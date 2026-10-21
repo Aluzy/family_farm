@@ -127,11 +127,8 @@
   // Le seuil du Poulailler dans poulailler.png (px de l'image) : le bas de la porte.
   const COOP_SILL = { x: 22, y: 43 };
 
-  // Vaches et moutons : cases de 32×24, profil droit, sabots sur la dernière rangée ; puis
-  // (scripts/carte/betes.py) entre deux pas de profil, et quatre temps de marche de face et
-  // de dos : la vue suit la direction du trajet (walkFrame).
-  const VUES_BETE = ['pas', 'bas0', 'bas1', 'bas2', 'bas3', 'haut0', 'haut1', 'haut2', 'haut3'];
-  const GRAZER_FRAMES = ['idle', 'queue', 'marche0', 'marche1', 'broute0', 'broute1', 'couchee0', 'couchee1', ...VUES_BETE];
+  // Vaches et moutons : cases de 32×24, profil droit, sabots sur la dernière rangée.
+  const GRAZER_FRAMES = ['idle', 'queue', 'marche0', 'marche1', 'broute0', 'broute1', 'couchee0', 'couchee1'];
   const GRAZER_NEXT = {
     debout: { broute: 6, marche: 3, couche: 1 },
     marche: { broute: 5, debout: 2 },
@@ -139,8 +136,11 @@
     couche: { debout: 1 },
   };
   const GRAZER_TIME = { debout: [1.5, 4], broute: [4, 10], couche: [8, 16] };   // secondes
-  // Poules : cases de 16×16, profil droit, pattes sur la dernière rangée.
-  const HEN_FRAMES = ['idle', 'picore0', 'picore1', 'marche0', 'marche1', 'gratte', 'couvee', 'ailes', ...VUES_BETE];
+  // Poules : cases de 16×16, profil droit, pattes sur la dernière rangée ; puis
+  // (scripts/carte/betes.py) entre deux pas de profil, et quatre temps de marche de face et
+  // de dos : la vue suit la direction du trajet (walkFrame).
+  const HEN_FRAMES = ['idle', 'picore0', 'picore1', 'marche0', 'marche1', 'gratte', 'couvee', 'ailes',
+    'pas', 'bas0', 'bas1', 'bas2', 'bas3', 'haut0', 'haut1', 'haut2', 'haut3'];
   const HEN_NEXT = {
     debout: { picore: 5, marche: 4, gratte: 2, couvee: 1, ailes: 1 },
     marche: { picore: 4, marche: 2, debout: 2, course: 1 },
@@ -911,8 +911,8 @@
       let path = [], speed = 0, stride = 2, walked = 0;   // déplacement en cours
       let vue = 'profil';                                 // profil, bas (vers nous), haut (de dos)
       const s = scene.add.image(0, 0, o.herd[kind], 0).setOrigin(0.5, 1).setVisible(false);
-      // (une planche d'avant, sans les vues de face et de dos : de profil seulement)
-      const vues = s.texture.frameTotal - 1 > H.frames.indexOf('haut3');
+      // (la poule a ses vues de face et de dos ; les autres, ou une planche d'avant : de profil seulement)
+      const vues = H.frames.includes('haut3') && s.texture.frameTotal - 1 > H.frames.indexOf('haut3');
 
       function enter(name) {
         before = st; st = name; me.age = 0; walked = 0;

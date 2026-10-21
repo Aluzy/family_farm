@@ -424,8 +424,9 @@
         if (lieu === 'enclos' && !still) {
           if (e.to) {
             const dx = e.to.x - e.x, dy = e.to.y - e.y, l = Math.hypot(dx, dy), st = d.vitesse * dt;
-            // (la vue du trajet, choisie à son départ : de face, de dos, ou de profil retourné)
-            if (!e.vue) e.vue = Math.abs(dy) > Math.abs(dx) ? (dy > 0 ? 'face' : 'dos') : 'marche';
+            // (la vue du trajet, choisie à son départ : de face, de dos pour qui en a — la poule —,
+            // sinon de profil retourné)
+            if (!e.vue) e.vue = d.face && Math.abs(dy) > Math.abs(dx) ? (dy > 0 ? 'face' : 'dos') : 'marche';
             e.img.setFlipX(e.vue === 'marche' ? dx < 0 || (Math.abs(dx) <= 0.5 && e.img.flipX) : false);
             if (l <= st) { e.x = e.to.x; e.y = e.to.y; e.to = null; e.t = d.pause[0] + Math.random() * (d.pause[1] - d.pause[0]); e.pose = d.poses[Math.floor(Math.random() * d.poses.length)]; e.age = 0; } else { e.x += (dx / l) * st; e.y += (dy / l) * st; }
           } else if ((e.t -= dt) <= 0) {
