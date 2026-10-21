@@ -16,7 +16,7 @@ import { autoMaintain, autoTasks, newAutoReport, rainNight, robotNight } from '.
 import { recordNight, updateChapters } from './campaign.js';
 import { noteTutorialSleep } from './alerts.js';
 import { collectLeftovers } from './ramassage.js';
-import { regrowGrass, respawnRocks, respawnTrees } from './outils.js';
+import { regrowGrass, respawnBushes, respawnRocks, respawnTrees } from './outils.js';
 import { immeubleNuit, voisinsNuit } from './voisins.js';
 import { economieNuit } from './economie.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
@@ -255,6 +255,7 @@ export function runNight(state) {
   state.awakeMs = 0;
   respawnRocks(state); // les rochers cassés dont le jour de retour est venu
   respawnTrees(state); // les arbres abattus dont le jour est venu repoussent
+  respawnBushes(state); // les buissons coupés aussi
   regrowGrass(state); // l'herbe haute fauchée dont le jour est venu repousse
   refreshUnlocks(state);
   updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil

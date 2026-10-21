@@ -77,7 +77,7 @@
       const p = this.fermier && this.fermier.pos();
       if (!p) return;
       if (outil === 'hache') {
-        const t = this.nearest((this.mapTrees() || []).filter((a) => !a.gone && !a.falling), (a) => a.foot, p);
+        const t = this.nearest((this.mapTrees() || []).filter((a) => this.choppable(a)), (a) => a.foot, p);
         if (t) this.chop(t, true);
         else this.fermier.actHere('couper', () => K.secousse(this, 'fort'));
         return;

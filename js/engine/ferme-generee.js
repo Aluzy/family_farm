@@ -406,9 +406,11 @@ function fabriquer(graine) {
     width: W, height: H, tilewidth: T, tileheight: T, nextlayerid: id, nextobjectid: 9501,
     graine, layers, tilesets: [],
   };
-  // BUISSONS : les buissons posés, [colonne de gauche, rangée du pied, largeur, hauteur] en tuiles
-  // (on y cueille des baies : atelier.js)
-  const buissons = poses.filter((p) => p[2].startsWith('buisson')).map(([fy, fx, , w, h]) => [Math.round(fx / T - w / 2), Math.round(fy / T) - 1, w, h]);
+  // BUISSONS : les buissons posés, [colonne de gauche, rangée du pied, largeur, hauteur, taille] en
+  // tuiles (on y cueille des baies : atelier.js ; la hache les coupe : outils.js) ; taille :
+  // « grand » (buisson_large) ou « petit » (buisson_rond)
+  const buissons = poses.filter((p) => p[2].startsWith('buisson'))
+    .map(([fy, fx, bloc, w, h]) => [Math.round(fx / T - w / 2), Math.round(fy / T) - 1, w, h, bloc === 'buisson_large' ? 'grand' : 'petit']);
   // (SOMMETS, TEINTES : les coins des cases, pour les chemins posés plus tard, tuileChemin)
   const sommets = Uint8Array.from(sommet, (k) => (k === 'eau' ? 2 : k === 'chemin' ? 1 : 0));
   // HERBES : les touffes d'herbe haute de chaque case, { case: [identifiants « x,y »] } (une case

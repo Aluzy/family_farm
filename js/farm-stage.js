@@ -218,7 +218,8 @@
               ground: () => {
                 const g = this.ambient && this.ambient.ground ? this.ambient.ground() : null;
                 const debout = (m) => !(this.felledFeet && this.felledFeet.has(m.x + ',' + m.base));
-                return g ? Object.assign({}, g, { trees: (g.trees || []).filter(debout), rocks: this.rockFeet() }) : { rocks: this.rockFeet() };
+                const pousse = (b) => !(this.felledBushes && this.felledBushes.has(b.x0 + ',' + b.base));
+                return g ? Object.assign({}, g, { trees: (g.trees || []).filter(debout), bushes: (g.bushes || []).filter(pousse), rocks: this.rockFeet() }) : { rocks: this.rockFeet() };
               },
               cols: () => this.grid.cols,
               outside: () => !this.room,

@@ -1,8 +1,8 @@
-/* carte/ferme/hache.js — la scène de la ferme : la hache et les arbres de la carte.
+/* carte/ferme/hache.js — la scène de la ferme : la hache, les arbres et les buissons de la carte.
  *
  * Les arbres de la carte (lus dans ses couches d'arbres), un coup de hache (le jeu compte, le
  * personnage frappe, l'arbre tremble), le dernier coup (l'arbre bascule : CarteKit.NATURE.chute),
- * les arbres abattus et ceux qui repoussent.
+ * les arbres abattus et ceux qui repoussent. Les buissons de la ferme générée tombent d'un coup.
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
  * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).
@@ -22,8 +22,9 @@
     /* ---------- la hache : les arbres de la carte ---------- */
 
     // Les arbres de la carte, lus une fois dans ses couches d'arbres : { id, layer, cells,
-    // x0, y0, x1, y1 (bornes en px), foot: { x, y }, kind }. id : « colonne,rangée » de la
-    // case du pied (ce que le jeu enregistre pour compter les coups du jour).
+    // x0, y0, x1, y1 (bornes en px), foot: { x, y }, kind, buisson }. id : « colonne,rangée » de la
+    // case du pied (ce que le jeu enregistre pour compter les coups du jour). buisson : un groupe
+    // de 2 à 4 cases de large sur 2 de haut (le jeu ne le coupe que sur la ferme générée).
     mapTrees() {
       if (this.treeList) return this.treeList;
       const list = [];
@@ -59,7 +60,8 @@
             }
           }
           const w = c1 - c0 + 1, h = r1 - r0 + 1;
-          if (w < 2 || w > 6 || h < 3 || h > 7) continue;            // buissons, souches, forêts soudées
+          const buisson = w >= 2 && w <= 4 && h === 2;
+          if (!buisson && (w < 2 || w > 6 || h < 3 || h > 7)) continue;   // souches, forêts soudées
           const foot = cells.filter((i) => ((i / W) | 0) === r1).map((i) => i % W);
           const fx = (Math.min(...foot) + Math.max(...foot) + 1) / 2 * T;
           // l'arbre du pack (feuillu, sapin) : son coin haut-gauche, d'après une de ses tuiles
@@ -71,11 +73,17 @@
           list.push({
             id: Math.floor(fx / T) + ',' + r1, layer, cells: new Set(cells),
             x0: c0 * T, y0: r0 * T, x1: (c1 + 1) * T, y1: (r1 + 1) * T,
-            foot: { x: fx, y: (r1 + 1) * T - 3 }, kind, ox, oy,
+            foot: { x: fx, y: (r1 + 1) * T - 3 }, kind: buisson ? null : kind, ox, oy, buisson,
           });
         }
       }
       return (this.treeList = list);
+    },
+
+    // L'arbre (ou le buisson) peut-il recevoir un coup de hache ? Pas tombé, pas en train de
+    // tomber ; un buisson, seulement sur la ferme générée (modèle.buissons).
+    choppable(t) {
+      return !t.gone && !t.falling && (!t.buisson || !!(this.ctx.lastModel && this.ctx.lastModel.buissons));
     },
 
     // L'arbre sous le point (wx, wy) : le plus en avant (pied le plus bas) dont le houppier
@@ -83,7 +91,7 @@
     mapTreeAt(wx, wy) {
       let best = null;
       for (const t of this.mapTrees()) {
-        if (t.gone || t.falling) continue;
+        if (!this.choppable(t)) continue;
         if (wx < t.x0 + 4 || wx > t.x1 - 4 || wy < t.y0 + 4 || wy > t.y1) continue;
         if (!best || t.foot.y > best.foot.y) best = t;
       }
@@ -97,7 +105,9 @@
     // fort (coupfort.js : il compte plusieurs coups, la vue tremble plus).
     chop(t, fort) {
       // (l'arbre tombera du côté opposé au personnage, comme fellTree ; ses morceaux aussi)
-      const p = this.strikeSide(t.foot, 11);
+      // (devant un buisson, il se place au bout de son pied : il ne marche pas dedans)
+      const dx = t.buisson ? (t.x1 - t.x0) / 2 + 2 : 11;
+      const p = this.strikeSide(t.foot, dx);
       const ou = this.piecePoints(t.foot, p, p.x > t.foot.x ? -1 : 1);
       const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.chop ? this.ctx.bridge.chop(t.id, ou, !!fort) : null));
       if (!got) return;
@@ -119,7 +129,7 @@
         if (t.falling && !t.queued) { this.fellTree(t, true); return; }
         this.shakeTree(t);
       };
-      if (!this.fermier || !this.fermier.chop(t.foot, hit)) hit();
+      if (!this.fermier || !this.fermier.chop(t.foot, hit, dx)) hit();
     },
 
     // Le dernier coup de hache : l'arbre bascule autour de son pied, du côté opposé au
@@ -137,6 +147,14 @@
         this.felledChanged();
       };
       if (!o || !o.img || !anim || reducedMotion() || !this.textures.exists(o.img.texture.key)) { done(); lache(); return; }
+      if (t.buisson) {
+        // un buisson ne bascule pas : il part en feuilles et en brindilles
+        if (o.shake) { o.shake.destroy(); o.shake = null; t.shaking = false; }
+        this.spawnShards({ box: { x0: t.x0 + 4, x1: t.x1 - 4, y0: t.y0 + 4, y1: t.foot.y } }, CHUTE.feuilles, true, null, CHUTE.couleurs);
+        done();
+        lache();
+        return;
+      }
       if (o.shake) { o.shake.destroy(); o.shake = null; t.shaking = false; }
       const p = this.fermier && this.fermier.pos();
       const dir = p && p.x > t.foot.x ? -1 : 1;
@@ -192,7 +210,9 @@
 
     // Les arbres abattus ont changé : leurs ombres, et les cases où le personnage passe.
     felledChanged() {
-      this.felledFeet = new Set(this.mapTrees().filter((t) => t.gone).map((t) => t.foot.x + ',' + t.foot.y));
+      this.felledFeet = new Set(this.mapTrees().filter((t) => t.gone && !t.buisson).map((t) => t.foot.x + ',' + t.foot.y));
+      // les buissons coupés (« x0,pied », comme ambient-life.js les relève) : on y passe
+      this.felledBushes = new Set(this.mapTrees().filter((t) => t.gone && t.buisson).map((t) => t.x0 + ',' + (t.y1 - 2)));
       this.sunDirty = true;
       if (this.ambient && this.ambient.setContext) this.ambient.setContext({ felled: this.felledFeet });
       if (this.fermier && this.fermier.regrid) this.fermier.regrid();

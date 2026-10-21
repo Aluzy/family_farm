@@ -95,7 +95,7 @@ function useTool(id) {
   }
   if (id === 'hache') {
     setAxeMode(true);
-    notify(`${def.ICONE} Hache en main : touche un arbre de la carte pour le couper.`);
+    notify(`${def.ICONE} Hache en main : touche un arbre ou un buisson de la carte pour le couper.`);
     if (stageWindow) closeStageWindow();
     else refresh();
     return;
@@ -125,7 +125,7 @@ const DATA_ICONE = (id) => toolDef(id).ICONE;
 // La puce « Hache en main » de la carte : la toucher range la hache.
 export function axeChipHtml() {
   if (!axeMode || !hasTool(state, 'hache') || stageInterior) return '';
-  return `<button type="button" class="stage-chip hoe axe" data-action="axe-toggle" aria-pressed="true" aria-label="Hache en main : touche un arbre pour le couper. Ranger la hache" title="Touche un arbre de la carte pour le couper"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('hache')}</span><span class="stage-chip-text">Hache</span><span class="stage-chip-val num">🪵</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
+  return `<button type="button" class="stage-chip hoe axe" data-action="axe-toggle" aria-pressed="true" aria-label="Hache en main : touche un arbre ou un buisson pour le couper. Ranger la hache" title="Touche un arbre ou un buisson de la carte pour le couper"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('hache')}</span><span class="stage-chip-text">Hache</span><span class="stage-chip-val num">🪵</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
 }
 
 // La puce « Pioche en main » de la carte : la toucher range la pioche.

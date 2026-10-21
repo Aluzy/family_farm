@@ -672,8 +672,9 @@
     // La hache en main, le joueur a touché un arbre : il va se placer à côté du tronc (à
     // gauche, sinon à droite), tourné vers lui, et donne un coup de hache. onHit : au coup.
     // Renvoie false s'il n'y a pas de place près du tronc (onHit est alors appelé tout de suite).
-    function chop(foot, onHit) {
-      return strike('couper', foot, 11, onHit);
+    // `dx` : à quelle distance du pied il se place (un buisson est plus large qu'un tronc).
+    function chop(foot, onHit, dx) {
+      return strike('couper', foot, dx || 11, onHit);
     }
     // La pioche en main, le joueur a touché un rocher (son pied en `foot`, sa demi-largeur
     // `half`) : il se place à côté, le fer de la pioche tombe sur le rocher.
