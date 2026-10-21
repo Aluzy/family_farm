@@ -58,6 +58,8 @@
         this.etageMurs = new Map();
         this.etageEmprise = on ? new Set(etage.emprise) : null;
         this.etageBloque = new Set();
+        this.etageLits = new Map();      // les couchages de l'étage : case → { img, x, y, dessin }
+        this.etageEscaliers = on ? etage.escaliers.slice() : [];
         if (on && this.has(BLOCS_CARTE.key)) {
           const cols = this.grid.cols, dy = E.dy, add = (o) => { this.etageObjs.push(o); return o; };
           const dans = (t) => this.etageEmprise.has(t);
@@ -90,10 +92,13 @@
                 add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setDepth(p.y + (M.bloque ? 0.9 : M.lit ? 0.75 : 0.6)));
               } else {
                 const H = this.textures.get(k).getSourceImage().height;
+                let bas = null;
                 for (let j = 0; j < M.hauteur; j++) {
                   const y1 = H - j * T, y0 = j === M.hauteur - 1 ? 0 : y1 - T;
-                  add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setCrop(0, y0, 9999, y1 - y0).setDepth(p.y - j * T + (M.lit ? 0.75 : 0.6)));
+                  const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setCrop(0, y0, 9999, y1 - y0).setDepth(p.y - j * T + (M.lit ? 0.75 : 0.6)));
+                  if (!j) bas = img;
                 }
+                if (M.lit) this.etageLits.set(b.case, { img: bas, x, y: p.y - dy - 1, haut: H, dessin: M.dessin });
               }
               if (M.bloque) for (let j = 0; j < M.hauteur; j++) for (let i = 0; i < M.largeur; i++) this.etageBloque.add(b.case - j * cols + i);
               continue;
@@ -101,6 +106,7 @@
             const [key, f] = this.blocImage(b, at, cols), p = pos(b.case);
             const plat = BLOCS_CARTE.plats.includes(b.sorte);
             const img = add(this.add.image(p.x, p.y - dy, key, f).setOrigin(0.5, 1).setDepth(p.y + (plat ? 0.7 : 1)));
+            if (b.sorte === 'paillasse') this.etageLits.set(b.case, { img, x: p.x, y: p.y - dy, paillasse: true });
             if (BLOCS_CARTE.bloquent.includes(b.sorte)) this.etageBloque.add(b.case);
             if (key === BLOCS_CARTE.hauts.key) this.etageMurs.set(b.case, { img, x: p.x, sorte: b.sorte });
           }
@@ -130,7 +136,9 @@
       const p = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       const cols = this.grid.cols;
       const dedans = p && this.etageEmprise.has(Math.floor((p.y - 1) / T) * cols + Math.floor(p.x / T));
-      const vue = this.vueNiveau != null ? (this.vueNiveau ? 'haut' : 'bas') : this.niveau ? 'haut' : dedans ? 'bas' : 'dehors';
+      // (couché dans un lit de l'étage : on le voit là-haut)
+      const litHaut = this.fermier && this.fermier.lit && this.fermier.lit();
+      const vue = this.vueNiveau != null ? (this.vueNiveau ? 'haut' : 'bas') : this.niveau || (litHaut && litHaut.via) ? 'haut' : dedans ? 'bas' : 'dehors';
       if (vue !== this.etageVue) {
         this.etageVue = vue;
         const haut = vue === 'bas' ? (this.vueNiveau != null ? E.transparent : E.dedans) : 1, z = vue === 'haut';
@@ -176,6 +184,26 @@
       const out = [], n = this.grid.cols * Math.ceil(this.world.h / T);
       for (let i = 0; i < n; i++) if (!this.etageEmprise.has(i) || this.etageBloque.has(i)) out.push(i);
       return out;
+    },
+
+    // Un couchage de l'étage (« etage:<tuile> », modèle.couchages) : où l'on s'y couche, comme
+    // bedSpotOf (js/carte/ferme/chantier.js), dessiné à l'étage (sa profondeur suit celle de son
+    // image : devant le voile quand on est à l'étage) ; via : le pied de l'escalier le plus proche,
+    // où l'on monte (et où l'on se lève, en bas) ; etage : sa case, au sol de la grille de l'étage
+    // (on y marche quand on y est déjà).
+    etageBedSpot(t) {
+      const e = this.etageLits && this.etageLits.get(t);
+      if (!e) return null;
+      const cols = this.grid.cols, pied = (c) => ({ x: (c % cols) * T + T / 2, y: (Math.floor(c / cols) + 1) * T - 2 });
+      const cell = pied(t);
+      const via = (this.etageEscaliers || []).map(pied).sort((a, b) => Math.hypot(a.x - cell.x, a.y - cell.y) - Math.hypot(b.x - cell.x, b.y - cell.y))[0] || null;
+      const img = e.img;
+      if (e.paillasse) {
+        return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, get depth() { return img.depth; }, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y }, via, etage: cell };
+      }
+      const drap = 'meuble_' + e.dessin + '_drap';
+      if (!this.has(drap)) return null;
+      return { x: e.x, y: Math.min(e.y - e.haut + BLOCS_CARTE.litPieds, e.y - 1), get depth() { return img.depth; }, drap: { key: drap, frame: undefined, x: e.x, y: e.y }, via, etage: cell };
     },
 
     // À l'étage, le personnage est dessiné remonté (ETAGE.dy), un peu devant le plancher.
