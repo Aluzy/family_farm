@@ -219,7 +219,7 @@
       halo: { couleur: 0x4ff0d2, rayon: 20, intensite: 0.09, attenuation: 0.08 },
     },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
-    // le plancher des pièces (`piece` : une tache de `rayon` px par case) ; sur les vitres des
+    // le plancher des pièces (`piece` : unie, sur ce qu'on voit de chaque case) ; sur les vitres des
     // murs `sortes` (`vitre` : `dy` px au-dessus du pied du mur) ; sur la face du mur du fond,
     // tournée vers la pièce (`murFond` : unie, `haut` px depuis le pied du mur) ; les rayons des vitres de la façade (`rayons` : partis du bas de la vitre,
     // `mur` px au-dessus du pied du mur, puis sur le sol devant elle, larges de `vitre` px puis de
@@ -227,7 +227,7 @@
     // et s'éteint à `vitesse` par seconde
     lumiereMaison: {
       sortes: ['mur_fenetre', 'paroi_vitree'], teinte: 0xffc673, vitesse: 1.5,
-      piece: { rayon: 12, alpha: 0.85 },
+      piece: { alpha: 0.7 },
       vitre: { rayon: 7, alpha: 0.95, dy: -16 },
       murFond: { haut: 32, alpha: 0.7 },
       rayons: { mur: 8, vitre: 10, large: 40, cases: 4, alpha: 0.8 },

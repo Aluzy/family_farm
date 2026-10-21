@@ -2,8 +2,9 @@
  *
  * Quand la nuit tombe (comme les lanternes : le voile de l'heure plus sombre que
  * BLOCS_CARTE.lanterne.allume), les pièces de la maison (les toits marqués `maison`, js/engine/
- * etage.js toits) s'allument : une lueur chaude sur leur plancher et la face du mur du fond (vus
- * quand leur toit s'efface, le personnage dedans), leurs vitres (BLOCS_CARTE.lumiereMaison.sortes) éclairées, et des rayons qui
+ * etage.js toits) s'allument : une lumière chaude, unie, sur leur plancher (ce qu'on en voit : pas
+ * sur le dessus ni la face des murs devant) et la face du mur du fond (vus quand leur toit s'efface,
+ * le personnage dedans), leurs vitres (BLOCS_CARTE.lumiereMaison.sortes) éclairées, et des rayons qui
  * passent par les vitres de la façade (un mur dont la case du dessus est dans la pièce : sa face
  * donne dehors) et tombent sur le sol devant elle (seulement le sol vu : un mur ou un toit les
  * arrête), les montants de la fenêtre y laissant une
@@ -97,7 +98,12 @@
           const P = L.piece;
           for (const c of t.dedans) {
             if (mur(c)) continue;
-            out.push({ key: 'lueur', x: (c % cols) * T + T / 2, y: Math.floor(c / cols) * T + T / 2, tint: L.teinte, alpha: P.alpha * ouvert, scaleX: P.rayon / 32, scaleY: P.rayon / 32 });
+            // (unie, sur ce qu'on voit de la case : un mur haut une ou deux rangées plus bas en
+            // cache le bas, sa face et son dessus, où la lumière du dedans ne va pas)
+            const y0 = Math.floor(c / cols) * T;
+            let y1 = y0 + T;
+            for (let k = 1; k <= 2; k++) if (mur(c + k * cols)) { y1 = Math.min(y1, y0 + (k + 1) * T - Hh.frame.frameHeight); break; }
+            if (y1 > y0) out.push({ key: 'lumiere_unie', x: (c % cols) * T, y: y0, tint: L.teinte, alpha: P.alpha * ouvert, scaleY: (y1 - y0) / T, originX: 0, originY: 0 });
             // (le mur du fond : sa face, tournée vers la pièce, au-dessus de la case)
             if (mur(c - cols) && t.dedans.has(c - cols)) {
               const M = L.murFond, e = B.get(c - cols);

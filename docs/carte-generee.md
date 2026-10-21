@@ -286,7 +286,8 @@ Le Marché vend toujours les outils.
     l'inventaire (`rangerEtage`) ; au coucher, on redescend.
 - **La lumière des maisons, la nuit** (`js/carte/ferme/fenetres.js`) : les pièces de la
   maison (les toits marqués `maison`) s'allument quand la nuit tombe : une lueur chaude sur leur
-  plancher et, unie, sur la face du mur du fond (vues quand le toit s'efface), leurs vitres
+  plancher (ce qu'on en voit : pas sur le dessus ni la face des murs devant) et sur la face du
+  mur du fond, unie, (vues quand le toit s'efface), leurs vitres
   éclairées (un peu transparentes : on voit l'intérieur au travers), et des rayons qui partent
   du bas des vitres de la façade, passent sur le bas du mur et tombent sur le sol devant elle
   (pas sur ce qui est devant : un mur, un toit les arrête). Elles s'éteignent quand tout le
