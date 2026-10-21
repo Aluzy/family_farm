@@ -3,7 +3,8 @@
 # (assets/portraits/perso_XX.png), scripts/personnage/fermier.py les planches de la carte
 # (assets/personnages/perso_XX.png).
 #
-# Une entrée : (peau, cheveux, coupe, couvre-chef, couleur de l'accessoire, détails, habit, motif)
+# Une entrée : (peau, cheveux, coupe, couvre-chef, couleur de l'accessoire, détails, habit, motif
+# [, couleur des yeux : brun, noisette, vert, bleu, violet, turquoise ; sans elle, modeles.yeux()])
 #   coupe      : longs, mi, carre, courts, frange, frange_carre, couettes, chignon, chauve
 #   couvre-chef: None, paille, casquette, bonnet, beret, bandeau, fleur
 #   détails    : barbe, moustache, lunettes, rousseur, boucles (séparés par des virgules)
@@ -32,6 +33,7 @@ CHEVEUX = {
     'bleus': {'b': (96, 140, 220), 'c': (60, 96, 176), 'd': (40, 64, 130)},
     'verts': {'b': (110, 176, 110), 'c': (70, 130, 76), 'd': (46, 96, 52)},
     'chocolat': {'b': (90, 56, 36), 'c': (62, 38, 24), 'd': (44, 26, 16)},
+    'violets': {'b': (81, 63, 157), 'c': (42, 31, 88), 'd': (18, 13, 37)},
 }
 HABITS = {
     'rouge': {'l': (70, 18, 14), 'm': (150, 42, 34), 'n': (206, 74, 58)},
@@ -49,6 +51,7 @@ HABITS = {
     'kaki': {'l': (44, 46, 20), 'm': (110, 116, 60), 'n': (156, 160, 96)},
     'bordeaux': {'l': (50, 10, 20), 'm': (120, 30, 50), 'n': (170, 56, 76)},
     'ciel': {'l': (30, 60, 90), 'm': (110, 160, 210), 'n': (170, 210, 240)},
+    'beige': {'l': (94, 80, 65), 'm': (150, 128, 103), 'n': (178, 158, 136)},
 }
 # habits qui imposent leur motif
 SPECIAL = {
@@ -58,7 +61,7 @@ SPECIAL = {
 ACCESSOIRES = {
     'rouge': (196, 52, 44), 'bleu': (54, 96, 180), 'vert': (60, 130, 70), 'jaune': (236, 196, 60),
     'rose': (232, 120, 170), 'noir': (40, 40, 46), 'gris': (130, 130, 138), 'blanc': (240, 240, 232),
-    'orange': (232, 128, 50), 'violet': (130, 80, 170), 'brun': (110, 72, 40),
+    'orange': (232, 128, 50), 'violet': (130, 80, 170), 'brun': (110, 72, 40), 'marine': (36, 50, 122),
 }
 # le bas (salopette ou pantalon), en alternance d'un personnage à l'autre
 BAS = [
@@ -70,25 +73,25 @@ BAS = [
 ]
 
 ENTREES = [
-    ('claire', 'chatains', 'frange', None, None, '', 'vert', None),
+    ('claire', 'chatains', 'frange', None, None, '', 'vert', None, 'vert'),
     ('tres_claire', 'blonds', 'couettes', None, 'rose', 'rousseur', 'rose', 'pois'),
     ('mate', 'noirs', 'courts', 'casquette', 'rouge', '', 'blanc', None),
-    ('foncee', 'noirs', 'chignon', None, None, 'boucles', 'jaune', None),
-    ('claire', 'gris', 'chauve', None, None, 'moustache', 'marron', 'carreaux'),
-    ('rosee', 'roux', 'longs', 'bandeau', 'vert', 'rousseur', 'blanc', None),
-    ('olive', 'chocolat', 'courts', None, None, 'barbe', 'kaki', None),
-    ('tres_foncee', 'noirs', 'carre', 'fleur', 'jaune', '', 'orange', None),
-    ('claire', 'platine', 'carre', None, None, 'lunettes', 'noir', None),
-    ('mate', 'bruns', 'courts', 'bonnet', 'rouge', '', 'marine', 'rayures'),
-    ('tres_claire', 'auburn', 'chignon', None, None, 'lunettes', 'bordeaux', None),
+    ('claire', 'blonds', 'longs', None, None, '', 'lilas', None, 'vert'),
+    ('claire', 'chatains', 'frange', None, None, 'lunettes', 'vert', None, 'vert'),
+    ('claire', 'blonds', 'longs', 'bandeau', 'rouge', '', 'rouge', None, 'turquoise'),
+    ('claire', 'chocolat', 'courts', None, None, 'moustache', 'marine', None, 'bleu'),
+    ('claire', 'chocolat', 'courts', 'casquette', 'marine', 'moustache', 'marine', None, 'vert'),
+    ('tres_foncee', 'violets', 'courts', None, None, '', 'jaune', None, 'violet'),
+    ('claire', 'chocolat', 'courts', None, None, 'moustache', 'orange', None, 'brun'),
+    ('mate', 'chatains', 'longs', None, None, '', 'beige', None, 'brun'),
     ('foncee', 'gris', 'courts', 'paille', 'bleu', 'barbe', 'jean', None),
     ('rosee', 'roses', 'couettes', None, 'blanc', '', 'ciel', 'pois'),
     ('claire', 'bruns', 'courts', 'beret', 'noir', 'moustache', 'rayures_bm', None),
     ('olive', 'noirs', 'longs', None, None, '', 'turquoise', None),
     ('mate', 'blancs', 'chignon', None, None, 'lunettes', 'lilas', 'pois'),
-    ('tres_foncee', 'chocolat', 'courts', 'casquette', 'jaune', '', 'vert', None),
+    ('tres_foncee', 'chocolat', 'frange', None, None, 'lunettes', 'vert', None),
     ('claire', 'roux', 'courts', None, None, 'barbe', 'carreaux_vert', None),
-    ('tres_claire', 'blonds', 'longs', 'paille', 'rose', '', 'blanc', None),
+    ('tres_claire', 'blonds', 'mi', 'fleur', 'rose', 'rousseur', 'blanc', None),
     ('foncee', 'bleus', 'frange_carre', None, None, 'boucles', 'noir', None),
     ('rosee', 'chatains', 'mi', 'bonnet', 'vert', 'rousseur', 'jaune', None),
     ('claire', 'noirs', 'frange', 'fleur', 'rouge', '', 'rouge', None),
@@ -119,7 +122,7 @@ ENTREES = [
     ('rosee', 'bruns', 'chignon', None, None, '', 'vert', 'pois'),
     ('olive', 'noirs', 'courts', 'bonnet', 'bleu', 'moustache', 'jean', None),
     ('claire', 'auburn', 'longs', 'paille', 'violet', '', 'lilas', None),
-    ('foncee', 'blonds', 'frange', 'bandeau', 'rouge', 'boucles', 'blanc', 'rayures'),
+    ('foncee', 'blonds', 'courts', 'bonnet', 'rouge', 'boucles', 'blanc', 'rayures'),
 ]
 
 
@@ -130,13 +133,13 @@ def fonce(c, k=0.72):
 def personnages():
     """Les 50 personnages : [(nom, description)], description = dict lisible."""
     out = []
-    for i, (peau, cheveux, coupe, chap, acc, details, habit, motif) in enumerate(ENTREES):
+    for i, (peau, cheveux, coupe, chap, acc, details, habit, motif, *yeux) in enumerate(ENTREES):
         if habit in SPECIAL:
             habit, impose = SPECIAL[habit]
             motif = motif or impose
         out.append((f'perso_{i + 1:02d}', {
             'peau': peau, 'cheveux': cheveux, 'coupe': coupe, 'chapeau': chap,
             'accessoire': ACCESSOIRES[acc or 'rouge'], 'details': [d for d in details.split(',') if d],
-            'habit': habit, 'motif': motif, 'bas': BAS[i % len(BAS)],
+            'habit': habit, 'motif': motif, 'bas': BAS[i % len(BAS)], 'yeux': yeux[0] if yeux else None,
         }))
     return out

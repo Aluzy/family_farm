@@ -688,16 +688,16 @@ def apercu_enfants():
     S = 4
     noms = list(frames())
     IDLE = [noms.index(n) for n in ('idle_bas_0', 'idle_cote_0', 'idle_haut_0')]
-    out = Image.new('RGBA', (10 * 70 * S // 2, 5 * 40 * S // 2), (126, 170, 92, 255))
+    out = Image.new('RGBA', (10 * 86 * S // 2, 5 * 40 * S // 2), (126, 170, 92, 255))
     for i, (nom, _) in enumerate(portraits_enfants.enfants()):
         sheet = Image.open(os.path.join(ASSETS, 'personnages', nom + '.png')).convert('RGBA')
         por = Image.open(os.path.join(ASSETS, 'portraits', nom + '.png')).convert('RGBA')
-        x0, y0 = (i % 10) * 70, (i // 10) * 40
-        tile = Image.new('RGBA', (70, 40), (0, 0, 0, 0))
-        tile.alpha_composite(por, (0, 12))
+        x0, y0 = (i % 10) * 86, (i // 10) * 40
+        tile = Image.new('RGBA', (86, 40), (0, 0, 0, 0))
+        tile.alpha_composite(por, (0, 4))
         for k, idx in enumerate(IDLE):
-            tile.alpha_composite(sheet.crop(((idx % COLS) * W, (idx // COLS) * H, (idx % COLS) * W + W, (idx // COLS) * H + H)), (18 + k * 17, 6))
-        out.alpha_composite(tile.resize((70 * S // 2, 40 * S // 2), Image.NEAREST), (x0 * S // 2, y0 * S // 2))
+            tile.alpha_composite(sheet.crop(((idx % COLS) * W, (idx // COLS) * H, (idx % COLS) * W + W, (idx // COLS) * H + H)), (34 + k * 17, 6))
+        out.alpha_composite(tile.resize((86 * S // 2, 40 * S // 2), Image.NEAREST), (x0 * S // 2, y0 * S // 2))
     out.save(os.path.join(ROOT, 'apercu_enfants_carte.png'))
 
 

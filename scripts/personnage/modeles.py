@@ -295,10 +295,13 @@ DETAILS = {
 YEUX = {
     'brun': ((54, 36, 24), (84, 58, 40)), 'noisette': ((96, 62, 28), (128, 88, 44)),
     'vert': ((20, 102, 16), (26, 128, 20)), 'bleu': ((30, 66, 150), (46, 96, 190)),
+    'violet': ((70, 36, 120), (100, 60, 160)), 'turquoise': ((10, 110, 124), (20, 150, 166)),
 }
 
 
 def yeux(d, i):
+    if d.get('yeux'):
+        return d['yeux']
     if d['cheveux'] in ('blonds', 'platine', 'roux', 'auburn', 'roses', 'bleus', 'verts'):
         return ('bleu', 'vert')[i % 2]
     return ('brun', 'noisette')[i % 2]

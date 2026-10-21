@@ -55,7 +55,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined' && document
   window.addEventListener('resize', taillesPortraits);
 }
 
-// Version 1.17 : le portrait d'un membre est celui de son personnage, 32 × 32 (un enfant : 16 × 16) agrandi sans
+// Version 1.17 : le portrait d'un membre est celui de son personnage, 32 × 32 (un enfant aussi) agrandi sans
 // flou : assets/portraits/perso_XX.png pour un adulte, enfant_XX.png pour un enfant.
 export function persoSrc(n, enfant = false) {
   return `assets/portraits/${enfant ? 'enfant' : 'perso'}_${String(n).padStart(2, '0')}.png`;
