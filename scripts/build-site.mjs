@@ -61,7 +61,7 @@ const SOURCEMAP = process.argv.includes('--sourcemap');
 // scripts classiques, hors du regroupement : le kit commun des cartes (js/carte/), la ferme
 // (js/carte/ferme/ et js/farm-stage.js), la ville (js/carte/ville/ et js/ville-carte.js)…
 const CARTE_KIT = ['kit', 'chemins', 'nature', 'gestes', 'lumiere', 'triporteur', 'toit', 'jeu'].map((n) => `js/carte/${n}.js`);
-const CARTE_FERME = ['config', 'sol', 'decor', 'soleil', 'interieurs', 'camera', 'etiquettes', 'hache', 'pioche', 'coupfort', 'moulin', 'cueillette', 'chantier', 'etage', 'toits', 'peche', 'passages', 'machines', 'modele'].map((n) => `js/carte/ferme/${n}.js`);
+const CARTE_FERME = ['config', 'sol', 'decor', 'soleil', 'interieurs', 'camera', 'etiquettes', 'hache', 'pioche', 'coupfort', 'moulin', 'cueillette', 'chantier', 'etage', 'toits', 'fenetres', 'peche', 'passages', 'machines', 'modele'].map((n) => `js/carte/ferme/${n}.js`);
 const CARTE_VILLE = ['config', 'circulation', 'ecole', 'hud', 'marche', 'train', 'navette', 'voitures', 'velos', 'trouvailles', 'faune', 'nature', 'peche', 'lueurs', 'eclairage', 'ombres', 'voisins', 'metiers', 'livreur', 'transition', 'immeuble', 'lieux', 'habitants'].map((n) => `js/carte/ville/${n}.js`);
 const SCRIPTS = ['js/telemetry.js', ...CARTE_KIT, 'js/ambient-life.js', 'js/fermier.js', 'js/famille-ferme.js', ...CARTE_FERME, 'js/farm-stage.js', ...CARTE_VILLE, 'js/ville-carte.js', 'js/infra-monde.js'];
 const ENTRY = 'js/main.js';

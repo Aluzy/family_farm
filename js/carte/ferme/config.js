@@ -218,6 +218,20 @@
       vitre: { rayon: 11, teinte: 0xd8fff6, alpha: 0.9, dx: 4, dy: -11 },
       halo: { couleur: 0x4ff0d2, rayon: 20, intensite: 0.09, attenuation: 0.08 },
     },
+    // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
+    // le plancher des pièces (`piece` : unie, sur ce qu'on voit de chaque case) ; sur les vitres des
+    // murs `sortes` (`vitre` : `dy` px au-dessus du pied du mur) ; sur la face du mur du fond,
+    // tournée vers la pièce (`murFond` : unie, `haut` px depuis le pied du mur) ; les rayons des vitres de la façade (`rayons` : partis du bas de la vitre,
+    // `mur` px au-dessus du pied du mur, puis sur le sol devant elle, larges de `vitre` px puis de
+    // `large`, sur `cases` rangées) ; elle s'allume
+    // et s'éteint à `vitesse` par seconde
+    lumiereMaison: {
+      sortes: ['mur_fenetre', 'paroi_vitree'], teinte: 0xffc673, vitesse: 1.5,
+      piece: { alpha: 0.7 },
+      vitre: { rayon: 7, alpha: 0.95, dy: -16 },
+      murFond: { haut: 32, alpha: 0.7 },
+      rayons: { mur: 8, vitre: 10, large: 40, cases: 4, alpha: 0.8 },
+    },
     // le four qui cuit : ses flammes, une image après l'autre (`fps` images par seconde)
     feu: { sorte: 'four', frames: [47, 48, 49], fps: 7 },
     plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot'],

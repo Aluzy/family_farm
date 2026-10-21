@@ -49,7 +49,7 @@
   // « multiplier ». voile.set(heure, tout de suite ?) : passe à la lumière de cette heure (null :
   // plein jour), en fondu, ou tout de suite (premier affichage, animations réduites) ;
   // voile.step() à chaque image ; voile.rect : le rectangle. voile.eclaire(sources) : sources()
-  // donne, à chaque image, les lumières à ajouter ([{ key, x, y, tint, alpha, scaleX, scaleY,
+  // donne, à chaque image, les lumières à ajouter ([{ key, frame, x, y, tint, alpha, scaleX, scaleY,
   // rotation, originX, originY }…], px de carte ; une image de la texture key, en mode « ajouter »).
   // voile.nuit : 0 en plein jour, 1 au cœur de la nuit (d'après la lumière affichée).
   const MARGE = 16;            // px de carte autour de la vue (la caméra a pu bouger depuis)
@@ -79,7 +79,7 @@
       rt.fill(color, 1);
       for (const s of sources()) {
         if (s.x < x0 - 96 || s.y < y0 - 96 || s.x > x0 + W + 96 || s.y > y0 + H + 96) continue;
-        rt.stamp(s.key, null, s.x - x0, s.y - y0, {
+        rt.stamp(s.key, s.frame == null ? null : s.frame, s.x - x0, s.y - y0, {
           tint: s.tint, alpha: s.alpha, scaleX: s.scaleX || 1, scaleY: s.scaleY || 1, rotation: s.rotation || 0,
           originX: s.originX == null ? 0.5 : s.originX, originY: s.originY == null ? 0.5 : s.originY, blendMode: Ph.BlendModes.ADD,
         });
