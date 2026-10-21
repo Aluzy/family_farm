@@ -253,8 +253,8 @@
   // planches (HERD_SHEETS : profil droit ; la poule aussi de face et de dos, scripts/carte/betes.py),
   // dehors dans l'enclos de jour[0] h à jour[1] h (comme la porte des bâtiments, ambient-life.js).
   // Par espèce : `vitesse` (px/s), `pas` (s par image de marche), `pause` (s entre deux trajets),
-  // sa marche (marche : de profil ; la poule, face et dos : vers nous, de dos ; la vue suit la
-  // direction du trajet), ce qu'elle fait à l'arrêt (anims : [images, s par image, part du
+  // sa marche (marche : de profil ; la poule et la vache, face et dos : vers nous, de dos ; la vue
+  // suit la direction du trajet), ce qu'elle fait à l'arrêt (anims : [images, s par image, part du
   // temps où elle le fait]) et la nuit (nuit : images, lentement).
   const GRAZER = { idle: 0, queue: 1, marche0: 2, marche1: 3, broute0: 4, broute1: 5, couchee0: 6, couchee1: 7 };
   const BETES = {
@@ -267,7 +267,9 @@
       mouton: { key: 'mouton', vitesse: 6, pas: 0.25, pause: [3, 8], marche: ['marche0', 'marche1'], nuit: ['couchee0', 'couchee0', 'couchee1'], poses: ['broute', 'broute', 'queue'],
         anims: { broute: [['broute0', 'broute1'], 0.5, 0.9], queue: [['queue', 'idle'], 0.22, 0.3] }, frames: GRAZER },
       vache: { key: 'vache', vitesse: 7, pas: 0.3, pause: [4, 10], marche: ['marche0', 'marche1'], nuit: ['couchee0', 'couchee0', 'couchee1'], poses: ['broute', 'broute', 'queue'],
-        anims: { broute: [['broute0', 'broute1'], 0.55, 0.9], queue: [['queue', 'idle'], 0.22, 0.3] }, frames: GRAZER },
+        face: ['bas0', 'bas1', 'bas0', 'bas2'], dos: ['haut0', 'haut1', 'haut2', 'haut3'],
+        anims: { broute: [['broute0', 'broute1'], 0.55, 0.9], queue: [['queue', 'idle'], 0.22, 0.3] },
+        frames: Object.assign({ bas0: 8, bas1: 9, bas2: 10, haut0: 11, haut1: 12, haut2: 13, haut3: 14 }, GRAZER) },
     },
   };
   const EXIT = { object: 'vers_la_transition', inset: 18, arrive: 34, page: 'ville-carte.html?carte=transition&arrivee=ferme' };
