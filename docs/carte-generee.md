@@ -290,7 +290,11 @@ Le Marché vend toujours les outils.
   quelle par-dessus, ne bouge pas : seuls l'eau et son liseré blanc ondulent) ; le jour, des
   scintillements naissent et s'éteignent sur l'eau, loin des rives, plus nombreux et dorés quand le soleil
   est bas ; la nuit, la lune s'y reflète (une colonne de traits brisés qui tremblent) et les
-  lumières posées au bord aussi. Seulement en WebGL, et pas avec « moins d'animations ».
+  lumières posées au bord aussi. Ce qui se tient au bord (arbres, bâtiments, personnages,
+  bêtes) se reflète dans l'eau, retourné sous son pied, teinté, et ondule avec elle ; des ronds
+  s'élargissent sur l'eau au bouchon de la pêche, quand un poisson saute (de temps en temps),
+  quand quelqu'un longe la rive, et au hasard (des insectes). Seulement en WebGL, et pas avec
+  « moins d'animations ».
 - **La lumière des maisons, la nuit** (`js/carte/ferme/fenetres.js`) : les pièces de la
   maison (les toits marqués `maison`) s'allument quand la nuit tombe : une lueur chaude sur leur
   plancher (ce qu'on en voit : pas sur le dessus ni la face des murs devant) et sur la face du
