@@ -484,39 +484,50 @@
     },
 
     // Les murs hauts devant quelqu'un (le personnage, la famille : derrière eux, à une ou deux
-    // cases au-dessus de leur pied) s'effacent un peu, pour qu'on le voie ; les autres
-    // reviennent. En mode Construire, tous s'effacent (on voit les cases qu'ils cachent). Dans
-    // un intérieur, rien (la carte est cachée).
+    // cases au-dessus de leur pied) s'effacent un peu, pour qu'on le voie (devant le personnage :
+    // presque tout, BLOCS_CARTE.hauts.joueur) ; les autres reviennent. Dans un bâtiment (en bas,
+    // hors du mode Construire), on n'en voit que le niveau où l'on est : les rangs du dessus de
+    // ses murs rehaussés s'effacent tout à fait. En mode Construire, tous s'effacent (on voit les
+    // cases qu'ils cachent). Dans un intérieur, rien (la carte est cachée).
     stepMurs(dt) {
       const B = this.blocks, H = BLOCS_CARTE.hauts;
       if (!B || !B.size || this.room || this.rang) return;        // (au niveau où l'on rehausse : syncRang)
-      const cols = this.grid.cols, devant = new Set();
-      const cache = (x, y) => {
+      const cols = this.grid.cols, but = new Map();
+      const vise = (i, a) => { if (i && i.active && !(but.get(i) <= a)) but.set(i, a); };
+      const p = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
+      // (le bâtiment où il est : celui de son toit, js/carte/ferme/toits.js)
+      const ici = p && !this.bati && !this.niveau ? Math.floor((p.y - 1) / T) * cols + Math.floor(p.x / T) : -1;
+      const bat = ici >= 0 ? (this.toits || []).find((t) => t.dedans.has(ici)) : null;
+      const dedans = (e) => !!bat && bat.dedans.has(e.case);
+      if (bat) for (const e of B.values()) if (e.hauts && dedans(e)) for (const h of e.hauts) vise(h, 0);
+      const cache = (x, y, a) => {
         const gx = Math.floor(x / T), gy = Math.floor((y - 1) / T);
         for (let dy = 1; dy <= 6; dy++) {
           for (let dx = -1; dx <= 1; dx++) {
             const e = B.get((gy + dy) * cols + gx + dx);
-            // (le personnage fait ±6 px de large ; un mur rehaussé cache plus loin derrière lui)
-            if (e && e.img.texture.key === H.key && dy <= 2 + 2 * ((e.hauteur || 1) - 1) && Math.abs(e.x - x) < T / 2 + 6) devant.add(e.img);
+            // (le personnage fait ±6 px de large ; un mur rehaussé, s'il se voit, cache plus loin derrière lui)
+            const h = dedans(e || {}) ? 1 : (e && e.hauteur) || 1;
+            if (e && e.img.texture.key === H.key && dy <= 2 + 2 * (h - 1) && Math.abs(e.x - x) < T / 2 + 6) {
+              vise(e.img, a);
+              for (const i of e.hauts || []) vise(i, a);
+            }
           }
         }
       };
-      const p = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
-      if (p) cache(p.x, p.y);
-      if (this.family) for (const m of this.family.info()) if (m.visible) cache(m.x, m.y);
-      if (this.bati) for (const e of B.values()) if (e.img.texture.key === H.key) devant.add(e.img);
+      if (p) cache(p.x, p.y, H.joueur);
+      if (this.family) for (const m of this.family.info()) if (m.visible) cache(m.x, m.y, H.alpha);
+      if (this.bati) for (const e of B.values()) if (e.img.texture.key === H.key) { vise(e.img, H.alpha); for (const i of e.hauts || []) vise(i, H.alpha); }
       if (!this.mursEfface) this.mursEfface = new Set();
-      for (const i of devant) this.mursEfface.add(i);
+      for (const i of but.keys()) this.mursEfface.add(i);
       const pas = H.vitesse * dt;
       for (const i of this.mursEfface) {
         if (!i.active) { this.mursEfface.delete(i); continue; }
         // (sous l'étage, quand on y est : sa transparence à lui, js/carte/ferme/etage.js)
-        const base = i.etageA || 1, but = devant.has(i) ? Math.min(base, H.alpha) : base;
-        const a = i.alpha < but ? Math.min(but, i.alpha + pas) : Math.max(but, i.alpha - pas);
+        const base = i.etageA || 1, cible = but.has(i) ? Math.min(base, but.get(i)) : base;
+        const a = i.alpha < cible ? Math.min(cible, i.alpha + pas) : Math.max(cible, i.alpha - pas);
         i.setAlpha(a);
         if (i.tableau && i.tableau.active) i.tableau.setAlpha(a);
-        if (i.hauts) for (const h of i.hauts) if (h.active) h.setAlpha(a);
-        if (a === base && !devant.has(i)) this.mursEfface.delete(i);
+        if (a === base && !but.has(i)) this.mursEfface.delete(i);
       }
     },
 
