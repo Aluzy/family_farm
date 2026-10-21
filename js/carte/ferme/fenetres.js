@@ -2,10 +2,11 @@
  *
  * Quand la nuit tombe (comme les lanternes : le voile de l'heure plus sombre que
  * BLOCS_CARTE.lanterne.allume), les pièces de la maison (les toits marqués `maison`, js/engine/
- * etage.js toits) s'allument : une lueur chaude sur leur plancher (vue quand leur toit s'efface,
- * le personnage dedans), leurs vitres (BLOCS_CARTE.lumiereMaison.sortes) éclairées, et des rayons qui
+ * etage.js toits) s'allument : une lueur chaude sur leur plancher et la face du mur du fond (vus
+ * quand leur toit s'efface, le personnage dedans), leurs vitres (BLOCS_CARTE.lumiereMaison.sortes) éclairées, et des rayons qui
  * passent par les vitres de la façade (un mur dont la case du dessus est dans la pièce : sa face
- * donne dehors) et tombent sur le sol devant elle, les montants de la fenêtre y laissant une
+ * donne dehors) et tombent sur le sol devant elle (seulement le sol vu : un mur ou un toit les
+ * arrête), les montants de la fenêtre y laissant une
  * ombre. Elles s'éteignent, en fondu, quand tout le foyer dort : le personnage (modèle.dort) et
  * chacun de sa famille, couché (js/famille-ferme.js).
  *
@@ -21,11 +22,15 @@
   const { T, BLOCS_CARTE } = F.C;
   const L = BLOCS_CARTE.lumiereMaison;
 
-  // Les rayons d'une fenêtre : un faisceau qui part de la vitre (en haut, au milieu) vers le bas,
-  // s'élargit et s'estompe ; le montant du milieu y laisse une ombre qui s'élargit aussi.
-  const W = 32, H = 64;
+  // Les rayons d'une fenêtre, sur le sol devant la façade : un faisceau qui part du pied du mur
+  // (large comme la vitre, au milieu), s'élargit et s'estompe ; le montant du milieu y laisse une
+  // ombre. Il couvre 3 × N cases (les cases de la fenêtre et de ses deux voisines, sur
+  // L.rayons.cases rangées) : découpé en une image par case (`c<colonne>_<rangée>`), chaque
+  // morceau n'est posé que si sa case est du sol qu'on voit (stepFenetres).
+  const W = 3 * T;
   function rayons(textures) {
     if (textures.exists('rayons_fenetre')) return;
+    const N = L.rayons.cases, H = N * T;
     const cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
     const g = cv.getContext('2d');
@@ -34,9 +39,9 @@
     grad.addColorStop(0.35, 'rgba(255,255,255,0.7)');
     grad.addColorStop(1, 'rgba(255,255,255,0)');
     g.fillStyle = grad;
-    const h0 = L.rayons.vitre / 2;
+    const h0 = L.rayons.vitre / 2, h1 = L.rayons.large / 2;
     g.beginPath();
-    g.moveTo(W / 2 - h0, 0); g.lineTo(W / 2 + h0, 0); g.lineTo(W, H); g.lineTo(0, H);
+    g.moveTo(W / 2 - h0, 0); g.lineTo(W / 2 + h0, 0); g.lineTo(W / 2 + h1, H); g.lineTo(W / 2 - h1, H);
     g.closePath();
     g.fill();
     // (le montant du milieu)
@@ -46,10 +51,19 @@
     g.moveTo(W / 2 - 0.5, 0); g.lineTo(W / 2 + 0.5, 0); g.lineTo(W / 2 + 2, H); g.lineTo(W / 2 - 2, H);
     g.closePath();
     g.fill();
-    textures.addCanvas('rayons_fenetre', cv);
+    const tex = textures.addCanvas('rayons_fenetre', cv);
+    for (let r = 0; r < N; r++) for (let c = 0; c < 3; c++) tex.add(`c${c}_${r}`, 0, c * T, r * T, T, T);
   }
 
   F.partie({
+
+    // La case `c` est-elle du sol qu'on voit (ni un mur, ni un bloc qui arrête, ni sous un toit) ?
+    solVu(c) {
+      const e = this.blocks.get(c);
+      if (e && (e.img.texture.key === BLOCS_CARTE.hauts.key || BLOCS_CARTE.bloquent.includes(e.sorte))) return false;
+      for (const t of this.toits || []) if (t.dedans.has(c) && t.img.alpha > 0.5) return false;
+      return true;
+    },
 
     // Les lumières des maisons à ajouter à `out` (les lumières du voile) ; `nuit` : V.nuit.
     stepFenetres(out, nuit, dt) {
@@ -73,6 +87,11 @@
           for (const c of t.dedans) {
             if (mur(c)) continue;
             out.push({ key: 'lueur', x: (c % cols) * T + T / 2, y: Math.floor(c / cols) * T + T / 2, tint: L.teinte, alpha: P.alpha * ouvert, scaleX: P.rayon / 32, scaleY: P.rayon / 32 });
+            // (le mur du fond : sa face, tournée vers la pièce, au-dessus de la case)
+            if (mur(c - cols) && t.dedans.has(c - cols)) {
+              const M = L.murFond, e = B.get(c - cols);
+              out.push({ key: 'lueur', x: e.x, y: e.y + M.dy, tint: L.teinte, alpha: M.alpha * ouvert, scaleX: M.large / 64, scaleY: M.haut / 64 });
+            }
           }
         }
         for (const c of t.dedans) {
@@ -90,11 +109,19 @@
             if (a <= 0.01) return;
             const V = L.vitre, y0 = e.y - r * dy;
             out.push({ key: 'lueur', x: e.x, y: y0 + V.dy, tint: L.teinte, alpha: V.alpha * a, scaleX: V.rayon / 32, scaleY: (V.rayon * 1.4) / 32 });
-            if (!facade) return;
-            // les rayons : de la vitre jusqu'au sol devant la façade, et au-delà
-            const R = L.rayons, long = R.long + r * dy;
-            out.push({ key: 'rayons_fenetre', x: e.x, y: y0 + R.dy, tint: L.teinte, alpha: R.alpha * a, scaleX: R.large / W, scaleY: long / H, originX: 0.5, originY: 0 });
           });
+          // les rayons, sur le sol devant la façade (une fois par fenêtre, quels que soient ses
+          // rangs) : chaque colonne s'arrête à la première case qui n'est pas du sol vu (un mur,
+          // un bâtiment sous son toit) ; la lumière ne monte pas sur ce qui est devant
+          if (!facade) continue;
+          const R = L.rayons;
+          for (let dc = -1; dc <= 1; dc++) {
+            for (let r = 0; r < R.cases; r++) {
+              const k2 = c + (r + 1) * cols + dc;
+              if (!this.solVu(k2)) break;
+              out.push({ key: 'rayons_fenetre', frame: `c${dc + 1}_${r}`, x: e.x - T / 2 + dc * T, y: e.y + r * T, tint: L.teinte, alpha: R.alpha * k, originX: 0, originY: 0 });
+            }
+          }
         }
       }
     },

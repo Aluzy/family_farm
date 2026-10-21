@@ -220,14 +220,17 @@
     },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
     // le plancher des pièces (`piece` : une tache de `rayon` px par case) ; sur les vitres des
-    // murs `sortes` (`vitre` : `dy` px au-dessus du pied du mur) ; les rayons des vitres de la
-    // façade (`rayons` : partis `dy` px au-dessus du pied, larges de `vitre` px puis de `large`,
-    // longs de `long` px) ; elle s'allume et s'éteint à `vitesse` par seconde
+    // murs `sortes` (`vitre` : `dy` px au-dessus du pied du mur) ; sur la face du mur du fond,
+    // tournée vers la pièce (`murFond` : une tache de `large` × `haut` px, `dy` px au-dessus du
+    // pied du mur) ; les rayons des vitres de la façade, sur le sol devant elle (`rayons` : partis
+    // du pied du mur, larges de `vitre` px puis de `large`, sur `cases` rangées) ; elle s'allume
+    // et s'éteint à `vitesse` par seconde
     lumiereMaison: {
       sortes: ['mur_fenetre', 'paroi_vitree'], teinte: 0xffc673, vitesse: 1.5,
-      piece: { rayon: 16, alpha: 0.75 },
+      piece: { rayon: 12, alpha: 0.85 },
       vitre: { rayon: 7, alpha: 0.95, dy: -16 },
-      rayons: { dy: -10, vitre: 10, large: 32, long: 56, alpha: 0.8 },
+      murFond: { large: 22, haut: 36, dy: -20, alpha: 0.75 },
+      rayons: { vitre: 10, large: 40, cases: 4, alpha: 0.8 },
     },
     // le four qui cuit : ses flammes, une image après l'autre (`fps` images par seconde)
     feu: { sorte: 'four', frames: [47, 48, 49], fps: 7 },
