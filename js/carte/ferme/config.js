@@ -436,10 +436,11 @@
   const JOIE = '😊';
   // Le dialogue du matin (js/carte/ferme/etiquettes.js stepMatin) : une fois par jour, entre
   // `de` et `a` heures, dès que le personnage du joueur et le second adulte du foyer (model.aide)
-  // sont dehors sur la ferme et tous deux dans la vue, une bulle au-dessus de chacun, l'une
-  // après l'autre : le joueur parle (`joueur`), puis l'autre lui répond (`compagnon`). Chaque
-  // bulle reste `garde` ms, puis s'estompe en `fondu` ms.
-  const MATIN = { de: 6, a: 11, garde: 5000, fondu: 600,
+  // sont dehors sur la ferme et tous deux dans la vue, le second adulte vient à côté du
+  // personnage (`approche` ms au plus) et s'y arrête ; puis une bulle au-dessus de chacun, l'une
+  // après l'autre : le joueur parle (`joueur`), l'autre lui répond (`compagnon`). Chaque bulle
+  // reste `garde` ms, puis s'estompe en `fondu` ms.
+  const MATIN = { de: 6, a: 11, approche: 10000, garde: 5000, fondu: 600,
     joueur: 'Encore une belle journée qui commence à la ferme n\'est-ce pas ?',
     compagnon: 'C\'est tellement apaisant de vivre ici, pour rien au monde je ne retournerai vivre en ville !' };
   const LONG_PRESS_MS = 450;   // appui maintenu sur la citerne : sa bulle (litres) s'affiche

@@ -195,17 +195,30 @@
 
     // Le dialogue du matin (MATIN) : le joueur parle, le second adulte lui répond, chacun dans
     // une bulle au-dessus de lui. Une fois par jour (model.jour) ; il attend que tous deux soient
-    // dehors, réveillés et dans la vue. Une bulle dont le personnage sort de la carte se cache.
+    // dehors, réveillés et dans la vue. C'est un temps d'échange : le second adulte vient d'abord
+    // à côté du personnage (famille.rejoindre ; `approche` ms au plus), s'y arrête tourné vers
+    // lui, puis les bulles viennent ; à la fin, il reprend sa journée. Le personnage rentré
+    // avant : le dialogue attend la prochaine occasion. Une bulle dont le personnage sort de la
+    // carte se cache.
     stepMatin() {
       const M = this.ctx.lastModel;
-      const S = this.matin || (this.matin = { jour: null, t0: 0, bulles: null });
+      const S = this.matin || (this.matin = { jour: null, etape: null, ta: 0, t0: 0, bulles: null });
       const now = global.performance.now();
+      const fam = this.family && this.family.rejoindre ? this.family : null;
       const ou = { joueur: () => (this.fermier && !this.room ? this.fermier.pos() : null), compagnon: () => (this.family && !this.room ? this.family.aidePos() : null) };
-      if (!S.t0 && M && M.aide && !M.nuit && S.jour !== M.jour && M.heure >= MATIN.de && M.heure < MATIN.a && this.dansLaVue(ou.joueur()) && this.dansLaVue(ou.compagnon())) {
+      if (!S.etape && fam && M && M.aide && !M.nuit && S.jour !== M.jour && M.heure >= MATIN.de && M.heure < MATIN.a && this.dansLaVue(ou.joueur()) && this.dansLaVue(ou.compagnon())) {
         S.jour = M.jour;
+        S.etape = 'approche';
+        S.ta = now;
+      }
+      if (!S.etape) return;
+      if (S.etape === 'approche') {
+        const at = ou.joueur();
+        if (!at || !ou.compagnon()) { fam.rejoindre(null); S.etape = null; S.jour = null; return; }
+        if (!fam.rejoindre(at) && now - S.ta < MATIN.approche) return;
+        S.etape = 'parle';
         S.t0 = now;
       }
-      if (!S.t0) return;
       if (!S.bulles) {
         S.bulles = {};
         for (const qui of ['joueur', 'compagnon']) {
@@ -234,7 +247,7 @@
         const maxX = this.scale.width / pixelRatio() - B.w - 4;
         B.el.style.transform = 'translate(' + Math.round(Math.max(4, Math.min(x - BUBBLE_TIP_X, maxX))) + 'px,' + Math.round(Math.max(4, y - B.h + BUBBLE_TIP_Y)) + 'px)';
       });
-      if (now - S.t0 >= 2 * pas) S.t0 = 0;
+      if (now - S.t0 >= 2 * pas) { fam.rejoindre(null); S.etape = null; }
     },
 
     // Le point de la carte (wx, wy) est-il dans la vue ?
