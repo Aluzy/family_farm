@@ -26,7 +26,7 @@ import { renderVille } from './ville.js';
 import { averageHappiness } from '../engine/ville.js';
 import { morph, morphSlots, refresh, setLastRenderAt } from './render.js';
 import {
-  cibleAttrs, heureDuJour, horlogeEmoji, setStagePan, STAGE_LIEUX, stageActive, stageUsable,
+  cibleAttrs, heureDuJour, setStagePan, STAGE_LIEUX, stageActive, stageUsable,
 } from './stage.js';
 import {
   backToFerme, deviceName, renderDeviceFenetre, renderDeviceScreen, renderEauFenetre, renderEnergieFenetre, renderFerme,
@@ -565,22 +565,32 @@ function playerGaugesHtml() {
     `<span class="player-gauges-in" aria-hidden="true">${jauge('coeur', eCls, ePct)}${jauge('eclair', 'endu', dPct)}${jauge('smiley', bCls, bonheur)}</span></button>`;
 }
 
-// Carte flottante en haut à droite (comme dans Stardew Valley), dans le même cadre que la
-// carte du joueur : la phase de la lune, le jour de la semaine et du mois (« 🌒 Lun. 8 »), le
-// mois du calendrier lunaire dessous (un appui ouvre le Calendrier), puis l'heure (l'argent est
-// sous la carte du joueur, à gauche).
+// Carte flottante en haut à droite, en pixel art (assets/hud, scripts/icones/hud.py) : un
+// cadran rond où la lune tourne dans sa rainure au fil de la lunaison (data/crops.json LUNE,
+// 14 jours ; pleine en haut, nouvelle en bas, croissante à gauche, décroissante à droite), avec
+// le dessin de sa phase ; au milieu, le jour (« Jeu. 4 ») et le mois du calendrier lunaire sur
+// un médaillon ; l'heure sur une plaque en bas à droite. Un appui ouvre le Calendrier.
 // L'heure avance par tranches de 10 minutes.
+const CADRAN = { centre: 27.5, rayon: 21.6, lune: 11 }; // en pixels du dessin (cadran.png, lunes.png)
 function renderHud() {
   const h = heureDuJour();
   const heure = Math.floor(h);
   const minutes = Math.floor((h - heure) * 6) * 10;
   const horaire = `${heure} h ${String(minutes).padStart(2, '0')}`;
   const lune = moonPhase(state.day);
+  const jour = dayOfMonth(state.day);
+  // l'âge de la lunaison, en jours (0 au matin du jour 1) ; la pleine lune (jours 6 et 7) en haut
+  const age = jour - 1 + h / 24;
+  const angle = ((age - 6) / DATA.LUNE.JOURS_MOIS) * 2 * Math.PI;
+  const mx = Math.round(CADRAN.centre + CADRAN.rayon * Math.sin(angle) - CADRAN.lune / 2);
+  const my = Math.round(CADRAN.centre - CADRAN.rayon * Math.cos(angle) - CADRAN.lune / 2);
+  const label = `${formatDay(state.day)}, ${lune.nom.toLowerCase()}, ${horaire}. Ouvrir le calendrier`;
   morph(document.getElementById('hud'),
-    `<button type="button" class="hud-date" data-action="stage-goto" data-window="calendrier" title="Calendrier" aria-label="${formatDay(state.day)}, ${lune.nom.toLowerCase()}. Ouvrir le calendrier">` +
-      `<span class="hud-day" aria-hidden="true">${lune.icone} ${weekdayShort(state.day)} <span class="num">${dayOfMonth(state.day)}</span></span>` +
-      `<span class="hud-month" aria-hidden="true">${monthName(state.day)}</span></button>` +
-    `<span class="hud-line"><span aria-hidden="true">${horlogeEmoji(heure)}</span> <span class="num">${horaire}</span></span>`
+    `<button type="button" class="hud-cadran" data-action="stage-goto" data-window="calendrier" title="Calendrier" aria-label="${label}">` +
+      `<span class="hud-lune" style="--lx:${mx};--ly:${my};--lf:${jour - 1}" aria-hidden="true"></span>` +
+      `<span class="hud-medaillon" aria-hidden="true"><span class="hud-day">${weekdayShort(state.day)} <span class="num">${jour}</span></span>` +
+      `<span class="hud-month">${monthName(state.day)}</span></span>` +
+      `<span class="hud-heure" aria-hidden="true">${pxText(`${heure}h${String(minutes).padStart(2, '0')}`)}</span></button>`
   );
 }
 

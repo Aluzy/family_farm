@@ -11,6 +11,13 @@
 #   anneau.png   l'anneau de l'autonomie : 21 cases de 15 × 15 (0 %, 5 %… 100 %, rempli dans le
 #                sens des aiguilles d'une montre depuis le haut) ;
 #   piece.png    l'argent, posé sur le bout gauche de sa pastille.
+# La carte de droite (renderHud) :
+#   cadran.png   le cadran rond (56 × 56) : un anneau de bois, la rainure où tourne la lune
+#                (rayon RAINURE), le fond crème ;
+#   medaillon.png le médaillon ovale du jour et du mois (38 × 22), au milieu du cadran ;
+#   lunes.png    la lune, 14 cases de 11 × 11 : une par jour de la lunaison (data/crops.json
+#                LUNE : croissante du jour 1 au 5, pleine les 6 et 7, décroissante du 8 au 12,
+#                nouvelle les 13 et 14).
 #
 #   python3 scripts/icones/hud.py            écrit assets/hud/
 #   python3 scripts/icones/hud.py --apercu   écrit aussi apercu_hud.png (agrandi)
@@ -192,6 +199,92 @@ def anneau(pct):
     return im
 
 
+CADRAN, RAINURE = 56, 22
+
+
+def cadran():
+    """Le cadran : contour, anneau de bois (reflet en haut à gauche), la rainure sombre de la
+    lune, un filet clair, le fond crème."""
+    S = CADRAN
+    c = (S - 1) / 2
+    im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    for y in range(S):
+        for x in range(S):
+            d = math.hypot(x - c, y - c)
+            if d > 27.6:
+                continue
+            haut = (x - c) + (y - c) < 0
+            if d > 26.6:
+                col = PAL['o']
+            elif d > 25.6:
+                col = PAL['h'] if haut else PAL['w']
+            elif d > 23.6:
+                col = PAL['m']
+            elif d > 22.6 + 1.0:
+                col = PAL['o']
+            elif d > RAINURE - 1.4:
+                col = '#2c2440'
+            elif d > RAINURE - 2.4:
+                col = PAL['o']
+            elif d > RAINURE - 3.4:
+                col = PAL['w'] if haut else PAL['h']
+            else:
+                col = '#ffe6b2'
+            im.putpixel((x, y), rgb(col))
+    return im
+
+
+def medaillon():
+    """L'ovale du jour et du mois : contour, relief, fond crème."""
+    W, H = 38, 22
+    cx, cy = (W - 1) / 2, (H - 1) / 2
+    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    for y in range(H):
+        for x in range(W):
+            e = ((x - cx) / (W / 2)) ** 2 + ((y - cy) / (H / 2)) ** 2
+            if e > 1:
+                continue
+            bord = ((x - cx) / (W / 2 - 1)) ** 2 + ((y - cy) / (H / 2 - 1)) ** 2 > 1
+            relief = ((x - cx) / (W / 2 - 2)) ** 2 + ((y - cy) / (H / 2 - 2)) ** 2 > 1
+            if bord:
+                col = PAL['o']
+            elif relief:
+                col = PAL['h'] if y < cy else PAL['l']
+            else:
+                col = '#fff1d2'
+            im.putpixel((x, y), rgb(col))
+    return im
+
+
+def lune(p):
+    """La lune (11 × 11) à l'âge p de la lunaison (0 : nouvelle, 0,5 : pleine) : éclairée à
+    droite quand elle croît, à gauche quand elle décroît ; la part sombre reste visible."""
+    S = 11
+    c = (S - 1) / 2
+    r = 5.4
+    cosp = math.cos(2 * math.pi * p)
+    im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    for y in range(S):
+        for x in range(S):
+            d = math.hypot(x - c, y - c)
+            if d > r:
+                continue
+            if d > r - 1:
+                im.putpixel((x, y), rgb('#1c1830'))
+                continue
+            demi = math.sqrt(max(0.01, (r - 1) ** 2 - (y - c) ** 2))
+            u = (x - c) / demi
+            eclaire = u > cosp if p <= 0.5 else u < -math.cos(2 * math.pi * p)
+            if eclaire:
+                col = '#fff6c8' if (x - c) + (y - c) < -3 else ('#d8c47a' if (x - c) + (y - c) > 3 else '#f2e29a')
+                if (x, y) in ((3, 6), (6, 3), (7, 7)):
+                    col = '#d8c47a'                     # des cratères
+            else:
+                col = '#3a3658'
+            im.putpixel((x, y), rgb(col))
+    return im
+
+
 def images():
     out = {
         'cadre': cadre(), 'fenetre': fenetre(), 'plaque': plaque(), 'tube': tube(), 'pastille': pastille(),
@@ -202,6 +295,12 @@ def images():
     for k in range(21):
         bande.paste(anneau(k * 5), (15 * k, 0))
     out['anneau'] = bande
+    out['cadran'] = cadran()
+    out['medaillon'] = medaillon()
+    lunes = Image.new('RGBA', (11 * 14, 11), (0, 0, 0, 0))
+    for k in range(14):
+        lunes.paste(lune(((k + 1.5) / 14) % 1), (11 * k, 0))
+    out['lunes'] = lunes
     return out
 
 

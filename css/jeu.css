@@ -1850,58 +1850,79 @@ main .ancre { scroll-margin-top: 150px; }
 /* FLU-11 : ce qui manque pour une action groupée, écrit sous les boutons */
 .group-note { flex: 1 0 100%; color: var(--danger); font-weight: 600; }
 
-/* ---------- Carte flottante (jour, heure, pièces), façon Stardew Valley ----------
+/* ---------- Carte flottante en haut à droite : le cadran de la lune, le jour, l'heure ----------
    Sur tous les écrans, au-dessus de la carte de la ferme et sous les fenêtres (window-layer,
-   modal-root). Même cadre bois que la carte du joueur, légèrement transparent : la carte
-   reste visible dessous. Le jour, l'heure dessous, puis les pièces. */
+   modal-root). En pixel art (assets/hud), à la taille --hp de la carte du joueur : le cadran
+   (56 × 56), la lune (11 × 11, 14 cases de lunes.png) posée dans sa rainure (--lx, --ly en
+   pixels du dessin, --lf sa case), le médaillon ovale (38 × 22) du jour et du mois, la plaque
+   de l'heure en bas à droite. */
 .hud {
+  --hp: var(--hud-px, 2px);
   position: fixed;
   top: calc(8px + env(safe-area-inset-top));
   right: calc(8px + env(safe-area-inset-right));
   z-index: var(--z-hud);
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  min-width: 76px;
-  padding: 4px;
-  background: rgba(var(--wood-bg-rgb), 0.82);
-  border: 3px solid var(--color-earth);
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 2px var(--wood-glow), 0 2px 4px rgba(0, 0, 0, 0.25);
   pointer-events: none;
-  font-weight: 700;
-  font-size: 0.95rem;
-  line-height: 1.1;
-  color: var(--wood-ink);
-  font-variant-numeric: tabular-nums;
   transition: opacity 0.2s;
 }
-.hud-line {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  min-height: 26px;
-  padding: 0 6px;
-  white-space: nowrap;
-}
-.hud > * + * { border-top: 1px solid rgba(var(--color-earth-rgb), 0.45); }
-/* La date (phase de lune, jour, mois) : un appui ouvre le Calendrier. */
-.hud-date {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2px 6px 3px;
+.hud-cadran {
+  position: relative;
+  display: block;
+  width: calc(56 * var(--hp));
+  height: calc(56 * var(--hp));
+  padding: 0;
   border: 0;
-  background: none;
+  background: url('../assets/hud/cadran.png') no-repeat 0 0 / 100% 100%;
+  image-rendering: pixelated;
   font: inherit;
-  color: inherit;
+  color: var(--wood-ink);
   cursor: pointer;
   pointer-events: auto;
 }
-.hud-date:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; border-radius: 4px; }
-.hud-day { display: flex; align-items: center; gap: 3px; font-size: 1.05rem; white-space: nowrap; }
-.hud-month { font-size: 0.78rem; font-weight: 600; color: #6a4426; }
+.hud-cadran:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; border-radius: 50%; }
+.hud-lune {
+  position: absolute;
+  left: calc(var(--lx) * var(--hp));
+  top: calc(var(--ly) * var(--hp));
+  width: calc(11 * var(--hp));
+  height: calc(11 * var(--hp));
+  background: url('../assets/hud/lunes.png') no-repeat;
+  background-size: calc(154 * var(--hp)) 100%;
+  background-position: calc(var(--lf) * -11 * var(--hp)) 0;
+  image-rendering: pixelated;
+}
+.hud-medaillon {
+  position: absolute;
+  left: calc(9 * var(--hp));
+  top: calc(15 * var(--hp));
+  width: calc(38 * var(--hp));
+  height: calc(22 * var(--hp));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: url('../assets/hud/medaillon.png') no-repeat 0 0 / 100% 100%;
+  image-rendering: pixelated;
+  font-weight: 700;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.hud-day { font-size: 0.82rem; white-space: nowrap; }
+.hud-month { font-size: 0.66rem; font-weight: 600; color: #6a4426; }
+.hud-heure {
+  position: absolute;
+  right: calc(5 * var(--hp));
+  bottom: calc(7 * var(--hp));
+  display: flex;
+  align-items: center;
+  height: calc(11 * var(--hp));
+  box-sizing: border-box;
+  padding: 0 var(--hp);
+  border: calc(3 * var(--hp)) solid transparent;
+  border-image: url('../assets/hud/plaque.png') 3 fill / calc(3 * var(--hp)) stretch;
+  image-rendering: pixelated;
+}
+.hud-heure .pxt { --p: var(--hp); }
 
 /* ---------- Calendrier lunaire (fenêtre) ---------- */
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 4px 0; }
