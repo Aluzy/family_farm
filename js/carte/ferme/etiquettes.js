@@ -1,7 +1,8 @@
 /* carte/ferme/etiquettes.js — la scène de la ferme : ce qui est en DOM par-dessus la carte.
  *
  * Les étiquettes des lieux (nom et pastille « à faire »), les bulles des tas à ramasser, la bulle
- * « +x » au-dessus du personnage, la bulle de la citerne : des éléments DOM du calque des
+ * « +x » au-dessus du personnage, la bulle de la citerne, les bulles du dialogue du matin : des
+ * éléments DOM du calque des
  * étiquettes (ctx.labelLayer), replacés à chaque image.
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
@@ -12,7 +13,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, TREE_OBJECT, MIN_TAP, LABEL_GAP, BUBBLE_TIP_X, BUBBLE_TIP_Y } = F.C;
+  const { T, TREE_OBJECT, MIN_TAP, LABEL_GAP, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN } = F.C;
   const { pixelRatio } = F;
 
   F.partie({
@@ -190,6 +191,58 @@
       if (!at) { G.place(null); return; }
       const f = this.screenFrame();
       G.place((at.x - f.left) * f.k, (at.y - K.BULLE.dessus - f.top) * f.k);
+    },
+
+    // Le dialogue du matin (MATIN) : le joueur parle, le second adulte lui répond, chacun dans
+    // une bulle au-dessus de lui. Une fois par jour (model.jour) ; il attend que tous deux soient
+    // dehors, réveillés et dans la vue. Une bulle dont le personnage sort de la carte se cache.
+    stepMatin() {
+      const M = this.ctx.lastModel;
+      const S = this.matin || (this.matin = { jour: null, t0: 0, bulles: null });
+      const now = global.performance.now();
+      const ou = { joueur: () => (this.fermier && !this.room ? this.fermier.pos() : null), compagnon: () => (this.family && !this.room ? this.family.aidePos() : null) };
+      if (!S.t0 && M && M.aide && !M.nuit && S.jour !== M.jour && M.heure >= MATIN.de && M.heure < MATIN.a && this.dansLaVue(ou.joueur()) && this.dansLaVue(ou.compagnon())) {
+        S.jour = M.jour;
+        S.t0 = now;
+      }
+      if (!S.t0) return;
+      if (!S.bulles) {
+        S.bulles = {};
+        for (const qui of ['joueur', 'compagnon']) {
+          const el = document.createElement('div');
+          el.className = 'stage-gain stage-parole';
+          el.setAttribute('role', 'status');
+          el.hidden = true;
+          this.ctx.labelLayer.appendChild(el);
+          S.bulles[qui] = { el, w: 0, h: 0 };
+        }
+      }
+      const pas = MATIN.garde + MATIN.fondu;
+      const f = this.screenFrame();
+      ['joueur', 'compagnon'].forEach((qui, k) => {
+        const B = S.bulles[qui], t = now - S.t0 - k * pas, at = ou[qui]();
+        if (t < 0 || t >= pas || !at) { B.el.hidden = true; return; }
+        if (B.el.hidden) {
+          B.el.textContent = MATIN[qui];
+          B.el.hidden = false;
+          B.w = 0;
+        }
+        B.el.classList.toggle('fade', t >= MATIN.garde);
+        if (!B.w) { B.w = B.el.offsetWidth; B.h = B.el.offsetHeight; }
+        // (la pointe sur sa tête ; la bulle reste dans l'écran, quitte à glisser sur le côté)
+        const x = (at.x - f.left) * f.k, y = (at.y - K.BULLE.dessus - f.top) * f.k;
+        const maxX = this.scale.width / pixelRatio() - B.w - 4;
+        B.el.style.transform = 'translate(' + Math.round(Math.max(4, Math.min(x - BUBBLE_TIP_X, maxX))) + 'px,' + Math.round(Math.max(4, y - B.h + BUBBLE_TIP_Y)) + 'px)';
+      });
+      if (now - S.t0 >= 2 * pas) S.t0 = 0;
+    },
+
+    // Le point de la carte (wx, wy) est-il dans la vue ?
+    dansLaVue(at) {
+      if (!at) return false;
+      const f = this.screenFrame(), dpr = pixelRatio();
+      const x = (at.x - f.left) * f.k, y = (at.y - f.top) * f.k;
+      return x >= 0 && y >= 0 && x <= this.scale.width / dpr && y <= this.scale.height / dpr;
     },
 
     /* ---------- étiquettes (DOM) ---------- */

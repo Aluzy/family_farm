@@ -454,6 +454,7 @@
         this.placePiles();
         this.placeGain();
         this.placeGainAide();
+        this.stepMatin();
         this.reportView();
       }
 

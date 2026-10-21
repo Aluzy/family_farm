@@ -2008,6 +2008,9 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
 }
 .stage-bubble:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 .stage-gain.fade { opacity: 0; transition: opacity 1.4s ease-in; }
+/* Les bulles du dialogue du matin (stepMatin) : la phrase va à la ligne, la bulle s'estompe vite. */
+.stage-parole { max-width: 210px; white-space: normal; font-weight: 600; }
+.stage-gain.stage-parole.fade { transition-duration: 0.6s; }
 .stage-bubble[hidden],
 .stage-gain[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .stage-gain.fade { transition-duration: 0.4s; } }
