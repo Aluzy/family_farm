@@ -11,6 +11,13 @@
  *   - la nuit, dans le voile de l'heure (avec les lanternes, chantier.js stepLanterns) : le
  *     reflet de la lune, une colonne de traits qui tremblent au milieu de l'étang, et celui des
  *     lumières posées au bord (lanternes, rayons des fenêtres) sur l'eau juste en dessous.
+ * Ce qui se tient au bord se reflète dans l'eau (stepReflets) : arbres, bâtiments, toits,
+ * personnages, bêtes, chacun retourné sous son pied, teinté, à `EAU.miroir.alpha` ; dessinés
+ * avec les ronds dans une texture par étendue, découpée à l'eau (ses pixels hors de l'eau
+ * effacés) et qui ondule avec elle (le même filtre).
+ * Des ronds s'élargissent sur l'eau (rond) : au bouchon de la pêche (peche.js ripple), quand
+ * un poisson saute (de temps en temps, sautPoisson), quand quelqu'un longe la rive, et de
+ * petits ronds au hasard (des insectes).
  * Seulement en WebGL (le filtre), et pas si le joueur a demandé moins d'animations.
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype.
@@ -58,7 +65,24 @@
     g.fillStyle = '#fff';
     g.fillRect(2, 1, 1, 3); g.fillRect(1, 2, 3, 1);
     textures.addCanvas('eau_scintille', cv);
+    // les ronds : des ellipses d'un pixel, de plus en plus grandes (E.ronds.images images de
+    // RW × RH px, l'une à côté de l'autre)
+    const N = E.ronds.images, rv = document.createElement('canvas');
+    rv.width = RW * N; rv.height = RH;
+    const gr = rv.getContext('2d');
+    gr.fillStyle = '#fff';
+    for (let i = 0; i < N; i++) {
+      const rx = 2 + (i * (RW / 2 - 3)) / (N - 1), ry = rx / 2, cx = i * RW + RW / 2, cy = RH / 2;
+      const vus = new Set();
+      for (let k = 0; k < 96; k++) {
+        const t = (2 * Math.PI * k) / 96, x = Math.round(cx + rx * Math.cos(t) - 0.5), y = Math.round(cy + ry * Math.sin(t) - 0.5);
+        if (!vus.has(x + ',' + y)) { vus.add(x + ',' + y); gr.fillRect(x, y, 1, 1); }
+      }
+    }
+    const tx = textures.addCanvas('eau_ronds', rv);
+    for (let i = 0; i < N; i++) tx.add(i, 0, i * RW, 0, RW, RH);
   }
+  const RW = 24, RH = 12;
 
   F.partie({
 
@@ -89,7 +113,15 @@
         // les cases d'eau de l'étendue (les scintillements, les reflets)
         const eau = [];
         for (const k of W.keys()) { const [x, y] = k.split(',').map(Number); if (x >= a.x && y >= a.y && x < a.x + w && y < a.y + h) eau.push({ x, y }); }
-        const v = { a, carte, ta, tb, fx, eau, rive, terre, i, brillants: [], profond: null };
+        // les reflets et les ronds : une texture par étendue, découpée à l'eau (`sec` : ce qui
+        // n'est pas de l'eau, effacé), qui ondule avec elle, juste au-dessus de l'eau
+        const refl = this.textures.addDynamicTexture(`eau_refl_${i}`, w, h);
+        const reflet = this.add.image(a.x, a.y, `eau_refl_${i}`).setOrigin(0).setDepth(a.sprite.depth + 0.0005);
+        reflet.enableFilters();
+        const fx2 = reflet.filters.internal.addDisplacement(`eau_carte_${i}`, (2 * E.ondule) / w, (2 * E.ondule) / h);
+        const sec = this.textures.createCanvas(`eau_sec_${i}`, w, h);
+        const secImg = this.make.image({ x: 0, y: 0, key: `eau_sec_${i}` }, false).setOrigin(0);
+        const v = { a, carte, ta, tb, fx, fx2, eau, rive, terre, refl, reflet, sec, secImg, i, brillants: [], profond: null, eauPx: null, ronds: [] };
         this.eauRive(v);
         return v;
       });
@@ -122,6 +154,12 @@
       for (let p = 0; p < w * h; p++) if (!eau[p] && d[p * 4 + 3]) for (let c = 0; c < 4; c++) ri.data[p * 4 + c] = d[p * 4 + c];
       rc.putImageData(ri, 0, 0);
       v.rive.refresh();
+      // ce qui n'est pas de l'eau (les reflets y sont effacés)
+      const sc = v.sec.getContext(), si = sc.createImageData(w, h);
+      for (let p = 0; p < w * h; p++) if (!eau[p]) si.data[p * 4 + 3] = 255;
+      sc.putImageData(si, 0, 0);
+      v.sec.refresh();
+      v.eauPx = eau;
       // l'eau déborde sous la terre, ENTRE px (de proche en proche)
       let bord = eau.slice();
       for (let n = 0; n < ENTRE; n++) {
@@ -159,11 +197,12 @@
       const avant = this.eauVive || [];
       for (const v of avant) {
         if (v.a.sprite.active && v.a.sprite.filters) v.a.sprite.filters.internal.remove(v.fx);
-        for (const o of [v.ta, v.tb, v.terre, ...v.brillants.map((b) => b.img)]) o.destroy();
-        this.textures.remove(`eau_carte_${v.i}`);
-        this.textures.remove(`eau_rive_${v.i}`);
+        for (const o of [v.ta, v.tb, v.terre, v.reflet, v.secImg, ...v.brillants.map((b) => b.img)]) o.destroy();
+        for (const k of ['carte', 'rive', 'refl', 'sec']) this.textures.remove(`eau_${k}_${v.i}`);
       }
       this.eauVive = null;
+      for (const o of this.refletPool || []) o.destroy();
+      this.refletPool = null;
       // (l'étendue reprend sa peinture d'origine, sans l'eau qui déborde)
       for (const v of avant) if (v.a.sprite.active) this.paintAnimArea(v.a);
     },
@@ -183,7 +222,154 @@
         v.tb.tilePositionX = -s * E.vitesse[1]; v.tb.tilePositionY = s * E.vitesse[0] * 0.7;
         v.carte.clear().draw(v.ta).draw(v.tb).render();
         this.stepScintille(v, sol, dt);
+        this.stepRonds(v, dt);
+        this.stepReflets(v);
       }
+      this.stepRives(dt);
+    },
+
+    // Un rond qui s'élargit sur l'eau, en (x, y) (px de carte) ; faux si l'eau vivante n'est pas
+    // là (peche.js ripple dessine alors le sien).
+    rond(x, y, gros) {
+      const v = this.eauVive && this.eauVive.find((e) => x >= e.a.x && y >= e.a.y && x < e.a.x + e.a.tex.width && y < e.a.y + e.a.tex.height && e.eauPx && e.eauPx[Math.floor(y - e.a.y) * e.a.tex.width + Math.floor(x - e.a.x)]);
+      if (!v) return !!this.eauVive;
+      v.ronds.push({ x: Math.round(x), y: Math.round(y), t: 0, vie: E.ronds.vie * (gros ? 1.3 : 1), a: gros ? 1 : 0.7 });
+      return true;
+    },
+
+    // Les ronds d'une étendue : ils vieillissent ; de petits ronds naissent au hasard (des
+    // insectes), et de temps en temps un poisson saute.
+    stepRonds(v, dt) {
+      const R = E.ronds;
+      for (let j = v.ronds.length - 1; j >= 0; j--) if ((v.ronds[j].t += dt) >= v.ronds[j].vie) v.ronds.splice(j, 1);
+      if (!v.profond) return;
+      const n = v.eau.length / 100;
+      if (Math.random() < R.hasard * n * dt) {
+        const q = this.eauLoin(v);
+        if (q) v.ronds.push({ x: q.x, y: q.y, t: 0, vie: R.vie * 0.7, a: 0.45, petit: true });
+      }
+      if (v.eau.length >= R.poissons && !v.saut && Math.random() < dt / R.saut) this.sautPoisson(v);
+    },
+
+    // Un point de l'eau loin des rives (v.profond), au hasard ; null si on n'en trouve pas.
+    eauLoin(v) {
+      const w = v.a.tex.width;
+      for (let essai = 0; essai < 10; essai++) {
+        const c = v.eau[(Math.random() * v.eau.length) | 0];
+        const px = Math.floor(c.x - v.a.x + Math.random() * T), py = Math.floor(c.y - v.a.y + Math.random() * T);
+        if (v.profond[py * w + px]) return { x: v.a.x + px, y: v.a.y + py };
+      }
+      return null;
+    },
+
+    // Un poisson saute hors de l'eau et y retombe un peu plus loin : un rond où il part, un
+    // autre où il replonge (son image : celle des poissons pêchés, peche.js fishTexture).
+    sautPoisson(v) {
+      const R = E.ronds, ids = Object.keys(F.C.FISHING.fish);
+      const p0 = this.eauLoin(v);
+      if (!p0 || !this.fishTexture) return;
+      const dir = Math.random() < 0.5 ? -1 : 1, p1 = { x: p0.x + dir * (8 + Math.random() * 10), y: p0.y + (Math.random() * 6 - 3) };
+      const w = v.a.tex.width;
+      if (!v.profond[Math.floor(p1.y - v.a.y) * w + Math.floor(p1.x - v.a.x)]) return;
+      const key = this.fishTexture(ids[(Math.random() * ids.length) | 0]);
+      if (!key) return;
+      v.saut = true;
+      this.rond(p0.x, p0.y, true);
+      const img = this.add.image(p0.x, p0.y, key).setOrigin(0.5, 1).setDepth(p0.y + 0.5).setFlipX(dir < 0);
+      const t0 = { k: 0 };
+      this.tweens.add({
+        targets: t0, k: 1, duration: R.sautMs, ease: 'Sine.easeInOut',
+        onUpdate: () => {
+          const k = t0.k;
+          img.setPosition(p0.x + (p1.x - p0.x) * k, p0.y + (p1.y - p0.y) * k - Math.sin(k * Math.PI) * R.sautHaut);
+          img.setAngle(dir * (k - 0.5) * 70);
+        },
+        onComplete: () => { img.destroy(); this.rond(p1.x, p1.y, true); v.saut = false; },
+      });
+    },
+
+    // Ceux qui longent l'eau (le personnage, la famille) : un rond à leurs pieds, de temps en
+    // temps, quand ils marchent au bord.
+    stepRives(dt) {
+      const R = E.ronds, qui = [];
+      const p = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
+      if (p) qui.push({ id: 'fermier', x: p.x, y: p.y });
+      if (this.family) for (const m of this.family.info()) if (m.visible) qui.push({ id: m.id, x: m.x, y: m.y });
+      if (!this.eauPas) this.eauPas = new Map();
+      for (const q of qui) {
+        const avant = this.eauPas.get(q.id) || { x: q.x, y: q.y, t: 0 };
+        avant.t -= dt;
+        const bouge = Math.hypot(q.x - avant.x, q.y - avant.y) > 0.3;
+        avant.x = q.x; avant.y = q.y;
+        this.eauPas.set(q.id, avant);
+        if (!bouge || avant.t > 0) continue;
+        // (l'eau la plus proche de ses pieds, à `rive` px au plus)
+        let best = null;
+        for (let dy = -2; dy <= R.rive && !best; dy++) {
+          for (const dx of [0, -2, 2, -4, 4, -R.rive, R.rive]) {
+            const x = Math.round(q.x + dx), y = Math.round(q.y + dy);
+            const v = this.eauVive.find((e) => x >= e.a.x && y >= e.a.y && x < e.a.x + e.a.tex.width && y < e.a.y + e.a.tex.height);
+            if (v && v.eauPx && v.eauPx[(y - v.a.y) * v.a.tex.width + x - v.a.x]) { best = { x, y }; break; }
+          }
+        }
+        if (!best) continue;
+        avant.t = R.pas;
+        this.rond(best.x, best.y + 1);
+      }
+    },
+
+    // Les morceaux d'arbres de la carte (decor.js, arbre_occ_*) portent aussi leur ombre sur
+    // l'herbe, à demi transparente : leur reflet n'en garde que les pixels opaques (une copie,
+    // faite une fois). Les autres images se reflètent telles quelles.
+    eauOpaque(key) {
+      if (!key.startsWith('arbre_occ_')) return key;
+      const k = 'eau_op_' + key;
+      if (this.textures.exists(k)) return k;
+      const src = this.textures.get(key).getSourceImage(), w = src.width, h = src.height;
+      const c = this.textures.createCanvas(k, w, h), g = c.getContext();
+      g.drawImage(src, 0, 0);
+      const im = g.getImageData(0, 0, w, h);
+      for (let i = 3; i < im.data.length; i += 4) if (im.data[i] < 250) im.data[i] = 0;
+      g.putImageData(im, 0, 0);
+      c.refresh();
+      return k;
+    },
+
+    // Les reflets et les ronds d'une étendue, redessinés : ce qui se tient au bord (une image
+    // debout dont le pied est au-dessus de l'étendue, à E.miroir.portee px au plus, ou dedans),
+    // retourné sous son pied ; les ronds ; puis tout ce qui n'est pas de l'eau effacé.
+    stepReflets(v) {
+      const a = v.a, w = a.tex.width, h = a.tex.height, R = E.miroir;
+      if (!this.refletPool) this.refletPool = [];
+      const pool = this.refletPool;
+      let n = 0;
+      const prend = () => pool[n] || (pool[n] = this.make.image({ x: 0, y: 0, key: 'eau_scintille' }, false));
+      v.refl.clear();
+      for (const o of this.children.list) {
+        if (!o.visible || o.alpha < 0.3 || (o.type !== 'Image' && o.type !== 'Sprite') || o.depth < 1 || o.blendMode !== 0 || o === v.reflet) continue;
+        const key = o.texture && o.texture.key;
+        if (!key || key.startsWith('eau_') || key === '__DEFAULT' || key === '__MISSING') continue;
+        const H = o.displayHeight, L = o.displayWidth;
+        const pied = o.y + (1 - o.originY) * H, gauche = o.x - o.originX * L;
+        if (pied < a.y - R.portee || pied > a.y + h || gauche > a.x + w || gauche + L < a.x || H > R.haut) continue;
+        const r = prend();
+        n++;
+        r.setTexture(this.eauOpaque(key), o.frame.name).setOrigin(o.originX, 0).setFlip(o.flipX, !o.flipY)
+          .setScale(o.scaleX, o.scaleY * R.ecrase).setAngle(-o.angle).setAlpha(R.alpha * o.alpha).setTint(R.teinte)
+          .setPosition(o.x - a.x, pied - a.y);
+        v.refl.draw(r);
+      }
+      // les ronds
+      const N = E.ronds.images;
+      for (const d of v.ronds) {
+        const r = prend();
+        n++;
+        const k = d.t / d.vie, f = Math.min(N - 1, Math.floor(k * (d.petit ? N / 2 : N)));
+        r.setTexture('eau_ronds', f).setOrigin(0.5).setFlip(false, false).setScale(1).setAngle(0).setTint(0xffffff)
+          .setAlpha(E.ronds.alpha * d.a * (1 - k)).setPosition(d.x - a.x, d.y - a.y);
+        v.refl.draw(r);
+      }
+      v.refl.erase(v.secImg).render();
     },
 
     // Les scintillements d'une étendue, le jour (sol : CarteKit.soleil, null la nuit).

@@ -191,9 +191,9 @@
       if (this.fishing === F) this.fishing = null;
     },
 
-    // Un rond qui s'élargit sur l'eau.
+    // Un rond qui s'élargit sur l'eau (avec l'eau vivante : le sien, eau.js rond).
     ripple(x, y) {
-      if (reducedMotion()) return;
+      if (reducedMotion() || (this.rond && this.rond(x, y, true))) return;
       const g = this.add.graphics().setDepth(y - 1);
       const o = { r: 1.5, a: 0.8 };
       this.tweens.add({

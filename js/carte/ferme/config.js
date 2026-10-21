@@ -464,6 +464,14 @@
     ondule: 1.5, vitesse: [6, 3.5],
     scintille: { parCase: 0.05, vie: [0.35, 1.1], alpha: 0.9, clair: 0xffffff, dore: 0xffd27a },
     reflets: { pas: 3, ecart: 1.5, tremble: 2.2, portee: 3, lumiere: 0.6, lune: { long: 12, teinte: 0xcfe0ff, alpha: 0.6 } },
+    // les reflets de ce qui se tient au bord (`miroir` : pied à `portee` px au plus au-dessus
+    // de l'eau, haut de `haut` px au plus ; retourné, écrasé à `ecrase`, teinté, à `alpha`) ;
+    // les ronds (`ronds` : `images` cercles en `vie` s, à `alpha` ; `hasard` petits ronds par s
+    // pour 100 cases d'eau ; un poisson saute toutes les `saut` s en moyenne, dans une eau d'au
+    // moins `poissons` cases, de `sautHaut` px en `sautMs` ms ; quelqu'un qui marche à `rive` px
+    // de l'eau y fait un rond toutes les `pas` s)
+    miroir: { portee: 40, haut: 160, ecrase: 0.9, teinte: 0x86a8c8, alpha: 0.42 },
+    ronds: { images: 6, vie: 1.1, alpha: 0.85, hasard: 0.35, saut: 14, poissons: 30, sautHaut: 10, sautMs: 520, rive: 6, pas: 0.45 },
   };
 
   const clamp = (v, lo, hi) => (hi < lo ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
