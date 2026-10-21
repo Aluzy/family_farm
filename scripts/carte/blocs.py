@@ -38,6 +38,8 @@
 #   66 à 68 : la lanterne scintillante (BLOCS_CARTE.lanterne) : éteinte, puis allumée (deux
 #            images qui alternent, la nuit) ;
 #   69 et 70 : l'escalier, puis son haut vu de l'étage (BLOCS_CARTE.escalier, un essai).
+#   71 et 72 : la ruche, vide puis pleine (le miel se devine : BLOCS_CARTE.frames.ruche,
+#            ruche_pleine).
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -1282,6 +1284,48 @@ def escalier_haut():
 
 ESCALIER = len(DESSINS)                          # l'escalier, puis son haut (BLOCS_CARTE.escalier)
 DESSINS += [escalier(), escalier_haut()]
+
+
+# ---------- la ruche (js/engine/ruches.js) ----------
+
+PEINT = [(112, 84, 38), (176, 140, 66), (214, 182, 98), (238, 214, 140), (252, 238, 188)]   # le bois peint, jaune pâle
+MIEL = [(150, 84, 14), (214, 136, 22), (246, 186, 48), (255, 226, 120)]                  # le miel, du fond au reflet
+
+
+def ruche(pleine=False):
+    """La ruche : deux hausses de planches peintes sur un petit socle, le toit plat qui
+    déborde, le trou de vol en bas. Pleine, le miel se devine : il luit entre les hausses et
+    perle au trou de vol, une goutte coule sur la planche d'envol."""
+    t = Toile()
+    pieds(t, (3, 11), 20, BAS - 1)
+    yd, yf = boite(t, 2, 13, 19, 12, 5, PEINT, planches(PEINT, 'h', pas=3, y0=1))
+    joint = yf + (19 - yf) // 2                  # le joint entre les deux hausses
+    for x in range(2, 14):
+        t.put(x, joint, PEINT[0])
+        t.put(x, joint + 1, PEINT[4] if x == 2 else PEINT[3])
+    # le toit : une planche plate qui déborde, son chant sombre
+    for y in range(yd - 2, yd + 2):
+        for x in range(1, 15):
+            t.put(x, y, TOIT[4] if y < yd + 1 else TOIT[2])
+    for x in range(1, 15):
+        t.put(x, yd + 2, TOIT[1])
+    # le trou de vol et la planche d'envol
+    t.rect(6, 18, 9, 18, OUT)
+    for x in range(5, 11):
+        t.put(x, 19, PEINT[4] if x == 5 else PEINT[3])
+    if pleine:
+        for x in (4, 7, 10, 12):                 # le miel luit dans le joint
+            t.put(x, joint, MIEL[2])
+        t.put(8, joint, MIEL[3])
+        t.put(7, 18, MIEL[1])                    # il perle au trou de vol
+        t.put(8, 18, MIEL[2])
+        t.put(8, 19, MIEL[2])                    # une goutte coule sur la planche
+        t.put(8, 20, MIEL[1])
+    return t.fini()
+
+
+RUCHE = len(DESSINS)                             # la ruche vide, puis pleine (BLOCS_CARTE.frames)
+DESSINS += [ruche(), ruche(True)]
 
 
 # ---------- l'aperçu : une pièce close et les objets, sur l'herbe de la carte ----------

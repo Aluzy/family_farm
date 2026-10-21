@@ -78,7 +78,7 @@
           seen.add(b.case);
           // (un meuble acheté au Marché : son propre dessin, assets/meuble_<dessin>.png)
           if (b.meuble) { if (this.syncMeuble(b)) changed = true; continue; }
-          let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case) }, at, cols);
+          let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case), pleine: b.pleine }, at, cols);
           if (verre.has(b.case) && key === H.key && f === H.porte) f = H.porteSerre;
           const e = B.get(b.case);
           if (e && e.sorte === b.sorte) {
@@ -549,6 +549,8 @@
       // (la fenêtre et les pierres d'angle se raccordent comme le mur en pierre)
       const V = BLOCS_CARTE.hauts.variantes;
       const mur = V[b.sorte] !== undefined;
+      // (une ruche : vide, ou pleine, le miel se devine, js/engine/ruches.js)
+      if (b.sorte === 'ruche') return BLOCS_CARTE.frames[b.pleine ? 'ruche_pleine' : 'ruche'];
       if (!mur && b.sorte !== 'porte') return BLOCS_CARTE.frames[b.sorte] || 0;
       const c = b.case % cols;
       const is = (k, porte) => { const s = at.get(k); return V[s] !== undefined || (porte && s === 'porte'); };

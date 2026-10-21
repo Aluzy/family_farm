@@ -161,7 +161,7 @@
   // px au-dessus du bas de la paillasse.
   const BLOCS_CARTE = {
     key: 'blocs', file: 'blocs.png', frame: { frameWidth: 16, frameHeight: 24 },
-    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13, lanterne: 66, escalier: 69 },
+    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13, lanterne: 66, escalier: 69, ruche: 71, ruche_pleine: 72 },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
     // l'étage (un essai, js/carte/ferme/etage.js) : le haut de l'escalier (`haut`) ; l'étage
     // est dessiné `dy` px plus haut (la hauteur de la face des murs hauts : leurs faces se suivent) ; le niveau où l'on n'est pas,
@@ -434,6 +434,17 @@
   const BUBBLE_TIP_X = K.BULLE.pointeX, BUBBLE_TIP_Y = K.BULLE.pointeY;
   // Le repas : la bulle des convives qui ont bien mangé.
   const JOIE = '😊';
+  // Les abeilles des ruches (js/carte/ferme/abeilles.js) : `parRuche` par ruche, de quelques
+  // pixels (`dessin` : 2 images, les ailes levées puis baissées, `battements` par seconde ;
+  // `couleurs`). Elles sortent par le trou de vol (`trou` px au-dessus du pied de la case),
+  // volent à `vitesse` px/s (`vol` px au-dessus du sol au plus, un zigzag de ± `zigzag` px) vers
+  // une fleur à moins de `portee` px, y butinent `butine` s, rentrent, restent `dedans` s dans
+  // la ruche, ressortent ; de `heures[0]` à `heures[1]` h. Dessinées `dessus` plus loin que leur
+  // point au sol (devant ce qu'elles survolent).
+  const ABEILLES = { key: 'abeille', parRuche: 4, trou: 5, portee: 9 * T, vitesse: 26, vol: 6, zigzag: 1.5,
+    butine: [1.5, 4], dedans: [1, 4], heures: [7, 19.5], battements: 14, dessus: 24,
+    dessin: [['.ww.', 'ybyk'], ['....', 'ybyk']],
+    couleurs: { y: '#f6c02c', b: '#2a1c10', k: '#2a1c10', w: 'rgba(232,246,255,0.85)' } };
   // Le dialogue du matin (js/carte/ferme/etiquettes.js stepMatin) : une fois par jour, entre
   // `de` et `a` heures, dès que le personnage du joueur et le second adulte du foyer (model.aide)
   // sont dehors sur la ferme et tous deux dans la vue, le second adulte vient à côté du
@@ -465,7 +476,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, EXIT, HOLLOW, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, MATIN, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, EXIT, HOLLOW, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, MATIN, ABEILLES, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

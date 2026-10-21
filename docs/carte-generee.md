@@ -228,6 +228,21 @@ Le Marché vend toujours les outils.
   - **Quand la nuit tombe**, ses deux images alternent au hasard pour la faire scintiller.
     Elle pose aussi sa lumière dans le voile de l'heure : une flaque cyan sur l'herbe et sa vitre,
     qui vacillent un peu, plus un petit halo (`stepLanterns`, `BLOCS_CARTE.lanterne`).
+- **La ruche** (au Marché, rayon Animaux : 200 pièces ; `DATA.RUCHE`, `js/engine/ruches.js`)
+  arrive dans l'inventaire et se pose dehors, sur l'herbe, comme un bloc. Elle arrête le passage.
+  - **Elle se remplit la nuit** (`remplirRuches`) : au bout de `RUCHE.NUITS` nuits (2), elle est
+    pleine. Son image change (`BLOCS_CARTE.frames.ruche_pleine`) : le miel luit entre ses deux
+    hausses et perle au trou de vol.
+  - **Pleine, elle attend qu'on la récolte** : une bulle « 🍯 3 » au-dessus d'elle, comme un tas
+    à ramasser (`ruchesARecolter`, l'identifiant `ruche:<case>`). Un appui sur la bulle envoie
+    le personnage ; il prend `RUCHE.MIEL` pots de miel (3), et elle repart à vide. Le miel ne
+    rentre pas tout seul la nuit (`pickUpAll` ne la vide pas). Reprise pleine, son miel vient
+    avec elle.
+  - **Ses abeilles** (`js/carte/ferme/abeilles.js`, `ABEILLES`) : quatre par ruche, de quelques
+    pixels. Le jour, elles volent vers les fleurs à portée (9 cases), y butinent, rentrent. Les
+    fleurs : celles de l'herbe (`terrain.FLEURS`, posées par le générateur), sauf sous un bloc,
+    un sol ou un labour ; l'herbe haute fleurie encore debout ; et tout bloc `fleurs` de
+    `DATA.ATELIER.BLOCS` (les futurs bacs à fleurs : `fleursPourAbeilles`).
 - **Une pièce close** : des cases entourées de murs, de portes ou de l'Atelier, avec au moins une
   porte. Elle fait au plus 120 cases et ne touche pas le bord de la carte. Les coins ne comptent
   pas : on ne passe pas en diagonale.

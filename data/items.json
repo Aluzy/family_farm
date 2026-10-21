@@ -129,6 +129,7 @@
     ],
     "champignon_lumineux": { "nom": "Champignon lumineux", "icone": "🍄‍✨", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "cueillette": "grotte" },
     "bois_infra": { "nom": "Morceau d'arbre de l'infra-monde", "icone": "🪵‍🌈", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "cueillette": "infra" },
+    "ruche": { "nom": "Ruche", "icone": "🐝", "prix": 200, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "lanterne": { "nom": "Lanterne scintillante", "icone": "🏮", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "porte": { "nom": "Porte", "icone": "🚪", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "paillasse": { "nom": "Paillasse", "icone": "🛏️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },

@@ -15,6 +15,7 @@ import { unlockLevel } from './levels.js';
 import { installStarter, removeStarter, starterBlock } from './depart.js';
 import { robotOn } from './automation.js';
 import { couchagesEtage, rangerEtage } from './etage.js';
+import { ruchePosee, rucheReprise } from './ruches.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -373,7 +374,7 @@ export function poseStatus(state, sorte, tile) {
   if (!s) return { ok: false, raison: 'Bloc inconnu.' };
   const T = farmTerrain(state);
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
-  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon Meubles).` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon Meubles).` : s.ruche ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon Animaux).` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
@@ -479,6 +480,8 @@ function poser(state, sorte, tile) {
   }
   // le panneau, la pompe, la citerne, la batterie : l'appareil est là (étape 5b-2)
   if (s.appareil) installStarter(state, s.appareil);
+  // une ruche : vide, elle commence à se remplir (js/engine/ruches.js)
+  if (s.ruche) ruchePosee(state, tile);
   // le bloc clé d'un bâtiment (le nichoir : le Poulailler ; la mangeoire : l'Étable , le bac à semis : la Serre ; le coffre à grain : le Silo) : le bâtiment est construit
   if (s.batiment) ouvrirBatiment(state, s.batiment);
   // un four, une cuisinière : la station est là (étape 5b, la maison) ; la meule : le Moulin
@@ -515,6 +518,8 @@ export function reprendreBloc(state, tile, opts) {
   else delete state.sols[tile];
   const s = sorteDe(sorte);
   if (s && s.appareil) removeStarter(state, s.appareil);
+  // (une ruche pleine : son miel vient avec elle)
+  if (s && s.ruche) rucheReprise(state, tile);
   if (s && s.batiment && state[s.batiment] && !['poulailler', 'paturage'].includes(s.batiment)) state[s.batiment].construit = false;
   if (s && s.objet) addItem(state, s.objet, 1);
   // la station s'en va avec lui (s'il n'y en a pas une autre posée)

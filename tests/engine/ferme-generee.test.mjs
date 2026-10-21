@@ -11,6 +11,7 @@ import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, couchagesEtage, etageCouvertes, ETAGE_BLOCS, chopTree, bushOf, bushCut, cutBushes, respawnBushes, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
   etatEtable, etatMoulin, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
+  buyRuche, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
 
@@ -237,6 +238,40 @@ function murs({ c, r, W }, w, h) {
   for (let dr = 0; dr < h; dr++) for (let dc = 0; dc < w; dc++) if (dr === 0 || dc === 0 || dr === h - 1 || dc === w - 1) out.push((r + dr) * W + c + dc);
   return { murs: out.filter((t) => t !== (r + h - 1) * W + c + Math.floor(w / 2)), porte: (r + h - 1) * W + c + Math.floor(w / 2), dedans: (r + 1) * W + c + 1 };
 }
+
+test('ruches : achetées au Marché, posées dehors, pleines au bout de NUITS nuits, récoltées', () => {
+  const R = DATA.RUCHE;
+  const s = chantier('ruche');
+  s.pieces = R.PRIX + 5;
+  assertEqual(buyRuche(s), { ok: true, cost: R.PRIX });
+  assertEqual([s.pieces, countItem(s, 'ruche')], [5, 1]);
+  assertEqual(buyRuche(s).ok, false, 'plus assez de pièces');
+  const z = terrainLibre(s, 6, 5);
+  const t = z.r * z.W + z.c;
+  assertEqual(poserBloc(s, 'ruche', t).ok, true);
+  assertEqual([blocAt(s, t), countItem(s, 'ruche'), blocBloque(s, t), ruchePleine(s, t)], ['ruche', 0, true, false]);
+  assertEqual(poserBloc(s, 'ruche', t + 2).error, 'Plus de ruche : achète-en au Marché (rayon Animaux).');
+  // (une vraie nuit de jeu la fait avancer, js/engine/night.js)
+  sleepOnce(s);
+  assertEqual(s.ruches[t].nuits, 1);
+  for (let n = 2; n < R.NUITS; n++) remplirRuches(s);
+  assertEqual([ruchePleine(s, t), ruchesARecolter(s)], [false, []]);
+  remplirRuches(s);
+  assertEqual(ruchesARecolter(s), [{ id: `ruche:${t}`, lieu: 'ruche', ref: t, items: { miel: R.MIEL } }]);
+  // le personnage récolte (comme un tas à ramasser) : le miel entre, la ruche repart à vide
+  const miel = countItem(s, 'miel');
+  assertEqual(pickUp(s, `ruche:${t}`), { ok: true, lieu: 'ruche', items: { miel: R.MIEL } });
+  assertEqual([countItem(s, 'miel') - miel, ruchePleine(s, t), pickUp(s, `ruche:${t}`).ok], [R.MIEL, false, false]);
+  // reprise pleine : la ruche et son miel reviennent dans l'inventaire
+  for (let n = 0; n < R.NUITS; n++) remplirRuches(s);
+  assertEqual(reprendreBloc(s, t).ok, true);
+  assertEqual([countItem(s, 'ruche'), countItem(s, 'miel') - miel, s.ruches[t]], [1, 2 * R.MIEL, undefined]);
+  // dans une pièce close : non (elle se pose dehors)
+  const m = murs(terrainLibre(s, 5, 5), 5, 5);
+  for (const w of m.murs) poserBloc(s, 'mur_pierre', w);
+  poserBloc(s, 'porte', m.porte);
+  assertEqual(poserBloc(s, 'ruche', m.dedans).ok, false);
+});
 
 test('ferme générée : poser et reprendre des blocs, sur l\'herbe seulement', () => {
   const s = chantier('b1');

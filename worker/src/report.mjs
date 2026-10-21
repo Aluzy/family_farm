@@ -32,6 +32,7 @@ export const GAME_ACTIONS = {
   'buy-item': 'Acheter un produit ou une graine',
   'buy-animal': 'Acheter un animal',
   'buy-meuble': 'Acheter un meuble',
+  'buy-ruche': 'Acheter une ruche',
   'plant-tree': 'Planter un arbre',
   'plant-all': 'Planter partout',
   'hoe-many': 'Labourer en glissant',

@@ -17,6 +17,7 @@ import { recordNight, updateChapters } from './campaign.js';
 import { noteTutorialSleep } from './alerts.js';
 import { collectLeftovers } from './ramassage.js';
 import { regrowGrass, respawnBushes, respawnRocks, respawnTrees } from './outils.js';
+import { remplirRuches } from './ruches.js';
 import { immeubleNuit, voisinsNuit } from './voisins.js';
 import { economieNuit } from './economie.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
@@ -257,6 +258,7 @@ export function runNight(state) {
   respawnTrees(state); // les arbres abattus dont le jour est venu repoussent
   respawnBushes(state); // les buissons coupés aussi
   regrowGrass(state); // l'herbe haute fauchée dont le jour est venu repousse
+  remplirRuches(state); // les abeilles remplissent les ruches
   refreshUnlocks(state);
   updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil
   noteTutorialSleep(state); // Lot 11 : la bulle « Dormir » se ferme à la première nuit

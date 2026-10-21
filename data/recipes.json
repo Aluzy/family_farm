@@ -125,6 +125,7 @@
       "citerne": { "nom": "Citerne", "objet": "citerne", "dehors": true, "bloque": true, "unique": true, "appareil": "reservoir" },
       "batterie": { "nom": "Batterie", "objet": "batterie", "bloque": true, "unique": true, "appareil": "batterie" },
       "escalier": { "nom": "Escalier", "objet": "escalier", "dedans": true, "escalier": true },
+      "ruche": { "nom": "Ruche", "objet": "ruche", "dehors": true, "bloque": true, "ruche": true },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
       "meuble_chaise": { "nom": "Chaise", "objet": "meuble_chaise", "meuble": "chaise", "dedans": true, "bloque": true },
       "meuble_table": { "nom": "Table", "objet": "meuble_table", "meuble": "table", "dedans": true, "bloque": true, "largeur": 3 },
