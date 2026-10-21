@@ -122,9 +122,11 @@
     }
     // Il se lève : à côté du lit, sans couverture ; il repart de là (dehors, visible).
     function lever(m) {
+      const L = m.couche;
       m.couche = null; m.ou = 'dehors';
       if (m.drap) m.drap.setVisible(false);
-      m.y += 4;
+      // (un lit de l'étage : il se lève en bas de l'escalier)
+      if (L && L.via) { m.x = L.via.x; m.y = L.via.y; } else m.y += 4;
     }
 
     function dessiner(m, nom) {
@@ -197,7 +199,9 @@
         if (m.puis && m.vers === 'lit') return;               // il y va
         if (!m.visible || m.fade < 0) { apparaitre(m, d.x, d.y); m.alpha = Math.max(m.alpha, 0.01); }
         m.tache = null; m.vers = 'lit';
-        aller(m, L.x, L.y, () => { m.vers = null; coucher(m, litDe(m) || L); });
+        // (un lit de l'étage : il va au pied de l'escalier, et y monte)
+        const vers = L.via || L;
+        aller(m, vers.x, vers.y, () => { m.vers = null; coucher(m, litDe(m) || L); });
         return;
       }
       m.vers = null;
@@ -291,6 +295,7 @@
             const n = Math.floor(performance.now() / 1600) % 2;
             dessiner(m, F[`dort_bas_${n}`] !== undefined ? `dort_bas_${n}` : `idle_bas_${n}`);
             m.s.setDepth(m.couche.depth + 0.1);
+            if (m.drap) m.drap.setDepth(m.couche.depth + 0.2);
             continue;
           }
           dessiner(m, marche ? `marche_${m.face}_${Math.floor(m.marche / PAS) % 4}` : `idle_${m.face}_${Math.floor(performance.now() / 600) % 2}`);

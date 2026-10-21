@@ -554,7 +554,8 @@
       // Il dort, et la ferme générée lui a une paillasse : il va s'y coucher.
       const lit = ctx.dort && !home && shown && o.couchage ? o.couchage() : null;
       if (lit) {
-        jobs.push(walkTo(lit.x, lit.y, { far: true }));
+        const v = litVers(lit);
+        jobs.push(walkTo(v.x, v.y, { far: true }));
         jobs.push(once(() => { couche = { lit, t: 0, slept: true }; }));
         return;
       }
@@ -656,7 +657,8 @@
         // déjà rentré (la maison, provisoire) : il ressort par la porte
         if (!shown || home) { const d = door(); x = d.x; y = d.y + 4; face = 'bas'; flip = false; home = false; where = null; appear(); }
         if (reduced()) { jobs = []; x = lit.x; y = lit.y; couche = { lit, t: 0, slept: false }; setTimeout(done, 0); return; }
-        jobs = [walkTo(lit.x, lit.y, { far: true, hurry: true }), once(() => { couche = { lit, t: 0, slept: false }; }), once(done)];
+        const v = litVers(lit);
+        jobs = [walkTo(v.x, v.y, { far: true, hurry: true }), once(() => { couche = { lit, t: 0, slept: false }; }), once(done)];
         idleAge = 0;
         return;
       }
@@ -1118,6 +1120,12 @@
     // dort debout entre la paillasse et sa couverture, tourné vers nous, comme dans son lit de
     // la maison ; endormi (ASLEEP_S), la nuit défile.
     let couche = null, drapDehors = null;
+    // Où il marche pour aller à son couchage : le couchage lui-même ; à l'étage (lit.via), le pied
+    // de l'escalier (il y monte), ou sa case s'il est déjà à l'étage (lit.etage).
+    function litVers(lit) {
+      if (!lit.via) return lit;
+      return lift() > 0 && lit.etage ? lit.etage : lit.via;
+    }
     function sleepOutside(dt) {
       const L = couche.lit;
       couche.t += dt;
@@ -1136,6 +1144,9 @@
     }
     // Il se lève : à côté de la paillasse, sans couverture ni « Z ».
     function getUpOutside() {
+      // (un couchage de l'étage : il se lève en bas de l'escalier, ou sur sa case s'il y est resté)
+      const L = couche && couche.lit;
+      if (L && L.via) { const v = litVers(L); x = v.x; y = v.y - 4; }
       couche = null;
       if (drapDehors) drapDehors.setVisible(false);
       stepZ(0, 0, -1);
@@ -1199,6 +1210,8 @@
     return {
       filter,
       update,
+      // Le couchage où il est couché (dehors : une paillasse, un lit, à l'étage peut-être), ou null.
+      lit: () => (couche ? couche.lit : null),
       info: () => ({ x: Math.round(x), y: Math.round(y), face, shown, home, ou: where, couche: inside.mode === 'lit' || !!couche, dedans: viewing && inside.wait <= 0 ? { x: Math.round(inside.x), y: Math.round(inside.y) } : null, jobs: jobs.length + (job ? 1 : 0), dirige: !!steer, retenues: [...holds.keys()], cuisson: cooking, aRamasser: [...pilesNow.keys()], prevus: [...claimed] }),
       // Le joueur a appuyé sur la bulle d'un tas : il va le chercher tout de suite.
       fetch: (id) => fetch(id, true),

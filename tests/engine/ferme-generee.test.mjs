@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { blocGid, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
-  isArable, migrate, etageCouvertes, ETAGE_BLOCS, chopTree, bushOf, bushCut, cutBushes, respawnBushes, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
+  isArable, migrate, couchagesEtage, etageCouvertes, ETAGE_BLOCS, chopTree, bushOf, bushCut, cutBushes, respawnBushes, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
   etatEtable, etatMoulin, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
@@ -949,6 +949,25 @@ test('ferme générée : les meubles du Marché se posent à l\'étage, sur tout
   // reprendre la table par une de ses cases
   assert(reprendreEtage(s, t + 1).ok);
   assertEqual([etageBlocs(s)[t], countItem(s, 'meuble_table'), etageCouvertes(s).size], [undefined, 1, 5], 'le tapis reste');
+});
+
+test('ferme générée : on dort dans les lits et sur les paillasses d\'une pièce close de l\'étage', () => {
+  const s = chantier('etage3');
+  setInv(s, { mur_pierre: 60, porte: 4, escalier: 1, meuble_lit_adulte: 1, paillasse: 2 });
+  const z = terrainLibre(s, 7, 6), p = murs(z, 7, 6), W = z.W;
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserBloc(s, 'porte', p.porte);
+  assert(poserBloc(s, 'escalier', p.dedans).ok);
+  const lit = (z.r + 3) * W + z.c + 2, paille = (z.r + 3) * W + z.c + 4;
+  assert(poserEtage(s, 'meuble_lit_adulte', lit).ok);
+  assert(poserEtage(s, 'paillasse', paille).ok);
+  assertEqual(couchagesEtage(s), [], 'un étage à ciel ouvert : on n\'y dort pas');
+  // des murs tout autour, à l'étage
+  for (const t of p.murs.concat([p.porte])) assert(poserEtage(s, 'mur_pierre', t).ok);
+  assertEqual(couchagesEtage(s), ['etage:' + lit, 'etage:' + paille]);
+  assertEqual(couchages(s), ['etage:' + lit, 'etage:' + paille], 'pas de couchage en bas : ceux de l\'étage');
+  assert(nuitCouchee(s), 'la famille dort');
+  assertEqual(nuitSansCouchage(s).length, Math.max(0, s.famille.membres.length - 2));
 });
 
 test('ferme générée : les fenêtres et les pierres d\'angle ferment une pièce comme des murs', () => {

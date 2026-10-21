@@ -14,7 +14,7 @@ import { isUnlocked } from './campaign.js';
 import { unlockLevel } from './levels.js';
 import { installStarter, removeStarter, starterBlock } from './depart.js';
 import { robotOn } from './automation.js';
-import { rangerEtage } from './etage.js';
+import { couchagesEtage, rangerEtage } from './etage.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -297,9 +297,10 @@ export function dansPiece(state, tile) {
   return piecesCloses(state).some((p) => p.cases.includes(tile));
 }
 
-// Les paillasses où l'on peut dormir (dans une pièce close), dans l'ordre des pièces.
+// Les paillasses et les lits où l'on peut dormir : ceux des pièces closes (leurs cases, dans
+// l'ordre des pièces), puis ceux de l'étage (« etage:<tuile> », etage.js couchagesEtage).
 export function couchages(state) {
-  return piecesCloses(state).flatMap((p) => p.paillasses);
+  return piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state));
 }
 
 // La Serre de la ferme générée sur la carte : les cases de la pièce close où est le bac à

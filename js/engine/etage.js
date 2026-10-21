@@ -129,6 +129,18 @@ export function toits(state) {
   return out;
 }
 
+// Les couchages de l'étage : ses paillasses et ses lits, dans une pièce close de l'étage (des
+// murs de l'étage tout autour : un toit de niveau 1), dans l'ordre des cases. Identifiants
+// « etage:<tuile> » (blocs.js couchages : après ceux du bas).
+export function couchagesEtage(state) {
+  const E = etageBlocs(state);
+  if (!Object.keys(E).length) return [];
+  const clos = new Set();
+  for (const t of toits(state)) if (t.niveau === 1) for (const c of t.cases) clos.add(c);
+  return Object.keys(E).map(Number).filter((t) => clos.has(t) && (E[t] === 'paillasse' || (DATA.ATELIER.BLOCS[E[t]] && DATA.ATELIER.BLOCS[E[t]].lit)))
+    .sort((a, b) => a - b).map((t) => 'etage:' + t);
+}
+
 // Peut-on poser `sorte` à l'étage, sur `tile` ? { ok, raison }
 export function poseEtageStatus(state, sorte, tile) {
   const s = DATA.ATELIER.BLOCS[sorte];
