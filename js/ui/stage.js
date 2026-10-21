@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { formatLitres, weekdayIndex } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
-import { houseRepaired, mainCharacter } from '../engine/depart.js';
+import { houseRepaired, mainCharacter, setupPending } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
@@ -689,7 +689,12 @@ function stageAct(action, data) {
 export function renderStage() {
   syncRamassage();
   const el = document.getElementById('farm-stage');
-  let on = stageActive();
+  // Tant que la partie n'est pas configurée (écran « Ta famille »), pas de carte : la ferme
+  // générée n'a pas encore de graine (js/ui/depart.js). Seules les fenêtres de configuration
+  // s'affichent (body.configuration, css/jeu.css) ; la page se recharge au départ.
+  const configuration = !!state && setupPending(state);
+  document.body.classList.toggle('configuration', configuration);
+  let on = stageActive() && !configuration;
   // Une autre carte est affichée (js/ui/excursion.js) : celle de la ferme se cache, les
   // fenêtres et la barre d'outils restent.
   if (on && document.body.classList.contains('en-excursion')) {

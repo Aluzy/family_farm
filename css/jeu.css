@@ -91,6 +91,10 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* La configuration d'une nouvelle partie (écran « Ta famille », js/ui/stage.js) : rien que ses
+   fenêtres (#modal-root), les messages et le bandeau des traceurs ; ni carte ni interface du jeu. */
+body.configuration > :not(#modal-root, #toast-root, #consent-banner, script) { display: none !important; }
+
 /* Le masquage du défilement horizontal est sur html seul : avec overflow sur html ET body,
    body devient un conteneur de défilement et le bandeau « sticky » ne reste plus en haut.
    Le zoom à deux doigts reste permis (pas de maximum-scale dans jeu.html) ; le double appui
