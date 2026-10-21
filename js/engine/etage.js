@@ -68,7 +68,8 @@ export function etageEmprise(state) {
 //     niveau de plus par bloc du plus bas d'entre eux, la tour du Moulin) ;
 //   - une pièce à escalier : sur les murs de l'étage, au-dessus de ce qu'ils ferment dans
 //     l'emprise (niveau 1) ; un étage sans murs tout autour reste à ciel ouvert (une terrasse).
-// [{ niveau, cases: [tuiles couvertes], dedans: [tuiles d'où l'on est dans le bâtiment], verre (la Serre) }]
+// [{ niveau, cases: [tuiles couvertes], dedans: [tuiles d'où l'on est dans le bâtiment], verre (la Serre),
+//    maison (une pièce de la maison : on y allume la nuit, js/carte/ferme/fenetres.js) }]
 export function toits(state) {
   if (!atelierOuvert(state)) return [];
   const B = blocsPoses(state), E = etageBlocs(state), W = farmTerrain(state).LARGEUR;
@@ -79,9 +80,10 @@ export function toits(state) {
     const emprise = avecMurs(state, p.cases), tri = (a) => [...a].sort((x, y) => x - y);
     // (la Serre, la pièce du bac à semis : un toit de verre, on voit ce qui pousse dessous)
     const verre = p.cases.some((t) => B[t] === 'bac_semis');
+    const maison = p.cases.some((t) => genreBloc(B[t]) === 'maison');
     if (!p.cases.some((t) => B[t] === 'escalier')) {
       const hauts = [...emprise].map((t) => hauteurMur(state, t)).filter((h) => h > 0);
-      out.push({ niveau: hauts.length ? Math.min(...hauts) - 1 : 0, cases: tri(emprise), dedans: tri(emprise), verre });
+      out.push({ niveau: hauts.length ? Math.min(...hauts) - 1 : 0, cases: tri(emprise), dedans: tri(emprise), verre, maison });
       continue;
     }
     // à l'étage : les cases libres de l'emprise qu'on ne rejoint pas depuis son bord
@@ -107,7 +109,7 @@ export function toits(state) {
         }
         for (const j of voisins(k)) if (libre(j) && !vus.has(j)) { vus.add(j); zone.push(j); }
       }
-      out.push({ niveau: 1, cases: tri(cases), dedans: tri(emprise), verre });
+      out.push({ niveau: 1, cases: tri(cases), dedans: tri(emprise), verre, maison });
     }
   }
   return out;

@@ -313,7 +313,8 @@
       const L = BLOCS_CARTE.lanterne, V = this.lumiere;
       const list = [];
       for (const e of (this.blocks || new Map()).values()) if (e.sorte === 'lanterne') list.push(e);
-      if (!list.length && !this.lanternLights) return;
+      // (et la lumière des maisons, js/carte/ferme/fenetres.js)
+      if (!list.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison)) return;
       if (!this.lanternLights) {
         this.lanternLights = [];
         lueur(this.textures);
@@ -349,6 +350,7 @@
         }
         if (e.halo) e.halo.setVisible(true).setAlpha(k);
       }
+      this.stepFenetres(out, nuit, dt);
     },
 
     // Les planchers posés (modèle.sols : leurs cases), à plat sous les blocs : chacun prend

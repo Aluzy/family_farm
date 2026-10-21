@@ -45,7 +45,7 @@
         // plus haut de ce que le dessin dépasse de l'emprise remontée)
         const c1 = Math.max(...t.cases.map((k) => k % cols));
         const ombre = { x0: c0 * T, x1: (c1 + 1) * T, y0: r0 * T, y1: (r1 + 1) * T, v: lift, faite: Math.max(0, cv.height - (r1 + 1 - r0) * T) };
-        this.toits.push({ key, img, ombre, dedans: new Set(t.dedans), x0: x, x1: x + cv.width, y0: y, y1: y + cv.height, pied: (r1 + 1) * T });
+        this.toits.push({ key, img, ombre, dedans: new Set(t.dedans), maison: !!t.maison, x0: x, x1: x + cv.width, y0: y, y1: y + cv.height, pied: (r1 + 1) * T });
       });
       this.sunDirty = true;
     },

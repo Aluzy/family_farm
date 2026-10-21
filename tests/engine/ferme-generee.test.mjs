@@ -952,6 +952,7 @@ test('ferme générée : un toit sur le dernier niveau de chaque bâtiment', () 
   assertEqual(toits(s).length, 0, 'une pièce close vide : une cour, à ciel ouvert');
   poserBloc(s, 'paillasse', p.dedans + 1);
   assertEqual(toits(s).map((t) => [t.niveau, t.cases.length]), [[0, 30]], 'aménagée : sur les murs du bas, murs compris');
+  assertEqual(toits(s).map((t) => t.maison), [true], 'une paillasse : une pièce de la maison (allumée la nuit)');
   // l'escalier : l'étage, à ciel ouvert tant que ses murs ne le ferment pas
   poserBloc(s, 'escalier', p.dedans);
   assertEqual(toits(s).length, 0, 'une terrasse');
