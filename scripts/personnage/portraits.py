@@ -49,6 +49,12 @@ DESSINS = {
     'perso_07': (1, 0), 'perso_08': (1, 1), 'perso_09': (0, 2), 'perso_10': (1, 2), 'perso_11': (2, 2),
 }
 HAUT = {(0, 2): 1}
+# Les portraits générés puis retouchés à la main (scripts/personnage/modeles/portraits_retouches.png :
+# les 50 adultes en 10 × 5 cases de 32 × 32, 2 px entre elles) : portraits du jeu tels quels. Trois
+# servent aussi de modèles aux autres (PIECES_RETOUCHEES) : les couettes de perso_02, les lunettes
+# du visage F de perso_16 et la barbe de perso_18.
+RETOUCHES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'modeles', 'portraits_retouches.png')
+RETOUCHES_NOMS = ('perso_02', 'perso_16', 'perso_17', 'perso_18', 'perso_20')
 # Les portraits générés validés : gardés tels quels dans assets/portraits (ce script ne les
 # réécrit plus).
 VALIDES = {f'perso_{n:02d}' for n in (3, 14, 15, 20, 21, 22, 25, 27, 29, 31, 33, 34, 35, 36,
@@ -148,7 +154,6 @@ class Pieces:
         self.frange = {q: t for q, t in A.items() if t[0] == 'cheveux'}
         cb = {q: t for q, t in B.items() if t[0] == 'cheveux'}
         self.moustache = {(x, y): t for (x, y), t in cb.items() if 17 <= y <= 19 and 10 <= x <= 21}
-        self.machoire = {(x, y): t for (x, y), t in cb.items() if y >= 17 and (x, y) not in self.moustache}
         self.courts = {(x, y): t for (x, y), t in cb.items() if y < 17}
         h = {q: jeton('H', c) for q, c in case(im, 0, 2, 0).items()}
         self.herisses = {q: t for q, t in h.items() if t[0] == 'cheveux'}
@@ -189,21 +194,21 @@ def cheveux_sombre(base):
     return {
         (135, 96, 44): (51, 39, 23), (88, 68, 54): (52, 47, 43), (191, 163, 55): (144, 122, 38),
         (81, 63, 157): (18, 13, 37),
-    }[base]
+    }.get(base) or tuple(min(255, round(v * 0.4)) for v in base)
 
 
 def cheveux_ombre(base):
     return {
         (135, 96, 44): (79, 58, 30), (88, 68, 54): (66, 50, 39), (191, 163, 55): (144, 122, 38),
         (81, 63, 157): (42, 31, 88),
-    }[base]
+    }.get(base) or tuple(min(255, round(v * 0.7)) for v in base)
 
 
 def cheveux_clair(base):
     return {
         (135, 96, 44): (182, 128, 60), (88, 68, 54): (88, 68, 54), (191, 163, 55): (219, 183, 44),
         (81, 63, 157): (81, 63, 157),
-    }[base]
+    }.get(base) or tuple(min(255, round(v * 1.15)) for v in base)
 
 
 def H(base, c):
@@ -386,12 +391,9 @@ def c_chignon(p):
 
 
 def c_couettes(p):
-    """Les cheveux longs de la femme jusqu'aux oreilles, puis deux couettes nouées qui tombent
-    sur les épaules."""
-    base = ROLES['F']['cheveux'][1]
-    p.poser({(x, y): t for (x, y), t in pieces().longs.items() if y <= 15})
-    touffe(p, 4.5, 15, 27, base)
-    touffe(p, 27.5, 15, 27, base)
+    """Les couettes retouchées à la main (perso_02) : les cheveux longs jusqu'aux oreilles, deux
+    couettes ondulées nouées d'un lien."""
+    p.poser(pieces_retouchees()['couettes'])
 
 
 def c_queue(p):
@@ -410,6 +412,74 @@ COUPES = {
     'court': ('M', c_courts), 'herisse': ('M', c_herisses), 'meche': ('M', c_frange), 'boucles': ('M', c_boucles),
     'long': ('F', c_longs), 'queue': ('F', c_queue),
 }
+
+
+# ---------- les pièces retouchées ----------
+
+def retouche(nom):
+    """La case de `nom` (perso_XX) sur la planche des retouches : { (x, y): couleur }."""
+    im = Image.open(RETOUCHES).convert('RGBA')
+    i = int(nom[-2:]) - 1
+    x0, y0 = (i % 10) * 34, (i // 10) * 34
+    return {(x, y): im.getpixel((x0 + x, y0 + y))[:3] for y in range(N) for x in range(N) if im.getpixel((x0 + x, y0 + y))[3]}
+
+
+def ecart(c, cible):
+    """L'écart entre c et la couleur `cible` portée à la même luminosité."""
+    k = lum(c) / max(1, lum(cible))
+    return sum(abs(a - min(255, b * k)) for a, b in zip(c, cible))
+
+
+def calque_retouche(nom, ref, garde):
+    """Ce que la retouche de `nom` ajoute à la référence `ref` (un portrait en jetons, sans le
+    détail retouché) : chaque pixel qui diffère, en jeton de la région que `garde(q, c, regions)`
+    choisit parmi les régions possibles (cheveux, accessoire, peau : la plus proche d'abord)."""
+    d = dict(catalogue.personnages())[nom]
+    i = int(nom[-2:]) - 1
+    avant = peindre(ref, d, i)
+    peau = transfert(PEAU, catalogue.PEAU['claire']['f'], catalogue.PEAU[d['peau']]['f'])
+    bases = {'cheveux': catalogue.CHEVEUX[d['cheveux']]['b'], 'acc': d['accessoire'], 'peau': peau}
+    out = {}
+    for q, c in retouche(nom).items():
+        a = avant.getpixel(q)
+        if a[3] and a[:3] == c:
+            continue
+        regions = sorted(bases, key=lambda r: ecart(c, bases[r]))
+        r = garde(q, c, regions)
+        if r == 'fixe':
+            out[q] = ('fixe', c, None)
+        elif r:
+            out[q] = (r, c, bases[r])
+    return out
+
+
+PR = None
+
+
+def pieces_retouchees():
+    global PR
+    if PR is None:
+        cat = dict(catalogue.personnages())
+        # les couettes : les cheveux et les liens (sur le visage F nu)
+        # (la peau, ses taches de rousseur, n'en fait pas partie)
+        couettes = calque_retouche('perso_02', base('F'), lambda q, c, rs: None if rs[0] == 'peau' else rs[0])
+        # la barbe : les poils sous les cheveux courts (rangées 16 à 24)
+        p = base('M')
+        c_courts(p)
+        motif(p, cat['perso_18']['motif'])
+        contour(p)
+        barbe = calque_retouche('perso_18', p, lambda q, c, rs: 'cheveux' if 16 <= q[1] <= 24 else None)
+        # les lunettes du visage F : la monture (sa couleur), l'ombre qu'elle pose sur la peau
+        p = base('F')
+        c_chignon(p)
+        d_rides(p)
+        motif(p, cat['perso_16']['motif'])
+        contour(p)
+        monture = (165, 72, 72)
+        lunettes = calque_retouche('perso_16', p, lambda q, c, rs: None if not 9 <= q[1] <= 17 else
+                                   ('fixe' if sum(abs(a - b) for a, b in zip(c, monture)) < 40 else 'peau'))
+        PR = {'couettes': couettes, 'barbe': barbe, 'lunettes': lunettes}
+    return PR
 
 
 # ---------- les couvre-chefs ----------
@@ -514,19 +584,8 @@ COUVRE_CHEFS = {None: lambda p: None, 'casquette': h_casquette, 'bandeau': h_ban
 # ---------- les détails ----------
 
 def d_lunettes(p):
-    """Les lunettes du jeune ; sur le visage F (des yeux plus grands, plus haut), des montures
-    tracées autour de chaque œil."""
-    if p.visage == 'M':
-        p.poser(pieces().lunettes)
-        return
-    noir = ('fixe', NOIR, None)
-    for x0, x1 in ((7, 15), (16, 24)):
-        for x in range(x0 + 1, x1):
-            p.g[(x, 9)] = noir
-            p.g[(x, 14)] = noir
-        for y in range(10, 14):
-            p.g[(x0, y)] = noir
-            p.g[(x1, y)] = noir
+    """Les lunettes du jeune ; sur le visage F, celles retouchées à la main (perso_16)."""
+    p.poser(pieces().lunettes if p.visage == 'M' else pieces_retouchees()['lunettes'])
 
 
 def d_moustache(p):
@@ -535,24 +594,9 @@ def d_moustache(p):
 
 
 def d_barbe(p):
-    """La barbe : la moustache, et un collier sur le bord de la mâchoire et le menton (la
-    bouche reste visible) ; plus clairsemée vers les joues."""
-    if p.visage != 'M':
-        return
-    base = ROLES['B']['cheveux'][1]
-    p.poser(pieces().moustache)
-    for (x, y), t in list(p.g.items()):
-        if t[0] != 'peau' or y < 17 or y > 22:
-            continue
-        bord = any(p.region((x + dx, y)) not in ('peau', 'fixe', 'iris') for dx in (-1, 1))
-        menton = y >= 21 and 11 <= x <= 20
-        bouche = 19 <= y <= 20 and 12 <= x <= 19
-        if bouche or not (bord or menton) or (y == 17 and not bord):
-            continue
-        if y <= 18 and (x + y) % 2:
-            continue                         # (clairsemée sur les joues)
-        c = (52, 47, 43) if y == 22 or (bord and y >= 20) else ((66, 50, 39) if (x + 2 * y) % 3 else (88, 68, 54))
-        p.g[(x, y)] = H(base, c)
+    """La barbe retouchée à la main (perso_18) : moustache et collier, la bouche visible."""
+    if p.visage == 'M':
+        p.poser(pieces_retouchees()['barbe'])
 
 
 # Les places des détails sur chaque visage (le visage F a les yeux une rangée plus haut, la
@@ -725,7 +769,8 @@ def peindre(p, d, i):
     return im
 
 
-def portrait(d, i, est_enfant=False):
+def jetons(d, est_enfant=False):
+    """Le portrait en jetons (avant les couleurs)."""
     vis, coupe = COUPES[d['coupe']]
     if any(x in d['details'] for x in ('barbe', 'moustache')):
         vis = 'M'
@@ -752,7 +797,11 @@ def portrait(d, i, est_enfant=False):
     contour(p)
     if est_enfant:
         enfant(p)
-    return peindre(p, d, i)
+    return p
+
+
+def portrait(d, i, est_enfant=False):
+    return peindre(jetons(d, est_enfant), d, i)
 
 
 def dessin(nom):
@@ -767,7 +816,12 @@ def tous():
     """[(nom, image)] : les 50 adultes, puis les 50 enfants."""
     out = []
     for i, (nom, d) in enumerate(catalogue.personnages()):
-        if nom in VALIDES:
+        if nom in RETOUCHES_NOMS:
+            im = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+            for q, c in retouche(nom).items():
+                im.putpixel(q, c + (255,))
+            out.append((nom, im))
+        elif nom in VALIDES:
             out.append((nom, Image.open(os.path.join(DIR, f'{nom}.png')).convert('RGBA')))
         else:
             out.append((nom, dessin(nom) if nom in DESSINS else portrait(d, i)))

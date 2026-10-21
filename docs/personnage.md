@@ -21,6 +21,10 @@ et de l'homme à moustache ; F, celui de la femme, plus long, avec cils et lèvr
 des dessins et celles qu'on en tire, la casquette, le bandeau, les lunettes et la moustache des
 dessins, puis les couleurs du catalogue (chaque pixel garde sa nuance par rapport à la base de sa
 région : peau, cheveux, haut, yeux, accessoire). Les cheveux gris ou blancs ajoutent des rides.
+Les portraits retouchés à la main (`scripts/personnage/modeles/portraits_retouches.png`, la planche
+des 50 adultes) sont gardés tels quels (`RETOUCHES_NOMS`), comme les portraits générés validés
+(`VALIDES`) ; trois retouches servent de modèles aux autres : les couettes (`perso_02`), les
+lunettes du visage F (`perso_16`) et la barbe (`perso_18`).
 `scripts/personnage/fermier.py` leur planche de 70 cases (`assets/personnages/perso_XX.png`, les
 noms des cases, les mêmes pour tous, dans `assets/personnages/cases.json`). Coupes : longs, mi,
 carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; sur la tête : chapeau de
