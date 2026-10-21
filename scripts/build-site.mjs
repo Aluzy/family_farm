@@ -52,7 +52,6 @@ const FOLDERS = ['css', 'assets', 'vendor'];
 // Fichiers de assets/ jamais mis en ligne : le jeu ne les charge pas.
 const ASSETS_HORS_SITE = [
   /\.(tmj|tsx)$/,                     // cartes et jeux de tuiles de travail Tiled (scripts/build-map.mjs en tire les .json)
-  /^portraits\/modele[a-z_]*\.png$/,  // modèles des portraits (scripts/personnage/portraits*.py)
   // images lues seulement par les générateurs (scripts/carte/*.py) ou par Tiled, dont aucune
   // carte construite ne pose de tuile (la vérification plus bas le garantit)
   /^(arbre_clair|pin_clair|barrieres|bordure_eau|bordure_eau_herbe|eau|herbe_chemin|herbe_deco)\.png$/,

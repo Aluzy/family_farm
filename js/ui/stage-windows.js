@@ -37,7 +37,7 @@ import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
 import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin, renderRecettes, renderStationFenetre } from './cuisine.js';
 import { renderTechno } from './techno.js';
-import { memberNameHtml, persoSrc, renderFamille } from './famille.js';
+import { memberNameHtml, persoHtml, renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
@@ -507,7 +507,7 @@ export function renderIndicators() {
     `<button type="button" class="player-head" ${famille} title="Ouvrir la Famille">` +
       // le portrait du personnage du joueur (version 1.17 : celui choisi dans sa fiche ; le
       // personnage principal est toujours un adulte)
-      `<img class="player-portrait" src="${m && memberPerso(m) ? persoSrc(memberPerso(m)) : 'assets/portrait_fermiere.png'}" alt="" width="48" height="48">` +
+      persoHtml(m ? memberPerso(m) : 0) +
       `<span class="player-name">${m ? memberNameHtml(m.id) : ''}</span></button>` +
     `<span class="player-stats">` +
     `<button type="button" class="player-line level-ind" data-action="open-levels" title="${niveau}" aria-label="${niveau}"><span aria-hidden="true">⭐</span><span class="num" aria-hidden="true">Niv. ${p.niveau}</span><span class="level-ind-bar" aria-hidden="true"><span style="width:${p.pct}%"></span></span></button>` +

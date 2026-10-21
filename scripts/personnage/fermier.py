@@ -11,11 +11,10 @@
 #   rousse      : cheveux roux longs, taches de rousseur, haut jaune à rayures ;
 #   lunettes    : peau mate, cheveux blonds aux épaules, lunettes, chemisier lilas ;
 #   garcon      : peau mate, cheveux bruns, chapeau de paille à ruban rouge, haut orange.
-# Les cinq derniers suivent les portraits de assets/portraits (scripts/personnage/portraits.py).
 #
 # Les 50 adultes du catalogue (scripts/personnage/catalogue.py) : assets/personnages/perso_XX.png.
-# Les 50 enfants (scripts/personnage/portraits_enfants.py, leurs portraits assets/portraits/
-# enfant_XX.png) : assets/personnages/enfant_XX.png, les mêmes cases. Un enfant est dessiné comme
+# Les 50 enfants (scripts/personnage/portraits_enfants.py) : assets/personnages/enfant_XX.png,
+# les mêmes cases. Un enfant est dessiné comme
 # un adulte, puis raccourci : quelques rangées du ventre et des jambes sont retirées (ENFANT_RANGEES),
 # la tête garde sa taille ; il fait 26 px de haut au lieu de 30, les pieds au même endroit.
 #
@@ -88,7 +87,6 @@ BASE = dict(C)
 #   cheveux  : 'courts', 'mi' (aux épaules) ou 'longs' (dans le dos)
 #   chapeau  : 'paille', 'casquette' ou None (on voit les cheveux sur le dessus)
 #   barbe, lunettes, rousseur, joues : vrai ou faux ; motif : None, 'carreaux' ou 'rayures'
-# Les cinq derniers suivent les portraits de assets/portraits (scripts/personnage/portraits.py).
 # Les 50 du catalogue (scripts/personnage/catalogue.py) passent par variante_catalogue().
 PEAU_CLAIRE = {'sk': (240, 196, 160), 'sk2': (196, 150, 118)}
 PEAU_MATE = {'sk': (198, 142, 96), 'sk2': (150, 100, 64)}
@@ -683,21 +681,19 @@ def main():
 
 
 def apercu_enfants():
-    """apercu_enfants_carte.png : chaque enfant (portrait, puis de face, de profil, de dos), à côté d'un adulte."""
+    """apercu_enfants_carte.png : chaque enfant de face, de profil et de dos."""
     import portraits_enfants
     S = 4
     noms = list(frames())
     IDLE = [noms.index(n) for n in ('idle_bas_0', 'idle_cote_0', 'idle_haut_0')]
-    out = Image.new('RGBA', (10 * 86 * S // 2, 5 * 40 * S // 2), (126, 170, 92, 255))
+    out = Image.new('RGBA', (10 * 54 * S // 2, 5 * 40 * S // 2), (126, 170, 92, 255))
     for i, (nom, _) in enumerate(portraits_enfants.enfants()):
         sheet = Image.open(os.path.join(ASSETS, 'personnages', nom + '.png')).convert('RGBA')
-        por = Image.open(os.path.join(ASSETS, 'portraits', nom + '.png')).convert('RGBA')
-        x0, y0 = (i % 10) * 86, (i // 10) * 40
-        tile = Image.new('RGBA', (86, 40), (0, 0, 0, 0))
-        tile.alpha_composite(por, (0, 4))
+        x0, y0 = (i % 10) * 54, (i // 10) * 40
+        tile = Image.new('RGBA', (54, 40), (0, 0, 0, 0))
         for k, idx in enumerate(IDLE):
-            tile.alpha_composite(sheet.crop(((idx % COLS) * W, (idx // COLS) * H, (idx % COLS) * W + W, (idx // COLS) * H + H)), (34 + k * 17, 6))
-        out.alpha_composite(tile.resize((86 * S // 2, 40 * S // 2), Image.NEAREST), (x0 * S // 2, y0 * S // 2))
+            tile.alpha_composite(sheet.crop(((idx % COLS) * W, (idx // COLS) * H, (idx % COLS) * W + W, (idx // COLS) * H + H)), (2 + k * 17, 6))
+        out.alpha_composite(tile.resize((54 * S // 2, 40 * S // 2), Image.NEAREST), (x0 * S // 2, y0 * S // 2))
     out.save(os.path.join(ROOT, 'apercu_enfants_carte.png'))
 
 
