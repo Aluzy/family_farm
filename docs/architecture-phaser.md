@@ -103,7 +103,7 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | `interieurs.js` | intérieurs (`bakeRooms`, `setRoom`, meubles), repas |
 | `camera.js` | zoom, glissement, élan, repères, `panTo` |
 | `etiquettes.js` | étiquettes, bulles des tas, bulle « +x », bulle de la citerne (DOM) |
-| `hache.js`, `pioche.js`, `peche.js` | les arbres, les rochers, l'étang et la mare ; chaque coup de hache ou de pioche lâche ses morceaux au sol |
+| `hache.js`, `pioche.js`, `peche.js` | les arbres, les buissons (la ferme générée : coupés d'un coup, 2 bois pour un grand, 1 pour un petit), les rochers, l'étang et la mare ; chaque coup de hache ou de pioche lâche ses morceaux au sol |
 | `chantier.js` | la ferme générée : les blocs posés (murs, portes, paillasses, Atelier), le mode Construire, les pièces closes, la paillasse où il dort |
 | `cueillette.js` | la ferme générée : ce qu'on ramasse à la main (pierres, bois, herbes), un appui et le personnage le prend ; le bois et la pierre lâchés par la hache et la pioche (`modèle.morceaux`, `state.morceaux` du moteur), que le personnage prend en marchant dessus (`syncPieces`, `stepPieces`) |
 | `passages.js` | la sortie vers la ville (le rectangle `vers_la_transition` de la carte, `exitAt()`), le tronc creux |

@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { blocGid, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
-  isArable, migrate, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
+  isArable, migrate, chopTree, bushOf, bushCut, cutBushes, respawnBushes, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
   etatEtable, etatMoulin, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
@@ -144,6 +144,32 @@ test('ferme générée : chaque matin, des pierres, du bois et des herbes à ram
   const demain = ramassables(s);
   assertEqual(demain.length, liste.length);
   assert(demain.map((p) => p.case).join() !== liste.map((p) => p.case).join(), 'ailleurs');
+});
+
+test('ferme générée : la hache coupe un buisson d\'un coup (grand : 2 bois, petit : 1), ses baies avec', () => {
+  const s = garden();
+  testFarmMap(s, 'r1');
+  s.outils = { hache: true, pioche: false, choisi: 'hache' };
+  const T = farmTerrain(s), B = DATA.HACHE.BUISSONS;
+  assertEqual([B.grand, B.petit], [2, 1]);
+  const id = ([c0, r1, w]) => (c0 + Math.floor(w / 2)) + ',' + r1;
+  const grand = T.BUISSONS.find((b) => b[4] === 'grand'), petit = T.BUISSONS.find((b) => b[4] === 'petit');
+  assert(grand && petit, 'des grands et des petits buissons');
+  assertEqual(bushOf(s, id(grand)).taille, 'grand');
+  // les baies du jour sur un buisson : coupé, elles s'en vont avec lui
+  const baie = ramassables(s).find((p) => p.buisson), b = T.BUISSONS.find((q) => baie.case === q[1] * T.LARGEUR + q[0] + Math.floor(q[2] / 2));
+  const bois0 = countItem(s, 'bois'), e0 = s.energie;
+  const r = chopTree(s, id(b));
+  assertEqual([r.ok, r.tombe, r.bois, countItem(s, 'bois') - bois0, s.energie < e0], [true, true, B[b[4]], B[b[4]], true]);
+  assert(!ramassables(s).some((p) => p.id === baie.id), 'ses baies sont parties');
+  assertEqual(chopTree(s, id(b)).error, 'Ce buisson est déjà coupé.');
+  const autre = b === grand ? petit : grand, bois1 = countItem(s, 'bois');
+  assertEqual([chopTree(s, id(autre)).bois, countItem(s, 'bois') - bois1], [B[autre[4]], B[autre[4]]], 'l\'autre taille');
+  assertEqual(cutBushes(s).sort(), [id(b), id(autre)].sort());
+  // il repousse au bout de RETOUR jours
+  s.day += B.RETOUR[1];
+  respawnBushes(s);
+  assertEqual([bushCut(s, id(b)), cutBushes(s)], [false, []]);
 });
 
 test('ferme générée : l\'Atelier se construit avec 3 bois et 3 pierres, puis fabrique', () => {

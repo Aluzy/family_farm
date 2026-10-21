@@ -263,9 +263,12 @@
     "d'énergie, NIVEAUX.XP.couper d'XP. Au COUPES-ième coup, l'arbre tombe (CHUTE bois de plus, là",
     "où sa cime touche le sol) et disparaît de la carte ; comme un rocher, il repousse à",
     "sa place au bout de RETOUR jours (tiré entre les deux, au réveil), sauf si une parcelle",
-    "occupe une de ses tuiles (elles se labourent en attendant) : il réessaie alors chaque matin."
+    "occupe une de ses tuiles (elles se labourent en attendant) : il réessaie alors chaque matin.",
+    "Les buissons de la ferme générée se coupent d'un seul coup : BUISSONS.grand bois pour un grand",
+    "buisson, BUISSONS.petit pour un petit (au sol, à son pied), l'énergie et l'XP d'un coup ; ses",
+    "baies du jour s'en vont avec lui. Il repousse au bout de BUISSONS.RETOUR jours (au réveil)."
   ],
-  "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "CHUTE": 2, "COUPES": 3, "RETOUR": [1, 3] },
+  "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "CHUTE": 2, "COUPES": 3, "RETOUR": [1, 3], "BUISSONS": { "grand": 2, "petit": 1, "RETOUR": [2, 4] } },
   "//PIOCHE": [
     "La pioche en main, un appui sur un rocher de la carte le fait casser : PIERRE pierre lâchée",
     "au sol à chaque coup (à ramasser en marchant dessus), PERSONNAGE.COUTS.piocher d'énergie,",

@@ -261,9 +261,9 @@ export function convertirPartie(state, graine) {
   for (const [o, n] of Object.entries(meubles)) addItem(state, o, n);
   if (Object.keys(meubles).length) rendus.meubles = meubles;
 
-  // 5. le reste : l'Atelier (à poser), les arbres abattus, les rochers cassés, la cueillette, le robot
+  // 5. le reste : l'Atelier (à poser), les arbres abattus, les buissons coupés, les rochers cassés, la cueillette, le robot
   if (!state.atelier || !state.atelier.construit) state.atelier = { construit: true, niveau: DATA.ATELIER.NIVEAU };
-  if (state.outils) { state.outils.arbres = {}; state.outils.rochers = {}; }
+  if (state.outils) { state.outils.arbres = {}; state.outils.rochers = {}; delete state.outils.buissons; }
   delete state.cueillette;
   delete state.robot;
   majPoulailler(state);

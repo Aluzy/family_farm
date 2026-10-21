@@ -14,7 +14,7 @@ import { chapterProgress, isUnlocked } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
 import { TIRED } from '../engine/stamina.js';
-import { brokenRocks, cutGrass, enSelle, fellenTrees, morceauxDe } from '../engine/outils.js';
+import { brokenRocks, cutBushes, cutGrass, enSelle, fellenTrees, morceauxDe } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmSeed, farmTerrain, tileCount } from '../engine/terrain.js';
@@ -359,6 +359,9 @@ export function stageModel() {
   const rochers = brokenRocks(state);
   // la hache : les arbres abattus n'y sont plus (ils repoussent comme les rochers)
   const abattus = fellenTrees(state);
+  // les buissons de la ferme générée se coupent aussi (d'un coup) ; les coupés n'y sont plus
+  const buissons = farmSeed(state) !== null;
+  const buissonsCoupes = cutBushes(state);
   // la faux en main : un appui sur une touffe d'herbe haute la fauche ; les touffes fauchées
   // n'y sont plus (elles repoussent)
   const faux = scytheMode && !!(state.outils && state.outils.faux) && !stageInterior;
@@ -470,7 +473,7 @@ export function stageModel() {
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
-    houe, hache, pioche, faux, canne, triporteur: enSelle(state), rochers, abattus, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, triporteur: enSelle(state), rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 

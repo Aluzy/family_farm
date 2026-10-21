@@ -148,6 +148,62 @@ export function fellenTrees(state) {
   return a ? Object.keys(a).filter((id) => treeGone(state, id)) : [];
 }
 
+/* ---------- la hache : couper un buisson de la ferme générée ---------- */
+
+// Les buissons de la ferme générée (le terrain, BUISSONS) : identifiant « colonne,rangée » du
+// milieu de leur pied, comme les arbres (la case où poussent leurs baies). Un seul coup les
+// coupe : state.outils.buissons[id] = { retour }, le jour où il repousse (HACHE.BUISSONS.RETOUR).
+
+// Le buisson `id` de la carte : { taille: 'grand' | 'petit', case }, ou null (ce n'en est pas un).
+export function bushOf(state, id) {
+  const T = farmTerrain(state);
+  for (const [c0, r1, w, , taille] of T.BUISSONS || []) {
+    const c = c0 + Math.floor(w / 2);
+    if (c + ',' + r1 === id) return { taille: taille || 'petit', case: r1 * T.LARGEUR + c };
+  }
+  return null;
+}
+
+// Le buisson `id` est-il coupé ?
+export function bushCut(state, id) {
+  const b = state && state.outils && state.outils.buissons;
+  return !!(b && b[id]);
+}
+
+// Les buissons coupés (leurs identifiants).
+export function cutBushes(state) {
+  const b = state.outils && state.outils.buissons;
+  return b ? Object.keys(b) : [];
+}
+
+// Les cases (milieu du pied) des buissons coupés : leurs baies n'y sont plus (atelier.js).
+export function cutBushCases(state) {
+  const W = farmTerrain(state).LARGEUR;
+  return new Set(cutBushes(state).map((id) => { const [c, r] = id.split(',').map(Number); return r * W + c; }));
+}
+
+// Un coup de hache sur le buisson `b` (bushOf) : il tombe d'un coup, HACHE.BUISSONS[taille] bois
+// au sol (aux points `ou.coup`, voir lacher). Renvoie ce que chopTree renvoie (tombe : vrai).
+function cutBush(state, id, b, ou, fort) {
+  const H = DATA.HACHE, B = H.BUISSONS;
+  if (bushCut(state, id)) return fail('Ce buisson est déjà coupé.');
+  const f = force(fort);
+  if (!canAfford(state, 'couper', f.energie)) return fail(TIRED);
+  const o = outils(state);
+  if (!o.buissons || typeof o.buissons !== 'object') o.buissons = {};
+  o.buissons[id] = { retour: state.day + randomInt(state, B.RETOUR[0], B.RETOUR[1]) };
+  const bois = withBonus(state, B[b.taille] || B.petit, techSum(state, 'recolteBonus'));
+  const morceaux = lacher(state, 'bois', bois, 0, ou);
+  spendEnergy(state, 'couper', f.energie);
+  gainActionXp(state, 'couper');
+  return { ok: true, bois, chute: 0, morceaux, reste: 0, coups: 1, tombe: true, fort: !!fort, buisson: b.taille };
+}
+
+// Au réveil, les buissons coupés dont le jour est venu repoussent. Renvoie leurs identifiants.
+export function respawnBushes(state) {
+  return respawn(state, state.outils && state.outils.buissons, {});
+}
+
 /* ---------- les morceaux au sol : le bois et la pierre lâchés par les coups ---------- */
 
 // Un coup de hache (ou de pioche) lâche ses morceaux au sol, sur la carte `carte` (« ferme »,
@@ -193,7 +249,7 @@ export function ramasserMorceau(state, n) {
   return { ok: true, item: m.item, n: 1 };
 }
 
-// Un coup de hache sur l'arbre `id` : HACHE.BOIS bois au sol (au pied de l'arbre), de
+// Un coup de hache sur l'arbre `id` (ou le buisson : cutBush) : HACHE.BOIS bois au sol (au pied de l'arbre), de
 // l'énergie, de l'XP ; `tombe` : l'arbre vient de tomber, HACHE.CHUTE bois de plus (là où sa
 // cime touche le sol). `ou` : { carte, coup: [points], fin: [points] } (voir lacher).
 // `fort` : le coup fort (COUP_FORT : il compte plusieurs coups, pour plus d'énergie).
@@ -201,6 +257,8 @@ export function chopTree(state, id, ou, fort = false) {
   const H = DATA.HACHE;
   if (!hasTool(state, 'hache')) return fail(`Il te faut une hache (Marché, ${H.PRIX} 💰).`);
   if (typeof id !== 'string' || !id) return fail('Touche un arbre pour le couper.');
+  const b = bushOf(state, id);
+  if (b) return cutBush(state, id, b, ou, fort);
   if (treeGone(state, id)) return fail('Cet arbre est déjà abattu.');
   const f = force(fort);
   if (!canAfford(state, 'couper', f.energie)) return fail(TIRED);
