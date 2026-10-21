@@ -112,11 +112,6 @@ export function heureDuJour() {
   return clockHours(state); // version 1.19 : la nuit défile aussi (22 h → 6 h)
 }
 
-// Cadran d'horloge de l'heure entière : 🕐 (1 h) à 🕛 (12 h), le même le matin et le soir.
-export function horlogeEmoji(heure) {
-  return String.fromCodePoint(0x1f550 + ((Math.floor(heure) + 11) % 12));
-}
-
 // Lieux de la carte qui portent une étiquette (et une fenêtre du même nom).
 export const STAGE_LIEUX = ['maison', 'etable', 'poulailler', 'moulin', 'serre', 'verger', 'zone', 'silo', 'ville'];
 
