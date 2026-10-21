@@ -371,6 +371,7 @@ def porte_haute(fond=None):
 
 
 VITRE = [(52, 74, 96), (96, 136, 168), (150, 192, 216), (214, 236, 244)]   # le verre, du fond au reflet
+VITRE_ALPHA = [255, 150, 165, 210]   # son opacité : on voit l'intérieur au travers (le reflet, moins)
 
 
 def fenetre(m, j=0, fond=None):
@@ -379,7 +380,8 @@ def fenetre(m, j=0, fond=None):
     un mur qui descend (vu de dessus seulement) reste plein ; `fond` : le mur où elle est percée
     (le mur en pierre, sinon). j : les fenêtres voisines qui la
     prolongent (1 à gauche, 2 à droite) : le verre, l'appui et le linteau vont jusqu'au bord
-    de ce côté (deux fenêtres côte à côte font une grande fenêtre)."""
+    de ce côté (deux fenêtres côte à côte font une grande fenêtre). Le verre est un peu
+    transparent (VITRE_ALPHA) : on voit l'intérieur au travers."""
     t = Toile(fond(m) if fond else mur(m))
     if m & 4:
         return t.im
@@ -394,7 +396,7 @@ def fenetre(m, j=0, fond=None):
             k = 1 if y > (y0 + y1) // 2 else 2
             if not g and x - x0 + (y - y0) < 3:
                 k = 3
-            t.put(x, y, VITRE[k])
+            t.px[x, y] = VITRE[k] + (VITRE_ALPHA[k],)
     xm, ym = 7, (y0 + y1) // 2
     for y in range(y0, y1 + 1):                      # les croisillons de bois (et entre deux fenêtres)
         t.put(xm, y, BOIS[2])
