@@ -30,6 +30,9 @@
  *   famille.update(deltaMs, room)
  *   famille.info()               // pour les tests : où est chacun
  *   famille.aidePos()            // où est le second adulte (sa bulle « +x »), ou null
+ *   famille.rejoindre(at)        // le second adulte vient à côté de at ({ x, y } : le personnage),
+ *                                // s'y arrête et se tourne vers lui ; true quand il y est ;
+ *                                // rejoindre(null) : il reprend sa journée
  */
 (function (global) {
   'use strict';
@@ -45,6 +48,7 @@
   const GESTE = 1.2;                       // s : le second adulte se baisse au Poulailler, à l'Étable
   const REPOS = 3;                         // s avant de chercher autre chose à faire
   const ENFANT_DY = 4;                     // px : un enfant couché est remonté d'autant (il est plus petit)
+  const COTE = 20;                         // px : le second adulte qui vient parler, à côté du personnage
 
   const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -280,8 +284,12 @@
             if (m.geste <= 0) { m.geste = 0; finirTache(m); }
             else { dessiner(m, `ramasse_${Math.min(2, Math.floor((1 - m.geste / GESTE) * 3))}`); continue; }
           }
-          if (!room) decider(m, dt);
-          const marche = !room && avancer(m, dt);
+          // (le second adulte parle avec le personnage : il s'arrête et se tourne vers lui ; son
+          // chemin l'attend)
+          const parle = m.parle && !room && !m.couche && m.visible;
+          if (parle) ({ face: m.face, flip: m.flip } = K.regard(m.parle.x - m.x, m.parle.y - m.y));
+          if (!room && !parle && !m.rejoint) decider(m, dt);
+          const marche = !room && !parle && avancer(m, dt);
           if (m.fade) {
             m.alpha = Math.max(0, Math.min(1, m.alpha + (m.fade * dt) / FADE_S));
             if (m.alpha >= 1 && m.fade > 0) m.fade = 0;
@@ -305,6 +313,32 @@
       },
       info() {
         return [...membres.values()].map((m) => ({ id: m.id, enfant: m.enfant, ou: m.ou, lit: !!m.couche, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0, tache: m.tache, ecole: m.enfant ? departEcole(m) : null }));
+      },
+      rejoindre(at) {
+        const A = model && model.aide, m = A && membres.get(A.id);
+        if (!m) return false;
+        if (!at) {
+          if (m.parle || m.rejoint) { m.parle = null; m.rejoint = null; m.chemin = []; m.puis = null; }
+          return false;
+        }
+        if (m.parle) return true;
+        // (dehors et debout ; s'il se baisse au Poulailler ou à l'Étable, il finit d'abord)
+        if (!m.visible || m.couche || m.ou !== 'dehors' || m.fade < 0 || m.geste > 0) return false;
+        m.tache = null;
+        // sa place : à côté du personnage, du côté où il arrive (sinon de l'autre)
+        const libre = (x, y) => !o.fermier || !o.fermier.standable || o.fermier.standable(x, y);
+        const c = m.x <= at.x ? -1 : 1;
+        const place = [c, -c].map((k) => ({ x: at.x + k * COTE, y: at.y })).find((q) => libre(q.x, q.y));
+        if (!place || Math.hypot(m.x - place.x, m.y - place.y) <= 3) {
+          m.rejoint = null; m.chemin = []; m.puis = null; m.parle = { x: at.x, y: at.y };
+          return true;
+        }
+        if (!m.rejoint || Math.hypot(m.rejoint.x - place.x, m.rejoint.y - place.y) > T) {
+          m.rejoint = place;
+          aller(m, place.x, place.y, () => { m.rejoint = null; m.parle = { x: at.x, y: at.y }; });
+          m.pause = 0;
+        }
+        return false;
       },
       aidePos() {
         const A = model && model.aide, m = A && membres.get(A.id);
