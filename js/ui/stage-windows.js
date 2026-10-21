@@ -21,7 +21,7 @@ import { telView } from './consent.js';
 import { notify } from './toasts.js';
 import { MARKET_CLOSED } from '../engine/market.js';
 import { actionSleep } from './game-actions.js';
-import { artHtml } from './pixel-art.js';
+import { artHtml, pxText } from './pixel-art.js';
 import { renderVille } from './ville.js';
 import { averageHappiness } from '../engine/ville.js';
 import { morph, morphSlots, refresh, setLastRenderAt } from './render.js';
@@ -484,10 +484,13 @@ export function applyAnchor() {
   if (el) el.scrollIntoView({ block: 'start' });
 }
 
-// Carte du joueur, en haut à gauche (elle remplace le bandeau du haut) : le portrait du
-// personnage principal, son prénom dessous, puis sur une même ligne le niveau (avec sa barre
-// vers le niveau suivant, FLU-30 ; ouvre les niveaux) et l'autonomie de la dernière nuit
-// (ouvre la Famille).
+// Carte du joueur, en haut à gauche (elle remplace le bandeau du haut), en pixel art
+// (assets/hud, scripts/icones/hud.py ; css/jeu.css .player-card) : dans un cadre bois, le
+// personnage principal debout et son prénom sur une plaque ; à droite, les jauges d'énergie (❤️),
+// d'endurance (⚡) et de bonheur de la famille (😊) ; dessous, la barre du niveau (⭐, vers le
+// niveau suivant, FLU-30 ; ouvre les niveaux) et l'anneau de l'autonomie de la dernière nuit
+// (ouvre la Famille) ; dessous encore, l'argent (ouvre les comptes). Les valeurs ne sont pas
+// écrites : elles sont dans les infobulles et les libellés.
 // Le prénom est saisi par le joueur : escapeHtml (memberNameHtml), jamais dans un data-*.
 let playerHeight = 0;
 let playerHtml = null; // dernier contenu de la carte du joueur
@@ -503,17 +506,26 @@ export function renderIndicators() {
   const autoTitre = `Autonomie de la dernière nuit : ${auto}. Ouvrir la Famille`;
   const famille = 'data-action="stage-goto" data-window="famille"';
   const el = document.getElementById('player-card');
+  const autoPct = Math.max(0, Math.min(100, Math.round(lastAutonomy(state))));
+  const argent = `${formatCoins(state.pieces)} pièces. Voir les comptes`;
   const html =
-    `<button type="button" class="player-head" ${famille} title="Ouvrir la Famille">` +
-      // le portrait du personnage du joueur (version 1.17 : celui choisi dans sa fiche ; le
-      // personnage principal est toujours un adulte)
-      persoHtml(m ? memberPerso(m) : 0) +
-      `<span class="player-name">${m ? memberNameHtml(m.id) : ''}</span></button>` +
-    `<span class="player-stats">` +
-    `<button type="button" class="player-line level-ind" data-action="open-levels" title="${niveau}" aria-label="${niveau}"><span aria-hidden="true">⭐</span><span class="num" aria-hidden="true">Niv. ${p.niveau}</span><span class="level-ind-bar" aria-hidden="true"><span style="width:${p.pct}%"></span></span></button>` +
-    `<button type="button" class="player-line" ${famille} title="${autoTitre}" aria-label="${autoTitre}"><span aria-hidden="true">🌿</span><span class="num" aria-hidden="true">${auto}</span></button>` +
+    `<span class="player-top">` +
+      `<button type="button" class="player-head" ${famille} title="Ouvrir la Famille">` +
+        // le personnage du joueur (version 1.17 : celui choisi dans sa fiche ; le personnage
+        // principal est toujours un adulte)
+        `<span class="player-portrait">${persoHtml(m ? memberPerso(m) : 0)}</span>` +
+        `<span class="player-name">${m ? memberNameHtml(m.id) : ''}</span></button>` +
+      playerGaugesHtml() +
     `</span>` +
-    playerGaugesHtml();
+    `<span class="player-stats">` +
+      `<button type="button" class="player-level" data-action="open-levels" title="${niveau}" aria-label="${niveau}">` +
+        `<span class="hud-tube h" aria-hidden="true"><span class="hud-fill" style="width:${p.pct}%"></span></span><i class="hud-ico etoile" aria-hidden="true"></i></button>` +
+      `<button type="button" class="player-auto" ${famille} title="${autoTitre}" aria-label="${autoTitre}">` +
+        `<span class="hud-anneau" style="--f:${Math.round(autoPct / 5)}" aria-hidden="true"></span><i class="hud-ico pousse" aria-hidden="true"></i></button>` +
+    `</span>` +
+    `<button type="button" class="player-money" data-action="open-compta" title="Voir les comptes" aria-label="${argent}">` +
+      `<span class="hud-pastille" aria-hidden="true">${state.pieces >= 0 ? pxText(Math.round(state.pieces).toLocaleString('fr-FR').replace(/\s/g, ' ')) : `<span class="num">${formatCoins(state.pieces)}</span>`}</span>` +
+      `<i class="hud-ico piece" aria-hidden="true"></i></button>`;
   if (html !== playerHtml) {
     playerHtml = html;
     playerMeasure = true;
@@ -531,9 +543,9 @@ export function renderIndicators() {
   renderHud();
 }
 
-// Extension de la carte du joueur, collée à sa droite sur un fond bois uni : les jauges
-// d'énergie, d'endurance (réduction du coût des actions, qui grandit avec le niveau) et de
-// bonheur de la famille, verticales, côte à côte. Elles ouvrent la Famille.
+// À droite du cadre de la carte du joueur : les jauges d'énergie, d'endurance (réduction du
+// coût des actions, qui grandit avec le niveau) et de bonheur de la famille, verticales, côte
+// à côte. Elles ouvrent la Famille.
 function playerGaugesHtml() {
   const P = DATA.PERSONNAGE;
   const e = energyLevel(state);
@@ -547,15 +559,16 @@ function playerGaugesHtml() {
   const bCls = jaugeClasse(bonheur);
   const titre = `Énergie : ${e} / ${P.MAX}. Endurance : tes actions coûtent ${endu} % de moins. Bonheur de la famille : ${bonheur} %. Ouvrir la Famille`;
   const jauge = (icone, cls, pct) =>
-    `<span class="player-gauge"><span class="player-gauge-icon">${icone}</span>` +
-    `<span class="player-gauge-bar"><span class="player-gauge-fill${cls ? ` ${cls}` : ''}" style="height:${pct}%"></span></span></span>`;
+    `<span class="player-gauge"><i class="hud-ico ${icone}"></i>` +
+    `<span class="hud-tube"><span class="hud-fill${cls ? ` ${cls}` : ''}" style="height:${pct}%"></span></span></span>`;
   return `<button type="button" class="player-gauges" data-action="stage-goto" data-window="famille" title="${titre}" aria-label="${titre}">` +
-    `<span class="player-gauges-in" aria-hidden="true">${jauge('⚡', eCls, ePct)}${jauge('💪', 'endu', dPct)}${jauge('😊', bCls, bonheur)}</span></button>`;
+    `<span class="player-gauges-in" aria-hidden="true">${jauge('coeur', eCls, ePct)}${jauge('eclair', 'endu', dPct)}${jauge('smiley', bCls, bonheur)}</span></button>`;
 }
 
 // Carte flottante en haut à droite (comme dans Stardew Valley), dans le même cadre que la
 // carte du joueur : la phase de la lune, le jour de la semaine et du mois (« 🌒 Lun. 8 »), le
-// mois du calendrier lunaire dessous (un appui ouvre le Calendrier), puis l'heure, puis les pièces (qui ouvrent les comptes).
+// mois du calendrier lunaire dessous (un appui ouvre le Calendrier), puis l'heure (l'argent est
+// sous la carte du joueur, à gauche).
 // L'heure avance par tranches de 10 minutes.
 function renderHud() {
   const h = heureDuJour();
@@ -567,8 +580,7 @@ function renderHud() {
     `<button type="button" class="hud-date" data-action="stage-goto" data-window="calendrier" title="Calendrier" aria-label="${formatDay(state.day)}, ${lune.nom.toLowerCase()}. Ouvrir le calendrier">` +
       `<span class="hud-day" aria-hidden="true">${lune.icone} ${weekdayShort(state.day)} <span class="num">${dayOfMonth(state.day)}</span></span>` +
       `<span class="hud-month" aria-hidden="true">${monthName(state.day)}</span></button>` +
-    `<span class="hud-line"><span aria-hidden="true">${horlogeEmoji(heure)}</span> <span class="num">${horaire}</span></span>` +
-    `<button type="button" class="hud-line hud-money" data-action="open-compta" title="Voir les comptes"><span aria-hidden="true">💰</span> <span class="num">${formatCoins(state.pieces)}</span><span class="visually-hidden"> pièces. Voir les comptes</span></button>`
+    `<span class="hud-line"><span aria-hidden="true">${horlogeEmoji(heure)}</span> <span class="num">${horaire}</span></span>`
   );
 }
 
