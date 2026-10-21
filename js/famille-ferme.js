@@ -294,8 +294,10 @@
           if (m.couche) {
             const n = Math.floor(performance.now() / 1600) % 2;
             dessiner(m, F[`dort_bas_${n}`] !== undefined ? `dort_bas_${n}` : `idle_bas_${n}`);
-            m.s.setDepth(m.couche.depth + 0.1);
-            if (m.drap) m.drap.setDepth(m.couche.depth + 0.2);
+            // (m.couche.z : un lit de l'étage, dont la profondeur a sa propre échelle)
+            const L = m.couche, z = (k) => (L.z ? L.z(k) : L.depth + k);
+            m.s.setDepth(z(0.1));
+            if (m.drap) m.drap.setDepth(z(0.2));
             continue;
           }
           dessiner(m, marche ? `marche_${m.face}_${Math.floor(m.marche / PAS) % 4}` : `idle_${m.face}_${Math.floor(performance.now() / 600) % 2}`);
