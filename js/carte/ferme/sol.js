@@ -458,6 +458,9 @@
       }
       ctx.restore();
       area.tex.refresh();
+      // (l'eau vivante : la rive, qui ne bouge pas, js/carte/ferme/eau.js)
+      const v = this.eauVive && this.eauVive.find((e) => e.a === area);
+      if (v) this.eauRive(v);
     },
 
     // Fait avancer les tuiles animées : une comparaison par tuile animée et par image ; une

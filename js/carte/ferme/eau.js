@@ -3,10 +3,11 @@
  * Les étendues d'eau animées (sol.js makeTileAnims : une image par étendue) ondulent : un filtre
  * de déformation (Phaser 4, filters.internal.addDisplacement) que nourrit, à chaque image, une
  * texture dynamique où glissent deux vaguelettes sans raccord (des sinus de périodes entières,
- * dans les canaux rouge et vert), en sens contraires ; les cases qui ne sont pas de l'eau
- * (les rives) gardent le gris neutre (elles ne bougent pas). La lumière y joue selon l'heure :
+ * dans les canaux rouge et vert), en sens contraires ; la terre des rives (les pixels ni bleus
+ * ni blancs) est reposée telle quelle par-dessus, et l'eau déborde un peu sous elle : seuls
+ * l'eau et son liseré blanc bougent, jamais l'herbe (eauRive). La lumière y joue selon l'heure :
  *   - le jour, des scintillements (de petites croix claires, en mode « ajouter ») paraissent
- *     et s'éteignent çà et là sur l'eau, plus nombreux et dorés quand le soleil est bas ;
+ *     et s'éteignent çà et là sur l'eau, loin des rives, plus nombreux et dorés quand le soleil est bas ;
  *   - la nuit, dans le voile de l'heure (avec les lanternes, chantier.js stepLanterns) : le
  *     reflet de la lune, une colonne de traits qui tremblent au milieu de l'étang, et celui des
  *     lumières posées au bord (lanternes, rayons des fenêtres) sur l'eau juste en dessous.
@@ -75,35 +76,85 @@
       const W = this.waters();
       this.eauVive = areas.map((a, i) => {
         const w = a.tex.width, h = a.tex.height;
-        // (les cases qui ne sont pas de l'eau : gris neutre, elles ne bougent pas)
-        const neutre = this.textures.createCanvas(`eau_neutre_${i}`, w, h), g = neutre.getContext();
-        g.fillStyle = 'rgb(128,128,128)';
-        g.fillRect(0, 0, w, h);
-        let n = 0;
-        for (let y = 0; y < h; y += T) for (let x = 0; x < w; x += T) if (W.has((a.x + x) + ',' + (a.y + y))) { g.clearRect(x, y, T, T); n++; }
-        neutre.refresh();
         const carte = this.textures.addDynamicTexture(`eau_carte_${i}`, w, h);
         const ta = this.make.tileSprite({ x: 0, y: 0, width: w, height: h, key: 'eau_vague_a' }, false).setOrigin(0);
         const tb = this.make.tileSprite({ x: 0, y: 0, width: w, height: h, key: 'eau_vague_b' }, false).setOrigin(0).setAlpha(0.5);
-        const nm = this.make.image({ x: 0, y: 0, key: `eau_neutre_${i}` }, false).setOrigin(0);
         a.sprite.enableFilters();
         // (le filtre décale de amount × taille × (valeur − ½) : jusqu'à `ondule` px)
         const fx = a.sprite.filters.internal.addDisplacement(`eau_carte_${i}`, (2 * E.ondule) / w, (2 * E.ondule) / h);
+        // la terre de l'étendue (l'herbe, la terre des rives), posée telle quelle par-dessus
+        // l'eau qui ondule : elle ne bouge pas (eauRive)
+        const rive = this.textures.createCanvas(`eau_rive_${i}`, w, h);
+        const terre = this.add.image(a.x, a.y, `eau_rive_${i}`).setOrigin(0).setDepth(a.sprite.depth + 0.001);
         // les cases d'eau de l'étendue (les scintillements, les reflets)
         const eau = [];
         for (const k of W.keys()) { const [x, y] = k.split(',').map(Number); if (x >= a.x && y >= a.y && x < a.x + w && y < a.y + h) eau.push({ x, y }); }
-        return { a, carte, ta, tb, nm, fx, eau, n, neutre, i, brillants: [] };
+        const v = { a, carte, ta, tb, fx, eau, rive, terre, i, brillants: [], profond: null };
+        this.eauRive(v);
+        return v;
       });
     },
 
+    // Après chaque peinture d'une étendue (sol.js paintAnimArea) : ses pixels de terre (ni bleus
+    // ni blancs : l'herbe, la terre des rives) vont sur l'image de la rive, qui ne bouge pas ; sous
+    // eux, l'eau déborde de `ENTRE` px (la couleur de l'eau voisine) : en ondulant, le liseré
+    // blanc de la rive et l'eau glissent sous la terre, jamais la terre sur l'eau. `profond` : les
+    // pixels d'eau à `LOIN` px au moins de la terre (où naissent les scintillements).
+    eauRive(v) {
+      const ENTRE = 2, LOIN = 3;
+      const w = v.a.tex.width, h = v.a.tex.height, ctx = v.a.tex.getContext();
+      const im = ctx.getImageData(0, 0, w, h), d = im.data;
+      const eau = new Uint8Array(w * h);
+      for (let p = 0; p < w * h; p++) {
+        const o = p * 4;
+        eau[p] = d[o + 3] > 0 && d[o + 2] >= d[o] && d[o + 2] >= d[o + 1] ? 1 : 0;
+      }
+      // la rive : les pixels de terre
+      const rc = v.rive.getContext(), ri = rc.createImageData(w, h);
+      for (let p = 0; p < w * h; p++) if (!eau[p] && d[p * 4 + 3]) for (let c = 0; c < 4; c++) ri.data[p * 4 + c] = d[p * 4 + c];
+      rc.putImageData(ri, 0, 0);
+      v.rive.refresh();
+      // l'eau déborde sous la terre, ENTRE px (de proche en proche)
+      let bord = eau.slice();
+      for (let n = 0; n < ENTRE; n++) {
+        const suite = bord.slice();
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const p = y * w + x;
+            if (bord[p] || !d[p * 4 + 3]) continue;
+            const q = x > 0 && bord[p - 1] ? p - 1 : x < w - 1 && bord[p + 1] ? p + 1 : y > 0 && bord[p - w] ? p - w : y < h - 1 && bord[p + w] ? p + w : -1;
+            if (q < 0) continue;
+            for (let c = 0; c < 3; c++) d[p * 4 + c] = d[q * 4 + c];
+            suite[p] = 1;
+          }
+        }
+        bord = suite;
+      }
+      ctx.putImageData(im, 0, 0);
+      v.a.tex.refresh();
+      // (l'eau loin de la terre : ni la rive, ni son liseré)
+      const profond = new Uint8Array(w * h);
+      for (let y = LOIN; y < h - LOIN; y++) {
+        for (let x = LOIN; x < w - LOIN; x++) {
+          let ok = 1;
+          for (let dy = -LOIN; dy <= LOIN && ok; dy++) for (let dx = -LOIN; dx <= LOIN; dx++) if (!eau[(y + dy) * w + x + dx]) { ok = 0; break; }
+          profond[y * w + x] = ok;
+        }
+      }
+      v.profond = profond;
+    },
+
     eauOff() {
-      for (const v of this.eauVive || []) {
+      const avant = this.eauVive || [];
+      for (const v of avant) {
         if (v.a.sprite.active && v.a.sprite.filters) v.a.sprite.filters.internal.remove(v.fx);
-        for (const o of [v.ta, v.tb, v.nm, ...v.brillants.map((b) => b.img)]) o.destroy();
+        for (const o of [v.ta, v.tb, v.terre, ...v.brillants.map((b) => b.img)]) o.destroy();
         this.textures.remove(`eau_carte_${v.i}`);
-        this.textures.remove(`eau_neutre_${v.i}`);
+        this.textures.remove(`eau_rive_${v.i}`);
       }
       this.eauVive = null;
+      // (l'étendue reprend sa peinture d'origine, sans l'eau qui déborde)
+      for (const v of avant) if (v.a.sprite.active) this.paintAnimArea(v.a);
     },
 
     // À chaque image : les vaguelettes glissent (la carte de la déformation redessinée), les
@@ -119,7 +170,7 @@
         if (!vu) continue;
         v.ta.tilePositionX = s * E.vitesse[0]; v.ta.tilePositionY = s * E.vitesse[1];
         v.tb.tilePositionX = -s * E.vitesse[1]; v.tb.tilePositionY = s * E.vitesse[0] * 0.7;
-        v.carte.clear().draw(v.ta).draw(v.tb).draw(v.nm).render();
+        v.carte.clear().draw(v.ta).draw(v.tb).render();
         this.stepScintille(v, sol, dt);
       }
     },
@@ -140,9 +191,16 @@
         if (b.t < 0) continue;
         if (b.t >= b.vie) {
           if (j >= voulu) { b.img.destroy(); v.brillants.splice(j, 1); continue; }
-          // ailleurs sur l'eau
-          const c = v.eau[(Math.random() * v.eau.length) | 0];
-          b.img.setPosition(Math.round(c.x + 2 + Math.random() * (T - 4)), Math.round(c.y + 2 + Math.random() * (T - 4)));
+          // ailleurs sur l'eau, loin des rives (v.profond ; sinon, il attend son tour)
+          const w = v.a.tex.width, P2 = v.profond;
+          let x = -1, y = -1;
+          for (let essai = 0; essai < 8 && x < 0; essai++) {
+            const c = v.eau[(Math.random() * v.eau.length) | 0];
+            const px = Math.floor(c.x - v.a.x + Math.random() * T), py = Math.floor(c.y - v.a.y + Math.random() * T);
+            if (P2 && P2[py * w + px]) { x = v.a.x + px; y = v.a.y + py; }
+          }
+          if (x < 0) { b.t = -0.2; b.img.setAlpha(0); continue; }
+          b.img.setPosition(x, y);
           b.img.setTint(dore > Math.random() ? S.dore : S.clair);
           b.vie = S.vie[0] + Math.random() * (S.vie[1] - S.vie[0]);
           b.t = 0;
@@ -166,7 +224,7 @@
         const cx = Math.round((Math.min(...xs) + Math.max(...xs) + T) / 2), y0 = Math.min(...ys), y1 = Math.max(...ys) + T;
         for (let y = y0 + 3, i = 0; y < y1 - 2; y += R.pas, i++) {
           const x = cx + tremble(cx, y, i);
-          if (!W.has(Math.floor(x / T) * T + ',' + Math.floor(y / T) * T)) continue;
+          if (!W.has(Math.floor(x / T) * T + ',' + Math.floor(y / T) * T) || !v.profond[(y - v.a.y) * v.a.tex.width + x - v.a.x]) continue;
           // (des traits brisés, qui s'allument et s'éteignent, plus pâles vers les bords de l'eau)
           const v1 = Math.abs(Math.sin(s * 1.1 + i * 2.3)) * Math.abs(Math.sin(s * 0.7 + i * 0.9));
           if (v1 < 0.15) continue;

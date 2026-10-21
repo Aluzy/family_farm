@@ -286,8 +286,9 @@ Le Marché vend toujours les outils.
     l'inventaire (`rangerEtage`) ; au coucher, on redescend.
 - **L'eau vivante** (un essai, `js/carte/ferme/eau.js`, réglages `EAU` dans
   `js/carte/ferme/config.js`) : les étendues d'eau ondulent (un filtre de déformation de
-  Phaser 4 que nourrissent deux vaguelettes qui glissent ; les rives ne bougent pas) ; le jour,
-  des scintillements naissent et s'éteignent sur l'eau, plus nombreux et dorés quand le soleil
+  Phaser 4 que nourrissent deux vaguelettes qui glissent ; la terre des rives, reposée telle
+  quelle par-dessus, ne bouge pas : seuls l'eau et son liseré blanc ondulent) ; le jour, des
+  scintillements naissent et s'éteignent sur l'eau, loin des rives, plus nombreux et dorés quand le soleil
   est bas ; la nuit, la lune s'y reflète (une colonne de traits brisés qui tremblent) et les
   lumières posées au bord aussi. Seulement en WebGL, et pas avec « moins d'animations ».
 - **La lumière des maisons, la nuit** (`js/carte/ferme/fenetres.js`) : les pièces de la
