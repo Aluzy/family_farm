@@ -119,6 +119,8 @@
           out.push({ key: 'lueur', x: car.x - ux * arriere + ox, y: car.y - P.haut - uy * arriere + oy, tint: P.feu.teinte, alpha: P.feu.alpha * nuit, scaleX: P.feu.rayon / R, scaleY: P.feu.rayon / R });
         }
       }
+      // (leurs reflets dans l'eau, et la lune : js/carte/eau.js stepEauLumiere)
+      this.stepEauLumiere(out, nuit, this.time.now);
     },
   });
 })(window);

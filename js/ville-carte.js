@@ -750,6 +750,7 @@
     update(time, delta) {
       this.stepTileAnims(time);
       const dt = Math.min(delta, 100) / 1000;
+      this.stepEau(time, dt);                  // (l'eau vivante : js/carte/ville/eau.js)
       this.stepTraffic(time, dt);
       this.stepPassages(time);
       this.stepClock(time);

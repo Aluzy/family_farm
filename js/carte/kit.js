@@ -23,7 +23,8 @@
  * Le reste du kit est dans les fichiers voisins, chargés juste après celui-ci : chemins.js
  * (le chemin le plus court, la case libre la plus proche), nature.js (l'herbe haute, les arbres
  * devant le personnage, les éclats, la pêche), gestes.js (l'appui, le double appui, la marche au
- * doigt, la secousse de la vue, la bulle « +1 ») et lumiere.js (le jour et la nuit).
+ * doigt, la secousse de la vue, la bulle « +1 »), lumiere.js (le jour et la nuit) et eau.js (l'eau
+ * vivante : lacs, fontaines, mer).
  *
  * Script classique, chargé avant tous les autres scripts des cartes (voir jeu.html) ; il ne
  * demande pas Phaser pour se charger. Voir docs/architecture-phaser.md.

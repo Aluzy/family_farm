@@ -284,8 +284,9 @@ Le Marché vend toujours les outils.
     et d'arrêter le passage (`state.etage`) ;
   - l'escalier repris, ou la pièce ouverte, l'étage s'en va : ses blocs reviennent dans
     l'inventaire (`rangerEtage`) ; au coucher, on redescend.
-- **L'eau vivante** (un essai, `js/carte/ferme/eau.js`, réglages `EAU` dans
-  `js/carte/ferme/config.js`) : l'eau de chaque étendue est peinte par un shader, inspiré du
+- **L'eau vivante** (`js/carte/eau.js`, CarteKit.eauVive, réglages CarteKit.EAU ; à la ferme,
+  `js/carte/ferme/eau.js` ; sur les autres cartes, `js/carte/ville/eau.js` : les fontaines de
+  la ville et de la transition, le lac de la montagne, la mer de la plage) : l'eau de chaque étendue est peinte par un shader, inspiré du
   « 2D Pixel Art Water » de niwho (godotshaders.com, CC0) : de légers traits ondulés au large
   (là où deux bruits qui glissent en sens contraires se croisent), plus sombre au large, de fins
   reflets de lumière au fond près des rives, le ciel de l'heure, une ligne d'écume qui avance et
@@ -299,7 +300,10 @@ Le Marché vend toujours les outils.
   bêtes) se reflète dans l'eau, retourné sous son pied, teinté, et ondule avec elle ; des ronds
   s'élargissent sur l'eau au bouchon de la pêche, quand un poisson saute (de temps en temps),
   quand quelqu'un longe la rive, et au hasard (des insectes). Seulement en WebGL, et pas avec
-  « moins d'animations ».
+  « moins d'animations ». La mer a son propre shader (EAU_MER) : la houle, des crêtes
+  parallèles à la plage qui roulent vers elle, des vagues qui se brisent au bord, et le ressac,
+  qui monte sur le sable et redescend en laissant le sable mouillé ; elle ne renvoie pas de
+  reflet net (seulement les ronds et les scintillements).
 - **La lumière des maisons, la nuit** (`js/carte/ferme/fenetres.js`) : les pièces de la
   maison (les toits marqués `maison`) s'allument quand la nuit tombe : une lueur chaude sur leur
   plancher (ce qu'on en voit : pas sur le dessus ni la face des murs devant) et sur la face du
