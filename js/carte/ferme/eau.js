@@ -104,10 +104,18 @@
       const ENTRE = 2, LOIN = 3;
       const w = v.a.tex.width, h = v.a.tex.height, ctx = v.a.tex.getContext();
       const im = ctx.getImageData(0, 0, w, h), d = im.data;
+      // (de l'eau : dans une case d'eau ou de rive (waters), un pixel franchement bleu ou blanc
+      // bleuté, le liseré ; ailleurs, et l'herbe sombre, les fleurs, les cailloux gris : la terre)
+      const W = this.waters(), cases = new Uint8Array(Math.ceil(w / T) * Math.ceil(h / T)), cw = Math.ceil(w / T);
+      for (let cy = 0; cy * T < h; cy++) for (let cx = 0; cx < cw; cx++) cases[cy * cw + cx] = W.has((v.a.x + cx * T) + ',' + (v.a.y + cy * T)) ? 1 : 0;
       const eau = new Uint8Array(w * h);
-      for (let p = 0; p < w * h; p++) {
-        const o = p * 4;
-        eau[p] = d[o + 3] > 0 && d[o + 2] >= d[o] && d[o + 2] >= d[o + 1] ? 1 : 0;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const p = y * w + x, o = p * 4, r = d[o], g = d[o + 1], b = d[o + 2];
+          if (!d[o + 3] || !cases[Math.floor(y / T) * cw + Math.floor(x / T)]) continue;
+          const bleu = b >= r + 40 && b >= g, blanc = Math.min(r, g, b) >= 190 && b >= r && b >= g - 8;
+          eau[p] = bleu || blanc ? 1 : 0;
+        }
       }
       // la rive : les pixels de terre
       const rc = v.rive.getContext(), ri = rc.createImageData(w, h);
@@ -130,6 +138,9 @@
         }
         bord = suite;
       }
+      // (le reste de la terre : transparent sous la rive ; en ondulant, il ne déborde pas d'un
+      // pixel sur l'herbe d'à côté, hors de l'étendue)
+      for (let p = 0; p < w * h; p++) if (!bord[p]) d[p * 4 + 3] = 0;
       ctx.putImageData(im, 0, 0);
       v.a.tex.refresh();
       // (l'eau loin de la terre : ni la rive, ni son liseré)
