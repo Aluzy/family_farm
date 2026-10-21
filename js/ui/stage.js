@@ -540,7 +540,7 @@ function etageModel() {
   if ((!emprise.size || coucher || asleep(state) || stageInterior) && etageVue) setEtageVue(false);
   if (!emprise.size) return { etage: null, niveau: 0 };
   return {
-    etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte })), escaliers: escaliers(state) },
+    etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte) })), escaliers: escaliers(state) },
     niveau: etageVue ? 1 : 0,
     vueNiveau: buildMode && !stageInterior ? niveauBati() : null,
   };

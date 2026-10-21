@@ -12,7 +12,7 @@ import { atelierConstruit, atelierOuvert } from '../engine/atelier.js';
 import { blocAt, blocDessus, blocsEnMain, changeMur, couchages, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
-import { ETAGE_BLOCS, etageEmprise, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
+import { ETAGE_BLOCS, etageCouvertes, etageEmprise, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -33,7 +33,8 @@ export const niveauRang = () => (niveauBati() ? 0 : niveau());
 const MURS = () => Object.keys(DATA.ATELIER.BLOCS).filter((s) => DATA.ATELIER.BLOCS[s].mur);
 // (à l'étage : seulement ceux qui s'y posent ; plus haut que le sol : les murs)
 // (les meubles du Marché : seulement ceux qu'on a en main, ou celui qu'on pose)
-const SORTES = () => (niveauBati() ? ETAGE_BLOCS : niveau() ? MURS() : Object.keys(DATA.ATELIER.BLOCS).filter((s) => !DATA.ATELIER.BLOCS[s].meuble || s === buildMode || blocsEnMain(state, s) > 0));
+const enMain = (s) => !DATA.ATELIER.BLOCS[s].meuble || s === buildMode || blocsEnMain(state, s) > 0;
+const SORTES = () => (niveauBati() ? ETAGE_BLOCS.filter(enMain) : niveau() ? MURS() : Object.keys(DATA.ATELIER.BLOCS).filter(enMain));
 // La liste des niveaux (au-dessus du menu) : ouverte ? Un appui long sur le carré l'ouvre, on
 // glisse jusqu'au niveau voulu et on lâche (APPUI_LONG_MS) ; un appui simple l'ouvre ou la ferme.
 let niveauListe = false;
@@ -202,8 +203,9 @@ registerActions({
     const c = Number(target.dataset.case);
     // à l'étage : poser, reprendre un bloc de l'étage
     if (niveauBati() && etageEmprise(state).has(c)) {
+      // (un appui sur un meuble de l'étage, sur n'importe laquelle de ses cases, le reprend)
       const e = etageBlocs(state)[c];
-      const r = e && !changeMur(e, buildMode) ? reprendreEtage(state, c) : poserEtage(state, buildMode, c);
+      const r = (e && !changeMur(e, buildMode)) || etageCouvertes(state).has(c) ? reprendreEtage(state, c) : poserEtage(state, buildMode, c);
       if (!r.ok) { notify(r.error); return; }
       persistState();
       refresh();
