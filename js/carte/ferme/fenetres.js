@@ -160,7 +160,12 @@
           if (eh && vitre(eh.sorte, eh.img)) {
             const face = t.dedans.has(c - cols) && !murHaut(c - cols);
             const a = k * eh.img.alpha * (face || haut ? 1 : 1 - t.img.alpha);
-            if (a > 0.01) out.push({ key: 'lueur', x: eh.x, y: eh.img.y + L.vitre.dy, tint: L.teinte, alpha: L.vitre.alpha * a, scaleX: L.vitre.rayon / 32, scaleY: (L.vitre.rayon * 1.4) / 32 });
+            if (a > 0.01) {
+              out.push({ key: 'lueur', x: eh.x, y: eh.img.y + L.vitre.dy, tint: L.teinte, alpha: L.vitre.alpha * a, scaleX: L.vitre.rayon / 32, scaleY: (L.vitre.rayon * 1.4) / 32 });
+              // (sur la façade, comme en bas : la lumière qui passe la vitre éclaire le bas du mur
+              // sous elle ; le dehors est en dessous, sans sol où la poser)
+              if (face) out.push({ key: 'rayons_fenetre', frame: 'mur', x: eh.x - W / 2, y: eh.img.y - L.rayons.mur, tint: L.teinte, alpha: L.rayons.alpha * a, originX: 0, originY: 0 });
+            }
           }
           const e = B.get(c);
           if (!e || !vitre(e.sorte, e.img)) continue;

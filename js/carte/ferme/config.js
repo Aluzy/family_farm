@@ -230,7 +230,7 @@
       piece: { alpha: 0.7 },
       vitre: { rayon: 7, alpha: 0.95, dy: -16 },
       murFond: { haut: 32, alpha: 0.7 },
-      rayons: { mur: 8, vitre: 10, large: 40, cases: 4, alpha: 0.8 },
+      rayons: { mur: 8, vitre: 10, large: 28, cases: 2, alpha: 0.8 },
     },
     // le four qui cuit : ses flammes, une image après l'autre (`fps` images par seconde)
     feu: { sorte: 'four', frames: [47, 48, 49], fps: 7 },
