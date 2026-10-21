@@ -1,8 +1,9 @@
 /* carte/ferme/eau.js — la scène de la ferme : l'eau vivante (un essai).
  *
- * Les étendues d'eau animées (sol.js makeTileAnims : une image par étendue) ondulent : un filtre
- * de déformation (Phaser 4, filters.internal.addDisplacement) que nourrit, à chaque image, une
- * texture dynamique où glissent deux vaguelettes sans raccord (des sinus de périodes entières,
+ * Les étendues d'eau animées (sol.js makeTileAnims : une image par étendue) sont peintes par un
+ * shader (EAU_FRAG : vagues, eau plus sombre au large, reflets de lumière au fond, ciel de
+ * l'heure, ligne d'écume qui avance et recule le long de la rive). L'eau ondule : le shader la
+ * décale selon une texture dynamique où glissent deux vaguelettes sans raccord (des sinus de périodes entières,
  * dans les canaux rouge et vert), en sens contraires ; la terre des rives (les pixels ni bleus
  * ni blancs) est reposée telle quelle par-dessus, et l'eau déborde un peu sous elle : seuls
  * l'eau et son liseré blanc bougent, jamais l'herbe (eauRive). La lumière y joue selon l'heure :
@@ -84,6 +85,60 @@
   }
   const RW = 24, RH = 12;
 
+  // Le shader de l'eau (js/carte/ferme/eau.js syncEau ; E.shader) : il peint l'eau de
+  // l'étendue à partir de son image (uBase : l'eau seule, la terre transparente, eauRive), pixel
+  // par pixel (les pixels de la carte, pas ceux de l'écran) :
+  //   - l'eau ondule (uVague : la carte de la déformation, décalée de pixels entiers) ;
+  //   - des vagues : leurs crêtes, de petits traits clairs qui serpentent et glissent (une onde
+  //     au-dessus de uVagues.x, coupée par une autre), au large ; leurs creux, plus sombres ;
+  //   - plus sombre au large (uChamp : la distance à la terre, 0 à 15 px) ;
+  //   - des reflets de lumière au fond, là où l'eau est peu profonde (des lignes fines qui
+  //     bougent : là où deux ondes s'annulent) ;
+  //   - le ciel s'y reflète (uCiel, la lumière de l'heure, à uCielK) ;
+  //   - le long de la rive, une ligne d'écume qui avance et recule (6), à tant de px de la terre.
+  const EAU_FRAG = `
+#pragma phaserTemplate(shaderName)
+precision mediump float;
+uniform sampler2D uBase;
+uniform sampler2D uChamp;
+uniform sampler2D uVague;
+uniform vec2 uTaille;
+uniform float uTemps;
+uniform float uOndule;
+uniform vec3 uCiel;
+uniform float uCielK;
+uniform vec4 uVagues;
+uniform vec4 uEcume;
+varying vec2 outTexCoord;
+float reflet(vec2 p, float t) {
+  vec2 q = p * 0.16;
+  float v = sin(q.x + 1.7 * sin(q.y * 0.8 + t * 0.7)) + sin(q.y * 1.2 + 1.5 * sin(q.x * 0.9 - t * 0.6));
+  return step(abs(v), 0.09);
+}
+void main() {
+  vec2 px = floor(outTexCoord * uTaille) + 0.5;
+  vec2 w = texture2D(uVague, px / uTaille).rg - 0.5;
+  vec2 off = floor(w * 2.0 * uOndule + 0.5);
+  vec4 base = texture2D(uBase, (px + off) / uTaille);
+  if (base.a < 0.5) { gl_FragColor = vec4(0.0); return; }
+  float d = texture2D(uChamp, px / uTaille).r * 15.0;
+  float t = uTemps;
+  vec3 c = base.rgb;
+  float large = smoothstep(3.0, 7.0, d);
+  float h = sin(dot(px, vec2(0.07, 0.23)) + t * 1.2 + 0.9 * sin(px.x * 0.06 - t * 0.5));
+  float k = sin(dot(px, vec2(0.13, -0.05)) - t * 0.7);
+  c = mix(c, c * 1.12 + 0.07, step(uVagues.x, h) * step(0.55, k) * large * uVagues.z);
+  c *= 1.0 - uVagues.w * step(h, uVagues.y) * step(0.55, -k) * large;
+  c *= mix(1.0, 0.86, smoothstep(4.0, 15.0, d));
+  c += vec3(0.09, 0.11, 0.09) * reflet(px, t) * (1.0 - smoothstep(2.0, 7.0, d));
+  c = mix(c, uCiel, uCielK);
+  float va = 0.5 + 0.5 * sin(t * uEcume.z + (px.x + px.y) * 0.045);
+  float bord = uEcume.x + uEcume.y * va;
+  float ecume = step(abs(d - bord), 0.55) * step(1.0, d);
+  c = mix(c, vec3(0.93, 0.97, 1.0), ecume * uEcume.w);
+  gl_FragColor = vec4(c, 1.0);
+}`;
+
   F.partie({
 
     // L'eau vivante, posée (ou ôtée) sur les étendues animées du moment.
@@ -103,9 +158,21 @@
         const carte = this.textures.addDynamicTexture(`eau_carte_${i}`, w, h);
         const ta = this.make.tileSprite({ x: 0, y: 0, width: w, height: h, key: 'eau_vague_a' }, false).setOrigin(0);
         const tb = this.make.tileSprite({ x: 0, y: 0, width: w, height: h, key: 'eau_vague_b' }, false).setOrigin(0).setAlpha(0.5);
-        a.sprite.enableFilters();
-        // (le filtre décale de amount × taille × (valeur − ½) : jusqu'à `ondule` px)
-        const fx = a.sprite.filters.internal.addDisplacement(`eau_carte_${i}`, (2 * E.ondule) / w, (2 * E.ondule) / h);
+        // l'eau elle-même : le shader (EAU_FRAG) à la place de l'image de l'étendue (cachée)
+        const champ = this.textures.createCanvas(`eau_champ_${i}`, w, h);
+        const uni = { temps: 0, ciel: [1, 1, 1], cielK: 0 };
+        const S = E.shader;
+        const shader = this.add.shader({
+          name: 'eauVive', fragmentSource: EAU_FRAG, initialUniforms: { uBase: 0, uChamp: 1, uVague: 2 },
+          setupUniforms: (set) => {
+            set('uTaille', [w, h]); set('uTemps', uni.temps); set('uOndule', E.ondule);
+            set('uCiel', uni.ciel); set('uCielK', uni.cielK);
+            set('uVagues', [S.crete, S.creux, S.clair, S.sombre]);
+            set('uEcume', [S.ecume.pres, S.ecume.va, S.ecume.vitesse, S.ecume.alpha]);
+          },
+        }, a.x, a.y, w, h, [a.tex.key, `eau_champ_${i}`, `eau_carte_${i}`]).setOrigin(0).setDepth(a.sprite.depth);
+        a.sprite.setAlpha(0);
+        const fx = null;
         // la terre de l'étendue (l'herbe, la terre des rives), posée telle quelle par-dessus
         // l'eau qui ondule : elle ne bouge pas (eauRive)
         const rive = this.textures.createCanvas(`eau_rive_${i}`, w, h);
@@ -121,7 +188,7 @@
         const fx2 = reflet.filters.internal.addDisplacement(`eau_carte_${i}`, (2 * E.ondule) / w, (2 * E.ondule) / h);
         const sec = this.textures.createCanvas(`eau_sec_${i}`, w, h);
         const secImg = this.make.image({ x: 0, y: 0, key: `eau_sec_${i}` }, false).setOrigin(0);
-        const v = { a, carte, ta, tb, fx, fx2, eau, rive, terre, refl, reflet, sec, secImg, i, brillants: [], profond: null, eauPx: null, ronds: [] };
+        const v = { a, carte, ta, tb, fx, fx2, champ, shader, uni, eau, rive, terre, refl, reflet, sec, secImg, i, brillants: [], profond: null, eauPx: null, ronds: [] };
         this.eauRive(v);
         return v;
       });
@@ -191,14 +258,51 @@
         }
       }
       v.profond = profond;
+      // le champ : la distance de chaque pixel d'eau à la terre (en px, jusqu'à 15 ; de proche en
+      // proche, en comptant les diagonales), dans le rouge (le shader : uChamp)
+      if (v.champ) {
+        // (les petits îlots de « terre » dans l'eau, roseaux, cailloux : de l'eau pour le champ,
+        // ni écume ni rive autour d'eux)
+        const ilot = new Uint8Array(w * h), vu = new Uint8Array(w * h);
+        for (let p0 = 0; p0 < w * h; p0++) {
+          if (eau[p0] || vu[p0]) continue;
+          const comp = [p0];
+          vu[p0] = 1;
+          for (let i = 0; i < comp.length && comp.length <= E.shader.ilot; i++) {
+            const p = comp[i], x = p % w, y = (p / w) | 0;
+            for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, y > 0 ? p - w : -1, y < h - 1 ? p + w : -1]) {
+              if (q >= 0 && !eau[q] && !vu[q]) { vu[q] = 1; comp.push(q); }
+            }
+          }
+          if (comp.length <= E.shader.ilot) for (const p of comp) ilot[p] = 1;
+        }
+        const D = new Uint8Array(w * h).fill(15), file = [];
+        for (let p = 0; p < w * h; p++) if (!eau[p] && !ilot[p]) { D[p] = 0; file.push(p); }
+        for (let i = 0; i < file.length; i++) {
+          const p = file[i], x = p % w, y = (p / w) | 0, n = D[p] + 1;
+          if (n >= 15) continue;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const xx = x + dx, yy = y + dy;
+              if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+              const q = yy * w + xx;
+              if (D[q] > n) { D[q] = n; file.push(q); }
+            }
+          }
+        }
+        const cc = v.champ.getContext(), ci = cc.createImageData(w, h);
+        for (let p = 0; p < w * h; p++) { ci.data[p * 4] = Math.round((D[p] * 255) / 15); ci.data[p * 4 + 3] = 255; }
+        cc.putImageData(ci, 0, 0);
+        v.champ.refresh();
+      }
     },
 
     eauOff() {
       const avant = this.eauVive || [];
       for (const v of avant) {
-        if (v.a.sprite.active && v.a.sprite.filters) v.a.sprite.filters.internal.remove(v.fx);
-        for (const o of [v.ta, v.tb, v.terre, v.reflet, v.secImg, ...v.brillants.map((b) => b.img)]) o.destroy();
-        for (const k of ['carte', 'rive', 'refl', 'sec']) this.textures.remove(`eau_${k}_${v.i}`);
+        if (v.a.sprite.active) v.a.sprite.setAlpha(1);
+        for (const o of [v.ta, v.tb, v.terre, v.reflet, v.secImg, v.shader, ...v.brillants.map((b) => b.img)]) o.destroy();
+        for (const k of ['carte', 'rive', 'refl', 'sec', 'champ']) this.textures.remove(`eau_${k}_${v.i}`);
       }
       this.eauVive = null;
       for (const o of this.refletPool || []) o.destroy();
@@ -214,6 +318,7 @@
       if (!this.eauVive) return;
       const s = time / 1000, cam = this.cameras.main.worldView;
       const m = this.ctx.lastModel || {}, sol = global.CarteKit.soleil(m.heure);
+      const ciel = global.CarteKit.lumiere(m.heure == null ? 12 : m.heure).map((c, k) => (c / 255) * E.shader.bleu[k]);
       for (const v of this.eauVive) {
         const a = v.a;
         const vu = !(a.x > cam.right || a.y > cam.bottom || a.x + a.tex.width < cam.x || a.y + a.tex.height < cam.y);
@@ -221,6 +326,10 @@
         v.ta.tilePositionX = s * E.vitesse[0]; v.ta.tilePositionY = s * E.vitesse[1];
         v.tb.tilePositionX = -s * E.vitesse[1]; v.tb.tilePositionY = s * E.vitesse[0] * 0.7;
         v.carte.clear().draw(v.ta).draw(v.tb).render();
+        // (le shader : le temps, le ciel de l'heure)
+        v.uni.temps = s;
+        v.uni.ciel = ciel;
+        v.uni.cielK = E.shader.ciel;
         this.stepScintille(v, sol, dt);
         this.stepRonds(v, dt);
         this.stepReflets(v);
