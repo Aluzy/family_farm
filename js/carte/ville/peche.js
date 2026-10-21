@@ -66,13 +66,13 @@
       if (f.phase === 'lancer') {
         this.mining.frame = `peche_${f.vue}_${f.t < PECHE.lancer / 2 ? 1 : 2}`;
         fil = f.t >= PECHE.lancer / 2;
-        if (f.t >= PECHE.lancer) { f.phase = 'attente'; f.t = 0; }
+        if (f.t >= PECHE.lancer) { f.phase = 'attente'; f.t = 0; this.rond(f.bouchon.x, f.bouchon.y + 1); }   // (le bouchon se pose : un rond, js/carte/eau.js)
       } else if (f.phase === 'attente') {
         bob = reduced() ? 0 : Math.round(Math.sin(f.t * 3) * 0.6);
         if (f.t >= f.attente) {
           f.phase = f.poisson ? 'touche' : 'ferrer';
           f.t = 0;
-          if (f.poisson) K.vibre('touche');
+          if (f.poisson) { K.vibre('touche'); this.rond(f.bouchon.x, f.bouchon.y + 1, true); }
         }
       } else if (f.phase === 'touche') {
         bob = 2;                                      // le bouchon plonge
@@ -103,7 +103,8 @@
       if (f.phase !== 'lancer' || f.t >= PECHE.lancer * 0.75) {
         g.fillStyle(B.bas, 1).fillRect(bx - 1, by - 1, 3, 2);
         if (f.phase !== 'touche') g.fillStyle(B.haut, 1).fillRect(bx - 1, by - 3, 3, 2);
-        if (f.phase === 'touche' && !reduced()) g.lineStyle(1, 0xffffff, 0.7).strokeEllipse(bx, by, 10 + f.t * 12, 4 + f.t * 4);
+        // (sans l'eau vivante : un rond dessiné ici)
+        if (f.phase === 'touche' && !reduced() && !this.eauVive) g.lineStyle(1, 0xffffff, 0.7).strokeEllipse(bx, by, 10 + f.t * 12, 4 + f.t * 4);
       }
     },
   });
