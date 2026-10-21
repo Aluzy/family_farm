@@ -12,8 +12,8 @@
 #                sens des aiguilles d'une montre depuis le haut) ;
 #   piece.png    l'argent, posé sur le bout gauche de sa pastille.
 # La carte de droite (renderHud) :
-#   cadran.png   le cadran rond (56 × 56) : un anneau de bois, sur lequel tourne la lune
-#                (rayon RAINURE), le fond crème ;
+#   cadran.png   le cadran rond (56 × 56) : un anneau de bois fin, sur lequel tourne la lune
+#                (rayon RAINURE), l'intérieur transparent ;
 #   medaillon.png le médaillon ovale du jour et du mois (38 × 22), au milieu du cadran ;
 #   lunes.png    la lune, 14 cases de 17 × 17 : une par jour de la lunaison (data/crops.json
 #                LUNE : croissante du jour 1 au 5, pleine les 6 et 7, décroissante du 8 au 12,
@@ -203,29 +203,24 @@ CADRAN, RAINURE, LUNE = 56, 24, 17
 
 
 def cadran():
-    """Le cadran : contour, anneau de bois (reflet en haut à gauche), un filet en creux, le
-    fond crème. La lune tourne à cheval sur l'anneau (rayon RAINURE)."""
+    """Le cadran : un anneau de bois fin (contour, reflet en haut à gauche, contour), sur
+    lequel la lune tourne à cheval (rayon RAINURE). L'intérieur reste transparent : seul le
+    médaillon a un fond."""
     S = CADRAN
     c = (S - 1) / 2
     im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
     for y in range(S):
         for x in range(S):
             d = math.hypot(x - c, y - c)
-            if d > 27.6:
+            if d > 26.6 or d <= 22.6:
                 continue
             haut = (x - c) + (y - c) < 0
-            if d > 26.6:
+            if d > 25.6 or d <= 23.6:
                 col = PAL['o']
-            elif d > 25.6:
+            elif d > 24.6:
                 col = PAL['h'] if haut else PAL['w']
-            elif d > 22.6:
-                col = PAL['m']
-            elif d > 21.6:
-                col = PAL['o']
-            elif d > 20.6:
-                col = PAL['w'] if haut else PAL['h']
             else:
-                col = '#ffe6b2'
+                col = PAL['m']
             im.putpixel((x, y), rgb(col))
     return im
 
