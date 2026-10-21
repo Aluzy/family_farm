@@ -305,9 +305,6 @@
     serre: { x: 736.1, y: 273.6, width: 94, height: 78.3 },
     verger: { x: 625.1, y: 303.7, width: 12.8, height: 15.9 },
     zone_culture_2: { x: 622, y: 607.6, width: 130.8, height: 128.8 },
-    // Version 1.5 : le poteau « Ville », au bout du chemin qui quitte la ferme vers l'est.
-    // Dans Tiled : un rectangle nommé `ville` le déplace.
-    ville: { x: 1092, y: 422, width: 20, height: 24 },
     silo: { x: 656, y: 238, width: 49, height: 64 },
     // Le puits, en haut à gauche du Moulin, sous le chemin (sur ses abords, que la houe ne
     // laboure pas). Dans Tiled : un rectangle nommé `puits` le déplace.
@@ -339,9 +336,6 @@
     { id: 'moulin', object: 'moulin', tex: 'windmill', suffixed: true, window: 'moulin', anim: true },
     { id: 'serre', object: 'serre', tex: 'serre', suffixed: true, window: 'serre', frame: SERRE_FRAME },
     { id: 'verger', object: 'verger', tex: 'sign', suffixed: false, window: 'verger' },
-    // panneau_ville.png (scripts/icones/art_ville.py) : la flèche est dessinée vers la gauche,
-    // retournée ici pour montrer la sortie, à l'est.
-    { id: 'ville', object: 'ville', tex: 'panneau_ville', suffixed: false, window: 'ville', flip: true },
     // silo.png (28×62, scripts/batiments/silo.py) : sur le rectangle `silo` de la carte.
     { id: 'silo', object: 'silo', tex: 'silo', suffixed: false, window: 'silo' },
   ];
