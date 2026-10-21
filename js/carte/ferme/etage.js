@@ -81,7 +81,7 @@
             const plat = BLOCS_CARTE.plats.includes(b.sorte);
             const img = add(this.add.image(p.x, p.y - dy, key, f).setOrigin(0.5, 1).setDepth(p.y + (plat ? 0.7 : 1)));
             if (BLOCS_CARTE.bloquent.includes(b.sorte)) this.etageBloque.add(b.case);
-            if (key === BLOCS_CARTE.hauts.key) this.etageMurs.set(b.case, { img, x: p.x });
+            if (key === BLOCS_CARTE.hauts.key) this.etageMurs.set(b.case, { img, x: p.x, sorte: b.sorte });
           }
         }
         // le voile de l'étage (montré quand on y est : stepEtage)

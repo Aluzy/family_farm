@@ -108,11 +108,36 @@
       if (k <= 0) return;
       const B = this.blocks, cols = this.grid.cols, Hh = BLOCS_CARTE.hauts, dy = BLOCS_CARTE.etage.dy;
       const mur = (c) => { const e = B.get(c); return !!e && e.img.texture.key === Hh.key; };
+      // à l'étage (le personnage y est monté) : le plancher de l'étage cache le bas
+      const EM = this.etageMurs || new Map(), haut = this.etageVue === 'haut';
+      const murHaut = (c) => EM.has(c);
+      // une vitre (l'image d'un mur à fenêtre ou d'une paroi vitrée) : pas sur un mur sans mur au-dessous
+      // (BLOCS_CARTE.hauts.joints : une grande fenêtre, chacun ses 16 images)
+      const vitre = (sorte, img) => {
+        if (!L.sortes.includes(sorte) || img.texture.key !== Hh.key) return false;
+        const n = img.frame.name, base = (Hh.joints[sorte] || [Hh.variantes[sorte]]).find((b) => n >= b && n < b + 16);
+        return base !== undefined && !((n - base) & 4);
+      };
       let arbres = null;
       for (const t of maisons) {
         // (le dedans ne se voit que quand le toit s'efface)
         const ouvert = k * (1 - t.img.alpha);
-        if (ouvert > 0.01) {
+        const etage = haut && t.niveau >= 1;
+        if (ouvert > 0.01 && etage) {
+          // à l'étage : sur son plancher (remonté de dy), et la face de son mur du fond
+          const P = L.piece;
+          for (const c of t.dedans) {
+            if (murHaut(c)) continue;
+            const y0 = Math.floor(c / cols) * T - dy;
+            let y1 = y0 + T;
+            for (let j = 1; j <= 2; j++) if (murHaut(c + j * cols)) { y1 = Math.min(y1, y0 + (j + 1) * T - Hh.frame.frameHeight); break; }
+            if (y1 > y0) out.push({ key: 'lumiere_unie', x: (c % cols) * T, y: y0, tint: L.teinte, alpha: P.alpha * ouvert, scaleY: (y1 - y0) / T, originX: 0, originY: 0 });
+            if (murHaut(c - cols) && t.dedans.has(c - cols)) {
+              const M = L.murFond, e = EM.get(c - cols);
+              out.push({ key: 'lumiere_unie', x: e.x - T / 2, y: e.img.y, tint: L.teinte, alpha: M.alpha * ouvert, scaleY: M.haut / T, originX: 0, originY: 1 });
+            }
+          }
+        } else if (ouvert > 0.01) {
           const P = L.piece;
           for (const c of t.dedans) {
             if (mur(c)) continue;
@@ -130,13 +155,18 @@
           }
         }
         for (const c of t.dedans) {
+          // les vitres de l'étage (vues du dehors, ou de l'étage)
+          const eh = EM.get(c);
+          if (eh && vitre(eh.sorte, eh.img)) {
+            const face = t.dedans.has(c - cols) && !murHaut(c - cols);
+            const a = k * eh.img.alpha * (face || haut ? 1 : 1 - t.img.alpha);
+            if (a > 0.01) out.push({ key: 'lueur', x: eh.x, y: eh.img.y + L.vitre.dy, tint: L.teinte, alpha: L.vitre.alpha * a, scaleX: L.vitre.rayon / 32, scaleY: (L.vitre.rayon * 1.4) / 32 });
+          }
           const e = B.get(c);
-          if (!e || !L.sortes.includes(e.sorte) || e.img.texture.key !== Hh.key) continue;
-          // (la vitre ne se voit que sur un mur sans mur au-dessous ; une grande fenêtre :
-          // BLOCS_CARTE.hauts.joints, chacun ses 16 images)
-          const n = e.img.frame.name, base = (Hh.joints[e.sorte] || [Hh.variantes[e.sorte]]).find((b) => n >= b && n < b + 16);
-          if (base === undefined || (n - base) & 4) continue;
+          if (!e || !vitre(e.sorte, e.img)) continue;
           const facade = t.dedans.has(c - cols) && !mur(c - cols);
+          // à l'étage, les vitres du bas tournées vers le dedans sont sous son plancher
+          if (haut && t.niveau >= 1 && !facade) continue;
           // (un rang rehaussé sous l'emprise de l'étage : le mur de l'étage le cache, sa vitre
           // n'est pas vue)
           const sousEtage = !!(this.etageEmprise && this.etageEmprise.has(c));
