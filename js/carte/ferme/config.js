@@ -303,7 +303,6 @@
     zone_culture: { x: 464.5, y: 385.1, width: 78.1, height: 94 },
     moulin: { x: 626.1, y: 412.3, width: 95.6, height: 127 },
     serre: { x: 736.1, y: 273.6, width: 94, height: 78.3 },
-    verger: { x: 625.1, y: 303.7, width: 12.8, height: 15.9 },
     zone_culture_2: { x: 622, y: 607.6, width: 130.8, height: 128.8 },
     silo: { x: 656, y: 238, width: 49, height: 64 },
     // Le puits, en haut à gauche du Moulin, sous le chemin (sur ses abords, que la houe ne
@@ -335,7 +334,6 @@
     { id: 'poulailler', object: 'poulailler', tex: 'coop', suffixed: false, window: 'poulailler', frame: 0 },
     { id: 'moulin', object: 'moulin', tex: 'windmill', suffixed: true, window: 'moulin', anim: true },
     { id: 'serre', object: 'serre', tex: 'serre', suffixed: true, window: 'serre', frame: SERRE_FRAME },
-    { id: 'verger', object: 'verger', tex: 'sign', suffixed: false, window: 'verger' },
     // silo.png (28×62, scripts/batiments/silo.py) : sur le rectangle `silo` de la carte.
     { id: 'silo', object: 'silo', tex: 'silo', suffixed: false, window: 'silo' },
   ];

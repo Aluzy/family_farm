@@ -42,7 +42,6 @@
       bake('ph_moulin', 96, 128, shed(0xd8c7a3, 0x6b4423, 96, 128));
       bake('ph_serre', 96, 80, shed(0x9fd3c7, 0x4f8a7a, 96, 80));
       bake('ph_poulailler', 44, 55, shed(0xb07a4a, 0x5c2f40, 44, 55));
-      bake('ph_verger', 17, 16, (d) => { d.fillStyle(0x6b4423).fillRect(7, 8, 3, 8); d.fillStyle(0xb98a4e).fillRect(1, 1, 15, 8); });
       bake('ph_silo', 28, 62, shed(0x9a6040, 0x5e3a4e, 28, 62));
       bake('ph_arbre', 80, 80, (d) => { d.fillStyle(0x6b4423).fillRect(36, 48, 8, 32); d.fillStyle(0x4f8a4a).fillCircle(40, 32, 28); });
       g.destroy();

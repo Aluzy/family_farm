@@ -23,7 +23,7 @@ PALETTE = {
     'j': '#1c1c48', 'J': '#34388a', 'h': '#5562c0', 'z': '#a0b4f0',
     # tissu à carreaux (miel)
     'f': '#e05050', 'F': '#f8d0c0',
-    # panneau de la carte (couleurs de assets/sign.png)
+    # panneau de la carte (couleurs de l'ancienne pancarte du verger)
     '1': '#42141b', '2': '#59362a', '3': '#684a37', '4': '#897154', '5': '#938878',
     '6': '#c8c5c1', '7': '#292439', '8': '#e8e4dc',
 }
@@ -491,7 +491,7 @@ ICONS['😊'] = overlay(_DISQUE, [
     '................',
 ])
 
-# Poteau indicateur de bord de chemin (carte), 20×28 natif, même facture que assets/sign.png :
+# Poteau indicateur de bord de chemin (carte), 20×28 natif, même facture que l'ancienne pancarte du verger :
 # planche en flèche vers la gauche, petite silhouette de ville claire dessus.
 ART = {}
 ART['carte-panneau_ville'] = [

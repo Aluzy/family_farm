@@ -113,7 +113,7 @@ export function heureDuJour() {
 }
 
 // Lieux de la carte qui portent une étiquette (et une fenêtre du même nom).
-export const STAGE_LIEUX = ['maison', 'etable', 'poulailler', 'moulin', 'serre', 'verger', 'zone', 'silo'];
+export const STAGE_LIEUX = ['maison', 'etable', 'poulailler', 'moulin', 'serre', 'zone', 'silo'];
 
 // La carte a douze emplacements d'arbres (rectangles arbre_verger_1 à 12) : autant que le
 // Verger peut en compter.
