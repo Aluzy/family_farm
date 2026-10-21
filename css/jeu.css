@@ -1923,7 +1923,6 @@ main .ancre { scroll-margin-top: 150px; }
 .cal-phases { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .cal-phase { display: flex; gap: 6px; align-items: flex-start; padding: 4px 6px; border-radius: 4px; }
 .cal-phase.current { background: #fbd98c; box-shadow: inset 0 0 0 2px var(--wood-light); }
-.hud .hud-money { width: 100%; padding: 0 6px; color: #8a2e22; }
 /* Un menu ouvert (fenêtre de la carte, fenêtre de dialogue) : la carte flottante reste
    visible par-dessus, à 80 % de transparence, et laisse passer les appuis. */
 body:has(.window-layer) .hud,
@@ -1992,29 +1991,24 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
 @media (prefers-reduced-motion: reduce) { .stage-gain.fade { transition-duration: 0.4s; } }
 
 /* ---------- Carte du joueur, en haut à gauche (remplace le bandeau du haut) ----------
-   Portrait du personnage principal, prénom, niveau (avec sa barre) et autonomie, dans le
-   même cadre bois que la carte flottante de droite (.hud). */
+   En pixel art (assets/hud, scripts/icones/hud.py) : --hp est la taille d'un pixel des dessins,
+   un nombre entier de pixels de l'écran (--hud-px, réglé par js/ui/famille.js). Les cadres,
+   la plaque, les tubes et la pastille sont découpés en 9 (border-image) ; les jauges se
+   remplissent en CSS (.hud-fill). */
 .player-card {
+  --hp: var(--hud-px, 2px);
   position: fixed;
   top: calc(8px + env(safe-area-inset-top));
   left: calc(8px + env(safe-area-inset-left));
   z-index: var(--z-hud);
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
-  min-width: 76px;
-  max-width: 150px;
-  padding: 4px;
-  background: rgba(var(--wood-bg-rgb), 0.82);
-  border: 3px solid var(--color-earth);
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 2px var(--wood-glow), 0 2px 4px rgba(0, 0, 0, 0.25);
+  align-items: flex-start;
+  gap: calc(2 * var(--hp));
   color: var(--wood-ink);
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   line-height: 1.1;
-  font-variant-numeric: tabular-nums;
   transition: opacity 0.2s;
 }
 .player-card button {
@@ -2025,78 +2019,113 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
   padding: 0;
   cursor: pointer;
 }
-/* Tous les éléments de la carte sont des boutons : « .player-card .x » l'emporte sur la
-   remise à zéro ci-dessus (.player-card button), sans !important. */
-.player-card .player-head { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 2px 0; }
-.player-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.player-card .player-line {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  min-height: 26px;
-  flex: 1 1 auto;
-  padding: 0 4px;
-  overflow: hidden;
-}
-.player-stats { display: flex; align-items: stretch; border-top: 1px solid rgba(var(--color-earth-rgb), 0.45); }
-.player-stats .player-line + .player-line { border-left: 1px solid rgba(var(--color-earth-rgb), 0.45); }
-.player-card .player-line.level-ind { padding-bottom: 4px; white-space: nowrap; }
 .player-card button:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; border-radius: 4px; }
 body:has(.window-layer) .player-card,
 body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.2; pointer-events: none; }
-/* Extension de la carte du joueur : collée à sa droite, sur toute sa hauteur, un fond uni de
-   la couleur du cadre bois ; la jauge d'énergie (⚡) et celle d'endurance (💪), verticales. */
-.player-card .player-gauges {
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  left: calc(100% - 1px);
+.player-top { display: flex; align-items: stretch; gap: calc(3 * var(--hp)); }
+/* Tous les éléments de la carte sont des boutons : « .player-card .x » l'emporte sur la
+   remise à zéro ci-dessus (.player-card button), sans !important. */
+.player-card .player-head {
   display: flex;
-  padding: 5px 7px 5px 5px;
-  background: var(--color-earth);
-  border-radius: 0 10px 10px 0;
-  box-shadow: inset -2px 0 0 #6e4426, inset 0 2px 0 #a8744a, 0 2px 4px rgba(0, 0, 0, 0.25);
+  flex-direction: column;
+  align-items: center;
+  gap: calc(2 * var(--hp));
+  border: calc(6 * var(--hp)) solid transparent;
+  border-image: url('../assets/hud/cadre.png') 6 fill / calc(6 * var(--hp)) stretch;
+  image-rendering: pixelated;
 }
-.player-gauges-in { display: flex; gap: 5px; height: 100%; }
-.player-gauge { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
-.player-gauge-icon {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 20px;
-  background: #ffe6b2;
-  border-radius: 4px;
-  box-shadow: inset 0 0 0 2px var(--wood-light);
-  font-size: 0.72rem;
-  line-height: 1;
+/* le personnage debout, de face (16 × 32), sur le fond en creux de la fenêtre */
+.player-portrait {
+  display: block;
+  padding: var(--hp) calc(3 * var(--hp)) 0;
+  border: calc(2 * var(--hp)) solid transparent;
+  border-image: url('../assets/hud/fenetre.png') 2 fill / calc(2 * var(--hp)) stretch;
+  image-rendering: pixelated;
 }
-.player-gauge-bar {
-  position: relative;
-  flex: 1 1 auto;
-  width: 14px;
-  min-height: 40px;
-  background: var(--wood-ink);
-  border-radius: 7px;
-  box-shadow: inset 0 0 0 2px var(--wood-light);
+.player-portrait .perso-px { --s: calc(32 * var(--hp)); width: calc(16 * var(--hp)); padding: 0; }
+.player-card .player-name {
+  display: block;
+  max-width: calc(34 * var(--hp));
+  padding: 0 var(--hp);
+  border: calc(3 * var(--hp)) solid transparent;
+  border-image: url('../assets/hud/plaque.png') 3 fill / calc(3 * var(--hp)) stretch;
+  image-rendering: pixelated;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.player-gauge-fill {
+/* les jauges d'énergie, d'endurance et de bonheur, verticales, sur toute la hauteur du cadre */
+.player-card .player-gauges { display: flex; }
+.player-gauges-in { display: flex; gap: calc(2 * var(--hp)); height: 100%; }
+.player-gauge { display: flex; flex-direction: column; align-items: center; gap: var(--hp); height: 100%; }
+/* Les dessins : coeur 9 × 8, éclair 8 × 10, smiley 9 × 9, étoile 11 × 10, pousse 7 × 7, pièce 10 × 10. */
+.hud-ico { display: block; flex: none; background: no-repeat 0 0 / 100% 100%; image-rendering: pixelated; }
+.hud-ico.coeur { width: calc(9 * var(--hp)); height: calc(8 * var(--hp)); background-image: url('../assets/hud/coeur.png'); }
+.hud-ico.eclair { width: calc(8 * var(--hp)); height: calc(10 * var(--hp)); background-image: url('../assets/hud/eclair.png'); }
+.hud-ico.smiley { width: calc(9 * var(--hp)); height: calc(9 * var(--hp)); background-image: url('../assets/hud/smiley.png'); }
+.hud-ico.etoile { width: calc(11 * var(--hp)); height: calc(10 * var(--hp)); background-image: url('../assets/hud/etoile.png'); }
+.hud-ico.pousse { width: calc(7 * var(--hp)); height: calc(7 * var(--hp)); background-image: url('../assets/hud/pousse.png'); }
+.hud-ico.piece { width: calc(10 * var(--hp)); height: calc(10 * var(--hp)); background-image: url('../assets/hud/piece.png'); }
+/* Le tube d'une jauge (9 px de large, 2 de bord) et son remplissage, un pixel en retrait. */
+.hud-tube {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  width: calc(9 * var(--hp));
+  min-height: calc(24 * var(--hp));
+  border: calc(2 * var(--hp)) solid transparent;
+  border-image: url('../assets/hud/tube.png') 2 fill / calc(2 * var(--hp)) stretch;
+  image-rendering: pixelated;
+}
+.hud-fill {
   position: absolute;
-  left: 3px;
-  right: 3px;
-  bottom: 3px;
-  max-height: calc(100% - 6px);
-  border-radius: 4px;
+  left: var(--hp);
+  right: var(--hp);
+  bottom: var(--hp);
+  max-height: calc(100% - 2 * var(--hp));
   background: #5ad23c;
-  box-shadow: inset 2px 0 0 #8cec6a;
-  transition: height 0.3s;
+  box-shadow: inset var(--hp) 0 0 #8cec6a;
+  transition: height 0.3s, width 0.3s;
 }
-.player-gauge-fill.mid { background: #e8b030; box-shadow: inset 2px 0 0 #f8d878; }
-.player-gauge-fill.low { background: #c8503a; box-shadow: inset 2px 0 0 #ec8a6e; }
-.player-gauge-fill.endu { background: #3a8ad2; box-shadow: inset 2px 0 0 #7ec0f0; }
-@media (prefers-reduced-motion: reduce) { .player-gauge-fill { transition: none; } }
+.hud-fill.mid { background: #e8b030; box-shadow: inset var(--hp) 0 0 #f8d878; }
+.hud-fill.low { background: #c8503a; box-shadow: inset var(--hp) 0 0 #ec8a6e; }
+.hud-fill.endu { background: #3a8ad2; box-shadow: inset var(--hp) 0 0 #7ec0f0; }
+@media (prefers-reduced-motion: reduce) { .hud-fill { transition: none; } }
+/* Sous le cadre : la barre du niveau (l'étoile sur son bout gauche) et l'anneau de l'autonomie. */
+.player-stats { display: flex; align-items: center; gap: calc(4 * var(--hp)); }
+.player-card .player-level { position: relative; display: flex; align-items: center; padding-left: calc(5 * var(--hp)); }
+.hud-tube.h { flex: none; width: calc(36 * var(--hp)); height: calc(9 * var(--hp)); min-height: 0; }
+.hud-tube.h .hud-fill { top: var(--hp); right: auto; max-height: none; max-width: calc(100% - 2 * var(--hp)); background: #f8d040; box-shadow: inset 0 var(--hp) 0 #fff2a0; }
+.player-level .etoile { position: absolute; left: 0; top: calc(-0.5 * var(--hp)); }
+.player-card .player-auto { position: relative; display: block; width: calc(18 * var(--hp)); height: calc(18 * var(--hp)); }
+.hud-anneau {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: calc(15 * var(--hp));
+  height: calc(15 * var(--hp));
+  background: url('../assets/hud/anneau.png') no-repeat;
+  background-size: calc(315 * var(--hp)) 100%;
+  background-position: calc(var(--f) * -15 * var(--hp)) 0;
+  image-rendering: pixelated;
+}
+.player-auto .pousse { position: absolute; left: 0; top: 0; }
+/* L'argent : la pièce sur le bout gauche de sa pastille, le montant en police pixel. */
+.player-card .player-money { position: relative; display: flex; align-items: center; padding-left: calc(5 * var(--hp)); }
+.hud-pastille {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: calc(13 * var(--hp));
+  padding: 0 calc(2 * var(--hp)) 0 calc(5 * var(--hp));
+  border: calc(3 * var(--hp)) solid transparent;
+  border-image: url('../assets/hud/pastille.png') 3 fill / calc(3 * var(--hp)) stretch;
+  image-rendering: pixelated;
+  color: #8a2e22;
+}
+.hud-pastille .pxt { --p: var(--hp); }
+.player-money .piece { position: absolute; left: 0; top: 50%; margin-top: calc(-5 * var(--hp)); }
 
 /* ---------- Fenêtres de la carte « bois » (Famille…) : le cadre bois des cartes flottantes ----------
    Couleurs, fond et cadre : la règle commune avec .modal.bois, plus haut. */
@@ -2277,8 +2306,6 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 .help-emoji { font-size: 32px; line-height: 1; }
 
 /* ---------- Comptes (un appui sur les pièces) : une addition, total en bas ---------- */
-.hud-money { pointer-events: auto; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
-.hud-money:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; border-radius: 6px; }
 .compta { list-style: none; margin: 12px 0; padding: 0; max-height: 55vh; overflow-y: auto; }
 .compta-ligne { display: flex; justify-content: space-between; gap: 12px; padding: 4px 2px; border-bottom: 1px dashed var(--border); }
 .compta-ligne .num { white-space: nowrap; font-weight: 700; }

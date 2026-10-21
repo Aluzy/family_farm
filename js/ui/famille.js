@@ -48,6 +48,8 @@ function helpToggleHtml(id, label) {
 function taillesPortraits() {
   const r = window.devicePixelRatio || 1, root = document.documentElement.style;
   for (const t of [40, 48, 64]) root.setProperty(`--portrait-${t}`, `${(Math.max(1, Math.round((t * r) / 32)) * 32) / r}px`);
+  // la taille d'un pixel des dessins de la carte du joueur (assets/hud) : environ 2 px CSS
+  root.setProperty('--hud-px', `${Math.max(1, Math.round(2 * r)) / r}px`);
 }
 if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.documentElement) {
   taillesPortraits();
