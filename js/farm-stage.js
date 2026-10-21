@@ -116,7 +116,6 @@
         L.image('soil_dry', v('soil_dry.png'));
         L.image('soil_wet', v('soil_wet.png'));
         L.image('sign', v('sign.png'));
-        L.image('panneau_ville', v('panneau_ville.png'));
         L.spritesheet(K.FLECHE.key, v(K.FLECHE.file), { frameWidth: K.FLECHE.size, frameHeight: K.FLECHE.size });
         L.image('silo', v('silo.png'));
         L.spritesheet(F.C.RAMASSABLES.key, v(F.C.RAMASSABLES.file), F.C.RAMASSABLES.frame);

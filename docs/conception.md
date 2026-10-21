@@ -1563,8 +1563,8 @@ export function take(s: GameState, item: string, qty: number) {
 ### 6.12 Bonheur, sorties et Ville (version 1.5)
 
 Données : `data/ville.json` (`DATA.VILLE`) ; moteur : `js/engine/ville.js` ; écran :
-`js/ui/ville.js` (fenêtre « Ville », ouverte par le poteau au bout du chemin, à l'est de la
-carte ; sans la carte, raccourci « Ville » de l'écran Ferme).
+`js/ui/ville.js` (fenêtre « Ville », ouverte depuis le menu ; sans la carte, raccourci « Ville »
+de l'écran Ferme ; le poteau qui l'ouvrait sur la carte de la ferme a été retiré).
 
 **Bonheur.** Une jauge par membre, de 0 à 100 ; départ à 60 (un nouveau membre arrive au
 bonheur moyen). Chaque repas la fait varier pour toute la famille : −3 si tout est cru,
