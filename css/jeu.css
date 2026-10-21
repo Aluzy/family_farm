@@ -2293,7 +2293,7 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 }
 
 /* ---------- Version 1.17 : les adultes ont l'apparence d'un personnage du catalogue ----------
-   Portraits agrandis sans flou (assets/portraits/perso_XX.png : 32 × 32 ; enfant_XX.png : 16 × 16),
+   Portraits agrandis sans flou (assets/portraits/perso_XX.png : 32 × 32 ; enfant_XX.png aussi),
    d'un nombre entier de fois : --portrait-<taille>, réglé par js/ui/famille.js. */
 .portrait-px { display: block; flex: none; width: var(--portrait-48, 48px); height: var(--portrait-48, 48px); image-rendering: pixelated; }
 .member-row .portrait-px, .setup-member .portrait-px { width: var(--portrait-40, 40px); height: var(--portrait-40, 40px); }

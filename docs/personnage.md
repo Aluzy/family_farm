@@ -13,12 +13,14 @@ planches ont les mêmes cases, seules les couleurs et le style changent.
 
 **Le catalogue** : 50 personnages de plus, `perso_01` à `perso_50`, décrits dans
 `scripts/personnage/catalogue.py` (peau, cheveux, coupe, couvre-chef, détails, habit, motif).
-`scripts/personnage/portraits.py` en tire leur portrait 32 × 32 (`assets/portraits/perso_XX.png`), d'après le
-portrait modèle dessiné à la main (`scripts/personnage/modeles/portrait.png`, perso_01) et de la
-forme de son visage (`portrait_visage.png` : le contour du visage tracé en noir). Chacun part de la
-même base, le visage sans cheveux (les mêmes yeux pour tous : 5 px de large, l'iris 3 × 3, la
-pupille 1 px), puis reçoit sa coiffure (tirée des cheveux du modèle), son couvre-chef, ses
-détails et ses couleurs,
+`scripts/personnage/portraits.py` en tire leur portrait 32 × 32 (`assets/portraits/perso_XX.png`),
+dans le style des neuf portraits dessinés à la main (`scripts/personnage/modeles/portraits_dessines.png` :
+trois personnes en trois variantes). Ces neuf dessins sont `perso_01` et `perso_04` à `perso_11`
+tels quels ; les autres sont assemblés à partir de leurs pièces : deux visages (M, celui du jeune
+et de l'homme à moustache ; F, celui de la femme, plus long, avec cils et lèvres), les coiffures
+des dessins et celles qu'on en tire, la casquette, le bandeau, les lunettes et la moustache des
+dessins, puis les couleurs du catalogue (chaque pixel garde sa nuance par rapport à la base de sa
+région : peau, cheveux, haut, yeux, accessoire). Les cheveux gris ou blancs ajoutent des rides.
 `scripts/personnage/fermier.py` leur planche de 70 cases (`assets/personnages/perso_XX.png`, les
 noms des cases, les mêmes pour tous, dans `assets/personnages/cases.json`). Coupes : longs, mi,
 carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; sur la tête : chapeau de
@@ -52,8 +54,9 @@ est masqué à l'écran de départ, `CHOIX_PRINCIPAL` dans `js/ui/depart.js`) :
 `modèle.perso`, sa planche est chargée à la demande (`syncPerso`).
 
 **Les enfants** ont de même un des 50 portraits d'enfants (`assets/portraits/enfant_XX.png`,
-dérivés de `modele_enfant.png` par `scripts/personnage/portraits_enfants.py` ; 9 coupes, chapeaux,
-nœud, serre-tête, fleur, lunettes, taches de rousseur, joues roses, pansement, salopette). Leur
+32 × 32, décrits dans `scripts/personnage/portraits_enfants.py` et dessinés par `portraits.py`
+comme les adultes : la tête descend de 3 rangées sur un corps plus étroit, les joues roses ;
+9 coupes, chapeaux, nœud, serre-tête, fleur, lunettes, taches de rousseur, pansement, salopette). Leur
 fiche a la même grille ; sans choix, `PERSO_DEFAUT_ENFANT` (1 pour un garçon, 2 pour une fille).
 Ils ne sont pas encore sur la carte : pas de planche d'enfant.
 
