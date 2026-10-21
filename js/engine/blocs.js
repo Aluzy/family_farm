@@ -374,7 +374,7 @@ export function poseStatus(state, sorte, tile) {
   if (!s) return { ok: false, raison: 'Bloc inconnu.' };
   const T = farmTerrain(state);
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
-  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon Meubles).` : s.ruche ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon Animaux).` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon Meubles).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon ${s.marche}).` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };

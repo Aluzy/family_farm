@@ -11,7 +11,7 @@ import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, couchagesEtage, etageCouvertes, ETAGE_BLOCS, chopTree, bushOf, bushCut, cutBushes, respawnBushes, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
   etatEtable, etatMoulin, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
-  buyRuche, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
+  buyRuche, buyDehors, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
 
@@ -271,6 +271,29 @@ test('ruches : achetées au Marché, posées dehors, pleines au bout de NUITS nu
   for (const w of m.murs) poserBloc(s, 'mur_pierre', w);
   poserBloc(s, 'porte', m.porte);
   assertEqual(poserBloc(s, 'ruche', m.dedans).ok, false);
+});
+
+test('bac à fleurs : acheté au Marché, posé comme un bloc, ses fleurs attirent les abeilles', () => {
+  const s = chantier('bac');
+  const prix = DATA.DEHORS.bac_fleurs.prix;
+  s.pieces = prix + DATA.RUCHE.PRIX;
+  assertEqual(buyDehors(s, 'bac_fleurs'), { ok: true, cost: prix });
+  assertEqual([s.pieces, countItem(s, 'bac_fleurs')], [DATA.RUCHE.PRIX, 1]);
+  const z = terrainLibre(s, 6, 5);
+  const t = z.r * z.W + z.c;
+  assertEqual(poserBloc(s, 'bac_fleurs', t).ok, true);
+  assertEqual([blocAt(s, t), blocBloque(s, t)], ['bac_fleurs', true]);
+  assertEqual(poserBloc(s, 'bac_fleurs', t + 2).error, 'Plus de bac à fleurs : achète-en au Marché (rayon Meubles).');
+  // sans ruche, pas d'abeilles (rien à butiner) ; avec une ruche, le bac est une fleur
+  assertEqual(fleursPourAbeilles(s), []);
+  buyRuche(s);
+  poserBloc(s, 'ruche', t + 3);
+  const f = fleursPourAbeilles(s);
+  assert(f.includes(t), 'le bac');
+  assert(!f.includes(t + 3), 'pas la ruche');
+  assert(f.length > 1, 'et les fleurs de l\'herbe');
+  assertEqual(reprendreBloc(s, t).ok, true);
+  assertEqual([countItem(s, 'bac_fleurs'), fleursPourAbeilles(s).includes(t)], [1, false]);
 });
 
 test('ferme générée : poser et reprendre des blocs, sur l\'herbe seulement', () => {

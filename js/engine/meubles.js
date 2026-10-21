@@ -5,6 +5,7 @@ import { adultCount, childCount } from './family.js';
 import { memberHappiness, setHappiness } from './ville.js';
 import { farmSeed } from './terrain.js';
 import { addItem } from './inventory.js';
+import { atelierOuvert } from './atelier.js';
 
 /* ---------- Meubles de la maison (Marché, rayon Meubles) ----------
    state.meubles = { id: nombre } (absent : aucun). Un meuble acheté prend sa place dans
@@ -41,4 +42,17 @@ export function buyFurniture(state, id) {
   // (sur une terre sauvage : dans l'inventaire, à poser dans la maison)
   if (sauvage) addItem(state, 'meuble_' + id, 1);
   return { ok: true, cost: def.prix, bonheur: def.bonheur || 0, nombre: state.meubles[id], aPoser: sauvage };
+}
+
+/* ---------- Pour le dehors de la ferme générée (Marché, rayon Meubles) ----------
+   DATA.DEHORS : le bac à fleurs… Acheté, il arrive dans l'inventaire (l'objet du même nom) et
+   se pose comme un bloc (DATA.ATELIER.BLOCS.<id>, js/engine/blocs.js). Prix fixe. */
+
+export function buyDehors(state, id) {
+  const def = DATA.DEHORS && DATA.DEHORS[id];
+  if (!def) return fail('Cet article n\'existe pas.');
+  if (!atelierOuvert(state)) return fail(`${def.nom} : se pose sur une ferme générée.`);
+  if (!pay(state, def.prix, `Achat : ${def.nom}`)) return fail(NO_COINS);
+  addItem(state, id, 1);
+  return { ok: true, cost: def.prix };
 }
