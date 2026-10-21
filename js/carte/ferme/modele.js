@@ -67,6 +67,7 @@
       this.syncBeasts(model.enclos, model.heure);
       this.fireOn = !!model.fourAllume;
       this.syncBlocks(model.blocs, model.bati, model.pieces, model.serreMurs);   // (avant le puits et la citerne : posés sur leurs blocs)
+      this.syncAbeilles(model);   // (les abeilles des ruches, et les fleurs où elles butinent)
       this.syncTableaux(model.tableaux);                                         // (après les blocs : sur leurs murs)
       this.syncEtage(model.etage, model.niveau, model.vueNiveau);                // (après les blocs : ceux sous l'étage se cachent)
       this.syncToits(model.toits);

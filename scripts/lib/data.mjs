@@ -125,6 +125,8 @@ export function sourcesOf(data, id) {
   for (const [rid, r] of Object.entries((A && A.RECETTES) || {})) if (id in (r.sortie || {})) out.push(`atelier ${rid}`);
   for (const [rid, r] of Object.entries((A && A.RAMASSAGE) || {})) if (r.objet === id) out.push(`ramassage ${rid}`);
   for (const [bid, b] of Object.entries((A && A.BLOCS) || {})) if (b.meuble && b.objet === id && data.MEUBLES && data.MEUBLES[b.meuble]) out.push(`meuble ${b.meuble} (Marché)`);
+  if (data.RUCHE && id === data.RUCHE.OBJET) out.push('ruche (Marché)');
+  if (data.RUCHE && id === data.RUCHE.PRODUIT) out.push('ruche');
   if (data.HACHE && id === 'bois') out.push('hache');
   if (data.PIOCHE && id === 'pierre') out.push('pioche');
   if (data.FAUX && data.PATURAGE && id === data.PATURAGE.NOURRITURE) out.push('faux');

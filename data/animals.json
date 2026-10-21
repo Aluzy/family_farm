@@ -8,6 +8,14 @@
     "les poules y mangent d'abord. ITEM : l'objet stocké."
   ],
   "SILO": { "ITEM": "ble", "PRIX_CONSTRUCTION": 0, "CAPACITE": [20, 50, 100, 200, 400], "PRIX_NIVEAUX": [0, 30, 80, 180, 400] },
+  "//RUCHE": [
+    "Les ruches de la ferme générée (js/engine/ruches.js) : une ruche s'achète au Marché",
+    "(rayon Animaux, PRIX pièces), arrive dans l'inventaire et se pose dehors comme un bloc",
+    "(recipes.json, ATELIER.BLOCS.ruche). Posée, elle se remplit : au bout de NUITS nuits elle",
+    "est pleine, et attend qu'on la récolte (MIEL pots de PRODUIT) ; vidée, elle recommence.",
+    "OBJET : l'objet acheté (et le bloc posé)."
+  ],
+  "RUCHE": { "NOM": "Ruche", "ICONE": "🐝", "OBJET": "ruche", "PRIX": 200, "NUITS": 2, "PRODUIT": "miel", "MIEL": 3 },
   "//POULAILLER": "Poulailler (sections 1.3 et 8.5).",
   "POULAILLER": { "PRIX_CONSTRUCTION": 40, "CAPACITE": [4, 8, 12, 16, 24], "PRIX_NIVEAUX": [0, 100, 220, 450, 900] },
   "//ANIMAUX": [

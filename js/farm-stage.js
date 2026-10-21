@@ -446,6 +446,7 @@
         this.stepVoilure(dt / 1000);
         this.stepPieces();
         this.stepBeasts(time, delta / 1000);
+        this.stepAbeilles(delta / 1000);
         this.stepRobot(dt);
         this.placeDialog();
         this.stepFishing(delta);

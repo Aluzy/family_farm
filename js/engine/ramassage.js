@@ -20,6 +20,7 @@ import { fail } from './devices.js';
 import { canFeedHen, feedAllHens, hensToFeed, shear, storeWithSilo, woolReady } from './animals.js';
 import { mainCharacter } from './depart.js';
 import { TIRED } from './stamina.js';
+import { recolterRuche, rucheDuTas } from './ruches.js';
 
 function pileId(lieu, ref) {
   return ref === null || ref === undefined ? lieu : `${lieu}:${ref}`;
@@ -53,8 +54,10 @@ export function deposit(state, lieu, ref, items, ici = true) {
   return true;
 }
 
-// Le personnage prend le tas `id` : son contenu entre dans l'inventaire.
+// Le personnage prend le tas `id` : son contenu entre dans l'inventaire. (Une ruche pleine,
+// « ruche:<case> » : il récolte son miel, js/engine/ruches.js.)
 export function pickUp(state, id) {
+  if (rucheDuTas(id) !== null) return recolterRuche(state, rucheDuTas(id));
   const pile = state.aRamasser && state.aRamasser[id];
   if (!pile) return fail('Il n\'y a plus rien à ramasser ici.');
   delete state.aRamasser[id];

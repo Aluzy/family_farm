@@ -102,12 +102,13 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | `soleil.js` | les ombres portées qui suivent le soleil : silhouettes des bâtiments, arbres, barrières et rochers, inclinées selon l'heure (vers la gauche le matin, la droite le soir, courtes à midi), peintes dans un seul canevas qui couvre la vue et une marge (`SOLEIL`) |
 | `interieurs.js` | intérieurs (`bakeRooms`, `setRoom`, meubles), repas |
 | `camera.js` | zoom, glissement, élan, repères, `panTo` |
-| `etiquettes.js` | étiquettes, bulles des tas, bulle « +x », bulle de la citerne (DOM) |
+| `etiquettes.js` | étiquettes, bulles des tas (et des ruches pleines), bulle « +x », bulle de la citerne, bulles du dialogue du matin (DOM) |
 | `hache.js`, `pioche.js`, `peche.js` | les arbres, les buissons (la ferme générée : coupés d'un coup, 2 bois pour un grand, 1 pour un petit), les rochers, l'étang et la mare ; chaque coup de hache ou de pioche lâche ses morceaux au sol |
 | `chantier.js` | la ferme générée : les blocs posés (murs, portes, paillasses, Atelier), le mode Construire, les pièces closes, la paillasse où il dort |
 | `cueillette.js` | la ferme générée : ce qu'on ramasse à la main (pierres, bois, herbes), un appui et le personnage le prend ; le bois et la pierre lâchés par la hache et la pioche (`modèle.morceaux`, `state.morceaux` du moteur), que le personnage prend en marchant dessus (`syncPieces`, `stepPieces`) |
 | `passages.js` | la sortie vers la ville (le rectangle `vers_la_transition` de la carte, `exitAt()`), le tronc creux |
 | `machines.js` | les asperseurs, le robot |
+| `abeilles.js` | les abeilles des ruches : elles sortent par le trou de vol, butinent les fleurs à portée (`modèle.fleurs`, l'herbe haute fleurie), rentrent ; le jour seulement |
 | `modele.js` | `sync(modèle)` et ce qu'il crée (bâtiments, parcelles, Verger, puits, citerne) |
 
 **La ville** : `js/ville-carte.js` garde la scène (création, boucle d'image, marche, chemins,

@@ -77,6 +77,11 @@
         const cols = this.grid.cols || 1;
         return { x: (p.ref % cols) * T + T / 2, y: Math.floor(p.ref / cols) * T + 2 };
       }
+      // (une ruche pleine : au-dessus de son toit)
+      if (p.lieu === 'ruche' && Number.isInteger(p.ref)) {
+        const cols = this.grid.cols || 1;
+        return { x: (p.ref % cols) * T + T / 2, y: (Math.floor(p.ref / cols) + 1) * T - 20 };
+      }
       if (p.lieu === 'arbre') {
         const e = this.trees.get(p.ref);
         const o = this.objects[TREE_OBJECT + (p.ref + 1)];

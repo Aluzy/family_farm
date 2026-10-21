@@ -22,7 +22,7 @@ import { chemin } from './chemin.js';
 //     (étape 5b). La maison n'y est plus : sa place (MAISON) reste dégagée, le chemin part de
 //     devant elle ; le foyer se bâtit (une pièce close avec une paillasse).
 // genererFerme(graine) → { carte, terrain } ; le terrain est celui de terrain-carte.js (plus
-// DECALAGE : où la cour a été posée, en tuiles ; BUISSONS : les buissons ; HERBES : les touffes d'herbe haute de chaque case). Les cartes déjà faites
+// DECALAGE : où la cour a été posée, en tuiles ; BUISSONS : les buissons ; HERBES : les touffes d'herbe haute de chaque case ; FLEURS : les cases fleuries). Les cartes déjà faites
 // sont gardées.
 
 export const FERME_GENEREE = {
@@ -348,8 +348,9 @@ function fabriquer(graine) {
 
   // ---- 9. les fleurs, sur l'herbe franche libre
   const rf = hasard('fleurs');
+  const fleurs = [];
   for (const [i, h] of herbePleine) {
-    if (rf() < G.FLEURS && !plantes[i] && !pris[i]) plantes[i] = blocGid('herbe_deco', (4 + h) * 16 + Math.floor(rf() * 16));
+    if (rf() < G.FLEURS && !plantes[i] && !pris[i]) { plantes[i] = blocGid('herbe_deco', (4 + h) * 16 + Math.floor(rf() * 16)); fleurs.push(i); }
   }
 
   // ---- 10. l'herbe haute : des touffes groupées (comme scripts/carte/herbe_haute.py)
@@ -417,7 +418,9 @@ function fabriquer(graine) {
   // où l'herbe pousse ne se bâtit qu'une fois fauchée : blocs.js)
   const herbes = {};
   for (const [x, y] of touffes) { const l = (herbes[Math.floor(y / T) * W + Math.floor(x / T)] ||= []), id = `${x},${y}`; if (!l.includes(id)) l.push(id); }
-  const terrain = Object.assign(terrainOfMap(carte), { DECALAGE: [ox, oy], BUISSONS: buissons, SOMMETS: sommets, TEINTES: teinte, HERBES: herbes });
+  // FLEURS : les cases où des fleurs poussent dans l'herbe (les abeilles des ruches y butinent :
+  // js/engine/ruches.js fleursPourAbeilles)
+  const terrain = Object.assign(terrainOfMap(carte), { DECALAGE: [ox, oy], BUISSONS: buissons, SOMMETS: sommets, TEINTES: teinte, HERBES: herbes, FLEURS: fleurs });
   return { carte, terrain };
 }
 

@@ -13,6 +13,7 @@ import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
+import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
 import { TIRED } from '../engine/stamina.js';
 import { brokenRocks, cutBushes, cutGrass, enSelle, fellenTrees, morceauxDe } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
@@ -410,7 +411,8 @@ export function stageModel() {
   const cuisson = ['cuisine', 'four'].find((id) => state.stations[id] && state.stations[id].construit && state.stations[id].tache) || null;
   // Version 1.18 : ce qui attend que le personnage le ramasse, à sa place (parcelle : sa
   // case ; arbre : sa case du Verger ; Poulailler, Étable), avec le texte de sa bulle.
-  const tas = piles(state);
+  // (et les ruches pleines : leur miel attend qu'il vienne le récolter, js/engine/ruches.js)
+  const tas = piles(state).concat(ruchesARecolter(state));
   // Version 1.19 : la laine des moutons prêts à tondre s'annonce dans la bulle de l'Étable (le
   // personnage les tond quand le joueur l'y envoie).
   const M = DATA.ANIMAUX.mouton;
@@ -438,6 +440,8 @@ export function stageModel() {
     // le second adulte du foyer et où il a à faire (le Poulailler, l'Étable : aideAFaire)
     aide: aidant(state) ? { id: aidant(state).id, lieux: aideAFaire(state) } : null,
     semaine: weekdayIndex(state.day),
+    // les fleurs où butinent les abeilles des ruches (des cases ; la carte y ajoute l'herbe haute fleurie)
+    fleurs: fleursPourAbeilles(state),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
     heure, cols: T.LARGEUR, cases: tileCount(T), terrain: terrainNow(rochers.concat(abattus)), plots,
     // la ferme générée : ce qui est à ramasser à la main (js/engine/atelier.js)
@@ -448,7 +452,7 @@ export function stageModel() {
     // l'on dort (js/engine/blocs.js)
     // (un meuble : son dessin, ses cases en largeur et en hauteur, s'il arrête le passage, s'il est à plat ou un lit)
     // (un mur rehaussé, version 1.25 : sa hauteur en blocs)
-    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}) })),
+    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}) })),
     // le Moulin de la ferme générée (version 1.25) : sa tour bâtie, ses bornes (les cases de la
     // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
     moulinTour: tour && tour.ok ? { ...tour.bornes, enMarche: batiments.moulin.enMarche } : null,
