@@ -59,8 +59,9 @@ est masqué à l'écran de départ, `CHOIX_PRINCIPAL` dans `js/ui/depart.js`) :
 
 **Les enfants** ont de même un des 50 portraits d'enfants (`assets/portraits/enfant_XX.png`,
 32 × 32, décrits dans `scripts/personnage/portraits_enfants.py` et dessinés par `portraits.py`
-comme les adultes : la tête descend de 3 rangées sur un corps plus étroit, les joues roses ;
-9 coupes, chapeaux, nœud, serre-tête, fleur, lunettes, taches de rousseur, pansement, salopette). Leur
+à partir du portrait d'enfant dessiné à la main, `scripts/personnage/modeles/portrait_enfant.png`
+(20 × 25, posé en bas au milieu de la case) ; 9 coupes, chapeaux, nœud, serre-tête, fleur,
+lunettes, taches de rousseur, joues roses, pansement, salopette). Leur
 fiche a la même grille ; sans choix, `PERSO_DEFAUT_ENFANT` (1 pour un garçon, 2 pour une fille).
 Ils ne sont pas encore sur la carte : pas de planche d'enfant.
 

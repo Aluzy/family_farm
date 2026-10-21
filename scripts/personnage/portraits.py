@@ -18,8 +18,8 @@
 #     rousseur, les boucles d'oreilles, les rides (cheveux gris ou blancs) dessinés ici ;
 #   - les couleurs : chaque pixel garde la nuance du dessin par rapport à la couleur de base de
 #     sa région (peau, cheveux, haut, yeux, accessoire), transposée sur la couleur du catalogue.
-# Un enfant est un portrait du même genre dont la tête descend de 3 rangées sur un corps plus
-# étroit, sans rides ni pilosité, les joues roses.
+# Les enfants partent du portrait d'enfant dessiné à la main (modeles/portrait_enfant.png, 20 × 25,
+# en bas au milieu de la case) : leurs coiffures, couvre-chefs et détails sont dessinés ici.
 #
 #   python3 scripts/personnage/portraits.py            écrit assets/portraits/perso_XX.png et enfant_XX.png
 #   python3 scripts/personnage/portraits.py --apercu   écrit aussi apercu_portraits.png (agrandi)
@@ -283,41 +283,12 @@ def c_courts(p):
     p.poser(pieces().courts)
 
 
-def c_herisses(p):
-    p.poser(pieces().herisses)
-
-
 def c_chauve(p):
     """Le crâne nu, une couronne de cheveux courts au-dessus des oreilles."""
     crane(p)
     base = ROLES['B']['cheveux'][1]
     p.poser({(x, y): t for (x, y), t in pieces().courts.items() if 11 <= y and (x <= 7 or x >= 24)})
     sourcils(p, base)
-
-
-def c_boucles(p):
-    """Des boucles : la frange du jeune, piquée de reflets et d'ombres en damier, le bord festonné."""
-    fr = pieces().frange
-    base = ROLES['A']['cheveux'][1]
-    out = {}
-    for (x, y), t in fr.items():
-        bord = any(n not in fr for n in voisins4(x, y))
-        if bord:
-            out[(x, y)] = t
-        elif (x + 2 * y) % 5 == 0:
-            out[(x, y)] = H(base, cheveux_clair(base))
-        elif (x + 2 * y) % 5 == 2:
-            out[(x, y)] = H(base, cheveux_ombre(base))
-        else:
-            out[(x, y)] = H(base, base)
-    for (x, y), t in fr.items():            # festons : une case de plus, une sur trois, vers le dehors
-        if t[1] == cheveux_sombre(base) and (x + y) % 3 == 0 and y <= 12:
-            for n in voisins4(x, y):
-                if n not in fr and n[1] < y + 1 and 0 <= n[0] < N and 0 <= n[1] < N:
-                    out[n] = H(base, cheveux_sombre(base))
-                    out[(x, y)] = H(base, cheveux_ombre(base))
-                    break
-    p.poser(out)
 
 
 def coupe_f(jusqua):
@@ -361,21 +332,6 @@ def attaches(p):
     p.poser(cal)
 
 
-def touffe(p, cx, y0, y1, base, lien=True):
-    """Une mèche nouée (couette, queue de cheval) : un fuseau de cheveux centré en cx."""
-    milieu = (y0 + y1) / 2
-    for y in range(y0, y1 + 1):
-        r = 2.4 - abs(y - milieu) * 2.0 / max(1, (y1 - y0))
-        for x in range(int(cx - 3), int(cx + 4)):
-            if abs(x - cx) <= r and 0 <= x < N:
-                bord = abs(x - cx) > r - 1 or y in (y0, y1)
-                c = cheveux_sombre(base) if bord else (cheveux_clair(base) if (x + y) % 4 == 0 and x < cx else base)
-                p.g[(x, y)] = H(base, c)
-    if lien:
-        for x in range(int(cx) - 1, int(cx) + 2):
-            p.g[(x, y0)] = ('acc', (223, 25, 25), (223, 25, 25))
-
-
 def c_chignon(p):
     """Les cheveux tirés en arrière, noués en chignon derrière le haut de la tête (à droite)."""
     attaches(p)
@@ -396,21 +352,12 @@ def c_couettes(p):
     p.poser(pieces_retouchees()['couettes'])
 
 
-def c_queue(p):
-    attaches(p)
-    base = ROLES['F']['cheveux'][1]
-    touffe(p, 27, 7, 21, base)
-
-
 COUPES = {
     # adultes
     'frange': ('M', c_frange), 'courts': ('M', c_courts), 'chauve': ('M', c_chauve),
     'longs': ('F', c_longs), 'mi': ('F', coupe_f(27)), 'carre': ('F', coupe_f(23)),
     'frange_carre': ('F', lambda p: (coupe_f(23)(p), frange_droite(p))),
     'couettes': ('F', c_couettes), 'chignon': ('F', c_chignon),
-    # enfants
-    'court': ('M', c_courts), 'herisse': ('M', c_herisses), 'meche': ('M', c_frange), 'boucles': ('M', c_boucles),
-    'long': ('F', c_longs), 'queue': ('F', c_queue),
 }
 
 
@@ -562,23 +509,8 @@ def h_fleur(p):
     p.g[(cx, cy)] = ('fixe', (236, 200, 60), None)
 
 
-def h_noeud(p):
-    """Un nœud sur le côté du haut de la tête."""
-    for (x, y), c in (((21, 2), 200), ((22, 2), 160), ((21, 3), 160), ((22, 3), 120), ((23, 3), 90),
-                      ((25, 2), 200), ((24, 2), 160), ((25, 3), 160), ((24, 3), 120)):
-        p.g[(x, y)] = A((c, c, c))
-    p.g[(23, 2)] = A((110, 110, 110))
-
-
-def h_serre_tete(p):
-    for x in range(4, 28):
-        for y in range(4, 7):
-            if p.region((x, y)) == 'cheveux' and y == 5 + (abs(x - 16) // 6):
-                p.g[(x, y)] = A((170, 170, 170) if x < 16 else (130, 130, 130))
-
-
 COUVRE_CHEFS = {None: lambda p: None, 'casquette': h_casquette, 'bandeau': h_bandeau, 'bonnet': h_bonnet,
-                'beret': h_beret, 'paille': h_paille, 'fleur': h_fleur, 'noeud': h_noeud, 'serre_tete': h_serre_tete}
+                'beret': h_beret, 'paille': h_paille, 'fleur': h_fleur}
 
 
 # ---------- les détails ----------
@@ -604,7 +536,6 @@ def d_barbe(p):
 PLACES = {
     'rousseur': {'M': ((8, 15), (10, 16), (11, 15), (20, 15), (21, 16), (23, 15)),
                  'F': ((8, 16), (10, 17), (11, 16), (21, 16), (22, 17), (24, 16))},
-    'joues': {'M': ((9, 18), (10, 18), (21, 18), (22, 18)), 'F': ((9, 19), (10, 19), (21, 19), (22, 19))},
     'rides': {'M': ((9, 16), (10, 16), (21, 16), (22, 16), (12, 18), (12, 19), (19, 18), (19, 19)),
               'F': ((9, 16), (10, 16), (22, 16), (23, 16), (12, 20), (12, 21), (19, 20), (19, 21))},
     'boucles': {'M': ((7, 18), (24, 18)), 'F': ((7, 21), (24, 21))},
@@ -627,32 +558,13 @@ def d_boucles(p):
         p.g[(x, y + 1)] = ('fixe', (184, 138, 46), None)
 
 
-def d_joues(p):
-    taches(p, 'joues', (236, 150, 130))
-
-
 def d_rides(p):
     """L'âge : un pli sous les yeux et de chaque côté de la bouche."""
     taches(p, 'rides', PEAU_RIDE)
 
 
-def d_pansement(p):
-    for (x, y), c in (((19, 17), (244, 226, 190)), ((20, 17), (240, 240, 232)), ((21, 17), (244, 226, 190)),
-                      ((20, 16), (220, 196, 160)), ((20, 18), (220, 196, 160))):
-        p.g[(x, y)] = ('fixe', c, None)
-
-
-def d_salopette(p):
-    """Les bretelles et la bavette d'une salopette sur le haut."""
-    for (x, y), t in list(p.g.items()):
-        if t[0] != 'chemise':
-            continue
-        if x in (10, 11, 20, 21) and y >= 26 or 10 <= x <= 21 and y >= 30:
-            p.g[(x, y)] = ('fixe', (63, 111, 168) if x not in (11, 21) or y >= 30 else (44, 79, 124), None)
-
-
 DETAILS = {'lunettes': d_lunettes, 'moustache': d_moustache, 'barbe': d_barbe, 'rousseur': d_rousseur,
-           'boucles': d_boucles, 'joues': d_joues, 'rides': d_rides, 'pansement': d_pansement, 'salopette': d_salopette}
+           'boucles': d_boucles, 'rides': d_rides}
 
 
 def motif(p, m):
@@ -691,25 +603,6 @@ def base(visage):
     if visage == 'F':
         corps_f(p)
     return p
-
-
-def enfant(p):
-    """La tête descend de 3 rangées sur un corps plus étroit (resserré de 20 % autour du milieu)."""
-    cou_y = 23 if p.visage == 'M' else 26
-    corps = {q: t for q, t in p.g.items() if t[0] in ('chemise', 'motif') or (t[0] == 'fixe' and q[1] >= 26)
-             or (t[0] == 'peau' and q[1] >= cou_y)}
-    tete = {q: t for q, t in p.g.items() if q not in corps}
-    g = {}
-    for y in range(N):
-        for x in range(N):
-            sx = round(15.5 + (x - 15.5) / 0.8)
-            t = corps.get((sx, y - 3))
-            if t:
-                g[(x, y)] = t
-    for (x, y), t in tete.items():
-        if y + 3 < N:
-            g[(x, y + 3)] = t
-    p.g = g
 
 
 # ---------- les couleurs ----------
@@ -769,39 +662,298 @@ def peindre(p, d, i):
     return im
 
 
-def jetons(d, est_enfant=False):
-    """Le portrait en jetons (avant les couleurs)."""
+def jetons(d):
+    """Le portrait d'un adulte en jetons (avant les couleurs)."""
     vis, coupe = COUPES[d['coupe']]
     if any(x in d['details'] for x in ('barbe', 'moustache')):
         vis = 'M'
     p = base(vis)
     coupe(p)
     details = list(d['details'])
-    if est_enfant:
-        details = [x for x in details if x not in ('barbe', 'moustache')] + ['joues']
-        if vis == 'F':
-            for q, t in p.g.items():        # (pas de rouge à lèvres)
-                if t[0] == 'peau' and t[1] in ROLES['F']['levres'][0]:
-                    p.g[q] = S(PEAU_BORD if t[1] == (217, 82, 61) else PEAU_RIDE)
-    elif d['cheveux'] in ('gris', 'blancs'):
+    if d['cheveux'] in ('gris', 'blancs'):
         details.append('rides')
     for x in details:
-        if x in DETAILS and x not in ('lunettes', 'salopette'):
+        if x in DETAILS and x != 'lunettes':
             DETAILS[x](p)
     COUVRE_CHEFS[d['chapeau']](p)
     if 'lunettes' in details:
         d_lunettes(p)
     motif(p, d['motif'])
-    if 'salopette' in details:
-        d_salopette(p)
     contour(p)
-    if est_enfant:
-        enfant(p)
     return p
 
 
-def portrait(d, i, est_enfant=False):
-    return peindre(jetons(d, est_enfant), d, i)
+def portrait(d, i):
+    return peindre(jetons(d), d, i)
+
+
+# ---------- les enfants ----------
+# Le modèle dessiné à la main (scripts/personnage/modeles/portrait_enfant.png, 20 × 25 : le garçon
+# à la coupe au bol et au t-shirt vert, les couleurs du jeune des adultes), posé en bas au milieu
+# de la case 32 × 32 (EX, EY) : la place au-dessus et sur les côtés reçoit chignon, couettes,
+# queue de cheval, mèches hérissées et chapeaux. Les coordonnées ci-dessous sont celles du modèle.
+
+MODELE_ENFANT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'modeles', 'portrait_enfant.png')
+EX, EY = 6, 7
+CH = ROLES['A']['cheveux'][1]
+# les nuances des cheveux du modèle : contour, sombre, base, mi-clair, reflet
+C_O, C_D, C_B, C_M, C_L = (51, 39, 23), (101, 74, 38), (135, 96, 44), (148, 105, 50), (182, 128, 60)
+
+
+class Enfant(Portrait):
+    """Un portrait d'enfant, en coordonnées du modèle (décalées de EX, EY à la pose)."""
+
+    def __init__(self):
+        im = Image.open(MODELE_ENFANT).convert('RGBA')
+        super().__init__({(x, y): jeton('A', im.getpixel((x, y))[:3])
+                          for y in range(im.height) for x in range(im.width) if im.getpixel((x, y))[3]})
+        self.visage = 'E'
+
+    def met(self, x, y, t):
+        if -EX <= x < N - EX and -EY <= y < N - EY:
+            self.g[(x, y)] = t
+
+    def cheveux(self):
+        return {q for q, t in self.g.items() if t[0] == 'cheveux'}
+
+
+def ch(c):
+    return H(CH, c)
+
+
+def e_cotes_courts(p):
+    """Les cheveux coupés au-dessus des oreilles : les côtés du bol ôtés sous la rangée 6, la
+    peau du bord du visage complétée, les oreilles."""
+    p.ote(lambda q, t: t[0] == 'cheveux' and q[1] >= 7)
+    for y in range(7, 12):
+        xs = [x for (x, yy) in p.g if yy == y]
+        for x in (min(xs) - 1, max(xs) + 1):
+            p.g[(x, y)] = S(PEAU_BORD)
+    for x in (2, 17):
+        for y, c in ((8, PEAU_BORD), (9, PEAU), (10, PEAU_BORD)):
+            p.g[(x, y)] = S(c)
+
+
+def e_frange(p):
+    pass
+
+
+def e_court(p):
+    e_cotes_courts(p)
+
+
+def e_meche(p):
+    """La mèche rabattue sur le côté : le front dégagé à droite, les cheveux en biais à gauche."""
+    e_cotes_courts(p)
+    for x in range(4, 16):
+        if x <= 9:
+            p.g[(x, 6)] = ch(C_M if x % 2 else C_B)
+        else:
+            p.g[(x, 6)] = S(PEAU)
+    for x in range(12, 16):
+        p.g[(x, 5)] = ch(C_D)
+
+
+def e_herisse(p):
+    """Courts, des mèches dressées sur le dessus."""
+    e_cotes_courts(p)
+    for x0 in (3, 6, 9, 12, 15):
+        for k in range(1, 3):
+            for x in range(x0 - (2 - k), x0 + 1):
+                p.met(x, -k + (x0 in (3, 15)), ch(C_L if x == x0 - 1 and k == 1 else C_B))
+
+
+def e_boucles(p):
+    """Des boucles : le bol grossi d'une case en festons, piqué de reflets et d'ombres."""
+    che = p.cheveux()
+    for (x, y) in list(che):
+        for n in voisins4(x, y):
+            if n not in p.g and n[1] <= 12 and (n[0] + n[1]) % 2 == 0:
+                p.met(*n, ch(C_B))
+    for (x, y) in p.cheveux():
+        if p.g[(x, y)][1] != C_O and (x + 3 * y) % 7 == 0:
+            p.g[(x, y)] = ch(C_L)
+        elif p.g[(x, y)][1] != C_O and (x + 3 * y) % 7 == 3:
+            p.g[(x, y)] = ch(C_D)
+
+
+def e_long(p):
+    """Les cheveux qui tombent sur les épaules, de chaque côté du visage."""
+    for y in range(11, 21):
+        for x0, x1 in ((1, 3), (16, 18)):
+            if y >= 14:
+                x0, x1 = (x0, x1 + 1) if x0 == 1 else (x0 - 1, x1)
+            for x in range(x0, x1 + 1):
+                if y == 20 and x in (x0, x1):
+                    continue
+                p.g[(x, y)] = ch(C_L if (x + y) % 5 == 0 else (C_D if x in (1, 18) else C_B))
+
+
+def e_touffe(p, cx, y0, y1, lien=True):
+    """Une mèche nouée (couette, queue de cheval) : un fuseau qui s'évase puis se resserre."""
+    for y in range(y0, y1 + 1):
+        r = 0.6 + 1.6 * (1 - abs((y - y0) / max(1, y1 - y0) - 0.45) / 0.55)
+        for x in range(int(cx - 3), int(cx + 4)):
+            if abs(x - cx) <= r:
+                p.met(x, y, ch(C_L if x < cx and (x + y) % 3 == 0 else (C_D if x > cx else C_B)))
+    if lien:
+        for x in range(int(cx) - 1, int(cx) + 2):
+            p.met(x, y0, A((150, 150, 150)))
+
+
+def e_couettes(p):
+    e_touffe(p, 0.5, 8, 17)
+    e_touffe(p, 18.5, 8, 17)
+
+
+def e_queue(p):
+    e_touffe(p, 19, 3, 15)
+
+
+def e_chignon(p):
+    for y in range(-3, 1):
+        for x in range(6, 14):
+            e = (x - 9.5) ** 2 / 10 + (y + 1.2) ** 2 / 3.5
+            if e <= 1:
+                p.met(x, y, ch(C_L if x <= 8 and y <= -2 else (C_D if x >= 12 else C_B)))
+
+
+COUPES_ENFANT = {'frange': e_frange, 'court': e_court, 'meche': e_meche, 'herisse': e_herisse,
+                 'boucles': e_boucles, 'long': e_long, 'couettes': e_couettes, 'queue': e_queue,
+                 'chignon': e_chignon}
+
+
+def e_sous(p, jusqua):
+    p.ote(lambda q, t: t[0] == 'cheveux' and q[1] < jusqua)
+
+
+def e_dessus(p, jusqua, rebord=None):
+    """Le haut de la tête (au-dessus de la rangée `jusqua`) devient le couvre-chef : clair en
+    haut à gauche, sombre à droite et au bord ; `rebord` : la rangée côtelée ou la visière."""
+    for (x, y) in [q for q, t in p.g.items() if q[1] < jusqua and t[0] in ('cheveux', 'peau')]:
+        bord = any(n not in p.g for n in voisins4(x, y))
+        c = 70 if bord else (205 if x <= 7 and y <= 2 else (125 if x >= 14 else 165))
+        p.g[(x, y)] = A((c, c, c))
+
+
+def e_casquette(p):
+    e_dessus(p, 4)
+    for x in range(1, 19):
+        p.g[(x, 4)] = A((90, 90, 90) if x in (1, 18) else (115, 115, 115))
+    for x in range(3, 17):
+        p.g[(x, 5)] = ch(C_D)                   # (l'ombre de la visière sur le front)
+
+
+def e_bonnet(p):
+    e_dessus(p, 5)
+    for x in range(2, 18):
+        p.g[(x, 4)] = A((185, 185, 185) if x % 2 else (125, 125, 125))
+    for (x, y) in ((9, -1), (10, -1), (9, -2), (10, -2)):
+        p.met(x, y, A((215, 215, 215) if y == -2 else (175, 175, 175)))
+
+
+def e_paille(p):
+    e_sous(p, 2)
+    for y in range(-3, 2):
+        for x in range(4, 16):
+            if y == -3 and x in (4, 15):
+                continue
+            bord = x in (4, 15) or y == -3
+            p.met(x, y, ('fixe', PAILLE['V'] if bord else (PAILLE['T'] if (x + y) % 4 == 0 else PAILLE['S']), None))
+    for x in range(5, 15):
+        p.met(x, 1, A((160, 160, 160)))
+    for x in range(-1, 21):
+        p.met(x, 2, ('fixe', PAILLE['V'] if x in (-1, 20) else (PAILLE['T'] if x % 3 == 0 else PAILLE['S']), None))
+    for x in range(0, 20):
+        p.met(x, 3, ('fixe', PAILLE['V'] if x in (0, 19) else PAILLE['U'], None))
+
+
+def e_noeud(p):
+    for (x, y), c in (((13, 0), 200), ((14, 0), 160), ((13, 1), 160), ((14, 1), 120), ((15, 1), 90),
+                      ((17, 0), 200), ((16, 0), 160), ((17, 1), 160), ((16, 1), 120), ((15, 0), 110)):
+        p.met(x, y, A((c, c, c)))
+
+
+def e_serre_tete(p):
+    for x in range(3, 17):
+        if p.region((x, 2)) == 'cheveux':
+            p.g[(x, 2)] = A((175, 175, 175) if x < 10 else (130, 130, 130))
+
+
+def e_fleur(p):
+    cx, cy = 15, 2
+    for dx, dy in ((0, -1), (-1, 0), (1, 0), (0, 1)):
+        p.met(cx + dx, cy + dy, A((200, 200, 200)))
+    for dx, dy in ((-1, -1), (1, 1)):
+        p.met(cx + dx, cy + dy, A((130, 130, 130)))
+    p.met(cx, cy, ('fixe', (236, 200, 60), None))
+
+
+COUVRE_CHEFS_ENFANT = {None: lambda p: None, 'casquette': e_casquette, 'bonnet': e_bonnet, 'paille': e_paille,
+                       'noeud': e_noeud, 'serre_tete': e_serre_tete, 'fleur': e_fleur}
+
+
+def e_lunettes(p):
+    noir = ('fixe', (40, 40, 46), None)
+    for x0, x1 in ((4, 10), (10, 16)):
+        for x in range(x0 + 1, x1):
+            p.g[(x, 6)] = noir
+            p.g[(x, 10)] = noir
+        for y in range(7, 10):
+            p.g[(x0, y)] = noir
+            p.g[(x1, y)] = noir
+
+
+def e_rousseur(p):
+    for q in ((5, 11), (7, 11), (6, 12), (12, 11), (14, 11), (13, 12)):
+        if p.region(q) == 'peau':
+            p.g[q] = S((214, 127, 58))
+
+
+def e_joues(p):
+    for q in ((5, 12), (6, 12), (13, 12), (14, 12)):
+        if p.region(q) == 'peau':
+            p.g[q] = S((236, 150, 130))
+
+
+def e_pansement(p):
+    for (x, y), c in (((13, 12), (244, 226, 190)), ((14, 12), (240, 240, 232)), ((15, 12), (244, 226, 190)),
+                      ((14, 11), (220, 196, 160)), ((14, 13), (220, 196, 160))):
+        p.g[(x, y)] = ('fixe', c, None)
+
+
+def e_salopette(p):
+    """Les bretelles et la bavette d'une salopette sur le t-shirt."""
+    for (x, y), t in list(p.g.items()):
+        if t[0] not in ('chemise', 'motif'):
+            continue
+        if x in (4, 5, 14, 15) and y >= 18 or 4 <= x <= 15 and y >= 22:
+            p.g[(x, y)] = ('fixe', (44, 79, 124) if x in (5, 15) and y < 22 or y == 22 else (63, 111, 168), None)
+    p.g[(4, 21)] = p.g[(15, 21)] = ('fixe', (236, 200, 60), None)
+
+
+DETAILS_ENFANT = {'rousseur': e_rousseur, 'joues': e_joues, 'pansement': e_pansement}
+
+
+def jetons_enfant(d):
+    p = Enfant()
+    COUPES_ENFANT[d['coupe']](p)
+    for x in d['details']:
+        if x in DETAILS_ENFANT:
+            DETAILS_ENFANT[x](p)
+    COUVRE_CHEFS_ENFANT[d['chapeau']](p)
+    if 'lunettes' in d['details']:
+        e_lunettes(p)
+    motif(p, d['motif'])
+    if 'salopette' in d['details']:
+        e_salopette(p)
+    contour(p)
+    p.g = {(x + EX, y + EY): t for (x, y), t in p.g.items()}
+    return p
+
+
+def portrait_enfant(d, i):
+    return peindre(jetons_enfant(d), d, i)
 
 
 def dessin(nom):
@@ -826,7 +978,7 @@ def tous():
         else:
             out.append((nom, dessin(nom) if nom in DESSINS else portrait(d, i)))
     for i, (nom, d) in enumerate(portraits_enfants.enfants()):
-        out.append((nom, portrait(d, 50 + i, True)))     # (i : son rang parmi tous, comme modeles.tous())
+        out.append((nom, portrait_enfant(d, 50 + i)))     # (i : son rang parmi tous, comme modeles.tous())
     return out
 
 
