@@ -631,7 +631,8 @@ test('ferme générée : on bâtit sur l\'herbe haute une fois fauchée, sur un 
   assertEqual(regrowGrass(s), [], 'rien ne repousse sous le mur');
   assert(ids.every((id) => grassCut(s, id)));
   reprendreBloc(s, t);
-  assertEqual(regrowGrass(s).sort(), ids.slice().sort(), 'le mur repris : elle repousse');
+  const revenues = regrowGrass(s);
+  assert(ids.every((id) => revenues.includes(id)), 'le mur repris : elle repousse');
   // un rocher : pas tant qu'il est là ; cassé, sa case se bâtit ; il ne revient pas dessous
   const [id, cases] = Object.entries(T.ROCHERS).find(([, cs]) => cs.length === 1 && !Object.values(T.ARBRES).some((a) => a.includes(cs[0])));
   const r = cases[0];
@@ -648,6 +649,23 @@ test('ferme générée : on bâtit sur l\'herbe haute une fois fauchée, sur un 
   const avant = countItem(s, 'paille');
   assert(faucherSousBati(s) >= T.HERBES[t2].length);
   assertEqual([herbesSur(s, t2), countItem(s, 'paille')], [[], avant]);
+});
+
+test('ferme générée : l\'herbe haute d\'une case voisine qui déborde sur un chemin est foulée et ne repousse pas dessus', () => {
+  const s = chantier('foule1');
+  setInv(s, { chemin: 10 });
+  const T = farmTerrain(s), W = T.LARGEUR, H = T.HERBES;
+  // une case d'herbe libre, sans touffe, dont la voisine de droite a une touffe tout à sa gauche
+  const t = Number(Object.keys(H).map(Number).map((k) => k - 1).find((j) => T.LIGNES[Math.floor(j / W)][j % W] === '#' && !(H[j] || []).length
+    && H[j + 1].some((id) => Number(id.split(',')[0]) - ((j + 1) % W) * 16 < 7)));
+  const ids = H[t + 1].filter((id) => Number(id.split(',')[0]) - ((t + 1) % W) * 16 < 7);
+  assert(ids.length && herbesSur(s, t).length === 0);
+  assert(poserBloc(s, 'chemin', t).ok, 'le chemin se pose à côté de la touffe');
+  assert(ids.every((id) => grassCut(s, id)), 'ses brins couvraient le chemin : foulée');
+  s.day += 5;
+  assert(!regrowGrass(s).some((id) => ids.includes(id)), 'elle ne repousse pas sur le chemin');
+  reprendreBloc(s, t);
+  assert(ids.every((id) => regrowGrass(s).includes(id) || !grassCut(s, id)), 'le chemin repris : elle repousse');
 });
 
 /* ---------- étape 5b : le Moulin (pièce close + meule) ---------- */

@@ -365,6 +365,16 @@ export const MIGRATIONS = {
     }
     return s2;
   },
+  // v43 → v44 : l'herbe haute qui déborde sur ce qui est bâti (un chemin, un mur) est foulée
+  // (faucherSousBati : ses brins couvraient la case voisine).
+  43: (state) => {
+    const s2 = { ...state, version: 44 };
+    if (s2.carte && farmSeed(s2) !== null) {
+      s2.outils = { ...(s2.outils || {}), herbes: { ...((s2.outils && s2.outils.herbes) || {}) } };
+      faucherSousBati(s2);
+    }
+    return s2;
+  },
 };
 
 function migrateRoomKinds(old) {
