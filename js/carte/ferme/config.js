@@ -470,13 +470,14 @@
     // pour 100 cases d'eau ; un poisson saute toutes les `saut` s en moyenne, dans une eau d'au
     // moins `poissons` cases, de `sautHaut` px en `sautMs` ms ; quelqu'un qui marche à `rive` px
     // de l'eau y fait un rond toutes les `pas` s)
-    // le shader de l'eau (`shader`, eau.js EAU_FRAG) : les crêtes des vagues (une onde au-dessus
-    // de `crete`), plus claires de `clair` ; les creux (sous `creux`), plus
-    // sombres de `sombre` ; le ciel de l'heure (CarteKit.lumiere, teinté de `bleu`) à `ciel` ;
-    // l'écume de la rive (`ecume`) : à `pres` px de la terre, jusqu'à `pres + va`, et retour, à
-    // `vitesse` rad/s, à `alpha` ; une « terre » de `ilot` px au plus dans l'eau (roseaux, cailloux)
-    // compte pour de l'eau
-    shader: { crete: 0.93, creux: -0.95, clair: 1, sombre: 0.06, bleu: [0.75, 0.88, 1], ciel: 0.1, ecume: { pres: 1.4, va: 1.8, vitesse: 0.9, alpha: 0.75 }, ilot: 64 },
+    // le shader de l'eau (`shader`, eau.js EAU_FRAG) : les traits ondulés du large (là où deux
+    // bruits qui glissent à `glisse` px/s diffèrent de moins de `trait`, et où un troisième
+    // dépasse `endroits`), plus clairs de `clair` ; le ciel de l'heure (CarteKit.lumiere,
+    // teinté de `bleu`) à `ciel` ; l'écume de la rive (`ecume`) : à `pres` px de la terre,
+    // jusqu'à `pres + va`, et retour, à `vitesse` rad/s, à `alpha` ; une « terre » de `ilot` px
+    // au plus dans l'eau (roseaux, cailloux) compte pour de l'eau ; la distance à la terre est
+    // lissée sur `lisse` px (les angles de l'écume s'arrondissent)
+    shader: { trait: 0.032, glisse: 3, clair: 1, endroits: 0.4, bleu: [0.75, 0.88, 1], ciel: 0.1, ecume: { pres: 1.4, va: 1.8, vitesse: 0.9, alpha: 0.75 }, ilot: 64, lisse: 2 },
     miroir: { portee: 40, haut: 160, ecrase: 0.9, teinte: 0x86a8c8, alpha: 0.42 },
     ronds: { images: 6, vie: 1.1, alpha: 0.85, hasard: 0.35, saut: 14, poissons: 30, sautHaut: 10, sautMs: 520, rive: 6, pas: 0.45 },
   };

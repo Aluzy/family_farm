@@ -285,9 +285,12 @@ Le Marché vend toujours les outils.
   - l'escalier repris, ou la pièce ouverte, l'étage s'en va : ses blocs reviennent dans
     l'inventaire (`rangerEtage`) ; au coucher, on redescend.
 - **L'eau vivante** (un essai, `js/carte/ferme/eau.js`, réglages `EAU` dans
-  `js/carte/ferme/config.js`) : l'eau de chaque étendue est peinte par un shader (des vagues
-  aux crêtes claires au large, plus sombre au large, des reflets de lumière au fond près des
-  rives, le ciel de l'heure, une ligne d'écume qui avance et recule le long de la rive) ; elle
+  `js/carte/ferme/config.js`) : l'eau de chaque étendue est peinte par un shader, inspiré du
+  « 2D Pixel Art Water » de niwho (godotshaders.com, CC0) : de légers traits ondulés au large
+  (là où deux bruits qui glissent en sens contraires se croisent), plus sombre au large, de fins
+  reflets de lumière au fond près des rives, le ciel de l'heure, une ligne d'écume qui avance et
+  recule le long de la rive, arrondie dans les angles (une distance à la terre euclidienne,
+  lissée) et coupée par endroits ; elle
   ondule (deux vaguelettes qui glissent, dans une texture que lit le shader ; la terre des rives, reposée telle
   quelle par-dessus, ne bouge pas : seuls l'eau et son liseré blanc ondulent) ; le jour, des
   scintillements naissent et s'éteignent sur l'eau, loin des rives, plus nombreux et dorés quand le soleil
