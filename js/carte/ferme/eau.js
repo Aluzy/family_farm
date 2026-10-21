@@ -87,21 +87,25 @@
 
   // Le shader de l'eau (js/carte/ferme/eau.js syncEau ; E.shader) : il peint l'eau de
   // l'étendue à partir de son image (uBase : l'eau seule, la terre transparente, eauRive), pixel
-  // par pixel (les pixels de la carte, pas ceux de l'écran) :
+  // par pixel (les pixels de la carte, pas ceux de l'écran). Les reflets et l'écume s'inspirent
+  // du shader « 2D Pixel Art Water » de niwho (godotshaders.com, CC0) : deux bruits qui glissent
+  // en sens contraires, et un dégradé depuis la rive.
   //   - l'eau ondule (uVague : la carte de la déformation, décalée de pixels entiers) ;
-  //   - des vagues : leurs crêtes, de petits traits clairs qui serpentent et glissent (une onde
-  //     au-dessus de uVagues.x, coupée par une autre), au large ; leurs creux, plus sombres ;
-  //   - plus sombre au large (uChamp : la distance à la terre, 0 à 15 px) ;
-  //   - des reflets de lumière au fond, là où l'eau est peu profonde (des lignes fines qui
-  //     bougent : là où deux ondes s'annulent) ;
+  //   - de légers traits ondulés, clairs, au large : là où deux bruits (uBruit, rouge et vert,
+  //     étirés en largeur) qui glissent en sens contraires se croisent, et seulement par
+  //     endroits (un troisième, lent) ;
+  //   - plus sombre au large (uChamp : la distance à la terre, 0 à 15 px, euclidienne) ;
+  //   - de fins reflets de lumière au fond, là où l'eau est peu profonde ;
   //   - le ciel s'y reflète (uCiel, la lumière de l'heure, à uCielK) ;
-  //   - le long de la rive, une ligne d'écume qui avance et recule (6), à tant de px de la terre.
+  //   - le long de la rive, une ligne d'écume qui avance et recule (6), à tant de px de la terre
+  //     (arrondie dans les angles : la distance est euclidienne), coupée par endroits.
   const EAU_FRAG = `
 #pragma phaserTemplate(shaderName)
 precision mediump float;
 uniform sampler2D uBase;
 uniform sampler2D uChamp;
 uniform sampler2D uVague;
+uniform sampler2D uBruit;
 uniform vec2 uTaille;
 uniform float uTemps;
 uniform float uOndule;
@@ -110,10 +114,12 @@ uniform float uCielK;
 uniform vec4 uVagues;
 uniform vec4 uEcume;
 varying vec2 outTexCoord;
+float bruit(vec2 p) { return texture2D(uBruit, fract(p / 128.0)).r; }
+float bruit2(vec2 p) { return texture2D(uBruit, fract(p / 128.0)).g; }
 float reflet(vec2 p, float t) {
   vec2 q = p * 0.16;
   float v = sin(q.x + 1.7 * sin(q.y * 0.8 + t * 0.7)) + sin(q.y * 1.2 + 1.5 * sin(q.x * 0.9 - t * 0.6));
-  return step(abs(v), 0.09);
+  return step(abs(v), 0.07);
 }
 void main() {
   vec2 px = floor(outTexCoord * uTaille) + 0.5;
@@ -125,19 +131,48 @@ void main() {
   float t = uTemps;
   vec3 c = base.rgb;
   float large = smoothstep(3.0, 7.0, d);
-  float h = sin(dot(px, vec2(0.07, 0.23)) + t * 1.2 + 0.9 * sin(px.x * 0.06 - t * 0.5));
-  float k = sin(dot(px, vec2(0.13, -0.05)) - t * 0.7);
-  c = mix(c, c * 1.12 + 0.07, step(uVagues.x, h) * step(0.55, k) * large * uVagues.z);
-  c *= 1.0 - uVagues.w * step(h, uVagues.y) * step(0.55, -k) * large;
-  c *= mix(1.0, 0.86, smoothstep(4.0, 15.0, d));
-  c += vec3(0.09, 0.11, 0.09) * reflet(px, t) * (1.0 - smoothstep(2.0, 7.0, d));
+  // les traits ondulés : là où les deux bruits se croisent (étirés en largeur : des traits
+  // couchés), par endroits seulement
+  vec2 e = vec2(px.x * 0.5, px.y);
+  float n1 = bruit(e + vec2(t * uVagues.y, t * 1.3));
+  float n2 = bruit2(e - vec2(t * uVagues.y * 0.8, t * -0.9) + 41.0);
+  float trait = step(abs(n1 - n2), uVagues.x) * step(uVagues.w, bruit(px * 0.35 + vec2(17.0 - t * 0.6, 5.0)));
+  c = mix(c, c * 1.06 + 0.05, trait * large * uVagues.z);
+  c *= mix(1.0, 0.88, smoothstep(4.0, 15.0, d));
+  c += vec3(0.05, 0.06, 0.05) * reflet(px, t) * (1.0 - smoothstep(2.0, 7.0, d));
   c = mix(c, uCiel, uCielK);
+  // l'écume : elle avance et recule, coupée par endroits
   float va = 0.5 + 0.5 * sin(t * uEcume.z + (px.x + px.y) * 0.045);
   float bord = uEcume.x + uEcume.y * va;
-  float ecume = step(abs(d - bord), 0.55) * step(1.0, d);
+  float ecume = step(abs(d - bord), 0.5) * step(1.0, d) * step(0.38, bruit2(px * 0.6 + vec2(t * 2.0, 0.0)));
   c = mix(c, vec3(0.93, 0.97, 1.0), ecume * uEcume.w);
   gl_FragColor = vec4(c, 1.0);
 }`;
+
+  // Le bruit du shader (uBruit) : un carreau de 128 × 128 px sans raccord, un bruit de valeurs
+  // lissé (une grille de 16 × 16 nombres au hasard, interpolés), dans le rouge et le vert.
+  function bruitEau(textures) {
+    if (textures.exists('eau_bruit')) return;
+    const N = 128, G = 16, cv = document.createElement('canvas');
+    cv.width = cv.height = N;
+    const g = cv.getContext('2d'), im = g.createImageData(N, N);
+    const grilles = [0, 1].map(() => Array.from({ length: G * G }, () => Math.random()));
+    const lisse = (x) => x * x * (3 - 2 * x);
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        const gx = (x / N) * G, gy = (y / N) * G, x0 = Math.floor(gx), y0 = Math.floor(gy), fx = lisse(gx - x0), fy = lisse(gy - y0);
+        const o = (y * N + x) * 4;
+        grilles.forEach((gr, c) => {
+          const v = (i, j) => gr[((j + G) % G) * G + ((i + G) % G)];
+          const a = v(x0, y0) + (v(x0 + 1, y0) - v(x0, y0)) * fx, b = v(x0, y0 + 1) + (v(x0 + 1, y0 + 1) - v(x0, y0 + 1)) * fx;
+          im.data[o + c] = Math.round(255 * (a + (b - a) * fy));
+        });
+        im.data[o + 3] = 255;
+      }
+    }
+    g.putImageData(im, 0, 0);
+    textures.addCanvas('eau_bruit', cv);
+  }
 
   F.partie({
 
@@ -152,6 +187,7 @@ void main() {
       this.eauAreas = areas;
       if (!areas.length) return;
       vaguelettes(this.textures);
+      bruitEau(this.textures);
       const W = this.waters();
       this.eauVive = areas.map((a, i) => {
         const w = a.tex.width, h = a.tex.height;
@@ -163,14 +199,14 @@ void main() {
         const uni = { temps: 0, ciel: [1, 1, 1], cielK: 0 };
         const S = E.shader;
         const shader = this.add.shader({
-          name: 'eauVive', fragmentSource: EAU_FRAG, initialUniforms: { uBase: 0, uChamp: 1, uVague: 2 },
+          name: 'eauVive', fragmentSource: EAU_FRAG, initialUniforms: { uBase: 0, uChamp: 1, uVague: 2, uBruit: 3 },
           setupUniforms: (set) => {
             set('uTaille', [w, h]); set('uTemps', uni.temps); set('uOndule', E.ondule);
             set('uCiel', uni.ciel); set('uCielK', uni.cielK);
-            set('uVagues', [S.crete, S.creux, S.clair, S.sombre]);
+            set('uVagues', [S.trait, S.glisse, S.clair, S.endroits]);
             set('uEcume', [S.ecume.pres, S.ecume.va, S.ecume.vitesse, S.ecume.alpha]);
           },
-        }, a.x, a.y, w, h, [a.tex.key, `eau_champ_${i}`, `eau_carte_${i}`]).setOrigin(0).setDepth(a.sprite.depth);
+        }, a.x, a.y, w, h, [a.tex.key, `eau_champ_${i}`, `eau_carte_${i}`, 'eau_bruit']).setOrigin(0).setDepth(a.sprite.depth);
         a.sprite.setAlpha(0);
         const fx = null;
         // la terre de l'étendue (l'herbe, la terre des rives), posée telle quelle par-dessus
@@ -258,8 +294,7 @@ void main() {
         }
       }
       v.profond = profond;
-      // le champ : la distance de chaque pixel d'eau à la terre (en px, jusqu'à 15 ; de proche en
-      // proche, en comptant les diagonales), dans le rouge (le shader : uChamp)
+      // le champ : la distance de chaque pixel d'eau à la terre (en px, jusqu'à 15), dans le rouge (le shader : uChamp)
       if (v.champ) {
         // (les petits îlots de « terre » dans l'eau, roseaux, cailloux : de l'eau pour le champ,
         // ni écume ni rive autour d'eux)
@@ -276,20 +311,44 @@ void main() {
           }
           if (comp.length <= E.shader.ilot) for (const p of comp) ilot[p] = 1;
         }
-        const D = new Uint8Array(w * h).fill(15), file = [];
-        for (let p = 0; p < w * h; p++) if (!eau[p] && !ilot[p]) { D[p] = 0; file.push(p); }
-        for (let i = 0; i < file.length; i++) {
-          const p = file[i], x = p % w, y = (p / w) | 0, n = D[p] + 1;
-          if (n >= 15) continue;
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const xx = x + dx, yy = y + dy;
-              if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
-              const q = yy * w + xx;
-              if (D[q] > n) { D[q] = n; file.push(q); }
+        // (la distance euclidienne : deux passes, Felzenszwalb et Huttenlocher ; les lignes à
+        // même distance s'arrondissent dans les angles)
+        const INF = 1e9, f = new Float64Array(Math.max(w, h)), dd = new Float64Array(Math.max(w, h)), vv = new Int32Array(Math.max(w, h)), zz = new Float64Array(Math.max(w, h) + 1);
+        const passe = (n) => {
+          let k = 0;
+          vv[0] = 0; zz[0] = -INF; zz[1] = INF;
+          for (let q = 1; q < n; q++) {
+            let s2 = ((f[q] + q * q) - (f[vv[k]] + vv[k] * vv[k])) / (2 * q - 2 * vv[k]);
+            while (s2 <= zz[k]) { k--; s2 = ((f[q] + q * q) - (f[vv[k]] + vv[k] * vv[k])) / (2 * q - 2 * vv[k]); }
+            k++; vv[k] = q; zz[k] = s2; zz[k + 1] = INF;
+          }
+          k = 0;
+          for (let q = 0; q < n; q++) { while (zz[k + 1] < q) k++; dd[q] = (q - vv[k]) * (q - vv[k]) + f[vv[k]]; }
+        };
+        const D2 = new Float64Array(w * h);
+        for (let p = 0; p < w * h; p++) D2[p] = !eau[p] && !ilot[p] ? 0 : INF;
+        for (let x = 0; x < w; x++) { for (let y = 0; y < h; y++) f[y] = D2[y * w + x]; passe(h); for (let y = 0; y < h; y++) D2[y * w + x] = dd[y]; }
+        for (let y = 0; y < h; y++) { for (let x = 0; x < w; x++) f[x] = D2[y * w + x]; passe(w); for (let x = 0; x < w; x++) D2[y * w + x] = dd[x]; }
+        let D = new Float64Array(w * h);
+        for (let p = 0; p < w * h; p++) D[p] = Math.min(15, Math.sqrt(D2[p]));
+        // (lissée : un flou de E.shader.lisse px, deux fois, en largeur puis en hauteur ; les
+        // angles rentrants de la rive s'arrondissent aussi ; la terre reste à 0)
+        const L = E.shader.lisse;
+        for (let n = 0; n < 2; n++) {
+          for (const [pas, long, larg] of [[1, w, h], [w, h, w]]) {
+            const out = new Float64Array(w * h);
+            for (let j = 0; j < larg; j++) {
+              const base = pas === 1 ? j * w : j;
+              for (let i = 0; i < long; i++) {
+                let t = 0, c = 0;
+                for (let k = Math.max(0, i - L); k <= Math.min(long - 1, i + L); k++) { t += D[base + k * pas]; c++; }
+                out[base + i * pas] = t / c;
+              }
             }
+            D = out;
           }
         }
+        for (let p = 0; p < w * h; p++) if (!eau[p] && !ilot[p]) D[p] = 0;
         const cc = v.champ.getContext(), ci = cc.createImageData(w, h);
         for (let p = 0; p < w * h; p++) { ci.data[p * 4] = Math.round((D[p] * 255) / 15); ci.data[p * 4 + 3] = 255; }
         cc.putImageData(ci, 0, 0);
