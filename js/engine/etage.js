@@ -4,7 +4,7 @@
 // cette pièce et de ses murs (l'emprise : etageEmprise), il y a un étage : un plancher sur toute
 // l'emprise, où l'on monte par l'escalier (la carte : js/carte/ferme/etage.js) et où l'on pose
 // d'autres blocs (ETAGE_BLOCS : des murs, des portes, une paillasse, une lanterne, une
-// barrière ; ils n'ont pas d'autre effet que d'être là et d'arrêter le passage). Une case de
+// barrière, des meubles ; ils n'ont pas d'autre effet que d'être là et d'arrêter le passage). Une case de
 // l'emprise est libre : celle de l'escalier (on y redescend).
 //
 // state.etage = { [tuile]: sorte } : les blocs posés à l'étage. Une pièce qui perd son escalier
@@ -13,16 +13,30 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, takeItem } from './inventory.js';
-import { blocsEnMain, blocsPoses, changeMur, genreBloc, hauteurMur, piecesCloses, solsPoses } from './blocs.js';
+import { blocsEnMain, blocsPoses, changeMur, empriseMeuble, genreBloc, hauteurMur, piecesCloses, solsPoses } from './blocs.js';
 import { atelierOuvert } from './atelier.js';
 import { farmTerrain } from './terrain.js';
 
-// Les blocs qui se posent à l'étage.
-export const ETAGE_BLOCS = ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'porte', 'paillasse', 'lanterne', 'barriere'];
+// Les blocs qui se posent à l'étage : des murs, des portes, une paillasse, une lanterne, une
+// barrière, et les meubles du Marché qui se posent au sol (pas les tableaux, accrochés à un mur).
+export const ETAGE_BLOCS = ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'porte', 'paillasse', 'lanterne', 'barriere']
+  .concat(Object.keys(DATA.ATELIER.BLOCS).filter((k) => DATA.ATELIER.BLOCS[k].meuble && !DATA.ATELIER.BLOCS[k].sur));
 
 // Les blocs posés à l'étage : { [tuile]: sorte }.
 export function etageBlocs(state) {
   return state.etage && typeof state.etage === 'object' ? state.etage : {};
+}
+
+// Les cases de l'étage couvertes par un meuble de plusieurs cases, hors la sienne : Map(case →
+// case du meuble).
+export function etageCouvertes(state) {
+  const out = new Map();
+  for (const [k, sorte] of Object.entries(etageBlocs(state))) {
+    const s = DATA.ATELIER.BLOCS[sorte], t = Number(k);
+    if (!s || !s.meuble) continue;
+    for (const j of empriseMeuble(state, sorte, t) || []) if (j !== t) out.set(j, t);
+  }
+  return out;
 }
 
 // Les escaliers posés (leurs cases).
@@ -122,7 +136,17 @@ export function poseEtageStatus(state, sorte, tile) {
   if (!etageEmprise(state).has(tile)) return { ok: false, raison: 'À l\'étage, on ne bâtit qu\'au-dessus d\'une pièce close qui a un escalier.' };
   if (blocsPoses(state)[tile] === 'escalier') return { ok: false, raison: 'Ici, c\'est le haut de l\'escalier.' };
   if (etageBlocs(state)[tile] && !changeMur(etageBlocs(state)[tile], sorte)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
-  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+  const couvertes = etageCouvertes(state);
+  if (couvertes.has(tile)) return { ok: false, raison: 'Un meuble occupe cette case.' };
+  // un meuble de plusieurs cases : toutes à l'étage, libres
+  if (s.meuble) {
+    const E = etageEmprise(state), B = blocsPoses(state), H = etageBlocs(state);
+    const cases = empriseMeuble(state, sorte, tile);
+    if (!cases || !cases.every((j) => E.has(j) && B[j] !== 'escalier' && (j === tile || (!H[j] && !couvertes.has(j))))) {
+      return { ok: false, raison: `${s.nom} : il lui faut ${s.largeur || 1} × ${s.hauteur || 1} cases libres à l'étage (vers la droite${(s.hauteur || 1) > 1 ? ' et vers le haut' : ''}).` };
+    }
+  }
+  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: `Plus de ${s.nom.toLowerCase()} : ${s.meuble ? 'achète-en au Marché' : 'fabrique-en à l\'Atelier'}.` };
   return { ok: true };
 }
 
@@ -138,8 +162,10 @@ export function poserEtage(state, sorte, tile) {
   return ancien ? { ok: true, sorte, case: tile, etage: true, remplace: ancien } : { ok: true, sorte, case: tile, etage: true };
 }
 
-// Reprend le bloc de l'étage posé sur `tile` : son objet revient dans l'inventaire.
+// Reprend le bloc de l'étage posé sur `tile` (ou le meuble qui couvre `tile`) : son objet revient
+// dans l'inventaire.
 export function reprendreEtage(state, tile) {
+  if (!etageBlocs(state)[tile] && etageCouvertes(state).has(tile)) tile = etageCouvertes(state).get(tile);
   const sorte = etageBlocs(state)[tile];
   if (!sorte) return fail('Il n\'y a pas de bloc ici.');
   delete state.etage[tile];
@@ -156,7 +182,9 @@ export function rangerEtage(state) {
   const emprise = etageEmprise(state);
   let n = 0;
   for (const k of tiles) {
-    if (emprise.has(Number(k)) && blocsPoses(state)[k] !== 'escalier') continue;
+    // (un meuble : toutes ses cases)
+    const cases = DATA.ATELIER.BLOCS[E[k]].meuble ? empriseMeuble(state, E[k], Number(k)) || [Number(k)] : [Number(k)];
+    if (cases.every((j) => emprise.has(j) && blocsPoses(state)[j] !== 'escalier')) continue;
     addItem(state, DATA.ATELIER.BLOCS[E[k]].objet, 1);
     delete E[k];
     n += 1;

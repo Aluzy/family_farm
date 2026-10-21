@@ -77,6 +77,27 @@
           // les blocs de l'étage (les murs raccordés entre eux, hauts comme en bas)
           const at = new Map(etage.blocs.map((b) => [b.case, b.sorte]));
           for (const b of etage.blocs) {
+            // un meuble (modèle : b.meuble, comme en bas : syncMeuble) : son dessin, au milieu des
+            // cases qu'il couvre, qui arrêtent le passage s'il bloque
+            if (b.meuble) {
+              const M = b.meuble, k = 'meuble_' + M.dessin, p = pos(b.case);
+              if (!this.textures.exists(k)) continue;
+              const x = Math.round(((b.case % cols) + M.largeur / 2) * T);
+              // (un meuble qui bloque : devant le personnage de sa rangée, derrière ses murs ; un
+              // tapis, un lit, où l'on marche : une tranche par rangée, sur le plancher de sa rangée,
+              // sous le personnage qui y est, etageDepth)
+              if (M.bloque || M.hauteur < 2) {
+                add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setDepth(p.y + (M.bloque ? 0.9 : M.lit ? 0.75 : 0.6)));
+              } else {
+                const H = this.textures.get(k).getSourceImage().height;
+                for (let j = 0; j < M.hauteur; j++) {
+                  const y1 = H - j * T, y0 = j === M.hauteur - 1 ? 0 : y1 - T;
+                  add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setCrop(0, y0, 9999, y1 - y0).setDepth(p.y - j * T + (M.lit ? 0.75 : 0.6)));
+                }
+              }
+              if (M.bloque) for (let j = 0; j < M.hauteur; j++) for (let i = 0; i < M.largeur; i++) this.etageBloque.add(b.case - j * cols + i);
+              continue;
+            }
             const [key, f] = this.blocImage(b, at, cols), p = pos(b.case);
             const plat = BLOCS_CARTE.plats.includes(b.sorte);
             const img = add(this.add.image(p.x, p.y - dy, key, f).setOrigin(0.5, 1).setDepth(p.y + (plat ? 0.7 : 1)));
