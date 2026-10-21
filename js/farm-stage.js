@@ -405,6 +405,7 @@
         this.stepLanterns(time, dt / 1000);      // (avant le voile : leurs lumières y sont posées)
         this.lumiere.step();
         if (this.tileAnims.length && !this.room) this.stepTileAnims(time);
+        this.stepEau(time, dt / 1000);           // (l'eau vivante, js/carte/ferme/eau.js)
         if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
         if (this.tankTipUntil && performance.now() >= this.tankTipUntil) this.showTankTip(false);
         this.syncTankTip();
