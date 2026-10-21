@@ -78,13 +78,32 @@
           }
           // les blocs de l'étage (les murs raccordés entre eux, hauts comme en bas)
           const at = new Map(etage.blocs.map((b) => [b.case, b.sorte]));
+          // deux lits adulte côte à côte (la même rangée) : un lit deux places, comme en bas
+          // (chantier.js syncLitsDoubles) ; celui de gauche le dessine, l'autre ne se dessine pas
+          const LD = BLOCS_CARTE.litDouble, seul = (c) => { const b = etage.blocs.find((q) => q.case === c); return !!(b && b.meuble && b.meuble.dessin === LD.seul); };
+          const paire = new Map();
+          if (this.textures.exists('meuble_' + LD.double)) {
+            for (const b of etage.blocs.slice().sort((p1, p2) => p1.case - p2.case)) {
+              const c = b.case;
+              if (!seul(c) || paire.has(c) || c % cols === cols - 1 || !seul(c + 1) || paire.has(c + 1)) continue;
+              paire.set(c, { gauche: true, autre: c + 1 });
+              paire.set(c + 1, { gauche: false, autre: c });
+            }
+          }
           for (const b of etage.blocs) {
             // un meuble (modèle : b.meuble, comme en bas : syncMeuble) : son dessin, au milieu des
             // cases qu'il couvre, qui arrêtent le passage s'il bloque
             if (b.meuble) {
-              const M = b.meuble, k = 'meuble_' + M.dessin, p = pos(b.case);
+              const M = b.meuble, pr = paire.get(b.case), p = pos(b.case);
+              const k = 'meuble_' + (pr ? LD.double : M.dessin);
               if (!this.textures.exists(k)) continue;
-              const x = Math.round(((b.case % cols) + M.largeur / 2) * T);
+              const x0 = Math.round(((b.case % cols) + M.largeur / 2) * T), x = pr ? x0 + T / 2 : x0;
+              // (la moitié droite d'un lit deux places : rien à dessiner, sa place seulement)
+              if (pr && !pr.gauche) {
+                const g = pos(pr.autre);
+                this.etageLits.set(b.case, { img: null, gauche: pr.autre, x: x0, y: g.y - dy - 1, haut: this.textures.get(k).getSourceImage().height, dessin: LD.double, double: true });
+                continue;
+              }
               // (un meuble qui bloque : devant le personnage de sa rangée, derrière ses murs ; un
               // tapis, un lit, où l'on marche : une tranche par rangée, sur le plancher de sa rangée,
               // sous le personnage qui y est, etageDepth)
@@ -98,7 +117,7 @@
                   const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setCrop(0, y0, 9999, y1 - y0).setDepth(p.y - j * T + (M.lit ? 0.75 : 0.6)));
                   if (!j) bas = img;
                 }
-                if (M.lit) this.etageLits.set(b.case, { img: bas, x, y: p.y - dy - 1, haut: H, dessin: M.dessin });
+                if (M.lit) this.etageLits.set(b.case, pr ? { img: bas, x: x0, xd: x, y: p.y - dy - 1, haut: H, dessin: LD.double, double: true } : { img: bas, x, y: p.y - dy - 1, haut: H, dessin: M.dessin });
               }
               if (M.bloque) for (let j = 0; j < M.hauteur; j++) for (let i = 0; i < M.largeur; i++) this.etageBloque.add(b.case - j * cols + i);
               continue;
@@ -197,13 +216,20 @@
       const cols = this.grid.cols, pied = (c) => ({ x: (c % cols) * T + T / 2, y: (Math.floor(c / cols) + 1) * T - 2 });
       const cell = pied(t);
       const via = (this.etageEscaliers || []).map(pied).sort((a, b) => Math.hypot(a.x - cell.x, a.y - cell.y) - Math.hypot(b.x - cell.x, b.y - cell.y))[0] || null;
-      const img = e.img;
+      // (la moitié droite d'un lit deux places : l'image et la couverture sont celles de gauche)
+      const g = e.img ? e : this.etageLits.get(e.gauche);
+      const img = g && g.img;
+      if (!img) return null;
+      // sa profondeur et celles de ce qui s'y pose (le dormeur, sa couverture : z(0.1), z(0.2)) :
+      // devant le voile quand on regarde l'étage (stepEtage, etageZ), à l'échelle de etageZ
+      const base = () => (img.etageZ !== undefined ? img.etageZ : img.depth);
+      const z = (k) => (img.etageZ !== undefined && img.depth !== img.etageZ ? this.etageZ(base() + k) : base() + k);
       if (e.paillasse) {
-        return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, get depth() { return img.depth; }, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y }, via, etage: cell };
+        return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, get depth() { return img.depth; }, z, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y }, via, etage: cell };
       }
       const drap = 'meuble_' + e.dessin + '_drap';
       if (!this.has(drap)) return null;
-      return { x: e.x, y: Math.min(e.y - e.haut + BLOCS_CARTE.litPieds, e.y - 1), get depth() { return img.depth; }, drap: { key: drap, frame: undefined, x: e.x, y: e.y }, via, etage: cell };
+      return { x: e.x, y: Math.min(e.y - e.haut + BLOCS_CARTE.litPieds, e.y - 1), get depth() { return img.depth; }, z, drap: { key: drap, frame: undefined, x: g.xd || g.x, y: g.y }, via, etage: cell };
     },
 
     // À l'étage, le personnage est dessiné remonté (ETAGE.dy), un peu devant le plancher.

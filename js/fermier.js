@@ -1133,9 +1133,12 @@
       if (!shown) appear();
       const k = F[dortCase(couche.t)];
       if (k !== undefined) s.setFrame(k);
-      s.setVisible(true).setAlpha(alpha).setFlipX(false).setPosition(L.x, L.y).setDepth(L.depth + 0.1);
+      // (L.z : un couchage de l'étage, dont la profondeur a sa propre échelle)
+      const z = (k) => (L.z ? L.z(k) : L.depth + k);
+      s.setVisible(true).setAlpha(alpha).setFlipX(false).setPosition(L.x, L.y).setDepth(z(0.1));
       if (!drapDehors) drapDehors = scene.add.image(0, 0, L.drap.key, L.drap.frame).setOrigin(0.5, 1);
-      drapDehors.setPosition(L.drap.x, L.drap.y).setDepth(L.depth + 0.2).setVisible(true);
+      if (drapDehors.texture.key !== L.drap.key) drapDehors.setTexture(L.drap.key, L.drap.frame);
+      drapDehors.setPosition(L.drap.x, L.drap.y).setDepth(z(0.2)).setVisible(true);
       stepZ(L.x, L.y - 32 + 5, couche.t);
       if (!couche.slept && couche.t >= (reduced() ? 0.8 : ASLEEP_S)) {
         couche.slept = true;
