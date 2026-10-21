@@ -43,8 +43,7 @@ function helpToggleHtml(id, label) {
 }
 
 // Les portraits sont agrandis d'un nombre entier de fois (un pixel de l'image : k × k pixels
-// de l'écran) ; sinon certaines rangées de pixels sont doublées et pas d'autres (une pupille de
-// 1 ou 2 pixels, un iris de 4 ou 5). --portrait-<taille> : la taille d'affichage, en px CSS, la
+// de l'écran) ; sinon certaines rangées de pixels sont doublées et pas d'autres. --portrait-<taille> : la taille d'affichage, en px CSS, la
 // plus proche de <taille> qui tombe juste pour l'écran (devicePixelRatio, qui change au zoom).
 function taillesPortraits() {
   const r = window.devicePixelRatio || 1, root = document.documentElement.style;
@@ -55,14 +54,21 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined' && document
   window.addEventListener('resize', taillesPortraits);
 }
 
-// Version 1.17 : le portrait d'un membre est celui de son personnage, 32 × 32 (un enfant aussi) agrandi sans
-// flou : assets/portraits/perso_XX.png pour un adulte, enfant_XX.png pour un enfant.
+// Le portrait d'un membre est son personnage de la carte, debout, de face (la première case,
+// idle_bas_0, de sa planche : assets/personnages/perso_XX.png pour un adulte, enfant_XX.png
+// pour un enfant), agrandi sans flou (.perso-px, css/jeu.css). `n` : son numéro ; 0 ou rien,
+// la planche par défaut (assets/fermiere.png). Sur le site en ligne, avec l'empreinte du fichier.
 export function persoSrc(n, enfant = false) {
-  return `assets/portraits/${enfant ? 'enfant' : 'perso'}_${String(n).padStart(2, '0')}.png`;
+  const file = n ? `personnages/${enfant ? 'enfant' : 'perso'}_${String(n).padStart(2, '0')}.png` : 'fermiere.png';
+  const versions = window.FERME_ASSET_VERSIONS;
+  return `assets/${file}${versions && versions[file] ? `?v=${versions[file]}` : ''}`;
+}
+export function persoHtml(n, enfant = false, id = '') {
+  return `<span class="perso-px"${id ? ` id="${id}"` : ''} style="background-image: url('${persoSrc(n, enfant)}')" aria-hidden="true"></span>`;
 }
 export function memberAvatarHtml(id) {
   const m = findMember(state, id);
-  return `<img class="portrait-px" src="${persoSrc(memberPerso(m), !!(m && m.enfant))}" alt="" width="32" height="32">`;
+  return persoHtml(memberPerso(m), !!(m && m.enfant));
 }
 
 // FLU-24 : une carte par membre (portrait, nom, boutons), deux par ligne : toute la famille
@@ -110,11 +116,11 @@ function openMemberModal(id) {
   // Version 1.17 : l'apparence est un des personnages de son âge (elle remplace le sexe, la
   // coiffure et la teinte des anciens portraits emoji).
   const persos = Array.from({ length: persoMax(m) }, (_, i) => i + 1)
-    .map((n) => `<button type="button" class="btn perso-btn" data-action="member-perso" data-perso="${n}" aria-pressed="false" aria-label="Personnage ${n}" title="Personnage ${n}"><img src="${persoSrc(n, !!m.enfant)}" alt="" width="32" height="32"></button>`).join('');
+    .map((n) => `<button type="button" class="btn perso-btn" data-action="member-perso" data-perso="${n}" aria-pressed="false" aria-label="Personnage ${n}" title="Personnage ${n}">${persoHtml(n, !!m.enfant)}</button>`).join('');
   openModal(`
     <h2 id="member-title">✏️ Modifier : ${escapeHtml(m.nom)}</h2>
     <div class="member-preview" aria-live="polite">
-      <img class="portrait-px" id="member-preview-perso" src="" alt="" width="32" height="32">
+      ${persoHtml(0, false, 'member-preview-perso')}
       <strong class="member-name" id="member-preview-name"></strong>
     </div>
     <div class="stack">
@@ -148,7 +154,7 @@ function syncMemberModal() {
   const input = document.getElementById('member-prenom');
   if (!d || !input) return;
   const typed = cleanFirstName(input.value);
-  document.getElementById('member-preview-perso').src = persoSrc(d.perso, d.enfant);
+  document.getElementById('member-preview-perso').style.backgroundImage = `url('${persoSrc(d.perso, d.enfant)}')`;
   for (const b of root.querySelectorAll('[data-action="member-perso"]')) {
     const n = Number(b.dataset.perso);
     b.setAttribute('aria-pressed', String(n === d.perso));

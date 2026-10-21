@@ -1,7 +1,6 @@
-# Les 50 personnages du catalogue (perso_01 à perso_50), dérivés du portrait modèle.
-# Données seulement : scripts/personnage/portraits.py en tire les portraits 32 × 32
-# (assets/portraits/perso_XX.png), scripts/personnage/fermier.py les planches de la carte
-# (assets/personnages/perso_XX.png).
+# Les 50 personnages du catalogue (perso_01 à perso_50). Données seulement :
+# scripts/personnage/modeles.py en tire les modèles, scripts/personnage/fermier.py les planches de
+# la carte (assets/personnages/perso_XX.png), dont la première case sert aussi de portrait.
 #
 # Une entrée : (peau, cheveux, coupe, couvre-chef, couleur de l'accessoire, détails, habit, motif
 # [, couleur des yeux : brun, noisette, vert, bleu, violet, turquoise ; sans elle, modeles.yeux()])

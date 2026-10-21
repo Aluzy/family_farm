@@ -2028,7 +2028,6 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
 /* Tous les éléments de la carte sont des boutons : « .player-card .x » l'emporte sur la
    remise à zéro ci-dessus (.player-card button), sans !important. */
 .player-card .player-head { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 2px 0; }
-.player-portrait { display: block; width: var(--portrait-48, 48px); height: var(--portrait-48, 48px); image-rendering: pixelated; }
 .player-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .player-card .player-line {
   position: relative;
@@ -2297,14 +2296,22 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 }
 
 /* ---------- Version 1.17 : les adultes ont l'apparence d'un personnage du catalogue ----------
-   Portraits agrandis sans flou (assets/portraits/perso_XX.png : 32 × 32 ; enfant_XX.png aussi),
-   d'un nombre entier de fois : --portrait-<taille>, réglé par js/ui/famille.js. */
-.portrait-px { display: block; flex: none; width: var(--portrait-48, 48px); height: var(--portrait-48, 48px); image-rendering: pixelated; }
-.member-row .portrait-px, .setup-member .portrait-px { width: var(--portrait-40, 40px); height: var(--portrait-40, 40px); }
-.member-preview .portrait-px { width: var(--portrait-64, 64px); height: var(--portrait-64, 64px); }
+   Le portrait est le personnage de la carte, debout, de face : la première case (16 × 32) de sa
+   planche (assets/personnages/perso_XX.png, 8 cases par rangée), au milieu d'un carré de 32
+   pixels de l'image, agrandi d'un nombre entier de fois : --s, réglé par js/ui/famille.js
+   (--portrait-<taille>). Les marges gauche et droite cachent les cases voisines. */
+.perso-px {
+  --s: var(--portrait-48, 48px);
+  display: block; flex: none; box-sizing: border-box;
+  width: var(--s); height: var(--s); padding: 0 calc(var(--s) / 4);
+  background: no-repeat 0 0 / calc(var(--s) * 4) auto content-box;
+  image-rendering: pixelated;
+}
+.member-row .perso-px, .setup-member .perso-px { --s: var(--portrait-40, 40px); }
+.member-preview .perso-px { --s: var(--portrait-64, 64px); }
 .perso-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; max-height: 240px; overflow-y: auto; padding: 2px; }
 .perso-btn { padding: 2px; min-height: 0; display: flex; align-items: center; justify-content: center; }
-.perso-btn img { width: 32px; height: 32px; image-rendering: pixelated; }
+.perso-btn .perso-px { --s: 32px; }
 .perso-btn.active { outline: 3px solid var(--color-sun); outline-offset: 0; }
 
 /* La barre d'outils (js/ui/outils.js) : en bas au milieu de la carte, dans le cadre bois des

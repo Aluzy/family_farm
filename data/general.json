@@ -82,10 +82,10 @@
       "par âge ; l'emoji devient portrait + teinte + ZWJ + STYLES[age][n] (rien pour la coiffure 0).",
       "STYLE_NOMS : leur libellé.",
       "Version 1.17 : un adulte a l'apparence d'un des PERSOS personnages du catalogue",
-      "(assets/portraits/perso_XX.png, assets/personnages/perso_XX.png ; voir memberPerso()).",
+      "(sa planche assets/personnages/perso_XX.png, qui sert aussi de portrait ; voir memberPerso()).",
       "PERSO_DEFAUT : celui d'un adulte qui n'en a pas encore choisi, selon son sexe.",
-      "Un enfant a l'apparence d'un des PERSOS_ENFANT portraits d'enfants",
-      "(assets/portraits/enfant_XX.png) ; PERSO_DEFAUT_ENFANT : son défaut, selon son sexe.",
+      "Un enfant a l'apparence d'un des PERSOS_ENFANT personnages d'enfants",
+      "(assets/personnages/enfant_XX.png) ; PERSO_DEFAUT_ENFANT : son défaut, selon son sexe.",
       "Le prénom est une donnée personnelle : il reste dans la sauvegarde, sur",
       "l'appareil, et ne doit jamais partir dans le suivi de session."
     ],

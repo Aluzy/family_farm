@@ -62,8 +62,8 @@ export function memberStyle(m) {
 }
 
 // Version 1.17 : l'apparence d'un membre, un des personnages du catalogue : pour un adulte,
-// 1 à PERSOS (assets/portraits/perso_XX.png, et sa planche pour la carte) ; pour un enfant,
-// 1 à PERSOS_ENFANT (assets/portraits/enfant_XX.png). Sans choix (ancienne partie, nouveau
+// 1 à PERSOS (sa planche assets/personnages/perso_XX.png, qui sert aussi de portrait) ; pour un
+// enfant, 1 à PERSOS_ENFANT (assets/personnages/enfant_XX.png). Sans choix (ancienne partie, nouveau
 // membre), le défaut de son âge selon son sexe. 0 sans membre.
 export function memberPerso(m) {
   if (!m) return 0;

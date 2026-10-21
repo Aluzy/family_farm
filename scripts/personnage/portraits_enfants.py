@@ -1,6 +1,6 @@
-# Les 50 enfants (enfant_01 à enfant_50). Données seulement : scripts/personnage/portraits.py
-# en tire les portraits 32 × 32 (assets/portraits/enfant_XX.png), scripts/personnage/modeles.py
-# les modèles de la carte (les planches : chibi.py). Les couleurs de peau, de cheveux, d'habits
+# Les 50 enfants (enfant_01 à enfant_50). Données seulement : scripts/personnage/modeles.py en
+# tire les modèles de la carte (les planches assets/personnages/enfant_XX.png : chibi.py, dont la
+# première case sert aussi de portrait). Les couleurs de peau, de cheveux, d'habits
 # et d'accessoires sont celles du catalogue des adultes (scripts/personnage/catalogue.py).
 #
 #   coupe      : court, frange, meche, herisse, boucles, long, queue, couettes, chignon

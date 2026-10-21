@@ -5,26 +5,13 @@ facultatifs : sans eux, la carte s'affiche comme avant.
 
 ## L'image
 
-Sept personnages : `fermier`, `fermiere`, et cinq qui suivent les portraits de `assets/portraits` (`papi`, `jeune_homme`, `rousse`, `lunettes`, `garcon`). Leur style (coupe, chapeau ou casquette, barbe, lunettes, taches de rousseur, motif de la chemise) est décrit dans `VARIANTES`. Pour chacun, `assets/<nom>.png` (cases de 16 × 32
-px, 8 par rangée), `assets/<nom>.json` (le nom de chaque case, dans l'ordre) et
-`assets/portrait_<nom>.png` (20 × 20, la tête et les épaules de face). Tout est écrit par
+Sept personnages : `fermier`, `fermiere`, et cinq autres (`papi`, `jeune_homme`, `rousse`, `lunettes`, `garcon`). Leur style (coupe, chapeau ou casquette, barbe, lunettes, taches de rousseur, motif de la chemise) est décrit dans `VARIANTES`. Pour chacun, `assets/<nom>.png` (cases de 16 × 32
+px, 8 par rangée), `assets/<nom>.json` (le nom de chaque case, dans l'ordre). Tout est écrit par
 `scripts/personnage/fermier.py` (`--apercu` écrit aussi les planches agrandies) ; les deux
 planches ont les mêmes cases, seules les couleurs et le style changent.
 
 **Le catalogue** : 50 personnages de plus, `perso_01` à `perso_50`, décrits dans
 `scripts/personnage/catalogue.py` (peau, cheveux, coupe, couvre-chef, détails, habit, motif).
-`scripts/personnage/portraits.py` en tire leur portrait 32 × 32 (`assets/portraits/perso_XX.png`),
-dans le style des neuf portraits dessinés à la main (`scripts/personnage/modeles/portraits_dessines.png` :
-trois personnes en trois variantes). Ces neuf dessins sont `perso_01` et `perso_04` à `perso_11`
-tels quels ; les autres sont assemblés à partir de leurs pièces : deux visages (M, celui du jeune
-et de l'homme à moustache ; F, celui de la femme, plus long, avec cils et lèvres), les coiffures
-des dessins et celles qu'on en tire, la casquette, le bandeau, les lunettes et la moustache des
-dessins, puis les couleurs du catalogue (chaque pixel garde sa nuance par rapport à la base de sa
-région : peau, cheveux, haut, yeux, accessoire). Les cheveux gris ou blancs ajoutent des rides.
-Les portraits retouchés à la main (`scripts/personnage/modeles/portraits_retouches.png`, la planche
-des 50 adultes) sont gardés tels quels (`RETOUCHES_NOMS`), comme les portraits générés validés
-(`VALIDES`) ; trois retouches servent de modèles aux autres : les couettes (`perso_02`), les
-lunettes du visage F (`perso_16`) et la barbe (`perso_18`).
 `scripts/personnage/fermier.py` leur planche de 70 cases (`assets/personnages/perso_XX.png`, les
 noms des cases, les mêmes pour tous, dans `assets/personnages/cases.json`). Coupes : longs, mi,
 carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; sur la tête : chapeau de
@@ -52,18 +39,17 @@ du bas compris).
 **Les adultes de la famille** (version 1.17) ont l'apparence d'un de ces 50 personnages : dans la
 fiche d'un adulte (✏️), la grille « Personnage » remplace le sexe, la coiffure et la teinte des
 emojis (`member.perso`, 1 à 50 ; sans choix, `PERSO_DEFAUT` selon le sexe : 1 pour une femme, 7
-pour un homme). Leur portrait s'affiche dans l'écran de départ, la Famille et la carte du joueur ;
+pour un homme). Leur portrait (l'écran de départ, la Famille, la carte du joueur) est leur
+personnage de la carte, debout, de face : la première case de sa planche (`persoHtml()` dans
+`js/ui/famille.js`, `.perso-px` dans `css/jeu.css`) ;
 **sur la carte de la ferme, c'est celui du personnage principal** (le premier adulte : son choix
 est masqué à l'écran de départ, `CHOIX_PRINCIPAL` dans `js/ui/depart.js`) :
 `modèle.perso`, sa planche est chargée à la demande (`syncPerso`).
 
-**Les enfants** ont de même un des 50 portraits d'enfants (`assets/portraits/enfant_XX.png`,
-32 × 32, décrits dans `scripts/personnage/portraits_enfants.py` et dessinés par `portraits.py`
-à partir du portrait d'enfant dessiné à la main, `scripts/personnage/modeles/portrait_enfant.png`
-(20 × 25, posé en bas au milieu de la case) ; 9 coupes, chapeaux, nœud, serre-tête, fleur,
-lunettes, taches de rousseur, joues roses, pansement, salopette). Les enfants retouchés à la main
-(`scripts/personnage/modeles/portraits_enfants_retouches.png`) sont gardés tels quels ; ce que
-leur retouche change à leur coupe est repris sur les enfants de la même coupe. Leur
+**Les enfants** ont de même un des 50 personnages d'enfants (décrits dans
+`scripts/personnage/portraits_enfants.py` ; leur planche `assets/personnages/enfant_XX.png` sert
+aussi de portrait ; 9 coupes, chapeaux, nœud, serre-tête, fleur, lunettes, taches de rousseur,
+joues roses, pansement, salopette). Leur
 fiche a la même grille ; sans choix, `PERSO_DEFAUT_ENFANT` (1 pour un garçon, 2 pour une fille).
 Ils ne sont pas encore sur la carte : pas de planche d'enfant.
 
