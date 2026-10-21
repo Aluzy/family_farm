@@ -61,7 +61,9 @@ est masqué à l'écran de départ, `CHOIX_PRINCIPAL` dans `js/ui/depart.js`) :
 32 × 32, décrits dans `scripts/personnage/portraits_enfants.py` et dessinés par `portraits.py`
 à partir du portrait d'enfant dessiné à la main, `scripts/personnage/modeles/portrait_enfant.png`
 (20 × 25, posé en bas au milieu de la case) ; 9 coupes, chapeaux, nœud, serre-tête, fleur,
-lunettes, taches de rousseur, joues roses, pansement, salopette). Leur
+lunettes, taches de rousseur, joues roses, pansement, salopette). Les enfants retouchés à la main
+(`scripts/personnage/modeles/portraits_enfants_retouches.png`) sont gardés tels quels ; ce que
+leur retouche change à leur coupe est repris sur les enfants de la même coupe. Leur
 fiche a la même grille ; sans choix, `PERSO_DEFAUT_ENFANT` (1 pour un garçon, 2 pour une fille).
 Ils ne sont pas encore sur la carte : pas de planche d'enfant.
 

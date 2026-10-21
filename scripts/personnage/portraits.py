@@ -364,8 +364,8 @@ COUPES = {
 # ---------- les pièces retouchées ----------
 
 def retouche(nom):
-    """La case de `nom` (perso_XX) sur la planche des retouches : { (x, y): couleur }."""
-    im = Image.open(RETOUCHES).convert('RGBA')
+    """La case de `nom` (perso_XX ou enfant_XX) sur sa planche de retouches : { (x, y): couleur }."""
+    im = Image.open(RETOUCHES_ENFANTS if nom.startswith('enfant') else RETOUCHES).convert('RGBA')
     i = int(nom[-2:]) - 1
     x0, y0 = (i % 10) * 34, (i // 10) * 34
     return {(x, y): im.getpixel((x0 + x, y0 + y))[:3] for y in range(N) for x in range(N) if im.getpixel((x0 + x, y0 + y))[3]}
@@ -904,10 +904,18 @@ def e_lunettes(p):
             p.g[(x1, y)] = noir
 
 
+# les taches de rousseur retouchées à la main (enfant_02, peau très claire), et deux reflets
+ROUSSEUR_ENFANT = ((225, 159, 105), ((5, 11), (7, 11), (9, 11), (12, 11), (14, 11), (6, 12), (9, 12), (10, 12), (13, 12)),
+                   (246, 196, 160), ((10, 9), (11, 12)))
+
+
 def e_rousseur(p):
-    for q in ((5, 11), (7, 11), (6, 12), (12, 11), (14, 11), (13, 12)):
-        if p.region(q) == 'peau':
-            p.g[q] = S((214, 127, 58))
+    base = transfert(PEAU, catalogue.PEAU['claire']['f'], catalogue.PEAU['tres_claire']['f'])
+    tache, taches, reflet, reflets = ROUSSEUR_ENFANT
+    for c, qs in ((tache, taches), (reflet, reflets)):
+        for q in qs:
+            if p.region(q) == 'peau':
+                p.g[q] = ('peau', c, base)
 
 
 def e_joues(p):
@@ -935,9 +943,65 @@ def e_salopette(p):
 DETAILS_ENFANT = {'rousseur': e_rousseur, 'joues': e_joues, 'pansement': e_pansement}
 
 
-def jetons_enfant(d):
+# Les enfants retouchés à la main (scripts/personnage/modeles/portraits_enfants_retouches.png,
+# la planche des 50 enfants) : portraits du jeu tels quels. Ce que la retouche change à la coupe
+# (cheveux, bord du visage, oreilles) est repris sur les autres enfants de la même coupe ; les
+# paupières claires des peaux foncées sont passées à la couleur de la peau (enfant_04, 08, 12).
+RETOUCHES_ENFANTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'modeles', 'portraits_enfants_retouches.png')
+RETOUCHES_ENFANTS_NOMS = ('enfant_01', 'enfant_02', 'enfant_03', 'enfant_04', 'enfant_05', 'enfant_07', 'enfant_08', 'enfant_12')
+COUPES_RETOUCHEES = {'frange': 'enfant_01', 'couettes': 'enfant_02', 'court': 'enfant_03', 'boucles': 'enfant_04',
+                     'herisse': 'enfant_05', 'meche': 'enfant_07'}
+PAUPIERES = ((6, 10), (7, 10), (8, 10), (12, 10), (13, 10), (14, 10))
+CR = {}
+
+
+def coupe_retouchee(coupe):
+    """Ce que la retouche de l'enfant de COUPES_RETOUCHEES[coupe] change à sa coupe, en jetons
+    (coordonnées du modèle) ; None : un pixel ôté."""
+    if coupe not in CR:
+        nom = COUPES_RETOUCHEES[coupe]
+        enfants = dict(portraits_enfants.enfants())
+        d = enfants[nom]
+        i = 50 + int(nom[-2:]) - 1
+        p = jetons_enfant(d, False)
+        avant = peindre(p, d, i)
+        peau = transfert(PEAU, catalogue.PEAU['claire']['f'], catalogue.PEAU[d['peau']]['f'])
+        bases = {'cheveux': catalogue.CHEVEUX[d['cheveux']]['b'], 'peau': peau, 'acc': d['accessoire']}
+        apres = retouche(nom)
+        out = {}
+        for y in range(N):
+            for x in range(N):
+                a, c = avant.getpixel((x, y)), apres.get((x, y))
+                if (a[3] and c == a[:3]) or (not a[3] and c is None):
+                    continue
+                vieux = p.region((x, y))
+                q = (x - EX, y - EY)
+                if c is None:
+                    if vieux in ('cheveux', 'acc', 'peau'):
+                        out[q] = None
+                    continue
+                e = {r: ecart(c, b) for r, b in bases.items()}
+                r = 'cheveux' if e['cheveux'] <= min(e.values()) + 10 else min(e, key=e.get)
+                visage = 4 <= q[0] <= 15 and 9 <= q[1] <= 15      # (taches de rousseur, paupières : pas la coupe)
+                if vieux in (None, 'cheveux', 'acc') or (r == 'cheveux' and not visage):
+                    out[q] = (r, c, bases[r])
+        CR[coupe] = out
+    return CR[coupe]
+
+
+def jetons_enfant(d, retouches=True):
     p = Enfant()
     COUPES_ENFANT[d['coupe']](p)
+    if retouches and d['coupe'] in COUPES_RETOUCHEES:
+        for q, t in coupe_retouchee(d['coupe']).items():
+            if t is None:
+                p.g.pop(q, None)
+            else:
+                p.g[q] = t
+    if retouches and d['peau'] in ('foncee', 'tres_foncee'):
+        for q in PAUPIERES:
+            if p.region(q) == 'peau':
+                p.g[q] = S(PEAU)
     for x in d['details']:
         if x in DETAILS_ENFANT:
             DETAILS_ENFANT[x](p)
@@ -978,7 +1042,13 @@ def tous():
         else:
             out.append((nom, dessin(nom) if nom in DESSINS else portrait(d, i)))
     for i, (nom, d) in enumerate(portraits_enfants.enfants()):
-        out.append((nom, portrait_enfant(d, 50 + i)))     # (i : son rang parmi tous, comme modeles.tous())
+        if nom in RETOUCHES_ENFANTS_NOMS:
+            im = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+            for q, c in retouche(nom).items():
+                im.putpixel(q, c + (255,))
+            out.append((nom, im))
+        else:
+            out.append((nom, portrait_enfant(d, 50 + i)))     # (i : son rang parmi tous, comme modeles.tous())
     return out
 
 
