@@ -89,9 +89,9 @@ ENTREES = [
     ('claire', 'bruns', 'courts', 'beret', 'noir', 'moustache', 'rayures_bm', None),
     ('olive', 'noirs', 'longs', None, None, '', 'turquoise', None),
     ('mate', 'blancs', 'chignon', None, None, 'lunettes', 'lilas', 'pois'),
-    ('tres_foncee', 'chocolat', 'courts', 'casquette', 'jaune', '', 'vert', None),
+    ('tres_foncee', 'chocolat', 'frange', None, None, 'lunettes', 'vert', None),
     ('claire', 'roux', 'courts', None, None, 'barbe', 'carreaux_vert', None),
-    ('tres_claire', 'blonds', 'longs', 'paille', 'rose', '', 'blanc', None),
+    ('tres_claire', 'blonds', 'mi', 'fleur', 'rose', 'rousseur', 'blanc', None),
     ('foncee', 'bleus', 'frange_carre', None, None, 'boucles', 'noir', None),
     ('rosee', 'chatains', 'mi', 'bonnet', 'vert', 'rousseur', 'jaune', None),
     ('claire', 'noirs', 'frange', 'fleur', 'rouge', '', 'rouge', None),
@@ -122,7 +122,7 @@ ENTREES = [
     ('rosee', 'bruns', 'chignon', None, None, '', 'vert', 'pois'),
     ('olive', 'noirs', 'courts', 'bonnet', 'bleu', 'moustache', 'jean', None),
     ('claire', 'auburn', 'longs', 'paille', 'violet', '', 'lilas', None),
-    ('foncee', 'blonds', 'frange', 'bandeau', 'rouge', 'boucles', 'blanc', 'rayures'),
+    ('foncee', 'blonds', 'courts', 'bonnet', 'rouge', 'boucles', 'blanc', 'rayures'),
 ]
 
 

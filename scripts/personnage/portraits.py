@@ -49,6 +49,10 @@ DESSINS = {
     'perso_07': (1, 0), 'perso_08': (1, 1), 'perso_09': (0, 2), 'perso_10': (1, 2), 'perso_11': (2, 2),
 }
 HAUT = {(0, 2): 1}
+# Les portraits générés validés : gardés tels quels dans assets/portraits (ce script ne les
+# réécrit plus).
+VALIDES = {f'perso_{n:02d}' for n in (3, 14, 15, 20, 21, 22, 25, 27, 29, 31, 33, 34, 35, 36,
+                                       41, 42, 43, 44, 45, 48, 49)}
 
 PEAU = (240, 185, 141)          # la peau des dessins (celle du catalogue « claire » s'en déduit)
 BLANCS = {(238, 237, 236), (210, 205, 204), (255, 255, 255)}
@@ -338,16 +342,16 @@ def frange_droite(p):
 
 
 def attaches(p):
-    """Les cheveux tirés en arrière : le haut de la chevelure, puis une bande de deux cases
-    autour du visage jusqu'au menton."""
+    """Les cheveux tirés en arrière : la chevelure de la femme réduite à la forme de la tête de
+    l'homme (ses cheveux courts) et à une case autour du visage, jusqu'au menton."""
     lg = pieces().longs
     vis = pieces().visage_f
+    sil = pieces().silhouette_b
     cal = {}
     for (x, y), t in lg.items():
-        if y <= 9:
-            cal[(x, y)] = t
-        elif y <= 22 and any((x + dx, y + dy) in vis and vis[(x + dx, y + dy)][0] == 'peau'
-                             for dx in (-2, -1, 0, 1, 2) for dy in (-1, 0, 1)):
+        if y > 21:
+            continue
+        if (x, y) in sil or any((x + dx, y) in vis and vis[(x + dx, y)][0] == 'peau' for dx in (-1, 1)):
             cal[(x, y)] = t
     p.poser(cal)
 
@@ -368,20 +372,26 @@ def touffe(p, cx, y0, y1, base, lien=True):
 
 
 def c_chignon(p):
+    """Les cheveux tirés en arrière, noués en chignon derrière le haut de la tête (à droite)."""
     attaches(p)
     base = ROLES['F']['cheveux'][1]
-    for y in range(0, 7):
-        for x in range(21, 29):
-            if (x - 25) ** 2 / 10 + (y - 3) ** 2 / 9 <= 1:
-                bord = (x - 25) ** 2 / 10 + (y - 3) ** 2 / 9 > 0.55
-                p.g[(x, y)] = H(base, cheveux_sombre(base) if bord else (cheveux_clair(base) if (x + y) % 3 == 0 else base))
+    for y in range(0, 8):
+        for x in range(21, 30):
+            e = (x - 25.5) ** 2 / 12 + (y - 3.5) ** 2 / 12
+            if e <= 1 and (x, y) not in p.g or e <= 1 and x >= 25:
+                bord = e > 0.6
+                mèche = (x - y) % 4 == 0
+                p.g[(x, y)] = H(base, cheveux_sombre(base) if bord else (cheveux_ombre(base) if mèche else
+                                                                          (cheveux_clair(base) if x <= 24 and y <= 3 else base)))
 
 
 def c_couettes(p):
-    attaches(p)
+    """Les cheveux longs de la femme jusqu'aux oreilles, puis deux couettes nouées qui tombent
+    sur les épaules."""
     base = ROLES['F']['cheveux'][1]
-    touffe(p, 3, 11, 22, base)
-    touffe(p, 28, 11, 22, base)
+    p.poser({(x, y): t for (x, y), t in pieces().longs.items() if y <= 15})
+    touffe(p, 4.5, 15, 27, base)
+    touffe(p, 27.5, 15, 27, base)
 
 
 def c_queue(p):
@@ -504,10 +514,19 @@ COUVRE_CHEFS = {None: lambda p: None, 'casquette': h_casquette, 'bandeau': h_ban
 # ---------- les détails ----------
 
 def d_lunettes(p):
-    pts = pieces().lunettes
-    if p.visage == 'F':
-        pts = {(x + (x >= 16), y - 1): t for (x, y), t in pts.items()}
-    p.poser(pts)
+    """Les lunettes du jeune ; sur le visage F (des yeux plus grands, plus haut), des montures
+    tracées autour de chaque œil."""
+    if p.visage == 'M':
+        p.poser(pieces().lunettes)
+        return
+    noir = ('fixe', NOIR, None)
+    for x0, x1 in ((7, 15), (16, 24)):
+        for x in range(x0 + 1, x1):
+            p.g[(x, 9)] = noir
+            p.g[(x, 14)] = noir
+        for y in range(10, 14):
+            p.g[(x0, y)] = noir
+            p.g[(x1, y)] = noir
 
 
 def d_moustache(p):
@@ -516,20 +535,24 @@ def d_moustache(p):
 
 
 def d_barbe(p):
-    """La barbe : la mâchoire de l'homme, et la peau du bas du visage (sauf la bouche) en poils."""
+    """La barbe : la moustache, et un collier sur le bord de la mâchoire et le menton (la
+    bouche reste visible) ; plus clairsemée vers les joues."""
     if p.visage != 'M':
         return
     base = ROLES['B']['cheveux'][1]
-    p.poser(pieces().machoire)
     p.poser(pieces().moustache)
     for (x, y), t in list(p.g.items()):
         if t[0] != 'peau' or y < 17 or y > 22:
             continue
-        bord = sum(1 for dx in (-2, -1, 1, 2) if p.region((x + dx, y)) not in ('peau', 'fixe'))
-        bouche = 19 <= y <= 20 and 13 <= x <= 18
-        if (bord or y >= 21) and not bouche:
-            c = (64, 50, 40) if (x + y) % 3 == 0 else ((88, 68, 54) if (x * 2 + y) % 5 else (76, 71, 64))
-            p.g[(x, y)] = H(base, c)
+        bord = any(p.region((x + dx, y)) not in ('peau', 'fixe', 'iris') for dx in (-1, 1))
+        menton = y >= 21 and 11 <= x <= 20
+        bouche = 19 <= y <= 20 and 12 <= x <= 19
+        if bouche or not (bord or menton) or (y == 17 and not bord):
+            continue
+        if y <= 18 and (x + y) % 2:
+            continue                         # (clairsemée sur les joues)
+        c = (52, 47, 43) if y == 22 or (bord and y >= 20) else ((66, 50, 39) if (x + 2 * y) % 3 else (88, 68, 54))
+        p.g[(x, y)] = H(base, c)
 
 
 # Les places des détails sur chaque visage (le visage F a les yeux une rangée plus haut, la
@@ -744,7 +767,10 @@ def tous():
     """[(nom, image)] : les 50 adultes, puis les 50 enfants."""
     out = []
     for i, (nom, d) in enumerate(catalogue.personnages()):
-        out.append((nom, dessin(nom) if nom in DESSINS else portrait(d, i)))
+        if nom in VALIDES:
+            out.append((nom, Image.open(os.path.join(DIR, f'{nom}.png')).convert('RGBA')))
+        else:
+            out.append((nom, dessin(nom) if nom in DESSINS else portrait(d, i)))
     for i, (nom, d) in enumerate(portraits_enfants.enfants()):
         out.append((nom, portrait(d, 50 + i, True)))     # (i : son rang parmi tous, comme modeles.tous())
     return out
