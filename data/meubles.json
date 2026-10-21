@@ -10,6 +10,14 @@
     "d'adulte d'abord, puis ceux d'enfant). Sur la ferme générée, un meuble acheté arrive dans l'inventaire",
     "(meuble_<id>) et se pose dans la maison avec le mode Construire (recipes.json, ATELIER.BLOCS.meuble_<id>)."
   ],
+  "//DEHORS": [
+    "Ce qui s'achète au Marché (rayon Meubles) pour le dehors de la ferme générée : il arrive dans",
+    "l'inventaire (l'objet du même nom) et se pose comme un bloc (recipes.json, ATELIER.BLOCS.<id>).",
+    "nom ; prix (pièces, fixe). Le bac à fleurs : ses fleurs attirent les abeilles des ruches."
+  ],
+  "DEHORS": {
+    "bac_fleurs": { "nom": "Bac à fleurs", "prix": 60 }
+  },
   "MEUBLES": {
     "chaise": { "nom": "Chaise", "piece": "cuisine", "prix": 30, "bonheur": 1, "max": "membres" },
     "table": { "nom": "Table", "piece": "cuisine", "prix": 90, "bonheur": 3 },

@@ -229,6 +229,15 @@ export const RAW_DATA = {
       "rachetable": false,
       "cueillette": "infra"
     },
+    "bac_fleurs": {
+      "nom": "Bac à fleurs",
+      "icone": "🪴‍🌷",
+      "prix": 60,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
     "ruche": { "nom": "Ruche", "icone": "🐝", "prix": 200, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "lanterne": { "nom": "Lanterne scintillante", "icone": "🏮", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "porte": { "nom": "Porte", "icone": "🚪", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -601,7 +610,8 @@ export const RAW_DATA = {
       "citerne": { "nom": "Citerne", "objet": "citerne", "dehors": true, "bloque": true, "unique": true, "appareil": "reservoir" },
       "batterie": { "nom": "Batterie", "objet": "batterie", "bloque": true, "unique": true, "appareil": "batterie" },
       "escalier": { "nom": "Escalier", "objet": "escalier", "dedans": true, "escalier": true },
-      "ruche": { "nom": "Ruche", "objet": "ruche", "dehors": true, "bloque": true, "ruche": true },
+      "ruche": { "nom": "Ruche", "objet": "ruche", "dehors": true, "bloque": true, "ruche": true, "marche": "Animaux" },
+      "bac_fleurs": { "nom": "Bac à fleurs", "objet": "bac_fleurs", "bloque": true, "fleurs": true, "marche": "Meubles" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
       "meuble_chaise": { "nom": "Chaise", "objet": "meuble_chaise", "meuble": "chaise", "dedans": true, "bloque": true },
       "meuble_table": { "nom": "Table", "objet": "meuble_table", "meuble": "table", "dedans": true, "bloque": true, "largeur": 3 },
@@ -2402,6 +2412,7 @@ export const RAW_DATA = {
     },
     "RATTRAPAGE": 30
   },
+  "DEHORS": { "bac_fleurs": { "nom": "Bac à fleurs", "prix": 60 } },
   "MEUBLES": {
     "chaise": { "nom": "Chaise", "piece": "cuisine", "prix": 30, "bonheur": 1, "max": "membres" },
     "table": { "nom": "Table", "piece": "cuisine", "prix": 90, "bonheur": 3 },

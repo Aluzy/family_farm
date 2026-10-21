@@ -3,7 +3,7 @@
  * Chaque ruche posée (un bloc « ruche », js/engine/ruches.js) a ses abeilles (ABEILLES.parRuche) :
  * quelques pixels (ABEILLES : 4 de corps, rayé, et 2 d'ailes qui battent). Le jour, chacune sort
  * par le trou de vol, vole vers une fleur à portée (modèle.fleurs : les cases fleuries de
- * l'herbe et les bacs à fleurs ; et les touffes d'herbe haute fleuries encore debout), y butine
+ * l'herbe et les bacs à fleurs, ABEILLES.bac px au-dessus du pied de leur case ; et les touffes d'herbe haute fleuries encore debout), y butine
  * un moment en tournant autour, puis rentre à la ruche, y reste un peu et repart. Sans fleur à
  * portée, elle tourne autour de la ruche. La nuit, dans un intérieur, ou avec « animations
  * réduites », on ne les voit pas (elles sont dans la ruche).
@@ -63,7 +63,9 @@
       const cle = model && model.fleurs ? model.fleurs.join(',') : '';
       if (cle !== this.fleursCle) {
         this.fleursCle = cle;
-        this.fleursCases = ((model && model.fleurs) || []).map((t) => ({ x: (t % cols) * T + T / 2, y: Math.floor(t / cols) * T + T / 2 + 2 }));
+        // (une case avec un bloc : un bac à fleurs, ses fleurs dépassent au-dessus de lui)
+        const bac = new Set(((model && model.blocs) || []).map((b) => b.case));
+        this.fleursCases = ((model && model.fleurs) || []).map((t) => ({ x: (t % cols) * T + T / 2, y: (Math.floor(t / cols) + 1) * T - (bac.has(t) ? ABEILLES.bac : T / 2 - 2) }));
       }
     },
 

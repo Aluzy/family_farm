@@ -161,7 +161,7 @@
   // px au-dessus du bas de la paillasse.
   const BLOCS_CARTE = {
     key: 'blocs', file: 'blocs.png', frame: { frameWidth: 16, frameHeight: 24 },
-    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13, lanterne: 66, escalier: 69, ruche: 71, ruche_pleine: 72 },
+    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13, lanterne: 66, escalier: 69, ruche: 71, ruche_pleine: 72, bac_fleurs: 73 },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
     // l'étage (un essai, js/carte/ferme/etage.js) : le haut de l'escalier (`haut`) ; l'étage
     // est dessiné `dy` px plus haut (la hauteur de la face des murs hauts : leurs faces se suivent) ; le niveau où l'on n'est pas,
@@ -440,8 +440,9 @@
   // volent à `vitesse` px/s (`vol` px au-dessus du sol au plus, un zigzag de ± `zigzag` px) vers
   // une fleur à moins de `portee` px, y butinent `butine` s, rentrent, restent `dedans` s dans
   // la ruche, ressortent ; de `heures[0]` à `heures[1]` h. Dessinées `dessus` plus loin que leur
-  // point au sol (devant ce qu'elles survolent).
-  const ABEILLES = { key: 'abeille', parRuche: 4, trou: 5, portee: 9 * T, vitesse: 26, vol: 6, zigzag: 1.5,
+  // point au sol (devant ce qu'elles survolent). Les fleurs d'un bac à fleurs : `bac` px au-dessus
+  // du pied de sa case.
+  const ABEILLES = { key: 'abeille', parRuche: 4, trou: 5, bac: 16, portee: 9 * T, vitesse: 26, vol: 6, zigzag: 1.5,
     butine: [1.5, 4], dedans: [1, 4], heures: [7, 19.5], battements: 14, dessus: 24,
     dessin: [['.ww.', 'ybyk'], ['....', 'ybyk']],
     couleurs: { y: '#f6c02c', b: '#2a1c10', k: '#2a1c10', w: 'rgba(232,246,255,0.85)' } };

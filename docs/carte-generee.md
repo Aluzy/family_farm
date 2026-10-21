@@ -242,7 +242,12 @@ Le Marché vend toujours les outils.
     pixels. Le jour, elles volent vers les fleurs à portée (9 cases), y butinent, rentrent. Les
     fleurs : celles de l'herbe (`terrain.FLEURS`, posées par le générateur), sauf sous un bloc,
     un sol ou un labour ; l'herbe haute fleurie encore debout ; et tout bloc `fleurs` de
-    `DATA.ATELIER.BLOCS` (les futurs bacs à fleurs : `fleursPourAbeilles`).
+    `DATA.ATELIER.BLOCS` (le bac à fleurs : `fleursPourAbeilles` ; ses fleurs dépassent au-dessus
+    de la jardinière, les abeilles y butinent `ABEILLES.bac` px au-dessus du pied de sa case).
+- **Le bac à fleurs** (au Marché, rayon Meubles : 60 pièces ; `DATA.DEHORS`, `buyDehors` dans
+  `js/engine/meubles.js`) arrive dans l'inventaire et se pose sur l'herbe, dehors ou dans la
+  maison, comme un bloc (`ATELIER.BLOCS.bac_fleurs`, `fleurs: true`). Il arrête le passage. Une
+  jardinière de planches, des fleurs de cinq couleurs (`BLOCS_CARTE.frames.bac_fleurs`).
 - **Une pièce close** : des cases entourées de murs, de portes ou de l'Atelier, avec au moins une
   porte. Elle fait au plus 120 cases et ne touche pas le bord de la carte. Les coins ne comptent
   pas : on ne passe pas en diagonale.

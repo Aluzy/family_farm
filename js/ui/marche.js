@@ -12,7 +12,8 @@ import {
   freeSheepPlaces, pastureCapacity, pastureCost, sheepCount,
 } from '../engine/animals.js';
 import { isUnlocked, plantableCropsFor } from '../engine/campaign.js';
-import { buyFurniture, furnitureCount, furnitureMax } from '../engine/meubles.js';
+import { buyDehors, buyFurniture, furnitureCount, furnitureMax } from '../engine/meubles.js';
+import { blocsPoses } from '../engine/blocs.js';
 import { houseRepaired } from '../engine/depart.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { buyRuche, ruchesPosees } from '../engine/ruches.js';
@@ -101,7 +102,7 @@ function helpText(tab) {
   if (tab === 'vendre') return `Les articles rangés au frigo se vendent aussi. Prix de vente fixes : l'inventaire part en premier, puis le frigo. Chaque unité vendue baisse de ${formatNumber(DATA.MARCHE.PAS)} points le coefficient d'achat de l'objet, sans passer sous son plancher.`;
   if (tab === 'acheter') return `Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Marché dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas. La houe, elle, s'achète une seule fois.`;
   if (tab === 'graines') return `Dépannage : les graines coûtent cher, produire les tiennes reste plus rentable. Elles s'achètent au prix majoré : coefficient de départ et plancher à ${formatNumber(DATA.MARCHE.PLANCHER.graine)} %. Le blé, la patate et les autres cultures qui se plantent d'elles-mêmes (on plante une patate pour en récolter d'autres) gardent leur prix habituel (plancher ${formatNumber(DATA.MARCHE.PLANCHER.defaut)} %) et restent dans l'onglet Acheter.`;
-  if (tab === 'meubles' && atelierOuvert(state)) return 'Sur ta terre, un meuble acheté arrive dans l\'inventaire : pose-le dans la maison (une pièce close du foyer) avec le mode Construire 🔨. Une table, un canapé ou un tapis prennent plusieurs cases, un lit est un couchage, un tableau s\'accroche à un mur. À l\'achat, ils donnent un peu de bonheur à chaque membre de la famille, une seule fois. Une chaise et un lit par personne. Prix fixes ; un meuble ne se revend pas.';
+  if (tab === 'meubles' && atelierOuvert(state)) return 'Sur ta terre, un meuble acheté arrive dans l\'inventaire : pose-le dans la maison (une pièce close du foyer) avec le mode Construire 🔨. Une table, un canapé ou un tapis prennent plusieurs cases, un lit est un couchage, un tableau s\'accroche à un mur. À l\'achat, ils donnent un peu de bonheur à chaque membre de la famille, une seule fois. Une chaise et un lit par personne. Le bac à fleurs, lui, se pose aussi dehors : ses fleurs attirent les abeilles des ruches. Prix fixes ; un meuble ne se revend pas.';
   if (tab === 'meubles') return 'Les meubles s\'installent dans la maison, chacun à sa place : la cuisine, le salon ou la chambre. À l\'achat, ils donnent un peu de bonheur à chaque membre de la famille, une seule fois. Une chaise et un lit par personne (lits d\'adulte et d\'enfant selon la famille). Prix fixes ; un meuble ne se revend pas.';
   const ruche = atelierOuvert(state) ? ` La ruche (${formatCoins(DATA.RUCHE.PRIX)} pièces) se pose dehors avec le mode Construire 🔨 : ses abeilles butinent les fleurs de la ferme, et au bout de ${DATA.RUCHE.NUITS} nuits elle est pleine (${DATA.RUCHE.MIEL} pots de miel à récolter d'un appui sur sa bulle).` : '';
   return `Prix fixe, quel que soit leur nombre. Un animal ne se revend pas. Les poules, les moutons et les vaches vivent à l'Étable.${ruche}`;
@@ -220,6 +221,15 @@ function animalSlot(kind) {
     `${def.nom} : ${formatCoins(price)} pièces, ${a.compte} sur ${a.cap}`);
 }
 
+// Pour le dehors (ferme générée, DATA.DEHORS : le bac à fleurs) : son prix, et en bas à droite
+// combien on en a (posés et en main).
+function dehorsSlot(id) {
+  const def = DATA.DEHORS[id];
+  const n = Object.values(blocsPoses(state)).filter((s) => s === id).length + countItem(state, id);
+  return shopSlot(DATA.OBJETS[id].icone, def.nom, `data-mode="dehors" data-item="${id}"`, def.prix, n ? pxText(String(n), 'light') : '', !canPay(def.prix),
+    `${def.nom} : ${formatCoins(def.prix)} pièces${n ? `, ${n} sur la ferme` : ''}`);
+}
+
 // La ruche (ferme générée) : son prix, et en bas à droite combien on en a (posées et en main).
 function rucheSlot() {
   const R = DATA.RUCHE;
@@ -265,7 +275,8 @@ export function renderComptoir(fenetre = false) {
   } else if (tab.id === 'animaux') {
     body = slotsHtml(ESPECES.map(animalSlot).concat(atelierOuvert(state) ? [rucheSlot()] : []), 'Aucun animal à vendre pour l\'instant.');
   } else if (tab.id === 'meubles') {
-    body = slotsHtml(Object.keys(DATA.MEUBLES).map(meubleSlot), '');
+    // (sur la ferme générée : ce qui se pose dehors, le bac à fleurs…)
+    body = slotsHtml(Object.keys(DATA.MEUBLES).map(meubleSlot).concat(atelierOuvert(state) ? Object.keys(DATA.DEHORS || {}).map(dehorsSlot) : []), '');
   } else {
     const items = Object.keys(DATA.OBJETS).filter((k) => isBuyable(k) && isGraineComptoir(k) && seedForSale(k));
     body = slotsHtml(items.map((k) => buySlot(k, 'graines')), 'Aucune graine en vente.');
@@ -283,7 +294,7 @@ function seedForSale(item) {
 /* -- Fiche d'un article (fenêtre de dialogue, cadre bois) : ses infos et les boutons de lot,
    chacun avec son total. Elle suit le jeu à chaque rendu (renderShopModal). -- */
 
-let shopOpen = null; // { mode, id } — mode : vendre, acheter, graines, houe, outil, animal, ruche, meuble
+let shopOpen = null; // { mode, id } — mode : vendre, acheter, graines, houe, outil, animal, ruche, meuble, dehors
 
 function lotBtn(attrs, q, label, total, ok) {
   return `<button type="button" class="btn lot-btn" ${attrs} data-q="${q}"${ok ? '' : ' disabled'}><span>${label}</span><small class="num">${total}</small></button>`;
@@ -307,6 +318,17 @@ function shopBodyHtml(o) {
         ${why ? `<li>${why}</li>` : ''}
       </ul>
       <div class="row item-actions"><button type="button" class="btn primary" data-action="buy-meuble" data-item="${o.id}"${why ? ' disabled' : ''}>Acheter (−${formatCoins(def.prix)} 💰)</button></div>`;
+  }
+  if (o.mode === 'dehors') {
+    const def = DATA.DEHORS[o.id], it = DATA.OBJETS[o.id];
+    const fleurs = (DATA.ATELIER.BLOCS[o.id] || {}).fleurs;
+    return `
+      <div class="item-head"><span class="item-icon" aria-hidden="true">${it.icone}</span><span class="item-title"><strong id="item-title">${def.nom}</strong><span class="num">${formatCoins(def.prix)} 💰 (prix fixe)</span></span></div>
+      <ul class="item-lines">
+        <li>🏠 Arrive dans l'inventaire : à poser sur l'herbe, dehors ou dans la maison, avec 🔨.</li>
+        ${fleurs ? `<li>${DATA.RUCHE.ICONE} Ses fleurs attirent les abeilles des ruches.</li>` : ''}
+      </ul>
+      <div class="row item-actions"><button type="button" class="btn primary" data-action="buy-dehors" data-item="${o.id}"${canPay(def.prix) ? '' : ' disabled'}>Acheter (−${formatCoins(def.prix)} 💰)</button></div>`;
   }
   if (o.mode === 'ruche') {
     const R = DATA.RUCHE, miel = DATA.OBJETS[R.PRODUIT];
@@ -425,6 +447,11 @@ registerActions({
       const ou = result.aPoser ? 'dans l\'inventaire, à poser dans la maison avec 🔨' : `installé dans ${PIECES[def.piece] || 'la maison'}`;
       notify(`🏠 ${def.nom} : ${ou} (−${formatCoins(result.cost)} 💰${result.bonheur ? ` · 😊 +${result.bonheur}` : ''})`);
     }
+  },
+  'buy-dehors': (target) => {
+    const id = target.dataset.item;
+    const result = applyResult(buyDehors(state, id));
+    if (result.ok) notify(`${DATA.OBJETS[id].icone} ${DATA.DEHORS[id].nom} : dans l'inventaire, à poser avec 🔨 (−${formatCoins(result.cost)} 💰)`);
   },
   'buy-ruche': () => {
     const result = applyResult(buyRuche(state));

@@ -40,6 +40,7 @@
 #   69 et 70 : l'escalier, puis son haut vu de l'étage (BLOCS_CARTE.escalier, un essai).
 #   71 et 72 : la ruche, vide puis pleine (le miel se devine : BLOCS_CARTE.frames.ruche,
 #            ruche_pleine).
+#   73 : le bac à fleurs (BLOCS_CARTE.frames.bac_fleurs).
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -1326,6 +1327,42 @@ def ruche(pleine=False):
 
 RUCHE = len(DESSINS)                             # la ruche vide, puis pleine (BLOCS_CARTE.frames)
 DESSINS += [ruche(), ruche(True)]
+
+
+# ---------- le bac à fleurs (un bloc `fleurs` : les abeilles des ruches y butinent) ----------
+
+FLEURS = [((214, 64, 72), (246, 120, 120)), ((240, 196, 48), (255, 232, 120)), ((150, 96, 210), (196, 156, 240)),
+          ((236, 236, 240), (255, 255, 255)), ((236, 120, 170), (255, 176, 210))]   # (cœur sombre, pétales)
+
+
+def bac_fleurs():
+    """Le bac à fleurs : une jardinière de planches basse, vue de haut, pleine de terreau ; des
+    tiges et des feuilles, et des fleurs de cinq couleurs qui dépassent du bord."""
+    t = Toile()
+    yd, yf = boite(t, 1, 14, BAS - 1, 7, 9, BOIS, planches(BOIS, 'h', pas=3, y0=2))
+    for y in range(yd + 1, yf - 1):              # le terreau
+        for x in range(2, 14):
+            t.put(x, y, TERRE[2] if (x + 2 * y) % 5 else TERRE[3])
+    for x in range(2, 14):
+        t.put(x, yd + 1, TERRE[0])
+    # les tiges et les feuilles, puis les fleurs (une croix de pétales autour d'un cœur)
+    places = [(3, yd - 2), (6, yd - 4), (9, yd - 2), (12, yd - 4), (5, yd + 1), (10, yd + 1), (13, yd)]
+    for k, (cx, cy) in enumerate(places):
+        for y in range(cy + 1, yf - 1):
+            t.put(cx, y, VERT[1])
+        t.put(cx + (1 if k % 2 else -1), cy + 2, VERT[2])
+    for k, (cx, cy) in enumerate(places):
+        coeur, petale = FLEURS[k % len(FLEURS)]
+        for dx, dy in ((0, -1), (-1, 0), (1, 0), (0, 1)):
+            t.put(cx + dx, cy + dy, petale)
+        t.put(cx, cy, (250, 210, 60) if k % len(FLEURS) != 1 else (200, 120, 30))
+    for x in range(2, 14):
+        t.put(x, BAS - 1, BOIS[0])
+    return t.fini()
+
+
+BAC_FLEURS = len(DESSINS)                        # le bac à fleurs (BLOCS_CARTE.frames.bac_fleurs)
+DESSINS += [bac_fleurs()]
 
 
 # ---------- l'aperçu : une pièce close et les objets, sur l'herbe de la carte ----------
