@@ -165,9 +165,10 @@
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
     // l'étage (un essai, js/carte/ferme/etage.js) : le haut de l'escalier (`haut`) ; l'étage
     // est dessiné `dy` px plus haut (la hauteur de la face des murs hauts : leurs faces se suivent) ; le niveau où l'on n'est pas,
-    // quand on est dans le bâtiment : à `transparent` ; à l'étage, un voile sombre sur toute la
+    // en mode Construire : à `transparent` (quand on est dans le bâtiment, en bas : à `dedans`,
+    // on n'en voit que son niveau) ; à l'étage, un voile sombre sur toute la
     // ferme (`voile`, `alpha` ; au-dessus de ce qui vole), et ce qui est de l'étage devant lui
-    etage: { haut: 70, dy: 30, transparent: 0.3, voile: 0x0d1018, alpha: 0.62 },
+    etage: { haut: 70, dy: 30, transparent: 0.3, dedans: 0, voile: 0x0d1018, alpha: 0.62 },
     // en mode Construire, aux niveaux où l'on rehausse les murs (chantier.js syncRang) : un
     // voile sombre (`voile`) sur la ferme ; devant lui, le rang de mur du niveau, celui du
     // dessous à `dessous`, les autres à `autres` (presque invisibles) ; les cases où poser le
@@ -188,10 +189,11 @@
     // les murs et la porte (d'un mur horizontal), une case plus hauts (assets/murs_hauts.png,
     // comme les maisons de la transition, scripts/carte/blocs.py murs_hauts : les 16 murs
     // raccordés, `murs` + masque, puis la porte) ; un mur devant quelqu'un (il le cache)
-    // s'efface jusqu'à `alpha`, à `vitesse` par seconde (chantier.js stepMurs)
+    // s'efface jusqu'à `alpha` (devant le personnage : `joueur`), à `vitesse` par seconde
+    // (chantier.js stepMurs)
     // ; `variantes` : les murs qui se raccordent comme le mur en pierre, et où commencent leurs
     // 16 images dans la planche (la fenêtre, les pierres d'angle ; sans la planche haute : le mur)
-    hauts: { key: 'murs_hauts', file: 'murs_hauts.png', frame: { frameWidth: 16, frameHeight: 40 }, murs: 0, porte: 16, alpha: 0.4, vitesse: 4,
+    hauts: { key: 'murs_hauts', file: 'murs_hauts.png', frame: { frameWidth: 16, frameHeight: 40 }, murs: 0, porte: 16, alpha: 0.4, joueur: 0.05, vitesse: 4,
       variantes: { mur_pierre: 0, mur_fenetre: 17, pierre_angle: 33, paroi_vitree: 97,
         // (les murs aux matières des immeubles de la ville : scripts/carte/blocs.py MATIERES_VILLE)
         mur_brique_rouge: 161, mur_brique_orange: 177, mur_brique_ocre: 193, mur_brique_bleue: 209, mur_pierre_taille: 225,
