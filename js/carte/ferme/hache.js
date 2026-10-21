@@ -210,6 +210,7 @@
 
     // Les arbres abattus ont changé : leurs ombres, et les cases où le personnage passe.
     felledChanged() {
+      this.arbresCases = null;          // (les rayons des fenêtres : fenetres.js casesArbres)
       this.felledFeet = new Set(this.mapTrees().filter((t) => t.gone && !t.buisson).map((t) => t.foot.x + ',' + t.foot.y));
       // les buissons coupés (« x0,pied », comme ambient-life.js les relève) : on y passe
       this.felledBushes = new Set(this.mapTrees().filter((t) => t.gone && t.buisson).map((t) => t.x0 + ',' + (t.y1 - 2)));

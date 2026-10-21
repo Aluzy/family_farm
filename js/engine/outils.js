@@ -370,35 +370,71 @@ export function scytheAround(state, ids, ou) {
 }
 
 // La case d'une touffe (son identifiant « x,y » : son pied, en px).
-function caseHerbe(state, id) {
-  const [x, y] = id.split(',').map(Number), T = FERME_GENEREE.T;
-  return Math.floor(y / T) * farmTerrain(state).LARGEUR + Math.floor(x / T);
+// Les cases que couvrent les brins de la touffe `id` (« x,y » de son pied) : sa case, et celles
+// où ils débordent (CarteKit.NATURE.herbe : 22 × 20 px posés sur le pied ; TOUFFE : ce qui
+// en est vraiment de l'herbe, de part et d'autre du pied et au-dessus).
+const TOUFFE = { large: 7, haut: 12 };
+function casesTouffe(state, id) {
+  const [x, y] = id.split(',').map(Number), T = FERME_GENEREE.T, W = farmTerrain(state).LARGEUR;
+  const out = new Set();
+  for (const px of [x - TOUFFE.large, x, x + TOUFFE.large]) for (const py of [y - TOUFFE.haut, y - 1]) out.add(Math.floor(py / T) * W + Math.floor(px / T));
+  return out;
 }
 
-// Au réveil : les touffes dont le jour est venu repoussent, sauf sur une case bâtie (elles
-// restent fauchées). Renvoie leurs identifiants.
+// La touffe `id` déborde-t-elle sur une case de `baties` (casesBaties) ?
+function touffeSurBati(state, id, baties) {
+  if (!baties.size) return false;
+  for (const t of casesTouffe(state, id)) if (baties.has(t)) return true;
+  return false;
+}
+
+// Au réveil : les touffes dont le jour est venu repoussent, sauf sur une case bâtie ou à son
+// bord (un mur, un chemin : leurs brins le couvriraient ; elles restent fauchées). Renvoie leurs
+// identifiants.
 export function regrowGrass(state) {
   const h = state.outils && state.outils.herbes;
   if (!h) return [];
   const out = [], baties = casesBaties(state);
   for (const id of Object.keys(h)) {
     if (!(Number(h[id] && h[id].retour) <= state.day)) continue;
-    if (baties.size && baties.has(caseHerbe(state, id))) continue;
+    if (touffeSurBati(state, id, baties)) continue;
     delete h[id];
     out.push(id);
   }
   return out;
 }
 
-// Les touffes d'herbe haute restées sous ce qui est bâti (une partie d'avant la version 1.26) :
-// fauchées, sans paille ; elles ne repoussent plus tant que la case est bâtie. Renvoie leur nombre.
+// Une pose sur la case `tile` : les touffes des cases voisines dont les brins débordent sur elle
+// sont foulées (fauchées, sans paille ; elles repoussent quand la case est libérée). Renvoie
+// leur nombre.
+export function foulerAutour(state, tile) {
+  const T = farmTerrain(state), H = T.HERBES, W = T.LARGEUR;
+  if (!H) return 0;
+  let n = 0;
+  for (const j of [tile - 1, tile + 1, tile + W - 1, tile + W, tile + W + 1]) {
+    for (const id of H[j] || []) {
+      if (grassCut(state, id) || !casesTouffe(state, id).has(tile)) continue;
+      const o = outils(state);
+      if (!o.herbes || typeof o.herbes !== 'object') o.herbes = {};
+      o.herbes[id] = { retour: state.day };
+      n++;
+    }
+  }
+  return n;
+}
+
+// Les touffes d'herbe haute sous ce qui est bâti ou qui débordent dessus (un chemin posé à côté
+// d'elles, une partie d'avant la version 1.26) : fauchées, sans paille ; elles ne repoussent plus
+// tant que la case est bâtie. Renvoie leur nombre.
 export function faucherSousBati(state) {
   const H = farmTerrain(state).HERBES;
   if (!H) return 0;
   const o = outils(state);
   if (!o.herbes || typeof o.herbes !== 'object') o.herbes = {};
+  const baties = casesBaties(state);
+  if (!baties.size) return 0;
   let n = 0;
-  for (const t of casesBaties(state)) for (const id of H[t] || []) if (!o.herbes[id]) { o.herbes[id] = { retour: state.day }; n++; }
+  for (const ids of Object.values(H)) for (const id of ids) if (!o.herbes[id] && touffeSurBati(state, id, baties)) { o.herbes[id] = { retour: state.day }; n++; }
   return n;
 }
 

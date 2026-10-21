@@ -7,7 +7,7 @@ import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
 import { openStation } from './kitchen.js';
 import { freedRockTiles, openSerre } from './crops.js';
-import { grassCut } from './outils.js';
+import { foulerAutour, grassCut } from './outils.js';
 import { fillSilo } from './animals.js';
 import { arbreProche, arbreSurCase, planterArbre } from './orchard.js';
 import { isUnlocked } from './campaign.js';
@@ -436,7 +436,15 @@ export function poseStatus(state, sorte, tile) {
   return { ok: true };
 }
 
+// Pose `sorte` sur `tile` ; l'herbe haute des cases voisines qui déborde sur ce qui est bâti
+// est foulée (fauchée, sans paille : foulerAutour).
 export function poserBloc(state, sorte, tile) {
+  const r = poser(state, sorte, tile);
+  if (r.ok) foulerAutour(state, tile);
+  return r;
+}
+
+function poser(state, sorte, tile) {
   const st = poseStatus(state, sorte, tile);
   if (!st.ok) return fail(st.raison);
   const s = sorteDe(sorte);
