@@ -138,8 +138,8 @@
       if (change) this.sunDirty = true;
     },
 
-    // La pose d'un meuble (modèle.bati.meuble : { grille, apercu: { case, dessin, largeur,
-    // hauteur, plat, ok } | null }, js/ui/chantier.js) : un quadrillage sur la carte, et
+    // La pose d'un meuble (modèle.bati.meuble : { grille, etage, apercu: { case, dessin, largeur,
+    // hauteur, plat, ok } | null }, js/ui/chantier.js ; etage : à l'étage) : un quadrillage sur la carte, et
     // l'aperçu du meuble calé sur la grille (son dessin, transparent ; ses cases encadrées),
     // vert s'il tient là, rouge sinon. null : rien.
     syncPoseMeuble(m) {
@@ -150,14 +150,16 @@
         for (let c = 0; c <= cols; c++) g.lineBetween(c * T, 0, c * T, this.world.h);
         for (let r = 0; r <= Math.ceil(this.world.h / T); r++) g.lineBetween(0, r * T, this.world.w, r * T);
       }
-      this.grilleGfx.setVisible(!!(m && m.grille));
-      const a = m && m.apercu, cle = a ? JSON.stringify(a) : '';
+      // (à l'étage : la grille et l'aperçu remontés comme lui, BLOCS_CARTE.etage.dy)
+      const lift = m && m.etage ? BLOCS_CARTE.etage.dy : 0;
+      this.grilleGfx.setVisible(!!(m && m.grille)).setY(-lift).setDepth(lift ? this.etageZ(9997) : BLOCS_CARTE.voileDepth + 0.01);
+      const a = m && m.apercu, cle = a ? JSON.stringify(a) + lift : '';
       if (cle === (this.apercuCle || '')) return;
       this.apercuCle = cle;
       if (this.apercu) { this.apercu.img && this.apercu.img.destroy(); this.apercu.cadre.destroy(); this.apercu = null; }
       if (!a) return;
       const col = a.case % cols, row = Math.floor(a.case / cols), couleur = a.ok ? P.ok : P.non;
-      const x0 = col * T, y1 = (row + 1) * T, w = a.largeur * T, h = a.hauteur * T;
+      const x0 = col * T, y1 = (row + 1) * T - lift, w = a.largeur * T, h = a.hauteur * T;
       const cadre = this.add.graphics().setDepth(this.etageZ(9998));
       cadre.fillStyle(couleur, P.fond).fillRect(x0, y1 - h, w, h);
       cadre.lineStyle(1, couleur, 1).strokeRect(x0 + 0.5, y1 - h + 0.5, w - 1, h - 1);

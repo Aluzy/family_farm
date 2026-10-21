@@ -12,7 +12,7 @@ import { atelierConstruit, atelierOuvert } from '../engine/atelier.js';
 import { blocAt, blocDessus, blocsEnMain, changeMur, couchages, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
-import { ETAGE_BLOCS, etageCouvertes, etageEmprise, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
+import { ETAGE_BLOCS, etageCouvertes, etageEmprise, poseEtageStatus, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -126,20 +126,22 @@ if (typeof document !== 'undefined') {
 }
 
 // La pose d'un meuble du Marché : un meuble en main (pas un tableau, qui s'accroche à un mur),
-// au sol, la carte montre un quadrillage ; un appui sur une case y pose son aperçu, calé sur la
-// grille (vert : il tient là ; rouge : non), sans le poser ; ✔️ le pose, ❌ sort de ce mode.
-// poseMeuble : { sorte, case } (l'aperçu), ou null.
+// au sol ou à l'étage, la carte montre un quadrillage ; un appui sur une case y pose son aperçu,
+// calé sur la grille (vert : il tient là ; rouge : non), sans le poser ; ✔️ le pose, ❌ sort de
+// ce mode. poseMeuble : { sorte, case } (l'aperçu), ou null.
 let poseMeuble = null;
 const meubleEnMain = () => {
   const b = buildMode && DATA.ATELIER.BLOCS[buildMode];
-  return !!(b && b.meuble && !b.sur && !niveau());
+  return !!(b && b.meuble && !b.sur && (!niveau() || niveauBati()));
 };
+// Le meuble en main tient-il sur `c`, au niveau où l'on construit ?
+const meubleTient = (c) => (niveauBati() ? poseEtageStatus(state, buildMode, c) : poseStatus(state, buildMode, c)).ok;
 // Pour la carte (modèle.bati.meuble) : la grille, et l'aperçu s'il y en a un
 // ({ case, dessin, largeur, hauteur, ok }).
 export function meubleModele() {
   if (!meubleEnMain()) return null;
   const p = poseMeuble && poseMeuble.sorte === buildMode ? poseMeuble : null, b = DATA.ATELIER.BLOCS[buildMode];
-  return { grille: true, apercu: p ? { case: p.case, dessin: b.meuble, largeur: b.largeur || 1, hauteur: b.hauteur || 1, plat: !!b.plat, ok: poseStatus(state, buildMode, p.case).ok } : null };
+  return { grille: true, etage: niveauBati(), apercu: p ? { case: p.case, dessin: b.meuble, largeur: b.largeur || 1, hauteur: b.hauteur || 1, plat: !!b.plat, ok: meubleTient(p.case) } : null };
 }
 // Sort de la pose d'un meuble : l'aperçu s'efface, un bloc (pas un meuble) passe en main.
 function quitteMeuble() {
@@ -205,7 +207,10 @@ registerActions({
     if (niveauBati() && etageEmprise(state).has(c)) {
       // (un appui sur un meuble de l'étage, sur n'importe laquelle de ses cases, le reprend)
       const e = etageBlocs(state)[c];
-      const r = (e && !changeMur(e, buildMode)) || etageCouvertes(state).has(c) ? reprendreEtage(state, c) : poserEtage(state, buildMode, c);
+      const reprend = (e && !changeMur(e, buildMode)) || etageCouvertes(state).has(c);
+      // (un meuble en main, sur une case libre : son aperçu, pas encore posé)
+      if (!reprend && meubleEnMain()) { poseMeuble = { sorte: buildMode, case: c }; refresh(); return; }
+      const r = reprend ? reprendreEtage(state, c) : poserEtage(state, buildMode, c);
       if (!r.ok) { notify(r.error); return; }
       persistState();
       refresh();
@@ -255,7 +260,7 @@ registerActions({
   'meuble-ok': () => {
     if (!poseMeuble || !meubleEnMain()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
-    const r = poserBloc(state, poseMeuble.sorte, poseMeuble.case);
+    const r = (niveauBati() ? poserEtage : poserBloc)(state, poseMeuble.sorte, poseMeuble.case);
     if (!r.ok) { notify(r.error); return; }
     poseMeuble = null;
     if (!blocsEnMain(state, buildMode)) quitteMeuble();     // (plus de ce meuble : on en sort)
