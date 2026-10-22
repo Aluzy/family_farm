@@ -17,6 +17,8 @@ export * from './terrain-carte.js';
 export * from './ferme-generee.js';
 export * from './crops.js';
 export * from './depart.js';
+export * from './cruche.js';
+export * from './didacticiel.js';
 export * from './animals.js';
 export * from './orchard.js';
 export * from './kitchen.js';

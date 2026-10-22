@@ -68,6 +68,7 @@
       "mur_brique_bleue": { "entrees": { "pierre": 3, "bois": 1 }, "sortie": { "mur_brique_bleue": 1 } },
       "mur_pierre_taille": { "entrees": { "pierre": 5 }, "sortie": { "mur_pierre_taille": 1 } },
       "mur_bois": { "entrees": { "bois": 4 }, "sortie": { "mur_bois": 1 } },
+      "cruche": { "entrees": { "bois": 3 }, "sortie": { "cruche": 1 } },
       "paroi_vitree": { "entrees": { "pierre": 2, "lingot_fer": 1 }, "sortie": { "paroi_vitree": 1 } },
       "porte": { "entrees": { "planche": 3 }, "sortie": { "porte": 1 } },
       "plancher": { "entrees": { "planche": 2 }, "sortie": { "plancher": 1 } },

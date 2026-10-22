@@ -46,6 +46,8 @@ import { buildChipHtml, meubleModele, niveauBati, niveauRang } from './chantier.
 import { escaliers, etageBlocs, etageEmprise, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
+import { aCruche, crucheCapacite, eauCruche, puitsPose, remplirCruche } from '../engine/cruche.js';
+import { surbrillanceDidacticiel } from './didacticiel.js';
 import { runAction } from './events.js';
 
 
@@ -466,6 +468,8 @@ export function stageModel() {
     blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}) })),
     // le Moulin de la ferme générée (version 1.25) : sa tour bâtie, ses bornes (les cases de la
     // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
+    // le didacticiel (js/ui/didacticiel.js) : ce que la carte entoure (pierres, bois, Atelier, puits)
+    surbrillance: surbrillanceDidacticiel(),
     moulinTour: tour && tour.ok ? { ...tour.bornes, enMarche: batiments.moulin.enMarche } : null,
     // les tableaux accrochés aux murs (DATA.ATELIER.BLOCS : sur « mur »)
     tableaux: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].meuble).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })),
@@ -900,6 +904,15 @@ function stagePanToScreen(i) {
 
 registerActions({
   'stage-open': (target) => {
+    // le puits, la cruche en main : il la remplit (js/engine/cruche.js) ; sinon sa fenêtre
+    if (target.dataset.window === 'eau' && aCruche(state) && puitsPose(state) && eauCruche(state) < crucheCapacite()) {
+      const r = remplirCruche(state);
+      if (!r.ok) { notify(r.error); return; }
+      notify(`${DATA.OBJETS.cruche.icone} Cruche remplie : ${r.litres} L pour arroser.`);
+      persistState();
+      refresh();
+      return;
+    }
     openStageWindow(target.dataset.window);
   },
   'aller': (target) => {

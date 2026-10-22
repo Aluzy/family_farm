@@ -435,6 +435,7 @@
         this.stepShards(delta);
         this.stepSprinklers();
         this.stepFires(time);
+        this.stepSurbrillance(time);
         this.stepMurs(dt / 1000);
         this.stepEtage(dt / 1000);
         this.stepToits(dt / 1000);

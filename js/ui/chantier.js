@@ -9,6 +9,8 @@
 
 import { DATA } from '../engine/catalog.js';
 import { atelierConstruit, atelierOuvert } from '../engine/atelier.js';
+import { blocsDidacticiel } from '../engine/didacticiel.js';
+import { setStageWindow, stageWindow } from './stage-windows.js';
 import { blocAt, blocDessus, blocsEnMain, changeMur, couchages, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
@@ -34,16 +36,19 @@ const MURS = () => Object.keys(DATA.ATELIER.BLOCS).filter((s) => DATA.ATELIER.BL
 // (à l'étage : seulement ceux qui s'y posent ; plus haut que le sol : les murs)
 // (les meubles du Marché : seulement ceux qu'on a en main, ou celui qu'on pose)
 const enMain = (s) => !DATA.ATELIER.BLOCS[s].meuble || s === buildMode || blocsEnMain(state, s) > 0;
-const SORTES = () => (niveauBati() ? ETAGE_BLOCS.filter(enMain) : niveau() ? MURS() : Object.keys(DATA.ATELIER.BLOCS).filter(enMain));
+// (pendant le didacticiel : seulement les blocs qu'il a débloqués, js/engine/didacticiel.js)
+const vu = (s) => { const v = blocsDidacticiel(state); return !v || v.has(s); };
+const SORTES = () => (niveauBati() ? ETAGE_BLOCS.filter(enMain) : niveau() ? MURS() : Object.keys(DATA.ATELIER.BLOCS).filter(enMain)).filter(vu);
 // La liste des niveaux (au-dessus du menu) : ouverte ? Un appui long sur le carré l'ouvre, on
 // glisse jusqu'au niveau voulu et on lâche (APPUI_LONG_MS) ; un appui simple l'ouvre ou la ferme.
 let niveauListe = false;
 const APPUI_LONG_MS = 350;
 const CONSEIL_MS = 2000;   // le rappel à l'ouverture du mode
 
-// Le mode Construire est-il possible ? (la ferme générée, l'Atelier construit)
+// Le mode Construire est-il possible ? (la ferme générée : on y pose d'abord l'Atelier, qui se
+// construit en le posant ; l'entrée 🔨 du menu latéral l'ouvre)
 export function chantierOuvert() {
-  return atelierOuvert(state) && atelierConstruit(state);
+  return atelierOuvert(state);
 }
 
 // L'icône d'un bloc (celle de son objet ; un meuble : son dessin ; l'Atelier : la sienne).
@@ -55,7 +60,7 @@ function icone(sorte) {
 
 // La case de la barre d'outils.
 export function buildSlotHtml() {
-  if (!chantierOuvert()) return '';
+  if (!chantierOuvert() || !atelierConstruit(state)) return '';
   const on = !!buildMode;
   const label = on ? 'Construire : ranger' : 'Construire (poser des blocs)';
   return `<button type="button" class="tool-slot${on ? ' active' : ''}" data-action="build-toggle" aria-pressed="${on}" aria-label="${label}" title="${label}">${DATA.ATELIER.ICONE}</button>`;
@@ -160,6 +165,7 @@ registerActions({
     if (buildMode) { poseMeuble = null; setBuildMode(null); refresh(); return; }
     if (!chantierOuvert()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    if (stageWindow) setStageWindow(null);    // (depuis le menu latéral : on revient sur la carte)
     setBuildLevel(etageVue ? 1 : 0);          // (on construit d'abord là où l'on est)
     niveauListe = false;
     setBuildMode(SORTES().find((s) => blocsEnMain(state, s) > 0) || SORTES()[0]);

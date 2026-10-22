@@ -220,6 +220,13 @@
   },
   "//AIDE": ["Première partie : bulles d'aide, dans cet ordre. La dernière (« dormir »)", "se ferme aussi d'elle-même à la première nuit."],
   "AIDE": { "ETAPES": ["eau", "potager", "dormir"] },
+  "//DIDACTICIEL": [
+    "Le didacticiel d'une nouvelle partie (js/engine/didacticiel.js, js/ui/didacticiel.js) : les jauges, le",
+    "déplacement, le ramassage, l'Atelier, la faux, la hache et la pioche, l'abri (des murs en bois, une",
+    "porte, une paillasse par membre de la famille), la houe, les graines offertes (GRAINES), LABOURS terres",
+    "à labourer, le semis, le puits et la cruche, l'arrosage."
+  ],
+  "DIDACTICIEL": { "GRAINES": { "graine_carotte": 6 }, "LABOURS": 3 },
   "//CARTES": [
     "Les cartes où le personnage peut aller (js/ui/excursion.js, cartesOuvertes). AUTRES : la carte",
     "de transition, la ville, la montagne, la plage, leurs grottes et l'infra-monde ; false (la",

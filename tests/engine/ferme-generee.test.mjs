@@ -13,6 +13,7 @@ import {
   etatEtable, etatMoulin, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   botteleuses, etatBotteleuse, machineDe, morceauxDe, ramasserMorceau, sortirBotte, verserFibres,
   buyRuche, buyDehors, PORTE_SUR_MUR, casesBuissonsCoupes, especeArbre, poussesArbres, arbresPlantes, respawnTrees, fellenTrees, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
+  commencerDidacticiel, etapeDidacticiel, suivantDidacticiel, majDidacticiel, objectifDidacticiel, recettesDidacticiel, blocsDidacticiel, passerDidacticiel, planAbri, hoe, plant, water, remplirCruche, eauCruche,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
 
@@ -1286,4 +1287,107 @@ test("ferme générée : l'herbe haute en quinconce, au plus 2 touffes par case"
     assert(Math.max(...parCase) <= 2, `${graine} : au plus 2 touffes par case`);
     assertEqual(parCase.reduce((a, b) => a + b, 0), objets.length, `${graine} : chaque touffe dans sa case`);
   }
+});
+
+test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il faut, l\'Atelier se construit en le posant', () => {
+  const s = garden();
+  tireless(s);
+  testFarmMap(s, 'didacticiel');
+  setInv(s, {});
+  s.eauMl = 0;   // (une nouvelle partie : pas de citerne)
+  commencerDidacticiel(s);
+  const R = DATA.ATELIER.RECETTES;
+  assertEqual([etapeDidacticiel(s), [...recettesDidacticiel(s)], [...blocsDidacticiel(s)]], ['sante', [], []]);
+  assertEqual(suivantDidacticiel(s, 'pierres').ok, false, 'pas l\'étape en cours');
+  for (let k = 0; k < 7; k++) assert(suivantDidacticiel(s).ok);
+  assertEqual([etapeDidacticiel(s), objectifDidacticiel(s).compteurs], ['pierres', [{ objet: 'pierre', n: 0, besoin: DATA.ATELIER.CONSTRUCTION.pierre }]]);
+  assertEqual(suivantDidacticiel(s).ok, false, 'une étape à objectif ne se passe pas');
+  setInv(s, { pierre: 3 });
+  assert(majDidacticiel(s));
+  assertEqual(etapeDidacticiel(s), 'bois');
+  setInv(s, { pierre: 3, bois: 3 });
+  majDidacticiel(s);
+  assertEqual([etapeDidacticiel(s), [...blocsDidacticiel(s)]], ['atelier', ['atelier']]);
+  // l'Atelier : posé, il se construit (ses matériaux quittent l'inventaire)
+  const N = planAbri(s).paillasses, z = terrainLibre(s, N + 6, 8);
+  assert(poserBloc(s, 'atelier', z.r * z.W + z.c + N + 4).ok);
+  assertEqual([atelierConstruit(s), countItem(s, 'pierre'), countItem(s, 'bois')], [true, 0, 0]);
+  majDidacticiel(s);
+  assertEqual(etapeDidacticiel(s), 'atelier_ouvrir');
+  assert(suivantDidacticiel(s, 'atelier_ouvrir').ok);
+  assertEqual([etapeDidacticiel(s), [...recettesDidacticiel(s)]], ['faux', ['faux']]);
+  setInv(s, R.faux.entrees);
+  assert(craft(s, 'faux').ok);
+  majDidacticiel(s);
+  const fibres = 2 + 3 * N;
+  assertEqual([etapeDidacticiel(s), objectifDidacticiel(s).compteurs], ['fibres', [{ objet: 'fibre', n: 0, besoin: fibres }]]);
+  setInv(s, { fibre: fibres, bois: 4, pierre: 5 });
+  majDidacticiel(s);
+  assertEqual(etapeDidacticiel(s), 'outils', 'les fibres, puis la hache et la pioche');
+  assert(craft(s, 'hache').ok && craft(s, 'pioche').ok);
+  majDidacticiel(s);
+  const p = planAbri(s);
+  assertEqual([etapeDidacticiel(s), p], ['abri_ressources', { murs: 2 * N + 5, porte: 1, paillasses: N }]);
+  assertEqual(objectifDidacticiel(s).compteurs, [{ objet: 'bois', n: 0, besoin: p.murs * 4 + 6 }, { objet: 'fibre', n: 3 * N, besoin: 3 * N }]);
+  setInv(s, { bois: p.murs * 4 + 6, fibre: 3 * N });
+  majDidacticiel(s);
+  assertEqual([etapeDidacticiel(s), recettesDidacticiel(s).has('mur_bois')], ['abri_fabriquer', true]);
+  for (let k = 0; k < p.murs; k++) assert(craft(s, 'mur_bois').ok);
+  for (let k = 0; k < 3; k++) assert(craft(s, 'planche').ok);
+  assert(craft(s, 'porte').ok);
+  for (let k = 0; k < N; k++) assert(craft(s, 'paillasse').ok);
+  majDidacticiel(s);
+  assertEqual([etapeDidacticiel(s), [...blocsDidacticiel(s)].sort()], ['abri_construire', ['atelier', 'mur_bois', 'porte']]);
+  // l'abri : une rangée de N cases entourée de murs, la porte au milieu du bas
+  const m = murs(z, N + 2, 3);
+  // (la porte se pose sur un mur, qui revient dans l'inventaire)
+  assert(poserBloc(s, 'mur_bois', m.porte).ok);
+  assert(poserBloc(s, 'porte', m.porte).ok);
+  for (const t of m.murs) { const q = poserBloc(s, 'mur_bois', t); assert(q.ok, `mur ${t} : ${q.error}`); }
+  majDidacticiel(s);
+  assertEqual(etapeDidacticiel(s), 'paillasses');
+  for (let k = 0; k < N; k++) assert(poserBloc(s, 'paillasse', (z.r + 1) * z.W + z.c + 1 + k).ok);
+  majDidacticiel(s);
+  assertEqual([etapeDidacticiel(s), houseRepaired(s)], ['houe', true]);
+  setInv(s, R.houe.entrees);
+  assert(craft(s, 'houe').ok);
+  majDidacticiel(s);
+  assertEqual([etapeDidacticiel(s), countItem(s, 'graine_carotte')], ['graines', DATA.DIDACTICIEL.GRAINES.graine_carotte], 'les graines offertes');
+  assert(suivantDidacticiel(s).ok);
+  const libres = hoeableTiles(s).slice(0, DATA.DIDACTICIEL.LABOURS);
+  for (const t of libres) assert(hoe(s, t).ok);
+  majDidacticiel(s);
+  assertEqual(etapeDidacticiel(s), 'semis');
+  assert(plant(s, s.potager.parcelles[0].id, 'carotte').ok);
+  majDidacticiel(s);
+  assertEqual([etapeDidacticiel(s), [...blocsDidacticiel(s)].includes('puits')], ['puits', true]);
+  assertEqual(water(s, s.potager.parcelles[0].id).ok, false, 'ni citerne ni cruche');
+  setInv(s, { pierre: 8, planche: 2, bois: 3 });
+  assert(craft(s, 'puits_pierre').ok && craft(s, 'cruche').ok);
+  assertEqual(remplirCruche(s).ok, false, 'pas de puits posé');
+  assert(poserBloc(s, 'puits', z.r * z.W + z.c + N + 4 + 2).ok);
+  majDidacticiel(s);
+  assertEqual(etapeDidacticiel(s), 'arroser');
+  assertEqual(water(s, s.potager.parcelles[0].id).error, 'La cruche est vide : remplis-la au puits (touche-le).');
+  assert(remplirCruche(s).ok);
+  assertEqual(eauCruche(s), DATA.CRUCHE.LITRES * 1000);
+  const r = water(s, s.potager.parcelles[0].id);
+  assert(r.ok);
+  assertEqual(eauCruche(s), (DATA.CRUCHE.LITRES - r.litres) * 1000, 'l\'eau vient de la cruche');
+  majDidacticiel(s);
+  assertEqual(etapeDidacticiel(s), 'fin');
+  assert(suivantDidacticiel(s).ok);
+  assertEqual([etapeDidacticiel(s), recettesDidacticiel(s), blocsDidacticiel(s)], [null, null, null], 'fini : tout est débloqué');
+});
+
+test('didacticiel : passé, tout est débloqué et les graines sont offertes ; une ancienne partie n\'en a pas', () => {
+  const s = garden();
+  testFarmMap(s, 'didacticiel2');
+  setInv(s, {});
+  commencerDidacticiel(s);
+  assert(passerDidacticiel(s).ok);
+  assertEqual([etapeDidacticiel(s), recettesDidacticiel(s), countItem(s, 'graine_carotte')], [null, null, DATA.DIDACTICIEL.GRAINES.graine_carotte]);
+  const t = garden();
+  testFarmMap(t, 'didacticiel3');
+  assertEqual([etapeDidacticiel(t), blocsDidacticiel(t)], [null, null]);
 });

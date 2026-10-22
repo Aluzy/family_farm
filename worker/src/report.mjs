@@ -80,7 +80,6 @@ export const GAME_ACTIONS = {
   'hoe-toggle': 'Prendre ou ranger la houe',
   'hoe-take': 'Prendre la houe (objectif du chapitre)',
   'buy-tool': 'Acheter un outil (pioche, hache, canne à pêche)',
-  'atelier-construire': 'Construire l\'Atelier (ferme générée)',
   'atelier-fabriquer': 'Fabriquer à l\'Atelier (ferme générée)',
   'bloc': 'Poser ou reprendre un bloc (ferme générée)',
   'build-toggle': 'Construire : ouvrir ou ranger (ferme générée)',
@@ -117,7 +116,7 @@ export const INTERFACE_ACTIONS = new Set([
   'cancel-queued', 'ack-chapter', 'tree-slot', 'tree-slot-cancel', 'commerce-pick', 'commerce-cancel',
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'demenagement-hasard',
-  'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-espece',
+  'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-espece', 'didacticiel-suivant', 'didacticiel-passer',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', 'four-tab', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,

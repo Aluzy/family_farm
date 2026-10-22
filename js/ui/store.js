@@ -19,7 +19,7 @@ export const TABS = [
   { id: 'commerce', label: 'Commerce', icon: '🏪' }, // version 1.14 : fenêtre de la carte (menu latéral), au niveau du commerce
   { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦' },
   { id: 'inventaire', label: 'Inventaire', icon: '📦' },
-  { id: 'atelier', label: 'Atelier', icon: '🔨' }, // la ferme générée : fenêtre de la carte (menu latéral)
+  { id: 'atelier', label: 'Construire', icon: '🔨' }, // la ferme générée : le menu Construire (l'Atelier : touché sur la carte)
   { id: 'recettes', label: 'Livre de recette', icon: '📖' },
   { id: 'techno', label: 'Arbre des technologies', icon: '🌳' },
   { id: 'comptoir', label: 'Marché', icon: '🧺' },

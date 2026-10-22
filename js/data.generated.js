@@ -100,6 +100,7 @@ export const RAW_DATA = {
   "AUTONOMIE": { "HISTORIQUE_MAX": 1000, "GRAPHIQUE_NUITS": 20 },
   "HORS_LIGNE": { "MAX_S": 28800, "PAS_S": 5, "USURE": false, "ECRAN_S": 60 },
   "AIDE": { "ETAPES": ["eau", "potager", "dormir"] },
+  "DIDACTICIEL": { "GRAINES": { "graine_carotte": 6 }, "LABOURS": 3 },
   "CARTES": { "AUTRES": false },
   "NIVEAU_MAX": 5,
   "RESEAU": {
@@ -208,6 +209,7 @@ export const RAW_DATA = {
       "categorie": "matériau",
       "rachetable": false
     },
+    "cruche": { "nom": "Cruche à eau", "icone": "🏺", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "mur_bois": { "nom": "Mur en bois", "icone": "🧱‍🪵", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "paroi_vitree": { "nom": "Paroi vitrée", "icone": "🏢", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "plancher": { "nom": "Plancher", "icone": "🟫‍🪚", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -558,6 +560,7 @@ export const RAW_DATA = {
       "mur_brique_bleue": { "entrees": { "pierre": 3, "bois": 1 }, "sortie": { "mur_brique_bleue": 1 } },
       "mur_pierre_taille": { "entrees": { "pierre": 5 }, "sortie": { "mur_pierre_taille": 1 } },
       "mur_bois": { "entrees": { "bois": 4 }, "sortie": { "mur_bois": 1 } },
+      "cruche": { "entrees": { "bois": 3 }, "sortie": { "cruche": 1 } },
       "paroi_vitree": { "entrees": { "pierre": 2, "lingot_fer": 1 }, "sortie": { "paroi_vitree": 1 } },
       "porte": { "entrees": { "planche": 3 }, "sortie": { "porte": 1 } },
       "plancher": { "entrees": { "planche": 2 }, "sortie": { "plancher": 1 } },
@@ -1157,6 +1160,7 @@ export const RAW_DATA = {
     "GRAINES": { "pin": "pomme_de_pin", "arbre": "gland" },
     "POUSSE": [2, 4]
   },
+  "CRUCHE": { "LITRES": 10 },
   "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "BRIS": 2, "COUPS": 3, "RETOUR": [1, 3], "MAIN": 1 },
   "COUP_FORT": { "COUPS": 2, "ENERGIE": 2 },
   "FAUX": { "NOM": "Faux", "ICONE": "🌾‍🔪", "PRIX": 50, "FIBRE": 1, "RETOUR": [2, 4], "BOT_TOUFFES": 40 },

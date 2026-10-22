@@ -5,6 +5,7 @@ import {
   setMainCharacter, setupPending, starterBlock,
 } from '../engine/depart.js';
 import { cleanFirstName, validFirstName } from '../engine/family.js';
+import { commencerDidacticiel } from '../engine/didacticiel.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { escapeHtml, formatCoins } from '../engine/format.js';
 import { state } from './store.js';
@@ -318,8 +319,10 @@ registerActions({
     });
     const f = r.ok ? finishSetup(state) : r;
     if (!f.ok) return refus(f.error);
-    // une terre sauvage : la ferme générée (la carte se lit au montage : la page se recharge)
+    // une terre sauvage : la ferme générée (la carte se lit au montage : la page se recharge) ;
+    // le didacticiel commence (js/ui/didacticiel.js)
     setFarmSeed(state, String(Math.floor(Math.random() * 1e6)));
+    commencerDidacticiel(state);
     persistState();
     location.reload();
     return undefined;

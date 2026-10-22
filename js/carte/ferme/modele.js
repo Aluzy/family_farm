@@ -78,6 +78,7 @@
       this.syncTank(model.citerne == null ? -1 : model.citerne | 0);
       this.syncGatherables(model.ramassables);
       this.syncPieces(model.morceaux);
+      this.syncSurbrillance(model.surbrillance);   // (le didacticiel : après les ramassables et les blocs)
       this.syncPousses(model.pousses);   // (les arbres plantés d'une graine : une jeune pousse,
       this.syncForet(model.foret);       //  puis un arbre, foret.js)
 

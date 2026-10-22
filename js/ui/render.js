@@ -9,6 +9,7 @@ import {
 } from './stage-windows.js';
 import { animateIn } from './animations.js';
 import { renderTutorial } from './aide.js';
+import { renderDidacticiel } from './didacticiel.js';
 import { renderItemModal } from './inventaire.js';
 import { renderShopModal } from './marche.js';
 import { pixelize, watch } from './pixel-emoji.js';
@@ -55,6 +56,7 @@ export function render() {
   renderStageWindow();
   applyAnchor();
   renderTutorial();
+  renderDidacticiel();
   renderRecipeBook();
   renderItemModal();
   renderShopModal();
