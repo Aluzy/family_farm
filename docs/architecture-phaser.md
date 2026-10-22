@@ -404,7 +404,7 @@ est la poignée de débogage posée par `js/main.js`).
 
 ## Crédits
 
-- Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <https://antarcticbees.itch.io/>
+- Graphismes : originaux (dessinés par les générateurs de `scripts/`)
 - Moteur d'affichage : Phaser 4 (licence MIT)
 
 ## Version 1.1 : ce qui a changé
