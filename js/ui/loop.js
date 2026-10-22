@@ -9,7 +9,7 @@ import { mailbox } from '../engine/campaign.js';
 import { mergeOfflineReports, simulateOffline } from '../engine/offline.js';
 import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
 import { formatCoins, formatDay, formatNumber } from '../engine/format.js';
-import { MAX_FRAME_MS, RENDER_THROTTLE_MS, state, TICK_MS } from './store.js';
+import { MAX_FRAME_MS, RENDER_THROTTLE_MS, state, tabAvailable, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
 import { showConsentBanner } from './consent.js';
 import { consentBannerDue, consentBannerPending, consentBannerShown, modalRoot, storyOpen, tutorialStopsClock, uiCalm } from './calme.js';
@@ -53,17 +53,18 @@ let lastFrameTime = null;
 // « prêt ! » quand une préparation se termine pendant que le joueur joue.
 let lastJobs = {};
 
-// Lot 7 : l'onglet Arbre des technologies était-il déjà ouvert ? (pour annoncer son arrivée)
+// Lot 7 : l'onglet Arbre des technologies était-il déjà visible ? (pour annoncer son arrivée :
+// au premier point de technologie, FLU-28 ; pas au lancement d'une nouvelle partie)
 let technoOpened = false;
 
 function watchUnlocks() {
-  const opened = state.unlockedTabs.includes(DATA.TECHNO.ONGLET);
+  const opened = tabAvailable(DATA.TECHNO.ONGLET);
   if (opened && !technoOpened) notify('🌳 Nouvel onglet : Arbre des technologies');
   technoOpened = opened;
 }
 
 export function syncJobs() {
-  technoOpened = state.unlockedTabs.includes(DATA.TECHNO.ONGLET);
+  technoOpened = tabAvailable(DATA.TECHNO.ONGLET);
   lastJobs = {};
   for (const id of Object.keys(DATA.STATIONS)) {
     const job = state.stations[id].tache;
