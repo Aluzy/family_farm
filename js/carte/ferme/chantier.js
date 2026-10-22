@@ -83,7 +83,9 @@
           const e = B.get(b.case);
           if (e && e.sorte === b.sorte) {
             // (les flammes du four, la lanterne allumée : stepFires, stepLanterns choisissent leur image)
-            if ((e.img.frame.name !== f || e.img.texture.key !== key) && b.sorte !== BLOCS_CARTE.feu.sorte && b.sorte !== 'lanterne') { e.img.setTexture(key, f); changed = true; }
+            // (la botteleuse qui travaille, sa bande qui tourne : botteleuse.js)
+            const anime = b.sorte === BLOCS_CARTE.feu.sorte || b.sorte === 'lanterne' || (this.botteCycles && this.botteCycles.size && ['botteleuse', 'convoyeur'].includes(b.sorte));
+            if ((e.img.frame.name !== f || e.img.texture.key !== key) && !anime) { e.img.setTexture(key, f); changed = true; }
             const li = linteau(b);
             if (this.syncHauts(e, li ? li.h : b.hauteur || 1, li && li.frame)) changed = true;
             continue;
@@ -551,6 +553,8 @@
       const mur = V[b.sorte] !== undefined;
       // (une ruche : vide, ou pleine, le miel se devine, js/engine/ruches.js)
       if (b.sorte === 'ruche') return BLOCS_CARTE.frames[b.pleine ? 'ruche_pleine' : 'ruche'];
+      // (un segment de convoyeur : le dernier de la file a son rouleau d'extrémité, botteleuse.js)
+      if (b.sorte === 'convoyeur') return BLOCS_CARTE.frames[b.case % cols < cols - 1 && at.get(b.case + 1) === 'convoyeur' ? 'convoyeur' : 'convoyeur_bout'];
       if (!mur && b.sorte !== 'porte') return BLOCS_CARTE.frames[b.sorte] || 0;
       const c = b.case % cols;
       const is = (k, porte) => { const s = at.get(k); return V[s] !== undefined || (porte && s === 'porte'); };

@@ -137,7 +137,7 @@ export function pickChipHtml() {
 // La puce « Faux en main » de la carte : la toucher range la faux.
 export function scytheChipHtml() {
   if (!scytheMode || !hasTool(state, 'faux') || stageInterior) return '';
-  return `<button type="button" class="stage-chip hoe axe" data-action="scythe-toggle" aria-pressed="true" aria-label="Faux en main : touche une touffe d'herbe haute pour la faucher. Ranger la faux" title="Touche une touffe d'herbe haute de la carte pour la faucher"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('faux')}</span><span class="stage-chip-text">Faux</span><span class="stage-chip-val num">${DATA.OBJETS[DATA.PATURAGE.NOURRITURE].icone}</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
+  return `<button type="button" class="stage-chip hoe axe" data-action="scythe-toggle" aria-pressed="true" aria-label="Faux en main : touche une touffe d'herbe haute pour la faucher. Ranger la faux" title="Touche une touffe d'herbe haute de la carte pour la faucher"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('faux')}</span><span class="stage-chip-text">Faux</span><span class="stage-chip-val num">${DATA.OBJETS.fibre.icone}</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
 }
 
 // La puce « Canne à pêche en main » de la carte : la toucher range la canne.
@@ -173,14 +173,14 @@ export function mineFromStage(id, ou, fort) {
 }
 
 // La carte : la faux en main, le joueur a touché la touffe `id` (« x,y » de son pied). Comme
-// chopFromStage : la paille tombe au sol. Renvoie { morceaux }, ou null.
+// chopFromStage : la fibre tombe au sol. Renvoie { morceaux }, ou null.
 export function scytheFromStage(id, ou) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
   const r = scytheGrass(state, id, ou);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
-  return { items: { [DATA.PATURAGE.NOURRITURE]: r.paille }, morceaux: r.morceaux };
+  return { items: { fibre: r.fibre }, morceaux: r.morceaux };
 }
 
 // La carte : le coup fort de la faux, il tournoie et fauche les touffes `ids` autour de lui

@@ -41,6 +41,9 @@
 #   71 et 72 : la ruche, vide puis pleine (le miel se devine : BLOCS_CARTE.frames.ruche,
 #            ruche_pleine).
 #   73 : le bac à fleurs (BLOCS_CARTE.frames.bac_fleurs).
+#   74 à 80 : la botteleuse (BLOCS_CARTE.frames) : l'entonnoir, la machine à l'arrêt puis en
+#            marche, le convoyeur (deux images qui alternent quand la bande tourne), puis son
+#            dernier segment (le rouleau d'où la botte tombe ; deux images aussi).
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -1364,6 +1367,128 @@ def bac_fleurs():
 BAC_FLEURS = len(DESSINS)                        # le bac à fleurs (BLOCS_CARTE.frames.bac_fleurs)
 DESSINS += [bac_fleurs()]
 
+
+
+# ---------- la botteleuse (js/engine/botteleuse.js) : l'entonnoir, la machine, le convoyeur ----------
+# Posés côte à côte sur une rangée, de gauche à droite : l'entonnoir déverse dans la machine par
+# un tuyau qui sort à droite à hauteur de BOTTE_ENTREE ; la machine rend la botte de paille à
+# droite, sur le convoyeur, dont la bande est à la hauteur BANDE (le haut de la bande : la botte
+# y pose son pied, js/carte/ferme/config.js BOTTELEUSE.bande). Les images s'enchaînent sans
+# couture d'une case à l'autre.
+
+BANDE = 16                                       # la rangée du haut de la bande du convoyeur
+BOTTE_ENTREE = 15                                # la rangée du tuyau de l'entonnoir
+CAOUTCHOUC = [(30, 30, 34), (48, 48, 54), (70, 70, 78)]
+VOYANT = [(40, 70, 40), (110, 220, 110)]         # le voyant de la machine : éteint, allumé
+
+
+def entonnoir():
+    """L'entonnoir : un grand cône de tôle sur un bâti de bois, vu de haut (son ouverture
+    ronde et sombre, le bord éclairé à gauche), qui se resserre en un tuyau coudé vers la droite,
+    vers la machine."""
+    t = Toile()
+    pieds(t, (3, 10), 17, BAS - 1)
+    for x in range(2, 13):                       # la traverse du bâti
+        t.put(x, 17, BOIS[3] if x == 2 else BOIS[2])
+        t.put(x, 18, BOIS[1])
+    # le cône : des rangées de plus en plus étroites, de la bouche (y 5) au bec (y 14)
+    for y in range(5, 15):
+        r = 7 - (y - 5) * 0.55
+        x0, x1 = round(7.5 - r), round(7.5 + r) - 1
+        for x in range(x0, x1 + 1):
+            k = 4 if x <= x0 + 1 else 1 if x >= x1 - 1 else 3 if x < 8 else 2
+            t.put(x, y, FER[k])
+    # la bouche : une ellipse sombre (l'intérieur), son rebord
+    for y in range(2, 9):
+        for x in range(W):
+            d = ((x + 0.5 - 7.5) / 7.2) ** 2 + ((y + 0.5 - 5) / 3.2) ** 2
+            if d <= 1:
+                inner = ((x + 0.5 - 7.5) / 5.8) ** 2 + ((y + 0.5 - 5) / 2.2) ** 2
+                t.put(x, y, (CAOUTCHOUC[0] if y >= 5 else CAOUTCHOUC[1]) if inner <= 1 else FER[4] if x < 8 and y < 6 else FER[3])
+    for x in (5, 7, 9):                          # quelques brins de fibre au fond
+        t.put(x, 6, VERT[1])
+    t.put(8, 5, VERT[2])
+    # le bec, puis le tuyau coudé vers la droite (jusqu'au bord : il entre dans la machine)
+    for y in range(15, BOTTE_ENTREE + 2):
+        t.put(7, y, FER[3])
+        t.put(8, y, FER[1])
+    for x in range(7, W):
+        t.put(x, BOTTE_ENTREE, FER[3])
+        t.put(x, BOTTE_ENTREE + 1, FER[1])
+    t.put(12, BOTTE_ENTREE, FER[4])
+    return t.fini()
+
+
+def botteleuse(marche=False):
+    """La machine (la botteleuse) : un caisson de bois cerclé de fer sur un socle, sa trappe
+    d'entrée à gauche (le tuyau de l'entonnoir), la presse au-dessus (un volant), la bouche de
+    sortie à droite au ras du convoyeur, un voyant (allumé : elle travaille, `marche`)."""
+    t = Toile()
+    yd, yf = boite(t, 1, 14, BAS - 1, 13, 10, BOIS, planches(BOIS, 'h', pas=3, y0=1))
+    for x in range(0, W):                        # le socle de fer
+        t.put(x, BAS, FER[1] if 0 < x < 15 else FER[0])
+    for y in range(yd, BAS):                     # les cerclages de fer
+        for x in (1, 14):
+            t.put(x, y, FER[3] if x == 1 else FER[1])
+    for x in range(1, 15):
+        t.put(x, yf + 4, FER[2])
+        t.put(x, yf + 5, FER[1])
+    for x in (3, 7, 12):
+        t.put(x, yf + 4, FER[4])                 # des rivets
+    # le volant de la presse, sur le dessus
+    for y in range(yd - 3, yd + 4):
+        for x in range(W):
+            d = ((x + 0.5 - 8) / 4.5) ** 2 + ((y + 0.5 - (yd + 1)) / 2.4) ** 2
+            if 0.45 <= d <= 1:
+                t.put(x, y, FER[3] if x < 8 else FER[2])
+    t.rect(7, yd, 8, yd + 1, FER[1])             # l'axe
+    t.put(7, yd, FER[4])
+    # l'entrée (le tuyau de l'entonnoir) à gauche, la sortie à droite, au ras de la bande
+    t.put(0, BOTTE_ENTREE, FER[3])
+    t.put(0, BOTTE_ENTREE + 1, FER[1])
+    t.rect(11, BANDE - 1, 15, BAS - 2, CAOUTCHOUC[0])
+    for x in range(11, W):
+        t.put(x, BANDE - 2, FER[2])
+    for x, y in ((12, BAS - 3), (13, BAS - 2), (14, BAS - 3)):
+        t.put(x, y, PAILLE[2])                   # de la paille qui dépasse
+    # le voyant
+    t.put(4, yf + 1, VOYANT[1] if marche else VOYANT[0])
+    t.put(4, yf + 2, FER[0])
+    return t.fini()
+
+
+def convoyeur(phase=0, bout=False):
+    """Un segment de convoyeur : une bande de caoutchouc vue de haut entre deux longerons de
+    bois, sur des pieds bas ; ses tasseaux défilent vers la droite (`phase` : 0 ou 1, deux
+    images qui alternent quand elle tourne). `bout` : le dernier segment, avec le rouleau
+    d'extrémité d'où la botte tombe."""
+    t = Toile()
+    pieds(t, (2, 12), BAS - 3, BAS)
+    fin = 13 if bout else W - 1
+    # la bande (le dessus), puis son épaisseur
+    for y in range(BANDE, BANDE + 4):
+        for x in range(0, fin + 1):
+            raye = (x + 2 * phase) % 4 == 0
+            t.put(x, y, CAOUTCHOUC[2] if raye else CAOUTCHOUC[1] if y > BANDE else CAOUTCHOUC[2] if x % 2 else CAOUTCHOUC[1])
+    for x in range(0, fin + 1):
+        t.put(x, BANDE + 4, CAOUTCHOUC[0])
+    # les longerons (devant et derrière)
+    for x in range(0, fin + 1):
+        t.put(x, BANDE - 1, BOIS[3])
+        t.put(x, BANDE + 5, BOIS[2])
+        t.put(x, BANDE + 6, BOIS[1])
+    if bout:                                     # le rouleau d'extrémité
+        for y in range(BANDE - 1, BANDE + 6):
+            t.put(14, y, FER[3] if y < BANDE + 2 else FER[2])
+            t.put(15, y, FER[1])
+        t.put(14, BANDE + 2, FER[4])
+    return t.fini()
+
+
+BOTTELEUSE = len(DESSINS)                        # l'entonnoir, la machine (à l'arrêt, en marche),
+DESSINS += [entonnoir(), botteleuse(), botteleuse(True)]   # puis le convoyeur (BLOCS_CARTE.frames)
+CONVOYEUR = len(DESSINS)
+DESSINS += [convoyeur(0), convoyeur(1), convoyeur(0, True), convoyeur(1, True)]
 
 # ---------- l'aperçu : une pièce close et les objets, sur l'herbe de la carte ----------
 

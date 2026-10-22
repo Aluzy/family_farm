@@ -31,6 +31,7 @@ import {
 } from './campaign.js';
 import { isAutomated } from './automation.js';
 import { buyTool, grassCut, hasTool, scytheGrass } from './outils.js';
+import { bottelerSansCarte } from './botteleuse.js';
 import { sleep } from './night.js';
 import { farmTerrain, tileCount } from './terrain.js';
 import { createNewGame, buyStarter, houseRepaired, repairHouse, starterBlock } from './depart.js';
@@ -287,9 +288,10 @@ function botCommerce(state) {
   chooseCommerce(state, best);
 }
 
-// Version 1.23 : la paille se fauche (la faux, FAUX) : dès qu'il a des moutons ou des
-// vaches, il achète la faux et fauche les touffes de son pré (« pre_0 »… : il n'a pas de
-// carte) pour PAILLE_NUITS nuits d'avance, tant qu'il en reste et qu'il a de l'énergie.
+// La paille vient des fibres de la faux (FAUX), bottelées (BOTTELEUSE) : dès qu'il a des
+// moutons ou des vaches, il achète la faux et fauche les touffes de son pré (« pre_0 »… : il
+// n'a pas de carte) pour PAILLE_NUITS nuits d'avance, tant qu'il en reste et qu'il a de
+// l'énergie ; ses fibres sont bottelées sans machine (bottelerSansCarte).
 export function botScythe(state) {
   const besoin = strawNeed(state);
   if (besoin <= 0) return;
@@ -299,6 +301,7 @@ export function botScythe(state) {
     const id = 'pre_' + k;
     if (grassCut(state, id)) continue;
     if (!scytheGrass(state, id).ok) break;
+    bottelerSansCarte(state);
   }
 }
 

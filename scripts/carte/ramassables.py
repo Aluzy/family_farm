@@ -1,14 +1,15 @@
-# Ce qu'on ramasse à la main sur la ferme générée (docs/carte-generee.md, étape 3) : la petite
-# pierre, le morceau de bois et l'herbe, posés au sol (le bas de l'image est le pied), puis une
-# grappe de baies (posée plusieurs fois sur un buisson), puis la paille que la faux lâche (une
-# gerbe couchée, liée au milieu), la pomme de pin et le gland qu'un arbre abattu laisse, puis les
-# jeunes pousses d'un sapin et d'un arbre plantés : neuf images de 16 × 16 côte à côte.
+# Ce qu'on ramasse sur la ferme générée (docs/carte-generee.md, étape 3) : la petite pierre, le
+# morceau de bois et la fibre que la faux lâche, posés au sol (le bas de l'image est le pied),
+# puis une grappe de baies (posée plusieurs fois sur un buisson), puis la paille (une gerbe
+# couchée, liée au milieu), la pomme de pin et le gland qu'un arbre abattu laisse, les jeunes
+# pousses d'un sapin et d'un arbre plantés, et la botte de paille de la botteleuse : dix images
+# de 16 × 16 côte à côte.
 #
 #   python3 scripts/carte/ramassables.py            écrit assets/ramassables.png
 #   python3 scripts/carte/ramassables.py --apercu   écrit aussi apercu_ramassables.png
 #
 # Même ordre que js/carte/ferme/config.js (RAMASSABLES.frames) : petite_pierre, morceau_bois,
-# herbe, baies, paille, pomme_de_pin, gland, pousse_pin, pousse_arbre. La grappe : 4 × 4 pixels, un dégradé de rouges du clair (en haut à gauche) au
+# fibre, baies, paille, pomme_de_pin, gland, pousse_pin, pousse_arbre, botte. La grappe : 4 × 4 pixels, un dégradé de rouges du clair (en haut à gauche) au
 # sombre, sans les quatre coins (pas de carré) et sans contour ; au bas milieu de l'image. Les gris sont ceux des rochers de la carte, les bruns ceux des troncs, les verts ceux de
 # l'herbe haute ; contour d'un pixel dans la teinte très sombre de la matière, lumière en haut à
 # gauche.
@@ -25,7 +26,7 @@ PALETTE = {
     'a': '#4e4c52', 'b': '#7a7880', 'c': '#a4a2a8', 'd': '#d0ced2',
     # bois
     'k': '#4a2c16', 's': '#6a4426', 't': '#8a5a34', 'T': '#b07a48', 'e': '#d8b07a',
-    # herbe
+    # fibre (les verts de l'herbe haute fauchée)
     'G': '#24502a', 'g': '#3a7a34', 'l': '#5aa040', 'L': '#8cc85a',
     # baies : du plus clair au plus sombre
     'h': '#ff9c8c', 'r': '#e8463e', 'm': '#c22a30', 'n': '#921c26', 'N': '#5e121a',
@@ -85,22 +86,22 @@ DESSINS = [
         '................',
         '................',
     ],
-    # l'herbe : une touffe haute, ses brins un peu penchés
+    # la fibre : une poignée de brins d'herbe fauchés, couchés en travers, liés d'un brin
     [
         '................',
         '................',
         '................',
-        '.......L........',
-        '...L...l...L....',
-        '...l..Ll..Ll....',
-        '....l.ll..l..L..',
-        '....ll.l.ll..l..',
-        '..L.ll.llll.ll..',
-        '..ll.lllgll.l...',
-        '...llglggglll...',
-        '...lgggggggll...',
-        '....gGgGggGg....',
-        '.....GGGGGG.....',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '.L.......L......',
+        '..lL..L.lLl..L..',
+        '...lllLlklllLl..',
+        '.Ll.ggllkggllg..',
+        '...gGgGgkgGgG...',
         '................',
         '................',
     ],
@@ -141,6 +142,28 @@ PAILLE = [
     '..PqPqPxqPqPqp..',
     '.qQqQqqxQqQqQq..',
     '..QQ.QQxQQ.QQ...',
+    '................',
+    '................',
+]
+
+
+# la botte de paille de la botteleuse (js/engine/botteleuse.js) : un pavé de paille pressée vu de
+# haut à 45°, son dessus clair, sa face avant plus sombre, deux ficelles qui l'enserrent
+BOTTE = [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '..pppxppppxppp..',
+    '.pPpPxPpPpxPpPp.',
+    '.PpPpxpPpPxpPpP.',
+    '.pPpPxPpPpxPpPp.',
+    '.PPPPxPPPPxPPPP.',
+    '.qQqqxqQqqxqqQq.',
+    '.QqQqxQqQqxQqQq.',
+    '.qQqQxqQqQxQqQq.',
+    '.QQQQxQQQQxQQQQ.',
     '................',
     '................',
 ]
@@ -230,6 +253,7 @@ POUSSE_ARBRE = [
 def main():
     images = [dessin(d, c) for d, c in zip(DESSINS, CONTOURS)] + [grappe(), dessin(PAILLE, '#4a3010')]
     images += [dessin(POMME_DE_PIN, '#2e1a0c'), dessin(GLAND, '#2e1a0c'), dessin(POUSSE_PIN, '#173418'), dessin(POUSSE_ARBRE, '#173418')]
+    images += [dessin(BOTTE, '#4a3010')]
     sheet = rangee(images, 16, 16)
     sheet.save(os.path.join(ASSETS, 'ramassables.png'))
     print(f'assets/ramassables.png : {len(images)} images de 16 × 16')

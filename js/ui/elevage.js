@@ -296,7 +296,7 @@ export function renderPaturage() {
     </div>
     <div class="card ancre" id="etable-paille">
       <span class="card-title"><span><span aria-hidden="true">${straw.icone}</span> Paille : <span class="num">${formatQty(stock)} / ${formatQty(need)}</span> pour cette nuit</span><span class="chip${missing > 0 ? ' warn' : ''}">${missing > 0 ? `⚠️ il en manque ${formatNumber(missing)}` : '✅ assez'}</span></span>
-      ${missing > 0 ? `<span class="alert">Fauche l'herbe haute de la carte, la faux en main : 1 touffe donne ${formatStraw(DATA.FAUX.PAILLE)}.</span>` : ''}
+      ${missing > 0 ? `<span class="alert">Fauche l'herbe haute de la carte (la faux) et jette ses fibres dans la botteleuse : ${DATA.BOTTELEUSE.FIBRES} fibres font une botte de ${formatStraw(DATA.BOTTELEUSE.PAILLE)}.</span>` : ''}
     </div>
     ${herbsCard(cCount)}
     ${sCount + cCount > 0 ? `<div class="animal-grid ancre" id="etable-animaux">${p.moutons.map((m) => sheepCard(m, fed)).join('')}${p.vaches.map((v) => cowCard(v, fed)).join('')}</div>` : ''}`;

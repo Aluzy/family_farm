@@ -230,7 +230,9 @@ export function morceauxDe(state, carte) {
 }
 
 // `nb` morceaux de `item` posés aux points `points` (le premier, le deuxième… puis on recommence).
-function poserMorceaux(state, item, nb, carte, points) {
+// `lot` (facultatif) : { qte, image } : chaque morceau en vaut `qte` (la botte de paille de la
+// botteleuse : BOTTELEUSE.PAILLE) et la carte le dessine avec l'image `image`.
+export function poserMorceaux(state, item, nb, carte, points, lot) {
   const out = [];
   if (!(nb > 0)) return out;
   if (!Array.isArray(state.morceaux)) state.morceaux = [];
@@ -239,6 +241,8 @@ function poserMorceaux(state, item, nb, carte, points) {
     const p = P[i % P.length], k = Math.floor(i / P.length);
     state.morceauxN = (state.morceauxN || 0) + 1;
     const m = { n: state.morceauxN, item, carte, x: Math.round(Number(p.x) + k * 3) || 0, y: Math.round(Number(p.y) + k * 2) || 0 };
+    if (lot && lot.qte > 1) m.qte = lot.qte;
+    if (lot && lot.image) m.image = lot.image;
     state.morceaux.push(m);
     out.push(m);
   }
@@ -253,14 +257,16 @@ function lacher(state, item, n, extra, ou) {
   return { coup: poserMorceaux(state, item, n, ou.carte, ou.coup), fin: poserMorceaux(state, item, extra, ou.carte, ou.fin || ou.coup) };
 }
 
-// Le morceau `n` ramassé : dans l'inventaire (sans énergie). { ok, item, n } ou un refus.
+// Le morceau `n` ramassé : dans l'inventaire (sans énergie ; une botte : toute sa paille).
+// { ok, item, n } ou un refus.
 export function ramasserMorceau(state, n) {
   const L = state.morceaux || [];
   const i = L.findIndex((m) => m.n === n);
   if (i < 0) return fail('Ce morceau n\'est plus là.');
   const [m] = L.splice(i, 1);
-  addItem(state, m.item, 1);
-  return { ok: true, item: m.item, n: 1 };
+  const q = m.qte > 1 ? m.qte : 1;
+  addItem(state, m.item, q);
+  return { ok: true, item: m.item, n: q };
 }
 
 // Un coup de hache sur l'arbre `id` (ou le buisson : cutBush) : HACHE.BOIS bois au sol (au pied de l'arbre), de
@@ -434,8 +440,9 @@ export function cutGrass(state) {
   return h ? Object.keys(h) : [];
 }
 
-// Un coup de faux sur la touffe `id` : FAUX.PAILLE paille au sol (aux points `ou.coup`, voir
-// lacher ; sans `ou`, dans l'inventaire), de l'énergie, de l'XP ; la touffe est fauchée.
+// Un coup de faux sur la touffe `id` : FAUX.FIBRE fibre au sol (aux points `ou.coup`, voir
+// lacher ; sans `ou`, dans l'inventaire), de l'énergie, de l'XP ; la touffe est fauchée. (La
+// botteleuse en fait de la paille : js/engine/botteleuse.js.)
 export function scytheGrass(state, id, ou) {
   const X = DATA.FAUX;
   if (!hasTool(state, 'faux')) return fail(`Il te faut une faux (Marché, ${X.PRIX} 💰).`);
@@ -445,17 +452,17 @@ export function scytheGrass(state, id, ou) {
   const o = outils(state);
   if (!o.herbes || typeof o.herbes !== 'object') o.herbes = {};
   o.herbes[id] = { retour: state.day + randomInt(state, X.RETOUR[0], X.RETOUR[1]) };
-  const paille = withBonus(state, X.PAILLE, techSum(state, 'recolteBonus'));
-  const morceaux = lacher(state, DATA.PATURAGE.NOURRITURE, paille, 0, ou);
+  const fibre = withBonus(state, X.FIBRE, techSum(state, 'recolteBonus'));
+  const morceaux = lacher(state, 'fibre', fibre, 0, ou);
   spendEnergy(state, 'faucher');
   gainActionXp(state, 'faucher');
-  return { ok: true, paille, morceaux };
+  return { ok: true, fibre, morceaux };
 }
 
 // Le coup fort de la faux (COUP_FORT) : il tournoie et fauche toutes les touffes `ids` (celles
 // autour de lui, que la carte donne), pour COUP_FORT.ENERGIE fois l'énergie d'un fauchage.
-// `ou` : { carte, points: { id: [points] } } (où tombe la paille de chaque touffe). Renvoie
-// { ok, fauchees: [ids], paille, morceaux: { coup: [...] } }.
+// `ou` : { carte, points: { id: [points] } } (où tombe la fibre de chaque touffe). Renvoie
+// { ok, fauchees: [ids], fibre, morceaux: { coup: [...] } }.
 export function scytheAround(state, ids, ou) {
   const X = DATA.FAUX;
   if (!hasTool(state, 'faux')) return fail(`Il te faut une faux (Marché, ${X.PRIX} 💰).`);
@@ -465,19 +472,19 @@ export function scytheAround(state, ids, ou) {
   if (!canAfford(state, 'faucher', E)) return fail(TIRED);
   const o = outils(state);
   if (!o.herbes || typeof o.herbes !== 'object') o.herbes = {};
-  let paille = 0;
+  let fibre = 0;
   const coup = [];
   for (const id of L) {
     o.herbes[id] = { retour: state.day + randomInt(state, X.RETOUR[0], X.RETOUR[1]) };
-    const n = withBonus(state, X.PAILLE, techSum(state, 'recolteBonus'));
-    paille += n;
+    const n = withBonus(state, X.FIBRE, techSum(state, 'recolteBonus'));
+    fibre += n;
     const pts = ou && ou.points && ou.points[id];
-    const m = lacher(state, DATA.PATURAGE.NOURRITURE, n, 0, pts ? { carte: ou.carte, coup: pts } : null);
+    const m = lacher(state, 'fibre', n, 0, pts ? { carte: ou.carte, coup: pts } : null);
     if (m) coup.push(...m.coup);
     gainActionXp(state, 'faucher');
   }
   spendEnergy(state, 'faucher', E);
-  return { ok: true, fauchees: L, paille, morceaux: coup.length ? { coup, fin: [] } : null };
+  return { ok: true, fauchees: L, fibre, morceaux: coup.length ? { coup, fin: [] } : null };
 }
 
 // La case d'une touffe (son identifiant « x,y » : son pied, en px).

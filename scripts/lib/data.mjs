@@ -131,7 +131,8 @@ export function sourcesOf(data, id) {
   if (data.HACHE && id === 'bois') out.push('hache');
   if (data.HACHE && Object.values(data.HACHE.GRAINES || {}).includes(id)) out.push('hache (graine d\'un arbre abattu)');
   if (data.PIOCHE && id === 'pierre') out.push('pioche');
-  if (data.FAUX && data.PATURAGE && id === data.PATURAGE.NOURRITURE) out.push('faux');
+  if (data.FAUX && id === 'fibre') out.push('faux');
+  if (data.BOTTELEUSE && data.PATURAGE && id === data.PATURAGE.NOURRITURE) out.push('botteleuse');
   if (id.startsWith('minerai_')) out.push('grotte');
   if (it.trouvaille) out.push(`trouvaille (${it.trouvaille})`);
   if (it.cueillette) out.push(`cueillette (${it.cueillette})`);
@@ -325,7 +326,11 @@ export function validateData(data) {
   const RT = data.PIOCHE && data.PIOCHE.RETOUR;
   if (!(Array.isArray(RT) && RT.length === 2 && RT.every((x) => isInt(x) && x >= 1) && RT[0] <= RT[1])) err('PIOCHE.RETOUR', 'deux entiers [min, max], 1 ≤ min ≤ max');
   const FX = data.FAUX || {};
-  if (!(isInt(FX.PAILLE) && FX.PAILLE > 0 && isInt(FX.BOT_TOUFFES) && FX.BOT_TOUFFES > 0)) err('FAUX', 'PAILLE et BOT_TOUFFES : deux entiers supérieurs à 0');
+  if (!(isInt(FX.FIBRE) && FX.FIBRE > 0 && isInt(FX.BOT_TOUFFES) && FX.BOT_TOUFFES > 0)) err('FAUX', 'FIBRE et BOT_TOUFFES : deux entiers supérieurs à 0');
+  needItem('FAUX (fibre)', 'fibre');
+  const BT = data.BOTTELEUSE || {};
+  if (!['FIBRES', 'PAILLE', 'CONVOYEUR', 'VIBRE_S'].every((k) => isInt(BT[k]) && BT[k] > 0)) err('BOTTELEUSE', 'FIBRES, PAILLE, CONVOYEUR et VIBRE_S : des entiers supérieurs à 0');
+  for (const piece of ['entonnoir', 'machine', 'convoyeur']) if (!Object.values((data.ATELIER && data.ATELIER.BLOCS) || {}).some((b) => b.botteleuse === piece)) err('BOTTELEUSE', `un bloc de l'Atelier « ${piece} » (ATELIER.BLOCS : botteleuse)`);
   const RF = FX.RETOUR;
   if (!(Array.isArray(RF) && RF.length === 2 && RF.every((x) => isInt(x) && x >= 1) && RF[0] <= RF[1])) err('FAUX.RETOUR', 'deux entiers [min, max], 1 ≤ min ≤ max');
   const CF = data.COUP_FORT || {};

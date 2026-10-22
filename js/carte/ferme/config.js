@@ -143,7 +143,7 @@
   // assets/ramassables.png (scripts/carte/ramassables.py), une image de 16 × 16 par sorte
   // (`frames`), le pied à `pied` px du haut de sa tuile ; `doigt` : px d'écran autour de lui où
   // un appui le prend.
-  const RAMASSABLES = { key: 'ramassables', file: 'ramassables.png', frame: { frameWidth: 16, frameHeight: 16 }, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2, baies: 3, paille: 4, pomme_de_pin: 5, gland: 6, pousse_pin: 7, pousse_arbre: 8 }, pied: 14, doigt: 28,
+  const RAMASSABLES = { key: 'ramassables', file: 'ramassables.png', frame: { frameWidth: 16, frameHeight: 16 }, frames: { petite_pierre: 0, morceau_bois: 1, fibre: 2, baies: 3, paille: 4, pomme_de_pin: 5, gland: 6, pousse_pin: 7, pousse_arbre: 8, botte: 9 }, pied: 14, doigt: 28,
     // les baies : des grappes posées sur le buisson (px depuis le milieu du bas de son pied)
     grappes: [[-13, -12], [-4, -21], [6, -15], [14, -8], [1, -6]] };
   // Les blocs de la ferme générée (js/carte/ferme/chantier.js) : assets/blocs.png
@@ -157,7 +157,7 @@
   // px au-dessus du bas de la paillasse.
   const BLOCS_CARTE = {
     key: 'blocs', file: 'blocs.png', frame: { frameWidth: 16, frameHeight: 24 },
-    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13, lanterne: 66, escalier: 69, ruche: 71, ruche_pleine: 72, bac_fleurs: 73 },
+    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, coffre_grain: 12, meule: 13, lanterne: 66, escalier: 69, ruche: 71, ruche_pleine: 72, bac_fleurs: 73, entonnoir: 74, botteleuse: 75, botteleuse_marche: 76, convoyeur: 77, convoyeur_bout: 79 },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
     // l'étage (un essai, js/carte/ferme/etage.js) : le haut de l'escalier (`haut`) ; l'étage
     // est dessiné `dy` px plus haut (la hauteur de la face des murs hauts : leurs faces se suivent) ; le niveau où l'on n'est pas,
@@ -230,7 +230,7 @@
     },
     // le four qui cuit : ses flammes, une image après l'autre (`fps` images par seconde)
     feu: { sorte: 'four', frames: [47, 48, 49], fps: 7 },
-    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot'],
+    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png ; la
     // station du robot : station_robot.png, machines.js)
     ailleurs: ['puits', 'citerne', 'station_robot'],
@@ -456,6 +456,18 @@
   const MATIN = { de: 6, a: 11, approche: 10000, garde: 5000, fondu: 600,
     joueur: 'Encore une belle journée qui commence à la ferme n\'est-ce pas ?',
     compagnon: 'C\'est tellement apaisant de vivre ici, pour rien au monde je ne retournerai vivre en ville !' };
+  // La botteleuse (js/carte/ferme/botteleuse.js, js/engine/botteleuse.js) : un appui sur une de
+  // ses pièces, le personnage va à gauche de l'entonnoir (sinon devant lui, `devant` px sous le
+  // bas de sa case, sinon derrière) et y jette ses fibres (geste « jeter ») ; des brins (RAMASSABLES : fibre) volent de ses
+  // mains à la bouche de l'entonnoir (`bouche` : px au-dessus du bas de sa case) en `volMs` ms.
+  // La machine pleine vibre `vibre` s (DATA.BOTTELEUSE.VIBRE_S : le moteur le dit) de ±`secousse`
+  // px, toutes les `secousseMs` ms, son voyant allumé ; la bande du convoyeur tourne (une image
+  // toutes les `bandeMs` ms) pendant qu'elle vibre et que la botte avance. La botte (RAMASSABLES :
+  // botte) sort à droite de la machine, posée sur la bande (`bande` px au-dessus du bas de la
+  // case), avance à `vitesse` px/s jusqu'au bout du convoyeur, puis tombe au sol (`chuteMs` ms,
+  // en rebondissant) sur la case au bout, à `pose` px sous son haut : le jeu en fait un morceau
+  // de paille à ramasser en marchant dessus.
+  const BOTTELEUSE = { devant: 6, bouche: 18, volMs: 380, secousse: 1, secousseMs: 60, bandeMs: 110, bande: 7, vitesse: 18, chuteMs: 420, pose: 14 };
   const LONG_PRESS_MS = 450;   // appui maintenu sur la citerne : sa bulle (litres) s'affiche
   const GROUND_CHECK_MS = 3000; // le fond de la carte est vérifié à ce rythme (voir repairGround)
   const SPRITE_CHECKS = 8;      // et, à chaque fois, autant d'arbres, de barrières ou de rochers
@@ -478,7 +490,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, EXIT, MINE, HOLLOW, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, MATIN, ABEILLES, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, EXIT, MINE, HOLLOW, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

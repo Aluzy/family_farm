@@ -28,6 +28,7 @@ export * from './stamina.js';
 export * from './night.js';
 export * from './ramassage.js';
 export * from './ruches.js';
+export * from './botteleuse.js';
 export * from './ville.js';
 export * from './voisins.js';
 export * from './economie.js';

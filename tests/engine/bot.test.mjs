@@ -95,7 +95,7 @@ test('Lot 10 : simulateFromCopy ne touche pas la partie en cours', () => {
   assertEqual(rows.map((r) => r.nuit), [5, 6, 7, 8, 9, 10], 'la simulation continue à partir de la nuit en cours');
 });
 
-test('Lot 10 : le joueur automatique fauche la paille de ses moutons et de ses vaches, et moud pour la farine', () => {
+test('Lot 10 : le joueur automatique fauche et bottelle la paille de ses moutons et de ses vaches, et moud pour la farine', () => {
   const S = DATA.SIMULATION;
   assertEqual([S.PAILLE_NUITS, S.PAILLE_MAX_NUITS, S.FARINE_MAX], [3, 6, 12]);
   assertEqual(S.PRIORITE[5], [{ type: 'station', id: 'moulin' }, { type: 'paturage' }, { type: 'moutons', n: 3 }], 'le Moulin avant les moutons');
@@ -108,12 +108,13 @@ test('Lot 10 : le joueur automatique fauche la paille de ses moutons et de ses v
   // version 1.23 : le Moulin ne donne plus de paille : avec assez de farine, il ne moud rien
   botMill(s);
   assertEqual([millPending(s), countItem(s, 'ble')], [0, 20]);
-  // 4 pailles par nuit × 3 nuits d'avance = 12 touffes fauchées (la faux achetée)
+  // 4 pailles par nuit × 3 nuits d'avance = 12 : 20 touffes fauchées, leurs fibres bottelées
+  // par 10 (deux bottes de 10 pailles ; la faux achetée)
   s.pieces = 1000;
   botScythe(s);
-  assertEqual([hasTool(s, 'faux'), countItem(s, 'paille'), cutGrass(s).length], [true, 12, 12]);
+  assertEqual([hasTool(s, 'faux'), countItem(s, 'paille'), cutGrass(s).length, countItem(s, 'fibre')], [true, 20, 20, 0]);
   botScythe(s);
-  assertEqual(countItem(s, 'paille'), 12, 'il n\'en fauche plus tant que la réserve couvre le besoin');
+  assertEqual(countItem(s, 'paille'), 20, 'il n\'en fauche plus tant que la réserve couvre le besoin');
   // sans animaux : il ne fauche rien ; avec trop peu de farine, il en moud
   const t = pature();
   openStation(t, 'moulin');

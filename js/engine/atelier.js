@@ -12,10 +12,10 @@ import { cutBushCases } from './outils.js';
 
 // docs/carte-generee.md, étape 3. Sur la ferme générée seulement (une partie avec une graine :
 // farmSeed) :
-//   - chaque matin, des petites pierres, des morceaux de bois et des herbes sont posés sur
-//     l'herbe de la carte (DATA.ATELIER.RAMASSAGE : combien de chaque), à des places tirées
-//     d'après la graine et le jour ; le personnage les ramasse à la main (geste « ramasser »),
-//     chacun donne son objet (pierre, bois, fibre). Les baies poussent sur les buissons
+//   - chaque matin, des petites pierres et des morceaux de bois sont posés sur l'herbe de la
+//     carte (DATA.ATELIER.RAMASSAGE : combien de chaque), à des places tirées d'après la graine
+//     et le jour ; le personnage les ramasse à la main (geste « ramasser »), chacun donne son
+//     objet (pierre, bois ; la fibre vient de la faux : outils.js scytheGrass). Les baies poussent sur les buissons
 //     (RAMASSAGE.baies.buissons : la case est celle du milieu de leur pied) et se cueillent sans
 //     énergie (gratuit) : même épuisé, on trouve de quoi manger. state.cueillette = { jour, pris: [ids] } :
 //     ceux déjà ramassés aujourd'hui ;

@@ -2,7 +2,7 @@
 
 Un jeu de gestion agricole familiale en pixel art : une famille (quatre personnes au départ)
 s'installe sur une **terre sauvage** et doit, à terme, se nourrir de ce que la ferme produit.
-On y ramasse des pierres, du bois et des herbes, on fabrique à l'Atelier, on **construit bloc
+On y ramasse des pierres et du bois, on fauche l'herbe haute (des fibres, des bottes de paille par la botteleuse), on fabrique à l'Atelier, on **construit bloc
 par bloc** (murs, portes, fenêtres, étage, toits), on cultive, on élève poules, moutons, vaches
 et abeilles, on cuisine, et l'on descend à la mine, cachée dans les bois de la ferme. Les
 autres cartes (un chemin de transition, une ville avec son économie et ses habitants, la

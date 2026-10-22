@@ -11,6 +11,7 @@ import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, couchagesEtage, etageCouvertes, ETAGE_BLOCS, chopTree, bushOf, bushCut, cutBushes, respawnBushes, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
   etatEtable, etatMoulin, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
+  botteleuses, etatBotteleuse, machineDe, morceauxDe, ramasserMorceau, sortirBotte, verserFibres,
   buyRuche, buyDehors, PORTE_SUR_MUR, casesBuissonsCoupes, especeArbre, poussesArbres, arbresPlantes, respawnTrees, fellenTrees, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
@@ -142,7 +143,7 @@ test('ferme générée : une partie y passe en mode test, et en revient', () => 
 
 /* ---------- étape 3 : ramasser à la main, l'Atelier ---------- */
 
-test('ferme générée : chaque matin, des pierres, du bois et des herbes à ramasser à la main', () => {
+test('ferme générée : chaque matin, des pierres et du bois à ramasser à la main (plus d\'herbes : la fibre vient de la faux)', () => {
   const s = garden();
   assertEqual(ramassables(s), [], 'pas sur la carte de Tiled');
   testFarmMap(s, 'r1');
@@ -151,10 +152,11 @@ test('ferme générée : chaque matin, des pierres, du bois et des herbes à ram
   assert(liste.filter((p) => !p.buisson).every((p) => isArable(p.case, s)), 'sur l\'herbe');
   assertEqual(new Set(liste.map((p) => p.case)).size, liste.length, 'deux jamais sur la même tuile');
   assertEqual(ramassables(s), liste, 'les mêmes toute la journée');
-  const avant = countItem(s, 'fibre'), e0 = s.energie;
-  const h = liste.find((p) => p.sorte === 'herbe');
-  assertEqual(ramasser(s, h.id), { ok: true, sorte: 'herbe', items: { fibre: 1 } });
-  assertEqual([countItem(s, 'fibre'), s.energie < e0, ramassables(s).length], [avant + 1, true, liste.length - 1]);
+  assertEqual(liste.some((p) => p.objet === 'fibre'), false, 'plus d\'herbes à ramasser');
+  const avant = countItem(s, 'pierre'), e0 = s.energie;
+  const h = liste.find((p) => p.sorte === 'petite_pierre');
+  assertEqual(ramasser(s, h.id), { ok: true, sorte: 'petite_pierre', items: { pierre: 1 } });
+  assertEqual([countItem(s, 'pierre'), s.energie < e0, ramassables(s).length], [avant + 1, true, liste.length - 1]);
   assertEqual(ramasser(s, h.id).ok, false, 'déjà ramassée');
   s.energie = 0;
   assertEqual(ramasser(s, liste[1].id).ok, false, 'à bout de forces');
@@ -300,6 +302,44 @@ test('ruches : achetées au Marché, posées dehors, pleines au bout de NUITS nu
   for (const w of m.murs) poserBloc(s, 'mur_pierre', w);
   poserPorte(s, m.porte);
   assertEqual(poserBloc(s, 'ruche', m.dedans).ok, false);
+});
+
+test('botteleuse : entonnoir, machine et convoyeur côte à côte ; 10 fibres jetées, une botte de paille au bout', () => {
+  const B = DATA.BOTTELEUSE;
+  const s = chantier('botte');
+  setInv(s, { planche: 20, pierre: 20, fibre: 30 });
+  for (const r of ['entonnoir', 'botteleuse', 'convoyeur']) assert(craft(s, r).ok, `l'Atelier fabrique : ${r}`);
+  assertEqual([countItem(s, 'entonnoir'), countItem(s, 'botteleuse'), countItem(s, 'convoyeur')], [1, 1, 2]);
+  const z = terrainLibre(s, 7, 3), t = (z.r + 1) * z.W + z.c + 1;     // la case de l'entonnoir
+  assert(poserBloc(s, 'entonnoir', t).ok && poserBloc(s, 'botteleuse', t + 1).ok);
+  assertEqual(etatBotteleuse(s, t + 1).ok, false, 'pas encore de convoyeur');
+  assertEqual(verserFibres(s, t).error, `Pose ${B.CONVOYEUR} convoyeurs à la suite, juste à droite de la botteleuse.`);
+  assert(poserBloc(s, 'convoyeur', t + 2).ok && poserBloc(s, 'convoyeur', t + 3).ok);
+  assertEqual([machineDe(s, t), machineDe(s, t + 1), machineDe(s, t + 3), machineDe(s, t + 4)], [t + 1, t + 1, t + 1, null]);
+  const e = botteleuses(s)[0];
+  assertEqual([e.ok, e.case, e.convoyeurs, e.bout, e.fibres], [true, t + 1, [t + 2, t + 3], t + 4, 0]);
+  // les fibres jetées : par l'entonnoir (ou un appui sur une autre pièce), jusqu'à FIBRES
+  setInv(s, { fibre: 4 });
+  assertEqual(verserFibres(s, t), { ok: true, case: t + 1, versees: 4, fibres: 4, pleine: false });
+  assertEqual(sortirBotte(s, t + 1).ok, false, 'pas encore ses fibres');
+  setInv(s, { fibre: 15 });
+  assertEqual(verserFibres(s, t + 3), { ok: true, case: t + 1, versees: B.FIBRES - 4, fibres: B.FIBRES, pleine: true });
+  assertEqual([countItem(s, 'fibre'), verserFibres(s, t).ok], [15 - (B.FIBRES - 4), false], 'pleine : elle travaille');
+  // la botte sort et tombe au bout du convoyeur : un morceau de PAILLE paille, ramassé d'un coup
+  const r = sortirBotte(s, t + 1, { carte: 'ferme', point: { x: 100, y: 200 } });
+  assertEqual([r.ok, r.paille, r.morceau.item, r.morceau.qte, r.morceau.image, etatBotteleuse(s, t + 1).fibres], [true, B.PAILLE, 'paille', B.PAILLE, 'botte', 0]);
+  assertEqual(morceauxDe(s, 'ferme').length, 1);
+  assertEqual([ramasserMorceau(s, r.morceau.n).n, countItem(s, 'paille')], [B.PAILLE, B.PAILLE]);
+  // reprise de la machine : ses fibres reviennent
+  setInv(s, { fibre: 3 });
+  assert(verserFibres(s, t).ok);
+  assertEqual(reprendreBloc(s, t + 1).ok, true);
+  assertEqual([countItem(s, 'fibre'), countItem(s, 'botteleuse'), s.botteleuses[t + 1]], [3, 1, undefined]);
+  // la case au bout doit rester libre
+  assert(poserBloc(s, 'botteleuse', t + 1).ok);
+  setInv(s, { mur_pierre: 1 });
+  assert(poserBloc(s, 'mur_pierre', t + 4).ok);
+  assertEqual(etatBotteleuse(s, t + 1).raison, 'La case au bout du convoyeur doit rester libre : la botte de paille y tombe.');
 });
 
 test('bac à fleurs : acheté au Marché, posé comme un bloc, ses fleurs attirent les abeilles', () => {

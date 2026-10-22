@@ -86,6 +86,9 @@
     ramasse: { anim: 'ramasse', frames: [0, 1, 2, 1, 2, 0], dur: [0.2, 0.2, 0.3, 0.2, 0.3, 0.2], hit: -1 },
     cueille: { anim: 'ramasse', frames: [0, 1, 2, 1, 0], dur: [0.16, 0.18, 0.26, 0.16, 0.16], hit: 3 },
     frigo: { anim: 'frigo', frames: [0, 1, 2, 2, 1, 0], dur: [0.2, 0.25, 0.9, 0.3, 0.25, 0.2], hit: -1 },
+    // jeter des fibres dans l'entonnoir de la botteleuse : la brassée contre lui, au-dessus de
+    // sa tête, lancée (hit : les brins partent)
+    jeter: { anim: 'jette', frames: [0, 1, 1, 2, 2], dur: [0.22, 0.3, 0.18, 0.1, 0.3], hit: 3 },
   };
 
   // Le bout de la canne à pêche dans chaque image peche_<vue>_<n> (x, y dans la case de
@@ -755,6 +758,17 @@
       return true;
     }
 
+    // La botteleuse : il va en `spot` (devant l'entonnoir), tourné vers lui (`face`, `flip`), et
+    // y jette ses fibres (onHit : quand elles partent). Renvoie false s'il ne peut pas y aller.
+    function jeter(spot, face, flip, onHit) {
+      if (!blocked) buildGrid();
+      if (!freeAt(spot.x, spot.y)) return false;
+      if (job && job.idle) job = null;
+      jobs = [walkTo(spot.x, spot.y), act('jeter', { face, flip, onHit }), wait(rand(0.4, 0.8))].concat(jobs.filter((j) => !j.idle));
+      idleAge = 0;
+      return true;
+    }
+
     // La canne à pêche en main, le joueur a touché l'eau : il va sur la rive en `spot`, tourné
     // vers l'eau (`face`, `flip`), lance (hooks.cast), attend la touche `wait` secondes
     // (hooks.bite), puis ferre (hooks.reel). Renvoie false s'il ne peut pas y aller.
@@ -1300,6 +1314,8 @@
       regard: () => ({ face, flip }),
       // À la main : prendre ce qui est au sol en `foot` (la ferme générée).
       gather,
+      // La botteleuse : jeter ses fibres dans l'entonnoir, depuis `spot`.
+      jeter,
       // La canne à pêche : pêcher depuis `spot`, et où est le bout de la canne.
       fish,
       rodTip,

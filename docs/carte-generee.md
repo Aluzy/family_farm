@@ -18,16 +18,34 @@ sans bâtiment au départ : on ramasse, on fabrique et on construit bloc par blo
 
 ### Ramassage à la main
 
-Des petites pierres, des morceaux de bois et des herbes se ramassent sans outil, avec un petit
-coût d'énergie :
+Des petites pierres et des morceaux de bois se ramassent sans outil, avec un petit coût
+d'énergie :
 
 | Ressource ramassée | Objet obtenu |
 |---|---|
 | petite pierre | 1 pierre |
 | morceau de bois | 1 bois |
-| herbe | 1 fibre |
 
-Chaque nuit, quelques-unes repoussent à des endroits tirés d'après la graine et le jour.
+Chaque nuit, quelques-unes repoussent à des endroits tirés d'après la graine et le jour. Il n'y
+a plus d'herbes à ramasser : la fibre vient de l'herbe haute fauchée (la faux, `FAUX.FIBRE` : une
+fibre au sol par touffe, à ramasser en marchant dessus). La faux se fabrique à l'Atelier sans
+fibre (3 bois, 2 pierres) : c'est le premier outil à faire.
+
+### La botteleuse : des fibres, des bottes de paille
+
+Trois sortes de blocs de l'Atelier (`ATELIER.BLOCS` : `botteleuse` « entonnoir », « machine »,
+« convoyeur » ; `js/engine/botteleuse.js`), posés côte à côte sur une rangée, de gauche à
+droite : l'entonnoir, la machine, puis `BOTTELEUSE.CONVOYEUR` (2) segments de convoyeur ; la case
+au bout du convoyeur reste libre. Un appui sur une de ses pièces : le personnage va devant
+l'entonnoir et y jette ses fibres, la brassée au-dessus de sa tête (geste `jette_<vue>_0..2`,
+`scripts/personnage/fermier.py`). Quand la machine en a reçu `BOTTELEUSE.FIBRES` (10), elle vibre
+`BOTTELEUSE.VIBRE_S` (3) secondes, son voyant allumé, la bande tourne ; une botte de paille sort à
+droite, avance sur le convoyeur et tombe au sol au bout : un morceau de `BOTTELEUSE.PAILLE` (10)
+paille (`state.morceaux`, image `botte`), ramassé en marchant dessus (`js/carte/ferme/botteleuse.js`).
+`state.botteleuses = { [case de la machine]: { fibres } }` ; reprise, la machine rend ses fibres.
+Les dessins : `scripts/carte/blocs.py` (entonnoir, machine, convoyeur), `scripts/carte/ramassables.py`
+(la fibre au sol, la botte). Le joueur automatique, sans carte, bottelle ses fibres directement
+(`bottelerSansCarte`).
 
 ### L'atelier niveau 1
 
@@ -95,10 +113,10 @@ Le Marché vend toujours les outils.
     pixel, une petite fleur au bout, posée sans la teinte du sol : `scripts/carte/herbe_haute.py`,
     `assets/herbe_haute_fleurs.png`). La faux en main (version 1.23 : `DATA.FAUX`, Marché ou
     Atelier), un appui sur une touffe la fauche (`grassAt`, `scythe` dans
-    `js/carte/ferme/decor.js` ; geste `faux_cote_0..3`) : elle se couche et disparaît, sa paille
-    tombe à son pied (`assets/ramassables.png`, 5ᵉ image) ; elle repousse 2 à 4 jours plus tard
-    (`state.outils.herbes`, modèle `fauchees`). C'est la seule source de paille : le Moulin ne
-    fait plus que de la farine. Le coup fort (version 1.24, `js/carte/ferme/coupfort.js`) : un
+    `js/carte/ferme/decor.js` ; geste `faux_cote_0..3`) : elle se couche et disparaît, sa fibre
+    tombe à son pied (`assets/ramassables.png`, 3ᵉ image) ; elle repousse 2 à 4 jours plus tard
+    (`state.outils.herbes`, modèle `fauchees`). Les fibres font la paille dans la botteleuse (voir
+    plus haut) ; le Moulin ne fait que de la farine. Le coup fort (version 1.24, `js/carte/ferme/coupfort.js`) : un
     appui maintenu sur le personnage qui tient un outil le fait trembler ; relâché, la hache ou
     la pioche comptent `COUP_FORT.COUPS` coups, la faux tournoie et fauche les touffes à 16 px
     autour de lui (`scytheAround`), la houe laboure les 3 × 3 tuiles autour de lui. Les rochers (`scripts/carte/rochers.py`,
@@ -493,9 +511,9 @@ parties.
   - Un toucher sur lui : il raconte sa tournée ; sur une caisse : ce qu'elle contient et ce
     qu'elle vaut au marché.
 - **Les ressources du jour sont pour le joueur** (`ramasserTransition`, `js/engine/transition.js`) :
-  des petites pierres, des morceaux de bois et des herbes, 36 par jour (`ressourcesDuJour`). Un
+  des petites pierres et des morceaux de bois, 36 par jour (`ressourcesDuJour`). Un
   toucher sur l'une d'elles y envoie le personnage, qui la prend en arrivant. Comme sur la ferme
-  générée : une petite pierre donne une pierre, un morceau de bois du bois, une herbe une fibre,
+  générée : une petite pierre donne une pierre, un morceau de bois du bois,
   contre l'énergie et l'XP du geste « ramasser » ; pas la nuit, ni épuisé. Ce qu'il a pris est
   gardé dans la partie (`state.transitionPris`, `{ jour, ids }`) et ne revient pas avant le
   lendemain.

@@ -1,7 +1,7 @@
 /* carte/ferme/cueillette.js — la scène de la ferme : ce qu'on ramasse à la main.
  *
  * Sur la ferme générée (docs/carte-generee.md, étape 3), le moteur pose chaque matin des petites
- * pierres, des morceaux de bois et des herbes sur l'herbe (js/engine/atelier.js, ramassables) :
+ * pierres et des morceaux de bois sur l'herbe (js/engine/atelier.js, ramassables) :
  * le modèle les donne (modèle.ramassables : [{ id, sorte, case }]), chacun a son image
  * (assets/ramassables.png, scripts/carte/ramassables.py), rangée selon son pied. Les baies :
  * des grappes posées sur un buisson (modèle : la case du milieu de son pied ; RAMASSABLES.grappes),
@@ -70,7 +70,8 @@
     },
 
     showPiece(m, saute) {
-      const img = this.add.image(m.x, m.y, RAMASSABLES.key, M.images[m.item] || 0).setOrigin(0.5, 1).setDepth(m.y - 1);
+      // (la botte de la botteleuse : son image, et toute sa paille d'un coup)
+      const img = this.add.image(m.x, m.y, RAMASSABLES.key, M.images[m.image || m.item] || 0).setOrigin(0.5, 1).setDepth(m.y - 1);
       this.pieces.set(m.n, { n: m.n, item: m.item, x: m.x, y: m.y, img });
       if (saute && !reduit()) this.tweens.add({ targets: img, y: { from: m.y - M.saut, to: m.y }, duration: M.sautMs, ease: 'Bounce.easeOut' });
     },

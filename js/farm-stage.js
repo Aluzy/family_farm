@@ -442,6 +442,7 @@
         this.stepPieces();
         this.stepBeasts(time, delta / 1000);
         this.stepAbeilles(delta / 1000);
+        this.stepBotteleuses(dt);
         this.stepRobot(dt);
         this.placeDialog();
         this.stepFishing(delta);
@@ -570,9 +571,12 @@
         if (this.niveau) return null;
         const pile = !this.room && !hoeing ? this.pileAt(wx, wy) : null;
         if (pile) return { pile: pile.id };
-        // la ferme générée : une pierre, un bout de bois, une herbe à ramasser à la main
+        // la ferme générée : une pierre, un bout de bois à ramasser à la main
         const brin = !this.room && !hoeing ? this.gatherAt(wx, wy) : null;
         if (brin) return { gather: brin };
+        // la botteleuse (une de ses pièces) : il va jeter ses fibres dans l'entonnoir
+        const botte = !this.room && !hoeing ? this.botteleuseAt(wx, wy) : -1;
+        if (botte >= 0) return { botteleuse: botte };
         // un four, une cuisinière posés (la ferme générée) : la fenêtre de sa station
         const station = !this.room && !hoeing ? this.stationAt(wx, wy) : null;
         if (station) return { window: station };
@@ -684,6 +688,7 @@
         if (hit.bati !== undefined) { this.ctx.bridge.act('bloc', { case: hit.bati }); return; }
         if (hit.etage) { this.ctx.bridge.act('etage-toggle', {}); return; }
         if (hit.gather) { this.gather(hit.gather); return; }
+        if (hit.botteleuse !== undefined) { this.jeterFibres(hit.botteleuse); return; }
         if (hit.chop) { this.chop(hit.chop); return; }
         if (hit.mine) { this.mine(hit.mine); return; }
         if (hit.scythe) { this.scythe(hit.scythe); return; }

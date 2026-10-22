@@ -160,7 +160,7 @@ function toolSlot(id) {
 const OUTILS_DESCRIPTIONS = {
   hache: 'Coupe les arbres de la carte : chaque coup lâche un morceau de bois 🪵 au sol ; au 3e coup, l\'arbre tombe et en lâche 2 de plus. Marche dessus pour les ramasser.',
   pioche: 'Casse les rochers de la carte : chaque coup lâche une pierre 🪨 au sol ; au 3e coup, le rocher se brise et en lâche 2 de plus (il revient 1 à 3 jours plus tard). Marche dessus pour les ramasser.',
-  faux: `Fauche l'herbe haute de la carte : chaque touffe fauchée lâche ${DATA.FAUX.PAILLE} paille 🪹 au sol (elle repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard). Marche dessus pour la ramasser. La paille nourrit les moutons et les vaches.`,
+  faux: `Fauche l'herbe haute de la carte : chaque touffe fauchée lâche ${DATA.FAUX.FIBRE} fibre ${DATA.OBJETS.fibre.icone} au sol (elle repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard). Marche dessus pour la ramasser. Dans la botteleuse (Atelier), ${DATA.BOTTELEUSE.FIBRES} fibres font une botte de ${DATA.BOTTELEUSE.PAILLE} paille 🪹 pour les moutons et les vaches.`,
   canne: 'Pêche dans l\'étang et la mare de la carte : truites 🐟‍🌈 et brochets 🐟‍🦷 (le brochet vit surtout dans l\'étang).',
   triporteur: `Un tricycle à caisse : en selle, tu te déplaces ${DATA.TRIPORTEUR.VITESSE} fois plus vite sur toutes les cartes (pas dans un intérieur ni dans la grotte).`,
 };
