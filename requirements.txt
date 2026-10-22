@@ -1,2 +1,3 @@
 # Générateurs d’images en Python (scripts/**/*.py) : pip install -r requirements.txt
 Pillow>=10
+fonttools>=4.40  # scripts/police/police_dialogue.py (la police des fenêtres de dialogue)
