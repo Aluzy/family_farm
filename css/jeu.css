@@ -1785,11 +1785,6 @@ main .ancre { scroll-margin-top: 150px; }
 
 /* ---------- version 1.12 : départ d'une nouvelle partie ---------- */
 
-.setup-members { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-/* Le choix de la ferme (dessinée ou générée d'après une graine) : js/ui/depart.js. */
-.setup-ferme { margin: 10px 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; display: flex; flex-direction: column; gap: 6px; }
-.setup-ferme legend { padding: 0 4px; }
-.setup-choix { display: flex; gap: 8px; align-items: baseline; }
 .setup-graine { margin-top: 4px; }
 /* le déménagement d'une ancienne partie (ui/demenagement.js) : l'aperçu de la nouvelle terre */
 .demenagement-apercu { margin: 8px 0; }
@@ -1797,19 +1792,37 @@ main .ancre { scroll-margin-top: 150px; }
 .demenagement-legende { margin: 4px 0 0; font-size: 0.85em; }
 .demenagement-liste { margin: 4px 0; padding-left: 1.2em; }
 #demenagement-graine { flex: 1; min-width: 0; }
-.setup-member {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-.setup-member .portrait-emoji { font-size: 1.8rem; line-height: 1; }
-.setup-member .row { gap: 6px; flex-wrap: nowrap; }
-.setup-member .btn { min-width: 44px; }
 .story-modal p { line-height: 1.5; }
+/* L'accueil d'une nouvelle partie (js/ui/depart.js) : une fenêtre de dialogue, une question
+   par écran ; la flèche en bas à droite passe à l'écran suivant. */
+.accueil-modal { position: relative; max-width: 380px; padding-bottom: 60px; }
+.modal .accueil-texte { margin: 4px 0 12px; line-height: 1.5; }
+.accueil-reglage { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.accueil-choix { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.accueil-choix .btn { min-width: 96px; }
+.accueil-champ { width: 100%; }
+.accueil-champ.accueil-nombre { width: 6em; text-align: center; }
+.accueil-persos { width: 100%; }
+.accueil-portrait .perso-px { --s: 64px; }
+.accueil-espece.active { outline: 3px solid var(--color-sun); outline-offset: 0; }
+.accueil-modal .pose-meuble-ok, .accueil-modal .pose-meuble-non { width: 56px; height: 56px; }
+.accueil-suite {
+  position: absolute; right: 10px; bottom: 8px;
+  width: 44px; height: 44px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: none; cursor: pointer;
+}
+.accueil-suite span {
+  width: 0; height: 0;
+  border-top: 9px solid transparent; border-bottom: 9px solid transparent;
+  border-left: 14px solid var(--color-earth);
+  animation: accueil-suite 0.9s ease-in-out infinite alternate;
+}
+.accueil-suite:disabled { cursor: default; opacity: 0.3; }
+.accueil-suite:disabled span { animation: none; }
+.accueil-suite:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; border-radius: 6px; }
+@keyframes accueil-suite { to { transform: translateX(4px); } }
+@media (prefers-reduced-motion: reduce) { .accueil-suite span { animation: none; } }
 .starter-row {
   display: flex;
   flex-wrap: wrap;
@@ -2378,7 +2391,7 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
   background: no-repeat 0 0 / calc(var(--s) * 4) auto content-box;
   image-rendering: pixelated;
 }
-.member-row .perso-px, .setup-member .perso-px { --s: var(--portrait-40, 40px); }
+.member-row .perso-px { --s: var(--portrait-40, 40px); }
 .member-preview .perso-px { --s: var(--portrait-64, 64px); }
 .perso-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; max-height: 240px; overflow-y: auto; padding: 2px; }
 .perso-btn { padding: 2px; min-height: 0; display: flex; align-items: center; justify-content: center; }

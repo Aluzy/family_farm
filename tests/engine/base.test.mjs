@@ -5,7 +5,7 @@
 
 import {
   buildCatalog, buildFridge, buildPaturage, buildPoulailler, buildSerre, buildSilo, buildStation,
-  buildVerger, buyHoe, buyItem, buyStarter, createInitialState, createNewGame, DATA, familyName,
+  buildVerger, buyHoe, buyItem, buyStarter, composeFamily, createInitialState, createNewGame, DATA, familyName,
   farmOpen, findMember, finishSetup, formatNumber, houseRepaired, inventoryCounts, isOwned,
   levelBlock, mailReceived, mainCharacter, MARKET_CLOSED, memberPortrait, memberRemovalBlock,
   memberStyle, migrate, migrateDepart, mulberry32, portraitEmoji, RAW_DATA, removeMember,
@@ -242,6 +242,30 @@ test('version 1.12 : configurer la famille : nom, personnage principal, membres'
   const t = createNewGame(1, { nom: 'Leroy', principal: 'adulte-2' });
   assertEqual([setupPending(t), familyName(t), mainCharacter(t).id], [false, 'Leroy', 'adulte-2']);
   assertEqual(mailReceived(createInitialState(1), 'notaire_heritage'), false, 'pas de lettre dans une partie de test');
+});
+
+test('accueil : la famille décrite par le joueur remplace celle de départ', () => {
+  const s = createNewGame(1);
+  assertEqual(composeFamily(s, { perso: 0, prenom: 'Léa', nom: 'Martin' }).error, 'Choisis un personnage.');
+  assertEqual(composeFamily(s, { perso: 3, prenom: '', nom: 'Martin' }).ok, false, 'un prénom');
+  assertEqual(composeFamily(s, { perso: 3, prenom: 'Léa', nom: 'M' }).ok, false, 'un nom trop court');
+  assertEqual(composeFamily(s, { perso: 3, prenom: 'Léa', nom: 'Martin', enfants: Array(6).fill({ prenom: 'Zoé' }) }).ok, false, 'trop de membres');
+  assertEqual(composeFamily(s, { perso: 3, prenom: 'Léa', nom: 'Martin', animaux: [{ espece: 'lapin', nom: 'Pan' }] }).ok, false, 'un chien ou un chat');
+  assertEqual(s.famille.membres.length, 4, 'rien n\'a changé après un refus');
+  const r = composeFamily(s, {
+    perso: 3, prenom: ' Léa ', nom: ' Martin ', compagnon: { perso: 12, prenom: 'Hugo' },
+    enfants: [{ prenom: 'Zoé', perso: 5 }, { prenom: 'Tom' }], animaux: [{ espece: 'chien', nom: 'Rex' }],
+  });
+  assert(r.ok);
+  assertEqual(s.famille.membres.map((m) => [m.id, m.prenom, m.enfant, m.perso]), [
+    ['adulte-1', 'Léa', false, 3], ['adulte-2', 'Hugo', false, 12], ['enfant-1', 'Zoé', true, 5], ['enfant-2', 'Tom', true, undefined],
+  ]);
+  assertEqual(s.famille.animaux, [{ id: 'compagnon-1', espece: 'chien', nom: 'Rex' }]);
+  assertEqual([familyName(s), mainCharacter(s).id], ['Martin', 'adulte-1']);
+  assert(finishSetup(s).ok);
+  const seul = createNewGame(2);
+  assert(composeFamily(seul, { perso: 1, prenom: 'Max', nom: 'Petit' }).ok);
+  assertEqual([seul.famille.membres.length, seul.famille.animaux.length], [1, 0], 'seul, sans animal');
 });
 
 test('version 1.12 : migration v28 → v29 : une partie en cours est déjà installée', () => {

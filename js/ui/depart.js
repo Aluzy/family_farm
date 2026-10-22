@@ -1,16 +1,16 @@
 import { DATA } from '../engine/catalog.js';
 import { isOwned, starterOf } from '../engine/devices.js';
 import {
-  buyStarter, familyName, finishSetup, houseRepaired, mainCharacter, repairHouse, setFamilyName, setFarmSeed,
+  buyStarter, composeFamily, familyName, finishSetup, houseRepaired, repairHouse, setFarmSeed,
   setMainCharacter, setupPending, starterBlock,
 } from '../engine/depart.js';
-import { familyNeed } from '../engine/family.js';
+import { cleanFirstName, validFirstName } from '../engine/family.js';
 import { atelierOuvert } from '../engine/atelier.js';
-import { escapeHtml, formatCoins, formatNumber } from '../engine/format.js';
+import { escapeHtml, formatCoins } from '../engine/format.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
-import { memberAvatarHtml, memberNameHtml } from './famille.js';
+import { persoHtml } from './famille.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { canPay, costLabel } from './common.js';
@@ -94,68 +94,176 @@ export function renderStarterCards() {
     </div>`;
 }
 
-/* -- écran de configuration de la famille (avant la première journée) -- */
+/* -- l'accueil d'une nouvelle partie : un dialogue, écran par écran -- */
 
-let setupNameDraft = null; // nom tapé, gardé quand on ouvre la fiche d'un membre
+// Le joueur décrit sa famille en répondant aux questions d'une petite fenêtre de dialogue (la
+// police des dialogues) : son personnage, son prénom, son nom ; un compagnon ; des enfants ; des
+// animaux de compagnie. À la fin, « C'est parti ! » installe la famille (composeFamily) sur une
+// ferme générée d'après une graine au hasard. Les prénoms tapés restent dans `accueil` (et
+// passent par escapeHtml()) : jamais dans un attribut data-* ni dans tel().
+const accueil = {
+  etape: 'bienvenue', perso: 0, prenom: '', nom: '',
+  compagnon: null,                 // { perso, prenom } dès qu'il y en a un
+  nbEnfants: 1, enfants: [],       // les prénoms, dans l'ordre
+  animaux: [],                     // [{ espece, nom }]
+  animal: { espece: 'chien', nom: '' },
+  k: 0,                            // l'enfant dont on demande le prénom
+  erreur: '',
+};
 
-// Choisir le personnage principal (⭐) : désactivé pour l'instant, c'est toujours le premier
-// adulte, dessiné en fermière sur la carte et dans la carte du joueur.
-const CHOIX_PRINCIPAL = false;
+const ORDINAUX = ['premier', 'deuxième', 'troisième', 'quatrième', 'cinquième', 'sixième'];
 
-function setupMemberRow(m) {
-  const main = mainCharacter(state);
-  const isMain = main && main.id === m.id;
-  return `
-    <li class="setup-member">
-      ${memberAvatarHtml(m.id)}
-      <span class="setup-member-name"><strong class="member-name">${memberNameHtml(m.id)}</strong><br><span class="muted">${m.enfant ? 'Enfant' : 'Adulte'}${isMain ? ' · ⭐ personnage principal' : ''}</span></span>
-      <span class="row">
-        ${CHOIX_PRINCIPAL && !m.enfant && !isMain ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}" title="Choisir comme personnage principal" aria-label="Choisir comme personnage principal">⭐ Principal</button>` : ''}
-        <button type="button" class="btn" data-action="member-edit" data-id="${m.id}">✏️</button>
-      </span>
-    </li>`;
+const enfantsMax = () => DATA.FAMILLE.COMPOSITION.MEMBRES_MAX - 1 - (accueil.compagnon ? 1 : 0);
+const seul = () => !accueil.compagnon && !accueil.enfants.length && !accueil.animaux.length;
+
+// La flèche en bas à droite : l'écran suivant.
+const fleche = (actif = true) => `<button type="button" class="accueil-suite" data-action="accueil-suite"${actif ? '' : ' disabled'} aria-label="Suivant" title="Suivant"><span aria-hidden="true"></span></button>`;
+const ouiNon = () => `<div class="accueil-choix"><button type="button" class="btn primary" data-action="accueil-oui">Oui</button><button type="button" class="btn" data-action="accueil-non">Non</button></div>`;
+const champ = (valeur, max, label, attrs = '') => `<input type="text" id="accueil-champ" class="member-input accueil-champ" maxlength="${max}" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="${label}" value="${escapeHtml(valeur)}"${attrs}>`;
+const grille = (choisi, enfant = false) => `<div class="perso-grid accueil-persos">${Array.from({ length: enfant ? DATA.FAMILLE.PROFIL.PERSOS_ENFANT : DATA.FAMILLE.PROFIL.PERSOS }, (_, i) => i + 1)
+  .map((n) => `<button type="button" class="btn perso-btn${n === choisi ? ' active' : ''}" data-action="accueil-perso" data-perso="${n}" aria-pressed="${n === choisi}" aria-label="Personnage ${n}">${persoHtml(n)}</button>`).join('')}</div>`;
+const portrait = (n) => (n ? `<div class="accueil-portrait">${persoHtml(n)}</div>` : '');
+
+// Le texte et ce qui se règle, pour l'écran en cours.
+function ecranAccueil() {
+  const A = accueil, P = DATA.FAMILLE.PROFIL, D = DATA.DEPART;
+  switch (A.etape) {
+    case 'bienvenue':
+      return ['Bienvenue dans Family Farm ! Ici tu peux construire ta ferme, élever des animaux, produire des ressources et fabriquer des objets, cuisiner des recettes et plein d\'autres super activités !', fleche()];
+    case 'perso':
+      return ['Pour commencer, choisis un personnage :', grille(A.perso) + fleche(A.perso > 0)];
+    case 'prenom':
+      return ['Comment s\'appelle-t-il ?', portrait(A.perso) + champ(A.prenom, P.PRENOM_MAX, 'Prénom') + fleche()];
+    case 'nom':
+      return ['Et son nom ?', portrait(A.perso) + champ(A.nom, D.NOM_MAX, 'Nom') + fleche()];
+    case 'confirme':
+      return [`OK, donc c'est ${escapeHtml(A.prenom)} ${escapeHtml(A.nom)}, c'est bien ça ?`, `${portrait(A.perso)}<div class="accueil-choix"><button type="button" class="pose-meuble-ok" data-action="accueil-oui" aria-label="Oui, c'est bien ça" title="Oui">✔️</button><button type="button" class="pose-meuble-non" data-action="accueil-non" aria-label="Non, changer" title="Changer">❌</button></div>`];
+    case 'compagnon':
+      return ['Est-ce qu\'il a un compagnon ?', ouiNon()];
+    case 'compagnon-perso':
+      return ['Choisis le personnage du compagnon :', grille(A.compagnon.perso) + fleche(A.compagnon.perso > 0)];
+    case 'compagnon-prenom':
+      return ['Quel est son prénom ?', portrait(A.compagnon.perso) + champ(A.compagnon.prenom, P.PRENOM_MAX, 'Prénom du compagnon') + fleche()];
+    case 'enfants':
+      return ['Et des enfants ?', ouiNon()];
+    case 'enfants-nombre':
+      return ['Combien ?', `<input type="number" id="accueil-champ" class="member-input accueil-champ accueil-nombre" min="1" max="${enfantsMax()}" step="1" inputmode="numeric" aria-label="Nombre d'enfants" value="${A.nbEnfants}">${fleche()}`];
+    case 'enfant-prenom':
+      return [A.nbEnfants === 1 ? 'Quel est son prénom ?' : `Quel est le prénom du ${ORDINAUX[A.k]} enfant ?`, champ(A.enfants[A.k] || '', P.PRENOM_MAX, `Prénom de l'enfant ${A.k + 1}`) + fleche()];
+    case 'animal':
+      return ['Un (ou des) animal de compagnie ?', ouiNon()];
+    case 'animal-nom': {
+      const E = DATA.FAMILLE.COMPAGNIE.ESPECES;
+      const especes = Object.keys(E).map((k) => `<button type="button" class="btn accueil-espece${A.animal.espece === k ? ' active' : ''}" data-action="accueil-espece" data-id="${k}" aria-pressed="${A.animal.espece === k}">${E[k].icone} ${escapeHtml(E[k].nom)}</button>`).join('');
+      return [A.animaux.length ? 'Et celui-là, comment s\'appelle-t-il ?' : 'Comment s\'appelle-t-il ?', `<div class="accueil-choix">${especes}</div>${champ(A.animal.nom, P.PRENOM_MAX, 'Nom de l\'animal')}${fleche()}`];
+    }
+    case 'animal-autre':
+      return ['Un autre ?', ouiNon()];
+    default:
+      return [`Parfait ! Une super aventure ${seul() ? 't\'attend' : 'vous attend'} !`, '<div class="accueil-choix"><button type="button" class="btn primary" data-action="setup-start">C\'est parti !</button></div>'];
+  }
 }
 
 export function openSetupModal() {
-  tel('modal', 'setup');
-  const D = DATA.DEPART;
-  const nom = setupNameDraft !== null ? setupNameDraft : familyName(state);
-  const C = DATA.FAMILLE.COMPOSITION;
-  const full = state.famille.membres.length >= C.MEMBRES_MAX;
+  if (accueil.etape === 'bienvenue') tel('modal', 'setup');
+  const [texte, reglage] = ecranAccueil();
   openModal(`
-    <h2 id="setup-title">🏡 Ta famille</h2>
-    <p class="muted">${CHOIX_PRINCIPAL ? 'Avant de partir pour la ferme : le nom de la famille, ses membres, et qui tient la ferme au quotidien (le personnage principal, qui dépense l\'énergie à chaque action).' : 'Avant de partir pour la ferme : le nom de la famille et ses membres. Le personnage principal (⭐), qui tient la ferme au quotidien, est le premier adulte.'}</p>
-    <div class="stack member-field">
-      <label for="setup-nom"><strong>Nom de famille</strong> <span class="muted">(${D.NOM_MIN} à ${D.NOM_MAX} signes)</span></label>
-      <input type="text" id="setup-nom" class="member-input" maxlength="${D.NOM_MAX}" autocomplete="off" autocapitalize="words" spellcheck="false" value="${escapeHtml(nom)}">
-    </div>
-    <ul class="setup-members" aria-label="Membres de la famille">${state.famille.membres.map(setupMemberRow).join('')}</ul>
-    <div class="row">
-      <button type="button" class="btn" data-action="member-add" data-age="adulte"${full ? ' disabled' : ''}>➕ Un adulte</button>
-      <button type="button" class="btn" data-action="member-add" data-age="enfant"${full ? ' disabled' : ''}>➕ Un enfant</button>
-    </div>
-    <p class="muted">${state.famille.membres.length} / ${C.MEMBRES_MAX} membres · besoin : <strong class="num">${formatNumber(familyNeed(state))}</strong> calories par jour. Pour retirer quelqu'un, ouvre sa fiche (✏️). Les animaux de compagnie s'adoptent ensuite dans la Famille.</p>
-    <p class="muted">Le nom et les prénoms restent sur cet appareil, dans ta sauvegarde : ils ne sont jamais envoyés.</p>
-    <fieldset class="setup-ferme">
-      <legend><strong>La ferme</strong></legend>
-      <p class="muted">Une terre sauvage, sans bâtiment : on ramasse, on fabrique à l'Atelier et on bâtit bloc par bloc.</p>
-      <label class="setup-graine" for="setup-graine">Graine <span class="muted">(la même graine, la même terre ; vide : au hasard)</span></label>
-      <input type="text" id="setup-graine" class="member-input" inputmode="numeric" maxlength="12" autocomplete="off" value="${escapeHtml(setupFerme.graine)}">
-    </fieldset>
-    <p class="alert" id="setup-error" role="alert" hidden></p>
-    <div class="row"><button type="button" class="btn primary" data-action="setup-start">Partir pour la ferme</button></div>`, { labelledBy: 'setup-title', className: 'modal setup-modal', id: 'setup-modal', dismiss: false });
-  const input = document.getElementById('setup-nom');
-  input.addEventListener('input', () => { setupNameDraft = input.value; });
-  const g = document.getElementById('setup-graine');
-  g.addEventListener('input', () => { setupFerme.graine = g.value; });
+    <p class="accueil-texte" id="accueil-texte">${texte}</p>
+    <div class="accueil-reglage">${reglage}</div>
+    <p class="alert" id="setup-error" role="alert"${accueil.erreur ? '' : ' hidden'}>${escapeHtml(accueil.erreur)}</p>`,
+  { labelledBy: 'accueil-texte', className: `modal bois accueil-modal accueil-${accueil.etape}`, id: 'setup-modal', dismiss: false, focus: '#accueil-champ, .accueil-suite:not([disabled]), .accueil-choix button' });
+  const input = document.getElementById('accueil-champ');
+  if (input) {
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); suiteAccueil(); } });
+  }
 }
 
-// La graine de la ferme sur l'écran de départ (gardée si l'écran revient, après la fiche d'un
-// membre). Une nouvelle partie est toujours sur une ferme générée d'après elle.
-const setupFerme = { graine: '' };
+// Passe à l'écran `etape` (sans message d'erreur).
+function allerA(etape) {
+  accueil.etape = etape;
+  accueil.erreur = '';
+  openSetupModal();
+}
 
-// Appelée à chaque image : l'écran de configuration revient tant que la famille n'est pas
-// installée (après la fiche d'un membre, par exemple).
+function refus(texte) {
+  accueil.erreur = texte;
+  openSetupModal();
+}
+
+const valeurChamp = () => { const i = document.getElementById('accueil-champ'); return i ? i.value : ''; };
+
+// La flèche (ou Entrée dans un champ) : vérifie ce qui est saisi, puis l'écran suivant.
+function suiteAccueil() {
+  const A = accueil, P = DATA.FAMILLE.PROFIL, D = DATA.DEPART;
+  const prenom = (t) => (validFirstName(t) ? '' : `Un prénom de 1 à ${P.PRENOM_MAX} signes.`);
+  switch (A.etape) {
+    case 'bienvenue': return allerA('perso');
+    case 'perso': return A.perso ? allerA('prenom') : refus('Choisis un personnage.');
+    case 'prenom': {
+      A.prenom = cleanFirstName(valeurChamp());
+      const e = prenom(A.prenom);
+      return e ? refus(e) : allerA('nom');
+    }
+    case 'nom': {
+      A.nom = valeurChamp().trim().replace(/\s+/g, ' ');
+      if (A.nom.length < D.NOM_MIN || A.nom.length > D.NOM_MAX) return refus(`Un nom de ${D.NOM_MIN} à ${D.NOM_MAX} signes.`);
+      return allerA('confirme');
+    }
+    case 'compagnon-perso': return A.compagnon.perso ? allerA('compagnon-prenom') : refus('Choisis un personnage.');
+    case 'compagnon-prenom': {
+      A.compagnon.prenom = cleanFirstName(valeurChamp());
+      const e = prenom(A.compagnon.prenom);
+      return e ? refus(e) : allerA('enfants');
+    }
+    case 'enfants-nombre': {
+      const n = Number(valeurChamp());
+      if (!Number.isInteger(n) || n < 1 || n > enfantsMax()) return refus(`Entre 1 et ${enfantsMax()} enfants.`);
+      A.nbEnfants = n;
+      A.enfants = A.enfants.slice(0, n);
+      A.k = 0;
+      return allerA('enfant-prenom');
+    }
+    case 'enfant-prenom': {
+      const t = cleanFirstName(valeurChamp());
+      const e = prenom(t);
+      if (e) return refus(e);
+      A.enfants[A.k] = t;
+      if (A.k + 1 < A.nbEnfants) { A.k += 1; return allerA('enfant-prenom'); }
+      return allerA('animal');
+    }
+    case 'animal-nom': {
+      A.animal.nom = cleanFirstName(valeurChamp());
+      if (!validFirstName(A.animal.nom)) return refus(`Un nom de 1 à ${P.PRENOM_MAX} signes.`);
+      A.animaux.push({ ...A.animal });
+      A.animal = { espece: A.animal.espece, nom: '' };
+      return allerA(A.animaux.length < DATA.FAMILLE.COMPAGNIE.MAX ? 'animal-autre' : 'fin');
+    }
+    default: return undefined;
+  }
+}
+
+// Oui (✔️) ou non (❌) à la question de l'écran en cours.
+function reponseAccueil(oui) {
+  const A = accueil;
+  switch (A.etape) {
+    case 'confirme': return allerA(oui ? 'compagnon' : 'perso');
+    case 'compagnon':
+      if (!oui) { A.compagnon = null; return allerA('enfants'); }
+      if (!A.compagnon) A.compagnon = { perso: 0, prenom: '' };
+      return allerA('compagnon-perso');
+    case 'enfants':
+      if (!oui) { A.enfants = []; return allerA('animal'); }
+      A.nbEnfants = Math.min(Math.max(1, A.nbEnfants), enfantsMax());
+      return allerA('enfants-nombre');
+    case 'animal':
+      A.animaux = [];
+      return allerA(oui ? 'animal-nom' : 'fin');
+    case 'animal-autre': return allerA(oui ? 'animal-nom' : 'fin');
+    default: return undefined;
+  }
+}
+
+// Appelée à chaque image : l'accueil revient tant que la famille n'est pas installée.
 export function watchSetup() {
   if (!state || !setupPending(state)) return;
   if (document.getElementById('modal-root').childElementCount > 0) return;
@@ -185,25 +293,35 @@ registerActions({
       notify('⭐ Nouveau personnage principal.');
     }
   },
+  'accueil-suite': () => suiteAccueil(),
+  'accueil-oui': () => reponseAccueil(true),
+  'accueil-non': () => reponseAccueil(false),
+  'accueil-perso': (target) => {
+    const n = Number(target.dataset.perso);
+    if (accueil.etape === 'compagnon-perso') accueil.compagnon.perso = n;
+    else accueil.perso = n;
+    accueil.erreur = '';
+    openSetupModal();
+  },
+  'accueil-espece': (target) => {
+    accueil.animal.espece = target.dataset.id;
+    accueil.animal.nom = valeurChamp();
+    openSetupModal();
+  },
   'setup-start': () => {
-    const input = document.getElementById('setup-nom');
-    const err = document.getElementById('setup-error');
-    const r = setFamilyName(state, input ? input.value : '');
-    if (!r.ok) {
-      err.textContent = r.error;
-      err.hidden = false;
-      return;
-    }
-    const f = finishSetup(state);
-    if (!f.ok) {
-      err.textContent = f.error;
-      err.hidden = false;
-      return;
-    }
-    setupNameDraft = null;
+    const A = accueil, P = DATA.FAMILLE.PROFIL;
+    // les enfants : un personnage d'enfant au hasard (il se change dans la Famille)
+    const r = composeFamily(state, {
+      perso: A.perso, prenom: A.prenom, nom: A.nom, compagnon: A.compagnon,
+      enfants: A.enfants.map((prenom) => ({ prenom, perso: 1 + Math.floor(Math.random() * P.PERSOS_ENFANT) })),
+      animaux: A.animaux,
+    });
+    const f = r.ok ? finishSetup(state) : r;
+    if (!f.ok) return refus(f.error);
     // une terre sauvage : la ferme générée (la carte se lit au montage : la page se recharge)
-    setFarmSeed(state, setupFerme.graine.trim() || String(Math.floor(Math.random() * 1e6)));
+    setFarmSeed(state, String(Math.floor(Math.random() * 1e6)));
     persistState();
     location.reload();
+    return undefined;
   },
 });
