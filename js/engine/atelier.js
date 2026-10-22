@@ -80,9 +80,39 @@ function placesDuJour(state, jour) {
       k++;
     }
   }
+  if (jour === 1) placesDepart(T, libres, r, prises, out);
   placesCle = cle;
   placesListe = out;
   return out;
+}
+
+// La tuile où le personnage apparaît dans une nouvelle partie : au-dessus du milieu de la Zone de
+// culture (la porte du foyer, tant que rien n'est bâti : js/carte/ferme/chantier.js homeDoor).
+export function caseDepart(T) {
+  const Z = T.ZONES[1];
+  return (Z.Y - 1) * T.LARGEUR + Z.X + Math.floor(Z.COLONNES / 2);
+}
+
+// Le premier jour : des pierres et du bois en plus autour de lui (DATA.ATELIER.RAMASSAGE_DEPART),
+// sur l'herbe libre, hors de la Zone de culture.
+function placesDepart(T, libres, r, prises, out) {
+  const D = DATA.ATELIER.RAMASSAGE_DEPART;
+  if (!D || !T.ZONES || !T.ZONES[1]) return;
+  const W = T.LARGEUR, d0 = caseDepart(T), r0 = Math.floor(d0 / W), c0 = d0 % W;
+  const Z = T.ZONES[1], zoneH = Math.ceil(DATA.POTAGER.CASES / Z.COLONNES);
+  const dansZone = (r1, c1) => r1 >= Z.Y && r1 < Z.Y + zoneH && c1 >= Z.X && c1 < Z.X + Z.COLONNES;
+  const proches = libres.filter((t) => {
+    const r1 = Math.floor(t / W), c1 = t % W, d = Math.max(Math.abs(r1 - r0), Math.abs(c1 - c0));
+    return d >= D.RAYON[0] && d <= D.RAYON[1] && !dansZone(r1, c1) && !prises.has(t);
+  });
+  for (const sorte of ['petite_pierre', 'morceau_bois']) {
+    const def = DATA.ATELIER.RAMASSAGE[sorte];
+    for (let k = 0; k < (D[sorte] || 0) && proches.length; k++) {
+      const t = proches.splice(Math.floor(r() * proches.length), 1)[0];
+      prises.add(t);
+      out.push({ id: sorte + ':' + t, sorte, objet: def.objet, case: t });
+    }
+  }
 }
 
 function cueillette(state) {
