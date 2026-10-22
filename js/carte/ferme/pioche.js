@@ -165,6 +165,32 @@
       if (!this.fermier || !this.fermier.mine(foot, (b.x1 - b.x0) / 2, hit)) hit();
     },
 
+    // Un caillou (un rocher d'une seule tuile), sans la pioche : le personnage va le ramasser à
+    // la main (le geste de la cueillette) ; le jeu met sa pierre dans l'inventaire au moment du
+    // geste (this.ctx.bridge.caillou), le caillou monte un peu et s'efface.
+    pickRock(r) {
+      if (r.picking || (this.ctx.lastModel && this.ctx.lastModel.coucher)) return;   // au lit (ou en y allant) : rien
+      r.picking = true;
+      const prendre = () => {
+        const got = this.ctx.bridge && this.ctx.bridge.caillou ? this.ctx.bridge.caillou(r.id) : null;
+        r.picking = false;
+        if (!got) return;
+        this.showGain(got.items);
+        K.vibre('ramasse');
+        r.gone = true;
+        if (this.fermier && this.fermier.regrid) this.fermier.regrid();
+        if (!r.img) return;
+        if (reducedMotion()) { r.img.setVisible(false); return; }
+        const img = r.img;
+        this.tweens.add({
+          targets: img, y: r.y - 6, alpha: 0, duration: 260, ease: 'Sine.easeOut',
+          onComplete: () => { img.setVisible(false).setAlpha(1).setPosition(r.x, r.y); },
+        });
+      };
+      const b = r.box || { x0: r.x, x1: r.x + r.w };
+      if (!this.fermier || !this.fermier.gather({ x: Math.round((b.x0 + b.x1) / 2), y: r.foot }, prendre)) prendre();
+    },
+
     // Le rocher tressaute d'un pixel sous le coup.
     shakeRock(r) {
       if (!r.img || reducedMotion() || r.shaking) return;

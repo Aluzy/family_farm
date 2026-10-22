@@ -323,6 +323,7 @@ export function validateData(data) {
   needItem('HACHE (bois)', 'bois');
   if (!(isInt(data.PIOCHE && data.PIOCHE.PIERRE) && data.PIOCHE.PIERRE > 0 && isInt(data.PIOCHE.COUPS) && data.PIOCHE.COUPS > 0)) err('PIOCHE', 'PIERRE et COUPS : deux entiers supérieurs à 0');
   needItem('PIOCHE (pierre)', 'pierre');
+  if (!(isInt(data.PIOCHE && data.PIOCHE.MAIN) && data.PIOCHE.MAIN > 0)) err('PIOCHE.MAIN', 'un entier supérieur à 0 (les pierres d\'un caillou ramassé à la main)');
   const RT = data.PIOCHE && data.PIOCHE.RETOUR;
   if (!(Array.isArray(RT) && RT.length === 2 && RT.every((x) => isInt(x) && x >= 1) && RT[0] <= RT[1])) err('PIOCHE.RETOUR', 'deux entiers [min, max], 1 ≤ min ≤ max');
   const FX = data.FAUX || {};
