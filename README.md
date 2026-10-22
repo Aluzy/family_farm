@@ -352,6 +352,9 @@ plus légers, pixel pour pixel identiques.
   `scripts/icones/art_*.py`, et `python3 scripts/icones/build.py` produit `assets/icones.png`
   et `js/ui/icones.generated.js` (Python 3 avec Pillow). `scripts/icones/preview.py` montre un
   aperçu d'un fichier de dessins. Détails : [`docs/icones.md`](docs/icones.md).
+- **Police des fenêtres de dialogue** (essai) : `python3 scripts/police/police_dialogue.py` fait
+  `assets/police_dialogue.woff` (avec fontTools) d'après l'alphabet dessiné à la main de
+  `scripts/police/originaux/` ; `css/jeu.css` la pose sur les fenêtres (`.modal`).
 - **Bâtiments dessinés en code** : `scripts/batiments/silo.py` génère `assets/silo.png`.
 - **Panneaux solaires du toit** : `python3 scripts/batiments/panneaux_toit.py` génère
   `assets/panneaux_toit.png`, posé sur le versant droit du toit de la maison une fois le panneau
