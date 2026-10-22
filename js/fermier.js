@@ -106,7 +106,7 @@
     const cols = Math.ceil(world.w / T), rows = Math.ceil(world.h / T);
 
     /* ---------- où il peut marcher ---------- */
-    // Bâtiments (rectangles nommés de la carte), eau, pieds des arbres et des buissons, barrières ; les zones de culture
+    // Bâtiments (rectangles nommés de la carte), eau, troncs des arbres, pieds des buissons, barrières ; les zones de culture
     // et l'herbe restent libres : il marche dans ses parcelles. Les passages (vers_la_…) aussi : on y va.
     let blocked = null;
     function buildGrid() {
@@ -124,7 +124,9 @@
       const g = o.ground ? o.ground() : null;
       if (g) {
         for (const key of g.water || []) { const [x, y] = key.split(',').map(Number); mark(x, y, x + T, y + T); }
-        for (const m of g.trees || []) mark(m.x - 8, m.base - 14, m.x + 8, m.base + 2);
+        // les arbres : la case de leur tronc seulement (on passe derrière et à côté, sous le
+        // feuillage ; un tronc à cheval sur deux cases, celle de gauche)
+        for (const m of g.trees || []) mark(m.x - 1, m.base - 6, m.x, m.base);
         // les buissons : leur pied, sur presque toute leur largeur (on passe derrière, pas dedans)
         for (const b of g.bushes || []) mark(b.x0 + 6, b.base - 12, b.x1 - 6, b.base);
         // les barrières : leurs cases, sauf l'ouverture des portails (il les passe)

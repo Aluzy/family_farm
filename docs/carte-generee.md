@@ -120,7 +120,9 @@ Le Marché vend toujours les outils.
 - **Les arbres devant le personnage** s'effacent un peu quand il passe derrière, mais seulement
   derrière leur dessin : chaque image d'arbre a son masque (des carrés de 4 px, opaques à plus de
   moitié : `probeOf`, `couvre` dans `js/carte/ferme/decor.js`), que le corps du personnage doit
-  toucher ; les coins vides de l'image ne comptent pas.
+  toucher ; les coins vides de l'image ne comptent pas. Ils n'arrêtent le personnage qu'à leur
+  tronc (la case de son pied, `buildGrid` dans `js/fermier.js`) : on passe à côté et derrière,
+  sous le feuillage.
 - **Le chemin** est tracé par un A* (`js/engine/chemin.js`), de la porte de la maison au bord
   est. Le rectangle `vers_la_transition` y est posé.
 - **Le terrain** (`js/engine/terrain-carte.js`) est calculé d'après la carte, avec les règles de
