@@ -145,7 +145,7 @@ function ecranAccueil() {
     case 'compagnon-prenom':
       return ['Quel est son prénom ?', portrait(A.compagnon.perso) + champ(A.compagnon.prenom, P.PRENOM_MAX, 'Prénom du compagnon') + fleche()];
     case 'enfants':
-      return ['Et des enfants ?', ouiNon()];
+      return [A.compagnon ? 'Est-ce qu\'ils ont des enfants ?' : 'Est-ce qu\'il a des enfants ?', ouiNon()];
     case 'enfants-nombre':
       return ['Combien ?', `<input type="number" id="accueil-champ" class="member-input accueil-champ accueil-nombre" min="1" max="${enfantsMax()}" step="1" inputmode="numeric" aria-label="Nombre d'enfants" value="${A.nbEnfants}">${fleche()}`];
     case 'enfant-prenom':
