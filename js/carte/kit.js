@@ -246,7 +246,7 @@
   // Les petits textes au-dessus du personnage (« ! » à la touche, « … ») : une
   // police, des couleurs, un contour. `taille` en px de carte ; rendus à 4 fois leur taille
   // pour rester nets au zoom.
-  const TEXTE = { fontFamily: 'system-ui, sans-serif', color: '#fffbea', stroke: '#2a2018', strokeThickness: 3, resolution: 4 };
+  const TEXTE = { fontFamily: "'Ferme Dialogue', sans-serif", color: '#fffbea', stroke: '#2a2018', strokeThickness: 3, resolution: 4 };
   function texte(scene, x, y, s, taille) {
     return scene.add.text(Math.round(x), Math.round(y), s, { fontFamily: TEXTE.fontFamily, fontSize: (taille || 9) + 'px', color: TEXTE.color, stroke: TEXTE.stroke, strokeThickness: TEXTE.strokeThickness })
       .setOrigin(0.5, 1).setResolution(TEXTE.resolution);
