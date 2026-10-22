@@ -182,7 +182,8 @@ function aFaireParLieu() {
     if (a.type === 'poules') n.poulailler += a.nombre;
     if (a.type === 'tonte') n.etable += a.nombre;
   }
-  n.zone = parcellesAFaire('potager', null);
+  // (la ferme générée : plus de pastille sur l'ancienne zone de culture)
+  n.zone = atelierOuvert(state) ? 0 : parcellesAFaire('potager', null);
   n.serre = parcellesAFaire('serre');
   n.verger = ripeTrees(state).length; // version 1.13 : arbres en fruits à cueillir
   return n;
