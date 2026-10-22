@@ -279,9 +279,12 @@
     "NIVEAUX.XP.piocher d'XP. Au COUPS-ième coup, le rocher se brise (BRIS pierres de plus) et",
     "disparaît de la carte ; il revient à sa",
     "place au bout de RETOUR jours (tiré entre les deux, au réveil), sauf si une parcelle occupe",
-    "une de ses tuiles (elles se labourent en attendant) : il réessaie alors chaque matin."
+    "une de ses tuiles (elles se labourent en attendant) : il réessaie alors chaque matin.",
+    "Un caillou (un rocher qui tient sur une seule tuile) se ramasse aussi à la main, sans outil : un",
+    "appui dessus, et MAIN pierre va dans l'inventaire (l'énergie et l'XP du ramassage) ; il revient",
+    "comme un rocher cassé. La pioche en main, il se casse comme les autres."
   ],
-  "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "BRIS": 2, "COUPS": 3, "RETOUR": [1, 3] },
+  "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "BRIS": 2, "COUPS": 3, "RETOUR": [1, 3], "MAIN": 1 },
   "//FAUX": [
     "La faux en main, un appui sur une touffe d'herbe haute de la carte la fauche : FIBRE fibre au",
     "sol, à son pied (à ramasser en marchant dessus), PERSONNAGE.COUTS.faucher d'énergie,",

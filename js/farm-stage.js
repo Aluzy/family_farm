@@ -574,6 +574,11 @@
         // la ferme générée : une pierre, un bout de bois à ramasser à la main
         const brin = !this.room && !hoeing ? this.gatherAt(wx, wy) : null;
         if (brin) return { gather: brin };
+        // un caillou (un rocher d'une seule tuile) se ramasse à la main, sauf la pioche en main
+        if (!this.room && !hoeing && !(this.ctx.lastModel && this.ctx.lastModel.pioche)) {
+          const caillou = this.rockAt(wx, wy);
+          if (caillou && caillou.cells.size === 1) return { caillou };
+        }
         // la botteleuse (une de ses pièces) : il va jeter ses fibres dans l'entonnoir
         const botte = !this.room && !hoeing ? this.botteleuseAt(wx, wy) : -1;
         if (botte >= 0) return { botteleuse: botte };
@@ -688,6 +693,7 @@
         if (hit.bati !== undefined) { this.ctx.bridge.act('bloc', { case: hit.bati }); return; }
         if (hit.etage) { this.ctx.bridge.act('etage-toggle', {}); return; }
         if (hit.gather) { this.gather(hit.gather); return; }
+        if (hit.caillou) { this.pickRock(hit.caillou); return; }
         if (hit.botteleuse !== undefined) { this.jeterFibres(hit.botteleuse); return; }
         if (hit.chop) { this.chop(hit.chop); return; }
         if (hit.mine) { this.mine(hit.mine); return; }

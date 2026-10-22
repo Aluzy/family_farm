@@ -5,12 +5,12 @@
 
 import {
   actionCost, actionsLeft, actionXp, borderMask, brokenRocks, buyHoe, buyTool, canBorder, castLine,
-  chopsLeft, chopTree, countItem, cutGrass, grassCut, scytheAround, scytheGrass, createInitialState, DATA, eatSnack, enduranceReduction,
+  caillou, chopsLeft, chopTree, countItem, cutGrass, grassCut, scytheAround, scytheGrass, createInitialState, DATA, eatSnack, enduranceReduction,
   energyLevel, energyMax, farmOpen, fellenTrees, findPlot, fishLeft, happinessCostPct, hasHoe,
   hasTool, hoe, hoeableTiles, hoeStatus, isArable, isBuyable, makePlot, makePlots, migrate,
   migrateEnergy, migrateHoe, mineRock, OUTILS, ownedTools, plant, plantAll, plotAtTile,
   farmTerrain, respawnRocks, respawnTrees, restoreEnergy, rockGone, runNight, selectedTool, selectTool,
-  snackEnergy, soilCap, soilCount, STATE_VERSION, terrainLines, testFillEnergy, morceauxDe, ramasserMorceau, testSetEnergyZero,
+  ramasserCaillou, snackEnergy, soilCap, soilCount, STATE_VERSION, terrainLines, testFillEnergy, morceauxDe, ramasserMorceau, testSetEnergyZero,
   testSetLevel, TIRED, toolDef, wakeEnergy, water, zoneTile, enSelle, toggleTriporteur, vitesseDeplacement,
 } from '../../js/engine/index.js';
 import {
@@ -247,6 +247,17 @@ test('pioche : chaque coup sur un rocher donne de la pierre ; au COUPS-ième, il
   s.energie = 0;
   assertEqual(mineRock(s, '44,16').error, TIRED);
   assertEqual([DATA.OBJETS.pierre.categorie, isBuyable('pierre')], ['produit', false], 'la pierre se vend, ne se rachète pas');
+});
+
+test('un caillou (un rocher d\'une seule tuile) se ramasse à la main, sans outil', () => {
+  const s = garden();
+  assertEqual([caillou(s, '44,16'), caillou(s, '25,13')], [true, false]);
+  assertEqual(ramasserCaillou(s, '25,13').ok, false, 'un gros rocher : la pioche');
+  const [e, xp] = [s.energie, s.progression.xp];
+  const r = ramasserCaillou(s, '44,16');
+  assertEqual([r.ok, r.items, countItem(s, 'pierre'), s.energie, s.progression.xp - xp, rockGone(s, '44,16')],
+    [true, { pierre: DATA.PIOCHE.MAIN }, DATA.PIOCHE.MAIN, e - actionCost(s, 'ramasser'), DATA.NIVEAUX.XP.ramasser, true]);
+  assertEqual(ramasserCaillou(s, '44,16').ok, false, 'déjà ramassé');
 });
 
 test('hache et pioche sur une carte : chaque coup lâche un morceau au sol, la chute et le bris deux de plus ; on les ramasse', () => {

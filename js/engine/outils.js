@@ -421,6 +421,28 @@ export function mineRock(state, id, ou, fort = false) {
   return { ok: true, pierre, bris, morceaux, coups, casse, fort: !!fort };
 }
 
+// Un caillou : un rocher qui tient sur une seule tuile du terrain.
+export function caillou(state, id) {
+  const cases = (farmTerrain(state).ROCHERS || {})[id];
+  return Array.isArray(cases) && cases.length === 1;
+}
+
+// Un caillou se ramasse à la main, sans outil : PIOCHE.MAIN pierre dans l'inventaire, l'énergie et
+// l'XP du ramassage ; il quitte la carte et revient comme un rocher cassé (PIOCHE.RETOUR jours).
+export function ramasserCaillou(state, id) {
+  const P = DATA.PIOCHE;
+  if (typeof id !== 'string' || !caillou(state, id)) return fail('Ce rocher est trop gros pour la main : il faut la pioche.');
+  if (rockGone(state, id)) return fail('Il n\'y a plus rien à ramasser ici.');
+  if (!canAfford(state, 'ramasser')) return fail(TIRED);
+  const o = outils(state);
+  if (!o.rochers || typeof o.rochers !== 'object') o.rochers = {};
+  o.rochers[id] = { retour: state.day + randomInt(state, P.RETOUR[0], P.RETOUR[1]) };
+  addItem(state, 'pierre', P.MAIN);
+  spendEnergy(state, 'ramasser');
+  gainActionXp(state, 'ramasser');
+  return { ok: true, items: { pierre: P.MAIN } };
+}
+
 /* ---------- la faux : faucher l'herbe haute de la carte ---------- */
 
 // Comme les arbres et les rochers, les touffes d'herbe haute n'existent que dans la carte

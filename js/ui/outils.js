@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { asleep } from '../engine/night.js';
 import { SOMMEIL_MESSAGE } from './actions.js';
-import { buyTool, castLine, chopTree, enSelle, hasTool, mineRock, OUTILS, ramasserMorceau, scytheAround, scytheGrass, selectTool, toggleTriporteur, toolDef } from '../engine/outils.js';
+import { buyTool, castLine, chopTree, enSelle, hasTool, mineRock, OUTILS, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass, selectTool, toggleTriporteur, toolDef } from '../engine/outils.js';
 import { axeMode, hoeMode, pickMode, rodMode, scytheMode, setAxeMode, setHoeMode, setPickMode, setRodMode, setScytheMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
@@ -170,6 +170,17 @@ export function mineFromStage(id, ou, fort) {
   persistState();
   refresh();
   return { items: { pierre: r.pierre }, casse: r.casse, morceaux: r.morceaux };
+}
+
+// La carte : le joueur a touché un caillou (un rocher d'une seule tuile) : il le ramasse à la
+// main, sa pierre va dans l'inventaire. Renvoie { items }, ou null (un message).
+export function caillouFromStage(id) {
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
+  const r = ramasserCaillou(state, id);
+  if (!r.ok) { notify(r.error); return null; }
+  persistState();
+  refresh();
+  return { items: r.items };
 }
 
 // La carte : la faux en main, le joueur a touché la touffe `id` (« x,y » de son pied). Comme
