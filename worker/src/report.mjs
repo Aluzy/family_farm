@@ -82,6 +82,7 @@ export const GAME_ACTIONS = {
   'buy-tool': 'Acheter un outil (pioche, hache, canne à pêche)',
   'atelier-fabriquer': 'Fabriquer à l\'Atelier (ferme générée)',
   'bloc': 'Poser ou reprendre un bloc (ferme générée)',
+  'arbre-oui': 'Planter un arbre (graine ou jeune arbre, depuis l\'Inventaire)',
   'build-toggle': 'Construire : ouvrir ou ranger (ferme générée)',
   'build-pick': 'Construire : choisir un bloc (ferme générée)',
   'meuble-place': 'Construire : glisser l\'aperçu d\'un meuble (ferme générée)',
@@ -124,7 +125,8 @@ export const INTERFACE_ACTIONS = new Set([
   'stage-goto', 'stage-pan', 'stage-pan-down', 'market-locked', 'plant-all-open', 'aller', 'comptoir-tab', 'inv-tab',
   'member-edit', 'member-perso',
   'family-edit', 'family-help', 'pets-edit', 'menu-toggle', 'book-open', 'book-next', 'book-prev', 'book-goto', // essai : le Livre de recette en livre
-  'encyclo-open', 'encyclo-page', // l'Encyclopédie, un livre qui se remplit au fil de la partie
+  'encyclo-open', 'encyclo-page',
+  'arbre-planter', 'arbre-annuler', 'arbre-case', // planter un arbre depuis l'Inventaire : choisir la case // l'Encyclopédie, un livre qui se remplit au fil de la partie
   'inv-item', // Inventaire : fiche d'un objet
   'shop-item', 'market-help', 'market-subtab', // Marché : fiche d'un article, aide de l'onglet // Famille : mode modification, aide de la ration quotidienne
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie

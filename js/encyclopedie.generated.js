@@ -193,7 +193,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "verger",
      "terme": "Verger",
-     "description": "Les arbres fruitiers de la ferme : pommier, poirier, cerisier, abricotier et pêcher. Un jeune arbre s'achète au Marché et se plante dans le sol, dehors, en mode Construire, à au moins 3 cases d'un autre arbre planté. L'arbre passe par 4 dessins : jeune arbre, arbuste, arbre (5 nuits chacun), puis arbre en fruits, 15 nuits après sa plantation. Les fruits attendent sur l'arbre : un appui le cueille (6 fruits, 4 énergie, 20 XP), et l'arbre redonne ses fruits 3 nuits plus tard, toute l'année. La Récolte du verger, dans l'Arbre des technologies, les cueille la nuit. Il ne s'arrose pas.",
+     "description": "Les arbres fruitiers de la ferme : pommier, poirier, cerisier, abricotier et pêcher. Un jeune arbre s'achète au Marché et se plante depuis sa fiche de l'Inventaire (« Planter », puis une case en surbrillance sur la carte), dehors, à au moins 3 cases d'un autre arbre planté. L'arbre passe par 4 dessins : jeune arbre, arbuste, arbre (5 nuits chacun), puis arbre en fruits, 15 nuits après sa plantation. Les fruits attendent sur l'arbre : un appui le cueille (6 fruits, 4 énergie, 20 XP), et l'arbre redonne ses fruits 3 nuits plus tard, toute l'année. La Récolte du verger, dans l'Arbre des technologies, les cueille la nuit. Il ne s'arrose pas.",
      "liens": [
       "pommier",
       "poirier",
@@ -644,7 +644,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "graines_d_arbre",
      "terme": "Pomme de pin et gland",
-     "description": "Sur la ferme, un arbre abattu ne repousse pas : il laisse sa graine, une pomme de pin pour un sapin, un gland pour un autre arbre. Plantée en mode Construire sur n'importe quelle case d'herbe libre, dehors, c'est d'abord une jeune pousse pendant 2 à 4 jours, puis un arbre qui se coupe comme les autres.",
+     "description": "Sur la ferme, un arbre abattu ne repousse pas : il laisse sa graine, une pomme de pin pour un sapin, un gland pour un autre arbre. Plantée depuis sa fiche de l'Inventaire (« Planter », puis une case en surbrillance sur la carte) sur n'importe quelle case d'herbe libre, dehors, c'est d'abord une jeune pousse pendant 2 à 4 jours, puis un arbre qui se coupe comme les autres.",
      "liens": [
       "hache",
       "mode_construire",

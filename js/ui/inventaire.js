@@ -3,6 +3,8 @@ import { dishHappiness } from '../engine/ville.js';
 import { countItem, isFridgeable, isPerishable, lotsOf } from '../engine/inventory.js';
 import { fridgeCapacity, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeRoom, fridgeUnits, moveAllToFridge } from '../engine/fridge.js';
 import { isUnlocked } from '../engine/campaign.js';
+import { atelierOuvert } from '../engine/atelier.js';
+import { sorteAPlanter } from '../engine/plantation.js';
 import { formatQty } from '../engine/format.js';
 import { invTab, state } from './store.js';
 import { eatButton } from './energie.js';
@@ -153,13 +155,16 @@ function itemBodyHtml(o) {
   }
   if (o.lieu === 'frigo') lines.push('🧊 Au frais : il ne vieillit pas tant que le frigo est alimenté.');
   if (o.item === DATA.SILO.ITEM && state.silo.construit) lines.push(`🛖 Silo : ${formatQty(state.silo.ble)}`);
-  if (it.categorie === 'graine') lines.push('🌱 Se sème dans la Zone de culture.');
+  const aPlanter = o.lieu === 'sac' && atelierOuvert(state) && stageUsable() && sorteAPlanter(o.item);
+  if (it.categorie === 'graine' && !sorteAPlanter(o.item)) lines.push('🌱 Se sème dans la Zone de culture.');
+  if (aPlanter) lines.push('🌳 Se plante dehors, sur une case d\'herbe libre, loin des autres arbres.');
   let actions = '';
   if (o.lieu === 'frigo') {
     actions = `
       <button type="button" class="btn" data-action="fridge-out" data-item="${o.item}" data-qty="1">Sortir 1</button>
       <button type="button" class="btn" data-action="fridge-out" data-item="${o.item}" data-qty="all">Tout sortir</button>`;
   } else {
+    if (aPlanter) actions += `<button type="button" class="btn primary" data-action="arbre-planter" data-item="${o.item}">🌱 Planter</button>`;
     if (it.mangeable) actions += eatButton(o.item, 'Manger');
     if (state.frigo.construit && isFridgeable(o.item)) {
       const off = fridgeRoom(state) < 1 ? ' disabled title="Le frigo est plein"' : '';

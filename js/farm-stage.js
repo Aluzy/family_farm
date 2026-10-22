@@ -436,6 +436,7 @@
         this.stepSprinklers();
         this.stepFires(time);
         this.stepSurbrillance(time);
+        this.stepPlantation(time);
         this.stepMurs(dt / 1000);
         this.stepEtage(dt / 1000);
         this.stepToits(dt / 1000);
@@ -565,6 +566,8 @@
         const hoeing = !!(this.ctx.lastModel && this.ctx.lastModel.houe);
         let refus = null;                            // en mode houe : une tuile qui ne se laboure pas
         // Version 1.18 : la bulle d'un tas à ramasser passe devant tout.
+        // planter un arbre (js/carte/ferme/plantation.js) : la case touchée, rien d'autre
+        if (!this.room && this.plantation) { const c = this.tileAtPoint(wx, wy); return c >= 0 ? { plante: c } : null; }
         // la ferme générée, en mode Construire : la case touchée (poser, reprendre), rien d'autre
         if (!this.room && this.ctx.lastModel && this.ctx.lastModel.bati) { const q = this.etagePoint ? this.etagePoint(wx, wy) : { x: wx, y: wy }, c = this.tileAtPoint(q.x, q.y); return c >= 0 ? { bati: c } : null; }
         // un escalier (un essai, js/carte/ferme/etage.js) : monter, descendre ; à l'étage, rien d'autre
@@ -691,6 +694,7 @@
         if (hit.pile) { if (this.fermier && !(this.ctx.lastModel && this.ctx.lastModel.coucher)) this.fermier.fetch(hit.pile); return; }   // il va au lit ou il dort : rien
         if (hit.window) { this.ctx.bridge.act('stage-open', { window: hit.window }); return; }
         if (hit.hoe) { K.vibre('houe'); this.ctx.bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
+        if (hit.plante !== undefined) { this.ctx.bridge.act('arbre-case', { case: hit.plante }); return; }
         if (hit.bati !== undefined) { this.ctx.bridge.act('bloc', { case: hit.bati }); return; }
         if (hit.etage) { this.ctx.bridge.act('etage-toggle', {}); return; }
         if (hit.gather) { this.gather(hit.gather); return; }
@@ -838,6 +842,8 @@
   function hasRoom(id) { const s = getScene(); return !!(s && s.ready && s.rooms[id]); }
   // Version 1.18 : la carte a-t-elle son personnage (c'est lui qui ramasse) ?
   function hasFermier() { const s = getScene(); return !!(s && s.ready && s.fermier); }
+  // La case du personnage sur la carte de la ferme (son numéro), ou -1.
+  function persoCase() { const s = getScene(); return s && s.ready && s.persoCase ? s.persoCase() : -1; }
 
   // « Dormir » : sur la carte, le personnage marche jusqu'à la porte de la maison (la vue le
   // suit) et entre ; `done` est appelé quand il est dedans (tout de suite s'il y est déjà).
@@ -881,5 +887,5 @@
   // (`est`) ou devant la porte de la mine (`mine`) ; la scène pas encore prête, elle le fera en
   // se créant (?arrivee=…).
   function arrive(ou) { const s = getScene(); if (s && s.ready) s.arrive(ou); }
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, goHome, mealScene, arrive, scene: getScene }; // scene() : pour le débogage et les tests
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, persoCase, goHome, mealScene, arrive, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);
