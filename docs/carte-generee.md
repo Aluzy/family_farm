@@ -202,6 +202,16 @@ Le Marché vend toujours les outils.
 - **La cruche à eau** (`js/engine/cruche.js`, `DATA.CRUCHE`) : un objet de l'Atelier (3 bois).
   Un appui sur le puits posé la remplit (10 L) ; une plante arrosée y puise son eau quand la
   citerne n'en a pas assez.
+- **L'Encyclopédie dans le jeu** (`js/engine/encyclopedie.js`, `js/engine/decouverte.js`,
+  `js/ui/encyclopedie.js`) : 📖 dans le menu latéral ouvre un livre, comme le Livre de recette
+  (`livre()` de `js/ui/livre.js`) : le sommaire (pages découvertes par catégorie, nouvelles
+  pages), une page par catégorie (« ? ? ? » pour ce qui reste à découvrir), une page par entrée
+  découverte avec ses liens « Voir aussi ». Les entrées sont celles de
+  `encyclopedie_ferme_familiale.json` (`scripts/build-encyclopedie.mjs` en écrit
+  `js/encyclopedie.generated.js`) ; chacune dit quand elle se découvre (`decouverte` : un objet
+  obtenu, un outil, une culture, une recette lisible, une étape du didacticiel, une carte
+  visitée…). Une découverte s'annonce par un message et reste « Nouveau » jusqu'à sa lecture
+  (`state.encyclopedie`) ; ce qu'une partie connaît déjà à son premier passage n'est pas nouveau.
 
 ## Construire et dormir (étape 4)
 

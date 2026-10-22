@@ -21,6 +21,7 @@ import { asleep } from '../engine/night.js';
 import { farmSeed } from '../engine/terrain.js';
 import { LIVREUR, ramasserTransition, ressourcesDuJour, transitionPlan, transitionPris, transitionSeed } from '../engine/transition.js';
 import { assigneEmplois, immeubleFoyer, immeubleVue, livraison, voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
+import { encyclopedieCarte } from './encyclopedie.js';
 
 /* ---------- les autres cartes, dans la page du jeu ---------- */
 
@@ -148,6 +149,7 @@ function ouvre(page, search) {
   history.replaceState(null, '', page === 'infra-monde.html' ? 'jeu.html?carte=infra' : 'jeu.html' + search);
   refresh();
   if (lib.start(el, search) === false) { rentre(null); return false; }
+  encyclopedieCarte(el.dataset.carte); // ses pages de l'Encyclopédie se découvrent
   // l'infra-monde n'a pas de chemin de retour : un bouton
   if (page === 'infra-monde.html') {
     const b = document.createElement('button');

@@ -43,6 +43,7 @@ import { renderNotifications } from './notifications.js';
 import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
 import { renderAtelier } from './atelier.js';
 import { atelierOuvert } from '../engine/atelier.js';
+import { encyclopedieNouveautes } from './encyclopedie.js';
 import { couchages } from '../engine/blocs.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './marche.js';
 import { renderChapterBanner } from './chapitres.js';
@@ -609,6 +610,13 @@ let menuClickBound = false;
 const MENU_ARROW = '<svg class="side-tab-arrow" viewBox="0 0 5 9" width="10" height="18" aria-hidden="true" shape-rendering="crispEdges">' +
   '<rect x="0" y="0" width="1" height="9"/><rect x="1" y="1" width="1" height="7"/><rect x="2" y="2" width="1" height="5"/><rect x="3" y="3" width="1" height="3"/><rect x="4" y="4" width="1" height="1"/></svg>';
 
+function encyclopedieBouton() {
+  const n = encyclopedieNouveautes();
+  const badge = n > 0 ? `<span class="nav-badge" aria-hidden="true">${n > 9 ? '9+' : n}</span>` : '';
+  const label = n > 0 ? `Encyclopédie (${n > 1 ? `${n} nouvelles pages` : '1 nouvelle page'})` : 'Encyclopédie';
+  return `<button type="button" class="nav-btn" data-action="encyclo-open" title="Encyclopédie" aria-label="${label}"><span class="nav-icon" aria-hidden="true">📖${badge}</span><span class="nav-label">Encyclopédie</span></button>`;
+}
+
 export function renderTabbar() {
   const current = ['commerce', 'inventaire', 'atelier', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
@@ -643,6 +651,8 @@ export function renderTabbar() {
         return `<button type="button" class="nav-btn${t.id === current ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}" title="${t.label}" aria-label="${label}"${t.id === current ? ' aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${t.icon}${badge}</span><span class="nav-label">${t.label}</span></button>`;
       })
       .join('') +
+      // L'Encyclopédie, un livre qui se remplit au fil de la partie (js/ui/encyclopedie.js)
+      encyclopedieBouton() +
       // Le mode test (activé dans les Options) : son panneau, par-dessus la carte.
       (testMode ? `<button type="button" class="nav-btn${testOpen ? ' active' : ''}" data-action="test-open" title="Mode test" aria-label="Mode test" aria-pressed="${testOpen}"><span class="nav-icon" aria-hidden="true">🧪</span><span class="nav-label">Test</span></button>` : '') +
       // Version 1.4 : les Options ne sont plus dans le bandeau mais ici, au bout du menu.

@@ -20,8 +20,7 @@ import { focusModal, openModal } from './modal.js';
    Plus tard, il s'ouvrira depuis la bibliothèque d'une vue en pixel art de la maison. */
 
 const FLIP_MS = 450;
-let page = 0; // page affichée (0 : sommaire)
-let flipping = false;
+const LIVRES = {}; // les livres, par id (le livre ouvert : livreOuvert)
 
 function bookRecipes() {
   const ids = bookStations();
@@ -82,84 +81,116 @@ function recipePageHtml(id) {
     <button type="button" class="btn${status.ok ? ' primary' : ''} book-prepare" data-action="start-recipe" data-recipe="${id}"${status.ok ? '' : ' disabled'}>Préparer</button>`;
 }
 
-function pageHtml(n) {
-  const recipes = bookRecipes();
-  const body = n === 0 ? summaryHtml() : recipePageHtml(recipes[n - 1]);
-  return `${body}<span class="book-folio num" aria-hidden="true">${n + 1}</span>`;
-}
-
-function navHtml() {
-  const total = pageCount();
-  return `
-    <button type="button" class="btn book-turn" data-action="book-prev" aria-label="Page précédente"${page === 0 ? ' disabled' : ''}>‹</button>
-    <span class="book-count num" aria-live="polite">Page ${page + 1} / ${total}</span>
-    <button type="button" class="btn book-turn" data-action="book-next" aria-label="Page suivante"${page >= total - 1 ? ' disabled' : ''}>›</button>`;
-}
-
-function bookEl() {
-  return document.querySelector('#modal-root .book');
-}
+// Le Livre de recette : le sommaire, puis une recette par page.
+const recettes = livre({
+  id: 'recettes',
+  label: 'Livre de recette',
+  pages: pageCount,
+  pageHtml: (n) => (n === 0 ? summaryHtml() : recipePageHtml(bookRecipes()[n - 1])),
+});
 
 export function openRecipeBook() {
   tel('modal', 'book');
-  page = Math.min(page, pageCount() - 1);
-  flipping = false;
-  openModal(`
-    <button type="button" class="book-close" data-action="close-modal" aria-label="Fermer" title="Fermer">✕</button>
-    <div class="book-pages">
-      <section class="book-page" id="book-page"></section>
-    </div>
-    <div class="book-nav"></div>`, { label: 'Livre de recette', className: 'book', backdropClass: 'book-backdrop', focus: false });
-  bindSwipe(document.querySelector('#modal-root .book-pages'));
-  renderRecipeBook();
-  focusModal('.book-turn:not([disabled])');
+  recettes.ouvrir();
 }
 
 // Appelé à chaque rendu : la page affichée suit le jeu (stocks, atelier occupé…).
 export function renderRecipeBook() {
-  const el = bookEl();
-  if (!el) return;
-  if (page > pageCount() - 1) page = pageCount() - 1;
-  if (!flipping) morph(el.querySelector('#book-page'), pageHtml(page));
-  morph(el.querySelector('.book-nav'), navHtml());
+  recettes.rendu();
 }
 
-// Tourne la page : la page qui part pivote autour de la reliure (à gauche) et laisse voir la
-// suivante ; en arrière, la page précédente revient se poser par-dessus.
-function turnTo(n) {
-  const el = bookEl();
-  if (!el || flipping || n === page || n < 0 || n > pageCount() - 1) return;
-  const forward = n > page;
-  const base = el.querySelector('#book-page');
-  const old = pageHtml(page);
-  page = n;
-  if (REDUCED_MOTION && REDUCED_MOTION.matches) {
-    renderRecipeBook();
-    return;
+/* ---------- un livre : pages tournées, glissées, au clavier ----------
+   livre({ id, label, className, pages(), pageHtml(n), aLaPage(n) }) : un livre ouvert dans
+   #modal-root (une seule fenêtre à la fois), `pages()` pages, la page n écrite par pageHtml(n) ;
+   aLaPage(n) est appelé quand la page n s'affiche (l'encyclopédie y marque la page lue).
+   Renvoie { ouvrir, rendu, tourner, page, aller }. */
+export function livre({ id, label, className = '', pages, pageHtml, aLaPage = null }) {
+  let page = 0; // page affichée (0 : sommaire)
+  let flipping = false;
+  const el = () => document.querySelector(`#modal-root .book[data-livre="${id}"]`);
+  const html = (n) => `${pageHtml(n)}<span class="book-folio num" aria-hidden="true">${n + 1}</span>`;
+  const nav = () => {
+    const total = pages();
+    return `
+    <button type="button" class="btn book-turn" data-action="book-prev" aria-label="Page précédente"${page === 0 ? ' disabled' : ''}>‹</button>
+    <span class="book-count num" aria-live="polite">Page ${page + 1} / ${total}</span>
+    <button type="button" class="btn book-turn" data-action="book-next" aria-label="Page suivante"${page >= total - 1 ? ' disabled' : ''}>›</button>`;
+  };
+  const vu = () => { if (aLaPage) aLaPage(page); };
+
+  function rendu() {
+    const box = el();
+    if (!box) return;
+    if (page > pages() - 1) page = pages() - 1;
+    if (!flipping) morph(box.querySelector('#book-page'), html(page));
+    morph(box.querySelector('.book-nav'), nav());
   }
-  flipping = true;
-  const leaf = document.createElement('section');
-  leaf.className = `book-page book-leaf ${forward ? 'turn-next' : 'turn-prev'}`;
-  leaf.setAttribute('aria-hidden', 'true');
-  if (forward) {
-    // la nouvelle page est dessous, l'ancienne s'envole par-dessus
-    morph(base, pageHtml(page));
-    morph(leaf, old);
-  } else {
-    // l'ancienne reste dessous, la précédente revient par-dessus
-    morph(leaf, pageHtml(page));
-  }
-  el.querySelector('.book-pages').appendChild(leaf);
-  morph(el.querySelector('.book-nav'), navHtml());
-  setTimeout(() => {
-    leaf.remove();
+
+  function ouvrir(n = page) {
+    page = Math.max(0, Math.min(n, pages() - 1));
     flipping = false;
-    renderRecipeBook();
-  }, FLIP_MS);
+    openModal(`
+    <button type="button" class="book-close" data-action="close-modal" aria-label="Fermer" title="Fermer">✕</button>
+    <div class="book-pages">
+      <section class="book-page" id="book-page"></section>
+    </div>
+    <div class="book-nav"></div>`, { label, className: `book${className ? ` ${className}` : ''}`, backdropClass: 'book-backdrop', focus: false }).dataset.livre = id;
+    bindSwipe(document.querySelector('#modal-root .book-pages'), (d) => tourner(page + d));
+    vu();
+    rendu();
+    focusModal('.book-turn:not([disabled])');
+  }
+
+  // Tourne la page : la page qui part pivote autour de la reliure (à gauche) et laisse voir la
+  // suivante ; en arrière, la page précédente revient se poser par-dessus.
+  function tourner(n) {
+    const box = el();
+    if (!box || flipping || n === page || n < 0 || n > pages() - 1) return;
+    const forward = n > page;
+    const base = box.querySelector('#book-page');
+    const old = html(page);
+    page = n;
+    vu();
+    if (REDUCED_MOTION && REDUCED_MOTION.matches) {
+      rendu();
+      base.scrollTop = 0;
+      return;
+    }
+    flipping = true;
+    const leaf = document.createElement('section');
+    leaf.className = `book-page book-leaf ${forward ? 'turn-next' : 'turn-prev'}`;
+    leaf.setAttribute('aria-hidden', 'true');
+    if (forward) {
+      // la nouvelle page est dessous, l'ancienne s'envole par-dessus
+      morph(base, html(page));
+      morph(leaf, old);
+    } else {
+      // l'ancienne reste dessous, la précédente revient par-dessus
+      morph(leaf, html(page));
+    }
+    base.scrollTop = 0;
+    box.querySelector('.book-pages').appendChild(leaf);
+    morph(box.querySelector('.book-nav'), nav());
+    setTimeout(() => {
+      leaf.remove();
+      flipping = false;
+      rendu();
+    }, FLIP_MS);
+  }
+
+  const l = { ouvrir, rendu, tourner, page: () => page, ouvert: () => !!el() };
+  LIVRES[id] = l;
+  return l;
+}
+
+// Le livre ouvert, ou null.
+function livreOuvert() {
+  const box = document.querySelector('#modal-root .book[data-livre]');
+  return box ? LIVRES[box.dataset.livre] || null : null;
 }
 
 // Glisser le doigt vers la gauche : page suivante ; vers la droite : page précédente.
-function bindSwipe(zone) {
+function bindSwipe(zone, tourne) {
   let x0 = null;
   let y0 = 0;
   zone.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; });
@@ -169,15 +200,16 @@ function bindSwipe(zone) {
     const dy = e.clientY - y0;
     x0 = null;
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
-    turnTo(page + (dx < 0 ? 1 : -1));
+    tourne(dx < 0 ? 1 : -1);
   });
   zone.addEventListener('pointercancel', () => { x0 = null; });
 }
 
 document.addEventListener('keydown', (e) => {
-  if (!bookEl() || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+  const l = livreOuvert();
+  if (!l || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
   e.preventDefault();
-  turnTo(page + (e.key === 'ArrowRight' ? 1 : -1));
+  l.tourner(l.page() + (e.key === 'ArrowRight' ? 1 : -1));
 });
 
 registerActions({
@@ -185,12 +217,15 @@ registerActions({
     openRecipeBook();
   },
   'book-next': () => {
-    turnTo(page + 1);
+    const l = livreOuvert();
+    if (l) l.tourner(l.page() + 1);
   },
   'book-prev': () => {
-    turnTo(page - 1);
+    const l = livreOuvert();
+    if (l) l.tourner(l.page() - 1);
   },
   'book-goto': (target) => {
-    turnTo(Number(target.dataset.page));
+    const l = livreOuvert();
+    if (l) l.tourner(Number(target.dataset.page));
   },
 });

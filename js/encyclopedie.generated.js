@@ -1,0 +1,2439 @@
+// FICHIER GÉNÉRÉ par scripts/build-encyclopedie.mjs à partir de encyclopedie_ferme_familiale.json.
+// Ne pas le modifier : changer le fichier JSON, puis lancer
+//   node scripts/build-encyclopedie.mjs
+export const ENCYCLOPEDIE = {
+ "categories": [
+  {
+   "id": "batiments",
+   "icone": "🏗️",
+   "nom": "Bâtiments & infrastructures",
+   "entrees": [
+    {
+     "id": "maison",
+     "terme": "Maison",
+     "description": "La maison de la famille, c'est le foyer qu'on bâtit soi-même : une pièce close (des murs tout autour et une porte) où l'on pose une paillasse ou un lit. On peut l'agrandir de plusieurs pièces, y poser le four, la cuisinière et les meubles du Marché, et lui ajouter un étage. Le soir, la famille y rentre dormir, et chaque matin le personnage en ressort. Sa fenêtre regroupe la Famille, le Livre de recette, l'Arbre des technologies et les Installations.",
+     "liens": [
+      "foyer",
+      "piece_close",
+      "famille",
+      "livre_de_recette",
+      "arbre_technologique",
+      "installations",
+      "meubles"
+     ],
+     "decouverte": [
+      "piece_close"
+     ]
+    },
+    {
+     "id": "installations",
+     "terme": "Installations",
+     "description": "Onglet de la Maison qui regroupe ce qui se gère sans aller sur place : les ateliers (Four, Cuisine, Presse), la production et le stockage d'énergie, la pompe, le réservoir, le réfrigérateur et le silo.",
+     "liens": [
+      "maison",
+      "four",
+      "cuisine",
+      "presse",
+      "panneau_solaire",
+      "batterie",
+      "pompe",
+      "reservoir",
+      "refrigerateur",
+      "silo"
+     ],
+     "decouverte": [
+      "objet:four_pierre",
+      "objet:cuisiniere",
+      "objet:meule"
+     ]
+    },
+    {
+     "id": "panneau_solaire",
+     "terme": "Panneau solaire",
+     "description": "Produit de l'électricité à partir du soleil, de 7 h à 19 h seulement, stockée dans la batterie ; sans batterie (ou batterie pleine), il alimente directement la pompe et les ateliers. Il se fabrique à l'Atelier (2 lingots de fer, 1 de cuivre, 2 planches) et se pose dehors, en mode Construire, une fois le foyer bâti. La ferme n'en a qu'un : il s'améliore en niveau, s'use durant son fonctionnement et peut être coupé par un interrupteur pour éviter cette usure.",
+     "liens": [
+      "atelier",
+      "mode_construire",
+      "batterie",
+      "lingot",
+      "foyer"
+     ],
+     "decouverte": [
+      "objet:panneau_solaire"
+     ]
+    },
+    {
+     "id": "batterie",
+     "terme": "Batterie",
+     "description": "Stocke l'électricité produite par le panneau solaire, pour le soir et la nuit. Facultative ; elle se fabrique à l'Atelier (2 lingots de cuivre, 1 de fer) et se pose en mode Construire. Alimente la pompe (dont l'eau sert aussi aux asperseurs), le moulin, la presse, le réfrigérateur et la station de charge du robot. La ferme n'en a qu'une : elle s'améliore en niveau.",
+     "liens": [
+      "panneau_solaire",
+      "atelier",
+      "mode_construire",
+      "lingot"
+     ],
+     "decouverte": [
+      "objet:batterie"
+     ]
+    },
+    {
+     "id": "puit",
+     "terme": "Puits",
+     "description": "Source d'eau illimitée, à laquelle la pompe puise pour remplir le réservoir. Il se fabrique à l'Atelier (8 pierres, 2 planches) et se pose dehors ; la pompe se pose dessus.",
+     "liens": [
+      "pompe",
+      "atelier",
+      "mode_construire"
+     ],
+     "decouverte": [
+      "objet:puits_pierre",
+      "didacticiel:puits"
+     ]
+    },
+    {
+     "id": "cruche",
+     "terme": "Cruche à eau",
+     "description": "Avant la pompe et la citerne, on arrose avec elle. Elle se fabrique à l'Atelier (3 bois) ; un appui sur le puits posé sur la ferme la remplit (10 litres). Une plante qu'on touche pour l'arroser y puise son eau quand la citerne n'en a pas assez.",
+     "liens": [
+      "puit",
+      "reservoir"
+     ],
+     "decouverte": [
+      "objet:cruche",
+      "didacticiel:puits"
+     ]
+    },
+    {
+     "id": "pompe",
+     "terme": "Pompe",
+     "description": "Extrait l'eau du puits et la fait circuler vers le réservoir. Consomme de l'électricité fournie par le panneau solaire ou la batterie. Elle se fabrique à l'Atelier (2 lingots de fer, 1 planche) et se pose sur le puits, une fois le panneau posé.",
+     "liens": [
+      "puit",
+      "reservoir",
+      "panneau_solaire",
+      "atelier"
+     ],
+     "decouverte": [
+      "objet:pompe"
+     ]
+    },
+    {
+     "id": "reservoir",
+     "terme": "Réservoir",
+     "description": "Stock d'eau rempli par la pompe : la citerne, qui se fabrique à l'Atelier (6 planches, 1 lingot de fer) et se pose dehors une fois le panneau et la pompe posés. Elle a ses propres niveaux ; les arrosages, à la main ou par les asperseurs, y puisent.",
+     "liens": [
+      "pompe",
+      "atelier",
+      "eau"
+     ],
+     "decouverte": [
+      "objet:citerne"
+     ]
+    },
+    {
+     "id": "potager",
+     "terme": "Zone de culture",
+     "description": "Toute l'herbe de la carte où poussent les cultures de plein air : les légumes (carotte, patate, tomate, courgette, aubergine, oignon, poivron, ail, épinard, fraise), le blé (une fois le Silo construit), le tournesol, le riz et le houblon. Chaque culture arrive à son niveau et suit les mêmes règles : une plante arrosée gagne un stade 24 heures plus tard, puis redemande de l'eau. La houe y change une tuile d'herbe en terre, n'importe où sur la carte, sauf sur les chemins, l'eau, les pierres, les arbres et les arbustes, et aux abords des bâtiments. Le nombre de tuiles de terre est plafonné par le niveau. Un appui sur l'herbe ou sur une terre ouvre sa fenêtre. L'arrosage (asperseurs), la récolte et le semis (robot) s'automatisent dans l'Arbre des technologies.",
+     "liens": [
+      "reservoir",
+      "carotte",
+      "patate",
+      "tomate",
+      "courgette",
+      "aubergine",
+      "oignon",
+      "ail",
+      "poivron",
+      "epinard",
+      "fraise",
+      "ble",
+      "tournesol",
+      "riz",
+      "houblon",
+      "houe",
+      "tuiles_de_terre",
+      "asperseurs",
+      "robot"
+     ],
+     "decouverte": [
+      "outil:houe",
+      "didacticiel:houe"
+     ]
+    },
+    {
+     "id": "tuiles_de_terre",
+     "terme": "Tuiles de terre",
+     "description": "Nombre de tuiles labourées sur toute la carte, plafonné par le niveau, qui le relève à chaque fois : 12 au niveau 1, puis 24, 40, 60, 84, 112, 144, 180, 220 et 264 au niveau 10. Au plafond, la houe ne laboure plus, mais on peut reboucher une terre vide pour labourer ailleurs.",
+     "liens": [
+      "houe",
+      "niveaux",
+      "potager"
+     ],
+     "decouverte": [
+      "didacticiel:labour",
+      "outil:houe"
+     ]
+    },
+    {
+     "id": "serre",
+     "terme": "Serre",
+     "description": "Un bâtiment qu'on bâtit : une pièce close où l'on pose le bac à semis (fabriqué à l'Atelier). Ses parcelles de culture protégées se placent dans les cases libres de la pièce ; ses murs, quels qu'ils soient, deviennent du verre. C'est le seul endroit où peuvent être cultivés le cacao, la vanille et le café, les cultures de rente ; quelques légumes y poussent aussi.",
+     "liens": [
+      "piece_close",
+      "bloc_cle",
+      "cacao",
+      "vanille",
+      "cafe"
+     ],
+     "decouverte": [
+      "objet:bac_semis",
+      "construit:serre"
+     ]
+    },
+    {
+     "id": "verger",
+     "terme": "Verger",
+     "description": "Les arbres fruitiers de la ferme : pommier, poirier, cerisier, abricotier et pêcher. Un jeune arbre s'achète au Marché et se plante dans le sol, dehors, en mode Construire, à au moins 3 cases d'un autre arbre planté. L'arbre passe par 4 dessins : jeune arbre, arbuste, arbre (5 nuits chacun), puis arbre en fruits, 15 nuits après sa plantation. Les fruits attendent sur l'arbre : un appui le cueille (6 fruits, 4 énergie, 20 XP), et l'arbre redonne ses fruits 3 nuits plus tard, toute l'année. La Récolte du verger, dans l'Arbre des technologies, les cueille la nuit. Il ne s'arrose pas.",
+     "liens": [
+      "pommier",
+      "poirier",
+      "comptoir",
+      "mode_construire"
+     ],
+     "decouverte": [
+      "objet:jeune_pommier",
+      "objet:jeune_poirier",
+      "objet:jeune_cerisier",
+      "objet:jeune_abricotier",
+      "objet:jeune_pecher",
+      "construit:verger"
+     ]
+    },
+    {
+     "id": "poulailler",
+     "terme": "Poulailler",
+     "description": "Un bâtiment qu'on bâtit : une pièce close avec le nichoir (fabriqué à l'Atelier), une porte sur le dehors et un enclos de barrières relié à la pièce par une autre porte. Il loge une poule par case libre, dans la pièce comme dans l'enclos, et au plus selon son niveau (4, 8, 12, 16 puis 24 poules). Les poules doivent y être nourries avec du blé pour pondre : 1 blé nourrit 2 poules pour la nuit ; le jour, elles sortent dans l'enclos.",
+     "liens": [
+      "piece_close",
+      "bloc_cle",
+      "barriere_enclos",
+      "poule"
+     ],
+     "decouverte": [
+      "objet:nichoir",
+      "construit:poulailler",
+      "animal:poule"
+     ]
+    },
+    {
+     "id": "etable",
+     "terme": "Étable",
+     "description": "Un bâtiment qu'on bâtit, comme le Poulailler : une pièce close avec la mangeoire (fabriquée à l'Atelier), une porte sur le dehors et un enclos de barrières relié par une autre porte. Un mouton occupe 1 place, une vache 3 ; il faut une case libre par place, dans la pièce et dans l'enclos. Chaque nuit, les moutons et les vaches y mangent de la paille. Les animaux s'achètent au Marché.",
+     "liens": [
+      "piece_close",
+      "bloc_cle",
+      "barriere_enclos",
+      "mouton",
+      "vache",
+      "paille"
+     ],
+     "decouverte": [
+      "objet:mangeoire",
+      "construit:paturage",
+      "animal:mouton",
+      "animal:vache"
+     ]
+    },
+    {
+     "id": "silo",
+     "terme": "Silo",
+     "description": "Stock de blé récolté : une pièce close où l'on pose le coffre à grain (fabriqué à l'Atelier). Il nourrit les poules du poulailler et alimente le moulin, qui prend d'abord le blé de l'inventaire.",
+     "liens": [
+      "piece_close",
+      "bloc_cle",
+      "ble",
+      "moulin"
+     ],
+     "decouverte": [
+      "objet:coffre_grain",
+      "construit:silo"
+     ]
+    },
+    {
+     "id": "moulin",
+     "terme": "Moulin",
+     "description": "Bâtiment de la carte qui transforme le blé : 1 blé donne 1 farine, en 5 secondes. La mouture se lance dans sa fenêtre, en choisissant le nombre de blés, et non depuis le livre de recette. Sur une ferme générée, il se bâtit en tour : une pièce close dont les murs ont 3 blocs de haut (le même mur posé sur un mur le rehausse), la meule au centre ; sa voilure tourne dehors quand il moud. La farine sert au pain, aux tartes, à la quiche, à la quenelle de poisson et au pain d'épices. Fonctionne à l'électricité fournie par la batterie.",
+     "liens": [
+      "ble",
+      "farine",
+      "batterie",
+      "pain",
+      "quenelle_de_poisson",
+      "pain_d_epices"
+     ],
+     "decouverte": [
+      "objet:meule",
+      "objet:farine"
+     ]
+    },
+    {
+     "id": "presse",
+     "terme": "Presse",
+     "description": "Transforme les graines de tournesol en huile. Fonctionne à l'électricité fournie par la batterie.",
+     "liens": [
+      "tournesol",
+      "huile",
+      "batterie"
+     ],
+     "decouverte": [
+      "objet:huile"
+     ]
+    },
+    {
+     "id": "four",
+     "terme": "Four",
+     "description": "Station qui débloque le livre de recette dès qu'elle est là : le four de pierre se fabrique à l'Atelier (8 pierres, 2 planches) et se pose dans la maison. Sert à cuire le pain et d'autres plats comme le gratin de patates, les tartes ou le pain d'épices. Il fond aussi le minerai de la grotte en lingots : 4 minerais et quelques bûches de bois donnent 1 lingot.",
+     "liens": [
+      "livre_de_recette",
+      "atelier",
+      "maison",
+      "lingot"
+     ],
+     "decouverte": [
+      "objet:four_pierre"
+     ]
+    },
+    {
+     "id": "cuisine",
+     "terme": "Cuisine",
+     "description": "Station où l'on prépare des plats comme l'omelette, la ratatouille, la soupe de légumes ou la compote : la cuisinière se fabrique à l'Atelier (6 pierres, 4 planches) et se pose dans la maison.",
+     "liens": [
+      "atelier",
+      "maison",
+      "livre_de_recette"
+     ],
+     "decouverte": [
+      "objet:cuisiniere"
+     ]
+    },
+    {
+     "id": "refrigerateur",
+     "terme": "Réfrigérateur",
+     "description": "Bâtiment qui empêche les aliments et plats qui y sont rangés de périmer. Il contient 25 unités au niveau 1, puis 40, 60, 90 et 120 en l'agrandissant (300, 700, 1 500 et 3 000 pièces) ; plein, on ne peut plus rien y ranger. Il consomme 100 mWh/s par unité stockée (rien s'il est vide), jour et nuit, prélevés sur la batterie ; si celle-ci se vide, le froid manque et le contenu peut recommencer à périmer.",
+     "liens": [
+      "batterie",
+      "peremption"
+     ],
+     "decouverte": [
+      "construit:frigo"
+     ]
+    },
+    {
+     "id": "livre_de_recette",
+     "terme": "Livre de recette",
+     "description": "Onglet de la Maison (et non un objet possédé) débloqué par la construction du four, qui permet de lancer la préparation des plats à partir des ingrédients disponibles dans l'inventaire. Les recettes non encore débloquées restent visibles, grisées, avec le nom de la technologie qui les ouvre. La farine, elle, se fait directement au moulin.",
+     "liens": [
+      "maison",
+      "four",
+      "cuisine",
+      "moulin",
+      "inventaire",
+      "arbre_technologique"
+     ],
+     "decouverte": [
+      "objet:four_pierre",
+      "objet:cuisiniere"
+     ]
+    },
+    {
+     "id": "arbre_technologique",
+     "terme": "Arbre des technologies",
+     "description": "Onglet de la Maison : 37 technologies réparties en 7 branches (Énergie, Eau, Culture, Élevage, Cuisine, Famille, Outils) et 5 paliers. Chaque technologie se paie en points de technologie (PT), en pièces et en ressources : du bois et de la pierre (hache, pioche), puis des lingots fondus au Four avec le minerai de la grotte. Elle débloque une automatisation, des recettes ou un effet (moins d'eau, d'usure ou d'électricité, temps de préparation réduit, outils plus efficaces…). Un palier s'ouvre avec le chapitre en cours.",
+     "liens": [
+      "maison",
+      "points_technologie",
+      "automatisation",
+      "semis_automatique",
+      "chapitres",
+      "bois_et_pierre",
+      "lingot",
+      "outils"
+     ],
+     "decouverte": [
+      "technologies"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "construction",
+   "icone": "🔨",
+   "nom": "Ramassage & construction",
+   "entrees": [
+    {
+     "id": "terre_sauvage",
+     "terme": "Terre sauvage",
+     "description": "La ferme de chaque partie : une terre de 144 × 114 cases tirée d'une graine (la même graine donne toujours la même ferme), sans aucun bâtiment. Des bois, des étangs, des rochers, des buissons et de l'herbe haute ; un chemin mène à l'est vers la campagne et la ville. Tout s'y ramasse, se fabrique et se bâtit bloc par bloc.",
+     "liens": [
+      "ramassage",
+      "atelier",
+      "mode_construire",
+      "carte"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "ramassage",
+     "terme": "Ramassage",
+     "description": "Chaque matin, des petites pierres et des morceaux de bois apparaissent sur l'herbe de la ferme, et des baies sur les buissons : un appui les ramasse (pierre, bois, baies), pour un peu d'énergie. Les baies se cueillent sans énergie : de quoi manger quand il n'y a plus rien.",
+     "liens": [
+      "bois_et_pierre",
+      "buissons",
+      "atelier"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "fibre",
+     "terme": "Fibre",
+     "description": "Matériau tiré de l'herbe haute fauchée (la faux). Elle sert à l'Atelier (paillasses, outils de pierre, nichoir, mangeoire, convoyeur…) et, dans la botteleuse, devient de la paille.",
+     "liens": [
+      "faux",
+      "botteleuse",
+      "atelier"
+     ],
+     "decouverte": [
+      "objet:fibre"
+     ]
+    },
+    {
+     "id": "botteleuse",
+     "terme": "Botteleuse",
+     "description": "Machine de l'Atelier qui fait des bottes de paille. Trois sortes de blocs, posés côte à côte sur une rangée, de gauche à droite : l'entonnoir, la botteleuse, puis 2 segments de convoyeur ; la case au bout du convoyeur reste libre. Un appui sur l'entonnoir : ton personnage y jette ses fibres, au-dessus de sa tête. Quand la machine en a reçu 10, elle vibre 3 secondes, puis une botte de paille (10 paille) sort sur le convoyeur et tombe au bout : marche dessus pour la ramasser.",
+     "liens": [
+      "fibre",
+      "paille",
+      "atelier",
+      "faux"
+     ],
+     "decouverte": [
+      "objet:entonnoir",
+      "objet:botteleuse",
+      "objet:convoyeur"
+     ]
+    },
+    {
+     "id": "buissons",
+     "terme": "Buissons et baies",
+     "description": "Les buissons de la ferme portent des baies, qui se cueillent chaque jour sans énergie. La hache les coupe d'un coup (2 bois pour un grand, 1 pour un petit) ; ils repoussent quelques jours plus tard, sauf si l'on a bâti sur leur place.",
+     "liens": [
+      "hache",
+      "ramassage"
+     ],
+     "decouverte": [
+      "objet:baies"
+     ]
+    },
+    {
+     "id": "atelier",
+     "terme": "Atelier",
+     "description": "Le premier bâtiment : il se construit avec 3 bois et 3 pierres, puis se pose sur la carte. On y fabrique les planches, les murs, les fenêtres, les portes, la paillasse, le plancher, le chemin, la barrière, l'escalier, les blocs clés des bâtiments, le four et la cuisinière, le puits, les appareils (panneau, pompe, citerne, batterie, avec des lingots) et les outils de pierre.",
+     "liens": [
+      "bois_et_pierre",
+      "fibre",
+      "mode_construire",
+      "lingot"
+     ],
+     "decouverte": [
+      "didacticiel:atelier"
+     ]
+    },
+    {
+     "id": "mode_construire",
+     "terme": "Mode Construire",
+     "description": "La case 🔨 de la barre d'outils : un menu sur le côté propose les blocs qu'on a en main ; un appui sur une case de la carte pose le bloc choisi, un appui sur un bloc posé le reprend (il revient dans l'inventaire). On ne bâtit que sur l'herbe libre : l'herbe haute se fauche d'abord, un rocher ou un arbre se casse ou s'abat. Un niveau au-dessus du sol sert à rehausser les murs ou à bâtir à l'étage.",
+     "liens": [
+      "atelier",
+      "murs",
+      "piece_close",
+      "etage"
+     ],
+     "decouverte": [
+      "didacticiel:atelier"
+     ]
+    },
+    {
+     "id": "murs",
+     "terme": "Murs, fenêtres et portes",
+     "description": "Les murs ferment les pièces : en pierre, en briques (rouges, orange, ocre, bleues), en pierre de taille, la pierre d'angle et la paroi vitrée. Une fenêtre ou une porte se pose sur un mur, à sa place (le mur revient dans l'inventaire). Le même mur posé sur un mur le rehausse, jusqu'à 3 blocs. Un mur qui porte l'étage ne se reprend pas tant qu'il y a quelque chose au-dessus.",
+     "liens": [
+      "piece_close",
+      "mode_construire",
+      "etage"
+     ],
+     "decouverte": [
+      "objet:mur_bois",
+      "objet:mur_pierre",
+      "objet:porte",
+      "didacticiel:abri_construire"
+     ]
+    },
+    {
+     "id": "piece_close",
+     "terme": "Pièce close",
+     "description": "Des cases entourées de murs (et de portes), sans toucher le bord de la carte, d'au plus 120 cases, avec au moins une porte. Une pièce close a un toit. Le premier bloc posé dedans décide de ce qu'elle est : la maison (une paillasse, un lit, le four, la cuisinière, un meuble) ou un bâtiment (son bloc clé) ; une pièce vide reste une simple enceinte.",
+     "liens": [
+      "murs",
+      "foyer",
+      "bloc_cle",
+      "maison"
+     ],
+     "decouverte": [
+      "piece_close"
+     ]
+    },
+    {
+     "id": "foyer",
+     "terme": "Foyer",
+     "description": "La pièce close où l'on dort, avec une paillasse ou un lit. Tant qu'il n'existe pas, rien d'autre ne s'installe (panneau, pompe…). Chaque nuit, il faut un couchage par membre de la famille, dans une pièce close : sans lui, un membre perd -8 de bonheur. Le personnage rentre au foyer le soir et en ressort le matin.",
+     "liens": [
+      "maison",
+      "piece_close",
+      "bonheur"
+     ],
+     "decouverte": [
+      "piece_close"
+     ]
+    },
+    {
+     "id": "bloc_cle",
+     "terme": "Bloc clé d'un bâtiment",
+     "description": "Posé dans une pièce close vide (un plancher peut y être), il en fait un bâtiment : le nichoir fait le Poulailler, la mangeoire l'Étable, le bac à semis la Serre, le coffre à grain le Silo, la meule le Moulin (dans une tour de murs rehaussés). Repris, le bâtiment n'est plus là ; ses bêtes restent.",
+     "liens": [
+      "poulailler",
+      "etable",
+      "serre",
+      "silo",
+      "moulin",
+      "piece_close"
+     ],
+     "decouverte": [
+      "objet:nichoir",
+      "objet:mangeoire",
+      "objet:coffre_grain",
+      "objet:bac_semis"
+     ]
+    },
+    {
+     "id": "etage",
+     "terme": "Étage",
+     "description": "Un escalier posé dans une pièce close ouvre un étage au-dessus d'elle et de ses murs : on y monte par l'escalier, et l'on y pose des murs, des fenêtres, des portes, des paillasses, des lits, des lanternes et des meubles. Le toit de la maison se pose alors sur les murs de l'étage.",
+     "liens": [
+      "piece_close",
+      "murs",
+      "maison"
+     ],
+     "decouverte": [
+      "objet:escalier"
+     ]
+    },
+    {
+     "id": "barriere_enclos",
+     "terme": "Barrière et enclos",
+     "description": "La barrière arrête le passage et se raccorde à ses voisines, sans fermer de pièce. Une étendue close de barrières, reliée à un bâtiment par une porte, fait l'enclos du Poulailler ou de l'Étable.",
+     "liens": [
+      "poulailler",
+      "etable"
+     ],
+     "decouverte": [
+      "objet:barriere"
+     ]
+    },
+    {
+     "id": "plancher_chemin",
+     "terme": "Plancher et chemin",
+     "description": "Des sols qui se posent à plat sous les autres blocs : le plancher dans les pièces, le chemin de terre dehors, qui se raccorde aux chemins de la carte.",
+     "liens": [
+      "mode_construire"
+     ],
+     "decouverte": [
+      "objet:plancher",
+      "objet:chemin"
+     ]
+    },
+    {
+     "id": "lanterne",
+     "terme": "Lanterne scintillante",
+     "description": "Bientôt disponible ! Un bloc qui éclaire autour de lui la nuit. Elle se fabrique à l'Atelier avec un champignon lumineux et un morceau d'arbre de l'infra-monde.",
+     "liens": [
+      "atelier"
+     ],
+     "decouverte": [
+      "objet:lanterne",
+      "objet:champignon_lumineux"
+     ]
+    },
+    {
+     "id": "meubles",
+     "terme": "Meubles",
+     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses et tableaux : ils s'achètent au Marché (rayon Meubles) et se posent dans la maison. Une grille aide à les placer ; les tableaux s'accrochent à un mur.",
+     "liens": [
+      "maison",
+      "comptoir"
+     ],
+     "decouverte": [
+      "objet:meuble_chaise",
+      "objet:meuble_table",
+      "objet:meuble_tapis_1",
+      "objet:meuble_tapis_2",
+      "objet:meuble_tapis_3",
+      "objet:meuble_lit_adulte",
+      "objet:meuble_lit_enfant",
+      "objet:meuble_chevet",
+      "objet:meuble_canape",
+      "objet:meuble_table_basse",
+      "objet:meuble_tableau_1",
+      "objet:meuble_tableau_2",
+      "objet:meuble_tableau_3"
+     ]
+    },
+    {
+     "id": "ruche",
+     "terme": "Ruche",
+     "description": "S'achète au Marché (rayon Animaux, 200 pièces) et se pose dehors comme un bloc. Au bout de 2 nuits, elle est pleine : une bulle avec un pot de miel s'affiche au-dessus d'elle, et un appui la récolte (3 pots). Ses abeilles volent vers les fleurs.",
+     "liens": [
+      "miel",
+      "abeilles",
+      "bac_a_fleurs"
+     ],
+     "decouverte": [
+      "objet:ruche",
+      "objet:miel"
+     ]
+    },
+    {
+     "id": "abeilles",
+     "terme": "Abeilles",
+     "description": "Chaque ruche a ses abeilles : le jour, elles sortent, butinent les fleurs de l'herbe et des bacs à fleurs, puis rentrent à la ruche. La nuit, elles restent dedans.",
+     "liens": [
+      "ruche",
+      "bac_a_fleurs"
+     ],
+     "decouverte": [
+      "objet:ruche",
+      "objet:miel"
+     ]
+    },
+    {
+     "id": "bac_a_fleurs",
+     "terme": "Bac à fleurs",
+     "description": "S'achète au Marché (rayon Meubles, 60 pièces) et se pose comme un bloc : les abeilles des ruches viennent y butiner.",
+     "liens": [
+      "abeilles",
+      "ruche",
+      "comptoir"
+     ],
+     "decouverte": [
+      "objet:bac_fleurs"
+     ]
+    },
+    {
+     "id": "graines_d_arbre",
+     "terme": "Pomme de pin et gland",
+     "description": "Sur la ferme, un arbre abattu ne repousse pas : il laisse sa graine, une pomme de pin pour un sapin, un gland pour un autre arbre. Plantée en mode Construire sur n'importe quelle case d'herbe libre, dehors, c'est d'abord une jeune pousse pendant 2 à 4 jours, puis un arbre qui se coupe comme les autres.",
+     "liens": [
+      "hache",
+      "mode_construire",
+      "graines"
+     ],
+     "decouverte": [
+      "objet:pomme_de_pin",
+      "objet:gland"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "cultures",
+   "icone": "🌾",
+   "nom": "Cultures & plantes",
+   "entrees": [
+    {
+     "id": "carotte",
+     "terme": "Carotte",
+     "description": "Légume de plein air (Zone de culture) qui atteint sa maturité en 4 stades de croissance (un stade 24 heures après chaque arrosage). Sa récolte rend aussi 1 à 2 graines de carotte.",
+     "liens": [
+      "potager"
+     ],
+     "decouverte": [
+      "culture:carotte"
+     ]
+    },
+    {
+     "id": "patate",
+     "terme": "Patate",
+     "description": "Légume de plein air (Zone de culture) qui atteint sa maturité en 6 stades. Une patate récoltée peut directement être replantée comme un plant.",
+     "liens": [
+      "potager"
+     ],
+     "decouverte": [
+      "culture:patate"
+     ]
+    },
+    {
+     "id": "tomate",
+     "terme": "Tomate",
+     "description": "Légume qui peut être cultivé aussi bien dans la Zone de culture qu'en serre, en 5 stades.",
+     "liens": [
+      "potager",
+      "serre"
+     ],
+     "decouverte": [
+      "culture:tomate"
+     ]
+    },
+    {
+     "id": "courgette",
+     "terme": "Courgette",
+     "description": "Légume qui peut être cultivé aussi bien dans la Zone de culture qu'en serre, en 5 stades.",
+     "liens": [
+      "potager",
+      "serre"
+     ],
+     "decouverte": [
+      "culture:courgette"
+     ]
+    },
+    {
+     "id": "aubergine",
+     "terme": "Aubergine",
+     "description": "Légume qui peut être cultivé aussi bien dans la Zone de culture qu'en serre, en 6 stades.",
+     "liens": [
+      "potager",
+      "serre"
+     ],
+     "decouverte": [
+      "culture:aubergine"
+     ]
+    },
+    {
+     "id": "oignon",
+     "terme": "Oignon",
+     "description": "Légume de plein air (Zone de culture), en 5 stades de croissance.",
+     "liens": [
+      "potager"
+     ],
+     "decouverte": [
+      "culture:oignon"
+     ]
+    },
+    {
+     "id": "ail",
+     "terme": "Ail",
+     "description": "Légume de plein air (Zone de culture), en 6 stades. Une fois récolté, il peut directement être replanté comme un plant.",
+     "liens": [
+      "potager"
+     ],
+     "decouverte": [
+      "culture:ail"
+     ]
+    },
+    {
+     "id": "poivron",
+     "terme": "Poivron",
+     "description": "Légume qui peut être cultivé aussi bien dans la Zone de culture qu'en serre, en 6 stades.",
+     "liens": [
+      "potager",
+      "serre"
+     ],
+     "decouverte": [
+      "culture:poivron"
+     ]
+    },
+    {
+     "id": "epinard",
+     "terme": "Épinard",
+     "description": "Légume de plein air (Zone de culture) qui pousse le plus rapidement, en seulement 3 stades.",
+     "liens": [
+      "potager"
+     ],
+     "decouverte": [
+      "culture:epinard"
+     ]
+    },
+    {
+     "id": "fraise",
+     "terme": "Fraise",
+     "description": "Légume de plein air (Zone de culture), en 4 stades, qui rend le plus de graines par récolte.",
+     "liens": [
+      "potager"
+     ],
+     "decouverte": [
+      "culture:fraise"
+     ]
+    },
+    {
+     "id": "ble",
+     "terme": "Blé",
+     "description": "Culture de la Zone de culture, qui ne se plante qu'une fois le Silo construit. Sert à la fois d'ingrédient (moulu au moulin, qui en tire de la farine, ou donné aux poules du poulailler) et de semence pour replanter.",
+     "liens": [
+      "potager",
+      "silo",
+      "moulin",
+      "farine",
+      "poulailler",
+      "poule"
+     ],
+     "decouverte": [
+      "culture:ble"
+     ]
+    },
+    {
+     "id": "tournesol",
+     "terme": "Tournesol",
+     "description": "Culture de la Zone de culture, dont les graines sont soit replantées, soit transformées en huile par la presse.",
+     "liens": [
+      "potager",
+      "presse",
+      "huile"
+     ],
+     "decouverte": [
+      "culture:tournesol"
+     ]
+    },
+    {
+     "id": "riz",
+     "terme": "Riz",
+     "description": "Culture de la Zone de culture, qui demande deux fois plus d'eau à l'arrosage que le blé.",
+     "liens": [
+      "potager",
+      "reservoir",
+      "riz_au_lait"
+     ],
+     "decouverte": [
+      "culture:riz"
+     ]
+    },
+    {
+     "id": "houblon",
+     "terme": "Houblon",
+     "description": "Culture de la Zone de culture, non comestible, utilisée uniquement pour la vente et pour préparer la bière artisanale.",
+     "liens": [
+      "potager",
+      "biere_artisanale"
+     ],
+     "decouverte": [
+      "culture:houblon"
+     ]
+    },
+    {
+     "id": "cacao",
+     "terme": "Cacao",
+     "description": "Culture de rente cultivée exclusivement en serre, jamais comestible. Utilisée pour la vente et pour préparer le chocolat chaud.",
+     "liens": [
+      "serre",
+      "chocolat_chaud"
+     ],
+     "decouverte": [
+      "culture:cacao"
+     ]
+    },
+    {
+     "id": "vanille",
+     "terme": "Vanille",
+     "description": "Culture de rente cultivée exclusivement en serre, jamais comestible et la plus chère à la vente. Utilisée pour préparer la crème à la vanille.",
+     "liens": [
+      "serre",
+      "creme_a_la_vanille"
+     ],
+     "decouverte": [
+      "culture:vanille"
+     ]
+    },
+    {
+     "id": "cafe",
+     "terme": "Café",
+     "description": "Culture de rente cultivée exclusivement en serre, jamais comestible. Utilisée pour préparer la boisson du même nom.",
+     "liens": [
+      "serre"
+     ],
+     "decouverte": [
+      "culture:cafe"
+     ]
+    },
+    {
+     "id": "pommier",
+     "terme": "Pommier",
+     "description": "Arbre fruitier permanent du verger, planté dans le sol (un jeune arbre acheté au Marché). Porte 6 pommes 15 nuits après sa plantation, puis 3 nuits après chaque cueillette, toute l'année.",
+     "liens": [
+      "verger"
+     ],
+     "decouverte": [
+      "objet:jeune_pommier",
+      "objet:pomme"
+     ]
+    },
+    {
+     "id": "poirier",
+     "terme": "Poirier",
+     "description": "Arbre fruitier permanent du verger, planté dans le sol (un jeune arbre acheté au Marché). Porte 6 poires 15 nuits après sa plantation, puis 3 nuits après chaque cueillette, toute l'année.",
+     "liens": [
+      "verger"
+     ],
+     "decouverte": [
+      "objet:jeune_poirier",
+      "objet:poire"
+     ]
+    },
+    {
+     "id": "autres_fruitiers",
+     "terme": "Cerisier, abricotier, pêcher",
+     "description": "Arbres fruitiers permanents du verger, comme le pommier et le poirier : un jeune arbre s'achète au Marché et se plante dans le sol. Ils donnent cerises, abricots et pêches, et fleurissent avant de porter leurs fruits.",
+     "liens": [
+      "verger",
+      "pommier",
+      "poirier"
+     ],
+     "decouverte": [
+      "objet:jeune_cerisier",
+      "objet:jeune_abricotier",
+      "objet:jeune_pecher",
+      "objet:cerise",
+      "objet:abricot",
+      "objet:peche"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "animaux",
+   "icone": "🐄",
+   "nom": "Animaux & produits animaux",
+   "entrees": [
+    {
+     "id": "poule",
+     "terme": "Poule",
+     "description": "Animal du Poulailler, acheté au Marché. Pond un œuf chaque nuit où elle a été nourrie avec du blé (1 blé pour 2 poules), et cela toute sa vie. Le jour, elle sort dans l'enclos.",
+     "liens": [
+      "poulailler",
+      "etable",
+      "comptoir",
+      "silo",
+      "ble",
+      "oeuf"
+     ],
+     "decouverte": [
+      "animal:poule"
+     ]
+    },
+    {
+     "id": "mouton",
+     "terme": "Mouton",
+     "description": "Animal de l'Étable, acheté au Marché, qui occupe 1 place. Il mange 1 paille par nuit ; sa laine est prête à tondre après 2 nuits où il a été nourri. Sans paille, sa laine n'avance pas cette nuit-là, et rien d'autre ne lui arrive. Le second adulte de la famille peut s'occuper des bêtes.",
+     "liens": [
+      "etable",
+      "comptoir",
+      "paille",
+      "laine"
+     ],
+     "decouverte": [
+      "animal:mouton"
+     ]
+    },
+    {
+     "id": "vache",
+     "terme": "Vache",
+     "description": "Animal de l'Étable, acheté au Marché, qui occupe 3 places. Elle mange 2 pailles par nuit et donne 1 lait chaque nuit où elle a mangé. Sans paille, elle ne donne pas de lait cette nuit-là, et rien d'autre ne lui arrive. Nourrie aux herbes de montagne (bouton « Nourrir les vaches aux herbes » de l'Étable), elle mange 1 herbe à la place de sa paille et donne du lait d'alpage.",
+     "liens": [
+      "etable",
+      "comptoir",
+      "paille",
+      "lait",
+      "fromage_d_alpage"
+     ],
+     "decouverte": [
+      "animal:vache"
+     ]
+    },
+    {
+     "id": "paille",
+     "terme": "Paille",
+     "description": "Nourriture des moutons et des vaches, que fait la botteleuse : on y jette 10 fibres et une botte de paille (10 paille) sort sur son convoyeur, à ramasser en marchant dessus. Chaque nuit, un mouton en mange 1 et une vache 2, dans l'ordre de leur liste. Elle ne se mange pas et ne s'achète pas ; elle ne périme pas.",
+     "liens": [
+      "botteleuse",
+      "fibre",
+      "mouton",
+      "vache",
+      "etable"
+     ],
+     "decouverte": [
+      "objet:paille"
+     ]
+    },
+    {
+     "id": "oeuf",
+     "terme": "Œuf",
+     "description": "Aliment produit par les poules du poulailler, consommé par la famille ou utilisé dans des recettes comme l'omelette.",
+     "liens": [
+      "poule",
+      "omelette"
+     ],
+     "decouverte": [
+      "objet:oeuf"
+     ]
+    },
+    {
+     "id": "laine",
+     "terme": "Laine",
+     "description": "Produit obtenu en tondant un mouton dont la laine est prête, vendu au Marché. Ne se consomme pas et ne périme jamais.",
+     "liens": [
+      "mouton",
+      "comptoir"
+     ],
+     "decouverte": [
+      "objet:laine"
+     ]
+    },
+    {
+     "id": "lait",
+     "terme": "Lait",
+     "description": "Produit donné chaque nuit par les vaches qui ont mangé leur paille, consommé par la famille ou utilisé dans des recettes comme le fromage frais ou le chocolat chaud.",
+     "liens": [
+      "vache",
+      "paille",
+      "fromage_frais",
+      "chocolat_chaud"
+     ],
+     "decouverte": [
+      "objet:lait"
+     ]
+    },
+    {
+     "id": "fromage_d_alpage",
+     "terme": "Herbes, lait et fromage d'alpage",
+     "description": "Bientôt disponible ! À la montagne, les herbes de montagne se cueillent dans les prés : ce sont les trouvailles les plus courantes, et elles se gardent 3 nuits. Dans l'Étable, le bouton « Nourrir les vaches aux herbes » les donne aux vaches : chaque nuit, une vache mange 1 herbe à la place de ses 2 pailles et donne du lait d'alpage au lieu du lait ; quand les herbes manquent, elle reprend sa paille. En Cuisine, une fois la Laiterie débloquée, 3 laits d'alpage font un fromage d'alpage, plus cher que le fromage frais. Le fromage d'alpage s'achète aussi au marché de la ville et sert à la raclette.",
+     "liens": [
+      "vache",
+      "etable",
+      "montagne",
+      "trouvailles",
+      "lait",
+      "cuisine",
+      "raclette",
+      "produits_de_la_ville"
+     ],
+     "decouverte": [
+      "objet:herbes_montagne",
+      "objet:lait_alpage",
+      "objet:fromage_alpage"
+     ]
+    },
+    {
+     "id": "viandes",
+     "terme": "Viandes et plats à la viande",
+     "description": "Depuis la version 1.1, les animaux ne sont plus abattus : la ferme ne produit plus de viande, et le ragoût, les poivrons farcis, le rôti de bœuf et le poulet rôti à l'ail ne se préparent plus. Les viandes et les plats à la viande qui restent dans une ancienne partie se mangent et se vendent toujours.",
+     "liens": [
+      "poule",
+      "mouton",
+      "vache"
+     ],
+     "decouverte": [
+      "objet:viande_mouton",
+      "objet:viande_boeuf",
+      "objet:viande_volaille",
+      "animal:mouton",
+      "animal:vache"
+     ]
+    },
+    {
+     "id": "miel",
+     "terme": "Miel",
+     "description": "Produit des ruches : une ruche pleine donne 3 pots de miel. Il se vend au Marché.",
+     "liens": [
+      "ruche",
+      "abeilles"
+     ],
+     "decouverte": [
+      "objet:miel"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ressources",
+   "icone": "📦",
+   "nom": "Ressources, ingrédients & stockage",
+   "entrees": [
+    {
+     "id": "electricite",
+     "terme": "Électricité",
+     "description": "Ressource produite par le panneau solaire (de 7 h à 19 h), stockée dans la batterie, et consommée par la pompe, le moulin, la presse, le réfrigérateur et la station de charge du robot.",
+     "liens": [
+      "panneau_solaire",
+      "batterie",
+      "robot"
+     ],
+     "decouverte": [
+      "objet:panneau_solaire",
+      "objet:batterie"
+     ]
+    },
+    {
+     "id": "eau",
+     "terme": "Eau",
+     "description": "Ressource puisée dans le puits par la pompe, stockée dans la citerne (le réservoir), et utilisée pour arroser la Zone de culture et la Serre, à la main ou par les asperseurs, et dans quelques recettes.",
+     "liens": [
+      "puit",
+      "pompe",
+      "reservoir",
+      "asperseurs"
+     ],
+     "decouverte": [
+      "objet:puits_pierre",
+      "objet:cruche",
+      "didacticiel:puits"
+     ]
+    },
+    {
+     "id": "pieces",
+     "terme": "Pièces",
+     "description": "Monnaie du jeu, obtenue en vendant les surplus de la ferme au Marché, et dépensée pour les achats, les améliorations et l'agrandissement des surfaces.",
+     "liens": [
+      "comptoir"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "farine",
+     "terme": "Farine",
+     "description": "Ingrédient obtenu en moulant le blé au moulin, utilisé dans des recettes comme le pain, les tartes, la quiche, la quenelle de poisson ou le pain d'épices.",
+     "liens": [
+      "ble",
+      "moulin",
+      "pain"
+     ],
+     "decouverte": [
+      "objet:farine"
+     ]
+    },
+    {
+     "id": "huile",
+     "terme": "Huile",
+     "description": "Ingrédient obtenu en transformant les graines de tournesol à la presse, utilisé dans des recettes comme l'omelette ou la ratatouille.",
+     "liens": [
+      "tournesol",
+      "presse",
+      "omelette",
+      "ratatouille"
+     ],
+     "decouverte": [
+      "objet:huile"
+     ]
+    },
+    {
+     "id": "graines",
+     "terme": "Graines",
+     "description": "Obtenues normalement en récoltant les cultures, elles permettent de replanter. Peuvent aussi être achetées au Marché en dépannage, mais à un prix plus élevé que la production. Les arbres abattus laissent aussi leurs graines : la pomme de pin et le gland.",
+     "liens": [
+      "graines_d_arbre"
+     ],
+     "decouverte": [
+      "objet:graine_carotte",
+      "didacticiel:graines"
+     ]
+    },
+    {
+     "id": "conserve",
+     "terme": "Boîte de conserve",
+     "description": "Aliment non périssable présent dès le début de la partie (40 boîtes), qui laisse le temps de lancer les premières cultures avant que la famille ne manque de nourriture. Ne peut pas être racheté une fois épuisé, et ne compte pas pour l'autonomie. À ne pas confondre avec le bocal de légumes, ni avec les boîtes de la Conserverie de la ville, vendues aussitôt.",
+     "liens": [
+      "apport_journalier",
+      "potager",
+      "bocal_de_legumes",
+      "entreprises"
+     ],
+     "decouverte": [
+      "objet:conserve"
+     ]
+    },
+    {
+     "id": "inventaire",
+     "terme": "Inventaire",
+     "description": "Stock illimité de tous les objets possédés par la ferme, organisé en lots datés selon leur date de récolte, pour suivre leur péremption.",
+     "liens": [
+      "peremption"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "apport_journalier",
+     "terme": "Apport journalier",
+     "description": "Besoin quotidien en énergie de la famille : 50 par adulte et 25 par enfant, soit 150 pour la famille de départ (deux adultes, deux enfants). Il suit la composition de la famille ; les animaux de compagnie n'y comptent pas. Il doit être couvert par les aliments du repas de 19 h pour que le personnage se réveille avec toute son énergie.",
+     "liens": [
+      "famille",
+      "adulte",
+      "enfant",
+      "animal_de_compagnie",
+      "repas",
+      "energie_personnage"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "peremption",
+     "terme": "Péremption",
+     "description": "Durée pendant laquelle un aliment ou un plat reste consommable hors du réfrigérateur : de 2 nuits (le poisson frais) à 12 nuits selon l'aliment, 6 nuits pour la plupart des plats. Le réfrigérateur permet de conserver sans limite de temps.",
+     "liens": [
+      "refrigerateur"
+     ],
+     "decouverte": [
+      "jour:2"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "recettes",
+   "icone": "🍲",
+   "nom": "Recettes & plats",
+   "entrees": [
+    {
+     "id": "pain",
+     "terme": "Pain",
+     "description": "Plat cuit au four à partir de farine et d'eau.",
+     "liens": [
+      "four",
+      "farine"
+     ],
+     "decouverte": [
+      "objet:pain",
+      "recette:pain"
+     ]
+    },
+    {
+     "id": "omelette",
+     "terme": "Omelette",
+     "description": "Plat préparé à la cuisine à partir d'œufs et d'huile.",
+     "liens": [
+      "cuisine",
+      "oeuf",
+      "huile"
+     ],
+     "decouverte": [
+      "objet:omelette",
+      "recette:omelette"
+     ]
+    },
+    {
+     "id": "ratatouille",
+     "terme": "Ratatouille",
+     "description": "Plat préparé à la cuisine à partir de tomate, courgette, aubergine et huile.",
+     "liens": [
+      "cuisine",
+      "tomate",
+      "courgette",
+      "aubergine",
+      "huile"
+     ],
+     "decouverte": [
+      "objet:ratatouille",
+      "recette:ratatouille"
+     ]
+    },
+    {
+     "id": "gratin_de_patates",
+     "terme": "Gratin de patates",
+     "description": "Plat cuit au four à partir de patates et d'œuf, dont la valeur nutritionnelle est fixée pour couvrir à elle seule tout l'apport journalier d'une famille.",
+     "liens": [
+      "four",
+      "patate",
+      "oeuf",
+      "apport_journalier"
+     ],
+     "decouverte": [
+      "objet:gratin_patates",
+      "recette:gratin_patates"
+     ]
+    },
+    {
+     "id": "compote",
+     "terme": "Compote",
+     "description": "Plat préparé à la cuisine à partir de pommes ou de poires.",
+     "liens": [
+      "cuisine",
+      "pommier",
+      "poirier"
+     ],
+     "decouverte": [
+      "objet:compote",
+      "recette:compote"
+     ]
+    },
+    {
+     "id": "tarte_aux_pommes",
+     "terme": "Tarte aux pommes",
+     "description": "Plat cuit au four à partir de farine, pommes et œuf.",
+     "liens": [
+      "four",
+      "farine",
+      "pommier",
+      "oeuf"
+     ],
+     "decouverte": [
+      "objet:tarte_pommes",
+      "recette:tarte_pommes"
+     ]
+    },
+    {
+     "id": "soupe_de_legumes",
+     "terme": "Soupe de légumes",
+     "description": "Plat préparé à la cuisine à partir de carotte, oignon, patate et eau.",
+     "liens": [
+      "cuisine",
+      "carotte",
+      "oignon",
+      "patate"
+     ],
+     "decouverte": [
+      "objet:soupe_legumes",
+      "recette:soupe_legumes"
+     ]
+    },
+    {
+     "id": "salade_de_tomates",
+     "terme": "Salade de tomates",
+     "description": "Plat préparé à la cuisine à partir de tomates et d'huile.",
+     "liens": [
+      "cuisine",
+      "tomate",
+      "huile"
+     ],
+     "decouverte": [
+      "objet:salade_tomates",
+      "recette:salade_tomates"
+     ]
+    },
+    {
+     "id": "quiche_aux_epinards",
+     "terme": "Quiche aux épinards",
+     "description": "Plat cuit au four à partir de farine, œufs, lait et épinard.",
+     "liens": [
+      "four",
+      "farine",
+      "oeuf",
+      "lait",
+      "epinard"
+     ],
+     "decouverte": [
+      "objet:quiche_epinards",
+      "recette:quiche_epinards"
+     ]
+    },
+    {
+     "id": "fromage_frais",
+     "terme": "Fromage frais",
+     "description": "Plat préparé à la cuisine à partir de lait, se conservant mieux que le lait cru.",
+     "liens": [
+      "cuisine",
+      "lait",
+      "fromage_d_alpage"
+     ],
+     "decouverte": [
+      "objet:fromage_frais",
+      "recette:fromage_frais"
+     ]
+    },
+    {
+     "id": "riz_au_lait",
+     "terme": "Riz au lait",
+     "description": "Plat préparé à la cuisine à partir de riz et de lait.",
+     "liens": [
+      "cuisine",
+      "riz",
+      "lait"
+     ],
+     "decouverte": [
+      "objet:riz_au_lait",
+      "recette:riz_au_lait"
+     ]
+    },
+    {
+     "id": "pain_a_lail",
+     "terme": "Pain à l'ail",
+     "description": "Plat cuit au four à partir de pain, d'ail et d'huile.",
+     "liens": [
+      "four",
+      "pain",
+      "ail",
+      "huile"
+     ],
+     "decouverte": [
+      "objet:pain_ail",
+      "recette:pain_ail"
+     ]
+    },
+    {
+     "id": "tarte_aux_fraises",
+     "terme": "Tarte aux fraises",
+     "description": "Plat cuit au four à partir de farine, fraises et œuf.",
+     "liens": [
+      "four",
+      "farine",
+      "fraise",
+      "oeuf"
+     ],
+     "decouverte": [
+      "objet:tarte_fraises",
+      "recette:tarte_fraises"
+     ]
+    },
+    {
+     "id": "confiture_de_fraises",
+     "terme": "Confiture de fraises",
+     "description": "Plat préparé à la cuisine à partir de fraises, ne périmant pas. Débloqué par la technologie Mise en bocaux.",
+     "liens": [
+      "cuisine",
+      "fraise",
+      "bocal_de_legumes",
+      "arbre_technologique"
+     ],
+     "decouverte": [
+      "objet:confiture_fraises",
+      "recette:confiture_fraises"
+     ]
+    },
+    {
+     "id": "bocal_de_legumes",
+     "terme": "Bocal de légumes",
+     "description": "Plat préparé à la cuisine à partir de 4 légumes d'une même sorte et de 1 L d'eau ; ne périme pas. Débloqué par la technologie Mise en bocaux. Contrairement à la boîte de conserve de départ, il compte comme produit de la ferme pour l'autonomie.",
+     "liens": [
+      "cuisine",
+      "conserve",
+      "arbre_technologique"
+     ],
+     "decouverte": [
+      "objet:bocal_legumes",
+      "recette:bocal_legumes"
+     ]
+    },
+    {
+     "id": "chocolat_chaud",
+     "terme": "Chocolat chaud",
+     "description": "Recette de luxe préparée à la cuisine à partir de cacao et de lait, vendue trois fois le prix de ses ingrédients.",
+     "liens": [
+      "cuisine",
+      "cacao",
+      "lait"
+     ],
+     "decouverte": [
+      "objet:chocolat_chaud",
+      "recette:chocolat_chaud"
+     ]
+    },
+    {
+     "id": "cafe_boisson",
+     "terme": "Café chaud",
+     "description": "Boisson de luxe préparée à la cuisine à partir de café et d'eau, vendue trois fois le prix de ses ingrédients.",
+     "liens": [
+      "cuisine",
+      "cafe"
+     ],
+     "decouverte": [
+      "objet:cafe_boisson",
+      "recette:cafe_boisson"
+     ]
+    },
+    {
+     "id": "creme_a_la_vanille",
+     "terme": "Crème à la vanille",
+     "description": "Recette de luxe préparée à la cuisine à partir de vanille, lait et œufs, vendue trois fois le prix de ses ingrédients.",
+     "liens": [
+      "cuisine",
+      "vanille",
+      "lait",
+      "oeuf"
+     ],
+     "decouverte": [
+      "objet:creme_vanille",
+      "recette:creme_vanille"
+     ]
+    },
+    {
+     "id": "biere_artisanale",
+     "terme": "Bière artisanale",
+     "description": "Recette de luxe préparée à la cuisine à partir de houblon et d'eau, vendue trois fois le prix de ses ingrédients et ne périmant pas.",
+     "liens": [
+      "cuisine",
+      "houblon"
+     ],
+     "decouverte": [
+      "objet:biere_artisanale",
+      "recette:biere_artisanale"
+     ]
+    },
+    {
+     "id": "omelette_aux_champignons",
+     "terme": "Omelette aux champignons",
+     "description": "Plat préparé à la cuisine à partir d'œufs et de champignons cueillis en forêt.",
+     "liens": [
+      "cuisine",
+      "oeuf",
+      "cueillettes_foret"
+     ],
+     "decouverte": [
+      "objet:omelette_champignons",
+      "recette:omelette_champignons"
+     ]
+    },
+    {
+     "id": "poisson_grille",
+     "terme": "Poisson grillé à l'ail",
+     "description": "Plat préparé à la cuisine à partir d'un poisson et d'ail.",
+     "liens": [
+      "cuisine",
+      "peche",
+      "ail",
+      "produits_de_la_ville"
+     ],
+     "decouverte": [
+      "objet:poisson_grille",
+      "recette:poisson_grille"
+     ]
+    },
+    {
+     "id": "raclette",
+     "terme": "Raclette",
+     "description": "Plat préparé à la cuisine à partir de fromage d'alpage et de patates ; l'un des plats les plus nourrissants.",
+     "liens": [
+      "cuisine",
+      "patate",
+      "fromage_d_alpage",
+      "produits_de_la_ville"
+     ],
+     "decouverte": [
+      "objet:raclette",
+      "recette:raclette"
+     ]
+    },
+    {
+     "id": "creme_de_marrons",
+     "terme": "Crème de marrons",
+     "description": "Plat préparé à la cuisine à partir de châtaignes cueillies en forêt et de sucre de la ville.",
+     "liens": [
+      "cuisine",
+      "cueillettes_foret",
+      "produits_de_la_ville"
+     ],
+     "decouverte": [
+      "objet:creme_marrons",
+      "recette:creme_marrons"
+     ]
+    },
+    {
+     "id": "tarte_aux_myrtilles",
+     "terme": "Tarte aux myrtilles",
+     "description": "Plat cuit au four à partir de farine, de myrtilles cueillies en forêt et de sucre.",
+     "liens": [
+      "four",
+      "farine",
+      "cueillettes_foret",
+      "produits_de_la_ville"
+     ],
+     "decouverte": [
+      "objet:tarte_myrtilles",
+      "recette:tarte_myrtilles"
+     ]
+    },
+    {
+     "id": "pain_d_epices",
+     "terme": "Pain d'épices",
+     "description": "Plat cuit au four à partir de farine, de miel et d'épices de la ville.",
+     "liens": [
+      "four",
+      "farine",
+      "produits_de_la_ville"
+     ],
+     "decouverte": [
+      "objet:pain_epices",
+      "recette:pain_epices"
+     ]
+    },
+    {
+     "id": "mayonnaise",
+     "terme": "Mayonnaise",
+     "description": "Préparation de la cuisine à partir d'œufs de la ferme, qui compte comme un plat.",
+     "liens": [
+      "cuisine",
+      "oeuf"
+     ],
+     "decouverte": [
+      "objet:mayonnaise",
+      "recette:mayonnaise"
+     ]
+    },
+    {
+     "id": "quenelle_de_poisson",
+     "terme": "Quenelle de poisson",
+     "description": "Plat préparé à la cuisine à partir de farine et d'un poisson pêché à la canne (ou acheté en ville).",
+     "liens": [
+      "cuisine",
+      "farine",
+      "peche"
+     ],
+     "decouverte": [
+      "objet:quenelle_poisson",
+      "recette:quenelle_poisson"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "outils",
+   "icone": "🛠️",
+   "nom": "Outils & matériaux",
+   "entrees": [
+    {
+     "id": "outils",
+     "terme": "Outils",
+     "description": "Cinq outils s'achètent une fois chacun au Marché : la houe (40 pièces), la hache (60), la pioche (60), la faux (50) et la canne à pêche (60) ; les quatre premiers se fabriquent aussi à l'Atelier, avec du bois, de la pierre et de la fibre. On choisit celui qu'on tient dans la barre d'outils de la carte, puis on touche l'herbe, un arbre, un rocher, une touffe d'herbe haute, un minerai ou l'eau. Un appui maintenu sur le personnage qui tient un outil donne un coup fort : il tremble puis frappe quand on relâche ; la hache ou la pioche comptent 2 coups, la faux tournoie et fauche toute l'herbe haute autour de lui, la houe laboure les tuiles autour de lui. Chaque geste coûte de l'énergie et rapporte de l'XP. La branche Outils de l'Arbre des technologies les rend plus efficaces : moins de coups, plus de bois, de pierre, de minerai et de poisson, moins d'énergie.",
+     "liens": [
+      "houe",
+      "hache",
+      "pioche",
+      "faux",
+      "canne_a_peche",
+      "atelier"
+     ],
+     "decouverte": [
+      "outil:houe",
+      "outil:hache",
+      "outil:faux",
+      "outil:pioche",
+      "outil:canne",
+      "didacticiel:faux"
+     ]
+    },
+    {
+     "id": "houe",
+     "terme": "Houe",
+     "description": "Outil acheté une seule fois au Marché (40 pièces). Houe en main (barre d'outils de la carte), un appui sur une tuile d'herbe de la carte la laboure (5 énergie, 10 XP) et un appui sur une terre vide la rebouche, gratuitement. La terre déborde en bordure mi-herbe mi-terre sur les 8 tuiles autour : si l'une d'elles ne peut pas la porter (chemin, eau, pierre, arbre, ou une seule tuile d'herbe prise entre deux terres), la houe refuse et dit pourquoi, comme sur un chemin ou aux abords d'un bâtiment.",
+     "liens": [
+      "outils",
+      "potager",
+      "tuiles_de_terre",
+      "energie_personnage"
+     ],
+     "decouverte": [
+      "outil:houe"
+     ]
+    },
+    {
+     "id": "hache",
+     "terme": "Hache",
+     "description": "Outil acheté une fois au Marché (60 pièces) ou fabriqué à l'Atelier. Hache en main, un appui sur un arbre de la ferme ou du chemin de la ville donne un coup : 6 énergie et 1 bois. L'arbre tombe au 3e coup. Sur la ferme, il laisse sa graine (une pomme de pin pour un sapin, un gland pour un autre arbre) et ne repousse pas : on replante sa graine où l'on veut. Sur les autres cartes, il repousse 1 à 3 jours plus tard. Les buissons de la ferme tombent d'un coup, avec leurs baies.",
+     "liens": [
+      "graines_d_arbre",
+      "bois_et_pierre",
+      "buissons"
+     ],
+     "decouverte": [
+      "outil:hache"
+     ]
+    },
+    {
+     "id": "faux",
+     "terme": "Faux",
+     "description": "Outil acheté une fois au Marché (50 pièces) ou fabriqué à l'Atelier. Faux en main, un appui sur une touffe d'herbe haute de la carte la fauche : 3 énergie et 1 fibre qui tombe au sol. La touffe repousse 2 à 4 jours plus tard. C'est la seule façon d'avoir de la fibre, et donc de la paille (la botteleuse).",
+     "liens": [
+      "outils",
+      "fibre",
+      "botteleuse",
+      "paille"
+     ],
+     "decouverte": [
+      "outil:faux"
+     ]
+    },
+    {
+     "id": "pioche",
+     "terme": "Pioche",
+     "description": "Outil acheté une fois au Marché (60 pièces). Pioche en main, un appui sur un rocher donne un coup : 6 énergie et 1 pierre. Le rocher se casse au 3e coup et revient 1 à 3 jours plus tard. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : un appui dessus, et 1 pierre va dans l'inventaire. Dans la grotte, elle prend aussi le minerai dans les murs.",
+     "liens": [
+      "outils",
+      "bois_et_pierre",
+      "grotte",
+      "minerai"
+     ],
+     "decouverte": [
+      "outil:pioche"
+     ]
+    },
+    {
+     "id": "canne_a_peche",
+     "terme": "Canne à pêche",
+     "description": "Outil acheté une fois au Marché (60 pièces). Canne en main, un appui sur l'eau lance la ligne (4 énergie) : dans l'étang ou la mare de la ferme, le lac de la montagne ou la mer, depuis le ponton de la plage. Il arrive que rien ne morde.",
+     "liens": [
+      "outils",
+      "peche"
+     ],
+     "decouverte": [
+      "outil:canne"
+     ]
+    },
+    {
+     "id": "bois_et_pierre",
+     "terme": "Bois et pierre",
+     "description": "Ressources de la carte : le bois tombe des arbres coupés à la hache, la pierre des rochers cassés à la pioche ; sur la ferme, on ramasse aussi à la main des petites pierres et des morceaux de bois. Ils ne périment pas et se vendent au Marché, mais servent surtout à l'Atelier (planches, murs, outils…) et à payer les technologies de l'Arbre des technologies ; le bois sert aussi au Four pour fondre les lingots.",
+     "liens": [
+      "ramassage",
+      "atelier",
+      "arbre_technologique"
+     ],
+     "decouverte": [
+      "objet:bois",
+      "objet:pierre"
+     ]
+    },
+    {
+     "id": "minerai",
+     "terme": "Minerai",
+     "description": "Fer, cuivre, or et platine, pris à la pioche dans les murs de la mine (la grotte) : le fer est partout, les autres de plus en plus rares et profonds. Le minerai va dans l'inventaire ; c'est un matériau, qui ne se mange pas et ne se vend pas. Au Four, 4 minerais et du bois font un lingot.",
+     "liens": [
+      "grotte",
+      "pioche",
+      "lingot",
+      "four"
+     ],
+     "decouverte": [
+      "objet:minerai_fer",
+      "objet:minerai_cuivre",
+      "objet:minerai_or",
+      "objet:minerai_platine"
+     ]
+    },
+    {
+     "id": "lingot",
+     "terme": "Lingot",
+     "description": "Lingot de fer, de cuivre, d'or ou de platine, fondu au Four à partir de 4 minerais et de bois (le fer en premier : 20 secondes). Matériau invendable, il paie, avec le bois et la pierre, la plupart des technologies à partir du palier 2 de l'Arbre des technologies.",
+     "liens": [
+      "minerai",
+      "four",
+      "arbre_technologique",
+      "bois_et_pierre"
+     ],
+     "decouverte": [
+      "objet:lingot_fer",
+      "objet:lingot_cuivre",
+      "objet:lingot_or",
+      "objet:lingot_platine"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "commerce",
+   "icone": "🏪",
+   "nom": "Commerce",
+   "entrees": [
+    {
+     "id": "comptoir",
+     "terme": "Marché",
+     "description": "Lieu d'achat et de vente, dans le menu du bas. On y vend les surplus de la ferme contre des pièces ; on y achète des produits et des graines en dépannage, les animaux (poule, mouton, vache) et les ruches, les outils (houe, hache, pioche, faux, canne à pêche), les jeunes arbres fruitiers, les meubles de la maison et les bacs à fleurs, en choisissant la quantité. Le prix d'achat des produits augmente avec les achats et diminue avec les ventes ; le reste est à prix fixe. Les minerais et les lingots ne se vendent pas.",
+     "liens": [
+      "coefficient_dachat",
+      "ruche",
+      "meubles",
+      "bac_a_fleurs",
+      "verger"
+     ],
+     "decouverte": [
+      "onglet:comptoir"
+     ]
+    },
+    {
+     "id": "coefficient_dachat",
+     "terme": "Coefficient d'achat",
+     "description": "Multiplicateur appliqué au prix de vente d'un objet pour déterminer son prix d'achat au Marché. Il augmente à chaque achat et diminue à chaque vente, sans jamais descendre sous un plancher minimal.",
+     "liens": [
+      "comptoir"
+     ],
+     "decouverte": [
+      "onglet:comptoir"
+     ]
+    },
+    {
+     "id": "commerce",
+     "terme": "Commerce",
+     "description": "Choisi au niveau 10, dans Maison › Commerce : étal de bocaux (4 légumes → 1 bocal de légumes, vendu 24 pièces), crèmerie (3 laits → 1 fromage, 36 pièces) ou métier à tisser (2 laines → 1 tissu, 36 pièces). Chaque nuit, après le repas de la famille, il transforme jusqu'à son quota et vend tout seul, sans passer par le Marché : 1 XP par pièce gagnée, ni énergie ni électricité. Capacité de 10 transformations par nuit, agrandie à 20, 35 puis 50. Le premier choix est gratuit ; en changer coûte 5 000 pièces. Il vend plus cher qu'une recette (130 % du prix des ingrédients), mais moins qu'une entreprise de la ville.",
+     "liens": [
+      "vache",
+      "mouton",
+      "comptoir",
+      "entreprises"
+     ],
+     "decouverte": [
+      "commerce"
+     ]
+    },
+    {
+     "id": "etals_de_la_ville",
+     "terme": "Étals de la ville",
+     "description": "Bientôt disponible ! Les étals du marché de la ville, où le personnage vend lui-même, en s'y promenant, les produits de la ferme (légumes, fruits, produits, boîtes de conserve) à 130 % de leur prix. Ce qui vient de la ville ne s'y revend pas.",
+     "liens": [
+      "ville",
+      "comptoir",
+      "pieces"
+     ],
+     "decouverte": [
+      "carte:ville"
+     ]
+    },
+    {
+     "id": "entreprises",
+     "terme": "Entreprises de la ville",
+     "description": "Bientôt disponible ! Trois entrepôts de la ville s'achètent en s'y promenant : la Conserverie (1 500 pièces : 3 légumes → 1 boîte de conserve, 24 pièces), la Confiturerie (2 000 pièces : 3 fruits → 1 pot de confiture, 24 pièces) et la Fromagerie (2 500 pièces : 2 litres de lait → 1 fromage, 32 pièces). Chaque jour à 9 h, chacune prend ce qu'il lui faut dans le stock de la ferme (l'inventaire, puis le frigo), jusqu'à son quota réglable, et vend aussitôt ce qu'elle fabrique. C'est le haut de l'échelle : une recette vend ses ingrédients ×1,3, un commerce de la ferme ×1,5, une entreprise ×2.",
+     "liens": [
+      "ville",
+      "commerce",
+      "conserve",
+      "lait"
+     ],
+     "decouverte": [
+      "carte:ville"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ville",
+   "icone": "🏙️",
+   "nom": "Ville & excursions",
+   "entrees": [
+    {
+     "id": "ville",
+     "terme": "Ville",
+     "description": "La ville voisine. Depuis l'onglet Ville, la famille y fait des sorties (parc, bibliothèque, cinéma…, une fois par jour chacune, retour avant 22 h) qui remontent le bonheur, et un adulte y fait les courses au marché de la ville (2 h aller-retour, 3 pièces de bus). Le personnage pourra aussi s'y promener lui-même (bientôt disponible !) : étals, entrepôts des entreprises, habitants, et la gare d'où part le train.",
+     "liens": [
+      "bonheur",
+      "produits_de_la_ville",
+      "etals_de_la_ville",
+      "entreprises",
+      "gare",
+      "navette"
+     ],
+     "decouverte": [
+      "carte:ville",
+      "onglet:ville"
+     ]
+    },
+    {
+     "id": "produits_de_la_ville",
+     "terme": "Produits de la ville",
+     "description": "Ce qu'on trouve au marché de la ville et pas à celui de la ferme : le poisson, le miel, le sucre, les épices et le fromage d'alpage (que la ferme peut aussi faire elle-même, avec le lait de vaches nourries aux herbes de la montagne). Ils servent surtout en cuisine (raclette, pain d'épices, crème de marrons, tarte aux myrtilles) et ne se revendent pas aux étals.",
+     "liens": [
+      "ville",
+      "raclette",
+      "pain_d_epices",
+      "creme_de_marrons",
+      "tarte_aux_myrtilles",
+      "fromage_d_alpage"
+     ],
+     "decouverte": [
+      "carte:ville",
+      "objet:sucre",
+      "objet:epices",
+      "objet:poisson"
+     ]
+    },
+    {
+     "id": "cueillettes_foret",
+     "terme": "Cueillettes de la forêt",
+     "description": "La sortie en forêt (le bus, depuis l'onglet Ville) rapporte la cueillette du jour, qui change d'un jour à l'autre : des champignons, des myrtilles, ou des champignons et des châtaignes. Ils se mangent tels quels ou en cuisine (omelette aux champignons, tarte aux myrtilles, crème de marrons).",
+     "liens": [
+      "ville",
+      "omelette_aux_champignons",
+      "tarte_aux_myrtilles",
+      "creme_de_marrons"
+     ],
+     "decouverte": [
+      "objet:champignon",
+      "objet:myrtille",
+      "objet:chataigne"
+     ]
+    },
+    {
+     "id": "chemin_de_campagne",
+     "terme": "Chemin de campagne",
+     "description": "Bientôt disponible ! Au bout du chemin de la ferme, la flèche mène à une carte de campagne, tirée pour chaque partie, entre la ferme et la ville : des arbres et des rochers pour la hache et la pioche, des voisins et leurs maisons, et l'abri de bus de la navette.",
+     "liens": [
+      "navette",
+      "hache",
+      "pioche",
+      "carte"
+     ],
+     "decouverte": [
+      "carte:transition"
+     ]
+    },
+    {
+     "id": "navette",
+     "terme": "Bus et navette",
+     "description": "Bientôt disponible ! La navette relie l'abri de bus du chemin de campagne à la gare, en ville, dans les deux sens, toute la journée : on attend à l'abri, le bus s'arrête, on monte. Le matin et le soir des jours d'école, le bus de l'école passe aussi prendre les enfants ; un autre bus emmène la famille en forêt.",
+     "liens": [
+      "chemin_de_campagne",
+      "gare",
+      "ville",
+      "cueillettes_foret"
+     ],
+     "decouverte": [
+      "carte:transition"
+     ]
+    },
+    {
+     "id": "gare",
+     "terme": "Train et gare",
+     "description": "Bientôt disponible ! De la gare de la ville, le train mène à la montagne (vers le nord) et à la plage (vers le sud), et de l'une à l'autre. Un appui sur la gare ouvre les départs ; on va sur le quai, le train arrive, on monte. La montagne et la plage sont des terminus.",
+     "liens": [
+      "ville",
+      "montagne",
+      "plage",
+      "navette"
+     ],
+     "decouverte": [
+      "carte:montagne",
+      "carte:plage"
+     ]
+    },
+    {
+     "id": "montagne",
+     "terme": "Montagne",
+     "description": "Bientôt disponible ! Carte des alpages, au bout du train : des trouvailles à ramasser (herbes de montagne dans les prés, ammonite, trilobite, quartz, améthyste), des animaux à regarder, le lac où l'on pêche l'omble chevalier, et les entrées des grottes.",
+     "liens": [
+      "gare",
+      "trouvailles",
+      "peche",
+      "grotte",
+      "fromage_d_alpage"
+     ],
+     "decouverte": [
+      "carte:montagne"
+     ]
+    },
+    {
+     "id": "plage",
+     "terme": "Plage",
+     "description": "Bientôt disponible ! Carte du bord de mer, au bout du train : des trouvailles à ramasser (coquille Saint-Jacques, bulot, corail, perle) et la pêche en mer depuis le ponton (dorade, sardine, anchois). La plage n'a pas de grotte.",
+     "liens": [
+      "gare",
+      "trouvailles",
+      "peche"
+     ],
+     "decouverte": [
+      "carte:plage"
+     ]
+    },
+    {
+     "id": "grotte",
+     "terme": "Grotte",
+     "description": "Sous la ferme, par l'entrée de la mine (un tas de terre et sa porte sombre, caché dans les bois : on ressort par elle), et sous la montagne, par ses entrées (bientôt disponible !) : des niveaux tirés au hasard chaque jour, de plus en plus profonds. On descend par le puits, on remonte par l'échelle ; il fait noir, on n'y voit qu'autour de soi. La pioche en main, on y prend le minerai des murs : du fer partout, du cuivre, de l'or et du platine plus bas.",
+     "liens": [
+      "montagne",
+      "minerai",
+      "pioche",
+      "lingot"
+     ],
+     "decouverte": [
+      "carte:grotte",
+      "objet:minerai_fer"
+     ]
+    },
+    {
+     "id": "trouvailles",
+     "terme": "Trouvailles",
+     "description": "Bientôt disponible ! Herbes, fossiles et pierres de la montagne, coquillages, corail et perles de la plage : chaque jour, certains endroits en ont une, à ramasser d'un appui. Elle va dans l'inventaire et se vend ; ce qu'on a ramassé ne revient que le lendemain. Seules les herbes de montagne périment (3 nuits) : elles nourrissent les vaches.",
+     "liens": [
+      "montagne",
+      "plage",
+      "comptoir"
+     ],
+     "decouverte": [
+      "carte:montagne",
+      "carte:plage"
+     ]
+    },
+    {
+     "id": "peche",
+     "terme": "Pêche et poissons",
+     "description": "À la canne : truite et brochet dans l'étang (6 prises par jour au plus) et la mare (3) de la ferme, omble chevalier et truite dans le lac de la montagne (4), dorade, sardine et anchois en mer, depuis le ponton de la plage (8) : le lac et la mer, bientôt disponibles ! Chaque lancer coûte 4 énergie. Le poisson frais se garde 2 nuits : il se mange, se vend ou se cuisine (poisson grillé à l'ail, quenelle de poisson).",
+     "liens": [
+      "canne_a_peche",
+      "montagne",
+      "plage",
+      "poisson_grille",
+      "quenelle_de_poisson"
+     ],
+     "decouverte": [
+      "outil:canne",
+      "objet:truite",
+      "objet:brochet"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mecaniques",
+   "icone": "⚙️",
+   "nom": "Mécaniques de jeu",
+   "entrees": [
+    {
+     "id": "carte",
+     "terme": "Carte de la ferme",
+     "description": "Vue principale du jeu : la ferme, une terre sauvage tirée d'une graine au début de la partie. Comme sur toutes les cartes, la vue suit ton personnage : le doigt posé puis glissé le fait marcher dans cette direction tant qu'il reste posé (il tourne avec le doigt), et un double appui sur l'herbe ou un chemin l'y envoie. Un appui sur ce qu'on a bâti ouvre sa fenêtre ; un appui sur une parcelle la plante, l'arrose ou la récolte ; la houe en main laboure l'herbe touchée, la hache coupe un arbre, la pioche casse un rocher et la canne pêche dans l'eau. Un appui sur une pierre, un morceau de bois, une herbe ou des baies les ramasse. Une pastille rouge signale ce qu'il y a à faire. La carte garde la même apparence toute l'année ; seule sa lumière change avec l'heure.",
+     "liens": [
+      "terre_sauvage",
+      "ramassage",
+      "mode_construire"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "horloge",
+     "terme": "Horloge",
+     "description": "La journée va de 6 h à 22 h, la nuit de 22 h à 6 h ; une heure dure 30 secondes. À 19 h, la famille prend son repas ; à 22 h, elle va se coucher et reste à la maison, et la nuit défile à la même vitesse. La nuit n'empêche pas d'agir : seul le sommeil du personnage bloque les actions. À minuit, la nuit passe (ponte, lait, récolte automatique…) et le jour change ; à 6 h, c'est le réveil. L'horloge s'arrête quand le jeu est fermé.",
+     "liens": [
+      "repas",
+      "bouton_dormir",
+      "absence"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "repas",
+     "terme": "Repas de 19 h",
+     "description": "Chaque jour à 19 h, la famille mange : d'abord ce qui périme le plus tôt, jusqu'à couvrir l'apport journalier. La part couverte fixe l'énergie du personnage au réveil, et le repas (cru ou cuisiné, suffisant ou non) fait varier le bonheur. Il n'y a jamais qu'un repas par jour.",
+     "liens": [
+      "apport_journalier",
+      "energie_personnage",
+      "bonheur",
+      "peremption",
+      "horloge"
+     ],
+     "decouverte": [
+      "jour:2"
+     ]
+    },
+    {
+     "id": "bouton_dormir",
+     "terme": "Bouton « Zzz » (Dormir)",
+     "description": "Bouton « Zzz », en bas à droite, qui n'apparaît que la nuit (de 22 h à 6 h) : il envoie le personnage dans son lit. Tant qu'il dort, ses actions sont bloquées, la nuit défile en accéléré (une heure toutes les 3 secondes) et son énergie remonte peu à peu (8 heures de sommeil pour celle du réveil). À minuit, la nuit passe : les automatisations récoltent, les poules nourries pondent, les moutons et les vaches mangent leur paille (laine, lait) et les aliments vieillissent.",
+     "liens": [
+      "horloge",
+      "repas",
+      "energie_personnage",
+      "peremption"
+     ],
+     "decouverte": [
+      "jour:2"
+     ]
+    },
+    {
+     "id": "energie_personnage",
+     "terme": "Énergie du personnage",
+     "description": "Jauge de 0 à 100 (⚡ dans le bandeau) que dépense chaque action faite au clic : couper 6, piocher 6, pêcher 4, labourer 5, planter 3, arroser 2, récolter 4, cueillir 4, tondre 8, cuisiner 3, cuire au four 3, moudre 1 par blé, presser 1. À 0, plus d'action au clic jusqu'à un en-cas ou une nuit de sommeil. Au réveil, elle remonte à 60 + 40 × la part du repas du soir couverte. Le bonheur de la famille et l'endurance réduisent ses coûts ; les automatisations n'en dépensent pas.",
+     "liens": [
+      "repas",
+      "en_cas",
+      "bonheur",
+      "endurance",
+      "automatisation",
+      "outils"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "endurance",
+     "terme": "Endurance",
+     "description": "Réduction des coûts d'énergie gagnée avec les niveaux : 3 % par niveau au-delà du premier (27 % au niveau 10).",
+     "liens": [
+      "energie_personnage",
+      "niveaux"
+     ],
+     "decouverte": [
+      "niveau:2"
+     ]
+    },
+    {
+     "id": "en_cas",
+     "terme": "En-cas",
+     "description": "Aliment mangé dans la journée depuis l'Inventaire (bouton « Manger ») : il rend son énergie ÷ 5 au personnage, sans dépasser le maximum. La technologie Goûter de l'Arbre des technologies augmente ce gain de 50 %.",
+     "liens": [
+      "energie_personnage",
+      "arbre_technologique"
+     ],
+     "decouverte": [
+      "jour:2"
+     ]
+    },
+    {
+     "id": "bonheur",
+     "terme": "Bonheur",
+     "description": "Valeur de 0 à 100 pour chaque membre de la famille (60 au départ). Chaque soir, au repas, il baisse de 5, et de 2 de plus si le repas ne couvre pas le besoin ; les plats du repas le remontent : chacun des 3 meilleurs plats différents rend 3 (Cuisine) ou 5 (Four), +2 avec de l'huile ou un fruit, +4 avec du cacao, du café ou de la vanille ; les aliments crus ne donnent rien. Les sorties en ville le remontent aussi. Le bonheur moyen réduit les coûts d'énergie du personnage : jusqu'à moitié prix à 100 de bonheur.",
+     "liens": [
+      "repas",
+      "energie_personnage",
+      "famille",
+      "ville"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "chapitres",
+     "terme": "Chapitres",
+     "description": "7 étapes de l'histoire de la famille, avec leurs objectifs : l'héritage (bâtir le foyer, poser le panneau, la pompe et la citerne, première récolte), le grenier (cultures, Silo, blé), le poulailler (et le premier minerai de fer de la grotte), le four (et le premier lingot de fer), le troupeau, puis l'autonomie. Ils ne débloquent plus rien depuis la version 1.7 : chaque chapitre terminé rapporte de l'expérience, des points de technologie, et ouvre un palier de l'Arbre des technologies.",
+     "liens": [
+      "autonomie",
+      "points_technologie",
+      "niveaux",
+      "grotte",
+      "lingot"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "niveaux",
+     "terme": "Niveaux",
+     "description": "Dix niveaux d'expérience (XP) qui débloquent les cultures, les bâtiments et les ateliers : par exemple la Cuisine au niveau 2, le Silo et le Poulailler au niveau 3, le Four au niveau 5, la Serre au niveau 7. Chaque niveau relève aussi le plafond de tuiles de terre. L'XP vient des actions (labourer 10, couper 10, piocher 10, pêcher 15, planter 10, arroser 10, récolter 20, cuisiner 40, cuire au four 50…), des œufs et du lait, des ventes (1 XP par pièce) et des chapitres terminés ; une automatisation rapporte la moitié. Le niveau s'affiche dans le bandeau (⭐).",
+     "liens": [
+      "chapitres",
+      "experience",
+      "tuiles_de_terre"
+     ],
+     "decouverte": [
+      "niveau:2"
+     ]
+    },
+    {
+     "id": "experience",
+     "terme": "Expérience (XP)",
+     "description": "Points gagnés en jouant, qui font monter de niveau : 500 XP pour le niveau 2, 1 200 pour le 3, puis 3 000, 7 500, 20 000, 40 000, 80 000, 180 000 et 400 000.",
+     "liens": [
+      "niveaux"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "autonomie",
+     "terme": "Autonomie",
+     "description": "Pourcentage représentant la part de l'apport journalier couverte par la production de la ferme elle-même. La nourriture achetée au Marché et les conserves de départ ne comptent pas.",
+     "liens": [
+      "apport_journalier",
+      "comptoir",
+      "conserve"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "usure",
+     "terme": "Usure",
+     "description": "Valeur de 0 à 100 % pour chaque appareil électrique (panneau, batterie, pompe, moulin, presse), qui augmente avec son temps de fonctionnement et réduit son rendement. À 100 %, l'appareil tombe en panne et doit être réparé.",
+     "liens": [
+      "panneau_solaire",
+      "batterie",
+      "pompe",
+      "moulin",
+      "presse"
+     ],
+     "decouverte": [
+      "objet:pompe",
+      "objet:panneau_solaire",
+      "objet:batterie"
+     ]
+    },
+    {
+     "id": "interrupteur",
+     "terme": "Interrupteur",
+     "description": "Bouton marche/arrêt présent sur chaque appareil électrique, qui permet de le couper pour éviter qu'il ne s'use ou ne consomme de l'énergie inutilement.",
+     "liens": [],
+     "decouverte": [
+      "objet:pompe",
+      "objet:panneau_solaire",
+      "objet:batterie"
+     ]
+    },
+    {
+     "id": "automatisation",
+     "terme": "Automatisation",
+     "description": "Tâche effectuée sans intervention : arrosage (les asperseurs, chaque matin), récolte et semis (le robot, chaque matin), nourrissage des poules, tonte et cueillette du verger (la nuit). Chacune s'obtient par une technologie de l'Arbre des technologies (et non plus par le niveau d'un bâtiment) et ne coûte jamais d'énergie au personnage.",
+     "liens": [
+      "arbre_technologique",
+      "energie_personnage",
+      "robot",
+      "asperseurs"
+     ],
+     "decouverte": [
+      "techno:ea_irrigation",
+      "techno:cu_recolte_auto",
+      "techno:semis_auto"
+     ]
+    },
+    {
+     "id": "robot",
+     "terme": "Robot",
+     "description": "Avec la Récolte automatique (puis le Semis automatique), un robot travaille dans la Zone de culture : chaque matin à 6 h, il dresse sa liste de tâches (récolter les parcelles mûres, puis les replanter) et les fait une à une, en roulant jusqu'à chaque parcelle (4 minutes de travail par tâche). Sa batterie tient 35 tâches ; vide, il rentre à sa station de charge (fabriquée à l'Atelier et posée dehors), qui prend l'électricité de la ferme (60 Wh par tâche). Un appui sur le robot ou sa station montre sa batterie et propose plus d'autonomie, contre des pièces.",
+     "liens": [
+      "automatisation",
+      "semis_automatique",
+      "batterie",
+      "electricite",
+      "potager"
+     ],
+     "decouverte": [
+      "techno:cu_recolte_auto",
+      "objet:station_robot"
+     ]
+    },
+    {
+     "id": "asperseurs",
+     "terme": "Asperseurs",
+     "description": "Avec le Réseau d'irrigation (et l'Irrigation de la Serre), des asperseurs tournent au milieu des cultures : chaque matin à 7 h, ils arrosent les parcelles plantées qui ont soif, avec l'eau du réservoir. Ils repassent dans la journée pour les plantes qui ont soif plus tard (semées après 7 h, par le robot ou à la main). Sans eau au réservoir, ils attendent.",
+     "liens": [
+      "automatisation",
+      "reservoir",
+      "pompe",
+      "potager",
+      "serre"
+     ],
+     "decouverte": [
+      "techno:ea_irrigation",
+      "techno:ea_serre"
+     ]
+    },
+    {
+     "id": "semis_automatique",
+     "terme": "Semis automatique",
+     "description": "Technologie qui fait replanter par le robot une parcelle qu'il vient de récolter, avec la même culture, si une graine est disponible au-delà de la réserve de semences. Réglable parcelle par parcelle.",
+     "liens": [
+      "arbre_technologique",
+      "robot"
+     ],
+     "decouverte": [
+      "techno:semis_auto"
+     ]
+    },
+    {
+     "id": "points_technologie",
+     "terme": "Points de technologie",
+     "description": "Monnaie de l'Arbre des technologies (PT), en plus des pièces et des ressources. On en gagne à chaque chapitre terminé (2, 3, 3, 4, 4, 5 puis 5), à six jalons de maîtrise (2 000 L pompés, 10 plats différents, 50 pains, 40 laines, 40 nuits jouées, 20 nuits à 100 %) et, une fois la campagne finie, 1 point toutes les 5 nuits à 100 %.",
+     "liens": [
+      "arbre_technologique",
+      "chapitres"
+     ],
+     "decouverte": [
+      "technologies"
+     ]
+    },
+    {
+     "id": "eau_de_pluie",
+     "terme": "Eau de pluie",
+     "description": "Technologie Récupérateur d'eau de pluie : chaque nuit, 15 L d'eau s'ajoutent au réservoir sans électricité, dans la limite de sa capacité.",
+     "liens": [
+      "arbre_technologique",
+      "reservoir"
+     ],
+     "decouverte": [
+      "techno:ea_pluie"
+     ]
+    },
+    {
+     "id": "actions_groupees",
+     "terme": "Actions groupées",
+     "description": "Boutons « Arroser tout » et « Récolter tout » de la Zone de culture et de la Serre (technologie Outils de jardin) : une tentative par parcelle, chacune payée en énergie comme un clic.",
+     "liens": [
+      "arbre_technologique",
+      "energie_personnage"
+     ],
+     "decouverte": [
+      "techno:cu_outils"
+     ]
+    },
+    {
+     "id": "file_de_preparations",
+     "terme": "File de préparations",
+     "description": "Technologie Préparations en série : chaque atelier garde jusqu'à 3 préparations en attente. Les ingrédients sont retirés à la mise en file et rendus si l'on annule.",
+     "liens": [
+      "arbre_technologique",
+      "livre_de_recette"
+     ],
+     "decouverte": [
+      "techno:cui_serie"
+     ]
+    },
+    {
+     "id": "delestage",
+     "terme": "Délestage",
+     "description": "Technologie Délestage intelligent : sous 10 % de charge de la batterie, le Moulin, la Presse et la Pompe sont suspendus pour garder l'électricité du réfrigérateur ; ils repartent seuls quand la charge remonte.",
+     "liens": [
+      "arbre_technologique",
+      "batterie",
+      "refrigerateur"
+     ],
+     "decouverte": [
+      "techno:en_delestage"
+     ]
+    },
+    {
+     "id": "entretien_automatique",
+     "terme": "Entretien automatique",
+     "description": "Technologie de l'Arbre des technologies : chaque nuit, tout appareil dont l'usure atteint 70 % ou plus est entretenu au prix normal si les pièces suffisent. Le résumé apparaît dans le rapport du réveil.",
+     "liens": [
+      "arbre_technologique",
+      "usure"
+     ],
+     "decouverte": [
+      "techno:en_entretien_auto"
+     ]
+    },
+    {
+     "id": "absence",
+     "terme": "Absence",
+     "description": "Quand le jeu est fermé, la ferme continue de tourner pendant 8 heures au plus : le panneau charge la batterie (si l'horloge s'est arrêtée entre 7 h et 19 h), la pompe remplit le réservoir, les ateliers finissent leurs préparations. Aucune nuit ne passe (une nuit déjà commencée se termine) et l'horloge s'arrête. Au retour, la fenêtre « Ravi de te revoir ! » donne la date, l'argent et les biens produits pendant l'absence.",
+     "liens": [
+      "horloge",
+      "bouton_dormir",
+      "batterie",
+      "reservoir"
+     ],
+     "decouverte": [
+      "jour:2"
+     ]
+    },
+    {
+     "id": "notifications",
+     "terme": "Notifications",
+     "description": "Onglet du menu du bas qui liste ce qui demande l'attention : appareils en panne, aliments qui vont périr, parcelles à arroser, poules à nourrir, paille qui manque, récoltes et tontes prêtes. Un appui sur une ligne mène directement à l'endroit concerné. C'est aussi là qu'arrive le courrier.",
+     "liens": [
+      "carte",
+      "courrier",
+      "usure",
+      "peremption",
+      "paille"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "courrier",
+     "terme": "Courrier",
+     "description": "Lettres que la famille reçoit au fil de la partie, à lire dans l'onglet Notifications ; une lettre lue y reste, pour être relue. La première arrive quand la Serre se débloque : un cousin du Venezuela envoie une fève de cacao, une gousse de vanille et un grain de café, à planter dans la Serre.",
+     "liens": [
+      "notifications",
+      "serre",
+      "cacao",
+      "vanille",
+      "cafe"
+     ],
+     "decouverte": [
+      "courrier"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "famille",
+   "icone": "👨‍👩‍👧‍👦",
+   "nom": "Famille",
+   "entrees": [
+    {
+     "id": "adulte",
+     "terme": "Adulte",
+     "description": "Membre de la famille dont le besoin énergétique quotidien est de 50. La famille en compte deux au départ, et toujours au moins un.",
+     "liens": [
+      "apport_journalier",
+      "famille"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "enfant",
+     "terme": "Enfant",
+     "description": "Membre de la famille dont le besoin énergétique quotidien est de 25. La famille en compte deux au départ.",
+     "liens": [
+      "apport_journalier",
+      "famille"
+     ],
+     "decouverte": [
+      "famille:enfant"
+     ]
+    },
+    {
+     "id": "famille",
+     "terme": "Famille",
+     "description": "Quatre personnes au départ (deux adultes, deux enfants), composées avant la première journée sur l'écran « Ta famille » (nom de famille, membres, personnage principal), puis à tout moment dans la fenêtre Famille (carte du joueur, en haut à gauche) : de 1 à 6 membres, dont au moins un adulte. Chacun a un prénom, un sexe, une coiffure (cinq par âge, dont blond) et une couleur de peau au choix. Un nouveau membre arrive avec le bonheur moyen de la famille. Le but du jeu est de couvrir l'apport journalier de la famille avec la production de la ferme, sans dépendre du Marché.",
+     "liens": [
+      "adulte",
+      "enfant",
+      "animal_de_compagnie",
+      "apport_journalier",
+      "bonheur",
+      "autonomie",
+      "maison"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "personnage_principal",
+     "terme": "Personnage principal",
+     "description": "L'adulte de la famille qui tient la ferme au quotidien : c'est son énergie qui baisse à chaque action. Il se choisit sur l'écran « Ta famille », puis dans la Famille (⭐) ; il ne peut pas quitter la famille.",
+     "liens": [
+      "famille",
+      "energie_personnage"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "animal_de_compagnie",
+     "terme": "Animal de compagnie",
+     "description": "Chien ou chat adopté dans la fenêtre Famille (carte du joueur, en haut à gauche) : trois au plus. Il porte un nom, ne coûte rien et ne mange pas les réserves : il ne compte ni dans l'apport journalier, ni dans le bonheur.",
+     "liens": [
+      "famille",
+      "apport_journalier"
+     ],
+     "decouverte": [
+      "famille:animal"
+     ]
+    }
+   ]
+  }
+ ]
+};

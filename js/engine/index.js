@@ -50,3 +50,5 @@ export * from './blocs.js';
 export * from './etage.js';
 export * from './transition.js';
 export * from './demenagement.js';
+export * from './decouverte.js';
+export * from './encyclopedie.js';
