@@ -4,7 +4,7 @@
    ========================================================================== */
 
 import {
-  animalPrice, autoTasks, buildMorningReport, buildPaturage, buyAnimal, buyCow, buyItem,
+  animalPrice, autoTasks, bottelerSansCarte, buildMorningReport, buildPaturage, buyAnimal, buyCow, buyItem,
   buyPasture, buySheep, countItem, cowCapacity, cowCount, cowPlaces, cowsOnHerbs,
   createInitialState, DATA, feedLivestock, finishPreparations, freeCowPlaces, freeSheepPlaces,
   grantTech, herbsOn, herbStock, inventoryCounts, isBuyable, isGraineComptoir, isPerishable,
@@ -301,7 +301,7 @@ test('paille insuffisante : on nourrit dans l\'ordre de la liste, les moutons pu
   assertEqual(JSON.stringify(s.paturage), avant, 'animaux inchangés');
 });
 
-test('la paille fauchée nourrit les animaux (faux → Étable) ; le Moulin n\'en donne plus', () => {
+test('la paille bottelée nourrit les animaux (faux → fibres → botteleuse → Étable) ; le Moulin n\'en donne plus', () => {
   const s = pature();
   s.stations.moulin = { construit: true, tache: null, appareil: makeDevice('moulin', 'moulin', 120) };
   testFillBatteries(s);
@@ -313,10 +313,12 @@ test('la paille fauchée nourrit les animaux (faux → Étable) ; le Moulin n\'e
   runFor(s, 21);
   assertEqual([countItem(s, 'farine'), strawStock(s), strawMissing(s)], [4, 0, 4], 'version 1.23 : la farine seule');
   s.outils = { faux: true, choisi: 'faux' };
-  for (let k = 0; k < 4; k++) assert(scytheGrass(s, `${k * 16},40`).ok);
-  assertEqual([strawStock(s), strawMissing(s)], [4, 0]);
+  for (let k = 0; k < 10; k++) assert(scytheGrass(s, `${k * 16},40`).ok);
+  assertEqual([countItem(s, 'fibre'), strawStock(s)], [10, 0], 'la faux donne des fibres');
+  assertEqual(bottelerSansCarte(s), 10);
+  assertEqual([countItem(s, 'fibre'), strawStock(s), strawMissing(s)], [0, 10, 0]);
   const rep = sleepOnce(s);
-  assertEqual([rep.etable.moutonsNourris, rep.etable.vachesNourries, rep.lait, strawStock(s)], [2, 1, 1, 0]);
+  assertEqual([rep.etable.moutonsNourris, rep.etable.vachesNourries, rep.lait, strawStock(s)], [2, 1, 1, 6]);
   assertEqual(countItem(s, 'farine'), 4, 'la farine reste pour le pain');
 });
 

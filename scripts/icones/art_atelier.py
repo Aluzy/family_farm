@@ -1,6 +1,6 @@
 # Lot « atelier » (la ferme générée, docs/carte-generee.md, étape 3) : la fibre, la planche, le
 # mur en pierre, la porte, le plancher, la barrière, le chemin, le champignon lumineux, le morceau
-# d'arbre de l'infra-monde, la lanterne, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, les jeunes arbres, l'Atelier et les
+# d'arbre de l'infra-monde, la lanterne, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, la botteleuse (entonnoir, machine, convoyeur), les jeunes arbres, l'Atelier et les
 # baies des buissons (un marteau).
 # Format commun : voir scripts/icones/build.py. Contour de 1 px dessiné à la main, dans la teinte
 # très sombre de chaque matière ; lumière en haut à gauche.
@@ -357,6 +357,63 @@ ICONS = {
         'keeeeeeeeeeeeeek',
         'kTTTTTTTTTTTTTTk',
         'kkkkkkkkkkkkkkkk',
+    ],
+    # entonnoir : un cône de tôle, sa bouche sombre, le bec
+    '🔻': [
+        '................',
+        '.mmmmmmmmmmmmmm.',
+        'mqqqqqqqqqqqqqpm',
+        'mqmmmmmmmmmmmmpm',
+        '.mqgmlmmmgmmpm..',
+        '..mqpppppppppm..',
+        '...mqppppppnm...',
+        '....mqppppnm....',
+        '.....mqppnm.....',
+        '......mqnm......',
+        '......mqnm......',
+        '......mqnm......',
+        '......mqnm......',
+        '......mqnm......',
+        '.......mm.......',
+        '................',
+    ],
+    # botteleuse : un caisson de bois cerclé de fer, son volant, la paille qui sort
+    '⚙️‍🌾': [
+        '................',
+        '.....mmmmmm.....',
+        '....mppmmppm....',
+        '....mmmnnmmm....',
+        '.kkkkkkkkkkkkkk.',
+        '.keeeeeeeeeeeek.',
+        '.kTTTTTTTTTTTTk.',
+        '.kmpppppppppppk.',
+        '.kTlTTTTTTkkkkk.',
+        '.kttttttttkOOOk.',
+        '.kmpppppppkyYyk.',
+        '.kTTTTTTTTkoyok.',
+        '.kttttttttkOOOk.',
+        '.kmpppppppkkkkk.',
+        '.kkkkkkkkkkkkkk.',
+        '................',
+    ],
+    # convoyeur : une bande de caoutchouc et ses tasseaux, entre deux longerons, deux rouleaux
+    '🛤️': [
+        '................',
+        '................',
+        '................',
+        '................',
+        '.kkkkkkkkkkkkkk.',
+        'meeeeeeeeeeeeeem',
+        'mpabnabnabnabnpm',
+        'mnabnabnabnabnnm',
+        'mpabnabnabnabnpm',
+        'mnaaaaaaaaaaaanm',
+        '.kTTTTTTTTTTTTk.',
+        '.kttttttttttttk.',
+        '.kk.kk....kk.kk.',
+        '.kk.kk....kk.kk.',
+        '................',
+        '................',
     ],
     # jeune pommier : un petit arbre en motte, une pomme
     '🌱‍🍎': [

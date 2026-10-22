@@ -267,7 +267,7 @@ test('hache et pioche sur une carte : chaque coup lâche un morceau au sol, la c
   assertEqual([countItem(s, 'bois'), countItem(s, 'pierre'), morceauxDe(s, 'ferme').length, ramasserMorceau(s, L[0].n).ok], [5, 5, 0, false]);
 });
 
-test('faux : faucher une touffe donne de la paille au sol, de l\'XP, coûte de l\'énergie ; elle repousse au bout de RETOUR jours', () => {
+test('faux : faucher une touffe donne de la fibre au sol, de l\'XP, coûte de l\'énergie ; elle repousse au bout de RETOUR jours', () => {
   const s = tireless(garden());
   const X = DATA.FAUX;
   assertEqual(scytheGrass(s, '40,60').ok, false, 'sans faux');
@@ -276,9 +276,9 @@ test('faux : faucher une touffe donne de la paille au sol, de l\'XP, coûte de l
   assertEqual(ownedTools(s), ['faux']);
   const xp = s.progression.xp, e0 = energyLevel(s);
   const r = scytheGrass(s, '40,60', { carte: 'ferme', coup: [{ x: 40, y: 60 }] });
-  assertEqual([r.ok, r.paille, r.morceaux.coup.map((m) => [m.item, m.x, m.y]), countItem(s, 'paille')], [true, X.PAILLE, [['paille', 40, 60]], 0], 'la paille tombe au sol');
+  assertEqual([r.ok, r.fibre, r.morceaux.coup.map((m) => [m.item, m.x, m.y]), countItem(s, 'fibre')], [true, X.FIBRE, [['fibre', 40, 60]], 0], 'la fibre tombe au sol');
   assertEqual(ramasserMorceau(s, r.morceaux.coup[0].n).ok, true);
-  assertEqual(countItem(s, 'paille'), 1);
+  assertEqual([countItem(s, 'fibre'), countItem(s, 'paille')], [1, 0]);
   assertEqual([s.progression.xp - xp, e0 - energyLevel(s) > 0], [actionXp('faucher'), true]);
   assertEqual([grassCut(s, '40,60'), cutGrass(s), scytheGrass(s, '40,60').ok], [true, ['40,60'], false], 'une touffe fauchée ne se refauche pas');
   const retour = s.outils.herbes['40,60'].retour;
@@ -305,11 +305,11 @@ test('coup fort (version 1.24) : la hache et la pioche comptent COUPS coups pour
   const r = mineRock(s, 'r1', null, true);
   assertEqual([r.ok, r.coups, r.casse], [true, 2, false]);
   assertEqual(mineRock(s, 'r1').casse, true);
-  // la faux : toutes les touffes données, une seule dépense (ENERGIE fauchages), la paille au sol
+  // la faux : toutes les touffes données, une seule dépense (ENERGIE fauchages), la fibre au sol
   e0 = s.energie;
   const pts = { '10,20': [{ x: 10, y: 20 }], '20,24': [{ x: 20, y: 24 }], '30,18': [{ x: 30, y: 18 }] };
   const f = scytheAround(s, Object.keys(pts), { carte: 'ferme', points: pts });
-  assertEqual([f.ok, f.fauchees, f.paille, f.morceaux.coup.map((m) => [m.x, m.y])], [true, Object.keys(pts), 3, [[10, 20], [20, 24], [30, 18]]]);
+  assertEqual([f.ok, f.fauchees, f.fibre, f.morceaux.coup.map((m) => [m.x, m.y])], [true, Object.keys(pts), 3, [[10, 20], [20, 24], [30, 18]]]);
   assertEqual(e0 - s.energie, actionCost(s, 'faucher', 2));
   assertEqual(cutGrass(s).sort(), Object.keys(pts).sort());
   assertEqual(scytheAround(s, Object.keys(pts), null).ok, false, 'déjà fauchées : rien à faucher');

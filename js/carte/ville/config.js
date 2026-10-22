@@ -412,7 +412,7 @@
     },
   };
   // (le joueur prend une ressource à `reach` px de ses pieds)
-  const RAMASSABLES = { key: 'ramassables', file: 'assets/ramassables.png', w: 16, h: 16, reach: 14, frames: { petite_pierre: 0, morceau_bois: 1, herbe: 2 } };
+  const RAMASSABLES = { key: 'ramassables', file: 'assets/ramassables.png', w: 16, h: 16, reach: 14, frames: { petite_pierre: 0, morceau_bois: 1 } };
   // La journée des familles de la transition : dehors de `jour[0]` h à `jour[1]` h, au lit de
   // `sommeil[0]` h à `sommeil[1]` h (chacun le sien : la maison en a un par membre) ; rentrés,
   // ils restent `pause` s à la maison (au hasard entre les deux) avant de ressortir. Les enfants

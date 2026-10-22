@@ -8,7 +8,7 @@ import {
   feedAllHens, freeCowPlaces, freeSheepPlaces, fridgeCount, lotsOf, makeDevice, makePlot,
   makePlots, memberName, memberPortrait, migrate, migrateTechTreeV2, MIGRATION_11, MIGRATIONS,
   millPending, newAutoReport, newStableReport, openStation, ownedTechs, pastureCost, planMeal,
-  prepTimeMult, scytheGrass, sellItem, setMemberProfile, shear, sheepCount, sheepToShear, sleep, stableFree,
+  prepTimeMult, bottelerSansCarte, scytheGrass, sellItem, setMemberProfile, shear, sheepCount, sheepToShear, sleep, stableFree,
   stableOccupied, startMilling, startRecipe, STATE_VERSION, strawMissing, strawNeed, strawStock,
   techPoints, testFillBatteries, wheatTotal, zoneTile,
 } from '../../js/engine/index.js';
@@ -263,13 +263,13 @@ test('migration v15 → v16 : une partie avancée continue à tourner après la 
   assertEqual(JSON.parse(JSON.stringify(m)), m, 'l\'état migré se sauvegarde tel quel');
   assertEqual(strawStock(m), 10);
   testFillBatteries(m);
-  // 12 nuits de jeu : la tonte automatique, la faux et l'Étable fonctionnent ensemble
+  // 12 nuits de jeu : la tonte automatique, la faux (ses fibres bottelées) et l'Étable fonctionnent ensemble
   let laines = 0;
   let lait = 0;
   for (let i = 0; i < 12; i++) {
     feedAllHens(m);
     if (!m.outils || !m.outils.faux) m.outils = { ...(m.outils || {}), faux: true };
-    for (let k = 0; strawMissing(m) > 0 && k < 40; k++) scytheGrass(m, `pre_${i}_${k}`);
+    for (let k = 0; strawMissing(m) > 0 && k < 40; k++) { scytheGrass(m, `pre_${i}_${k}`); bottelerSansCarte(m); }
     runFor(m, 30);
     const rep = sleep(m);
     assert(rep !== null, `nuit ${i + 1}`);

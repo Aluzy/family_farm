@@ -13,7 +13,7 @@ import { farmSeed } from './terrain.js';
 // terre qui va de la ferme à la route, trois à cinq maisons de voisins bâties en blocs (comme
 // le foyer de la ferme générée) avec leurs allées, la mare, le puits, le tonneau, le banc, les
 // barrières, les buissons, les arbres, les rochers, l'herbe haute, les fleurs. Chaque jour,
-// des ressources (petites pierres, morceaux de bois, herbes) poussent sur l'herbe : les
+// des ressources (petites pierres, morceaux de bois) poussent sur l'herbe : les
 // familles des maisons vont les ramasser (js/carte/ville/transition.js), le joueur aussi
 // (ramasserTransition : comme sur la ferme générée, geste « ramasser »).
 //
@@ -39,9 +39,9 @@ export const TRANSITION = {
   BARRIERE: [2, 8],
   ROCHERS: ['rocher_a', 'rocher_b', 'rocher_c', 'caillou_0', 'caillou_1'], ROCHERS_N: 14,
   // les ressources du jour : combien, et de quelles sortes (les images de assets/ramassables.png)
-  RESSOURCES: 36, SORTES: ['petite_pierre', 'morceau_bois', 'herbe'],
+  RESSOURCES: 36, SORTES: ['petite_pierre', 'morceau_bois'],
   // ce que chaque sorte rapporte à qui la ramasse (une famille, ou le joueur : son inventaire)
-  OBJETS: { petite_pierre: 'pierre', morceau_bois: 'bois', herbe: 'fibre' },
+  OBJETS: { petite_pierre: 'pierre', morceau_bois: 'bois' },
 };
 
 // Un nombre de 32 bits d'après une chaîne (FNV-1a).

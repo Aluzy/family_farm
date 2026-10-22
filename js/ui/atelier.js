@@ -9,6 +9,7 @@ import { DATA } from '../engine/catalog.js';
 import { atelierConstruit, atelierStatus, buildAtelier, craft, craftStatus, ramasser } from '../engine/atelier.js';
 import { countItem } from '../engine/inventory.js';
 import { toolDef } from '../engine/outils.js';
+import { sortirBotte, verserFibres } from '../engine/botteleuse.js';
 import { asleep } from '../engine/night.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
@@ -23,6 +24,29 @@ export function ramasserFromStage(id) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
   const r = ramasser(state, id);
   if (!r.ok) { notify(r.error); return null; }
+  persistState();
+  refresh();
+  return r;
+}
+
+// La carte : le personnage a jeté ses fibres dans l'entonnoir de la botteleuse dont `tile` est
+// une pièce (js/engine/botteleuse.js). Renvoie { ok, versees, fibres, pleine } ou null (un message).
+export function verserFromStage(tile) {
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
+  const r = verserFibres(state, tile);
+  if (!r.ok) { notify(r.error); return null; }
+  const B = DATA.BOTTELEUSE, f = DATA.OBJETS.fibre.icone;
+  notify(r.pleine ? `${B.ICONE} ${B.NOM} : ${r.fibres} ${f} reçues, elle se met en marche !` : `${f} ${r.versees} fibre${r.versees > 1 ? 's' : ''} dans l'entonnoir : ${r.fibres} / ${B.FIBRES}.`);
+  persistState();
+  refresh();
+  return r;
+}
+
+// La carte : la machine de `tile` a vibré, sa botte tombe au bout du convoyeur (`ou` : { carte,
+// point }). Renvoie { ok, morceau } ou null.
+export function botteFromStage(tile, ou) {
+  const r = sortirBotte(state, tile, ou);
+  if (!r.ok) return null;
   persistState();
   refresh();
   return r;

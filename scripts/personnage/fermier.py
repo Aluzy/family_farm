@@ -38,6 +38,8 @@
 #                            coup qui balaie l'herbe devant ses pieds, la lame qui finit en avant
 #   assis_<vue>_0..1         assis à table : les mains sur la table, la fourchette à la bouche
 #   dort_bas_0..1            il dort, de face (dans son lit) : les yeux fermés, il respire
+#   jette_<vue>_0..2         jeter des fibres dans l'entonnoir de la botteleuse : la brassée
+#                            contre lui, tenue au-dessus de sa tête, lancée (les brins s'envolent)
 #   peche_<vue>_0..3         pêcher : canne tenue, armée en arrière, lancée (il attend la
 #                            touche), relevée (il ferre). Le fil et le bouchon sont dessinés par
 #                            la carte, depuis le bout de la canne (PECHE_BOUT dans js/fermier.js)
@@ -80,6 +82,7 @@ C = {
     'be': (40, 40, 46), 'ba': (196, 52, 44),             # béret, bandeau (et rubans des tresses)
     'fl': (232, 120, 170), 'fc': (236, 200, 60),         # fleur
     'yo': (236, 200, 60),                                # boucles d'oreilles
+    'fb': (98, 156, 60), 'fb2': (58, 110, 44), 'fb3': (150, 196, 92),   # fibres (la botteleuse)
 }
 BASE = dict(C)
 
@@ -626,6 +629,30 @@ def frames(figure=figure):
     # il dort (dans son lit, tourné vers nous) : les yeux fermés, il respire
     F['dort_bas_0'] = figure('bas', fermes=True)
     F['dort_bas_1'] = figure('bas', b=1, fermes=True)
+    # jeter des fibres dans l'entonnoir de la botteleuse : la brassée contre lui, puis tenue
+    # au-dessus de sa tête, puis lancée devant lui (les brins s'envolent)
+    def brassee(x0, y0, x1, y1):
+        def draw(cv):
+            cv.rect(x0, y0, x1, y1, 'fb')
+            for x in range(x0, x1 + 1):
+                cv.put(x, y1, 'fb2')
+                if x % 2:
+                    cv.put(x, y0, 'fb3')
+            cv.put(x0 - 1, y0, 'fb3')            # des brins qui dépassent
+            cv.put(x1 + 1, y0 + 1, 'fb')
+        return draw
+
+    def brins(pts):
+        return lambda cv: [cv.put(x, y, 'fb' if k % 2 else 'fb3') for k, (x, y) in enumerate(pts)]
+    F['jette_cote_0'] = figure('cote', hands=((10, 20), (9, 21)), after=brassee(9, 18, 12, 20))
+    F['jette_cote_1'] = figure('cote', b=-1, hands=((8, 6), (7, 7)), after=brassee(6, 3, 10, 5))
+    F['jette_cote_2'] = figure('cote', hands=((12, 10), (11, 11)), after=brins([(13, 7), (14, 8), (15, 9), (13, 9), (14, 6), (15, 11)]))
+    F['jette_bas_0'] = figure('bas', hands=((6, 20), (9, 20)), after=brassee(5, 19, 10, 21))
+    F['jette_bas_1'] = figure('bas', b=-1, hands=((1, 7), (14, 7)), after=brassee(3, 3, 12, 5))
+    F['jette_bas_2'] = figure('bas', hands=((4, 21), (11, 21)), after=brins([(4, 23), (6, 24), (8, 23), (10, 25), (11, 23), (7, 26)]))
+    F['jette_haut_0'] = figure('haut', hands=((6, 20), (9, 20)), before=brassee(5, 19, 10, 21))
+    F['jette_haut_1'] = figure('haut', b=-1, hands=((1, 7), (14, 7)), after=brassee(3, 3, 12, 5))
+    F['jette_haut_2'] = figure('haut', hands=((2, 4), (13, 4)), after=brins([(4, 1), (6, 0), (8, 2), (10, 1), (11, 3), (7, 3)]))
     return F
 
 

@@ -16,6 +16,7 @@ import { installStarter, removeStarter, starterBlock } from './depart.js';
 import { robotOn } from './automation.js';
 import { couchagesEtage, etageHorsEmprise, rangerEtage } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
+import { botteleuseReprise } from './botteleuse.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -551,6 +552,8 @@ export function reprendreBloc(state, tile, opts) {
   if (s && s.appareil) removeStarter(state, s.appareil);
   // (une ruche pleine : son miel vient avec elle)
   if (s && s.ruche) rucheReprise(state, tile);
+  // (une botteleuse : les fibres qu'elle a reçues reviennent, js/engine/botteleuse.js)
+  if (s && s.botteleuse === 'machine') botteleuseReprise(state, tile);
   if (s && s.batiment && state[s.batiment] && !['poulailler', 'paturage'].includes(s.batiment)) state[s.batiment].construit = false;
   if (s && s.objet) addItem(state, s.objet, 1);
   // la station s'en va avec lui (s'il n'y en a pas une autre posée)

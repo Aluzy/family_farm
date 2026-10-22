@@ -36,7 +36,9 @@ import { renderMoulin } from './cuisine.js';
 import { objectiveValueText } from './chapitres.js';
 import { registerActions } from './actions.js';
 import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, morceauFromStage, pickChipHtml, rodChipHtml, scytheAroundFromStage, scytheChipHtml, scytheFromStage } from './outils.js';
-import { ramasserFromStage } from './atelier.js';
+import { botteFromStage, ramasserFromStage, verserFromStage } from './atelier.js';
+import { botteleuses } from '../engine/botteleuse.js';
+import { countItem } from '../engine/inventory.js';
 import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, blocsDessusPoses, couchages, etatEtable, etatMoulin, etatPoulailler, genrePiece, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { atelierOuvert } from '../engine/atelier.js';
@@ -447,7 +449,12 @@ export function stageModel() {
     // la ferme générée : ce qui est à ramasser à la main (js/engine/atelier.js)
     ramassables: ramassables(state).map((r) => ({ id: r.id, sorte: r.sorte, case: r.case, buisson: !!r.buisson })),
     // le bois et la pierre lâchés par la hache et la pioche, à ramasser en marchant dessus
-    morceaux: morceauxDe(state, 'ferme').map((m) => ({ n: m.n, item: m.item, x: m.x, y: m.y })),
+    morceaux: morceauxDe(state, 'ferme').map((m) => ({ n: m.n, item: m.item, x: m.x, y: m.y, ...(m.image ? { image: m.image } : {}) })),
+    // les botteleuses (js/engine/botteleuse.js : l'entonnoir, la machine, le convoyeur ; pleine,
+    // elle vibre VIBRE_S s et sa botte sort) et les fibres de l'inventaire, à y jeter
+    botteleuses: farmSeed(state) !== null ? botteleuses(state) : [],
+    botteVibre: DATA.BOTTELEUSE.VIBRE_S,
+    fibres: countItem(state, 'fibre'),
     // les arbres plantés d'une graine (sur une case d'herbe libre) : une jeune pousse
     pousses: farmSeed(state) !== null ? poussesArbres(state) : [],
     // puis, grands, des arbres de la carte (js/carte/ferme/foret.js)
@@ -718,7 +725,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, chop: chopFromStage, mine: mineFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, chop: chopFromStage, mine: mineFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
