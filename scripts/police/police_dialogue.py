@@ -1,7 +1,7 @@
 # La police des fenêtres de dialogue (essai) : l'alphabet dessiné à la main de
 # scripts/police/originaux/ (minuscules.png : les minuscules fines, les chiffres et quelques
-# signes ; majuscules.png : les majuscules grasses, aussi hautes que les minuscules), tel quel,
-# en police web.
+# signes ; majuscules.png : les majuscules, fines, aussi hautes que les chiffres), tel quel, en
+# police web.
 #
 #   python3 scripts/police/police_dialogue.py            écrit assets/police_dialogue.woff
 #   python3 scripts/police/police_dialogue.py --apercu   écrit aussi apercu_police_dialogue.png
@@ -24,7 +24,7 @@ ORIGINAUX = os.path.join(ROOT, 'scripts', 'police', 'originaux')
 SORTIE = os.path.join(ASSETS, 'police_dialogue.woff')
 NOM = 'Ferme Dialogue'
 UPM, PX = 1024, 128
-MONTEE, DESCENTE = 9, 3          # pixels au-dessus et au-dessous de la ligne de base
+MONTEE, DESCENTE = 10, 3         # pixels au-dessus et au-dessous de la ligne de base
 ESPACE = 3                       # l'avance de l'espace (px)
 
 # La découpe : caractère -> (image, x0, x1, y0, y1, ligne de base), x1 et y1 compris ; la
@@ -43,14 +43,12 @@ for c, x0, x1 in zip('1234567890', (12, 17, 23, 29, 36, 42, 48, 54, 60, 66), (15
 for c, x0, x1 in (('!', 1, 1), ('?', 3, 7), (':', 10, 10), ('’', 13, 14), ('“', 18, 21), ('”', 24, 27),
                   ('+', 29, 33), ('-', 35, 39), ('÷', 41, 45)):
     DECOUPE[c] = (MIN, x0, x1, 36, 43, 43)
-for ligne, lettres, xs, y0, y1 in (
-        (0, 'ABCMNO', ((3, 10), (13, 20), (22, 29), (33, 41), (44, 51), (54, 61)), 5, 9),
-        (1, 'DEFPQR', ((3, 10), (13, 20), (22, 29), (33, 41), (44, 51), (54, 61)), 12, 16),
-        (2, 'GHISTU', ((3, 10), (13, 20), (24, 28), (33, 41), (44, 51), (54, 61)), 19, 23),
-        (3, 'JKLVWXZ', ((3, 10), (13, 20), (22, 29), (33, 41), (43, 50), (53, 60), (64, 71)), 25, 29)):
+for lettres, xs, y0, y1 in (
+        ('ABCDEFGHIJ', ((1, 6), (8, 13), (15, 20), (22, 27), (29, 34), (36, 41), (43, 48), (50, 55), (57, 61), (64, 69)), 1, 8),
+        ('KLMNOPQRST', ((1, 6), (8, 13), (15, 20), (22, 27), (29, 34), (36, 41), (43, 48), (50, 55), (57, 62), (64, 68)), 12, 19),
+        ('UVWXYZ', ((1, 6), (8, 14), (16, 22), (24, 28), (30, 34), (36, 41)), 24, 31)):
     for c, (x0, x1) in zip(lettres, xs):
         DECOUPE[c] = (MAJ, x0, x1, y0, y1 + (1 if c == 'Q' else 0), y1)
-DECOUPE['Y'] = (MAJ, 64, 71, 15, 19, 19)
 
 # Les signes dessinés ici : rangées du haut vers le bas, la dernière posée sur la ligne de base
 # (sauf `bas` : rangées sous la ligne de base, comme la virgule).
@@ -88,8 +86,8 @@ MAINS = {
 MAINS['‘'] = (['#.', '#.', '.#'] + ['..'] * 5, 0)
 MAINS['−'] = None                                         # (le moins : le tiret de l'original)
 
-# Les accents : (dessus des minuscules, dessus des majuscules), en pixels (rangée, colonne
-# depuis le milieu), la rangée 0 juste au-dessus de la lettre (une rangée vide entre les deux).
+# Les accents : en pixels (rangée, colonne depuis le milieu), au-dessus de la lettre : une
+# rangée vide entre les deux sur une minuscule, aucune sur une majuscule (la place manque).
 ACCENTS = {
     'aigu': [(-1, 1), (-2, 2)], 'grave': [(-1, 0), (-2, -1)],
     'circ': [(-1, -1), (-2, 0), (-1, 1)], 'trema': [(-1, -1), (-1, 1)],
@@ -132,19 +130,14 @@ def glyphes():
     pts, w = g['c']
     g['ç'] = (pts | {(2, -1), (2, -2), (1, -3)}, w)
     pts, w = g['C']
-    g['Ç'] = (pts | {(4, -1), (4, -2), (3, -2), (3, -3)}, w)
+    g['Ç'] = (pts | {(3, -1), (3, -2), (2, -3)}, w)
     (po, wo), (pe, we) = g['o'], g['e']
     g['œ'] = (po | {(x + wo - 1, y) for x, y in pe}, wo + we - 1)
     for c, (base, accent) in COMPOSES.items():
         pts, w = g[base]
-        haut = max(y for _, y in pts) + 2
-        gras = base.isupper()
+        haut = max(y for _, y in pts) + (1 if base.isupper() else 2)
         milieu = (w - 1) // 2
-        marques = set()
-        for r, dc in ACCENTS[accent]:
-            for k in ((0, 1) if gras else (0,)):
-                marques.add((milieu + dc * (2 if gras and accent != 'circ' else 1) + k, haut - r - 1))
-        g[c] = (pts | marques, w)
+        g[c] = (pts | {(milieu + dc, haut - r - 1) for r, dc in ACCENTS[accent]}, w)
     return g
 
 

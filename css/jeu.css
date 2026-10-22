@@ -414,8 +414,8 @@ textarea, input[type="text"] {
 
 /* Essai : la police dessinée à la main (scripts/police/police_dialogue.py) dans les fenêtres de
    dialogue. Un pixel du dessin fait 2 px de l'écran (16 px), 3 dans les titres (24 px) : des tailles
-   entières, pour des lettres nettes. Pas de gras ni d'italique imités (les majuscules sont déjà
-   grasses) ; les emojis et les caractères absents de la police passent à la suivante. */
+   entières, pour des lettres nettes. Pas de gras ni d'italique imités (la police n'en a
+   pas) ; les emojis et les caractères absents de la police passent à la suivante. */
 @font-face {
   font-family: 'Ferme Dialogue';
   src: url('../assets/police_dialogue.woff') format('woff');
