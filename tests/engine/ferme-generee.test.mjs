@@ -1263,7 +1263,7 @@ test('ferme générée : la paroi vitrée se pose comme un mur ou à la place d\
 });
 
 test('ferme générée : les murs aux matières de la ville ferment une pièce et changent un mur', () => {
-  const sortes = ['mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille'];
+  const sortes = ['mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois'];
   for (const sorte of sortes) {
     assertEqual([DATA.ATELIER.BLOCS[sorte].mur, DATA.ATELIER.RECETTES[sorte].sortie[sorte]], [true, 1], sorte);
     const s = chantier('mv_' + sorte);

@@ -193,6 +193,8 @@
       variantes: { mur_pierre: 0, mur_fenetre: 17, pierre_angle: 33, paroi_vitree: 97,
         // (les murs aux matières des immeubles de la ville : scripts/carte/blocs.py MATIERES_VILLE)
         mur_brique_rouge: 161, mur_brique_orange: 177, mur_brique_ocre: 193, mur_brique_bleue: 209, mur_pierre_taille: 225,
+        // (le mur en bois : des planches couchées, scripts/carte/blocs.py mur_bois)
+        mur_bois: 371,
         // (les murs de l'enceinte de la Serre, quels qu'ils soient : du verre dans des arêtes de
         // bois, scripts/carte/blocs.py verre_serre ; sa porte : `porteSerre`)
         mur_serre: 306 },
@@ -233,7 +235,7 @@
     // la meule qui moud (le Moulin en marche) : sa pierre et sa manivelle tournent (`fps` images
     // par seconde, un tour en 8 images ; chantier.js stepFires)
     meule: { sorte: 'meule', frames: [81, 82, 83, 84, 85, 86, 87, 88], fps: 8 },
-    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur'],
+    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png ; la
     // station du robot : station_robot.png, machines.js)
     ailleurs: ['puits', 'citerne', 'station_robot'],

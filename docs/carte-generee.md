@@ -235,6 +235,10 @@ Le Marché vend toujours les outils.
     murs (`mur: true`) : ils ferment une pièce, se raccordent à tous les autres murs, en changent
     un sans qu'on l'enlève et se posent à l'étage. Images de `murs_hauts.png` : 161, 177, 193,
     209, 225 + masque (`MATIERES_VILLE`, `scripts/carte/blocs.py`).
+  - **Le mur en bois** (4 bois) : des planches couchées sur la face, une lisse claire en haut,
+    une sablière sombre au pied, des planches au soleil sur le dessus. C'est un mur comme les
+    autres (`mur: true`) ; images de `murs_hauts.png` : 371 + masque (`mur_bois`,
+    `scripts/carte/blocs.py`).
   - Les murs et la porte d'un mur horizontal sont une case plus hauts que les autres blocs
     (`assets/murs_hauts.png`, 16 × 40 px, comme les maisons de la transition). Un mur qui cache
     le personnage ou un membre de la famille s'efface à moitié, et tous s'effacent en mode

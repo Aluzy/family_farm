@@ -623,6 +623,43 @@ def mur_ville(m, motif, dessus):
     return t.im
 
 
+def mur_bois(m):
+    """Le mur haut de masque m en bois : des planches couchées sur la face (un joint sombre
+    toutes les 4 rangées, les aboutements décalés d'une planche à l'autre, calés sur la case :
+    deux murs voisins se raccordent), une lisse plus claire en haut, une sablière sombre au
+    pied ; le dessus, des planches au soleil ; les bords libres gardent le contour du mur."""
+    t = Toile(mur(m))
+    for y in range(H):
+        for x in range(W):
+            p = t.im.getpixel((x, y))
+            if not p[3] or p[:3] == OUT:
+                continue
+            if not m & 4 and CHAPE < y < BAS:
+                r = BAS - y                               # la hauteur au-dessus du pied
+                if y == CHAPE + 1:
+                    col = BOIS[4]                         # la lisse, au soleil
+                elif r <= 2:
+                    col = BOIS[0] if r == 2 else BOIS[1]  # la sablière
+                else:
+                    v = y - CHAPE - 2                     # les rangées de planches, de haut en bas
+                    k = v // 4
+                    if v % 4 == 3:
+                        col = BOIS[0]                     # le joint entre deux planches
+                    elif (x + 8 * (k % 2)) % 16 == 0:
+                        col = BOIS[1]                     # l'aboutement de deux planches
+                    elif v % 4 == 0:
+                        col = BOIS[3]                     # le haut de la planche, éclairé
+                    else:
+                        col = BOIS[2] if hasard(x // 3, k) < 0.25 and (x + v) % 5 == 0 else BOIS[2 if hasard(k, 7) < 0.5 else 3] if v % 4 == 2 else BOIS[3 if hasard(k, 5) < 0.5 else 2]
+                if (not m & 8 and x == 1) or (not m & 2 and x == 14):
+                    col = BOIS[3] if x == 1 else BOIS[1]  # les arêtes : claire à gauche, sombre à droite
+            else:
+                # le dessus : des planches au soleil, dans le sens du mur
+                col = BOIS[4] if y == 1 and not m & 1 else planches([BOIS[1], BOIS[2], BOIS[3], BOIS[4]], 'h' if m & 5 == 0 or m & 10 else 'v')(x, y)
+            t.put(x, y, col)
+    return t.im
+
+
 def murs_hauts():
     """Les 16 murs raccordés et la porte, une case plus hauts (images de 16 × (24 + 16)) ; puis
     les 16 murs à fenêtre et les 16 murs aux pierres d'angle (BLOCS_CARTE.hauts.variantes) ; puis
@@ -633,7 +670,7 @@ def murs_hauts():
     (l'immeuble de la ville), les fenêtres seules, prolongées à gauche, à droite, des deux
     côtés (241, 257, 273, 289 + masque) et la porte (305) ; puis les murs de verre de la serre,
     seuls, prolongés à gauche, à droite, des deux côtés (306, 322, 338, 354 + masque) et sa
-    porte (370)."""
+    porte (370) ; puis le mur en bois (371 + masque)."""
     global H, BAS, FACE
     garde = H, BAS, FACE
     motif, dessus = next((mo, de) for nom, mo, de in MATIERES_VILLE if nom == 'brique_ocre')
@@ -645,7 +682,8 @@ def murs_hauts():
                 + [fenetre(m, j) for j in (1, 2, 3) for m in range(16)] + [paroi_vitree(m, j) for j in range(4) for m in range(16)]
                 + [mur_ville(m, motif, dessus) for _, motif, dessus in MATIERES_VILLE for m in range(16)]
                 + [fenetre(m, j, ocre) for j in range(4) for m in range(16)] + [porte_haute(ocre)]
-                + [verre_serre(m, j) for j in range(4) for m in range(16)] + [porte_serre()], H)
+                + [verre_serre(m, j) for j in range(4) for m in range(16)] + [porte_serre()]
+                + [mur_bois(m) for m in range(16)], H)
     finally:
         H, BAS, FACE = garde
 

@@ -1,5 +1,5 @@
 # Lot « atelier » (la ferme générée, docs/carte-generee.md, étape 3) : la fibre, la planche, le
-# mur en pierre, la porte, le plancher, la barrière, le chemin, le champignon lumineux, le morceau
+# mur en pierre, le mur en bois, la porte, le plancher, la barrière, le chemin, le champignon lumineux, le morceau
 # d'arbre de l'infra-monde, la lanterne, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, la botteleuse (entonnoir, machine, convoyeur), les jeunes arbres, l'Atelier et les
 # baies des buissons (un marteau).
 # Format commun : voir scripts/icones/build.py. Contour de 1 px dessiné à la main, dans la teinte
@@ -90,6 +90,25 @@ ICONS = {
         '..accccacccccb..',
         '..abbbbabbbbba..',
         '..aaaaaaaaaaaa..',
+        '................',
+    ],
+    # mur en bois : des planches couchées, leurs joints sombres, les aboutements décalés
+    '🧱‍🪵': [
+        '................',
+        '................',
+        '..kkkkkkkkkkkk..',
+        '..keeeeeTeeeek..',
+        '..kTTTTTkTTTTk..',
+        '..kttttttttttk..',
+        '..kkkkkkkkkkkk..',
+        '..keekeeeeeeek..',
+        '..kTTkTTTTTTTk..',
+        '..kttktttttttk..',
+        '..kkkkkkkkkkkk..',
+        '..keeeeeeeekek..',
+        '..kTTTTTTTTkTk..',
+        '..kssssssssksk..',
+        '..kkkkkkkkkkkk..',
         '................',
     ],
     # porte : planches verticales, deux pentures de fer, la poignée
