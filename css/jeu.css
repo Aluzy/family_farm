@@ -1367,6 +1367,9 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   max-width: 460px;
   margin: 0 auto;
   padding: 12px 14px 10px;
+  --text: var(--wood-ink);
+  --text-muted: #7a5434; /* le texte sombre du bois, en clair comme en sombre */
+  color: var(--text);
   background: rgba(var(--wood-bg-rgb), 0.96);
   border: 3px solid var(--color-earth);
   border-radius: 8px;
@@ -1384,7 +1387,7 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
 .didac-pied .muted { font-size: 14px; white-space: nowrap; }
 .didac-passer { margin-right: auto; }
 .didac-pied .btn { font-size: 16px; }
-.didac-passer { flex: none; white-space: nowrap; padding: 4px 0; border: 0; background: none; color: var(--muted, #6b5a44); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; }
+.didac-passer { flex: none; white-space: nowrap; padding: 4px 0; border: 0; background: none; color: var(--text-muted); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; }
 .didac-compteurs {
   position: fixed;
   top: calc(140px + env(safe-area-inset-top));
