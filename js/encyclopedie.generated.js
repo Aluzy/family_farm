@@ -247,15 +247,14 @@ export const ENCYCLOPEDIE = {
     {
      "id": "silo",
      "terme": "Silo",
-     "description": "Stock de blé récolté : une pièce close où l'on pose le coffre à grain (fabriqué à l'Atelier). Il nourrit les poules du poulailler et alimente le moulin, qui prend d'abord le blé de l'inventaire.",
+     "description": "Stock de blé récolté, en bois : des blocs de silo (fabriqués à l'Atelier) posés dehors, en colonnes côte à côte. Deux colonnes de trois blocs, et les blocs deviennent un silo. Chaque bloc garde 10 blés : on l'agrandit en y posant d'autres blocs, en largeur ou en hauteur (un appui long sur le silo). Il nourrit les poules du poulailler et alimente le moulin, qui prend d'abord le blé de l'inventaire.",
      "liens": [
-      "piece_close",
-      "bloc_cle",
       "ble",
-      "moulin"
+      "moulin",
+      "poulailler"
      ],
      "decouverte": [
-      "objet:coffre_grain",
+      "objet:bloc_silo",
       "construit:silo"
      ]
     },
@@ -512,19 +511,17 @@ export const ENCYCLOPEDIE = {
     {
      "id": "bloc_cle",
      "terme": "Bloc clé d'un bâtiment",
-     "description": "Posé dans une pièce close vide (un plancher peut y être), il en fait un bâtiment : le nichoir fait le Poulailler, la mangeoire l'Étable, le bac à semis la Serre, le coffre à grain le Silo, la meule le Moulin (dans une tour de murs rehaussés). Repris, le bâtiment n'est plus là ; ses bêtes restent.",
+     "description": "Posé dans une pièce close vide (un plancher peut y être), il en fait un bâtiment : le nichoir fait le Poulailler, la mangeoire l'Étable, le bac à semis la Serre, la meule le Moulin (dans une tour de murs rehaussés). Repris, le bâtiment n'est plus là ; ses bêtes restent.",
      "liens": [
       "poulailler",
       "etable",
       "serre",
-      "silo",
       "moulin",
       "piece_close"
      ],
      "decouverte": [
       "objet:nichoir",
       "objet:mangeoire",
-      "objet:coffre_grain",
       "objet:bac_semis"
      ]
     },

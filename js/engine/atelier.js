@@ -2,7 +2,8 @@ import { DATA } from './catalog.js';
 import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
-import { gainActionXp } from './levels.js';
+import { gainActionXp, unlockLevel } from './levels.js';
+import { isUnlocked } from './campaign.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { hasHoe, plotAtTile } from './crops.js';
 import { farmSeed, farmTerrain, tileCount } from './terrain.js';
@@ -183,11 +184,18 @@ function aDejaOutil(state, outil) {
 }
 
 // Peut-on fabriquer la recette `id` ? { ok, raison, manque }
+// Une recette « debloque » (le bloc de silo) : à partir du niveau de cet élément (NIVEAUX).
+export function recetteDebloquee(state, id) {
+  const r = DATA.ATELIER.RECETTES[id];
+  return !!r && (!r.debloque || isUnlocked(state, r.debloque));
+}
+
 export function craftStatus(state, id) {
   const r = DATA.ATELIER.RECETTES[id];
   if (!r) return { ok: false, raison: 'Recette inconnue.', manque: {} };
   if (!atelierConstruit(state)) return { ok: false, raison: 'Il faut d\'abord construire l\'Atelier.', manque: {} };
   if (r.outil && aDejaOutil(state, r.outil)) return { ok: false, raison: 'Tu as déjà cet outil.', manque: {} };
+  if (!recetteDebloquee(state, id)) return { ok: false, raison: `Se débloque au niveau ${unlockLevel(r.debloque)}.`, manque: {} };
   const m = manque(state, r.entrees);
   if (Object.keys(m).length) return { ok: false, raison: 'Il manque des matériaux.', manque: m };
   if (!canAfford(state, 'fabriquer')) return { ok: false, raison: TIRED, manque: {} };

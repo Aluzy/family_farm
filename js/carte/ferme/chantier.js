@@ -86,6 +86,8 @@
           if (vt > 1) return { h: vt, frame: plein(murDe(b, true), 1 + 4) };
           return null;
         };
+        // (sa hauteur ; un bloc dessiné ailleurs, une colonne du silo : silo.js la dessine)
+        const haut1 = (b) => (BLOCS_CARTE.ailleurs.includes(b.sorte) ? 1 : b.hauteur || 1);
         for (const b of list || []) {
           seen.add(b.case);
           // (un meuble acheté au Marché : son propre dessin, assets/meuble_<dessin>.png)
@@ -101,7 +103,7 @@
             const anime = b.sorte === BLOCS_CARTE.feu.sorte || b.sorte === BLOCS_CARTE.meule.sorte || b.sorte === 'lanterne' || (this.botteCycles && this.botteCycles.size && ['botteleuse', 'convoyeur'].includes(b.sorte));
             if ((e.img.frame.name !== f || e.img.texture.key !== key) && !anime) { e.img.setTexture(key, f); changed = true; }
             const li = linteau(b);
-            if (this.syncHauts(e, li ? li.h : b.hauteur || 1, li && li.frame)) changed = true;
+            if (this.syncHauts(e, li ? li.h : haut1(b), li && li.frame)) changed = true;
             continue;
           }
           if (e) { e.img.destroy(); this.syncHauts(e, 0); }
@@ -112,7 +114,7 @@
           const ne = { case: b.case, sorte: b.sorte, x, y, img };
           B.set(b.case, ne);
           const li = linteau(b);
-          this.syncHauts(ne, li ? li.h : b.hauteur || 1, li && li.frame);
+          this.syncHauts(ne, li ? li.h : haut1(b), li && li.frame);
           changed = true;
         }
       }

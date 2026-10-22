@@ -9,7 +9,7 @@ import { bumpCounter } from './campaign.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { farmSeed } from './terrain.js';
-import { etatEtable, etatPoulailler } from './blocs.js';
+import { etatEtable, etatPoulailler, etatSilo } from './blocs.js';
 
 /* ---------- Lot 4 : Silo et blé ---------- */
 
@@ -19,8 +19,10 @@ import { etatEtable, etatPoulailler } from './blocs.js';
 // l'inventaire, et le Silo se remplit dès qu'il a de la place (fillSilo).
 // Les quantités sont entières : 1 blé nourrit 2 poules (voir feedHen).
 
+// (la ferme générée : tant de blés par bloc de silo posé, etatSilo)
 export function siloCapacity(state) {
-  return state.silo.construit ? DATA.SILO.CAPACITE[state.silo.niveau - 1] : 0;
+  if (!state.silo.construit) return 0;
+  return farmSeed(state) !== null ? etatSilo(state).capacite : DATA.SILO.CAPACITE[state.silo.niveau - 1];
 }
 
 export function siloUpgradeCost(state) {
@@ -99,8 +101,8 @@ export function storeWithSilo(state, item, qty) {
 // Le Silo est offert (construction à 0 dans DATA) mais reste à construire.
 export function buildSilo(state) {
   const s = state.silo;
-  // la ferme générée : un coffre à grain, fabriqué à l'Atelier, posé dans une pièce close (blocs.js)
-  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, le Silo se bâtit : une pièce close et un coffre à grain (Atelier).');
+  // la ferme générée : des blocs de silo, fabriqués à l'Atelier, posés dehors (blocs.js, etatSilo)
+  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, le Silo se bâtit : des blocs de silo (Atelier) posés dehors.');
   return buildWith(state, 'silo', { built: s.construit, deja: 'Le Silo est déjà construit.', cost: DATA.SILO.PRIX_CONSTRUCTION, libelle: 'Réparation du Silo' }, () => {
     s.construit = true;
     s.niveau = 1;
@@ -110,6 +112,8 @@ export function buildSilo(state) {
 
 export function upgradeSilo(state) {
   if (!state.silo.construit) return fail('Construis d\'abord le Silo.');
+  // (la ferme générée : il s'agrandit en y posant des blocs de silo)
+  if (farmSeed(state) !== null) return fail('Le Silo s\'agrandit en y posant des blocs de silo (un appui long sur le silo).');
   return upgradeWith(state, siloUpgradeCost(state), 'Silo agrandi', () => {
     state.silo.niveau += 1;
     fillSilo(state);

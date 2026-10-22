@@ -238,7 +238,7 @@ function etageEnPeril(state, blocs) {
 // Le premier lit (paillasse) ou bloc clé posé dans une enceinte décide de ce qu'elle est :
 //   - une maison : la paillasse, le four, la cuisinière (et les blocs sans genre, la batterie) ;
 //   - un bâtiment : le nichoir (le Poulailler), la mangeoire (l'Étable), le bac à semis (la
-//     Serre), le coffre à grain (le Silo), la meule (le Moulin). Un bâtiment n'a que son bloc
+//     Serre), la meule (le Moulin). Un bâtiment n'a que son bloc
 //     clé (et un plancher au sol, state.sols, qui n'est pas un bloc ; les sols n'ont pas de genre).
 // Un bloc d'un autre genre n'y entre pas (poseStatus) ; un mur ou une porte qui, repris,
 // mêlerait deux enceintes de genres différents ne se reprend pas (reprendreBloc).
@@ -404,6 +404,11 @@ export function poseStatus(state, sorte, tile) {
   if (s.mur && blocAt(state, tile) === sorte) {
     return hauteurMur(state, tile) < DATA.ATELIER.HAUTEUR_MAX ? { ok: true } : { ok: false, raison: `Ce mur est déjà haut de ${DATA.ATELIER.HAUTEUR_MAX} blocs.` };
   }
+  // un bloc de silo posé sur une colonne du silo : elle se rehausse d'un bloc (jusqu'à SILO.HAUTEUR_MAX)
+  if (s.silo && blocAt(state, tile) === sorte) {
+    const max = DATA.ATELIER.SILO.HAUTEUR_MAX;
+    return hauteurSilo(state, tile) < max ? { ok: true } : { ok: false, raison: `Cette colonne du silo est déjà haute de ${max} blocs.` };
+  }
   // un mur posé : une fenêtre (ou une pierre d'angle, une porte) le remplace, la pièce reste close
   if (changeMur(blocAt(state, tile), sorte)) {
     return hauteurMur(state, tile) > 1 ? { ok: false, raison: 'Ce mur est rehaussé : reprends d\'abord ses blocs du dessus.' } : { ok: true };
@@ -452,6 +457,11 @@ export function poseStatus(state, sorte, tile) {
   if (s.dehors && dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dehors, pas dans une pièce close.` };
   // (un mur qui couperait la pièce de l'escalier : l'étage perdrait ce qui est posé au-dessus)
   if (s.ferme && etageEnPeril(state, { ...blocsPoses(state), [tile]: sorte })) return { ok: false, raison: `${s.nom} : couperait la pièce de l'escalier, et l'étage perdrait ce qui y est posé. Reprends d'abord ces blocs de l'étage.` };
+  // un bloc de silo au sol : à côté des colonnes déjà posées (un seul silo)
+  if (s.silo) {
+    const refus = refusSilo(state, tile);
+    if (refus) return { ok: false, raison: refus };
+  }
   // une maison ou un bâtiment : pas de bloc d'un autre genre (le premier posé décide)
   const p = !s.ferme && !s.sol && pieceDe(state, tile);
   const refus = p && refusGenre(state, sorte, p);
@@ -486,6 +496,11 @@ function poser(state, sorte, tile) {
     majPoulailler(state);
     return { ok: true, sorte, case: tile, hauteur: hauteurMur(state, tile) };
   }
+  if (s.silo && ancien === sorte) {
+    setHauteur(state, tile, hauteurSilo(state, tile) + 1);
+    majPoulailler(state);
+    return { ok: true, sorte, case: tile, hauteur: hauteurSilo(state, tile) };
+  }
   if (changeMur(ancien, sorte)) {
     addItem(state, sorteDe(ancien).objet, 1);
     state.blocs[tile] = sorte;
@@ -517,7 +532,7 @@ function poser(state, sorte, tile) {
   if (s.appareil) installStarter(state, s.appareil);
   // une ruche : vide, elle commence à se remplir (js/engine/ruches.js)
   if (s.ruche) ruchePosee(state, tile);
-  // le bloc clé d'un bâtiment (le nichoir : le Poulailler ; la mangeoire : l'Étable , le bac à semis : la Serre ; le coffre à grain : le Silo) : le bâtiment est construit
+  // le bloc clé d'un bâtiment (le nichoir : le Poulailler ; la mangeoire : l'Étable , le bac à semis : la Serre) : le bâtiment est construit
   if (s.batiment) ouvrirBatiment(state, s.batiment);
   // un four, une cuisinière : la station est là (étape 5b, la maison) ; la meule : le Moulin
   // quand sa tour est bâtie (majMoulin)
@@ -536,12 +551,18 @@ export function reprendreBloc(state, tile, opts) {
   const dessus = blocDessus(state, tile), bloc = blocAt(state, tile);
   const sorte = dessus || bloc || solAt(state, tile);
   if (!sorte) return fail('Il n\'y a pas de bloc ici.');
-  // un mur rehaussé : le bloc du dessus d'abord
-  if (!dessus && bloc && hauteurMur(state, tile) > 1) {
-    setHauteur(state, tile, hauteurMur(state, tile) - 1);
+  // un mur rehaussé, une colonne du silo : le bloc du dessus d'abord
+  if (!dessus && bloc && hauteurEmpilee(state, tile) > 1) {
+    setHauteur(state, tile, hauteurEmpilee(state, tile) - 1);
     addItem(state, sorteDe(bloc).objet, 1);
     majPoulailler(state);
-    return { ok: true, sorte: bloc, case: tile, hauteur: hauteurMur(state, tile) };
+    return { ok: true, sorte: bloc, case: tile, hauteur: hauteurEmpilee(state, tile) };
+  }
+  // (la colonne du silo du milieu : elle le couperait en deux)
+  if (!dessus && estSilo(bloc)) {
+    const W = farmTerrain(state).LARGEUR, r = Math.floor(tile / W);
+    const voisin = (k) => estSilo(blocAt(state, k)) && Math.floor(k / W) === r;
+    if (voisin(tile - 1) && voisin(tile + 1)) return fail('Cette colonne couperait le silo en deux : reprends d\'abord une colonne d\'un bout.');
   }
   // un mur ou une porte entre une maison et un bâtiment (ou deux bâtiments) : il reste
   if (!dessus && bloc && sorteDe(bloc).ferme && !(opts && opts.force)) {
@@ -680,6 +701,7 @@ export function majPoulailler(state) {
     if (e.ok && !state.paturage.places) state.paturage.places = DATA.PATURAGE.PLACES_DEPART;
   }
   majMoulin(state);
+  majSilo(state);
 }
 
 /* ---------- le Moulin de la ferme générée : une tour et sa meule (version 1.25) ---------- */
@@ -744,3 +766,77 @@ export function majMoulin(state) {
   if (ok && !state.stations.moulin.construit) openStation(state, 'moulin');
   else if (!ok) state.stations.moulin.construit = false;
 }
+
+/* ---------- le Silo de la ferme générée : des blocs de silo empilés ---------- */
+
+// Les blocs de silo (fabriqués à l'Atelier une fois le Silo débloqué) se posent dehors, en
+// colonnes jointives sur une même rangée de la carte : un bloc posé sur un autre rehausse sa
+// colonne (jusqu'à SILO.HAUTEUR_MAX). Le Silo est là quand au moins SILO.LARGEUR colonnes
+// sont hautes d'au moins SILO.HAUTEUR blocs : leurs blocs deviennent un silo en bois
+// (js/carte/ferme/silo.js). Un seul silo ; sa capacité : SILO.BLES_PAR_BLOC blés par bloc de ces
+// colonnes.
+
+const estSilo = (sorte) => !!(sorteDe(sorte) && sorteDe(sorte).silo);
+
+// Les cases des blocs de silo posés (les colonnes), de gauche à droite.
+export function casesSilo(state) {
+  const B = blocsPoses(state);
+  return Object.keys(B).map(Number).filter((t) => estSilo(B[t])).sort((a, b) => a - b);
+}
+
+// La hauteur de la colonne de silo de `tile` (en blocs), 0 sans bloc de silo.
+export function hauteurSilo(state, tile) {
+  if (!estSilo(blocAt(state, tile))) return 0;
+  const h = state.hauteurs && Number(state.hauteurs[tile]);
+  return h > 1 ? Math.min(h, DATA.ATELIER.SILO.HAUTEUR_MAX) : 1;
+}
+
+// La hauteur d'un bloc qui s'empile (un mur, une colonne de silo), 0 sinon.
+const hauteurEmpilee = (state, tile) => hauteurMur(state, tile) || hauteurSilo(state, tile);
+
+// Un bloc de silo posé au sol en `tile` : pas d'autre silo ailleurs, la même rangée, à côté
+// d'une colonne déjà là (ou le premier). Renvoie la raison d'un refus, ou ''.
+function refusSilo(state, tile) {
+  const cases = casesSilo(state);
+  if (!cases.length) return '';
+  const W = farmTerrain(state).LARGEUR, r = Math.floor(tile / W);
+  const voisin = (k) => cases.includes(k) && Math.floor(k / W) === r;
+  return voisin(tile - 1) || voisin(tile + 1) ? '' : 'Un seul silo sur la ferme : pose ce bloc juste à côté de ses colonnes (sur la même rangée), ou sur l\'une d\'elles pour la rehausser.';
+}
+
+// Ce qu'il faut pour que le Silo soit là, et ce qu'il est. Une colonne haute d'au moins
+// SILO.HAUTEUR blocs est « pleine » : elle fait partie du silo ; plus basse, elle est en
+// construction (ses blocs ne comptent pas encore). etatSilo(state) → { ok, conditions: [{ id,
+// texte, ok }], cases (les colonnes, de gauche à droite), hauteurs, pleines (les cases des
+// colonnes pleines), largeur, blocs (ceux des colonnes pleines), capacite (blés, 0 tant qu'il
+// n'est pas là) }.
+export function etatSilo(state) {
+  const S = DATA.ATELIER.SILO, cases = casesSilo(state);
+  const hauteurs = cases.map((t) => hauteurSilo(state, t));
+  const pleines = cases.filter((_, i) => hauteurs[i] >= S.HAUTEUR);
+  const blocs = hauteurs.filter((h) => h >= S.HAUTEUR).reduce((a, b) => a + b, 0);
+  const conditions = [
+    { id: 'largeur', texte: `Au moins ${S.LARGEUR} colonnes de blocs de silo côte à côte, dehors, sur une même rangée (${Math.min(cases.length, S.LARGEUR)} / ${S.LARGEUR})`, ok: cases.length >= S.LARGEUR },
+    { id: 'hauteur', texte: `Au moins ${S.LARGEUR} colonnes hautes de ${S.HAUTEUR} blocs : pose un bloc sur une colonne pour la rehausser (${Math.min(pleines.length, S.LARGEUR)} / ${S.LARGEUR})`, ok: pleines.length >= S.LARGEUR },
+  ];
+  const ok = conditions.every((c) => c.ok);
+  return { ok, conditions, cases, hauteurs, pleines, largeur: cases.length, blocs, capacite: ok ? blocs * S.BLES_PAR_BLOC : 0 };
+}
+
+// Le Silo de la ferme générée existe quand ses blocs le forment (etatSilo) ; son blé reste
+// quand il ne l'est plus. Plus petit, ce qui ne tient plus revient dans l'inventaire ; plus
+// grand, le blé de l'inventaire y entre. Appelée après chaque bloc posé ou repris.
+export function majSilo(state) {
+  if (farmSeed(state) === null || !state.silo || typeof state.silo !== 'object') return;
+  const e = etatSilo(state), s = state.silo;
+  s.construit = e.ok;
+  if (!e.ok) return;
+  if (!s.niveau) s.niveau = 1;
+  if (s.ble > e.capacite) {
+    const trop = s.ble - e.capacite;
+    s.ble = e.capacite;
+    addItem(state, DATA.SILO.ITEM, trop);
+  }
+  fillSilo(state);
+}
+

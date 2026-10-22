@@ -1,6 +1,6 @@
 # Lot « atelier » (la ferme générée, docs/carte-generee.md, étape 3) : la fibre, la planche, le
 # mur en pierre, le mur en bois, la cruche à eau, la porte, le plancher, la barrière, le chemin, le champignon lumineux, le morceau
-# d'arbre de l'infra-monde, la lanterne, la paillasse, le nichoir, la mangeoire, le bac à semis, le coffre à grain, la meule, la botteleuse (entonnoir, machine, convoyeur), les jeunes arbres, l'Atelier et les
+# d'arbre de l'infra-monde, la lanterne, la paillasse, le nichoir, la mangeoire, le bac à semis, le bloc de silo, la meule, la botteleuse (entonnoir, machine, convoyeur), les jeunes arbres, l'Atelier et les
 # baies des buissons (un marteau).
 # Format commun : voir scripts/icones/build.py. Contour de 1 px dessiné à la main, dans la teinte
 # très sombre de chaque matière ; lumière en haut à gauche.
@@ -358,24 +358,24 @@ ICONS = {
         'kssssssssssssssk',
         'kkkkkkkkkkkkkkkk',
     ],
-    # coffre à grain : un coffre de planches cerclé de fer, le blé déborde
+    # bloc de silo : un tronçon de silo en bois (des douelles cerclées de fer), le blé au-dessus
     '🗃': [
         '................',
-        '................',
-        '....y..Y..y.....',
-        '...yOy.yOyOy.y..',
-        '..yYoyYoyYoyYoy.',
+        '....kkkkkkkk....',
+        '..kkyYyYyYyYkk..',
         '.kOyYoyYoyYoyOk.',
-        'kkkkkkkkkkkkkkkk',
-        'keeeeeeeeeeeeeek',
-        'kmnnnnnnnnnnnnmk',
-        'kTtTtTtTtTtTtTtk',
-        'ktTtTtTppTtTtTtk',
-        'kTtTtTtmmTtTtTtk',
-        'kmnnnnnnnnnnnnmk',
-        'ktTtTtTtTtTtTtTk',
-        'kssssssssssssssk',
-        'kkkkkkkkkkkkkkkk',
+        '.kkkkkkkkkkkkkk.',
+        '.keTTtTTtTTtTsk.',
+        '.kmnpnnnnnnnnmk.',
+        '.keTTtTTtTTtTsk.',
+        '.keTTtTTtTTtTsk.',
+        '.keTTtTTtTTtTsk.',
+        '.keTTtTTtTTtTsk.',
+        '.kmnpnnnnnnnnmk.',
+        '.keTTtTTtTTtTsk.',
+        '..kkkkkkkkkkkk..',
+        '................',
+        '................',
     ],
     # meule : une roue de pierre debout, son axe de fer, sur un bâti de bois
     '🪨‍⚙️': [

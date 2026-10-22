@@ -175,6 +175,26 @@ registerActions({
     notify(`${DATA.ATELIER.ICONE} Touche une case pour poser, un bloc pour le reprendre.`, { duree: CONSEIL_MS });
     refresh();
   },
+  // Un appui long sur le silo (js/carte/ferme/silo.js) : le mode Construire, un bloc de silo
+  // en main, pour l'agrandir (une colonne de plus à côté, ou plus haute).
+  'silo-agrandir': () => {
+    if (!chantierOuvert() || !atelierConstruit(state)) return;
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    if (stageWindow) setStageWindow(null);
+    poseMeuble = null;
+    niveauListe = false;
+    setBuildLevel(0);
+    setBuildMode('bloc_silo');
+    notify(blocsEnMain(state, 'bloc_silo')
+      ? '🌾 Touche une colonne du silo pour la rehausser, une case juste à côté pour l\'élargir.'
+      : `🌾 Plus de bloc de silo : fabrique-en à l'Atelier (${DATA.ATELIER.ICONE}).`, { duree: CONSEIL_MS * 2 });
+    refresh();
+    // (sa case, dans le menu qui défile : en vue)
+    setTimeout(() => {
+      const slot = document.querySelector('.build-slot.active');
+      if (slot && slot.scrollIntoView) slot.scrollIntoView({ block: 'nearest' });
+    }, 50);
+  },
   // L'escalier (un essai, js/engine/etage.js) : monter à l'étage, ou en redescendre.
   'etage-toggle': () => {
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
@@ -248,7 +268,9 @@ registerActions({
     // (une fenêtre, une pierre d'angle, une porte en main : un appui sur un autre mur le change ; sinon un
     // appui sur un bloc le reprend : un mur rehaussé, son bloc du dessus d'abord)
     const b = blocAt(state, c);
-    const reprend = b ? !surLibre && !changeMur(b, buildMode) : sol && solAt(state, c);
+    // (un bloc de silo en main, sur une colonne du silo : il la rehausse)
+    const empile = !!b && b === buildMode && !!DATA.ATELIER.BLOCS[b].silo;
+    const reprend = b ? !surLibre && !changeMur(b, buildMode) && !empile : sol && solAt(state, c);
     // (un meuble en main, sur une case libre : son aperçu, pas encore posé)
     if (!reprend && meubleEnMain()) { poseMeuble = { sorte: buildMode, case: c }; refresh(); return; }
     const r = reprend ? reprendreBloc(state, c) : poserBloc(state, buildMode, c);

@@ -49,10 +49,12 @@
     "la droite et vers le haut (rien d'autre ne s'y pose) ; plat : à plat, on marche dessus (les tapis) ; lit : on y dort",
     "comme sur une paillasse ; sur « mur » : accroché à un mur, quel qu'il soit (les tableaux).",
     "batiment (étape 5b, les bâtiments) : le bloc clé d'un bâtiment. Posé dans une pièce close, il le",
-    "construit (le nichoir : le Poulailler ; la mangeoire : l'Étable ; le bac à semis : la Serre ; le coffre à grain : le Silo) ; repris, le bâtiment n'est plus là (ses bêtes restent).",
+    "construit (le nichoir : le Poulailler ; la mangeoire : l'Étable ; le bac à semis : la Serre) ; repris, le bâtiment n'est plus là (ses bêtes restent).",
     "semis : la graine d'un arbre de la carte (la pomme de pin d'un sapin, le gland d'un autre arbre : HACHE.GRAINES), à planter sur une case d'herbe libre, dehors, loin des autres arbres plantés (ARBRE_ECART) ; un arbre de cette espèce y pousse (outils.js, planterGraine), sans rester un bloc.",
     "Le Poulailler veut aussi une porte sur le dehors et un enclos de barrières relié par une porte, et une case libre par poule dedans et dans l'enclos (blocs.js, etatPoulailler).",
-    "botteleuse : une pièce de la botteleuse (BOTTELEUSE) : « entonnoir », « machine » ou « convoyeur »."
+    "botteleuse : une pièce de la botteleuse (BOTTELEUSE) : « entonnoir », « machine » ou « convoyeur ».",
+    "silo : un bloc de silo (ATELIER.SILO) : posé sur un autre, il rehausse sa colonne. Une recette « debloque » ne se",
+    "fabrique (et ne se montre à l'Atelier) qu'à partir du niveau de cet élément (NIVEAUX)."
   ],
   "ATELIER": {
     "NOM": "Atelier", "ICONE": "🔨", "NIVEAU": 1,
@@ -82,7 +84,7 @@
       "nichoir": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "nichoir": 1 } },
       "mangeoire": { "entrees": { "planche": 6, "pierre": 4, "fibre": 2 }, "sortie": { "mangeoire": 1 } },
       "bac_semis": { "entrees": { "planche": 8, "pierre": 4, "fibre": 4 }, "sortie": { "bac_semis": 1 } },
-      "coffre_grain": { "entrees": { "planche": 6, "fibre": 2 }, "sortie": { "coffre_grain": 1 } },
+      "bloc_silo": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "bloc_silo": 1 }, "debloque": "silo" },
       "meule": { "entrees": { "pierre": 10, "planche": 4 }, "sortie": { "meule": 1 } },
       "pompe": { "entrees": { "lingot_fer": 2, "planche": 1 }, "sortie": { "pompe": 1 } },
       "panneau_solaire": { "entrees": { "lingot_fer": 2, "lingot_cuivre": 1, "planche": 2 }, "sortie": { "panneau_solaire": 1 } },
@@ -126,7 +128,7 @@
       "nichoir": { "nom": "Nichoir", "objet": "nichoir", "dedans": true, "bloque": true, "unique": true, "batiment": "poulailler" },
       "mangeoire": { "nom": "Mangeoire", "objet": "mangeoire", "dedans": true, "bloque": true, "unique": true, "batiment": "paturage" },
       "bac_semis": { "nom": "Bac à semis", "objet": "bac_semis", "dedans": true, "bloque": true, "unique": true, "batiment": "serre" },
-      "coffre_grain": { "nom": "Coffre à grain", "objet": "coffre_grain", "dedans": true, "bloque": true, "unique": true, "batiment": "silo" },
+      "bloc_silo": { "nom": "Bloc de silo", "objet": "bloc_silo", "dehors": true, "bloque": true, "silo": true, "debloque": "silo" },
       "puits": { "nom": "Puits", "objet": "puits_pierre", "dehors": true, "bloque": true, "unique": true },
       "pompe": { "nom": "Pompe", "objet": "pompe", "sur": "puits", "appareil": "pompe" },
       "panneau": { "nom": "Panneau solaire", "objet": "panneau_solaire", "dehors": true, "bloque": true, "unique": true, "appareil": "panneau" },
@@ -166,6 +168,15 @@
     ],
     "HAUTEUR_MAX": 3,
     "MOULIN": { "HAUTEUR": 3 },
+    "//SILO": [
+      "Le Silo de la ferme générée (js/engine/blocs.js, etatSilo) : des blocs de silo (fabriqués à l'Atelier",
+      "une fois le Silo débloqué) posés dehors, en colonnes jointives sur une même rangée de la carte ; un bloc",
+      "posé sur un autre rehausse sa colonne (jusqu'à HAUTEUR_MAX). Au moins LARGEUR colonnes hautes d'au moins",
+      "HAUTEUR blocs : leurs blocs deviennent un silo en bois, qu'un appui ouvre (un appui long : le mode Construire,",
+      "pour l'agrandir). Un seul silo. Sa capacité : BLES_PAR_BLOC blés par bloc de ces colonnes (une colonne plus",
+      "basse est en construction)."
+    ],
+    "SILO": { "LARGEUR": 2, "HAUTEUR": 3, "HAUTEUR_MAX": 6, "BLES_PAR_BLOC": 10 },
     "ARBRE_ECART": 3,
     "BONHEUR_SANS_COUCHAGE": -8,
     "RAMASSAGE": {
