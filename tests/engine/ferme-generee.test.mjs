@@ -1007,6 +1007,17 @@ test('ferme générée (essai) : l\'escalier ouvre un étage au-dessus de sa pi�
   assert(poserEtage(s, 'paillasse', p.dedans + 2).ok);
   assertEqual(poserEtage(s, 'mur_pierre', coin).ok, false, 'déjà un bloc');
   assertEqual([Object.keys(etageBlocs(s)).length, countItem(s, 'paillasse')], [2, 1]);
+  // un mur du bas qui porte l'étage (ou la porte) : il reste, l'étage garde ce qui y est posé
+  const r = reprendreBloc(s, p.murs[3]);
+  assertEqual([r.ok, blocAt(s, p.murs[3]), Object.keys(etageBlocs(s)).length], [false, 'mur_pierre', 2]);
+  assert(/porte l'étage/.test(r.error), r.error);
+  assertEqual(reprendreBloc(s, p.porte).ok, false, 'la porte aussi');
+  // un mur qui couperait la pièce de l'escalier (la paillasse de l'étage serait dehors) : non
+  const col = (dr) => (z.r + dr) * z.W + z.c + 2;
+  assert(poserBloc(s, 'mur_pierre', col(1)).ok && poserBloc(s, 'mur_pierre', col(2)).ok, 'tant que la pièce reste entière');
+  assert(/couperait la pièce de l'escalier/.test(poserBloc(s, 'mur_pierre', col(3)).error));
+  assertEqual(Object.keys(etageBlocs(s)).length, 2);
+  reprendreBloc(s, col(1)); reprendreBloc(s, col(2));
   assert(reprendreEtage(s, coin).ok);
   // l'escalier repris : l'étage s'en va, ses blocs reviennent
   reprendreBloc(s, p.dedans);

@@ -309,8 +309,12 @@ Le Marché vend toujours les outils.
   - en mode Construire, à l'étage (niveau 1), le menu ne propose que les blocs de l'étage (murs, portes,
     paillasse, lanterne, barrière : `ETAGE_BLOCS`) ; ils n'ont pas d'autre effet que d'être là
     et d'arrêter le passage (`state.etage`) ;
-  - l'escalier repris, ou la pièce ouverte, l'étage s'en va : ses blocs reviennent dans
-    l'inventaire (`rangerEtage`) ; au coucher, on redescend.
+  - l'escalier repris, l'étage s'en va : ses blocs reviennent dans l'inventaire
+    (`rangerEtage`) ; au coucher, on redescend ;
+  - un mur ou une porte du bas qui porte l'étage (retiré, la pièce de l'escalier s'ouvrirait et
+    des blocs de l'étage tomberaient) ne se reprend pas, et un mur qui couperait cette pièce ne
+    se pose pas (`etageEnPeril`, `etageHorsEmprise`) : on reprend d'abord ces blocs de l'étage.
+    Une fenêtre ou une porte change un mur sans l'enlever : l'étage n'y perd rien.
 - **L'eau vivante** (`js/carte/eau.js`, CarteKit.eauVive, réglages CarteKit.EAU ; à la ferme,
   `js/carte/ferme/eau.js` ; sur les autres cartes, `js/carte/ville/eau.js` : les fontaines de
   la ville et de la transition, le lac de la montagne, la mer de la plage) : l'eau de chaque étendue est peinte par un shader, inspiré du

@@ -190,17 +190,23 @@ export function reprendreEtage(state, tile) {
 // l'inventaire. Renvoie leur nombre.
 export function rangerEtage(state) {
   const E = etageBlocs(state);
-  const tiles = Object.keys(E);
-  if (!tiles.length) return 0;
-  const emprise = etageEmprise(state);
-  let n = 0;
-  for (const k of tiles) {
-    // (un meuble : toutes ses cases)
-    const cases = DATA.ATELIER.BLOCS[E[k]].meuble ? empriseMeuble(state, E[k], Number(k)) || [Number(k)] : [Number(k)];
-    if (cases.every((j) => emprise.has(j) && blocsPoses(state)[j] !== 'escalier')) continue;
+  const hors = etageHorsEmprise(state);
+  for (const k of hors) {
     addItem(state, DATA.ATELIER.BLOCS[E[k]].objet, 1);
     delete E[k];
-    n += 1;
   }
-  return n;
+  return hors.length;
+}
+
+// Les blocs de l'étage hors de son emprise (une case qui n'y est plus, ou celle de l'escalier) :
+// leurs tuiles. Ce que rangerEtage remettrait dans l'inventaire.
+export function etageHorsEmprise(state) {
+  const E = etageBlocs(state);
+  const tiles = Object.keys(E);
+  if (!tiles.length) return [];
+  const emprise = etageEmprise(state), B = blocsPoses(state);
+  // (un meuble : toutes ses cases)
+  const dedans = (k) => (DATA.ATELIER.BLOCS[E[k]].meuble ? empriseMeuble(state, E[k], Number(k)) || [Number(k)] : [Number(k)])
+    .every((j) => emprise.has(j) && B[j] !== 'escalier');
+  return tiles.filter((k) => !dedans(k));
 }
