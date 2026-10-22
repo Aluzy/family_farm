@@ -100,6 +100,7 @@ export const RAW_DATA = {
   "AUTONOMIE": { "HISTORIQUE_MAX": 1000, "GRAPHIQUE_NUITS": 20 },
   "HORS_LIGNE": { "MAX_S": 28800, "PAS_S": 5, "USURE": false, "ECRAN_S": 60 },
   "AIDE": { "ETAPES": ["eau", "potager", "dormir"] },
+  "CARTES": { "AUTRES": false },
   "NIVEAU_MAX": 5,
   "RESEAU": {
     "panneau": { "whParS": [40, 90, 160, 260, 400], "prixNiveaux": [0, 150, 400, 900, 2000] },
@@ -1832,7 +1833,7 @@ export const RAW_DATA = {
       {
         "titre": "Le poulailler",
         "icone": "🐔",
-        "intro": "Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé, et la ferme doit nourrir la moitié de la famille. L'Arbre des technologies demande maintenant du fer : une pioche en main, prends le chemin de la ville, puis le train jusqu'à la montagne, et descends à la grotte.",
+        "intro": "Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé, et la ferme doit nourrir la moitié de la famille. L'Arbre des technologies demande maintenant du fer : une pioche en main, cherche la mine de la ferme, cachée dans les bois, et descends-y.",
         "objectifs": [
           { "type": "pontes", "cible": 7, "libelle": "Pondre 7 nuits d'affilée", "unite": "nuits" },
           { "type": "autonomie", "cible": 50, "libelle": "Atteindre 50 % d'autonomie", "unite": "%" },

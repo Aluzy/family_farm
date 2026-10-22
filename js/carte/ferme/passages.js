@@ -53,7 +53,8 @@
     stepExit(time) {
       const at = !this.room && this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       const a = this.exit;
-      if (a) {
+      if (a && !this.autresCartes()) a.setVisible(false);
+      else if (a) {
         const e = this.exitAt();
         const show = !!at && Math.hypot(e.x - at.x, e.y - at.y) <= K.FLECHE.near + EXIT.inset;
         a.setVisible(show);
@@ -71,6 +72,14 @@
       if (global.FermeHote) global.FermeHote.go(EXIT.page);
       else global.location.href = EXIT.page;
       return true;
+    },
+
+    // Les autres cartes que la ferme et sa mine sont-elles ouvertes (DATA.CARTES.AUTRES, le god
+    // mode : FermeHote.autresCartes) ? Fermées, la flèche du chemin et le tronc creux ne mènent
+    // nulle part.
+    autresCartes() {
+      const H = global.FermeHote;
+      return !H || !H.autresCartes || H.autresCartes();
     },
 
     /* ---------- l'entrée de la mine ---------- */
@@ -135,7 +144,7 @@
     // Un double appui en (wx, wy) : sur le tronc creux, le personnage tout près, la bulle
     // s'ouvre (renvoie true) ; sinon rien (false : le personnage y va).
     askHollow(wx, wy) {
-      const b = this.hollow();
+      const b = this.autresCartes() ? this.hollow() : null;
       if (!b || this.room || wx < b.x0 - 2 || wx > b.x1 + 2 || wy < b.y0 - 4 || wy > b.y1 + 2) return false;
       const at = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       if (!at) return false;

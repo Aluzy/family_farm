@@ -4,8 +4,11 @@ Un jeu de gestion agricole familiale en pixel art : une famille (quatre personne
 s'installe sur une **terre sauvage** et doit, à terme, se nourrir de ce que la ferme produit.
 On y ramasse des pierres, du bois et des herbes, on fabrique à l'Atelier, on **construit bloc
 par bloc** (murs, portes, fenêtres, étage, toits), on cultive, on élève poules, moutons, vaches
-et abeilles, on cuisine, et l'on va vendre en ville. Autour de la ferme : un chemin de
-transition, une ville avec son économie et ses habitants, la montagne, la plage et la grotte.
+et abeilles, on cuisine, et l'on descend à la mine, cachée dans les bois de la ferme. Les
+autres cartes (un chemin de transition, une ville avec son économie et ses habitants, la
+montagne, la plage, leurs grottes et l'infra-monde) existent mais sont fermées dans cette
+première version : `CARTES.AUTRES` (`data/general.json`) les rouvre, et le god mode (⚙️ Options,
+sous le mode test) y mène toujours.
 
 - **Version** : 1.22.0 (affichée dans ⚙️ Options › À propos ; format de sauvegarde 44)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi, et
@@ -312,8 +315,9 @@ npm run smoke
 
 `tests/smoke.mjs` sert le dépôt avec un petit serveur statique Node sur un port libre, ouvre
 `jeu.html` dans Chromium (Playwright), lance une nouvelle partie, puis visite les cartes par
-`window.FermeHote.go` (la ville par la gare, le chemin de transition, la montagne, la plage,
-la grotte) et revient à la ferme. Il échoue sur une erreur de la console, une exception de
+`window.FermeHote.go` : la mine de la ferme, la ville (qui doit rester fermée), puis, en god
+mode, la ville par la gare, le chemin de transition, la montagne, la plage et la grotte, et
+revient à la ferme. Il échoue sur une erreur de la console, une exception de
 la page, une réponse HTTP ≥ 400 ou une carte qui ne s'ouvre pas ; les requêtes vers un autre
 hôte sont coupées. Playwright : celui du dépôt s'il est installé, sinon
 `/opt/node-tools/node_modules/playwright` ; navigateurs : `PLAYWRIGHT_BROWSERS_PATH` (par
