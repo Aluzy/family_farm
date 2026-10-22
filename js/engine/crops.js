@@ -9,6 +9,7 @@ import { gainActionXp, levelReached } from './levels.js';
 import { isMoonPhase, moonHarvestPct, moonWaterPct } from './lune.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { absoluteHours, dayHour } from './clock.js';
+import { aCruche, eauCruche, puiserCruche } from './cruche.js';
 import { farmSeed, farmTerrain, tileCount } from './terrain.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
@@ -431,9 +432,13 @@ export function waterPlot(state, plot, auto = false, note = true) {
   if (plot.arrose) return fail('Déjà arrosée : elle pousse.');
   if (isMature(plot)) return fail('Déjà mûre, inutile d\'arroser.');
   const litres = waterCost(state, plot);
-  if (state.eauMl < litres * 1000) return fail('Pas assez d\'eau dans le réservoir.');
+  // (sans assez d'eau dans le réservoir : celle de la cruche, à la main)
+  const cruche = state.eauMl < litres * 1000 && !auto;
+  if (cruche && eauCruche(state) < litres * 1000) return fail(aCruche(state) ? 'La cruche est vide : remplis-la au puits (touche-le).' : 'Pas assez d\'eau dans le réservoir.');
+  if (!cruche && state.eauMl < litres * 1000) return fail('Pas assez d\'eau dans le réservoir.');
   if (!auto && !canAfford(state, 'arroser')) return fail(TIRED); // version 1.8
-  state.eauMl -= litres * 1000;
+  if (cruche) puiserCruche(state, litres * 1000);
+  else state.eauMl -= litres * 1000;
   plot.arrose = true;
   plot.arroseH = absoluteHours(state); // elle gagne son stade POUSSE_HEURES heures plus tard
   if (!auto) spendEnergy(state, 'arroser');

@@ -103,7 +103,7 @@
     },
 
     // La faux : il tournoie ; un cercle balayé autour de ses pieds, les touffes à moins de
-    // C.rayonFaux px se couchent et s'effacent, leur paille tombe à leur pied.
+    // C.rayonFaux px se couchent et s'effacent, leur fibre tombe à leur pied.
     spinScythe(p) {
       const prises = (this.tallGrass || []).filter((g) => g.img && g.img.visible && !g.cut && !g.tombe && Math.hypot(g.x - p.x, g.y - p.y) <= C.rayonFaux);
       const points = {};

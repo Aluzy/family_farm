@@ -86,7 +86,7 @@ function alertMessage(ev) {
     case 'entretien': return `⚠️ ${name} : usure à ${formatNumber(DATA.USURE.SEUIL_ENTRETIEN)} %, pense à l'entretenir.`;
     case 'batteriesVides': return '🔋 Batterie vide : la pompe et les ateliers attendent le soleil.';
     case 'frigoCoupe': return '🧊 Réfrigérateur hors tension : il manque d\'énergie.';
-    case 'pailleManque': return `${DATA.OBJETS[DATA.PATURAGE.NOURRITURE].icone} Il manque de la paille pour les animaux cette nuit : fauche l'herbe haute, la faux en main.`;
+    case 'pailleManque': return `${DATA.OBJETS[DATA.PATURAGE.NOURRITURE].icone} Il manque de la paille pour les animaux cette nuit : fauche l'herbe haute (la faux en main) et jette ses fibres dans la botteleuse.`;
     default: return '';
   }
 }

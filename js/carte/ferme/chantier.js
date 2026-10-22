@@ -64,22 +64,36 @@
       if (this.has(BLOCS_CARTE.key)) {
         // (au-dessus d'une porte entre deux murs rehaussés : le mur continue, horizontal ou vertical)
         const haut = new Map((list || []).filter((b) => b.hauteur > 1).map((b) => [b.case, b.hauteur]));
+        const verre = new Set(serre || []);
+        const at = new Map((list || []).map((b) => [b.case, verre.has(b.case) && H.variantes[b.sorte] !== undefined ? 'mur_serre' : b.sorte]));
+        // la matière du mur où est percée la porte `b` : celle de son voisin de gauche ou de
+        // droite (un mur horizontal), sinon du dessus ou du dessous ; null : pas de mur
+        const murDe = (b, vertical) => {
+          const v = vertical ? [b.case - cols, b.case + cols] : [b.case - 1, b.case + 1];
+          return v.map((k) => at.get(k)).find((s) => H.variantes[s] !== undefined) || null;
+        };
         const linteau = (b) => {
           if (b.sorte !== 'porte' || !haut.size) return null;
           const h = (k) => haut.get(k) || 0;
           const hz = Math.min(h(b.case - 1), h(b.case + 1)), vt = Math.min(h(b.case - cols), h(b.case + cols));
-          if (hz > 1) return { h: hz, frame: this.hautFrame(BLOCS_CARTE.murs + 2 + 8) };
-          if (vt > 1) return { h: vt, frame: this.hautFrame(BLOCS_CARTE.murs + 1 + 4) };
+          // (le mur continue au-dessus de la porte, dans sa matière ; une fenêtre ou une paroi
+          // vitrée : un mur en pierre plein)
+          const plein = (s, masque) => {
+            if (!s || !this.has(H.key) || s === 'mur_fenetre' || s === 'paroi_vitree') return this.hautFrame(BLOCS_CARTE.murs + masque);
+            return [H.key, H.variantes[s] + masque];
+          };
+          if (hz > 1) return { h: hz, frame: plein(murDe(b, false), 2 + 8) };
+          if (vt > 1) return { h: vt, frame: plein(murDe(b, true), 1 + 4) };
           return null;
         };
-        const verre = new Set(serre || []);
-        const at = new Map((list || []).map((b) => [b.case, verre.has(b.case) && H.variantes[b.sorte] !== undefined ? 'mur_serre' : b.sorte]));
         for (const b of list || []) {
           seen.add(b.case);
           // (un meuble acheté au Marché : son propre dessin, assets/meuble_<dessin>.png)
           if (b.meuble) { if (this.syncMeuble(b)) changed = true; continue; }
           let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case), pleine: b.pleine }, at, cols);
           if (verre.has(b.case) && key === H.key && f === H.porte) f = H.porteSerre;
+          // (la porte d'un mur horizontal : le haut de son image est celui du mur voisin)
+          else if (key === H.key && f === H.porte && H.portes[murDe(b, false)] !== undefined) f = H.portes[murDe(b, false)];
           const e = B.get(b.case);
           if (e && e.sorte === b.sorte) {
             // (les flammes du four, la meule qui moud, la lanterne allumée : stepFires, stepLanterns choisissent leur image)

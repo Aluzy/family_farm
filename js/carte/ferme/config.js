@@ -193,10 +193,16 @@
       variantes: { mur_pierre: 0, mur_fenetre: 17, pierre_angle: 33, paroi_vitree: 97,
         // (les murs aux matières des immeubles de la ville : scripts/carte/blocs.py MATIERES_VILLE)
         mur_brique_rouge: 161, mur_brique_orange: 177, mur_brique_ocre: 193, mur_brique_bleue: 209, mur_pierre_taille: 225,
+        // (le mur en bois : des planches couchées, scripts/carte/blocs.py mur_bois)
+        mur_bois: 371,
         // (les murs de l'enceinte de la Serre, quels qu'ils soient : du verre dans des arêtes de
         // bois, scripts/carte/blocs.py verre_serre ; sa porte : `porteSerre`)
         mur_serre: 306 },
       porteSerre: 370,
+      // la porte (d'un mur horizontal) dans un mur d'une autre matière que la pierre : le mur
+      // voisin continue au-dessus d'elle (scripts/carte/blocs.py murs_hauts ; un linteau de bois
+      // dans le mur en bois) ; les autres murs : `porte`, en pierre
+      portes: { mur_brique_rouge: 387, mur_brique_orange: 388, mur_brique_ocre: 305, mur_brique_bleue: 389, mur_pierre_taille: 390, mur_bois: 391 },
       // `joints` : les murs qu'un voisin de même sorte prolonge (à gauche, à droite, des deux
       // côtés : deux fenêtres font une grande fenêtre, les parois vitrées une façade de verre)
       joints: { mur_fenetre: [17, 49, 65, 81], paroi_vitree: [97, 113, 129, 145], mur_serre: [306, 322, 338, 354] } },
@@ -233,14 +239,14 @@
     // la meule qui moud (le Moulin en marche) : sa pierre et sa manivelle tournent (`fps` images
     // par seconde, un tour en 8 images ; chantier.js stepFires)
     meule: { sorte: 'meule', frames: [81, 82, 83, 84, 85, 86, 87, 88], fps: 8 },
-    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur'],
+    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'meule', 'lanterne', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png ; la
     // station du robot : station_robot.png, machines.js)
     ailleurs: ['puits', 'citerne', 'station_robot'],
     // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la
     // batterie, le puits ou la citerne, l'énergie ou l'eau ; sur le nichoir, le Poulailler ; sur la mangeoire, l'Étable ; sur le bac à semis, la Serre ;
     // sur le coffre à grain, le Silo ; sur la meule, le Moulin
-    fenetres: { four: 'four', cuisiniere: 'cuisine', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', coffre_grain: 'silo', meule: 'moulin', station_robot: 'robot' },
+    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', coffre_grain: 'silo', meule: 'moulin', station_robot: 'robot' },
     // le bloc clé de chaque bâtiment (étape 5b) : là où l'on ramasse ce qu'il donne
     cles: { poulailler: 'nichoir', etable: 'mangeoire', serre: 'bac_semis', silo: 'coffre_grain' },
     voile: 0xc8ffb4, voileAlpha: 0.4, voileDepth: 0.08, coucheY: 4,

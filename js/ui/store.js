@@ -19,7 +19,7 @@ export const TABS = [
   { id: 'commerce', label: 'Commerce', icon: '🏪' }, // version 1.14 : fenêtre de la carte (menu latéral), au niveau du commerce
   { id: 'famille', label: 'Famille', icon: '👨‍👩‍👧‍👦' },
   { id: 'inventaire', label: 'Inventaire', icon: '📦' },
-  { id: 'atelier', label: 'Atelier', icon: '🔨' }, // la ferme générée : fenêtre de la carte (menu latéral)
+  { id: 'atelier', label: 'Construire', icon: '🔨' }, // la ferme générée : le menu Construire (l'Atelier : touché sur la carte)
   { id: 'recettes', label: 'Livre de recette', icon: '📖' },
   { id: 'techno', label: 'Arbre des technologies', icon: '🌳' },
   { id: 'comptoir', label: 'Marché', icon: '🧺' },
@@ -95,7 +95,7 @@ export function setRodMode(value) {
   if (value) { hoeMode = false; axeMode = false; pickMode = false; scytheMode = false; buildMode = null; }
   return value;
 }
-// La faux en main : un appui sur une touffe d'herbe haute de la carte la fauche (de la paille).
+// La faux en main : un appui sur une touffe d'herbe haute de la carte la fauche (de la fibre).
 export let scytheMode = false;
 export function setScytheMode(value) {
   scytheMode = value;

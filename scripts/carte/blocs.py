@@ -342,15 +342,17 @@ def porte_verticale():
 HAUTEUR_EN_PLUS = T
 
 
-def porte_haute(fond=None):
-    """La porte dans un mur haut : le mur plein (raccordé à gauche et à droite), un linteau de
-    pierre, et au-dessous la porte de planches cintrée, ses pentures, sa poignée, le seuil."""
+def porte_haute(fond=None, linteau=None):
+    """La porte dans un mur haut : le mur plein (raccordé à gauche et à droite), un linteau
+    (`linteau` : ses tons clair, moyen, des coins du cintre ; de la pierre sans lui), et
+    au-dessous la porte de planches cintrée, ses pentures, sa poignée, le seuil."""
     t = Toile(fond(2 | 8) if fond else mur(2 | 8))
+    clair, moyen, coin = linteau or (PIERRE[5], PIERRE[3], PIERRE[2])
     y0, x0, x1 = H - 22, 2, 13                   # le haut du battant (22 px de porte)
-    for x in range(1, 15):                       # le linteau : une pierre claire, son ombre
+    for x in range(1, 15):                       # le linteau : clair, son ombre
         t.put(x, y0 - 3, OUT)
-        t.put(x, y0 - 2, PIERRE[5])
-        t.put(x, y0 - 1, PIERRE[3])
+        t.put(x, y0 - 2, clair)
+        t.put(x, y0 - 1, moyen)
     bois = planches([CADRE[1], BOIS[1], BOIS[2], BOIS[3]], pas=2, x0=x0)
     for y in range(y0, H):
         t.put(1, y, CADRE[0])                    # le chambranle
@@ -358,7 +360,7 @@ def porte_haute(fond=None):
         for x in range(x0, x1 + 1):
             t.put(x, y, bois(x, y))
     for x, y in ((2, y0), (3, y0), (12, y0), (13, y0), (2, y0 + 1), (13, y0 + 1)):
-        t.put(x, y, PIERRE[2])                   # le cintre : les coins du haut restent en pierre
+        t.put(x, y, coin)                        # le cintre : les coins du haut restent du linteau
     for x, y in ((4, y0), (11, y0), (3, y0 + 1), (12, y0 + 1)):
         t.put(x, y, CADRE[0])
     for x in range(5, 11):
@@ -623,6 +625,43 @@ def mur_ville(m, motif, dessus):
     return t.im
 
 
+def mur_bois(m):
+    """Le mur haut de masque m en bois : des planches couchées sur la face (un joint sombre
+    toutes les 4 rangées, les aboutements décalés d'une planche à l'autre, calés sur la case :
+    deux murs voisins se raccordent), une lisse plus claire en haut, une sablière sombre au
+    pied ; le dessus, des planches au soleil ; les bords libres gardent le contour du mur."""
+    t = Toile(mur(m))
+    for y in range(H):
+        for x in range(W):
+            p = t.im.getpixel((x, y))
+            if not p[3] or p[:3] == OUT:
+                continue
+            if not m & 4 and CHAPE < y < BAS:
+                r = BAS - y                               # la hauteur au-dessus du pied
+                if y == CHAPE + 1:
+                    col = BOIS[4]                         # la lisse, au soleil
+                elif r <= 2:
+                    col = BOIS[0] if r == 2 else BOIS[1]  # la sablière
+                else:
+                    v = y - CHAPE - 2                     # les rangées de planches, de haut en bas
+                    k = v // 4
+                    if v % 4 == 3:
+                        col = BOIS[0]                     # le joint entre deux planches
+                    elif (x + 8 * (k % 2)) % 16 == 0:
+                        col = BOIS[1]                     # l'aboutement de deux planches
+                    elif v % 4 == 0:
+                        col = BOIS[3]                     # le haut de la planche, éclairé
+                    else:
+                        col = BOIS[2] if hasard(x // 3, k) < 0.25 and (x + v) % 5 == 0 else BOIS[2 if hasard(k, 7) < 0.5 else 3] if v % 4 == 2 else BOIS[3 if hasard(k, 5) < 0.5 else 2]
+                if (not m & 8 and x == 1) or (not m & 2 and x == 14):
+                    col = BOIS[3] if x == 1 else BOIS[1]  # les arêtes : claire à gauche, sombre à droite
+            else:
+                # le dessus : des planches au soleil, dans le sens du mur
+                col = BOIS[4] if y == 1 and not m & 1 else planches([BOIS[1], BOIS[2], BOIS[3], BOIS[4]], 'h' if m & 5 == 0 or m & 10 else 'v')(x, y)
+            t.put(x, y, col)
+    return t.im
+
+
 def murs_hauts():
     """Les 16 murs raccordés et la porte, une case plus hauts (images de 16 × (24 + 16)) ; puis
     les 16 murs à fenêtre et les 16 murs aux pierres d'angle (BLOCS_CARTE.hauts.variantes) ; puis
@@ -633,7 +672,9 @@ def murs_hauts():
     (l'immeuble de la ville), les fenêtres seules, prolongées à gauche, à droite, des deux
     côtés (241, 257, 273, 289 + masque) et la porte (305) ; puis les murs de verre de la serre,
     seuls, prolongés à gauche, à droite, des deux côtés (306, 322, 338, 354 + masque) et sa
-    porte (370)."""
+    porte (370) ; puis le mur en bois (371 + masque) ; puis la porte dans les murs des autres
+    matières (387 à 391 : briques rouges, orange, bleues, pierre de taille, bois ; celle des
+    briques ocre est la 305), son linteau de pierre, de bois dans le mur en bois."""
     global H, BAS, FACE
     garde = H, BAS, FACE
     motif, dessus = next((mo, de) for nom, mo, de in MATIERES_VILLE if nom == 'brique_ocre')
@@ -645,7 +686,10 @@ def murs_hauts():
                 + [fenetre(m, j) for j in (1, 2, 3) for m in range(16)] + [paroi_vitree(m, j) for j in range(4) for m in range(16)]
                 + [mur_ville(m, motif, dessus) for _, motif, dessus in MATIERES_VILLE for m in range(16)]
                 + [fenetre(m, j, ocre) for j in range(4) for m in range(16)] + [porte_haute(ocre)]
-                + [verre_serre(m, j) for j in range(4) for m in range(16)] + [porte_serre()], H)
+                + [verre_serre(m, j) for j in range(4) for m in range(16)] + [porte_serre()]
+                + [mur_bois(m) for m in range(16)]
+                + [porte_haute(lambda m, mo=motif, de=dessus: mur_ville(m, mo, de)) for nom, motif, dessus in MATIERES_VILLE if nom != 'brique_ocre']
+                + [porte_haute(mur_bois, (BOIS[4], BOIS[2], BOIS[1]))], H)
     finally:
         H, BAS, FACE = garde
 

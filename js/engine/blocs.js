@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
-import { atelierConstruit, atelierOuvert } from './atelier.js';
+import { atelierConstruit, atelierOuvert, atelierStatus, buildAtelier } from './atelier.js';
 import { farmSeed, farmTerrain, tileCount } from './terrain.js';
 import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
@@ -157,7 +157,8 @@ export const PORTE_SUR_MUR = 'La porte se pose sur un mur (elle prend sa place, 
 export function blocsEnMain(state, sorte) {
   const s = sorteDe(sorte);
   if (!s) return 0;
-  if (sorte === 'atelier') return atelierConstruit(state) && !Object.values(blocsPoses(state)).includes('atelier') ? 1 : 0;
+  // l'Atelier : à poser une fois ; pas encore construit, il se construit en le posant (poser)
+  if (sorte === 'atelier') return !atelierConstruit(state) ? (atelierOuvert(state) ? 1 : 0) : !Object.values(blocsPoses(state)).includes('atelier') ? 1 : 0;
   return countItem(state, s.objet);
 }
 
@@ -394,6 +395,11 @@ export function poseStatus(state, sorte, tile) {
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
+  // l'Atelier pas encore construit : ses matériaux (DATA.ATELIER.CONSTRUCTION) dans l'inventaire
+  if (sorte === 'atelier' && !atelierConstruit(state) && !atelierStatus(state).ok) {
+    const C = DATA.ATELIER.CONSTRUCTION;
+    return { ok: false, raison: `L'Atelier : il faut ${Object.entries(C).map(([o, n]) => `${n} ${DATA.OBJETS[o].nom.toLowerCase()}`).join(' et ')} (ramasse-les sur la carte).` };
+  }
   // le même mur posé sur un mur : il se rehausse d'un bloc (jusqu'à HAUTEUR_MAX)
   if (s.mur && blocAt(state, tile) === sorte) {
     return hauteurMur(state, tile) < DATA.ATELIER.HAUTEUR_MAX ? { ok: true } : { ok: false, raison: `Ce mur est déjà haut de ${DATA.ATELIER.HAUTEUR_MAX} blocs.` };
@@ -474,6 +480,7 @@ function poser(state, sorte, tile) {
   const s = sorteDe(sorte);
   const ancien = blocAt(state, tile);
   if (s.objet) takeItem(state, s.objet, 1);
+  if (sorte === 'atelier' && !atelierConstruit(state)) buildAtelier(state);   // (ses matériaux quittent l'inventaire)
   if (s.mur && ancien === sorte) {
     setHauteur(state, tile, hauteurMur(state, tile) + 1);
     majPoulailler(state);

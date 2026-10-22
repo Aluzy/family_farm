@@ -15,7 +15,7 @@ import { formatCoins, formatDay, formatNumber, formatPercent, weekdayShort } fro
 import { dayOfMonth, monthName, moonPhase } from '../engine/lune.js';
 import { renderCalendrier } from './calendrier.js';
 import {
-  activeTab, coucher, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setBuildMode, setComptoirTab, setCoucher, setEcranFerme, setVergerCase, state, tabAvailable, TABS, testMode, testOpen,
+  activeTab, buildMode, coucher, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setBuildMode, setComptoirTab, setCoucher, setEcranFerme, setVergerCase, state, tabAvailable, TABS, testMode, testOpen,
 } from './store.js';
 import { telView } from './consent.js';
 import { notify } from './toasts.js';
@@ -255,8 +255,8 @@ export const STAGE_WINDOWS = {
     enTete: () => inventoryTabsHtml(),
     corps: () => renderInventaire(true),
   },
-  // L'Atelier (menu latéral, sur la ferme générée seulement : js/ui/atelier.js) : fenêtre
-  // flottante dans le cadre bois, comme l'Inventaire.
+  // L'Atelier (un appui sur l'Atelier posé sur la carte, la ferme générée seulement :
+  // js/ui/atelier.js) : fenêtre flottante dans le cadre bois, comme l'Inventaire.
   atelier: {
     nom: 'Atelier', icone: '🔨', ok: () => atelierOuvert(state), bois: true, flottante: true,
     corps: () => renderAtelier(),
@@ -636,6 +636,8 @@ export function renderTabbar() {
         if (!tabAvailable(t.id)) {
           return `<button type="button" class="nav-btn locked" data-action="market-locked" title="${t.label}" aria-label="${t.label} : s'ouvre avec le panneau et la pompe"><span class="nav-icon" aria-hidden="true">${t.icon}<span class="nav-lock">🔒</span></span><span class="nav-label">${t.label}</span></button>`;
         }
+        // la ferme générée : 🔨 Construire ouvre le menu Construire (l'Atelier, lui, se touche sur la carte)
+        if (t.id === 'atelier') return `<button type="button" class="nav-btn${buildMode ? ' active' : ''}" data-action="build-toggle" data-tab="atelier" title="Construire" aria-label="Construire" aria-pressed="${!!buildMode}"><span class="nav-icon" aria-hidden="true">${t.icon}</span><span class="nav-label">Construire</span></button>`;
         const badge = t.id === 'notifications' && alerts > 0 ? `<span class="nav-badge" aria-hidden="true">${alerts}</span>` : '';
         const label = t.id === 'notifications' && alerts > 0 ? `${t.label} (${plural(alerts, 'alerte')})` : t.label;
         return `<button type="button" class="nav-btn${t.id === current ? ' active' : ''}" data-action="switch-tab" data-tab="${t.id}" title="${t.label}" aria-label="${label}"${t.id === current ? ' aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${t.icon}${badge}</span><span class="nav-label">${t.label}</span></button>`;

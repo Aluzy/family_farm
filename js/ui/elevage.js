@@ -28,6 +28,7 @@ import { helpBtn } from './aide.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { accord, canPay, costLabel, itemsText, plural } from './common.js';
+import { eauCruche } from '../engine/cruche.js';
 import { closeModal, openModal } from './modal.js';
 
 /* ---------- Ferme : Silo et Poulailler ---------- */
@@ -412,7 +413,7 @@ export function plotCard(p, n) {
     main = iconBtn('🧺', label, `data-action="harvest" data-id="${p.id}"`, { primary: true });
   } else {
     const litres = waterCost(state, p);
-    const noWater = state.eauMl < litres * 1000;
+    const noWater = state.eauMl < litres * 1000 && eauCruche(state) < litres * 1000;   // (la cruche aussi)
     const reste = growHoursLeft(state, p);
     const label = p.arrose ? `Arrosée : un stade dans ${Math.max(1, Math.ceil(reste))} h` : noWater ? `Arroser : il faut ${formatQty(litres)} L d'eau` : `Arroser (${formatQty(litres)} L)`;
     main = iconBtn('💧', label, `data-action="water" data-id="${p.id}"`, { done: p.arrose, disabled: p.arrose || noWater });

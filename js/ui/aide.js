@@ -376,7 +376,7 @@ const TUTO = {
     // version 1.12 : dans une nouvelle partie, tant que la ferme n'est pas installée, la bulle
     // dit par où commencer
     texte: () => (!farmOpen(state) && atelierOuvert(state) && !houseRepaired(state)
-      ? 'Une terre sauvage, sans maison : ramasse les petites pierres et les morceaux de bois (un appui dessus), cueille les baies des buissons pour reprendre des forces (même épuisé) ou coupe-les à la hache pour leur bois, construis l\'Atelier (menu), fabriques-y une faux pour faucher l\'herbe haute (ses fibres), puis des murs, une porte et une paillasse, puis bâtis une pièce close avec la case 🔨 de la barre d\'outils (la porte se pose sur un mur, à sa place). Ce sera ton foyer : on y dort, puis s\'installent le panneau solaire et la pompe.'
+      ? 'Une terre sauvage, sans maison : ramasse les petites pierres et les morceaux de bois (un appui dessus), cueille les baies des buissons pour reprendre des forces (même épuisé) ou coupe-les à la hache pour leur bois, pose l\'Atelier (menu, 🔨 Construire) et touche-le pour y fabriquer une faux pour faucher l\'herbe haute (ses fibres), puis des murs, une porte et une paillasse, puis bâtis une pièce close avec la case 🔨 de la barre d\'outils (la porte se pose sur un mur, à sa place). Ce sera ton foyer : on y dort, puis s\'installent le panneau solaire et la pompe.'
       : !farmOpen(state) && atelierOuvert(state)
       ? 'Ton foyer est bâti. Fabrique à l\'Atelier un puits, une pompe et un panneau solaire (il faut des lingots : le minerai de la grotte, fondu au four), puis pose-les avec la case 🔨 : le puits et le panneau dehors, la pompe sur le puits. Ils ouvrent la Zone de culture et le Marché ; une citerne gardera ensuite l\'eau pour arroser.'
       : !farmOpen(state)

@@ -109,7 +109,7 @@ function useTool(id) {
   }
   if (id === 'faux') {
     setScytheMode(true);
-    notify(`${def.ICONE} Faux en main : touche une touffe d'herbe haute de la carte pour la faucher (de la paille).`);
+    notify(`${def.ICONE} Faux en main : touche une touffe d'herbe haute de la carte pour la faucher.`);
     if (stageWindow) closeStageWindow();
     else refresh();
     return;

@@ -178,16 +178,30 @@ Le Marché vend toujours les outils.
     personnage en cueille 3, **sans énergie** (`gratuit`) : même épuisé et sans réserves, il
     trouve de quoi manger et ne reste pas bloqué ;
   - `state.cueillette` garde ce qui a déjà été pris aujourd'hui.
-- **L'Atelier** est une fenêtre du menu latéral, sur la ferme générée seulement
-  (`js/ui/atelier.js`) :
-  - il se construit avec 3 bois et 3 pierres (`state.atelier`) ;
+- **L'Atelier** est une fenêtre de la carte, sur la ferme générée seulement
+  (`js/ui/atelier.js`) : un appui sur l'Atelier posé l'ouvre (`BLOCS_CARTE.fenetres`) :
+  - il se construit avec 3 bois et 3 pierres (`state.atelier`), en le posant sur la carte :
+    l'entrée 🔨 Construire du menu latéral ouvre le menu Construire, dès le départ ;
   - ses recettes (`DATA.ATELIER.RECETTES`) sont fabriquées tout de suite : c'est le geste
     « fabriquer », qui coûte 2 d'énergie et rapporte 10 XP ;
   - les outils de pierre sont les mêmes que ceux du Marché, qui les vend toujours.
 - **Les nouveaux objets** (« matériau ») : fibre 🪢, planche 🪚, mur en pierre 🧱, porte 🚪,
   paillasse 🛏 ; leurs icônes sont dans `scripts/icones/art_atelier.py`.
-- **Sur la carte, pour l'instant**, l'Atelier n'est qu'une fenêtre. La pose bloc par bloc
-  (étape 4) lui donnera sa place.
+- **Le didacticiel** d'une nouvelle partie (`js/engine/didacticiel.js`, `js/ui/didacticiel.js`,
+  `DATA.DIDACTICIEL`) : une bulle de texte dit quoi faire et ce qu'il faut toucher porte un
+  anneau doré (dans la page) ou un cercle doré qui pulse (sur la carte,
+  `js/carte/ferme/didacticiel.js`, modèle `surbrillance`) ; les compteurs, sous le cadran, disent
+  ce qu'il reste à réunir. Ses étapes : les jauges (santé, endurance, bonheur, XP, autonomie,
+  argent), le déplacement, le ramassage (3 pierres, puis 3 bois), l'Atelier (menu latéral, 🔨
+  Construire, la case de l'Atelier, une case de la carte), l'Atelier touché sur la carte, la faux,
+  les fibres, la hache et la pioche, l'abri (bois et fibres, puis les murs en bois, la porte et une
+  paillasse par membre de la famille, puis la pièce close et ses paillasses), la houe, les graines
+  offertes (l'Inventaire), le labour, le semis, le puits et la cruche, l'arrosage. Pendant le
+  didacticiel, l'Atelier ne montre que les recettes qu'il a débloquées, le menu Construire que les
+  blocs utiles ; « Passer le didacticiel » débloque tout (les graines sont offertes quand même).
+- **La cruche à eau** (`js/engine/cruche.js`, `DATA.CRUCHE`) : un objet de l'Atelier (3 bois).
+  Un appui sur le puits posé la remplit (10 L) ; une plante arrosée y puise son eau quand la
+  citerne n'en a pas assez.
 
 ## Construire et dormir (étape 4)
 
@@ -235,6 +249,10 @@ Le Marché vend toujours les outils.
     murs (`mur: true`) : ils ferment une pièce, se raccordent à tous les autres murs, en changent
     un sans qu'on l'enlève et se posent à l'étage. Images de `murs_hauts.png` : 161, 177, 193,
     209, 225 + masque (`MATIERES_VILLE`, `scripts/carte/blocs.py`).
+  - **Le mur en bois** (4 bois) : des planches couchées sur la face, une lisse claire en haut,
+    une sablière sombre au pied, des planches au soleil sur le dessus. C'est un mur comme les
+    autres (`mur: true`) ; images de `murs_hauts.png` : 371 + masque (`mur_bois`,
+    `scripts/carte/blocs.py`).
   - Les murs et la porte d'un mur horizontal sont une case plus hauts que les autres blocs
     (`assets/murs_hauts.png`, 16 × 40 px, comme les maisons de la transition). Un mur qui cache
     le personnage ou un membre de la famille s'efface à moitié, et tous s'effacent en mode

@@ -1,12 +1,15 @@
-// atelier.js — la ferme générée (docs/carte-generee.md, étape 3) : l'Atelier (une fenêtre du
-// menu latéral, sur la ferme générée seulement) et ce qu'on ramasse à la main sur la carte.
+// atelier.js — la ferme générée (docs/carte-generee.md, étape 3) : l'Atelier (une fenêtre de la
+// carte : un appui sur l'Atelier posé, sur la ferme générée seulement) et ce qu'on ramasse à la
+// main sur la carte.
 //
-// L'Atelier se construit avec des matériaux (DATA.ATELIER.CONSTRUCTION) ; ensuite, chaque
+// L'Atelier se construit avec des matériaux (DATA.ATELIER.CONSTRUCTION), en le posant sur la
+// carte (menu 🔨 Construire, js/engine/blocs.js) ; ensuite, chaque
 // recette dit ce qu'elle prend et ce qu'elle donne, et un bouton la fabrique (grisé, avec ce
 // qui manque, quand on ne peut pas). Le moteur : js/engine/atelier.js.
 
 import { DATA } from '../engine/catalog.js';
-import { atelierConstruit, atelierStatus, buildAtelier, craft, craftStatus, ramasser } from '../engine/atelier.js';
+import { atelierConstruit, craft, craftStatus, ramasser } from '../engine/atelier.js';
+import { recettesDidacticiel } from '../engine/didacticiel.js';
 import { countItem } from '../engine/inventory.js';
 import { toolDef } from '../engine/outils.js';
 import { sortirBotte, verserFibres } from '../engine/botteleuse.js';
@@ -74,30 +77,24 @@ function recetteHtml(id, r) {
 
 export function renderAtelier() {
   const A = DATA.ATELIER;
+  // (pas encore construit : il se pose sur la carte, 🔨 Construire, et se construit alors)
   if (!atelierConstruit(state)) {
-    const st = atelierStatus(state);
     return `
       <div class="section-head"><h3>${A.ICONE} ${A.NOM}</h3></div>
       <div class="card">
         <p>Un établi pour travailler le bois, la pierre et la fibre ramassés sur la ferme : planches, murs, portes, paillasses et outils de pierre.</p>
         <span class="chips">${besoinHtml(A.CONSTRUCTION)}</span>
-        <button type="button" class="btn primary" data-action="atelier-construire"${st.ok ? '' : ' disabled'}>Construire l'Atelier</button>
-        ${st.ok ? '' : '<p class="muted">Ramasse sur la carte les petites pierres et les morceaux de bois (un appui dessus).</p>'}
+        <p class="muted">Ramasse sur la carte les petites pierres et les morceaux de bois (un appui dessus), puis pose l'Atelier : menu ${A.ICONE} Construire.</p>
       </div>`;
   }
+  // (pendant le didacticiel : seulement les recettes qu'il a débloquées)
+  const vues = recettesDidacticiel(state);
   return `
     <div class="section-head"><h3>${A.ICONE} ${A.NOM} · niveau ${state.atelier.niveau}</h3></div>
-    ${Object.entries(A.RECETTES).map(([id, r]) => recetteHtml(id, r)).join('')}`;
+    ${Object.entries(A.RECETTES).filter(([id]) => !vues || vues.has(id)).map(([id, r]) => recetteHtml(id, r)).join('')}`;
 }
 
 registerActions({
-  'atelier-construire': () => {
-    const r = buildAtelier(state);
-    if (!r.ok) { notify(r.error); return; }
-    notify(`${DATA.ATELIER.ICONE} L'Atelier est construit.`);
-    persistState();
-    refresh();
-  },
   'atelier-fabriquer': (target) => {
     const r = craft(state, target.dataset.recette);
     if (!r.ok) { notify(r.error); return; }
