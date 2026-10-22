@@ -22,7 +22,7 @@
       swing: [2, 1, 0, 3, 0, 1, 0], step: 75, reach: { x: 9, up: 6, down: 4 }, shade: 0.12 },
     // Un arbre devant le personnage, qui le cache : son opacité.
     devant: 0.6,
-    // L'ombre portée d'un arbre adulte (assets/ombre_arbre.png, scripts/carte/arbres_3d.py),
+    // L'ombre portée d'un arbre adulte (assets/ombre_arbre.png, scripts/carte/ombre_arbre.py),
     // posée sur le sol : son coin haut-gauche, (dx, dy) px du pied de l'arbre.
     ombre: { key: 'ombre_arbre', file: 'ombre_arbre.png', dx: -16, dy: -8 },
     // La hache : au dernier coup, l'arbre bascule de `angle` degrés autour de son pied (du côté

@@ -76,7 +76,7 @@ Le Marché vend toujours les outils.
 ## La ferme générée (étape 2)
 
 - **La carte** : `genererFerme(graine)` rend une carte au format de Tiled (144 × 114 tuiles),
-  dessinée avec les tuiles du décor version 2, comme `scripts/carte/carte_v2.py` dessine la carte
+  dessinée avec les tuiles du décor version 2, comme l'ancien `scripts/carte/carte_v2.py` dessinait la carte
   de Tiled :
   - l'herbe en trois teintes, qui ondulent selon un bruit ;
   - 2 à 4 étangs avec leurs rives (le premier assez grand pour le brochet), et le tronc creux au

@@ -126,7 +126,6 @@
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
         L.json('perso_cases', v('personnages/cases.json'));
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
-        L.spritesheet('coop', v('poulailler.png'), COOP_FRAME);
         L.spritesheet(TALL_GRASS.key, v(TALL_GRASS.file), TALL_GRASS.frame);
         L.spritesheet(TALL_GRASS.fleurs.key, v(TALL_GRASS.fleurs.file), TALL_GRASS.frame);
         L.spritesheet(ROOF_PANELS.key, v(ROOF_PANELS.file), ROOF_PANELS.frame);
@@ -148,12 +147,8 @@
         for (const name of LITS) L.image('meuble_' + name + '_drap', v('meuble_' + name + '_drap.png'));
         L.image(MAP.tiles, v(MAP.image));
         L.image('house_' + SFX, v('house_' + SFX + '.png'));
-        L.image('barn_' + SFX, v('barn_' + SFX + '.png'));
         L.image('serre_' + SFX, v('serre_' + SFX + '.png'));
-        L.spritesheet('windmill_' + SFX, v('windmill_' + SFX + '.png'), MILL_FRAME);
-        L.spritesheet('tree_' + SFX, v('basic_' + SFX + '.png'), TREE_FRAME);
         L.spritesheet('verger', v('verger.png'), TREE_FRAME);
-        L.spritesheet('pine_sp', v('pine_sp.png'), { frameWidth: 58, frameHeight: 64 });
         L.spritesheet('arbre_clair_sp', v('arbre_clair_sp.png'), { frameWidth: 56, frameHeight: 64 });
         L.spritesheet('pin_clair_sp', v('pin_clair_sp.png'), { frameWidth: 72, frameHeight: 64 });
         L.image('terre_bords', v('terre_bords.png'));

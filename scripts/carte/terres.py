@@ -127,7 +127,7 @@ def main():
 
     # Arbres du Verger : leurs rectangles et une tuile autour.
     verger = [o for n, o in objets.items() if n.startswith('arbre_verger_')]
-    # les couches d'arbres ajoutées par scripts/carte/carte_v2.py (layer_tree_0, layer_tree_0b…)
+    # les couches d'arbres ajoutées par l'ancien scripts/carte/carte_v2.py (layer_tree_0, layer_tree_0b…)
     couvrantes = COUVRANTES + [n for n in layers if n.startswith('layer_tree') and n not in COUVRANTES]
     ok = []
     raison = []

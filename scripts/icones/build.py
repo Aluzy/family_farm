@@ -15,7 +15,7 @@ Sources, dans cet ordre (une icône déjà vue n'est pas reprise) :
        ART = {'b-serre': [rangées], ...}      (même PALETTE ; ART_SCALE = 2 les double)
      ou art() qui renvoie {nom: Image}. Ils forment assets/art.png, des cases de 32×32 où
      le dessin est centré et posé sur le bas (js/ui/animations.js, artSvg()).
-  2. FROM_SHEET ci-dessous : cases reprises des planches du jeu (récoltes de crops.png…),
+  2. FROM_SHEET ci-dessous : cases reprises des planches du jeu (la courgette de crops.png…),
      pour que l'icône d'un légume soit celle qu'on voit sur la carte.
   3. derived(icônes) dans un art_*.py : icônes faites à partir des autres (sachets de graines).
 
@@ -39,16 +39,7 @@ COLS = 16
 
 # emoji : (planche, colonne, rangée) — cases de 16×16
 FROM_SHEET = {
-    '🌾': ('crops.png', 13, 6),
-    '🥕': ('crops.png', 4, 1),
-    '🥔': ('crops.png', 4, 3),
-    '🧅': ('crops.png', 13, 3),
-    '🍓': ('crops.png', 14, 4),
-    '🥬': ('crops.png', 4, 6),
-    '🍅': ('crops.png', 14, 9),
-    '🫑': ('crops.png', 14, 11),
     '🥒': ('crops.png', 4, 11),
-    '🍎': ('crops.png', 9, 12),
     # les trouvailles de la montagne et de la plage (scripts/ville/faune.py) : l'image de la carte
     '🪨‍🐚': ('trouvailles.png', 0, 0),
     '🪨‍🪲': ('trouvailles.png', 1, 0),

@@ -138,7 +138,7 @@ porte ni bêtes, sans rien régler.
 **Les portes.** Celle de l'Étable n'a pas d'image à elle : les images « entrouverte » et
 « ouverte » sont fabriquées au démarrage à partir de l'image de l'Étable (`BARN_DOOR` : où sont
 les battants dans `barn_*.png`, de combien ils coulissent). Celle du Poulailler est dans sa
-planche (`assets/poulailler.png`, trois images de 44×55 : fermée, entrouverte, ouverte) ; son
+planche (l'ancien `assets/poulailler.png`, retiré avec la carte dessinée) ; son
 seuil est `COOP_SILL`. Changer le dessin d'un bâtiment demande de revoir ces mesures.
 
 **Une espèce** = une ligne dans `HERD` (ambient-life.js), une ligne dans `HERD_SHEETS`

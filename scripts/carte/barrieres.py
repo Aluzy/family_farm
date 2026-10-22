@@ -7,7 +7,7 @@
 # Les poteaux du devant et du fond font 5 px de large, un tous les PAS px, avec trois lisses
 # (rangées 35 à 37 du modèle) ; les côtés empilent des tronçons de poteau de TRONCON px.
 #
-# Utilisé par scripts/carte/carte_v2.py : chaque barrière de la carte (BARRIERES) y est dessinée
+# Utilisé par l'ancien scripts/carte/carte_v2.py : chaque barrière de la carte (BARRIERES) y était dessinée
 # au pixel près, puis découpée en tuiles de 16 px (les tuiles identiques une seule fois) :
 # assets/barrieres.png (bloc « barrieres » de scripts/carte/planche_v2.py).
 import os

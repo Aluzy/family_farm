@@ -52,19 +52,15 @@
   const ORCHARD_FRAMES = { libre: 0, jeune: 1, arbre: 3 };
   const ORCHARD_ADULT = 2;                                   // à partir de l'arbre (stade) : feuilles et écureuils
   const TREE_BODY = 0.5;                                     // part de l'image qu'occupe l'arbre (le feuillu de 48 px), en largeur
-  // Ombres portées des arbres (scripts/carte/arbres_3d.py) : celles des arbres de la carte,
-  // une image de la taille de la carte posée sur le sol (les arbres eux-mêmes en sont exclus),
-  // et celle d'un arbre adulte du Verger, posée sous lui ; (dx, dy) : son coin haut-gauche par
-  // rapport au pied de l'arbre (milieu du bas de son image).
+  // L'ombre d'un arbre adulte du Verger (scripts/carte/ombre_arbre.py), posée sous lui :
+  // CarteKit.NATURE.ombre (js/carte/nature.js).
   // Arbres de la carte (couches layer_tree_*, sauf layer_tree_top) qui se coupent à la hache :
-  // un arbre est un groupe de cases voisines d'une même couche. Les deux arbres du pack qui ont
-  // une feuille de sprites (le feuillu, le sapin) tremblent sous le coup avec elle : `box`, leur
+  // un arbre est un groupe de cases voisines d'une même couche. Les arbres qui ont une feuille
+  // de sprites tremblent sous le coup avec elle : `box`, leur
   // place dans la planche (colonne, rangée, largeur, hauteur, en tuiles) ; `dx, dy`, le coin
   // de l'image de la feuille par rapport au coin haut-gauche de l'arbre ; `frames`, les images
   // jouées. Les autres arbres tremblent d'un pixel, de gauche à droite.
   const CHOP_TREES = {
-    feuillu: { box: [12, 0, 4, 5], key: 'tree_sp', dx: -8, dy: 1, frames: [0, 1, 2, 1, 2, 3, 4, 5, 6, 7, 0] },
-    sapin: { box: [9, 4, 3, 4], key: 'pine_sp', dx: -5, dy: 0, frames: [0, 1, 2, 1, 2, 1, 0] },
     // le décor version 2 (scripts/carte/planche_v2.py, arbre_clair.py) : l'arbre clair et le pin
     // Ils restent d'un bloc et penchent autour de leur pied (images : 0 droit, 1 à droite, 2 à
     // gauche, avec 4 px de marge de chaque côté) : droite, milieu, gauche, milieu, droite, milieu.
@@ -328,11 +324,11 @@
   // Bâtiments : `object` = rectangle nommé de la carte (le bas-centre de l'image se pose sur
   // le bas-centre du rectangle), `window` = fenêtre ouverte par un appui. La maison est
   // toujours là ; les autres n'apparaissent que si modèle.batiments[id].visible est vrai.
+  // (Seule l'ancienne carte dessinée a ces rectangles : sur la ferme générée, tout se bâtit en
+  // blocs. L'étable, le poulailler et le moulin n'y ont plus d'image : leur forme de secours.)
   const BUILDINGS = [
     { id: 'maison', object: 'maison', tex: 'house', suffixed: true, window: 'maison' },
     { id: 'etable', object: 'grange', tex: 'barn', suffixed: true, window: 'etable' },
-    // poulailler.png : trois images de 44×55 (porte fermée, entrouverte, ouverte) ; la vie
-    // d'ambiance ouvre la porte le matin pour faire sortir les poules.
     { id: 'poulailler', object: 'poulailler', tex: 'coop', suffixed: false, window: 'poulailler', frame: 0 },
     { id: 'moulin', object: 'moulin', tex: 'windmill', suffixed: true, window: 'moulin', anim: true },
     { id: 'serre', object: 'serre', tex: 'serre', suffixed: true, window: 'serre', frame: SERRE_FRAME },
@@ -358,10 +354,7 @@
   // même découpe que l'image d'origine.
   const RUINES = {
     maison: { key: 'house_sp_ruine', file: 'house_sp_ruine.png' },
-    etable: { key: 'barn_sp_ruine', file: 'barn_sp_ruine.png' },
-    moulin: { key: 'windmill_sp_ruine', file: 'windmill_sp_ruine.png', sheet: 'mill', frame: 0 },
     serre: { key: 'serre_sp_ruine', file: 'serre_sp_ruine.png', frame: 'batiment' },
-    poulailler: { key: 'poulailler_ruine', file: 'poulailler_ruine.png', sheet: 'coop', frame: 0 },
     silo: { key: 'silo_ruine', file: 'silo_ruine.png' },
   };
   // chat.png : le chat de la vie d'ambiance, 8 cases de 16×16 (leur ordre : CAT_FRAMES dans

@@ -15,9 +15,8 @@
 #   fissure(), toile(), herbes(), mousse().
 # Le hasard est fixe (graine par bâtiment) : relancer le script redonne les mêmes images.
 #
-# Images d'origine : celles de scripts/batiments/style_v2.py (la ferme, l'étable, le moulin et
-# le poulailler du décor version 2), le pack "Farm – 4 Seasons 16x16 Tileset" (antarcticbees)
-# pour la serre, silo.png du dépôt. Lancer style_v2.py avant ce script. Seules les images de printemps (_sp) sont faites : la carte garde
+# Images d'origine : celles de scripts/batiments/style_v2.py (la ferme et la serre du décor
+# version 2), silo.png du dépôt. Lancer style_v2.py avant ce script. Seules les images de printemps (_sp) sont faites : la carte garde
 # l'apparence du printemps toute l'année (SEASONS_ON_MAP dans js/farm-stage.js).
 import colorsys
 import os
@@ -245,109 +244,6 @@ def maison():
     return m
 
 
-def etable():
-    """barn_sp.png (104×93) : toit de bardeaux à deux pentes, pignon de planches claires,
-    murs de planches verticales, deux baies sombres, double porte au centre."""
-    m = Ruine('barn_sp.png', 23)
-    m.vieillir()
-    def toit(x, y):
-        return 0 <= x < m.W and 0 <= y < m.H and orange(m.orig.getpixel((x, y)))
-    m.trou([(22, 23, 8, 3), (19, 26, 11, 3), (21, 29, 7, 3), (23, 32, 3, 2)], pente=(0, 1), ecart=3, dedans=toit)
-    m.trou([(70, 29, 7, 3), (71, 32, 7, 3), (73, 35, 4, 2)], pente=(0, 1), ecart=3, dedans=toit)
-    m.trou([(92, 52, 6, 4)], pente=(0, 1), ecart=3, dedans=toit)
-    for (x, y) in ((45, 10), (60, 17), (9, 47), (35, 35), (82, 41), (40, 26)):
-        m.trou([(x, y, 3, 2)], ecart=99, dedans=toit)
-    m.planche_h(28, 48, 40, 51)                          # planche du pignon arrachée
-    m.planche(8, 62, 10, 88)                             # planches de mur manquantes
-    m.planche(92, 59, 94, 84)
-    m.planche(16, 70, 18, 89)
-    m.deplacer(52, 59, 67, 88, 1, 2)                     # le battant droit pend
-    m.clouer(22, 66, 34, 68)                             # baies condamnées
-    m.clouer(22, 78, 34, 76)
-    m.clouer(69, 70, 81, 74)
-    m.toile(24, 61, 1, 1, 4)
-    m.fissure([(48, 38), (50, 41), (49, 44)])
-    m.mousse(4, 48, 20, 62, 0.15, dedans=toit)
-    m.mousse(86, 44, 102, 62, 0.12, dedans=toit)
-    m.herbes(3, 101, 92, hmax=4, densite=0.35)
-    return m
-
-
-def moulin():
-    """windmill_sp.png (4 cases de 96×128, les ailes tournent) : le moulin cassé ne tourne
-    plus. Les 4 cases reçoivent la même image : l'animation du jeu peut rester branchée, le
-    moulin reste immobile. Une aile arrachée, une aile raccourcie, des lattes manquantes."""
-    src = Image.open(os.path.join(ASSETS, 'windmill_sp.png')).convert('RGBA')
-    cases = [src.crop((i * 96, 0, i * 96 + 96, 128)) for i in range(4)]
-    # Les ailes de la case 0 (en croix) : verticale haute, horizontale gauche et droite,
-    # verticale basse (devant la tour), moyeu au centre.
-    AILES = {'haut': (43, 9, 51, 45), 'gauche': (8, 46, 45, 55), 'droite': (52, 46, 88, 55), 'bas': (40, 56, 52, 93)}
-    MOYEU = (44, 45, 52, 57)
-    dans = lambda x, y, r: r[0] <= x <= r[2] and r[1] <= y <= r[3]
-    aile = lambda x, y: any(dans(x, y, r) for r in AILES.values()) and not dans(x, y, MOYEU)
-    # 1. la tour sans ailes : derrière une aile de la case 0, on prend le pixel d'une case
-    #    où les ailes sont ailleurs (cases 2, 1, 3), s'il n'y est pas couvert lui non plus.
-    creme = lambda c: c[3] > 0 and c[0] > 160 and c[1] > 140 and abs(c[0] - c[2]) < 50
-    tour = cases[0].copy()
-    tp, sp = tour.load(), [c.load() for c in cases]
-    for y in range(128):
-        for x in range(96):
-            if not aile(x, y):
-                continue
-            tp[x, y] = (0, 0, 0, 0)
-            for k in (2, 1, 3):
-                c = sp[k][x, y]
-                if c[3] == 0 or not creme(c):
-                    tp[x, y] = c
-                    break
-    # là où les trois autres cases ont aussi une aile, on prolonge le pixel de gauche
-    for y in range(128):
-        for x in range(1, 96):
-            if aile(x, y) and tp[x, y][3] == 0 and 27 <= x <= 73 and 34 <= y and tp[x - 1, y][3]:
-                tp[x, y] = tp[x - 1, y]
-    m = Ruine('windmill_sp.png', 37, image=tour)
-    # 2. on remet ce qui reste des ailes de la case 0
-    a0 = sp[0]
-    garde = []
-    for y in range(128):
-        for x in range(96):
-            if dans(x, y, MOYEU):
-                garde.append((x, y))
-            elif dans(x, y, AILES['haut']) and y >= 17 + (x * 7) % 4:               # bout arraché
-                garde.append((x, y))
-            elif dans(x, y, AILES['gauche']):
-                latte = (13 <= x <= 16 or 26 <= x <= 28) and 48 <= y <= 53       # lattes manquantes
-                if not latte and x >= 8 + (y * 5) % 3:
-                    garde.append((x, y))
-            elif dans(x, y, AILES['droite']) and x <= 60 + (y * 3) % 4:             # aile cassée net
-                garde.append((x, y))
-            elif dans(x, y, AILES['bas']) and y <= 74 + (x * 5) % 4:
-                garde.append((x, y))
-    for (x, y) in garde:
-        c = a0[x, y]
-        if c[3]:
-            m.put(x, y, c, c[3])
-    m.vieillir()
-    # 3. la tour : vitres cassées, balcon troué, crépi fissuré, porte condamnée
-    sarcelle = lambda c: c[2] >= c[0] and sum(c[:3]) / 3 < 110
-    m.vitre(28, 77, 39, 82, verre=sarcelle)
-    m.vitre(56, 77, 68, 82, verre=sarcelle)
-    m.planche_h(30, 88, 38, 90)
-    m.planche_h(58, 87, 66, 89)
-    m.trou([(56, 36, 4, 3), (58, 39, 3, 2)], pente=(0, 1), ecart=3)
-    m.fissure([(31, 96), (33, 99), (32, 103), (35, 106)])
-    m.fissure([(62, 97), (60, 100), (63, 104)])
-    m.clouer(42, 109, 56, 115)
-    m.herbes(26, 72, 127, hmax=4, densite=0.4)
-    ruine = Image.new('RGBA', src.size, (0, 0, 0, 0))
-    for i in range(4):
-        ruine.alpha_composite(m.im, (i * 96, 0))
-    m.im = ruine
-    m.W, m.H = ruine.size
-    m.px = ruine.load()
-    return m
-
-
 def serre():
     """serre_sp.png (96×81, scripts/batiments/style_v2.py) : toit de lattes claires (rangées 19
     à 37), bandeau vitré (40 à 43), vitres des deux ailes et double porte vitrée (46 à 70) dans
@@ -377,24 +273,6 @@ def serre():
     return m
 
 
-def poulailler():
-    """poulailler.png (3 cases de 44×55 : porte fermée, entrouverte, ouverte) : les mêmes
-    dégâts sur les trois cases, porte comprise."""
-    m = Ruine('poulailler.png', 53)
-    m.vieillir()
-    toit = lambda x, y: 0 <= x < m.W and 0 <= y < m.H and orange(m.orig.getpixel((x, y))) and y % 55 < 30
-    for i in range(3):
-        o = i * 44
-        m.trou([(o + 8, 10, 6, 3), (o + 6, 13, 7, 3), (o + 8, 16, 4, 2)], pente=(0, 1), ecart=3, dedans=toit)
-        m.trou([(o + 31, 18, 4, 3)], pente=(0, 1), ecart=3, dedans=toit)
-        for (x, y) in ((o + 20, 6), (o + 36, 11), (o + 14, 22)):
-            m.trou([(x, y, 3, 2)], ecart=99, dedans=toit)
-        m.planche_h(o + 4, 39, o + 10, 41)
-        m.fissure([(o + 34, 31), (o + 36, 34), (o + 35, 37)])
-        m.herbes(o + 2, o + 42, 54, hmax=3, densite=0.4)
-    return m
-
-
 def silo():
     """silo.png (28×62, scripts/batiments/silo.py) : bardeaux arrachés, planches manquantes,
     pierres du collier tombées."""
@@ -412,7 +290,7 @@ def silo():
     return m
 
 
-BATIMENTS = [maison, etable, moulin, serre, poulailler, silo]
+BATIMENTS = [maison, serre, silo]
 
 
 def apercu(faits, k=5):

@@ -29,7 +29,7 @@ jeu.html                  la page : structure seule, charge les fichiers ci-dess
      ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node tests/run-tests.mjs
      └─ js/ui/            interface ; la carte : stage.js (« Carte Phaser ») et stage-windows.js (« Fenêtres de la carte »)
 tests/engine/             tests du moteur, un fichier par thème (jamais chargés par la page)
-assets/                   cartes Tiled (carte_printemps.json et serre_interieur.json, et leurs sources .tmj) + images du pack
+assets/                   cartes Tiled (carte_printemps.json et serre_interieur.json, et leurs sources .tmj) + images (toutes dessinées par scripts/)
 ```
 
 Flux de données, à sens unique dans chaque direction :
@@ -198,7 +198,10 @@ la ferme dormait à côté avec ses propres textures.
 (1152×912 px), treize couches de tuiles et une couche d'objets `batiment`. Elle est fabriquée
 depuis la carte de travail `assets/carte_printemps_elargie.tmj` (voir « Mettre la carte à
 jour »). Depuis la version 1.6, le jeu n'a plus de saisons : la carte et les images des
-bâtiments sont celles du printemps (suffixe `_sp` des fichiers du pack, constante `SFX`).
+bâtiments sont celles du printemps (suffixe `_sp`, constante `SFX`). Cette carte n'est plus
+jouée (toutes les parties sont sur la ferme générée) : les 45 premières rangées de sa planche
+(`farm_spring_summer.png`, celles d'un ancien pack graphique) sont vides, et l'étable, le
+poulailler et le moulin n'y ont plus d'image (leur forme de secours).
 
 - **Sol cuit en une image.** Au démarrage, `bakeGround()` lit le JSON brut
   (`cache.tilemap.get(clé).data`) et dessine toutes les couches de tuiles dans un seul canvas
@@ -223,9 +226,9 @@ bâtiments sont celles du printemps (suffixe `_sp` des fichiers du pack, constan
   | Objet | Image | Affiché si | Fenêtre |
   |---|---|---|---|
   | `maison` | `house_*` | toujours | Maison |
-  | `grange` | `barn_*` (l'étable) | Pâturage débloqué, ou des moutons ou des vaches | Étable |
-  | `poulailler` | `poulailler.png` (3 images de 44×55 : porte fermée, entrouverte, ouverte) | Poulailler débloqué | Poulailler |
-  | `moulin` | `windmill_*` (4 images de 96×128, animé) | un atelier débloqué | Moulin et ateliers |
+  | `grange` | forme de secours (l'étable) | Pâturage débloqué, ou des moutons ou des vaches | Étable |
+  | `poulailler` | forme de secours | Poulailler débloqué | Poulailler |
+  | `moulin` | forme de secours | un atelier débloqué | Moulin et ateliers |
   | `serre` | `serre_*`, découpe « batiment » (verrière seule, 94×83) | Serre débloquée | Serre |
   | `silo` | `silo.png` (28×62, dessiné par `scripts/batiments/silo.py`) | Silo débloqué ou construit | Silo |
   | `maison` (versant droit du toit) | `panneaux_toit.png` (6 images de 32×47, dessinées par `scripts/batiments/panneaux_toit.py`) | panneau acheté, maison réparée ; niveau du panneau + 1 panneaux | — |

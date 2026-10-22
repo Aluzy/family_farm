@@ -972,7 +972,7 @@ export const RAW_DATA = {
       "litres": 3,
       "rendement": 10,
       "graines": { "item": "graine_tomate", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 9, "h": 32, "c": [9, 10, 12, 13] }
+      "sprite": { "r": 27, "h": 32, "c": [10, 11, 12, 13] }
     },
     "courgette": {
       "nom": "Courgette",
@@ -1012,7 +1012,7 @@ export const RAW_DATA = {
       "litres": 3,
       "rendement": 8,
       "graines": { "item": "graine_oignon", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 3, "h": 32, "c": [9, 10, 11, 12] }
+      "sprite": { "r": 29, "h": 32, "c": [0, 1, 2, 3] }
     },
     "ail": {
       "nom": "Ail",

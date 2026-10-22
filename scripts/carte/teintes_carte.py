@@ -8,7 +8,7 @@
 #
 #   python3 scripts/carte/teintes_carte.py
 #
-# À lancer en dernier, après scripts/carte/arbres_3d.py, les scripts des planches d'herbe
+# À lancer en dernier, après les scripts des planches d'herbe
 # (herbe_chemin, herbe_deco, bordure_eau) et scripts/carte/planche_v2.py : ils repartent des
 # couleurs d'origine. Le script remplace des couleurs exactes ; une couleur déjà retouchée
 # n'est plus dans les listes : le relancer ne change rien. Le chemin n'est retouché que dans
