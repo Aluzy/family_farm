@@ -6,7 +6,7 @@
 
 import { assert, assertEqual, garden, reach, setInv, sleepOnce, test, tireless } from './aide.mjs';
 import { readFileSync } from 'node:fs';
-import { blocGid, TRONC_CREUX } from '../../js/engine/planche.js';
+import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, couchagesEtage, etageCouvertes, ETAGE_BLOCS, chopTree, bushOf, bushCut, cutBushes, respawnBushes, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
@@ -38,11 +38,34 @@ test('ferme générée : la même graine donne la même carte, une autre graine 
   assert(JSON.stringify(c.carte) !== JSON.stringify(a.carte), 'une autre graine, une autre carte');
   // d'une fois sur l'autre (pas seulement dans la même page) : toujours la même ferme pour
   // « test-1 » (à mettre à jour si le générateur change, ce qui change les fermes des parties)
-  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 256, 12007]);
+  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 255, 12010]);
   assertEqual([a.carte.width, a.carte.height, a.terrain.LARGEUR, a.terrain.HAUTEUR], [FERME_GENEREE.LARGEUR, FERME_GENEREE.HAUTEUR, 144, 114]);
 });
 
 for (const graine of ['1', '2', '7', 'abc', '12345']) {
+  test(`ferme générée « ${graine} » : l'entrée de la mine, dans les bois, la porte dégagée`, () => {
+    const { carte, terrain } = genererFerme(graine);
+    const W = carte.width, T = carte.tilewidth;
+    const o = carte.layers.find((l) => l.name === 'batiment').objects.find((x) => x.name === 'mine');
+    assert(o, 'le rectangle de la mine');
+    assertEqual([o.width, o.height, o.x % T, o.y % T], [3 * T, 3 * T, 0, 0], '3 × 3 tuiles');
+    const c0 = o.x / T, r0 = o.y / T;
+    const plantes = carte.layers.find((l) => l.name === 'plantes_pierres').data;
+    for (let k = 0; k < 9; k++) {
+      const i = (r0 + Math.floor(k / 3)) * W + c0 + (k % 3);
+      assertEqual(plantes[i], MINE[k], 'les tuiles du tas');
+      assertEqual(terrain.LIGNES[Math.floor(i / W)][i % W], '.', 'on ne bâtit pas sur la mine');
+    }
+    // devant la porte : deux rangées d'herbe, sans arbre (on y arrive en remontant)
+    const arbres = carte.layers.filter((l) => l.name.startsWith('layer_tree'));
+    for (const r of [r0 + 3, r0 + 4]) {
+      for (let c = c0; c < c0 + 3; c++) {
+        assertEqual(terrain.LIGNES[r][c], '#', 'de l\'herbe devant la porte');
+        assert(arbres.every((l) => !l.data[r * W + c]), 'aucun arbre devant la porte');
+      }
+    }
+  });
+
   test(`ferme générée « ${graine} » : un chemin mène de la maison à la sortie vers la transition`, () => {
     const { carte, terrain } = genererFerme(graine);
     const W = carte.width, T = carte.tilewidth;

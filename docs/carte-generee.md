@@ -104,6 +104,25 @@ Le Marché vend toujours les outils.
     blocs : la pierre des bâtiments taillée en pans, un contour sombre, de la mousse sur les
     gros. Trois tailles : 2 × 2 cases, 1 × 2 (debout ou couché) et 1 × 1 (`DESSINS_ROCHERS` :
     l'emprise de chaque forme, et ses dessins).
+- **La mine** : un tas de terre de 3 × 3 tuiles, sa porte sombre étayée de poutres au milieu du
+  bas (`scripts/carte/mine.py`, le bloc « mine » de la planche, `MINE`). Il est posé à 16 à 34
+  tuiles de la maison (`MINE_DISTANCE`), là où le bois est le plus dense, sur de l'herbe franche
+  loin du chemin et de l'eau ; pas de rocher à une tuile autour. Des arbres poussent tout contre
+  et le cachent un peu (leur feuillage sur ses colonnes de gauche et de droite, un derrière),
+  jamais sur la porte ni sur les deux rangées d'herbe devant elle. Ses cases ne se bâtissent
+  pas ; le rectangle `mine` (couche « batiment ») arrête le personnage. Un double appui sur le
+  tas, ou le personnage poussé au doigt vers la porte quand il est juste devant, et il y entre
+  (`MINE` dans `js/carte/ferme/config.js`, `js/carte/ferme/passages.js`, `entre` dans
+  `js/fermier.js`) : il va devant, monte dans la porte en s'effaçant, puis le premier niveau de
+  la grotte s'ouvre (`js/ville-carte.js`, l'entrée « ferme »). Au premier niveau, l'échelle
+  ramène à la ferme (`jeu.html?arrivee=mine`) : il sort de la porte en apparaissant et descend
+  devant.
+- **Les arbres devant le personnage** s'effacent un peu quand il passe derrière, mais seulement
+  derrière leur dessin : chaque image d'arbre a son masque (des carrés de 4 px, opaques à plus de
+  moitié : `probeOf`, `couvre` dans `js/carte/ferme/decor.js`), que le corps du personnage doit
+  toucher ; les coins vides de l'image ne comptent pas. Ils n'arrêtent le personnage qu'à leur
+  tronc (la case de son pied, `buildGrid` dans `js/fermier.js`) : on passe à côté et derrière,
+  sous le feuillage.
 - **Le chemin** est tracé par un A* (`js/engine/chemin.js`), de la porte de la maison au bord
   est. Le rectangle `vers_la_transition` y est posé.
 - **Le terrain** (`js/engine/terrain-carte.js`) est calculé d'après la carte, avec les règles de

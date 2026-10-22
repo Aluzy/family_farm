@@ -13,6 +13,10 @@
   const K = global.CarteKit;
   const F = global.FermeCarte;
   const { T, MAP, OCCLUDER_ALPHA, TALL_GRASS, SPRITE_CHECKS, MIN_TAP } = F.C;
+  // Le masque d'un arbre : des carrés de MASQUE px. Le corps du personnage, qu'un arbre cache :
+  // `l` px de chaque côté de ses pieds, de `h` px au-dessus d'eux à `pied` px au-dessus.
+  const MASQUE = 4;
+  const CORPS = { l: 5, h: 26, pied: 2 };
   const { pixelRatio, reducedMotion } = F;
   const DECOR_MARGE = 64;           // px autour de la vue : dessiné quand même (voir cullDecor)
   const HERBE_MORCEAU = 256;        // px : le côté d'un morceau d'herbe haute (voir makeTallGrass)
@@ -89,17 +93,37 @@
       this.drawLayer(ctx, raw, o.layer, set, img, o.cells, null, true);
       ctx.restore();
       o.tex.refresh();
-      o.probe = this.probeOf(o.tex, o.w, o.h);
+      o.probe = this.probeOf(o.tex, o.w, o.h, o);
     },
 
     // Un point opaque d'une image dessinée dans un canevas (null s'il n'y en a pas) : s'il
-    // redevient transparent, le navigateur a vidé le canevas (voir spritesWiped).
-    probeOf(tex, w, h) {
+    // redevient transparent, le navigateur a vidé le canevas (voir spritesWiped). Avec `o` (un
+    // arbre, un buisson) : son masque aussi, o.mask, une case par carré de MASQUE px, 1 là où
+    // l'image est surtout opaque (le personnage n'est caché que derrière : stepOccluders).
+    probeOf(tex, w, h, o) {
       try {
         const d = tex.getContext().getImageData(0, 0, w, h).data;
+        if (o) {
+          const M = MASQUE, mw = Math.ceil(w / M), mh = Math.ceil(h / M), n = new Uint16Array(mw * mh);
+          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 128) n[((y / M) | 0) * mw + ((x / M) | 0)]++;
+          o.mask = { M, mw, mh, cases: n.map((k) => (k * 2 >= M * M ? 1 : 0)) };
+        }
         for (let i = 3; i < d.length; i += 4) if (d[i] > 200) { const k = (i - 3) / 4; return { x: k % w, y: (k / w) | 0 }; }
       } catch (e) { /* pas de vérification pour cette image */ }
       return null;
+    },
+
+    // Le rectangle (x0, y0)–(x1, y1) (px de carte) touche-t-il une partie opaque de l'arbre `o` ?
+    // (sans masque : son rectangle)
+    couvre(o, x0, y0, x1, y1) {
+      const a = Math.max(x0, o.x), b = Math.min(x1, o.x + o.w), c = Math.max(y0, o.y), e = Math.min(y1, o.y + o.h);
+      if (a >= b || c >= e) return false;
+      const m = o.mask;
+      if (!m) return true;
+      for (let cy = Math.floor((c - o.y) / m.M); cy <= Math.min(m.mh - 1, Math.floor((e - 1 - o.y) / m.M)); cy++) {
+        for (let cx = Math.floor((a - o.x) / m.M); cx <= Math.min(m.mw - 1, Math.floor((b - 1 - o.x) / m.M)); cx++) if (m.cases[cy * m.mw + cx]) return true;
+      }
+      return false;
     },
 
     // Les arbres, les barrières et les rochers de la carte sont dessinés chacun dans son
@@ -136,14 +160,15 @@
     },
 
     // À chaque image : l'arbre devant le personnage (son pied plus bas que celui du
-    // personnage) et qui le recouvre devient transparent, doucement ; les autres redeviennent
+    // personnage) et qui le recouvre vraiment (son feuillage, son tronc : son masque, pas les
+    // coins vides de son image) devient transparent, doucement ; les autres redeviennent
     // opaques.
     stepOccluders(dt) {
       if (!this.occluders || !this.occluders.length) return;
       const p = this.fermier && !this.room ? this.fermier.pos() : null;
       for (const o of this.occluders) {
         if (!o.img || o.regrowing) continue;
-        const derriere = p && p.y < o.foot && p.x + 6 > o.x && p.x - 6 < o.x + o.w && p.y > o.y + 4 && p.y - 28 < o.y + o.h;
+        const derriere = p && p.y < o.foot && this.couvre(o, p.x - CORPS.l, p.y - CORPS.h, p.x + CORPS.l, p.y - CORPS.pied);
         const want = derriere ? OCCLUDER_ALPHA : 1;
         if (o.alpha === want) continue;
         o.alpha = K.fondu(o.alpha, want, dt);

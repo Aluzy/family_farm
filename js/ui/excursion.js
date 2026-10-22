@@ -147,29 +147,31 @@ function ouvre(page, search) {
   document.body.classList.add('en-excursion');
   history.replaceState(null, '', page === 'infra-monde.html' ? 'jeu.html?carte=infra' : 'jeu.html' + search);
   refresh();
-  if (lib.start(el, search) === false) { rentre(false); return false; }
+  if (lib.start(el, search) === false) { rentre(null); return false; }
   // l'infra-monde n'a pas de chemin de retour : un bouton
   if (page === 'infra-monde.html') {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'btn map-retour';
     b.textContent = '🌳 Retour à la ferme';
-    b.onclick = () => rentre(false);
+    b.onclick = () => rentre(null);
     el.appendChild(b);
   }
   return true;
 }
 
-// Retour à la ferme : `est` : le personnage arrive au bout du chemin de l'est.
-function rentre(est = true) {
+// Retour à la ferme : `arrivee` : le personnage arrive au bout du chemin de l'est (« est »),
+// devant la porte de la mine (« mine »), ou là où il était (null).
+function rentre(arrivee = null) {
   for (const p of Object.keys(CARTES)) { const lib = CARTES[p](); if (lib && lib.stop) lib.stop(); }
   active = null;
   const el = mapEl();
   if (el) { el.hidden = true; delete el.dataset.carte; el.querySelectorAll('.map-retour').forEach((b) => b.remove()); }
   document.body.classList.remove('en-excursion');
-  history.replaceState(null, '', 'jeu.html' + (est ? '?arrivee=est' : ''));
+  const ou = ['est', 'mine'].includes(arrivee) ? arrivee : null;
+  history.replaceState(null, '', 'jeu.html' + (ou ? '?arrivee=' + ou : ''));
   refresh();
-  if (est && window.FarmStage && window.FarmStage.arriveEast) window.FarmStage.arriveEast();
+  if (ou && window.FarmStage && window.FarmStage.arrive) window.FarmStage.arrive(ou);
 }
 
 // Changer de carte (une flèche, le train, un lien) : « jeu.html… » ramène à la ferme.
@@ -177,10 +179,10 @@ function rentre(est = true) {
 // ville-carte.html et infra-monde.html ne font que ramener ici).
 export function go(cible) {
   const { page, search } = parse(cible);
-  if (page === 'jeu.html' || page === '') { rentre(new URLSearchParams(search).get('arrivee') === 'est'); return; }
+  if (page === 'jeu.html' || page === '') { rentre(new URLSearchParams(search).get('arrivee')); return; }
   if (ouvre(page, search)) return;
   if (!CARTES[page]) { window.location.href = cible; return; }
-  if (active) rentre(false);
+  if (active) rentre(null);
   else history.replaceState(null, '', 'jeu.html');
   showToast('🗺️ Cette carte ne peut pas s\'afficher sur cet appareil.');
 }
@@ -324,6 +326,7 @@ const DESTINATIONS = [
   ['🏙️ La ville (route de la ferme)', 'ville-carte.html?carte=ville&arrivee=ferme'],
   ['🚉 La ville (la gare)', 'ville-carte.html?carte=ville&arrivee=gare'],
   ['⛰️ La montagne', 'ville-carte.html?carte=montagne&arrivee=gare'],
+  ['⛏️ La mine de la ferme', 'ville-carte.html?carte=grotte&grotte=ferme&niveau=1&arrivee=haut'],
   ['⛏️ La grotte, niveau 1', 'ville-carte.html?carte=grotte&grotte=30&niveau=1&arrivee=haut'],
   ['⛏️ La grotte, niveau 4', 'ville-carte.html?carte=grotte&grotte=30&niveau=4&arrivee=haut'],
   ['⛏️ La grotte, niveau 8', 'ville-carte.html?carte=grotte&grotte=30&niveau=8&arrivee=haut'],
@@ -366,7 +369,7 @@ document.addEventListener('click', (e) => {
 // ferme. La nuit seule n'y oblige pas.
 setInterval(() => {
   if (!active) return;
-  if (asleep(state)) { rentre(false); showToast('💤 Tu dors : retour à la maison.'); }
+  if (asleep(state)) { rentre(null); showToast('💤 Tu dors : retour à la maison.'); }
 }, 500);
 
 // Au chargement, l'adresse jeu.html?carte=… rouvre cette carte (après la mise en place).

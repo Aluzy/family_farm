@@ -19,6 +19,7 @@ export const BLOCS = {
   buisson_large: [61, 50, 3, 2],
   rochers: [16, 55, 8, 2],
   tronc_creux: [24, 55, 2, 1],
+  mine: [16, 57, 3, 3],
 };
 
 // Numéro de tuile (gid, à partir de 1) de la k-ième tuile d'un bloc (rangée par rangée).
@@ -81,3 +82,8 @@ export const DESSINS_ROCHERS = {
 // js/carte/ferme/config.js), deux tuiles côte à côte de « plantes_pierres » : celles du bloc
 // « tronc_creux » (scripts/carte/tronc_creux.py). La carte de Tiled garde celui du pack (539, 540).
 export const TRONC_CREUX = [blocGid('tronc_creux', 0), blocGid('tronc_creux', 1)];
+
+// L'entrée de la mine (le passage vers les niveaux de la grotte : MINE dans
+// js/carte/ferme/config.js), un tas de terre de 3 × 3 tuiles de « plantes_pierres », la porte au
+// milieu de la rangée du bas : le bloc « mine » (scripts/carte/mine.py).
+export const MINE = Array.from({ length: 9 }, (_, k) => blocGid('mine', k));
