@@ -20,6 +20,7 @@ import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { itemsText } from './common.js';
+import { subtabsHtml } from './inventaire.js';
 
 // La carte : le personnage a pris ce qui était au sol (`id`). Renvoie { ok, items } ou null
 // (un message).
@@ -75,6 +76,23 @@ function recetteHtml(id, r) {
     </div>`;
 }
 
+// Deux onglets : les outils (houe, hache, pioche, faux), puis les matériaux (tout le reste).
+const ATELIER_TABS = [
+  { id: 'outils', icon: '⛏️', label: 'Outils' },
+  { id: 'materiaux', icon: '🧱', label: 'Matériaux' },
+];
+let atelierTab = 'outils';
+
+// L'onglet de la recette `id` (le didacticiel montre l'onglet avant le bouton Fabriquer).
+export const ongletRecette = (id) => (DATA.ATELIER.RECETTES[id] && DATA.ATELIER.RECETTES[id].outil ? 'outils' : 'materiaux');
+export const ongletAtelier = () => atelierTab;
+const dansOnglet = (r) => (atelierTab === 'outils' ? !!r.outil : !r.outil);
+
+// La rangée d'onglets (sous le titre de la fenêtre) : une fois l'Atelier construit.
+export function atelierOngletsHtml() {
+  return atelierConstruit(state) ? subtabsHtml(ATELIER_TABS, atelierTab, 'atelier-tab') : '';
+}
+
 export function renderAtelier() {
   const A = DATA.ATELIER;
   // (pas encore construit : il se pose sur la carte, 🔨 Construire, et se construit alors)
@@ -89,12 +107,18 @@ export function renderAtelier() {
   }
   // (pendant le didacticiel : seulement les recettes qu'il a débloquées)
   const vues = recettesDidacticiel(state);
+  const recettes = Object.entries(A.RECETTES).filter(([id, r]) => (!vues || vues.has(id)) && dansOnglet(r));
   return `
     <div class="section-head"><h3>${A.ICONE} ${A.NOM} · niveau ${state.atelier.niveau}</h3></div>
-    ${Object.entries(A.RECETTES).filter(([id]) => !vues || vues.has(id)).map(([id, r]) => recetteHtml(id, r)).join('')}`;
+    ${recettes.length ? recettes.map(([id, r]) => recetteHtml(id, r)).join('')
+    : `<p class="muted">${atelierTab === 'outils' ? 'Aucun outil à fabriquer pour l\'instant.' : 'Aucun matériau à fabriquer pour l\'instant.'}</p>`}`;
 }
 
 registerActions({
+  'atelier-tab': (target) => {
+    atelierTab = target.dataset.tab === 'materiaux' ? 'materiaux' : 'outils';
+    refresh();
+  },
   'atelier-fabriquer': (target) => {
     const r = craft(state, target.dataset.recette);
     if (!r.ok) { notify(r.error); return; }

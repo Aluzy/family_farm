@@ -41,7 +41,7 @@ import { memberNameHtml, persoHtml, renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
-import { renderAtelier } from './atelier.js';
+import { atelierOngletsHtml, renderAtelier } from './atelier.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { encyclopedieNouveautes } from './encyclopedie.js';
 import { couchages } from '../engine/blocs.js';
@@ -260,6 +260,7 @@ export const STAGE_WINDOWS = {
   // js/ui/atelier.js) : fenêtre flottante dans le cadre bois, comme l'Inventaire.
   atelier: {
     nom: 'Atelier', icone: '🔨', ok: () => atelierOuvert(state), bois: true, flottante: true,
+    onglets: () => atelierOngletsHtml(),
     corps: () => renderAtelier(),
   },
   // Marché (menu latéral) : fenêtre flottante comme l'Inventaire ; en-tête : les rayons en
@@ -396,6 +397,7 @@ export function renderStageWindow() {
   }
   if (stageWindowShown === null) windowFocusBack = rememberFocus();
   const detail = w.detail ? w.detail() : '';
+  const onglets = w.onglets && !windowLocked(stageWindow) ? w.onglets() : '';
   morph(root, `
     <div class="window-layer${w.flottante ? ' flottante' : ''}">
       <div class="window-backdrop" data-action="stage-close"></div>
@@ -405,7 +407,7 @@ export function renderStageWindow() {
           ${stageWindow !== 'chapitres' && !w.enTete ? '<button type="button" class="icon-btn window-chapter" data-action="stage-open" data-window="chapitres" aria-label="Voir le chapitre en cours" title="Voir le chapitre">📜</button>' : ''}
           <button type="button" class="icon-btn" id="stage-window-close" data-action="stage-close" aria-label="Fermer" title="Fermer">✕</button>
         </header>
-        ${w.onglets && !windowLocked(stageWindow) ? `<div class="window-tabs">${w.onglets()}</div>` : ''}
+        ${onglets ? `<div class="window-tabs">${onglets}</div>` : ''}
         <div class="window-body${w.sansTitre ? ' sans-titre' : ''}">${windowLocked(stageWindow) ? lockedBody(stageWindow) : w.corps()}</div>
       </section>
     </div>`);
