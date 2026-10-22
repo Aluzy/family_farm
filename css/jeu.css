@@ -1404,12 +1404,13 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   background: rgba(var(--wood-bg-rgb), 0.94);
   border: 2px solid var(--color-earth);
   border-radius: 6px;
+  color: var(--wood-ink); /* le texte sombre du bois, en clair comme en sombre */
   font-family: 'Ferme Dialogue', sans-serif;
   font-size-adjust: none;
   font-size: 16px;
   white-space: nowrap;
 }
-.didac-compteur.ok { border-color: #2f8a3a; background: #d9f2c9; }
+.didac-compteur.ok { border-color: #2f8a3a; background: #d9f2c9; color: #1f5a28; }
 .didac-ring {
   outline: 3px solid #ffd23f;
   outline-offset: 3px;
