@@ -14,7 +14,7 @@ import { isUnlocked } from './campaign.js';
 import { unlockLevel } from './levels.js';
 import { installStarter, removeStarter, starterBlock } from './depart.js';
 import { robotOn } from './automation.js';
-import { couchagesEtage, rangerEtage } from './etage.js';
+import { couchagesEtage, etageHorsEmprise, rangerEtage } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
@@ -218,6 +218,16 @@ function melangeSansMur(state, tile) {
   if (!mele) return null;
   const genres = [...new Set(blocsDe(reste, mele.cases).map((b) => genreBloc(b.sorte)).filter(Boolean))].map((g) => GENRES_PIECE[g]);
   return `Ce mur sépare ${genres.join(' et ')} : retiré, les deux ne feraient plus qu'une enceinte.`;
+}
+
+// Changer les blocs du bas (`blocs`, les blocs posés après le changement) ferait-il perdre des
+// blocs posés à l'étage (la pièce de l'escalier ouverte ou coupée : son emprise rétrécit) ?
+function etageEnPeril(state, blocs) {
+  if (!Object.keys(state.etage || {}).length) return false;
+  const avant = etageHorsEmprise(state).length;
+  const perdus = etageHorsEmprise({ ...state, blocs }).length;
+  piecesCloses(state);   // (le cache revient sur la vraie partie)
+  return perdus > avant;
 }
 
 /* ---------- ce que devient une pièce close : une maison ou un bâtiment ---------- */
@@ -430,6 +440,8 @@ export function poseStatus(state, sorte, tile) {
   if ((state.potager.parcelles || []).some((p) => p.case === tile)) return { ok: false, raison: 'Une terre labourée : rebouche-la d\'abord.' };
   if (s.dedans && !dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dans une pièce close (des murs tout autour, et une porte).` };
   if (s.dehors && dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dehors, pas dans une pièce close.` };
+  // (un mur qui couperait la pièce de l'escalier : l'étage perdrait ce qui est posé au-dessus)
+  if (s.ferme && etageEnPeril(state, { ...blocsPoses(state), [tile]: sorte })) return { ok: false, raison: `${s.nom} : couperait la pièce de l'escalier, et l'étage perdrait ce qui y est posé. Reprends d'abord ces blocs de l'étage.` };
   // une maison ou un bâtiment : pas de bloc d'un autre genre (le premier posé décide)
   const p = !s.ferme && !s.sol && pieceDe(state, tile);
   const refus = p && refusGenre(state, sorte, p);
@@ -518,6 +530,10 @@ export function reprendreBloc(state, tile, opts) {
   if (!dessus && bloc && sorteDe(bloc).ferme && !(opts && opts.force)) {
     const melange = melangeSansMur(state, tile);
     if (melange) return fail(melange);
+    // un mur (une porte) qui porte l'étage : retiré, la pièce de l'escalier s'ouvrirait et ce qui
+    // est posé à l'étage tomberait ; il reste
+    const { [tile]: _ote, ...reste } = blocsPoses(state);
+    if (etageEnPeril(state, reste)) return fail(`${sorteDe(bloc).nom} : il porte l'étage. Reprends d'abord ce qui est posé à l'étage au-dessus.`);
   }
   if (dessus) delete state.blocsDessus[tile];
   else if (bloc) { delete state.blocs[tile]; setHauteur(state, tile, 1); }
