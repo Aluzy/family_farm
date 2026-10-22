@@ -19,7 +19,7 @@
 # assets/herbe_haute_fleurs.png (même découpe) : les fleurs seules ; le jeu les pose par-dessus
 # la touffe sans la teinte du sol, qui les ternirait.
 #
-# Les zones d'herbe haute sont posées sur la carte par scripts/carte/carte_v2.py (couche
+# Les zones d'herbe haute étaient posées sur la carte de Tiled par l'ancien scripts/carte/carte_v2.py (couche
 # d'objets « herbe_haute » : un point par touffe, type = rangée de l'herbe).
 import math
 import os

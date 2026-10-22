@@ -364,9 +364,10 @@ PASSAGES = [
 ARRIVEES = {'ferme': (2.5, 36.9), 'ville': (W - 2.5, 32.6)}
 
 # Les images des rochers et des cailloux (assets/transition_objets.png, cases de 32 × 32, le
-# pied au milieu du bas) : lues dans la planche de la ferme, celles de ses rochers.
-ROCHERS_IMAGES = {'rocher_a': (15, 6, 2, 2), 'rocher_b': (15, 8, 2, 1), 'rocher_c': (15, 9, 2, 2),
-                  'caillou_0': (13, 10, 1, 1), 'caillou_1': (14, 10, 1, 1)}
+# pied au milieu du bas) : lues dans la planche de la ferme, celles de ses rochers (le bloc
+# « rochers » de scripts/carte/planche_v2.py, colonne 16 rangée 55 ; scripts/carte/rochers.py).
+ROCHERS_IMAGES = {'rocher_a': (16, 55, 2, 2), 'rocher_b': (21, 56, 2, 1), 'rocher_c': (18, 55, 2, 2),
+                  'caillou_0': (23, 55, 1, 1), 'caillou_1': (23, 56, 1, 1)}
 
 
 def planche_objets():

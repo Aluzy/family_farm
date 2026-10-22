@@ -1,18 +1,18 @@
-# Les cultures de la carte, dessinées pour le jeu (elles ne viennent plus du pack) : la carotte,
-# la pomme de terre, l'épinard, la fraise, le blé, le riz, le tournesol et le houblon, et la
-# graine des cultures déjà redessinées (l'aubergine, le poivron, l'ail, le cacao, le café, la
-# vanille), qui commencent elles aussi par une graine.
+# Les cultures de la carte, dessinées pour le jeu : la carotte, la pomme de terre, l'épinard,
+# la fraise, le blé, le riz, le tournesol, le houblon, la tomate et l'oignon, et la graine des
+# cultures déjà redessinées (l'aubergine, le poivron, l'ail, le cacao, le café, la vanille), qui
+# commencent elles aussi par une graine (la courgette : scripts/carte/courgette.py).
 #
-#   python3 scripts/carte/cultures.py            ajoute les rangées à assets/crops.png
+#   python3 scripts/carte/cultures.py            réécrit assets/crops.png (rangées BASE et suivantes)
 #   python3 scripts/carte/cultures.py --apercu   écrit aussi apercu_cultures.png
 #
-# assets/crops.png garde ses rangées 0 à 17 (les icônes des récoltes s'y découpent,
-# scripts/icones/build.py) ; ce script réécrit les rangées BASE et suivantes : des bandes de deux
-# rangées (cases de 16 × 32, le dessin posé au bas de la case), trois cultures par bande, cinq
-# colonnes par culture (data/crops.json : sprite { r, h: 32, c }, une colonne par phase) :
+# assets/crops.png garde ses rangées 0 à 17 (vides, sauf la courgette de la rangée 11) ; ce
+# script réécrit les rangées BASE et suivantes : des bandes de deux rangées (cases de 16 × 32,
+# le dessin posé au bas de la case), trois cultures par bande, cinq colonnes par culture
+# (data/crops.json : sprite { r, h: 32, c }, une colonne par phase) :
 #   - les cultures redessinées ici : 4 phases (graine, pousse, plante, plante mûre) ;
-#   - les cultures déjà redessinées : leur graine, puis leurs 4 dessins (repris de leur rangée
-#     d'avant : 5 phases).
+#   - les cultures déjà redessinées : leur graine, puis leurs 4 dessins (repris là où ils sont :
+#     5 phases).
 # Toutes commencent par la graine : le jour où on la plante, on voit des graines dans un petit
 # trou de terre, pas déjà une pousse. Lumière en haut à gauche, contour sombre d'un pixel.
 import math
@@ -481,19 +481,98 @@ def houblon(phase):
     return d.image()
 
 
+# ---------- la tomate ----------
+
+def tomate(phase):
+    if phase == 0:
+        return graine([(180, 160, 110), (232, 214, 160), (248, 236, 196)], 'rond')
+    if phase == 1:
+        d = pousse(5, 2.2)
+        d.feuille(8.4, 25.2, 1.4, 1.0, 0.0, nervure=False)
+        return d.image()
+    d = Dessin()
+    tuteur(d, 10 if phase == 2 else 3)
+    haut = 14 if phase == 2 else 6
+    # la tige monte le long du tuteur, des feuilles découpées de part et d'autre
+    for y in range(31, haut - 1, -1):
+        d.p(9 + (1 if (y // 4) % 2 else 0), y, TIGE)
+    k = 0
+    for y in range(29, haut, -4):
+        s_ = -1 if k % 2 else 1
+        d.feuille(9.5 + s_ * 3.2, y, 2.6, 1.6, s_ * 0.5)
+        d.feuille(9.5 + s_ * 5.0, y + 1.2, 1.4, 1.0, s_ * 0.6, nervure=False)
+        k += 1
+    d.feuille(9.5, haut, 1.8, 1.4, 0.0, nervure=False)
+    if phase == 2:
+        # de petites fleurs jaunes
+        for x, y in ((5, 19), (13, 16), (6, 24)):
+            d.p(x, y, JAUNE[2], nu=True)
+            d.p(x + 1, y, JAUNE[1], nu=True)
+            d.p(x, y - 1, JAUNE[3], nu=True)
+    else:
+        # les tomates mûres, en grappes, et une encore verte
+        for x, y, r in ((5, 12, 1.9), (14, 15, 2.1), (5, 20, 2.2), (13.5, 23, 1.9), (6.5, 27, 1.8)):
+            d.rond(x, y, r, ROUGE)
+            d.p(x - 0.5, y - r, VERT[3])
+        d.rond(13.5, 8.5, 1.5, [VERT[1], VERT[2], VERT[3], VERT[4]])
+    return d.image()
+
+
+# ---------- l'oignon ----------
+
+OIGNON = [(120, 62, 20), (178, 104, 40), (218, 150, 70), (244, 200, 130)]
+
+
+def tubes(d, x, y0, hs, angs):
+    """Les feuilles creuses de l'oignon : des tiges de deux pixels, raides puis un peu penchées."""
+    for h, a in zip(hs, angs):
+        for k in range(int(h * 2) + 1):
+            t = k / (h * 2)
+            xx = x + math.sin(a * (0.4 + t)) * h * t
+            yy = y0 - math.cos(a * (0.4 + t)) * h * t
+            d.p(xx, yy, VERT[2])
+            d.p(xx + 1, yy, VERT[3] if t < 0.8 else VERT[4])
+
+
+def oignon(phase):
+    if phase == 0:
+        return graine([(20, 18, 16), (52, 48, 44), (90, 84, 78)], 'rond')
+    d = Dessin()
+    if phase == 1:
+        tubes(d, 7.5, 31, (5, 6), (-0.25, 0.25))
+    elif phase == 2:
+        tubes(d, 7, 30, (8, 11, 9), (-0.45, 0.05, 0.5))
+        d.rond(8, 30, 2.2, OIGNON)
+    else:
+        # le bulbe doré sort de terre, les feuilles jaunissent et se couchent
+        tubes(d, 7, 25, (8, 10, 7), (-0.9, 0.15, 1.0))
+        for y in range(23, 27):
+            d.p(7, y, VERT[1])
+            d.p(8, y, VERT[2])
+        d.rond(8, 28.2, 3.6, OIGNON)
+        d.p(8, 31, OIGNON[0])
+        d.p(5, 28, OIGNON[1])
+        d.p(11, 28, OIGNON[1])
+    return d.image()
+
+
+
+
+# les cultures déjà redessinées : leur graine, puis leurs 4 dessins, repris là où ils sont dans
+# la planche (les colonnes après leur graine : le script se relance sans rien perdre)
+GRAINES = {
+    'aubergine': (lambda: graine([(150, 140, 100), (214, 200, 150), (236, 226, 184)], 'rond'), 19, [1, 2, 3, 4]),
+    'poivron': (lambda: graine([(160, 140, 90), (226, 208, 150), (244, 232, 190)], 'rond'), 19, [6, 7, 8, 9]),
+    'ail': (caieu, 19, [11, 12, 13, 14]),
+    'cacao': (lambda: graine([(60, 32, 20), (106, 62, 36), (150, 96, 60)], 'feve', n=2), 21, [1, 2, 3, 4]),
+    'cafe': (lambda: graine([(48, 26, 16), (86, 50, 28), (126, 82, 48)], 'feve', n=2), 21, [6, 7, 8, 9]),
+    'vanille': (bouture, 21, [11, 12, 13, 14]),
+}
+
 NOUVELLES = {
     'carotte': carotte, 'patate': patate, 'epinard': epinard, 'fraise': fraise,
     'ble': ble, 'riz': riz, 'tournesol': tournesol, 'houblon': houblon,
-}
-
-# les cultures déjà redessinées : leur graine, puis leurs 4 dessins (rangée et colonnes d'avant)
-GRAINES = {
-    'aubergine': (lambda: graine([(150, 140, 100), (214, 200, 150), (236, 226, 184)], 'rond'), 15, [0, 1, 2, 3]),
-    'poivron': (lambda: graine([(160, 140, 90), (226, 208, 150), (244, 232, 190)], 'rond'), 17, [0, 1, 2, 3]),
-    'ail': (caieu, 17, [4, 5, 6, 7]),
-    'cacao': (lambda: graine([(60, 32, 20), (106, 62, 36), (150, 96, 60)], 'feve', n=2), 15, [4, 5, 6, 7]),
-    'cafe': (lambda: graine([(48, 26, 16), (86, 50, 28), (126, 82, 48)], 'feve', n=2), 15, [8, 9, 10, 11]),
-    'vanille': (bouture, 15, [12, 13, 14, 15]),
+    'tomate': tomate, 'oignon': oignon,
 }
 
 
@@ -514,7 +593,8 @@ def main():
     places = bandes()
     rangees = max(r for r, _ in places.values()) + 1
     out = Image.new('RGBA', (sheet.width, rangees * T), (0, 0, 0, 0))
-    out.alpha_composite(sheet.crop((0, 0, sheet.width, BASE * T)), (0, 0))
+    # (au-dessus de BASE, seule la courgette de scripts/carte/courgette.py : rangée 11, 5 cases)
+    out.alpha_composite(sheet.crop((0, 11 * T, 5 * T, 12 * T)), (0, 11 * T))
     for nom, (r, cols) in places.items():
         y = (r + 1) * T - H
         if nom in GRAINES:

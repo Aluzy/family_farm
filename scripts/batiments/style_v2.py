@@ -1,24 +1,19 @@
 # Les bâtiments du décor version 2, dans le style de la nouvelle ferme.
 #
-#   python3 scripts/batiments/style_v2.py            écrit assets/house_sp.png, barn_sp.png,
-#                                                    windmill_sp.png, poulailler.png, serre_sp.png
+#   python3 scripts/batiments/style_v2.py            écrit assets/house_sp.png et serre_sp.png
 #   python3 scripts/batiments/style_v2.py --apercu   écrit aussi apercu_style_v2.png
 #
 # Puis python3 scripts/batiments/ruines.py : les versions à réparer partent de ces images.
 #
 # La ferme : scripts/batiments/originaux/ferme_modele.png (94 × 97), telle quelle sauf le toit
 # (son orange adouci en brun rouge, TOIT) — murs de planches dorées, volets et vitres turquoise, terrasse de planches grises.
-# L'étable, le moulin et le poulailler en dérivent : on part des images d'origine (pack
-# « Farm – 4 Seasons », gardées dans originaux/*_v1.png ; même taille, mêmes cases, donc mêmes
-# animations dans le jeu), et chaque matière prend la palette de la ferme. Une matière est un
-# ensemble de pixels (une couleur d'origine, éventuellement limitée à une zone) ; ses couleurs
-# se rangent par luminosité et prennent, dans cet ordre, les tons de la rampe de la ferme.
-# Le relief du dessin (ses ombres, ses lumières) est donc gardé.
-# Enfin, la maison, l'étable et le moulin prennent les couleurs de la serre (PALETTE_SERRE,
-# « bois naturel ») ; le poulailler garde celles de la ferme.
+# Puis la maison prend les couleurs de la serre (PALETTE_SERRE, « bois naturel ») : chaque
+# matière (un ensemble de pixels, une couleur d'origine éventuellement limitée à une zone) range
+# ses couleurs par luminosité et prend, dans cet ordre, les tons de la rampe (recolorer).
+# (Ces bâtiments ne servent qu'à l'ancienne carte dessinée ; sur la ferme générée, tout se bâtit
+# en blocs.)
 # La serre : scripts/batiments/originaux/serre_modele.png (96 × 81 : toit de lattes, vitres et
-# double porte vitrée dans un cadre de bois), telle quelle ; l'ancienne verrière du pack est
-# gardée dans originaux/serre_sp_v1.png.
+# double porte vitrée dans un cadre de bois), telle quelle.
 import colorsys
 import os
 import sys
@@ -89,68 +84,8 @@ def recolorer(img, matieres):
     return out
 
 
-def prune(c):
-    r, g, b = c
-    return 40 <= r <= 130 and g < 80 and b >= g and r > g
-
-
 def creme(c):
     return min(c) > 150 and max(c) - min(c) < 60
-
-
-def brun(c):
-    r, g, b = c
-    return r > g >= b - 6 and r < 160
-
-
-def etable():
-    """barn_sp.png (104 × 93) : toit de bardeaux (orange), pignon crème à colombages (planches
-    dorées claires, colombages bruns), murs de planches (dorés), baies sombres (turquoise
-    sombre, comme les volets de la ferme), portes (bois)."""
-    img = Image.open(os.path.join(ORIG, 'barn_sp_v1.png')).convert('RGBA')
-    # le pignon : le triangle sous les deux pentes, de la pointe (52, 33) à la poutre (y 57)
-    pignon = lambda x, y: 33 + 0.45 * abs(x - 52) <= y < 57
-    toit = lambda x, y: (y < 57 and not pignon(x, y)) or (y < 65 and (x < 4 or x > 99))
-    baie = lambda x, y: y >= 58 and (21 <= x <= 35 or 68 <= x <= 82)
-    return recolorer(img, [
-        (lambda x, y, c: prune(c) and baie(x, y), [(14, 68, 62), (24, 92, 88), (32, 112, 108)]),
-        (lambda x, y, c: brun(c) and toit(x, y), TOIT),
-        (lambda x, y, c: creme(c) or c == (174, 156, 137), BOIS[3:]),
-        (lambda x, y, c: pignon(x, y), CADRE[:3]),
-        (lambda x, y, c: 36 <= x <= 67 and y >= 58, CADRE),
-        (lambda x, y, c: brun(c) or prune(c), BOIS),
-    ])
-
-
-def poulailler():
-    """poulailler.png (3 cases de 44 × 55) : toit prune (orange), murs crème (planches dorées),
-    bois (cadre brun)."""
-    img = Image.open(os.path.join(ORIG, 'poulailler_v1.png')).convert('RGBA')
-    return recolorer(img, [
-        (lambda x, y, c: prune(c) and y < 30, TOIT),
-        (lambda x, y, c: prune(c), CADRE),
-        (lambda x, y, c: creme(c), [(200, 178, 104)]),                     # l'enduit : planches claires
-        (lambda x, y, c: c in ((222, 176, 74), (176, 128, 52)), TURQUOISE[1:4]),
-        (lambda x, y, c: brun(c) and lum(c) < 75, CADRE[:2]),
-        (lambda x, y, c: brun(c), BOIS[1:4]),
-    ])
-
-
-def moulin():
-    """windmill_sp.png (4 cases de 96 × 128, les ailes tournent) : toile des ailes (crème
-    chaud), tour de pierre crème (pierre de la terrasse), charpente (cadre brun), toit (orange),
-    vitres sombres (turquoise)."""
-    img = Image.open(os.path.join(ORIG, 'windmill_sp_v1.png')).convert('RGBA')
-    vitre = lambda c: c in ((14, 68, 62), (46, 77, 79), (24, 57, 64))
-    feuillage = lambda c: c in ((45, 107, 71), (86, 139, 69), (158, 171, 110))
-    return recolorer(img, [
-        (lambda x, y, c: feuillage(c) or (vitre(c) and y >= 92), None),       # le lierre ne change pas
-        (lambda x, y, c: vitre(c), TURQUOISE[:3]),
-        (lambda x, y, c: creme(c) and y < 95, TOILE),
-        (lambda x, y, c: creme(c), PIERRE[1:]),
-        (lambda x, y, c: brun(c) and y < 40, TOIT[:5]),
-        (lambda x, y, c: brun(c), BOIS[:4]),
-    ])
 
 
 def ferme():
@@ -232,10 +167,6 @@ def harmoniser(img, remplace=None, garde=None):
 def main():
     faits = {
         'house_sp.png': harmoniser(ferme()),
-        'barn_sp.png': harmoniser(etable()),
-        # le lierre du bas du moulin a un vert très sombre, le même que ses vitres : gardé
-        'windmill_sp.png': harmoniser(moulin(), {'bois': 'cadre'}, lambda x, y, c: y >= 92 and c == (14, 68, 62)),
-        'poulailler.png': poulailler(),
         'serre_sp.png': Image.open(os.path.join(ORIG, 'serre_modele.png')).convert('RGBA'),
     }
     for nom, img in faits.items():

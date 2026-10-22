@@ -557,9 +557,8 @@ export function openAboutModal() {
     <h3>Fiches d'aide</h3>
     <div class="row">${FICHES.map((id) => `<button type="button" class="btn" data-action="help" data-id="${id}">${HELP[id]().icone} ${HELP[id]().nom}</button>`).join('')}</div>
     <h3>Crédits</h3>
-    <p class="muted">Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <a href="https://antarcticbees.itch.io/" target="_blank" rel="noopener noreferrer">https://antarcticbees.itch.io/</a></p>
-    <p class="muted">Moteur d'affichage : Phaser 3 (licence MIT).</p>
-    <p class="muted">Icônes et illustrations des fiches : originales.</p>
+    <p class="muted">Graphismes, icônes et illustrations : originaux.</p>
+    <p class="muted">Moteur d'affichage : Phaser 4 (licence MIT).</p>
     <div class="row">
       <button type="button" class="btn" data-action="open-options">← Options</button>
       <button type="button" class="btn primary" data-action="close-modal" id="about-close">Fermer</button>

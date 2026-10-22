@@ -1,6 +1,5 @@
-# La courgette dans assets/crops.png (rangée 11) : le pack graphique y dessinait une citrouille.
-# Ce script remplace ses cases par une courgette, dans les couleurs du pack :
-#   colonne 0 : les graines (celles du pack, gardées) ;
+# La courgette dans assets/crops.png (rangée 11), cases de 16 × 16 :
+#   colonne 0 : les graines dans leur trou de semis (comme les autres cultures, scripts/carte/cultures.py) ;
 #   colonnes 1 à 3 : le plant qui pousse (jeune pousse, plant en fleur, plant avec ses courgettes) ;
 #   colonne 4 : la courgette récoltée (icône 🥒, scripts/icones/build.py ; son sachet de
 #   graines en est tiré, scripts/icones/art_graines.py).
@@ -21,7 +20,7 @@ SHEET = os.path.join(ASSETS, 'crops.png')
 ROW = 11
 
 C = {
-    # feuillage (couleurs du pack)
+    # feuillage
     'D': (12, 89, 73), 'M': (29, 116, 69), 'L': (51, 139, 68), 'H': (86, 154, 55),
     # tige, terre
     'S': (90, 43, 30), 'B': (103, 73, 55),
@@ -147,9 +146,15 @@ def harvested():
     return im
 
 
+def graines():
+    """Le trou de semis et ses graines plates, crème (celui des autres cultures : cultures.py)."""
+    from cultures import graine
+    return graine([(176, 160, 112), (230, 216, 168), (246, 238, 204)], 'rond').crop((0, 16, 16, 32))
+
+
 def main():
     sheet = Image.open(SHEET).convert('RGBA')
-    cells = {1: phase1(), 2: phase2(), 3: phase3(), 4: harvested()}
+    cells = {0: graines(), 1: phase1(), 2: phase2(), 3: phase3(), 4: harvested()}
     for col, im in cells.items():
         box = (col * T, ROW * T, (col + 1) * T, (ROW + 1) * T)
         sheet.paste(Image.new('RGBA', (T, T), (0, 0, 0, 0)), box)
@@ -160,7 +165,7 @@ def main():
         bg = Image.new('RGBA', row.size, (105, 150, 84, 255))
         bg.alpha_composite(row)
         bg.save(os.path.join(ROOT, 'apercu_courgette.png'))
-    print('crops.png : courgette réécrite (rangée %d, colonnes 1 à 4)' % ROW)
+    print('crops.png : courgette réécrite (rangée %d, colonnes 0 à 4)' % ROW)
 
 
 if __name__ == '__main__':

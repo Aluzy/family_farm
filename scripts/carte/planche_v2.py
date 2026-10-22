@@ -2,18 +2,19 @@
 #
 #   python3 scripts/carte/planche_v2.py
 #
-# À lancer après scripts/carte/arbres_3d.py (qui refait les 45 premières rangées de
-# assets/farm_spring_summer.png) et après les scripts des nouvelles planches (herbe_chemin,
-# herbe_deco, eau, bordure_eau, arbre_clair, rochers, tronc_creux). Le script garde les 45 premières rangées
-# (la planche d'origine) et pose dessous, à partir de la rangée BASE, les blocs de BLOCS ; il
+# À lancer après les scripts des nouvelles planches (herbe_chemin, herbe_deco, eau,
+# bordure_eau, arbre_clair, rochers, tronc_creux). Le script garde les 45 premières rangées de
+# assets/farm_spring_summer.png (vides : la planche d'origine, celle d'un pack graphique, n'est
+# plus dans le jeu ; les numéros de tuile des blocs restent les mêmes) et pose dessous, à partir
+# de la rangée BASE, les blocs de BLOCS ; il
 # met à jour assets/farm_spring_summer.tsx (taille, nombre de tuiles, animations de l'eau).
 # Le jeu ne lit qu'une planche pour la carte : les nouvelles tuiles s'y ajoutent, et tout ce
 # qui lit la planche (eau animée, arbres à couper, terre labourable) les voit.
 # Lancer ensuite scripts/carte/teintes_carte.py (l'herbe assombrie, le chemin en terre battue).
 #
 # BLOCS : nom -> (fichier, colonne, rangée, largeur, hauteur en tuiles, source) ; source est le
-# coin haut-gauche et la taille (en px) de la partie du fichier copiée. carte_v2.py et le jeu
-# (js/farm-stage.js, CHOP_TREES) s'en servent pour retrouver une tuile.
+# coin haut-gauche et la taille (en px) de la partie du fichier copiée. Le jeu (js/engine/planche.js,
+# js/carte/ferme/config.js CHOP_TREES) s'en sert pour retrouver une tuile.
 import os
 import re
 import sys
@@ -38,7 +39,7 @@ BLOCS = {
     'pin': ('pin_clair_sp.png', 52, 50, 4, 4, (4, 0, 64, 64)),          # la 1re image (droite), sans sa marge
     'buisson_rond': ('arbre_clair.png', 57, 50, 3, 2, (48, 32, 48, 32)),
     'buisson_large': ('arbre_clair.png', 61, 50, 3, 2, (96, 32, 48, 32)),
-    'barrieres': ('barrieres.png', 48, 54, 27, 7, (0, 0, 432, 112)),       # écrit par carte_v2.py
+    'barrieres': ('barrieres.png', 48, 54, 27, 7, (0, 0, 432, 112)),       # écrit par l'ancien carte_v2.py
     'rochers': ('rochers.png', 16, 55, 8, 2, (0, 0, 128, 32)),             # scripts/carte/rochers.py
     'tronc_creux': ('tronc_creux.png', 24, 55, 2, 1, (0, 0, 32, 16)),      # scripts/carte/tronc_creux.py
 }

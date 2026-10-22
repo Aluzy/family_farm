@@ -1,15 +1,16 @@
 # 🌾 Ferme Familiale
 
-Un *idle game* de gestion agricole familiale : une famille (quatre personnes au départ), une ferme, et un
-objectif, nourrir la famille avec ce que la ferme produit. Panneau solaire,
-batterie, pompe, réservoir, zone de culture et champ, silo, moulin et presse, poulailler,
-troupeau (poules, moutons, vaches), verger, serre, cuisine, four et réfrigérateur.
-La journée suit une horloge : réveil à 6 h, repas de la famille à
-19 h, et la nuit passe quand vous cliquez sur **Zzz** (Dormir) ou, à défaut, à 22 h.
+Un jeu de gestion agricole familiale en pixel art : une famille (quatre personnes au départ)
+s'installe sur une **terre sauvage** et doit, à terme, se nourrir de ce que la ferme produit.
+On y ramasse des pierres, du bois et des herbes, on fabrique à l'Atelier, on **construit bloc
+par bloc** (murs, portes, fenêtres, étage, toits), on cultive, on élève poules, moutons, vaches
+et abeilles, on cuisine, et l'on va vendre en ville. Autour de la ferme : un chemin de
+transition, une ville avec son économie et ses habitants, la montagne, la plage et la grotte.
 
-- **Version** : 1.22.0 (affichée dans ⚙️ Options › À propos ; les Options sont au bout du menu du bas)
-- **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi (autres
-  documents : voir « Documentation » plus bas)
+- **Version** : 1.22.0 (affichée dans ⚙️ Options › À propos ; format de sauvegarde 44)
+- **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi, et
+  [`docs/carte-generee.md`](docs/carte-generee.md) pour la ferme générée et la construction
+  (autres documents : voir « Documentation » plus bas)
 - **Chiffres entiers** : toutes les valeurs du jeu sont entières (pièces, Wh, L,
   %, kg) ; voir la note v25 de la conception
 - **Technique** : des pages HTML sans bibliothèque à installer ni serveur :
@@ -19,10 +20,11 @@ La journée suit une horloge : réveil à 6 h, repas de la famille à
   et traceurs). Le jeu se sert en HTTP (voir Structure) ; les autres pages s'ouvrent aussi depuis le disque.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
-- **Carte de la ferme** : l'onglet Ferme affiche une carte en pixel art (Phaser 4,
-  `vendor/phaser.min.js`, scène dans `js/farm-stage.js`, images et carte Tiled dans
-  `assets/`) ; voir [`docs/architecture-phaser.md`](docs/architecture-phaser.md). Sans
-  Phaser, la Ferme garde sa liste classique et le jeu reste jouable.
+- **Cartes** : la ferme et les autres lieux sont des cartes en pixel art (Phaser 4,
+  `vendor/phaser.min.js`, scène de la ferme dans `js/farm-stage.js` et `js/carte/ferme/`,
+  autres cartes dans `js/ville-carte.js` et `js/carte/ville/`, images dans `assets/`) ; voir
+  [`docs/architecture-phaser.md`](docs/architecture-phaser.md). Tous les graphismes sont
+  originaux, dessinés par les générateurs Python de `scripts/`.
 
 ## Jouer
 
@@ -59,48 +61,39 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
 
 ## Règles en bref
 
-- La famille commence à 2 adultes et 2 enfants : **150 énergie par jour** (50 par
-  adulte, 25 par enfant). Le joueur peut la composer : 1 à 6 membres, dont au moins
-  un adulte, et jusqu'à 3 chiens ou chats, qui ne comptent pas dans le besoin. Elle
-  mange à 19 h (ou au coucher, si elle dort avant), d'abord ce qui périme le plus tôt.
-- La journée va de 6 h à 22 h et une heure dure 18 s (288 s en tout). On peut **Dormir**
-  après 30 s d'éveil ; à 22 h, la nuit se déroule d'elle-même. L'horloge
-  s'arrête quand le jeu est fermé ; il n'y a plus de résumé au réveil.
-- La nuit : les plantes arrosées gagnent un stade, les poules nourries pondent,
-  les moutons et les vaches mangent leur paille (laine, lait), les aliments vieillissent.
-- L'électricité et l'eau circulent en temps réel : panneau (de 7 h à 19 h) → batterie →
-  pompe, moulin, presse, réfrigérateur. Les appareils s'usent quand ils tournent.
-- Le **réfrigérateur** contient 25 à 120 unités selon son niveau et consomme selon
-  son contenu (100 mWh/s par unité, rien à vide).
-- **Départ** : on compose d'abord la famille (nom, membres, personnage principal). La
-  ferme du grand-père est délabrée : 1 500 💰 et 40 conserves pour réparer la maison,
-  acheter le panneau, la pompe, le réservoir (la batterie est facultative) et la houe.
-- La **Zone de culture** est une grille de 30 cases ; le **Champ**,
-  64 cases, s'ouvre quand le Moulin est construit. La **houe** (Marché, 40 💰) change
-  l'herbe en terre (5 d'énergie, 10 XP) ou rebouche une terre vide ; le nombre de tuiles
-  de terre est plafonné par le niveau (6 à 64). La **hache**, la **pioche** et la **canne à pêche** (Marché, 60 💰
-  chacune) : la hache en main, un appui sur un arbre de la carte le fait couper (1 bois 🪵,
-  6 d'énergie, 10 XP ; 3 coups par arbre et par jour) ; la pioche en main, un appui sur un
-  rocher le fait casser (1 pierre 🪨 par coup, 6 d'énergie, 10 XP ; au 3e coup, le rocher se
-  brise et disparaît). Il revient à sa place au bout de 1 à 3 jours, sauf si une parcelle
-  occupe une de ses cases (elles se labourent en attendant). La canne à pêche en main, un
-  appui sur l'eau fait pêcher : le personnage va sur la rive, lance, attend la touche et ferre
-  (4 d'énergie par lancer, 15 XP par prise). L'étang donne des truites 🐟‍🌈 et des brochets 🐟‍🦷
-  (6 prises par jour au plus), la mare surtout des truites (3 par jour).
-  Le bouton rond de la carte porte l'outil choisi : un appui le prend en main, un double
-  appui ouvre la fenêtre **Outils** pour en changer. Les arbres du Verger (12 au plus)
-  apparaissent sur la carte.
-- Le **Silo** stocke le blé de la ferme : de 20 à 400 selon son niveau. Le blé ne se
-  plante qu'une fois le Silo construit.
-- **Dix niveaux d'expérience** (⭐ dans le bandeau) débloquent les cultures, les
-  bâtiments et les ateliers (Cuisine au niveau 2, Silo et Poulailler au 3, Moulin au 4,
-  Four et Étable au 5, Presse et Verger au 6, Serre au 7, Réfrigérateur au 8). L'XP vient
-  des actions, des ventes (1 XP par pièce) et des chapitres terminés.
-- Sept chapitres racontent l'histoire jusqu'à une famille **100 % autonome** : L'eau et le soleil, Le
-  premier potager, Le poulailler, Le four et le livre de recette, Le troupeau, Toute
-  l'année, Famille autonome.
-- **Pas de saisons** (version 1.6) : les cultures, l'eau, le soleil et le Verger
-  donnent la même chose chaque nuit de l'année.
+- **Départ** : on compose la famille (nom, 1 à 6 membres dont au moins un adulte, jusqu'à
+  3 chiens ou chats, personnage principal), puis on choisit une graine : elle tire la ferme,
+  une terre sauvage de 144 × 114 cases, sans bâtiment. 1 500 💰 pour commencer.
+- **Ramasser, fabriquer, construire** : petites pierres, morceaux de bois et herbes se
+  ramassent à la main ; l'**Atelier** (3 bois et 3 pierres) fabrique planches, murs, portes,
+  fenêtres, paillasses, outils… Le mode **Construire** (🔨) pose les blocs sur la carte : une
+  enceinte de murs avec une porte (posée sur un mur) devient une **pièce close** ; avec une
+  paillasse, c'est le **foyer**, où l'on dort. Un bloc clé fait d'une enceinte un bâtiment
+  (nichoir : le Poulailler, mangeoire : l'Étable, bac à semis : la Serre, coffre à grain : le
+  Silo, meule : le Moulin). Murs rehaussés, étage par un escalier, toits, meubles, chemins,
+  barrières, lanternes, ruches et bacs à fleurs se posent de la même façon.
+- **Outils** (Marché ou Atelier) : la **houe** laboure l'herbe ; la **hache** coupe arbres et
+  buissons (un sapin laisse une pomme de pin, un autre arbre un gland : un arbre abattu ne
+  repousse pas, mais une graine se plante sur n'importe quelle case d'herbe libre) ; la
+  **pioche** casse les rochers (et le minerai de la grotte) ; la **faux** fauche l'herbe haute
+  (la paille des bêtes) ; la **canne à pêche** pêche dans l'étang, la mare, le lac et la mer.
+- **Le temps** : la journée commence à 6 h, une heure dure 30 s ; la famille mange à 19 h et
+  se couche à 22 h ; à minuit, la nuit passe (ponte, laine, lait, aliments qui vieillissent).
+  La nuit, « Zzz » envoie le personnage au lit : endormi, une heure passe en 3 s et son
+  énergie remonte. Il ne dort que quand on l'envoie se coucher. Les plantes poussent 24 h
+  après leur arrosage.
+- **La famille** a besoin de 150 énergie par jour (50 par adulte, 25 par enfant) ; elle mange
+  au repas du soir, d'abord ce qui périme le plus tôt. Le second adulte s'occupe des bêtes.
+- **Électricité et eau** circulent en temps réel : panneau (de 7 h à 19 h) → batterie →
+  pompe, moulin, presse, réfrigérateur, station du robot. Les appareils s'usent.
+- **Dix niveaux d'expérience** (⭐) débloquent cultures, bâtiments et ateliers ; un **arbre
+  des technologies** (37 technologies, 7 branches) les automatisations (arrosage, robot de
+  récolte et de semis, nourrissage…), payées en points, en pièces et en ressources.
+- **Sept chapitres** racontent l'histoire jusqu'à une famille **100 % autonome** : L'héritage,
+  Le grenier, Le poulailler, Le four et le livre de recette, Le troupeau, Toute l'année,
+  Famille autonome.
+- **Pas de saisons** : les cultures, l'eau, le soleil et les arbres donnent la même chose
+  chaque nuit de l'année.
 
 Le détail (valeurs, formules, tableau d'équilibrage) est dans la conception ; les
 règles principales sont aussi rappelées dans le jeu (⚙️ Options › À propos), et
@@ -111,24 +104,25 @@ chaque bâtiment a son bouton **?** (rôle, consommation, production).
 Quand vous revenez (page rouverte, ou onglet qui repasse au premier plan), le
 temps écoulé est rattrapé, **plafonné à 8 heures**, par pas de 5 s :
 
-- avancent : panneau (si l'horloge s'est arrêtée entre 7 h et 19 h) et batterie, pompe, moulin, presse, préparations en cours,
+- avancent : panneau et batterie, pompe, moulin, presse, préparations en cours,
   consommation du réfrigérateur ;
 - n'avancent pas : les nuits (ni pousse, ni repas, ni ponte, ni péremption) et
   l'usure des appareils ;
-- ce temps compte comme temps d'éveil : on peut dormir dès le retour.
+- ce temps compte comme temps d'éveil.
 
-Un écran **« Pendant votre absence… »** résume ce qui s'est passé si l'absence
-dépasse une minute.
+Si l'absence dépasse une minute, la fenêtre **« Ravi de te revoir ! »** donne la date,
+l'argent et les biens produits pendant l'absence.
 
 ## Développer
 
 ### Structure
 
-`jeu.html` ne contient que la structure de la page. Elle charge `css/jeu.css`, cinq scripts
-classiques (`js/telemetry.js`, le suivi de session ; `vendor/phaser.min.js` ; `js/ambient-life.js`,
-la vie d'ambiance de la carte, facultative ; `js/fermier.js`, le personnage, facultatif ;
-`js/farm-stage.js`, la carte), puis `js/main.js`,
-point d'entrée de **modules ES** :
+`jeu.html` ne contient que la structure de la page. Elle charge `css/jeu.css`, des scripts
+classiques (`js/telemetry.js`, le suivi de session ; `vendor/phaser.min.js` ; `js/carte/*.js`,
+les outils communs des cartes ; `js/ambient-life.js`, la vie d'ambiance ; `js/fermier.js`, le
+personnage ; `js/famille-ferme.js`, la famille ; `js/carte/ferme/*.js` et `js/farm-stage.js`,
+la carte de la ferme ; `js/carte/ville/*.js` et `js/ville-carte.js`, les autres cartes ;
+`js/infra-monde.js`), puis `js/main.js`, point d'entrée de **modules ES** :
 
 | Dossier | Contenu |
 |---|---|
@@ -136,7 +130,9 @@ point d'entrée de **modules ES** :
 | `js/engine/` | le moteur (simulation pure : pas de DOM, pas d'horloge, aléatoire à graine), un module par domaine : `catalog.js` (`DATA`), `energy.js`, `inventory.js`, `crops.js`, `animals.js`, `kitchen.js`, `techtree.js`, `campaign.js`, `night.js`, `state.js` (partie neuve, migrations), `testmode.js`, `bot.js`… |
 | `js/ui/` | l'interface, un module par écran (`ferme.js`, `elevage.js`, `cuisine.js`, `marche.js`, `famille.js`…), plus `store.js` (l'état de l'interface), `render.js`, `loop.js`, `storage.js`, `actions.js` |
 | `js/main.js` | charge tous les modules, puis démarre la partie |
-| `js/farm-stage.js`, `js/ambient-life.js`, `js/fermier.js` | la carte Phaser de l'onglet Ferme, sa vie d'ambiance et le personnage (scripts classiques, hors modules ; voir docs/personnage.md) |
+| `js/farm-stage.js`, `js/carte/ferme/` | la carte Phaser de la ferme, une partie par fichier (le sol, le décor, la hache, les blocs, l'étage, les toits, les abeilles, les arbres plantés…) |
+| `js/ville-carte.js`, `js/carte/ville/` | les autres cartes (transition, ville, montagne, plage, grotte) |
+| `js/ambient-life.js`, `js/fermier.js`, `js/famille-ferme.js` | la vie d'ambiance, le personnage et la famille sur la carte (scripts classiques, hors modules ; voir docs/personnage.md) |
 | `scripts/` | outils Node et Python : données, carte, site, vérifications, simulation, icônes (voir plus bas) |
 | `tests/` | les tests (`npm test`) : moteur, données, suivi de session, rapport quotidien |
 | `worker/`, `wrangler.toml`, `scripts/collect-server.mjs` | collecte des sessions et rapport quotidien (voir « Suivi de session ») |
@@ -207,10 +203,13 @@ Toutes les valeurs du jeu sont dans `data/`, un fichier JSON par domaine :
 
 | Fichier | Contenu |
 |---|---|
-| `items.json` | objets (aliments, graines, produits), plats retirés, durées de conservation |
-| `recipes.json` | ateliers et recettes |
-| `crops.json` | cultures, zone de culture, serre, verger |
-| `animals.json` | silo, poulailler, animaux, étable |
+| `items.json` | objets (aliments, graines, produits, matériaux), plats retirés, durées de conservation |
+| `recipes.json` | ateliers et recettes, l'Atelier de la ferme générée et ses blocs |
+| `crops.json` | cultures, zone de culture, serre, verger, outils (houe, hache, pioche, faux, canne) |
+| `animals.json` | silo, poulailler, animaux, étable, ruches |
+| `meubles.json` | meubles de la maison, objets du dehors (bac à fleurs) |
+| `terrain.json` | le terrain de la carte de Tiled et la génération de la ferme |
+| `ville.json`, `economie.json` | la ville, ses habitants, ses entreprises et son économie |
 | `techtree.json` | arbre des technologies |
 | `campaign.json` | chapitres et courrier |
 | `niveaux.json` | niveaux d'expérience : seuils, déblocages, XP des actions et des chapitres |
@@ -408,7 +407,10 @@ nuits, aller à un chapitre, et voir l'état complet de la partie.
 |---|---|
 | [`docs/conception.md`](docs/conception.md) | la conception du jeu : règles, valeurs, équilibrage (fait foi) |
 | [`docs/conception-v2.md`](docs/conception-v2.md) | refonte v2 (niveaux d'XP, énergie du personnage, houe…) : saisons retirées et un seul panneau et une seule batterie (version 1.6), niveaux d'expérience (version 1.7) ; le reste n'est pas encore codé |
-| [`docs/architecture-phaser.md`](docs/architecture-phaser.md) | la carte de la ferme : découpage, cartes Tiled, pièges à éviter |
+| [`docs/carte-generee.md`](docs/carte-generee.md) | la ferme générée : ramassage, Atelier, construction bloc par bloc, étage, bâtiments, transition, anciennes parties |
+| [`docs/architecture-phaser.md`](docs/architecture-phaser.md) | les cartes Phaser : découpage, cartes Tiled, pièges à éviter |
+| [`docs/personnage.md`](docs/personnage.md) | le personnage et ses gestes sur la carte |
+| [`docs/plan-ville.md`](docs/plan-ville.md) | le plan de la ville |
 | [`docs/vie-ambiance.md`](docs/vie-ambiance.md) | la vie d'ambiance de la carte (vent, nuages, animaux, habitants) |
 | [`docs/icones.md`](docs/icones.md) | les icônes en pixel art, la police et les jauges |
 | [`docs/arbre_technologique.md`](docs/arbre_technologique.md) | proposition d'arbre des technologies v2, historique (`docs/techtree_v2.js`) ; la source de vérité est `data/techtree.json` |
@@ -457,5 +459,5 @@ son nom brut suivi de « (non répertorié) ». `node scripts/check-actions.mjs`
 
 ## Crédits
 
-- Graphismes : pack "Farm – 4 Seasons 16x16 Tileset" par antarcticbees — <https://antarcticbees.itch.io/>
+- Graphismes, icônes et illustrations : originaux (dessinés par les générateurs de `scripts/`)
 - Moteur d'affichage : Phaser 4 (licence MIT)

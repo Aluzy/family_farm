@@ -21,7 +21,7 @@
  * grande : js/engine/ferme-generee.js). Il n'est repeint que quand la vue en approche du bord,
  * quand l'heure avance de SOLEIL.pas heure ou qu'un bâtiment, un arbre change (this.sunDirty).
  * Il remplace les anciennes ombres fixes (copies décalées des bâtiments, ovales des arbres :
- * assets/ombres_arbres.png, ombre_arbre.png).
+ * assets/ombre_arbre.png).
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
  * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).

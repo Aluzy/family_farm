@@ -8,8 +8,8 @@ import { chemin } from './chemin.js';
 // Une carte de la ferme de LARGEUR × HAUTEUR tuiles (quatre fois la surface de la carte de
 // Tiled), toujours la même pour une même graine, au format de Tiled (comme
 // assets/carte_printemps.json, sans ses jeux de tuiles : la scène y met ceux de la carte de
-// Tiled). Elle est dessinée avec les tuiles du décor version 2 (planche.js), comme la carte de
-// Tiled l'est par scripts/carte/carte_v2.py :
+// Tiled). Elle est dessinée avec les tuiles du décor version 2 (planche.js), comme l'était la
+// carte de Tiled (par l'ancien scripts/carte/carte_v2.py) :
 //   - l'herbe en trois teintes qui ondulent (un bruit), avec leurs raccords ;
 //   - des étangs aux bords irréguliers (peu profonds au bord, profonds au milieu) et leurs rives ;
 //   - un chemin de la cour jusqu'au bord est : le rectangle `vers_la_transition` (couche
@@ -208,7 +208,7 @@ function fabriquer(graine) {
   }
   const masque = (f, x, y) => (f(x, y) ? 8 : 0) | (f(x + 1, y) ? 4 : 0) | (f(x, y + 1) ? 2 : 0) | (f(x + 1, y + 1) ? 1 : 0);
 
-  // ---- 5. le sol, les rives (comme scripts/carte/carte_v2.py, étape 3)
+  // ---- 5. le sol, les rives (comme l'ancien scripts/carte/carte_v2.py, étape 3)
   const vide = () => new Array(N).fill(0);
   const ground = vide(), rives = vide(), plantes = vide();
   const herbePleine = [];
@@ -284,7 +284,7 @@ function fabriquer(graine) {
   // ---- 8. les arbres, les pins et les buissons
   const ra = hasard('arbres');
   const bois = bruit(graine + ':bois', 18, 3);
-  const poses = [];                    // [pied y, pied x, bloc, l, h] (px, comme carte_v2.py)
+  const poses = [];                    // [pied y, pied x, bloc, l, h] (px, comme l'ancien carte_v2.py)
   const tailles = { arbre: [3, 4], pin: [4, 4], buisson_rond: [3, 2], buisson_large: [3, 2] };
   for (let gy = 1; gy < H; gy += 3) {
     for (let gx = 0; gx < W; gx += 3) {
@@ -310,7 +310,7 @@ function fabriquer(graine) {
     }
   }
   // chaque dessin va dans la couche la plus en arrière où il ne touche rien de déjà posé, et
-  // devant ceux qu'il chevauche (comme carte_v2.py, étape 5)
+  // devant ceux qu'il chevauche (comme l'ancien carte_v2.py, étape 5)
   const ordre = ['layer_tree_4', 'layer_tree_3', 'layer_tree_2', 'layer_tree_1'];
   const arbres = {}, occupe = {};
   for (const nom of ordre) { arbres[nom] = vide(); occupe[nom] = new Set(); }
