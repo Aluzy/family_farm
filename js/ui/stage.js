@@ -182,8 +182,7 @@ function aFaireParLieu() {
     if (a.type === 'poules') n.poulailler += a.nombre;
     if (a.type === 'tonte') n.etable += a.nombre;
   }
-  // (la ferme générée : plus de pastille sur l'ancienne zone de culture)
-  n.zone = atelierOuvert(state) ? 0 : parcellesAFaire('potager', null);
+  n.zone = parcellesAFaire('potager', null);
   n.serre = parcellesAFaire('serre');
   n.verger = ripeTrees(state).length; // version 1.13 : arbres en fruits à cueillir
   return n;
@@ -346,6 +345,8 @@ export function stageModel() {
   const batiments = {};
   // version 1.12 : les bâtiments verrouillés sont aussi sur la carte (délabrés)
   for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok() || windowLocked(id), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id], ruine: buildingInRuins(id) };
+  // (la ferme générée : plus d'étiquette sur l'ancienne Zone de culture)
+  if (atelierOuvert(state)) batiments.zone.visible = false;
   // le Moulin ne tourne que quand il moud (du blé en cours)
   batiments.moulin.enMarche = !!(state.stations && state.stations.moulin && state.stations.moulin.tache);
   const hauteurs = hauteursPosees(state);
