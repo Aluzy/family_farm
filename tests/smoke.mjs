@@ -104,10 +104,17 @@ let code = 0;
 try {
   await page.goto(`${BASE}/jeu.html`, { waitUntil: 'load' });
   etape = 'nouvelle partie';
+  // l'accueil : une question par écran (js/ui/depart.js), jusqu'à « C'est parti ! »
+  const clic = async (sel) => { const b = page.locator(sel).first(); await b.waitFor({ state: 'visible', timeout: 15000 }); await b.click(); };
+  const saisir = async (texte) => { await page.locator('#accueil-champ').fill(texte); await clic('[data-action="accueil-suite"]'); };
+  await clic('[data-action="accueil-suite"]');
+  await clic('[data-action="accueil-perso"]');
+  await clic('[data-action="accueil-suite"]');
+  await saisir('Fumée');
+  await saisir('Test');
+  for (let k = 0; k < 4; k++) await clic(k ? '[data-action="accueil-non"]' : '[data-action="accueil-oui"]');
   const depart = page.locator('[data-action="setup-start"]');
   await depart.waitFor({ state: 'visible', timeout: 15000 });
-  const nom = page.locator('#setup-nom');
-  if (await nom.count()) await nom.fill('Fumée');
   await depart.click();
   await page.waitForTimeout(PAUSE_MS);
   if (await depart.isVisible()) erreurs.push('[nouvelle partie] la fenêtre de départ est toujours ouverte');

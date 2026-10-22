@@ -80,9 +80,19 @@ async function until(fn, arg, what, timeout = 180000) {
 let code = 0;
 try {
   await page.goto(url);
-  await page.waitForSelector('[data-action="setup-start"]');
+  await page.waitForSelector('[data-action="accueil-suite"]');
 
-  await touch('[data-action="setup-start"]', 'Partir pour la ferme');
+  // l'accueil (js/ui/depart.js) : une question par écran
+  await touch('[data-action="accueil-suite"]', 'Accueil : suivant');
+  await touch('[data-action="accueil-perso"]', 'Choisir un personnage');
+  await touch('[data-action="accueil-suite"]', 'Suivant');
+  await page.locator('#accueil-champ').fill('Camille');
+  await touch('[data-action="accueil-suite"]', 'Prénom, suivant');
+  await page.locator('#accueil-champ').fill('Martin');
+  await touch('[data-action="accueil-suite"]', 'Nom, suivant');
+  await touch('[data-action="accueil-oui"]', 'C\'est bien ça');
+  for (const q of ['Compagnon', 'Enfants', 'Animal']) await touch('[data-action="accueil-non"]', `${q} : non`);
+  await touch('[data-action="setup-start"]', 'C\'est parti !');
   await touch('#modal-root .story-modal .btn.primary', 'En route');
   await touch('[data-action="consent-refuse"]', 'Bandeau du suivi : Refuser');
   await touch('[data-action="tuto-skip"]', 'Passer l\'aide');

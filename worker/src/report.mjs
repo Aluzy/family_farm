@@ -117,6 +117,7 @@ export const INTERFACE_ACTIONS = new Set([
   'cancel-queued', 'ack-chapter', 'tree-slot', 'tree-slot-cancel', 'commerce-pick', 'commerce-cancel',
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'demenagement-hasard',
+  'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-espece',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', 'four-tab', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,
