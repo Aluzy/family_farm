@@ -44,6 +44,8 @@
 #   74 à 80 : la botteleuse (BLOCS_CARTE.frames) : l'entonnoir, la machine à l'arrêt puis en
 #            marche, le convoyeur (deux images qui alternent quand la bande tourne), puis son
 #            dernier segment (le rouleau d'où la botte tombe ; deux images aussi).
+#   81 à 88 : la meule qui moud (BLOCS_CARTE.meule) : sa pierre du dessus et sa manivelle
+#            tournent, une image après l'autre (un tour en 8 images).
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -1139,9 +1141,11 @@ def coffre_grain():
     return t.fini()
 
 
-def meule():
+def meule(a=0.0):
     """La meule : deux meules de pierre l'une sur l'autre, vues de haut sur leur bâti de bois ;
-    l'œil et l'axe de fer, la manivelle, de la farine au pied."""
+    l'œil et l'axe de fer, la manivelle, de la farine au pied. `a` (radians) : où en est la meule
+    du dessus dans son tour (la manivelle, les rayures de la pierre) ; 0 : la manivelle à droite."""
+    import math
     t = Toile()
     pieds(t, (2, 12), 18, 22)
     boite(t, 1, 14, 18, 4, 14, BOIS, lambda x, y: BOIS[0] if y == 18 else BOIS[3] if x == 1 else BOIS[2])
@@ -1159,12 +1163,17 @@ def meule():
                     t.put(x, y, PIERRE[k])
                 elif cy + hy < y + 0.5 <= cy + hy + ep:
                     t.put(x, y, PIERRE[2] if dx < 0.3 else PIERRE[1])    # la tranche
+    # les rayures de la meule du dessus (elles tournent avec elle), entre l'œil et le bord
+    for b in (a + 2 * math.pi / 3, a + 4 * math.pi / 3):
+        for u in (0.55, 0.75, 0.92):
+            t.put(int(7.5 + u * 5.5 * math.cos(b)), int(9.5 + u * 3.4 * math.sin(b)), PIERRE[1])
     t.rect(7, 9, 8, 10, FER[0])                  # l'œil, l'axe
     t.put(7, 9, FER[3])
-    for y in range(4, 10):                       # la manivelle
-        t.put(12, y, BOIS[3])
-    t.put(12, 3, BOIS[4])
-    t.put(11, 8, FER[2])
+    bx, by = int(7.5 + 4.5 * math.cos(a)), int(9.5 + 2.8 * math.sin(a))
+    for y in range(by - 5, by + 1):              # la manivelle, plantée au bord de la meule
+        t.put(bx, y, BOIS[3])
+    t.put(bx, by - 6, BOIS[4])
+    t.put(bx - round(math.cos(a)), by - 1 - round(math.sin(a)), FER[2])
     for x, y in ((3, 22), (4, 22), (5, 21), (10, 22), (11, 22)):
         t.put(x, y, FARINE[x % 2])
     return t.fini()
@@ -1489,6 +1498,12 @@ BOTTELEUSE = len(DESSINS)                        # l'entonnoir, la machine (à l
 DESSINS += [entonnoir(), botteleuse(), botteleuse(True)]   # puis le convoyeur (BLOCS_CARTE.frames)
 CONVOYEUR = len(DESSINS)
 DESSINS += [convoyeur(0), convoyeur(1), convoyeur(0, True), convoyeur(1, True)]
+
+# la meule qui moud (BLOCS_CARTE.meule) : sa pierre du dessus et sa manivelle font un tour en
+# MEULE_IMAGES images (dans le sens inverse des aiguilles d'une montre)
+MEULE = len(DESSINS)
+MEULE_IMAGES = 8
+DESSINS += [meule(-2 * 3.141592653589793 * k / MEULE_IMAGES) for k in range(MEULE_IMAGES)]
 
 # ---------- l'aperçu : une pièce close et les objets, sur l'herbe de la carte ----------
 
