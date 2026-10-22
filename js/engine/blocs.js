@@ -7,7 +7,7 @@ import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
 import { openStation } from './kitchen.js';
 import { freedRockTiles, openSerre } from './crops.js';
-import { casesBuissonsCoupes, foulerAutour, grassCut, planterGraine, souchePour } from './outils.js';
+import { casesBuissonsCoupes, foretArbres, foretProche, foretSurCase, foulerAutour, grassCut, planterGraine } from './outils.js';
 import { fillSilo } from './animals.js';
 import { arbreProche, arbreSurCase, planterArbre } from './orchard.js';
 import { isUnlocked } from './campaign.js';
@@ -95,6 +95,7 @@ export function casesBaties(state) {
   for (const o of [state.blocs, state.sols, state.blocsDessus]) for (const k of Object.keys(o && typeof o === 'object' ? o : {})) out.add(Number(k));
   for (const j of casesCouvertes(state).keys()) out.add(j);
   if (farmSeed(state) !== null) for (const a of (state.verger && state.verger.arbres) || []) if (Number.isInteger(a.case)) out.add(a.case);
+  for (const a of foretArbres(state)) out.add(a.case);   // (les arbres plantés d'une graine : outils.js)
   return out;
 }
 
@@ -408,14 +409,6 @@ export function poseStatus(state, sorte, tile) {
     const r = starterBlock(state, s.appareil);
     if (r) return { ok: false, raison: r === 'Répare d\'abord la maison.' ? 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.' : r === 'Achète d\'abord le panneau et la pompe.' ? 'Pose d\'abord le panneau solaire et la pompe.' : r };
   }
-  // une graine d'arbre : là où un arbre de son espèce a été abattu, sa place libre
-  if (s.semis) {
-    const id = souchePour(state, s.semis, tile);
-    if (!id) return { ok: false, raison: `${s.nom} : à planter là où ${s.semis === 'pin' ? 'un sapin' : 'un arbre (pas un sapin)'} a été abattu.` };
-    const pris = casesBaties(state), labour = new Set((state.potager.parcelles || []).map((q) => q.case));
-    if (T.ARBRES[id].some((t) => pris.has(t) || labour.has(t))) return { ok: false, raison: 'La place de l\'arbre est prise (un bloc, une terre labourée) : libère-la d\'abord.' };
-    return { ok: true };
-  }
   // la pompe : sur le puits, sans prendre de case
   if (s.sur) {
     const sous = sorteDe(s.sur), b = sorteDe(blocAt(state, tile));
@@ -435,9 +428,11 @@ export function poseStatus(state, sorte, tile) {
   } else if (blocAt(state, tile)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
   else if (casesCouvertes(state).has(tile)) return { ok: false, raison: 'Un meuble occupe cette case.' };
   if (s.ferme && solAt(state, tile)) return { ok: false, raison: `Un ${sorteDe(solAt(state, tile)).nom.toLowerCase()} ici : reprends-le d'abord.` };
-  if (arbreSurCase(state, tile)) return { ok: false, raison: 'Un arbre pousse ici.' };
+  if (arbreSurCase(state, tile) || foretSurCase(state, tile)) return { ok: false, raison: 'Un arbre pousse ici.' };
   // un arbre fruitier : loin des autres (son feuillage), à côté d'aucun bloc
-  if (s.arbre && arbreProche(state, tile, DATA.ATELIER.ARBRE_ECART)) return { ok: false, raison: 'Trop près d\'un autre arbre : laisse-lui de la place.' };
+  // (une graine d'arbre, la pomme de pin, le gland : n'importe quelle case d'herbe libre, dehors,
+  // loin des autres arbres plantés)
+  if ((s.arbre || s.semis) && (arbreProche(state, tile, DATA.ATELIER.ARBRE_ECART) || foretProche(state, tile, DATA.ATELIER.ARBRE_ECART))) return { ok: false, raison: 'Trop près d\'un autre arbre : laisse-lui de la place.' };
   // (une case sous un rocher ou un arbre de la carte : une fois cassé, abattu, elle se bâtit)
   const ch = T.LIGNES[Math.floor(tile / T.LARGEUR)][tile % T.LARGEUR];
   if (ch === 'o' && (rocherOuArbre(T, tile)) && !freedRockTiles(state).has(tile)) return { ok: false, raison: 'Un rocher ou un arbre occupe cette case : casse-le ou abats-le d\'abord.' };
@@ -488,8 +483,12 @@ function poser(state, sorte, tile) {
     state.blocs[tile] = sorte;
     return { ok: true, sorte, case: tile, remplace: ancien };
   }
-  // une graine d'arbre : l'arbre abattu repoussera à sa place, elle n'est pas un bloc
-  if (s.semis) return { ok: true, sorte, case: tile, arbre: planterGraine(state, s.semis, tile) };
+  // une graine d'arbre : plantée dans le sol, elle n'est pas un bloc ; un arbre y poussera
+  if (s.semis) {
+    const a = planterGraine(state, s.semis, tile);
+    majPoulailler(state);
+    return { ok: true, sorte, case: tile, arbre: a.id };
+  }
   // un arbre fruitier : planté dans le sol, il n'est pas un bloc (orchard.js)
   if (s.arbre) {
     const tree = planterArbre(state, s.arbre, tile);

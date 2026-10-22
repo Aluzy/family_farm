@@ -153,7 +153,7 @@
     "bac_semis": { "nom": "Bac à semis", "icone": "🎍", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "coffre_grain": { "nom": "Coffre à grain", "icone": "🗃", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meule": { "nom": "Meule", "icone": "🪨‍⚙️", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
-    "//pomme_de_pin": ["Les graines des arbres de la ferme générée (HACHE.GRAINES) : un sapin abattu laisse une pomme de pin,", "un autre arbre un gland. Plantées là où l'arbre a été coupé (mode Construire), il y repousse ; sinon, il ne repousse pas."],
+    "//pomme_de_pin": ["Les graines des arbres de la ferme générée (HACHE.GRAINES) : un sapin abattu laisse une pomme de pin,", "un autre arbre un gland ; l'arbre abattu ne repousse pas. Plantées sur une case d'herbe libre (mode Construire), un arbre y pousse."],
     "pomme_de_pin": { "nom": "Pomme de pin", "icone": "🌲‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "gland": { "nom": "Gland", "icone": "🌳‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "jeune_pommier": { "nom": "Jeune pommier", "icone": "🌱‍🍎", "prix": 40, "mangeable": false, "categorie": "graine", "arbre": "pommier" },

@@ -2,7 +2,7 @@
 # pierre, le morceau de bois et l'herbe, posés au sol (le bas de l'image est le pied), puis une
 # grappe de baies (posée plusieurs fois sur un buisson), puis la paille que la faux lâche (une
 # gerbe couchée, liée au milieu), la pomme de pin et le gland qu'un arbre abattu laisse, puis les
-# jeunes pousses d'un sapin et d'un arbre replantés : neuf images de 16 × 16 côte à côte.
+# jeunes pousses d'un sapin et d'un arbre plantés : neuf images de 16 × 16 côte à côte.
 #
 #   python3 scripts/carte/ramassables.py            écrit assets/ramassables.png
 #   python3 scripts/carte/ramassables.py --apercu   écrit aussi apercu_ramassables.png

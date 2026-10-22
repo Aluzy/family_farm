@@ -13,8 +13,8 @@
  * state.morceaux) : le personnage les prend en marchant dessus (stepPieces) ; ceux d'un coup
  * paraissent quand il porte, ceux de l'arbre qui tombe quand il touche le sol (holdPieces,
  * revealPieces ; où ils tombent : CarteKit.pointsMorceaux). Un arbre de la ferme générée qui
- * tombe lâche aussi sa graine (la pomme de pin, le gland) ; replantée, une jeune pousse marque sa
- * place jusqu'à ce qu'il repousse (syncPousses).
+ * tombe lâche aussi sa graine (la pomme de pin, le gland) ; plantée, c'est d'abord une jeune
+ * pousse (syncPousses), puis un arbre (foret.js).
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
  * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).
@@ -31,11 +31,11 @@
 
   F.partie({
 
-    /* ---------- les arbres replantés : une jeune pousse ---------- */
+    /* ---------- les arbres plantés d'une graine : une jeune pousse ---------- */
 
-    // Les arbres abattus dont on a planté la graine (modèle.pousses : [{ id, espece, case }],
-    // js/engine/outils.js poussesArbres) : une jeune pousse au milieu de leur pied
-    // (RAMASSABLES.frames : pousse_pin, pousse_arbre), jusqu'à ce qu'ils repoussent.
+    // Les arbres plantés d'une graine, encore jeunes (modèle.pousses : [{ id, espece, case }],
+    // js/engine/outils.js poussesArbres) : une jeune pousse au milieu du bas de leur case
+    // (RAMASSABLES.frames : pousse_pin, pousse_arbre) ; grands, ils sont des arbres (foret.js).
     syncPousses(list) {
       if (!this.pousses) this.pousses = new Map();
       if (!this.has(RAMASSABLES.key)) return;

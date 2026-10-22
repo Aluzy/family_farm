@@ -1,6 +1,6 @@
 # Les graines des arbres de la ferme générée (js/engine/outils.js, HACHE.GRAINES) : la pomme de
-# pin d'un sapin abattu et le gland d'un autre arbre ; plantées là où l'arbre était, il y
-# repousse. Les mêmes dessins que sur la carte (scripts/carte/ramassables.py), en plus grand.
+# pin d'un sapin abattu et le gland d'un autre arbre ; plantées sur une case d'herbe libre, un
+# arbre y pousse. Les mêmes dessins que sur la carte (scripts/carte/ramassables.py), en plus grand.
 # Format commun à tous les fichiers art_*.py : voir scripts/icones/build.py.
 
 PALETTE = {

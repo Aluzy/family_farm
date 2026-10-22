@@ -268,9 +268,9 @@
     "buisson, BUISSONS.petit pour un petit (au sol, à son pied), l'énergie et l'XP d'un coup ; ses",
     "baies du jour s'en vont avec lui. Il repousse au bout de BUISSONS.RETOUR jours (au réveil).",
     "Sur la ferme générée, un arbre abattu laisse sa graine (GRAINES : la pomme de pin d'un sapin,",
-    "le gland d'un autre arbre ; au sol, là où tombe sa cime) et ne repousse plus de lui-même : sa graine,",
-    "plantée là où il était (mode Construire, les blocs pomme_de_pin et gland), l'y fait repousser au",
-    "bout de POUSSE jours (tiré entre les deux, au réveil ; pas tant qu'une de ses cases est bâtie)."
+    "le gland d'un autre arbre ; au sol, là où tombe sa cime) et ne repousse plus de lui-même. Une graine",
+    "se plante sur n'importe quelle case d'herbe libre (mode Construire, les blocs pomme_de_pin et gland) :",
+    "jeune pousse pendant POUSSE jours (tiré entre les deux), c'est ensuite un arbre qui se coupe comme les autres."
   ],
   "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "CHUTE": 2, "COUPES": 3, "RETOUR": [1, 3], "BUISSONS": { "grand": 2, "petit": 1, "RETOUR": [2, 4] }, "GRAINES": { "pin": "pomme_de_pin", "arbre": "gland" }, "POUSSE": [2, 4] },
   "//PIOCHE": [

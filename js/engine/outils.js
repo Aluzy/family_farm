@@ -274,6 +274,8 @@ export function chopTree(state, id, ou, fort = false) {
   const b = bushOf(state, id);
   if (b) return cutBush(state, id, b, ou, fort);
   if (treeGone(state, id)) return fail('Cet arbre est déjà abattu.');
+  const plante = foretArbre(state, id);
+  if (plante && !foretGrand(state, plante)) return fail('Ce n\'est encore qu\'une jeune pousse : laisse-la grandir.');
   const f = force(fort);
   if (!canAfford(state, 'couper', f.energie)) return fail(TIRED);
   delete outils(state).coupes;           // l'ancien compte des coups du jour
@@ -284,8 +286,13 @@ export function chopTree(state, id, ou, fort = false) {
   // (un arbre de la ferme générée : sa graine tombe avec lui, et il ne repousse que si on la plante)
   const espece = tombe ? especeArbre(state, id) : null;
   const graine = espece ? H.GRAINES[espece] : null;
+  if (plante && tombe) {
+    // (un arbre planté : il n'est plus là, sa case se libère)
+    state.foret.arbres = state.foret.arbres.filter((a) => a !== plante);
+    delete outils(state).arbres[id];
+  }
   if (graine) {
-    outils(state).arbres[id] = { espece };
+    if (!plante) outils(state).arbres[id] = { espece };
     const m = lacher(state, graine, 0, 1, ou);
     if (morceaux && m) morceaux.fin.push(...m.fin);
   }
@@ -298,15 +305,20 @@ export function chopTree(state, id, ou, fort = false) {
 
 // Un arbre de la ferme générée qui tombe laisse sa graine (HACHE.GRAINES : la pomme de pin d'un
 // sapin, le gland d'un autre arbre) et ne repousse plus de lui-même : state.outils.arbres[id] =
-// { espece } (sans jour de retour). Sa graine, plantée là où il était (planterGraine, le mode
-// Construire : les blocs `semis`), l'y fait repousser au bout de HACHE.POUSSE jours :
-// { espece, retour } (respawnTrees, au réveil ; pas tant qu'une de ses cases est bâtie).
+// { espece } (sans jour de retour). Une graine se plante sur n'importe quelle case d'herbe libre
+// (le mode Construire : les blocs `semis`, blocs.js) : state.foret.arbres = [{ id: 'f<n>',
+// espece, case, pousse }]. Jeune pousse jusqu'au jour `pousse` (HACHE.POUSSE jours plus tard),
+// c'est ensuite un arbre de la carte (dessiné au-dessus de sa case, son pied au milieu ;
+// js/carte/ferme/foret.js) : il se coupe comme les autres et laisse sa graine en tombant.
 
 const especes = new Map();   // graine de la ferme → Map(arbre → 'pin' | 'arbre')
 
 // L'espèce de l'arbre `id` de la ferme générée : 'pin' (un sapin) ou 'arbre' ; null ailleurs
-// (la carte de Tiled, les arbres des autres cartes). Lue dans ses tuiles (planche.js).
+// (la carte de Tiled, les arbres des autres cartes). Un arbre planté : la sienne ; un arbre de
+// la carte : lue dans ses tuiles (planche.js).
 export function especeArbre(state, id) {
+  const plante = foretArbre(state, id);
+  if (plante) return plante.espece;
   const g = farmSeed(state);
   if (g === null) return null;
   if (!especes.has(g)) {
@@ -325,33 +337,50 @@ export function especeArbre(state, id) {
   return especes.get(g).get(id) || null;
 }
 
-// L'arbre abattu de l'espèce `espece` dont `tile` est une case, pas encore replanté : son
-// identifiant, ou null.
-export function souchePour(state, espece, tile) {
-  const A = farmTerrain(state).ARBRES || {}, o = (state.outils && state.outils.arbres) || {};
-  for (const [id, cs] of Object.entries(A)) {
-    const e = o[id];
-    if (!cs.includes(tile) || !e || typeof e !== 'object' || e.retour !== undefined) continue;
-    if ((e.espece || especeArbre(state, id)) === espece) return id;
-  }
-  return null;
+// Les arbres plantés (state.foret.arbres), sur la ferme générée.
+export function foretArbres(state) {
+  const f = state.foret;
+  return farmSeed(state) !== null && f && Array.isArray(f.arbres) ? f.arbres : [];
 }
 
-// La graine de l'espèce `espece` plantée sur `tile` (blocs.js vérifie la place : poseStatus) :
-// l'arbre y repousse dans HACHE.POUSSE jours. Renvoie son identifiant, ou null.
+// L'arbre planté `id`, ou null.
+export function foretArbre(state, id) {
+  return foretArbres(state).find((a) => a.id === id) || null;
+}
+
+// L'arbre planté sur la case `tile`, ou null.
+export function foretSurCase(state, tile) {
+  return foretArbres(state).find((a) => a.case === tile) || null;
+}
+
+// Un arbre planté à moins de `d` cases (en ligne ou en diagonale) de `tile` ?
+export function foretProche(state, tile, d) {
+  const W = farmTerrain(state).LARGEUR, c = tile % W, r = Math.floor(tile / W);
+  return foretArbres(state).some((a) => Math.max(Math.abs(a.case % W - c), Math.abs(Math.floor(a.case / W) - r)) < d);
+}
+
+// Plante une graine de l'espèce `espece` sur `tile` (blocs.js a vérifié la place, poseStatus ;
+// la graine est déjà prise dans l'inventaire). Renvoie l'arbre planté.
 export function planterGraine(state, espece, tile) {
-  const id = souchePour(state, espece, tile);
-  if (!id) return null;
-  const P = DATA.HACHE.POUSSE;
-  outils(state).arbres[id] = { espece, retour: state.day + randomInt(state, P[0], P[1]) };
-  return id;
+  if (!state.foret || typeof state.foret !== 'object' || !Array.isArray(state.foret.arbres)) state.foret = { n: 0, arbres: [] };
+  const f = state.foret, P = DATA.HACHE.POUSSE;
+  f.n = (f.n | 0) + 1;
+  const a = { id: 'f' + f.n, espece, case: tile, pousse: state.day + randomInt(state, P[0], P[1]) };
+  f.arbres.push(a);
+  return a;
 }
 
-// Les arbres replantés qui n'ont pas encore repoussé : [{ id, espece, case (le milieu de son pied) }].
+// L'arbre planté a-t-il fini de pousser ?
+export function foretGrand(state, a) {
+  return !!a && state.day >= a.pousse;
+}
+
+// Les arbres plantés encore jeunes pousses : [{ id, espece, case }] ; ceux qui ont poussé : grands.
 export function poussesArbres(state) {
-  const o = (state.outils && state.outils.arbres) || {}, W = farmTerrain(state).LARGEUR;
-  return Object.entries(o).filter(([, e]) => e && typeof e === 'object' && e.espece && e.retour !== undefined)
-    .map(([id, e]) => { const [c, r] = id.split(',').map(Number); return { id, espece: e.espece, case: r * W + c }; });
+  return foretArbres(state).filter((a) => !foretGrand(state, a)).map((a) => ({ id: a.id, espece: a.espece, case: a.case }));
+}
+export function arbresPlantes(state) {
+  return foretArbres(state).filter((a) => foretGrand(state, a)).map((a) => ({ id: a.id, espece: a.espece, case: a.case }));
 }
 
 /* ---------- la pioche : casser un rocher de la carte ---------- */
