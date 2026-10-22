@@ -188,7 +188,7 @@ test('version 1.9 : le joueur automatique laboure jusqu\'au plafond, en gardant 
   s.potager.houe = true;
   testSetLevel(s, 2);
   botHoe(s);
-  assertEqual(soilCount(s), 12, 'plafond du niveau 2');
+  assertEqual(soilCount(s), DATA.NIVEAUX.TUILES[1], 'plafond du niveau 2');
   const t = createInitialState(1);
   t.potager.houe = true;
   testSetLevel(t, 3);

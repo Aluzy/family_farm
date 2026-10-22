@@ -53,10 +53,10 @@
     "AUTO": 50,
     "//TUILES": [
       "Version 1.9 (v2, lot 5) : plafond de tuiles de terre par niveau (index 0 =",
-      "niveau 1), toutes les terres de la carte ensemble (version 1.15). Au plafond, la houe ne laboure",
+      "niveau 1), toutes les terres de la carte ensemble (version 1.15) ; il monte à chaque niveau. Au plafond, la houe ne laboure",
       "plus (on peut toujours reboucher une terre vide pour labourer ailleurs)."
     ],
-    "TUILES": [6, 12, 20, 32, 48, 64, 64, 64, 64, 64],
+    "TUILES": [12, 24, 40, 60, 84, 112, 144, 180, 220, 264],
     "//CHAPITRES_XP": "XP du succès « chapitre n terminé » (index 0 = chapitre 1).",
     "CHAPITRES_XP": [200, 500, 1000, 2500, 2000, 4000, 8000],
     "//CHAPITRE_NIVEAU": [

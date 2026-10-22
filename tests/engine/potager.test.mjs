@@ -291,13 +291,13 @@ test('version 1.9 : la Zone de culture, grille de 30 cases ; plafond de tuiles p
   assertEqual([DATA.POTAGER.COLONNES, DATA.POTAGER.CASES, DATA.POTAGER.ZONE2.COLONNES, DATA.POTAGER.ZONE2.CASES], [5, 30, 8, 64]);
   assertEqual([DATA.POTAGER.PARCELLES, DATA.POTAGER.PRIX_NIVEAUX], [undefined, undefined], 'plus d\'agrandissement en pièces');
   assertEqual(DATA.CHAMP, undefined, 'le Champ n\'existe plus comme bâtiment');
-  assertEqual(DATA.NIVEAUX.TUILES, [6, 12, 20, 32, 48, 64, 64, 64, 64, 64]);
+  assertEqual(DATA.NIVEAUX.TUILES, [12, 24, 40, 60, 84, 112, 144, 180, 220, 264]);
   const s = garden();
-  assertEqual([soilCount(s), soilCap(s), soilCapNext(s)], [6, 6, 6]);
+  assertEqual([soilCount(s), soilCap(s), soilCapNext(s)], [6, 12, 12]);
   testSetLevel(s, 5);
-  assertEqual([soilCap(s), soilCapNext(s)], [48, 16]);
+  assertEqual([soilCap(s), soilCapNext(s)], [84, 28]);
   testSetLevel(s, 10);
-  assertEqual([soilCap(s), soilCapNext(s)], [64, 0]);
+  assertEqual([soilCap(s), soilCapNext(s)], [264, 0]);
   assertEqual(new Set(startPlots().map((p) => p.id)).size, 6);
 });
 
