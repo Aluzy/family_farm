@@ -54,7 +54,7 @@ test('Déménager : chaque bâtiment d\'une ancienne partie est rebâti en blocs
     assert(s.serre.construit && s.silo.construit, 'Serre et Silo');
     for (const id of ['four', 'cuisine', 'moulin', 'presse']) assert(s.stations[id].construit, id);
     const B = blocsPoses(s), sortes = Object.values(B);
-    for (const sorte of ['four', 'cuisiniere', 'meule', 'nichoir', 'mangeoire', 'bac_semis', 'coffre_grain', 'puits', 'panneau', 'citerne', 'batterie', 'station_robot']) {
+    for (const sorte of ['four', 'cuisiniere', 'meule', 'nichoir', 'mangeoire', 'bac_semis', 'puits', 'panneau', 'citerne', 'batterie', 'station_robot']) {
       assertEqual(sortes.filter((x) => x === sorte).length, 1, `un bloc ${sorte}`);
     }
     // les appareils : toujours là ; la pompe sur le puits ; la station du robot

@@ -10,7 +10,7 @@ import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, couchagesEtage, etageCouvertes, ETAGE_BLOCS, chopTree, bushOf, bushCut, cutBushes, respawnBushes, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
-  etatEtable, etatMoulin, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
+  etatEtable, etatMoulin, etatSilo, hauteurSilo, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   botteleuses, etatBotteleuse, machineDe, morceauxDe, ramasserMorceau, sortirBotte, verserFibres,
   buyRuche, buyDehors, PORTE_SUR_MUR, casesBuissonsCoupes, especeArbre, poussesArbres, arbresPlantes, respawnTrees, fellenTrees, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
   caseDepart, commencerDidacticiel, etapeDidacticiel, suivantDidacticiel, majDidacticiel, objectifDidacticiel, recettesDidacticiel, blocsDidacticiel, passerDidacticiel, planAbri, hoe, plant, water, remplirCruche, eauCruche,
@@ -784,20 +784,78 @@ test('ferme générée : un bac à semis posé dans une pièce close construit l
   assertEqual(serreMurs(s), [...p.murs, p.porte].sort((a, b) => a - b));
 });
 
-/* ---------- étape 5b : le Silo (pièce close + coffre à grain) ---------- */
+/* ---------- le Silo : des blocs de silo empilés, dehors ---------- */
 
-test('ferme générée : un coffre à grain posé dans une pièce close construit le Silo', () => {
+test('ferme générée : des blocs de silo, 2 colonnes de 3, font le Silo ; il s\'agrandit en largeur et en hauteur', () => {
+  const S = DATA.ATELIER.SILO;
   const s = reach(chantier('g1'), 'silo');
   s.silo = createInitialState(1).silo;
   assertEqual(buildSilo(s).ok, false, 'pas en pièces');
-  setInv(s, { mur_pierre: 30, porte: 2, coffre_grain: 1, ble: 5 });
-  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
+  // la recette, à l'Atelier : débloquée avec le Silo
+  setInv(s, { planche: 3, pierre: 1 });
+  assert(craftStatus(s, 'bloc_silo').ok, 'débloquée');
+  assert(craft(s, 'bloc_silo').ok);
+  assertEqual(countItem(s, 'bloc_silo'), 1);
+  setInv(s, { bloc_silo: 12, ble: 5 });
+  const z = terrainLibre(s, 5, 2), a = z.r * z.W + z.c;
+  assert(poserBloc(s, 'bloc_silo', a).ok, 'le premier bloc');
+  // un seul silo : à côté de ses colonnes, sur la même rangée
+  assertEqual(poserBloc(s, 'bloc_silo', a + 3).ok, false, 'pas ailleurs');
+  assertEqual(poserBloc(s, 'bloc_silo', a + z.W).ok, false, 'pas sous lui');
+  assert(poserBloc(s, 'bloc_silo', a + 1).ok, 'la deuxième colonne');
+  // chaque bloc posé sur une colonne la rehausse
+  for (let k = 0; k < 2; k++) { assert(poserBloc(s, 'bloc_silo', a).ok); }
+  assertEqual([etatSilo(s).ok, s.silo.construit], [false, false], 'une colonne encore basse');
+  for (let k = 0; k < 2; k++) assert(poserBloc(s, 'bloc_silo', a + 1).ok);
+  assertEqual([hauteurSilo(s, a), hauteurSilo(s, a + 1), etatSilo(s).blocs], [3, 3, 6]);
+  assertEqual([s.silo.construit, siloCapacity(s), s.silo.ble, countItem(s, 'ble')], [true, 6 * S.BLES_PAR_BLOC, 5, 0], 'le blé y entre');
+  // plus grand : une colonne de plus (comptée une fois haute de 3 blocs), un bloc de plus en hauteur
+  assert(poserBloc(s, 'bloc_silo', a + 2).ok);
+  assertEqual([s.silo.construit, siloCapacity(s)], [true, 6 * S.BLES_PAR_BLOC], 'une colonne en construction : le silo reste, elle ne compte pas encore');
+  for (let k = 0; k < 2; k++) assert(poserBloc(s, 'bloc_silo', a + 2).ok);
+  assertEqual(siloCapacity(s), 9 * S.BLES_PAR_BLOC, 'chaque bloc compte');
+  assert(poserBloc(s, 'bloc_silo', a).ok);
+  assertEqual([hauteurSilo(s, a), siloCapacity(s)], [4, 10 * S.BLES_PAR_BLOC]);
+  // jusqu'à HAUTEUR_MAX
+  for (let h = 4; h < S.HAUTEUR_MAX; h++) assert(poserBloc(s, 'bloc_silo', a).ok);
+  assertEqual(poserBloc(s, 'bloc_silo', a).ok, false, 'déjà au plus haut');
+  // repris : le bloc du dessus d'abord ; pas la colonne du milieu ; trop petit, plus de silo
+  const avant = countItem(s, 'bloc_silo');
+  assert(reprendreBloc(s, a).ok);
+  assertEqual([hauteurSilo(s, a), countItem(s, 'bloc_silo')], [S.HAUTEUR_MAX - 1, avant + 1]);
+  s.silo.ble = siloCapacity(s);
+  assert(reprendreBloc(s, a + 2).ok);
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [siloCapacity(s), 3 * S.BLES_PAR_BLOC], 'la colonne trop basse ne compte plus : ce qui ne tient plus revient dans l\'inventaire');
+  for (let h = hauteurSilo(s, a + 1); h > 1; h--) assert(reprendreBloc(s, a + 1).ok);
+  assertEqual(s.silo.construit, false, 'une seule colonne assez haute : plus de silo');
+  assertEqual(reprendreBloc(s, a + 1).ok, false, 'son dernier bloc couperait le silo en deux');
+});
+
+test('ferme générée : le bloc de silo se pose dehors, et sa recette attend le niveau du Silo', () => {
+  const s = chantier('g2');
+  s.progression.niveau = 1;
+  setInv(s, { planche: 3, pierre: 1, bloc_silo: 1, mur_pierre: 30, porte: 2 });
+  assertEqual(craftStatus(s, 'bloc_silo').ok, false, 'pas encore débloquée');
+  const z = terrainLibre(s, 2, 1);
+  assertEqual(poserBloc(s, 'bloc_silo', z.r * z.W + z.c).ok, false, 'pas encore débloqué');
+  reach(s, 'silo');
+  const p = murs(terrainLibre(s, 5, 5), 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
   poserPorte(s, p.porte);
-  assert(poserBloc(s, 'coffre_grain', p.dedans).ok);
-  assertEqual([s.silo.construit, siloCapacity(s) > 0, s.silo.ble, countItem(s, 'ble')], [true, true, 5, 0], 'le blé y entre');
-  reprendreBloc(s, p.dedans);
-  assertEqual([s.silo.construit, countItem(s, 'coffre_grain')], [false, 1]);
+  assertEqual(poserBloc(s, 'bloc_silo', p.dedans).ok, false, 'pas dans une pièce close');
+});
+
+test('migration v45 : le coffre à grain est remboursé, posé ou dans l\'inventaire', () => {
+  const s = chantier('g3');
+  setInv(s, { ble: 1 });
+  s.blocs = { ...s.blocs, 1234: 'coffre_grain' };
+  s.inventaire.coffre_grain = [{ qty: 2, nightsLeft: null, origin: 'produit' }];
+  s.silo = { ...s.silo, construit: true, niveau: 2, ble: 12 };
+  s.version = 44;
+  const m = migrate({ v: 44, t: 0, s });
+  assertEqual([m.version, m.blocs[1234], m.inventaire.coffre_grain], [STATE_VERSION, undefined, undefined]);
+  assertEqual([countItem(m, 'planche'), countItem(m, 'fibre')], [18, 6], '3 coffres : 6 planches et 2 fibres chacun');
+  assertEqual([m.silo.construit, m.silo.ble], [false, 12], 'le blé du Silo reste');
 });
 
 /* ---------- version 1.26 : les ressources de la carte avant de bâtir ---------- */

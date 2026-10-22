@@ -8,7 +8,7 @@
 // qui manque, quand on ne peut pas). Le moteur : js/engine/atelier.js.
 
 import { DATA } from '../engine/catalog.js';
-import { atelierConstruit, craft, craftStatus, ramasser } from '../engine/atelier.js';
+import { atelierConstruit, craft, craftStatus, ramasser, recetteDebloquee } from '../engine/atelier.js';
 import { recettesDidacticiel } from '../engine/didacticiel.js';
 import { countItem } from '../engine/inventory.js';
 import { toolDef } from '../engine/outils.js';
@@ -107,7 +107,7 @@ export function renderAtelier() {
   }
   // (pendant le didacticiel : seulement les recettes qu'il a débloquées)
   const vues = recettesDidacticiel(state);
-  const recettes = Object.entries(A.RECETTES).filter(([id, r]) => (!vues || vues.has(id)) && dansOnglet(r));
+  const recettes = Object.entries(A.RECETTES).filter(([id, r]) => (!vues || vues.has(id)) && recetteDebloquee(state, id) && dansOnglet(r));
   return `
     <div class="section-head"><h3>${A.ICONE} ${A.NOM} · niveau ${state.atelier.niveau}</h3></div>
     ${recettes.length ? recettes.map(([id, r]) => recetteHtml(id, r)).join('')

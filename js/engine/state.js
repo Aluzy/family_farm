@@ -375,7 +375,29 @@ export const MIGRATIONS = {
     }
     return s2;
   },
+  // v44 → v45 : sur la ferme générée, le Silo est fait de blocs de silo posés dehors
+  // (blocs.js, etatSilo) ; le coffre à grain n'existe plus : posé ou dans l'inventaire, il est
+  // remboursé (ce qu'il coûtait à l'Atelier). Le blé du Silo reste.
+  44: (state) => migrateCoffreGrain(state),
 };
+
+// (ce que coûtait le coffre à grain à l'Atelier, avant la version 45)
+const COFFRE_GRAIN = { planche: 6, fibre: 2 };
+function migrateCoffreGrain(old) {
+  const state = { ...old, version: 45 };
+  if (!state.carte || !state.inventaire || typeof state.inventaire !== 'object') return state;
+  state.inventaire = JSON.parse(JSON.stringify(state.inventaire));
+  let n = 0;
+  if (state.blocs && typeof state.blocs === 'object') {
+    state.blocs = { ...state.blocs };
+    for (const [t, sorte] of Object.entries(state.blocs)) if (sorte === 'coffre_grain') { delete state.blocs[t]; n += 1; }
+  }
+  n += countItem(state, 'coffre_grain');
+  delete state.inventaire.coffre_grain;
+  for (const [o, q] of Object.entries(COFFRE_GRAIN)) addItem(state, o, q * n);
+  if (state.silo && typeof state.silo === 'object') { state.silo = { ...state.silo }; majPoulailler(state); }
+  return state;
+}
 
 function migrateRoomKinds(old) {
   const state = { ...old, version: 38 };

@@ -6,7 +6,7 @@ import { ANCIENNE_COUR } from './ferme-generee.js';
 import { houseRepaired } from './depart.js';
 import { robotOn } from './automation.js';
 import { pickUpAll } from './ramassage.js';
-import { couchages, etatEtable, etatMoulin, etatPoulailler, majPoulailler, pieceDe, serrePlaces } from './blocs.js';
+import { couchages, etatEtable, etatMoulin, etatPoulailler, etatSilo, majPoulailler, serrePlaces } from './blocs.js';
 
 /* ---------- déménager une ancienne partie sur la ferme générée ---------- */
 
@@ -18,7 +18,7 @@ import { couchages, etatEtable, etatMoulin, etatPoulailler, majPoulailler, piece
 //   - chaque bâtiment déjà là est rebâti en blocs, près de sa place d'avant : le foyer (une
 //     paillasse par membre, le four, la cuisinière), le Poulailler et l'Étable (leur enceinte et
 //     un enclos de barrières, à la taille de leur niveau ou de leurs places), la Serre (une case
-//     par parcelle), le Silo, le Moulin, le puits (et la pompe), le panneau, la citerne, la
+//     par parcelle), le Silo (des colonnes de blocs de silo, dehors), le Moulin, le puits (et la pompe), le panneau, la citerne, la
 //     batterie et la station du robot ;
 //   - un bâtiment qui ne trouve pas sa place rend ses blocs dans l'inventaire (à poser) ;
 //   - une maison pas encore réparée : les blocs d'un foyer sont dans l'inventaire ;
@@ -83,11 +83,18 @@ function planSerre(parcelles) {
   return { w: a + 2, h: b + 2, plan };
 }
 
-// Une petite pièce (le Silo, le Moulin) avec son bloc au milieu du fond.
+// Une petite pièce (le Moulin) avec son bloc au milieu du fond.
 function planPetit(cle) {
   const plan = piece(3, 2);
   plan.push({ dx: 2, dy: 1, sorte: cle });
   return { w: 5, h: 4, plan };
+}
+
+// Le Silo : des colonnes de blocs de silo, dehors, de quoi garder `capacite` blés (etatSilo).
+function planSilo(capacite) {
+  const S = DATA.ATELIER.SILO, n = Math.max(S.LARGEUR * S.HAUTEUR, Math.ceil(capacite / S.BLES_PAR_BLOC));
+  const w = Math.max(S.LARGEUR, Math.ceil(n / S.HAUTEUR_MAX)), h = Math.max(S.HAUTEUR, Math.ceil(n / w));
+  return { w, h: 1, plan: Array.from({ length: w }, (_, dx) => ({ dx, dy: 0, sorte: 'bloc_silo', hauteur: h })) };
 }
 
 // Le Moulin (version 1.25) : la petite pièce, la meule au centre, ses murs hauts de
@@ -127,7 +134,7 @@ function plans(state) {
     out.push({ id: 'paturage', ou: 'paturage', pose: true, places: Math.min(places, placesMax()), ...planEnclos('mangeoire', places) });
   }
   if (state.serre && state.serre.construit) out.push({ id: 'serre', ou: 'serre', pose: true, parcelles: state.serre.parcelles.length, ...planSerre(state.serre.parcelles.length) });
-  if (state.silo && state.silo.construit) out.push({ id: 'silo', ou: 'silo', pose: true, ...planPetit('coffre_grain') });
+  if (state.silo && state.silo.construit) out.push({ id: 'silo', ou: 'silo', pose: true, ...planSilo(DATA.SILO.CAPACITE[Math.max(1, Math.min(state.silo.niveau || 1, DATA.SILO.CAPACITE.length)) - 1]) });
   if (st('moulin')) out.push({ id: 'moulin', ou: 'moulin', pose: true, ...planMoulin() });
   // dehors : le puits (le décor de la cour d'avant ; la pompe dessus), le panneau, la citerne, la batterie
   const a = (type) => isOwned(starterOf(state, type));
@@ -216,13 +223,12 @@ export function convertirPartie(state, graine) {
   }
 
   // 3. chaque bâtiment posé est-il reconnu ? sinon, ses blocs reviennent dans l'inventaire
-  const cleDe = (p, sorte) => p.cases.find((t) => state.blocs[t] === sorte);
   const verifie = {
     maison: (p) => couchages(state).length >= p.plan.filter((b) => b.sorte === 'paillasse').length,
     poulailler: (p) => { const e = etatPoulailler(state); return e.ok && e.places >= p.places; },
     paturage: (p) => { const e = etatEtable(state); return e.ok && e.places >= p.places; },
     serre: (p) => serrePlaces(state).length >= p.parcelles,
-    silo: (p) => !!pieceDe(state, cleDe(p, 'coffre_grain')),
+    silo: () => etatSilo(state).ok,
     moulin: () => etatMoulin(state).ok,
   };
   for (const p of batis) {
