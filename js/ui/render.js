@@ -15,6 +15,7 @@ import { renderShopModal } from './marche.js';
 import { pixelize, watch } from './pixel-emoji.js';
 import { renderRecipeBook } from './livre.js';
 import { renderEncyclopedie } from './encyclopedie.js';
+import { renderPlantation } from './plantation.js';
 
 export let renderScheduled = false;
 export function setRenderScheduled(value) {
@@ -60,6 +61,7 @@ export function render() {
   renderDidacticiel();
   renderRecipeBook();
   renderEncyclopedie();
+  renderPlantation();
   renderItemModal();
   renderShopModal();
   renderTestPanel();

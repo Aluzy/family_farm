@@ -79,6 +79,7 @@
       this.syncGatherables(model.ramassables);
       this.syncPieces(model.morceaux);
       this.syncSurbrillance(model.surbrillance);   // (le didacticiel : après les ramassables et les blocs)
+      this.syncPlantation(model.plantation);       // (planter un arbre : les cases possibles)
       this.syncPousses(model.pousses);   // (les arbres plantés d'une graine : une jeune pousse,
       this.syncForet(model.foret);       //  puis un arbre, foret.js)
 

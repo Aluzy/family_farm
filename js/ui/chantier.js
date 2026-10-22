@@ -38,7 +38,9 @@ const MURS = () => Object.keys(DATA.ATELIER.BLOCS).filter((s) => DATA.ATELIER.BL
 const enMain = (s) => !DATA.ATELIER.BLOCS[s].meuble || s === buildMode || blocsEnMain(state, s) > 0;
 // (pendant le didacticiel : seulement les blocs qu'il a débloqués, js/engine/didacticiel.js)
 const vu = (s) => { const v = blocsDidacticiel(state); return !v || v.has(s); };
-const SORTES = () => (niveauBati() ? ETAGE_BLOCS.filter(enMain) : niveau() ? MURS() : Object.keys(DATA.ATELIER.BLOCS).filter(enMain)).filter(vu);
+// (les arbres, graines et jeunes arbres fruitiers, se plantent depuis l'Inventaire : js/ui/plantation.js)
+const bati = (s) => !DATA.ATELIER.BLOCS[s].semis && !DATA.ATELIER.BLOCS[s].arbre;
+const SORTES = () => (niveauBati() ? ETAGE_BLOCS.filter(enMain) : niveau() ? MURS() : Object.keys(DATA.ATELIER.BLOCS).filter(enMain)).filter(vu).filter(bati);
 // La liste des niveaux (au-dessus du menu) : ouverte ? Un appui long sur le carré l'ouvre, on
 // glisse jusqu'au niveau voulu et on lâche (APPUI_LONG_MS) ; un appui simple l'ouvre ou la ferme.
 let niveauListe = false;

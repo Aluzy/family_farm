@@ -48,6 +48,7 @@ import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose, remplirCruche } from '../engine/cruche.js';
 import { surbrillanceDidacticiel } from './didacticiel.js';
+import { plantationModele } from './plantation.js';
 import { runAction } from './events.js';
 
 
@@ -470,6 +471,8 @@ export function stageModel() {
     // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
     // le didacticiel (js/ui/didacticiel.js) : ce que la carte entoure (pierres, bois, Atelier, puits)
     surbrillance: surbrillanceDidacticiel(),
+    // planter un arbre depuis l'Inventaire (js/ui/plantation.js) : les cases possibles
+    plantation: stageInterior ? null : plantationModele(),
     moulinTour: tour && tour.ok ? { ...tour.bornes, enMarche: batiments.moulin.enMarche } : null,
     // les tableaux accrochés aux murs (DATA.ATELIER.BLOCS : sur « mur »)
     tableaux: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].meuble).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })),
