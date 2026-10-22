@@ -970,6 +970,8 @@ select {
 .item-modal { max-width: 360px; }
 .modal-backdrop:has(.item-modal) { align-items: center; padding: 16px; } /* une carte au milieu de l'écran */
 .modal-backdrop:has(.item-modal) .modal { border-radius: 8px; }
+.modal-backdrop:has(.accueil-modal) { align-items: center; padding: 16px; } /* l'accueil d'une nouvelle partie : au milieu de l'écran */
+.modal-backdrop:has(.accueil-modal) .modal { border-radius: 8px; }
 .item-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .item-icon {
   flex: none;
@@ -1881,6 +1883,14 @@ main .ancre { scroll-margin-top: 150px; }
 .accueil-champ { width: 100%; }
 .accueil-champ.accueil-nombre { width: 6em; text-align: center; }
 .accueil-persos { width: 100%; }
+/* Le choix du personnage : tous visibles d'un coup, dessinés deux fois plus gros (64 px) ; la case
+   ne garde que la largeur du personnage (les marges transparentes de .perso-px la débordent). */
+.perso-grid.accueil-persos {
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 4px;
+  max-height: calc(100dvh - 230px);
+}
+.accueil-persos .perso-btn { padding: 0; overflow: hidden; }
+.accueil-persos .perso-btn .perso-px { --s: 64px; }
 .accueil-portrait .perso-px { --s: 64px; }
 .accueil-espece.active { outline: 3px solid var(--color-sun); outline-offset: 0; }
 .accueil-modal .pose-meuble-ok, .accueil-modal .pose-meuble-non { width: 56px; height: 56px; }
