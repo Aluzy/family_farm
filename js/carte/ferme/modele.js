@@ -66,6 +66,7 @@
       this.syncPaths(model.chemins);
       this.syncBeasts(model.enclos, model.heure);
       this.fireOn = !!model.fourAllume;
+      this.meuleOn = !!model.meuleTourne;
       this.syncBlocks(model.blocs, model.bati, model.pieces, model.serreMurs);   // (avant le puits et la citerne : posés sur leurs blocs)
       this.syncAbeilles(model);   // (les abeilles des ruches, et les fleurs où elles butinent)
       this.syncBotteleuses(model.botteleuses, model.botteVibre, model.fibres);   // (après les blocs : leurs images)

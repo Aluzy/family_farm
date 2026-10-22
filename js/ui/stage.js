@@ -476,6 +476,8 @@ export function stageModel() {
     enclos: betesDesEnclos(),
     // le four (son bloc) cuit-il ? ses flammes bougent (js/carte/ferme/chantier.js, stepFires)
     fourAllume: !!(state.stations.four && state.stations.four.construit && state.stations.four.tache),
+    // le Moulin moud-il ? sa meule (son bloc) tourne (js/carte/ferme/chantier.js, stepFires)
+    meuleTourne: batiments.moulin.enMarche,
     bati: buildMode && !stageInterior ? { sorte: buildMode, rang: niveauRang(), meuble: meubleModele() } : null,
     // l'étage (un essai, js/engine/etage.js) et le niveau où est le personnage (0 : en bas)
     ...etageModel(),

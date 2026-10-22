@@ -82,9 +82,9 @@
           if (verre.has(b.case) && key === H.key && f === H.porte) f = H.porteSerre;
           const e = B.get(b.case);
           if (e && e.sorte === b.sorte) {
-            // (les flammes du four, la lanterne allumée : stepFires, stepLanterns choisissent leur image)
+            // (les flammes du four, la meule qui moud, la lanterne allumée : stepFires, stepLanterns choisissent leur image)
             // (la botteleuse qui travaille, sa bande qui tourne : botteleuse.js)
-            const anime = b.sorte === BLOCS_CARTE.feu.sorte || b.sorte === 'lanterne' || (this.botteCycles && this.botteCycles.size && ['botteleuse', 'convoyeur'].includes(b.sorte));
+            const anime = b.sorte === BLOCS_CARTE.feu.sorte || b.sorte === BLOCS_CARTE.meule.sorte || b.sorte === 'lanterne' || (this.botteCycles && this.botteCycles.size && ['botteleuse', 'convoyeur'].includes(b.sorte));
             if ((e.img.frame.name !== f || e.img.texture.key !== key) && !anime) { e.img.setTexture(key, f); changed = true; }
             const li = linteau(b);
             if (this.syncHauts(e, li ? li.h : b.hauteur || 1, li && li.frame)) changed = true;
@@ -301,12 +301,17 @@
     },
 
     // Le four qui cuit (modèle.fourAllume) : ses flammes bougent, une image de
-    // BLOCS_CARTE.feu après l'autre ; éteint, il reprend son image.
+    // BLOCS_CARTE.feu après l'autre ; éteint, il reprend son image. De même la meule quand le
+    // Moulin moud (modèle.meuleTourne, BLOCS_CARTE.meule) : elle tourne, ou s'arrête.
     stepFires(time) {
       if (!this.blocks) return;
-      const F = BLOCS_CARTE.feu;
-      const frame = this.fireOn ? F.frames[Math.floor(time * F.fps / 1000) % F.frames.length] : BLOCS_CARTE.frames[F.sorte];
-      for (const e of this.blocks.values()) if (e.sorte === F.sorte && e.img.frame.name !== frame) e.img.setFrame(frame);
+      const Fe = BLOCS_CARTE.feu, M = BLOCS_CARTE.meule;
+      const image = (A, on) => (on ? A.frames[Math.floor(time * A.fps / 1000) % A.frames.length] : BLOCS_CARTE.frames[A.sorte]);
+      const feu = image(Fe, this.fireOn), meule = image(M, this.meuleOn && !F.reducedMotion());
+      for (const e of this.blocks.values()) {
+        const f = e.sorte === Fe.sorte ? feu : e.sorte === M.sorte ? meule : null;
+        if (f !== null && e.img.frame.name !== f) e.img.setFrame(f);
+      }
     },
 
     // Les lanternes scintillantes (BLOCS_CARTE.lanterne) : éteintes le jour ; quand la nuit tombe,
