@@ -382,7 +382,7 @@ test('pioche : un rocher cassé revient au bout de RETOUR jours, sauf si une par
 
 test('version 1.9 : labourer une case d\'herbe coûte de l\'énergie et rapporte de l\'XP, dans le plafond', () => {
   const s = garden();
-  testSetLevel(s, 2);
+  testSetLevel(s, 1);
   assertEqual(hoe(s, champ(0, 0)).error, `Il te faut une houe (Marché, ${DATA.HOUE.PRIX} 💰).`);
   s.potager.houe = true;
   const [e, xp] = [s.energie, s.progression.xp];
@@ -393,7 +393,7 @@ test('version 1.9 : labourer une case d\'herbe coûte de l\'énergie et rapporte
   assert(plant(tireless(s), 'potager-7', 'carotte').ok, 'la nouvelle terre se plante');
   for (const [c, r2] of [[1, 0], [2, 0], [0, 1], [1, 1], [2, 1]]) assert(hoe(s, champ(c, r2)).ok, `tuile ${c},${r2}`);
   const plein = hoeStatus(s, champ(3, 0));
-  assertEqual([plein.ok, plein.raison], [false, 'Plafond atteint : 12 tuiles au niveau 2. Niveau suivant : +8 tuiles.']);
+  assertEqual([plein.ok, plein.raison], [false, 'Plafond atteint : 12 tuiles au niveau 1. Niveau suivant : +12 tuiles.']);
   assertEqual([hoe(s, 0).ok, hoe(s, -1).ok, hoe(s, 1e6).ok], [false, false, false], 'hors de l\'herbe ou de la carte');
   s.energie = 0;
   testSetLevel(s, 3);
@@ -418,11 +418,11 @@ test('version 1.9 : le plafond compte toutes les terres de la carte', () => {
   const s = garden();
   tireless(s);
   s.potager.houe = true;
-  growZone(s, 30);
-  testSetLevel(s, 4);
-  assertEqual([soilCount(s), soilCap(s)], [30, 32]);
+  growZone(s, 22);
+  testSetLevel(s, 2);
+  assertEqual([soilCount(s), soilCap(s)], [22, 24]);
   assert(hoe(s, champ(0, 0)).ok && hoe(s, champ(1, 0)).ok);
-  assertEqual([soilCount(s), hoeStatus(s, champ(2, 0)).ok], [32, false]);
+  assertEqual([soilCount(s), hoeStatus(s, champ(2, 0)).ok], [24, false]);
 });
 
 test('version 1.9 : migration v26 → v27 : les parcelles prennent une case, la houe est offerte', () => {

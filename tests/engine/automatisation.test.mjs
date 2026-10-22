@@ -15,6 +15,7 @@ import {
   testAddHens, testAddPieces, testAddWheat, testEmptyBatteries, testFillBatteries,
   testSetBuildingLevel5, testUnlockAllTechs, tick, upgradeRobotBattery, water, wheatTotal,
   zoneTile,
+  soilCap,
 } from '../../js/engine/index.js';
 import {
   assert, assertEqual, atelier, auto5, chapter1StepsDone, farm, garden, growZone, matin, ml,
@@ -655,7 +656,8 @@ test('progression affichée dans l\'arbre : niveaux des bâtiments et appareils'
   const s = auto5('potager');
   const culture = techProgress(s, 'culture');
   // une seule ligne : la Zone de culture (l'ancien Champ n'est plus suivi)
-  assertEqual(culture.map((e) => [e.cle, e.nom, e.type, e.tuiles, e.max, e.automatise]), [['potager', 'Zone de culture', 'tuiles', 30, 30, true]], 'version 1.9 : les tuiles de terre, plus de niveau');
+  // (max : le plafond du niveau, ou les tuiles déjà là s'il y en a plus)
+  assertEqual(culture.map((e) => [e.cle, e.nom, e.type, e.tuiles, e.max, e.automatise]), [['potager', 'Zone de culture', 'tuiles', 30, Math.max(30, soilCap(s)), true]], 'version 1.9 : les tuiles de terre, plus de niveau');
   assertEqual([DATA.ARBRE.batiments.champ, DATA.ARBRE.suivi.champ], [undefined, undefined]);
   assertEqual(DATA.ARBRE.batiments.potager.nom, 'Zone de culture');
   const energie = techProgress(s, 'energie');
