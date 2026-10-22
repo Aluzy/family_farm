@@ -8,7 +8,7 @@ import { takeMeal } from '../engine/family.js';
 import { mailbox } from '../engine/campaign.js';
 import { mergeOfflineReports, simulateOffline } from '../engine/offline.js';
 import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
-import { formatDuration, formatLitres, formatNumber } from '../engine/format.js';
+import { formatCoins, formatDay, formatNumber } from '../engine/format.js';
 import { MAX_FRAME_MS, RENDER_THROTTLE_MS, state, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
 import { showConsentBanner } from './consent.js';
@@ -251,38 +251,22 @@ function watchAbsence() {
   openAbsenceModal(report);
 }
 
+// Une petite fenêtre du jeu (cadre bois, en-tête et ✕ comme les fenêtres de la carte) : la date,
+// l'argent, et les biens produits pendant l'absence (ce que les ateliers ont ajouté aux stocks).
 function openAbsenceModal(r) {
-  const cap = DATA.HORS_LIGNE.MAX_S;
-  const done = itemsText(r.terminees);
-  const running = r.enCours.map((e) => {
-    const def = DATA.STATIONS[e.station];
-    const rec = DATA.RECETTES[e.recette];
-    const left = Number.isFinite(e.reste) ? `encore ${formatDuration(e.reste)}` : 'en pause';
-    // Au Moulin : le nombre de blés qu'il reste à moudre.
-    const lot = e.quantite > 1 ? `${formatNumber(e.quantite)} blés à moudre` : rec.nom.toLowerCase();
-    return `${def.icone} ${def.nom} : ${lot} (${left})`;
-  });
-  const f = r.frigo;
-  let fridge = '';
-  if (f.construit) {
-    fridge = f.horsTensionS > 0
-      ? `<li class="alert">⚠️ Le réfrigérateur a manqué de courant pendant ${formatDuration(f.horsTensionS)}. S'il a manqué de froid plus de la moitié de la journée, chaque lot perdra une nuit de conservation au prochain Dormir.</li>`
-      : '<li>🧊 Le réfrigérateur est resté alimenté.</li>';
-  }
-  const lines = [
-    `<li>⏳ Absence : <strong class="num">${formatDuration(r.demande)}</strong>${r.plafonne ? ` <span class="muted">(seules les ${formatDuration(cap)} premières comptent)</span>` : ''}</li>`,
-    // Version 1.6 : l'électricité produite et stockée ne s'affiche plus ici (fenêtre Énergie).
-    `<li>💧 Eau pompée : <strong class="num">${formatLitres(r.eauPompee)}</strong> · réservoir <span class="num">${formatNumber(Math.floor(r.eauFin / 1000))} / ${formatLitres(r.capaciteEau)}</span></li>`,
-    done ? `<li>🍳 Préparations terminées : <strong>${done}</strong></li>` : '',
-    running.length ? `<li>⏳ Toujours en cours : ${running.join(' · ')}</li>` : '',
-    fridge,
-    `<li>🌙 Aucune nuit n'est passée : l'horloge s'arrête quand le jeu est fermé, et les cultures, les animaux et la famille t'attendent.</li>`,
-    DATA.HORS_LIGNE.USURE ? '' : '<li class="muted">🛠️ Les appareils ne se sont pas usés pendant ton absence.</li>',
-  ];
+  const biens = Object.entries(r.terminees || {}).filter(([item, n]) => DATA.OBJETS[item] && n > 0)
+    .map(([item, n]) => `<li><span aria-hidden="true">${DATA.OBJETS[item].icone}</span> ${DATA.OBJETS[item].nom}<strong class="num">+${formatNumber(n)}</strong></li>`);
   openModal(`
-    <h2 id="absence-title">⏳ Pendant ton absence…</h2>
-    <ul class="report-list">${lines.join('')}</ul>
-    <button type="button" class="btn primary" data-action="close-modal" id="absence-close">Continuer</button>`, { labelledBy: 'absence-title', focus: '#absence-close' });
+    <header class="window-head">
+      <h2 id="absence-title"><span aria-hidden="true">👋</span> Ravi de te revoir !</h2>
+      <button type="button" class="icon-btn" id="absence-close" data-action="close-modal" aria-label="Fermer" title="Fermer">✕</button>
+    </header>
+    <div class="absence-body">
+      <p class="absence-ligne"><span aria-hidden="true">📅</span> ${formatDay(state.day)}</p>
+      <p class="absence-ligne"><span aria-hidden="true">🪙</span> <strong class="num">${formatCoins(state.pieces)}</strong> pièces</p>
+      <h3>Biens produits</h3>
+      ${biens.length ? `<ul class="absence-biens">${biens.join('')}</ul>` : '<p class="muted">Rien de nouveau.</p>'}
+    </div>`, { labelledBy: 'absence-title', focus: '#absence-close', className: 'modal bois item-modal absence-modal' });
 }
 
 // Quitter la page ou la cacher : on sauvegarde tout de suite (sur mobile,

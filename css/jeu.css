@@ -2473,3 +2473,16 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .pose-meuble-ok { background: #6fcf6a; box-shadow: inset 0 0 0 3px #2f8a3a; }
 .pose-meuble-ok:disabled { background: #c9d8c2; box-shadow: inset 0 0 0 3px #9aa894; opacity: 0.6; cursor: default; }
 .pose-meuble-non { background: #ead0a0; box-shadow: inset 0 0 0 2px var(--wood-light); }
+
+/* « Ravi de te revoir ! » (js/ui/loop.js openAbsenceModal) : une petite fenêtre du jeu, cadre
+   bois, en-tête et ✕ comme les fenêtres de la carte ; la date, l'argent, les biens produits. */
+.absence-modal { --bg-header: rgba(232, 196, 140, 0.6); max-width: 320px; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.absence-modal .window-head { min-height: 0; padding: 6px 8px 6px 14px; border-bottom: 3px solid var(--color-earth); }
+.absence-modal .window-head h2 { font-size: 1.05rem; }
+.absence-body { padding: 12px 14px 16px; overflow-y: auto; }
+.absence-ligne { margin: 0 0 6px; font-size: 1.02rem; }
+.absence-body h3 { margin: 12px 0 6px; font-size: 0.95rem; }
+.absence-body .muted { margin: 0; }
+.absence-biens { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.absence-biens li { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-elevated); }
+.absence-biens strong { margin-left: auto; }
