@@ -13,7 +13,7 @@ import { advanceTutorial, skipTutorial, tutorialStep } from '../engine/alerts.js
 import {
   formatDuration, formatNumber, formatQty, formatWh, formatWhRate,
 } from '../engine/format.js';
-import { activeTab, ecranFerme, hoeMode, state } from './store.js';
+import { activeTab, cartesOuvertes, ecranFerme, hoeMode, state } from './store.js';
 import { tel } from './consent.js';
 import { consentBannerPending, consentBannerShown, letterToastShown, storyOpen, uiCalm } from './calme.js';
 import { applyResult } from './game-actions.js';
@@ -83,6 +83,8 @@ const luxuryRecipes = () => DATA.ARBRE.noeuds.cui_epicerie.effet.recettes.map((i
 
 // Les eaux de la canne à pêche et ce qu'on y prend.
 const EAUX = { etang: 'Étang de la ferme', mare: 'Mare de la ferme', lac: 'Lac de la montagne', mer: 'Mer (depuis le ponton de la plage)' };
+// Celles des autres cartes (la montagne, la plage : cartesOuvertes).
+const EAUX_AILLEURS = ['lac', 'mer'];
 
 // Le fromage d'alpage (fiche de l'Étable) : herbes de montagne → lait d'alpage → fromage.
 function alpageText() {
@@ -170,7 +172,7 @@ const HELP = {
       role: `Les moutons et les vaches vivent à l'Étable et s'achètent au Marché. Un mouton prend ${formatPlaces(P.PLACES_PAR_MOUTON)}, une vache ${formatPlaces(P.PLACES_PAR_VACHE)}. Une place achetée reste acquise.`,
       conso: `Chaque nuit, ${formatStraw(M.pailleParNuit)} par mouton et ${formatStraw(V.pailleParNuit)} par vache. La paille se fauche : la faux en main (Marché ou Atelier), chaque touffe d'herbe haute de la carte fauchée en donne ${formatStraw(DATA.FAUX.PAILLE)}, à ramasser au sol ; la touffe repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard. Elle ne s'achète pas au Marché.`,
       prod: `Un mouton nourri ${M.joursLaine} nuits donne ${M.laineParTonte} laine (à tondre). Une vache nourrie donne ${V.laitParNuit} lait la nuit même.`,
-      note: `Préparer l'Étable pour eux : ${costLabel(P.PRIX_CONSTRUCTION)} pour ${formatPlaces(P.PLACES_DEPART)} ; ensuite ${formatNumber(P.PRIX_PLACE)} 💰 la place, +${formatNumber(P.CROISSANCE - 100)} % à chaque achat. S'il n'y a pas assez de paille, les animaux mangent dans l'ordre de la liste (les moutons, puis les vaches). Un animal qui n'a pas mangé ne donne rien cette nuit-là ; il ne lui arrive rien d'autre. ${alpageText()}`,
+      note: `Préparer l'Étable pour eux : ${costLabel(P.PRIX_CONSTRUCTION)} pour ${formatPlaces(P.PLACES_DEPART)} ; ensuite ${formatNumber(P.PRIX_PLACE)} 💰 la place, +${formatNumber(P.CROISSANCE - 100)} % à chaque achat. S'il n'y a pas assez de paille, les animaux mangent dans l'ordre de la liste (les moutons, puis les vaches). Un animal qui n'a pas mangé ne donne rien cette nuit-là ; il ne lui arrive rien d'autre.${cartesOuvertes() ? ` ${alpageText()}` : ''}`,
     };
   },
   verger: () => {
@@ -223,10 +225,10 @@ const HELP = {
         ['Bonheur', `Chaque soir, au repas, il baisse de ${formatNumber(-B.DECLIN)} pour tous (et de ${formatNumber(-B.FAIM)} de plus si le repas ne couvre pas le besoin). Les plats cuisinés (au plus ${B.PLATS_MAX} différents par repas) et les sorties le font remonter ; les aliments crus ne rapportent rien. Plus la famille est heureuse, moins tes actions coûtent d'énergie.`],
         ['Sorties', `Toute la famille part ; le temps passe pendant la sortie (retour avant ${DATA.TEMPS.HEURE_NUIT} h). Chaque sortie se fait une fois par jour. Les voyages (${voyages.map((x) => x.nom.toLowerCase()).join(', ')}) sont plus longs et plus chers, et rapportent de quoi cuisiner.`],
         ['Marché de la ville', `${capitalize(itemNames(Object.keys(DATA.OBJETS).filter((id) => DATA.OBJETS[id].ville)))} : introuvables au marché de la ferme. Un adulte y va (${M.HEURES} h aller-retour, ${formatNumber(M.PRIX)} 💰 de bus) ; le marché reste ouvert jusqu'au soir.`],
-        ['Promenade', 'Ton personnage peut aussi aller en ville lui-même : au bout du chemin de la ferme, la navette part de l\'abri de bus et le dépose à la gare. Voir la fiche « Cartes d\'excursion ».'],
-        ['Étals', `Aux étals du marché, tu vends les produits de la ferme (${M.CATEGORIES.map((c) => `${c}s`).join(', ')}) ${formatNumber(M.VENTE)} % de leur prix.`],
+        ...(cartesOuvertes() ? [['Promenade', 'Ton personnage peut aussi aller en ville lui-même : au bout du chemin de la ferme, la navette part de l\'abri de bus et le dépose à la gare. Voir la fiche « Cartes d\'excursion ».']] : []),
+        ...(cartesOuvertes() ? [['Étals', `Aux étals du marché, tu vends les produits de la ferme (${M.CATEGORIES.map((c) => `${c}s`).join(', ')}) ${formatNumber(M.VENTE)} % de leur prix.`],
         ['Entreprises', `Les entrepôts de la ville s'achètent : ${Object.values(E.LISTE).map((x) => `${x.icone} ${x.nom} ${formatNumber(x.prix)} 💰`).join(' · ')}. Chaque jour à ${E.HEURE} h, une entreprise prend des produits dans le stock de la ferme, les transforme et vend aussitôt ce qu'elle fabrique, plus cher qu'un commerce de la ferme.`],
-        ['Gare', 'Le train mène de la ville à la montagne et à la plage.'],
+        ['Gare', 'Le train mène de la ville à la montagne et à la plage.']] : []),
       ],
     };
   },
@@ -256,7 +258,7 @@ const HELP = {
     icone: '⛏️',
     lignes: [
       ['La mine', 'Sur la ferme, caché dans les bois, un tas de terre avec une porte sombre : touche deux fois le tas (ou avance vers la porte quand tu es devant) pour y entrer. Au premier niveau, l\'échelle te fait ressortir par la porte.'],
-      ['La grotte', 'À la montagne (le train, depuis la gare de la ville), des entrées mènent aussi sous terre. Chaque niveau change tous les jours ; on descend par le puits, on remonte par l\'échelle. Il y fait noir : on n\'y voit qu\'autour de soi.'],
+      ...(cartesOuvertes() ? [['La grotte', 'À la montagne (le train, depuis la gare de la ville), des entrées mènent aussi sous terre. Chaque niveau change tous les jours ; on descend par le puits, on remonte par l\'échelle. Il y fait noir : on n\'y voit qu\'autour de soi.']] : [['Sous terre', 'Chaque niveau change tous les jours ; on descend par le puits, on remonte par l\'échelle. Il y fait noir : on n\'y voit qu\'autour de soi.']]),
       ['Minerais', `La pioche en main, touche un minerai dans les murs (${formatNumber(DATA.PERSONNAGE.COUTS.piocher)} d'énergie le coup) : il va dans l'inventaire. Le fer est partout ; le cuivre, l'or et le platine se trouvent de plus en plus bas.`],
       ['Lingots', `Au Four, avec du bois : ${ingotRecipes().map((r) => `${DATA.OBJETS[r.sortie].nom.toLowerCase()} = ${ingredientsText(r)}`).join(' ; ')}.`],
       ['À quoi ça sert', 'Minerais et lingots ne se vendent pas (ce sont des matériaux) : avec le bois et la pierre, ils paient les technologies de l\'Arbre des technologies.'],
@@ -269,7 +271,8 @@ const HELP = {
       nom: 'Pêche',
       icone: '🎣',
       lignes: [
-        ...Object.entries(C.PRISES).map(([eau, prises]) => [EAUX[eau] || eau, `${capitalize(itemNames(Object.keys(prises)))} ; au plus ${formatNumber(C.JOUR[eau])} prises par jour.`]),
+        // (le lac de la montagne et la mer, les autres cartes fermées : bientôt disponibles)
+        ...Object.entries(C.PRISES).map(([eau, prises]) => [EAUX[eau] || eau, `${capitalize(itemNames(Object.keys(prises)))} ; au plus ${formatNumber(C.JOUR[eau])} prises par jour.${!cartesOuvertes() && EAUX_AILLEURS.includes(eau) ? ' Bientôt disponible !' : ''}`]),
         ['Lancer', `La canne en main (Marché, ${formatNumber(C.PRIX)} 💰), touche l'eau : ${formatNumber(DATA.PERSONNAGE.COUTS.pecher)} d'énergie le lancer, et il arrive que rien ne morde.`],
         ['Poissons', `Frais, ils se gardent peu de nuits : mange-les, vends-les ou cuisine-les (${recipesUsing([...poissons, 'poisson']).join(', ')}).`],
       ],
@@ -330,8 +333,10 @@ const HELP = {
   }),
 };
 
-// Les fiches sans bâtiment, ouvertes depuis À propos.
+// Les fiches sans bâtiment, ouvertes depuis À propos (celle des cartes d'excursion : quand elles
+// sont ouvertes, cartesOuvertes).
 const FICHES = ['outils', 'grotte', 'peche', 'techno', 'cartes'];
+const fiches = () => FICHES.filter((id) => id !== 'cartes' || cartesOuvertes());
 
 // Le nom des actions de DATA.PERSONNAGE.COUTS, pour la règle de l'énergie.
 const ACTIONS_NOMS = {
@@ -556,7 +561,7 @@ export function openAboutModal() {
     <h3>Règles principales</h3>
     <ol class="about-rules">${rules.map((r) => `<li>${r}</li>`).join('')}</ol>
     <h3>Fiches d'aide</h3>
-    <div class="row">${FICHES.map((id) => `<button type="button" class="btn" data-action="help" data-id="${id}">${HELP[id]().icone} ${HELP[id]().nom}</button>`).join('')}</div>
+    <div class="row">${fiches().map((id) => `<button type="button" class="btn" data-action="help" data-id="${id}">${HELP[id]().icone} ${HELP[id]().nom}</button>`).join('')}</div>
     <h3>Crédits</h3>
     <p class="muted">Graphismes, icônes et illustrations : originaux.</p>
     <p class="muted">Moteur d'affichage : Phaser 4 (licence MIT).</p>

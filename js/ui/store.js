@@ -3,6 +3,7 @@
    window, au stockage ou à l'horloge.
    ========================================================================== */
 
+import { DATA } from '../engine/catalog.js';
 import { isUnlocked } from '../engine/campaign.js';
 import { atelierOuvert } from '../engine/atelier.js';
 
@@ -157,6 +158,12 @@ export function setGodMode(value) {
   godMode = !!value;
   try { if (godMode) window.localStorage.setItem(GOD_KEY, '1'); else window.localStorage.removeItem(GOD_KEY); } catch (e) { /* le temps de la visite */ }
   return godMode;
+}
+// Les autres cartes que la ferme et sa mine (la transition, la ville, la montagne, la plage,
+// leurs grottes, l'infra-monde) : ouvertes si les données le disent (DATA.CARTES.AUTRES), et
+// toujours en god mode.
+export function cartesOuvertes() {
+  return !!(DATA.CARTES && DATA.CARTES.AUTRES) || godMode;
 }
 export let invTab = 'frais'; // Inventaire : 'frais', 'graines' ou 'produits'
 export function setInvTab(value) {

@@ -10,7 +10,7 @@ import { addItem } from '../engine/inventory.js';
 import { buyInShop, negoceOffres, sellToNegoce, shopView } from '../engine/ville.js';
 import { economie, economieVue } from '../engine/economie.js';
 import { buyCompany, companyIds, companyPlan, sellInTown, setCompanyQuota, townSellList } from '../engine/entreprises.js';
-import { axeMode, godMode, hoeMode, pickMode, rodMode, state } from './store.js';
+import { axeMode, cartesOuvertes, godMode, hoeMode, pickMode, rodMode, state } from './store.js';
 import { chopFromStage, fishFromStage, mineFromStage, morceauFromStage } from './outils.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
@@ -174,12 +174,25 @@ function rentre(arrivee = null) {
   if (ou && window.FarmStage && window.FarmStage.arrive) window.FarmStage.arrive(ou);
 }
 
+// La carte `page` (search : ses paramètres) s'ouvre-t-elle ? Les autres cartes fermées
+// (cartesOuvertes, DATA.CARTES.AUTRES) : seulement la mine de la ferme (la grotte « ferme »).
+function permise(page, search) {
+  if (!CARTES[page] || cartesOuvertes()) return true;
+  const p = new URLSearchParams(search);
+  return page === 'ville-carte.html' && p.get('carte') === 'grotte' && p.get('grotte') === 'ferme';
+}
+
 // Changer de carte (une flèche, le train, un lien) : « jeu.html… » ramène à la ferme.
 // Sans Phaser (ou sans la carte), le joueur reste où il est, avec un message (les pages
 // ville-carte.html et infra-monde.html ne font que ramener ici).
 export function go(cible) {
   const { page, search } = parse(cible);
   if (page === 'jeu.html' || page === '') { rentre(new URLSearchParams(search).get('arrivee')); return; }
+  if (!permise(page, search)) {
+    if (!active) history.replaceState(null, '', 'jeu.html');
+    showToast('🗺️ Cette carte n\'est pas encore ouverte.');
+    return;
+  }
   if (ouvre(page, search)) return;
   if (!CARTES[page]) { window.location.href = cible; return; }
   if (active) rentre(null);
@@ -191,6 +204,9 @@ window.FermeHote = {
   maintenant,
   perso: () => memberPerso(mainCharacter(state)),
   go,
+  // les autres cartes que la ferme et sa mine sont-elles ouvertes (la flèche du chemin, le tronc
+  // creux) ?
+  autresCartes: cartesOuvertes,
   vitrine,
   // (la nuit : comme les boutons de la ferme, SOMMEIL_BLOQUEES ; le quota reste réglable)
   vendre: (item, n) => nuit('sell-item') || joue(sellInTown(state, item, n)),

@@ -7,7 +7,7 @@ import {
 } from '../engine/ville.js';
 import { happinessCostPct } from '../engine/stamina.js';
 import { formatCoins, formatNumber } from '../engine/format.js';
-import { state } from './store.js';
+import { cartesOuvertes, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -78,7 +78,8 @@ function townMarketHtml() {
 // ici, le quota du jour de celles qu'on a, et ce qu'elles ont fait.
 function companiesHtml() {
   const H = DATA.VILLE.ENTREPRISES.HEURE;
-  const cards = companyIds().map((id) => {
+  // (les autres cartes fermées : seulement celles qu'on a déjà, on ne peut plus en acheter)
+  const cards = companyIds().filter((id) => cartesOuvertes() || ownsCompany(state, id)).map((id) => {
     const d = DATA.VILLE.ENTREPRISES.LISTE[id];
     if (!ownsCompany(state, id)) {
       return `
@@ -123,10 +124,11 @@ export function renderVille() {
     </details>
     <h3 class="section-title">🧺 Marché de la ville</h3>
     ${townMarketHtml()}
-    <h3 class="section-title">🏭 Entreprises</h3>
-    ${companiesHtml()}
+    ${cartesOuvertes() || companyIds().some((id) => ownsCompany(state, id)) ? `<h3 class="section-title">🏭 Entreprises</h3>
+    ${companiesHtml()}` : ''}
     <div class="card">
-      <a class="btn primary" href="ville-carte.html">🗺️ Se promener en ville</a>
+      ${cartesOuvertes() ? '<a class="btn primary" href="ville-carte.html">🗺️ Se promener en ville</a>'
+        : '<button type="button" class="btn" disabled>🗺️ Se promener en ville : bientôt disponible !</button>'}
     </div>`;
 }
 

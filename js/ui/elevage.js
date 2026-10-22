@@ -19,7 +19,7 @@ import { techAuto, techFlag } from '../engine/techtree.js';
 import { AUTO_TACHES, harvestAll, isAutomated, plantAll, setSemis, waterAll } from '../engine/automation.js';
 import { plantableCropsFor } from '../engine/campaign.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
-import { state } from './store.js';
+import { cartesOuvertes, state } from './store.js';
 import { tel } from './consent.js';
 import { applyResult } from './game-actions.js';
 import { artIcon, artPx, coopArtRow } from './animations.js';
@@ -221,6 +221,8 @@ function herbsCard(cCount) {
   const on = herbsOn(state);
   const n = cowsOnHerbs(state);
   if (!cCount && !stock && !on) return '';
+  // (les herbes se cueillent à la montagne : sans elle, la carte ne sert qu'à finir le stock)
+  if (!cartesOuvertes() && !stock && !on) return '';
   const parVache = DATA.ANIMAUX.vache.herbesParNuit;
   let etat;
   if (!on) etat = `<span class="muted">Les vaches mangent leur paille. Nourries aux herbes (${formatNumber(parVache)} par vache et par nuit, à la place de la paille), elles donnent du ${lait.nom.toLowerCase()}.</span>`;

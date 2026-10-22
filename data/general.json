@@ -219,5 +219,13 @@
     "ECRAN_S": 60
   },
   "//AIDE": ["Première partie : bulles d'aide, dans cet ordre. La dernière (« dormir »)", "se ferme aussi d'elle-même à la première nuit."],
-  "AIDE": { "ETAPES": ["eau", "potager", "dormir"] }
+  "AIDE": { "ETAPES": ["eau", "potager", "dormir"] },
+  "//CARTES": [
+    "Les cartes où le personnage peut aller (js/ui/excursion.js, cartesOuvertes). AUTRES : la carte",
+    "de transition, la ville, la montagne, la plage, leurs grottes et l'infra-monde ; false (la",
+    "première version du jeu) : seules la ferme et sa mine. La flèche au bout du chemin, le tronc",
+    "creux et « Se promener en ville » disparaissent ; le god mode (Options, sous le mode test)",
+    "les rouvre toutes."
+  ],
+  "CARTES": { "AUTRES": false }
 }
