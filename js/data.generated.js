@@ -672,7 +672,8 @@ export const RAW_DATA = {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
       "baies": { "nom": "Baies", "objet": "baies", "nombre": 16, "quantite": 3, "buissons": true, "gratuit": true }
-    }
+    },
+    "RAMASSAGE_DEPART": { "RAYON": [2, 7], "petite_pierre": 6, "morceau_bois": 6 }
   },
   "BOTTELEUSE": { "NOM": "Botteleuse", "ICONE": "⚙️‍🌾", "FIBRES": 10, "VIBRE_S": 3, "PAILLE": 10, "CONVOYEUR": 2 },
   "STATIONS": {

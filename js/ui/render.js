@@ -14,6 +14,7 @@ import { renderItemModal } from './inventaire.js';
 import { renderShopModal } from './marche.js';
 import { pixelize, watch } from './pixel-emoji.js';
 import { renderRecipeBook } from './livre.js';
+import { renderEncyclopedie } from './encyclopedie.js';
 
 export let renderScheduled = false;
 export function setRenderScheduled(value) {
@@ -58,6 +59,7 @@ export function render() {
   renderTutorial();
   renderDidacticiel();
   renderRecipeBook();
+  renderEncyclopedie();
   renderItemModal();
   renderShopModal();
   renderTestPanel();

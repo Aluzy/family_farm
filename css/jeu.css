@@ -1404,12 +1404,13 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   background: rgba(var(--wood-bg-rgb), 0.94);
   border: 2px solid var(--color-earth);
   border-radius: 6px;
+  color: var(--wood-ink); /* le texte sombre du bois, en clair comme en sombre */
   font-family: 'Ferme Dialogue', sans-serif;
   font-size-adjust: none;
   font-size: 16px;
   white-space: nowrap;
 }
-.didac-compteur.ok { border-color: #2f8a3a; background: #d9f2c9; }
+.didac-compteur.ok { border-color: #2f8a3a; background: #d9f2c9; color: #1f5a28; }
 .didac-ring {
   outline: 3px solid #ffd23f;
   outline-offset: 3px;
@@ -2396,6 +2397,36 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 .book-turn:disabled { opacity: 0.4; }
 .book-count { font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .book-leaf { animation: none; } }
+
+/* ---------- L'Encyclopédie (js/ui/encyclopedie.js) : le même livre, en cuir vert ----------
+   Un wiki qui se remplit : les entrées découvertes sont des liens, les autres « ? ? ? ». */
+.book.encyclo {
+  background-color: #2f4f3a;
+  border-color: #1d3324;
+  box-shadow: inset 0 0 0 2px #b8913f, 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.book.encyclo .book-turn, .book.encyclo .book-close { border-color: #1d3324; color: #1d3324; }
+.book.encyclo .book-toc-link .num { flex: none; white-space: nowrap; }
+.book.encyclo .book-toc-dots { min-width: 12px; }
+.encyclo-jauge { height: 10px; margin: 0 auto 4px; max-width: 260px; border: 2px solid var(--color-earth); border-radius: 6px; background: #efe0bd; overflow: hidden; }
+.encyclo-jauge span { display: block; height: 100%; background: #5d9a4a; }
+.encyclo-total { margin: 0 0 4px; text-align: center; font-size: 0.85rem; color: #6b4a2a; }
+.encyclo-liens { display: flex; flex-wrap: wrap; gap: 6px; }
+.encyclo-lien, .encyclo-inconnue { font: inherit; font-size: 0.9rem; }
+.encyclo-lien { cursor: pointer; border: 2px solid var(--color-earth); background: #fff8e6; color: var(--wood-ink); }
+.encyclo-lien:hover { background: #f6e7c8; }
+.encyclo-inconnue { border: 2px dashed rgba(var(--color-earth-rgb), 0.45); background: none; color: #a08463; letter-spacing: 0.1em; }
+.encyclo-neuf { margin-left: 4px; padding: 0 5px; border-radius: 4px; background: #c0392b; color: #fff; font-size: 0.72rem; vertical-align: 1px; }
+.encyclo-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.encyclo-item { display: block; width: 100%; min-height: 32px; padding: 4px 2px; border: 0; border-bottom: 1px dotted rgba(var(--color-earth-rgb), 0.45); background: none; color: var(--wood-ink); font: inherit; text-align: left; }
+button.encyclo-item { cursor: pointer; }
+button.encyclo-item:hover { text-decoration: underline; }
+span.encyclo-item.encyclo-inconnue { color: #a08463; }
+.encyclo-categorie { margin: 0; text-align: center; }
+.encyclo-lien-texte { padding: 4px 0; border: 0; background: none; color: #6b3f1c; font: inherit; font-size: 0.9rem; text-decoration: underline; cursor: pointer; }
+.encyclo-retour { margin: 12px 0 0; }
+.encyclo-texte { margin: 8px 0 4px; line-height: 1.5; color: var(--wood-ink); }
+.encyclo-astuce { margin: 14px 0 0; font-size: 0.85rem; font-style: italic; color: #7a5434; }
 
 /* ---------- Marché en cases (comme l'Inventaire) ----------
    Le prix en haut à gauche (police pixel et pièce), la quantité en bas à droite ; une case

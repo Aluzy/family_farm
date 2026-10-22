@@ -13,7 +13,7 @@ import {
   etatEtable, etatMoulin, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   botteleuses, etatBotteleuse, machineDe, morceauxDe, ramasserMorceau, sortirBotte, verserFibres,
   buyRuche, buyDehors, PORTE_SUR_MUR, casesBuissonsCoupes, especeArbre, poussesArbres, arbresPlantes, respawnTrees, fellenTrees, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
-  commencerDidacticiel, etapeDidacticiel, suivantDidacticiel, majDidacticiel, objectifDidacticiel, recettesDidacticiel, blocsDidacticiel, passerDidacticiel, planAbri, hoe, plant, water, remplirCruche, eauCruche,
+  caseDepart, commencerDidacticiel, etapeDidacticiel, suivantDidacticiel, majDidacticiel, objectifDidacticiel, recettesDidacticiel, blocsDidacticiel, passerDidacticiel, planAbri, hoe, plant, water, remplirCruche, eauCruche,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
 
@@ -148,8 +148,13 @@ test('ferme générée : chaque matin, des pierres et du bois à ramasser à la 
   const s = garden();
   assertEqual(ramassables(s), [], 'pas sur la carte de Tiled');
   testFarmMap(s, 'r1');
-  const R = DATA.ATELIER.RAMASSAGE, liste = ramassables(s);
-  assertEqual(liste.length, Object.values(R).reduce((a, d) => a + d.nombre, 0));
+  const R = DATA.ATELIER.RAMASSAGE, D = DATA.ATELIER.RAMASSAGE_DEPART, liste = ramassables(s);
+  const base = Object.values(R).reduce((a, d) => a + d.nombre, 0);
+  assertEqual(liste.length, base + D.petite_pierre + D.morceau_bois, 'le premier jour, de quoi commencer en plus');
+  // le premier jour : des pierres et du bois tout près de l'endroit où le personnage apparaît
+  const T0 = farmTerrain(s), W = T0.LARGEUR, d0 = caseDepart(T0);
+  const pres = (sorte) => liste.filter((p) => p.sorte === sorte && Math.max(Math.abs(Math.floor(p.case / W) - Math.floor(d0 / W)), Math.abs((p.case % W) - (d0 % W))) <= D.RAYON[1]).length;
+  assert(pres('petite_pierre') >= D.petite_pierre && pres('morceau_bois') >= D.morceau_bois, 'autour du départ');
   assert(liste.filter((p) => !p.buisson).every((p) => isArable(p.case, s)), 'sur l\'herbe');
   assertEqual(new Set(liste.map((p) => p.case)).size, liste.length, 'deux jamais sur la même tuile');
   assertEqual(ramassables(s), liste, 'les mêmes toute la journée');
@@ -169,7 +174,7 @@ test('ferme générée : chaque matin, des pierres et du bois à ramasser à la 
   // le lendemain, d'autres places, et tout est revenu
   s.day += 1;
   const demain = ramassables(s);
-  assertEqual(demain.length, liste.length);
+  assertEqual(demain.length, base, 'le lendemain, plus de supplément');
   assert(demain.map((p) => p.case).join() !== liste.map((p) => p.case).join(), 'ailleurs');
 });
 

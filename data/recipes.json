@@ -172,7 +172,13 @@
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
       "baies": { "nom": "Baies", "objet": "baies", "nombre": 16, "quantite": 3, "buissons": true, "gratuit": true }
-    }
+    },
+    "//RAMASSAGE_DEPART": [
+      "Le premier jour d'une nouvelle partie, en plus : autant de petites pierres et de morceaux de bois",
+      "autour de l'endroit où le personnage apparaît (au-dessus de la Zone de culture), entre RAYON[0] et",
+      "RAYON[1] tuiles de lui : de quoi bâtir l'Atelier sans s'éloigner."
+    ],
+    "RAMASSAGE_DEPART": { "RAYON": [2, 7], "petite_pierre": 6, "morceau_bois": 6 }
   },
   "//BOTTELEUSE": [
     "La botteleuse (js/engine/botteleuse.js) : trois sortes de blocs de l'Atelier posés côte à côte sur",

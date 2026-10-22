@@ -68,7 +68,7 @@ const ETAPES_UI = {
   xp: { texte: () => 'L\'étoile, c\'est ton <b>expérience</b> (XP) : chaque action t\'en rapporte. Barre pleine, tu passes au niveau suivant et de nouvelles choses se débloquent.', cible: () => '.player-level' },
   autonomie: { texte: () => 'La pousse, c\'est l\'<b>autonomie</b> de ta ferme : la part de ce que mange ta famille que tu as produit toi-même. Le but du jeu : 100 % !', cible: () => '.player-auto' },
   argent: { texte: () => 'Et voici ton <b>argent</b>, pour acheter au Marché quand il ouvrira.', cible: () => '.player-money' },
-  deplacement: { texte: () => 'Pour <b>te déplacer</b>, touche deux fois de suite un endroit de la carte : ton personnage y marche. Fais glisser ton doigt pour faire défiler la carte, pince-la pour zoomer.' },
+  deplacement: { texte: () => 'Pour <b>te déplacer</b>, pose ton doigt sur la carte et fais-le glisser : ton personnage marche dans cette direction tant que ton doigt reste posé, et la carte le suit.' },
   pierres: { texte: () => 'Pour <b>ramasser</b>, touche simplement l\'objet : ton personnage va le chercher. Commence par les <b>petites pierres</b> (entourées sur la carte) : il en faut pour l\'Atelier.', carte: () => ({ ramassables: 'petite_pierre' }) },
   bois: { texte: () => 'Parfait ! Maintenant, ramasse des <b>morceaux de bois</b>.', carte: () => ({ ramassables: 'morceau_bois' }) },
   atelier: {
