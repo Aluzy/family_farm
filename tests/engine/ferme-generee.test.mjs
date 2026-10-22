@@ -11,7 +11,7 @@ import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, couchagesEtage, etageCouvertes, ETAGE_BLOCS, chopTree, bushOf, bushCut, cutBushes, respawnBushes, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
   etatEtable, etatMoulin, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
-  buyRuche, buyDehors, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
+  buyRuche, buyDehors, PORTE_SUR_MUR, casesBuissonsCoupes, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
 
@@ -232,6 +232,12 @@ function terrainLibre(s, w, h) {
   return null;
 }
 
+// Une porte se pose sur un mur (elle prend sa place) : le mur, puis la porte.
+function poserPorte(s, t) {
+  poserBloc(s, 'mur_pierre', t);
+  return poserBloc(s, 'porte', t);
+}
+
 // Les murs d'une pièce de w × h cases (murs compris), la porte au milieu du bas.
 function murs({ c, r, W }, w, h) {
   const out = [];
@@ -269,7 +275,7 @@ test('ruches : achetées au Marché, posées dehors, pleines au bout de NUITS nu
   // dans une pièce close : non (elle se pose dehors)
   const m = murs(terrainLibre(s, 5, 5), 5, 5);
   for (const w of m.murs) poserBloc(s, 'mur_pierre', w);
-  poserBloc(s, 'porte', m.porte);
+  poserPorte(s, m.porte);
   assertEqual(poserBloc(s, 'ruche', m.dedans).ok, false);
 });
 
@@ -296,13 +302,34 @@ test('bac à fleurs : acheté au Marché, posé comme un bloc, ses fleurs attire
   assertEqual([countItem(s, 'bac_fleurs'), fleursPourAbeilles(s).includes(t)], [1, false]);
 });
 
+test('ferme générée : sous un buisson coupé, on bâtit (et il ne repousse pas sous ce qui est bâti)', () => {
+  const s = chantier('bu1');
+  s.outils = { ...s.outils, hache: true };
+  const T = farmTerrain(s), id = ([c0, r1, w]) => (c0 + Math.floor(w / 2)) + ',' + r1;
+  const b = T.BUISSONS.find((q) => (T.BUISSONS_CASES[id(q)] || []).length);
+  const cs = T.BUISSONS_CASES[id(b)], t = cs[0];
+  assertEqual(T.LIGNES[Math.floor(t / T.LARGEUR)][t % T.LARGEUR], '.');
+  assertEqual(poserBloc(s, 'mur_pierre', t).ok, false, 'sous le buisson : non');
+  assert(chopTree(s, id(b)).ok);
+  assertEqual(cs.every((c) => casesBuissonsCoupes(s).has(c)), true);
+  const r = poserBloc(s, 'mur_pierre', t);
+  assert(r.ok, r.error);
+  // le jour de sa repousse venu, il reste coupé : une case est bâtie
+  s.day += DATA.HACHE.BUISSONS.RETOUR[1];
+  assertEqual([respawnBushes(s), bushCut(s, id(b))], [[], true]);
+  reprendreBloc(s, t);
+  assertEqual(respawnBushes(s), [id(b)]);
+  assertEqual(casesBuissonsCoupes(s).has(t), false);
+});
+
 test('ferme générée : poser et reprendre des blocs, sur l\'herbe seulement', () => {
   const s = chantier('b1');
   const z = terrainLibre(s, 6, 5);
   const t = z.r * z.W + z.c;
   assertEqual(poserBloc(s, 'mur_pierre', t), { ok: true, sorte: 'mur_pierre', case: t });
   assertEqual([blocAt(s, t), countItem(s, 'mur_pierre'), isArable(t, s), blocBloque(s, t)], ['mur_pierre', 39, false, true]);
-  assertEqual(poserBloc(s, 'porte', t).ok, false, 'déjà un bloc');
+  assertEqual(poserBloc(s, 'porte', t + 2).error, PORTE_SUR_MUR, 'la porte : sur un mur');
+  assertEqual(poserBloc(s, 'paillasse', t).ok, false, 'déjà un bloc');
   const route = farmTerrain(s).LIGNES.join('').indexOf('.');
   assertEqual(poserBloc(s, 'mur_pierre', route).ok, false, 'pas hors de l\'herbe');
   assertEqual(poserBloc(s, 'paillasse', t + 2).ok, false, 'la paillasse : dans une pièce close');
@@ -325,7 +352,7 @@ test('ferme générée : des murs tout autour et une porte font une pièce close
   for (const t of p.murs) assert(poserBloc(s, 'mur_pierre', t).ok);
   assertEqual(piecesCloses(s), [], 'sans porte : pas de pièce close');
   assertEqual(nuitCouchee(s), false, 'pas de paillasse : on ne dort pas');
-  assert(poserBloc(s, 'porte', p.porte).ok);
+  assert(poserPorte(s, p.porte).ok);
   const pc = piecesCloses(s);
   assertEqual([pc.length, pc[0].cases.length, pc[0].portes], [1, 9, [p.porte]]);
   assert(dansPiece(s, p.dedans));
@@ -357,7 +384,7 @@ test('ferme générée : le plancher se pose à plat, sous les blocs, et se repr
   setInv(s, { mur_pierre: 40, porte: 2, paillasse: 1, plancher: 3 });
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assertEqual(poserBloc(s, 'plancher', p.murs[0]).ok, false, 'pas sous un mur');
   assert(poserBloc(s, 'plancher', p.dedans).ok);
   assertEqual([solAt(s, p.dedans), blocAt(s, p.dedans), countItem(s, 'plancher'), isArable(p.dedans, s)], ['plancher', null, 2, false]);
@@ -399,7 +426,7 @@ test('ferme générée : chaque nuit, qui n\'a pas de paillasse dans une pièce 
   // une pièce, une paillasse : le personnage principal dort, les autres non
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   poserBloc(s, 'paillasse', p.dedans);
   for (const m of membres) m.bonheur = 50;
   const sans2 = nuitSansCouchage(s);
@@ -420,7 +447,7 @@ test('ferme générée : pas de maison à réparer, le foyer est une pièce clos
   assertEqual([houseRepaired(s), repairHouse(s).ok], [false, false], 'rien à réparer : à bâtir');
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assertEqual(houseRepaired(s), false, 'une pièce sans paillasse');
   poserBloc(s, 'paillasse', p.dedans);
   assertEqual(houseRepaired(s), true, 'le foyer');
@@ -436,7 +463,7 @@ test('ferme générée : les meubles du Marché se posent dans la maison (plusie
   assertEqual(buyFurniture(s, 'table').ok, false, 'pas de foyer : pas de meuble');
   const z = terrainLibre(s, 8, 7), p = murs(z, 8, 7), W = z.W, at = (dc, dr) => (z.r + dr) * W + z.c + dc;
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   poserBloc(s, 'paillasse', p.dedans);
   for (const id of ['table', 'chaise', 'lit_adulte', 'tableau_1', 'tapis_1']) assert(buyFurniture(s, id).ok, id);
   // pas dehors
@@ -472,7 +499,7 @@ test('ferme générée : le four et la cuisinière se posent dans une pièce clo
   const z = terrainLibre(s, 6, 5), p = murs(z, 6, 5);
   assertEqual(poserBloc(s, 'four', p.dedans).ok, false, 'hors d\'une pièce close');
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assert(poserBloc(s, 'four', p.dedans).ok);
   assert(poserBloc(s, 'cuisiniere', p.dedans + 1).ok);
   assertEqual([s.stations.four.construit, s.stations.cuisine.construit, blocBloque(s, p.dedans)], [true, true, true]);
@@ -494,7 +521,7 @@ test('ferme générée : le puits, la pompe dessus, le panneau, la citerne et la
   const dehors = (k) => (z.r + 7) * z.W + z.c + k;
   assertEqual(poserBloc(s, 'panneau', dehors(0)).ok, false, 'sans foyer : rien ne s\'installe');
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   poserBloc(s, 'paillasse', p.dedans);
   assertEqual(poserBloc(s, 'panneau', p.dedans + 1).ok, false, 'pas dans une pièce close');
   assert(poserBloc(s, 'panneau', dehors(0)).ok);
@@ -522,8 +549,8 @@ function enceinteEtEnclos(s, z) {
   const p = murs(z, 5, 5), W = z.W, at = (x, y) => (z.r + y) * W + z.c + x;
   const porteEnclos = at(4, 2);
   for (const t of p.murs) if (t !== porteEnclos) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
-  poserBloc(s, 'porte', porteEnclos);
+  poserPorte(s, p.porte);
+  poserPorte(s, porteEnclos);
   const barrieres = [];
   for (let x = 5; x <= 8; x++) barrieres.push(at(x, 0), at(x, 4));
   for (let y = 1; y <= 3; y++) barrieres.push(at(8, y));
@@ -558,7 +585,7 @@ test('ferme générée : le Poulailler, une enceinte avec une porte dehors, un n
   // pas de porte sur le dehors : pas de Poulailler
   reprendreBloc(s, p.porte); poserBloc(s, 'mur_pierre', p.porte);
   assertEqual([etatPoulailler(s).conditions.find((c) => c.id === 'dehors').ok, s.poulailler.construit], [false, false]);
-  reprendreBloc(s, p.porte); poserBloc(s, 'porte', p.porte);
+  reprendreBloc(s, p.porte); poserPorte(s, p.porte);
   // le nichoir repris : plus de Poulailler
   reprendreBloc(s, p.dedans);
   assertEqual([s.poulailler.construit, coopCapacity(s)], [false, 0], 'repris : plus de Poulailler');
@@ -634,7 +661,7 @@ test('ferme générée : un bac à semis posé dans une pièce close construit l
   setInv(s, { mur_pierre: 30, porte: 2, bac_semis: 1 });
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   s.progression.niveau = 1;
   assertEqual(poserBloc(s, 'bac_semis', p.dedans).ok, false, 'pas avant le niveau de la Serre');
   reach(s, 'serre');
@@ -664,7 +691,7 @@ test('ferme générée : un coffre à grain posé dans une pièce close construi
   setInv(s, { mur_pierre: 30, porte: 2, coffre_grain: 1, ble: 5 });
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assert(poserBloc(s, 'coffre_grain', p.dedans).ok);
   assertEqual([s.silo.construit, siloCapacity(s) > 0, s.silo.ble, countItem(s, 'ble')], [true, true, 5, 0], 'le blé y entre');
   reprendreBloc(s, p.dedans);
@@ -735,7 +762,7 @@ test('ferme générée (version 1.25) : le Moulin, une tour aux murs hauts de 3 
   setInv(s, { mur_pierre: 60, porte: 2, meule: 1 });
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5), W = z.W;
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   const centre = (z.r + 2) * W + z.c + 2;
   s.progression.niveau = 1;
   assertEqual(poserBloc(s, 'meule', centre).ok, false, 'pas avant le niveau du Moulin');
@@ -785,7 +812,7 @@ test('migration v41 → v42 : une meule seule ne fait plus le Moulin', () => {
   reach(s, 'moulin');
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   poserBloc(s, 'meule', (z.r + 2) * z.W + z.c + 2);
   // une partie d'avant : la meule posée avait ouvert la station
   s.stations.moulin.construit = true;
@@ -802,7 +829,7 @@ test('ferme générée : un jeune arbre se plante dans le sol, dehors, et donne 
   setInv(s, { mur_pierre: 30, porte: 2, jeune_pommier: 3 });
   const z = terrainLibre(s, 8, 5), p = murs(z, 5, 5), W = z.W;
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assertEqual(poserBloc(s, 'pommier', p.dedans).ok, false, 'dehors, pas dans une pièce');
   const ici = (z.r + 1) * W + z.c + 7;
   s.progression.niveau = 1;
@@ -847,7 +874,7 @@ test('ferme générée : une enceinte est une maison ou un bâtiment, le premier
   // deux enceintes côte à côte, un mur en commun
   const z = terrainLibre(s, 9, 5), a = murs(z, 5, 5), b = murs({ ...z, c: z.c + 4 }, 5, 5);
   for (const t of new Set([...a.murs, ...b.murs])) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', a.porte); poserBloc(s, 'porte', b.porte);
+  poserPorte(s, a.porte); poserPorte(s, b.porte);
   // la maison : un lit, puis un four ; pas de nichoir
   assert(poserBloc(s, 'paillasse', a.dedans).ok);
   assertEqual([genrePiece(s, a.dedans), genrePiece(s, b.dedans)], ['maison', null]);
@@ -872,7 +899,7 @@ test('migration v37 → v38 : une enceinte qui mêle une maison et un bâtiment 
   const s = reach(chantier('g2'), 'poulailler');
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assert(poserBloc(s, 'paillasse', p.dedans).ok);
   // (une partie d'avant la règle : le nichoir posé à côté du lit)
   s.blocs[p.dedans + 1] = 'nichoir';
@@ -888,7 +915,7 @@ test('ferme générée : la barrière arrête le passage sans fermer de pièce ;
   // une enceinte de barrières : pas une pièce close
   const z = terrainLibre(s, 12, 5), p = murs(z, 5, 5);
   for (const t of p.murs) assert(poserBloc(s, 'barriere', t).ok);
-  assert(poserBloc(s, 'porte', p.porte).ok);
+  assert(poserPorte(s, p.porte).ok);
   assertEqual([blocBloque(s, p.murs[0]), dansPiece(s, p.dedans), piecesCloses(s).length], [true, false, 0]);
   // un chemin : sur l'herbe, dehors ; ses tuiles sont celles du chemin de la carte
   const c = (z.r + 2) * z.W + z.c + 8;
@@ -926,7 +953,7 @@ test('ferme générée : la lanterne scintillante (un champignon lumineux et un 
   // dans une enceinte vide : oui ; dans un bâtiment (le Poulailler) : non
   const p = murs(z, 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assert(poserBloc(s, 'lanterne', p.dedans + 1).ok, 'dans une enceinte vide');
   reprendreBloc(s, p.dedans + 1);
   assert(poserBloc(s, 'nichoir', p.dedans).ok);
@@ -966,7 +993,7 @@ test('ferme générée (essai) : l\'escalier ouvre un étage au-dessus de sa pi�
   setInv(s, { mur_pierre: 40, porte: 4, escalier: 1, paillasse: 2 });
   const z = terrainLibre(s, 6, 5), p = murs(z, 6, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assertEqual(etageEmprise(s).size, 0, 'pas d\'escalier : pas d\'étage');
   assert(poserBloc(s, 'escalier', p.dedans).ok, 'l\'escalier, dans la pièce close');
   assertEqual([escaliers(s), blocBloque(s, p.dedans)], [[p.dedans], false], 'il se traverse');
@@ -991,7 +1018,7 @@ test('ferme générée : les meubles du Marché se posent à l\'étage, sur tout
   setInv(s, { mur_pierre: 40, porte: 4, escalier: 1, meuble_table: 1, meuble_chaise: 1, meuble_tapis_2: 1, meuble_tableau_1: 1 });
   const z = terrainLibre(s, 7, 6), p = murs(z, 7, 6), W = z.W;
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assert(poserBloc(s, 'escalier', p.dedans).ok);
   assert(!ETAGE_BLOCS.includes('meuble_tableau_1') && ETAGE_BLOCS.includes('meuble_table'), 'les meubles du sol, pas les tableaux');
   const t = (z.r + 3) * W + z.c + 1;                       // (la table : 3 cases vers la droite)
@@ -1014,7 +1041,7 @@ test('ferme générée : on dort dans les lits et sur les paillasses d\'une piè
   setInv(s, { mur_pierre: 60, porte: 4, escalier: 1, meuble_lit_adulte: 1, paillasse: 2 });
   const z = terrainLibre(s, 7, 6), p = murs(z, 7, 6), W = z.W;
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assert(poserBloc(s, 'escalier', p.dedans).ok);
   const lit = (z.r + 3) * W + z.c + 2, paille = (z.r + 3) * W + z.c + 4;
   assert(poserEtage(s, 'meuble_lit_adulte', lit).ok);
@@ -1035,18 +1062,18 @@ test('ferme générée : les fenêtres et les pierres d\'angle ferment une pièc
   const coins = [p.murs[0], p.murs[4], p.murs[p.murs.length - 1], p.murs[p.murs.length - 4]];
   const fenetres = [p.murs[2], p.murs[p.murs.length - 2]];
   for (const t of p.murs) assert(poserBloc(s, coins.includes(t) ? 'pierre_angle' : fenetres.includes(t) ? 'mur_fenetre' : 'mur_pierre', t).ok, `bloc ${t}`);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assertEqual(piecesCloses(s).length, 1, 'une pièce close');
   assertEqual([blocBloque(s, coins[0]), blocBloque(s, fenetres[0])], [true, true], 'on ne passe pas');
   assertEqual([countItem(s, 'pierre_angle'), countItem(s, 'mur_fenetre')], [0, 2]);
 });
 
-test('ferme générée : une fenêtre change un mur sans l\'enlever (au sol et à l\'étage)', () => {
+test('ferme générée : une fenêtre, une porte changent un mur sans l\'enlever (au sol et à l\'étage)', () => {
   const s = chantier('deco2');
-  setInv(s, { mur_pierre: 20, mur_fenetre: 2, pierre_angle: 1, porte: 1, escalier: 1 });
+  setInv(s, { mur_pierre: 20, mur_fenetre: 2, pierre_angle: 1, porte: 3, escalier: 1 });
   const z = terrainLibre(s, 5, 4), p = murs(z, 5, 4);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   const m = p.murs[2], avant = countItem(s, 'mur_pierre');
   const r = poserBloc(s, 'mur_fenetre', m);
   assert(r.ok, r.error);
@@ -1054,13 +1081,23 @@ test('ferme générée : une fenêtre change un mur sans l\'enlever (au sol et �
   assertEqual(piecesCloses(s).length, 1, 'la pièce reste close');
   assert(poserBloc(s, 'pierre_angle', m).ok, 'une pierre d\'angle à la place de la fenêtre');
   assertEqual([blocAt(s, m), countItem(s, 'mur_fenetre')], ['pierre_angle', 2]);
-  assertEqual(poserBloc(s, 'porte', p.murs[3]).ok, false, 'une porte ne change pas un mur');
+  // la porte : sur un mur, à sa place (le mur revient dans l'inventaire), la pièce reste close
+  const m2 = p.murs[3], murs2 = countItem(s, 'mur_pierre');
+  const rp = poserBloc(s, 'porte', m2);
+  assertEqual([rp.ok, rp.remplace, blocAt(s, m2), countItem(s, 'mur_pierre')], [true, 'mur_pierre', 'porte', murs2 + 1]);
+  assertEqual(piecesCloses(s).length, 1, 'la pièce reste close');
+  assertEqual(reprendreBloc(s, m2).ok, true);
+  assertEqual(blocAt(s, m2), null, 'reprise, la porte laisse la case vide (comme une fenêtre)');
+  poserBloc(s, 'mur_pierre', m2);
   // à l'étage
   poserBloc(s, 'escalier', p.dedans);
   const coin = p.murs[0];
   assert(poserEtage(s, 'mur_pierre', coin).ok);
   assert(poserEtage(s, 'mur_fenetre', coin).ok, 'une fenêtre sur le mur de l\'étage');
   assertEqual([etageBlocs(s)[coin], countItem(s, 'mur_fenetre')], ['mur_fenetre', 1]);
+  assertEqual(poserEtage(s, 'porte', p.murs[1]).error, PORTE_SUR_MUR, 'à l\'étage aussi, la porte sur un mur');
+  assert(poserEtage(s, 'mur_pierre', p.murs[1]).ok);
+  assert(poserEtage(s, 'porte', p.murs[1]).ok, 'une porte sur le mur de l\'étage');
 });
 
 test('ferme générée : des bouts de murs qui ne se touchent pas ne font pas de pièce close', () => {
@@ -1092,7 +1129,7 @@ test('ferme générée : un toit sur le dernier niveau de chaque bâtiment', () 
   const z = terrainLibre(s, 6, 5), p = murs(z, 6, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
   assertEqual(toits(s).length, 0, 'pas de pièce close : pas de toit');
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assertEqual(toits(s).length, 0, 'une pièce close vide : une cour, à ciel ouvert');
   poserBloc(s, 'paillasse', p.dedans + 1);
   assertEqual(toits(s).map((t) => [t.niveau, t.cases.length]), [[0, 30]], 'aménagée : sur les murs du bas, murs compris');
@@ -1112,7 +1149,7 @@ test('ferme générée : la paroi vitrée se pose comme un mur ou à la place d\
   setInv(s, { mur_pierre: 20, paroi_vitree: 4, porte: 1 });
   const z = terrainLibre(s, 5, 4), p = murs(z, 5, 4);
   for (const [i, t] of p.murs.entries()) assert(poserBloc(s, i === 1 ? 'paroi_vitree' : 'mur_pierre', t).ok, `bloc ${t}`);
-  poserBloc(s, 'porte', p.porte);
+  poserPorte(s, p.porte);
   assertEqual(piecesCloses(s).length, 1, 'elle ferme la pièce');
   assert(poserBloc(s, 'paroi_vitree', p.murs[2]).ok, 'à la place d\'un mur');
   assertEqual([blocAt(s, p.murs[2]), blocBloque(s, p.murs[2]), countItem(s, 'paroi_vitree'), piecesCloses(s).length], ['paroi_vitree', true, 2, 1]);
@@ -1125,8 +1162,8 @@ test('ferme générée : les murs aux matières de la ville ferment une pièce e
     const s = chantier('mv_' + sorte);
     setInv(s, { [sorte]: 20, porte: 1 });
     const z = terrainLibre(s, 5, 4), p = murs(z, 5, 4);
-    for (const t of p.murs) assert(poserBloc(s, sorte, t).ok, `${sorte} ${t}`);
-    poserBloc(s, 'porte', p.porte);
+    for (const t of p.murs.concat(p.porte)) assert(poserBloc(s, sorte, t).ok, `${sorte} ${t}`);
+    assert(poserBloc(s, 'porte', p.porte).ok, `${sorte} : la porte sur le mur`);
     assertEqual(piecesCloses(s).length, 1, `${sorte} : une pièce close`);
     setInv(s, { mur_pierre: 1 });
     assert(poserBloc(s, 'mur_pierre', p.murs[1]).ok, `${sorte} : changé en mur en pierre`);

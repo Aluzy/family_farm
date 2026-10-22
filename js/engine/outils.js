@@ -199,9 +199,22 @@ function cutBush(state, id, b, ou, fort) {
   return { ok: true, bois, chute: 0, morceaux, reste: 0, coups: 1, tombe: true, fort: !!fort, buisson: b.taille };
 }
 
-// Au réveil, les buissons coupés dont le jour est venu repoussent. Renvoie leurs identifiants.
+// Les cases que les buissons coupés rendent au terrain (le terrain, BUISSONS_CASES) : on y
+// bâtit comme sur l'herbe (blocs.js poseStatus). Une case sous deux buissons : quand les deux le sont.
+export function casesBuissonsCoupes(state) {
+  const out = new Set();
+  const B = farmTerrain(state).BUISSONS_CASES, coupes = cutBushes(state);
+  if (!B || !coupes.length) return out;
+  const sous = new Map();
+  for (const [id, cs] of Object.entries(B)) for (const t of cs) (sous.get(t) || sous.set(t, []).get(t)).push(id);
+  for (const id of coupes) for (const t of B[id] || []) if (sous.get(t).every((b) => bushCut(state, b))) out.add(t);
+  return out;
+}
+
+// Au réveil, les buissons coupés dont le jour est venu repoussent (sauf sous une parcelle ou
+// une case bâtie). Renvoie leurs identifiants.
 export function respawnBushes(state) {
-  return respawn(state, state.outils && state.outils.buissons, {});
+  return respawn(state, state.outils && state.outils.buissons, farmTerrain(state).BUISSONS_CASES);
 }
 
 /* ---------- les morceaux au sol : le bois et la pierre lâchés par les coups ---------- */
