@@ -1236,3 +1236,14 @@ test('ferme générée : les murs aux matières de la ville ferment une pièce e
     assert(poserBloc(s, 'mur_pierre', p.murs[1]).ok, `${sorte} : changé en mur en pierre`);
   }
 });
+
+test("ferme générée : l'herbe haute en quinconce, au plus 2 touffes par case", () => {
+  for (const graine of ['1', 'abc', '12345']) {
+    const { carte, terrain } = genererFerme(graine);
+    const objets = carte.layers.find((l) => l.name === 'herbe_haute').objects;
+    const parCase = Object.values(terrain.HERBES).map((l) => l.length);
+    assert(objets.length > 2000 && objets.length < 8000, `${graine} : ${objets.length} touffes`);
+    assert(Math.max(...parCase) <= 2, `${graine} : au plus 2 touffes par case`);
+    assertEqual(parCase.reduce((a, b) => a + b, 0), objets.length, `${graine} : chaque touffe dans sa case`);
+  }
+});

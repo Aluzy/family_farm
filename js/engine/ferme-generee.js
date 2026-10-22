@@ -30,9 +30,11 @@ export const FERME_GENEREE = {
   LARGEUR: 144, HAUTEUR: 114, T: 16,
   ETANGS: [2, 4], RAYON_ETANG: [[7, 10], [3, 7]],     // le premier étang (le plus grand), puis les autres
   ROCHERS: 64, ARBRES_SEUIL: 0.56, ARBRES_BORD: 14,  // densité des bois ; les bords (tuiles) en ont plus
-  // l'herbe haute : le nombre de zones, leur rayon (tuiles), et par case un tirage t : autant de
-  // touffes que de seuils de TOUFFES_PAR_CASE sous t (0 à 4) ; puis sa teinte et ses fleurs
-  TOUFFES: 200, TOUFFES_RAYON: [3, 6], TOUFFES_PAR_CASE: [0.02, 0.2, 0.55, 0.85], TOUFFE_ZONE: 0.7, TOUFFE_FLEURS: 0.2,
+  // l'herbe haute : le nombre de zones, leur rayon (tuiles) ; les touffes sur un quinconce (deux
+  // places par case, une par demi-rangée, décalées d'une demi-case d'une demi-rangée à l'autre),
+  // chaque place prise avec une chance qui va de TOUFFES_DENSITE[0] (le cœur de la zone) à [1]
+  // (son bord) ; puis sa teinte et ses fleurs
+  TOUFFES: 140, TOUFFES_RAYON: [2.5, 5], TOUFFES_DENSITE: [0.9, 0.3], TOUFFE_ZONE: 0.7, TOUFFE_FLEURS: 0.2,
   FLEURS: 0.05,
   // la mine : à MINE_DISTANCE tuiles de la maison (au plus près, au plus loin), là où le bois est
   // le plus dense ; pas de rocher à MINE_MARGE tuile autour, ni d'arbre devant sa porte (2 rangées)
@@ -440,6 +442,13 @@ function fabriquer(graine) {
   const rt = hasard('herbe_teinte');
   const teinteTouffe = () => { const t = rt(); return t < 0.45 ? 0 : t < 0.65 ? 1 : t < 0.83 ? 2 : 3; };
   const variante = (herbe, zone) => herbe + 3 * (2 * (rt() < G.TOUFFE_ZONE ? zone : teinteTouffe()) + (rt() < G.TOUFFE_FLEURS ? 1 : 0));
+  // Le quinconce : par case, deux places (les pieds à 6 et 14 px du haut de la case), la
+  // seconde décalée d'une demi-case (4 et 12 px du bord gauche, alternés d'une rangée de cases à
+  // l'autre aussi) ; les herbes (11 à 17 px de large) se chevauchent ainsi en biais, comme une
+  // seule touffe drue, sans s'empiler. Une place n'est prise qu'une fois, même là où deux zones
+  // se recouvrent (au plus 2 touffes par case).
+  const prises = new Set();
+  const place = (tx, ty, j) => [tx * T + ((2 * ty + j) % 2 ? 12 : 4) + Math.round((rh() - 0.5) * 6), ty * T + 6 + 8 * j + Math.round((rh() - 0.5) * 2)];
   const touffes = [];
   for (let k = 0, essais = 0; k < G.TOUFFES && essais < G.TOUFFES * 20; essais++) {
     const cx = entre(rh, 3, W - 4), cy = entre(rh, 3, H - 4), r = G.TOUFFES_RAYON[0] + rh() * (G.TOUFFES_RAYON[1] - G.TOUFFES_RAYON[0]);
@@ -450,9 +459,16 @@ function fabriquer(graine) {
       for (let tx = Math.floor(cx - r - 2); tx <= cx + r + 2; tx++) {
         const a = Math.atan2(ty - cy, tx - cx);
         const bord = r * (1 + bosses.reduce((s, b, n) => s + b * Math.sin((n + 2) * a + n), 0) / 2);
-        if (Math.hypot(tx - cx, (ty - cy) * 1.2) > bord || !libreHerbe(tx, ty)) continue;
-        const t = rh(), nb = G.TOUFFES_PAR_CASE.filter((p) => t >= p).length;
-        for (let q = 0; q < nb; q++) touffes.push([tx * T + 8 + Math.round((rh() - 0.5) * 8), ty * T + 12 + Math.round((rh() - 0.5) * 6), variante(Math.floor(rh() * 3), zone)]);
+        const d = Math.hypot(tx - cx, (ty - cy) * 1.2) / bord;
+        if (d > 1 || !libreHerbe(tx, ty)) continue;
+        // (dense au cœur, clairsemée au bord)
+        const p = G.TOUFFES_DENSITE[0] + (G.TOUFFES_DENSITE[1] - G.TOUFFES_DENSITE[0]) * Math.max(0, d - 0.4) / 0.6;
+        for (let j = 0; j < 2; j++) {
+          const cle = (2 * ty + j) * W + tx;
+          if (rh() >= p || prises.has(cle)) continue;
+          prises.add(cle);
+          touffes.push([...place(tx, ty, j), variante(Math.floor(rh() * 3), zone)]);
+        }
       }
     }
     if (touffes.length > n0) k++;
