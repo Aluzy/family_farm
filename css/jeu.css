@@ -88,8 +88,16 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* la police du jeu (assets/police_dialogue.woff, scripts/police/police_dialogue.py), partout ;
+     sans gras ni italique fabriqués. Ses lettres sont plus grandes que celles d'une police
+     ordinaire de même taille : font-size-adjust les ramène à la hauteur d'x de l'interface
+     (texte de 16 px → lettres de 12 px, un pixel de la police = 1,5 px) ; les fenêtres
+     (.modal) gardent leurs tailles exactes, 16 et 24 px. */
+  font-family: 'Ferme Dialogue', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-synthesis: none;
+  font-size-adjust: ex-height 0.47;
 }
+input, select, textarea { font-family: inherit; }
 
 /* La configuration d'une nouvelle partie (écran « Ta famille », js/ui/stage.js) : rien que ses
    fenêtres (#modal-root), les messages et le bandeau des traceurs ; ni carte ni interface du jeu. */
@@ -305,9 +313,9 @@ main {
 .modal.letter { background: #fdf6e3; color: #3a2a12; border: 1px solid #d9c9a0; }
 .modal.letter h2 { color: #3a2a12; }
 .letter-place { margin: 0 0 4px; text-align: right; font-style: italic; color: #6b5330; }
-.letter-body { margin: 10px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 1.02rem; line-height: 1.55; }
+.letter-body { margin: 10px 0; font-family: inherit; font-size: 1.02rem; line-height: 1.55; }
 .letter-body p { margin: 0 0 10px; }
-.letter-sign { margin: 0 0 14px; text-align: right; font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: 1.05rem; }
+.letter-sign { margin: 0 0 14px; text-align: right; font-family: inherit; font-style: italic; font-size: 1.05rem; }
 .letter-gifts { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; padding: 10px 12px; border: 1px dashed #b9772a; border-radius: var(--radius); background: #fff9ea; }
 .letter-gifts .muted { color: #6b5330; }
 .letter-gift-list { font-size: 1.05rem; font-weight: 700; }
@@ -424,6 +432,7 @@ textarea, input[type="text"] {
 .modal {
   font-family: 'Ferme Dialogue', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-synthesis: none;
+  font-size-adjust: none;
   line-height: 1.5;
 }
 .modal :is(p, li, span, div, strong, b, em, small, label, button, input, select, textarea, td, th, summary, a, h3, h4) { font-family: inherit; font-size: 16px; font-weight: normal; font-style: normal; }
@@ -2253,7 +2262,7 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
     repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0 27px, rgba(var(--color-earth-rgb), 0.12) 27px 28px);
   border-radius: 2px 8px 8px 2px;
   box-shadow: 2px 0 0 #e8d8b4, 4px 0 0 #d8c49a, 6px 2px 6px rgba(0, 0, 0, 0.3); /* tranche des pages */
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: inherit;
 }
 .book-leaf {
   z-index: 2;
@@ -2276,12 +2285,12 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 .book-sub { margin: 0 0 12px; text-align: center; font-style: italic; color: #7a5434; }
 .book-h3 { margin: 14px 0 6px; font-size: 1.02rem; color: #6b3f1c; border-bottom: 1px solid rgba(var(--color-earth-rgb), 0.4); }
 .book-dish { text-align: center; font-size: 3.2rem; line-height: 1.1; margin-top: 6px; }
-.book-meta { margin: 0 0 6px; text-align: center; font-family: system-ui, sans-serif; font-size: 0.85rem; color: #6b4a2a; }
+.book-meta { margin: 0 0 6px; text-align: center; font-family: inherit; font-size: 0.85rem; color: #6b4a2a; }
 .book-ingredients { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .book-ingredients li.missing { color: #8a2e22; }
 .book-note { font-size: 0.85em; color: #8a6a4a; }
 .book-reason { margin: 6px 0 10px; font-style: italic; color: #8a2e22; }
-.book-prepare { width: 100%; font-family: system-ui, sans-serif; }
+.book-prepare { width: 100%; font-family: inherit; }
 .book-toc { list-style: none; margin: 0; padding: 0; }
 .book-toc-link {
   width: 100%;

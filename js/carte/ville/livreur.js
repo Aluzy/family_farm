@@ -156,7 +156,7 @@
       for (const c of this.caisses) {
         const gain = r.foyers[c.m.nom];
         if (!gain) continue;
-        const t = this.add.text(c.x, c.y - 18, `+${gain} 💰`, { fontFamily: 'sans-serif', fontSize: '9px', color: '#fff4c8', stroke: '#3a2a10', strokeThickness: 3 })
+        const t = this.add.text(c.x, c.y - 18, `+${gain} 💰`, { fontFamily: "'Ferme Dialogue', sans-serif", fontSize: '8px', color: '#fff4c8', stroke: '#3a2a10', strokeThickness: 3 })
           .setOrigin(0.5, 1).setDepth(2e6).setResolution(3);
         this.tweens.add({ targets: t, y: c.y - 38, alpha: { from: 1, to: 0 }, delay: 400, duration: reduced() ? 600 : 2600, onComplete: () => t.destroy() });
       }
