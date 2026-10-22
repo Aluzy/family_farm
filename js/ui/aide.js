@@ -83,6 +83,8 @@ const luxuryRecipes = () => DATA.ARBRE.noeuds.cui_epicerie.effet.recettes.map((i
 
 // Les eaux de la canne à pêche et ce qu'on y prend.
 const EAUX = { etang: 'Étang de la ferme', mare: 'Mare de la ferme', lac: 'Lac de la montagne', mer: 'Mer (depuis le ponton de la plage)' };
+// Celles des autres cartes (la montagne, la plage : cartesOuvertes).
+const EAUX_AILLEURS = ['lac', 'mer'];
 
 // Le fromage d'alpage (fiche de l'Étable) : herbes de montagne → lait d'alpage → fromage.
 function alpageText() {
@@ -269,7 +271,8 @@ const HELP = {
       nom: 'Pêche',
       icone: '🎣',
       lignes: [
-        ...Object.entries(C.PRISES).map(([eau, prises]) => [EAUX[eau] || eau, `${capitalize(itemNames(Object.keys(prises)))} ; au plus ${formatNumber(C.JOUR[eau])} prises par jour.`]),
+        // (le lac de la montagne et la mer, les autres cartes fermées : bientôt disponibles)
+        ...Object.entries(C.PRISES).map(([eau, prises]) => [EAUX[eau] || eau, `${capitalize(itemNames(Object.keys(prises)))} ; au plus ${formatNumber(C.JOUR[eau])} prises par jour.${!cartesOuvertes() && EAUX_AILLEURS.includes(eau) ? ' Bientôt disponible !' : ''}`]),
         ['Lancer', `La canne en main (Marché, ${formatNumber(C.PRIX)} 💰), touche l'eau : ${formatNumber(DATA.PERSONNAGE.COUTS.pecher)} d'énergie le lancer, et il arrive que rien ne morde.`],
         ['Poissons', `Frais, ils se gardent peu de nuits : mange-les, vends-les ou cuisine-les (${recipesUsing([...poissons, 'poisson']).join(', ')}).`],
       ],

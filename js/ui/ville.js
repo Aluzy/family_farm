@@ -126,9 +126,10 @@ export function renderVille() {
     ${townMarketHtml()}
     ${cartesOuvertes() || companyIds().some((id) => ownsCompany(state, id)) ? `<h3 class="section-title">🏭 Entreprises</h3>
     ${companiesHtml()}` : ''}
-    ${cartesOuvertes() ? `<div class="card">
-      <a class="btn primary" href="ville-carte.html">🗺️ Se promener en ville</a>
-    </div>` : ''}`;
+    <div class="card">
+      ${cartesOuvertes() ? '<a class="btn primary" href="ville-carte.html">🗺️ Se promener en ville</a>'
+        : '<button type="button" class="btn" disabled>🗺️ Se promener en ville : bientôt disponible !</button>'}
+    </div>`;
 }
 
 registerActions({
