@@ -668,7 +668,7 @@
             clearTimeout(prev.timer);
             this.lastTap = null;
             if (farmyard) this.goCollect(farmyard, hit.window);
-            else if (!this.askHollow(wx, wy)) this.goHere(wx, wy);
+            else if (!this.askMine(wx, wy) && !this.askHollow(wx, wy)) this.goHere(wx, wy);
             return;
           }
           if (prev) clearTimeout(prev.timer);
@@ -865,8 +865,9 @@
     return s.panTo(best.p, false);
   }
 
-  // Revenu d'une autre carte (js/ui/excursion.js) : le personnage au bout du chemin de l'est ;
-  // la scène pas encore prête, elle le fera en se créant (?arrivee=est).
-  function arriveEast() { const s = getScene(); if (s && s.ready) s.arriveEast(); }
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, goHome, mealScene, arriveEast, scene: getScene }; // scene() : pour le débogage et les tests
+  // Revenu d'une autre carte (js/ui/excursion.js) : le personnage au bout du chemin de l'est
+  // (`est`) ou devant la porte de la mine (`mine`) ; la scène pas encore prête, elle le fera en
+  // se créant (?arrivee=…).
+  function arrive(ou) { const s = getScene(); if (s && s.ready) s.arrive(ou); }
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, goHome, mealScene, arrive, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

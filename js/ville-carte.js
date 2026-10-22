@@ -536,11 +536,14 @@
         this.layers.marquage.putTileAt(t('sol_0'), s.x, s.y);
       }
       const ici = `ville-carte.html?carte=grotte&grotte=${id}`;
+      // (au premier niveau, l'échelle remonte d'où l'on vient : la mine de la ferme, l'entrée
+      // « ferme » ; sinon la montagne)
+      const dehors = id === 'ferme' ? 'jeu.html?arrivee=mine' : `ville-carte.html?carte=montagne&arrivee=grotte_${id}`;
       const pass = (nom, x, y, sens, cible) => ({ name: nom, x: x * T, y: y * T, width: T, height: T, properties: [{ name: 'cible', value: cible }, { name: 'sens', value: sens }] });
       c.objects = {
         depart: [{ x: E.x * T + 8, y: (E.y + 1) * T + 12 }],
         arrivees: [{ name: 'haut', x: E.x * T + 8, y: (E.y + 1) * T + 12 }].concat(P ? [{ name: 'bas', x: P.x * T + 8, y: (P.y + 1) * T + 12 }] : []),
-        passages: [pass('remonter', E.x, E.y - 1, 'haut', niveau > 1 ? `${ici}&niveau=${niveau - 1}&arrivee=bas` : `ville-carte.html?carte=montagne&arrivee=grotte_${id}`)]
+        passages: [pass('remonter', E.x, E.y - 1, 'haut', niveau > 1 ? `${ici}&niveau=${niveau - 1}&arrivee=bas` : dehors)]
           .concat(P ? [pass('descendre', P.x, P.y, 'bas', `${ici}&niveau=${niveau + 1}&arrivee=haut`)] : []),
       };
       this.cameras.main.setBackgroundColor('#0b090a');
@@ -565,7 +568,7 @@
       // la Lampe de mineur (arbre des technologies) éclaire plus loin : lumiere %
       const lampe = hote() && hote().tech ? hote().tech('grotte') : null;
       const f = lampe && lampe.lumiere ? lampe.lumiere / 100 : 1;
-      if (this.makeCaveLights(f)) { this.say(`⛏️ La grotte — niveau ${c.niveau}${c.niveau >= GROTTE.jeu.NIVEAUX ? ' (le plus profond)' : ''}`); return; }
+      if (this.makeCaveLights(f)) { this.say(`⛏️ ${c.id === 'ferme' ? 'La mine' : 'La grotte'} — niveau ${c.niveau}${c.niveau >= GROTTE.jeu.NIVEAUX ? ' (le plus profond)' : ''}`); return; }
       const L = { r0: GROTTE.lumiere.r0 * f, r1: GROTTE.lumiere.r1 * f, noir: GROTTE.lumiere.noir }, N = 512, K = 4;
       const cle = 'lumiere_grotte_' + Math.round(f * 100);   // une texture de N px, agrandie K fois
       if (!this.textures.exists(cle)) {
@@ -582,7 +585,7 @@
       }
       // (agrandie : elle couvre l'écran même au plus petit zoom)
       this.light = this.add.image(0, 0, cle).setScale(K).setDepth(1.9e6);
-      this.say(`⛏️ La grotte — niveau ${c.niveau}${c.niveau >= GROTTE.jeu.NIVEAUX ? ' (le plus profond)' : ''}`);
+      this.say(`⛏️ ${c.id === 'ferme' ? 'La mine' : 'La grotte'} — niveau ${c.niveau}${c.niveau >= GROTTE.jeu.NIVEAUX ? ' (le plus profond)' : ''}`);
     }
 
     tapOre(w) {

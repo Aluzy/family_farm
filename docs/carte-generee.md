@@ -104,6 +104,16 @@ Le Marché vend toujours les outils.
     blocs : la pierre des bâtiments taillée en pans, un contour sombre, de la mousse sur les
     gros. Trois tailles : 2 × 2 cases, 1 × 2 (debout ou couché) et 1 × 1 (`DESSINS_ROCHERS` :
     l'emprise de chaque forme, et ses dessins).
+- **La mine** : un tas de terre de 3 × 3 tuiles, sa porte sombre étayée de poutres au milieu du
+  bas (`scripts/carte/mine.py`, le bloc « mine » de la planche, `MINE`). Il est posé à 16 à 34
+  tuiles de la maison (`MINE_DISTANCE`), là où le bois est le plus dense, sur de l'herbe franche
+  loin du chemin et de l'eau ; ni arbre, ni rocher, ni touffe à une tuile autour, et deux
+  rangées d'herbe devant la porte. Ses cases ne se bâtissent pas ; le rectangle `mine` (couche
+  « batiment ») arrête le personnage. Devant la porte, une flèche bleue paraît au-dessus du tas
+  (`MINE` dans `js/carte/ferme/config.js`, `js/carte/ferme/passages.js`) : un appui dessus, ou
+  un double appui sur le tas, mène au premier niveau de la grotte (`js/ville-carte.js`,
+  l'entrée « ferme »). Au premier niveau, l'échelle ramène devant la porte
+  (`jeu.html?arrivee=mine`).
 - **Le chemin** est tracé par un A* (`js/engine/chemin.js`), de la porte de la maison au bord
   est. Le rectangle `vers_la_transition` y est posé.
 - **Le terrain** (`js/engine/terrain-carte.js`) est calculé d'après la carte, avec les règles de

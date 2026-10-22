@@ -252,10 +252,11 @@ const HELP = {
     };
   },
   grotte: () => ({
-    nom: 'Grotte, minerais et lingots',
+    nom: 'Mine, minerais et lingots',
     icone: '⛏️',
     lignes: [
-      ['La grotte', 'À la montagne (le train, depuis la gare de la ville), des entrées mènent sous terre. Chaque niveau change tous les jours ; on descend par le puits, on remonte par l\'échelle. Il y fait noir : on n\'y voit qu\'autour de soi.'],
+      ['La mine', 'Sur la ferme, dans les bois, un tas de terre avec une porte sombre : devant la porte, touche la flèche (ou touche deux fois le tas) pour descendre. Au premier niveau, l\'échelle ramène devant la porte.'],
+      ['La grotte', 'À la montagne (le train, depuis la gare de la ville), des entrées mènent aussi sous terre. Chaque niveau change tous les jours ; on descend par le puits, on remonte par l\'échelle. Il y fait noir : on n\'y voit qu\'autour de soi.'],
       ['Minerais', `La pioche en main, touche un minerai dans les murs (${formatNumber(DATA.PERSONNAGE.COUTS.piocher)} d'énergie le coup) : il va dans l'inventaire. Le fer est partout ; le cuivre, l'or et le platine se trouvent de plus en plus bas.`],
       ['Lingots', `Au Four, avec du bois : ${ingotRecipes().map((r) => `${DATA.OBJETS[r.sortie].nom.toLowerCase()} = ${ingredientsText(r)}`).join(' ; ')}.`],
       ['À quoi ça sert', 'Minerais et lingots ne se vendent pas (ce sont des matériaux) : avec le bois et la pierre, ils paient les technologies de l\'Arbre des technologies.'],

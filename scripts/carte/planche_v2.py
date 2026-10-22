@@ -3,7 +3,7 @@
 #   python3 scripts/carte/planche_v2.py
 #
 # À lancer après les scripts des nouvelles planches (herbe_chemin, herbe_deco, eau,
-# bordure_eau, arbre_clair, rochers, tronc_creux). Le script garde les 45 premières rangées de
+# bordure_eau, arbre_clair, rochers, tronc_creux, mine). Le script garde les 45 premières rangées de
 # assets/farm_spring_summer.png (vides : la planche d'origine, celle d'un pack graphique, n'est
 # plus dans le jeu ; les numéros de tuile des blocs restent les mêmes) et pose dessous, à partir
 # de la rangée BASE, les blocs de BLOCS ; il
@@ -42,6 +42,7 @@ BLOCS = {
     'barrieres': ('barrieres.png', 48, 54, 27, 7, (0, 0, 432, 112)),       # écrit par l'ancien carte_v2.py
     'rochers': ('rochers.png', 16, 55, 8, 2, (0, 0, 128, 32)),             # scripts/carte/rochers.py
     'tronc_creux': ('tronc_creux.png', 24, 55, 2, 1, (0, 0, 32, 16)),      # scripts/carte/tronc_creux.py
+    'mine': ('mine.png', 16, 57, 3, 3, (0, 0, 48, 48)),                    # scripts/carte/mine.py
 }
 EAU_TUILES, EAU_IMAGES, EAU_DUREE = 32, 8, 160     # voir scripts/carte/eau.py
 

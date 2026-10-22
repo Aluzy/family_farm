@@ -1,5 +1,5 @@
 import { mulberry32 } from './base.js';
-import { blocGid, DESSINS_ROCHERS, TRONC_CREUX, TUILES_VIDES } from './planche.js';
+import { blocGid, DESSINS_ROCHERS, MINE, TRONC_CREUX, TUILES_VIDES } from './planche.js';
 import { terrainOfMap } from './terrain-carte.js';
 import { chemin } from './chemin.js';
 
@@ -15,8 +15,9 @@ import { chemin } from './chemin.js';
 //   - un chemin de la cour jusqu'au bord est : le rectangle `vers_la_transition` (couche
 //     « passages ») y est posé, la sortie vers la carte de transition ;
 //   - des bois (arbres clairs, pins, buissons) plus denses vers les bords de la carte, des
-//     rochers, des fleurs, des touffes d'herbe haute, et le tronc creux au bord d'un étang (le
-//     passage vers l'infra-monde) ;
+//     rochers, des fleurs, des touffes d'herbe haute, le tronc creux au bord d'un étang (le
+//     passage vers l'infra-monde) et l'entrée de la mine, dans les bois pas trop loin de la cour
+//     (le rectangle `mine`, couche « batiment ») ;
 //   - pour l'instant (docs/carte-generee.md), une cour dégagée où les bâtiments de la carte de
 //     Tiled gardent leur disposition (COUR) : la construction bloc par bloc les remplace un à un
 //     (étape 5b). La maison n'y est plus : sa place (MAISON) reste dégagée, le chemin part de
@@ -33,6 +34,9 @@ export const FERME_GENEREE = {
   // touffes que de seuils de TOUFFES_PAR_CASE sous t (0 à 4) ; puis sa teinte et ses fleurs
   TOUFFES: 200, TOUFFES_RAYON: [3, 6], TOUFFES_PAR_CASE: [0.02, 0.2, 0.55, 0.85], TOUFFE_ZONE: 0.7, TOUFFE_FLEURS: 0.2,
   FLEURS: 0.05,
+  // la mine : à MINE_DISTANCE tuiles de la maison (au plus près, au plus loin), là où le bois est
+  // le plus dense ; rien ne pousse à MINE_MARGE tuile autour, ni devant sa porte (2 rangées)
+  MINE_DISTANCE: [16, 34], MINE_MARGE: 1,
 };
 
 // La cour (provisoire) : les rectangles de la carte de Tiled (couche « batiment »), en px. La cour est posée d'un
@@ -265,6 +269,39 @@ function fabriquer(graine) {
     }
   }
 
+  // ---- 6b. l'entrée de la mine : 3 × 3 cases d'herbe franche, loin du chemin et de l'eau, la
+  // porte (au milieu de la rangée du bas) ouverte sur 2 rangées d'herbe ; à bonne distance de la
+  // maison, au plus épais du bois (sans tirage : les autres usages ne bougent pas)
+  const bois = bruit(graine + ':bois', 18, 3);
+  const autourMine = new Uint8Array(N);   // la mine et ses abords : ni arbre, ni rocher, ni touffe
+  let mine = null;
+  {
+    const [dmin, dmax] = G.MINE_DISTANCE;
+    let best = -Infinity;
+    for (let r0 = 2; r0 + 5 < H - 1; r0++) {
+      for (let c0 = 2; c0 + 3 < W - 2; c0++) {
+        const d = Math.hypot(c0 + 1 - depart[0], r0 + 1 - depart[1]);
+        if (d < dmin || d > dmax) continue;
+        const score = bois(c0 + 1, r0 + 1);
+        if (score <= best) continue;
+        let ok = true;
+        for (let r = r0; ok && r < r0 + 5; r++) {
+          for (let c = c0; ok && c < c0 + 3; c++) {
+            const i = idx(c, r);
+            ok = surHerbe(i) && !cour[i] && !pris[i] && !pres(i, 2, (j) => classe[j] !== 'herbe' || pris[j]);
+          }
+        }
+        if (ok) { best = score; mine = [c0, r0]; }
+      }
+    }
+  }
+  if (mine) {
+    const [c0, r0] = mine, m = G.MINE_MARGE;
+    for (let k = 0; k < 9; k++) plantes[idx(c0 + (k % 3), r0 + Math.floor(k / 3))] = MINE[k];
+    for (let r = r0 - m; r < r0 + 5; r++) for (let c = c0 - m; c < c0 + 3 + m; c++) if (dedans(c, r)) { pris[idx(c, r)] = 1; autourMine[idx(c, r)] = 1; }
+    objets.mine = { x: c0 * T, y: r0 * T, width: 3 * T, height: 3 * T };
+  }
+
   // ---- 7. les rochers (jamais côte à côte : chacun est un groupe de cases à part)
   const rk = hasard('rochers');
   const formes = [['caillou', 0.36], ['moyen', 0.22], ['gros', 0.2], ['haut', 0.12], ['caillou2', 0.1]];
@@ -283,7 +320,6 @@ function fabriquer(graine) {
 
   // ---- 8. les arbres, les pins et les buissons
   const ra = hasard('arbres');
-  const bois = bruit(graine + ':bois', 18, 3);
   const poses = [];                    // [pied y, pied x, bloc, l, h] (px, comme l'ancien carte_v2.py)
   const tailles = { arbre: [3, 4], pin: [4, 4], buisson_rond: [3, 2], buisson_large: [3, 2] };
   for (let gy = 1; gy < H; gy += 3) {
@@ -303,7 +339,8 @@ function fabriquer(graine) {
         const i = idx(c, y1);
         ok = surHerbe(i) && !cour[i] && !pris[i] && !pres(i, 1, (j) => classe[j] !== 'herbe' || pris[j]);
       }
-      for (let r = y1 - h + 1; ok && r <= y1; r++) for (let c = x0; ok && c < x0 + w; c++) ok = !cour[idx(c, r)] && classe[idx(c, r)] !== 'chemin';
+      // (ni sur la mine ni devant : son feuillage la cacherait)
+      for (let r = y1 - h + 1; ok && r <= y1; r++) for (let c = x0; ok && c < x0 + w; c++) ok = !cour[idx(c, r)] && !autourMine[idx(c, r)] && classe[idx(c, r)] !== 'chemin';
       if (!ok) continue;
       for (let c = x0; c < x0 + w; c++) pris[idx(c, y1)] = 1;
       poses.push([(y1 + 1) * T, (x0 + w / 2) * T, bloc, w, h]);
