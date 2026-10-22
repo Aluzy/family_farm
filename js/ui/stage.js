@@ -38,7 +38,7 @@ import { registerActions } from './actions.js';
 import { axeChipHtml, chopFromStage, fishFromStage, mineFromStage, morceauFromStage, pickChipHtml, rodChipHtml, scytheAroundFromStage, scytheChipHtml, scytheFromStage } from './outils.js';
 import { ramasserFromStage } from './atelier.js';
 import { ramassables } from '../engine/atelier.js';
-import { blocsPoses, blocsDessusPoses, couchages, etatEtable, etatMoulin, etatPoulailler, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
+import { blocsPoses, blocsDessusPoses, couchages, etatEtable, etatMoulin, etatPoulailler, genrePiece, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { atelierOuvert } from '../engine/atelier.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang } from './chantier.js';
 import { escaliers, etageBlocs, etageEmprise, toits } from '../engine/etage.js';
@@ -490,11 +490,12 @@ function meubleDe(sorte) {
 }
 
 // La ferme générée, sans maison : la porte du foyer (la première pièce close où l'on dort, sinon
-// la première pièce close), où le personnage rentre le soir et ressort le matin ; null sans pièce.
+// la première pièce close du genre maison), où le personnage rentre le soir et ressort le matin ;
+// null sans maison (une enceinte vide, un bâtiment ne sont pas le foyer).
 function foyerPorte() {
   if (!atelierOuvert(state)) return null;
   const pieces = piecesCloses(state);
-  const p = pieces.find((q) => q.paillasses.length) || pieces[0];
+  const p = pieces.find((q) => q.paillasses.length) || pieces.find((q) => genrePiece(state, q.cases[0]) === 'maison');
   return p ? p.portes[0] : null;
 }
 

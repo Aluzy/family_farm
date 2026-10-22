@@ -21,7 +21,7 @@
     "BLOCS (étape 4) : ce qui se",
     "pose sur une case de la carte (objet : pris dans l'inventaire, rendu quand on le reprend ;",
     "l'atelier, une fois construit, sans objet) ; bloque : on ne passe pas dessus ; ferme : il ferme une",
-    "pièce (murs, portes, atelier) ; porte : une pièce close en a au moins une ; dedans : ne se pose",
+    "pièce (murs, portes, atelier) ; porte : une pièce close en a au moins une, elle se pose sur un mur (à sa place) ; dedans : ne se pose",
     "que dans une pièce close (la paillasse). PIECE_MAX : une pièce a au plus tant de cases.",
     "ARBRE_ECART : deux arbres fruitiers plantés sont à au moins tant de cases l'un de l'autre.",
     "BONHEUR_SANS_COUCHAGE (étape 5) : chaque nuit, chaque membre de la famille sans paillasse dans une",

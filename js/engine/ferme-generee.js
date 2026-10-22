@@ -314,7 +314,7 @@ function fabriquer(graine) {
   const ordre = ['layer_tree_4', 'layer_tree_3', 'layer_tree_2', 'layer_tree_1'];
   const arbres = {}, occupe = {};
   for (const nom of ordre) { arbres[nom] = vide(); occupe[nom] = new Set(); }
-  const places = [];
+  const places = [], dessinsBuissons = [];
   poses.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   for (const [fy, fx, bloc, w, h] of poses) {
     const x0 = Math.round(fx / T - w / 2), y1 = Math.round(fy / T) - 1;
@@ -344,6 +344,7 @@ function fabriquer(graine) {
     for (const [i, g] of cases) arbres[nom][i] = g;
     for (const i of ids) occupe[nom].add(i);
     places.push([nom, ids]);
+    if (bloc.startsWith('buisson')) dessinsBuissons.push({ id: (x0 + Math.floor(w / 2)) + ',' + y1, nom, ids });
   }
 
   // ---- 9. les fleurs, sur l'herbe franche libre
@@ -421,6 +422,21 @@ function fabriquer(graine) {
   // FLEURS : les cases où des fleurs poussent dans l'herbe (les abeilles des ruches y butinent :
   // js/engine/ruches.js fleursPourAbeilles)
   const terrain = Object.assign(terrainOfMap(carte), { DECALAGE: [ox, oy], BUISSONS: buissons, SOMMETS: sommets, TEINTES: teinte, HERBES: herbes, FLEURS: fleurs });
+  // BUISSONS_CASES : { buisson: [cases] }, les cases que chaque buisson rend au terrain une fois
+  // coupé (outils.js, casesBuissonsCoupes) : celles qui, sans les buissons, seraient de l'herbe
+  // où l'on bâtit (« # » ou « + »). Une case sous deux buissons : libre quand les deux sont coupés.
+  const sansBuissons = { ...carte, layers: carte.layers.map((l) => (arbres[l.name] ? { ...l, data: l.data.slice() } : l)) };
+  for (const b of dessinsBuissons) {
+    const l = sansBuissons.layers.find((x) => x.name === b.nom);
+    for (const i of b.ids) l.data[i] = 0;
+  }
+  const L0 = terrain.LIGNES, L1 = terrainOfMap(sansBuissons).LIGNES;
+  const car = (L, i) => L[Math.floor(i / W)][i % W];
+  terrain.BUISSONS_CASES = {};
+  for (const b of dessinsBuissons) {
+    const libres = [...b.ids].filter((i) => car(L0, i) === '.' && (car(L1, i) === '#' || car(L1, i) === '+')).sort((a, c) => a - c);
+    if (libres.length) terrain.BUISSONS_CASES[b.id] = (terrain.BUISSONS_CASES[b.id] || []).concat(libres);
+  }
   return { carte, terrain };
 }
 

@@ -7,7 +7,7 @@ import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
 import { openStation } from './kitchen.js';
 import { freedRockTiles, openSerre } from './crops.js';
-import { foulerAutour, grassCut } from './outils.js';
+import { casesBuissonsCoupes, foulerAutour, grassCut } from './outils.js';
 import { fillSilo } from './animals.js';
 import { arbreProche, arbreSurCase, planterArbre } from './orchard.js';
 import { isUnlocked } from './campaign.js';
@@ -141,10 +141,14 @@ function setHauteur(state, tile, h) {
   else delete state.hauteurs[tile];
 }
 
+// (une porte aussi : elle se pose sur un mur, à sa place, comme une fenêtre)
 export function changeMur(ancien, sorte) {
   const a = sorteDe(ancien), s = sorteDe(sorte);
-  return !!(a && s && a.mur && s.mur && ancien !== sorte);
+  return !!(a && s && a.mur && (s.mur || s.porte) && ancien !== sorte);
 }
+
+// La porte se pose sur un mur (elle prend sa place) : sans mur, la raison du refus.
+export const PORTE_SUR_MUR = 'La porte se pose sur un mur (elle prend sa place, comme une fenêtre) : pose d\'abord le mur.';
 
 // Combien de blocs `sorte` peut-on encore poser ? (l'Atelier : 1 s'il est construit et pas
 // encore posé)
@@ -382,10 +386,11 @@ export function poseStatus(state, sorte, tile) {
   if (s.mur && blocAt(state, tile) === sorte) {
     return hauteurMur(state, tile) < DATA.ATELIER.HAUTEUR_MAX ? { ok: true } : { ok: false, raison: `Ce mur est déjà haut de ${DATA.ATELIER.HAUTEUR_MAX} blocs.` };
   }
-  // un mur posé : une fenêtre (ou une pierre d'angle) le remplace, la pièce reste close
+  // un mur posé : une fenêtre (ou une pierre d'angle, une porte) le remplace, la pièce reste close
   if (changeMur(blocAt(state, tile), sorte)) {
     return hauteurMur(state, tile) > 1 ? { ok: false, raison: 'Ce mur est rehaussé : reprends d\'abord ses blocs du dessus.' } : { ok: true };
   }
+  if (s.porte) return { ok: false, raison: PORTE_SUR_MUR };
   if (s.unique && dejaPose(state, sorte)) return { ok: false, raison: `Il y a déjà ${s.nom.toLowerCase() === 'citerne' ? 'une' : 'un'} ${s.nom.toLowerCase()} sur la ferme.` };
   // la station du robot : quand il est là (récolte ou semis automatiques)
   if (s.robot && !robotOn(state)) return { ok: false, raison: 'Il faut d\'abord le robot : la récolte ou le semis automatiques (arbre des technologies).' };
@@ -418,7 +423,8 @@ export function poseStatus(state, sorte, tile) {
   // (une case sous un rocher ou un arbre de la carte : une fois cassé, abattu, elle se bâtit)
   const ch = T.LIGNES[Math.floor(tile / T.LARGEUR)][tile % T.LARGEUR];
   if (ch === 'o' && (rocherOuArbre(T, tile)) && !freedRockTiles(state).has(tile)) return { ok: false, raison: 'Un rocher ou un arbre occupe cette case : casse-le ou abats-le d\'abord.' };
-  if (ch !== '#' && ch !== '+' && !(ch === 'o' && freedRockTiles(state).has(tile))) return { ok: false, raison: 'On ne bâtit que sur l\'herbe : pas sur les chemins, l\'eau, les arbres, les rochers ni les bâtiments.' };
+  // (une case sous un buisson coupé : de l'herbe, tant qu'il est coupé ; il ne repousse pas sous ce qui est bâti)
+  if (ch !== '#' && ch !== '+' && !(ch === 'o' && freedRockTiles(state).has(tile)) && !(ch === '.' && casesBuissonsCoupes(state).has(tile))) return { ok: false, raison: 'On ne bâtit que sur l\'herbe : pas sur les chemins, l\'eau, les arbres, les rochers ni les bâtiments.' };
   // (l'herbe haute : à faucher d'abord)
   if ((s.meuble ? empriseMeuble(state, sorte, tile) || [tile] : [tile]).some((j) => herbesSur(state, j).length)) return { ok: false, raison: 'De l\'herbe haute pousse ici : fauche-la d\'abord (la faux).' };
   if ((state.potager.parcelles || []).some((p) => p.case === tile)) return { ok: false, raison: 'Une terre labourée : rebouche-la d\'abord.' };

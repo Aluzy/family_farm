@@ -237,7 +237,7 @@ registerActions({
     // (le plancher en main : un appui sur un plancher sans rien dessus le reprend ; un autre
     // bloc se pose dessus)
     const sol = DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sol;
-    // (une fenêtre, une pierre d'angle en main : un appui sur un autre mur le change ; sinon un
+    // (une fenêtre, une pierre d'angle, une porte en main : un appui sur un autre mur le change ; sinon un
     // appui sur un bloc le reprend : un mur rehaussé, son bloc du dessus d'abord)
     const b = blocAt(state, c);
     const reprend = b ? !surLibre && !changeMur(b, buildMode) : sol && solAt(state, c);
