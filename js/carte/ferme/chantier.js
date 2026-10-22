@@ -586,8 +586,9 @@
         if (e.cases) { if (e.bloque) out.push(...e.cases); }      // (un meuble : toutes ses cases)
         else if (BLOCS_CARTE.bloquent.includes(e.sorte)) out.push(e.case);
       }
-      // les arbres plantés dans le sol : leur tronc
+      // les arbres plantés dans le sol : leur tronc (ceux du Verger, ceux d'une graine : foret.js)
       for (const e of (this.trees || new Map()).values()) if (e.a && e.a.sol) out.push(e.a.case);
+      out.push(...this.foretCells());
       return out;
     },
 

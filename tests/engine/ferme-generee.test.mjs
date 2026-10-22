@@ -11,7 +11,7 @@ import {
   atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
   isArable, migrate, couchagesEtage, etageCouvertes, ETAGE_BLOCS, chopTree, bushOf, bushCut, cutBushes, respawnBushes, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
   etatEtable, etatMoulin, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
-  buyRuche, buyDehors, PORTE_SUR_MUR, casesBuissonsCoupes, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
+  buyRuche, buyDehors, PORTE_SUR_MUR, casesBuissonsCoupes, especeArbre, poussesArbres, arbresPlantes, respawnTrees, fellenTrees, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
 
@@ -320,6 +320,39 @@ test('ferme générée : sous un buisson coupé, on bâtit (et il ne repousse pa
   reprendreBloc(s, t);
   assertEqual(respawnBushes(s), [id(b)]);
   assertEqual(casesBuissonsCoupes(s).has(t), false);
+});
+
+test('ferme générée : un sapin abattu laisse une pomme de pin, un arbre un gland ; ils se plantent sur l\'herbe libre', () => {
+  const s = chantier('graines1');
+  s.outils = { ...s.outils, hache: true };
+  const T = farmTerrain(s), ids = Object.keys(T.ARBRES);
+  const pin = ids.find((id) => especeArbre(s, id) === 'pin'), arbre = ids.find((id) => especeArbre(s, id) === 'arbre');
+  assert(pin && arbre, 'des sapins et des arbres');
+  const abattre = (id) => { let r; for (let k = 0; k < DATA.HACHE.COUPES; k++) r = chopTree(s, id); return r; };
+  const r = abattre(pin);
+  assertEqual([r.tombe, r.graine, countItem(s, 'pomme_de_pin')], [true, 'pomme_de_pin', 1]);
+  assertEqual([abattre(arbre).graine, countItem(s, 'gland')], ['gland', 1]);
+  // sans graine plantée, il ne repousse pas
+  s.day += 30;
+  assertEqual([respawnTrees(s), fellenTrees(s).sort()], [[], [pin, arbre].sort()]);
+  // la graine : sur n'importe quelle case d'herbe libre, dehors
+  const z = terrainLibre(s, 8, 5), t = (z.r + 4) * z.W + z.c + 1;
+  assertEqual(poserBloc(s, 'pomme_de_pin', T.LIGNES.join('').indexOf('.')).ok, false, 'pas hors de l\'herbe');
+  const p = poserBloc(s, 'pomme_de_pin', t);
+  assert(p.ok, p.error);
+  assertEqual([countItem(s, 'pomme_de_pin'), blocAt(s, t), poussesArbres(s).map((q) => [q.id, q.espece, q.case])], [0, null, [[p.arbre, 'pin', t]]]);
+  assertEqual(poserBloc(s, 'mur_pierre', t).error, 'Un arbre pousse ici.');
+  assert(/Trop près/.test(poserBloc(s, 'gland', t + 1).error), 'loin des autres arbres plantés');
+  // jeune pousse : on ne la coupe pas ; elle grandit en HACHE.POUSSE jours
+  assert(/jeune pousse/.test(chopTree(s, p.arbre).error));
+  s.day = s.foret.arbres[0].pousse;
+  assertEqual([poussesArbres(s), arbresPlantes(s).map((q) => q.id)], [[], [p.arbre]]);
+  // grand, il se coupe comme les autres et laisse sa graine ; sa case se libère
+  const b = abattre(p.arbre);
+  assertEqual([b.tombe, b.graine, countItem(s, 'pomme_de_pin'), arbresPlantes(s), fellenTrees(s).includes(p.arbre)], [true, 'pomme_de_pin', 1, [], false]);
+  assert(poserBloc(s, 'gland', t + 1).ok, 'la place est libre');
+  // hors de la ferme générée (une autre carte) : pas de graine, il repousse de lui-même
+  assertEqual(especeArbre(s, 'transition:3,4'), null);
 });
 
 test('ferme générée : poser et reprendre des blocs, sur l\'herbe seulement', () => {

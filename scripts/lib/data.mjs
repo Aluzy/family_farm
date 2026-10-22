@@ -129,6 +129,7 @@ export function sourcesOf(data, id) {
   if (data.RUCHE && id === data.RUCHE.OBJET) out.push('ruche (Marché)');
   if (data.RUCHE && id === data.RUCHE.PRODUIT) out.push('ruche');
   if (data.HACHE && id === 'bois') out.push('hache');
+  if (data.HACHE && Object.values(data.HACHE.GRAINES || {}).includes(id)) out.push('hache (graine d\'un arbre abattu)');
   if (data.PIOCHE && id === 'pierre') out.push('pioche');
   if (data.FAUX && data.PATURAGE && id === data.PATURAGE.NOURRITURE) out.push('faux');
   if (id.startsWith('minerai_')) out.push('grotte');

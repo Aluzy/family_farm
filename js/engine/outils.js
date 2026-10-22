@@ -3,12 +3,13 @@ import { nextRandom, randomInt } from './base.js';
 import { canPay, fail, farmOpen, NO_COINS, spend } from './devices.js';
 import { buyHoe, hasHoe, rockGone, treeGone } from './crops.js';
 import { addItem } from './inventory.js';
-import { farmTerrain } from './terrain.js';
+import { farmSeed, farmTerrain } from './terrain.js';
+import { blocGid } from './planche.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { techFlag, techSum } from './techtree.js';
 import { casesBaties } from './blocs.js';
-import { FERME_GENEREE } from './ferme-generee.js';
+import { FERME_GENEREE, genererFerme } from './ferme-generee.js';
 
 /* ---------- les outils : houe, pioche, hache, faux, canne à pêche ---------- */
 
@@ -273,6 +274,8 @@ export function chopTree(state, id, ou, fort = false) {
   const b = bushOf(state, id);
   if (b) return cutBush(state, id, b, ou, fort);
   if (treeGone(state, id)) return fail('Cet arbre est déjà abattu.');
+  const plante = foretArbre(state, id);
+  if (plante && !foretGrand(state, plante)) return fail('Ce n\'est encore qu\'une jeune pousse : laisse-la grandir.');
   const f = force(fort);
   if (!canAfford(state, 'couper', f.energie)) return fail(TIRED);
   delete outils(state).coupes;           // l'ancien compte des coups du jour
@@ -280,9 +283,104 @@ export function chopTree(state, id, ou, fort = false) {
   const bois = withBonus(state, H.BOIS, techSum(state, 'recolteBonus'));
   const chute = tombe ? H.CHUTE || 0 : 0;
   const morceaux = lacher(state, 'bois', bois, chute, ou);
+  // (un arbre de la ferme générée : sa graine tombe avec lui, et il ne repousse que si on la plante)
+  const espece = tombe ? especeArbre(state, id) : null;
+  const graine = espece ? H.GRAINES[espece] : null;
+  if (plante && tombe) {
+    // (un arbre planté : il n'est plus là, sa case se libère)
+    state.foret.arbres = state.foret.arbres.filter((a) => a !== plante);
+    delete outils(state).arbres[id];
+  }
+  if (graine) {
+    if (!plante) outils(state).arbres[id] = { espece };
+    const m = lacher(state, graine, 0, 1, ou);
+    if (morceaux && m) morceaux.fin.push(...m.fin);
+  }
   spendEnergy(state, 'couper', f.energie);
   gainActionXp(state, 'couper');
-  return { ok: true, bois, chute, morceaux, reste: chopsLeft(state, id), coups, tombe, fort: !!fort };
+  return { ok: true, bois, chute, morceaux, reste: chopsLeft(state, id), coups, tombe, fort: !!fort, graine };
+}
+
+/* ---------- les graines des arbres de la ferme générée ---------- */
+
+// Un arbre de la ferme générée qui tombe laisse sa graine (HACHE.GRAINES : la pomme de pin d'un
+// sapin, le gland d'un autre arbre) et ne repousse plus de lui-même : state.outils.arbres[id] =
+// { espece } (sans jour de retour). Une graine se plante sur n'importe quelle case d'herbe libre
+// (le mode Construire : les blocs `semis`, blocs.js) : state.foret.arbres = [{ id: 'f<n>',
+// espece, case, pousse }]. Jeune pousse jusqu'au jour `pousse` (HACHE.POUSSE jours plus tard),
+// c'est ensuite un arbre de la carte (dessiné au-dessus de sa case, son pied au milieu ;
+// js/carte/ferme/foret.js) : il se coupe comme les autres et laisse sa graine en tombant.
+
+const especes = new Map();   // graine de la ferme → Map(arbre → 'pin' | 'arbre')
+
+// L'espèce de l'arbre `id` de la ferme générée : 'pin' (un sapin) ou 'arbre' ; null ailleurs
+// (la carte de Tiled, les arbres des autres cartes). Un arbre planté : la sienne ; un arbre de
+// la carte : lue dans ses tuiles (planche.js).
+export function especeArbre(state, id) {
+  const plante = foretArbre(state, id);
+  if (plante) return plante.espece;
+  const g = farmSeed(state);
+  if (g === null) return null;
+  if (!especes.has(g)) {
+    const { carte, terrain } = genererFerme(g);
+    const tuiles = (bloc, n) => new Set(Array.from({ length: n }, (_, k) => blocGid(bloc, k)));
+    const pins = tuiles('pin', 16), feuillus = tuiles('arbre', 12);
+    const couches = carte.layers.filter((l) => l.type === 'tilelayer' && l.name.startsWith('layer_tree'));
+    const m = new Map();
+    for (const [aid, cs] of Object.entries(terrain.ARBRES || {})) {
+      let p = 0, a = 0;
+      for (const t of cs) for (const l of couches) { const gid = l.data[t] & 0x0fffffff; if (pins.has(gid)) p++; else if (feuillus.has(gid)) a++; }
+      if (p || a) m.set(aid, p > a ? 'pin' : 'arbre');
+    }
+    especes.set(g, m);
+  }
+  return especes.get(g).get(id) || null;
+}
+
+// Les arbres plantés (state.foret.arbres), sur la ferme générée.
+export function foretArbres(state) {
+  const f = state.foret;
+  return farmSeed(state) !== null && f && Array.isArray(f.arbres) ? f.arbres : [];
+}
+
+// L'arbre planté `id`, ou null.
+export function foretArbre(state, id) {
+  return foretArbres(state).find((a) => a.id === id) || null;
+}
+
+// L'arbre planté sur la case `tile`, ou null.
+export function foretSurCase(state, tile) {
+  return foretArbres(state).find((a) => a.case === tile) || null;
+}
+
+// Un arbre planté à moins de `d` cases (en ligne ou en diagonale) de `tile` ?
+export function foretProche(state, tile, d) {
+  const W = farmTerrain(state).LARGEUR, c = tile % W, r = Math.floor(tile / W);
+  return foretArbres(state).some((a) => Math.max(Math.abs(a.case % W - c), Math.abs(Math.floor(a.case / W) - r)) < d);
+}
+
+// Plante une graine de l'espèce `espece` sur `tile` (blocs.js a vérifié la place, poseStatus ;
+// la graine est déjà prise dans l'inventaire). Renvoie l'arbre planté.
+export function planterGraine(state, espece, tile) {
+  if (!state.foret || typeof state.foret !== 'object' || !Array.isArray(state.foret.arbres)) state.foret = { n: 0, arbres: [] };
+  const f = state.foret, P = DATA.HACHE.POUSSE;
+  f.n = (f.n | 0) + 1;
+  const a = { id: 'f' + f.n, espece, case: tile, pousse: state.day + randomInt(state, P[0], P[1]) };
+  f.arbres.push(a);
+  return a;
+}
+
+// L'arbre planté a-t-il fini de pousser ?
+export function foretGrand(state, a) {
+  return !!a && state.day >= a.pousse;
+}
+
+// Les arbres plantés encore jeunes pousses : [{ id, espece, case }] ; ceux qui ont poussé : grands.
+export function poussesArbres(state) {
+  return foretArbres(state).filter((a) => !foretGrand(state, a)).map((a) => ({ id: a.id, espece: a.espece, case: a.case }));
+}
+export function arbresPlantes(state) {
+  return foretArbres(state).filter((a) => foretGrand(state, a)).map((a) => ({ id: a.id, espece: a.espece, case: a.case }));
 }
 
 /* ---------- la pioche : casser un rocher de la carte ---------- */

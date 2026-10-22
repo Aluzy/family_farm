@@ -170,6 +170,15 @@ Le Marché vend toujours les outils.
     la case vide, comme une fenêtre.
   - Un buisson coupé rend ses cases (le terrain, `BUISSONS_CASES`) : on y bâtit comme sur
     l'herbe (`casesBuissonsCoupes`), et il ne repousse pas tant qu'une de ses cases est bâtie.
+  - Un arbre abattu laisse sa graine (`HACHE.GRAINES`) : un sapin, une pomme de pin, un autre
+    arbre, un gland (au sol avec le bois de sa chute ; `assets/ramassables.png`, 6ᵉ et 7ᵉ images ;
+    son espèce, lue dans ses tuiles : `especeArbre`). Il ne repousse plus de lui-même
+    (`state.outils.arbres[id] = { espece }`). Une graine se plante sur n'importe quelle case
+    d'herbe libre, dehors, loin des autres arbres plantés (mode Construire, les blocs
+    `pomme_de_pin` et `gland`, `semis` ; `planterGraine`, `state.foret.arbres`) : jeune pousse
+    pendant `HACHE.POUSSE` jours (modèle `pousses`, 8ᵉ et 9ᵉ images), puis un arbre de la
+    planche (le sapin, l'arbre clair : modèle `foret`, `js/carte/ferme/foret.js`) qui ferme sa
+    case, s'efface quand on passe derrière, porte une ombre et se coupe comme les autres.
   - Le foyer (où le personnage rentre le soir et réapparaît le matin) : la pièce où l'on dort,
     sinon une pièce du genre maison ; jamais une enceinte vide ni un bâtiment.
   - Deux fenêtres côte à côte (sur une même rangée, leurs faces visibles) forment une grande

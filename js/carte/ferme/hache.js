@@ -145,6 +145,8 @@
         t.gone = true;
         if (o && o.img) o.img.setVisible(false);
         this.felledChanged();
+        // (un arbre planté : le jeu ne l'a plus, il quitte la scène ; foret.js)
+        if (t.plante && this.ctx.lastModel) this.syncForet(this.ctx.lastModel.foret);
       };
       if (!o || !o.img || !anim || reducedMotion() || !this.textures.exists(o.img.texture.key)) { done(); lache(); return; }
       if (t.buisson) {
@@ -189,6 +191,7 @@
       this.felledSynced = true;
       let changed = false;
       for (const t of this.mapTrees()) {
+        if (t.plante) continue;   // (un arbre planté : foret.js)
         const gone = down.has(t.id);
         if (gone === !!t.gone || (gone && t.falling)) continue;
         t.gone = gone;

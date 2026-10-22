@@ -261,6 +261,8 @@ export const RAW_DATA = {
     "bac_semis": { "nom": "Bac à semis", "icone": "🎍", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "coffre_grain": { "nom": "Coffre à grain", "icone": "🗃", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meule": { "nom": "Meule", "icone": "🪨‍⚙️", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "pomme_de_pin": { "nom": "Pomme de pin", "icone": "🌲‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
+    "gland": { "nom": "Gland", "icone": "🌳‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "jeune_pommier": { "nom": "Jeune pommier", "icone": "🌱‍🍎", "prix": 40, "mangeable": false, "categorie": "graine", "arbre": "pommier" },
     "jeune_poirier": { "nom": "Jeune poirier", "icone": "🌱‍🍐", "prix": 40, "mangeable": false, "categorie": "graine", "arbre": "poirier" },
     "jeune_cerisier": { "nom": "Jeune cerisier", "icone": "🌱‍🍒", "prix": 50, "mangeable": false, "categorie": "graine", "arbre": "cerisier" },
@@ -610,6 +612,8 @@ export const RAW_DATA = {
       "citerne": { "nom": "Citerne", "objet": "citerne", "dehors": true, "bloque": true, "unique": true, "appareil": "reservoir" },
       "batterie": { "nom": "Batterie", "objet": "batterie", "bloque": true, "unique": true, "appareil": "batterie" },
       "escalier": { "nom": "Escalier", "objet": "escalier", "dedans": true, "escalier": true },
+      "pomme_de_pin": { "nom": "Pomme de pin", "objet": "pomme_de_pin", "dehors": true, "semis": "pin" },
+      "gland": { "nom": "Gland", "objet": "gland", "dehors": true, "semis": "arbre" },
       "ruche": { "nom": "Ruche", "objet": "ruche", "dehors": true, "bloque": true, "ruche": true, "marche": "Animaux" },
       "bac_fleurs": { "nom": "Bac à fleurs", "objet": "bac_fleurs", "bloque": true, "fleurs": true, "marche": "Meubles" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
@@ -1136,7 +1140,9 @@ export const RAW_DATA = {
     "CHUTE": 2,
     "COUPES": 3,
     "RETOUR": [1, 3],
-    "BUISSONS": { "grand": 2, "petit": 1, "RETOUR": [2, 4] }
+    "BUISSONS": { "grand": 2, "petit": 1, "RETOUR": [2, 4] },
+    "GRAINES": { "pin": "pomme_de_pin", "arbre": "gland" },
+    "POUSSE": [2, 4]
   },
   "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "BRIS": 2, "COUPS": 3, "RETOUR": [1, 3] },
   "COUP_FORT": { "COUPS": 2, "ENERGIE": 2 },

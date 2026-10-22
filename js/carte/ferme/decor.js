@@ -131,7 +131,7 @@
       const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
       if (!set) return;
       const img = this.textures.get(MAP.tiles).getSourceImage();
-      for (const o of (this.occluders || []).concat(this.rocks || [])) if (o.tex) this.paintOccluder(o, raw, set, img);
+      for (const o of (this.occluders || []).concat(this.rocks || [])) if (o.tex) { if (o.peindre) o.peindre(); else this.paintOccluder(o, raw, set, img); }
       this.sunDirty = true;            // (les ombres du soleil en sont tirées)
     },
 
