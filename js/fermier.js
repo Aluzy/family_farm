@@ -594,6 +594,7 @@
     // le reste (ses gestes en attente suivent), puis y reste.
     // Renvoie le point où il va, ou null.
     function goTo(tx, ty) {
+      if (passe) return null;
       const spot = nearestFree(Math.max(0, Math.min(world.w - 1, tx)), Math.max(1, Math.min(world.h - 1, ty)));
       if (!spot) return null;
       if (job && job.idle) job = null;
@@ -610,6 +611,7 @@
     // reprennent après (le chemin vers un geste repart d'où il est). Au lit (ou en y allant) : rien.
     let steer = null, steerWalked = 0;
     function steerTo(dir) {
+      if (passe) return;
       if (dir && !ctx.coucher && !ctx.dort) { steer = dir; return; }
       if (!steer) return;
       steer = null;
@@ -633,17 +635,59 @@
     }
 
     // Il arrive d'une autre carte (la carte de transition) : il apparaît en (tx, ty) (la case
-    // libre la plus proche) et reste là, au lieu de sortir de la maison.
-    function arrive(tx, ty) {
+    // libre la plus proche) et reste là, au lieu de sortir de la maison. `porte` ({ x, y }) : il
+    // sort d'une porte (la mine) : il y apparaît, s'éclaire et descend jusqu'en (tx, ty).
+    function arrive(tx, ty, porte) {
       const spot = nearestFree(Math.max(0, Math.min(world.w - 1, tx)), Math.max(1, Math.min(world.h - 1, ty)));
       if (!spot) return null;
-      x = spot.x; y = spot.y; face = 'cote'; flip = true;
-      appear();
+      passe = false;
       job = null;
-      jobs = [wait(rand(3, 5))];
       idleAge = 0;
+      if (porte && !reduced()) {
+        x = porte.x; y = porte.y; face = 'bas'; flip = false;
+        shown = false; alpha = 0;
+        appear();
+        jobs = [glisse(spot.x, spot.y), wait(rand(3, 5))];
+        draw(`idle_${face}_0`);
+        return spot;
+      }
+      x = spot.x; y = spot.y; face = porte ? 'bas' : 'cote'; flip = !porte;
+      appear();
+      jobs = [wait(rand(3, 5))];
       draw(`idle_${face}_0`);
       return spot;
+    }
+
+    // Une marche tout droit jusqu'en (tx, ty), sans chercher de chemin : le seuil d'une porte
+    // (la mine), qu'il passe en y entrant ou en en sortant.
+    function glisse(tx, ty) {
+      let walked = 0;
+      return {
+        start() {},
+        step(dt) {
+          const dx = tx - x, dy = ty - y, left = Math.hypot(dx, dy);
+          const d = Math.min(left, SPEED * 0.6 * dt);
+          if (left > 0.01) { x += (dx / left) * d; y += (dy / left) * d; look(dx, dy); }
+          walked += d;
+          draw(`marche_${face}_${Math.floor(walked / STRIDE) % 4}`);
+          return left - d <= 0.3;
+        },
+      };
+    }
+
+    // Il entre par une porte (la mine) : il va devant (`devant`), puis monte jusqu'à la porte
+    // (`porte`) en s'effaçant ; `done` quand il a disparu. Pendant ce temps, le doigt ne le
+    // dirige plus (passe).
+    let passe = false;
+    function entre(devant, porte, done) {
+      releaseAll(); claimed.clear(); job = null; steer = null;
+      passe = true;
+      if (reduced()) { x = porte.x; y = porte.y; jobs = []; vanish(); setTimeout(done, 0); return; }
+      if (!shown || home) { const d = door(); x = d.x; y = d.y; face = 'bas'; flip = false; appear(); }
+      const w = walkTo(devant.x, devant.y, { far: true });
+      w.joueur = true;
+      jobs = [w, glisse(devant.x, devant.y), once(() => { face = 'haut'; flip = false; vanish(); }), glisse(porte.x, porte.y), wait(FADE_S / 2), once(done)];
+      idleAge = 0;
     }
 
     // « Dormir » : il laisse tout, marche (vite) jusqu'à la porte de la maison et entre ; `done`
@@ -1221,8 +1265,12 @@
       goTo,
       // Au doigt : il marche dans la direction { x, y } ; null : il s'arrête.
       steer: steerTo,
-      // Il arrive d'une autre carte, en (x, y).
+      // Il arrive d'une autre carte, en (x, y) (sorti d'une porte : arrive(x, y, porte)).
       arrive,
+      // Il entre par une porte (la mine) : entre(devant, porte, done).
+      entre,
+      // Il est en train de passer une porte.
+      passe: () => passe,
       // Un chemin par les cases libres, de (x0, y0) à (x1, y1) : [{ x, y }…] ou null (pour
       // les autres membres de la famille, js/famille-ferme.js).
       path: (x0, y0, x1, y1) => findPath(x0, y0, x1, y1),

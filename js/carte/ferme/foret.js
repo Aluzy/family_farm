@@ -67,7 +67,7 @@
         ctx.clearRect(0, 0, w, h);
         ctx.drawImage(src, d.box[0] * T, d.box[1] * T, w, h, 0, 0, w, h);
         o.tex.refresh();
-        o.probe = this.probeOf(o.tex, w, h);
+        o.probe = this.probeOf(o.tex, w, h, o);
       };
       if (this.textures.exists(o.key)) this.textures.remove(o.key);
       o.tex = this.textures.createCanvas(o.key, w, h);

@@ -271,12 +271,12 @@
   const EXIT = { object: 'vers_la_transition', inset: 18, arrive: 34, page: 'ville-carte.html?carte=transition&arrivee=ferme' };
   // L'entrée de la mine, sur la ferme générée (le rectangle `mine` de la carte, couche « batiment » :
   // le tas de terre de 3 × 3 tuiles, MINE dans js/engine/planche.js ; la porte au milieu de son
-  // bas). Quand le personnage est devant la porte (à `near` px au plus), la flèche bleue des
-  // passages (CarteKit.FLECHE, image 2 : vers le haut) paraît au-dessus du tas ; un appui dessus,
-  // ou un double appui sur le tas, mène au premier niveau de la mine (`page` : la grotte de
-  // js/ville-carte.js, l'entrée « ferme »). En revenant de là (jeu.html?arrivee=mine), le
-  // personnage apparaît devant la porte (`arrive` px sous le tas).
-  const MINE = { object: 'mine', near: 30, arrive: 10, page: 'ville-carte.html?carte=grotte&grotte=ferme&niveau=1&arrivee=haut' };
+  // bas). Un double appui sur le tas, ou le personnage poussé vers la porte quand il est juste
+  // devant (à `near` px au plus), et il y entre : il va devant (`arrive` px sous le tas), monte
+  // dans la porte (`seuil` px au-dessus du bas du tas) en s'effaçant, puis le premier niveau de
+  // la mine s'ouvre (`page` : la grotte de js/ville-carte.js, l'entrée « ferme »). En revenant
+  // de là (jeu.html?arrivee=mine), il sort de la porte et descend devant.
+  const MINE = { object: 'mine', near: 14, arrive: 10, seuil: 6, page: 'ville-carte.html?carte=grotte&grotte=ferme&niveau=1&arrivee=haut' };
   const HOLLOW = {
     // (539, 540 : celui du pack, sur la carte de Tiled ; 4150, 4151 : le bloc « tronc_creux » de la
     // planche, sur la ferme générée, TRONC_CREUX dans js/engine/planche.js)

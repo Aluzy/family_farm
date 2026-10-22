@@ -1,7 +1,7 @@
 /* carte/ferme/passages.js — la scène de la ferme : la sortie vers la ville, la mine et le tronc creux.
  *
  * La flèche bleue au bout du chemin de l'est (CarteKit.FLECHE : vers la carte de transition),
- * l'entrée de la mine (sa flèche au-dessus de la porte : vers les niveaux de la grotte),
+ * l'entrée de la mine (le personnage passe sa porte : vers les niveaux de la grotte),
  * l'arrivée d'une autre carte, et le tronc creux au bord de l'étang (la fenêtre « veux-tu aller
  * voir ? » qui mène à l'infra-monde).
  *
@@ -28,8 +28,6 @@
     makeExit() {
       const e = this.exitAt();
       this.exit = this.has(K.FLECHE.key) ? this.add.image(e.x - EXIT.inset, e.y, K.FLECHE.key, 0).setDepth(1e6).setVisible(false) : null;
-      const m = this.mineDoor();
-      this.mineArrow = m && this.has(K.FLECHE.key) ? this.add.image(m.x, m.y - 58, K.FLECHE.key, K.FLECHE.sens.indexOf('haut')).setDepth(1e6).setVisible(false) : null;
       // revenu d'une autre carte (la transition, la mine) : à son arrivée, la vue sur lui
       const params = new URLSearchParams(global.location.search);
       if (['est', 'mine'].includes(params.get('arrivee'))) this.arrive(params.get('arrivee'));
@@ -43,13 +41,15 @@
       const q = params.toString();
       global.history.replaceState(null, '', global.location.pathname + (q ? '?' + q : '') + global.location.hash);
       const e = this.exitAt(), m = this.mineDoor();
-      const p = ou === 'mine' && m ? { x: m.x, y: m.y + MINE.arrive } : { x: e.x - EXIT.arrive, y: e.y };
-      const at = this.fermier && this.fermier.arrive ? this.fermier.arrive(p.x, p.y) : null;
+      // (de la mine : il sort de la porte et descend devant)
+      const at = !this.fermier || !this.fermier.arrive ? null
+        : ou === 'mine' && m ? this.fermier.arrive(m.x, m.y + MINE.arrive, { x: m.x, y: m.y - MINE.seuil })
+          : this.fermier.arrive(e.x - EXIT.arrive, e.y);
       if (at) this.setCentre(at.x, at.y);
     },
 
-    // Les flèches paraissent quand le personnage est tout près du bout du chemin, de la porte de
-    // la mine.
+    // La flèche paraît quand le personnage est tout près du bout du chemin. Devant la porte de la
+    // mine, poussé vers elle (au doigt, aux flèches), il y entre.
     stepExit(time) {
       const at = !this.room && this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       const a = this.exit;
@@ -59,19 +59,14 @@
         a.setVisible(show);
         if (show) a.setPosition(Math.round(e.x - EXIT.inset + K.balance(time)), e.y);
       }
-      const b = this.mineArrow, m = b && this.mineDoor();
-      if (m) {
-        const show = !!at && this.nearMine(at);
-        b.setVisible(show);
-        if (show) b.setPosition(m.x, Math.round(m.y - 58 - K.balance(time)));   // (au-dessus du tas)
-      }
+      const dir = at && this.manette ? this.manette.dir() : null;
+      if (dir && dir.y < -0.6 && Math.abs(dir.x) < 0.6 && this.nearMine(at)) this.enterMine();
     },
 
-    // Un appui sur une flèche : vers la carte de transition, dans la mine (true : l'appui est pris).
+    // Un appui sur la flèche : vers la carte de transition (true : l'appui est pris).
     tapExit(wx, wy) {
-      const touche = (a) => a && a.visible && Math.abs(wx - a.x) <= 18 && Math.abs(wy - a.y) <= 18;
-      if (touche(this.mineArrow)) { this.goMine(); return true; }
-      if (!touche(this.exit)) return false;
+      const a = this.exit;
+      if (!a || !a.visible || Math.abs(wx - a.x) > 18 || Math.abs(wy - a.y) > 18) return false;
       // (dans la page du jeu : js/ui/excursion.js ; le jeu continue de tourner)
       if (global.FermeHote) global.FermeHote.go(EXIT.page);
       else global.location.href = EXIT.page;
@@ -87,26 +82,33 @@
       return o ? { x: o.x + o.width / 2, y: o.y + o.height } : null;
     },
 
-    // Le personnage en `at` est-il devant la porte ?
+    // Le personnage en `at` est-il tout près de la porte, juste devant ?
     nearMine(at) {
       const m = this.mineDoor();
       return !!m && Math.abs(at.x - m.x) <= MINE.near && at.y >= m.y - 4 && at.y - m.y <= MINE.near;
     },
 
-    goMine() {
-      if (global.FermeHote) global.FermeHote.go(MINE.page);
-      else global.location.href = MINE.page;
+    // Il entre dans la mine : il va devant la porte, la passe en s'effaçant, puis la carte
+    // change (la mine). Une fois seulement (`this.enMine`) ; la carte qui ne s'ouvre pas : il
+    // ressort.
+    enterMine() {
+      const m = this.mineDoor();
+      if (!m || this.enMine || !this.fermier || !this.fermier.entre) return;
+      this.enMine = true;
+      this.fermier.entre({ x: m.x, y: m.y + MINE.arrive }, { x: m.x, y: m.y - MINE.seuil }, () => {
+        this.enMine = false;
+        if (global.FermeHote) global.FermeHote.go(MINE.page);
+        else { global.location.href = MINE.page; return; }
+        if (!global.document.body.classList.contains('en-excursion')) this.arrive('mine');
+      });
     },
 
-    // Un double appui en (wx, wy) sur le tas de la mine : le personnage devant la porte, il y
-    // entre ; plus loin, il va devant la porte (true : l'appui est pris ; false : pas sur la mine).
+    // Un double appui en (wx, wy) sur le tas de la mine : le personnage y va et y entre (true :
+    // l'appui est pris ; false : pas sur la mine).
     askMine(wx, wy) {
       const o = this.objects && this.objects[MINE.object];
       if (!o || this.room || wx < o.x || wx > o.x + o.width || wy < o.y || wy > o.y + o.height) return false;
-      const at = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
-      if (at && this.nearMine(at)) { this.goMine(); return true; }
-      const m = this.mineDoor();
-      this.goHere(m.x, m.y + MINE.arrive);
+      this.enterMine();
       return true;
     },
 
