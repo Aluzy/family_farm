@@ -61,8 +61,34 @@ function stationBlurb(id) {
   return `${names.charAt(0).toUpperCase()}${names.slice(1)}.${power}${id === 'four' ? ' Le construire ouvre l\'onglet Livre de recette.' : ''}`;
 }
 
+// La ferme générée : le bloc de l'Atelier qui fait la station `id` (la cuisinière, le four), ou null.
+function blocDeStation(id) {
+  if (farmSeed(state) === null) return null;
+  return Object.values(DATA.ATELIER.BLOCS).find((b) => b.station === id) || null;
+}
+
 function stationBuildCard(id) {
   const def = DATA.STATIONS[id];
+  const bloc = blocDeStation(id);
+  if (bloc) {
+    // (pas d'achat : elle se fabrique à l'Atelier, puis se pose dans une pièce close)
+    const o = DATA.OBJETS[bloc.objet];
+    const r = DATA.ATELIER.RECETTES[bloc.objet];
+    const besoin = r ? Object.entries(r.entrees).map(([item, n]) => `<span class="chip">${n} ${DATA.OBJETS[item].icone}</span>`).join('') : '';
+    const enStock = countItem(state, bloc.objet);
+    const f = def.article === 'la';   // (la cuisinière ; le four de pierre)
+    const ou = `dans une pièce close (menu ${DATA.ATELIER.ICONE} Construire)`;
+    const texte = enStock
+      ? `${o.icone} ${f ? 'Ta' : 'Ton'} ${o.nom.toLowerCase()} est prêt${f ? 'e' : ''} : pose-${f ? 'la' : 'le'} ${ou}.`
+      : `${o.icone} ${f ? 'La' : 'Le'} ${o.nom.toLowerCase()} se fabrique à l'Atelier, puis se pose ${ou} :`;
+    return `
+    <div class="card station">
+      <span class="card-title"><span>${artIcon(id)}${def.nom}</span><span class="chips"><span class="chip">Non construit</span>${helpBtn(id)}</span></span>
+      <span class="muted">${stationBlurb(id)}</span>
+      <span class="muted">${texte}</span>
+      ${besoin && !enStock ? `<span class="chips">${besoin}</span>` : ''}
+    </div>`;
+  }
   const need = def.requiert ? DATA.STATIONS[def.requiert] : null;
   const blocked = need && !state.stations[def.requiert].construit;
   return `
