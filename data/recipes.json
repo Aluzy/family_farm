@@ -50,6 +50,7 @@
     "comme sur une paillasse ; sur « mur » : accroché à un mur, quel qu'il soit (les tableaux).",
     "batiment (étape 5b, les bâtiments) : le bloc clé d'un bâtiment. Posé dans une pièce close, il le",
     "construit (le nichoir : le Poulailler ; la mangeoire : l'Étable ; le bac à semis : la Serre ; le coffre à grain : le Silo) ; repris, le bâtiment n'est plus là (ses bêtes restent).",
+    "semis : la graine d'un arbre de la carte (la pomme de pin d'un sapin, le gland d'un autre arbre : HACHE.GRAINES), à planter là où un arbre de cette espèce a été abattu ; il y repousse (outils.js, planterGraine), sans rester un bloc.",
     "Le Poulailler veut aussi une porte sur le dehors et un enclos de barrières relié par une porte, et une case libre par poule dedans et dans l'enclos (blocs.js, etatPoulailler)."
   ],
   "ATELIER": {
@@ -125,6 +126,8 @@
       "citerne": { "nom": "Citerne", "objet": "citerne", "dehors": true, "bloque": true, "unique": true, "appareil": "reservoir" },
       "batterie": { "nom": "Batterie", "objet": "batterie", "bloque": true, "unique": true, "appareil": "batterie" },
       "escalier": { "nom": "Escalier", "objet": "escalier", "dedans": true, "escalier": true },
+      "pomme_de_pin": { "nom": "Pomme de pin", "objet": "pomme_de_pin", "dehors": true, "semis": "pin" },
+      "gland": { "nom": "Gland", "objet": "gland", "dehors": true, "semis": "arbre" },
       "ruche": { "nom": "Ruche", "objet": "ruche", "dehors": true, "bloque": true, "ruche": true, "marche": "Animaux" },
       "bac_fleurs": { "nom": "Bac à fleurs", "objet": "bac_fleurs", "bloque": true, "fleurs": true, "marche": "Meubles" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },

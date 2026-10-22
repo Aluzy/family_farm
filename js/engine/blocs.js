@@ -7,7 +7,7 @@ import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
 import { openStation } from './kitchen.js';
 import { freedRockTiles, openSerre } from './crops.js';
-import { casesBuissonsCoupes, foulerAutour, grassCut } from './outils.js';
+import { casesBuissonsCoupes, foulerAutour, grassCut, planterGraine, souchePour } from './outils.js';
 import { fillSilo } from './animals.js';
 import { arbreProche, arbreSurCase, planterArbre } from './orchard.js';
 import { isUnlocked } from './campaign.js';
@@ -388,7 +388,7 @@ export function poseStatus(state, sorte, tile) {
   if (!s) return { ok: false, raison: 'Bloc inconnu.' };
   const T = farmTerrain(state);
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
-  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon Meubles).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon ${s.marche}).` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon Meubles).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon ${s.marche}).` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
@@ -407,6 +407,14 @@ export function poseStatus(state, sorte, tile) {
   if (s.appareil) {
     const r = starterBlock(state, s.appareil);
     if (r) return { ok: false, raison: r === 'Répare d\'abord la maison.' ? 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.' : r === 'Achète d\'abord le panneau et la pompe.' ? 'Pose d\'abord le panneau solaire et la pompe.' : r };
+  }
+  // une graine d'arbre : là où un arbre de son espèce a été abattu, sa place libre
+  if (s.semis) {
+    const id = souchePour(state, s.semis, tile);
+    if (!id) return { ok: false, raison: `${s.nom} : à planter là où ${s.semis === 'pin' ? 'un sapin' : 'un arbre (pas un sapin)'} a été abattu.` };
+    const pris = casesBaties(state), labour = new Set((state.potager.parcelles || []).map((q) => q.case));
+    if (T.ARBRES[id].some((t) => pris.has(t) || labour.has(t))) return { ok: false, raison: 'La place de l\'arbre est prise (un bloc, une terre labourée) : libère-la d\'abord.' };
+    return { ok: true };
   }
   // la pompe : sur le puits, sans prendre de case
   if (s.sur) {
@@ -480,6 +488,8 @@ function poser(state, sorte, tile) {
     state.blocs[tile] = sorte;
     return { ok: true, sorte, case: tile, remplace: ancien };
   }
+  // une graine d'arbre : l'arbre abattu repoussera à sa place, elle n'est pas un bloc
+  if (s.semis) return { ok: true, sorte, case: tile, arbre: planterGraine(state, s.semis, tile) };
   // un arbre fruitier : planté dans le sol, il n'est pas un bloc (orchard.js)
   if (s.arbre) {
     const tree = planterArbre(state, s.arbre, tile);

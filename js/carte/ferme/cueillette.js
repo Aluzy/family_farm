@@ -12,7 +12,9 @@
  * Le bois et la pierre que la hache et la pioche lâchent (modèle.morceaux, js/engine/outils.js :
  * state.morceaux) : le personnage les prend en marchant dessus (stepPieces) ; ceux d'un coup
  * paraissent quand il porte, ceux de l'arbre qui tombe quand il touche le sol (holdPieces,
- * revealPieces ; où ils tombent : CarteKit.pointsMorceaux).
+ * revealPieces ; où ils tombent : CarteKit.pointsMorceaux). Un arbre de la ferme générée qui
+ * tombe lâche aussi sa graine (la pomme de pin, le gland) ; replantée, une jeune pousse marque sa
+ * place jusqu'à ce qu'il repousse (syncPousses).
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
  * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).
@@ -28,6 +30,25 @@
   const reduit = () => K.reduit();
 
   F.partie({
+
+    /* ---------- les arbres replantés : une jeune pousse ---------- */
+
+    // Les arbres abattus dont on a planté la graine (modèle.pousses : [{ id, espece, case }],
+    // js/engine/outils.js poussesArbres) : une jeune pousse au milieu de leur pied
+    // (RAMASSABLES.frames : pousse_pin, pousse_arbre), jusqu'à ce qu'ils repoussent.
+    syncPousses(list) {
+      if (!this.pousses) this.pousses = new Map();
+      if (!this.has(RAMASSABLES.key)) return;
+      const seen = new Set(), cols = this.grid.cols;
+      for (const p of list || []) {
+        seen.add(p.id);
+        if (this.pousses.has(p.id)) continue;
+        const x = (p.case % cols) * T + T / 2, y = (Math.floor(p.case / cols) + 1) * T;
+        const f = RAMASSABLES.frames[p.espece === 'pin' ? 'pousse_pin' : 'pousse_arbre'];
+        this.pousses.set(p.id, this.add.image(x, y, RAMASSABLES.key, f).setOrigin(0.5, 1).setDepth(y - 1));
+      }
+      for (const [id, img] of this.pousses) if (!seen.has(id)) { img.destroy(); this.pousses.delete(id); }
+    },
 
     /* ---------- les morceaux de bois et de pierre lâchés par la hache et la pioche ---------- */
 

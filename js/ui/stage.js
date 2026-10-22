@@ -15,7 +15,7 @@ import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
 import { TIRED } from '../engine/stamina.js';
-import { brokenRocks, cutBushes, cutGrass, enSelle, fellenTrees, morceauxDe } from '../engine/outils.js';
+import { brokenRocks, cutBushes, cutGrass, enSelle, fellenTrees, morceauxDe, poussesArbres } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmSeed, farmTerrain, tileCount } from '../engine/terrain.js';
@@ -448,6 +448,8 @@ export function stageModel() {
     ramassables: ramassables(state).map((r) => ({ id: r.id, sorte: r.sorte, case: r.case, buisson: !!r.buisson })),
     // le bois et la pierre lâchés par la hache et la pioche, à ramasser en marchant dessus
     morceaux: morceauxDe(state, 'ferme').map((m) => ({ n: m.n, item: m.item, x: m.x, y: m.y })),
+    // les arbres replantés (une graine plantée là où ils ont été abattus) : une jeune pousse
+    pousses: farmSeed(state) !== null ? poussesArbres(state) : [],
     // et ses blocs posés, le mode Construire (les pièces closes s'y voient), les paillasses où
     // l'on dort (js/engine/blocs.js)
     // (un meuble : son dessin, ses cases en largeur et en hauteur, s'il arrête le passage, s'il est à plat ou un lit)

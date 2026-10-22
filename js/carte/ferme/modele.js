@@ -76,6 +76,7 @@
       this.syncTank(model.citerne == null ? -1 : model.citerne | 0);
       this.syncGatherables(model.ramassables);
       this.syncPieces(model.morceaux);
+      this.syncPousses(model.pousses);   // (les arbres replantés : une jeune pousse)
 
       // Parcelles des deux zones : on crée, met à jour, détruit. Tuiles jointives depuis le
       // coin de chaque rectangle (zone_culture_1, zone_culture_2).
