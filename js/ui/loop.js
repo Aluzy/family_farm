@@ -258,7 +258,7 @@ function openAbsenceModal(r) {
     .map(([item, n]) => `<li><span aria-hidden="true">${DATA.OBJETS[item].icone}</span> ${DATA.OBJETS[item].nom}<strong class="num">+${formatNumber(n)}</strong></li>`);
   openModal(`
     <header class="window-head">
-      <h2 id="absence-title"><span aria-hidden="true">⏳</span> Pendant ton absence</h2>
+      <h2 id="absence-title"><span aria-hidden="true">👋</span> Ravi de te revoir !</h2>
       <button type="button" class="icon-btn" id="absence-close" data-action="close-modal" aria-label="Fermer" title="Fermer">✕</button>
     </header>
     <div class="absence-body">
