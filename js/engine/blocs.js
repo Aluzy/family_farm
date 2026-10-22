@@ -238,7 +238,7 @@ function etageEnPeril(state, blocs) {
 // Le premier lit (paillasse) ou bloc clé posé dans une enceinte décide de ce qu'elle est :
 //   - une maison : la paillasse, le four, la cuisinière (et les blocs sans genre, la batterie) ;
 //   - un bâtiment : le nichoir (le Poulailler), la mangeoire (l'Étable), le bac à semis (la
-//     Serre), le coffre à grain (le Silo), la meule (le Moulin). Un bâtiment n'a que son bloc
+//     Serre), la meule (le Moulin). Un bâtiment n'a que son bloc
 //     clé (et un plancher au sol, state.sols, qui n'est pas un bloc ; les sols n'ont pas de genre).
 // Un bloc d'un autre genre n'y entre pas (poseStatus) ; un mur ou une porte qui, repris,
 // mêlerait deux enceintes de genres différents ne se reprend pas (reprendreBloc).
@@ -532,7 +532,7 @@ function poser(state, sorte, tile) {
   if (s.appareil) installStarter(state, s.appareil);
   // une ruche : vide, elle commence à se remplir (js/engine/ruches.js)
   if (s.ruche) ruchePosee(state, tile);
-  // le bloc clé d'un bâtiment (le nichoir : le Poulailler ; la mangeoire : l'Étable , le bac à semis : la Serre ; le coffre à grain : le Silo) : le bâtiment est construit
+  // le bloc clé d'un bâtiment (le nichoir : le Poulailler ; la mangeoire : l'Étable , le bac à semis : la Serre) : le bâtiment est construit
   if (s.batiment) ouvrirBatiment(state, s.batiment);
   // un four, une cuisinière : la station est là (étape 5b, la maison) ; la meule : le Moulin
   // quand sa tour est bâtie (majMoulin)

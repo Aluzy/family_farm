@@ -13,7 +13,7 @@ import {
   setCowHerbs, shear, sheepCount, sheepToShear, siloCapacity, siloUpgradeCost, stableOccupied, strawMissing,
   strawNeed, strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady, coopUpgradeRefus, pastureRefus, stablePlaces,
 } from '../engine/animals.js';
-import { etatEtable, etatPoulailler } from '../engine/blocs.js';
+import { etatEtable, etatPoulailler, etatSilo } from '../engine/blocs.js';
 import { farmSeed } from '../engine/terrain.js';
 import { techAuto, techFlag } from '../engine/techtree.js';
 import { AUTO_TACHES, harvestAll, isAutomated, plantAll, setSemis, waterAll } from '../engine/automation.js';
@@ -33,8 +33,45 @@ import { closeModal, openModal } from './modal.js';
 
 /* ---------- Ferme : Silo et Poulailler ---------- */
 
+// La ferme générée : le Silo en blocs de silo (etatSilo, blocs.js) : ce qu'il faut pour le
+// bâtir, ou ce qu'il garde ; il s'agrandit par un appui long (le mode Construire).
+function renderSiloBlocs() {
+  const s = state.silo, e = etatSilo(state), S = DATA.ATELIER.SILO, o = DATA.OBJETS.bloc_silo;
+  const enMain = countItem(state, 'bloc_silo');
+  const stock = `<span class="muted">${o.icone} ${o.nom} : ${enMain} dans l'inventaire${enMain ? '' : ' (à fabriquer à l\'Atelier, onglet Matériaux)'}.</span>`;
+  if (!s.construit) {
+    const lignes = e.conditions.map((c) => `<li class="${c.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${c.ok ? '✅' : '❌'}</span> <span>${c.texte}</span></li>`).join('');
+    return `
+      <div class="section-head"><h3>${artIcon('silo')}Silo</h3>${helpBtn('silo')}</div>
+      <div class="card">
+        <span class="card-title">Pour bâtir le Silo</span>
+        <ul class="ingredients">${lignes}</ul>
+        <span class="muted">Des blocs de silo posés dehors, côte à côte ; un bloc posé sur un autre rehausse sa colonne. Formé, il garde ${S.BLES_PAR_BLOC} blés par bloc.</span>
+        ${stock}
+      </div>`;
+  }
+  const cap = siloCapacity(state);
+  const pct = cap > 0 ? Math.min(100, Math.round((s.ble / cap) * 100)) : 0;
+  const cls = s.ble >= cap - EPS ? ' warn' : '';
+  const surplus = countItem(state, DATA.SILO.ITEM);
+  const enCours = e.largeur - e.pleines.length;
+  const hp = e.hauteurs.filter((h) => h >= S.HAUTEUR), h0 = Math.min(...hp), h1 = Math.max(...hp);
+  return `
+    <div class="section-head"><h3>${artIcon('silo')}Silo · ${e.blocs} blocs</h3>${helpBtn('silo')}</div>
+    <div class="card">
+      <span class="big">${formatQty(s.ble)} / ${formatNumber(cap)} 🌾</span>
+      <span class="bar" role="progressbar" aria-label="Remplissage du Silo" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${Math.round(s.ble)}"><span class="bar-fill${cls}" style="width:${pct}%"></span></span>
+      ${s.ble >= cap - EPS || surplus > 0 ? `<span class="chips">${s.ble >= cap - EPS ? '<span class="chip warn">Silo plein</span>' : ''}${surplus > 0 ? `<span class="chip">🎒 ${formatQty(surplus)} 🌾</span>` : ''}</span>` : ''}
+      <span class="muted">${e.pleines.length} colonne${e.pleines.length > 1 ? 's' : ''} de ${h0 === h1 ? h0 : `${h0} à ${h1}`} blocs${enCours ? `, ${enCours} en construction (moins de ${S.HAUTEUR} blocs : elle${enCours > 1 ? 's' : ''} ne compte${enCours > 1 ? 'nt' : ''} pas encore)` : ''}. ${S.BLES_PAR_BLOC} blés par bloc.</span>
+      <span class="muted">Pour l'agrandir : un appui long sur le silo, puis touche une colonne pour la rehausser (jusqu'à ${S.HAUTEUR_MAX} blocs) ou une case juste à côté pour l'élargir.</span>
+      ${stock}
+      <button type="button" class="btn" data-action="silo-agrandir">🔨 Agrandir le silo</button>
+    </div>`;
+}
+
 export function renderSilo() {
   const s = state.silo;
+  if (farmSeed(state) !== null) return renderSiloBlocs();
   if (!s.construit) {
     const cost = DATA.SILO.PRIX_CONSTRUCTION;
     return `

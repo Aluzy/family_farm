@@ -342,8 +342,8 @@ Le Marché vend toujours les outils.
   - **La maison** : la paillasse, le four, la cuisinière (et la batterie, sans genre). On n'y
     pose aucun bloc clé de bâtiment.
   - **Un bâtiment** : le nichoir (le Poulailler), la mangeoire (l'Étable), le bac à semis (la
-    Serre), le coffre à grain (le Silo), la meule (le Moulin). Il ne prend que son bloc clé, et
-    un plancher au sol ; il se bâtit dans une enceinte vide.
+    Serre), la meule (le Moulin). Il ne prend que son bloc clé, et un plancher au sol ; il se
+    bâtit dans une enceinte vide. (Le Silo, lui, se bâtit dehors en blocs de silo : 5b-6.)
   - Un mur ou une porte entre deux enceintes de genres différents ne se reprend pas : les deux
     n'en feraient plus qu'une.
   - Une partie d'avant cette règle (migration v38, `rangerPieces`) : dans une enceinte qui mêle
@@ -690,7 +690,8 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
   | le Poulailler | une enceinte avec le nichoir, une porte sur le dehors, un enclos de barrières ; une case libre par poule de son niveau |
   | l'Étable | la même chose avec la mangeoire, une case libre par place achetée |
   | la Serre | une enceinte avec le bac à semis, une case par parcelle |
-  | le Silo, le Moulin | une petite enceinte avec le coffre à grain ou la meule |
+  | le Silo | des colonnes de blocs de silo, dehors, de quoi garder le blé de son niveau |
+  | le Moulin | une petite enceinte avec la meule, ses murs hauts de 3 blocs |
   | le puits, les appareils | le puits (la pompe dessus si elle est achetée), le panneau, la citerne, la batterie, en ligne |
   | le robot | sa station, à côté du foyer |
 
@@ -873,12 +874,28 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          (`murs_hauts.png` 306 à 369, `verre_serre` ; la porte vitrée : 370, `porte_serre`).
        - Comme partout, un bloc clé ne se pose qu'à partir du niveau où son bâtiment se débloque
          (`isUnlocked` : la Serre au niveau 7).
-     - ✅ **5b-6, le silo** : le Silo quitte la cour.
-       - Le **coffre à grain** (6 planches, 2 fibres) se fabrique à l'Atelier. Posé dans une pièce
-         close, il construit le Silo au niveau 1 et y range le blé de l'inventaire (`fillSilo`) ;
-         repris, le Silo n'est plus construit (son blé reste compté). On ne le répare plus sur
-         la ferme générée (`buildSilo` refuse).
-       - Un appui sur le coffre ouvre la fenêtre du Silo.
+     - ✅ **5b-6, le silo** : le Silo quitte la cour ; il se bâtit dehors, en **blocs de silo**
+       (`etatSilo`, `js/engine/blocs.js` ; `ATELIER.SILO` dans `data/recipes.json`).
+       - Le **bloc de silo** (3 planches, 1 pierre) se fabrique à l'Atelier (onglet Matériaux)
+         une fois le Silo débloqué (sa recette a `debloque: "silo"`, `recetteDebloquee`). Il se
+         pose dehors, sur l'herbe ; un bloc posé sur une colonne la rehausse (jusqu'à
+         `HAUTEUR_MAX` = 6, `state.hauteurs`, comme les murs). Un seul silo : un nouveau bloc au
+         sol va juste à côté des colonnes déjà posées, sur la même rangée ; la colonne du milieu
+         ne se reprend pas (le silo serait coupé en deux).
+       - Au moins **2 colonnes hautes de 3 blocs** : leurs blocs « deviennent » un silo en bois
+         (`js/carte/ferme/silo.js` : des douelles cerclées de fer, un toit en dôme, une trappe ;
+         l'image est dessinée par la scène, pas de planche). Une colonne plus basse, à côté, reste
+         une pile de caisses : elle est en construction et ne compte pas encore.
+       - **10 blés par bloc** des colonnes pleines (`siloCapacity`) ; plus de niveaux payants
+         (`upgradeSilo` refuse). Le Silo formé range le blé de l'inventaire (`fillSilo`, `majSilo`) ;
+         plus petit, le blé qui ne tient plus revient dans l'inventaire ; défait, il n'est plus
+         construit (son blé reste compté). On ne le répare plus sur la ferme générée (`buildSilo`
+         refuse).
+       - Un appui sur le silo (ou ses caisses) ouvre sa fenêtre (ce qu'il faut pour le bâtir, ou
+         ce qu'il garde) ; un **appui long**, le mode Construire avec un bloc de silo en main
+         (`silo-agrandir`) : toucher une colonne la rehausse, une case à côté l'élargit.
+       - Le coffre à grain d'avant (une pièce close et ce bloc) n'existe plus : migration v45,
+         remboursé (6 planches, 2 fibres) qu'il soit posé ou dans l'inventaire.
      - ✅ **5b-7, le moulin** : le Moulin quitte la cour.
        - La **meule** (10 pierres, 4 planches) se fabrique à l'Atelier. Posée dans une pièce
          close, elle tient lieu de la station du Moulin (`station: 'moulin'`, comme le four et la

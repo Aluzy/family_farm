@@ -72,8 +72,9 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   fenêtres, paillasses, outils… Le mode **Construire** (🔨) pose les blocs sur la carte : une
   enceinte de murs avec une porte (posée sur un mur) devient une **pièce close** ; avec une
   paillasse, c'est le **foyer**, où l'on dort. Un bloc clé fait d'une enceinte un bâtiment
-  (nichoir : le Poulailler, mangeoire : l'Étable, bac à semis : la Serre, coffre à grain : le
-  Silo, meule : le Moulin). Murs rehaussés, étage par un escalier, toits, meubles, chemins,
+  (nichoir : le Poulailler, mangeoire : l'Étable, bac à semis : la Serre, meule : le Moulin) ;
+  le **Silo** se bâtit dehors en blocs de silo (2 colonnes de 3 blocs, 10 blés par bloc ; un
+  appui long dessus pour l'agrandir). Murs rehaussés, étage par un escalier, toits, meubles, chemins,
   barrières, lanternes, ruches et bacs à fleurs se posent de la même façon.
 - **Outils** (Marché ou Atelier) : la **houe** laboure l'herbe ; la **hache** coupe arbres et
   buissons (un sapin laisse une pomme de pin, un autre arbre un gland : un arbre abattu ne

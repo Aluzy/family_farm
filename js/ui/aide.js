@@ -1,6 +1,7 @@
 import { DATA, ingredientOptions } from '../engine/catalog.js';
 import { houseRepaired } from '../engine/depart.js';
 import { atelierOuvert } from '../engine/atelier.js';
+import { farmSeed } from '../engine/terrain.js';
 import { GAME_VERSION, STATE_VERSION } from '../engine/base.js';
 import { farmOpen, pumpFlow } from '../engine/devices.js';
 import { energyStats } from '../engine/energy.js';
@@ -148,13 +149,26 @@ const HELP = {
     prod: `${cropsLine('serre', 'recolte')}. Les cultures de rente ne se mangent pas : elles servent à la vente et aux recettes de luxe.`,
     note: `Construction : ${costLabel(DATA.SERRE.PRIX_CONSTRUCTION)}. Parcelles par niveau : ${listNum(DATA.SERRE.PARCELLES, '')} ; agrandir : ${listNum(DATA.SERRE.PRIX_NIVEAUX.slice(1), '💰')}.`,
   }),
-  silo: () => ({
-    nom: 'Silo',
-    role: 'Stocke le blé récolté ; les poules y mangent d\'abord. Le surplus va dans l\'inventaire.',
-    conso: 'Aucune.',
-    prod: `Capacité : ${listNum(DATA.SILO.CAPACITE, 'blés')} selon le niveau.`,
-    note: '',
-  }),
+  silo: () => {
+    const S = DATA.ATELIER.SILO, R = DATA.ATELIER.RECETTES.bloc_silo;
+    // (la ferme générée : un silo en bois, fait de blocs de silo, blocs.js etatSilo)
+    if (farmSeed(state) !== null) {
+      return {
+        nom: 'Silo',
+        role: 'Stocke le blé récolté ; les poules y mangent d\'abord. Le surplus va dans l\'inventaire.',
+        conso: 'Aucune.',
+        prod: `${S.BLES_PAR_BLOC} blés par bloc de silo : ${S.LARGEUR * S.HAUTEUR * S.BLES_PAR_BLOC} blés pour le silo de départ (${S.LARGEUR} colonnes de ${S.HAUTEUR} blocs).`,
+        note: `Un bloc de silo se fabrique à l'Atelier (${Object.entries(R.entrees).map(([o, n]) => `${n} ${DATA.OBJETS[o].nom.toLowerCase()}`).join(' et ')}) et se pose dehors, sur l'herbe ; un bloc posé sur un autre rehausse sa colonne (jusqu'à ${S.HAUTEUR_MAX} blocs). ${S.LARGEUR} colonnes côte à côte, hautes de ${S.HAUTEUR} blocs : les blocs deviennent un silo en bois. Un seul silo : pour l'agrandir, un appui long dessus, puis une colonne de plus à côté (elle compte une fois haute de ${S.HAUTEUR} blocs) ou un bloc de plus sur une colonne. Repris, ses blocs reviennent dans l'inventaire (le blé qui ne tient plus aussi).`,
+      };
+    }
+    return {
+      nom: 'Silo',
+      role: 'Stocke le blé récolté ; les poules y mangent d\'abord. Le surplus va dans l\'inventaire.',
+      conso: 'Aucune.',
+      prod: `Capacité : ${listNum(DATA.SILO.CAPACITE, 'blés')} selon le niveau.`,
+      note: '',
+    };
+  },
   poulailler: () => ({
     nom: 'Poulailler',
     role: 'Loge les poules, achetées au Marché. Une poule pond toute sa vie, tant qu\'elle est nourrie.',

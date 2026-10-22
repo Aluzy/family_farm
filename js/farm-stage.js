@@ -286,6 +286,18 @@
         const mc = this.meubleSous ? this.meubleSous(wp.x, wp.y) : null;
         if (mc !== null) { this.drag.meuble = { case: mc, c: Math.floor(wp.x / T), r: Math.floor(wp.y / T), dernier: mc }; return; }
         if (!this.drag.fort) this.drag.labour = this.labourStart(wp.x, wp.y);
+        // Appui maintenu sur le silo (hors du mode Construire) : le mode Construire, un bloc de
+        // silo en main, pour l'agrandir (js/ui/chantier.js).
+        if (!this.drag.labour && !this.drag.fort && !this.room && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.siloAt(wp.x, wp.y)) {
+          const d = this.drag;
+          d.holdTimer = setTimeout(() => {
+            if (this.drag !== d || d.moved) return;
+            d.held = true;
+            this.setHover(null);
+            K.vibre('houe');
+            this.ctx.bridge.act('silo-agrandir', {});
+          }, LONG_PRESS_MS);
+        }
         // Appui maintenu sur la citerne : une bulle dit combien de litres elle contient.
         if (!this.drag.labour && this.onTank(wp.x, wp.y)) {
           const d = this.drag;
@@ -437,6 +449,7 @@
         this.stepFires(time);
         this.stepSurbrillance(time);
         this.stepPlantation(time);
+        this.stepSilo();
         this.stepMurs(dt / 1000);
         this.stepEtage(dt / 1000);
         this.stepToits(dt / 1000);
@@ -569,7 +582,13 @@
         // planter un arbre (js/carte/ferme/plantation.js) : la case touchée, rien d'autre
         if (!this.room && this.plantation) { const c = this.tileAtPoint(wx, wy); return c >= 0 ? { plante: c } : null; }
         // la ferme générée, en mode Construire : la case touchée (poser, reprendre), rien d'autre
-        if (!this.room && this.ctx.lastModel && this.ctx.lastModel.bati) { const q = this.etagePoint ? this.etagePoint(wx, wy) : { x: wx, y: wy }, c = this.tileAtPoint(q.x, q.y); return c >= 0 ? { bati: c } : null; }
+        // (sur l'image du silo, au sol : le pied de la colonne touchée, js/carte/ferme/silo.js)
+        if (!this.room && this.ctx.lastModel && this.ctx.lastModel.bati) {
+          const sc = !this.niveau ? this.siloCaseAt(wx, wy) : -1;
+          if (sc >= 0) return { bati: sc };
+          const q = this.etagePoint ? this.etagePoint(wx, wy) : { x: wx, y: wy }, c = this.tileAtPoint(q.x, q.y);
+          return c >= 0 ? { bati: c } : null;
+        }
         // un escalier (un essai, js/carte/ferme/etage.js) : monter, descendre ; à l'étage, rien d'autre
         if (this.escalierAt && this.escalierAt(wx, wy) >= 0) return { etage: true };
         if (this.niveau) return null;
@@ -586,6 +605,8 @@
         // la botteleuse (une de ses pièces) : il va jeter ses fibres dans l'entonnoir
         const botte = !this.room && !hoeing ? this.botteleuseAt(wx, wy) : -1;
         if (botte >= 0) return { botteleuse: botte };
+        // le silo de la ferme générée (ses blocs) : la fenêtre du Silo
+        if (!this.room && !hoeing && this.siloAt(wx, wy)) return { window: 'silo' };
         // un four, une cuisinière posés (la ferme générée) : la fenêtre de sa station
         const station = !this.room && !hoeing ? this.stationAt(wx, wy) : null;
         if (station) return { window: station };
