@@ -342,15 +342,17 @@ def porte_verticale():
 HAUTEUR_EN_PLUS = T
 
 
-def porte_haute(fond=None):
-    """La porte dans un mur haut : le mur plein (raccordé à gauche et à droite), un linteau de
-    pierre, et au-dessous la porte de planches cintrée, ses pentures, sa poignée, le seuil."""
+def porte_haute(fond=None, linteau=None):
+    """La porte dans un mur haut : le mur plein (raccordé à gauche et à droite), un linteau
+    (`linteau` : ses tons clair, moyen, des coins du cintre ; de la pierre sans lui), et
+    au-dessous la porte de planches cintrée, ses pentures, sa poignée, le seuil."""
     t = Toile(fond(2 | 8) if fond else mur(2 | 8))
+    clair, moyen, coin = linteau or (PIERRE[5], PIERRE[3], PIERRE[2])
     y0, x0, x1 = H - 22, 2, 13                   # le haut du battant (22 px de porte)
-    for x in range(1, 15):                       # le linteau : une pierre claire, son ombre
+    for x in range(1, 15):                       # le linteau : clair, son ombre
         t.put(x, y0 - 3, OUT)
-        t.put(x, y0 - 2, PIERRE[5])
-        t.put(x, y0 - 1, PIERRE[3])
+        t.put(x, y0 - 2, clair)
+        t.put(x, y0 - 1, moyen)
     bois = planches([CADRE[1], BOIS[1], BOIS[2], BOIS[3]], pas=2, x0=x0)
     for y in range(y0, H):
         t.put(1, y, CADRE[0])                    # le chambranle
@@ -358,7 +360,7 @@ def porte_haute(fond=None):
         for x in range(x0, x1 + 1):
             t.put(x, y, bois(x, y))
     for x, y in ((2, y0), (3, y0), (12, y0), (13, y0), (2, y0 + 1), (13, y0 + 1)):
-        t.put(x, y, PIERRE[2])                   # le cintre : les coins du haut restent en pierre
+        t.put(x, y, coin)                        # le cintre : les coins du haut restent du linteau
     for x, y in ((4, y0), (11, y0), (3, y0 + 1), (12, y0 + 1)):
         t.put(x, y, CADRE[0])
     for x in range(5, 11):
@@ -670,7 +672,9 @@ def murs_hauts():
     (l'immeuble de la ville), les fenêtres seules, prolongées à gauche, à droite, des deux
     côtés (241, 257, 273, 289 + masque) et la porte (305) ; puis les murs de verre de la serre,
     seuls, prolongés à gauche, à droite, des deux côtés (306, 322, 338, 354 + masque) et sa
-    porte (370) ; puis le mur en bois (371 + masque)."""
+    porte (370) ; puis le mur en bois (371 + masque) ; puis la porte dans les murs des autres
+    matières (387 à 391 : briques rouges, orange, bleues, pierre de taille, bois ; celle des
+    briques ocre est la 305), son linteau de pierre, de bois dans le mur en bois."""
     global H, BAS, FACE
     garde = H, BAS, FACE
     motif, dessus = next((mo, de) for nom, mo, de in MATIERES_VILLE if nom == 'brique_ocre')
@@ -683,7 +687,9 @@ def murs_hauts():
                 + [mur_ville(m, motif, dessus) for _, motif, dessus in MATIERES_VILLE for m in range(16)]
                 + [fenetre(m, j, ocre) for j in range(4) for m in range(16)] + [porte_haute(ocre)]
                 + [verre_serre(m, j) for j in range(4) for m in range(16)] + [porte_serre()]
-                + [mur_bois(m) for m in range(16)], H)
+                + [mur_bois(m) for m in range(16)]
+                + [porte_haute(lambda m, mo=motif, de=dessus: mur_ville(m, mo, de)) for nom, motif, dessus in MATIERES_VILLE if nom != 'brique_ocre']
+                + [porte_haute(mur_bois, (BOIS[4], BOIS[2], BOIS[1]))], H)
     finally:
         H, BAS, FACE = garde
 

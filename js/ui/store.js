@@ -95,7 +95,7 @@ export function setRodMode(value) {
   if (value) { hoeMode = false; axeMode = false; pickMode = false; scytheMode = false; buildMode = null; }
   return value;
 }
-// La faux en main : un appui sur une touffe d'herbe haute de la carte la fauche (de la paille).
+// La faux en main : un appui sur une touffe d'herbe haute de la carte la fauche (de la fibre).
 export let scytheMode = false;
 export function setScytheMode(value) {
   scytheMode = value;

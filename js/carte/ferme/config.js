@@ -199,6 +199,10 @@
         // bois, scripts/carte/blocs.py verre_serre ; sa porte : `porteSerre`)
         mur_serre: 306 },
       porteSerre: 370,
+      // la porte (d'un mur horizontal) dans un mur d'une autre matière que la pierre : le mur
+      // voisin continue au-dessus d'elle (scripts/carte/blocs.py murs_hauts ; un linteau de bois
+      // dans le mur en bois) ; les autres murs : `porte`, en pierre
+      portes: { mur_brique_rouge: 387, mur_brique_orange: 388, mur_brique_ocre: 305, mur_brique_bleue: 389, mur_pierre_taille: 390, mur_bois: 391 },
       // `joints` : les murs qu'un voisin de même sorte prolonge (à gauche, à droite, des deux
       // côtés : deux fenêtres font une grande fenêtre, les parois vitrées une façade de verre)
       joints: { mur_fenetre: [17, 49, 65, 81], paroi_vitree: [97, 113, 129, 145], mur_serre: [306, 322, 338, 354] } },

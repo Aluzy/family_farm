@@ -323,8 +323,8 @@
     },
 
     // Un coup de faux sur la touffe `g` : le jeu le compte tout de suite (this.ctx.bridge.scythe)
-    // et pose la paille au sol ; le personnage va à côté et fauche ; au coup, la touffe se couche
-    // et s'efface, la paille paraît à son pied.
+    // et pose la fibre au sol ; le personnage va à côté et fauche ; au coup, la touffe se couche
+    // et s'efface, la fibre paraît à son pied.
     scythe(g) {
       const pied = { x: g.x, y: Math.round(g.y) };
       const ou = { carte: 'ferme', coup: [{ x: pied.x, y: pied.y }] };
