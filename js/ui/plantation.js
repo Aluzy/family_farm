@@ -18,7 +18,8 @@ import { closeModal, openModal } from './modal.js';
    surbrillance sur la carte (js/carte/ferme/plantation.js) ; un appui sur l'une d'elles demande
    « Voulez-vous planter un arbre ici ? », et « Oui » le plante. Tant qu'il en reste dans
    l'inventaire, on continue : les cases se rallument (sans celle qui vient d'être plantée, ni
-   celles trop proches), et un autre appui en plante un autre. Un bandeau, en bas, rappelle quoi
+   celles trop proches), et un appui sur l'une d'elles y plante aussitôt le suivant (la question
+   n'est posée que pour le premier). Un bandeau, en bas, rappelle quoi
    faire et combien il en reste, et permet de s'arrêter. */
 
 const RAYON = 10;      // les cases proposées : à au plus tant de cases du personnage
@@ -94,6 +95,8 @@ registerActions({
     const c = Number(target.dataset.case);
     const st = poseStatus(state, plante.sorte, c);
     if (!st.ok) { notify(st.raison); return; }
+    // (déjà un de planté : les suivants, sans redemander)
+    if (plante.plantes) { planter(c); return; }
     openModal(`
       <p class="plantation-question" id="plantation-question">Voulez-vous planter un arbre ici ?</p>
       <div class="row plantation-choix">
@@ -103,17 +106,21 @@ registerActions({
   },
   'arbre-oui': (target) => {
     closeModal();
-    if (!plante) return;
-    const b = DATA.ATELIER.BLOCS[plante.sorte];
-    const r = planterIci(state, plante.sorte, Number(target.dataset.case));
-    if (!r.ok) { notify(r.error); refresh(); return; }
-    // il en reste : on continue (les cases se recalculent) ; sinon, c'est fini
-    plante.plantes += 1;
-    cache = null;
-    const reste = countItem(state, b.objet);
-    if (!reste) fermer();
-    persistState();
-    notify(`🌱 ${b.semis ? 'Graine plantée : un arbre poussera ici.' : `${b.nom} planté.`}${reste ? ' Touche une autre case pour continuer.' : ''}`);
-    refresh();
+    if (plante) planter(Number(target.dataset.case));
   },
 });
+
+// Plante l'arbre en cours sur la case `c` ; il en reste : on continue, sinon c'est fini.
+function planter(c) {
+  const b = DATA.ATELIER.BLOCS[plante.sorte];
+  const r = planterIci(state, plante.sorte, c);
+  if (!r.ok) { notify(r.error); refresh(); return; }
+  // il en reste : on continue (les cases se recalculent) ; sinon, c'est fini
+  plante.plantes += 1;
+  cache = null;
+  const reste = countItem(state, b.objet);
+  if (!reste) fermer();
+  persistState();
+  notify(`🌱 ${b.semis ? 'Graine plantée : un arbre poussera ici.' : `${b.nom} planté.`}${reste ? ' Touche une autre case pour continuer.' : ''}`);
+  refresh();
+}
