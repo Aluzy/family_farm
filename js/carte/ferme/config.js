@@ -332,16 +332,16 @@
   [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
     [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641], [944.8, 673.1]]
     .forEach((p, i) => { DEFAULT_OBJECTS[TREE_OBJECT + (i + 1)] = { x: p[0], y: p[1], width: 63.7, height: 78.2 }; });
-  // puits.png (scripts/batiments/puits.py) : 3 images de 48×50 vues de haut à 45°, le puits
+  // puits.png (scripts/batiments/puits.py) : 3 images de 50×50 vues de haut à 45°, le puits
   // seul (0), le puits avec le tuyau de la pompe (1), la pompe seule (2), posée par-dessus une
   // fois achetée.
   // modèle.pompe = la pompe est achetée ; modèle.pompeEnMarche = elle tourne (elle vibre alors
   // d'un pixel vers la droite, toutes les PUMP_SHAKE_MS).
-  const WELL = { key: 'puits', file: 'puits.png', frame: { frameWidth: 48, frameHeight: 50 }, object: 'puits', frames: { puits: 0, tuyau: 1, pompe: 2 } };
+  const WELL = { key: 'puits', file: 'puits.png', frame: { frameWidth: 50, frameHeight: 50 }, object: 'puits', frames: { puits: 0, tuyau: 1, pompe: 2 } };
   const PUMP_SHAKE_MS = 70;
-  // citerne.png (scripts/batiments/citerne.py) : 5 images de 24×34, le tube de niveau vide
+  // citerne.png (scripts/batiments/citerne.py) : 5 images de 28×38 vues de haut à 45°, le tube de niveau vide
   // (0) jusqu'à plein (4). modèle.citerne = cette image, ou -1 tant que le réservoir n'est pas acheté.
-  const TANK = { key: 'citerne', file: 'citerne.png', frame: { frameWidth: 24, frameHeight: 34 }, object: 'citerne', max: 4 };
+  const TANK = { key: 'citerne', file: 'citerne.png', frame: { frameWidth: 28, frameHeight: 38 }, object: 'citerne', max: 4 };
   // Les animaux de compagnie de la vie d'ambiance (chat.png, chien.png…) : 8 cases de 16×16
   // (leur ordre : CAT_FRAMES dans js/ambient-life.js). Sans l'image, pas d'animal ; rien d'autre ne change.
   const CAT_FRAME = { frameWidth: 16, frameHeight: 16 };
