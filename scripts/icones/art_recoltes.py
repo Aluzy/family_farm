@@ -14,27 +14,28 @@ PALETTE = {
     'b': '#784016', 'B': '#b26828', 'c': '#da9646', 'C': '#f4c882',                    # oignon
     'x': '#f4f0e0',                                                                     # graines, reflets
     'n': '#5a3a1e',                                                                     # queue
+    'd': '#ff9e02', 'e': '#ffc002', 'f': '#c59c23', 'h': '#ecba23',                    # épis de blé
 }
 
 ICONS = {}
 
-ICONS['🌾'] = [
-    '...KK..KK..KK...',
-    '..KZzKKZzKKZzK..',
-    '..KzYKKzYKKzYK..',
-    '..KZzKKZzKKZzK..',
-    '..KzYKKzYKKzYK..',
-    '..KZzKKZzKKZzK..',
-    '...KYK.KYK.KYK..',
-    '....KyK.yK.KyK..',
-    '.....KyKyKKyK...',
-    '......KyyyyK....',
-    '.....KBbbbbBK...',
-    '......KyyyyK....',
-    '.....KyKyKyyK...',
-    '....KyK.yK.KyK..',
-    '...KyK..yK..KyK.',
-    '...KK...KK...KK.',
+ICONS['🌾'] = [   # deux épis dorés, sans contour (dessin fourni)
+    '...........d....',
+    '.........d.d.d..',
+    '...d.....efdfe..',
+    '.d.d.d..e.heh.e.',
+    '.efdfe..dh.d.hd.',
+    'e.heh.e..dhdhd..',
+    'dh.d.hd.e.dhd.e.',
+    '.dhdhd..dh.d.hd.',
+    'e.dhd.e..dhdhd..',
+    'dh.d.hd.e.ddd.e.',
+    '.dhdhd..dh.h.hd.',
+    'e.ddd.e..dhdhd..',
+    'dh.h.hd...ddd...',
+    '.dhdhd.....d....',
+    '..ddd......d....',
+    '...d.......d....',
 ]
 
 ICONS['🥕'] = [
