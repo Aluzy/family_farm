@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { energyLevel, enduranceReduction } from '../engine/stamina.js';
 import { EPS } from '../engine/base.js';
-import { allDevices, farmOpen, isOwned, starterOf } from '../engine/devices.js';
+import { allDevices, isOwned, marcheFerme, starterOf } from '../engine/devices.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { familyNameHtml } from './depart.js';
 import { nightActive } from '../engine/clock.js';
@@ -19,7 +19,6 @@ import {
 } from './store.js';
 import { telView } from './consent.js';
 import { notify } from './toasts.js';
-import { MARKET_CLOSED } from '../engine/market.js';
 import { actionSleep } from './game-actions.js';
 import { artHtml, pxText } from './pixel-art.js';
 import { renderVille } from './ville.js';
@@ -128,7 +127,7 @@ export function setMaisonTab(value) {
 // aussi au menu latéral) tant que la maison est à réparer ou que le panneau, la pompe ou le
 // réservoir manquent, ou tant que la Maison n'a aucun onglet ; sinon le dernier onglet choisi.
 function maisonOuInstallations() {
-  const manque = !houseRepaired(state) || ['panneau', 'pompe', 'reservoir'].some((id) => !isOwned(starterOf(state, id)));
+  const manque = !houseRepaired(state) || (!atelierOuvert(state) && ['panneau', 'pompe', 'reservoir'].some((id) => !isOwned(starterOf(state, id))));
   return manque || !MAISON_TABS.some((t) => t.ok()) ? 'installations' : 'maison';
 }
 let ancreVoulue = null; // id de l'élément à amener en haut au prochain rendu (calendrier, eau…)
@@ -644,7 +643,7 @@ export function renderTabbar() {
       .filter((t) => tabAvailable(t.id) || t.id === 'comptoir')
       .map((t) => {
         if (!tabAvailable(t.id)) {
-          return `<button type="button" class="nav-btn locked" data-action="market-locked" title="${t.label}" aria-label="${t.label} : s'ouvre avec le panneau et la pompe"><span class="nav-icon" aria-hidden="true">${t.icon}<span class="nav-lock">🔒</span></span><span class="nav-label">${t.label}</span></button>`;
+          return `<button type="button" class="nav-btn locked" data-action="market-locked" title="${t.label}" aria-label="${t.label} : ${marcheFerme(state)}"><span class="nav-icon" aria-hidden="true">${t.icon}<span class="nav-lock">🔒</span></span><span class="nav-label">${t.label}</span></button>`;
         }
         // la ferme générée : 🔨 Construire ouvre le menu Construire (l'Atelier, lui, se touche sur la carte)
         if (t.id === 'atelier') return `<button type="button" class="nav-btn${buildMode ? ' active' : ''}" data-action="build-toggle" data-tab="atelier" title="Construire" aria-label="Construire" aria-pressed="${!!buildMode}"><span class="nav-icon" aria-hidden="true">${t.icon}</span><span class="nav-label">Construire</span></button>`;
@@ -822,7 +821,7 @@ registerActions({
     setMenuOpen(!menuOpen);
   },
   'market-locked': () => {
-    notify(`🔒 ${MARKET_CLOSED}`);
+    notify(`🔒 ${marcheFerme(state)}`);
   },
   'stage-goto': (target) => {
     allerAuLieu(target.dataset.window, target.dataset.tab, target.dataset.anchor);

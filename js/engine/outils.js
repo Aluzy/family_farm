@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { nextRandom, randomInt } from './base.js';
-import { canPay, fail, farmOpen, NO_COINS, spend } from './devices.js';
+import { canPay, fail, marcheFerme, marcheOuvert, NO_COINS, spend } from './devices.js';
 import { buyHoe, hasHoe, rockGone, treeGone } from './crops.js';
 import { addItem } from './inventory.js';
 import { farmSeed, farmTerrain } from './terrain.js';
@@ -57,7 +57,7 @@ export function buyTool(state, id) {
   if (id === 'houe') return buyHoe(state);
   const un = def.ARTICLE === 'un';
   if (hasTool(state, id)) return fail(`Tu as déjà ${un ? 'un' : 'une'} ${def.NOM.toLowerCase()}.`);
-  if (!farmOpen(state)) return fail(`${un ? 'Le' : 'La'} ${def.NOM.toLowerCase()} s'achète au Marché, qui ouvre avec le panneau et la pompe.`);
+  if (!marcheOuvert(state)) return fail(`${un ? 'Le' : 'La'} ${def.NOM.toLowerCase()} s'achète au Marché. ${marcheFerme(state)}`);
   if (!canPay(state, def.PRIX)) return fail(NO_COINS);
   const avant = selectedTool(state);
   spend(state, def.PRIX, `Achat : ${def.NOM}`);

@@ -428,7 +428,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "buissons",
      "terme": "Buissons et baies",
-     "description": "Les buissons de la ferme portent des baies, qui se cueillent chaque jour sans énergie. La hache les coupe d'un coup (2 bois pour un grand, 1 pour un petit) ; ils repoussent quelques jours plus tard, sauf si l'on a bâti sur leur place.",
+     "description": "Chaque matin, des buissons de la ferme portent des baies (3 sur un petit buisson, 5 sur un grand), qui se cueillent sans énergie. La hache les coupe d'un coup (2 bois pour un grand, 1 pour un petit) ; ils repoussent quelques jours plus tard, sauf si l'on a bâti sur leur place.",
      "liens": [
       "hache",
       "ramassage"
@@ -1637,7 +1637,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "hache",
      "terme": "Hache",
-     "description": "Outil acheté une fois au Marché (60 pièces) ou fabriqué à l'Atelier. Hache en main, un appui sur un arbre de la ferme ou du chemin de la ville donne un coup : 6 énergie et 1 bois. L'arbre tombe au 3e coup. Sur la ferme, il laisse sa graine (une pomme de pin pour un sapin, un gland pour un autre arbre) et ne repousse pas : on replante sa graine où l'on veut. Sur les autres cartes, il repousse 1 à 3 jours plus tard. Les buissons de la ferme tombent d'un coup, avec leurs baies.",
+     "description": "Outil acheté une fois au Marché (60 pièces) ou fabriqué à l'Atelier. Hache en main, un appui sur un arbre de la ferme ou du chemin de la ville donne un coup : 3 énergie et 1 bois. L'arbre tombe au 3e coup. Sur la ferme, il laisse sa graine (une pomme de pin pour un sapin, un gland pour un autre arbre) et ne repousse pas : on replante sa graine où l'on veut. Sur les autres cartes, il repousse 1 à 3 jours plus tard. Les buissons de la ferme tombent d'un coup, avec leurs baies.",
      "liens": [
       "graines_d_arbre",
       "bois_et_pierre",
@@ -1664,7 +1664,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "pioche",
      "terme": "Pioche",
-     "description": "Outil acheté une fois au Marché (60 pièces). Pioche en main, un appui sur un rocher donne un coup : 6 énergie et 1 pierre. Le rocher se casse au 3e coup et revient 1 à 3 jours plus tard. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : un appui dessus, et 1 pierre va dans l'inventaire. Dans la grotte, elle prend aussi le minerai dans les murs.",
+     "description": "Outil acheté une fois au Marché (60 pièces). Pioche en main, un appui sur un rocher donne un coup : 3 énergie et 1 pierre. Le rocher se casse au 3e coup et revient 1 à 3 jours plus tard. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : un appui dessus, et 1 pierre va dans l'inventaire. Dans la grotte, elle prend aussi le minerai dans les murs.",
      "liens": [
       "outils",
       "bois_et_pierre",
@@ -2050,7 +2050,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "energie_personnage",
      "terme": "Énergie du personnage",
-     "description": "Jauge de 0 à 100 (⚡ dans le bandeau) que dépense chaque action faite au clic : couper 6, piocher 6, pêcher 4, labourer 5, planter 3, arroser 2, récolter 4, cueillir 4, tondre 8, cuisiner 3, cuire au four 3, moudre 1 par blé, presser 1. À 0, plus d'action au clic jusqu'à un en-cas ou une nuit de sommeil. Au réveil, elle remonte à 60 + 40 × la part du repas du soir couverte. Le bonheur de la famille et l'endurance réduisent ses coûts ; les automatisations n'en dépensent pas.",
+     "description": "Jauge de 0 à 100 (⚡ dans le bandeau) que dépense chaque action faite au clic : couper 3, piocher 3, pêcher 4, labourer 5, planter 3, arroser 2, récolter 4, cueillir 4, tondre 8, cuisiner 3, cuire au four 3, moudre 1 par blé, presser 1. À 0, plus d'action au clic jusqu'à un en-cas ou une nuit de sommeil. Au réveil, elle remonte à 60 + 40 × la part du repas du soir couverte. Le bonheur de la famille et l'endurance réduisent ses coûts ; les automatisations n'en dépensent pas.",
      "liens": [
       "repas",
       "en_cas",

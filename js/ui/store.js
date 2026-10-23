@@ -6,6 +6,7 @@
 import { DATA } from '../engine/catalog.js';
 import { isUnlocked } from '../engine/campaign.js';
 import { atelierOuvert } from '../engine/atelier.js';
+import { marcheOuvert } from '../engine/devices.js';
 
 export const SAVE_KEY = 'ferme-save';
 export const TICK_MS = 200;
@@ -44,6 +45,8 @@ export function tabAvailable(id) {
   if (id === 'techno' && !techTreeShown()) return false;
   if (id === 'commerce') return isUnlocked(state, 'commerce');
   if (id === 'atelier') return atelierOuvert(state);   // la ferme générée seulement (avec la carte)
+  // la ferme générée : le Marché ouvre à son niveau (devices.js, marcheOuvert)
+  if (id === 'comptoir' && atelierOuvert(state)) return marcheOuvert(state);
   return ALWAYS_TABS.includes(id) || state.unlockedTabs.includes(id);
 }
 

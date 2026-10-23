@@ -27,7 +27,7 @@ test('DATA niveaux : seuils, gains d\'XP, XP des chapitres', () => {
   assertEqual([N.AUTO, N.CHAPITRES_XP.slice(0, 4)], [50, [200, 500, 1000, 2500]]);
   assertEqual([0, 499, 500, 1199, 1200, 400000, 10 ** 7].map(levelForXp), [1, 1, 2, 2, 3, 10, 10]);
   assertEqual(createInitialState(1).progression, { xp: 0, niveau: 1, annonces: [] });
-  assertEqual(levelUnlocks(3), { niveau: 3, seuil: 1200, elements: ['silo', 'poulailler'], cultures: ['poivron', 'ail', 'fraise', 'ble'], note: null });
+  assertEqual(levelUnlocks(3), { niveau: 3, seuil: 1200, elements: ['silo', 'poulailler', 'marche'], cultures: ['poivron', 'ail', 'fraise', 'ble'], note: null });
   assertEqual([actionXp('arroser'), actionXp('arroser', 1, true), actionXp('recolter', 3, true), actionXp('inconnue')], [10, 5, 30, 0]);
 });
 

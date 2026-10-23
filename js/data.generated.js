@@ -8,6 +8,7 @@
 export const RAW_DATA = {
   "DEPART": {
     "PIECES": 1500,
+    "PIECES_SAUVAGE": 300,
     "INVENTAIRE": { "conserve": 40 },
     "MAISON": 650,
     "ACHATS": { "panneau": 150, "batterie": 180, "pompe": 90, "reservoir": 50 },
@@ -74,8 +75,8 @@ export const RAW_DATA = {
     "COUTS": {
       "ramasser": 1,
       "fabriquer": 2,
-      "couper": 6,
-      "piocher": 6,
+      "couper": 3,
+      "piocher": 3,
       "faucher": 3,
       "pecher": 4,
       "labourer": 5,
@@ -576,10 +577,14 @@ export const RAW_DATA = {
       "bac_semis": { "entrees": { "planche": 8, "pierre": 4, "fibre": 4 }, "sortie": { "bac_semis": 1 } },
       "bloc_silo": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "bloc_silo": 1 }, "debloque": "silo" },
       "meule": { "entrees": { "pierre": 10, "planche": 4 }, "sortie": { "meule": 1 } },
-      "pompe": { "entrees": { "lingot_fer": 2, "planche": 1 }, "sortie": { "pompe": 1 } },
-      "panneau_solaire": { "entrees": { "lingot_fer": 2, "lingot_cuivre": 1, "planche": 2 }, "sortie": { "panneau_solaire": 1 } },
-      "citerne": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "citerne": 1 } },
-      "batterie": { "entrees": { "lingot_cuivre": 2, "lingot_fer": 1 }, "sortie": { "batterie": 1 } },
+      "pompe": { "entrees": { "lingot_fer": 2, "planche": 1 }, "sortie": { "pompe": 1 }, "debloque": "energie" },
+      "panneau_solaire": {
+        "entrees": { "lingot_fer": 2, "lingot_cuivre": 1, "planche": 2 },
+        "sortie": { "panneau_solaire": 1 },
+        "debloque": "energie"
+      },
+      "citerne": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "citerne": 1 }, "debloque": "energie" },
+      "batterie": { "entrees": { "lingot_cuivre": 2, "lingot_fer": 1 }, "sortie": { "batterie": 1 }, "debloque": "energie" },
       "escalier": { "entrees": { "planche": 6, "bois": 2 }, "sortie": { "escalier": 1 } },
       "station_robot": { "entrees": { "lingot_fer": 1, "lingot_cuivre": 1, "planche": 2 }, "sortie": { "station_robot": 1 } },
       "entonnoir": { "entrees": { "planche": 2, "pierre": 1 }, "sortie": { "entonnoir": 1 } },
@@ -620,10 +625,26 @@ export const RAW_DATA = {
       "bac_semis": { "nom": "Bac à semis", "objet": "bac_semis", "dedans": true, "bloque": true, "unique": true, "batiment": "serre" },
       "bloc_silo": { "nom": "Bloc de silo", "objet": "bloc_silo", "dehors": true, "bloque": true, "silo": true, "debloque": "silo" },
       "puits": { "nom": "Puits", "objet": "puits_pierre", "dehors": true, "bloque": true, "unique": true },
-      "pompe": { "nom": "Pompe", "objet": "pompe", "sur": "puits", "appareil": "pompe" },
-      "panneau": { "nom": "Panneau solaire", "objet": "panneau_solaire", "dehors": true, "bloque": true, "unique": true, "appareil": "panneau" },
-      "citerne": { "nom": "Citerne", "objet": "citerne", "dehors": true, "bloque": true, "unique": true, "appareil": "reservoir" },
-      "batterie": { "nom": "Batterie", "objet": "batterie", "bloque": true, "unique": true, "appareil": "batterie" },
+      "pompe": { "nom": "Pompe", "objet": "pompe", "sur": "puits", "appareil": "pompe", "debloque": "energie" },
+      "panneau": {
+        "nom": "Panneau solaire",
+        "objet": "panneau_solaire",
+        "dehors": true,
+        "bloque": true,
+        "unique": true,
+        "appareil": "panneau",
+        "debloque": "energie"
+      },
+      "citerne": {
+        "nom": "Citerne",
+        "objet": "citerne",
+        "dehors": true,
+        "bloque": true,
+        "unique": true,
+        "appareil": "reservoir",
+        "debloque": "energie"
+      },
+      "batterie": { "nom": "Batterie", "objet": "batterie", "bloque": true, "unique": true, "appareil": "batterie", "debloque": "energie" },
       "escalier": { "nom": "Escalier", "objet": "escalier", "dedans": true, "escalier": true },
       "pomme_de_pin": { "nom": "Pomme de pin", "objet": "pomme_de_pin", "dehors": true, "semis": "pin" },
       "gland": { "nom": "Gland", "objet": "gland", "dehors": true, "semis": "arbre" },
@@ -672,7 +693,15 @@ export const RAW_DATA = {
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
-      "baies": { "nom": "Baies", "objet": "baies", "nombre": 16, "quantite": 3, "buissons": true, "gratuit": true }
+      "baies": {
+        "nom": "Baies",
+        "objet": "baies",
+        "nombre": 32,
+        "quantite": 3,
+        "parTaille": { "petit": 3, "grand": 5 },
+        "buissons": true,
+        "gratuit": true
+      }
     },
     "RAMASSAGE_DEPART": { "RAYON": [2, 7], "petite_pierre": 6, "morceau_bois": 6 }
   },
@@ -1817,7 +1846,7 @@ export const RAW_DATA = {
         "titre": "L'héritage",
         "icone": "🏚️",
         "intro": "La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; achète une houe au Marché, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
-        "introSauvage": "Une terre sauvage est à ta famille, sans maison ni bâtiment. Ramasse des pierres et du bois, construis l'Atelier, fabriques-y une faux pour faucher l'herbe haute (ses fibres), puis bâtis ton foyer : une pièce close et une paillasse. Pose le panneau solaire et la pompe, puis la citerne ; achète une houe au Marché, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
+        "introSauvage": "Une terre sauvage est à ta famille, sans maison ni bâtiment. Ramasse des pierres et du bois, construis l'Atelier, fabriques-y une faux pour faucher l'herbe haute (ses fibres), puis bâtis ton foyer : une pièce close et une paillasse. Fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
           {
             "type": "maison",
@@ -1826,10 +1855,24 @@ export const RAW_DATA = {
             "libelleSauvage": "Bâtir le foyer (une pièce close, une paillasse)",
             "unite": ""
           },
-          { "type": "panneau", "cible": 1, "libelle": "Acheter le panneau solaire", "libelleSauvage": "Poser le panneau solaire", "unite": "" },
-          { "type": "pompe", "cible": 1, "libelle": "Acheter la pompe", "libelleSauvage": "Poser la pompe sur le puits", "unite": "" },
-          { "type": "reservoir", "cible": 1, "libelle": "Acheter le réservoir", "libelleSauvage": "Poser la citerne", "unite": "" },
-          { "type": "houe", "cible": 1, "libelle": "Acheter une houe au Marché", "unite": "" },
+          {
+            "type": "panneau",
+            "sauvage": false,
+            "cible": 1,
+            "libelle": "Acheter le panneau solaire",
+            "libelleSauvage": "Poser le panneau solaire",
+            "unite": ""
+          },
+          {
+            "type": "pompe",
+            "sauvage": false,
+            "cible": 1,
+            "libelle": "Acheter la pompe",
+            "libelleSauvage": "Poser la pompe sur le puits",
+            "unite": ""
+          },
+          { "type": "reservoir", "sauvage": false, "cible": 1, "libelle": "Acheter le réservoir", "libelleSauvage": "Poser la citerne", "unite": "" },
+          { "type": "houe", "cible": 1, "libelle": "Acheter une houe au Marché", "libelleSauvage": "Fabriquer une houe à l'Atelier", "unite": "" },
           { "type": "labours", "cible": 6, "libelle": "Labourer 6 tuiles", "unite": "" },
           { "type": "semis", "cible": 6, "libelle": "Planter 6 parcelles", "unite": "" },
           { "type": "arrosees", "cible": 6, "libelle": "Arroser tes parcelles", "unite": "" },
@@ -1968,16 +2011,23 @@ export const RAW_DATA = {
     "liste": [
       { "debloque": ["carotte", "patate", "tomate"] },
       { "debloque": ["courgette", "aubergine", "oignon", "cuisine"] },
-      { "debloque": ["poivron", "ail", "fraise", "ble", "silo", "poulailler"] },
+      { "debloque": ["poivron", "ail", "fraise", "ble", "silo", "poulailler", "marche"] },
       { "debloque": ["epinard", "tournesol", "riz", "moulin"] },
       { "debloque": ["houblon", "four", "paturage", "moutons"] },
       { "debloque": ["presse", "verger"] },
-      { "debloque": ["cacao", "vanille", "cafe", "serre"] },
+      { "debloque": ["cacao", "vanille", "cafe", "serre", "energie"] },
       { "debloque": ["frigo"] },
       { "debloque": [], "note": "un courrier du notaire : un héritage caché" },
       { "debloque": ["commerce"] }
     ],
     "ELEMENTS": {
+      "marche": { "sauvage": true, "nom": "Marché", "icone": "🧺", "note": "acheter des graines, des outils et des animaux, vendre tes récoltes" },
+      "energie": {
+        "sauvage": true,
+        "nom": "Énergie et eau",
+        "icone": "☀️",
+        "note": "panneau solaire, pompe, citerne et batterie : l'automatisation commence"
+      },
       "silo": { "nom": "Silo", "icone": "🛖", "note": "stock de blé ; le blé ne se plante qu'une fois le Silo construit" },
       "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
       "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tartes" },

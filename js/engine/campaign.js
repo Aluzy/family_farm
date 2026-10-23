@@ -254,11 +254,12 @@ export function objectiveValue(state, obj) {
 // Progression d'un chapitre : { chapitre, titre, icone, intro, objectifs: [{ ...objectif,
 // valeur, ok, ratio }], fait }.
 // Sur une terre sauvage (la ferme générée), l'intro et les libellés ont leur version
-// (introSauvage, libelleSauvage) : une nouvelle partie ne connaît pas la ferme du grand-père.
+// (introSauvage, libelleSauvage) : une nouvelle partie ne connaît pas la ferme du grand-père ;
+// les objectifs marqués sauvage: false n'y existent pas (le panneau, la pompe, la citerne).
 export function chapterProgress(state, chapitre = state.campagne.chapitre) {
   const def = DATA.CHAPITRES.liste[chapitre - 1];
   const sauvage = farmSeed(state) !== null;
-  const objectifs = def.objectifs.map((o) => {
+  const objectifs = def.objectifs.filter((o) => !(sauvage && o.sauvage === false)).map((o) => {
     const valeur = objectiveValue(state, o);
     return { ...o, libelle: (sauvage && o.libelleSauvage) || o.libelle, valeur, ok: valeur + EPS >= o.cible, ratio: Math.max(0, Math.min(1, valeur / o.cible)) };
   });

@@ -7,6 +7,7 @@ import {
 import { cleanFirstName, validFirstName } from '../engine/family.js';
 import { commencerDidacticiel } from '../engine/didacticiel.js';
 import { atelierOuvert } from '../engine/atelier.js';
+import { levelBlock } from '../engine/levels.js';
 import { escapeHtml, formatCoins } from '../engine/format.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
@@ -72,10 +73,11 @@ export function renderStarterCards() {
       // la ferme générée : il se fabrique à l'Atelier et se pose sur la carte (étape 5b-2)
       if (atelierOuvert(state)) {
         const ou = t === 'pompe' ? 'sur un puits' : 'dehors';
+        const verrou = levelBlock(state, 'energie');
         return `
         <div class="starter-row">
           <span><span aria-hidden="true">${L.icone}</span> <strong>${L.nom}</strong><br><span class="muted">${L.note}</span></span>
-          <span class="muted">${raison && raison !== 'Achète d\'abord le panneau et la pompe.' ? escapeHtml(raison) : `À fabriquer à l'Atelier, puis à poser ${ou} (🔨).`}</span>
+          <span class="muted">${verrou || (raison && raison !== 'Achète d\'abord le panneau et la pompe.' ? escapeHtml(raison) : `À fabriquer à l'Atelier, puis à poser ${ou} (🔨).`)}</span>
         </div>`;
       }
       return `
@@ -90,7 +92,7 @@ export function renderStarterCards() {
   return `
     <div class="card starter">
       <span class="card-title"><span>🛠️ Installer la ferme</span></span>
-      <span class="muted">Le panneau et la pompe ouvrent la Zone de culture et le Marché.</span>
+      <span class="muted">${atelierOuvert(state) ? 'Le panneau et la pompe remplissent la citerne pour toi : l\'automatisation commence.' : 'Le panneau et la pompe ouvrent la Zone de culture et le Marché.'}</span>
       ${rows.join('')}
     </div>`;
 }

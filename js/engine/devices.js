@@ -2,7 +2,8 @@ import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { techFlag } from './techtree.js';
 import { noteCompta } from './compta.js';
-import { levelBlock } from './levels.js';
+import { levelBlock, unlockLevel } from './levels.js';
+import { farmSeed } from './terrain.js';
 
 /* ---------- appareils : fabrication et sélecteurs ---------- */
 
@@ -95,6 +96,20 @@ export function isOwned(obj) {
 // Panneau ET pompe achetés : la Zone de culture, le Marché et le réservoir s'ouvrent.
 export function farmOpen(state) {
   return isOwned(starterOf(state, 'panneau')) && isOwned(starterOf(state, 'pompe'));
+}
+
+// Le Marché de la ferme est-il ouvert ? Sur une terre sauvage (la ferme générée), au niveau
+// qui débloque « marche » (NIVEAUX) : le panneau et la pompe n'arrivent que bien plus tard,
+// avec l'automatisation. Sur la ferme du grand-père, avec le panneau et la pompe (farmOpen).
+export function marcheOuvert(state) {
+  return farmSeed(state) !== null ? !levelBlock(state, 'marche') : farmOpen(state);
+}
+
+// Pourquoi le Marché est fermé (texte).
+export function marcheFerme(state) {
+  return farmSeed(state) !== null
+    ? `Le Marché ouvre au niveau ${unlockLevel('marche')}.`
+    : 'Le Marché ouvre quand le panneau solaire et la pompe sont installés.';
 }
 
 const NOT_OWNED = 'Cet appareil n\'est pas encore acheté.';

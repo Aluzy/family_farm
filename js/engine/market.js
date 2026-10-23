@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { fail, farmOpen, NO_COINS, pay, percentCeil } from './devices.js';
+import { fail, marcheFerme, marcheOuvert, NO_COINS, pay, percentCeil } from './devices.js';
 import { earn } from './compta.js';
 import { addLot } from './inventory.js';
 import { stockCount, takeStock } from './fridge.js';
@@ -75,7 +75,7 @@ export function buyQuote(state, item, qty = 1) {
 export function buyItem(state, item, qty = 1, { ville = false } = {}) {
   const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');
-  if (!ville && !farmOpen(state)) return fail(MARKET_CLOSED);
+  if (!ville && !marcheOuvert(state)) return fail(marcheFerme(state));
   if (ville ? !def.ville || def.rachetable === false : !isBuyable(item)) return fail(`${def.nom} ne s'achète pas ici.`);
   let bought = 0;
   let cost = 0;
@@ -101,14 +101,15 @@ export function sellableCount(state, item) {
 // chaque unité vendue retire un pas au coefficient, sans passer sous le plancher.
 // Les articles rangés au frigo se vendent aussi : on vend d'abord ce qui est
 // dans l'inventaire (il périt), puis ce qui est au frais.
-// Version 1.12 : le Marché de la ferme ouvre quand le panneau et la pompe sont achetés.
+// Version 1.12 : le Marché de la ferme ouvre quand le panneau et la pompe sont achetés (sur une
+// terre sauvage : à un niveau, devices.js marcheOuvert).
 export const MARKET_CLOSED = 'Le Marché ouvre quand le panneau solaire et la pompe sont installés.';
 
 export function sellItem(state, item, qty) {
   const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');
   if (def.invendable) return fail(`${def.nom} ne se vend pas : il sert à l'arbre des technologies.`);
-  if (!farmOpen(state)) return fail(MARKET_CLOSED);
+  if (!marcheOuvert(state)) return fail(marcheFerme(state));
   const wanted = Math.min(Math.floor(Number(qty)) || 0, Math.floor(sellableCount(state, item) + EPS));
   const n = takeStock(state, item, wanted);
   if (n <= 0) return fail('Rien à vendre.');
