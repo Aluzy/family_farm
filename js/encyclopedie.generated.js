@@ -468,7 +468,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "murs",
      "terme": "Murs, fenêtres et portes",
-     "description": "Les murs ferment les pièces : en pierre, en briques (rouges, orange, ocre, bleues), en pierre de taille, la pierre d'angle et la paroi vitrée. Une fenêtre ou une porte se pose sur un mur, à sa place (le mur revient dans l'inventaire). Le même mur posé sur un mur le rehausse, jusqu'à 3 blocs. Un mur qui porte l'étage ne se reprend pas tant qu'il y a quelque chose au-dessus.",
+     "description": "Les murs ferment les pièces : en pierre, en briques (rouges, orange, ocre, bleues), en pierre de taille, la pierre d'angle et la paroi vitrée. Une fenêtre se pose sur un mur, à sa place (le mur revient dans l'inventaire) ; une porte aussi, ou directement sur une case libre. Le même mur posé sur un mur le rehausse, jusqu'à 3 blocs. Un mur qui porte l'étage ne se reprend pas tant qu'il y a quelque chose au-dessus.",
      "liens": [
       "piece_close",
       "mode_construire",

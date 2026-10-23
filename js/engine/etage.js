@@ -13,7 +13,7 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, takeItem } from './inventory.js';
-import { PORTE_SUR_MUR, blocsEnMain, blocsPoses, changeMur, empriseMeuble, genreBloc, hauteurMur, piecesCloses, solsPoses } from './blocs.js';
+import { blocsEnMain, blocsPoses, changeMur, empriseMeuble, genreBloc, hauteurMur, piecesCloses, solsPoses } from './blocs.js';
 import { farmTerrain } from './terrain.js';
 
 // Les blocs qui se posent à l'étage : des murs, des portes, une paillasse, une lanterne, une
@@ -146,7 +146,6 @@ export function poseEtageStatus(state, sorte, tile) {
   if (!etageEmprise(state).has(tile)) return { ok: false, raison: 'À l\'étage, on ne bâtit qu\'au-dessus d\'une pièce close qui a un escalier.' };
   if (blocsPoses(state)[tile] === 'escalier') return { ok: false, raison: 'Ici, c\'est le haut de l\'escalier.' };
   if (etageBlocs(state)[tile] && !changeMur(etageBlocs(state)[tile], sorte)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
-  if (s.porte && !etageBlocs(state)[tile]) return { ok: false, raison: PORTE_SUR_MUR };
   const couvertes = etageCouvertes(state);
   if (couvertes.has(tile)) return { ok: false, raison: 'Un meuble occupe cette case.' };
   // un meuble de plusieurs cases : toutes à l'étage, libres

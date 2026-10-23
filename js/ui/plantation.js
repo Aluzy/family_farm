@@ -1,5 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import { poseStatus } from '../engine/blocs.js';
+import { countItem } from '../engine/inventory.js';
 import { asleep } from '../engine/night.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { casesAPlanter, planterIci, sorteAPlanter } from '../engine/plantation.js';
@@ -15,8 +16,10 @@ import { closeModal, openModal } from './modal.js';
    La fiche d'une graine d'arbre (pomme de pin, gland) ou d'un jeune arbre fruitier a un bouton
    « Planter » : la fiche se ferme, les cases où il peut aller (autour du personnage) sont en
    surbrillance sur la carte (js/carte/ferme/plantation.js) ; un appui sur l'une d'elles demande
-   « Voulez-vous planter un arbre ici ? », et « Oui » le plante. Un bandeau, en bas, rappelle
-   quoi faire et permet d'annuler. */
+   « Voulez-vous planter un arbre ici ? », et « Oui » le plante. Tant qu'il en reste dans
+   l'inventaire, on continue : les cases se rallument (sans celle qui vient d'être plantée, ni
+   celles trop proches), et un autre appui en plante un autre. Un bandeau, en bas, rappelle quoi
+   faire et combien il en reste, et permet de s'arrêter. */
 
 const RAYON = 10;      // les cases proposées : à au plus tant de cases du personnage
 const BOUGE = 3;       // le personnage a bougé de tant de cases : les cases se recalculent
@@ -61,10 +64,10 @@ export function renderPlantation() {
   if (!root) return;
   if (plante && autreMode()) fermer();
   if (!plante) { if (root.childElementCount) morph(root, ''); return; }
-  const b = DATA.ATELIER.BLOCS[plante.sorte], o = DATA.OBJETS[b.objet];
+  const b = DATA.ATELIER.BLOCS[plante.sorte], o = DATA.OBJETS[b.objet], n = countItem(state, b.objet);
   morph(root, `<div class="plantation-bandeau" role="status">
-    <span>${o.icone} Touche une case en surbrillance pour y planter ${b.semis ? 'ta graine' : `le ${b.nom.toLowerCase()}`}.</span>
-    <button type="button" class="btn" data-action="arbre-annuler">Annuler</button>
+    <span>${o.icone} Touche une case en surbrillance pour y planter ${b.semis ? 'une graine' : `un ${b.nom.toLowerCase()}`} (<span class="num">${n}</span> ${n > 1 ? 'restent' : 'reste'}).</span>
+    <button type="button" class="btn" data-action="arbre-annuler">${plante.plantes ? 'Terminer' : 'Annuler'}</button>
   </div>`);
 }
 
@@ -77,7 +80,7 @@ registerActions({
     closeModal();
     setStageWindow(null);
     setBuildMode(null); setHoeMode(false); setAxeMode(false); setPickMode(false); setRodMode(false); setScytheMode(false);
-    plante = { sorte };
+    plante = { sorte, plantes: 0 };
     cache = null;
     refresh();
   },
@@ -104,9 +107,13 @@ registerActions({
     const b = DATA.ATELIER.BLOCS[plante.sorte];
     const r = planterIci(state, plante.sorte, Number(target.dataset.case));
     if (!r.ok) { notify(r.error); refresh(); return; }
-    fermer();
+    // il en reste : on continue (les cases se recalculent) ; sinon, c'est fini
+    plante.plantes += 1;
+    cache = null;
+    const reste = countItem(state, b.objet);
+    if (!reste) fermer();
     persistState();
-    notify(`🌱 ${b.semis ? 'Graine plantée : un arbre poussera ici.' : `${b.nom} planté.`}`);
+    notify(`🌱 ${b.semis ? 'Graine plantée : un arbre poussera ici.' : `${b.nom} planté.`}${reste ? ' Touche une autre case pour continuer.' : ''}`);
     refresh();
   },
 });

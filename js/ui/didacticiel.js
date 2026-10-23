@@ -97,12 +97,14 @@ const ETAPES_UI = {
   fibres: { texte: () => (tenu('faux') || scytheMode ? 'Touche les touffes d\'<b>herbe haute</b> pour les faucher, puis marche sur les <b>fibres</b> tombées pour les ramasser.' : prendreOutil('<b>faux</b>')), cible: () => outil('faux') },
   outils: { texte: () => (atelierOuvertFenetre() ? 'Fabrique la <b>hache</b> (pour le bois des arbres) et la <b>pioche</b> (pour les rochers).' : 'À l\'Atelier, fabrique maintenant la <b>hache</b> et la <b>pioche</b>. Il te faut du bois, des pierres et des fibres.'), ...fabrique(() => ['hache', 'pioche']) },
   abri_ressources: { texte: () => `Ta famille a besoin d'un <b>abri</b> : des murs en bois, une porte, et une paillasse pour chacun (${planAbri(state).paillasses}). Coupe des arbres à la <b>hache</b> pour le bois, fauche pour les fibres.` },
+  // (après avoir abattu des arbres pour l'abri : ils ne repoussent pas, il faut les planter)
+  arbres: { texte: () => `Un arbre abattu ne repousse <b>pas</b> de lui-même ! Il laisse une <b>graine</b> (${nomObjet(DATA.HACHE.GRAINES.pin)}, ${nomObjet(DATA.HACHE.GRAINES.arbre)}) : plante-la depuis ton <b>inventaire</b> (onglet des graines) sur une case d'herbe libre, et un nouvel arbre y poussera.` },
   abri_fabriquer: {
     texte: () => (atelierOuvertFenetre() ? 'Fabrique les <b>murs en bois</b>, des <b>planches</b> pour la <b>porte</b>, et les <b>paillasses</b>.' : 'Tout est réuni ! À l\'Atelier, fabrique les murs, la porte et les paillasses.'),
     ...fabriquerAbri(),
   },
   abri_construire: {
-    texte: () => (buildMode && ['mur_bois', 'porte'].includes(buildMode) ? (casesAbriAPoser(state, 'abri_construire').length ? 'Pose les <b>murs</b> sur les cases qui brillent (la case blanche aussi), puis la <b>porte</b> sur la case blanche : elle prend la place du mur.' : 'Pose les <b>murs</b> en rectangle autour d\'une rangée de cases libres (une par paillasse), puis la <b>porte</b> sur l\'un des murs : elle prend sa place.') : buildMode ? 'Choisis le <b>mur en bois</b>.' : menuOpen ? 'Touche 🔨 <b>Construire</b>.' : 'Bâtis l\'abri là où les cases brillent : ouvre le menu (la flèche), puis 🔨 Construire.'),
+    texte: () => (buildMode && ['mur_bois', 'porte'].includes(buildMode) ? (casesAbriAPoser(state, 'abri_construire').length ? 'Pose les <b>murs</b> sur les cases dorées et la <b>porte</b> directement sur la case blanche.' : 'Pose les <b>murs</b> en rectangle autour d\'une rangée de cases libres (une par paillasse), avec la <b>porte</b> dans l\'un des côtés.') : buildMode ? 'Choisis le <b>mur en bois</b>.' : menuOpen ? 'Touche 🔨 <b>Construire</b>.' : 'Bâtis l\'abri là où les cases brillent : ouvre le menu (la flèche), puis 🔨 Construire.'),
     // les cases de l'abri qui restent à poser, allumées sur la carte (murs dorés, porte blanche)
     carte: () => ({ cases: casesAbriAPoser(state, 'abri_construire') }),
     cible: () => (buildMode && buildMode === 'porte' ? null : buildMode && buildMode !== 'mur_bois' && countItem(state, 'mur_bois') > 0 ? '[data-action="build-pick"][data-sorte="mur_bois"]' : buildMode ? (countItem(state, 'mur_bois') === 0 && countItem(state, 'porte') > 0 && buildMode !== 'porte' ? '[data-action="build-pick"][data-sorte="porte"]' : null) : menu('atelier')),
@@ -124,9 +126,13 @@ const ETAPES_UI = {
     texte: () => (countItem(state, 'puits_pierre') > 0 ? (buildMode === 'puits' ? 'Touche une case d\'herbe pour poser le <b>puits</b>.' : 'Pose le <b>puits</b> dehors : 🔨 Construire.') : atelierOuvertFenetre() ? 'Fabrique le <b>puits</b> et une <b>cruche</b> : pour arroser, tu y rempliras la cruche.' : 'Tes graines ont besoin d\'eau : fabrique un <b>puits</b> et une <b>cruche</b> à l\'Atelier.'),
     ...puits(),
   },
+  // (le puits vient d'être posé : la fenêtre Construire est encore ouverte, et un appui sur le
+  // puits le reprendrait ; on la ferme d'abord)
   arroser: {
-    texte: () => (eauCruche(state) > 0 ? 'Touche ta plante pour l\'<b>arroser</b> avec la cruche.' : 'Touche le <b>puits</b> pour remplir ta cruche.'),
-    carte: () => (eauCruche(state) > 0 ? null : { blocs: ['puits'] }),
+    texte: () => (buildMode ? 'Le puits est posé ! Ferme d\'abord la fenêtre <b>Construire</b> (✕) : tu pourras alors toucher le puits.'
+      : eauCruche(state) > 0 ? 'Touche ta plante pour l\'<b>arroser</b> avec la cruche.' : 'Touche le <b>puits</b> pour remplir ta cruche.'),
+    cible: () => (buildMode ? '.build-bar-close' : null),
+    carte: () => (buildMode || eauCruche(state) > 0 ? null : { blocs: ['puits'] }),
   },
   fin: { texte: () => 'Bravo, ta ferme est lancée ! Ta plante poussera une fois arrosée ; récolte-la quand elle sera mûre. La suite est à toi : élevage, cuisine, et bien plus encore.' },
 };
