@@ -533,8 +533,29 @@ function playerGaugesHtml() {
     `<span class="player-gauges-in" aria-hidden="true">${jauge('coeur', eCls, ePct)}${jauge('eclair', 'endu', dPct)}${jauge('smiley', bCls, bonheur)}</span></button>`;
 }
 
+// Le ciel du hublot à l'heure h (0 à 24) : ses trois bandes, du haut vers le bas, et l'éclat des
+// étoiles (0 à 1), interpolés entre les repères voisins : la nuit bleu sombre et étoilée de 22 h
+// à 5 h, une aube mauve puis dorée, le ciel bleu de 9 h à 16 h, la lumière dorée du soir, puis le
+// crépuscule (comme la lumière de la carte, js/carte/lumiere.js).
+const CIEL_HUBLOT = [
+  [0, 0x1c2246, 0x232b55, 0x2c3664, 1], [5, 0x1c2246, 0x232b55, 0x2c3664, 1],
+  [6, 0x4a4c8c, 0x8a6e9e, 0xd89a88, 0.4], [7.5, 0x7fa0d8, 0xe6cc96, 0xf4b878, 0],
+  [9, 0x4f9ee8, 0x6cb4f0, 0x9ad0f4, 0], [16, 0x4f9ee8, 0x6cb4f0, 0x9ad0f4, 0],
+  [18.5, 0x7a9cd4, 0xe8c68e, 0xf2a866, 0], [20.5, 0x4a4a8a, 0x8a6a9a, 0xc8808a, 0.3],
+  [22, 0x1c2246, 0x232b55, 0x2c3664, 1], [24, 0x1c2246, 0x232b55, 0x2c3664, 1],
+];
+function cielDuHublot(h) {
+  let i = 0;
+  while (i < CIEL_HUBLOT.length - 2 && h >= CIEL_HUBLOT[i + 1][0]) i++;
+  const a = CIEL_HUBLOT[i], b = CIEL_HUBLOT[i + 1];
+  const t = Math.min(1, Math.max(0, (h - a[0]) / (b[0] - a[0])));
+  const mix = (x, y) => '#' + [16, 8, 0].map((s) => Math.round(((x >> s) & 255) + (((y >> s) & 255) - ((x >> s) & 255)) * t)
+    .toString(16).padStart(2, '0')).join('');
+  return { bandes: [1, 2, 3].map((k) => mix(a[k], b[k])), etoiles: +(a[4] + (b[4] - a[4]) * t).toFixed(2) };
+}
+
 // Carte flottante en haut à droite, en pixel art (assets/hud, scripts/icones/hud.py) : un hublot
-// rond sur le ciel de la nuit, la lune dedans dans sa phase du jour (data/crops.json LUNE, 14 jours,
+// rond sur le ciel de l'heure (cielDuHublot), la lune dedans dans sa phase du jour (data/crops.json LUNE, 14 jours,
 // une image par jour) ; l'heure sur sa plaque, en haut à gauche du hublot ; dessous, le jour et le
 // mois (« Lun. 1 · Solaria ») sur un bandeau beige. Un appui ouvre le Calendrier. L'heure avance par tranches de 10
 // minutes.
@@ -546,9 +567,11 @@ function renderHud() {
   const lune = moonPhase(state.day);
   const jour = dayOfMonth(state.day);
   const label = `${formatDay(state.day)}, ${lune.nom.toLowerCase()}, ${horaire}. Ouvrir le calendrier`;
+  const ciel = cielDuHublot(heure + minutes / 60);
+  const fond = `--ciel1:${ciel.bandes[0]};--ciel2:${ciel.bandes[1]};--ciel3:${ciel.bandes[2]};--etoiles:${ciel.etoiles}`;
   morph(document.getElementById('hud'),
     `<button type="button" class="hud-cadran" data-action="stage-goto" data-window="calendrier" title="Calendrier" aria-label="${label}">` +
-      `<span class="hud-hublot" aria-hidden="true"><span class="hud-lune" style="--lf:${jour - 1}"></span>` +
+      `<span class="hud-hublot" aria-hidden="true" style="${fond}"><span class="hud-ciel"></span><span class="hud-etoiles"></span><span class="hud-lune" style="--lf:${jour - 1}"></span>` +
         `<span class="hud-heure">${heure}h${String(minutes).padStart(2, '0')}</span></span>` +
       `<span class="hud-ruban" aria-hidden="true"><span class="hud-day">${weekdayShort(state.day)} <span class="num">${jour}</span></span><span>·</span>` +
       `<span class="hud-month">${monthName(state.day)}</span></span></button>`

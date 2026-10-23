@@ -2032,7 +2032,8 @@ main .ancre { scroll-margin-top: 150px; }
 /* ---------- Carte flottante en haut à droite : la lune, le jour, l'heure ----------
    Sur tous les écrans, au-dessus de la carte de la ferme et sous les fenêtres (window-layer,
    modal-root). En pixel art (assets/hud), à la taille --hp de la carte du joueur : le hublot
-   (40 × 40, le ciel de la nuit) et la lune dedans (21 × 21, 14 cases de lunes.png, --lf sa
+   (40 × 40 : son anneau de bois, sur le ciel de l'heure, --ciel1 à --ciel3 ses trois bandes, et
+   les étoiles, à --etoiles d'opacité) et la lune dedans (21 × 21, 14 cases de lunes.png, --lf sa
    case) ; dessous, le bandeau beige du jour et du mois (ruban.png : ses bouts entaillés, le
    milieu qui s'étire), à cheval sur le bas du hublot ; la plaque de l'heure en haut à gauche. */
 .hud {
@@ -2062,8 +2063,27 @@ main .ancre { scroll-margin-top: 150px; }
   display: block;
   width: calc(40 * var(--hp));
   height: calc(40 * var(--hp));
-  background: url('../assets/hud/hublot.png') no-repeat 0 0 / 100% 100%;
   image-rendering: pixelated;
+}
+/* l'anneau par-dessus le ciel et la lune ; le ciel déborde un peu sous l'anneau (son bord
+   arrondi n'est pas en pixels) */
+.hud-hublot::after,
+.hud-ciel,
+.hud-etoiles {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.hud-hublot::after { background: url('../assets/hud/hublot.png') no-repeat 0 0 / 100% 100%; }
+.hud-ciel {
+  clip-path: circle(calc(17 * var(--hp)) at 50% 50%);
+  background: linear-gradient(var(--ciel1) calc(13 * var(--hp)), var(--ciel2) 0 calc(26 * var(--hp)), var(--ciel3) 0);
+}
+.hud-etoiles {
+  background: url('../assets/hud/etoiles.png') no-repeat 0 0 / 100% 100%;
+  opacity: var(--etoiles, 1);
+  transition: opacity 1s;
 }
 .hud-lune {
   position: absolute;
