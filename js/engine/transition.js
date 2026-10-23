@@ -51,11 +51,9 @@ function hache(s) {
   return h >>> 0;
 }
 
-// La graine de la carte de transition : celle de la ferme générée, sinon celle des voisins
-// (state.graineVoisins, tirée à la création de la partie ; une ancienne partie la reçoit de
-// la page à sa première visite, js/ui/excursion.js).
+// La graine de la carte de transition : celle de la ferme générée (sans partie : '1').
 export function transitionSeed(state) {
-  return farmSeed(state) || (state && state.graineVoisins ? String(state.graineVoisins) : '1');
+  return farmSeed(state) || '1';
 }
 
 // Le livreur (js/carte/ville/livreur.js), à l'est, au-dessus de l'arrêt de bus (la carte de

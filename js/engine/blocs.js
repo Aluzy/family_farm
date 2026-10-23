@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
-import { atelierConstruit, atelierOuvert, atelierStatus, buildAtelier } from './atelier.js';
+import { atelierConstruit, atelierStatus, buildAtelier } from './atelier.js';
 import { farmSeed, farmTerrain, tileCount } from './terrain.js';
 import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
@@ -94,10 +94,10 @@ export function empriseMeuble(state, sorte, tile) {
 // rochers, les arbres).
 export function casesBaties(state) {
   const out = new Set();
-  if (atelierOuvert(state)) for (const p of piecesCloses(state)) for (const t of p.cases) out.add(t);
+  for (const p of piecesCloses(state)) for (const t of p.cases) out.add(t);
   for (const o of [state.blocs, state.sols, state.blocsDessus]) for (const k of Object.keys(o && typeof o === 'object' ? o : {})) out.add(Number(k));
   for (const j of casesCouvertes(state).keys()) out.add(j);
-  if (farmSeed(state) !== null) for (const a of (state.verger && state.verger.arbres) || []) if (Number.isInteger(a.case)) out.add(a.case);
+  for (const a of (state.verger && state.verger.arbres) || []) if (Number.isInteger(a.case)) out.add(a.case);
   for (const a of foretArbres(state)) out.add(a.case);   // (les arbres plantés d'une graine : outils.js)
   return out;
 }
@@ -176,7 +176,7 @@ export function blocsEnMain(state, sorte) {
   const s = sorteDe(sorte);
   if (!s) return 0;
   // l'Atelier : à poser une fois ; pas encore construit, il se construit en le posant (poser)
-  if (sorte === 'atelier') return !atelierConstruit(state) ? (atelierOuvert(state) ? 1 : 0) : !Object.values(blocsPoses(state)).includes('atelier') ? 1 : 0;
+  if (sorte === 'atelier') return !atelierConstruit(state) || !Object.values(blocsPoses(state)).includes('atelier') ? 1 : 0;
   return countItem(state, s.objet);
 }
 
@@ -186,7 +186,6 @@ let piecesCle = null, piecesListe = [];
 
 // Les pièces closes : [{ cases: [tuiles], portes: [tuiles], paillasses: [tuiles] }].
 export function piecesCloses(state) {
-  if (!atelierOuvert(state)) return [];
   const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR;
   const cle = W + ':' + JSON.stringify(B);
   if (cle === piecesCle) return piecesListe;
@@ -370,17 +369,16 @@ export function serreMurs(state) {
   return [...out].sort((a, b) => a - b);
 }
 
-// La famille dort-elle cette nuit ? Partout sauf sur la ferme générée ; là, il faut une
-// paillasse dans une pièce close pour le personnage principal (la première lui revient).
+// La famille dort-elle cette nuit ? Il faut une paillasse dans une pièce close pour le
+// personnage principal (la première lui revient).
 export function nuitCouchee(state) {
-  return !atelierOuvert(state) || couchages(state).length > 0;
+  return couchages(state).length > 0;
 }
 
-// La nuit (runNight), sur la ferme générée : il faut une paillasse d'une pièce close par
-// personne, le personnage principal d'abord ; chaque membre sans couchage perd
-// ATELIER.BONHEUR_SANS_COUCHAGE de bonheur. Renvoie les membres sans couchage.
+// La nuit (runNight) : il faut une paillasse d'une pièce close par personne, le personnage
+// principal d'abord ; chaque membre sans couchage perd ATELIER.BONHEUR_SANS_COUCHAGE de bonheur.
+// Renvoie les membres sans couchage.
 export function nuitSansCouchage(state) {
-  if (!atelierOuvert(state)) return [];
   const principal = mainCharacter(state);
   const ordre = [principal].concat(state.famille.membres.filter((m) => m !== principal)).filter(Boolean);
   const sans = ordre.slice(couchages(state).length);
@@ -405,7 +403,6 @@ function ouvrirBatiment(state, id) {
 // Peut-on poser `sorte` sur `tile` ? { ok, raison }
 export function poseStatus(state, sorte, tile) {
   const s = sorteDe(sorte);
-  if (!atelierOuvert(state)) return { ok: false, raison: 'On construit sur une ferme générée.' };
   if (!s) return { ok: false, raison: 'Bloc inconnu.' };
   const T = farmTerrain(state);
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
@@ -438,7 +435,7 @@ export function poseStatus(state, sorte, tile) {
   if (s.robot && !robotOn(state)) return { ok: false, raison: 'Il faut d\'abord le robot : la récolte ou le semis automatiques (arbre des technologies).' };
   if (s.appareil) {
     const r = starterBlock(state, s.appareil);
-    if (r) return { ok: false, raison: r === 'Répare d\'abord la maison.' ? 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.' : r === 'Achète d\'abord le panneau et la pompe.' ? 'Pose d\'abord le panneau solaire et la pompe.' : r };
+    if (r) return { ok: false, raison: r };
   }
   // la pompe : sur le puits, sans prendre de case
   if (s.sur) {
@@ -670,7 +667,7 @@ export function etatEnclos(state, sorteCle) {
   const T = farmTerrain(state), W = T.LARGEUR;
   const ok = {}, e = { ok: false, piece: null, enclos: null, porteDehors: null, porteEnclos: null, libresPiece: [], libresEnclos: [], places: 0 };
   const nid = Object.keys(B).map(Number).find((t) => B[t] === sorteCle);
-  const pieces = atelierOuvert(state) ? piecesCloses(state) : [];
+  const pieces = piecesCloses(state);
   const p = nid === undefined ? null : pieces.find((q) => q.cases.includes(nid)) || null;
   ok.cle = nid !== undefined && !!p;
   ok.enceinte = !!p;
@@ -706,11 +703,9 @@ export function etatEtable(state) {
   return etatEnclos(state, 'mangeoire');
 }
 
-// Sur la ferme générée, le Poulailler et l'Étable existent quand tout y est (etatEnclos) ; ils
-// gardent leur niveau, leurs places et leurs bêtes quand ils ne le sont plus. Appelée après
-// chaque bloc posé ou repris.
+// Le Poulailler et l'Étable existent quand tout y est (etatEnclos) ; ils gardent leur niveau,
+// leurs places et leurs bêtes quand ils ne le sont plus. Appelée après chaque bloc posé ou repris.
 export function majPoulailler(state) {
-  if (farmSeed(state) === null) return;
   if (state.poulailler) {
     const e = etatPoulailler(state);
     state.poulailler.construit = e.ok;
@@ -779,10 +774,10 @@ function manquants(state, murs, H) {
   return `à rehausser : ${Object.entries(parCote).map(([k, n]) => `${n} ${k}`).join(', ')} — marqués en rouge aux niveaux 1 et 2`;
 }
 
-// Le Moulin de la ferme générée existe quand sa tour est bâtie (etatMoulin) : la station
-// moulin (son appareil, ses moutures) suit. Appelée après chaque bloc posé ou repris.
+// Le Moulin existe quand sa tour est bâtie (etatMoulin) : la station moulin (son appareil, ses
+// moutures) suit. Appelée après chaque bloc posé ou repris.
 export function majMoulin(state) {
-  if (farmSeed(state) === null || !state.stations || !state.stations.moulin) return;
+  if (!state.stations || !state.stations.moulin) return;
   const ok = etatMoulin(state).ok;
   if (ok && !state.stations.moulin.construit) openStation(state, 'moulin');
   else if (!ok) state.stations.moulin.construit = false;
@@ -844,11 +839,11 @@ export function etatSilo(state) {
   return { ok, conditions, cases, hauteurs, pleines, largeur: cases.length, blocs, capacite: ok ? blocs * S.BLES_PAR_BLOC : 0 };
 }
 
-// Le Silo de la ferme générée existe quand ses blocs le forment (etatSilo) ; son blé reste
-// quand il ne l'est plus. Plus petit, ce qui ne tient plus revient dans l'inventaire ; plus
-// grand, le blé de l'inventaire y entre. Appelée après chaque bloc posé ou repris.
+// Le Silo existe quand ses blocs le forment (etatSilo) ; son blé reste quand il ne l'est plus.
+// Plus petit, ce qui ne tient plus revient dans l'inventaire ; plus grand, le blé de
+// l'inventaire y entre. Appelée après chaque bloc posé ou repris.
 export function majSilo(state) {
-  if (farmSeed(state) === null || !state.silo || typeof state.silo !== 'object') return;
+  if (!state.silo || typeof state.silo !== 'object') return;
   const e = etatSilo(state), s = state.silo;
   s.construit = e.ok;
   if (!e.ok) return;

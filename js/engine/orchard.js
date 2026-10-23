@@ -1,35 +1,17 @@
 import { DATA } from './catalog.js';
-import { buildWith, fail, growthPrice, NO_COINS, pay } from './devices.js';
+import { fail } from './devices.js';
 import { deposit } from './ramassage.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { gainActionXp } from './levels.js';
 import { techAuto } from './techtree.js';
-import { farmSeed, farmTerrain } from './terrain.js';
+import { farmTerrain } from './terrain.js';
 
 /* ---------- Lot 8 : Verger ---------- */
 
-// state.verger = { construit, places, achetes, compteur, arbres }.
-// places : emplacements au total (départ compris) ; achetes : emplacements
-// achetés en plus (ils fixent le prix du suivant) ; arbres : { id, espece,
-// plantee } où plantee est la nuit de plantation.
-
-export function orchardFree(state) {
-  return Math.max(0, state.verger.places - state.verger.arbres.length);
-}
-
-// Prix du prochain emplacement : 50 × 1,25^n (arrondi à l'entier supérieur),
-// n = emplacements déjà achetés.
-export function orchardSlotPrice(state) {
-  const E = DATA.VERGER.EMPLACEMENT;
-  return growthPrice(E.base, E.croissance, state.verger.achetes);
-}
-
-// Aménage le Verger (gratuit tant que DATA.VERGER.PRIX_CONSTRUCTION vaut 0).
-export function buildVerger(state) {
-  const deja = 'Le Verger est déjà aménagé.';
-  if (farmSeed(state) !== null) return fail(SANS_VERGER);
-  return buildWith(state, 'verger', { built: state.verger.construit, deja, cost: DATA.VERGER.PRIX_CONSTRUCTION, libelle: 'Verger' }, () => { openVerger(state); });
-}
+// state.verger = { construit, compteur, arbres } (places et achetes : les emplacements de
+// l'ancien Verger, sans usage). Un jeune arbre, acheté au Marché, se plante dans le sol, sur
+// l'herbe, dehors (blocs.js : les blocs « arbre ») ; tree.case est sa case de la carte. Le premier
+// planté ouvre le Verger : ses arbres poussent et donnent leurs fruits.
 
 export function openVerger(state) {
   const v = state.verger;
@@ -37,34 +19,15 @@ export function openVerger(state) {
   if (v.places < DATA.VERGER.EMPLACEMENTS_DEPART) v.places = DATA.VERGER.EMPLACEMENTS_DEPART;
 }
 
-export function buyOrchardSlot(state) {
-  const v = state.verger;
-  if (farmSeed(state) !== null) return fail(SANS_VERGER);
-  if (!v.construit) return fail('Aménage d\'abord le Verger (onglet Ferme).');
-  if (v.places >= DATA.VERGER.EMPLACEMENTS_MAX) return fail('Le Verger a atteint sa taille maximale (' + DATA.VERGER.EMPLACEMENTS_MAX + ' emplacements).');
-  const cost = orchardSlotPrice(state);
-  if (!pay(state, cost, 'Emplacement du Verger')) return fail(NO_COINS);
-  v.places += 1;
-  v.achetes += 1;
-  return { ok: true, cost, places: v.places };
-}
-
-/* -- la ferme générée (docs/carte-generee.md, étape 5b-8) -- */
-
-// Pas de Verger ni d'emplacements : un jeune arbre, acheté au Marché, se plante dans le sol, sur
-// l'herbe, dehors (blocs.js : les blocs « arbre ») ; tree.case est alors sa case de la carte. Le
-// premier planté ouvre le Verger : ses arbres poussent et donnent leurs fruits comme avant.
-const SANS_VERGER = 'Sur une terre sauvage, pas de Verger : achète un jeune arbre au Marché et plante-le dans le sol (🔨).';
-
 // L'arbre planté sur la case `tile` de la carte, ou null.
 export function arbreSurCase(state, tile) {
-  return farmSeed(state) !== null && state.verger ? state.verger.arbres.find((t) => t.case === tile) || null : null;
+  return state.verger ? state.verger.arbres.find((t) => t.case === tile) || null : null;
 }
 
 // Un arbre est-il planté à moins de `d` cases (en ligne ou en diagonale) de `tile` ?
 export function arbreProche(state, tile, d) {
   const W = farmTerrain(state).LARGEUR, c = tile % W, r = Math.floor(tile / W);
-  return farmSeed(state) !== null && state.verger.arbres.some((t) => Math.max(Math.abs(t.case % W - c), Math.abs(Math.floor(t.case / W) - r)) < d);
+  return state.verger.arbres.some((t) => Math.max(Math.abs(t.case % W - c), Math.abs(Math.floor(t.case / W) - r)) < d);
 }
 
 // Plante l'arbre `espece` sur la case `tile` (le jeune arbre est déjà pris dans l'inventaire).
@@ -75,39 +38,6 @@ export function planterArbre(state, espece, tile) {
   const tree = newTree(`arbre-${v.compteur}`, espece, state.day, tile);
   v.arbres.push(tree);
   return tree;
-}
-
-// Version 1.13 (v2, lot 9) : chaque arbre occupe une case (0 à places − 1), qui est
-// aussi son rectangle sur la carte. Case de l'arbre, ou null.
-export function treeAt(state, c) {
-  return state.verger.arbres.find((t) => t.case === c) || null;
-}
-
-// Cases libres du Verger, dans l'ordre.
-export function freeOrchardCases(state) {
-  const out = [];
-  for (let c = 0; c < state.verger.places; c++) if (!treeAt(state, c)) out.push(c);
-  return out;
-}
-
-// Plante un arbre sur une case libre (prix payé à ce moment). Sans case, la première
-// libre. Refusé sans Verger, sans case libre ou sans assez de pièces.
-export function plantTree(state, espece, c = null) {
-  const def = DATA.VERGER.ARBRES[espece];
-  if (!def) return fail('Cet arbre n\'est pas en vente.');
-  if (farmSeed(state) !== null) return fail(SANS_VERGER);
-  const v = state.verger;
-  if (!v.construit) return fail('Aménage d\'abord le Verger.');
-  const libres = freeOrchardCases(state);
-  if (!libres.length) return fail('Le Verger est plein : achète un emplacement.');
-  const ou = c === null || c === undefined ? libres[0] : Number(c);
-  if (!Number.isInteger(ou) || ou < 0 || ou >= v.places) return fail('Emplacement introuvable.');
-  if (treeAt(state, ou)) return fail('Un arbre pousse déjà ici.');
-  if (!pay(state, def.prix, `Achat : ${def.nom}`)) return fail(NO_COINS);
-  v.compteur += 1;
-  const tree = newTree(`arbre-${v.compteur}`, espece, state.day, ou);
-  v.arbres.push(tree);
-  return { ok: true, cost: def.prix, id: tree.id, case: ou };
 }
 
 // Un arbre neuf : ses premiers fruits arrivent la nuit qui complète sa MATURITÉ-ième

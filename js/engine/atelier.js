@@ -26,11 +26,6 @@ import { noter } from './journal.js';
 //     objets de l'inventaire (geste « fabriquer ») : planche, mur en pierre, porte, paillasse, et
 //     les outils de pierre (houe, hache, pioche : comme achetés au Marché).
 
-// L'Atelier et le ramassage existent-ils dans cette partie ? (la ferme générée)
-export function atelierOuvert(state) {
-  return farmSeed(state) !== null;
-}
-
 export function atelierConstruit(state) {
   return !!(state.atelier && state.atelier.construit);
 }
@@ -126,7 +121,6 @@ function cueillette(state) {
 // labourée, pas sous un bloc posé ni sous un arbre planté, pas sur un buisson coupé) :
 // [{ id, sorte, objet, case }]. Rien hors de la ferme générée.
 export function ramassables(state) {
-  if (!atelierOuvert(state)) return [];
   const pris = state.cueillette && state.cueillette.jour === state.day ? state.cueillette.pris : [];
   const arbres = new Set(state.verger ? state.verger.arbres.map((t) => t.case) : []);
   const coupes = cutBushCases(state);
@@ -167,7 +161,6 @@ function prendre(state, besoin) {
 // Peut-on construire l'Atelier ? { ok, raison, manque }
 export function atelierStatus(state) {
   const A = DATA.ATELIER;
-  if (!atelierOuvert(state)) return { ok: false, raison: 'L\'Atelier se construit sur une ferme générée.', manque: {} };
   if (atelierConstruit(state)) return { ok: false, raison: 'L\'Atelier est déjà construit.', manque: {} };
   const m = manque(state, A.CONSTRUCTION);
   return Object.keys(m).length ? { ok: false, raison: 'Il manque des matériaux.', manque: m } : { ok: true, manque: {} };

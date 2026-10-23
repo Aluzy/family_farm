@@ -345,10 +345,10 @@ export function especeArbre(state, id) {
   return especes.get(g).get(id) || null;
 }
 
-// Les arbres plantés (state.foret.arbres), sur la ferme générée.
+// Les arbres plantés (state.foret.arbres).
 export function foretArbres(state) {
   const f = state.foret;
-  return farmSeed(state) !== null && f && Array.isArray(f.arbres) ? f.arbres : [];
+  return f && Array.isArray(f.arbres) ? f.arbres : [];
 }
 
 // L'arbre planté `id`, ou null.

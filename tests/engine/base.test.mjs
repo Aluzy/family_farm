@@ -4,17 +4,17 @@
    ========================================================================== */
 
 import {
-  buildCatalog, buildFridge, buildPaturage, buildPoulailler, buildSerre, buildSilo, buildStation,
-  buildVerger, buyHoe, buyItem, buyStarter, composeFamily, createInitialState, createNewGame, DATA, familyName,
-  farmOpen, findMember, finishSetup, formatNumber, houseRepaired, inventoryCounts, isOwned,
-  levelBlock, mailReceived, mainCharacter, MARKET_CLOSED, memberPortrait, memberRemovalBlock,
-  memberStyle, migrate, migrateDepart, mulberry32, portraitEmoji, RAW_DATA, removeMember,
-  repairHouse, sellItem, setFamilyName, setMainCharacter, setMemberProfile, setupPending,
-  simulateGame, starterBlock, starterOf, STATE_VERSION, tankCapacity, testSetLevel, tick,
-  toggleDevice, unlockLevel, upgradeDevice, upgradeTank,
+  blocsPoses, buildCatalog, buildFridge, buyHoe, buyItem, composeFamily, createInitialState,
+  createNewGame, DATA, familyName, farmOpen, farmSeed, findMember, finishSetup, formatNumber,
+  graineDemenagement, houseRepaired, inventoryCounts, isOwned, levelBlock, mailReceived,
+  mainCharacter, marcheFerme, memberPortrait, memberRemovalBlock, memberStyle, migrate,
+  migrateDepart, mulberry32, portraitEmoji, RAW_DATA, removeMember, sellItem, setFamilyName,
+  setMainCharacter, setMemberProfile, setupPending, simulateGame, starterBlock, starterOf,
+  STATE_VERSION, tankCapacity, testBatir, testSetLevel, tick, toggleDevice, unlockLevel,
+  upgradeDevice, upgradeTank,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, avecLune, ml, runFor, test,
+  assert, assertEqual, AVANT_DEMENAGEMENT, avecLune, migreAvant, ml, runFor, test,
 } from './aide.mjs';
 
 test('état initial : forme et valeurs attendues', () => {
@@ -53,8 +53,8 @@ test('sérialisation JSON aller-retour identique', () => {
 test('migration factice v0 → version courante', () => {
   const legacy = { day: 3, awakeSeconds: 10, pieces: 80, rngSeed: 9, unlockedTabs: ['ferme'], stats: {} };
   // pas de champ `version` : doit être traité comme version 0 et migré jusqu'au bout
-  const migrated = migrate({ v: 0, t: Date.now(), s: legacy });
-  assertEqual(migrated.version, STATE_VERSION);
+  const migrated = migreAvant({ v: 0, t: Date.now(), s: legacy });
+  assertEqual(migrated.version, AVANT_DEMENAGEMENT);
   assertEqual(migrated.day, 3);
   assertEqual(migrated.pieces, 80);
   assertEqual(migrated.panneaux.length, 1);
@@ -62,8 +62,8 @@ test('migration factice v0 → version courante', () => {
 
 test('migration v1 (Lot 0) → version courante : garde la partie et ajoute le parc', () => {
   const v1 = { version: 1, day: 4, awakeSeconds: 12, pieces: 200, rngSeed: 3, unlockedTabs: ['ferme'], stats: { a: 1 } };
-  const m = migrate({ v: 1, t: 0, s: v1 });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 1, t: 0, s: v1 });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual(m.day, 4);
   assertEqual(m.pieces, 200);
   assertEqual(m.stats, { a: 1 });
@@ -90,7 +90,7 @@ test('import d\'un texte invalide sans plantage', () => {
     let threw = false;
     let result;
     try {
-      result = migrate(bad);
+      result = migreAvant(bad);
     } catch (e) {
       threw = true;
     }
@@ -174,9 +174,10 @@ test('données : chaque culture connaît sa découpe sur la carte', () => {
 
 /* ---------- version 1.12 (v2, lot 8) : le départ d'une nouvelle partie ---------- */
 
-test('version 1.12 : une nouvelle partie : 1 500 pièces, 40 conserves, tout est à réparer ou à acheter', () => {
+test('une nouvelle partie : sur sa terre sauvage, 1 500 pièces, 40 conserves, rien de bâti', () => {
   const s = createNewGame(1);
-  assertEqual([s.pieces, inventoryCounts(s), s.potager.parcelles, s.potager.houe], [1500, { conserve: 40 }, [], false]);
+  assertEqual(farmSeed(s), graineDemenagement(s), 'sa ferme : celle de sa graine');
+  assertEqual([s.pieces, inventoryCounts(s), s.potager.parcelles, s.potager.houe, blocsPoses(s)], [1500, { conserve: 40 }, [], false, {}]);
   assertEqual([houseRepaired(s), farmOpen(s), tankCapacity(s), s.unlockedTabs.includes('comptoir')], [false, false, 0, false]);
   assertEqual(['panneau', 'batterie', 'pompe', 'reservoir'].map((t) => isOwned(starterOf(s, t))), [false, false, false, false]);
   assertEqual([s.panneaux[0].allume, s.pompe.allume, s.batteries[0].allume], [false, false, false]);
@@ -184,45 +185,36 @@ test('version 1.12 : une nouvelle partie : 1 500 pièces, 40 conserves, tout est
   assertEqual(toggleDevice(s, 'pompe').ok, false, 'pas encore achetée');
   assertEqual(upgradeDevice(s, 'panneau-1').ok, false);
   assertEqual(upgradeTank(s).ok, false);
-  assertEqual(buyItem(s, 'graine_carotte', 1).error, MARKET_CLOSED);
-  assertEqual(sellItem(s, 'conserve', 1).error, MARKET_CLOSED);
+  assertEqual(buyItem(s, 'graine_carotte', 1).error, marcheFerme(s));
+  assertEqual(sellItem(s, 'conserve', 1).error, marcheFerme(s));
   assertEqual(buyHoe(s).ok, false);
   runFor(s, 60);
   assertEqual([s.eauMl, s.batteries[0].chargeMwh], [0, 0], 'rien ne tourne');
-  // une partie de test (createInitialState) a tout : panneau, pompe, Marché
+  // une partie de test (createInitialState) a ses appareils (panneau, pompe), pas de foyer
   const t = createInitialState(1);
-  assertEqual([houseRepaired(t), farmOpen(t), setupPending(t)], [true, true, false]);
+  assertEqual([houseRepaired(t), farmOpen(t), setupPending(t)], [false, true, false]);
 });
 
-test('version 1.12 : réparer la maison (650), puis acheter panneau (150), pompe (90), réservoir (50), batterie (180)', () => {
-  const s = createNewGame(1);
-  assertEqual(starterBlock(s, 'panneau'), 'Répare d\'abord la maison.');
-  assertEqual(buyStarter(s, 'panneau').ok, false);
-  assertEqual(repairHouse(s).cost, 650);
-  assertEqual(repairHouse(s).ok, false, 'une seule fois');
-  assertEqual(starterBlock(s, 'reservoir'), 'Achète d\'abord le panneau et la pompe.');
-  assertEqual(buyStarter(s, 'panneau').cost, 150);
+test('le foyer d\'abord (une pièce close, une paillasse), puis le panneau, la pompe, la citerne, la batterie', () => {
+  const s = createNewGame(1, { nom: 'Test' });
+  testSetLevel(s, unlockLevel('energie'));
+  assertEqual(starterBlock(s, 'panneau'), 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.');
+  assertEqual(testBatir(s, 'panneau').error, 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.');
+  assert(testBatir(s, 'foyer').ok);
+  assertEqual([houseRepaired(s), starterBlock(s, 'reservoir')], [true, 'Pose d\'abord le panneau solaire et la pompe.']);
+  assert(testBatir(s, 'panneau').ok);
   assertEqual(farmOpen(s), false);
-  const r = buyStarter(s, 'pompe');
-  assertEqual([r.cost, r.ouvert, farmOpen(s), s.unlockedTabs.includes('comptoir')], [90, true, true, true], 'panneau et pompe : la ferme s\'ouvre');
-  assertEqual(buyStarter(s, 'reservoir').cost, 50);
+  assert(testBatir(s, 'pompe').ok);
+  assertEqual([farmOpen(s), s.unlockedTabs.includes('comptoir')], [true, true], 'panneau et pompe : la ferme s\'ouvre');
+  assert(testBatir(s, 'citerne').ok);
   assertEqual(tankCapacity(s), DATA.RESEAU.reservoir.litres[0] * 1000);
-  assertEqual([s.pieces, isOwned(s.batteries[0])], [1500 - 650 - 150 - 90 - 50, false], 'la batterie reste facultative');
-  assertEqual(buyStarter(s, 'batterie').cost, 180);
-  assertEqual([s.batteries[0].allume, s.batteries[0].prix, buyStarter(s, 'batterie').ok], [true, 180, false]);
-  assertEqual(buyStarter(s, 'frigo').ok, false);
-  s.pieces = 10;
-  const u = createNewGame(2);
-  u.pieces = 600;
-  assertEqual(repairHouse(u).error, 'Pas assez de pièces.');
-  // une fois achetés, panneau et pompe tournent
-  const v = createNewGame(3);
-  repairHouse(v);
-  buyStarter(v, 'panneau');
-  buyStarter(v, 'pompe');
-  buyStarter(v, 'reservoir');
-  runFor(v, 60);
-  assert(v.eauMl > 0, 'la pompe remplit le réservoir');
+  assertEqual(isOwned(s.batteries[0]), false, 'la batterie reste facultative');
+  assert(testBatir(s, 'batterie').ok);
+  assertEqual([s.batteries[0].allume, s.batteries[0].prix, starterBlock(s, 'batterie')], [true, 180, 'Déjà posé.']);
+  assertEqual(s.pieces, 1500, 'rien ne s\'achète : tout se fabrique et se pose');
+  // une fois posés, panneau et pompe tournent
+  runFor(s, 60);
+  assert(s.eauMl > 0, 'la pompe remplit le réservoir');
 });
 
 test('version 1.12 : configurer la famille : nom, personnage principal, membres', () => {
@@ -276,9 +268,9 @@ test('version 1.12 : migration v28 → v29 : une partie en cours est déjà inst
   const m = migrateDepart(old);
   assertEqual([m.version, m.famille.nom, m.famille.principal, m.famille.configuree], [29, '', 'adulte-1', true]);
   assertEqual([m.campagne.compteurs.recoltes, m.campagne.compteurs.cultures, m.campagne.compteurs.semisBle], [0, [], 0]);
-  assertEqual([houseRepaired(m), farmOpen(m), mailReceived(m, 'notaire_heritage')], [true, true, false]);
-  const full = migrate({ v: 28, t: 0, s: old });
-  assertEqual([full.version, setupPending(full)], [STATE_VERSION, false]);
+  assertEqual([farmOpen(m), mailReceived(m, 'notaire_heritage')], [true, false]);
+  const full = migreAvant({ v: 28, t: 0, s: old });
+  assertEqual([full.version, setupPending(full)], [AVANT_DEMENAGEMENT, false]);
 });
 
 test('version 1.12 : le joueur automatique part du départ v2 et termine le chapitre 1', () => {
@@ -306,13 +298,13 @@ test('version 1.12 : un bâtiment ne se répare ni ne se construit avant son niv
   const s = createNewGame(1, { nom: 'Test' });
   s.pieces = 100000;
   const refus = [
-    ['silo', () => buildSilo(s)], ['poulailler', () => buildPoulailler(s)], ['paturage', () => buildPaturage(s)],
-    ['serre', () => buildSerre(s)], ['frigo', () => buildFridge(s)], ['verger', () => buildVerger(s)],
-    ['four', () => buildStation(s, 'four')], ['moulin', () => buildStation(s, 'moulin')],
+    ['silo', () => testBatir(s, 'silo')], ['poulailler', () => testBatir(s, 'poulailler')], ['paturage', () => testBatir(s, 'etable')],
+    ['serre', () => testBatir(s, 'serre')], ['frigo', () => buildFridge(s)], ['verger', () => testBatir(s, 'pommier')],
+    ['four', () => testBatir(s, 'four')], ['moulin', () => testBatir(s, 'moulin')],
   ];
   for (const [id, f] of refus) assertEqual(f().error, `Disponible au niveau ${unlockLevel(id)}.`, id);
   assertEqual([s.pieces, s.silo.construit, s.stations.four.construit], [100000, false, false], 'rien n\'est payé');
   assertEqual(levelBlock(s, 'cuisine'), 'Disponible au niveau 2.');
   testSetLevel(s, 3);
-  assertEqual([levelBlock(s, 'silo'), buildSilo(s).ok], ['', true]);
+  assertEqual([levelBlock(s, 'silo'), testBatir(s, 'silo').ok], ['', true]);
 });

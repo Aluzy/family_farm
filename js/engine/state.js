@@ -17,7 +17,8 @@ import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
 import { majMoulin, majPoulailler, rangerPieces } from './blocs.js';
 import { faucherSousBati } from './outils.js';
-import { farmSeed } from './terrain.js';
+import { farmSeed, farmTerrain } from './terrain.js';
+import { convertirPartie, graineDemenagement } from './demenagement.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -93,8 +94,9 @@ function startLot11() {
   return { aide: newTutorial() };
 }
 
+// La ferme de la partie est générée d'après sa graine (state.carte.graine, tirée de `seed`).
 export function createInitialState(seed = 1) {
-  return {
+  const s = {
     version: STATE_VERSION,
     day: 1,
     awakeMs: 0,
@@ -121,6 +123,9 @@ export function createInitialState(seed = 1) {
     ...startLot9(),
     ...startLot11(),
   };
+  s.carte = { graine: graineDemenagement(s) };
+  s.potager.parcelles = startPlots(farmTerrain(s));
+  return s;
 }
 
 // Table de migrations successives : MIGRATIONS[n] transforme un état de
@@ -386,7 +391,25 @@ export const MIGRATIONS = {
     const { repas, ...rest } = state;
     return { ...rest, version: 46, boite: { items: {} }, repasJour: null };
   },
+  // v46 → v47 : la ferme du grand-père n'existe plus. Une partie restée sur la carte de Tiled
+  // (sans graine) déménage sur la ferme générée (demenagement.js, convertirPartie) : chaque
+  // bâtiment est rebâti en blocs, rien ne se perd ; `demenagee` le dit à la page (une annonce).
+  // Une partie dont la famille n'est pas encore installée reçoit seulement sa graine.
+  46: (state) => migrateDemenagement(state),
 };
+
+function migrateDemenagement(old) {
+  const state = { ...JSON.parse(JSON.stringify(old)), version: 47 };
+  if (farmSeed(state) !== null) return state;
+  const graine = graineDemenagement(state);
+  if (!state.famille || !state.famille.configuree || !state.potager || !state.famille.membres) {
+    state.carte = { graine };
+    if (state.potager && Array.isArray(state.potager.parcelles)) state.potager.parcelles = [];
+    return state;
+  }
+  if (convertirPartie(state, graine).ok) state.demenagee = true;
+  return state;
+}
 
 // (ce que coûtait le coffre à grain à l'Atelier, avant la version 45)
 const COFFRE_GRAIN = { planche: 6, fibre: 2 };
@@ -1042,15 +1065,16 @@ export function migrateToIntegers(old) {
 }
 
 // Applique les migrations successives à une sauvegarde { v, t, s } (ou à un
-// état brut) jusqu'à atteindre la version courante. Ne lance jamais
+// état brut) jusqu'à atteindre la version courante (ou `jusqua` : les tests des
+// anciennes migrations s'arrêtent avant le déménagement, v46 → v47). Ne lance jamais
 // d'exception : une entrée invalide retombe sur un état migré au mieux.
-export function migrate(save) {
+export function migrate(save, jusqua = STATE_VERSION) {
   let state = save && typeof save === 'object' && save.s && typeof save.s === 'object'
     ? { ...save.s }
     : (save && typeof save === 'object' ? { ...save } : {});
   let version = typeof state.version === 'number' ? state.version : 0;
   let guard = 0;
-  while (MIGRATIONS[version] && guard < 1000) {
+  while (MIGRATIONS[version] && version < jusqua && guard < 1000) {
     state = MIGRATIONS[version](state);
     version = typeof state.version === 'number' ? state.version : version + 1;
     guard++;

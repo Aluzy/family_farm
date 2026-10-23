@@ -5,18 +5,19 @@
 
 import {
   addItem, advanceTutorial, alertEvents, alertSnapshot, allDevices, awakeRequired, batteryCapacity,
-  canSleep, countItem, createInitialState, DATA, deliverMail, energyStats, feedAllHens,
-  formatDuration, fridgeLots, gainXp, GAME_VERSION, getNotifications, harvest, isBroken,
-  isUnlocked, mailReceived, mergeOfflineReports, migrate, MIGRATIONS, moveToFridge, newGameFrom,
-  nightHarvest, notificationCount, plant, readMail, seedItem, shear, simulateOffline, skipTutorial,
-  spoil, startMilling, startRecipe, STATE_VERSION, storeWheat, tankCapacity, testAddHens,
-  testAddSeeds, testAddSheep, testEmptyBatteries, testFillBatteries, testRipenAll, testSetLevel,
-  testSetWear, testUnlockAllTechs, testWoolReady, tick, toggleDevice, tutorialStep, unlockLevel,
-  unreadMail, updateChapters, water,
+  canSleep, countItem, createInitialState, DATA, deliverMail, energyStats, formatDuration,
+  fridgeLots, gainXp, GAME_VERSION, getNotifications, harvest, isBroken, isUnlocked, mailReceived,
+  mergeOfflineReports, MIGRATIONS, moveToFridge, newGameFrom, nightHarvest, notificationCount,
+  plant, readMail, seedItem, shear, simulateOffline, skipTutorial, spoil, startMilling,
+  startRecipe, storeWheat, tankCapacity, testAddHens, testAddSeeds, testAddSheep, testBatir,
+  testEmptyBatteries, testFillBatteries, testRipenAll, testSetLevel, testSetWear,
+  testUnlockAllTechs, testWoolReady, tick, toggleDevice, tutorialStep, unlockLevel, unreadMail,
+  updateChapters, water,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, atChapter, atelier, coldRoom, farm, fillCows, fillSheep, garden, kwh, ml,
-  near, pature, plantRipe, ranch, runFor, setInv, setStraw, sleepOnce, test,
+  assert, assertEqual, atChapter, atelier, AVANT_DEMENAGEMENT, coldRoom, farm, fillCows, fillSheep,
+  garden, kwh, migreAvant, ml, near, pature, plantRipe, reach, runFor, setInv, setStraw, sleepOnce,
+  test,
 } from './aide.mjs';
 
 // Version 1.7 : partie de test placée au début du niveau `n` (chapitre 1).
@@ -193,7 +194,8 @@ test('Lot 11 : hors-ligne, mêmes flux que le jeu, plafonnés par les capacités
 test('Lot 11 : la progression hors-ligne compte pour les objectifs du chapitre', () => {
   const s = createInitialState(1);
   assertEqual(s.campagne.chapitre, 1);
-  // version 1.12 : chapitre 1 « L'héritage » rempli, sauf ce que la nuit hors-ligne vérifie
+  // chapitre 1 « L'héritage » rempli (le foyer bâti), relu par la progression hors-ligne
+  assert(testBatir(s, 'foyer').ok);
   s.potager.houe = true;
   Object.assign(s.campagne.compteurs, { recoltes: 1, labours: 6, semis: 6, arroseesMax: 6 });
   s.reservoir.niveau = 2; // réservoir de 80 L : on peut pomper les 50 L de l'objectif
@@ -337,6 +339,7 @@ test('alertes : la paille qui vient à manquer est annoncée une fois', () => {
 
 test('notifications : poules à nourrir', () => {
   const s = charged(garden());
+  assert(testBatir(reach(s, 'poulailler'), 'poulailler').ok);
   testAddHens(s, 4);
   assertEqual(getNotifications(s).map((x) => [x.type, x.nombre]), [['poules', 4]]);
   s.poulailler.nourries = 4;
@@ -376,6 +379,7 @@ test('notifications : aliments qui périssent cette nuit', () => {
 test('notifications : les tâches automatisées par la technologie ne sont pas signalées', () => {
   const s = charged(pature());
   testAddSeeds(s);
+  assert(testBatir(reach(s, 'poulailler'), 'poulailler').ok);
   testAddHens(s, 2);
   fillSheep(s, 1);
   setStraw(s, 1);
@@ -448,13 +452,13 @@ test('migration v10 → v11 : bulles d\'aide seulement pour une partie pas encor
     s.day = day;
     return s;
   };
-  const neuve = migrate({ v: 10, t: 0, s: v10(1) });
-  assertEqual([neuve.version, neuve.aide], [STATE_VERSION, { etape: 0, fini: false }]);
-  const avancee = migrate({ v: 10, t: 0, s: v10(9) });
+  const neuve = migreAvant({ v: 10, t: 0, s: v10(1) });
+  assertEqual([neuve.version, neuve.aide], [AVANT_DEMENAGEMENT, { etape: 0, fini: false }]);
+  const avancee = migreAvant({ v: 10, t: 0, s: v10(9) });
   assertEqual(avancee.aide.fini, true);
   assertEqual(avancee.day, 9);
   assertEqual(JSON.parse(JSON.stringify(avancee)), avancee);
-  assertEqual(migrate({ v: 0, t: 0, s: { day: 3, pieces: 10, stats: {} } }).aide.fini, true, 'depuis une très vieille sauvegarde');
+  assertEqual(migreAvant({ v: 0, t: 0, s: { day: 3, pieces: 10, stats: {} } }).aide.fini, true, 'depuis une très vieille sauvegarde');
 });
 
 // La récolte de la nuit (nightHarvest) : œufs, lait, fruits et récoltes automatiques, par produit.
@@ -482,7 +486,7 @@ test('version 1.3 : format 19, la boîte aux lettres commence vide et la migrati
   delete v18.courrier;
   const m = MIGRATIONS[18](v18);
   assertEqual([m.version, m.courrier], [19, []]);
-  assertEqual(migrate({ v: 18, t: 0, s: v18 }).courrier, [], 'la migration complète garde la boîte');
+  assertEqual(migreAvant({ v: 18, t: 0, s: v18 }).courrier, [], 'la migration complète garde la boîte');
 });
 
 test('version 1.3 : la lettre du cousin est définie : Serre, 1 cacao, 1 vanille, 1 café, sans prénom de la famille', () => {
@@ -533,7 +537,7 @@ test('version 1.3 : une partie d\'avant la version 1.3, Serre déjà ouverte, re
   const v18 = JSON.parse(JSON.stringify(atChapter(7)));
   v18.version = 18;
   delete v18.courrier;
-  const m = migrate({ v: 18, t: 0, s: v18 });
+  const m = migreAvant({ v: 18, t: 0, s: v18 });
   assertEqual(m.courrier, [], 'la migration ne distribue rien elle-même');
   const cacao = countItem(m, 'cacao');
   tick(m, 0.2);

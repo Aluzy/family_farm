@@ -4,13 +4,14 @@
    ========================================================================== */
 
 import {
-  addItem, buildSerre, buyItem, buyPrice, countItem, createInitialState, DATA, expiringSoon,
-  depenserMembre, harvest, inventoryCounts, isBuyable, isPerishable, lotsOf, marketCoef, marketFloor,
-  mangerMembre, mangeurs, migrate, sellItem, setSeedReserve, shelfLife, sleep, spoil, startFarm,
-  startHousehold, STATE_VERSION, takeItem, testAddFood, testAgeInventory, tick,
+  addItem, buyItem, buyPrice, countItem, createInitialState, DATA, depenserMembre, expiringSoon,
+  harvest, inventoryCounts, isBuyable, isPerishable, lotsOf, mangerMembre, mangeurs, marketCoef,
+  marketFloor, migrate, sellItem, setSeedReserve, shelfLife, sleep, spoil, startFarm,
+  startHousehold, takeItem, testAddFood, testAgeInventory, testBatir, tick,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, garden, plantRipe, reach, setInv, test, testBase,
+  affamer, assertEqual, AVANT_DEMENAGEMENT, garden, migreAvant, plantRipe, reach, setInv, test,
+  testBase, versBoite,
 } from './aide.mjs';
 
 /* ---------- Lot 3 : inventaire par lots, péremption, Marché ---------- */
@@ -173,6 +174,7 @@ test('Dormir : ce que la famille mange passe avant la péremption (un lot à 1 n
   const s = garden();
   setInv(s, { conserve: 100, carotte: 4 });
   lotsOf(s, 'carotte')[0].nightsLeft = 1;
+  versBoite(s);
   affamer(s);
   s.awakeMs = 30000;
   const r = sleep(s);
@@ -181,7 +183,9 @@ test('Dormir : ce que la famille mange passe avant la péremption (un lot à 1 n
 });
 
 // L'ordre dans lequel un membre affamé mange (les clés de ce qu'il a mangé, dans l'ordre).
+// (ce qui est dans l'inventaire passe dans la boîte, où la famille mange)
 function ordreRepas(s) {
+  versBoite(s);
   const m = mangeurs(s)[0];
   depenserMembre(s, m.id, 80);
   return Object.keys(mangerMembre(s, m).mange);
@@ -215,10 +219,11 @@ test('ordre de consommation : dans un item, le lot le plus ancien est mangé d\'
   spoil(s);
   spoil(s);
   addItem(s, 'carotte', 60); // 5 carottes à 4 nuits, 60 à 6 nuits
+  versBoite(s);
   const m = mangeurs(s)[0];
   depenserMembre(s, m.id, 80);
   assertEqual(mangerMembre(s, m).mange, { carotte: 40 }, 'de 20 à 100 : 40 carottes de valeur 2');
-  assertEqual(lotsOf(s, 'carotte'), [{ qty: 25, nightsLeft: 6, origin: 'produit' }], 'le lot de 4 nuits part en entier, puis 35 du lot frais');
+  assertEqual(s.boite.items.carotte, [{ qty: 25, nightsLeft: 6, origin: 'produit' }], 'le lot de 4 nuits part en entier, puis 35 du lot frais');
 });
 
 test('Marché : prix d\'achat = prix de vente × coefficient, plancher 1,2', () => {
@@ -394,7 +399,7 @@ test('vente : retire les lots les plus anciens, refuse sans stock et ignore les 
 test('les 10 nouvelles cultures : récolte stockée dans l\'inventaire, puis vendable', () => {
   const s = garden();
   s.pieces = 5000;
-  buildSerre(reach(s, 'serre'));
+  testBatir(reach(s, 'serre'), 'serre');
   addItem(s, 'graine_oignon', 1);
   addItem(s, 'riz', 1);
   addItem(s, 'cacao', 1);
@@ -487,8 +492,8 @@ test('migration v3 (Lot 2) → v4 : l\'inventaire devient des lots à conservati
   };
   v3.inventaire = { conserve: 40, carotte: 7, patate: 6, graine_carotte: 3, tomate: 0 };
   delete v3.nuit.perdus; // une nuit de Lot 2 ne connaît pas encore les pertes
-  const m = migrate({ v: 3, t: 0, s: v3 });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 3, t: 0, s: v3 });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual([m.day, m.pieces], [9, 66]);
   assertEqual(inventoryCounts(m), { conserve: 40, carotte: 7, patate: 6, graine_carotte: 3 }, 'un item à zéro disparaît');
   assertEqual(lotsOf(m, 'carotte'), [{ qty: 7, nightsLeft: 6, origin: 'produit' }]);
@@ -497,28 +502,28 @@ test('migration v3 (Lot 2) → v4 : l\'inventaire devient des lots à conservati
   assertEqual(lotsOf(m, 'conserve'), [{ qty: 40, nightsLeft: null, origin: 'acheté' }]);
   assertEqual(m.marche, {});
   assertEqual(m.nuit.perdus, {});
-  // l'état migré tourne : Dormir, Marché
-  setSeedReserve(m, 'carotte', 7); // la famille ne mange pas ces carottes cette nuit
-  m.awakeMs = 30000;
-  assert(sleep(m) !== null, 'l\'état migré peut dormir');
-  assertEqual(lotsOf(m, 'carotte')[0].nightsLeft, 5, 'la péremption s\'applique à la carotte migrée');
-  m.pieces = 10;
-  assertEqual(buyItem(m, 'carotte').ok, true);
+  // l'état migré (puis déménagé sur sa terre sauvage) tourne : Dormir, Marché
+  const d = reach(migrate({ v: AVANT_DEMENAGEMENT, t: 0, s: m }), 'marche');
+  d.awakeMs = 30000;
+  assertEqual(sleep(d).nuit, 10, 'l\'état migré dort (son foyer rebâti)');
+  assertEqual(lotsOf(d, 'carotte')[0].nightsLeft, 5, 'la péremption s\'applique à la carotte migrée');
+  d.pieces = 10;
+  assertEqual(buyItem(d, 'carotte').ok, true);
 });
 
 test('migration v1 → version courante : les chaînes de migration mènent à des lots', () => {
   const v1 = { version: 1, day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} };
-  const m = migrate({ v: 1, t: 0, s: v1 });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 1, t: 0, s: v1 });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual(lotsOf(m, 'conserve'), [{ qty: 160, nightsLeft: null, origin: 'acheté' }]);
   assertEqual(m.marche, {});
   // une sauvegarde déjà en lots n'est pas convertie deux fois
-  const again = migrate({ v: 3, t: 0, s: { ...m, version: 3 } });
+  const again = migreAvant({ v: 3, t: 0, s: { ...m, version: 3 } });
   assertEqual(lotsOf(again, 'conserve'), [{ qty: 160, nightsLeft: null, origin: 'acheté' }]);
 });
 
 test('sérialisation JSON : lots et coefficients font l\'aller-retour', () => {
-  const s = createInitialState(3);
+  const s = reach(createInitialState(3), 'marche');
   s.pieces = 100;
   buyItem(s, 'carotte', 3);
   spoil(s);

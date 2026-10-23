@@ -116,7 +116,6 @@ Le Marché vend toujours les outils.
 - La nuit recopie ce qui a été mangé dans la journée (`feedFamily`) : l'**autonomie** est la part
   des points mangés qui vient de la ferme (un jour sans repas garde celle de la veille) ; l'énergie
   du réveil vaut 60 + 40 × la jauge moyenne de la famille au coucher.
-- Sur la ferme dessinée (jusqu'à sa suppression), sans Atelier, la famille mange dans l'inventaire.
 
 ## La ferme générée (étape 2)
 
@@ -699,7 +698,7 @@ niveau. Le toucher : il raconte son travail, ses achats et son dîner d'hier.
 ## Les anciennes parties
 
 Une partie de la carte de Tiled peut déménager sur une ferme générée, sans rien perdre
-(`convertirPartie(state, graine)`, `js/engine/demenagement.js`). Étape 1, le moteur :
+(`convertirPartie(state, graine)`, `js/engine/demenagement.js`). Ce qui change :
 
 - **Ce qui reste** : l'argent, l'inventaire, le niveau, les technologies, la famille, les bêtes, les
   niveaux des bâtiments et ce qui pousse.
@@ -728,31 +727,41 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
 - **Le reste** : l'Atelier est construit (à poser). Les arbres abattus, les rochers cassés, la
   cueillette du jour et la tournée du robot repartent de zéro. Les tas à ramasser entrent dans
   l'inventaire.
-- **Étape 2, le déménagement automatique** (`js/ui/storage.js`, `surTerreSauvage`) : la ferme du
-  grand-père n'existe plus. Au chargement, une ancienne partie encore sur la carte de Tiled (écran
-  de départ passé) déménage d'elle-même, sur la terre de sa graine (`graineDemenagement`, tirée de
-  la partie), sans fenêtre ni choix : la sauvegarde d'avant reste sur l'appareil
-  (`ferme-save-avant-demenagement`) et une annonce le dit une fois (`demenagementAnnonce`). Une
-  partie pas encore commencée reçoit simplement sa terre.
-  - **Une nouvelle partie** est sur sa terre sauvage dès sa création, avant même l'écran
-    d'accueil (`nouvellePartie`).
-  - Ce qui ne servait qu'à la ferme dessinée est retiré du jeu : la maison à réparer et les
-    appareils à acheter, les bâtiments à réparer (Poulailler, Étable, Serre, Silo, Verger à
-    emplacements), les intérieurs de la maison et de la Serre (leurs cartes Tiled, js/carte/ferme/interieurs.js),
-    le repas à table, les images des bâtiments dessinés (maison, serre, ruines, panneaux du toit,
-    silo) et leurs générateurs.
-- **Étape 3, à venir** : le moteur et ses tests (js/engine, tests/engine) savent encore jouer sans
-  graine (la carte de Tiled sert de terrain de test) ; ils passeront sur la ferme générée, et la
-  conversion entrera dans les migrations du moteur.
+- **Le déménagement au chargement** : la ferme du grand-père n'existe plus. Une ancienne
+  sauvegarde encore sur la carte de Tiled (écran de départ passé) déménage en migrant (version 46
+  → 47, `js/engine/state.js`), sur la terre de sa graine (`graineDemenagement`, tirée de la
+  partie), sans fenêtre ni choix ; elle le dit (`state.demenagee`) : la page garde la sauvegarde
+  d'avant sur l'appareil (`ferme-save-avant-demenagement`) et l'annonce une fois
+  (`js/ui/storage.js`, `demenagementAnnonce`). Une partie pas encore commencée reçoit simplement
+  sa graine.
+- **Une nouvelle partie** a sa graine dès sa création (`createInitialState` : `graineDemenagement`) ;
+  le moteur ne joue plus que sur la ferme générée. La carte de Tiled (`DATA.TERRAIN`) ne sert plus
+  qu'aux anciennes sauvegardes, avant leur déménagement.
+- **Ce qui ne servait qu'à la ferme dessinée est retiré** : du jeu, la maison à réparer et les
+  appareils à acheter, les bâtiments à réparer (Poulailler, Étable, Serre, Silo, Verger à
+  emplacements), les intérieurs de la maison et de la Serre, le repas à table, les images des
+  bâtiments dessinés ; du moteur, `repairHouse`, `buyStarter`, `buildPoulailler`, `buildPaturage`,
+  `buildSilo` et `upgradeSilo`, `buildSerre`, `buildVerger`, `plantTree` et les emplacements du
+  Verger, le repas pris dans l'inventaire.
+- **Les tests du moteur** jouent sur la ferme générée (la graine '1' de `createInitialState(1)`).
+  Leurs bâtiments se bâtissent en vrais blocs, d'un coup (`testBatir`, js/engine/testmode.js :
+  le foyer, la boîte à nourriture, le four, la cuisinière, le Poulailler, l'Étable, la Serre, le
+  Moulin, le Silo, les appareils, les jeunes arbres), et la famille mange à la boîte
+  (`boite`, `versBoite`, tests/engine/aide.mjs). Les tests des anciennes migrations s'arrêtent à
+  la version 46 (`migreAvant`) ; le déménagement a les siens, sur de vraies sauvegardes d'avant
+  (tests/engine/anciennes-parties.json).
+- **Le joueur automatique** (js/engine/bot.js) bâtit lui aussi d'un coup (`testBatir`) et paie le
+  prix qu'avait chaque bâtiment à la place des matériaux ; avant la pompe, il arrose à la cruche
+  (le puits posé d'un coup) ; la famille mange à la boîte à nourriture, qu'il remplit le soir.
 
 ## Étapes
 
 1. ✅ Le terrain ne dépend plus de la carte. Le moteur passe par `farmTerrain(state)`
    (`js/engine/terrain.js`). La scène lit la taille de la carte et la sortie
    `vers_la_transition`.
-2. ✅ Le générateur à partir de la graine (`js/engine/ferme-generee.js`), à essayer dans le
-   mode test (« Essayer la ferme générée », une graine au choix ou au hasard ; « Revenir à la
-   ferme dessinée »). Voir « La ferme générée » plus haut.
+2. ✅ Le générateur à partir de la graine (`js/engine/ferme-generee.js`). Le mode test change
+   de ferme (« Changer de ferme », une graine au choix ou au hasard). Voir « La ferme générée »
+   plus haut.
    Pour aller vite, la section « Ressources » du mode test (Options, puis « 🧪 Test » dans le
    menu latéral) donne en un appui : 20 bois, pierres, fibres et planches ; 10 de chaque minerai et
    lingot ; 5 de chaque bloc ; tous les outils ; l'Atelier construit ; ou n'importe quel objet,

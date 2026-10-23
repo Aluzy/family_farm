@@ -4,22 +4,21 @@
    ========================================================================== */
 
 import {
-  addItem, addLot, allDevices, allPlots, availableEnergy, buildFridge, buildSerre, buildVerger,
-  buyOrchardSlot, CONSUMERS, countItem, createInitialState, DATA, deviceStatus,
-  findDevice, findPlot, freeOrchardCases, fridgeCapacity, fridgeCount, fridgeCounts,
-  fridgeCoversNight, fridgeLots, fridgeNight, fridgeNightNeed, fridgeRate, fridgeRoom, fridgeUnits,
-  fridgeUpgradeCost, grantTech, growOrchard, harvest, harvestTree, harvestYield, isBroken, lotsOf,
-  maintainCost, maxStage, migrate, migrateFridgeCapacity, migrateOrchard, MIGRATIONS,
-  moveAllToFridge, moveFromFridge, moveToFridge, newNightStats, newTree, nightPower, orchardFree,
-  orchardSlotPrice, plant, plantableCrops, plantTree, readyCrops, repairCost,
-  repairDevice, ripeTrees, scaleEnergie, serreUpgradeCost, shelfLife, STATE_VERSION, testAddSeeds,
-  testBuildFridge, testBuildSerre, testBuildVerger, testEmptyBatteries, testFillBatteries,
-  testSetWear, tick, toggleDevice, treeAt, treeInBloom, treeNextHarvest, treeStage, treeStageName, upgradeCost, upgradeFridge,
-  upgradeSerre, water, waterCostFor,
+  addItem, addLot, allDevices, allPlots, availableEnergy, buildFridge, CONSUMERS, countItem,
+  createInitialState, DATA, deviceStatus, findDevice, findPlot, fridgeCapacity, fridgeCount,
+  fridgeCounts, fridgeCoversNight, fridgeLots, fridgeNight, fridgeNightNeed, fridgeRate,
+  fridgeRoom, fridgeUnits, fridgeUpgradeCost, grantTech, harvest, harvestTree, harvestYield,
+  isBroken, lotsOf, maintainCost, maxStage, migrate, migrateFridgeCapacity, migrateOrchard,
+  MIGRATIONS, moveAllToFridge, moveFromFridge, moveToFridge, newTree, nightPower, plant,
+  plantableCrops, poserBloc, readyCrops, repairCost, repairDevice, ripeTrees, scaleEnergie,
+  serreUpgradeCost, shelfLife, STATE_VERSION, testAddSeeds, testBatir, testBuildFridge,
+  testBuildSerre, testBuildVerger, testEmptyBatteries, testFillBatteries, testSetLevel,
+  testSetWear, tick, toggleDevice, treeInBloom, treeNextHarvest, treeStage, treeStageName,
+  unlockLevel, upgradeCost, upgradeFridge, upgradeSerre, water, waterCostFor,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, coldRoom, farm, fillCows, fillSheep, garden, kwh, ml, pature, plantRipe,
-  ranch, reach, runFor, setInv, setStraw, sleepOnce, test,
+  affamer, assert, assertEqual, AVANT_DEMENAGEMENT, coldRoom, farm, fillCows, fillSheep, garden,
+  kwh, migreAvant, ml, pature, plantRipe, ranch, reach, runFor, setInv, setStraw, sleepOnce, test,
 } from './aide.mjs';
 
 /* ---------- Lot 8 : Serre, Verger, Réfrigérateur (les saisons sont retirées en version 1.6) ---------- */
@@ -29,11 +28,18 @@ function protect(s, ...items) {
   for (const item of items) s.famille.reserve[item] = 99999;
 }
 
+// Une partie au niveau du Verger ; ses arbres se plantent dans le sol (planter).
 function orchard() {
   const s = garden();
   s.pieces = 5000;
-  assert(buildVerger(reach(s, 'verger')).ok, 'aménager le Verger');
-  return s;
+  return reach(s, 'verger');
+}
+
+// Un jeune arbre planté sur une case d'herbe libre (testBatir) : le premier ouvre le Verger.
+function planter(s, espece) {
+  const r = testBatir(s, espece);
+  assert(r.ok, `planter un ${espece}`);
+  return r;
 }
 
 test('DATA Lot 8 : Serre, Verger et Réfrigérateur (plus de saisons)', () => {
@@ -94,16 +100,15 @@ test('version 1.6 : plus de saisons, la même production toute l\'année', () =>
 
 /* --- Serre --- */
 
-test('Serre : 1 000 pièces, 15 parcelles, refus sans pièces ou si déjà construite', () => {
+test('Serre : bâtie en blocs (une pièce close, le bac à semis), 16 parcelles ; un seul bac', () => {
   const s = garden();
-  s.pieces = 999;
-  assertEqual(buildSerre(reach(s, 'serre')).ok, false);
-  s.pieces = 1000;
-  const r = buildSerre(reach(s, 'serre'));
-  assertEqual([r.ok, r.cost, s.pieces], [true, 1000, 0]);
+  s.pieces = 0;
+  assertEqual(testBatir(s, 'serre').error, `Disponible au niveau ${unlockLevel('serre')}.`);
+  const r = testBatir(reach(s, 'serre'), 'serre');
+  assertEqual([r.ok, s.pieces], [true, 0]);
   assertEqual([s.serre.construit, s.serre.niveau, s.serre.parcelles.length], [true, 1, 16]);
   assertEqual(s.serre.parcelles.every((p) => p.lieu === 'serre'), true);
-  assertEqual(buildSerre(reach(s, 'serre')).ok, false);
+  assertEqual(testBatir(s, 'serre').ok, false, 'un seul bac à semis');
   assertEqual(allPlots(s).length, 22, '6 du Potager et 16 de la Serre');
   assertEqual(findPlot(s, 'serre-3').lieu, 'serre');
 });
@@ -111,7 +116,7 @@ test('Serre : 1 000 pièces, 15 parcelles, refus sans pièces ou si déjà const
 test('Serre : +10 parcelles par niveau jusqu\'à toute sa terre (56), 900 / 1 800 / 3 000 / 5 400 pièces', () => {
   const s = garden();
   s.pieces = 100000;
-  buildSerre(reach(s, 'serre'));
+  testBatir(reach(s, 'serre'), 'serre');
   const seen = [];
   for (let i = 0; i < 4; i++) {
     const cost = serreUpgradeCost(s);
@@ -128,7 +133,7 @@ test('Serre : +10 parcelles par niveau jusqu\'à toute sa terre (56), 900 / 1 80
 test('Serre : tomate, courgette, aubergine, poivron, cacao, vanille, café', () => {
   const s = garden();
   s.pieces = 5000;
-  buildSerre(reach(s, 'serre'));
+  testBatir(reach(s, 'serre'), 'serre');
   upgradeSerre(s); // niveau 2 : 9 parcelles, assez pour tout planter en même temps
   testAddSeeds(s);
   const toPlant = ['tomate', 'courgette', 'aubergine', 'poivron', 'cacao', 'vanille', 'cafe'];
@@ -152,7 +157,7 @@ test('cultures de rente : cacao, vanille et café exclusivement en Serre', () =>
   // fonction de plantation qui porte la règle.
   const s = garden();
   s.pieces = 5000;
-  buildSerre(reach(s, 'serre'));
+  testBatir(reach(s, 'serre'), 'serre');
   addItem(s, 'cacao', 5);
   addItem(s, 'vanille', 5);
   addItem(s, 'cafe', 5);
@@ -184,7 +189,7 @@ test('Serre : 3 L par arrosage et 10 tomates, chaque nuit de l\'année', () => {
   for (const day of [1, 11, 21, 31]) {
     const s = garden();
     s.pieces = 5000;
-    buildSerre(reach(s, 'serre'));
+    testBatir(reach(s, 'serre'), 'serre');
     s.day = day;
     plant(s, 'serre-1', 'tomate');
     const before = s.eauMl;
@@ -198,7 +203,7 @@ test('Serre : 3 L par arrosage et 10 tomates, chaque nuit de l\'année', () => {
 test('Serre : pousse une nuit arrosée, et les récoltes prêtes la comptent', () => {
   const s = garden();
   s.pieces = 5000;
-  buildSerre(reach(s, 'serre'));
+  testBatir(reach(s, 'serre'), 'serre');
   plant(s, 'serre-1', 'tomate');
   water(s, 'serre-1');
   sleepOnce(s);
@@ -209,66 +214,15 @@ test('Serre : pousse une nuit arrosée, et les récoltes prêtes la comptent', (
 
 /* --- Verger --- */
 
-test('Verger : 2 emplacements au départ, aucun arbre', () => {
+test('Verger : un jeune arbre se plante dans le sol, sur l\'herbe ; le premier ouvre le Verger', () => {
   const s = orchard();
-  assertEqual([s.verger.construit, s.verger.places, s.verger.arbres.length, orchardFree(s)], [true, 2, 0, 2]);
-  assertEqual(buildVerger(reach(s, 'verger')).ok, false, 'déjà aménagé');
-  assertEqual(plantTree(garden(), 'pommier').ok, false, 'sans Verger');
-});
-
-test('Verger : prix des emplacements supplémentaires 50 × 1,25^n arrondi à l\'entier supérieur', () => {
-  const s = orchard();
-  s.pieces = 100000;
-  const seen = [];
-  for (let i = 0; i < 6; i++) {
-    const before = s.pieces;
-    const price = orchardSlotPrice(s);
-    assert(buyOrchardSlot(s).ok);
-    seen.push([price, before - s.pieces, s.verger.places]);
-  }
-  assertEqual(seen.map((x) => x[0]), [50, 63, 79, 98, 123, 153]);
-  assertEqual(seen.map((x) => x[1]), [50, 63, 79, 98, 123, 153]);
-  assertEqual(seen.map((x) => x[2]), [3, 4, 5, 6, 7, 8]);
-  assertEqual(s.verger.achetes, 6, 'les 2 emplacements de départ ne comptent pas');
-  const poor = orchard();
-  poor.pieces = 49;
-  assertEqual(buyOrchardSlot(poor).ok, false);
-  assertEqual(buyOrchardSlot(garden()).ok, false, 'sans Verger');
-});
-
-// Version 1.4 : 12 emplacements, autant que de rectangles arbre_verger_n sur la carte.
-test('Verger : le nombre d\'emplacements est plafonné à 12', () => {
-  const s = orchard();
-  s.pieces = 10000000;
-  assertEqual(DATA.VERGER.EMPLACEMENTS_MAX, 12);
-  // 2 emplacements de départ + 10 achats = 12.
-  for (let i = 0; i < 10; i++) {
-    assert(buyOrchardSlot(s).ok, `achat ${i + 1}/10 devrait réussir`);
-  }
-  assertEqual(s.verger.places, 12);
-  assertEqual(s.verger.achetes, 10);
-  const blocked = buyOrchardSlot(s);
-  assertEqual(blocked.ok, false, 'refusé au-delà de 12 emplacements');
-  assertEqual(s.verger.places, 12, 'le plafond ne bouge pas même avec assez de pièces');
-});
-
-test('Verger : arbre à 40 pièces sur un emplacement libre, pommier ou poirier', () => {
-  const s = orchard();
-  s.pieces = 100;
-  const a = plantTree(s, 'pommier');
-  assertEqual([a.ok, a.cost, s.pieces], [true, 40, 60]);
-  assertEqual(plantTree(s, 'poirier').ok, true);
-  assertEqual(s.pieces, 20);
-  assertEqual(s.verger.arbres.map((t) => [t.id, t.espece, t.plantee]), [['arbre-1', 'pommier', 1], ['arbre-2', 'poirier', 1]]);
-  s.pieces = 500;
-  assertEqual(plantTree(s, 'pommier').ok, false, 'verger plein');
-  assertEqual(s.pieces, 500);
-  buyOrchardSlot(s);
-  assertEqual(plantTree(s, 'pommier').ok, true, 'un emplacement acheté');
-  assertEqual(plantTree(s, 'cerisier').ok, false, 'arbre inconnu');
-  const poor = orchard();
-  poor.pieces = 39;
-  assertEqual(plantTree(poor, 'pommier').ok, false);
+  assertEqual([s.verger.construit, s.verger.arbres.length], [false, 0]);
+  const r = planter(s, 'pommier');
+  assertEqual([s.verger.construit, s.verger.arbres.map((t) => [t.id, t.espece, t.plantee, t.case])], [true, [['arbre-1', 'pommier', 1, r.case]]]);
+  assertEqual(poserBloc(s, 'poirier', r.case + 1).ok, false, 'trop près d\'un autre arbre');
+  planter(s, 'poirier');
+  assertEqual(s.verger.arbres.length, 2);
+  assertEqual(testBatir(reach(garden(), 'verger'), 'cerisier').ok, true, 'cinq espèces');
 });
 
 test('Verger : première récolte 15 nuits après la plantation', () => {
@@ -276,7 +230,7 @@ test('Verger : première récolte 15 nuits après la plantation', () => {
   grantTech(s, 'cu_verger_auto'); // version 1.13 : cueillis la nuit
   protect(s, 'pomme');
   s.day = 10;
-  plantTree(s, 'pommier');
+  planter(s, 'pommier');
   const fruits = {};
   while (s.day <= 30) {
     const day = s.day;
@@ -293,7 +247,7 @@ test('Verger : arbre planté à la nuit 1, première récolte à la nuit 15, pui
   const s = orchard();
   grantTech(s, 'cu_verger_auto');
   protect(s, 'poire');
-  plantTree(s, 'poirier');
+  planter(s, 'poirier');
   const fruits = {};
   while (s.day <= 30) {
     const day = s.day;
@@ -308,6 +262,7 @@ test('Verger : version 1.6, des fruits toute l\'année, chaque arbre à son ryth
   assertEqual(treeNextHarvest({ day: 2 }, tree), 15);
   assertEqual(treeNextHarvest({ day: 2 }, newTree('arbre-9', 'pommier', 2, 0)), 16, 'planté nuit 2 : nuit 16');
   const s = orchard();
+  s.verger.construit = true;
   grantTech(s, 'cu_verger_auto');
   protect(s, 'pomme');
   s.verger.arbres.push({ id: 'arbre-9', espece: 'pommier', plantee: -100 });
@@ -318,6 +273,7 @@ test('Verger : version 1.6, des fruits toute l\'année, chaque arbre à son ryth
 
 test('Verger : chaque arbre donne 6 fruits de son espèce, pas d\'arrosage', () => {
   const s = orchard();
+  s.verger.construit = true;
   grantTech(s, 'cu_verger_auto');
   protect(s, 'pomme', 'poire');
   s.verger.arbres.push({ id: 'arbre-1', espece: 'pommier', plantee: -50 }, { id: 'arbre-2', espece: 'poirier', plantee: -50 });
@@ -621,9 +577,8 @@ test('ordre nocturne complet : verger avant le frigo, péremption après', () =>
 test('sérialisation JSON : Serre, Verger et Réfrigérateur font l\'aller-retour', () => {
   const s = coldRoom();
   s.pieces = 9999;
-  buildSerre(reach(s, 'serre'));
-  buildVerger(reach(s, 'verger'));
-  plantTree(s, 'pommier');
+  testBatir(reach(s, 'serre'), 'serre');
+  planter(reach(s, 'verger'), 'pommier');
   setInv(s, { carotte: 5, conserve: 500 });
   moveToFridge(s, 'carotte', 5);
   runFor(s, 2);
@@ -643,8 +598,8 @@ test('migration v8 (Lot 7) → v9 (Lot 8) → v10 : Serre, Verger et Réfrigéra
   v8.version = 8;
   v8.day = 25;
   v8.pieces = 321;
-  const m = migrate({ v: 8, t: 0, s: v8 });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 8, t: 0, s: v8 });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual([m.day, m.pieces], [25, 321]);
   assertEqual(m.serre, { construit: false, niveau: 1, parcelles: [] });
   assertEqual(m.verger.places, 2);
@@ -652,11 +607,12 @@ test('migration v8 (Lot 7) → v9 (Lot 8) → v10 : Serre, Verger et Réfrigéra
   assertEqual(m.nuit.fruits, {});
   tick(m, 0.2);
   assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
-  assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }).version, STATE_VERSION);
+  assertEqual(migreAvant({ v: AVANT_DEMENAGEMENT, t: 0, s: JSON.parse(JSON.stringify(m)) }).version, AVANT_DEMENAGEMENT);
 });
 
 test('mode test Lot 8 : constructions gratuites, batteries vides', () => {
   const t = farm();
+  testSetLevel(t, unlockLevel('serre'));
   testFillBatteries(t);
   t.pieces = 0;
   testBuildSerre(t);
@@ -697,30 +653,9 @@ test('version 1.4 : format 20, le Champ commence vide et la migration l\'ajoute'
   const v19 = JSON.parse(JSON.stringify(createInitialState(3)));
   v19.version = 19;
   delete v19.potager.zone2;
-  const m = migrate({ v: 19, t: 0, s: v19 });
-  assertEqual([m.version, m.potager.zone2, m.potager.parcelles.length], [STATE_VERSION, [], 6]);
-  assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
-});
-
-test('version 1.4 : un Verger de plus de 12 emplacements garde ses arbres et ses fruits', () => {
-  const s = orchard();
-  s.verger.places = 15;
-  s.verger.achetes = 13;
-  s.pieces = 100000;
-  for (let i = 0; i < 15; i++) assert(plantTree(s, i % 2 ? 'poirier' : 'pommier').ok, `arbre ${i + 1}`);
-  assertEqual([s.verger.arbres.length, orchardFree(s)], [15, 0]);
-  assertEqual(buyOrchardSlot(s).ok, false, 'plus d\'emplacement à vendre au-delà de 12');
-  const v19 = JSON.parse(JSON.stringify(s));
-  v19.version = 19;
-  const m = migrate({ v: 19, t: 0, s: v19 });
-  assertEqual([m.verger.places, m.verger.arbres.length], [15, 15], 'rien n\'est retiré');
-  // Les 15 arbres, adultes et plantés la même nuit, donnent tous leurs fruits la même nuit.
-  m.day = DATA.VERGER.MATURITE + 2 * DATA.VERGER.PERIODE;
-  for (const t of m.verger.arbres) { t.plantee = 1; t.prochaine = m.day; }
-  grantTech(m, 'cu_verger_auto');
-  m.nuit = newNightStats();
-  growOrchard(m);
-  assertEqual((m.nuit.fruits.pomme || 0) + (m.nuit.fruits.poire || 0), 15 * DATA.VERGER.FRUITS);
+  const m = migreAvant({ v: 19, t: 0, s: v19 });
+  assertEqual([m.version, m.potager.zone2, m.potager.parcelles.length], [AVANT_DEMENAGEMENT, [], 6]);
+  assertEqual(migreAvant({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
 });
 
 /* ---------- version 1.10 (v2, lot 6) : le frigo à capacité ---------- */
@@ -797,23 +732,10 @@ test('version 1.10 : migration v27 → v28 : le frigo passe au niveau 1, le surp
 
 /* ---------- version 1.13 (v2, lot 9) : le Verger au clic ---------- */
 
-test('version 1.13 : un arbre se plante sur la case choisie du Verger', () => {
-  const s = orchard();
-  s.pieces = 200;
-  assertEqual(freeOrchardCases(s), [0, 1]);
-  const r = plantTree(s, 'poirier', 1);
-  assertEqual([r.ok, r.case, s.pieces], [true, 1, 160]);
-  assertEqual(treeAt(s, 1).espece, 'poirier');
-  assertEqual(plantTree(s, 'pommier', 1).ok, false, 'case déjà prise');
-  assertEqual(plantTree(s, 'pommier', 2).ok, false, 'case non achetée');
-  assertEqual(plantTree(s, 'pommier').case, 0, 'sans case : la première libre');
-  assertEqual(freeOrchardCases(s), []);
-});
-
 test('version 1.13 : 4 dessins, 5 nuits par dessin, puis des fruits qui attendent', () => {
   const s = orchard();
   protect(s, 'pomme');
-  plantTree(s, 'pommier', 0);
+  planter(s, 'pommier');
   const t = s.verger.arbres[0];
   const stades = [];
   for (let n = 0; n <= 16; n++) {
@@ -828,7 +750,7 @@ test('version 1.13 : 4 dessins, 5 nuits par dessin, puis des fruits qui attenden
 test('le Verger : un arbre fleurit le jour avant ses fruits (FLORAISON), à chaque cycle', () => {
   const s = orchard();
   protect(s, 'cerise');
-  assert(plantTree(s, 'cerisier', 0).ok, 'un cerisier');
+  planter(s, 'cerisier');
   const t = s.verger.arbres[0];
   const fleurs = [];
   for (let n = 0; n <= 16; n++) {
@@ -862,7 +784,7 @@ test('le Verger : cinq espèces, chacune son fruit, son jeune arbre et son dessi
 test('version 1.13 : la cueillette au clic coûte de l\'énergie et rapporte 20 XP, fruits 3 nuits plus tard', () => {
   const s = orchard();
   protect(s, 'poire');
-  plantTree(s, 'poirier', 0);
+  planter(s, 'poirier');
   const t = s.verger.arbres[0];
   t.fruits = true;
   const xp = s.progression.xp;
@@ -890,7 +812,7 @@ test('version 1.13 : Récolte du verger, cueillette la nuit à moitié de l\'XP'
   const s = orchard();
   protect(s, 'pomme');
   grantTech(s, 'cu_verger_auto');
-  plantTree(s, 'pommier', 0);
+  planter(s, 'pommier');
   s.verger.arbres[0].prochaine = s.day;
   const xp = s.progression.xp;
   const r = sleepOnce(s);
@@ -909,6 +831,6 @@ test('migration v29 → v30 : chaque arbre reçoit sa case et garde son calendri
   assertEqual(m.version, 30);
   // arbre 1 : nuits 15, 18, 21… → 21 ; arbre 2 : nuit 24
   assertEqual(m.verger.arbres.map((t) => [t.case, t.fruits, t.prochaine]), [[0, false, 21], [1, false, 24]]);
-  const all = migrate({ v: 29, t: 0, s: old });
-  assertEqual(all.version, STATE_VERSION);
+  const all = migreAvant({ v: 29, t: 0, s: old });
+  assertEqual(all.version, AVANT_DEMENAGEMENT);
 });

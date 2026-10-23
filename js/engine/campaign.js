@@ -9,7 +9,6 @@ import { plantableCrops } from './crops.js';
 import { checkMastery, grantTechPoints, isBuilt, techPoints } from './techtree.js';
 import { gainXp, levelReached, unlockLevel } from './levels.js';
 import { houseRepaired } from './depart.js';
-import { farmSeed } from './terrain.js';
 
 /* ---------- Lot 9 : autonomie et chapitres ---------- */
 
@@ -230,23 +229,22 @@ export function objectiveValue(state, obj) {
 
 // Progression d'un chapitre : { chapitre, titre, icone, intro, objectifs: [{ ...objectif,
 // valeur, ok, ratio }], fait }.
-// Sur une terre sauvage (la ferme générée), l'intro et les libellés ont leur version
-// (introSauvage, libelleSauvage) : une nouvelle partie ne connaît pas la ferme du grand-père ;
-// les objectifs marqués sauvage: false n'y existent pas (le panneau, la pompe, la citerne).
+// Sur une terre sauvage, l'intro et les libellés ont leur version (introSauvage,
+// libelleSauvage) quand elle existe ; les objectifs marqués sauvage: false n'y existent pas (le
+// panneau, la pompe, la citerne).
 export function chapterProgress(state, chapitre = state.campagne.chapitre) {
   const def = DATA.CHAPITRES.liste[chapitre - 1];
-  const sauvage = farmSeed(state) !== null;
-  const objectifs = def.objectifs.filter((o) => !(sauvage && o.sauvage === false)).map((o) => {
+  const objectifs = def.objectifs.filter((o) => o.sauvage !== false).map((o) => {
     const valeur = objectiveValue(state, o);
-    return { ...o, libelle: (sauvage && o.libelleSauvage) || o.libelle, valeur, ok: valeur + EPS >= o.cible, ratio: Math.max(0, Math.min(1, valeur / o.cible)) };
+    return { ...o, libelle: o.libelleSauvage || o.libelle, valeur, ok: valeur + EPS >= o.cible, ratio: Math.max(0, Math.min(1, valeur / o.cible)) };
   });
-  return { chapitre, titre: def.titre, icone: def.icone, intro: (sauvage && def.introSauvage) || def.intro, objectifs, fait: objectifs.every((o) => o.ok) };
+  return { chapitre, titre: def.titre, icone: def.icone, intro: def.introSauvage || def.intro, objectifs, fait: objectifs.every((o) => o.ok) };
 }
 
-// Le texte de la lettre `id` : sur une terre sauvage, sa version (texteSauvage) s'il y en a une.
+// Le texte de la lettre `id` : sa version d'une terre sauvage (texteSauvage) s'il y en a une.
 export function mailText(state, id) {
   const def = DATA.COURRIER[id];
-  return (farmSeed(state) !== null && def.texteSauvage) || def.texte;
+  return def.texteSauvage || def.texte;
 }
 
 // Terminer le chapitre en cours : on l'annonce, puis le suivant s'ouvre (ou la

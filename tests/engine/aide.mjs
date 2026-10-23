@@ -10,10 +10,10 @@
 
 import { test } from 'node:test';
 import {
-  addItem, awakeMsAtHour, buildFridge, buildPaturage, buildPoulailler, buildSilo, buildStation,
+  addItem, awakeMsAtHour, boitePosee, buildFridge, buildStation,
   buyCow, buySheep, countItem, createInitialState, DATA, defaultOrigin, findPlot, grantTech,
-  growDue, irrigate, makePlot, maxStage, openStation, plant, plotAtTile, robotStep, shelfLife,
-  depenserMembre, mangeurs, repasStep, sleep, takeItem, testFillBatteries, testGoToChapter, testSetBuildingLevel5, tick, unlockLevel,
+  farmTerrain, growDue, irrigate, makePlot, migrate, maxStage, startPlots, openStation, plant, plotAtTile, robotStep, shelfLife,
+  depenserMembre, mangeurs, repasStep, sleep, takeItem, testBatir, testFillBatteries, testGoToChapter, testSetBuildingLevel5, tick, unlockLevel,
   zoneTile,
 } from '../../js/engine/index.js';
 
@@ -79,8 +79,16 @@ export function reach(s, id) {
   return s;
 }
 
+// La partie de test : au niveau du Marché (il ouvre à un niveau, NIVEAUX), avec son foyer (une
+// pièce close, une paillasse par membre : la famille dort).
+export function partie(seed = 1) {
+  const s = reach(createInitialState(seed), 'marche');
+  assert(testBatir(s, 'foyer').ok, 'bâtir le foyer');
+  return s;
+}
+
 export function farm({ pump = false, sun = true } = {}) {
-  const s = createInitialState(1);
+  const s = partie();
   s.pompe.allume = pump;
   if (sun) s.awakeMs = awakeMsAtHour(DATA.SOLEIL.DEBUT);
   return s;
@@ -88,7 +96,7 @@ export function farm({ pump = false, sun = true } = {}) {
 
 // État de test : réservoir plein d'eau (le potager s'arrose avec).
 export function garden() {
-  const s = createInitialState(1);
+  const s = partie();
   s.pompe.allume = false;
   s.eauMl = ml(40);
   return s;
@@ -108,6 +116,27 @@ export function setInv(s, quantities) {
   for (const [item, n] of Object.entries(quantities)) addItem(s, item, n);
 }
 
+// La boîte à nourriture posée dans le foyer (bâti s'il le faut), remplie de ces quantités
+// (lots à conservation pleine, au-delà des limites de la boîte) : la famille y mange.
+export function boite(s, quantities = {}) {
+  if (!boitePosee(s)) assert(testBatir(s, 'boite').ok, 'poser la boîte');
+  s.boite.items = {};
+  for (const [item, n] of Object.entries(quantities)) if (n > 0) s.boite.items[item] = [{ qty: n, nightsLeft: shelfLife(item), origin: defaultOrigin(item) }];
+  return s;
+}
+
+// Les aliments de l'inventaire passent dans la boîte à nourriture (posée s'il le faut), avec
+// leurs lots (origine, conservation), au-delà des limites de la boîte.
+export function versBoite(s) {
+  if (!boitePosee(s)) assert(testBatir(s, 'boite').ok, 'poser la boîte');
+  for (const [item, lots] of Object.entries(s.inventaire)) {
+    if (!DATA.OBJETS[item] || !DATA.OBJETS[item].mangeable) continue;
+    s.boite.items[item] = [...(s.boite.items[item] || []), ...lots];
+    delete s.inventaire[item];
+  }
+  return s;
+}
+
 // Version 1.8 : une partie de test « infatigable », pour les tests qui enchaînent
 // beaucoup d'actions au clic sans parler d'énergie (l'énergie a ses propres tests).
 export function tireless(s) {
@@ -120,9 +149,10 @@ export function tireless(s) {
 export function growZone(s, total) {
   s.potager.houe = true;
   for (let c = 0; s.potager.parcelles.length < total && c < DATA.POTAGER.CASES; c++) {
-    if (plotAtTile(s, zoneTile(1, c))) continue;
+    const tile = zoneTile(1, c, farmTerrain(s));
+    if (plotAtTile(s, tile)) continue;
     const n = s.potager.parcelles.length + 1;
-    s.potager.parcelles.push({ ...makePlot(n), case: c });
+    s.potager.parcelles.push({ ...makePlot(n), case: tile });
   }
   s.potager.parcelles.sort((a, b) => a.case - b.case);
   return s;
@@ -134,8 +164,8 @@ export function growZone(s, total) {
 export function ranch({ silo = true, coop = true } = {}) {
   const s = garden();
   s.pieces = 5000;
-  if (silo) assert(buildSilo(reach(s, 'silo')).ok, 'construire le Silo');
-  if (coop) assert(buildPoulailler(reach(s, 'poulailler')).ok, 'construire le Poulailler');
+  if (silo) assert(testBatir(reach(s, 'silo'), 'silo').ok, 'construire le Silo');
+  if (coop) assert(testBatir(reach(s, 'poulailler'), 'poulailler').ok, 'construire le Poulailler');
   return s;
 }
 
@@ -143,7 +173,7 @@ export function ranch({ silo = true, coop = true } = {}) {
 // pleines, réservoir plein, panneau coupé (l'énergie ne bouge que par les consommateurs).
 export function atelier({ stations = ['four', 'cuisine', 'moulin', 'presse'] } = {}) {
   const s = ranch();
-  for (const id of stations) assert(buildStation(reach(s, id), id).ok, `construire ${id}`);
+  for (const id of stations) assert((id === 'presse' ? buildStation(reach(s, id), id) : testBatir(reach(s, id), id)).ok, `construire ${id}`);
   s.pieces = 1000;
   setInv(s, {});
   testFillBatteries(s);
@@ -162,7 +192,7 @@ export function runFor(s, seconds, dt = 0.2) {
 export function pature({ built = true } = {}) {
   const s = garden();
   s.pieces = 5000;
-  if (built) assert(buildPaturage(reach(s, 'paturage')).ok, 'ouvrir l\'Étable');
+  if (built) assert(testBatir(reach(s, 'paturage'), 'etable').ok, 'ouvrir l\'Étable');
   return s;
 }
 
@@ -208,6 +238,7 @@ export function auto5(...batiments) {
     if (b === 'potager') {
       grantTech(s, 'ea_irrigation');
       grantTech(s, 'cu_recolte_auto');
+      assert(testBatir(s, 'station_robot').ok, 'la station du robot');
     }
     if (b === 'poulailler') grantTech(s, 'el_mangeoire');
   }
@@ -220,7 +251,7 @@ export function auto5(...batiments) {
 export function v14State({ potager = 1, champ = 0 } = {}, mutate) {
   const anciennes = { potager: [6, 9, 12, 16, 20], champ: [4, 6, 9, 12, 16] };
   const plots = (n, lieu) => Array.from({ length: n }, (_, i) => ({ id: `${lieu}-${i + 1}`, lieu, culture: null, stade: 0, arrose: false, semis: 'meme', verrou: null }));
-  const s = createInitialState(6);
+  const s = ancienne(6);
   s.potager = { niveau: potager, parcelles: plots(anciennes.potager[potager - 1], 'potager') };
   s.champ = champ > 0
     ? { construit: true, niveau: champ, parcelles: plots(anciennes.champ[champ - 1], 'champ') }
@@ -231,6 +262,21 @@ export function v14State({ potager = 1, champ = 0 } = {}, mutate) {
   if (mutate) mutate(s);
   return JSON.parse(JSON.stringify(s));
 }
+
+// Une partie d'avant le déménagement, sur la ferme du grand-père (la carte de Tiled, sans
+// graine) : la partie de test, sans sa carte, avec les parcelles de départ de la ferme dessinée.
+// Pour les tests des anciennes migrations.
+export function ancienne(seed = 1) {
+  const s = createInitialState(seed);
+  delete s.carte;
+  s.potager.parcelles = startPlots();
+  return s;
+}
+
+// Les anciennes migrations, jusqu'à la version 46 : la dernière sur la ferme du grand-père,
+// avant le déménagement (v46 → v47, demenagement.test.mjs).
+export const AVANT_DEMENAGEMENT = 46;
+export const migreAvant = (save) => migrate(save, AVANT_DEMENAGEMENT);
 
 // Ce qu'une parcelle porte, sans son identifiant ni son lieu (que la fusion renumérote).
 export function plotContent(p) {
@@ -270,8 +316,8 @@ export function affamer(s, points = DATA.FAMILLE.FAIM.MAX - DATA.FAMILLE.FAIM.SE
 // conserves pour le reste. `item` : patate par défaut (valeur 5, mangée avant les conserves
 // qui ne périment pas) ; un autre item (ex. courgette, valeur 3) donne d'autres pourcentages.
 export function nightWithProduced(s, qty, item = 'patate') {
-  s.famille.reserve = {};
-  setInv(s, { [item]: qty, conserve: 60 });
+  setInv(s, {});
+  boite(s, { [item]: qty, conserve: 60 });
   affamer(s);
   return sleepOnce(s);
 }
@@ -290,7 +336,10 @@ export function withMill() {
 
 // Version 1.15 : le milieu de l'ancien Champ, de l'herbe tout autour (les bordures s'y
 // dessinent) ; (c, r) de 0 à 5.
-export const champ = (c, r) => zoneTile(2, (r + 1) * 8 + c + 1);
+export const champ = (c, r) => zoneTile(2, (r + 1) * 8 + c + 1, T1);
+
+// Le terrain des parties de test (createInitialState(1) : la ferme générée de la graine '1').
+export const T1 = farmTerrain({ carte: { graine: '1' } });
 
 // FLU-42 : une partie migrée qui avait déjà labouré, planté et arrosé (ou dépassé le
 // chapitre 1) a les trois nouvelles étapes du chapitre 1 validées.

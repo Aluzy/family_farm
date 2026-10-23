@@ -14,7 +14,6 @@ import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, takeItem } from './inventory.js';
 import { PORTE_SUR_MUR, blocsEnMain, blocsPoses, changeMur, empriseMeuble, genreBloc, hauteurMur, piecesCloses, solsPoses } from './blocs.js';
-import { atelierOuvert } from './atelier.js';
 import { farmTerrain } from './terrain.js';
 
 // Les blocs qui se posent à l'étage : des murs, des portes, une paillasse, une lanterne, une
@@ -65,7 +64,6 @@ function avecMurs(state, cases) {
 // les portes qui les bordent (les huit voisines). Un Set de tuiles.
 export function etageEmprise(state) {
   const out = new Set();
-  if (!atelierOuvert(state)) return out;
   const B = blocsPoses(state);
   for (const p of piecesCloses(state)) {
     if (!p.cases.some((t) => B[t] === 'escalier')) continue;
@@ -85,7 +83,6 @@ export function etageEmprise(state) {
 // [{ niveau, cases: [tuiles couvertes], dedans: [tuiles d'où l'on est dans le bâtiment], verre (la Serre),
 //    maison (une pièce de la maison : on y allume la nuit, js/carte/ferme/fenetres.js) }]
 export function toits(state) {
-  if (!atelierOuvert(state)) return [];
   const B = blocsPoses(state), E = etageBlocs(state), W = farmTerrain(state).LARGEUR;
   const ferme = (t) => { const s = DATA.ATELIER.BLOCS[E[t]]; return !!(s && s.ferme); };
   const out = [], S = solsPoses(state);

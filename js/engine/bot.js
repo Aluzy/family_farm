@@ -1,29 +1,30 @@
 import { DATA, dishPrice, ingredientOptions } from './catalog.js';
 import { EPS } from './base.js';
 import {
-  allDevices, batteryCapacity, canPay, farmOpen, isBroken, isOwned, maintainDevice, marcheOuvert, needsService, panelOutput, pumpFlow,
+  allDevices, batteryCapacity, canPay, farmOpen, isBroken, isOwned, maintainDevice, marcheOuvert, needsService, panelOutput, pay, pumpFlow,
   repairDevice, starterOf, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from './devices.js';
 import { awakeRequired } from './clock.js';
 import { tick } from './energy.js';
-import { addItem, countItem, expiringSoon } from './inventory.js';
+import { addItem, countItem, expiringSoon, inventoryCounts, lotRank, lotsOf } from './inventory.js';
 import { buildFridge, fridgeLevel, fridgeRate, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, stockCount, upgradeFridge } from './fridge.js';
 import { buyItem, buyPrice, isBuyable, sellItem } from './market.js';
 import { eatSnack } from './family.js';
-import { depenserMembre, jaugeMembre, mangeurs, repasStep, valeurAliment } from './repas.js';
+import { boitePosee, depenserMembre, deposerBoite, jaugeMembre, mangeurs, repasStep, valeurAliment } from './repas.js';
 import { actionCost, energyLevel, energyMax } from './stamina.js';
+import { levelBlock } from './levels.js';
 import { averageHappiness, dishHappiness } from './ville.js';
 import {
-  allPlots, buildSerre, buyHoe, cropProduct, harvest, hasHoe, hoe, hoeStatus, isArable, isMature, plant, plotAtTile, seedItem, seedStock,
+  allPlots, buyHoe, cropProduct, harvest, hasHoe, hoe, hoeStatus, isArable, isMature, plant, plotAtTile, seedItem, seedStock,
   serreUpgradeCost, soilCount, upgradeSerre, water, waterCost,
 } from './crops.js';
 import {
-  animalPrice, buildPaturage, buildPoulailler, buildSilo, buyAnimal, buyCow, buyPasture, buySheep, canFeedHen, cowCount, freeCowPlaces,
+  animalPrice, buyAnimal, buyCow, buyPasture, buySheep, canFeedHen, cowCount, freeCowPlaces,
   coopCapacity, coopUpgradeCost, feedAllHens, freeSheepPlaces, hensToFeed, pastureCost, shear, sheepCount,
-  siloUpgradeCost, strawNeed, strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady,
+  strawNeed, strawStock, upgradePoulailler, wheatTotal, woolReady,
 } from './animals.js';
 import { chooseCommerce, commerceStock, commerceUpgradeCost, upgradeCommerce } from './commerce.js';
-import { buildVerger, buyOrchardSlot, harvestTree, orchardFree, orchardSlotPrice, plantTree, ripeTrees } from './orchard.js';
+import { harvestTree, ripeTrees } from './orchard.js';
 import { buildStation, millPending, recipeUnlocked, startMilling, startRecipe } from './kitchen.js';
 import { buyTech, hasTech, techPoints, techResources, techStatus } from './techtree.js';
 import {
@@ -34,8 +35,10 @@ import { isAutomated } from './automation.js';
 import { buyTool, grassCut, hasTool, scytheGrass } from './outils.js';
 import { bottelerSansCarte } from './botteleuse.js';
 import { sleep } from './night.js';
-import { farmTerrain, tileCount } from './terrain.js';
-import { createNewGame, buyStarter, houseRepaired, repairHouse, starterBlock } from './depart.js';
+import { farmSeed, farmTerrain, tileCount } from './terrain.js';
+import { createNewGame, houseRepaired, starterBlock } from './depart.js';
+import { testBatir } from './testmode.js';
+import { aCruche, crucheCapacite, eauCruche, puitsPose, remplirCruche } from './cruche.js';
 
 /* ==========================================================================
    Lot 10 : simulation d'un joueur automatique (conception, sections 8.10 et
@@ -209,22 +212,32 @@ export function botFarm(state) {
   }
   const thirsty = allPlots(state).filter((p) => p.culture && !p.arrose && !isMature(p));
   thirsty.sort((a, b) => b.stade - a.stade);
-  for (const p of thirsty) water(state, p.id);
+  // (la cruche vide : remplie au puits, puis la parcelle arrosée)
+  for (const p of thirsty) if (!water(state, p.id).ok && remplirCruche(state).ok) water(state, p.id);
+}
+
+// Avant la pompe : le puits (posé d'un coup, testBatir) et la cruche (fabriquée à l'Atelier :
+// donnée, comme les ressources de botGather), remplie au puits.
+function botEau(state) {
+  if (!houseRepaired(state)) return;
+  if (!puitsPose(state)) testBatir(state, 'puits');
+  if (!aCruche(state)) addItem(state, 'cruche', 1);
+  if (eauCruche(state) < crucheCapacite()) remplirCruche(state);
 }
 
 // Tuiles labourables, des plus proches de l'ancienne Zone de culture aux plus lointaines
 // (version 1.15 : le joueur automatique cultive d'un seul tenant).
-// (Une fois par terrain.)
+// (Une fois par terrain et par blocs posés : ce qui est bâti ne se laboure pas.)
 let botTilesCache = null, botTilesPour = null;
 function botTiles(state) {
-  const T = farmTerrain(state);
-  if (botTilesPour === T) return botTilesCache;
+  const T = farmTerrain(state), cle = farmSeed(state) + ':' + Object.keys(state.blocs || {}).join(',');
+  if (botTilesPour === cle) return botTilesCache;
   const W = T.LARGEUR, Z = T.ZONES[1], n = tileCount(T);
   const tiles = [], aucune = new Set(); // (les tuiles sous un rocher ou un arbre n'y sont pas)
   for (let t = 0; t < n; t++) if (isArable(t, state, aucune)) tiles.push(t);
   const d = (t) => Math.hypot((t % W) - (Z.X + 2), Math.floor(t / W) - (Z.Y + 2.5));
   botTilesCache = tiles.sort((a, b) => d(a) - d(b) || a - b);
-  botTilesPour = T;
+  botTilesPour = cle;
   return botTilesCache;
 }
 
@@ -440,35 +453,51 @@ function botCook(state) {
 
 /* ---------- achats ---------- */
 
+// Bâtir `id` (un bâtiment, un appareil, un arbre : testBatir) : le joueur simulé ne ramasse ni
+// ne fabrique les blocs, il les pose d'un coup et paie `cost` à la place (le prix qu'avait ce
+// bâtiment). { cost, buy }.
+function botBatir(state, id, cost) {
+  return {
+    cost,
+    buy: () => {
+      if (!canPay(state, cost)) return { ok: false, error: 'Pas assez de pièces.' };
+      const r = testBatir(state, id);
+      if (r.ok && cost > 0) pay(state, cost, `Construction : ${id}`);
+      return r;
+    },
+  };
+}
+
 // Ce qu'il reste à faire pour une étape du plan : { done }, { locked } ou { cost, buy }.
 export function botStepInfo(state, step, eveilS) {
   const built = (b) => b.construit && b.niveau >= step.niveau;
   switch (step.type) {
     case 'infra':
       return botInfraInfo(state, eveilS);
-    // version 1.12 (v2, lot 8) : la maison à réparer, les appareils de départ à acheter
+    // le foyer à bâtir, les appareils de départ à poser
     case 'maison':
-      return houseRepaired(state) ? { done: true } : { cost: DATA.DEPART.MAISON, buy: () => repairHouse(state) };
+      return houseRepaired(state) ? { done: true } : botBatir(state, 'foyer', DATA.DEPART.MAISON);
     case 'achat':
       if (isOwned(starterOf(state, step.id))) return { done: true };
-      if (starterBlock(state, step.id)) return { locked: true };
-      return { cost: DATA.DEPART.ACHATS[step.id], buy: () => buyStarter(state, step.id) };
+      if (starterBlock(state, step.id) || levelBlock(state, 'energie')) return { locked: true };
+      return botBatir(state, step.id, DATA.DEPART.ACHATS[step.id]);
+    // (Marché fermé : la houe se fabrique à l'Atelier ; ses matériaux, le joueur simulé les a,
+    // comme les ressources de botGather)
     case 'houe':
       if (hasHoe(state)) return { done: true };
-      return marcheOuvert(state) ? { cost: DATA.HOUE.PRIX, buy: () => buyHoe(state) } : { locked: true };
+      return marcheOuvert(state) ? { cost: DATA.HOUE.PRIX, buy: () => buyHoe(state) } : { cost: 0, buy: () => { state.potager.houe = true; return { ok: true }; } };
     case 'silo':
       if (!isUnlocked(state, 'silo')) return { locked: true };
-      if (built(state.silo)) return { done: true };
-      return state.silo.construit ? { cost: siloUpgradeCost(state), buy: () => upgradeSilo(state) } : { cost: DATA.SILO.PRIX_CONSTRUCTION, buy: () => buildSilo(state) };
+      return state.silo.construit ? { done: true } : botBatir(state, 'silo', DATA.SILO.PRIX_CONSTRUCTION);
     case 'poulailler':
       if (!isUnlocked(state, 'poulailler')) return { locked: true };
       if (built(state.poulailler)) return { done: true };
-      return state.poulailler.construit ? { cost: coopUpgradeCost(state), buy: () => upgradePoulailler(state) } : { cost: DATA.POULAILLER.PRIX_CONSTRUCTION, buy: () => buildPoulailler(state) };
+      return state.poulailler.construit ? { cost: coopUpgradeCost(state), buy: () => upgradePoulailler(state) } : botBatir(state, 'poulailler', DATA.POULAILLER.PRIX_CONSTRUCTION);
     case 'poules': {
       if (!isUnlocked(state, 'poulailler')) return { locked: true };
       const p = state.poulailler;
       if (p.poules >= step.n) return { done: true };
-      if (!p.construit) return { cost: DATA.POULAILLER.PRIX_CONSTRUCTION, buy: () => buildPoulailler(state) };
+      if (!p.construit) return botBatir(state, 'poulailler', DATA.POULAILLER.PRIX_CONSTRUCTION);
       if (p.poules >= coopCapacity(state)) return { cost: coopUpgradeCost(state), buy: () => upgradePoulailler(state) };
       return { cost: animalPrice('poule'), buy: () => buyAnimal(state, 'poule') };
     }
@@ -477,15 +506,15 @@ export function botStepInfo(state, step, eveilS) {
       if (!isUnlocked(state, step.id)) return { locked: true };
       if (state.stations[step.id].construit) return { done: true };
       if (def.requiert && !state.stations[def.requiert].construit) return { locked: true };
-      return { cost: def.prixConstruction, buy: () => buildStation(state, step.id) };
+      return step.id === 'presse' ? { cost: def.prixConstruction, buy: () => buildStation(state, step.id) } : botBatir(state, step.id, def.prixConstruction);
     }
     case 'paturage':
       if (!isUnlocked(state, 'paturage')) return { locked: true };
-      return state.paturage.construit ? { done: true } : { cost: DATA.PATURAGE.PRIX_CONSTRUCTION, buy: () => buildPaturage(state) };
+      return state.paturage.construit ? { done: true } : botBatir(state, 'etable', DATA.PATURAGE.PRIX_CONSTRUCTION);
     case 'moutons': {
       if (!isUnlocked(state, 'moutons')) return { locked: true };
       const p = state.paturage;
-      if (!p.construit) return { cost: DATA.PATURAGE.PRIX_CONSTRUCTION, buy: () => buildPaturage(state) };
+      if (!p.construit) return botBatir(state, 'etable', DATA.PATURAGE.PRIX_CONSTRUCTION);
       if (sheepCount(state) >= step.n) return { done: true };
       if (freeSheepPlaces(state) <= 0) return { cost: pastureCost(state), buy: () => buyPasture(state) };
       return { cost: animalPrice('mouton'), buy: () => buySheep(state) };
@@ -494,7 +523,7 @@ export function botStepInfo(state, step, eveilS) {
     case 'vaches': {
       if (!isUnlocked(state, 'moutons')) return { locked: true };
       const p = state.paturage;
-      if (!p.construit) return { cost: DATA.PATURAGE.PRIX_CONSTRUCTION, buy: () => buildPaturage(state) };
+      if (!p.construit) return botBatir(state, 'etable', DATA.PATURAGE.PRIX_CONSTRUCTION);
       if (cowCount(state) >= step.n) return { done: true };
       if (freeCowPlaces(state) <= 0) return { cost: pastureCost(state), buy: () => buyPasture(state) };
       return { cost: animalPrice('vache'), buy: () => buyCow(state) };
@@ -507,18 +536,16 @@ export function botStepInfo(state, step, eveilS) {
     case 'serre':
       if (!isUnlocked(state, 'serre')) return { locked: true };
       if (built(state.serre)) return { done: true };
-      return state.serre.construit ? { cost: serreUpgradeCost(state), buy: () => upgradeSerre(state) } : { cost: DATA.SERRE.PRIX_CONSTRUCTION, buy: () => buildSerre(state) };
+      return state.serre.construit ? { cost: serreUpgradeCost(state), buy: () => upgradeSerre(state) } : botBatir(state, 'serre', DATA.SERRE.PRIX_CONSTRUCTION);
+    // (le Verger s'ouvre avec le premier arbre planté)
     case 'verger':
-      if (!isUnlocked(state, 'verger')) return { locked: true };
-      return state.verger.construit ? { done: true } : { cost: DATA.VERGER.PRIX_CONSTRUCTION, buy: () => buildVerger(state) };
+      return isUnlocked(state, 'verger') ? { done: true } : { locked: true };
     case 'arbres': {
       if (!isUnlocked(state, 'verger')) return { locked: true };
       const v = state.verger;
-      if (!v.construit) return { cost: DATA.VERGER.PRIX_CONSTRUCTION, buy: () => buildVerger(state) };
       if (v.arbres.length >= step.n) return { done: true };
-      if (orchardFree(state) <= 0) return { cost: orchardSlotPrice(state), buy: () => buyOrchardSlot(state) };
       const espece = Object.keys(DATA.VERGER.ARBRES)[v.arbres.length % Object.keys(DATA.VERGER.ARBRES).length];
-      return { cost: DATA.VERGER.ARBRES[espece].prix, buy: () => plantTree(state, espece) };
+      return botBatir(state, espece, DATA.VERGER.ARBRES[espece].prix);
     }
     case 'frigo':
       if (!isUnlocked(state, 'frigo')) return { locked: true };
@@ -617,11 +644,22 @@ function familleAffameeCeSoir(state) {
 }
 
 // Range au frais ce qui périme (sauf la réserve de semences), tant qu'il y a de la
-// place : d'abord ce qui périme le plus tôt.
+// place : d'abord ce qui périme le plus tôt. Sans frigo, la famille mange à la boîte à
+// nourriture du foyer (posée d'un coup, testBatir) : elle s'y remplit, les plats d'abord.
 function botStore(state) {
-  const f = state.frigo;
-  if (!f.construit || !f.appareil.allume || isBroken(f.appareil)) return;
-  moveAllToFridge(state, state.famille.reserve || {});
+  const f = state.frigo, reserve = state.famille.reserve || {};
+  if (f.construit) {
+    if (f.appareil.allume && !isBroken(f.appareil)) moveAllToFridge(state, reserve);
+    return;
+  }
+  if (!boitePosee(state) && (!houseRepaired(state) || !testBatir(state, 'boite').ok)) return;
+  // (les plats d'abord : ils rendent du bonheur ; puis ce qui périme le plus tôt)
+  const items = Object.keys(inventoryCounts(state)).filter((k) => DATA.OBJETS[k] && DATA.OBJETS[k].mangeable);
+  items.sort((a, b) => dishHappiness(b) - dishHappiness(a) || lotRank(lotsOf(state, a)[0]) - lotRank(lotsOf(state, b)[0]));
+  for (const item of items) {
+    const n = countItem(state, item) - (reserve[item] || 0);
+    if (n >= 1) deposerBoite(state, item, Math.floor(n));
+  }
 }
 
 /* ---------- une journée, une partie ---------- */
@@ -632,18 +670,21 @@ function botActions(state, strat, options, soir) {
   botMail(state);
   botSnack(state);
   botBuy(state, strat.eveilS);
+  botEau(state);
   // version 1.14 : les plats d'abord (quelques points d'énergie) : sans eux, plus de
   // bonheur, et chaque action coûte jusqu'au double ; une grande ferme épuisait l'énergie
   // avant la cuisine.
   botObjectives(state);
   botCook(state);
-  botFarm(state);
-  botHoe(state);
+  // (les bêtes d'abord, leur paille et leur tonte : les cultures et le labour prennent
+  // l'énergie qui reste)
+  botScythe(state);
   botHens(state);
   botSheep(state);
+  botFarm(state);
+  botHoe(state);
   botOrchard(state);
   botCommerce(state);
-  botScythe(state);
   botMill(state);
   botCook(state);
   if (!soir) return;
@@ -713,7 +754,10 @@ export function simulatePlay(state, strategyId, nights = DATA.SIMULATION.NUITS, 
 // Partie neuve de `nights` nuits, jouée par la stratégie donnée.
 export function simulateGame(strategyId, nights = DATA.SIMULATION.NUITS, seed = DATA.SIMULATION.GRAINE, options = {}) {
   // version 1.12 : le départ d'une nouvelle partie (maison à réparer, appareils à acheter)
-  return simulatePlay(createNewGame(seed, { nom: 'Simulation' }), strategyId, nights, options);
+  // (sans didacticiel : ses graines offertes)
+  const state = createNewGame(seed, { nom: 'Simulation' });
+  for (const [item, n] of Object.entries(DATA.DIDACTICIEL.GRAINES)) addItem(state, item, n);
+  return simulatePlay(state, strategyId, nights, options);
 }
 
 // Première nuit où l'autonomie lissée (moyenne des LISSAGE dernières nuits) atteint `pct`, ou null.

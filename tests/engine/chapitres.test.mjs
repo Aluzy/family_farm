@@ -4,18 +4,19 @@
    ========================================================================== */
 
 import {
-  addItem, addLot, autonomyHistory, autonomyPercent, buildPaturage, buildPoulailler, buildSilo,
-  buyAnimal, mailText, setFarmSeed, buyHoe, buyItem, buyStarter, chapterProgress, chapterReached, completeChapter,
-  countItem, createInitialState, createNewGame, DATA, feedAllHens, findPlot, formatPercent,
-  harvest, hoe, holdStatus, lastAutonomy, lotsOf, makePlot, maxStage, migrate, moveToFridge,
-  objectiveValue, plannedAutonomy, plant, plantableCrops, plantableCropsFor, repairHouse, shear,
-  startMilling, startRecipe, STATE_VERSION, storeWheat, takeItem, testAddHens, testAddWheat,
-  testEmptyBatteries, testFillBatteries, testGoToChapter, testSetBuildingLevel5, testSetLevel,
-  testWoolReady, tick, unlockLevel, updateChapters, upgradeSilo, water, zoneTile,
+  addItem, addLot, autonomyHistory, autonomyPercent, buyAnimal, buyItem, chapterProgress,
+  chapterReached, completeChapter, countItem, createInitialState, createNewGame, DATA, farmTerrain,
+  feedAllHens, findPlot, formatPercent, harvest, hoe, holdStatus, lastAutonomy, lotsOf, mailText,
+  maxStage, moveToFridge, objectiveValue, plannedAutonomy, plant, plantableCrops,
+  plantableCropsFor, shear, startMilling, startRecipe, storeWheat, takeItem, testAddHens,
+  testAddWheat, testBatir, testEmptyBatteries, testFillBatteries, testGoToChapter,
+  testSetBuildingLevel5, testSetLevel, testWoolReady, tick, unlockLevel, updateChapters, water,
+  zoneTile,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, atChapter, atelier, coldRoom, farm, fillSheep, garden, holdNights, kwh, ml,
-  nightWithProduced, pature, plantRipe, reach, runFor, setInv, sleepOnce, test, testBase, tireless,
+  affamer, assert, assertEqual, atChapter, atelier, boite, coldRoom, farm, fillSheep, garden,
+  holdNights, kwh, ml, nightWithProduced, pature, plantRipe, reach, runFor, setInv, sleepOnce,
+  test, testBase, tireless, versBoite,
 } from './aide.mjs';
 
 /* ---------- Lot 9 : autonomie et chapitres ---------- */
@@ -61,11 +62,9 @@ test('autonomie : points « produit » mangés ÷ points mangés, plafonnée à 
   assertEqual(autonomyPercent(165, 150), 100);
   assertEqual(autonomyPercent(0, 150), 0);
   assertEqual(autonomyPercent(50, 0), 0);
-  const s = farm();
-  s.famille.reserve = {};
   // 3 membres au seuil (20) mangent jusqu'à 100 : 6 patates (valeur 5 : 30 points) d'abord, puis
   // les conserves (valeur 6), qui ne périment pas
-  setInv(s, { patate: 6, conserve: 100 });
+  const s = boite(farm(), { patate: 6, conserve: 100 });
   affamer(s);
   const r = sleepOnce(s);
   assertEqual([r.energieProduit, r.energieMangee, r.autonomie], [30, 252, 11]);
@@ -74,14 +73,13 @@ test('autonomie : points « produit » mangés ÷ points mangés, plafonnée à 
 });
 
 test('autonomie : les conserves n\'y comptent pas ; un jour sans repas garde celle de la veille', () => {
-  const s = farm();
-  setInv(s, { conserve: 60 });
+  const s = boite(farm(), { conserve: 60 });
   affamer(s);
   const r = sleepOnce(s);
   assertEqual(r.couverture, 100, 'la famille est rassasiée');
   assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [252, 0, 0]);
   // le lendemain, avec des patates, puis un jour où personne n'a faim : l'autonomie reste
-  setInv(s, { patate: 60 });
+  boite(s, { patate: 60 });
   affamer(s);
   assertEqual(sleepOnce(s).autonomie, 100);
   const r3 = sleepOnce(s);
@@ -90,12 +88,12 @@ test('autonomie : les conserves n\'y comptent pas ; un jour sans repas garde cel
 
 test('autonomie : un achat du Marché n\'y compte pas, une récolte oui', () => {
   const s = farm();
-  s.famille.reserve = {};
   setInv(s, { conserve: 60 });
   s.pieces = 500;
   assert(buyItem(s, 'carotte', 4).ok, 'acheter 4 carottes');
   addItem(s, 'carotte', 15); // récoltées
   assertEqual(lotsOf(s, 'carotte').map((l) => [l.qty, l.origin]).sort(), [[4, 'acheté'], [15, 'produit']].sort());
+  versBoite(s);
   // les 19 carottes (valeur 2) passent avant les conserves : 38 points, dont 30 récoltés
   affamer(s);
   const r = sleepOnce(s);
@@ -120,9 +118,9 @@ test('autonomie : au frigo, les œufs gardent leur origine', () => {
 
 test('autonomie : la prévision de la nuit est celle qui est vraiment mesurée', () => {
   const s = farm();
-  s.famille.reserve = {};
   setInv(s, { patate: 5, carotte: 10, conserve: 60 });
   addLot(s, 'carotte', 7, 'acheté');
+  versBoite(s);
   assertEqual(plannedAutonomy(s), 0, 'personne n\'a encore mangé : celle de la veille');
   affamer(s);
   const prevue = plannedAutonomy(s);
@@ -221,98 +219,62 @@ test('compteurs : laines tondues, pains cuits, plats différents', () => {
 });
 
 function fillSheepAfterPasture(s) {
-  assert(buildPaturage(reach(s, 'paturage')).ok, 'débloquer le Pâturage');
+  assert(testBatir(reach(s, 'paturage'), 'etable').ok, 'débloquer le Pâturage');
   fillSheep(s, 2);
 }
 
 /* --- objectifs de chapitre --- */
 
-test('version 1.12 : chapitre 1 « L\'héritage » : maison, panneau, pompe, réservoir, houe, labour, semis, arrosage, première récolte', () => {
+test('chapitre 1 « L\'héritage » : foyer, houe, labour, semis, arrosage, première récolte ; chapitre 2 : le Silo', () => {
   const s = createNewGame(1, { nom: 'Martin' });
-  const non = Array(9).fill(false);
+  const non = Array(6).fill(false);
   assertEqual([s.campagne.chapitre, okList(s)], [1, non]);
-  assert(repairHouse(s).ok);
-  assert(buyStarter(s, 'panneau').ok);
-  assert(buyStarter(s, 'pompe').ok);
-  assertEqual(okList(s), [true, true, true, false, false, false, false, false, false]);
-  assert(buyStarter(s, 'reservoir').ok);
-  assert(buyHoe(s).ok);
-  assertEqual(okList(s), [true, true, true, true, true, false, false, false, false]);
+  assert(testBatir(s, 'foyer').ok);
+  assertEqual(okList(s), [true, false, false, false, false, false]);
+  s.potager.houe = true;   // (fabriquée à l'Atelier)
+  assertEqual(okList(s), [true, true, false, false, false, false]);
   tireless(s);
   testSetLevel(s, 1);
+  const T = farmTerrain(s);
   // FLU-42 : labourer 6 tuiles, planter 6 parcelles, les arroser le même jour
-  for (const i of [0, 1, 2, 3, 5, 6]) assert(hoe(s, zoneTile(1, i)).ok, `labour ${i}`); // la case 4 : bordure impossible
+  for (let c = 0, n = 0; n < 6; c++) if (hoe(s, zoneTile(1, c, T)).ok) n += 1;
   assertEqual(objectiveValue(s, { type: 'labours' }), 6);
-  assertEqual(okList(s).slice(5), [true, false, false, false]);
+  assertEqual(okList(s).slice(2), [true, false, false, false]);
   addItem(s, 'graine_carotte', 6);
   const ids = s.potager.parcelles.map((p) => p.id);
   for (const id of ids) assert(plant(s, id, 'carotte').ok, `semis ${id}`);
-  assertEqual(okList(s).slice(5), [true, true, false, false]);
+  assertEqual(okList(s).slice(2), [true, true, false, false]);
   s.eauMl = 1000 * 1000;
   for (const id of ids.slice(0, 5)) assert(water(s, id).ok, `arrosage ${id}`);
-  assertEqual([objectiveValue(s, { type: 'arrosees' }), okList(s)[7]], [5, false], '5 parcelles arrosées : pas encore');
+  assertEqual([objectiveValue(s, { type: 'arrosees' }), okList(s)[4]], [5, false], '5 parcelles arrosées : pas encore');
   assert(water(s, ids[5]).ok);
-  assertEqual(okList(s).slice(5), [true, true, true, false]);
+  assertEqual(okList(s).slice(2), [true, true, true, false]);
   // la nuit sèche les parcelles, l'objectif reste acquis (record)
   for (const p of s.potager.parcelles) p.arrose = false;
-  assertEqual(okList(s)[7], true);
+  assertEqual(okList(s)[4], true);
   findPlot(s, ids[0]).stade = maxStage(findPlot(s, ids[0]));
   assertEqual(s.campagne.chapitre, 1);
   assert(harvest(s, ids[0]).ok);
-  updateChapters(s);
-  assertEqual(s.campagne.chapitre, 2, 'la première récolte termine le chapitre');
-  assertEqual(s.campagne.annonces.map((a) => a.chapitre), [1]);
-  assertEqual(DATA.NIVEAUX.CHAPITRES_XP[0], 200, 'la récompense du chapitre 1 ne change pas');
-});
-
-test('FLU-42 : migration v33 → v34, une partie qui a déjà labouré, planté ou arrosé ne recule pas', () => {
-  const base = createNewGame(1, { nom: 'Martin' });
-  const v33 = (mutate) => {
-    const s = JSON.parse(JSON.stringify(base));
-    s.version = 33;
-    for (const k of ['labours', 'semis', 'arroseesMax']) delete s.campagne.compteurs[k];
-    mutate(s);
-    return migrate({ v: 33, t: 0, s });
-  };
-  const k = (m) => [m.campagne.compteurs.labours, m.campagne.compteurs.semis, m.campagne.compteurs.arroseesMax];
-  assertEqual(k(v33(() => {})), [0, 0, 0], 'rien fait : tout reste à faire');
-  const plot = (extra) => ({ ...makePlot(1), case: zoneTile(1, 0), ...extra });
-  assertEqual(k(v33((s) => { s.potager.parcelles = [plot()]; })), [6, 0, 0], 'déjà labouré');
-  assertEqual(k(v33((s) => { s.potager.parcelles = [plot({ culture: 'carotte' })]; })), [6, 6, 0], 'déjà planté');
-  assertEqual(k(v33((s) => { s.potager.parcelles = [plot({ culture: 'carotte', arrose: true })]; })), [6, 6, 6], 'déjà arrosé');
-  assertEqual(k(v33((s) => { s.campagne.compteurs.recoltes = 1; })), [6, 6, 6], 'déjà récolté');
-  assertEqual(k(v33((s) => { s.campagne.chapitre = 3; })), [6, 6, 6], 'chapitre 1 dépassé');
-  const m = v33((s) => { s.potager.parcelles = [plot({ culture: 'carotte', arrose: true })]; });
-  assertEqual([m.version, m.campagne.chapitre], [STATE_VERSION, 1]);
-});
-
-test('version 1.12 : la batterie est facultative au chapitre 1', () => {
-  const ids = DATA.CHAPITRES.liste[0].objectifs.map((o) => o.type);
-  assertEqual(ids, ['maison', 'panneau', 'pompe', 'reservoir', 'houe', 'labours', 'semis', 'arrosees', 'recoltes']);
-  assertEqual(ids.includes('batterie'), false);
-});
-
-testBase('version 1.12 : chapitre 2 « Le grenier » : niveau 2, 4 cultures, Silo, blé semé, 50 blés au Silo', () => {
-  const s = atChapter(2);
-  testSetLevel(s, 2);
-  assertEqual(okList(s), [true, false, false, false, false]);
   addItem(s, 'graine_courgette', 1);
+  addItem(s, 'patate', 1);
+  addItem(s, 'graine_tomate', 1);
   for (const [i, c] of [[1, 'carotte'], [2, 'patate'], [3, 'tomate'], [4, 'courgette']].entries()) {
-    plantRipe(s, `potager-${c[0]}`, c[1]);
-    assert(harvest(s, `potager-${c[0]}`).ok, `récolte ${i}`);
+    findPlot(s, ids[c[0] - 1]).culture = null;
+    plantRipe(s, ids[c[0] - 1], c[1]);
+    assert(harvest(s, ids[c[0] - 1]).ok, `récolte ${i}`);
   }
   assertEqual(okList(s).slice(0, 2), [true, true], 'quatre cultures différentes');
-  testSetLevel(s, 3);
-  s.pieces = 5000;
-  assert(buildSilo(reach(s, 'silo')).ok);
-  addItem(s, 'ble', 5);
-  assert(plant(s, 'potager-1', 'ble').ok);
-  assertEqual(okList(s), [true, true, true, true, false]);
-  storeWheat(s, 50);
   updateChapters(s);
-  assertEqual([s.silo.ble, s.campagne.chapitre], [20, 2], 'Silo de niveau 1 : 20 blés au plus');
-  assert(upgradeSilo(s).ok);
-  storeWheat(s, 30);
+  assertEqual(s.campagne.chapitre, 2);
+  testSetLevel(s, 3);
+  assert(testBatir(reach(s, 'silo'), 'silo').ok);
+  addItem(s, 'ble', 5);
+  assert(plant(s, ids[0], 'ble').ok);
+  assertEqual(okList(s), [true, true, true, true, false]);
+  storeWheat(s, 49);
+  updateChapters(s);
+  assertEqual([s.silo.ble, s.campagne.chapitre], [49, 2], 'pas encore 50 blés au Silo');
+  storeWheat(s, 1);
   updateChapters(s);
   assertEqual(s.campagne.chapitre, 3);
 });
@@ -328,11 +290,11 @@ testBase('version 1.12 : chapitre 2 : la même culture récoltée quatre fois ne
 });
 
 testBase('chapitre 3 : 7 nuits de ponte d\'affilée et 50 % d\'autonomie', () => {
-  const s = atChapter(3);
-  setInv(s, { carotte: 200 }); // des légumes de la ferme : la famille est nourrie par la ferme
+  const s = boite(atChapter(3), { carotte: 200 }); // des légumes de la ferme : la famille est nourrie par la ferme
+  setInv(s, {});
   s.pieces = 5000;
-  assert(buildSilo(reach(s, 'silo')).ok);
-  assert(buildPoulailler(reach(s, 'poulailler')).ok);
+  assert(testBatir(reach(s, 'silo'), 'silo').ok);
+  assert(testBatir(reach(s, 'poulailler'), 'poulailler').ok);
   for (let i = 0; i < 4; i++) assert(buyAnimal(s, 'poule').ok);
   testAddWheat(s, 50);
   for (let night = 1; night <= 7; night++) {
@@ -365,8 +327,8 @@ test('chapitre 3 : sept nuits sans l\'autonomie requise ne suffisent pas', () =>
 testBase('remise à zéro : une nuit sans œuf casse la série de ponte', () => {
   const s = atChapter(3);
   s.pieces = 5000;
-  assert(buildSilo(reach(s, 'silo')).ok);
-  assert(buildPoulailler(reach(s, 'poulailler')).ok);
+  assert(testBatir(reach(s, 'silo'), 'silo').ok);
+  assert(testBatir(reach(s, 'poulailler'), 'poulailler').ok);
   for (let i = 0; i < 4; i++) assert(buyAnimal(s, 'poule').ok);
   testAddWheat(s, 50);
   for (let night = 1; night <= 3; night++) {
@@ -564,10 +526,10 @@ test('cultures plantables : chacune à son niveau, le blé attend aussi le Silo'
   const n3 = at(3);
   assertEqual(plantableCropsFor(n3, 'potager'), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'fraise'], 'pas de blé sans Silo');
   n3.pieces = 100;
-  assert(buildSilo(reach(n3, 'silo')).ok);
+  assert(testBatir(reach(n3, 'silo'), 'silo').ok);
   assertEqual(plantableCropsFor(n3, 'potager').includes('ble'), true, 'Silo construit : le blé se plante');
   const n5 = at(5);
-  buildSilo(reach(n5, 'silo'));
+  testBatir(reach(n5, 'silo'), 'silo');
   assertEqual(plantableCropsFor(n5, 'potager'), ['carotte', 'patate', 'tomate', 'courgette', 'aubergine', 'poivron', 'oignon', 'ail', 'epinard', 'fraise', 'ble', 'tournesol', 'riz', 'houblon']);
   assertEqual(plantableCropsFor(at(6), 'serre'), ['tomate', 'courgette', 'aubergine', 'poivron'], 'cacao, vanille, café au niveau 7');
   assertEqual(plantableCropsFor(at(7), 'serre'), plantableCrops('serre'));
@@ -593,16 +555,10 @@ test('tenue : état du suivi pour l\'interface', () => {
 
 test('terre sauvage : ni le chapitre 1 ni les lettres du notaire ne parlent de la ferme du grand-père', () => {
   const s = createNewGame(1);
-  const dessinee = chapterProgress(s);
-  assert(/grand-père/.test(dessinee.intro), 'la ferme dessinée garde son histoire');
-  setFarmSeed(s, '77');
   const p = chapterProgress(s);
   assertEqual(/grand-père/.test(p.intro), false, p.intro);
   // (le panneau, la pompe et la citerne n'arrivent qu'avec l'automatisation : pas d'objectif)
   assertEqual(p.objectifs.slice(0, 3).map((o) => o.libelle), ['Bâtir le foyer (une pièce close, une paillasse)', 'Fabriquer une houe à l\'Atelier', 'Labourer 6 tuiles']);
-  assertEqual(chapterProgress(createNewGame(1)).objectifs.filter((o) => ['panneau', 'pompe', 'reservoir'].includes(o.type)).length, 3, 'la ferme dessinée les garde');
-  for (const id of ['notaire_heritage', 'notaire_legs']) {
-    assertEqual(mailText(s, id).some((l) => /grand-père|moulin/.test(l)), false, id);
-    assert(mailText(createNewGame(1), id).some((l) => /grand-père/.test(l)), `${id} : la ferme dessinée garde sa lettre`);
-  }
+  assertEqual(p.objectifs.filter((o) => ['panneau', 'pompe', 'reservoir'].includes(o.type)).length, 0);
+  for (const id of ['notaire_heritage', 'notaire_legs']) assertEqual(mailText(s, id).some((l) => /grand-père|moulin/.test(l)), false, id);
 });

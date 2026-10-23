@@ -1,29 +1,27 @@
 import { DATA } from './catalog.js';
 import { unlockTab } from './base.js';
-import { deviceLabel, fail, farmOpen, isOwned, NO_COINS, pay, starterOf } from './devices.js';
+import { fail, farmOpen, isOwned, starterOf } from './devices.js';
 import { lotsFromCounts } from './inventory.js';
 import { createInitialState } from './state.js';
 import { cleanFirstName, familyNumbers, findMember, makeMember, persoMax, validFirstName } from './family.js';
 import { updateChapters } from './campaign.js';
 import { startPlots } from './crops.js';
 import { farmTerrain } from './terrain.js';
-import { atelierOuvert } from './atelier.js';
-import { couchages } from './blocs.js';
+import { couchages, majPoulailler } from './blocs.js';
 
 /* ---------- version 1.12 (v2, lot 8) : le départ d'une nouvelle partie ---------- */
 
-// Une nouvelle partie (docs/conception-v2.md, sections 2 et 3) : la famille hérite de la
-// ferme du grand-père. La maison est à réparer, le panneau, la batterie, la pompe et le
-// réservoir sont à acheter, la Zone de culture est en herbe et il n'y a ni houe ni
-// graines : seulement DATA.DEPART.INVENTAIRE et DATA.DEPART.PIECES. `famille` : la
-// configuration choisie avant la partie ({ nom, principal }) ; sans elle, l'écran de
-// configuration s'ouvre au lancement (famille.configuree === false).
+// Une nouvelle partie (docs/carte-generee.md) : la famille arrive sur une terre sauvage, la ferme
+// générée de la graine de la partie (createInitialState). Rien n'y est bâti : le foyer,
+// le panneau, la batterie, la pompe et la citerne se fabriquent à l'Atelier et se posent ; la
+// Zone de culture est en herbe et il n'y a ni houe ni graines : seulement
+// DATA.DEPART.INVENTAIRE et DATA.DEPART.PIECES. `famille` : la configuration choisie avant la
+// partie ({ nom, principal }) ; sans elle, l'écran de configuration s'ouvre au lancement
+// (famille.configuree === false).
 export function createNewGame(seed = 1, famille = null) {
   const D = DATA.DEPART;
   const state = createInitialState(seed);
   state.departV2 = true;
-  // la graine de la carte de transition (js/engine/transition.js) quand la ferme n'est pas générée
-  state.graineVoisins = String(seed);
   state.pieces = D.PIECES;
   state.compta = [];
   state.inventaire = lotsFromCounts(D.INVENTAIRE);
@@ -35,7 +33,6 @@ export function createNewGame(seed = 1, famille = null) {
     d.allume = false;
   }
   state.reservoir.achete = false;
-  state.maison = { reparee: false };
   state.unlockedTabs = state.unlockedTabs.filter((t) => t !== 'comptoir');
   state.famille.nom = D.NOM;
   state.famille.principal = state.famille.membres.find((m) => !m.enfant).id;
@@ -48,18 +45,19 @@ export function createNewGame(seed = 1, famille = null) {
   return state;
 }
 
-/* -- la ferme : celle du grand-père (dessinée) ou une ferme générée -- */
+/* -- la ferme générée -- */
 
-// La partie passe sur la ferme générée d'après `graine` (null : la ferme dessinée, celle de
-// Tiled ; docs/carte-generee.md). Les terres, les arbres abattus et les rochers cassés de
-// l'autre carte n'ont pas de sens sur celle-ci : la partie repart des parcelles de départ (une
-// partie neuve, sans terre, n'en reçoit pas), tous les arbres debout et tous les rochers entiers.
+// La partie passe sur la ferme générée d'après `graine` (docs/carte-generee.md). Les terres, les
+// blocs posés, les arbres abattus et les rochers cassés d'une autre ferme n'y ont pas de sens :
+// la partie repart des parcelles de départ (une partie neuve, sans terre, n'en reçoit pas), sans
+// rien de bâti, tous les arbres debout et tous les rochers entiers.
 export function setFarmSeed(state, graine) {
-  if (graine === null || graine === undefined || graine === '') delete state.carte;
-  else state.carte = { graine: String(graine) };
+  state.carte = { graine: String(graine) };
   state.potager.parcelles = state.potager.parcelles.length ? startPlots(farmTerrain(state)) : [];
+  for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'etage']) if (state[k]) state[k] = {};
   if (state.outils) { state.outils.arbres = {}; state.outils.rochers = {}; }
-  return { ok: true, graine: state.carte ? state.carte.graine : null };
+  majPoulailler(state);
+  return { ok: true, graine: state.carte.graine };
 }
 
 /* -- la famille -- */
@@ -170,46 +168,24 @@ export function setupPending(state) {
   return !!(state.famille && state.famille.configuree === false);
 }
 
-/* -- la maison et les achats -- */
+/* -- le foyer et les appareils de départ -- */
 
-// La maison est-elle réparée ? Sur la ferme générée (docs/carte-generee.md, étape 5b), il n'y a
-// pas de maison : le foyer est une pièce close avec une paillasse (js/engine/blocs.js).
+// Le foyer est-il bâti ? Une pièce close avec une paillasse (js/engine/blocs.js).
 export function houseRepaired(state) {
-  if (atelierOuvert(state)) return couchages(state).length > 0;
-  return !(state.maison && state.maison.reparee === false);
+  return couchages(state).length > 0;
 }
 
-export function repairHouse(state) {
-  if (atelierOuvert(state)) return fail('Sur une terre sauvage, pas de maison à réparer : bâtis une pièce close (des murs, une porte) et pose-y une paillasse.');
-  if (houseRepaired(state)) return fail('La maison est déjà réparée.');
-  const cost = DATA.DEPART.MAISON;
-  if (!pay(state, cost, 'Réparation de la maison')) return fail(NO_COINS);
-  state.maison.reparee = true;
-  updateChapters(state);
-  return { ok: true, cost };
-}
-
-// Ce qui empêche d'acheter un appareil de départ (texte), ou '' s'il peut l'être.
+// Ce qui empêche de poser l'appareil de départ `type` (texte), ou '' s'il peut l'être.
 export function starterBlock(state, type) {
   const obj = starterOf(state, type);
   if (!obj || !(type in DATA.DEPART.ACHATS)) return 'Appareil inconnu.';
-  if (isOwned(obj)) return 'Déjà acheté.';
-  if (!houseRepaired(state)) return 'Répare d\'abord la maison.';
-  if (type === 'reservoir' && !farmOpen(state)) return 'Achète d\'abord le panneau et la pompe.';
+  if (isOwned(obj)) return 'Déjà posé.';
+  if (!houseRepaired(state)) return 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.';
+  if (type === 'reservoir' && !farmOpen(state)) return 'Pose d\'abord le panneau solaire et la pompe.';
   return '';
 }
 
-export function buyStarter(state, type) {
-  if (atelierOuvert(state)) return fail(`Sur une terre sauvage, ${deviceLabel(type).toLowerCase()} se fabrique à l'Atelier et se pose sur la carte (🔨).`);
-  const raison = starterBlock(state, type);
-  if (raison) return fail(raison);
-  const cost = DATA.DEPART.ACHATS[type];
-  if (!pay(state, cost, `Achat : ${deviceLabel(type)}`)) return fail(NO_COINS);
-  installStarter(state, type);
-  return { ok: true, cost, ouvert: farmOpen(state) };
-}
-
-// L'appareil de départ `type` est là (acheté, ou posé sur la ferme générée : blocs.js), allumé
+// L'appareil de départ `type` est là (posé : blocs.js), allumé
 // sauf le réservoir ; son prix (entretien, réparation) est celui de DEPART.ACHATS.
 export function installStarter(state, type) {
   const obj = starterOf(state, type);
@@ -223,7 +199,7 @@ export function installStarter(state, type) {
   updateChapters(state);
 }
 
-// L'appareil de départ `type` n'est plus là (son bloc repris, sur la ferme générée).
+// L'appareil de départ `type` n'est plus là (son bloc repris).
 export function removeStarter(state, type) {
   const obj = starterOf(state, type);
   obj.achete = false;

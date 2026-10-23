@@ -4,12 +4,12 @@
    ========================================================================== */
 
 import {
-  awakeMsAtHour, buyStarter, canSleep, clockHours, createInitialState, createNewGame, DATA,
-  deviceStatus, drawEnergy, efficiency, energyStats, formatCoins, formatHour, formatLitres,
-  formatLitresRate, formatSigned, formatWh, formatWhRate, hourOfDay, isBroken, maintainCost,
-  maintainDevice, NIGHT_STEPS, repairCost, repairDevice, repairHouse, sleep, storeEnergy, sunlitMs,
-  tankCapacity, testFillBatteries, testFillTank, testSetBuildingLevel5, testSetWear,
-  testSleepNights, tick, toggleDevice, upgradeDevice, upgradeTank,
+  awakeMsAtHour, canSleep, clockHours, createInitialState, createNewGame, DATA, deviceStatus,
+  drawEnergy, efficiency, energyStats, formatCoins, formatHour, formatLitres, formatLitresRate,
+  formatSigned, formatWh, formatWhRate, hourOfDay, isBroken, maintainCost, maintainDevice,
+  NIGHT_STEPS, repairCost, repairDevice, sleep, storeEnergy, sunlitMs, tankCapacity, testBatir,
+  testFillBatteries, testFillTank, testSetBuildingLevel5, testSetLevel, testSetWear,
+  testSleepNights, tick, toggleDevice, unlockLevel, upgradeDevice, upgradeTank,
 } from '../../js/engine/index.js';
 import {
   assert, assertEqual, farm, kwh, ml, near, test,
@@ -172,14 +172,15 @@ test('pompe à l\'arrêt si le réservoir est plein : rien consommé, aucune usu
   assertEqual(deviceStatus(s, s.pompe).code, 'plein');
 });
 
-test('FLU-34 : panneau et pompe achetés sans réservoir, la pompe n\'affiche pas « Réservoir plein »', () => {
+test('FLU-34 : panneau et pompe posés sans citerne, la pompe n\'affiche pas « Réservoir plein »', () => {
   const s = createNewGame(1, { nom: 'Martin' });
-  assert(repairHouse(s).ok);
-  assert(buyStarter(s, 'panneau').ok);
-  assert(buyStarter(s, 'pompe').ok);
+  testSetLevel(s, unlockLevel('energie'));
+  assert(testBatir(s, 'foyer').ok);
+  assert(testBatir(s, 'panneau').ok);
+  assert(testBatir(s, 'pompe').ok);
   assertEqual(deviceStatus(s, s.pompe), { code: 'sansreservoir', label: 'Pas encore de réservoir', badge: '' });
-  assert(buyStarter(s, 'reservoir').ok);
-  assert(deviceStatus(s, s.pompe).code !== 'sansreservoir', 'réservoir acheté : statut habituel');
+  assert(testBatir(s, 'citerne').ok);
+  assert(deviceStatus(s, s.pompe).code !== 'sansreservoir', 'citerne posée : statut habituel');
 });
 
 test('le réservoir ne dépasse jamais sa capacité', () => {

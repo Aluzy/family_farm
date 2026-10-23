@@ -4,17 +4,19 @@
    ========================================================================== */
 
 import {
-  actionCost, actionsLeft, actionXp, borderMask, brokenRocks, buyHoe, buyTool, canBorder, castLine,
-  caillou, chopsLeft, chopTree, countItem, cutGrass, grassCut, scytheAround, scytheGrass, createInitialState, DATA, eatSnack, enduranceReduction,
-  energyLevel, energyMax, farmOpen, fellenTrees, findPlot, fishLeft, happinessCostPct, hasHoe,
-  hasTool, hoe, hoeableTiles, hoeStatus, isArable, isBuyable, makePlot, makePlots, migrate,
-  migrateEnergy, migrateHoe, mineRock, OUTILS, ownedTools, plant, plantAll, plotAtTile,
-  farmTerrain, respawnRocks, respawnTrees, restoreEnergy, rockGone, runNight, selectedTool, selectTool,
-  ramasserCaillou, snackEnergy, soilCap, soilCount, STATE_VERSION, terrainLines, testFillEnergy, morceauxDe, ramasserMorceau, testSetEnergyZero,
-  testSetLevel, TIRED, toolDef, wakeEnergy, water, zoneTile, enSelle, toggleTriporteur, vitesseDeplacement,
+  actionCost, actionsLeft, actionXp, borderMask, brokenRocks, buyHoe, buyTool, caillou, canBorder,
+  castLine, chopsLeft, chopTree, countItem, createInitialState, cutGrass, DATA, eatSnack,
+  enduranceReduction, energyLevel, energyMax, enSelle, farmTerrain, fellenTrees, findPlot,
+  fishLeft, grassCut, happinessCostPct, hasHoe, hasTool, hoe, hoeableTiles, hoeStatus, isArable,
+  isBuyable, makePlot, makePlots, marcheOuvert, migrateEnergy, migrateHoe, mineRock, morceauxDe,
+  OUTILS, ownedTools, plant, plantAll, plotAtTile, ramasserCaillou, ramasserMorceau, respawnRocks,
+  respawnTrees, restoreEnergy, rockGone, runNight, scytheAround, scytheGrass, selectedTool,
+  selectTool, snackEnergy, soilCap, soilCount, terrainLines, testFillEnergy, testSetEnergyZero,
+  testSetLevel, TIRED, toggleTriporteur, toolDef, vitesseDeplacement, wakeEnergy, water, zoneTile,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, champ, garden, growZone, setInv, sleepOnce, test, tireless,
+  assert, assertEqual, AVANT_DEMENAGEMENT, champ, garden, growZone, migreAvant, setInv, sleepOnce,
+  T1, test, tireless,
 } from './aide.mjs';
 
 // run-tests.mjs importe ce fichier et lit `results`.
@@ -22,6 +24,7 @@ import {
 
 test('version 1.8 : le coût d\'une action dépend du bonheur et de l\'endurance', () => {
   const s = garden();
+  testSetLevel(s, 1);
   assertEqual([energyMax(), energyLevel(s), happinessCostPct(s), enduranceReduction(s)], [100000, 100, 70, 0], 'bonheur 60 : −30 %');
   assertEqual(actionCost(s, 'planter'), 2100);
   assertEqual(actionCost(s, 'moudre', 4), 2800, 'moudre : par blé');
@@ -95,7 +98,7 @@ test('version 1.8 : migration v25 → v26 : santé, soins et nœuds retirés', (
   assertEqual(m.famille.membres.some((x) => 'sante' in x || 'malade' in x), false);
   assertEqual([m.technologies, m.pieces, m.pointsTech.solde], [[], 410, 2], 'nœuds retirés remboursés');
   assertEqual(['bonusPlats' in m.nuit, 'santeAvant' in m.nuit], [false, false]);
-  assertEqual(migrate({ v: 25, t: 0, s: old }).energie, 100000, 'chargement d\'une ancienne partie');
+  assertEqual(migreAvant({ v: 25, t: 0, s: old }).energie, 100000, 'chargement d\'une ancienne partie');
 });
 
 /* ---------- version 1.9 (v2, lot 5) : la houe ---------- */
@@ -137,7 +140,7 @@ test('outils : une partie avec la houe seule l\'a sur le bouton ; le Marché fer
   assertEqual(selectedTool(s), 'houe', 'un outil choisi qu\'on n\'a pas revient à la houe');
   const t = createInitialState(1);
   t.pieces = 1000;
-  assertEqual(buyTool(t, 'hache').ok, farmOpen(t), 'le Marché ouvre avec le panneau et la pompe');
+  assertEqual([marcheOuvert(t), buyTool(t, 'hache').ok], [false, false], 'le Marché ouvre à son niveau');
 });
 
 test('triporteur : acheté une fois au Marché, il fait rouler plus vite ; on en descend et on y remonte', () => {
@@ -178,12 +181,11 @@ test('hache : chaque coup sur un arbre donne du bois, de l\'XP, coûte de l\'én
   assertEqual([DATA.OBJETS.bois.categorie, isBuyable('bois')], ['produit', false], 'le bois se vend, ne se rachète pas');
 });
 
-test('hache : un arbre abattu repousse au bout de RETOUR jours, sauf si une parcelle occupe une de ses tuiles', () => {
-  const [lo, hi] = DATA.HACHE.RETOUR;
-  const A = DATA.TERRAIN.ARBRES;
+test('hache : un arbre abattu laisse sa graine et ne repousse pas de lui-même ; ses tuiles libérées se labourent', () => {
+  const A = T1.ARBRES;
   assert(Object.keys(A).length > 50, 'les arbres de la carte ont leurs tuiles');
   // un arbre et une de ses tuiles qu'il est seul à couvrir
-  const seul = (t) => !Object.entries(A).some(([k, l]) => l.includes(t) && k !== id) && !Object.values(DATA.TERRAIN.ROCHERS).some((l) => l.includes(t));
+  const seul = (t) => !Object.entries(A).some(([k, l]) => l.includes(t) && k !== id) && !Object.values(T1.ROCHERS).some((l) => l.includes(t));
   const etat = () => {
     const x = garden();
     x.outils = { hache: true, pioche: false, choisi: 'hache' };
@@ -202,21 +204,15 @@ test('hache : un arbre abattu repousse au bout de RETOUR jours, sauf si une parc
   }
   assert(tuile !== undefined, 'un arbre seul sur une tuile labourable');
   const s = etat();
-  assertEqual([isArable(tuile), isArable(tuile, s)], [false, false], 'sous l\'arbre : pas de labour');
-  for (let k = 0; k < DATA.HACHE.COUPES; k++) chopTree(s, id);
-  const retour = s.outils.arbres[id].retour;
-  assert(retour >= s.day + lo && retour <= s.day + hi, `repousse entre ${lo} et ${hi} jours (${retour - s.day})`);
+  assertEqual(isArable(tuile, s), false, 'sous l\'arbre : pas de labour');
+  let r;
+  for (let k = 0; k < DATA.HACHE.COUPES; k++) r = chopTree(s, id);
+  assertEqual([r.tombe, 'retour' in s.outils.arbres[id], fellenTrees(s)], [true, false, [id]], 'tombé, sans jour de retour');
+  assert(countItem(s, r.graine) > 0, `sa graine (${r.graine})`);
   assertEqual(isArable(tuile, s), true, 'la tuile libérée se laboure');
   assert(hoe(s, tuile).ok, 'labour de la tuile libérée');
-  s.day = retour;
-  assertEqual([respawnTrees(s), fellenTrees(s)], [[], [id]], 'une parcelle sur sa tuile : il attend');
-  assert(hoe(s, tuile).ok, 'reboucher');
-  s.day = retour + 2;
-  assertEqual([respawnTrees(s), fellenTrees(s), chopsLeft(s, id)], [[id], [], DATA.HACHE.COUPES], 'la tuile libre : il repousse, entier');
-  for (let k = 0; k < DATA.HACHE.COUPES; k++) chopTree(s, id);
-  s.outils.arbres[id].retour = s.day + 1;
-  runNight(s);
-  assertEqual(fellenTrees(s), [], 'repoussé au réveil');
+  s.day += 30;
+  assertEqual([respawnTrees(s), fellenTrees(s)], [[], [id]], 'il ne repousse pas de lui-même');
   // une tuile sous deux arbres ne se laboure que quand les deux sont tombés
   const double = Object.entries(A).flatMap(([k, l]) => l.map((t) => [t, k])).find(([t, k]) => Object.entries(A).some(([k2, l2]) => k2 !== k && l2.includes(t)));
   if (double) {
@@ -251,13 +247,14 @@ test('pioche : chaque coup sur un rocher donne de la pierre ; au COUPS-ième, il
 
 test('un caillou (un rocher d\'une seule tuile) se ramasse à la main, sans outil', () => {
   const s = garden();
-  assertEqual([caillou(s, '44,16'), caillou(s, '25,13')], [true, false]);
-  assertEqual(ramasserCaillou(s, '25,13').ok, false, 'un gros rocher : la pioche');
-  const [e, xp] = [s.energie, s.progression.xp];
-  const r = ramasserCaillou(s, '44,16');
-  assertEqual([r.ok, r.items, countItem(s, 'pierre'), s.energie, s.progression.xp - xp, rockGone(s, '44,16')],
+  const petit = Object.keys(T1.ROCHERS).find((id) => caillou(s, id)), gros = Object.keys(T1.ROCHERS).find((id) => !caillou(s, id));
+  assertEqual([T1.ROCHERS[petit].length, T1.ROCHERS[gros].length > 1], [1, true]);
+  assertEqual(ramasserCaillou(s, gros).ok, false, 'un gros rocher : la pioche');
+  const [e, xp, pierre] = [s.energie, s.progression.xp, countItem(s, 'pierre')];
+  const r = ramasserCaillou(s, petit);
+  assertEqual([r.ok, r.items, countItem(s, 'pierre') - pierre, s.energie, s.progression.xp - xp, rockGone(s, petit)],
     [true, { pierre: DATA.PIOCHE.MAIN }, DATA.PIOCHE.MAIN, e - actionCost(s, 'ramasser'), DATA.NIVEAUX.XP.ramasser, true]);
-  assertEqual(ramasserCaillou(s, '44,16').ok, false, 'déjà ramassé');
+  assertEqual(ramasserCaillou(s, petit).ok, false, 'déjà ramassé');
 });
 
 test('hache et pioche sur une carte : chaque coup lâche un morceau au sol, la chute et le bris deux de plus ; on les ramasse', () => {
@@ -366,29 +363,42 @@ test('canne à pêche : un lancer coûte de l\'énergie ; une prise (truite, bro
 
 test('pioche : un rocher cassé revient au bout de RETOUR jours, sauf si une parcelle occupe une de ses tuiles', () => {
   const [lo, hi] = DATA.PIOCHE.RETOUR;
-  const tuile = DATA.TERRAIN.ROCHERS['18,27'][0];
-  const s = garden();
-  s.outils = { hache: false, pioche: true, choisi: 'pioche' };
-  s.potager.houe = true;
-  s.potager.parcelles = [];                       // sous le plafond de tuiles de terre
-  assertEqual([isArable(tuile), isArable(tuile, s), hoeStatus(s, tuile).action], [false, false, null], 'sous le rocher : pas de labour');
-  for (let k = 0; k < DATA.PIOCHE.COUPS; k++) mineRock(s, '18,27');
-  const retour = s.outils.rochers['18,27'].retour;
+  const etat = () => {
+    const x = garden();
+    x.outils = { hache: false, pioche: true, choisi: 'pioche' };
+    x.potager.houe = true;
+    x.potager.parcelles = [];                       // sous le plafond de tuiles de terre
+    return x;
+  };
+  // un gros rocher dont une tuile, libérée, se laboure (et qu'aucun arbre ne couvre)
+  let id = null, tuile;
+  for (const [k, l] of Object.entries(T1.ROCHERS)) {
+    if (l.length < 2) continue;
+    const x = etat();
+    for (let n = 0; n < DATA.PIOCHE.COUPS; n++) mineRock(x, k);
+    tuile = l.find((t) => !Object.values(T1.ARBRES).some((a) => a.includes(t)) && hoeStatus(x, t).ok);
+    if (tuile !== undefined) { id = k; break; }
+  }
+  assert(id !== null, 'un rocher sur une tuile labourable');
+  const s = etat();
+  assertEqual([isArable(tuile, s), hoeStatus(s, tuile).action], [false, null], 'sous le rocher : pas de labour');
+  for (let k = 0; k < DATA.PIOCHE.COUPS; k++) mineRock(s, id);
+  const retour = s.outils.rochers[id].retour;
   assert(retour >= s.day + lo && retour <= s.day + hi, `retour entre ${lo} et ${hi} jours (${retour - s.day})`);
-  assertEqual([isArable(tuile, s), terrainLines(s)[Math.floor(tuile / DATA.TERRAIN.LARGEUR)][tuile % DATA.TERRAIN.LARGEUR]], [true, '#'], 'la tuile libérée se laboure');
+  assertEqual([isArable(tuile, s), terrainLines(s)[Math.floor(tuile / T1.LARGEUR)][tuile % T1.LARGEUR]], [true, '#'], 'la tuile libérée se laboure');
   assert(hoe(s, tuile).ok, 'labour de la tuile libérée');
   s.day = retour;
-  assertEqual([respawnRocks(s), rockGone(s, '18,27')], [[], true], 'une parcelle sur sa tuile : il attend');
+  assertEqual([respawnRocks(s), rockGone(s, id)], [[], true], 'une parcelle sur sa tuile : il attend');
   assert(hoe(s, tuile).ok, 'reboucher');
   s.day = retour + 4;
-  assertEqual([respawnRocks(s), rockGone(s, '18,27'), mineRock(s, '18,27').coups], [['18,27'], false, 1], 'la tuile libre : il revient, entier');
+  assertEqual([respawnRocks(s), rockGone(s, id), mineRock(s, id).coups], [[id], false, 1], 'la tuile libre : il revient, entier');
   // au réveil (runNight), le jour venu
-  for (let k = 1; k < DATA.PIOCHE.COUPS; k++) mineRock(s, '18,27');
-  s.outils.rochers['18,27'].retour = s.day + 1;
+  for (let k = 1; k < DATA.PIOCHE.COUPS; k++) mineRock(s, id);
+  s.outils.rochers[id].retour = s.day + 1;
   runNight(s);
-  assertEqual(rockGone(s, '18,27'), false, 'revenu au réveil');
+  assertEqual(rockGone(s, id), false, 'revenu au réveil');
   const t = garden();
-  t.outils = { pioche: true, rochers: { '18,27': 2 } };
+  t.outils = { pioche: true, rochers: { [id]: 2 } };
   assertEqual(respawnRocks(t), [], 'un rocher entamé reste entamé');
 });
 
@@ -401,7 +411,7 @@ test('version 1.9 : labourer une case d\'herbe coûte de l\'énergie et rapporte
   const r = hoe(s, champ(0, 0));
   assertEqual([r.ok, r.action, r.plot.id, r.plot.case, soilCount(s)], [true, 'labourer', 'potager-7', champ(0, 0), 7]);
   assertEqual([e - s.energie, s.progression.xp - xp], [actionCost(s, 'labourer'), actionXp('labourer')]);
-  assertEqual(s.potager.parcelles.map((p) => p.case), [...[0, 1, 2, 5, 6, 7].map((c) => zoneTile(1, c)), champ(0, 0)], 'rangées par tuile');
+  assertEqual(s.potager.parcelles.map((p) => p.case), [...[0, 1, 2, 5, 6, 7].map((c) => zoneTile(1, c, T1)), champ(0, 0)], 'rangées par tuile');
   assert(plant(tireless(s), 'potager-7', 'carotte').ok, 'la nouvelle terre se plante');
   for (const [c, r2] of [[1, 0], [2, 0], [0, 1], [1, 1], [2, 1]]) assert(hoe(s, champ(c, r2)).ok, `tuile ${c},${r2}`);
   const plein = hoeStatus(s, champ(3, 0));
@@ -416,14 +426,14 @@ test('version 1.9 : reboucher une terre vide est gratuit et rend la place ; une 
   const s = garden();
   s.potager.houe = true;
   const [e, xp] = [s.energie, s.progression.xp];
-  assertEqual(hoeStatus(s, zoneTile(1, 0)).action, 'reboucher');
-  const r = hoe(s, zoneTile(1, 0));
+  assertEqual(hoeStatus(s, zoneTile(1, 0, T1)).action, 'reboucher');
+  const r = hoe(s, zoneTile(1, 0, T1));
   assertEqual([r.ok, r.action, r.plot.id, soilCount(s), s.energie, s.progression.xp], [true, 'reboucher', 'potager-1', 5, e, xp]);
   assertEqual(findPlot(s, 'potager-1'), null);
   assert(hoe(s, champ(0, 0)).ok, 'la place rendue se laboure ailleurs');
   assertEqual(plotAtTile(s, champ(0, 0)).id, 'potager-7', 'jamais un identifiant déjà pris');
   plant(s, 'potager-2', 'carotte');
-  assertEqual(hoe(s, zoneTile(1, 1)).ok, false, 'terre plantée');
+  assertEqual(hoe(s, zoneTile(1, 1, T1)).ok, false, 'terre plantée');
 });
 
 test('version 1.9 : le plafond compte toutes les terres de la carte', () => {
@@ -447,26 +457,26 @@ test('version 1.9 : migration v26 → v27 : les parcelles prennent une case, la 
   assertEqual([m.version, 'niveau' in m.potager, m.potager.houe], [27, false, true]);
   assertEqual(m.potager.parcelles.map((p) => p.case), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
   assertEqual([m.potager.parcelles[3].culture, m.potager.zone2.map((p) => p.case)], ['carotte', [0, 1]]);
-  const full = migrate({ v: 26, t: 0, s: old });
-  assertEqual([full.version, full.potager.parcelles.length, full.potager.zone2], [STATE_VERSION, 14, []], 'version 1.15 : le Champ rejoint la liste unique');
+  const full = migreAvant({ v: 26, t: 0, s: old });
+  assertEqual([full.version, full.potager.parcelles.length, full.potager.zone2], [AVANT_DEMENAGEMENT, 14, []], 'version 1.15 : le Champ rejoint la liste unique');
   assert(sleepOnce(full) !== null, 'la partie migrée passe la nuit');
 });
 
 /* ---------- version 1.15 : la houe sur toute la carte ---------- */
 
 test('version 1.15 : la houe laboure n\'importe quelle tuile d\'herbe de la carte, dans le plafond', () => {
-  const T = DATA.TERRAIN;
-  assertEqual([T.LARGEUR, T.HAUTEUR, T.LIGNES.length], [72, 57, 57]);
-  const arables = [];
-  for (let t = 0; t < T.LARGEUR * T.HAUTEUR; t++) if (isArable(t)) arables.push(t);
-  assert(arables.length > 800, 'des centaines de tuiles labourables');
   const s = garden();
+  const T = farmTerrain(s);
+  assertEqual([T.LARGEUR, T.HAUTEUR, T.LIGNES.length], [144, 114, 114], 'la ferme générée, pas la carte de Tiled (72 × 57)');
+  const arables = [];
+  for (let t = 0; t < T.LARGEUR * T.HAUTEUR; t++) if (isArable(t, s)) arables.push(t);
+  assert(arables.length > 800, 'des centaines de tuiles labourables');
   s.potager.houe = true;
   tireless(s);
   testSetLevel(s, 2);
   // tout en bas de la carte, loin de l'ancienne zone, avec de l'herbe tout autour
   const W = T.LARGEUR;
-  const ouvert = (t) => [-W - 1, -W, -W + 1, -1, 1, W - 1, W, W + 1].every((d) => canBorder(t + d));
+  const ouvert = (t) => [-W - 1, -W, -W + 1, -1, 1, W - 1, W, W + 1].every((d) => canBorder(t + d, s));
   const loin = arables.filter(ouvert).pop();
   const r = hoe(s, loin);
   assertEqual([r.ok, r.plot.case, plotAtTile(s, loin).id], [true, loin, 'potager-7']);
@@ -474,18 +484,19 @@ test('version 1.15 : la houe laboure n\'importe quelle tuile d\'herbe de la cart
   assertEqual(hoe(s, loin).ok, false, 'plantée : ne se rebouche pas');
 });
 
-test('version 1.15 : ni chemin, ni eau, ni forêt, ni abords du poulailler, du moulin ou du verger', () => {
+test('version 1.15 : ni chemin, ni eau, ni forêt, ni ce qui est bâti', () => {
   const s = garden();
   s.potager.houe = true;
   tireless(s);
-  const W = DATA.TERRAIN.LARGEUR;
-  const tuile = (x, y) => Math.floor(y / 16) * W + Math.floor(x / 16);
-  assertEqual(hoe(s, 0).ok, false, 'la forêt du coin de la carte');
-  assertEqual(hoe(s, tuile(160, 300)).ok, false, 'à côté du poulailler (rayon 8)');
-  assertEqual(hoe(s, tuile(670, 560)).ok, false, 'au pied du moulin');
-  assertEqual(hoe(s, tuile(980, 600)).ok, false, 'au milieu du verger');
-  assertEqual(hoe(s, tuile(1000, 450)).ok, false, 'sur un chemin');
-  assert(/herbe/.test(hoeStatus(s, 0).raison), 'la raison est donnée');
+  const T = farmTerrain(s), W = T.LARGEUR, ch = (t) => T.LIGNES[Math.floor(t / W)][t % W];
+  const chemin = T.LIGNES.join('').indexOf('.');
+  const foret = Object.values(T.ARBRES)[0][0];
+  const mur = Number(Object.keys(s.blocs)[0]);
+  assertEqual([ch(chemin), ch(foret)], ['.', 'o']);
+  assertEqual(hoe(s, chemin).ok, false, 'un chemin, l\'eau');
+  assertEqual(hoe(s, foret).ok, false, 'sous un arbre');
+  assertEqual(hoe(s, mur).ok, false, 'un mur du foyer');
+  assert(/herbe/.test(hoeStatus(s, chemin).raison), 'la raison est donnée');
 });
 
 test('migration v31 → v32 : les terres de la Zone de culture et du Champ gardent leur place sur la carte', () => {
@@ -494,8 +505,8 @@ test('migration v31 → v32 : les terres de la Zone de culture et du Champ garde
   old.version = 31;
   old.potager.parcelles = old.potager.parcelles.map((p, i) => ({ ...p, case: [0, 1, 2, 5, 6, 7][i] }));
   old.potager.zone2 = [{ ...makePlot(1), id: 'zone2-1', zone: 2, case: 9, culture: 'ble', stade: 2 }];
-  const m = migrate({ v: 31, t: 0, s: old });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 31, t: 0, s: old });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual(m.potager.parcelles.map((p) => p.case), [...[0, 1, 2, 5, 6, 7].map((c) => zoneTile(1, c)), zoneTile(2, 9)]);
   assertEqual([m.potager.zone2, findPlot(m, 'zone2-1').culture, 'zone' in findPlot(m, 'zone2-1')], [[], 'ble', false]);
   assert(m.potager.parcelles.every((p) => isArable(p.case)), 'toutes sur de l\'herbe labourable');
@@ -515,12 +526,12 @@ test('version 1.15 : la terre déborde en bordure sur les 8 tuiles voisines, qui
   assert(hoe(s, champ(3, 3)).ok, 'en diagonale à une tuile : la tuile diagonale existe');
   assert(hoe(s, champ(1, 0)).ok, 'l\'écart se comble : une tuile de plus, pas de pont');
   const dirt = new Set(s.potager.parcelles.map((p) => p.case));
-  assertEqual(borderMask(dirt, champ(2, 2)), 9, 'herbe entre deux terres en diagonale');
+  assertEqual(borderMask(dirt, champ(2, 2), T1.LARGEUR), 9, 'herbe entre deux terres en diagonale');
   // au bord d'un chemin : la bordure tomberait sur le chemin
-  const W = DATA.TERRAIN.LARGEUR;
+  const W = T1.LARGEUR;
   let bord = -1;
-  for (let t = 0; t < W * DATA.TERRAIN.HAUTEUR && bord < 0; t++) {
-    if (isArable(t) && !canBorder(t + 1) && !plotAtTile(s, t)) bord = t;
+  for (let t = 0; t < W * T1.HAUTEUR && bord < 0; t++) {
+    if (isArable(t, s) && !canBorder(t + 1, s) && !plotAtTile(s, t)) bord = t;
   }
   assert(bord >= 0);
   const st = hoeStatus(s, bord);
@@ -549,52 +560,16 @@ test('version 1.15 : la grille de la houe montre exactement les tuiles que la ho
   for (const t of tiles.slice(0, 40)) assertEqual(hoeStatus(s, t).ok, true, `tuile ${t}`);
 });
 
-test('carte générée (étape 1) : le moteur suit la taille du terrain de la ferme, pas 72 × 57', () => {
-  // un petit terrain de 10 × 8 tuiles : de l'herbe labourable entourée de chemin, un rocher
-  // de deux tuiles (« 4,3 ») au milieu
-  const petit = {
-    LARGEUR: 10, HAUTEUR: 8,
-    LIGNES: ['..........', '.########.', '.########.', '.###oo###.', '.########.', '.########.', '.########.', '..........'],
-    ROCHERS: { '4,3': [34, 35] }, ARBRES: {},
-    ZONES: { 1: { X: 1, Y: 1, COLONNES: 4 }, 2: { X: 5, Y: 4, COLONNES: 4 } },
-  };
-  const avant = DATA.TERRAIN;
-  DATA.TERRAIN = petit;
-  try {
-    const s = garden();
-    s.potager.parcelles = [];
-    s.potager.houe = true;
-    tireless(s);
-    testSetLevel(s, 6);
-    assertEqual(farmTerrain(s), petit);
-    assertEqual([isArable(22, s), isArable(34, s), isArable(80, s)], [true, false, false], 'herbe, rocher debout, hors du terrain');
-    const libres = hoeableTiles(s);
-    assert(libres.length > 0 && libres.every((t) => t < 80), 'la grille de la houe tient dans le terrain');
-    assertEqual([libres.includes(22), libres.includes(25)], [true, false], 'à côté du rocher : sa bordure ne se dessinerait pas');
-    // une rangée ne déborde pas sur la suivante : la tuile 29 (bout de la rangée 2) n'a pas
-    // la 30 (début de la rangée 3) pour voisine
-    assertEqual([borderMask(new Set([30]), 29), borderMask(new Set([28]), 29)], [0, 10]);
-    assertEqual([hoe(s, 22).ok, plotAtTile(s, 22).case], [true, 22]);
-    assertEqual(terrainLines(s)[3], '.###..###.', 'le rocher debout : pas de labour sous lui');
-    s.outils = { rochers: { '4,3': { retour: s.day } } };
-    assertEqual([isArable(34, s), hoeableTiles(s).includes(25), terrainLines(s)[3]], [true, true, '.########.'], 'cassé : sa place se laboure');
-    assertEqual(respawnRocks(s), ['4,3'], 'il revient à sa place');
-    assertEqual(zoneTile(2, 5), 5 * 10 + 6, 'les anciennes zones : en tuiles du terrain');
-  } finally {
-    DATA.TERRAIN = avant;
-  }
-});
-
 test('migration v32 → v33 (FLU-06) : la bulle de la houe n\'est pas remontrée à qui a déjà labouré', () => {
   const s = garden();
   const old = JSON.parse(JSON.stringify(s));
   old.version = 32;
   delete old.potager.houeVue;
   old.potager.houe = true;
-  assertEqual(migrate({ v: 32, t: 0, s: old }).potager.houeVue, true);
+  assertEqual(migreAvant({ v: 32, t: 0, s: old }).potager.houeVue, true);
   const neuve = JSON.parse(JSON.stringify(old));
   neuve.potager.houe = false;
-  assertEqual(migrate({ v: 32, t: 0, s: neuve }).potager.houeVue, false);
+  assertEqual(migreAvant({ v: 32, t: 0, s: neuve }).potager.houeVue, false);
   assertEqual(createInitialState(1).potager.houeVue, false);
 });
 
@@ -616,6 +591,7 @@ test('FLU-09 : « Planter partout » plante les parcelles vides dans la limite d
   const r3 = plantAll(las, 'potager', 'carotte');
   assertEqual([r3.plantees, r3.raison], [2, TIRED], 'énergie insuffisante');
   const ver = garden();
+  testSetLevel(ver, 1);
   setInv(ver, { conserve: 100, graine_poivron: 6 });
   assertEqual(plantAll(ver, 'potager', 'poivron').ok, false, 'culture pas encore débloquée');
 });

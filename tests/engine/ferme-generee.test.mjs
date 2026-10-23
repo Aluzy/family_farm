@@ -4,18 +4,36 @@
    Lancer seul : node --test tests/engine/ferme-generee.test.mjs (ou node tests/run-tests.mjs ferme-generee).
    ========================================================================== */
 
-import { assert, assertEqual, garden, reach, setInv, sleepOnce, test, tireless } from './aide.mjs';
+import {
+  assert, assertEqual, AVANT_DEMENAGEMENT, garden, migreAvant, reach, setInv, sleepOnce, test,
+  tireless,
+} from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
-  atelierConstruit, atelierOuvert, eatSnack, buildPoulailler, coopCapacity, buildPaturage, freeSheepPlaces, buildSerre, buildSilo, siloCapacity, buildVerger, harvestTree, isArable as arable, removeStarter, blocDessus, buyStarter, farmOpen, isOwned, starterOf, buildStation, buyFurniture, houseRepaired, repairHouse, atelierStatus, createNewGame, mainCharacter, nuitSansCouchage, setFarmSeed, blocAt, blocBloque, blocsEnMain, couchages, dansPiece, nuitCouchee, piecesCloses, poserBloc, reprendreBloc, solAt, buildAtelier, countItem, craft, craftStatus, createInitialState, DATA, FERME_GENEREE, farmMap, farmPoint, farmTerrain, genererFerme, hoeableTiles,
-  isArable, migrate, couchagesEtage, etageCouvertes, ETAGE_BLOCS, chopTree, bushOf, bushCut, cutBushes, respawnBushes, serrePlaces, serreMurs, ramassables, ramasser, etageEmprise, etageBlocs, poserEtage, toits, reprendreEtage, escaliers, robotTrip, robotStation, robotBattery, robotCapacity, runRobotCharge, grantTech, STATE_VERSION, terrainOfMap, testFarmMap, genrePiece, tuilesChemins, etatPoulailler, upgradePoulailler, layEggs,
-  etatEtable, etatMoulin, etatSilo, hauteurSilo, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
-  botteleuses, etatBotteleuse, machineDe, morceauxDe, ramasserMorceau, sortirBotte, verserFibres,
-  buyRuche, buyDehors, PORTE_SUR_MUR, casesBuissonsCoupes, especeArbre, poussesArbres, arbresPlantes, respawnTrees, fellenTrees, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
-  buyItem, sellItem, buyHoe, marcheOuvert, unlockLevel, planAbriCases, casesAbriAPoser, goToSleep, skipNight, simulateOffline, asleep,
-  caseDepart, commencerDidacticiel, etapeDidacticiel, suivantDidacticiel, majDidacticiel, objectifDidacticiel, recettesDidacticiel, blocsDidacticiel, passerDidacticiel, planAbri, hoe, plant, water, remplirCruche, eauCruche,
-  TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
+  isArable as arable,
+  arbresPlantes, asleep, atelierConstruit, atelierStatus, blocAt, blocBloque, blocDessus,
+  blocsDidacticiel, blocsEnMain, blocsPoses, botteleuses, buildAtelier, buildStation, bushCut,
+  bushOf, buyDehors, buyFurniture, buyHoe, buyItem, buyPasture, buyRuche, caseDepart,
+  casesAbriAPoser, casesBuissonsCoupes, chopTree, commencerDidacticiel, coopCapacity, couchages,
+  couchagesEtage, countItem, craft, craftStatus, createInitialState, createNewGame, cutBushes,
+  dansPiece, DATA, eatSnack, eauCruche, escaliers, especeArbre, ETAGE_BLOCS, etageBlocs,
+  etageCouvertes, etageEmprise, etapeDidacticiel, etatBotteleuse, etatEtable, etatMoulin,
+  etatPoulailler, etatSilo, farmMap, farmOpen, farmPoint, farmSeed, farmTerrain, faucherSousBati,
+  feedLivestock, fellenTrees, FERME_GENEREE, fleursPourAbeilles, freeSheepPlaces, genererFerme,
+  genrePiece, goToSleep, grantTech, grassCut, harvestTree, hauteurMur, hauteurSilo, herbesSur, hoe,
+  hoeableTiles, houseRepaired, isArable, isOwned, layEggs, machineDe, mainCharacter,
+  majDidacticiel, makeCow, makeSheep, marcheOuvert, morceauxDe, nuitCouchee, nuitSansCouchage,
+  objectifDidacticiel, passerDidacticiel, pickUp, piecesCloses, planAbri, planAbriCases, plant,
+  PORTE_SUR_MUR, poserBloc, poserEtage, poussesArbres, ramassables, ramasser, ramasserMorceau,
+  recettesDidacticiel, regrowGrass, removeStarter, remplirCruche, remplirRuches, reprendreBloc,
+  reprendreEtage, respawnBushes, respawnRocks, respawnTrees, robotBattery, robotCapacity,
+  robotStation, robotTrip, ruchePleine, ruchesARecolter, runRobotCharge, sellItem, serreMurs,
+  serrePlaces, setFarmSeed, siloCapacity, simulateOffline, skipNight, solAt, sortirBotte,
+  stableHoused, stablePlaces, starterOf, STATE_VERSION, suivantDidacticiel, terrainOfMap,
+  TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools,
+  testBuildAtelier, testFarmMap, testSetLevel, toits, tuilesChemins, unlockLevel,
+  upgradePoulailler, verserFibres, water,
 } from '../../js/engine/index.js';
 
 const lire = (f) => JSON.parse(readFileSync(new URL('../../' + f, import.meta.url), 'utf8'));
@@ -121,9 +139,9 @@ for (const graine of ['1', '2', '7', 'abc', '12345']) {
   });
 }
 
-test('ferme générée : une partie y passe en mode test, et en revient', () => {
+test('ferme générée : une partie change de ferme en mode test (une autre graine)', () => {
   const s = garden();
-  assertEqual([farmTerrain(s), farmMap(s)], [DATA.TERRAIN, null], 'la carte de Tiled');
+  assertEqual([farmSeed(s), farmTerrain(s).LARGEUR, farmMap(s).width], ['1', 144, 144], 'sa ferme : celle de sa graine');
   s.outils = { arbres: { '14,25': { retour: 9 } }, rochers: { '25,13': 2 } };
   assertEqual(testFarmMap(s, 42), { ok: true, graine: '42' });
   const T = farmTerrain(s);
@@ -136,18 +154,17 @@ test('ferme générée : une partie y passe en mode test, et en revient', () => 
   s.robot = { taches: [{ t: 'recolter', id: s.potager.parcelles[0].id }], i: 0, base: -1 };
   assert(robotTrip(s, s.robot, 0).route < 1, 'de sa base à une parcelle de départ : un court trajet');
   // la graine est sauvegardée
-  const m = migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(s)) });
+  const m = migreAvant({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(s)) });
   assertEqual(m.carte, { graine: '42' });
-  testFarmMap(s, null);
-  assertEqual(['carte' in s, farmTerrain(s)], [false, DATA.TERRAIN], 'revenue sur la carte de Tiled');
-  assert(createInitialState(1).carte === undefined, 'une partie neuve : la carte de Tiled (pour l\'instant)');
+  assertEqual([testFarmMap(s, null).ok, testFarmMap(s, ' ').ok, farmSeed(s)], [false, false, '42'], 'il faut une graine');
+  assertEqual([blocsPoses(s), houseRepaired(s)], [{}, false], 'les blocs de l\'autre ferme n\'y sont plus');
+  assertEqual(createInitialState(1).carte, { graine: '1' }, 'une partie neuve : sa ferme générée');
 });
 
 /* ---------- étape 3 : ramasser à la main, l'Atelier ---------- */
 
 test('ferme générée : chaque matin, des pierres et du bois à ramasser à la main (plus d\'herbes : la fibre vient de la faux)', () => {
   const s = garden();
-  assertEqual(ramassables(s), [], 'pas sur la carte de Tiled');
   testFarmMap(s, 'r1');
   const R = DATA.ATELIER.RAMASSAGE, D = DATA.ATELIER.RAMASSAGE_DEPART, liste = ramassables(s);
   const base = Object.values(R).reduce((a, d) => a + d.nombre, 0);
@@ -512,8 +529,7 @@ test('nouvelle partie sur une ferme générée : la graine, sans terre au dépar
   const s = createNewGame(5);
   assertEqual(s.potager.parcelles, []);
   assertEqual(setFarmSeed(s, 'neuve'), { ok: true, graine: 'neuve' });
-  assertEqual([farmTerrain(s).LARGEUR, s.potager.parcelles, atelierOuvert(s)], [144, [], true]);
-  assertEqual(setFarmSeed(s, null).graine, null, 'et retour à la ferme dessinée');
+  assertEqual([farmTerrain(s).LARGEUR, s.potager.parcelles], [144, []]);
 });
 
 test('ferme générée : chaque nuit, qui n\'a pas de paillasse dans une pièce close perd du bonheur', () => {
@@ -535,7 +551,7 @@ test('ferme générée : chaque nuit, qui n\'a pas de paillasse dans une pièce 
   const sans2 = nuitSansCouchage(s);
   assertEqual([sans2.includes(mainCharacter(s)), sans2.length], [false, membres.length - 1]);
   assertEqual(mainCharacter(s).bonheur, 50);
-  // sur la ferme dessinée, rien
+  // une paillasse par membre (la partie de test) : personne
   assertEqual(nuitSansCouchage(garden()), []);
   // et la nuit le note pour le réveil
   const r = sleepOnce(s);
@@ -546,8 +562,7 @@ test('ferme générée : chaque nuit, qui n\'a pas de paillasse dans une pièce 
 
 test('ferme générée : pas de maison à réparer, le foyer est une pièce close avec une paillasse', () => {
   const s = chantier('m1');
-  s.maison = { reparee: false };
-  assertEqual([houseRepaired(s), repairHouse(s).ok], [false, false], 'rien à réparer : à bâtir');
+  assertEqual(houseRepaired(s), false, 'rien à réparer : à bâtir');
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
   poserPorte(s, p.porte);
@@ -617,7 +632,6 @@ test('ferme générée : le puits, la pompe dessus, le panneau, la citerne et la
   const s = reach(chantier('e1'), 'energie');
   s.pieces = 100000;
   for (const t of ['panneau', 'pompe', 'reservoir', 'batterie']) removeStarter(s, t);   // (une partie neuve : rien d'installé)
-  assertEqual(buyStarter(s, 'panneau').ok, false, 'pas en pièces');
   // le foyer d'abord (et, deux rangées sous lui, de quoi poser dehors)
   const z = terrainLibre(s, 7, 8), p = murs(z, 5, 5);
   setInv(s, { mur_pierre: 30, porte: 2, paillasse: 2, puits_pierre: 1, pompe: 1, panneau_solaire: 2, citerne: 1, batterie: 1 });
@@ -664,7 +678,6 @@ test('ferme générée : le Poulailler, une enceinte avec une porte dehors, un n
   const s = reach(chantier('p1'), 'poulailler');
   s.pieces = 100000;
   s.poulailler.construit = false;
-  assertEqual(buildPoulailler(s).ok, false, 'pas en pièces');
   setInv(s, { mur_pierre: 30, porte: 3, nichoir: 2, barriere: 20 });
   const z = terrainLibre(s, 9, 6), p = enceinteEtEnclos(s, z);
   assertEqual(poserBloc(s, 'nichoir', p.dedans + 50).ok, false, 'hors d\'une pièce close');
@@ -725,7 +738,6 @@ test('ferme générée : l\'Étable, une enceinte avec une porte dehors, une man
   s.pieces = 100000;
   s.paturage.construit = false;
   s.paturage.places = 0;
-  assertEqual(buildPaturage(s).ok, false, 'pas en pièces');
   setInv(s, { mur_pierre: 30, porte: 3, mangeoire: 1, barriere: 20 });
   const z = terrainLibre(s, 9, 6), p = enceinteEtEnclos(s, z);
   assertEqual(poserBloc(s, 'mangeoire', p.dedans + 50).ok, false, 'hors d\'une pièce close');
@@ -760,7 +772,6 @@ test('ferme générée : un bac à semis posé dans une pièce close construit l
   const s = chantier('s1');
   s.pieces = 100000;
   s.serre = createInitialState(1).serre;   // comme une partie neuve
-  assertEqual(buildSerre(s).ok, false, 'pas en pièces');
   setInv(s, { mur_pierre: 30, porte: 2, bac_semis: 1 });
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
@@ -791,7 +802,6 @@ test('ferme générée : des blocs de silo, 2 colonnes de 3, font le Silo ; il s
   const S = DATA.ATELIER.SILO;
   const s = reach(chantier('g1'), 'silo');
   s.silo = createInitialState(1).silo;
-  assertEqual(buildSilo(s).ok, false, 'pas en pièces');
   // la recette, à l'Atelier : débloquée avec le Silo
   setInv(s, { planche: 3, pierre: 1 });
   assert(craftStatus(s, 'bloc_silo').ok, 'débloquée');
@@ -853,8 +863,8 @@ test('migration v45 : le coffre à grain est remboursé, posé ou dans l\'invent
   s.inventaire.coffre_grain = [{ qty: 2, nightsLeft: null, origin: 'produit' }];
   s.silo = { ...s.silo, construit: true, niveau: 2, ble: 12 };
   s.version = 44;
-  const m = migrate({ v: 44, t: 0, s });
-  assertEqual([m.version, m.blocs[1234], m.inventaire.coffre_grain], [STATE_VERSION, undefined, undefined]);
+  const m = migreAvant({ v: 44, t: 0, s });
+  assertEqual([m.version, m.blocs[1234], m.inventaire.coffre_grain], [AVANT_DEMENAGEMENT, undefined, undefined]);
   assertEqual([countItem(m, 'planche'), countItem(m, 'fibre')], [18, 6], '3 coffres : 6 planches et 2 fibres chacun');
   assertEqual([m.silo.construit, m.silo.ble], [false, 12], 'le blé du Silo reste');
 });
@@ -977,8 +987,8 @@ test('migration v41 → v42 : une meule seule ne fait plus le Moulin', () => {
   poserBloc(s, 'meule', (z.r + 2) * z.W + z.c + 2);
   // une partie d'avant : la meule posée avait ouvert la station
   s.stations.moulin.construit = true;
-  const m = migrate({ v: 41, t: 0, s: { ...s, version: 41 } });
-  assertEqual([m.version, m.stations.moulin.construit], [STATE_VERSION, false]);
+  const m = migreAvant({ v: 41, t: 0, s: { ...s, version: 41 } });
+  assertEqual([m.version, m.stations.moulin.construit], [AVANT_DEMENAGEMENT, false]);
 });
 
 /* ---------- étape 5b-8 : les arbres fruitiers, plantés dans le sol ---------- */
@@ -986,7 +996,6 @@ test('migration v41 → v42 : une meule seule ne fait plus le Moulin', () => {
 test('ferme générée : un jeune arbre se plante dans le sol, dehors, et donne ses fruits', () => {
   const s = reach(chantier('v1'), 'verger');
   s.pieces = 100000;
-  assertEqual(buildVerger(s).ok, false, 'pas de Verger à aménager');
   setInv(s, { mur_pierre: 30, porte: 2, jeune_pommier: 3 });
   const z = terrainLibre(s, 8, 5), p = murs(z, 5, 5), W = z.W;
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
@@ -1025,7 +1034,6 @@ test('mode test : les ressources, les blocs, les outils et l\'Atelier en un appu
   assertEqual(testAddItem(s, 'panneau_solaire', '3').items, { panneau_solaire: 3 });
   assertEqual(countItem(s, 'panneau_solaire'), avant + 3);
   assertEqual(testAddItem(s, 'licorne', 1).ok, false);
-  assertEqual(testBuildAtelier(createInitialState()).ok, false, 'pas d\'Atelier sur la ferme dessinée');
 });
 
 test('ferme générée : une enceinte est une maison ou un bâtiment, le premier bloc décide', () => {
@@ -1066,8 +1074,8 @@ test('migration v37 → v38 : une enceinte qui mêle une maison et un bâtiment 
   s.blocs[p.dedans + 1] = 'nichoir';
   s.poulailler.construit = true;
   setInv(s, {});
-  const m = migrate({ ...s, version: 37 });
-  assertEqual([m.version, m.blocs[p.dedans], m.blocs[p.dedans + 1], countItem(m, 'nichoir'), m.poulailler.construit], [STATE_VERSION, 'paillasse', undefined, 1, false]);
+  const m = migreAvant({ ...s, version: 37 });
+  assertEqual([m.version, m.blocs[p.dedans], m.blocs[p.dedans + 1], countItem(m, 'nichoir'), m.poulailler.construit], [AVANT_DEMENAGEMENT, 'paillasse', undefined, 1, false]);
 });
 
 test('ferme générée : la barrière arrête le passage sans fermer de pièce ; le chemin se pose dehors, comme celui de la carte', () => {
@@ -1141,11 +1149,11 @@ test('ferme générée : la station du robot est un bloc à poser dehors ; sans 
   reprendreBloc(s, t);
   assertEqual([robotStation(s), countItem(s, 'station_robot')], [null, 2], 'reprise : dans l\'inventaire');
   // (une ancienne partie qui a le robot reçoit sa station)
-  const v = migrate({ ...JSON.parse(JSON.stringify(s)), version: 40, inventaire: JSON.parse(JSON.stringify(s.inventaire)) });
+  const v = migreAvant({ ...JSON.parse(JSON.stringify(s)), version: 40, inventaire: JSON.parse(JSON.stringify(s.inventaire)) });
   assertEqual(countItem(v, 'station_robot'), 2, 'elle en a déjà : rien de plus');
   setInv(s, {});
-  const w = migrate({ ...JSON.parse(JSON.stringify(s)), version: 40 });
-  assertEqual([w.version, countItem(w, 'station_robot')], [STATE_VERSION, 1]);
+  const w = migreAvant({ ...JSON.parse(JSON.stringify(s)), version: 40 });
+  assertEqual([w.version, countItem(w, 'station_robot')], [AVANT_DEMENAGEMENT, 1]);
   void robotCapacity;
 });
 
@@ -1461,7 +1469,7 @@ test('ferme générée : le Marché ouvre au niveau 3 ; le panneau, la pompe, la
   assertEqual([unlockLevel('marche'), unlockLevel('energie')], [3, 7]);
   const s = chantier('m1');
   s.pieces = 1000;
-  s.progression.niveau = 2;
+  testSetLevel(s, 2);
   for (const t of ['panneau', 'pompe', 'reservoir', 'batterie']) removeStarter(s, t);   // (une partie neuve)
   // avant le niveau 3 : le Marché est fermé, sans panneau ni pompe ou avec
   assertEqual(marcheOuvert(s), false);
@@ -1484,10 +1492,6 @@ test('ferme générée : le Marché ouvre au niveau 3 ; le panneau, la pompe, la
   s.progression.niveau = 7;
   assert(craftStatus(s, 'pompe').ok);
   assert(poserBloc(s, 'panneau', dehors).ok);
-  // la ferme du grand-père : le Marché ouvre toujours avec le panneau et la pompe
-  const d = createNewGame(1);
-  d.progression.niveau = 10;
-  assertEqual(marcheOuvert(d), false);
 });
 
 test('terre sauvage : une nouvelle partie commence avec 300 pièces', () => {

@@ -1,7 +1,5 @@
 import { migrate } from '../engine/state.js';
-import { createNewGame, setFarmSeed } from '../engine/depart.js';
-import { farmSeed } from '../engine/terrain.js';
-import { convertirPartie, graineDemenagement } from '../engine/demenagement.js';
+import { createNewGame } from '../engine/depart.js';
 import { SAVE_KEY, setState, state } from './store.js';
 import { setPendingAbsence, setSimulatedAt, simulatedAt, syncJobs } from './loop.js';
 import { notify } from './toasts.js';
@@ -35,7 +33,7 @@ export function loadOrCreateState() {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return nouvellePartie();
     if (typeof parsed.t === 'number' && Number.isFinite(parsed.t)) setSimulatedAt(parsed.t);
-    return surTerreSauvage(migrate(parsed), raw);
+    return demenagement(migrate(parsed), raw);
   } catch (e) {
     return nouvellePartie();
   }
@@ -44,26 +42,21 @@ export function loadOrCreateState() {
 // La sauvegarde d'avant le déménagement d'une ancienne partie, gardée sur l'appareil (au cas où).
 export const SAVE_AVANT_DEMENAGEMENT = 'ferme-save-avant-demenagement';
 
-// Une nouvelle partie : sur une terre sauvage (la ferme générée) dès sa création.
+// Une nouvelle partie : sur une terre sauvage (la ferme générée de sa graine).
 function nouvellePartie() {
-  const s = createNewGame(makeSeed());
-  setFarmSeed(s, graineDemenagement(s));
-  return s;
+  return createNewGame(makeSeed());
 }
 
-// La ferme du grand-père (la carte de Tiled) n'existe plus : une partie qui y est encore
-// déménage d'elle-même sur une terre sauvage (js/engine/demenagement.js : rien ne se perd, ses
-// bâtiments sont rebâtis en blocs). La partie d'avant reste sur l'appareil ; une annonce le dit
-// au chargement (demenagementAnnonce). Une partie pas encore commencée reçoit sa terre, sans plus.
+// La ferme du grand-père (la carte de Tiled) n'existe plus : une partie qui y était encore a
+// déménagé sur une terre sauvage en migrant (js/engine/state.js, v46 → v47 ; rien ne se perd, ses
+// bâtiments sont rebâtis en blocs) et le dit (state.demenagee). La partie d'avant reste sur
+// l'appareil ; une annonce le dit au chargement (demenagementAnnonce).
 let demenagee = false;
-function surTerreSauvage(s, raw) {
-  if (farmSeed(s) !== null) return s;
-  if (!s.famille || !s.famille.configuree) {
-    setFarmSeed(s, graineDemenagement(s));
-    return s;
-  }
+function demenagement(s, raw) {
+  if (!s.demenagee) return s;
+  delete s.demenagee;
   safeStorageSet(SAVE_AVANT_DEMENAGEMENT, raw);
-  demenagee = convertirPartie(s, graineDemenagement(s)).ok;
+  demenagee = true;
   return s;
 }
 
@@ -112,7 +105,9 @@ export function importSaveText(text) {
       throw new Error('format de sauvegarde invalide');
     }
     // Une sauvegarde importée reprend maintenant : pas de rattrapage hors-ligne.
-    setState(migrate(parsed));
+    const s = migrate(parsed);
+    delete s.demenagee;
+    setState(s);
     setSimulatedAt(Date.now());
     setPendingAbsence(null);
     syncJobs();

@@ -4,7 +4,6 @@ import { fail } from './devices.js';
 import { awakeMsAtHour } from './clock.js';
 import { weekdayIndex } from './format.js';
 import { addItem, countItem, keepLots, lotList, lotRank, lotsOf, pullLots, pushLots } from './inventory.js';
-import { atelierOuvert } from './atelier.js';
 import { mainCharacter } from './depart.js';
 import { dishHappiness, memberHappiness, setHappiness } from './ville.js';
 import { noter } from './journal.js';
@@ -160,29 +159,27 @@ export function rangerBoite(state) {
 
 /* -- les repas -- */
 
-// Où la famille mange : 'frigo' (le réfrigérateur construit), 'boite' (la boîte posée),
-// 'inventaire' (la ferme dessinée, qui n'a pas d'Atelier), ou null (rien où manger).
+// Où la famille mange : 'frigo' (le réfrigérateur construit), 'boite' (la boîte posée), ou
+// null (rien où manger).
 export function sourceRepas(state) {
   if (state.frigo && state.frigo.construit) return 'frigo';
-  if (!atelierOuvert(state)) return 'inventaire';
   return boitePosee(state) ? 'boite' : null;
 }
 
 function rangement(state, source) {
   if (source === 'frigo') return state.frigo.items || (state.frigo.items = {});
   if (source === 'boite') return boiteItems(state);
-  if (source === 'inventaire') return state.inventaire;
   return null;
 }
 
 // Le prochain aliment d'un rangement : ce qui périme le plus tôt, puis le plat qui rend le
-// plus de bonheur, puis ce qui rend le plus. `reserve` : { item: quantité } jamais mangée.
-function prochainAliment(store, reserve) {
+// plus de bonheur, puis ce qui rend le plus.
+function prochainAliment(store) {
   let best = null;
   for (const item of Object.keys(store)) {
     const def = DATA.OBJETS[item];
     const lots = lotList(store, item);
-    if (!def || !def.mangeable || lots.reduce((t, l) => t + l.qty, 0) <= ((reserve && reserve[item]) || 0)) continue;
+    if (!def || !def.mangeable || lots.reduce((t, l) => t + l.qty, 0) <= 0) continue;
     const cle = [lotRank(lots[0]), -dishHappiness(item), -valeurAliment(item)];
     if (!best || cle[0] < best.cle[0] || (cle[0] === best.cle[0] && (cle[1] < best.cle[1] || (cle[1] === best.cle[1] && cle[2] < best.cle[2])))) best = { item, cle };
   }
@@ -201,12 +198,10 @@ export function repasJour(state) {
 export function mangerMembre(state, m, cible = F().MAX) {
   const source = sourceRepas(state);
   const store = rangement(state, source);
-  // (dans l'inventaire, la réserve de semences n'est pas mangée)
-  const reserve = source === 'inventaire' ? state.famille.reserve : null;
   const mange = {};
   let e = jaugeMembre(m);
   while (store && e < cible) {
-    const item = prochainAliment(store, reserve);
+    const item = prochainAliment(store);
     if (!item) break;
     const lots = lotList(store, item);
     const [p] = pullLots(lots, 1);

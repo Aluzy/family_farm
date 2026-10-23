@@ -3,7 +3,6 @@ import { fail, isOwned, starterOf } from './devices.js';
 import { addItem } from './inventory.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { ANCIENNE_COUR } from './ferme-generee.js';
-import { houseRepaired } from './depart.js';
 import { robotOn } from './automation.js';
 import { pickUpAll } from './ramassage.js';
 import { couchages, etatEtable, etatMoulin, etatPoulailler, etatSilo, majPoulailler, serrePlaces } from './blocs.js';
@@ -121,7 +120,7 @@ function plans(state) {
   const membres = state.famille && state.famille.membres ? state.famille.membres.length : 1;
   const st = (id) => !!(state.stations && state.stations[id] && state.stations[id].construit);
   const out = [];
-  const foyer = houseRepaired(state);
+  const foyer = !(state.maison && state.maison.reparee === false);   // (la maison d'avant, réparée)
   out.push({ id: 'maison', ou: 'maison', pose: foyer, ...planFoyer(membres, st('four'), st('cuisine')) });
   const poul = state.poulailler;
   if (poul && poul.construit) {
@@ -276,39 +275,11 @@ export function convertirPartie(state, graine) {
   return { ok: true, graine: g, batis: batis.filter((p) => !p.rendu).map((p) => p.id), rendus };
 }
 
-/* ---------- le déménagement d'une ancienne partie (au chargement) ---------- */
+/* ---------- la graine d'une partie ---------- */
 
-// Une ancienne partie déménage (écran de départ passé) : la fenêtre ne propose pas de rester sur
-// la carte de Tiled, seulement de choisir sa terre (la graine).
-export function demenagementPossible(state) {
-  return farmSeed(state) === null && !!(state.famille && state.famille.configuree);
-}
-
-// La graine proposée : tirée de la partie (toujours la même pour elle).
+// La graine de la ferme générée d'une partie : tirée de sa graine aléatoire (toujours la même
+// pour elle). Une partie neuve la reçoit (createInitialState), une ancienne aussi en déménageant
+// (la migration v46 → v47).
 export function graineDemenagement(state) {
   return String((Number(state.rngSeed) >>> 0) % 1000000);
-}
-
-// Ce que donnerait le déménagement sur la graine `graine`, sans toucher à la partie :
-// { ok, graine, batis, rendus, largeur, hauteur, sol (une lettre par case : h herbe, a arbre ou
-// rocher, e eau, c chemin), blocs: { case: sorte }, parcelles: [cases], arbres: [cases], cour: [c0, r0, c1, r1] }.
-export function apercuDemenagement(state, graine) {
-  const copie = JSON.parse(JSON.stringify(state));
-  const r = convertirPartie(copie, graine);
-  if (!r.ok) return r;
-  const T = farmTerrain(copie), W = T.LARGEUR, H = T.HAUTEUR, V = W + 1;
-  let sol = '';
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const ch = T.LIGNES[y][x], k = T.SOMMETS ? T.SOMMETS[y * V + x] : 0;
-      sol += ch === 'o' ? 'a' : ch !== '.' ? 'h' : k === 2 ? 'e' : 'c';
-    }
-  }
-  const tout = Object.keys(copie.blocs).map(Number).concat(copie.potager.parcelles.map((p) => p.case), copie.verger.arbres.map((t) => t.case));
-  const cs = tout.map((t) => t % W), rs = tout.map((t) => Math.floor(t / W));
-  return {
-    ...r, largeur: W, hauteur: H, sol, blocs: { ...copie.blocs },
-    parcelles: copie.potager.parcelles.map((p) => p.case), arbres: copie.verger.arbres.map((t) => t.case),
-    cour: tout.length ? [Math.min(...cs), Math.min(...rs), Math.max(...cs), Math.max(...rs)] : null,
-  };
 }

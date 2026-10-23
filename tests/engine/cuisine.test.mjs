@@ -4,23 +4,25 @@
    ========================================================================== */
 
 import {
-  actionCost, addItem, allDevices, buildFridge, buildStation, buyItem, buyPasture, buyPrice,
-  buySheep, cancelMilling, cancelQueued, countItem, createInitialState, DATA, deviceStatus,
-  depenserMembre, dishEnergy, dishPrice, feedAllHens, findDevice, findPlot, fridgeCount,
-  fridgeRate, fridgeUnits, grantTech, harvest, harvestAll, hasTech, ingredientOptions,
-  inventoryCounts, isBroken, isBuyable, isPerishable, loadShedding, lotsOf, maintainCost,
-  maintainDevice, marketCoef, migrate, millPending, millTimeLeft, moveToFridge, panelOutput,
-  mangerMembre, mangeurs, pastureCost, plant, valeurAliment, productionItemKeys, queueCapacity, recipeNode, recipeStatus,
-  recipeUnlocked, repairCost, repairDevice, scaleEnergie, sellableCount, sellItem, sellPrice,
-  shelfLife, simulateOffline, sleep, snackEnergy, startFarm, startHousehold, startLot4,
-  startMilling, startRecipe, STATE_VERSION, storeWheat, taskTimeLeft, techEffects, techPct,
-  testAddEggs, testAddFlour, testAddHens, testAddOil, testAddSeeds, testAddWheat,
-  testBuildStations, testSetWear, testWearMill, testWoolReady, tick, toggleDevice, upgradeCost,
-  upgradeDevice, wakeEnergy, waterAll, waterCostFor, wheatForHens, wheatTotal,
+  actionCost, addItem, allDevices, boiteCounts, buildFridge, buildStation, buyItem, buyPasture,
+  buyPrice, buySheep, cancelMilling, cancelQueued, countItem, createInitialState, DATA,
+  depenserMembre, deposerBoite, deviceStatus, dishEnergy, dishPrice, feedAllHens, findDevice,
+  findPlot, fridgeCount, fridgeRate, fridgeUnits, grantTech, harvest, harvestAll, hasTech,
+  houseRepaired, ingredientOptions, inventoryCounts, isBroken, isBuyable, isPerishable,
+  loadShedding, lotsOf, maintainCost, maintainDevice, mangerMembre, mangeurs, marketCoef, migrate,
+  millPending, millTimeLeft, moveToFridge, panelOutput, pastureCost, plant, productionItemKeys,
+  queueCapacity, recipeNode, recipeStatus, recipeUnlocked, repairCost, repairDevice, scaleEnergie,
+  sellableCount, sellItem, sellPrice, shelfLife, simulateOffline, sleep, snackEnergy, startFarm,
+  startHousehold, startLot4, startMilling, startRecipe, storeWheat, taskTimeLeft, techEffects,
+  techPct, testAddEggs, testAddFlour, testAddHens, testAddOil, testAddSeeds, testAddWheat,
+  testBatir, testBuildStations, testSetLevel, testSetWear, testWearMill, testWoolReady, tick,
+  toggleDevice, unlockLevel, upgradeCost, upgradeDevice, valeurAliment, wakeEnergy, waterAll,
+  waterCostFor, wheatForHens, wheatTotal,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, atelier, coldRoom, farm, fillSheep, garden, kwh, matin, ml, pature,
-  plantRipe, ranch, reach, runFor, setInv, sleepOnce, test,
+  affamer, assert, assertEqual, atelier, AVANT_DEMENAGEMENT, boite, coldRoom, farm, fillSheep,
+  garden, kwh, matin, migreAvant, ml, pature, plantRipe, ranch, reach, runFor, setInv, sleepOnce,
+  test,
 } from './aide.mjs';
 
 /* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
@@ -85,14 +87,12 @@ test('Lot 11 (nutrition) : +25 % sur les aliments existants, arrondi centralisé
 });
 
 test('le Gratin de patates rassasie à lui seul un membre affamé', () => {
-  const s = garden();
-  s.famille.reserve = {};
-  setInv(s, { gratin_patates: 3 });
+  const s = boite(garden(), { gratin_patates: 3 });
   assertEqual(valeurAliment('gratin_patates'), 33);
   const m = mangeurs(s)[0];
   depenserMembre(s, m.id, 30);
   assertEqual(mangerMembre(s, m).mange, { gratin_patates: 1 }, 'de 70 à 100 : un seul gratin');
-  assertEqual(countItem(s, 'gratin_patates'), 2, 'les 2 gratins restants ne sont pas touchés');
+  assertEqual(boiteCounts(s), { gratin_patates: 2 }, 'les 2 gratins restants ne sont pas touchés');
 });
 
 test('prix de vente des plats : somme des prix × 1,3, arrondi', () => {
@@ -701,8 +701,8 @@ test('arbre v2 : arrosage prioritaire quand l\'eau manque', () => {
 test('version 1.19 : Réveil matinal I et II et Routine familiale sont retirés, remboursés, avec le réglage « Dormir tout seul »', () => {
   const vieille = { ...createInitialState(1), version: 35, technologies: ['reveil_1', 'reveil_2', 'fa_routine', 'fa_sommeil'], routine: true, pieces: 10 };
   vieille.pointsTech = { ...vieille.pointsTech, solde: 0 };
-  const m = migrate({ v: 35, t: 0, s: vieille });
-  assertEqual([m.version, m.technologies, m.routine, m.pieces, m.pointsTech.solde], [STATE_VERSION, ['fa_sommeil'], undefined, 10 + 200 + 500 + 2500, 1 + 1 + 3]);
+  const m = migreAvant({ v: 35, t: 0, s: vieille });
+  assertEqual([m.version, m.technologies, m.routine, m.pieces, m.pointsTech.solde], [AVANT_DEMENAGEMENT, ['fa_sommeil'], undefined, 10 + 200 + 500 + 2500, 1 + 1 + 3]);
   for (const id of ['reveil_1', 'reveil_2', 'fa_routine']) assertEqual(DATA.ARBRE.noeuds[id], undefined, id);
   assertEqual(createInitialState(1).routine, undefined);
 });
@@ -731,12 +731,10 @@ test('Café (cafe_boisson) : id distinct de l\'item cafe, ne remplace pas l\'ing
 });
 
 test('la farine et l\'huile ne se mangent pas seules ; les plats se mangent', () => {
-  const s = atelier();
-  setInv(s, { farine: 50, huile: 50 });
+  const s = boite(atelier(), { farine: 50, huile: 50 });
   affamer(s);
   assertEqual(s.repasJour.mange, {});
-  const t = atelier();
-  setInv(t, { pain: 3, omelette: 1, conserve: 200 });
+  const t = boite(atelier(), { pain: 3, omelette: 1, conserve: 200 });
   affamer(t);
   assertEqual([t.repasJour.mange.pain, t.repasJour.mange.omelette], [3, 1]);
 });
@@ -750,34 +748,32 @@ test('état initial Lot 5 : quatre stations à construire, libres, sans appareil
   assertEqual(s.unlockedTabs.includes('recettes'), false);
 });
 
-test('construire le Four : 100 pièces, et l\'onglet Livre de recette s\'ouvre', () => {
+test('poser le Four (un bloc, dans le foyer) ouvre l\'onglet Livre de recette ; il ne s\'achète pas', () => {
   const s = ranch();
   s.pieces = 100;
-  const r = buildStation(reach(s, 'four'), 'four');
-  assertEqual([r.ok, r.cost, s.pieces], [true, 100, 0]);
+  assertEqual(buildStation(reach(s, 'four'), 'four').ok, false, 'il se fabrique à l\'Atelier');
+  assertEqual(s.pieces, 100);
+  assert(testBatir(s, 'four').ok);
   assertEqual(s.stations.four.construit, true);
   assertEqual(s.unlockedTabs.includes('recettes'), true, 'onglet ouvert par le Four');
+  assert(testBatir(s, 'four').ok, 'un second four');
   assertEqual(s.unlockedTabs.filter((t) => t === 'recettes').length, 1);
   assertEqual(allDevices(s).length, 3, 'le Four n\'est pas un appareil électrique');
-  assertEqual(buildStation(reach(s, 'four'), 'four').ok, false, 'une seule de chaque');
 });
 
-test('la Cuisine (150) se construit sans le Four, et ouvre le Livre de recette', () => {
+test('la Cuisinière se pose sans le Four, et ouvre le Livre de recette', () => {
   const s = ranch();
   assertEqual(s.unlockedTabs.includes('recettes'), false);
-  s.pieces = 149;
-  assertEqual(buildStation(reach(s, 'cuisine'), 'cuisine').ok, false, 'pas assez de pièces');
-  s.pieces = 150;
-  assertEqual(buildStation(reach(s, 'cuisine'), 'cuisine').ok, true);
-  assertEqual(s.pieces, 0);
+  assertEqual(buildStation(reach(s, 'cuisine'), 'cuisine').ok, false, 'elle se fabrique à l\'Atelier');
+  assert(testBatir(s, 'cuisine').ok);
+  assertEqual([s.stations.cuisine.construit, s.stations.four.construit], [true, false]);
   assertEqual(s.unlockedTabs.includes('recettes'), true, 'version 1.7 : la Cuisine ouvre le Livre de recette');
-  assertEqual(buildStation(reach(s, 'cuisine'), 'cuisine').ok, false, 'une seule Cuisine');
 });
 
-test('le Moulin (120) et la Presse (150) se construisent sans le Four et rejoignent le parc', () => {
+test('le Moulin (sa tour) et la Presse (150) se construisent sans le Four et rejoignent le parc', () => {
   const s = ranch();
-  s.pieces = 270;
-  assertEqual(buildStation(reach(s, 'moulin'), 'moulin').ok, true);
+  s.pieces = 150;
+  assertEqual(testBatir(reach(s, 'moulin'), 'moulin').ok, true);
   assertEqual(buildStation(reach(s, 'presse'), 'presse').ok, true);
   assertEqual(s.pieces, 0);
   assertEqual(s.unlockedTabs.includes('recettes'), false, 'seul le Four ouvre l\'onglet');
@@ -929,8 +925,7 @@ test('version 1.1 : plus aucune recette ne demande de viande, les anciens plats 
   assertEqual(startRecipe(s, 'ragout'), { ok: false, error: 'Recette inconnue.' });
   assertEqual(countItem(s, 'viande_mouton'), 2, 'rien n\'est retiré');
   // La famille mange encore un ancien plat et de l'ancienne viande ; les plats comptent pour le bonus.
-  const t = atelier();
-  setInv(t, { viande_mouton: 2, carotte: 2, patate: 1, ragout: 1, roti_boeuf: 1 });
+  const t = boite(atelier(), { viande_mouton: 2, carotte: 2, patate: 1, ragout: 1, roti_boeuf: 1 });
   const m = mangeurs(t)[0];
   depenserMembre(t, m.id, 80);
   const mange = mangerMembre(t, m).mange;
@@ -1252,8 +1247,8 @@ test('Dormir : une préparation en cours se termine immédiatement', () => {
 });
 
 test('Dormir : le plat fini pendant la nuit se mange à partir du repas suivant', () => {
-  const s = atelier();
-  setInv(s, { farine: 2, conserve: 200 });
+  const s = boite(atelier(), { conserve: 200 });
+  setInv(s, { farine: 2 });
   startRecipe(s, 'pain');
   affamer(s);
   s.awakeMs = 30000;
@@ -1261,6 +1256,7 @@ test('Dormir : le plat fini pendant la nuit se mange à partir du repas suivant'
   assertEqual(r.mange.pain, undefined, 'pas mangé ce jour-là : il cuit');
   assertEqual(countItem(s, 'pain'), 1);
   assertEqual(lotsOf(s, 'pain')[0].nightsLeft, 6, 'le pain vieillit d\'une nuit comme les œufs pondus');
+  assert(deposerBoite(s, 'pain').ok, 'mis dans la boîte');
   affamer(s);
   s.awakeMs = 30000;
   assertEqual(sleep(s).mange.pain, 1, 'mangé le lendemain');
@@ -1289,10 +1285,10 @@ test('onglet Livre de recette : ouvert par le Four, jamais avant', () => {
   const s = createInitialState(1);
   assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir']);
   s.pieces = 500;
-  buildStation(reach(s, 'moulin'), 'moulin');
+  testBatir(reach(s, 'moulin'), 'moulin');
   buildStation(reach(s, 'presse'), 'presse');
   assertEqual(s.unlockedTabs.includes('recettes'), false);
-  buildStation(reach(s, 'four'), 'four');
+  testBatir(reach(s, 'four'), 'four');
   assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir', 'recettes']);
 });
 
@@ -1310,6 +1306,7 @@ test('plats et ingrédients se vendent au Marché au prix fixe', () => {
 
 test('mode test Lot 5 : stations gratuites, +10 farines, +10 huiles, +20 œufs, moulin usé', () => {
   const s = createInitialState(1);
+  testSetLevel(s, unlockLevel('four'));
   s.pieces = 0;
   assertEqual(testWearMill(s).ok, false, 'pas de Moulin, pas d\'usure');
   assertEqual(testBuildStations(s).ok, true);
@@ -1357,32 +1354,33 @@ test('migration v5 (Lot 4) → v6 (puis v7) : les stations apparaissent, la part
     ...startFarm(), ...startHousehold(), ...startLot4(),
   };
   delete v5.nuit.bonusPlats;
-  const m = migrate({ v: 5, t: 0, s: v5 });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 5, t: 0, s: v5 });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual([m.day, m.pieces], [20, 432]);
   for (const id of ['four', 'cuisine', 'moulin', 'presse']) {
     assertEqual(m.stations[id], { construit: false, tache: null, appareil: null }, id);
   }
   assertEqual(['bonusPlats' in m.nuit, m.nuit.termine], [false, {}], 'version 1.8 : plus de bonus de santé');
   assertEqual(inventoryCounts(m).conserve, 160);
-  // l'état migré construit, cuisine et dort
-  m.pieces = 500;
-  assertEqual(buildStation(reach(m, 'four'), 'four').ok, true);
-  assertEqual(m.unlockedTabs.includes('recettes'), true);
-  addItem(m, 'farine', 2);
-  assertEqual(startRecipe(m, 'pain').ok, false, 'le réservoir de cette sauvegarde est vide');
-  m.eauMl = ml(5);
-  assertEqual(startRecipe(m, 'pain').ok, true);
-  m.awakeMs = 30000;
-  assertEqual(sleep(m).termine, { pain: 1 });
   // une sauvegarde déjà en v6 n'est pas modifiée par la migration
-  const again = migrate({ v: 6, t: 0, s: JSON.parse(JSON.stringify(m)) });
+  const again = migreAvant({ v: 6, t: 0, s: JSON.parse(JSON.stringify(m)) });
   assertEqual(again.stations, m.stations);
+  // l'état migré (puis déménagé sur sa terre sauvage) construit, cuisine et dort
+  const d = migrate({ v: AVANT_DEMENAGEMENT, t: 0, s: m });
+  assertEqual(houseRepaired(d), true, 'le foyer rebâti');
+  assertEqual(testBatir(reach(d, 'four'), 'four').ok, true);
+  assertEqual(d.unlockedTabs.includes('recettes'), true);
+  addItem(d, 'farine', 2);
+  assertEqual(startRecipe(d, 'pain').ok, false, 'le réservoir de cette sauvegarde est vide');
+  d.eauMl = ml(5);
+  assertEqual(startRecipe(d, 'pain').ok, true);
+  d.awakeMs = 30000;
+  assertEqual(sleep(d).termine, { pain: 1 });
 });
 
 test('migration v0 → version courante : les chaînes mènent au Lot 5', () => {
-  const m = migrate({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual(m.stations.moulin.construit, false);
   assertEqual(allDevices(m).length, 3);
 });
