@@ -97,7 +97,7 @@
     // La voilure du Moulin (modèle.moulinTour : { c0, c1, r0, r1 } les cases de la pièce, et
     // enMarche ; null : pas de Moulin bâti) : posée, déplacée ou ôtée.
     syncVoilure(tour) {
-      if (!tour || this.room) {
+      if (!tour) {
         if (this.voilure) { this.voilure.img.destroy(); this.voilure = null; }
         return;
       }

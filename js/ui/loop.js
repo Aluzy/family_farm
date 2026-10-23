@@ -1,7 +1,6 @@
 import { DATA, recipeOutput } from '../engine/catalog.js';
 import { setupPending } from '../engine/depart.js';
 import { watchSetup } from './depart.js';
-import { watchDemenagement } from './demenagement.js';
 import { bedtimeDue, nightActive } from '../engine/clock.js';
 import { tick } from '../engine/energy.js';
 import { memberName } from '../engine/family.js';
@@ -13,7 +12,7 @@ import { formatCoins, formatDay, formatNumber } from '../engine/format.js';
 import { MAX_FRAME_MS, RENDER_THROTTLE_MS, state, tabAvailable, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
 import { showConsentBanner } from './consent.js';
-import { consentBannerDue, consentBannerPending, consentBannerShown, modalRoot, storyOpen, tutorialStopsClock, uiCalm } from './calme.js';
+import { consentBannerDue, consentBannerPending, consentBannerShown, modalRoot, storyOpen, uiCalm } from './calme.js';
 import { actionNightStart, wakeUp } from './game-actions.js';
 import {
   lastRenderAt, refresh, render, renderScheduled, setLastRenderAt, setRenderScheduled,
@@ -193,7 +192,7 @@ export function frame(now) {
   accumulatorMs += elapsed;
   let ticked = false;
   // version 1.12 : pas d'heure avant le départ ; FLU-21 : ni pendant l'histoire ou une bulle d'aide
-  const horlogeArretee = setupPending(state) || storyOpen() || tutorialStopsClock();
+  const horlogeArretee = setupPending(state) || storyOpen();
   while (accumulatorMs >= TICK_MS) {
     tick(state, TICK_MS / 1000, horlogeArretee);
     accumulatorMs -= TICK_MS;
@@ -202,7 +201,6 @@ export function frame(now) {
   }
   simulatedAt = wall;
   watchSetup(); // version 1.12 : la configuration de la famille passe avant tout
-  watchDemenagement(); // une ancienne partie : déménager sur une terre sauvage ?
   if (consentBannerDue()) showConsentBanner(); // FLU-17 : après l'histoire, la carte seule 500 ms
   watchTechPoints();
   watchDay();

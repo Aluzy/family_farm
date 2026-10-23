@@ -27,7 +27,7 @@
 
     // Les toits du modèle : dessinés (un canevas par toit), ou ôtés.
     syncToits(toits) {
-      const cle = toits && toits.length && !this.room ? JSON.stringify(toits) : '';
+      const cle = toits && toits.length ? JSON.stringify(toits) : '';
       if (cle === (this.toitsCle || '')) return;
       this.toitsCle = cle;
       for (const t of this.toits || []) { t.img.destroy(); this.textures.remove(t.key); }

@@ -1,7 +1,6 @@
 import { energyLevel } from '../engine/stamina.js';
 import { lastAutonomy } from '../engine/campaign.js';
 import { ecouterJournal } from '../engine/journal.js';
-import { atelierOuvert } from '../engine/atelier.js';
 import { etapeDidacticiel } from '../engine/didacticiel.js';
 import { activeTab, ecranFerme, state, testMode } from './store.js';
 import { openOptionsModal } from './options.js';
@@ -44,7 +43,7 @@ export function telNight(awakeSeconds) {
     day: state.day, chapter: chap, autonomy: lastAutonomy(state),
     pieces: state.pieces, energy: energyLevel(state), awake: awakeSeconds,
     level: p.niveau, xp: p.xp, adults: membres.filter((m) => !m.enfant).length, children: membres.filter((m) => m.enfant).length,
-    wild: atelierOuvert(state), meal: state.nuit && Number.isFinite(state.nuit.couverture) ? state.nuit.couverture : null,
+    wild: true, meal: state.nuit && Number.isFinite(state.nuit.couverture) ? state.nuit.couverture : null,
     tuto: etapeDidacticiel(state),
   });
   if (telChapter !== null && typeof chap === 'number' && chap > telChapter) tel('chapter', chap, state.day);

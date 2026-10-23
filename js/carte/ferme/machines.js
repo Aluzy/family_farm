@@ -95,22 +95,16 @@
       return this.robotHouse();
     },
 
-    // À côté de la porte de la maison.
+    // À côté de la porte du foyer.
     robotHouse() {
-      const e = this.buildings && this.buildings.get('maison');
-      const s = e && e.sprite;
-      const door = s ? { x: s.x + s.width * 0.5, y: s.y + 6 } : this.homeDoor() || { x: this.world.w / 2, y: this.world.h / 2 };
+      const door = this.homeDoor() || { x: this.world.w / 2, y: this.world.h / 2 };
       return { x: Math.round(door.x + ROBOT.dock.dx), y: Math.round(door.y + ROBOT.dock.dy) };
     },
 
     // Où il se tient pour travailler la case `a` : juste à gauche, le bras vers elle ; la
     // Serre : devant sa porte.
     robotSpot(a) {
-      if (a === 'serre') {
-        const e = this.buildings && this.buildings.get('serre');
-        const s = e && e.sprite;
-        return s ? { x: Math.round(s.x + s.width * 0.5), y: Math.round(s.y + 8) } : this.robotDock();
-      }
+      if (a === 'serre') return this.robotDock();
       const W = this.grid.cols;
       return { x: (a % W) * T - 3, y: Math.floor(a / W) * T + T - 1 };
     },
@@ -167,7 +161,7 @@
       if (B.station) {
         const sf = charging ? 1 + (reducedMotion() ? 3 : Math.floor(performance.now() / 1000 / ROBOT.station.period) % 4) : 0;
         if (sp) B.station.setFrame(sf).setPosition(sp.x, sp.y).setDepth(sp.y);
-        B.station.setVisible(!!sp && !this.room);
+        B.station.setVisible(!!sp);
       }
       if (charging || empty) {
         const txt = (charging ? '⚡ ' : '🔋 ') + m.batterie + ' %';
@@ -181,9 +175,9 @@
       }
       if (m && m.etat === 'travail' && frame === 5) frame = Math.floor(B.roll / 3) % 2;
       if (frame >= 2 && frame <= 4) B.img.setFlipX(false);   // le bras vers la parcelle, à sa droite
-      B.img.setFrame(frame).setPosition(Math.round(B.x), Math.round(B.y)).setDepth(B.y).setVisible(!this.room);
+      B.img.setFrame(frame).setPosition(Math.round(B.x), Math.round(B.y)).setDepth(B.y).setVisible(true);
       // la bulle de sa tâche
-      const show = !this.room && m && (m.etat === 'travail' || charging || empty);
+      const show = m && (m.etat === 'travail' || charging || empty);
       B.el.hidden = !show;
       if (!show) return;
       if (!B.w) { B.w = B.el.offsetWidth; B.h = B.el.offsetHeight; }
@@ -203,7 +197,7 @@
         this.sprayGround = this.add.graphics().setDepth(1.5);
       }
       const air = this.sprayAir.clear(), sol = this.sprayGround.clear();
-      if (this.room || reducedMotion()) return;
+      if (reducedMotion()) return;
       const now = performance.now() / 1000;
       const n = Math.round(S.period / S.de);
       const hash = (k, m) => { const x = Math.sin(k * 12.9898 + m * 78.233) * 43758.5453; return x - Math.floor(x); };

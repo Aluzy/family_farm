@@ -5,7 +5,6 @@
 
 import { DATA } from '../engine/catalog.js';
 import { isUnlocked } from '../engine/campaign.js';
-import { atelierOuvert } from '../engine/atelier.js';
 import { marcheOuvert } from '../engine/devices.js';
 
 export const SAVE_KEY = 'ferme-save';
@@ -44,9 +43,9 @@ export function tabAvailable(id) {
   // FLU-28 : l'Arbre des technologies se montre au premier point de technologie gagné
   if (id === 'techno' && !techTreeShown()) return false;
   if (id === 'commerce') return isUnlocked(state, 'commerce');
-  if (id === 'atelier') return atelierOuvert(state);   // la ferme générée seulement (avec la carte)
-  // la ferme générée : le Marché ouvre à son niveau (devices.js, marcheOuvert)
-  if (id === 'comptoir' && atelierOuvert(state)) return marcheOuvert(state);
+  if (id === 'atelier') return true;
+  // le Marché ouvre à son niveau (devices.js, marcheOuvert)
+  if (id === 'comptoir') return marcheOuvert(state);
   return ALWAYS_TABS.includes(id) || state.unlockedTabs.includes(id);
 }
 

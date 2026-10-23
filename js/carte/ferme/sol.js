@@ -12,7 +12,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, MAP, ZONE_TILES, SFX, ZONE_OBJECTS, SERRE_FRAMES } = F.C;
+  const { T, MAP, ZONE_TILES, ZONE_OBJECTS } = F.C;
   const { reducedMotion } = F;
 
   F.partie({
@@ -48,7 +48,7 @@
     },
 
     // Découpes : crops.png, une image « culture:phase » par case (table reçue au
-    // montage) ; serre_*.png, le bâtiment seul (défini ici).
+    // montage).
     defineFrames() {
       if (this.has('crops')) {
         const t = this.textures.get('crops');
@@ -56,23 +56,8 @@
           sp.c.forEach((col, phase) => t.add(name + ':' + phase, 0, col * T, (sp.r + 1) * T - sp.h, T, sp.h));
         }
       }
-      for (const a of [SFX, SFX + '_ruine']) {
-        if (!this.has('serre_' + a)) continue;
-        const t = this.textures.get('serre_' + a);
-        const img = t.getSourceImage();
-        for (const [name, sizes] of Object.entries(SERRE_FRAMES)) {
-          const sz = sizes[a] || sizes.sp; // la serre délabrée a la découpe de la serre de printemps
-          t.add(name, 0, 0, 0, Math.min(sz[0], img.width), Math.min(sz[1], img.height));
-        }
-      }
     },
 
-    defineAnims() {
-      const key = 'windmill_' + SFX;
-      if (this.has(key) && !this.anims.exists(key)) {
-        this.anims.create({ key, frames: this.anims.generateFrameNumbers(key, { start: 0, end: 3 }), frameRate: 5, repeat: -1 });
-      }
-    },
 
     /* ---------- carte Tiled ---------- */
 
@@ -141,11 +126,10 @@
       tex.refresh();
     },
 
-    // Le fond de la carte et les intérieurs. Appelée au démarrage et chaque fois que le
+    // Le fond de la carte. Appelée au démarrage et chaque fois que le
     // navigateur a vidé ces images.
     paintGround() {
       this.paintMap('ground', this.mapRaw, this.world.w, this.world.h, '#6a8157');
-      for (const r of Object.values(this.rooms)) this.paintMap(r.tex, r.raw, r.w, r.h, r.bg, r.def.image);
       for (const a of this.animAreas || []) this.paintAnimArea(a);
     },
 

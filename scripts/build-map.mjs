@@ -1,8 +1,6 @@
 // Fabrique les cartes que le jeu charge à partir des cartes de travail Tiled :
 //
 //   assets/carte_printemps_elargie.tmj → assets/carte_printemps.json   (la carte de la ferme)
-//   assets/serre_interieur.tmj         → assets/serre_interieur.json   (l'intérieur de la Serre)
-//   assets/maison_interieur.tmj        → assets/maison_interieur.json  (l'intérieur de la maison)
 //   assets/infra_monde.tmj             → assets/infra_monde.json       (l'infra-monde, infra-monde.html)
 //   assets/ville.tmj                   → assets/ville.json             (la ville, ville-carte.html)
 //   assets/transition.tmj              → assets/transition.json        (entre la ferme et la ville)
@@ -37,19 +35,6 @@ const MAPS = [
     // vers_la_transition : le bout est du chemin, voir js/carte/ferme/passages.js).
     places: ['maison', 'grange', 'moulin', 'serre', 'verger', 'vers_la_transition'],
     oneOf: ['zone_culture_1', 'zone_culture'],       // l'un des deux : la zone de culture
-  },
-  {
-    source: 'assets/serre_interieur.tmj',
-    target: 'assets/serre_interieur.json',
-    // Couches d'objets dont le rectangle reçoit les parcelles (voir ROOMS et bakeRooms()).
-    zoneLayers: /^serre_zone_\d+$/,
-  },
-  {
-    source: 'assets/maison_interieur.tmj',
-    target: 'assets/maison_interieur.json',
-    // Couche d'objets « meubles » : un rectangle par meuble (voir ROOMS et bakeRooms()), et
-    // le rectangle « vue » : ce que la vue cadre en entrant (sans lui, toute la maison).
-    places: ['four', 'cuisine', 'frigo'],
   },
   {
     // fabriquée par scripts/infra/carte.py ; « depart » : où l'habitant apparaît

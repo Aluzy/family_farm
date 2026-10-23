@@ -728,18 +728,22 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
 - **Le reste** : l'Atelier est construit (à poser). Les arbres abattus, les rochers cassés, la
   cueillette du jour et la tournée du robot repartent de zéro. Les tas à ramasser entrent dans
   l'inventaire.
-- **Étape 2, le déménagement au chargement** (`js/ui/demenagement.js`) : une ancienne partie
-  (écran de départ passé) déménage, sans choix de rester : tant qu'elle est sur la carte de
-  Tiled, une fenêtre qu'on ne ferme pas l'explique. Elle montre l'aperçu de la nouvelle terre
-  autour de la cour (`apercuDemenagement` : la conversion faite sur une copie), la liste de ce qui
-  est rebâti et de ce qui revient dans l'inventaire, et la graine (tirée de la partie,
-  `graineDemenagement`) : si la terre ne plaît pas, on change de graine ou on en tire une au hasard
-  (« Une autre terre »).
-  - **Déménager sur cette terre** : la sauvegarde d'avant reste sur l'appareil
-    (`ferme-save-avant-demenagement`), la partie est convertie et la page se recharge.
-  - **Une nouvelle partie** est toujours sur une ferme générée : l'écran de départ explique la
-    terre sauvage et demande la graine (vide : au hasard), sans proposer la ferme du grand-père.
-- À venir (étape 3) : retirer la carte de Tiled quand plus aucune partie ne l'utilise.
+- **Étape 2, le déménagement automatique** (`js/ui/storage.js`, `surTerreSauvage`) : la ferme du
+  grand-père n'existe plus. Au chargement, une ancienne partie encore sur la carte de Tiled (écran
+  de départ passé) déménage d'elle-même, sur la terre de sa graine (`graineDemenagement`, tirée de
+  la partie), sans fenêtre ni choix : la sauvegarde d'avant reste sur l'appareil
+  (`ferme-save-avant-demenagement`) et une annonce le dit une fois (`demenagementAnnonce`). Une
+  partie pas encore commencée reçoit simplement sa terre.
+  - **Une nouvelle partie** est sur sa terre sauvage dès sa création, avant même l'écran
+    d'accueil (`nouvellePartie`).
+  - Ce qui ne servait qu'à la ferme dessinée est retiré du jeu : la maison à réparer et les
+    appareils à acheter, les bâtiments à réparer (Poulailler, Étable, Serre, Silo, Verger à
+    emplacements), les intérieurs de la maison et de la Serre (leurs cartes Tiled, js/carte/ferme/interieurs.js),
+    le repas à table, les images des bâtiments dessinés (maison, serre, ruines, panneaux du toit,
+    silo) et leurs générateurs.
+- **Étape 3, à venir** : le moteur et ses tests (js/engine, tests/engine) savent encore jouer sans
+  graine (la carte de Tiled sert de terrain de test) ; ils passeront sur la ferme générée, et la
+  conversion entrera dans les migrations du moteur.
 
 ## Étapes
 

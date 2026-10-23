@@ -6,7 +6,6 @@ import { countItem, shelfLife } from '../engine/inventory.js';
 import { energyChip } from './energie.js';
 import { wheatTotal } from '../engine/animals.js';
 import { etatMoulin } from '../engine/blocs.js';
-import { farmSeed } from '../engine/terrain.js';
 import {
   buildStation, cancelMilling, cancelQueued, millPending, millTimeLeft, queueCapacity, recipeStatus,
   startMilling, startRecipe, taskTimeLeft,
@@ -61,9 +60,8 @@ function stationBlurb(id) {
   return `${names.charAt(0).toUpperCase()}${names.slice(1)}.${power}${id === 'four' ? ' Le construire ouvre l\'onglet Livre de recette.' : ''}`;
 }
 
-// La ferme générée : le bloc de l'Atelier qui fait la station `id` (la cuisinière, le four), ou null.
+// Le bloc de l'Atelier qui fait la station `id` (la cuisinière, le four), ou null (la Presse s'achète).
 function blocDeStation(id) {
-  if (farmSeed(state) === null) return null;
   return Object.values(DATA.ATELIER.BLOCS).find((b) => b.station === id) || null;
 }
 
@@ -132,8 +130,8 @@ export function renderMoulin() {
   if (!isUnlocked(state, 'moulin')) return '';
   const def = DATA.STATIONS.moulin;
   const st = state.stations.moulin;
-  // la ferme générée (version 1.25) : le Moulin est une tour bâtie en blocs (etatMoulin)
-  if (!st.construit && farmSeed(state) !== null) {
+  // (version 1.25) : le Moulin est une tour bâtie en blocs (etatMoulin)
+  if (!st.construit) {
     const e = etatMoulin(state);
     const lignes = e.conditions.map((c) => `<li class="${c.ok ? 'ok' : 'missing'}"><span aria-hidden="true">${c.ok ? '✅' : '❌'}</span> <span>${c.texte}</span></li>`).join('');
     return `
@@ -143,11 +141,6 @@ export function renderMoulin() {
       <ul class="ingredients">${lignes}</ul>
       <span class="muted">Une tour : une pièce close dont les murs ont ${DATA.ATELIER.MOULIN.HAUTEUR} blocs de haut, la meule (fabriquée à l'Atelier) au centre. Bâtie, sa voilure paraît dehors et tourne quand la meule moud.</span>
     </div>`;
-  }
-  if (!st.construit) {
-    return `
-    <div class="section-head"><h3>${artIcon('moulin')}${def.nom}</h3></div>
-    <div class="cards">${stationBuildCard('moulin')}</div>`;
   }
   const r = DATA.RECETTES.farine;
   const wheat = Math.floor(wheatTotal(state) + EPS);

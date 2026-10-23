@@ -1885,12 +1885,6 @@ main .ancre { scroll-margin-top: 150px; }
 /* ---------- version 1.12 : départ d'une nouvelle partie ---------- */
 
 .setup-graine { margin-top: 4px; }
-/* le déménagement d'une ancienne partie (ui/demenagement.js) : l'aperçu de la nouvelle terre */
-.demenagement-apercu { margin: 8px 0; }
-.demenagement-apercu canvas { display: block; width: 100%; max-height: 46vh; object-fit: contain; image-rendering: pixelated; border: 1px solid var(--border); border-radius: 8px; background: #7aa64a; }
-.demenagement-legende { margin: 4px 0 0; font-size: 0.85em; }
-.demenagement-liste { margin: 4px 0; padding-left: 1.2em; }
-#demenagement-graine { flex: 1; min-width: 0; }
 .story-modal p { line-height: 1.5; }
 /* L'accueil d'une nouvelle partie (js/ui/depart.js) : une fenêtre de dialogue, une question
    par écran ; la flèche en bas à droite passe à l'écran suivant. */

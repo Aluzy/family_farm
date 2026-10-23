@@ -1,21 +1,18 @@
 import { DATA } from '../engine/catalog.js';
 import { isOwned, starterOf } from '../engine/devices.js';
 import {
-  buyStarter, composeFamily, familyName, finishSetup, houseRepaired, repairHouse, setFarmSeed,
-  setMainCharacter, setupPending, starterBlock,
+  composeFamily, familyName, finishSetup, houseRepaired, setMainCharacter, setupPending, starterBlock,
 } from '../engine/depart.js';
 import { cleanFirstName, validFirstName } from '../engine/family.js';
 import { commencerDidacticiel } from '../engine/didacticiel.js';
-import { atelierOuvert } from '../engine/atelier.js';
 import { levelBlock } from '../engine/levels.js';
-import { escapeHtml, formatCoins } from '../engine/format.js';
+import { escapeHtml } from '../engine/format.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
 import { persoHtml } from './famille.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
-import { canPay, costLabel } from './common.js';
 import { tel } from './consent.js';
 import { openModal } from './modal.js';
 
@@ -45,54 +42,34 @@ const STARTER_LABELS = {
   batterie: { icone: '🔋', nom: 'Batterie (facultative)', note: 'garde l\'électricité pour le soir et la nuit' },
 };
 
-// Fenêtre Installations, avant tout : la maison à réparer, puis les appareils à acheter.
+// Fenêtre Installations, avant tout : le foyer à bâtir, puis le panneau, la pompe, la citerne et
+// la batterie, qui se fabriquent à l'Atelier et se posent sur la carte (étape 5b-2).
 export function renderStarterCards() {
-  // la ferme générée : pas de maison à réparer, un foyer à bâtir (js/engine/blocs.js)
-  if (!houseRepaired(state) && atelierOuvert(state)) {
+  if (!houseRepaired(state)) {
     return `
       <div class="card starter house">
         <span class="card-title"><span>🧱 Ton foyer</span><span class="chip warn">À bâtir</span></span>
         <span class="muted">Pas de maison sur une terre sauvage : bâtis une pièce close (des murs tout autour, une porte) et pose-y une paillasse. Tant qu'elle n'existe pas, rien d'autre ne s'installe.</span>
       </div>`;
   }
-  if (!houseRepaired(state)) {
-    const cost = DATA.DEPART.MAISON;
-    return `
-      <div class="card starter house">
-        <span class="card-title"><span>🏚️ La maison du grand-père</span><span class="chip warn">À réparer</span></span>
-        <span class="muted">Le toit fuit et les volets sont fermés. Tant qu'elle n'est pas réparée, rien d'autre ne s'installe.</span>
-        <button type="button" class="btn primary" data-action="repair-house"${canPay(cost) ? '' : ' disabled'}>Réparer la maison (${costLabel(cost)})</button>
-      </div>`;
-  }
   const rows = ['panneau', 'pompe', 'reservoir', 'batterie']
     .filter((t) => !isOwned(starterOf(state, t)))
     .map((t) => {
       const L = STARTER_LABELS[t];
-      const cost = DATA.DEPART.ACHATS[t];
       const raison = starterBlock(state, t);
-      // la ferme générée : il se fabrique à l'Atelier et se pose sur la carte (étape 5b-2)
-      if (atelierOuvert(state)) {
-        const ou = t === 'pompe' ? 'sur un puits' : 'dehors';
-        const verrou = levelBlock(state, 'energie');
-        return `
-        <div class="starter-row">
-          <span><span aria-hidden="true">${L.icone}</span> <strong>${L.nom}</strong><br><span class="muted">${L.note}</span></span>
-          <span class="muted">${verrou || (raison && raison !== 'Achète d\'abord le panneau et la pompe.' ? escapeHtml(raison) : `À fabriquer à l'Atelier, puis à poser ${ou} (🔨).`)}</span>
-        </div>`;
-      }
+      const ou = t === 'pompe' ? 'sur un puits' : 'dehors';
+      const verrou = levelBlock(state, 'energie');
       return `
         <div class="starter-row">
           <span><span aria-hidden="true">${L.icone}</span> <strong>${L.nom}</strong><br><span class="muted">${L.note}</span></span>
-          ${raison
-            ? `<span class="muted">${escapeHtml(raison)}</span>`
-            : `<button type="button" class="btn${t === 'batterie' ? '' : ' primary'}" data-action="buy-starter" data-id="${t}"${canPay(cost) ? '' : ' disabled'}>Acheter (${costLabel(cost)})</button>`}
+          <span class="muted">${verrou || (raison && raison !== 'Achète d\'abord le panneau et la pompe.' ? escapeHtml(raison) : `À fabriquer à l'Atelier, puis à poser ${ou} (🔨).`)}</span>
         </div>`;
     });
   if (!rows.length) return '';
   return `
     <div class="card starter">
       <span class="card-title"><span>🛠️ Installer la ferme</span></span>
-      <span class="muted">${atelierOuvert(state) ? 'Le panneau et la pompe remplissent la citerne pour toi : l\'automatisation commence.' : 'Le panneau et la pompe ouvrent la Zone de culture et le Marché.'}</span>
+      <span class="muted">Le panneau et la pompe remplissent la citerne pour toi : l'automatisation commence.</span>
       ${rows.join('')}
     </div>`;
 }
@@ -276,18 +253,6 @@ export function watchSetup() {
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 
 registerActions({
-  'repair-house': () => {
-    const r = applyResult(repairHouse(state));
-    if (r.ok) notify(`🏠 La maison est réparée (−${formatCoins(r.cost)} 💰). Installe le panneau et la pompe.`);
-  },
-  'buy-starter': (target) => {
-    const t = target.dataset.id;
-    const r = applyResult(buyStarter(state, t));
-    if (r.ok) {
-      const L = STARTER_LABELS[t];
-      notify(`${L.icone} ${L.nom} installé (−${formatCoins(r.cost)} 💰)${r.ouvert && (t === 'panneau' || t === 'pompe') ? ' · la Zone de culture et le Marché ouvrent' : ''}`);
-    }
-  },
   'main-character': (target) => {
     const r = applyResult(setMainCharacter(state, target.dataset.id));
     if (setupPending(state)) openSetupModal();
@@ -321,9 +286,8 @@ registerActions({
     });
     const f = r.ok ? finishSetup(state) : r;
     if (!f.ok) return refus(f.error);
-    // une terre sauvage : la ferme générée (la carte se lit au montage : la page se recharge) ;
-    // le didacticiel commence (js/ui/didacticiel.js)
-    setFarmSeed(state, String(Math.floor(Math.random() * 1e6)));
+    // la partie est sur sa terre sauvage depuis sa création (js/ui/storage.js) ; le didacticiel
+    // commence (js/ui/didacticiel.js)
     commencerDidacticiel(state);
     persistState();
     location.reload();

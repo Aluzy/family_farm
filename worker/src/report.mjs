@@ -56,7 +56,6 @@ export const GAME_ACTIONS = {
   'buy-meuble': 'Acheter un meuble',
   'buy-ruche': 'Acheter une ruche',
   'buy-dehors': 'Acheter un bac à fleurs (ou autre objet du dehors)',
-  'plant-tree': 'Planter un arbre',
   'plant-all': 'Planter partout',
   'hoe-many': 'Labourer en glissant',
   'commerce-choose': 'Choisir un commerce',
@@ -74,27 +73,17 @@ export const GAME_ACTIONS = {
   'mill-cancel': 'Moudre du blé au Moulin',
   'member-save': 'Personnaliser un membre de la famille',
   'member-add': 'Ajouter un membre à la famille',
-  'repair-house': 'Réparer la maison',
-  'buy-starter': 'Acheter un appareil de départ',
   'main-character': 'Choisir le personnage principal',
   'setup-start': 'Commencer la partie (famille configurée)',
-  'demenagement-ok': 'Déménager sur une terre sauvage',
   'member-remove': 'Retirer un membre de la famille',
   'pet-add': 'Adopter un animal de compagnie',
   'pet-save': 'Personnaliser un animal de compagnie',
   'pet-remove': 'Retirer un animal de compagnie',
-  'buy-orchard-slot': 'Acheter un emplacement de verger',
   'buy-tech': 'Acquérir une technologie',
   'sleep': 'Dormir',
-  'build-serre': 'Construire un bâtiment',
-  'build-poulailler': 'Construire un bâtiment',
   'build-fridge': 'Construire un bâtiment',
-  'build-verger': 'Construire un bâtiment',
-  'build-silo': 'Construire un bâtiment',
-  'build-paturage': 'Construire un bâtiment',
   'build-station': 'Construire un bâtiment',
   'upgrade': 'Améliorer ou agrandir',
-  'upgrade-silo': 'Améliorer ou agrandir',
   'upgrade-serre': 'Améliorer ou agrandir',
   'upgrade-poulailler': 'Améliorer ou agrandir',
   'buy-hoe': 'Acheter la houe',
@@ -138,9 +127,8 @@ export const GAME_ACTIONS = {
 export const INTERFACE_ACTIONS = new Set([
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',
   'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open',
-  'cancel-queued', 'ack-chapter', 'tree-slot', 'tree-slot-cancel', 'commerce-pick', 'commerce-cancel',
+  'cancel-queued', 'ack-chapter', 'commerce-pick', 'commerce-cancel',
   'ask-new-game', 'cancel-new-game', 'copy-export',
-  'demenagement-hasard',
   'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-espece', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-deplier',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', 'four-tab', 'atelier-tab', 'silo-agrandir', // carte de la ferme : fenêtres et onglets de la maison
@@ -155,7 +143,6 @@ export const INTERFACE_ACTIONS = new Set([
   'shop-item', 'market-help', 'market-subtab', // Marché : fiche d'un article, aide de l'onglet // Famille : mode modification, aide de la ration quotidienne
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
   'mail-open', // version 1.3 : ouvrir une lettre du courrier
-  'stage-exit', // intérieur de la Serre : en sortir
   'toolbar-toggle', // la barre d'outils de la carte : la ranger, la sortir
 ]);
 

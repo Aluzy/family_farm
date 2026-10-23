@@ -5,27 +5,23 @@ import {
   availableEnergy, buildFridge, fridgeCoversNight, fridgeNightNeed,
   fridgeCapacity, fridgeUnits, fridgeUpgradeCost, upgradeFridge,
 } from '../engine/fridge.js';
-import { buildSerre, serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
+import { serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
 import {
-  buildVerger, buyOrchardSlot, harvestTree, isTreeAdult, orchardSlotPrice, plantTree,
-  treeAge, treeAt, treeNextHarvest, treeStageName,
+  harvestTree, isTreeAdult, treeAge, treeNextHarvest, treeStageName,
 } from '../engine/orchard.js';
 import { canAfford } from '../engine/stamina.js';
-import { atelierOuvert } from '../engine/atelier.js';
 import { techAuto } from '../engine/techtree.js';
 import { formatCoins, formatNumber, formatWh } from '../engine/format.js';
-import { setVergerCase, state, vergerCase } from './store.js';
+import { state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { wearHtml } from './ferme.js';
 import { autoChip, groupButtons, plotCard } from './elevage.js';
 import { stationControls } from './cuisine.js';
 import { nightsLabel } from './inventaire.js';
-import { artIcon, artPx, treeArt } from './animations.js';
+import { artIcon, treeArt } from './animations.js';
 import { helpBtn } from './aide.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
-import { refresh } from './render.js';
-import { openStageWindow, stageWindow } from './stage-windows.js';
 import { canPay, costLabel } from './common.js';
 
 /* ---------- Lot 8 : Serre, Verger, Réfrigérateur ---------- */
@@ -33,11 +29,10 @@ import { canPay, costLabel } from './common.js';
 export function renderSerre() {
   const g = state.serre;
   if (!g.construit) {
-    const cost = DATA.SERRE.PRIX_CONSTRUCTION;
     return `
       <div class="section-head"><h3>${artIcon('serre')}Serre</h3>${helpBtn('serre')}</div>
       <div class="card">
-        <button type="button" class="btn primary" data-action="build-serre"${canPay(cost) ? '' : ' disabled'}>Réparer la Serre (${costLabel(cost)})</button>
+        <span class="muted">Bâtis une pièce close et poses-y le bac à semis (fabriqué à l'Atelier, menu ${DATA.ATELIER.ICONE} Construire) : c'est la Serre.</span>
       </div>`;
   }
   const up = serreUpgradeCost(state);
@@ -81,78 +76,17 @@ function treeCard(tree) {
     </div>`;
 }
 
-function freeCard(c) {
-  return `
-    <div class="card plot tree free">
-      <span class="card-title"><span>Emplacement ${c + 1}</span></span>
-      ${artPx(['plot-soil'], 'plot-art')}
-      <button type="button" class="btn" data-action="tree-slot" data-case="${c}">Planter un arbre</button>
-    </div>`;
-}
-
-// « Choisir un arbre » : ouvert par un appui sur un emplacement libre (carte ou fenêtre).
-function treeChoice() {
-  const c = vergerCase;
-  if (c === null || c >= state.verger.places || treeAt(state, c)) return '';
-  const V = DATA.VERGER;
-  const rows = Object.entries(V.ARBRES).map(([espece, def]) => {
-    const fruit = DATA.OBJETS[def.fruit];
-    return `
-      <div class="shop-row">
-        <div class="inv-main"><span><span aria-hidden="true">${fruit.icone}</span> ${def.nom}</span><span class="muted">${formatCoins(def.prix)} 💰</span></div>
-        <button type="button" class="btn primary" data-action="plant-tree" data-species="${espece}" data-case="${c}"${canPay(def.prix) ? '' : ' disabled'}>Planter un ${def.nom.toLowerCase()} (${formatCoins(def.prix)} 💰)</button>
-      </div>`;
-  }).join('');
-  return `
-    <div class="card tree-choice">
-      <span class="card-title"><span>🌱 Choisir un arbre · emplacement ${c + 1}</span><button type="button" class="icon-btn" data-action="tree-slot-cancel" aria-label="Fermer" title="Fermer">✕</button></span>
-      ${rows}
-    </div>`;
-}
-
 export function renderVerger() {
   const v = state.verger;
-  const V = DATA.VERGER;
-  // la ferme générée : pas d'emplacements, les arbres plantés dans le sol (étape 5b-8)
-  if (atelierOuvert(state)) {
-    const auto = techAuto(state, 'recolte', 'verger');
-    return `
-      <div class="section-head">
-        <h3>${artIcon('verger')}Arbres fruitiers · ${v.arbres.length}</h3>
-        <span class="chips">${auto ? autoChip('verger', 'Les arbres en fruits sont cueillis la nuit (Récolte du verger)') : ''}${helpBtn('verger')}</span>
-      </div>
-      <p class="muted">Achète de jeunes arbres au Marché (rayon Graines), puis plante-les dans le sol, dehors, avec la case ${DATA.ATELIER.ICONE}. Un appui sur un arbre en fruits le cueille.</p>
-      ${v.arbres.length ? `<div class="plots">${v.arbres.map(treeCard).join('')}</div>` : ''}`;
-  }
-  if (!v.construit) {
-    const cost = V.PRIX_CONSTRUCTION;
-    return `
-      <div class="section-head"><h3>${artIcon('verger')}Verger</h3>${helpBtn('verger')}</div>
-      <div class="card">
-        <button type="button" class="btn primary" data-action="build-verger"${canPay(cost) ? '' : ' disabled'}>Aménager le Verger (${costLabel(cost)})</button>
-      </div>`;
-  }
-  const price = orchardSlotPrice(state);
-  const slots = [];
-  for (let c = 0; c < v.places; c++) {
-    const t = treeAt(state, c);
-    slots.push(t ? treeCard(t) : freeCard(c));
-  }
-  const atMax = v.places >= V.EMPLACEMENTS_MAX;
+  // pas d'emplacements : les arbres plantés dans le sol (étape 5b-8)
   const auto = techAuto(state, 'recolte', 'verger');
   return `
     <div class="section-head">
-      <h3>${artIcon('verger')}Verger · ${v.arbres.length} / ${v.places} emplacements</h3>
+      <h3>${artIcon('verger')}Arbres fruitiers · ${v.arbres.length}</h3>
       <span class="chips">${auto ? autoChip('verger', 'Les arbres en fruits sont cueillis la nuit (Récolte du verger)') : ''}${helpBtn('verger')}</span>
     </div>
-    ${treeChoice()}
-    <div class="plots">${slots.join('')}</div>
-    <div class="card">
-      ${atMax
-        ? `<span class="muted">Le Verger a atteint sa taille maximale (${V.EMPLACEMENTS_MAX} emplacements).</span>`
-        : `<button type="button" class="btn" data-action="buy-orchard-slot"${canPay(price) ? '' : ' disabled'}>Acheter un emplacement (${costLabel(price)})</button>`}
-    </div>
-  `;
+    <p class="muted">Achète de jeunes arbres au Marché (rayon Graines), puis plante-les dans le sol, dehors, avec la case ${DATA.ATELIER.ICONE}. Un appui sur un arbre en fruits le cueille.</p>
+    ${v.arbres.length ? `<div class="plots">${v.arbres.map(treeCard).join('')}</div>` : ''}`;
 }
 
 // ❄️ quand le frigo est alimenté ; ⚠️ en panne, éteint ou hors tension.
@@ -215,43 +149,19 @@ function fridgeUpgradeHtml() {
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 
 registerActions({
-  'build-serre': () => {
-    const result = applyResult(buildSerre(state));
-    if (result.ok) notify(`🏡 Serre construite : ${state.serre.parcelles.length} parcelles (−${formatCoins(result.cost)} 💰)`);
-  },
+
   'upgrade-serre': () => {
     applyResult(upgradeSerre(state));
   },
-  'build-verger': () => {
-    const result = applyResult(buildVerger(state));
-    if (result.ok) notify(`🌳 Verger aménagé : ${state.verger.places} emplacements`);
-  },
-  // Version 1.13 : un emplacement libre (carte ou fenêtre) ouvre le choix de l'arbre.
-  'tree-slot': (target) => {
-    setVergerCase(Number(target.dataset.case));
-    if (stageWindow !== 'verger') openStageWindow('verger');
-    else refresh();
-  },
-  'tree-slot-cancel': () => {
-    setVergerCase(null);
-    refresh();
-  },
-  'plant-tree': (target) => {
-    const espece = target.dataset.species;
-    const result = applyResult(plantTree(state, espece, Number(target.dataset.case)));
-    if (result.ok) {
-      setVergerCase(null);
-      notify(`🌱 ${DATA.VERGER.ARBRES[espece].nom} planté (−${formatCoins(result.cost)} 💰)`);
-    }
-  },
+
+
+
+
   'harvest-tree': (target) => {
     const result = applyResult(harvestTree(state, target.dataset.id));
     if (result.ok && !result.aRamasser) notify(`+${result.qty} ${DATA.OBJETS[result.item].icone}`);
   },
-  'buy-orchard-slot': () => {
-    const result = applyResult(buyOrchardSlot(state));
-    if (result.ok) notify(`Emplacement acheté : ${result.places} au total (−${formatCoins(result.cost)} 💰)`);
-  },
+
   'upgrade-fridge': () => {
     const result = applyResult(upgradeFridge(state));
     if (result.ok) notify(`🧊 Réfrigérateur niveau ${result.niveau} : ${result.capacite} unités (−${formatCoins(result.cost)} 💰)`);

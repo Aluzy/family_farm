@@ -84,7 +84,7 @@
       if (!R || !R.size) return;
       const M = this.ctx.lastModel;
       const h = M ? M.heure : 12;
-      const dehors = !this.room && !(M && M.nuit) && h >= ABEILLES.heures[0] && h < ABEILLES.heures[1] && !reducedMotion();
+      const dehors = !(M && M.nuit) && h >= ABEILLES.heures[0] && h < ABEILLES.heures[1] && !reducedMotion();
       const now = performance.now() / 1000, A = ABEILLES;
       for (const r of R.values()) {
         for (const a of r.abeilles) {

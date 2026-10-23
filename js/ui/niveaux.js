@@ -1,7 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import { acknowledgeLevel, levelCount, levelProgress, levelUnlocks } from '../engine/levels.js';
 import { formatNumber } from '../engine/format.js';
-import { atelierOuvert } from '../engine/atelier.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
 import { refresh } from './render.js';
@@ -14,8 +13,7 @@ import { openModal } from './modal.js';
 export function unlocksHtml(niveau) {
   const u = levelUnlocks(niveau);
   const items = [
-    // (les éléments d'une terre sauvage, sauvage: true, ne se montrent que sur la ferme générée)
-    ...u.elements.filter((id) => !DATA.NIVEAUX.ELEMENTS[id].sauvage || atelierOuvert(state)).map((id) => {
+    ...u.elements.map((id) => {
       const e = DATA.NIVEAUX.ELEMENTS[id];
       return `<li><strong>${e.icone} ${e.nom}</strong><br><span class="muted">${e.note}</span></li>`;
     }),

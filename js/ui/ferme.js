@@ -114,9 +114,9 @@ export function renderFerme() {
   ];
 }
 
-// Cartes « Énergie et eau », réparties : sur la carte, ⚡ Énergie (panneaux du toit) et
-// 💧 Eau (pompe du puits, citerne) ont leur fenêtre ; la Maison garde les achats de départ et
-// le frigo. Sans la carte, tout reste ensemble dans la liste de la Ferme.
+// Cartes « Énergie et eau », réparties : sur la carte, ⚡ Énergie (panneau, batterie) et
+// 💧 Eau (pompe du puits, citerne) ont leur fenêtre ; les Installations gardent le foyer, les
+// appareils à poser et le frigo. Sans la carte, tout reste ensemble dans la liste de la Ferme.
 export function renderEnergieEau() {
   const p = energieEauParts();
   return `
@@ -137,7 +137,7 @@ export function renderEauFenetre() {
   return `<div class="cards">${p.pompe}${p.reservoir}</div>`;
 }
 
-// Fenêtre Installations, avec la carte : la maison à réparer, les appareils à acheter, le frigo
+// Fenêtre Installations, avec la carte : le foyer à bâtir, les appareils à poser, le frigo
 // (la fenêtre porte déjà le titre).
 export function renderInstallationsMaison() {
   const p = energieEauParts();
@@ -152,7 +152,7 @@ function energieEauParts() {
   if (e.net > 0) netText = 'En charge';
   else if (e.net < 0) netText = 'En décharge';
   const tankText = state.eauMl >= cap ? 'Réservoir plein' : `Vitesse de remplissage : ${formatLitresRate(state.flux.eau)}`;
-  // version 1.12 : la maison à réparer et les appareils à acheter passent en premier ;
+  // version 1.12 : le foyer à bâtir et les appareils à poser passent en premier ;
   // un appareil pas encore acheté n'a pas de carte
   const owned = (t) => isOwned(starterOf(state, t));
   const panneauCard = owned('panneau') ? `

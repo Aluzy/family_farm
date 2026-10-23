@@ -18,7 +18,6 @@ import { showToast } from './toasts.js';
 import { closeModal, openModal } from './modal.js';
 import { SOMMEIL_BLOQUEES, SOMMEIL_MESSAGE } from './actions.js';
 import { asleep } from '../engine/night.js';
-import { farmSeed } from '../engine/terrain.js';
 import { LIVREUR, ramasserTransition, ressourcesDuJour, transitionPlan, transitionPris, transitionSeed } from '../engine/transition.js';
 import { assigneEmplois, immeubleFoyer, immeubleVue, livraison, voisinAbat, voisinFoyer, voisinsVue } from '../engine/voisins.js';
 import { encyclopedieCarte } from './encyclopedie.js';
@@ -278,13 +277,8 @@ window.FermeHote = {
   // le personnage est en selle sur son triporteur (js/carte/triporteur.js) : il roule plus vite
   triporteur: () => enSelle(state),
   // la carte de transition de la partie (js/engine/transition.js) : son plan (l'ouest, tiré
-  // d'après la graine), les ressources du jour, celles que le joueur a déjà prises (pris) et le
-  // jour. Une partie d'avant n'a pas encore de graine des voisins : elle la tire ici, une fois.
+  // d'après la graine), les ressources du jour, celles que le joueur a déjà prises (pris) et le jour.
   transition: () => {
-    if (!farmSeed(state) && !state.graineVoisins) {
-      state.graineVoisins = String(Math.floor(Math.random() * 1e9));
-      persistState();
-    }
     const g = transitionSeed(state);
     return { plan: transitionPlan(g), ressources: ressourcesDuJour(g, state.day), pris: transitionPris(state), jour: state.day, livreur: LIVREUR };
   },

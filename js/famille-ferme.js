@@ -25,12 +25,11 @@
  *     l'heure où le bus l'a ramené (retourFerme).
  *
  * Ils marchent par les chemins du personnage (fermier.path : les mêmes cases libres). Avec
- * « animations réduites », ils vont d'un point à l'autre sans marcher. Rien ne bouge dans un
- * intérieur (ils y sont cachés).
+ * « animations réduites », ils vont d'un point à l'autre sans marcher.
  *
  *   const famille = FamilleFerme.attach(scene, { fermier, frames, exit: { x, y }, file(perso, enfant), reduced })
  *   famille.sync(model)          // model.famille : [{ id, perso, enfant }], model.heure, model.semaine, model.nuit
- *   famille.update(deltaMs, room)
+ *   famille.update(deltaMs)
  *   famille.info()               // pour les tests : où est chacun
  *   famille.aidePos()            // où est le second adulte (sa bulle « +x »), ou null
  *   famille.allerManger(id)      // il va à la boîte à nourriture et s'y baisse ; false s'il ne le peut pas
@@ -65,9 +64,7 @@
     let model = null;
 
     function door() {
-      const h = scene.buildings && scene.buildings.get('maison') && scene.buildings.get('maison').sprite;
-      if (h) return { x: Math.round(h.x + h.width * 0.5), y: Math.round(h.y + 6) };
-      const f = scene.homeDoor ? scene.homeDoor() : null;   // la ferme générée : la porte du foyer
+      const f = scene.homeDoor ? scene.homeDoor() : null;   // la porte du foyer
       return f || { x: scene.world.w / 2, y: scene.world.h / 2 };
     }
 
@@ -284,29 +281,29 @@
           scene.load.start();
         }
       },
-      update(deltaMs, room) {
+      update(deltaMs) {
         const dt = Math.min(deltaMs, 100) / 1000;
         for (const m of membres.values()) {
           // (le second adulte se baisse au Poulailler ou à l'Étable)
-          if (m.geste > 0 && !room) {
+          if (m.geste > 0) {
             m.geste -= dt;
             if (m.geste <= 0) { m.geste = 0; finirTache(m); }
             else { dessiner(m, `ramasse_${Math.min(2, Math.floor((1 - m.geste / GESTE) * 3))}`); continue; }
           }
           // (le second adulte parle avec le personnage : il s'arrête et se tourne vers lui ; son
           // chemin l'attend)
-          const parle = m.parle && !room && !m.couche && m.visible;
+          const parle = m.parle && !m.couche && m.visible;
           if (parle) ({ face: m.face, flip: m.flip } = K.regard(m.parle.x - m.x, m.parle.y - m.y));
-          if (!room && !parle && !m.rejoint) decider(m, dt);
-          const marche = !room && !parle && avancer(m, dt);
+          if (!parle && !m.rejoint) decider(m, dt);
+          const marche = !parle && avancer(m, dt);
           if (m.fade) {
             m.alpha = Math.max(0, Math.min(1, m.alpha + (m.fade * dt) / FADE_S));
             if (m.alpha >= 1 && m.fade > 0) m.fade = 0;
             if (m.alpha <= 0 && m.fade < 0) { m.fade = 0; m.visible = false; }
           }
-          m.s.setVisible(m.visible && !room);
-          if (m.drap) m.drap.setVisible(!!m.couche && !room);
-          if (!m.visible || room) continue;
+          m.s.setVisible(m.visible);
+          if (m.drap) m.drap.setVisible(!!m.couche);
+          if (!m.visible) continue;
           // au lit : les yeux fermés, un souffle lent, juste devant le lit, sous sa couverture
           if (m.couche) {
             const n = Math.floor(performance.now() / 1600) % 2;

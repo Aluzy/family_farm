@@ -1,7 +1,5 @@
 import { DATA, ingredientOptions } from '../engine/catalog.js';
 import { houseRepaired } from '../engine/depart.js';
-import { atelierOuvert } from '../engine/atelier.js';
-import { farmSeed } from '../engine/terrain.js';
 import { GAME_VERSION, STATE_VERSION } from '../engine/base.js';
 import { farmOpen, pumpFlow } from '../engine/devices.js';
 import { energyStats } from '../engine/energy.js';
@@ -26,7 +24,6 @@ import { daysLabel, nightsLabel } from './inventaire.js';
 import { artPx, REDUCED_MOTION } from './animations.js';
 import { openOptionsModal } from './options.js';
 import { registerActions } from './actions.js';
-import { costLabel } from './common.js';
 import { openModal } from './modal.js';
 
 /* ---------- Lot 11 : aide sur chaque bâtiment ---------- */
@@ -146,26 +143,17 @@ const HELP = {
     role: `Des légumes à l'abri, et les cultures de rente (${cashCrops().map((c) => DATA.CULTURES[c].nom.toLowerCase()).join(', ')}) qu'on ne trouve qu'ici.`,
     conso: `Eau par arrosage : ${cropsLine('serre', 'eau')}.`,
     prod: `${cropsLine('serre', 'recolte')}. Les cultures de rente ne se mangent pas : elles servent à la vente et aux recettes de luxe.`,
-    note: `Construction : ${costLabel(DATA.SERRE.PRIX_CONSTRUCTION)}. Parcelles par niveau : ${listNum(DATA.SERRE.PARCELLES, '')} ; agrandir : ${listNum(DATA.SERRE.PRIX_NIVEAUX.slice(1), '💰')}.`,
+    note: 'Elle se bâtit : une pièce close avec le bac à semis (fabriqué à l\'Atelier) ; ses parcelles sont les cases libres de la pièce.',
   }),
   silo: () => {
     const S = DATA.ATELIER.SILO, R = DATA.ATELIER.RECETTES.bloc_silo;
-    // (la ferme générée : un silo en bois, fait de blocs de silo, blocs.js etatSilo)
-    if (farmSeed(state) !== null) {
-      return {
-        nom: 'Silo',
-        role: 'Stocke le blé récolté ; les poules y mangent d\'abord. Le surplus va dans l\'inventaire.',
-        conso: 'Aucune.',
-        prod: `${S.BLES_PAR_BLOC} blés par bloc de silo : ${S.LARGEUR * S.HAUTEUR * S.BLES_PAR_BLOC} blés pour le silo de départ (${S.LARGEUR} colonnes de ${S.HAUTEUR} blocs).`,
-        note: `Un bloc de silo se fabrique à l'Atelier (${Object.entries(R.entrees).map(([o, n]) => `${n} ${DATA.OBJETS[o].nom.toLowerCase()}`).join(' et ')}) et se pose dehors, sur l'herbe ; un bloc posé sur un autre rehausse sa colonne (jusqu'à ${S.HAUTEUR_MAX} blocs). ${S.LARGEUR} colonnes côte à côte, hautes de ${S.HAUTEUR} blocs : les blocs deviennent un silo en bois. Un seul silo : pour l'agrandir, un appui long dessus, puis une colonne de plus à côté (elle compte une fois haute de ${S.HAUTEUR} blocs) ou un bloc de plus sur une colonne. Repris, ses blocs reviennent dans l'inventaire (le blé qui ne tient plus aussi).`,
-      };
-    }
+    // un silo en bois, fait de blocs de silo (blocs.js, etatSilo)
     return {
       nom: 'Silo',
       role: 'Stocke le blé récolté ; les poules y mangent d\'abord. Le surplus va dans l\'inventaire.',
       conso: 'Aucune.',
-      prod: `Capacité : ${listNum(DATA.SILO.CAPACITE, 'blés')} selon le niveau.`,
-      note: '',
+      prod: `${S.BLES_PAR_BLOC} blés par bloc de silo : ${S.LARGEUR * S.HAUTEUR * S.BLES_PAR_BLOC} blés pour le silo de départ (${S.LARGEUR} colonnes de ${S.HAUTEUR} blocs).`,
+      note: `Un bloc de silo se fabrique à l'Atelier (${Object.entries(R.entrees).map(([o, n]) => `${n} ${DATA.OBJETS[o].nom.toLowerCase()}`).join(' et ')}) et se pose dehors, sur l'herbe ; un bloc posé sur un autre rehausse sa colonne (jusqu'à ${S.HAUTEUR_MAX} blocs). ${S.LARGEUR} colonnes côte à côte, hautes de ${S.HAUTEUR} blocs : les blocs deviennent un silo en bois. Un seul silo : pour l'agrandir, un appui long dessus, puis une colonne de plus à côté (elle compte une fois haute de ${S.HAUTEUR} blocs) ou un bloc de plus sur une colonne. Repris, ses blocs reviennent dans l'inventaire (le blé qui ne tient plus aussi).`,
     };
   },
   poulailler: () => ({
@@ -185,19 +173,20 @@ const HELP = {
       role: `Les moutons et les vaches vivent à l'Étable et s'achètent au Marché. Un mouton prend ${formatPlaces(P.PLACES_PAR_MOUTON)}, une vache ${formatPlaces(P.PLACES_PAR_VACHE)}. Une place achetée reste acquise.`,
       conso: `Chaque nuit, ${formatStraw(M.pailleParNuit)} par mouton et ${formatStraw(V.pailleParNuit)} par vache. La paille sort de la botteleuse : la faux en main (Marché ou Atelier), chaque touffe d'herbe haute de la carte fauchée donne ${DATA.FAUX.FIBRE} fibre, à ramasser au sol (la touffe repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard) ; ${DATA.BOTTELEUSE.FIBRES} fibres jetées dans la botteleuse font une botte de ${formatStraw(DATA.BOTTELEUSE.PAILLE)}. Elle ne s'achète pas au Marché.`,
       prod: `Un mouton nourri ${M.joursLaine} nuits donne ${M.laineParTonte} laine (à tondre). Une vache nourrie donne ${V.laitParNuit} lait la nuit même.`,
-      note: `Préparer l'Étable pour eux : ${costLabel(P.PRIX_CONSTRUCTION)} pour ${formatPlaces(P.PLACES_DEPART)} ; ensuite ${formatNumber(P.PRIX_PLACE)} 💰 la place, +${formatNumber(P.CROISSANCE - 100)} % à chaque achat. S'il n'y a pas assez de paille, les animaux mangent dans l'ordre de la liste (les moutons, puis les vaches). Un animal qui n'a pas mangé ne donne rien cette nuit-là ; il ne lui arrive rien d'autre.${cartesOuvertes() ? ` ${alpageText()}` : ''}`,
+      note: `L'Étable se bâtit : une enceinte de murs avec la mangeoire (fabriquée à l'Atelier), reliée à un enclos de barrières ; puis ${formatNumber(P.PRIX_PLACE)} 💰 la place, +${formatNumber(P.CROISSANCE - 100)} % à chaque achat. S'il n'y a pas assez de paille, les animaux mangent dans l'ordre de la liste (les moutons, puis les vaches). Un animal qui n'a pas mangé ne donne rien cette nuit-là ; il ne lui arrive rien d'autre.${cartesOuvertes() ? ` ${alpageText()}` : ''}`,
     };
   },
   verger: () => {
     const V = DATA.VERGER;
     return {
       nom: 'Verger',
-      role: 'Pommiers et poiriers : appuie sur un emplacement libre (sur la carte ou ici) et choisis l\'arbre. Il pousse en 4 dessins (jeune arbre, arbuste, arbre, arbre en fruits) et reste en place.',
+      role: 'Pommiers, poiriers et autres fruitiers : achète un jeune arbre au Marché (rayon Graines) et plante-le dans le sol, dehors, avec la case 🔨, loin des autres arbres. Il pousse en 4 dessins (jeune arbre, arbuste, arbre, arbre en fruits) et reste en place.',
       conso: `Aucune : pas d'arrosage. Cueillir un arbre en fruits coûte ${formatNumber(DATA.PERSONNAGE.COUTS.cueillir)} énergie (rien avec la Récolte du verger de l'Arbre des technologies).`,
       prod: `${V.FRUITS} fruits ${nightsLabel(V.MATURITE)} après la plantation, puis ${V.PERIODE} nuits après chaque cueillette, toute l'année. Les fruits attendent sur l'arbre : un appui sur l'arbre les cueille.`,
-      note: `Emplacement supplémentaire : ${formatNumber(V.EMPLACEMENT.base)} 💰, +${formatNumber(V.EMPLACEMENT.croissance - 100)} % par emplacement déjà acheté (arrondi à l'entier supérieur).`,
+      note: '',
     };
   },
+
   four: () => ({
     nom: 'Four',
     role: `Cuit le pain et les plats au four, et fond les minerais de la grotte en lingots, avec du bois (${ingotRecipes().map((r) => DATA.OBJETS[r.sortie].nom.toLowerCase()).join(', ')}). Une préparation à la fois ; le construire ouvre le Livre de recette.`,
@@ -210,7 +199,7 @@ const HELP = {
     role: 'Prépare les plats mijotés. Une préparation à la fois.',
     conso: 'Pas d\'électricité.',
     prod: `${stationRecipesLine('cuisine')}.`,
-    note: `Un plat vaut ${formatNumber(DATA.CUISINE.COEF_PLAT)} % de l'énergie de ses ingrédients (arrondi), et les plats rendent la famille plus heureuse (son bonheur réduit l'énergie que coûtent tes actions) : chaque soir, au repas, le bonheur baisse de ${formatNumber(-DATA.VILLE.BONHEUR.DECLIN)}, et chacun des ${DATA.VILLE.BONHEUR.PLATS_MAX} meilleurs plats différents du repas en rend ${DATA.VILLE.BONHEUR.PLATS.cuisine} (Cuisine) ou ${DATA.VILLE.BONHEUR.PLATS.four} (Four), +${DATA.VILLE.BONHEUR.HUILE_FRUIT} avec de l'huile ou un fruit, +${DATA.VILLE.BONHEUR.SPECIALES.bonus} avec du cacao, du café ou de la vanille. Le repas commence par un exemplaire de chacun de ces plats. Les recettes de luxe (${luxuryRecipes().map((r) => r.nom.toLowerCase()).join(', ')}) se vendent ${[...new Set(luxuryRecipes().map((r) => formatNumber(r.coefPrix)))].join(' ou ')} % du prix de leurs ingrédients au lieu de ${formatNumber(DATA.CUISINE.COEF_PLAT)} %.`,
+    note: `Un plat vaut ${formatNumber(DATA.CUISINE.COEF_PLAT)} % de l'énergie de ses ingrédients (arrondi), et les plats rendent la famille plus heureuse (son bonheur réduit l'énergie que coûtent tes actions) : chaque nuit, le bonheur baisse de ${formatNumber(-DATA.VILLE.BONHEUR.DECLIN)}, et chacun des ${DATA.VILLE.BONHEUR.PLATS_MAX} meilleurs plats différents mangés dans la journée en rend ${DATA.VILLE.BONHEUR.PLATS.cuisine} (Cuisine) ou ${DATA.VILLE.BONHEUR.PLATS.four} (Four), +${DATA.VILLE.BONHEUR.HUILE_FRUIT} avec de l'huile ou un fruit, +${DATA.VILLE.BONHEUR.SPECIALES.bonus} avec du cacao, du café ou de la vanille. Les recettes de luxe (${luxuryRecipes().map((r) => r.nom.toLowerCase()).join(', ')}) se vendent ${[...new Set(luxuryRecipes().map((r) => formatNumber(r.coefPrix)))].join(' ou ')} % du prix de leurs ingrédients au lieu de ${formatNumber(DATA.CUISINE.COEF_PLAT)} %.`,
   }),
   moulin: () => ({
     nom: 'Moulin',
@@ -388,13 +377,11 @@ const TUTO = {
     titre: '💧 L\'eau et le soleil',
     // version 1.12 : dans une nouvelle partie, tant que la ferme n'est pas installée, la bulle
     // dit par où commencer
-    texte: () => (!farmOpen(state) && atelierOuvert(state) && !houseRepaired(state)
+    texte: () => (!farmOpen(state) && !houseRepaired(state)
       ? 'Une terre sauvage, sans maison : ramasse les petites pierres et les morceaux de bois (un appui dessus), cueille les baies des buissons pour reprendre des forces (même épuisé) ou coupe-les à la hache pour leur bois, pose l\'Atelier (menu, 🔨 Construire) et touche-le pour y fabriquer une faux pour faucher l\'herbe haute (ses fibres), puis des murs, une porte et une paillasse, puis bâtis une pièce close avec la case 🔨 de la barre d\'outils (la porte se pose sur un mur, à sa place). Ce sera ton foyer : on y dort.'
-      : !farmOpen(state) && atelierOuvert(state)
-      ? `Ton foyer est bâti. Ici, tout se fait d'abord à la main : fabrique à l'Atelier un puits et une cruche, pose le puits dehors avec la case 🔨, remplis la cruche au puits (un appui dessus) et arrose tes plantes. Le Marché ouvre au niveau ${unlockLevel('marche')}. Au niveau ${unlockLevel('energie')}, le panneau solaire, la pompe, la citerne et la batterie (il faut des lingots : le minerai de la grotte, fondu au four) pomperont l'eau pour toi : l'automatisation commence.`
       : !farmOpen(state)
-      ? `Rien ne fonctionne encore : ${houseRepaired(state) ? 'achète le panneau solaire et la pompe' : `répare d'abord la maison (${formatNumber(DATA.DEPART.MAISON)} 💰), puis achète le panneau solaire et la pompe`}${stageUsable() ? ` : ouvre 🏗️ Installations dans le menu${atelierOuvert(state) ? '' : ' (ou touche la maison)'}` : ' (Ferme › Énergie et eau)'}. Ils ouvrent la Zone de culture et le Marché ; le réservoir garde ensuite l'eau pour arroser.`
-      : `Le panneau solaire charge la batterie de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.POMPE.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : maintiens le doigt sur la citerne pour voir son niveau.${stageUsable() ? (atelierOuvert(state) ? ' Sur la carte, touche le panneau solaire ou la batterie pour l\'énergie, le puits ou la citerne pour l\'eau.' : ' Sur la carte, touche les panneaux du toit pour l\'énergie (panneau, batterie), la pompe du puits ou la citerne pour l\'eau (pompe, réservoir).') : ''}`),
+      ? `Ton foyer est bâti. Ici, tout se fait d'abord à la main : fabrique à l'Atelier un puits et une cruche, pose le puits dehors avec la case 🔨, remplis la cruche au puits (un appui dessus) et arrose tes plantes. Le Marché ouvre au niveau ${unlockLevel('marche')}. Au niveau ${unlockLevel('energie')}, le panneau solaire, la pompe, la citerne et la batterie (il faut des lingots : le minerai de la grotte, fondu au four) pomperont l'eau pour toi : l'automatisation commence.`
+      : `Le panneau solaire charge la batterie de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.POMPE.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : maintiens le doigt sur la citerne pour voir son niveau.${stageUsable() ? ' Sur la carte, touche le panneau solaire ou la batterie pour l\'énergie, le puits ou la citerne pour l\'eau.' : ''}`),
   },
   potager: {
     titre: '🌱 La zone de culture',
@@ -462,10 +449,6 @@ export function renderTutorial() {
 // l'écran, sinon la puce d'objectif (qui y mène, FLU-01). L'anneau suit l'état de la partie :
 // il avance dès que l'objectif est atteint. Avec la houe en main, ce sont les cases vertes.
 const GUIDE_BOUTONS = {
-  maison: ['[data-action="repair-house"]'],
-  panneau: ['[data-action="buy-starter"][data-id="panneau"]'],
-  pompe: ['[data-action="buy-starter"][data-id="pompe"]'],
-  reservoir: ['[data-action="buy-starter"][data-id="reservoir"]'],
   houe: ['[data-action="buy-hoe"]', '[data-action="shop-item"][data-kind="houe"]'],
   labours: ['.tool-slot[data-outil="houe"]'],
   semis: ['#modal-root [data-action="plant-all"][data-crop="carotte"]:not([disabled])', '#modal-root [data-action="plant"]:not([disabled])', '[data-action="plant-all-open"]:not([disabled])', '[data-action="plant-open"]:not([disabled])'],

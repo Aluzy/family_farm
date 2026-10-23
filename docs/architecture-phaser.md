@@ -5,6 +5,11 @@ du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur
 Les autres cartes (la ville et celles qu'on rejoint par elle, l'infra-monde) s'affichent au même
 endroit et partagent avec elle un kit commun (§ 1 bis) et le jour et la nuit (§ 1 ter).
 
+> **La ferme du grand-père n'existe plus** (docs/carte-generee.md, « Les anciennes parties ») :
+> la carte de la ferme est toujours la ferme générée. Les passages de ce document sur la carte
+> dessinée (bâtiments, ruines, panneaux du toit, intérieurs de la maison et de la Serre, repas
+> à table) décrivent l'histoire du jeu : leur code et leurs images ont été retirés.
+
 > **Piège à ne pas refaire :** aucune variable globale de la page ne doit s'appeler `screen`
 > (ni `name`, `status`, `top`, `event`…). `screen` masque `window.screen`, dont Phaser a besoin
 > au démarrage (erreur « reading 'orientation' »). Le jeu utilise `ecranFerme`.
@@ -29,7 +34,7 @@ jeu.html                  la page : structure seule, charge les fichiers ci-dess
      ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node tests/run-tests.mjs
      └─ js/ui/            interface ; la carte : stage.js (« Carte Phaser ») et stage-windows.js (« Fenêtres de la carte »)
 tests/engine/             tests du moteur, un fichier par thème (jamais chargés par la page)
-assets/                   cartes Tiled (carte_printemps.json et serre_interieur.json, et leurs sources .tmj) + images (toutes dessinées par scripts/)
+assets/                   cartes Tiled (carte_printemps.json et sa source .tmj : ses jeux de tuiles servent à la ferme générée) + images (toutes dessinées par scripts/)
 ```
 
 Flux de données, à sens unique dans chaque direction :
@@ -100,7 +105,6 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | `sol.js` | textures et dessins de secours, sol cuit (`bakeGround`, `drawLayer` ; la ferme générée, `ctx.carte`, à la place de la carte de Tiled), terre labourée, grille de la houe, tuiles animées (repeintes dans la vue seulement), réparation du fond |
 | `decor.js` | arbres, buissons et barrières (`findOccluders`), herbe haute ; hors de la vue, ni eux ni les rochers ne sont dessinés (`cullDecor`) |
 | `soleil.js` | les ombres portées qui suivent le soleil : silhouettes des bâtiments, arbres, barrières et rochers, inclinées selon l'heure (vers la gauche le matin, la droite le soir, courtes à midi), peintes dans un seul canevas qui couvre la vue et une marge (`SOLEIL`) |
-| `interieurs.js` | intérieurs (`bakeRooms`, `setRoom`, meubles), repas |
 | `camera.js` | zoom, glissement, élan, repères, `panTo` |
 | `etiquettes.js` | étiquettes, bulles des tas (et des ruches pleines), bulle « +x », bulle de la citerne, bulles du dialogue du matin (DOM) |
 | `hache.js`, `pioche.js`, `peche.js` | les arbres, les buissons (la ferme générée : coupés d'un coup, 2 bois pour un grand, 1 pour un petit), les rochers, l'étang et la mare ; chaque coup de hache ou de pioche lâche ses morceaux au sol |

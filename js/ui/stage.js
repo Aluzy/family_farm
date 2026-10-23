@@ -1,13 +1,13 @@
 import { DATA } from '../engine/catalog.js';
 import { formatLitres, weekdayIndex } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
-import { houseRepaired, mainCharacter, setupPending } from '../engine/depart.js';
+import { mainCharacter, setupPending } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
 import { memberPerso, petSheets } from '../engine/family.js';
 import { allPlots, growHoursLeft, hoeableTiles, terrainLines, isMature, maxStage, soilCap, soilCount } from '../engine/crops.js';
-import { ripeTrees, treeAt, treeInBloom, treeStage } from '../engine/orchard.js';
+import { ripeTrees, treeInBloom, treeStage } from '../engine/orchard.js';
 import { coopCapacity, sheepToShear, stableHoused, woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked } from '../engine/campaign.js';
@@ -19,7 +19,7 @@ import { TIRED } from '../engine/stamina.js';
 import { brokenRocks, cutBushes, cutGrass, enSelle, fellenTrees, morceauxDe, poussesArbres, arbresPlantes } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
-import { farmMap, farmSeed, farmTerrain, tileCount } from '../engine/terrain.js';
+import { farmMap, farmTerrain, tileCount } from '../engine/terrain.js';
 import { tuilesChemins } from '../engine/ferme-generee.js';
 import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
@@ -30,7 +30,7 @@ import { telView } from './consent.js';
 import { persistState, safeStorageGet, safeStorageSet } from './storage.js';
 import { morph, refresh, setLastRenderAt } from './render.js';
 import {
-  allerAuLieu, asleepFromStage, interiorAvailable, interiorHelp, MAISON_TABS, openStageWindow, renderTabContent, setAncreVoulue,
+  allerAuLieu, asleepFromStage, MAISON_TABS, openStageWindow, renderTabContent, setAncreVoulue,
   setStageInterior, setStageReturn, setStageWindow, stageInterior, STAGE_WINDOWS, windowLocked,
 } from './stage-windows.js';
 import { renderMoulin } from './cuisine.js';
@@ -42,7 +42,6 @@ import { botteleuses } from '../engine/botteleuse.js';
 import { countItem } from '../engine/inventory.js';
 import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, blocsDessusPoses, couchages, etatEtable, etatMoulin, etatPoulailler, genrePiece, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
-import { atelierOuvert } from '../engine/atelier.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang } from './chantier.js';
 import { escaliers, etageBlocs, etageEmprise, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
@@ -53,11 +52,9 @@ import { plantationModele } from './plantation.js';
 import { runAction } from './events.js';
 
 
-// Le Poulailler et l'Étable de la ferme générée, bâtis (js/engine/blocs.js, etatEnclos) : les
-// cases libres de l'enceinte et de l'enclos, et les bêtes qui y ont leur place (les autres ne
-// se montrent pas) ; [] ailleurs.
+// Le Poulailler et l'Étable, bâtis (js/engine/blocs.js, etatEnclos) : les cases libres de
+// l'enceinte et de l'enclos, et les bêtes qui y ont leur place (les autres ne se montrent pas).
 function betesDesEnclos() {
-  if (farmSeed(state) === null) return [];
   const out = [];
   if (state.poulailler.construit) {
     const e = etatPoulailler(state);
@@ -121,10 +118,6 @@ export function heureDuJour() {
 
 // Lieux de la carte qui portent une étiquette (et une fenêtre du même nom).
 export const STAGE_LIEUX = ['maison', 'etable', 'poulailler', 'moulin', 'serre', 'zone', 'silo'];
-
-// La carte a douze emplacements d'arbres (rectangles arbre_verger_1 à 12) : autant que le
-// Verger peut en compter.
-const STAGE_ARBRES = 12;
 
 // Le Moulin a-t-il sa propre fenêtre de travail (renderMoulin) ? Sinon ses commandes
 // restent dans le Livre de recette.
@@ -325,33 +318,22 @@ export function stageModel() {
     const d = 2 + 4 * ((DATA.VERGER.ARBRES[t.espece] && DATA.VERGER.ARBRES[t.espece].dessin) || 0);
     return st === 1 ? d : t.fruits ? d + 3 : treeInBloom(state, t) ? d + 2 : d + 1;
   };
-  const arbres = [];
-  // (la ferme générée : chaque arbre planté dans le sol, sa case de la carte, sans emplacement)
-  if (atelierOuvert(state)) {
-    for (const t of state.verger.arbres) {
-      const st = treeStage(state, t);
-      arbres.push({ case: t.case, id: t.id, fruits: !!t.fruits, dessin: dessinArbre(t, st), stade: Math.min(st, 2), sol: true });
-    }
-  } else if (isUnlocked(state, 'verger') && state.verger.construit) {
-    for (let c = 0; c < Math.min(state.verger.places, STAGE_ARBRES); c++) {
-      const t = treeAt(state, c);
-      if (!t) { arbres.push({ case: c, libre: true, dessin: 0, stade: -1 }); continue; }
-      const st = treeStage(state, t);
-      arbres.push({ case: c, id: t.id, fruits: !!t.fruits, dessin: dessinArbre(t, st), stade: Math.min(st, 2) });
-    }
-  }
+  // chaque arbre planté dans le sol, sa case de la carte, sans emplacement
+  const arbres = state.verger.arbres.map((t) => {
+    const st = treeStage(state, t);
+    return { case: t.case, id: t.id, fruits: !!t.fruits, dessin: dessinArbre(t, st), stade: Math.min(st, 2), sol: true };
+  });
   // Lieux étiquetés : seulement ceux que le jeu a débloqués (la maison et la zone sont
   // toujours là), avec leur nom et le nombre de choses à y faire.
   const aFaire = aFaireParLieu();
   const batiments = {};
-  // version 1.12 : les bâtiments verrouillés sont aussi sur la carte (délabrés)
-  for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok() || windowLocked(id), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id], ruine: buildingInRuins(id) };
-  // (la ferme générée : plus d'étiquette sur l'ancienne Zone de culture)
-  if (atelierOuvert(state)) batiments.zone.visible = false;
+  for (const id of STAGE_LIEUX) batiments[id] = { visible: STAGE_WINDOWS[id].ok() || windowLocked(id), nom: STAGE_WINDOWS[id].nom, badge: aFaire[id] };
+  // (plus d'étiquette sur l'ancienne Zone de culture)
+  batiments.zone.visible = false;
   // le Moulin ne tourne que quand il moud (du blé en cours)
   batiments.moulin.enMarche = !!(state.stations && state.stations.moulin && state.stations.moulin.tache);
   const hauteurs = hauteursPosees(state);
-  const tour = farmSeed(state) !== null ? etatMoulin(state) : null;
+  const tour = etatMoulin(state);
   // Heure arrondie au quart d'heure : la lumière de la carte change par petits pas.
   const heure = (Math.round(heureDuJour() * 4) / 4) % 24;
   // Les bêtes de l'Étable et du Poulailler : seulement des nombres, la carte en fait des
@@ -370,8 +352,8 @@ export function stageModel() {
   const rochers = brokenRocks(state);
   // la hache : les arbres abattus n'y sont plus (ils repoussent comme les rochers)
   const abattus = fellenTrees(state);
-  // les buissons de la ferme générée se coupent aussi (d'un coup) ; les coupés n'y sont plus
-  const buissons = farmSeed(state) !== null;
+  // les buissons se coupent aussi (d'un coup) ; les coupés n'y sont plus
+  const buissons = true;
   const buissonsCoupes = cutBushes(state);
   // la faux en main : un appui sur une touffe d'herbe haute la fauche ; les touffes fauchées
   // n'y sont plus (elles repoussent)
@@ -460,13 +442,13 @@ export function stageModel() {
     morceaux: morceauxDe(state, 'ferme').map((m) => ({ n: m.n, item: m.item, x: m.x, y: m.y, ...(m.image ? { image: m.image } : {}) })),
     // les botteleuses (js/engine/botteleuse.js : l'entonnoir, la machine, le convoyeur ; pleine,
     // elle vibre VIBRE_S s et sa botte sort) et les fibres de l'inventaire, à y jeter
-    botteleuses: farmSeed(state) !== null ? botteleuses(state) : [],
+    botteleuses: botteleuses(state),
     botteVibre: DATA.BOTTELEUSE.VIBRE_S,
     fibres: countItem(state, 'fibre'),
     // les arbres plantés d'une graine (sur une case d'herbe libre) : une jeune pousse
-    pousses: farmSeed(state) !== null ? poussesArbres(state) : [],
+    pousses: poussesArbres(state),
     // puis, grands, des arbres de la carte (js/carte/ferme/foret.js)
-    foret: farmSeed(state) !== null ? arbresPlantes(state) : [],
+    foret: arbresPlantes(state),
     // et ses blocs posés, le mode Construire (les pièces closes s'y voient), les paillasses où
     // l'on dort (js/engine/blocs.js)
     // (un meuble : son dessin, ses cases en largeur et en hauteur, s'il arrête le passage, s'il est à plat ou un lit)
@@ -495,9 +477,9 @@ export function stageModel() {
     ...etageModel(),
     pieces: buildMode && !stageInterior ? piecesCloses(state).map((p) => p.cases) : null,
     // la Serre de la ferme générée : les cases de sa pièce où ses parcelles se posent (serrePlaces)
-    serreCases: atelierOuvert(state) && state.serre.construit ? serrePlaces(state) : null,
+    serreCases: state.serre.construit ? serrePlaces(state) : null,
     // et ses murs et ses portes, en verre et en bois (serreMurs)
-    serreMurs: atelierOuvert(state) ? serreMurs(state) : [],
+    serreMurs: serreMurs(state),
     // les toits des bâtiments, sur leur dernier niveau (js/carte/ferme/toits.js)
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
@@ -514,11 +496,10 @@ function meubleDe(sorte) {
   return { meuble: { dessin: b.meuble, largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: !!b.plat, lit: !!b.lit } };
 }
 
-// La ferme générée, sans maison : la porte du foyer (la première pièce close où l'on dort, sinon
+// Sans maison : la porte du foyer (la première pièce close où l'on dort, sinon
 // la première pièce close du genre maison), où le personnage rentre le soir et ressort le matin ;
 // null sans maison (une enceinte vide, un bâtiment ne sont pas le foyer).
 function foyerPorte() {
-  if (!atelierOuvert(state)) return null;
   const pieces = piecesCloses(state);
   const p = pieces.find((q) => q.paillasses.length) || pieces.find((q) => genrePiece(state, q.cases[0]) === 'maison');
   return p ? p.portes[0] : null;
@@ -700,19 +681,6 @@ function terrainNow(rochers) {
   return terrainCache.lines;
 }
 
-// Version 1.12 : un bâtiment pas encore réparé ou construit se dessine délabré.
-function buildingInRuins(id) {
-  switch (id) {
-    case 'maison': return !houseRepaired(state);
-    case 'etable': return !state.paturage.construit;
-    case 'poulailler': return !state.poulailler.construit;
-    case 'moulin': return !(state.stations && state.stations.moulin && state.stations.moulin.construit);
-    case 'serre': return !state.serre.construit;
-    case 'silo': return !state.silo.construit;
-    default: return false;
-  }
-}
-
 // Pont carte → jeu : l'action du registre, comme un clic sur un bouton qui porterait
 // data-action et ces data-* (en texte, comme dans le DOM) ; suivi et sommeil compris.
 function stageAct(action, data) {
@@ -761,8 +729,6 @@ export function renderStage() {
     if (window.FarmStage) FarmStage.hide();
     return;
   }
-  // Un intérieur qui n'existe plus (nouvelle partie, par exemple) : retour à la carte.
-  if (stageInterior && !interiorAvailable(stageInterior)) setStageInterior(null);
   FarmStage.show();
   FarmStage.update(stageModel());
   // Déplacement demandé par une notification ou un indicateur : sans animation si la carte
@@ -882,15 +848,6 @@ function renderStageNav(el) {
   const nav = el.querySelector('.stage-nav');
   const v = stageView;
   if (!nav) return;
-  // Dans un intérieur : sortir, ou ouvrir la fenêtre du bâtiment.
-  if (stageInterior) {
-    const w = STAGE_WINDOWS[stageInterior];
-    morph(nav, `<div class="stage-room-bar" role="group" aria-label="${w.nom}">
-      <button type="button" class="btn btn-pill stage-room-btn" data-action="stage-exit" aria-label="Sortir : retour à la carte" title="Retour à la carte"><span aria-hidden="true">‹</span> Sortir</button>
-      <button type="button" class="btn primary btn-pill stage-room-btn" data-action="stage-open" data-window="${stageInterior}" aria-label="${w.nom} : ${interiorHelp(stageInterior)}" title="${interiorHelp(stageInterior)}"><span aria-hidden="true">${w.icone}</span> Gérer</button>
-    </div>`);
-    return;
-  }
   if (!v || !v.mobile) {
     morph(nav, '');
     return;

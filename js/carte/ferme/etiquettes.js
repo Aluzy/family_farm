@@ -21,7 +21,7 @@
     // Le point (wx, wy) est-il sur la citerne (zone d'appui élargie à 44 px CSS) ?
     onTank(wx, wy) {
       const s = this.tank;
-      if (!s || this.room) return false;
+      if (!s) return false;
       const min = (MIN_TAP * pixelRatio()) / this.cameras.main.zoom;
       const w = Math.max(s.width, min), h = Math.max(s.height, min);
       const cx = s.x + s.width / 2, cy = s.y - s.height / 2;
@@ -88,10 +88,7 @@
         if (e) return { x: e.sprite.x, y: e.sprite.y - Math.round(e.sprite.height * 0.55) };
         return o ? { x: o.x + o.width / 2, y: o.y + o.height / 2 } : null;
       }
-      const b = this.buildings.get(p.lieu);
-      // sur le bâtiment, sous son étiquette
-      if (b) return { x: b.sprite.x + b.sprite.width / 2, y: b.sprite.y - Math.round(b.sprite.height * 0.45) };
-      // la ferme générée : au-dessus de son bloc clé (le nichoir)
+      // au-dessus du bloc clé de son bâtiment (le nichoir, la mangeoire)
       const k = this.keyBlockOf && this.keyBlockOf(p.lieu);
       return k ? { x: k.x, y: k.y - 24 } : null;
     },
@@ -141,7 +138,7 @@
       if (!this.piles || !this.piles.size) return;
       const f = this.screenFrame();
       for (const B of this.piles.values()) {
-        const a = this.room ? null : this.pileAnchor(B.p);
+        const a = this.pileAnchor(B.p);
         B.at = a;
         if (!a) { if (!B.el.hidden) B.el.hidden = true; continue; }
         if (B.el.hidden) { B.el.hidden = false; B.w = 0; }
@@ -176,7 +173,7 @@
     placeGain() {
       const G = this.gain;
       if (!G || !G.visible()) return;
-      const at = this.fermier && !this.room ? this.fermier.pos() : null;
+      const at = this.fermier ? this.fermier.pos() : null;
       if (!at) { G.place(null); return; }
       const f = this.screenFrame();
       G.place((at.x - f.left) * f.k, (at.y - K.BULLE.dessus - f.top) * f.k);
@@ -192,7 +189,7 @@
     placeGainAide() {
       const G = this.gainAide;
       if (!G || !G.visible()) return;
-      const at = this.family && !this.room ? this.family.aidePos() : null;
+      const at = this.family ? this.family.aidePos() : null;
       if (!at) { G.place(null); return; }
       const f = this.screenFrame();
       G.place((at.x - f.left) * f.k, (at.y - K.BULLE.dessus - f.top) * f.k);
@@ -210,7 +207,7 @@
       const S = this.matin || (this.matin = { jour: null, etape: null, ta: 0, t0: 0, bulles: null });
       const now = global.performance.now();
       const fam = this.family && this.family.rejoindre ? this.family : null;
-      const ou = { joueur: () => (this.fermier && !this.room ? this.fermier.pos() : null), compagnon: () => (this.family && !this.room ? this.family.aidePos() : null) };
+      const ou = { joueur: () => (this.fermier ? this.fermier.pos() : null), compagnon: () => (this.family ? this.family.aidePos() : null) };
       if (!S.etape && fam && M && M.aide && !M.nuit && S.jour !== M.jour && M.heure >= MATIN.de && M.heure < MATIN.a && this.dansLaVue(ou.joueur()) && this.dansLaVue(ou.compagnon())) {
         S.jour = M.jour;
         S.etape = 'approche';
@@ -290,7 +287,7 @@
     // Lieu désigné par un résultat de hitAt() : une parcelle désigne sa zone ('zone' ou 'zone2').
     placeOf(hit) {
       if (!hit) return null;
-      if (hit.treeHarvest || hit.treeSlot !== undefined) return 'verger';
+      if (hit.treeHarvest) return 'verger';
       return hit.plot || hit.hoe ? hit.place : hit.window || null;
     },
 

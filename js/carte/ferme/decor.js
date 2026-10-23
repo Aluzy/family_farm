@@ -165,7 +165,7 @@
     // opaques.
     stepOccluders(dt) {
       if (!this.occluders || !this.occluders.length) return;
-      const p = this.fermier && !this.room ? this.fermier.pos() : null;
+      const p = this.fermier ? this.fermier.pos() : null;
       for (const o of this.occluders) {
         if (!o.img || o.regrowing) continue;
         const derriere = p && p.y < o.foot && this.couvre(o, p.x - CORPS.l, p.y - CORPS.h, p.x + CORPS.l, p.y - CORPS.pied);
@@ -368,7 +368,7 @@
         this.grassCheck = 500;
         for (const g of list) this.showGrass(g);
       }
-      const p = this.fermier && !this.room ? this.fermier.pos() : null;
+      const p = this.fermier ? this.fermier.pos() : null;
       this.grassPrev = K.herbe(list, p, this.grassPrev, dt);
     },
 

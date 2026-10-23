@@ -15,7 +15,7 @@ import { formatCoins, formatDay, formatNumber, formatPercent, weekdayShort } fro
 import { dayOfMonth, monthName, moonPhase } from '../engine/lune.js';
 import { renderCalendrier } from './calendrier.js';
 import {
-  activeTab, buildMode, coucher, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setBuildMode, setComptoirTab, setCoucher, setEcranFerme, setVergerCase, state, tabAvailable, TABS, testMode, testOpen,
+  activeTab, buildMode, coucher, ecranFerme, FERME_LINKS, NAV_TABS, setActiveTab, setBuildMode, setComptoirTab, setCoucher, setEcranFerme, state, tabAvailable, TABS, testMode, testOpen,
 } from './store.js';
 import { telView } from './consent.js';
 import { notify } from './toasts.js';
@@ -41,7 +41,6 @@ import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
 import { atelierOngletsHtml, renderAtelier } from './atelier.js';
-import { atelierOuvert } from '../engine/atelier.js';
 import { encyclopedieNouveautes } from './encyclopedie.js';
 import { couchages } from '../engine/blocs.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './marche.js';
@@ -69,41 +68,12 @@ export function setStageReturn(value) {
   stageReturn = value;
   return value;
 }
-// Intérieur affiché à la place de la carte : null (dehors) ou 'serre'. On y entre en appuyant
-// sur le bâtiment une fois qu'il est construit ; ses parcelles s'y travaillent d'un appui,
-// comme celles des zones de culture. Rien n'est enregistré : c'est un état de l'affichage.
+// Intérieur affiché à la place de la carte : toujours null depuis que la ferme du grand-père (sa
+// maison, sa Serre) n'existe plus ; gardé pour la scène, qui sait encore en afficher un.
 export let stageInterior = null;
 export function setStageInterior(value) {
   stageInterior = value;
   return value;
-}
-// Intérieurs : la Serre (ses parcelles) et, une fois réparée, la maison (ses meubles : four,
-// cuisine, réfrigérateur, chacun ouvre sa fenêtre). `gerer` : ce qu'ouvre le bouton « Gérer ».
-const INTERIORS = {
-  // (sur la ferme générée, la Serre se bâtit sans bâtiment : ses parcelles, dans sa fenêtre)
-  serre: { ok: () => state.serre.construit && !atelierOuvert(state), gerer: 'agrandir, tout arroser, tout récolter' },
-  // (la ferme générée n'a pas de maison : on y vit dans les pièces qu'on bâtit, sans intérieur)
-  maison: { ok: () => houseRepaired(state) && !atelierOuvert(state), gerer: 'livre de recette, commerce, installations' },
-};
-export function interiorHelp(id) {
-  return INTERIORS[id] ? INTERIORS[id].gerer : '';
-}
-
-// L'intérieur peut-il être affiché ? Il faut le bâtiment, la carte, et que la scène ait pu
-// charger la carte de l'intérieur (sinon la fenêtre du bâtiment reste le seul accès).
-export function interiorAvailable(id) {
-  const d = INTERIORS[id];
-  return !!(d && d.ok() && stageUsable() && window.FarmStage && FarmStage.hasRoom && FarmStage.hasRoom(id));
-}
-
-export function enterInterior(id) {
-  if (!interiorAvailable(id)) return false;
-  stageInterior = id;
-  stageWindow = null;
-  stageReturn = null;
-  setLastRenderAt(0); // rendu tout de suite : la vue change sans attendre la cadence
-  refresh();
-  return true;
 }
 
 export function leaveInterior() {
@@ -129,8 +99,7 @@ export function setMaisonTab(value) {
 // aussi au menu latéral) tant que la maison est à réparer ou que le panneau, la pompe ou le
 // réservoir manquent, ou tant que la Maison n'a aucun onglet ; sinon le dernier onglet choisi.
 function maisonOuInstallations() {
-  const manque = !houseRepaired(state) || (!atelierOuvert(state) && ['panneau', 'pompe', 'reservoir'].some((id) => !isOwned(starterOf(state, id))));
-  return manque || !MAISON_TABS.some((t) => t.ok()) ? 'installations' : 'maison';
+  return !houseRepaired(state) || !MAISON_TABS.some((t) => t.ok()) ? 'installations' : 'maison';
 }
 let ancreVoulue = null; // id de l'élément à amener en haut au prochain rendu (calendrier, eau…)
 export function setAncreVoulue(value) {
@@ -154,8 +123,7 @@ function lieuFamille(fenetre, onglet) {
   // les Installations ont quitté la Maison (onglet « batiments » des anciennes cibles)
   if (onglet === 'batiments') return 'installations';
   if (onglet) return MAISON_TABS.some((t) => t.id === onglet && t.ok()) ? 'maison' : 'installations';
-  // la maison réparée : on y entre (voir allerAuLieu)
-  return interiorAvailable('maison') ? 'maison' : maisonOuInstallations();
+  return maisonOuInstallations();
 }
 
 function maisonCurrentTab() {
@@ -188,12 +156,12 @@ export function renderAchatTroupeau() {
 // Une partie peut avoir des animaux avant que le chapitre n'ouvre leur logement (mode
 // test, sauvegarde modifiée) : l'Étable et ses sections existent alors quand même, pour
 // qu'aucun animal ne soit caché (et qu'aucune alerte ne parle d'animaux invisibles).
-// Version 1.12 : les bâtiments de la carte sont là dès le départ, délabrés. Tant que leur
-// niveau n'est pas atteint, leur fenêtre dit seulement à quel niveau on pourra les réparer.
+// Tant que le niveau d'un bâtiment n'est pas atteint, sa fenêtre dit seulement à quel niveau on
+// pourra le bâtir (en blocs, sur la terre sauvage).
 // fenêtre → élément débloqué par un niveau (DATA.NIVEAUX.liste).
 export const LOCKED_BUILDINGS = { etable: 'paturage', poulailler: 'poulailler', moulin: 'moulin', serre: 'serre', silo: 'silo' };
 
-// La fenêtre `id` est-elle celle d'un bâtiment encore verrouillé (montré, mais pas réparable) ?
+// La fenêtre `id` est-elle celle d'un bâtiment encore verrouillé (montré, mais pas encore à bâtir) ?
 export function windowLocked(id) {
   const w = STAGE_WINDOWS[id];
   return !!(w && LOCKED_BUILDINGS[id] && !w.ok());
@@ -205,9 +173,9 @@ function lockedBody(id) {
   const n = unlockLevel(el);
   return `
     <div class="card locked-building">
-      <span class="card-title"><span>🏚️ ${STAGE_WINDOWS[id].nom} délabré${id === 'serre' || id === 'etable' ? 'e' : ''}</span><span class="chip">🔒 niveau ${n}</span></span>
-      <span class="muted">Le bâtiment du grand-père attend des jours meilleurs. Il se répare à partir du <strong>niveau ${n}</strong> (tu es au niveau ${state.progression ? state.progression.niveau : 1}).</span>
-      ${def.note ? `<span class="muted">Une fois réparé : ${def.note}.</span>` : ''}
+      <span class="card-title"><span>🔒 ${STAGE_WINDOWS[id].nom}</span><span class="chip">🔒 niveau ${n}</span></span>
+      <span class="muted">Il se bâtit à partir du <strong>niveau ${n}</strong> (tu es au niveau ${state.progression ? state.progression.niveau : 1}).</span>
+      ${def.note ? `<span class="muted">Une fois bâti : ${def.note}.</span>` : ''}
     </div>`;
 }
 
@@ -260,7 +228,7 @@ export const STAGE_WINDOWS = {
   // L'Atelier (un appui sur l'Atelier posé sur la carte, la ferme générée seulement :
   // js/ui/atelier.js) : fenêtre flottante dans le cadre bois, comme l'Inventaire.
   atelier: {
-    nom: 'Atelier', icone: '🔨', ok: () => atelierOuvert(state), bois: true, flottante: true,
+    nom: 'Atelier', icone: '🔨', ok: () => true, bois: true, flottante: true,
     onglets: () => atelierOngletsHtml(),
     corps: () => renderAtelier(),
   },
@@ -371,7 +339,6 @@ export const STAGE_WINDOWS = {
   },
   verger: {
     nom: 'Verger', icone: '🍎', ok: () => isUnlocked(state, 'verger'), sansTitre: true,
-    detail: () => (state.verger.construit ? `${state.verger.arbres.length} / ${state.verger.places} emplacements` : ''),
     corps: () => renderVerger(),
   },
   zone: {
@@ -436,10 +403,7 @@ export function openStageWindow(id) {
     refresh();
     return;
   }
-  // Un bâtiment qui a un intérieur : depuis la carte, on y entre. Une fois dedans, la même
-  // action ouvre sa fenêtre (agrandir, tout arroser, tout récolter).
-  if (INTERIORS[id] && stageInterior !== id && enterInterior(id)) return;
-  // la Maison (de l'intérieur, « Gérer ») : ses onglets, ou les Installations s'il n'y en a pas
+  // la Maison : ses onglets, ou les Installations s'il n'y en a pas
   if (id === 'maison') id = maisonOuInstallations();
   if (id === 'maison') maisonTab = maisonTabChoisi;
   stageWindow = id;
@@ -450,7 +414,6 @@ export function openStageWindow(id) {
 
 export function closeStageWindow() {
   stageWindow = null;
-  setVergerCase(null); // version 1.13 : le choix d'un arbre se referme avec la fenêtre
   stageReturn = null;
   renderStageWindow();
   refresh();
@@ -468,11 +431,7 @@ export function allerAuLieu(fenetre, onglet, ancre) {
     setActiveTab('ferme');
     if (fenetre === 'maison' && onglet) maisonTab = onglet;
     stageWindow = STAGE_WINDOWS[fenetre] && STAGE_WINDOWS[fenetre].ok() ? fenetre : null;
-    // Un lieu qui a un intérieur : on y entre, ses parcelles sont sous les yeux. Tout autre
-    // lieu fait sortir.
-    // un onglet de la Maison demandé (Livre de recette…) : sa fenêtre, sans entrer
-    stageInterior = INTERIORS[fenetre] && !(fenetre === 'maison' && onglet) && interiorAvailable(fenetre) ? fenetre : null;
-    if (stageInterior) stageWindow = null;
+    stageInterior = null;
     if (STAGE_LIEUX.includes(fenetre)) setStagePan(fenetre);
   } else {
     stageWindow = null;
@@ -738,41 +697,20 @@ export function actionGoToBed() {
   if (asleep(state)) return;
   if (coucher) { actionSleep(); return; }
   const scene = window.FarmStage;
-  // La ferme générée : on dort sur une paillasse d'une pièce close (js/engine/blocs.js), dehors
-  // sur la carte ; sans elle, la famille ne dort pas : la nuit passe sans rendre d'énergie.
-  if (atelierOuvert(state)) {
-    if (!couchages(state).length) { notify('🛏 Sans paillasse dans une pièce close (des murs tout autour et une porte), on ne peut pas dormir : la nuit passe sans rendre d\'énergie.'); return; }
-    if (scene && scene.hasFermier && scene.hasFermier() && scene.goHome) {
-      if (stageInterior) leaveInterior();
-      setCoucher(true);
-      setBuildMode(null);
-      setActiveTab('ferme');
-      setEcranFerme(null);
-      stageWindow = null;
-      stageReturn = null;
-      setLastRenderAt(0);
-      refresh();
-      scene.goHome(() => {});   // il va à sa paillasse ; endormi, la nuit défile (asleepFromStage)
-      return;
-    }
-  }
-  if (!interiorAvailable('maison') || !(scene && scene.hasFermier && scene.hasFermier() && scene.goHome)) { actionSleep(); return; }
+  // On dort sur une paillasse d'une pièce close (js/engine/blocs.js), dehors sur la carte ; sans
+  // elle, la famille ne dort pas : la nuit passe sans rendre d'énergie.
+  if (!couchages(state).length) { notify('🛏 Sans paillasse dans une pièce close (des murs tout autour et une porte), on ne peut pas dormir : la nuit passe sans rendre d\'énergie.'); return; }
+  if (!(scene && scene.hasFermier && scene.hasFermier() && scene.goHome)) { actionSleep(); return; }
+  if (stageInterior) leaveInterior();
   setCoucher(true);
-  setVergerCase(null);
+  setBuildMode(null);
   setActiveTab('ferme');
   setEcranFerme(null);
   stageWindow = null;
   stageReturn = null;
-  if (stageInterior) {
-    // déjà dans la maison : il va au lit ; dans la Serre : il traverse jusqu'à la maison
-    if (stageInterior !== 'maison') enterInterior('maison');
-    setLastRenderAt(0);
-    refresh();
-    return;
-  }
   setLastRenderAt(0);
   refresh();
-  scene.goHome(() => { if (coucher && nightActive(state)) enterInterior('maison'); });
+  scene.goHome(() => {});   // il va à sa paillasse ; endormi, la nuit défile (asleepFromStage)
 }
 
 // La carte : il est couché dans son lit, il s'endort ; la nuit défile en accéléré.
@@ -787,9 +725,6 @@ export function asleepFromStage() {
 registerActions({
   'stage-close': () => {
     closeStageWindow();
-  },
-  'stage-exit': () => {
-    leaveInterior();
   },
   'four-tab': (target) => {
     fourTab = target.dataset.tab === 'objets' ? 'objets' : 'aliments';

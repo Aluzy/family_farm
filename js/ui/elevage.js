@@ -8,13 +8,12 @@ import {
   growHoursLeft, water, waterCost, waterCostFor, seedLabel,
 } from '../engine/crops.js';
 import {
-  buildPaturage, buildPoulailler, buildSilo, buyPasture, canFeedHen, coopCapacity, coopUpgradeCost,
+  buyPasture, canFeedHen, coopCapacity, coopUpgradeCost,
   cowCount, cowsOnHerbs, feedAllHens, feedHen, freeSheepPlaces, hensToFeed, herbStock, herbsOn, pastureCost,
-  setCowHerbs, shear, sheepCount, sheepToShear, siloCapacity, siloUpgradeCost, stableOccupied, strawMissing,
-  strawNeed, strawStock, upgradePoulailler, upgradeSilo, wheatTotal, woolReady, coopUpgradeRefus, pastureRefus, stablePlaces,
+  setCowHerbs, shear, sheepCount, sheepToShear, siloCapacity, stableOccupied, strawMissing,
+  strawNeed, strawStock, upgradePoulailler, wheatTotal, woolReady, coopUpgradeRefus, pastureRefus, stablePlaces,
 } from '../engine/animals.js';
 import { etatEtable, etatPoulailler, etatSilo } from '../engine/blocs.js';
-import { farmSeed } from '../engine/terrain.js';
 import { techAuto, techFlag } from '../engine/techtree.js';
 import { AUTO_TACHES, harvestAll, isAutomated, plantAll, setSemis, waterAll } from '../engine/automation.js';
 import { plantableCropsFor } from '../engine/campaign.js';
@@ -70,33 +69,7 @@ function renderSiloBlocs() {
 }
 
 export function renderSilo() {
-  const s = state.silo;
-  if (farmSeed(state) !== null) return renderSiloBlocs();
-  if (!s.construit) {
-    const cost = DATA.SILO.PRIX_CONSTRUCTION;
-    return `
-      <div class="section-head"><h3>${artIcon('silo')}Silo</h3>${helpBtn('silo')}</div>
-      <div class="card">
-        <button type="button" class="btn primary" data-action="build-silo"${canPay(cost) ? '' : ' disabled'}>Réparer le Silo (${costLabel(cost)})</button>
-      </div>`;
-  }
-  const cap = siloCapacity(state);
-  const pct = cap > 0 ? Math.min(100, Math.round((s.ble / cap) * 100)) : 0;
-  const cls = s.ble >= cap - EPS ? ' warn' : '';
-  const surplus = countItem(state, DATA.SILO.ITEM);
-  const up = siloUpgradeCost(state);
-  const upBtn =
-    up === null
-      ? '<button type="button" class="btn" disabled>Silo au niveau maximum</button>'
-      : `<button type="button" class="btn" data-action="upgrade-silo"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${s.niveau + 1}, ${formatNumber(DATA.SILO.CAPACITE[s.niveau])} blés (${costLabel(up)})</button>`;
-  return `
-    <div class="section-head"><h3>${artIcon('silo')}Silo · niveau ${s.niveau}</h3>${helpBtn('silo')}</div>
-    <div class="card">
-      <span class="big">${formatQty(s.ble)} / ${formatNumber(cap)} 🌾</span>
-      <span class="bar" role="progressbar" aria-label="Remplissage du Silo" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${Math.round(s.ble)}"><span class="bar-fill${cls}" style="width:${pct}%"></span></span>
-      ${s.ble >= cap - EPS || surplus > 0 ? `<span class="chips">${s.ble >= cap - EPS ? '<span class="chip warn">Silo plein</span>' : ''}${surplus > 0 ? `<span class="chip">🎒 ${formatQty(surplus)} 🌾</span>` : ''}</span>` : ''}
-      ${upBtn}
-    </div>`;
+  return renderSiloBlocs();
 }
 
 // La ferme générée : ce qu'il faut pour que le Poulailler (ou l'Étable) soit là (etatEnclos,
@@ -109,22 +82,13 @@ function enclosChecklist(e, nom, unite) {
 
 export function renderPoulailler() {
   const p = state.poulailler;
-  const genere = farmSeed(state) !== null;
-  if (!p.construit && genere) {
+  if (!p.construit) {
     return `
       <div class="section-head"><h3>${artIcon('poulailler')}Poulailler</h3>${helpBtn('poulailler')}</div>
       <div class="card">
         <span class="card-title">Pour bâtir le Poulailler</span>
         ${enclosChecklist(etatPoulailler(state), 'le poulailler', 'une poule')}
         ${p.poules ? `<span class="alert">⚠️ Tes ${plural(p.poules, 'poule')} attendent : elles ne pondent pas tant que le Poulailler n'est pas complet.</span>` : ''}
-      </div>`;
-  }
-  if (!p.construit) {
-    const cost = DATA.POULAILLER.PRIX_CONSTRUCTION;
-    return `
-      <div class="section-head"><h3>${artIcon('poulailler')}Poulailler</h3>${helpBtn('poulailler')}</div>
-      <div class="card">
-        <button type="button" class="btn primary" data-action="build-poulailler"${canPay(cost) ? '' : ' disabled'}>Réparer le Poulailler (${costLabel(cost)})</button>
       </div>`;
   }
   const cap = coopCapacity(state);
@@ -139,7 +103,7 @@ export function renderPoulailler() {
       : `<button type="button" class="btn" data-action="upgrade-poulailler"${canPay(up) && !refus ? '' : ' disabled'}>Agrandir : niveau ${p.niveau + 1}, ${DATA.POULAILLER.CAPACITE[p.niveau]} poules (${costLabel(up)})</button>${refus ? `<span class="muted">${refus}</span>` : ''}`;
   // Une ligne d'état, courte ; les règles (rations, ponte, niveaux) sont dans « ? ».
   let hint;
-  if (genere && p.poules > cap) hint = `<span class="alert">⚠️ ${plural(p.poules - cap, 'poule')} de trop pour la place : elles ne pondent pas.</span>`;
+  if (p.poules > cap) hint = `<span class="alert">⚠️ ${plural(p.poules - cap, 'poule')} de trop pour la place : elles ne pondent pas.</span>`;
   else if (p.poules === 0) hint = '<span class="muted">Aucune poule : achètes-en au Marché.</span>';
   else if (toFeed === 0) hint = '<span class="muted">✅ Toutes nourries : elles pondront cette nuit.</span>';
   else if (isAutomated(state, 'poulailler')) hint = '<span class="muted">🤖 Nourries toutes seules cette nuit.</span>';
@@ -284,7 +248,7 @@ export function renderPaturage() {
   const M = DATA.ANIMAUX.mouton;
   const V = DATA.ANIMAUX.vache;
   const straw = DATA.OBJETS[P.NOURRITURE];
-  if (!p.construit && farmSeed(state) !== null) {
+  if (!p.construit) {
     const betes = p.moutons.length + p.vaches.length;
     return `
       <div class="section-head"><h3>${artIcon('paturage')}Moutons et vaches</h3>${helpBtn('paturage')}</div>
@@ -292,14 +256,6 @@ export function renderPaturage() {
         <span class="card-title">Pour bâtir l'Étable</span>
         ${enclosChecklist(etatEtable(state), 'l\'étable', 'une place')}
         ${betes ? `<span class="alert">⚠️ Tes ${plural(betes, 'bête')} attendent : elles ne donnent rien tant que l'Étable n'est pas complète.</span>` : ''}
-      </div>`;
-  }
-  if (!p.construit) {
-    const cost = P.PRIX_CONSTRUCTION;
-    return `
-      <div class="section-head"><h3>${artIcon('paturage')}Moutons et vaches</h3>${helpBtn('paturage')}</div>
-      <div class="card">
-        <button type="button" class="btn primary" data-action="build-paturage"${canPay(cost) ? '' : ' disabled'}>Préparer ${formatPlaces(P.PLACES_DEPART)} pour les moutons et les vaches (${costLabel(cost)})</button>
       </div>`;
   }
   const sCount = sheepCount(state);
@@ -536,15 +492,9 @@ registerActions({
     // version 1.18 : ce qui attend le personnage s'annonce par sa bulle, au ramassage
     if (result.ok && !result.aRamasser) notify(harvestToast(result));
   },
-  'build-silo': () => {
-    applyResult(buildSilo(state));
-  },
-  'upgrade-silo': () => {
-    applyResult(upgradeSilo(state));
-  },
-  'build-poulailler': () => {
-    applyResult(buildPoulailler(state));
-  },
+
+
+
   'upgrade-poulailler': () => {
     applyResult(upgradePoulailler(state));
   },
@@ -558,10 +508,7 @@ registerActions({
       notify(`${plural(result.nourries, 'poule')} ${accord(result.nourries, 'nourrie')}.`);
     }
   },
-  'build-paturage': () => {
-    const result = applyResult(buildPaturage(state));
-    if (result.ok) notify(`🐑 L'Étable est prête pour les moutons et les vaches : ${formatPlaces(result.places)} (−${formatCoins(result.cost)} 💰)`);
-  },
+
   'buy-pasture': () => {
     const result = applyResult(buyPasture(state));
     if (result.ok) notify(`Place achetée : ${formatPlaces(result.places)} au total (−${formatCoins(result.cost)} 💰)`);
