@@ -15,7 +15,7 @@ import { craftStatus } from '../engine/atelier.js';
 import { ongletAtelier, ongletRecette } from './atelier.js';
 import { eauCruche, aCruche } from '../engine/cruche.js';
 import {
-  etapeDidacticiel, ETAPES, majDidacticiel, objectifDidacticiel, passerDidacticiel, planAbri, suivantDidacticiel,
+  casesAbriAPoser, etapeDidacticiel, ETAPES, majDidacticiel, objectifDidacticiel, passerDidacticiel, planAbri, suivantDidacticiel,
 } from '../engine/didacticiel.js';
 import { buildMode, hoeMode, scytheMode, state } from './store.js';
 import { menuOpen, stageWindow } from './stage-windows.js';
@@ -101,10 +101,12 @@ const ETAPES_UI = {
     ...fabriquerAbri(),
   },
   abri_construire: {
-    texte: () => (buildMode && ['mur_bois', 'porte'].includes(buildMode) ? 'Pose les <b>murs</b> en rectangle autour d\'une rangée de cases libres (une par paillasse), puis la <b>porte</b> sur l\'un des murs : elle prend sa place.' : buildMode ? 'Choisis le <b>mur en bois</b>.' : menuOpen ? 'Touche 🔨 <b>Construire</b>.' : 'Bâtis l\'abri : ouvre le menu (la flèche), puis 🔨 Construire.'),
+    texte: () => (buildMode && ['mur_bois', 'porte'].includes(buildMode) ? (casesAbriAPoser(state, 'abri_construire').length ? 'Pose les <b>murs</b> sur les cases qui brillent (la case blanche aussi), puis la <b>porte</b> sur la case blanche : elle prend la place du mur.' : 'Pose les <b>murs</b> en rectangle autour d\'une rangée de cases libres (une par paillasse), puis la <b>porte</b> sur l\'un des murs : elle prend sa place.') : buildMode ? 'Choisis le <b>mur en bois</b>.' : menuOpen ? 'Touche 🔨 <b>Construire</b>.' : 'Bâtis l\'abri là où les cases brillent : ouvre le menu (la flèche), puis 🔨 Construire.'),
+    // les cases de l'abri qui restent à poser, allumées sur la carte (murs dorés, porte blanche)
+    carte: () => ({ cases: casesAbriAPoser(state, 'abri_construire') }),
     cible: () => (buildMode && buildMode === 'porte' ? null : buildMode && buildMode !== 'mur_bois' && countItem(state, 'mur_bois') > 0 ? '[data-action="build-pick"][data-sorte="mur_bois"]' : buildMode ? (countItem(state, 'mur_bois') === 0 && countItem(state, 'porte') > 0 && buildMode !== 'porte' ? '[data-action="build-pick"][data-sorte="porte"]' : null) : menu('atelier')),
   },
-  paillasses: { texte: () => (buildMode === 'paillasse' ? 'Pose les <b>paillasses</b> dans l\'abri, une par case.' : buildMode ? 'Choisis la <b>paillasse</b>.' : 'Il reste les <b>paillasses</b> : 🔨 Construire.'), cible: () => construire('paillasse') },
+  paillasses: { texte: () => (buildMode === 'paillasse' ? 'Pose les <b>paillasses</b> dans l\'abri, sur les cases vertes qui brillent.' : buildMode ? 'Choisis la <b>paillasse</b>.' : 'Il reste les <b>paillasses</b> : 🔨 Construire.'), cible: () => construire('paillasse'), carte: () => ({ cases: casesAbriAPoser(state, 'paillasses') }) },
   houe: { texte: () => (atelierOuvertFenetre() ? 'Fabrique la <b>houe</b> : elle change l\'herbe en terre à cultiver.' : 'L\'abri est prêt, ta famille dormira au chaud ! Place au potager : fabrique une <b>houe</b> à l\'Atelier.'), ...fabrique(() => ['houe']) },
   graines: {
     texte: () => (stageWindow === 'inventaire' ? `Voici ton <b>inventaire</b> : tout ce que tu as ramassé et fabriqué, rangé par onglets. On t'offre ${Object.entries(DATA.DIDACTICIEL.GRAINES).map(([o, n]) => `${n} ${nomObjet(o)}`).join(', ')} pour ton premier potager : regarde l'onglet des <b>graines</b> !` : 'Un cadeau t\'attend dans ton <b>inventaire</b> : ouvre le menu, puis l\'Inventaire.'),

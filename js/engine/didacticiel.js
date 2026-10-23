@@ -1,8 +1,9 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, countItem } from './inventory.js';
-import { atelierOuvert } from './atelier.js';
-import { blocsPoses, couchages, piecesCloses } from './blocs.js';
+import { atelierOuvert, caseDepart } from './atelier.js';
+import { blocAt, blocsPoses, caseBatissable, couchages, piecesCloses } from './blocs.js';
+import { farmTerrain } from './terrain.js';
 import { hasHoe, soilCount } from './crops.js';
 import { aCruche, puitsPose } from './cruche.js';
 
@@ -60,6 +61,69 @@ export function planAbri(state) {
   const n = Math.max(1, state.famille.membres.length);
   return { murs: 2 * n + 5, porte: 1, paillasses: n };
 }
+
+// Où bâtir l'abri : le didacticiel allume ces cases sur la carte (étapes abri_construire et
+// paillasses). Une rangée de N cases (N paillasses) entourée de murs : { murs: [cases],
+// porte: case (au milieu du mur du bas), dedans: [cases] } ; null sans place. L'emplacement,
+// choisi près de l'Atelier sur de l'herbe libre (sans herbe haute si possible), est gardé dans
+// state.didacticiel.abri tant qu'il reste bâtissable (ce qui est déjà posé à sa place compte).
+export function planAbriCases(state) {
+  if (!state.didacticiel || !atelierOuvert(state)) return null;
+  const T = farmTerrain(state), W = T.LARGEUR, n = planAbri(state).paillasses;
+  const forme = (c, r) => {
+    const murs = [], dedans = [];
+    for (let dc = 0; dc < n + 2; dc++) { murs.push(r * W + c + dc); murs.push((r + 2) * W + c + dc); }
+    murs.push((r + 1) * W + c, (r + 1) * W + c + n + 1);
+    for (let k = 1; k <= n; k++) dedans.push((r + 1) * W + c + k);
+    const porte = (r + 2) * W + c + 1 + Math.floor((n - 1) / 2);
+    return { c, r, murs: murs.filter((t) => t !== porte), porte, dedans };
+  };
+  // une case du plan : libre, ou déjà ce qu'il y faut (un mur, la porte, une paillasse)
+  const tenable = (t, voulu, herbe) => {
+    const b = sorteDe(blocAt(state, t));
+    if (b) return voulu === 'mur' ? !!(b.mur || b.porte) : voulu === 'porte' ? !!b.porte || !!b.mur : blocAt(state, t) === 'paillasse';
+    return caseBatissable(state, t, { herbe });
+  };
+  const valable = (p, herbe) => p.murs.every((t) => tenable(t, 'mur', herbe)) && tenable(p.porte, 'porte', herbe)
+    && p.dedans.every((t) => tenable(t, 'paillasse', herbe)) && caseBatissable(state, p.porte + W, { herbe: true });
+  const g = state.didacticiel.abri;
+  if (g && g.n === n) {
+    const p = forme(g.c, g.r);
+    if (valable(p, true)) return p;
+  }
+  // près de l'Atelier (sinon de la case de départ), en spirale
+  const at = Object.entries(blocsPoses(state)).find(([, s]) => s === 'atelier');
+  const o = at ? Number(at[0]) : caseDepart(T);
+  const c0 = o % W, r0 = Math.floor(o / W);
+  for (const herbe of [false, true]) {
+    for (let d = 2; d <= 14; d++) {
+      for (let dr = -d; dr <= d; dr++) {
+        for (let dc = -d; dc <= d; dc++) {
+          if (Math.max(Math.abs(dr), Math.abs(dc)) !== d) continue;
+          const p = forme(c0 + dc, r0 + dr);
+          if (p.c < 1 || p.r < 1 || p.c + n + 2 >= W || p.r + 4 >= T.HAUTEUR) continue;
+          if (!valable(p, herbe)) continue;
+          state.didacticiel.abri = { c: p.c, r: p.r, n };
+          return p;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// Les cases de l'abri qui restent à poser : [{ case, sorte }] (sorte : mur_bois, porte,
+// paillasse), pour l'étape `etape` (abri_construire : murs et porte ; paillasses : les paillasses).
+export function casesAbriAPoser(state, etape) {
+  const p = planAbriCases(state);
+  if (!p) return [];
+  if (etape === 'paillasses') return p.dedans.filter((t) => blocAt(state, t) !== 'paillasse').map((t) => ({ case: t, sorte: 'paillasse' }));
+  const out = p.murs.filter((t) => { const b = sorteDe(blocAt(state, t)); return !(b && (b.mur || b.porte)); }).map((t) => ({ case: t, sorte: 'mur_bois' }));
+  if (blocAt(state, p.porte) !== 'porte') out.push({ case: p.porte, sorte: 'porte' });
+  return out;
+}
+
+const sorteDe = (sorte) => DATA.ATELIER.BLOCS[sorte] || null;
 
 // Combien de `sorte` on a : en main et posés.
 function possedes(state, sorte) {
