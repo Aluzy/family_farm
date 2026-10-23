@@ -40,10 +40,21 @@ si sa tuile la plus haute est bleue ; un arbre est un groupe de tuiles de 3 à 5
 à 6 de haut dans une couche dont le nom contient `tree` ou `arbre` (sauf `top`). Sur la carte
 actuelle : 70 cases d'eau, 39 arbres. Renommer ces couches fait disparaître feuilles et écureuils.
 
-## 3. Le chat
+## 3. Les animaux de compagnie (le chat, le chien)
 
-Les autres bêtes naissent au bord de la vue et repartent. Le chat, lui, reste : il a une position
-sur la carte, qu'on le regarde ou non, et une vraie planche d'images (`assets/chat.png`).
+Les autres bêtes naissent au bord de la vue et repartent. Les animaux de compagnie, eux, restent :
+ce sont ceux de la famille (Famille › animaux de compagnie, trois au plus), et seulement eux :
+sans animal adopté, il n'y a ni chat ni chien sur la carte. Chacun a une position sur la carte,
+qu'on le regarde ou non, et une vraie planche d'images. Le n-ième chat de la famille prend la
+n-ième robe (`assets/chat.png` roux, `chat_2.png` gris tigré, `chat_3.png` noir et blanc), de
+même pour les chiens (`chien.png` brun, `chien_2.png` noir et blanc, `chien_3.png` sable) :
+`petSheets` (js/engine/family.js) donne la planche de chacun, la scène les passe à l'ambiance
+(`setContext({ compagnons })`). `chat.png` est dessiné à la main ; les autres sortent de
+`scripts/compagnons/compagnons.py` (les chats : les couleurs de `chat.png` changées ; le chien :
+dessiné dans le script, mêmes 8 cases, sa case « leche » le montre qui halète).
+
+Le chien suit le même graphe que le chat, mais ne grimpe pas : la nuit, il dort en boule là où
+il est. Plusieurs chats partagent le toit, chacun décalé de quelques pixels.
 
 **Ce qu'il fait** est un graphe, `CAT_NEXT` : pour chaque activité, celles qui peuvent suivre, avec
 un poids.
@@ -193,16 +204,16 @@ Poulailler sont trop petits pour qu'elles restent à l'écart les unes des autre
 `farm-stage.js` appelle l'ambiance en quatre endroits et ne dépend pas d'elle :
 
 ```
-preload() this.load.spritesheet('chat', 'chat.png', { frameWidth: 16, frameHeight: 16 })
+preload() this.load.spritesheet('chat', 'chat.png', { frameWidth: 16, frameHeight: 16 })   // et chat_2, chat_3, chien, chien_2, chien_3
           this.load.spritesheet('vache', 'vache.png', { frameWidth: 32, frameHeight: 24 })   // et 'mouton', 'poule'
-create()  this.ambient = AmbientLife.attach(this, { world, map, tiles, objects, lightDepth, reduced, cat, herd })
+create()  this.ambient = AmbientLife.attach(this, { world, map, tiles, objects, lightDepth, reduced, herd })
 update()  this.ambient.update(delta)
-sync()    this.ambient.setContext({ hour, trees, folds, herd })   // jamais le modèle de vue
+sync()    this.ambient.setContext({ hour, trees, folds, herd, compagnons })   // jamais le modèle de vue
 tap()     this.ambient.scare(wx, wy)
 ```
 
-`cat` est le nom de la planche du chat si elle a été chargée. Sans `assets/chat.png`, il n'y a
-pas de chat et rien d'autre ne change. De même `herd` donne la planche de chaque espèce du
+`compagnons` est la liste des planches des animaux de la famille ; une planche absente n'est pas
+dessinée et rien d'autre ne change. De même `herd` donne la planche de chaque espèce du
 troupeau : une espèce sans planche n'est pas dessinée.
 
 L'ambiance ne lit ni l'état du jeu ni le modèle de vue, et ne déclenche aucune action.
@@ -221,9 +232,9 @@ Depuis la console, sur l'onglet Ferme :
 ```
 const a = FarmStage.scene().ambient
 a.spawn('oiseau')      // aussi : papillon, feuille, ecureuil, lucioles
-a.stats()              // bêtes présentes, date des prochaines naissances, ce que fait le chat
-a.chat('toilette')     // lance une activité du chat : debout, marche, course, assis, toilette, couche, sieste
-a.chat('nuit')         // l'envoie se coucher sur son toit (en plein jour, il se réveille aussitôt)
+a.stats()              // bêtes présentes, date des prochaines naissances, ce que font les animaux de compagnie
+a.chat('toilette')     // lance une activité de chaque animal : debout, marche, course, assis, toilette, couche, sieste
+a.chat('nuit')         // les envoie se coucher (un chat sur son toit ; en plein jour, il se réveille aussitôt)
 a.stats().troupeau     // ce que fait chaque bête ; a.stats().portes : 0 fermée, 2 ouverte
 ```
 

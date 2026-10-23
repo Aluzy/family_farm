@@ -4,7 +4,7 @@
    ========================================================================== */
 
 import {
-  addMember, addPet, adultCount, alertEvents, alertSnapshot, autoMaintain, autoTasks,
+  addMember, addPet, petSheets, adultCount, alertEvents, alertSnapshot, autoMaintain, autoTasks,
   averageHappiness, buildMorningReport, childCount, cleanFirstName, collectLeftovers,
   commerceNight, countItem, createInitialState, DATA, dishHappiness, energyMax, escapeHtml,
   familyNeed, feedFamily, feedLivestock, fillSilo, findMember, findPet, findPlot,
@@ -436,4 +436,15 @@ test('version 1.11 : le repas commence par un exemplaire des trois meilleurs pla
   setInv(t, { carotte: 40 });
   t.famille.reserve = {};
   assertEqual(Object.keys(planMeal(t).mange), ['carotte'], 'sans plat : rien ne change');
+});
+
+test('animaux de compagnie : chacun sa robe sur la carte, le n-ième chat (ou chien) prend la n-ième', () => {
+  const s = createInitialState(1);
+  s.famille.animaux = [];
+  assertEqual(petSheets(s), [], 'sans animal : ni chat ni chien sur la carte');
+  addPet(s, 'chat'); addPet(s, 'chien'); addPet(s, 'chat');
+  assertEqual(petSheets(s).map((p) => p.planche), ['chat', 'chien', 'chat_2']);
+  s.famille.animaux = [];
+  for (let k = 0; k < 3; k++) addPet(s, 'chien');
+  assertEqual(petSheets(s).map((p) => p.planche), ['chien', 'chien_2', 'chien_3']);
 });
