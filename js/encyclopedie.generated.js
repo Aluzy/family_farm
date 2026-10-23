@@ -577,7 +577,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "meubles",
      "terme": "Meubles",
-     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses et tableaux : ils s'achètent au Marché (rayon Meubles) et se posent dans la maison. Une grille aide à les placer ; les tableaux s'accrochent à un mur.",
+     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : ils s'achètent au Marché (rayon Meubles) et se posent dans la maison. Une grille aide à les placer ; les tableaux s'accrochent à un mur.",
      "liens": [
       "maison",
       "comptoir"
@@ -595,7 +595,30 @@ export const ENCYCLOPEDIE = {
       "objet:meuble_table_basse",
       "objet:meuble_tableau_1",
       "objet:meuble_tableau_2",
-      "objet:meuble_tableau_3"
+      "objet:meuble_tableau_3",
+      "objet:meuble_buffet",
+      "objet:meuble_commode",
+      "objet:meuble_armoire_chene",
+      "objet:meuble_armoire_peinte",
+      "objet:meuble_armoire_glace",
+      "objet:meuble_cuisine_porte",
+      "objet:meuble_cuisine_tiroirs",
+      "objet:meuble_cuisine_sauge",
+      "objet:meuble_poubelle",
+      "objet:meuble_bibliotheque",
+      "objet:meuble_bibliotheque_vitree",
+      "objet:meuble_lampadaire",
+      "objet:meuble_coffre_jouets",
+      "objet:meuble_plante_ficus",
+      "objet:meuble_plante_monstera",
+      "objet:meuble_plante_sansevieria",
+      "objet:meuble_plante_cactus",
+      "objet:meuble_plante_fougere",
+      "objet:meuble_plante_palmier",
+      "objet:meuble_plante_citronnier",
+      "objet:meuble_plante_orchidee",
+      "objet:meuble_plante_aloe",
+      "objet:meuble_plante_bonsai"
      ]
     },
     {
