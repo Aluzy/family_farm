@@ -2034,7 +2034,7 @@ main .ancre { scroll-margin-top: 150px; }
    modal-root). En pixel art (assets/hud), à la taille --hp de la carte du joueur : le hublot
    (40 × 40, le ciel de la nuit) et la lune dedans (21 × 21, 14 cases de lunes.png, --lf sa
    case) ; dessous, le bandeau beige du jour et du mois (ruban.png : ses bouts entaillés, le
-   milieu qui s'étire), à cheval sur le bas du hublot ; puis la plaque de l'heure. */
+   milieu qui s'étire), à cheval sur le bas du hublot ; la plaque de l'heure en haut à gauche. */
 .hud {
   --hp: var(--hud-px, 2px);
   position: fixed;
@@ -2099,17 +2099,25 @@ main .ancre { scroll-margin-top: 150px; }
 }
 .hud-day { white-space: nowrap; }
 .hud-month { font-weight: 600; }
-/* l'heure : la plaque au trait fin, les chiffres à 2 px de son bord (dessus, dessous, côtés) */
+/* l'heure : sa plaque à liseré de bois, en haut à gauche du hublot (un peu sur son anneau), dans la
+   police de la date, à distance du bord */
 .hud-heure {
+  position: absolute;
+  right: calc(26 * var(--hp));
+  top: calc(1 * var(--hp));
+  z-index: 1;
   display: flex;
   align-items: center;
-  margin-top: calc(2 * var(--hp));
-  padding: calc(2 * var(--hp)) calc(3 * var(--hp));
-  border: calc(2 * var(--hp)) solid transparent;
-  border-image: url('../assets/hud/heure.png') 2 fill / calc(2 * var(--hp)) stretch;
+  padding: 0 calc(3 * var(--hp));
+  border: calc(3 * var(--hp)) solid transparent;
+  border-image: url('../assets/hud/heure.png') 3 fill / calc(3 * var(--hp)) stretch;
   image-rendering: pixelated;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #4a2c14;
+  font-variant-numeric: tabular-nums;
 }
-.hud-heure .pxt { --p: var(--hp); --row: 0; } /* chiffres sombres sur la plaque, même en mode sombre */
 
 /* ---------- Calendrier lunaire (fenêtre) ---------- */
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 4px 0; }

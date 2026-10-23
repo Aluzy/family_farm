@@ -24,7 +24,8 @@
 #                décroissante du 8 au 12, nouvelle les 13 et 14) ;
 #   ruban.png    le bandeau beige du jour et du mois (28 × 12 : ses bouts entaillés en V,
 #                découpés à 5 px de chaque côté, le milieu s'étire en largeur seulement) ;
-#   heure.png    la plaque de l'heure, sous le bandeau (6 × 6, découpée en 9 : un trait fin, un relief).
+#   heure.png    la plaque de l'heure, en haut à gauche du hublot (8 × 8, découpée en 9 : un
+#                contour, un liseré de bois, un trait fin).
 #
 #   python3 scripts/icones/hud.py            écrit assets/hud/
 #   python3 scripts/icones/hud.py --apercu   écrit aussi apercu_hud.png (agrandi)
@@ -107,7 +108,9 @@ def plaque():
 
 
 def heure():
-    return neuf(6, ['o', ('#fff6dc', 'C')], 1, '#ffe6b2')
+    """La plaque de l'heure (8 × 8, 3 px de bord) : un contour, un liseré de bois (clair en haut
+    et à gauche, sombre en bas et à droite), un trait fin, le fond crème."""
+    return neuf(8, ['o', ('h', 'w'), 'o'], 1, '#ffe6b2')
 
 
 def tube():

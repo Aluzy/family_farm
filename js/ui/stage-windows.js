@@ -535,8 +535,8 @@ function playerGaugesHtml() {
 
 // Carte flottante en haut à droite, en pixel art (assets/hud, scripts/icones/hud.py) : un hublot
 // rond sur le ciel de la nuit, la lune dedans dans sa phase du jour (data/crops.json LUNE, 14 jours,
-// une image par jour) ; dessous, le jour et le mois (« Lun. 1 · Solaria ») sur un bandeau beige,
-// puis l'heure sur sa plaque. Un appui ouvre le Calendrier. L'heure avance par tranches de 10
+// une image par jour) ; l'heure sur sa plaque, en haut à gauche du hublot ; dessous, le jour et le
+// mois (« Lun. 1 · Solaria ») sur un bandeau beige. Un appui ouvre le Calendrier. L'heure avance par tranches de 10
 // minutes.
 function renderHud() {
   const h = heureDuJour();
@@ -548,10 +548,10 @@ function renderHud() {
   const label = `${formatDay(state.day)}, ${lune.nom.toLowerCase()}, ${horaire}. Ouvrir le calendrier`;
   morph(document.getElementById('hud'),
     `<button type="button" class="hud-cadran" data-action="stage-goto" data-window="calendrier" title="Calendrier" aria-label="${label}">` +
-      `<span class="hud-hublot" aria-hidden="true"><span class="hud-lune" style="--lf:${jour - 1}"></span></span>` +
+      `<span class="hud-hublot" aria-hidden="true"><span class="hud-lune" style="--lf:${jour - 1}"></span>` +
+        `<span class="hud-heure">${heure}h${String(minutes).padStart(2, '0')}</span></span>` +
       `<span class="hud-ruban" aria-hidden="true"><span class="hud-day">${weekdayShort(state.day)} <span class="num">${jour}</span></span><span>·</span>` +
-      `<span class="hud-month">${monthName(state.day)}</span></span>` +
-      `<span class="hud-heure" aria-hidden="true">${pxText(`${heure}h${String(minutes).padStart(2, '0')}`)}</span></button>`
+      `<span class="hud-month">${monthName(state.day)}</span></span></button>`
   );
 }
 
