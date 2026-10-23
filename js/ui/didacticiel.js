@@ -5,7 +5,7 @@
 // menu latéral, une entrée du menu, une case du menu Construire, une recette de l'Atelier, un outil
 // de la barre d'outils. Sur la carte, la scène entoure d'un cercle les objets à toucher (modèle :
 // surbrillance, js/carte/ferme/didacticiel.js) : les pierres, le bois, l'Atelier, le puits. En
-// haut à droite, sous le cadran, les compteurs (« 🪨 2 / 3 ») de ce qu'il reste à réunir. Les
+// haut à droite, sous le hublot, les compteurs (« 🪨 2 / 3 ») de ce qu'il reste à réunir. Les
 // étapes à lire ont un bouton « Suivant » ; les autres passent d'elles-mêmes quand leur objectif
 // est atteint (majDidacticiel, à chaque rendu). « Passer » arrête le didacticiel.
 

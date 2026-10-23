@@ -18,12 +18,13 @@
 #                sens des aiguilles d'une montre depuis le haut) ;
 #   piece.png    l'argent, posé sur le bout gauche de sa pastille.
 # La carte de droite (renderHud) :
-#   cadran.png   le cadran rond (56 × 56) : un anneau de bois fin, sur lequel tourne la lune
-#                (rayon RAINURE), l'intérieur transparent ;
-#   medaillon.png le médaillon ovale du jour et du mois (38 × 22), au milieu du cadran ;
-#   lunes.png    la lune, 14 cases de 17 × 17 : une par jour de la lunaison (data/crops.json
-#                LUNE : croissante du jour 1 au 5, pleine les 6 et 7, décroissante du 8 au 12,
-#                nouvelle les 13 et 14).
+#   hublot.png   le hublot rond (40 × 40) : un anneau de bois, un ciel de nuit étoilé dedans ;
+#   lunes.png    la lune du hublot, 14 cases de 21 × 21 : une par jour de la lunaison
+#                (data/crops.json LUNE : croissante du jour 1 au 5, pleine les 6 et 7,
+#                décroissante du 8 au 12, nouvelle les 13 et 14) ;
+#   ruban.png    le bandeau beige du jour et du mois (28 × 12 : ses bouts entaillés en V,
+#                découpés à 5 px de chaque côté, le milieu s'étire en largeur seulement) ;
+#   heure.png    la plaque de l'heure, sous le bandeau (6 × 6, découpée en 9 : un trait fin, un relief).
 #
 #   python3 scripts/icones/hud.py            écrit assets/hud/
 #   python3 scripts/icones/hud.py --apercu   écrit aussi apercu_hud.png (agrandi)
@@ -103,6 +104,10 @@ def fenetre():
 
 def plaque():
     return neuf(10, ['o', ('h', 'w'), 'm'], 1, '#ffe6b2')
+
+
+def heure():
+    return neuf(6, ['o', ('#fff6dc', 'C')], 1, '#ffe6b2')
 
 
 def tube():
@@ -273,60 +278,15 @@ def etoile_niveau():
     return im
 
 
-CADRAN, RAINURE, LUNE = 56, 24, 17
+LUNE = 17                                          # (la taille de référence des cratères)
 
 
-def cadran():
-    """Le cadran : un anneau de bois fin (contour, reflet en haut à gauche, contour), sur
-    lequel la lune tourne à cheval (rayon RAINURE). L'intérieur reste transparent : seul le
-    médaillon a un fond."""
-    S = CADRAN
-    c = (S - 1) / 2
-    im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-    for y in range(S):
-        for x in range(S):
-            d = math.hypot(x - c, y - c)
-            if d > 26.6 or d <= 22.6:
-                continue
-            haut = (x - c) + (y - c) < 0
-            if d > 25.6 or d <= 23.6:
-                col = PAL['o']
-            elif d > 24.6:
-                col = PAL['h'] if haut else PAL['w']
-            else:
-                col = PAL['m']
-            im.putpixel((x, y), rgb(col))
-    return im
-
-
-def medaillon():
-    """L'ovale du jour et du mois : contour, relief, fond crème."""
-    W, H = 38, 22
-    cx, cy = (W - 1) / 2, (H - 1) / 2
-    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    for y in range(H):
-        for x in range(W):
-            e = ((x - cx) / (W / 2)) ** 2 + ((y - cy) / (H / 2)) ** 2
-            if e > 1:
-                continue
-            bord = ((x - cx) / (W / 2 - 1)) ** 2 + ((y - cy) / (H / 2 - 1)) ** 2 > 1
-            relief = ((x - cx) / (W / 2 - 2)) ** 2 + ((y - cy) / (H / 2 - 2)) ** 2 > 1
-            if bord:
-                col = PAL['o']
-            elif relief:
-                col = PAL['h'] if y < cy else PAL['l']
-            else:
-                col = '#fff1d2'
-            im.putpixel((x, y), rgb(col))
-    return im
-
-
-def lune(p):
-    """La lune (17 × 17) à l'âge p de la lunaison (0 : nouvelle, 0,5 : pleine) : éclairée à
+def lune(p, S=LUNE, r=8.4):
+    """La lune (S × S, rayon r) à l'âge p de la lunaison (0 : nouvelle, 0,5 : pleine) : éclairée à
     droite quand elle croît, à gauche quand elle décroît ; la part sombre reste visible."""
-    S = LUNE
     c = (S - 1) / 2
-    r = 8.4
+    k = S / LUNE                                       # (les cratères, à l'échelle)
+    crateres = {(round(x * k), round(y * k)) for x, y in ((5, 9), (6, 9), (9, 5), (10, 11), (11, 11), (11, 10))}
     cosp = math.cos(2 * math.pi * p)
     im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
     for y in range(S):
@@ -342,7 +302,7 @@ def lune(p):
             eclaire = u > cosp if p <= 0.5 else u < -math.cos(2 * math.pi * p)
             if eclaire:
                 col = '#fff6c8' if (x - c) + (y - c) < -5 else ('#d8c47a' if (x - c) + (y - c) > 5 else '#f2e29a')
-                if (x, y) in ((5, 9), (6, 9), (9, 5), (10, 11), (11, 11), (11, 10)):
+                if (x, y) in crateres:
                     col = '#d8c47a'                     # des cratères
             else:
                 col = '#3a3658'
@@ -350,11 +310,71 @@ def lune(p):
     return im
 
 
+HUBLOT, GRANDE = 40, 21
+# les étoiles du ciel du hublot : (x, y, vive)
+ETOILES = [(9, 12, 1), (13, 7, 0), (27, 8, 1), (31, 14, 0), (8, 25, 0), (11, 30, 1), (29, 29, 1), (25, 33, 0), (20, 5, 0), (33, 22, 0), (6, 18, 0)]
+
+
+def hublot():
+    """Le hublot : un anneau de bois (contour, reflet en haut à gauche, bois, ombre en bas à
+    droite, un trait dedans), le ciel de nuit dedans, plus clair vers le bas, et ses étoiles."""
+    S = HUBLOT
+    c = (S - 1) / 2
+    im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    for y in range(S):
+        for x in range(S):
+            d = math.hypot(x - c, y - c)
+            if d > 19.6:
+                continue
+            haut = (x - c) + (y - c) < -6
+            bas = (x - c) + (y - c) > 6
+            if d > 18.6:
+                col = PAL['o']
+            elif d > 16.4:
+                col = PAL['h'] if haut else (PAL['w'] if bas else PAL['m'])
+            elif d > 15.4:
+                col = PAL['w']
+            else:
+                col = '#1c2246' if y < 13 else ('#232b55' if y < 26 else '#2c3664')
+            im.putpixel((x, y), rgb(col))
+    for x, y, vive in ETOILES:
+        im.putpixel((x, y), rgb('#fff6c8' if vive else '#8e98c8'))
+        if vive:
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                im.putpixel((x + dx, y + dy), rgb('#6a74a8'))
+    return im
+
+
+def ruban():
+    """Le bandeau du jour et du mois (28 × 12) : une bande beige, ses deux bouts entaillés en V,
+    un contour, un reflet en haut, une ombre en bas."""
+    W, H = 28, 12
+    forme = set()
+    for y in range(H):
+        e = 3.2 - abs(y - 5.5) * 0.75             # (l'entaille : 3 px au milieu, rien en haut et en bas)
+        for x in range(W):
+            if x >= e and W - 1 - x >= e:
+                forme.add((x, y))
+    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    for (x, y) in forme:
+        dehors = any((x + dx, y + dy) not in forme for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+        if dehors:
+            col = PAL['o']
+        elif y == 1:
+            col = '#fff6dc'
+        elif y == H - 2:
+            col = PAL['C']
+        else:
+            col = '#f6deb0'
+        im.putpixel((x, y), rgb(col))
+    return im
+
+
 def images():
     out = {
         'cadre': cadre(), 'fenetre': fenetre(), 'plaque': plaque(), 'tube': tube(), 'pastille': pastille(),
         'coeur': grille(COEUR), 'eclair': grille(ECLAIR), 'smiley': grille(SMILEY), 'etoile': grille(ETOILE),
-        'pousse': grille(POUSSE), 'piece': grille(PIECE),
+        'pousse': grille(POUSSE), 'piece': grille(PIECE), 'heure': heure(),
     }
     bande = Image.new('RGBA', (15 * 21, 15), (0, 0, 0, 0))
     for k in range(21):
@@ -365,12 +385,12 @@ def images():
         bande.paste(portrait(k * 5), (PORTRAIT * k, 0))
     out['portrait'] = bande
     out['niveau'] = etoile_niveau()
-    out['cadran'] = cadran()
-    out['medaillon'] = medaillon()
-    lunes = Image.new('RGBA', (LUNE * 14, LUNE), (0, 0, 0, 0))
+    out['hublot'] = hublot()
+    out['ruban'] = ruban()
+    grandes = Image.new('RGBA', (GRANDE * 14, GRANDE), (0, 0, 0, 0))
     for k in range(14):
-        lunes.paste(lune(((k + 1.5) / 14) % 1), (LUNE * k, 0))
-    out['lunes'] = lunes
+        grandes.paste(lune(((k + 1.5) / 14) % 1, GRANDE, 10.2), (GRANDE * k, 0))
+    out['lunes'] = grandes
     return out
 
 

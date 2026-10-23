@@ -1359,7 +1359,7 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
 /* ---------- le didacticiel d'une nouvelle partie (js/ui/didacticiel.js) ----------
    Une bulle de bois en bas de l'écran (en haut quand ce qu'elle montre est en bas), au-dessus
    des fenêtres de la carte ; ce qu'il faut toucher porte un anneau doré qui pulse ; sous le
-   cadran, en haut à droite, les compteurs de ce qu'il reste à réunir. */
+   hublot, en haut à droite, les compteurs de ce qu'il reste à réunir. */
 .didac-bulle {
   position: fixed;
   left: 16px;
@@ -2029,12 +2029,12 @@ main .ancre { scroll-margin-top: 150px; }
 /* FLU-11 : ce qui manque pour une action groupée, écrit sous les boutons */
 .group-note { flex: 1 0 100%; color: var(--danger); font-weight: 600; }
 
-/* ---------- Carte flottante en haut à droite : le cadran de la lune, le jour, l'heure ----------
+/* ---------- Carte flottante en haut à droite : la lune, le jour, l'heure ----------
    Sur tous les écrans, au-dessus de la carte de la ferme et sous les fenêtres (window-layer,
-   modal-root). En pixel art (assets/hud), à la taille --hp de la carte du joueur : le cadran
-   (56 × 56, un anneau fin, l'intérieur transparent), la lune (17 × 17, 14 cases de lunes.png) posée sur son anneau (--lx, --ly en
-   pixels du dessin, --lf sa case), le médaillon ovale (38 × 22) du jour et du mois, la plaque
-   de l'heure en bas à droite. */
+   modal-root). En pixel art (assets/hud), à la taille --hp de la carte du joueur : le hublot
+   (40 × 40, le ciel de la nuit) et la lune dedans (21 × 21, 14 cases de lunes.png, --lf sa
+   case) ; dessous, le bandeau beige du jour et du mois (ruban.png : ses bouts entaillés, le
+   milieu qui s'étire), à cheval sur le bas du hublot ; puis la plaque de l'heure. */
 .hud {
   --hp: var(--hud-px, 2px);
   position: fixed;
@@ -2045,61 +2045,68 @@ main .ancre { scroll-margin-top: 150px; }
   transition: opacity 0.2s;
 }
 .hud-cadran {
-  position: relative;
-  display: block;
-  width: calc(56 * var(--hp));
-  height: calc(56 * var(--hp));
-  margin: calc(5 * var(--hp)) calc(5 * var(--hp)) 0 0; /* la lune dépasse du cadran en haut et à droite */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 0;
   border: 0;
-  background: url('../assets/hud/cadran.png') no-repeat 0 0 / 100% 100%;
-  image-rendering: pixelated;
+  background: none;
   font: inherit;
   color: var(--wood-ink);
   cursor: pointer;
   pointer-events: auto;
 }
-.hud-cadran:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; border-radius: 50%; }
+.hud-cadran:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; border-radius: 6px; }
+.hud-hublot {
+  position: relative;
+  display: block;
+  width: calc(40 * var(--hp));
+  height: calc(40 * var(--hp));
+  background: url('../assets/hud/hublot.png') no-repeat 0 0 / 100% 100%;
+  image-rendering: pixelated;
+}
 .hud-lune {
   position: absolute;
-  left: calc(var(--lx) * var(--hp));
-  top: calc(var(--ly) * var(--hp));
-  width: calc(17 * var(--hp));
-  height: calc(17 * var(--hp));
+  left: calc(10 * var(--hp));
+  top: calc(10 * var(--hp));
+  width: calc(21 * var(--hp));
+  height: calc(21 * var(--hp));
   background: url('../assets/hud/lunes.png') no-repeat;
-  background-size: calc(238 * var(--hp)) 100%;
-  background-position: calc(var(--lf) * -17 * var(--hp)) 0;
+  background-size: calc(294 * var(--hp)) 100%;
+  background-position: calc(var(--lf) * -21 * var(--hp)) 0;
   image-rendering: pixelated;
 }
-.hud-medaillon {
-  position: absolute;
-  left: calc(9 * var(--hp));
-  top: calc(15 * var(--hp));
-  width: calc(38 * var(--hp));
-  height: calc(22 * var(--hp));
+/* le bandeau : 12 px de haut, ses bouts de 5 px ; il ne s'étire qu'en largeur */
+.hud-ruban {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: url('../assets/hud/medaillon.png') no-repeat 0 0 / 100% 100%;
+  box-sizing: border-box;
+  height: calc(12 * var(--hp));
+  margin-top: calc(-5 * var(--hp));
+  padding: 0 var(--hp) var(--hp);
+  border-style: solid;
+  border-width: 0 calc(5 * var(--hp));
+  border-color: transparent;
+  border-image: url('../assets/hud/ruban.png') 0 5 fill / 0 calc(5 * var(--hp)) stretch;
   image-rendering: pixelated;
+  gap: 0.3em;
+  white-space: nowrap;
+  font-size: 0.72rem;
   font-weight: 700;
-  line-height: 1.05;
+  color: #4a2c14;
   font-variant-numeric: tabular-nums;
 }
-.hud-day { font-size: 0.82rem; white-space: nowrap; }
-.hud-month { font-size: 0.66rem; font-weight: 600; color: #6a4426; }
+.hud-day { white-space: nowrap; }
+.hud-month { font-weight: 600; }
+/* l'heure : la plaque au trait fin, les chiffres à 2 px de son bord (dessus, dessous, côtés) */
 .hud-heure {
-  position: absolute;
-  right: calc(5 * var(--hp));
-  bottom: calc(7 * var(--hp));
   display: flex;
   align-items: center;
-  height: calc(11 * var(--hp));
-  box-sizing: border-box;
-  padding: 0 var(--hp);
-  border: calc(3 * var(--hp)) solid transparent;
-  border-image: url('../assets/hud/plaque.png') 3 fill / calc(3 * var(--hp)) stretch;
+  margin-top: calc(2 * var(--hp));
+  padding: calc(2 * var(--hp)) calc(3 * var(--hp));
+  border: calc(2 * var(--hp)) solid transparent;
+  border-image: url('../assets/hud/heure.png') 2 fill / calc(2 * var(--hp)) stretch;
   image-rendering: pixelated;
 }
 .hud-heure .pxt { --p: var(--hp); --row: 0; } /* chiffres sombres sur la plaque, même en mode sombre */
