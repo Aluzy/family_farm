@@ -49,7 +49,7 @@ export function energyDetailsHtml() {
       <span class="muted">Ce que coûte chaque action maintenant : ${costs}.</span>
       <span class="level-line"><span>💪 Endurance : avec ton niveau, tes actions coûtent</span><span class="num">${endu} % de moins</span></span>
       <span class="bar" role="progressbar" aria-label="Endurance" aria-valuemin="0" aria-valuemax="${P.ENDURANCE * (DATA.NIVEAUX.SEUILS.length - 1)}" aria-valuenow="${endu}"><span class="bar-fill" style="width:${Math.round((endu * 100) / (P.ENDURANCE * (DATA.NIVEAUX.SEUILS.length - 1)))}%"></span></span>
-      <span class="muted">Au réveil, l'énergie remonte à ${P.REVEIL_BASE} + ${P.REVEIL_REPAS} × la part du repas du soir couverte (repas complet : ${P.REVEIL_BASE + P.REVEIL_REPAS}). Un aliment mangé dans la journée rend ses calories ÷ ${P.MANGER_DIVISEUR}, depuis l'Inventaire.</span>
+      <span class="muted">Au réveil, l'énergie remonte à ${P.REVEIL_BASE} + ${P.REVEIL_REPAS} × la jauge de faim moyenne du reste de la famille au coucher (famille rassasiée : ${P.REVEIL_BASE + P.REVEIL_REPAS}). Un aliment mangé dans la journée, depuis l'Inventaire, rend son énergie ÷ ${P.MANGER_DIVISEUR}, + ${P.MANGER_BONUS} %, arrondie au-dessus.</span>
     </div>`;
 }
 

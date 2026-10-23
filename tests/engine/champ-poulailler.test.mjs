@@ -9,13 +9,13 @@ import {
   DATA, expiringSoon, feedAllHens, feedHen, fillSilo, findPlot, formatQty, freeCowPlaces,
   fridgeCount, harvest, inventoryCounts, isFridgeable, isGraineComptoir, isMature, isUnlocked,
   layEggs, lotsOf, marketFloor, migrate, migrateWheatAndReserve, moveAllToFridge, moveToFridge,
-  planMeal, plant, plantableCrops, readyCrops, scaleEnergie, seedStock, sellItem, shelfLife,
+  depenserMembre, mangerMembre, mangeurs, plant, plantableCrops, readyCrops, scaleEnergie, seedStock, sellItem, shelfLife,
   siloCapacity, siloUpgradeCost, sleep, stableFree, startFarm, startHousehold, STATE_VERSION,
   storeWheat, testAddHens, testAddSeeds, testAddWheat, testRipenAll, testSetLevel,
   upgradePoulailler, upgradeSilo, water, wheatForHens, wheatTotal, zoneTile,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, fillCows, fillSheep, garden, growZone, ml, pature, ranch, reach, setInv,
+  affamer, assert, assertEqual, fillCows, fillSheep, garden, growZone, ml, pature, ranch, reach, setInv,
   test,
 } from './aide.mjs';
 
@@ -437,20 +437,17 @@ test('le blé et les graines de tournesol ne sont pas des aliments de la famille
   const s = ranch();
   setInv(s, { ble: 50, graine_tournesol: 50 });
   s.silo.ble = 20;
-  const plan = planMeal(s);
-  assertEqual(plan.mange, {});
-  assertEqual(plan.energie, 0);
+  affamer(s);
+  assertEqual([s.repasJour.mange, s.repasJour.energie], [{}, 0]);
 });
 
-test('la famille mange les œufs (13 énergie) : ils périment avant les conserves', () => {
+test('la famille mange les œufs (valeur 3) : ils périment avant les conserves', () => {
   const s = ranch();
   setInv(s, { oeuf: 4, conserve: 200 });
-  const plan = planMeal(s);
-  assertEqual(plan.mange.oeuf, 4);
-  // Lot 11 (nutrition) : œuf 13, conserve 25.
-  const conserves = Math.ceil((150 - 4 * DATA.OBJETS.oeuf.energie) / DATA.OBJETS.conserve.energie);
-  assertEqual(plan.mange.conserve, conserves);
-  assertEqual(plan.energie, 4 * DATA.OBJETS.oeuf.energie + conserves * DATA.OBJETS.conserve.energie);
+  const m = mangeurs(s)[0];
+  depenserMembre(s, m.id, 80);
+  // de 20 : 4 œufs (12), puis 12 conserves (72) : 104
+  assertEqual(Object.entries(mangerMembre(s, m).mange), [['oeuf', 4], ['conserve', 12]]);
 });
 
 test('migration v4 (Lot 3) → v5 : Silo et Poulailler apparaissent (plus de Champ), la partie est gardée', () => {

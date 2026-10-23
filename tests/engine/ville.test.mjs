@@ -4,15 +4,15 @@
    ========================================================================== */
 
 import {
-  addItem, advanceHours, applyMealHappiness, averageHappiness, awakeMsAtHour, buyCompany,
+  addItem, advanceHours, averageHappiness, bonheurRepas, awakeMsAtHour, buyCompany,
   buyInShop, buyInTown, buyItem, companiesStep, dishHappiness, companyPlan, countItem, createInitialState, DATA, findPlot,
   goOut, goToTownMarket, happinessCostPct, hourOfDay, isBuyable, isPerishable, mealHappinessDelta,
   memberHappiness, migrate, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus,
-  ownsCompany, plant, removeMember, sellInTown, setCompanyQuota, shopPrice, shopView, STATE_VERSION, takeMeal, tick,
+  ownsCompany, plant, removeMember, sellInTown, setCompanyQuota, shopPrice, shopView, STATE_VERSION, tick,
   townItems, townMarketOpen, townSellable, townSellList, townSellPrice, water,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, auto5, garden, setInv, test,
+  affamer, assert, assertEqual, auto5, garden, setInv, sleepOnce, test,
 } from './aide.mjs';
 
 /* ---------- version 1.5 : bonheur, sorties, marché de la ville ---------- */
@@ -26,18 +26,19 @@ test('bonheur : chaque membre part à DEPART ; repas cru ou cuisiné', () => {
   assertEqual(mealHappinessDelta({ mange: { gratin_patates: 2 }, couverture: 100 }), -5 + 5, 'un plat du Four');
   assertEqual(mealHappinessDelta({ mange: { carotte: 1 }, couverture: 40 }), -5 + B.FAIM, 'cru et pas assez');
   assertEqual(mealHappinessDelta({ mange: {}, couverture: 0 }), -5 + B.FAIM, 'rien mangé');
-  const d = applyMealHappiness(s, { mange: { tarte_pommes: 1, pain: 1, omelette: 1 }, couverture: 100 });
+  const d = bonheurRepas(s, { tarte_pommes: 1, pain: 1, omelette: 1 });
   assertEqual(d, -5 + 7 + 5 + 5);
   assertEqual(averageHappiness(s), 72);
   assertEqual(happinessCostPct(s), 64);
 });
 
-test('bonheur : le repas de 19 h le fait varier et le note dans state.repas', () => {
+test('bonheur : la nuit le fait varier selon ce que la famille a mangé, et le note dans son compte rendu', () => {
   const s = garden();
-  setInv(s, { carotte: 40 });
+  setInv(s, { carotte: 200 });
   const avant = averageHappiness(s);
-  takeMeal(s);
-  assertEqual(s.repas.bonheur, DATA.VILLE.BONHEUR.DECLIN);
+  affamer(s);
+  sleepOnce(s);
+  assertEqual(s.nuit.bonheur, DATA.VILLE.BONHEUR.DECLIN);
   assertEqual(averageHappiness(s), avant + DATA.VILLE.BONHEUR.DECLIN);
 });
 
@@ -86,7 +87,7 @@ test('sorties : le temps passe (les panneaux produisent), sans repas ni nuit', (
   advanceHours(s, 2);
   assertEqual(s.awakeMs, 2 * DATA.TEMPS.SECONDES_PAR_HEURE * 1000);
   assertEqual(s.day, day);
-  assertEqual(s.repas, null);
+  assertEqual(s.repasJour.energie, 0, 'personne n\'a eu faim : rien n\'est mangé');
 });
 
 test('sorties : pendant l\'absence, les plantes poussent et les asperseurs arrosent (le même pas que tick)', () => {

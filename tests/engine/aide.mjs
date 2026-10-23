@@ -13,7 +13,7 @@ import {
   addItem, awakeMsAtHour, buildFridge, buildPaturage, buildPoulailler, buildSilo, buildStation,
   buyCow, buySheep, countItem, createInitialState, DATA, defaultOrigin, findPlot, grantTech,
   growDue, irrigate, makePlot, maxStage, openStation, plant, plotAtTile, robotStep, shelfLife,
-  sleep, takeItem, testFillBatteries, testGoToChapter, testSetBuildingLevel5, tick, unlockLevel,
+  depenserMembre, mangeurs, repasStep, sleep, takeItem, testFillBatteries, testGoToChapter, testSetBuildingLevel5, tick, unlockLevel,
   zoneTile,
 } from '../../js/engine/index.js';
 
@@ -258,14 +258,21 @@ export function atChapter(n) {
   return s;
 }
 
-// Une nuit avec exactement `qty` unités de `item` d'origine « produit » au menu
-// (jamais gardées en réserve), plus des conserves pour le reste. `item` vaut
-// patate par défaut (19 d'énergie depuis le Lot 11) ; un autre item (ex.
-// courgette, 10 d'énergie) permet d'atteindre des pourcentages d'autonomie
-// précis que les multiples de 19 ne permettent pas.
+// La famille a faim : chaque membre (sauf le personnage) dépense `points` de sa jauge
+// (FAMILLE.FAIM), puis ceux qui sont au seuil vont manger (repasStep).
+export function affamer(s, points = DATA.FAMILLE.FAIM.MAX - DATA.FAMILLE.FAIM.SEUIL) {
+  for (const m of mangeurs(s)) depenserMembre(s, m.id, points);
+  repasStep(s);
+}
+
+// Une nuit où la famille a eu faim (chaque membre au seuil, puis rassasié : 3 membres ×
+// 80 points), avec exactement `qty` unités de `item` d'origine « produit » au menu, plus des
+// conserves pour le reste. `item` : patate par défaut (valeur 5, mangée avant les conserves
+// qui ne périment pas) ; un autre item (ex. courgette, valeur 3) donne d'autres pourcentages.
 export function nightWithProduced(s, qty, item = 'patate') {
   s.famille.reserve = {};
-  setInv(s, { [item]: qty, conserve: 30 });
+  setInv(s, { [item]: qty, conserve: 60 });
+  affamer(s);
   return sleepOnce(s);
 }
 

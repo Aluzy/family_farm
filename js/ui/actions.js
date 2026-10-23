@@ -24,7 +24,7 @@ export const SOMMEIL_PERMISES = new Set([
   'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'entreprise-quota', 'meuble-annule', 'meuble-place',
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
-  'plant', 'water', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
+  'plant', 'boite-deposer', 'boite-reprendre', 'water', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
   'sell-item', 'buy-item', 'buy-animal', 'buy-meuble', 'buy-ruche', 'buy-dehors', 'plant-tree', 'plant-all', 'hoe-many', 'commerce-choose',
   'commerce-upgrade', 'commerce-quota-dec', 'commerce-quota-inc', 'commerce-quota-max', 'harvest-tree', 'ville-go',
   'ville-market', 'ville-buy', 'buy-pasture', 'mill-start', 'mill-cancel', 'repair-house', 'buy-starter',

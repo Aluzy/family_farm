@@ -1,14 +1,12 @@
 import { DATA } from './catalog.js';
-import { applyMealHappiness, dishHappiness, memberHappiness } from './ville.js';
-import { EPS, floorPercent } from './base.js';
+import { memberHappiness } from './ville.js';
 import { fail } from './devices.js';
-import { hourOfDay } from './clock.js';
-import { countItem, nextExpiry, takeItem } from './inventory.js';
+import { countItem, takeItem } from './inventory.js';
 import { fridgeCount, takeFromFridge } from './fridge.js';
 import { newStableReport } from './animals.js';
 import { energyMax, snackEnergy } from './stamina.js';
 import { newAutoReport } from './automation.js';
-import { autonomyPercent } from './campaign.js';
+import { affames, bonheurRepas, jaugeFamille, repasCoucher, repasJour } from './repas.js';
 
 /* ---------- Lot 2 : famille (version 1.8 : plus de santé) ---------- */
 
@@ -170,7 +168,7 @@ function nextFamilyNumber(state, type) {
 
 // Ajoute un membre à la famille : un adulte, ou un enfant si `enfant` est vrai.
 // Refusé au-delà de MEMBRES_MAX. Le nouveau venu arrive avec le bonheur moyen de
-// la famille. Son besoin s'ajoute dès le prochain repas.
+// la famille. Il arrive rassasié (sa jauge de faim pleine : repas.js).
 export function addMember(state, enfant = false) {
   const C = DATA.FAMILLE.COMPOSITION;
   const f = state.famille;
@@ -180,7 +178,7 @@ export function addMember(state, enfant = false) {
   const m = makeMember({ id: `${type}-${n}`, nom: `${enfant ? 'Enfant' : 'Adulte'} ${n}`, enfant: !!enfant });
   if (f.membres.length) m.bonheur = Math.round(f.membres.reduce((t, x) => t + memberHappiness(x), 0) / f.membres.length);
   f.membres.push(m);
-  return { ok: true, id: m.id, besoin: familyNeed(state) };
+  return { ok: true, id: m.id };
 }
 
 // Pourquoi un membre ne peut pas quitter la famille (texte), ou '' s'il le peut :
@@ -196,14 +194,13 @@ export function memberRemovalBlock(state, id) {
   return '';
 }
 
-// Retire un membre de la famille (voir memberRemovalBlock). Son besoin disparaît
-// dès le prochain repas ; un repas déjà pris aujourd'hui n'est pas refait.
+// Retire un membre de la famille (voir memberRemovalBlock).
 export function removeMember(state, id) {
   const raison = memberRemovalBlock(state, id);
   if (raison) return fail(raison);
   const f = state.famille;
   f.membres = f.membres.filter((m) => m.id !== id);
-  return { ok: true, id, besoin: familyNeed(state) };
+  return { ok: true, id };
 }
 
 /* -- animaux de compagnie -- */
@@ -245,7 +242,7 @@ export function petIcon(espece) {
 }
 
 // Adopte un chien ou un chat : refusé au-delà de COMPAGNIE.MAX. Gratuit, et sans
-// effet sur le besoin journalier ni sur le bonheur.
+// effet sur les repas de la famille ni sur le bonheur.
 export function addPet(state, espece) {
   const K = DATA.FAMILLE.COMPAGNIE;
   if (!K.ESPECES[espece]) return fail('Cet animal ne s\'adopte pas.');
@@ -286,91 +283,6 @@ export function removePet(state, id) {
   return { ok: true, id };
 }
 
-export function familyNeed(state) {
-  return state.famille.membres.reduce((t, m) => t + DATA.FAMILLE.AJ[m.enfant ? 'enfant' : 'adulte'], 0);
-}
-
-// Aliments dans l'ordre où la famille les mange : d'abord ce qui périme le plus
-// tôt (lot le plus ancien de chaque item ; ce qui ne périme pas passe en
-// dernier, donc les conserves), puis par énergie décroissante.
-// (la péremption de chaque aliment est lue une fois, pas à chaque comparaison du tri : même
-// ordre, l'aperçu du repas est recalculé à chaque rendu)
-export function mealOrder(state) {
-  const keys = Object.keys(DATA.OBJETS).filter((k) => DATA.OBJETS[k].mangeable);
-  const expiry = new Map(keys.map((k) => [k, nextExpiry(state, k)]));
-  return keys.sort((a, b) => {
-    const ea = expiry.get(a);
-    const eb = expiry.get(b);
-    if (ea !== eb) return ea < eb ? -1 : 1;
-    return DATA.OBJETS[b].energie - DATA.OBJETS[a].energie;
-  });
-}
-
-// Lot 8 : les stocks que la famille peut manger, dans l'ordre du repas. Une
-// entrée par aliment de l'inventaire (rang = nuits avant péremption) et une par
-// aliment du frigo (rang infini : au frais, il ne périme pas). Les entrées de
-// même rang passent par énergie décroissante, l'inventaire avant le frigo.
-// La réserve de semences protège d'abord l'inventaire (c'est là qu'on prend les
-// plants), puis le frigo.
-function mealEntries(state) {
-  const entries = [];
-  for (const item of mealOrder(state)) {
-    const reserve = state.famille.reserve[item] || 0;
-    const inv = countItem(state, item);
-    const cold = fridgeCount(state, item);
-    const invSpare = Math.max(0, inv - reserve);
-    const coldSpare = Math.max(0, cold - Math.max(0, reserve - inv));
-    if (invSpare > 0) entries.push({ item, froid: false, spare: invSpare, rank: nextExpiry(state, item) });
-    if (coldSpare > 0) entries.push({ item, froid: true, spare: coldSpare, rank: Infinity });
-  }
-  return entries.sort((a, b) => {
-    if (a.rank !== b.rank) return a.rank < b.rank ? -1 : 1;
-    return DATA.OBJETS[b.item].energie - DATA.OBJETS[a.item].energie;
-  });
-}
-
-// Repas de la nuit, calculé sans rien modifier (sert aussi à l'aperçu de
-// Dormir). Les quantités de la réserve de semences ne sont jamais mangées.
-// `mange` : total par aliment ; `froid` : la part prise dans le frigo (Lot 8).
-export function planMeal(state) {
-  const need = familyNeed(state);
-  let covered = 0;
-  const mange = {};
-  const froid = {};
-  const entries = mealEntries(state);
-  // Version 1.11 : d'abord un exemplaire de chacun des PLATS_MAX meilleurs plats (ceux qui
-  // rendent le plus de bonheur), même si le premier suffit à couvrir le besoin : la famille
-  // goûte à tout ; puis le reste dans l'ordre habituel.
-  const vus = new Set();
-  const plats = entries
-    .filter((e) => dishHappiness(e.item) > 0)
-    .sort((a, b) => dishHappiness(b.item) - dishHappiness(a.item))
-    .filter((e) => (vus.has(e.item) ? false : vus.add(e.item)))
-    .slice(0, DATA.VILLE.BONHEUR.PLATS_MAX);
-  for (const entry of plats) {
-    mange[entry.item] = (mange[entry.item] || 0) + 1;
-    if (entry.froid) froid[entry.item] = (froid[entry.item] || 0) + 1;
-    entry.spare -= 1;
-    covered += DATA.OBJETS[entry.item].energie;
-  }
-  for (const entry of entries) {
-    if (covered >= need - EPS) break;
-    const energy = DATA.OBJETS[entry.item].energie;
-    const n = Math.min(entry.spare, Math.ceil((need - covered) / energy - EPS));
-    if (n <= 0) continue;
-    mange[entry.item] = (mange[entry.item] || 0) + n;
-    if (entry.froid) froid[entry.item] = (froid[entry.item] || 0) + n;
-    covered += n * energy;
-  }
-  return {
-    besoin: need,
-    energie: covered,
-    mange,
-    froid,
-    couverture: need > 0 ? floorPercent(covered, need) : 100, // %
-  };
-}
-
 // La nuit du frigo : mWh prélevés, panne de froid, lots qui ont perdu une nuit.
 export function newFridgeNightStats() {
   return { mwh: 0, panne: false, vieillis: false };
@@ -380,62 +292,34 @@ export function newNightStats() {
   return { besoin: 0, energie: 0, couverture: 100, mange: {}, perdus: {}, oeufs: 0, lait: 0, etable: newStableReport(), termine: {}, auto: newAutoReport(), fruits: {}, frigo: newFridgeNightStats(), energieProduit: 0, autonomie: 0, pluie: 0, entretiens: [] };
 }
 
-// Le repas de la famille, puis son bonheur. Version 1.1.1 : il se prend à 19 h
-// (mealDue) ; si la famille se couche avant, il est pris au coucher (feedFamily).
-// Le compte du repas est gardé dans state.repas jusqu'à la nuit, qui le recopie
-// dans son compte rendu : un seul repas par jour, quoi qu'il arrive.
-export function takeMeal(state) {
-  if (state.repas) return fail('La famille a déjà pris son repas aujourd\'hui.');
-  const plan = planMeal(state);
-  // Lot 9 : énergie mangée qui vient de lots d'origine « produit » (autonomie).
-  let produit = 0;
-  for (const [item, n] of Object.entries(plan.mange)) {
-    const cold = plan.froid[item] || 0;
-    const pieces = [];
-    takeItem(state, item, n - cold, pieces);
-    if (cold > 0) takeFromFridge(state, item, cold, pieces);
-    for (const p of pieces) {
-      if (p.origin === DATA.ORIGINE.PRODUIT) produit += p.qty * DATA.OBJETS[item].energie;
-    }
-  }
-  const bonheur = applyMealHappiness(state, plan); // version 1.5 : plats cuisinés → bonheur
-  state.repas = {
-    heure: hourOfDay(state),
-    besoin: plan.besoin,
-    energie: plan.energie,
-    couverture: plan.couverture,
-    mange: plan.mange,
-    bonheur,
-    energieProduit: produit,
-    autonomie: autonomyPercent(produit, plan.besoin),
-  };
-  return { ok: true, repas: state.repas };
-}
-
-// Première étape nocturne : le repas s'il n'a pas été pris à 19 h, puis son
-// compte recopié dans celui de la nuit. Version 1.8 : la couverture du repas
-// note l'énergie du personnage (elle remonte en dormant : recoverInSleep).
+// Première étape nocturne : les enfants mangent au coucher (s'ils ne l'ont pas fait), puis ce
+// que la famille a mangé dans la journée à la boîte à nourriture ou au frigo (repas.js) est
+// recopié dans le compte rendu de la nuit : points mangés (besoin, énergie), dont ceux qui
+// viennent de la ferme (autonomie), jauge moyenne au coucher (couverture : elle règle le
+// réveil), bonheur des plats et faim de ceux qui n'ont rien trouvé.
 export function feedFamily(state) {
-  if (!state.repas) takeMeal(state);
-  const { heure, ...repas } = state.repas;
-  state.repas = null;
-  state.nuit = {
-    ...repas,
-    termine: {},
-    perdus: {},
-    oeufs: 0,
-    auto: newAutoReport(),
-    fruits: {},
-    frigo: newFridgeNightStats(),
-  };
+  repasCoucher(state);
+  const R = repasJour(state);
+  const faim = affames(state);
+  const bonheur = bonheurRepas(state, R.mange);
+  for (const m of state.famille.membres) delete m.affame;
+  Object.assign(state.nuit, {
+    besoin: R.energie,
+    energie: R.energie,
+    couverture: jaugeFamille(state),
+    mange: { ...R.mange },
+    bonheur,
+    energieProduit: R.produit,
+    affames: faim,
+  });
+  state.repasJour = null;
   // l'énergie ne remonte plus d'un coup à minuit : en dormant, peu à peu (recoverInSleep)
   state.nuit.energieReveil = state.energie;
   return state.nuit;
 }
 
 // Version 1.8 : manger un aliment en journée (inventaire d'abord, puis frigo) rend
-// de l'énergie au personnage (snackEnergy), jusqu'au maximum. L'aliment sort des
-// réserves : la famille ne le mangera pas ce soir.
+// de l'énergie au personnage (snackEnergy), jusqu'au maximum.
 export function eatSnack(state, item) {
   const def = DATA.OBJETS[item];
   if (!def || !def.mangeable) return fail('Cela ne se mange pas.');

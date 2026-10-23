@@ -318,7 +318,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "refrigerateur",
      "terme": "Réfrigérateur",
-     "description": "Bâtiment qui empêche les aliments et plats qui y sont rangés de périmer. Il contient 25 unités au niveau 1, puis 40, 60, 90 et 120 en l'agrandissant (300, 700, 1 500 et 3 000 pièces) ; plein, on ne peut plus rien y ranger. Il consomme 100 mWh/s par unité stockée (rien s'il est vide), jour et nuit, prélevés sur la batterie ; si celle-ci se vide, le froid manque et le contenu peut recommencer à périmer.",
+     "description": "Bâtiment où la famille mange quand il est construit (la boîte à nourriture revient dans l'Inventaire), et qui empêche les aliments et plats qui y sont rangés de périmer. Il contient 25 unités au niveau 1, puis 40, 60, 90 et 120 en l'agrandissant (300, 700, 1 500 et 3 000 pièces) ; plein, on ne peut plus rien y ranger. Il consomme 100 mWh/s par unité stockée (rien s'il est vide), jour et nuit, prélevés sur la batterie ; si celle-ci se vide, le froid manque et le contenu peut recommencer à périmer.",
      "liens": [
       "batterie",
       "peremption"
@@ -1148,7 +1148,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "conserve",
      "terme": "Boîte de conserve",
-     "description": "Aliment non périssable présent dès le début de la partie (40 boîtes), qui laisse le temps de lancer les premières cultures avant que la famille ne manque de nourriture. Ne peut pas être racheté une fois épuisé, et ne compte pas pour l'autonomie. À ne pas confondre avec le bocal de légumes, ni avec les boîtes de la Conserverie de la ville, vendues aussitôt.",
+     "description": "Aliment non périssable présent dès le début de la partie (40 boîtes), qui laisse le temps de lancer les premières cultures avant que la boîte à nourriture ne soit vide. Ne peut pas être racheté une fois épuisé, et ne compte pas pour l'autonomie. À ne pas confondre avec le bocal de légumes, ni avec les boîtes de la Conserverie de la ville, vendues aussitôt.",
      "liens": [
       "apport_journalier",
       "potager",
@@ -1172,8 +1172,8 @@ export const ENCYCLOPEDIE = {
     },
     {
      "id": "apport_journalier",
-     "terme": "Apport journalier",
-     "description": "Besoin quotidien en énergie de la famille : 50 par adulte et 25 par enfant, soit 150 pour la famille de départ (deux adultes, deux enfants). Il suit la composition de la famille ; les animaux de compagnie n'y comptent pas. Il doit être couvert par les aliments du repas de 19 h pour que le personnage se réveille avec toute son énergie.",
+     "terme": "Faim de la famille",
+     "description": "Chaque membre de la famille, sauf le personnage principal, a une jauge de faim de 0 à 100 (dans la fenêtre Famille). Elle baisse quand il marche sur la carte (1 point tous les 100 pixels) et quand il aide aux bêtes (5 points par tâche). À 20, il va manger jusqu'à 100 dans la boîte à nourriture (ou au réfrigérateur) ; s'il n'y trouve rien, il a faim et perd du bonheur la nuit. Les jours d'école, les enfants rentrent avec au plus 80 et mangent jusqu'à 100 avant d'aller dormir. Les animaux de compagnie n'y comptent pas.",
      "liens": [
       "famille",
       "adulte",
@@ -1250,7 +1250,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "gratin_de_patates",
      "terme": "Gratin de patates",
-     "description": "Plat cuit au four à partir de patates et d'œuf, dont la valeur nutritionnelle est fixée pour couvrir à elle seule tout l'apport journalier d'une famille.",
+     "description": "Plat cuit au four à partir de patates et d'œuf, dont la valeur nutritionnelle est élevée : il rassasie à lui seul un membre affamé.",
      "liens": [
       "four",
       "patate",
@@ -2008,7 +2008,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "horloge",
      "terme": "Horloge",
-     "description": "La journée va de 6 h à 22 h, la nuit de 22 h à 6 h ; une heure dure 30 secondes. À 19 h, la famille prend son repas ; à 22 h, elle va se coucher et reste à la maison, et la nuit défile à la même vitesse. La nuit n'empêche pas d'agir : seul le sommeil du personnage bloque les actions. À minuit, la nuit passe (ponte, lait, récolte automatique…) et le jour change ; à 6 h, c'est le réveil. L'horloge s'arrête quand le jeu est fermé.",
+     "description": "La journée va de 6 h à 22 h, la nuit de 22 h à 6 h ; une heure dure 30 secondes. À 22 h, la famille va se coucher et reste à la maison, et la nuit défile à la même vitesse. La nuit n'empêche pas d'agir : seul le sommeil du personnage bloque les actions. À minuit, la nuit passe (ponte, lait, récolte automatique…) et le jour change ; à 6 h, c'est le réveil. L'horloge s'arrête quand le jeu est fermé.",
      "liens": [
       "repas",
       "bouton_dormir",
@@ -2020,8 +2020,8 @@ export const ENCYCLOPEDIE = {
     },
     {
      "id": "repas",
-     "terme": "Repas de 19 h",
-     "description": "Chaque jour à 19 h, la famille mange : d'abord ce qui périme le plus tôt, jusqu'à couvrir l'apport journalier. La part couverte fixe l'énergie du personnage au réveil, et le repas (cru ou cuisiné, suffisant ou non) fait varier le bonheur. Il n'y a jamais qu'un repas par jour.",
+     "terme": "Boîte à nourriture",
+     "description": "Bloc fabriqué à l'Atelier (3 planches) et posé dans une pièce close du foyer. Le joueur la remplit depuis l'Inventaire (un appui sur la boîte) : 6 aliments différents au plus, 10 de chacun. Les membres qui ont faim y mangent, d'abord ce qui périme le plus tôt ; ce qu'elle contient périme comme dans l'Inventaire. Chaque aliment rend sa valeur : son énergie ÷ 5, + 10 %, arrondie au-dessus. Une fois le réfrigérateur construit, la boîte revient dans l'Inventaire avec son contenu et la famille mange au frigo.",
      "liens": [
       "apport_journalier",
       "energie_personnage",
@@ -2050,7 +2050,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "energie_personnage",
      "terme": "Énergie du personnage",
-     "description": "Jauge de 0 à 100 (⚡ dans le bandeau) que dépense chaque action faite au clic : couper 3, piocher 3, pêcher 4, labourer 5, planter 3, arroser 2, récolter 4, cueillir 4, tondre 8, cuisiner 3, cuire au four 3, moudre 1 par blé, presser 1. À 0, plus d'action au clic jusqu'à un en-cas ou une nuit de sommeil. Au réveil, elle remonte à 60 + 40 × la part du repas du soir couverte. Le bonheur de la famille et l'endurance réduisent ses coûts ; les automatisations n'en dépensent pas.",
+     "description": "Jauge de 0 à 100 (⚡ dans le bandeau) que dépense chaque action faite au clic : couper 3, piocher 3, pêcher 4, labourer 5, planter 3, arroser 2, récolter 4, cueillir 4, tondre 8, cuisiner 3, cuire au four 3, moudre 1 par blé, presser 1. À 0, plus d'action au clic jusqu'à un en-cas ou une nuit de sommeil. Au réveil, elle remonte à 60 + 40 × la jauge de faim moyenne du reste de la famille au coucher : une famille rassasiée, un meilleur réveil. Le bonheur de la famille et l'endurance réduisent ses coûts ; les automatisations n'en dépensent pas.",
      "liens": [
       "repas",
       "en_cas",
@@ -2078,7 +2078,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "en_cas",
      "terme": "En-cas",
-     "description": "Aliment mangé dans la journée depuis l'Inventaire (bouton « Manger ») : il rend son énergie ÷ 5 au personnage, sans dépasser le maximum. La technologie Goûter de l'Arbre des technologies augmente ce gain de 50 %.",
+     "description": "Aliment mangé dans la journée depuis l'Inventaire (bouton « Manger ») : il rend sa valeur au personnage (son énergie ÷ 5, + 10 %, arrondie au-dessus : la même qu'à la boîte à nourriture), sans dépasser le maximum. La technologie Goûter de l'Arbre des technologies augmente ce gain de 50 %.",
      "liens": [
       "energie_personnage",
       "arbre_technologique"
@@ -2090,7 +2090,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "bonheur",
      "terme": "Bonheur",
-     "description": "Valeur de 0 à 100 pour chaque membre de la famille (60 au départ). Chaque soir, au repas, il baisse de 5, et de 2 de plus si le repas ne couvre pas le besoin ; les plats du repas le remontent : chacun des 3 meilleurs plats différents rend 3 (Cuisine) ou 5 (Four), +2 avec de l'huile ou un fruit, +4 avec du cacao, du café ou de la vanille ; les aliments crus ne donnent rien. Les sorties en ville le remontent aussi. Le bonheur moyen réduit les coûts d'énergie du personnage : jusqu'à moitié prix à 100 de bonheur.",
+     "description": "Valeur de 0 à 100 pour chaque membre de la famille (60 au départ). Chaque nuit, il baisse de 5, et de 2 de plus pour qui a eu faim sans rien trouver dans la boîte à nourriture ; les plats mangés dans la journée le remontent : chacun des 3 meilleurs plats différents rend 3 (Cuisine) ou 5 (Four), +2 avec de l'huile ou un fruit, +4 avec du cacao, du café ou de la vanille ; les aliments crus ne donnent rien. Les sorties en ville le remontent aussi. Le bonheur moyen réduit les coûts d'énergie du personnage : jusqu'à moitié prix à 100 de bonheur.",
      "liens": [
       "repas",
       "energie_personnage",
@@ -2143,7 +2143,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "autonomie",
      "terme": "Autonomie",
-     "description": "Pourcentage représentant la part de l'apport journalier couverte par la production de la ferme elle-même. La nourriture achetée au Marché et les conserves de départ ne comptent pas.",
+     "description": "Pourcentage de ce que la famille a mangé dans la journée (à la boîte à nourriture ou au réfrigérateur) qui vient de la ferme elle-même. La nourriture achetée au Marché et les conserves de départ ne comptent pas. Un jour où personne n'a mangé garde l'autonomie de la veille.",
      "liens": [
       "apport_journalier",
       "comptoir",
@@ -2368,7 +2368,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "adulte",
      "terme": "Adulte",
-     "description": "Membre de la famille dont le besoin énergétique quotidien est de 50. La famille en compte deux au départ, et toujours au moins un.",
+     "description": "Membre de la famille. La famille en compte deux au départ, et toujours au moins un. Le second adulte s'occupe des bêtes, ce qui lui donne faim.",
      "liens": [
       "apport_journalier",
       "famille"
@@ -2380,7 +2380,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "enfant",
      "terme": "Enfant",
-     "description": "Membre de la famille dont le besoin énergétique quotidien est de 25. La famille en compte deux au départ.",
+     "description": "Membre de la famille, qui va à l'école les jours d'école et rentre affamé. La famille en compte deux au départ.",
      "liens": [
       "apport_journalier",
       "famille"
@@ -2392,7 +2392,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "famille",
      "terme": "Famille",
-     "description": "Quatre personnes au départ (deux adultes, deux enfants), composées avant la première journée sur l'écran « Ta famille » (nom de famille, membres, personnage principal), puis à tout moment dans la fenêtre Famille (carte du joueur, en haut à gauche) : de 1 à 6 membres, dont au moins un adulte. Chacun a un prénom, un sexe, une coiffure (cinq par âge, dont blond) et une couleur de peau au choix. Un nouveau membre arrive avec le bonheur moyen de la famille. Le but du jeu est de couvrir l'apport journalier de la famille avec la production de la ferme, sans dépendre du Marché.",
+     "description": "Quatre personnes au départ (deux adultes, deux enfants), composées avant la première journée sur l'écran « Ta famille » (nom de famille, membres, personnage principal), puis à tout moment dans la fenêtre Famille (carte du joueur, en haut à gauche) : de 1 à 6 membres, dont au moins un adulte. Chacun a un prénom, un sexe, une coiffure (cinq par âge, dont blond) et une couleur de peau au choix. Un nouveau membre arrive avec le bonheur moyen de la famille. Le but du jeu est de nourrir la famille avec la production de la ferme, sans dépendre du Marché.",
      "liens": [
       "adulte",
       "enfant",
@@ -2421,7 +2421,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "animal_de_compagnie",
      "terme": "Animal de compagnie",
-     "description": "Chien ou chat adopté dans la fenêtre Famille (carte du joueur, en haut à gauche) : trois au plus. Il porte un nom, ne coûte rien et ne mange pas les réserves : il ne compte ni dans l'apport journalier, ni dans le bonheur.",
+     "description": "Chien ou chat adopté dans la fenêtre Famille (carte du joueur, en haut à gauche) : trois au plus. Il porte un nom, ne coûte rien et ne mange pas les réserves : il n'a pas de jauge de faim et ne compte pas dans le bonheur.",
      "liens": [
       "famille",
       "apport_journalier"

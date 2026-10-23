@@ -6,6 +6,7 @@ import {
   ageLots, countItem, isFridgeable, isPerishable, keepLots, lotList, lotRank, lotsOf, pullLots, pushLots, takeItem,
 } from './inventory.js';
 import { newFridgeNightStats, newNightStats } from './family.js';
+import { rangerBoite } from './repas.js';
 import { techPct } from './techtree.js';
 
 /* ---------- Lot 8 : réfrigérateur ---------- */
@@ -269,4 +270,5 @@ export function openFridge(state) {
   if (!f.niveau) f.niveau = 1;
   if (!f.appareil) f.appareil = makeDevice('frigo', 'frigo', DATA.FRIGO.PRIX_CONSTRUCTION);
   f.alimente = true;
+  rangerBoite(state); // la famille mange au frigo : la boîte à nourriture revient dans l'inventaire
 }

@@ -18,6 +18,7 @@ import { couchagesEtage, etageHorsEmprise, rangerEtage } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
 import { botteleuseReprise } from './botteleuse.js';
 import { noter } from './journal.js';
+import { viderBoite } from './repas.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -431,6 +432,7 @@ export function poseStatus(state, sorte, tile) {
     return hauteurMur(state, tile) > 1 ? { ok: false, raison: 'Ce mur est rehaussé : reprends d\'abord ses blocs du dessus.' } : { ok: true };
   }
   if (s.porte) return { ok: false, raison: PORTE_SUR_MUR };
+  if (s.boite && state.frigo && state.frigo.construit) return { ok: false, raison: 'La famille mange au réfrigérateur : la boîte à nourriture ne sert plus.' };
   if (s.unique && dejaPose(state, sorte)) return { ok: false, raison: `Il y a déjà ${s.nom.toLowerCase() === 'citerne' ? 'une' : 'un'} ${s.nom.toLowerCase()} sur la ferme.` };
   // la station du robot : quand il est là (récolte ou semis automatiques)
   if (s.robot && !robotOn(state)) return { ok: false, raison: 'Il faut d\'abord le robot : la récolte ou le semis automatiques (arbre des technologies).' };
@@ -599,6 +601,8 @@ export function reprendreBloc(state, tile, opts) {
   if (s && s.ruche) rucheReprise(state, tile);
   // (une botteleuse : les fibres qu'elle a reçues reviennent, js/engine/botteleuse.js)
   if (s && s.botteleuse === 'machine') botteleuseReprise(state, tile);
+  // (la boîte à nourriture : ce qu'elle contient revient dans l'inventaire)
+  if (s && s.boite) viderBoite(state);
   if (s && s.batiment && state[s.batiment] && !['poulailler', 'paturage'].includes(s.batiment)) state[s.batiment].construit = false;
   if (s && s.objet) addItem(state, s.objet, 1);
   // la station s'en va avec lui (s'il n'y en a pas une autre posée)

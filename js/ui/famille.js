@@ -1,11 +1,14 @@
 import { DATA } from '../engine/catalog.js';
-import { EPS } from '../engine/base.js';
 import {
-  addMember, addPet, cleanFirstName, familyNeed, findMember, findPet,
-  memberName, memberPerso, memberRemovalBlock, memberRoom, persoMax, petIcon, petName, petRoom, pets, planMeal,
+  addMember, addPet, cleanFirstName, findMember, findPet,
+  memberName, memberPerso, memberRemovalBlock, memberRoom, persoMax, petIcon, petName, petRoom, pets,
   removeMember, removePet, setMemberProfile, setPetProfile,
 } from '../engine/family.js';
-import { escapeHtml, formatNumber } from '../engine/format.js';
+import { escapeHtml, formatNumber, formatPercent } from '../engine/format.js';
+import { affames, boiteCounts, jaugeFamille, jaugeMembre, sourceRepas } from '../engine/repas.js';
+import { sleepTarget } from '../engine/night.js';
+import { energyLevel } from '../engine/stamina.js';
+import { itemsText } from './common.js';
 import { energyDetailsHtml } from './energie.js';
 import { familyNameHtml } from './depart.js';
 import { mainCharacter } from '../engine/depart.js';
@@ -82,6 +85,7 @@ function portraitCard(m) {
       ${memberAvatarHtml(m.id)}
       <span class="member-row-text">
         <strong class="member-name">${memberNameHtml(m.id)}</strong>${main ? ' <span class="chip auto">⭐ Principal</span>' : ''}
+        ${main ? '' : faimHtml(m)}
       </span>
       ${familyEditing ? `<span class="member-row-btns">
         ${!m.enfant && !main ? `<button type="button" class="btn" data-action="main-character" data-id="${m.id}" aria-label="Choisir comme personnage principal" title="Choisir comme personnage principal">⭐</button>` : ''}
@@ -101,7 +105,6 @@ function openMemberModal(id) {
   if (!m) return;
   tel('modal', 'member'); // le nom de la fenêtre seulement : jamais le prénom
   const P = DATA.FAMILLE.PROFIL;
-  const age = m.enfant ? 'enfant' : 'adulte';
   memberDraft = {
     id: m.id,
     enfant: !!m.enfant,
@@ -114,7 +117,7 @@ function openMemberModal(id) {
   const depart = blocage
     ? `<span class="muted">${escapeHtml(blocage)}</span>`
     : `<button type="button" class="btn" data-action="member-remove" id="member-remove">Retirer de la famille</button>
-       <span class="muted">Le besoin de la famille baisse de ${DATA.FAMILLE.AJ[age]} calories par jour.</span>`;
+       <span class="muted">Sa part de la boîte à nourriture reste à la famille.</span>`;
   // Version 1.17 : l'apparence est un des personnages de son âge (elle remplace le sexe, la
   // coiffure et la teinte des anciens portraits emoji).
   const persos = Array.from({ length: persoMax(m) }, (_, i) => i + 1)
@@ -217,7 +220,7 @@ function removeMemberFromModal() {
   closeModal();
   persistState();
   refresh();
-  notify(`👋 ${nom} a quitté la famille. Besoin : ${formatNumber(result.besoin)} calories par jour.`);
+  notify(`👋 ${nom} a quitté la famille.`);
 }
 
 /* -- version 1.2 : animaux de compagnie (chiens et chats) -- */
@@ -262,7 +265,7 @@ function openPetModal(id) {
         <strong>Chien ou chat</strong>
         <div class="row choice-row">${especes}</div>
       </div>
-      <p class="muted">Il ne mange pas les réserves de la famille : il ne compte pas dans le besoin journalier. Son nom reste sur cet appareil, dans ta sauvegarde.</p>
+      <p class="muted">Il ne mange pas dans la boîte à nourriture de la famille. Son nom reste sur cet appareil, dans ta sauvegarde.</p>
       <p class="alert" id="pet-error" role="alert" hidden></p>
     </div>
     <div class="row">
@@ -344,12 +347,11 @@ function removePetFromModal() {
 // Version 1.2 : composition de la famille (1 à 6 membres) et animaux de compagnie (3 au plus).
 function renderFamilyAdd() {
   const C = DATA.FAMILLE.COMPOSITION;
-  const AJ = DATA.FAMILLE.AJ;
   const full = memberRoom(state) === 0;
   return `
     <div class="row family-add">
-      <button type="button" class="btn" data-action="member-add" data-age="adulte"${full ? ' disabled' : ''}>➕ Un adulte <span class="muted">(+${AJ.adulte} calories/jour)</span></button>
-      <button type="button" class="btn" data-action="member-add" data-age="enfant"${full ? ' disabled' : ''}>➕ Un enfant <span class="muted">(+${AJ.enfant} calories/jour)</span></button>
+      <button type="button" class="btn" data-action="member-add" data-age="adulte"${full ? ' disabled' : ''}>➕ Un adulte</button>
+      <button type="button" class="btn" data-action="member-add" data-age="enfant"${full ? ' disabled' : ''}>➕ Un enfant</button>
     </div>
     <p class="muted">${full ? `La famille est au complet (${C.MEMBRES_MAX} membres). ` : ''}Pour retirer quelqu'un, ouvre sa fiche (✏️).</p>`;
 }
@@ -363,32 +365,48 @@ function renderPets() {
     .join('');
   return `
     <h3 class="section-title help-title"><span>🐾 Animaux de compagnie · <span class="num">${list.length} / ${K.MAX}</span></span>${helpToggleHtml('pets', 'animaux de compagnie')}</h3>
-    <p class="muted" id="pets-help"${helpOpen.has('pets') ? '' : ' hidden'}>Un chien ou un chat tient compagnie à la famille. Il ne mange pas ses réserves : il ne compte pas dans le besoin journalier.</p>
+    <p class="muted" id="pets-help"${helpOpen.has('pets') ? '' : ' hidden'}>Un chien ou un chat tient compagnie à la famille. Il ne mange pas dans la boîte à nourriture : il n'a pas de jauge de faim.</p>
     <button type="button" class="btn${petsEditing ? ' primary' : ''} family-edit-btn" data-action="pets-edit" aria-pressed="${petsEditing}">${petsEditing ? '✅ Terminer' : '🐾 Ajouter ou modifier un animal'}</button>
     ${list.length ? `<div class="portraits">${list.map(petCard).join('')}</div>` : ''}
     ${petsEditing ? `<div class="row family-add">${boutons}</div>
     ${full ? `<p class="muted">${K.MAX} animaux de compagnie au plus.</p>` : ''}` : ''}`;
 }
 
+// La jauge de faim d'un membre (js/engine/repas.js) : une barre, en alerte à SEUIL.
+function faimHtml(m) {
+  const F = DATA.FAMILLE.FAIM;
+  const j = Math.floor(jaugeMembre(m));
+  const bas = j <= F.SEUIL;
+  return `<span class="faim-jauge" title="Faim : ${j} / ${F.MAX}${m.affame ? ' (a faim : rien à manger)' : ''}">
+      <span class="bar" role="progressbar" aria-label="Jauge de faim" aria-valuemin="0" aria-valuemax="${F.MAX}" aria-valuenow="${j}"><span class="bar-fill${bas ? ' warn' : ''}" style="width:${Math.round((j / F.MAX) * 100)}%"></span></span>
+      <span class="num muted">🍽️ ${j}${m.affame ? ' ⚠️' : ''}</span>
+    </span>`;
+}
+
+// Où mange la famille, et ce qu'il y reste.
+function repasCardHtml() {
+  const F = DATA.FAMILLE.FAIM;
+  const src = sourceRepas(state);
+  const faim = affames(state).length;
+  const ou = src === 'frigo' ? 'La famille mange au réfrigérateur.'
+    : src === 'boite' ? `La famille mange à la boîte à nourriture : ${itemsText(boiteCounts(state)) || 'elle est vide'}.`
+      : src === 'inventaire' ? 'La famille mange ce qu\'il y a dans l\'inventaire.'
+        : 'Pas de boîte à nourriture dans le foyer : fabrique-la à l\'Atelier et pose-la dans une pièce close, puis remplis-la.';
+  return `
+      <div class="card">
+        <span class="card-title ration-title"><span>🍽️ Famille rassasiée : <span class="num">${formatPercent(jaugeFamille(state))}</span></span><span class="row ration-title-end">${faim ? `<span class="chip warn">⚠️ ${faim} ${faim > 1 ? 'ont' : 'a'} faim</span>` : ''}${helpToggleHtml('ration', 'faim de la famille')}</span></span>
+        <span class="muted">${ou}</span>
+        <span class="muted" id="ration-help"${helpOpen.has('ration') ? '' : ' hidden'}>Chaque membre (sauf toi) a une jauge de faim : elle baisse quand il marche et quand il aide. À ${F.SEUIL}, il va manger jusqu'à ${F.MAX} ; s'il ne trouve rien, il perd du bonheur la nuit. Les jours d'école, les enfants rentrent avec ${F.ECOLE.NIVEAU} au plus et mangent avant d'aller dormir. Plus la famille est rassasiée au coucher, plus ton énergie remonte en dormant : ${formatNumber(energyLevel({ energie: sleepTarget(state) }))} cette nuit.</span>
+      </div>`;
+}
+
 export function renderFamille() {
-  // Avant 19 h : le repas prévu ; après : celui qui a été pris.
-  const pris = !!state.repas;
-  const plan = state.repas || planMeal(state);
-  const shown = Math.min(plan.energie, plan.besoin);
-  const short = plan.energie + EPS < plan.besoin;
   return `
     <h2>👨‍👩‍👧‍👦 Famille${familyNameHtml() ? ` ${familyNameHtml()}` : ''}</h2>
     <button type="button" class="btn${familyEditing ? ' primary' : ''} family-edit-btn" data-action="family-edit" aria-pressed="${familyEditing}">${familyEditing ? '✅ Terminer' : '✏️ Modifier la famille'}</button>
     <ul class="member-rows">${state.famille.membres.map(portraitCard).join('')}</ul>
     ${familyEditing ? renderFamilyAdd() : ''}
-    <div class="cards">
-      <div class="card">
-        <span class="card-title ration-title"><span>🍽️ Ration quotidienne : <span class="num">${formatNumber(shown)} / ${formatNumber(plan.besoin)}</span></span><span class="row ration-title-end">${pris ? '<span class="chip">✅ prise</span>' : ''}${helpToggleHtml('ration', 'ration quotidienne')}</span></span>
-        <span class="bar" role="progressbar" aria-label="${pris ? 'Calories mangées' : 'Calories prévues'}" aria-valuemin="0" aria-valuemax="${plan.besoin}" aria-valuenow="${Math.round(shown)}"><span class="bar-fill${short ? ' warn' : ''}" style="width:${plan.besoin ? Math.round((shown / plan.besoin) * 100) : 0}%"></span></span>
-        <span class="muted" id="ration-help"${helpOpen.has('ration') ? '' : ' hidden'}>${pris ? 'Calories mangées' : 'Calories prévues'} pour un besoin de ${formatNumber(familyNeed(state))} calories par jour. ${pris
-          ? (short ? `⚠️ Le besoin n'a pas été couvert : ton énergie remontera moins en dormant.` : `Le besoin a été couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} en dormant.`)
-          : (short ? `⚠️ Le besoin ne sera pas couvert : ton énergie remontera moins en dormant.` : `Le besoin sera couvert : ton énergie remontera à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} en dormant.`)} La famille mange à ${DATA.TEMPS.HEURE_REPAS} h, ou au coucher si elle dort avant.</span>
-      </div>
+    <div class="cards">${repasCardHtml()}
     </div>
     ${renderPets()}
     <details class="more">
@@ -432,7 +450,7 @@ registerActions({
     const result = applyResult(addMember(state, enfant));
     if (result.ok) {
       persistState();
-      notify(`👋 Un ${enfant ? 'enfant' : 'adulte'} rejoint la famille. Besoin : ${formatNumber(result.besoin)} calories par jour.`);
+      notify(`👋 Un ${enfant ? 'enfant' : 'adulte'} rejoint la famille.`);
       openMemberModal(result.id); // tout de suite : son prénom et son apparence
     }
   },

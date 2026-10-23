@@ -98,7 +98,8 @@ export function createInitialState(seed = 1) {
     version: STATE_VERSION,
     day: 1,
     awakeMs: 0,
-    repas: null, // version 1.1.1 : compte du repas de 19 h, jusqu'à la nuit (voir takeMeal)
+    boite: { items: {} }, // la boîte à nourriture : { item: [lots] } (repas.js)
+    repasJour: null, // ce que la famille a mangé aujourd'hui (repas.js : repasJour)
     courrier: [], // version 1.3 : lettres reçues [{ id, nuit, lu }] (voir deliverMail)
     pieces: DATA.DEPART.ETAT_INITIAL.PIECES,
     rngSeed: seed >>> 0,
@@ -379,6 +380,12 @@ export const MIGRATIONS = {
   // (blocs.js, etatSilo) ; le coffre à grain n'existe plus : posé ou dans l'inventaire, il est
   // remboursé (ce qu'il coûtait à l'Atelier). Le blé du Silo reste.
   44: (state) => migrateCoffreGrain(state),
+  // v45 → v46 : fin du repas de 19 h. La famille mange à la boîte à nourriture (vide au
+  // départ) ou au frigo quand elle a faim ; les membres commencent rassasiés.
+  45: (state) => {
+    const { repas, ...rest } = state;
+    return { ...rest, version: 46, boite: { items: {} }, repasJour: null };
+  },
 };
 
 // (ce que coûtait le coffre à grain à l'Atelier, avant la version 45)

@@ -13,6 +13,9 @@
  *     quand il y a à faire au Poulailler ou à l'Étable (model.aide.lieux), il y va, se baisse
  *     (GESTE s) et nourrit les poules, prend les œufs, le lait et la laine (o.aide : tout entre
  *     dans l'inventaire ; o.gain : la bulle « +x » au-dessus de lui) ;
+ *   - chacun a faim en marchant (o.marche(id, px) : le moteur compte 1 point de faim tous les
+ *     FAMILLE.FAIM.PX_PAR_POINT px, js/engine/repas.js) ; quand il mange à la boîte à nourriture,
+ *     il y va et se baisse (allerManger, appelé par la page : js/ui/loop.js ; o.boite : où elle est) ;
  *   - les enfants vont à l'école le lundi, le mardi, le jeudi et le vendredi ; elle commence à
  *     8 h 45 (CarteKit.ECOLE). Chacun part de la maison le temps qu'il lui faut pour être au bord
  *     de la carte quand il doit marcher jusqu'au bus de la carte de transition
@@ -30,6 +33,7 @@
  *   famille.update(deltaMs, room)
  *   famille.info()               // pour les tests : où est chacun
  *   famille.aidePos()            // où est le second adulte (sa bulle « +x »), ou null
+ *   famille.allerManger(id)      // il va à la boîte à nourriture et s'y baisse ; false s'il ne le peut pas
  *   famille.rejoindre(at)        // le second adulte vient à côté de at ({ x, y } : le personnage),
  *                                // s'y arrête et se tourne vers lui ; true quand il y est ;
  *                                // rejoindre(null) : il reprend sa journée
@@ -49,6 +53,7 @@
   const REPOS = 3;                         // s avant de chercher autre chose à faire
   const ENFANT_DY = 4;                     // px : un enfant couché est remonté d'autant (il est plus petit)
   const COTE = 20;                         // px : le second adulte qui vient parler, à côté du personnage
+  const PAS_COMPTE = 50;                   // px : la marche est comptée au moteur par tranches d'autant (o.marche)
 
   const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -184,6 +189,7 @@
       const lieu = m.tache;
       m.tache = null;
       m.repos = REPOS;
+      if (lieu === 'boite') return;   // il a mangé (le moteur l'a déjà fait)
       o.aide(lieu, (items) => { if (items && o.gain) o.gain(items); });
     }
 
@@ -242,6 +248,9 @@
       ({ face: m.face, flip: m.flip } = K.regard(dx, dy));
       if (l <= st) { m.x = to.x; m.y = to.y; m.chemin.shift(); } else { m.x += (dx / l) * st; m.y += (dy / l) * st; }
       m.marche += Math.min(l, st);
+      // (la marche donne faim : comptée au moteur par tranches de PAS_COMPTE px)
+      m.pas = (m.pas || 0) + Math.min(l, st);
+      if (m.pas >= PAS_COMPTE && o.marche) { o.marche(m.id, m.pas); m.pas = 0; }
       return true;
     }
 
@@ -339,6 +348,14 @@
           m.pause = 0;
         }
         return false;
+      },
+      allerManger(id) {
+        const m = membres.get(id);
+        const spot = o.boite ? o.boite() : null;
+        if (!m || !spot || !m.visible || m.couche || m.ou !== 'dehors' || m.fade < 0 || m.geste > 0 || m.parle || m.rejoint) return false;
+        m.tache = 'boite';
+        aller(m, spot.x, spot.y, () => { m.face = 'haut'; m.flip = false; m.geste = reduced() ? 0.01 : GESTE; });
+        return true;
       },
       aidePos() {
         const A = model && model.aide, m = A && membres.get(A.id);

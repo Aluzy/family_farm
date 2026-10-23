@@ -125,6 +125,8 @@ export const GAME_ACTIONS = {
   'repair': 'Réparer un appareil',
   'eat': 'Manger un en-cas',
   'fridge-in': 'Utiliser le réfrigérateur',
+  'boite-deposer': 'Remplir la boîte à nourriture',
+  'boite-reprendre': 'Remplir la boîte à nourriture',
   'fridge-in-all': 'Utiliser le réfrigérateur',
   'fridge-out': 'Utiliser le réfrigérateur',
   'toggle': 'Allumer ou éteindre un appareil',

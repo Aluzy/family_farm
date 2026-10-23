@@ -52,12 +52,12 @@ test('version 1.8 : sans énergie, plus d\'action au clic ; les automatisations 
   assertEqual(s.energie, energyMax());
 });
 
-test('version 1.8 : manger un aliment dans la journée rend ses calories ÷ 5', () => {
+test('version 1.8 : manger un aliment dans la journée rend sa valeur (énergie ÷ 5, + 10 %, arrondie au-dessus)', () => {
   const s = garden();
   assertEqual(eatSnack(s, 'carotte').ok, false, 'énergie pleine');
   s.energie = 10000;
   setInv(s, { carotte: 2 });
-  assertEqual(snackEnergy(s, 'carotte'), DATA.OBJETS.carotte.energie * 200);
+  assertEqual(snackEnergy(s, 'carotte'), 2000);
   const r = eatSnack(s, 'carotte');
   assertEqual([r.ok, s.energie, countItem(s, 'carotte')], [true, 10000 + snackEnergy(s, 'carotte'), 1]);
   assertEqual(eatSnack(s, 'graine_carotte').ok, false, 'ne se mange pas');

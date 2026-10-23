@@ -2,9 +2,10 @@ import { DATA, recipeOutput } from '../engine/catalog.js';
 import { setupPending } from '../engine/depart.js';
 import { watchSetup } from './depart.js';
 import { watchDemenagement } from './demenagement.js';
-import { bedtimeDue, mealDue, nightActive } from '../engine/clock.js';
+import { bedtimeDue, nightActive } from '../engine/clock.js';
 import { tick } from '../engine/energy.js';
-import { takeMeal } from '../engine/family.js';
+import { memberName } from '../engine/family.js';
+import { ecouterJournal } from '../engine/journal.js';
 import { mailbox } from '../engine/campaign.js';
 import { mergeOfflineReports, simulateOffline } from '../engine/offline.js';
 import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
@@ -17,7 +18,6 @@ import { actionNightStart, wakeUp } from './game-actions.js';
 import {
   lastRenderAt, refresh, render, renderScheduled, setLastRenderAt, setRenderScheduled,
 } from './render.js';
-import { startMealScene } from './stage-windows.js';
 import { watchChapters } from './chapitres.js';
 import { watchLevels } from './niveaux.js';
 import {
@@ -143,8 +143,7 @@ function watchTechPoints() {
   persistState();
 }
 
-// La journée suit l'horloge : de 6 h à 22 h, 30 s par heure. À 19 h, la famille prend
-// son repas. Version 1.19 : à 22 h, la famille va dormir et la nuit défile à la même
+// La journée suit l'horloge : de 6 h à 22 h, 30 s par heure. Version 1.19 : à 22 h, la famille va dormir et la nuit défile à la même
 // vitesse (tick : seule l'heure avance) ; à minuit, la nuit se calcule (récolte automatique
 // comprise) et le jour change ; à 6 h, c'est le réveil (sans résumé). Le bouton « Zzz »
 // couche le personnage : quand il dort, la nuit défile en accéléré. Jeu ouvert seulement : une absence n'avance l'horloge du jour que jusqu'à
@@ -152,12 +151,6 @@ function watchTechPoints() {
 // refermée, et ne commence pas tant qu'une bulle d'aide de la première partie est affichée
 // (le joueur lit), sauf celle qui explique la nuit.
 function watchDay() {
-  if (mealDue(state)) {
-    const r = takeMeal(state);
-    persistState();
-    refresh();
-    if (r.ok) playMealScene(r.repas);
-  }
   if (state.reveil && !modalRoot().childElementCount) wakeUp();
   if (nightActive(state)) {
     // minuit vient de passer : les préparations finies dans la nuit, sans toast
@@ -173,15 +166,17 @@ function watchDay() {
 }
 let midnightSeen = false;
 
-// Le repas de 19 h : une annonce (un appui mène à la Famille) et, sur la carte, la famille
-// qui passe à table (startMealScene).
-function playMealScene(repas) {
-  startMealScene(repas);
-  const mange = itemsText(repas.mange);
-  const complet = repas.couverture >= 100;
-  const suite = complet ? 'Tout le monde a mangé à sa faim.' : `Repas insuffisant : ${formatNumber(Math.min(repas.energie, repas.besoin))} / ${formatNumber(repas.besoin)} calories, ton énergie remontera moins cette nuit.`;
-  notify(`🍽️ ${DATA.TEMPS.HEURE_REPAS} h : la famille passe à table${mange ? ` (${mange})` : ''}. ${suite}`, { kind: complet ? 'repas' : 'alerte', cible: { fenetre: 'famille' } });
-}
+// La faim de la famille (js/engine/repas.js) : un membre qui a faim et ne trouve rien à manger
+// le fait savoir (un appui mène à la Famille) ; sur la carte, celui qui mange va à la boîte
+// à nourriture (js/famille-ferme.js).
+ecouterJournal((type, d) => {
+  if (type === 'faim') {
+    const ou = d.source === 'frigo' ? 'le réfrigérateur est vide' : d.source === 'boite' ? 'la boîte à nourriture est vide' : d.source === 'inventaire' ? 'il n\'y a plus rien à manger dans l\'inventaire' : 'il n\'y a pas de boîte à nourriture dans le foyer (fabrique-la à l\'Atelier)';
+    notify(`🍽️ ${memberName(state, d.id)} a faim : ${ou}. Sans manger, la famille perdra du bonheur cette nuit.`, { kind: 'alerte', cible: { fenetre: 'famille' } });
+  } else if (type === 'repasMembre' && d.source === 'boite' && window.FarmStage && window.FarmStage.allerManger) {
+    window.FarmStage.allerManger(d.id);
+  }
+});
 
 export function frame(now) {
   const wall = Date.now();

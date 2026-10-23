@@ -6,11 +6,11 @@
 import {
   actionCost, addItem, allDevices, buildFridge, buildStation, buyItem, buyPasture, buyPrice,
   buySheep, cancelMilling, cancelQueued, countItem, createInitialState, DATA, deviceStatus,
-  dishEnergy, dishPrice, familyNeed, feedAllHens, feedFamily, findDevice, findPlot, fridgeCount,
+  depenserMembre, dishEnergy, dishPrice, feedAllHens, findDevice, findPlot, fridgeCount,
   fridgeRate, fridgeUnits, grantTech, harvest, harvestAll, hasTech, ingredientOptions,
   inventoryCounts, isBroken, isBuyable, isPerishable, loadShedding, lotsOf, maintainCost,
   maintainDevice, marketCoef, migrate, millPending, millTimeLeft, moveToFridge, panelOutput,
-  pastureCost, planMeal, plant, productionItemKeys, queueCapacity, recipeNode, recipeStatus,
+  mangerMembre, mangeurs, pastureCost, plant, valeurAliment, productionItemKeys, queueCapacity, recipeNode, recipeStatus,
   recipeUnlocked, repairCost, repairDevice, scaleEnergie, sellableCount, sellItem, sellPrice,
   shelfLife, simulateOffline, sleep, snackEnergy, startFarm, startHousehold, startLot4,
   startMilling, startRecipe, STATE_VERSION, storeWheat, taskTimeLeft, techEffects, techPct,
@@ -19,7 +19,7 @@ import {
   upgradeDevice, wakeEnergy, waterAll, waterCostFor, wheatForHens, wheatTotal,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, atelier, coldRoom, farm, fillSheep, garden, kwh, matin, ml, pature,
+  affamer, assert, assertEqual, atelier, coldRoom, farm, fillSheep, garden, kwh, matin, ml, pature,
   plantRipe, ranch, reach, runFor, setInv, sleepOnce, test,
 } from './aide.mjs';
 
@@ -84,40 +84,15 @@ test('Lot 11 (nutrition) : +25 % sur les aliments existants, arrondi centralisé
   }
 });
 
-test('Lot 11 (nutrition) : le Gratin de patates couvre exactement le besoin d\'une famille de 2 adultes + 2 enfants', () => {
+test('le Gratin de patates rassasie à lui seul un membre affamé', () => {
   const s = garden();
-  assertEqual(familyNeed(s), 150, '2 adultes (50) + 2 enfants (25) = 150');
   s.famille.reserve = {};
   setInv(s, { gratin_patates: 3 });
-  const plan = planMeal(s);
-  // un seul gratin est mangé : aucune consommation résiduelle inattendue
-  assertEqual(plan.mange, { gratin_patates: 1 });
-  assertEqual(plan.energie, 150);
-  assertEqual(plan.couverture, 100);
-  feedFamily(s);
+  assertEqual(valeurAliment('gratin_patates'), 33);
+  const m = mangeurs(s)[0];
+  depenserMembre(s, m.id, 30);
+  assertEqual(mangerMembre(s, m).mange, { gratin_patates: 1 }, 'de 70 à 100 : un seul gratin');
   assertEqual(countItem(s, 'gratin_patates'), 2, 'les 2 gratins restants ne sont pas touchés');
-});
-
-test('Lot 11 (nutrition) : familyNeed() suit la composition de la famille', () => {
-  const s = garden();
-  assertEqual(familyNeed(s), 150, '2 adultes + 2 enfants');
-  // 1 adulte + 2 enfants
-  s.famille.membres = s.famille.membres.filter((m) => m.id !== 'adulte-2');
-  assertEqual(familyNeed(s), 100);
-  // 1 adulte seul
-  s.famille.membres = s.famille.membres.filter((m) => !m.enfant);
-  assertEqual(familyNeed(s), 50);
-  // 3 adultes + 1 enfant
-  const t = garden();
-  t.famille.membres = [
-    ...t.famille.membres,
-    { id: 'adulte-3', nom: 'Adulte 3', enfant: false, sante: 100, malade: false },
-  ].filter((m) => m.id !== 'enfant-2');
-  assertEqual(familyNeed(t), 175, '3 × 50 + 1 × 25');
-  // famille vide (cas limite)
-  const u = garden();
-  u.famille.membres = [];
-  assertEqual(familyNeed(u), 0);
 });
 
 test('prix de vente des plats : somme des prix × 1,3, arrondi', () => {
@@ -680,10 +655,10 @@ test('arbre v2 : effets sur la famille (Bon sommeil, Goûter, Cellier)', () => {
   assertEqual(wakeEnergy(s, 0), 60000);
   grantTech(s, 'fa_sommeil');
   assertEqual([wakeEnergy(s, 0), wakeEnergy(s, 50), wakeEnergy(s, 100)], [70000, 90000, 100000]);
-  // Goûter : un en-cas rend 50 % de plus (gratin 150 calories → 30, puis 45)
-  assertEqual(snackEnergy(s, 'gratin_patates'), (DATA.OBJETS.gratin_patates.energie * 1000) / 5);
+  // Goûter : un en-cas rend 50 % de plus (gratin : valeur 33, puis 49,5)
+  assertEqual(snackEnergy(s, 'gratin_patates'), 33000);
   grantTech(s, 'fa_gouter');
-  assertEqual(snackEnergy(s, 'gratin_patates'), Math.floor((DATA.OBJETS.gratin_patates.energie * 1000 * 150) / 500));
+  assertEqual(snackEnergy(s, 'gratin_patates'), 49500);
   // Cellier : +1 nuit hors frigo pour ce qui périme, rien pour le reste
   grantTech(s, 'fa_cellier');
   setInv(s, {});
@@ -758,10 +733,12 @@ test('Café (cafe_boisson) : id distinct de l\'item cafe, ne remplace pas l\'ing
 test('la farine et l\'huile ne se mangent pas seules ; les plats se mangent', () => {
   const s = atelier();
   setInv(s, { farine: 50, huile: 50 });
-  assertEqual(planMeal(s).mange, {});
-  setInv(s, { pain: 3, omelette: 1, conserve: 200 });
-  const plan = planMeal(s);
-  assertEqual([plan.mange.pain, plan.mange.omelette], [3, 1]);
+  affamer(s);
+  assertEqual(s.repasJour.mange, {});
+  const t = atelier();
+  setInv(t, { pain: 3, omelette: 1, conserve: 200 });
+  affamer(t);
+  assertEqual([t.repasJour.mange.pain, t.repasJour.mange.omelette], [3, 1]);
 });
 
 test('état initial Lot 5 : quatre stations à construire, libres, sans appareil', () => {
@@ -952,8 +929,12 @@ test('version 1.1 : plus aucune recette ne demande de viande, les anciens plats 
   assertEqual(startRecipe(s, 'ragout'), { ok: false, error: 'Recette inconnue.' });
   assertEqual(countItem(s, 'viande_mouton'), 2, 'rien n\'est retiré');
   // La famille mange encore un ancien plat et de l'ancienne viande ; les plats comptent pour le bonus.
-  const plan = planMeal(s);
-  assert(plan.mange.ragout === 1 || plan.mange.roti_boeuf === 1 || plan.mange.viande_mouton > 0, 'ils sont au menu');
+  const t = atelier();
+  setInv(t, { viande_mouton: 2, carotte: 2, patate: 1, ragout: 1, roti_boeuf: 1 });
+  const m = mangeurs(t)[0];
+  depenserMembre(t, m.id, 80);
+  const mange = mangerMembre(t, m).mange;
+  assert(mange.ragout === 1 || mange.roti_boeuf === 1 || mange.viande_mouton > 0, 'ils sont au menu');
   const before = s.pieces;
   assertEqual(sellItem(s, 'viande_mouton', 2).gain, 20);
   assertEqual(sellItem(s, 'ragout', 1).gain, 36);
@@ -1274,13 +1255,15 @@ test('Dormir : le plat fini pendant la nuit se mange à partir du repas suivant'
   const s = atelier();
   setInv(s, { farine: 2, conserve: 200 });
   startRecipe(s, 'pain');
+  affamer(s);
   s.awakeMs = 30000;
   const r = sleep(s);
-  assertEqual(r.mange.pain, undefined, 'pas mangé cette nuit');
+  assertEqual(r.mange.pain, undefined, 'pas mangé ce jour-là : il cuit');
   assertEqual(countItem(s, 'pain'), 1);
   assertEqual(lotsOf(s, 'pain')[0].nightsLeft, 6, 'le pain vieillit d\'une nuit comme les œufs pondus');
+  affamer(s);
   s.awakeMs = 30000;
-  assertEqual(sleep(s).mange.pain, 1, 'mangé la nuit suivante');
+  assertEqual(sleep(s).mange.pain, 1, 'mangé le lendemain');
 });
 
 test('Dormir avec une station libre ou non construite ne change rien', () => {

@@ -14,7 +14,7 @@ import {
   testWoolReady, tick, unlockLevel, updateChapters, upgradeCommerce, water,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, atChapter, atelier, auto5, farm, fillCows, fillSheep, garden, holdNights,
+  affamer, assert, assertEqual, atChapter, atelier, auto5, farm, fillCows, fillSheep, garden, holdNights,
   kwh, matin, ml, pature, plantRipe, ranch, reach, runFor, setInv, setStraw, sleepOnce, test,
 } from './aide.mjs';
 
@@ -187,14 +187,15 @@ test('annonces : un écran de fin par chapitre terminé, vidé un à un', () => 
 test('rapport de réveil Lot 9 : autonomie, chapitre en cours et chapitres terminés', () => {
   const s = atChapter(2);
   s.famille.reserve = {};
-  // Lot 11 (nutrition) : patate à 19 d'énergie, 6 unités (114) sous le besoin (150).
-  setInv(s, { patate: 6, conserve: 10 });
+  // la famille a faim : 6 patates (30 points) puis des conserves
+  setInv(s, { patate: 6, conserve: 60 });
   // version 1.12 : tout le chapitre 2 est rempli juste avant la nuit
   s.progression.niveau = 3;
   Object.assign(s.campagne.compteurs, { cultures: ['carotte', 'patate', 'tomate', 'courgette'], semisBle: 1 });
   Object.assign(s.silo, { construit: true, ble: 50 });
+  affamer(s);
   const r = sleepOnce(s);
-  assertEqual([r.autonomie, r.energieProduit, r.chapitre, r.chapitresTermines], [76, 114, 3, [2]]);
+  assertEqual([r.autonomie, r.energieProduit, r.chapitre, r.chapitresTermines], [11, 30, 3, [2]]);
 });
 
 /* --- masquage --- */
@@ -332,7 +333,7 @@ test('mode test Lot 9 : aller à un chapitre donné (et au niveau qui va avec)',
 
 test('sérialisation JSON Lot 9 : la campagne fait l\'aller-retour', () => {
   const s = atChapter(6);
-  holdNights(s, 3, 22);
+  holdNights(s, 3, 48);
   testCompleteChapter(s);
   const copy = JSON.parse(JSON.stringify(s));
   assertEqual(copy, s);

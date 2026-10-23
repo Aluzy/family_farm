@@ -4,7 +4,8 @@ import { allDevices, fail, isBroken, needsService, newDayStats, storageCapacity,
 import { awakeRequired, bedtimeDue, midnightMs, nightActive, nightLengthMs } from './clock.js';
 import { expiringSoon, spoil } from './inventory.js';
 import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridge.js';
-import { feedFamily, newNightStats, planMeal } from './family.js';
+import { feedFamily, newNightStats } from './family.js';
+import { jaugeFamille, repasCoucher } from './repas.js';
 import { growDue, readyCrops } from './crops.js';
 import { energyMax, restoreEnergy, wakeEnergy } from './stamina.js';
 import { feedLivestock, fillSilo, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
@@ -23,9 +24,9 @@ import { economieNuit } from './economie.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
-// repas (version 1.8 : énergie au réveil), puis pousse. Lot 4 : la ponte. Lot 5 : les préparations en
-// cours se terminent (après le repas du soir : un plat fini pendant la nuit se
-// mange dès le repas suivant). Lot 6, revu en version 1.1 : les moutons et les
+// ce que la famille a mangé dans la journée (repas.js ; énergie au réveil), puis pousse. Lot 4 : la
+// ponte. Lot 5 : les préparations en cours se terminent (un plat fini pendant la nuit se mange
+// dès le lendemain). Lot 6, revu en version 1.1 : les moutons et les
 // vaches mangent leur paille juste après la ponte (feedLivestock) ; ceux qui ont
 // mangé font avancer leur laine ou donnent leur lait. Lot 3 : la péremption, toujours en dernier. Les
 // lots suivants insèrent leurs fonctions avant `spoil`. Lot 7 : les
@@ -160,6 +161,7 @@ export function sleep(state) {
 export function startNight(state) {
   if (nightActive(state) || !bedtimeDue(state)) return false;
   state.nuitEnCours = { ms: 0, minuit: false };
+  repasCoucher(state); // les enfants mangent avant d'aller dormir
   return true;
 }
 
@@ -190,13 +192,12 @@ export function advanceNight(state, dtMs) {
   return event;
 }
 
-// L'énergie que le sommeil de cette nuit vise : celle du réveil d'après le repas du soir
-// (REVEIL_BASE + REVEIL_REPAS × couverture). Avant minuit, le repas pris (ou prévu) ; après,
-// celui que la famille a mangé.
+// L'énergie que le sommeil de cette nuit vise : REVEIL_BASE + REVEIL_REPAS × la jauge moyenne
+// de la famille (repas.js). Avant minuit, celle d'à présent ; après, celle du coucher.
 export function sleepTarget(state) {
   const n = state.nuitEnCours;
   const couverture = n && n.minuit && state.nuit && Number.isFinite(state.nuit.couverture) ? state.nuit.couverture
-    : state.repas ? state.repas.couverture : planMeal(state).couverture;
+    : jaugeFamille(state);
   return wakeEnergy(state, couverture);
 }
 

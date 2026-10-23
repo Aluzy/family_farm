@@ -3,6 +3,7 @@ import { levelReached } from './levels.js';
 import { techEffects, techFlag } from './techtree.js';
 import { averageHappiness } from './ville.js';
 import { noter } from './journal.js';
+import { valeurAliment } from './repas.js';
 
 /* ---------- version 1.8 (v2, lot 4) : l'énergie du personnage ---------- */
 
@@ -63,8 +64,8 @@ export function actionsLeft(state, action) {
   return c > 0 ? Math.floor((Number(state.energie) || 0) / c) : Infinity;
 }
 
-// Énergie au réveil (millièmes) selon la couverture du repas du soir (0 à 100 %),
-// plus le bonus de l'arbre (Bon sommeil), jusqu'au maximum.
+// Énergie au réveil (millièmes) selon la jauge moyenne de la famille au coucher (0 à 100 %,
+// repas.js : jaugeFamille), plus le bonus de l'arbre (Bon sommeil), jusqu'au maximum.
 export function wakeEnergy(state, couverture) {
   const P = DATA.PERSONNAGE;
   const pts = P.REVEIL_BASE + Math.floor((P.REVEIL_REPAS * Math.max(0, Math.min(100, couverture))) / 100) + (techFlag(state, 'reveilEnergie') || 0);
@@ -77,11 +78,11 @@ export function restoreEnergy(state, couverture) {
   return state.energie;
 }
 
-// Énergie (millièmes) que rend un aliment mangé en journée : calories ÷ MANGER_DIVISEUR,
-// +50 % avec le Goûter de l'arbre (en %).
+// Énergie (millièmes) que rend un aliment mangé en journée : sa valeur (repas.js,
+// valeurAliment), +50 % avec le Goûter de l'arbre (en %).
 export function snackEnergy(state, item) {
   const def = DATA.OBJETS[item];
   if (!def || !def.mangeable) return 0;
   const pct = techFlag(state, 'gouter') || 100;
-  return Math.floor((def.energie * MILLE * pct) / (DATA.PERSONNAGE.MANGER_DIVISEUR * 100));
+  return Math.floor((valeurAliment(item) * MILLE * pct) / 100);
 }

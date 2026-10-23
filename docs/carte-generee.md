@@ -94,6 +94,30 @@ Le Marché vend toujours les outils.
 - Il faut **une paillasse par personne**. Un membre de la famille sans paillasse ne dort pas et
   ne regagne pas l'énergie de la nuit.
 
+### Manger : la boîte à nourriture
+
+- Il n'y a **plus de repas à 19 h**. Chaque membre de la famille, sauf le personnage principal, a
+  une **jauge de faim** de 0 à 100 (`FAMILLE.FAIM`, `js/engine/repas.js`). Elle baisse d'un point
+  tous les 100 pixels marchés sur la carte (`js/famille-ferme.js` → `marcherMembre`) et de
+  `FAIM.AIDE` points par tâche du second adulte aux bêtes (`aideBetes`).
+- Arrivé à **20**, le membre mange jusqu'à 100 (`repasStep`, à chaque pas de la journée) : dans la
+  **boîte à nourriture** (un bloc de l'Atelier, 3 planches, posé dans une pièce close), d'abord ce
+  qui périme le plus tôt ; sur la carte, il va à la boîte et s'y baisse (`allerManger`). Sans rien
+  à manger, il a faim : une alerte, et `VILLE.BONHEUR.FAIM` de bonheur en moins la nuit.
+- Le joueur remplit la boîte (un appui dessus : `js/ui/boite.js`) : **6 aliments différents, 10 de
+  chacun** (`ATELIER.BOITE`). Ce qu'elle contient périme comme l'inventaire ; reprise, elle rend
+  tout.
+- **Le réfrigérateur construit**, la boîte et son contenu reviennent dans l'inventaire
+  (`rangerBoite`) et la famille mange au frigo.
+- Les jours d'école, les **enfants rentrent à 17 h 30 avec 80 au plus** ; au coucher, ils mangent
+  jusqu'à 100.
+- Un aliment rend sa **valeur** : énergie ÷ 5, + 10 %, arrondie au-dessus (`valeurAliment` :
+  carotte 2, baie 2, patate 5, conserve 6), à la famille comme au personnage (l'en-cas).
+- La nuit recopie ce qui a été mangé dans la journée (`feedFamily`) : l'**autonomie** est la part
+  des points mangés qui vient de la ferme (un jour sans repas garde celle de la veille) ; l'énergie
+  du réveil vaut 60 + 40 × la jauge moyenne de la famille au coucher.
+- Sur la ferme dessinée (jusqu'à sa suppression), sans Atelier, la famille mange dans l'inventaire.
+
 ## La ferme générée (étape 2)
 
 - **La carte** : `genererFerme(graine)` rend une carte au format de Tiled (144 × 114 tuiles),

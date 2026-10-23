@@ -11,6 +11,7 @@ import { nightActive } from './clock.js';
 import { growDue } from './crops.js';
 import { irrigate, robotStep, runRobotCharge } from './automation.js';
 import { advanceNight, nightSpeed } from './night.js';
+import { repasStep } from './repas.js';
 import { companiesStep } from './entreprises.js';
 
 /* ---------- énergie : stockage et prélèvement ---------- */
@@ -153,6 +154,7 @@ export function farmStep(state, dtMs, { usure = true, horloge = true, eveilMax =
     robotStep(state);
     irrigate(state);
     companiesStep(state);
+    repasStep(state); // la famille mange à la boîte quand elle a faim (repas.js)
   }
   noteEnergyRecord(state); // Lot 9 : record d'énergie stockée
 }

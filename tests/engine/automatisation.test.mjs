@@ -282,7 +282,7 @@ testBase('semis automatique : sans le nœud, la parcelle récoltée reste vide',
   sleepOnce(s);
   matin(s);
   assertEqual(findPlot(s, 'potager-1').culture, null);
-  assertEqual(countItem(s, 'patate'), 8, 'la famille a mangé les 5 patates du stock (plus de réserve)');
+  assertEqual(countItem(s, 'patate'), 13, 'personne n\'a eu faim : les patates du stock restent');
 });
 
 testBase('semis automatique : replante la même culture, arrosée dans la foulée', () => {
@@ -294,7 +294,7 @@ testBase('semis automatique : replante la même culture, arrosée dans la foulé
   matin(s);
   const p1 = findPlot(s, 'potager-1');
   assertEqual([p1.culture, p1.stade, p1.arrose], ['patate', 0, true]);
-  assertEqual(countItem(s, 'patate'), 8 - 1, 'la famille a mangé les 5 patates du stock, le semis en prend 1');
+  assertEqual(countItem(s, 'patate'), 13 - 1, 'personne n\'a eu faim ; le semis en prend 1');
   const p2 = findPlot(s, 'potager-2');
   assertEqual([p2.culture, p2.stade, p2.arrose], ['carotte', 0, true], 'une graine de carotte de l\'inventaire');
   assertEqual(countItem(s, 'graine_carotte'), 10 - 1 + s.robot.recoltes.graine_carotte - 1, 'une pour la plantation à la main, celles de la récolte, une pour le semis');
