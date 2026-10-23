@@ -284,12 +284,20 @@ export function plotContent(p) {
   return reste;
 }
 
+// Le Réfrigérateur acheté (buildFridge : il arrive dans l'inventaire), puis posé dans le foyer
+// (testBatir, le foyer bâti d'abord s'il n'y en a pas) : construit. Le résultat de l'achat.
+export function construireFrigo(s) {
+  const r = buildFridge(s);
+  if (r.ok) assert(testBatir(s, 'frigo').ok, 'poser le Réfrigérateur');
+  return r;
+}
+
 // Version 1.10 : un frigo vide ne consomme rien ; il est construit au niveau 5 (120 unités)
 // avec `lest` épinards au frais (50 : 5 Wh/s, l'ancienne consommation de base).
 export function coldRoom({ charge = true, lest = 50 } = {}) {
   const s = farm();
   s.pieces = 5000;
-  assert(buildFridge(reach(s, 'frigo')).ok, 'construire le Réfrigérateur');
+  assert(construireFrigo(reach(s, 'frigo')).ok, 'construire le Réfrigérateur');
   s.frigo.niveau = DATA.FRIGO.CAPACITE.length;
   if (lest) s.frigo.items.epinard = [{ qty: lest, nightsLeft: shelfLife('epinard'), origin: defaultOrigin('epinard') }];
   if (charge) testFillBatteries(s);

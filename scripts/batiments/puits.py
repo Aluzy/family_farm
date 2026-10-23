@@ -1,159 +1,167 @@
-# assets/puits.png : le puits de la ferme, en haut à gauche du Moulin, 3 images de 34×40 :
-#   0 : le vieux puits seul (margelle de pierres, deux poteaux, toit de bardeaux, seau) ;
-#   1 : le même, avec le tuyau de la pompe plongé dans le puits ;
+# assets/puits.png : le puits de la ferme (un bloc posé dehors), 3 images de 48×50 :
+#   0 : le puits seul ;
+#   1 : le même, avec le tuyau de la pompe qui passe par-dessus la margelle et plonge dans l'eau ;
 #   2 : la pompe électrique seule, posée à droite du puits (par-dessus l'image 1 une fois la
 #       pompe achetée ; la carte la fait vibrer d'un pixel vers la droite quand elle tourne).
-#       Le tuyau de l'image 1 court sous son bord gauche : décalée, elle reste raccordée.
-# Aux couleurs de la serre, comme les bâtiments (PALETTE_SERRE de scripts/batiments/style_v2.py) :
-# toit en dôme, bois et pierres ; l'eau et la pompe gardent les leurs.
-# Lumière à gauche.
-from PIL import Image
+#       Le tuyau de l'image 1 sort de son flanc gauche : décalée, elle reste raccordée.
+# Vu de haut à 45° comme les blocs (scripts/rendu45.py) : une margelle ronde de pierres, l'eau et
+# le seau pendu à sa corde au milieu de l'ouverture, deux poteaux, une manivelle à droite, et
+# au-dessus un toit conique de tuiles rouges à nervures, coiffé d'un épi. Le puits est au
+# milieu de l'image (la carte la centre sur sa case), le bas de la margelle sur le bas de l'image.
 import math
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, '..'))  # scripts/pixel.py, scripts/rendu45.py
 from pixel import ASSETS, rangee  # noqa: E402
+from rendu45 import Toile, boite, cylindre, disque, ton  # noqa: E402
 from style_v2 import PALETTE_SERRE as PS  # noqa: E402
 
-TOIT = PS['toit']
+W, H = 48, 50
+X0, Y0 = 24, 41                      # le pied de l'axe du puits dans l'image
 
-W, H = 34, 40
-C = {
-    'out': (36, 30, 20),
-    # pierres
-    'sj': PS['pierre'][0], 'sd': PS['pierre'][1], 'sm': PS['pierre'][2], 'sl': PS['pierre'][3], 'sh': PS['pierre'][4],
-    # eau
-    'eau': (28, 38, 58), 'eau_l': (64, 96, 138),
-    # bois
-    'wo': PS['cadre'][0], 'wd': PS['bois'][1], 'wm': PS['bois'][2], 'wl': PS['bois'][3],
-    # toit (les tons des toits des bâtiments)
-    'rj': TOIT[0], 'rd': TOIT[2], 'rm': TOIT[3], 'rl': TOIT[4], 'rh': TOIT[5],
-    # pompe
-    'po': (28, 32, 40), 'pd': (38, 62, 66), 'pm': (58, 92, 96), 'pl': (96, 140, 140),
-    'tu': (120, 124, 130), 'tl': (176, 180, 186), 'voyant': (240, 204, 80),
-}
-CX = 13          # axe du puits
-TOP, BOT = 24, 34  # centre de l'ellipse du haut de la margelle, et du bas
-RX, RY = 10, 4
+PIERRE = PS['pierre']
+BOIS = PS['bois']
+TUILE = [(92, 34, 24), (122, 47, 34), (155, 63, 44), (185, 87, 59), (210, 122, 82)]
+EAU = [(20, 28, 46), (28, 38, 58), (40, 56, 84), (64, 96, 138)]
+FER = [(52, 54, 60), (90, 94, 102), (140, 146, 156)]
+CORDE = [(120, 96, 60), (170, 140, 92)]
+TUYAU = [(96, 100, 106), (140, 144, 150), (186, 190, 196)]
+POMPE = [(28, 32, 40), (38, 62, 66), (58, 92, 96), (96, 140, 140)]
+VOYANT = (240, 204, 80)
+
+RO, RI, HM, EAU_Z = 12.5, 10, 9, 6     # margelle : rayons dehors et dedans, hauteur ; l'eau
+ZT, R, HR = 30, 15.5, 9                # le toit : avant-toit, rayon, hauteur du cône
+NERVURES = 8
 
 
-def frame(kind):
-    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    px = im.load()
+def margelle(t):
+    # le flanc : des rangées de pierres de 3 px, joints décalés d'une rangée à l'autre
+    def flanc(phi, z, s):
+        rang = int(z // 3)
+        u = (phi * RO) / 5.0 + (0.5 if rang % 2 else 0)
+        if (z % 3) < 0.6 or (u % 1) < 0.18:
+            return ton(PIERRE, s, -2)
+        v = (int(u) * 7 + rang * 3) % 5
+        return ton(PIERRE, s * 0.85 + 0.1, -1 if v == 0 else (1 if v == 3 else 0))
+    cylindre(t, 0, 0, RO, 0, HM, flanc, 'margelle')
 
-    def put(x, y, c, a=255):
-        if 0 <= x < W and 0 <= y < H:
-            px[x, y] = (C[c] if isinstance(c, str) else c) + (a,)
+    # le rebord : des pierres plates, une sur deux plus claire
+    def rebord(rho, phi, s):
+        k = phi * 8 / (2 * math.pi)
+        if k % 1 < 0.08 or abs(rho - (RI + 0.3)) < 0.3:
+            return PIERRE[2]
+        return PIERRE[4] if int(k) % 2 else PIERRE[3]
+    disque(t, 0, 0, RI, RO, HM, rebord, 'margelle')
 
-    if kind == 'pompe':
-        draw_pump(put)
-        return im
+    # la paroi du dedans (le fond se voit, dans l'ombre)
+    def paroi(phi, z, s):
+        rang = int(z // 3)
+        u = (phi * RI) / 5.0 + (0.5 if rang % 2 else 0)
+        if (z % 3) < 0.6 or (u % 1) < 0.18:
+            return (60, 54, 44)
+        return ton(PIERRE[:3], 0.3 + 0.4 * (z - EAU_Z) / (HM - EAU_Z))
+    cylindre(t, 0, 0, RI, EAU_Z, HM, paroi, 'paroi', interieur=True)
 
-    def half(x, ry):
-        d = (x - CX) / (RX + 0.5)
-        return ry * math.sqrt(max(0.0, 1 - d * d))
-
-    # margelle : cylindre de pierres en rangées de 3 px, joints décalés
-    for x in range(CX - RX, CX + RX + 1):
-        y0 = round(TOP + half(x, RY))
-        y1 = round(BOT + half(x, RY))
-        for y in range(y0, y1 + 1):
-            if x in (CX - RX, CX + RX) or y == y1:
-                put(x, y, 'out'); continue
-            row = (y - round(TOP + half(x, RY))) // 3
-            joint_h = (y - round(TOP + half(x, RY))) % 3 == 2
-            joint_v = (x + (row % 2) * 3) % 6 == 0
-            if joint_h or joint_v:
-                put(x, y, 'sj'); continue
-            t = (x - (CX - RX)) / (2 * RX)
-            put(x, y, 'sh' if t < 0.18 else 'sl' if t < 0.4 else 'sm' if t < 0.75 else 'sd')
-    # dessus de la margelle : anneau clair, eau sombre au milieu
-    for x in range(CX - RX, CX + RX + 1):
-        h = half(x, RY)
-        for y in range(round(TOP - h), round(TOP + h) + 1):
-            inner = ((x - CX) / (RX - 2.5)) ** 2 + ((y - TOP) / (RY - 1.5)) ** 2 <= 1
-            if y == round(TOP - h) or x in (CX - RX, CX + RX):
-                put(x, y, 'out')
-            elif inner:
-                put(x, y, 'eau_l' if (y == TOP and CX - 4 <= x <= CX - 2) else 'eau')
-            else:
-                put(x, y, 'sh' if x < CX else 'sl')
-    # poteaux
-    for x0 in (CX - RX + 1, CX + RX - 2):
-        for y in range(8, TOP + 1):
-            put(x0, y, 'wl' if x0 < CX else 'wm')
-            put(x0 + 1, y, 'wd')
-    # treuil
-    for x in range(CX - RX + 1, CX + RX):
-        put(x, 12, 'wo')
-        put(x, 13, 'wm')
-        put(x, 14, 'wd')
-    put(CX + RX, 13, 'wo'); put(CX + RX + 1, 13, 'wo'); put(CX + RX + 1, 14, 'wo')  # manivelle
-    # corde et seau
-    for y in range(15, 18):
-        put(CX, y, 'wo')
-    for y in range(18, 22):
-        for x in range(CX - 2, CX + 3):
-            if y == 21 or x in (CX - 2, CX + 2):
-                put(x, y, 'wo')
-            else:
-                put(x, y, 'tl' if y == 19 else 'wl' if x < CX else 'wm')
-    # toit en dôme, bardeaux : demi-largeur span(y), un quart de cercle aplati du sommet (y = 1)
-    # à l'avant-toit ; vu de 3/4, son bord bas est une demi-ellipse (bombe(x) pixels plus bas au
-    # milieu qu'aux bouts), et les rangées de bardeaux suivent cette courbe. Contour sombre.
-    def span(y):
-        t = (9.5 - min(y, 9)) / 9.0
-        return 13.4 * math.sqrt(max(0.0, 1 - t * t)) if y >= 1 else -1
-
-    def bombe(x):
-        d = (x - CX) / 14.0
-        return 2.2 * math.sqrt(max(0.0, 1 - d * d))
-
-    def dedans(x, y):
-        return abs(x - CX) <= span(y) and y <= 9 + bombe(x)
-
-    for y in range(1, 13):
-        for x in range(CX - 14, CX + 15):
-            if not dedans(x, y):
-                continue
-            if not (dedans(x - 1, y) and dedans(x + 1, y) and dedans(x, y - 1) and dedans(x, y + 1)):
-                put(x, y, 'rj'); continue
-            v = y - bombe(x)                      # hauteur le long de la courbe
-            row = math.floor((v - 1) / 3)
-            if (v - 1) - 3 * row >= 2.2 or (x + (row % 2) * 2) % 4 == 0:
-                put(x, y, 'rd'); continue
-            t = (x - CX) / 13
-            put(x, y, 'rh' if t < -0.45 else 'rl' if t < -0.1 else 'rm' if t < 0.45 else 'rd')
-    if kind == 'tuyau':
-        # tuyau : de la pompe au bord du puits, puis dedans
-        for x in range(CX + 4, 27):
-            put(x, 26, 'tl'); put(x, 27, 'tu')
-        for y in range(TOP, 27):
-            put(CX + 4, y, 'tu')
-    return im
+    # l'eau, sombre, un reflet à gauche
+    def eau(rho, phi, s):
+        x, d = rho * math.cos(phi), rho * math.sin(phi)
+        if -6 < x < -2 and -3 < d < -1.5:
+            return EAU[3]
+        if rho > RI - 1.5 and d > 0:
+            return EAU[0]
+        return EAU[1] if int(x + d * 2) % 7 else EAU[2]
+    disque(t, 0, 0, 0, RI, EAU_Z, eau, 'eau')
 
 
-def draw_pump(put):
-    # corps de la pompe
-    for x in range(25, 33):
-        for y in range(25, 36):
-            if x in (25, 32) or y in (25, 35):
-                put(x, y, 'po')
-            elif y == 28:
-                put(x, y, 'pd')
-            else:
-                put(x, y, 'pl' if x == 26 else 'pm' if x < 31 else 'pd')
-    # moteur sur le dessus
-    for x in range(26, 32):
-        for y in range(21, 25):
-            put(x, y, 'po' if y == 21 or x in (26, 31) else 'pl' if x == 27 else 'pm')
-    for y in (22, 23):
-        put(29, y, 'pd')
-    put(30, 31, 'voyant')
+def seau(t, z0=EAU_Z - 0.5, h=4):
+    # un seau de bois cerclé de fer, à moitié dans l'eau, et sa corde jusque sous le toit
+    def flanc(phi, z, s):
+        if abs(z - (z0 + h - 0.8)) < 0.5 or abs(z - (z0 + 0.8)) < 0.5:
+            return ton(FER, s)
+        return ton(BOIS[1:], s)
+    cylindre(t, 0, 0, 3, z0, z0 + h, flanc, 'seau')
+    disque(t, 0, 0, 0, 2.6, z0 + h - 0.6, lambda r, p, s: EAU[1] if r < 1.6 else BOIS[1], 'seau')
+    z = z0 + h
+    while z < ZT:
+        t.point(0.2, 0, z, CORDE[1] if int(z) % 2 else CORDE[0], 'corde')
+        z += 0.2
 
 
-sheet = rangee([frame(kind) for kind in ('puits', 'tuyau', 'pompe')], W, H)
+def poteaux(t):
+    for x in (-RO + 1.2, RO - 1.2):
+        cylindre(t, x, 0, 1.3, HM, ZT, lambda p, z, s: ton(BOIS, s), 'poteau')
+    # la manivelle, à droite : un axe, puis le bras qui descend
+    for i in range(12):
+        t.point(RO + 0.2 + i * 0.25, 0, ZT - 6, FER[1], 'manivelle')
+    for i in range(10):
+        t.point(RO + 3, 0, ZT - 6 - i * 0.3, FER[0], 'manivelle')
+
+
+def toit(t):
+    # un cône de tuiles : NERVURES nervures plus sombres, des rangs tous les 4 px
+    def relief(rho, phi):
+        k = HR / R
+        return HR * (1 - rho / R), (math.cos(phi) * k, math.sin(phi) * k, 1)
+
+    def tuile(rho, phi, s):
+        a = (phi * NERVURES / (2 * math.pi)) % 1
+        if a < 0.07 or a > 0.97:
+            return ton(TUILE, s, -2)
+        if rho % 4 < 0.55:
+            return ton(TUILE, s, -1)
+        if rho < 1.2:
+            return TUILE[1]
+        return ton(TUILE, s * 0.9 + 0.1)
+    disque(t, 0, 0, 0, R, ZT, tuile, 'toit', relief=relief)
+    # l'épi du faîte
+    cylindre(t, 0, 0, 1.2, ZT + HR - 0.5, ZT + HR + 2.5, lambda p, z, s: ton(TUILE, s, -1), 'epi')
+    disque(t, 0, 0, 0, 1.2, ZT + HR + 2.5, lambda r, p, s: TUILE[-1], 'epi')
+
+
+def tuyau(t):
+    # de la pompe (à droite) jusqu'au-dessus de la margelle, puis il plonge dans l'eau
+    xp, zh = 16.5, HM + 2
+    x = RI - 2.5
+    while x <= xp:
+        for dz in (0, 0.5, 1):
+            t.point(x, -1.5, zh + dz, TUYAU[2] if dz == 1 else TUYAU[1], 'tuyau')
+        x += 0.2
+    z = EAU_Z
+    while z <= zh + 1:
+        for dx in (0, 0.5, 1):
+            t.point(RI - 2.5 + dx, -1.5, z, TUYAU[2] if dx == 0 else TUYAU[0], 'tuyau')
+        z += 0.2
+
+
+def pompe(t):
+    # le corps posé à droite du puits, son moteur dessus, un voyant
+    def corps(face, u, v, s):
+        if face == 'devant' and abs(u - 19.5) < 0.6 and abs(v - 4) < 0.6:
+            return VOYANT
+        if face == 'devant' and abs(v - 6.5) < 0.4:
+            return POMPE[1]
+        return ton(POMPE, s * 0.8 + 0.2)
+    boite(t, 16, 21.5, -3, 2, 0, 8.5, corps, 'pompe')
+    cylindre(t, 18.7, -0.5, 1.8, 8.5, 12, lambda p, z, s: ton(POMPE, s * 0.8 + 0.2), 'moteur')
+    disque(t, 18.7, -0.5, 0, 1.8, 12, lambda r, p, s: POMPE[3] if r < 1 else POMPE[2], 'moteur')
+
+
+def image(sorte):
+    t = Toile(W, H, X0, Y0, lies=[('toit', 'corde'), ('toit', 'epi'), ('pompe', 'moteur')])
+    if sorte == 'pompe':
+        pompe(t)
+        return t.image()
+    margelle(t)
+    seau(t)
+    poteaux(t)
+    toit(t)
+    if sorte == 'tuyau':
+        tuyau(t)
+    return t.image()
+
+
+sheet = rangee([image(sorte) for sorte in ('puits', 'tuyau', 'pompe')], W, H)
 sheet.save(os.path.join(ASSETS, 'puits.png'))
 print('assets/puits.png : 3 images de', W, '×', H)

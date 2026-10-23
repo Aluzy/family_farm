@@ -7,7 +7,7 @@ import {
 import { awakeRequired } from './clock.js';
 import { tick } from './energy.js';
 import { addItem, countItem, expiringSoon, inventoryCounts, lotRank, lotsOf } from './inventory.js';
-import { buildFridge, fridgeLevel, fridgeRate, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, stockCount, upgradeFridge } from './fridge.js';
+import { fridgeLevel, fridgeRate, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, stockCount, upgradeFridge } from './fridge.js';
 import { buyItem, buyPrice, isBuyable, sellItem } from './market.js';
 import { eatSnack } from './family.js';
 import { boitePosee, depenserMembre, deposerBoite, jaugeMembre, mangeurs, repasStep, valeurAliment } from './repas.js';
@@ -549,7 +549,7 @@ export function botStepInfo(state, step, eveilS) {
     }
     case 'frigo':
       if (!isUnlocked(state, 'frigo')) return { locked: true };
-      if (!state.frigo.construit) return { cost: DATA.FRIGO.PRIX_CONSTRUCTION, buy: () => buildFridge(state) };
+      if (!state.frigo.construit) return botBatir(state, 'frigo', DATA.FRIGO.PRIX_CONSTRUCTION);
       // version 1.10 : un niveau de frigo visé (capacité)
       return fridgeLevel(state) >= (step.niveau || 1) ? { done: true } : { cost: fridgeUpgradeCost(state), buy: () => upgradeFridge(state) };
     case 'pompe':

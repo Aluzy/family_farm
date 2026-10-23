@@ -127,6 +127,7 @@ export function sourcesOf(data, id) {
   for (const [bid, b] of Object.entries((A && A.BLOCS) || {})) if (b.meuble && b.objet === id && data.MEUBLES && data.MEUBLES[b.meuble]) out.push(`meuble ${b.meuble} (Marché)`);
   if (data.DEHORS && data.DEHORS[id]) out.push('Marché (dehors)');
   if (data.RUCHE && id === data.RUCHE.OBJET) out.push('ruche (Marché)');
+  for (const b of Object.values((A && A.BLOCS) || {})) if (b.frigo && b.objet === id && data.FRIGO) out.push('achat du Réfrigérateur');
   if (data.RUCHE && id === data.RUCHE.PRODUIT) out.push('ruche');
   if (data.HACHE && id === 'bois') out.push('hache');
   if (data.HACHE && Object.values(data.HACHE.GRAINES || {}).includes(id)) out.push('hache (graine d\'un arbre abattu)');

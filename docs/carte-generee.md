@@ -107,8 +107,13 @@ Le Marché vend toujours les outils.
 - Le joueur remplit la boîte (un appui dessus : `js/ui/boite.js`) : **6 aliments différents, 10 de
   chacun** (`ATELIER.BOITE`). Ce qu'elle contient périme comme l'inventaire ; reprise, elle rend
   tout.
-- **Le réfrigérateur construit**, la boîte et son contenu reviennent dans l'inventaire
-  (`rangerBoite`) et la famille mange au frigo.
+- **Le réfrigérateur** s'achète (sa fenêtre, `buildFridge`) et arrive dans l'inventaire : c'est un
+  bloc qu'on pose dans la maison comme un meuble (`ATELIER.BLOCS.refrigerateur`, pas à l'étage ;
+  dessin `assets/meuble_refrigerateur.png`). **Posé**, il est construit : la boîte et son contenu
+  reviennent dans l'inventaire (`rangerBoite`), la famille mange au frigo et va s'y servir sur la
+  carte. **Repris**, ce qu'il gardait revient dans l'inventaire (`closeFridge`). Une partie
+  d'avant la version 48 voit son frigo posé sur une case libre du foyer (sinon, il attend dans
+  l'inventaire).
 - Les jours d'école, les **enfants rentrent à 17 h 30 avec 80 au plus** ; au coucher, ils mangent
   jusqu'à 100.
 - Un aliment rend sa **valeur** : énergie ÷ 5, + 10 %, arrondie au-dessus (`valeurAliment` :

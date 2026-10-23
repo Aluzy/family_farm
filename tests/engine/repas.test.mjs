@@ -4,14 +4,14 @@
    ========================================================================== */
 
 import {
-  aidant, aideBetes, awakeMsAtHour, boiteCount, boiteCounts, boitePosee, buildAtelier, buildFridge,
-  countItem, craft, DATA, depenserMembre, deposerBoite, farmTerrain, findMember, jaugeFamille,
+  aidant, aideBetes, awakeMsAtHour, blocsPoses, boiteCount, boiteCounts, boitePosee, buildAtelier,
+  buildFridge, caseLibreFoyer, countItem, craft, DATA, depenserMembre, deposerBoite, farmTerrain, findMember, jaugeFamille,
   jaugeMembre, mainCharacter, mangeurs, marcherMembre, placeBoite, poserBloc, poseStatus,
-  repasStep, reprendreBloc, reprendreBoite, sleepTarget, snackEnergy, sourceRepas, spoil,
-  startNight, testAddHens, testAddWheat, testBatir, testFarmMap, tick, valeurAliment, wakeEnergy,
+  fridgeCount, migrate, moveToFridge, repasStep, reprendreBloc, reprendreBoite, sleepTarget, snackEnergy, sourceRepas, spoil,
+  STATE_VERSION, startNight, testAddHens, testAddWheat, testBatir, testFarmMap, tick, valeurAliment, wakeEnergy,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, AVANT_DEMENAGEMENT, boite, garden, migreAvant, reach, setInv,
+  affamer, assert, assertEqual, construireFrigo, AVANT_DEMENAGEMENT, boite, garden, migreAvant, reach, setInv,
   sleepOnce, test, tireless,
 } from './aide.mjs';
 
@@ -176,10 +176,48 @@ test('le réfrigérateur construit : la boîte et son contenu reviennent dans l\
   setInv(s, { carotte: 6 });
   deposerBoite(s, 'carotte', 6);
   s.pieces = 5000;
-  assert(buildFridge(reach(s, 'frigo')).ok, 'frigo');
+  assert(construireFrigo(reach(s, 'frigo')).ok, 'frigo');
   assertEqual([boitePosee(s), countItem(s, 'boite_nourriture'), countItem(s, 'carotte'), boiteCounts(s), sourceRepas(s)], [false, 1, 6, {}, 'frigo']);
   assertEqual(poseStatus(s, 'boite_nourriture', boite).raison, 'La famille mange au réfrigérateur : la boîte à nourriture ne sert plus.');
   assertEqual(deposerBoite(s, 'carotte', 1).ok, false);
+});
+
+test('le réfrigérateur est un bloc : acheté, il se pose dans la maison ; repris, son contenu revient dans l\'inventaire', () => {
+  const { s } = foyerAvecBoite('frigo-bloc');
+  s.pieces = 5000;
+  reach(s, 'frigo');
+  assertEqual(poseStatus(s, 'refrigerateur', caseLibreFoyer(s)).raison, 'Achète d\'abord le Réfrigérateur (sa fenêtre, dans les Installations).');
+  assert(buildFridge(s).ok, 'acheté');
+  assertEqual([s.frigo.construit, sourceRepas(s), countItem(s, 'refrigerateur')], [false, null, 1], 'dans l\'inventaire, pas encore posé');
+  const t = caseLibreFoyer(s);
+  assert(poserBloc(s, 'refrigerateur', t).ok, 'posé dans le foyer');
+  assertEqual([s.frigo.construit, sourceRepas(s), countItem(s, 'refrigerateur')], [true, 'frigo', 0]);
+  setInv(s, { carotte: 4 });
+  moveToFridge(s, 'carotte', 4);
+  assert(reprendreBloc(s, t).ok, 'repris');
+  assertEqual([s.frigo.construit, sourceRepas(s), countItem(s, 'refrigerateur'), countItem(s, 'carotte'), fridgeCount(s, 'carotte')], [false, null, 1, 4, 0]);
+  assert(poserBloc(s, 'refrigerateur', t).ok, 'reposé');
+  assertEqual([s.frigo.construit, s.frigo.niveau, sourceRepas(s)], [true, 1, 'frigo']);
+});
+
+test('migration v47 → v48 : le réfrigérateur construit est posé dans le foyer ; sans place, il revient dans l\'inventaire', () => {
+  const { s } = foyerAvecBoite('frigo-migre');
+  s.pieces = 5000;
+  reach(s, 'frigo');
+  assert(construireFrigo(s).ok, 'frigo');
+  const t = Number(Object.keys(blocsPoses(s)).find((k) => blocsPoses(s)[k] === 'refrigerateur'));
+  setInv(s, { carotte: 3 });
+  moveToFridge(s, 'carotte', 3);
+  // (avant la version 48 : le frigo acheté n'était pas un bloc)
+  const v47 = JSON.parse(JSON.stringify(s));
+  delete v47.blocs[t];
+  v47.version = 47;
+  const m = migrate({ v: 47, t: 0, s: JSON.parse(JSON.stringify(v47)) });
+  assertEqual([m.version, m.frigo.construit, Object.values(m.blocs).filter((b) => b === 'refrigerateur').length, countItem(m, 'refrigerateur'), fridgeCount(m, 'carotte')], [STATE_VERSION, true, 1, 0, 3]);
+  // sans foyer : dans l'inventaire, avec ce qu'il gardait
+  for (const [k, b] of Object.entries(v47.blocs)) if (b === 'paillasse') delete v47.blocs[k];
+  const n = migrate({ v: 47, t: 0, s: v47 });
+  assertEqual([n.frigo.construit, countItem(n, 'refrigerateur'), countItem(n, 'carotte'), fridgeCount(n, 'carotte')], [false, 1, 3, 0]);
 });
 
 test('migration v45 → v46 : le repas du jour disparaît, la boîte arrive vide, la famille est rassasiée', () => {

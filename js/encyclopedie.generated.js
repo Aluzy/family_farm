@@ -318,7 +318,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "refrigerateur",
      "terme": "Réfrigérateur",
-     "description": "Bâtiment où la famille mange quand il est construit (la boîte à nourriture revient dans l'Inventaire), et qui empêche les aliments et plats qui y sont rangés de périmer. Il contient 25 unités au niveau 1, puis 40, 60, 90 et 120 en l'agrandissant (300, 700, 1 500 et 3 000 pièces) ; plein, on ne peut plus rien y ranger. Il consomme 100 mWh/s par unité stockée (rien s'il est vide), jour et nuit, prélevés sur la batterie ; si celle-ci se vide, le froid manque et le contenu peut recommencer à périmer.",
+     "description": "Acheté, il arrive dans l'Inventaire : il se pose dans la maison avec 🔨 Construire. Posé, la famille y mange et va s'y servir (la boîte à nourriture revient dans l'Inventaire) ; il empêche les aliments et plats qui y sont rangés de périmer. Il contient 25 unités au niveau 1, puis 40, 60, 90 et 120 en l'agrandissant (300, 700, 1 500 et 3 000 pièces) ; plein, on ne peut plus rien y ranger. Il consomme 100 mWh/s par unité stockée (rien s'il est vide), jour et nuit, prélevés sur la batterie ; si celle-ci se vide, le froid manque et le contenu peut recommencer à périmer.",
      "liens": [
       "batterie",
       "peremption"
@@ -2021,7 +2021,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "repas",
      "terme": "Boîte à nourriture",
-     "description": "Bloc fabriqué à l'Atelier (3 planches) et posé dans une pièce close du foyer. Le joueur la remplit depuis l'Inventaire (un appui sur la boîte) : 6 aliments différents au plus, 10 de chacun. Les membres qui ont faim y mangent, d'abord ce qui périme le plus tôt ; ce qu'elle contient périme comme dans l'Inventaire. Chaque aliment rend sa valeur : son énergie ÷ 5, + 10 %, arrondie au-dessus. Une fois le réfrigérateur construit, la boîte revient dans l'Inventaire avec son contenu et la famille mange au frigo.",
+     "description": "Bloc fabriqué à l'Atelier (3 planches) et posé dans une pièce close du foyer. Le joueur la remplit depuis l'Inventaire (un appui sur la boîte) : 6 aliments différents au plus, 10 de chacun. Les membres qui ont faim y mangent, d'abord ce qui périme le plus tôt ; ce qu'elle contient périme comme dans l'Inventaire. Chaque aliment rend sa valeur : son énergie ÷ 5, + 10 %, arrondie au-dessus. Une fois le réfrigérateur posé dans la maison, la boîte revient dans l'Inventaire avec son contenu et la famille mange au frigo.",
      "liens": [
       "apport_journalier",
       "energie_personnage",

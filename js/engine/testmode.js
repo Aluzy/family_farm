@@ -3,9 +3,8 @@ import { unlockTab } from './base.js';
 import { batteryCapacity, fail, findDevice, isBroken, tankCapacity } from './devices.js';
 import { noteCompta } from './compta.js';
 import { awakeMsAtHour } from './clock.js';
-import { addItem, spoil, takeItem } from './inventory.js';
-import { blocAt, blocsPoses, casesBaties, casesCouvertes, couchages, herbesSur, majPoulailler, pieceDe, poserBloc } from './blocs.js';
-import { openFridge } from './fridge.js';
+import { addItem, countItem, spoil, takeItem } from './inventory.js';
+import { blocAt, blocsPoses, casesBaties, caseLibreFoyer, couchages, herbesSur, majPoulailler, poserBloc } from './blocs.js';
 import { allPlots, makePlot, maxStage, seedItem, zoneTile } from './crops.js';
 import { farmTerrain } from './terrain.js';
 import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, storeWheat } from './animals.js';
@@ -255,8 +254,7 @@ export function testBuildVerger(state) {
 }
 
 export function testBuildFridge(state) {
-  openFridge(state);
-  return { ok: true };
+  return state.frigo.construit ? { ok: true } : testBatir(state, 'frigo');
 }
 
 // Lot 8 : toutes les batteries à 0 Wh.
@@ -413,8 +411,9 @@ function piece(state, z, w, h, hauteur = 1) {
 // Bâtit d'un coup, en vrais blocs posés sur un coin d'herbe libre de la ferme générée (sans
 // matériaux, au niveau qu'il faut déjà atteint) :
 //   - 'foyer' : une pièce close avec une paillasse par membre de la famille ;
-//   - 'four', 'cuisine', 'boite' : la station ou la boîte à nourriture dans le foyer (bâti
-//     d'abord s'il n'y en a pas) ;
+//   - 'four', 'cuisine', 'boite', 'frigo' : la station, la boîte à nourriture ou le
+//     réfrigérateur dans le foyer (bâti d'abord s'il n'y en a pas ; le réfrigérateur déjà acheté,
+//     dans l'inventaire, est celui qui se pose) ;
 //   - 'poulailler', 'etable' : une enceinte (porte dehors), le nichoir ou la mangeoire, et un
 //     enclos de barrières de 6 × 5 cases ;
 //   - 'serre' : une pièce close avec le bac à semis ;
@@ -425,7 +424,7 @@ function piece(state, z, w, h, hauteur = 1) {
 //   - une espèce du Verger ('pommier'…) : le jeune arbre planté dehors, loin des autres.
 // Pas avant le niveau qui débloque le bâtiment (levelBlock).
 export function testBatir(state, id) {
-  const verrou = { etable: 'paturage', panneau: 'energie', batterie: 'energie', citerne: 'energie', reservoir: 'energie', pompe: 'energie' }[id]
+  const verrou = { etable: 'paturage', frigo: 'frigo', panneau: 'energie', batterie: 'energie', citerne: 'energie', reservoir: 'energie', pompe: 'energie' }[id]
     || (DATA.VERGER.ARBRES[id] ? 'verger' : ['poulailler', 'silo', 'serre', 'moulin', 'four', 'cuisine'].includes(id) ? id : null);
   const bloque = verrou && levelBlock(state, verrou);
   if (bloque) return fail(bloque);
@@ -442,16 +441,16 @@ export function testBatir(state, id) {
     return r.ok && id === 'pompe' ? poserDonne(state, 'pompe', t) : r;
   }
   const tailles = { foyer: [8, 6], poulailler: [15, 7], etable: [15, 7], serre: [8, 6], moulin: [5, 5], silo: [DATA.ATELIER.SILO.LARGEUR, 1] };
-  const dansFoyer = { four: 'four', cuisine: 'cuisiniere', boite: 'boite_nourriture' };
+  const dansFoyer = { four: 'four', cuisine: 'cuisiniere', boite: 'boite_nourriture', frigo: 'refrigerateur' };
   if (dansFoyer[id]) {
     if (!couchages(state).length) {
       const r = testBatir(state, 'foyer');
       if (!r.ok) return r;
     }
-    const foyer = pieceDe(state, couchages(state)[0]);
-    const libre = foyer.cases.find((t) => !blocAt(state, t) && !casesCouvertes(state).has(t) && !foyer.portes.some((d) => [d - 1, d + 1, d - farmTerrain(state).LARGEUR, d + farmTerrain(state).LARGEUR].includes(t)));
+    const libre = caseLibreFoyer(state);
     if (libre === undefined) return fail('Plus de place dans le foyer.');
-    return poserDonne(state, dansFoyer[id], libre);
+    const sorte = dansFoyer[id];
+    return sorte === 'refrigerateur' && countItem(state, sorte) > 0 ? poserBloc(state, sorte, libre) : poserDonne(state, sorte, libre);
   }
   if (!tailles[id]) return fail('Bâtiment inconnu.');
   const [w, h] = tailles[id];

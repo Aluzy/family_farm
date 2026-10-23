@@ -4,7 +4,7 @@
    ========================================================================== */
 
 import {
-  addItem, allPlots, animalPrice, buildFridge, buyAnimal, buyCow, buyItem, buyPasture,
+  addItem, allPlots, animalPrice, buyAnimal, buyCow, buyItem, buyPasture,
   coopCapacity, coopUpgradeCost, countItem, createInitialState, cropProduct, DATA, depenserMembre,
   etatSilo, expiringSoon, farmTerrain, feedAllHens, feedHen, fillSilo, findPlot, formatQty,
   freeCowPlaces, fridgeCount, harvest, inventoryCounts, isFridgeable, isGraineComptoir, isMature,
@@ -15,7 +15,7 @@ import {
   unlockLevel, upgradePoulailler, water, wheatForHens, wheatTotal, zoneTile,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, AVANT_DEMENAGEMENT, boite, fillCows, fillSheep, garden, growZone,
+  affamer, assert, assertEqual, construireFrigo, AVANT_DEMENAGEMENT, boite, fillCows, fillSheep, garden, growZone,
   migreAvant, ml, pature, ranch, reach, setInv, test,
 } from './aide.mjs';
 
@@ -592,7 +592,7 @@ test('blé : le Silo se remplit avec le blé de l\'inventaire (la nuit, à l\'am
 test('blé : il ne va pas au frigo (sa place est au Silo)', () => {
   const s = ranch();
   s.pieces = 1000;
-  buildFridge(reach(s, 'frigo'));
+  construireFrigo(reach(s, 'frigo'));
   setInv(s, { ble: 4, carotte: 3 });
   assertEqual([isFridgeable('ble'), isFridgeable('carotte'), isFridgeable('conserve')], [false, true, false]);
   assertEqual(moveToFridge(s, 'ble', 2).ok, false);
@@ -604,7 +604,8 @@ test('« Tout ranger » : tous les aliments frais vont au frigo en une fois, sau
   setInv(s, { carotte: 3, tomate: 2, ble: 4, conserve: 10 });
   assertEqual(moveAllToFridge(s).ok, false, 'pas de frigo');
   s.pieces = 1000;
-  buildFridge(reach(s, 'frigo'));
+  construireFrigo(reach(s, 'frigo'));
+  setInv(s, { carotte: 3, tomate: 2, ble: 4, conserve: 10 });   // (le foyer bâti : le Silo a pris le blé)
   const r = moveAllToFridge(s);
   assertEqual([r.ok, r.moved, r.reste], [true, 5, 0]);
   assertEqual([r.items.carotte, r.items.tomate], [3, 2]);

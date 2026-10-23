@@ -246,7 +246,7 @@
     // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la
     // batterie, le puits ou la citerne, l'énergie ou l'eau ; sur le nichoir, le Poulailler ; sur la mangeoire, l'Étable ; sur le bac à semis, la Serre ;
     // sur la meule, le Moulin ; sur la boîte à nourriture, ce qu'elle contient (le silo : silo.js, siloAt)
-    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite' },
+    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo' },
     // le bloc clé de chaque bâtiment (étape 5b) : là où l'on ramasse ce qu'il donne (le silo :
     // le pied de sa première colonne)
     cles: { poulailler: 'nichoir', etable: 'mangeoire', serre: 'bac_semis', silo: 'bloc_silo' },
@@ -332,11 +332,12 @@
   [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
     [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641], [944.8, 673.1]]
     .forEach((p, i) => { DEFAULT_OBJECTS[TREE_OBJECT + (i + 1)] = { x: p[0], y: p[1], width: 63.7, height: 78.2 }; });
-  // puits.png (scripts/batiments/puits.py) : 3 images de 34×40, le vieux puits seul (0), le
-  // puits avec le tuyau de la pompe (1), la pompe seule (2), posée par-dessus une fois achetée.
+  // puits.png (scripts/batiments/puits.py) : 3 images de 48×50 vues de haut à 45°, le puits
+  // seul (0), le puits avec le tuyau de la pompe (1), la pompe seule (2), posée par-dessus une
+  // fois achetée.
   // modèle.pompe = la pompe est achetée ; modèle.pompeEnMarche = elle tourne (elle vibre alors
   // d'un pixel vers la droite, toutes les PUMP_SHAKE_MS).
-  const WELL = { key: 'puits', file: 'puits.png', frame: { frameWidth: 34, frameHeight: 40 }, object: 'puits', frames: { puits: 0, tuyau: 1, pompe: 2 } };
+  const WELL = { key: 'puits', file: 'puits.png', frame: { frameWidth: 48, frameHeight: 50 }, object: 'puits', frames: { puits: 0, tuyau: 1, pompe: 2 } };
   const PUMP_SHAKE_MS = 70;
   // citerne.png (scripts/batiments/citerne.py) : 5 images de 24×34, le tube de niveau vide
   // (0) jusqu'à plein (4). modèle.citerne = cette image, ou -1 tant que le réservoir n'est pas acheté.
@@ -362,11 +363,11 @@
     poule: ['poule.png', { frameWidth: 16, frameHeight: 16 }],
   };
   // Les meubles de la maison (scripts/batiments/meubles.py, assets/meuble_<dessin>.png), posés en
-  // blocs dans une pièce close (js/carte/ferme/chantier.js).
+  // blocs dans une pièce close (js/carte/ferme/chantier.js) ; le réfrigérateur aussi.
   const MEUBLES = [
     'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3',
     'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3', 'paillasse',
-    'lit_double',
+    'lit_double', 'refrigerateur',
   ];
   // La couverture seule de chaque lit (meuble_<lit>_drap.png) : posée par-dessus le personnage
   // quand il y dort (js/fermier.js). La paillasse : son lit tant qu'aucun lit n'est acheté.
