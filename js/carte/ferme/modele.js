@@ -222,7 +222,10 @@
         if (niveau < 0 || !this.has(TANK.key) || (this.ctx.carte && !rect)) return;
       }
       if (!this.tank) { this.tank = this.placeProp(TANK, rect); this.tankAt = at; this.sunDirty = true; }
-      this.tank.setFrame(Math.min(niveau, TANK.max));
+      const f = Math.min(niveau, TANK.max);
+      // (un niveau de capacité de plus : la cuve grandit, son ombre aussi)
+      if (Math.floor(Number(this.tank.frame.name) / 5) !== Math.floor(f / 5)) this.sunDirty = true;
+      this.tank.setFrame(f);
     },
 
     // Image d'une planche posée comme un bâtiment sur le rectangle `def.object` (ou `rect`).

@@ -339,9 +339,11 @@
   // d'un pixel vers la droite, toutes les PUMP_SHAKE_MS).
   const WELL = { key: 'puits', file: 'puits.png', frame: { frameWidth: 50, frameHeight: 50 }, object: 'puits', frames: { puits: 0, tuyau: 1, pompe: 2 } };
   const PUMP_SHAKE_MS = 70;
-  // citerne.png (scripts/batiments/citerne.py) : 5 images de 28×38 vues de haut à 45°, le tube de niveau vide
-  // (0) jusqu'à plein (4). modèle.citerne = cette image, ou -1 tant que le réservoir n'est pas acheté.
-  const TANK = { key: 'citerne', file: 'citerne.png', frame: { frameWidth: 28, frameHeight: 38 }, object: 'citerne', max: 4 };
+  // citerne.png (scripts/batiments/citerne.py) : des images de 28×58 vues de haut à 45°, 5 à
+  // la suite par niveau du réservoir (la cuve plus haute à chaque niveau), le tube de niveau
+  // vide (0) jusqu'à plein (4) : (niveau - 1) × 5 + remplissage. modèle.citerne = cette image, ou
+  // -1 tant que le réservoir n'est pas acheté.
+  const TANK = { key: 'citerne', file: 'citerne.png', frame: { frameWidth: 28, frameHeight: 58 }, object: 'citerne', max: 24 };
   // Les animaux de compagnie de la vie d'ambiance (chat.png, chien.png…) : 8 cases de 16×16
   // (leur ordre : CAT_FRAMES dans js/ambient-life.js). Sans l'image, pas d'animal ; rien d'autre ne change.
   const CAT_FRAME = { frameWidth: 16, frameHeight: 16 };
