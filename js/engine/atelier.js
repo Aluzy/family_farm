@@ -8,6 +8,7 @@ import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { hasHoe, plotAtTile } from './crops.js';
 import { farmSeed, farmTerrain, tileCount } from './terrain.js';
 import { cutBushCases } from './outils.js';
+import { noter } from './journal.js';
 
 /* ---------- la ferme générée : ramasser à la main, l'Atelier ---------- */
 
@@ -141,6 +142,7 @@ export function ramasser(state, id) {
   if (!def.gratuit && !canAfford(state, 'ramasser')) return fail(TIRED);
   cueillette(state).pris.push(id);
   addItem(state, p.objet, n);
+  noter('ramasse', { item: p.objet, n });
   if (!def.gratuit) spendEnergy(state, 'ramasser');
   gainActionXp(state, 'ramasser');
   return { ok: true, sorte: p.sorte, items: { [p.objet]: n } };
@@ -216,6 +218,7 @@ export function craft(state, id) {
     state.outils[r.outil] = true;
   }
   for (const [item, n] of Object.entries(r.sortie || {})) addItem(state, item, n);
+  noter('fabrique', { recette: id, items: { ...(r.sortie || {}) }, outil: r.outil || null });
   spendEnergy(state, 'fabriquer');
   gainActionXp(state, 'fabriquer');
   return { ok: true, items: { ...(r.sortie || {}) }, outil: r.outil || null };

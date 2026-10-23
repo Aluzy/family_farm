@@ -57,7 +57,7 @@
       <div class="kicker">Confidentialité</div>
       <h1>Cookies et traceurs</h1>
       <p class="lead">Ce que Ferme Familiale enregistre dans votre navigateur, pourquoi, et comment garder la main.</p>
-      <p class="meta">Version 1.2 · dernière mise à jour : 10 octobre 2026</p>
+      <p class="meta">Version 1.3 · dernière mise à jour : 23 octobre 2026</p>
     </header>
 
     <div class="summary">
@@ -87,6 +87,7 @@
           <tr><td><code>ferme-consent</code></td><td>Mémoriser votre choix sur le suivi (accepté ou refusé, date, version de cette page).</td><td><code>localStorage</code></td><td>6 mois, puis nous vous redemandons</td><td>Non requis : nécessaire pour respecter votre choix</td></tr>
           <tr><td><code>ff_sid</code></td><td>Numéro aléatoire de votre visite, pour regrouper les actions d'une même session de jeu.</td><td><code>sessionStorage</code></td><td>Jusqu'à la fermeture de l'onglet</td><td>Oui : créé seulement si vous acceptez</td></tr>
           <tr><td><code>ff_t0</code></td><td>Heure de début de votre visite.</td><td><code>sessionStorage</code></td><td>Jusqu'à la fermeture de l'onglet</td><td>Oui : créé seulement si vous acceptez</td></tr>
+          <tr><td><code>ff_player</code></td><td>Numéro aléatoire de joueur, le même d'une visite à l'autre, et le temps de jeu cumulé : pour suivre la progression d'une partie dans la durée (au bout de combien de temps un niveau est atteint).</td><td><code>localStorage</code></td><td>Jusqu'au retrait de votre accord (il est alors effacé) ou à l'effacement du stockage du site</td><td>Oui : créé seulement si vous acceptez</td></tr>
           <tr><td><code>ff_data</code></td><td>Compteurs de la visite en cours, pour ne pas les perdre si vous rechargez la page.</td><td><code>sessionStorage</code></td><td>Jusqu'à la fermeture de l'onglet</td><td>Oui : créé seulement si vous acceptez</td></tr>
         </tbody>
       </table>
@@ -102,12 +103,15 @@
       <li>les écrans consultés et le temps passé sur chacun, onglet visible ;</li>
       <li>le défilement : nombre de défilements et profondeur maximale atteinte sur chaque écran, par paliers de 25 % ;</li>
       <li>les fenêtres ouvertes (options, aide, récolte…) ;</li>
-      <li>à chaque nuit : le jour, le chapitre, l'autonomie de la famille, les pièces, l'énergie du personnage et le temps d'éveil ;</li>
+      <li>à chaque nuit : le jour, le chapitre, le niveau et l'expérience, l'autonomie de la famille et la part du repas du soir couverte, les pièces, l'énergie du personnage, le temps d'éveil, le nombre d'adultes et d'enfants de la famille (jamais leurs prénoms), le type de ferme et l'étape du didacticiel ;</li>
+      <li>pour chaque jour de jeu : le temps réel passé, le nombre de gestes du personnage par type (couper, piocher, arroser…), l'énergie dépensée par type de geste, les ressources ramassées, les objets fabriqués et les blocs posés ;</li>
+      <li>chaque niveau atteint, avec le jour de jeu et le temps de jeu cumulé ;</li>
       <li>le commentaire que vous choisissez d'écrire et d'envoyer, dans ⚙️ Options › « Aide-nous à améliorer le jeu ! » (1 000 signes au plus, 3 par visite) ;</li>
       <li>les alertes affichées (batteries vides, panne…) ;</li>
       <li>les erreurs techniques (message tronqué, nom du fichier et ligne, sans pile complète) ;</li>
       <li>la version du jeu, la durée de la visite, une classe d'appareil (mobile ou ordinateur) et la largeur d'écran arrondie à 100 pixels ;</li>
-      <li>le numéro de session aléatoire, l'heure de début et la dernière mise à jour.</li>
+      <li>le numéro de session aléatoire, l'heure de début et la dernière mise à jour ;</li>
+      <li>le numéro de joueur aléatoire, la date de sa création et le temps de jeu cumulé.</li>
     </ul>
     <p><strong>Jamais enregistré :</strong> votre nom, votre e-mail, votre position, ce que vous écrivez dans un champ de texte (à l'exception du commentaire que vous décidez vous-même d'envoyer : n'y indiquez aucune donnée personnelle), le contenu de votre sauvegarde exportée ou importée. Le jeu ne lit ni ne conserve votre adresse IP. Aucun enregistrement d'écran ni de vidéo de votre partie n'est réalisé.</p>
 
@@ -123,9 +127,9 @@
     <h2>9. Vos choix et vos droits</h2>
     <ul>
       <li><strong>Accepter ou refuser.</strong> Un bandeau s'affiche à votre première visite dans le jeu. Refuser n'enlève rien au jeu.</li>
-      <li><strong>Changer d'avis.</strong> Dans le jeu, ouvrez ⚙️ Options puis « Confidentialité » : le suivi s'arrête immédiatement et les traceurs <code>ff_sid</code>, <code>ff_t0</code> et <code>ff_data</code> sont effacés.</li>
+      <li><strong>Changer d'avis.</strong> Dans le jeu, ouvrez ⚙️ Options puis « Confidentialité » : le suivi s'arrête immédiatement et les traceurs <code>ff_sid</code>, <code>ff_t0</code>, <code>ff_data</code> et <code>ff_player</code> sont effacés.</li>
       <li><strong>Signal du navigateur.</strong> Si votre navigateur envoie Global Privacy Control ou Do Not Track, aucun suivi n'est activé.</li>
-      <li><strong>Vos droits.</strong> Accès, rectification, effacement, limitation, opposition et retrait du consentement : écrivez à <a href="mailto:contact.voidr@gmail.com">contact.voidr@gmail.com</a>. Comme les données sont rattachées à un numéro aléatoire sans identité, indiquez-nous votre numéro de session, affiché dans ⚙️ Options › Confidentialité tant que le suivi est actif, pour que nous puissions retrouver vos données.</li>
+      <li><strong>Vos droits.</strong> Accès, rectification, effacement, limitation, opposition et retrait du consentement : écrivez à <a href="mailto:contact.voidr@gmail.com">contact.voidr@gmail.com</a>. Comme les données sont rattachées à un numéro aléatoire sans identité, indiquez-nous votre numéro de session ou de joueur, affichés dans ⚙️ Options › Confidentialité tant que le suivi est actif, pour que nous puissions retrouver vos données.</li>
       <li><strong>Réclamation.</strong> Vous pouvez saisir la CNIL (<a href="https://www.cnil.fr" rel="noopener">www.cnil.fr</a>).</li>
       <li><strong>Effacer vous-même.</strong> Vous pouvez vider le stockage du site dans les réglages de votre navigateur. Attention : cela supprime aussi votre partie ; exportez-la d'abord via ⚙️ Options › Exporter.</li>
     </ul>

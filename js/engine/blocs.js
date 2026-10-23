@@ -17,6 +17,7 @@ import { robotOn } from './automation.js';
 import { couchagesEtage, etageHorsEmprise, rangerEtage } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
 import { botteleuseReprise } from './botteleuse.js';
+import { noter } from './journal.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -480,7 +481,7 @@ export function poseStatus(state, sorte, tile) {
 // est foulée (fauchée, sans paille : foulerAutour).
 export function poserBloc(state, sorte, tile) {
   const r = poser(state, sorte, tile);
-  if (r.ok) foulerAutour(state, tile);
+  if (r.ok) { foulerAutour(state, tile); noter('pose', { sorte }); }
   return r;
 }
 

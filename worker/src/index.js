@@ -1,7 +1,9 @@
 // Point de collecte Ferme Familiale (Cloudflare Worker + R2).
 // - POST /session : reçoit le JSON d'une session (depuis le jeu) et l'écrit dans
 //   le bucket R2 sous la clé sessions/<sid>.json. Un envoi ultérieur de la même
-//   session remplace le fichier (dernière version = la plus complète).
+//   session remplace le fichier (dernière version = la plus complète). Une session
+//   de la version 2 porte un numéro de joueur : sa fiche players/<id>.json (sa
+//   progression d'une visite à l'autre) est mise à jour (mergePlayer).
 // - Tous les jours à 13 h (heure de Paris) : calcule le rapport des dernières 24 h
 //   et le publie comme issue d'un dépôt GitHub PRIVÉ (l'e-mail vient des notifications
 //   GitHub). Le Worker refuse de publier si ce dépôt n'est pas privé : le rapport
@@ -9,16 +11,19 @@
 // - GET /report (facultatif) : aperçu du rapport en Markdown, ou publication de test
 //   avec &publish=1. Protégé par REPORT_TOKEN : sans ce secret, la route n'existe pas.
 
-import { buildReport, renderMarkdown, reportSubject, parisHour } from './report.mjs';
+import { buildReport, mergePlayer, renderMarkdown, reportSubject, parisHour } from './report.mjs';
 
 const ALLOWED_ORIGIN = 'https://aluzy.github.io';
 const MAX_BYTES = 64 * 1024;
 const SID_RE = /^[A-Za-z0-9-]{8,64}$/;
+const PID_RE = SID_RE;
 const MAX_FEEDBACK = 3;
 const MAX_FEEDBACK_CHARS = 1000;
 
-// Fichiers de session lus au maximum par rapport (limite de sous-requêtes de Cloudflare).
-const MAX_READ = 800;
+// Fichiers lus au maximum par rapport (limite de sous-requêtes de Cloudflare) : les
+// sessions, puis les fiches des joueurs.
+const MAX_READ = 700;
+const MAX_PLAYERS_READ = 200;
 const READ_BATCH = 25;
 
 function corsHeaders(origin) {
@@ -51,18 +56,18 @@ function cleanFeedback(value) {
 
 /* ---------- rapport quotidien ---------- */
 
-// Liste les sessions mises à jour depuis `since`, puis lit les plus récentes.
-async function loadSessions(bucket, since) {
+// Liste les fichiers `prefix` mis à jour depuis `since`, puis lit les `max` plus récents.
+async function loadFiles(bucket, prefix, since, max) {
   const found = [];
   let cursor;
   do {
-    const page = await bucket.list({ prefix: 'sessions/', cursor, limit: 1000 });
+    const page = await bucket.list({ prefix, cursor, limit: 1000 });
     for (const o of page.objects) if (o.uploaded >= since) found.push(o);
     cursor = page.truncated ? page.cursor : undefined;
   } while (cursor);
 
   found.sort((a, b) => b.uploaded - a.uploaded);
-  const toRead = found.slice(0, MAX_READ);
+  const toRead = found.slice(0, max);
   const sessions = [];
   let unreadable = 0;
   for (let i = 0; i < toRead.length; i += READ_BATCH) {
@@ -81,8 +86,21 @@ async function loadSessions(bucket, since) {
 
 async function makeReport(env, now) {
   const since = new Date(now.getTime() - 24 * 3600 * 1000);
-  const { sessions, unreadable, truncated } = await loadSessions(env.SESSIONS, since);
-  return buildReport(sessions, now, { unreadable, truncated });
+  const { sessions, unreadable, truncated } = await loadFiles(env.SESSIONS, 'sessions/', since, MAX_READ);
+  const fiches = await loadFiles(env.SESSIONS, 'players/', since, MAX_PLAYERS_READ);
+  return buildReport(sessions, now, { unreadable: unreadable + fiches.unreadable, truncated: truncated + fiches.truncated }, fiches.sessions);
+}
+
+// La fiche du joueur de la session `data` (version 2) : relue, complétée, réécrite. Un échec
+// ne fait pas perdre la session, déjà enregistrée.
+async function updatePlayer(bucket, data) {
+  const id = String((data.player && data.player.id) || '');
+  if (!PID_RE.test(id)) return;
+  const key = `players/${id}.json`;
+  let prev = null;
+  try { const obj = await bucket.get(key); prev = obj ? await obj.json() : null; } catch { prev = null; }
+  const fiche = mergePlayer(prev, data, data.receivedAt);
+  if (fiche) await bucket.put(key, JSON.stringify(fiche), { httpMetadata: { contentType: 'application/json' } });
 }
 
 // Une issue GitHub accepte 65 536 signes au plus.
@@ -191,6 +209,7 @@ export default {
     await env.SESSIONS.put(`sessions/${data.sid}.json`, JSON.stringify(data), {
       httpMetadata: { contentType: 'application/json' },
     });
+    try { await updatePlayer(env.SESSIONS, data); } catch (e) { console.error(`fiche joueur en échec : ${e.message}`); }
     return json({ ok: true, events: data.events.length }, 200, origin);
   },
 

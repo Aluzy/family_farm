@@ -53,3 +53,4 @@ export * from './demenagement.js';
 export * from './decouverte.js';
 export * from './encyclopedie.js';
 export * from './plantation.js';
+export * from './journal.js';

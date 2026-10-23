@@ -6,7 +6,7 @@ import { GAME_VERSION } from './engine/base.js';
 import { chapterCount, mailbox } from './engine/campaign.js';
 import { alertSnapshot } from './engine/alerts.js';
 import { AUTOSAVE_MS, setState, state } from './ui/store.js';
-import {setTelChapter, telView} from './ui/consent.js';
+import {setTelChapter, telDay, telView} from './ui/consent.js';
 import { loadOrCreateState, persistState } from './ui/storage.js';
 import { catchUp, frame, onHide, renderLoop, setMailSeen, syncJobs } from './ui/loop.js';
 import { resumeExcursion } from './ui/excursion.js';
@@ -98,6 +98,7 @@ try {
   // FLU-17 : le bandeau attend que l'écran soit calme (histoire refermée, carte seule)
   if (Telemetry.init({ version: GAME_VERSION }) === 'unknown') wantConsentBanner();
   telView();
+  telDay();
 } catch (e) { /* le suivi ne doit jamais empêcher de jouer */ }
 
 // Pour la console du navigateur : l'état de la partie, le moteur et le rendu ne sont

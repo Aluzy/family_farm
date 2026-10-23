@@ -2,6 +2,7 @@ import { DATA } from './catalog.js';
 import { levelReached } from './levels.js';
 import { techEffects, techFlag } from './techtree.js';
 import { averageHappiness } from './ville.js';
+import { noter } from './journal.js';
 
 /* ---------- version 1.8 (v2, lot 4) : l'énergie du personnage ---------- */
 
@@ -51,7 +52,9 @@ export const TIRED = 'Plus assez d\'énergie : mange quelque chose ou va dormir.
 
 // Retire le coût de l'action (à appeler une fois l'action faite).
 export function spendEnergy(state, action, n = 1) {
-  state.energie = Math.max(0, (Number(state.energie) || 0) - actionCost(state, action, n));
+  const cout = actionCost(state, action, n);
+  state.energie = Math.max(0, (Number(state.energie) || 0) - cout);
+  if (cout) noter('energie', { action, mille: cout });
 }
 
 // Combien de fois l'action peut encore être faite avec l'énergie restante.

@@ -1,6 +1,7 @@
 import { DATA } from './catalog.js';
 import { floorPercent } from './base.js';
 import { fail } from './devices.js';
+import { noter } from './journal.js';
 
 /* ---------- version 1.7 (v2, lot 3) : niveaux d'expérience ---------- */
 
@@ -63,12 +64,14 @@ export function gainXp(state, amount) {
     p.niveau += 1;
     p.annonces.push({ niveau: p.niveau, nuit: state.day });
     gained.push(p.niveau);
+    noter('niveau', { niveau: p.niveau });
   }
   return gained;
 }
 
 // XP d'une action du joueur (ou d'une automatisation).
 export function gainActionXp(state, action, n = 1, auto = false) {
+  noter('action', { action, n, auto: !!auto });
   return gainXp(state, actionXp(action, n, auto));
 }
 

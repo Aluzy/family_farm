@@ -71,7 +71,7 @@ function makeBrowser(env = {}) {
   return { T, ctx, local, session, beacons, fetches, handlers };
 }
 
-const consent = (choice, over = {}) => JSON.stringify({ choice, at: new Date().toISOString(), policy: '1.2', ...over });
+const consent = (choice, over = {}) => JSON.stringify({ choice, at: new Date().toISOString(), policy: '1.3', ...over });
 
 test('sans choix : statut « unknown », aucun stockage, aucun envoi', () => {
   const b = makeBrowser();
@@ -122,7 +122,9 @@ test('acceptation : session créée, premier envoi, format et destination', () =
   assert(/^text\/plain/.test(type), 'text/plain : pas de requête préliminaire CORS');
   eq(body.sid, sid);
   eq(body.game, '0.14.0');
-  eq(body.v, 1);
+  eq(body.v, 2);
+  assert(/^[A-Za-z0-9-]{8,64}$/.test(body.player.id) && body.player.id !== sid, 'numéro de joueur distinct de la session');
+  eq(body.jours, {});
   eq(body.ended, false);
   eq(body.events[0].type, 'session_start');
   eq(body.device.cls, 'mobile');
@@ -311,4 +313,58 @@ test('payload sans commentaire : liste « feedback » vide', () => {
   b.T.init({ version: '1' });
   b.T.setConsent('granted');
   eq(b.beacons.at(-1).body.feedback, []);
+});
+
+test('joueur : un numéro aléatoire gardé d\'une visite à l\'autre, avec le temps de jeu cumulé ; effacé au retrait', () => {
+  const b = makeBrowser();
+  b.T.init({ version: '1' });
+  b.T.setConsent('granted');
+  const pid = b.T.playerId();
+  assert(pid && JSON.parse(b.local.getItem('ff_player')).id === pid, 'gardé dans localStorage');
+  // une nouvelle visite (nouvel onglet : sessionStorage vide) : même joueur, autre session
+  const b2 = makeBrowser({ local: b.local });
+  b2.T.init({ version: '1' });
+  eq(b2.T.playerId(), pid);
+  assert(b2.T.sessionId() !== pid, 'la session a son propre numéro');
+  eq(b2.beacons.at(-1).body.player.id, pid);
+  b2.T.setConsent('denied');
+  eq(b2.local.getItem('ff_player'), null, 'retrait : le numéro de joueur est effacé');
+  // sans consentement : rien
+  const b3 = makeBrowser();
+  b3.T.init({ version: '1' });
+  b3.T.game('action', { action: 'couper', n: 1 });
+  eq(b3.local.map.size, 0);
+});
+
+test('jours de jeu : actions, énergie, ressources, fabrications et blocs par jour ; passage de niveau daté', () => {
+  const b = makeBrowser();
+  b.T.init({ version: '1' });
+  b.T.setConsent('granted');
+  b.T.game('action', { action: 'couper', n: 1 });   // avant le premier jour : ignoré
+  b.T.day(3);
+  b.T.game('action', { action: 'couper', n: 1 });
+  b.T.game('action', { action: 'couper', n: 1 });
+  b.T.game('action', { action: 'arroser', n: 2, auto: true });
+  b.T.game('energie', { action: 'couper', mille: 3000 });
+  b.T.game('energie', { action: 'couper', mille: 2500 });
+  b.T.game('ramasse', { item: 'bois', n: 3 });
+  b.T.game('fabrique', { recette: 'planche', items: { planche: 1 } });
+  b.T.game('fabrique', { recette: 'faux', items: {}, outil: 'faux' });
+  b.T.game('pose', { sorte: 'mur_bois' });
+  b.T.day(4);
+  b.T.game('ramasse', { item: 'baies', n: 5 });
+  b.T.game('niveau', { niveau: 2 });
+  b.T.night({ day: 4, level: 2, xp: 600, adults: 2, children: 1, wild: true, meal: 80, tuto: 'labour' });
+  b.T._flush(false);
+  const body = b.beacons.at(-1).body;
+  eq(Object.keys(body.jours), ['3', '4']);
+  const j3 = body.jours['3'];
+  eq([j3.actions, j3.auto, j3.energie, j3.ramasse, j3.fabrique, j3.pose],
+    [{ couper: 2 }, { arroser: 2 }, { couper: 5.5 }, { bois: 3 }, { planche: 1, faux: 1 }, { mur_bois: 1 }]);
+  eq(body.jours['4'].ramasse, { baies: 5 });
+  const lvl = body.events.find((e) => e.type === 'level');
+  eq([lvl.level, lvl.day], [2, 4]);
+  assert(Number.isFinite(lvl.playMs));
+  const n = body.events.find((e) => e.type === 'night');
+  eq([n.level, n.xp, n.adults, n.children, n.wild, n.meal, n.tuto], [2, 600, 2, 1, true, 80, 'labour']);
 });
