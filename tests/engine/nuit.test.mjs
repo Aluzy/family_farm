@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Tests du moteur : repas de 19 h, nuit de 22 h, achats par quantité (1.1.1, 1.1.3) ; nuit qui défile, sommeil, semaine, calendrier lunaire (1.19).
+   Tests du moteur : fin du repas de 19 h, nuit de 22 h, achats par quantité (1.1.1, 1.1.3) ; nuit qui défile, sommeil, semaine, calendrier lunaire (1.19).
    Lancer seul : node --test tests/engine/nuit.test.mjs (ou node tests/run-tests.mjs nuit).
    ========================================================================== */
 
@@ -7,86 +7,80 @@ import {
   absoluteHours, actionCost, addItem, advanceNight, alertSnapshot, animalBuyMax, animalRoom,
   asleep, awakeMsAtHour, bedtimeDue, buildPaturage, buildSerre, buyAnimals, buyItem, buyPrice,
   buyQuote, canSleep, castLine, chopTree, collectAt, countItem, createInitialState, DATA,
-  dayOfMonth, deposit, depositOreNotebook, energyMax, familyNeed, findPlot, fishLeft, formatDay,
+  dayOfMonth, deposit, depositOreNotebook, energyMax, findPlot, fishLeft, formatDay,
   getNotifications, goToSleep, grantTech, growAll, harvest, harvestYield, hitsNeeded, hourOfDay,
-  isBuyable, maxStage, mealDue, midnightMs, migrate, MIGRATIONS, mineOre, mineRock, monthIndex,
+  isBuyable, maxStage, midnightMs, migrate, MIGRATIONS, mineOre, mineRock, monthIndex,
   monthName, moonPhase, nightActive, nightLengthMs, nightSpeed, piles, plannedAutonomy, plant,
   recipeTime, sellItem, sheepCount, simulateOffline, skipNight, sleep, sleepTarget, startNight,
-  startRecipe, STATE_VERSION, strawMissing, strawNeed, takeMeal, testAddHens, testAddSeeds,
+  startRecipe, STATE_VERSION, strawMissing, strawNeed, testAddHens, testAddSeeds,
   testAddSheep, testFillEnergy, testSetEnergyZero, testWoolReady, tick, TIRED, townSellable, water,
   waterCostFor, weekdayName, weekdayShort, woolReady, yearNumber,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, atelier, avecLune, farm, garden, ml, ranch, reach, runFor, setInv, setStraw,
+  affamer, assert, assertEqual, atelier, avecLune, farm, garden, ml, ranch, reach, runFor, setInv, setStraw,
   sleepOnce, test,
 } from './aide.mjs';
 
-/* ---------- versions 1.1.1 et 1.1.3 : repas de 19 h, nuit de 22 h, achats par quantité ---------- */
+/* ---------- versions 1.1.1 et 1.1.3 : nuit de 22 h, achats par quantité (le repas de 19 h n'est plus) ---------- */
 
-test('version 1.1.1 : version 17, la migration v16 → v17 ajoute le repas du jour (pas encore pris)', () => {
-  assertEqual(typeof MIGRATIONS[16], 'function');
-  assertEqual(createInitialState(1).repas, null);
+test('fin du repas de 19 h : version 46, la migration retire le repas du jour et ajoute la boîte à nourriture', () => {
+  assertEqual(typeof MIGRATIONS[45], 'function');
+  const s0 = createInitialState(1);
+  assertEqual(['repas' in s0, s0.boite, s0.repasJour], [false, { items: {} }, null]);
   const v16 = JSON.parse(JSON.stringify(createInitialState(4)));
-  delete v16.repas;
+  delete v16.boite;
+  delete v16.repasJour;
   v16.version = 16;
   v16.pieces = 321;
   const m = migrate({ v: 16, t: 0, s: v16 });
-  assertEqual([m.version, m.repas, m.pieces], [STATE_VERSION, null, 321]);
+  assertEqual([m.version, 'repas' in m, m.boite, m.repasJour, m.pieces], [STATE_VERSION, false, { items: {} }, null, 321]);
   assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
+  const v45 = { ...JSON.parse(JSON.stringify(m)), version: 45, repas: { heure: 19, besoin: 150 } };
+  delete v45.boite;
+  assertEqual('repas' in migrate({ v: 45, t: 0, s: v45 }), false, 'le repas pris d\'une partie en cours disparaît');
 });
 
 test('version 1.21 : la journée va de 6 h à 22 h, 30 s par heure (480 s)', () => {
-  assertEqual([DATA.TEMPS.HEURE_REVEIL, DATA.TEMPS.HEURE_REPAS, DATA.TEMPS.HEURE_NUIT, DATA.TEMPS.SECONDES_PAR_HEURE], [6, 19, 22, 30]);
+  assertEqual([DATA.TEMPS.HEURE_REVEIL, DATA.TEMPS.HEURE_REPAS, DATA.TEMPS.HEURE_NUIT, DATA.TEMPS.SECONDES_PAR_HEURE], [6, undefined, 22, 30]);
   assertEqual([awakeMsAtHour(6), awakeMsAtHour(7), awakeMsAtHour(19), awakeMsAtHour(22)], [0, 30000, 390000, 480000]);
-  // le repas et le coucher restent dans la journée, et l'on peut dormir bien avant 22 h
-  assert(awakeMsAtHour(DATA.TEMPS.HEURE_REPAS) < awakeMsAtHour(DATA.TEMPS.HEURE_NUIT), 'le repas précède le coucher');
-  assert(DATA.TEMPS.EVEIL_MIN_S * 1000 < awakeMsAtHour(DATA.TEMPS.HEURE_REPAS), 'on peut dormir avant le repas');
+  assert(DATA.TEMPS.EVEIL_MIN_S * 1000 < awakeMsAtHour(DATA.TEMPS.HEURE_NUIT), 'on peut dormir bien avant 22 h');
 });
 
-test('version 1.1.1 : le repas se prend à 19 h (234 s d\'éveil), une seule fois par jour', () => {
+test('plus de repas à 19 h : la famille mange dans la journée, quand elle a faim', () => {
   const s = garden();
   setInv(s, { conserve: 200 });
+  s.day = 3; // un mercredi : pas d'école
   s.awakeMs = awakeMsAtHour(19) - 100;
-  assertEqual([mealDue(s), hourOfDay(s)], [false, 18]);
-  s.awakeMs = awakeMsAtHour(19);
-  assertEqual([mealDue(s), hourOfDay(s)], [true, 19]);
-  const besoin = familyNeed(s);
-  const avant = countItem(s, 'conserve');
-  const r = takeMeal(s);
-  assertEqual([r.ok, r.repas.heure, r.repas.besoin, r.repas.couverture], [true, 19, besoin, 100]);
-  assert(countItem(s, 'conserve') < avant, 'les conserves sont mangées à 19 h');
-  assertEqual([mealDue(s), takeMeal(s).ok], [false, false], 'pas de deuxième repas');
-  assertEqual(JSON.parse(JSON.stringify(s)).repas, s.repas, 'le repas pris se sauvegarde');
+  tick(s, 1);
+  assertEqual(countItem(s, 'conserve'), 200, 'à 19 h, personne n\'a faim : rien n\'est mangé');
+  affamer(s);
+  assertEqual(countItem(s, 'conserve'), 200 - 3 * 14, 'au seuil, chacun mange jusqu\'à rassasié');
+  assertEqual(JSON.parse(JSON.stringify(s)).repasJour, s.repasJour, 'ce qui est mangé dans la journée se sauvegarde');
 });
 
-test('version 1.1.1 : la nuit reprend le repas de 19 h sans faire manger une deuxième fois', () => {
-  const a = garden();
-  const b = garden();
-  for (const s of [a, b]) setInv(s, { conserve: 200 });
-  // a : repas à 19 h puis coucher ; b : coucher avant 19 h (le repas est pris au coucher)
-  a.awakeMs = awakeMsAtHour(19);
-  takeMeal(a);
-  const apresRepas = countItem(a, 'conserve');
-  const ra = sleep(a);
-  b.awakeMs = 30000;
-  const rb = sleep(b);
-  assertEqual(countItem(a, 'conserve'), apresRepas, 'la nuit ne remange pas');
-  assertEqual(countItem(a, 'conserve'), countItem(b, 'conserve'), 'même repas dans les deux cas');
-  assertEqual([ra.energieMangee, ra.couverture, ra.santeAvant, ra.santeApres, ra.autonomie], [rb.energieMangee, rb.couverture, rb.santeAvant, rb.santeApres, rb.autonomie]);
-  assertEqual([a.repas, b.repas, a.awakeMs, mealDue(a)], [null, null, 0, false], 'au réveil, le repas du jour est à prendre');
+test('la nuit recopie ce que la famille a mangé dans la journée, sans la faire remanger', () => {
+  const s = garden();
+  setInv(s, { conserve: 200 });
+  s.day = 3;
+  affamer(s);
+  const apres = countItem(s, 'conserve');
+  const r = sleepOnce(s);
+  assertEqual(countItem(s, 'conserve'), apres, 'la nuit ne remange pas');
+  assertEqual([r.energieMangee, r.couverture, r.mange], [3 * 84, 100, { conserve: 42 }]);
+  assertEqual([s.repasJour, s.awakeMs], [null, 0], 'au réveil, une nouvelle journée');
 });
 
-test('version 1.21 : 22 h (480 s d\'éveil) rend la nuit due ; l\'aperçu d\'autonomie suit le repas pris', () => {
+test('version 1.21 : 22 h (480 s d\'éveil) rend la nuit due ; l\'aperçu d\'autonomie suit ce qui est mangé', () => {
   const s = garden();
   setInv(s, { conserve: 200 });
   s.awakeMs = 479900;
   assertEqual([bedtimeDue(s), hourOfDay(s)], [false, 21]);
   s.awakeMs = 480000;
   assertEqual([bedtimeDue(s), hourOfDay(s), canSleep(s)], [true, 22, true]);
-  takeMeal(s);
-  assertEqual(plannedAutonomy(s), s.repas.autonomie);
+  affamer(s);
+  assertEqual(plannedAutonomy(s), 0, 'des conserves : rien de la ferme');
   const rep = sleep(s);
-  assertEqual([s.day, s.awakeMs, bedtimeDue(s), rep.nuit], [2, 0, false, 2]);
+  assertEqual([s.day, s.awakeMs, bedtimeDue(s), rep.nuit, rep.autonomie], [2, 0, false, 2, 0]);
 });
 
 test('version 1.1.1 : horloge arrêtée (résumé du réveil ouvert), les flux tournent mais l\'heure n\'avance pas', () => {
@@ -100,15 +94,14 @@ test('version 1.1.1 : horloge arrêtée (résumé du réveil ouvert), les flux t
   assertEqual(s.awakeMs, avant + 5000);
 });
 
-test('version 1.1.1 : hors-ligne, l\'horloge s\'arrête à l\'éveil minimal (ni repas ni nuit pendant l\'absence)', () => {
+test('version 1.1.1 : hors-ligne, l\'horloge s\'arrête à l\'éveil minimal (pas de nuit pendant l\'absence)', () => {
   const s = farm({ pump: true });
   simulateOffline(s, 3600);
-  assertEqual([s.awakeMs, canSleep(s), mealDue(s), bedtimeDue(s), s.repas, s.day], [30000, true, false, false, null, 1]);
-  // parti à 20 h, après le repas : l'horloge ne recule pas et n'avance pas
+  assertEqual([s.awakeMs, canSleep(s), bedtimeDue(s), s.day], [30000, true, false, 1]);
+  // parti à 20 h : l'horloge ne recule pas et n'avance pas
   const t = farm({ pump: true });
   setInv(t, { conserve: 200 });
   t.awakeMs = awakeMsAtHour(20);
-  takeMeal(t);
   simulateOffline(t, 3600);
   assertEqual([t.awakeMs, hourOfDay(t), bedtimeDue(t), t.day], [awakeMsAtHour(20), 20, false, 1]);
 });

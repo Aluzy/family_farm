@@ -28,7 +28,6 @@ export const RAW_DATA = {
     "SECONDES_HEURE_MARCHE": 30,
     "SECONDES_PAR_HEURE": 30,
     "EVEIL_MIN_S": 30,
-    "HEURE_REPAS": 19,
     "HEURE_NUIT": 22,
     "SECONDES_PAR_HEURE_SOMMEIL": 3,
     "POUSSE_HEURES": 24,
@@ -60,6 +59,7 @@ export const RAW_DATA = {
     "AJ": { "adulte": 50, "enfant": 25 },
     "COMPOSITION": { "MEMBRES_MIN": 1, "MEMBRES_MAX": 6, "ADULTES_MIN": 1 },
     "COMPAGNIE": { "MAX": 3, "ESPECES": { "chien": { "nom": "Chien", "icone": "🐶" }, "chat": { "nom": "Chat", "icone": "🐱" } } },
+    "FAIM": { "MAX": 100, "SEUIL": 20, "PX_PAR_POINT": 100, "AIDE": 5, "ECOLE": { "JOURS": [0, 1, 3, 4], "RETOUR_H": 17.5, "NIVEAU": 80 } },
     "RESERVE_DEPART": {}
   },
   "ROBOT": {
@@ -95,6 +95,7 @@ export const RAW_DATA = {
     "REVEIL_BASE": 60,
     "REVEIL_REPAS": 40,
     "MANGER_DIVISEUR": 5,
+    "MANGER_BONUS": 10,
     "SOMMEIL_HEURES": 8
   },
   "MARCHE": { "PLANCHER": { "defaut": 120, "graine": 200 }, "PAS": 10, "MULTIPLICATEUR_PRODUCTION": 2, "TRANSFORMATIONS_DOUBLEES": ["farine"] },
@@ -247,6 +248,7 @@ export const RAW_DATA = {
     "lanterne": { "nom": "Lanterne scintillante", "icone": "🏮", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "porte": { "nom": "Porte", "icone": "🚪", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "paillasse": { "nom": "Paillasse", "icone": "🛏️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "boite_nourriture": { "nom": "Boîte à nourriture", "icone": "🧺", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_chaise": { "nom": "Chaise", "icone": "🪑", "prix": 7, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_table": { "nom": "Table", "icone": "🍽️", "prix": 22, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_tapis_1": { "nom": "Tapis tressé", "icone": "🧺", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -569,6 +571,7 @@ export const RAW_DATA = {
       "chemin": { "entrees": { "pierre": 1 }, "sortie": { "chemin": 2 } },
       "lanterne": { "entrees": { "champignon_lumineux": 1, "bois_infra": 1 }, "sortie": { "lanterne": 1 } },
       "paillasse": { "entrees": { "fibre": 2 }, "sortie": { "paillasse": 1 } },
+      "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 } },
       "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },
       "cuisiniere": { "entrees": { "pierre": 6, "planche": 4 }, "sortie": { "cuisiniere": 1 } },
       "puits_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "puits_pierre": 1 } },
@@ -608,6 +611,7 @@ export const RAW_DATA = {
       "paroi_vitree": { "nom": "Paroi vitrée", "objet": "paroi_vitree", "bloque": true, "ferme": true, "mur": true },
       "porte": { "nom": "Porte", "objet": "porte", "porte": true, "ferme": true },
       "paillasse": { "nom": "Paillasse", "objet": "paillasse", "dedans": true },
+      "boite_nourriture": { "nom": "Boîte à nourriture", "objet": "boite_nourriture", "dedans": true, "bloque": true, "unique": true, "boite": true },
       "plancher": { "nom": "Plancher", "objet": "plancher", "sol": true },
       "chemin": { "nom": "Chemin", "objet": "chemin", "sol": true, "dehors": true },
       "barriere": { "nom": "Barrière", "objet": "barriere", "bloque": true },
@@ -685,6 +689,7 @@ export const RAW_DATA = {
       "atelier": { "nom": "Atelier", "bloque": true, "ferme": true }
     },
     "PIECE_MAX": 120,
+    "BOITE": { "PLATS": 6, "QUANTITE": 10 },
     "HAUTEUR_MAX": 3,
     "MOULIN": { "HAUTEUR": 3 },
     "SILO": { "LARGEUR": 2, "HAUTEUR": 3, "HAUTEUR_MAX": 6, "BLES_PAR_BLOC": 10 },
@@ -2507,6 +2512,7 @@ export const RAW_DATA = {
     "NUITS": 80,
     "GRAINE": 1,
     "PAS_S": 5,
+    "FAIM_JOUR": 10,
     "LISSAGE": 7,
     "STRATEGIES": { "applique": { "nom": "Joueur appliqué", "eveilS": 60 }, "minimal": { "nom": "Joueur minimal", "eveilS": 30 } },
     "CAISSE": 20,

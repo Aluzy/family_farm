@@ -157,7 +157,7 @@
   // px au-dessus du bas de la paillasse.
   const BLOCS_CARTE = {
     key: 'blocs', file: 'blocs.png', frame: { frameWidth: 16, frameHeight: 24 },
-    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, bloc_silo: 12, meule: 13, lanterne: 66, escalier: 69, ruche: 71, ruche_pleine: 72, bac_fleurs: 73, entonnoir: 74, botteleuse: 75, botteleuse_marche: 76, convoyeur: 77, convoyeur_bout: 79 },
+    frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, bloc_silo: 12, meule: 13, lanterne: 66, escalier: 69, ruche: 71, ruche_pleine: 72, bac_fleurs: 73, entonnoir: 74, botteleuse: 75, botteleuse_marche: 76, convoyeur: 77, convoyeur_bout: 79, boite_nourriture: 89 },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
     // l'étage (un essai, js/carte/ferme/etage.js) : le haut de l'escalier (`haut`) ; l'étage
     // est dessiné `dy` px plus haut (la hauteur de la face des murs hauts : leurs faces se suivent) ; le niveau où l'on n'est pas,
@@ -239,14 +239,14 @@
     // la meule qui moud (le Moulin en marche) : sa pierre et sa manivelle tournent (`fps` images
     // par seconde, un tour en 8 images ; chantier.js stepFires)
     meule: { sorte: 'meule', frames: [81, 82, 83, 84, 85, 86, 87, 88], fps: 8 },
-    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'bloc_silo', 'meule', 'lanterne', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur'],
+    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'bloc_silo', 'meule', 'lanterne', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur', 'boite_nourriture'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png ; la
     // station du robot : station_robot.png, machines.js ; les blocs de silo : silo.js)
     ailleurs: ['puits', 'citerne', 'station_robot', 'bloc_silo'],
     // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la
     // batterie, le puits ou la citerne, l'énergie ou l'eau ; sur le nichoir, le Poulailler ; sur la mangeoire, l'Étable ; sur le bac à semis, la Serre ;
-    // sur la meule, le Moulin (le silo : silo.js, siloAt)
-    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot' },
+    // sur la meule, le Moulin ; sur la boîte à nourriture, ce qu'elle contient (le silo : silo.js, siloAt)
+    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite' },
     // le bloc clé de chaque bâtiment (étape 5b) : là où l'on ramasse ce qu'il donne (le silo :
     // le pied de sa première colonne)
     cles: { poulailler: 'nichoir', etable: 'mangeoire', serre: 'bac_semis', silo: 'bloc_silo' },

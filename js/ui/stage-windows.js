@@ -1,12 +1,12 @@
 import { DATA } from '../engine/catalog.js';
 import { energyLevel, enduranceReduction } from '../engine/stamina.js';
-import { EPS } from '../engine/base.js';
 import { allDevices, isOwned, marcheFerme, starterOf } from '../engine/devices.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { familyNameHtml } from './depart.js';
 import { nightActive } from '../engine/clock.js';
-import { asleep } from '../engine/night.js';
-import { memberPerso, planMeal } from '../engine/family.js';
+import { asleep, sleepTarget } from '../engine/night.js';
+import { memberPerso } from '../engine/family.js';
+import { affames, jaugeFamille } from '../engine/repas.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
 import { levelProgress, unlockLevel } from '../engine/levels.js';
@@ -46,6 +46,8 @@ import { encyclopedieNouveautes } from './encyclopedie.js';
 import { couchages } from '../engine/blocs.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './marche.js';
 import { renderChapterBanner } from './chapitres.js';
+import { renderBoite } from './boite.js';
+import { boitePosee } from '../engine/repas.js';
 import { tutoTarget } from './aide.js';
 import { registerActions } from './actions.js';
 import { toolBarHtml, toolbarOpen } from './outils.js';
@@ -298,6 +300,11 @@ export const STAGE_WINDOWS = {
   robot: {
     nom: 'Robot', icone: '🤖', ok: () => robotOn(state), bois: true,
     corps: () => `<div class="cards">${renderRobotCard()}</div>`,
+  },
+  // La boîte à nourriture posée dans le foyer : ce qu'elle contient, la remplir.
+  boite: {
+    nom: 'Boîte à nourriture', icone: '🧺', ok: () => boitePosee(state) && !state.frigo.construit, bois: true,
+    corps: () => renderBoite(),
   },
   // Meubles de la maison (intérieur) : chacun ouvre sa fenêtre, dans le cadre bois.
   // Le four : deux onglets, les aliments (pains, tartes…) et les objets (la fonte des lingots).
@@ -680,17 +687,16 @@ export function renderTabContent() {
   morphSlots(document.getElementById('tab-content'), (TAB_RENDERERS[activeTab] || TAB_RENDERERS.ferme)());
 }
 
-// Bouton « Dormir » (lune en pixel art), en bas à droite sur tous les onglets. L'aperçu du repas est dans
-// son libellé (title / aria-label) ; une pastille ne s'affiche que si le repas prévu est insuffisant.
+// Bouton « Dormir » (lune en pixel art), en bas à droite sur tous les onglets. La faim de la famille est
+// dans son libellé (title / aria-label) ; une pastille ne s'affiche que si un membre a faim sans rien à manger.
 export function renderSleepBar() {
   // Version 1.19 : le bouton « Zzz » n'est là que la nuit (de 22 h à 6 h), tant que le personnage ne
   // dort pas ; il l'envoie dans son lit (actionGoToBed), puis la nuit défile en accéléré.
   const nuit = nightActive(state) && !asleep(state); // il dort : plus rien à faire
-  // Après 19 h, le repas est pris : on montre ce qui a été mangé, plus ce qui est prévu.
-  const plan = state.repas || planMeal(state);
-  const short = plan.energie + EPS < plan.besoin;
-  const eaten = `${formatNumber(Math.min(plan.energie, plan.besoin))} / ${formatNumber(plan.besoin)}`;
-  const meal = `${state.repas ? `Repas pris à ${DATA.TEMPS.HEURE_REPAS} h` : `Repas prévu à ${DATA.TEMPS.HEURE_REPAS} h`} : ${eaten} énergie${short ? ' (insuffisant)' : ''} · autonomie ${formatPercent(plannedAutonomy(state))}`;
+  // (la jauge de faim moyenne de la famille règle l'énergie du réveil : repas.js, night.js)
+  const faim = affames(state).length;
+  const jauge = jaugeFamille(state);
+  const meal = `Famille rassasiée à ${formatPercent(jauge)}${faim ? ` (${faim} ${faim > 1 ? 'ont' : 'a'} faim)` : ''} · réveil à ${formatNumber(energyLevel({ energie: sleepTarget(state) }))} d'énergie · autonomie ${formatPercent(plannedAutonomy(state))}`;
   const label = state.nuitEnCours && state.nuitEnCours.minuit
     ? `Dormir : réveil à ${DATA.TEMPS.HEURE_REVEIL} h`
     : `Dormir : réveil à ${DATA.TEMPS.HEURE_REVEIL} h. ${meal}`;
@@ -704,7 +710,7 @@ export function renderSleepBar() {
   document.body.classList.toggle('has-toolbar', !!outils);
   morph(
     document.getElementById('sleep-fab'),
-    (short ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${eaten} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
+    (faim ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${formatPercent(jauge)} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
       (nuit ? `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}">${artHtml('sleep-on', 'sleep-art')}</button>` : '')
   );
 }
@@ -767,28 +773,6 @@ export function actionGoToBed() {
   setLastRenderAt(0);
   refresh();
   scene.goHome(() => { if (coucher && nightActive(state)) enterInterior('maison'); });
-}
-
-// Le repas de 19 h sur la carte : sur la Ferme, sans fenêtre ouverte, la maison réparée. Le
-// personnage rentre (la vue le suit jusqu'à la porte), l'intérieur de la maison s'ouvre ; il va
-// à table, la famille le rejoint, tous s'assoient et mangent. `heureux` : une bulle 😊
-// au-dessus de chacun. Renvoie false si la scène ne se joue pas (l'annonce suffit).
-export function startMealScene(repas) {
-  const scene = window.FarmStage;
-  if (activeTab !== 'ferme' || !stageActive() || stageWindow || nightActive(state)) return false;
-  if (!interiorAvailable('maison') || !(scene && scene.mealScene && scene.hasFermier && scene.hasFermier())) return false;
-  const B = DATA.VILLE.BONHEUR;
-  const heureux = repas.couverture >= 100 && (Number(repas.bonheur) || 0) - B.DECLIN >= B.BULLE;
-  const principal = mainCharacter(state);
-  const convives = state.famille.membres.filter((m) => m !== principal).map((m) => ({ perso: memberPerso(m), enfant: !!m.enfant }));
-  if (!scene.mealScene({ convives, heureux })) return false;
-  if (stageInterior === 'maison') return true;
-  if (stageInterior) { enterInterior('maison'); return true; }
-  scene.goHome(() => {
-    // le joueur a ouvert une fenêtre ou changé d'onglet entre-temps : il n'entre pas
-    if (activeTab === 'ferme' && stageActive() && !stageWindow && !stageInterior && !nightActive(state)) enterInterior('maison');
-  });
-  return true;
 }
 
 // La carte : il est couché dans son lit, il s'endort ; la nuit défile en accéléré.

@@ -14,7 +14,7 @@ import {
   testWoolReady, tick, unlockLevel, updateChapters, upgradeSilo, water, zoneTile,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, atChapter, atelier, coldRoom, farm, fillSheep, garden, holdNights, kwh, ml,
+  affamer, assert, assertEqual, atChapter, atelier, coldRoom, farm, fillSheep, garden, holdNights, kwh, ml,
   nightWithProduced, pature, plantRipe, reach, runFor, setInv, sleepOnce, test, testBase, tireless,
 } from './aide.mjs';
 
@@ -55,7 +55,7 @@ test('état initial Lot 9 : chapitre 1, compteurs à zéro, historique vide', ()
 
 /* --- autonomie --- */
 
-test('autonomie : énergie « produit » mangée ÷ besoin, plafonnée à 100 %', () => {
+test('autonomie : points « produit » mangés ÷ points mangés, plafonnée à 100 %', () => {
   assertEqual(autonomyPercent(75, 150), 50);
   assertEqual(autonomyPercent(30, 150), 20);
   assertEqual(autonomyPercent(165, 150), 100);
@@ -63,57 +63,68 @@ test('autonomie : énergie « produit » mangée ÷ besoin, plafonnée à 100 %'
   assertEqual(autonomyPercent(50, 0), 0);
   const s = farm();
   s.famille.reserve = {};
-  // Lot 11 (nutrition) : patate à 19, 6 unités (114) restent sous le besoin (150).
-  setInv(s, { patate: 6, conserve: 100 }); // 6 × 19 = 114 produit
+  // 3 membres au seuil (20) mangent jusqu'à 100 : 6 patates (valeur 5 : 30 points) d'abord, puis
+  // les conserves (valeur 6), qui ne périment pas
+  setInv(s, { patate: 6, conserve: 100 });
+  affamer(s);
   const r = sleepOnce(s);
-  assertEqual([r.energieProduit, r.autonomie], [114, 76]);
-  assertEqual(s.campagne.historique, [{ nuit: 1, pct: 76, energie: 114 }]);
-  assertEqual(lastAutonomy(s), 76);
+  assertEqual([r.energieProduit, r.energieMangee, r.autonomie], [30, 252, 11]);
+  assertEqual(s.campagne.historique, [{ nuit: 1, pct: 11, energie: 30 }]);
+  assertEqual(lastAutonomy(s), 11);
 });
 
-test('autonomie : les conserves n\'y comptent pas', () => {
+test('autonomie : les conserves n\'y comptent pas ; un jour sans repas garde celle de la veille', () => {
   const s = farm();
-  setInv(s, { conserve: 6 }); // 6 × 25 = 150 couvre le besoin (150) : la famille est nourrie, mais rien n'est produit
+  setInv(s, { conserve: 60 });
+  affamer(s);
   const r = sleepOnce(s);
-  assertEqual(r.couverture, 100);
-  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [150, 0, 0]);
+  assertEqual(r.couverture, 100, 'la famille est rassasiée');
+  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [252, 0, 0]);
+  // le lendemain, avec des patates, puis un jour où personne n'a faim : l'autonomie reste
+  setInv(s, { patate: 60 });
+  affamer(s);
+  assertEqual(sleepOnce(s).autonomie, 100);
+  const r3 = sleepOnce(s);
+  assertEqual([r3.energieMangee, r3.autonomie, lastAutonomy(s)], [0, 100, 100]);
 });
 
 test('autonomie : un achat du Marché n\'y compte pas, une récolte oui', () => {
   const s = farm();
   s.famille.reserve = {};
-  setInv(s, { conserve: 10 });
+  setInv(s, { conserve: 60 });
   s.pieces = 500;
   assert(buyItem(s, 'carotte', 4).ok, 'acheter 4 carottes');
   addItem(s, 'carotte', 15); // récoltées
   assertEqual(lotsOf(s, 'carotte').map((l) => [l.qty, l.origin]).sort(), [[4, 'acheté'], [15, 'produit']].sort());
-  // Lot 11 (nutrition) : carotte à 8 d'énergie, 19 (=4+15) couvrent le besoin (152) avant les conserves
+  // les 19 carottes (valeur 2) passent avant les conserves : 38 points, dont 30 récoltés
+  affamer(s);
   const r = sleepOnce(s);
-  assertEqual(r.energieMangee, 152);
-  assertEqual(r.energieProduit, 120, 'seules les 15 carottes récoltées comptent');
-  assertEqual(r.autonomie, 80);
+  assertEqual(r.energieProduit, 30, 'seules les 15 carottes récoltées comptent');
+  assertEqual(r.autonomie, Math.floor((30 * 100) / r.energieMangee));
 });
 
-test('autonomie : un plat cuisiné compte, les œufs du frigo gardent leur origine', () => {
-  const s = coldRoom();
+test('autonomie : au frigo, les œufs gardent leur origine', () => {
+  const s = coldRoom({ lest: 0 });
   s.famille.reserve = {};
   setInv(s, { conserve: 4 });
   addItem(s, 'oeuf', 10);
   addLot(s, 'oeuf', 10, 'acheté');
   assert(moveToFridge(s, 'oeuf', 20).ok, 'ranger les œufs au frigo');
-  // Lot 11 (nutrition) : à rang égal (rien ne périme), la conserve (25 énergie)
-  // passe avant l'œuf (13) : 4 conserves (100) + 4 œufs (52) couvrent les 150
-  // énergies du besoin ; les 4 œufs viennent du lot « produit », le plus ancien
-  // des deux lots au frigo
+  // le frigo construit, la famille mange au frigo (pas dans l'inventaire) : les 10 œufs
+  // « produit » d'abord (valeur 3), puis les 10 achetés ; il en manque, deux ont faim
+  affamer(s);
   const r = sleepOnce(s);
-  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [152, 52, 34], '52 ÷ 150 = 34,7 %, arrondi vers le bas');
+  assertEqual([r.energieMangee, r.energieProduit, r.autonomie, countItem(s, 'conserve')], [60, 30, 50, 4]);
+  assert(s.nuit.affames.length > 0, 'il n\'y avait pas assez à manger');
 });
 
 test('autonomie : la prévision de la nuit est celle qui est vraiment mesurée', () => {
   const s = farm();
   s.famille.reserve = {};
-  setInv(s, { patate: 5, carotte: 10, conserve: 10 });
+  setInv(s, { patate: 5, carotte: 10, conserve: 60 });
   addLot(s, 'carotte', 7, 'acheté');
+  assertEqual(plannedAutonomy(s), 0, 'personne n\'a encore mangé : celle de la veille');
+  affamer(s);
   const prevue = plannedAutonomy(s);
   assert(prevue > 0 && prevue < 100);
   assertEqual(sleepOnce(s).autonomie, prevue);
@@ -327,6 +338,7 @@ testBase('chapitre 3 : 7 nuits de ponte d\'affilée et 50 % d\'autonomie', () =>
   for (let night = 1; night <= 7; night++) {
     assertEqual(s.campagne.chapitre, 3, `nuit ${night} : toujours le chapitre 3`);
     assert(feedAllHens(s).ok);
+    affamer(s); // la famille mange les carottes de la ferme
     sleepOnce(s);
     assertEqual(s.campagne.compteurs.serieOeufs, night);
   }
@@ -377,7 +389,7 @@ test('séries d\'affilée : elles ne comptent qu\'à partir du chapitre qui les 
   sleepOnce(s);
   assertEqual(s.campagne.compteurs.serieOeufs, 0, 'chapitre 1 : la ponte ne compte pas encore');
   const t = atChapter(6);
-  nightWithProduced(t, 22);
+  nightWithProduced(t, 48);
   assertEqual(t.campagne.compteurs.serie100, 0, 'chapitre 6 : les nuits à 100 % ne comptent pas encore');
 });
 
@@ -463,10 +475,10 @@ testBase('chapitre 5 : 10 laines et 60 % d\'autonomie', () => {
   assert(shear(s, s.paturage.moutons[0].id).ok);
   updateChapters(s);
   assertEqual([s.campagne.compteurs.laines, okList(s)], [10, [true, false]]);
-  // Lot 11 (nutrition) : patate à 19 d'énergie (au lieu de 15).
-  nightWithProduced(s, 4); // 76 / 150 ≈ 50,67 % : pas assez
+  // patate de valeur 5 : 25 patates sur ~245 points mangés ≈ 51 % : pas assez
+  nightWithProduced(s, 25);
   assertEqual(s.campagne.chapitre, 5);
-  nightWithProduced(s, 5); // 95 / 150 ≈ 63,33 %
+  nightWithProduced(s, 31); // ≈ 63 %
   assertEqual(s.campagne.chapitre, 6);
 });
 
@@ -474,9 +486,9 @@ testBase('chapitre 5 : 10 laines et 60 % d\'autonomie', () => {
 test('chapitre 6 : 10 nuits d\'affilée à 80 % en moyenne, sans soin', () => {
   const s = atChapter(6);
   s.day = 31;
-  holdNights(s, 9, 18); // 342 / 150 : plafonné à 100 %
+  holdNights(s, 9, 50); // de quoi tout couvrir : 100 %
   assertEqual([s.campagne.chapitre, s.campagne.compteurs.tenue.nuits], [6, 9]);
-  holdNights(s, 1, 18);
+  holdNights(s, 1, 50);
   assertEqual(s.campagne.chapitre, 7);
   assertEqual(s.campagne.compteurs.tenueReussie, true);
   assertEqual(s.campagne.compteurs.tenueDerniere.reussi, true);
@@ -487,29 +499,28 @@ test('chapitre 6 : la série commence dès la première nuit du chapitre, quel q
   for (const day of [1, 7, 33]) {
     const s = atChapter(6);
     s.day = day;
-    holdNights(s, 10, 22);
+    holdNights(s, 10, 48);
     assertEqual(s.campagne.chapitre, 7, `départ à la nuit ${day}`);
   }
 });
 
 test('chapitre 6 : une moyenne de 76 % ne suffit pas, une nouvelle série suit aussitôt', () => {
   const s = atChapter(6);
-  // patate à 19 d'énergie, 6 unités (114) restent sous 80 %.
-  holdNights(s, 10, 6); // 114 / 150 = 76 %
+  // 38 patates (190 points) sur 244 points mangés : 77 %, sous 80 %
+  holdNights(s, 10, 38);
   assertEqual(s.campagne.chapitre, 6);
-  assertEqual(s.campagne.compteurs.tenueDerniere, { moyenne: 76, reussi: false });
+  assertEqual(s.campagne.compteurs.tenueDerniere, { moyenne: 77, reussi: false });
   assertEqual(s.campagne.compteurs.tenue, null);
-  holdNights(s, 1, 22);
+  holdNights(s, 1, 48);
   assertEqual(s.campagne.compteurs.tenue.nuits, 1, 'la série suivante a commencé');
-  holdNights(s, 9, 22);
+  holdNights(s, 9, 48);
   assertEqual(s.campagne.chapitre, 7);
 });
 
 test('chapitre 6 : la moyenne compte toutes les nuits, pas seulement la dernière', () => {
   const s = atChapter(6);
-  holdNights(s, 5, 10); // 190 / 150 : plafonné à 100 %
-  // courgette (10 d'énergie) : un pourcentage exact
-  holdNights(s, 5, 6, 'courgette'); // 60 / 150 = 40 %
+  holdNights(s, 5, 50); // 100 %
+  holdNights(s, 5, 20); // 100 points sur 244 : 40 %
   assertEqual(s.campagne.chapitre, 6);
   assertEqual(s.campagne.compteurs.tenueDerniere.moyenne, 70);
 });
@@ -517,10 +528,10 @@ test('chapitre 6 : la moyenne compte toutes les nuits, pas seulement la dernièr
 test('chapitre 7 : 100 % pendant 7 nuits d\'affilée termine la campagne', () => {
   const s = atChapter(7);
   for (let night = 1; night <= 6; night++) {
-    nightWithProduced(s, 22); // 330 : 100 %
+    nightWithProduced(s, 48); // 240 points : 100 %
     assertEqual([s.campagne.compteurs.serie100, s.campagne.fini], [night, false]);
   }
-  nightWithProduced(s, 22);
+  nightWithProduced(s, 48);
   assertEqual(s.campagne.fini, true);
   assertEqual(s.campagne.chapitre, 7);
   assertEqual(chapterReached(s), 8);
@@ -529,14 +540,13 @@ test('chapitre 7 : 100 % pendant 7 nuits d\'affilée termine la campagne', () =>
 
 test('remise à zéro : une nuit sous 100 % casse la série d\'autonomie', () => {
   const s = atChapter(7);
-  for (let i = 0; i < 4; i++) nightWithProduced(s, 22);
+  for (let i = 0; i < 4; i++) nightWithProduced(s, 48);
   assertEqual(s.campagne.compteurs.serie100, 4);
-  // Lot 11 (nutrition) : 7 patates (133) restent sous 150, contre 9 avant l'augmentation.
-  nightWithProduced(s, 7); // 133 / 150 ≈ 88,67 %
+  nightWithProduced(s, 44); // 220 points sur 244 : 90 %
   assertEqual(s.campagne.compteurs.serie100, 0);
-  for (let i = 0; i < 6; i++) nightWithProduced(s, 22);
+  for (let i = 0; i < 6; i++) nightWithProduced(s, 48);
   assertEqual([s.campagne.compteurs.serie100, s.campagne.fini], [6, false]);
-  nightWithProduced(s, 22);
+  nightWithProduced(s, 48);
   assertEqual(s.campagne.fini, true);
 });
 
@@ -572,11 +582,11 @@ test('affichage : pourcentage arrondi vers le bas, 100 % seulement à 100', () =
 test('tenue : état du suivi pour l\'interface', () => {
   const s = atChapter(6);
   assertEqual(holdStatus(s).etat, 'attente');
-  nightWithProduced(s, 22);
+  nightWithProduced(s, 48);
   const w = holdStatus(s);
   assertEqual([w.etat, w.nuits, w.moyenne, 'soinPaye' in w], ['suivi', 1, 100, false]);
   const u = atChapter(6);
-  holdNights(u, 10, 22);
+  holdNights(u, 10, 48);
   assertEqual(holdStatus(u).etat, 'reussi');
   assertEqual(holdStatus(atChapter(5)).etat, 'attente', 'avant le chapitre 6 : rien n\'est suivi');
 });

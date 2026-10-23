@@ -54,3 +54,4 @@ export * from './decouverte.js';
 export * from './encyclopedie.js';
 export * from './plantation.js';
 export * from './journal.js';
+export * from './repas.js';

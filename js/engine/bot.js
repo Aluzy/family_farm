@@ -9,7 +9,8 @@ import { tick } from './energy.js';
 import { addItem, countItem, expiringSoon } from './inventory.js';
 import { buildFridge, fridgeLevel, fridgeRate, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, stockCount, upgradeFridge } from './fridge.js';
 import { buyItem, buyPrice, isBuyable, sellItem } from './market.js';
-import { eatSnack, planMeal } from './family.js';
+import { eatSnack } from './family.js';
+import { depenserMembre, jaugeMembre, mangeurs, repasStep, valeurAliment } from './repas.js';
 import { actionCost, energyLevel, energyMax } from './stamina.js';
 import { averageHappiness, dishHappiness } from './ville.js';
 import {
@@ -59,15 +60,13 @@ function botMaintenance(state) {
 }
 
 // Version 1.8 : quand l'énergie ne suffit plus pour une récolte, le joueur mange un
-// en-cas, pris seulement dans ce que le repas du soir ne mangera pas (l'aliment le
-// plus nourrissant d'abord), et jamais au-delà du maximum.
+// en-cas (l'aliment le plus nourrissant d'abord, hors réserve de semences), et jamais
+// au-delà du maximum.
 export function botSnack(state) {
   for (let guard = 0; guard < 10; guard++) {
     if (state.energie >= actionCost(state, 'recolter') || state.energie >= energyMax()) return;
-    const plan = planMeal(state);
-    if (plan.couverture < 100) return;
     const spare = Object.keys(DATA.OBJETS)
-      .filter((k) => DATA.OBJETS[k].mangeable && countItem(state, k) - (plan.mange[k] || 0) - (state.famille.reserve[k] || 0) >= 1)
+      .filter((k) => DATA.OBJETS[k].mangeable && countItem(state, k) - (state.famille.reserve[k] || 0) >= 1)
       .sort((a, b) => DATA.OBJETS[b].energie - DATA.OBJETS[a].energie);
     if (!spare.length || !eatSnack(state, spare[0]).ok) return;
   }
@@ -356,7 +355,7 @@ export function botRecipeValue(state, id) {
     && !state.campagne.compteurs.plats.includes(id)) {
     return (2 * S.PRIORITE_BONHEUR) / r.temps;
   }
-  // version 1.11 : sous le bonheur visé, un plat qui manque au repas du soir passe avant
+  // version 1.11 : sous le bonheur visé, un plat qui manque à la famille passe avant
   // tout (le meilleur bonheur d'abord), même s'il ne rapporte rien
   if (averageHappiness(state) < S.BONHEUR_CIBLE && botSpare(state, id) < 1 && dishHappiness(id) > 0) {
     return (S.PRIORITE_BONHEUR + dishHappiness(id)) / r.temps;
@@ -580,17 +579,19 @@ export function botBuy(state, eveilS) {
 
 /* ---------- ventes et rangement du soir ---------- */
 
-// Vend ce qui périrait demain et que le repas de ce soir ne mangera pas, la laine,
+// Vend ce qui périrait demain (hors réserve de semences et ce que la famille mangera ce soir), la laine,
 // le blé en trop et la paille en trop. Avec un réfrigérateur en marche, on range au lieu de vendre.
 export function botSell(state) {
   const S = DATA.SIMULATION;
   // version 1.10 : le frigo a une capacité ; ce qui n'y tient pas et périrait se vend
   {
-    const plan = planMeal(state);
     const expiring = expiringSoon(state);
+    // (la famille qui mangera ce soir, FAIM_JOUR dépensés : on lui garde de quoi se rassasier)
+    let faim = familleAffameeCeSoir(state);
     for (const item of Object.keys(expiring)) {
-      const eaten = Math.max(0, (plan.mange[item] || 0) - (plan.froid[item] || 0));
-      const spare = Math.min(expiring[item] - eaten, countItem(state, item) - (state.famille.reserve[item] || 0));
+      const garde = Math.min(expiring[item], Math.ceil(faim / Math.max(1, valeurAliment(item))));
+      faim -= garde * valeurAliment(item);
+      const spare = Math.min(expiring[item] - garde, countItem(state, item) - (state.famille.reserve[item] || 0));
       if (spare >= 1) sellItem(state, item, Math.floor(spare));
     }
   }
@@ -603,6 +604,16 @@ export function botSell(state) {
   if (paille >= 1) sellItem(state, DATA.PATURAGE.NOURRITURE, paille);
   const farine = countItem(state, 'farine') - S.FARINE_MAX;
   if (farine >= 1) sellItem(state, 'farine', farine);
+}
+
+// Points de jauge que la famille mangera ce soir : ceux des membres qui, FAIM_JOUR dépensés,
+// arriveront au seuil (botDay) et mangeront jusqu'à rassasiés.
+function familleAffameeCeSoir(state) {
+  const F = DATA.FAMILLE.FAIM;
+  return mangeurs(state).reduce((t, m) => {
+    const j = jaugeMembre(m) - DATA.SIMULATION.FAIM_JOUR;
+    return j <= F.SEUIL ? t + F.MAX - Math.max(0, j) : t;
+  }, 0);
 }
 
 // Range au frais ce qui périme (sauf la réserve de semences), tant qu'il y a de la
@@ -661,6 +672,9 @@ export function botDay(state, strat, options) {
     t += dt;
     botActions(state, strat, options, t + EPS >= eveil);
   }
+  // la famille ne marche pas sur une carte : sa faim de la journée est simulée (FAIM_JOUR)
+  for (const m of mangeurs(state)) depenserMembre(state, m.id, S.FAIM_JOUR);
+  repasStep(state);
   return sleep(state);
 }
 

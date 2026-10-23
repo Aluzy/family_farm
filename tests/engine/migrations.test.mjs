@@ -7,13 +7,13 @@ import {
   addItem, buyCow, buyItem, buySheep, buyTech, countItem, cowCount, createInitialState, DATA,
   feedAllHens, freeCowPlaces, freeSheepPlaces, fridgeCount, lotsOf, makeDevice, makePlot,
   makePlots, memberName, memberPortrait, migrate, migrateTechTreeV2, MIGRATION_11, MIGRATIONS,
-  millPending, newAutoReport, newStableReport, openStation, ownedTechs, pastureCost, planMeal,
+  millPending, newAutoReport, newStableReport, openStation, ownedTechs, pastureCost, depenserMembre, mangeurs, repasStep,
   prepTimeMult, bottelerSansCarte, scytheGrass, sellItem, setMemberProfile, shear, sheepCount, sheepToShear, sleep, stableFree,
   stableOccupied, startMilling, startRecipe, STATE_VERSION, strawMissing, strawNeed, strawStock,
   techPoints, testFillBatteries, wheatTotal, zoneTile,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, champ, chapter1StepsDone, plotContent, runFor, sleepOnce, test, v14State,
+  affamer, assert, assertEqual, champ, chapter1StepsDone, plotContent, runFor, sleepOnce, test, v14State,
 } from './aide.mjs';
 
 /* ---------- migration v15 → v16 (version 1.1) ---------- */
@@ -174,18 +174,19 @@ test('migration v15 → v16 : la viande et les anciens plats de l\'inventaire et
   for (const id of ['viande_mouton', 'viande_boeuf', 'viande_volaille', 'ragout', 'poulet_roti_ail', 'roti_boeuf', 'poivrons_farcis']) {
     assertEqual([!!DATA.OBJETS[id], DATA.OBJETS[id].mangeable], [true, true], id);
   }
-  // la famille les mange (ce qui périme le plus tôt d'abord)
-  const plan = planMeal(m);
-  assertEqual(plan.couverture, 100);
-  assert(plan.mange.poulet_roti_ail === 1 && plan.mange.ragout === 1, `version 1.11 : les plats d'abord, au menu : ${JSON.stringify(plan.mange)}`);
+  // la famille les mange : le frigo construit, au frigo (ce qui périme le plus tôt d'abord)
+  const un = mangeurs(m)[0];
+  depenserMembre(m, un.id, 80);
+  repasStep(m);
+  assertEqual(m.repasJour.mange, { poivrons_farcis: 1, roti_boeuf: 2 }, 'de 20 : 18 + 2 × 32');
   const rep = sleepOnce(m);
-  assertEqual([rep.couverture, rep.autonomie > 0], [100, true]);
+  assertEqual(rep.autonomie > 0, true);
   // et ils se vendent, au prix d'avant
   m.pieces = 0;
   assertEqual(sellItem(m, 'viande_boeuf', 4).gain, 40);
-  assertEqual(sellItem(m, 'ragout', 1).gain, 36, 'version 1.11 : l\'autre a été mangé (les plats d\'abord)');
+  assertEqual(sellItem(m, 'ragout', 1).gain, 36, 'le frigo construit, la famille n\'a pas touché à l\'inventaire');
   const roti = fridgeCount(m, 'roti_boeuf');
-  assert(roti >= 2, `rôtis restants : ${roti}`);
+  assertEqual(roti, 1, 'rôti restant');
   assertEqual(sellItem(m, 'roti_boeuf', roti).gain, 36 * roti, 'même rangé au frigo');
   assertEqual(m.pieces, 76 + 36 * roti);
   // mais on ne peut plus en refaire ni en racheter

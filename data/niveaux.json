@@ -72,7 +72,7 @@
   },
   "//COMMERCE": [
     "Version 1.14 (v2, lot 10) : le commerce du niveau 10 (docs/conception-v2.md, 4.5).",
-    "Un seul commerce à la fois (TYPES). Chaque nuit, après le repas du soir et la",
+    "Un seul commerce à la fois (TYPES). Chaque nuit, après ce que la famille a mangé et la",
     "production de la nuit, il transforme jusqu'à `quota` fois `par` unités de ce qu'il",
     "prend (les lots qui périment le plus tôt d'abord ; seulement l'inventaire, pas le",
     "frigo) et vend aussitôt le produit au prix `prix`, sans passer par le Marché :",

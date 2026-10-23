@@ -853,6 +853,8 @@ select {
 .member-row .portrait-emoji { font-size: 1.9rem; flex: none; }
 .member-row-text { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .member-row-text .chip { align-self: flex-start; }
+.faim-jauge { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; }
+.faim-jauge .bar { flex: 1 1 auto; min-width: 40px; height: 6px; }
 /* en mode modification, les boutons passent sur leur propre ligne, sous le prénom */
 .member-row-btns { display: flex; flex-direction: row; gap: 4px; flex: 1 0 100%; justify-content: flex-end; }
 .member-row-btns .btn { min-width: 44px; padding: 0 10px; }
@@ -2682,3 +2684,9 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .plantation-question { margin: 6px 0 14px; font-size: 1.1rem; text-align: center; }
 .plantation-choix { justify-content: center; gap: 12px; }
 .plantation-choix .btn { min-width: 96px; }
+
+/* la boîte à nourriture (js/ui/boite.js) */
+.boite-liste { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.boite-ligne { display: flex; align-items: center; gap: 8px; }
+.boite-ligne .boite-nom { flex: 1 1 auto; min-width: 0; }
+.boite-ligne .btn { min-width: 44px; padding: 0 8px; }

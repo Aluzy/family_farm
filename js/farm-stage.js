@@ -251,6 +251,12 @@
               // le second adulte a fini au Poulailler ou à l'Étable : ce qu'il a pris, sa bulle
               aide: (lieu, done) => setTimeout(() => done(this.ctx.bridge && this.ctx.bridge.aide ? this.ctx.bridge.aide(lieu) : null), 0),
               gain: (items) => this.showGainAide(items),
+              // la marche donne faim (js/engine/repas.js) ; la boîte à nourriture posée : où s'y servir
+              marche: (id, px) => { if (this.ctx.bridge && this.ctx.bridge.marche) this.ctx.bridge.marche(id, px); },
+              boite: () => {
+                for (const e of (this.blocks || new Map()).values()) if (e.sorte === 'boite_nourriture') return { x: e.x, y: e.y + 8 };
+                return null;
+              },
               // la nuit, le k-ième membre dort dans le (k + 2)-ième couchage (le premier : le personnage)
               lit: (k) => (this.bedSpots ? this.bedSpots()[k + 1] || null : null),
               file: (perso, enfant) => v(K.planche(perso, enfant)),
@@ -908,5 +914,11 @@
   // (`est`) ou devant la porte de la mine (`mine`) ; la scène pas encore prête, elle le fera en
   // se créant (?arrivee=…).
   function arrive(ou) { const s = getScene(); if (s && s.ready) s.arrive(ou); }
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, persoCase, goHome, mealScene, arrive, scene: getScene }; // scene() : pour le débogage et les tests
+  // Un membre de la famille va manger à la boîte à nourriture (js/famille-ferme.js) ; false s'il
+  // n'est pas dehors sur la carte.
+  function allerManger(id) {
+    const s = getScene();
+    return !!(s && s.ready && s.family && s.family.allerManger(id));
+  }
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, persoCase, goHome, mealScene, allerManger, arrive, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

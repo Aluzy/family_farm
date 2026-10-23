@@ -1569,6 +1569,40 @@ PIECE = [
 SORTES = {'f': 5, 'c': 6, 'p': 3, 'd': 4, 'a': 2, 'n': 9, 'g': 10, 's': 11, 'b': 8, 'm': 13, 'o': 12, 'r': 7, 'l': 67}
 
 
+def boite_nourriture():
+    """La boîte à nourriture : une caisse de planches ouverte, vue de haut, où la famille vient
+    prendre à manger : des carottes, une tomate, une patate, une boîte de conserve."""
+    t = Toile()
+    yd, yf = boite(t, 1, 14, BAS - 1, 8, 10, BOIS, planches(BOIS, 'h', pas=3, y0=1))
+    for y in range(yd + 1, yf - 1):              # le fond de la caisse, dans l'ombre
+        for x in range(2, 14):
+            t.put(x, y, BOIS[0] if (x + y) % 4 else BOIS[1])
+    # deux carottes couchées, leurs fanes
+    for x in range(3, 7):
+        t.put(x, yd + 2, (226, 120, 40) if x < 6 else (196, 92, 30))
+    t.put(7, yd + 2, VERT[2]); t.put(7, yd + 1, VERT[3])
+    for x in range(4, 8):
+        t.put(x, yd + 4, (226, 120, 40) if x < 7 else (196, 92, 30))
+    t.put(8, yd + 4, VERT[2]); t.put(8, yd + 3, VERT[3])
+    # une tomate
+    t.rect(9, yd + 1, 11, yd + 3, (204, 52, 48))
+    t.put(9, yd + 1, (236, 110, 96)); t.put(10, yd, VERT[2])
+    # une patate
+    t.rect(10, yd + 4, 12, yd + 5, (176, 132, 76))
+    t.put(12, yd + 5, (140, 100, 56))
+    # une boîte de conserve, debout dans le coin
+    t.rect(2, yd - 2, 4, yd + 1, (150, 156, 166))
+    t.rect(2, yd - 1, 4, yd, (196, 60, 52))
+    t.put(2, yd - 2, (214, 220, 228))
+    for x in range(2, 14):
+        t.put(x, BAS - 1, BOIS[0])
+    return t.fini()
+
+
+BOITE_NOURRITURE = len(DESSINS)                  # la boîte à nourriture (BLOCS_CARTE.frames.boite_nourriture)
+DESSINS += [boite_nourriture()]
+
+
 def masque(g, x, y):
     """Comme js/carte/ferme/chantier.js (wallMask) : les murs voisins, et les portes à gauche
     et à droite."""

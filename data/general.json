@@ -45,7 +45,6 @@
     "SECONDES_PAR_HEURE : l'horloge affichée au joueur avance d'une heure",
     "toutes les 30 s d'éveil (version 1.21 ; 18 s depuis la 1.1.3, 5 s auparavant). Voir hourOfDay()",
     "et clockHours().",
-    "HEURE_REPAS (version 1.1.1) : à 19 h, la famille prend son repas (takeMeal()).",
     "HEURE_NUIT : à 22 h (version 1.1.3 ; minuit auparavant), la journée est",
     "finie : la nuit se déroule d'elle-même si le joueur n'a pas cliqué sur",
     "Dormir (bedtimeDue() ; c'est l'interface qui déclenche). La journée dure",
@@ -62,7 +61,7 @@
     "ARROSAGE_HEURE : avec l'arrosage automatique, les asperseurs arrosent tous les jours à cette",
     "heure les plantes qui ont soif (irrigate) ; sur la carte, ils tournent ARROSAGE_S secondes."
   ],
-  "TEMPS": { "HEURE_REVEIL": 6, "SECONDES_HEURE_MARCHE": 30, "SECONDES_PAR_HEURE": 30, "EVEIL_MIN_S": 30, "HEURE_REPAS": 19, "HEURE_NUIT": 22, "SECONDES_PAR_HEURE_SOMMEIL": 3, "POUSSE_HEURES": 24, "ARROSAGE_HEURE": 7, "ARROSAGE_S": 9 },
+  "TEMPS": { "HEURE_REVEIL": 6, "SECONDES_HEURE_MARCHE": 30, "SECONDES_PAR_HEURE": 30, "EVEIL_MIN_S": 30, "HEURE_NUIT": 22, "SECONDES_PAR_HEURE_SOMMEIL": 3, "POUSSE_HEURES": 24, "ARROSAGE_HEURE": 7, "ARROSAGE_S": 9 },
   "//FAMILLE": "Famille (sections 1.1, 1.4, 6.9 et 8.8 ; version 1.8 : plus de santé).",
   "FAMILLE": {
     "//MEMBRES": [
@@ -108,8 +107,9 @@
     "//COMPOSITION": [
       "Version 1.2 : le joueur compose sa famille. De MEMBRES_MIN à MEMBRES_MAX",
       "membres (adultes ou enfants), dont au moins ADULTES_MIN adulte ; la partie",
-      "commence avec les quatre membres de MEMBRES. Le besoin journalier suit :",
-      "c'est la somme des AJ des membres présents (familyNeed())."
+      "commence avec les quatre membres de MEMBRES. Chacun (sauf le personnage principal)",
+      "a sa jauge de faim (FAIM). AJ ne sert plus qu'au besoin journalier des voisins",
+      "et des habitants de la ville (voisins.js, economie.js)."
     ],
     "COMPOSITION": { "MEMBRES_MIN": 1, "MEMBRES_MAX": 6, "ADULTES_MIN": 1 },
     "//COMPAGNIE": [
@@ -118,6 +118,18 @@
       "le bonheur. Leur nom suit les règles d'un prénom."
     ],
     "COMPAGNIE": { "MAX": 3, "ESPECES": { "chien": { "nom": "Chien", "icone": "🐶" }, "chat": { "nom": "Chat", "icone": "🐱" } } },
+    "//FAIM": [
+      "La boîte à nourriture (js/engine/repas.js) : chaque membre de la famille, sauf le personnage principal",
+      "(qui a son énergie, PERSONNAGE), a une jauge de 0 à MAX (100 au départ). Elle baisse quand il marche sur",
+      "la carte (1 point tous les PX_PAR_POINT pixels parcourus) et quand il aide (AIDE points par tâche du",
+      "second adulte : les poules, le lait, la laine). Arrivé à SEUIL, il va manger jusqu'à MAX : dans le",
+      "réfrigérateur s'il est construit, sinon dans la boîte à nourriture posée dans le foyer (ce que le",
+      "joueur y a mis), d'abord ce qui périme le plus tôt. Chaque aliment rend sa valeur (valeurAliment :",
+      "énergie ÷ PERSONNAGE.MANGER_DIVISEUR, + PERSONNAGE.MANGER_BONUS %, arrondi au-dessus). S'il n'y a rien à",
+      "manger, il a faim : il perd VILLE.BONHEUR.FAIM de bonheur la nuit. ECOLE : les jours d'école (JOURS, 0 :",
+      "lundi), les enfants rentrent à RETOUR_H h avec au plus NIVEAU points ; au coucher, ils mangent jusqu'à MAX."
+    ],
+    "FAIM": { "MAX": 100, "SEUIL": 20, "PX_PAR_POINT": 100, "AIDE": 5, "ECOLE": { "JOURS": [0, 1, 3, 4], "RETOUR_H": 17.5, "NIVEAU": 80 } },
     "//RESERVE_DEPART": "Réserve de semences de départ : quantité par item que la famille ne mange jamais. Vide depuis la suppression de la réserve dans l'Inventaire (les semences se rachètent au Marché).",
     "RESERVE_DEPART": {}
   },
@@ -144,10 +156,11 @@
     "coûte COUTS[action] × (100 − bonheur moyen × BONHEUR_REDUCTION ÷ 100) % ×",
     "(100 − ENDURANCE × (niveau − 1)) %, arrondi au millième supérieur. À 0, plus",
     "d'action au clic. En dormant, l'énergie remonte peu à peu vers REVEIL_BASE +",
-    "REVEIL_REPAS × couverture du repas du soir (en %) : SOMMEIL_HEURES heures de sommeil",
-    "pour l'atteindre (moins si elle était déjà haute) ; éveillé la nuit, rien ne revient.",
-    "Une énergie plus haute est gardée. Manger en journée rend les calories de l'aliment",
-    "÷ MANGER_DIVISEUR."
+    "REVEIL_REPAS × la jauge moyenne des autres membres au coucher (en %, FAMILLE.FAIM) : une famille",
+    "rassasiée, un meilleur réveil. SOMMEIL_HEURES heures de sommeil pour l'atteindre (moins si elle",
+    "était déjà haute) ; éveillé la nuit, rien ne revient. Une énergie plus haute est gardée. Manger un",
+    "aliment rend sa valeur : énergie ÷ MANGER_DIVISEUR, + MANGER_BONUS %, arrondie au-dessus (la même",
+    "pour la famille à la boîte à nourriture)."
   ],
   "PERSONNAGE": {
     "MAX": 100,
@@ -157,6 +170,7 @@
     "REVEIL_BASE": 60,
     "REVEIL_REPAS": 40,
     "MANGER_DIVISEUR": 5,
+    "MANGER_BONUS": 10,
     "SOMMEIL_HEURES": 8
   },
   "//MARCHE": [

@@ -2,9 +2,8 @@ import { DATA } from './catalog.js';
 import { EPS, floorPercent } from './base.js';
 import { fail, isOwned, starterOf, storedEnergy } from './devices.js';
 import { earn } from './compta.js';
-import { addItem, countItem, lotsOf } from './inventory.js';
-import { fridgeLots } from './fridge.js';
-import { planMeal } from './family.js';
+import { addItem, countItem } from './inventory.js';
+import { autonomieJour } from './repas.js';
 import { averageHappiness } from './ville.js';
 import { plantableCrops } from './crops.js';
 import { checkMastery, grantTechPoints, isBuilt, techPoints } from './techtree.js';
@@ -58,37 +57,15 @@ export function newCampaignCounters() {
 
 /* -- autonomie -- */
 
-// Autonomie d'une nuit en % : énergie « produit » mangée ÷ besoin, plafonnée à 100.
+// Autonomie d'une nuit en % : points mangés venus de la ferme ÷ points mangés, plafonnée à 100.
 export function autonomyPercent(energieProduit, besoin) {
   return floorPercent(energieProduit, besoin);
 }
 
-// Part de `qty` unités qui vient de lots « produit », en parcourant les lots dans
-// l'ordre où on les retire (sans rien modifier).
-function producedShare(lots, qty) {
-  let rest = qty;
-  let produit = 0;
-  for (const lot of lots) {
-    if (rest <= 0) break;
-    const n = Math.min(lot.qty, rest);
-    if (lot.origin === DATA.ORIGINE.PRODUIT) produit += n;
-    rest -= n;
-  }
-  return produit;
-}
-
-// Autonomie prévue pour la nuit qui vient (repas prévu, origines comprises).
+// Autonomie prévue pour la nuit qui vient : celle de ce que la famille a mangé aujourd'hui
+// (repas.js), ou celle de la dernière nuit si elle n'a encore rien mangé.
 export function plannedAutonomy(state) {
-  if (state.repas) return state.repas.autonomie; // le repas de 19 h est déjà pris
-  const plan = planMeal(state);
-  let produit = 0;
-  for (const [item, n] of Object.entries(plan.mange)) {
-    const cold = plan.froid[item] || 0;
-    const energie = DATA.OBJETS[item].energie;
-    produit += producedShare(lotsOf(state, item), n - cold) * energie;
-    if (cold > 0) produit += producedShare(fridgeLots(state, item), cold) * energie;
-  }
-  return autonomyPercent(produit, plan.besoin);
+  return autonomieJour(state, lastAutonomy(state));
 }
 
 export function autonomyHistory(state, count = DATA.AUTONOMIE.GRAPHIQUE_NUITS) {
@@ -412,7 +389,8 @@ export function recordNight(state) {
   if (!c) return null;
   const n = state.nuit;
   const energie = n.energieProduit || 0;
-  const pct = autonomyPercent(energie, n.besoin);
+  // (une journée où la famille n'a rien mangé garde l'autonomie de la nuit d'avant)
+  const pct = n.besoin > 0 ? autonomyPercent(energie, n.besoin) : lastAutonomy(state);
   n.autonomie = pct;
   c.historique.push({ nuit: state.day, pct, energie });
   const max = DATA.AUTONOMIE.HISTORIQUE_MAX;

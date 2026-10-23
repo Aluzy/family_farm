@@ -9,14 +9,14 @@ import {
   createInitialState, DATA, feedLivestock, finishPreparations, freeCowPlaces, freeSheepPlaces,
   grantTech, herbsOn, herbStock, inventoryCounts, isBuyable, isGraineComptoir, isPerishable,
   layEggs, makeDevice, scytheGrass, maxCows, maxSheep, migrate, moveToFridge, newStableReport, NIGHT_STEPS,
-  nightHarvest, pastureCapacity, pastureCost, planMeal, recipeNode, recipeStatus, roundPct,
+  nightHarvest, pastureCapacity, pastureCost, recipeNode, recipeStatus, roundPct,
   scaleEnergie, sellItem, setCowHerbs, shear, sheepCount, sheepPlaces, sheepToShear, shelfLife,
   sleep, stableFree, stableOccupied, startFarm, startHousehold, startLot4, startLot5, startMilling,
   startRecipe, STATE_VERSION, strawMissing, strawNeed, strawStock, testAddHens, testAddSheep,
   testAddStraw, testFillBatteries, testWoolReady, woolReady,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, atelier, farm, fillCows, fillSheep, garden, pature, reach, runFor, setInv,
+  affamer, assert, assertEqual, atelier, farm, fillCows, fillSheep, garden, pature, reach, runFor, setInv,
   setStraw, sleepOnce, test,
 } from './aide.mjs';
 
@@ -329,7 +329,8 @@ test('laine : ni périssable ni comestible, vendue 12 pièces l\'unité (6 avant
   shear(s, 'mouton-1');
   for (let i = 0; i < 10; i++) sleepOnce(s);
   assertEqual(countItem(s, 'laine'), 1, 'la laine ne périme pas');
-  assertEqual(planMeal(s).mange.laine, undefined, 'la famille ne la mange pas');
+  affamer(s);
+  assertEqual([s.repasJour.mange.laine, countItem(s, 'laine')], [undefined, 1], 'la famille ne la mange pas');
   const before = s.pieces;
   const r = sellItem(s, 'laine', 1);
   assertEqual([r.ok, r.gain, s.pieces], [true, 12, before + 12]);
@@ -341,7 +342,8 @@ test('paille : ne périme pas, ne se mange pas, se vend 1 pièce et ne s\'achèt
   setStraw(s, 5);
   for (let i = 0; i < 10; i++) sleepOnce(s);
   assertEqual(strawStock(s), 5, 'sans animaux, elle se garde');
-  assertEqual(planMeal(s).mange.paille, undefined, 'la famille ne la mange pas');
+  affamer(s);
+  assertEqual([s.repasJour.mange.paille, strawStock(s)], [undefined, 5], 'la famille ne la mange pas');
   assertEqual(moveToFridge(Object.assign(s, { frigo: { ...s.frigo, construit: true } }), 'paille', 1).ok, false, 'inutile au frigo');
   const before = s.pieces;
   assertEqual(sellItem(s, 'paille', 2), { ok: true, sold: 2, gain: 2 });
@@ -373,6 +375,7 @@ test('nuit : la paille est mangée juste après la ponte, sans perturber ni le r
   fillSheep(s, 2);
   setStraw(s, 2);
   s.poulailler.nourries = 4;
+  affamer(s);
   const rep = sleepOnce(s);
   assertEqual(rep.oeufs, 4);
   assertEqual(s.paturage.moutons.map((m) => m.laine), [1, 1]);

@@ -5,20 +5,20 @@
 
 import {
   addItem, addLot, allDevices, allPlots, availableEnergy, buildFridge, buildSerre, buildVerger,
-  buyOrchardSlot, CONSUMERS, countItem, createInitialState, DATA, deviceStatus, feedFamily,
+  buyOrchardSlot, CONSUMERS, countItem, createInitialState, DATA, deviceStatus,
   findDevice, findPlot, freeOrchardCases, fridgeCapacity, fridgeCount, fridgeCounts,
   fridgeCoversNight, fridgeLots, fridgeNight, fridgeNightNeed, fridgeRate, fridgeRoom, fridgeUnits,
   fridgeUpgradeCost, grantTech, growOrchard, harvest, harvestTree, harvestYield, isBroken, lotsOf,
   maintainCost, maxStage, migrate, migrateFridgeCapacity, migrateOrchard, MIGRATIONS,
   moveAllToFridge, moveFromFridge, moveToFridge, newNightStats, newTree, nightPower, orchardFree,
-  orchardSlotPrice, planMeal, plant, plantableCrops, plantTree, readyCrops, repairCost,
+  orchardSlotPrice, plant, plantableCrops, plantTree, readyCrops, repairCost,
   repairDevice, ripeTrees, scaleEnergie, serreUpgradeCost, shelfLife, STATE_VERSION, testAddSeeds,
   testBuildFridge, testBuildSerre, testBuildVerger, testEmptyBatteries, testFillBatteries,
   testSetWear, tick, toggleDevice, treeAt, treeInBloom, treeNextHarvest, treeStage, treeStageName, upgradeCost, upgradeFridge,
   upgradeSerre, water, waterCostFor,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, coldRoom, farm, fillCows, fillSheep, garden, kwh, ml, pature, plantRipe,
+  affamer, assert, assertEqual, coldRoom, farm, fillCows, fillSheep, garden, kwh, ml, pature, plantRipe,
   ranch, reach, runFor, setInv, setStraw, sleepOnce, test,
 } from './aide.mjs';
 
@@ -174,10 +174,9 @@ test('cultures de rente : jamais mangées par la famille, même affamée', () =>
   const s = garden();
   // La famille ne possède que cacao, vanille et café : le repas doit rester vide.
   setInv(s, { cacao: 50, vanille: 50, cafe: 50 });
-  const plan = planMeal(s);
-  assertEqual(plan.mange, {}, 'aucune de ces 3 cultures ne nourrit jamais la famille');
-  assertEqual(plan.couverture, 0);
-  feedFamily(s);
+  affamer(s);
+  assertEqual(s.repasJour.mange, {}, 'aucune de ces 3 cultures ne nourrit jamais la famille');
+  assertEqual(s.famille.membres.filter((m) => m.affame).length, 3, 'la famille a faim');
   assertEqual([countItem(s, 'cacao'), countItem(s, 'vanille'), countItem(s, 'cafe')], [50, 50, 50], 'rien n\'est consommé');
 });
 
@@ -571,32 +570,19 @@ test('nuit sans frigo construit : nightPower et fridgeNight ne font rien', () =>
   assertEqual(s.report.frigo.construit, false);
 });
 
-test('la famille mange le contenu du frigo, après l\'inventaire', () => {
-  const s = coldRoom();
+test('le frigo construit, la famille mange au frigo, pas dans l\'inventaire', () => {
+  const s = coldRoom({ lest: 0 });
   setInv(s, {});
   addItem(s, 'pomme', 50);
   moveToFridge(s, 'pomme', 40); // 10 pommes dehors, 40 au frigo
   s.frigo.alimenteMs = 30000;
   s.frigo.eveilMs = 30000;
-  // Lot 11 (nutrition) : pomme à 10 d'énergie ; 10 dehors (100) + 5 au frigo (50) = 150.
-  assertEqual(planMeal(s).mange, { pomme: 15 });
-  assertEqual(planMeal(s).couverture, 100);
+  // pomme de valeur 3 : les 40 du frigo ne suffisent pas à rassasier 3 membres affamés
+  affamer(s);
   sleepOnce(s);
-  assertEqual(s.report.mange, { pomme: 15 });
-  assertEqual(countItem(s, 'pomme'), 0, 'l\'inventaire d\'abord');
-  assertEqual(fridgeCount(s, 'pomme'), 35, '5 pommes prises au frigo');
-  assertEqual(s.report.couverture, 100);
-});
-
-test('la réserve de semences compte le frigo : on ne mange pas ce qui est réservé', () => {
-  const s = coldRoom({ lest: 0 });
-  setInv(s, {});
-  addItem(s, 'patate', 10);
-  moveToFridge(s, 'patate', 10);
-  s.famille.reserve.patate = 10;
-  assertEqual(planMeal(s).mange, {});
-  s.famille.reserve.patate = 4;
-  assertEqual(planMeal(s).mange, { patate: 6 });
+  assertEqual(s.report.mange, { pomme: 40 });
+  assertEqual([countItem(s, 'pomme'), fridgeCount(s, 'pomme')], [10, 0], 'l\'inventaire n\'est pas touché');
+  assert(s.report.couverture < 100, 'il n\'y avait pas assez au frigo');
 });
 
 test('frigo : les compteurs d\'éveil et d\'alimentation suivent les ticks', () => {

@@ -87,7 +87,7 @@ export function offlineReport(state, before, demande, simule) {
 // pousse, ni repas, ni ponte, ni péremption. Le temps simulé s'ajoute au temps
 // d'éveil, mais seulement jusqu'à l'éveil minimal (version 1.1.1) : au retour
 // le joueur peut dormir tout de suite, et l'horloge n'a pas dépassé midi (ou
-// l'heure où il est parti) ; ni le repas de 19 h ni la nuit de 22 h ne se
+// l'heure où il est parti) ; la nuit de 22 h ne se
 // déclenchent pendant une absence. Renvoie le bilan (voir offlineReport). Une
 // durée nulle, négative ou invalide ne change rien.
 export function simulateOffline(state, seconds) {

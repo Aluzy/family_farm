@@ -4,13 +4,13 @@
    ========================================================================== */
 
 import {
-  addItem, countItem, createInitialState, DATA, familyNeed, feedFamily, findPlot, growAll, harvest,
-  harvestYield, inventoryCounts, isMature, maxStage, mulberry32, nextRandom, planMeal, plant,
+  addItem, countItem, createInitialState, DATA, depenserMembre, findPlot, jaugeMembre, mangerMembre, mangeurs, valeurAliment, growAll, harvest,
+  harvestYield, inventoryCounts, isMature, maxStage, mulberry32, nextRandom, plant,
   randomInt, reservableItems, scaleEnergie, seedItem, setSeedReserve, sleep, soilCap, soilCapNext,
   soilCount, startPlots, takeItem, testAddSeeds, testSetLevel, water, zoneTile,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, garden, ml, plantRipe, setInv, test, testBase, tireless,
+  affamer, assert, assertEqual, garden, ml, plantRipe, setInv, test, testBase, tireless,
 } from './aide.mjs';
 
 /* ---------- Lot 2 : potager, famille, santé, conserves ---------- */
@@ -301,67 +301,43 @@ test('version 1.9 : la Zone de culture, grille de 30 cases ; plafond de tuiles p
   assertEqual(new Set(startPlots().map((p) => p.id)).size, 6);
 });
 
-test('famille : besoin = 50 par adulte + 25 par enfant = 150', () => {
-  const s = createInitialState(1);
-  assertEqual(familyNeed(s), 150);
-  s.famille.membres.pop();
-  assertEqual(familyNeed(s), 125);
-  assertEqual(planMeal(createInitialState(1)).besoin, 150);
+test('valeur des aliments : énergie ÷ 5, + 10 %, arrondie au-dessus ; 0 pour ce qui ne se mange pas', () => {
+  assertEqual(['carotte', 'patate', 'baies', 'conserve', 'courgette', 'graine_carotte', 'pierre'].map(valeurAliment), [2, 5, 2, 6, 3, 0, 0]);
 });
 
-test('repas : ce qui périme le plus tôt, conserves en dernier, jusqu\'à couvrir le besoin', () => {
+test('repas : ce qui périme le plus tôt, conserves en dernier, jusqu\'à rassasier', () => {
   const s = garden();
   setInv(s, { conserve: 100, carotte: 10, patate: 2, courgette: 3 });
   s.famille.reserve = {};
-  const plan = planMeal(s);
   // courgette 5 nuits, carotte 6, patate 7, conserve : ne périme pas
-  assertEqual(Object.keys(plan.mange), ['courgette', 'carotte', 'patate', 'conserve']);
-  // Lot 11 (nutrition) : énergies × 1,25 (courgette 10, carotte 8, patate 19,
-  // conserve 25) ; 1 seule conserve suffit désormais à couvrir le reliquat.
-  assertEqual(plan.mange, { courgette: 3, carotte: 10, patate: 2, conserve: 1 });
-  assertEqual(plan.energie, 30 + 80 + 38 + 25);
-  assertEqual(plan.couverture, 100);
-  // planMeal ne modifie rien
-  assertEqual(countItem(s, 'conserve'), 100);
-  feedFamily(s);
-  assertEqual(inventoryCounts(s), { conserve: 99 });
-  // il s'arrête dès que le besoin est couvert : plus de réserve de semences, les
-  // 6 patates de départ (7 nuits) passent avant les conserves, puis 2 conserves
-  const t = garden();
-  feedFamily(t);
-  assertEqual(countItem(t, 'conserve'), 158);
-  assertEqual(countItem(t, 'patate'), 0);
+  const m = mangeurs(s)[0];
+  depenserMembre(s, m.id, 80);
+  assertEqual(mangerMembre(s, m).mange, { courgette: 3, carotte: 10, patate: 2, conserve: 7 }, '20 + 9 + 20 + 10 = 59, puis 7 conserves');
+  assertEqual(jaugeMembre(m), 100);
+  assertEqual(inventoryCounts(s), { conserve: 93 });
+  // rassasié, il ne mange plus
+  assertEqual(mangerMembre(s, m).mange, {});
 });
 
-test('repas : les non-comestibles (graines) ne sont jamais mangés', () => {
+test('repas : les non-comestibles (graines) ne sont jamais mangés : la famille a faim', () => {
   const s = garden();
   setInv(s, { graine_carotte: 50, graine_tomate: 50 });
-  const plan = planMeal(s);
-  assertEqual(plan.mange, {});
-  assertEqual(plan.energie, 0);
-  assertEqual(plan.couverture, 0);
+  affamer(s);
+  assertEqual([s.repasJour.mange, s.famille.membres.filter((m) => m.affame).length, countItem(s, 'graine_carotte')], [{}, 3, 50]);
 });
 
-test('réserve de semences (moteur) : la famille ne mange jamais la réserve', () => {
+test('réserve de semences (moteur) : la famille ne mange jamais la réserve de l\'inventaire', () => {
   const s = garden();
   assertEqual(s.famille.reserve, {}, 'plus de réserve au départ : la réserve n\'est plus réglable dans l\'Inventaire');
   setSeedReserve(s, 'patate', 6);
-  // Lot 11 (nutrition) : carotte à 8 d'énergie ne suffit plus à couvrir le
-  // besoin (150) à elle seule avec 20 unités ; 15 carottes + 2 patates y suffisent.
   setInv(s, { patate: 10, carotte: 15 });
-  const plan = planMeal(s);
-  assertEqual(plan.mange, { carotte: 15, patate: 2 });
-  feedFamily(s);
-  assertEqual(countItem(s, 'patate'), 8, 'la réserve (6 patates) reste intacte, seul le surplus est mangé');
+  affamer(s);
+  assertEqual(s.repasJour.mange, { carotte: 15, patate: 4 });
+  assertEqual(countItem(s, 'patate'), 6, 'la réserve (6 patates) reste intacte, seul le surplus est mangé');
   assertEqual(countItem(s, 'carotte'), 0);
-  // réserve à 0 : tout peut être mangé (8 patates à 19 d'énergie couvrent le besoin de 150)
   const t = garden();
   setInv(t, { patate: 8 });
-  assertEqual(setSeedReserve(t, 'patate', 0).ok, true);
-  assertEqual(planMeal(t).mange, { patate: 8 });
-  // réserve supérieure au stock : rien n'est mangé
   assertEqual(setSeedReserve(t, 'patate', 25).ok, true);
-  assertEqual(planMeal(t).mange, {});
   // valeurs invalides refusées
   assertEqual(setSeedReserve(t, 'inconnu', 3).ok, false);
   assertEqual(setSeedReserve(t, 'patate', 'abc').ok, false);

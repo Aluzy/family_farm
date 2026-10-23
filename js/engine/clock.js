@@ -9,8 +9,7 @@ export function awakeRequired() {
 }
 
 // Heure de la journée (0 à 23) : 6 h au réveil, +1 heure toutes les
-// SECONDES_PAR_HEURE secondes d'éveil (30 s). À 19 h la famille prend son
-// repas (mealDue / takeMeal) ; à 22 h la nuit se déroule d'elle-même
+// SECONDES_PAR_HEURE secondes d'éveil (30 s). À 22 h la nuit se déroule d'elle-même
 // (bedtimeDue : c'est l'interface qui lance sleep(), jeu ouvert). Si rien ne
 // la lance, l'horloge repasse à 0 h et continue. (L'usure des appareils a sa
 // propre « heure de marche », SECONDES_HEURE_MARCHE : voir wearStep().)
@@ -74,20 +73,14 @@ export function midnightMs() {
   return (24 - DATA.TEMPS.HEURE_NUIT) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
 }
 
-// Temps d'éveil (ms) auquel l'horloge marque `hour` heures (19 h → 65 000 ms).
+// Temps d'éveil (ms) auquel l'horloge marque `hour` heures (19 h → 390 000 ms).
 export function awakeMsAtHour(hour) {
   return (hour - DATA.TEMPS.HEURE_REVEIL) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000;
 }
 
-// Version 1.1.1 : le repas de 19 h est-il à prendre maintenant ? (pas encore
-// pris aujourd'hui, et l'horloge a atteint HEURE_REPAS)
-export function mealDue(state) {
-  return !state.repas && state.awakeMs >= awakeMsAtHour(DATA.TEMPS.HEURE_REPAS);
-}
-
 // L'heure du coucher (HEURE_NUIT, 22 h) est-elle passée sans que personne n'ait
 // dormi ? L'interface lance alors
-// la nuit (sleep()) : repas s'il n'a pas été pris, puis les étapes habituelles.
+// la nuit (sleep()) : les étapes habituelles.
 export function bedtimeDue(state) {
   return state.awakeMs >= awakeMsAtHour(DATA.TEMPS.HEURE_NUIT);
 }

@@ -7,7 +7,7 @@ import {
   actionCost, botBuy, botDay, botFarm, botFieldTarget, botHoe, botIsFieldCrop, botMill,
   botRaiseFunds, botScythe, cutGrass, hasTool, botRecipeValue, botSell, botSheep, botSnack, botStepInfo, botWheatKept, buildSilo,
   chapterReached, countItem, createInitialState, DATA, hasHoe, millPending, NIGHT_STEPS,
-  openStation, planMeal, sheepCount, simulateFromCopy, simulateGame, simulatePlay, simulationReach,
+  openStation, sheepCount, simulateFromCopy, simulateGame, simulatePlay, simulationReach,
   soilCount, testFillBatteries, testGoToChapter, testSetLevel, testWoolReady,
 } from '../../js/engine/index.js';
 import {
@@ -158,16 +158,14 @@ test('Lot 10 : simulationReach date un jalon sur la moyenne mobile', () => {
   assertEqual(simulationReach(mk([100, 0, 100]), 100), null, 'une nuit isolée à 100 % ne compte pas');
 });
 
-test('Lot 10 : le joueur vend ce qui périt demain et que le repas ne mangera pas, jamais la réserve', () => {
+test('Lot 10 : le joueur vend ce qui périt demain, jamais la réserve', () => {
   const s = createInitialState(1);
   s.inventaire = { carotte: [{ qty: 100, nightsLeft: 1, origin: 'produit' }], patate: [{ qty: 10, nightsLeft: 1, origin: 'produit' }] };
   s.famille.reserve = { patate: 6 };
-  const mange = planMeal(s).mange;
   const piecesAvant = s.pieces;
   botSell(s);
-  const attendu = 100 - (mange.carotte || 0);
-  assertEqual(countItem(s, 'carotte'), 100 - attendu, 'seul le surplus de carottes est vendu');
-  assert(countItem(s, 'patate') >= 6, 'la réserve de semences reste');
+  assertEqual(countItem(s, 'carotte'), 0, 'les carottes qui périraient sont vendues');
+  assertEqual(countItem(s, 'patate'), 6, 'la réserve de semences reste');
   assert(s.pieces > piecesAvant, 'la vente rapporte des pièces');
 });
 
@@ -253,17 +251,16 @@ test('Lot 10 : le joueur ne vend des conserves que pour payer un achat, et pas s
   assertEqual(countItem(s, 'conserve'), DATA.SIMULATION.CONSERVES_GARDEES + 100 - 10);
 });
 
-test('Lot 10 : à court d\'énergie, le joueur mange un en-cas pris sur ce que le repas laisse', () => {
+test('Lot 10 : à court d\'énergie, le joueur mange un en-cas, jamais la réserve de semences', () => {
   const s = createInitialState(1);
   s.energie = 0;
-  setInv(s, { conserve: 6 }); // juste le repas du soir (150 calories) : rien à grignoter
+  setInv(s, { patate: 6 });
+  s.famille.reserve = { patate: 6 };
   botSnack(s);
-  assertEqual([s.energie, countItem(s, 'conserve')], [0, 6], 'le repas passe avant');
+  assertEqual([s.energie, countItem(s, 'patate')], [0, 6], 'la réserve n\'est pas mangée');
   setInv(s, { conserve: 6, carotte: 30 });
-  const repas = planMeal(s);
   botSnack(s);
   assert(s.energie >= actionCost(s, 'recolter'), `assez pour récolter : ${s.energie}`);
-  assertEqual(planMeal(s).couverture, repas.couverture, 'le repas du soir reste couvert');
 });
 
 test('Lot 10 : plante, arrose et récolte : les premières carottes arrivent', () => {

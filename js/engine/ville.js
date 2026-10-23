@@ -63,13 +63,6 @@ export function dishHappiness(item) {
   return B.PLATS[r.station] + (huileFruit ? B.HUILE_FRUIT : 0) + (speciale ? B.SPECIALES.bonus : 0);
 }
 
-// Applique la variation du repas à toute la famille ; renvoie la variation.
-export function applyMealHappiness(state, plan) {
-  const delta = mealHappinessDelta(plan);
-  for (const m of state.famille.membres) setHappiness(m, memberHappiness(m) + delta);
-  return delta;
-}
-
 /* ---------- sorties ---------- */
 
 function ville(state) {

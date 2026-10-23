@@ -10,6 +10,8 @@
     "GRAINE": 1,
     "//PAS_S": "secondes simulées entre deux séries d'actions du joueur",
     "PAS_S": 5,
+    "//FAIM_JOUR": "points de jauge de faim que chaque membre (sauf le personnage) dépense dans une journée simulée (FAMILLE.FAIM) : 3 membres × 10 points, à peu près les 150 calories par jour de l'ancien repas du soir",
+    "FAIM_JOUR": 10,
     "//LISSAGE": "nuits de la moyenne mobile qui sert à dater un jalon d'autonomie",
     "LISSAGE": 7,
     "STRATEGIES": { "applique": { "nom": "Joueur appliqué", "eveilS": 60 }, "minimal": { "nom": "Joueur minimal", "eveilS": 30 } },

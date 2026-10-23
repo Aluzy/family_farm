@@ -5,12 +5,12 @@
 
 import {
   addItem, buildSerre, buyItem, buyPrice, countItem, createInitialState, DATA, expiringSoon,
-  feedFamily, harvest, inventoryCounts, isBuyable, isPerishable, lotsOf, marketCoef, marketFloor,
-  mealOrder, migrate, planMeal, sellItem, setSeedReserve, shelfLife, sleep, spoil, startFarm,
+  depenserMembre, harvest, inventoryCounts, isBuyable, isPerishable, lotsOf, marketCoef, marketFloor,
+  mangerMembre, mangeurs, migrate, sellItem, setSeedReserve, shelfLife, sleep, spoil, startFarm,
   startHousehold, STATE_VERSION, takeItem, testAddFood, testAgeInventory, tick,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, garden, plantRipe, reach, setInv, test, testBase,
+  affamer, assert, assertEqual, garden, plantRipe, reach, setInv, test, testBase,
 } from './aide.mjs';
 
 /* ---------- Lot 3 : inventaire par lots, péremption, Marché ---------- */
@@ -169,34 +169,42 @@ test('Dormir : la péremption est la dernière étape et le rapport nomme les pe
   assertEqual(r2.aPerimer, {});
 });
 
-test('Dormir : le repas passe avant la péremption (un lot à 1 nuit est mangé, pas perdu)', () => {
+test('Dormir : ce que la famille mange passe avant la péremption (un lot à 1 nuit est mangé, pas perdu)', () => {
   const s = garden();
   setInv(s, { conserve: 100, carotte: 4 });
   lotsOf(s, 'carotte')[0].nightsLeft = 1;
+  affamer(s);
   s.awakeMs = 30000;
   const r = sleep(s);
   assertEqual(r.mange.carotte, 4);
   assertEqual(r.perimes, {});
 });
 
+// L'ordre dans lequel un membre affamé mange (les clés de ce qu'il a mangé, dans l'ordre).
+function ordreRepas(s) {
+  const m = mangeurs(s)[0];
+  depenserMembre(s, m.id, 80);
+  return Object.keys(mangerMembre(s, m).mange);
+}
+
 test('ordre de consommation : d\'abord ce qui périme le plus tôt', () => {
   const s = garden();
   setInv(s, { conserve: 100, carotte: 2, courgette: 2, tomate: 2 });
   s.famille.reserve = {};
-  // au départ : tomate et courgette (5 nuits) avant la carotte (6), la courgette (8) avant la tomate (6)
-  assertEqual(Object.keys(planMeal(s).mange), ['courgette', 'tomate', 'carotte', 'conserve']);
-  // la carotte vieillit de 3 nuits : elle n'a plus que 3 nuits et passe en tête malgré son énergie
-  lotsOf(s, 'carotte')[0].nightsLeft = 3;
-  assertEqual(Object.keys(planMeal(s).mange), ['carotte', 'courgette', 'tomate', 'conserve']);
+  // au départ : tomate et courgette (5 nuits) avant la carotte (6), la courgette (valeur 3) avant la tomate
+  assertEqual(ordreRepas(s), ['courgette', 'tomate', 'carotte', 'conserve']);
+  // la carotte n'a plus que 3 nuits : elle passe en tête
+  const t = garden();
+  setInv(t, { conserve: 100, carotte: 2, courgette: 2, tomate: 2 });
+  lotsOf(t, 'carotte')[0].nightsLeft = 3;
+  assertEqual(ordreRepas(t), ['carotte', 'courgette', 'tomate', 'conserve']);
 });
 
-test('ordre de consommation : à péremption égale, par énergie décroissante', () => {
+test('ordre de consommation : à péremption égale, par valeur décroissante ; les conserves en dernier', () => {
   const s = garden();
   setInv(s, { conserve: 100, tomate: 2, courgette: 2 });
   s.famille.reserve = {};
-  assertEqual(Object.keys(planMeal(s).mange), ['courgette', 'tomate', 'conserve']);
-  const inStock = mealOrder(s).filter((k) => countItem(s, k) > 0);
-  assertEqual(inStock.slice(-1), ['conserve'], 'les conserves, qui ne périment pas, passent en dernier');
+  assertEqual(ordreRepas(s), ['courgette', 'tomate', 'conserve']);
 });
 
 test('ordre de consommation : dans un item, le lot le plus ancien est mangé d\'abord', () => {
@@ -207,11 +215,10 @@ test('ordre de consommation : dans un item, le lot le plus ancien est mangé d\'
   spoil(s);
   spoil(s);
   addItem(s, 'carotte', 60); // 5 carottes à 4 nuits, 60 à 6 nuits
-  const plan = planMeal(s);
-  // Lot 11 (nutrition) : carotte à 8 d'énergie, 19 en couvrent les 150.
-  assertEqual(plan.mange, { carotte: 19 }, '19 carottes couvrent les 150 énergies du besoin');
-  feedFamily(s);
-  assertEqual(lotsOf(s, 'carotte'), [{ qty: 46, nightsLeft: 6, origin: 'produit' }], 'le lot de 4 nuits part en entier, puis 14 du lot frais');
+  const m = mangeurs(s)[0];
+  depenserMembre(s, m.id, 80);
+  assertEqual(mangerMembre(s, m).mange, { carotte: 40 }, 'de 20 à 100 : 40 carottes de valeur 2');
+  assertEqual(lotsOf(s, 'carotte'), [{ qty: 25, nightsLeft: 6, origin: 'produit' }], 'le lot de 4 nuits part en entier, puis 35 du lot frais');
 });
 
 test('Marché : prix d\'achat = prix de vente × coefficient, plancher 1,2', () => {

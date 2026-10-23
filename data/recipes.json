@@ -54,6 +54,9 @@
     "semis : la graine d'un arbre de la carte (la pomme de pin d'un sapin, le gland d'un autre arbre : HACHE.GRAINES), à planter sur une case d'herbe libre, dehors, loin des autres arbres plantés (ARBRE_ECART) ; un arbre de cette espèce y pousse (outils.js, planterGraine), sans rester un bloc.",
     "Le Poulailler veut aussi une porte sur le dehors et un enclos de barrières relié par une porte, et une case libre par poule dedans et dans l'enclos (blocs.js, etatPoulailler).",
     "botteleuse : une pièce de la botteleuse (BOTTELEUSE) : « entonnoir », « machine » ou « convoyeur ».",
+    "boite : la boîte à nourriture (BOITE, js/engine/repas.js) : la famille y mange ; on y range au plus PLATS aliments",
+    "différents, QUANTITE de chacun. Une fois le réfrigérateur construit, elle revient dans l'inventaire avec son contenu",
+    "et ne se pose plus (la famille mange au frigo).",
     "silo : un bloc de silo (ATELIER.SILO) : posé sur un autre, il rehausse sa colonne. Une recette « debloque » ne se",
     "fabrique (et ne se montre à l'Atelier) qu'à partir du niveau de cet élément (NIVEAUX)."
   ],
@@ -79,6 +82,7 @@
       "chemin": { "entrees": { "pierre": 1 }, "sortie": { "chemin": 2 } },
       "lanterne": { "entrees": { "champignon_lumineux": 1, "bois_infra": 1 }, "sortie": { "lanterne": 1 } },
       "paillasse": { "entrees": { "fibre": 2 }, "sortie": { "paillasse": 1 } },
+      "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 } },
       "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },
       "cuisiniere": { "entrees": { "pierre": 6, "planche": 4 }, "sortie": { "cuisiniere": 1 } },
       "puits_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "puits_pierre": 1 } },
@@ -114,6 +118,7 @@
       "paroi_vitree": { "nom": "Paroi vitrée", "objet": "paroi_vitree", "bloque": true, "ferme": true, "mur": true },
       "porte": { "nom": "Porte", "objet": "porte", "porte": true, "ferme": true },
       "paillasse": { "nom": "Paillasse", "objet": "paillasse", "dedans": true },
+      "boite_nourriture": { "nom": "Boîte à nourriture", "objet": "boite_nourriture", "dedans": true, "bloque": true, "unique": true, "boite": true },
       "plancher": { "nom": "Plancher", "objet": "plancher", "sol": true },
       "chemin": { "nom": "Chemin", "objet": "chemin", "sol": true, "dehors": true },
       "barriere": { "nom": "Barrière", "objet": "barriere", "bloque": true },
@@ -160,6 +165,7 @@
       "atelier": { "nom": "Atelier", "bloque": true, "ferme": true }
     },
     "PIECE_MAX": 120,
+    "BOITE": { "PLATS": 6, "QUANTITE": 10 },
     "//HAUTEUR_MAX": [
       "Version 1.25 : un mur se rehausse (le même mur posé sur lui) jusqu'à HAUTEUR_MAX blocs de haut ;",
       "chaque bloc de plus se prend dans l'inventaire et y revient quand on le reprend (le bloc du",
@@ -291,8 +297,8 @@
     },
     "//gratin_patates": [
       "Lot 11 (nutrition) : override à 150 (energieForcee) pour qu'une unité de",
-      "gratin couvre exactement le besoin d'une journée de la famille de départ",
-      "(2 adultes + 2 enfants = familyNeed() = 150, voir DATA.FAMILLE.AJ). Le",
+      "gratin couvre le besoin d'une journée de quatre personnes (150, voir",
+      "DATA.FAMILLE.AJ ; pour la famille du joueur : une valeur de 33, repas.js). Le",
       "calcul ingrédients × COEF_PLAT donnerait 91 (3 patates à 19 + 1 œuf à 13,",
       "soit 70 × 1,3), donc l'objectif est atteint via ce champ dédié plutôt",
       "qu'en gonflant les quantités d'ingrédients (ce qui aurait changé le coût",
