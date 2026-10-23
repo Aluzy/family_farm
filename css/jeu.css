@@ -1815,6 +1815,20 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble) { display: no
 .build-bulle .build-slot { height: 46px; }
 .build-bulle .build-slot .px { --pxs: 30px; }
 
+/* L'Atelier (js/ui/atelier.js) : dans sa fenêtre, le même menu que Construire (onglets
+   intercalaires, barre de cases qui défile, bulles des murs, des portes et des sols) ; sous la
+   barre, la recette choisie (son icône, ce qu'elle prend ➜ ce qu'elle donne, Fabriquer). */
+.atelier-menu { --slot: 48px; display: flex; flex-direction: column; margin-bottom: 10px; }
+.atelier-menu .build-bar { filter: none; }
+.atelier-detail { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.atelier-detail-ico { font-size: 2rem; line-height: 1; }
+.atelier-detail-ico .px { --pxs: 40px; }
+.atelier-detail-txt { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.atelier-detail-nom { font-weight: 800; }
+.atelier-detail .chips { align-items: center; }
+.atelier-fleche { font-weight: 900; color: var(--color-earth); }
+.atelier-detail .btn { flex: 1 0 100%; }
+
 /* Dans un intérieur (la Serre) : « Sortir » et « Gérer », à la place des flèches. */
 .stage-room-bar {
   position: absolute;
