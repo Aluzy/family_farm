@@ -67,9 +67,9 @@ function placesDuJour(state, jour) {
       // RAMASSAGE.baies.nombre buissons en portent ce matin, tirés au hasard
       const B = (T.BUISSONS || []).slice();
       for (let k = 0; k < def.nombre && B.length; k++) {
-        const [c0, r1, w] = B.splice(Math.floor(r() * B.length), 1)[0];
+        const [c0, r1, w, , taille] = B.splice(Math.floor(r() * B.length), 1)[0];
         const t = r1 * T.LARGEUR + c0 + Math.floor(w / 2);
-        out.push({ id: sorte + ':' + t, sorte, objet: def.objet, case: t, buisson: true });
+        out.push({ id: sorte + ':' + t, sorte, objet: def.objet, case: t, buisson: true, taille: taille || 'petit' });
       }
       continue;
     }
@@ -136,7 +136,8 @@ export function ramassables(state) {
 export function ramasser(state, id) {
   const p = ramassables(state).find((q) => q.id === id);
   if (!p) return fail('Il n\'y a plus rien à ramasser ici.');
-  const def = DATA.ATELIER.RAMASSAGE[p.sorte], n = def.quantite || 1;
+  // (les baies : selon la taille du buisson, RAMASSAGE.baies.parTaille)
+  const def = DATA.ATELIER.RAMASSAGE[p.sorte], n = (def.parTaille && def.parTaille[p.taille]) || def.quantite || 1;
   if (!def.gratuit && !canAfford(state, 'ramasser')) return fail(TIRED);
   cueillette(state).pris.push(id);
   addItem(state, p.objet, n);

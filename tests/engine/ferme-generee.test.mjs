@@ -1496,3 +1496,17 @@ test('terre sauvage : une nouvelle partie commence avec 300 pièces', () => {
   assertEqual(s.pieces, 300);
   assertEqual(DATA.DEPART.PIECES_SAUVAGE, 300);
 });
+
+test('ferme générée : 32 buissons portent des baies chaque matin, 3 sur un petit, 5 sur un grand ; hache et pioche à 3 d\'énergie', () => {
+  assertEqual([DATA.PERSONNAGE.COUTS.couper, DATA.PERSONNAGE.COUTS.piocher], [3, 3]);
+  const s = chantier('b1');
+  const baies = ramassables(s).filter((p) => p.sorte === 'baies');
+  assertEqual(baies.length, Math.min(DATA.ATELIER.RAMASSAGE.baies.nombre, farmTerrain(s).BUISSONS.length));
+  for (const taille of ['petit', 'grand']) {
+    const p = baies.find((q) => q.taille === taille);
+    if (!p) continue;
+    const avant = countItem(s, 'baies');
+    assert(ramasser(s, p.id).ok);
+    assertEqual(countItem(s, 'baies') - avant, taille === 'grand' ? 5 : 3, taille);
+  }
+});

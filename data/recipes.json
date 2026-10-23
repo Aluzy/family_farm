@@ -17,7 +17,8 @@
     "morceaux de bois et d'herbes sur l'herbe de la carte (tirés d'après la graine et le jour) ;",
     "chacun se ramasse à la main (geste « ramasser ») et donne son objet (quantite : combien, 1 par",
     "défaut). buissons : sur les buissons de la carte plutôt que sur l'herbe (les baies) ; gratuit :",
-    "sans énergie (les baies se cueillent même épuisé : de quoi manger quand il n'y a plus rien).",
+    "sans énergie (les baies se cueillent même épuisé : de quoi manger quand il n'y a plus rien) ;",
+    "parTaille : combien selon la taille du buisson (petit, grand), à la place de quantite.",
     "BLOCS (étape 4) : ce qui se",
     "pose sur une case de la carte (objet : pris dans l'inventaire, rendu quand on le reprend ;",
     "l'atelier, une fois construit, sans objet) ; bloque : on ne passe pas dessus ; ferme : il ferme une",
@@ -182,7 +183,7 @@
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
-      "baies": { "nom": "Baies", "objet": "baies", "nombre": 16, "quantite": 3, "buissons": true, "gratuit": true }
+      "baies": { "nom": "Baies", "objet": "baies", "nombre": 32, "quantite": 3, "parTaille": { "petit": 3, "grand": 5 }, "buissons": true, "gratuit": true }
     },
     "//RAMASSAGE_DEPART": [
       "Le premier jour d'une nouvelle partie, en plus : autant de petites pierres et de morceaux de bois",

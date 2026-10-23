@@ -75,8 +75,8 @@ export const RAW_DATA = {
     "COUTS": {
       "ramasser": 1,
       "fabriquer": 2,
-      "couper": 6,
-      "piocher": 6,
+      "couper": 3,
+      "piocher": 3,
       "faucher": 3,
       "pecher": 4,
       "labourer": 5,
@@ -693,7 +693,15 @@ export const RAW_DATA = {
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
-      "baies": { "nom": "Baies", "objet": "baies", "nombre": 16, "quantite": 3, "buissons": true, "gratuit": true }
+      "baies": {
+        "nom": "Baies",
+        "objet": "baies",
+        "nombre": 32,
+        "quantite": 3,
+        "parTaille": { "petit": 3, "grand": 5 },
+        "buissons": true,
+        "gratuit": true
+      }
     },
     "RAMASSAGE_DEPART": { "RAYON": [2, 7], "petite_pierre": 6, "morceau_bois": 6 }
   },
