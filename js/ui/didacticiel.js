@@ -13,6 +13,7 @@ import { DATA } from '../engine/catalog.js';
 import { countItem } from '../engine/inventory.js';
 import { craftStatus } from '../engine/atelier.js';
 import { ongletAtelier, ongletRecette } from './atelier.js';
+import { cibleBloc } from './chantier.js';
 import { eauCruche, aCruche } from '../engine/cruche.js';
 import {
   casesAbriAPoser, etapeDidacticiel, ETAPES, majDidacticiel, objectifDidacticiel, passerDidacticiel, planAbri, suivantDidacticiel,
@@ -45,7 +46,7 @@ const menu = (tab) => (menuOpen ? `.nav-btn[data-tab="${tab}"]` : '#side-tab');
 // bloc ; null quand il est en main (on touche alors la carte).
 function construire(sorte) {
   if (!buildMode) return menu('atelier');
-  return buildMode === sorte ? null : `[data-action="build-pick"][data-sorte="${sorte}"]`;
+  return buildMode === sorte ? null : cibleBloc(sorte);
 }
 
 // Un outil de la barre d'outils : d'abord fermer la fenêtre ouverte (la barre ne se montre pas
@@ -107,7 +108,7 @@ const ETAPES_UI = {
     texte: () => (buildMode && ['mur_bois', 'porte'].includes(buildMode) ? (casesAbriAPoser(state, 'abri_construire').length ? 'Pose les <b>murs</b> sur les cases dorées et la <b>porte</b> directement sur la case blanche.' : 'Pose les <b>murs</b> en rectangle autour d\'une rangée de cases libres (une par paillasse), avec la <b>porte</b> dans l\'un des côtés.') : buildMode ? 'Choisis le <b>mur en bois</b>.' : menuOpen ? 'Touche 🔨 <b>Construire</b>.' : 'Bâtis l\'abri là où les cases brillent : ouvre le menu (la flèche), puis 🔨 Construire.'),
     // les cases de l'abri qui restent à poser, allumées sur la carte (murs dorés, porte blanche)
     carte: () => ({ cases: casesAbriAPoser(state, 'abri_construire') }),
-    cible: () => (buildMode && buildMode === 'porte' ? null : buildMode && buildMode !== 'mur_bois' && countItem(state, 'mur_bois') > 0 ? '[data-action="build-pick"][data-sorte="mur_bois"]' : buildMode ? (countItem(state, 'mur_bois') === 0 && countItem(state, 'porte') > 0 && buildMode !== 'porte' ? '[data-action="build-pick"][data-sorte="porte"]' : null) : menu('atelier')),
+    cible: () => (buildMode && buildMode === 'porte' ? null : buildMode && buildMode !== 'mur_bois' && countItem(state, 'mur_bois') > 0 ? cibleBloc('mur_bois') : buildMode ? (countItem(state, 'mur_bois') === 0 && countItem(state, 'porte') > 0 && buildMode !== 'porte' ? cibleBloc('porte') : null) : menu('atelier')),
   },
   paillasses: { texte: () => (buildMode === 'paillasse' ? 'Pose les <b>paillasses</b> dans l\'abri, sur les cases vertes qui brillent.' : buildMode ? 'Choisis la <b>paillasse</b>.' : 'Il reste les <b>paillasses</b> : 🔨 Construire.'), cible: () => construire('paillasse'), carte: () => ({ cases: casesAbriAPoser(state, 'paillasses') }) },
   houe: { texte: () => (atelierOuvertFenetre() ? 'Fabrique la <b>houe</b> : elle change l\'herbe en terre à cultiver.' : 'L\'abri est prêt, ta famille dormira au chaud ! Place au potager : fabrique une <b>houe</b> à l\'Atelier.'), ...fabrique(() => ['houe']) },

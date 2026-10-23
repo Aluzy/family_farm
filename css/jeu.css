@@ -1672,27 +1672,51 @@ body.has-stage { padding-bottom: 0; }
 .stage-chip-go { flex: none; color: var(--text-muted); font-size: 1.1rem; line-height: 1; }
 .stage-chip-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--bg-muted); }
 .stage-chip-bar > span { display: block; height: 100%; background: var(--accent); }
-/* La ferme générée, le mode Construire (js/ui/chantier.js) : le menu des blocs, sur le côté
-   droit de l'écran, dans le bois de la barre d'outils (même cadre, mêmes cases .tool-slot) :
-   en haut les paillasses et ✕, puis deux colonnes de cases qui défilent (le bloc choisi
-   encadré, comme l'outil en main ; un bloc qu'on n'a plus, pâli). */
+/* La ferme générée, le mode Construire (js/ui/chantier.js) : le menu des blocs, en haut de
+   l'écran (le HUD du haut s'efface : body.construction), dans le bois de la barre d'outils (même
+   cadre, mêmes cases .tool-slot). Des onglets intercalaires posés sur la barre (l'ouvert, plus
+   haut, avec son nom), puis la barre : une ligne de cases qui défile (le bloc choisi encadré,
+   comme l'outil en main ; un bloc qu'on n'a plus, pâli), et au bout le niveau, ✕ et les
+   paillasses. La bulle des murs s'ouvre sous la case des murs. */
+body.construction #player-card,
+body.construction #hud,
+body.construction .stage-hud > :not(.build-dock):not(.pose-meuble) { display: none !important; }
 .build-dock {
   --slot: 52px;
   position: fixed;
+  top: calc(8px + env(safe-area-inset-top));
+  left: calc(6px + env(safe-area-inset-left));
   right: calc(6px + env(safe-area-inset-right));
-  top: 50%;
-  transform: translateY(-50%);
   z-index: var(--z-fab);
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  max-height: calc(100% - 180px);
-  pointer-events: auto;
+  align-items: stretch;
+  pointer-events: none;
 }
-/* Le niveau de construction : un petit carré du même bois, au-dessus du menu (à droite) ; un
-   appui long ouvre au-dessus de lui la liste des niveaux, le plus haut en haut (on glisse
-   jusqu'à l'un, on lâche). */
+.build-dock > * { pointer-events: auto; }
+.build-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  margin: 0 0 -3px 6px;
+  align-self: flex-start;
+  max-width: calc(100% - 12px);
+  position: relative;
+  z-index: 1;
+}
+.build-tab {
+  display: flex; align-items: center; gap: 4px;
+  height: 30px; min-width: 32px; padding: 0 5px;
+  border: 3px solid var(--color-earth); border-bottom: 0; border-radius: 7px 7px 0 0;
+  background: #c99a5e;
+  font: inherit; font-weight: 800; color: var(--color-earth);
+  cursor: pointer;
+}
+.build-tab .px { --pxs: 20px; }
+.build-tab.on { height: 36px; padding: 0 10px 0 6px; background: rgb(var(--wood-bg-rgb)); }
+.build-tab-nom { white-space: nowrap; }
+/* Le niveau de construction : un petit carré du même bois, au bout de la barre ; un appui long
+   ouvre sous lui la liste des niveaux, le plus haut en haut (on glisse jusqu'à l'un, on lâche). */
 .build-level { position: relative; }
 .build-level-btn, .build-level-list {
   box-sizing: border-box;
@@ -1700,21 +1724,21 @@ body.has-stage { padding-bottom: 0; }
   border: 3px solid var(--color-earth);
   border-radius: 6px;
   box-shadow: inset 0 0 0 2px var(--wood-glow);
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
 }
 .build-level-btn {
-  width: calc(var(--slot) + 6px); height: calc(var(--slot) + 6px);
+  width: 34px; height: 34px;
   padding: 0;
-  font: inherit; font-size: 1.5rem; font-weight: 800; color: var(--color-earth);
+  font: inherit; font-size: 1.1rem; font-weight: 800; color: var(--color-earth);
   cursor: pointer;
   touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 .build-level-list {
-  position: absolute; right: 0; bottom: 0;
+  position: absolute; right: 0; top: calc(100% + 4px);
   display: flex; flex-direction: column; gap: 4px;
   width: calc(var(--slot) + 6px);
   padding: 3px;
-  z-index: 1;
+  z-index: 2;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
 }
 .build-level-list[hidden] { display: none; }
 .build-level-item {
@@ -1729,35 +1753,35 @@ body.has-stage { padding-bottom: 0; }
 .build-bar {
   box-sizing: border-box;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-height: 0;
-  max-height: calc(6 * (var(--slot) + 5px) + 44px);
+  align-items: flex-start;
+  gap: 6px;
   padding: 5px;
-  background: rgba(var(--wood-bg-rgb), 0.88);
+  background: rgba(var(--wood-bg-rgb), 0.92);
   border: 3px solid var(--color-earth);
   border-radius: 6px;
   box-shadow: inset 0 0 0 2px var(--wood-glow);
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
-  pointer-events: auto;
 }
-.build-bar-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 0 2px; font-weight: 700; }
+.build-bar-cases { position: relative; flex: 1; min-width: 0; }
+.build-bar-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--slot);
+  grid-template-rows: var(--slot);
+  gap: 5px;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding-bottom: 1px;
+}
+.build-bar-bout { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; height: var(--slot); }
+.build-bar-boutons { display: flex; gap: 4px; }
+.build-bar-head { font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
 .build-bar-close {
-  width: 28px; height: 28px; padding: 0;
+  width: 34px; height: 34px; padding: 0;
   border: 0; border-radius: 4px;
   background: #ead0a0; box-shadow: inset 0 0 0 2px var(--wood-light);
   font: inherit; font-size: 1rem; line-height: 1; cursor: pointer;
-}
-.build-bar-grid {
-  display: grid;
-  grid-template-columns: repeat(2, var(--slot));
-  grid-auto-rows: var(--slot);
-  gap: 5px;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  padding-right: 1px;
 }
 .build-slot { position: relative; height: var(--slot); font-size: 1.4rem; }
 .build-slot .px { --pxs: 32px; }
@@ -1768,6 +1792,27 @@ body.has-stage { padding-bottom: 0; }
 }
 .build-slot.epuise { opacity: 0.55; }
 .build-slot-img { max-width: 30px; max-height: 30px; image-rendering: pixelated; pointer-events: none; }
+/* la case des murs : « ⋯ » en haut à gauche (elle ouvre la bulle des murs) */
+.build-murs-plus { position: absolute; left: 4px; top: -2px; font-size: 1rem; font-weight: 900; line-height: 1; color: var(--color-earth); }
+/* la bulle des murs : sous la barre, une flèche vers la case des murs ; chaque mur, son icône */
+.build-bulle {
+  position: absolute; left: -6px; top: calc(var(--slot) + 12px);
+  z-index: 2;
+  padding: 6px;
+  background: rgba(var(--wood-bg-rgb), 0.97);
+  border: 3px solid var(--color-earth);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px var(--wood-glow);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+}
+.build-bulle::after {
+  content: ''; position: absolute; left: 22px; top: -19px;
+  border: 8px solid transparent; border-bottom-color: var(--color-earth);
+}
+.build-bulle-titre { font-weight: 800; color: var(--color-earth); margin: 0 2px 4px; }
+.build-bulle-grid { display: grid; grid-template-columns: repeat(5, 46px); grid-auto-rows: 46px; gap: 4px; }
+.build-bulle .build-slot { height: 46px; }
+.build-bulle .build-slot .px { --pxs: 30px; }
 
 /* Dans un intérieur (la Serre) : « Sortir » et « Gérer », à la place des flèches. */
 .stage-room-bar {

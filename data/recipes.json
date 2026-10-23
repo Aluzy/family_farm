@@ -178,6 +178,21 @@
     ],
     "HAUTEUR_MAX": 3,
     "MOULIN": { "HAUTEUR": 3 },
+    "//CATEGORIES": [
+      "Les onglets du menu Construire (js/ui/chantier.js), dans l'ordre : nom, icone, blocs (dans",
+      "l'ordre du menu). murs : tous les murs (BLOCS[].mur) en une case, qui ouvre la bulle des murs ;",
+      "meubles : les meubles du Marché (BLOCS[].meuble, sauf le réfrigérateur). Chaque bloc qui se pose",
+      "(pas les arbres ni les graines, qui se plantent depuis l'Inventaire) est dans un onglet. Un bloc",
+      "ne se montre que débloqué (blocs.js, blocDebloque), un onglet que s'il en a un."
+    ],
+    "CATEGORIES": {
+      "batir": { "nom": "Bâtir", "icone": "🧱", "murs": true, "blocs": ["porte", "plancher", "chemin", "barriere", "escalier"] },
+      "maison": { "nom": "Maison", "icone": "🏠", "blocs": ["paillasse", "boite_nourriture", "refrigerateur", "four", "cuisiniere", "lanterne"] },
+      "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
+      "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "mangeoire", "bac_semis", "ruche", "bac_fleurs", "bloc_silo", "meule"] },
+      "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
+      "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur"] }
+    },
     "//SILO": [
       "Le Silo de la ferme générée (js/engine/blocs.js, etatSilo) : des blocs de silo (fabriqués à l'Atelier",
       "une fois le Silo débloqué) posés dehors, en colonnes jointives sur une même rangée de la carte ; un bloc",

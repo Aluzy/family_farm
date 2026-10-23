@@ -379,10 +379,17 @@ Le Marché vend toujours les outils.
     dans l'inventaire.
 - **Construire** se fait sur la carte (`js/ui/chantier.js`, `js/carte/ferme/chantier.js`) :
   - une case 🔨 apparaît dans la barre d'outils dès que l'Atelier est construit ;
-  - un menu s'ouvre sur le côté droit de l'écran, dans le bois de la barre d'outils (même
-    cadre, mêmes cases) : en haut le nombre de paillasses où l'on peut dormir et ✕, puis une
-    case par bloc (son icône, ce qui en reste en main ; le bloc choisi encadré, un bloc épuisé
-    pâli) sur deux colonnes qui défilent (`.build-bar`) ;
+  - un menu s'ouvre en haut de l'écran, dans le bois de la barre d'outils (même cadre, mêmes
+    cases) ; le HUD du haut (personnage, jauges, heure) s'efface tant qu'il est ouvert
+    (`body.construction`). Seuls les blocs **débloqués** s'y montrent (`blocDebloque` : en main,
+    posés, ou que l'Atelier sait fabriquer à ce niveau), rangés en **onglets** intercalaires
+    (`ATELIER.CATEGORIES` : Bâtir, Maison, Meubles, Élevage, Énergie, Machines ; l'onglet ouvert
+    avec son nom, les autres avec leur icône seule ; un onglet vide ne se montre pas). Sous eux,
+    une ligne de cases qui défile (l'icône du bloc, ce qui en reste ; le bloc choisi encadré, un
+    bloc épuisé pâli), et au bout le niveau de construction, ✕ et les paillasses où l'on peut
+    dormir. Tous les murs tiennent dans **une case** (le dernier mur choisi, « ⋯ ») qui ouvre la
+    **bulle des murs** : chacun avec son icône (`scripts/icones/art_blocs.py`, un carré de sa
+    face) et ce qui en reste, sans texte ;
   - à l'ouverture, un rappel bref (2 s) : « touche une case pour poser, un bloc pour le reprendre » ;
   - un appui sur une case y pose le bloc choisi, un appui sur un bloc le reprend ;
   - les pièces closes sont teintées de vert.
