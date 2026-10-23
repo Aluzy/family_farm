@@ -233,7 +233,7 @@
 >   houe (l'achat attend que le panneau et la pompe ouvrent le Marché).
 > - **Chapitre 1 « L'héritage »** : réparer la maison, acheter panneau, pompe, réservoir,
 >   houe, faire une première récolte. **Chapitre 2 « Le grenier »** : niveau 2, 4 cultures
->   différentes récoltées, Silo réparé (niveau 3), du blé planté, 50 blés au Silo (il faut
+>   différentes récoltées, Silo construit (niveau 3), du blé planté, 50 blés au Silo (il faut
 >   donc l'agrandir au niveau 2). Les chapitres 3 à 7 ne changent pas.
 > - **Planche d'avatars** : cinq coiffures par âge (adultes : classique, roux, frisé,
 >   cheveux gris et lunettes, blond ; enfants : classique, roux, frisé, casquette, blond),

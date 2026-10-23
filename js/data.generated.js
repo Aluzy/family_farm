@@ -1980,11 +1980,11 @@ export const RAW_DATA = {
       {
         "titre": "Le grenier",
         "icone": "🌾",
-        "intro": "De nouvelles cultures, un Silo à réparer et du blé à rentrer : le grenier de la ferme se remplit.",
+        "intro": "De nouvelles cultures, un Silo à construire et du blé à rentrer : le grenier de la ferme se remplit.",
         "objectifs": [
           { "type": "niveau", "cible": 2, "libelle": "Atteindre le niveau 2", "unite": "" },
           { "type": "cultures", "cible": 4, "libelle": "Récolter 4 cultures différentes", "unite": "" },
-          { "type": "silo", "cible": 1, "libelle": "Réparer le Silo (niveau 3)", "unite": "" },
+          { "type": "silo", "cible": 1, "libelle": "Construire le Silo (niveau 3)", "unite": "" },
           { "type": "semisBle", "cible": 1, "libelle": "Planter du blé", "unite": "" },
           { "type": "siloBle", "cible": 50, "libelle": "Stocker 50 blés au Silo", "unite": "" }
         ]
