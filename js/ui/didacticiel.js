@@ -31,6 +31,7 @@ const nomObjet = (o) => (DATA.OBJETS[o] ? DATA.OBJETS[o].nom.toLowerCase() : o);
 const fabricable = (id) => craftStatus(state, id).ok;
 const atelierOuvertFenetre = () => stageWindow === 'atelier';
 const tenu = (outil) => !!document.querySelector(`.tool-slot.active[data-outil="${outil}"]`);
+const ongletGraines = () => !!document.querySelector('.inv-tab.active[data-tab="graines"]');
 
 // La première recette de `ids` qu'on peut fabriquer maintenant, sinon la première de la liste.
 function recette(ids) {
@@ -108,11 +109,14 @@ const ETAPES_UI = {
   },
   paillasses: { texte: () => (buildMode === 'paillasse' ? 'Pose les <b>paillasses</b> dans l\'abri, sur les cases vertes qui brillent.' : buildMode ? 'Choisis la <b>paillasse</b>.' : 'Il reste les <b>paillasses</b> : 🔨 Construire.'), cible: () => construire('paillasse'), carte: () => ({ cases: casesAbriAPoser(state, 'paillasses') }) },
   houe: { texte: () => (atelierOuvertFenetre() ? 'Fabrique la <b>houe</b> : elle change l\'herbe en terre à cultiver.' : 'L\'abri est prêt, ta famille dormira au chaud ! Place au potager : fabrique une <b>houe</b> à l\'Atelier.'), ...fabrique(() => ['houe']) },
+  // l'inventaire ouvert, l'onglet des graines, les graines offertes qui brillent (renderDidacticiel),
+  // puis on le referme : l'étape passe (et la suivante fait prendre la houe)
   graines: {
-    texte: () => (stageWindow === 'inventaire' ? `Voici ton <b>inventaire</b> : tout ce que tu as ramassé et fabriqué, rangé par onglets. On t'offre ${Object.entries(DATA.DIDACTICIEL.GRAINES).map(([o, n]) => `${n} ${nomObjet(o)}`).join(', ')} pour ton premier potager : regarde l'onglet des <b>graines</b> !` : 'Un cadeau t\'attend dans ton <b>inventaire</b> : ouvre le menu, puis l\'Inventaire.'),
-    // (l'inventaire ouvert : l'onglet des graines, s'il n'est pas déjà choisi)
-    cible: () => (stageWindow === 'inventaire' ? '.inv-tab[data-tab="graines"]:not(.active)' : menu('inventaire')),
-    bouton: () => stageWindow === 'inventaire',
+    texte: () => (stageWindow !== 'inventaire' ? 'Un cadeau t\'attend dans ton <b>inventaire</b> : ouvre le menu, puis l\'Inventaire.'
+      : !ongletGraines() ? 'Ouvre l\'onglet des <b>graines</b> : un cadeau t\'y attend. (Ton inventaire range par onglets tout ce que tu as ramassé et fabriqué.)'
+      : `Ferme ton inventaire (✕), puis prends la houe : on t'offre ${Object.entries(DATA.DIDACTICIEL.GRAINES).map(([o, n]) => `<b>${n} ${nomObjet(o)}</b>`).join(', ')} (elles brillent) pour ton premier potager !`),
+    cible: () => (stageWindow !== 'inventaire' ? menu('inventaire') : !ongletGraines() ? '.inv-tab[data-tab="graines"]' : '#stage-window-close'),
+    bouton: () => false,
   },
   labour: { texte: () => (hoeMode || tenu('houe') ? 'Touche des cases d\'herbe pour les <b>labourer</b>.' : prendreOutil('<b>houe</b>')), cible: () => (hoeMode ? null : outil('houe')) },
   semis: { texte: () => (document.querySelector('#modal-root [data-action="plant"]') ? 'Choisis la <b>carotte</b>.' : hoeMode ? 'Range la houe (touche-la), puis touche une terre labourée pour <b>semer</b>.' : 'Touche une terre labourée pour y <b>semer</b> tes graines.'), cible: () => (document.querySelector('#modal-root [data-action="plant"]') ? '#modal-root [data-action="plant"]' : hoeMode ? outil('houe') || '.tool-slot[data-outil="houe"]' : null) },
@@ -185,13 +189,25 @@ const fenetreOuverte = () => !!stageWindow || !!document.querySelector('#modal-r
 let deplie = false;
 
 let anneau = null;
+let lueur = null;           // une seconde surbrillance, sans être la cible : les graines offertes
+let grainesVues = false;    // l'étape des graines : on les a vues dans l'inventaire
 export function renderDidacticiel() {
   const root = document.getElementById('didacticiel-root');
   if (!root) return;
   if (state && majDidacticiel(state)) persistState();
   // la fenêtre de l'Atelier s'ouvre : l'étape « touche l'Atelier » est faite
   if (state && etapeDidacticiel(state) === 'atelier_ouvrir' && stageWindow === 'atelier' && suivantDidacticiel(state, 'atelier_ouvrir').ok) persistState();
+  // les graines vues dans l'inventaire, puis l'inventaire refermé : l'étape est faite
+  if (state && etapeDidacticiel(state) === 'graines') {
+    if (stageWindow === 'inventaire' && ongletGraines()) grainesVues = true;
+    else if (grainesVues && stageWindow !== 'inventaire' && suivantDidacticiel(state, 'graines').ok) { grainesVues = false; persistState(); }
+  }
   const etape = visible() ? etapeDidacticiel(state) : null;
+  const brille = etape === 'graines' && stageWindow === 'inventaire' && ongletGraines()
+    ? document.querySelector(Object.keys(DATA.DIDACTICIEL.GRAINES).map((o) => `.inv-slot[data-item="${o}"]`).join(',')) : null;
+  if (lueur && lueur !== brille) lueur.classList.remove('didac-lueur');
+  if (brille && brille !== lueur) brille.classList.add('didac-lueur');
+  lueur = brille;
   document.body.classList.toggle('didacticiel', !!etape);
   const e = etape && ETAPES_UI[etape];
   const el = e && e.cible ? element(e.cible()) : null;
