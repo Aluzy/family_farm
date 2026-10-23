@@ -28,7 +28,7 @@ d'énergie :
 
 Chaque nuit, quelques-unes repoussent à des endroits tirés d'après la graine et le jour. Le
 premier jour d'une nouvelle partie, il y en a en plus autour de l'endroit où le personnage apparaît
-(`ATELIER.RAMASSAGE_DEPART` : 6 pierres et 6 bois, à 2 à 7 tuiles de lui) : de quoi bâtir l'Atelier
+(`ATELIER.RAMASSAGE_DEPART` : 6 pierres et 9 bois, à 2 à 7 tuiles de lui, posés ce jour-là seulement) : de quoi bâtir l'Atelier, puis la hache et la pioche,
 sans s'éloigner. Il n'y
 a plus d'herbes à ramasser : la fibre vient de l'herbe haute fauchée (la faux, `FAUX.FIBRE` : une
 fibre au sol par touffe, à ramasser en marchant dessus). La faux se fabrique à l'Atelier sans
