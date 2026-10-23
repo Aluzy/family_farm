@@ -176,6 +176,12 @@ export function surbrillanceDidacticiel() {
 const icone = (o) => (o === 'terre' ? '🟫' : DATA.OBJETS[o] ? DATA.OBJETS[o].icone : '');
 const libelle = (o) => (o === 'terre' ? 'terres labourées' : nomObjet(o));
 
+// Une fenêtre est-elle ouverte (une fenêtre de la carte, une fenêtre par-dessus) ? La bulle se
+// réduit alors à une ligne en bas de l'écran, pour ne pas gêner ; un appui la déplie (deplie),
+// jusqu'à ce que la fenêtre se ferme.
+const fenetreOuverte = () => !!stageWindow || !!document.querySelector('#modal-root > *');
+let deplie = false;
+
 let anneau = null;
 export function renderDidacticiel() {
   const root = document.getElementById('didacticiel-root');
@@ -197,6 +203,19 @@ export function renderDidacticiel() {
   const compteurs = o && o.compteurs.length
     ? `<div class="didac-compteurs" aria-label="Ce qu'il te faut">${o.compteurs.map((c) => `<span class="didac-compteur${c.n >= c.besoin ? ' ok' : ''}" title="${libelle(c.objet)}"><span aria-hidden="true">${icone(c.objet)}</span> <span class="num">${Math.min(c.n, c.besoin)} / ${c.besoin}</span><span class="visually-hidden"> ${libelle(c.objet)}</span></span>`).join('')}</div>`
     : '';
+  const fenetre = fenetreOuverte();
+  if (!fenetre) deplie = false;
+  if (fenetre && !deplie) {
+    morph(root, `${compteurs}
+    <section class="didac-bulle reduite" aria-live="polite" aria-label="Didacticiel">
+      <button type="button" class="didac-reduite" data-action="didacticiel-deplier" aria-expanded="false" title="Afficher le didacticiel">
+        <span class="didac-reduite-texte">${e.texte()}</span>
+        <span class="muted num">${n} / ${ETAPES.length}</span>
+        <span class="didac-chevron" aria-hidden="true">▴</span>
+      </button>
+    </section>`);
+    return;
+  }
   // la bulle en haut quand ce qu'elle montre est dans le bas de l'écran
   const haut = el && el.getBoundingClientRect().top > window.innerHeight * 0.55;
   morph(root, `${compteurs}
@@ -206,11 +225,16 @@ export function renderDidacticiel() {
         <button type="button" class="didac-passer" data-action="didacticiel-passer">Passer le didacticiel</button>
         <span class="muted num">${n} / ${ETAPES.length}</span>
         ${lire ? `<button type="button" class="btn primary" data-action="didacticiel-suivant">${etape === 'fin' ? 'Terminer' : 'Suivant'}</button>` : ''}
+        ${fenetre ? '<button type="button" class="didac-replier" data-action="didacticiel-deplier" aria-expanded="true" title="Réduire le didacticiel" aria-label="Réduire le didacticiel">▾</button>' : ''}
       </div>
     </section>`);
 }
 
 registerActions({
+  'didacticiel-deplier': () => {
+    deplie = !deplie;
+    refresh();
+  },
   'didacticiel-suivant': () => {
     const r = suivantDidacticiel(state);
     if (r.ok) { persistState(); refresh(); }
