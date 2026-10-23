@@ -47,8 +47,17 @@ function construire(sorte) {
   return buildMode === sorte ? null : `[data-action="build-pick"][data-sorte="${sorte}"]`;
 }
 
-// Un outil de la barre d'outils : d'abord la languette, si la barre est rangée.
-const outil = (id) => (tenu(id) ? null : toolbarOpen ? `.tool-slot[data-outil="${id}"]` : '.tool-bar-tab');
+// Un outil de la barre d'outils : d'abord fermer la fenêtre ouverte (la barre ne se montre pas
+// sous une fenêtre), puis la languette si la barre est rangée, puis la case de l'outil.
+const outil = (id) => (tenu(id) ? null : stageWindow ? '#stage-window-close' : toolbarOpen ? `.tool-slot[data-outil="${id}"]` : '.tool-bar-tab');
+
+// Ce qu'il faut dire pour prendre un outil (`nom` : son nom, en HTML) dans la barre d'outils.
+function prendreOutil(nom) {
+  if (stageWindow === 'atelier') return 'Ferme la fenêtre de l\'<b>Atelier</b> (✕) pour retrouver ta barre d\'outils.';
+  if (stageWindow) return 'Ferme cette fenêtre (✕) pour retrouver ta barre d\'outils.';
+  if (!toolbarOpen) return 'Appuie sur la <b>flèche</b> de la barre d\'outils, en bas de l\'écran, pour la faire sortir.';
+  return `Prends la ${nom} dans ta barre d'outils.`;
+}
 
 // Une recette de l'Atelier : sa fenêtre ouverte, son onglet, le bouton Fabriquer ; sinon l'Atelier de la carte.
 function fabriquer(ids) {
@@ -84,7 +93,7 @@ const ETAPES_UI = {
     bouton: () => false,   // (elle passe quand la fenêtre de l'Atelier s'ouvre)
   },
   faux: { texte: () => (atelierOuvertFenetre() ? (fabricable('faux') ? 'Fabrique ta première <b>faux</b> : elle coupe l\'herbe haute.' : 'Il te faut de quoi fabriquer la <b>faux</b> : ramasse encore du bois et des pierres.') : 'Ton premier outil sera une <b>faux</b> : touche l\'Atelier.'), ...fabrique(() => ['faux']) },
-  fibres: { texte: () => (tenu('faux') || scytheMode ? 'Touche les touffes d\'<b>herbe haute</b> pour les faucher, puis marche sur les <b>fibres</b> tombées pour les ramasser.' : 'Prends la <b>faux</b> dans ta barre d\'outils.'), cible: () => outil('faux') },
+  fibres: { texte: () => (tenu('faux') || scytheMode ? 'Touche les touffes d\'<b>herbe haute</b> pour les faucher, puis marche sur les <b>fibres</b> tombées pour les ramasser.' : prendreOutil('<b>faux</b>')), cible: () => outil('faux') },
   outils: { texte: () => (atelierOuvertFenetre() ? 'Fabrique la <b>hache</b> (pour le bois des arbres) et la <b>pioche</b> (pour les rochers).' : 'À l\'Atelier, fabrique maintenant la <b>hache</b> et la <b>pioche</b>. Il te faut du bois, des pierres et des fibres.'), ...fabrique(() => ['hache', 'pioche']) },
   abri_ressources: { texte: () => `Ta famille a besoin d'un <b>abri</b> : des murs en bois, une porte, et une paillasse pour chacun (${planAbri(state).paillasses}). Coupe des arbres à la <b>hache</b> pour le bois, fauche pour les fibres.` },
   abri_fabriquer: {
@@ -103,7 +112,7 @@ const ETAPES_UI = {
     cible: () => (stageWindow === 'inventaire' ? '.inv-tab[data-tab="graines"]:not(.active)' : menu('inventaire')),
     bouton: () => stageWindow === 'inventaire',
   },
-  labour: { texte: () => (hoeMode || tenu('houe') ? 'Touche des cases d\'herbe pour les <b>labourer</b>.' : 'Prends la <b>houe</b> dans ta barre d\'outils.'), cible: () => (hoeMode ? null : outil('houe')) },
+  labour: { texte: () => (hoeMode || tenu('houe') ? 'Touche des cases d\'herbe pour les <b>labourer</b>.' : prendreOutil('<b>houe</b>')), cible: () => (hoeMode ? null : outil('houe')) },
   semis: { texte: () => (document.querySelector('#modal-root [data-action="plant"]') ? 'Choisis la <b>carotte</b>.' : hoeMode ? 'Range la houe (touche-la), puis touche une terre labourée pour <b>semer</b>.' : 'Touche une terre labourée pour y <b>semer</b> tes graines.'), cible: () => (document.querySelector('#modal-root [data-action="plant"]') ? '#modal-root [data-action="plant"]' : hoeMode ? outil('houe') || '.tool-slot[data-outil="houe"]' : null) },
   puits: {
     texte: () => (countItem(state, 'puits_pierre') > 0 ? (buildMode === 'puits' ? 'Touche une case d\'herbe pour poser le <b>puits</b>.' : 'Pose le <b>puits</b> dehors : 🔨 Construire.') : atelierOuvertFenetre() ? 'Fabrique le <b>puits</b> et une <b>cruche</b> : pour arroser, tu y rempliras la cruche.' : 'Tes graines ont besoin d\'eau : fabrique un <b>puits</b> et une <b>cruche</b> à l\'Atelier.'),
