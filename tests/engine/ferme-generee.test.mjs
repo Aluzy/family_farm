@@ -13,7 +13,7 @@ import {
   etatEtable, etatMoulin, etatSilo, hauteurSilo, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   botteleuses, etatBotteleuse, machineDe, morceauxDe, ramasserMorceau, sortirBotte, verserFibres,
   buyRuche, buyDehors, PORTE_SUR_MUR, casesBuissonsCoupes, especeArbre, poussesArbres, arbresPlantes, respawnTrees, fellenTrees, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
-  buyItem, sellItem, buyHoe, marcheOuvert, unlockLevel,
+  buyItem, sellItem, buyHoe, marcheOuvert, unlockLevel, goToSleep, skipNight, simulateOffline, asleep,
   caseDepart, commencerDidacticiel, etapeDidacticiel, suivantDidacticiel, majDidacticiel, objectifDidacticiel, recettesDidacticiel, blocsDidacticiel, passerDidacticiel, planAbri, hoe, plant, water, remplirCruche, eauCruche,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
@@ -219,13 +219,13 @@ test('ferme générée : l\'Atelier se construit avec 3 bois et 3 pierres, puis 
   assertEqual(buildAtelier(s), { ok: true });
   assertEqual([atelierConstruit(s), countItem(s, 'bois'), countItem(s, 'pierre'), s.pieces], [true, 8, 6, pieces], 'payé en matériaux, sans pièces');
   assertEqual(buildAtelier(s).ok, false, 'une seule fois');
-  // 2 bois → 1 planche ; 4 pierres → 1 mur ; 3 planches → 1 porte ; 3 fibres → 1 paillasse
+  // 2 bois → 1 planche ; 4 pierres → 1 mur ; 3 planches → 1 porte ; 2 fibres → 1 paillasse
   for (let k = 0; k < 3; k++) assertEqual(craft(s, 'planche').items, { planche: 1 });
   assertEqual([countItem(s, 'bois'), countItem(s, 'planche')], [2, 3]);
   assertEqual(craft(s, 'porte').items, { porte: 1 });
   assertEqual(craft(s, 'mur_pierre').items, { mur_pierre: 1 });
   assertEqual(craft(s, 'paillasse').items, { paillasse: 1 });
-  assertEqual([countItem(s, 'planche'), countItem(s, 'pierre'), countItem(s, 'fibre'), countItem(s, 'porte'), countItem(s, 'mur_pierre'), countItem(s, 'paillasse')], [0, 2, 2, 1, 1, 1]);
+  assertEqual([countItem(s, 'planche'), countItem(s, 'pierre'), countItem(s, 'fibre'), countItem(s, 'porte'), countItem(s, 'mur_pierre'), countItem(s, 'paillasse')], [0, 2, 5 - DATA.ATELIER.RECETTES.paillasse.entrees.fibre, 1, 1, 1]);
   const m = craftStatus(s, 'mur_pierre');
   assertEqual([m.ok, m.manque], [false, { pierre: 2 }]);
   // les outils de pierre
@@ -1383,7 +1383,7 @@ test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il
   setInv(s, R.faux.entrees);
   assert(craft(s, 'faux').ok);
   majDidacticiel(s);
-  const fibres = 2 + 3 * N;
+  const fibres = 2 + R.paillasse.entrees.fibre * N;
   assertEqual([etapeDidacticiel(s), objectifDidacticiel(s).compteurs], ['fibres', [{ objet: 'fibre', n: 0, besoin: fibres }]]);
   setInv(s, { fibre: fibres, bois: 4, pierre: 5 });
   majDidacticiel(s);
@@ -1392,8 +1392,9 @@ test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il
   majDidacticiel(s);
   const p = planAbri(s);
   assertEqual([etapeDidacticiel(s), p], ['abri_ressources', { murs: 2 * N + 5, porte: 1, paillasses: N }]);
-  assertEqual(objectifDidacticiel(s).compteurs, [{ objet: 'bois', n: 0, besoin: p.murs * 4 + 6 }, { objet: 'fibre', n: 3 * N, besoin: 3 * N }]);
-  setInv(s, { bois: p.murs * 4 + 6, fibre: 3 * N });
+  const RC = DATA.ATELIER.RECETTES, bois = p.murs * RC.mur_bois.entrees.bois + 6, fib = RC.paillasse.entrees.fibre * N;
+  assertEqual(objectifDidacticiel(s).compteurs, [{ objet: 'bois', n: 0, besoin: bois }, { objet: 'fibre', n: fib, besoin: fib }]);
+  setInv(s, { bois, fibre: fib });
   majDidacticiel(s);
   assertEqual([etapeDidacticiel(s), recettesDidacticiel(s).has('mur_bois')], ['abri_fabriquer', true]);
   for (let k = 0; k < p.murs; k++) assert(craft(s, 'mur_bois').ok);
@@ -1509,4 +1510,28 @@ test('ferme générée : 32 buissons portent des baies chaque matin, 3 sur un pe
     assert(ramasser(s, p.id).ok);
     assertEqual(countItem(s, 'baies') - avant, taille === 'grand' ? 5 : 3, taille);
   }
+});
+
+test('ferme générée : sans paillasse dans une pièce close, on ne dort pas (ni au bouton, ni au retour sur le jeu, ni en sautant la nuit)', () => {
+  const s = chantier('z1');
+  s.energie = 5000;
+  s.nuitEnCours = { ms: 0, minuit: false };
+  const r = goToSleep(s);
+  assertEqual([r.ok, asleep(s)], [false, false]);
+  assert(/paillasse/.test(r.error));
+  // le jeu revient d'une absence en pleine nuit : il ne s'est pas endormi, l'énergie n'est pas revenue
+  s.nuitEnCours = { ms: 0, minuit: false };
+  simulateOffline(s, 60);
+  assertEqual(asleep(s), false);
+  s.nuitEnCours = { ms: 0, minuit: false };
+  skipNight(s);
+  assertEqual(s.energie <= 5000, true, 'sans paillasse : rien ne revient');
+  // avec un abri et une paillasse : il dort
+  const z = terrainLibre(s, 7, 8), p = murs(z, 5, 5);
+  setInv(s, { mur_pierre: 30, porte: 2, paillasse: 2 });
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserPorte(s, p.porte);
+  assert(poserBloc(s, 'paillasse', p.dedans).ok);
+  s.nuitEnCours = { ms: 0, minuit: false };
+  assertEqual([goToSleep(s).ok, asleep(s)], [true, true]);
 });

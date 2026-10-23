@@ -216,8 +216,12 @@ export function recoverInSleep(state, ms) {
 // « Dormir » : le personnage dort dans son lit, la nuit défile en accéléré (une heure toutes
 // les TIME.SECONDES_PAR_HEURE_SOMMEIL secondes au lieu de SECONDES_PAR_HEURE) jusqu'au réveil.
 // On ne dort que la nuit.
+// Sur la ferme générée, il faut une paillasse dans une pièce close (nuitCouchee) : sans elle, on
+// ne dort pas, la nuit passe à son rythme et ne rend pas d'énergie.
+export const SANS_COUCHAGE = 'Sans paillasse dans une pièce close (des murs tout autour et une porte), on ne peut pas dormir : la nuit passe sans rendre d\'énergie.';
 export function goToSleep(state) {
   if (!nightActive(state)) return fail(`On ne dort que la nuit, de ${DATA.TEMPS.HEURE_NUIT} h à ${DATA.TEMPS.HEURE_REVEIL} h.`);
+  if (!nuitCouchee(state)) return fail(SANS_COUCHAGE);
   state.nuitEnCours.dort = true;
   return { ok: true };
 }
@@ -236,7 +240,7 @@ export function nightSpeed(state) {
 // rapport de réveil, ou null s'il n'y a pas de nuit en cours.
 export function skipNight(state) {
   if (!nightActive(state)) return null;
-  state.nuitEnCours.dort = true; // le reste de la nuit, il dort
+  state.nuitEnCours.dort = nuitCouchee(state); // le reste de la nuit, il dort (s'il a où dormir)
   advanceNight(state, nightLengthMs());
   return state.report;
 }

@@ -59,7 +59,7 @@ L'atelier coûte 3 bois et 3 pierres. Il permet de fabriquer :
 | 2 bois | 1 planche |
 | 4 pierres | 1 mur en pierre |
 | 3 planches | 1 porte |
-| 3 fibres | 1 paillasse |
+| 2 fibres | 1 paillasse |
 | 2 bois + 1 pierre + 1 fibre | houe de pierre |
 | 2 bois + 2 pierres + 1 fibre | hache de pierre |
 | 2 bois + 3 pierres + 1 fibre | pioche de pierre |
@@ -262,7 +262,7 @@ Le Marché vend toujours les outils.
     murs (`mur: true`) : ils ferment une pièce, se raccordent à tous les autres murs, en changent
     un sans qu'on l'enlève et se posent à l'étage. Images de `murs_hauts.png` : 161, 177, 193,
     209, 225 + masque (`MATIERES_VILLE`, `scripts/carte/blocs.py`).
-  - **Le mur en bois** (4 bois) : des planches couchées sur la face, une lisse claire en haut,
+  - **Le mur en bois** (2 bois) : des planches couchées sur la face, une lisse claire en haut,
     une sablière sombre au pied, des planches au soleil sur le dessus. C'est un mur comme les
     autres (`mur: true`) ; images de `murs_hauts.png` : 371 + masque (`mur_bois`,
     `scripts/carte/blocs.py`).

@@ -272,7 +272,7 @@
     "se plante sur n'importe quelle case d'herbe libre (mode Construire, les blocs pomme_de_pin et gland) :",
     "jeune pousse pendant POUSSE jours (tiré entre les deux), c'est ensuite un arbre qui se coupe comme les autres."
   ],
-  "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "CHUTE": 2, "COUPES": 3, "RETOUR": [1, 3], "BUISSONS": { "grand": 2, "petit": 1, "RETOUR": [2, 4] }, "GRAINES": { "pin": "pomme_de_pin", "arbre": "gland" }, "POUSSE": [2, 4] },
+  "HACHE": { "NOM": "Hache", "ICONE": "🪓", "PRIX": 60, "BOIS": 1, "CHUTE": 3, "COUPES": 3, "RETOUR": [1, 3], "BUISSONS": { "grand": 2, "petit": 1, "RETOUR": [2, 4] }, "GRAINES": { "pin": "pomme_de_pin", "arbre": "gland" }, "POUSSE": [2, 4] },
   "//CRUCHE": [
     "La cruche à eau (Atelier) : avant la pompe et la citerne, on arrose avec elle. Un appui sur le puits",
     "posé sur la ferme la remplit (LITRES litres, state.cruche.ml) ; une plante arrosée y puise son eau",
