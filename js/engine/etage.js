@@ -74,7 +74,8 @@ export function etageEmprise(state) {
 }
 
 // Les toits : chaque bâtiment (une pièce close aménagée : un bloc qui en fait une maison ou un
-// bâtiment, un plancher ou un escalier) a le sien, posé sur son dernier niveau. Une pièce close
+// bâtiment, un plancher ou un escalier ; plusieurs pièces sans escalier qui partagent un mur ou
+// une porte n'en font qu'un) a le sien, posé sur son dernier niveau. Une pièce close
 // sans rien de tout ça reste à ciel ouvert : une cour, un passage enfermé entre les murs de
 // bâtiments voisins.
 //   - une pièce sans escalier : sur ses murs (niveau 0 ; ses murs rehaussés, version 1.25 : un
@@ -86,16 +87,16 @@ export function etageEmprise(state) {
 export function toits(state) {
   const B = blocsPoses(state), E = etageBlocs(state), W = farmTerrain(state).LARGEUR;
   const ferme = (t) => { const s = DATA.ATELIER.BLOCS[E[t]]; return !!(s && s.ferme); };
-  const out = [], S = solsPoses(state);
+  const out = [], simples = [], S = solsPoses(state), tri = (a) => [...a].sort((x, y) => x - y);
   for (const p of piecesCloses(state)) {
     if (!p.cases.some((t) => genreBloc(B[t]) || S[t] || B[t] === 'escalier')) continue;   // (une cour)
-    const emprise = avecMurs(state, p.cases), tri = (a) => [...a].sort((x, y) => x - y);
+    const emprise = avecMurs(state, p.cases);
     // (la Serre, la pièce du bac à semis : un toit de verre, on voit ce qui pousse dessous)
     const verre = p.cases.some((t) => B[t] === 'bac_semis');
     const maison = p.cases.some((t) => genreBloc(B[t]) === 'maison');
     if (!p.cases.some((t) => B[t] === 'escalier')) {
       const hauts = [...emprise].map((t) => hauteurMur(state, t)).filter((h) => h > 0);
-      out.push({ niveau: hauts.length ? Math.min(...hauts) - 1 : 0, cases: tri(emprise), dedans: tri(emprise), verre, maison });
+      simples.push({ niveau: hauts.length ? Math.min(...hauts) - 1 : 0, emprise, verre, maison });
       continue;
     }
     // à l'étage : les cases libres de l'emprise qu'on ne rejoint pas depuis son bord
@@ -124,7 +125,21 @@ export function toits(state) {
       out.push({ niveau: 1, cases: tri(cases), dedans: tri(emprise), verre, maison });
     }
   }
-  return out;
+  // les pièces sans escalier qui partagent un mur ou une porte forment un seul bâtiment, sous un
+  // seul toit (posé sur le plus bas de leurs murs) ; la Serre garde son toit de verre à part
+  const groupes = [];
+  for (const p of simples) {
+    const lies = groupes.filter((g) => g.verre === p.verre && [...p.emprise].some((t) => g.emprise.has(t)));
+    const g = { niveau: p.niveau, emprise: new Set(p.emprise), verre: p.verre, maison: p.maison };
+    for (const l of lies) {
+      for (const t of l.emprise) g.emprise.add(t);
+      g.niveau = Math.min(g.niveau, l.niveau);
+      g.maison = g.maison || l.maison;
+      groupes.splice(groupes.indexOf(l), 1);
+    }
+    groupes.push(g);
+  }
+  return groupes.map((g) => ({ niveau: g.niveau, cases: tri(g.emprise), dedans: tri(g.emprise), verre: g.verre, maison: g.maison })).concat(out);
 }
 
 // Les couchages de l'étage : ses paillasses et ses lits, dans une pièce close de l'étage (des
