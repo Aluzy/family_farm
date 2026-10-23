@@ -36,7 +36,7 @@ import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
 import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin, renderRecettes, renderStationFenetre } from './cuisine.js';
 import { renderTechno } from './techno.js';
-import { memberNameHtml, persoHtml, renderFamille } from './famille.js';
+import { persoHtml, renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
@@ -453,13 +453,13 @@ export function applyAnchor() {
 }
 
 // Carte du joueur, en haut à gauche (elle remplace le bandeau du haut), en pixel art
-// (assets/hud, scripts/icones/hud.py ; css/jeu.css .player-card) : dans un cadre bois, le
-// personnage principal debout et son prénom sur une plaque ; à droite, les jauges d'énergie (❤️),
-// d'endurance (⚡) et de bonheur de la famille (😊) ; dessous, la barre du niveau (⭐, vers le
-// niveau suivant, FLU-30 ; ouvre les niveaux) et l'anneau de l'autonomie de la dernière nuit
-// (ouvre la Famille) ; dessous encore, l'argent (ouvre les comptes). Les valeurs ne sont pas
+// (assets/hud, scripts/icones/hud.py ; css/jeu.css .player-card) : le personnage principal
+// dans un médaillon rond (comme le cadran de droite), cerclé de l'anneau doré de l'XP vers le
+// niveau suivant (FLU-30) ; en bas à gauche du médaillon, la grande étoile du niveau, son
+// numéro dedans (ouvre les niveaux) ; en bas à droite, l'anneau de l'autonomie de la dernière
+// nuit (ouvre la Famille). À droite, les jauges d'énergie (❤️), d'endurance (⚡) et de bonheur
+// de la famille (😊), horizontales, puis l'argent (ouvre les comptes). Les valeurs ne sont pas
 // écrites : elles sont dans les infobulles et les libellés.
-// Le prénom est saisi par le joueur : escapeHtml (memberNameHtml), jamais dans un data-*.
 let playerHeight = 0;
 let playerHtml = null; // dernier contenu de la carte du joueur
 let playerMeasure = true; // à mesurer : contenu changé, fenêtre redimensionnée, police chargée
@@ -477,23 +477,23 @@ export function renderIndicators() {
   const autoPct = Math.max(0, Math.min(100, Math.round(lastAutonomy(state))));
   const argent = `${formatCoins(state.pieces)} pièces. Voir les comptes`;
   const html =
-    `<span class="player-top">` +
+    `<span class="player-medaillon">` +
       `<button type="button" class="player-head" ${famille} title="Ouvrir la Famille">` +
         // le personnage du joueur (version 1.17 : celui choisi dans sa fiche ; le personnage
-        // principal est toujours un adulte)
-        `<span class="player-portrait">${persoHtml(m ? memberPerso(m) : 0)}</span>` +
-        `<span class="player-name">${m ? memberNameHtml(m.id) : ''}</span></button>` +
-      playerGaugesHtml() +
-    `</span>` +
-    `<span class="player-stats">` +
+        // principal est toujours un adulte), dans le disque du médaillon ; l'anneau : l'XP
+        `<span class="hud-portrait" style="--f:${Math.round(Math.max(0, Math.min(100, p.pct)) / 5)}" aria-hidden="true"></span>` +
+        `<span class="player-portrait">${persoHtml(m ? memberPerso(m) : 0)}</span></button>` +
       `<button type="button" class="player-level" data-action="open-levels" title="${niveau}" aria-label="${niveau}">` +
-        `<span class="hud-tube h" aria-hidden="true"><span class="hud-fill" style="width:${p.pct}%"></span></span><i class="hud-ico etoile" aria-hidden="true"></i></button>` +
+        `<span class="hud-niveau" aria-hidden="true">${pxText(String(p.niveau))}</span></button>` +
       `<button type="button" class="player-auto" ${famille} title="${autoTitre}" aria-label="${autoTitre}">` +
         `<span class="hud-anneau" style="--f:${Math.round(autoPct / 5)}" aria-hidden="true"></span><i class="hud-ico pousse" aria-hidden="true"></i></button>` +
     `</span>` +
-    `<button type="button" class="player-money" data-action="open-compta" title="Voir les comptes" aria-label="${argent}">` +
-      `<span class="hud-pastille" aria-hidden="true">${state.pieces >= 0 ? pxText(Math.round(state.pieces).toLocaleString('fr-FR').replace(/\s/g, ' ')) : `<span class="num">${formatCoins(state.pieces)}</span>`}</span>` +
-      `<i class="hud-ico piece" aria-hidden="true"></i></button>`;
+    `<span class="player-cote">` +
+      playerGaugesHtml() +
+      `<button type="button" class="player-money" data-action="open-compta" title="Voir les comptes" aria-label="${argent}">` +
+        `<span class="hud-pastille" aria-hidden="true">${state.pieces >= 0 ? pxText(Math.round(state.pieces).toLocaleString('fr-FR').replace(/\s/g, ' ')) : `<span class="num">${formatCoins(state.pieces)}</span>`}</span>` +
+        `<i class="hud-ico piece" aria-hidden="true"></i></button>` +
+    `</span>`;
   if (html !== playerHtml) {
     playerHtml = html;
     playerMeasure = true;
@@ -511,9 +511,9 @@ export function renderIndicators() {
   renderHud();
 }
 
-// À droite du cadre de la carte du joueur : les jauges d'énergie, d'endurance (réduction du
-// coût des actions, qui grandit avec le niveau) et de bonheur de la famille, verticales, côte
-// à côte. Elles ouvrent la Famille.
+// À droite du médaillon : les jauges d'énergie, d'endurance (réduction du coût des actions,
+// qui grandit avec le niveau) et de bonheur de la famille, horizontales, l'une sous l'autre.
+// Elles ouvrent la Famille.
 function playerGaugesHtml() {
   const P = DATA.PERSONNAGE;
   const e = energyLevel(state);
@@ -528,7 +528,7 @@ function playerGaugesHtml() {
   const titre = `Énergie : ${e} / ${P.MAX}. Endurance : tes actions coûtent ${endu} % de moins. Bonheur de la famille : ${bonheur} %. Ouvrir la Famille`;
   const jauge = (icone, cls, pct) =>
     `<span class="player-gauge"><i class="hud-ico ${icone}"></i>` +
-    `<span class="hud-tube"><span class="hud-fill${cls ? ` ${cls}` : ''}" style="height:${pct}%"></span></span></span>`;
+    `<span class="hud-tube h"><span class="hud-fill${cls ? ` ${cls}` : ''}" style="width:${pct}%"></span></span></span>`;
   return `<button type="button" class="player-gauges" data-action="stage-goto" data-window="famille" title="${titre}" aria-label="${titre}">` +
     `<span class="player-gauges-in" aria-hidden="true">${jauge('coeur', eCls, ePct)}${jauge('eclair', 'endu', dPct)}${jauge('smiley', bCls, bonheur)}</span></button>`;
 }
