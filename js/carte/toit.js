@@ -4,9 +4,9 @@
  * ville (js/carte/ville/immeuble.js : l'immeuble en blocs) posent le même toit, dessiné comme
  * ceux des immeubles de la ville vus de 3/4 (scripts/ville/immeubles.py toit_croupe) : un toit
  * à croupes, dont l'emprise est celle du bâtiment, murs compris :
- *   - le pan de devant, grand (TOIT.devant de la profondeur), face à nous ; celui de derrière vu
- *     en raccourci, plus clair ; aux deux bouts, les croupes en triangle (la gauche dans la
- *     lumière), séparées des pans par leurs arêtiers ;
+ *   - le pan de devant, face à nous ; celui de derrière vu en raccourci, une bande fine et claire en
+ *     haut (TOIT.haut de la profondeur, ou en px) ; aux deux bouts, les croupes en triangle (la
+ *     gauche dans la lumière), dont les arêtiers vont des bouts du faîtage aux angles du toit ;
  *   - des rangs de tuiles de 8 px, décalés d'un rang à l'autre (batiments.py tuile) ;
  *   - le faîtage, une ligne de tuiles rondes, entre les deux croupes ;
  *   - le bord sombre, un débord de TOIT.debord px sur les côtés ; sous le pan de devant, l'égout,
@@ -25,12 +25,12 @@
   const T = K.T;
   // la couverture (batiments.py COUVERTURES['tuile'] : la tuile, son arête claire, le rang
   // sombre, le joint), le contour, l'ombrage de chaque pan (le soleil en haut à gauche : le pan
-  // de derrière et la croupe gauche dans la lumière, la croupe droite à l'ombre), la part du pan
-  // de devant dans la profondeur, le débord sur les côtés (px), la planche de rive sous l'égout,
+  // de derrière et la croupe gauche dans la lumière, la croupe droite à l'ombre), l'épaisseur du
+  // pan de derrière (une part de la profondeur, ou des px), le débord sur les côtés (px), la planche de rive sous l'égout,
   // l'ombre que le toit porte sur la façade
   const R = K.TOIT = {
     tuile: [134, 78, 56], claire: [166, 102, 72], sombre: [88, 50, 38], joint: [104, 60, 44], contour: [40, 31, 31],
-    ombrage: { bas: 1, haut: 1.14, gauche: 1.1, droite: 0.78 }, devant: 0.75, debord: 3,
+    ombrage: { bas: 1, haut: 1.14, gauche: 1.1, droite: 0.78 }, haut: 4, debord: 3,
     planche: [[122, 80, 52], [98, 64, 42]], ombre: 0.35,
   };
   const teinte = (c, f) => (f <= 1 ? c.map((v) => Math.round(v * f)) : c.map((v) => Math.round(v + (255 - v) * (f - 1))));
@@ -81,9 +81,13 @@
       const c = c0 + Math.min(c1 - c0, Math.max(0, Math.floor(x / T))), r = r0 + Math.min(r1 - r0, Math.floor(y / T));
       return S.has(r * cols + c);
     };
-    const x0 = -D, x1 = Wc + D, devant = Math.round(E * R.devant), faite = E - devant;
+    // le pan de derrière : une bande fine en haut (TOIT.haut : une part de la profondeur, ou des px)
+    const faite = Math.max(2, Math.round(R.haut < 1 ? E * R.haut : R.haut)), devant = E - faite;
+    const x0 = -D, x1 = Wc + D;
     const rentre = Math.min(Math.floor(E / 2), Math.floor((x1 - x0) / 2));
-    // le pan sous le pixel : 'bas' (devant), 'haut' (derrière), 'gauche', 'droite' (les croupes)
+    // le pan sous le pixel : 'bas' (devant), 'haut' (derrière), 'gauche', 'droite' (les croupes, en
+    // triangle : leurs arêtes vont des bouts du faîtage aux quatre angles du toit ; celles du haut,
+    // presque à plat, bordent la bande fine du pan de derrière)
     const zone = (x, y) => {
       if (x < x0 + rentre && (y >= faite ? (x - x0) < rentre * (E - y) / devant : (x - x0) < rentre * y / faite)) return 'gauche';
       if (x >= x1 - rentre && (y >= faite ? (x1 - 1 - x) < rentre * (E - y) / devant : (x1 - 1 - x) < rentre * y / faite)) return 'droite';
