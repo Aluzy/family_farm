@@ -5,8 +5,9 @@
  *     vent qui pousse les feuilles qui tombent et les papillons. Les arbres ne bougent pas.
  *   - Événements rares, tirés au sort : papillon, oiseau qui picore puis s'envole,
  *     feuille qui tombe, écureuil qui change d'arbre, lucioles au crépuscule.
- *   - Un habitant : le chat, qui enchaîne ses activités au hasard (tirage pondéré) et dort
- *     la nuit sur son toit.
+ *   - Les animaux de compagnie de la famille (aucun si elle n'en a pas) : chats et chiens, qui
+ *     enchaînent leurs activités au hasard (tirage pondéré) ; la nuit, un chat dort sur son
+ *     toit, un chien en boule là où il est.
  *   - Les bêtes de la ferme : à 7 h les portes de l'Étable s'ouvrent et vaches et moutons
  *     sortent dans l'enclos ; à 6 h la porte du Poulailler s'ouvre et les poules sortent en
  *     liberté. Tous rentrent à 19 h.
@@ -23,11 +24,12 @@
  *
  * Les bêtes de passage sont dessinées ici, pixel par pixel (aucune image à charger) : ce
  * sont des dessins provisoires, à remplacer par de vraies planches quand elles existeront.
- * Le chat, la vache, le mouton et la poule ont déjà la leur (assets/chat.png, vache.png,
- * mouton.png, poule.png, chargées par farm-stage.js).
+ * Les animaux de compagnie, la vache, le mouton et la poule ont déjà la leur (assets/chat*.png,
+ * chien*.png, vache.png, mouton.png, poule.png, chargées par farm-stage.js ; les chats et les
+ * chiens : scripts/compagnons/compagnons.py).
  *
- * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced, cat, herd })
- *       → { update(dt), setContext({ hour, trees, folds, herd, felled }), scare(x, y),
+ * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced, herd })
+ *       → { update(dt), setContext({ hour, trees, folds, herd, felled, compagnons }), scare(x, y),
  *           spawn(type), stats(), chat(activité) }
  */
 (function (global) {
@@ -618,7 +620,7 @@
 
     // Son toit : l'objet `chat_toit` de la carte s'il existe, sinon l'appentis de la maison.
     // `foot` = d'où il saute, `depth` = profondeur qui le fait passer devant le bâtiment.
-    const catHome = (function () {
+    const homeSpot = (function () {
       const objs = o.objects || {};
       const spot = objs[CAT_ROOF], house = objs.maison;
       const roof = spot ? { x: spot.x + (spot.width || 0) / 2, y: spot.y + (spot.height || 0) / 2 }
@@ -651,14 +653,26 @@
       return [{ x: x1, y: y1 }];
     }
 
-    let cat = null;
-    let catAt = null;                  // où il était quand l'ambiance a été retirée (animations réduites)
-    function makeCat() {
-      if (!o.cat || !scene.textures.exists(o.cat)) return null;   // pas de planche : pas de chat
+    // Les animaux de compagnie de la famille (setContext : compagnons, la planche de chacun) :
+    // aucun si la famille n'en a pas. Un chat dort sur son toit ; un chien, qui ne grimpe pas,
+    // dort en boule là où la nuit le trouve. Chacun a son coin (un décalage selon son rang).
+    let pets = [];
+    let petsWant = [];
+    let petsKey = '';
+    const petAt = {};                  // où chacun était quand l'ambiance a été retirée (animations réduites)
+    function makePet(sheet, rank) {
+      if (!sheet || !scene.textures.exists(sheet)) return null;   // pas de planche : pas d'animal
+      const dog = /^chien/.test(sheet);
+      const dx = rank * 11;
+      const catHome = !dog && homeSpot ? {
+        roof: { x: homeSpot.roof.x + dx, y: homeSpot.roof.y }, foot: { x: homeSpot.foot.x + dx, y: homeSpot.foot.y }, depth: homeSpot.depth,
+      } : null;
       const F = {};
       CAT_FRAMES.forEach((name, i) => { F[name] = i; });
-      const centre = catHome ? catHome.foot : { x: world.w / 2, y: world.h / 2 };
-      let x = catAt ? catAt.x : centre.x, y = catAt ? catAt.y : centre.y;
+      const base = homeSpot ? homeSpot.foot : { x: world.w / 2, y: world.h / 2 };
+      const centre = { x: base.x + dx, y: base.y + rank * 6 };
+      const at = petAt[sheet];
+      let x = at ? at.x : centre.x, y = at ? at.y : centre.y;
       let face = Math.random() < 0.5 ? 1 : -1;
       let st = 'debout', before = null, age = 0, len = rand(0.5, 1.5);   // activité, celle d'avant, son âge, sa durée
       let rise = 0;                    // secondes de la pose de passage (assis) entre couché et debout
@@ -667,7 +681,7 @@
       let jump = null;                 // saut en cours : { x0, y0, x1, y1 }
       let stirAt = 0, stir = 0;        // sommeil : date du prochain demi-réveil, et ce qu'il en reste
       const breath = rand(1.1, 1.6);   // sommeil : secondes par souffle
-      const s = scene.add.image(x, y, o.cat, 0).setOrigin(0.5, 1);
+      const s = scene.add.image(x, y, sheet, 0).setOrigin(0.5, 1);
       // Le jeu s'ouvre de nuit ou avant le lever du jour : il dort déjà sur son toit.
       if (catHome && ctx.hour != null && !ctx.day && (ctx.dusk || ctx.hour < 12)) {
         night = true; st = 'dort'; x = catHome.roof.x; y = catHome.roof.y; stirAt = rand(15, 35);
@@ -793,9 +807,15 @@
           else if (CAT_NEXT[name] && CAT_NEXT[st]) begin(name);
           return this.info();
         },
-        info: () => ({ etat: st, avant: before, x: Math.round(x), y: Math.round(y), nuit: night, toit: catHome ? catHome.roof : null }),
-        destroy() { catAt = CAT_NEXT[st] ? { x, y } : null; s.destroy(); },
+        info: () => ({ planche: sheet, etat: st, avant: before, x: Math.round(x), y: Math.round(y), nuit: night, toit: catHome ? catHome.roof : null }),
+        destroy() { petAt[sheet] = CAT_NEXT[st] ? { x, y } : null; s.destroy(); },
       };
+    }
+
+    // La famille a changé d'animaux : on refait la troupe (ceux qui restent gardent leur place).
+    function syncPets() {
+      pets.forEach((p) => p.destroy());
+      pets = on ? petsWant.map((sheet, i) => makePet(sheet, i)).filter(Boolean) : [];
     }
 
     /* ---------- les bêtes : elles sortent le matin et rentrent le soir ---------- */
@@ -1097,7 +1117,7 @@
     function start() {
       on = true;
       for (const type in EVENTS) arm(type, true);
-      cat = makeCat();
+      syncPets();
       for (let i = 0; i < 3; i++) {
         const s = scene.add.image(rand(0, world.w), rand(0, world.h), 'amb_nuage').setDepth(SHADOW_DEPTH).setTint(0x0b1d2e).setAlpha(0).setScale(rand(4, 6.5), rand(4, 6));
         clouds.push({ s, v: rand(7, 12) });
@@ -1109,7 +1129,7 @@
       on = false;
       for (const a of actors) a.sprites.forEach((s) => s.destroy());
       actors.length = 0;
-      if (cat) { cat.destroy(); cat = null; }
+      pets.forEach((p) => p.destroy()); pets = [];
       clearHerd();
       clouds.forEach((c) => c.s.destroy()); clouds = [];
     }
@@ -1128,7 +1148,7 @@
         const a = actors[i];
         if (a.step(dt) === false) { a.sprites.forEach((s) => s.destroy()); actors.splice(i, 1); }
       }
-      if (cat) cat.step(dt);
+      for (const p of pets) p.step(dt);
       stepHerd(dt);
       for (const c of clouds) {
         const half = c.s.displayWidth / 2;
@@ -1160,24 +1180,29 @@
         }
       }
       if (c.herd) herdWant = c.herd;
+      // Les animaux de compagnie de la famille : la planche de chacun, dans l'ordre.
+      if (Array.isArray(c.compagnons)) {
+        const key = c.compagnons.join(',');
+        if (key !== petsKey) { petsKey = key; petsWant = c.compagnons.slice(); if (on) syncPets(); }
+      }
     }
 
     function scare(x, y) {
       for (const a of actors) if (a.scare) a.scare(x, y);
-      if (cat) cat.scare(x, y);
+      for (const p of pets) p.scare(x, y);
     }
 
     function stats() {
       const by = {};
       for (const a of actors) by[a.type] = (by[a.type] || 0) + 1;
-      return { on, actors: actors.length, by, water: water.length, mapTrees: mapTrees.length, wood: wood.size, orchard: trees.length, chat: cat ? cat.info() : null, troupeau: herd.map((b) => b.kind + ' ' + b.state() + ' ' + Math.round(b.x) + ',' + Math.round(b.y)), portes: Object.fromEntries(Object.keys(folds).map((n) => [n, folds[n].k])), clock: t, next: Object.assign({}, next) };
+      return { on, actors: actors.length, by, water: water.length, mapTrees: mapTrees.length, wood: wood.size, orchard: trees.length, compagnons: pets.map((p) => p.info()), troupeau: herd.map((b) => b.kind + ' ' + b.state() + ' ' + Math.round(b.x) + ',' + Math.round(b.y)), portes: Object.fromEntries(Object.keys(folds).map((n) => [n, folds[n].k])), clock: t, next: Object.assign({}, next) };
     }
 
     return {
       update, setContext, scare, stats, spawn: (type) => spawn(type, true), wind: (x, y) => windAt(x, y, t), repaint,
       // L'eau et les arbres lus dans la carte : le personnage (js/fermier.js) les contourne.
       ground: () => ({ water: waterSet, trees: mapTrees, bushes: mapBushes, fences: fenceWalls }),   // tous les arbres (la carte ôte les abattus)
-      chat: (name) => (cat ? cat.force(name) : null),
+      chat: (name) => pets.map((p) => p.force(name)),
     };
   }
 

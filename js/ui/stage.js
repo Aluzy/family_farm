@@ -5,7 +5,7 @@ import { houseRepaired, mainCharacter, setupPending } from '../engine/depart.js'
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
-import { memberPerso } from '../engine/family.js';
+import { memberPerso, petSheets } from '../engine/family.js';
 import { allPlots, growHoursLeft, hoeableTiles, terrainLines, isMature, maxStage, soilCap, soilCount } from '../engine/crops.js';
 import { ripeTrees, treeAt, treeInBloom, treeStage } from '../engine/orchard.js';
 import { coopCapacity, sheepToShear, stableHoused, woolReady } from '../engine/animals.js';
@@ -356,6 +356,8 @@ export function stageModel() {
   // Les bêtes de l'Étable et du Poulailler : seulement des nombres, la carte en fait des
   // bêtes dans l'enclos et des poules en liberté autour du Poulailler.
   const animaux = { vache: state.paturage.vaches.length, mouton: state.paturage.moutons.length, poule: state.poulailler.poules };
+  // les animaux de compagnie de la famille : la planche de chacun (aucun : pas de chat ni de chien)
+  const compagnons = petSheets(state).map((p) => p.planche);
   // Version 1.15 : une parcelle porte le numéro de sa tuile sur la carte ; `terrain` dit
   // quelles tuiles la houe peut labourer (une chaîne par rangée, « # » labourable).
   const T = farmTerrain(state);
@@ -499,7 +501,7 @@ export function stageModel() {
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
-    houe, hache, pioche, faux, canne, triporteur: enSelle(state), rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, triporteur: enSelle(state), rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 

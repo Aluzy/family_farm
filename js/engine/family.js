@@ -228,6 +228,17 @@ export function petName(state, id) {
   return validFirstName(a.nom) ? cleanFirstName(a.nom) : (E[a.espece] ? E[a.espece].nom : 'Animal');
 }
 
+// La planche de chaque animal sur la carte de la ferme (assets/<planche>.png) : le n-ième chat
+// de la famille prend la n-ième robe de chat (chat, chat_2, chat_3), de même pour les chiens.
+// [{ id, espece, planche }], dans l'ordre de la famille.
+export function petSheets(state) {
+  const rang = {};
+  return pets(state).filter((a) => DATA.FAMILLE.COMPAGNIE.ESPECES[a.espece]).map((a) => {
+    const n = rang[a.espece] = (rang[a.espece] || 0) + 1;
+    return { id: a.id, espece: a.espece, planche: n > 1 ? `${a.espece}_${Math.min(n, 3)}` : a.espece };
+  });
+}
+
 export function petIcon(espece) {
   const e = DATA.FAMILLE.COMPAGNIE.ESPECES[espece];
   return e ? e.icone : '🐾';

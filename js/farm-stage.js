@@ -47,7 +47,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, MAP, SFX, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, EXIT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, MILL_FRAME, ROOF_PANELS, WELL, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
+  const { T, MAP, SFX, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, EXIT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, MILL_FRAME, ROOF_PANELS, WELL, TANK, RUINES, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
   const { clamp, pixelRatio, reducedMotion, v } = F;
 
   let game = null;          // le jeu Phaser de toutes les cartes (js/carte/jeu.js)
@@ -120,7 +120,8 @@
         L.spritesheet(F.C.RAMASSABLES.key, v(F.C.RAMASSABLES.file), F.C.RAMASSABLES.frame);
         L.spritesheet(F.C.BLOCS_CARTE.key, v(F.C.BLOCS_CARTE.file), F.C.BLOCS_CARTE.frame);
         L.spritesheet(F.C.BLOCS_CARTE.hauts.key, v(F.C.BLOCS_CARTE.hauts.file), F.C.BLOCS_CARTE.hauts.frame);
-        L.spritesheet('chat', v('chat.png'), CAT_FRAME);
+        // les animaux de compagnie de la famille (js/ambient-life.js) : trois robes de chat, trois de chien
+        for (const k of COMPAGNONS) L.spritesheet(k, v(k + '.png'), CAT_FRAME);
         L.spritesheet(K.TRIPORTEUR.key, v(K.TRIPORTEUR.file), { frameWidth: K.TRIPORTEUR.w, frameHeight: K.TRIPORTEUR.h });
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
@@ -191,14 +192,13 @@
         this.scale.on('resize', () => this.fit());
         this.fit();
         // Vie d'ambiance (js/ambient-life.js, facultatif) : ombres de nuages, petites bêtes de
-        // passage, et le chat. Voir docs/vie-ambiance.md.
+        // passage, et les animaux de compagnie de la famille. Voir docs/vie-ambiance.md.
         this.ambient = null;
         if (global.AmbientLife) {
           try {
             this.ambient = global.AmbientLife.attach(this, {
               world: this.world, map: this.mapRaw, tiles: this.has(MAP.tiles) ? MAP.tiles : null,
               objects: this.objects, lightDepth: this.light.depth, reduced: reducedMotion,
-              cat: this.has('chat') ? 'chat' : null,
               herd: Object.fromEntries(Object.keys(HERD_SHEETS).filter((kind) => this.has(kind)).map((kind) => [kind, kind])),
             });
           } catch (e) { console.warn('[FarmStage] vie d\'ambiance indisponible', e); }

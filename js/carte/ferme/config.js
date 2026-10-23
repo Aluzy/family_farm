@@ -375,9 +375,12 @@
     serre: { key: 'serre_sp_ruine', file: 'serre_sp_ruine.png', frame: 'batiment' },
     silo: { key: 'silo_ruine', file: 'silo_ruine.png' },
   };
-  // chat.png : le chat de la vie d'ambiance, 8 cases de 16×16 (leur ordre : CAT_FRAMES dans
-  // js/ambient-life.js). Sans l'image, pas de chat ; rien d'autre ne change.
+  // Les animaux de compagnie de la vie d'ambiance (chat.png, chien.png…) : 8 cases de 16×16
+  // (leur ordre : CAT_FRAMES dans js/ambient-life.js). Sans l'image, pas d'animal ; rien d'autre ne change.
   const CAT_FRAME = { frameWidth: 16, frameHeight: 16 };
+  // Les planches des animaux de compagnie (assets/<nom>.png, scripts/compagnons/compagnons.py) :
+  // le n-ième chat de la famille prend la n-ième robe de chat, de même pour les chiens.
+  const COMPAGNONS = ['chat', 'chat_2', 'chat_3', 'chien', 'chien_2', 'chien_3'];
   // fermier.png : le personnage (js/fermier.js), cases de 16×32 ; leurs noms dans fermier.json
   // (scripts/personnage/fermier.py). Sans eux, pas de personnage ; rien d'autre ne change.
   const FERMIER_FRAME = { frameWidth: 16, frameHeight: 32 };
@@ -500,7 +503,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, EXIT, MINE, HOLLOW, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, EXIT, MINE, HOLLOW, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

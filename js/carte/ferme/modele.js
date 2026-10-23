@@ -130,7 +130,7 @@
         for (const e of this.trees.values()) if (e.key.indexOf('ph_') !== 0 && e.a.stade >= ORCHARD_ADULT) leafy.push(e.sprite);
         const real = (id) => { const e = this.buildings.get(id); return e && e.sprite.texture.key.indexOf('ph_') !== 0 ? e.sprite : null; };
         const folds = { etable: real('etable'), poulailler: real('poulailler') };
-        this.ambient.setContext({ hour: model.heure, trees: leafy, folds, herd: model.animaux || {} });
+        this.ambient.setContext({ hour: model.heure, trees: leafy, folds, herd: model.animaux || {}, compagnons: model.compagnons || [] });
       }
       this.placeLabels();
     },
