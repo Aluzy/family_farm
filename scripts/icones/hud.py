@@ -18,7 +18,9 @@
 #                sens des aiguilles d'une montre depuis le haut) ;
 #   piece.png    l'argent, posé sur le bout gauche de sa pastille.
 # La carte de droite (renderHud) :
-#   hublot.png   le hublot rond (40 × 40) : un anneau de bois, un ciel de nuit étoilé dedans ;
+#   hublot.png   l'anneau de bois du hublot rond (40 × 40), vide dedans : le ciel de l'heure se
+#                peint dessous (renderHud, cielDuHublot) ;
+#   etoiles.png  les étoiles du ciel du hublot (40 × 40), qui s'effacent le jour ;
 #   lunes.png    la lune du hublot, 14 cases de 21 × 21 : une par jour de la lunaison
 #                (data/crops.json LUNE : croissante du jour 1 au 5, pleine les 6 et 7,
 #                décroissante du 8 au 12, nouvelle les 13 et 14) ;
@@ -286,7 +288,8 @@ LUNE = 17                                          # (la taille de référence d
 
 def lune(p, S=LUNE, r=8.4):
     """La lune (S × S, rayon r) à l'âge p de la lunaison (0 : nouvelle, 0,5 : pleine) : éclairée à
-    droite quand elle croît, à gauche quand elle décroît ; la part sombre reste visible."""
+    droite quand elle croît, à gauche quand elle décroît ; la part sombre et le contour sont
+    translucides : le ciel du hublot (nuit, aube, jour) s'y voit à travers."""
     c = (S - 1) / 2
     k = S / LUNE                                       # (les cratères, à l'échelle)
     crateres = {(round(x * k), round(y * k)) for x, y in ((5, 9), (6, 9), (9, 5), (10, 11), (11, 11), (11, 10))}
@@ -298,7 +301,7 @@ def lune(p, S=LUNE, r=8.4):
             if d > r:
                 continue
             if d > r - 1:
-                im.putpixel((x, y), rgb('#1c1830'))
+                im.putpixel((x, y), (20, 16, 40, 110))
                 continue
             demi = math.sqrt(max(0.01, (r - 1) ** 2 - (y - c) ** 2))
             u = (x - c) / demi
@@ -308,7 +311,8 @@ def lune(p, S=LUNE, r=8.4):
                 if (x, y) in crateres:
                     col = '#d8c47a'                     # des cratères
             else:
-                col = '#3a3658'
+                im.putpixel((x, y), (150, 160, 210, 64))
+                continue
             im.putpixel((x, y), rgb(col))
     return im
 
@@ -320,7 +324,7 @@ ETOILES = [(9, 12, 1), (13, 7, 0), (27, 8, 1), (31, 14, 0), (8, 25, 0), (11, 30,
 
 def hublot():
     """Le hublot : un anneau de bois (contour, reflet en haut à gauche, bois, ombre en bas à
-    droite, un trait dedans), le ciel de nuit dedans, plus clair vers le bas, et ses étoiles."""
+    droite, un trait dedans), vide dedans (le ciel est peint dessous, à la couleur de l'heure)."""
     S = HUBLOT
     c = (S - 1) / 2
     im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
@@ -338,8 +342,14 @@ def hublot():
             elif d > 15.4:
                 col = PAL['w']
             else:
-                col = '#1c2246' if y < 13 else ('#232b55' if y < 26 else '#2c3664')
+                continue
             im.putpixel((x, y), rgb(col))
+    return im
+
+
+def etoiles():
+    """Les étoiles du hublot (40 × 40), sur du vide : les vives ont une croix plus sombre autour."""
+    im = Image.new('RGBA', (HUBLOT, HUBLOT), (0, 0, 0, 0))
     for x, y, vive in ETOILES:
         im.putpixel((x, y), rgb('#fff6c8' if vive else '#8e98c8'))
         if vive:
@@ -389,6 +399,7 @@ def images():
     out['portrait'] = bande
     out['niveau'] = etoile_niveau()
     out['hublot'] = hublot()
+    out['etoiles'] = etoiles()
     out['ruban'] = ruban()
     grandes = Image.new('RGBA', (GRANDE * 14, GRANDE), (0, 0, 0, 0))
     for k in range(14):
