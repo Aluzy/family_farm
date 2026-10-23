@@ -1382,6 +1382,20 @@ test('ferme générée : un toit sur le dernier niveau de chaque bâtiment', () 
   assertEqual(toits(s).length, 0, 'un mur de l\'étage en moins : ouvert');
 });
 
+test('ferme générée : des pièces séparées par un mur et une porte, sous un seul toit', () => {
+  const s = chantier('toit2');
+  setInv(s, { mur_pierre: 60, porte: 4, paillasse: 2 });
+  const z = terrainLibre(s, 9, 5), at = (dc, dr) => (z.r + dr) * z.W + z.c + dc;
+  // le tour (9 × 5), et le mur du milieu (colonne 4), percé d'une porte
+  for (let dr = 0; dr < 5; dr++) for (let dc = 0; dc < 9; dc++) if (dr === 0 || dr === 4 || dc === 0 || dc === 8 || dc === 4) poserBloc(s, 'mur_pierre', at(dc, dr));
+  assert(poserBloc(s, 'porte', at(2, 4)).ok, 'la porte de dehors');
+  assert(poserBloc(s, 'porte', at(4, 2)).ok, 'la porte entre les deux pièces');
+  poserBloc(s, 'paillasse', at(1, 1));
+  assertEqual(toits(s).map((t) => t.cases.length), [25], 'une seule pièce aménagée : son toit');
+  poserBloc(s, 'paillasse', at(7, 1));
+  assertEqual(toits(s).map((t) => [t.niveau, t.cases.length, t.dedans.length]), [[0, 45, 45]], 'deux pièces voisines : un seul toit sur tout le bâtiment');
+});
+
 test('ferme générée : la paroi vitrée se pose comme un mur ou à la place d\'un mur', () => {
   const s = chantier('vitre1');
   setInv(s, { mur_pierre: 20, paroi_vitree: 4, porte: 1 });
