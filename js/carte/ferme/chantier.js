@@ -35,6 +35,8 @@
 
   const F = global.FermeCarte;
   const { T, BLOCS_CARTE, BETES } = F.C;
+  // (une porte : celle de planches, ou un de ses modèles, BLOCS_CARTE.hauts.modelesPortes)
+  const estPorte = (s) => s === 'porte' || BLOCS_CARTE.hauts.modelesPortes[s] !== undefined;
 
   // La tache de lumière des lanternes : un disque blanc qui s'estompe vers son bord (R px de
   // rayon), teinté et agrandi dans le voile (la même que les réverbères de la ville).
@@ -73,7 +75,7 @@
           return v.map((k) => at.get(k)).find((s) => H.variantes[s] !== undefined) || null;
         };
         const linteau = (b) => {
-          if (b.sorte !== 'porte' || !haut.size) return null;
+          if (!estPorte(b.sorte) || !haut.size) return null;
           const h = (k) => haut.get(k) || 0;
           const hz = Math.min(h(b.case - 1), h(b.case + 1)), vt = Math.min(h(b.case - cols), h(b.case + cols));
           // (le mur continue au-dessus de la porte, dans sa matière ; une fenêtre ou une paroi
@@ -93,9 +95,12 @@
           // (un meuble acheté au Marché : son propre dessin, assets/meuble_<dessin>.png)
           if (b.meuble) { if (this.syncMeuble(b)) changed = true; continue; }
           let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case), pleine: b.pleine }, at, cols);
-          if (verre.has(b.case) && key === H.key && f === H.porte) f = H.porteSerre;
+          const modele = H.modelesPortes[b.sorte];
+          if (verre.has(b.case) && key === H.key && (f === H.porte || f === modele)) f = H.porteSerre;
           // (la porte d'un mur horizontal : le haut de son image est celui du mur voisin)
           else if (key === H.key && f === H.porte && H.portes[murDe(b, false)] !== undefined) f = H.portes[murDe(b, false)];
+          // (un modèle de porte : son image dans la matière du mur voisin, la pierre sinon)
+          else if (key === H.key && f === modele) f = modele + Math.max(0, H.matieresPortes.indexOf(murDe(b, false)));
           const e = B.get(b.case);
           if (e && e.sorte === b.sorte) {
             // (les flammes du four, la meule qui moud, la lanterne allumée : stepFires, stepLanterns choisissent leur image)
@@ -233,13 +238,13 @@
           else i.setAlpha(R.autres);
         });
         // (un mur haut de n blocs : la place du bloc suivant)
-        if (e.img.texture.key === BLOCS_CARTE.hauts.key && rangs.length === n && e.sorte !== 'porte') g.fillRect(e.x - T / 2, e.y - T - n * dy, T, T);
+        if (e.img.texture.key === BLOCS_CARTE.hauts.key && rangs.length === n && !estPorte(e.sorte)) g.fillRect(e.x - T / 2, e.y - T - n * dy, T, T);
       }
       // un mur pas plus haut que le niveau, à côté d'un mur plus haut que lui (un trou dans un
       // mur rehaussé : vu de 3/4, les blocs de ses voisins le cachent) : en rouge, à la place de
       // son bloc suivant
       const B = this.blocks || new Map();
-      const mur = (e) => e && !e.cases && e.sorte !== 'porte' && e.img.texture.key === BLOCS_CARTE.hauts.key;
+      const mur = (e) => e && !e.cases && !estPorte(e.sorte) && e.img.texture.key === BLOCS_CARTE.hauts.key;
       const h = (e) => 1 + (e.hauts || []).length;
       // (devant les murs : les blocs des voisins ne le cachent pas)
       if (!this.rangManque) this.rangManque = this.add.graphics();
@@ -379,16 +384,16 @@
       this.stepEauLumiere(out, nuit, time);
     },
 
-    // Les planchers posés (modèle.sols : leurs cases), à plat sous les blocs : chacun prend
-    // l'image raccordée aux planchers voisins.
+    // Les sols posés (modèle.sols : [{ case, sorte }], le plancher et les autres modèles), à plat
+    // sous les blocs : chacun prend l'image raccordée à ses voisins de même sorte.
     syncFloors(list) {
       if (!this.floors) this.floors = new Map();
-      const S = this.floors, cols = this.grid.cols, at = new Set(list || []);
+      const S = this.floors, cols = this.grid.cols, at = new Map((list || []).map((p) => [p.case, p.sorte]));
       if (!this.has(BLOCS_CARTE.key)) return;
-      for (const c of at) {
-        const col = c % cols;
-        const m = (at.has(c - cols) ? 1 : 0) + (col < cols - 1 && at.has(c + 1) ? 2 : 0) + (at.has(c + cols) ? 4 : 0) + (col > 0 && at.has(c - 1) ? 8 : 0);
-        const frame = BLOCS_CARTE.sols + m, img = S.get(c);
+      for (const [c, sorte] of at) {
+        const col = c % cols, is = (k) => at.get(k) === sorte;
+        const m = (is(c - cols) ? 1 : 0) + (col < cols - 1 && is(c + 1) ? 2 : 0) + (is(c + cols) ? 4 : 0) + (col > 0 && is(c - 1) ? 8 : 0);
+        const frame = (BLOCS_CARTE.modelesSols[sorte] !== undefined ? BLOCS_CARTE.modelesSols[sorte] : BLOCS_CARTE.sols) + m, img = S.get(c);
         if (img) { if (img.frame.name !== frame) img.setFrame(frame); continue; }
         const x = col * T + T / 2, y = (Math.floor(c / cols) + 1) * T;
         S.set(c, this.add.image(x, y, BLOCS_CARTE.key, frame).setOrigin(0.5, 1).setDepth(BLOCS_CARTE.solDepth));
@@ -498,6 +503,8 @@
       const prolonge = (k) => at.get(k) === b.sorte && face(k) && Math.floor(k / cols) === Math.floor(b.case / cols);
       const v = J && face(b.case) ? J[(prolonge(b.case - 1) ? 1 : 0) + (prolonge(b.case + 1) ? 2 : 0)] : H.variantes[b.sorte];
       if (v !== undefined && this.has(H.key) && f >= BLOCS_CARTE.murs && f < BLOCS_CARTE.murs + 16) return [H.key, H.murs + v + f - BLOCS_CARTE.murs];
+      // (un modèle de porte dans un mur horizontal : la sienne, dans un mur en pierre)
+      if (H.modelesPortes[b.sorte] !== undefined && f === BLOCS_CARTE.frames.porte && this.has(H.key)) return [H.key, H.modelesPortes[b.sorte]];
       return this.hautFrame(f);
     },
 
@@ -576,12 +583,12 @@
       if (b.sorte === 'ruche') return BLOCS_CARTE.frames[b.pleine ? 'ruche_pleine' : 'ruche'];
       // (un segment de convoyeur : le dernier de la file a son rouleau d'extrémité, botteleuse.js)
       if (b.sorte === 'convoyeur') return BLOCS_CARTE.frames[b.case % cols < cols - 1 && at.get(b.case + 1) === 'convoyeur' ? 'convoyeur' : 'convoyeur_bout'];
-      if (!mur && b.sorte !== 'porte') return BLOCS_CARTE.frames[b.sorte] || 0;
+      if (!mur && !estPorte(b.sorte)) return BLOCS_CARTE.frames[b.sorte] || 0;
       const c = b.case % cols;
-      const is = (k, porte) => { const s = at.get(k); return V[s] !== undefined || (porte && s === 'porte'); };
+      const is = (k, porte) => { const s = at.get(k); return V[s] !== undefined || (porte && estPorte(s)); };
       const n = is(b.case - cols), s = is(b.case + cols);
       const e = c < cols - 1 && is(b.case + 1, true), w = c > 0 && is(b.case - 1, true);
-      if (!mur) return (n || s) && !(e || w) ? BLOCS_CARTE.porteVerticale : BLOCS_CARTE.frames.porte;
+      if (!mur) return (n || s) && !(e || w) ? BLOCS_CARTE.portesVerticales[b.sorte] || BLOCS_CARTE.porteVerticale : BLOCS_CARTE.frames.porte;
       return BLOCS_CARTE.murs + (n ? 1 : 0) + (e ? 2 : 0) + (s ? 4 : 0) + (w ? 8 : 0);
     },
 

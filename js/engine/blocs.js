@@ -162,10 +162,18 @@ function setHauteur(state, tile, h) {
   else delete state.hauteurs[tile];
 }
 
-// (une porte aussi : elle se pose sur un mur, à sa place, comme une fenêtre)
+// (une porte aussi : elle se pose sur un mur, à sa place, comme une fenêtre ; une porte d'un
+// autre modèle, sur une porte)
 export function changeMur(ancien, sorte) {
   const a = sorteDe(ancien), s = sorteDe(sorte);
-  return !!(a && s && a.mur && (s.mur || s.porte) && ancien !== sorte);
+  return !!(a && s && ((a.mur && (s.mur || s.porte)) || (a.porte && s.porte)) && ancien !== sorte);
+}
+
+// (un sol d'un autre modèle sur un sol, le plancher, les dalles… : il prend sa place, l'ancien
+// revient dans l'inventaire ; pas le chemin, du dehors)
+export function changeSol(ancien, sorte) {
+  const a = sorteDe(ancien), s = sorteDe(sorte);
+  return !!(a && s && a.sol && s.sol && !a.dehors && !s.dehors && ancien !== sorte);
 }
 
 // Le bloc `sorte` est-il débloqué (le menu Construire le montre) ? En main ou déjà posé ; sinon,
@@ -484,7 +492,7 @@ export function poseStatus(state, sorte, tile) {
   }
   // un sol (le plancher) : sous les blocs, pas sous ce qui ferme une pièce
   if (s.sol) {
-    if (solAt(state, tile)) return { ok: false, raison: `Il y a déjà un ${sorteDe(solAt(state, tile)).nom.toLowerCase()} ici.` };
+    if (solAt(state, tile) && !changeSol(solAt(state, tile), sorte)) return { ok: false, raison: `Il y a déjà ${solAt(state, tile) === sorte ? 'ce sol' : `un ${sorteDe(solAt(state, tile)).nom.toLowerCase()}`} ici.` };
     const b = sorteDe(blocAt(state, tile));
     if (b && b.ferme) return { ok: false, raison: `${s.nom} : pas sous un mur, une porte ni l'Atelier.` };
   } else if (blocAt(state, tile)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
@@ -573,6 +581,12 @@ function poser(state, sorte, tile) {
     state.blocsDessus[tile] = sorte;
   } else if (s.sol) {
     if (!state.sols || typeof state.sols !== 'object') state.sols = {};
+    const avant = state.sols[tile];
+    if (changeSol(avant, sorte)) {
+      addItem(state, sorteDe(avant).objet, 1);
+      state.sols[tile] = sorte;
+      return { ok: true, sorte, case: tile, remplace: avant };
+    }
     state.sols[tile] = sorte;
   } else {
     if (!state.blocs || typeof state.blocs !== 'object') state.blocs = {};

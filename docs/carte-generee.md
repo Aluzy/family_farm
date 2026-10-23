@@ -313,6 +313,19 @@ Le Marché vend toujours les outils.
   - On n'y pose ni mur, ni porte, ni l'Atelier, et on ne peut pas y labourer.
   - Un appui avec le plancher en main le reprend, une fois ce qui est posé dessus repris.
   - Comme les murs, il se raccorde à ses voisins (`syncFloors`).
+- **Les modèles de portes et de sols** : en plus de la porte de planches et du plancher,
+  l'Atelier fabrique 7 portes (chêne, vitrée, de grange, bleue, en fer, d'écurie, blanche) et 7
+  sols (dalles de pierre, carrelage en damier, tomettes, parquet à chevrons, marbre, pavés,
+  mosaïque). Chacun est un bloc, un objet et une recette à lui (`porte_*`, `sol_*`).
+  - Une porte se pose comme la porte de planches et ferme la pièce de même ; posée sur une autre
+    porte, elle prend sa place (`changeMur`), l'ancienne revient dans l'inventaire.
+  - Un sol se pose comme le plancher ; posé sur un autre sol (pas le chemin), il prend sa place
+    (`changeSol`). Chaque sol ne se raccorde qu'aux voisins de même sorte.
+  - Leurs images : `scripts/carte/blocs.py` (`MODELES_PORTES`, `MODELES_SOLS`). Chaque porte a
+    son battant dans les 7 matières de mur (`murs_hauts.png`, `BLOCS_CARTE.hauts.modelesPortes`
+    et `matieresPortes` : le mur voisin continue au-dessus d'elle) et son image ouverte dans un
+    mur vertical (`blocs.png`, `portesVerticales`) ; chaque sol, ses 16 images raccordées
+    (`blocs.png`, `modelesSols`). Leurs icônes : `scripts/icones/art_blocs.py`.
 - **Le chemin** (1 pierre à l'Atelier : 2 chemins) est un sol comme le plancher (`state.sols`),
   dehors seulement : on ne laboure pas dessus, rien n'y pousse.
   - Il se dessine avec les tuiles du chemin de la carte (`herbe_chemin`), raccordées à
@@ -389,7 +402,8 @@ Le Marché vend toujours les outils.
     bloc épuisé pâli), et au bout le niveau de construction, ✕ et les paillasses où l'on peut
     dormir. Tous les murs tiennent dans **une case** (le dernier mur choisi, « ⋯ ») qui ouvre la
     **bulle des murs** : chacun avec son icône (`scripts/icones/art_blocs.py`, un carré de sa
-    face) et ce qui en reste, sans texte ;
+    face) et ce qui en reste, sans texte. De même, les portes et les sols ont chacun leur case
+    et leur bulle (`GROUPES` de `js/ui/chantier.js` ; la flèche de la bulle montre sa case) ;
   - à l'ouverture, un rappel bref (2 s) : « touche une case pour poser, un bloc pour le reprendre » ;
   - un appui sur une case y pose le bloc choisi, un appui sur un bloc le reprend ;
   - les pièces closes sont teintées de vert.
