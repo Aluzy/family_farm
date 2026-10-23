@@ -230,11 +230,13 @@
               // le second adulte a fini au Poulailler ou à l'Étable : ce qu'il a pris, sa bulle
               aide: (lieu, done) => setTimeout(() => done(this.ctx.bridge && this.ctx.bridge.aide ? this.ctx.bridge.aide(lieu) : null), 0),
               gain: (items) => this.showGainAide(items),
-              // la marche donne faim (js/engine/repas.js) ; la boîte à nourriture posée : où s'y servir
+              // la marche donne faim (js/engine/repas.js) ; le réfrigérateur posé (sinon la boîte à
+              // nourriture) : où s'y servir, devant lui
               marche: (id, px) => { if (this.ctx.bridge && this.ctx.bridge.marche) this.ctx.bridge.marche(id, px); },
               boite: () => {
-                for (const e of (this.blocks || new Map()).values()) if (e.sorte === 'boite_nourriture') return { x: e.x, y: e.y + 8 };
-                return null;
+                const B = [...(this.blocks || new Map()).values()];
+                const e = B.find((b) => b.sorte === 'refrigerateur') || B.find((b) => b.sorte === 'boite_nourriture');
+                return e ? { x: e.x, y: e.y + 8 } : null;
               },
               // la nuit, le k-ième membre dort dans le (k + 2)-ième couchage (le premier : le personnage)
               lit: (k) => (this.bedSpots ? this.bedSpots()[k + 1] || null : null),

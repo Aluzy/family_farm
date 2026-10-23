@@ -19,6 +19,7 @@ import { ruchePosee, rucheReprise } from './ruches.js';
 import { botteleuseReprise } from './botteleuse.js';
 import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
+import { closeFridge, openFridge } from './fridge.js';
 
 /* ---------- la ferme générée : construire bloc par bloc ---------- */
 
@@ -338,6 +339,16 @@ export function couchages(state) {
   return piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state));
 }
 
+// Une case libre du foyer (la première pièce close qui a une paillasse), pas juste derrière une
+// de ses portes ; undefined sans foyer ou sans place. Le mode test y pose la boîte, le four… ;
+// une ancienne partie, son réfrigérateur (state.js, v47 → v48).
+export function caseLibreFoyer(state) {
+  const foyer = piecesCloses(state).find((p) => p.paillasses.length);
+  if (!foyer) return undefined;
+  const W = farmTerrain(state).LARGEUR, couvertes = casesCouvertes(state);
+  return foyer.cases.find((t) => !blocAt(state, t) && !couvertes.has(t) && !foyer.portes.some((d) => [d - 1, d + 1, d - W, d + W].includes(t)));
+}
+
 // La Serre de la ferme générée sur la carte : les cases de la pièce close où est le bac à
 // semis, sans bloc, hors celles juste derrière ses portes (le passage), dans l'ordre des
 // cases. Ses parcelles s'y posent, une par case (les premières) ; [] sans bac dans une pièce.
@@ -406,7 +417,7 @@ export function poseStatus(state, sorte, tile) {
   if (!s) return { ok: false, raison: 'Bloc inconnu.' };
   const T = farmTerrain(state);
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
-  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon Meubles).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon ${s.marche}).` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.frigo ? 'Achète d\'abord le Réfrigérateur (sa fenêtre, dans les Installations).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon Meubles).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : achète-en au Marché (rayon ${s.marche}).` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };
@@ -548,6 +559,8 @@ function poser(state, sorte, tile) {
   if (s.appareil) installStarter(state, s.appareil);
   // une ruche : vide, elle commence à se remplir (js/engine/ruches.js)
   if (s.ruche) ruchePosee(state, tile);
+  // le réfrigérateur : construit, la famille y mange (la boîte revient dans l'inventaire)
+  if (s.frigo) openFridge(state);
   // le bloc clé d'un bâtiment (le nichoir : le Poulailler ; la mangeoire : l'Étable , le bac à semis : la Serre) : le bâtiment est construit
   if (s.batiment) ouvrirBatiment(state, s.batiment);
   // un four, une cuisinière : la station est là (étape 5b, la maison) ; la meule : le Moulin
@@ -598,8 +611,9 @@ export function reprendreBloc(state, tile, opts) {
   if (s && s.ruche) rucheReprise(state, tile);
   // (une botteleuse : les fibres qu'elle a reçues reviennent, js/engine/botteleuse.js)
   if (s && s.botteleuse === 'machine') botteleuseReprise(state, tile);
-  // (la boîte à nourriture : ce qu'elle contient revient dans l'inventaire)
+  // (la boîte à nourriture, le réfrigérateur : ce qu'ils contiennent revient dans l'inventaire)
   if (s && s.boite) viderBoite(state);
+  if (s && s.frigo) closeFridge(state);
   if (s && s.batiment && state[s.batiment] && !['poulailler', 'paturage'].includes(s.batiment)) state[s.batiment].construit = false;
   if (s && s.objet) addItem(state, s.objet, 1);
   // la station s'en va avec lui (s'il n'y en a pas une autre posée)

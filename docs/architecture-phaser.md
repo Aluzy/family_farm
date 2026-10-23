@@ -236,7 +236,7 @@ poulailler et le moulin n'y ont plus d'image (leur forme de secours).
   | `serre` | `serre_*`, découpe « batiment » (verrière seule, 94×83) | Serre débloquée | Serre |
   | `silo` | `silo.png` (28×62, dessiné par `scripts/batiments/silo.py`) | Silo débloqué ou construit | Silo |
   | `maison` (versant droit du toit) | `panneaux_toit.png` (6 images de 32×47, dessinées par `scripts/batiments/panneaux_toit.py`) | panneau acheté, maison réparée ; niveau du panneau + 1 panneaux | — |
-  | `puits` (à défaut : en haut à gauche du Moulin, sous le chemin) | `puits.png` (3 images de 34×40 : puits seul, puits et tuyau, pompe seule ; `scripts/batiments/puits.py`) | toujours ; la pompe une fois achetée, qui vibre d'un pixel quand elle tourne | — |
+  | `puits` (à défaut : en haut à gauche du Moulin, sous le chemin) | `puits.png` (3 images de 48×50 vues de haut à 45° : puits seul, puits et tuyau, pompe seule ; `scripts/batiments/puits.py`) | toujours ; la pompe une fois achetée, qui vibre d'un pixel quand elle tourne | — |
   | `citerne` (à défaut : à droite de la pompe) | `citerne.png` (5 images de 24×34 : tube de niveau vide à plein ; `scripts/batiments/citerne.py`) | réservoir acheté ; l'image suit le remplissage | — |
   | `zone_culture_1` (ou `zone_culture`) | parcelles | toujours | Zone de culture |
   | `zone_culture_2` | parcelles (8 colonnes) | Moulin débloqué | Champ |

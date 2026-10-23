@@ -4,7 +4,7 @@
    ========================================================================== */
 
 import {
-  addItem, addLot, allDevices, allPlots, availableEnergy, buildFridge, CONSUMERS, countItem,
+  addItem, addLot, allDevices, allPlots, availableEnergy, blocsPoses, buildFridge, CONSUMERS, countItem,
   createInitialState, DATA, deviceStatus, findDevice, findPlot, fridgeCapacity, fridgeCount,
   fridgeCounts, fridgeCoversNight, fridgeLots, fridgeNight, fridgeNightNeed, fridgeRate,
   fridgeRoom, fridgeUnits, fridgeUpgradeCost, grantTech, harvest, harvestTree, harvestYield,
@@ -17,7 +17,7 @@ import {
   unlockLevel, upgradeCost, upgradeFridge, upgradeSerre, water, waterCostFor,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, AVANT_DEMENAGEMENT, coldRoom, farm, fillCows, fillSheep, garden,
+  affamer, assert, assertEqual, construireFrigo, AVANT_DEMENAGEMENT, coldRoom, farm, fillCows, fillSheep, garden,
   kwh, migreAvant, ml, pature, plantRipe, ranch, reach, runFor, setInv, setStraw, sleepOnce, test,
 } from './aide.mjs';
 
@@ -297,8 +297,11 @@ test('Réfrigérateur : 600 pièces, appareil du parc avec interrupteur, usure e
   assertEqual(buildFridge(reach(s, 'frigo')).ok, false);
   s.pieces = 700;
   const r = buildFridge(reach(s, 'frigo'));
-  assertEqual([r.ok, r.cost, s.pieces], [true, 600, 100]);
-  assertEqual(buildFridge(reach(s, 'frigo')).ok, false, 'déjà construit');
+  assertEqual([r.ok, r.cost, s.pieces, countItem(s, 'refrigerateur'), s.frigo.construit], [true, 600, 100, 1, false], 'acheté : dans l\'inventaire, à poser');
+  assertEqual(buildFridge(s).ok, false, 'déjà acheté');
+  assert(testBatir(s, 'frigo').ok, 'posé dans le foyer');
+  assertEqual([s.frigo.construit, countItem(s, 'refrigerateur'), Object.values(blocsPoses(s)).includes('refrigerateur')], [true, 0, true]);
+  assertEqual(buildFridge(s).ok, false, 'déjà construit');
   const d = findDevice(s, 'frigo');
   assertEqual([d.type, d.allume, d.usure, d.prix], ['frigo', true, 0, 600]);
   assertEqual(allDevices(s).includes(d), true);
@@ -612,7 +615,7 @@ test('migration v8 (Lot 7) → v9 (Lot 8) → v10 : Serre, Verger et Réfrigéra
 
 test('mode test Lot 8 : constructions gratuites, batteries vides', () => {
   const t = farm();
-  testSetLevel(t, unlockLevel('serre'));
+  testSetLevel(t, Math.max(unlockLevel('serre'), unlockLevel('frigo')));
   testFillBatteries(t);
   t.pieces = 0;
   testBuildSerre(t);
@@ -664,7 +667,7 @@ test('version 1.10 : le frigo contient 25 unités au niveau 1 ; ranger s\'arrêt
   const s = ranch();
   s.pieces = 1000;
   assertEqual(fridgeCapacity(s), 0, 'pas construit');
-  buildFridge(reach(s, 'frigo'));
+  construireFrigo(reach(s, 'frigo'));
   assertEqual([s.frigo.niveau, fridgeCapacity(s), fridgeRoom(s)], [1, 25, 25]);
   setInv(s, { carotte: 30 });
   const r = moveToFridge(s, 'carotte', 30);
@@ -679,7 +682,7 @@ test('version 1.10 : le frigo contient 25 unités au niveau 1 ; ranger s\'arrêt
 test('version 1.10 : « Tout ranger » range d\'abord ce qui périme le plus tôt et garde la réserve', () => {
   const s = ranch();
   s.pieces = 1000;
-  buildFridge(reach(s, 'frigo'));
+  construireFrigo(reach(s, 'frigo'));
   setInv(s, { carotte: 20, tomate: 10, patate: 6 });
   s.inventaire.tomate[0].nightsLeft = 1;
   s.inventaire.carotte[0].nightsLeft = 5;
@@ -693,7 +696,7 @@ test('version 1.10 : améliorer le frigo (300 / 700 / 1 500 / 3 000) ; la consom
   const s = ranch();
   s.pieces = 10000;
   assertEqual(upgradeFridge(s).ok, false, 'pas construit');
-  buildFridge(reach(s, 'frigo'));
+  construireFrigo(reach(s, 'frigo'));
   const caps = [];
   const costs = [];
   while (fridgeUpgradeCost(s) !== null) {
@@ -712,7 +715,7 @@ test('version 1.10 : améliorer le frigo (300 / 700 / 1 500 / 3 000) ; la consom
 test('version 1.10 : migration v27 → v28 : le frigo passe au niveau 1, le surplus revient à l\'inventaire', () => {
   const s = ranch();
   s.pieces = 1000;
-  buildFridge(reach(s, 'frigo'));
+  construireFrigo(reach(s, 'frigo'));
   const old = JSON.parse(JSON.stringify(s));
   old.version = 27;
   delete old.frigo.niveau;

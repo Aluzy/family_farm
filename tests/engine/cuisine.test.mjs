@@ -4,7 +4,7 @@
    ========================================================================== */
 
 import {
-  actionCost, addItem, allDevices, boiteCounts, buildFridge, buildStation, buyItem, buyPasture,
+  actionCost, addItem, allDevices, boiteCounts, buildStation, buyItem, buyPasture,
   buyPrice, buySheep, cancelMilling, cancelQueued, countItem, createInitialState, DATA,
   depenserMembre, deposerBoite, deviceStatus, dishEnergy, dishPrice, feedAllHens, findDevice,
   findPlot, fridgeCount, fridgeRate, fridgeUnits, grantTech, harvest, harvestAll, hasTech,
@@ -20,7 +20,7 @@ import {
   waterCostFor, wheatForHens, wheatTotal,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, atelier, AVANT_DEMENAGEMENT, boite, coldRoom, farm, fillSheep,
+  affamer, assert, assertEqual, construireFrigo, atelier, AVANT_DEMENAGEMENT, boite, coldRoom, farm, fillSheep,
   garden, kwh, matin, migreAvant, ml, pature, plantRipe, ranch, reach, runFor, setInv, sleepOnce,
   test,
 } from './aide.mjs';
@@ -208,7 +208,7 @@ test('Lot 12 : la vente crédite le nouveau montant et le Marché affiche le pri
 test('Marché : les articles rangés au frigo se vendent aussi (l\'inventaire part d\'abord)', () => {
   const s = garden();
   s.pieces = 1000;
-  buildFridge(reach(s, 'frigo'));
+  construireFrigo(reach(s, 'frigo'));
   setInv(s, { carotte: 5 });
   assert(moveToFridge(s, 'carotte', 3).ok, 'ranger 3 carottes');
   assertEqual([countItem(s, 'carotte'), fridgeCount(s, 'carotte'), sellableCount(s, 'carotte')], [2, 3, 5]);
@@ -227,7 +227,7 @@ test('Marché : les articles rangés au frigo se vendent aussi (l\'inventaire pa
   // Le coefficient d'achat baisse comme pour une vente ordinaire.
   const t = garden();
   t.pieces = 1000;
-  buildFridge(reach(t, 'frigo'));
+  construireFrigo(reach(t, 'frigo'));
   buyItem(t, 'tomate', 3);
   moveToFridge(t, 'tomate', 3);
   assertEqual(marketCoef(t, 'tomate'), 150);

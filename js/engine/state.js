@@ -15,7 +15,8 @@ import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsE
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
-import { majMoulin, majPoulailler, rangerPieces } from './blocs.js';
+import { caseLibreFoyer, majMoulin, majPoulailler, poserBloc, rangerPieces } from './blocs.js';
+import { closeFridge, FRIGO_OBJET } from './fridge.js';
 import { faucherSousBati } from './outils.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
@@ -396,7 +397,21 @@ export const MIGRATIONS = {
   // bâtiment est rebâti en blocs, rien ne se perd ; `demenagee` le dit à la page (une annonce).
   // Une partie dont la famille n'est pas encore installée reçoit seulement sa graine.
   46: (state) => migrateDemenagement(state),
+  // v47 → v48 : le réfrigérateur est un bloc qu'on pose dans la maison (blocs.js) ; la famille
+  // va y manger. Un frigo déjà construit est posé sur une case libre du foyer ; sans foyer ni
+  // place, il revient dans l'inventaire avec ce qu'il gardait (à poser avec 🔨 Construire).
+  47: (state) => migrateFrigoBloc(state),
 };
+
+function migrateFrigoBloc(old) {
+  const state = { ...JSON.parse(JSON.stringify(old)), version: 48 };
+  const f = state.frigo;
+  if (!f || !f.construit || !state.carte || Object.values(state.blocs || {}).includes(FRIGO_OBJET)) return state;
+  addItem(state, FRIGO_OBJET, 1);
+  const t = caseLibreFoyer(state);
+  if (t === undefined || !poserBloc(state, FRIGO_OBJET, t).ok) closeFridge(state);
+  return state;
+}
 
 function migrateDemenagement(old) {
   const state = { ...JSON.parse(JSON.stringify(old)), version: 47 };

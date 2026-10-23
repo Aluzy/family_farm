@@ -3,7 +3,7 @@ import { EPS } from './base.js';
 import { buildWith, fail, isBroken, makeDevice, nextLevelCost, perSecond, perTick, upgradeWith } from './devices.js';
 import { drawEnergy, drawNightEnergy } from './energy.js';
 import {
-  ageLots, countItem, isFridgeable, isPerishable, keepLots, lotList, lotRank, lotsOf, pullLots, pushLots, takeItem,
+  addItem, ageLots, countItem, isFridgeable, isPerishable, keepLots, lotList, lotRank, lotsOf, pullLots, pushLots, takeItem,
 } from './inventory.js';
 import { newFridgeNightStats, newNightStats } from './family.js';
 import { rangerBoite } from './repas.js';
@@ -258,9 +258,16 @@ export function fridgeNight(state) {
   f.panneNuit = false;
 }
 
+// L'achat du Réfrigérateur : payé, il arrive dans l'inventaire (l'objet FRIGO_OBJET) ; posé dans
+// la maison comme un meuble (blocs.js), il est construit (openFridge). Un seul : refusé s'il est
+// déjà posé ou dans l'inventaire.
+export const FRIGO_OBJET = 'refrigerateur';
 export function buildFridge(state) {
-  const deja = 'Le Réfrigérateur est déjà construit.';
-  return buildWith(state, 'frigo', { built: state.frigo.construit, deja, cost: DATA.FRIGO.PRIX_CONSTRUCTION, libelle: 'Achat : Réfrigérateur' }, () => { openFridge(state); });
+  const deja = state.frigo.construit ? 'Le Réfrigérateur est déjà posé.' : 'Le Réfrigérateur t\'attend dans l\'inventaire : pose-le dans la maison (🔨 Construire).';
+  return buildWith(state, 'frigo', { built: state.frigo.construit || countItem(state, FRIGO_OBJET) > 0, deja, cost: DATA.FRIGO.PRIX_CONSTRUCTION, libelle: 'Achat : Réfrigérateur' }, () => {
+    addItem(state, FRIGO_OBJET, 1);
+    return { objet: FRIGO_OBJET };
+  });
 }
 
 // Pose le frigo dans l'état (sans payer).
@@ -271,4 +278,14 @@ export function openFridge(state) {
   if (!f.appareil) f.appareil = makeDevice('frigo', 'frigo', DATA.FRIGO.PRIX_CONSTRUCTION);
   f.alimente = true;
   rangerBoite(state); // la famille mange au frigo : la boîte à nourriture revient dans l'inventaire
+}
+
+// Le Réfrigérateur repris (son bloc) : ce qu'il gardait revient dans l'inventaire, et la famille
+// n'y mange plus. Son niveau et son appareil restent pour quand il sera reposé.
+export function closeFridge(state) {
+  const f = state.frigo;
+  if (!f || !f.construit) return;
+  for (const [item, n] of Object.entries(fridgeCounts(state))) moveFromFridge(state, item, n);
+  f.construit = false;
+  f.alimente = false;
 }

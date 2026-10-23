@@ -9,7 +9,9 @@
 #     lit_enfant, chevet, canape, table_basse, tableau_1 à 3 ;
 #   - la paillasse (sans lit acheté, le personnage dort dessus) et les couvertures seules
 #     des lits (lit_adulte_drap, lit_enfant_drap, paillasse_drap), posées sur le dormeur ;
-#   - le lit double (lit_double, lit_double_drap) : deux lits adulte côte à côte sur la carte.
+#   - le lit double (lit_double, lit_double_drap) : deux lits adulte côte à côte sur la carte ;
+#   - le réfrigérateur de la ferme générée (refrigerateur, 16 × 34) : un bloc qu'on pose dans
+#     la maison (la famille y mange), dessiné comme les blocs (scripts/rendu45.py).
 # Vue de dessus à 45° (comme la carte) : on voit le dessus de chaque meuble, raccourci, et sa
 # face avant ; les tapis sont à plat, la fenêtre et les tableaux accrochés au mur (de face).
 # Lumière en haut à gauche.
@@ -24,6 +26,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
 from pixel import ASSETS, ROOT  # noqa: E402
+from rendu45 import Toile, boite, ton  # noqa: E402
 
 C = {
     'K': (34, 22, 16),                                           # contour
@@ -466,6 +469,33 @@ def tableau(n):
     return im
 
 
+# Le réfrigérateur de la ferme générée : blanc, le congélateur en haut, deux poignées. Un pavé
+# de 14 px de large sur 12 de fond, haut de 25 (sa face : 22 px), vu de haut à 45° ; le bas de
+# l'image est le bas de sa case.
+FRIGO_BLANC = [(150, 156, 160), (190, 196, 198), (216, 220, 220), (234, 236, 234), (248, 248, 244)]
+FRIGO_POIGNEE = [(70, 74, 82), (120, 126, 136), (196, 200, 206)]
+FRIGO_JOINT = (60, 62, 68)
+
+
+def refrigerateur():
+    x0, x1, d0, d1, hz, porte = -6.6, 6.6, -6, 6, 25, 17
+    t = Toile(16, 34, 8, 33)
+
+    def couleur(face, u, v, s):
+        if face == 'dessus':
+            return ton(FRIGO_BLANC, 0.95)
+        if face in ('gauche', 'droite'):
+            return ton(FRIGO_BLANC, s * 0.75)
+        x, z = u, v
+        if z < 1.2 or abs(z - porte) < 0.45:
+            return FRIGO_JOINT                  # le socle, la jointure congélateur / frigo
+        if 3.4 < x < 4.4 and (porte + 1.5 < z < hz - 1.5 or 7 < z < porte - 2):
+            return ton(FRIGO_POIGNEE, 0.6 if x < 3.9 else 0.3)
+        return ton(FRIGO_BLANC, 0.55 if x > 5.3 else 0.95 if x < -5.6 else 0.8)
+    boite(t, x0, x1, d0, d1, 0, hz, couleur, 'frigo')
+    return t.image(traits=False)
+
+
 def modele(nom):
     return Image.open(os.path.join(ROOT, 'scripts', 'batiments', 'originaux', f'meuble_{nom}.png')).convert('RGBA')
 
@@ -480,6 +510,7 @@ def main():
     }
     images['paillasse'] = paillasse()
     images['lit_double'] = lit_double()
+    images['refrigerateur'] = refrigerateur()
     # les couvertures des lits (rangée 12 : le haut rabattu) : js/fermier.js les pose
     # par-dessus le personnage quand il dort
     for k in ('lit_adulte', 'lit_enfant', 'paillasse', 'lit_double'):

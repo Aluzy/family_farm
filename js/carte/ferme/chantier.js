@@ -649,11 +649,12 @@
       return z ? { x: Math.round(z.x + z.width / 2), y: Math.round(z.y - 20) } : null;
     },
 
-    // Le four ou la cuisinière sous le doigt : la fenêtre de sa station, ou null.
+    // Le four ou la cuisinière sous le doigt : la fenêtre de sa station, ou null (le
+    // réfrigérateur, plus haut qu'un bloc : toute sa hauteur).
     stationAt(wx, wy) {
       for (const e of (this.blocks || new Map()).values()) {
-        const win = BLOCS_CARTE.fenetres[e.sorte];
-        if (win && Math.abs(wx - e.x) <= T / 2 + 2 && wy <= e.y + 2 && wy >= e.y - 24) return win;
+        const win = BLOCS_CARTE.fenetres[e.sorte], h = e.sorte === 'refrigerateur' ? 34 : 24;
+        if (win && Math.abs(wx - e.x) <= T / 2 + 2 && wy <= e.y + 2 && wy >= e.y - h) return win;
       }
       return null;
     },

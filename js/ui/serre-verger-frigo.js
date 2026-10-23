@@ -1,8 +1,9 @@
 import { DATA } from '../engine/catalog.js';
 import { isBroken } from '../engine/devices.js';
+import { countItem } from '../engine/inventory.js';
 import { deviceStatus } from '../engine/energy.js';
 import {
-  availableEnergy, buildFridge, fridgeCoversNight, fridgeNightNeed,
+  availableEnergy, buildFridge, FRIGO_OBJET, fridgeCoversNight, fridgeNightNeed,
   fridgeCapacity, fridgeUnits, fridgeUpgradeCost, upgradeFridge,
 } from '../engine/fridge.js';
 import { serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
@@ -100,12 +101,15 @@ export function fridgeIcon() {
 export function renderFridgeCard() {
   const f = state.frigo;
   if (!f.construit) {
-    const cost = DATA.FRIGO.PRIX_CONSTRUCTION;
+    // acheté, il attend dans l'inventaire d'être posé dans la maison (un bloc, js/engine/blocs.js)
+    const cost = DATA.FRIGO.PRIX_CONSTRUCTION, enMain = countItem(state, FRIGO_OBJET) > 0;
     return `
       <div class="card">
-        <span class="card-title"><span>${artIcon('frigo')}Réfrigérateur</span><span class="chips"><span class="chip">Non construit</span>${helpBtn('frigo')}</span></span>
-        <span class="muted">Les aliments rangés au frigo ne vieillissent plus. Il contient ${formatNumber(DATA.FRIGO.CAPACITE[0])} unités (jusqu'à ${formatNumber(DATA.FRIGO.CAPACITE[DATA.FRIGO.CAPACITE.length - 1])} en l'améliorant) et consomme un peu de courant par unité stockée (rien s'il est vide). Appareil électrique : interrupteur, usure, pannes.</span>
-        <button type="button" class="btn primary" data-action="build-fridge"${canPay(cost) ? '' : ' disabled'}>Construire le Réfrigérateur (${costLabel(cost)})</button>
+        <span class="card-title"><span>${artIcon('frigo')}Réfrigérateur</span><span class="chips"><span class="chip">${enMain ? 'À poser' : 'Non construit'}</span>${helpBtn('frigo')}</span></span>
+        <span class="muted">Les aliments rangés au frigo ne vieillissent plus, et la famille y mange : posé dans la maison, il remplace la boîte à nourriture. Il contient ${formatNumber(DATA.FRIGO.CAPACITE[0])} unités (jusqu'à ${formatNumber(DATA.FRIGO.CAPACITE[DATA.FRIGO.CAPACITE.length - 1])} en l'améliorant) et consomme un peu de courant par unité stockée (rien s'il est vide). Appareil électrique : interrupteur, usure, pannes.</span>
+        ${enMain
+    ? '<span class="hint">Il est dans l\'inventaire : pose-le dans la maison avec 🔨 Construire.</span>'
+    : `<button type="button" class="btn primary" data-action="build-fridge"${canPay(cost) ? '' : ' disabled'}>Acheter le Réfrigérateur (${costLabel(cost)})</button>`}
       </div>`;
   }
   const d = f.appareil;
@@ -168,6 +172,6 @@ registerActions({
   },
   'build-fridge': () => {
     const result = applyResult(buildFridge(state));
-    if (result.ok) notify(`🧊 Réfrigérateur construit (−${formatCoins(result.cost)} 💰)`);
+    if (result.ok) notify(`🧊 Réfrigérateur acheté (−${formatCoins(result.cost)} 💰) : pose-le dans la maison avec 🔨 Construire.`);
   },
 });
