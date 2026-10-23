@@ -959,6 +959,13 @@ select {
   --border: #c9965e;
   --text: var(--wood-ink);
   --text-muted: #7a5434;
+  /* (le vert, le rouge et l'ambre du thème clair : ceux du sombre, faits pour un fond sombre,
+     ne se lisent pas sur le crème) */
+  --accent: #3a7530;
+  --accent-contrast: #ffffff;
+  --danger: #b23a25;
+  --danger-contrast: #ffffff;
+  --warn-text: #855400;
   background: var(--bg);
   color: var(--text);
   border: 3px solid var(--color-earth);
@@ -1371,6 +1378,9 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   padding: 8px 10px 6px;
   --text: var(--wood-ink);
   --text-muted: #7a5434; /* le texte sombre du bois, en clair comme en sombre */
+  --accent: #3a7530;
+  --danger: #b23a25;
+  --warn-text: #855400;
   color: var(--text);
   background: rgba(var(--wood-bg-rgb), 0.96);
   border: 3px solid var(--color-earth);
@@ -1694,6 +1704,8 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble) { display: no
   pointer-events: none;
 }
 .build-dock > * { pointer-events: auto; }
+/* le texte sombre du bois, en clair comme en sombre (le menu de Construire, la pose d'un meuble) */
+.build-dock, .pose-meuble { color: var(--wood-ink); }
 .build-tabs {
   display: flex;
   align-items: flex-end;
