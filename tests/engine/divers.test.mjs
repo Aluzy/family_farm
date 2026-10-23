@@ -6,7 +6,7 @@
 import {
   buyFurniture, collectLeftovers, COMPTA_MAX, comptaRecente, countItem, createInitialState, DATA,
   earn, findPlot, furnitureCount, furnitureMax, harvest, layEggs, makePlots, memberPerso, migrate,
-  noteCompta, pickUp, piles, setMemberProfile, STATE_VERSION, aidant, aideAFaire, aideBetes, addItem, makeSheep, hensToFeed, removeMember,
+  noteCompta, posteCompta, ecouterJournal, pickUp, piles, setMemberProfile, STATE_VERSION, aidant, aideAFaire, aideBetes, addItem, makeSheep, hensToFeed, removeMember,
 } from '../../js/engine/index.js';
 import {
   assert, assertEqual, garden, plantRipe, test, testBase,
@@ -166,4 +166,15 @@ test('Le second adulte du foyer nourrit les poules et prend les œufs, le lait e
   // seul adulte : personne pour aider
   removeMember(s, 'adulte-2');
   assertEqual([aidant(s), aideAFaire(s)], [null, []]);
+});
+
+test('journal : les pièces gagnées et dépensées sont notées avec leur poste', () => {
+  assertEqual([posteCompta('Achat : Carotte'), posteCompta('Réparation de la maison'), posteCompta('Vente en ville'), posteCompta('')], ['achat', 'reparation_de_la_maison', 'vente_en_ville', 'autre']);
+  const s = createInitialState(1), notes = [];
+  const fin = ecouterJournal((type, d) => { if (type === 'pieces') notes.push(d); });
+  earn(s, 12, 'Vente : Carotte', 3);
+  noteCompta(s, -5, 'Achat : Graines de tomate');
+  fin();
+  earn(s, 1, 'Lettre : notaire');
+  assertEqual(notes, [{ montant: 12, poste: 'vente' }, { montant: -5, poste: 'achat' }]);
 });

@@ -1,3 +1,5 @@
+import { noter } from './journal.js';
+
 /* ---------- Comptes : le détail récent des pièces gagnées et dépensées ---------- */
 
 // state.compta = [{ jour, libelle, montant, n }], du plus ancien au plus récent (absent dans
@@ -6,8 +8,16 @@
 // compte : 5 carottes achetées une par une donnent une ligne « × 5 »).
 export const COMPTA_MAX = 40;
 
+// Le poste d'une écriture, pour le suivi : le début de son libellé (« Achat : Carotte » →
+// achat), sans accents ni espaces.
+export function posteCompta(libelle) {
+  return String(libelle || '').split(' : ')[0].normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40) || 'autre';
+}
+
 export function noteCompta(state, montant, libelle, n = 1) {
   if (!montant) return;
+  noter('pieces', { montant, poste: posteCompta(libelle) });
   if (!Array.isArray(state.compta)) state.compta = [];
   const last = state.compta[state.compta.length - 1];
   if (last && last.jour === state.day && last.libelle === libelle && Math.sign(last.montant) === Math.sign(montant)) {

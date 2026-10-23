@@ -10,6 +10,7 @@ import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { techFlag, techSum } from './techtree.js';
 import { casesBaties } from './blocs.js';
 import { FERME_GENEREE, genererFerme } from './ferme-generee.js';
+import { noter } from './journal.js';
 
 /* ---------- les outils : houe, pioche, hache, faux, canne à pêche ---------- */
 
@@ -253,7 +254,7 @@ export function poserMorceaux(state, item, nb, carte, points, lot) {
 // qui tombe, le rocher qui se brise) aux points `ou.fin` ; sans `ou`, dans l'inventaire.
 // Renvoie { coup, fin } (les morceaux posés) ou null.
 function lacher(state, item, n, extra, ou) {
-  if (!ou || typeof ou.carte !== 'string' || !ou.carte) { addItem(state, item, n + extra); return null; }
+  if (!ou || typeof ou.carte !== 'string' || !ou.carte) { addItem(state, item, n + extra); noter('ramasse', { item, n: n + extra }); return null; }
   return { coup: poserMorceaux(state, item, n, ou.carte, ou.coup), fin: poserMorceaux(state, item, extra, ou.carte, ou.fin || ou.coup) };
 }
 
@@ -266,6 +267,7 @@ export function ramasserMorceau(state, n) {
   const [m] = L.splice(i, 1);
   const q = m.qte > 1 ? m.qte : 1;
   addItem(state, m.item, q);
+  noter('ramasse', { item: m.item, n: q });
   return { ok: true, item: m.item, n: q };
 }
 
@@ -438,6 +440,7 @@ export function ramasserCaillou(state, id) {
   if (!o.rochers || typeof o.rochers !== 'object') o.rochers = {};
   o.rochers[id] = { retour: state.day + randomInt(state, P.RETOUR[0], P.RETOUR[1]) };
   addItem(state, 'pierre', P.MAIN);
+  noter('ramasse', { item: 'pierre', n: P.MAIN });
   spendEnergy(state, 'ramasser');
   gainActionXp(state, 'ramasser');
   return { ok: true, items: { pierre: P.MAIN } };
@@ -595,6 +598,7 @@ export function mineOre(state, sorte) {
   const n = withBonus(state, 1, pct);
   const item = 'minerai_' + sorte;
   addItem(state, item, n);
+  noter('ramasse', { item, n });
   spendEnergy(state, 'piocher');
   gainActionXp(state, 'piocher');
   return { ok: true, item, n };
@@ -687,6 +691,7 @@ export function castLine(state, eau) {
     const p = peche(state);
     p.prises[eau] = (p.prises[eau] || 0) + 1;
     addItem(state, poisson, 1);
+    noter('ramasse', { item: poisson, n: 1 });
     gainActionXp(state, 'pecher');
   }
   return { ok: true, poisson, reste: fishLeft(state, eau) };

@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
-  buildReport, chapterSegments, renderMarkdown, reportSubject, fmtDuration, parisHour,
+  buildReport, chapterSegments, mergePlayer, parisDate, playerMeta, renderMarkdown, reportSubject, fmtDuration, parisHour,
 } from '../worker/src/report.mjs';
 
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -406,3 +406,189 @@ test('Worker : aucune trace de Resend ni de service d\'e-mail tiers', () => {
   const src = readFileSync(join(here, 'worker/src/index.js'), 'utf8');
   assert(!/resend/i.test(src));
 });
+
+/* ---------- version 2 : joueurs, jours de jeu, gestes, niveaux ---------- */
+
+const PID_A = 'joueur-aaaa-1111', PID_B = 'joueur-bbbb-2222';
+function sessionV2(pid, over = {}) {
+  return session({ v: 2, player: { id: pid, playMs: 40 * MIN, since: ago(3 * 24 * 60 * MIN) }, jours: {}, ...over });
+}
+const jour = (over = {}) => ({ ms: 4 * MIN, actions: {}, auto: {}, energie: {}, ramasse: {}, fabrique: {}, pose: {}, ...over });
+
+test('fiche joueur : nuits et niveaux indexés, renvoyer la même session ne change rien, numéro invalide refusé', () => {
+  const s1 = sessionV2(PID_A, { sid: 'sess-aaaa-0001', events: [
+    { t: 1, type: 'level', level: 2, day: 2, playMs: 9 * MIN },
+    { t: 2, type: 'night', day: 2, level: 2, xp: 600, chapter: 1, playMs: 10 * MIN, adults: 2, children: 2, meal: 70, wild: true, tuto: 'labour' },
+  ] });
+  const f1 = mergePlayer(null, s1, NOW.toISOString());
+  eq(Object.keys(f1.points).sort(), ['l2', 'n2']);
+  eq(f1.playMs, 40 * MIN);
+  eq(mergePlayer(f1, s1, NOW.toISOString()).points, f1.points, 'idempotent');
+  // une autre session du même joueur : le niveau gardé est le premier atteint (plus petit temps)
+  const s2 = sessionV2(PID_A, { sid: 'sess-aaaa-0002', player: { id: PID_A, playMs: 80 * MIN }, events: [
+    { t: 1, type: 'level', level: 2, day: 2, playMs: 20 * MIN }, { t: 2, type: 'level', level: 3, day: 5, playMs: 70 * MIN },
+    { t: 3, type: 'night', day: 5, level: 3, xp: 1300, chapter: 2, playMs: 75 * MIN, adults: 2, children: 2 },
+  ] });
+  const f2 = mergePlayer(f1, s2, NOW.toISOString());
+  eq([f2.points.l2.playMs, f2.points.l3.playMs, f2.playMs, Object.keys(f2.sessions).length], [9 * MIN, 70 * MIN, 80 * MIN, 2]);
+  eq(mergePlayer(null, session({ player: { id: '<script>' } }), ''), null);
+  eq(mergePlayer(null, session(), ''), null, 'session v1 : pas de fiche');
+});
+
+test('rapport v2 : gestes, énergie, jours de jeu, ressources, fabrications, blocs', () => {
+  const a = sessionV2(PID_A, { jours: {
+    3: jour({ ms: 6 * MIN, actions: { couper: 10, ramasser: 4 }, energie: { couper: 30, ramasser: 4 }, ramasse: { bois: 20, pierre: 4 }, fabrique: { planche: 3 }, pose: { mur_bois: 5 }, auto: { arroser: 6 } }),
+    4: jour({ ms: 2 * MIN, actions: { couper: 2 }, energie: { couper: 6 }, ramasse: { bois: 4 } }),
+  } });
+  const b = sessionV2(PID_B, { jours: { 1: jour({ ms: 4 * MIN, actions: { arroser: 6 }, energie: { arroser: 12 }, ramasse: { baies: 15 } }) } });
+  const r = buildReport([a, b, session()], NOW);
+  eq(r.jours.count, 3);
+  eq(r.jours.avgMs, 4 * MIN);
+  eq(r.jours.actions, 22 / 3);
+  const couper = r.gestes.find((g) => g.action === 'couper');
+  eq([couper.label, couper.count, couper.energie, couper.parGeste, couper.parJour], ['Couper (hache)', 12, 36, 3, 4]);
+  eq(r.jours.ramasse.find((x) => x.key === 'bois').parJour, 8);
+  eq(r.jours.fabrique, [{ key: 'planche', total: 3, parJour: 1 }]);
+  eq(r.jours.auto[0].key, 'arroser');
+  eq(r.joueurs.actifs, 2);
+  const md = renderMarkdown(r);
+  for (const bout of ['## Gestes du personnage', '| Couper \\(hache\\) | 12 | 4 | 36 | 3 |', '## Ressources ramassées', '| bois | 24 | 8 |', '## Objets fabriqués', '## Blocs posés', '| mur\\_bois | 5 |', 'Temps réel par jour de jeu']) {
+    assert(md.includes(bout), bout);
+  }
+});
+
+test('rapport v2 : niveaux (temps de jeu et jour médians), progression par joueur, courbes, famille, repas', () => {
+  const fa = mergePlayer(null, sessionV2(PID_A, { player: { id: PID_A, playMs: 120 * MIN }, events: [
+    { t: 1, type: 'level', level: 2, day: 2, playMs: 20 * MIN }, { t: 2, type: 'level', level: 3, day: 4, playMs: 60 * MIN },
+    { t: 3, type: 'night', day: 4, level: 3, xp: 1300, chapter: 2, playMs: 61 * MIN, adults: 2, children: 2, meal: 50, tuto: null },
+  ] }), ago(30 * MIN));
+  const fb = mergePlayer(null, sessionV2(PID_B, { player: { id: PID_B, playMs: 50 * MIN }, events: [
+    { t: 1, type: 'level', level: 2, day: 3, playMs: 40 * MIN },
+    { t: 2, type: 'night', day: 3, level: 2, xp: 700, chapter: 1, playMs: 41 * MIN, adults: 1, children: 0, meal: 100, tuto: 'semis' },
+  ] }), ago(30 * MIN));
+  const sa = sessionV2(PID_A, { events: [{ t: 5, type: 'night', day: 4, meal: 50, tuto: null }] });
+  const sb = sessionV2(PID_B, { events: [{ t: 5, type: 'night', day: 3, meal: 100, tuto: 'semis' }] });
+  const r = buildReport([sa, sb], NOW, {}, [fa, fb]);
+  const n2 = r.niveaux.find((n) => n.level === 2), n3 = r.niveaux.find((n) => n.level === 3);
+  eq([n2.joueurs, n2.medianMs, n2.medianJour], [2, 30 * MIN, 2.5]);
+  eq([n3.joueurs, n3.medianMs, n3.medianDepuisMs], [1, 60 * MIN, 40 * MIN]);
+  eq(r.joueurs.fiches.map((p) => [p.niveau, p.membres]), [[3, 4], [2, 1]]);
+  eq(r.joueurs.nouveaux, 2);
+  eq(r.joueurs.familles, [[1, 1], [4, 1]]);
+  eq([r.repas.nuits, r.repas.moyenne, r.repas.faim], [2, 75, 1]);
+  eq(r.tutos.map((t) => t[0]).sort(), ['fini', 'semis']);
+  const md = renderMarkdown(r);
+  assert(md.includes('```mermaid') && md.includes('xychart-beta') && md.includes('line ['), 'courbes');
+  assert(md.includes('| joueur | ') || md.includes('| joueur |'), 'numéro de joueur abrégé');
+  assert(md.includes('| 2 | 2 | 30 min 00 s | 2,5 |'), 'ligne du niveau 2');
+  assert(md.includes('2 membres') === false && md.includes('4 membres : 1 joueur'));
+});
+
+test('rapport v2 : les clés venues du navigateur sont neutralisées', () => {
+  const a = sessionV2(PID_A, { jours: { 1: jour({ actions: { '<img src=x>@moi': 2 }, ramasse: { '[lien](http://x)': 1 } }) } });
+  const md = renderMarkdown(buildReport([a], NOW));
+  assert(!md.includes('<img') && !md.includes('](http') && !md.includes('@moi'), md);
+});
+
+test('Worker : une session v2 met à jour la fiche du joueur, relue par le rapport', withGithub(async ({ calls }) => {
+  const worker = await loadWorker();
+  const files = {};
+  const bucket = {
+    async list({ prefix }) { return { objects: Object.entries(files).filter(([k]) => k.startsWith(prefix)).map(([key, f]) => ({ key, uploaded: f.uploaded })), truncated: false }; },
+    async get(key) { const f = files[key]; return f ? { json: async () => JSON.parse(JSON.stringify(f.data)) } : null; },
+    async put(key, body) { files[key] = { uploaded: uploadedNow, data: JSON.parse(body) }; },
+  };
+  const env = { SESSIONS: bucket, REPORT_GITHUB_TOKEN: TOKEN, REPORT_GITHUB_REPO: 'Aluzy/rapports' };
+  const s1 = { ...sessionV2(PID_A, { sid: 'sess-aaaa-0001', startedAt: ago(30 * MIN) }), events: [{ t: 1, type: 'level', level: 2, day: 2, playMs: 9 * MIN }] };
+  const s2 = { ...sessionV2(PID_A, { sid: 'sess-aaaa-0002', startedAt: ago(20 * MIN) }), events: [{ t: 1, type: 'level', level: 3, day: 4, playMs: 30 * MIN }] };
+  eq((await worker.fetch(post(s1), env)).status, 200);
+  eq((await worker.fetch(post(s2), env)).status, 200);
+  const fiche = files[`players/${PID_A}.json`].data;
+  eq(Object.keys(fiche.points).sort(), ['l2', 'l3']);
+  eq(Object.keys(fiche.sessions).length, 2);
+  await runScheduled(worker, env, NOW);
+  const body = calls.find((c) => c.method === 'POST').body.body;
+  assert(body.includes('## Niveaux') && body.includes('| 3 | 1 | 30 min 00 s |'), body);
+}));
+
+/* ---------- rétention, abandon, économie ---------- */
+
+// Un résumé de fiche (playerMeta) : premier et dernier jour, à `first` jours et `last` jours d'aujourd'hui.
+const TODAY = parisDate(NOW.getTime() - 1);
+const dayAgo = (n) => parisDate(Date.parse(`${TODAY}T12:00:00Z`) - n * 24 * 60 * MIN);
+const meta = (first, last, over = {}) => ({ first: dayAgo(first), last: dayAgo(last), jours: String(first === last ? 1 : 2), d1: '0', d7: '0', niveau: '1', chapitre: '1', jeu: '2', tuto: '', playMs: String(20 * MIN), sessions: '1', ...over });
+
+test('fiche joueur : jours joués à Paris, revenu à J+1 et à J+7 (métadonnées)', () => {
+  const s = (startedAt) => sessionV2(PID_A, { sid: 'sess-' + startedAt.slice(0, 13).replace(/[^0-9]/g, ''), startedAt });
+  let f = mergePlayer(null, s('2026-10-01T10:00:00Z'), '2026-10-01T10:05:00Z');
+  eq(playerMeta(f).d1, '0');
+  f = mergePlayer(f, s('2026-10-02T21:30:00Z'), '2026-10-02T21:35:00Z'); // 23 h 30 à Paris, le 2
+  eq([playerMeta(f).first, playerMeta(f).last, playerMeta(f).d1, playerMeta(f).d7, playerMeta(f).jours], ['2026-10-01', '2026-10-02', '1', '0', '2']);
+  f = mergePlayer(f, s('2026-10-09T08:00:00Z'), '2026-10-09T08:10:00Z');
+  eq(playerMeta(f).d7, '1');
+  for (const v of Object.values(playerMeta(f))) assert(typeof v === 'string', 'R2 : des chaînes');
+  assert(JSON.stringify(playerMeta(f)).length < 2048, 'R2 : 2 Ko au plus');
+});
+
+test('rétention : par jour de première visite, J+1 et J+7 seulement quand on peut le savoir', () => {
+  const annuaire = [
+    meta(10, 9, { d1: '1', d7: '0', jours: '2' }), meta(10, 0, { d1: '1', d7: '1', jours: '5' }), meta(10, 10),
+    meta(2, 1, { d1: '1', jours: '2' }), meta(2, 2),
+    meta(0, 0),
+  ];
+  const r = buildReport([], NOW, {}, [], annuaire);
+  eq(r.retention.cohortes.map((c) => [c.date, c.n]), [[dayAgo(0), 1], [dayAgo(2), 2], [dayAgo(10), 3]]);
+  eq([r.retention.j1.n, Math.round(r.retention.j1.pct)], [5, 60]);
+  eq([r.retention.j7.n, Math.round(r.retention.j7.pct)], [3, 33]);
+  const md = renderMarkdown(r);
+  assert(md.includes('## Rétention') && md.includes(`| ${dayAgo(10)} | 3 | 2 (66,7 %) | 1 (33,3 %) |`) && md.includes(`| ${dayAgo(0)} | 1 | — | — |`), md);
+});
+
+test('abandon : joueurs partis depuis 3 jours, leur niveau, leur étape du didacticiel, leur temps de jeu', () => {
+  const annuaire = [
+    meta(20, 15, { niveau: '2', tuto: '', jours: '3', playMs: String(60 * MIN) }),
+    meta(10, 10, { niveau: '1', tuto: 'abri_construire', playMs: String(10 * MIN) }),
+    meta(8, 8, { niveau: '1', tuto: 'abri_construire', playMs: String(20 * MIN) }),
+    meta(9, 1, { niveau: '3' }),          // encore là
+    meta(90, 80, { niveau: '1' }),        // trop ancien
+  ];
+  const A = buildReport([], NOW, {}, [], annuaire).abandon;
+  eq([A.partis, A.recents, A.uneVisite, A.medianMs], [3, 4, 2, 20 * MIN]);
+  eq(A.niveaux, [[1, 2], [2, 1]]);
+  eq(A.tutos, [['abri_construire', 2]]);
+  const md = renderMarkdown(buildReport([], NOW, {}, [], annuaire));
+  assert(md.includes('## Abandon') && md.includes('abri\\_construire : 2'), md);
+});
+
+test('économie : gains et dépenses par poste et par jour de jeu, pièces du soir par jour de jeu', () => {
+  const a = sessionV2(PID_A, { jours: {
+    1: jour({ gagne: { vente: 40 }, depense: { achat: 30 } }),
+    2: jour({ gagne: { vente: 20, lettre: 50 }, depense: { technologie: 100 } }),
+  } });
+  const fa = mergePlayer(null, sessionV2(PID_A, { events: [{ t: 1, type: 'night', day: 1, xp: 10, pieces: 300 }, { t: 2, type: 'night', day: 2, xp: 20, pieces: 240 }] }), NOW.toISOString());
+  const fb = mergePlayer(null, sessionV2(PID_B, { events: [{ t: 1, type: 'night', day: 1, xp: 10, pieces: 100 }] }), NOW.toISOString());
+  const r = buildReport([a], NOW, {}, [fa, fb]);
+  eq([r.economie.gagneJour, r.economie.depenseJour], [55, 65]);
+  eq(r.economie.soirs, [{ day: 1, joueurs: 2, median: 200, min: 100, max: 300 }, { day: 2, joueurs: 1, median: 240, min: 240, max: 240 }]);
+  const md = renderMarkdown(r);
+  for (const bout of ['## Économie', '| Ventes au Marché | 60 | — | +30 |', '| Technologies | — | 100 | -50 |', '| 1 | 2 | 200 | 100 | 300 |']) assert(md.includes(bout), bout);
+});
+
+test('Worker : la fiche du joueur porte son résumé en métadonnées, lu par le rapport pour la rétention', withGithub(async ({ calls }) => {
+  const worker = await loadWorker();
+  const files = {};
+  const bucket = {
+    async list({ prefix, include }) {
+      return { objects: Object.entries(files).filter(([k]) => k.startsWith(prefix)).map(([key, f]) => ({ key, uploaded: f.uploaded, ...(include && include.includes('customMetadata') ? { customMetadata: f.meta } : {}) })), truncated: false };
+    },
+    async get(key) { const f = files[key]; return f ? { json: async () => JSON.parse(JSON.stringify(f.data)) } : null; },
+    async put(key, body, opts = {}) { files[key] = { uploaded: uploadedNow, data: JSON.parse(body), meta: opts.customMetadata }; },
+  };
+  const env = { SESSIONS: bucket, REPORT_GITHUB_TOKEN: TOKEN, REPORT_GITHUB_REPO: 'Aluzy/rapports' };
+  eq((await worker.fetch(post(sessionV2(PID_A, { sid: 'sess-aaaa-0001', startedAt: ago(30 * MIN) })), env)).status, 200);
+  const m = files[`players/${PID_A}.json`].meta;
+  eq([m.first, m.niveau], [parisDate(NOW.getTime() - 30 * MIN), '1']);
+  await runScheduled(worker, env, NOW);
+  const body = calls.find((c) => c.method === 'POST').body.body;
+  assert(body.includes('## Rétention') && body.includes(`| ${m.first} | 1 |`), body);
+}));

@@ -7,8 +7,10 @@
    - Rien n'est créé (ni stockage, ni requête réseau) tant que le joueur n'a
      pas accepté ; un refus, ou un signal Global Privacy Control / Do Not Track
      du navigateur, désactive tout.
-   - Aucune donnée personnelle : un numéro de session aléatoire, des compteurs
-     (boutons, écrans, défilement) et des instantanés de progression.
+   - Aucune donnée personnelle : un numéro de session aléatoire, un numéro de
+     joueur aléatoire (le même d'une visite à l'autre, pour suivre la progression),
+     des compteurs (boutons, écrans, défilement, gestes du personnage par jour de
+     jeu) et des instantanés de progression.
    - Le contenu de la sauvegarde et l'adresse IP ne sont jamais lus. Le seul
      texte saisi qui part est le commentaire que le joueur choisit lui-même
      d'envoyer (Options › « Aidez-nous à améliorer le jeu ! »).
@@ -22,7 +24,8 @@ const Telemetry = (() => {
   const SID_KEY = 'ff_sid';            // sessionStorage : numéro de session
   const T0_KEY = 'ff_t0';              // sessionStorage : début de session
   const DATA_KEY = 'ff_data';          // sessionStorage : compteurs de la visite
-  const POLICY_VERSION = '1.2';
+  const PLAYER_KEY = 'ff_player';      // localStorage : numéro de joueur, temps de jeu cumulé
+  const POLICY_VERSION = '1.3';
   const CONSENT_TTL_MS = 183 * 24 * 3600 * 1000; // environ 6 mois
   const FLUSH_MS = 60000;
   const MAX_EVENTS = 400;
@@ -33,6 +36,8 @@ const Telemetry = (() => {
   const MAX_FEEDBACK = 3;          // commentaires par visite
   const MAX_FEEDBACK_CHARS = 1000; // longueur d'un commentaire
   const MAX_IDLE_STEP_MS = 10 * 60 * 1000; // un écart plus long = appareil en veille
+  const MAX_DAYS = 40;     // jours de jeu détaillés par visite
+  const MAX_DAY_KEYS = 60; // actions, objets… par jour
 
   const ENDPOINT_PROD = 'https://family-farm.contact-voidr.workers.dev/session';
   const ENDPOINT_LOCAL = 'http://127.0.0.1:8787/session'; // collect-server.mjs (essais)
@@ -50,6 +55,8 @@ const Telemetry = (() => {
   let lastTick = 0;
   let lastVisible = true;
   let lastScrollAt = 0;
+  let player = null;  // { id, ms, since } : le joueur, d'une visite à l'autre
+  let curDay = null;  // le jour de jeu en cours
 
   /* ---------- stockage : toujours protégé, jamais bloquant ---------- */
 
@@ -119,7 +126,44 @@ const Telemetry = (() => {
   }
 
   function emptyData() {
-    return { clicks: {}, dead: 0, scrolls: 0, tabs: {}, scroll: {}, modals: {}, errors: 0, visibleMs: 0, dropped: 0, feedback: [], events: [] };
+    return { clicks: {}, dead: 0, scrolls: 0, tabs: {}, scroll: {}, modals: {}, errors: 0, visibleMs: 0, dropped: 0, feedback: [], events: [], jours: {} };
+  }
+
+  /* ---------- le joueur : un numéro aléatoire, gardé d'une visite à l'autre ---------- */
+
+  function loadPlayer() {
+    try {
+      const p = JSON.parse(lsGet(PLAYER_KEY) || 'null');
+      if (p && /^[A-Za-z0-9-]{8,64}$/.test(String(p.id || ''))) {
+        return { id: p.id, ms: Number.isFinite(p.ms) && p.ms > 0 ? p.ms : 0, since: clean(p.since, 30) };
+      }
+    } catch (e) { /* un nouveau numéro */ }
+    const fresh = { id: newSid(), ms: 0, since: new Date().toISOString() };
+    lsSet(PLAYER_KEY, JSON.stringify(fresh));
+    return fresh;
+  }
+
+  function savePlayer() { if (active && player) lsSet(PLAYER_KEY, JSON.stringify(player)); }
+
+  // Les compteurs du jour de jeu en cours : { ms, actions, auto, energie, ramasse, fabrique, pose,
+  // gagne, depense } (gagne, depense : les pièces, par poste).
+  function dayEntry() {
+    if (curDay === null) return null;
+    const k = String(curDay);
+    if (!data.jours[k]) {
+      if (Object.keys(data.jours).length >= MAX_DAYS) return null;
+      data.jours[k] = { ms: 0, actions: {}, auto: {}, energie: {}, ramasse: {}, fabrique: {}, pose: {}, gagne: {}, depense: {} };
+    }
+    return data.jours[k];
+  }
+
+  function bumpDay(field, key, by) {
+    const j = dayEntry();
+    if (!j) return;
+    const map = j[field], k = cleanKey(key);
+    if (!(k in map) && Object.keys(map).length >= MAX_DAY_KEYS) return;
+    map[k] = Math.round(((map[k] || 0) + by) * 100) / 100;
+    dirty = true;
   }
 
   function bump(map, key, by) {
@@ -162,6 +206,9 @@ const Telemetry = (() => {
       if (dt > 0 && dt < MAX_IDLE_STEP_MS) {
         data.visibleMs += dt;
         if (curTab) tabEntry(curTab).ms += dt;
+        const j = dayEntry();
+        if (j) j.ms += dt;
+        if (player) player.ms += dt;
       }
     }
     lastTick = n;
@@ -201,10 +248,40 @@ const Telemetry = (() => {
 
   function night(snapshot) {
     if (!active || !snapshot) return;
+    accrue();
     push('night', {
       day: num(snapshot.day), chapter: num(snapshot.chapter), autonomy: num(snapshot.autonomy),
       pieces: num(snapshot.pieces), energy: num(snapshot.energy), awake: num(snapshot.awake),
+      level: num(snapshot.level), xp: num(snapshot.xp), adults: num(snapshot.adults), children: num(snapshot.children),
+      wild: snapshot.wild === undefined ? null : !!snapshot.wild, meal: num(snapshot.meal),
+      tuto: snapshot.tuto ? cleanKey(snapshot.tuto) : null, playMs: player ? Math.round(player.ms) : null,
     });
+    savePlayer();
+  }
+
+  // Le jour de jeu en cours (au chargement, puis à chaque réveil) : le temps réel s'y ajoute.
+  function day(n) {
+    if (!active || !Number.isFinite(n)) return;
+    accrue();
+    curDay = Math.max(0, Math.floor(n));
+  }
+
+  // Un geste du personnage, noté par le moteur (js/engine/journal.js).
+  function game(type, d) {
+    if (!active || !d) return;
+    if (type === 'action') bumpDay(d.auto ? 'auto' : 'actions', d.action, num(d.n) || 1);
+    else if (type === 'energie') bumpDay('energie', d.action, (num(d.mille) || 0) / 1000);
+    else if (type === 'ramasse') bumpDay('ramasse', d.item, num(d.n) || 1);
+    else if (type === 'fabrique') {
+      const items = d.items && Object.keys(d.items).length ? d.items : (d.outil ? { [d.outil]: 1 } : {});
+      for (const [item, n] of Object.entries(items)) bumpDay('fabrique', item, num(n) || 1);
+    } else if (type === 'pose') bumpDay('pose', d.sorte, 1);
+    else if (type === 'pieces' && num(d.montant)) bumpDay(d.montant > 0 ? 'gagne' : 'depense', d.poste || 'autre', Math.abs(num(d.montant)));
+    else if (type === 'niveau') {
+      accrue();
+      push('level', { level: num(d.niveau), day: curDay, playMs: player ? Math.round(player.ms) : null });
+      savePlayer();
+    }
   }
 
   // Commentaire libre du joueur, envoyé avec la session. Retourne :
@@ -277,12 +354,14 @@ const Telemetry = (() => {
     const d = data;
     let events = d.events;
     const make = () => JSON.stringify({
-      v: 1, sid, game: gameVersion, policy: POLICY_VERSION,
+      v: 2, sid, game: gameVersion, policy: POLICY_VERSION,
+      player: player ? { id: player.id, playMs: Math.round(player.ms), since: player.since } : null,
       startedAt: new Date(t0).toISOString(), updatedAt: new Date().toISOString(),
       ended: !!ended, durationMs: rel(), visibleMs: Math.round(d.visibleMs),
       device: deviceInfo(),
       counters: { clicks: d.clicks, deadClicks: d.dead, scrolls: d.scrolls, tabs: d.tabs, scrollDepth: d.scroll, modals: d.modals, errors: d.errors, droppedEvents: d.dropped },
       feedback: d.feedback || [],
+      jours: d.jours || {},
       events,
     });
     let json = make();
@@ -292,6 +371,11 @@ const Telemetry = (() => {
       events = events.filter((e) => !(removed < 25 && e.type === 'click' && ++removed));
       if (removed === 0) events = events.slice(25);
       d.dropped += removed || 25;
+      json = make();
+    }
+    // (encore trop gros sans événement : les plus vieux jours de jeu partent)
+    while (json.length > MAX_BYTES && Object.keys(d.jours || {}).length > 1) {
+      delete d.jours[Object.keys(d.jours).sort((a, b) => a - b)[0]];
       json = make();
     }
     d.events = events;
@@ -311,7 +395,7 @@ const Telemetry = (() => {
     } catch (e) { return false; }
   }
 
-  function persist() { if (active) ssSet(DATA_KEY, JSON.stringify(data)); }
+  function persist() { if (active) { ssSet(DATA_KEY, JSON.stringify(data)); savePlayer(); } }
 
   function flush(endedNow) {
     if (!active) return;
@@ -373,6 +457,7 @@ const Telemetry = (() => {
         if (saved && typeof saved === 'object' && Array.isArray(saved.events)) data = Object.assign(emptyData(), saved);
       } catch (e) { /* on repart de zéro */ }
     }
+    player = loadPlayer();
     active = true;
     lastTick = now();
     try { lastVisible = !document.hidden; } catch (e) { lastVisible = true; }
@@ -387,7 +472,8 @@ const Telemetry = (() => {
     if (timer) { clearInterval(timer); timer = null; }
     removeListeners();
     ssDel(SID_KEY); ssDel(T0_KEY); ssDel(DATA_KEY);
-    sid = null; data = null; curTab = null; dirty = false; ended = false;
+    try { localStorage.removeItem(PLAYER_KEY); } catch (e) { /* ignoré */ }
+    sid = null; data = null; curTab = null; dirty = false; ended = false; player = null; curDay = null;
   }
 
   function init(opts) {
@@ -398,8 +484,9 @@ const Telemetry = (() => {
 
   return {
     init, status, setConsent, track: push,
-    click, deadClick, tab, modal, night, chapter, alert: alertSeen, feedback,
+    click, deadClick, tab, modal, night, chapter, alert: alertSeen, feedback, day, game,
     sessionId: () => (active ? sid : null),
+    playerId: () => (active && player ? player.id : null),
     isActive: () => active,
     policyVersion: POLICY_VERSION,
     // exposés pour les tests hors navigateur

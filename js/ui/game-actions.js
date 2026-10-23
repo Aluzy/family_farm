@@ -5,7 +5,7 @@ import { fridgeCount, moveFromFridge, moveToFridge } from '../engine/fridge.js';
 import { goToSleep, startNight } from '../engine/night.js';
 import { newGameFrom } from '../engine/alerts.js';
 import { setActiveTab, setCoucher, setEcranFerme, setState, state } from './store.js';
-import { telNight } from './consent.js';
+import { telDay, telNight } from './consent.js';
 import { makeSeed, persistState } from './storage.js';
 import { setPendingAbsence, setSimulatedAt, syncJobs } from './loop.js';
 import { refresh } from './render.js';
@@ -66,6 +66,7 @@ export function wakeUp() {
   setCoucher(false); // il se lève
   syncJobs(); // les préparations terminées pendant la nuit ne sont pas annoncées par un toast
   persistState(); // sauvegarde après chaque nuit
+  telDay(); // le suivi : un nouveau jour de jeu
   refresh();
 }
 

@@ -5,10 +5,36 @@
 - `POST /session` : reçoit le JSON d'une session de jeu et l'écrit dans le bucket R2
   `ferme-familiale-sessions` sous `sessions/<sid>.json`. N'accepte que l'origine
   `https://aluzy.github.io`. Les commentaires des joueurs (`feedback`) sont nettoyés
-  (3 au plus, 1 000 signes chacun).
+  (3 au plus, 1 000 signes chacun). Une session de la version 2 porte aussi un numéro de
+  joueur aléatoire (le même d'une visite à l'autre) : sa fiche `players/<id>.json`, la
+  progression du joueur (une ligne par nuit et par niveau atteint, avec le temps de jeu
+  cumulé, les jours où il a joué), est mise à jour à chaque envoi. Son résumé (premier et
+  dernier jour joué, retour à J+1 et J+7, niveau, étape du didacticiel, temps de jeu) est
+  gardé dans les métadonnées du fichier : la rétention et l'abandon se calculent sur tous
+  les joueurs sans relire chaque fiche.
 - **Rapport quotidien à 13 h (heure de Paris)** : lit les sessions démarrées dans les
   dernières 24 h et publie le rapport comme **issue d'un dépôt GitHub privé**
-  (sessions, temps moyen, temps par chapitre, top 10 des actions, commentaires).
+  avec :
+  - les **sessions** (temps moyen et médian, sessions très courtes) ;
+  - les **joueurs** : actifs et nouveaux, taille de la famille, part du repas du soir
+    couverte, étape du didacticiel ;
+  - les **jours de jeu** : temps réel moyen par jour de jeu, gestes et énergie par jour ;
+  - les **gestes du personnage** par type (couper, piocher, arroser…) : nombre, par jour de
+    jeu, énergie dépensée et énergie par geste ; les automatisations à part ;
+  - les **ressources ramassées**, les **objets fabriqués** à l'Atelier et les **blocs posés**,
+    en total et par jour de jeu ;
+  - les **niveaux** : temps de jeu et jour de jeu médians pour atteindre chacun, et temps
+    depuis le niveau précédent ;
+  - la **progression par joueur** : un tableau (temps de jeu, jour, niveau, chapitre,
+    famille) et un graphique du niveau selon le temps de jeu (Mermaid, affiché par GitHub) ;
+  - la **rétention** : par jour de première visite, les joueurs revenus le lendemain (J+1)
+    et 7 jours après ou plus (J+7) ;
+  - l'**abandon** : les joueurs arrivés depuis 60 jours au plus et sans visite depuis 3 jours,
+    leur temps de jeu, leur niveau, leur chapitre et leur étape du didacticiel ;
+  - l'**économie** : pièces gagnées et dépensées par poste et par jour de jeu, et pièces
+    du soir (médiane, min, max) pour chacun des 20 premiers jours de jeu ;
+  - le temps par chapitre, le top 10 des boutons, les erreurs techniques et les
+    commentaires.
   GitHub t'écrit ensuite par e-mail via ses notifications. Deux déclencheurs UTC (11 h
   et 12 h) couvrent l'heure d'été et l'heure d'hiver ; le Worker ignore celui qui ne
   tombe pas à 13 h.
@@ -56,8 +82,13 @@ installés par ce même déploiement.
 
 ## Limites connues
 
-- Le rapport lit au plus 800 fichiers de session par jour (limite de sous-requêtes
-  de Cloudflare) ; au-delà, il l'indique dans la section « À savoir ».
+- Le rapport lit au plus 700 fichiers de session et 200 fiches de joueur par jour (limite
+  de sous-requêtes de Cloudflare) ; au-delà, il l'indique dans la section « À savoir ».
+- Les jours de jeu sont comptés par joueur : un jour commencé avant la période, ou joué
+  sur deux appareils (deux numéros de joueur), n'est vu qu'en partie.
+- Effacer les données d'un joueur (demande d'effacement) : supprimer `players/<id>.json`
+  et les fichiers `sessions/` dont `player.id` vaut ce numéro (ou le numéro de session
+  donné par le joueur).
 - Le temps par chapitre est une approximation : le jeu note le chapitre à chaque
   nuit, et le temps « onglet visible » est réparti au prorata du temps écoulé.
 - Les données de suivi sont conservées 12 mois d'après `cookies.html` : prévoir une
