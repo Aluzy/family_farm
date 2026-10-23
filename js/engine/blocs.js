@@ -168,9 +168,6 @@ export function changeMur(ancien, sorte) {
   return !!(a && s && a.mur && (s.mur || s.porte) && ancien !== sorte);
 }
 
-// La porte se pose sur un mur (elle prend sa place) : sans mur, la raison du refus.
-export const PORTE_SUR_MUR = 'La porte se pose sur un mur (elle prend sa place, comme une fenêtre) : pose d\'abord le mur.';
-
 // Combien de blocs `sorte` peut-on encore poser ? (l'Atelier : 1 s'il est construit et pas
 // encore posé)
 export function blocsEnMain(state, sorte) {
@@ -439,7 +436,6 @@ export function poseStatus(state, sorte, tile) {
   if (changeMur(blocAt(state, tile), sorte)) {
     return hauteurMur(state, tile) > 1 ? { ok: false, raison: 'Ce mur est rehaussé : reprends d\'abord ses blocs du dessus.' } : { ok: true };
   }
-  if (s.porte) return { ok: false, raison: PORTE_SUR_MUR };
   if (s.boite && state.frigo && state.frigo.construit) return { ok: false, raison: 'La famille mange au réfrigérateur : la boîte à nourriture ne sert plus.' };
   if (s.unique && dejaPose(state, sorte)) return { ok: false, raison: `Il y a déjà ${s.nom.toLowerCase() === 'citerne' ? 'une' : 'un'} ${s.nom.toLowerCase()} sur la ferme.` };
   // la station du robot : quand il est là (récolte ou semis automatiques)

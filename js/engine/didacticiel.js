@@ -21,13 +21,13 @@ import { aCruche, puitsPose } from './cruche.js';
 export const ETAPES = [
   'sante', 'endurance', 'bonheur', 'xp', 'autonomie', 'argent', 'deplacement',
   'pierres', 'bois', 'atelier', 'atelier_ouvrir', 'faux', 'fibres', 'outils',
-  'abri_ressources', 'abri_fabriquer', 'abri_construire', 'paillasses',
+  'abri_ressources', 'arbres', 'abri_fabriquer', 'abri_construire', 'paillasses',
   'houe', 'graines', 'labour', 'semis', 'puits', 'arroser', 'fin',
 ];
 
 // Les étapes qui se lisent : on passe à la suivante avec « Suivant » (suivantDidacticiel).
 // (atelier_ouvrir : l'interface la valide quand la fenêtre de l'Atelier s'ouvre)
-const A_LIRE = new Set(['sante', 'endurance', 'bonheur', 'xp', 'autonomie', 'argent', 'deplacement', 'atelier_ouvrir', 'graines', 'fin']);
+const A_LIRE = new Set(['sante', 'endurance', 'bonheur', 'xp', 'autonomie', 'argent', 'deplacement', 'atelier_ouvrir', 'arbres', 'graines', 'fin']);
 
 // Ce que chaque étape débloque, dès qu'on l'atteint : les recettes de l'Atelier, les blocs du
 // menu Construire. (Après le didacticiel : tout.)

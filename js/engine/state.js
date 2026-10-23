@@ -17,6 +17,7 @@ import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
 import { caseLibreFoyer, majMoulin, majPoulailler, poserBloc, rangerPieces } from './blocs.js';
 import { closeFridge, FRIGO_OBJET } from './fridge.js';
+import { ETAPES } from './didacticiel.js';
 import { faucherSousBati } from './outils.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
@@ -401,6 +402,13 @@ export const MIGRATIONS = {
   // va y manger. Un frigo déjà construit est posé sur une case libre du foyer ; sans foyer ni
   // place, il revient dans l'inventaire avec ce qu'il gardait (à poser avec 🔨 Construire).
   47: (state) => migrateFrigoBloc(state),
+  // v48 → v49 : une étape de plus au didacticiel (« arbres », après « abri_ressources » : un arbre
+  // abattu ne repousse pas, il faut planter sa graine). Une partie plus loin avance d'un cran.
+  48: (state) => {
+    const d = state.didacticiel;
+    const plus = d && !d.fini && Number.isInteger(d.etape) && d.etape > ETAPES.indexOf('abri_ressources');
+    return { ...state, version: 49, ...(plus ? { didacticiel: { ...d, etape: d.etape + 1 } } : {}) };
+  },
 };
 
 function migrateFrigoBloc(old) {

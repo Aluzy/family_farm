@@ -68,8 +68,8 @@ Le Marché vend toujours les outils.
 
 ### Construction bloc par bloc
 
-- On pose chaque mur sur une case de la carte ; la porte se pose sur un mur, à sa place (comme
-  une fenêtre : le mur revient dans l'inventaire).
+- On pose chaque mur sur une case de la carte ; la porte aussi, directement sur une case libre,
+  ou sur un mur, à sa place (comme une fenêtre : le mur revient dans l'inventaire).
 - Un espace entièrement entouré de murs, avec au moins une porte, devient une **pièce close**.
 - Les autres bâtiments suivent la même logique.
 - Un meuble du Marché en main (pas un tableau) : la carte se quadrille ; un appui sur une case y
@@ -260,8 +260,8 @@ Le Marché vend toujours les outils.
     Un mur se change sans être enlevé : avec une fenêtre (ou une pierre d'angle, un mur en
     pierre) en main, un appui sur un autre de ces murs le remplace, l'ancien revient dans
     l'inventaire et la pièce reste close (`BLOCS[].mur`, `changeMur` ; au sol et à l'étage).
-    La porte aussi se pose sur un mur, et seulement là (`PORTE_SUR_MUR`) : reprise, elle laisse
-    la case vide, comme une fenêtre.
+    La porte se pose sur un mur (à sa place) ou directement sur une case libre : reprise, elle
+    laisse la case vide.
   - Un buisson coupé rend ses cases (le terrain, `BUISSONS_CASES`) : on y bâtit comme sur
     l'herbe (`casesBuissonsCoupes`), et il ne repousse pas tant qu'une de ses cases est bâtie.
   - Un arbre abattu laisse sa graine (`HACHE.GRAINES`) : un sapin, une pomme de pin, un autre

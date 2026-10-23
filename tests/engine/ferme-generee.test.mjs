@@ -25,12 +25,12 @@ import {
   hoeableTiles, houseRepaired, isArable, isOwned, layEggs, machineDe, mainCharacter,
   majDidacticiel, makeCow, makeSheep, marcheOuvert, morceauxDe, nuitCouchee, nuitSansCouchage,
   objectifDidacticiel, passerDidacticiel, pickUp, piecesCloses, planAbri, planAbriCases, plant,
-  PORTE_SUR_MUR, poserBloc, poserEtage, poussesArbres, ramassables, ramasser, ramasserMorceau,
+  poserBloc, poserEtage, poussesArbres, ramassables, ramasser, ramasserMorceau,
   recettesDidacticiel, regrowGrass, removeStarter, remplirCruche, remplirRuches, reprendreBloc,
   reprendreEtage, respawnBushes, respawnRocks, respawnTrees, robotBattery, robotCapacity,
   robotStation, robotTrip, ruchePleine, ruchesARecolter, runRobotCharge, sellItem, serreMurs,
   serrePlaces, setFarmSeed, siloCapacity, simulateOffline, skipNight, solAt, sortirBotte,
-  stableHoused, stablePlaces, starterOf, STATE_VERSION, suivantDidacticiel, terrainOfMap,
+  stableHoused, stablePlaces, starterOf, STATE_VERSION, suivantDidacticiel, migrate, ETAPES, terrainOfMap,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools,
   testBuildAtelier, testFarmMap, testSetLevel, toits, tuilesChemins, unlockLevel,
   upgradePoulailler, verserFibres, water,
@@ -448,7 +448,8 @@ test('ferme générée : poser et reprendre des blocs, sur l\'herbe seulement', 
   const t = z.r * z.W + z.c;
   assertEqual(poserBloc(s, 'mur_pierre', t), { ok: true, sorte: 'mur_pierre', case: t });
   assertEqual([blocAt(s, t), countItem(s, 'mur_pierre'), isArable(t, s), blocBloque(s, t)], ['mur_pierre', 39, false, true]);
-  assertEqual(poserBloc(s, 'porte', t + 2).error, PORTE_SUR_MUR, 'la porte : sur un mur');
+  assertEqual([poserBloc(s, 'porte', t + 2).ok, blocAt(s, t + 2)], [true, 'porte'], 'la porte : directement sur une case libre');
+  assert(reprendreBloc(s, t + 2).ok);
   assertEqual(poserBloc(s, 'paillasse', t).ok, false, 'déjà un bloc');
   const route = farmTerrain(s).LIGNES.join('').indexOf('.');
   assertEqual(poserBloc(s, 'mur_pierre', route).ok, false, 'pas hors de l\'herbe');
@@ -1275,9 +1276,9 @@ test('ferme générée : une fenêtre, une porte changent un mur sans l\'enlever
   assert(poserEtage(s, 'mur_pierre', coin).ok);
   assert(poserEtage(s, 'mur_fenetre', coin).ok, 'une fenêtre sur le mur de l\'étage');
   assertEqual([etageBlocs(s)[coin], countItem(s, 'mur_fenetre')], ['mur_fenetre', 1]);
-  assertEqual(poserEtage(s, 'porte', p.murs[1]).error, PORTE_SUR_MUR, 'à l\'étage aussi, la porte sur un mur');
-  assert(poserEtage(s, 'mur_pierre', p.murs[1]).ok);
-  assert(poserEtage(s, 'porte', p.murs[1]).ok, 'une porte sur le mur de l\'étage');
+  assert(poserEtage(s, 'porte', p.murs[1]).ok, 'à l\'étage aussi, la porte directement sur une case libre');
+  assert(poserEtage(s, 'mur_pierre', p.murs[2]).ok);
+  assert(poserEtage(s, 'porte', p.murs[2]).ok, 'une porte sur le mur de l\'étage');
 });
 
 test('ferme générée : des bouts de murs qui ne se touchent pas ne font pas de pièce close', () => {
@@ -1404,6 +1405,9 @@ test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il
   assertEqual(objectifDidacticiel(s).compteurs, [{ objet: 'bois', n: 0, besoin: bois }, { objet: 'fibre', n: fib, besoin: fib }]);
   setInv(s, { bois, fibre: fib });
   majDidacticiel(s);
+  // (une étape à lire : un arbre abattu ne repousse pas, il faut planter sa graine)
+  assertEqual(etapeDidacticiel(s), 'arbres');
+  assert(suivantDidacticiel(s, 'arbres').ok);
   assertEqual([etapeDidacticiel(s), recettesDidacticiel(s).has('mur_bois')], ['abri_fabriquer', true]);
   for (let k = 0; k < p.murs; k++) assert(craft(s, 'mur_bois').ok);
   for (let k = 0; k < 3; k++) assert(craft(s, 'planche').ok);
@@ -1413,8 +1417,7 @@ test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il
   assertEqual([etapeDidacticiel(s), [...blocsDidacticiel(s)].sort()], ['abri_construire', ['atelier', 'mur_bois', 'porte']]);
   // l'abri : une rangée de N cases entourée de murs, la porte au milieu du bas
   const m = murs(z, N + 2, 3);
-  // (la porte se pose sur un mur, qui revient dans l'inventaire)
-  assert(poserBloc(s, 'mur_bois', m.porte).ok);
+  // (la porte se pose directement sur sa case)
   assert(poserBloc(s, 'porte', m.porte).ok);
   for (const t of m.murs) { const q = poserBloc(s, 'mur_bois', t); assert(q.ok, `mur ${t} : ${q.error}`); }
   majDidacticiel(s);
@@ -1451,6 +1454,15 @@ test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il
   assertEqual(etapeDidacticiel(s), 'fin');
   assert(suivantDidacticiel(s).ok);
   assertEqual([etapeDidacticiel(s), recettesDidacticiel(s), blocsDidacticiel(s)], [null, null, null], 'fini : tout est débloqué');
+});
+
+test('migration v48 → v49 : l\'étape « arbres » s\'ajoute au didacticiel, une partie plus loin avance d\'un cran', () => {
+  const vieille = (etape) => ({ ...createInitialState(3), version: 48, didacticiel: { etape, fini: false } });
+  const i = ETAPES.indexOf('arbres');
+  assertEqual(ETAPES.slice(i - 1, i + 2), ['abri_ressources', 'arbres', 'abri_fabriquer']);
+  assertEqual(migrate({ v: 48, t: 0, s: vieille(i - 1) }).didacticiel.etape, i - 1, 'avant : la même étape');
+  assertEqual(ETAPES[migrate({ v: 48, t: 0, s: vieille(i) }).didacticiel.etape], 'abri_fabriquer', 'l\'ancienne étape d\'après garde son nom');
+  assertEqual(migrate({ v: 48, t: 0, s: { ...vieille(20), didacticiel: { etape: 20, fini: true } } }).didacticiel.etape, 20, 'fini : rien ne change');
 });
 
 test('didacticiel : passé, tout est débloqué et les graines sont offertes ; une ancienne partie n\'en a pas', () => {
