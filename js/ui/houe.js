@@ -4,7 +4,7 @@ import {
 } from '../engine/crops.js';
 import { levelReached } from '../engine/levels.js';
 import { selectTool } from '../engine/outils.js';
-import { farmOpen } from '../engine/devices.js';
+import { marcheFerme, marcheOuvert } from '../engine/devices.js';
 import { actionCost, TIRED } from '../engine/stamina.js';
 import { formatCoins } from '../engine/format.js';
 import { hoeMode, setHoeMode, state } from './store.js';
@@ -34,11 +34,12 @@ export function soilLine() {
 export function hoePanelHtml() {
   const H = DATA.HOUE;
   if (!hasHoe(state)) {
-    // version 1.12 : avant le panneau et la pompe, le Marché (et donc la houe) est fermé
-    const ouvert = farmOpen(state);
+    // version 1.12 : avant le panneau et la pompe (une terre sauvage : avant son niveau), le
+    // Marché (et donc la houe) est fermé
+    const ouvert = marcheOuvert(state);
     return `
       <div class="hoe-bar">
-        ${ouvert ? '' : '<span class="muted">Marché fermé : installe le panneau et la pompe.</span>'}
+        ${ouvert ? '' : `<span class="muted">Marché fermé. ${marcheFerme(state)}</span>`}
         <button type="button" class="btn" data-action="buy-hoe"${ouvert && canPay(H.PRIX) ? '' : ' disabled'}>Acheter la houe (${formatCoins(H.PRIX)} 💰)</button>
       </div>`;
   }

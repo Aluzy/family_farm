@@ -12,17 +12,21 @@
     "liste": [
       { "debloque": ["carotte", "patate", "tomate"] },
       { "debloque": ["courgette", "aubergine", "oignon", "cuisine"] },
-      { "debloque": ["poivron", "ail", "fraise", "ble", "silo", "poulailler"] },
+      { "debloque": ["poivron", "ail", "fraise", "ble", "silo", "poulailler", "marche"] },
       { "debloque": ["epinard", "tournesol", "riz", "moulin"] },
       { "debloque": ["houblon", "four", "paturage", "moutons"] },
       { "debloque": ["presse", "verger"] },
-      { "debloque": ["cacao", "vanille", "cafe", "serre"] },
+      { "debloque": ["cacao", "vanille", "cafe", "serre", "energie"] },
       { "debloque": ["frigo"] },
       { "debloque": [], "note": "un courrier du notaire : un héritage caché" },
       { "debloque": ["commerce"] }
     ],
     "//ELEMENTS": "Libellé des éléments débloqués (écran du niveau, Ferme).",
     "ELEMENTS": {
+      "//marche": "Sur une terre sauvage (la ferme générée) seulement : le Marché (devices.js, marcheOuvert).",
+      "marche": { "sauvage": true, "nom": "Marché", "icone": "🧺", "note": "acheter des graines, des outils et des animaux, vendre tes récoltes" },
+      "//energie": "Sur une terre sauvage : les recettes et les blocs du panneau, de la pompe, de la citerne et de la batterie.",
+      "energie": { "sauvage": true, "nom": "Énergie et eau", "icone": "☀️", "note": "panneau solaire, pompe, citerne et batterie : l'automatisation commence" },
       "silo": { "nom": "Silo", "icone": "🛖", "note": "stock de blé ; le blé ne se plante qu'une fois le Silo construit" },
       "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
       "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tartes" },

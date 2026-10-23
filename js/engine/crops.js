@@ -1,6 +1,6 @@
 import { DATA, roundPct } from './catalog.js';
 import { EPS, nextRandom, randomInt } from './base.js';
-import { buildWith, fail, farmOpen, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
+import { buildWith, fail, marcheFerme, marcheOuvert, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
 import { countWithSilo, takeWithSilo } from './animals.js';
 import { deposit } from './ramassage.js';
 import { techPct, techSum } from './techtree.js';
@@ -235,7 +235,7 @@ export function hasHoe(state) {
 // Achat de la houe au Marché (une seule fois).
 export function buyHoe(state) {
   if (hasHoe(state)) return fail('Tu as déjà une houe.');
-  if (!farmOpen(state)) return fail('La houe s\'achète au Marché, qui ouvre avec le panneau et la pompe.');
+  if (!marcheOuvert(state)) return fail(`La houe s'achète au Marché. ${marcheFerme(state)}`);
   const cost = DATA.HOUE.PRIX;
   if (!pay(state, cost, 'Achat : Houe')) return fail(NO_COINS);
   state.potager.houe = true;

@@ -1,7 +1,7 @@
 import { DATA, dishPrice, ingredientOptions } from './catalog.js';
 import { EPS } from './base.js';
 import {
-  allDevices, batteryCapacity, canPay, farmOpen, isBroken, isOwned, maintainDevice, needsService, panelOutput, pumpFlow,
+  allDevices, batteryCapacity, canPay, farmOpen, isBroken, isOwned, maintainDevice, marcheOuvert, needsService, panelOutput, pumpFlow,
   repairDevice, starterOf, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from './devices.js';
 import { awakeRequired } from './clock.js';
@@ -387,7 +387,7 @@ function botStartRecipe(state, id) {
 
 // Version 1.14 : l'huile et la farine qui manquent aux plats s'achètent au Marché.
 function botBuyStaples(state) {
-  if (!farmOpen(state)) return;
+  if (!marcheOuvert(state)) return;
   for (const [item, a] of Object.entries(DATA.SIMULATION.ACHATS_CUISINE)) {
     for (let i = 0; i < a.stock && stockCount(state, item) < a.stock; i++) {
       if (!isBuyable(item) || buyPrice(state, item) > a.prixMax + EPS || !canPay(state, buyPrice(state, item) + DATA.SIMULATION.CAISSE)) break;
@@ -456,7 +456,7 @@ export function botStepInfo(state, step, eveilS) {
       return { cost: DATA.DEPART.ACHATS[step.id], buy: () => buyStarter(state, step.id) };
     case 'houe':
       if (hasHoe(state)) return { done: true };
-      return farmOpen(state) ? { cost: DATA.HOUE.PRIX, buy: () => buyHoe(state) } : { locked: true };
+      return marcheOuvert(state) ? { cost: DATA.HOUE.PRIX, buy: () => buyHoe(state) } : { locked: true };
     case 'silo':
       if (!isUnlocked(state, 'silo')) return { locked: true };
       if (built(state.silo)) return { done: true };

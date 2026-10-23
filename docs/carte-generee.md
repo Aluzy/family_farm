@@ -800,6 +800,11 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
        - Le puits, le panneau et la citerne se posent dehors, la pompe sur le puits
          (`state.blocsDessus`). Il y en a un de chaque, et il faut d'abord le foyer. La citerne
          attend le panneau et la pompe.
+       - **Le rythme** : le début de partie est manuel (cultiver, construire, arroser à la
+         cruche). Le Marché ouvre au niveau 3 (`marche`, `marcheOuvert`) et une nouvelle partie
+         commence avec 300 pièces (`DEPART.PIECES_SAUVAGE`). Le panneau, la pompe, la citerne
+         et la batterie (recettes et blocs) arrivent au niveau 7 (`energie`) : ils ouvrent
+         l'automatisation. Le chapitre 1 ne les demande plus (`sauvage: false`).
        - Le puits et la citerne gardent leurs images (la pompe qui vibre, le niveau de l'eau),
          posées sur leurs blocs. Un appui ouvre l'énergie ou l'eau.
        - **La station du robot** (1 lingot de fer, 1 de cuivre, 2 planches) se fabrique aussi à

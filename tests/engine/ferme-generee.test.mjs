@@ -13,6 +13,7 @@ import {
   etatEtable, etatMoulin, etatSilo, hauteurSilo, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   botteleuses, etatBotteleuse, machineDe, morceauxDe, ramasserMorceau, sortirBotte, verserFibres,
   buyRuche, buyDehors, PORTE_SUR_MUR, casesBuissonsCoupes, especeArbre, poussesArbres, arbresPlantes, respawnTrees, fellenTrees, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
+  buyItem, sellItem, buyHoe, marcheOuvert, unlockLevel,
   caseDepart, commencerDidacticiel, etapeDidacticiel, suivantDidacticiel, majDidacticiel, objectifDidacticiel, recettesDidacticiel, blocsDidacticiel, passerDidacticiel, planAbri, hoe, plant, water, remplirCruche, eauCruche,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
@@ -613,7 +614,7 @@ test('ferme générée : le four et la cuisinière se posent dans une pièce clo
 /* ---------- étape 5b-2 : l'énergie et l'eau en blocs ---------- */
 
 test('ferme générée : le puits, la pompe dessus, le panneau, la citerne et la batterie se posent et installent les appareils', () => {
-  const s = reach(chantier('e1'), 'paturage');
+  const s = reach(chantier('e1'), 'energie');
   s.pieces = 100000;
   for (const t of ['panneau', 'pompe', 'reservoir', 'batterie']) removeStarter(s, t);   // (une partie neuve : rien d'installé)
   assertEqual(buyStarter(s, 'panneau').ok, false, 'pas en pièces');
@@ -1028,7 +1029,7 @@ test('mode test : les ressources, les blocs, les outils et l\'Atelier en un appu
 });
 
 test('ferme générée : une enceinte est une maison ou un bâtiment, le premier bloc décide', () => {
-  const s = reach(chantier('g1'), 'poulailler');
+  const s = reach(reach(chantier('g1'), 'poulailler'), 'energie');
   setInv(s, { mur_pierre: 40, porte: 4, paillasse: 2, four_pierre: 1, nichoir: 1, plancher: 2, batterie: 1 });
   removeStarter(s, 'batterie');   // (une partie neuve : pas de batterie installée)
   // deux enceintes côte à côte, un mur en commun
@@ -1453,4 +1454,45 @@ test('didacticiel : passé, tout est débloqué et les graines sont offertes ; u
   const t = garden();
   testFarmMap(t, 'didacticiel3');
   assertEqual([etapeDidacticiel(t), blocsDidacticiel(t)], [null, null]);
+});
+
+test('ferme générée : le Marché ouvre au niveau 3 ; le panneau, la pompe, la citerne et la batterie arrivent au niveau 7', () => {
+  assertEqual([unlockLevel('marche'), unlockLevel('energie')], [3, 7]);
+  const s = chantier('m1');
+  s.pieces = 1000;
+  s.progression.niveau = 2;
+  for (const t of ['panneau', 'pompe', 'reservoir', 'batterie']) removeStarter(s, t);   // (une partie neuve)
+  // avant le niveau 3 : le Marché est fermé, sans panneau ni pompe ou avec
+  assertEqual(marcheOuvert(s), false);
+  assertEqual(buyItem(s, 'graine_carotte', 1).error, 'Le Marché ouvre au niveau 3.');
+  assertEqual(sellItem(s, 'conserve', 1).ok, false);
+  assertEqual(buyHoe(s).ok, false);
+  // au niveau 3 : il ouvre, sans panneau ni pompe
+  s.progression.niveau = 3;
+  assert(marcheOuvert(s) && !farmOpen(s));
+  assert(buyItem(s, 'graine_carotte', 1).ok);
+  // les appareils : ni leur recette ni leur bloc avant le niveau 7
+  setInv(s, { mur_pierre: 30, porte: 2, paillasse: 2, lingot_fer: 20, lingot_cuivre: 20, planche: 20, panneau_solaire: 1 });
+  for (const id of ['pompe', 'panneau_solaire', 'citerne', 'batterie']) assertEqual(craftStatus(s, id).raison, 'Se débloque au niveau 7.', id);
+  const z = terrainLibre(s, 7, 8), p = murs(z, 5, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserPorte(s, p.porte);
+  poserBloc(s, 'paillasse', p.dedans);
+  const dehors = (z.r + 7) * z.W + z.c;
+  assertEqual(poserBloc(s, 'panneau', dehors).error, 'Panneau solaire : se pose à partir du niveau 7.');
+  s.progression.niveau = 7;
+  assert(craftStatus(s, 'pompe').ok);
+  assert(poserBloc(s, 'panneau', dehors).ok);
+  // la ferme du grand-père : le Marché ouvre toujours avec le panneau et la pompe
+  const d = createNewGame(1);
+  d.progression.niveau = 10;
+  assertEqual(marcheOuvert(d), false);
+});
+
+test('terre sauvage : une nouvelle partie commence avec 300 pièces', () => {
+  const s = createNewGame(1, { nom: 'Essai' });
+  setFarmSeed(s, '5');
+  commencerDidacticiel(s);
+  assertEqual(s.pieces, 300);
+  assertEqual(DATA.DEPART.PIECES_SAUVAGE, 300);
 });

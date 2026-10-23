@@ -588,7 +588,9 @@ test('terre sauvage : ni le chapitre 1 ni les lettres du notaire ne parlent de l
   setFarmSeed(s, '77');
   const p = chapterProgress(s);
   assertEqual(/grand-père/.test(p.intro), false, p.intro);
-  assertEqual(p.objectifs.slice(0, 4).map((o) => o.libelle), ['Bâtir le foyer (une pièce close, une paillasse)', 'Poser le panneau solaire', 'Poser la pompe sur le puits', 'Poser la citerne']);
+  // (le panneau, la pompe et la citerne n'arrivent qu'avec l'automatisation : pas d'objectif)
+  assertEqual(p.objectifs.slice(0, 3).map((o) => o.libelle), ['Bâtir le foyer (une pièce close, une paillasse)', 'Fabriquer une houe à l\'Atelier', 'Labourer 6 tuiles']);
+  assertEqual(chapterProgress(createNewGame(1)).objectifs.filter((o) => ['panneau', 'pompe', 'reservoir'].includes(o.type)).length, 3, 'la ferme dessinée les garde');
   for (const id of ['notaire_heritage', 'notaire_legs']) {
     assertEqual(mailText(s, id).some((l) => /grand-père|moulin/.test(l)), false, id);
     assert(mailText(createNewGame(1), id).some((l) => /grand-père/.test(l)), `${id} : la ferme dessinée garde sa lettre`);

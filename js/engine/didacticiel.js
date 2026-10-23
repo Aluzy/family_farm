@@ -43,9 +43,11 @@ export function etapeDidacticiel(state) {
   return ETAPES[state.didacticiel.etape] || null;
 }
 
-// Une nouvelle partie : le didacticiel commence (les anciennes bulles d'aide n'ont plus lieu).
+// Une nouvelle partie : le didacticiel commence (les anciennes bulles d'aide n'ont plus lieu),
+// avec les pièces d'une terre sauvage (DEPART.PIECES_SAUVAGE).
 export function commencerDidacticiel(state) {
   state.didacticiel = { etape: 0, fini: false };
+  state.pieces = DATA.DEPART.PIECES_SAUVAGE;
   if (state.aide) state.aide.fini = true;
   return { ok: true };
 }

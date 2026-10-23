@@ -9,6 +9,8 @@
   ],
   "DEPART": {
     "PIECES": 1500,
+    "//PIECES_SAUVAGE": "Les pièces d'une nouvelle partie sur une terre sauvage (la ferme générée : didacticiel.js, commencerDidacticiel).",
+    "PIECES_SAUVAGE": 300,
     "INVENTAIRE": { "conserve": 40 },
     "MAISON": 650,
     "ACHATS": { "panneau": 150, "batterie": 180, "pompe": 90, "reservoir": 50 },
