@@ -21,13 +21,12 @@ import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { chartFrame, itemsText } from './common.js';
 
-// La ferme générée (docs/carte-generee.md, étape 2) : la partie change de carte, puis la page
+// La partie passe sur la ferme générée d'une autre graine (docs/carte-generee.md), puis la page
 // se recharge (la carte de la ferme se lit au montage de la scène).
-function actionTestFarmMap(generee) {
+function actionTestFarmMap() {
   const champ = document.getElementById('test-graine');
   const saisie = champ ? champ.value.trim() : '';
-  const graine = generee ? (saisie || String(Math.floor(Math.random() * 1e6))) : null;
-  testFarmMap(state, graine);
+  testFarmMap(state, saisie || String(Math.floor(Math.random() * 1e6)));
   persistState();
   location.reload();
 }
@@ -277,9 +276,6 @@ registerActions({
     actionTestNights(5);
   },
   'test-ferme-generee': () => {
-    actionTestFarmMap(true);
-  },
-  'test-ferme-dessinee': () => {
-    actionTestFarmMap(false);
+    actionTestFarmMap();
   },
 });

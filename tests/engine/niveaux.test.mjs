@@ -4,18 +4,19 @@
    ========================================================================== */
 
 import {
-  acknowledgeChapter, acknowledgeLevel, actionXp, addItem, awakeMsAtHour, buildPoulailler,
-  chooseCommerce, commerceCapacity, commerceChoiceCost, commerceNight, countItem,
-  createInitialState, cropUnlocked, DATA, deliverMail, feedAllHens, findPlot, gainXp, harvest,
-  ingredientOptions, isUnlocked, levelForXp, levelProgress, levelReached, levelUnlocks, lotsOf,
-  mailReceived, makeDevice, maxStage, migrate, newCampaignCounters, newCommerce, openFridge,
-  openSerre, plant, plantableCropsFor, readMail, sellItem, setCommerceQuota, shear, startMilling,
-  startRecipe, STATE_VERSION, tankCapacity, testCompleteChapter, testGoToChapter, testSetLevel,
-  testWoolReady, tick, unlockLevel, updateChapters, upgradeCommerce, water,
+  acknowledgeChapter, acknowledgeLevel, actionXp, addItem, awakeMsAtHour, chooseCommerce,
+  commerceCapacity, commerceChoiceCost, commerceNight, countItem, createInitialState, cropUnlocked,
+  DATA, deliverMail, feedAllHens, findPlot, gainXp, harvest, ingredientOptions, isUnlocked,
+  levelForXp, levelProgress, levelReached, levelUnlocks, lotsOf, mailReceived, makeDevice,
+  maxStage, newCampaignCounters, newCommerce, openFridge, openSerre, plant, plantableCropsFor,
+  readMail, sellItem, setCommerceQuota, shear, startMilling, startRecipe, STATE_VERSION,
+  tankCapacity, testBatir, testCompleteChapter, testGoToChapter, testSetLevel, testWoolReady, tick,
+  unlockLevel, updateChapters, upgradeCommerce, water,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, atChapter, atelier, auto5, farm, fillCows, fillSheep, garden, holdNights,
-  kwh, matin, ml, pature, plantRipe, ranch, reach, runFor, setInv, setStraw, sleepOnce, test,
+  affamer, assert, assertEqual, atChapter, atelier, auto5, AVANT_DEMENAGEMENT, boite, farm,
+  fillCows, fillSheep, garden, holdNights, kwh, matin, migreAvant, ml, pature, plantRipe, ranch,
+  reach, runFor, setInv, setStraw, sleepOnce, test,
 } from './aide.mjs';
 
 /* ---------- version 1.7 : niveaux d'expérience ---------- */
@@ -33,16 +34,21 @@ test('DATA niveaux : seuils, gains d\'XP, XP des chapitres', () => {
 
 test('XP : planter, arroser, récolter, vendre ; un niveau franchi est annoncé une fois', () => {
   const s = garden();
+  testSetLevel(s, 1);
+  s.progression.xp = 0;
   assert(plant(s, 'potager-1', 'carotte').ok);
   assert(water(s, 'potager-1').ok);
   assertEqual(s.progression.xp, 20);
   findPlot(s, 'potager-1').stade = maxStage(findPlot(s, 'potager-1'));
   harvest(s, 'potager-1');
   assertEqual(s.progression.xp, 40);
-  const r = sellItem(s, 'carotte', 6); // 6 × 2 pièces
-  assertEqual([r.gain, s.progression.xp], [12, 52]);
+  // (la vente : au niveau du Marché)
+  const v = garden(), xp = v.progression.xp;
+  addItem(v, 'carotte', 6);
+  const r = sellItem(v, 'carotte', 6); // 6 × 2 pièces
+  assertEqual([r.gain, v.progression.xp - xp], [12, 12]);
   assertEqual(s.progression.annonces, []);
-  assertEqual(gainXp(s, 448), [2]);
+  assertEqual(gainXp(s, 460), [2]);
   assertEqual([s.progression.niveau, s.progression.annonces], [2, [{ niveau: 2, nuit: 1 }]]);
   assertEqual(levelProgress(s), { niveau: 2, xp: 500, debut: 500, fin: 1200, max: false, pct: 0, reste: 700 });
   assertEqual(gainXp(s, 10000), [3, 4, 5], 'plusieurs niveaux d\'un coup');
@@ -108,7 +114,7 @@ test('migration v24 → v25 (version 1.7) : le niveau garde tout ce que les chap
     delete old.progression;
     old.campagne.chapitre = chapitre;
     if (fn) fn(old);
-    return migrate({ v: 24, t: 0, s: old });
+    return migreAvant({ v: 24, t: 0, s: old });
   };
   assertEqual(at(1).progression, { xp: 0, niveau: 1, annonces: [] });
   assertEqual(at(3).progression.niveau, 3);
@@ -119,7 +125,7 @@ test('migration v24 → v25 (version 1.7) : le niveau garde tout ce que les chap
   assertEqual(at(1, (s) => { s.serre.construit = true; }).progression.niveau, 7);
   assertEqual(at(2, (s) => { s.potager.parcelles[0].culture = 'epinard'; }).progression.niveau, 4, 'un épinard en terre');
   const m = at(4);
-  assertEqual([m.version, isUnlocked(m, 'presse'), isUnlocked(m, 'serre')], [STATE_VERSION, true, false]);
+  assertEqual([m.version, isUnlocked(m, 'presse'), isUnlocked(m, 'serre')], [AVANT_DEMENAGEMENT, true, false]);
 });
 
 test('migration v23 → v24 (version 1.6) : un seul panneau, une seule batterie, un réservoir à niveaux', () => {
@@ -138,8 +144,8 @@ test('migration v23 → v24 (version 1.6) : un seul panneau, une seule batterie,
     { ...makeDevice('batterie', 'batterie-1', 0), chargeMwh: kwh(4) },
     { ...makeDevice('batterie', 'batterie-2', 96), chargeMwh: kwh(4) },
   ];
-  const m = migrate({ v: 23, t: 0, s: old });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 23, t: 0, s: old });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual(m.panneaux.map((p) => [p.id, p.niveau, p.usure, p.prix]), [['panneau-1', 3, 5, 87]], 'le plus haut niveau, puis le moins usé');
   assertEqual(m.batteries.map((b) => [b.id, b.niveau]), [['batterie-1', 1]]);
   assertEqual(m.batteries[0].chargeMwh, kwh(6), '8 000 Wh au total, plafonnés à 6 000');
@@ -157,8 +163,8 @@ test('migration v22 → v23 (version 1.6) : l\'hiver réussi devient la série r
   const { tenue, tenueDerniere, tenueReussie, ...k } = old.campagne.compteurs;
   old.campagne.compteurs = { ...k, hiver: { debut: 31, nuits: 3, somme: 300, soins: 0 }, hiverDernier: { moyenne: 90, sansSoin: true, reussi: true }, hiverReussi: true };
   old.report = { saison: 'hiver', nuitDeSaison: 3, oeufs: 2 };
-  const m = migrate({ v: 22, t: 0, s: old });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 22, t: 0, s: old });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   const c = m.campagne.compteurs;
   assertEqual([c.tenue, c.tenueDerniere, c.tenueReussie], [null, { moyenne: 90, reussi: true }, true], 'version 1.8 : « sans soin » disparaît');
   assertEqual(['hiver' in c, 'hiverDernier' in c, 'hiverReussi' in c], [false, false, false]);
@@ -167,7 +173,7 @@ test('migration v22 → v23 (version 1.6) : l\'hiver réussi devient la série r
   fresh.version = 22;
   const { tenue: a, tenueDerniere: b, tenueReussie: d, ...k2 } = fresh.campagne.compteurs;
   fresh.campagne.compteurs = { ...k2, hiver: null, hiverDernier: null, hiverReussi: false };
-  assertEqual(migrate({ v: 22, t: 0, s: fresh }).campagne.compteurs.tenueReussie, false);
+  assertEqual(migreAvant({ v: 22, t: 0, s: fresh }).campagne.compteurs.tenueReussie, false);
 });
 
 /* --- annonces --- */
@@ -185,10 +191,8 @@ test('annonces : un écran de fin par chapitre terminé, vidé un à un', () => 
 });
 
 test('rapport de réveil Lot 9 : autonomie, chapitre en cours et chapitres terminés', () => {
-  const s = atChapter(2);
-  s.famille.reserve = {};
   // la famille a faim : 6 patates (30 points) puis des conserves
-  setInv(s, { patate: 6, conserve: 60 });
+  const s = boite(atChapter(2), { patate: 6, conserve: 60 });
   // version 1.12 : tout le chapitre 2 est rempli juste avant la nuit
   s.progression.niveau = 3;
   Object.assign(s.campagne.compteurs, { cultures: ['carotte', 'patate', 'tomate', 'courgette'], semisBle: 1 });
@@ -217,7 +221,7 @@ test('déblocages : chaque niveau atteint ouvre ses éléments', () => {
 });
 
 test('déblocages : le Potager, la pompe et le Marché sont là dès le départ', () => {
-  const s = farm();
+  const s = createInitialState(1);
   assertEqual(levelReached(s), 1);
   for (const id of ['potager', 'pompe', 'panneau', 'batterie', 'comptoir']) assertEqual([id, isUnlocked(s, id)], [id, true]);
   assertEqual(unlockLevel('potager'), 1);
@@ -229,7 +233,7 @@ test('masquage : un niveau plus bas ne détruit rien de ce que la partie possèd
   s.pieces = 5000;
   addItem(s, 'ble', 1);
   assert(plant(s, 'potager-1', 'ble').ok, 'les actions du moteur restent libres : le masquage est celui de l\'interface');
-  assert(buildPoulailler(reach(s, 'poulailler')).ok);
+  assert(testBatir(reach(s, 'poulailler'), 'poulailler').ok);
   testSetLevel(s, 1);
   assertEqual([findPlot(s, 'potager-1').culture, s.poulailler.construit], ['ble', true]);
   assertEqual([cropUnlocked(s, 'ble'), isUnlocked(s, 'poulailler')], [false, false]);
@@ -253,8 +257,8 @@ function v9State(mutate) {
 }
 
 test('migration v9 → v10 : une partie neuve arrive au chapitre 1', () => {
-  const m = migrate({ v: 9, t: 0, s: v9State() });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 9, t: 0, s: v9State() });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual([m.campagne.chapitre, m.campagne.fini, m.campagne.annonces, m.campagne.historique], [1, false, [], []]);
   // FLU-42 : la partie a déjà ses parcelles (anciennes versions) : « Labourer 6 tuiles » est fait
   assertEqual(m.campagne.compteurs, { ...newCampaignCounters(), labours: 6 });
@@ -262,7 +266,7 @@ test('migration v9 → v10 : une partie neuve arrive au chapitre 1', () => {
 });
 
 test('migration v9 → v10 : le chapitre suit ce que la partie possède', () => {
-  const chapitre = (mutate) => migrate({ v: 9, t: 0, s: v9State(mutate) }).campagne.chapitre;
+  const chapitre = (mutate) => migreAvant({ v: 9, t: 0, s: v9State(mutate) }).campagne.chapitre;
   assertEqual(chapitre((s) => { s.day = 6; }), 2, 'quelques nuits passées, rien de débloqué');
   assertEqual(chapitre((s) => { s.potager.niveau = 2; }), 2, 'Potager agrandi');
   assertEqual(chapitre((s) => { s.champ.construit = true; }), 3, 'Champ');
@@ -280,20 +284,20 @@ test('migration v9 → v10 : le chapitre suit ce que la partie possède', () => 
 });
 
 test('migration v9 → v10 : la partie migrée continue, tout ce qu\'elle possède est visible', () => {
-  const m = migrate({ v: 9, t: 0, s: v9State((s) => { s.day = 30; s.pieces = 777; openSerre(s); openFridge(s); }) });
+  const m = migreAvant({ v: 9, t: 0, s: v9State((s) => { s.day = 30; s.pieces = 777; openSerre(s); openFridge(s); }) });
   assertEqual([m.day, m.pieces, m.campagne.chapitre], [30, 777, 6]);
   for (const id of ['serre', 'verger', 'frigo', 'champ', 'four', 'moutons']) assertEqual([id, isUnlocked(m, id)], [id, true]);
   tick(m, 0.2);
   assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
   assertEqual(m.campagne.historique.length, 1);
   assertEqual(JSON.parse(JSON.stringify(m)), m);
-  const again = migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) });
+  const again = migreAvant({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) });
   assertEqual(again.campagne, m.campagne, 'une partie déjà à jour n\'est pas replacée');
 });
 
 test('migration : une sauvegarde très ancienne traverse toutes les versions jusqu\'au chapitre 2', () => {
-  const m = migrate({ v: 0, t: 0, s: { day: 4, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
-  assertEqual([m.version, m.campagne.chapitre], [STATE_VERSION, 2]);
+  const m = migreAvant({ v: 0, t: 0, s: { day: 4, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
+  assertEqual([m.version, m.campagne.chapitre], [AVANT_DEMENAGEMENT, 2]);
 });
 
 /* --- mode test --- */
@@ -462,7 +466,7 @@ test('migration v30 → v31 : un commerce vide', () => {
   const old = JSON.parse(JSON.stringify(s));
   old.version = 30;
   delete old.commerce;
-  const m = migrate({ v: 30, t: 0, s: old });
+  const m = migreAvant({ v: 30, t: 0, s: old });
   assertEqual(m.commerce, newCommerce());
-  assertEqual(m.version, STATE_VERSION);
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
 });

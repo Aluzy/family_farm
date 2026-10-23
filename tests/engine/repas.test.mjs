@@ -4,14 +4,15 @@
    ========================================================================== */
 
 import {
-  aideBetes, aidant, awakeMsAtHour, boiteCount, boiteCounts, boitePosee, buildAtelier, buildFridge,
+  aidant, aideBetes, awakeMsAtHour, boiteCount, boiteCounts, boitePosee, buildAtelier, buildFridge,
   countItem, craft, DATA, depenserMembre, deposerBoite, farmTerrain, findMember, jaugeFamille,
-  jaugeMembre, mainCharacter, mangeurs, marcherMembre, migrate, placeBoite, poserBloc, poseStatus,
-  repasStep, reprendreBloc, reprendreBoite, sleepTarget, snackEnergy, sourceRepas, spoil, startNight,
-  STATE_VERSION, testFarmMap, testAddHens, testAddWheat, tick, valeurAliment, wakeEnergy,
+  jaugeMembre, mainCharacter, mangeurs, marcherMembre, placeBoite, poserBloc, poseStatus,
+  repasStep, reprendreBloc, reprendreBoite, sleepTarget, snackEnergy, sourceRepas, spoil,
+  startNight, testAddHens, testAddWheat, testBatir, testFarmMap, tick, valeurAliment, wakeEnergy,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, garden, reach, setInv, sleepOnce, test, tireless,
+  affamer, assert, assertEqual, AVANT_DEMENAGEMENT, boite, garden, migreAvant, reach, setInv,
+  sleepOnce, test, tireless,
 } from './aide.mjs';
 
 // Une ferme générée, l'Atelier construit, un foyer clos (murs, porte, paillasses) et la boîte à
@@ -65,6 +66,7 @@ test('jauges : chaque membre sauf le personnage, pleines au départ ; la marche 
   assertEqual(marcherMembre(s, 'enfant-1', 250), 97.5);
   assertEqual(marcherMembre(s, mainCharacter(s).id, 1000), 0, 'le personnage a son énergie à lui');
   // l'aide aux bêtes : AIDE points par tâche faite
+  assert(testBatir(reach(s, 'poulailler'), 'poulailler').ok);
   testAddHens(s, 2);
   testAddWheat(s, 10);
   const a = aidant(s);
@@ -73,15 +75,14 @@ test('jauges : chaque membre sauf le personnage, pleines au départ ; la marche 
 });
 
 test('au seuil, le membre mange jusqu\'à rassasié ; sans rien à manger, il a faim une fois', () => {
-  const s = garden();
-  setInv(s, { carotte: 10 });
+  const s = boite(garden(), { carotte: 10 });
   const m = findMember(s, 'enfant-2');
   depenserMembre(s, m.id, 79);
   repasStep(s);
-  assertEqual([jaugeMembre(m), countItem(s, 'carotte')], [21, 10], 'au-dessus du seuil : il ne mange pas');
+  assertEqual([jaugeMembre(m), boiteCount(s, 'carotte')], [21, 10], 'au-dessus du seuil : il ne mange pas');
   depenserMembre(s, m.id, 1);
   repasStep(s);
-  assertEqual([jaugeMembre(m), countItem(s, 'carotte'), !!m.affame], [40, 0, false], 'il mange tout ce qu\'il trouve');
+  assertEqual([jaugeMembre(m), boiteCount(s, 'carotte'), !!m.affame], [40, 0, false], 'il mange tout ce qu\'il trouve');
   depenserMembre(s, m.id, 30);
   repasStep(s);
   assertEqual(m.affame, true, 'plus rien : il a faim');
@@ -90,8 +91,7 @@ test('au seuil, le membre mange jusqu\'à rassasié ; sans rien à manger, il a 
 });
 
 test('l\'école : les jours d\'école, les enfants rentrent à 17 h 30 avec 80 au plus ; au coucher, ils mangent jusqu\'à 100', () => {
-  const s = garden();
-  setInv(s, { conserve: 100 });
+  const s = boite(garden(), { conserve: 100 });
   assertEqual(s.day, 1, 'un lundi');
   s.awakeMs = awakeMsAtHour(17);
   tick(s, 1);
@@ -102,7 +102,7 @@ test('l\'école : les jours d\'école, les enfants rentrent à 17 h 30 avec 80 a
   s.awakeMs = awakeMsAtHour(DATA.TEMPS.HEURE_NUIT);
   assert(startNight(s), 'la famille se couche');
   assertEqual(mangeurs(s).map(jaugeMembre), [100, 100, 100], 'les enfants ont mangé avant de dormir (4 conserves chacun, la jauge plafonne à 100)');
-  assertEqual(countItem(s, 'conserve'), 92);
+  assertEqual(boiteCount(s, 'conserve'), 92);
   // un mercredi : pas d'école
   const t = garden();
   t.day = 3;
@@ -188,6 +188,6 @@ test('migration v45 → v46 : le repas du jour disparaît, la boîte arrive vide
   delete v45.repasJour;
   v45.version = 45;
   v45.repas = { heure: 19, besoin: 150, energie: 150, couverture: 100, mange: { conserve: 6 } };
-  const m = migrate({ v: 45, t: 0, s: v45 });
-  assertEqual([m.version, 'repas' in m, m.boite, m.repasJour, jaugeFamille(m)], [STATE_VERSION, false, { items: {} }, null, 100]);
+  const m = migreAvant({ v: 45, t: 0, s: v45 });
+  assertEqual([m.version, 'repas' in m, m.boite, m.repasJour, jaugeFamille(m)], [AVANT_DEMENAGEMENT, false, { items: {} }, null, 100]);
 });

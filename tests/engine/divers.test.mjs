@@ -4,20 +4,21 @@
    ========================================================================== */
 
 import {
-  buyFurniture, collectLeftovers, COMPTA_MAX, comptaRecente, countItem, createInitialState, DATA,
-  earn, findPlot, furnitureCount, furnitureMax, harvest, layEggs, makePlots, memberPerso, migrate,
-  noteCompta, posteCompta, ecouterJournal, pickUp, piles, setMemberProfile, STATE_VERSION, aidant, aideAFaire, aideBetes, addItem, makeSheep, hensToFeed, removeMember,
+  addItem, aidant, aideAFaire, aideBetes, buyFurniture, collectLeftovers, COMPTA_MAX,
+  comptaRecente, countItem, createInitialState, DATA, earn, ecouterJournal, findPlot,
+  furnitureCount, furnitureMax, harvest, hensToFeed, layEggs, makePlots, makeSheep, memberPerso,
+  noteCompta, pickUp, piles, posteCompta, removeMember, setMemberProfile, testBatir,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, garden, plantRipe, test, testBase,
+  assert, assertEqual, AVANT_DEMENAGEMENT, garden, migreAvant, partie, plantRipe, reach, test,
+  testBase,
 } from './aide.mjs';
 
 test('meubles : achat au Marché, limites selon la famille, bonheur une fois', () => {
   const s = createInitialState();
   s.pieces = 10000;
-  s.maison = { reparee: false };
-  assertEqual(buyFurniture(s, 'table').ok, false, 'maison à réparer');
-  s.maison.reparee = true;
+  assertEqual(buyFurniture(s, 'table').error, 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.');
+  assert(testBatir(s, 'foyer').ok);
   s.famille.membres.forEach((m) => { m.bonheur = 50; });
   const r = buyFurniture(s, 'canape');
   assertEqual([r.ok, s.pieces, furnitureCount(s, 'canape'), s.famille.membres.every((m) => m.bonheur === 50 + DATA.MEUBLES.canape.bonheur)], [true, 10000 - DATA.MEUBLES.canape.prix, 1, true]);
@@ -36,11 +37,11 @@ test('migration v34 → v35 : une Serre construite reçoit les parcelles de son 
   old.version = 34;
   old.serre = { ...old.serre, construit: true, niveau: 2, parcelles: makePlots(9, 'serre') };
   old.serre.parcelles[0].culture = 'tomate';
-  const m = migrate(old);
+  const m = migreAvant(old);
   assertEqual([m.version >= 35, m.serre.parcelles.length, m.serre.parcelles[0].culture, m.serre.parcelles[25].id], [true, 26, 'tomate', 'serre-26']);
   const vide = createInitialState();
   vide.version = 34;
-  assertEqual(migrate(vide).serre.construit, false, 'pas de Serre : rien ne change');
+  assertEqual(migreAvant(vide).serre.construit, false, 'pas de Serre : rien ne change');
 });
 
 test('migration v36 → v37 : la Serre aux deux bacs (56) : parcelles de son niveau, les plantées en trop restent', () => {
@@ -48,21 +49,21 @@ test('migration v36 → v37 : la Serre aux deux bacs (56) : parcelles de son niv
   old.version = 36;
   old.serre = { ...old.serre, construit: true, niveau: 5, parcelles: makePlots(63, 'serre') };
   old.serre.parcelles[60].culture = 'tomate';
-  const m = migrate(old);
-  assertEqual([m.version, m.serre.parcelles.length, m.serre.parcelles[56].id, m.serre.parcelles[56].culture], [STATE_VERSION, 57, 'serre-61', 'tomate']);
+  const m = migreAvant(old);
+  assertEqual([m.version, m.serre.parcelles.length, m.serre.parcelles[56].id, m.serre.parcelles[56].culture], [AVANT_DEMENAGEMENT, 57, 'serre-61', 'tomate']);
   const un = createInitialState();
   un.version = 36;
   un.serre = { ...un.serre, construit: true, niveau: 1, parcelles: makePlots(15, 'serre') };
-  assertEqual(migrate(un).serre.parcelles.map((p) => p.id).slice(-1), ['serre-16'], 'niveau 1 : 16 parcelles');
+  assertEqual(migreAvant(un).serre.parcelles.map((p) => p.id).slice(-1), ['serre-16'], 'niveau 1 : 16 parcelles');
   const vide = createInitialState();
   vide.version = 36;
-  assertEqual(migrate(vide).serre.construit, false, 'pas de Serre : rien ne change');
+  assertEqual(migreAvant(vide).serre.construit, false, 'pas de Serre : rien ne change');
 });
 
 test('Comptes : chaque gain et dépense est noté ; même libellé le même jour : une ligne ; solde d\'avant + somme = pièces', () => {
-  const s = createInitialState();
+  const s = partie();
   s.pieces = 1000;
-  s.maison = { reparee: true };
+  s.compta = [];
   assert(buyFurniture(s, 'chaise').ok && buyFurniture(s, 'chaise').ok);
   earn(s, 50, 'Vente : Carotte', 5);
   const c = comptaRecente(s);
@@ -123,9 +124,9 @@ testBase('Ramassage (version 1.18) : avec le personnage, la récolte au clic att
 });
 
 test('Ramassage (version 1.18) : les œufs attendent au Poulailler, le lait et la laine à l\'Étable', () => {
-  const s = createInitialState(1);
+  const s = reach(createInitialState(1), 'poulailler');
+  assert(testBatir(s, 'poulailler').ok);
   s.ramassage = true;
-  s.poulailler.construit = true;
   s.poulailler.poules = 2;
   s.poulailler.nourries = 2;
   const oeuf = DATA.ANIMAUX.poule.produit;
@@ -138,10 +139,10 @@ test('Ramassage (version 1.18) : les œufs attendent au Poulailler, le lait et l
 });
 
 test('Le second adulte du foyer nourrit les poules et prend les œufs, le lait et la laine', () => {
-  const s = createInitialState(1);
+  const s = reach(reach(createInitialState(1), 'poulailler'), 'paturage');
   s.ramassage = true;
   assertEqual(aidant(s).id, 'adulte-2', 'l\'autre adulte, pas le personnage principal');
-  s.poulailler.construit = true;
+  assert(testBatir(s, 'poulailler').ok);
   s.poulailler.poules = 2;
   assertEqual(aideAFaire(s), [], 'pas de blé : rien à faire');
   addItem(s, 'ble', 5);
@@ -154,7 +155,7 @@ test('Le second adulte du foyer nourrit les poules et prend les œufs, le lait e
   assertEqual(aideBetes(s, 'poulailler').items[oeuf], 2 * DATA.ANIMAUX.poule.oeufsParNuit);
   assertEqual([countItem(s, oeuf), piles(s).length], [avant + 2 * DATA.ANIMAUX.poule.oeufsParNuit, 0], 'dans l\'inventaire');
   // l'Étable : un mouton prêt, tondu sans l'énergie du personnage principal
-  s.paturage.construit = true;
+  assert(testBatir(s, 'etable').ok);
   const m = makeSheep(s);
   m.laine = DATA.ANIMAUX.mouton.joursLaine;
   s.paturage.moutons.push(m);

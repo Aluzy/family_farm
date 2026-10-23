@@ -4,15 +4,17 @@
    ========================================================================== */
 
 import {
-  addItem, advanceHours, averageHappiness, bonheurRepas, awakeMsAtHour, buyCompany,
-  buyInShop, buyInTown, buyItem, companiesStep, dishHappiness, companyPlan, countItem, createInitialState, DATA, findPlot,
-  goOut, goToTownMarket, happinessCostPct, hourOfDay, isBuyable, isPerishable, mealHappinessDelta,
-  memberHappiness, migrate, migrateHappiness, outingCost, outingLoot, outingMembers, outingStatus,
-  ownsCompany, plant, removeMember, sellInTown, setCompanyQuota, shopPrice, shopView, STATE_VERSION, tick,
-  townItems, townMarketOpen, townSellable, townSellList, townSellPrice, water,
+  addItem, advanceHours, averageHappiness, awakeMsAtHour, bonheurRepas, buyCompany, buyInShop,
+  buyInTown, buyItem, companiesStep, companyPlan, countItem, createInitialState, DATA,
+  dishHappiness, findPlot, goOut, goToTownMarket, happinessCostPct, hourOfDay, isBuyable,
+  isPerishable, mealHappinessDelta, memberHappiness, migrateHappiness, outingCost, outingLoot,
+  outingMembers, outingStatus, ownsCompany, plant, removeMember, sellInTown, setCompanyQuota,
+  shopPrice, shopView, tick, townItems, townMarketOpen, townSellable, townSellList, townSellPrice,
+  water,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, auto5, garden, setInv, sleepOnce, test,
+  affamer, assert, assertEqual, auto5, AVANT_DEMENAGEMENT, boite, garden, migreAvant, setInv,
+  sleepOnce, test,
 } from './aide.mjs';
 
 /* ---------- version 1.5 : bonheur, sorties, marché de la ville ---------- */
@@ -33,8 +35,7 @@ test('bonheur : chaque membre part à DEPART ; repas cru ou cuisiné', () => {
 });
 
 test('bonheur : la nuit le fait varier selon ce que la famille a mangé, et le note dans son compte rendu', () => {
-  const s = garden();
-  setInv(s, { carotte: 200 });
+  const s = boite(garden(), { carotte: 200 });
   const avant = averageHappiness(s);
   affamer(s);
   sleepOnce(s);
@@ -134,8 +135,8 @@ test('migration v21 → v22 : chaque membre reçoit son bonheur de départ', () 
   v21.version = 21;
   delete v21.ville;
   for (const m of v21.famille.membres) delete m.bonheur;
-  const m = migrate({ v: 21, t: 0, s: v21 });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 21, t: 0, s: v21 });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual(m.ville, { faits: {}, marche: 0 });
   for (const x of m.famille.membres) assertEqual(x.bonheur, DATA.VILLE.BONHEUR.DEPART);
   assertEqual(typeof migrateHappiness, 'function');

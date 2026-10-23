@@ -9,7 +9,6 @@ import { recipeTime, techEffects, techFlag } from './techtree.js';
 import { noteRecipeDone } from './campaign.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
-import { farmSeed } from './terrain.js';
 
 /* ---------- Lot 5 : stations, recettes, Livre de recette ---------- */
 
@@ -315,14 +314,15 @@ export function finishPreparations(state) {
   return done;
 }
 
-// Construit une station. Le Four ouvre l'onglet Livre de recette ; la Cuisine
-// demande le Four ; le Moulin et la Presse deviennent des appareils du parc.
+// Construit une station qui s'achète (la Presse ; les autres sont des blocs posés). Elle devient
+// un appareil du parc.
 export function buildStation(state, id) {
   const def = DATA.STATIONS[id];
   if (!def) return fail('Atelier inconnu.');
-  // la ferme générée : le four et la cuisinière se fabriquent à l'Atelier et se posent (blocs.js)
-  if (farmSeed(state) !== null && Object.values(DATA.ATELIER.BLOCS).some((b) => b.station === id)) {
-    return fail(`Sur une terre sauvage, ${def.article} ${def.nom.toLowerCase()} se fabrique à l'Atelier et se pose dans une pièce close.`);
+  // le four, la cuisinière et la meule du Moulin se fabriquent à l'Atelier et se posent (blocs.js)
+  const bloc = Object.values(DATA.ATELIER.BLOCS).find((b) => b.station === id);
+  if (bloc) {
+    return fail(`${def.nom} : son bloc (${bloc.nom.toLowerCase()}) se fabrique à l'Atelier et se pose dans une pièce close.`);
   }
   // la Cuisine demande le Four
   const requis = () => {

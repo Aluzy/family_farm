@@ -4,16 +4,18 @@
    ========================================================================== */
 
 import {
-  addItem, buyCow, buyItem, buySheep, buyTech, countItem, cowCount, createInitialState, DATA,
-  feedAllHens, freeCowPlaces, freeSheepPlaces, fridgeCount, lotsOf, makeDevice, makePlot,
-  makePlots, memberName, memberPortrait, migrate, migrateTechTreeV2, MIGRATION_11, MIGRATIONS,
-  millPending, newAutoReport, newStableReport, openStation, ownedTechs, pastureCost, depenserMembre, mangeurs, repasStep,
-  prepTimeMult, bottelerSansCarte, scytheGrass, sellItem, setMemberProfile, shear, sheepCount, sheepToShear, sleep, stableFree,
-  stableOccupied, startMilling, startRecipe, STATE_VERSION, strawMissing, strawNeed, strawStock,
-  techPoints, testFillBatteries, wheatTotal, zoneTile,
+  addItem, bottelerSansCarte, buyCow, buyItem, buySheep, buyTech, countItem, cowCount,
+  createInitialState, DATA, depenserMembre, feedAllHens, freeCowPlaces, freeSheepPlaces,
+  fridgeCount, lotsOf, makeDevice, makePlot, makePlots, mangeurs, memberName, memberPortrait,
+  migrate, migrateTechTreeV2, MIGRATION_11, MIGRATIONS, millPending, newAutoReport,
+  newStableReport, openStation, ownedTechs, pastureCost, prepTimeMult, repasStep, scytheGrass,
+  sellItem, setMemberProfile, shear, sheepCount, sheepToShear, sleep, stableFree, stableOccupied,
+  startRecipe, STATE_VERSION, strawMissing, strawNeed, strawStock, techPoints, testFillBatteries,
+  zoneTile,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, champ, chapter1StepsDone, plotContent, runFor, sleepOnce, test, v14State,
+  ancienne, assert, assertEqual, AVANT_DEMENAGEMENT, champ, chapter1StepsDone, migreAvant,
+  plotContent, runFor, sleepOnce, test, v14State,
 } from './aide.mjs';
 
 /* ---------- migration v15 → v16 (version 1.1) ---------- */
@@ -22,7 +24,7 @@ import {
 // sans profil, surface en ares, animaux avec leur poids, pas de compte rendu
 // de l'Étable. `mutate` reçoit l'état avant sa copie.
 function v15State(mutate) {
-  const s = createInitialState(9);
+  const s = ancienne(9);
   s.version = 15;
   for (const m of s.famille.membres) {
     delete m.prenom;
@@ -48,18 +50,18 @@ function v15Herd(s, laines, vaches = 0, ares = 50) {
 test('migration v15 → v16 : une partie sans animaux ne perd ni ne gagne rien', () => {
   assertEqual(typeof MIGRATIONS[15], 'function');
   const v15 = v15State((s) => { s.pieces = 432; s.day = 12; });
-  const m = migrate({ v: 15, t: 0, s: v15 });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 15, t: 0, s: v15 });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual([m.pieces, m.day, m.inventaire, m.campagne, m.potager, m.technologies, m.pointsTech], [432, 12, v15.inventaire, chapter1StepsDone(v15.campagne), { ...v15.potager, houe: true, houeVue: true, parcelles: v15.potager.parcelles.map((p, i) => ({ ...p, case: zoneTile(1, i) })) }, v15.technologies, v15.pointsTech]);
   assertEqual(m.paturage, { construit: false, places: 0, compteur: 0, compteurVache: 0, moutons: [], vaches: [] });
   assertEqual(countItem(m, 'paille'), 0, 'pas d\'animaux : pas de paille offerte');
   assertEqual(m.nuit.etable, newStableReport());
   // même forme qu'une partie neuve, et la partie continue
-  assertEqual(Object.keys(m).sort(), Object.keys(createInitialState(9)).sort());
+  assertEqual(Object.keys(m).sort(), Object.keys(ancienne(9)).sort());
   assertEqual(Object.keys(m.paturage), Object.keys(createInitialState(9).paturage));
   assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
   // une partie déjà en version 16 n'est pas retouchée
-  const again = migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) });
+  const again = migreAvant({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) });
   assertEqual(again, m);
 });
 
@@ -70,7 +72,7 @@ test('migration v15 → v16 : chaque membre de la famille reçoit son profil de 
     s.famille.membres[3].sante = 0;
   });
   assertEqual(v15.famille.membres.every((m) => !('prenom' in m) && !('genre' in m) && !('teint' in m)), true, 'la sauvegarde de départ n\'a pas de profil');
-  const m = migrate({ v: 15, t: 0, s: v15 });
+  const m = migreAvant({ v: 15, t: 0, s: v15 });
   assertEqual(m.famille.membres.map((x) => [x.id, x.nom, x.prenom, x.genre, x.teint]), [
     ['adulte-1', 'Adulte 1', 'Adulte 1', 'f', 0],
     ['adulte-2', 'Adulte 2', 'Adulte 2', 'm', 0],
@@ -82,7 +84,7 @@ test('migration v15 → v16 : chaque membre de la famille reçoit son profil de 
   assertEqual(m.famille.membres, createInitialState(1).famille.membres, 'même forme qu\'une partie neuve');
   assert(setMemberProfile(m, 'adulte-1', { prenom: 'Léa', teint: 2 }).ok, 'le profil se règle ensuite normalement');
   // un membre inconnu de DATA (sauvegarde bricolée) reçoit quand même un profil valide
-  const bizarre = migrate({ v: 15, t: 0, s: v15State((s) => { s.famille.membres.push({ id: 'cousin-1', nom: 'Cousin', enfant: false, sante: 80, malade: false }); }) });
+  const bizarre = migreAvant({ v: 15, t: 0, s: v15State((s) => { s.famille.membres.push({ id: 'cousin-1', nom: 'Cousin', enfant: false, sante: 80, malade: false }); }) });
   const cousin = bizarre.famille.membres[4];
   assertEqual([cousin.prenom, cousin.genre, cousin.teint, memberName(bizarre, 'cousin-1')], ['Cousin', 'f', 0, 'Cousin']);
 });
@@ -92,7 +94,7 @@ test('migration v15 → v16 : les comptes rendus en attente nomment les nouveaux
     s.nuit.nouveauxMalades = ['Adulte 2', 'Enfant 1'];
     s.report = { nuit: 7, nouveauxMalades: ['Enfant 2', 'Inconnu'], auto: newAutoReport(), mange: {} };
   });
-  const m = migrate({ v: 15, t: 0, s: v15 });
+  const m = migreAvant({ v: 15, t: 0, s: v15 });
   // version 1.8 : les malades disparaissent ensuite avec la santé
   assertEqual(['nouveauxMalades' in m.nuit, 'nouveauxMalades' in m.report], [false, false]);
   assertEqual(m.report.nuit, 7, 'le reste du compte rendu en attente est gardé');
@@ -100,7 +102,7 @@ test('migration v15 → v16 : les comptes rendus en attente nomment les nouveaux
 
 test('migration v15 → v16 : les animaux perdent leur poids, les ares deviennent des places', () => {
   const v15 = v15State((s) => v15Herd(s, [0, 3], 1, 65));
-  const m = migrate({ v: 15, t: 0, s: v15 });
+  const m = migreAvant({ v: 15, t: 0, s: v15 });
   assertEqual(m.paturage, {
     construit: true, places: 13, compteur: 2, compteurVache: 1,
     moutons: [{ id: 'mouton-1', laine: 0 }, { id: 'mouton-2', laine: 0 }],
@@ -110,25 +112,27 @@ test('migration v15 → v16 : les animaux perdent leur poids, les ares deviennen
   for (const a of [...m.paturage.moutons, ...m.paturage.vaches]) assertEqual('poids' in a, false, a.id);
   assertEqual(JSON.stringify(m).includes('poids'), false, 'plus aucun poids dans la sauvegarde');
   // 5 ares = 1 place : même nombre d'animaux possible qu'avant, même prix pour la suite
-  assertEqual([50, 55, 60, 65, 100].map((ares) => migrate({ v: 15, t: 0, s: v15State((s) => v15Herd(s, [], 0, ares)) }).paturage.places), [10, 11, 12, 13, 20]);
-  assertEqual([stableOccupied(m), stableFree(m), freeSheepPlaces(m), freeCowPlaces(m)], [5, 8, 8, 2]);
-  assertEqual(pastureCost(m), 70, '13 places : la 14ᵉ coûte 70, comme les 5 a suivants avant');
+  assertEqual([50, 55, 60, 65, 100].map((ares) => migreAvant({ v: 15, t: 0, s: v15State((s) => v15Herd(s, [], 0, ares)) }).paturage.places), [10, 11, 12, 13, 20]);
+  // (déménagée sur sa terre sauvage, l'Étable rebâtie à la taille de ses places)
+  const d = migrate({ v: AVANT_DEMENAGEMENT, t: 0, s: m });
+  assertEqual([stableOccupied(d), stableFree(d), freeSheepPlaces(d), freeCowPlaces(d)], [5, 8, 8, 2]);
+  assertEqual(pastureCost(d), 70, '13 places : la 14ᵉ coûte 70, comme les 5 a suivants avant');
   // les numéros ne sont pas réutilisés
-  m.pieces = 1000;
-  assertEqual(buySheep(m).id, 'mouton-3');
-  assertEqual(buyCow(m).id, 'vache-2');
+  d.pieces = 1000;
+  assertEqual(buySheep(d).id, 'mouton-3');
+  assertEqual(buyCow(d).id, 'vache-2');
 });
 
 test('migration v15 → v16 : la laine passe du rythme de 7 nuits à celui de 2 nuits nourries', () => {
   const v15 = v15State((s) => v15Herd(s, [0, 1, 2, 3, 4, 5, 6, 7], 0, 50));
-  const m = migrate({ v: 15, t: 0, s: v15 });
+  const m = migreAvant({ v: 15, t: 0, s: v15 });
   // 0 à 3 nuits sur 7 → 0 ; 4 à 6 → 1 (à mi-chemin) ; 7 (prête) → 2 (prête)
   assertEqual(m.paturage.moutons.map((x) => x.laine), [0, 0, 0, 0, 1, 1, 1, 2]);
   assertEqual(sheepToShear(m), 1, 'une laine prête reste prête');
   assertEqual(shear(m, 'mouton-8').ok, true);
   assertEqual(shear(m, 'mouton-7').ok, false);
   // une valeur abîmée ne casse rien
-  const abime = migrate({ v: 15, t: 0, s: v15State((s) => { v15Herd(s, [99, -3], 0, 50); s.paturage.moutons.push({ id: 'mouton-3', poids: 300 }); }) });
+  const abime = migreAvant({ v: 15, t: 0, s: v15State((s) => { v15Herd(s, [99, -3], 0, 50); s.paturage.moutons.push({ id: 'mouton-3', poids: 300 }); }) });
   assertEqual(abime.paturage.moutons.map((x) => x.laine), [2, 0, 0]);
 });
 
@@ -136,6 +140,7 @@ test('migration v15 → v16 : 2 nuits de paille offertes par mouton et par vache
   assertEqual(MIGRATION_11, { ARES_PAR_PLACE: 5, ANCIENS_JOURS_LAINE: 7, NUITS_PAILLE: 2 });
   const v15 = v15State((s) => v15Herd(s, [7, 2, 0], 2, 50));
   assertEqual('paille' in v15.inventaire, false);
+  // (déménagée sur sa terre sauvage, l'Étable rebâtie)
   const m = migrate({ v: 15, t: 0, s: v15 });
   assertEqual(strawNeed(m), 3 * 1 + 2 * 2);
   assertEqual(strawStock(m), 2 * 7, '2 nuits pour 3 moutons et 2 vaches');
@@ -151,7 +156,7 @@ test('migration v15 → v16 : 2 nuits de paille offertes par mouton et par vache
   assertEqual([sheepCount(m), cowCount(m)], [3, 2], 'sans paille, les animaux restent');
   // la paille déjà possédée (migration rejouée sur un état hybride) n'est pas écrasée
   const deja = v15State((s) => { v15Herd(s, [0], 0, 50); addItem(s, 'paille', 5); });
-  assertEqual(strawStock(migrate({ v: 15, t: 0, s: deja })), 5 + 2);
+  assertEqual(strawStock(migreAvant({ v: 15, t: 0, s: deja })), 5 + 2);
 });
 
 test('migration v15 → v16 : la viande et les anciens plats de l\'inventaire et du frigo restent mangeables et vendables', () => {
@@ -166,7 +171,7 @@ test('migration v15 → v16 : la viande et les anciens plats de l\'inventaire et
     s.frigo = { ...s.frigo, construit: true, appareil: makeDevice('frigo', 'frigo', 600), items: { roti_boeuf: [{ qty: 3, nightsLeft: 6, origin: 'produit' }], poivrons_farcis: [{ qty: 1, nightsLeft: 4, origin: 'produit' }] } };
     s.marche = { viande_mouton: 150 };
   });
-  const m = migrate({ v: 15, t: 0, s: v15 });
+  const m = migreAvant({ v: 15, t: 0, s: v15 });
   assertEqual(m.inventaire, v15.inventaire, 'rien n\'est retiré de l\'inventaire');
   assertEqual(m.frigo.items, v15.frigo.items, 'ni du frigo (4 unités : elles tiennent au niveau 1)');
   assertEqual(m.frigo.niveau, 1, 'version 1.10 : le frigo a un niveau');
@@ -200,12 +205,12 @@ test('migration v15 → v16 : la Rôtisserie est retirée de l\'arbre et rembour
     s.pointsTech = { solde: 2, gagnes: 9, maitrise: [], libre: 0, annonces: [] };
     s.pieces = 500;
   });
-  const m = migrate({ v: 15, t: 0, s: v15 });
+  const m = migreAvant({ v: 15, t: 0, s: v15 });
   assertEqual(m.technologies, ['cu_outils', 'cui_boulangerie', 'cui_laiterie']);
   assertEqual([m.pieces, m.pointsTech.solde, m.pointsTech.gagnes], [800, 3, 9], '300 pièces et 1 point de technologie rendus');
   assertEqual(ownedTechs(m).every((id) => DATA.ARBRE.noeuds[id]), true);
   // sans ce nœud : rien n'est offert
-  const sans = migrate({ v: 15, t: 0, s: v15State((s) => { s.technologies = ['cu_outils']; s.pieces = 500; }) });
+  const sans = migreAvant({ v: 15, t: 0, s: v15State((s) => { s.technologies = ['cu_outils']; s.pieces = 500; }) });
   assertEqual([sans.pieces, sans.pointsTech.solde, sans.technologies], [500, 0, ['cu_outils']]);
   // l'étape v13 → v14 n'offre plus ce nœud à une vieille partie
   const v13 = v15State((s) => { v15Herd(s, [], 0, 50); s.version = 13; s.technologies = []; });
@@ -224,7 +229,7 @@ test('migration v15 → v16 : les préparations des recettes retirées sont term
     s.stations.moulin.file = [{ recette: 'farine', pris: [{ item: 'ble', qte: 1 }], eau: 0 }, { recette: 'farine', pris: [{ item: 'ble', qte: 1 }], eau: 0 }];
     s.stations.presse.tache = { recette: 'huile', resteMs: 1000, dureeMs: 10000 };
   });
-  const m = migrate({ v: 15, t: 0, s: v15 });
+  const m = migreAvant({ v: 15, t: 0, s: v15 });
   // Cuisine : les deux ragoûts sont servis, l'omelette qui attendait démarre.
   assertEqual([countItem(m, 'ragout'), m.stations.cuisine.tache.recette, m.stations.cuisine.file], [2, 'omelette', []]);
   // Four : le pain continue, les deux plats retirés de la file sont servis.
@@ -241,7 +246,7 @@ test('migration v15 → v16 : les préparations des recettes retirées sont term
   assertEqual([countItem(m, 'farine'), countItem(m, 'paille'), countItem(m, 'omelette'), countItem(m, 'pain'), countItem(m, 'huile')], [3, 0, 1, 1, 1]);
   assertEqual(Object.keys(DATA.STATIONS).map((id) => m.stations[id].tache), [null, null, null, null]);
   // un Moulin dont seule la file contenait du blé (cas limite) repart avec ce blé
-  const file = migrate({ v: 15, t: 0, s: v15State((s) => { openStation(s, 'moulin'); s.stations.moulin.file = [{ recette: 'farine', pris: [], eau: 0 }, { recette: 'farine', pris: [], eau: 0 }]; }) });
+  const file = migreAvant({ v: 15, t: 0, s: v15State((s) => { openStation(s, 'moulin'); s.stations.moulin.file = [{ recette: 'farine', pris: [], eau: 0 }, { recette: 'farine', pris: [], eau: 0 }]; }) });
   assertEqual(file.stations.moulin.tache, { recette: 'farine', resteMs: 5000, dureeMs: 5000, enAttente: 1 });
 });
 
@@ -259,6 +264,7 @@ test('migration v15 → v16 : une partie avancée continue à tourner après la 
     s.inventaire.ble = [{ qty: 60, nightsLeft: null, origin: 'produit' }];
     s.technologies = ['el_tonte', 'cui_rotisserie'];
   });
+  // (déménagée sur sa terre sauvage : le Poulailler et l'Étable rebâtis)
   const m = migrate({ v: 15, t: 0, s: v15 });
   assertEqual([m.version, m.campagne.compteurs.laines, m.campagne.compteurs.plats], [STATE_VERSION, 4, ['omelette', 'ragout', 'roti_boeuf']], 'les plats déjà préparés restent comptés');
   assertEqual(JSON.parse(JSON.stringify(m)), m, 'l\'état migré se sauvegarde tel quel');
@@ -285,13 +291,13 @@ test('migration v15 → v16 : une partie avancée continue à tourner après la 
 });
 
 test('migration v15 → v16 : toute la chaîne depuis une très vieille sauvegarde mène au nouveau format', () => {
-  const m = migrate({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual(m.famille.membres.map((x) => [x.prenom, x.genre, x.teint]), [['Adulte 1', 'f', 0], ['Adulte 2', 'm', 0], ['Enfant 1', 'm', 0], ['Enfant 2', 'f', 0]]);
   assertEqual(m.paturage, { construit: false, places: 0, compteur: 0, compteurVache: 0, moutons: [], vaches: [] });
   // des entrées absurdes ne font jamais planter la migration
   for (const bad of [null, undefined, 42, 'x', [], { version: 15 }, { version: 15, famille: null, paturage: 7, stations: 'non', technologies: 3, inventaire: null }]) {
-    const out = migrate(bad);
+    const out = migreAvant(bad);
     assert(out && typeof out === 'object', `migration sans exception : ${JSON.stringify(bad)}`);
   }
 });
@@ -305,7 +311,7 @@ test('migration v14 → v15 : chaque champ de chaque parcelle est conservé, que
       });
     });
     const before = [...v14.potager.parcelles, ...v14.champ.parcelles];
-    const m = migrate({ v: 14, t: 0, s: v14 });
+    const m = migreAvant({ v: 14, t: 0, s: v14 });
     const planted = m.potager.parcelles.filter((p) => p.culture);
     assertEqual(planted.map(plotContent), before.filter((p) => p.culture).map(plotContent), `potager ${potager}, champ ${champ} : les parcelles plantées`);
     assert(DATA.POTAGER.PARCELLES_V1.includes(m.potager.parcelles.length), 'la zone est pleine à son ancien niveau');
@@ -318,10 +324,10 @@ test('migration v14 → v15 : chaque champ de chaque parcelle est conservé, que
   // sauvegarde abîmée : sans Champ, ou sans parcelles — la migration ne plante pas
   const sans = v14State({ potager: 2 });
   delete sans.champ;
-  assertEqual(migrate({ v: 14, t: 0, s: sans }).potager.parcelles.length, 12);
+  assertEqual(migreAvant({ v: 14, t: 0, s: sans }).potager.parcelles.length, 12);
   const vide = v14State();
   delete vide.potager.parcelles;
-  const mv = migrate({ v: 14, t: 0, s: vide });
+  const mv = migreAvant({ v: 14, t: 0, s: vide });
   assertEqual(mv.potager.parcelles, makePlots(6).map((p, i) => ({ ...p, case: zoneTile(1, i) })));
 });
 

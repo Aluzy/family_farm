@@ -1,9 +1,8 @@
 import { DATA } from './catalog.js';
 import { fail, NO_COINS, pay } from './devices.js';
 import { addItem } from './inventory.js';
-import { atelierOuvert } from './atelier.js';
 import { storeWithSilo } from './animals.js';
-import { farmSeed, farmTerrain } from './terrain.js';
+import { farmTerrain } from './terrain.js';
 
 /* ---------- les ruches de la ferme générée ----------
    Une ruche s'achète au Marché (rayon Animaux, DATA.RUCHE.PRIX), arrive dans l'inventaire
@@ -49,7 +48,6 @@ export function rucheDuTas(id) {
 
 export function buyRuche(state) {
   const R = DATA.RUCHE;
-  if (!atelierOuvert(state)) return fail('Les ruches se posent sur une ferme générée.');
   if (!pay(state, R.PRIX, `Achat : ${R.NOM}`)) return fail(NO_COINS);
   addItem(state, R.OBJET, 1);
   return { ok: true, cost: R.PRIX };
@@ -94,7 +92,7 @@ export function recolterRuche(state, tile) {
 // recouvre, et les blocs à fleurs posés (un bloc `fleurs` de DATA.ATELIER.BLOCS : les bacs à
 // fleurs). Rien sans ruche.
 export function fleursPourAbeilles(state) {
-  if (farmSeed(state) === null || !ruchesPosees(state).length) return [];
+  if (!ruchesPosees(state).length) return [];
   const B = state.blocs || {}, S = state.sols || {};
   const labour = new Set(((state.potager && state.potager.parcelles) || []).map((p) => p.case));
   const bacs = Object.keys(B).filter((t) => (DATA.ATELIER.BLOCS[B[t]] || {}).fleurs).map(Number);

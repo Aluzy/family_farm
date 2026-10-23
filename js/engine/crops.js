@@ -1,6 +1,6 @@
 import { DATA, roundPct } from './catalog.js';
 import { EPS, nextRandom, randomInt } from './base.js';
-import { buildWith, fail, marcheFerme, marcheOuvert, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
+import { fail, marcheFerme, marcheOuvert, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
 import { countWithSilo, takeWithSilo } from './animals.js';
 import { deposit } from './ramassage.js';
 import { techPct, techSum } from './techtree.js';
@@ -10,7 +10,7 @@ import { isMoonPhase, moonHarvestPct, moonWaterPct } from './lune.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { absoluteHours, dayHour } from './clock.js';
 import { aCruche, eauCruche, puiserCruche } from './cruche.js';
-import { farmSeed, farmTerrain, tileCount } from './terrain.js';
+import { farmTerrain, tileCount } from './terrain.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -100,9 +100,9 @@ export function freedRockTiles(state) {
 // La tuile est-elle labourable ? Sans `state`, une tuile sous un rocher ne l'est pas.
 // `libres` : freedRockTiles(state), à passer quand on teste beaucoup de tuiles d'un coup.
 export function isArable(tile, state, libres) {
-  if (state && state.blocs && state.blocs[tile]) return false;     // un bloc posé (la ferme générée)
+  if (state && state.blocs && state.blocs[tile]) return false;     // un bloc posé
   if (state && state.sols && state.sols[tile]) return false;       // un plancher
-  if (state && farmSeed(state) !== null && state.verger.arbres.some((t) => t.case === tile)) return false;   // un arbre planté (idem)
+  if (state && state.verger.arbres.some((t) => t.case === tile)) return false;   // un arbre planté
   const ch = terrainChar(tile, farmTerrain(state));
   return ch === '#' || (ch === 'o' && (libres || freedRockTiles(state)).has(tile));
 }
@@ -553,13 +553,6 @@ export function growHoursLeft(state, plot) {
 
 export function serreUpgradeCost(state) {
   return nextLevelCost(DATA.SERRE.PRIX_NIVEAUX, state.serre.niveau);
-}
-
-export function buildSerre(state) {
-  const deja = 'La Serre est déjà construite.';
-  // la ferme générée : un bac à semis, fabriqué à l'Atelier, posé dans une pièce close (blocs.js)
-  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, la Serre se bâtit : une pièce close et un bac à semis (Atelier).');
-  return buildWith(state, 'serre', { built: state.serre.construit, deja, cost: DATA.SERRE.PRIX_CONSTRUCTION, libelle: 'Serre' }, () => { openSerre(state); });
 }
 
 // Pose la Serre au niveau 1 (sans payer) et crée ses parcelles.

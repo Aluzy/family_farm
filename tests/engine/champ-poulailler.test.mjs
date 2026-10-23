@@ -4,19 +4,19 @@
    ========================================================================== */
 
 import {
-  addItem, allPlots, animalPrice, buildFridge, buildPoulailler, buildSilo, buyAnimal, buyCow,
-  buyItem, buyPasture, coopCapacity, coopUpgradeCost, countItem, createInitialState, cropProduct,
-  DATA, expiringSoon, feedAllHens, feedHen, fillSilo, findPlot, formatQty, freeCowPlaces,
-  fridgeCount, harvest, inventoryCounts, isFridgeable, isGraineComptoir, isMature, isUnlocked,
-  layEggs, lotsOf, marketFloor, migrate, migrateWheatAndReserve, moveAllToFridge, moveToFridge,
-  depenserMembre, mangerMembre, mangeurs, plant, plantableCrops, readyCrops, scaleEnergie, seedStock, sellItem, shelfLife,
-  siloCapacity, siloUpgradeCost, sleep, stableFree, startFarm, startHousehold, STATE_VERSION,
-  storeWheat, testAddHens, testAddSeeds, testAddWheat, testRipenAll, testSetLevel,
-  upgradePoulailler, upgradeSilo, water, wheatForHens, wheatTotal, zoneTile,
+  addItem, allPlots, animalPrice, buildFridge, buyAnimal, buyCow, buyItem, buyPasture,
+  coopCapacity, coopUpgradeCost, countItem, createInitialState, cropProduct, DATA, depenserMembre,
+  etatSilo, expiringSoon, farmTerrain, feedAllHens, feedHen, fillSilo, findPlot, formatQty,
+  freeCowPlaces, fridgeCount, harvest, inventoryCounts, isFridgeable, isGraineComptoir, isMature,
+  isUnlocked, layEggs, lotsOf, mangerMembre, mangeurs, marketFloor, migrateWheatAndReserve,
+  moveAllToFridge, moveToFridge, plant, plantableCrops, poserBloc, readyCrops, scaleEnergie,
+  seedStock, sellItem, shelfLife, siloCapacity, sleep, stableFree, startFarm, startHousehold,
+  storeWheat, testAddHens, testAddSeeds, testAddWheat, testBatir, testRipenAll, testSetLevel,
+  unlockLevel, upgradePoulailler, water, wheatForHens, wheatTotal, zoneTile,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, fillCows, fillSheep, garden, growZone, ml, pature, ranch, reach, setInv,
-  test,
+  affamer, assert, assertEqual, AVANT_DEMENAGEMENT, boite, fillCows, fillSheep, garden, growZone,
+  migreAvant, ml, pature, ranch, reach, setInv, test,
 } from './aide.mjs';
 
 /* ---------- Lot 4 : cultures de plein champ, Silo, Poulailler ---------- */
@@ -110,7 +110,7 @@ test('le Champ n\'existe plus : ni état, ni actions, une seule zone qui grandit
   assertEqual(findPlot(s, 'champ-1'), null, 'aucune parcelle « champ-n »');
   // version 1.9 : la zone grandit à la houe
   growZone(s, 12);
-  assertEqual(s.potager.parcelles.filter((p) => !DATA.POTAGER.DEPART.map((c) => zoneTile(1, c)).includes(p.case)).map((p) => [p.id, p.lieu]), [7, 8, 9, 10, 11, 12].map((n) => [`potager-${n}`, 'potager']));
+  assertEqual(s.potager.parcelles.filter((p) => !DATA.POTAGER.DEPART.map((c) => zoneTile(1, c, farmTerrain(s))).includes(p.case)).map((p) => [p.id, p.lieu]), [7, 8, 9, 10, 11, 12].map((n) => [`potager-${n}`, 'potager']));
 });
 
 test('cultures de plein champ : la Zone de culture les fait pousser comme les légumes (planter, arroser, pousser, récolter)', () => {
@@ -141,34 +141,31 @@ test('cultures de plein champ : la Zone de culture les fait pousser comme les l�
   assertEqual(countItem(s, 'graine_tournesol'), 9 + 1, 'la graine plantée est consommée : 2 − 1 + 9');
 });
 
-test('Silo : capacité par niveau et coûts 30 / 80 / 180 / 400, construction offerte', () => {
+test('Silo : bâti de blocs de silo, sa capacité suit ses blocs ; il ne s\'achète pas', () => {
+  const S = DATA.ATELIER.SILO;
   const s = garden();
   s.pieces = 0;
-  assertEqual(buildSilo(reach(s, 'silo')).ok, true, 'la construction est gratuite');
-  assertEqual(s.pieces, 0);
-  assertEqual(buildSilo(reach(s, 'silo')).ok, false);
-  assertEqual(siloCapacity(s), 20);
-  const seen = [];
-  s.pieces = 1000;
-  while (siloUpgradeCost(s) !== null) {
-    const cost = siloUpgradeCost(s);
-    assertEqual(upgradeSilo(s).ok, true);
-    seen.push([cost, s.silo.niveau, siloCapacity(s)]);
-  }
-  assertEqual(seen, [[30, 2, 50], [80, 3, 100], [180, 4, 200], [400, 5, 400]]);
-  assertEqual(s.pieces, 1000 - 690);
-  assertEqual(upgradeSilo(s).ok, false, 'niveau maximum');
-  const t = garden();
-  assertEqual(upgradeSilo(t).ok, false, 'pas avant la construction');
-  buildSilo(reach(t, 'silo'));
-  t.pieces = 29;
-  assertEqual(upgradeSilo(t).ok, false, 'pas assez de pièces');
+  testSetLevel(s, 1);
+  assertEqual(testBatir(s, 'silo').error, `Disponible au niveau ${unlockLevel('silo')}.`);
+  assertEqual(testBatir(reach(s, 'silo'), 'silo').ok, true);
+  assertEqual([s.pieces, s.silo.construit, siloCapacity(s)], [0, true, S.LARGEUR * S.HAUTEUR * S.BLES_PAR_BLOC]);
+  // un bloc de plus sur une colonne : BLES_PAR_BLOC de plus
+  rehausser(s);
+  assertEqual(siloCapacity(s), (S.LARGEUR * S.HAUTEUR + 1) * S.BLES_PAR_BLOC);
 });
+
+// Un bloc de silo de plus sur la première colonne du Silo (BLES_PAR_BLOC blés de plus).
+function rehausser(s) {
+  addItem(s, 'bloc_silo', 1);
+  assert(poserBloc(s, 'bloc_silo', etatSilo(s).cases[0]).ok, 'rehausser le Silo');
+}
 
 test('Silo : le blé récolté va d\'abord au Silo, le surplus déborde dans l\'inventaire', () => {
   const s = ranch();
   setInv(s, {});
-  // 3 récoltes de 8 blés = 24 : 20 au Silo (niveau 1), 4 dans l'inventaire
+  const C = siloCapacity(s);
+  s.silo.ble = C - 20;
+  // 3 récoltes de 8 blés = 24 : 20 de place au Silo, 4 dans l'inventaire
   s.potager.parcelles.forEach((p, i) => {
     if (i < 3) {
       p.culture = 'ble';
@@ -176,23 +173,24 @@ test('Silo : le blé récolté va d\'abord au Silo, le surplus déborde dans l\'
     }
   });
   harvest(s, 'potager-1');
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [8, 0]);
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [C - 12, 0]);
   harvest(s, 'potager-2');
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [16, 0]);
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [C - 4, 0]);
   harvest(s, 'potager-3');
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [20, 4], 'plein à 20, surplus de 4 dans l\'inventaire');
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [C, 4], 'plein, surplus de 4 dans l\'inventaire');
   assertEqual(lotsOf(s, 'ble')[0].nightsLeft, 10, 'le blé de l\'inventaire périme');
-  assertEqual(wheatTotal(s), 24);
+  assertEqual(wheatTotal(s), C + 4);
   // sans Silo, tout va dans l'inventaire
   const t = ranch({ silo: false });
   setInv(t, {});
   assertEqual(storeWheat(t, 8), { silo: 0, inventaire: 8 });
   assertEqual([t.silo.ble, countItem(t, 'ble')], [0, 8]);
-  // niveau 2 : capacité 50 ; le surplus de l'inventaire rejoint aussitôt le Silo
-  upgradeSilo(s);
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [24, 0]);
-  assertEqual(storeWheat(s, 100), { silo: 26, inventaire: 100 - 26 });
-  assertEqual(s.silo.ble, 50);
+  // un bloc de plus (BLES_PAR_BLOC de place) : le surplus de l'inventaire rejoint aussitôt le Silo
+  rehausser(s);
+  const place = DATA.ATELIER.SILO.BLES_PAR_BLOC - 4;
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [C + 4, 0]);
+  assertEqual(storeWheat(s, 100), { silo: place, inventaire: 100 - place });
+  assertEqual(s.silo.ble, siloCapacity(s));
 });
 
 test('Silo : les poules mangent d\'abord dans l\'inventaire (il y périme), puis dans le Silo', () => {
@@ -234,15 +232,12 @@ test('blé entier : 1 blé nourrit 2 poules, une ration entamée ne revient pas 
   assertEqual(formatQty(0), '0');
 });
 
-test('Poulailler : construction 40, capacité 4 / 8 / 12 / 16 / 24 aux coûts 100 / 220 / 450 / 900', () => {
+test('Poulailler : bâti en blocs, capacité 4 / 8 / 12 / 16 / 24 aux coûts 100 / 220 / 450 / 900', () => {
   const s = garden();
-  s.pieces = 39;
-  assertEqual(buildPoulailler(reach(s, 'poulailler')).ok, false);
   assertEqual(upgradePoulailler(s).ok, false, 'pas avant la construction');
-  s.pieces = 40;
-  assertEqual(buildPoulailler(reach(s, 'poulailler')).ok, true);
+  s.pieces = 0;
+  assertEqual(testBatir(reach(s, 'poulailler'), 'poulailler').ok, true);
   assertEqual([s.pieces, coopCapacity(s)], [0, 4]);
-  assertEqual(buildPoulailler(reach(s, 'poulailler')).ok, false);
   s.pieces = 5000;
   const seen = [];
   while (coopUpgradeCost(s) !== null) {
@@ -442,8 +437,7 @@ test('le blé et les graines de tournesol ne sont pas des aliments de la famille
 });
 
 test('la famille mange les œufs (valeur 3) : ils périment avant les conserves', () => {
-  const s = ranch();
-  setInv(s, { oeuf: 4, conserve: 200 });
+  const s = boite(ranch(), { oeuf: 4, conserve: 200 });
   const m = mangeurs(s)[0];
   depenserMembre(s, m.id, 80);
   // de 20 : 4 œufs (12), puis 12 conserves (72) : 104
@@ -461,8 +455,8 @@ test('migration v4 (Lot 3) → v5 : Silo et Poulailler apparaissent (plus de Cha
   delete v4.poulailler;
   delete v4.jour.ble;
   delete v4.nuit.oeufs;
-  const m = migrate({ v: 4, t: 0, s: v4 });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 4, t: 0, s: v4 });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual([m.day, m.pieces], [12, 321]);
   assertEqual(m.marche, { carotte: 150 }, 'coefficient converti en %');
   assertEqual('champ' in m, false, 'aucun Champ n\'est créé : la Zone de culture le remplace');
@@ -473,7 +467,7 @@ test('migration v4 (Lot 3) → v5 : Silo et Poulailler apparaissent (plus de Cha
   assertEqual(inventoryCounts(m).conserve, 160);
   // l'état migré tourne, construit et pond
   m.pieces = 500;
-  assertEqual(buildPoulailler(reach(m, 'poulailler')).ok, true);
+  assertEqual(testBatir(reach(m, 'poulailler'), 'poulailler').ok, true);
   buyAnimal(m, 'poule');
   m.silo.ble = 0;
   setInv(m, { ble: 2, conserve: 200 });
@@ -482,13 +476,13 @@ test('migration v4 (Lot 3) → v5 : Silo et Poulailler apparaissent (plus de Cha
   const report = sleep(m);
   assertEqual([report.oeufs, countItem(m, 'oeuf')], [1, 1]);
   // une sauvegarde déjà en v5 n'est pas modifiée par la migration
-  const again = migrate({ v: 5, t: 0, s: JSON.parse(JSON.stringify(m)) });
+  const again = migreAvant({ v: 5, t: 0, s: JSON.parse(JSON.stringify(m)) });
   assertEqual(again.poulailler, m.poulailler);
 });
 
 test('migration v0 → version courante : les chaînes mènent au Lot 4', () => {
-  const m = migrate({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual(m.silo.construit, false);
   assertEqual('champ' in m, false);
   assertEqual(m.potager.parcelles.map((p) => p.id), ['potager-1', 'potager-2', 'potager-3', 'potager-4', 'potager-5', 'potager-6']);
@@ -498,17 +492,17 @@ test('migration v0 → version courante : les chaînes mènent au Lot 4', () => 
 test('mode test Lot 4 : +50 blés (Silo puis inventaire) et +4 poules dans la limite de la capacité', () => {
   const s = ranch();
   setInv(s, {});
+  s.silo.ble = siloCapacity(s) - 20;
   assertEqual(testAddWheat(s).ok, true);
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [20, 30], 'Silo niveau 1 : 20, le reste déborde');
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [siloCapacity(s), 30], '20 de place au Silo, le reste déborde');
   assertEqual(testAddHens(s).ok, true);
   assertEqual(s.poulailler.poules, 4);
   testAddHens(s);
   assertEqual(s.poulailler.poules, 4, 'plafonné par la capacité du Poulailler');
-  // sans poulailler, il est construit gratuitement
+  // sans poulailler, pas de poule : il se bâtit
   const t = garden();
-  t.pieces = 0;
-  testAddHens(t);
-  assertEqual([t.poulailler.construit, t.poulailler.poules, t.pieces], [true, 4, 0]);
+  assertEqual(testAddHens(t).ok, false);
+  assertEqual([t.poulailler.construit, t.poulailler.poules], [false, 0]);
   // sans Silo, tout va dans l'inventaire
   const u = garden();
   testAddWheat(u);
@@ -557,40 +551,42 @@ test('rapport de réveil Lot 4 : œufs pondus et blé consommé', () => {
 test('blé : au Silo il ne périme jamais, dans l\'inventaire il périme en 10 nuits', () => {
   const s = ranch();
   setInv(s, { conserve: 500 });
-  s.silo.ble = 20; // Silo plein (niveau 1)
+  const C = siloCapacity(s);
+  s.silo.ble = C; // Silo plein
   addItem(s, 'ble', 5);
   assertEqual(lotsOf(s, 'ble')[0].nightsLeft, 10);
   for (let i = 0; i < 9; i++) {
     s.awakeMs = 30000;
     sleep(s);
   }
-  assertEqual([s.silo.ble, countItem(s, 'ble'), expiringSoon(s).ble], [20, 5, 5], 'le Silo est plein : le blé de l\'inventaire vieillit');
+  assertEqual([s.silo.ble, countItem(s, 'ble'), expiringSoon(s).ble], [C, 5, 5], 'le Silo est plein : le blé de l\'inventaire vieillit');
   s.awakeMs = 30000;
   const r = sleep(s);
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [20, 0], 'le Silo, lui, n\'a rien perdu');
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [C, 0], 'le Silo, lui, n\'a rien perdu');
   assertEqual(r.perimes.ble, 5);
 });
 
 test('blé : le Silo se remplit avec le blé de l\'inventaire (la nuit, à l\'amélioration, à l\'achat)', () => {
   const s = ranch();
+  const C = siloCapacity(s), B = DATA.ATELIER.SILO.BLES_PAR_BLOC;
   setInv(s, { conserve: 500, ble: 30 });
-  s.silo.ble = 5;
-  assertEqual(fillSilo(s), 15, '20 − 5 = 15 places');
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [20, 15]);
-  s.pieces = 1000;
-  assert(upgradeSilo(s).ok);
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [35, 0], 'niveau 2 : tout rentre');
+  s.silo.ble = C - 15;
+  assertEqual(fillSilo(s), 15, '15 places');
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [C, 15]);
+  rehausser(s);
+  rehausser(s);
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [C + 15, 0], 'deux blocs de plus : tout rentre');
   // la nuit : ce qui a été pris dans le Silo laisse de la place
-  s.silo.ble = 45;
+  s.silo.ble = C + 2 * B - 5;
   addItem(s, 'ble', 8);
   s.awakeMs = 30000;
   sleep(s);
-  assertEqual([s.silo.ble, countItem(s, 'ble')], [50, 3]);
+  assertEqual([s.silo.ble, countItem(s, 'ble')], [C + 2 * B, 3]);
   // le blé acheté au Marché va au Silo s'il y a de la place
-  s.silo.ble = 48;
+  s.silo.ble = C + 2 * B - 2;
   setInv(s, { conserve: 500 });
   const r = buyItem(s, 'ble', 5);
-  assertEqual([r.bought, s.silo.ble, countItem(s, 'ble')], [5, 50, 3]);
+  assertEqual([r.bought, s.silo.ble, countItem(s, 'ble')], [5, C + 2 * B, 3]);
 });
 
 test('blé : il ne va pas au frigo (sa place est au Silo)', () => {
@@ -632,11 +628,12 @@ test('Étable : des places achetées à la suite pour loger une vache', () => {
 test('migration v20 → v21 : la réserve de semences est vidée, le blé de l\'inventaire part à conservation pleine', () => {
   const v20 = JSON.parse(JSON.stringify(ranch()));
   v20.version = 20;
+  delete v20.carte;   // (la ferme du grand-père)
   v20.famille.reserve = { patate: 6, ail: 2 };
   v20.inventaire.ble = [{ qty: 3, nightsLeft: null, origin: 'produit' }, { qty: 2, nightsLeft: null, origin: 'acheté' }];
   v20.silo.ble = 12;
-  const m = migrate({ v: 20, t: 0, s: v20 });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 20, t: 0, s: v20 });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual(m.famille.reserve, {});
   assertEqual(m.inventaire.ble, [{ qty: 5, nightsLeft: 10, origin: 'produit' }]);
   assertEqual(m.silo.ble, 12, 'le Silo ne change pas');

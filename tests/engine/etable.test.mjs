@@ -4,20 +4,20 @@
    ========================================================================== */
 
 import {
-  animalPrice, autoTasks, bottelerSansCarte, buildMorningReport, buildPaturage, buyAnimal, buyCow, buyItem,
+  animalPrice, autoTasks, bottelerSansCarte, buildMorningReport, buyAnimal, buyCow, buyItem,
   buyPasture, buySheep, countItem, cowCapacity, cowCount, cowPlaces, cowsOnHerbs,
   createInitialState, DATA, feedLivestock, finishPreparations, freeCowPlaces, freeSheepPlaces,
   grantTech, herbsOn, herbStock, inventoryCounts, isBuyable, isGraineComptoir, isPerishable,
-  layEggs, makeDevice, scytheGrass, maxCows, maxSheep, migrate, moveToFridge, newStableReport, NIGHT_STEPS,
-  nightHarvest, pastureCapacity, pastureCost, recipeNode, recipeStatus, roundPct,
-  scaleEnergie, sellItem, setCowHerbs, shear, sheepCount, sheepPlaces, sheepToShear, shelfLife,
-  sleep, stableFree, stableOccupied, startFarm, startHousehold, startLot4, startLot5, startMilling,
+  layEggs, makeDevice, maxCows, maxSheep, moveToFridge, newStableReport, NIGHT_STEPS, nightHarvest,
+  pastureCapacity, pastureCost, recipeNode, recipeStatus, roundPct, scaleEnergie, scytheGrass,
+  sellItem, setCowHerbs, shear, sheepCount, sheepPlaces, sheepToShear, shelfLife, sleep,
+  stableFree, stableOccupied, startFarm, startHousehold, startLot4, startLot5, startMilling,
   startRecipe, STATE_VERSION, strawMissing, strawNeed, strawStock, testAddHens, testAddSheep,
-  testAddStraw, testFillBatteries, testWoolReady, woolReady,
+  testAddStraw, testBatir, testFillBatteries, testWoolReady, woolReady,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, atelier, farm, fillCows, fillSheep, garden, pature, reach, runFor, setInv,
-  setStraw, sleepOnce, test,
+  affamer, assert, assertEqual, atelier, AVANT_DEMENAGEMENT, farm, fillCows, fillSheep, garden,
+  migreAvant, pature, reach, runFor, setInv, setStraw, sleepOnce, test, versBoite,
 } from './aide.mjs';
 
 /* ---------- Lot 6 : Étable — moutons, vaches, paille, laine, lait ---------- */
@@ -49,16 +49,13 @@ test('état initial Lot 6 : Étable à ouvrir, sans place, mouton ni vache', () 
   assertEqual([stableOccupied(s), stableFree(s), strawNeed(s), strawMissing(s)], [0, 0, 0, 0]);
 });
 
-test('Étable : ouverte aux moutons et aux vaches pour 150 pièces, 10 places', () => {
+test('Étable : bâtie en blocs (enceinte, mangeoire, enclos), ouverte aux moutons et aux vaches, 10 places', () => {
   const s = garden();
-  s.pieces = 149;
-  assertEqual(buildPaturage(reach(s, 'paturage')).ok, false, 'refusé sans 150 pièces');
-  assertEqual([s.pieces, s.paturage.construit, s.paturage.places], [149, false, 0]);
-  s.pieces = 150;
-  assertEqual(buildPaturage(reach(s, 'paturage')), { ok: true, cost: 150, places: 10 });
+  s.pieces = 0;
+  assertEqual(testBatir(reach(s, 'paturage'), 'etable').ok, true);
   assertEqual([s.pieces, s.paturage.construit, s.paturage.places], [0, true, 10]);
   assertEqual([pastureCapacity(s), freeSheepPlaces(s), cowCapacity(s), stableFree(s)], [10, 10, 3, 10]);
-  assertEqual(buildPaturage(reach(s, 'paturage')).ok, false, 'une seule fois');
+  assertEqual(testBatir(s, 'etable').ok, false, 'une seule mangeoire');
   // même équilibrage qu'avant : 1 place = 5 ares d'autrefois, une vache en prend 3
   assertEqual([maxSheep(10), maxSheep(11), maxSheep(1), maxSheep(0)], [10, 11, 1, 0]);
   assertEqual([maxCows(10), maxCows(9), maxCows(3), maxCows(2)], [3, 3, 1, 0]);
@@ -68,7 +65,7 @@ test('mouton : 60 pièces, refusé sans Étable ouverte ni pièces, sans poids',
   const s = pature({ built: false });
   const r = buySheep(s);
   assertEqual([r.ok, s.pieces], [false, 5000], 'l\'Étable n\'est pas prête');
-  buildPaturage(reach(s, 'paturage'));
+  testBatir(reach(s, 'paturage'), 'etable');
   s.pieces = 59;
   assertEqual(buySheep(s).ok, false, 'pas assez de pièces');
   assertEqual(sheepCount(s), 0);
@@ -118,7 +115,7 @@ test('places : 40, 48 puis 58 pièces pour les 11ᵉ, 12ᵉ et 13ᵉ places', ()
 test('places : refusée sans Étable ouverte ou sans pièces ; sinon à la suite, même s\'il en reste de libres', () => {
   const s = pature({ built: false });
   assertEqual(buyPasture(s).ok, false, 'l\'Étable n\'est pas prête');
-  buildPaturage(reach(s, 'paturage'));
+  testBatir(reach(s, 'paturage'), 'etable');
   assertEqual(s.paturage.places, 10);
   fillSheep(s, 10);
   s.pieces = 39;
@@ -371,9 +368,11 @@ test('rapport de réveil : moutons, laine prête, vaches, paille', () => {
 
 test('nuit : la paille est mangée juste après la ponte, sans perturber ni le repas ni les œufs', () => {
   const s = pature();
+  assert(testBatir(reach(s, 'poulailler'), 'poulailler').ok);
   testAddHens(s, 4);
   fillSheep(s, 2);
   setStraw(s, 2);
+  versBoite(s);
   s.poulailler.nourries = 4;
   affamer(s);
   const rep = sleepOnce(s);
@@ -400,10 +399,12 @@ test('tonte automatique : la laine prête est tondue avant le repas, et repart d
 });
 
 test('mode test Lot 6 : +3 moutons, laine prête, +20 pailles', () => {
-  const s = createInitialState(1);
+  const s = reach(createInitialState(1), 'paturage');
   s.pieces = 0;
+  assertEqual(testAddSheep(s).ok, false, 'pas d\'Étable : elle se bâtit');
+  assert(testBatir(s, 'etable').ok);
   assertEqual(testAddSheep(s).ok, true);
-  assertEqual([s.pieces, s.paturage.construit, s.paturage.places, sheepCount(s)], [0, true, 10, 3], 'Étable ouverte gratuitement');
+  assertEqual([s.pieces, s.paturage.construit, s.paturage.places, sheepCount(s)], [0, true, 10, 3]);
   testAddSheep(s);
   assertEqual(sheepCount(s), 6);
   testAddSheep(s, 10);
@@ -426,7 +427,7 @@ test('mode test Lot 6 : +3 moutons, laine prête, +20 pailles', () => {
 test('vache : 200 pièces, refusée sans Étable ouverte ni 3 places libres, sans poids', () => {
   const s = pature({ built: false });
   assertEqual(buyCow(s).ok, false, 'l\'Étable n\'est pas prête');
-  buildPaturage(reach(s, 'paturage'));
+  testBatir(reach(s, 'paturage'), 'etable');
   s.pieces = 199;
   assertEqual(buyCow(s).ok, false, 'pas assez de pièces');
   s.pieces = 5000;
@@ -464,7 +465,7 @@ test('sauvegarder et recharger avec des moutons, des vaches et de la paille', ()
   fillCows(s, 2);
   setStraw(s, 9);
   sleepOnce(s);
-  const reloaded = migrate({ v: STATE_VERSION, t: Date.now(), s: JSON.parse(JSON.stringify(s)) });
+  const reloaded = migreAvant({ v: STATE_VERSION, t: Date.now(), s: JSON.parse(JSON.stringify(s)) });
   assertEqual(reloaded, s, 'aucun changement au rechargement (même version)');
   assertEqual([strawStock(reloaded), cowCount(reloaded), sheepCount(reloaded)], [3, 2, 2]);
   // Le jeu continue à fonctionner normalement après le rechargement.
@@ -493,24 +494,24 @@ test('migration v6 (Lot 5) → v7 : l\'Étable des moutons apparaît à ouvrir, 
     unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir', 'recettes'], marche: {},
     ...startFarm(), ...startHousehold(), ...startLot4(), ...startLot5(),
   };
-  const m = migrate({ v: 6, t: 0, s: v6 });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 6, t: 0, s: v6 });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual([m.day, m.pieces], [30, 640]);
   assertEqual(m.paturage, { construit: false, places: 0, compteur: 0, compteurVache: 0, moutons: [], vaches: [] });
   assertEqual(inventoryCounts(m).conserve, 160);
   m.pieces = 500;
-  assertEqual(buildPaturage(reach(m, 'paturage')).ok, true);
+  assertEqual(testBatir(reach(m, 'paturage'), 'etable').ok, true);
   assertEqual(buySheep(m).ok, true);
   m.awakeMs = 30000;
   assertEqual(sleep(m).moutons, 1);
   // une sauvegarde déjà en v7 n'est pas modifiée
-  const again = migrate({ v: 7, t: 0, s: JSON.parse(JSON.stringify(m)) });
+  const again = migreAvant({ v: 7, t: 0, s: JSON.parse(JSON.stringify(m)) });
   assertEqual(again.paturage, m.paturage);
 });
 
 test('migration v0 → version courante : les chaînes mènent au Lot 6', () => {
-  const m = migrate({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 0, t: 0, s: { day: 2, awakeSeconds: 0, pieces: 55, rngSeed: 3, unlockedTabs: ['ferme'], stats: {} } });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual(m.paturage.construit, false);
   assertEqual(m.paturage.moutons, []);
 });

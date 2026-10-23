@@ -5,13 +5,14 @@
 
 import {
   actionCost, botBuy, botDay, botFarm, botFieldTarget, botHoe, botIsFieldCrop, botMill,
-  botRaiseFunds, botScythe, cutGrass, hasTool, botRecipeValue, botSell, botSheep, botSnack, botStepInfo, botWheatKept, buildSilo,
-  chapterReached, countItem, createInitialState, DATA, hasHoe, millPending, NIGHT_STEPS,
+  botRaiseFunds, botRecipeValue, botScythe, botSell, botSheep, botSnack, botStepInfo, botWheatKept,
+  chapterReached, countItem, cutGrass, DATA, hasHoe, hasTool, millPending, NIGHT_STEPS,
   openStation, sheepCount, simulateFromCopy, simulateGame, simulatePlay, simulationReach,
-  soilCount, testFillBatteries, testGoToChapter, testSetLevel, testWoolReady,
+  soilCount, testBatir, testFillBatteries, testGoToChapter, testSetLevel, testWoolReady,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, atChapter, fillCows, fillSheep, growZone, pature, reach, setInv, test,
+  assert, assertEqual, atChapter, fillCows, fillSheep, growZone, partie, pature, reach, setInv,
+  test,
 } from './aide.mjs';
 
 /* --- Lot 10 : simulation d'un joueur automatique --- */
@@ -31,7 +32,7 @@ test('Lot 10 : DATA.SIMULATION est cohérent (stratégies, jalons, plan)', () =>
   assertEqual(S.TOLERANCE_NUITS, 10);
   assertEqual(S.NUITS, 80);
   // chaque étape du plan et des priorités se lit sans erreur sur une partie neuve
-  const s = createInitialState(1);
+  const s = partie(1);
   const steps = [...S.PLAN, ...Object.values(S.PRIORITE).flat()];
   for (const step of steps) {
     const info = botStepInfo(s, step, 60);
@@ -68,7 +69,7 @@ test('Lot 10 : la simulation ne lit ni l\'horloge ni Math.random', () => {
 
 test('Lot 10 : chaque nuit, la journée du joueur dure son temps d\'éveil', () => {
   for (const id of ['applique', 'minimal']) {
-    const s = createInitialState(1);
+    const s = partie(1);
     const strat = DATA.SIMULATION.STRATEGIES[id];
     // on mesure l'éveil juste avant Dormir : botDay l'a rempli, sleep() le remet à zéro.
     // La mesure est une étape de nuit ajoutée en tête : elle passe avant la remise à zéro.
@@ -85,7 +86,7 @@ test('Lot 10 : chaque nuit, la journée du joueur dure son temps d\'éveil', () 
 });
 
 test('Lot 10 : simulateFromCopy ne touche pas la partie en cours', () => {
-  const s = createInitialState(3);
+  const s = partie(3);
   s.pieces = 123;
   s.day = 5;
   const before = JSON.stringify(s);
@@ -133,7 +134,7 @@ test('Lot 10 : le joueur automatique fauche et bottelle la paille de ses moutons
 });
 
 test('Lot 10 : au chapitre du troupeau, le joueur automatique nourrit ses moutons et finit par tondre 10 laines', () => {
-  const s = createInitialState(3);
+  const s = partie(3);
   simulatePlay(s, 'applique', 22);
   testGoToChapter(s, 5);
   // version 1.6 : les améliorations coûtent plus cher (100 à 2 200 pièces) ;
@@ -159,7 +160,7 @@ test('Lot 10 : simulationReach date un jalon sur la moyenne mobile', () => {
 });
 
 test('Lot 10 : le joueur vend ce qui périt demain, jamais la réserve', () => {
-  const s = createInitialState(1);
+  const s = partie(1);
   s.inventaire = { carotte: [{ qty: 100, nightsLeft: 1, origin: 'produit' }], patate: [{ qty: 10, nightsLeft: 1, origin: 'produit' }] };
   s.famille.reserve = { patate: 6 };
   const piecesAvant = s.pieces;
@@ -170,7 +171,7 @@ test('Lot 10 : le joueur vend ce qui périt demain, jamais la réserve', () => {
 });
 
 test('Lot 10 : le joueur n\'achète la houe qu\'en gardant sa caisse', () => {
-  const s = createInitialState(1);
+  const s = partie(1);
   s.inventaire = {};
   const cout = DATA.HOUE.PRIX;
   s.pieces = cout + DATA.SIMULATION.CAISSE - 1;
@@ -183,12 +184,12 @@ test('Lot 10 : le joueur n\'achète la houe qu\'en gardant sa caisse', () => {
 });
 
 test('version 1.9 : le joueur automatique laboure jusqu\'au plafond, en gardant de l\'énergie', () => {
-  const s = createInitialState(1);
+  const s = partie(1);
   s.potager.houe = true;
   testSetLevel(s, 2);
   botHoe(s);
   assertEqual(soilCount(s), DATA.NIVEAUX.TUILES[1], 'plafond du niveau 2');
-  const t = createInitialState(1);
+  const t = partie(1);
   t.potager.houe = true;
   testSetLevel(t, 3);
   t.energie = actionCost(t, 'recolter') * 3 + actionCost(t, 'labourer') * 2;
@@ -206,7 +207,7 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   const cible = (chapitre, niveau) => {
     const s = atChapter(chapitre);
     s.pieces = 5000;
-    buildSilo(s); // version 1.7 : le blé attend le Silo (refusé avant son niveau)
+    testBatir(s, 'silo'); // version 1.7 : le blé attend le Silo (refusé avant son niveau)
     growZone(s, DATA.POTAGER.PARCELLES_V1[niveau - 1]);
     return botFieldTarget(s);
   };
@@ -214,7 +215,7 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   // chapitre 3, zone de 12 parcelles : 4 parcelles de blé, le reste en légumes
   const s = atChapter(3);
   s.pieces = 5000;
-  buildSilo(reach(s, 'silo'));
+  testBatir(reach(s, 'silo'), 'silo');
   growZone(s, 12);
   setInv(s, { ble: 20, patate: 20, graine_carotte: 20, riz: 20, houblon: 20, graine_tournesol: 20 });
   botFarm(s);
@@ -226,7 +227,7 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   // chapitre 4 avec la Presse : une parcelle de tournesol prise sur la part de plein champ
   const t = atChapter(4);
   t.pieces = 5000;
-  buildSilo(reach(t, 'silo'));
+  testBatir(reach(t, 'silo'), 'silo');
   growZone(t, 12);
   t.stations.presse.construit = true;
   setInv(t, { ble: 20, patate: 20, graine_tournesol: 20 });
@@ -240,7 +241,7 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
 });
 
 test('Lot 10 : le joueur ne vend des conserves que pour payer un achat, et pas sous le stock gardé', () => {
-  const s = createInitialState(1);
+  const s = partie(1);
   s.pieces = 0;
   s.inventaire.conserve = [{ qty: DATA.SIMULATION.CONSERVES_GARDEES, nightsLeft: null, origin: 'acheté' }];
   botRaiseFunds(s, 30);
@@ -252,7 +253,7 @@ test('Lot 10 : le joueur ne vend des conserves que pour payer un achat, et pas s
 });
 
 test('Lot 10 : à court d\'énergie, le joueur mange un en-cas, jamais la réserve de semences', () => {
-  const s = createInitialState(1);
+  const s = partie(1);
   s.energie = 0;
   setInv(s, { patate: 6 });
   s.famille.reserve = { patate: 6 };
@@ -264,7 +265,7 @@ test('Lot 10 : à court d\'énergie, le joueur mange un en-cas, jamais la réser
 });
 
 test('Lot 10 : plante, arrose et récolte : les premières carottes arrivent', () => {
-  const s = createInitialState(1);
+  const s = partie(1);
   const strat = DATA.SIMULATION.STRATEGIES.applique;
   for (let i = 0; i < 9; i++) botDay(s, strat, {});
   assert(s.campagne.compteurs.recoltes > 0, 'la ferme a produit');

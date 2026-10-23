@@ -8,17 +8,18 @@ import { genererFerme } from './ferme-generee.js';
 // rocher ou un arbre, « . » rien), ROCHERS, ARBRES (identifiant → tuiles), ZONES (les
 // anciennes zones de culture) }. Une tuile porte le numéro rangée × LARGEUR + colonne.
 //
-// Une partie a la carte dessinée dans Tiled (data/terrain.json, écrit par
-// scripts/carte/terres.py) ou, avec une graine (state.carte.graine : pour l'instant en mode
-// test, docs/carte-generee.md), la ferme générée d'après elle (ferme-generee.js). Le moteur ne
-// lit le terrain que par ici, sans supposer sa taille. Sans partie (`state` absent), c'est la
-// carte de Tiled.
+// Une partie a toujours une graine (state.carte.graine, docs/carte-generee.md) : sa ferme est
+// générée d'après elle (ferme-generee.js). La carte dessinée dans Tiled (data/terrain.json,
+// écrit par scripts/carte/terres.py) ne sert plus qu'aux anciennes sauvegardes, avant qu'elles
+// déménagent (les migrations, demenagement.js), et quand il n'y a pas de partie (`state` absent).
+// Le moteur ne lit le terrain que par ici, sans supposer sa taille.
 export function farmTerrain(state) {
   const g = farmSeed(state);
   return g === null ? DATA.TERRAIN : genererFerme(g).terrain;
 }
 
-// La graine de la ferme générée de la partie, ou null (la carte de Tiled).
+// La graine de la ferme générée de la partie, ou null (une ancienne sauvegarde, pas encore
+// déménagée : la carte de Tiled).
 export function farmSeed(state) {
   const g = state && state.carte ? state.carte.graine : null;
   return g === null || g === undefined || g === '' ? null : String(g);

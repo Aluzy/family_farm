@@ -5,20 +5,20 @@
 
 import {
   absoluteHours, actionCost, addItem, advanceNight, alertSnapshot, animalBuyMax, animalRoom,
-  asleep, awakeMsAtHour, bedtimeDue, buildPaturage, buildSerre, buyAnimals, buyItem, buyPrice,
-  buyQuote, canSleep, castLine, chopTree, collectAt, countItem, createInitialState, DATA,
-  dayOfMonth, deposit, depositOreNotebook, energyMax, findPlot, fishLeft, formatDay,
-  getNotifications, goToSleep, grantTech, growAll, harvest, harvestYield, hitsNeeded, hourOfDay,
-  isBuyable, maxStage, midnightMs, migrate, MIGRATIONS, mineOre, mineRock, monthIndex,
-  monthName, moonPhase, nightActive, nightLengthMs, nightSpeed, piles, plannedAutonomy, plant,
-  recipeTime, sellItem, sheepCount, simulateOffline, skipNight, sleep, sleepTarget, startNight,
-  startRecipe, STATE_VERSION, strawMissing, strawNeed, testAddHens, testAddSeeds,
-  testAddSheep, testFillEnergy, testSetEnergyZero, testWoolReady, tick, TIRED, townSellable, water,
-  waterCostFor, weekdayName, weekdayShort, woolReady, yearNumber,
+  asleep, awakeMsAtHour, bedtimeDue, boiteCounts, buyAnimals, buyItem, buyPrice, buyQuote,
+  canSleep, castLine, chopTree, collectAt, countItem, createInitialState, DATA, dayOfMonth,
+  deposit, depositOreNotebook, energyMax, findPlot, fishLeft, formatDay, getNotifications,
+  goToSleep, grantTech, growAll, harvest, harvestYield, hitsNeeded, hourOfDay, isBuyable, maxStage,
+  midnightMs, MIGRATIONS, mineOre, mineRock, monthIndex, monthName, moonPhase, nightActive,
+  nightLengthMs, nightSpeed, piles, plannedAutonomy, plant, recipeTime, sellItem, sheepCount,
+  simulateOffline, skipNight, sleep, sleepTarget, startNight, startRecipe, STATE_VERSION,
+  strawMissing, strawNeed, testAddHens, testAddSeeds, testAddSheep, testBatir, testFillEnergy,
+  testSetEnergyZero, testWoolReady, tick, TIRED, townSellable, water, waterCostFor, weekdayName,
+  weekdayShort, woolReady, yearNumber,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, atelier, avecLune, farm, garden, ml, ranch, reach, runFor, setInv, setStraw,
-  sleepOnce, test,
+  affamer, assert, assertEqual, atelier, AVANT_DEMENAGEMENT, avecLune, boite, farm, garden,
+  migreAvant, ml, partie, ranch, reach, runFor, setInv, setStraw, sleepOnce, test,
 } from './aide.mjs';
 
 /* ---------- versions 1.1.1 et 1.1.3 : nuit de 22 h, achats par quantité (le repas de 19 h n'est plus) ---------- */
@@ -32,12 +32,12 @@ test('fin du repas de 19 h : version 46, la migration retire le repas du jour et
   delete v16.repasJour;
   v16.version = 16;
   v16.pieces = 321;
-  const m = migrate({ v: 16, t: 0, s: v16 });
-  assertEqual([m.version, 'repas' in m, m.boite, m.repasJour, m.pieces], [STATE_VERSION, false, { items: {} }, null, 321]);
-  assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
+  const m = migreAvant({ v: 16, t: 0, s: v16 });
+  assertEqual([m.version, 'repas' in m, m.boite, m.repasJour, m.pieces], [AVANT_DEMENAGEMENT, false, { items: {} }, null, 321]);
+  assertEqual(migreAvant({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
   const v45 = { ...JSON.parse(JSON.stringify(m)), version: 45, repas: { heure: 19, besoin: 150 } };
   delete v45.boite;
-  assertEqual('repas' in migrate({ v: 45, t: 0, s: v45 }), false, 'le repas pris d\'une partie en cours disparaît');
+  assertEqual('repas' in migreAvant({ v: 45, t: 0, s: v45 }), false, 'le repas pris d\'une partie en cours disparaît');
 });
 
 test('version 1.21 : la journée va de 6 h à 22 h, 30 s par heure (480 s)', () => {
@@ -47,25 +47,23 @@ test('version 1.21 : la journée va de 6 h à 22 h, 30 s par heure (480 s)', () 
 });
 
 test('plus de repas à 19 h : la famille mange dans la journée, quand elle a faim', () => {
-  const s = garden();
-  setInv(s, { conserve: 200 });
+  const s = boite(garden(), { conserve: 200 });
   s.day = 3; // un mercredi : pas d'école
   s.awakeMs = awakeMsAtHour(19) - 100;
   tick(s, 1);
-  assertEqual(countItem(s, 'conserve'), 200, 'à 19 h, personne n\'a faim : rien n\'est mangé');
+  assertEqual(boiteCounts(s).conserve, 200, 'à 19 h, personne n\'a faim : rien n\'est mangé');
   affamer(s);
-  assertEqual(countItem(s, 'conserve'), 200 - 3 * 14, 'au seuil, chacun mange jusqu\'à rassasié');
+  assertEqual(boiteCounts(s).conserve, 200 - 3 * 14, 'au seuil, chacun mange jusqu\'à rassasié');
   assertEqual(JSON.parse(JSON.stringify(s)).repasJour, s.repasJour, 'ce qui est mangé dans la journée se sauvegarde');
 });
 
 test('la nuit recopie ce que la famille a mangé dans la journée, sans la faire remanger', () => {
-  const s = garden();
-  setInv(s, { conserve: 200 });
+  const s = boite(garden(), { conserve: 200 });
   s.day = 3;
   affamer(s);
-  const apres = countItem(s, 'conserve');
+  const apres = boiteCounts(s).conserve;
   const r = sleepOnce(s);
-  assertEqual(countItem(s, 'conserve'), apres, 'la nuit ne remange pas');
+  assertEqual(boiteCounts(s).conserve, apres, 'la nuit ne remange pas');
   assertEqual([r.energieMangee, r.couverture, r.mange], [3 * 84, 100, { conserve: 42 }]);
   assertEqual([s.repasJour, s.awakeMs], [null, 0], 'au réveil, une nouvelle journée');
 });
@@ -232,7 +230,7 @@ test('version 1.1.1 : animaux achetés par quantité, dans la limite des places 
   s.pieces = 20;
   assertEqual([animalBuyMax(s, 'mouton'), animalRoom(s, 'mouton')], [0, 0], 'pas d\'Étable : pas de mouton');
   s.pieces = 5000;
-  assert(buildPaturage(reach(s, 'paturage')).ok, 'préparer l\'Étable');
+  assert(testBatir(reach(s, 'paturage'), 'etable').ok, 'préparer l\'Étable');
   s.pieces = 130;
   assertEqual(animalBuyMax(s, 'mouton'), 2, '130 pièces = 2 moutons à 60');
   const m = buyAnimals(s, 'mouton', 9);
@@ -243,7 +241,7 @@ test('version 1.1.1 : animaux achetés par quantité, dans la limite des places 
 test('version 1.1.1 : sans mouton ni vache, jamais d\'alerte de paille', () => {
   const s = ranch();
   s.pieces = 5000;
-  assert(buildPaturage(reach(s, 'paturage')).ok, 'préparer l\'Étable');
+  assert(testBatir(reach(s, 'paturage'), 'etable').ok, 'préparer l\'Étable');
   setStraw(s, 0);
   assertEqual([strawNeed(s), strawMissing(s), alertSnapshot(s).pailleManque], [0, 0, false]);
   assertEqual(getNotifications(s).filter((n) => n.type === 'paille'), []);
@@ -341,7 +339,7 @@ test('Énergie : elle remonte peu à peu en dormant (8 h pour le réveil), rien 
 });
 
 test('Dormir : on ne dort que la nuit ; couché, la nuit défile en accéléré (4 s par heure) jusqu\'au réveil', () => {
-  const s = createInitialState(1);
+  const s = partie();
   s.awakeMs = awakeMsAtHour(15);
   assertEqual([goToSleep(s).ok, asleep(s), nightSpeed(s)], [false, false, 1], 'le jour, on ne dort pas');
   s.awakeMs = awakeMsAtHour(22);
@@ -356,7 +354,8 @@ test('Dormir : on ne dort que la nuit ; couché, la nuit défile en accéléré 
 });
 
 test('Ramassage (version 1.19) : à l\'Étable, le personnage tond les moutons prêts puis prend lait et laine ; au Poulailler, les œufs', () => {
-  const s = createInitialState(1);
+  const s = reach(createInitialState(1), 'paturage');
+  assert(testBatir(s, 'etable').ok);
   s.ramassage = true;
   testAddSheep(s, 2);
   testWoolReady(s);
@@ -396,7 +395,7 @@ test('Lune : pleine, récoltes +50 % ; décroissante, arrosage −25 % ; nouvell
   const serre = (day) => {
     const s = garden();
     s.pieces = 5000;
-    buildSerre(reach(s, 'serre'));
+    testBatir(reach(s, 'serre'), 'serre');
     s.day = day;
     plant(s, 'serre-1', 'tomate');
     return s;

@@ -103,8 +103,6 @@ export function sellableCount(state, item) {
 // dans l'inventaire (il périt), puis ce qui est au frais.
 // Version 1.12 : le Marché de la ferme ouvre quand le panneau et la pompe sont achetés (sur une
 // terre sauvage : à un niveau, devices.js marcheOuvert).
-export const MARKET_CLOSED = 'Le Marché ouvre quand le panneau solaire et la pompe sont installés.';
-
 export function sellItem(state, item, qty) {
   const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');

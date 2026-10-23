@@ -4,20 +4,21 @@
    ========================================================================== */
 
 import {
-  addMember, addPet, petSheets, adultCount, alertEvents, alertSnapshot, autoMaintain, autoTasks,
-  averageHappiness, buildMorningReport, childCount, cleanFirstName, collectLeftovers,
+  addMember, addPet, adultCount, alertEvents, alertSnapshot, autoMaintain, autoTasks,
+  averageHappiness, boiteCounts, buildMorningReport, childCount, cleanFirstName, collectLeftovers,
   commerceNight, countItem, createInitialState, DATA, dishHappiness, energyMax, escapeHtml,
-  feedFamily, feedLivestock, fillSilo, findMember, findPet, findPlot,
-  finishPreparations, fridgeNight, getNotifications, growOrchard, harvest, inventoryCounts,
-  layEggs, lotsOf, mealHappinessDelta, memberName, memberPortrait, memberRemovalBlock, memberRoom,
-  migrate, MIGRATIONS, newGameFrom, NIGHT_STEPS, nightPower, offlineReport, offlineSnapshot,
-  petIcon, petName, petRoom, pets, plant, portraitEmoji, rainNight, readyCrops,
-  removeMember, removePet, robotNight, setMemberProfile, setPetProfile, setSeedReserve,
-  simulateFromCopy, sleep, spoil, startFarm, STATE_VERSION, testAddSeeds, testFillEnergy,
-  testRipenAll, testSetEnergyZero, validFirstName, water, jaugeMembre, mangeurs,
+  feedFamily, feedLivestock, fillSilo, findMember, findPet, findPlot, finishPreparations,
+  fridgeNight, getNotifications, growOrchard, harvest, inventoryCounts, jaugeMembre, layEggs,
+  mangeurs, mealHappinessDelta, memberName, memberPortrait, memberRemovalBlock, memberRoom,
+  MIGRATIONS, newGameFrom, NIGHT_STEPS, nightPower, offlineReport, offlineSnapshot, petIcon,
+  petName, petRoom, pets, petSheets, plant, portraitEmoji, rainNight, readyCrops, removeMember,
+  removePet, robotNight, setMemberProfile, setPetProfile, simulateFromCopy, sleep, spoil,
+  startFarm, STATE_VERSION, testAddSeeds, testFillEnergy, testRipenAll, testSetEnergyZero,
+  validFirstName, water,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, garden, ml, plantRipe, setInv, sleepOnce, test,
+  affamer, assert, assertEqual, AVANT_DEMENAGEMENT, boite, garden, migreAvant, ml, plantRipe,
+  setInv, sleepOnce, test, versBoite,
 } from './aide.mjs';
 
 /* ---------- version 1.1 : prénom, sexe et couleur de peau de chaque membre ---------- */
@@ -127,7 +128,7 @@ test('profil : le prénom sert dans les messages, mais jamais dans les comptes r
   const copy = JSON.parse(JSON.stringify(s));
   assertEqual(copy, s);
   assertEqual(copy.famille.membres.map((m) => memberName(copy, m.id)), prenoms);
-  assertEqual(migrate({ v: STATE_VERSION, t: 0, s: copy }), s, 'recharger ne touche pas aux profils');
+  assertEqual(migreAvant({ v: STATE_VERSION, t: 0, s: copy }), s, 'recharger ne touche pas aux profils');
   // Une nouvelle partie repart d'une famille neuve.
   assertEqual(newGameFrom(s, 4).famille.membres.map((m) => m.prenom), ['Adulte 1', 'Adulte 2', 'Enfant 1', 'Enfant 2']);
 });
@@ -157,8 +158,9 @@ test('Dormir : repas de la famille, énergie, pousse et rapport de réveil', () 
   findPlot(s, 'potager-1').stade = 3;
   water(s, 'potager-1');
   water(s, 'potager-2');
-  // la famille a eu faim (3 membres au seuil) : sur la ferme dessinée, elle mange dans
-  // l'inventaire, d'abord les 6 patates de départ (valeur 5), puis des conserves (valeur 6)
+  // la famille a eu faim (3 membres au seuil) : elle mange à la boîte, d'abord les 6 patates de
+  // départ (valeur 5), puis des conserves (valeur 6)
+  versBoite(s);
   affamer(s);
   s.awakeMs = 30000;
   const r = sleep(s);
@@ -166,7 +168,7 @@ test('Dormir : repas de la famille, énergie, pousse et rapport de réveil', () 
   assertEqual(findPlot(s, 'potager-1').stade, 4);
   assertEqual(findPlot(s, 'potager-2').stade, 1);
   assertEqual(r.mange.patate, 6);
-  assertEqual([r.besoin, r.energieMangee, r.couverture, countItem(s, 'conserve')], [30 + 6 * r.mange.conserve, r.besoin, 100, 160 - r.mange.conserve]);
+  assertEqual([r.besoin, r.energieMangee, r.couverture, boiteCounts(s).conserve], [30 + 6 * r.mange.conserve, r.besoin, 100, 160 - r.mange.conserve]);
   assertEqual(r.energieReveil, 100000, 'famille rassasiée : l\'énergie remonte à 100');
   assertEqual(r.pretes, [{ culture: 'carotte', nombre: 1 }]);
   // une famille affamée sans rien à manger : l'énergie ne remonte qu'à 60 + 40 × 20 %
@@ -211,8 +213,8 @@ test('migration v2 (Lot 1) → version courante : garde la partie, ajoute le pot
   };
   delete v2.eauMl;
   v2.eau = 12; // ancienne sauvegarde : litres décimaux
-  const m = migrate({ v: 2, t: 0, s: v2 });
-  assertEqual(m.version, STATE_VERSION);
+  const m = migreAvant({ v: 2, t: 0, s: v2 });
+  assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual([m.day, m.pieces, m.eauMl], [5, 120, ml(12)]);
   assertEqual(m.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir']);
   assertEqual(inventoryCounts(m), { conserve: 160, graine_carotte: 10, patate: 6, graine_tomate: 4 });
@@ -227,7 +229,7 @@ test('migration v2 (Lot 1) → version courante : garde la partie, ajoute le pot
   const s = garden();
   s.pieces = 77;
   setInv(s, { conserve: 3 });
-  const same = migrate({ v: STATE_VERSION, t: 0, s });
+  const same = migreAvant({ v: STATE_VERSION, t: 0, s });
   assertEqual([same.pieces, countItem(same, 'conserve')], [77, 3]);
 });
 
@@ -262,13 +264,13 @@ test('version 1.2 : format 18, la migration ajoute les animaux de compagnie et l
   delete v17.famille.numeros;
   v17.famille.membres[0].prenom = 'Léa';
   v17.famille.membres[2].sante = 40;
-  const m = migrate({ v: 17, t: 0, s: v17 });
-  assertEqual([m.version, m.famille.animaux, m.famille.numeros], [STATE_VERSION, [], { adulte: 2, enfant: 2, compagnon: 0 }]);
+  const m = migreAvant({ v: 17, t: 0, s: v17 });
+  assertEqual([m.version, m.famille.animaux, m.famille.numeros], [AVANT_DEMENAGEMENT, [], { adulte: 2, enfant: 2, compagnon: 0 }]);
   assertEqual(m.famille.membres, v17.famille.membres.map(({ sante, malade, ...x }) => x), 'les membres ne changent pas (sauf la santé, retirée en version 1.8)');
-  assertEqual(migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
+  assertEqual(migreAvant({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) }), m, 'recharger ne change rien');
   // une sauvegarde abîmée ne fait pas planter la migration
   for (const bad of [{ version: 17 }, { version: 17, famille: null }, { version: 17, famille: 7 }, { version: 17, famille: { membres: 'x' } }]) {
-    assertEqual(migrate(bad).version, STATE_VERSION);
+    assertEqual(migreAvant(bad).version, AVANT_DEMENAGEMENT);
   }
 });
 
@@ -286,7 +288,7 @@ test('version 1.2 : ajouter des membres jusqu\'à 6, chacun avec sa jauge de fai
   assertEqual([plein.ok, s.famille.membres.length], [false, 6], 'pas de septième membre');
   // les nouveaux venus arrivent rassasiés, puis mangent comme les autres
   assertEqual(mangeurs(s).map((m) => jaugeMembre(m)), [100, 100, 100, 100, 100]);
-  setInv(s, { conserve: 200 });
+  boite(s, { conserve: 200 });
   affamer(s);
   const rep = sleepOnce(s);
   assertEqual([rep.besoin, rep.couverture], [5 * 84, 100], '5 membres de 20 à 104 (14 conserves chacun)');
@@ -327,7 +329,7 @@ test('version 1.2 : un identifiant de membre n\'est jamais réutilisé, la famil
   delete s.famille.numeros;
   assertEqual(addMember(s, false).id, 'adulte-3');
   const copie = JSON.parse(JSON.stringify(s));
-  assertEqual(migrate({ v: STATE_VERSION, t: 0, s: copie }).famille, s.famille);
+  assertEqual(migreAvant({ v: STATE_VERSION, t: 0, s: copie }).famille, s.famille);
 });
 
 test('version 1.2 : un adulte seul vit sa nuit (personne d\'autre ne mange), une famille de six aussi', () => {
@@ -339,7 +341,7 @@ test('version 1.2 : un adulte seul vit sa nuit (personne d\'autre ne mange), une
   const t = garden();
   addMember(t, false);
   addMember(t, false);
-  setInv(t, { conserve: 400 });
+  boite(t, { conserve: 400 });
   affamer(t);
   const r6 = sleepOnce(t);
   assertEqual([r6.besoin, r6.couverture, t.famille.membres.length], [5 * 84, 100, 6]);
@@ -358,14 +360,13 @@ test('version 1.2 : chiens et chats : trois au plus, sans jauge de faim ni bonhe
   assertEqual(addPet(garden(), 'poney').ok, false);
   assertEqual([averageHappiness(s), s.energie, s.famille.membres.length, mangeurs(s).length], [...sante, 4, 3], 'ils ne comptent pas');
   // ils ne mangent pas à la boîte
-  setInv(s, { conserve: 200 });
+  boite(s, { conserve: 200 });
   affamer(s);
   const rep = sleepOnce(s);
-  const sans = garden();
-  setInv(sans, { conserve: 200 });
+  const sans = boite(garden(), { conserve: 200 });
   affamer(sans);
   sleepOnce(sans);
-  assertEqual([rep.besoin, countItem(s, 'conserve')], [3 * 84, countItem(sans, 'conserve')], 'même repas avec ou sans animaux');
+  assertEqual([rep.besoin, boiteCounts(s).conserve], [3 * 84, boiteCounts(sans).conserve], 'même repas avec ou sans animaux');
   assertEqual(pets(s).length, 3, 'ils sont toujours là au réveil');
 });
 
@@ -406,8 +407,7 @@ test('version 1.11 : au plus trois plats différents comptent, les meilleurs', (
 });
 
 test('version 1.11 : les plats mangés dans la journée rendent du bonheur la nuit, les meilleurs d\'abord', () => {
-  const s = garden();
-  setInv(s, { gratin_patates: 5, pain: 3, soupe_legumes: 2, omelette: 2, carotte: 40 });
+  const s = boite(garden(), { gratin_patates: 5, pain: 3, soupe_legumes: 2, omelette: 2, carotte: 40 });
   // d'abord ce qui périme le plus tôt (le pain se garde : il n'est pas mangé), à péremption
   // égale le plat qui rend le plus de bonheur ; au plus 3 plats comptent
   affamer(s);

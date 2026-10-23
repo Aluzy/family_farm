@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, countItem } from './inventory.js';
-import { atelierOuvert, caseDepart } from './atelier.js';
+import { caseDepart } from './atelier.js';
 import { blocAt, blocsPoses, caseBatissable, couchages, piecesCloses } from './blocs.js';
 import { farmTerrain } from './terrain.js';
 import { hasHoe, soilCount } from './crops.js';
@@ -35,7 +35,7 @@ const RECETTES = { faux: ['faux'], outils: ['hache', 'pioche'], abri_fabriquer: 
 const BLOCS = { atelier: ['atelier'], abri_construire: ['mur_bois', 'porte'], paillasses: ['paillasse'], puits: ['puits'] };
 
 export function didacticielActif(state) {
-  return !!(state.didacticiel && !state.didacticiel.fini && atelierOuvert(state));
+  return !!(state.didacticiel && !state.didacticiel.fini);
 }
 
 // L'étape en cours (son nom), ou null.
@@ -68,7 +68,7 @@ export function planAbri(state) {
 // choisi près de l'Atelier sur de l'herbe libre (sans herbe haute si possible), est gardé dans
 // state.didacticiel.abri tant qu'il reste bâtissable (ce qui est déjà posé à sa place compte).
 export function planAbriCases(state) {
-  if (!state.didacticiel || !atelierOuvert(state)) return null;
+  if (!state.didacticiel) return null;
   const T = farmTerrain(state), W = T.LARGEUR, n = planAbri(state).paillasses;
   const forme = (c, r) => {
     const murs = [], dedans = [];

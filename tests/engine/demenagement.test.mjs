@@ -1,32 +1,24 @@
 /* ==========================================================================
-   Tests du moteur : une ancienne partie (la carte de Tiled) déménage sur la ferme générée.
+   Tests du moteur : une ancienne partie (la carte de Tiled) déménage sur la ferme générée
+   (convertirPartie, et la migration v46 → v47 qui le fait au chargement).
    Lancer seul : node --test tests/engine/demenagement.test.mjs (ou node tests/run-tests.mjs demenagement).
    ========================================================================== */
 
+import { readFileSync } from 'node:fs';
 import {
-  apercuDemenagement, blocsPoses, blocDessus, buildPaturage, demenagementPossible, graineDemenagement, buildSerre, buildVerger, buyPasture, convertirPartie, countItem,
-  couchages, createInitialState, DATA, etatEtable, etatPoulailler, farmSeed, farmTerrain, grantTech,
-  houseRepaired, isOwned, nuitSansCouchage, plantTree, robotStation, serrePlaces, starterOf, upgradePoulailler,
-  upgradeSerre,
+  blocDessus, blocsPoses, convertirPartie, countItem, couchages, DATA, etatEtable, etatPoulailler,
+  farmSeed, farmTerrain, graineDemenagement, houseRepaired, isOwned, migrate, nuitSansCouchage,
+  robotStation, serrePlaces, starterOf, STATE_VERSION,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, atelier, reach, sleepOnce, test } from './aide.mjs';
+import { assert, assertEqual, AVANT_DEMENAGEMENT, sleepOnce, test } from './aide.mjs';
 
-// Une ancienne partie bien avancée : la maison, le four, la cuisinière, le Moulin, la Presse, le
-// Silo, un Poulailler au niveau 5, une Étable de 25 places, une Serre de 56 parcelles, deux arbres
-// au Verger, et le robot.
-function vieillePartie() {
-  const s = atelier();
-  s.pieces = 1e6;
-  for (let i = 0; i < 4; i++) assert(upgradePoulailler(reach(s, 'poulailler')).ok, 'Poulailler agrandi');
-  assert(buildPaturage(reach(s, 'paturage')).ok, 'Étable');
-  for (let i = 0; i < 15; i++) assert(buyPasture(s).ok, 'place de l\'Étable');
-  assert(buildSerre(reach(s, 'serre')).ok, 'Serre');
-  for (let i = 0; i < 4; i++) assert(upgradeSerre(s).ok, 'Serre agrandie');
-  assert(buildVerger(reach(s, 'verger')).ok, 'Verger');
-  assert(plantTree(s, 'pommier').ok && plantTree(s, 'poirier').ok, 'arbres plantés');
-  grantTech(s, 'cu_recolte_auto');
-  return s;
-}
+// De vraies sauvegardes de la ferme du grand-père (version 46), écrites par le jeu d'avant :
+//   - avancee : la maison, le four, la cuisinière, le Moulin, la Presse, le Silo, un Poulailler
+//     au niveau 5, une Étable de 25 places, une Serre de 56 parcelles, deux arbres au Verger, le
+//     robot ;
+//   - debut : une partie neuve, la maison pas encore réparée.
+const ANCIENNES = JSON.parse(readFileSync(new URL('./anciennes-parties.json', import.meta.url), 'utf8'));
+const vieillePartie = () => structuredClone(ANCIENNES.avancee);
 
 test('Déménager : chaque bâtiment d\'une ancienne partie est rebâti en blocs, et reconnu', () => {
   const avant = vieillePartie();
@@ -92,9 +84,8 @@ test('Déménager : la partie continue (une nuit, sans perte de bonheur)', () =>
 });
 
 test('Déménager : une maison pas réparée rend les blocs d\'un foyer', () => {
-  const s = createInitialState(1);
-  s.maison = { reparee: false };
-  assert(!houseRepaired(s), 'pas réparée');
+  const s = structuredClone(ANCIENNES.debut);
+  assertEqual(s.maison, { reparee: false }, 'pas réparée');
   const r = convertirPartie(s, 'debut');
   assert(r.ok, r.raison);
   assert(!r.batis.includes('maison'), 'pas de foyer posé');
@@ -106,25 +97,23 @@ test('Déménager : une maison pas réparée rend les blocs d\'un foyer', () => 
 });
 
 test('Déménager : refus sur une ferme générée ou sans graine', () => {
-  const s = createInitialState(1);
+  const s = structuredClone(ANCIENNES.debut);
   assertEqual(convertirPartie(s, '  ').ok, false);
   assert(convertirPartie(s, 'g').ok, 'déménagée');
   assertEqual(convertirPartie(s, 'h').ok, false);
 });
 
-test('Déménager : obligatoire après l\'écran de départ, et l\'aperçu sans toucher à la partie', () => {
-  const s = createInitialState(1);
-  s.famille.configuree = false;
-  assertEqual(demenagementPossible(s), false, 'pas avant l\'écran de départ');
-  s.famille.configuree = true;
-  assert(demenagementPossible(s), 'à faire');
-  assertEqual(graineDemenagement(s), graineDemenagement(structuredClone(s)), 'la même graine pour la partie');
-  const avant = JSON.stringify(s);
-  const a = apercuDemenagement(s, '77');
-  assertEqual(JSON.stringify(s), avant, 'la partie n\'a pas changé');
-  assert(a.ok && a.batis.includes('maison') && a.sol.length === a.largeur * a.hauteur, 'l\'aperçu');
-  assert(/^[hace]+$/.test(a.sol) && a.sol.includes('e'), 'herbe, arbres, chemin, eau');
-  assert(Object.values(a.blocs).includes('paillasse') && a.parcelles.length === s.potager.parcelles.length && a.cour, 'blocs, parcelles, cour');
-  assert(convertirPartie(s, '77').ok, 'déménagée');
-  assertEqual(demenagementPossible(s), false, 'fait');
+test('Déménager au chargement : la migration v46 → v47, une fois, sur la graine de la partie', () => {
+  const v46 = vieillePartie();
+  assertEqual([v46.version, AVANT_DEMENAGEMENT, farmSeed(v46)], [46, 46, null]);
+  const m = migrate({ v: 46, t: 0, s: structuredClone(v46) });
+  assertEqual([m.version, farmSeed(m), m.demenagee], [STATE_VERSION, graineDemenagement(v46), true]);
+  assertEqual([m.pieces, m.poulailler.niveau, m.paturage.places, m.serre.parcelles.length], [v46.pieces, 5, 25, 56], 'rien ne se perd');
+  assert(houseRepaired(m) && m.poulailler.construit && m.paturage.construit && m.serre.construit && m.silo.construit, 'tout est rebâti');
+  assertEqual(migrate({ v: STATE_VERSION, t: 0, s: structuredClone(m) }), m, 'recharger ne déménage plus');
+  // une partie dont la famille n'est pas encore installée : sa graine seulement
+  const neuve = structuredClone(ANCIENNES.debut);
+  neuve.famille.configuree = false;
+  const n = migrate({ v: 46, t: 0, s: neuve });
+  assertEqual([farmSeed(n), n.demenagee, blocsPoses(n), n.potager.parcelles], [graineDemenagement(neuve), undefined, {}, []]);
 });

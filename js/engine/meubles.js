@@ -3,9 +3,7 @@ import { fail, NO_COINS, pay } from './devices.js';
 import { houseRepaired } from './depart.js';
 import { adultCount, childCount } from './family.js';
 import { memberHappiness, setHappiness } from './ville.js';
-import { farmSeed } from './terrain.js';
 import { addItem } from './inventory.js';
-import { atelierOuvert } from './atelier.js';
 
 /* ---------- Meubles de la maison (Marché, rayon Meubles) ----------
    state.meubles = { id: nombre } (absent : aucun). Un meuble acheté prend sa place dans
@@ -30,8 +28,7 @@ export function furnitureMax(state, id) {
 export function buyFurniture(state, id) {
   const def = DATA.MEUBLES[id];
   if (!def) return fail('Ce meuble n\'existe pas.');
-  const sauvage = farmSeed(state) !== null;
-  if (!houseRepaired(state)) return fail(sauvage ? 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.' : 'Répare d\'abord la maison.');
+  if (!houseRepaired(state)) return fail('Bâtis d\'abord ton foyer : une pièce close avec une paillasse.');
   const max = furnitureMax(state, id);
   if (furnitureCount(state, id) >= max) {
     return fail(max > 1 || def.max ? `Tu en as déjà assez pour la famille (${max}).` : 'Tu l\'as déjà.');
@@ -39,9 +36,9 @@ export function buyFurniture(state, id) {
   if (!pay(state, def.prix, `Meuble : ${def.nom}`)) return fail(NO_COINS);
   state.meubles = { ...(state.meubles || {}), [id]: furnitureCount(state, id) + 1 };
   for (const m of state.famille.membres) setHappiness(m, memberHappiness(m) + (def.bonheur || 0));
-  // (sur une terre sauvage : dans l'inventaire, à poser dans la maison)
-  if (sauvage) addItem(state, 'meuble_' + id, 1);
-  return { ok: true, cost: def.prix, bonheur: def.bonheur || 0, nombre: state.meubles[id], aPoser: sauvage };
+  // (dans l'inventaire, à poser dans la maison)
+  addItem(state, 'meuble_' + id, 1);
+  return { ok: true, cost: def.prix, bonheur: def.bonheur || 0, nombre: state.meubles[id], aPoser: true };
 }
 
 /* ---------- Pour le dehors de la ferme générée (Marché, rayon Meubles) ----------
@@ -51,7 +48,6 @@ export function buyFurniture(state, id) {
 export function buyDehors(state, id) {
   const def = DATA.DEHORS && DATA.DEHORS[id];
   if (!def) return fail('Cet article n\'existe pas.');
-  if (!atelierOuvert(state)) return fail(`${def.nom} : se pose sur une ferme générée.`);
   if (!pay(state, def.prix, `Achat : ${def.nom}`)) return fail(NO_COINS);
   addItem(state, id, 1);
   return { ok: true, cost: def.prix };

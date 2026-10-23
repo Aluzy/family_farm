@@ -10,7 +10,6 @@ import { feedAllHens, hensToFeed, shear, woolReady } from './animals.js';
 import { techAuto, techFlag } from './techtree.js';
 import { absoluteHours, dayHour, hourOfDay, nightActive } from './clock.js';
 import { farmPoint, farmTerrain } from './terrain.js';
-import { atelierOuvert } from './atelier.js';
 import { blocsPoses } from './blocs.js';
 
 /* ---------- Lot 7 : automatisations de la nuit ---------- */
@@ -157,11 +156,9 @@ function robotSpot(state, id) {
   return farmPoint(state, DATA.ROBOT.SERRE);
 }
 
-// Sa station de charge. Sur la ferme générée, c'est un bloc qu'on pose (BLOCS station_robot,
-// fabriqué à l'Atelier) : sa case, ou null tant qu'elle n'est pas posée (il ne se recharge pas,
-// et attend près de la maison). Sur la ferme d'avant, elle est à côté de la maison : 'maison'.
+// Sa station de charge : un bloc qu'on pose (BLOCS station_robot, fabriqué à l'Atelier) ; sa
+// case, ou null tant qu'elle n'est pas posée (il ne se recharge pas, et attend près de la maison).
 export function robotStation(state) {
-  if (!atelierOuvert(state)) return 'maison';
   const t = Object.entries(blocsPoses(state)).find(([, s]) => s === 'station_robot');
   return t ? Number(t[0]) : null;
 }

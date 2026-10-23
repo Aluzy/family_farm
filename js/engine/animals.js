@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
-import { buildWith, fail, growthPrice, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
+import { fail, growthPrice, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { deposit } from './ramassage.js';
 import { newNightStats } from './family.js';
@@ -8,7 +8,6 @@ import { techFlag } from './techtree.js';
 import { bumpCounter } from './campaign.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
-import { farmSeed } from './terrain.js';
 import { etatEtable, etatPoulailler, etatSilo } from './blocs.js';
 
 /* ---------- Lot 4 : Silo et blé ---------- */
@@ -19,14 +18,9 @@ import { etatEtable, etatPoulailler, etatSilo } from './blocs.js';
 // l'inventaire, et le Silo se remplit dès qu'il a de la place (fillSilo).
 // Les quantités sont entières : 1 blé nourrit 2 poules (voir feedHen).
 
-// (la ferme générée : tant de blés par bloc de silo posé, etatSilo)
+// Tant de blés par bloc de silo posé (etatSilo, blocs.js).
 export function siloCapacity(state) {
-  if (!state.silo.construit) return 0;
-  return farmSeed(state) !== null ? etatSilo(state).capacite : DATA.SILO.CAPACITE[state.silo.niveau - 1];
-}
-
-export function siloUpgradeCost(state) {
-  return nextLevelCost(DATA.SILO.PRIX_NIVEAUX, state.silo.niveau);
+  return state.silo.construit ? etatSilo(state).capacite : 0;
 }
 
 export function wheatTotal(state) {
@@ -98,65 +92,32 @@ export function storeWithSilo(state, item, qty) {
   else addItem(state, item, qty);
 }
 
-// Le Silo est offert (construction à 0 dans DATA) mais reste à construire.
-export function buildSilo(state) {
-  const s = state.silo;
-  // la ferme générée : des blocs de silo, fabriqués à l'Atelier, posés dehors (blocs.js, etatSilo)
-  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, le Silo se bâtit : des blocs de silo (Atelier) posés dehors.');
-  return buildWith(state, 'silo', { built: s.construit, deja: 'Le Silo est déjà construit.', cost: DATA.SILO.PRIX_CONSTRUCTION, libelle: 'Réparation du Silo' }, () => {
-    s.construit = true;
-    s.niveau = 1;
-    fillSilo(state);
-  });
-}
-
-export function upgradeSilo(state) {
-  if (!state.silo.construit) return fail('Construis d\'abord le Silo.');
-  // (la ferme générée : il s'agrandit en y posant des blocs de silo)
-  if (farmSeed(state) !== null) return fail('Le Silo s\'agrandit en y posant des blocs de silo (un appui long sur le silo).');
-  return upgradeWith(state, siloUpgradeCost(state), 'Silo agrandi', () => {
-    state.silo.niveau += 1;
-    fillSilo(state);
-  });
-}
-
 /* ---------- Lot 4 : Poulailler et poules ---------- */
 
-// Sur la ferme générée, une poule par case libre de l'enceinte et de l'enclos, au plus
-// (etatPoulailler, blocs.js) : la capacité du niveau, bornée par la place.
+// Une poule par case libre de l'enceinte et de l'enclos, au plus (etatPoulailler, blocs.js) :
+// la capacité du niveau, bornée par la place.
 export function coopCapacity(state) {
   if (!state.poulailler.construit) return 0;
-  const cap = DATA.POULAILLER.CAPACITE[state.poulailler.niveau - 1];
-  return farmSeed(state) === null ? cap : Math.min(cap, etatPoulailler(state).places);
+  return Math.min(DATA.POULAILLER.CAPACITE[state.poulailler.niveau - 1], etatPoulailler(state).places);
 }
 
 export function coopUpgradeCost(state) {
   return nextLevelCost(DATA.POULAILLER.PRIX_NIVEAUX, state.poulailler.niveau);
 }
 
-export function buildPoulailler(state) {
-  const p = state.poulailler;
-  // la ferme générée : un nichoir, fabriqué à l'Atelier, posé dans une pièce close (blocs.js)
-  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, le Poulailler se bâtit : une enceinte de murs avec une porte sur l\'extérieur, un nichoir (Atelier), et un enclos de barrières relié par une porte.');
-  return buildWith(state, 'poulailler', { built: p.construit, deja: 'Le Poulailler est déjà construit.', cost: DATA.POULAILLER.PRIX_CONSTRUCTION, libelle: 'Poulailler' }, () => {
-    p.construit = true;
-    p.niveau = 1;
-  });
-}
-
 export function upgradePoulailler(state) {
   if (!state.poulailler.construit) return fail('Construis d\'abord le Poulailler.');
-  // la ferme générée : il faut aussi la place des poules du niveau suivant (une case libre par
-  // poule dans l'enceinte et dans l'enclos)
+  // il faut aussi la place des poules du niveau suivant (une case libre par poule dans
+  // l'enceinte et dans l'enclos)
   const refus = coopUpgradeRefus(state);
   if (refus) return fail(refus);
   return upgradeWith(state, coopUpgradeCost(state), 'Poulailler agrandi', () => { state.poulailler.niveau += 1; });
 }
 
-// Sur la ferme générée, pourquoi le Poulailler ne peut pas monter de niveau (la place), ou null.
+// Pourquoi le Poulailler ne peut pas monter de niveau (la place), ou null.
 export function coopUpgradeRefus(state) {
   const p = state.poulailler;
-  if (farmSeed(state) === null || !p.construit || p.niveau >= DATA.POULAILLER.CAPACITE.length) return null;
+  if (!p.construit || p.niveau >= DATA.POULAILLER.CAPACITE.length) return null;
   const e = etatPoulailler(state), besoin = DATA.POULAILLER.CAPACITE[p.niveau];
   if (e.libresPiece.length >= besoin && e.libresEnclos.length >= besoin) return null;
   return `Pour le niveau ${p.niveau + 1} (${besoin} poules), il faut ${besoin} cases libres dans le poulailler et dans l'enclos : il y en a ${e.libresPiece.length} et ${e.libresEnclos.length}.`;
@@ -336,12 +297,11 @@ export function stableOccupied(state) {
   return sheepPlaces(state) + cowPlaces(state);
 }
 
-// Les places de l'Étable : celles achetées ; sur la ferme générée, bornées par la place (une
-// case libre de l'enceinte et de l'enclos par place : etatEtable, blocs.js).
+// Les places de l'Étable : celles achetées, bornées par la place (une case libre de l'enceinte
+// et de l'enclos par place : etatEtable, blocs.js).
 export function stablePlaces(state) {
   const p = state.paturage;
-  if (!p.construit) return 0;
-  return farmSeed(state) === null ? p.places : Math.min(p.places, etatEtable(state).places);
+  return p.construit ? Math.min(p.places, etatEtable(state).places) : 0;
 }
 
 // Places encore libres.
@@ -385,40 +345,26 @@ export function pastureCost(state) {
   return growthPrice(P.PRIX_PLACE, croissance, rank - 1);
 }
 
-// Sur la ferme générée, pourquoi l'Étable ne peut pas prendre une place de plus (il faut une
-// case libre de plus dans l'enceinte et dans l'enclos), ou null.
+// Pourquoi l'Étable ne peut pas prendre une place de plus (il faut une case libre de plus dans
+// l'enceinte et dans l'enclos), ou null.
 export function pastureRefus(state) {
   const p = state.paturage;
-  if (farmSeed(state) === null || !p.construit) return null;
+  if (!p.construit) return null;
   const e = etatEtable(state), besoin = p.places + 1;
   if (e.libresPiece.length >= besoin && e.libresEnclos.length >= besoin) return null;
   return `Pour ${besoin} places, il faut ${besoin} cases libres dans l'étable et dans l'enclos : il y en a ${e.libresPiece.length} et ${e.libresEnclos.length}.`;
 }
 
-// Les bêtes de l'Étable qui ont leur place (ferme générée : les places de stablePlaces, les
-// moutons d'abord, puis les vaches) ; les autres restent mais ne donnent rien. { moutons, vaches }
-// (des Set d'identifiants).
+// Les bêtes de l'Étable qui ont leur place (les places de stablePlaces, les moutons d'abord, puis
+// les vaches) ; les autres restent mais ne donnent rien. { moutons, vaches } (des Set
+// d'identifiants).
 export function stableHoused(state) {
   const p = state.paturage, P = DATA.PATURAGE;
-  if (farmSeed(state) === null) return { moutons: new Set(p.moutons.map((m) => m.id)), vaches: new Set(p.vaches.map((v) => v.id)) };
   let reste = stablePlaces(state);
   const moutons = new Set(), vaches = new Set();
   for (const m of p.moutons) if (reste >= P.PLACES_PAR_MOUTON) { moutons.add(m.id); reste -= P.PLACES_PAR_MOUTON; }
   for (const v of p.vaches) if (reste >= P.PLACES_PAR_VACHE) { vaches.add(v.id); reste -= P.PLACES_PAR_VACHE; }
   return { moutons, vaches };
-}
-
-// Ouvre l'Étable aux moutons et aux vaches : les places de départ sont acquises.
-export function buildPaturage(state) {
-  const p = state.paturage;
-  const deja = 'L\'Étable accueille déjà les moutons et les vaches.';
-  // la ferme générée : une mangeoire, fabriquée à l'Atelier, posée dans une pièce close (blocs.js)
-  if (farmSeed(state) !== null) return fail('Sur une terre sauvage, l\'Étable se bâtit : une enceinte de murs avec une porte sur l\'extérieur, une mangeoire (Atelier), et un enclos de barrières relié par une porte.');
-  return buildWith(state, 'paturage', { built: p.construit, deja, cost: DATA.PATURAGE.PRIX_CONSTRUCTION, libelle: 'Étable préparée' }, () => {
-    p.construit = true;
-    p.places = DATA.PATURAGE.PLACES_DEPART;
-    return { places: p.places };
-  });
 }
 
 // Achète une place. Les places s'achètent à la suite, autant que les pièces le
