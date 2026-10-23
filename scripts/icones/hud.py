@@ -6,7 +6,13 @@
 #   tube.png     le tube des jauges, vertical ou horizontal (9 × 9, 2 px de bord, l'intérieur sombre) ;
 #   pastille.png la pastille de l'argent (10 × 10, 3 px de bord) ;
 #   coeur.png, eclair.png, smiley.png : les jauges d'énergie, d'endurance et de bonheur ;
-#   etoile.png   le niveau, posé sur le bout gauche de sa barre ;
+#   etoile.png   l'étoile de l'XP (le didacticiel, les fenêtres) ;
+#   portrait.png le médaillon rond du portrait : 21 cases de 42 × 42 (0 %, 5 %… 100 % de l'XP vers
+#                le niveau suivant, l'anneau doré rempli dans le sens des aiguilles d'une
+#                montre depuis le haut, sur un anneau de bois clair) ; le portrait se pose dans
+#                son disque crème (rayon PORTRAIT_R) ;
+#   niveau.png   la grande étoile du niveau (19 × 18), posée en bas à gauche du médaillon : le
+#                numéro du niveau s'écrit dans son cœur, en police pixel ;
 #   pousse.png   l'autonomie, posée en haut à gauche de son anneau ;
 #   anneau.png   l'anneau de l'autonomie : 21 cases de 15 × 15 (0 %, 5 %… 100 %, rempli dans le
 #                sens des aiguilles d'une montre depuis le haut) ;
@@ -199,6 +205,74 @@ def anneau(pct):
     return im
 
 
+PORTRAIT, PORTRAIT_R = 42, 16
+
+
+def portrait(pct):
+    """Le médaillon du portrait (PORTRAIT px de côté) : un trait de bois, l'anneau de l'XP (doré
+    sur `pct` %, depuis le haut, dans le sens des aiguilles d'une montre ; le reste en bois
+    clair, reflet en haut à gauche), un trait de bois, puis le disque crème du portrait."""
+    S = PORTRAIT
+    c = (S - 1) / 2
+    im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    for y in range(S):
+        for x in range(S):
+            d = math.hypot(x - c, y - c)
+            if d > 21:
+                continue
+            haut = (x - c) + (y - c) < -8
+            bas = (x - c) + (y - c) > 8
+            if d > 20:
+                col = PAL['w']
+            elif d > PORTRAIT_R + 1:
+                a = (math.degrees(math.atan2(x - c, -(y - c))) + 360) % 360
+                if a < pct * 3.6 or pct >= 100:
+                    col = PAL['J'] if haut else (PAL['y'] if bas else PAL['Y'])
+                else:
+                    col = PAL['h'] if haut else (PAL['m'] if bas else PAL['l'])
+            elif d > PORTRAIT_R:
+                col = PAL['m']
+            else:
+                col = PAL['c']
+            im.putpixel((x, y), rgb(col))
+    return im
+
+
+def etoile_niveau():
+    """La grande étoile du niveau (19 × 18) : cinq branches, un cœur assez large pour deux
+    chiffres de la police pixel (3 × 5) ; contour, reflet en haut à gauche, ombre en bas à droite."""
+    W, H = 19, 18
+    cx, cy = 9, 9.6
+    R, r = 9.6, 5.6
+    pts = []
+    for k in range(10):
+        a = math.pi / 2 + k * math.pi / 5
+        rr = R if k % 2 == 0 else r
+        pts.append((cx + rr * math.cos(a), cy - rr * math.sin(a)))
+
+    def dedans(x, y):
+        n, ok = len(pts), False
+        for i in range(n):
+            (x1, y1), (x2, y2) = pts[i], pts[(i + 1) % n]
+            if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+                ok = not ok
+        return ok
+    plein = {(x, y) for y in range(H) for x in range(W) if dedans(x + 0.5, y + 0.5)}
+    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    for (x, y) in plein:
+        bord = any((x + dx, y + dy) not in plein for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+        if bord:
+            col = PAL['o']
+        elif (x - cx) + (y - cy) < -6:
+            col = PAL['J']
+        elif (x - cx) + (y - cy) > 5:
+            col = PAL['y']
+        else:
+            col = PAL['Y']
+        im.putpixel((x, y), rgb(col))
+    return im
+
+
 CADRAN, RAINURE, LUNE = 56, 24, 17
 
 
@@ -286,6 +360,11 @@ def images():
     for k in range(21):
         bande.paste(anneau(k * 5), (15 * k, 0))
     out['anneau'] = bande
+    bande = Image.new('RGBA', (PORTRAIT * 21, PORTRAIT), (0, 0, 0, 0))
+    for k in range(21):
+        bande.paste(portrait(k * 5), (PORTRAIT * k, 0))
+    out['portrait'] = bande
+    out['niveau'] = etoile_niveau()
     out['cadran'] = cadran()
     out['medaillon'] = medaillon()
     lunes = Image.new('RGBA', (LUNE * 14, LUNE), (0, 0, 0, 0))

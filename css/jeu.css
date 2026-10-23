@@ -2196,9 +2196,11 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
 
 /* ---------- Carte du joueur, en haut à gauche (remplace le bandeau du haut) ----------
    En pixel art (assets/hud, scripts/icones/hud.py) : --hp est la taille d'un pixel des dessins,
-   un nombre entier de pixels de l'écran (--hud-px, réglé par js/ui/famille.js). Les cadres,
-   la plaque, les tubes et la pastille sont découpés en 9 (border-image) ; les jauges se
-   remplissent en CSS (.hud-fill). */
+   un nombre entier de pixels de l'écran (--hud-px, réglé par js/ui/famille.js). Le portrait dans
+   son médaillon rond (l'anneau doré de l'XP : une case de portrait.png), la grande étoile du
+   niveau en bas à gauche, l'anneau de l'autonomie en bas à droite ; à droite, les jauges
+   horizontales et l'argent. Les tubes et la pastille sont découpés en 9 (border-image) ; les
+   jauges se remplissent en CSS (.hud-fill). */
 .player-card {
   --hp: var(--hud-px, 2px);
   position: fixed;
@@ -2206,9 +2208,8 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
   left: calc(8px + env(safe-area-inset-left));
   z-index: var(--z-hud);
   display: flex;
-  flex-direction: column;
   align-items: flex-start;
-  gap: calc(2 * var(--hp));
+  gap: calc(9 * var(--hp));
   color: var(--wood-ink);
   font-weight: 700;
   font-size: 0.78rem;
@@ -2226,42 +2227,74 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
 .player-card button:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; border-radius: 4px; }
 body:has(.window-layer) .player-card,
 body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.2; pointer-events: none; }
-.player-top { display: flex; align-items: stretch; gap: calc(3 * var(--hp)); }
+/* Le médaillon (42 × 42) ; l'étoile et l'anneau de l'autonomie débordent sous lui. */
+.player-medaillon { position: relative; flex: none; width: calc(42 * var(--hp)); height: calc(42 * var(--hp)); margin-bottom: calc(5 * var(--hp)); }
 /* Tous les éléments de la carte sont des boutons : « .player-card .x » l'emporte sur la
    remise à zéro ci-dessus (.player-card button), sans !important. */
-.player-card .player-head {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: calc(2 * var(--hp));
-  border: calc(6 * var(--hp)) solid transparent;
-  border-image: url('../assets/hud/cadre.png') 6 fill / calc(6 * var(--hp)) stretch;
+.player-card .player-head { position: absolute; inset: 0; border-radius: 50%; }
+.hud-portrait {
+  position: absolute;
+  inset: 0;
+  background: url('../assets/hud/portrait.png') no-repeat;
+  background-size: calc(882 * var(--hp)) 100%;
+  background-position: calc(var(--f) * -42 * var(--hp)) 0;
   image-rendering: pixelated;
 }
-/* le personnage debout, de face (16 × 32), sur le fond en creux de la fenêtre */
+/* le personnage debout, de face (16 × 32), dans le disque crème du médaillon (rayon 16) */
 .player-portrait {
-  display: block;
-  padding: var(--hp) calc(3 * var(--hp)) 0;
-  border: calc(2 * var(--hp)) solid transparent;
-  border-image: url('../assets/hud/fenetre.png') 2 fill / calc(2 * var(--hp)) stretch;
-  image-rendering: pixelated;
+  position: absolute;
+  left: calc(5 * var(--hp));
+  top: calc(5 * var(--hp));
+  width: calc(32 * var(--hp));
+  height: calc(32 * var(--hp));
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  padding-top: calc(3 * var(--hp));
+  box-sizing: border-box;
 }
 .player-portrait .perso-px { --s: calc(32 * var(--hp)); width: calc(16 * var(--hp)); padding: 0; }
-.player-card .player-name {
-  display: block;
-  max-width: calc(34 * var(--hp));
-  padding: 0 var(--hp);
-  border: calc(3 * var(--hp)) solid transparent;
-  border-image: url('../assets/hud/plaque.png') 3 fill / calc(3 * var(--hp)) stretch;
-  image-rendering: pixelated;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* la grande étoile du niveau (19 × 18), en bas à gauche du médaillon, le numéro dans son cœur */
+.player-card .player-level {
+  position: absolute;
+  left: calc(-4 * var(--hp));
+  bottom: calc(-6 * var(--hp));
+  width: calc(19 * var(--hp));
+  height: calc(18 * var(--hp));
 }
-/* les jauges d'énergie, d'endurance et de bonheur, verticales, sur toute la hauteur du cadre */
+.hud-niveau {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding-top: calc(2 * var(--hp));
+  box-sizing: border-box;
+  background: url('../assets/hud/niveau.png') no-repeat 0 0 / 100% 100%;
+  image-rendering: pixelated;
+}
+.hud-niveau .pxt { --p: var(--hp); --row: 0; } /* chiffres sombres dans l'étoile, même en mode sombre */
+/* l'anneau de l'autonomie, en bas à droite du médaillon, la pousse en haut à gauche de l'anneau */
+.player-card .player-auto { position: absolute; right: calc(-5 * var(--hp)); bottom: calc(-5 * var(--hp)); width: calc(18 * var(--hp)); height: calc(18 * var(--hp)); }
+.hud-anneau {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: calc(15 * var(--hp));
+  height: calc(15 * var(--hp));
+  background: url('../assets/hud/anneau.png') no-repeat;
+  background-size: calc(315 * var(--hp)) 100%;
+  background-position: calc(var(--f) * -15 * var(--hp)) 0;
+  image-rendering: pixelated;
+}
+.player-auto .pousse { position: absolute; left: 0; top: 0; }
+/* À droite du médaillon : les jauges, puis l'argent. */
+.player-cote { display: flex; flex-direction: column; align-items: flex-start; gap: calc(3 * var(--hp)); padding-top: calc(2 * var(--hp)); }
+/* les jauges d'énergie, d'endurance et de bonheur, horizontales, l'une sous l'autre */
 .player-card .player-gauges { display: flex; }
-.player-gauges-in { display: flex; gap: calc(2 * var(--hp)); height: 100%; }
-.player-gauge { display: flex; flex-direction: column; align-items: center; gap: var(--hp); height: 100%; }
+.player-gauges-in { display: flex; flex-direction: column; gap: calc(2 * var(--hp)); }
+.player-gauge { display: grid; grid-template-columns: calc(10 * var(--hp)) auto; align-items: center; justify-items: center; gap: var(--hp); }
 /* Les dessins : coeur 9 × 8, éclair 8 × 10, smiley 9 × 9, étoile 11 × 10, pousse 7 × 7, pièce 10 × 10. */
 .hud-ico { display: block; flex: none; background: no-repeat 0 0 / 100% 100%; image-rendering: pixelated; }
 .hud-ico.coeur { width: calc(9 * var(--hp)); height: calc(8 * var(--hp)); background-image: url('../assets/hud/coeur.png'); }
@@ -2270,7 +2303,8 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 .hud-ico.etoile { width: calc(11 * var(--hp)); height: calc(10 * var(--hp)); background-image: url('../assets/hud/etoile.png'); }
 .hud-ico.pousse { width: calc(7 * var(--hp)); height: calc(7 * var(--hp)); background-image: url('../assets/hud/pousse.png'); }
 .hud-ico.piece { width: calc(10 * var(--hp)); height: calc(10 * var(--hp)); background-image: url('../assets/hud/piece.png'); }
-/* Le tube d'une jauge (9 px de large, 2 de bord) et son remplissage, un pixel en retrait. */
+/* Le tube d'une jauge (2 px de bord) et son remplissage, un pixel en retrait ; horizontal (.h) :
+   il se remplit de gauche à droite, le reflet en haut. */
 .hud-tube {
   position: relative;
   display: block;
@@ -2282,6 +2316,7 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
   border-image: url('../assets/hud/tube.png') 2 fill / calc(2 * var(--hp)) stretch;
   image-rendering: pixelated;
 }
+.hud-tube.h { flex: none; width: calc(34 * var(--hp)); height: calc(8 * var(--hp)); min-height: 0; }
 .hud-fill {
   position: absolute;
   left: var(--hp);
@@ -2295,26 +2330,11 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 .hud-fill.mid { background: #e8b030; box-shadow: inset var(--hp) 0 0 #f8d878; }
 .hud-fill.low { background: #c8503a; box-shadow: inset var(--hp) 0 0 #ec8a6e; }
 .hud-fill.endu { background: #3a8ad2; box-shadow: inset var(--hp) 0 0 #7ec0f0; }
+.hud-tube.h .hud-fill { top: var(--hp); right: auto; max-height: none; max-width: calc(100% - 2 * var(--hp)); box-shadow: inset 0 var(--hp) 0 #8cec6a; }
+.hud-tube.h .hud-fill.mid { box-shadow: inset 0 var(--hp) 0 #f8d878; }
+.hud-tube.h .hud-fill.low { box-shadow: inset 0 var(--hp) 0 #ec8a6e; }
+.hud-tube.h .hud-fill.endu { box-shadow: inset 0 var(--hp) 0 #7ec0f0; }
 @media (prefers-reduced-motion: reduce) { .hud-fill { transition: none; } }
-/* Sous le cadre : la barre du niveau (l'étoile sur son bout gauche) et l'anneau de l'autonomie. */
-.player-stats { display: flex; align-items: center; gap: calc(4 * var(--hp)); }
-.player-card .player-level { position: relative; display: flex; align-items: center; padding-left: calc(5 * var(--hp)); }
-.hud-tube.h { flex: none; width: calc(36 * var(--hp)); height: calc(9 * var(--hp)); min-height: 0; }
-.hud-tube.h .hud-fill { top: var(--hp); right: auto; max-height: none; max-width: calc(100% - 2 * var(--hp)); background: #f8d040; box-shadow: inset 0 var(--hp) 0 #fff2a0; }
-.player-level .etoile { position: absolute; left: 0; top: calc(-0.5 * var(--hp)); }
-.player-card .player-auto { position: relative; display: block; width: calc(18 * var(--hp)); height: calc(18 * var(--hp)); }
-.hud-anneau {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: calc(15 * var(--hp));
-  height: calc(15 * var(--hp));
-  background: url('../assets/hud/anneau.png') no-repeat;
-  background-size: calc(315 * var(--hp)) 100%;
-  background-position: calc(var(--f) * -15 * var(--hp)) 0;
-  image-rendering: pixelated;
-}
-.player-auto .pousse { position: absolute; left: 0; top: 0; }
 /* L'argent : la pièce sur le bout gauche de sa pastille, le montant en police pixel. */
 .player-card .player-money { position: relative; display: flex; align-items: center; padding-left: calc(5 * var(--hp)); }
 .hud-pastille {
