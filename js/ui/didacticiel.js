@@ -12,7 +12,7 @@
 import { DATA } from '../engine/catalog.js';
 import { countItem } from '../engine/inventory.js';
 import { craftStatus } from '../engine/atelier.js';
-import { ongletAtelier, ongletRecette } from './atelier.js';
+import { cibleRecette } from './atelier.js';
 import { cibleBloc } from './chantier.js';
 import { eauCruche, aCruche } from '../engine/cruche.js';
 import {
@@ -61,12 +61,14 @@ function prendreOutil(nom) {
   return `Prends la ${nom} dans ta barre d'outils.`;
 }
 
-// Une recette de l'Atelier : sa fenêtre ouverte, son onglet, le bouton Fabriquer ; sinon l'Atelier de la carte.
+// Une recette de l'Atelier : sa fenêtre ouverte, son onglet, sa case (ou celle de son groupe),
+// le bouton Fabriquer ; sinon l'Atelier de la carte.
 function fabriquer(ids) {
   if (buildMode) return { cible: '.build-bar-close' };
   if (!atelierOuvertFenetre()) return { carte: { blocs: ['atelier'] } };
   const id = recette(ids);
-  if (ongletRecette(id) !== ongletAtelier()) return { cible: `[data-action="atelier-tab"][data-tab="${ongletRecette(id)}"]` };
+  const c = cibleRecette(id);
+  if (c) return { cible: c };
   return { cible: fabricable(id) ? `[data-action="atelier-fabriquer"][data-recette="${id}"]` : null };
 }
 // (pour une étape : sa cible et sa surbrillance, d'après la liste de recettes `ids()`)

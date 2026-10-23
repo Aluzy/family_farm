@@ -40,7 +40,7 @@ import { persoHtml, renderFamille } from './famille.js';
 import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
-import { atelierOngletsHtml, renderAtelier } from './atelier.js';
+import { renderAtelier } from './atelier.js';
 import { encyclopedieNouveautes } from './encyclopedie.js';
 import { couchages } from '../engine/blocs.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './marche.js';
@@ -226,10 +226,10 @@ export const STAGE_WINDOWS = {
     corps: () => renderInventaire(true),
   },
   // L'Atelier (un appui sur l'Atelier posé sur la carte, la ferme générée seulement :
-  // js/ui/atelier.js) : fenêtre flottante dans le cadre bois, comme l'Inventaire.
+  // js/ui/atelier.js) : fenêtre flottante dans le cadre bois, comme l'Inventaire ; dedans, le
+  // menu des recettes, comme celui de Construire (onglets intercalaires, cases, bulles).
   atelier: {
     nom: 'Atelier', icone: '🔨', ok: () => true, bois: true, flottante: true,
-    onglets: () => atelierOngletsHtml(),
     corps: () => renderAtelier(),
   },
   // Marché (menu latéral) : fenêtre flottante comme l'Inventaire ; en-tête : les rayons en
