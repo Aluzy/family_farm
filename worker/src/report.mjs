@@ -96,6 +96,8 @@ export const GAME_ACTIONS = {
   'arbre-oui': 'Planter un arbre (graine ou jeune arbre, depuis l\'Inventaire)',
   'build-toggle': 'Construire : ouvrir ou ranger (ferme générée)',
   'build-pick': 'Construire : choisir un bloc (ferme générée)',
+  'build-tab': 'Construire : ouvrir un onglet (une catégorie de blocs)',
+  'build-murs': 'Construire : la case des murs (ouvrir la bulle des murs)',
   'meuble-place': 'Construire : glisser l\'aperçu d\'un meuble (ferme générée)',
   'meuble-ok': 'Construire : poser le meuble là où est son aperçu (ferme générée)',
   'meuble-annule': 'Construire : sortir de la pose d\'un meuble (ferme générée)',

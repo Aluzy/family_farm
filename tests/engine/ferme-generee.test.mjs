@@ -25,7 +25,7 @@ import {
   hoeableTiles, houseRepaired, isArable, isOwned, layEggs, machineDe, mainCharacter,
   majDidacticiel, makeCow, makeSheep, marcheOuvert, morceauxDe, nuitCouchee, nuitSansCouchage,
   objectifDidacticiel, passerDidacticiel, pickUp, piecesCloses, planAbri, planAbriCases, plant,
-  poserBloc, poserEtage, poussesArbres, ramassables, ramasser, ramasserMorceau,
+  poserBloc, blocDebloque, categorieBloc, addItem, poserEtage, poussesArbres, ramassables, ramasser, ramasserMorceau,
   recettesDidacticiel, regrowGrass, removeStarter, remplirCruche, remplirRuches, reprendreBloc,
   reprendreEtage, respawnBushes, respawnRocks, respawnTrees, robotBattery, robotCapacity,
   robotStation, robotTrip, ruchePleine, ruchesARecolter, runRobotCharge, sellItem, serreMurs,
@@ -440,6 +440,26 @@ test('ferme générée : un sapin abattu laisse une pomme de pin, un arbre un gl
   assert(poserBloc(s, 'gland', t + 1).ok, 'la place est libre');
   // hors de la ferme générée (une autre carte) : pas de graine, il repousse de lui-même
   assertEqual(especeArbre(s, 'transition:3,4'), null);
+});
+
+test('menu Construire : chaque bloc dans une catégorie ; seuls les blocs débloqués se montrent', () => {
+  const B = DATA.ATELIER.BLOCS;
+  assertEqual(Object.keys(B).filter((k) => !B[k].semis && !B[k].arbre && !categorieBloc(k)), [], 'chaque bloc posable a son onglet');
+  assertEqual([categorieBloc('mur_brique_bleue'), categorieBloc('porte'), categorieBloc('refrigerateur'), categorieBloc('meuble_canape'), categorieBloc('meuble_tableau_1'), categorieBloc('nichoir'), categorieBloc('citerne'), categorieBloc('atelier')],
+    ['batir', 'batir', 'maison', 'meubles', 'meubles', 'elevage', 'energie', 'machines']);
+  const s = chantier('menu');
+  setInv(s, {});
+  // au départ : ce que l'Atelier fabrique déjà ; pas encore le nichoir (le Poulailler), le bloc
+  // de silo, le panneau, la station du robot, ni un meuble
+  assertEqual(['mur_bois', 'porte', 'paillasse', 'atelier'].map((k) => blocDebloque(s, k)), [true, true, true, true]);
+  s.progression.niveau = 1;
+  assertEqual(['nichoir', 'bloc_silo', 'panneau', 'station_robot', 'meuble_chaise', 'refrigerateur'].map((k) => blocDebloque(s, k)), [false, false, false, false, false, false]);
+  // en main : il se montre (un meuble acheté)
+  addItem(s, 'meuble_chaise', 1);
+  assertEqual(blocDebloque(s, 'meuble_chaise'), true);
+  // son niveau atteint : le nichoir se fabrique, il se montre
+  s.progression.niveau = unlockLevel('poulailler');
+  assertEqual(blocDebloque(s, 'nichoir'), true);
 });
 
 test('ferme générée : poser et reprendre des blocs, sur l\'herbe seulement', () => {

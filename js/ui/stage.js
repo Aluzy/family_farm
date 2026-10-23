@@ -840,6 +840,8 @@ function renderStageHud(el) {
     el.insertAdjacentHTML('beforeend', '<div class="stage-hud"></div><div class="stage-nav"></div>');
     hud = el.querySelector('.stage-hud');
   }
+  // le mode Construire : son menu prend le haut de l'écran, le HUD du haut s'efface (jeu.css)
+  document.body.classList.toggle('construction', !!buildMode && !stageInterior);
   morph(hud, chapterChipHtml() + hoeChipHtml() + axeChipHtml() + pickChipHtml() + scytheChipHtml() + rodChipHtml() + buildChipHtml());
   if (!stageView) stageView = FarmStage.view();
   renderStageNav(el);

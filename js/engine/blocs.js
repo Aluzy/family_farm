@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
-import { atelierConstruit, atelierStatus, buildAtelier } from './atelier.js';
+import { atelierConstruit, atelierStatus, buildAtelier, recetteDebloquee } from './atelier.js';
 import { farmSeed, farmTerrain, tileCount } from './terrain.js';
 import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
@@ -166,6 +166,33 @@ function setHauteur(state, tile, h) {
 export function changeMur(ancien, sorte) {
   const a = sorteDe(ancien), s = sorteDe(sorte);
   return !!(a && s && a.mur && (s.mur || s.porte) && ancien !== sorte);
+}
+
+// Le bloc `sorte` est-il débloqué (le menu Construire le montre) ? En main ou déjà posé ; sinon,
+// une fois son niveau atteint (son bâtiment, sa station, son « debloque »), si une recette de
+// l'Atelier débloquée le fabrique (l'Atelier, lui, toujours : il se pose en premier ; la station
+// du robot, avec le robot). Un meuble,
+// un objet du Marché, le réfrigérateur : seulement en main ou posé.
+export function blocDebloque(state, sorte) {
+  const s = sorteDe(sorte);
+  if (!s) return false;
+  if (blocsEnMain(state, sorte) > 0 || Object.values(blocsPoses(state)).includes(sorte)) return true;
+  const verrou = s.batiment || s.debloque || s.station;
+  if (verrou && !isUnlocked(state, verrou)) return false;
+  if (s.robot && !robotOn(state)) return false;   // (la station du robot : avec le robot)
+  if (sorte === 'atelier') return true;
+  const R = DATA.ATELIER.RECETTES;
+  return Object.keys(R).some((id) => R[id].sortie && s.objet in R[id].sortie && recetteDebloquee(state, id));
+}
+
+// La catégorie du menu Construire du bloc `sorte` (DATA.ATELIER.CATEGORIES), ou null.
+export function categorieBloc(sorte) {
+  const s = sorteDe(sorte);
+  if (!s) return null;
+  for (const [id, c] of Object.entries(DATA.ATELIER.CATEGORIES)) {
+    if ((c.murs && s.mur) || (c.meubles && s.meuble && !s.frigo) || (c.blocs || []).includes(sorte)) return id;
+  }
+  return null;
 }
 
 // Combien de blocs `sorte` peut-on encore poser ? (l'Atelier : 1 s'il est construit et pas
