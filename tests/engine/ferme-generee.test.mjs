@@ -13,7 +13,7 @@ import {
   etatEtable, etatMoulin, etatSilo, hauteurSilo, hauteurMur, herbesSur, regrowGrass, respawnRocks, faucherSousBati, grassCut, stablePlaces, stableHoused, buyPasture, makeSheep, makeCow, feedLivestock,
   botteleuses, etatBotteleuse, machineDe, morceauxDe, ramasserMorceau, sortirBotte, verserFibres,
   buyRuche, buyDehors, PORTE_SUR_MUR, casesBuissonsCoupes, especeArbre, poussesArbres, arbresPlantes, respawnTrees, fellenTrees, fleursPourAbeilles, ruchePleine, ruchesARecolter, remplirRuches, pickUp,
-  buyItem, sellItem, buyHoe, marcheOuvert, unlockLevel, goToSleep, skipNight, simulateOffline, asleep,
+  buyItem, sellItem, buyHoe, marcheOuvert, unlockLevel, planAbriCases, casesAbriAPoser, goToSleep, skipNight, simulateOffline, asleep,
   caseDepart, commencerDidacticiel, etapeDidacticiel, suivantDidacticiel, majDidacticiel, objectifDidacticiel, recettesDidacticiel, blocsDidacticiel, passerDidacticiel, planAbri, hoe, plant, water, remplirCruche, eauCruche,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools, testBuildAtelier,
 } from '../../js/engine/index.js';
@@ -1534,4 +1534,29 @@ test('ferme générée : sans paillasse dans une pièce close, on ne dort pas (n
   assert(poserBloc(s, 'paillasse', p.dedans).ok);
   s.nuitEnCours = { ms: 0, minuit: false };
   assertEqual([goToSleep(s).ok, asleep(s)], [true, true]);
+});
+
+test('didacticiel : les cases de l\'abri s\'allument, à la taille de la famille ; posées, elles forment l\'abri', () => {
+  for (const n of [1, 6]) {
+    const s = chantier('abri' + n);
+    commencerDidacticiel(s);
+    s.famille.membres = s.famille.membres.slice(0, 1);
+    while (s.famille.membres.length < n) s.famille.membres.push({ ...s.famille.membres[0], id: 'm' + s.famille.membres.length });
+    const p = planAbriCases(s);
+    assert(p, 'un emplacement');
+    assertEqual([p.murs.length, p.dedans.length], [planAbri(s).murs, n], 'murs et paillasses selon la famille');
+    assertEqual(planAbriCases(s), p, 'le même emplacement, gardé');
+    assertEqual(casesAbriAPoser(s, 'abri_construire').length, p.murs.length + 1);
+    setInv(s, { mur_bois: p.murs.length, porte: 1, paillasse: n });
+    for (const t of p.murs) assert(poserBloc(s, 'mur_bois', t).ok, 'un mur sur sa case allumée');
+    assertEqual(casesAbriAPoser(s, 'abri_construire').map((c) => c.sorte), ['porte'], 'il reste la porte');
+    // la porte se pose sur un mur : un mur d'abord, puis la porte à sa place
+    setInv(s, { mur_bois: 1, porte: 1, paillasse: n });
+    assert(poserBloc(s, 'mur_bois', p.porte).ok);
+    assert(poserBloc(s, 'porte', p.porte).ok);
+    assertEqual([casesAbriAPoser(s, 'abri_construire'), piecesCloses(s).length], [[], 1], 'l\'abri est clos');
+    assertEqual(casesAbriAPoser(s, 'paillasses').length, n);
+    for (const t of p.dedans) assert(poserBloc(s, 'paillasse', t).ok);
+    assertEqual([casesAbriAPoser(s, 'paillasses'), couchages(s).length], [[], n]);
+  }
 });

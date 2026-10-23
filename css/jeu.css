@@ -1430,7 +1430,13 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   0%, 100% { outline-offset: 3px; box-shadow: 0 0 0 6px rgba(255, 210, 63, 0.35); }
   50% { outline-offset: 7px; box-shadow: 0 0 0 12px rgba(255, 210, 63, 0); }
 }
-@media (prefers-reduced-motion: reduce) { .didac-ring { animation: none; } }
+.didac-lueur { /* ce que le didacticiel montre sans le faire toucher (les graines offertes) */
+  outline: 3px solid #8be36a;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(139, 227, 106, 0.35);
+  animation: didac-ring 0.9s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .didac-ring, .didac-lueur { animation: none; } }
 /* pendant le didacticiel : ni l'ancienne bulle d'aide ni la puce du chapitre */
 body.didacticiel .stage-chip:not(.hoe):not(.compact), body.didacticiel #tuto-root { display: none; }
 

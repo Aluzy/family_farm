@@ -107,6 +107,22 @@ export function herbesSur(state, tile) {
   return ((H && H[tile]) || []).filter((id) => !grassCut(state, id));
 }
 
+// Peut-on bâtir sur `tile` (quel que soit le bloc) : de l'herbe libre, sans bloc, sol, meuble,
+// arbre, rocher ni terre labourée ; `herbe` : l'herbe haute (à faucher) est acceptée. Sert au
+// didacticiel pour choisir où placer l'abri (didacticiel.js, planAbriCases).
+export function caseBatissable(state, tile, { herbe = false } = {}) {
+  const T = farmTerrain(state);
+  if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return false;
+  const c = tile % T.LARGEUR, r = Math.floor(tile / T.LARGEUR);
+  if (c < 1 || r < 1 || c >= T.LARGEUR - 1 || r >= T.HAUTEUR - 1) return false;
+  if (blocAt(state, tile) || solAt(state, tile) || casesCouvertes(state).has(tile)) return false;
+  if (arbreSurCase(state, tile) || foretSurCase(state, tile)) return false;
+  const ch = T.LIGNES[r][c];
+  if (ch !== '#' && ch !== '+') return false;
+  if (!herbe && herbesSur(state, tile).length) return false;
+  return !(state.potager.parcelles || []).some((p) => p.case === tile);
+}
+
 // La case `tile` est-elle sous un rocher ou un arbre de la carte ?
 function rocherOuArbre(T, tile) {
   return [T.ROCHERS, T.ARBRES].some((L) => Object.values(L || {}).some((cs) => cs.includes(tile)));

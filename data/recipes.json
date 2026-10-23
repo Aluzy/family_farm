@@ -188,9 +188,10 @@
     "//RAMASSAGE_DEPART": [
       "Le premier jour d'une nouvelle partie, en plus : autant de petites pierres et de morceaux de bois",
       "autour de l'endroit où le personnage apparaît (au-dessus de la Zone de culture), entre RAYON[0] et",
-      "RAYON[1] tuiles de lui : de quoi bâtir l'Atelier sans s'éloigner."
+      "RAYON[1] tuiles de lui : de quoi bâtir l'Atelier, puis la hache et la pioche, sans s'éloigner. Ils ne",
+      "sont posés que ce jour-là : ramassés, ils ne reviennent pas."
     ],
-    "RAMASSAGE_DEPART": { "RAYON": [2, 7], "petite_pierre": 6, "morceau_bois": 6 }
+    "RAMASSAGE_DEPART": { "RAYON": [2, 7], "petite_pierre": 6, "morceau_bois": 9 }
   },
   "//BOTTELEUSE": [
     "La botteleuse (js/engine/botteleuse.js) : trois sortes de blocs de l'Atelier posés côte à côte sur",
