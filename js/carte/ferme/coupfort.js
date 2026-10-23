@@ -27,7 +27,7 @@
     // L'outil en main, s'il y en a un qui frappe fort : 'houe', 'hache', 'pioche', 'faux' ou null.
     outilFort() {
       const m = this.ctx.lastModel;
-      if (!m || this.room) return null;
+      if (!m) return null;
       return m.houe ? 'houe' : m.hache ? 'hache' : m.pioche ? 'pioche' : m.faux ? 'faux' : null;
     },
 

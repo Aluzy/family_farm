@@ -169,7 +169,7 @@
       const s = this.silo;
       if (!s) return;
       const p = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
-      const derriere = !!p && !this.room && p.y < s.y && p.y > s.y - s.h && p.x > s.x - 4 && p.x < s.x + s.w + 4;
+      const derriere = !!p && p.y < s.y && p.y > s.y - s.h && p.x > s.x - 4 && p.x < s.x + s.w + 4;
       const a = derriere || this.bati ? S.alpha : 1;
       if (s.img.alpha !== a) s.img.setAlpha(a);
     },

@@ -15,7 +15,6 @@ import { isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { buyDehors, buyFurniture, furnitureCount, furnitureMax } from '../engine/meubles.js';
 import { blocsPoses } from '../engine/blocs.js';
 import { houseRepaired } from '../engine/depart.js';
-import { atelierOuvert } from '../engine/atelier.js';
 import { buyRuche, ruchesPosees } from '../engine/ruches.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
 import { BUY_MAX, comptoirTab, comptoirTabChoisi, state } from './store.js';
@@ -39,8 +38,8 @@ const COMPTOIR_TABS = [
   { id: 'vendre', label: 'Vendre', icon: '💰', ok: () => true },
   { id: 'acheter', label: 'Acheter', icon: '🛒', ok: () => true },
   { id: 'graines', label: 'Graines', icon: '🌱', ok: () => true },
-  // (sur la ferme générée, dès le départ : la ruche s'y achète)
-  { id: 'animaux', label: 'Animaux', icon: '🐔', ok: () => isUnlocked(state, 'poulailler') || isUnlocked(state, 'moutons') || coopShown() || herdShown() || atelierOuvert(state) },
+  // (dès le départ : la ruche s'y achète)
+  { id: 'animaux', label: 'Animaux', icon: '🐔', ok: () => true },
   // Meubles de la maison (data/meubles.json) : l'onglet porte le dessin du canapé
   { id: 'meubles', label: 'Meubles', icon: '🛋️', img: 'canape', ok: () => true },
 ];
@@ -102,9 +101,8 @@ function helpText(tab) {
   if (tab === 'vendre') return `Les articles rangés au frigo se vendent aussi. Prix de vente fixes : l'inventaire part en premier, puis le frigo. Chaque unité vendue baisse de ${formatNumber(DATA.MARCHE.PAS)} points le coefficient d'achat de l'objet, sans passer sous son plancher.`;
   if (tab === 'acheter') return `Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(DATA.MARCHE.PAS)} points au coefficient, et il ne redescend qu'à la vente : le Marché dépanne, il ne nourrit pas la ferme. Les conserves ne s'achètent pas. La houe, elle, s'achète une seule fois.`;
   if (tab === 'graines') return `Dépannage : les graines coûtent cher, produire les tiennes reste plus rentable. Elles s'achètent au prix majoré : coefficient de départ et plancher à ${formatNumber(DATA.MARCHE.PLANCHER.graine)} %. Le blé, la patate et les autres cultures qui se plantent d'elles-mêmes (on plante une patate pour en récolter d'autres) gardent leur prix habituel (plancher ${formatNumber(DATA.MARCHE.PLANCHER.defaut)} %) et restent dans l'onglet Acheter.`;
-  if (tab === 'meubles' && atelierOuvert(state)) return 'Sur ta terre, un meuble acheté arrive dans l\'inventaire : pose-le dans la maison (une pièce close du foyer) avec le mode Construire 🔨. Une table, un canapé ou un tapis prennent plusieurs cases, un lit est un couchage, un tableau s\'accroche à un mur. À l\'achat, ils donnent un peu de bonheur à chaque membre de la famille, une seule fois. Une chaise et un lit par personne. Le bac à fleurs, lui, se pose aussi dehors : ses fleurs attirent les abeilles des ruches. Prix fixes ; un meuble ne se revend pas.';
-  if (tab === 'meubles') return 'Les meubles s\'installent dans la maison, chacun à sa place : la cuisine, le salon ou la chambre. À l\'achat, ils donnent un peu de bonheur à chaque membre de la famille, une seule fois. Une chaise et un lit par personne (lits d\'adulte et d\'enfant selon la famille). Prix fixes ; un meuble ne se revend pas.';
-  const ruche = atelierOuvert(state) ? ` La ruche (${formatCoins(DATA.RUCHE.PRIX)} pièces) se pose dehors avec le mode Construire 🔨 : ses abeilles butinent les fleurs de la ferme, et au bout de ${DATA.RUCHE.NUITS} nuits elle est pleine (${DATA.RUCHE.MIEL} pots de miel à récolter d'un appui sur sa bulle).` : '';
+  if (tab === 'meubles') return 'Sur ta terre, un meuble acheté arrive dans l\'inventaire : pose-le dans la maison (une pièce close du foyer) avec le mode Construire 🔨. Une table, un canapé ou un tapis prennent plusieurs cases, un lit est un couchage, un tableau s\'accroche à un mur. À l\'achat, ils donnent un peu de bonheur à chaque membre de la famille, une seule fois. Une chaise et un lit par personne. Le bac à fleurs, lui, se pose aussi dehors : ses fleurs attirent les abeilles des ruches. Prix fixes ; un meuble ne se revend pas.';
+  const ruche = ` La ruche (${formatCoins(DATA.RUCHE.PRIX)} pièces) se pose dehors avec le mode Construire 🔨 : ses abeilles butinent les fleurs de la ferme, et au bout de ${DATA.RUCHE.NUITS} nuits elle est pleine (${DATA.RUCHE.MIEL} pots de miel à récolter d'un appui sur sa bulle).`;
   return `Prix fixe, quel que soit leur nombre. Un animal ne se revend pas. Les poules, les moutons et les vaches vivent à l'Étable.${ruche}`;
 }
 
@@ -273,10 +271,10 @@ export function renderComptoir(fenetre = false) {
     const slots = items.map((k) => buySlot(k, 'acheter'));
     body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), toolSlot('pioche'), toolSlot('hache'), toolSlot('faux'), toolSlot('canne'), toolSlot('triporteur'), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
   } else if (tab.id === 'animaux') {
-    body = slotsHtml(ESPECES.map(animalSlot).concat(atelierOuvert(state) ? [rucheSlot()] : []), 'Aucun animal à vendre pour l\'instant.');
+    body = slotsHtml(ESPECES.map(animalSlot).concat([rucheSlot()]), 'Aucun animal à vendre pour l\'instant.');
   } else if (tab.id === 'meubles') {
-    // (sur la ferme générée : ce qui se pose dehors, le bac à fleurs…)
-    body = slotsHtml(Object.keys(DATA.MEUBLES).map(meubleSlot).concat(atelierOuvert(state) ? Object.keys(DATA.DEHORS || {}).map(dehorsSlot) : []), '');
+    // (et ce qui se pose dehors, le bac à fleurs…)
+    body = slotsHtml(Object.keys(DATA.MEUBLES).map(meubleSlot).concat(Object.keys(DATA.DEHORS || {}).map(dehorsSlot)), '');
   } else {
     const items = Object.keys(DATA.OBJETS).filter((k) => isBuyable(k) && isGraineComptoir(k) && seedForSale(k));
     body = slotsHtml(items.map((k) => buySlot(k, 'graines')), 'Aucune graine en vente.');
@@ -285,9 +283,9 @@ export function renderComptoir(fenetre = false) {
 }
 
 // Une graine dont la culture n'est pas encore débloquée (tournesol) n'est pas en vente. Un
-// jeune arbre (pommier, poirier) : sur la ferme générée seulement, une fois le Verger débloqué.
+// jeune arbre (pommier, poirier) : une fois le Verger débloqué.
 function seedForSale(item) {
-  if (DATA.OBJETS[item].arbre) return atelierOuvert(state) && isUnlocked(state, 'verger');
+  if (DATA.OBJETS[item].arbre) return isUnlocked(state, 'verger');
   return !Object.keys(DATA.CULTURES).some((c) => seedItem(c) === item && !isUnlocked(state, c));
 }
 
@@ -306,15 +304,14 @@ function shopBodyHtml(o) {
     const n = furnitureCount(state, o.id);
     const max = furnitureMax(state, o.id);
     let why = '';
-    const sauvage = atelierOuvert(state);
-    if (!houseRepaired(state)) why = sauvage ? 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.' : 'Répare d\'abord la maison.';
+    if (!houseRepaired(state)) why = 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.';
     else if (n >= max) why = def.max ? `Tu en as un pour chacun (${max}).` : 'Il est déjà dans la maison.';
     else if (!canPay(def.prix)) why = 'Pas assez de pièces.';
     return `
       <div class="item-head"><span class="item-icon" aria-hidden="true">${meubleImg(o.id, 'meuble-big')}</span><span class="item-title"><strong id="item-title">${def.nom}</strong><span class="num">${formatCoins(def.prix)} 💰${def.max ? ` · ${n} / ${max}` : ''}</span></span></div>
       <ul class="item-lines">
         <li>😊 +${def.bonheur} bonheur pour chaque membre de la famille, une fois</li>
-        <li>🏠 ${sauvage ? `Arrive dans l'inventaire : à poser dans la maison (🔨)${posePlace(o.id)}` : `S'installe dans ${PIECES[def.piece] || 'la maison'}`}${def.max === 'membres' ? ' : une chaise par personne' : def.max === 'adultes' ? ' : un lit par adulte' : def.max === 'enfants' ? ' : un lit par enfant' : ''}.</li>
+        <li>🏠 Arrive dans l'inventaire : à poser dans la maison (🔨)${posePlace(o.id)}${def.max === 'membres' ? ' : une chaise par personne' : def.max === 'adultes' ? ' : un lit par adulte' : def.max === 'enfants' ? ' : un lit par enfant' : ''}.</li>
         ${why ? `<li>${why}</li>` : ''}
       </ul>
       <div class="row item-actions"><button type="button" class="btn primary" data-action="buy-meuble" data-item="${o.id}"${why ? ' disabled' : ''}>Acheter (−${formatCoins(def.prix)} 💰)</button></div>`;

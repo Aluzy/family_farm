@@ -254,7 +254,7 @@
     // Un escalier sous ce point (son bas, ou son haut à l'étage) : sa case, ou -1.
     escalierAt(wx, wy) {
       const e = this.ctx.lastModel && this.ctx.lastModel.etage;
-      if (!e || this.room) return -1;
+      if (!e) return -1;
       const q = this.etagePoint(wx, wy), c = this.tileAtPoint(q.x, q.y);
       return e.escaliers.includes(c) ? c : -1;
     },

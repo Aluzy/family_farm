@@ -98,12 +98,6 @@ try {
   await touch('[data-action="tuto-skip"]', 'Passer l\'aide');
 
   // Chapitre 1 : la puce d'objectif mène à chaque achat
-  await touch('.stage-chip:not(.hoe)', 'Puce « Réparer la maison »');
-  await touch('[data-action="repair-house"]', 'Réparer la maison');
-  await touch('[data-action="buy-starter"][data-id="panneau"]', 'Acheter le panneau');
-  await touch('[data-action="buy-starter"][data-id="pompe"]', 'Acheter la pompe');
-  await touch('[data-action="buy-starter"][data-id="reservoir"]', 'Acheter le réservoir');
-  await touch('#stage-window-close', 'Fermer la Maison (la puce est dessous)');
   await touch('.stage-chip:not(.hoe)', 'Puce « Acheter une houe »');
   await touch('[data-action="shop-item"][data-kind="houe"]', 'Case de la houe');
   await touch('[data-action="buy-hoe"]', 'Acheter la houe (la fiche se ferme)');

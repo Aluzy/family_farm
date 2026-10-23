@@ -51,7 +51,7 @@
     // La flèche paraît quand le personnage est tout près du bout du chemin. Devant la porte de la
     // mine, poussé vers elle (au doigt, aux flèches), il y entre.
     stepExit(time) {
-      const at = !this.room && this.fermier && this.fermier.pos ? this.fermier.pos() : null;
+      const at = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       const a = this.exit;
       if (a && !this.autresCartes()) a.setVisible(false);
       else if (a) {
@@ -116,7 +116,7 @@
     // l'appui est pris ; false : pas sur la mine).
     askMine(wx, wy) {
       const o = this.objects && this.objects[MINE.object];
-      if (!o || this.room || wx < o.x || wx > o.x + o.width || wy < o.y || wy > o.y + o.height) return false;
+      if (!o || wx < o.x || wx > o.x + o.width || wy < o.y || wy > o.y + o.height) return false;
       this.enterMine();
       return true;
     },
@@ -145,7 +145,7 @@
     // s'ouvre (renvoie true) ; sinon rien (false : le personnage y va).
     askHollow(wx, wy) {
       const b = this.autresCartes() ? this.hollow() : null;
-      if (!b || this.room || wx < b.x0 - 2 || wx > b.x1 + 2 || wy < b.y0 - 4 || wy > b.y1 + 2) return false;
+      if (!b || wx < b.x0 - 2 || wx > b.x1 + 2 || wy < b.y0 - 4 || wy > b.y1 + 2) return false;
       const at = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       if (!at) return false;
       const dx = Math.max(b.x0 - at.x, 0, at.x - b.x1), dy = Math.max(b.y0 - at.y, 0, at.y - b.y1);
@@ -182,7 +182,7 @@
       if (!D.isConnected) { this.dialog = null; return; }
       const at = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       const b = this.hollow();
-      if (!at || this.room || !b || Math.hypot(Math.max(b.x0 - at.x, 0, at.x - b.x1), Math.max(b.y0 - at.y, 0, at.y - b.y1)) > HOLLOW.near * 2) this.closeDialog();
+      if (!at || !b || Math.hypot(Math.max(b.x0 - at.x, 0, at.x - b.x1), Math.max(b.y0 - at.y, 0, at.y - b.y1)) > HOLLOW.near * 2) this.closeDialog();
     },
   });
 })(window);

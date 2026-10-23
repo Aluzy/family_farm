@@ -65,7 +65,6 @@
         const x = s.x - s.originX * w, y = s.y - s.originY * h;
         out.push({ src: f.source.image, sx: f.cutX, sy: f.cutY, sw: f.cutWidth, shh: f.cutHeight, x, y, w, h, flip: s.flipX, pied: pied == null ? y + h - SOLEIL.base : pied });
       };
-      for (const e of (this.buildings || new Map()).values()) sprite(e.sprite);
       sprite(this.well);
       sprite(this.tank);
       for (const e of (this.trees || new Map()).values()) sprite(e.sprite);

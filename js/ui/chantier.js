@@ -8,7 +8,7 @@
 // js/engine/blocs.js ; la carte : js/carte/ferme/chantier.js.
 
 import { DATA } from '../engine/catalog.js';
-import { atelierConstruit, atelierOuvert } from '../engine/atelier.js';
+import { atelierConstruit } from '../engine/atelier.js';
 import { blocsDidacticiel } from '../engine/didacticiel.js';
 import { setStageWindow, stageWindow } from './stage-windows.js';
 import { blocAt, blocDessus, blocsEnMain, changeMur, couchages, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
@@ -47,10 +47,10 @@ let niveauListe = false;
 const APPUI_LONG_MS = 350;
 const CONSEIL_MS = 2000;   // le rappel à l'ouverture du mode
 
-// Le mode Construire est-il possible ? (la ferme générée : on y pose d'abord l'Atelier, qui se
-// construit en le posant ; l'entrée 🔨 du menu latéral l'ouvre)
+// Le mode Construire est-il possible ? Toujours : on y pose d'abord l'Atelier, qui se construit
+// en le posant ; l'entrée 🔨 du menu latéral l'ouvre.
 export function chantierOuvert() {
-  return atelierOuvert(state);
+  return true;
 }
 
 // L'icône d'un bloc (celle de son objet ; un meuble : son dessin ; l'Atelier : la sienne).

@@ -119,7 +119,7 @@
     // Chaque image : le morceau sous les pieds du personnage est ramassé (le pont :
     // ctx.bridge.morceau) ; la bulle « +1 » monte. Refusé (il dort) : il reste là.
     stepPieces() {
-      if (!this.pieces || !this.pieces.size || this.room) return;
+      if (!this.pieces || !this.pieces.size) return;
       const p = this.fermier && this.fermier.pos();
       if (!p) return;
       for (const e of this.pieces.values()) {

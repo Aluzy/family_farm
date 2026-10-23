@@ -3,7 +3,6 @@ import { dishHappiness } from '../engine/ville.js';
 import { countItem, isFridgeable, isPerishable, lotsOf } from '../engine/inventory.js';
 import { fridgeCapacity, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeRoom, fridgeUnits, moveAllToFridge } from '../engine/fridge.js';
 import { isUnlocked } from '../engine/campaign.js';
-import { atelierOuvert } from '../engine/atelier.js';
 import { sorteAPlanter } from '../engine/plantation.js';
 import { formatQty } from '../engine/format.js';
 import { invTab, state } from './store.js';
@@ -155,7 +154,7 @@ function itemBodyHtml(o) {
   }
   if (o.lieu === 'frigo') lines.push('🧊 Au frais : il ne vieillit pas tant que le frigo est alimenté.');
   if (o.item === DATA.SILO.ITEM && state.silo.construit) lines.push(`🛖 Silo : ${formatQty(state.silo.ble)}`);
-  const aPlanter = o.lieu === 'sac' && atelierOuvert(state) && stageUsable() && sorteAPlanter(o.item);
+  const aPlanter = o.lieu === 'sac' && stageUsable() && sorteAPlanter(o.item);
   if (it.categorie === 'graine' && !sorteAPlanter(o.item)) lines.push('🌱 Se sème dans la Zone de culture.');
   if (aPlanter) lines.push('🌳 Se plante dehors, sur une case d\'herbe libre, loin des autres arbres.');
   let actions = '';

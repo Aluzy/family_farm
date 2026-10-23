@@ -1,7 +1,7 @@
 /* carte/ferme/config.js — la scène de la ferme : ses réglages (window.FermeCarte).
  *
  * Les tables de la carte de la ferme (la carte Tiled, les bâtiments, les arbres, les rochers, la
- * pêche, les asperseurs, le robot, les intérieurs…), lues par js/farm-stage.js et par les
+ * pêche, les asperseurs, le robot…), lues par js/farm-stage.js et par les
  * fichiers de js/carte/ferme/. Chacun de ces fichiers ajoute ses méthodes à la scène de la ferme
  * par FermeCarte.partie({ … }) ; js/farm-stage.js les pose sur le prototype de la scène quand
  * il la crée. Les réglages communs à toutes les cartes sont dans js/carte/ (CarteKit).
@@ -332,32 +332,6 @@
   [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
     [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641], [944.8, 673.1]]
     .forEach((p, i) => { DEFAULT_OBJECTS[TREE_OBJECT + (i + 1)] = { x: p[0], y: p[1], width: 63.7, height: 78.2 }; });
-  // serre_*.png : la découpe du bâtiment (largeur × hauteur depuis le coin haut-gauche).
-  //   « batiment » : la serre du décor version 2 (scripts/batiments/style_v2.py), 96 × 81, sur
-  //   le rectangle `serre` de la carte.
-  const SERRE_FRAMES = {
-    batiment: { sp: [96, 81] },
-  };
-  const SERRE_FRAME = 'batiment';
-  // Bâtiments : `object` = rectangle nommé de la carte (le bas-centre de l'image se pose sur
-  // le bas-centre du rectangle), `window` = fenêtre ouverte par un appui. La maison est
-  // toujours là ; les autres n'apparaissent que si modèle.batiments[id].visible est vrai.
-  // (Seule l'ancienne carte dessinée a ces rectangles : sur la ferme générée, tout se bâtit en
-  // blocs. L'étable, le poulailler et le moulin n'y ont plus d'image : leur forme de secours.)
-  const BUILDINGS = [
-    { id: 'maison', object: 'maison', tex: 'house', suffixed: true, window: 'maison' },
-    { id: 'etable', object: 'grange', tex: 'barn', suffixed: true, window: 'etable' },
-    { id: 'poulailler', object: 'poulailler', tex: 'coop', suffixed: false, window: 'poulailler', frame: 0 },
-    { id: 'moulin', object: 'moulin', tex: 'windmill', suffixed: true, window: 'moulin', anim: true },
-    { id: 'serre', object: 'serre', tex: 'serre', suffixed: true, window: 'serre', frame: SERRE_FRAME },
-    // silo.png (28×62, scripts/batiments/silo.py) : sur le rectangle `silo` de la carte.
-    { id: 'silo', object: 'silo', tex: 'silo', suffixed: false, window: 'silo' },
-  ];
-  const MILL_FRAME = { frameWidth: 96, frameHeight: 128 };
-  // panneaux_toit.png (scripts/batiments/panneaux_toit.py) : les panneaux solaires sur le
-  // versant droit du toit de la maison, 6 images de 32×47 (la n-ième porte n panneaux),
-  // posées au point (x, y) de house_sp.png. modèle.panneaux = nombre de panneaux (0 : aucun).
-  const ROOF_PANELS = { key: 'panneaux_toit', file: 'panneaux_toit.png', frame: { frameWidth: 32, frameHeight: 47 }, x: 37, y: 2, max: 6 };
   // puits.png (scripts/batiments/puits.py) : 3 images de 34×40, le vieux puits seul (0), le
   // puits avec le tuyau de la pompe (1), la pompe seule (2), posée par-dessus une fois achetée.
   // modèle.pompe = la pompe est achetée ; modèle.pompeEnMarche = elle tourne (elle vibre alors
@@ -367,14 +341,6 @@
   // citerne.png (scripts/batiments/citerne.py) : 5 images de 24×34, le tube de niveau vide
   // (0) jusqu'à plein (4). modèle.citerne = cette image, ou -1 tant que le réservoir n'est pas acheté.
   const TANK = { key: 'citerne', file: 'citerne.png', frame: { frameWidth: 24, frameHeight: 34 }, object: 'citerne', max: 4 };
-  // Version 1.12 : images délabrées (scripts/batiments/ruines.py), montrées tant que le
-  // bâtiment n'est pas réparé ou construit (modèle.batiments[id].ruine). Même taille et
-  // même découpe que l'image d'origine.
-  const RUINES = {
-    maison: { key: 'house_sp_ruine', file: 'house_sp_ruine.png' },
-    serre: { key: 'serre_sp_ruine', file: 'serre_sp_ruine.png', frame: 'batiment' },
-    silo: { key: 'silo_ruine', file: 'silo_ruine.png' },
-  };
   // Les animaux de compagnie de la vie d'ambiance (chat.png, chien.png…) : 8 cases de 16×16
   // (leur ordre : CAT_FRAMES dans js/ambient-life.js). Sans l'image, pas d'animal ; rien d'autre ne change.
   const CAT_FRAME = { frameWidth: 16, frameHeight: 16 };
@@ -395,29 +361,10 @@
     mouton: ['mouton.png', { frameWidth: 32, frameHeight: 24 }],
     poule: ['poule.png', { frameWidth: 16, frameHeight: 16 }],
   };
-  const COOP_FRAME = { frameWidth: 44, frameHeight: 55 };
-  // Intérieurs : une petite carte Tiled à part, affichée à la place de la carte quand le
-  // joueur entre dans le bâtiment (modèle.interieur). `zones` = nom des couches d'objets dont
-  // le rectangle reçoit les parcelles, `plots` = leur liste dans le modèle, `window` = fenêtre
-  // ouverte par une parcelle où il n'y a rien à faire, `building` = bâtiment devant lequel la
-  // vue revient à la sortie. `props` = couche d'objets dont chaque rectangle nommé reçoit un
-  // meuble (MEUBLES) : un appui sur le meuble ouvre la fenêtre de ce nom. `image` : un dessin
-  // posé en fond à la place des tuiles (la Serre : scripts/batiments/serre_interieur.py).
-  // Couche d'objets « passages » (facultative) : les rectangles « sol » (où le personnage
-  // marche ; sans eux, les cases du sol de la carte) et le point « entree » (sans lui, le bas
-  // de la vue, en son milieu).
-  const ROOMS = {
-    serre: { key: 'map_serre', json: 'serre_interieur.json', image: 'serre_interieur', zones: /^serre_zone_(\d+)$/, plots: 'serre', window: 'serre', building: 'serre' },
-    maison: { key: 'map_maison', json: 'maison_interieur.json', props: 'meubles', window: 'maison', building: 'maison' },
-  };
-  // Meubles de la maison (scripts/batiments/meubles.py, assets/meuble_<dessin>.png) : posés en
-  // bas au centre de leur rectangle. modèle.meubles[place] :
-  //   - un nombre (four, cuisine, frigo) : 0 absent, 1 en filigrane (pas encore construit),
-  //     2 construit ; le dessin porte le nom de la place, un appui ouvre sa fenêtre ;
-  //   - { dessin } : un meuble posé là (décor, meuble acheté), qui ne s'ouvre pas.
-  // Les tapis, les tableaux et la fenêtre sont à plat (sous tout le reste).
+  // Les meubles de la maison (scripts/batiments/meubles.py, assets/meuble_<dessin>.png), posés en
+  // blocs dans une pièce close (js/carte/ferme/chantier.js).
   const MEUBLES = [
-    'four', 'cuisine', 'frigo', 'evier', 'plan', 'fenetre', 'plante', 'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3',
+    'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3',
     'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3', 'paillasse',
     'lit_double',
   ];
@@ -425,12 +372,6 @@
   // quand il y dort (js/fermier.js). La paillasse : son lit tant qu'aucun lit n'est acheté.
   // (le lit double : deux lits adulte côte à côte, sur la ferme générée, js/carte/ferme/chantier.js)
   const LITS = ['lit_adulte', 'lit_enfant', 'paillasse', 'lit_double'];
-  const MEUBLE_PLAT = /^(tapis|tableau|fenetre)/;
-  const MEUBLE_GHOST = 0.35;
-  const ROOM_GAP = 64 * T;     // les intérieurs sont posés à droite de la carte, hors de portée de la vue
-  const ROOM_SHADE = 0.45;     // assombrissement des emplacements que le joueur n'a pas encore
-  const ROOM_FADE_MS = 180;    // fondu à l'entrée et à la sortie
-  const ROOM_PAD = { top: 44, bottom: 60 };   // px CSS laissés à l'objectif (en haut) et aux boutons (en bas)
 
   // l'appui et le double appui (sur l'herbe ou un chemin : le personnage y va), comme sur les
   // autres cartes (CarteKit.APPUI)
@@ -446,8 +387,6 @@
   // Bulles (assets/bulle.png, au double) : la pointe est à BUBBLE_TIP_X px CSS du bord gauche
   // et BUBBLE_TIP_Y px au-dessus du bas (les mêmes que la bulle « +x », CarteKit.BULLE).
   const BUBBLE_TIP_X = K.BULLE.pointeX, BUBBLE_TIP_Y = K.BULLE.pointeY;
-  // Le repas : la bulle des convives qui ont bien mangé.
-  const JOIE = '😊';
   // Les abeilles des ruches (js/carte/ferme/abeilles.js) : `parRuche` par ruche, de quelques
   // pixels (`dessin` : 2 images, les ailes levées puis baissées, `battements` par seconde ;
   // `couleurs`). Elles sortent par le trou de vol (`trou` px au-dessus du pied de la case),
@@ -503,7 +442,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, EXIT, MINE, HOLLOW, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, SERRE_FRAMES, SERRE_FRAME, BUILDINGS, MILL_FRAME, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, MEUBLE_PLAT, MEUBLE_GHOST, ROOM_GAP, ROOM_SHADE, ROOM_FADE_MS, ROOM_PAD, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, JOIE, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, EXIT, MINE, HOLLOW, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

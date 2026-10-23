@@ -11,7 +11,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, SFX, TREE_OBJECT, ORCHARD_ADULT, TREE_BODY, DEFAULT_OBJECTS, BUILDINGS, ROOF_PANELS, WELL, PUMP_SHAKE_MS, TANK, RUINES, FERMIER_FRAME, ZONE_LABEL_UP } = F.C;
+  const { T, SFX, TREE_OBJECT, ORCHARD_ADULT, TREE_BODY, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, FERMIER_FRAME, ZONE_LABEL_UP } = F.C;
   const { clamp, reducedMotion, v } = F;
 
   F.partie({
@@ -30,38 +30,14 @@
       // Lumière de l'heure (CarteKit.voile) : en fondu, sauf au premier affichage.
       this.lumiere.set(model.heure, force);
 
-      // Bâtiments : présents seulement si le jeu les a débloqués.
-      // modèle.batiments[id] = { visible, nom, badge } (ou un simple booléen).
+      // Lieux : modèle.batiments[id] = { visible, nom, badge } (ou un simple booléen).
       const shown = model.batiments || {};
       const info = (id) => {
         const v = shown[id];
         const o = v && typeof v === 'object' ? v : { visible: !!v };
-        return (id === 'maison' || o.visible) ? o : null;   // version 1.12 : la Zone de culture aussi, une fois la ferme ouverte
+        return o.visible ? o : null;
       };
-      for (const def of BUILDINGS) {
-        // (la ferme générée n'a pas de rectangle pour ce qui se bâtit, comme la maison : rien)
-        const want = this.objects[def.object] ? info(def.id) : null;
-        const e = this.buildings.get(def.id);
-        if (e && (!want || rebuild || !!want.ruine !== !!e.ruine)) { e.sprite.destroy(); this.buildings.delete(def.id); this.sunDirty = true; }
-        if (want && !this.buildings.has(def.id)) {
-          const sprite = this.makeBuilding(def, !!want.ruine);
-          this.buildings.set(def.id, { def, ruine: !!want.ruine, sprite });
-          this.sunDirty = true;
-        }
-        // Le Moulin ne tourne que quand il moud (modèle.batiments.moulin.enMarche).
-        const b = want ? this.buildings.get(def.id) : null;
-        if (b && def.anim && b.sprite.anims) {
-          const key = b.sprite.texture.key;
-          const run = !!want.enMarche && !reducedMotion() && this.anims.exists(key);
-          if (run && !b.sprite.anims.isPlaying) b.sprite.play(key);
-          else if (!run && b.sprite.anims.isPlaying) { b.sprite.stop(); b.sprite.setFrame(0); }
-        }
-        // Étiquette : centrée au-dessus de l'image.
-        const s = want ? this.buildings.get(def.id).sprite : null;
-        this.syncLabel(def.id, want, def.window, s ? s.x + s.width / 2 : 0, s ? s.y - s.height + (def.labelDown || 0) : 0);
-      }
       this.syncPerso(model.perso | 0);
-      this.syncRoofPanels(model.panneaux | 0);
       this.syncFloors(model.sols);
       this.syncPaths(model.chemins);
       this.syncBeasts(model.enclos, model.heure);
@@ -120,7 +96,6 @@
       this.syncRobot(model.robot);
       this.syncTrees(model.arbres || [], rebuild);
       this.syncPiles(model.ramasser || []);
-      this.syncRooms(model, force);
       // L'ambiance reçoit l'heure et les images des arbres (jamais le modèle) : elle
       // ne les anime pas, elle y fait partir feuilles et écureuils. Elle reçoit aussi l'image
       // de l'Étable et du Poulailler (s'ils sont affichés, avec leur vraie image) et le nombre
@@ -128,9 +103,7 @@
       if (this.ambient) {
         const leafy = [];
         for (const e of this.trees.values()) if (e.key.indexOf('ph_') !== 0 && e.a.stade >= ORCHARD_ADULT) leafy.push(e.sprite);
-        const real = (id) => { const e = this.buildings.get(id); return e && e.sprite.texture.key.indexOf('ph_') !== 0 ? e.sprite : null; };
-        const folds = { etable: real('etable'), poulailler: real('poulailler') };
-        this.ambient.setContext({ hour: model.heure, trees: leafy, folds, herd: model.animaux || {}, compagnons: model.compagnons || [] });
+        this.ambient.setContext({ hour: model.heure, trees: leafy, herd: model.animaux || {}, compagnons: model.compagnons || [] });
       }
       this.placeLabels();
     },
@@ -201,21 +174,6 @@
       return { w: e.sprite.displayWidth * TREE_BODY, h: 64 };
     },
 
-    // Panneaux solaires sur le versant droit du toit : seulement sur la vraie image de la
-    // maison réparée (ni ruine, ni dessin de secours), juste devant elle.
-    syncRoofPanels(n) {
-      const e = this.buildings.get('maison');
-      const house = e && !e.ruine && e.sprite.texture.key.indexOf('house_') === 0 ? e.sprite : null;
-      if (!house || n <= 0 || !this.has(ROOF_PANELS.key)) {
-        if (this.roofPanels) { this.roofPanels.destroy(); this.roofPanels = null; }
-        return;
-      }
-      if (!this.roofPanels) this.roofPanels = this.add.image(0, 0, ROOF_PANELS.key, 0).setOrigin(0);
-      this.roofPanels.setFrame(Math.min(n, ROOF_PANELS.max) - 1)
-        .setPosition(house.x + ROOF_PANELS.x, house.y - house.height + ROOF_PANELS.y)
-        .setDepth(house.depth + 0.5);
-    },
-
     // Le puits est toujours là ; la pompe s'y ajoute une fois achetée. Comme un bâtiment :
     // bas-centre de l'image sur le bas-centre du rectangle, profondeur = y du pied.
     // En marche, la pompe vibre : un pixel à droite, puis à sa place, et ainsi de suite.
@@ -275,30 +233,6 @@
       const x = clamp(Math.round(o.x + o.width / 2 - w / 2), 0, this.world.w - w);
       const y = clamp(Math.round(o.y + o.height), h, this.world.h);
       return this.add.image(x, y, def.key, 0).setOrigin(0, 1).setDepth(y);
-    },
-
-    // Pose le bas-centre de l'image sur le bas-centre du rectangle de la carte, sans sortir
-    // de la carte. Profondeur = y du pied : ce qui est plus bas passe devant.
-    makeBuilding(def, ruine) {
-      const o = this.objects[def.object] || DEFAULT_OBJECTS[def.object];
-      const wanted = def.suffixed ? def.tex + '_' + SFX : def.tex;
-      const r = ruine && RUINES[def.id] && this.has(RUINES[def.id].key) ? RUINES[def.id] : null;
-      const key = r ? r.key : this.tex(wanted, 'ph_' + def.id);
-      const real = key.indexOf('ph_') !== 0;
-      let s;
-      if (r) {
-        s = this.add.image(0, 0, key, r.frame != null ? r.frame : undefined);   // délabré : immobile
-      } else if (def.anim && real) {
-        s = this.add.sprite(0, 0, key, 0);         // l'animation : selon modèle.batiments (sync)
-      } else {
-        s = this.add.image(0, 0, key, real && def.frame != null ? def.frame : undefined);
-      }
-      s.setOrigin(0, 1);
-      if (def.flip) s.setFlipX(true);
-      const x = clamp(Math.round(o.x + o.width / 2 - s.width / 2), 0, this.world.w - s.width);
-      const y = clamp(Math.round(o.y + o.height), s.height, this.world.h);
-      s.setPosition(Math.round(x), Math.round(y)).setDepth(Math.round(y));
-      return s;
     },
 
     // La Serre de la ferme générée : ses parcelles (sur les cases de sa pièce) dans des bacs de

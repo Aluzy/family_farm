@@ -31,7 +31,7 @@
       const g = this.plantationG;
       if (!g) return;
       g.clear();
-      if (!this.plantation || this.room) return;
+      if (!this.plantation) return;
       const cols = this.grid.cols, v = this.cameras.main.worldView;
       const k = reducedMotion() ? 0.5 : (Math.sin((time / P.periode) * Math.PI * 2) + 1) / 2;
       for (const c of this.plantation.cases) {
@@ -44,7 +44,7 @@
 
     // La case du personnage (son numéro), ou -1.
     persoCase() {
-      const p = this.fermier && !this.room ? this.fermier.pos() : null;
+      const p = this.fermier ? this.fermier.pos() : null;
       return p ? this.tileAtPoint(p.x, p.y - 1) : -1;
     },
   });

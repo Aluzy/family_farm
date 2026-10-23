@@ -34,7 +34,7 @@
     // Les points à entourer : { x, y } en px de carte.
     pointsSurbrillance() {
       const s = this.surbrillance, out = [];
-      if (!s || this.room) return out;
+      if (!s) return out;
       if (s.blocs && this.blocks) for (const e of this.blocks.values()) if (s.blocs.includes(e.sorte)) out.push({ x: e.x, y: e.y - 8 });
       if (s.ramassables && this.gatherables) {
         for (const g of this.gatherables.values()) if (g.sorte === s.ramassables && !g.busy) out.push({ x: g.x, y: g.y - 5 });
@@ -52,7 +52,7 @@
       if (!this.surbrillance) return;
       const k = reducedMotion() ? 0.5 : (Math.sin((time / S.periode) * Math.PI * 2) + 1) / 2;
       const r = S.rayon + S.pouls * k;
-      if (Array.isArray(this.surbrillance.cases) && !this.room) {
+      if (Array.isArray(this.surbrillance.cases)) {
         const cols = this.grid.cols, v = this.cameras.main.worldView;
         for (const q of this.surbrillance.cases) {
           const x = (q.case % cols) * T, y = Math.floor(q.case / cols) * T;

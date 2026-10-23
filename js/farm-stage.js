@@ -47,7 +47,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, MAP, SFX, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, EXIT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, MILL_FRAME, ROOF_PANELS, WELL, TANK, RUINES, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, COOP_FRAME, ROOMS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
+  const { T, MAP, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, EXIT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
   const { clamp, pixelRatio, reducedMotion, v } = F;
 
   let game = null;          // le jeu Phaser de toutes les cartes (js/carte/jeu.js)
@@ -74,8 +74,6 @@
         super('farm');
         this.ctx = ctx;                  // ce que la page a donné au montage (voir mount)
         this.plots = new Map();          // id de parcelle -> { soil, crop, key, tween }
-        this.buildings = new Map();      // id de bâtiment -> { def, sprite }
-        this.roofPanels = null;          // panneaux solaires sur le toit de la maison (image)
         this.well = null;                // le puits (image)
         this.pump = null;                // la pompe, une fois achetée (image), et sa vibration :
         this.pumpShake = null;           //   minuterie qui la décale d'un pixel quand elle tourne
@@ -96,10 +94,6 @@
         this.tileAnims = [];             // tuiles animées de la carte, par tuile (voir makeTileAnims)
         this.tileSprites = [];           // les images des étendues de cases animées (voir makeTileAnims)
         this.tilesStill = false;         // animations réduites : ces images sont masquées
-        this.rooms = {};                 // intérieurs disponibles (voir bakeRooms) : id -> image, zones, emplacements
-        this.room = null;                // intérieur affiché à la place de la carte (null : dehors)
-        this.roomShade = null;           // voile sur les emplacements pas encore achetés
-        this.shadeKey = '';
         this.cx = DEFAULT_W / 2;         // centre de la vue, en px de carte
         this.cy = DEFAULT_H / 2;
         this.drag = null;                // glissement en cours
@@ -116,7 +110,6 @@
         L.image('soil_dry', v('soil_dry.png'));
         L.image('soil_wet', v('soil_wet.png'));
         L.spritesheet(K.FLECHE.key, v(K.FLECHE.file), { frameWidth: K.FLECHE.size, frameHeight: K.FLECHE.size });
-        L.image('silo', v('silo.png'));
         L.spritesheet(F.C.RAMASSABLES.key, v(F.C.RAMASSABLES.file), F.C.RAMASSABLES.frame);
         L.spritesheet(F.C.BLOCS_CARTE.key, v(F.C.BLOCS_CARTE.file), F.C.BLOCS_CARTE.frame);
         L.spritesheet(F.C.BLOCS_CARTE.hauts.key, v(F.C.BLOCS_CARTE.hauts.file), F.C.BLOCS_CARTE.hauts.frame);
@@ -129,26 +122,15 @@
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
         L.spritesheet(TALL_GRASS.key, v(TALL_GRASS.file), TALL_GRASS.frame);
         L.spritesheet(TALL_GRASS.fleurs.key, v(TALL_GRASS.fleurs.file), TALL_GRASS.frame);
-        L.spritesheet(ROOF_PANELS.key, v(ROOF_PANELS.file), ROOF_PANELS.frame);
         L.spritesheet(WELL.key, v(WELL.file), WELL.frame);
         L.spritesheet(TANK.key, v(TANK.file), TANK.frame);
-        for (const r of Object.values(RUINES)) {
-          if (r.sheet) L.spritesheet(r.key, v(r.file), r.sheet === 'mill' ? MILL_FRAME : COOP_FRAME);
-          else L.image(r.key, v(r.file));
-        }
         L.tilemapTiledJSON(MAP.key, v(MAP.json));
-        for (const r of Object.values(ROOMS)) {
-          L.tilemapTiledJSON(r.key, v(r.json));
-          if (r.image) L.image(r.image, v(r.image + '.png'));
-        }
         L.spritesheet(SPRINKLER.key, v(SPRINKLER.file), SPRINKLER.frame);
         L.spritesheet(ROBOT.key, v(ROBOT.file), ROBOT.frame);
         L.spritesheet(ROBOT.station.key, v(ROBOT.station.file), ROBOT.station.frame);
         for (const name of MEUBLES) L.image('meuble_' + name, v('meuble_' + name + '.png'));
         for (const name of LITS) L.image('meuble_' + name + '_drap', v('meuble_' + name + '_drap.png'));
         L.image(MAP.tiles, v(MAP.image));
-        L.image('house_' + SFX, v('house_' + SFX + '.png'));
-        L.image('serre_' + SFX, v('serre_' + SFX + '.png'));
         L.spritesheet('verger', v('verger.png'), TREE_FRAME);
         L.spritesheet('arbre_clair_sp', v('arbre_clair_sp.png'), { frameWidth: 56, frameHeight: 64 });
         L.spritesheet('pin_clair_sp', v('pin_clair_sp.png'), { frameWidth: 72, frameHeight: 64 });
@@ -160,13 +142,11 @@
         this.cameras.main.roundPixels = false;
         this.makePlaceholders();
         this.defineFrames();
-        this.defineAnims();
         this.bakeGround();
         this.add.image(0, 0, 'ground').setOrigin(0).setDepth(0);
         this.makeSun();                       // les ombres portées, qui suivent le soleil (js/carte/ferme/soleil.js)
         this.watchGround();
         this.makeTileAnims();
-        this.bakeRooms();
         // Voile de lumière : il couvre toute la carte, au-dessus des bâtiments et des
         // plantes, et multiplie leurs couleurs (blanc = aucun effet). Les étiquettes et les
         // boutons, en DOM, restent au-dessus et gardent leurs couleurs.
@@ -217,7 +197,6 @@
                 return g ? Object.assign({}, g, { trees: (g.trees || []).filter(debout), bushes: (g.bushes || []).filter(pousse), rocks: this.rockFeet() }) : { rocks: this.rockFeet() };
               },
               cols: () => this.grid.cols,
-              outside: () => !this.room,
               resync: () => { if (this.rawModel) this.sync(this.rawModel); },
               // Version 1.18 : il prend un tas (le jeu le met dans l'inventaire), hors de sa
               // boucle d'image ; puis la bulle « +x » monte au-dessus de lui.
@@ -294,7 +273,7 @@
         if (!this.drag.fort) this.drag.labour = this.labourStart(wp.x, wp.y);
         // Appui maintenu sur le silo (hors du mode Construire) : le mode Construire, un bloc de
         // silo en main, pour l'agrandir (js/ui/chantier.js).
-        if (!this.drag.labour && !this.drag.fort && !this.room && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.siloAt(wp.x, wp.y)) {
+        if (!this.drag.labour && !this.drag.fort && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.siloAt(wp.x, wp.y)) {
           const d = this.drag;
           d.holdTimer = setTimeout(() => {
             if (this.drag !== d || d.moved) return;
@@ -323,7 +302,7 @@
           if (!pointer.wasTouch) {
             const wp = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
             const hit = this.hitAt(wp.x, wp.y);
-            this.game.canvas.style.cursor = hit ? 'pointer' : this.room || this.suitPerso() ? 'default' : 'grab';
+            this.game.canvas.style.cursor = hit ? 'pointer' : this.suitPerso() ? 'default' : 'grab';
             this.setHover(this.placeOf(hit));       // survol : le nom du lieu s'affiche
           }
           return;
@@ -361,9 +340,8 @@
           d.moved = true;
           clearTimeout(d.holdTimer);
           this.setHover(null);           // on fait glisser la carte : plus de nom affiché
-          if (!this.room) this.dragged = true;   // signalé à la page par reportView()
-          else this.roomPanned = true;           // l'intérieur garde où le joueur l'a fait glisser
-          if (!this.room) this.game.canvas.style.cursor = 'grabbing';
+          this.dragged = true;   // signalé à la page par reportView()
+          this.game.canvas.style.cursor = 'grabbing';
         }
         this.setCentre(d.cx - dx / zoom, d.cy - dy / zoom);
         const now = performance.now();
@@ -416,24 +394,22 @@
         else if (this.vx || this.vy) this.stepInertia(dt);
         this.stepLanterns(time, dt / 1000);      // (avant le voile : leurs lumières y sont posées)
         this.lumiere.step();
-        if (this.tileAnims.length && !this.room) this.stepTileAnims(time);
+        if (this.tileAnims.length) this.stepTileAnims(time);
         this.stepEau(time, dt / 1000);           // (l'eau vivante, js/carte/ferme/eau.js)
         if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
         if (this.tankTipUntil && performance.now() >= this.tankTipUntil) this.showTankTip(false);
         this.syncTankTip();
         // Filet de sécurité : le fond est vérifié toutes les quelques secondes.
         if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false, true); }
-        // Dans un intérieur : ni bêtes ni nuages, ni étiquettes de bâtiments.
-        if (this.ambient && !this.room) this.ambient.update(delta);
+        if (this.ambient) this.ambient.update(delta);
         this.stepCharge();
         if (this.fermier) {
-          this.fermier.steer(this.room ? null : this.manette.dir());
-          this.fermier.update(delta, this.room ? this.room.id : null);
+          this.fermier.steer(this.manette.dir());
+          this.fermier.update(delta);
         }
         this.stepExit(time);
-        if (this.family) this.family.update(delta, this.room ? this.room.id : null);
-        // Dehors, la vue suit le personnage, centrée sur lui (comme sur les autres cartes) ; elle
-        // s'arrête quand il est dans la maison.
+        if (this.family) this.family.update(delta);
+        // La vue suit le personnage, centrée sur lui (comme sur les autres cartes).
         if (this.suitPerso()) {
           const p = this.fermier.pos();
           if (p) {
@@ -443,10 +419,6 @@
             this.setCentre(this.cx + (p.x - this.cx) * k, this.cy + (p.y - FOLLOW_UP - this.cy) * k);
           }
         }
-        this.placeMealBubbles();
-        // Dans la maison, la vue suit le personnage qui va se coucher (la chambre est à droite).
-        const suivi = this.room && this.fermier && !this.drag && this.fermier.focus ? this.fermier.focus() : null;
-        if (suivi != null) this.setCentre(this.cx + (suivi - this.cx) * Math.min(1, dt / 300), this.cy);
         this.cullDecor();
         this.stepOccluders(delta);
         this.stepTallGrass(delta);
@@ -468,7 +440,7 @@
         this.placeDialog();
         this.stepFishing(delta);
         this.stepSun();
-        if (!this.room) this.placeLabels();
+        this.placeLabels();
         this.placePiles();
         this.placeGain();
         this.placeGainAide();
@@ -479,7 +451,7 @@
       // La vue suit-elle le personnage ? Dehors, dès qu'il est sur la carte (sans lui, la vue
       // glisse au doigt, comme avant).
       suitPerso() {
-        return !this.room && !!this.fermier;
+        return !!this.fermier;
       }
 
       /* ---------- appuis ---------- */
@@ -521,18 +493,6 @@
             },
           });
         }
-        for (const r of Object.values(this.rooms)) {
-          if (!r.def.plots || (sc && r.id === 'serre')) continue;   // un intérieur sans parcelles (la maison)
-          list.push({
-            id: 'interieur-' + r.id, place: null, window: r.def.window, plots: m ? m[r.def.plots] || [] : [],
-            slot: (p, i) => i,
-            pos: (i) => r.slots[i] || null,
-            at: (wx, wy) => {
-              const i = r.slotAt.get(Math.floor(wx / T) * T + ',' + Math.floor(wy / T) * T);
-              return i === undefined ? -1 : i;
-            },
-          });
-        }
         return list;
       }
 
@@ -541,7 +501,7 @@
       // ensemble au relâchement (un seul rendu, une seule sauvegarde).
       labourStart(wx, wy) {
         const m = this.ctx.lastModel;
-        if (!m || !m.houe || this.room || !m.labourables) return null;
+        if (!m || !m.houe || !m.labourables) return null;
         const W = this.grid.cols;
         const t = Math.floor(wy / T) * W + Math.floor(wx / T);
         const ok = new Set(m.labourables);
@@ -586,10 +546,10 @@
         let refus = null;                            // en mode houe : une tuile qui ne se laboure pas
         // Version 1.18 : la bulle d'un tas à ramasser passe devant tout.
         // planter un arbre (js/carte/ferme/plantation.js) : la case touchée, rien d'autre
-        if (!this.room && this.plantation) { const c = this.tileAtPoint(wx, wy); return c >= 0 ? { plante: c } : null; }
+        if (this.plantation) { const c = this.tileAtPoint(wx, wy); return c >= 0 ? { plante: c } : null; }
         // la ferme générée, en mode Construire : la case touchée (poser, reprendre), rien d'autre
         // (sur l'image du silo, au sol : le pied de la colonne touchée, js/carte/ferme/silo.js)
-        if (!this.room && this.ctx.lastModel && this.ctx.lastModel.bati) {
+        if (this.ctx.lastModel && this.ctx.lastModel.bati) {
           const sc = !this.niveau ? this.siloCaseAt(wx, wy) : -1;
           if (sc >= 0) return { bati: sc };
           const q = this.etagePoint ? this.etagePoint(wx, wy) : { x: wx, y: wy }, c = this.tileAtPoint(q.x, q.y);
@@ -598,23 +558,23 @@
         // un escalier (un essai, js/carte/ferme/etage.js) : monter, descendre ; à l'étage, rien d'autre
         if (this.escalierAt && this.escalierAt(wx, wy) >= 0) return { etage: true };
         if (this.niveau) return null;
-        const pile = !this.room && !hoeing ? this.pileAt(wx, wy) : null;
+        const pile = !hoeing ? this.pileAt(wx, wy) : null;
         if (pile) return { pile: pile.id };
         // la ferme générée : une pierre, un bout de bois à ramasser à la main
-        const brin = !this.room && !hoeing ? this.gatherAt(wx, wy) : null;
+        const brin = !hoeing ? this.gatherAt(wx, wy) : null;
         if (brin) return { gather: brin };
         // un caillou (un rocher d'une seule tuile) se ramasse à la main, sauf la pioche en main
-        if (!this.room && !hoeing && !(this.ctx.lastModel && this.ctx.lastModel.pioche)) {
+        if (!hoeing && !(this.ctx.lastModel && this.ctx.lastModel.pioche)) {
           const caillou = this.rockAt(wx, wy);
           if (caillou && caillou.cells.size === 1) return { caillou };
         }
         // la botteleuse (une de ses pièces) : il va jeter ses fibres dans l'entonnoir
-        const botte = !this.room && !hoeing ? this.botteleuseAt(wx, wy) : -1;
+        const botte = !hoeing ? this.botteleuseAt(wx, wy) : -1;
         if (botte >= 0) return { botteleuse: botte };
         // le silo de la ferme générée (ses blocs) : la fenêtre du Silo
-        if (!this.room && !hoeing && this.siloAt(wx, wy)) return { window: 'silo' };
+        if (!hoeing && this.siloAt(wx, wy)) return { window: 'silo' };
         // un four, une cuisinière posés (la ferme générée) : la fenêtre de sa station
-        const station = !this.room && !hoeing ? this.stationAt(wx, wy) : null;
+        const station = !hoeing ? this.stationAt(wx, wy) : null;
         if (station) return { window: station };
         for (const z of this.zones()) {
           const i = z.at(wx, wy);
@@ -625,7 +585,6 @@
           if (hoeing && z.zone && (p || this.arable(i))) return { hoe: { zone: z.zone, case: i }, place: z.place };
           if (p) return { plot: p, place: z.place, open: z.window };
         }
-        if (this.room) return this.propAt(wx, wy);   // dans un intérieur : ses meubles, rien d'autre
         // la canne à pêche en main : l'eau de l'étang ou de la mare sous le doigt s'y pêche
         if (this.ctx.lastModel && this.ctx.lastModel.canne) {
           const eau = this.waterAt(wx, wy);
@@ -656,13 +615,7 @@
           if (wx < x - padX || wx > x + w + padX || wy < y - h - padY || wy > y + padY) return;
           if (!best || depth > best.depth) best = { depth, window: win };
         };
-        for (const e of this.buildings.values()) test(e.sprite.x, e.sprite.y, e.sprite.width, e.sprite.height, e.sprite.depth, e.def.window);
-        // Les panneaux solaires du toit ouvrent la fenêtre Énergie ; la pompe du puits et la
-        // citerne, la fenêtre Eau (devant la maison et les autres bâtiments : profondeur +1).
-        if (this.roofPanels) {
-          const r = this.roofPanels;
-          test(r.x, r.y + r.height, r.width, r.height, r.depth + 1, 'energie');
-        }
+        // La pompe du puits et la citerne : la fenêtre Eau.
         if (this.pump && this.well) test(this.well.x, this.well.y, this.well.width, this.well.height, this.well.depth + 1, 'eau');
         // le robot et sa station de charge : sa fenêtre (batterie, autonomie)
         if (this.bot) {
@@ -683,7 +636,6 @@
         }
         if (best && best.tree) {
           if (best.tree.fruits) return { treeHarvest: best.tree.id };
-          if (best.tree.libre) return { treeSlot: best.tree.case };
         }
         // L'herbe (même labourable) n'ouvre rien : la fenêtre de la Zone de culture s'ouvre par
         // une parcelle déjà labourée, ou en mode houe. En mode houe, une tuile qui ne se laboure
@@ -700,7 +652,7 @@
         // sur ces bâtiments (leur fenêtre) attend donc DOUBLE_TAP_MS de voir s'il n'est pas
         // suivi d'un second.
         const farmyard = hit && (hit.window === 'poulailler' || hit.window === 'etable') ? hit.window : null;
-        if (!this.room && (!hit || farmyard)) {
+        if (!hit || farmyard) {
           if (!hit) K.astuceMarche(this.input.activePointer);   // un essai de marche : le geste s'explique, une fois
           const now = performance.now(), prev = this.lastTap;
           const near = prev && Math.hypot(wx - prev.x, wy - prev.y) <= (DOUBLE_TAP_PX * pixelRatio()) / this.cameras.main.zoom;
@@ -732,7 +684,6 @@
         if (hit.scythe) { this.scythe(hit.scythe); return; }
         if (hit.fish) { this.goFish(hit.fish, wx, wy); return; }
         if (hit.treeHarvest) { this.ctx.bridge.act('harvest-tree', { id: hit.treeHarvest }); return; }
-        if (hit.treeSlot !== undefined) { this.ctx.bridge.act('tree-slot', { case: hit.treeSlot }); return; }
         const p = hit.plot;
         if (!p.culture) this.ctx.bridge.act('plant-open', { id: p.id });
         else if (p.mature) this.ctx.bridge.act('harvest', { id: p.id });
@@ -864,9 +815,6 @@
     if (mounted) global.CarteJeu.cache('farm');   // une autre carte affichée : rien ne change pour elle
   }
 
-  // L'intérieur `id` ('serre') peut-il être affiché ? Faux tant que la scène n'est pas prête,
-  // ou si sa carte n'a pas pu être chargée.
-  function hasRoom(id) { const s = getScene(); return !!(s && s.ready && s.rooms[id]); }
   // Version 1.18 : la carte a-t-elle son personnage (c'est lui qui ramasse) ?
   function hasFermier() { const s = getScene(); return !!(s && s.ready && s.fermier); }
   // La case du personnage sur la carte de la ferme (son numéro), ou -1.
@@ -876,16 +824,10 @@
   // suit) et entre ; `done` est appelé quand il est dedans (tout de suite s'il y est déjà).
   function goHome(done) {
     const s = getScene();
-    if (!s || !s.ready || !s.fermier || s.room) { setTimeout(done, 0); return; }
+    if (!s || !s.ready || !s.fermier) { setTimeout(done, 0); return; }
     s.fermier.goHome(done);
   }
 
-  // Le repas de 19 h : le personnage (et la famille) iront à table dans la maison.
-  // opts : { convives: [{ perso, enfant }], heureux }. false : pas de personnage.
-  function mealScene(opts) {
-    const s = getScene();
-    return !!(s && s.ready && s.startMeal(opts || {}));
-  }
 
   // Où en est la vue (voir viewInfo()) ; null tant que la scène n'est pas prête.
   function view() { const s = getScene(); return s && s.ready ? s.viewInfo() : null; }
@@ -920,5 +862,5 @@
     const s = getScene();
     return !!(s && s.ready && s.family && s.family.allerManger(id));
   }
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasRoom, hasFermier, persoCase, goHome, mealScene, allerManger, arrive, scene: getScene }; // scene() : pour le débogage et les tests
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, goHome, allerManger, arrive, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

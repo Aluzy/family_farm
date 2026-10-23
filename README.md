@@ -343,8 +343,8 @@ de `assets/` sont, eux, en palette indexée quand c'est possible sans perte (≤
 plus légers, pixel pour pixel identiques.
 
 - **Cartes Tiled** : `node scripts/build-map.mjs` (ou `npm run build:map`) fabrique les cartes
-  que le jeu charge (`assets/carte_printemps.json` pour la ferme, `serre_interieur.json`,
-  `maison_interieur.json`, `infra_monde.json`, `ville.json`, `transition.json`,
+  que le jeu charge (`assets/carte_printemps.json`, dont la ferme générée reprend les jeux de
+  tuiles, `infra_monde.json`, `ville.json`, `transition.json`,
   `montagne.json`, `plage.json`) à partir des cartes de travail `.tmj` et de leurs jeux de
   tuiles `.tsx`. À relancer après chaque modification dans Tiled (ou d'un générateur
   `scripts/ville/*.py`, `scripts/infra/carte.py`) ; `--check` vérifie sans écrire. Voir
@@ -356,20 +356,10 @@ plus légers, pixel pour pixel identiques.
 - **Police des fenêtres de dialogue** (essai) : `python3 scripts/police/police_dialogue.py` fait
   `assets/police_dialogue.woff` (avec fontTools) d'après l'alphabet dessiné à la main de
   `scripts/police/originaux/` ; `css/jeu.css` la pose sur les fenêtres (`.modal`).
-- **Bâtiments dessinés en code** : `scripts/batiments/silo.py` génère `assets/silo.png`.
-- **Panneaux solaires du toit** : `python3 scripts/batiments/panneaux_toit.py` génère
-  `assets/panneaux_toit.png`, posé sur le versant droit du toit de la maison une fois le panneau
-  acheté (un panneau de plus par niveau : 2 au niveau 1, 6 au niveau 5).
 - **Puits et pompe** : `python3 scripts/batiments/puits.py` génère `assets/puits.png`, le puits
-  en haut à gauche du Moulin, sous le chemin, toujours là ; la pompe s'y ajoute une fois achetée
-  et vibre légèrement quand elle tourne.
+  posé en bloc ; la pompe s'y ajoute une fois posée dessus et vibre légèrement quand elle tourne.
 - **Citerne** : `python3 scripts/batiments/citerne.py` génère `assets/citerne.png`, la citerne
-  (le réservoir) à droite de la pompe, une fois achetée ; son tube de niveau suit l'eau du réservoir.
-- **Bâtiments délabrés** (début de partie, avant réparation) : `python3 scripts/batiments/ruines.py`
-  écrit `assets/<image>_ruine.png` pour la maison, l'étable, le moulin, la serre, le poulailler et
-  le silo, à partir des images d'origine (même taille, mêmes cases : chacune remplace l'originale
-  telle quelle). Le moulin délabré a ses 4 cases identiques : il ne tourne pas. Pour la serre,
-  seule la verrière (découpe `batiment`) est abîmée. `--apercu` écrit une planche avant / après.
+  (le réservoir) posée en bloc ; son tube de niveau suit l'eau du réservoir.
 
 ### Simulation d'équilibrage
 

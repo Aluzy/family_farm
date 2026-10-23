@@ -194,7 +194,7 @@
     // déplace (js/farm-stage.js, drag.meuble).
     meubleSous(wx, wy) {
       const a = this.apercu;
-      return a && !this.room && wx >= a.x0 && wx <= a.x1 && wy >= a.y0 && wy <= a.y1 ? a.case : null;
+      return a && wx >= a.x0 && wx <= a.x1 && wy >= a.y0 && wy <= a.y1 ? a.case : null;
     },
 
     // En mode Construire, au niveau `n` où l'on rehausse les murs (0 : aucun) : un voile sombre
@@ -347,7 +347,7 @@
       }
       const out = this.lanternLights;
       out.length = 0;
-      const nuit = this.room ? 0 : V.nuit, on = nuit > L.allume, calme = global.CarteKit.reduit();
+      const nuit = V.nuit, on = nuit > L.allume, calme = global.CarteKit.reduit();
       const Ph = global.Phaser, webgl = this.sys.renderer.type === (Ph && Ph.WEBGL);
       for (const e of list) {
         if (e.phase == null) { e.phase = Math.random() * 7; e.flip = 0; e.k = 1; }
@@ -519,7 +519,7 @@
     // cases qu'ils cachent). Dans un intérieur, rien (la carte est cachée).
     stepMurs(dt) {
       const B = this.blocks, H = BLOCS_CARTE.hauts;
-      if (!B || !B.size || this.room || this.rang) return;        // (au niveau où l'on rehausse : syncRang)
+      if (!B || !B.size || this.rang) return;        // (au niveau où l'on rehausse : syncRang)
       const cols = this.grid.cols, but = new Map();
       const vise = (i, a) => { if (i && i.active && !(but.get(i) <= a)) but.set(i, a); };
       const p = this.fermier && this.fermier.pos ? this.fermier.pos() : null;

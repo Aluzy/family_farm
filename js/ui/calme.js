@@ -1,5 +1,4 @@
-import { houseRepaired, setupPending } from '../engine/depart.js';
-import { atelierOuvert } from '../engine/atelier.js';
+import { setupPending } from '../engine/depart.js';
 import { state } from './store.js';
 
 /* ---------- Fluidité (FLU-17, FLU-18) : une seule fenêtre à la fois au démarrage ---------- */
@@ -44,16 +43,6 @@ export function storyOpen() {
 
 export function tutorialShown() {
   return document.body.classList.contains('has-tuto');
-}
-
-// FLU-21 : l'horloge s'arrête pendant qu'on lit les bulles d'aide, avant de jouer : dès que
-// la maison est réparée, le temps reprend (le soleil fait tourner la pompe ; sinon le joueur
-// qui garde la bulle ouverte resterait à 6 h, sans eau). Jamais pendant « dormir », qui
-// attend justement que le temps d'éveil soit passé.
-// Sur la ferme générée, le temps ne s'arrête pas : le foyer se bâtit en plusieurs jours (les
-// ressources à ramasser reviennent chaque matin).
-export function tutorialStopsClock() {
-  return tutorialShown() && !houseRepaired(state) && !atelierOuvert(state) && !document.querySelector('#tuto-root .tuto-dormir');
 }
 
 // Bandeau des cookies demandé au chargement : il attend le calme (FLU-17).

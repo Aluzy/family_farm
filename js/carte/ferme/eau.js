@@ -17,7 +17,7 @@
   F.partie(Object.assign({}, K.eauVive, {
 
     eauEtendues() {
-      return this.room ? null : this.animAreas;
+      return this.animAreas;
     },
 
     eauHeure() {

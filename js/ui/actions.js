@@ -20,16 +20,16 @@ export function registerActions(handlers) {
 // dans l'une des deux listes.
 export const SOMMEIL_MESSAGE = '💤 Tu dors : attends le réveil.';
 export const SOMMEIL_PERMISES = new Set([
-  'sleep', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start', 'demenagement-ok',
+  'sleep', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
   'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'entreprise-quota', 'meuble-annule', 'meuble-place',
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
   'plant', 'boite-deposer', 'boite-reprendre', 'water', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
-  'sell-item', 'buy-item', 'buy-animal', 'buy-meuble', 'buy-ruche', 'buy-dehors', 'plant-tree', 'plant-all', 'hoe-many', 'commerce-choose',
+  'sell-item', 'buy-item', 'buy-animal', 'buy-meuble', 'buy-ruche', 'buy-dehors', 'plant-all', 'hoe-many', 'commerce-choose',
   'commerce-upgrade', 'commerce-quota-dec', 'commerce-quota-inc', 'commerce-quota-max', 'harvest-tree', 'ville-go',
-  'ville-market', 'ville-buy', 'buy-pasture', 'mill-start', 'mill-cancel', 'repair-house', 'buy-starter',
-  'buy-orchard-slot', 'buy-tech', 'build-serre', 'build-poulailler', 'build-fridge', 'build-verger', 'build-silo',
-  'build-paturage', 'build-station', 'atelier-fabriquer', 'bloc', 'arbre-planter', 'arbre-case', 'arbre-oui', 'build-toggle', 'silo-agrandir', 'build-pick', 'meuble-ok', 'build-level-menu', 'build-level', 'etage-toggle', 'upgrade', 'upgrade-silo', 'upgrade-serre', 'upgrade-poulailler', 'buy-hoe', 'buy-tool', 'axe-toggle', 'pick-toggle', 'rod-toggle', 'scythe-toggle',
+  'ville-market', 'ville-buy', 'buy-pasture', 'mill-start', 'mill-cancel',
+  'buy-tech', 'build-fridge',
+  'build-station', 'atelier-fabriquer', 'bloc', 'arbre-planter', 'arbre-case', 'arbre-oui', 'build-toggle', 'silo-agrandir', 'build-pick', 'meuble-ok', 'build-level-menu', 'build-level', 'etage-toggle', 'upgrade', 'upgrade-serre', 'upgrade-poulailler', 'buy-hoe', 'buy-tool', 'axe-toggle', 'pick-toggle', 'rod-toggle', 'scythe-toggle',
   'hoe', 'hoe-toggle', 'hoe-take', 'upgrade-tank', 'robot-autonomie', 'upgrade-fridge', 'maintain', 'repair', 'eat', 'fridge-in',
   'fridge-in-all', 'fridge-out', 'toggle', 'semis-set', 'cow-herbs',
 ]);
