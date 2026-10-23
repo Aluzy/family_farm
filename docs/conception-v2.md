@@ -110,7 +110,7 @@ pour tenir jusqu'à la première récolte (simulation en 13.3) 🟡.
 |---|---|---|
 | 1 | Atteindre le niveau 2 : nouvelles tuiles et nouvelles cultures | — |
 | 2 | Cultiver au moins 4 cultures différentes 🟡 | — |
-| 3 | Atteindre le niveau 3, **réparer le Silo** | le **blé** devient plantable |
+| 3 | Atteindre le niveau 3, **construire le Silo** | le **blé** devient plantable |
 | 4 | Planter du blé | — |
 | 5 | Stocker **50 blés** au Silo 🟡 | fin du chapitre 2 |
 
@@ -143,7 +143,7 @@ ses chapitres servent de jalons.
 |---|---|---|---|
 | 1 | 0 | patate, tomate, carotte | 6 |
 | 2 | 500 | courgette, aubergine, oignon ; **achat de la Cuisine** ; **huile au Marché** | 12 |
-| 3 | 1 200 | poivron, ail, fraise, **blé** ; **réparation du Silo** ; **réparation du Poulailler** | 20 |
+| 3 | 1 200 | poivron, ail, fraise, **blé** ; **construction du Silo** ; **réparation du Poulailler** | 20 |
 | 4 | 3 000 | épinard, tournesol, riz ; **réparation du Moulin** (et le Champ) | 32 |
 | 5 | 7 500 | houblon ; **achat du Four** ; **réparation de l'Étable** | 48 |
 | 6 | 20 000 | **achat de la Presse** ; **Verger** | 64 |
@@ -313,7 +313,7 @@ Les 17 cultures du jeu sont toutes placées (pas de nouvelle culture à créer) 
 |---|---|---|---|
 | 1 | 🥔 patate, 🍅 tomate, 🥕 carotte | Zone de culture | houe |
 | 2 | 🥒 courgette, 🍆 aubergine, 🧅 oignon | Zone de culture | — |
-| 3 | 🫑 poivron, 🧄 ail, 🍓 fraise, 🌾 **blé** | Zone de culture | **blé : Silo réparé** |
+| 3 | 🫑 poivron, 🧄 ail, 🍓 fraise, 🌾 **blé** | Zone de culture | **blé : Silo construit** |
 | 4 | 🥬 épinard, 🌻 tournesol, 🍚 riz | Zone de culture / Champ | — |
 | 5 | 🍺 houblon | Zone de culture / Champ | — |
 | 6 | 🍎 pommier, 🍐 poirier | Verger | — |
@@ -321,10 +321,10 @@ Les 17 cultures du jeu sont toutes placées (pas de nouvelle culture à créer) 
 
 ### 6.2 Règle du blé
 
-> Le **blé ne peut être planté que si le Silo a été réparé.** Tant que le Silo est délabré,
-> la graine de blé apparaît grisée dans le menu « Planter » avec la mention « Réparez
-> d'abord le Silo ». Dans le code, la culture `ble` passe de `deblocage: "champ"` à une
-> double condition : niveau 3 et `silo` réparé.
+> Le **blé ne peut être planté que si le Silo a été construit.** Tant que le Silo n'est pas
+> construit, la graine de blé apparaît grisée dans le menu « Planter » avec la mention
+> « Construisez d'abord le Silo ». Dans le code, la culture `ble` passe de `deblocage: "champ"` à une
+> double condition : niveau 3 et `silo` construit.
 
 ### 6.3 Verger (niveau 6) ✅ (fait, version 1.13)
 
