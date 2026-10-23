@@ -1794,7 +1794,7 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble) { display: no
 .build-slot-img { max-width: 30px; max-height: 30px; image-rendering: pixelated; pointer-events: none; }
 /* la case des murs : « ⋯ » en haut à gauche (elle ouvre la bulle des murs) */
 .build-murs-plus { position: absolute; left: 4px; top: -2px; font-size: 1rem; font-weight: 900; line-height: 1; color: var(--color-earth); }
-/* la bulle des murs : sous la barre, une flèche vers la case des murs ; chaque mur avec son nom */
+/* la bulle des murs : sous la barre, une flèche vers la case des murs ; chaque mur, son icône */
 .build-bulle {
   position: absolute; left: -6px; top: calc(var(--slot) + 12px);
   z-index: 2;
@@ -1810,11 +1810,9 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble) { display: no
   border: 8px solid transparent; border-bottom-color: var(--color-earth);
 }
 .build-bulle-titre { font-weight: 800; color: var(--color-earth); margin: 0 2px 4px; }
-.build-bulle-grid { display: grid; grid-template-columns: repeat(5, 48px); grid-auto-rows: 52px; gap: 4px; }
-.build-bulle .build-slot { height: 52px; padding-bottom: 10px; }
-.build-bulle .build-slot .px { --pxs: 28px; }
-.build-bulle .build-slot-n { top: 2px; bottom: auto; }
-.build-slot-nom { position: absolute; left: 0; right: 0; bottom: 1px; font-size: 0.55rem; font-weight: 800; line-height: 1; color: var(--color-earth); text-align: center; white-space: nowrap; overflow: hidden; }
+.build-bulle-grid { display: grid; grid-template-columns: repeat(5, 46px); grid-auto-rows: 46px; gap: 4px; }
+.build-bulle .build-slot { height: 46px; }
+.build-bulle .build-slot .px { --pxs: 30px; }
 
 /* Dans un intérieur (la Serre) : « Sortir » et « Gérer », à la place des flèches. */
 .stage-room-bar {

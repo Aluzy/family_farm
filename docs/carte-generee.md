@@ -389,7 +389,7 @@ Le Marché vend toujours les outils.
     bloc épuisé pâli), et au bout le niveau de construction, ✕ et les paillasses où l'on peut
     dormir. Tous les murs tiennent dans **une case** (le dernier mur choisi, « ⋯ ») qui ouvre la
     **bulle des murs** : chacun avec son icône (`scripts/icones/art_blocs.py`, un carré de sa
-    face), son nom et ce qui en reste ;
+    face) et ce qui en reste, sans texte ;
   - à l'ouverture, un rappel bref (2 s) : « touche une case pour poser, un bloc pour le reprendre » ;
   - un appui sur une case y pose le bloc choisi, un appui sur un bloc le reprend ;
   - les pièces closes sont teintées de vert.

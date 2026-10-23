@@ -6,7 +6,7 @@
 // catégories (DATA.ATELIER.CATEGORIES) : des onglets intercalaires posés sur la barre, celui
 // qui est ouvert avec son nom, les autres avec leur icône seule ; sous eux, une ligne de cases
 // qui défile. Tous les murs tiennent dans une case, qui ouvre la bulle des murs (chacun son
-// icône, son nom, ce qui en reste). On choisit un bloc, un appui sur une case de la carte l'y
+// icône, ce qui en reste ; son nom au survol). On choisit un bloc, un appui sur une case de la carte l'y
 // pose, un appui sur un bloc le reprend. Les pièces closes sont teintées de vert sur la carte. Le moteur :
 // js/engine/blocs.js ; la carte : js/carte/ferme/chantier.js.
 
@@ -108,15 +108,11 @@ export function buildSlotHtml() {
   return `<button type="button" class="tool-slot${on ? ' active' : ''}" data-action="build-toggle" aria-pressed="${on}" aria-label="${label}" title="${label}">${DATA.ATELIER.ICONE}</button>`;
 }
 
-// Une case du menu : l'icône du bloc, ce qu'il en reste (pâlie quand il n'y en a plus) ;
-// `nom` : son nom sous l'icône (dans la bulle des murs).
-function caseBloc(s, nom = false) {
+// Une case du menu : l'icône du bloc, ce qu'il en reste (pâlie quand il n'y en a plus).
+function caseBloc(s) {
   const n = blocsEnMain(state, s), on = s === buildMode, b = DATA.ATELIER.BLOCS[s];
-  return `<button type="button" class="tool-slot build-slot${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-pick" data-sorte="${s}" aria-pressed="${on}" aria-label="${b.nom} : ${n}" title="${b.nom} : ${n}"><span aria-hidden="true">${icone(s)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span>${nom ? `<span class="build-slot-nom" aria-hidden="true">${nomCourt(s)}</span>` : ''}</button>`;
+  return `<button type="button" class="tool-slot build-slot${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-pick" data-sorte="${s}" aria-pressed="${on}" aria-label="${b.nom} : ${n}" title="${b.nom} : ${n}"><span aria-hidden="true">${icone(s)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span></button>`;
 }
-// (le nom d'un mur dans la bulle, court : il tient sous l'icône)
-const NOMS_COURTS = { pierre_angle: 'Angle', mur_pierre_taille: 'Taille', paroi_vitree: 'Vitrée', mur_fenetre: 'Fenêtre' };
-const nomCourt = (s) => NOMS_COURTS[s] || DATA.ATELIER.BLOCS[s].nom.replace(/^Mur (en |de briques )?/, '').replace(/^./, (c) => c.toUpperCase());
 
 // Le menu de construction, en haut de l'écran : les onglets intercalaires, puis la barre (la
 // ligne des cases, qui défile ; au bout, le niveau de construction, ✕ et les paillasses d'une
@@ -137,7 +133,7 @@ export function buildChipHtml() {
     const n = blocsEnMain(state, murVu), on = murs.includes(buildMode);
     cases = `<button type="button" class="tool-slot build-slot build-murs${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-murs" aria-expanded="${bulleMurs}" aria-label="Murs : ${DATA.ATELIER.BLOCS[murVu].nom}, ${n}. Choisir un autre mur" title="Murs : choisir un mur"><span class="build-murs-plus" aria-hidden="true">⋯</span><span aria-hidden="true">${icone(murVu)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span></button>${cases}`;
   }
-  const bulle = groupe && bulleMurs ? `<div class="build-bulle" role="group" aria-label="Murs"><div class="build-bulle-titre">Murs</div><div class="build-bulle-grid">${murs.map((s) => caseBloc(s, true)).join('')}</div></div>` : '';
+  const bulle = groupe && bulleMurs ? `<div class="build-bulle" role="group" aria-label="Murs"><div class="build-bulle-titre">Murs</div><div class="build-bulle-grid">${murs.map((s) => caseBloc(s)).join('')}</div></div>` : '';
   const dodo = couchages(state).length;
   const tete = niveauBati() ? '<span title="À l\'étage : on bâtit au-dessus de la pièce de l\'escalier ; ailleurs, on rehausse les murs">🪜 Étage</span>'
     : niveau() ? `<span title="Niveau ${niveau()} : touche un mur haut de ${niveau()} bloc${niveau() > 1 ? 's' : ''} pour le rehausser, un mur plus haut pour reprendre son bloc du dessus">🧱 Rehausser</span>`
