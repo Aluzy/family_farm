@@ -65,6 +65,27 @@ export function blocDessus(state, tile) {
   return blocsDessusPoses(state)[tile] || null;
 }
 
+// Les fenêtres percées dans un mur : { [case]: sorte du mur } (state.fenetres). Une fenêtre se
+// perce dans un mur de n'importe quelle matière, qui reste autour d'elle (la carte la dessine
+// dans ce mur) : reprise, elle laisse son mur. Une fenêtre posée seule (pas sur un mur) n'y est
+// pas : elle est dans un mur en pierre.
+export function fenetresPosees(state) {
+  return state.fenetres && typeof state.fenetres === 'object' ? state.fenetres : {};
+}
+
+// Le bloc `sorte` est-il une fenêtre (la fenêtre à carreaux, l'œil-de-bœuf…) ?
+export const estFenetre = (sorte) => !!(sorteDe(sorte) && sorteDe(sorte).fenetre);
+
+// (un mur plein, où une fenêtre se perce ; pas la paroi vitrée, déjà de verre : la fenêtre la
+// remplace)
+const murPlein = (sorte) => !!(sorteDe(sorte) && sorteDe(sorte).mur && !sorteDe(sorte).fenetre) && sorte !== 'paroi_vitree';
+
+function setFenetre(state, tile, mur) {
+  if (!mur) { if (state.fenetres) delete state.fenetres[tile]; return; }
+  if (!state.fenetres || typeof state.fenetres !== 'object') state.fenetres = {};
+  state.fenetres[tile] = mur;
+}
+
 // Un bloc de cette sorte est-il déjà posé (par terre ou sur un autre) ?
 function dejaPose(state, sorte) {
   return Object.values(blocsPoses(state)).includes(sorte) || Object.values(state.blocsDessus || {}).includes(sorte);
@@ -162,8 +183,8 @@ function setHauteur(state, tile, h) {
   else delete state.hauteurs[tile];
 }
 
-// (une porte aussi : elle se pose sur un mur, à sa place, comme une fenêtre ; une porte d'un
-// autre modèle, sur une porte)
+// (une porte aussi : elle se pose sur un mur, à sa place ; une fenêtre, dans le mur, qui reste
+// autour d'elle : state.fenetres ; une porte d'un autre modèle, sur une porte)
 export function changeMur(ancien, sorte) {
   const a = sorteDe(ancien), s = sorteDe(sorte);
   return !!(a && s && ((a.mur && (s.mur || s.porte)) || (a.porte && s.porte)) && ancien !== sorte);
@@ -560,7 +581,20 @@ function poser(state, sorte, tile) {
     return { ok: true, sorte, case: tile, hauteur: hauteurSilo(state, tile) };
   }
   if (changeMur(ancien, sorte)) {
+    const dans = fenetresPosees(state)[tile];
+    // une fenêtre dans un mur plein : il reste autour d'elle
+    if (s.fenetre && murPlein(ancien)) {
+      setFenetre(state, tile, ancien);
+      state.blocs[tile] = sorte;
+      return { ok: true, sorte, case: tile, perce: ancien };
+    }
     addItem(state, sorteDe(ancien).objet, 1);
+    // (une fenêtre d'un autre modèle : dans le même mur ; un mur, une porte à la place d'une
+    // fenêtre : son mur revient aussi)
+    if (dans && !(s.fenetre && estFenetre(ancien))) {
+      addItem(state, sorteDe(dans).objet, 1);
+      setFenetre(state, tile, null);
+    }
     state.blocs[tile] = sorte;
     return { ok: true, sorte, case: tile, remplace: ancien };
   }
@@ -591,6 +625,7 @@ function poser(state, sorte, tile) {
   } else {
     if (!state.blocs || typeof state.blocs !== 'object') state.blocs = {};
     state.blocs[tile] = sorte;
+    setFenetre(state, tile, null);
   }
   // le panneau, la pompe, la citerne, la batterie : l'appareil est là (étape 5b-2)
   if (s.appareil) installStarter(state, s.appareil);
@@ -624,6 +659,15 @@ export function reprendreBloc(state, tile, opts) {
     majPoulailler(state);
     return { ok: true, sorte: bloc, case: tile, hauteur: hauteurEmpilee(state, tile) };
   }
+  // une fenêtre percée dans un mur : elle revient, le mur reste (la pièce reste close)
+  if (!dessus && estFenetre(bloc) && fenetresPosees(state)[tile]) {
+    const mur = fenetresPosees(state)[tile];
+    state.blocs[tile] = mur;
+    setFenetre(state, tile, null);
+    addItem(state, sorteDe(bloc).objet, 1);
+    majPoulailler(state);
+    return { ok: true, sorte: bloc, case: tile, reste: mur };
+  }
   // (la colonne du silo du milieu : elle le couperait en deux)
   if (!dessus && estSilo(bloc)) {
     const W = farmTerrain(state).LARGEUR, r = Math.floor(tile / W);
@@ -640,7 +684,7 @@ export function reprendreBloc(state, tile, opts) {
     if (etageEnPeril(state, reste)) return fail(`${sorteDe(bloc).nom} : il porte l'étage. Reprends d'abord ce qui est posé à l'étage au-dessus.`);
   }
   if (dessus) delete state.blocsDessus[tile];
-  else if (bloc) { delete state.blocs[tile]; setHauteur(state, tile, 1); }
+  else if (bloc) { delete state.blocs[tile]; setHauteur(state, tile, 1); setFenetre(state, tile, null); }
   else delete state.sols[tile];
   const s = sorteDe(sorte);
   if (s && s.appareil) removeStarter(state, s.appareil);

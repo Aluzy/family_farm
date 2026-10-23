@@ -17,7 +17,7 @@ import {
   bushOf, buyDehors, buyFurniture, buyHoe, buyItem, buyPasture, buyRuche, caseDepart,
   casesAbriAPoser, casesBuissonsCoupes, chopTree, commencerDidacticiel, coopCapacity, couchages,
   couchagesEtage, countItem, craft, craftStatus, createInitialState, createNewGame, cutBushes,
-  dansPiece, DATA, eatSnack, eauCruche, escaliers, especeArbre, ETAGE_BLOCS, etageBlocs,
+  dansPiece, DATA, eatSnack, eauCruche, escaliers, especeArbre, ETAGE_BLOCS, etageBlocs, fenetresEtage, fenetresPosees,
   etageCouvertes, etageEmprise, etapeDidacticiel, etatBotteleuse, etatEtable, etatMoulin,
   etatPoulailler, etatSilo, farmMap, farmOpen, farmPoint, farmSeed, farmTerrain, faucherSousBati,
   feedLivestock, fellenTrees, FERME_GENEREE, fleursPourAbeilles, freeSheepPlaces, genererFerme,
@@ -1315,10 +1315,10 @@ test('ferme générée : une fenêtre, une porte changent un mur sans l\'enlever
   const m = p.murs[2], avant = countItem(s, 'mur_pierre');
   const r = poserBloc(s, 'mur_fenetre', m);
   assert(r.ok, r.error);
-  assertEqual([blocAt(s, m), r.remplace, countItem(s, 'mur_pierre'), countItem(s, 'mur_fenetre')], ['mur_fenetre', 'mur_pierre', avant + 1, 1]);
+  assertEqual([blocAt(s, m), r.perce, countItem(s, 'mur_pierre'), countItem(s, 'mur_fenetre'), fenetresPosees(s)[m]], ['mur_fenetre', 'mur_pierre', avant, 1, 'mur_pierre'], 'percée dans le mur, qui reste');
   assertEqual(piecesCloses(s).length, 1, 'la pièce reste close');
   assert(poserBloc(s, 'pierre_angle', m).ok, 'une pierre d\'angle à la place de la fenêtre');
-  assertEqual([blocAt(s, m), countItem(s, 'mur_fenetre')], ['pierre_angle', 2]);
+  assertEqual([blocAt(s, m), countItem(s, 'mur_fenetre'), countItem(s, 'mur_pierre'), fenetresPosees(s)[m]], ['pierre_angle', 2, avant + 1, undefined], 'la fenêtre et son mur reviennent');
   // la porte : sur un mur, à sa place (le mur revient dans l'inventaire), la pièce reste close
   const m2 = p.murs[3], murs2 = countItem(s, 'mur_pierre');
   const rp = poserBloc(s, 'porte', m2);
@@ -1332,10 +1332,48 @@ test('ferme générée : une fenêtre, une porte changent un mur sans l\'enlever
   const coin = p.murs[0];
   assert(poserEtage(s, 'mur_pierre', coin).ok);
   assert(poserEtage(s, 'mur_fenetre', coin).ok, 'une fenêtre sur le mur de l\'étage');
-  assertEqual([etageBlocs(s)[coin], countItem(s, 'mur_fenetre')], ['mur_fenetre', 1]);
+  assertEqual([etageBlocs(s)[coin], countItem(s, 'mur_fenetre'), fenetresEtage(s)[coin]], ['mur_fenetre', 1, 'mur_pierre']);
+  assertEqual([reprendreEtage(s, coin).reste, etageBlocs(s)[coin], countItem(s, 'mur_fenetre')], ['mur_pierre', 'mur_pierre', 2], 'reprise, la fenêtre laisse son mur');
   assert(poserEtage(s, 'porte', p.murs[1]).ok, 'à l\'étage aussi, la porte directement sur une case libre');
   assert(poserEtage(s, 'mur_pierre', p.murs[2]).ok);
   assert(poserEtage(s, 'porte', p.murs[2]).ok, 'une porte sur le mur de l\'étage');
+});
+
+test('ferme générée : une fenêtre, de chaque modèle, se perce dans un mur de chaque matière', () => {
+  const s = chantier('fen1');
+  const modeles = Object.keys(DATA.ATELIER.BLOCS).filter((k) => DATA.ATELIER.BLOCS[k].fenetre);
+  assertEqual(modeles, ['mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail']);
+  const matieres = ['mur_pierre', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois'];
+  setInv(s, { ...Object.fromEntries(matieres.map((k) => [k, 30])), ...Object.fromEntries(modeles.map((k) => [k, 10])), porte: 2 });
+  const z = terrainLibre(s, 9, 4), p = murs(z, 9, 4);
+  for (const [i, t] of p.murs.entries()) poserBloc(s, matieres[i % matieres.length], t);
+  poserPorte(s, p.porte);
+  assertEqual(piecesCloses(s).length, 1);
+  for (const [i, t] of p.murs.entries()) {
+    const mur = blocAt(s, t), f = modeles[i % modeles.length];
+    const r = poserBloc(s, f, t);
+    assert(r.ok, `${f} dans ${mur} : ${r.error}`);
+    assertEqual([blocAt(s, t), fenetresPosees(s)[t], r.perce], [f, mur, mur], `${f} dans ${mur}`);
+  }
+  assertEqual(piecesCloses(s).length, 1, 'la pièce reste close');
+  assertEqual(matieres.map((k) => countItem(s, k)), matieres.map((k) => 30 - p.murs.filter((_, i) => matieres[i % matieres.length] === k).length), 'les murs restent posés');
+  // un autre modèle dans la même fenêtre : le mur reste, l'ancienne fenêtre revient
+  const t = p.murs[1], mur = fenetresPosees(s)[t], avant = blocAt(s, t);
+  const autre = modeles.find((k) => k !== avant);
+  const n = countItem(s, avant);
+  { const q = poserBloc(s, autre, t); assert(q.ok, `autre modèle : ${q.error}`); }
+  assertEqual([blocAt(s, t), fenetresPosees(s)[t], countItem(s, avant)], [autre, mur, n + 1]);
+  // reprise : la fenêtre revient, son mur reste
+  const r = reprendreBloc(s, t);
+  assertEqual([r.ok, r.reste, blocAt(s, t), fenetresPosees(s)[t]], [true, mur, mur, undefined]);
+  // une porte à la place d'une fenêtre : la fenêtre et son mur reviennent
+  const t2 = p.murs[2], mur2 = fenetresPosees(s)[t2], f2 = blocAt(s, t2), m2 = countItem(s, mur2);
+  { const q = poserBloc(s, 'porte', t2); assert(q.ok, `porte : ${q.error}`); }
+  assertEqual([blocAt(s, t2), fenetresPosees(s)[t2], countItem(s, mur2), countItem(s, f2) > 0], ['porte', undefined, m2 + 1, true]);
+  // une fenêtre posée seule (pas sur un mur) : dans un mur en pierre, rien à rendre
+  const libre = p.dedans + 2;
+  { const q = poserBloc(s, 'fenetre_ronde', libre); assert(q.ok, `seule : ${q.error}`); }
+  assertEqual([fenetresPosees(s)[libre], reprendreBloc(s, libre).reste, blocAt(s, libre)], [undefined, undefined, null]);
 });
 
 test('ferme générée : des bouts de murs qui ne se touchent pas ne font pas de pièce close', () => {

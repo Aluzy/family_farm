@@ -195,7 +195,7 @@
     // ; `variantes` : les murs qui se raccordent comme le mur en pierre, et où commencent leurs
     // 16 images dans la planche (la fenêtre, les pierres d'angle ; sans la planche haute : le mur)
     hauts: { key: 'murs_hauts', file: 'murs_hauts.png', frame: { frameWidth: 16, frameHeight: 40 }, murs: 0, porte: 16, alpha: 0.4, joueur: 0.05, vitesse: 4,
-      variantes: { mur_pierre: 0, mur_fenetre: 17, pierre_angle: 33, paroi_vitree: 97,
+      variantes: { mur_pierre: 0, mur_fenetre: 17, fenetre_ronde: 17, fenetre_cintree: 17, fenetre_volets: 17, fenetre_vitrail: 17, pierre_angle: 33, paroi_vitree: 97,
         // (les murs aux matières des immeubles de la ville : scripts/carte/blocs.py MATIERES_VILLE)
         mur_brique_rouge: 161, mur_brique_orange: 177, mur_brique_ocre: 193, mur_brique_bleue: 209, mur_pierre_taille: 225,
         // (le mur en bois : des planches couchées, scripts/carte/blocs.py mur_bois)
@@ -215,7 +215,13 @@
       matieresPortes: ['mur_pierre', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois'],
       // `joints` : les murs qu'un voisin de même sorte prolonge (à gauche, à droite, des deux
       // côtés : deux fenêtres font une grande fenêtre, les parois vitrées une façade de verre)
-      joints: { mur_fenetre: [17, 49, 65, 81], paroi_vitree: [97, 113, 129, 145], mur_serre: [306, 322, 338, 354] } },
+      joints: { mur_fenetre: [17, 49, 65, 81], paroi_vitree: [97, 113, 129, 145], mur_serre: [306, 322, 338, 354] },
+      // les fenêtres, percées dans un mur de n'importe quelle matière (modèle.blocs : b.mur, la
+      // matière, rangée dans `matieresPortes` ; la pierre sans elle), rangées après les autres
+      // murs (scripts/carte/blocs.py fenetres_hautes) : depuis leur image `modeles`, la fenêtre
+      // à carreaux dans chaque matière, seule puis prolongée à gauche, à droite, des deux côtés
+      // (`prolonge` : 4 × 16 images par matière) ; les autres modèles, 16 images par matière
+      fenetres: { modeles: { mur_fenetre: 441, fenetre_ronde: 889, fenetre_cintree: 1001, fenetre_volets: 1113, fenetre_vitrail: 1225 }, prolonge: ['mur_fenetre'] } },
     // la barrière : 16 images raccordées aux barrières voisines (barrieres + masque, comme les murs)
     barrieres: 50,
     // la lanterne scintillante (un bloc `lumiere`, chantier.js stepLanterns) : éteinte le jour
@@ -238,7 +244,7 @@
     // `large`, sur `cases` rangées) ; elle s'allume
     // et s'éteint à `vitesse` par seconde
     lumiereMaison: {
-      sortes: ['mur_fenetre', 'paroi_vitree'], teinte: 0xffc673, vitesse: 1.5,
+      sortes: ['mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'paroi_vitree'], teinte: 0xffc673, vitesse: 1.5,
       piece: { alpha: 0.7 },
       vitre: { rayon: 7, alpha: 0.95, dy: -16 },
       murFond: { haut: 32, alpha: 0.7 },
@@ -249,7 +255,7 @@
     // la meule qui moud (le Moulin en marche) : sa pierre et sa manivelle tournent (`fps` images
     // par seconde, un tour en 8 images ; chantier.js stepFires)
     meule: { sorte: 'meule', frames: [81, 82, 83, 84, 85, 86, 87, 88], fps: 8 },
-    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'bloc_silo', 'meule', 'lanterne', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur', 'boite_nourriture'],
+    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'bloc_silo', 'meule', 'lanterne', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur', 'boite_nourriture'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png ; la
     // station du robot : station_robot.png, machines.js ; les blocs de silo : silo.js)
     ailleurs: ['puits', 'citerne', 'station_robot', 'bloc_silo'],

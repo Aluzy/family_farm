@@ -1,5 +1,6 @@
 # Les icônes tirées des images des blocs de la carte : chaque mur a la sienne (un carré de sa
-# face, pris dans assets/murs_hauts.png : le mur seul, sans voisin) ; chaque modèle de porte, son
+# face, pris dans assets/murs_hauts.png : le mur seul, sans voisin ; de même les modèles de
+# fenêtres) ; chaque modèle de porte, son
 # battant en petit (scripts/carte/blocs.py, MODELES_PORTES) ; chaque modèle de sol, sa case seule
 # (assets/blocs.png, BLOCS_CARTE.modelesSols) ; et l'escalier, dessiné de profil (son image de
 # la carte, vue de haut, ne se lit pas en petit). Le menu Construire
@@ -29,6 +30,10 @@ MURS = {
     '🧱‍🟫': 371,    # mur en bois
 }
 FACE = 14            # la rangée où commence le carré de la face (sous le dessus du mur)
+# emoji : le modèle de fenêtre (scripts/carte/blocs.py MODELES_FENETRES), dans le mur en pierre
+# seul : sa première image dans murs_hauts.png (BLOCS_CARTE.hauts.fenetres)
+FENETRES = {'🪟‍⭕': 889, '🪟‍🌙': 1001, '🪟‍🟩': 1113, '🪟‍🌈': 1225}
+COLONNES = 64        # murs_hauts.png : des rangées de 64 images de 16 × 40
 # emoji : le modèle de porte (MODELES_PORTES), le modèle de sol (MODELES_SOLS), dans leur ordre
 PORTES = {'porte_chene': '🚪‍🟤', 'porte_vitree': '🚪‍🪟', 'porte_grange': '🚪‍🟥', 'porte_bleue': '🚪‍🟦',
           'porte_fer': '🚪‍⬛', 'porte_ecurie': '🚪‍🟩', 'porte_blanche': '🚪‍⬜'}
@@ -59,9 +64,9 @@ ESCALIER = [
 def icons():
     out = {}
     hauts = Image.open(os.path.join(ASSETS, 'murs_hauts.png')).convert('RGBA')
-    for e, f in MURS.items():
-        x = f * 16
-        ic = hauts.crop((x, FACE, x + 16, FACE + 16)).copy()
+    for e, f in {**MURS, **FENETRES}.items():
+        x, y = (f % COLONNES) * 16, (f // COLONNES) * 40
+        ic = hauts.crop((x, y + FACE, x + 16, y + FACE + 16)).copy()
         # un trait en haut et en bas (les côtés ont déjà le contour du mur)
         for xx in range(16):
             ic.putpixel((xx, 0), TRAIT)

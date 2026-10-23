@@ -55,6 +55,7 @@
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
 # période) : deux murs voisins se raccordent sans couture.
+import math
 import os
 import sys
 
@@ -598,6 +599,174 @@ def fenetre(m, j=0, fond=None):
         t.put(x, y0 - 2, PIERRE[4])
     return t.im
 
+
+
+# ---------- les modèles de fenêtres ----------
+# Une fenêtre se perce dans un mur de n'importe quelle matière (la pierre, les briques, la
+# pierre de taille, le bois : MATIERES_FENETRES) ; la fenêtre à carreaux (fenetre, plus haut)
+# et quatre autres formes (MODELES_FENETRES) : l'œil-de-bœuf, la fenêtre cintrée, la fenêtre à
+# volets, le vitrail. Chacune : une fonction (m, fond) → l'image du mur haut de masque m, sa
+# fenêtre percée sur la face (un mur qui descend, vu de dessus seulement, reste plein).
+VOLET = [(26, 60, 38), (40, 92, 56), (60, 126, 76), (104, 168, 112)]                 # les volets peints
+VITRAIL = [(176, 48, 44), (52, 96, 170), (232, 186, 64), (70, 146, 70), (150, 70, 150)]   # le verre coloré
+PLOMB = (44, 40, 50)                                                                   # les plombs du vitrail
+
+
+def _vitre(t, x, y, x0, y0, haut, bas):
+    """Un pixel de verre (VITRE, un peu transparent) : sombre en bas, clair en haut, un reflet
+    en haut à gauche."""
+    k = 3 if (x - x0) + (y - y0) < 3 else 2 if y < (haut + bas) // 2 else 1
+    t.px[x, y] = VITRE[k] + (VITRE_ALPHA[k],)
+
+
+def _appui(t, x0, x1, y):
+    """L'appui de pierre sous la fenêtre (la rangée y), éclairé, et son ombre."""
+    for x in range(max(0, x0), min(15, x1) + 1):
+        t.put(x, y, PIERRE[5])
+        t.put(x, y + 1, PIERRE[1])
+
+
+def fenetre_ronde(m, fond=None):
+    """L'œil-de-bœuf : une ouverture ronde, un cadre de bois, une croisée, un entourage de
+    pierre et sa clé en haut."""
+    t = Toile(fond(m) if fond else mur(m))
+    if m & 4:
+        return t.im
+    cx, cy, r = 7.5, 22.5, 5.2
+    for y in range(CHAPE + 2, BAS - 2):
+        for x in range(W):
+            d = math.hypot(x - cx, y - cy)
+            if d <= r - 1:
+                _vitre(t, x, y, 3, 18, 18, 27)
+            elif d <= r:
+                t.put(x, y, CADRE[0])                     # le cadre
+            elif d <= r + 1.3:
+                t.put(x, y, PIERRE[5] if (x - cx) + (y - cy) < 0 else PIERRE[3])   # l'entourage de pierre
+            elif d <= r + 2:
+                t.put(x, y, PIERRE[1])
+    for k in range(-4, 5):                                # la croisée
+        t.put(cx - 0.5, cy + k, BOIS[2])
+        t.put(cx + k, cy - 0.5, BOIS[2])
+    for x in (7, 8):                                      # la clé de voûte
+        for y in range(round(cy - r - 2), round(cy - r)):
+            t.put(x, y, PIERRE[5] if x == 7 else PIERRE[4])
+    return t.im
+
+
+def fenetre_cintree(m, fond=None):
+    """La fenêtre cintrée : haute et étroite, le haut en arc ; un cadre de bois, un meneau et
+    deux traverses, un arc de pierre au-dessus, un appui."""
+    t = Toile(fond(m) if fond else mur(m))
+    if m & 4:
+        return t.im
+    x0, x1, ya, y1 = 4, 11, 17, 32                         # le dedans ; ya : la naissance de l'arc
+    cx, rx = 7.5, 4.0
+    dedans = lambda x, y: x0 <= x <= x1 and ya <= y <= y1 or y < ya and (x - cx) ** 2 + ((y - ya) * 1.0) ** 2 <= (rx - 0.4) ** 2   # noqa: E731
+    for y in range(CHAPE + 1, BAS):
+        for x in range(W):
+            if dedans(x, y):
+                _vitre(t, x, y, x0, ya - 4, ya - 4, y1)
+            elif any(dedans(x + u, y + v) for u, v in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1))):
+                t.put(x, y, CADRE[0])                     # le cadre
+            elif y < ya + 1 and any(dedans(x + u, y + v) for u in (-2, -1, 0, 1, 2) for v in (0, 1, 2)):
+                t.put(x, y, PIERRE[5] if x < cx else PIERRE[4])   # l'arc de pierre
+    for y in range(ya - 3, y1 + 1):                       # le meneau
+        t.put(7, y, BOIS[2])
+        t.put(8, y, BOIS[1])
+    for y in (ya + 1, ya + 9):                            # les traverses
+        for x in range(x0, x1 + 1):
+            t.put(x, y, BOIS[2])
+    _appui(t, x0 - 2, x1 + 2, y1 + 2)
+    return t.im
+
+
+def fenetre_volets(m, fond=None):
+    """La fenêtre à volets : une fenêtre à carreaux plus étroite, et ses deux volets de bois
+    peint ouverts de chaque côté (des lames, des pentures)."""
+    t = Toile(fond(m) if fond else mur(m))
+    if m & 4:
+        return t.im
+    x0, x1, y0, y1 = 5, 10, CHAPE + 6, BAS - 8
+    for y in range(y0 - 1, y1 + 2):
+        for x in range(x0 - 1, x1 + 2):
+            if x in (x0 - 1, x1 + 1) or y in (y0 - 1, y1 + 1):
+                t.put(x, y, CADRE[0])
+            else:
+                _vitre(t, x, y, x0, y0, y0, y1)
+    for y in range(y0, y1 + 1):                           # les croisillons
+        t.put(7, y, BOIS[2])
+    for y in (y0 + 5, y0 + 10):
+        for x in range(x0, x1 + 1):
+            t.put(x, y, BOIS[2])
+    for a, b in ((1, x0 - 2), (x1 + 2, 14)):              # les volets : des lames peintes
+        for y in range(y0 - 1, y1 + 2):
+            for x in range(a, b + 1):
+                bord = x in (a, b) or y in (y0 - 1, y1 + 1)
+                t.put(x, y, VOLET[0] if bord else VOLET[3] if (y - y0) % 3 == 0 else VOLET[2] if x < (a + b) / 2 + 0.5 else VOLET[1])
+        for y in (y0 + 2, y1 - 2):                        # les pentures
+            t.put(b if a == 1 else a, y, FER[3])
+    _appui(t, x0 - 2, x1 + 2, y1 + 2)
+    return t.im
+
+
+def fenetre_vitrail(m, fond=None):
+    """Le vitrail : une fenêtre en ogive, du verre de couleur serti de plombs en losanges, un
+    entourage de pierre, un appui."""
+    t = Toile(fond(m) if fond else mur(m))
+    if m & 4:
+        return t.im
+    x0, x1, ya, y1, cx = 4, 11, 18, 32, 7.5
+    dedans = lambda x, y: x0 <= x <= x1 and y <= y1 and (y >= ya or abs(x - cx) <= (y - (ya - 6)) * 0.62)   # noqa: E731
+    for y in range(CHAPE + 1, BAS):
+        for x in range(W):
+            if dedans(x, y):
+                if (x + y) % 4 == 0 or (x - y) % 4 == 0:
+                    t.put(x, y, PLOMB)                    # les plombs
+                else:
+                    c = VITRAIL[((x + y) // 4 + (x - y) // 4) % len(VITRAIL)]
+                    c = VB.teinte(c, 1.25) if (x - x0) + (y - ya) < 2 else c   # un reflet en haut à gauche
+                    t.px[x, y] = tuple(c) + (235,)
+            elif any(dedans(x + u, y + v) for u, v in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                t.put(x, y, PIERRE[5] if x < cx else PIERRE[3])   # l'entourage de pierre
+            elif any(dedans(x + u, y + v) for u, v in ((1, 1), (-1, 1), (2, 0), (-2, 0), (0, 2))):
+                t.put(x, y, PIERRE[1])
+    _appui(t, x0 - 2, x1 + 2, y1 + 2)
+    return t.im
+
+
+# id du bloc : sa fonction (dans l'ordre de BLOCS_CARTE.hauts.fenetres.modeles, après la fenêtre
+# à carreaux) ; les matières des murs où une fenêtre se perce (BLOCS_CARTE.hauts.fenetres.matieres)
+MODELES_FENETRES = {'fenetre_ronde': fenetre_ronde, 'fenetre_cintree': fenetre_cintree,
+                    'fenetre_volets': fenetre_volets, 'fenetre_vitrail': fenetre_vitrail}
+MATIERES_FENETRES = ['mur_pierre', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois']
+COLONNES_HAUTS = 64     # murs_hauts.png : des rangées de 64 images (la planche ne dépasse pas 1024 px de large)
+
+
+def fenetres_hautes():
+    """Les fenêtres des murs hauts, rangées dans murs_hauts.png après les autres murs (à partir
+    de BLOCS_CARTE.fenetres.debut) : la fenêtre à carreaux dans chaque matière
+    (MATIERES_FENETRES), seule puis prolongée à gauche, à droite, des deux côtés (16 + masque
+    chacune) ; puis chaque modèle (MODELES_FENETRES) dans chaque matière (16 + masque)."""
+    global H, BAS, FACE
+    garde = H, BAS, FACE
+    ville = {nom: (lambda m, mo=mo, de=de: mur_ville(m, mo, de)) for nom, mo, de in MATIERES_VILLE}
+    fonds = [None] + [ville[k] for k in ('brique_rouge', 'brique_orange', 'brique_ocre', 'brique_bleue', 'pierre_taille')] + [mur_bois]
+    H += HAUTEUR_EN_PLUS
+    BAS, FACE = H - 1, FACE + HAUTEUR_EN_PLUS
+    try:
+        ims = [fenetre(m, j, fond) for fond in fonds for j in range(4) for m in range(16)]
+        ims += [f(m, fond) for f in MODELES_FENETRES.values() for fond in fonds for m in range(16)]
+    finally:
+        H, BAS, FACE = garde
+    return ims
+
+
+def grille(ims, w, h, cols):
+    """Les images `ims` (w × h) en rangées de `cols` : l'image k en (k % cols, k // cols)."""
+    out = Image.new('RGBA', (cols * w, -(-len(ims) // cols) * h), (0, 0, 0, 0))
+    for i, im in enumerate(ims):
+        out.paste(im, ((i % cols) * w, (i // cols) * h))
+    return out
 
 # les tons du métal de la paroi vitrée, à la place de ceux de la pierre
 METAL = {PIERRE[0]: FER[1], PIERRE[1]: FER[1], PIERRE[2]: FER[2], PIERRE[3]: FER[3], PIERRE[4]: FER[3], PIERRE[5]: FER[4]}
@@ -1978,8 +2147,9 @@ def main():
     sheet.save(os.path.join(ASSETS, 'blocs.png'))
     print(f'assets/blocs.png : {len(DESSINS)} images de {W} × {H}')
     hauts, h = murs_hauts()
-    rangee(hauts, W, h).save(os.path.join(ASSETS, 'murs_hauts.png'))
-    print(f'assets/murs_hauts.png : {len(hauts)} images de {W} × {h}')
+    fen = fenetres_hautes()
+    grille(hauts + fen, W, h, COLONNES_HAUTS).save(os.path.join(ASSETS, 'murs_hauts.png'))
+    print(f'assets/murs_hauts.png : {len(hauts)} murs puis {len(fen)} fenêtres (à partir de {len(hauts)}), images de {W} × {h}')
     for nom, matiere in FACADES:
         imm, h = immeuble_ville(matiere)
         rangee(imm, W, h).save(os.path.join(ASSETS, nom + '.png'))
