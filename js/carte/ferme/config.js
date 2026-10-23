@@ -386,6 +386,11 @@
     'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3',
     'lit_adulte', 'lit_enfant', 'chevet', 'canape', 'table_basse', 'tableau_1', 'tableau_2', 'tableau_3', 'paillasse',
     'lit_double', 'refrigerateur',
+    // (scripts/batiments/meubles45.py : en vue de haut à 45°, comme les blocs)
+    'buffet', 'commode', 'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte',
+    'cuisine_tiroirs', 'cuisine_sauge', 'poubelle', 'bibliotheque', 'bibliotheque_vitree', 'lampadaire',
+    'coffre_jouets', 'plante_ficus', 'plante_monstera', 'plante_sansevieria', 'plante_cactus', 'plante_fougere',
+    'plante_palmier', 'plante_citronnier', 'plante_orchidee', 'plante_aloe', 'plante_bonsai',
   ];
   // La couverture seule de chaque lit (meuble_<lit>_drap.png) : posée par-dessus le personnage
   // quand il y dort (js/fermier.js). La paillasse : son lit tant qu'aucun lit n'est acheté.

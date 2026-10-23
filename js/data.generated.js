@@ -288,6 +288,64 @@ export const RAW_DATA = {
     "meuble_tableau_1": { "nom": "Tableau : la ferme", "icone": "🖼️", "prix": 11, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_tableau_2": { "nom": "Tableau : le bouquet", "icone": "💐", "prix": 13, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_tableau_3": { "nom": "Tableau : la mer", "icone": "🌊", "prix": 17, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_buffet": { "nom": "Buffet vaisselier", "icone": "🍽️", "prix": 35, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_commode": { "nom": "Commode", "icone": "🗄️", "prix": 28, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_armoire_chene": { "nom": "Armoire de chêne", "icone": "🚪", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_armoire_peinte": { "nom": "Armoire peinte", "icone": "🚪", "prix": 45, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_armoire_glace": { "nom": "Armoire à glace", "icone": "🪞", "prix": 32, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_cuisine_porte": {
+      "nom": "Bas de cuisine à porte",
+      "icone": "🍞",
+      "prix": 12,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false
+    },
+    "meuble_cuisine_tiroirs": {
+      "nom": "Bas de cuisine à tiroirs",
+      "icone": "🥄",
+      "prix": 14,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false
+    },
+    "meuble_cuisine_sauge": {
+      "nom": "Bas de cuisine vitré",
+      "icone": "🍵",
+      "prix": 18,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false
+    },
+    "meuble_poubelle": { "nom": "Poubelle", "icone": "🗑️", "prix": 5, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_bibliotheque": {
+      "nom": "Bibliothèque étroite",
+      "icone": "📚",
+      "prix": 20,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false
+    },
+    "meuble_bibliotheque_vitree": {
+      "nom": "Bibliothèque vitrée",
+      "icone": "📚",
+      "prix": 42,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false
+    },
+    "meuble_lampadaire": { "nom": "Lampadaire", "icone": "💡", "prix": 11, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_coffre_jouets": { "nom": "Coffre à jouets", "icone": "🧸", "prix": 15, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_plante_ficus": { "nom": "Ficus", "icone": "🌳", "prix": 9, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_plante_monstera": { "nom": "Monstera", "icone": "🪴", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_plante_sansevieria": { "nom": "Sansevière", "icone": "🌿", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_plante_cactus": { "nom": "Cactus cierge", "icone": "🌵", "prix": 5, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_plante_fougere": { "nom": "Fougère", "icone": "🌿", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_plante_palmier": { "nom": "Palmier kentia", "icone": "🌴", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_plante_citronnier": { "nom": "Citronnier", "icone": "🍋", "prix": 15, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_plante_orchidee": { "nom": "Orchidée", "icone": "🌸", "prix": 9, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_plante_aloe": { "nom": "Aloe vera", "icone": "🪴", "prix": 5, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "meuble_plante_bonsai": { "nom": "Bonsaï", "icone": "🌲", "prix": 18, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "four_pierre": { "nom": "Four de pierre", "icone": "🔥", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "nichoir": { "nom": "Nichoir", "icone": "🪺", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "mangeoire": { "nom": "Mangeoire", "icone": "🛶", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -758,6 +816,106 @@ export const RAW_DATA = {
       "meuble_tableau_1": { "nom": "Tableau : la ferme", "objet": "meuble_tableau_1", "meuble": "tableau_1", "sur": "mur" },
       "meuble_tableau_2": { "nom": "Tableau : le bouquet", "objet": "meuble_tableau_2", "meuble": "tableau_2", "sur": "mur" },
       "meuble_tableau_3": { "nom": "Tableau : la mer", "objet": "meuble_tableau_3", "meuble": "tableau_3", "sur": "mur" },
+      "meuble_buffet": { "nom": "Buffet vaisselier", "objet": "meuble_buffet", "meuble": "buffet", "dedans": true, "bloque": true, "largeur": 2 },
+      "meuble_commode": { "nom": "Commode", "objet": "meuble_commode", "meuble": "commode", "dedans": true, "bloque": true, "largeur": 2 },
+      "meuble_armoire_chene": {
+        "nom": "Armoire de chêne",
+        "objet": "meuble_armoire_chene",
+        "meuble": "armoire_chene",
+        "dedans": true,
+        "bloque": true,
+        "largeur": 2
+      },
+      "meuble_armoire_peinte": {
+        "nom": "Armoire peinte",
+        "objet": "meuble_armoire_peinte",
+        "meuble": "armoire_peinte",
+        "dedans": true,
+        "bloque": true,
+        "largeur": 2
+      },
+      "meuble_armoire_glace": { "nom": "Armoire à glace", "objet": "meuble_armoire_glace", "meuble": "armoire_glace", "dedans": true, "bloque": true },
+      "meuble_cuisine_porte": {
+        "nom": "Bas de cuisine à porte",
+        "objet": "meuble_cuisine_porte",
+        "meuble": "cuisine_porte",
+        "dedans": true,
+        "bloque": true
+      },
+      "meuble_cuisine_tiroirs": {
+        "nom": "Bas de cuisine à tiroirs",
+        "objet": "meuble_cuisine_tiroirs",
+        "meuble": "cuisine_tiroirs",
+        "dedans": true,
+        "bloque": true
+      },
+      "meuble_cuisine_sauge": {
+        "nom": "Bas de cuisine vitré",
+        "objet": "meuble_cuisine_sauge",
+        "meuble": "cuisine_sauge",
+        "dedans": true,
+        "bloque": true
+      },
+      "meuble_poubelle": { "nom": "Poubelle", "objet": "meuble_poubelle", "meuble": "poubelle", "dedans": true, "bloque": true },
+      "meuble_bibliotheque": {
+        "nom": "Bibliothèque étroite",
+        "objet": "meuble_bibliotheque",
+        "meuble": "bibliotheque",
+        "dedans": true,
+        "bloque": true
+      },
+      "meuble_bibliotheque_vitree": {
+        "nom": "Bibliothèque vitrée",
+        "objet": "meuble_bibliotheque_vitree",
+        "meuble": "bibliotheque_vitree",
+        "dedans": true,
+        "bloque": true,
+        "largeur": 2
+      },
+      "meuble_lampadaire": { "nom": "Lampadaire", "objet": "meuble_lampadaire", "meuble": "lampadaire", "dedans": true, "bloque": true },
+      "meuble_coffre_jouets": {
+        "nom": "Coffre à jouets",
+        "objet": "meuble_coffre_jouets",
+        "meuble": "coffre_jouets",
+        "dedans": true,
+        "bloque": true,
+        "largeur": 2
+      },
+      "meuble_plante_ficus": { "nom": "Ficus", "objet": "meuble_plante_ficus", "meuble": "plante_ficus", "dedans": true, "bloque": true },
+      "meuble_plante_monstera": { "nom": "Monstera", "objet": "meuble_plante_monstera", "meuble": "plante_monstera", "dedans": true, "bloque": true },
+      "meuble_plante_sansevieria": {
+        "nom": "Sansevière",
+        "objet": "meuble_plante_sansevieria",
+        "meuble": "plante_sansevieria",
+        "dedans": true,
+        "bloque": true
+      },
+      "meuble_plante_cactus": { "nom": "Cactus cierge", "objet": "meuble_plante_cactus", "meuble": "plante_cactus", "dedans": true, "bloque": true },
+      "meuble_plante_fougere": { "nom": "Fougère", "objet": "meuble_plante_fougere", "meuble": "plante_fougere", "dedans": true, "bloque": true },
+      "meuble_plante_palmier": {
+        "nom": "Palmier kentia",
+        "objet": "meuble_plante_palmier",
+        "meuble": "plante_palmier",
+        "dedans": true,
+        "bloque": true
+      },
+      "meuble_plante_citronnier": {
+        "nom": "Citronnier",
+        "objet": "meuble_plante_citronnier",
+        "meuble": "plante_citronnier",
+        "dedans": true,
+        "bloque": true
+      },
+      "meuble_plante_orchidee": { "nom": "Orchidée", "objet": "meuble_plante_orchidee", "meuble": "plante_orchidee", "dedans": true, "bloque": true },
+      "meuble_plante_aloe": { "nom": "Aloe vera", "objet": "meuble_plante_aloe", "meuble": "plante_aloe", "dedans": true, "bloque": true },
+      "meuble_plante_bonsai": {
+        "nom": "Bonsaï",
+        "objet": "meuble_plante_bonsai",
+        "meuble": "plante_bonsai",
+        "dedans": true,
+        "bloque": true,
+        "largeur": 2
+      },
       "atelier": { "nom": "Atelier", "bloque": true, "ferme": true }
     },
     "PIECE_MAX": 120,
@@ -2611,7 +2769,30 @@ export const RAW_DATA = {
     "table_basse": { "nom": "Table basse", "piece": "salon", "prix": 60, "bonheur": 2 },
     "tableau_1": { "nom": "Tableau : la ferme", "piece": "salon", "prix": 45, "bonheur": 2 },
     "tableau_2": { "nom": "Tableau : le bouquet", "piece": "salon", "prix": 55, "bonheur": 2 },
-    "tableau_3": { "nom": "Tableau : la mer", "piece": "chambre", "prix": 70, "bonheur": 3 }
+    "tableau_3": { "nom": "Tableau : la mer", "piece": "chambre", "prix": 70, "bonheur": 3 },
+    "buffet": { "nom": "Buffet vaisselier", "piece": "cuisine", "prix": 140, "bonheur": 4 },
+    "commode": { "nom": "Commode", "piece": "chambre", "prix": 110, "bonheur": 3 },
+    "armoire_chene": { "nom": "Armoire de chêne", "piece": "chambre", "prix": 160, "bonheur": 4 },
+    "armoire_peinte": { "nom": "Armoire peinte", "piece": "chambre", "prix": 180, "bonheur": 4 },
+    "armoire_glace": { "nom": "Armoire à glace", "piece": "chambre", "prix": 130, "bonheur": 3 },
+    "cuisine_porte": { "nom": "Bas de cuisine à porte", "piece": "cuisine", "prix": 50, "bonheur": 1, "max": 4 },
+    "cuisine_tiroirs": { "nom": "Bas de cuisine à tiroirs", "piece": "cuisine", "prix": 55, "bonheur": 1, "max": 4 },
+    "cuisine_sauge": { "nom": "Bas de cuisine vitré", "piece": "cuisine", "prix": 70, "bonheur": 2, "max": 4 },
+    "poubelle": { "nom": "Poubelle", "piece": "cuisine", "prix": 20, "bonheur": 1 },
+    "bibliotheque": { "nom": "Bibliothèque étroite", "piece": "salon", "prix": 80, "bonheur": 2 },
+    "bibliotheque_vitree": { "nom": "Bibliothèque vitrée", "piece": "salon", "prix": 170, "bonheur": 4 },
+    "lampadaire": { "nom": "Lampadaire", "piece": "salon", "prix": 45, "bonheur": 2 },
+    "coffre_jouets": { "nom": "Coffre à jouets", "piece": "chambre", "prix": 60, "bonheur": 3 },
+    "plante_ficus": { "nom": "Ficus", "piece": "salon", "prix": 35, "bonheur": 2 },
+    "plante_monstera": { "nom": "Monstera", "piece": "salon", "prix": 40, "bonheur": 2 },
+    "plante_sansevieria": { "nom": "Sansevière", "piece": "chambre", "prix": 25, "bonheur": 1 },
+    "plante_cactus": { "nom": "Cactus cierge", "piece": "salon", "prix": 20, "bonheur": 1 },
+    "plante_fougere": { "nom": "Fougère", "piece": "salon", "prix": 30, "bonheur": 2 },
+    "plante_palmier": { "nom": "Palmier kentia", "piece": "salon", "prix": 50, "bonheur": 2 },
+    "plante_citronnier": { "nom": "Citronnier", "piece": "cuisine", "prix": 60, "bonheur": 3 },
+    "plante_orchidee": { "nom": "Orchidée", "piece": "chambre", "prix": 35, "bonheur": 2 },
+    "plante_aloe": { "nom": "Aloe vera", "piece": "cuisine", "prix": 20, "bonheur": 1 },
+    "plante_bonsai": { "nom": "Bonsaï", "piece": "salon", "prix": 70, "bonheur": 3 }
   },
   "SIMULATION": {
     "NUITS": 80,

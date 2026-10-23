@@ -844,7 +844,13 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          - la carte pose leur dessin (`assets/meuble_<id>.png`) en bas au milieu de leurs cases
            (`syncMeuble`, `syncTableaux` dans `js/carte/ferme/chantier.js`) ; le menu Construire
            ne montre que les meubles qu'on a en main ;
-         - une ancienne partie qui déménage retrouve ses meubles achetés dans l'inventaire.
+         - une ancienne partie qui déménage retrouve ses meubles achetés dans l'inventaire ;
+         - 23 meubles de plus, dessinés en vue de haut à 45° comme les blocs
+           (`scripts/batiments/meubles45.py`) : un buffet vaisselier, une commode, trois armoires
+           (de chêne, peinte, à glace), trois bas de cuisine au gabarit de la cuisinière (jusqu'à 4
+           de chaque), une poubelle, deux bibliothèques, un lampadaire, un coffre à jouets et dix
+           plantes vertes ; le buffet, la commode, les armoires de chêne et peinte, la
+           bibliothèque vitrée, le coffre à jouets et le bonsaï prennent 2 cases.
      - ✅ **5b-2, l'énergie et l'eau** : le puits et la citerne quittent la cour.
        - Le puits, la pompe, le panneau solaire, la citerne et la batterie se fabriquent à
          l'Atelier (il faut des lingots : le minerai de la grotte, fondu au four) :
