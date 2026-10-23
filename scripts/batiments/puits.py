@@ -1,9 +1,11 @@
-# assets/puits.png : le puits de la ferme (un bloc posé dehors), 3 images de 48×50 :
+# assets/puits.png : le puits de la ferme (un bloc posé dehors), 3 images de 50×50 :
 #   0 : le puits seul ;
 #   1 : le même, avec le tuyau de la pompe qui passe par-dessus la margelle et plonge dans l'eau ;
 #   2 : la pompe électrique seule, posée à droite du puits (par-dessus l'image 1 une fois la
-#       pompe achetée ; la carte la fait vibrer d'un pixel vers la droite quand elle tourne).
-#       Le tuyau de l'image 1 sort de son flanc gauche : décalée, elle reste raccordée.
+#       pompe achetée ; la carte la fait vibrer d'un pixel vers la droite quand elle tourne) :
+#       une pompe verticale, son moteur vert debout sur le corps de fonte, un manomètre, sur un
+#       socle de béton. Le tuyau de l'image 1 entre dans son flanc gauche : décalée, elle reste
+#       raccordée.
 # Vu de haut à 45° comme les blocs (scripts/rendu45.py) : une margelle ronde de pierres, l'eau et
 # le seau pendu à sa corde au milieu de l'ouverture, deux poteaux, une manivelle à droite, et
 # au-dessus un toit conique de tuiles rouges à nervures, coiffé d'un épi. Le puits est au
@@ -18,8 +20,8 @@ from pixel import ASSETS, rangee  # noqa: E402
 from rendu45 import Toile, boite, cylindre, disque, ton  # noqa: E402
 from style_v2 import PALETTE_SERRE as PS  # noqa: E402
 
-W, H = 48, 50
-X0, Y0 = 24, 41                      # le pied de l'axe du puits dans l'image
+W, H = 50, 50
+X0, Y0 = 25, 41                      # le pied de l'axe du puits dans l'image
 
 PIERRE = PS['pierre']
 BOIS = PS['bois']
@@ -28,8 +30,10 @@ EAU = [(20, 28, 46), (28, 38, 58), (40, 56, 84), (64, 96, 138)]
 FER = [(52, 54, 60), (90, 94, 102), (140, 146, 156)]
 CORDE = [(120, 96, 60), (170, 140, 92)]
 TUYAU = [(96, 100, 106), (140, 144, 150), (186, 190, 196)]
-POMPE = [(28, 32, 40), (38, 62, 66), (58, 92, 96), (96, 140, 140)]
-VOYANT = (240, 204, 80)
+BETON = [(84, 92, 100), (112, 122, 132), (144, 154, 164), (176, 186, 194), (206, 214, 220)]
+FONTE = [(40, 42, 48), (70, 74, 82), (110, 116, 126), (156, 162, 172), (200, 206, 214)]
+MOTEUR = [(30, 52, 34), (46, 82, 50), (70, 118, 70), (104, 152, 96), (150, 190, 138)]
+CADRAN, AIGUILLE = (236, 236, 228), (166, 46, 40)
 
 RO, RI, HM, EAU_Z = 12.5, 10, 9, 6     # margelle : rayons dehors et dedans, hauteur ; l'eau
 ZT, R, HR = 30, 15.5, 9                # le toit : avant-toit, rayon, hauteur du cône
@@ -136,20 +140,21 @@ def tuyau(t):
 
 
 def pompe(t):
-    # le corps posé à droite du puits, son moteur dessus, un voyant
-    def corps(face, u, v, s):
-        if face == 'devant' and abs(u - 19.5) < 0.6 and abs(v - 4) < 0.6:
-            return VOYANT
-        if face == 'devant' and abs(v - 6.5) < 0.4:
-            return POMPE[1]
-        return ton(POMPE, s * 0.8 + 0.2)
-    boite(t, 16, 21.5, -3, 2, 0, 8.5, corps, 'pompe')
-    cylindre(t, 18.7, -0.5, 1.8, 8.5, 12, lambda p, z, s: ton(POMPE, s * 0.8 + 0.2), 'moteur')
-    disque(t, 18.7, -0.5, 0, 1.8, 12, lambda r, p, s: POMPE[3] if r < 1 else POMPE[2], 'moteur')
+    # une pompe verticale sur un socle de béton : le corps de fonte en bas, le moteur vert debout
+    # dessus (des cannelures), un manomètre rond en façade
+    boite(t, 13.5, 23.2, -4.5, 3.5, 0, 1.5, lambda f, u, v, s: ton(BETON, s * 0.6 + 0.2), 'socle')
+    cylindre(t, 18.5, -0.5, 3.4, 1.5, 6, lambda p, z, s: ton(FONTE, s * 0.8 + 0.2), 'corps')
+    cylindre(t, 18.5, -0.5, 2.7, 6, 14, lambda p, z, s: ton(MOTEUR, s * 0.85 + 0.1, -1 if (p * 2.7 / 1.2) % 1 < 0.3 else 0), 'moteur')
+    disque(t, 18.5, -0.5, 0, 2.7, 14, lambda r, p, s: ton(MOTEUR, 0.9 if r < 1.2 else 0.6), 'moteur')
+    for i in range(60):
+        a = 2 * math.pi * i / 60
+        for rr in (0.3, 0.6, 0.9, 1.2):
+            c = AIGUILLE if rr < 0.4 else CADRAN if rr < 1.1 else FONTE[0]
+            t.point(15.4 + rr * 1.2 * math.cos(a), -4.2, 4 + rr * 1.2 * math.sin(a), c, 'manometre')
 
 
 def image(sorte):
-    t = Toile(W, H, X0, Y0, lies=[('toit', 'corde'), ('toit', 'epi'), ('pompe', 'moteur')])
+    t = Toile(W, H, X0, Y0, lies=[('toit', 'corde'), ('toit', 'epi'), ('socle', 'corps'), ('corps', 'moteur'), ('corps', 'manometre'), ('socle', 'moteur')])
     if sorte == 'pompe':
         pompe(t)
         return t.image()

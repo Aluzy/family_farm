@@ -373,9 +373,11 @@ export function stageModel() {
   // Le puits, en haut à gauche du Moulin : la pompe s'y ajoute une fois achetée.
   const pompe = isOwned(starterOf(state, 'pompe'));
   const pompeEnMarche = pompe && state.pompe.debit > 0; // elle remplit la citerne : elle vibre
-  // La citerne (le réservoir), une fois achetée : son tube de niveau, vide (0) à plein (4).
+  // La citerne (le réservoir), une fois achetée : plus haute à chaque niveau de capacité (5 images
+  // par niveau), son tube de niveau vide (0) à plein (4).
   const cap = tankCapacity(state);
-  const citerne = isOwned(starterOf(state, 'reservoir')) ? (cap > 0 ? Math.round((Math.min(state.eauMl, cap) * 4) / cap) : 0) : -1;
+  const remplie = cap > 0 ? Math.round((Math.min(state.eauMl, cap) * 4) / cap) : 0;
+  const citerne = isOwned(starterOf(state, 'reservoir')) ? (Math.max(1, state.reservoir.niveau || 1) - 1) * 5 + remplie : -1;
   // Meubles de l'intérieur de la maison : 0 absent (pas encore débloqué), 1 en filigrane (à
   // construire : un appui ouvre sa fiche), 2 construit.
   const meuble = (shown, built) => (built ? 2 : shown ? 1 : 0);
