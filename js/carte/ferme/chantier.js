@@ -81,7 +81,7 @@
           // (le mur continue au-dessus de la porte, dans sa matière ; une fenêtre ou une paroi
           // vitrée : un mur en pierre plein)
           const plein = (s, masque) => {
-            if (!s || !this.has(H.key) || s === 'mur_fenetre' || s === 'paroi_vitree') return this.hautFrame(BLOCS_CARTE.murs + masque);
+            if (!s || !this.has(H.key) || H.fenetres.modeles[s] !== undefined || s === 'paroi_vitree') return this.hautFrame(BLOCS_CARTE.murs + masque);
             return [H.key, H.variantes[s] + masque];
           };
           if (hz > 1) return { h: hz, frame: plein(murDe(b, false), 2 + 8) };
@@ -94,7 +94,7 @@
           seen.add(b.case);
           // (un meuble acheté au Marché : son propre dessin, assets/meuble_<dessin>.png)
           if (b.meuble) { if (this.syncMeuble(b)) changed = true; continue; }
-          let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case), pleine: b.pleine }, at, cols);
+          let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case), pleine: b.pleine, mur: b.mur }, at, cols);
           const modele = H.modelesPortes[b.sorte];
           if (verre.has(b.case) && key === H.key && (f === H.porte || f === modele)) f = H.porteSerre;
           // (la porte d'un mur horizontal : le haut de son image est celui du mur voisin)
@@ -493,7 +493,8 @@
     },
 
     // L'image du bloc b, raccordé à ses voisins (at : case -> sorte) : [clé, image]. Un mur, une
-    // fenêtre, des pierres d'angle : leur version haute (BLOCS_CARTE.hauts.variantes), sinon
+    // fenêtre (dans la matière de son mur), des pierres d'angle : leur version haute
+    // (BLOCS_CARTE.hauts.variantes, BLOCS_CARTE.hauts.fenetres), sinon
     // celle du mur de blocs.png.
     blocImage(b, at, cols) {
       const f = this.wallFrame(b, at, cols), H = BLOCS_CARTE.hauts;
@@ -501,7 +502,14 @@
       // droite, si leurs faces se voient toutes deux)
       const J = H.joints[b.sorte], face = (k) => H.variantes[at.get(k + cols)] === undefined;
       const prolonge = (k) => at.get(k) === b.sorte && face(k) && Math.floor(k / cols) === Math.floor(b.case / cols);
-      const v = J && face(b.case) ? J[(prolonge(b.case - 1) ? 1 : 0) + (prolonge(b.case + 1) ? 2 : 0)] : H.variantes[b.sorte];
+      const j = face(b.case) ? (prolonge(b.case - 1) ? 1 : 0) + (prolonge(b.case + 1) ? 2 : 0) : 0;
+      // (une fenêtre : dans la matière de son mur, BLOCS_CARTE.hauts.fenetres)
+      const FN = H.fenetres, fb = FN.modeles[b.sorte];
+      if (fb !== undefined && this.has(H.key) && f >= BLOCS_CARTE.murs && f < BLOCS_CARTE.murs + 16) {
+        const mat = Math.max(0, H.matieresPortes.indexOf(b.mur));
+        return [H.key, fb + (FN.prolonge.includes(b.sorte) ? mat * 4 + j : mat) * 16 + f - BLOCS_CARTE.murs];
+      }
+      const v = J && face(b.case) ? J[j] : H.variantes[b.sorte];
       if (v !== undefined && this.has(H.key) && f >= BLOCS_CARTE.murs && f < BLOCS_CARTE.murs + 16) return [H.key, H.murs + v + f - BLOCS_CARTE.murs];
       // (un modèle de porte dans un mur horizontal : la sienne, dans un mur en pierre)
       if (H.modelesPortes[b.sorte] !== undefined && f === BLOCS_CARTE.frames.porte && this.has(H.key)) return [H.key, H.modelesPortes[b.sorte]];

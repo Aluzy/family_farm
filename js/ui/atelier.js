@@ -73,7 +73,8 @@ function besoinHtml(besoin) {
 // et les sols (GROUPES). Sous la barre, la recette choisie : ce qu'elle prend, ce qu'elle
 // donne, et le bouton Fabriquer.
 const GROUPES = [
-  { id: 'murs', nom: 'Murs', de: (b) => !!b.mur },
+  { id: 'fenetres', nom: 'Fenêtres', de: (b) => !!b.fenetre },
+  { id: 'murs', nom: 'Murs', de: (b) => !!b.mur && !b.fenetre },
   { id: 'portes', nom: 'Portes', de: (b) => !!b.porte },
   { id: 'sols', nom: 'Sols', de: (b) => !!b.sol && !b.dehors },
 ];

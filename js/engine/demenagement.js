@@ -192,6 +192,7 @@ export function convertirPartie(state, graine) {
   state.sols = {};
   state.blocsDessus = {};
   state.hauteurs = {};
+  state.fenetres = {};
   const batis = [], rendus = {};
   const rendre = (p) => {
     const objets = objetsDe(p);

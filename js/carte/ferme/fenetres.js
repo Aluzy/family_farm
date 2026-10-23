@@ -113,9 +113,12 @@
       const murHaut = (c) => EM.has(c);
       // une vitre (l'image d'un mur à fenêtre ou d'une paroi vitrée) : pas sur un mur sans mur au-dessous
       // (BLOCS_CARTE.hauts.joints : une grande fenêtre, chacun ses 16 images)
+      // (une fenêtre : ses images depuis Hh.fenetres.modeles, 16 par matière et prolongement)
       const vitre = (sorte, img) => {
         if (!L.sortes.includes(sorte) || img.texture.key !== Hh.key) return false;
-        const n = img.frame.name, base = (Hh.joints[sorte] || [Hh.variantes[sorte]]).find((b) => n >= b && n < b + 16);
+        const n = img.frame.name, fb = Hh.fenetres.modeles[sorte];
+        if (fb !== undefined && n >= fb) return !((n - fb) % 16 & 4);
+        const base = (Hh.joints[sorte] || [Hh.variantes[sorte]]).find((b) => n >= b && n < b + 16);
         return base !== undefined && !((n - base) & 4);
       };
       let arbres = null;

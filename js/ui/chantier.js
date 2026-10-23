@@ -48,9 +48,10 @@ const ouvert = (s) => s === buildMode || blocDebloque(state, s);
 const SORTES = () => (niveauBati() ? ETAGE_BLOCS.filter(enMain) : niveau() ? MURS() : Object.keys(DATA.ATELIER.BLOCS).filter(enMain)).filter(vu).filter(bati).filter(ouvert);
 
 // Les blocs qui tiennent dans une seule case du menu, qui ouvre leur bulle (quand il y en a
-// plusieurs dans l'onglet) : les murs, les portes, les sols (pas le chemin, du dehors).
+// plusieurs dans l'onglet) : les fenêtres, les murs, les portes, les sols (pas le chemin, du dehors).
 const GROUPES = [
-  { id: 'murs', nom: 'Murs', de: (b) => !!b.mur },
+  { id: 'fenetres', nom: 'Fenêtres', de: (b) => !!b.fenetre },
+  { id: 'murs', nom: 'Murs', de: (b) => !!b.mur && !b.fenetre },
   { id: 'portes', nom: 'Portes', de: (b) => !!b.porte },
   { id: 'sols', nom: 'Sols', de: (b) => !!b.sol && !b.dehors },
 ];

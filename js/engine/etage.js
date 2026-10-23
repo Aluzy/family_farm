@@ -19,12 +19,25 @@ import { farmTerrain } from './terrain.js';
 // Les blocs qui se posent à l'étage : des murs, des portes, une paillasse, une lanterne, une
 // barrière, et les meubles du Marché qui se posent au sol (pas les tableaux, accrochés à un mur ;
 // pas le réfrigérateur, qui reste en bas, où la famille mange).
-export const ETAGE_BLOCS = ['mur_pierre', 'mur_fenetre', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'porte', 'porte_chene', 'porte_vitree', 'porte_grange', 'porte_bleue', 'porte_fer', 'porte_ecurie', 'porte_blanche', 'paillasse', 'lanterne', 'barriere']
+export const ETAGE_BLOCS = ['mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'porte', 'porte_chene', 'porte_vitree', 'porte_grange', 'porte_bleue', 'porte_fer', 'porte_ecurie', 'porte_blanche', 'paillasse', 'lanterne', 'barriere']
   .concat(Object.keys(DATA.ATELIER.BLOCS).filter((k) => DATA.ATELIER.BLOCS[k].meuble && !DATA.ATELIER.BLOCS[k].sur && !DATA.ATELIER.BLOCS[k].frigo));
 
 // Les blocs posés à l'étage : { [tuile]: sorte }.
 export function etageBlocs(state) {
   return state.etage && typeof state.etage === 'object' ? state.etage : {};
+}
+
+// Les fenêtres de l'étage percées dans un mur : { [case]: sorte du mur } (state.fenetresEtage),
+// comme celles du bas (blocs.js fenetresPosees).
+export function fenetresEtage(state) {
+  return state.fenetresEtage && typeof state.fenetresEtage === 'object' ? state.fenetresEtage : {};
+}
+const estFen = (sorte) => !!(DATA.ATELIER.BLOCS[sorte] && DATA.ATELIER.BLOCS[sorte].fenetre);
+const murPlein = (sorte) => !!(DATA.ATELIER.BLOCS[sorte] && DATA.ATELIER.BLOCS[sorte].mur && !estFen(sorte)) && sorte !== 'paroi_vitree';
+function setFenetreEtage(state, tile, mur) {
+  if (!mur) { if (state.fenetresEtage) delete state.fenetresEtage[tile]; return; }
+  if (!state.fenetresEtage || typeof state.fenetresEtage !== 'object') state.fenetresEtage = {};
+  state.fenetresEtage[tile] = mur;
 }
 
 // Les cases de l'étage couvertes par un meuble de plusieurs cases, hors la sienne : Map(case →
@@ -179,10 +192,21 @@ export function poserEtage(state, sorte, tile) {
   const st = poseEtageStatus(state, sorte, tile);
   if (!st.ok) return fail(st.raison);
   takeItem(state, DATA.ATELIER.BLOCS[sorte].objet, 1);
-  // un mur changé (une fenêtre à la place d'un mur en pierre) : l'ancien revient
-  const ancien = etageBlocs(state)[tile];
-  if (ancien) addItem(state, DATA.ATELIER.BLOCS[ancien].objet, 1);
+  const ancien = etageBlocs(state)[tile], dans = fenetresEtage(state)[tile];
   if (!state.etage || typeof state.etage !== 'object') state.etage = {};
+  // une fenêtre dans un mur plein : il reste autour d'elle
+  if (ancien && estFen(sorte) && murPlein(ancien)) {
+    setFenetreEtage(state, tile, ancien);
+    state.etage[tile] = sorte;
+    return { ok: true, sorte, case: tile, etage: true, perce: ancien };
+  }
+  // un mur changé (une porte à la place d'un mur en pierre) : l'ancien revient ; à la place d'une
+  // fenêtre (sauf une autre fenêtre), son mur aussi
+  if (ancien) addItem(state, DATA.ATELIER.BLOCS[ancien].objet, 1);
+  if (dans && !(estFen(sorte) && estFen(ancien))) {
+    addItem(state, DATA.ATELIER.BLOCS[dans].objet, 1);
+    setFenetreEtage(state, tile, null);
+  }
   state.etage[tile] = sorte;
   return ancien ? { ok: true, sorte, case: tile, etage: true, remplace: ancien } : { ok: true, sorte, case: tile, etage: true };
 }
@@ -193,9 +217,13 @@ export function reprendreEtage(state, tile) {
   if (!etageBlocs(state)[tile] && etageCouvertes(state).has(tile)) tile = etageCouvertes(state).get(tile);
   const sorte = etageBlocs(state)[tile];
   if (!sorte) return fail('Il n\'y a pas de bloc ici.');
-  delete state.etage[tile];
+  // une fenêtre percée dans un mur : elle revient, le mur reste
+  const mur = fenetresEtage(state)[tile];
+  if (estFen(sorte) && mur) state.etage[tile] = mur;
+  else delete state.etage[tile];
+  setFenetreEtage(state, tile, null);
   addItem(state, DATA.ATELIER.BLOCS[sorte].objet, 1);
-  return { ok: true, sorte, case: tile, etage: true };
+  return mur && estFen(sorte) ? { ok: true, sorte, case: tile, etage: true, reste: mur } : { ok: true, sorte, case: tile, etage: true };
 }
 
 // Les blocs de l'étage qui ne sont plus au-dessus d'une pièce à escalier reviennent dans
@@ -205,6 +233,10 @@ export function rangerEtage(state) {
   const hors = etageHorsEmprise(state);
   for (const k of hors) {
     addItem(state, DATA.ATELIER.BLOCS[E[k]].objet, 1);
+    // (le mur d'une fenêtre aussi)
+    const mur = fenetresEtage(state)[k];
+    if (mur) addItem(state, DATA.ATELIER.BLOCS[mur].objet, 1);
+    setFenetreEtage(state, k, null);
     delete E[k];
   }
   return hors.length;
