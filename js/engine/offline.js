@@ -8,6 +8,7 @@ import { inventoryCounts } from './inventory.js';
 import { millPending, millTimeLeft, taskTimeLeft } from './kitchen.js';
 import { refreshUnlocks } from './techtree.js';
 import { updateChapters } from './campaign.js';
+import { nuitCouchee } from './blocs.js';
 
 /* ---------- Lot 11 : progression hors-ligne ---------- */
 
@@ -96,10 +97,11 @@ export function simulateOffline(state, seconds) {
   const before = offlineSnapshot(state);
   let left = Math.round(simule * 1000);
   // Version 1.19 : parti en pleine nuit, la nuit continue (minuit compris) ; le reste de
-  // l'absence suit la règle habituelle à partir du réveil. Jeu fermé, le personnage dort.
+  // l'absence suit la règle habituelle à partir du réveil. Jeu fermé, le personnage dort, s'il a
+  // où dormir (sur la ferme générée, une paillasse dans une pièce close : nuitCouchee).
   if (nightActive(state)) {
     const reste = nightLengthMs() - state.nuitEnCours.ms;
-    state.nuitEnCours.dort = true;
+    state.nuitEnCours.dort = nuitCouchee(state);
     advanceNight(state, left);
     left = Math.max(0, left - reste);
   }

@@ -266,16 +266,17 @@ test('hache et pioche sur une carte : chaque coup lâche un morceau au sol, la c
   const ou = { carte: 'ferme', coup: [{ x: 10, y: 20 }, { x: 12, y: 22 }], fin: [{ x: 40, y: 20 }, { x: 52, y: 24 }] };
   const coups = [];
   for (let k = 0; k < DATA.HACHE.COUPES; k++) { testFillEnergy(s); coups.push(chopTree(s, '14,25', ou)); }
-  assertEqual(coups.map((r) => [r.morceaux.coup.length, r.morceaux.fin.length]), [[1, 0], [1, 0], [1, 2]], '1 par coup, 2 de plus à la chute');
-  assertEqual([countItem(s, 'bois'), morceauxDe(s, 'ferme').length, morceauxDe(s, 'ville').length], [0, 5, 0], 'au sol, pas dans l\'inventaire');
-  assertEqual(coups[2].morceaux.fin.map((m) => [m.item, m.x, m.y]), [['bois', 40, 20], ['bois', 52, 24]], 'là où la cime touche le sol');
+  assertEqual(coups.map((r) => [r.morceaux.coup.length, r.morceaux.fin.length]), [[1, 0], [1, 0], [1, DATA.HACHE.CHUTE]], '1 par coup, CHUTE de plus à la chute');
+  const B = 2 + 1 + DATA.HACHE.CHUTE;
+  assertEqual([countItem(s, 'bois'), morceauxDe(s, 'ferme').length, morceauxDe(s, 'ville').length], [0, B, 0], 'au sol, pas dans l\'inventaire');
+  assertEqual(coups[2].morceaux.fin.slice(0, 2).map((m) => [m.item, m.x, m.y]), [['bois', 40, 20], ['bois', 52, 24]], 'là où la cime touche le sol');
   // la pioche : pareil, 1 + 1 + 3 pierres
   for (let k = 0; k < DATA.PIOCHE.COUPS; k++) { testFillEnergy(s); mineRock(s, '25,13', ou); }
   const L = morceauxDe(s, 'ferme');
-  assertEqual([L.length, L.filter((m) => m.item === 'pierre').length, new Set(L.map((m) => m.n)).size], [10, 5, 10]);
+  assertEqual([L.length, L.filter((m) => m.item === 'pierre').length, new Set(L.map((m) => m.n)).size], [B + 5, 5, B + 5]);
   // ramassés un à un (une fois chacun)
   for (const m of L) assert(ramasserMorceau(s, m.n).ok);
-  assertEqual([countItem(s, 'bois'), countItem(s, 'pierre'), morceauxDe(s, 'ferme').length, ramasserMorceau(s, L[0].n).ok], [5, 5, 0, false]);
+  assertEqual([countItem(s, 'bois'), countItem(s, 'pierre'), morceauxDe(s, 'ferme').length, ramasserMorceau(s, L[0].n).ok], [B, 5, 0, false]);
 });
 
 test('faux : faucher une touffe donne de la fibre au sol, de l\'XP, coûte de l\'énergie ; elle repousse au bout de RETOUR jours', () => {

@@ -735,8 +735,8 @@ export function actionGoToBed() {
   // La ferme générée : on dort sur une paillasse d'une pièce close (js/engine/blocs.js), dehors
   // sur la carte ; sans elle, la famille ne dort pas : la nuit passe sans rendre d'énergie.
   if (atelierOuvert(state)) {
-    if (!couchages(state).length) notify('🛏 Sans paillasse dans une pièce close (des murs tout autour et une porte), la famille ne dort pas : pas d\'énergie retrouvée cette nuit.');
-    else if (scene && scene.hasFermier && scene.hasFermier() && scene.goHome) {
+    if (!couchages(state).length) { notify('🛏 Sans paillasse dans une pièce close (des murs tout autour et une porte), on ne peut pas dormir : la nuit passe sans rendre d\'énergie.'); return; }
+    if (scene && scene.hasFermier && scene.hasFermier() && scene.goHome) {
       if (stageInterior) leaveInterior();
       setCoucher(true);
       setBuildMode(null);
