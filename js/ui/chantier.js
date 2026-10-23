@@ -6,7 +6,7 @@
 // catégories (DATA.ATELIER.CATEGORIES) : des onglets intercalaires posés sur la barre, celui
 // qui est ouvert avec son nom, les autres avec leur icône seule ; sous eux, une ligne de cases
 // qui défile. Tous les murs tiennent dans une case, qui ouvre la bulle des murs (chacun son
-// icône, ce qui en reste ; son nom au survol). On choisit un bloc, un appui sur une case de la carte l'y
+// icône, ce qui en reste ; son nom au survol) ; de même les portes et les sols (GROUPES). On choisit un bloc, un appui sur une case de la carte l'y
 // pose, un appui sur un bloc le reprend. Les pièces closes sont teintées de vert sur la carte. Le moteur :
 // js/engine/blocs.js ; la carte : js/carte/ferme/chantier.js.
 
@@ -14,7 +14,7 @@ import { DATA } from '../engine/catalog.js';
 import { atelierConstruit } from '../engine/atelier.js';
 import { blocsDidacticiel } from '../engine/didacticiel.js';
 import { setStageWindow, stageWindow } from './stage-windows.js';
-import { blocAt, blocDebloque, blocDessus, blocsEnMain, categorieBloc, changeMur, couchages, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
+import { blocAt, blocDebloque, blocDessus, blocsEnMain, categorieBloc, changeMur, changeSol, couchages, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
 import { ETAGE_BLOCS, etageCouvertes, etageEmprise, poseEtageStatus, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
@@ -47,11 +47,24 @@ const bati = (s) => !DATA.ATELIER.BLOCS[s].semis && !DATA.ATELIER.BLOCS[s].arbre
 const ouvert = (s) => s === buildMode || blocDebloque(state, s);
 const SORTES = () => (niveauBati() ? ETAGE_BLOCS.filter(enMain) : niveau() ? MURS() : Object.keys(DATA.ATELIER.BLOCS).filter(enMain)).filter(vu).filter(bati).filter(ouvert);
 
+// Les blocs qui tiennent dans une seule case du menu, qui ouvre leur bulle (quand il y en a
+// plusieurs dans l'onglet) : les murs, les portes, les sols (pas le chemin, du dehors).
+const GROUPES = [
+  { id: 'murs', nom: 'Murs', de: (b) => !!b.mur },
+  { id: 'portes', nom: 'Portes', de: (b) => !!b.porte },
+  { id: 'sols', nom: 'Sols', de: (b) => !!b.sol && !b.dehors },
+];
+const groupeDe = (s) => { const b = DATA.ATELIER.BLOCS[s]; return b ? GROUPES.find((g) => g.de(b)) || null : null; };
+// (les blocs du groupe `g` dans l'onglet `o`)
+const duGroupe = (o, g) => (o ? o.sortes.filter((s) => groupeDe(s) === g) : []);
+
 // Les onglets : [{ id, nom, icone, sortes }] (ceux qui ont au moins un bloc), dans l'ordre de
 // DATA.ATELIER.CATEGORIES ; dans chacun, ses blocs dans l'ordre des données (les murs d'abord,
 // dans l'ordre de BLOCS). L'onglet ouvert (onglet : son id, ou null : celui du bloc en main) ;
-// la bulle des murs (bulleMurs) ; le dernier mur choisi (murChoisi), que montre la case des murs.
-let onglet = null, bulleMurs = false, murChoisi = null;
+// la bulle ouverte (bulle : l'id de son groupe, ou null) ; le dernier bloc choisi de chaque
+// groupe (choisi : { murs, portes, sols }), que montre la case du groupe.
+let onglet = null, bulle = null;
+const choisi = {};
 function onglets() {
   const dispo = new Set(SORTES()), out = [];
   for (const [id, c] of Object.entries(DATA.ATELIER.CATEGORIES)) {
@@ -65,20 +78,28 @@ function onglets() {
 function ongletOuvert(liste = onglets()) {
   return liste.find((o) => o.id === onglet) || liste.find((o) => o.sortes.includes(buildMode)) || liste[0] || null;
 }
-// Le premier bloc à prendre en main dans l'onglet `o` : le dernier mur choisi, sinon le premier
-// qu'on a encore, sinon le premier.
+// Le bloc que montre la case du groupe `g` dans l'onglet `o` : celui en main, sinon le dernier
+// choisi, sinon le premier qu'on a encore, sinon le premier.
+function vuDuGroupe(o, g) {
+  const l = duGroupe(o, g);
+  if (l.includes(buildMode)) return buildMode;
+  if (l.includes(choisi[g.id])) return choisi[g.id];
+  return l.find((s) => blocsEnMain(state, s) > 0) || l[0];
+}
+// Le premier bloc à prendre en main dans l'onglet `o` : le dernier choisi d'un groupe qu'on a
+// encore, sinon le premier qu'on a encore, sinon le premier.
 function premierBloc(o) {
-  if (murChoisi && o.sortes.includes(murChoisi) && blocsEnMain(state, murChoisi) > 0) return murChoisi;
-  return o.sortes.find((s) => blocsEnMain(state, s) > 0) || o.sortes[0];
+  const c = GROUPES.map((g) => choisi[g.id]).find((s) => s && o.sortes.includes(s) && blocsEnMain(state, s) > 0);
+  return c || o.sortes.find((s) => blocsEnMain(state, s) > 0) || o.sortes[0];
 }
 
 // Pour le didacticiel (js/ui/didacticiel.js) : ce qu'il faut toucher pour prendre `sorte` en
-// main. Sa case, ou l'onglet où il est, ou la case des murs qui ouvre la bulle.
+// main. Sa case, ou l'onglet où il est, ou la case de son groupe qui ouvre la bulle.
 export function cibleBloc(sorte) {
   const liste = onglets(), o = ongletOuvert(liste), cat = categorieBloc(sorte);
   if (!o || o.id !== cat) return `[data-action="build-tab"][data-cat="${cat}"]`;
-  const murs = o.sortes.filter((s) => DATA.ATELIER.BLOCS[s].mur);
-  if (DATA.ATELIER.BLOCS[sorte].mur && murs.length > 1 && !bulleMurs) return '[data-action="build-murs"]';
+  const g = groupeDe(sorte);
+  if (g && duGroupe(o, g).length > 1 && bulle !== g.id) return `[data-action="build-groupe"][data-groupe="${g.id}"]`;
   return `[data-action="build-pick"][data-sorte="${sorte}"]`;
 }
 // La liste des niveaux (au-dessus du menu) : ouverte ? Un appui long sur le carré l'ouvre, on
@@ -116,7 +137,7 @@ function caseBloc(s) {
 
 // Le menu de construction, en haut de l'écran : les onglets intercalaires, puis la barre (la
 // ligne des cases, qui défile ; au bout, le niveau de construction, ✕ et les paillasses d'une
-// pièce close) ; la bulle des murs sous la case des murs.
+// pièce close) ; la bulle d'un groupe (les murs, les portes, les sols) sous la barre.
 export function buildChipHtml() {
   if (!buildMode || !chantierOuvert()) return '';
   const liste = onglets(), o = ongletOuvert(liste);
@@ -124,16 +145,21 @@ export function buildChipHtml() {
     const on = o && t.id === o.id;
     return `<button type="button" class="build-tab${on ? ' on' : ''}" role="tab" data-action="build-tab" data-cat="${t.id}" aria-selected="${on}" aria-label="${t.nom}" title="${t.nom}"><span aria-hidden="true">${t.icone}</span>${on ? `<span class="build-tab-nom">${t.nom}</span>` : ''}</button>`;
   }).join('')}</div>` : '';
-  // les murs : une case (le mur choisi), qui ouvre la bulle ; un seul mur : sa case
-  const sortes = o ? o.sortes : [], murs = sortes.filter((s) => DATA.ATELIER.BLOCS[s].mur);
-  const groupe = murs.length > 1;
-  const murVu = groupe ? (murs.includes(buildMode) ? buildMode : murs.includes(murChoisi) ? murChoisi : murs.find((s) => blocsEnMain(state, s) > 0) || murs[0]) : null;
-  let cases = sortes.filter((s) => !groupe || !DATA.ATELIER.BLOCS[s].mur).map((s) => caseBloc(s)).join('');
-  if (groupe) {
-    const n = blocsEnMain(state, murVu), on = murs.includes(buildMode);
-    cases = `<button type="button" class="tool-slot build-slot build-murs${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-murs" aria-expanded="${bulleMurs}" aria-label="Murs : ${DATA.ATELIER.BLOCS[murVu].nom}, ${n}. Choisir un autre mur" title="Murs : choisir un mur"><span class="build-murs-plus" aria-hidden="true">⋯</span><span aria-hidden="true">${icone(murVu)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span></button>${cases}`;
-  }
-  const bulle = groupe && bulleMurs ? `<div class="build-bulle" role="group" aria-label="Murs"><div class="build-bulle-titre">Murs</div><div class="build-bulle-grid">${murs.map((s) => caseBloc(s)).join('')}</div></div>` : '';
+  // un groupe (les murs, les portes, les sols) : une case (le bloc choisi), à la place du
+  // premier, qui ouvre sa bulle ; un seul bloc du groupe : sa case
+  const sortes = o ? o.sortes : [], vus = new Set(), rangs = [];
+  const cases = sortes.map((s) => {
+    const g = groupeDe(s), l = g ? duGroupe(o, g) : [];
+    if (l.length < 2) { rangs.push(null); return caseBloc(s); }
+    if (vus.has(g.id)) return '';
+    vus.add(g.id);
+    rangs.push(g.id);
+    const v = vuDuGroupe(o, g), n = blocsEnMain(state, v), on = l.includes(buildMode);
+    return `<button type="button" class="tool-slot build-slot build-groupe${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-groupe" data-groupe="${g.id}" aria-expanded="${bulle === g.id}" aria-label="${g.nom} : ${DATA.ATELIER.BLOCS[v].nom}, ${n}. En choisir un autre" title="${g.nom} : en choisir un autre"><span class="build-groupe-plus" aria-hidden="true">⋯</span><span aria-hidden="true">${icone(v)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span></button>`;
+  }).join('');
+  const gb = GROUPES.find((g) => g.id === bulle), lb = gb ? duGroupe(o, gb) : [];
+  // (sa flèche vers la case du groupe : son rang dans la barre)
+  const bulleHtml = lb.length > 1 ? `<div class="build-bulle" role="group" aria-label="${gb.nom}" style="--rang:${Math.max(0, rangs.indexOf(gb.id))}"><div class="build-bulle-titre">${gb.nom}</div><div class="build-bulle-grid">${lb.map((s) => caseBloc(s)).join('')}</div></div>` : '';
   const dodo = couchages(state).length;
   const tete = niveauBati() ? '<span title="À l\'étage : on bâtit au-dessus de la pièce de l\'escalier ; ailleurs, on rehausse les murs">🪜 Étage</span>'
     : niveau() ? `<span title="Niveau ${niveau()} : touche un mur haut de ${niveau()} bloc${niveau() > 1 ? 's' : ''} pour le rehausser, un mur plus haut pour reprendre son bloc du dessus">🧱 Rehausser</span>`
@@ -146,7 +172,7 @@ export function buildChipHtml() {
   // la pose d'un meuble : ✔️ le pose là où est son aperçu, ❌ sort de ce mode
   const m = meubleModele(), ap = m && m.apercu;
   const pose = m ? `<div class="pose-meuble" role="group" aria-label="Poser le meuble"><span class="pose-meuble-txt">${ap ? (ap.ok ? 'Le poser ici ?' : 'Il ne tient pas ici') : 'Touche une case pour placer le meuble'}</span><button type="button" class="pose-meuble-ok" data-action="meuble-ok"${ap && ap.ok ? '' : ' disabled'} aria-label="Poser le meuble ici" title="Poser le meuble ici">✔️</button><button type="button" class="pose-meuble-non" data-action="meuble-annule" aria-label="Sortir de la pose du meuble" title="Sortir de la pose du meuble">❌</button></div>` : '';
-  return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulle}</div><div class="build-bar-bout"><div class="build-bar-boutons">${choixNiveau}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>`;
+  return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons">${choixNiveau}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>`;
 }
 
 // L'appui long sur le carré du niveau : la liste s'ouvre ; en glissant, le niveau sous le doigt
@@ -222,7 +248,7 @@ function blocDuNiveau() {
 
 registerActions({
   'build-toggle': () => {
-    onglet = null; bulleMurs = false;
+    onglet = null; bulle = null;
     if (buildMode) { poseMeuble = null; setBuildMode(null); refresh(); return; }
     if (!chantierOuvert()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
@@ -230,7 +256,7 @@ registerActions({
     setBuildLevel(etageVue ? 1 : 0);          // (on construit d'abord là où l'on est)
     niveauListe = false;
     // (le dernier mur choisi, ou le premier bloc qu'on a encore)
-    setBuildMode(murChoisi && SORTES().includes(murChoisi) && blocsEnMain(state, murChoisi) > 0 ? murChoisi : SORTES().find((s) => blocsEnMain(state, s) > 0) || SORTES()[0]);
+    setBuildMode(choisi.murs && SORTES().includes(choisi.murs) && blocsEnMain(state, choisi.murs) > 0 ? choisi.murs : SORTES().find((s) => blocsEnMain(state, s) > 0) || SORTES()[0]);
     // (un rappel bref, à chaque ouverture : il ne cache pas longtemps la puce des blocs)
     notify(`${DATA.ATELIER.ICONE} Touche une case pour poser, un bloc pour le reprendre.`, { duree: CONSEIL_MS });
     refresh();
@@ -284,31 +310,33 @@ registerActions({
     if (!buildMode) return;
     const s = target.dataset.sorte;
     poseMeuble = null;
-    bulleMurs = false;
-    if (DATA.ATELIER.BLOCS[s] && DATA.ATELIER.BLOCS[s].mur) murChoisi = s;
+    bulle = null;
+    const g = groupeDe(s);
+    if (g) choisi[g.id] = s;
     onglet = categorieBloc(s) || onglet;
     setBuildMode(s);
     refresh();
   },
-  // Un onglet : ses blocs ; le premier qu'on a encore en main (la bulle des murs se ferme).
+  // Un onglet : ses blocs ; le premier qu'on a encore en main (la bulle se ferme).
   'build-tab': (target) => {
     if (!buildMode) return;
     const o = onglets().find((t) => t.id === target.dataset.cat);
     if (!o) return;
     onglet = o.id;
-    bulleMurs = false;
+    bulle = null;
     poseMeuble = null;
     if (!o.sortes.includes(buildMode)) setBuildMode(premierBloc(o));
     refresh();
   },
-  // La case des murs : le mur qu'elle montre en main, et la bulle des murs (ouverte ou fermée).
-  'build-murs': (target) => {
+  // La case d'un groupe (les murs, les portes, les sols) : le bloc qu'elle montre en main, et
+  // sa bulle (ouverte ou fermée ; celle d'un autre groupe se ferme).
+  'build-groupe': (target) => {
     if (!buildMode) return;
-    const o = ongletOuvert(), murs = o ? o.sortes.filter((s) => DATA.ATELIER.BLOCS[s].mur) : [];
-    if (!murs.length) return;
-    if (!murs.includes(buildMode)) setBuildMode(murs.includes(murChoisi) ? murChoisi : murs.find((s) => blocsEnMain(state, s) > 0) || murs[0]);
+    const o = ongletOuvert(), g = GROUPES.find((q) => q.id === target.dataset.groupe);
+    if (!g || !duGroupe(o, g).length) return;
+    setBuildMode(vuDuGroupe(o, g));
     poseMeuble = null;
-    bulleMurs = !bulleMurs;
+    bulle = bulle === g.id ? null : g.id;
     refresh();
   },
   // La carte : un appui sur la case `case` en mode Construire.
@@ -347,15 +375,15 @@ registerActions({
     // (la pompe se pose sur le puits : un appui sur un puits libre la pose, ne reprend pas le puits)
     const sur = DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sur;
     const surLibre = sur && blocAt(state, c) === sur && !blocDessus(state, c);
-    // (le plancher en main : un appui sur un plancher sans rien dessus le reprend ; un autre
-    // bloc se pose dessus)
+    // (le plancher en main : un appui sur un plancher sans rien dessus le reprend ; un sol d'un
+    // autre modèle prend sa place ; un autre bloc se pose dessus)
     const sol = DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sol;
     // (une fenêtre, une pierre d'angle, une porte en main : un appui sur un autre mur le change ; sinon un
     // appui sur un bloc le reprend : un mur rehaussé, son bloc du dessus d'abord)
     const b = blocAt(state, c);
     // (un bloc de silo en main, sur une colonne du silo : il la rehausse)
     const empile = !!b && b === buildMode && !!DATA.ATELIER.BLOCS[b].silo;
-    const reprend = b ? !surLibre && !changeMur(b, buildMode) && !empile : sol && solAt(state, c);
+    const reprend = b ? !surLibre && !changeMur(b, buildMode) && !empile : sol && solAt(state, c) && !changeSol(solAt(state, c), buildMode);
     // (un meuble en main, sur une case libre : son aperçu, pas encore posé)
     if (!reprend && meubleEnMain()) { poseMeuble = { sorte: buildMode, case: c }; refresh(); return; }
     const r = reprend ? reprendreBloc(state, c) : poserBloc(state, buildMode, c);

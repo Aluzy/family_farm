@@ -544,6 +544,43 @@ test('ferme générée : le plancher se pose à plat, sous les blocs, et se repr
   assertEqual([solAt(s, p.dedans), countItem(s, 'plancher')], [null, 2]);
 });
 
+test('ferme générée : 7 modèles de portes et 7 de sols, qui se fabriquent, se posent et s\'échangent', () => {
+  const B = DATA.ATELIER.BLOCS;
+  const portes = Object.keys(B).filter((k) => B[k].porte && k !== 'porte'), sols = Object.keys(B).filter((k) => B[k].sol && !B[k].dehors && k !== 'plancher');
+  assertEqual([portes.length, sols.length], [7, 7]);
+  // chacun : un objet de l'inventaire, une recette de l'Atelier, l'onglet Bâtir, une icône à lui
+  for (const k of [...portes, ...sols]) {
+    assert(DATA.OBJETS[B[k].objet] && DATA.ATELIER.RECETTES[k] && DATA.ATELIER.RECETTES[k].sortie[k], k);
+    assertEqual(categorieBloc(k), 'batir', k);
+  }
+  const icones = [...portes, ...sols, 'porte', 'plancher'].map((k) => DATA.OBJETS[k].icone);
+  assertEqual(new Set(icones).size, icones.length, 'une icône chacun');
+  const s = chantier('modeles');
+  setInv(s, { planche: 4 });
+  assertEqual(craft(s, 'porte_chene').items, { porte_chene: 1 });
+  assertEqual(blocDebloque(s, 'sol_marbre'), true, 'débloqués avec l\'Atelier');
+  setInv(s, { mur_pierre: 40, porte: 1, porte_chene: 1, porte_fer: 1, plancher: 2, sol_marbre: 1, sol_dalles: 1 });
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  // une porte de chêne ferme la pièce comme la porte de planches
+  assert(poserBloc(s, 'porte_chene', p.porte).ok);
+  assertEqual(piecesCloses(s).length, 1, 'la pièce est close');
+  // une porte en fer sur la porte de chêne : elle prend sa place, l'autre revient
+  const r = poserBloc(s, 'porte_fer', p.porte);
+  assertEqual([r.ok, r.remplace, blocAt(s, p.porte), countItem(s, 'porte_chene'), piecesCloses(s).length], [true, 'porte_chene', 'porte_fer', 1, 1]);
+  // un sol de marbre, puis des dalles à sa place (le marbre revient), puis repris
+  assert(poserBloc(s, 'sol_marbre', p.dedans).ok);
+  const rs = poserBloc(s, 'sol_dalles', p.dedans);
+  assertEqual([rs.ok, rs.remplace, solAt(s, p.dedans), countItem(s, 'sol_marbre'), countItem(s, 'sol_dalles')], [true, 'sol_marbre', 'sol_dalles', 1, 0]);
+  assertEqual(poserBloc(s, 'sol_dalles', p.dedans).ok, false, 'déjà ce sol');
+  assertEqual(reprendreBloc(s, p.dedans).sorte, 'sol_dalles');
+  // le chemin, du dehors, ne s'échange pas avec un sol
+  setInv(s, { chemin: 1, plancher: 1 });
+  const dehors = p.porte + z.W;
+  assert(poserBloc(s, 'chemin', dehors).ok);
+  assertEqual(poserBloc(s, 'plancher', dehors).error, 'Il y a déjà un chemin ici.');
+});
+
 /* ---------- étape 5 : la nouvelle partie, le bonheur sans couchage ---------- */
 
 test('nouvelle partie sur une ferme générée : la graine, sans terre au départ', () => {

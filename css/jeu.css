@@ -1792,9 +1792,10 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble) { display: no
 }
 .build-slot.epuise { opacity: 0.55; }
 .build-slot-img { max-width: 30px; max-height: 30px; image-rendering: pixelated; pointer-events: none; }
-/* la case des murs : « ⋯ » en haut à gauche (elle ouvre la bulle des murs) */
-.build-murs-plus { position: absolute; left: 4px; top: -2px; font-size: 1rem; font-weight: 900; line-height: 1; color: var(--color-earth); }
-/* la bulle des murs : sous la barre, une flèche vers la case des murs ; chaque mur, son icône */
+/* la case d'un groupe (les murs, les portes, les sols) : « ⋯ » en haut à gauche (elle ouvre sa bulle) */
+.build-groupe-plus { position: absolute; left: 4px; top: -2px; font-size: 1rem; font-weight: 900; line-height: 1; color: var(--color-earth); }
+/* la bulle d'un groupe : sous la barre, une flèche vers la case du groupe (--rang : son rang
+   dans la barre) ; chaque bloc, son icône */
 .build-bulle {
   position: absolute; left: -6px; top: calc(var(--slot) + 12px);
   z-index: 2;
@@ -1806,7 +1807,7 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble) { display: no
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
 }
 .build-bulle::after {
-  content: ''; position: absolute; left: 22px; top: -19px;
+  content: ''; position: absolute; left: calc(22px + var(--rang, 0) * (var(--slot) + 5px)); top: -19px;
   border: 8px solid transparent; border-bottom-color: var(--color-earth);
 }
 .build-bulle-titre { font-weight: 800; color: var(--color-earth); margin: 0 2px 4px; }

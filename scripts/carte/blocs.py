@@ -46,6 +46,11 @@
 #            dernier segment (le rouleau d'où la botte tombe ; deux images aussi).
 #   81 à 88 : la meule qui moud (BLOCS_CARTE.meule) : sa pierre du dessus et sa manivelle
 #            tournent, une image après l'autre (un tour en 8 images).
+#   89 : la boîte à nourriture ;
+#   90 à 201 : les modèles de sols (BLOCS_CARTE.modelesSols, MODELES_SOLS) : 16 images
+#            raccordées chacun, comme le plancher ;
+#   202 à 208 : les modèles de portes percées dans un mur vertical (BLOCS_CARTE.portesVerticales,
+#            MODELES_PORTES).
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -301,9 +306,11 @@ def porte():
     return t.im
 
 
-def porte_verticale():
+def porte_verticale(tons=None):
     """La porte percée dans un mur vertical : de haut, le seuil de planches entre les deux
-    bouts du mur, et le battant ouvert, debout contre le montant de droite."""
+    bouts du mur, et le battant ouvert, debout contre le montant de droite (`tons` : ceux de
+    son chant, clair, moyen, sombre, ombre ; le bois de la porte de planches sans eux)."""
+    clair, moyen, sombre, ombre = tons or (BOIS[4], BOIS[3], BOIS[2], BOIS[1])
     t = Toile()
     y0 = H - T                                   # le haut de la case
     seuil = planches([CADRE[1], BOIS[1], BOIS[2], BOIS[3]], 'h', pas=4, y0=y0)
@@ -320,17 +327,175 @@ def porte_verticale():
     # le battant : une planche debout, son chant vu de haut puis son bas vu de face
     yb, yp = y0 - 4, BAS - 6
     for y in range(yb, BAS):
-        t.put(11, y, BOIS[4] if y < yp else BOIS[2])
-        t.put(12, y, BOIS[3] if y < yp else BOIS[1])
+        t.put(11, y, clair if y < yp else sombre)
+        t.put(12, y, moyen if y < yp else ombre)
         t.put(10, y, OUT)
         t.put(13, y, OUT)
     for x in (11, 12):
         t.put(x, yb - 1, OUT)
         t.put(x, BAS, OUT)
-        t.put(x, yp - 1, BOIS[4])
+        t.put(x, yp - 1, clair)
     t.put(11, yb + 3, FER[2])
     t.put(11, yp + 2, FER[2])
     return t.im
+
+
+# ---------- les modèles de portes ----------
+# Les portes qu'on fabrique à l'Atelier en plus de la porte de planches (MODELES_PORTES, dans
+# l'ordre de BLOCS_CARTE.hauts.modelesPortes) : chacune peint son battant (une fonction de la
+# rangée u et de la colonne v d'un battant de w × h px : sa couleur), et les tons de son chant
+# quand elle est ouverte dans un mur vertical (porte_verticale : clair, moyen, sombre, ombre).
+# Le même battant, plus petit, fait l'icône de son objet (scripts/icones/art_blocs.py).
+CHENE = [(48, 28, 16), (78, 46, 26), (106, 66, 38), (140, 92, 54)]
+GRANGE = [(84, 22, 20), (132, 38, 32), (168, 54, 42), (200, 86, 66)]
+BLANC_GRANGE = (232, 228, 214)
+BLEU_PORTE = [(24, 40, 72), (42, 70, 118), (64, 100, 156), (108, 146, 194)]
+VERT_ECURIE = [(22, 52, 32), (36, 84, 50), (54, 118, 68), (94, 158, 98)]
+CREME = [(150, 146, 132), (196, 192, 178), (224, 220, 206), (246, 244, 234)]
+LAITON = [(120, 86, 30), (206, 164, 70), (244, 214, 120)]
+VITRE_PORTE = [(46, 68, 92), (92, 132, 166), (150, 192, 216), (214, 236, 244)]
+
+
+def _panneau(u, v, u0, u1, v0, v1, tons, creux=False):
+    """Un panneau de u0..u1 × v0..v1 : en relief (le haut et la gauche éclairés), ou en creux
+    (l'inverse) ; None hors de lui."""
+    if not (u0 <= u <= u1 and v0 <= v <= v1):
+        return None
+    sombre, moyen, clair = tons
+    haut = u == u0 or v == v0
+    bas = u == u1 or v == v1
+    if haut:
+        return sombre if creux else clair
+    if bas:
+        return clair if creux else sombre
+    return moyen
+
+
+def battant_chene(u, v, w, h):
+    """Du chêne sombre : deux panneaux en relief en haut, deux en bas, une poignée de laiton."""
+    C, mid, rail = CHENE, w // 2, round(h * 0.45)
+    if (u, v) == (rail + 1, w - 3):
+        return LAITON[2]
+    if (u, v) == (rail + 2, w - 3):
+        return LAITON[0]
+    for u0, u1 in ((1, rail - 1), (rail + 2, h - 2)):
+        for v0, v1 in ((1, mid - 2), (mid + 1, w - 2)):
+            p = _panneau(u, v, u0, u1, v0, v1, (C[0], C[2], C[3]))
+            if p:
+                return p
+    return C[1] if (u + 2 * v) % 7 else C[0]
+
+
+def battant_vitre(u, v, w, h):
+    """Un cadre de bois clair, quatre carreaux en haut, un panneau plein en bas."""
+    g = round(h * 0.58)
+    if (u, v) == (g + 2, w - 3):
+        return FER[4]
+    if 1 <= u <= g - 1 and 1 <= v <= w - 2:
+        if v == w // 2 or u == g // 2:
+            return BOIS[3]                       # les croisillons
+        if u == 1 or v == 1:
+            return VITRE_PORTE[0]                # l'ombre du cadre sur le verre
+        return VITRE_PORTE[3] if (u + v) % 6 in (0, 1) else VITRE_PORTE[1]
+    p = _panneau(u, v, g + 1, h - 2, 1, w - 2, (BOIS[1], BOIS[2], BOIS[4]))
+    return p or BOIS[3]
+
+
+def battant_grange(u, v, w, h):
+    """Des planches rouges dans un cadre blanc, croisé d'un X blanc."""
+    t = u / (h - 1) * (w - 1)
+    if v in (0, w - 1) or u in (0, h - 1) or abs(v - t) < 0.75 or abs(v - (w - 1 - t)) < 0.75:
+        return BLANC_GRANGE
+    return GRANGE[1] if v % 3 == 2 else GRANGE[3] if v % 3 == 0 and u % 5 == 1 else GRANGE[2]
+
+
+def battant_bleu(u, v, w, h):
+    """Des planches peintes en bleu, deux pentures noires, une poignée de fer."""
+    if (u, v) == (h // 2, w - 2):
+        return FER[4]
+    if u in (2, h - 4) and v <= w - 3:
+        return FER[1] if v == w - 3 else FER[0]
+    return BLEU_PORTE[3] if v % 3 == 0 else BLEU_PORTE[1] if v % 3 == 2 else BLEU_PORTE[2]
+
+
+def battant_fer(u, v, w, h):
+    """Des plaques de fer rivetées, l'une au-dessus de l'autre, un anneau pour l'ouvrir."""
+    if (u, v) in ((h // 2, w - 3), (h // 2 + 1, w - 4), (h // 2 + 1, w - 2), (h // 2 + 2, w - 3)):
+        return FER[4]
+    if v in (0, w - 1) or u == h - 1:
+        return FER[1]
+    if u % 5 == 4:
+        return FER[0]                            # la jointure de deux plaques
+    if u % 5 == 1 and v in (1, w - 2):
+        return FER[4]                            # un rivet
+    return FER[3] if u % 5 == 0 else FER[2]
+
+
+def battant_ecurie(u, v, w, h):
+    """La porte d'écurie, verte : deux vantaux l'un au-dessus de l'autre, chacun barré d'une
+    écharpe, la tablette de bois entre eux."""
+    s, V = h // 2, VERT_ECURIE
+    if u == s:
+        return BOIS[4]                           # la tablette
+    if u == s + 1:
+        return V[0]                              # son ombre
+    if (u, v) == (s - 2, w - 3):
+        return FER[4]
+    if v in (0, w - 1) or u in (0, h - 1):
+        return V[1]
+    u0, hh = (0, s) if u < s else (s + 1, h - s - 1)
+    t = (u - u0) / max(1, hh - 1) * (w - 1)
+    if abs(v - (w - 1 - t)) < 0.75:
+        return V[3]                              # l'écharpe
+    return V[1] if v % 3 == 2 else V[2]
+
+
+def battant_blanc(u, v, w, h):
+    """Une porte blanche à moulures : quatre panneaux en creux, une poignée de laiton."""
+    mid, r = w // 2, round(h * 0.4)
+    if (u, v) == (round(h * 0.52), w - 2):
+        return LAITON[2]
+    if (u, v) == (round(h * 0.52) + 1, w - 2):
+        return LAITON[0]
+    for u0, u1 in ((1, r - 1), (r + 2, h - 2)):
+        for v0, v1 in ((1, mid - 2), (mid + 1, w - 2)):
+            p = _panneau(u, v, u0, u1, v0, v1, (CREME[1], CREME[2], CREME[3]), creux=True)
+            if p:
+                return p
+    return CREME[2]
+
+
+# id du bloc : (le battant, les tons de son chant dans un mur vertical)
+MODELES_PORTES = {
+    'porte_chene': (battant_chene, (CHENE[3], CHENE[2], CHENE[1], CHENE[0])),
+    'porte_vitree': (battant_vitre, (VITRE_PORTE[3], BOIS[3], BOIS[2], BOIS[1])),
+    'porte_grange': (battant_grange, (BLANC_GRANGE, GRANGE[3], GRANGE[2], GRANGE[1])),
+    'porte_bleue': (battant_bleu, (BLEU_PORTE[3], BLEU_PORTE[2], BLEU_PORTE[1], BLEU_PORTE[0])),
+    'porte_fer': (battant_fer, (FER[4], FER[3], FER[2], FER[1])),
+    'porte_ecurie': (battant_ecurie, (VERT_ECURIE[3], VERT_ECURIE[2], VERT_ECURIE[1], VERT_ECURIE[0])),
+    'porte_blanche': (battant_blanc, (CREME[3], CREME[2], CREME[1], CREME[0])),
+}
+
+
+def icone_porte(battant):
+    """L'icône de 16 × 16 d'une porte : son battant de 10 × 13 dans son chambranle, le seuil."""
+    im = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
+    px = im.load()
+    for y in range(0, 15):
+        for x in range(2, 14):
+            px[x, y] = OUT + (255,)
+    for u in range(13):
+        for v in range(10):
+            px[3 + v, 1 + u] = battant(u, v, 10, 13) + (255,)
+    for x in range(3, 13):
+        px[x, 14] = CADRE[2] + (255,)
+    for x in range(2, 14):
+        px[x, 15] = OUT + (255,)
+    for x, y in ((2, 0), (13, 0)):
+        px[x, y] = (0, 0, 0, 0)
+    for x, y in ((3, 1), (12, 1)):
+        px[x, y] = OUT + (255,)
+    return im
 
 
 # ---------- les murs hauts (les maisons de la carte de transition) ----------
@@ -342,10 +507,11 @@ def porte_verticale():
 HAUTEUR_EN_PLUS = T
 
 
-def porte_haute(fond=None, linteau=None):
+def porte_haute(fond=None, linteau=None, battant=None):
     """La porte dans un mur haut : le mur plein (raccordé à gauche et à droite), un linteau
     (`linteau` : ses tons clair, moyen, des coins du cintre ; de la pierre sans lui), et
-    au-dessous la porte de planches cintrée, ses pentures, sa poignée, le seuil."""
+    au-dessous la porte de planches cintrée, ses pentures, sa poignée, le seuil ; ou le
+    battant d'un modèle de porte (`battant`, MODELES_PORTES), cintré de même."""
     t = Toile(fond(2 | 8) if fond else mur(2 | 8))
     clair, moyen, coin = linteau or (PIERRE[5], PIERRE[3], PIERRE[2])
     y0, x0, x1 = H - 22, 2, 13                   # le haut du battant (22 px de porte)
@@ -358,7 +524,18 @@ def porte_haute(fond=None, linteau=None):
         t.put(1, y, CADRE[0])                    # le chambranle
         t.put(14, y, CADRE[0])
         for x in range(x0, x1 + 1):
-            t.put(x, y, bois(x, y))
+            t.put(x, y, battant(y - y0, x - x0, x1 - x0 + 1, BAS - 1 - y0) if battant and y < BAS - 1 else bois(x, y))
+    if battant:
+        for x, y in ((2, y0), (3, y0), (12, y0), (13, y0), (2, y0 + 1), (13, y0 + 1)):
+            t.put(x, y, coin)
+        for x, y in ((4, y0), (11, y0), (3, y0 + 1), (12, y0 + 1)):
+            t.put(x, y, CADRE[0])
+        for x in range(5, 11):
+            t.put(x, y0, CADRE[0])
+        for x in range(1, 15):                   # le seuil
+            t.put(x, BAS - 1, CADRE[2])
+            t.put(x, BAS, OUT)
+        return t.im
     for x, y in ((2, y0), (3, y0), (12, y0), (13, y0), (2, y0 + 1), (13, y0 + 1)):
         t.put(x, y, coin)                        # le cintre : les coins du haut restent du linteau
     for x, y in ((4, y0), (11, y0), (3, y0 + 1), (12, y0 + 1)):
@@ -674,11 +851,17 @@ def murs_hauts():
     seuls, prolongés à gauche, à droite, des deux côtés (306, 322, 338, 354 + masque) et sa
     porte (370) ; puis le mur en bois (371 + masque) ; puis la porte dans les murs des autres
     matières (387 à 391 : briques rouges, orange, bleues, pierre de taille, bois ; celle des
-    briques ocre est la 305), son linteau de pierre, de bois dans le mur en bois."""
+    briques ocre est la 305), son linteau de pierre, de bois dans le mur en bois ; puis les
+    modèles de portes (MODELES_PORTES, 392 + 7 × leur rang), chacun dans les 7 murs de
+    BLOCS_CARTE.hauts.matieresPortes."""
     global H, BAS, FACE
     garde = H, BAS, FACE
     motif, dessus = next((mo, de) for nom, mo, de in MATIERES_VILLE if nom == 'brique_ocre')
     ocre = lambda m: mur_ville(m, motif, dessus)   # noqa: E731
+    # (les modèles de portes, chacun dans les murs de BLOCS_CARTE.hauts.matieresPortes : la
+    # pierre, les briques rouges, orange, ocre, bleues, la pierre de taille, le bois)
+    ville = {nom: (lambda m, mo=mo, de=de: mur_ville(m, mo, de)) for nom, mo, de in MATIERES_VILLE}
+    fonds_portes = [(None, None)] + [(ville[k], None) for k in ('brique_rouge', 'brique_orange', 'brique_ocre', 'brique_bleue', 'pierre_taille')] + [(mur_bois, (BOIS[4], BOIS[2], BOIS[1]))]
     H += HAUTEUR_EN_PLUS
     BAS, FACE = H - 1, FACE + HAUTEUR_EN_PLUS
     try:
@@ -689,7 +872,8 @@ def murs_hauts():
                 + [verre_serre(m, j) for j in range(4) for m in range(16)] + [porte_serre()]
                 + [mur_bois(m) for m in range(16)]
                 + [porte_haute(lambda m, mo=motif, de=dessus: mur_ville(m, mo, de)) for nom, motif, dessus in MATIERES_VILLE if nom != 'brique_ocre']
-                + [porte_haute(mur_bois, (BOIS[4], BOIS[2], BOIS[1]))], H)
+                + [porte_haute(mur_bois, (BOIS[4], BOIS[2], BOIS[1]))]
+                + [porte_haute(fond, linteau, battant) for battant, _ in MODELES_PORTES.values() for fond, linteau in fonds_portes], H)
     finally:
         H, BAS, FACE = garde
 
@@ -1601,6 +1785,137 @@ def boite_nourriture():
 
 BOITE_NOURRITURE = len(DESSINS)                  # la boîte à nourriture (BLOCS_CARTE.frames.boite_nourriture)
 DESSINS += [boite_nourriture()]
+
+
+# ---------- les modèles de sols ----------
+# Les sols qu'on fabrique à l'Atelier en plus du plancher (MODELES_SOLS, dans l'ordre de
+# BLOCS_CARTE.modelesSols) : chacun un motif de 16 px de période (une fonction de x et de la
+# rangée v de la case : sa couleur ; deux sols voisins de même sorte se raccordent), le ton du
+# bord du haut et celui du chant du bas, comme le plancher.
+DALLE = [(70, 64, 56), (128, 120, 106), (150, 142, 126), (172, 164, 146), (198, 190, 172)]
+DAMIER = [(46, 50, 60), (62, 68, 80), (226, 220, 200), (244, 240, 226)]
+TOMETTE = [(92, 40, 24), (150, 70, 42), (176, 88, 54), (198, 108, 68), (220, 140, 96)]
+CHEVRON = [(112, 70, 36), (176, 120, 62), (198, 144, 82), (220, 170, 108)]
+MARBRE = [(150, 150, 162), (184, 184, 194), (218, 218, 226), (236, 236, 242)]
+PAVE = [(54, 50, 48), (104, 100, 96), (128, 124, 118), (152, 146, 138), (178, 172, 162)]
+MOSAIQUE = [(214, 206, 186), (232, 188, 72), (98, 158, 214), (36, 70, 140)]
+
+
+def motif_dalles(x, v):
+    """De grandes dalles de pierre de 8 px, décalées d'une rangée à l'autre."""
+    r = v // 8
+    d = (x + 4 * (r % 2)) % 16
+    if v % 8 == 7 or d % 8 == 7:
+        return DALLE[0]
+    if v % 8 == 0 or d % 8 == 0:
+        return DALLE[4]
+    k = hasard(r, d // 8, 3)
+    return DALLE[1] if k < 0.33 else DALLE[2] if k < 0.66 else DALLE[3]
+
+
+def motif_damier(x, v):
+    """Un carrelage noir et blanc de carreaux de 4 px, un reflet au coin de chaque carreau."""
+    blanc = ((x // 4) + (v // 4)) % 2 == 0
+    coin = x % 4 == 0 and v % 4 == 0
+    return (DAMIER[3] if coin else DAMIER[2]) if blanc else (DAMIER[1] if coin else DAMIER[0])
+
+
+def motif_tomettes(x, v):
+    """Des tomettes de terre cuite, rangées en quinconce, les coins coupés (presque des
+    hexagones), chacune son ton."""
+    r = v // 4
+    d = (x + 4 * (r % 2)) % 16
+    if v % 4 == 3 or d % 8 == 7 or (v % 4 == 0 and d % 8 in (0, 6)):
+        return TOMETTE[0]
+    k = hasard(r, d // 8, 5)
+    if v % 4 == 0:
+        return TOMETTE[4]
+    return TOMETTE[1] if k < 0.3 else TOMETTE[2] if k < 0.7 else TOMETTE[3]
+
+
+def motif_chevrons(x, v):
+    """Un parquet à chevrons (point de Hongrie) : des lames en biais, d'un sens puis de l'autre,
+    par bandes de 4 px."""
+    b, i = x // 4, x % 4
+    if i == 3:
+        return CHEVRON[0]
+    k = (i + v) if b % 2 == 0 else (i - v)
+    if k % 4 == 0:
+        return CHEVRON[0]
+    return CHEVRON[3] if (k // 4 + b) % 2 else CHEVRON[2]
+
+
+def motif_marbre(x, v):
+    """Des plaques de marbre blanc de 8 px, veinées de gris."""
+    if v % 8 == 7 or x % 8 == 7:
+        return MARBRE[1]
+    veine = (x + v + (2 if (v // 3) % 2 else 0)) % 9 == 0 and hasard(x // 8, v // 8, 9) < 0.8
+    if veine:
+        return MARBRE[0]
+    return MARBRE[3] if hasard(x, v, 11) < 0.35 else MARBRE[2]
+
+
+def motif_paves(x, v):
+    """Des pavés de 4 px, en quinconce, le haut de chacun éclairé."""
+    r = v // 4
+    d = (x + 2 * (r % 2)) % 16
+    if v % 4 == 3 or d % 4 == 3:
+        return PAVE[0]
+    k = hasard(r, d // 4, 7)
+    if v % 4 == 0 and d % 4 == 0:
+        return PAVE[4]
+    return PAVE[1] if k < 0.33 else PAVE[2] if k < 0.66 else PAVE[3]
+
+
+def motif_mosaique(x, v):
+    """Une mosaïque de tesselles de 3 px dans un joint clair : un losange or et bleu par case."""
+    if x % 4 == 3 or v % 4 == 3:
+        return MOSAIQUE[0]
+    d = abs(x // 4 - 1.5) + abs(v // 4 - 1.5)
+    return MOSAIQUE[1] if d < 1.5 else MOSAIQUE[2] if d < 2.5 else MOSAIQUE[3]
+
+
+# id du bloc : (le motif, le bord du haut, le chant du bas)
+MODELES_SOLS = {
+    'sol_dalles': (motif_dalles, DALLE[4], DALLE[0]),
+    'sol_carrelage': (motif_damier, DAMIER[3], DAMIER[0]),
+    'sol_tomettes': (motif_tomettes, TOMETTE[4], TOMETTE[0]),
+    'sol_chevrons': (motif_chevrons, CHEVRON[3], CHEVRON[0]),
+    'sol_marbre': (motif_marbre, MARBRE[3], MARBRE[0]),
+    'sol_paves': (motif_paves, PAVE[4], PAVE[0]),
+    'sol_mosaique': (motif_mosaique, MOSAIQUE[0], MOSAIQUE[3]),
+}
+
+
+def sol_modele(m, motif, haut, chant):
+    """Le sol de masque m (comme le plancher), du motif `motif`."""
+    t = Toile()
+    n, e, s, w = (m & 1, m & 2, m & 4, m & 8)
+    y0 = H - T
+    for y in range(y0, H):
+        for x in range(W):
+            t.put(x, y, motif(x, y - y0))
+    if not s:
+        for x in range(W):
+            t.put(x, BAS - 1, chant)
+            t.put(x, BAS, OUT)
+    if not n:
+        for x in range(W):
+            t.put(x, y0, OUT)
+            t.put(x, y0 + 1, haut)
+    if not w:
+        for y in range(y0, H):
+            t.put(0, y, OUT)
+    if not e:
+        for y in range(y0, H):
+            t.put(15, y, OUT)
+    return t.im
+
+
+SOLS_MODELES = len(DESSINS)                      # les sols, 16 images chacun (BLOCS_CARTE.modelesSols)
+DESSINS += [sol_modele(m, *MODELES_SOLS[k]) for k in MODELES_SOLS for m in range(16)]
+PORTES_VERTICALES = len(DESSINS)                 # les portes dans un mur vertical (BLOCS_CARTE.portesVerticales)
+DESSINS += [porte_verticale(MODELES_PORTES[k][1]) for k in MODELES_PORTES]
 
 
 def masque(g, x, y):

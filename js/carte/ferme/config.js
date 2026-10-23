@@ -159,6 +159,11 @@
     key: 'blocs', file: 'blocs.png', frame: { frameWidth: 16, frameHeight: 24 },
     frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, bloc_silo: 12, meule: 13, lanterne: 66, escalier: 69, ruche: 71, ruche_pleine: 72, bac_fleurs: 73, entonnoir: 74, botteleuse: 75, botteleuse_marche: 76, convoyeur: 77, convoyeur_bout: 79, boite_nourriture: 89 },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
+    // les modèles de sols (scripts/carte/blocs.py MODELES_SOLS) : leurs 16 images raccordées,
+    // depuis celle-ci + masque, comme le plancher ; les modèles de portes percés dans un mur
+    // vertical (MODELES_PORTES) : leur image
+    modelesSols: { sol_dalles: 90, sol_carrelage: 106, sol_tomettes: 122, sol_chevrons: 138, sol_marbre: 154, sol_paves: 170, sol_mosaique: 186 },
+    portesVerticales: { porte_chene: 202, porte_vitree: 203, porte_grange: 204, porte_bleue: 205, porte_fer: 206, porte_ecurie: 207, porte_blanche: 208 },
     // l'étage (un essai, js/carte/ferme/etage.js) : le haut de l'escalier (`haut`) ; l'étage
     // est dessiné `dy` px plus haut (la hauteur de la face des murs hauts : leurs faces se suivent) ; le niveau où l'on n'est pas,
     // en mode Construire : à `transparent` (quand on est dans le bâtiment, en bas : à `dedans`,
@@ -203,6 +208,11 @@
       // voisin continue au-dessus d'elle (scripts/carte/blocs.py murs_hauts ; un linteau de bois
       // dans le mur en bois) ; les autres murs : `porte`, en pierre
       portes: { mur_brique_rouge: 387, mur_brique_orange: 388, mur_brique_ocre: 305, mur_brique_bleue: 389, mur_pierre_taille: 390, mur_bois: 391 },
+      // les modèles de portes (scripts/carte/blocs.py MODELES_PORTES) : leur image dans un mur
+      // horizontal, depuis celle-ci + le rang de la matière du mur voisin dans `matieresPortes`
+      // (la pierre pour les autres : la fenêtre, la paroi vitrée…)
+      modelesPortes: { porte_chene: 392, porte_vitree: 399, porte_grange: 406, porte_bleue: 413, porte_fer: 420, porte_ecurie: 427, porte_blanche: 434 },
+      matieresPortes: ['mur_pierre', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois'],
       // `joints` : les murs qu'un voisin de même sorte prolonge (à gauche, à droite, des deux
       // côtés : deux fenêtres font une grande fenêtre, les parois vitrées une façade de verre)
       joints: { mur_fenetre: [17, 49, 65, 81], paroi_vitree: [97, 113, 129, 145], mur_serre: [306, 322, 338, 354] } },
