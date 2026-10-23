@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
-  buildReport, chapterSegments, mergePlayer, renderMarkdown, reportSubject, fmtDuration, parisHour,
+  buildReport, chapterSegments, mergePlayer, parisDate, playerMeta, renderMarkdown, reportSubject, fmtDuration, parisHour,
 } from '../worker/src/report.mjs';
 
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -509,4 +509,86 @@ test('Worker : une session v2 met à jour la fiche du joueur, relue par le rappo
   await runScheduled(worker, env, NOW);
   const body = calls.find((c) => c.method === 'POST').body.body;
   assert(body.includes('## Niveaux') && body.includes('| 3 | 1 | 30 min 00 s |'), body);
+}));
+
+/* ---------- rétention, abandon, économie ---------- */
+
+// Un résumé de fiche (playerMeta) : premier et dernier jour, à `first` jours et `last` jours d'aujourd'hui.
+const TODAY = parisDate(NOW.getTime() - 1);
+const dayAgo = (n) => parisDate(Date.parse(`${TODAY}T12:00:00Z`) - n * 24 * 60 * MIN);
+const meta = (first, last, over = {}) => ({ first: dayAgo(first), last: dayAgo(last), jours: String(first === last ? 1 : 2), d1: '0', d7: '0', niveau: '1', chapitre: '1', jeu: '2', tuto: '', playMs: String(20 * MIN), sessions: '1', ...over });
+
+test('fiche joueur : jours joués à Paris, revenu à J+1 et à J+7 (métadonnées)', () => {
+  const s = (startedAt) => sessionV2(PID_A, { sid: 'sess-' + startedAt.slice(0, 13).replace(/[^0-9]/g, ''), startedAt });
+  let f = mergePlayer(null, s('2026-10-01T10:00:00Z'), '2026-10-01T10:05:00Z');
+  eq(playerMeta(f).d1, '0');
+  f = mergePlayer(f, s('2026-10-02T21:30:00Z'), '2026-10-02T21:35:00Z'); // 23 h 30 à Paris, le 2
+  eq([playerMeta(f).first, playerMeta(f).last, playerMeta(f).d1, playerMeta(f).d7, playerMeta(f).jours], ['2026-10-01', '2026-10-02', '1', '0', '2']);
+  f = mergePlayer(f, s('2026-10-09T08:00:00Z'), '2026-10-09T08:10:00Z');
+  eq(playerMeta(f).d7, '1');
+  for (const v of Object.values(playerMeta(f))) assert(typeof v === 'string', 'R2 : des chaînes');
+  assert(JSON.stringify(playerMeta(f)).length < 2048, 'R2 : 2 Ko au plus');
+});
+
+test('rétention : par jour de première visite, J+1 et J+7 seulement quand on peut le savoir', () => {
+  const annuaire = [
+    meta(10, 9, { d1: '1', d7: '0', jours: '2' }), meta(10, 0, { d1: '1', d7: '1', jours: '5' }), meta(10, 10),
+    meta(2, 1, { d1: '1', jours: '2' }), meta(2, 2),
+    meta(0, 0),
+  ];
+  const r = buildReport([], NOW, {}, [], annuaire);
+  eq(r.retention.cohortes.map((c) => [c.date, c.n]), [[dayAgo(0), 1], [dayAgo(2), 2], [dayAgo(10), 3]]);
+  eq([r.retention.j1.n, Math.round(r.retention.j1.pct)], [5, 60]);
+  eq([r.retention.j7.n, Math.round(r.retention.j7.pct)], [3, 33]);
+  const md = renderMarkdown(r);
+  assert(md.includes('## Rétention') && md.includes(`| ${dayAgo(10)} | 3 | 2 (66,7 %) | 1 (33,3 %) |`) && md.includes(`| ${dayAgo(0)} | 1 | — | — |`), md);
+});
+
+test('abandon : joueurs partis depuis 3 jours, leur niveau, leur étape du didacticiel, leur temps de jeu', () => {
+  const annuaire = [
+    meta(20, 15, { niveau: '2', tuto: '', jours: '3', playMs: String(60 * MIN) }),
+    meta(10, 10, { niveau: '1', tuto: 'abri_construire', playMs: String(10 * MIN) }),
+    meta(8, 8, { niveau: '1', tuto: 'abri_construire', playMs: String(20 * MIN) }),
+    meta(9, 1, { niveau: '3' }),          // encore là
+    meta(90, 80, { niveau: '1' }),        // trop ancien
+  ];
+  const A = buildReport([], NOW, {}, [], annuaire).abandon;
+  eq([A.partis, A.recents, A.uneVisite, A.medianMs], [3, 4, 2, 20 * MIN]);
+  eq(A.niveaux, [[1, 2], [2, 1]]);
+  eq(A.tutos, [['abri_construire', 2]]);
+  const md = renderMarkdown(buildReport([], NOW, {}, [], annuaire));
+  assert(md.includes('## Abandon') && md.includes('abri\\_construire : 2'), md);
+});
+
+test('économie : gains et dépenses par poste et par jour de jeu, pièces du soir par jour de jeu', () => {
+  const a = sessionV2(PID_A, { jours: {
+    1: jour({ gagne: { vente: 40 }, depense: { achat: 30 } }),
+    2: jour({ gagne: { vente: 20, lettre: 50 }, depense: { technologie: 100 } }),
+  } });
+  const fa = mergePlayer(null, sessionV2(PID_A, { events: [{ t: 1, type: 'night', day: 1, xp: 10, pieces: 300 }, { t: 2, type: 'night', day: 2, xp: 20, pieces: 240 }] }), NOW.toISOString());
+  const fb = mergePlayer(null, sessionV2(PID_B, { events: [{ t: 1, type: 'night', day: 1, xp: 10, pieces: 100 }] }), NOW.toISOString());
+  const r = buildReport([a], NOW, {}, [fa, fb]);
+  eq([r.economie.gagneJour, r.economie.depenseJour], [55, 65]);
+  eq(r.economie.soirs, [{ day: 1, joueurs: 2, median: 200, min: 100, max: 300 }, { day: 2, joueurs: 1, median: 240, min: 240, max: 240 }]);
+  const md = renderMarkdown(r);
+  for (const bout of ['## Économie', '| Ventes au Marché | 60 | — | +30 |', '| Technologies | — | 100 | -50 |', '| 1 | 2 | 200 | 100 | 300 |']) assert(md.includes(bout), bout);
+});
+
+test('Worker : la fiche du joueur porte son résumé en métadonnées, lu par le rapport pour la rétention', withGithub(async ({ calls }) => {
+  const worker = await loadWorker();
+  const files = {};
+  const bucket = {
+    async list({ prefix, include }) {
+      return { objects: Object.entries(files).filter(([k]) => k.startsWith(prefix)).map(([key, f]) => ({ key, uploaded: f.uploaded, ...(include && include.includes('customMetadata') ? { customMetadata: f.meta } : {}) })), truncated: false };
+    },
+    async get(key) { const f = files[key]; return f ? { json: async () => JSON.parse(JSON.stringify(f.data)) } : null; },
+    async put(key, body, opts = {}) { files[key] = { uploaded: uploadedNow, data: JSON.parse(body), meta: opts.customMetadata }; },
+  };
+  const env = { SESSIONS: bucket, REPORT_GITHUB_TOKEN: TOKEN, REPORT_GITHUB_REPO: 'Aluzy/rapports' };
+  eq((await worker.fetch(post(sessionV2(PID_A, { sid: 'sess-aaaa-0001', startedAt: ago(30 * MIN) })), env)).status, 200);
+  const m = files[`players/${PID_A}.json`].meta;
+  eq([m.first, m.niveau], [parisDate(NOW.getTime() - 30 * MIN), '1']);
+  await runScheduled(worker, env, NOW);
+  const body = calls.find((c) => c.method === 'POST').body.body;
+  assert(body.includes('## Rétention') && body.includes(`| ${m.first} | 1 |`), body);
 }));

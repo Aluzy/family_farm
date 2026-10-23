@@ -145,13 +145,14 @@ const Telemetry = (() => {
 
   function savePlayer() { if (active && player) lsSet(PLAYER_KEY, JSON.stringify(player)); }
 
-  // Les compteurs du jour de jeu en cours : { ms, actions, auto, energie, ramasse, fabrique, pose }.
+  // Les compteurs du jour de jeu en cours : { ms, actions, auto, energie, ramasse, fabrique, pose,
+  // gagne, depense } (gagne, depense : les pièces, par poste).
   function dayEntry() {
     if (curDay === null) return null;
     const k = String(curDay);
     if (!data.jours[k]) {
       if (Object.keys(data.jours).length >= MAX_DAYS) return null;
-      data.jours[k] = { ms: 0, actions: {}, auto: {}, energie: {}, ramasse: {}, fabrique: {}, pose: {} };
+      data.jours[k] = { ms: 0, actions: {}, auto: {}, energie: {}, ramasse: {}, fabrique: {}, pose: {}, gagne: {}, depense: {} };
     }
     return data.jours[k];
   }
@@ -275,6 +276,7 @@ const Telemetry = (() => {
       const items = d.items && Object.keys(d.items).length ? d.items : (d.outil ? { [d.outil]: 1 } : {});
       for (const [item, n] of Object.entries(items)) bumpDay('fabrique', item, num(n) || 1);
     } else if (type === 'pose') bumpDay('pose', d.sorte, 1);
+    else if (type === 'pieces' && num(d.montant)) bumpDay(d.montant > 0 ? 'gagne' : 'depense', d.poste || 'autre', Math.abs(num(d.montant)));
     else if (type === 'niveau') {
       accrue();
       push('level', { level: num(d.niveau), day: curDay, playMs: player ? Math.round(player.ms) : null });

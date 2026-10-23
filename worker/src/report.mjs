@@ -180,6 +180,31 @@ function median(values) {
 const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const round1 = (v) => Math.round(v * 10) / 10;
 const fmtNum = (v) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(round1(v));
+// Les postes de pièces (compta.js du jeu, posteCompta) : leur libellé.
+export const POSTES = {
+  achat: 'Achats au Marché', vente: 'Ventes au Marché', ventes: 'Ventes du commerce', vente_en_ville: 'Ventes en ville',
+  technologie: 'Technologies', reparation: 'Réparations', reparation_de_la_maison: 'Réparation de la maison',
+  entretien: 'Entretien des appareils', meuble: 'Meubles', commerce: 'Commerce', lettre: 'Lettres',
+  sortie: 'Sorties', bus_pour_le_marche_de_la_ville: 'Bus pour la ville', bureau_de_negoce: 'Bureau de négoce',
+  robot: 'Robot', emplacement_du_verger: 'Emplacements du Verger',
+};
+const RETENTION_JOURS = 14;     // cohortes affichées (un jour de première visite par ligne)
+const ABANDON_JOURS = 3;        // sans visite depuis tant de jours : le joueur a arrêté
+const ABANDON_FENETRE = 60;     // joueurs arrivés depuis tant de jours au plus
+const PIECES_JOURS = 20;        // jours de jeu du tableau des pièces
+
+// La date (AAAA-MM-JJ) à Paris d'un instant, ou null.
+export function parisDate(t) {
+  const d = new Date(t);
+  if (!Number.isFinite(d.getTime())) return null;
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+
+// Jours entre deux dates AAAA-MM-JJ (b - a).
+function dateDiff(a, b) {
+  return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / DAY_MS);
+}
+
 // Une clé venue du navigateur (action, objet) : lettres, chiffres, _ : - . seulement.
 const cleanKey = (k) => String(k).replace(/[^A-Za-z0-9_:.-]/g, '_').slice(0, 60);
 
@@ -284,6 +309,10 @@ export function mergePlayer(prev, s, receivedAt) {
     : { id: p.id, since: String(p.since || '').slice(0, 30), first: at, points: {}, sessions: {} };
   fiche.last = at;
   fiche.game = String(s.game || '').slice(0, 20);
+  // les jours (à Paris) où il a joué : la rétention
+  const dates = new Set(Array.isArray(fiche.dates) ? fiche.dates : []);
+  for (const t of [s.startedAt, at]) { const d = parisDate(t); if (d) dates.add(d); }
+  fiche.dates = [...dates].sort().slice(-400);
   fiche.playMs = Math.max(numOr0(fiche.playMs), numOr0(p.playMs));
   if (PID_RE.test(String(s.sid || ''))) fiche.sessions[s.sid] = { startedAt: String(s.startedAt || '').slice(0, 30), visibleMs: numOr0(s.visibleMs) };
   const sids = Object.keys(fiche.sessions);
@@ -297,7 +326,7 @@ export function mergePlayer(prev, s, receivedAt) {
       fiche.points[`n${Math.floor(e.day)}`] = {
         day: Math.floor(e.day), level: num(e.level), xp: num(e.xp), chapter: num(e.chapter), playMs: num(e.playMs),
         adults: num(e.adults), children: num(e.children), meal: num(e.meal),
-        wild: typeof e.wild === 'boolean' ? e.wild : null, tuto: e.tuto ? cleanKey(e.tuto) : null,
+        wild: typeof e.wild === 'boolean' ? e.wild : null, tuto: e.tuto ? cleanKey(e.tuto) : null, pieces: num(e.pieces),
       };
     } else if (e.type === 'level' && num(e.level) !== null) {
       const k = `l${Math.floor(e.level)}`, old = fiche.points[k];
@@ -311,6 +340,24 @@ export function mergePlayer(prev, s, receivedAt) {
     for (const k of nuits.slice(0, keys.length - MAX_PLAYER_POINTS)) delete fiche.points[k];
   }
   return fiche;
+}
+
+// Le résumé d'une fiche, gardé dans les métadonnées de son fichier R2 : le rapport lit ainsi
+// la rétention et les abandons de tous les joueurs sans relire chaque fiche (des chaînes,
+// 2 Ko au plus). first, last : premier et dernier jour joué (AAAA-MM-JJ) ; d1 : revenu le
+// lendemain ; d7 : revenu 7 jours après ou plus ; jours : jours distincts joués.
+export function playerMeta(f) {
+  const dates = Array.isArray(f.dates) && f.dates.length ? f.dates : [parisDate(f.first) || ''];
+  const first = dates[0], last = dates[dates.length - 1];
+  const p = playerSummary(f);
+  return {
+    first, last, jours: String(dates.length),
+    d1: dates.includes(first && parisDate(Date.parse(`${first}T12:00:00Z`) + DAY_MS)) ? '1' : '0',
+    d7: dates.some((d) => first && dateDiff(first, d) >= 7) ? '1' : '0',
+    niveau: String(p.niveau), chapitre: p.chapitre === null ? '' : String(p.chapitre),
+    jeu: p.jour === null ? '' : String(p.jour), tuto: p.tuto || '', playMs: String(Math.round(p.playMs)),
+    sessions: String(p.sessions),
+  };
 }
 
 // Ce qu'une fiche dit du joueur : sa dernière nuit, son niveau, ses jours de jeu.
@@ -345,7 +392,7 @@ function levelAt(curve, ms) {
 /* ---------- les jours de jeu ---------- */
 
 // Les jours de jeu des sessions, réunis par joueur (ou par session, avant la version 2) :
-// [{ ms, actions, auto, energie, ramasse, fabrique, pose }].
+// [{ ms, actions, auto, energie, ramasse, fabrique, pose, gagne, depense }].
 function gameDays(sessions) {
   const days = new Map();
   for (const s of sessions) {
@@ -354,9 +401,9 @@ function gameDays(sessions) {
     for (const [d, j] of Object.entries(s.jours)) {
       if (!j || typeof j !== 'object' || !/^\d+$/.test(d)) continue;
       const k = `${who}:${d}`;
-      const t = days.get(k) || { ms: 0, actions: {}, auto: {}, energie: {}, ramasse: {}, fabrique: {}, pose: {} };
+      const t = days.get(k) || { ms: 0, actions: {}, auto: {}, energie: {}, ramasse: {}, fabrique: {}, pose: {}, gagne: {}, depense: {} };
       t.ms += numOr0(j.ms);
-      for (const f of ['actions', 'auto', 'energie', 'ramasse', 'fabrique', 'pose']) addInto(t[f], j[f]);
+      for (const f of ['actions', 'auto', 'energie', 'ramasse', 'fabrique', 'pose', 'gagne', 'depense']) addInto(t[f], j[f]);
       days.set(k, t);
     }
   }
@@ -376,7 +423,8 @@ function perDay(days, field) {
 
 // sessions : tableau d'objets JSON de session. now : fin de la période.
 // meta : { unreadable, truncated } pour signaler une lecture incomplète.
-export function buildReport(sessions, now, meta = {}, players = []) {
+// annuaire : les métadonnées (playerMeta) de toutes les fiches, pour la rétention et les abandons.
+export function buildReport(sessions, now, meta = {}, players = [], annuaire = []) {
   const end = now.getTime();
   const start = end - DAY_MS;
   const valid = sessions.filter((s) => s && typeof s === 'object');
@@ -527,9 +575,75 @@ export function buildReport(sessions, now, meta = {}, players = []) {
     }
   }
 
+  /* -- la rétention : les joueurs qui reviennent, par jour de première visite -- */
+  const today = parisDate(end - 1);
+  const annu = annuaire.filter((m) => m && /^\d{4}-\d{2}-\d{2}$/.test(String(m.first || '')) && /^\d{4}-\d{2}-\d{2}$/.test(String(m.last || '')));
+  const cohortes = new Map();
+  for (const m of annu) {
+    const age = dateDiff(m.first, today);
+    if (age < 0 || age >= RETENTION_JOURS + 7) continue;
+    const c = cohortes.get(m.first) || { date: m.first, age, n: 0, d1: 0, d7: 0, revenus: 0 };
+    c.n += 1;
+    if (m.d1 === '1') c.d1 += 1;
+    if (m.d7 === '1') c.d7 += 1;
+    if (Number(m.jours) > 1) c.revenus += 1;
+    cohortes.set(m.first, c);
+  }
+  const taux = (rows, key, minAge) => {
+    const ok = rows.filter((c) => c.age >= minAge);
+    const n = ok.reduce((t, c) => t + c.n, 0);
+    return { n, pct: n ? (100 * ok.reduce((t, c) => t + c[key], 0)) / n : 0 };
+  };
+  const cRows = [...cohortes.values()].sort((a, b) => b.date.localeCompare(a.date));
+  const retention = {
+    cohortes: cRows.filter((c) => c.age < RETENTION_JOURS),
+    j1: taux(cRows, 'd1', 1), j7: taux(cRows, 'd7', 7), revenus: taux(cRows, 'revenus', 1),
+  };
+
+  /* -- l'abandon : les joueurs arrivés récemment qui ne sont plus revenus -- */
+  const partis = annu.filter((m) => dateDiff(m.first, today) <= ABANDON_FENETRE && dateDiff(m.last, today) >= ABANDON_JOURS);
+  const recents = annu.filter((m) => dateDiff(m.first, today) <= ABANDON_FENETRE && dateDiff(m.first, today) >= ABANDON_JOURS);
+  const compte = (rows, f) => {
+    const map = new Map();
+    for (const m of rows) { const k = f(m); if (k !== null) map.set(k, (map.get(k) || 0) + 1); }
+    return [...map.entries()];
+  };
+  const abandon = {
+    partis: partis.length, recents: recents.length,
+    uneVisite: partis.filter((m) => Number(m.jours) <= 1).length,
+    medianMs: median(partis.map((m) => numOr0(Number(m.playMs)))),
+    medianJeu: median(partis.map((m) => numOr0(Number(m.jeu)))),
+    niveaux: compte(partis, (m) => Number(m.niveau) || 1).sort((a, b) => a[0] - b[0]),
+    tutos: compte(partis, (m) => (m.tuto ? cleanKey(m.tuto) : null)).sort((a, b) => b[1] - a[1]),
+    chapitres: compte(partis, (m) => (m.chapitre ? Number(m.chapitre) : null)).sort((a, b) => a[0] - b[0]),
+  };
+
+  /* -- l'économie : les pièces gagnées et dépensées par jour de jeu, et le solde du soir -- */
+  const gagne = perDay(days, 'gagne'), depense = perDay(days, 'depense');
+  const totalG = gagne.reduce((t, x) => t + x.total, 0), totalD = depense.reduce((t, x) => t + x.total, 0);
+  const soirs = new Map();
+  for (const f of fiches) {
+    for (const pt of Object.values(f.points || {})) {
+      if (pt && 'xp' in pt && Number.isFinite(pt.day) && Number.isFinite(pt.pieces) && pt.day >= 1 && pt.day <= PIECES_JOURS) {
+        const l = soirs.get(pt.day) || [];
+        l.push(pt.pieces);
+        soirs.set(pt.day, l);
+      }
+    }
+  }
+  const economie = {
+    gagne, depense,
+    gagneJour: days.length ? totalG / days.length : 0,
+    depenseJour: days.length ? totalD / days.length : 0,
+    soirs: [...soirs.entries()].sort((a, b) => a[0] - b[0]).map(([day, l]) => ({ day, joueurs: l.length, median: median(l), min: Math.min(...l), max: Math.max(...l) })),
+  };
+
   return {
     start: new Date(start),
     end: new Date(end),
+    retention,
+    abandon,
+    economie,
     joueurs: { actifs: pids.size, fiches: resumes.slice(0, MAX_PLAYERS_SHOWN), fichesTotal: resumes.length, nouveaux, familles: [...familles.entries()].sort((a, b) => a[0] - b[0]) },
     gestes,
     jours,
@@ -600,6 +714,71 @@ function perDayTable(L, rows, titre) {
   L.push('');
 }
 
+const pct = (v) => `${fmtNum(v)} %`;
+const posteLabel = (k) => POSTES[k] || k;
+
+// La rétention, l'abandon et l'économie.
+function renderRetention(L, r) {
+  const R = r.retention, A = r.abandon, E = r.economie;
+  L.push('## Rétention');
+  L.push('');
+  if (R.cohortes.length || R.j1.n) {
+    L.push(`- **Revenus le lendemain (J+1)** : ${pct(R.j1.pct)} des ${R.j1.n} joueur(s) arrivés depuis au moins un jour`);
+    L.push(`- **Revenus après une semaine (J+7 ou plus)** : ${R.j7.n ? `${pct(R.j7.pct)} des ${R.j7.n} joueur(s) arrivés depuis au moins 7 jours` : 'pas encore de joueur arrivé il y a 7 jours ou plus'}`);
+    L.push(`- **Revenus au moins une fois** : ${pct(R.revenus.pct)}`);
+    L.push('');
+    L.push('| Première visite | Nouveaux joueurs | Revenus à J+1 | Revenus à J+7 ou plus |');
+    L.push('| --- | ---: | ---: | ---: |');
+    for (const c of R.cohortes) {
+      const j7 = c.age >= 7 ? `${c.d7} (${pct((100 * c.d7) / c.n)})` : '—';
+      const j1 = c.age >= 1 ? `${c.d1} (${pct((100 * c.d1) / c.n)})` : '—';
+      L.push(`| ${c.date} | ${c.n} | ${j1} | ${j7} |`);
+    }
+    L.push('');
+    L.push(`<sub>Par jour de première visite (heure de Paris), sur les ${RETENTION_JOURS} derniers jours ; « — » : trop tôt pour le savoir.</sub>`);
+  } else {
+    L.push('Aucun joueur suivi (le numéro de joueur arrive avec la version 2 du suivi).');
+  }
+  L.push('');
+  L.push('## Abandon');
+  L.push('');
+  if (A.partis) {
+    L.push(`- **Joueurs partis** (arrivés depuis ${ABANDON_FENETRE} jours au plus, sans visite depuis ${ABANDON_JOURS} jours ou plus) : ${A.partis}${A.recents ? ` sur ${A.recents} (${pct((100 * A.partis) / A.recents)})` : ''}, dont ${A.uneVisite} après un seul jour de visite`);
+    L.push(`- **Avant de partir** : ${fmtDuration(A.medianMs)} de jeu et ${fmtNum(A.medianJeu)} jour(s) de jeu (médianes)`);
+    L.push(`- **Niveau atteint** : ${A.niveaux.map(([n, c]) => `niveau ${n} : ${c}`).join(' · ')}`);
+    if (A.chapitres.length) L.push(`- **Chapitre** : ${A.chapitres.map(([n, c]) => `chapitre ${n} : ${c}`).join(' · ')}`);
+    if (A.tutos.length) L.push(`- **Partis pendant le didacticiel**, à l'étape : ${A.tutos.map(([t, c]) => `${mdSafe(t)} : ${c}`).join(' · ')}`);
+  } else {
+    L.push('Aucun abandon repéré.');
+  }
+  L.push('');
+  L.push('## Économie');
+  L.push('');
+  if (E.gagne.length || E.depense.length) {
+    L.push(`- **Par jour de jeu** : ${fmtNum(E.gagneJour)} pièces gagnées, ${fmtNum(E.depenseJour)} dépensées (solde ${E.gagneJour - E.depenseJour >= 0 ? '+' : ''}${fmtNum(E.gagneJour - E.depenseJour)})`);
+    L.push('');
+    L.push('| Poste | Gagné | Dépensé | Par jour de jeu |');
+    L.push('| --- | ---: | ---: | ---: |');
+    const postes = new Map();
+    for (const x of E.gagne) postes.set(x.key, { g: x.total, d: 0, j: x.parJour });
+    for (const x of E.depense) { const p = postes.get(x.key) || { g: 0, d: 0, j: 0 }; p.d += x.total; p.j -= x.parJour; postes.set(x.key, p); }
+    for (const [k, p] of [...postes.entries()].sort((a, b) => (b[1].g + b[1].d) - (a[1].g + a[1].d))) {
+      L.push(`| ${mdSafe(posteLabel(k))} | ${p.g ? fmtNum(p.g) : '—'} | ${p.d ? fmtNum(p.d) : '—'} | ${p.j >= 0 ? '+' : ''}${fmtNum(p.j)} |`);
+    }
+  } else {
+    L.push('Aucune pièce gagnée ni dépensée enregistrée.');
+  }
+  L.push('');
+  if (E.soirs.length) {
+    L.push('| Jour de jeu | Joueurs | Pièces le soir (médiane) | Min | Max |');
+    L.push('| ---: | ---: | ---: | ---: | ---: |');
+    for (const x of E.soirs) L.push(`| ${x.day} | ${x.joueurs} | ${fmtNum(x.median)} | ${fmtNum(x.min)} | ${fmtNum(x.max)} |`);
+    L.push('');
+    L.push(`<sub>Les ${PIECES_JOURS} premiers jours de jeu des joueurs actifs pendant la période.</sub>`);
+    L.push('');
+  }
+}
+
 // Les sections de la version 2 : joueurs, jours de jeu, gestes, ressources, niveaux, progression.
 function renderGame(L, r) {
   const J = r.joueurs, D = r.jours;
@@ -657,6 +836,7 @@ function renderGame(L, r) {
     L.push('Aucun niveau gagné enregistré.');
   }
   L.push('');
+  renderRetention(L, r);
   L.push('## Progression par joueur');
   L.push('');
   if (J.fiches.length) {

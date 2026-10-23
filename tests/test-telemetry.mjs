@@ -368,3 +368,16 @@ test('jours de jeu : actions, énergie, ressources, fabrications et blocs par jo
   const n = body.events.find((e) => e.type === 'night');
   eq([n.level, n.xp, n.adults, n.children, n.wild, n.meal, n.tuto], [2, 600, 2, 1, true, 80, 'labour']);
 });
+
+test('jours de jeu : pièces gagnées et dépensées par poste', () => {
+  const b = makeBrowser();
+  b.T.init({ version: '1' });
+  b.T.setConsent('granted');
+  b.T.day(2);
+  b.T.game('pieces', { montant: 12, poste: 'vente' });
+  b.T.game('pieces', { montant: 8, poste: 'vente' });
+  b.T.game('pieces', { montant: -30, poste: 'achat' });
+  b.T._flush(false);
+  const j = b.beacons.at(-1).body.jours['2'];
+  eq([j.gagne, j.depense], [{ vente: 20 }, { achat: 30 }]);
+});

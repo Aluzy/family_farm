@@ -2,8 +2,9 @@
    Le moteur y note ses gestes au fil du jeu : l'énergie dépensée (energie : { action, mille }),
    chaque action et son XP (action : { action, n, auto }), les niveaux gagnés (niveau :
    { niveau }), les ressources ramassées sur la carte (ramasse : { item, n }), ce qui est
-   fabriqué à l'Atelier (fabrique : { recette, items, outil }) et les blocs posés (pose :
-   { sorte }). L'interface l'écoute pour le suivi de session, avec le consentement du joueur
+   fabriqué à l'Atelier (fabrique : { recette, items, outil }), les blocs posés (pose :
+   { sorte }) et les pièces gagnées ou dépensées (pieces : { montant, poste }, compta.js).
+   L'interface l'écoute pour le suivi de session, avec le consentement du joueur
    (js/ui/consent.js) ; sans écouteur, rien ne se passe. Rien n'entre dans la sauvegarde. */
 
 const ecouteurs = new Set();

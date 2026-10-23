@@ -11,7 +11,7 @@
 // - GET /report (facultatif) : aperçu du rapport en Markdown, ou publication de test
 //   avec &publish=1. Protégé par REPORT_TOKEN : sans ce secret, la route n'existe pas.
 
-import { buildReport, mergePlayer, renderMarkdown, reportSubject, parisHour } from './report.mjs';
+import { buildReport, mergePlayer, playerMeta, renderMarkdown, reportSubject, parisHour } from './report.mjs';
 
 const ALLOWED_ORIGIN = 'https://aluzy.github.io';
 const MAX_BYTES = 64 * 1024;
@@ -84,11 +84,25 @@ async function loadFiles(bucket, prefix, since, max) {
   return { sessions, unreadable, truncated: found.length - toRead.length };
 }
 
+// Les résumés de toutes les fiches (métadonnées R2, playerMeta) : la rétention et les
+// abandons, sans relire les fiches (une sous-requête par page de 1 000).
+async function loadAnnuaire(bucket) {
+  const out = [];
+  let cursor;
+  do {
+    const page = await bucket.list({ prefix: 'players/', cursor, limit: 1000, include: ['customMetadata'] });
+    for (const o of page.objects) if (o.customMetadata) out.push(o.customMetadata);
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+  return out;
+}
+
 async function makeReport(env, now) {
   const since = new Date(now.getTime() - 24 * 3600 * 1000);
   const { sessions, unreadable, truncated } = await loadFiles(env.SESSIONS, 'sessions/', since, MAX_READ);
   const fiches = await loadFiles(env.SESSIONS, 'players/', since, MAX_PLAYERS_READ);
-  return buildReport(sessions, now, { unreadable: unreadable + fiches.unreadable, truncated: truncated + fiches.truncated }, fiches.sessions);
+  const annuaire = await loadAnnuaire(env.SESSIONS);
+  return buildReport(sessions, now, { unreadable: unreadable + fiches.unreadable, truncated: truncated + fiches.truncated }, fiches.sessions, annuaire);
 }
 
 // La fiche du joueur de la session `data` (version 2) : relue, complétée, réécrite. Un échec
@@ -100,7 +114,7 @@ async function updatePlayer(bucket, data) {
   let prev = null;
   try { const obj = await bucket.get(key); prev = obj ? await obj.json() : null; } catch { prev = null; }
   const fiche = mergePlayer(prev, data, data.receivedAt);
-  if (fiche) await bucket.put(key, JSON.stringify(fiche), { httpMetadata: { contentType: 'application/json' } });
+  if (fiche) await bucket.put(key, JSON.stringify(fiche), { httpMetadata: { contentType: 'application/json' }, customMetadata: playerMeta(fiche) });
 }
 
 // Une issue GitHub accepte 65 536 signes au plus.
