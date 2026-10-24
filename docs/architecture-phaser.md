@@ -100,7 +100,7 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | Fichier | Méthodes |
 |---|---|
 | `config.js` | les réglages (`FermeCarte.C` : `MAP`, `BUILDINGS`, `ROCKS`, `FISHING`, `ROOMS`…) |
-| `sol.js` | textures et dessins de secours, sol cuit (`bakeGround`, `drawLayer` ; la ferme générée, `ctx.carte`, à la place de la carte de Tiled), terre labourée, grille de la houe, tuiles animées (repeintes dans la vue seulement), réparation du fond |
+| `sol.js` | textures et dessins de secours, sol cuit par régions (`bakeGround`, `syncRegions`, `paintRegion`, `drawLayer` ; la ferme générée, `ctx.carte`, à la place de la carte de Tiled), terre labourée, grille de la houe, tuiles animées (repeintes dans la vue seulement), réparation du fond |
 | `decor.js` | arbres, buissons et barrières (`findOccluders`), herbe haute ; hors de la vue, ni eux ni les rochers ne sont dessinés (`cullDecor`) |
 | `soleil.js` | les ombres portées qui suivent le soleil : silhouettes des bâtiments, arbres, barrières et rochers, inclinées selon l'heure (vers la gauche le matin, la droite le soir, courtes à midi), peintes dans un seul canevas qui couvre la vue et une marge (`SOLEIL`) |
 | `camera.js` | zoom, glissement, élan, repères, `panTo` |
@@ -188,10 +188,13 @@ jouée (toutes les parties sont sur la ferme générée) : les 45 premières ran
 (`farm_spring_summer.png`, celles d'un ancien pack graphique) sont vides, et l'étable, le
 poulailler et le moulin n'y ont plus d'image (leur forme de secours).
 
-- **Sol cuit en une image.** Au démarrage, `bakeGround()` lit le JSON brut
-  (`cache.tilemap.get(clé).data`) et dessine toutes les couches de tuiles dans un seul canvas
-  (texture `ground`, profondeur 0). Pas de `TilemapLayer` : avec un zoom non entier, des tuiles
-  rendues une à une laissent de fins liserés. Case 0 = vide ; les bits de retournement de Tiled
+- **Sol cuit par régions.** Au démarrage, `bakeGround()` lit le JSON brut
+  (`cache.tilemap.get(clé).data`) et découpe le sol en régions (`makeRegions`,
+  `CarteKit.REGION` : 64 × 64 tuiles). À chaque image, `syncRegions()` dessine toutes les
+  couches de tuiles des régions proches de la vue dans leur canvas (textures `sol_<rx>_<ry>`,
+  profondeur 0) et retire celles qui s'en sont éloignées. Chaque canvas déborde d'une tuile sur
+  ses voisins. Pas de `TilemapLayer` : avec un zoom non entier, des tuiles rendues une à une
+  laissent de fins liserés. Case 0 = vide ; les bits de retournement de Tiled
   sont gérés.
 - **Tuiles animées** (l'eau des étangs). Les animations sont celles de Tiled : elles sont
   dans le jeu de tuiles (`farm_spring_summer.tsx`, 4 images de 400 ms par tuile) et
@@ -431,8 +434,8 @@ est la poignée de débogage posée par `js/main.js`).
 ## Version 1.1.4 : le fond de la carte au retour d'une absence
 
 - **Symptôme** : sur téléphone, au retour d'une absence, la carte n'affichait plus qu'un vert uni sous les bâtiments et les parcelles.
-- **Cause** : le fond (texture `ground`) est un canvas composé au démarrage à partir des couches Tiled. Quand le navigateur reprend la mémoire graphique d'une page en arrière-plan, il vide ce canvas et le contexte WebGL ; au retour, Phaser recrée ses textures à partir de leurs sources : les images reviennent, le canvas revient vide.
-- **Correction** (`farm-stage.js`) : `paintGround()` redessine le fond dans la texture existante ; `repairGround()` l'appelle quand le contexte WebGL est rendu (`RESTORE_WEBGL`), quand le canvas du fond est rendu (`contextrestored`), au retour sur la page (`visibilitychange`, `pageshow`, `focus`, `FarmStage.show()`), et toutes les 3 s si un point du fond est devenu transparent (`groundWiped()`).
+- **Cause** : le fond (aujourd'hui les canvas des régions, `sol_<rx>_<ry>`) est un canvas composé au démarrage à partir des couches Tiled. Quand le navigateur reprend la mémoire graphique d'une page en arrière-plan, il vide ce canvas et le contexte WebGL ; au retour, Phaser recrée ses textures à partir de leurs sources : les images reviennent, le canvas revient vide.
+- **Correction** (`farm-stage.js`) : `paintGround()` redessine les régions dessinées dans leurs textures ; `repairGround()` l'appelle quand le contexte WebGL est rendu (`RESTORE_WEBGL`), quand le canvas d'une région est rendu (`contextrestored`), au retour sur la page (`visibilitychange`, `pageshow`, `focus`, `FarmStage.show()`), et toutes les 3 s si un point du fond est devenu transparent (`groundWiped()`).
 - **Vérification** : perte simulée avec l'extension `WEBGL_lose_context` et canvas vidé à la main ; pas d'essai sur un vrai téléphone.
 
 ## Version 1.2 : composer sa famille

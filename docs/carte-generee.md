@@ -222,9 +222,9 @@ Le Marché vend toujours les outils.
   - les arbres, rochers et touffes hors de la vue ne sont pas dessinés ;
   - l'eau animée n'est repeinte que dans la vue.
 
-  Le calcul par image reste celui de la carte de Tiled (environ 1 ms dans Chromium). Le sol
-  reste une seule image (2304 × 1824 px, sous la limite de 4096 px des téléphones) : le passer en
-  calques de tuiles ne s'est pas révélé nécessaire.
+  Le calcul par image reste celui de la carte de Tiled (environ 1 ms dans Chromium). Le sol est
+  dessiné par régions de 64 × 64 tuiles autour de la vue (`syncRegions`, docs/grand-monde.md,
+  étape 2), et non plus en une seule image de la taille de la carte.
 
 ## Ramasser et fabriquer (étape 3)
 

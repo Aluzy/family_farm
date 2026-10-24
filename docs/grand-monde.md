@@ -33,8 +33,9 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
   cheval.
 - **Le Marché devient une calèche** : elle fait le tour du monde par les chemins, de hameau en
   hameau et jusqu'à la ferme, et achète ce que les habitants et le joueur produisent. On la
-  voit passer ; on peut la héler quand elle est près de soi. (À décider : vend-elle aussi ce
-  que vend le Marché aujourd'hui — graines, outils, animaux, meubles ?)
+  voit passer ; on peut la héler quand elle est près de soi. Elle ne vend que les produits des
+  habitants et les graines ; ce que vend le Marché aujourd'hui (outils, animaux, meubles,
+  aliments) se fabriquera à l'Atelier (décidé).
 
 ## Les étapes
 
@@ -77,6 +78,15 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
 2. **Le rendu par régions**, sur la ferme d'aujourd'hui (2 PR) : le sol, les arbres, les
    rochers, les fleurs et l'herbe haute chargés par régions de 64 × 64 tuiles autour de la
    caméra, au lieu d'une seule image de la taille de la carte.
+   - **Fait (2a)** : le sol. `CarteKit.REGION` (`js/carte/kit.js`) : des régions de 64 × 64
+     tuiles, chacune son canevas (`sol_<rx>_<ry>`), qui déborde d'une tuile sur ses voisines
+     (pas de filet au zoom non entier) ; créées à moins de `pres` px de la vue, retirées
+     au-delà de `loin` px (`syncRegions`, `js/carte/ferme/sol.js`, à chaque image). Les
+     cases qui changent (terre labourée, chemins) sont repeintes dans les régions dessinées ;
+     les autres le seront à jour en reparaissant. La teinte de l'herbe haute se lit région
+     par région. Vérifié : chaque région est identique au pixel près à l'ancien sol entier.
+   - **À faire (2b)** : les arbres, les barrières et les rochers (une image chacun,
+     aujourd'hui toutes créées au démarrage), créés et retirés de la même façon.
 3. **Le moteur en coordonnées du monde** (2 à 3 PR) : les cases numérotées sur la largeur du
    monde (migration de tout ce qui est rangé par case), le terrain lu case par case, la nuit
    limitée aux régions visitées, des trajets bornés.
