@@ -40,10 +40,11 @@ import { axeChipHtml, chopFromStage, fishFromStage, caillouFromStage, mineFromSt
 import { botteFromStage, ramasserFromStage, verserFromStage, verserGrainFromStage } from './atelier.js';
 import { botteleuses } from '../engine/botteleuse.js';
 import { distributeurDe, distributeurs, grainDans } from '../engine/distributeur.js';
+import { chevalMonte, chevalOu, vitesseCheval } from '../engine/cheval.js';
 import { countWithSilo } from '../engine/animals.js';
 import { countItem } from '../engine/inventory.js';
 import { ramassables } from '../engine/atelier.js';
-import { blocsPoses, blocsDessusPoses, couchages, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
+import { blocsPoses, blocsDessusPoses, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang } from './chantier.js';
 import { escaliers, etageBlocs, etageEmprise, fenetresEtage, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
@@ -65,6 +66,11 @@ function betesDesEnclos() {
   if (state.paturage.construit) {
     const e = etatEtable(state), l = stableHoused(state);
     out.push({ id: 'etable', piece: e.libresPiece, enclos: e.libresEnclos, betes: Array(l.moutons.size).fill('mouton').concat(Array(l.vaches.size).fill('vache')) });
+  }
+  // (le cheval, à l'Écurie quand il n'est ni monté ni attaché ailleurs : il y va et vient, jour et nuit)
+  if (chevalOu(state) === 'ecurie') {
+    const e = etatEcurie(state);
+    if (e.piece && e.libresPiece.length) out.push({ id: 'ecurie', piece: e.libresPiece, enclos: e.libresPiece, betes: ['cheval'] });
   }
   return out;
 }
@@ -494,7 +500,7 @@ export function stageModel() {
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
-    houe, hache, pioche, faux, canne, triporteur: enSelle(state), rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, triporteur: enSelle(state), cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 

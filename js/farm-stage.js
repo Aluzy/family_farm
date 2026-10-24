@@ -116,6 +116,8 @@
         // les animaux de compagnie de la famille (js/ambient-life.js) : trois robes de chat, trois de chien
         for (const k of COMPAGNONS) L.spritesheet(k, v(k + '.png'), CAT_FRAME);
         L.spritesheet(K.TRIPORTEUR.key, v(K.TRIPORTEUR.file), { frameWidth: K.TRIPORTEUR.w, frameHeight: K.TRIPORTEUR.h });
+        // le cheval : sellé, seul (à l'Écurie), son poteau (js/carte/cheval.js)
+        if (K.chargeCheval) K.chargeCheval(this, v);
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
         L.json('perso_cases', v('personnages/cases.json'));

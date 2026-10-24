@@ -11,6 +11,7 @@ import { techFlag, techSum } from './techtree.js';
 import { casesBaties } from './blocs.js';
 import { FERME_GENEREE, genererFerme } from './ferme-generee.js';
 import { noter } from './journal.js';
+import { chevalMonte, vitesseCheval } from './cheval.js';
 
 /* ---------- les outils : houe, pioche, hache, faux, canne à pêche ---------- */
 
@@ -80,6 +81,7 @@ export function enSelle(state) {
 export function toggleTriporteur(state) {
   const def = DATA.TRIPORTEUR;
   if (!hasTool(state, 'triporteur')) return fail(`Il te faut un triporteur (Marché, ${def.PRIX} 💰).`);
+  if (chevalMonte(state)) return fail('Descends d\'abord de ton cheval.');
   const o = outils(state);
   o.aPied = !o.aPied;
   return { ok: true, enSelle: !o.aPied };
@@ -87,6 +89,7 @@ export function toggleTriporteur(state) {
 
 // Combien de fois plus vite il se déplace sur la carte (1 à pied).
 export function vitesseDeplacement(state) {
+  if (chevalMonte(state)) return vitesseCheval(state);
   return enSelle(state) ? DATA.TRIPORTEUR.VITESSE : 1;
 }
 

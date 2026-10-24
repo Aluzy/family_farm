@@ -292,6 +292,12 @@
         face: ['bas0', 'bas1', 'bas0', 'bas2'], dos: ['haut0', 'haut1', 'haut2', 'haut3'],
         anims: { broute: [['broute0', 'broute1'], 0.55, 0.9], queue: [['queue', 'idle'], 0.22, 0.3] },
         frames: Object.assign({ bas0: 8, bas1: 9, bas2: 10, haut0: 11, haut1: 12, haut2: 13, haut3: 14 }, GRAZER) },
+      // le cheval, à l'Écurie (assets/cheval.png, scripts/personnage/cheval.py ; chargé avec
+      // son matériel, js/carte/cheval.js) : il va et vient dans l'enceinte, jour et nuit (debout)
+      cheval: { key: 'cheval', vitesse: 9, pas: 0.18, pause: [3, 8], marche: ['marche0', 'marche1', 'marche2', 'marche3'],
+        face: ['bas0', 'bas1', 'bas2', 'bas3'], dos: ['haut0', 'haut1', 'haut2', 'haut3'], nuit: ['idle'], poses: ['broute', 'broute', 'idle'],
+        anims: { broute: [['broute', 'broute'], 0.6, 0.85], idle: [['idle'], 1, 1] },
+        frames: { idle: 0, marche0: 1, marche1: 2, marche2: 3, marche3: 4, broute: 5, bas0: 6, bas1: 7, bas2: 8, bas3: 9, haut0: 10, haut1: 11, haut2: 12, haut3: 13 } },
     },
   };
   const EXIT = { object: 'vers_la_transition', inset: 18, arrive: 34, page: 'ville-carte.html?carte=transition&arrivee=ferme' };
@@ -395,6 +401,8 @@
     // suit le blé qu'ils contiennent)
     'distributeur_0', 'distributeur_1', 'distributeur_2', 'distributeur_3', 'distributeur_4',
     'mangeoire_grain_vide', 'mangeoire_grain_pleine',
+    // le râtelier de l'Écurie (scripts/personnage/cheval.py)
+    'ratelier',
   ];
   // La couverture seule de chaque lit (meuble_<lit>_drap.png) : posée par-dessus le personnage
   // quand il y dort (js/fermier.js). La paillasse : son lit tant qu'aucun lit n'est acheté.

@@ -441,6 +441,22 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
+     "id": "cheval",
+     "terme": "Cheval et Écurie",
+     "description": "Le cheval s'achète au Marché (600 pièces) une fois l'Écurie construite : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Il y vit tant que tu es à la ferme. Sa case de la barre d'outils te met en selle : tu vas 1,8 fois plus vite sur toutes les cartes. Hors de la ferme, pour en descendre, il faut un poteau d'attache et une corde de fibre (Atelier) : il t'attend attaché là, et un toucher dessus te fait remonter. De retour à la ferme, il rentre à l'Écurie. Chaque nuit il mange 2 paille ; sans elle, il ne va que 1,3 fois plus vite le lendemain.",
+     "liens": [
+      "atelier",
+      "murs",
+      "paille",
+      "fibre"
+     ],
+     "decouverte": [
+      "objet:ratelier",
+      "objet:corde",
+      "objet:poteau_attache"
+     ]
+    },
+    {
      "id": "buissons",
      "terme": "Buissons et baies",
      "description": "Chaque matin, des buissons de la ferme portent des baies (3 sur un petit buisson, 5 sur un grand), qui se cueillent sans énergie. La hache les coupe d'un coup (2 bois pour un grand, 1 pour un petit) ; ils repoussent quelques jours plus tard, sauf si l'on a bâti sur leur place.",

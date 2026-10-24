@@ -13,9 +13,10 @@ import {
 } from '../engine/animals.js';
 import { isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { buyDehors, buyFurniture, furnitureCount, furnitureMax } from '../engine/meubles.js';
-import { blocsPoses } from '../engine/blocs.js';
+import { blocsPoses, etatEcurie } from '../engine/blocs.js';
 import { houseRepaired } from '../engine/depart.js';
 import { buyRuche, ruchesPosees } from '../engine/ruches.js';
+import { buyCheval, chevalPossede, chevalRefus } from '../engine/cheval.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
 import { BUY_MAX, comptoirTab, comptoirTabChoisi, state } from './store.js';
 import { applyResult } from './game-actions.js';
@@ -103,7 +104,8 @@ function helpText(tab) {
   if (tab === 'graines') return `Dépannage : les graines coûtent cher, produire les tiennes reste plus rentable. Elles s'achètent au prix majoré : coefficient de départ et plancher à ${formatNumber(DATA.MARCHE.PLANCHER.graine)} %. Le blé, la patate et les autres cultures qui se plantent d'elles-mêmes (on plante une patate pour en récolter d'autres) gardent leur prix habituel (plancher ${formatNumber(DATA.MARCHE.PLANCHER.defaut)} %) et restent dans l'onglet Acheter.`;
   if (tab === 'meubles') return 'Sur ta terre, un meuble acheté arrive dans l\'inventaire : pose-le dans la maison (une pièce close du foyer) avec le mode Construire 🔨. Une table, un canapé ou un tapis prennent plusieurs cases, un lit est un couchage, un tableau s\'accroche à un mur. À l\'achat, ils donnent un peu de bonheur à chaque membre de la famille, une seule fois. Une chaise et un lit par personne. Le bac à fleurs, lui, se pose aussi dehors : ses fleurs attirent les abeilles des ruches. Prix fixes ; un meuble ne se revend pas.';
   const ruche = ` La ruche (${formatCoins(DATA.RUCHE.PRIX)} pièces) se pose dehors avec le mode Construire 🔨 : ses abeilles butinent les fleurs de la ferme, et au bout de ${DATA.RUCHE.NUITS} nuits elle est pleine (${DATA.RUCHE.MIEL} pots de miel à récolter d'un appui sur sa bulle).`;
-  return `Prix fixe, quel que soit leur nombre. Un animal ne se revend pas. Les poules, les moutons et les vaches vivent à l'Étable.${ruche}`;
+  const cheval = isUnlocked(state, 'ecurie') ? ` Le cheval (${formatCoins(DATA.CHEVAL.PRIX)} pièces) vit à l'Écurie : on le monte pour aller plus vite sur toutes les cartes.` : '';
+  return `Prix fixe, quel que soit leur nombre. Un animal ne se revend pas. Les poules, les moutons et les vaches vivent à l'Étable.${ruche}${cheval}`;
 }
 
 // En-tête : les onglets en icônes seules, et le « ? » de l'onglet ouvert.
@@ -236,6 +238,15 @@ function rucheSlot() {
     `${R.NOM} : ${formatCoins(R.PRIX)} pièces${n ? `, ${n} sur la ferme` : ''}`);
 }
 
+// Le cheval (ferme générée, dès que l'Écurie se débloque) : son prix, ✅ une fois acheté.
+function chevalSlot() {
+  const C = DATA.CHEVAL;
+  if (!isUnlocked(state, 'ecurie')) return null;
+  const owned = chevalPossede(state);
+  return shopSlot(C.ICONE, C.NOM, 'data-mode="cheval" data-kind="cheval"', owned ? null : C.PRIX, owned ? '<span aria-hidden="true">✅</span>' : '', !owned && (!canPay(C.PRIX) || !!chevalRefus(state)),
+    owned ? `${C.NOM} : déjà acheté` : `${C.NOM} : ${formatCoins(C.PRIX)} pièces`);
+}
+
 // Le rayon Acheter a deux sous-rayons : Ingrédients (la houe en tête, légumes, fruits,
 // œufs, lait, farine…) et Plats (ce que cuisinent le Four et la Cuisine).
 const SOUS_RAYONS = [
@@ -271,7 +282,7 @@ export function renderComptoir(fenetre = false) {
     const slots = items.map((k) => buySlot(k, 'acheter'));
     body = `${sousRayonsHtml()}${chapitre}${slotsHtml(rayon.id === 'ingredients' ? [hoeSlot(), toolSlot('pioche'), toolSlot('hache'), toolSlot('faux'), toolSlot('canne'), toolSlot('triporteur'), ...slots] : slots, 'Rien à acheter ici pour l\'instant.')}`;
   } else if (tab.id === 'animaux') {
-    body = slotsHtml(ESPECES.map(animalSlot).concat([rucheSlot()]), 'Aucun animal à vendre pour l\'instant.');
+    body = slotsHtml(ESPECES.map(animalSlot).concat([rucheSlot()], chevalSlot() || []), 'Aucun animal à vendre pour l\'instant.');
   } else if (tab.id === 'meubles') {
     // (et ce qui se pose dehors, le bac à fleurs…)
     body = slotsHtml(Object.keys(DATA.MEUBLES).map(meubleSlot).concat(Object.keys(DATA.DEHORS || {}).map(dehorsSlot)), '');
@@ -326,6 +337,22 @@ function shopBodyHtml(o) {
         ${fleurs ? `<li>${DATA.RUCHE.ICONE} Ses fleurs attirent les abeilles des ruches.</li>` : ''}
       </ul>
       <div class="row item-actions"><button type="button" class="btn primary" data-action="buy-dehors" data-item="${o.id}"${canPay(def.prix) ? '' : ' disabled'}>Acheter (−${formatCoins(def.prix)} 💰)</button></div>`;
+  }
+  if (o.mode === 'cheval') {
+    const C = DATA.CHEVAL, owned = chevalPossede(state), refus = owned ? null : chevalRefus(state);
+    const paille = DATA.OBJETS[DATA.PATURAGE.NOURRITURE];
+    const vit = (v) => String(v).replace('.', ',');
+    return `
+      <div class="item-head"><span class="item-icon" aria-hidden="true">${C.ICONE}</span><span class="item-title"><strong id="item-title">${C.NOM}</strong><span class="num">${owned ? 'Déjà acheté' : `${formatCoins(C.PRIX)} 💰 (prix fixe)`}</span></span></div>
+      <ul class="item-lines">
+        <li>🏠 Il vit à l'Écurie : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et ${C.PLACES} cases libres.</li>
+        <li>${C.ICONE} Dans la barre d'outils : monte en selle, tu vas ${vit(C.VITESSE)} fois plus vite sur toutes les cartes.</li>
+        <li>${DATA.OBJETS.poteau_attache.icone} Hors de la ferme, pour en descendre : un poteau d'attache et une corde (Atelier). Touche-le pour remonter.</li>
+        <li>${paille.icone} Chaque nuit, ${C.RATION} ${paille.nom.toLowerCase()} ; sans elle, il ne va que ${vit(C.VITESSE_FAIM)} fois plus vite le lendemain.</li>
+      </ul>
+      ${refus ? `<p class="hint">${refus}</p>` : ''}
+      ${!owned && isUnlocked(state, 'ecurie') && !etatEcurie(state).ok ? `<ul class="item-lines">${etatEcurie(state).conditions.map((c) => `<li>${c.ok ? '✅' : '❌'} ${c.texte}</li>`).join('')}</ul>` : ''}
+      <div class="row item-actions"><button type="button" class="btn primary" data-action="buy-cheval"${owned || refus || !canPay(C.PRIX) ? ' disabled' : ''}>${owned ? 'Déjà acheté' : `Acheter (−${formatCoins(C.PRIX)} 💰)`}</button></div>`;
   }
   if (o.mode === 'ruche') {
     const R = DATA.RUCHE, miel = DATA.OBJETS[R.PRODUIT];
@@ -449,6 +476,10 @@ registerActions({
     const id = target.dataset.item;
     const result = applyResult(buyDehors(state, id));
     if (result.ok) notify(`${DATA.OBJETS[id].icone} ${DATA.DEHORS[id].nom} : dans l'inventaire, à poser avec 🔨 (−${formatCoins(result.cost)} 💰)`);
+  },
+  'buy-cheval': () => {
+    const result = applyResult(buyCheval(state));
+    if (result.ok) notify(`${DATA.CHEVAL.ICONE} Ton cheval t'attend à l'Écurie : monte en selle avec sa case de la barre d'outils (−${formatCoins(result.cost)} 💰)`);
   },
   'buy-ruche': () => {
     const result = applyResult(buyRuche(state));

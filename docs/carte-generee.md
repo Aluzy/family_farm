@@ -65,6 +65,21 @@ repris, il rend son blé. La carte les dessine comme des meubles (`dessin` : une
 blé, `scripts/batiments/distributeur.py` : le hublot de vide à plein, la mangeoire vide ou pleine) ;
 la fenêtre du Poulailler dit son blé, ou ce qui manque pour qu'il marche.
 
+### Le cheval et l'Écurie
+
+Le cheval (`js/engine/cheval.js`, `DATA.CHEVAL`) s'achète au Marché (rayon Animaux) une fois
+l'Écurie construite : une enceinte de murs où est posé le râtelier (`ATELIER.BLOCS.ratelier`,
+`ecurie: true`, fabriqué à l'Atelier), une porte sur le dehors, et `CHEVAL.PLACES` cases libres
+(`etatEcurie`, une variante sans enclos d'`etatEnclos`). Il s'y promène tant que le joueur est à
+la ferme (`syncBeasts`, l'entrée `ecurie` de `betesDesEnclos`). Sa case de la barre d'outils met
+le personnage en selle (`toggleCheval`) : il va `VITESSE` fois plus vite sur toutes les cartes,
+assis sur le cheval sellé (`js/carte/cheval.js`, comme le triporteur ; `scripts/personnage/cheval.py`).
+Hors de la ferme, en descendre plante un poteau d'attache et y noue une corde (`CHEVAL.ATTACHE`,
+deux objets de l'Atelier, rendus quand on remonte) : le cheval attend là (`state.cheval.attache` :
+la carte, le point), broute, et un toucher dessus fait remonter (`js/carte/ville/monture.js`). De
+retour à la ferme, il rentre à l'Écurie (`rentrerCheval`). La nuit, après l'Étable, il mange
+`RATION` paille (`chevalNuit`) ; sinon il ne va que `VITESSE_FAIM` fois plus vite.
+
 ### L'atelier niveau 1
 
 L'atelier coûte 3 bois et 3 pierres. Il permet de fabriquer :

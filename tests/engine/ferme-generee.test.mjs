@@ -22,7 +22,7 @@ import {
   etatPoulailler, etatSilo, farmMap, farmOpen, farmPoint, farmSeed, farmTerrain, faucherSousBati,
   feedLivestock, fellenTrees, FERME_GENEREE, fleursPourAbeilles, freeSheepPlaces, genererFerme,
   genrePiece, goToSleep, grantTech, grassCut, harvestTree, hauteurMur, hauteurSilo, herbesSur, hoe,
-  awakeMsAtHour, hoeableTiles, houseRepaired, etatDistributeur, distributeurs, verserGrain, distribuerGrain, grainDans, isArable, isOwned, layEggs, machineDe, mainCharacter,
+  awakeMsAtHour, buyCheval, chevalMonte, chevalNuit, chevalOu, chevalRefus, descendreCheval, etatEcurie, monterCheval, rentrerCheval, toggleCheval, toggleTriporteur, vitesseCheval, vitesseDeplacement, hoeableTiles, houseRepaired, etatDistributeur, distributeurs, verserGrain, distribuerGrain, grainDans, isArable, isOwned, layEggs, machineDe, mainCharacter,
   majDidacticiel, makeCow, makeSheep, marcheOuvert, morceauxDe, nuitCouchee, nuitSansCouchage,
   objectifDidacticiel, passerDidacticiel, pickUp, piecesCloses, planAbri, planAbriCases, plant,
   poserBloc, blocDebloque, categorieBloc, addItem, poserEtage, poussesArbres, ramassables, ramasser, ramasserMorceau,
@@ -823,6 +823,57 @@ test('ferme générée : le distributeur de grain, raccordé dans l\'enclos, nou
   // repris : son blé revient
   reprendreBloc(s, t(8, 5));
   assertEqual(countItem(s, 'ble') + (s.silo && s.silo.ble ? s.silo.ble : 0) >= 10 + D.CAPACITE - 2, true);
+});
+
+test('ferme générée : le cheval vit à l\'Écurie, on le monte, on l\'attache à un poteau hors de la ferme', () => {
+  const C = DATA.CHEVAL;
+  const s = reach(chantier('cheval', 80), 'ecurie');
+  s.pieces = 100000;
+  setInv(s, { mur_pierre: 30, porte: 2, ratelier: 1 });
+  assertEqual(chevalRefus(s).includes('Écurie'), true, 'pas d\'Écurie, pas de cheval');
+  // l'Écurie : une enceinte de 3 × 2 cases, le râtelier, une porte sur le dehors
+  const z = terrainLibre(s, 8, 6), W = z.W, t = (x, y) => (z.r + y) * W + z.c + x;
+  for (let x = 0; x <= 4; x++) for (let y = 0; y <= 3; y++) if (x === 0 || y === 0 || x === 4 || y === 3) poserBloc(s, 'mur_pierre', t(x, y));
+  assertEqual(etatEcurie(s).conditions.find((c) => c.id === 'dehors').ok, false, 'sans porte');
+  assert(poserBloc(s, 'porte', t(2, 3)).ok);
+  assert(poserBloc(s, 'ratelier', t(1, 1)).ok);
+  const e = etatEcurie(s);
+  assert(e.ok, JSON.stringify(e.conditions));
+  assertEqual(e.places, 5);
+  // acheté au Marché : il est à l'Écurie, nourri
+  assert(buyCheval(s).ok);
+  assertEqual([chevalOu(s), buyCheval(s).ok], ['ecurie', false]);
+  // monté à la ferme : plus vite ; le triporteur reste au garage
+  assert(toggleCheval(s, { carte: 'ferme' }).ok);
+  assertEqual([chevalMonte(s), vitesseDeplacement(s)], [true, C.VITESSE]);
+  assertEqual(toggleTriporteur(s).ok, false);
+  // hors de la ferme : pas de poteau ni de corde, il faut rester en selle
+  setInv(s, { corde: 1 });
+  const refus = descendreCheval(s, { carte: 'ville', x: 100, y: 200 });
+  assertEqual([refus.ok, refus.error.includes('poteau'), chevalMonte(s)], [false, true, true]);
+  setInv(s, { corde: 1, poteau_attache: 1 });
+  assert(descendreCheval(s, { carte: 'ville', x: 100, y: 200 }).ok);
+  assertEqual([chevalOu(s), s.cheval.attache, countItem(s, 'corde'), countItem(s, 'poteau_attache')], ['attache', { carte: 'ville', x: 100, y: 200 }, 0, 0]);
+  // on le reprend à côté de lui, sur la même carte seulement ; le poteau et la corde reviennent
+  assertEqual(monterCheval(s, { carte: 'plage', proche: true }).ok, false);
+  assertEqual(monterCheval(s, { carte: 'ville', proche: false }).ok, false);
+  assert(monterCheval(s, { carte: 'ville', proche: true }).ok);
+  assertEqual([chevalMonte(s), countItem(s, 'corde'), countItem(s, 'poteau_attache')], [true, 1, 1]);
+  // laissé attaché, puis rentré à la ferme : il retrouve l'Écurie
+  descendreCheval(s, { carte: 'montagne', x: 5, y: 6 });
+  assert(rentrerCheval(s));
+  assertEqual([chevalOu(s), countItem(s, 'corde'), countItem(s, 'poteau_attache')], ['ecurie', 1, 1]);
+  // à la ferme, il descend sans rien : il rentre à l'Écurie
+  monterCheval(s, { carte: 'ferme' });
+  assert(descendreCheval(s, { carte: 'ferme' }).ok);
+  assertEqual(chevalOu(s), 'ecurie');
+  // la nuit, sa paille ; sans paille, il va moins vite le lendemain
+  setInv(s, { [DATA.PATURAGE.NOURRITURE]: C.RATION });
+  chevalNuit(s);
+  assertEqual([s.cheval.nourri, countItem(s, DATA.PATURAGE.NOURRITURE)], [true, 0]);
+  chevalNuit(s);
+  monterCheval(s, { carte: 'ferme' });
+  assertEqual([s.cheval.nourri, vitesseCheval(s)], [false, C.VITESSE_FAIM]);
 });
 
 test('ferme générée : le Poulailler monte de niveau s\'il a la place ; les poules en trop ne pondent pas', () => {

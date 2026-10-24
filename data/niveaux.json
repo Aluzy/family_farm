@@ -15,7 +15,7 @@
       { "debloque": ["poivron", "ail", "fraise", "ble", "silo", "poulailler", "marche"] },
       { "debloque": ["epinard", "tournesol", "riz", "moulin"] },
       { "debloque": ["houblon", "four", "paturage", "moutons"] },
-      { "debloque": ["presse", "verger"] },
+      { "debloque": ["presse", "verger", "ecurie"] },
       { "debloque": ["cacao", "vanille", "cafe", "serre", "energie"] },
       { "debloque": ["frigo"] },
       { "debloque": [], "note": "un courrier du notaire : un héritage caché" },
@@ -38,6 +38,8 @@
       "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille fauchée" },
       "serre": { "nom": "Serre", "icone": "🏡", "note": "cacao, vanille et café, et des légumes à l'abri" },
       "verger": { "nom": "Verger", "icone": "🌳", "note": "pommiers et poiriers" },
+      "//ecurie": "Sur une terre sauvage : le râtelier de l'Écurie, la corde et le poteau d'attache (js/engine/cheval.js) ; le cheval s'achète au Marché.",
+      "ecurie": { "sauvage": true, "nom": "Écurie", "icone": "🐴", "note": "un cheval à monter sur toutes les cartes, la corde et le poteau pour l'attacher" },
       "commerce": { "nom": "Commerce", "icone": "🏪", "note": "étal de bocaux, crèmerie ou métier à tisser : il vend chaque nuit une partie de la production" },
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊", "note": "conservation sans péremption" }
     },

@@ -322,6 +322,7 @@ export function genreBloc(sorte) {
   const s = sorteDe(sorte);
   if (!s) return null;
   if (s.batiment) return s.batiment;
+  if (s.ecurie) return 'ecurie';
   if (s.station === 'moulin') return 'moulin';
   if (sorte === 'paillasse' || s.station || s.meuble) return 'maison';
   return null;
@@ -730,12 +731,23 @@ export function reprendreBloc(state, tile, opts) {
 // aussi par son niveau (coopCapacity), l'Étable par ses places achetées (stablePlaces).
 // etatEnclos(state, cle) → { ok, conditions: [{ id, texte, ok }], piece, enclos (leurs cases),
 // porteDehors, porteEnclos, libresPiece, libresEnclos (cases), places }.
+// L'Écurie (le râtelier, js/engine/cheval.js) n'a pas d'enclos : le cheval vit dans l'enceinte,
+// qui veut CHEVAL.PLACES cases libres (hors râtelier) ; places : ses cases libres.
 const ENCLOS = {
   nichoir: { batiment: 'poulailler', bloc: 'Un nichoir', bete: 'poule', horsCle: 'hors nichoir' },
   mangeoire: { batiment: 'paturage', bloc: 'Une mangeoire', bete: 'place (un mouton : 1, une vache : {vache})', horsCle: 'hors mangeoire' },
+  ratelier: { batiment: 'ecurie', bloc: 'Un râtelier', sansEnclos: true },
 };
 function conditionsEnclos(cle) {
   const d = ENCLOS[cle];
+  if (d.sansEnclos) {
+    return [
+      ['enceinte', 'Une enceinte de murs (une pièce close)'],
+      ['cle', `${d.bloc} dans l'enceinte`],
+      ['dehors', 'Une porte de l\'enceinte qui donne sur l\'extérieur'],
+      ['place', `${DATA.CHEVAL.PLACES} cases libres dans l'enceinte (hors râtelier)`],
+    ];
+  }
   return [
     ['enceinte', 'Une enceinte de murs (une pièce close)'],
     ['cle', `${d.bloc} dans l'enceinte`],
@@ -806,11 +818,11 @@ export function etatEnclos(state, sorteCle) {
     const couv = casesCouvertes(state);   // (la mangeoire à grain : ses deux cases)
     e.libresPiece = p.cases.filter((t) => !B[t] && !couv.has(t));
     e.libresEnclos = (e.enclos || []).filter((t) => !B[t] && !couv.has(t) && herbe(t) && !arbres.has(t));
-    e.places = e.enclos ? Math.min(e.libresPiece.length, e.libresEnclos.length) : 0;
+    e.places = ENCLOS[sorteCle].sansEnclos ? e.libresPiece.length : e.enclos ? Math.min(e.libresPiece.length, e.libresEnclos.length) : 0;
   }
   ok.dehors = e.porteDehors !== null;
   ok.enclos = !!e.enclos;
-  ok.place = e.places > 0;
+  ok.place = ENCLOS[sorteCle].sansEnclos ? e.places >= DATA.CHEVAL.PLACES : e.places > 0;
   e.conditions = conditionsEnclos(sorteCle).map(([id, texte]) => ({ id, texte: id === 'enclos' && p && !ok[id] && e.pourquoi ? `${texte} (${e.pourquoi})` : texte, ok: !!ok[id] }));
   e.ok = e.conditions.every((c) => c.ok);
   enclosCache.set(sorteCle, { cle, etat: e });
@@ -823,6 +835,11 @@ export function etatPoulailler(state) {
 
 export function etatEtable(state) {
   return etatEnclos(state, 'mangeoire');
+}
+
+// L'Écurie du cheval (js/engine/cheval.js) : son enceinte, son râtelier, sa porte sur le dehors.
+export function etatEcurie(state) {
+  return etatEnclos(state, 'ratelier');
 }
 
 // Le Poulailler et l'Étable existent quand tout y est (etatEnclos) ; ils gardent leur niveau,

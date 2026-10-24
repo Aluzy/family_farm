@@ -25,7 +25,8 @@
  *
  * Le triporteur (acheté au Marché, modèle.triporteur : il est en selle) : dehors, quand il
  * marche ou attend, il y est assis (js/carte/triporteur.js) et va TRIPORTEUR.vitesse fois plus
- * vite ; pendant un geste ou dans un intérieur, il en descend.
+ * vite ; pendant un geste ou dans un intérieur, il en descend. De même son cheval (modèle.cheval,
+ * modèle.chevalVitesse : js/carte/cheval.js), qui passe avant le triporteur.
  *
  * Image : assets/fermier.png (cases de 16 × 32), noms des cases dans assets/fermier.json
  * (scripts/personnage/fermier.py). Sans elles, pas de personnage : rien d'autre ne change.
@@ -159,24 +160,27 @@
       const k = F[name];
       if (k !== undefined) s.setFrame(k);
     }
-    // le triporteur (js/carte/triporteur.js) : dehors, quand il marche ou attend, il y est
-    // assis et roule plus vite (ctx.triporteur : le modèle dit qu'il est en selle) ; pendant un
-    // geste, dans un intérieur, il en descend
-    const selle = K.triporteur ? K.triporteur(scene) : null;
+    // le triporteur (js/carte/triporteur.js) ou le cheval (js/carte/cheval.js) : dehors, quand
+    // il marche ou attend, il y est assis et va plus vite (ctx.triporteur, ctx.cheval : le
+    // modèle dit qu'il est en selle, et sur quoi) ; pendant un geste, dans un intérieur, il en descend
+    const selles = { triporteur: K.triporteur ? K.triporteur(scene) : null, cheval: K.cheval ? K.cheval(scene) : null };
+    const monture = () => (ctx.cheval ? 'cheval' : ctx.triporteur ? 'triporteur' : null);
+    const cacheSelles = () => { for (const k in selles) if (selles[k]) selles[k].cache(); };
     const ROULE = /^(marche|panier|idle)_(bas|haut|cote)_\d$/;
     let roule = 0, rx = 0, ry = 0;
-    const enSelle = () => !!(selle && ctx.triporteur && shown && !home && !where);
-    const vitesse = () => (enSelle() ? K.TRIPORTEUR.vitesse : 1);
+    const enSelle = () => !!(monture() && selles[monture()] && shown && !home && !where);
+    const vitesse = () => (!enSelle() ? 1 : monture() === 'cheval' ? ctx.chevalVitesse || 1 : K.TRIPORTEUR.vitesse);
     let drawn = '';
     function draw(name) {
       drawn = name;
       if (enSelle() && ROULE.test(name)) {
         roule += Math.hypot(x - rx, y - ry);
-        const r = selle.place(x, y, face, flip, roule, alpha);
+        for (const k in selles) if (k !== monture() && selles[k]) selles[k].cache();
+        const r = selles[monture()].place(x, y, face, flip, roule, alpha);
         frame(r.image);
         s.setPosition(Math.round(x + r.dx), Math.round(y - r.dy - lift())).setFlipX(flip).setDepth(dz(y)).setAlpha(alpha);
       } else {
-        if (selle) selle.cache();
+        cacheSelles();
         frame(name);
         s.setPosition(Math.round(x), Math.round(y - lift())).setFlipX(flip).setDepth(dz(y)).setAlpha(alpha);
         // le coup fort qui se charge : il tremble (d'autant plus que la charge monte)
@@ -427,6 +431,8 @@
       const raw = model;
       ctx.hour = raw.heure == null ? 12 : raw.heure;
       ctx.triporteur = !!raw.triporteur;
+      ctx.cheval = !!raw.cheval;
+      ctx.chevalVitesse = raw.chevalVitesse || 1;
       ctx.coucher = !!raw.coucher;
       ctx.dort = !!raw.dort;
       pilesNow = new Map((raw.ramasser || []).map((p) => [p.id, p]));
@@ -859,7 +865,7 @@
     function update(delta) {
       const dt = Math.min(delta, 50) / 1000;
       // (rentré, caché, descendu : plus de triporteur sous lui ; draw le repose s'il roule)
-      if (selle && (!enSelle() || !s.visible || !ROULE.test(drawn))) selle.cache();
+      if (!enSelle() || !s.visible || !ROULE.test(drawn)) cacheSelles();
       // Retenues trop longues (onglet caché, chemin bloqué) : la case se montre.
       if (holds.size) {
         const now = performance.now();
@@ -954,7 +960,7 @@
         if (!lastPos || lastPos.x !== x || lastPos.y !== y) lastPos = { x, y };
         return lastPos;
       },
-      destroy() { s.destroy(); if (selle) selle.destroy(); if (drapDehors) drapDehors.destroy(); zs.forEach((z) => z.destroy()); holds.clear(); },
+      destroy() { s.destroy(); for (const k in selles) if (selles[k]) selles[k].destroy(); if (drapDehors) drapDehors.destroy(); zs.forEach((z) => z.destroy()); holds.clear(); },
       // Autre planche (le personnage du joueur a changé) : mêmes cases, dans le même ordre.
       setSheet(key) {
         o.sheet = key;
