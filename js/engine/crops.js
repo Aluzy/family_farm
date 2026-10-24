@@ -177,7 +177,7 @@ export function soilLayoutOk(state, tile, labour) {
 // plafond et énergie, qui se disent au moment du labour) : labourables, sans terre, et dont
 // les bordures se dessineraient.
 export function hoeableTiles(state) {
-  const cases = casesDuTerrain(farmTerrain(state));
+  const cases = casesDuTerrain(farmTerrain(state), state);   // (la ferme et les régions vues)
   const dirt = dirtTiles(state);
   const libres = freedRockTiles(state); // une fois pour toute la carte
   const serre = new Set(serrePlaces(state));   // (les cases de la Serre : à part, plus bas)

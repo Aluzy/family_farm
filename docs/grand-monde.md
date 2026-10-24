@@ -92,7 +92,7 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
      repoussent). Un arbre abattu (`o.vu`) ou un rocher cassé reste caché quand son image se
      refait ; la boîte d'un rocher (`rockBox`) se mesure à sa première image. Les arbres
      plantés par le joueur gardent leur image.
-3. **Le moteur en coordonnées du monde** (2 à 3 PR) : les cases numérotées sur la largeur du
+3. ✅ **Le moteur en coordonnées du monde** (2 PR, fait) : les cases numérotées sur la largeur du
    monde (migration de tout ce qui est rangé par case), le terrain lu case par case, la nuit
    limitée aux régions visitées, des trajets bornés.
    - **Fait (3a)** : le monde (`js/engine/monde.js`, `genererMonde`) : la ferme générée posée
@@ -111,10 +111,42 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
      (« colonne,rangée », pas les arbres plantés « f<n> ») ; les touffes fauchées et les morceaux
      au sol (en px) ; l'abri du didacticiel. La cueillette du jour est tirée de nouveau. Vérifié
      dans Chromium : une partie du jeu d'avant se rouvre à l'identique.
-   - **À faire (3b)** : la nuit limitée aux régions visitées, des trajets bornés (le personnage,
-     la famille), les régions lues case par case quand le monde aura ses biomes. Attention pour
-     l'étape 4 : un arbre ou un rocher du monde collé au bord de la ferme ne doit pas se
-     fondre avec un arbre de la ferme (leurs identifiants changeraient).
+   - **Fait (3b)** : les régions vues, les trajets bornés, la carte lue par régions.
+     - Le moteur : `MONDE.REGION` (64, `js/engine/monde.js`), la seule taille des régions (la scène
+       la reçoit au montage, `CarteKit.REGION`). `state.monde.vues` : les régions vues (« rx,ry ») ;
+       celles de la ferme d'office ; le personnage qui entre dans une autre la note (la scène le
+       dit au pont, `stepRegionPerso` → `voirRegion`, `js/engine/terrain.js`).
+       `casesDuTerrain(T, state)` : la ferme et les régions vues, dans l'ordre des cases ; les
+       revues de cases du moteur (labourables, le joueur automatique, la cueillette) s'y bornent,
+       aucune ne parcourt tout le monde.
+     - La nuit : les rochers, arbres et buissons qui reviennent, les touffes qui repoussent, la
+       cueillette du jour ne concernent que la ferme et les régions vues (`regionVue`,
+       `js/engine/outils.js`, `atelier.js` : chaque région vue hors de la ferme a sa propre suite
+       de places, une région découverte dans la journée ne change pas celles de la ferme). Une
+       région pas vue ne bouge pas (tests : `tests/engine/monde.test.mjs`).
+     - Les trajets : `CarteKit.chemin` cherche dans une boîte (le départ et le but, plus 48 cases,
+       bornée au monde ; au plus 8 000 cases examinées) ; un appui à plus de 150 cases ne lance
+       pas de recherche : le personnage va tout droit, aussi loin que rien ne le gêne (il ne saute
+       plus à l'autre bout). La famille et le robot passent par le même chemin (`fermier.path`).
+       Mesuré dans Chromium : un but enfermé (le pire cas) prenait 300 à 380 ms sur tout le
+       monde, 9 à 15 ms dans sa boîte ; 400 trajets dans la ferme : les mêmes chemins, 0,4 ms en
+       moyenne et 3 à 7 ms au plus (avant : 1,8 à 2,3 ms, et 12 à 19 ms au plus) ; un appui à
+       l'autre bout du monde : moins d'une ms.
+     - La carte lue par régions : `carte.regionsPleines` (le moteur : pour l'instant les 8 régions
+       de la ferme) ; les relevés du chargement (arbres, barrières, rochers, tuiles animées, terre
+       des anciennes zones, lieux de la vie d'ambiance) ne lisent que leurs cases
+       (`CarteKit.casesPleines`, 32 768 cases au lieu de 328 440), dans l'ordre de la carte : les
+       mêmes résultats (vérifié dans Chromium). Le `create()` de la scène : 530 à 680 ms avant,
+       340 à 510 ms après.
+     - Sauvegardes : format 53 ; la migration 52 → 53 donne à une partie existante les régions de
+       sa ferme.
+     - Laissé pour plus tard : un arbre ou un rocher à cheval sur une région pleine et une région
+       qui ne l'est pas serait trouvé depuis sa première case dans la région pleine (pas de
+       souci tant que tout est sur la ferme) ; un trajet de plus de 70 cases à la ferme fait
+       toujours apparaître le personnage au bout (comme avant) ; la mine garde sa recherche sur
+       toute sa grille (petite). Attention pour l'étape 4 : un arbre ou un rocher du monde collé
+       au bord de la ferme ne doit pas se fondre avec un arbre de la ferme (leurs identifiants
+       changeraient).
 4. **Le générateur du monde** (2 PR) : relief, humidité, biomes, rivières, côte, chemins ; la
    ferme au centre ; les hameaux, les entrées de grotte, les coins de pêche ; dans un Web
    Worker, région par région, avec un cache.

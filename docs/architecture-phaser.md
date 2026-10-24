@@ -77,8 +77,8 @@ pas Phaser pour se charger. Ce que chaque carte avait en double y est une seule 
 
 | Fichier | Contenu |
 |---|---|
-| `kit.js` | `T` (16 px) ; `v(fichier)`, l'adresse versionnée d'un fichier de `assets/` (avec ou sans le préfixe `assets/`) ; `reduit()`, « réduire les animations » (une requête `matchMedia` créée une fois) ; `extrude()`, les planches de tuiles à bord répété ; `planche(n, enfant)`, `planchePerso()`, la planche d'un personnage ; `saisie()` ; `regard(dx, dy)`, de face, de dos ou de profil (la règle `|dx| > 0,8 × |dy|`) ; `VITESSES`, la vitesse de marche de chacun, carte par carte ; `cycle()`, `imageA()`, `animTuiles()`, `pasAnimTuiles()`, les tuiles animées de Tiled ; `FLECHE`, `balance()`, la flèche bleue des passages ; `TEXTE`, `texte()`, les petits textes qui montent au-dessus du personnage |
-| `chemins.js` | `chemin(grille, départ, but, { diag, max })` : le seul chercheur de chemin (A*, tas binaire, 8 directions sans couper un coin) ; `tendre()`, le chemin tendu (tout droit tant que rien ne gêne) ; `plusProche(ok, rayon)`, la place libre la plus proche (anneau par anneau, au plus près dans l'anneau) |
+| `kit.js` | `T` (16 px) ; `v(fichier)`, l'adresse versionnée d'un fichier de `assets/` (avec ou sans le préfixe `assets/`) ; `reduit()`, « réduire les animations » (une requête `matchMedia` créée une fois) ; `extrude()`, les planches de tuiles à bord répété ; `planche(n, enfant)`, `planchePerso()`, la planche d'un personnage ; `saisie()` ; `regard(dx, dy)`, de face, de dos ou de profil (la règle `|dx| > 0,8 × |dy|`) ; `VITESSES`, la vitesse de marche de chacun, carte par carte ; `REGION`, `regionsPleines()`, `casesPleines()`, les régions du sol et celles qui ont quelque chose à relever ; `cycle()`, `imageA()`, `animTuiles()`, `pasAnimTuiles()`, les tuiles animées de Tiled ; `FLECHE`, `balance()`, la flèche bleue des passages ; `TEXTE`, `texte()`, les petits textes qui montent au-dessus du personnage |
+| `chemins.js` | `chemin(grille, départ, but, { diag, max, boite })` : le seul chercheur de chemin (A*, tas binaire, 8 directions sans couper un coin), borné à une boîte de recherche (`boite(c0, r0, c1, r1, marge, cols, rows)` : le départ et le but, plus une marge ; ses tables ont la taille de la boîte, pas celle du monde) ; à la ferme, le personnage (et par lui la famille et le robot) cherche dans une marge de 48 cases, au plus 8 000 cases examinées, et va tout droit au-delà de 150 cases ; `tendre()`, le chemin tendu (tout droit tant que rien ne gêne) ; `plusProche(ok, rayon)`, la place libre la plus proche (anneau par anneau, au plus près dans l'anneau) |
 | `nature.js` | `NATURE` (l'herbe haute, l'opacité d'un arbre devant le personnage, l'ombre d'un arbre, l'arbre qui tombe, les éclats de pierre), `PECHE` (l'attente de la touche, le bouchon et le fil) ; `herbe()`, l'herbe haute qui penche ; `fondu()`, l'arbre qui s'éclaircit ; `MORCEAUX` et `pointsMorceaux()`, le bois et la pierre que la hache et la pioche lâchent au sol (un morceau par coup au pied, et HACHE.CHUTE ou PIOCHE.BRIS de plus là où l'arbre tombe ou autour du rocher brisé) |
 | `gestes.js` | les gestes et leurs effets, pareils sur toutes les cartes : `APPUI` et `doubleAppui()` (un appui sur ce qui se touche : le personnage y va et fait son geste, un coup par appui ; un double appui ailleurs : il y marche), `MANETTE` et `manette()` (le doigt posé puis glissé : il marche dans la direction du glissement tant que le doigt reste posé, rien ne s'affiche), `astuceMarche()` (la bulle qui explique ce geste, une fois par appareil, au premier essai de marche au doigt), `SECOUSSE` et `secousse()` (la vue tremble un peu quand un arbre tombe et à chaque coup de pioche), `BULLE` et `bulleGain()` (la bulle « +1 🪵 » au-dessus du personnage, en DOM). Sur toutes les cartes, la caméra suit le personnage |
 | `lumiere.js` | le jour et la nuit : `LIGHT_KEYS`, `lumiere(heure)`, `voile(scène, l, h, profondeur)` (§ 1 ter) |
@@ -190,12 +190,22 @@ poulailler et le moulin n'y ont plus d'image (leur forme de secours).
 
 - **Sol cuit par régions.** Au démarrage, `bakeGround()` lit le JSON brut
   (`cache.tilemap.get(clé).data`) et découpe le sol en régions (`makeRegions`,
-  `CarteKit.REGION` : 64 × 64 tuiles). À chaque image, `syncRegions()` dessine toutes les
+  `CarteKit.REGION` : 64 × 64 tuiles, la taille de `MONDE.REGION` du moteur, donnée au montage
+  par `FarmStage.mount({ regionTuiles })`). À chaque image, `syncRegions()` dessine toutes les
   couches de tuiles des régions proches de la vue dans leur canvas (textures `sol_<rx>_<ry>`,
   profondeur 0) et retire celles qui s'en sont éloignées. Chaque canvas déborde d'une tuile sur
   ses voisins. Pas de `TilemapLayer` : avec un zoom non entier, des tuiles rendues une à une
   laissent de fins liserés. Case 0 = vide ; les bits de retournement de Tiled
   sont gérés.
+- **Relevés du chargement par régions.** Les arbres, buissons et barrières (`findOccluders`,
+  `mapTrees`), les rochers (`findRocks`), les tuiles animées (`makeTileAnims`), la terre des
+  anciennes zones (`zoneGround`) et les lieux de la vie d'ambiance (`readMap`,
+  `js/ambient-life.js`) ne parcourent pas toute la carte : ils lisent les cases des régions qui
+  ont quelque chose (`CarteKit.casesPleines`, d'après `carte.regionsPleines` écrit par le moteur :
+  pour l'instant la ferme ; toutes les régions sur une carte de Tiled), rangées dans l'ordre de la
+  carte (les mêmes arbres et rochers, dans le même ordre, qu'en lisant tout). Le personnage qui
+  change de région le dit à la page (`stepRegionPerso`, pont `region`) : la région devient vue
+  pour le moteur (`state.monde.vues`).
 - **Tuiles animées** (l'eau des étangs). Les animations sont celles de Tiled : elles sont
   dans le jeu de tuiles (`farm_spring_summer.tsx`, 4 images de 400 ms par tuile) et
   `build-map.mjs` les recopie dans le JSON. Le fond reste une image fixe, où une tuile animée

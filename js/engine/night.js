@@ -256,6 +256,7 @@ export function runNight(state) {
   recordNight(state); // Lot 9 : autonomie de la nuit, séries et tenue (nuit encore = state.day)
   state.day += 1;
   state.awakeMs = 0;
+  // (sur la ferme et dans les régions vues seulement : state.monde.vues, outils.js)
   respawnRocks(state); // les rochers cassés dont le jour de retour est venu
   respawnTrees(state); // les arbres abattus dont le jour est venu repoussent
   respawnBushes(state); // les buissons coupés aussi

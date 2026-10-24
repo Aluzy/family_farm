@@ -25,6 +25,7 @@
     // x0, y0, x1, y1 (bornes en px), foot: { x, y }, kind, buisson }. id : « colonne,rangée » de la
     // case du pied (ce que le jeu enregistre pour compter les coups du jour). buisson : un groupe
     // de 2 à 4 cases de large sur 2 de haut (le jeu ne le coupe que sur la ferme générée).
+    // (lus dans les régions qui ont quelque chose, CarteKit.casesPleines, comme findOccluders)
     mapTrees() {
       if (this.treeList) return this.treeList;
       const list = [];
@@ -46,7 +47,7 @@
         if (layer.type !== 'tilelayer' || !Array.isArray(layer.data) || !/tree|arbre/i.test(layer.name || '') || /top|haut/i.test(layer.name || '')) continue;
         const seen = new Uint8Array(W * H);
         const gidAt = (i) => layer.data[i] & 0x0fffffff;
-        for (let i0 = 0; i0 < W * H; i0++) {
+        for (const i0 of K.casesPleines(raw)) {
           if (seen[i0] || !gidAt(i0)) continue;
           const cells = [], stack = [i0];
           seen[i0] = 1;

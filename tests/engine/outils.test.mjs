@@ -279,23 +279,25 @@ test('hache et pioche sur une carte : chaque coup lâche un morceau au sol, la c
 test('faux : faucher une touffe donne de la fibre au sol, de l\'XP, coûte de l\'énergie ; elle repousse au bout de RETOUR jours', () => {
   const s = tireless(garden());
   const X = DATA.FAUX;
-  assertEqual(scytheGrass(s, '40,60').ok, false, 'sans faux');
+  // (une touffe de la ferme : ailleurs dans le monde, une région pas vue, elle ne repousserait pas)
+  const ID = Object.values(farmTerrain(s).HERBES)[0][0];
+  assertEqual(scytheGrass(s, ID).ok, false, 'sans faux');
   s.pieces = 1000;
   assert(buyTool(s, 'faux').ok);
   assertEqual(ownedTools(s), ['faux']);
   const xp = s.progression.xp, e0 = energyLevel(s);
-  const r = scytheGrass(s, '40,60', { carte: 'ferme', coup: [{ x: 40, y: 60 }] });
+  const r = scytheGrass(s, ID, { carte: 'ferme', coup: [{ x: 40, y: 60 }] });
   assertEqual([r.ok, r.fibre, r.morceaux.coup.map((m) => [m.item, m.x, m.y]), countItem(s, 'fibre')], [true, X.FIBRE, [['fibre', 40, 60]], 0], 'la fibre tombe au sol');
   assertEqual(ramasserMorceau(s, r.morceaux.coup[0].n).ok, true);
   assertEqual([countItem(s, 'fibre'), countItem(s, 'paille')], [1, 0]);
   assertEqual([s.progression.xp - xp, e0 - energyLevel(s) > 0], [actionXp('faucher'), true]);
-  assertEqual([grassCut(s, '40,60'), cutGrass(s), scytheGrass(s, '40,60').ok], [true, ['40,60'], false], 'une touffe fauchée ne se refauche pas');
-  const retour = s.outils.herbes['40,60'].retour;
+  assertEqual([grassCut(s, ID), cutGrass(s), scytheGrass(s, ID).ok], [true, [ID], false], 'une touffe fauchée ne se refauche pas');
+  const retour = s.outils.herbes[ID].retour;
   assert(retour >= s.day + X.RETOUR[0] && retour <= s.day + X.RETOUR[1]);
   while (s.day < retour - 1) sleepOnce(s);
-  assertEqual(grassCut(s, '40,60'), true);
+  assertEqual(grassCut(s, ID), true);
   sleepOnce(s);
-  assertEqual([grassCut(s, '40,60'), cutGrass(s)], [false, []], 'elle a repoussé');
+  assertEqual([grassCut(s, ID), cutGrass(s)], [false, []], 'elle a repoussé');
 });
 
 test('coup fort (version 1.24) : la hache et la pioche comptent COUPS coups pour ENERGIE fois l\'énergie ; la faux fauche tout autour', () => {

@@ -6,7 +6,8 @@ import { gainActionXp, unlockLevel } from './levels.js';
 import { isUnlocked } from './campaign.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { hasHoe, plotAtTile } from './crops.js';
-import { casesDuTerrain, farmSeed, farmTerrain } from './terrain.js';
+import { casesDuTerrain, farmSeed, farmTerrain, regionsVues } from './terrain.js';
+import { casesDeRegion } from './monde.js';
 import { cutBushCases } from './outils.js';
 import { noter } from './journal.js';
 
@@ -39,7 +40,7 @@ function hache(s) {
   return h >>> 0;
 }
 
-// Les tuiles d'herbe labourable (« # ») du terrain T, une fois par terrain.
+// Les tuiles d'herbe labourable (« # ») de la ferme du terrain T, une fois par terrain.
 const herbesDe = new WeakMap();
 function herbes(T) {
   if (!herbesDe.has(T)) {
@@ -50,13 +51,47 @@ function herbes(T) {
   return herbesDe.get(T);
 }
 
+// Celles de la région « rx,ry » (monde.js), hors de la ferme, une fois par terrain et par région.
+const herbesRegionDe = new WeakMap();
+function herbesRegion(T, cle) {
+  if (!herbesRegionDe.has(T)) herbesRegionDe.set(T, new Map());
+  const m = herbesRegionDe.get(T), F = T.FERME;
+  if (!m.has(cle)) {
+    const dansFerme = (c, r) => c >= F.X && r >= F.Y && c < F.X + F.LARGEUR && r < F.Y + F.HAUTEUR;
+    m.set(cle, casesDeRegion(cle, T.LARGEUR, T.HAUTEUR).filter((t) => {
+      const c = t % T.LARGEUR, r = Math.floor(t / T.LARGEUR);
+      return !dansFerme(c, r) && T.LIGNES[r][c] === '#';
+    }));
+  }
+  return m.get(cle);
+}
+
+// `nombre` places de `sorte` tirées parmi `libres` (suite `r`), sans deux sur la même tuile, tant
+// que les places prises restent sous `limite`.
+function tirer(sorte, def, nombre, libres, r, prises, out, limite) {
+  for (let k = 0, essais = 0; k < nombre && essais < nombre * 20 && prises.size < limite; essais++) {
+    const t = libres[Math.floor(r() * libres.length)];
+    if (prises.has(t)) continue;
+    prises.add(t);
+    out.push({ id: sorte + ':' + t, sorte, objet: def.objet, case: t });
+    k++;
+  }
+}
+
 // Les places du jour `jour` : [{ id, sorte, objet, case, buisson? }] (id : « sorte:case »), toutes les
 // sortes tirées dans la même suite, sans deux sur la même tuile. Gardées pour le dernier jour.
+// La cueillette ne pousse que sur la ferme et dans les régions vues (regionsVues, terrain.js) :
+// celles de la ferme d'abord (leur suite ne dépend que de la graine et du jour), puis chaque
+// région vue hors de la ferme, avec sa propre suite et autant de places par case d'herbe que la
+// ferme (une région découverte dans la journée ajoute ses places sans changer les autres). Une
+// région que le joueur n'a pas vue n'en a pas.
 let placesCle = null, placesListe = [];
 function placesDuJour(state, jour) {
-  const graine = farmSeed(state), cle = graine + ':' + jour;
+  const T = farmTerrain(state), graine = farmSeed(state), vues = regionsVues(state, T);
+  const autres = vues ? [...vues].filter((k) => herbesRegion(T, k).length).sort() : [];
+  const cle = graine + ':' + jour + ':' + autres.join(';');
   if (cle === placesCle) return placesListe;
-  const T = farmTerrain(state), libres = herbes(T), r = mulberry32(hache(graine + ':ramassage:' + jour));
+  const libres = herbes(T), r = mulberry32(hache(graine + ':ramassage:' + jour));
   const prises = new Set(), out = [];
   for (const [sorte, def] of Object.entries(DATA.ATELIER.RAMASSAGE)) {
     if (def.buissons) {
@@ -69,15 +104,15 @@ function placesDuJour(state, jour) {
       }
       continue;
     }
-    for (let k = 0, essais = 0; k < def.nombre && essais < def.nombre * 20 && prises.size < libres.length; essais++) {
-      const t = libres[Math.floor(r() * libres.length)];
-      if (prises.has(t)) continue;
-      prises.add(t);
-      out.push({ id: sorte + ':' + t, sorte, objet: def.objet, case: t });
-      k++;
-    }
+    tirer(sorte, def, def.nombre, libres, r, prises, out, libres.length);
   }
   if (jour === 1) placesDepart(T, libres, r, prises, out);
+  for (const k of autres) {
+    const ici = herbesRegion(T, k), rk = mulberry32(hache(graine + ':ramassage:' + jour + ':' + k)), limite = prises.size + ici.length;
+    for (const [sorte, def] of Object.entries(DATA.ATELIER.RAMASSAGE)) {
+      if (!def.buissons) tirer(sorte, def, Math.round((def.nombre * ici.length) / Math.max(1, libres.length)), ici, rk, prises, out, limite);
+    }
+  }
   placesCle = cle;
   placesListe = out;
   return out;

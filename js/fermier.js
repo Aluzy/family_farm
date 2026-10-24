@@ -49,6 +49,15 @@
   const CASCADE_MS = 90;         // entre deux cases de la cascade
   const TELEPORT = 24 * T;       // chemin plus long : il apparaît directement sur place
   const TELEPORT_FAR = 70 * T;   // le matin, il traverse la ferme jusqu'au Poulailler
+  // Les trajets dans le grand monde : la recherche du chemin ne regarde que les cases autour du
+  // départ et du but (MARGE cases de plus tout autour) ; plus loin que TRAJET_MAX cases (la
+  // ferme fait 144 cases de large), il n'en cherche pas : il va tout droit, aussi loin que rien ne
+  // le gêne (ou il reste là).
+  // La recherche examine au plus RECHERCHE_MAX cases (un but qu'on ne peut pas atteindre, enfermé,
+  // ferait sinon parcourir toute la boîte : quelques dizaines de ms) ; au-delà, pas de chemin.
+  const MARGE = 48;
+  const TRAJET_MAX = 150;
+  const RECHERCHE_MAX = 8000;
   const OUT = [6, 21.5];         // heures où il est dehors
   const FADE_S = 0.25;
   const HOME_MAX = 30 * T;       // « Dormir » : il arrive à la porte de moins loin que ça (il se presse)
@@ -132,15 +141,28 @@
     }
     // Le chemin le plus court sur les cases (CarteKit.chemin : A*, 8 directions, sans couper
     // les coins), puis tendu : il va tout droit tant que rien ne le gêne. null : pas de chemin.
+    // Trop loin pour chercher (TRAJET_MAX) : la ligne droite vers (x1, y1), jusqu'au dernier point
+    // libre avant ce qui la coupe ; [] s'il ne peut pas avancer. Le chemin porte `droit` : il le
+    // marche (il ne saute pas au bout, walkTo).
+    function straight(x0, y0, x1, y1) {
+      const d = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(d / 4));
+      let k = 0;
+      while (k < n && freeAt(x0 + ((x1 - x0) * (k + 1)) / n, y0 + ((y1 - y0) * (k + 1)) / n)) k++;
+      const out = k * (d / n) >= T / 2 ? [{ x: x0 + ((x1 - x0) * k) / n, y: y0 + ((y1 - y0) * k) / n }] : [];
+      out.droit = true;
+      return out;
+    }
     let grid = null;
     function findPath(x0, y0, x1, y1) {
       if (!blocked) buildGrid();
-      if (lineFree(x0, y0, x1, y1)) return [{ x: x1, y: y1 }];
       const [sc, sr] = cellOf(x0, y0);
       const [gc, gr] = cellOf(x1, y1);
+      if (Math.max(Math.abs(gc - sc), Math.abs(gr - sr)) > TRAJET_MAX) return straight(x0, y0, x1, y1);
+      if (lineFree(x0, y0, x1, y1)) return [{ x: x1, y: y1 }];
       if (!free(gc, gr)) return null;
       if (!grid) grid = { cols, rows, libre: (i) => !blocked[i] };
-      const cells = K.chemin(grid, sr * cols + sc, gr * cols + gc, { max: Math.round(cols * rows * 1.5) });
+      const boite = K.boite(sc, sr, gc, gr, MARGE, cols, rows);
+      const cells = K.chemin(grid, sr * cols + sc, gr * cols + gc, { boite, max: RECHERCHE_MAX });
       if (!cells) return null;
       const pts = cells.map((i) => ({ x: (i % cols) * T + T / 2, y: ((i / cols) | 0) * T + T - 2 }));
       pts[pts.length - 1] = { x: x1, y: y1 };
@@ -224,7 +246,9 @@
           if (!shown) { const d = door(); x = d.x; y = d.y; face = 'bas'; flip = false; appear(); }
           path = findPath(x, y, tx, ty);
           const len = path ? pathLength(x, y, path) : 0;
-          if (path && opts && opts.max && len > opts.max && !reduced()) skipAlong(path, len - opts.max);
+          // (trop loin pour chercher : il marche tout droit, jusqu'où il peut)
+          if (path && path.droit) { if (opts && opts.max && len > opts.max && !reduced()) skipAlong(path, len - opts.max); }
+          else if (path && opts && opts.max && len > opts.max && !reduced()) skipAlong(path, len - opts.max);
           // (à l'étage, sans chemin : il ne saute pas hors de l'étage, il reste où il est)
           else if (!path && lift() > 0) path = [];
           else if (!path || reduced() || len > (opts && opts.far ? TELEPORT_FAR : TELEPORT)) { x = tx; y = ty; path = []; }

@@ -157,7 +157,43 @@
   // quand la région approche de la vue (à moins de `pres` px) et retiré quand elle s'en éloigne
   // (au-delà de `loin` px). Chaque canevas déborde de `bord` tuile sur ses voisines : au zoom non
   // entier, deux images bord à bord laisseraient voir un filet entre elles.
-  const REGION = { tuiles: 64, bord: 1, pres: 256, loin: 768 };
+  // `tuiles` est la taille des régions du moteur (MONDE.REGION, js/engine/monde.js : la seule
+  // source), que la page donne au montage de la ferme (FarmStage.mount, `regionTuiles`) : le
+  // moteur et la scène parlent des mêmes régions (state.monde.vues). Rien tant qu'elle n'est pas
+  // montée.
+  const REGION = { tuiles: 0, bord: 1, pres: 256, loin: 768 };
+
+  // Les régions d'une carte (au format de Tiled) qui ont quelque chose à relever au chargement
+  // (arbres, rochers, barrières, eau, lieux de la vie d'ambiance) : celles que la carte nomme
+  // (`regionsPleines` : [« rx,ry »…], écrit par le moteur, js/engine/monde.js : pour l'instant, la
+  // ferme ; l'étape 4 y ajoutera les biomes), sinon toutes (la carte de Tiled, petite). Chacune :
+  // { cle, c0, r0, c1, r1 } (ses colonnes c0 à c1 - 1, ses rangées r0 à r1 - 1, bornées à la carte).
+  function regionsPleines(raw) {
+    const W = raw.width, H = raw.height, N = REGION.tuiles || Math.max(W, H), out = [];
+    const cles = Array.isArray(raw.regionsPleines) ? raw.regionsPleines : null;
+    const une = (rx, ry) => {
+      const c0 = rx * N, r0 = ry * N, c1 = Math.min(W, c0 + N), r1 = Math.min(H, r0 + N);
+      if (c0 >= 0 && r0 >= 0 && c0 < c1 && r0 < r1) out.push({ cle: rx + ',' + ry, c0, r0, c1, r1 });
+    };
+    if (cles) for (const k of cles) { const [rx, ry] = String(k).split(',').map(Number); if (Number.isInteger(rx) && Number.isInteger(ry)) une(rx, ry); }
+    else for (let ry = 0; ry * N < H; ry++) for (let rx = 0; rx * N < W; rx++) une(rx, ry);
+    return out;
+  }
+
+  // Les cases de ces régions, lues région par région, puis rangées dans l'ordre des cases de la
+  // carte (rangée × largeur + colonne) : un relevé qui les parcourt trouve ce qu'il cherche dans
+  // le même ordre qu'en parcourant toute la carte (les mêmes numéros d'arbres, de rochers,
+  // d'étendues d'eau), sans passer par les régions qui n'ont que du sol. Une fois par carte.
+  const casesDe = new WeakMap();
+  function casesPleines(raw) {
+    let out = casesDe.get(raw);
+    if (out) return out;
+    const W = raw.width, liste = [];
+    for (const r of regionsPleines(raw)) for (let y = r.r0; y < r.r1; y++) for (let x = r.c0; x < r.c1; x++) liste.push(y * W + x);
+    out = Int32Array.from(liste).sort();
+    casesDe.set(raw, out);
+    return out;
+  }
 
   // La longueur (px) d'une suite de points [{ x, y }], depuis `de` s'il est donné.
   function longueur(pts, de) {
@@ -224,7 +260,7 @@
   }
 
   global.CarteKit = Object.assign(global.CarteKit || {}, {
-    T, v, reduit, ratio, extrude, planche, planchePerso, saisie, regard, cases, VITESSES, REGION, longueur,
+    T, v, reduit, ratio, extrude, planche, planchePerso, saisie, regard, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
     cycle, imageA, animTuiles, pasAnimTuiles, FLECHE, balance, TEXTE, texte,
   });
 })(window);

@@ -18,9 +18,46 @@ import { genererFerme, hache, teinteHerbe } from './ferme-generee.js';
 // mêmes ajouts (DECALAGE, BUISSONS, SOMMETS, TEINTES, HERBES, FLEURS, BUISSONS_CASES) dans les
 // cases du monde, et FERME : { X, Y, LARGEUR, HAUTEUR }, la place de la ferme (en tuiles).
 
-export const MONDE = { LARGEUR: 644, HAUTEUR: 510, T: 16 };
+export const MONDE = { LARGEUR: 644, HAUTEUR: 510, T: 16, REGION: 64 };
 // La place de la ferme dans le monde : au centre (en tuiles).
 export const FERME_DANS_MONDE = [250, 198];
+
+/* ---------- les régions du monde ---------- */
+
+// Le monde se découpe en régions de MONDE.REGION × MONDE.REGION tuiles (la région « rx,ry » : les
+// colonnes rx × REGION à (rx + 1) × REGION - 1, de même pour les rangées). C'est la seule source
+// de cette taille : la scène de la ferme la reçoit au montage (js/ui/stage.js → CarteKit.REGION,
+// js/carte/kit.js), où elle découpe son sol, ses arbres et ses rochers sur la même grille.
+// Le moteur ne passe en revue que la ferme et les régions que le joueur a vues (state.monde.vues,
+// terrain.js : casesDuTerrain, regionVue) ; la carte dit à la scène les régions qui ont quelque
+// chose à relever (carte.regionsPleines : pour l'instant, celles de la ferme).
+
+// La région de la case `t` d'un terrain de `largeur` tuiles : « rx,ry ».
+export function regionDeCase(t, largeur = MONDE.LARGEUR) {
+  const N = MONDE.REGION;
+  return Math.floor((t % largeur) / N) + ',' + Math.floor(Math.floor(t / largeur) / N);
+}
+
+// Les régions que touche le rectangle de tuiles (X, Y, L × H) : [« rx,ry »…], rangée par rangée.
+export function regionsDuRect(X, Y, L, H) {
+  const N = MONDE.REGION, out = [];
+  if (!(L > 0 && H > 0)) return out;
+  for (let ry = Math.floor(Y / N); ry <= Math.floor((Y + H - 1) / N); ry++) {
+    for (let rx = Math.floor(X / N); rx <= Math.floor((X + L - 1) / N); rx++) out.push(rx + ',' + ry);
+  }
+  return out;
+}
+
+// Les cases de la région « rx,ry » d'un terrain de `largeur` × `hauteur` tuiles (bornée à lui),
+// dans l'ordre des cases.
+export function casesDeRegion(cle, largeur = MONDE.LARGEUR, hauteur = MONDE.HAUTEUR) {
+  const N = MONDE.REGION, [rx, ry] = String(cle).split(',').map(Number), out = [];
+  if (!Number.isInteger(rx) || !Number.isInteger(ry)) return out;
+  for (let r = Math.max(0, ry * N); r < Math.min(hauteur, (ry + 1) * N); r++) {
+    for (let c = Math.max(0, rx * N); c < Math.min(largeur, (rx + 1) * N); c++) out.push(r * largeur + c);
+  }
+  return out;
+}
 
 // (les derniers mondes faits, MONDES_GARDES au plus : un monde pèse quelques dizaines de Mo, et
 // une partie n'en a qu'un)
@@ -117,7 +154,10 @@ function fabriquer(graine) {
         }
       }
     }
-    return (carteFaite = { ...f, width: W, height: H, layers });
+    // (les régions où la scène relève les arbres, les rochers, les barrières, l'eau… : celles de
+    // la ferme ; la prairie autour n'a que du sol. L'étape 4 y ajoutera celles des biomes.)
+    const regionsPleines = regionsDuRect(OX, OY, fw, fh);
+    return (carteFaite = { ...f, width: W, height: H, layers, regionsPleines });
   };
 
   // ---- 3. le terrain : celui de la ferme porté dans les cases du monde (sans relire la carte du

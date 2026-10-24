@@ -304,6 +304,9 @@
       if (!raw || !Array.isArray(raw.layers)) return;
       const W = raw.width, H = raw.height;
       const layers = raw.layers.filter((l) => l.type === 'tilelayer' && l.visible !== false && Array.isArray(l.data));
+      // les cases relevées : celles des régions qui ont quelque chose (CarteKit.casesPleines : la
+      // ferme, pas la prairie du monde autour), dans l'ordre de la carte
+      const cases = global.CarteKit.casesPleines(raw);
       const set = (raw.tilesets || [])[0];
       const img = o.tiles && scene.textures.exists(o.tiles) ? scene.textures.get(o.tiles).getSourceImage() : null;
       if (set && img) {
@@ -336,7 +339,7 @@
             blue.set(gid, k);
             return k;
           };
-          for (let i = 0; i < W * H; i++) {
+          for (const i of cases) {
             let top = 0;
             for (const l of layers) { const gid = l.data[i] & 0x0fffffff; if (gid) { const k = kind(gid); if (k >= 0) top = k; } }
             if (top === 1) water.push({ x: (i % W) * T, y: Math.floor(i / W) * T });
@@ -345,12 +348,12 @@
       }
       for (const l of layers) {
         if (!/tree|arbre/i.test(l.name || '')) continue;
-        for (let i = 0; i < W * H; i++) if (l.data[i] & 0x0fffffff) wood.add((i % W) * T + ',' + Math.floor(i / W) * T);
+        for (const i of cases) if (l.data[i] & 0x0fffffff) wood.add((i % W) * T + ',' + Math.floor(i / W) * T);
       }
       for (const l of layers) {
         if (!/barri/i.test(l.name || '')) continue;
         const gate = /portail/i.test(l.name || '');
-        for (let i = 0; i < W * H; i++) {
+        for (const i of cases) {
           if (!(l.data[i] & 0x0fffffff)) continue;
           const x = (i % W) * T, y = Math.floor(i / W) * T;
           fence.add(x + ',' + y);
@@ -360,7 +363,7 @@
       for (const l of layers) {
         if (!/tree|arbre/i.test(l.name || '') || /top|haut/i.test(l.name || '')) continue;
         const seen = new Uint8Array(W * H);
-        for (let i = 0; i < W * H; i++) {
+        for (const i of cases) {
           if (seen[i] || !(l.data[i] & 0x0fffffff)) continue;
           let x0 = W, x1 = 0, y0 = H, y1 = 0;
           const stack = [i], cells = [];
