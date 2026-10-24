@@ -405,6 +405,7 @@
         else if (this.vx || this.vy) this.stepInertia(dt);
         this.stepLanterns(time, dt / 1000);      // (avant le voile : leurs lumières y sont posées)
         this.lumiere.step();
+        this.syncEauMonde();                    // (les blocs d'eau du grand monde près de la vue : eau-monde.js)
         if (this.tileAnims.length) this.stepTileAnims(time);
         this.stepEau(time, dt / 1000);           // (l'eau vivante, js/carte/ferme/eau.js)
         if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);

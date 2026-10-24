@@ -13,6 +13,7 @@ import { apercuDesBiomes, caseMarchable, COULEURS_BIOMES, contexteSol, elementsS
 //   - marchable(t) : peut-on marcher sur la case t (caseMarchable : la ferme oui ; une région pas
 //     encore faite, non) ;
 //   - ferme : { X, Y, LARGEUR, HAUTEUR } ; tuiles : SOLS_MONDE (où sont les tuiles des sols) ;
+//     taille : celle des régions ; biomes : leurs noms (BIOMES : la mer, pour l'eau qui bouge) ;
 //   - mesures() : la durée des éléments, de chaque région (dans le Worker ou en direct).
 //
 // Les régions se calculent dans un Web Worker (js/monde-worker.js) : la page ne fait qu'en garder
@@ -94,7 +95,7 @@ function client(T, M) {
     worker.postMessage({ type: 'init', graine: M.graine, cadre: M.cadre, ferme: M.ferme, taille: M.taille });
   } else enDirect();
   const sol = {
-    ferme: M.cadre.FERME, tuiles: SOLS_MONDE, taille: M.taille,
+    ferme: M.cadre.FERME, tuiles: SOLS_MONDE, taille: M.taille, biomes: BIOMES,
     region(rx, ry) {
       const cle = rx + ',' + ry, r = regions.get(cle);
       if (r) return r;

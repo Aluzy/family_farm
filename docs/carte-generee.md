@@ -468,7 +468,7 @@ Le Marché vend toujours les outils.
     se pose pas (`etageEnPeril`, `etageHorsEmprise`) : on reprend d'abord ces blocs de l'étage.
     Une fenêtre ou une porte change un mur sans l'enlever : l'étage n'y perd rien.
 - **L'eau vivante** (`js/carte/eau.js`, CarteKit.eauVive, réglages CarteKit.EAU ; à la ferme,
-  `js/carte/ferme/eau.js` ; le shader de la mer servira aux côtes du grand monde) : l'eau de chaque étendue est peinte par un shader, inspiré du
+  `js/carte/ferme/eau.js` ; au grand monde, la mer, les lacs et les rivières par blocs : `js/carte/ferme/eau-monde.js`, fiche 5a) : l'eau de chaque étendue est peinte par un shader, inspiré du
   « 2D Pixel Art Water » de niwho (godotshaders.com, CC0) : de légers traits ondulés au large
   (là où deux bruits qui glissent en sens contraires se croisent), plus sombre au large, de fins
   reflets de lumière au fond près des rives, le ciel de l'heure, une ligne d'écume qui avance et

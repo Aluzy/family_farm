@@ -2,7 +2,7 @@ import { blocGid } from './planche.js';
 import { hache, teinteHerbe } from './ferme-generee.js';
 import { AUCUNE_EAU, BIOME, BIOMES, bruitDuMonde, champsDuMonde, elementsDuMonde, releve } from './monde-gen.js';
 
-/* ---------- le sol du grand monde, région par région (docs/grand-monde.md, étape 4 : fiche 4b) ---------- */
+/* ---------- le sol du grand monde, région par région (docs/grand-monde.md : fiches 4b et 5a) ---------- */
 
 // Le plan du monde (monde-gen.js : les biomes, les rivières, les lacs, les chemins) devient ici un
 // sol : pour chaque case hors de la ferme, les tuiles à peindre, et si l'on peut y marcher. Le
@@ -14,21 +14,43 @@ import { AUCUNE_EAU, BIOME, BIOMES, bruitDuMonde, champsDuMonde, elementsDuMonde
 // servent à raccorder la prairie autour, comme avant.
 //
 // Le contexte d'un monde (contexteSol) : les champs (le relief, l'humidité, le biome de chaque case,
-// par les seuls bruits), puis, une fois pour tout le monde, les éléments (rivières, lacs, chemins :
-// elementsDuMonde) et les cases des chemins. Une région (solDeRegion) ne lit ensuite que ses cases
-// et trois de plus autour (les coins, l'eau profonde).
+// par les seuls bruits), les bruits du sol (les taches, les bords, la largeur des chemins), puis,
+// une fois pour tout le monde, les éléments (rivières, lacs, chemins : elementsDuMonde), les cases
+// des chemins (où l'on marche, les gués) et leurs coins dessinés. Une région (solDeRegion) ne lit
+// ensuite que ses cases et six de plus autour.
 //
-// Le sol d'une case se dessine par ses quatre coins, comme l'herbe et l'eau de la ferme : chaque
-// coin prend le sol des quatre cases qui le touchent (l'eau dès que deux d'entre elles sont de
-// l'eau, sinon le sol le plus présent ; un chemin dès que deux sont du chemin). Puis :
+// Le sol d'une case : celui de son biome, ou l'un des siens par taches (solDe : la forêt, ses
+// feuilles, ses aiguilles en hauteur et sa mousse où c'est humide ; le marais, sa vase et son eau
+// basse ; la lande, son herbe rase et sa terre nue ; la plage, son sable et ses galets ; la
+// montagne, ses éboulis et sa roche nue). Il se dessine par les quatre coins de la case, comme
+// l'herbe et l'eau de la ferme. Les bords naturels (fiche 5a) : la frontière entre deux sols ne
+// suit plus la grille des cases.
+//   - Chaque case prend le sol d'une case un peu plus loin (jusqu'à DERIVE cases, selon deux bruits
+//     lents) : les frontières se déforment à l'échelle de quelques cases.
+//   - Un coin prend l'eau dès que deux des quatre cases qui le touchent en sont (la rive suit les
+//     cases où l'on ne marche pas) ; sinon, le sol qui pèse le plus parmi les seize cases autour,
+//     chaque poids poussé par un bruit propre à ce sol : une frontière en biais devient une ligne en
+//     biais, qui ondule, et non un escalier.
+//   - Les tuiles de bord de assets/sols_monde.png sont tracées comme des « carrés qui marchent »
+//     (scripts/carte/sols_monde.py) : la frontière y coupe chaque côté en son milieu et va droit
+//     d'un côté à l'autre (une ligne à 45° le long d'une diagonale de coins), ondulée par un bruit,
+//     en trois variantes ; les sols doux (les herbes, le sable, la vase…) ont un bord tramé.
+//   - Le chemin : une bande autour du fil lissé de chaque chemin du plan (LARGEUR_CHEMIN cases de
+//     demi-largeur, ± un bruit), et non trois cases en carré autour de chacune ; aux abords de la
+//     ferme, la règle d'avant (son raccord avec la sortie de la ferme ne bouge pas).
+//   - L'eau profonde : un coin d'eau sans terre dans un rond de PROFOND coins (± un bruit), posée
+//     sur l'eau peu profonde par les tuiles de la planche des sols (même tracé que les bords).
+// Puis :
 //   - une case toute d'herbe (la prairie) : exactement comme la prairie d'avant (monde.js, étape 3) :
-//     l'herbe de herbe_chemin, ses trois teintes et leurs raccords, ses chemins ;
+//     l'herbe de herbe_chemin, ses trois teintes et leurs raccords ; ses chemins, aux abords de la
+//     ferme par les raccords de herbe_chemin, ailleurs le chemin posé sur l'herbe ;
 //   - une case où se touchent des sols différents : le sol le plus bas (SOLS, dans l'ordre :
 //     l'herbe, le sable… la neige) en entier, puis chaque sol plus haut posé sur ses coins (les
-//     tuiles « bord » de assets/sols_monde.png : scripts/carte/sols_monde.py) ;
-//   - une case qui touche l'eau : l'eau de la planche de la ferme (profonde loin des rives, comme
-//     les étangs de la ferme), puis la terre posée sur ses coins par une rive (rive_herbe pour
-//     l'herbe, rive_sable au bout d'un chemin, les tuiles « rive » des autres sols) ;
+//     tuiles « bord » de assets/sols_monde.png) ;
+//   - une case qui touche l'eau : l'eau de la planche de la ferme (ses tuiles animées : la scène
+//     les anime, js/carte/ferme/eau-monde.js), l'eau profonde sur ses coins, puis la terre posée sur
+//     ses coins par une rive (rive_herbe pour l'herbe, rive_sable au bout d'un chemin, les tuiles
+//     « rive » des autres sols) ;
 //   - un chemin hors de l'herbe : le chemin de la ferme posé sur ses coins ; sur une rivière, un
 //     gué (des pierres plates : on y passe à pied).
 //
@@ -38,10 +60,17 @@ import { AUCUNE_EAU, BIOME, BIOMES, bruitDuMonde, champsDuMonde, elementsDuMonde
 
 export const SOLS_MONDE = {
   fichier: 'sols_monde.png', colonnes: 16, DECALAGE: 8192,
-  // dans l'ordre de la planche (scripts/carte/sols_monde.py, SOLS)
-  sols: ['sable', 'galets', 'marais', 'lande', 'foret', 'eboulis', 'roche', 'falaise', 'neige'],
-  // les couches d'une case au plus (l'eau, trois sols, le chemin, le gué)
-  COUCHES: 6,
+  // dans l'ordre de la planche (scripts/carte/sols_monde.py, SOLS), du plus bas au plus haut : un
+  // sol plus haut se pose sur un plus bas par ses bords (le sable sur l'herbe, la mousse sur les
+  // feuilles, la vase sur l'eau basse…)
+  sols: ['sable', 'galets', 'eau_basse', 'vase', 'terre', 'lande', 'feuilles', 'aiguilles', 'mousse', 'eboulis', 'roche', 'falaise', 'neige'],
+  // les rangées de chaque sol dans la planche : 1 de sols pleins (16 variantes), BORDS de bords
+  // sur un sol plus bas, RIVES de rives sur l'eau (16 tuiles de coins chacune) ; puis CHEMINS
+  // rangées du chemin posé sur un autre sol que l'herbe (ou sur l'herbe, loin de la ferme), une de
+  // gués, une d'eau profonde posée sur l'eau peu profonde
+  BORDS: 3, RIVES: 2, CHEMINS: 3,
+  // les couches d'une case au plus (l'eau, le profond, la rive, trois sols, le chemin, le gué)
+  COUCHES: 8,
   // le bord de la région dessiné en plus (une case de chaque côté : la scène en déborde d'autant,
   // CarteKit.REGION.bord)
   BORD: 1,
@@ -49,14 +78,28 @@ export const SOLS_MONDE = {
   ROCHE: 0.8,
   // la plage : des galets là où ce bruit (PAS_GALETS cases) dépasse GALETS
   GALETS: 0.62, PAS_GALETS: 18,
+  // les sols de chaque biome, par taches (un bruit de PAS_TACHES cases, SOUS_SOLS) : le marais,
+  // de l'eau basse où le bruit passe EAU_BASSE ; la lande, de la terre nue au-delà de TERRE ; la
+  // forêt, des aiguilles au-dessus d'un relief AIGUILLES, de la mousse au-dessus d'une humidité
+  // MOUSSE, des feuilles ailleurs (le bruit déplace ces seuils de ± TACHES)
+  PAS_TACHES: 7, EAU_BASSE: 0.56, TERRE: 0.66, AIGUILLES: 0.54, MOUSSE: 0.7, TACHES: 0.12,
+  // les bords naturels (voir solDeRegion) : le poids des cases autour d'un coin (les quatre qui
+  // le touchent, les huit d'à côté, les quatre des angles), un bruit de PAS_BORDS coins qui pousse
+  // la frontière de ± BRUIT_BORDS ; le chemin, une bande de LARGEUR_CHEMIN cases de demi-largeur
+  // autour de son fil, ± BRUIT_CHEMIN (pas à moins de PRES_FERME cases de la ferme : son raccord)
+  PROFOND: [1.8, 3.6],
+  POIDS: [1, 0.37, 0.14], PAS_BORDS: 5, BRUIT_BORDS: 1.5, DERIVE: 4, PAS_DERIVE: 8,
+  LARGEUR_CHEMIN: 1.5, PAS_CHEMIN: 6, BRUIT_CHEMIN: 0.55, PRES_FERME: 6,
 };
 const D = SOLS_MONDE.DECALAGE, NS = SOLS_MONDE.sols.length;
+const RS = 1 + SOLS_MONDE.BORDS + SOLS_MONDE.RIVES;
 const tuile = (k) => D + k;
-const plein = (s, v) => tuile(3 * s * 16 + v);
-const bord = (s, m) => tuile((3 * s + 1) * 16 + m);
-const rive = (s, m) => tuile((3 * s + 2) * 16 + m);
-const cheminSur = (m) => tuile(3 * NS * 16 + m);
-const gue = (v) => tuile((3 * NS + 1) * 16 + v);
+const plein = (s, v) => tuile(RS * s * 16 + v);
+const bord = (s, m, j) => tuile((RS * s + 1 + j) * 16 + m);
+const rive = (s, m, j) => tuile((RS * s + 1 + SOLS_MONDE.BORDS + j) * 16 + m);
+const cheminSur = (m, j) => tuile((RS * NS + j) * 16 + m);
+const gue = (v) => tuile((RS * NS + SOLS_MONDE.CHEMINS) * 16 + v);
+const profond = (m) => tuile((RS * NS + SOLS_MONDE.CHEMINS + 1) * 16 + m);
 
 // Les sols d'un coin, du plus bas au plus haut (un sol plus haut se pose sur un plus bas) : l'eau,
 // l'herbe, puis ceux de la planche (2 + leur rang dans SOLS_MONDE.sols).
@@ -72,10 +115,12 @@ const EAUX = new Uint8Array(BIOMES.length);
 for (const b of ['mer', 'lac', 'riviere']) EAUX[BIOME[b]] = 1;
 
 // La couleur unie de chaque biome (dans l'ordre de BIOMES), pour le sol provisoire d'une région
-// pas encore faite (la scène la peint ainsi en attendant).
+// pas encore faite (la scène la peint ainsi en attendant) : la couleur moyenne de ses sols (celles
+// que donne scripts/carte/sols_monde.py ; le marais, sa vase et un peu d'eau basse ; l'eau et
+// l'herbe, celles des tuiles de la ferme).
 export const COULEURS_BIOMES = {
-  mer: '#2f6fa8', plage: '#d8c28a', falaise: '#6e6660', prairie: '#6a8157', foret: '#3a5428', marais: '#58643a',
-  lande: '#8c8c4a', montagne: '#8e877c', sommet: '#e8edf5', lac: '#4a8fc8', riviere: '#4a8fc8',
+  mer: '#2461aa', plage: '#dfc188', falaise: '#736960', prairie: '#84a93c', foret: '#4c6329', marais: '#596a46',
+  lande: '#a0a048', montagne: '#8a8278', sommet: '#eaf0f9', lac: '#4facd3', riviere: '#4facd3',
 };
 
 // Un nombre au hasard pour la case i (toujours le même pour une même graine) : celui de la prairie
@@ -94,12 +139,19 @@ export function hasardCase(g0, i) {
 // coins de la ferme ({ sommets, teintes } : ses SOMMETS et TEINTES, (LARGEUR + 1) × (HAUTEUR + 1)) ;
 // `taille` : celle des régions (MONDE.REGION).
 export function contexteSol(graine, cadre, ferme, taille) {
-  const champs = champsDuMonde(graine, cadre);
+  const champs = champsDuMonde(graine, cadre), S = SOLS_MONDE, W = cadre.LARGEUR, H = cadre.HAUTEUR;
+  const b = (usage, pas, octaves, w = W, h = H) => bruitDuMonde(String(graine) + ':monde:' + usage, pas, octaves, w, h);
   return {
     graine: String(graine), cadre, ferme, taille, champs, lire: releve(champs, cadre),
     teinte: teinteHerbe(graine), g0: hache(graine + ':monde'),
-    galets: bruitDuMonde(String(graine) + ':monde:galets', SOLS_MONDE.PAS_GALETS, 2, cadre.LARGEUR, cadre.HAUTEUR),
-    elements: null, chemins: null, mesures: { elements: 0 },
+    galets: b('galets', S.PAS_GALETS, 2),
+    // les taches des sols d'un biome (deux bruits), les bords (deux bruits, sur les coins), la
+    // largeur du chemin (sur les coins)
+    taches: b('taches', S.PAS_TACHES, 2), taches2: b('taches2', S.PAS_TACHES, 2),
+    bords: b('bords', S.PAS_BORDS, 2, W + 1, H + 1), bords2: b('bords2', S.PAS_BORDS, 2, W + 1, H + 1),
+    largeur: b('largeur', S.PAS_CHEMIN, 1, W + 1, H + 1),
+    derive: b('derive', S.PAS_DERIVE, 2), derive2: b('derive2', S.PAS_DERIVE, 2),
+    elements: null, chemins: null, cheminCoins: null, mesures: { elements: 0 },
   };
 }
 
@@ -129,8 +181,40 @@ export function elementsSol(ctx) {
       }
     }
   }
+  // Le chemin dessiné : les coins (W + 1) × (H + 1) à moins de LARGEUR_CHEMIN cases (± le bruit) de
+  // son fil, lissé (une moyenne glissante sur sept cases : le fil du plan va de case en case, en
+  // escalier dans les diagonales). Une bande ronde, qui suit la courbe, et non trois cases en
+  // carré autour de chacune ; près de la ferme, sans bruit (sa sortie a ses trois cases de large).
+  const S = SOLS_MONDE, cv = W + 1, coins = new Uint8Array(cv * (H + 1));
+  const pres = (X, Y) => X >= F.X - S.PRES_FERME && Y >= F.Y - S.PRES_FERME && X <= F.X + F.LARGEUR + S.PRES_FERME && Y <= F.Y + F.HAUTEUR + S.PRES_FERME;
+  for (const ch of el.chemins) {
+    const n = ch.length, px = new Float64Array(n), py = new Float64Array(n);
+    for (let k = 0; k < n; k++) {
+      let sx = 0, sy = 0, c = 0;
+      for (let d = -3; d <= 3; d++) {
+        const q = ch[Math.max(0, Math.min(n - 1, k + d))];
+        sx += q % W; sy += Math.floor(q / W); c++;
+      }
+      px[k] = sx / c + 0.5; py[k] = sy / c + 0.5;
+    }
+    for (let k = 0; k < n; k++) {
+      const ax = px[k], ay = py[k], bx = px[Math.min(n - 1, k + 1)], by = py[Math.min(n - 1, k + 1)];
+      const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy, M = S.LARGEUR_CHEMIN + S.BRUIT_CHEMIN;
+      for (let Y = Math.max(0, Math.floor(Math.min(ay, by) - M)); Y <= Math.min(H, Math.ceil(Math.max(ay, by) + M)); Y++) {
+        for (let X = Math.max(0, Math.floor(Math.min(ax, bx) - M)); X <= Math.min(W, Math.ceil(Math.max(ax, bx) + M)); X++) {
+          const j = Y * cv + X;
+          if (coins[j]) continue;
+          const t = l2 ? Math.max(0, Math.min(1, ((X - ax) * dx + (Y - ay) * dy) / l2)) : 0;
+          const ex = X - ax - t * dx, ey = Y - ay - t * dy;
+          const R = S.LARGEUR_CHEMIN + (pres(X, Y) ? 0 : S.BRUIT_CHEMIN * (ctx.largeur(X, Y) - 0.5) * 2);
+          if (ex * ex + ey * ey <= R * R + 1e-6) coins[j] = 1;
+        }
+      }
+    }
+  }
   ctx.elements = el;
   ctx.chemins = chemins;
+  ctx.cheminCoins = coins;
   ctx.mesures.elements = Date.now() - t0;
   return el;
 }
@@ -141,16 +225,22 @@ function biomeDe(ctx, i) {
   return e !== AUCUNE_EAU ? e : ctx.lire.biome(i);
 }
 
-// Le sol (d'un coin) que donne le biome b de la case i.
+// Le sol que donne le biome b à la case i (x, y) : celui du biome, ou l'un des siens, par taches
+// (SOLS_MONDE : le marais, la lande, la forêt, la plage, la montagne).
 function solDe(ctx, b, i, x, y) {
   if (EAUX[b]) return EAU;
+  const S = SOLS_MONDE;
   switch (BIOMES[b]) {
-    case 'plage': return ctx.galets(x, y) > SOLS_MONDE.GALETS ? SOL.galets : SOL.sable;
+    case 'plage': return ctx.galets(x, y) > S.GALETS ? SOL.galets : SOL.sable;
     case 'falaise': return SOL.falaise;
-    case 'foret': return SOL.foret;
-    case 'marais': return SOL.marais;
-    case 'lande': return SOL.lande;
-    case 'montagne': return ctx.lire.relief(i) > SOLS_MONDE.ROCHE ? SOL.roche : SOL.eboulis;
+    case 'foret': {
+      const n = (ctx.taches(x, y) - 0.5) * 2 * S.TACHES;
+      if (ctx.lire.relief(i) + n > S.AIGUILLES) return SOL.aiguilles;
+      return ctx.lire.humidite(i) + (ctx.taches2(x, y) - 0.5) * 2 * S.TACHES > S.MOUSSE ? SOL.mousse : SOL.feuilles;
+    }
+    case 'marais': return ctx.taches(x, y) > S.EAU_BASSE ? SOL.eau_basse : SOL.vase;
+    case 'lande': return ctx.taches2(x, y) > S.TERRE ? SOL.terre : SOL.lande;
+    case 'montagne': return ctx.lire.relief(i) + (ctx.taches(x, y) - 0.5) * 0.08 > S.ROCHE ? SOL.roche : SOL.eboulis;
     case 'sommet': return SOL.neige;
     default: return HERBE;
   }
@@ -171,21 +261,47 @@ export function solDeRegion(ctx, rx, ry) {
   const cx0 = rx * taille, cy0 = ry * taille, cl = Math.max(0, Math.min(taille, W - cx0)), chh = Math.max(0, Math.min(taille, H - cy0));
   const x0 = Math.max(0, cx0 - B), y0 = Math.max(0, cy0 - B), x1 = Math.min(W, cx0 + cl + B), y1 = Math.min(H, cy0 + chh + B);
   const l = x1 - x0, h = y1 - y0;
-  // les cases lues : le rectangle et trois de plus autour (bornées au monde : la case du bord)
-  const M = 3, gx0 = x0 - M, gy0 = y0 - M, gw = l + 2 * M, gh = h + 2 * M;
-  const gSol = new Uint8Array(gw * gh), gCh = new Uint8Array(gw * gh);
+  // les cases lues : le rectangle et six de plus autour (bornées au monde : la case du bord)
+  const S = SOLS_MONDE;
+  const M = 6, gx0 = x0 - M, gy0 = y0 - M, gw = l + 2 * M, gh = h + 2 * M;
+  // (le sol de chaque case, puis celui d'une case un peu plus loin, DERIVE cases au plus, selon deux
+  // bruits lents : les frontières entre sols se déforment ; l'eau ne bouge pas, ni ne vient)
+  const RD = Math.ceil(S.DERIVE), bw = gw + 2 * RD, bh = gh + 2 * RD, brut = new Uint8Array(bw * bh);
+  for (let y = 0; y < bh; y++) {
+    const wy = Math.min(H - 1, Math.max(0, gy0 - RD + y));
+    for (let x = 0; x < bw; x++) {
+      const wx = Math.min(W - 1, Math.max(0, gx0 - RD + x)), i = wy * W + wx;
+      brut[y * bw + x] = solDe(ctx, biomeDe(ctx, i), i, wx, wy);
+    }
+  }
+  const gSol = new Uint8Array(gw * gh);
   for (let y = 0; y < gh; y++) {
     const wy = Math.min(H - 1, Math.max(0, gy0 + y));
     for (let x = 0; x < gw; x++) {
-      const wx = Math.min(W - 1, Math.max(0, gx0 + x)), i = wy * W + wx, k = y * gw + x;
-      gSol[k] = solDe(ctx, biomeDe(ctx, i), i, wx, wy);
-      gCh[k] = ctx.chemins[i];
+      const wx = Math.min(W - 1, Math.max(0, gx0 + x));
+      let v = brut[(y + RD) * bw + x + RD];
+      if (v !== EAU) {
+        const dx = Math.round((ctx.derive(wx, wy) - 0.5) * 2 * S.DERIVE), dy = Math.round((ctx.derive2(wx, wy) - 0.5) * 2 * S.DERIVE);
+        // (bornée au monde, comme la case elle-même)
+        const ux = Math.min(W - 1, Math.max(0, wx + dx)) - wx, uy = Math.min(H - 1, Math.max(0, wy + dy)) - wy;
+        const u = brut[(y + RD + uy) * bw + x + RD + ux];
+        if (u !== EAU) v = u;
+      }
+      gSol[y * gw + x] = v;
     }
   }
-  // les coins : de (x0 - 2, y0 - 2) à (x1 + 2, y1 + 2)
-  const cw = l + 5, chc = h + 5, kx0 = x0 - 2, ky0 = y0 - 2;
+  // les coins : de (x0 - 4, y0 - 4) à (x1 + 4, y1 + 4). Les bords naturels : l'eau d'un coin reste
+  // celle de ses quatre cases (dès que deux en sont : la rive suit les cases où l'on ne marche pas) ;
+  // sinon, le sol d'un coin n'est plus le plus présent de ses quatre cases (un escalier, case par
+  // case, le long d'une frontière en biais) mais celui qui pèse le plus parmi les seize cases
+  // autour (POIDS : les quatre qui le touchent, les huit d'à côté, les quatre des angles), chaque
+  // poids poussé par un bruit propre à ce sol (± BRUIT_BORDS, PAS_BORDS coins) : la frontière
+  // s'arrondit et ondule, à l'échelle de quelques cases. Une étendue d'un seul sol (la prairie
+  // autour de la ferme) ne change pas.
+  const [P0, P1, P2] = S.POIDS, cv = W + 1, CC = ctx.cheminCoins;
+  const cw = l + 9, chc = h + 9, kx0 = x0 - 4, ky0 = y0 - 4;
   const cSol = new Uint8Array(cw * chc), cCh = new Uint8Array(cw * chc), cTe = new Uint8Array(cw * chc), cDeep = new Uint8Array(cw * chc);
-  const compte = new Uint8Array(2 + NS);
+  const poids = new Float32Array(2 + NS), vus = [];
   for (let y = 0; y < chc; y++) {
     for (let x = 0; x < cw; x++) {
       const X = kx0 + x, Y = ky0 + y, k = y * cw + x;
@@ -195,33 +311,68 @@ export function solDeRegion(ctx, rx, ry) {
         cSol[k] = s === 2 ? EAU : HERBE; cCh[k] = s === 1 ? 1 : 0; cTe[k] = ferme.teintes[(Y - F.Y) * fv + X - F.X];
         continue;
       }
-      compte.fill(0);
-      let ch = 0;
-      for (const [dx, dy] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
-        const g = (Y + dy - gy0) * gw + X + dx - gx0;
-        compte[gSol[g]]++;
-        if (gCh[g] === 1) ch++;
-      }
+      const g = (Y - 1 - gy0) * gw + X - 1 - gx0;   // la case haut-gauche du coin
+      const a = gSol[g], b2 = gSol[g + 1], c2 = gSol[g + gw], d = gSol[g + gw + 1];
       let s = EAU;
-      if (compte[EAU] < 2) {
-        let best = 0;
-        for (let c = HERBE; c < compte.length; c++) if (compte[c] && compte[c] >= best) { best = compte[c]; s = c; }
+      if ((a === EAU) + (b2 === EAU) + (c2 === EAU) + (d === EAU) < 2) {
+        // (seize cases du même sol, le cas de presque tous les coins : ce sol)
+        let seul = a === EAU ? b2 === EAU ? c2 : b2 : a, un = true;
+        for (let dy = -1; dy <= 2 && un; dy++) for (let dx = -1; dx <= 2; dx++) { const v = gSol[g + dy * gw + dx]; if (v !== EAU && v !== seul) { un = false; break; } }
+        if (!un) {
+          for (const v of vus) poids[v] = 0;
+          vus.length = 0;
+          for (let dy = -1; dy <= 2; dy++) {
+            for (let dx = -1; dx <= 2; dx++) {
+              const v = gSol[g + dy * gw + dx];
+              if (v === EAU) continue;
+              const bx = dx === 0 || dx === 1, by = dy === 0 || dy === 1;
+              if (!poids[v]) vus.push(v);
+              poids[v] += bx && by ? P0 : bx || by ? P1 : P2;
+            }
+          }
+          const n1 = ctx.bords(X, Y) - 0.5, n2 = ctx.bords2(X, Y) - 0.5;
+          let best = -1;
+          for (const v of vus) {
+            const p = poids[v] * (1 + S.BRUIT_BORDS * 2 * (n1 * Math.cos(v * 2.4) + n2 * Math.sin(v * 2.4)));
+            if (p > best || (p === best && v > seul)) { best = p; seul = v; }
+          }
+        }
+        s = seul;
       }
-      cSol[k] = s; cCh[k] = s !== EAU && ch >= 2 ? 1 : 0;
+      cSol[k] = s;
+      if (X >= F.X - S.PRES_FERME && Y >= F.Y - S.PRES_FERME && X <= F.X + F.LARGEUR + S.PRES_FERME && Y <= F.Y + F.HAUTEUR + S.PRES_FERME) {
+        // (aux abords de la ferme, le chemin d'avant : un coin dont deux des quatre cases sont du
+        // chemin ; son raccord avec celui de la ferme ne bouge pas)
+        let n = 0;
+        for (const [dx, dy] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
+          const x2 = Math.min(W - 1, Math.max(0, X + dx)), y2 = Math.min(H - 1, Math.max(0, Y + dy));
+          if (ctx.chemins[y2 * W + x2] === 1) n++;
+        }
+        cCh[k] = s !== EAU && n >= 2 ? 1 : 0;
+      } else cCh[k] = s !== EAU && s !== SOL.falaise && s !== SOL.neige && X >= 0 && Y >= 0 && X <= W && Y <= H && CC[Y * cv + X] ? 1 : 0;
       cTe[k] = ctx.teinte(X - F.X, Y - F.Y);
     }
   }
-  // l'eau profonde : un coin d'eau dont tous les coins à deux pas sont de l'eau (comme la ferme)
-  for (let y = 2; y < chc - 2; y++) {
-    for (let x = 2; x < cw - 2; x++) {
+  // l'eau profonde : un coin d'eau sans terre dans un rond de PROFOND coins de rayon (± un bruit :
+  // la limite du profond ondule, sans suivre l'escalier de la rive)
+  for (let y = 3; y < chc - 3; y++) {
+    for (let x = 3; x < cw - 3; x++) {
       let p = cSol[y * cw + x] === EAU;
-      for (let dy = -2; dy <= 2 && p; dy++) for (let dx = -2; dx <= 2 && p; dx++) if (cSol[(y + dy) * cw + x + dx] !== EAU) p = false;
+      let terre = false;
+      for (let dy = -3; dy <= 3 && p && !terre; dy++) for (let dx = -3; dx <= 3; dx++) if (cSol[(y + dy) * cw + x + dx] !== EAU) { terre = true; break; }
+      if (p && terre) {
+        const R = S.PROFOND[0] + (S.PROFOND[1] - S.PROFOND[0]) * ctx.bords(kx0 + x, ky0 + y), R2 = R * R;
+        for (let dy = -3; dy <= 3 && p; dy++) for (let dx = -3; dx <= 3 && p; dx++) if (dx * dx + dy * dy <= R2 && cSol[(y + dy) * cw + x + dx] !== EAU) p = false;
+      }
       cDeep[y * cw + x] = p ? 1 : 0;
     }
   }
   const couches = new Uint16Array(l * h * K);
   const masque = (f, k) => (f(k) ? 8 : 0) | (f(k + 1) ? 4 : 0) | (f(k + cw) ? 2 : 0) | (f(k + cw + 1) ? 1 : 0);
-  const variante = (r) => ((r % 100) < 85 ? (r >>> 8) % 8 : 8 + ((r >>> 12) % 8));
+  // (les sols pleins : les variantes 0 à 11 le plus souvent, 12 à 15, avec un détail, une fois sur
+  // six ; les bords, les rives, le chemin : leurs variantes)
+  const variante = (r) => ((r % 100) < 84 ? (r >>> 8) % 12 : 12 + ((r >>> 12) % 4));
+  const vb = (r) => (r >>> 20) % S.BORDS, vr = (r) => (r >>> 22) % S.RIVES, vc = (r) => (r >>> 24) % S.CHEMINS;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < l; x++) {
       const X = x0 + x, Y = y0 + y;
@@ -239,33 +390,42 @@ export function solDeRegion(ctx, rx, ry) {
       if (s0 === EAU || s1 === EAU || s2 === EAU || s3 === EAU) {
         // l'eau, puis la terre sur ses coins (une rive), puis le chemin, le gué
         const nd = masque((q) => cDeep[q] === 1, k);
-        const f = nd === 0 ? ((r % 100) < 70 ? 0 : 1 + ((r >>> 8) % 7)) : nd === 15 ? 8 + (((r >>> 4) % 100) < 70 ? ((r >>> 12) & 1 ? 2 : 0) : (r >>> 16) % 8) : 16 + nd;
+        // (l'eau de la ferme, peu profonde ou profonde ; entre les deux, l'eau profonde de la planche
+        // des sols posée sur ses coins : sa limite suit la courbe de la rive)
+        const f = nd === 15 ? 8 + (((r >>> 4) % 100) < 70 ? ((r >>> 12) & 1 ? 2 : 0) : (r >>> 16) % 8) : nd === 0 && (r % 100) >= 70 ? 1 + ((r >>> 8) % 7) : 0;
         pose(blocGid('eau', f));
+        if (nd && nd !== 15) pose(profond(nd));
         let premier = true;
         for (let c = HERBE; c < 2 + NS; c++) {
           if (!ks.some((q) => cSol[q] === c)) continue;
           const m = masque((q) => terre(q) && cSol[q] >= c, k);
           if (premier) {
             if (c === HERBE) pose(ks.every((q) => !terre(q) || cCh[q]) ? blocGid('rive_sable', m) : blocGid('rive_herbe', hh * 16 + m));
-            else pose(rive(c - 2, m));
+            else pose(rive(c - 2, m, vr(r)));
             premier = false;
-          } else pose(bord(c - 2, m));
+          } else pose(bord(c - 2, m, vb(r)));
         }
-        if (nCh) pose(cheminSur(nCh));
+        if (nCh) pose(cheminSur(nCh, vc(r)));
         if (ctx.chemins[i] === 2) pose(gue(r % 8));
       } else if (s0 === HERBE && s1 === HERBE && s2 === HERBE && s3 === HERBE) {
-        // la prairie, comme avant
-        if (nCh) pose(blocGid('herbe_chemin', nCh === 15 ? 4 * 16 + (r % 8) : (5 + hh * 2) * 16 + nCh));
-        else if (Math.max(t0, t1, t2, t3) > hh) pose(blocGid('herbe_chemin', (13 + hh) * 16 + masque((q) => cTe[q] > hh, k)));
-        else pose(blocGid('herbe_chemin', hh * 16 + (r % 16)));
+        // la prairie, comme avant ; le chemin, aux abords de la ferme, par ses raccords (comme à sa
+        // sortie), ailleurs posé sur l'herbe (son bord suit la courbe, pas l'escalier des cases)
+        const abords = X >= F.X - S.PRES_FERME && Y >= F.Y - S.PRES_FERME && X < F.X + F.LARGEUR + S.PRES_FERME && Y < F.Y + F.HAUTEUR + S.PRES_FERME;
+        if (nCh === 15) pose(blocGid('herbe_chemin', 4 * 16 + (r % 8)));
+        else if (nCh && abords) pose(blocGid('herbe_chemin', (5 + hh * 2) * 16 + nCh));
+        else {
+          if (Math.max(t0, t1, t2, t3) > hh) pose(blocGid('herbe_chemin', (13 + hh) * 16 + masque((q) => cTe[q] > hh, k)));
+          else pose(blocGid('herbe_chemin', hh * 16 + (r % 16)));
+          if (nCh) pose(cheminSur(nCh, vc(r)));
+        }
       } else if (nCh === 15) {
         pose(blocGid('herbe_chemin', 4 * 16 + (r % 8)));
       } else {
         // des sols différents : le plus bas en entier, les autres sur leurs coins
         const bas = Math.min(s0, s1, s2, s3);
         pose(bas === HERBE ? blocGid('herbe_chemin', hh * 16 + (r % 16)) : plein(bas - 2, variante(r)));
-        for (let c = bas + 1; c < 2 + NS; c++) if (ks.some((q) => cSol[q] === c)) pose(bord(c - 2, masque((q) => cSol[q] >= c, k)));
-        if (nCh) pose(cheminSur(nCh));
+        for (let c = bas + 1; c < 2 + NS; c++) if (ks.some((q) => cSol[q] === c)) pose(bord(c - 2, masque((q) => cSol[q] >= c, k), vb(r)));
+        if (nCh) pose(cheminSur(nCh, vc(r)));
       }
     }
   }

@@ -1,10 +1,11 @@
 /* ==========================================================================
-   Tests du moteur : le sol du grand monde (js/engine/monde-sol.js, fiche 4b) : chaque case hors de
-   la ferme a ses tuiles (rien sur la ferme, dont la carte ne change pas), les biomes d'une région
-   sont ceux du plan, la prairie se raccorde au bord de la ferme et son chemin continue à la sortie
-   est ; où l'on marche (ni la mer, ni un lac, ni une rivière sauf à gué, ni une falaise, ni un
-   sommet) ; le Web Worker (js/monde-worker.js) donne les mêmes régions que le calcul direct ; la
-   durée d'une région.
+   Tests du moteur : le sol du grand monde (js/engine/monde-sol.js, fiches 4b et 5a) : chaque case
+   hors de la ferme a ses tuiles (rien sur la ferme, dont la carte ne change pas), les biomes d'une
+   région sont ceux du plan, la prairie se raccorde au bord de la ferme et son chemin continue à la
+   sortie est, la prairie autour de la ferme est peinte comme avant les sols des biomes ; chaque
+   biome a ses sols ; les chemins du plan sont dessinés ; où l'on marche (ni la mer, ni un lac, ni
+   une rivière sauf à gué, ni une falaise, ni un sommet) ; le Web Worker (js/monde-worker.js) donne
+   les mêmes régions que le calcul direct ; la durée d'une région.
    Lancer seul : node --test tests/engine/monde-sol.test.mjs (ou node tests/run-tests.mjs monde-sol).
    ========================================================================== */
 
@@ -23,7 +24,7 @@ const regions = () => {
   for (let ry = 0; ry * N < H; ry++) for (let rx = 0; rx * N < W; rx++) out.push([rx, ry]);
   return out;
 };
-// (les tuiles des planches : celle de la ferme, 75 × 61 ; assets/sols_monde.png, 16 × 29)
+// (les tuiles des planches : celle de la ferme, 75 × 61 ; assets/sols_monde.png, 16 × 83)
 const png = (f) => { const b = readFileSync(new URL('../../assets/' + f, import.meta.url)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
 const [sw, sh] = png(SOLS_MONDE.fichier), [fw, fh] = png('farm_spring_summer.png');
 
@@ -79,6 +80,74 @@ test('le sol du monde : la prairie se raccorde à la ferme, son chemin continue 
   // juste à l'est de la sortie : le chemin, plein, sur ses trois rangées, et quelques cases plus loin
   for (const dr of [-1, 0, 1]) assert(cheminPlein.has(tuile(F.X + F.LARGEUR, sortie + dr)), `le chemin à la sortie (rangée ${dr})`);
   assert(cheminPlein.has(tuile(F.X + F.LARGEUR + 1, sortie)), 'le chemin continue');
+});
+
+// Les tuiles de la case (c, r) du monde (sans les couches vides).
+const tuilesDe = (sol, c, r) => {
+  const reg = sol.region(Math.floor(c / N), Math.floor(r / N)), o = ((r - reg.y0) * reg.l + c - reg.x0) * K;
+  return [...reg.couches.slice(o, o + K)].filter(Boolean);
+};
+
+test('le sol du monde : la prairie autour de la ferme est peinte comme avant les sols des biomes (fiche 5a)', () => {
+  // les tuiles des cinq cases autour de la ferme, en une empreinte : celle que donnait le sol de
+  // la fiche 4b (le raccord de l'herbe, des teintes, de l'eau et du chemin avec la ferme ne bouge pas)
+  const m = monde(), F = m.terrain.FERME, sol = solDirect(m.terrain);
+  let h = 2166136261, n = 0;
+  for (let r = F.Y - 5; r < F.Y + F.HAUTEUR + 5; r++) {
+    for (let c = F.X - 5; c < F.X + F.LARGEUR + 5; c++) {
+      if (c >= F.X && r >= F.Y && c < F.X + F.LARGEUR && r < F.Y + F.HAUTEUR) continue;
+      for (const v of tuilesDe(sol, c, r)) h = Math.imul(h ^ v, 16777619) >>> 0;
+      h = Math.imul(h ^ 0xffff, 16777619) >>> 0;
+      n++;
+    }
+  }
+  assertEqual([n, h], [2680, 2525127769]);
+});
+
+test('le sol du monde : chaque biome a ses sols, les chemins du plan sont dessinés', () => {
+  const m = monde(), p = m.plan, sol = solDirect(m.terrain), F = m.terrain.FERME, D = SOLS_MONDE.DECALAGE;
+  const RS = 1 + SOLS_MONDE.BORDS + SOLS_MONDE.RIVES, NS = SOLS_MONDE.sols.length;
+  const plein = (nom) => { const s = SOLS_MONDE.sols.indexOf(nom); return Array.from({ length: 16 }, (_, v) => D + RS * s * 16 + v); };
+  const herbe = Array.from({ length: 256 }, (_, k) => blocGid('herbe_chemin', k)), eau = Array.from({ length: 256 }, (_, k) => blocGid('eau', k));
+  const SOLS = {
+    prairie: herbe, plage: [...plein('sable'), ...plein('galets')], falaise: plein('falaise'), foret: [...plein('feuilles'), ...plein('aiguilles'), ...plein('mousse')],
+    marais: [...plein('vase'), ...plein('eau_basse')], lande: [...plein('lande'), ...plein('terre')], montagne: [...plein('eboulis'), ...plein('roche')],
+    sommet: plein('neige'), mer: eau, lac: eau, riviere: eau,
+  };
+  const attendu = Object.fromEntries(Object.entries(SOLS).map(([b, l]) => [BIOME[b], new Set(l)]));
+  // une case sur 5, loin (7 cases) de tout autre biome et de la ferme : la tuile du dessous est un
+  // sol plein de son biome (ou l'eau), sauf sous un chemin
+  const chemin = new Set(Array.from({ length: 16 * 9 }, (_, k) => blocGid('herbe_chemin', 64 + k)));
+  for (let k = 0; k < 16 * SOLS_MONDE.CHEMINS; k++) chemin.add(D + RS * NS * 16 + k);
+  const vus = new Map();
+  let ecarts = 0;
+  for (let r = 7; r < H - 7; r += 5) {
+    for (let c = 7; c < W - 7; c += 5) {
+      const t = r * W + c, b = p.biome[t];
+      if (c >= F.X - 7 && r >= F.Y - 7 && c < F.X + F.LARGEUR + 7 && r < F.Y + F.HAUTEUR + 7) continue;
+      let seul = true;
+      for (let dr = -7; dr <= 7 && seul; dr++) for (let dc = -7; dc <= 7; dc++) if (p.biome[t + dr * W + dc] !== b) { seul = false; break; }
+      if (!seul) continue;
+      vus.set(b, (vus.get(b) || 0) + 1);
+      const t0 = tuilesDe(sol, c, r)[0];
+      if (!attendu[b].has(t0) && !chemin.has(t0)) ecarts++;
+    }
+  }
+  assertEqual(ecarts, 0, 'des cases sans le sol de leur biome');
+  for (const b of ['prairie', 'foret', 'marais', 'lande', 'montagne', 'sommet', 'mer']) assert(vus.get(BIOME[b]) > 5, `des cases de ${b}`);
+  // les chemins : chaque case du fil d'un chemin (hors de l'eau, des falaises, des sommets et des
+  // abords de la ferme) porte du chemin, celui de la ferme ou celui posé sur un sol
+  const fermes = new Set(['mer', 'lac', 'riviere', 'falaise', 'sommet'].map((x) => BIOME[x]));
+  let n = 0, dessines = 0;
+  for (const ch of p.chemins) {
+    for (const t of ch) {
+      const c = t % W, r = Math.floor(t / W);
+      if (fermes.has(p.biome[t]) || (c >= F.X - 8 && r >= F.Y - 8 && c < F.X + F.LARGEUR + 8 && r < F.Y + F.HAUTEUR + 8)) continue;
+      n++;
+      if (tuilesDe(sol, c, r).some((v) => chemin.has(v))) dessines++;
+    }
+  }
+  assert(n > 500 && dessines >= n * 0.995, `les chemins dessinés : ${dessines} cases sur ${n}`);
 });
 
 test('marcher dans le monde : ni la mer, ni les lacs, ni les rivières (sauf à gué), ni les falaises, ni les sommets', () => {
