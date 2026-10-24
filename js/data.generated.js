@@ -647,7 +647,10 @@ export const RAW_DATA = {
       "categorie": "fruit",
       "rachetable": false,
       "trouvaille": "foret"
-    }
+    },
+    "mures": { "nom": "Mûres", "icone": "🫐‍⚫", "energie": 5, "prix": 2, "mangeable": true, "categorie": "fruit", "rachetable": false },
+    "etoile_mer": { "nom": "Étoile de mer", "icone": "⭐‍🌊", "prix": 4, "mangeable": false, "categorie": "produit", "rachetable": false },
+    "algues": { "nom": "Algues", "icone": "🌿‍🌊", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false }
   },
   "PLATS_RETIRES": {
     "ragout": { "nom": "Ragoût", "icone": "🍖", "energie": 144, "prix": 36 },
@@ -3054,6 +3057,66 @@ export const RAW_DATA = {
       "mer": { "images": [0.001, 0.01], "basses": [0, 0] }
     }
   },
+  "RECOLTE": {
+    "PORTEE": 40,
+    "SORTES": {
+      "feuillu": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 3] }, "chance": { "gland": 25 }, "retour": [5, 8] },
+      "bouleau": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 3] }, "retour": [5, 8] },
+      "sapin": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 3] }, "chance": { "pomme_de_pin": 30 }, "retour": [5, 8] },
+      "saule": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 3] }, "retour": [5, 8] },
+      "pin_tordu": {
+        "geste": "couper",
+        "coups": 2,
+        "coup": { "bois": 1 },
+        "fin": { "bois": [1, 2] },
+        "chance": { "pomme_de_pin": 30 },
+        "retour": [6, 10]
+      },
+      "sapin_nain": {
+        "geste": "couper",
+        "coups": 2,
+        "coup": { "bois": 1 },
+        "fin": { "bois": [1, 2] },
+        "chance": { "pomme_de_pin": 20 },
+        "retour": [6, 10]
+      },
+      "sapin_neige": {
+        "geste": "couper",
+        "coups": 3,
+        "coup": { "bois": 1 },
+        "fin": { "bois": [2, 3] },
+        "chance": { "pomme_de_pin": 20 },
+        "retour": [6, 10]
+      },
+      "arbre_pre": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 3] }, "chance": { "gland": 25 }, "retour": [5, 8] },
+      "buisson_pre": { "geste": "couper", "coups": 1, "fin": { "bois": [1, 2] }, "retour": [3, 5] },
+      "ajonc": { "geste": "couper", "coups": 1, "fin": { "bois": [1, 1] }, "retour": [3, 5] },
+      "genet": { "geste": "couper", "coups": 1, "fin": { "bois": [1, 1] }, "retour": [3, 5] },
+      "souche": { "geste": "couper", "coups": 2, "coup": { "bois": 1 }, "fin": { "bois": [1, 2] }, "retour": [12, 20] },
+      "tronc_couche": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 4] }, "retour": [12, 20] },
+      "ronces": { "geste": "cueillir", "variantes": [0, 1], "apres": 2, "fin": { "mures": [2, 4] }, "retour": [3, 5] },
+      "champignons": { "geste": "ramasser", "fin": { "champignon": [1, 2] }, "retour": [3, 6] },
+      "touffe_mont": { "geste": "ramasser", "fin": { "herbes_montagne": [1, 1] }, "retour": [4, 6] },
+      "bois_flotte": { "geste": "ramasser", "fin": { "bois": [1, 2] }, "retour": [5, 8] },
+      "fougere": { "geste": "faucher", "fin": { "fibre": [1, 1] }, "retour": [3, 5] },
+      "bruyere": { "geste": "faucher", "fin": { "fibre": [1, 1] }, "retour": [3, 5] },
+      "jonc": { "geste": "faucher", "fin": { "fibre": [1, 1] }, "retour": [3, 5] },
+      "oyat": { "geste": "faucher", "fin": { "fibre": [1, 1] }, "retour": [3, 5] },
+      "roseaux": { "geste": "faucher", "fin": { "fibre": [1, 2] }, "retour": [3, 5] },
+      "massette": { "geste": "faucher", "fin": { "fibre": [1, 2] }, "retour": [3, 5] },
+      "rocher": { "geste": "casser", "coups": 3, "coup": { "pierre": 1 }, "fin": { "pierre": [2, 2] }, "retour": [5, 8] },
+      "rocher_moussu": { "geste": "casser", "coups": 4, "coup": { "pierre": 1 }, "fin": { "pierre": [2, 3] }, "retour": [6, 10] },
+      "bloc": { "geste": "casser", "coups": 5, "coup": { "pierre": 1 }, "fin": { "pierre": [3, 4] }, "retour": [8, 12] },
+      "eboulis": { "geste": "casser", "coups": 2, "coup": { "pierre": 1 }, "fin": { "pierre": [2, 3] }, "retour": [5, 8] },
+      "rocher_neige": { "geste": "casser", "coups": 3, "coup": { "pierre": 1 }, "fin": { "pierre": [2, 2] }, "retour": [6, 10] },
+      "galets": { "geste": "ramasser", "fin": { "pierre": [1, 1] }, "retour": [4, 6] },
+      "pierres": { "geste": "ramasser", "fin": { "pierre": [1, 1] }, "retour": [4, 6] },
+      "pierres_moussues": { "geste": "ramasser", "fin": { "pierre": [1, 1] }, "retour": [4, 6] },
+      "coquillages": { "geste": "ramasser", "fin": { "coquille": [1, 1] }, "chance": { "bulot": 30 }, "retour": [2, 4] },
+      "etoile_mer": { "geste": "ramasser", "fin": { "etoile_mer": [1, 1] }, "retour": [3, 5] },
+      "algues": { "geste": "ramasser", "fin": { "algues": [1, 2] }, "retour": [2, 4] }
+    }
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,
@@ -3094,6 +3157,7 @@ export const RAW_DATA = {
     "myrtille": 3,
     "baies": 2,
     "chataigne": 12,
+    "mures": 2,
     "pain": 7,
     "fromage_frais": 8,
     "confiture_fraises": null,

@@ -2,6 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { asleep } from '../engine/night.js';
 import { SOMMEIL_MESSAGE } from './actions.js';
 import { buyTool, castLine, chopTree, enSelle, hasTool, mineRock, OUTILS, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass, selectTool, toggleTriporteur, toolDef } from '../engine/outils.js';
+import { recolterMonde } from '../engine/monde-recolte.js';
 import { axeMode, hoeMode, pickMode, rodMode, scytheMode, setAxeMode, setHoeMode, setPickMode, setRodMode, setScytheMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
@@ -228,6 +229,20 @@ export function scytheAroundFromStage(ids, ou) {
   persistState();
   refresh();
   return { fauchees: r.fauchees, morceaux: r.morceaux };
+}
+
+// La carte (js/carte/ferme/recolte-monde.js) : le joueur a touché la pièce `id` du grand monde
+// (« sorte:x,y ») : le geste qui lui convient (couper, casser, faucher, cueillir, ramasser :
+// recolterMonde). `o` : { ou, fort, variante, depuis } (où tombe ce qu'elle lâche, le coup fort,
+// son dessin, la case du personnage). Renvoie ce que le moteur a répondu (items, morceaux, tombe,
+// casse…), ou null (il dort, sans outil, sans énergie, trop loin : un message).
+export function mondeFromStage(id, o) {
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
+  const r = recolterMonde(state, id, o || {});
+  if (!r.ok) { notify(r.error); return null; }
+  persistState();
+  refresh();
+  return r;
 }
 
 // La carte : le personnage a marché sur le morceau `n` (bois, pierre) : dans l'inventaire.

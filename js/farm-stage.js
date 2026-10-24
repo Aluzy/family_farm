@@ -628,6 +628,12 @@
           const arbre = this.mapTreeAt(wx, wy);
           if (arbre) return { chop: arbre };
         }
+        // le grand monde : un arbre, un rocher, une plante, un coquillage… qui se prend avec ce
+        // qu'il a en main, ou à la main (js/carte/ferme/recolte-monde.js)
+        if (!hoeing && this.ctx.monde && this.mondeObjetAt) {
+          const piece = this.mondeObjetAt(wx, wy);
+          if (piece) return { monde: piece };
+        }
         const label = this.labelAt(wx, wy);
         if (label) return { window: label.window };
         const min = (MIN_TAP * pixelRatio()) / this.cameras.main.zoom;
@@ -705,6 +711,7 @@
         if (hit.chop) { this.chop(hit.chop); return; }
         if (hit.mine) { this.mine(hit.mine); return; }
         if (hit.scythe) { this.scythe(hit.scythe); return; }
+        if (hit.monde) { this.mondeAgir(hit.monde); return; }
         if (hit.fish) { this.goFish(hit.fish, wx, wy); return; }
         if (hit.treeHarvest) { this.ctx.bridge.act('harvest-tree', { id: hit.treeHarvest }); return; }
         const p = hit.plot;

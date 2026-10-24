@@ -519,12 +519,14 @@ export function solDirect(T) {
 // eau sont les obstacles de la scène, comme avant) ; ailleurs, selon le plan : ni la mer, ni un lac,
 // ni une rivière (sauf à gué, où un chemin la traverse), ni une falaise, ni un sommet. `sol` : qui
 // donne les régions (region(rx, ry) → solDeRegion, ou null si elle n'est pas encore faite : on n'y
-// va pas) ; par défaut, le calcul direct (solDirect). Hors du monde : non.
-export function caseMarchable(T, t, sol = solDirect(T)) {
+// va pas) ; par défaut, le calcul direct (solDirect). Hors du monde : non. `ouvertes` (un Set de
+// cases, ou rien) : celles qu'une pièce prise rend à la marche (un arbre abattu, un rocher cassé :
+// monde-recolte.js, casesOuvertesMonde).
+export function caseMarchable(T, t, sol = solDirect(T), ouvertes = null) {
   if (!T.FERME || !sol) return true;
   const W = T.LARGEUR, c = t % W, r = Math.floor(t / W), F = T.FERME;
   if (!(t >= 0 && t < W * T.HAUTEUR)) return false;
   if (c >= F.X && r >= F.Y && c < F.X + F.LARGEUR && r < F.Y + F.HAUTEUR) return true;
   const N = T.MONDE.taille, reg = sol.region(Math.floor(c / N), Math.floor(r / N));
-  return !!reg && reg.marche[(r - reg.cy0) * reg.cl + c - reg.cx0] === 1;
+  return !!reg && (reg.marche[(r - reg.cy0) * reg.cl + c - reg.cx0] === 1 || (!!ouvertes && ouvertes.has(t)));
 }

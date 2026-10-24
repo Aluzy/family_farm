@@ -122,6 +122,9 @@ refuse('rochers : une sorte inconnue dans les densités', (d) => { d.ROCHES.DENS
 refuse('rochers : une falaise sans toutes ses colonnes', (d) => { d.ROCHES.SORTES.find((s) => s.nom === 'paroi').variantes = 24; }, 'ROCHES.SORTES[10].variantes');
 refuse('monde : un coût de chemin sur un biome inconnu', (d) => { d.PLAN_MONDE.CHEMINS.COUTS.desert = 3; }, '« desert » n\'est pas un biome');
 refuse('monde : des hameaux en nombre impossible', (d) => { d.PLAN_MONDE.HAMEAUX.NOMBRE = [10, 6]; }, 'PLAN_MONDE.HAMEAUX.NOMBRE');
+refuse('récolte du monde : une sorte inconnue', (d) => { d.RECOLTE.SORTES.baobab = { geste: 'couper', coups: 3, fin: { bois: [1, 2] }, retour: [2, 3] }; }, '« baobab » n\'est pas une sorte du monde');
+refuse('récolte du monde : un butin qui n\'existe pas', (d) => { d.RECOLTE.SORTES.ronces.fin = { framboise: [1, 2] }; }, 'RECOLTE.SORTES.ronces.fin');
+refuse('récolte du monde : une falaise reste du décor', (d) => { d.RECOLTE.SORTES.paroi = { geste: 'ramasser', fin: { pierre: [1, 2] }, retour: [2, 3] }; }, 'une paroi reste du décor');
 
 /* ---------- arbre : clés d'effet ; objets qu'on peut obtenir ---------- */
 
@@ -140,8 +143,8 @@ test('objet impossible à obtenir : un avertissement, pas une erreur', () => {
   eq(sourcesOf(d, 'minerai_or'), ['grotte']);
   eq(sourcesOf(d, 'anchois'), ['pêche mer']);
 });
-test('le fromage d\'alpage : herbes de montagne (trouvaille) → lait d\'alpage (vache) → fromage (Cuisine)', () => {
-  eq(sourcesOf(DATA, 'herbes_montagne'), ['trouvaille du grand monde (montagne)']);
+test('le fromage d\'alpage : herbes de montagne (trouvaille, récolte du grand monde) → lait d\'alpage (vache) → fromage (Cuisine)', () => {
+  eq(sourcesOf(DATA, 'herbes_montagne'), ['trouvaille du grand monde (montagne)', 'récolte du grand monde (touffe_mont)']);
   eq(sourcesOf(DATA, 'lait_alpage'), ['animal vache']);
   eq(sourcesOf(DATA, 'fromage_alpage'), ['recette fromage_alpage', 'Marché']);
 });

@@ -3,7 +3,8 @@
  * Un appui maintenu sur le personnage qui tient un outil (la houe, la hache, la pioche ou la
  * faux) : passé COUP_FORT.arme ms, il tient l'outil prêt et tremble, de plus en plus fort ;
  * relâché une fois la charge pleine (COUP_FORT.plein ms), il frappe fort (DATA.COUP_FORT) :
- *   - la hache, sur l'arbre le plus proche : le coup compte pour plusieurs ;
+ *   - la hache, sur l'arbre le plus proche (de la ferme, sinon du grand monde) : le coup compte
+ *     pour plusieurs ;
  *   - la pioche, sur le rocher le plus proche : de même ;
  *   - la faux : il tournoie, la lame balaie un cercle et fauche toutes les touffes autour de lui ;
  *   - la houe : les tuiles labourables autour de lui sont labourées d'un coup.
@@ -78,13 +79,18 @@
       if (!p) return;
       if (outil === 'hache') {
         const t = this.nearest((this.mapTrees() || []).filter((a) => this.choppable(a)), (a) => a.foot, p);
+        // (dans le grand monde : l'arbre ou le buisson le plus proche, recolte-monde.js)
+        const m = !t && this.mondeProche ? this.mondeProche('couper', p, C.portee) : null;
         if (t) this.chop(t, true);
+        else if (m) this.mondeAgir(m, true);
         else this.fermier.actHere('couper', () => K.secousse(this, 'fort'));
         return;
       }
       if (outil === 'pioche') {
         const r = this.nearest((this.rocks || []).filter((q) => !q.gone && !q.breaking && q.box), (q) => ({ x: (q.box.x0 + q.box.x1) / 2, y: q.foot }), p);
+        const m = !r && this.mondeProche ? this.mondeProche('casser', p, C.portee) : null;
         if (r) this.mine(r, true);
+        else if (m) this.mondeAgir(m, true);
         else this.fermier.actHere('piocher', () => K.secousse(this, 'fort'));
         return;
       }

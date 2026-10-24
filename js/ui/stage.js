@@ -38,7 +38,8 @@ import {
 import { renderMoulin } from './cuisine.js';
 import { objectiveValueText } from './chapitres.js';
 import { registerActions } from './actions.js';
-import { axeChipHtml, chopFromStage, fishFromStage, caillouFromStage, mineFromStage, morceauFromStage, pickChipHtml, rodChipHtml, scytheAroundFromStage, scytheChipHtml, scytheFromStage } from './outils.js';
+import { axeChipHtml, chopFromStage, fishFromStage, caillouFromStage, mineFromStage, mondeFromStage, morceauFromStage, pickChipHtml, rodChipHtml, scytheAroundFromStage, scytheChipHtml, scytheFromStage } from './outils.js';
+import { casesOuvertesMonde, mondeCueillis, mondePris, noterIci } from '../engine/monde-recolte.js';
 import { botteFromStage, ramasserFromStage, verserFromStage, verserGrainFromStage } from './atelier.js';
 import { botteleuses } from '../engine/botteleuse.js';
 import { distributeurDe, distributeurs, grainDans } from '../engine/distributeur.js';
@@ -450,6 +451,9 @@ export function stageModel() {
     ramassables: ramassables(state).map((r) => ({ id: r.id, sorte: r.sorte, case: r.case, buisson: !!r.buisson })),
     // le bois et la pierre lâchés par la hache et la pioche, à ramasser en marchant dessus
     morceaux: morceauxDe(state, 'ferme').map((m) => ({ n: m.n, item: m.item, x: m.x, y: m.y, ...(m.image ? { image: m.image } : {}) })),
+    // le grand monde : ce qui y est pris (ni dessiné, ni fermé à la marche), ce qui y est cueilli
+    // (sans ses fruits), par identifiant (js/engine/monde-recolte.js, js/carte/ferme/recolte-monde.js)
+    monde: { pris: mondePris(state), cueillis: mondeCueillis(state) },
     // les botteleuses (js/engine/botteleuse.js : l'entonnoir, la machine, le convoyeur ; pleine,
     // elle vibre VIBRE_S s et sa botte sort) et les fibres de l'inventaire, à y jeter
     botteleuses: botteleuses(state),
@@ -684,6 +688,20 @@ function stageRegion(tile) {
   if (voirRegion(state, tile)) persistState();
 }
 
+// La case du personnage sur la carte (à chaque case : rien ne repousse sous lui dans le grand
+// monde, js/engine/monde-recolte.js). Rien à sauvegarder tout de suite.
+function stageIci(tile) {
+  noterIci(state, tile);
+}
+
+// Le sol du grand monde pour la carte (js/ui/monde-sol.js), et les cases que ce qui y est pris rend
+// à la marche (casesOuvertesMonde, d'après la partie en cours).
+function mondeDeLaCarte() {
+  const sol = solDuMonde(farmTerrain(state));
+  if (sol) sol.ouvertes = () => casesOuvertesMonde(state);
+  return sol;
+}
+
 // Sans la carte de la ferme à l'écran (une autre carte, pas de carte) : le second adulte fait
 // quand même son travail aux heures où il est dehors (comme js/famille-ferme.js, HORAIRE).
 const AIDE_HEURES = [7, 18.75];
@@ -751,7 +769,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, regionTuiles: MONDE.REGION, chop: chopFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: solDuMonde(farmTerrain(state)) })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

@@ -2,6 +2,7 @@ import { BIOMES } from '../engine/monde-gen.js';
 import { apercuDesBiomes, caseMarchable, COULEURS_BIOMES, contexteSol, elementsSol, SOLS_MONDE, solDeRegion } from '../engine/monde-sol.js';
 import { SORTES_ROCHES } from '../engine/monde-roches.js';
 import { SORTES } from '../engine/monde-vegetation.js';
+import { idObjetMonde, RECOLTE } from '../engine/monde-recolte.js';
 
 /* ---------- le sol du grand monde pour la scène (docs/grand-monde.md, étape 4 : fiche 4b) ---------- */
 
@@ -18,7 +19,11 @@ import { SORTES } from '../engine/monde-vegetation.js';
 //     taille : celle des régions ; biomes : leurs noms (BIOMES : la mer, pour l'eau qui bouge) ;
 //     sortes : celles de la végétation (VEGETATION.SORTES, js/engine/monde-vegetation.js) ; roches :
 //     celles des rochers et des falaises (ROCHES.SORTES, js/engine/monde-roches.js) ;
-//   - mesures() : la durée des éléments, de chaque région (dans le Worker ou en direct).
+//   - mesures() : la durée des éléments, de chaque région (dans le Worker ou en direct) ;
+//   - ce qui se prend (fiche 6a, js/engine/monde-recolte.js) : regles (RECOLTE.SORTES, ce que donne
+//     chaque sorte), idObjet(sorte, x, y) (l'identifiant d'une pièce, le même que le moteur) ;
+//     ouvertes : une fonction que la page pose (js/ui/stage.js) et qui donne les cases que les
+//     pièces prises rendent à la marche (casesOuvertesMonde), lues par marchable.
 //
 // Les régions se calculent dans un Web Worker (js/monde-worker.js) : la page ne fait qu'en garder
 // le résultat, en mémoire (le monde entier fait 88 régions, environ 4 Mo : tout se garde ; pas
@@ -100,6 +105,7 @@ function client(T, M) {
   } else enDirect();
   const sol = {
     ferme: M.cadre.FERME, tuiles: SOLS_MONDE, taille: M.taille, biomes: BIOMES, sortes: SORTES, roches: SORTES_ROCHES,
+    regles: RECOLTE.SORTES, idObjet: idObjetMonde, ouvertes: null,
     region(rx, ry) {
       const cle = rx + ',' + ry, r = regions.get(cle);
       if (r) return r;
@@ -111,7 +117,7 @@ function client(T, M) {
     },
     quandRegion(f) { abonnes.push(f); },
     apercu: () => (apercu ? { apercu, couleurs } : null),
-    marchable: (t) => caseMarchable(T, t, sol),
+    marchable: (t) => caseMarchable(T, t, sol, sol.ouvertes ? sol.ouvertes() : null),
     mesures: () => mesures,
   };
   return {

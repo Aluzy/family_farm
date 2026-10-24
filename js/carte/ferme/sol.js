@@ -147,6 +147,8 @@
     stepRegionPerso() {
       const t = this.persoCase ? this.persoCase() : -1;
       if (t < 0) return;
+      // (sa case, pour le moteur : rien ne repousse sous lui, js/engine/monde-recolte.js)
+      if (t !== this.iciCase) { this.iciCase = t; if (this.ctx.bridge && this.ctx.bridge.ici) this.ctx.bridge.ici(t); }
       const W = this.grid.cols, N = REGION.tuiles;
       const cle = Math.floor((t % W) / N) + ',' + Math.floor(Math.floor(t / W) / N);
       if (cle === this.regionPerso) return;
@@ -274,6 +276,15 @@
       const S = M.tuiles, D = S.DECALAGE, K = S.COUCHES, couches = reg.couches;
       const set = P.set, img = P.img, cols = set.columns || Math.floor(img.width / T);
       const sols = this.has('sols_monde') ? this.textures.get('sols_monde').getSourceImage() : null;
+      // (quelques cases repeintes : une petite pièce prise, recolte-monde.js ; le dessin s'y borne,
+      // celui des petites pièces voisines qui y débordent compris)
+      const partie = cells.length !== this.regionParts(r).monde.length;
+      if (partie) {
+        ctx.save();
+        ctx.beginPath();
+        for (const i of cells) ctx.rect((i % W) * T, ((i / W) | 0) * T, T, T);
+        ctx.clip();
+      }
       for (const i of cells) {
         const c = i % W, y = (i / W) | 0, x = c - reg.x0, yy = y - reg.y0;
         if (x < 0 || yy < 0 || x >= reg.l || yy >= reg.h) continue;
@@ -292,7 +303,8 @@
         }
       }
       // ses petites plantes, sur le sol (vegetation.js) : toutes, ou celles des cases repeintes
-      this.peintVegetation(ctx, reg, cells.length === this.regionParts(r).monde.length ? null : new Set(cells));
+      this.peintVegetation(ctx, reg, partie ? new Set(cells) : null);
+      if (partie) ctx.restore();
     },
 
     // Le sol repeint partout (au démarrage, quand le navigateur a vidé les images) : les régions

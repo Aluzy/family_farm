@@ -705,6 +705,49 @@ export const ENCYCLOPEDIE = {
       "objet:pomme_de_pin",
       "objet:gland"
      ]
+    },
+    {
+     "id": "recolte_du_monde",
+     "terme": "Couper et ramasser dans le grand monde",
+     "description": "Hors de la ferme, ce qui pousse et ce qui traîne se prend avec les gestes de la ferme. La hache abat les arbres des forêts, de la lande et du marais en 3 coups (un sapin lâche parfois une pomme de pin, un feuillu un gland), les buissons, les souches et les troncs couchés ; la pioche casse les rochers, les gros blocs et les éboulis de la montagne ; la faux fauche les fougères, la bruyère, les joncs, les roseaux et les oyats (de la fibre). À la main, on cueille les mûres des ronciers, on ramasse les champignons, les herbes de montagne, le bois flotté, les galets et les pierres, les coquillages, les étoiles de mer et les algues de la plage. Ce qui est pris revient quelques jours plus tard, si l'on est passé par là. Les falaises, les pitons, les rochers dans la mer et l'épave restent comme ils sont.",
+     "liens": [
+      "hache",
+      "pioche",
+      "faux",
+      "mures",
+      "laisse_de_mer",
+      "bois_et_pierre"
+     ],
+     "decouverte": [
+      "objet:mures",
+      "objet:etoile_mer",
+      "objet:algues"
+     ]
+    },
+    {
+     "id": "mures",
+     "terme": "Mûres",
+     "description": "Dans les forêts du grand monde, les ronciers qui portent des mûres (noires ou rouges ; un roncier en fleur n'en a pas encore) se cueillent à la main : 2 à 4 mûres, pour un peu d'énergie. Le roncier reste là, sans fruits, et en porte de nouveau 3 à 5 jours plus tard. Elles se mangent fraîches (elles se gardent peu) ou se vendent.",
+     "liens": [
+      "recolte_du_monde",
+      "buissons"
+     ],
+     "decouverte": [
+      "objet:mures"
+     ]
+    },
+    {
+     "id": "laisse_de_mer",
+     "terme": "Étoiles de mer, algues et coquillages",
+     "description": "Sur les plages du grand monde, au bord de l'eau, la mer laisse des coquillages (une coquille Saint-Jacques, parfois un bulot avec), des étoiles de mer et des algues : un appui dessus, le personnage va les ramasser à la main. La mer en rapporte d'autres quelques jours plus tard. Ils ne se mangent pas : ils se vendent (la calèche du Marché les achètera).",
+     "liens": [
+      "recolte_du_monde"
+     ],
+     "decouverte": [
+      "objet:etoile_mer",
+      "objet:algues",
+      "objet:coquille"
+     ]
     }
    ]
   },

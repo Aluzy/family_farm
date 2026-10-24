@@ -250,6 +250,18 @@ poulailler et le moulin n'y ont plus d'image (leur forme de secours).
   quatre dessins tournent (`stepVegetation`, immobile avec « animations réduites »), culée avec son
   rocher (`cullDecor`). Le shader de la mer (`js/carte/eau.js`, `EAU_MER`) fait déferler ses crêtes
   près de la plage (une lame d'écume, un creux devant).
+- **Ce qui se prend dans le monde** (fiche 6a, `js/carte/ferme/recolte-monde.js`) : chaque pièce
+  qui se prend (`RECOLTE.SORTES`, `ctx.monde.regles`) a un identifiant tiré d'elle-même,
+  « sorte:x,y » (`ctx.monde.idObjet`, le même que le moteur : `js/engine/monde-recolte.js`) ; son
+  image le porte (`this.mondeObjets`). Le modèle dit ce qui est pris et cueilli (`modèle.monde`,
+  `syncMonde`) : une image prise est cachée, une petite pièce prise n'est plus peinte (quelques
+  cases repeintes, `paintMonde` borné à elles par un `clip`), un roncier cueilli prend son dessin en
+  fleur. Un appui (`mondeObjetAt`, dans `hitAt`) : le geste de la ferme (`mondeCouper`,
+  `mondeCasser`, `mondeFaucher`, `mondePrendre` : `fermier.chop`, `mine`, `scythe`, `gather`),
+  le coup compté tout de suite par le pont `recolte` (js/ui/outils.js, `mondeFromStage`), la chute
+  et les éclats comme sur la ferme. La marche : `ctx.monde.marchable` lit les cases que les pièces
+  prises rendent (`ouvertes`, posé par js/ui/stage.js : `casesOuvertesMonde`). La case du
+  personnage va au moteur à chaque pas (pont `ici`) : rien ne repousse sous lui.
 - **Relevés du chargement par régions.** Les arbres, buissons et barrières (`findOccluders`,
   `mapTrees`), les rochers (`findRocks`), les tuiles animées (`makeTileAnims`), la terre des
   anciennes zones (`zoneGround`) et les lieux de la vie d'ambiance (`readMap`,
