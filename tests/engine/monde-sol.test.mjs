@@ -5,7 +5,7 @@
    sortie est, la prairie autour de la ferme est peinte comme avant les sols des biomes ; chaque
    biome a ses sols ; les chemins du plan sont dessinés ; où l'on marche (ni la mer, ni un lac, ni
    une rivière sauf à gué, ni une falaise, ni un sommet) ; le Web Worker (js/monde-worker.js) donne
-   les mêmes régions que le calcul direct ; la durée d'une région.
+   les mêmes régions que le calcul direct (leur végétation comprise) ; la durée d'une région.
    Lancer seul : node --test tests/engine/monde-sol.test.mjs (ou node tests/run-tests.mjs monde-sol).
    ========================================================================== */
 
@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs';
 import {
   BIOME, caseMarchable, genererFerme, genererMonde, MONDE, SOLS_MONDE, solDirect,
 } from '../../js/engine/index.js';
+import { SORTES } from '../../js/engine/monde-vegetation.js';
 import { blocGid } from '../../js/engine/planche.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
@@ -157,6 +158,14 @@ test('marcher dans le monde : ni la mer, ni les lacs, ni les rivières (sauf à 
   // (les chemins ont trois cases de large : celles du plan et leurs voisines)
   const large = new Set();
   for (const t of chemin) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) large.add(t + dr * W + dc);
+  // (les pieds des arbres et des buissons du monde : fermés aussi, monde-vegetation.test.mjs)
+  const sol = solDirect(T), pieds = new Set();
+  for (let ry = 0; ry * N < H; ry++) {
+    for (let rx = 0; rx * N < W; rx++) {
+      const im = sol.region(rx, ry).vegetation.images;
+      for (let k = 0; k < im.length; k += 4) for (const [dx, dy] of SORTES[im[k]].bloque || []) pieds.add((Math.floor((im[k + 2] - 1) / 16) + dy) * W + Math.floor(im[k + 1] / 16) + dx);
+    }
+  }
   let n = 0, gues = 0;
   const vus = new Set();
   // une case sur 7 de tout le monde, et chaque case de chemin
@@ -166,7 +175,7 @@ test('marcher dans le monde : ni la mer, ni les lacs, ni les rivières (sauf à 
     const c = t % W, r = Math.floor(t / W), b = p.biome[t], ok = caseMarchable(T, t);
     if (c >= F.X && r >= F.Y && c < F.X + F.LARGEUR && r < F.Y + F.HAUTEUR) { assert(ok, 'la ferme'); continue; }
     if (b === BIOME.riviere && large.has(t)) { assert(ok, `un gué en ${c},${r}`); gues++; continue; }
-    assertEqual(ok, !fermes.has(b), `${p.BIOMES[b]} en ${c},${r}`);
+    assertEqual(ok, !fermes.has(b) && !pieds.has(t), `${p.BIOMES[b]} en ${c},${r}`);
     n++;
   }
   assert(n > 40000, 'des cases vues');
@@ -196,6 +205,8 @@ test('le Web Worker du sol : les mêmes régions que le calcul direct, l\'aperç
       const [rx, ry] = r.region.cle.split(',').map(Number), d = sol.region(rx, ry);
       assertEqual([...r.region.couches].join(), [...d.couches].join(), 'les tuiles de ' + r.region.cle);
       assertEqual([...r.region.marche].join(), [...d.marche].join(), 'la marche de ' + r.region.cle);
+      assertEqual([...r.region.vegetation.images].join(), [...d.vegetation.images].join(), 'les arbres de ' + r.region.cle);
+      assertEqual([...r.region.vegetation.basses].join(), [...d.vegetation.basses].join(), 'les petites plantes de ' + r.region.cle);
     }
   } finally {
     delete globalThis.self;

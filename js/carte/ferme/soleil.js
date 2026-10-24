@@ -69,6 +69,8 @@
       sprite(this.tank);
       for (const e of (this.trees || new Map()).values()) sprite(e.sprite);
       for (const o of (this.occluders || []).concat(this.rocks || [])) if (o.img && o.tex && !o.gone) sprite(o.img, o.foot);
+      // les arbres et les buissons du grand monde près de la vue (vegetation.js)
+      for (const o of this.vegetationOmbres ? this.vegetationOmbres() : []) sprite(o.img, o.foot);
       // (les murs et les portes hautes : des volumes, sunPrisms)
       for (const e of (this.blocks || new Map()).values()) if (e.sorte !== 'paillasse' && !e.plat && e.img.texture.key !== BLOCS_CARTE.hauts.key) sprite(e.img);
       return out;

@@ -227,6 +227,18 @@ poulailler et le moulin n'y ont plus d'image (leur forme de secours).
   bruits en px de la carte (`uOrigine`), la carte des vaguelettes est la même pour tous les blocs
   (`eauCommune`), et la distance d'un bloc à la terre voit celle de ses voisins (`eauMarge`) : pas
   de couture d'un bloc à l'autre.
+- **La végétation du grand monde** (fiche 5b, `js/carte/ferme/vegetation.js`) : chaque région
+  arrive du Worker avec ses plantes (`reg.vegetation` : `images` et `basses`, `[sorte, x, y,
+  variante]`, posées par `js/engine/monde-vegetation.js`). Les petites plantes sont peintes dans le
+  canvas de la région, après ses tuiles (`peintVegetation`, appelé par `paintMonde`). Les arbres,
+  buissons et plantes hautes sont des images découpées de la planche `vegetation` (des cadres
+  numérotés, d'après `assets/vegetation.json` : pas de canvas par arbre), rangées selon leur pied ;
+  une région dessinée se découpe en blocs de 16 × 16 cases dont seuls ceux à moins de 96 px de la
+  vue ont leurs images (ôtées au-delà de 384 px, `syncVegetation` : quelques centaines à la fois) ;
+  hors de la vue, `cullDecor` ne les dessine pas. Un arbre qui cache le personnage devient
+  transparent (`stepVegetation`, avec le masque de son cadre, lu une fois), il porte son ombre
+  (`sunCasters`) ; les roseaux penchent (`CarteKit.herbe`). Les pieds sont fermés dans la marche
+  de la région (`marche`), que lit déjà `caseMarchable`.
 - **Relevés du chargement par régions.** Les arbres, buissons et barrières (`findOccluders`,
   `mapTrees`), les rochers (`findRocks`), les tuiles animées (`makeTileAnims`), la terre des
   anciennes zones (`zoneGround`) et les lieux de la vie d'ambiance (`readMap`,

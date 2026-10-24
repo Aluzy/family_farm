@@ -454,6 +454,9 @@
       for (const g of this.tallGrass || []) { marque(g.img); marque(g.fleurs); }
       for (const g of (this.gatherables || new Map()).values()) g.imgs.forEach(marque);
       for (const e of (this.blocks || new Map()).values()) marque(e.img);
+      // (les arbres et les plantes hautes du grand monde qui ont leur image : vegetation.js)
+      for (const o of this.vegListe || []) marque(o.img);
+      for (const g of this.vegHerbes || []) marque(g.img);
     },
 
     // L'image de l'arbre `t` (mapTrees) : celle qui contient sa première case.
