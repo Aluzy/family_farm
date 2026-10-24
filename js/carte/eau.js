@@ -210,7 +210,9 @@ void main() {
   //     jusqu'à uPortee px, où elles s'effacent : au large, la distance ne change plus), qui
   //     roulent vers elle, coupées par endroits ;
   //   - plus sombre au large ;
-  //   - les vagues se brisent au bord : une écume qui avance et recule avec le ressac ;
+  //   - près de la plage, chaque crête déferle : une lame d'écume blanche, un creux sombre devant,
+  //     de l'écume derrière (fiche 5c) ; puis les vagues se brisent au bord : une écume qui avance
+  //     et recule avec le ressac ;
   //   - le ressac : l'eau monte sur le sable (uChamp, vert : la distance de la terre à l'eau),
   //     plus ou moins loin le long de la plage, en une nappe claire bordée d'écume, puis
   //     redescend ; le sable reste mouillé (plus sombre) derrière elle. La terre de l'étendue
@@ -287,6 +289,13 @@ void main() {
   float crete = step(f, uHoule.z) * step(0.4, bruit(pw * vec2(0.08, 0.3) + vec2(t * 0.4, 0.0))) * smoothstep(3.0, 8.0, d)
     * (1.0 - smoothstep(uPortee - 14.0, uPortee - 2.0, d));
   c = mix(c, c * 1.1 + 0.08, crete * uHoule.w);
+  // les vagues déferlent : près de la plage, la crête se dresse en une lame d'écume blanche, un
+  // creux sombre devant elle, de l'écume qui traîne derrière (coupées par endroits)
+  float pres = (1.0 - smoothstep(7.0, 16.0, d)) * step(1.5, d);
+  float lame = pres * step(0.3, bruit(pw * vec2(0.1, 0.35) + vec2(t * 0.3, 0.0)));
+  c = mix(c, c * 0.8, step(0.86, f) * lame * 0.85);
+  c = mix(c, vec3(0.95, 0.98, 1.0), step(f, 0.14) * lame * 0.95);
+  c = mix(c, vec3(0.84, 0.93, 0.98), step(0.14, f) * step(f, 0.34) * lame * 0.7 * step(0.42, bruit2(pw * 0.8 + vec2(0.0, t))));
   float brise = step(d, 1.0 + 3.0 * (0.5 + 0.5 * sin(ph + 2.2))) * step(0.3, bruit2(pw * 0.5 + vec2(-t * 1.5, t)));
   c = mix(c, vec3(0.94, 0.97, 1.0), brise * 0.8);
   c = mix(c, uCiel, uCielK);

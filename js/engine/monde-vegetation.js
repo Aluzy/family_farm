@@ -41,8 +41,11 @@ export const SORTE = Object.fromEntries(SORTES.map((s, k) => [s.nom, k]));
 export const EN_IMAGE = SORTES.map((s) => s.genre !== 'basse');
 const ECART_MAX = Math.max(...SORTES.map((s) => s.ecart || 0));
 const BLOQUE_MAX = Math.max(...SORTES.map((s) => Math.max(0, ...(s.bloque || []).map(([dx, dy]) => Math.max(Math.abs(dx), Math.abs(dy))))));
-// la marge des tirages autour de la région : l'écart, ce que bloque une image, le bord peint
-const MARGE = Math.max(3, ECART_MAX + BLOQUE_MAX + 2);
+// la marge des tirages autour de la région : l'écart, ce que bloque une image, le bord peint ; et
+// les rochers (monde-roches.js), qui s'écartent des arbres gardés (valables à ECART_MAX cases de
+// moins que le cadre) et dont les pièces ferment des cases jusqu'au bord peint (MARGE_ROCHES)
+export const MARGE_ROCHES = 7;
+const MARGE = Math.max(3, ECART_MAX + BLOQUE_MAX + 2, MARGE_ROCHES + ECART_MAX);
 
 // Les tables d'un biome et d'un sol : [[sorte, part]…], les images d'un côté, les petites de
 // l'autre, faites une fois (`codes` : le code de chaque sol, celui de monde-sol.js).
@@ -89,7 +92,11 @@ export function reservesDuMonde(el, W, H) {
 
 // vegetationDeRegion(ctx, g) → { images, basses } (Int32Array : [sorte, x, y, variante] par
 // plante, x et y en px de la carte, le pied ; les basses rangées par y, l'ordre où les peindre),
-// et pose 0 dans g.marche (la marche de la région) sous les cases bloquées. `g` : ce que
+// et pose 0 dans g.marche (la marche de la région) sous les cases bloquées. Entre les tirages et la
+// pose, g.apresTirages(t) (s'il est donné : les rochers, monde-roches.js) reçoit le cadre des
+// tirages ({ gx0, gy0, gw, gh, garde (1 : une image gardée), image (sorte + 1), libre(X, Y),
+// solCase(X, Y), distEau(X, Y) }) et rend les cases prises par ses pièces (une fonction (X, Y) →
+// vrai) : pas de petite plante dessous. `g` : ce que
 // solDeRegion a déjà fait pour la région : cx0, cy0, cl, ch (la région), x0, y0, l, h (le
 // rectangle peint), cSol, cCh, cTe (les sols, les chemins, les teintes des coins), cw, kx0, ky0
 // (leur cadre), biomeDe(i), codes (le code de chaque sol), EAU (celui de l'eau), marche.
@@ -218,6 +225,7 @@ export function vegetationDeRegion(ctx, g) {
       if (ok) garde[o] = 1;
     }
   }
+  const pris = g.apresTirages ? g.apresTirages({ gx0, gy0, gw, gh, garde, image, libre, solCase, distEau }) : null;
   const images = [], basses = [];
   const dansRegion = (X, Y) => X >= g.cx0 && Y >= g.cy0 && X < g.cx0 + g.cl && Y < g.cy0 + g.ch;
   for (let y = 0; y < gh; y++) {
@@ -232,7 +240,7 @@ export function vegetationDeRegion(ctx, g) {
         continue;
       }
       // les petites : le rectangle peint, et une case de plus autour
-      if (image[o] || !table[o] || X < g.x0 - 1 || Y < g.y0 - 1 || X > g.x0 + g.l || Y > g.y0 + g.h) continue;
+      if (image[o] || !table[o] || (pris && pris(X, Y)) || X < g.x0 - 1 || Y < g.y0 - 1 || X > g.x0 + g.l || Y > g.y0 + g.h) continue;
       const t = table[o];
       if (!t.basses.length) continue;
       const h = hasard(ctx.gv ^ 0x165667b1, Y * W + X);

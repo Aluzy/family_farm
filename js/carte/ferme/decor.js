@@ -454,8 +454,12 @@
       for (const g of this.tallGrass || []) { marque(g.img); marque(g.fleurs); }
       for (const g of (this.gatherables || new Map()).values()) g.imgs.forEach(marque);
       for (const e of (this.blocks || new Map()).values()) marque(e.img);
-      // (les arbres et les plantes hautes du grand monde qui ont leur image : vegetation.js)
-      for (const o of this.vegListe || []) marque(o.img);
+      // (les arbres, les plantes hautes et les rochers du grand monde qui ont leur image : vegetation.js)
+      for (const o of this.vegListe || []) {
+        marque(o.img);
+        // (l'écume autour d'un rocher dans l'eau : dessinée avec lui)
+        if (o.ecume) { marque(o.ecume.img); o.ecume.img.horsVue = o.img.horsVue; }
+      }
       for (const g of this.vegHerbes || []) marque(g.img);
     },
 

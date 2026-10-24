@@ -458,6 +458,49 @@ export function validateData(data) {
     }
   }
 
+  /* les rochers, les falaises et la côte du grand monde (data/monde.json, lus par js/engine/monde-roches.js) */
+  if (data.ROCHES) {
+    const R = data.ROCHES, BI = data.BIOMES || [];
+    const genres = ['bloc', 'mer', 'epave', 'paroi', 'basse'];
+    const sols = ['herbe', 'haut', 'sable', 'galets', 'eau_basse', 'vase', 'terre', 'lande', 'feuilles', 'aiguilles', 'mousse', 'eboulis', 'roche', 'falaise', 'neige'];
+    const noms = new Set();
+    for (const [k, s] of (R.SORTES || []).entries()) {
+      const ou = `ROCHES.SORTES[${k}]`;
+      if (!s || typeof s.nom !== 'string' || noms.has(s.nom)) { err(ou, 'un nom, chacun une fois'); continue; }
+      noms.add(s.nom);
+      if (!genres.includes(s.genre)) err(`${ou}.genre`, `l'un de ${genres.join(', ')} ; reçu ${JSON.stringify(s.genre)}`);
+      if (!(isInt(s.variantes) && s.variantes >= 1)) err(`${ou}.variantes`, 'un entier positif');
+      if (s.genre === 'paroi' && s.variantes !== 81) err(`${ou}.variantes`, '81 (3 hauteurs × 9 bouts × 3 tranches)');
+      if ((s.genre === 'bloc' || s.genre === 'epave') && !(Array.isArray(s.bloque) && s.bloque.some(([dx, dy]) => !dx && !dy))) err(`${ou}.bloque`, 'les cases fermées, dont celle du pied [0, 0]');
+      if ((s.genre === 'bloc' || s.genre === 'mer') && !(isInt(s.ecart) && s.ecart >= 0 && s.ecart <= 3)) err(`${ou}.ecart`, 'un entier de 0 à 3');
+    }
+    for (const n of ['rocher_mer', 'epave', 'eboulis', 'paroi', 'paroi_herbe', 'paroi_neige']) if (!noms.has(n)) err('ROCHES.SORTES', `« ${n} » manque (monde-roches.js le pose)`);
+    for (const [b, parSol] of Object.entries(R.DENSITES || {})) {
+      if (!BI.includes(b)) err('ROCHES.DENSITES', `« ${b} » n'est pas un biome (BIOMES)`);
+      for (const [sol, parts] of Object.entries(parSol)) {
+        if (!sols.includes(sol)) err(`ROCHES.DENSITES.${b}`, `« ${sol} » n'est pas un sol`);
+        let total = 0;
+        for (const [nom, p] of Object.entries(parts)) {
+          const so = (R.SORTES || []).find((x) => x.nom === nom);
+          if (!so || !['bloc', 'basse'].includes(so.genre)) err(`ROCHES.DENSITES.${b}.${sol}`, `« ${nom} » n'est pas une sorte posée par les tables (bloc ou basse)`);
+          if (!(typeof p === 'number' && p > 0)) err(`ROCHES.DENSITES.${b}.${sol}.${nom}`, 'une part positive');
+          total += p;
+        }
+        if (total > 1) err(`ROCHES.DENSITES.${b}.${sol}`, `des parts qui font plus que 1 (${total})`);
+      }
+    }
+    const paire = (v) => Array.isArray(v) && v.length === 2 && v[0] <= v[1];
+    if (!(typeof R.HAUT === 'number' && R.HAUT > 0 && R.HAUT < 1)) err('ROCHES.HAUT', 'un relief de 0 à 1');
+    if (!(isInt(R.SOMMET) && R.SOMMET >= 3)) err('ROCHES.SOMMET', 'un entier, 3 au moins (la face des falaises a 3 cases)');
+    if (!(R.EBOULIS && paire(R.EBOULIS.PENTE) && R.EBOULIS.PENTE[0] < R.EBOULIS.PENTE[1])) err('ROCHES.EBOULIS.PENTE', '[de, à]');
+    if (!(R.MER && paire(R.MER.DISTANCE) && R.MER.DISTANCE[1] <= 4 && paire(R.MER.TACHES))) err('ROCHES.MER', 'DISTANCE [au moins, au plus 4], TACHES [de, à]');
+    if (!(R.PAROIS && isInt(R.PAROIS.EAU) && isInt(R.PAROIS.TERRE) && R.PAROIS.EAU >= 0 && R.PAROIS.TERRE <= 16)) err('ROCHES.PAROIS', 'EAU, TERRE : des px de 0 à 16');
+    for (const [b, bornes] of Object.entries(R.BORNES || {})) {
+      if (!BI.includes(b)) err('ROCHES.BORNES', `« ${b} » n'est pas un biome (BIOMES)`);
+      for (const q of ['images', 'basses']) if (!paire(bornes[q])) err(`ROCHES.BORNES.${b}.${q}`, '[au moins, au plus]');
+    }
+  }
+
   /* arbre des technologies : chaque clé d'effet est lue par le moteur */
   for (const [id, n] of Object.entries(techtree.noeuds)) {
     for (const cle of Object.keys(n.effet || {})) {

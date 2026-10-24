@@ -141,6 +141,8 @@
         if (this.ctx.monde) L.image('sols_monde', v(this.ctx.monde.tuiles.fichier));
         // la végétation du grand monde (scripts/carte/vegetation.py, js/carte/ferme/vegetation.js)
         if (this.ctx.monde) { L.image('vegetation', v('vegetation.png')); L.json('vegetation_cases', v('vegetation.json')); }
+        // ses rochers, ses falaises, sa côte (scripts/carte/roches.py, js/carte/ferme/vegetation.js)
+        if (this.ctx.monde) { L.image('roches', v('roches.png')); L.json('roches_cases', v('roches.json')); }
       }
 
       create() {

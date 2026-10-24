@@ -203,5 +203,106 @@
       "montagne": { "images": [0.01, 0.08], "basses": [0.02, 0.2] },
       "prairie": { "images": [0.001, 0.02], "basses": [0.03, 0.15] }
     }
+  },
+  "//ROCHES": [
+    "Les rochers, les falaises et la côte du grand monde (docs/grand-monde.md, fiche 5c), posés région",
+    "par région par js/engine/monde-roches.js (dans le Worker du sol, avec la végétation), dessinés par",
+    "scripts/carte/roches.py (assets/roches.png, roches.json : les images de chaque sorte, dans l'ordre",
+    "des variantes).",
+    "SORTES : dans l'ordre de leur code (une pièce posée est [sorte, x, y, variante] : n'allonger la",
+    "  liste qu'à la fin). genre : « bloc » (une image rangée selon son pied, transparente quand le",
+    "  personnage passe derrière, avec son ombre ; ses cases « bloque » ne se traversent pas : [dx, dy]",
+    "  depuis la case de son pied), « mer » (un rocher dans l'eau, près du rivage, l'écume autour),",
+    "  « epave » (une par monde au plus, sur une plage), « paroi » (les colonnes des falaises : voir",
+    "  PAROIS), « basse » (peinte dans le sol de sa région, se traverse). ecart : pas d'autre image",
+    "  (rocher ou plante de la végétation) à tant de cases ou moins ; la plus forte au tirage",
+    "  l'emporte. eau : [au moins, au plus] cases de l'eau.",
+    "DENSITES : pour chaque biome, pour chaque sol de la case (comme VEGETATION.DENSITES ; « haut » :",
+    "  la montagne au-dessus du relief HAUT, près des sommets, à la place de son sol), la part des",
+    "  cases qui tirent chaque sorte. Les sommets (« sommet », « neige ») ne portent rien à moins de",
+    "  SOMMET cases de leur bas (les falaises). Les pièces des sommets et des falaises ne se traversent",
+    "  pas de toute façon.",
+    "EBOULIS : les amas de pierres au pied des pentes : la part PART dans la montagne et la lande",
+    "  (multipliée de 0 à 1 quand la pente du relief, sur 2 cases, va de PENTE[0] à PENTE[1]), PIED",
+    "  au pied d'une falaise ou d'un sommet (à 1 à 3 cases au sud de son bas).",
+    "MER : les rochers dans l'eau, dans la mer à DISTANCE[0] à DISTANCE[1] cases de la terre : la",
+    "  part PART, FALAISE fois plus au pied d'une falaise (à 4 cases), multipliée de TACHES[0] à",
+    "  TACHES[1] par un bruit (celui des touffes de la végétation) : ils vont par groupes.",
+    "EPAVE : une plage de sable de 3 × 2 cases, la mer à 1 à 3 cases au sud, à CHEMIN cases au moins",
+    "  d'un chemin ; dans un seul coin du monde, tiré au hasard parmi les plages (sinon pas d'épave).",
+    "PAROIS : au bas de chaque bande de falaise (ou de sommets), une colonne par case, haute de 1 à",
+    "  3 cases (la bande, au plus) ; son pied à EAU px sous le haut de sa case quand l'eau la borde,",
+    "  à TERRE px sinon. Son rebord : la neige sous un sommet, l'herbe sous la prairie, la forêt, la",
+    "  lande, le marais, la roche ailleurs.",
+    "BORNES : les densités attendues par biome (part des cases qui portent une image, une petite",
+    "  pièce), vérifiées par les tests sur des mondes entiers."
+  ],
+  "ROCHES": {
+    "SORTES": [
+      { "nom": "rocher", "genre": "bloc", "variantes": 4, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "bloc", "genre": "bloc", "variantes": 4, "bloque": [[0, 0], [1, 0]], "ecart": 2 },
+      { "nom": "rocher_moussu", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 2 },
+      { "nom": "eboulis", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 2 },
+      { "nom": "piton", "genre": "bloc", "variantes": 3, "bloque": [[0, 0]], "ecart": 2 },
+      { "nom": "piton_neige", "genre": "bloc", "variantes": 2, "bloque": [[0, 0]], "ecart": 2 },
+      { "nom": "rocher_neige", "genre": "bloc", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "sapin_neige", "genre": "bloc", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "rocher_mer", "genre": "mer", "variantes": 4, "ecart": 2 },
+      { "nom": "epave", "genre": "epave", "variantes": 2, "bloque": [[0, 0], [1, 0], [2, 0], [0, -1], [1, -1], [2, -1]] },
+      { "nom": "paroi", "genre": "paroi", "variantes": 81 },
+      { "nom": "paroi_herbe", "genre": "paroi", "variantes": 81 },
+      { "nom": "paroi_neige", "genre": "paroi", "variantes": 81 },
+      { "nom": "galets", "genre": "basse", "variantes": 6 },
+      { "nom": "pierres", "genre": "basse", "variantes": 6 },
+      { "nom": "pierres_moussues", "genre": "basse", "variantes": 3 },
+      { "nom": "coquillages", "genre": "basse", "variantes": 6, "eau": [0, 2] },
+      { "nom": "etoile_mer", "genre": "basse", "variantes": 3, "eau": [0, 1] },
+      { "nom": "algues", "genre": "basse", "variantes": 4, "eau": [0, 1] },
+      { "nom": "congere", "genre": "basse", "variantes": 4 }
+    ],
+    "DENSITES": {
+      "prairie": {
+        "herbe": {"rocher": 0.002, "pierres": 0.006}
+      },
+      "foret": {
+        "feuilles": {"rocher_moussu": 0.03, "pierres_moussues": 0.03},
+        "aiguilles": {"rocher_moussu": 0.02, "rocher": 0.01, "pierres_moussues": 0.025},
+        "mousse": {"rocher_moussu": 0.045, "pierres_moussues": 0.05}
+      },
+      "lande": {
+        "lande": {"rocher": 0.006, "bloc": 0.002, "pierres": 0.02},
+        "terre": {"rocher": 0.01, "bloc": 0.004, "pierres": 0.06}
+      },
+      "marais": {
+        "vase": {"pierres_moussues": 0.006}
+      },
+      "plage": {
+        "sable": {"rocher": 0.002, "galets": 0.01, "coquillages": 0.05, "etoile_mer": 0.012, "algues": 0.04},
+        "galets": {"rocher": 0.012, "galets": 0.16, "coquillages": 0.02, "algues": 0.03}
+      },
+      "montagne": {
+        "eboulis": {"rocher": 0.012, "bloc": 0.01, "galets": 0.05, "pierres": 0.1},
+        "roche": {"bloc": 0.014, "piton": 0.01, "rocher": 0.008, "pierres": 0.08},
+        "haut": {"rocher_neige": 0.03, "sapin_neige": 0.03, "piton_neige": 0.006, "congere": 0.025, "pierres": 0.03}
+      },
+      "sommet": {
+        "neige": {"rocher_neige": 0.012, "piton_neige": 0.006, "congere": 0.012}
+      }
+    },
+    "HAUT": 0.87,
+    "SOMMET": 4,
+    "EBOULIS": {"PART": 0.05, "PENTE": [0.03, 0.08], "PIED": 0.14},
+    "MER": {"PART": 0.03, "DISTANCE": [1, 4], "FALAISE": 3, "TACHES": [0.1, 2.2]},
+    "EPAVE": {"CHEMIN": 8},
+    "PAROIS": {"EAU": 10, "TERRE": 14},
+    "BORNES": {
+      "prairie": {"images": [0.0005, 0.006], "basses": [0.002, 0.02]},
+      "foret": {"images": [0.001, 0.02], "basses": [0.002, 0.04]},
+      "lande": {"images": [0.003, 0.03], "basses": [0.01, 0.08]},
+      "plage": {"images": [0.001, 0.03], "basses": [0.03, 0.3]},
+      "montagne": {"images": [0.01, 0.08], "basses": [0.04, 0.25]},
+      "sommet": {"images": [0.005, 0.04], "basses": [0.004, 0.04]},
+      "mer": {"images": [0.001, 0.01], "basses": [0, 0]}
+    }
   }
 }
