@@ -1,0 +1,101 @@
+{
+  "//BIOMES": [
+    "Les biomes du grand monde (docs/grand-monde.md, étape 4), dans l'ordre de leurs codes : le",
+    "plan du monde (js/engine/monde-gen.js) range une valeur par tuile, l'indice du biome dans",
+    "cette liste (BIOMES[0] : la mer). Ajouter un biome à la fin, jamais au milieu : les codes",
+    "des autres ne bougent pas. « lac » et « riviere » sont les eaux posées par le générateur",
+    "(les rivières, leurs lacs, les lacs à part) par-dessus les biomes du relief."
+  ],
+  "BIOMES": ["mer", "plage", "falaise", "prairie", "foret", "marais", "lande", "montagne", "sommet", "lac", "riviere"],
+  "//PLAN_MONDE": [
+    "Les réglages du générateur du grand monde (js/engine/monde-gen.js, docs/grand-monde.md,",
+    "étape 4). Les tailles sont en tuiles ; le relief et l'humidité vont de 0 à 1.",
+    "LENT : les bruits lents (les bords, l'humidité, les crêtes, la découpe de la côte, les",
+    "  falaises) sont lus sur une grille de LENT tuiles et interpolés (le monde est grand).",
+    "GRILLE : les rivières et les chemins sont cherchés sur une grille grossière de GRILLE ×",
+    "  GRILLE tuiles, puis tracés en courbe par un point sur SAUT de la route trouvée, chacun",
+    "  décalé au hasard de DECALAGE × GRILLE × SAUT tuiles au plus.",
+    "RELIEF : une pente de HAUT (au pied des bords nord et ouest) à BAS (près des bords sud et",
+    "  est) ; la montagne y ajoute MONTAGNE (à la puissance FORME : des pentes douces puis raides)",
+    "  et des crêtes (CRETES, un bruit de PAS_CRETES tuiles) ; la mer en ôte MER ; des bosses",
+    "  (BRUIT, un bruit de PAS tuiles) ; la côte est découpée par DECOUPE (un bruit de PAS_DECOUPE).",
+    "BORDS : MONTAGNE, MER, la profondeur (depuis le bord) où la montagne et la mer se font",
+    "  sentir ; ONDULATION, de combien les bords se décalent (un bruit de PAS_ONDULATION tuiles :",
+    "  pas de bord droit) ; FERMETURE, la bande du bord même où la mer ou les sommets sont forcés",
+    "  (aucun passage hors du monde) ; COIN, la netteté du partage entre la mer et la montagne",
+    "  dans les coins nord-est et sud-ouest (des falaises y tombent dans la mer).",
+    "SEUILS : MER, sous ce relief c'est la mer ; COTE, la largeur (en relief) de la côte au-dessus",
+    "  d'elle ; FALAISE, au-dessus de ce bruit (PAS_FALAISE tuiles), la côte est en falaises",
+    "  plutôt qu'en plage ; MONTAGNE, SOMMET : les reliefs de la montagne et des sommets enneigés ;",
+    "  MARAIS (humidité, sous le relief MARAIS_RELIEF), FORET (humidité), LANDE (humidité au plus)",
+    "  et LANDE_HAUTE (relief au moins) ; sinon la prairie.",
+    "HUMIDITE : PAS, la taille des taches (un bruit) ; CONTRASTE, l'étirement du bruit ; MER, ce",
+    "  que l'approche de la mer ajoute (des marais côtiers).",
+    "FERME : autour de la ferme, MARGE tuiles forcées en prairie (RELIEF, HUMIDITE : un plateau",
+    "  que les rivières contournent), puis une transition douce sur TRANSITION tuiles.",
+    "RIVIERES : leur nombre (au moins, au plus), leurs sources en montagne à ECART tuiles l'une",
+    "  de l'autre au moins ; chacune cherche le chemin le moins coûteux jusqu'à la mer (ou une",
+    "  autre rivière, un lac) : un pas coûte 1, plus MEANDRE fois un bruit de PAS_MEANDRE tuiles",
+    "  (elle serpente), plus VALLEE fois le relief (elle suit les vallées), plus MONTEE par unité de",
+    "  relief gagnée (elle descend tant qu'elle peut, et creuse au plus court quand elle ne peut",
+    "  plus) ; une rivière de moins de LONGUEUR_MIN cases n'est pas gardée. Là où son fil remonte de",
+    "  LAC_SEUIL au moins, la cuvette devient un lac (rempli de LAC_PROFONDEUR au plus au-dessus du",
+    "  fond, de LAC_MIN à LAC_MAX tuiles ; LACS_PAR_RIVIERE au plus). LARGEUR : elle a 2 tuiles de",
+    "  large passé cette part de sa longueur, 3 passé la seconde (si elle fait au moins LONGUE",
+    "  cases), 1 avant.",
+    "LACS : les lacs à part, dans les terres basses : leur nombre (au moins, au plus), leur TAILLE",
+    "  (tuiles), ECART tuiles d'un autre lac au moins.",
+    "HAMEAUX : leur nombre (au moins, au plus), un par secteur autour de la ferme ; ECART : la",
+    "  distance entre deux hameaux au moins ; FERME : leur distance à la ferme au moins ; PLACE : le",
+    "  rayon de terre libre autour ; dans la prairie, la lande, sur la plage ou à la lisière d'une",
+    "  forêt (une terre ouverte à LISIERE tuiles) ; la note d'une place : un tirage, plus OUVERT",
+    "  sur une terre ouverte, plus LOIN_BONUS au plus selon sa distance à la ferme (jusqu'à LOIN",
+    "  tuiles) ; NOMS : les noms qu'on leur donne (tirés sans répétition).",
+    "CHEMINS : COUTS, le prix d'un pas sur chaque biome (absent : on n'y passe pas ; « riviere » :",
+    "  un pont ; « chemin » : un chemin déjà posé, à peine moins cher que la prairie, pour que la",
+    "  boucle se ferme au lieu de faire le grand tour par les chemins posés) ; MEANDRE : l'écart",
+    "  de prix (un bruit de PAS_MEANDRE tuiles) qui fait serpenter ; PRES_FERME_COUT : le prix",
+    "  multiplié à moins de PRES_FERME tuiles de la marge de la ferme (pas le long de sa clôture) ;",
+    "  POIDS : le poids de l'estimation de l'A* ; REPRISE_MAX : les cases examinées au plus pour",
+    "  refaire un bout de courbe où l'on ne passe pas ; ESSAIS : les recherches de la route",
+    "  grossière, en fermant l'obstacle, avant de chercher le chemin case par case (lissé par une",
+    "  case sur LISSE). Un chemin qui en longe un autre (à RAPPROCHE tuiles au plus, sur LONGE",
+    "  cases au moins) le rejoint : ce bout est refait où un chemin posé coûte LONGE_COUT.",
+    "GROTTES : leur nombre (au moins, au plus) au pied de la montagne (une terre basse à PIED",
+    "  tuiles), à ECART tuiles l'une de l'autre, à FERME tuiles de la ferme au moins.",
+    "PECHE : MER, le nombre de coins de pêche sur le rivage, à ECART tuiles l'un de l'autre ; un",
+    "  coin par lac et par rivière."
+  ],
+  "PLAN_MONDE": {
+    "LENT": 4, "GRILLE": 6, "SAUT": 3, "DECALAGE": 0.3,
+    "RELIEF": {
+      "HAUT": 0.56, "BAS": 0.3, "MONTAGNE": 0.5, "FORME": 2, "MER": 0.42, "BRUIT": 0.16, "PAS": 48,
+      "CRETES": 0.3, "PAS_CRETES": 26, "DECOUPE": 0.24, "PAS_DECOUPE": 22
+    },
+    "BORDS": { "MONTAGNE": 160, "MER": 100, "ONDULATION": 44, "PAS_ONDULATION": 80, "FERMETURE": 10, "COIN": 7 },
+    "SEUILS": {
+      "MER": 0.2, "COTE": 0.03, "FALAISE": 0.62, "PAS_FALAISE": 36, "MONTAGNE": 0.62, "SOMMET": 0.92,
+      "MARAIS": 0.64, "MARAIS_RELIEF": 0.42, "FORET": 0.53, "LANDE": 0.36, "LANDE_HAUTE": 0.57
+    },
+    "HUMIDITE": { "PAS": 60, "CONTRASTE": 2.4, "MER": 0.14 },
+    "FERME": { "MARGE": 12, "TRANSITION": 40, "RELIEF": 0.47, "HUMIDITE": 0.45 },
+    "RIVIERES": {
+      "NOMBRE": [5, 8], "ECART": 60, "VALLEE": 3, "MONTEE": 150, "MEANDRE": 2, "PAS_MEANDRE": 30,
+      "LONGUEUR_MIN": 40, "LAC_SEUIL": 0.004, "LAC_PROFONDEUR": 0.006, "LAC_MIN": 14, "LAC_MAX": 180, "LACS_PAR_RIVIERE": 2,
+      "LARGEUR": [0.3, 0.7], "LONGUE": 120
+    },
+    "LACS": { "NOMBRE": [2, 4], "TAILLE": [40, 180], "ECART": 50 },
+    "HAMEAUX": {
+      "NOMBRE": [6, 10], "ECART": 75, "FERME": 45, "PLACE": 3, "LISIERE": 4, "OUVERT": 0.3, "LOIN": 150, "LOIN_BONUS": 0.6,
+      "NOMS": ["Les Saules", "Brumeval", "Roche-Claire", "Le Moulinet", "Fontfroide", "Les Genêts", "Hautepierre",
+        "Le Gué", "Bois-Joli", "Les Mouettes", "Combelongue", "Pré-Fleuri", "La Bruyère", "L'Étang-Vieux",
+        "Les Ajoncs", "Sablons", "Val-Doré", "Le Hameau des Pins", "Chantelune", "Les Roseaux"]
+    },
+    "CHEMINS": {
+      "COUTS": { "prairie": 2, "lande": 3, "plage": 4, "foret": 5, "marais": 14, "montagne": 22, "riviere": 24, "chemin": 2.5 },
+      "MEANDRE": 1.5, "PAS_MEANDRE": 40, "POIDS": 2, "PRES_FERME": 14, "PRES_FERME_COUT": 3, "REPRISE_MAX": 20000, "ESSAIS": 4, "LISSE": 10, "RAPPROCHE": 5, "LONGE": 8, "LONGE_COUT": 1
+    },
+    "GROTTES": { "NOMBRE": [3, 6], "ECART": 60, "PIED": 4, "FERME": 40 },
+    "PECHE": { "MER": 4, "ECART": 60 }
+  }
+}

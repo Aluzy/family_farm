@@ -215,6 +215,7 @@ Toutes les valeurs du jeu sont dans `data/`, un fichier JSON par domaine :
 | `meubles.json` | meubles de la maison, objets du dehors (bac à fleurs) |
 | `terrain.json` | le terrain de la carte de Tiled et la génération de la ferme |
 | `grotte.json` | la grotte de la mine : niveaux, minerais, réglages de la scène |
+| `monde.json` | le grand monde : les biomes (`BIOMES`) et les réglages de son générateur (`PLAN_MONDE`) |
 | `techtree.json` | arbre des technologies |
 | `campaign.json` | chapitres et courrier |
 | `niveaux.json` | niveaux d'expérience : seuils, déblocages, XP des actions et des chapitres |
@@ -350,6 +351,10 @@ plus légers, pixel pour pixel identiques.
   plage, `assets/trouvailles.png` et la faune (`assets/faune.json`, `faune_*.png` : `scripts/carte/faune.py`) restent dans
   `assets/` comme kit de textures pour les biomes du grand monde. Voir
   [`docs/architecture-phaser.md`](docs/architecture-phaser.md).
+- **Le plan du grand monde** (ses biomes, rivières, chemins et lieux, `js/engine/monde-gen.js`) :
+  `node scripts/monde/apercu.mjs <graine> [fichier.png]` en écrit une image pour le relire (sans
+  fichier : `apercu_monde.png` à la racine, ignoré par git). Voir
+  [`docs/grand-monde.md`](docs/grand-monde.md), étape 4.
 - **Icônes en pixel art** (elles remplacent les emojis à l'affichage) : les dessins sont dans
   `scripts/icones/art_*.py`, et `python3 scripts/icones/build.py` produit `assets/icones.png`
   et `js/ui/icones.generated.js` (Python 3 avec Pillow). `scripts/icones/preview.py` montre un

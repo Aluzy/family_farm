@@ -16,6 +16,7 @@
     "grotte.json",
     "meubles.json",
     "simulation.json",
-    "terrain.json"
+    "terrain.json",
+    "monde.json"
   ]
 }

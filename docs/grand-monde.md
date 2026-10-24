@@ -150,6 +150,67 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
 4. **Le générateur du monde** (2 PR) : relief, humidité, biomes, rivières, côte, chemins ; la
    ferme au centre ; les hameaux, les entrées de grotte, les coins de pêche ; dans un Web
    Worker, région par région, avec un cache.
+   - **Fait (4a)** : le plan du monde, des données seulement (le jeu ne change pas encore
+     d'aspect ; la fiche 4b le dessinera et le rendra marchable). `js/engine/monde-gen.js`, réglé
+     par `data/monde.json` (`BIOMES`, `PLAN_MONDE`) ; `genererMonde(graine).plan` ou
+     `planDuMonde(graine)` (`js/engine/monde.js`), fait à la première demande seulement (ni le
+     terrain ni la carte ne le lisent : le moteur et les tests n'en paient pas le prix).
+     - **Le format du plan** : `{ LARGEUR, HAUTEUR, BIOMES, FERME, SORTIE, biome, relief,
+       humidite, rivieres, finRivieres, lacs, chemins, lieux }`. `biome` : un `Uint8Array`, une
+       valeur par case du monde (rangée × LARGEUR + colonne), l'indice du biome dans `BIOMES`
+       (`mer`, `plage`, `falaise`, `prairie`, `foret`, `marais`, `lande`, `montagne`, `sommet`,
+       `lac`, `riviere` : la liste de `data/monde.json`, à n'allonger qu'à la fin) ; `relief`,
+       `humidite` : des `Uint8Array` de 0 à 255. `rivieres` : le fil de chaque rivière (des cases
+       voisines, de la source à l'embouchure ; ses cases de large en plus, 1 à 3, sont dans
+       `biome`), `finRivieres` : où chacune se jette (`mer`, `lac`, `riviere`) ; `lacs` : les cases
+       de chaque lac ; `chemins` : des listes de cases voisines (un chemin par tronçon du
+       réseau). `lieux` : `hameaux` (`{ id, case, nom }`), `grottes` (`{ id, case }`, l'entrée,
+       en montagne), `peche` (`{ id, case, eau }`, la case de la rive ; `eau` : `lac`, `riviere`
+       ou `mer`). `SORTIE` : la case juste à l'est de la sortie du chemin de la ferme.
+     - **Le relief** : une pente douce des bords nord et ouest vers les bords sud et est ; la
+       montagne s'y ajoute près des premiers (des crêtes), la mer se creuse près des seconds (une
+       découpe de la côte) ; les bords sont décalés par un bruit (rien de droit) ; tout contre
+       le bord, les sommets ou la mer sont forcés (aucun passage hors du monde) ; dans les coins
+       nord-est et sud-ouest, le bord le plus proche l'emporte et des falaises font le partage.
+       Les biomes viennent du relief et de l'humidité (des seuils) : des bandes (sommets,
+       montagne, lande des hauteurs, prairie, marais des bas-fonds, côte) et des taches (forêts,
+       marais, clairières). La ferme et une marge de 12 cases sont forcées en prairie (un
+       plateau), avec une transition douce sur 40 cases.
+     - **Les rivières** : de sources en montagne, un A* à plusieurs buts (la mer, une autre
+       rivière, un lac) où descendre ne coûte presque rien et monter beaucoup ; là où le fil doit
+       remonter (une cuvette), la rivière creuse son lit et la cuvette devient un lac. **Les
+       chemins** : les hameaux (6 à 10, dans la prairie, la lande, sur la côte ou à la lisière
+       d'une forêt, un par secteur autour de la ferme, loin les uns des autres) et la sortie de la
+       ferme, dans l'ordre de leur angle autour d'elle, chacun relié au suivant : une boucle qui
+       fait le tour de la ferme (la calèche la suivra). Un pas coûte selon le biome (cher en
+       montagne et dans les marais, un pont sur une rivière ; ni la mer, ni un lac, ni un sommet,
+       ni une falaise). Les rivières et les chemins sont cherchés sur une grille grossière (des
+       cases de 6 × 6), puis tracés en courbe lissée par les points trouvés (un A* case par case
+       ferait des traits droits et des angles droits), les cases où l'on ne passe pas refaites au
+       plus juste ; un chemin qui en longe un autre le rejoint. Les entrées de grotte (3 à 6) sont
+       au pied de la montagne ; les coins de pêche, un par lac et par rivière, et quatre sur le
+       rivage.
+     - **Par régions** (pour la fiche 4b et son Web Worker) : `champsDuMonde(graine, cadre)`
+       donne le relief, l'humidité et le biome d'une case par les seuls bruits (n'importe quelle
+       région se calcule seule) ; `elementsDuMonde(graine, cadre)` tire une fois pour tout le
+       monde les rivières, lacs, chemins et lieux (des listes de cases, et `eaux` : une valeur par
+       case, le lac ou la rivière posés par-dessus) ; `biomesDeRegion(champs, elements, cadre, rx,
+       ry, taille)` donne les biomes d'une région, les mêmes que le plan entier (testé).
+     - Mesuré (Node, la ferme déjà faite) : le plan entier en 180 ms (médiane sur 60 graines, au
+       plus 290 ms) une fois le code compilé, 230 à 470 ms pour un premier plan à froid ; dans
+       Chromium, 230 à 440 ms à froid. `npm test` : 30 s (34 s avant). L'aperçu :
+       `node scripts/monde/apercu.mjs <graine> [fichier.png]` (une couleur par biome, ombrée par
+       le relief ; les rivières, les chemins, les hameaux, les grottes, les coins de pêche, le
+       rectangle de la ferme).
+     - Tests : `tests/engine/monde-plan.test.mjs` (déterministe ; la ferme et sa marge en
+       prairie ; le monde fermé sur ses quatre bords, aucun passage depuis la ferme ; les
+       rivières de la montagne à la mer ou à un lac, en cases voisines, sans boucle ; les chemins
+       qui font le tour de la ferme et relient chaque hameau à sa sortie ; les lieux dans leurs
+       biomes ; une région faite seule identique au plan ; la durée), et `tests/test-data.mjs`
+       (les réglages de `data/monde.json`, vérifiés par `scripts/lib/data.mjs`).
+     - Pour la fiche 4b : le terrain et la carte ne lisent pas encore le plan (« . » autour de
+       la ferme) ; les chemins s'arrêtent à `SORTIE`, au bout du chemin de la ferme ; deux chemins
+       peuvent encore courir côte à côte sur quelques cases là où ils se séparent.
 5. **Les décors des biomes**, en vue de haut à 45° (3 PR) : sable, mer, roche, éboulis, neige,
    sapins, sous-bois, roseaux, eau basse, bruyère, et leurs raccords.
 6. **Les ressources et la vie de chaque biome** (2 PR) : ce qui se ramasse, les minerais et
