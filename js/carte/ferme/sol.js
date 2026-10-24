@@ -126,7 +126,7 @@
         this.mondeAbonne = true;
         this.ctx.monde.quandRegion((cle) => {
           const r = this.regions && this.regions.get(cle);
-          if (r && r.tex) this.paintRegion(r, null, this.regionParts(r).monde);
+          if (r && r.tex) { this.paintRegion(r, null, this.regionParts(r).monde); this.eauMondeRegion(r); this.eauMondeCle = null; }
         });
       }
       this.regions = new Map();
@@ -191,9 +191,11 @@
       if (c && c.addEventListener) c.addEventListener('contextrestored', () => { if (r.tex) this.paintRegion(r); });
       this.paintRegion(r);
       this.showRegionObjs(r);              // ses arbres, ses barrières, ses rochers (decor.js)
+      this.eauMondeRegion(r);              // ses blocs d'eau (eau-monde.js)
     },
 
     dropRegion(r) {
+      this.dropEauMonde(r);
       this.dropRegionObjs(r);
       if (r.img) r.img.destroy();
       if (r.tex) this.textures.remove(r.tex.key);
@@ -582,6 +584,7 @@
     // Repeint une étendue de cases animées : chaque case, toutes ses couches, chaque tuile
     // animée à son image du moment.
     paintAnimArea(area) {
+      if (area.monde) { this.paintMondeArea(area); return; }   // un bloc d'eau du monde (eau-monde.js)
       const raw = this.mapRaw;
       const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
       if (!set) return;
@@ -629,6 +632,8 @@
       const v = this.cameras.main.worldView;
       for (const a of this.animAreas || []) {
         if (!a.stale) for (const n of a.groups) if (changed.has(n)) { a.stale = true; break; }
+        // (un bloc d'eau du monde sous l'eau vivante : le shader bouge, ses tuiles ne sont pas repeintes)
+        if (a.monde && a.vive) continue;
         if (!a.stale || a.x > v.right || a.y > v.bottom || a.x + a.tex.width < v.x || a.y + a.tex.height < v.y) continue;
         a.stale = false;
         this.paintAnimArea(a);

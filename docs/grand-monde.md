@@ -258,6 +258,61 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        image) ; les tuiles des sols sont provisoires.
 5. **Les décors des biomes**, en vue de haut à 45° (3 PR) : sable, mer, roche, éboulis, neige,
    sapins, sous-bois, roseaux, eau basse, bruyère, et leurs raccords.
+   - **Fait (5a)** : les sols des biomes, leurs bords et l'eau du monde.
+     - **Les sols** (`assets/sols_monde.png`, refaite par `scripts/carte/sols_monde.py`, 16 × 83
+       tuiles ; le relancer redonne la même image) : 13 sols, dans les tons de la ferme — le sable
+       et les galets de la plage, l'eau basse et la vase du marais, la terre nue et l'herbe rase
+       (bruyère, ajoncs) de la lande, les feuilles, les aiguilles et la mousse de la forêt, les
+       éboulis et la roche de la montagne, la falaise (sa paroi sous son bord), la neige. Les herbes
+       (lande, vase, feuilles, mousse) reprennent le dessin de l'herbe de la ferme, reteint. Chacun :
+       16 variantes pleines sans dégradé ni forme qui passe un bord (12 courantes, 4 avec un détail :
+       coquillage, nénuphar, pomme de pin, ajonc…), 3 variantes de bords sur un sol plus bas, 2 de
+       rives sur l'eau ; puis le chemin de la ferme posé sur un autre sol (3 variantes), le gué,
+       l'eau profonde posée sur l'eau peu profonde. Un biome a plusieurs sols, par taches
+       (`solDe`, `SOLS_MONDE.PAS_TACHES`…) : les aiguilles en hauteur, la mousse où c'est humide.
+       La prairie reste l'herbe de la ferme, inchangée. Le sol uni provisoire (`COULEURS_BIOMES`)
+       prend la couleur moyenne des nouveaux sols.
+     - **Les bords naturels** (`js/engine/monde-sol.js`, `solDeRegion`) : le plan et la marche ne
+       changent pas, seul le dessin. (1) Chaque case prend le sol d'une case un peu plus loin
+       (jusqu'à 4 cases, deux bruits lents : `DERIVE`) : les frontières se déforment à l'échelle de
+       quelques cases. (2) Le sol d'un coin n'est plus le plus présent de ses quatre cases mais celui
+       qui pèse le plus parmi les seize autour, chaque poids poussé par un bruit propre à ce sol
+       (`POIDS`, `BRUIT_BORDS`) : une frontière en biais reste en biais. (3) Les tuiles de bord sont
+       des « carrés qui marchent » : la frontière coupe chaque côté en son milieu et va droit,
+       ondulée par un bruit (commun près des côtés : pas de couture ; propre à la variante au
+       milieu) ; une suite de coins en escalier donne une ligne à 45°, plus de marches. Les sols
+       doux ont un bord tramé, les sols durs un liseré et une ombre. (4) Le chemin : une bande ronde
+       autour du fil lissé du plan (± un bruit), posée sur l'herbe comme sur les autres sols ; aux
+       abords de la ferme (6 cases), la règle d'avant : le raccord avec sa sortie ne bouge pas
+       (testé : les tuiles des 5 cases autour de la ferme, les mêmes qu'avant). (5) La limite de
+       l'eau profonde : un rond (± un bruit) au lieu d'un carré, tracée comme les bords. L'eau garde
+       sa règle (un coin d'eau dès que deux de ses cases en sont) : la rive suit les cases où l'on
+       ne marche pas.
+     - **L'eau du monde** (`js/carte/ferme/eau-monde.js`) : chaque région dessinée se découpe en
+       blocs de 16 × 16 cases ; un bloc qui a de l'eau est une étendue animée comme un étang de la
+       ferme (les mêmes tuiles animées), son image faite près de la vue seulement ; dans la vue,
+       l'eau vivante de la ferme (`CarteKit.eauVive`, `js/carte/eau.js`) : le shader des lacs et des
+       rivières, celui de la mer (la houle qui roule vers la plage, l'écume, le ressac sur le sable
+       mouillé). Sans couture d'un bloc à l'autre : bruits pris en px de la carte (`uOrigine`), une
+       seule carte des vaguelettes (`eauCommune`), la distance à la terre qui voit les voisins
+       (`eauMarge`), la lecture de l'image bornée (une texture de 256 px se répétait). Les étendues
+       se font et se défont une à une (`syncEau`). La mer : ni reflets ni ronds d'insectes, sa
+       houle s'efface au large. La lune ne se reflète pas dans un bloc. Avec « animations réduites »,
+       l'eau reste immobile (vérifié : deux images identiques). Un gué : ses pierres restent posées
+       sur l'eau qui bouge. La ferme et ses étangs : rien ne change.
+     - **Mesuré** (Chromium sans carte graphique, SwiftShader : tout le rendu se fait sur le
+       processeur). Le calcul d'une région (Node, 3 mondes) : médiane 2,3 à 4,1 ms avant, 4,5 à
+       7,4 ms après (90 % : 3,3 à 14,7 ms avant, 5,3 à 17,5 après) ; les éléments 150 à 190 ms
+       avant, 160 à 250 après ; dans le Worker en jeu, médiane 5 à 9 ms, au plus 26 à 44 ms. Le
+       temps d'une image en longeant la côte (964 images) : 60 à 62 ms avant (la mer immobile),
+       91 à 95 ms après (une couche de plus sur l'eau : le shader, les scintillements) ; avec
+       « animations réduites », 50 ms avant comme après ; le JavaScript de l'eau ~3 ms par image
+       (faire l'eau vivante d'un bloc : ~40 ms, un bloc par image au plus). `npm test` : 32 s avant
+       comme après.
+     - Reste : sur une vraie carte graphique, le coût du shader de la mer est à revoir sur
+       téléphone (étape 9) ; les teintes de la prairie (héritées de la ferme) gardent leurs bords
+       en marches ; les rives d'herbe (celles de la ferme) aussi ; un coin isolé d'un sol peut
+       faire un petit losange.
 6. **Les ressources et la vie de chaque biome** (2 PR) : ce qui se ramasse, les minerais et
    les grottes de la montagne, la pêche, les animaux à regarder.
 7. **Les habitants et la calèche** (3 PR) : les hameaux bâtis en blocs, leurs familles et

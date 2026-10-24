@@ -16,8 +16,9 @@
 
   F.partie(Object.assign({}, K.eauVive, {
 
+    // (au grand monde, les étangs de la ferme et les blocs d'eau dans la vue : eau-monde.js)
     eauEtendues() {
-      return this.animAreas;
+      return this.eauListe || this.animAreas;
     },
 
     eauHeure() {

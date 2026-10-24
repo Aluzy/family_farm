@@ -34,4 +34,4 @@ Conventions communes à toutes les fiches :
 | [3b — nuit et trajets bornés](3b-nuit-et-trajets.md) | 3 | fait |
 | [4a — le générateur du monde (les données)](4a-generateur-du-monde.md) | 4 | fait |
 | [4b — le monde dessiné et marchable](4b-monde-dessine.md) | 4 | fait |
-| [5a — les sols des biomes, leurs bords et l'eau](5a-sols-des-biomes.md) | 5 | à faire |
+| [5a — les sols des biomes, leurs bords et l'eau](5a-sols-des-biomes.md) | 5 | fait |
