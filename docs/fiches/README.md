@@ -25,10 +25,9 @@ Conventions communes à toutes les fiches :
 - avant le commit : supprimer les `apercu*.png` à la racine, remettre `assets/art.png` s'il a
   changé (`git checkout assets/art.png`) ; ne rien laisser hors du commit ;
 - mettre à jour `docs/grand-monde.md` (l'étape : fait / à faire) et la doc touchée ;
-- un commit sur la branche de travail, message en français, terminé par les lignes
-  `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` et
-  `Claude-Session: https://claude.ai/code/session_016SMXTshMHFQWPL7JBQkwdT` ; pas de push, pas
-  de PR (elle est ouverte après relecture) ; aucun nom de modèle dans le dépôt.
+- un commit sur la branche de travail, message en français, terminé par les lignes d'attribution
+  que la session donne à l'agent ; pas de push, pas de PR (elle est ouverte après relecture) ;
+  aucun nom de modèle dans les fichiers du dépôt.
 
 | Fiche | Étape | État |
 |---|---|---|
