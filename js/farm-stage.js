@@ -144,8 +144,7 @@
         this.cameras.main.roundPixels = false;
         this.makePlaceholders();
         this.defineFrames();
-        this.bakeGround();
-        this.add.image(0, 0, 'ground').setOrigin(0).setDepth(0);
+        this.bakeGround();                    // (le sol par régions : syncRegions, à chaque image)
         this.makeSun();                       // les ombres portées, qui suivent le soleil (js/carte/ferme/soleil.js)
         this.watchGround();
         this.makeTileAnims();
@@ -426,6 +425,7 @@
             this.setCentre(this.cx + (p.x - this.cx) * k, this.cy + (p.y - FOLLOW_UP - this.cy) * k);
           }
         }
+        this.syncRegions();
         this.cullDecor();
         this.stepOccluders(delta);
         this.stepTallGrass(delta);

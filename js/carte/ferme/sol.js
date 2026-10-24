@@ -1,8 +1,9 @@
 /* carte/ferme/sol.js — la scène de la ferme : les textures de secours et le sol de la carte.
  *
- * Les textures (images du pack, dessins de secours, découpes), le sol cuit en une image
- * (bakeGround : toutes les couches de tuiles de la carte Tiled), la terre labourée, la grille
- * de la houe, les tuiles animées (l'eau) et la réparation du fond quand le navigateur l'a vidé.
+ * Les textures (images du pack, dessins de secours, découpes), le sol cuit par régions (toutes
+ * les couches de tuiles de la carte, une image par région de CarteKit.REGION.tuiles tuiles de
+ * côté, créée autour de la vue : syncRegions), la terre labourée, la grille de la houe, les
+ * tuiles animées (l'eau) et la réparation du fond quand le navigateur l'a vidé.
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
  * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).
@@ -13,6 +14,8 @@
   const K = global.CarteKit;
   const F = global.FermeCarte;
   const { T, MAP, ZONE_TILES, ZONE_OBJECTS } = F.C;
+  const REGION = K.REGION;
+  const FOND = '#6a8157';            // le vert de l'herbe, sous les tuiles
   const { reducedMotion } = F;
 
   F.partie({
@@ -61,9 +64,8 @@
 
     /* ---------- carte Tiled ---------- */
 
-    // Toutes les couches de tuiles sont dessinées une fois dans une seule image (texture
-    // « ground ») : pas de liseré entre les tuiles quand le zoom n'est pas entier. Les
-    // rectangles nommés de la couche d'objets (maison, grange, zone_culture…) sont relevés.
+    // La carte et ses rectangles nommés (maison, grange, zone_culture…, la couche d'objets) ; le
+    // sol se découpe en régions (makeRegions), dessinées quand la vue en approche (syncRegions).
     bakeGround() {
       const ok = this.cache.tilemap.exists(MAP.key) && !this.missing.has(MAP.key);
       let raw = ok ? this.cache.tilemap.get(MAP.key).data : null;
@@ -96,56 +98,131 @@
       this.zoneOver = this.zoneGround();   // version 1.9 : les anciennes zones commencent en herbe
       this.dirt = new Set();                // version 1.15 : tuiles labourées de la carte
       this.zoneKey = '';
-      this.textures.createCanvas('ground', this.world.w, this.world.h);
-      this.paintGround();
+      this.makeRegions();
       this.makeOccluders();
       this.makeRocks();
       this.makeTallGrass();
     },
 
-    // Dessine (ou redessine) une carte Tiled dans sa texture, puis l'envoie à la carte
-    // graphique : toutes ses couches de tuiles, sur un fond uni.
-    paintMap(key, raw, w, h, bg, image) {
-      const tex = this.textures.get(key);
-      const ctx = tex.getContext();
-      ctx.imageSmoothingEnabled = false;
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, w, h);
-      if (raw) {
-        const img = this.has(MAP.tiles) ? this.textures.get(MAP.tiles).getSourceImage() : null;
-        // Jeu de tuiles : celui dont l'image est la planche chargée (intégré dans le JSON).
-        const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
-        for (const layer of raw.layers) {
-          if (layer.type === 'tilelayer' && layer.visible !== false && img && set && Array.isArray(layer.data)) {
-            this.drawLayer(ctx, raw, layer, set, img);
-          }
-        }
-      }
-      if (image && this.has(image)) ctx.drawImage(this.textures.get(image).getSourceImage(), 0, 0);
-      tex.refresh();
+    /* ---------- le sol, par régions ---------- */
+
+    // Le jeu de tuiles de la carte (celui dont l'image est la planche chargée, intégré dans le
+    // JSON) et son image, ou null.
+    planche() {
+      const raw = this.mapRaw;
+      if (!raw || !this.has(MAP.tiles)) return null;
+      const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
+      return set ? { set, img: this.textures.get(MAP.tiles).getSourceImage() } : null;
     },
 
-    // Le fond de la carte. Appelée au démarrage et chaque fois que le
-    // navigateur a vidé ces images.
+    // Les régions du sol (CarteKit.REGION) : chacune ses cases (bord compris : elle déborde d'une
+    // tuile sur ses voisines), son rectangle en px ; son canevas et son image seulement quand elle
+    // est près de la vue. this.regions : clé « rx,ry » -> région.
+    makeRegions() {
+      for (const r of (this.regions || new Map()).values()) this.dropRegion(r);
+      this.regions = new Map();
+      this.regionsKey = '';
+      const W = Math.ceil(this.world.w / T), H = Math.ceil(this.world.h / T), N = REGION.tuiles, B = REGION.bord;
+      for (let ry = 0; ry * N < H; ry++) {
+        for (let rx = 0; rx * N < W; rx++) {
+          const c0 = Math.max(0, rx * N - B), r0 = Math.max(0, ry * N - B);
+          const c1 = Math.min(W, (rx + 1) * N + B), r1 = Math.min(H, (ry + 1) * N + B);
+          this.regions.set(rx + ',' + ry, { rx, ry, c0, r0, c1, r1, x: c0 * T, y: r0 * T, w: (c1 - c0) * T, h: (r1 - r0) * T, cells: null, tex: null, img: null });
+        }
+      }
+    },
+
+    // Ses cases (dans l'ordre de la carte), calculées une fois.
+    regionCells(r) {
+      if (r.cells) return r.cells;
+      const W = this.grid.cols, out = [];
+      for (let y = r.r0; y < r.r1; y++) for (let x = r.c0; x < r.c1; x++) out.push(y * W + x);
+      r.cells = out;
+      return out;
+    },
+
+    // Les régions près de la vue : créées et dessinées ; loin : retirées (leur canevas avec).
+    // Revu quand la vue change de case de REGION.pres px.
+    syncRegions(force) {
+      if (!this.regions) return;
+      // (la vue d'après la caméra elle-même : son worldView n'est mis à jour qu'au rendu)
+      const c = this.cameras.main, vw = c.width / c.zoom, vh = c.height / c.zoom;
+      const mx = c.scrollX + c.width * c.originX, my = c.scrollY + c.height * c.originY;
+      const v = { x: mx - vw / 2, y: my - vh / 2, right: mx + vw / 2, bottom: my + vh / 2 }, P = REGION.pres;
+      const cle = Math.floor(v.x / P) + ',' + Math.floor(v.y / P) + ',' + Math.ceil(v.right / P) + ',' + Math.ceil(v.bottom / P);
+      if (!force && cle === this.regionsKey) return;
+      this.regionsKey = cle;
+      const loin = (r, m) => r.x > v.right + m || r.x + r.w < v.x - m || r.y > v.bottom + m || r.y + r.h < v.y - m;
+      for (const r of this.regions.values()) {
+        if (!r.tex && !loin(r, REGION.pres)) this.showRegion(r);
+        else if (r.tex && loin(r, REGION.loin)) this.dropRegion(r);
+      }
+    },
+
+    showRegion(r) {
+      const key = 'sol_' + r.rx + '_' + r.ry;
+      if (this.textures.exists(key)) this.textures.remove(key);
+      r.tex = this.textures.createCanvas(key, r.w, r.h);
+      r.img = this.add.image(r.x, r.y, key).setOrigin(0).setDepth(0);
+      // (canevas rendu vide par le navigateur : on le redessine)
+      const c = r.tex.getSourceImage();
+      if (c && c.addEventListener) c.addEventListener('contextrestored', () => { if (r.tex) this.paintRegion(r); });
+      this.paintRegion(r);
+    },
+
+    dropRegion(r) {
+      if (r.img) r.img.destroy();
+      if (r.tex) this.textures.remove(r.tex.key);
+      r.img = r.tex = null;
+    },
+
+    // Les régions dessinées en ce moment.
+    shownRegions() {
+      return [...(this.regions || new Map()).values()].filter((r) => r.tex);
+    },
+
+    // Dessine une région (toutes les couches de tuiles de ses cases, sur un fond uni) dans `ctx`
+    // (son canevas, sinon) : `only`, seulement ces cases-là (repeinture partielle).
+    paintRegion(r, ctx0, only) {
+      const ctx = ctx0 || r.tex.getContext();
+      const raw = this.mapRaw, P = this.planche();
+      ctx.imageSmoothingEnabled = false;
+      ctx.globalAlpha = 1;
+      ctx.save();
+      ctx.translate(-r.x, -r.y);
+      ctx.fillStyle = FOND;
+      if (!only) ctx.fillRect(r.x, r.y, r.w, r.h);
+      else for (const i of only) ctx.fillRect((i % raw.width) * raw.tilewidth, Math.floor(i / raw.width) * raw.tileheight, raw.tilewidth, raw.tileheight);
+      if (raw && P) {
+        const cells = only || this.regionCells(r);
+        for (const layer of raw.layers) {
+          if (layer.type === 'tilelayer' && layer.visible !== false && Array.isArray(layer.data)) this.drawLayer(ctx, raw, layer, P.set, P.img, cells);
+        }
+      }
+      ctx.restore();
+      if (!ctx0) r.tex.refresh();
+    },
+
+    // Le sol repeint partout (au démarrage, quand le navigateur a vidé les images) : les régions
+    // dessinées et les étendues d'eau animées.
     paintGround() {
-      this.paintMap('ground', this.mapRaw, this.world.w, this.world.h, '#6a8157');
+      for (const r of this.shownRegions()) this.paintRegion(r);
       for (const a of this.animAreas || []) this.paintAnimArea(a);
     },
 
-    // Le fond a-t-il été vidé ? Il est entièrement opaque quand il est dessiné : un point
-    // transparent veut dire que le navigateur a jeté son contenu (page restée en
+    // Le fond a-t-il été vidé ? Chaque région est entièrement opaque quand elle est dessinée :
+    // un point transparent veut dire que le navigateur a jeté son contenu (page restée en
     // arrière-plan sur un téléphone, mémoire graphique reprise).
     groundWiped() {
-      try {
-        const tex = this.textures.get('ground');
-        const ctx = tex.getContext();
-        if (ctx.isContextLost && ctx.isContextLost()) return false;   // pas encore rendu : on réessaiera
-        const w = this.world.w, h = this.world.h;
-        return [[0, 0], [w >> 1, h >> 1], [w - 1, h - 1]].some((p) => ctx.getImageData(p[0], p[1], 1, 1).data[3] === 0);
-      } catch (e) {
-        return false;
-      }
+      return this.shownRegions().some((r) => {
+        try {
+          const ctx = r.tex.getContext();
+          if (ctx.isContextLost && ctx.isContextLost()) return false;   // pas encore rendu : on réessaiera
+          return [[0, 0], [r.w >> 1, r.h >> 1], [r.w - 1, r.h - 1]].some((p) => ctx.getImageData(p[0], p[1], 1, 1).data[3] === 0);
+        } catch (e) {
+          return false;
+        }
+      });
     },
 
     // Redessine le fond s'il a été vidé (ou d'office avec `force`). Sans cela, au retour
@@ -153,7 +230,7 @@
     // les barrières et les rochers (leurs canevas) aussi : sinon il ne restait que leurs
     // ombres. Et les images de la vie d'ambiance (bêtes, nuages, feuilles).
     repairGround(force, few) {
-      if (!this.textures.exists('ground')) return false;
+      if (!this.regions) return false;
       if (!force && !this.groundWiped() && !this.spritesWiped(few)) return false;
       this.paintGround();
       this.paintSprites();
@@ -161,15 +238,12 @@
       return true;
     },
 
-    // Tout ce qui peut annoncer que la mémoire graphique a été reprise puis rendue.
+    // Contexte WebGL rendu : Phaser recrée ses textures, puis on renvoie le fond (les canevas
+    // des régions rendus vides par le navigateur : showRegion).
     watchGround() {
       const R = this.game.renderer;
       const E = global.Phaser.Renderer && global.Phaser.Renderer.Events;
-      // Contexte WebGL rendu : Phaser recrée ses textures, puis on renvoie le fond.
       if (R && R.on) R.on((E && E.RESTORE_WEBGL) || 'restorewebgl', () => this.repairGround(true));
-      // Canvas du fond rendu par le navigateur (il revient vide).
-      const c = this.textures.get('ground').getSourceImage();
-      if (c && c.addEventListener) c.addEventListener('contextrestored', () => this.repairGround(true));
       this.groundCheckAt = 0;
     },
 
@@ -252,21 +326,17 @@
       if (cells.size) this.repaintCells(cells);
     },
 
+    // Repeint ces cases (un Set d'index) dans les régions dessinées qui les contiennent (une case
+    // du bord est dans deux régions, ou quatre) ; une région qui n'est pas dessinée le sera à
+    // jour quand la vue en approchera.
     repaintCells(cells) {
       const raw = this.mapRaw;
-      if (!raw || !this.has(MAP.tiles)) return;
-      const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
-      if (!set) return;
-      const tex = this.textures.get('ground');
-      const ctx = tex.getContext();
-      const img = this.textures.get(MAP.tiles).getSourceImage();
-      ctx.imageSmoothingEnabled = false;
-      ctx.fillStyle = '#6a8157';
-      for (const i of cells) ctx.fillRect((i % raw.width) * raw.tilewidth, Math.floor(i / raw.width) * raw.tileheight, raw.tilewidth, raw.tileheight);
-      for (const layer of raw.layers) {
-        if (layer.type === 'tilelayer' && layer.visible !== false && Array.isArray(layer.data)) this.drawLayer(ctx, raw, layer, set, img, cells);
+      if (!raw || !this.planche()) return;
+      const W = raw.width;
+      for (const r of this.shownRegions()) {
+        const mine = [...cells].filter((i) => { const c = i % W, y = (i / W) | 0; return c >= r.c0 && c < r.c1 && y >= r.r0 && y < r.r1; }).sort((a, b) => a - b);
+        if (mine.length) this.paintRegion(r, null, mine);
       }
-      tex.refresh();
       for (const a of this.animAreas || []) {           // une étendue d'eau animée touchée
         for (const i of cells) if (a.cells.has(i)) { this.paintAnimArea(a); break; }
       }
@@ -436,7 +506,7 @@
       ctx.clearRect(0, 0, area.tex.width, area.tex.height);
       ctx.save();
       ctx.translate(-area.x, -area.y);
-      ctx.fillStyle = '#6a8157';
+      ctx.fillStyle = FOND;
       for (const i of area.cells) ctx.fillRect((i % raw.width) * raw.tilewidth, Math.floor(i / raw.width) * raw.tileheight, raw.tilewidth, raw.tileheight);
       for (const layer of raw.layers) {
         if (layer.type === 'tilelayer' && layer.visible !== false && Array.isArray(layer.data)) this.drawLayer(ctx, raw, layer, set, img, area.ordre, cur);

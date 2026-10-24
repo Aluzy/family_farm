@@ -15,6 +15,7 @@
  *   - regard(dx, dy) : de face, de dos ou de profil selon le sens de la marche ;
  *   - cases(noms) : les cases d'une planche par leur nom (une table, pas une recherche par image) ;
  *   - VITESSES : la vitesse de marche de chacun, carte par carte (px/s) ;
+ *   - REGION : le découpage du sol en régions (docs/grand-monde.md, étape 2) ;
  *   - cycle(), imageA(), animTuiles(), pasAnimTuiles() : les tuiles animées de Tiled ;
  *   - FLECHE, balance() : la flèche bleue des passages (la mine, ses niveaux) ;
  *   - TEXTE, texte() : les petits textes qui montent au-dessus du personnage (« … »).
@@ -151,6 +152,13 @@
     grotte: 48,                                    // le personnage, dans la mine (js/grotte.js)
   };
 
+  // Le sol d'une carte n'est pas une seule image de sa taille (le grand monde serait bien trop
+  // grand) : il est découpé en régions de `tuiles` × `tuiles` tuiles, chacune son canevas, créé
+  // quand la région approche de la vue (à moins de `pres` px) et retiré quand elle s'en éloigne
+  // (au-delà de `loin` px). Chaque canevas déborde de `bord` tuile sur ses voisines : au zoom non
+  // entier, deux images bord à bord laisseraient voir un filet entre elles.
+  const REGION = { tuiles: 64, bord: 1, pres: 256, loin: 768 };
+
   // La longueur (px) d'une suite de points [{ x, y }], depuis `de` s'il est donné.
   function longueur(pts, de) {
     let d = 0, a = de || (pts && pts[0]);
@@ -216,7 +224,7 @@
   }
 
   global.CarteKit = Object.assign(global.CarteKit || {}, {
-    T, v, reduit, ratio, extrude, planche, planchePerso, saisie, regard, cases, VITESSES, longueur,
+    T, v, reduit, ratio, extrude, planche, planchePerso, saisie, regard, cases, VITESSES, REGION, longueur,
     cycle, imageA, animTuiles, pasAnimTuiles, FLECHE, balance, TEXTE, texte,
   });
 })(window);
