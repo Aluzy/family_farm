@@ -7,7 +7,7 @@ import {
   addMember, addPet, adultCount, alertEvents, alertSnapshot, autoMaintain, autoTasks,
   averageHappiness, boiteCounts, buildMorningReport, childCount, cleanFirstName, collectLeftovers,
   commerceNight, countItem, createInitialState, DATA, dishHappiness, energyMax, escapeHtml,
-  feedFamily, feedLivestock, fillSilo, findMember, findPet, findPlot, finishPreparations,
+  feedFamily, feedLivestock, chevalNuit, fillSilo, findMember, findPet, findPlot, finishPreparations,
   fridgeNight, getNotifications, growOrchard, harvest, inventoryCounts, jaugeMembre, layEggs,
   mangeurs, mealHappinessDelta, memberName, memberPortrait, memberRemovalBlock, memberRoom,
   MIGRATIONS, newGameFrom, NIGHT_STEPS, nightPower, offlineReport, offlineSnapshot, petIcon,
@@ -147,7 +147,7 @@ test('profil : un prénom abîmé dans une sauvegarde retombe sur le rôle à l\
 test('ordre des étapes nocturnes : ce qui reste à ramasser, repas et santé, automatisations, ponte (la pousse suit l\'horloge), paille des moutons et des vaches, préparations, puis péremption en dernier', () => {
   // Arbre v2 : la pluie avant les automatisations, l'entretien automatique
   // après les préparations et avant le bloc nocturne du frigo.
-  assertEqual(NIGHT_STEPS, [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, robotNight, fridgeNight, fillSilo, spoil]);
+  assertEqual(NIGHT_STEPS, [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, chevalNuit, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, robotNight, fridgeNight, fillSilo, spoil]);
   assert(NIGHT_STEPS[NIGHT_STEPS.length - 1] === spoil, 'la péremption est toujours la dernière étape');
 });
 

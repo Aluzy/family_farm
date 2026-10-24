@@ -9,6 +9,7 @@ import { jaugeFamille, repasCoucher } from './repas.js';
 import { growDue, readyCrops } from './crops.js';
 import { energyMax, restoreEnergy, wakeEnergy } from './stamina.js';
 import { feedLivestock, fillSilo, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
+import { chevalNuit } from './cheval.js';
 import { growOrchard } from './orchard.js';
 import { commerceNight } from './commerce.js';
 import { finishPreparations } from './kitchen.js';
@@ -38,10 +39,11 @@ import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 // la paille du blé qui finit de se moudre pendant la nuit sert donc à partir
 // de la nuit suivante. Juste avant la péremption, le blé de l'inventaire
 // rejoint le Silo s'il y a de la place (fillSilo) : au Silo, il ne périme pas. Le robot se
-// recharge juste après le frigo (robotNight), sur ce qui reste dans les batteries.
+// recharge juste après le frigo (robotNight), sur ce qui reste dans les batteries. Le cheval
+// mange sa paille juste après l'Étable (chevalNuit, js/engine/cheval.js).
 // Chaque étape reçoit l'état et le modifie.
 // La pousse des cultures n'en fait plus partie : elle suit l'horloge (growDue).
-export const NIGHT_STEPS = [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, robotNight, fridgeNight, fillSilo, spoil];
+export const NIGHT_STEPS = [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, chevalNuit, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, robotNight, fridgeNight, fillSilo, spoil];
 
 /* ---------- la nuit ---------- */
 

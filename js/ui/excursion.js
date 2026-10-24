@@ -4,6 +4,7 @@ import { weekdayIndex } from '../engine/format.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
 import { memberPerso } from '../engine/family.js';
 import { depositOreNotebook, enSelle, hasTool, hitsNeeded, mineOre, morceauxDe } from '../engine/outils.js';
+import { chevalVue, monterCheval, rentrerCheval } from '../engine/cheval.js';
 import { techFlag } from '../engine/techtree.js';
 import { rockGone, treeGone } from '../engine/crops.js';
 import { addItem } from '../engine/inventory.js';
@@ -169,6 +170,8 @@ function rentre(arrivee = null) {
   const el = mapEl();
   if (el) { el.hidden = true; delete el.dataset.carte; el.querySelectorAll('.map-retour').forEach((b) => b.remove()); }
   document.body.classList.remove('en-excursion');
+  // (le cheval laissé attaché sur une autre carte rentre à l'Écurie : js/engine/cheval.js)
+  if (rentrerCheval(state)) { persistState(); showToast(`${DATA.CHEVAL.ICONE} Ton cheval est rentré à l'Écurie ; le poteau et la corde sont dans l'inventaire.`); }
   const ou = ['est', 'mine'].includes(arrivee) ? arrivee : null;
   history.replaceState(null, '', 'jeu.html' + (ou ? '?arrivee=' + ou : ''));
   refresh();
@@ -276,6 +279,14 @@ window.FermeHote = {
   god: () => godMode,
   // le personnage est en selle sur son triporteur (js/carte/triporteur.js) : il roule plus vite
   triporteur: () => enSelle(state),
+  // son cheval (js/engine/cheval.js) : { monte, attache, vitesse } ou null ; le monter, attaché
+  // sur cette carte (lieu : { carte, proche }) — en descendre passe par la barre d'outils
+  cheval: () => chevalVue(state),
+  monterCheval: (lieu) => {
+    const r = nuit() || joue(monterCheval(state, lieu));
+    if (r.ok) showToast(`${DATA.CHEVAL.ICONE} En selle ! Le poteau et la corde sont dans l'inventaire.`);
+    return r;
+  },
   // la carte de transition de la partie (js/engine/transition.js) : son plan (l'ouest, tiré
   // d'après la graine), les ressources du jour, celles que le joueur a déjà prises (pris) et le jour.
   transition: () => {

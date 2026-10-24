@@ -12,13 +12,15 @@ import { closeStageWindow, stageInterior, stageWindow } from './stage-windows.js
 import { closeModal } from './modal.js';
 import { buildSlotHtml } from './chantier.js';
 import { setBuildMode } from './store.js';
+import { chevalMonte, chevalOu, chevalPossede, toggleCheval } from '../engine/cheval.js';
 
 /* ---------- la barre d'outils, en bas de la carte ---------- */
 
 // Une case par outil (OUTILS, dans l'ordre de la barre), qui montre l'outil une fois acheté.
 // Un appui prend l'outil en main ; un second appui sur l'outil en main le range. Le triporteur,
 // une fois acheté, a sa case au bout : un appui y fait monter le personnage, un autre l'en
-// fait descendre (il roule plus vite : js/carte/triporteur.js). La barre se
+// fait descendre (il roule plus vite : js/carte/triporteur.js). De même le cheval (js/engine/
+// cheval.js) : hors de la ferme, en descendre l'attache à un poteau, là. La barre se
 // range comme le menu : sa languette, au-dessus d'elle, la fait glisser hors de l'écran.
 export let toolbarOpen = true;
 
@@ -41,8 +43,8 @@ function enMain() {
 // dès qu'un outil est acheté.
 export function toolBarHtml() {
   const bati = buildSlotHtml();             // la ferme générée : le mode Construire (js/ui/chantier.js)
-  const tri = hasTool(state, 'triporteur');
-  if (!OUTILS.some((id) => hasTool(state, id)) && !tri && !bati) return '';
+  const tri = hasTool(state, 'triporteur'), cheval = chevalPossede(state);
+  if (!OUTILS.some((id) => hasTool(state, id)) && !tri && !cheval && !bati) return '';
   const main = enMain();
   const cases = OUTILS.map((id) => {
     const def = toolDef(id);
@@ -52,7 +54,7 @@ export function toolBarHtml() {
     const tenu = id === main;
     const label = tenu ? `${def.NOM} en main : la ranger` : `Prendre : ${def.NOM}`;
     return `<button type="button" class="tool-slot${tenu ? ' active' : ''}" data-action="tool-use" data-outil="${id}" aria-pressed="${tenu}" aria-label="${label}" title="${label}">${def.ICONE}</button>`;
-  }).join('') + (tri ? triporteurSlot() : '') + bati;
+  }).join('') + (tri ? triporteurSlot() : '') + (cheval ? chevalSlot() : '') + bati;
   const tab = `<button type="button" class="tool-bar-tab" data-action="toolbar-toggle" aria-expanded="${toolbarOpen}" aria-label="${toolbarOpen ? 'Ranger la barre d\'outils' : 'Sortir la barre d\'outils'}" title="Outils">${BARRE_FLECHE}</button>`;
   return tab + `<div class="tool-bar-body" role="toolbar" aria-label="Outils"${toolbarOpen ? '' : ' inert'}>${cases}</div>`;
 }
@@ -62,6 +64,33 @@ function triporteurSlot() {
   const def = toolDef('triporteur'), monte = enSelle(state);
   const label = monte ? `${def.NOM} : en descendre` : `${def.NOM} : monter dessus`;
   return `<button type="button" class="tool-slot${monte ? ' active' : ''}" data-action="tool-use" data-outil="triporteur" aria-pressed="${monte}" aria-label="${label}" title="${label}">${def.ICONE}</button>`;
+}
+
+// La case du cheval : allumée quand le personnage est en selle.
+function chevalSlot() {
+  const C = DATA.CHEVAL, monte = chevalMonte(state);
+  const label = monte ? `${C.NOM} : en descendre` : `${C.NOM} : monter en selle`;
+  return `<button type="button" class="tool-slot${monte ? ' active' : ''}" data-action="cheval-toggle" aria-pressed="${monte}" aria-label="${label}" title="${label}">${C.ICONE}</button>`;
+}
+
+// Où est le personnage : sur la ferme, ou sur une carte d'excursion (js/carte/ville/monture.js,
+// chevalLieu : son nom, le point où il est, à côté du cheval attaché ou non ; l'infra-monde : ailleurs).
+function lieuJoueur() {
+  if (!document.body.classList.contains('en-excursion')) return { carte: 'ferme' };
+  const sc = window.Ville && window.Ville.scene;
+  return sc && sc.chevalLieu ? sc.chevalLieu() : { carte: 'infra', x: 0, y: 0, proche: false };
+}
+
+// Monter en selle ou descendre du cheval (un appui sur sa case).
+function useCheval() {
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+  const C = DATA.CHEVAL, lieu = lieuJoueur(), avant = chevalOu(state);
+  const r = applyResult(toggleCheval(state, lieu));
+  if (!r.ok) return;
+  persistState();
+  if (r.monte) notify(`${C.ICONE} En selle : tu vas ${String(state.cheval.nourri === false ? C.VITESSE_FAIM : C.VITESSE).replace('.', ',')} fois plus vite sur les cartes${state.cheval.nourri === false ? ' (il n\'a pas mangé sa paille cette nuit)' : ''}.`);
+  else if (r.attache) notify(`${C.ICONE} Tu l'attaches à son poteau : il t'attend ici. Touche-le pour remonter.`);
+  else if (avant === 'monte') notify(`${C.ICONE} Tu descends de cheval : il rentre à l'Écurie.`);
 }
 
 function useTool(id) {
@@ -234,6 +263,9 @@ export function fishFromStage(eau) {
 registerActions({
   'tool-use': (target) => {
     useTool(target.dataset.outil);
+  },
+  'cheval-toggle': () => {
+    useCheval();
   },
   'toolbar-toggle': () => {
     toolbarOpen = !toolbarOpen;

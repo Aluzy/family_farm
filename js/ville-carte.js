@@ -79,6 +79,8 @@
       this.load.spritesheet(this.heroKey, v(sheet.file), { frameWidth: HERO.w, frameHeight: HERO.h });
       // son triporteur (js/carte/triporteur.js)
       if (!this.textures.exists(K.TRIPORTEUR.key)) this.load.spritesheet(K.TRIPORTEUR.key, v('assets/' + K.TRIPORTEUR.file), { frameWidth: K.TRIPORTEUR.w, frameHeight: K.TRIPORTEUR.h });
+      // son cheval : sellé, attaché à son poteau (js/carte/cheval.js)
+      if (K.chargeCheval) K.chargeCheval(this, (f) => v('assets/' + f));
       this.load.json(this.heroKey + '_noms', v(sheet.names));
       this.load.spritesheet(CARS.key, v(CARS.file), { frameWidth: 64, frameHeight: 64 });
       this.load.json(CARS.key + '_meta', v(CARS.meta));
@@ -238,6 +240,8 @@
       const d = (arrivee && objects('arrivees').find((o) => o.name === arrivee)) || objects('depart')[0] || { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
       this.hero = this.add.sprite(Math.round(d.x), Math.round(d.y), this.heroKey, this.frame('idle_bas_0')).setOrigin(0.5, HERO.foot / HERO.h);
       this.selle = K.triporteur(this);
+      this.nomCarte = etat.nom;
+      this.makeCheval();
       this.shadow = this.add.ellipse(0, 0, 11, 4, 0x1e1a18, 0.35);
       this.heroPos = { x: d.x, y: d.y };
       this.heroAlpha = 1;
@@ -283,7 +287,7 @@
         if (this.peche && !this.peche.phase) this.peche = null;
         const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
         if (a) { this.leave(a); return; }
-        if (this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapHabitant(w) || this.tapCamion(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisinDehors(w) || this.tapLivreur(w)) { this.dbl.oublie(); return; }
+        if (this.tapCheval(w) || this.tapFind(w) || this.tapRessource(w) || this.tapAnimal(w) || this.tapGare(w) || this.tapAbri(w) || this.tapOre(w) || this.tapChampignon(w) || this.tapHabitant(w) || this.tapCamion(w) || this.tapLieu(w) || this.tapNature(w) || this.tapWater(w) || this.tapVoisinDehors(w) || this.tapLivreur(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
         // ailleurs, un double appui (comme à la ferme) : elle y va
         // (un essai de marche : la marche au doigt s'explique, une fois)
@@ -781,13 +785,15 @@
       this.stepHabitants(time, dt);
       this.stepCueillette();
       this.stepDialog();
+      this.stepCheval(time);
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;
       let vx = 0, vy = 0;
-      // en selle sur son triporteur (pas dans la grotte, ni pendant un geste) : plus vite
+      // en selle sur son triporteur, ou sur son cheval (pas dans la grotte, ni pendant un geste) : plus vite
       const Ho = hote();
-      const selle = !!(this.selle && Ho && Ho.triporteur && Ho.triporteur() && !this.cave && !this.mining && !this.locked);
-      const vit = HERO.speed * (selle ? K.TRIPORTEUR.vitesse : 1);
+      const aCheval = !this.mining && !this.locked ? this.chevalVitesse() : 0;
+      const selle = !aCheval && !!(this.selle && Ho && Ho.triporteur && Ho.triporteur() && !this.cave && !this.mining && !this.locked);
+      const vit = HERO.speed * (aCheval || (selle ? K.TRIPORTEUR.vitesse : 1));
       const k = this.locked || this.fishing || saisie() ? null : this.keys;
       const j = this.locked || this.fishing || this.dialog ? null : this.manette.dir();
       if (j) { vx = j.x; vy = j.y; }
@@ -824,12 +830,22 @@
         // debout : elle respire (deux images, lentement)
         H.setFrame(this.frame.de('idle', this.face, Math.floor(time / 600) % 2));
       }
-      if (selle) {
+      if (aCheval) {
+        // en selle sur son cheval, qui va au pas sous lui
+        if (this.selle) this.selle.cache();
+        const r = this.chevalSelle.place(P.x, P.y, this.face, H.flipX, this.walked, this.heroAlpha);
+        H.setFrame(this.frame(r.image));
+        hx = r.dx; hy = r.dy;
+      } else if (selle) {
         // assis sur le triporteur, qui roule sous lui
+        if (this.chevalSelle) this.chevalSelle.cache();
         const r = this.selle.place(P.x, P.y, this.face, H.flipX, this.walked, this.heroAlpha);
         H.setFrame(this.frame(r.image));
         hx = r.dx; hy = r.dy;
-      } else if (this.selle) this.selle.cache();
+      } else {
+        if (this.selle) this.selle.cache();
+        if (this.chevalSelle) this.chevalSelle.cache();
+      }
       // (à un étage de l'immeuble : remontée, devant le voile)
       const lift = this.liftVille();
       H.setPosition(Math.round(P.x + hx), Math.round(P.y - hy - lift)).setDepth(this.profondeurHeros(P.y)).setAlpha(this.heroAlpha);

@@ -349,6 +349,9 @@ export const RAW_DATA = {
     "four_pierre": { "nom": "Four de pierre", "icone": "🔥", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "nichoir": { "nom": "Nichoir", "icone": "🪺", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "mangeoire": { "nom": "Mangeoire", "icone": "🛶", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "ratelier": { "nom": "Râtelier", "icone": "🌾‍🪜", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "corde": { "nom": "Corde", "icone": "➰", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "poteau_attache": { "nom": "Poteau d'attache", "icone": "🪵‍🔗", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "bac_semis": { "nom": "Bac à semis", "icone": "🎍", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "bloc_silo": { "nom": "Bloc de silo", "icone": "🗃", "prix": 7, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meule": { "nom": "Meule", "icone": "🪨‍⚙️", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -681,6 +684,9 @@ export const RAW_DATA = {
       "puits_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "puits_pierre": 1 } },
       "nichoir": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "nichoir": 1 } },
       "mangeoire": { "entrees": { "planche": 6, "pierre": 4, "fibre": 2 }, "sortie": { "mangeoire": 1 } },
+      "ratelier": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "ratelier": 1 }, "debloque": "ecurie" },
+      "corde": { "entrees": { "fibre": 3 }, "sortie": { "corde": 1 }, "debloque": "ecurie" },
+      "poteau_attache": { "entrees": { "bois": 2 }, "sortie": { "poteau_attache": 1 }, "debloque": "ecurie" },
       "bac_semis": { "entrees": { "planche": 8, "pierre": 4, "fibre": 4 }, "sortie": { "bac_semis": 1 } },
       "bloc_silo": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "bloc_silo": 1 }, "debloque": "silo" },
       "meule": { "entrees": { "pierre": 10, "planche": 4 }, "sortie": { "meule": 1 } },
@@ -760,6 +766,16 @@ export const RAW_DATA = {
       "pecher": { "nom": "Pêcher", "objet": "jeune_pecher", "dehors": true, "arbre": "pecher", "debloque": "verger" },
       "nichoir": { "nom": "Nichoir", "objet": "nichoir", "dedans": true, "bloque": true, "unique": true, "batiment": "poulailler" },
       "mangeoire": { "nom": "Mangeoire", "objet": "mangeoire", "dedans": true, "bloque": true, "unique": true, "batiment": "paturage" },
+      "ratelier": {
+        "nom": "Râtelier",
+        "objet": "ratelier",
+        "dedans": true,
+        "bloque": true,
+        "unique": true,
+        "ecurie": true,
+        "dessin": "ratelier",
+        "debloque": "ecurie"
+      },
       "bac_semis": { "nom": "Bac à semis", "objet": "bac_semis", "dedans": true, "bloque": true, "unique": true, "batiment": "serre" },
       "bloc_silo": { "nom": "Bloc de silo", "objet": "bloc_silo", "dehors": true, "bloque": true, "silo": true, "debloque": "silo" },
       "puits": { "nom": "Puits", "objet": "puits_pierre", "dehors": true, "bloque": true, "unique": true },
@@ -976,7 +992,7 @@ export const RAW_DATA = {
       "elevage": {
         "nom": "Élevage",
         "icone": "🐔",
-        "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "bac_semis", "ruche", "bac_fleurs", "bloc_silo", "meule"]
+        "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "bac_fleurs", "bloc_silo", "meule"]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
       "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur"] }
@@ -1540,6 +1556,17 @@ export const RAW_DATA = {
   },
   "SILO": { "ITEM": "ble", "PRIX_CONSTRUCTION": 0, "CAPACITE": [20, 50, 100, 200, 400], "PRIX_NIVEAUX": [0, 30, 80, 180, 400] },
   "RUCHE": { "NOM": "Ruche", "ICONE": "🐝", "OBJET": "ruche", "PRIX": 200, "NUITS": 2, "PRODUIT": "miel", "MIEL": 3 },
+  "CHEVAL": {
+    "NOM": "Cheval",
+    "ICONE": "🐴",
+    "PRIX": 600,
+    "PLACES": 2,
+    "VITESSE": 1.8,
+    "VITESSE_FAIM": 1.3,
+    "RATION": 2,
+    "ATTACHE": ["poteau_attache", "corde"],
+    "PROCHE": 40
+  },
   "POULAILLER": { "PRIX_CONSTRUCTION": 40, "CAPACITE": [4, 8, 12, 16, 24], "PRIX_NIVEAUX": [0, 100, 220, 450, 900] },
   "ANIMAUX": {
     "poule": { "nom": "Poule", "icone": "🐔", "prix": 15, "poulesParBle": 2, "oeufsParNuit": 1, "produit": "oeuf" },
@@ -2309,7 +2336,7 @@ export const RAW_DATA = {
       { "debloque": ["poivron", "ail", "fraise", "ble", "silo", "poulailler", "marche"] },
       { "debloque": ["epinard", "tournesol", "riz", "moulin"] },
       { "debloque": ["houblon", "four", "paturage", "moutons"] },
-      { "debloque": ["presse", "verger"] },
+      { "debloque": ["presse", "verger", "ecurie"] },
       { "debloque": ["cacao", "vanille", "cafe", "serre", "energie"] },
       { "debloque": ["frigo"] },
       { "debloque": [], "note": "un courrier du notaire : un héritage caché" },
@@ -2333,6 +2360,12 @@ export const RAW_DATA = {
       "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille fauchée" },
       "serre": { "nom": "Serre", "icone": "🏡", "note": "cacao, vanille et café, et des légumes à l'abri" },
       "verger": { "nom": "Verger", "icone": "🌳", "note": "pommiers et poiriers" },
+      "ecurie": {
+        "sauvage": true,
+        "nom": "Écurie",
+        "icone": "🐴",
+        "note": "un cheval à monter sur toutes les cartes, la corde et le poteau pour l'attacher"
+      },
       "commerce": {
         "nom": "Commerce",
         "icone": "🏪",
