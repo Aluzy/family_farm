@@ -19,6 +19,8 @@ import { closeFridge, FRIGO_OBJET } from './fridge.js';
 import { ETAPES } from './didacticiel.js';
 import { faucherSousBati } from './outils.js';
 import { farmSeed, farmTerrain } from './terrain.js';
+import { genererFerme } from './ferme-generee.js';
+import { caseDuMonde, FERME_DANS_MONDE, idDuMonde, MONDE } from './monde.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
@@ -427,7 +429,67 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v51 → v52 : la ferme est posée au centre du grand monde (monde.js) ; les cases se numérotent
+  // sur la largeur du monde. Tout ce que la partie range par case (ou par colonne et rangée, ou
+  // par position en px sur la carte) est porté dans les cases du monde (migrerVersLeMonde).
+  51: (state) => migrerVersLeMonde(state),
 };
+
+// Porte les cases d'une partie (numérotées sur la largeur de sa ferme) dans celles du monde, où sa
+// ferme est posée en FERME_DANS_MONDE : les blocs, les sols, les étages, les fenêtres, les
+// hauteurs, les ruches, les distributeurs, les botteleuses (leurs clés) ; les parcelles du
+// potager et de la Serre, les arbres du Verger et ceux plantés, l'arrosage du jour (leurs
+// cases) ; ce qui reste à ramasser (« parcelle:<case> », « arbre:<case> ») ; les arbres, les
+// buissons et les rochers touchés (« colonne,rangée » ; pas les arbres plantés, « f<n> »), les
+// touffes fauchées et les morceaux au sol (en px) ; l'abri du didacticiel. La cueillette du jour
+// repart de zéro (ses places sont tirées de nouveau).
+function migrerVersLeMonde(old) {
+  return { ...decalerPartie(old, 1), version: 52 };
+}
+
+// Le décalage lui-même : `sens` 1, de la ferme vers le monde ; -1, l'inverse (les tests s'en
+// servent pour faire une partie d'avant le monde à partir d'une partie d'aujourd'hui). Une copie.
+export function decalerPartie(old, sens) {
+  const state = JSON.parse(JSON.stringify(old));
+  const g = farmSeed(state);
+  if (g === null) return state;                       // (la carte de Tiled : pas de monde)
+  const W0 = genererFerme(g).terrain.LARGEUR, W1 = MONDE.LARGEUR, T = MONDE.T;
+  const [ox, oy] = FERME_DANS_MONDE.map((d) => d * sens);
+  const c = (i) => {
+    if (!Number.isInteger(i)) return i;
+    return sens > 0 ? caseDuMonde(i, W0) : (Math.floor(i / W1) + oy) * W0 + (i % W1) + ox;
+  };
+  const decale = (id, px = 1) => idDuMonde(id, px, [ox, oy]);
+  const cles = (o) => (o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [/^\d+$/.test(k) ? String(c(Number(k))) : k, v])) : o);
+  const ids = (o, px) => (o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [decale(k, px), v])) : o);
+  for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'fenetres', 'etage', 'fenetresEtage', 'ruches', 'distributeurs', 'botteleuses']) {
+    if (state[k]) state[k] = cles(state[k]);
+  }
+  const cases = (l) => (Array.isArray(l) ? l.map((p) => (p && typeof p === 'object' ? { ...p, case: c(p.case) } : p)) : l);
+  if (state.potager) state.potager.parcelles = cases(state.potager.parcelles);
+  if (state.serre) state.serre.parcelles = cases(state.serre.parcelles);
+  if (state.verger) state.verger.arbres = cases(state.verger.arbres);
+  if (state.foret) state.foret.arbres = cases(state.foret.arbres);
+  if (state.irrigation) {
+    for (const k of ['cases', 'faites']) if (Array.isArray(state.irrigation[k])) state.irrigation[k] = state.irrigation[k].map(c);
+  }
+  if (state.aRamasser) {
+    state.aRamasser = Object.fromEntries(Object.entries(state.aRamasser).map(([id, tas]) => {
+      if (!tas || !Number.isInteger(tas.ref)) return [id, tas];
+      return [`${tas.lieu}:${c(tas.ref)}`, { ...tas, ref: c(tas.ref) }];
+    }));
+  }
+  const O = state.outils;
+  if (O) {
+    for (const k of ['arbres', 'buissons', 'rochers']) if (O[k]) O[k] = ids(O[k]);
+    if (O.herbes) O.herbes = ids(O.herbes, T);
+  }
+  if (Array.isArray(state.morceaux)) state.morceaux = state.morceaux.map((m) => (m && m.carte === 'ferme' ? { ...m, x: m.x + ox * T, y: m.y + oy * T } : m));
+  const abri = state.didacticiel && state.didacticiel.abri;
+  if (abri && Number.isInteger(abri.c) && Number.isInteger(abri.r)) state.didacticiel.abri = { ...abri, c: abri.c + ox, r: abri.r + oy };
+  delete state.cueillette;
+  return state;
+}
 
 function migrateSerreCases(old) {
   const state = { ...JSON.parse(JSON.stringify(old)), version: 50 };

@@ -95,6 +95,26 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
 3. **Le moteur en coordonnées du monde** (2 à 3 PR) : les cases numérotées sur la largeur du
    monde (migration de tout ce qui est rangé par case), le terrain lu case par case, la nuit
    limitée aux régions visitées, des trajets bornés.
+   - **Fait (3a)** : le monde (`js/engine/monde.js`, `genererMonde`) : la ferme générée posée
+     telle quelle en `FERME_DANS_MONDE` (250, 198), au centre d'un monde de 644 × 510 tuiles ;
+     autour, une prairie qui continue l'herbe de la ferme (même bruit de teinte, raccords, le
+     chemin qui s'arrondit au bord). Le terrain du monde est celui de la ferme porté dans ses
+     cases (sans relire la carte case par case) ; la carte et les coins des cases ne se font qu'à
+     la première demande. Pour l'instant, la prairie n'est « rien » (« . ») : on y marche, on n'y
+     laboure ni n'y bâtit, et le moteur ne parcourt que les cases de la ferme
+     (`casesDuTerrain`). `farmTerrain`, `farmMap` : le monde ; une partie d'avant (version < 52,
+     pendant ses migrations) lit encore sa ferme seule.
+   - Sauvegardes : format 52 ; la migration 51 → 52 (`decalerPartie`, `js/engine/state.js`)
+     porte tout ce qui est rangé par case : les clés des blocs, sols, étages, fenêtres, hauteurs,
+     ruches, distributeurs et botteleuses ; les cases des parcelles, des arbres du Verger et de
+     ceux plantés, de l'arrosage ; les tas à ramasser ; les arbres, buissons et rochers touchés
+     (« colonne,rangée », pas les arbres plantés « f<n> ») ; les touffes fauchées et les morceaux
+     au sol (en px) ; l'abri du didacticiel. La cueillette du jour est tirée de nouveau. Vérifié
+     dans Chromium : une partie du jeu d'avant se rouvre à l'identique.
+   - **À faire (3b)** : la nuit limitée aux régions visitées, des trajets bornés (le personnage,
+     la famille), les régions lues case par case quand le monde aura ses biomes. Attention pour
+     l'étape 4 : un arbre ou un rocher du monde collé au bord de la ferme ne doit pas se
+     fondre avec un arbre de la ferme (leurs identifiants changeraient).
 4. **Le générateur du monde** (2 PR) : relief, humidité, biomes, rivières, côte, chemins ; la
    ferme au centre ; les hameaux, les entrées de grotte, les coins de pêche ; dans un Web
    Worker, région par région, avec un cache.

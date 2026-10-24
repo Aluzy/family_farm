@@ -69,7 +69,7 @@ export const ANCIENNE_COUR = {
 };
 
 // Un nombre de 32 bits d'après une chaîne (FNV-1a).
-function hache(s) {
+export function hache(s) {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
   return h >>> 0;
@@ -77,7 +77,7 @@ function hache(s) {
 
 // Un bruit lisse (valeurs sur une grille de `pas` tuiles, interpolées), entre 0 et 1, plusieurs
 // octaves.
-function bruit(graine, pas, octaves = 3) {
+export function bruit(graine, pas, octaves = 3) {
   const g0 = hache(graine);
   const val = (ix, iy, o) => {
     let h = (g0 ^ Math.imul(ix, 374761393) ^ Math.imul(iy, 668265263) ^ Math.imul(o + 1, 2147483647)) >>> 0;
@@ -95,6 +95,13 @@ function bruit(graine, pas, octaves = 3) {
     }
     return s / poids;
   };
+}
+
+// La teinte de l'herbe (0, 1 ou 2, de la plus foncée à la plus claire) au coin (x, y) des cases
+// (en tuiles de la ferme ; au-delà de ses bords aussi : la prairie du monde la continue, monde.js).
+export function teinteHerbe(graine) {
+  const b = bruit(graine + ':teinte', 14, 2);
+  return (x, y) => { const v = b(x, y); return v < 0.42 ? 0 : v < 0.6 ? 1 : 2; };
 }
 
 const cartes = new Map();
@@ -197,12 +204,11 @@ function fabriquer(graine) {
     }
   }
   const S = (x, y) => sommet[y * V + x];
-  const teinteDe = bruit(graine + ':teinte', 14, 2);
+  const teinteDe = teinteHerbe(graine);
   const teinte = new Uint8Array(V * (H + 1)), prof = new Uint8Array(V * (H + 1));
   for (let y = 0; y <= H; y++) {
     for (let x = 0; x <= W; x++) {
-      const b = teinteDe(x, y);
-      let t = b < 0.42 ? 0 : b < 0.6 ? 1 : 2;
+      let t = teinteDe(x, y);
       for (const [dx, dy] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) if (classe[idx(Math.min(W - 1, Math.max(0, x + dx)), Math.min(H - 1, Math.max(0, y + dy)))] === 'eau') t = 0;
       teinte[y * V + x] = t;
       let p = S(x, y) === 'eau';

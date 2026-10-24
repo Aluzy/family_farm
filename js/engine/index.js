@@ -15,6 +15,7 @@ export * from './family.js';
 export * from './terrain.js';
 export * from './terrain-carte.js';
 export * from './ferme-generee.js';
+export * from './monde.js';
 export * from './crops.js';
 export * from './depart.js';
 export * from './cruche.js';

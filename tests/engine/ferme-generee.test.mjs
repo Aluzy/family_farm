@@ -7,6 +7,7 @@
 import {
   assert, assertEqual, AVANT_DEMENAGEMENT, garden, migreAvant, reach, setInv, sleepOnce, test,
   tireless,
+  avantLeMonde, caseDeLaFerme,
 } from './aide.mjs';
 import { readFileSync } from 'node:fs';
 import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
@@ -141,11 +142,11 @@ for (const graine of ['1', '2', '7', 'abc', '12345']) {
 
 test('ferme générée : une partie change de ferme en mode test (une autre graine)', () => {
   const s = garden();
-  assertEqual([farmSeed(s), farmTerrain(s).LARGEUR, farmMap(s).width], ['1', 144, 144], 'sa ferme : celle de sa graine');
+  assertEqual([farmSeed(s), farmTerrain(s).LARGEUR, farmMap(s).width, farmTerrain(s).FERME.LARGEUR], ['1', 644, 644, 144], 'sa ferme : celle de sa graine, au centre du monde');
   s.outils = { arbres: { '14,25': { retour: 9 } }, rochers: { '25,13': 2 } };
   assertEqual(testFarmMap(s, 42), { ok: true, graine: '42' });
   const T = farmTerrain(s);
-  assertEqual([T.LARGEUR, farmMap(s).width, s.outils.arbres, s.outils.rochers], [144, 144, {}, {}]);
+  assertEqual([T.LARGEUR, farmMap(s).width, s.outils.arbres, s.outils.rochers], [644, 644, {}, {}]);
   assert(s.potager.parcelles.length === DATA.POTAGER.DEPART.length && s.potager.parcelles.every((p) => isArable(p.case, s)), 'les parcelles de départ, sur la nouvelle carte');
   assert(hoeableTiles(s).length > 5000, 'la houe y laboure');
   // le robot : sa base et la Serre suivent la cour
@@ -587,7 +588,7 @@ test('nouvelle partie sur une ferme générée : la graine, sans terre au dépar
   const s = createNewGame(5);
   assertEqual(s.potager.parcelles, []);
   assertEqual(setFarmSeed(s, 'neuve'), { ok: true, graine: 'neuve' });
-  assertEqual([farmTerrain(s).LARGEUR, s.potager.parcelles], [144, []]);
+  assertEqual([farmTerrain(s).LARGEUR, s.potager.parcelles], [644, []]);
 });
 
 test('ferme générée : chaque nuit, qui n\'a pas de paillasse dans une pièce close perd du bonheur', () => {
@@ -1273,8 +1274,9 @@ test('migration v37 → v38 : une enceinte qui mêle une maison et un bâtiment 
   s.blocs[p.dedans + 1] = 'nichoir';
   s.poulailler.construit = true;
   setInv(s, {});
-  const m = migreAvant({ ...s, version: 37 });
-  assertEqual([m.version, m.blocs[p.dedans], m.blocs[p.dedans + 1], countItem(m, 'nichoir'), m.poulailler.construit], [AVANT_DEMENAGEMENT, 'paillasse', undefined, 1, false]);
+  const m = migreAvant(avantLeMonde(s, 37));
+  const d = caseDeLaFerme(p.dedans);
+  assertEqual([m.version, m.blocs[d], m.blocs[d + 1], countItem(m, 'nichoir'), m.poulailler.construit], [AVANT_DEMENAGEMENT, 'paillasse', undefined, 1, false]);
 });
 
 test('ferme générée : la barrière arrête le passage sans fermer de pièce ; le chemin se pose dehors, comme celui de la carte', () => {

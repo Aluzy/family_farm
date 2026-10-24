@@ -6,7 +6,7 @@ import { gainActionXp, unlockLevel } from './levels.js';
 import { isUnlocked } from './campaign.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { hasHoe, plotAtTile } from './crops.js';
-import { farmSeed, farmTerrain, tileCount } from './terrain.js';
+import { casesDuTerrain, farmSeed, farmTerrain } from './terrain.js';
 import { cutBushCases } from './outils.js';
 import { noter } from './journal.js';
 
@@ -43,8 +43,8 @@ function hache(s) {
 const herbesDe = new WeakMap();
 function herbes(T) {
   if (!herbesDe.has(T)) {
-    const out = [], n = tileCount(T);
-    for (let t = 0; t < n; t++) if (T.LIGNES[Math.floor(t / T.LARGEUR)][t % T.LARGEUR] === '#') out.push(t);
+    const out = [];
+    for (const t of casesDuTerrain(T)) if (T.LIGNES[Math.floor(t / T.LARGEUR)][t % T.LARGEUR] === '#') out.push(t);
     herbesDe.set(T, out);
   }
   return herbesDe.get(T);
