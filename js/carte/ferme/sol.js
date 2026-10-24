@@ -222,13 +222,16 @@
       this.hoeGrid = g;
     },
 
-    // Version 1.15 : la terre suit les parcelles (leur tuile) ; seules les tuiles qui
-    // changent, et leurs voisines (leur bordure), sont repeintes.
+    // Version 1.15 : la terre suit les parcelles (leur tuile), celles de la Serre comprises (sur
+    // les cases de sa pièce : la même terre, les mêmes bordures qu'au-dehors) ; seules les
+    // tuiles qui changent, et leurs voisines (leur bordure), sont repeintes.
     syncZoneGround(model) {
       const raw = this.mapRaw;
       if (!raw) return;
       const W = raw.width;
-      const now = new Set((model.plots || []).map((p) => p.case).filter((c) => typeof c === 'number'));
+      const serre = new Set(model.serreCases || []);
+      const now = new Set((model.plots || []).map((p) => p.case).filter((c) => typeof c === 'number')
+        .concat((model.serre || []).map((p) => p.case).filter((c) => serre.has(c))));
       const key = [...now].sort((a, b) => a - b).join();
       if (key === this.zoneKey) return;
       this.zoneKey = key;

@@ -87,7 +87,6 @@
       for (const [id, e] of this.plots) {
         if (!seen.has(id)) { this.destroyPlot(e); this.plots.delete(id); }
       }
-      this.syncSerreBacs(model);
       this.syncZoneGround(model);
       this.syncHoeGrid(model.labourables);
       this.syncRocks(model.rochers);
@@ -237,28 +236,6 @@
       const x = clamp(Math.round(o.x + o.width / 2 - w / 2), 0, this.world.w - w);
       const y = clamp(Math.round(o.y + o.height), h, this.world.h);
       return this.add.image(x, y, def.key, 0).setOrigin(0, 1).setDepth(y);
-    },
-
-    // La Serre de la ferme générée : ses parcelles (labourées sur les cases de sa pièce) dans des
-    // bacs de planches ; un rebord autour de chaque groupe de cases voisines.
-    syncSerreBacs(model) {
-      const places = new Set(model.serreCases || []);
-      const cases = (model.serre || []).map((p) => p.case).filter((c) => places.has(c)).sort((a, b) => a - b);
-      const cle = cases.join();
-      if (cle === (this.serreBacsCle || '')) return;
-      this.serreBacsCle = cle;
-      if (!this.serreBacs) this.serreBacs = this.add.graphics().setDepth(2.1);
-      const g = this.serreBacs.clear(), cols = this.grid.cols, S = new Set(cases);
-      for (const c of cases) {
-        const x = (c % cols) * T, y = Math.floor(c / cols) * T;
-        const haut = !S.has(c - cols), bas = !S.has(c + cols);
-        const gauche = c % cols === 0 || !S.has(c - 1), droite = (c + 1) % cols === 0 || !S.has(c + 1);
-        // le rebord : la planche (claire dessus, sombre au bord), plus épaisse devant
-        if (haut) g.fillStyle(0x9a6a3a).fillRect(x, y, T, 2).fillStyle(0x5e3b1e).fillRect(x, y, T, 1);
-        if (gauche) g.fillStyle(0x8a5c30).fillRect(x, y, 2, T).fillStyle(0x5e3b1e).fillRect(x, y, 1, T);
-        if (droite) g.fillStyle(0x7a4f28).fillRect(x + T - 2, y, 2, T).fillStyle(0x4a2e17).fillRect(x + T - 1, y, 1, T);
-        if (bas) g.fillStyle(0x9a6a3a).fillRect(x, y + T - 3, T, 2).fillStyle(0x4a2e17).fillRect(x, y + T - 1, T, 1);
-      }
     },
 
     syncCrop(e, p, x, y) {
