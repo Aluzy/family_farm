@@ -1,6 +1,7 @@
 import { blocGid } from './planche.js';
 import { hache, teinteHerbe } from './ferme-generee.js';
 import { AUCUNE_EAU, BIOME, BIOMES, bruitDuMonde, champsDuMonde, elementsDuMonde, releve } from './monde-gen.js';
+import { bassesRoches, rochesDeRegion } from './monde-roches.js';
 import { reservesDuMonde, vegetationDeRegion, VEGETATION } from './monde-vegetation.js';
 
 /* ---------- le sol du grand monde, région par région (docs/grand-monde.md : fiches 4b et 5a) ---------- */
@@ -159,6 +160,8 @@ export function contexteSol(graine, cadre, ferme, taille) {
     gv: hache(graine + ':vegetation'),
     clairieres: b('clairieres', VEGETATION.CLAIRIERES.PAS, 2), touffes: b('touffes', VEGETATION.TOUFFES.PAS, 2),
     reserves: null,
+    // les rochers (monde-roches.js) : leur hasard ; l'épave du monde, tirée à la première région
+    gr: hache(graine + ':roches'), epave: undefined,
     elements: null, chemins: null, cheminCoins: null, mesures: { elements: 0 },
   };
 }
@@ -261,8 +264,9 @@ function solDe(ctx, b, i, x, y) {
 // BORD case autour, borné au monde), couches (Uint16Array, COUCHES tuiles par case de ce rectangle,
 // rangée par rangée ; 0 : rien ; les cases de la ferme n'ont rien), cx0, cy0, cl, ch (la région
 // elle-même), biome, marche (Uint8Array, une valeur par case de la région : son biome, 1 si l'on
-// peut y marcher : ni l'eau, ni le pied d'un arbre ou d'un buisson), vegetation ({ images, basses } :
-// monde-vegetation.js), ms (la durée du calcul) }.
+// peut y marcher : ni l'eau, ni le pied d'un arbre, d'un buisson ou d'un gros rocher), vegetation
+// ({ images, basses } : monde-vegetation.js), roches ({ images, basses } : monde-roches.js), ms (la
+// durée du calcul) }.
 export function solDeRegion(ctx, rx, ry) {
   const t0 = Date.now();
   elementsSol(ctx);
@@ -275,7 +279,9 @@ export function solDeRegion(ctx, rx, ry) {
   const S = SOLS_MONDE;
   const M = 6, gx0 = x0 - M, gy0 = y0 - M, gw = l + 2 * M, gh = h + 2 * M;
   // (le sol de chaque case, puis celui d'une case un peu plus loin, DERIVE cases au plus, selon deux
-  // bruits lents : les frontières entre sols se déforment ; l'eau ne bouge pas, ni ne vient)
+  // bruits lents : les frontières entre sols se déforment ; l'eau ne bouge pas, ni ne vient, ni la
+  // falaise et la neige des sommets, où l'on ne marche pas : leur sol suit leurs cases, sous les
+  // falaises en relief de monde-roches.js)
   const RD = Math.ceil(S.DERIVE), bw = gw + 2 * RD, bh = gh + 2 * RD, brut = new Uint8Array(bw * bh);
   for (let y = 0; y < bh; y++) {
     const wy = Math.min(H - 1, Math.max(0, gy0 - RD + y));
@@ -290,12 +296,12 @@ export function solDeRegion(ctx, rx, ry) {
     for (let x = 0; x < gw; x++) {
       const wx = Math.min(W - 1, Math.max(0, gx0 + x));
       let v = brut[(y + RD) * bw + x + RD];
-      if (v !== EAU) {
+      if (v !== EAU && v !== SOL.falaise && v !== SOL.neige) {
         const dx = Math.round((ctx.derive(wx, wy) - 0.5) * 2 * S.DERIVE), dy = Math.round((ctx.derive2(wx, wy) - 0.5) * 2 * S.DERIVE);
         // (bornée au monde, comme la case elle-même)
         const ux = Math.min(W - 1, Math.max(0, wx + dx)) - wx, uy = Math.min(H - 1, Math.max(0, wy + dy)) - wy;
         const u = brut[(y + RD + uy) * bw + x + RD + ux];
-        if (u !== EAU) v = u;
+        if (u !== EAU && u !== SOL.falaise && u !== SOL.neige) v = u;
       }
       gSol[y * gw + x] = v;
     }
@@ -342,7 +348,16 @@ export function solDeRegion(ctx, rx, ry) {
           }
           const n1 = ctx.bords(X, Y) - 0.5, n2 = ctx.bords2(X, Y) - 0.5;
           let best = -1;
+          // (la falaise et la neige des sommets, où l'on ne marche pas, ne prennent un coin que si
+          // toutes ses cases de terre en sont : leur sol reste dans leurs cases, sous les falaises
+          // en relief, sans déborder sur la case où l'on marche)
+          const tout = (v) => (a === EAU || a === v) && (b2 === EAU || b2 === v) && (c2 === EAU || c2 === v) && (d === EAU || d === v);
+          if ((poids[SOL.falaise] && !tout(SOL.falaise)) || (poids[SOL.neige] && !tout(SOL.neige))) {
+            if (!tout(SOL.falaise)) poids[SOL.falaise] = 0;
+            if (!tout(SOL.neige)) poids[SOL.neige] = 0;
+          }
           for (const v of vus) {
+            if (!poids[v]) continue;
             const p = poids[v] * (1 + S.BRUIT_BORDS * 2 * (n1 * Math.cos(v * 2.4) + n2 * Math.sin(v * 2.4)));
             if (p > best || (p === best && v > seul)) { best = p; seul = v; }
           }
@@ -449,11 +464,17 @@ export function solDeRegion(ctx, rx, ry) {
     }
   }
   // la végétation (monde-vegetation.js) : ses images, ses petites plantes ; les pieds des arbres
-  // et des buissons ferment leurs cases
-  const vegetation = vegetationDeRegion(ctx, {
+  // et des buissons ferment leurs cases. Entre ses tirages et sa pose, les rochers, les falaises,
+  // l'épave (monde-roches.js), qui s'écartent des arbres ; leurs petites pièces après les plantes.
+  const g = {
     cx0, cy0, cl, ch: chh, x0, y0, l, h, cSol, cCh, cTe, cw, kx0, ky0, EAU, codes: CODES_SOLS, marche, biomeDe: (i) => biomeDe(ctx, i),
-  });
-  return { cle: rx + ',' + ry, x0, y0, l, h, couches, cx0, cy0, cl, ch: chh, biome, marche, vegetation, ms: Date.now() - t0 };
+    solBrut: (i, x, y) => solDe(ctx, biomeDe(ctx, i), i, x, y),
+  };
+  let r = null, tir = null;
+  g.apresTirages = (t) => { tir = t; r = rochesDeRegion(ctx, g, t); return r.pris; };
+  const vegetation = vegetationDeRegion(ctx, g);
+  const roches = { images: Int32Array.from(r.images), basses: bassesRoches(ctx, g, r, tir, vegetation.basses) };
+  return { cle: rx + ',' + ry, x0, y0, l, h, couches, cx0, cy0, cl, ch: chh, biome, marche, vegetation, roches, ms: Date.now() - t0 };
 }
 
 // Un aperçu des biomes de tout le monde (une valeur tous les `pas` cases, au milieu de chaque bloc,

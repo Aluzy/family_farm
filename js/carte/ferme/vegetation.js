@@ -1,4 +1,5 @@
-/* carte/ferme/vegetation.js — la scène de la ferme : la végétation du grand monde (fiche 5b).
+/* carte/ferme/vegetation.js — la scène de la ferme : la végétation du grand monde (fiche 5b), ses
+ * rochers, ses falaises et sa côte (fiche 5c).
  *
  * Chaque région du monde arrive du Worker avec sa végétation (js/engine/monde-vegetation.js :
  * reg.vegetation, { images, basses }, [sorte, x, y, variante] par plante, le pied en px). Les
@@ -21,6 +22,16 @@
  *   - Marcher : les pieds des arbres et des buissons sont fermés dans la marche de la région
  *     (monde-sol.js), que le personnage lit déjà (caseMarchable) : rien à faire ici.
  *
+ * Les rochers (fiche 5c, js/engine/monde-roches.js : reg.roches, { images, basses }, de même forme)
+ * suivent le même chemin avec leur planche, assets/roches.png (scripts/carte/roches.py, découpée
+ * d'après assets/roches.json) : les galets, pierres, coquillages, algues et congères sont peints
+ * dans le sol (après les petites plantes) ; les gros blocs, pitons, éboulis, rochers et sapins
+ * enneigés, l'épave et les colonnes des falaises sont des images rangées selon leur pied, dans les
+ * mêmes blocs, transparentes quand le personnage passe derrière ; tous portent leur ombre, sauf les
+ * falaises (leur face regarde le soleil). Autour d'un rocher dans l'eau, l'écume bat : une image
+ * sous lui, sur l'eau, dont les quatre dessins tournent (ECUME ms chacun ; immobile avec
+ * « animations réduites »).
+ *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype.
  */
 (function (global) {
@@ -29,34 +40,41 @@
   const K = global.CarteKit;
   const F = global.FermeCarte;
   const { T, OCCLUDER_ALPHA } = F.C;
-  const CLE = 'vegetation';
-  const BLOC = 16, PRES = 96, LOIN = 384, MASQUE = 4;
+  const { reducedMotion } = F;
+  // les deux planches : la végétation (fiche 5b), les rochers (fiche 5c) ; leurs sortes (ctx.monde)
+  const PLANCHES = [
+    { cle: 'vegetation', json: 'vegetation_cases', donnees: 'vegetation', sortes: 'sortes' },
+    { cle: 'roches', json: 'roches_cases', donnees: 'roches', sortes: 'roches' },
+  ];
+  const BLOC = 16, PRES = 96, LOIN = 384, MASQUE = 4, ECUME = 240;
   const CORPS = { l: 5, h: 26, pied: 2 };
 
   F.partie({
 
-    // La planche découpée : chaque image a un numéro (CarteKit.herbe change l'image d'une plante
-    // qui penche par son numéro) ; this.veg : { sortes, images: [sorte][k] → numéro, pieds, masques }.
+    // Les planches découpées : chaque image a un numéro dans sa texture (CarteKit.herbe change
+    // l'image d'une plante qui penche par son numéro) ; this.veg : { planches: [{ cle, sortes,
+    // images: [sorte][k] → numéro, cadres }], ecume (les numéros des images de l'écume) }.
     vegetationPrete() {
       if (this.veg !== undefined) return this.veg;
       this.veg = null;
       const M = this.ctx.monde;
-      const table = this.cache.json.get('vegetation_cases');
-      if (!M || !M.sortes || !table || !this.has(CLE)) return null;
-      const tex = this.textures.get(CLE), src = tex.getSourceImage();
-      let d = null;
-      try {
-        const cv = global.document.createElement('canvas');
-        cv.width = src.width; cv.height = src.height;
-        const g = cv.getContext('2d', { willReadFrequently: true });
-        g.drawImage(src, 0, 0);
-        d = g.getImageData(0, 0, src.width, src.height).data;
-      } catch (e) { /* sans masques : le rectangle de l'image */ }
-      const images = [], cadres = [];
-      let n = 0;
-      for (const s of M.sortes) {
-        const liste = [];
-        for (const [x, y, w, h, px, py] of table[s.nom] || []) {
+      if (!M || !M.sortes) return null;
+      const planches = [];
+      for (const P of PLANCHES) {
+        const table = this.cache.json.get(P.json);
+        if (!table || !this.has(P.cle) || !M[P.sortes]) return null;
+        const tex = this.textures.get(P.cle), src = tex.getSourceImage();
+        let d = null;
+        try {
+          const cv = global.document.createElement('canvas');
+          cv.width = src.width; cv.height = src.height;
+          const g = cv.getContext('2d', { willReadFrequently: true });
+          g.drawImage(src, 0, 0);
+          d = g.getImageData(0, 0, src.width, src.height).data;
+        } catch (e) { /* sans masques : le rectangle de l'image */ }
+        const images = [], cadres = [];
+        let n = 0;
+        const decoupe = (liste, x, y, w, h, px, py) => {
           tex.add(n, 0, x, y, w, h);
           let mask = null;
           if (d) {
@@ -66,27 +84,40 @@
           }
           cadres[n] = { w, h, px, py, mask };
           liste.push(n++);
+        };
+        for (const s of M[P.sortes]) {
+          const liste = [];
+          for (const [x, y, w, h, px, py] of table[s.nom] || []) decoupe(liste, x, y, w, h, px, py);
+          images.push(liste);
         }
-        images.push(liste);
+        const ecume = [];
+        for (const [x, y, w, h, px, py] of table.ecume || []) decoupe(ecume, x, y, w, h, px, py);
+        planches.push({ cle: P.cle, donnees: P.donnees, sortes: M[P.sortes], images, cadres, ecume });
       }
-      this.veg = { sortes: M.sortes, images, cadres };
-      this.vegListe = [];        // les arbres et les buissons qui ont leur image
+      this.veg = { planches };
+      this.vegListe = [];        // les arbres, les buissons, les rochers qui ont leur image
       this.vegHerbes = [];       // les plantes hautes qui penchent, qui ont leur image
+      this.vegEcumes = [];       // l'écume autour des rochers dans l'eau
       return this.veg;
     },
 
-    // Peint les petites plantes de la région du monde `reg` dans `ctx` (déjà décalé en px de la
-    // carte), celles des cases `seules` (un Set ; null : toutes).
+    // Peint les petites plantes et les petites pièces (galets, coquillages…) de la région du monde
+    // `reg` dans `ctx` (déjà décalé en px de la carte), celles des cases `seules` (un Set ; null :
+    // toutes).
     peintVegetation(ctx, reg, seules) {
       const V = this.vegetationPrete();
-      if (!V || !reg.vegetation) return;
-      const b = reg.vegetation.basses, src = this.textures.get(CLE).getSourceImage(), W = this.grid.cols;
-      for (let k = 0; k < b.length; k += 4) {
-        const x = b[k + 1], y = b[k + 2];
-        if (seules && !seules.has(Math.floor((y - 1) / T) * W + Math.floor(x / T))) continue;
-        const n = V.images[b[k]][b[k + 3]], c = V.cadres[n], f = this.textures.get(CLE).get(n);
-        if (!f) continue;
-        ctx.drawImage(src, f.cutX, f.cutY, c.w, c.h, x - c.px, y - c.py, c.w, c.h);
+      if (!V) return;
+      const W = this.grid.cols;
+      for (const P of V.planches) {
+        if (!reg[P.donnees]) continue;
+        const b = reg[P.donnees].basses, tex = this.textures.get(P.cle), src = tex.getSourceImage();
+        for (let k = 0; k < b.length; k += 4) {
+          const x = b[k + 1], y = b[k + 2];
+          if (seules && !seules.has(Math.floor((y - 1) / T) * W + Math.floor(x / T))) continue;
+          const n = P.images[b[k]][b[k + 3]], c = P.cadres[n], f = tex.get(n);
+          if (!f) continue;
+          ctx.drawImage(src, f.cutX, f.cutY, c.w, c.h, x - c.px, y - c.py, c.w, c.h);
+        }
       }
     },
 
@@ -96,12 +127,15 @@
       if (r.vegBlocs || !this.vegetationPrete()) return;
       const M = this.ctx.monde, reg = M.region(r.rx, r.ry);
       if (!reg || !reg.vegetation) return;
-      const im = reg.vegetation.images, blocs = new Map(), P = BLOC * T;
-      for (let k = 0; k < im.length; k += 4) {
-        const cle = Math.floor(im[k + 1] / P) + ',' + Math.floor((im[k + 2] - 1) / P);
-        if (!blocs.has(cle)) blocs.set(cle, { x: Math.floor(im[k + 1] / P) * P, y: Math.floor((im[k + 2] - 1) / P) * P, items: [], objets: null });
-        blocs.get(cle).items.push(k);
-      }
+      const blocs = new Map(), P = BLOC * T;
+      this.veg.planches.forEach((pl, j) => {
+        const im = reg[pl.donnees] ? reg[pl.donnees].images : [];
+        for (let k = 0; k < im.length; k += 4) {
+          const cle = Math.floor(im[k + 1] / P) + ',' + Math.floor((im[k + 2] - 1) / P);
+          if (!blocs.has(cle)) blocs.set(cle, { x: Math.floor(im[k + 1] / P) * P, y: Math.floor((im[k + 2] - 1) / P) * P, items: [], objets: null });
+          blocs.get(cle).items.push(j, k);
+        }
+      });
       r.vegReg = reg;
       r.vegBlocs = [...blocs.values()];
       this.vegCle = null;
@@ -136,8 +170,14 @@
       if (change) {
         this.vegListe = [];
         this.vegHerbes = [];
+        this.vegEcumes = [];
         for (const r of this.shownRegions()) {
-          for (const b of r.vegBlocs || []) for (const o of b.objets || []) (o.herbe ? this.vegHerbes : this.vegListe).push(o.herbe || o);
+          for (const b of r.vegBlocs || []) {
+            for (const o of b.objets || []) {
+              (o.herbe ? this.vegHerbes : this.vegListe).push(o.herbe || o);
+              if (o.ecume) this.vegEcumes.push(o.ecume);
+            }
+          }
         }
         this.sunDirty = true;
         this.cullKey = '';          // (les nouvelles images, hors de la vue : pas dessinées, decor.js cullDecor)
@@ -145,21 +185,28 @@
     },
 
     vegBlocOn(b, reg) {
-      const V = this.veg, im = reg.vegetation.images;
+      const V = this.veg;
       b.objets = [];
-      for (const k of b.items) {
-        const s = V.sortes[im[k]], x = im[k + 1], y = im[k + 2], v = im[k + 3];
-        const penche = !!s.penche, n = V.images[im[k]][penche ? v * 5 : v], c = V.cadres[n];
+      for (let q = 0; q < b.items.length; q += 2) {
+        const pl = V.planches[b.items[q]], k = b.items[q + 1], im = reg[pl.donnees].images;
+        const s = pl.sortes[im[k]], x = im[k + 1], y = im[k + 2], v = im[k + 3];
+        const penche = !!s.penche, n = pl.images[im[k]][penche ? v * 5 : v], c = pl.cadres[n];
         if (n == null || !c) continue;
-        const img = this.add.image(x, y, CLE, n).setOrigin(c.px / c.w, c.py / c.h).setDepth(y);
-        const o = { img, x: x - c.px, y: y - c.py, w: c.w, h: c.h, foot: y, mask: c.mask, alpha: 1, ombre: s.genre !== 'haute' };
+        const img = this.add.image(x, y, pl.cle, n).setOrigin(c.px / c.w, c.py / c.h).setDepth(y);
+        // (pas d'ombre : les plantes hautes ; les falaises, dont la face regarde le soleil)
+        const o = { img, x: x - c.px, y: y - c.py, w: c.w, h: c.h, foot: y, mask: c.mask, alpha: 1, ombre: s.genre !== 'haute' && s.genre !== 'paroi' };
         if (penche) o.herbe = { img, fleurs: null, x, y, base: n, t: -1, dir: 1, inside: false };
+        if (s.genre === 'mer' && pl.ecume.length) {
+          // l'écume autour, sur l'eau (sous le rocher), chaque rocher à son moment
+          const e = pl.ecume[0], ce = pl.cadres[e];
+          o.ecume = { img: this.add.image(x, y, pl.cle, e).setOrigin(ce.px / ce.w, ce.py / ce.h).setDepth(0.2), images: pl.ecume, k: (x + y) % pl.ecume.length };
+        }
         b.objets.push(o);
       }
     },
 
     vegBlocOff(b) {
-      for (const o of b.objets || []) o.img.destroy();
+      for (const o of b.objets || []) { o.img.destroy(); if (o.ecume) o.ecume.img.destroy(); }
       b.objets = null;
     },
 
@@ -179,9 +226,17 @@
         o.img.setAlpha(o.alpha);
       }
       if (this.vegHerbes.length) this.vegPrev = K.herbe(this.vegHerbes, p, this.vegPrev, dt);
+      // l'écume qui bat autour des rochers dans l'eau (immobile avec « animations réduites »)
+      if (this.vegEcumes.length && !reducedMotion()) {
+        const pas = Math.floor(performance.now() / ECUME);
+        if (pas !== this.vegEcumePas) {
+          this.vegEcumePas = pas;
+          for (const e of this.vegEcumes) e.img.setFrame(e.images[(pas + e.k) % e.images.length]);
+        }
+      }
     },
 
-    // Les arbres et les buissons du monde qui portent une ombre (soleil.js sunCasters).
+    // Les arbres, les buissons et les rochers du monde qui portent une ombre (soleil.js sunCasters).
     vegetationOmbres() {
       return (this.vegListe || []).filter((o) => o.ombre);
     },

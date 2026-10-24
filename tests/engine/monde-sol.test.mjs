@@ -5,7 +5,7 @@
    sortie est, la prairie autour de la ferme est peinte comme avant les sols des biomes ; chaque
    biome a ses sols ; les chemins du plan sont dessinés ; où l'on marche (ni la mer, ni un lac, ni
    une rivière sauf à gué, ni une falaise, ni un sommet) ; le Web Worker (js/monde-worker.js) donne
-   les mêmes régions que le calcul direct (leur végétation comprise) ; la durée d'une région.
+   les mêmes régions que le calcul direct (leur végétation, leurs rochers compris) ; la durée d'une région.
    Lancer seul : node --test tests/engine/monde-sol.test.mjs (ou node tests/run-tests.mjs monde-sol).
    ========================================================================== */
 
@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs';
 import {
   BIOME, caseMarchable, genererFerme, genererMonde, MONDE, SOLS_MONDE, solDirect,
 } from '../../js/engine/index.js';
+import { SORTES_ROCHES } from '../../js/engine/monde-roches.js';
 import { SORTES } from '../../js/engine/monde-vegetation.js';
 import { blocGid } from '../../js/engine/planche.js';
 import { assert, assertEqual, test } from './aide.mjs';
@@ -164,6 +165,9 @@ test('marcher dans le monde : ni la mer, ni les lacs, ni les rivières (sauf à 
     for (let rx = 0; rx * N < W; rx++) {
       const im = sol.region(rx, ry).vegetation.images;
       for (let k = 0; k < im.length; k += 4) for (const [dx, dy] of SORTES[im[k]].bloque || []) pieds.add((Math.floor((im[k + 2] - 1) / 16) + dy) * W + Math.floor(im[k + 1] / 16) + dx);
+      // (et ceux des gros rochers, de l'épave : monde-roches.test.mjs)
+      const ro = sol.region(rx, ry).roches.images;
+      for (let k = 0; k < ro.length; k += 4) for (const [dx, dy] of SORTES_ROCHES[ro[k]].bloque || []) pieds.add((Math.floor((ro[k + 2] - 1) / 16) + dy) * W + Math.floor(ro[k + 1] / 16) + dx);
     }
   }
   let n = 0, gues = 0;
@@ -207,6 +211,8 @@ test('le Web Worker du sol : les mêmes régions que le calcul direct, l\'aperç
       assertEqual([...r.region.marche].join(), [...d.marche].join(), 'la marche de ' + r.region.cle);
       assertEqual([...r.region.vegetation.images].join(), [...d.vegetation.images].join(), 'les arbres de ' + r.region.cle);
       assertEqual([...r.region.vegetation.basses].join(), [...d.vegetation.basses].join(), 'les petites plantes de ' + r.region.cle);
+      assertEqual([...r.region.roches.images].join(), [...d.roches.images].join(), 'les rochers de ' + r.region.cle);
+      assertEqual([...r.region.roches.basses].join(), [...d.roches.basses].join(), 'les petites pièces de ' + r.region.cle);
     }
   } finally {
     delete globalThis.self;

@@ -2995,6 +2995,65 @@ export const RAW_DATA = {
       "prairie": { "images": [0.001, 0.02], "basses": [0.03, 0.15] }
     }
   },
+  "ROCHES": {
+    "SORTES": [
+      { "nom": "rocher", "genre": "bloc", "variantes": 4, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "bloc", "genre": "bloc", "variantes": 4, "bloque": [[0, 0], [1, 0]], "ecart": 2 },
+      { "nom": "rocher_moussu", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 2 },
+      { "nom": "eboulis", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 2 },
+      { "nom": "piton", "genre": "bloc", "variantes": 3, "bloque": [[0, 0]], "ecart": 2 },
+      { "nom": "piton_neige", "genre": "bloc", "variantes": 2, "bloque": [[0, 0]], "ecart": 2 },
+      { "nom": "rocher_neige", "genre": "bloc", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "sapin_neige", "genre": "bloc", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "rocher_mer", "genre": "mer", "variantes": 4, "ecart": 2 },
+      { "nom": "epave", "genre": "epave", "variantes": 2, "bloque": [[0, 0], [1, 0], [2, 0], [0, -1], [1, -1], [2, -1]] },
+      { "nom": "paroi", "genre": "paroi", "variantes": 81 },
+      { "nom": "paroi_herbe", "genre": "paroi", "variantes": 81 },
+      { "nom": "paroi_neige", "genre": "paroi", "variantes": 81 },
+      { "nom": "galets", "genre": "basse", "variantes": 6 },
+      { "nom": "pierres", "genre": "basse", "variantes": 6 },
+      { "nom": "pierres_moussues", "genre": "basse", "variantes": 3 },
+      { "nom": "coquillages", "genre": "basse", "variantes": 6, "eau": [0, 2] },
+      { "nom": "etoile_mer", "genre": "basse", "variantes": 3, "eau": [0, 1] },
+      { "nom": "algues", "genre": "basse", "variantes": 4, "eau": [0, 1] },
+      { "nom": "congere", "genre": "basse", "variantes": 4 }
+    ],
+    "DENSITES": {
+      "prairie": { "herbe": { "rocher": 0.002, "pierres": 0.006 } },
+      "foret": {
+        "feuilles": { "rocher_moussu": 0.03, "pierres_moussues": 0.03 },
+        "aiguilles": { "rocher_moussu": 0.02, "rocher": 0.01, "pierres_moussues": 0.025 },
+        "mousse": { "rocher_moussu": 0.045, "pierres_moussues": 0.05 }
+      },
+      "lande": { "lande": { "rocher": 0.006, "bloc": 0.002, "pierres": 0.02 }, "terre": { "rocher": 0.01, "bloc": 0.004, "pierres": 0.06 } },
+      "marais": { "vase": { "pierres_moussues": 0.006 } },
+      "plage": {
+        "sable": { "rocher": 0.002, "galets": 0.01, "coquillages": 0.05, "etoile_mer": 0.012, "algues": 0.04 },
+        "galets": { "rocher": 0.012, "galets": 0.16, "coquillages": 0.02, "algues": 0.03 }
+      },
+      "montagne": {
+        "eboulis": { "rocher": 0.012, "bloc": 0.01, "galets": 0.05, "pierres": 0.1 },
+        "roche": { "bloc": 0.014, "piton": 0.01, "rocher": 0.008, "pierres": 0.08 },
+        "haut": { "rocher_neige": 0.03, "sapin_neige": 0.03, "piton_neige": 0.006, "congere": 0.025, "pierres": 0.03 }
+      },
+      "sommet": { "neige": { "rocher_neige": 0.012, "piton_neige": 0.006, "congere": 0.012 } }
+    },
+    "HAUT": 0.87,
+    "SOMMET": 4,
+    "EBOULIS": { "PART": 0.05, "PENTE": [0.03, 0.08], "PIED": 0.14 },
+    "MER": { "PART": 0.03, "DISTANCE": [1, 4], "FALAISE": 3, "TACHES": [0.1, 2.2] },
+    "EPAVE": { "CHEMIN": 8 },
+    "PAROIS": { "EAU": 10, "TERRE": 14 },
+    "BORNES": {
+      "prairie": { "images": [0.0005, 0.006], "basses": [0.002, 0.02] },
+      "foret": { "images": [0.001, 0.02], "basses": [0.002, 0.04] },
+      "lande": { "images": [0.003, 0.03], "basses": [0.01, 0.08] },
+      "plage": { "images": [0.001, 0.03], "basses": [0.03, 0.3] },
+      "montagne": { "images": [0.01, 0.08], "basses": [0.04, 0.25] },
+      "sommet": { "images": [0.005, 0.04], "basses": [0.004, 0.04] },
+      "mer": { "images": [0.001, 0.01], "basses": [0, 0] }
+    }
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,

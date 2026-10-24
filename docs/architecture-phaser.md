@@ -239,6 +239,17 @@ poulailler et le moulin n'y ont plus d'image (leur forme de secours).
   transparent (`stepVegetation`, avec le masque de son cadre, lu une fois), il porte son ombre
   (`sunCasters`) ; les roseaux penchent (`CarteKit.herbe`). Les pieds sont fermés dans la marche
   de la région (`marche`), que lit déjà `caseMarchable`.
+- **Les rochers, les falaises et la côte** (fiche 5c, même fichier) : `reg.roches` (`images` et
+  `basses`, de même forme, posées par `js/engine/monde-roches.js` dans le même calcul que la
+  végétation) passe par le même chemin, avec sa planche `roches` (`assets/roches.json`) : les
+  galets, coquillages, algues et congères sont peints après les petites plantes ; les gros blocs,
+  pitons, éboulis, rochers et sapins enneigés, l'épave et les colonnes des falaises (16 px de large,
+  une par case au bas de chaque bande de falaise ou de sommet) sont des images dans les mêmes blocs
+  (`this.veg.planches` : une découpe par planche), transparentes quand le personnage passe derrière,
+  avec leur ombre (pas les falaises). Sous chaque rocher dans l'eau, une image d'écume dont les
+  quatre dessins tournent (`stepVegetation`, immobile avec « animations réduites »), culée avec son
+  rocher (`cullDecor`). Le shader de la mer (`js/carte/eau.js`, `EAU_MER`) fait déferler ses crêtes
+  près de la plage (une lame d'écume, un creux devant).
 - **Relevés du chargement par régions.** Les arbres, buissons et barrières (`findOccluders`,
   `mapTrees`), les rochers (`findRocks`), les tuiles animées (`makeTileAnims`), la terre des
   anciennes zones (`zoneGround`) et les lieux de la vie d'ambiance (`readMap`,

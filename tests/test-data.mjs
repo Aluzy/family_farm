@@ -117,7 +117,9 @@ refuse('commerce : matière inconnue', (d) => { d.COMMERCE.TYPES.cremerie.prend.
 refuse('grotte : minerai inconnu', (d) => { d.GROTTE.POIDS.argent = { FIXE: 1 }; }, 'GROTTE.POIDS : « minerai_argent »');
 refuse('grotte : aucun niveau', (d) => { d.GROTTE.NIVEAUX = 0; }, 'GROTTE.NIVEAUX : un entier');
 refuse('grotte : une chance au-delà de 1', (d) => { d.GROTTE.MINERAI = 7; }, 'GROTTE.MINERAI : une part entre 0 et 1');
-refuse('monde : un biome manque', (d) => { d.BIOMES = d.BIOMES.filter((b) => b !== 'sommet'); }, 'BIOMES : « sommet » manque');
+refuse('monde : un biome manque', (d) => { d.BIOMES = d.BIOMES.filter((b) => b !== 'sommet'); delete d.ROCHES.DENSITES.sommet; delete d.ROCHES.BORNES.sommet; }, 'BIOMES : « sommet » manque');
+refuse('rochers : une sorte inconnue dans les densités', (d) => { d.ROCHES.DENSITES.montagne.roche.menhir = 0.01; }, '« menhir » n\'est pas une sorte');
+refuse('rochers : une falaise sans toutes ses colonnes', (d) => { d.ROCHES.SORTES.find((s) => s.nom === 'paroi').variantes = 24; }, 'ROCHES.SORTES[10].variantes');
 refuse('monde : un coût de chemin sur un biome inconnu', (d) => { d.PLAN_MONDE.CHEMINS.COUTS.desert = 3; }, '« desert » n\'est pas un biome');
 refuse('monde : des hameaux en nombre impossible', (d) => { d.PLAN_MONDE.HAMEAUX.NOMBRE = [10, 6]; }, 'PLAN_MONDE.HAMEAUX.NOMBRE');
 

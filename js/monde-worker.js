@@ -30,7 +30,7 @@ function suite() {
     if (!q || q.ctx !== ctx) { suite(); return; }
     try {
       const r = solDeRegion(ctx, q.rx, q.ry);
-      self.postMessage({ type: 'region', graine: ctx.graine, region: r }, [r.couches.buffer, r.biome.buffer, r.marche.buffer, r.vegetation.images.buffer, r.vegetation.basses.buffer]);
+      self.postMessage({ type: 'region', graine: ctx.graine, region: r }, [r.couches.buffer, r.biome.buffer, r.marche.buffer, r.vegetation.images.buffer, r.vegetation.basses.buffer, r.roches.images.buffer, r.roches.basses.buffer]);
     } catch (e) {
       self.postMessage({ type: 'erreur', graine: ctx.graine, cle: q.rx + ',' + q.ry, message: String((e && e.message) || e) });
     }

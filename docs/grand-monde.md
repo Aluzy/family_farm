@@ -256,7 +256,7 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        quelques cases, surtout près de la sortie de la ferme ; les biomes et les chemins gardent
        des bords en escalier (un biome par case) ; l'eau du monde ne s'anime pas (sa première
        image) ; les tuiles des sols sont provisoires.
-5. **Les décors des biomes**, en vue de haut à 45° (3 PR) : sable, mer, roche, éboulis, neige,
+5. ✅ **Les décors des biomes**, en vue de haut à 45° (3 PR, fait) : sable, mer, roche, éboulis, neige,
    sapins, sous-bois, roseaux, eau basse, bruyère, et leurs raccords.
    - **Fait (5a)** : les sols des biomes, leurs bords et l'eau du monde.
      - **Les sols** (`assets/sols_monde.png`, refaite par `scripts/carte/sols_monde.py`, 16 × 83
@@ -361,6 +361,61 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        après (les tests de la végétation : 3,6 s).
      - Reste : sur une vraie carte graphique, mesurer le dessin des arbres sur téléphone (étape 9) ;
        couper les arbres, cueillir (étape 6) ; les rochers et éboulis en relief (fiche 5c).
+   - **Fait (5c)** : les rochers, les falaises et la côte (décor seulement : casser, ramasser dans le
+     monde viendront à l'étape 6 ; les rochers de la ferme et leurs identifiants ne changent pas).
+     - **Les dessins** (`scripts/carte/roches.py` → `assets/roches.png` et `assets/roches.json` ; le
+       relancer redonne la même image) : 20 sortes, 310 images, dans le style des rochers de la
+       ferme (`rochers.py` : leur pierre, leur contour, leurs pans plats éclairés en haut à gauche) :
+       rochers d'une case, gros blocs de granit et rochers moussus de deux cases, éboulis (des amas
+       de pierres), aiguilles de roche (nues ou enneigées), rochers et sapins enneigés (le sapin de
+       la 5b, la neige sur ses branches), rochers dans l'eau (pierre mouillée, liseré d'écume) et
+       quatre images de l'écume qui bat autour, une barque échouée ; galets, pierres (moussues en
+       forêt), coquillages, étoiles de mer, algues, congères, peints dans le sol. Les falaises : des
+       colonnes de 16 px (une texture de 48 px de large qui se répète, la colonne en prend la
+       tranche de sa case modulo 3 : pas de couture), une face vue à 45° (14 px par case) en pans de
+       roche et en strates (corniches claires, leur ombre), son rebord de roche, d'herbe qui pend ou
+       de neige et de glaçons ; 3 hauteurs × 9 bouts (la bande continue, fait une marche ou
+       s'arrête, de chaque côté) × 3 tranches.
+     - **La pose** (`js/engine/monde-roches.js`, réglée par `data/monde.json`, `ROCHES`) : dans le
+       même calcul que la végétation (`solDeRegion`, dans le Worker), entre ses tirages et sa pose
+       (`apresTirages`). Les falaises : une colonne au bas de chaque bande de cases « hautes » du
+       plan (falaise, sommet), haute de la bande (3 cases au plus), son pied au ras de l'eau ou au
+       bas de sa case : du plan seul, sans hasard, donc continues, une fois chacune, dans la région
+       de leur case (testé sur des mondes entiers). Le sol de la falaise et de la neige ne dérive
+       plus et ne prend un coin que si toutes ses cases de terre en sont : il reste sous les
+       colonnes. Les autres pièces : la table de chaque biome et de chaque sol (`DENSITES` ; la
+       montagne au-dessus du relief 0,87, ses rochers et sapins enneigés, ses congères), les éboulis
+       au pied des pentes (la pente du relief) et des falaises, les rochers dans la mer à 1 à 4
+       cases du rivage, par groupes (plus nombreux au pied des falaises), l'épave (une par monde au
+       plus : un coin de plage au bord de la mer tiré parmi tous, puis la meilleure place de sa
+       fenêtre, loin des chemins) ; l'écart comme la végétation (de deux tirages proches le plus fort
+       reste) et jamais près d'un arbre gardé (le cadre des tirages de la végétation passe de 5 à 9
+       cases autour de la région) ; les petites plantes ne poussent pas sous une pièce, les petites
+       pièces pas sur une plante. Rien sur la ferme et sa marge, un chemin, un gué, un lieu, ni dans
+       l'eau (sauf les rochers dans la mer), ni au bas des sommets.
+     - **La scène** (`js/carte/ferme/vegetation.js`, qui découpe maintenant deux planches) : les
+       petites pièces peintes dans le canevas de la région après les petites plantes ; les grandes en
+       images rangées selon leur pied, par blocs près de la vue, transparentes quand le personnage
+       passe derrière, avec leur ombre au soleil (pas les falaises, dont la face regarde le soleil) ;
+       l'écume sous chaque rocher dans l'eau tourne (240 ms par image), culée avec lui, immobile avec
+       « animations réduites » (vérifié : deux captures identiques). La mer (`js/carte/eau.js`,
+       `EAU_MER`) : près de la plage, chaque crête de la houle déferle en une lame d'écume blanche,
+       un creux sombre devant elle, de l'écume derrière.
+     - **La marche** : les rochers, gros blocs, éboulis, aiguilles, sapins enneigés et l'épave ferment
+       leurs cases (`bloque`) dans la marche de la région ; galets, pierres, coquillages se
+       traversent ; la falaise et les sommets restaient fermés. Vérifié dans Chromium : le personnage
+       contourne un gros bloc, longe une falaise sans la traverser, une aiguille devient
+       transparente quand il passe derrière ; testé : aucune case de chemin fermée.
+     - **Mesuré** (Chromium sans carte graphique, SwiftShader, la même graine, 2 parties de chaque).
+       Une région dans Node (3 mondes) : médiane 5,7 à 7,2 ms avant, 7,3 à 9,5 ms après (90 % : 7,2 à
+       19 avant, 8,6 à 24 après) ; dans le Worker en jeu, médiane 12 à 16 ms avant, 20 à 24 ms
+       après. Le temps d'une image en glissant le long du mur des sommets (900 images) : 47,6 à
+       49,7 ms avant, 48,9 à 52,3 ms après (~150 images près de la vue) ; le long de la côte sud :
+       89,2 à 92,3 ms avant, 91,3 à 96,9 ms après. `npm test` : 34,5 s avant, 35,7 s après.
+     - Reste : pas de lac gelé (aucun lac n'est assez haut dans les plans essayés : les glaçons
+       pendent des falaises des sommets) ; une bande de falaise en biais fait des marches d'une case
+       (des colonnes décalées) ; le côté d'une bande nord-sud n'a pas de face (vue de haut, il ne se
+       voit pas) ; casser, miner, ramasser (étape 6).
 6. **Les ressources et la vie de chaque biome** (2 PR) : ce qui se ramasse, les minerais et
    les grottes de la montagne, la pêche, les animaux à regarder.
 7. **Les habitants et la calèche** (3 PR) : les hameaux bâtis en blocs, leurs familles et
