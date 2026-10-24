@@ -100,7 +100,7 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | Fichier | Méthodes |
 |---|---|
 | `config.js` | les réglages (`FermeCarte.C` : `MAP`, `BUILDINGS`, `ROCKS`, `FISHING`, `ROOMS`…) |
-| `sol.js` | textures et dessins de secours, sol cuit par régions (`bakeGround`, `syncRegions`, `paintRegion`, `drawLayer` ; la ferme générée, `ctx.carte`, à la place de la carte de Tiled), terre labourée, grille de la houe, tuiles animées (repeintes dans la vue seulement), réparation du fond |
+| `sol.js` | textures et dessins de secours, sol cuit par régions (`bakeGround`, `syncRegions`, `paintRegion`, `drawLayer` ; la ferme générée, `ctx.carte`, à la place de la carte de Tiled ; le sol du grand monde autour, `paintMonde`, `ctx.monde`), terre labourée, grille de la houe, tuiles animées (repeintes dans la vue seulement), réparation du fond |
 | `decor.js` | arbres, buissons et barrières (`findOccluders`), herbe haute ; hors de la vue, ni eux ni les rochers ne sont dessinés (`cullDecor`) |
 | `soleil.js` | les ombres portées qui suivent le soleil : silhouettes des bâtiments, arbres, barrières et rochers, inclinées selon l'heure (vers la gauche le matin, la droite le soir, courtes à midi), peintes dans un seul canevas qui couvre la vue et une marge (`SOLEIL`) |
 | `camera.js` | zoom, glissement, élan, repères, `panTo` |
@@ -197,6 +197,27 @@ poulailler et le moulin n'y ont plus d'image (leur forme de secours).
   ses voisins. Pas de `TilemapLayer` : avec un zoom non entier, des tuiles rendues une à une
   laissent de fins liserés. Case 0 = vide ; les bits de retournement de Tiled
   sont gérés.
+- **Le sol du grand monde, dans un Web Worker** (fiche 4b). Autour de la ferme, les couches de
+  la carte sont vides : le sol de chaque case vient du plan du monde (`js/engine/monde-sol.js`,
+  `solDeRegion` : les biomes, les rivières, les chemins → jusqu'à six tuiles par case, de la
+  planche de la carte ou de `assets/sols_monde.png`, et où l'on marche). Le calcul se fait dans
+  un **Web Worker** (`js/monde-worker.js`), une région à la fois : la page le crée au montage
+  (`js/ui/monde-sol.js`, `solDuMonde(terrain)`, donné à la scène en `ctx.monde`) ; il répond
+  d'abord par un aperçu des biomes (un tous les 8 × 8 cases), puis tire une fois les éléments du
+  monde (rivières, lacs, chemins : ~200 à 300 ms dans le Worker), puis fait les régions demandées
+  (2 à 20 ms chacune), dont il transfère les tableaux. `paintRegion` peint les cases du monde
+  par `paintMonde` (les couches de la carte, seulement sur les cases de la ferme) ; une région
+  pas encore faite est demandée et peinte en attendant de la couleur unie de ses biomes (l'aperçu),
+  puis repeinte à son arrivée (`ctx.monde.quandRegion`). Les régions faites restent en mémoire
+  (tout le monde : 88 régions, ~4 Mo) ; pas d'IndexedDB (relire une région ne serait guère plus
+  rapide que la refaire, et il faudrait jeter le cache à chaque retouche du générateur). Le
+  personnage, la famille et le robot ne marchent pas dans la mer, un lac, une rivière (sauf à gué,
+  où un chemin la traverse), une falaise ni un sommet : `Fermier.attach({ marchable })` lit
+  `ctx.monde.marchable(case)` (`caseMarchable` du moteur ; une région pas encore faite : non).
+  Sur le site, `scripts/build-site.mjs` regroupe le Worker à part (`js/monde-worker.js`, un Worker
+  classique) et écrit son adresse versionnée dans `jeu.bundle.js` (`MONDE_WORKER`) ; depuis le
+  dépôt, la page le charge comme un module. Sans Worker (un navigateur trop ancien, un Worker qui
+  ne se charge pas), le même calcul tourne sur la page, une région par tâche.
 - **Relevés du chargement par régions.** Les arbres, buissons et barrières (`findOccluders`,
   `mapTrees`), les rochers (`findRocks`), les tuiles animées (`makeTileAnims`), la terre des
   anciennes zones (`zoneGround`) et les lieux de la vie d'ambiance (`readMap`,

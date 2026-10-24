@@ -131,7 +131,9 @@
       // la ferme générée : les murs et l'Atelier posés (leurs cases)
       if (o.blocks) for (const c of o.blocks()) blocked[c] = 1;
     }
-    const free = (c, r) => c >= 0 && r >= 0 && c < cols && r < rows && !blocked[r * cols + c];
+    // (le grand monde : o.marchable(case) dit où l'on marche hors de la ferme, d'après son plan)
+    const marche = o.marchable || null;
+    const free = (c, r) => c >= 0 && r >= 0 && c < cols && r < rows && !blocked[r * cols + c] && (!marche || marche(r * cols + c));
     const cellOf = (x, y) => [Math.floor(x / T), Math.floor((y - 1) / T)];
     const freeAt = (x, y) => { const [c, r] = cellOf(x, y); return free(c, r); };
     function lineFree(x0, y0, x1, y1) {
@@ -160,7 +162,7 @@
       if (Math.max(Math.abs(gc - sc), Math.abs(gr - sr)) > TRAJET_MAX) return straight(x0, y0, x1, y1);
       if (lineFree(x0, y0, x1, y1)) return [{ x: x1, y: y1 }];
       if (!free(gc, gr)) return null;
-      if (!grid) grid = { cols, rows, libre: (i) => !blocked[i] };
+      if (!grid) grid = { cols, rows, libre: marche ? (i) => !blocked[i] && marche(i) : (i) => !blocked[i] };
       const boite = K.boite(sc, sr, gc, gr, MARGE, cols, rows);
       const cells = K.chemin(grid, sr * cols + sc, gr * cols + gc, { boite, max: RECHERCHE_MAX });
       if (!cells) return null;

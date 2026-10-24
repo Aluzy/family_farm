@@ -147,7 +147,7 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        toute sa grille (petite). Attention pour l'étape 4 : un arbre ou un rocher du monde collé
        au bord de la ferme ne doit pas se fondre avec un arbre de la ferme (leurs identifiants
        changeraient).
-4. **Le générateur du monde** (2 PR) : relief, humidité, biomes, rivières, côte, chemins ; la
+4. ✅ **Le générateur du monde** (2 PR, fait) : relief, humidité, biomes, rivières, côte, chemins ; la
    ferme au centre ; les hameaux, les entrées de grotte, les coins de pêche ; dans un Web
    Worker, région par région, avec un cache.
    - **Fait (4a)** : le plan du monde, des données seulement (le jeu ne change pas encore
@@ -208,9 +208,54 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        qui font le tour de la ferme et relient chaque hameau à sa sortie ; les lieux dans leurs
        biomes ; une région faite seule identique au plan ; la durée), et `tests/test-data.mjs`
        (les réglages de `data/monde.json`, vérifiés par `scripts/lib/data.mjs`).
-     - Pour la fiche 4b : le terrain et la carte ne lisent pas encore le plan (« . » autour de
-       la ferme) ; les chemins s'arrêtent à `SORTIE`, au bout du chemin de la ferme ; deux chemins
-       peuvent encore courir côte à côte sur quelques cases là où ils se séparent.
+   - **Fait (4b)** : le monde dessiné et marchable.
+     - **Le sol** (`js/engine/monde-sol.js`, `solDeRegion`) : chaque case hors de la ferme prend le
+       sol de son biome (prairie : l'herbe de la ferme et ses trois teintes ; forêt : un sous-bois
+       sombre ; lande ; marais ; plage : sable ou galets ; falaise ; montagne : éboulis, roche nue
+       au-dessus d'un relief de 0,8 ; sommets : neige ; mer, lacs, rivières : l'eau de la ferme,
+       profonde loin des rives). Par coins de cases, comme la ferme : un coin prend l'eau si deux
+       des quatre cases qui le touchent en sont, sinon le sol le plus présent ; une case où se
+       touchent plusieurs sols peint le plus bas en entier, puis chaque sol plus haut posé sur ses
+       coins (`SOLS_MONDE`, dans l'ordre : herbe, sable, galets, marais, lande, forêt, éboulis,
+       roche, falaise, neige) ; près de l'eau, une rive (`rive_herbe`, `rive_sable`, ou celle du
+       sol). Les chemins du plan sont élargis à trois cases, comme celui de la ferme, et tracés avec
+       ses tuiles (sur un autre sol que l'herbe, posés par-dessus) ; ils rejoignent le chemin de la
+       ferme à sa sortie est. Une case toute d'herbe se peint exactement comme la prairie d'avant
+       (vérifié : les mêmes tuiles autour de la ferme). Les tuiles nouvelles, provisoires (les
+       décors viendront à l'étape 5) : `assets/sols_monde.png`, faite par
+       `scripts/carte/sols_monde.py` (9 sols : 16 variantes pleines, 15 bords sur un autre sol,
+       15 rives sur l'eau ; le chemin sur un autre sol ; le gué).
+     - **La ferme ne change pas** : la carte du monde n'a plus que ses couches (vides autour, la
+       prairie n'y est plus calculée au démarrage) ; le sol autour vient des régions, peint sous
+       elles par la scène (`paintMonde`, `js/carte/ferme/sol.js`). Tests :
+       `tests/engine/monde-sol.test.mjs`.
+     - **Marcher** : `caseMarchable(T, t)` (le moteur) : la ferme oui (ses propres obstacles,
+       comme avant) ; ailleurs ni la mer, ni un lac, ni une rivière, ni une falaise, ni un sommet.
+       Une rivière se passe **à gué** là où un chemin la croise (ses trois cases de large : des
+       pierres plates sur l'eau). La scène le lit pour le personnage, la famille et le robot
+       (`Fermier.attach({ marchable })`) ; une région pas encore faite est fermée. Le terrain du
+       moteur (`LIGNES`) reste « . » hors de la ferme ; pas de changement de sauvegarde.
+     - **Le Web Worker** (`js/monde-worker.js`, `js/ui/monde-sol.js` ;
+       docs/architecture-phaser.md) : la page lui donne la graine, le cadre du plan et les coins de
+       la ferme ; il envoie un aperçu des biomes (le sol provisoire, uni par blocs de 8 × 8 cases),
+       tire les éléments une fois, puis fait les régions demandées par `syncRegions` (une à la
+       fois). Elles restent en mémoire (88 régions en tout, ~4 Mo ; pas d'IndexedDB). Sans Worker,
+       le même code tourne sur la page (une région par tâche) ou dans Node (`solDirect`). Le plan
+       entier n'est plus jamais calculé dans le jeu.
+     - **Mesuré** (Chromium sans carte graphique, 3 parties chacune) : la scène prête 2 120 à
+       2 210 ms après le chargement de la page (avant : 2 285 à 2 850 ms), la plus longue tâche du
+       démarrage 677 à 767 ms (avant : 755 à 965 ms) ; `genererMonde().carte` : plus de calcul de
+       la prairie (70 à 110 ms de moins). Dans le Worker : les éléments 220 à 300 ms, une région
+       2 à 24 ms (médiane 5 ms) ; sur la page, peindre une région : 30 ms en médiane, 60 ms au plus
+       (avant : 40 et 67 ms). `npm test` : 34 s (33 s avant).
+     - **Les défauts du plan vus à la 4a** : un long trait droit entre deux points d'une rivière
+       ou d'un chemin ondule maintenant (`ONDULE`) ; un lac se remplit en rond autour de son fond
+       (`LAC_ROND`) et un lac trop maigre (le fond d'une vallée en V, qui donnait des traits d'eau
+       à angle droit, surtout au nord) n'est plus posé (`LAC_PLEIN`) : moins de lacs le long des
+       rivières (3 à 5 par monde). Reste : deux chemins peuvent encore courir côte à côte sur
+       quelques cases, surtout près de la sortie de la ferme ; les biomes et les chemins gardent
+       des bords en escalier (un biome par case) ; l'eau du monde ne s'anime pas (sa première
+       image) ; les tuiles des sols sont provisoires.
 5. **Les décors des biomes**, en vue de haut à 45° (3 PR) : sable, mer, roche, éboulis, neige,
    sapins, sous-bois, roseaux, eau basse, bruyère, et leurs raccords.
 6. **Les ressources et la vie de chaque biome** (2 PR) : ce qui se ramasse, les minerais et

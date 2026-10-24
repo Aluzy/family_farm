@@ -13,6 +13,8 @@
 //   - js/assets-versions.js : l'empreinte de chaque fichier de assets/ (images,
 //     cartes), que js/farm-stage.js ajoute à leurs adresses (« ?v=… »). Une image
 //     ou une carte modifiée est donc rechargée, même sur un téléphone qui l'a en cache ;
+//   - js/monde-worker.js : le Web Worker du sol du grand monde, regroupé avec les modules du moteur
+//     qu'il demande, un Worker classique ; jeu.bundle.js le charge à l'adresse versionnée ;
 //   - les scripts classiques de la page (SCRIPTS) : minifiés un à un (esbuild), sans
 //     changer leur forme (toujours des scripts classiques, mêmes noms globaux) ;
 //   - les autres pages, le style, les images et Phaser, copiés tels quels.
@@ -62,6 +64,7 @@ const CARTE_FERME = ['config', 'sol', 'decor', 'soleil', 'camera', 'etiquettes',
 const SCRIPTS = ['js/telemetry.js', ...CARTE_KIT, 'js/ambient-life.js', 'js/fermier.js', 'js/famille-ferme.js', ...CARTE_FERME, 'js/farm-stage.js', 'js/grotte.js'];
 const ENTRY = 'js/main.js';
 const BUNDLE = 'js/jeu.bundle.js';
+const WORKER = 'js/monde-worker.js';
 
 rmSync(OUT, { recursive: true, force: true });
 for (const f of PAGES) {
@@ -107,8 +110,24 @@ if (missing.length) {
   process.exit(1);
 }
 
+/* le Web Worker du sol du grand monde (js/monde-worker.js, docs/architecture-phaser.md) : ses
+   modules regroupés en un Worker classique, à part ; son adresse (avec l'empreinte de son contenu)
+   est écrite dans le regroupement des modules (MONDE_WORKER, lu par js/ui/monde-sol.js) */
+await esbuild.build({
+  entryPoints: [join(ROOT, WORKER)],
+  outfile: join(OUT, WORKER),
+  bundle: true,
+  format: 'iife',
+  target: ['es2020'],
+  minify: true,
+  charset: 'utf8',
+  legalComments: 'none',
+  logLevel: 'warning',
+});
+
 /* les modules, regroupés */
 await esbuild.build({
+  define: { MONDE_WORKER: JSON.stringify(`${WORKER}?v=${createHash('sha256').update(readFileSync(join(OUT, WORKER))).digest('hex').slice(0, 10)}`) },
   entryPoints: [join(ROOT, ENTRY)],
   outfile: join(OUT, BUNDLE),
   bundle: true,
