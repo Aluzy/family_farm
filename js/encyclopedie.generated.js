@@ -426,6 +426,21 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
+     "id": "distributeur",
+     "terme": "Distributeur de grain",
+     "description": "Machine de l'Atelier qui nourrit les poules toute seule. Trois blocs, posés côte à côte sur une rangée dans l'enclos du Poulailler, de gauche à droite : un entonnoir (celui de la botteleuse), le distributeur, puis la mangeoire à grain, deux cases de large. Un appui sur l'une de ses pièces : ton personnage jette son blé dans l'entonnoir ; le distributeur en garde jusqu'à 40. Chaque jour à 7 h, il nourrit les poules qui ne le sont pas encore, avec les mêmes rations qu'à la main.",
+     "liens": [
+      "poulailler",
+      "botteleuse",
+      "atelier",
+      "ble"
+     ],
+     "decouverte": [
+      "objet:distributeur",
+      "objet:mangeoire_grain"
+     ]
+    },
+    {
      "id": "buissons",
      "terme": "Buissons et baies",
      "description": "Chaque matin, des buissons de la ferme portent des baies (3 sur un petit buisson, 5 sur un grand), qui se cueillent sans énergie. La hache les coupe d'un coup (2 bois pour un grand, 1 pour un petit) ; ils repoussent quelques jours plus tard, sauf si l'on a bâti sur leur place.",

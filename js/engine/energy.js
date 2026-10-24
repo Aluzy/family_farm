@@ -10,6 +10,7 @@ import { bumpCounter, noteEnergyRecord, updateChapters } from './campaign.js';
 import { nightActive } from './clock.js';
 import { growDue } from './crops.js';
 import { irrigate, robotStep, runRobotCharge } from './automation.js';
+import { distribuerGrain } from './distributeur.js';
 import { advanceNight, nightSpeed } from './night.js';
 import { repasStep } from './repas.js';
 import { companiesStep } from './entreprises.js';
@@ -153,6 +154,7 @@ export function farmStep(state, dtMs, { usure = true, horloge = true, eveilMax =
     growDue(state);
     robotStep(state);
     irrigate(state);
+    distribuerGrain(state); // le distributeur de grain nourrit les poules (distributeur.js)
     companiesStep(state);
     repasStep(state); // la famille mange à la boîte quand elle a faim (repas.js)
   }

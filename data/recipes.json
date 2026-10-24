@@ -54,6 +54,9 @@
     "semis : la graine d'un arbre de la carte (la pomme de pin d'un sapin, le gland d'un autre arbre : HACHE.GRAINES), à planter sur une case d'herbe libre, dehors, loin des autres arbres plantés (ARBRE_ECART) ; un arbre de cette espèce y pousse (outils.js, planterGraine), sans rester un bloc.",
     "Le Poulailler veut aussi une porte sur le dehors et un enclos de barrières relié par une porte, et une case libre par poule dedans et dans l'enclos (blocs.js, etatPoulailler).",
     "botteleuse : une pièce de la botteleuse (BOTTELEUSE) : « entonnoir », « machine » ou « convoyeur ».",
+    "distributeur : une pièce du distributeur de grain (DISTRIBUTEUR) : « machine » ou « mangeoire » (l'entonnoir est",
+    "celui de la botteleuse) ; dessin : la carte le dessine avec sa propre image (assets/meuble_<dessin>_<état>.png),",
+    "comme un meuble ; largeur : il couvre autant de cases vers la droite.",
     "boite : la boîte à nourriture (BOITE, js/engine/repas.js) : la famille y mange ; on y range au plus PLATS aliments",
     "différents, QUANTITE de chacun. Une fois le réfrigérateur posé, elle revient dans l'inventaire avec son contenu",
     "et ne se pose plus (la famille mange au frigo).",
@@ -120,6 +123,8 @@
       "entonnoir": { "entrees": { "planche": 2, "pierre": 1 }, "sortie": { "entonnoir": 1 } },
       "botteleuse": { "entrees": { "planche": 4, "pierre": 6 }, "sortie": { "botteleuse": 1 } },
       "convoyeur": { "entrees": { "planche": 2, "fibre": 2 }, "sortie": { "convoyeur": 2 } },
+      "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler" },
+      "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler" },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
@@ -188,6 +193,8 @@
       "entonnoir": { "nom": "Entonnoir", "objet": "entonnoir", "bloque": true, "botteleuse": "entonnoir" },
       "botteleuse": { "nom": "Botteleuse", "objet": "botteleuse", "bloque": true, "botteleuse": "machine" },
       "convoyeur": { "nom": "Convoyeur", "objet": "convoyeur", "bloque": true, "botteleuse": "convoyeur" },
+      "distributeur": { "nom": "Distributeur de grain", "objet": "distributeur", "dehors": true, "bloque": true, "distributeur": "machine", "dessin": "distributeur" },
+      "mangeoire_grain": { "nom": "Mangeoire à grain", "objet": "mangeoire_grain", "dehors": true, "bloque": true, "distributeur": "mangeoire", "dessin": "mangeoire_grain", "largeur": 2 },
       "meuble_chaise": { "nom": "Chaise", "objet": "meuble_chaise", "meuble": "chaise", "dedans": true, "bloque": true },
       "meuble_table": { "nom": "Table", "objet": "meuble_table", "meuble": "table", "dedans": true, "bloque": true, "largeur": 3 },
       "meuble_tapis_1": { "nom": "Tapis tressé", "objet": "meuble_tapis_1", "meuble": "tapis_1", "dedans": true, "plat": true, "largeur": 3 },
@@ -249,7 +256,7 @@
       "batir": { "nom": "Bâtir", "icone": "🧱", "murs": true, "blocs": ["porte", "porte_chene", "porte_vitree", "porte_grange", "porte_bleue", "porte_fer", "porte_ecurie", "porte_blanche", "plancher", "sol_dalles", "sol_carrelage", "sol_tomettes", "sol_chevrons", "sol_marbre", "sol_paves", "sol_mosaique", "chemin", "barriere", "escalier"] },
       "maison": { "nom": "Maison", "icone": "🏠", "blocs": ["paillasse", "boite_nourriture", "refrigerateur", "four", "cuisiniere", "lanterne"] },
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
-      "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "mangeoire", "bac_semis", "ruche", "bac_fleurs", "bloc_silo", "meule"] },
+      "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "bac_semis", "ruche", "bac_fleurs", "bloc_silo", "meule"] },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
       "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur"] }
     },
@@ -285,6 +292,15 @@
     "sur le convoyeur et tombe au sol, au bout : le joueur la ramasse en marchant dessus. La case au",
     "bout du convoyeur doit rester libre (rien qui bloque)."
   ],
+  "//DISTRIBUTEUR": [
+    "Le distributeur de grain du Poulailler (js/engine/distributeur.js) : trois blocs posés côte à côte",
+    "sur une rangée, dans l'enclos du Poulailler, de gauche à droite : un entonnoir (celui de la botteleuse),",
+    "le distributeur, puis la mangeoire à grain (2 cases de large, à demi-hauteur). On y jette le blé",
+    "(l'inventaire, puis le Silo) par l'entonnoir, comme les fibres dans la botteleuse ; il en garde au plus",
+    "CAPACITE. Chaque jour à HEURE h, il nourrit les poules qui ne le sont pas encore, avec les mêmes rations",
+    "qu'à la main, tant qu'il lui reste du blé."
+  ],
+  "DISTRIBUTEUR": { "NOM": "Distributeur de grain", "ICONE": "🌾‍⚙️", "CAPACITE": 40, "HEURE": 7 },
   "BOTTELEUSE": { "NOM": "Botteleuse", "ICONE": "⚙️‍🌾", "FIBRES": 10, "VIBRE_S": 3, "PAILLE": 10, "CONVOYEUR": 2 },
   "STATIONS": {
     "four": { "nom": "Four", "article": "le", "icone": "🔥", "prixConstruction": 100, "electrique": false, "debloque": ["recettes"], "action": "cuireFour" },

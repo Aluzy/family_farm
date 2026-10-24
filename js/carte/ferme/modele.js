@@ -47,6 +47,7 @@
       this.syncSilo(model.blocs);         // (les blocs de silo : leurs caisses, ou le silo qu'ils forment, silo.js)
       this.syncAbeilles(model);   // (les abeilles des ruches, et les fleurs où elles butinent)
       this.syncBotteleuses(model.botteleuses, model.botteVibre, model.fibres);   // (après les blocs : leurs images)
+      this.syncDistributeurs(model.distributeurs, model.grainEnMain);
       this.syncTableaux(model.tableaux);                                         // (après les blocs : sur leurs murs)
       this.syncEtage(model.etage, model.niveau, model.vueNiveau);                // (après les blocs : ceux sous l'étage se cachent)
       this.syncToits(model.toits);

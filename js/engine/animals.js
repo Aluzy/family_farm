@@ -190,18 +190,36 @@ export function feedHen(state) {
   if (p.poules <= 0) return fail('Aucune poule à nourrir.');
   if (hensToFeed(state) <= 0) return fail('Toutes les poules sont nourries.');
   if (!canFeedHen(state)) return fail('Pas assez de blé.');
+  nourrirUne(state, { total: () => wheatTotal(state), prendre: (n) => takeWheat(state, n, 'inventaire') });
+  return { ok: true };
+}
+
+// Une poule nourrie avec le blé de `source` ({ total(), prendre(n) }) : un blé entamé la
+// nourrit et laisse des rations pour les suivantes (ration équilibrée, arbre v2 : 2 blé pour
+// 5 poules si possible).
+function nourrirUne(state, source) {
+  const p = state.poulailler;
   if (!(p.restes > 0)) {
-    // Un blé entamé : il nourrit cette poule et laisse des rations pour les
-    // suivantes. Ration équilibrée (arbre v2) : 2 blé pour 5 poules si possible.
     const r = henRation(state);
-    const ble = wheatTotal(state) >= r.ble ? r.ble : 1;
-    takeWheat(state, ble, 'inventaire');
+    const ble = source.total() >= r.ble ? r.ble : 1;
+    source.prendre(ble);
     state.jour.ble += ble;
     p.restes = ble === r.ble ? r.poules : DATA.ANIMAUX.poule.poulesParBle;
   }
   p.restes -= 1;
   p.nourries += 1;
-  return { ok: true };
+}
+
+// Nourrit les poules qui ne le sont pas encore avec le blé de `source` (le distributeur de
+// grain, js/engine/distributeur.js), tant qu'il en reste. Renvoie combien.
+export function feedHensFrom(state, source) {
+  const p = state.poulailler;
+  let n = 0;
+  while (hensToFeed(state) > 0 && (p.restes > 0 || source.total() >= 1)) {
+    nourrirUne(state, source);
+    n += 1;
+  }
+  return n;
 }
 
 // Ration des poules : { ble, poules } (1 blé → 2 poules, ou 2 blé → 5 poules).

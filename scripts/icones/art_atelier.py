@@ -1,6 +1,6 @@
 # Lot « atelier » (la ferme générée, docs/carte-generee.md, étape 3) : la fibre, la planche, le
 # mur en pierre, le mur en bois, la cruche à eau, la porte, le plancher, la barrière, le chemin, le champignon lumineux, le morceau
-# d'arbre de l'infra-monde, la lanterne, la paillasse, le nichoir, la mangeoire, le bac à semis, le bloc de silo, la meule, la botteleuse (entonnoir, machine, convoyeur), les jeunes arbres, l'Atelier et les
+# d'arbre de l'infra-monde, la lanterne, la paillasse, le nichoir, la mangeoire, le bac à semis, le bloc de silo, la meule, la botteleuse (entonnoir, machine, convoyeur), le distributeur de grain et sa mangeoire, les jeunes arbres, l'Atelier et les
 # baies des buissons (un marteau).
 # Format commun : voir scripts/icones/build.py. Contour de 1 px dessiné à la main, dans la teinte
 # très sombre de chaque matière ; lumière en haut à gauche.
@@ -432,6 +432,45 @@ ICONS = {
         '.kttttttttkOOOk.',
         '.kmpppppppkkkkk.',
         '.kkkkkkkkkkkkkk.',
+        '................',
+    ],
+    # distributeur de grain : une trémie de planches cerclée de fer, son couvercle en pente, le
+    # hublot plein de blé, la goulotte en bas à droite
+    '🌾‍⚙️': [
+        '...kkkkkkkkkk...',
+        '..keeeeeeeeeek..',
+        '..kTTTTTTTTTTk..',
+        '...ktTmmmmTtk...',
+        '...ktTmYymTtk...',
+        '...knnmyynnnk...',
+        '...ktTmyomTtk...',
+        '...ktTmoomTtk...',
+        '...ktTmoomTtk...',
+        '...knnmmmmnnk...',
+        '...ktTTttTTtkmm.',
+        '...ktTTttTTtkpm.',
+        '...kkkkkkkkkkmpm',
+        '....kk....kk...m',
+        '....kk....kk....',
+        '................',
+    ],
+    # mangeoire à grain : une auge basse de planches, deux cloisons, pleine de blé
+    '🌾‍🛶': [
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        'kkkkkkkkkkkkkkkk',
+        'keeeeeeeeeeeeeek',
+        'kOyYykYyYkyYyOek',
+        'kOoyykoyykyoyOTk',
+        'kkkkkkkkkkkkkkkk',
+        'kTTTTTTTTTTTTTTk',
+        'kttttttttttttttk',
+        'kkkkkkkkkkkkkkkk',
+        '.kk..........kk.',
+        '.kk..........kk.',
         '................',
     ],
     # convoyeur : une bande de caoutchouc et ses tasseaux, entre deux longerons, deux rouleaux

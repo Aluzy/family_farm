@@ -50,6 +50,21 @@ Les dessins : `scripts/carte/blocs.py` (entonnoir, machine, convoyeur), `scripts
 (la fibre au sol, la botte). Le joueur automatique, sans carte, bottelle ses fibres directement
 (`bottelerSansCarte`).
 
+### Le distributeur de grain : le blé des poules
+
+Trois blocs posés côte à côte sur une rangée, dans l'enclos du Poulailler (`js/engine/distributeur.js`),
+de gauche à droite : un entonnoir (celui de la botteleuse), le distributeur (`ATELIER.BLOCS.distributeur`,
+`distributeur: "machine"`), puis la mangeoire à grain (`mangeoire_grain`, deux cases de large :
+`largeur: 2`, `casesCouvertes`). Tous deux se fabriquent à l'Atelier une fois le Poulailler débloqué.
+Un appui sur une de ses pièces : le personnage va devant l'entonnoir et y jette son blé
+(l'inventaire, puis le Silo ; `verserGrain`), comme les fibres dans la botteleuse ; le distributeur en
+garde au plus `DISTRIBUTEUR.CAPACITE` (40). Chaque jour, de `DISTRIBUTEUR.HEURE` (7 h) jusqu'au soir,
+il nourrit les poules qui ne le sont pas encore, avec les mêmes rations qu'à la main
+(`distribuerGrain`, `feedHensFrom`). `state.distributeurs = { [case du distributeur]: { grain } }` ;
+repris, il rend son blé. La carte les dessine comme des meubles (`dessin` : une image qui suit le
+blé, `scripts/batiments/distributeur.py` : le hublot de vide à plein, la mangeoire vide ou pleine) ;
+la fenêtre du Poulailler dit son blé, ou ce qui manque pour qu'il marche.
+
 ### L'atelier niveau 1
 
 L'atelier coûte 3 bois et 3 pierres. Il permet de fabriquer :

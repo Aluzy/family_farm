@@ -284,7 +284,7 @@
     // que ce qui est debout (le dormeur passe devant sa tête). Renvoie vrai s'il a changé.
     syncMeuble(b) {
       const B = this.blocks, M = b.meuble, key = 'meuble_' + M.dessin, e = B.get(b.case);
-      if (e && e.sorte === b.sorte) return false;
+      if (e && e.sorte === b.sorte && e.dessin === M.dessin) return false;   // (l'image suit son contenu)
       if (e) e.img.destroy();
       B.delete(b.case);
       if (!this.textures.exists(key)) return !!e;

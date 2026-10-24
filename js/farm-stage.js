@@ -574,6 +574,9 @@
         // la botteleuse (une de ses pièces) : il va jeter ses fibres dans l'entonnoir
         const botte = !hoeing ? this.botteleuseAt(wx, wy) : -1;
         if (botte >= 0) return { botteleuse: botte };
+        // le distributeur de grain (une de ses pièces) : il va jeter son blé dans l'entonnoir
+        const distrib = !hoeing ? this.distributeurAt(wx, wy) : -1;
+        if (distrib >= 0) return { distributeur: distrib };
         // le silo de la ferme générée (ses blocs) : la fenêtre du Silo
         if (!hoeing && this.siloAt(wx, wy)) return { window: 'silo' };
         // un four, une cuisinière posés (la ferme générée) : la fenêtre de sa station
@@ -682,6 +685,7 @@
         if (hit.gather) { this.gather(hit.gather); return; }
         if (hit.caillou) { this.pickRock(hit.caillou); return; }
         if (hit.botteleuse !== undefined) { this.jeterFibres(hit.botteleuse); return; }
+        if (hit.distributeur !== undefined) { this.jeterGrain(hit.distributeur); return; }
         if (hit.chop) { this.chop(hit.chop); return; }
         if (hit.mine) { this.mine(hit.mine); return; }
         if (hit.scythe) { this.scythe(hit.scythe); return; }

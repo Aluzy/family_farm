@@ -37,8 +37,10 @@ import { renderMoulin } from './cuisine.js';
 import { objectiveValueText } from './chapitres.js';
 import { registerActions } from './actions.js';
 import { axeChipHtml, chopFromStage, fishFromStage, caillouFromStage, mineFromStage, morceauFromStage, pickChipHtml, rodChipHtml, scytheAroundFromStage, scytheChipHtml, scytheFromStage } from './outils.js';
-import { botteFromStage, ramasserFromStage, verserFromStage } from './atelier.js';
+import { botteFromStage, ramasserFromStage, verserFromStage, verserGrainFromStage } from './atelier.js';
 import { botteleuses } from '../engine/botteleuse.js';
+import { distributeurDe, distributeurs, grainDans } from '../engine/distributeur.js';
+import { countWithSilo } from '../engine/animals.js';
 import { countItem } from '../engine/inventory.js';
 import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, blocsDessusPoses, couchages, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
@@ -447,6 +449,10 @@ export function stageModel() {
     botteleuses: botteleuses(state),
     botteVibre: DATA.BOTTELEUSE.VIBRE_S,
     fibres: countItem(state, 'fibre'),
+    // les distributeurs de grain du Poulailler (js/engine/distributeur.js : l'entonnoir, le
+    // distributeur, la mangeoire) et le blé du joueur (l'inventaire et le Silo), à y jeter
+    distributeurs: distributeurs(state),
+    grainEnMain: countWithSilo(state, DATA.SILO.ITEM),
     // les arbres plantés d'une graine (sur une case d'herbe libre) : une jeune pousse
     pousses: poussesArbres(state),
     // puis, grands, des arbres de la carte (js/carte/ferme/foret.js)
@@ -456,7 +462,7 @@ export function stageModel() {
     // (un meuble : son dessin, ses cases en largeur et en hauteur, s'il arrête le passage, s'il est à plat ou un lit)
     // (un mur rehaussé, version 1.25 : sa hauteur en blocs)
     // (une fenêtre percée dans un mur : la matière de ce mur)
-    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}) })),
+    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}) })),
     // le Moulin de la ferme générée (version 1.25) : sa tour bâtie, ses bornes (les cases de la
     // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
     // le didacticiel (js/ui/didacticiel.js) : ce que la carte entoure (pierres, bois, Atelier, puits)
@@ -492,12 +498,28 @@ export function stageModel() {
   };
 }
 
-// Un meuble posé sur la ferme générée (DATA.ATELIER.BLOCS.meuble_<id>) : ce que la carte en a
-// besoin ; {} pour un autre bloc.
-function meubleDe(sorte) {
+// Un meuble posé sur la ferme générée (DATA.ATELIER.BLOCS.meuble_<id>), ou un bloc dessiné comme
+// lui (`dessin` : le distributeur de grain, sa mangeoire ; leur image suit ce qu'ils contiennent) :
+// ce que la carte en a besoin ; {} pour un autre bloc.
+function meubleDe(sorte, tile) {
   const b = DATA.ATELIER.BLOCS[sorte];
+  if (b && b.dessin) return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: false, lit: false } };
   if (!b || !b.meuble) return {};
   return { meuble: { dessin: b.meuble, largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: !!b.plat, lit: !!b.lit } };
+}
+
+// L'image d'un bloc dessiné comme un meuble : le distributeur selon son blé (assets/
+// meuble_distributeur_<0 à 4>.png : vide à plein), la mangeoire pleine tant qu'il en a.
+function dessinBloc(b, tile) {
+  if (b.distributeur === 'machine') {
+    const f = grainDans(state, tile) / DATA.DISTRIBUTEUR.CAPACITE;
+    return `distributeur_${f > 0 ? Math.max(1, Math.round(f * 4)) : 0}`;
+  }
+  if (b.distributeur === 'mangeoire') {
+    const m = distributeurDe(state, tile);
+    return `mangeoire_grain_${m !== null && grainDans(state, m) > 0 ? 'pleine' : 'vide'}`;
+  }
+  return b.dessin;
 }
 
 // Sans maison : la porte du foyer (la première pièce close où l'on dort, sinon
@@ -717,7 +739,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, chop: chopFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, chop: chopFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
