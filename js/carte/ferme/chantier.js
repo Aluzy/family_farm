@@ -40,7 +40,8 @@
 
   // La dalle sous un mur (syncDalle) : les `h` premières rangées de l'image du mur (son dessus,
   // scripts/carte/blocs.py : 10 px), étirées sur sa case ; sur le sol, sous les parcelles (2).
-  const DALLE = { h: 10, profondeur: 1.4 };
+  // Sous une porte, le seuil : une planche de chêne de x0 à x1, de y0 à y1 (px de la case).
+  const DALLE = { h: 10, profondeur: 1.4, seuil: { x0: 1, x1: 15, y0: 4, y1: 12, bois: '#8a5a34', clair: '#b07a48', sombre: '#3a2414' } };
   // La tache de lumière des lanternes : un disque blanc qui s'estompe vers son bord (R px de
   // rayon), teinté et agrandi dans le voile (la même que les réverbères de la ville).
   const R = 32;
@@ -285,20 +286,31 @@
 
     // La dalle sous un mur (ou une fenêtre) : sa case au sol, dans la matière et la couleur du
     // dessus du mur (les DALLE.h premières rangées de son image, étirées sur la case), sous tout
-    // le reste. Quand le mur s'efface devant le personnage (stepMurs), c'est elle qu'on voit, et
-    // non l'herbe. `ote` : le mur s'en va, sa dalle aussi.
+    // le reste. Sous une porte, un seuil : la même dalle (le dessus du mur de part et d'autre),
+    // traversée d'une planche de chêne là où passe la porte (DALLE.seuil). Quand le mur ou la
+    // porte s'efface devant le personnage (stepMurs), c'est elle qu'on voit, et non l'herbe.
+    // `ote` : le bloc s'en va, sa dalle aussi.
     syncDalle(e, ote) {
       const H = BLOCS_CARTE.hauts;
-      const mur = !ote && e.img && e.img.active && e.img.texture.key === H.key && H.variantes[e.sorte] !== undefined;
-      const f = mur ? e.img.frame.name : null;
+      const ok = !ote && e.img && e.img.active && e.img.texture.key === H.key;
+      const porte = ok && estPorte(e.sorte);
+      const f = ok && (porte || H.variantes[e.sorte] !== undefined) ? e.img.frame.name : null;
       if (e.dalle && e.dalle.f === f) return;
       if (e.dalle) { e.dalle.img.destroy(); e.dalle = null; }
       if (f === null) return;
-      const key = 'dalle_' + H.key + '_' + f;
+      const key = (porte ? 'seuil_' : 'dalle_') + H.key + '_' + f;
       if (!this.textures.exists(key)) {
-        const src = this.textures.getFrame(H.key, f), cv = this.textures.createCanvas(key, T, T);
-        cv.context.imageSmoothingEnabled = false;
-        cv.context.drawImage(src.source.image, src.cutX, src.cutY, T, DALLE.h, 0, 0, T, T);
+        const src = this.textures.getFrame(H.key, f), cv = this.textures.createCanvas(key, T, T), g = cv.context;
+        g.imageSmoothingEnabled = false;
+        g.drawImage(src.source.image, src.cutX, src.cutY, T, DALLE.h, 0, 0, T, T);
+        if (porte) {
+          // (le seuil : une planche couchée, son arête claire, son ombre, les deux joints)
+          const S = DALLE.seuil;
+          g.fillStyle = S.bois; g.fillRect(S.x0, S.y0, S.x1 - S.x0, S.y1 - S.y0);
+          g.fillStyle = S.clair; g.fillRect(S.x0, S.y0, S.x1 - S.x0, 1);
+          g.fillStyle = S.sombre; g.fillRect(S.x0, S.y1 - 1, S.x1 - S.x0, 1);
+          g.fillRect(S.x0, S.y0, 1, S.y1 - S.y0); g.fillRect(S.x1 - 1, S.y0, 1, S.y1 - S.y0);
+        }
         cv.refresh();
       }
       const x = e.x - T / 2, y = e.y - T;

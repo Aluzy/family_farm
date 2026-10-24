@@ -79,7 +79,9 @@
   function corps(w, h) {
     const R = w / 2 - 1.4, HZ = (h * S.bloc) / V.HAUT, HD = 0.75 * R, z0 = V.socle;
     const bas = Math.ceil(R * V.FOND) + 2;
-    const haut = Math.ceil(Math.max(HZ * V.HAUT + R * V.FOND, (HZ + HD + 2) * V.HAUT)) + 2;
+    // (le haut de l'image : le fond du dôme, vu de haut, monte jusqu'à hypot(HD × HAUT, RD × FOND)
+    // au-dessus du fût, plus haut que son sommet ; le chapeau d'aération, au milieu)
+    const haut = Math.ceil(Math.max(HZ * V.HAUT + Math.hypot(HD * V.HAUT, (R + 0.5) * V.FOND), (HZ + HD + 2) * V.HAUT + 2.2 * V.FOND)) + 2;
     const W = w, H = haut + bas, X0 = w / 2, Y0 = H - bas + 0.5;
     const cle = new Float32Array(W * H).fill(-Infinity), col = new Array(W * H), obj = new Int8Array(W * H);
     const point = (x, d, z, c, o) => {
