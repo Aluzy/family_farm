@@ -10,7 +10,7 @@ import { isMoonPhase, moonHarvestPct, moonWaterPct } from './lune.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { absoluteHours, dayHour } from './clock.js';
 import { aCruche, eauCruche, puiserCruche } from './cruche.js';
-import { farmTerrain, tileCount } from './terrain.js';
+import { casesDuTerrain, farmTerrain, tileCount } from './terrain.js';
 import { serrePlaces } from './blocs.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
@@ -177,12 +177,12 @@ export function soilLayoutOk(state, tile, labour) {
 // plafond et énergie, qui se disent au moment du labour) : labourables, sans terre, et dont
 // les bordures se dessineraient.
 export function hoeableTiles(state) {
-  const n = tileCount(farmTerrain(state));
+  const cases = casesDuTerrain(farmTerrain(state));
   const dirt = dirtTiles(state);
   const libres = freedRockTiles(state); // une fois pour toute la carte
   const serre = new Set(serrePlaces(state));   // (les cases de la Serre : à part, plus bas)
   const out = [];
-  for (let t = 0; t < n; t++) {
+  for (const t of cases) {
     if (dirt.has(t) || serre.has(t) || !isArable(t, state, libres)) continue;
     const before = badBorders(state, dirt, t, libres);
     dirt.add(t);

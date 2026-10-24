@@ -467,7 +467,7 @@ test('version 1.9 : migration v26 → v27 : les parcelles prennent une case, la 
 test('version 1.15 : la houe laboure n\'importe quelle tuile d\'herbe de la carte, dans le plafond', () => {
   const s = garden();
   const T = farmTerrain(s);
-  assertEqual([T.LARGEUR, T.HAUTEUR, T.LIGNES.length], [144, 114, 114], 'la ferme générée, pas la carte de Tiled (72 × 57)');
+  assertEqual([T.LARGEUR, T.HAUTEUR, T.LIGNES.length, T.FERME.LARGEUR, T.FERME.HAUTEUR], [644, 510, 510, 144, 114], 'le monde, la ferme générée au centre, pas la carte de Tiled (72 × 57)');
   const arables = [];
   for (let t = 0; t < T.LARGEUR * T.HAUTEUR; t++) if (isArable(t, s)) arables.push(t);
   assert(arables.length > 800, 'des centaines de tuiles labourables');

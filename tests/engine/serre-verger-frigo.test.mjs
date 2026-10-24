@@ -19,6 +19,7 @@ import {
 import {
   affamer, assert, assertEqual, construireFrigo, AVANT_DEMENAGEMENT, coldRoom, farm, fillCows, fillSheep, garden,
   kwh, migreAvant, ml, pature, plantRipe, ranch, reach, runFor, setInv, setStraw, sleepOnce, test,
+  avantLeMonde, caseDeLaFerme,
 } from './aide.mjs';
 
 /* ---------- Lot 8 : Serre, Verger, Réfrigérateur (les saisons sont retirées en version 1.6) ---------- */
@@ -620,12 +621,11 @@ test('migration v49 → v50 : les parcelles de la Serre prennent les cases où l
   testBatir(reach(s, 'serre'), 'serre');
   const cases = s.serre.parcelles.map((p) => p.case);
   plant(s, 'serre-2', 'tomate');
-  const v49 = JSON.parse(JSON.stringify(s));
-  v49.version = 49;
+  const v49 = avantLeMonde(s, 49);
   v49.serre.parcelles = v49.serre.parcelles.map(({ case: _c, ...p }) => p);
   const m = MIGRATIONS[49](v49);
   assertEqual(m.version, 50);
-  assertEqual(m.serre.parcelles.map((p) => p.case), cases, 'les premières cases de sa pièce, dans l\'ordre');
+  assertEqual(m.serre.parcelles.map((p) => p.case), cases.map(caseDeLaFerme), 'les premières cases de sa pièce, dans l\'ordre');
   assertEqual(m.serre.parcelles.find((p) => p.id === 'serre-2').culture, 'tomate');
 });
 

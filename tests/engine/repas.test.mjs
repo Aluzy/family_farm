@@ -13,6 +13,7 @@ import {
 import {
   affamer, assert, assertEqual, construireFrigo, AVANT_DEMENAGEMENT, boite, garden, migreAvant, reach, setInv,
   sleepOnce, test, tireless,
+  avantLeMonde, caseDeLaFerme,
 } from './aide.mjs';
 
 // Une ferme générée, l'Atelier construit, un foyer clos (murs, porte, paillasses) et la boîte à
@@ -196,9 +197,8 @@ test('migration v47 → v48 : le réfrigérateur construit est posé dans le foy
   setInv(s, { carotte: 3 });
   moveToFridge(s, 'carotte', 3);
   // (avant la version 48 : le frigo acheté n'était pas un bloc)
-  const v47 = JSON.parse(JSON.stringify(s));
-  delete v47.blocs[t];
-  v47.version = 47;
+  const v47 = avantLeMonde(s, 47);
+  delete v47.blocs[caseDeLaFerme(t)];
   const m = migrate({ v: 47, t: 0, s: JSON.parse(JSON.stringify(v47)) });
   assertEqual([m.version, m.frigo.construit, Object.values(m.blocs).filter((b) => b === 'refrigerateur').length, countItem(m, 'refrigerateur'), fridgeCount(m, 'carotte')], [STATE_VERSION, true, 1, 0, 3]);
   // sans foyer : dans l'inventaire, avec ce qu'il gardait

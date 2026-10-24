@@ -9,7 +9,8 @@ import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { techFlag, techSum } from './techtree.js';
 import { casesBaties } from './blocs.js';
-import { FERME_GENEREE, genererFerme } from './ferme-generee.js';
+import { FERME_GENEREE } from './ferme-generee.js';
+import { genererMonde } from './monde.js';
 import { noter } from './journal.js';
 import { chevalMonte, vitesseCheval } from './cheval.js';
 
@@ -333,7 +334,7 @@ export function especeArbre(state, id) {
   const g = farmSeed(state);
   if (g === null) return null;
   if (!especes.has(g)) {
-    const { carte, terrain } = genererFerme(g);
+    const { carte, terrain } = genererMonde(g);
     const tuiles = (bloc, n) => new Set(Array.from({ length: n }, (_, k) => blocGid(bloc, k)));
     const pins = tuiles('pin', 16), feuillus = tuiles('arbre', 12);
     const couches = carte.layers.filter((l) => l.type === 'tilelayer' && l.name.startsWith('layer_tree'));

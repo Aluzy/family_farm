@@ -35,7 +35,7 @@ import { isAutomated } from './automation.js';
 import { buyTool, grassCut, hasTool, scytheGrass } from './outils.js';
 import { bottelerSansCarte } from './botteleuse.js';
 import { sleep } from './night.js';
-import { farmSeed, farmTerrain, tileCount } from './terrain.js';
+import { casesDuTerrain, farmSeed, farmTerrain } from './terrain.js';
 import { createNewGame, houseRepaired, starterBlock } from './depart.js';
 import { testBatir, testLabourerSerre } from './testmode.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose, remplirCruche } from './cruche.js';
@@ -232,9 +232,9 @@ let botTilesCache = null, botTilesPour = null;
 function botTiles(state) {
   const T = farmTerrain(state), cle = farmSeed(state) + ':' + Object.keys(state.blocs || {}).join(',');
   if (botTilesPour === cle) return botTilesCache;
-  const W = T.LARGEUR, Z = T.ZONES[1], n = tileCount(T);
+  const W = T.LARGEUR, Z = T.ZONES[1];
   const tiles = [], aucune = new Set(); // (les tuiles sous un rocher ou un arbre n'y sont pas)
-  for (let t = 0; t < n; t++) if (isArable(t, state, aucune)) tiles.push(t);
+  for (const t of casesDuTerrain(T)) if (isArable(t, state, aucune)) tiles.push(t);
   const d = (t) => Math.hypot((t % W) - (Z.X + 2), Math.floor(t / W) - (Z.Y + 2.5));
   botTilesCache = tiles.sort((a, b) => d(a) - d(b) || a - b);
   botTilesPour = cle;

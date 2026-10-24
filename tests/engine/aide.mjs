@@ -10,7 +10,7 @@
 
 import { test } from 'node:test';
 import {
-  addItem, awakeMsAtHour, boitePosee, buildFridge, buildStation,
+  addItem, awakeMsAtHour, boitePosee, buildFridge, buildStation, decalerPartie, FERME_DANS_MONDE, FERME_GENEREE, MONDE,
   buyCow, buySheep, countItem, createInitialState, DATA, defaultOrigin, findPlot, grantTech,
   farmTerrain, growDue, irrigate, makePlot, migrate, maxStage, startPlots, openStation, plant, plotAtTile, robotStep, shelfLife,
   depenserMembre, mangeurs, repasStep, sleep, takeItem, testBatir, testFillBatteries, testGoToChapter, testSetBuildingLevel5, tick, unlockLevel,
@@ -276,6 +276,18 @@ export function ancienne(seed = 1) {
 // Les anciennes migrations, jusqu'à la version 46 : la dernière sur la ferme du grand-père,
 // avant le déménagement (v46 → v47, demenagement.test.mjs).
 export const AVANT_DEMENAGEMENT = 46;
+
+// Une partie d'aujourd'hui ramenée d'avant le grand monde (version `v` < 52) : ses cases sur la
+// largeur de sa ferme seule, comme la migration 51 → 52 les trouve (decalerPartie, state.js).
+export function avantLeMonde(s, v) {
+  return { ...decalerPartie(s, -1), version: v };
+}
+
+// La case `i` du monde, sur la largeur de la ferme seule (celle d'une partie d'avant le monde).
+export function caseDeLaFerme(i) {
+  const [ox, oy] = FERME_DANS_MONDE;
+  return (Math.floor(i / MONDE.LARGEUR) - oy) * FERME_GENEREE.LARGEUR + (i % MONDE.LARGEUR) - ox;
+}
 export const migreAvant = (save) => migrate(save, AVANT_DEMENAGEMENT);
 
 // Ce qu'une parcelle porte, sans son identifiant ni son lieu (que la fusion renumérote).

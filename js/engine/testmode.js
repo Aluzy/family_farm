@@ -354,26 +354,28 @@ export function testBuildAtelier(state) {
 // Un coin d'herbe libre de w × h cases (coin haut-gauche), une case de marge autour, le plus
 // près possible de la Zone de culture, ou null ; `filtre(tile)` : une condition de plus sur le coin.
 function coinLibre(state, w, h, filtre = null) {
-  const T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR;
+  const T = farmTerrain(state), W = T.LARGEUR;
+  // (sur la ferme seulement : la prairie du monde autour n'a rien où bâtir, monde.js)
+  const F = T.FERME || { X: 0, Y: 0, LARGEUR: W, HAUTEUR: T.HAUTEUR }, X0 = F.X, Y0 = F.Y, L = F.LARGEUR, H = F.HAUTEUR;
   const pris = casesBaties(state), terres = new Set(state.potager.parcelles.map((p) => p.case));
-  // (les cases prises, en sommes cumulées : une boîte se vérifie d'un coup)
-  const somme = new Int32Array((W + 1) * (H + 1));
+  // (les cases prises, en sommes cumulées : une boîte se vérifie d'un coup ; en cases de la ferme)
+  const somme = new Int32Array((L + 1) * (H + 1));
   for (let r = 0; r < H; r++) {
-    for (let c = 0; c < W; c++) {
-      const t = r * W + c, ch = T.LIGNES[r][c];
+    for (let c = 0; c < L; c++) {
+      const t = (r + Y0) * W + c + X0, ch = T.LIGNES[r + Y0][c + X0];
       const occupe = (ch === '#' || ch === '+') && !pris.has(t) && !terres.has(t) && !herbesSur(state, t).length ? 0 : 1;
-      somme[(r + 1) * (W + 1) + c + 1] = occupe + somme[r * (W + 1) + c + 1] + somme[(r + 1) * (W + 1) + c] - somme[r * (W + 1) + c];
+      somme[(r + 1) * (L + 1) + c + 1] = occupe + somme[r * (L + 1) + c + 1] + somme[(r + 1) * (L + 1) + c] - somme[r * (L + 1) + c];
     }
   }
-  const boite = (c0, r0, c1, r1) => somme[r1 * (W + 1) + c1] - somme[r0 * (W + 1) + c1] - somme[r1 * (W + 1) + c0] + somme[r0 * (W + 1) + c0];
-  const Z = T.ZONES[1], cx = Z.X + Z.COLONNES / 2, cy = Z.Y + 3;
+  const boite = (c0, r0, c1, r1) => somme[r1 * (L + 1) + c1] - somme[r0 * (L + 1) + c1] - somme[r1 * (L + 1) + c0] + somme[r0 * (L + 1) + c0];
+  const Z = T.ZONES[1], cx = Z.X - X0 + Z.COLONNES / 2, cy = Z.Y - Y0 + 3;
   let best = null, dBest = Infinity;
   for (let r = 2; r < H - h - 2; r++) {
-    for (let c = 2; c < W - w - 2; c++) {
+    for (let c = 2; c < L - w - 2; c++) {
       const d = Math.hypot(c + w / 2 - cx, r + h / 2 - cy);
       if (d >= dBest || boite(c - 1, r - 1, c + w + 1, r + h + 1)) continue;
-      if (filtre && !filtre(r * W + c)) continue;
-      best = { c, r, W };
+      if (filtre && !filtre((r + Y0) * W + c + X0)) continue;
+      best = { c: c + X0, r: r + Y0, W };
       dBest = d;
     }
   }
