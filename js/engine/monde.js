@@ -1,5 +1,4 @@
-import { blocGid } from './planche.js';
-import { genererFerme, hache, teinteHerbe } from './ferme-generee.js';
+import { genererFerme, teinteHerbe } from './ferme-generee.js';
 import { fairePlan } from './monde-gen.js';
 
 /* ---------- le grand monde (docs/grand-monde.md) ---------- */
@@ -10,17 +9,21 @@ import { fairePlan } from './monde-gen.js';
 // carte et la sauvegarde parlent tous de ces cases-là (la migration 51 → 52 y a porté les
 // anciennes parties, state.js).
 //
-// Pour l'instant (étape 3), le monde autour de la ferme est une prairie : l'herbe de la ferme y
-// continue, avec la même teinte qui ondule (teinteHerbe) et ses raccords, et le chemin de la
-// ferme s'y arrête en s'arrondissant. Le générateur du monde (étape 4) y posera les biomes.
+// Autour de la ferme, les biomes du plan (monde-gen.js) : leur sol se calcule région par région
+// (monde-sol.js : les tuiles de chaque case, où l'on marche), dans un Web Worker sur le site
+// (js/monde-worker.js, js/ui/monde-sol.js), et la scène le peint sous les couches de la carte. Près
+// de la ferme, c'est une prairie (le plan l'y force) : l'herbe de la ferme y continue, avec la même
+// teinte qui ondule (teinteHerbe) et ses raccords, et son chemin rejoint ceux du monde à la sortie
+// est. Le terrain du moteur (LIGNES) reste « rien » (« . ») hors de la ferme : on y marche, on n'y
+// laboure ni n'y bâtit.
 //
-// genererMonde(graine) → { carte, terrain } comme genererFerme : la carte au format de Tiled (ses
-// couches à la taille du monde, ses objets décalés), le terrain de terrain-carte.js avec les
-// mêmes ajouts (DECALAGE, BUISSONS, SOMMETS, TEINTES, HERBES, FLEURS, BUISSONS_CASES) dans les
-// cases du monde, et FERME : { X, Y, LARGEUR, HAUTEUR }, la place de la ferme (en tuiles) ; et
-// `plan`, le plan du monde (monde-gen.js : biomes, relief, rivières, chemins, lieux), tiré à la
-// première demande. Pour l'instant (fiche 4a), le plan n'est que des données : ni le terrain ni la
-// carte ne le lisent encore (la fiche 4b les dessinera et les rendra marchables).
+// genererMonde(graine) → { carte, terrain, plan } comme genererFerme : la carte au format de Tiled
+// (ses couches à la taille du monde, vides hors de la ferme, ses objets décalés), le terrain de
+// terrain-carte.js avec les mêmes ajouts (DECALAGE, BUISSONS, SOMMETS, TEINTES, HERBES, FLEURS,
+// BUISSONS_CASES) dans les cases du monde, FERME : { X, Y, LARGEUR, HAUTEUR }, la place de la ferme
+// (en tuiles), et MONDE (pas énumérable) : de quoi en calculer le sol (monde-sol.js) ; et `plan`, le
+// plan entier du monde (monde-gen.js : biomes, relief, rivières, chemins, lieux), tiré à la première
+// demande (ni le jeu ni le sol ne le demandent : l'aperçu et les tests seulement).
 
 export const MONDE = { LARGEUR: 644, HAUTEUR: 510, T: 16, REGION: 64 };
 // La place de la ferme dans le monde : au centre (en tuiles).
@@ -96,19 +99,10 @@ export function idDuMonde(id, px = 1, [ox, oy] = FERME_DANS_MONDE) {
   return (Number(m[1]) + ox * px) + ',' + (Number(m[2]) + oy * px);
 }
 
-// Un nombre au hasard pour la case i (toujours le même pour une même graine).
-function hasardCase(g0, i) {
-  let h = (g0 ^ Math.imul(i + 1, 2654435761)) >>> 0;
-  h = Math.imul(h ^ (h >>> 15), 2246822519);
-  h = Math.imul(h ^ (h >>> 13), 3266489917);
-  return (h ^ (h >>> 16)) >>> 0;
-}
-
 function fabriquer(graine) {
   const { carte: f, terrain: tf } = genererFerme(graine);
   const W = MONDE.LARGEUR, H = MONDE.HAUTEUR, T = MONDE.T, N = W * H, V = W + 1;
   const fw = f.width, fh = f.height, fv = fw + 1, [OX, OY] = FERME_DANS_MONDE;
-  const g0 = hache(graine + ':monde');
   const dansFerme = (c, r) => c >= OX && r >= OY && c < OX + fw && r < OY + fh;
   const versMonde = (i) => (Math.floor(i / fw) + OY) * W + (i % fw) + OX;
 
@@ -130,12 +124,13 @@ function fabriquer(graine) {
     return (coinsFaits = { sommets, teintes });
   };
 
-  // ---- 2. les couches : celles de la ferme à leur place ; le sol de la prairie autour (à la
-  // première demande aussi : seule la scène les lit)
+  // ---- 2. les couches : celles de la ferme à leur place, vides autour (à la première demande :
+  // seule la scène les lit). Le sol du monde autour de la ferme ne passe pas par elles : il se
+  // calcule région par région (monde-sol.js, dans un Web Worker sur le site : js/ui/monde-sol.js)
+  // et la scène le peint sous les couches de la carte.
   let carteFaite = null;
   const carte = () => {
     if (carteFaite) return carteFaite;
-    const { sommets, teintes } = coins();
     const layers = f.layers.map((l) => {
       if (l.type === 'tilelayer') {
         const data = new Array(N).fill(0);
@@ -144,27 +139,8 @@ function fabriquer(graine) {
       }
       return { ...l, objects: (l.objects || []).map((o) => ({ ...o, x: o.x + OX * T, y: o.y + OY * T })) };
     });
-    const ground = layers.find((l) => l.name === 'ground').data;
-    const masque = (f2, x, y) => (f2(x, y) ? 8 : 0) | (f2(x + 1, y) ? 4 : 0) | (f2(x, y + 1) ? 2 : 0) | (f2(x + 1, y + 1) ? 1 : 0);
-    const chemin = (x, y) => sommets[y * V + x] === 1;
-    for (let ty = 0; ty < H; ty++) {
-      for (let tx = 0; tx < W; tx++) {
-        if (dansFerme(tx, ty)) continue;
-        const i = ty * W + tx, k = ty * V + tx;
-        const t0 = teintes[k], t1 = teintes[k + 1], t2 = teintes[k + V], t3 = teintes[k + V + 1];
-        const h = Math.min(t0, t1, t2, t3), r = hasardCase(g0, i);
-        if (sommets[k] === 1 || sommets[k + 1] === 1 || sommets[k + V] === 1 || sommets[k + V + 1] === 1) {
-          const n = masque(chemin, tx, ty);
-          ground[i] = blocGid('herbe_chemin', n === 15 ? 4 * 16 + (r % 8) : (5 + h * 2) * 16 + n);
-        } else if (Math.max(t0, t1, t2, t3) > h) {
-          ground[i] = blocGid('herbe_chemin', (13 + h) * 16 + masque((x, y) => teintes[y * V + x] > h, tx, ty));
-        } else {
-          ground[i] = blocGid('herbe_chemin', h * 16 + (r % 16));
-        }
-      }
-    }
     // (les régions où la scène relève les arbres, les rochers, les barrières, l'eau… : celles de
-    // la ferme ; la prairie autour n'a que du sol. L'étape 4 y ajoutera celles des biomes.)
+    // la ferme ; autour, le monde n'a encore que du sol. L'étape 5 y ajoutera les décors des biomes.)
     const regionsPleines = regionsDuRect(OX, OY, fw, fh);
     return (carteFaite = { ...f, width: W, height: H, layers, regionsPleines });
   };
@@ -202,15 +178,16 @@ function fabriquer(graine) {
   // ---- 4. le plan du monde (monde-gen.js), à la première demande : la ferme à sa place, et la
   // sortie de son chemin (le rectangle `vers_la_transition`, couche « passages », sur les trois
   // rangées du chemin au bord est) : le réseau des chemins du monde part de la case juste à l'est.
+  const passage = f.layers.find((l) => l.name === 'passages').objects.find((o) => o.name === 'vers_la_transition');
+  const cadre = { LARGEUR: W, HAUTEUR: H, FERME: terrain.FERME, SORTIE: (OY + Math.round(passage.y / T) + 1) * W + OX + fw };
   let planFait = null;
-  const plan = () => {
-    if (planFait) return planFait;
-    const passage = f.layers.find((l) => l.name === 'passages').objects.find((o) => o.name === 'vers_la_transition');
-    const sortie = Math.round(passage.y / T) + 1;
-    planFait = fairePlan(graine, {
-      LARGEUR: W, HAUTEUR: H, FERME: terrain.FERME, SORTIE: (OY + sortie) * W + OX + fw,
-    });
-    return planFait;
-  };
+  const plan = () => planFait || (planFait = fairePlan(graine, cadre));
+  // ---- 5. de quoi calculer le sol du monde (monde-sol.js : solDirect, caseMarchable ; la page le
+  // donne à son Worker, js/ui/monde-sol.js) : la graine, le cadre du plan, les coins de la ferme
+  // (pour que la prairie autour s'y raccorde), la taille des régions. Pas énumérable : le terrain
+  // garde sa forme.
+  Object.defineProperty(terrain, 'MONDE', {
+    value: { graine, cadre, ferme: { sommets: tf.SOMMETS, teintes: tf.TEINTES }, taille: MONDE.REGION },
+  });
   return { get carte() { return carte(); }, terrain, get plan() { return plan(); } };
 }

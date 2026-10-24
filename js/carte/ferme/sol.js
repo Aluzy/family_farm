@@ -120,6 +120,15 @@
     // est près de la vue. this.regions : clé « rx,ry » -> région.
     makeRegions() {
       for (const r of (this.regions || new Map()).values()) this.dropRegion(r);
+      // une région du monde qui arrive du Worker : ses cases hors de la ferme repeintes, si elle
+      // est dessinée (sinon, elle le sera à jour en approchant de la vue)
+      if (this.ctx.monde && !this.mondeAbonne) {
+        this.mondeAbonne = true;
+        this.ctx.monde.quandRegion((cle) => {
+          const r = this.regions && this.regions.get(cle);
+          if (r && r.tex) this.paintRegion(r, null, this.regionParts(r).monde);
+        });
+      }
       this.regions = new Map();
       this.regionsKey = '';
       const W = Math.ceil(this.world.w / T), H = Math.ceil(this.world.h / T), N = REGION.tuiles, B = REGION.bord;
@@ -208,14 +217,76 @@
       ctx.fillStyle = FOND;
       if (!only) ctx.fillRect(r.x, r.y, r.w, r.h);
       else for (const i of only) ctx.fillRect((i % raw.width) * raw.tilewidth, Math.floor(i / raw.width) * raw.tileheight, raw.tilewidth, raw.tileheight);
-      if (raw && P) {
-        const cells = only || this.regionCells(r);
+      let cells = only || this.regionCells(r);
+      // le grand monde : ses cases hors de la ferme ont leur sol (paintMonde), les couches de la
+      // carte n'ont rien pour elles
+      if (this.ctx.monde && raw) {
+        const parts = this.regionParts(r);
+        this.paintMonde(ctx, r, only ? only.filter((i) => !parts.dansFerme(i)) : parts.monde, P);
+        cells = only ? only.filter((i) => parts.dansFerme(i)) : parts.ferme;
+      }
+      if (raw && P && cells.length) {
         for (const layer of raw.layers) {
           if (layer.type === 'tilelayer' && layer.visible !== false && Array.isArray(layer.data)) this.drawLayer(ctx, raw, layer, P.set, P.img, cells);
         }
       }
       ctx.restore();
       if (!ctx0) r.tex.refresh();
+    },
+
+    // Les cases d'une région, de la ferme d'un côté, du monde autour de l'autre (dans l'ordre de la
+    // carte), et dansFerme(case) : faits une fois par région.
+    regionParts(r) {
+      if (r.parts) return r.parts;
+      const F = this.ctx.monde.ferme, W = this.grid.cols;
+      const dansFerme = (i) => { const c = i % W, y = (i / W) | 0; return c >= F.X && y >= F.Y && c < F.X + F.LARGEUR && y < F.Y + F.HAUTEUR; };
+      const ferme = [], monde = [];
+      for (const i of this.regionCells(r)) (dansFerme(i) ? ferme : monde).push(i);
+      r.parts = { ferme, monde, dansFerme };
+      return r.parts;
+    },
+
+    // Le sol du grand monde sur ces cases (hors de la ferme) : les tuiles de la région, faites dans
+    // le Web Worker (js/ui/monde-sol.js, js/engine/monde-sol.js : solDeRegion) ; un nombre sous
+    // tuiles.DECALAGE est une tuile de la planche de la carte, au-delà une de assets/sols_monde.png.
+    // Tant que la région n'est pas faite (elle est alors demandée), un sol provisoire : la couleur
+    // unie de son biome, par blocs (l'aperçu du Worker), ou le vert de l'herbe. Elle sera repeinte
+    // à son arrivée (quandRegion, makeRegions).
+    paintMonde(ctx, r, cells, P) {
+      if (!cells.length) return;
+      const M = this.ctx.monde, reg = M.region(r.rx, r.ry), W = this.grid.cols;
+      if (!reg || !P) {
+        const a = M.apercu();
+        if (!a) return;
+        const { pas, l, biomes } = a.apercu;
+        let style = null;
+        for (const i of cells) {
+          const c = i % W, y = (i / W) | 0, f = a.couleurs[biomes[((y / pas) | 0) * l + ((c / pas) | 0)]];
+          if (f !== style) { ctx.fillStyle = f; style = f; }
+          ctx.fillRect(c * T, y * T, T, T);
+        }
+        return;
+      }
+      const S = M.tuiles, D = S.DECALAGE, K = S.COUCHES, couches = reg.couches;
+      const set = P.set, img = P.img, cols = set.columns || Math.floor(img.width / T);
+      const sols = this.has('sols_monde') ? this.textures.get('sols_monde').getSourceImage() : null;
+      for (const i of cells) {
+        const c = i % W, y = (i / W) | 0, x = c - reg.x0, yy = y - reg.y0;
+        if (x < 0 || yy < 0 || x >= reg.l || yy >= reg.h) continue;
+        const o = (yy * reg.l + x) * K, dx = c * T, dy = y * T;
+        for (let k = 0; k < K; k++) {
+          const v = couches[o + k];
+          if (!v) break;
+          if (v >= D) {
+            if (!sols) continue;
+            const n = v - D;
+            ctx.drawImage(sols, (n % S.colonnes) * T, ((n / S.colonnes) | 0) * T, T, T, dx, dy, T, T);
+          } else {
+            const n = v - set.firstgid;
+            ctx.drawImage(img, (n % cols) * T, ((n / cols) | 0) * T, T, T, dx, dy, T, T);
+          }
+        }
+      }
     },
 
     // Le sol repeint partout (au démarrage, quand le navigateur a vidé les images) : les régions

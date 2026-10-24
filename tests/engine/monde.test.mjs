@@ -49,8 +49,11 @@ test('le monde : la prairie continue l\'herbe de la ferme (mêmes coins de cases
   for (const [lx, ly] of [[0, 0], [f.carte.width, 30], [70, f.carte.height]]) {
     assertEqual([m.terrain.SOMMETS[(ly + OY) * V + lx + OX], m.terrain.TEINTES[(ly + OY) * V + lx + OX]], [f.terrain.SOMMETS[ly * fv + lx], f.terrain.TEINTES[ly * fv + lx]]);
   }
+  // (le sol autour de la ferme n'est plus dans les couches de la carte : il se calcule région par
+  // région, monde-sol.js, tests/engine/monde-sol.test.mjs)
   const sol = m.carte.layers.find((l) => l.name === 'ground').data;
-  assert(sol.every((g) => g > 0), 'du sol partout');
+  const F = m.terrain.FERME;
+  assert(sol.every((g, i) => { const c = i % MONDE.LARGEUR, r = Math.floor(i / MONDE.LARGEUR); return (c >= F.X && r >= F.Y && c < F.X + F.LARGEUR && r < F.Y + F.HAUTEUR) === (g > 0); }), 'du sol sur la ferme, rien autour dans la carte');
 });
 
 test('migration v51 → v52 : les cases d\'une partie passent dans celles du monde', () => {

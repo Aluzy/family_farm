@@ -14,7 +14,9 @@
     "  falaises) sont lus sur une grille de LENT tuiles et interpolés (le monde est grand).",
     "GRILLE : les rivières et les chemins sont cherchés sur une grille grossière de GRILLE ×",
     "  GRILLE tuiles, puis tracés en courbe par un point sur SAUT de la route trouvée, chacun",
-    "  décalé au hasard de DECALAGE × GRILLE × SAUT tuiles au plus.",
+    "  décalé au hasard de DECALAGE × GRILLE × SAUT tuiles au plus. ONDULE : entre deux points de",
+    "  plus de 2 × PAS tuiles, un point tous les PAS tuiles, écarté de côté de AMPLITUDE fois",
+    "  l'écart entre deux points au plus (pas de long trait droit, pas d'angle droit).",
     "RELIEF : une pente de HAUT (au pied des bords nord et ouest) à BAS (près des bords sud et",
     "  est) ; la montagne y ajoute MONTAGNE (à la puissance FORME : des pentes douces puis raides)",
     "  et des crêtes (CRETES, un bruit de PAS_CRETES tuiles) ; la mer en ôte MER ; des bosses",
@@ -40,7 +42,10 @@
     "  relief gagnée (elle descend tant qu'elle peut, et creuse au plus court quand elle ne peut",
     "  plus) ; une rivière de moins de LONGUEUR_MIN cases n'est pas gardée. Là où son fil remonte de",
     "  LAC_SEUIL au moins, la cuvette devient un lac (rempli de LAC_PROFONDEUR au plus au-dessus du",
-    "  fond, de LAC_MIN à LAC_MAX tuiles ; LACS_PAR_RIVIERE au plus). LARGEUR : elle a 2 tuiles de",
+    "  fond, de LAC_MIN à LAC_MAX tuiles ; LACS_PAR_RIVIERE au plus ; une tuile s'y prend d'autant",
+    "  plus tard qu'elle est loin du fond, LAC_ROND de relief par tuile : un lac rond, pas un trait",
+    "  le long d'une pente ; il couvre LAC_PLEIN au moins du disque qui le contient, sinon pas de",
+    "  lac : le fond d'une vallée étroite ferait un trait d'eau). LARGEUR : elle a 2 tuiles de",
     "  large passé cette part de sa longueur, 3 passé la seconde (si elle fait au moins LONGUE",
     "  cases), 1 avant.",
     "LACS : les lacs à part, dans les terres basses : leur nombre (au moins, au plus), leur TAILLE",
@@ -67,7 +72,7 @@
     "  coin par lac et par rivière."
   ],
   "PLAN_MONDE": {
-    "LENT": 4, "GRILLE": 6, "SAUT": 3, "DECALAGE": 0.3,
+    "LENT": 4, "GRILLE": 6, "SAUT": 3, "DECALAGE": 0.3, "ONDULE": { "PAS": 12, "AMPLITUDE": 0.35 },
     "RELIEF": {
       "HAUT": 0.56, "BAS": 0.3, "MONTAGNE": 0.5, "FORME": 2, "MER": 0.42, "BRUIT": 0.16, "PAS": 48,
       "CRETES": 0.3, "PAS_CRETES": 26, "DECOUPE": 0.24, "PAS_DECOUPE": 22
@@ -81,7 +86,7 @@
     "FERME": { "MARGE": 12, "TRANSITION": 40, "RELIEF": 0.47, "HUMIDITE": 0.45 },
     "RIVIERES": {
       "NOMBRE": [5, 8], "ECART": 60, "VALLEE": 3, "MONTEE": 150, "MEANDRE": 2, "PAS_MEANDRE": 30,
-      "LONGUEUR_MIN": 40, "LAC_SEUIL": 0.004, "LAC_PROFONDEUR": 0.006, "LAC_MIN": 14, "LAC_MAX": 180, "LACS_PAR_RIVIERE": 2,
+      "LONGUEUR_MIN": 40, "LAC_SEUIL": 0.004, "LAC_PROFONDEUR": 0.006, "LAC_ROND": 0.001, "LAC_PLEIN": 0.3, "LAC_MIN": 14, "LAC_MAX": 180, "LACS_PAR_RIVIERE": 2,
       "LARGEUR": [0.3, 0.7], "LONGUE": 120
     },
     "LACS": { "NOMBRE": [2, 4], "TAILLE": [40, 180], "ECART": 50 },

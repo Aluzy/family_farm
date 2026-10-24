@@ -2805,6 +2805,7 @@ export const RAW_DATA = {
     "GRILLE": 6,
     "SAUT": 3,
     "DECALAGE": 0.3,
+    "ONDULE": { "PAS": 12, "AMPLITUDE": 0.35 },
     "RELIEF": {
       "HAUT": 0.56,
       "BAS": 0.3,
@@ -2844,6 +2845,8 @@ export const RAW_DATA = {
       "LONGUEUR_MIN": 40,
       "LAC_SEUIL": 0.004,
       "LAC_PROFONDEUR": 0.006,
+      "LAC_ROND": 0.001,
+      "LAC_PLEIN": 0.3,
       "LAC_MIN": 14,
       "LAC_MAX": 180,
       "LACS_PAR_RIVIERE": 2,

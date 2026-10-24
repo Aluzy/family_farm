@@ -60,7 +60,7 @@
   // Ce que la scène reçoit au montage (scene.ctx) : le pont vers la page, le dossier des
   // images, la table des découpes de crops.png, le calque DOM des étiquettes, le dernier
   // modèle reçu (appliqué dès que la scène est prête) et si la carte est affichée.
-  const ctx = { bridge: null, base: 'assets/', crops: {}, carte: null, labelLayer: null, lastModel: null, visible: false };
+  const ctx = { bridge: null, base: 'assets/', crops: {}, carte: null, monde: null, labelLayer: null, lastModel: null, visible: false };
 
   // La scène de la ferme : la classe est faite une fois (il faut Phaser), puis reçoit les
   // méthodes des fichiers de js/carte/ferme/ (FermeCarte.partie) ; ici, sa création, sa
@@ -137,6 +137,8 @@
         L.spritesheet('arbre_clair_sp', v('arbre_clair_sp.png'), { frameWidth: 56, frameHeight: 64 });
         L.spritesheet('pin_clair_sp', v('pin_clair_sp.png'), { frameWidth: 72, frameHeight: 64 });
         L.image('terre_bords', v('terre_bords.png'));
+        // les sols des biomes du grand monde (scripts/carte/sols_monde.py, js/carte/ferme/sol.js)
+        if (this.ctx.monde) L.image('sols_monde', v(this.ctx.monde.tuiles.fichier));
       }
 
       create() {
@@ -210,6 +212,9 @@
               has: (key) => this.has(key),
               // la ferme générée : les blocs où l'on ne passe pas, et la paillasse où il dort
               blocks: () => this.blockCells(),
+              // le grand monde : ni la mer, ni les lacs, les rivières (sauf à gué), les falaises, les
+              // sommets (js/engine/monde-sol.js, caseMarchable ; une région pas encore faite non plus)
+              marchable: this.ctx.monde ? (i) => this.ctx.monde.marchable(i) : null,
               // à l'étage, il passe devant son voile
               depth: (y) => (this.etageDepth ? this.etageDepth(y) : y),
               lift: () => (this.etageLift ? this.etageLift() : 0),
@@ -740,6 +745,9 @@
     ctx.base = (options && options.base) || 'assets/';
     ctx.crops = (options && options.crops) || {};
     ctx.carte = (options && options.carte) || null;
+    // le sol du grand monde autour de la ferme (js/ui/monde-sol.js : ses régions, faites dans un
+    // Web Worker ; où l'on marche), ou null : rien autour de la carte
+    ctx.monde = (options && options.monde) || null;
     ctx.labelLayer = document.createElement('div');
     ctx.labelLayer.className = 'stage-labels';
     element.appendChild(ctx.labelLayer);

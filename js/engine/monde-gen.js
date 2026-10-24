@@ -7,11 +7,12 @@ import { hache } from './ferme-generee.js';
 // Le plan du monde d'une partie, tiré d'après sa graine autour de la ferme posée au centre
 // (monde.js) : le relief, l'humidité et le biome de chaque tuile, les rivières, les lacs, les
 // chemins et les lieux (hameaux, entrées de grotte, coins de pêche). Ce ne sont que des données :
-// la fiche 4b les dessinera et les rendra marchables. Les réglages sont dans data/monde.json
-// (DATA.BIOMES, DATA.PLAN_MONDE).
+// monde-sol.js en fait le sol du monde (les tuiles de chaque case, où l'on marche). Les réglages
+// sont dans data/monde.json (DATA.BIOMES, DATA.PLAN_MONDE).
 //
 // Le générateur a son fichier (et pas une place dans monde.js, qui pose la ferme et fait la carte)
-// parce qu'il se découpe en trois parts, que la fiche 4b mettra dans un Web Worker :
+// parce qu'il se découpe en trois parts, que monde-sol.js fait travailler dans un Web Worker
+// (js/monde-worker.js) :
 //   - les champs (champsDuMonde) : le relief, l'humidité et le biome « naturel » d'une tuile ne
 //     dépendent que de bruits de la graine et de la place de la ferme, tuile par tuile, sans rien
 //     garder d'une tuile à l'autre : n'importe quelle région se calcule seule ;
@@ -57,7 +58,7 @@ function distanceFerme(F, x, y) {
 // de `pas` tuiles, interpolées, plusieurs octaves), sur un monde de W × H tuiles : les valeurs de
 // la grille de chaque octave sont tirées une fois, au départ (le monde a 328 440 tuiles, la
 // grille de la plus fine octave quelques milliers de points).
-function bruitDuMonde(graine, pas, octaves, W, H) {
+export function bruitDuMonde(graine, pas, octaves, W, H) {
   const g0 = hache(graine), grilles = [];
   for (let o = 0, p = pas; o < octaves; o++, p /= 2) {
     const nx = Math.floor((W - 1) / p) + 2, ny = Math.floor((H - 1) / p) + 2, v = new Float32Array(nx * ny);
@@ -309,6 +310,21 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
       const bouge = n > 0 && n < points.length - 1 ? decalage : 0;
       return [col(i) + (r() - 0.5) * 2 * bouge, rang(i) + (r() - 0.5) * 2 * bouge];
     });
+    // un long trait droit entre deux points (une route courte, peu de jalons) ondule : un point
+    // tous les ONDULE.PAS tuiles, écarté de côté (ONDULE.AMPLITUDE fois l'écart entre deux points,
+    // au hasard) ; sans quoi une rivière courte ou deux qui se rejoignent font des angles droits
+    if (decalage > 0) {
+      const O = P.ONDULE, out = [pts[0]];
+      for (let k = 0; k < pts.length - 1; k++) {
+        const [ax, ay] = pts[k], [bx, by] = pts[k + 1], L = Math.hypot(bx - ax, by - ay), n = Math.floor(L / O.PAS);
+        for (let j = 1; j < n; j++) {
+          const t = j / n, e = (r() - 0.5) * 2 * O.AMPLITUDE * (L / n);
+          out.push([ax + (bx - ax) * t - ((by - ay) / L) * e, ay + (by - ay) * t + ((bx - ax) / L) * e]);
+        }
+        out.push(pts[k + 1]);
+      }
+      pts = out;
+    }
     for (let n = 0; n < 2; n++) {
       const out = [pts[0]];
       for (let k = 0; k < pts.length - 1; k++) {
@@ -421,20 +437,28 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
   };
   // remplir la cuvette de la case `depart` jusqu'au niveau `niveau` : les tuiles les plus basses
   // d'abord, `max` au plus, sans la mer, les autres eaux ni la marge de la ferme
+  // (une tuile se prend d'autant plus tard qu'elle est loin du départ : LAC_ROND par tuile ;
+  // sans quoi, sur une pente régulière, le lac s'étirait en un trait le long de la rangée la plus
+  // basse ; une tuile au-dessus du niveau n'est pas prise, mais les autres continuent). Rien si
+  // le lac est trop maigre.
   const remplir = (depart, niveau, max, ok = () => true) => {
     const t = tas(), vus = new Set([depart]), cases = [];
-    t.pousse(relief(depart), depart);
+    const cx = col(depart), cy = rang(depart), cle = (j) => relief(j) + R.LAC_ROND * Math.hypot(col(j) - cx, rang(j) - cy);
+    t.pousse(cle(depart), depart);
     while (t.taille && cases.length < max) {
       const j = t.tire();
-      if (relief(j) > niveau) break;
-      if (!ok(j)) continue;
+      if (relief(j) > niveau || !ok(j)) continue;
       cases.push(j);
       for (const v of voisins(j)) {
         if (vus.has(v) || interditEau(v) || estMer(v) || eaux[v] !== AUCUNE_EAU) continue;
-        vus.add(v); t.pousse(relief(v), v);
+        vus.add(v); t.pousse(cle(v), v);
       }
     }
-    return cases;
+    // un lac trop maigre (le fond d'une vallée en V, entre deux crêtes : un trait d'eau) n'en est
+    // pas un : sa surface doit faire LAC_PLEIN au moins du disque qui le contient
+    let r2 = 0;
+    for (const j of cases) r2 = Math.max(r2, (col(j) - cx) ** 2 + (rang(j) - cy) ** 2);
+    return cases.length >= R.LAC_PLEIN * Math.PI * (Math.sqrt(r2) + 0.5) ** 2 ? cases : [];
   };
   const voulues = entre(rr, R.NOMBRE), choisies = [];
   for (const s of sources) {
@@ -722,8 +746,8 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
 /* ---------- 3. une région ---------- */
 
 // Les biomes de la région « rx,ry » (taille × taille tuiles, bornée au monde) : un Uint8Array,
-// rangée par rangée, les eaux des éléments posées sur les champs. (La fiche 4b la fera dans un
-// Web Worker : les champs y sont recalculés, les éléments y arrivent tout faits.)
+// rangée par rangée, les eaux des éléments posées sur les champs. (Le sol d'une région,
+// monde-sol.js, lit de même les champs et les eaux posées, case par case.)
 export function biomesDeRegion(champs, elements, cadre, rx, ry, taille) {
   const W = cadre.LARGEUR, H = cadre.HAUTEUR;
   const x0 = rx * taille, y0 = ry * taille, l = Math.max(0, Math.min(taille, W - x0)), h = Math.max(0, Math.min(taille, H - y0));
