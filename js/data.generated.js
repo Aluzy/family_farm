@@ -919,6 +919,7 @@ export const RAW_DATA = {
       "atelier": { "nom": "Atelier", "bloque": true, "ferme": true }
     },
     "PIECE_MAX": 400,
+    "ENCLOS_MAX": 1200,
     "BOITE": { "PLATS": 6, "QUANTITE": 10 },
     "HAUTEUR_MAX": 3,
     "MOULIN": { "HAUTEUR": 3 },

@@ -893,11 +893,14 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          - une enceinte de murs (une pièce close) avec le nichoir ;
          - une porte de l'enceinte qui donne sur l'extérieur ;
          - un enclos : une étendue close de barrières (elle peut s'appuyer sur les murs de
-           l'enceinte), reliée à l'enceinte par une autre porte ;
+           l'enceinte ; au plus `ENCLOS_MAX` cases, 1 200 ; avant, la limite des pièces, 120),
+           reliée à l'enceinte par une autre porte, devant laquelle une case reste libre ;
          - une case libre par poule, dans l'enceinte (hors nichoir) et dans l'enclos (un plancher
            laisse la case libre ; un bloc ou un arbre la prend).
        - Il manque quelque chose : le Poulailler n'est plus là (pas d'achat de poules, pas de
-         ponte), mais il garde son niveau et ses poules. Sa fenêtre liste ce qui manque.
+         ponte), mais il garde son niveau et ses poules. Sa fenêtre liste ce qui manque ; sans
+         enclos, elle dit pourquoi (`pourquoi` : une porte qui donne sur une barrière, pas de
+         deuxième porte, un enclos ouvert sur le dehors ou trop grand).
        - **Capacité** (`coopCapacity`) : le plus petit de la capacité du niveau
          (`POULAILLER.CAPACITE`) et des cases libres de l'enceinte et de l'enclos. Les poules en
          trop (des cases reprises) restent mais ne pondent pas (`layEggs`).
