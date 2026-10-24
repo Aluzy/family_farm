@@ -395,6 +395,33 @@ export function validateData(data) {
     }
   }
 
+  /* le plan du grand monde (data/monde.json, lu par js/engine/monde-gen.js) */
+  if (data.BIOMES || data.PLAN_MONDE) {
+    const BI = data.BIOMES;
+    // le générateur nomme ces biomes-là ; leur code est leur place dans la liste (255 : « aucune eau »)
+    const attendus = ['mer', 'plage', 'falaise', 'prairie', 'foret', 'marais', 'lande', 'montagne', 'sommet', 'lac', 'riviere'];
+    if (!Array.isArray(BI) || BI.length > 254 || new Set(BI).size !== BI.length || !BI.every((b) => typeof b === 'string')) {
+      err('BIOMES', 'une liste de noms, chacun une fois (254 au plus)');
+    } else {
+      for (const b of attendus) if (!BI.includes(b)) err('BIOMES', `« ${b} » manque (le générateur du monde le lit)`);
+    }
+    const PM = data.PLAN_MONDE || {};
+    const fourchette = (cle, v) => {
+      if (!(Array.isArray(v) && v.length === 2 && v.every((n) => isInt(n) && n >= 0) && v[0] <= v[1])) err(`PLAN_MONDE.${cle}`, `[au moins, au plus] : deux entiers positifs dans l'ordre ; reçu ${JSON.stringify(v)}`);
+    };
+    for (const cle of ['RIVIERES', 'LACS', 'HAMEAUX', 'GROTTES']) fourchette(`${cle}.NOMBRE`, (PM[cle] || {}).NOMBRE);
+    fourchette('LACS.TAILLE', (PM.LACS || {}).TAILLE);
+    const H = PM.HAMEAUX || {};
+    if (!(Array.isArray(H.NOMS) && H.NOMS.length && H.NOMS.every((n) => typeof n === 'string' && n))) err('PLAN_MONDE.HAMEAUX.NOMS', 'une liste de noms');
+    for (const [b, c] of Object.entries((PM.CHEMINS || {}).COUTS || {})) {
+      if (b !== 'chemin' && !(Array.isArray(BI) && BI.includes(b))) err('PLAN_MONDE.CHEMINS.COUTS', `« ${b} » n'est pas un biome (BIOMES)`);
+      if (!(typeof c === 'number' && c > 0)) err(`PLAN_MONDE.CHEMINS.COUTS.${b}`, `un nombre positif ; reçu ${JSON.stringify(c)}`);
+    }
+    const S = PM.SEUILS || {};
+    if (!(S.MER < S.MONTAGNE && S.MONTAGNE < S.SOMMET)) err('PLAN_MONDE.SEUILS', 'MER < MONTAGNE < SOMMET');
+    for (const cle of ['GRILLE', 'SAUT', 'LENT']) if (!(isInt(PM[cle]) && PM[cle] >= 1)) err(`PLAN_MONDE.${cle}`, `un entier supérieur à 0 ; reçu ${JSON.stringify(PM[cle])}`);
+  }
+
   /* arbre des technologies : chaque clé d'effet est lue par le moteur */
   for (const [id, n] of Object.entries(techtree.noeuds)) {
     for (const cle of Object.keys(n.effet || {})) {

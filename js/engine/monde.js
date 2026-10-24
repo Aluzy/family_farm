@@ -1,5 +1,6 @@
 import { blocGid } from './planche.js';
 import { genererFerme, hache, teinteHerbe } from './ferme-generee.js';
+import { fairePlan } from './monde-gen.js';
 
 /* ---------- le grand monde (docs/grand-monde.md) ---------- */
 
@@ -16,7 +17,10 @@ import { genererFerme, hache, teinteHerbe } from './ferme-generee.js';
 // genererMonde(graine) → { carte, terrain } comme genererFerme : la carte au format de Tiled (ses
 // couches à la taille du monde, ses objets décalés), le terrain de terrain-carte.js avec les
 // mêmes ajouts (DECALAGE, BUISSONS, SOMMETS, TEINTES, HERBES, FLEURS, BUISSONS_CASES) dans les
-// cases du monde, et FERME : { X, Y, LARGEUR, HAUTEUR }, la place de la ferme (en tuiles).
+// cases du monde, et FERME : { X, Y, LARGEUR, HAUTEUR }, la place de la ferme (en tuiles) ; et
+// `plan`, le plan du monde (monde-gen.js : biomes, relief, rivières, chemins, lieux), tiré à la
+// première demande. Pour l'instant (fiche 4a), le plan n'est que des données : ni le terrain ni la
+// carte ne le lisent encore (la fiche 4b les dessinera et les rendra marchables).
 
 export const MONDE = { LARGEUR: 644, HAUTEUR: 510, T: 16, REGION: 64 };
 // La place de la ferme dans le monde : au centre (en tuiles).
@@ -72,6 +76,11 @@ export function genererMonde(graine) {
   mondes.set(cle, m);
   while (mondes.size > MONDES_GARDES) mondes.delete(mondes.keys().next().value);
   return m;
+}
+
+// Le plan du monde de la graine (monde-gen.js : fairePlan), tiré à la première demande.
+export function planDuMonde(graine) {
+  return genererMonde(graine).plan;
 }
 
 // Une case de la ferme (rangée × largeur de la ferme + colonne) → la même case du monde.
@@ -190,5 +199,18 @@ function fabriquer(graine) {
   };
   Object.defineProperty(terrain, 'SOMMETS', { get: () => coins().sommets, enumerable: true });
   Object.defineProperty(terrain, 'TEINTES', { get: () => coins().teintes, enumerable: true });
-  return { get carte() { return carte(); }, terrain };
+  // ---- 4. le plan du monde (monde-gen.js), à la première demande : la ferme à sa place, et la
+  // sortie de son chemin (le rectangle `vers_la_transition`, couche « passages », sur les trois
+  // rangées du chemin au bord est) : le réseau des chemins du monde part de la case juste à l'est.
+  let planFait = null;
+  const plan = () => {
+    if (planFait) return planFait;
+    const passage = f.layers.find((l) => l.name === 'passages').objects.find((o) => o.name === 'vers_la_transition');
+    const sortie = Math.round(passage.y / T) + 1;
+    planFait = fairePlan(graine, {
+      LARGEUR: W, HAUTEUR: H, FERME: terrain.FERME, SORTIE: (OY + sortie) * W + OX + fw,
+    });
+    return planFait;
+  };
+  return { get carte() { return carte(); }, terrain, get plan() { return plan(); } };
 }

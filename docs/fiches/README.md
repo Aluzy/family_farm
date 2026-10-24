@@ -32,3 +32,4 @@ Conventions communes à toutes les fiches :
 | Fiche | Étape | État |
 |---|---|---|
 | [3b — nuit et trajets bornés](3b-nuit-et-trajets.md) | 3 | fait |
+| [4a — le générateur du monde (les données)](4a-generateur-du-monde.md) | 4 | fait |

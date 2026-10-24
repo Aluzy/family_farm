@@ -117,6 +117,9 @@ refuse('commerce : matière inconnue', (d) => { d.COMMERCE.TYPES.cremerie.prend.
 refuse('grotte : minerai inconnu', (d) => { d.GROTTE.POIDS.argent = { FIXE: 1 }; }, 'GROTTE.POIDS : « minerai_argent »');
 refuse('grotte : aucun niveau', (d) => { d.GROTTE.NIVEAUX = 0; }, 'GROTTE.NIVEAUX : un entier');
 refuse('grotte : une chance au-delà de 1', (d) => { d.GROTTE.MINERAI = 7; }, 'GROTTE.MINERAI : une part entre 0 et 1');
+refuse('monde : un biome manque', (d) => { d.BIOMES = d.BIOMES.filter((b) => b !== 'sommet'); }, 'BIOMES : « sommet » manque');
+refuse('monde : un coût de chemin sur un biome inconnu', (d) => { d.PLAN_MONDE.CHEMINS.COUTS.desert = 3; }, '« desert » n\'est pas un biome');
+refuse('monde : des hameaux en nombre impossible', (d) => { d.PLAN_MONDE.HAMEAUX.NOMBRE = [10, 6]; }, 'PLAN_MONDE.HAMEAUX.NOMBRE');
 
 /* ---------- arbre : clés d'effet ; objets qu'on peut obtenir ---------- */
 
