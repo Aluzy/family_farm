@@ -412,6 +412,7 @@
         if (this.fermier) {
           this.fermier.steer(this.manette.dir());
           this.fermier.update(delta);
+          this.stepRegionPerso();            // (la région où il entre devient vue : js/carte/ferme/sol.js)
         }
         this.stepMine();
         if (this.family) this.family.update(delta);
@@ -730,6 +731,10 @@
   function mount(element, options) {
     if (!global.Phaser || !global.CarteJeu) return false;   // pas de Phaser : la page garde son affichage classique
     if (mounted) return true;
+    // la taille des régions du monde, celle du moteur (MONDE.REGION, js/engine/monde.js) : la
+    // scène découpe son sol et ses relevés sur la même grille (CarteKit.REGION)
+    if (!(options && options.regionTuiles > 0)) { console.warn('[FarmStage] taille des régions inconnue (regionTuiles)'); return false; }
+    K.REGION.tuiles = options.regionTuiles;
     host = element;
     ctx.bridge = options;
     ctx.base = (options && options.base) || 'assets/';

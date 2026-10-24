@@ -132,6 +132,19 @@
       }
     },
 
+    // La région où est le personnage : quand il change de région, la page le sait (pont
+    // `region`, avec sa case : js/ui/stage.js en fait une région vue du moteur, state.monde.vues).
+    // Une comparaison par image.
+    stepRegionPerso() {
+      const t = this.persoCase ? this.persoCase() : -1;
+      if (t < 0) return;
+      const W = this.grid.cols, N = REGION.tuiles;
+      const cle = Math.floor((t % W) / N) + ',' + Math.floor(Math.floor(t / W) / N);
+      if (cle === this.regionPerso) return;
+      this.regionPerso = cle;
+      if (this.ctx.bridge && this.ctx.bridge.region) this.ctx.bridge.region(t);
+    },
+
     // Ses cases (dans l'ordre de la carte), calculées une fois.
     regionCells(r) {
       if (r.cells) return r.cells;
@@ -274,7 +287,8 @@
       const over = new Map();
       const sol = raw.layers.find((l) => l.type === 'tilelayer');
       if (!sol) return over;
-      sol.data.forEach((g, i) => { if ((g & 0x0fffffff) === ZONE_TILES.terre) over.set(i, ZONE_TILES.herbe); });
+      // (dans les régions qui ont quelque chose, CarteKit.casesPleines : la terre est sur la ferme)
+      for (const i of K.casesPleines(raw)) if ((sol.data[i] & 0x0fffffff) === ZONE_TILES.terre) over.set(i, ZONE_TILES.herbe);
       return over;
     },
 
@@ -446,7 +460,8 @@
       const layers = raw.layers.filter((l) => l.type === 'tilelayer' && l.visible !== false && Array.isArray(l.data));
       const groups = new Map();           // numéro de tuile animée -> { ends, total, cur, ids }
       const cellGroups = new Map();       // case -> numéros des tuiles animées qu'elle porte
-      for (let i = 0; i < W * H; i++) {
+      // (dans les régions qui ont quelque chose, CarteKit.casesPleines : pas la prairie du monde)
+      for (const i of K.casesPleines(raw)) {
         for (const layer of layers) {
           const gid = layer.data[i] & 0x0fffffff;
           if (!gid || gid < set.firstgid || gid >= last) continue;

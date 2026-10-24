@@ -32,4 +32,4 @@ Conventions communes à toutes les fiches :
 
 | Fiche | Étape | État |
 |---|---|---|
-| [3b — nuit et trajets bornés](3b-nuit-et-trajets.md) | 3 | à faire |
+| [3b — nuit et trajets bornés](3b-nuit-et-trajets.md) | 3 | fait |

@@ -21,6 +21,7 @@
     // Les rochers, lus une fois dans la couche des plantes et des pierres : { id, cells, x, y,
     // w, h (bornes des cases, en px), foot, img }. id : « colonne,rangée » de la case en bas à
     // gauche (ce que le jeu enregistre pour compter les coups). Leurs cases quittent le fond.
+    // (lus dans les régions qui ont quelque chose, CarteKit.casesPleines, comme les arbres)
     findRocks() {
       this.rocks = [];
       const raw = this.mapRaw;
@@ -30,7 +31,7 @@
       const rock = (i) => ROCKS.gids.has(layer.data[i] & 0x0fffffff);
       const seen = new Uint8Array(W * H);
       const all = this.occluded.get(layer) || new Set();
-      for (let i0 = 0; i0 < W * H; i0++) {
+      for (const i0 of K.casesPleines(raw)) {
         if (seen[i0] || !rock(i0)) continue;
         const cells = [], stack = [i0];
         seen[i0] = 1;

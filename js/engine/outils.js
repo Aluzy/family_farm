@@ -3,7 +3,7 @@ import { nextRandom, randomInt } from './base.js';
 import { canPay, fail, marcheFerme, marcheOuvert, NO_COINS, spend } from './devices.js';
 import { buyHoe, hasHoe, rockGone, treeGone } from './crops.js';
 import { addItem } from './inventory.js';
-import { farmSeed, farmTerrain } from './terrain.js';
+import { farmSeed, farmTerrain, regionVue } from './terrain.js';
 import { blocGid } from './planche.js';
 import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
@@ -538,12 +538,15 @@ function touffeSurBati(state, id, baties) {
 // Au réveil : les touffes dont le jour est venu repoussent, sauf sur une case bâtie ou à son
 // bord (un mur, un chemin : leurs brins le couvriraient ; elles restent fauchées). Renvoie leurs
 // identifiants.
+// Seulement sur la ferme et dans les régions vues (regionVue, terrain.js) : une touffe d'une
+// région que le joueur n'a pas vue ne bouge pas.
 export function regrowGrass(state) {
   const h = state.outils && state.outils.herbes;
   if (!h) return [];
-  const out = [], baties = casesBaties(state);
+  const out = [], baties = casesBaties(state), T = farmTerrain(state);
   for (const id of Object.keys(h)) {
     if (!(Number(h[id] && h[id].retour) <= state.day)) continue;
+    if (!regionVue(state, caseDuPied(id, T), T)) continue;
     if (touffeSurBati(state, id, baties)) continue;
     delete h[id];
     out.push(id);
@@ -619,6 +622,18 @@ export function depositOreNotebook(state, carnet) {
   return { ok: true, items: out };
 }
 
+// La case du pied de la touffe `id` (« x,y » en px) sur le terrain T.
+function caseDuPied(id, T) {
+  const [x, y] = String(id).split(',').map(Number);
+  return Math.floor((y - 1) / FERME_GENEREE.T) * T.LARGEUR + Math.floor(x / FERME_GENEREE.T);
+}
+
+// La nuit, sur la carte, ne repousse ou n'évolue que ce qui est sur la ferme ou dans une région
+// que le joueur a vue (state.monde.vues, regionVue : terrain.js) : les rochers, les arbres, les
+// buissons (respawn), les touffes d'herbe haute (regrowGrass), la cueillette du jour (atelier.js,
+// placesDuJour). Ce qui est dans une région qu'il n'a pas vue attend qu'il y vienne : le monde
+// est grand, la nuit ne le parcourt pas.
+
 // Au réveil (runNight, jour suivant) : un rocher cassé dont le jour de retour est venu
 // réapparaît à sa place, sauf si une parcelle (terre labourée, plantée ou non) ou une case bâtie
 // occupe une de ses tuiles ; il réessaie alors chaque matin. Renvoie les rochers revenus.
@@ -632,9 +647,18 @@ export function respawnTrees(state) {
   return respawn(state, state.outils && state.outils.arbres, farmTerrain(state).ARBRES);
 }
 
+// La case d'un arbre, d'un buisson ou d'un rocher `id` : sa première tuile au terrain (`tuiles`),
+// sinon d'après son identifiant (« colonne,rangée ») ; null pour un arbre planté (« f<n> », sur
+// la ferme).
+function caseDe(id, tuiles, W) {
+  if (tuiles[id] && tuiles[id].length) return tuiles[id][0];
+  const m = /^(\d+),(\d+)$/.exec(id);
+  return m ? Number(m[2]) * W + Number(m[1]) : null;
+}
+
 function respawn(state, partis, tuiles) {
   if (!partis) return [];
-  const T = tuiles || {};
+  const T = tuiles || {}, terrain = farmTerrain(state);
   // (une parcelle, ou une case bâtie)
   const prises = new Set([...state.potager.parcelles.map((p) => p.case), ...casesBaties(state)]);
   const revenus = [];
@@ -642,6 +666,8 @@ function respawn(state, partis, tuiles) {
     const e = partis[id];
     if (typeof e !== 'object') continue;
     if (!(Number(e.retour) <= state.day)) continue;
+    const ou = caseDe(id, T, terrain.LARGEUR);
+    if (ou !== null && !regionVue(state, ou, terrain)) continue;      // (une région pas vue : il attend)
     if ((T[id] || []).some((t) => prises.has(t))) continue;
     delete partis[id];
     revenus.push(id);

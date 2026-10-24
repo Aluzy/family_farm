@@ -230,11 +230,12 @@ function botEau(state) {
 // (Une fois par terrain et par blocs posés : ce qui est bâti ne se laboure pas.)
 let botTilesCache = null, botTilesPour = null;
 function botTiles(state) {
-  const T = farmTerrain(state), cle = farmSeed(state) + ':' + Object.keys(state.blocs || {}).join(',');
+  const T = farmTerrain(state), cases = casesDuTerrain(T, state);
+  const cle = farmSeed(state) + ':' + cases.length + ':' + Object.keys(state.blocs || {}).join(',');
   if (botTilesPour === cle) return botTilesCache;
   const W = T.LARGEUR, Z = T.ZONES[1];
   const tiles = [], aucune = new Set(); // (les tuiles sous un rocher ou un arbre n'y sont pas)
-  for (const t of casesDuTerrain(T)) if (isArable(t, state, aucune)) tiles.push(t);
+  for (const t of cases) if (isArable(t, state, aucune)) tiles.push(t);
   const d = (t) => Math.hypot((t % W) - (Z.X + 2), Math.floor(t / W) - (Z.Y + 2.5));
   botTilesCache = tiles.sort((a, b) => d(a) - d(b) || a - b);
   botTilesPour = cle;

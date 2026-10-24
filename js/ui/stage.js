@@ -19,7 +19,8 @@ import { TIRED } from '../engine/stamina.js';
 import { brokenRocks, cutBushes, cutGrass, enSelle, fellenTrees, morceauxDe, poussesArbres, arbresPlantes } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
-import { farmMap, farmTerrain, tileCount } from '../engine/terrain.js';
+import { farmMap, farmTerrain, tileCount, voirRegion } from '../engine/terrain.js';
+import { MONDE } from '../engine/monde.js';
 import { tuilesChemins } from '../engine/ferme-generee.js';
 import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
@@ -676,6 +677,12 @@ function stageMarche(id, px) {
   marcherMembre(state, id, px);
 }
 
+// Le personnage entre dans une région du monde (la carte le dit quand il change de région, avec
+// sa case) : elle devient vue (state.monde.vues, js/engine/terrain.js), une fois.
+function stageRegion(tile) {
+  if (voirRegion(state, tile)) persistState();
+}
+
 // Sans la carte de la ferme à l'écran (une autre carte, pas de carte) : le second adulte fait
 // quand même son travail aux heures où il est dehors (comme js/famille-ferme.js, HORAIRE).
 const AIDE_HEURES = [7, 18.75];
@@ -743,7 +750,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, chop: chopFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, regionTuiles: MONDE.REGION, chop: chopFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state) })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

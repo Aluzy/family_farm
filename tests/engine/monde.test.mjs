@@ -1,14 +1,16 @@
 /* ==========================================================================
-   Tests du moteur : le grand monde (js/engine/monde.js), la ferme générée posée au centre, et
-   la migration v51 → v52 qui porte les cases d'une partie dans celles du monde.
+   Tests du moteur : le grand monde (js/engine/monde.js), la ferme générée posée au centre, la
+   migration v51 → v52 qui porte les cases d'une partie dans celles du monde ; les régions vues
+   (state.monde.vues, migration v52 → v53) : le moteur et la nuit ne regardent qu'elles.
    Lancer seul : node --test tests/engine/monde.test.mjs (ou node tests/run-tests.mjs monde).
    ========================================================================== */
 
 import {
-  addItem, casesDuTerrain, decalerPartie, farmMap, farmTerrain, FERME_DANS_MONDE, genererFerme, genererMonde,
-  hoeableTiles, migrate, MONDE, poserBloc, STATE_VERSION, terrainOfMap,
+  addItem, brokenRocks, casesDeRegion, casesDuTerrain, createInitialState, cutBushes, cutGrass, decalerPartie, farmMap,
+  farmTerrain, fellenTrees, FERME_DANS_MONDE, genererFerme, genererMonde, hoeableTiles, migrate, MONDE, poserBloc,
+  ramassables, regionDeCase, regionsFerme, regionsVues, regionVue, STATE_VERSION, terrainOfMap, voirRegion,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, avantLeMonde, caseDeLaFerme, garden, test } from './aide.mjs';
+import { assert, assertEqual, avantLeMonde, caseDeLaFerme, garden, sleepOnce, test } from './aide.mjs';
 
 const [OX, OY] = FERME_DANS_MONDE;
 
@@ -78,4 +80,88 @@ test('migration v51 → v52 : les cases d\'une partie passent dans celles du mon
   assertEqual(decalerPartie(decalerPartie(s, -1), 1).blocs, s.blocs, 'aller et retour');
   // la carte de la partie : le monde
   assertEqual(farmMap(m).width, MONDE.LARGEUR);
+});
+
+/* ---------- les régions vues (étape 3b) ---------- */
+
+// Une case loin de la ferme, dans la région « 1,1 » (la prairie du coin nord-ouest).
+const LOIN = 70 * MONDE.LARGEUR + 70;
+
+test('les régions vues : celles de la ferme d\'office ; le personnage qui entre dans une autre la note', () => {
+  const s = garden(), T = farmTerrain(s), F = T.FERME, N = MONDE.REGION;
+  assertEqual(N, 64);
+  assertEqual(regionsFerme(T), ['3,3', '4,3', '5,3', '6,3', '3,4', '4,4', '5,4', '6,4'], 'la ferme (250 + 144, 198 + 114) touche 4 × 2 régions');
+  assertEqual(s.monde, { vues: regionsFerme(T) }, 'une partie neuve a vu sa ferme');
+  assertEqual(regionDeCase(LOIN), '1,1');
+  assert(!regionVue(s, LOIN), 'pas encore vue');
+  assertEqual(voirRegion(s, LOIN), true, 'il y entre : elle devient vue');
+  assertEqual(voirRegion(s, LOIN + 1), false, 'une fois');
+  assertEqual(voirRegion(s, F.Y * MONDE.LARGEUR + F.X), false, 'la ferme l\'était déjà');
+  assertEqual(s.monde.vues.at(-1), '1,1');
+  assert(regionVue(s, LOIN) && regionsVues(s).has('1,1'));
+  assertEqual(voirRegion(s, -1), false, 'hors du monde : rien');
+});
+
+test('casesDuTerrain : la ferme, puis les régions vues ; jamais une région que le joueur n\'a pas vue', () => {
+  const s = garden(), T = farmTerrain(s), F = T.FERME;
+  const ferme = casesDuTerrain(T);
+  assertEqual(ferme.length, F.LARGEUR * F.HAUTEUR);
+  // les régions de la ferme sont vues d'office : leurs cases de prairie autour de la ferme aussi
+  assertEqual(casesDuTerrain(T, s).length, regionsFerme(T).length * MONDE.REGION * MONDE.REGION);
+  assert(!casesDuTerrain(T, s).includes(LOIN), 'une région pas vue est ignorée');
+  voirRegion(s, LOIN);
+  const vues = casesDuTerrain(T, s);
+  assert(vues.includes(LOIN), 'une région vue est prise en compte');
+  assertEqual(vues.length, (regionsFerme(T).length + 1) * MONDE.REGION * MONDE.REGION);
+  assertEqual(casesDeRegion('1,1').length, MONDE.REGION * MONDE.REGION);
+  assert(vues.every((t, i) => i === 0 || t > vues[i - 1]), 'dans l\'ordre des cases');
+});
+
+test('la nuit : ce qui est dans une région pas vue ne bouge pas ; vue, elle repousse comme sur la ferme', () => {
+  const s = garden(), T = farmTerrain(s), W = MONDE.LARGEUR;
+  const [rf] = Object.keys(T.ROCHERS), [af] = Object.keys(T.ARBRES);
+  const ici = `${LOIN % W},${Math.floor(LOIN / W)}`;          // « colonne,rangée » dans la région 1,1
+  const touffe = `${(LOIN % W) * 16 + 8},${Math.floor(LOIN / W) * 16 + 15}`;   // son pied, en px
+  const touffeFerme = Object.values(T.HERBES)[0][0];
+  s.outils = s.outils || {};
+  s.outils.rochers = { [rf]: { retour: s.day + 1 }, [ici]: { retour: s.day + 1 } };
+  s.outils.arbres = { [af]: { retour: s.day + 1 }, [ici]: { retour: s.day + 1 } };
+  s.outils.buissons = { [ici]: { retour: s.day + 1 } };
+  s.outils.herbes = { [touffeFerme]: { retour: s.day + 1 }, [touffe]: { retour: s.day + 1 } };
+  sleepOnce(s);
+  assertEqual([brokenRocks(s), fellenTrees(s), cutBushes(s), cutGrass(s)], [[ici], [ici], [ici], [touffe]], 'la ferme a repoussé, pas la région 1,1');
+  sleepOnce(s);
+  assertEqual([brokenRocks(s), fellenTrees(s), cutBushes(s), cutGrass(s)], [[ici], [ici], [ici], [touffe]], 'elle attend qu\'il y vienne');
+  voirRegion(s, LOIN);
+  sleepOnce(s);
+  assertEqual([brokenRocks(s), fellenTrees(s), cutBushes(s), cutGrass(s)], [[], [], [], []], 'vue : elle repousse la nuit suivante');
+});
+
+test('la cueillette : rien dans une région pas vue ; vue, elle a ses places, sans changer celles de la ferme', () => {
+  const s = createInitialState(4242);
+  const T = farmTerrain(s), W = MONDE.LARGEUR;
+  // (la prairie n'a pas encore d'herbe à cueillir, monde.js : on en met dans la région 1,1 de ce
+  // monde-là, le temps du test)
+  for (let r = 64; r < 128; r++) T.LIGNES[r] = T.LIGNES[r].slice(0, 64) + '#'.repeat(64) + T.LIGNES[r].slice(128);
+  const avant = ramassables(s);
+  assert(avant.length > 0, 'des places sur la ferme');
+  assert(avant.every((p) => regionVue(s, p.case)), 'toutes dans des régions vues');
+  voirRegion(s, LOIN);
+  const apres = ramassables(s);
+  const loin = apres.filter((p) => regionDeCase(p.case) === '1,1');
+  assert(loin.length > 0, 'la région vue a ses places');
+  assertEqual(apres.filter((p) => regionDeCase(p.case) !== '1,1'), avant, 'celles de la ferme ne changent pas');
+  assert(loin.every((p) => Math.floor(p.case / W) >= 64 && Math.floor(p.case / W) < 128));
+});
+
+test('migration v52 → v53 : une partie d\'avant a vu les régions de sa ferme, rien d\'autre ne change', () => {
+  const s = garden();
+  const { monde, ...reste } = s;
+  const v52 = JSON.parse(JSON.stringify({ ...reste, version: 52 }));
+  const m = migrate({ v: 52, t: 0, s: v52 });
+  assertEqual(m.version, STATE_VERSION);
+  assertEqual(m.monde, { vues: regionsFerme(farmTerrain(s)) });
+  assertEqual({ ...m, monde: undefined, version: 0 }, { ...JSON.parse(JSON.stringify(s)), monde: undefined, version: 0 }, 'le reste à l\'identique');
+  assertEqual(casesDuTerrain(farmTerrain(m), m), casesDuTerrain(farmTerrain(s), s));
+  assert(sleepOnce(m) !== null, 'la partie continue');
 });

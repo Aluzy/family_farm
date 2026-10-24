@@ -34,6 +34,9 @@
     // barrière = des cases voisines d'une même rangée, avec son pied au bas de la rangée. Le
     // fond d'un enclos passe ainsi derrière les bêtes, le devant devant elles, et chaque
     // tronçon de côté selon sa rangée.
+    // Le relevé ne lit que les régions de la carte qui ont quelque chose (CarteKit.casesPleines :
+    // la ferme, pas la prairie du monde autour), dans l'ordre des cases : les mêmes arbres, dans le
+    // même ordre, qu'en parcourant toute la carte.
     findOccluders() {
       this.occluders = [];
       this.occluded = new Map();
@@ -47,7 +50,7 @@
         const gidAt = (i) => layer.data[i] & 0x0fffffff;
         const seen = new Uint8Array(W * H);
         const all = new Set();
-        for (let i0 = 0; i0 < W * H; i0++) {
+        for (const i0 of K.casesPleines(raw)) {
           if (seen[i0] || !gidAt(i0)) continue;
           const cells = [], stack = [i0];
           seen[i0] = 1;

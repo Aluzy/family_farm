@@ -18,7 +18,7 @@ import { caseLibreFoyer, majMoulin, majPoulailler, poserBloc, rangerPieces, serr
 import { closeFridge, FRIGO_OBJET } from './fridge.js';
 import { ETAPES } from './didacticiel.js';
 import { faucherSousBati } from './outils.js';
-import { farmSeed, farmTerrain } from './terrain.js';
+import { farmSeed, farmTerrain, regionsFerme } from './terrain.js';
 import { genererFerme } from './ferme-generee.js';
 import { caseDuMonde, FERME_DANS_MONDE, idDuMonde, MONDE } from './monde.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
@@ -126,6 +126,9 @@ export function createInitialState(seed = 1) {
     ...startLot11(),
   };
   s.carte = { graine: graineDemenagement(s) };
+  // les régions du monde vues (terrain.js, voirRegion) : celles de la ferme d'office, puis celles
+  // où le personnage entre
+  s.monde = { vues: regionsFerme(farmTerrain(s)) };
   s.potager.parcelles = startPlots(farmTerrain(s));
   return s;
 }
@@ -433,6 +436,9 @@ export const MIGRATIONS = {
   // sur la largeur du monde. Tout ce que la partie range par case (ou par colonne et rangée, ou
   // par position en px sur la carte) est porté dans les cases du monde (migrerVersLeMonde).
   51: (state) => migrerVersLeMonde(state),
+  // v52 → v53 : les régions du monde vues (state.monde.vues, terrain.js) : une partie existante a
+  // vu celles de sa ferme (la nuit et les revues de cases du moteur s'y bornent).
+  52: (state) => ({ ...state, monde: { vues: regionsFerme(farmTerrain({ ...state, version: 53 })) }, version: 53 }),
 };
 
 // Porte les cases d'une partie (numérotées sur la largeur de sa ferme) dans celles du monde, où sa
