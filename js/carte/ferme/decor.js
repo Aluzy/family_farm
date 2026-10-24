@@ -67,21 +67,57 @@
       }
     },
 
-    // Les images des arbres et des buissons (après le fond : la planche est chargée).
+    // Les arbres, les buissons et les barrières de la carte : leur image ne se fait que quand
+    // leur région du sol est dessinée (showRegionObjs), et s'en va avec elle.
     makeOccluders() {
-      const raw = this.mapRaw;
-      if (!raw || !this.has(MAP.tiles)) return;
-      const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
-      if (!set) return;
-      const img = this.textures.get(MAP.tiles).getSourceImage();
-      this.occluders.forEach((o, k) => {
-        const key = 'arbre_occ_' + k;
-        if (this.textures.exists(key)) this.textures.remove(key);
-        o.tex = this.textures.createCanvas(key, o.w, o.h);
-        this.paintOccluder(o, raw, set, img);
-        o.img = this.add.image(o.x, o.y, key).setOrigin(0).setDepth(o.foot);
-        o.alpha = 1;
-      });
+      this.occluders.forEach((o, k) => { o.key = 'arbre_occ_' + k; o.vu = true; this.placeInRegion(o); });
+    },
+
+    /* ---------- les images des arbres, des barrières et des rochers, par région ---------- */
+
+    // `o` (un arbre, une barrière, un rocher) appartient à la région du sol (sol.js, makeRegions)
+    // où est le milieu de son image : elle est créée et retirée avec la région.
+    placeInRegion(o) {
+      const N = K.REGION.tuiles * T;
+      const r = this.regions && this.regions.get(Math.floor((o.x + o.w / 2) / N) + ',' + Math.floor((o.y + o.h / 2) / N));
+      if (!r) return;
+      (r.objets || (r.objets = [])).push(o);
+      if (r.tex) this.showObj(o);
+    },
+
+    showRegionObjs(r) {
+      for (const o of r.objets || []) this.showObj(o);
+      if (r.objets && r.objets.length) this.sunDirty = true;   // (leurs ombres au soleil)
+    },
+
+    dropRegionObjs(r) {
+      for (const o of r.objets || []) this.dropObj(o);
+    },
+
+    // Son image : un canevas peint depuis la planche de la carte, rangé selon son pied. Un rocher
+    // y mesure aussi la place qu'occupent vraiment ses pixels (rockBox) ; un rocher cassé, un
+    // arbre abattu (o.vu, hache.js syncFelled) restent cachés.
+    showObj(o) {
+      if (o.img) return;
+      const P = this.planche();
+      if (!P) return;
+      if (this.textures.exists(o.key)) this.textures.remove(o.key);
+      o.tex = this.textures.createCanvas(o.key, o.w, o.h);
+      this.paintOccluder(o, this.mapRaw, P.set, P.img);
+      if (o.rocher) this.rockBox(o);
+      o.img = this.add.image(o.x, o.y, o.key).setOrigin(0).setDepth(o.foot);
+      o.alpha = 1;
+      o.img.setVisible(o.rocher ? !o.gone : o.vu !== false);
+    },
+
+    // Loin de la vue : son image et son canevas s'en vont (pas pendant qu'il tremble, tombe ou
+    // se brise : le personnage est à côté).
+    dropObj(o) {
+      if (!o.img || o.shake || o.falling || o.breaking || o.regrowing) return;
+      this.tweens.killTweensOf(o.img);
+      o.img.destroy();
+      if (this.textures.exists(o.key)) this.textures.remove(o.key);
+      o.img = o.tex = o.probe = null;
     },
 
     paintOccluder(o, raw, set, img) {
