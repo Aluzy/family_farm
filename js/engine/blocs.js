@@ -742,10 +742,10 @@ function conditionsEnclos(cle) {
 const enclosCache = new Map();
 
 // L'étendue d'herbe atteinte depuis `depart` sans passer un mur, une porte, l'Atelier ou une
-// barrière : { cases, close (elle ne touche ni le bord ni ne dépasse PIECE_MAX), barriere (une
+// barrière : { cases, close (elle ne touche ni le bord ni ne dépasse ENCLOS_MAX), barriere (une
 // barrière la borde) }.
 function etendue(state, depart) {
-  const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR, max = DATA.ATELIER.PIECE_MAX;
+  const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR, max = DATA.ATELIER.ENCLOS_MAX;
   const arret = (t) => { const s = sorteDe(B[t]); return !!(s && (s.ferme || B[t] === 'barriere')); };
   const vus = new Set([depart]), pile = [depart], cases = [];
   let close = true, barriere = false;
@@ -776,11 +776,24 @@ export function etatEnclos(state, sorteCle) {
   if (p) {
     e.piece = p.cases;
     // chaque porte : la case de l'autre côté (hors de l'enceinte) ; un enclos, ou le dehors
+    // (bouchee : une porte qui donne sur une barrière ; ouvert : des barrières, mais l'étendue
+    // rejoint le dehors ; pour dire pourquoi il n'y a pas d'enclos)
+    let bouchee = false, ouvert = 0;
     for (const d of p.portes) {
       const o = [d - 1, d + 1, d - W, d + W].find((j) => !p.cases.includes(j) && !(sorteDe(B[j]) && (sorteDe(B[j]).ferme || B[j] === 'barriere')));
-      if (o === undefined || pieces.some((q) => q !== p && q.cases.includes(o))) continue;
+      if (o === undefined) { bouchee = bouchee || [d - 1, d + 1, d - W, d + W].some((j) => B[j] === 'barriere'); continue; }
+      if (pieces.some((q) => q !== p && q.cases.includes(o))) continue;
       const x = etendue(state, o);
-      if (x.close && x.barriere) { if (!e.enclos || x.cases.length > e.enclos.length) { e.enclos = x.cases; e.porteEnclos = d; } } else if (!x.close && e.porteDehors === null) e.porteDehors = d;
+      if (x.close && x.barriere) { if (!e.enclos || x.cases.length > e.enclos.length) { e.enclos = x.cases; e.porteEnclos = d; } } else if (!x.close) {
+        if (x.barriere) ouvert += 1;
+        if (e.porteDehors === null) e.porteDehors = d;
+      }
+    }
+    if (!e.enclos) {
+      e.pourquoi = bouchee ? 'une porte donne sur une barrière : laisse devant elle une case libre, dans l\'enclos'
+        : p.portes.length < 2 ? 'il faut une deuxième porte dans l\'enceinte, qui donne dans l\'enclos'
+          : ouvert ? `l'enclos n'est pas fermé : une ouverture (entre deux barrières, ou entre une barrière et un mur) le relie au dehors, ou il dépasse ${DATA.ATELIER.ENCLOS_MAX} cases`
+            : 'des barrières tout autour de la case devant une porte, jointes aux murs';
     }
     const arbres = new Set(state.verger ? state.verger.arbres.map((a) => a.case) : []);
     const herbe = (t) => { const ch = T.LIGNES[Math.floor(t / W)][t % W]; return ch === '#' || ch === '+'; };
@@ -791,7 +804,7 @@ export function etatEnclos(state, sorteCle) {
   ok.dehors = e.porteDehors !== null;
   ok.enclos = !!e.enclos;
   ok.place = e.places > 0;
-  e.conditions = conditionsEnclos(sorteCle).map(([id, texte]) => ({ id, texte, ok: !!ok[id] }));
+  e.conditions = conditionsEnclos(sorteCle).map(([id, texte]) => ({ id, texte: id === 'enclos' && p && !ok[id] && e.pourquoi ? `${texte} (${e.pourquoi})` : texte, ok: !!ok[id] }));
   e.ok = e.conditions.every((c) => c.ok);
   enclosCache.set(sorteCle, { cle, etat: e });
   return e;

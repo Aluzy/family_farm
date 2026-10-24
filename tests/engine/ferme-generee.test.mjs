@@ -765,6 +765,30 @@ test('ferme générée : le Poulailler, une enceinte avec une porte dehors, un n
   assertEqual([s.poulailler.construit, coopCapacity(s)], [false, 0], 'repris : plus de Poulailler');
 });
 
+test('ferme générée : l\'enclos du Poulailler ou de l\'Étable peut être grand ; sinon, la fenêtre dit pourquoi', () => {
+  const s = reach(chantier('enclos', 120), 'paturage');
+  setInv(s, { mur_pierre: 40, porte: 4, mangeoire: 1, barriere: 120 });
+  const z = terrainLibre(s, 22, 16), W = z.W, t = (x, y) => (z.r + y) * W + z.c + x;
+  // l'enceinte : 6 × 5 (murs compris), une porte en bas (dehors), une à droite (l'enclos)
+  for (let x = 0; x <= 5; x++) for (let y = 0; y <= 4; y++) if (x === 0 || y === 0 || x === 5 || y === 4) poserBloc(s, 'mur_pierre', t(x, y));
+  poserBloc(s, 'porte', t(2, 4)); poserBloc(s, 'porte', t(5, 2));
+  assert(poserBloc(s, 'mangeoire', t(1, 1)).ok);
+  const enclos = () => etatEtable(s).conditions.find((c) => c.id === 'enclos');
+  // une barrière juste devant la porte : elle ne mène nulle part
+  poserBloc(s, 'barriere', t(6, 2));
+  assertEqual([enclos().ok, enclos().texte.includes('donne sur une barrière')], [false, true]);
+  reprendreBloc(s, t(6, 2));
+  // un grand enclos (13 × 15 cases dedans, plus que les 120 d'avant) avec un trou contre le mur
+  for (let x = 7; x <= 19; x++) poserBloc(s, 'barriere', t(x, 0));
+  for (let x = 5; x <= 19; x++) poserBloc(s, 'barriere', t(x, 14));
+  for (let y = 1; y < 14; y++) poserBloc(s, 'barriere', t(19, y));
+  for (let y = 5; y < 14; y++) poserBloc(s, 'barriere', t(5, y));
+  assertEqual([enclos().ok, enclos().texte.includes('pas fermé')], [false, true], 'un trou entre la barrière et le mur');
+  poserBloc(s, 'barriere', t(6, 0));
+  assert(etatEtable(s).ok, 'fermé : l\'Étable est là');
+  assertEqual([etatEtable(s).enclos.length > 120, s.paturage.construit], [true, true]);
+});
+
 test('ferme générée : le Poulailler monte de niveau s\'il a la place ; les poules en trop ne pondent pas', () => {
   const s = reach(chantier('p2'), 'poulailler');
   s.pieces = 100000;
