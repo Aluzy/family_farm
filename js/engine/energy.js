@@ -13,7 +13,6 @@ import { irrigate, robotStep, runRobotCharge } from './automation.js';
 import { distribuerGrain } from './distributeur.js';
 import { advanceNight, nightSpeed } from './night.js';
 import { repasStep } from './repas.js';
-import { companiesStep } from './entreprises.js';
 
 /* ---------- énergie : stockage et prélèvement ---------- */
 
@@ -140,9 +139,8 @@ export function tick(state, dt, horlogeArretee = false) {
   return state;
 }
 
-// Un pas de jour de la ferme, le même pour tick, simulateOffline et advanceHours (sorties
-// en ville) : flux, usure (`usure`), puis, si l'heure avance (`horloge`), le temps d'éveil
-// (plafonné à `eveilMax`) et ce qui suit l'horloge : pousse, robot, asperseurs, entreprises.
+// Un pas de jour de la ferme, le même pour tick, simulateOffline et advanceHours : flux, usure (`usure`), puis, si l'heure avance (`horloge`), le temps d'éveil
+// (plafonné à `eveilMax`) et ce qui suit l'horloge : pousse, robot, asperseurs.
 // Enfin le record d'énergie stockée (Lot 9). Ni nuit, ni repas : chaque appelant s'en charge.
 export function farmStep(state, dtMs, { usure = true, horloge = true, eveilMax = Infinity } = {}) {
   flowStep(state, dtMs);
@@ -155,7 +153,6 @@ export function farmStep(state, dtMs, { usure = true, horloge = true, eveilMax =
     robotStep(state);
     irrigate(state);
     distribuerGrain(state); // le distributeur de grain nourrit les poules (distributeur.js)
-    companiesStep(state);
     repasStep(state); // la famille mange à la boîte quand elle a faim (repas.js)
   }
   noteEnergyRecord(state); // Lot 9 : record d'énergie stockée

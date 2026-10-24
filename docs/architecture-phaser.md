@@ -2,8 +2,10 @@
 
 Périmètre : la zone entre le bandeau « Ferme Familiale » (titre + indicateurs) et le menu
 du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur) reste en DOM.
-Les autres cartes (la ville et celles qu'on rejoint par elle, l'infra-monde) s'affichent au même
-endroit et partagent avec elle un kit commun (§ 1 bis) et le jour et la nuit (§ 1 ter).
+La seule autre carte, la grotte de la mine (`js/grotte.js`), s'affiche au même endroit et
+partage avec elle un kit commun (§ 1 bis) et le jeu Phaser (§ 1 quater). La ville, la transition,
+la montagne, la plage et l'infra-monde ont été retirées (étape 1 de docs/grand-monde.md) ; elles
+restent sur la branche `archive/jeu-avant-grand-monde`.
 
 > **La ferme du grand-père n'existe plus** (docs/carte-generee.md, « Les anciennes parties ») :
 > la carte de la ferme est toujours la ferme générée. Les passages de ce document sur la carte
@@ -20,16 +22,14 @@ endroit et partagent avec elle un kit commun (§ 1 bis) et le jour et la nuit (�
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
  ├─ js/telemetry.js       suivi de session (script classique)
  ├─ vendor/phaser.min.js  Phaser 4.2.1 (≈ 1,4 Mo)
- ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, chemins.js, nature.js, gestes.js, lumiere.js, triporteur.js ;
+ ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, chemins.js, nature.js, gestes.js, lumiere.js, eau.js, triporteur.js, cheval.js, toit.js ;
  │                        jeu.js, le jeu Phaser de toutes les cartes (CarteJeu, voir § 1 quater)
  ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat, les bêtes de l'Étable et du Poulailler (voir docs/vie-ambiance.md)
  ├─ js/fermier.js         le personnage, facultatif : il refait sur la carte les gestes du joueur (voir docs/personnage.md)
  ├─ js/famille-ferme.js   les autres membres de la famille sur la carte de la ferme
  ├─ js/carte/ferme/       la scène de la ferme, fichier par fichier (FermeCarte : ses réglages et ses méthodes)
  ├─ js/farm-stage.js      la scène de la ferme : ne connaît ni `state` ni le moteur (script classique)
- ├─ js/carte/ville/       la scène de la ville et des cartes qu'on rejoint par elle, fichier par fichier (CarteVille)
- ├─ js/ville-carte.js     cette scène : la ville, la transition, la montagne, la plage, les grottes
- ├─ js/infra-monde.js     l'infra-monde
+ ├─ js/grotte.js          la scène de la grotte de la mine (GrotteScene, window.Grotte ; réglages : data/grotte.json)
  └─ js/main.js            point d'entrée des modules ES
      ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node tests/run-tests.mjs
      └─ js/ui/            interface ; la carte : stage.js (« Carte Phaser ») et stage-windows.js (« Fenêtres de la carte »)
@@ -66,10 +66,9 @@ d'appel au moteur depuis la scène.
 
 Tous les fichiers des cartes sont des **scripts classiques** (pas des modules ES) : ils posent
 chacun un nom global, dans l'ordre de `jeu.html`, et `scripts/build-site.mjs` les minifie un à
-un (liste `SCRIPTS`), sans regroupement. C'était déjà la forme de `farm-stage.js` et de
-`ville-carte.js` : la page, les modules (`js/ui/stage.js`, `js/ui/excursion.js`) et les tests
-les trouvent sous les mêmes noms (`FarmStage`, `VilleCarte`, `InfraMonde`), et la scène de la
-ferme peut toujours manquer sans que le jeu s'arrête (§ 6). Les passer en modules regroupés par
+un (liste `SCRIPTS`), sans regroupement. La page, les modules (`js/ui/stage.js`,
+`js/ui/excursion.js`) et les tests les trouvent sous leurs noms (`FarmStage`, `Grotte`), et la
+scène de la ferme peut toujours manquer sans que le jeu s'arrête (§ 6). Les passer en modules regroupés par
 esbuild aurait demandé de changer leur chargement (après les modules, ou importés par eux) et la
 vérification de la page, pour un gain nul à l'exécution.
 
@@ -83,13 +82,12 @@ pas Phaser pour se charger. Ce que chaque carte avait en double y est une seule 
 | `nature.js` | `NATURE` (l'herbe haute, l'opacité d'un arbre devant le personnage, l'ombre d'un arbre, l'arbre qui tombe, les éclats de pierre), `PECHE` (l'attente de la touche, le bouchon et le fil) ; `herbe()`, l'herbe haute qui penche ; `fondu()`, l'arbre qui s'éclaircit ; `MORCEAUX` et `pointsMorceaux()`, le bois et la pierre que la hache et la pioche lâchent au sol (un morceau par coup au pied, et HACHE.CHUTE ou PIOCHE.BRIS de plus là où l'arbre tombe ou autour du rocher brisé) |
 | `gestes.js` | les gestes et leurs effets, pareils sur toutes les cartes : `APPUI` et `doubleAppui()` (un appui sur ce qui se touche : le personnage y va et fait son geste, un coup par appui ; un double appui ailleurs : il y marche), `MANETTE` et `manette()` (le doigt posé puis glissé : il marche dans la direction du glissement tant que le doigt reste posé, rien ne s'affiche), `astuceMarche()` (la bulle qui explique ce geste, une fois par appareil, au premier essai de marche au doigt), `SECOUSSE` et `secousse()` (la vue tremble un peu quand un arbre tombe et à chaque coup de pioche), `BULLE` et `bulleGain()` (la bulle « +1 🪵 » au-dessus du personnage, en DOM). Sur toutes les cartes, la caméra suit le personnage |
 | `lumiere.js` | le jour et la nuit : `LIGHT_KEYS`, `lumiere(heure)`, `voile(scène, l, h, profondeur)` (§ 1 ter) |
-| `triporteur.js` | le triporteur du personnage (acheté au Marché : `enSelle`, moteur) : `TRIPORTEUR`, `triporteur(scène)` → `place(x, y, vue, retourné, roulé)` pose le tricycle sous lui et dit son image assise ; en selle, il va `TRIPORTEUR.vitesse` fois plus vite (ferme, cartes de la ville, infra-monde ; pas dans la grotte ni un intérieur, ni pendant un geste) |
+| `triporteur.js` | le triporteur du personnage (acheté au Marché : `enSelle`, moteur) : `TRIPORTEUR`, `triporteur(scène)` → `place(x, y, vue, retourné, roulé)` pose le tricycle sous lui et dit son image assise ; en selle, il va `TRIPORTEUR.vitesse` fois plus vite (à la ferme ; pas dans la grotte ni un intérieur, ni pendant un geste) |
+| `cheval.js` | le cheval du personnage (`DATA.CHEVAL`, `js/engine/cheval.js`) : monté depuis la barre d'outils, plus rapide, à la ferme seulement pour l'instant (pas dans la mine) ; l'attacher à un poteau sur une autre carte reviendra avec le grand monde |
+| `eau.js`, `toit.js` | l'eau vivante des étendues d'eau (`CarteKit.eauVive`), le toit de tuiles d'un bâtiment bâti en blocs |
 
-Le coût d'un pas en diagonale dépend de la carte : 1,414 à la ferme (dehors, cases de 16 px, et
-dans les intérieurs, grille de 4 px), 1 en ville et dans l'infra-monde, où l'ancienne recherche
-en largeur comptait les pas : leurs chemins ont gardé la même longueur en nombre de cases (3 000
-grilles tirées au hasard comparées à l'ancien A* de la ferme et à l'ancienne recherche en
-largeur : mêmes coûts partout).
+Le coût d'un pas en diagonale est de 1,414 à la ferme (dehors, cases de 16 px, et dans les
+intérieurs, grille de 4 px).
 
 **La ferme** : `js/farm-stage.js` garde le montage, l'API `FarmStage`, et la scène elle-même :
 sa création, sa boucle d'image, les appuis et les gestes (tout ce qui passe par le pont
@@ -110,35 +108,26 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | `hache.js`, `pioche.js`, `peche.js` | les arbres, les buissons (la ferme générée : coupés d'un coup, 2 bois pour un grand, 1 pour un petit), les rochers, l'étang et la mare ; chaque coup de hache ou de pioche lâche ses morceaux au sol |
 | `chantier.js` | la ferme générée : les blocs posés (murs, portes, paillasses, Atelier), le mode Construire, les pièces closes, la paillasse où il dort |
 | `cueillette.js` | la ferme générée : ce qu'on ramasse à la main (pierres, bois, herbes), un appui et le personnage le prend ; le bois et la pierre lâchés par la hache et la pioche (`modèle.morceaux`, `state.morceaux` du moteur), que le personnage prend en marchant dessus (`syncPieces`, `stepPieces`) |
-| `passages.js` | la sortie vers la ville (le rectangle `vers_la_transition` de la carte, `exitAt()`), le tronc creux |
+| `passages.js` | l'entrée de la mine (la porte du tas de terre, vers `js/grotte.js`) et le retour de la mine (`?arrivee=mine`) |
 | `machines.js` | les asperseurs, le robot |
 | `abeilles.js` | les abeilles des ruches : elles sortent par le trou de vol, butinent les fleurs à portée (`modèle.fleurs`, l'herbe haute fleurie), rentrent ; le jour seulement |
 | `modele.js` | `sync(modèle)` et ce qu'il crée (bâtiments, parcelles, Verger, puits, citerne) |
 
-**La ville** : `js/ville-carte.js` garde la scène (création, boucle d'image, marche, chemins,
-passages, horloge, grottes) et l'API `VilleCarte` ; ses réglages sont dans
-`js/carte/ville/config.js` (`CarteVille.C` ; `CarteVille.etat` : la carte affichée), ses autres
-méthodes dans `js/carte/ville/` (`CarteVille.partie`) : `circulation.js` (les bâtiments en 3/4
-et les voitures), `ecole.js` (le bus de l'école), `hud.js` (les messages, la fenêtre de la gare),
-`marche.js` (le marché, les entreprises), `train.js`, `navette.js` (le bus de ligne),
-`trouvailles.js`, `faune.js`, `nature.js` (arbres, rochers, herbe haute), `peche.js`,
-`lueurs.js` (les lumières de la grotte : lanterne, champignons, améthystes ; Phaser 4, WebGL),
-`ombres.js` (les ombres portées qui suivent le soleil, comme à la ferme : bâtiments, arbres,
-mobilier, réverbères, rochers ; un canevas de la vue, `OMBRES`), `eclairage.js` (la nuit : les réverbères de la couche d'objets « lumieres » et les phares des
-voitures, posés dans la carte de lumière du voile, `CarteKit.voile(…).eclaire`),
-`voisins.js` (la famille de chaque maison des voisins), `metiers.js` (leur métier sur la carte :
-bûcherons, champs, marché, cuisine). Un fichier sur ~800 lignes au plus.
-
-Réglages qui avaient divergé et qui n'en font plus qu'un : l'attente de la touche à la pêche
-(2,2 à 4,8 s, celle de la ferme ; la ville attendait 2,2 à 4,6 s), les feuilles d'un arbre qui
-tombe (26, celles de la ferme ; la ville en lâchait 22), les éclats d'un rocher qui se brise (la
-palette de la ferme : la ville finissait par un gris clair, `0xe4e0dc`, la ferme par `0x6f6a6c`),
-les petits textes « ! » et « … » de la pêche à la ferme (police et couleurs du « +1 » de la
-ville), la case libre la plus proche (anneau par anneau, au plus près dans l'anneau : la ville
-prenait, pour s'y poser d'un coup, la première trouvée, l'infra-monde aussi ; la ferme cherchait
-dans tout le carré de 13 cases), et les tuiles animées de la ville et de l'infra-monde, qui
-suivent maintenant la durée de chaque image comme à la ferme (toutes leurs images durent 400 ms :
-rien ne change à l'écran).
+**La grotte** : `js/grotte.js` est une scène Phaser à elle seule (`GrotteScene`, l'API
+`window.Grotte` : `start`, `stop`, `scene`), sortie de l'ancien `js/ville-carte.js`. Chaque niveau
+est tiré au hasard pour la journée (un automate cellulaire, avec les morceaux de tuiles de
+`scripts/carte/grotte.py` : `assets/grotte_tuiles.png`, `grotte_objets.png`, `grotte.json`) ; on
+descend par le puits et on remonte par l'échelle (la flèche bleue de `CarteKit.FLECHE`,
+dessinée par `scripts/carte/fleche.py`). Ses réglages de jeu (taille d'un niveau, nombre de
+niveaux, minerai, coups de pioche) sont dans `data/grotte.json` (`GROTTE`), que la page lui donne
+par `FermeHote.donnees('GROTTE')` ; le fichier ne garde que les images et la lumière (la
+lanterne, le jour qui tombe de l'échelle, les champignons et les améthystes : des lumières WebGL,
+sans WebGL une image noire percée autour du personnage). `js/ui/excursion.js` l'ouvre dans
+`#map-stage` (`jeu.html?carte=grotte&niveau=N…`) et lui sert de pont (`FermeHote` : l'heure, le
+personnage, la pioche, le minerai, les messages, `go(cible)` pour changer de niveau ou remonter).
+Le temps passe comme à la ferme : la grotte lit le jour du jeu (`FermeHote.maintenant()`) pour
+tirer ses niveaux, il n'y a plus d'horloge à part (`HorlogeSortie` a été retirée).
+En god mode (⚙️ Options), un menu mène à la ferme et aux niveaux 1, 4 et 8 de la mine.
 
 ## 1 ter. Le jour et la nuit
 
@@ -150,19 +139,13 @@ suite au premier affichage et avec « réduire les animations »).
 
 - **La ferme** : l'heure du modèle (`modèle.heure`), à la profondeur 1e6. Les intérieurs, posés
   à droite de la carte, restent hors du voile : ils sont éclairés.
-- **La ville, la transition, la montagne et la plage** (`JOUR_NUIT`) : l'horloge du jeu
-  (`HorlogeSortie.maintenant().heure`, relue chaque seconde par `stepClock`), sous ce qui vole
-  (l'aigle, la mouette en vol : `VOL`), les flèches des passages et les petits textes, qui gardent
-  leurs couleurs. Sans partie (pas d'horloge) : plein jour.
-- **Pas de voile** : la grotte (elle a sa propre obscurité, la lumière autour du personnage),
-  l'infra-monde (sa lumière à lui).
+- **Pas de voile** : la grotte (elle a sa propre obscurité, la lumière autour du personnage).
 - Hors de portée pour l'instant : les réverbères et les fenêtres allumées la nuit.
 
 ## 1 quater. Un seul jeu Phaser pour toutes les cartes
 
 `js/carte/jeu.js` (`window.CarteJeu`, chargé après le kit) tient **un seul `Phaser.Game`** :
-la ferme, la ville (et la transition, la montagne, la plage, la grotte) et
-l'infra-monde en sont des scènes. Un canvas, un contexte WebGL, un jeu de textures. Avant, chaque
+la ferme et la grotte de la mine en sont des scènes. Un canvas, un contexte WebGL, un jeu de textures. Avant, chaque
 changement de carte détruisait le jeu de la carte précédente et en créait un autre (nouveau
 contexte WebGL, images retéléchargées et redécodées, planches réextrudées), pendant que celui de
 la ferme dormait à côté avec ses propres textures.
@@ -170,31 +153,29 @@ la ferme dormait à côté avec ses propres textures.
 - **Changer de carte = changer de scène** (`CarteJeu.montre(zone, clé, { cree, data, neuve, garde })`).
   La ferme est une scène *gardée* : elle s'endort (`scene.sleep`) et se réveille telle qu'on l'a
   laissée (vue, personnage, intérieur). Une autre carte est une **scène neuve à chaque fois**
-  (`new VilleScene()`, ses paramètres en `data` : `{ search: '?carte=…&arrivee=…' }`, lus dans
+  (`new GrotteScene()`, ses paramètres en `data` : `{ search: '?carte=grotte&niveau=…' }`, lus dans
   `init()`), retirée quand on la quitte : ses objets, ses minuteries (`this.time`), ses tweens,
   ses appuis et ses touches partent avec elle. Pendant une image (une carte quittée depuis une
   minuterie de sa scène), le passage est fait juste après, hors de l'image.
 - **Les textures restent** : le chargeur d'une scène saute ce qui est déjà dans le jeu, une carte
   revue ne redemande rien ; `CarteKit.extrude()` n'extrude une planche qu'une fois. Ce qui dépend
   de la carte ou de la partie porte son fichier dans sa clé : la planche du personnage
-  (`heros:<fichier>`), celle des rochers d'une carte (`rochers_carte:<fichier>`) ; les
-  animations de l'habitant de l'infra-monde portent son nom (le gestionnaire d'animations est
-  commun).
+  (`heros:<fichier>`), celle des rochers d'une carte (`rochers_carte:<fichier>`) ; le
+  gestionnaire d'animations est commun à toutes les scènes.
 - **Le canvas** est rendu à la densité de l'écran (`CarteKit.ratio()`, plafonnée à 3) en
   `Scale.NONE`, et posé dans la zone de la carte affichée (`#farm-stage`, `#map-stage`) ; un
   `ResizeObserver` sur ces zones et `CarteJeu.taille()` tiennent sa taille. La ferme garde son
-  zoom non entier ; la ville et l'infra-monde prennent un **zoom entier en pixels de l'écran**
+  zoom non entier ; la grotte prend un **zoom entier en pixels de l'écran**
   (`CarteJeu.zoomEntier` : 2 à 5 pixels CSS par pixel de carte comme avant, arrondi à un nombre
   entier de pixels de l'écran) et arrondissent par leur caméra. Un écouteur de taille posé par une
   scène passe par `CarteJeu.suitTaille(scène, fn)`, retiré à son arrêt.
 - **Le clavier** est celui de Phaser (`input.keyboard`), sans capture : rien n'est retenu à la
   page ; `CarteKit.saisie()` laisse les touches au champ qui a le focus ou à la fenêtre ouverte.
-- **Fenêtres des cartes** (la gare, l'arrêt de bus, un étal, une entreprise, le tronc creux) :
-  celles du jeu, par `FermeHote.modal(html, options)` / `FermeHote.closeModal()` (js/ui/modal.js :
+- **Fenêtres des cartes** : celles du jeu, par `FermeHote.modal(html, options)` / `FermeHote.closeModal()` (js/ui/modal.js :
   cadre bois, focus gardé par Tab, Échap, focus rendu). Tant qu'une fenêtre est ouverte, les
   touchers et les flèches ne vont pas à la carte.
 - **Sans Phaser** (ou sans WebGL ni canvas utilisable) : la ferme garde sa liste classique (§ 6) ;
-  une autre carte ne s'ouvre pas, le joueur reste où il est avec un message.
+  la mine ne s'ouvre pas, le joueur reste à la ferme avec un message.
 
 ## 2. La carte : 72×57 tuiles, trois repères
 

@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { levelReached } from './levels.js';
 import { techEffects, techFlag } from './techtree.js';
-import { averageHappiness } from './ville.js';
+import { averageHappiness } from './bonheur.js';
 import { noter } from './journal.js';
 import { valeurAliment } from './repas.js';
 

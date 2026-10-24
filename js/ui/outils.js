@@ -73,18 +73,14 @@ function chevalSlot() {
   return `<button type="button" class="tool-slot${monte ? ' active' : ''}" data-action="cheval-toggle" aria-pressed="${monte}" aria-label="${label}" title="${label}">${C.ICONE}</button>`;
 }
 
-// Où est le personnage : sur la ferme, ou sur une carte d'excursion (js/carte/ville/monture.js,
-// chevalLieu : son nom, le point où il est, à côté du cheval attaché ou non ; l'infra-monde : ailleurs).
-function lieuJoueur() {
-  if (!document.body.classList.contains('en-excursion')) return { carte: 'ferme' };
-  const sc = window.Ville && window.Ville.scene;
-  return sc && sc.chevalLieu ? sc.chevalLieu() : { carte: 'infra', x: 0, y: 0, proche: false };
-}
-
-// Monter en selle ou descendre du cheval (un appui sur sa case).
+// Monter en selle ou descendre du cheval (un appui sur sa case). Sur la ferme seulement pour
+// l'instant : le poteau d'attache servira dans le grand monde (docs/grand-monde.md) ; dans la
+// mine, on ne monte ni ne descend.
 function useCheval() {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
-  const C = DATA.CHEVAL, lieu = lieuJoueur(), avant = chevalOu(state);
+  const C = DATA.CHEVAL;
+  if (document.body.classList.contains('en-excursion')) { notify(`${C.ICONE} Pas de cheval dans la mine.`); return; }
+  const lieu = { carte: 'ferme' }, avant = chevalOu(state);
   const r = applyResult(toggleCheval(state, lieu));
   if (!r.ok) return;
   persistState();

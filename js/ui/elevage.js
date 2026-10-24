@@ -18,7 +18,7 @@ import { techAuto, techFlag } from '../engine/techtree.js';
 import { AUTO_TACHES, harvestAll, isAutomated, plantAll, setSemis, waterAll } from '../engine/automation.js';
 import { plantableCropsFor } from '../engine/campaign.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
-import { cartesOuvertes, state } from './store.js';
+import { state } from './store.js';
 import { tel } from './consent.js';
 import { applyResult } from './game-actions.js';
 import { artIcon, artPx, coopArtRow } from './animations.js';
@@ -233,15 +233,15 @@ function herbsCard(cCount) {
   const stock = herbStock(state);
   const on = herbsOn(state);
   const n = cowsOnHerbs(state);
-  if (!cCount && !stock && !on) return '';
-  // (les herbes se cueillent à la montagne : sans elle, la carte ne sert qu'à finir le stock)
-  if (!cartesOuvertes() && !stock && !on) return '';
+  // (les herbes se cueilleront dans les prés de montagne du grand monde : d'ici là, la carte ne
+  // sert qu'à finir le stock)
+  if (!stock && !on) return '';
   const parVache = DATA.ANIMAUX.vache.herbesParNuit;
   let etat;
   if (!on) etat = `<span class="muted">Les vaches mangent leur paille. Nourries aux herbes (${formatNumber(parVache)} par vache et par nuit, à la place de la paille), elles donnent du ${lait.nom.toLowerCase()}.</span>`;
   else if (!cCount) etat = '<span class="muted">Pas de vache à nourrir.</span>';
   else if (n > 0) etat = `<span>${lait.icone} ${plural(n, 'vache')} au ${lait.nom.toLowerCase()} cette nuit${n < cCount ? ` ; les autres mangent leur paille` : ''}.</span>`;
-  else etat = '<span class="alert">Plus d\'herbes : cueille-les dans les prés de la montagne (le train, à la gare de la ville).</span>';
+  else etat = '<span class="alert">Plus d\'herbes : les vaches reprennent leur paille.</span>';
   return `
     <div class="card ancre" id="etable-herbes">
       <span class="card-title"><span><span aria-hidden="true">${herbes.icone}</span> ${herbes.nom} : <span class="num">${formatNumber(stock)}</span></span><span class="chip${on ? ' badge' : ''}">${on ? '✅ données aux vaches' : 'pas données'}</span></span>

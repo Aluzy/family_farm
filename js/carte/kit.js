@@ -1,7 +1,6 @@
 /* carte/kit.js — ce que toutes les cartes Phaser du jeu partagent (window.CarteKit).
  *
- * La ferme (js/farm-stage.js et js/carte/ferme/), la ville et les cartes qu'on rejoint par
- * elle (js/ville-carte.js et js/carte/ville/), l'infra-monde (js/infra-monde.js), et les
+ * La ferme (js/farm-stage.js et js/carte/ferme/), la mine (js/grotte.js), et les
  * personnages (js/fermier.js, js/famille-ferme.js) lisent ici leurs réglages communs au lieu
  * d'en garder chacun une copie qui finissait par diverger :
  *
@@ -17,7 +16,7 @@
  *   - cases(noms) : les cases d'une planche par leur nom (une table, pas une recherche par image) ;
  *   - VITESSES : la vitesse de marche de chacun, carte par carte (px/s) ;
  *   - cycle(), imageA(), animTuiles(), pasAnimTuiles() : les tuiles animées de Tiled ;
- *   - FLECHE, balance() : la flèche bleue des passages vers une autre carte ;
+ *   - FLECHE, balance() : la flèche bleue des passages (la mine, ses niveaux) ;
  *   - TEXTE, texte() : les petits textes qui montent au-dessus du personnage (« … »).
  *
  * Le reste du kit est dans les fichiers voisins, chargés juste après celui-ci : chemins.js
@@ -104,8 +103,8 @@
   }
 
   // Le joueur écrit dans un champ de la page (un nom, une quantité, un menu), ou une fenêtre du
-  // jeu est ouverte (#modal-root : la gare, un étal…) : les flèches et ZQSD sont à lui, le
-  // personnage ne bouge pas (la ville, l'infra-monde).
+  // jeu est ouverte (#modal-root) : les flèches et ZQSD sont à lui, le personnage ne bouge pas
+  // (la mine).
   function saisie() {
     const el = document.activeElement;
     if (el && (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable)) return true;
@@ -145,48 +144,12 @@
   }
 
   // La vitesse de marche de chacun (px de carte par seconde) : chaque carte a sa mesure (la
-  // ville est vue de plus près que la ferme), mais toutes sont ici.
+  // grotte est vue de plus près que la ferme), mais toutes sont ici.
   const VITESSES = {
     fermier: 58,                                   // le personnage, à la ferme (js/fermier.js)
     famille: { adulte: 26, enfant: 32 },           // les autres membres, à la ferme (js/famille-ferme.js)
-    ville: 48,                                     // le personnage, en ville et sur les cartes du train
-    enfantsBus: 32,                                // les enfants qui vont au bus de l'école
-    voisins: { adulte: 24, enfant: 32 },           // les voisins, chez eux
-    infra: 46,                                     // le personnage, dans l'infra-monde
-    habitant: 44,                                  // l'habitant de l'infra-monde (il flâne à 60 %)
+    grotte: 48,                                    // le personnage, dans la mine (js/grotte.js)
   };
-
-  // L'école : la même pour tous les enfants (ceux de la ferme, des voisins de la transition, de
-  // l'immeuble de la ville), de `debut` h à `fin` h, les jours d'école (HorlogeSortie.JOURS_ECOLE).
-  // Chaque enfant part de chez lui le temps qu'il lui faut pour y être à l'heure : sa distance
-  // à parcourir divisée par sa vitesse (une heure du jeu : `sParHeure` s), et `marge` h d'avance.
-  // Ceux de la ferme et de la transition prennent le bus de l'école : il roule `bus` h de l'arrêt
-  // de la transition à celui de la ville (hors des cartes) ; les enfants y montent en `monter` s.
-  // `longueurs` : le chemin des enfants sur la carte de la ville (de l'arrêt du bus à la porte de
-  // l'école) et sur celle de la transition (du bord de la ferme à l'arrêt), en px, tels que
-  // les cartes de Tiled les tracent ; une carte qui a le sien sous les yeux le mesure.
-  const ECOLE = { debut: 8.75, fin: 16.75, sParHeure: 30, marge: 0.05, bus: 0.5, monter: 2, longueurs: { ville: 115, transition: 997 } };
-
-  // Combien d'heures du jeu pour faire `px` px à `vitesse` px/s (et `s` s de plus).
-  const heuresDeMarche = (px, vitesse, s = 0) => (px / vitesse + s) / ECOLE.sParHeure;
-
-  // L'horaire du bus de l'école, compté à rebours depuis le début de l'école (et à partir de sa
-  // fin, le soir) : l'heure où il est à l'arrêt de la ville (villeMatin : les enfants en
-  // descendent et marchent jusqu'à l'école ; villeSoir : ils y sont montés), à l'arrêt de la
-  // transition (transitionMatin : ils y montent ; transitionSoir : ils en descendent), et celles
-  // où les enfants de la ferme passent le bord de la ferme (sortieFerme, le matin ; retourFerme,
-  // le soir). `L` : les longueurs mesurées (ECOLE.longueurs sinon).
-  function horaireEcole(L) {
-    const E = ECOLE, v = VITESSES.enfantsBus;
-    const lv = (L && L.ville) || E.longueurs.ville, lt = (L && L.transition) || E.longueurs.transition;
-    const villeMatin = E.debut - heuresDeMarche(lv, v) - E.marge;
-    const transitionMatin = villeMatin - E.bus;
-    const sortieFerme = transitionMatin - heuresDeMarche(lt, v, E.monter);
-    const villeSoir = E.fin + heuresDeMarche(lv, v, E.monter);
-    const transitionSoir = villeSoir + E.bus;
-    const retourFerme = transitionSoir + heuresDeMarche(lt, v);
-    return { villeMatin, transitionMatin, sortieFerme, villeSoir, transitionSoir, retourFerme };
-  }
 
   // La longueur (px) d'une suite de points [{ x, y }], depuis `de` s'il est donné.
   function longueur(pts, de) {
@@ -237,7 +200,7 @@
     }
   }
 
-  // La flèche bleue des passages (assets/fleche_passage.png, scripts/ville/fleche.py : images
+  // La flèche bleue des passages (assets/fleche_passage.png, scripts/carte/fleche.py : images
   // droite, gauche, haut, bas, de 32 px) : elle paraît quand le personnage est à moins de
   // `near` px du passage et se balance de `bob` px, un aller-retour en 2π × `periode` ms.
   const FLECHE = { key: 'fleche_passage', file: 'fleche_passage.png', size: 32, near: 80, bob: 3, periode: 220, sens: ['droite', 'gauche', 'haut', 'bas'] };
@@ -253,7 +216,7 @@
   }
 
   global.CarteKit = Object.assign(global.CarteKit || {}, {
-    T, v, reduit, ratio, extrude, planche, planchePerso, saisie, regard, cases, VITESSES, ECOLE, heuresDeMarche, horaireEcole, longueur,
+    T, v, reduit, ratio, extrude, planche, planchePerso, saisie, regard, cases, VITESSES, longueur,
     cycle, imageA, animTuiles, pasAnimTuiles, FLECHE, balance, TEXTE, texte,
   });
 })(window);

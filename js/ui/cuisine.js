@@ -12,7 +12,7 @@ import {
 } from '../engine/kitchen.js';
 import { recipeTime } from '../engine/techtree.js';
 import { isUnlocked } from '../engine/campaign.js';
-import { dishHappiness } from '../engine/ville.js';
+import { dishHappiness } from '../engine/bonheur.js';
 import {
   formatCoins, formatDuration, formatNumber, formatQty,
 } from '../engine/format.js';

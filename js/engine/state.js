@@ -1,6 +1,5 @@
 import { DATA } from './catalog.js';
 import { STATE_VERSION } from './base.js';
-import { newVille } from './ville.js';
 import { batteryCapacity, newDayStats, startFarm } from './devices.js';
 import { addItem, countItem, freshLot, lotRank, lotsFromCounts, pushLots } from './inventory.js';
 import {
@@ -110,7 +109,6 @@ export function createInitialState(seed = 1) {
     unlockedTabs: ['ferme', 'famille', 'inventaire', 'comptoir'],
     stats: {},
     marche: {}, // Lot 3 : coefficients d'achat au-dessus de leur plancher
-    ville: newVille(), // version 1.5 : sorties faites aujourd'hui, marché de la ville
     progression: newProgression(), // version 1.7 : expérience et niveau
     energie: energyMax(), // version 1.8 : l'énergie du personnage (millièmes)
     compta: [], // les Comptes : gains et dépenses récents (voir compta.js)
@@ -414,6 +412,21 @@ export const MIGRATIONS = {
   // serrePlaces) ; celles qui n'y tenaient pas s'en vont, sauf une parcelle plantée (elle reste
   // jusqu'à sa récolte).
   49: (state) => migrateSerreCases(state),
+  // v50 → v51 : le grand monde (docs/grand-monde.md). Les autres cartes s'en vont (la ville, la
+  // transition, la montagne, la plage, l'infra-monde) et avec elles ce qu'elles gardaient : les
+  // sorties et le marché de la ville, ses entreprises, son économie, les voisins de la
+  // transition, les familles de ses immeubles, ce qui y avait été ramassé. Le cheval attaché sur
+  // l'une d'elles rentre à l'Écurie (son poteau et sa corde reviennent).
+  50: (state) => {
+    const { ville, voisins, immeuble, economie, transitionPris, ...rest } = state;
+    const out = { ...rest, version: 51 };
+    if (out.cheval && out.cheval.attache) {
+      out.cheval = { ...out.cheval, attache: null };
+      out.inventaire = JSON.parse(JSON.stringify(out.inventaire || {}));
+      for (const o of DATA.CHEVAL.ATTACHE) addItem(out, o, 1);
+    }
+    return out;
+  },
 };
 
 function migrateSerreCases(old) {
@@ -774,10 +787,10 @@ function migrateNoSeasons(old) {
 }
 
 export function migrateHappiness(old) {
-  const state = { ...old, version: 22, ville: old.ville && typeof old.ville === 'object' ? old.ville : newVille() };
+  const state = { ...old, version: 22, ville: old.ville && typeof old.ville === 'object' ? old.ville : { faits: {}, marche: 0 } };
   const f = state.famille;
   if (f && typeof f === 'object' && Array.isArray(f.membres)) {
-    state.famille = { ...f, membres: f.membres.map((m) => (m && typeof m === 'object' && typeof m.bonheur !== 'number' ? { ...m, bonheur: DATA.VILLE.BONHEUR.DEPART } : m)) };
+    state.famille = { ...f, membres: f.membres.map((m) => (m && typeof m === 'object' && typeof m.bonheur !== 'number' ? { ...m, bonheur: DATA.BONHEUR.DEPART } : m)) };
   }
   return state;
 }

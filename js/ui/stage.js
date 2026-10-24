@@ -1,5 +1,5 @@
 import { DATA } from '../engine/catalog.js';
-import { formatLitres, weekdayIndex } from '../engine/format.js';
+import { formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
@@ -436,12 +436,10 @@ export function stageModel() {
     ramasser,
     // version 1.17 : le personnage du joueur sur la carte (son numéro dans le catalogue)
     perso: memberPerso(mainCharacter(state)),
-    // les autres membres de la famille, qui font leur journée sur la carte (js/famille-ferme.js),
-    // et le jour de la semaine (0 : lundi) : les enfants vont à l'école les jours d'école
+    // les autres membres de la famille, qui font leur journée sur la carte (js/famille-ferme.js)
     famille: state.famille.membres.filter((m) => m !== mainCharacter(state)).map((m) => ({ id: m.id, perso: memberPerso(m), enfant: !!m.enfant })),
     // le second adulte du foyer et où il a à faire (le Poulailler, l'Étable : aideAFaire)
     aide: aidant(state) ? { id: aidant(state).id, lieux: aideAFaire(state) } : null,
-    semaine: weekdayIndex(state.day),
     // les fleurs où butinent les abeilles des ruches (des cases ; la carte y ajoute l'herbe haute fleurie)
     fleurs: fleursPourAbeilles(state),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,

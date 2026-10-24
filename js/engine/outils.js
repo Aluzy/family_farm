@@ -225,7 +225,7 @@ export function respawnBushes(state) {
 /* ---------- les morceaux au sol : le bois et la pierre lâchés par les coups ---------- */
 
 // Un coup de hache (ou de pioche) lâche ses morceaux au sol, sur la carte `carte` (« ferme »,
-// « transition », « ville », « montagne », « plage ») : state.morceaux = [{ n, item, carte, x, y }]
+// puis les cartes du grand monde) : state.morceaux = [{ n, item, carte, x, y }]
 // (x, y : px de la carte, donnés par elle ; n : un numéro unique, state.morceauxN). Le joueur
 // les ramasse en marchant dessus (ramasserMorceau) ; ils restent là jusqu'à ce qu'il les prenne.
 // Sans carte (le moteur seul, les tests), ils vont droit dans l'inventaire.
@@ -674,7 +674,7 @@ export function castLine(state, eau) {
   const C = DATA.CANNE;
   if (!hasTool(state, 'canne')) return fail(`Il te faut une canne à pêche (Marché, ${C.PRIX} 💰).`);
   const chances = C.PRISES[eau];
-  if (!chances) return fail('Touche l\'eau pour y pêcher : l\'étang ou la mare de la ferme, le lac de la montagne, la mer depuis le ponton de la plage.');
+  if (!chances) return fail('Touche l\'eau pour y pêcher : l\'étang ou la mare de la ferme.');
   if (fishLeft(state, eau) <= 0) return fail(eau === 'lac' || eau === 'mer' ? `Le poisson se fait rare ${eau === 'lac' ? 'dans le lac' : 'en mer'} aujourd'hui : reviens demain.` : `Le poisson se fait rare ${eau === 'mare' ? 'dans la mare' : 'dans l\'étang'} aujourd'hui : essaie l'autre eau, ou reviens demain.`);
   if (!canAfford(state, 'pecher')) return fail(TIRED);
   spendEnergy(state, 'pecher');

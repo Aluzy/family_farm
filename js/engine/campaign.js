@@ -4,7 +4,7 @@ import { fail, isOwned, starterOf, storedEnergy } from './devices.js';
 import { earn } from './compta.js';
 import { addItem, countItem } from './inventory.js';
 import { autonomieJour } from './repas.js';
-import { averageHappiness } from './ville.js';
+import { averageHappiness } from './bonheur.js';
 import { plantableCrops } from './crops.js';
 import { checkMastery, grantTechPoints, isBuilt, techPoints } from './techtree.js';
 import { gainXp, levelReached, unlockLevel } from './levels.js';

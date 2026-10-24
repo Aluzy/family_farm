@@ -40,7 +40,6 @@ import './ui/famille.js';
 import './ui/notifications.js';
 import './ui/inventaire.js';
 import './ui/marche.js';
-import './ui/ville.js';
 import './ui/chapitres.js';
 import './ui/niveaux.js';
 import './ui/energie.js';
@@ -92,7 +91,7 @@ document.addEventListener('visibilitychange', onHide);
 requestAnimationFrame(frame);
 requestAnimationFrame(renderLoop);
 render();
-resumeExcursion(); // jeu.html?carte=… : la ville, la montagne, la plage, une grotte, l'infra-monde
+resumeExcursion(); // jeu.html?carte=grotte&… : un niveau de la mine
 
 // Suivi de session : démarre seulement si le joueur a déjà accepté ; sinon on le lui demande.
 try {

@@ -13,10 +13,11 @@ import { chemin } from './chemin.js';
 //   - l'herbe en trois teintes qui ondulent (un bruit), avec leurs raccords ;
 //   - des étangs aux bords irréguliers (peu profonds au bord, profonds au milieu) et leurs rives ;
 //   - un chemin de la cour jusqu'au bord est : le rectangle `vers_la_transition` (couche
-//     « passages ») y est posé, la sortie vers la carte de transition ;
+//     « passages ») y est posé (il menait à la carte de transition, retirée du jeu : il ne sert
+//     plus ; la graine de la carte n'a pas changé) ;
 //   - des bois (arbres clairs, pins, buissons) plus denses vers les bords de la carte, des
-//     rochers, des fleurs, des touffes d'herbe haute, le tronc creux au bord d'un étang (le
-//     passage vers l'infra-monde) et l'entrée de la mine, dans les bois pas trop loin de la cour
+//     rochers, des fleurs, des touffes d'herbe haute, le tronc creux au bord d'un étang (un
+//     décor) et l'entrée de la mine, dans les bois pas trop loin de la cour
 //     (le rectangle `mine`, couche « batiment ») ;
 //   - pour l'instant (docs/carte-generee.md), une cour dégagée où les bâtiments de la carte de
 //     Tiled gardent leur disposition (COUR) : la construction bloc par bloc les remplace un à un

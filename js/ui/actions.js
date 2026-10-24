@@ -21,13 +21,13 @@ export function registerActions(handlers) {
 export const SOMMEIL_MESSAGE = '💤 Tu dors : attends le réveil.';
 export const SOMMEIL_PERMISES = new Set([
   'sleep', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
-  'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'entreprise-quota', 'meuble-annule', 'meuble-place',
+  'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'meuble-annule', 'meuble-place',
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
   'plant', 'boite-deposer', 'boite-reprendre', 'water', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
   'sell-item', 'buy-item', 'buy-animal', 'buy-meuble', 'buy-ruche', 'buy-cheval', 'cheval-toggle', 'buy-dehors', 'plant-all', 'hoe-many', 'commerce-choose',
-  'commerce-upgrade', 'commerce-quota-dec', 'commerce-quota-inc', 'commerce-quota-max', 'harvest-tree', 'ville-go',
-  'ville-market', 'ville-buy', 'buy-pasture', 'mill-start', 'mill-cancel',
+  'commerce-upgrade', 'commerce-quota-dec', 'commerce-quota-inc', 'commerce-quota-max', 'harvest-tree',
+  'buy-pasture', 'mill-start', 'mill-cancel',
   'buy-tech', 'build-fridge',
   'build-station', 'atelier-fabriquer', 'bloc', 'arbre-planter', 'arbre-case', 'arbre-oui', 'build-toggle', 'silo-agrandir', 'build-pick', 'build-tab', 'build-groupe', 'meuble-ok', 'build-level-menu', 'build-level', 'etage-toggle', 'upgrade', 'upgrade-serre', 'upgrade-poulailler', 'buy-hoe', 'buy-tool', 'axe-toggle', 'pick-toggle', 'rod-toggle', 'scythe-toggle',
   'hoe', 'hoe-toggle', 'hoe-take', 'upgrade-tank', 'robot-autonomie', 'upgrade-fridge', 'maintain', 'repair', 'eat', 'fridge-in',

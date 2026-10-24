@@ -40,7 +40,7 @@ COLS = 16
 # emoji : (planche, colonne, rangée) — cases de 16×16
 FROM_SHEET = {
     '🥒': ('crops.png', 4, 11),
-    # les trouvailles de la montagne et de la plage (scripts/ville/faune.py) : l'image de la carte
+    # les trouvailles de la montagne et de la plage (scripts/carte/faune.py) : l'image de la carte
     '🪨‍🐚': ('trouvailles.png', 0, 0),
     '🪨‍🪲': ('trouvailles.png', 1, 0),
     '💎': ('trouvailles.png', 2, 0),

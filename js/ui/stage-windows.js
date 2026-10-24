@@ -21,8 +21,7 @@ import { telView } from './consent.js';
 import { notify } from './toasts.js';
 import { actionSleep } from './game-actions.js';
 import { artHtml, pxText } from './pixel-art.js';
-import { renderVille } from './ville.js';
-import { averageHappiness } from '../engine/ville.js';
+import { averageHappiness } from '../engine/bonheur.js';
 import { morph, morphSlots, refresh, setLastRenderAt } from './render.js';
 import {
   cibleAttrs, heureDuJour, setStagePan, STAGE_LIEUX, stageActive, stageUsable,
@@ -347,8 +346,6 @@ export const STAGE_WINDOWS = {
     corps: () => renderPotager(),
   },
   chapitres: { nom: 'Chapitres', icone: '📜', ok: () => true, corps: () => renderChapterBanner() },
-  // Version 1.5 : le poteau « Ville » au bout du chemin (sorties, voyages, marché de la ville).
-  ville: { nom: 'Ville', icone: '🏙️', ok: () => true, sansTitre: true, corps: () => renderVille() },
   // Le Silo : sur la carte dès qu'il est débloqué (comme le Poulailler) ; on le construit,
   // l'agrandit et on voit son blé dans sa fenêtre.
   silo: { nom: 'Silo', icone: '🌾', ok: () => isUnlocked(state, 'silo') || state.silo.construit, sansTitre: true, corps: () => renderSilo() },
@@ -436,7 +433,7 @@ export function allerAuLieu(fenetre, onglet, ancre) {
   } else {
     stageWindow = null;
     stageInterior = null;
-    setActiveTab(fenetre === 'ville' ? 'ville' : ['famille', 'inventaire', 'comptoir', 'techno'].includes(fenetre) && tabAvailable(fenetre) ? fenetre : fenetre === 'installations' ? 'ferme' : fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
+    setActiveTab(['famille', 'inventaire', 'comptoir', 'techno'].includes(fenetre) && tabAvailable(fenetre) ? fenetre : fenetre === 'installations' ? 'ferme' : fenetre === 'maison' && FERME_LINKS.includes(onglet) && tabAvailable(onglet) ? onglet : 'ferme');
   }
   ancreVoulue = ancre || null;
   telView();
@@ -654,7 +651,6 @@ const TAB_RENDERERS = {
   recettes: () => [backToFerme() + renderRecettes()],
   commerce: () => [backToFerme() + renderCommerce()],
   techno: () => [backToFerme() + renderTechno()],
-  ville: () => [backToFerme() + renderVille()],
   notifications: () => [renderNotifications()],
 };
 
@@ -769,8 +765,7 @@ registerActions({
       return;
     }
     if (FERME_LINKS.includes(target.dataset.tab) && stageUsable()) {
-      if (target.dataset.tab === 'ville') allerAuLieu('ville');
-      else allerAuLieu('maison', target.dataset.tab);
+      allerAuLieu('maison', target.dataset.tab);
       return;
     }
     setActiveTab(target.dataset.tab);

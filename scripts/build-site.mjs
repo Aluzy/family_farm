@@ -13,8 +13,6 @@
 //   - js/assets-versions.js : l'empreinte de chaque fichier de assets/ (images,
 //     cartes), que js/farm-stage.js ajoute à leurs adresses (« ?v=… »). Une image
 //     ou une carte modifiée est donc rechargée, même sur un téléphone qui l'a en cache ;
-//   - ville-carte.html et infra-monde.html : des renvois vers jeu.html, où la ville et
-//     l'infra-monde s'affichent (js/ville-carte.js, js/infra-monde.js : même table) ;
 //   - les scripts classiques de la page (SCRIPTS) : minifiés un à un (esbuild), sans
 //     changer leur forme (toujours des scripts classiques, mêmes noms globaux) ;
 //   - les autres pages, le style, les images et Phaser, copiés tels quels.
@@ -47,7 +45,7 @@ try {
 }
 
 const OUT = join(ROOT, '_site');
-const PAGES = ['index.html', 'jeu.html', 'encyclopedie.html', 'cookies.html', 'infra-monde.html', 'ville-carte.html'];
+const PAGES = ['index.html', 'jeu.html', 'encyclopedie.html', 'cookies.html'];
 const FOLDERS = ['css', 'assets', 'vendor'];
 // Fichiers de assets/ jamais mis en ligne : le jeu ne les charge pas.
 const ASSETS_HORS_SITE = [
@@ -58,11 +56,10 @@ const ASSETS_HORS_SITE = [
 ];
 const SOURCEMAP = process.argv.includes('--sourcemap');
 // scripts classiques, hors du regroupement : le kit commun des cartes (js/carte/), la ferme
-// (js/carte/ferme/ et js/farm-stage.js), la ville (js/carte/ville/ et js/ville-carte.js)…
+// (js/carte/ferme/ et js/farm-stage.js), la mine (js/grotte.js)
 const CARTE_KIT = ['kit', 'chemins', 'nature', 'gestes', 'lumiere', 'eau', 'triporteur', 'cheval', 'toit', 'jeu'].map((n) => `js/carte/${n}.js`);
 const CARTE_FERME = ['config', 'sol', 'decor', 'soleil', 'camera', 'etiquettes', 'hache', 'pioche', 'coupfort', 'moulin', 'cueillette', 'chantier', 'etage', 'toits', 'fenetres', 'eau', 'peche', 'didacticiel', 'plantation', 'passages', 'machines', 'abeilles', 'botteleuse', 'silo', 'foret', 'modele'].map((n) => `js/carte/ferme/${n}.js`);
-const CARTE_VILLE = ['config', 'circulation', 'ecole', 'hud', 'marche', 'train', 'navette', 'voitures', 'velos', 'trouvailles', 'faune', 'nature', 'peche', 'eau', 'lueurs', 'eclairage', 'ombres', 'voisins', 'metiers', 'livreur', 'transition', 'immeuble', 'lieux', 'habitants', 'monture'].map((n) => `js/carte/ville/${n}.js`);
-const SCRIPTS = ['js/telemetry.js', ...CARTE_KIT, 'js/ambient-life.js', 'js/fermier.js', 'js/famille-ferme.js', ...CARTE_FERME, 'js/farm-stage.js', ...CARTE_VILLE, 'js/ville-carte.js', 'js/infra-monde.js'];
+const SCRIPTS = ['js/telemetry.js', ...CARTE_KIT, 'js/ambient-life.js', 'js/fermier.js', 'js/famille-ferme.js', ...CARTE_FERME, 'js/farm-stage.js', 'js/grotte.js'];
 const ENTRY = 'js/main.js';
 const BUNDLE = 'js/jeu.bundle.js';
 

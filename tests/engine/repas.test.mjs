@@ -59,7 +59,7 @@ test('valeur d\'un aliment : la même pour l\'en-cas du personnage et pour la fa
 test('jauges : chaque membre sauf le personnage, pleines au départ ; la marche et l\'aide les vident', () => {
   const s = garden();
   const F = DATA.FAMILLE.FAIM;
-  assertEqual([F.MAX, F.SEUIL, F.PX_PAR_POINT, F.ECOLE.NIVEAU], [100, 20, 100, 80]);
+  assertEqual([F.MAX, F.SEUIL, F.PX_PAR_POINT], [100, 20, 100]);
   assertEqual(mangeurs(s).map((m) => m.id), ['adulte-2', 'enfant-1', 'enfant-2'], 'pas le personnage principal');
   assertEqual([mangeurs(s).every((m) => jaugeMembre(m) === 100), jaugeFamille(s)], [true, 100]);
   // 1 point tous les 100 pixels de marche
@@ -90,25 +90,12 @@ test('au seuil, le membre mange jusqu\'à rassasié ; sans rien à manger, il a 
   assertEqual([s.nuit.affames, 'affame' in m], [['enfant-2'], false], 'la nuit le note, et le jour suivant repart');
 });
 
-test('l\'école : les jours d\'école, les enfants rentrent à 17 h 30 avec 80 au plus ; au coucher, ils mangent jusqu\'à 100', () => {
+test('pas d\'école : les enfants ne rentrent pas affamés en fin d\'après-midi', () => {
   const s = boite(garden(), { conserve: 100 });
   assertEqual(s.day, 1, 'un lundi');
-  s.awakeMs = awakeMsAtHour(17);
+  s.awakeMs = awakeMsAtHour(17.5);
   tick(s, 1);
   assertEqual(mangeurs(s).map(jaugeMembre), [100, 100, 100]);
-  s.awakeMs = awakeMsAtHour(DATA.FAMILLE.FAIM.ECOLE.RETOUR_H);
-  tick(s, 1);
-  assertEqual(mangeurs(s).map(jaugeMembre), [100, 80, 80], 'seuls les enfants');
-  s.awakeMs = awakeMsAtHour(DATA.TEMPS.HEURE_NUIT);
-  assert(startNight(s), 'la famille se couche');
-  assertEqual(mangeurs(s).map(jaugeMembre), [100, 100, 100], 'les enfants ont mangé avant de dormir (4 conserves chacun, la jauge plafonne à 100)');
-  assertEqual(boiteCount(s, 'conserve'), 92);
-  // un mercredi : pas d'école
-  const t = garden();
-  t.day = 3;
-  t.awakeMs = awakeMsAtHour(18);
-  tick(t, 1);
-  assertEqual(mangeurs(t).map(jaugeMembre), [100, 100, 100]);
 });
 
 test('réveil : 60 + 40 × la jauge moyenne de la famille au coucher', () => {

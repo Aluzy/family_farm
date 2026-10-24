@@ -83,7 +83,7 @@ export const EFFETS_TECHNO = [
   'frigoConso', // techPct (energy.js)
   'gouter', // techFlag (family.js)
   'grainesBonus', // techSum (crops.js)
-  'grotte', // techFlag (outils.js, ville-carte.js)
+  'grotte', // techFlag (outils.js, grotte.js)
   'groupeEconome', // techFlag (crops.js)
   'parBle', // techFlag (animals.js)
   'pecheJour', // techSum (outils.js)
@@ -118,9 +118,6 @@ export function sourcesOf(data, id) {
     for (const champ of ['produit', 'laine', 'lait', 'laitAlpage']) if (a[champ] === id) out.push(`animal ${aid}`);
   }
   for (const [eau, p] of Object.entries((data.CANNE && data.CANNE.PRISES) || {})) if (id in p) out.push(`pêche ${eau}`);
-  for (const [sid, s] of Object.entries((data.VILLE && data.VILLE.SORTIES) || {})) {
-    if (id in (s.butin || {}) || (s.cueillettes || []).some((c) => id in c)) out.push(`sortie ${sid}`);
-  }
   const A = data.ATELIER;
   for (const [rid, r] of Object.entries((A && A.RECETTES) || {})) if (id in (r.sortie || {})) out.push(`atelier ${rid}`);
   for (const [rid, r] of Object.entries((A && A.RAMASSAGE) || {})) if (r.objet === id) out.push(`ramassage ${rid}`);
@@ -135,15 +132,13 @@ export function sourcesOf(data, id) {
   if (data.FAUX && id === 'fibre') out.push('faux');
   if (data.BOTTELEUSE && data.PATURAGE && id === data.PATURAGE.NOURRITURE) out.push('botteleuse');
   if (id.startsWith('minerai_')) out.push('grotte');
-  if (it.trouvaille) out.push(`trouvaille (${it.trouvaille})`);
+  if (it.trouvaille) out.push(`trouvaille du grand monde (${it.trouvaille})`);
   if (it.cueillette) out.push(`cueillette (${it.cueillette})`);
   if (data.DEPART && id in data.DEPART.INVENTAIRE) out.push('DEPART.INVENTAIRE');
   if (data.DEPART && data.DEPART.ETAT_INITIAL && id in data.DEPART.ETAT_INITIAL.INVENTAIRE) out.push('DEPART.ETAT_INITIAL.INVENTAIRE');
   if (data.FAMILLE && id in data.FAMILLE.RESERVE_DEPART) out.push('FAMILY.RESERVE_DEPART');
   for (const [lid, l] of Object.entries(data.COURRIER || {})) if (id in (l.cadeaux || {})) out.push(`courrier ${lid}`);
-  for (const [bid, b] of Object.entries((data.VILLE && data.VILLE.BOUTIQUES && data.VILLE.BOUTIQUES.LISTE) || {})) if ((b.objets || []).includes(id)) out.push(`boutique ${bid}`);
-  if (it.ville) out.push('marché de la ville');
-  else if (it.rachetable !== false) out.push('Marché');
+  if (it.rachetable !== false) out.push('Marché');
   if (it.retire) out.push('ancienne sauvegarde (retire)');
   return out;
 }
@@ -368,26 +363,19 @@ export function validateData(data) {
     const q = lettre.quand || {};
     if (q.debloque !== undefined && !elements.includes(q.debloque)) err(where, `quand.debloque « ${q.debloque} » inconnu (NIVEAUX.ELEMENTS)`);
   }
-  // Commerces de la ferme, entreprises et sorties de la ville, Silo, Étable, joueur simulé.
+  // Commerces de la ferme, bonheur, Silo, Étable, joueur simulé.
   // (Les meubles, eux, ne citent aucun objet : rien à vérifier.)
   const C = data.COMMERCE || {};
   for (const [id, t] of Object.entries(C.TYPES || {})) for (const item of t.prend || []) needItem(`COMMERCE.TYPES.${id}.prend`, item);
-  const V = data.VILLE || {};
-  for (const [id, e] of Object.entries((V.ENTREPRISES && V.ENTREPRISES.LISTE) || {})) {
-    for (const item of e.intrants || []) needItem(`VILLE.ENTREPRISES.LISTE.${id}.intrants`, item);
-  }
-  for (const [id, s] of Object.entries(V.SORTIES || {})) {
-    for (const item of Object.keys(s.butin || {})) needItem(`VILLE.SORTIES.${id}.butin`, item);
-    (s.cueillettes || []).forEach((c, i) => { for (const item of Object.keys(c)) needItem(`VILLE.SORTIES.${id}.cueillettes[${i}]`, item); });
-  }
-  for (const item of (V.BONHEUR && V.BONHEUR.SPECIALES && V.BONHEUR.SPECIALES.objets) || []) needItem('VILLE.BONHEUR.SPECIALES.objets', item);
+  const B = data.BONHEUR || {};
+  for (const item of (B.SPECIALES && B.SPECIALES.objets) || []) needItem('BONHEUR.SPECIALES.objets', item);
   if (data.SILO) needItem('SILO.ITEM', data.SILO.ITEM);
   if (data.PATURAGE) needItem('PATURAGE.NOURRITURE', data.PATURAGE.NOURRITURE);
   const SIM = data.SIMULATION || {};
   for (const item of Object.keys(SIM.ACHATS_CUISINE || {})) needItem('SIMULATION.ACHATS_CUISINE', item);
   if (SIM.DEPANNAGE) needItem('SIMULATION.DEPANNAGE.item', SIM.DEPANNAGE.item);
 
-  /* les grottes et le bus de ligne (ville.json, lus par les cartes : js/carte/ville/config.js) */
+  /* la mine (data/grotte.json, lue par sa scène : js/grotte.js) */
   const G = data.GROTTE;
   if (G) {
     for (const cle of ['LARGEUR', 'HAUTEUR', 'NIVEAUX', 'PASSES', 'COUPS']) {
@@ -404,15 +392,6 @@ export function validateData(data) {
       needItem('GROTTE.POIDS', `minerai_${sorte}`);
       const ok = (n) => typeof n === 'number' && n >= 0;
       if (!(p && ('FIXE' in p ? ok(p.FIXE) : ok(p.DEPUIS) && ok(p.PENTE)))) err(`GROTTE.POIDS.${sorte}`, 'FIXE, ou DEPUIS et PENTE : des nombres positifs');
-    }
-  }
-  const NV = data.NAVETTE;
-  if (NV) {
-    const h = NV.HORAIRES || {};
-    if (!(isInt(h.DEBUT) && isInt(h.FIN) && h.DEBUT >= 0 && h.FIN <= 24 && h.DEBUT < h.FIN)) err('NAVETTE.HORAIRES', `DEBUT et FIN : des heures entières, 0 ≤ DEBUT < FIN ≤ 24 ; reçu ${JSON.stringify(h)}`);
-    for (const cle of ['MONTEE', 'DEPART', 'DESCENTE', 'REPART']) {
-      const d = (NV.DUREES || {})[cle];
-      if (!(typeof d === 'number' && d >= 0)) err(`NAVETTE.DUREES.${cle}`, `une durée en secondes ; reçu ${JSON.stringify(d)}`);
     }
   }
 

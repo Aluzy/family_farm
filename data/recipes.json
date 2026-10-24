@@ -103,7 +103,7 @@
       "sol_mosaique": { "entrees": { "pierre": 3, "lingot_cuivre": 1 }, "sortie": { "sol_mosaique": 2 } },
       "barriere": { "entrees": { "planche": 1 }, "sortie": { "barriere": 2 } },
       "chemin": { "entrees": { "pierre": 1 }, "sortie": { "chemin": 2 } },
-      "lanterne": { "entrees": { "champignon_lumineux": 1, "bois_infra": 1 }, "sortie": { "lanterne": 1 } },
+      "lanterne": { "entrees": { "champignon_lumineux": 1, "bois": 2 }, "sortie": { "lanterne": 1 } },
       "paillasse": { "entrees": { "fibre": 2 }, "sortie": { "paillasse": 1 } },
       "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 } },
       "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },

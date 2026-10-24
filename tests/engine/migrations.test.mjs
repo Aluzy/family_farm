@@ -56,8 +56,9 @@ test('migration v15 → v16 : une partie sans animaux ne perd ni ne gagne rien',
   assertEqual(m.paturage, { construit: false, places: 0, compteur: 0, compteurVache: 0, moutons: [], vaches: [] });
   assertEqual(countItem(m, 'paille'), 0, 'pas d\'animaux : pas de paille offerte');
   assertEqual(m.nuit.etable, newStableReport());
-  // même forme qu'une partie neuve, et la partie continue
-  assertEqual(Object.keys(m).sort(), Object.keys(ancienne(9)).sort());
+  // même forme qu'une partie neuve (state.ville en plus : la migration v50 → v51 l'ôte), et la
+  // partie continue
+  assertEqual(Object.keys(m).filter((k) => k !== 'ville').sort(), Object.keys(ancienne(9)).sort());
   assertEqual(Object.keys(m.paturage), Object.keys(createInitialState(9).paturage));
   assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
   // une partie déjà en version 16 n'est pas retouchée

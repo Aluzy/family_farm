@@ -372,7 +372,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "terre_sauvage",
      "terme": "Terre sauvage",
-     "description": "La ferme de chaque partie : une terre de 144 × 114 cases tirée d'une graine (la même graine donne toujours la même ferme), sans aucun bâtiment. Des bois, des étangs, des rochers, des buissons et de l'herbe haute ; un chemin mène à l'est vers la campagne et la ville. Tout s'y ramasse, se fabrique et se bâtit bloc par bloc.",
+     "description": "La ferme de chaque partie : une terre de 144 × 114 cases tirée d'une graine (la même graine donne toujours la même ferme), sans aucun bâtiment. Des bois, des étangs, des rochers, des buissons et de l'herbe haute . Tout s'y ramasse, se fabrique et se bâtit bloc par bloc.",
      "liens": [
       "ramassage",
       "atelier",
@@ -596,7 +596,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "lanterne",
      "terme": "Lanterne scintillante",
-     "description": "Bientôt disponible ! Un bloc qui éclaire autour de lui la nuit. Elle se fabrique à l'Atelier avec un champignon lumineux et un morceau d'arbre de l'infra-monde.",
+     "description": "Bientôt disponible ! Un bloc qui éclaire autour de lui la nuit. Elle se fabrique à l'Atelier avec un champignon lumineux (cueilli dans la mine) et deux bois.",
      "liens": [
       "atelier"
      ],
@@ -1066,16 +1066,13 @@ export const ENCYCLOPEDIE = {
     {
      "id": "fromage_d_alpage",
      "terme": "Herbes, lait et fromage d'alpage",
-     "description": "Bientôt disponible ! À la montagne, les herbes de montagne se cueillent dans les prés : ce sont les trouvailles les plus courantes, et elles se gardent 3 nuits. Dans l'Étable, le bouton « Nourrir les vaches aux herbes » les donne aux vaches : chaque nuit, une vache mange 1 herbe à la place de ses 2 pailles et donne du lait d'alpage au lieu du lait ; quand les herbes manquent, elle reprend sa paille. En Cuisine, une fois la Laiterie débloquée, 3 laits d'alpage font un fromage d'alpage, plus cher que le fromage frais. Le fromage d'alpage s'achète aussi au marché de la ville et sert à la raclette.",
+     "description": "Bientôt disponible ! Les herbes de montagne se cueilleront dans les prés de la montagne du grand monde ; elles se gardent 3 nuits. Dans l'Étable, le bouton « Nourrir les vaches aux herbes » les donne aux vaches : chaque nuit, une vache mange 1 herbe à la place de ses 2 pailles et donne du lait d'alpage au lieu du lait ; quand les herbes manquent, elle reprend sa paille. En Cuisine, une fois la Laiterie débloquée, 3 laits d'alpage font un fromage d'alpage, plus cher que le fromage frais. Le fromage d'alpage s'achète aussi au marché de la ville et sert à la raclette.",
      "liens": [
       "vache",
       "etable",
-      "montagne",
-      "trouvailles",
       "lait",
       "cuisine",
-      "raclette",
-      "produits_de_la_ville"
+      "raclette"
      ],
      "decouverte": [
       "objet:herbes_montagne",
@@ -1202,12 +1199,11 @@ export const ENCYCLOPEDIE = {
     {
      "id": "conserve",
      "terme": "Boîte de conserve",
-     "description": "Aliment non périssable présent dès le début de la partie (40 boîtes), qui laisse le temps de lancer les premières cultures avant que la boîte à nourriture ne soit vide. Ne peut pas être racheté une fois épuisé, et ne compte pas pour l'autonomie. À ne pas confondre avec le bocal de légumes, ni avec les boîtes de la Conserverie de la ville, vendues aussitôt.",
+     "description": "Aliment non périssable présent dès le début de la partie (40 boîtes), qui laisse le temps de lancer les premières cultures avant que la boîte à nourriture ne soit vide. Ne peut pas être racheté une fois épuisé, et ne compte pas pour l'autonomie. À ne pas confondre avec le bocal de légumes.",
      "liens": [
       "apport_journalier",
       "potager",
-      "bocal_de_legumes",
-      "entreprises"
+      "bocal_de_legumes"
      ],
      "decouverte": [
       "objet:conserve"
@@ -1227,7 +1223,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "apport_journalier",
      "terme": "Faim de la famille",
-     "description": "Chaque membre de la famille, sauf le personnage principal, a une jauge de faim de 0 à 100 (dans la fenêtre Famille). Elle baisse quand il marche sur la carte (1 point tous les 100 pixels) et quand il aide aux bêtes (5 points par tâche). À 20, il va manger jusqu'à 100 dans la boîte à nourriture (ou au réfrigérateur) ; s'il n'y trouve rien, il a faim et perd du bonheur la nuit. Les jours d'école, les enfants rentrent avec au plus 80 et mangent jusqu'à 100 avant d'aller dormir. Les animaux de compagnie n'y comptent pas.",
+     "description": "Chaque membre de la famille, sauf le personnage principal, a une jauge de faim de 0 à 100 (dans la fenêtre Famille). Elle baisse quand il marche sur la carte (1 point tous les 100 pixels) et quand il aide aux bêtes (5 points par tâche). À 20, il va manger jusqu'à 100 dans la boîte à nourriture (ou au réfrigérateur) ; s'il n'y trouve rien, il a faim et perd du bonheur la nuit. Les animaux de compagnie n'y comptent pas.",
      "liens": [
       "famille",
       "adulte",
@@ -1538,8 +1534,7 @@ export const ENCYCLOPEDIE = {
      "description": "Plat préparé à la cuisine à partir d'œufs et de champignons cueillis en forêt.",
      "liens": [
       "cuisine",
-      "oeuf",
-      "cueillettes_foret"
+      "oeuf"
      ],
      "decouverte": [
       "objet:omelette_champignons",
@@ -1553,8 +1548,7 @@ export const ENCYCLOPEDIE = {
      "liens": [
       "cuisine",
       "peche",
-      "ail",
-      "produits_de_la_ville"
+      "ail"
      ],
      "decouverte": [
       "objet:poisson_grille",
@@ -1568,8 +1562,7 @@ export const ENCYCLOPEDIE = {
      "liens": [
       "cuisine",
       "patate",
-      "fromage_d_alpage",
-      "produits_de_la_ville"
+      "fromage_d_alpage"
      ],
      "decouverte": [
       "objet:raclette",
@@ -1579,11 +1572,9 @@ export const ENCYCLOPEDIE = {
     {
      "id": "creme_de_marrons",
      "terme": "Crème de marrons",
-     "description": "Plat préparé à la cuisine à partir de châtaignes cueillies en forêt et de sucre de la ville.",
+     "description": "Plat préparé à la cuisine à partir de châtaignes et de sucre.",
      "liens": [
-      "cuisine",
-      "cueillettes_foret",
-      "produits_de_la_ville"
+      "cuisine"
      ],
      "decouverte": [
       "objet:creme_marrons",
@@ -1593,12 +1584,10 @@ export const ENCYCLOPEDIE = {
     {
      "id": "tarte_aux_myrtilles",
      "terme": "Tarte aux myrtilles",
-     "description": "Plat cuit au four à partir de farine, de myrtilles cueillies en forêt et de sucre.",
+     "description": "Plat cuit au four à partir de farine, de myrtilles et de sucre.",
      "liens": [
       "four",
-      "farine",
-      "cueillettes_foret",
-      "produits_de_la_ville"
+      "farine"
      ],
      "decouverte": [
       "objet:tarte_myrtilles",
@@ -1608,11 +1597,10 @@ export const ENCYCLOPEDIE = {
     {
      "id": "pain_d_epices",
      "terme": "Pain d'épices",
-     "description": "Plat cuit au four à partir de farine, de miel et d'épices de la ville.",
+     "description": "Plat cuit au four à partir de farine, de miel et d'épices.",
      "liens": [
       "four",
-      "farine",
-      "produits_de_la_ville"
+      "farine"
      ],
      "decouverte": [
       "objet:pain_epices",
@@ -1635,7 +1623,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "quenelle_de_poisson",
      "terme": "Quenelle de poisson",
-     "description": "Plat préparé à la cuisine à partir de farine et d'un poisson pêché à la canne (ou acheté en ville).",
+     "description": "Plat préparé à la cuisine à partir de farine et d'un poisson pêché à la canne.",
      "liens": [
       "cuisine",
       "farine",
@@ -1691,7 +1679,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "hache",
      "terme": "Hache",
-     "description": "Outil acheté une fois au Marché (60 pièces) ou fabriqué à l'Atelier. Hache en main, un appui sur un arbre de la ferme ou du chemin de la ville donne un coup : 3 énergie et 1 bois. L'arbre tombe au 3e coup. Sur la ferme, il laisse sa graine (une pomme de pin pour un sapin, un gland pour un autre arbre) et ne repousse pas : on replante sa graine où l'on veut. Sur les autres cartes, il repousse 1 à 3 jours plus tard. Les buissons de la ferme tombent d'un coup, avec leurs baies.",
+     "description": "Outil acheté une fois au Marché (60 pièces) ou fabriqué à l'Atelier. Hache en main, un appui sur un arbre de la ferme donne un coup : 3 énergie et 1 bois. L'arbre tombe au 3e coup. Sur la ferme, il laisse sa graine (une pomme de pin pour un sapin, un gland pour un autre arbre) et ne repousse pas : on replante sa graine où l'on veut. Sur les autres cartes, il repousse 1 à 3 jours plus tard. Les buissons de la ferme tombent d'un coup, avec leurs baies.",
      "liens": [
       "graines_d_arbre",
       "bois_et_pierre",
@@ -1732,7 +1720,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "canne_a_peche",
      "terme": "Canne à pêche",
-     "description": "Outil acheté une fois au Marché (60 pièces). Canne en main, un appui sur l'eau lance la ligne (4 énergie) : dans l'étang ou la mare de la ferme, le lac de la montagne ou la mer, depuis le ponton de la plage. Il arrive que rien ne morde.",
+     "description": "Outil acheté une fois au Marché (60 pièces). Canne en main, un appui sur l'eau lance la ligne (4 énergie) : dans l'étang ou la mare de la ferme. Il arrive que rien ne morde.",
      "liens": [
       "outils",
       "peche"
@@ -1825,180 +1813,28 @@ export const ENCYCLOPEDIE = {
     {
      "id": "commerce",
      "terme": "Commerce",
-     "description": "Choisi au niveau 10, dans Maison › Commerce : étal de bocaux (4 légumes → 1 bocal de légumes, vendu 24 pièces), crèmerie (3 laits → 1 fromage, 36 pièces) ou métier à tisser (2 laines → 1 tissu, 36 pièces). Chaque nuit, après le repas de la famille, il transforme jusqu'à son quota et vend tout seul, sans passer par le Marché : 1 XP par pièce gagnée, ni énergie ni électricité. Capacité de 10 transformations par nuit, agrandie à 20, 35 puis 50. Le premier choix est gratuit ; en changer coûte 5 000 pièces. Il vend plus cher qu'une recette (130 % du prix des ingrédients), mais moins qu'une entreprise de la ville.",
+     "description": "Choisi au niveau 10, dans Maison › Commerce : étal de bocaux (4 légumes → 1 bocal de légumes, vendu 24 pièces), crèmerie (3 laits → 1 fromage, 36 pièces) ou métier à tisser (2 laines → 1 tissu, 36 pièces). Chaque nuit, après le repas de la famille, il transforme jusqu'à son quota et vend tout seul, sans passer par le Marché : 1 XP par pièce gagnée, ni énergie ni électricité. Capacité de 10 transformations par nuit, agrandie à 20, 35 puis 50. Le premier choix est gratuit ; en changer coûte 5 000 pièces. Il vend plus cher qu'une recette (130 % du prix des ingrédients).",
      "liens": [
       "vache",
       "mouton",
-      "comptoir",
-      "entreprises"
+      "comptoir"
      ],
      "decouverte": [
       "commerce"
-     ]
-    },
-    {
-     "id": "etals_de_la_ville",
-     "terme": "Étals de la ville",
-     "description": "Bientôt disponible ! Les étals du marché de la ville, où le personnage vend lui-même, en s'y promenant, les produits de la ferme (légumes, fruits, produits, boîtes de conserve) à 130 % de leur prix. Ce qui vient de la ville ne s'y revend pas.",
-     "liens": [
-      "ville",
-      "comptoir",
-      "pieces"
-     ],
-     "decouverte": [
-      "carte:ville"
-     ]
-    },
-    {
-     "id": "entreprises",
-     "terme": "Entreprises de la ville",
-     "description": "Bientôt disponible ! Trois entrepôts de la ville s'achètent en s'y promenant : la Conserverie (1 500 pièces : 3 légumes → 1 boîte de conserve, 24 pièces), la Confiturerie (2 000 pièces : 3 fruits → 1 pot de confiture, 24 pièces) et la Fromagerie (2 500 pièces : 2 litres de lait → 1 fromage, 32 pièces). Chaque jour à 9 h, chacune prend ce qu'il lui faut dans le stock de la ferme (l'inventaire, puis le frigo), jusqu'à son quota réglable, et vend aussitôt ce qu'elle fabrique. C'est le haut de l'échelle : une recette vend ses ingrédients ×1,3, un commerce de la ferme ×1,5, une entreprise ×2.",
-     "liens": [
-      "ville",
-      "commerce",
-      "conserve",
-      "lait"
-     ],
-     "decouverte": [
-      "carte:ville"
      ]
     }
    ]
   },
   {
-   "id": "ville",
+   "id": "mine",
    "icone": "🏙️",
-   "nom": "Ville & excursions",
+   "nom": "Mine & pêche",
    "entrees": [
-    {
-     "id": "ville",
-     "terme": "Ville",
-     "description": "La ville voisine. Depuis l'onglet Ville, la famille y fait des sorties (parc, bibliothèque, cinéma…, une fois par jour chacune, retour avant 22 h) qui remontent le bonheur, et un adulte y fait les courses au marché de la ville (2 h aller-retour, 3 pièces de bus). Le personnage pourra aussi s'y promener lui-même (bientôt disponible !) : étals, entrepôts des entreprises, habitants, et la gare d'où part le train.",
-     "liens": [
-      "bonheur",
-      "produits_de_la_ville",
-      "etals_de_la_ville",
-      "entreprises",
-      "gare",
-      "navette"
-     ],
-     "decouverte": [
-      "carte:ville",
-      "onglet:ville"
-     ]
-    },
-    {
-     "id": "produits_de_la_ville",
-     "terme": "Produits de la ville",
-     "description": "Ce qu'on trouve au marché de la ville et pas à celui de la ferme : le poisson, le miel, le sucre, les épices et le fromage d'alpage (que la ferme peut aussi faire elle-même, avec le lait de vaches nourries aux herbes de la montagne). Ils servent surtout en cuisine (raclette, pain d'épices, crème de marrons, tarte aux myrtilles) et ne se revendent pas aux étals.",
-     "liens": [
-      "ville",
-      "raclette",
-      "pain_d_epices",
-      "creme_de_marrons",
-      "tarte_aux_myrtilles",
-      "fromage_d_alpage"
-     ],
-     "decouverte": [
-      "carte:ville",
-      "objet:sucre",
-      "objet:epices",
-      "objet:poisson"
-     ]
-    },
-    {
-     "id": "cueillettes_foret",
-     "terme": "Cueillettes de la forêt",
-     "description": "La sortie en forêt (le bus, depuis l'onglet Ville) rapporte la cueillette du jour, qui change d'un jour à l'autre : des champignons, des myrtilles, ou des champignons et des châtaignes. Ils se mangent tels quels ou en cuisine (omelette aux champignons, tarte aux myrtilles, crème de marrons).",
-     "liens": [
-      "ville",
-      "omelette_aux_champignons",
-      "tarte_aux_myrtilles",
-      "creme_de_marrons"
-     ],
-     "decouverte": [
-      "objet:champignon",
-      "objet:myrtille",
-      "objet:chataigne"
-     ]
-    },
-    {
-     "id": "chemin_de_campagne",
-     "terme": "Chemin de campagne",
-     "description": "Bientôt disponible ! Au bout du chemin de la ferme, la flèche mène à une carte de campagne, tirée pour chaque partie, entre la ferme et la ville : des arbres et des rochers pour la hache et la pioche, des voisins et leurs maisons, et l'abri de bus de la navette.",
-     "liens": [
-      "navette",
-      "hache",
-      "pioche",
-      "carte"
-     ],
-     "decouverte": [
-      "carte:transition"
-     ]
-    },
-    {
-     "id": "navette",
-     "terme": "Bus et navette",
-     "description": "Bientôt disponible ! La navette relie l'abri de bus du chemin de campagne à la gare, en ville, dans les deux sens, toute la journée : on attend à l'abri, le bus s'arrête, on monte. Le matin et le soir des jours d'école, le bus de l'école passe aussi prendre les enfants ; un autre bus emmène la famille en forêt.",
-     "liens": [
-      "chemin_de_campagne",
-      "gare",
-      "ville",
-      "cueillettes_foret"
-     ],
-     "decouverte": [
-      "carte:transition"
-     ]
-    },
-    {
-     "id": "gare",
-     "terme": "Train et gare",
-     "description": "Bientôt disponible ! De la gare de la ville, le train mène à la montagne (vers le nord) et à la plage (vers le sud), et de l'une à l'autre. Un appui sur la gare ouvre les départs ; on va sur le quai, le train arrive, on monte. La montagne et la plage sont des terminus.",
-     "liens": [
-      "ville",
-      "montagne",
-      "plage",
-      "navette"
-     ],
-     "decouverte": [
-      "carte:montagne",
-      "carte:plage"
-     ]
-    },
-    {
-     "id": "montagne",
-     "terme": "Montagne",
-     "description": "Bientôt disponible ! Carte des alpages, au bout du train : des trouvailles à ramasser (herbes de montagne dans les prés, ammonite, trilobite, quartz, améthyste), des animaux à regarder, le lac où l'on pêche l'omble chevalier, et les entrées des grottes.",
-     "liens": [
-      "gare",
-      "trouvailles",
-      "peche",
-      "grotte",
-      "fromage_d_alpage"
-     ],
-     "decouverte": [
-      "carte:montagne"
-     ]
-    },
-    {
-     "id": "plage",
-     "terme": "Plage",
-     "description": "Bientôt disponible ! Carte du bord de mer, au bout du train : des trouvailles à ramasser (coquille Saint-Jacques, bulot, corail, perle) et la pêche en mer depuis le ponton (dorade, sardine, anchois). La plage n'a pas de grotte.",
-     "liens": [
-      "gare",
-      "trouvailles",
-      "peche"
-     ],
-     "decouverte": [
-      "carte:plage"
-     ]
-    },
     {
      "id": "grotte",
      "terme": "Grotte",
-     "description": "Sous la ferme, par l'entrée de la mine (un tas de terre et sa porte sombre, caché dans les bois : on ressort par elle), et sous la montagne, par ses entrées (bientôt disponible !) : des niveaux tirés au hasard chaque jour, de plus en plus profonds. On descend par le puits, on remonte par l'échelle ; il fait noir, on n'y voit qu'autour de soi. La pioche en main, on y prend le minerai des murs : du fer partout, du cuivre, de l'or et du platine plus bas.",
+     "description": "Sous la ferme, par l'entrée de la mine (un tas de terre et sa porte sombre, caché dans les bois : on ressort par elle) : des niveaux tirés au hasard chaque jour, de plus en plus profonds. On descend par le puits, on remonte par l'échelle ; il fait noir, on n'y voit qu'autour de soi. La pioche en main, on y prend le minerai des murs : du fer partout, du cuivre, de l'or et du platine plus bas.",
      "liens": [
-      "montagne",
       "minerai",
       "pioche",
       "lingot"
@@ -2009,27 +1845,11 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
-     "id": "trouvailles",
-     "terme": "Trouvailles",
-     "description": "Bientôt disponible ! Herbes, fossiles et pierres de la montagne, coquillages, corail et perles de la plage : chaque jour, certains endroits en ont une, à ramasser d'un appui. Elle va dans l'inventaire et se vend ; ce qu'on a ramassé ne revient que le lendemain. Seules les herbes de montagne périment (3 nuits) : elles nourrissent les vaches.",
-     "liens": [
-      "montagne",
-      "plage",
-      "comptoir"
-     ],
-     "decouverte": [
-      "carte:montagne",
-      "carte:plage"
-     ]
-    },
-    {
      "id": "peche",
      "terme": "Pêche et poissons",
-     "description": "À la canne : truite et brochet dans l'étang (6 prises par jour au plus) et la mare (3) de la ferme, omble chevalier et truite dans le lac de la montagne (4), dorade, sardine et anchois en mer, depuis le ponton de la plage (8) : le lac et la mer, bientôt disponibles ! Chaque lancer coûte 4 énergie. Le poisson frais se garde 2 nuits : il se mange, se vend ou se cuisine (poisson grillé à l'ail, quenelle de poisson).",
+     "description": "À la canne : truite et brochet dans l'étang (6 prises par jour au plus) et la mare (3) de la ferme. Les lacs, les rivières et la mer du grand monde viendront avec leurs poissons. Chaque lancer coûte 4 énergie. Le poisson frais se garde 2 nuits : il se mange, se vend ou se cuisine (poisson grillé à l'ail, quenelle de poisson).",
      "liens": [
       "canne_a_peche",
-      "montagne",
-      "plage",
       "poisson_grille",
       "quenelle_de_poisson"
      ],
@@ -2144,12 +1964,11 @@ export const ENCYCLOPEDIE = {
     {
      "id": "bonheur",
      "terme": "Bonheur",
-     "description": "Valeur de 0 à 100 pour chaque membre de la famille (60 au départ). Chaque nuit, il baisse de 5, et de 2 de plus pour qui a eu faim sans rien trouver dans la boîte à nourriture ; les plats mangés dans la journée le remontent : chacun des 3 meilleurs plats différents rend 3 (Cuisine) ou 5 (Four), +2 avec de l'huile ou un fruit, +4 avec du cacao, du café ou de la vanille ; les aliments crus ne donnent rien. Les sorties en ville le remontent aussi. Le bonheur moyen réduit les coûts d'énergie du personnage : jusqu'à moitié prix à 100 de bonheur.",
+     "description": "Valeur de 0 à 100 pour chaque membre de la famille (60 au départ). Chaque nuit, il baisse de 5, et de 2 de plus pour qui a eu faim sans rien trouver dans la boîte à nourriture ; les plats mangés dans la journée le remontent : chacun des 3 meilleurs plats différents rend 3 (Cuisine) ou 5 (Four), +2 avec de l'huile ou un fruit, +4 avec du cacao, du café ou de la vanille ; les aliments crus ne donnent rien. Le bonheur moyen réduit les coûts d'énergie du personnage : jusqu'à moitié prix à 100 de bonheur.",
      "liens": [
       "repas",
       "energie_personnage",
-      "famille",
-      "ville"
+      "famille"
      ],
      "decouverte": [
       "depart"
@@ -2434,7 +2253,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "enfant",
      "terme": "Enfant",
-     "description": "Membre de la famille, qui va à l'école les jours d'école et rentre affamé. La famille en compte deux au départ.",
+     "description": "Membre de la famille. La famille en compte deux au départ.",
      "liens": [
       "apport_journalier",
       "famille"

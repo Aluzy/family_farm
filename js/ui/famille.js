@@ -396,7 +396,7 @@ function repasCardHtml() {
       <div class="card">
         <span class="card-title ration-title"><span>🍽️ Famille rassasiée : <span class="num">${formatPercent(jaugeFamille(state))}</span></span><span class="row ration-title-end">${faim ? `<span class="chip warn">⚠️ ${faim} ${faim > 1 ? 'ont' : 'a'} faim</span>` : ''}${helpToggleHtml('ration', 'faim de la famille')}</span></span>
         <span class="muted">${ou}</span>
-        <span class="muted" id="ration-help"${helpOpen.has('ration') ? '' : ' hidden'}>Chaque membre (sauf toi) a une jauge de faim : elle baisse quand il marche et quand il aide. À ${F.SEUIL}, il va manger jusqu'à ${F.MAX} ; s'il ne trouve rien, il perd du bonheur la nuit. Les jours d'école, les enfants rentrent avec ${F.ECOLE.NIVEAU} au plus et mangent avant d'aller dormir. Plus la famille est rassasiée au coucher, plus ton énergie remonte en dormant : ${formatNumber(energyLevel({ energie: sleepTarget(state) }))} cette nuit.</span>
+        <span class="muted" id="ration-help"${helpOpen.has('ration') ? '' : ' hidden'}>Chaque membre (sauf toi) a une jauge de faim : elle baisse quand il marche et quand il aide. À ${F.SEUIL}, il va manger jusqu'à ${F.MAX} ; s'il ne trouve rien, il perd du bonheur la nuit. Plus la famille est rassasiée au coucher, plus ton énergie remonte en dormant : ${formatNumber(energyLevel({ energie: sleepTarget(state) }))} cette nuit.</span>
       </div>`;
 }
 

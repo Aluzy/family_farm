@@ -7,7 +7,7 @@ import { conditionRemplie } from './decouverte.js';
    en fait js/encyclopedie.generated.js), découverte dès qu'une de ses conditions est remplie
    (js/engine/decouverte.js : un objet obtenu, un outil, une carte visitée…).
    state.encyclopedie = { vues: { id: jour de la découverte }, lues: { id: true },
-   evenements: { 'carte:ville': true } }. Sans `vues` (une ancienne partie, ou avant le premier
+   evenements: { 'carte:grotte': true } }. Sans `vues` (une ancienne partie, ou avant le premier
    passage) : majEncyclopedie les crée, et ce qui est déjà connu n'est pas « nouveau ». */
 
 export const CATEGORIES = ENCYCLOPEDIE.categories;
@@ -52,7 +52,7 @@ export function pagesConnues(state, categorie = null) {
   return ids.filter((id) => e.vues && e.vues[id] !== undefined);
 }
 
-// Note un événement que l'état ne garde pas (« carte:ville » : la carte a été visitée).
+// Note un événement que l'état ne garde pas (« carte:grotte » : la carte a été visitée).
 export function noterEncyclopedie(state, evenement) {
   if (!etat(state)) state.encyclopedie = {};
   state.encyclopedie.evenements = state.encyclopedie.evenements || {};

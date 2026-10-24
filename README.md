@@ -4,13 +4,14 @@ Un jeu de gestion agricole familiale en pixel art : une famille (quatre personne
 s'installe sur une **terre sauvage** et doit, à terme, se nourrir de ce que la ferme produit.
 On y ramasse des pierres et du bois, on fauche l'herbe haute (des fibres, des bottes de paille par la botteleuse), on fabrique à l'Atelier, on **construit bloc
 par bloc** (murs, portes, fenêtres, étage, toits), on cultive, on élève poules, moutons, vaches
-et abeilles, on cuisine, et l'on descend à la mine, cachée dans les bois de la ferme. Les
-autres cartes (un chemin de transition, une ville avec son économie et ses habitants, la
-montagne, la plage, leurs grottes et l'infra-monde) existent mais sont fermées dans cette
-première version : `CARTES.AUTRES` (`data/general.json`) les rouvre, et le god mode (⚙️ Options,
-sous le mode test) y mène toujours.
+et abeilles, on cuisine, et l'on descend à la mine, cachée dans les bois de la ferme. Le jeu
+n'a que ces deux lieux : la ferme et sa mine (une grotte à plusieurs niveaux). Les anciennes
+autres cartes (la ville, le chemin de transition, la montagne, la plage, le train, l'école,
+l'infra-monde) ont été retirées pour faire place au **grand monde**, une seule carte faite de
+biomes et découverte en marchant (projet : [`docs/grand-monde.md`](docs/grand-monde.md)) ; le
+jeu d'avant est gardé tel quel sur la branche `archive/jeu-avant-grand-monde`.
 
-- **Version** : 1.22.0 (affichée dans ⚙️ Options › À propos ; format de sauvegarde 44)
+- **Version** : 1.22.0 (affichée dans ⚙️ Options › À propos ; format de sauvegarde 51)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi, et
   [`docs/carte-generee.md`](docs/carte-generee.md) pour la ferme générée et la construction
   (autres documents : voir « Documentation » plus bas)
@@ -23,9 +24,9 @@ sous le mode test) y mène toujours.
   et traceurs). Le jeu se sert en HTTP (voir Structure) ; les autres pages s'ouvrent aussi depuis le disque.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
-- **Cartes** : la ferme et les autres lieux sont des cartes en pixel art (Phaser 4,
+- **Cartes** : la ferme et la mine sont des cartes en pixel art (Phaser 4,
   `vendor/phaser.min.js`, scène de la ferme dans `js/farm-stage.js` et `js/carte/ferme/`,
-  autres cartes dans `js/ville-carte.js` et `js/carte/ville/`, images dans `assets/`) ; voir
+  scène de la grotte dans `js/grotte.js`, images dans `assets/`) ; voir
   [`docs/architecture-phaser.md`](docs/architecture-phaser.md). Tous les graphismes sont
   originaux, dessinés par les générateurs Python de `scripts/`.
 
@@ -125,8 +126,8 @@ l'argent et les biens produits pendant l'absence.
 classiques (`js/telemetry.js`, le suivi de session ; `vendor/phaser.min.js` ; `js/carte/*.js`,
 les outils communs des cartes ; `js/ambient-life.js`, la vie d'ambiance ; `js/fermier.js`, le
 personnage ; `js/famille-ferme.js`, la famille ; `js/carte/ferme/*.js` et `js/farm-stage.js`,
-la carte de la ferme ; `js/carte/ville/*.js` et `js/ville-carte.js`, les autres cartes ;
-`js/infra-monde.js`), puis `js/main.js`, point d'entrée de **modules ES** :
+la carte de la ferme ; `js/grotte.js`, la grotte de la mine), puis `js/main.js`, point
+d'entrée de **modules ES** :
 
 | Dossier | Contenu |
 |---|---|
@@ -135,7 +136,7 @@ la carte de la ferme ; `js/carte/ville/*.js` et `js/ville-carte.js`, les autres 
 | `js/ui/` | l'interface, un module par écran (`ferme.js`, `elevage.js`, `cuisine.js`, `marche.js`, `famille.js`…), plus `store.js` (l'état de l'interface), `render.js`, `loop.js`, `storage.js`, `actions.js` |
 | `js/main.js` | charge tous les modules, puis démarre la partie |
 | `js/farm-stage.js`, `js/carte/ferme/` | la carte Phaser de la ferme, une partie par fichier (le sol, le décor, la hache, les blocs, l'étage, les toits, les abeilles, les arbres plantés…) |
-| `js/ville-carte.js`, `js/carte/ville/` | les autres cartes (transition, ville, montagne, plage, grotte) |
+| `js/grotte.js` | la scène Phaser de la grotte de la mine (`window.Grotte`), réglée par `data/grotte.json` |
 | `js/ambient-life.js`, `js/fermier.js`, `js/famille-ferme.js` | la vie d'ambiance, le personnage et la famille sur la carte (scripts classiques, hors modules ; voir docs/personnage.md) |
 | `scripts/` | outils Node et Python : données, carte, site, vérifications, simulation, icônes (voir plus bas) |
 | `tests/` | les tests (`npm test`) : moteur, données, suivi de session, rapport quotidien |
@@ -170,7 +171,7 @@ que GitHub publie :
 - `jeu.html` : la même page, qui charge ce fichier ; chaque fichier local y est suivi de
   `?v=<empreinte de son contenu>`. Un fichier modifié change d'adresse et le navigateur le
   recharge ; il n'y a plus de numéro à changer à la main à chaque version ;
-- les scripts classiques de la page (`js/farm-stage.js`, `js/ville-carte.js`…) minifiés
+- les scripts classiques de la page (`js/farm-stage.js`, `js/grotte.js`…) minifiés
   un à un, sans changer de forme ;
 - les autres pages, `css/`, `assets/`, `vendor/`, copiés tels quels, sauf les fichiers de
   travail de `assets/` que le jeu ne charge pas (cartes et jeux de tuiles Tiled `.tmj`/`.tsx`,
@@ -213,12 +214,12 @@ Toutes les valeurs du jeu sont dans `data/`, un fichier JSON par domaine :
 | `animals.json` | silo, poulailler, animaux, étable, ruches |
 | `meubles.json` | meubles de la maison, objets du dehors (bac à fleurs) |
 | `terrain.json` | le terrain de la carte de Tiled et la génération de la ferme |
-| `ville.json`, `economie.json` | la ville, ses habitants, ses entreprises et son économie |
+| `grotte.json` | la grotte de la mine : niveaux, minerais, réglages de la scène |
 | `techtree.json` | arbre des technologies |
 | `campaign.json` | chapitres et courrier |
 | `niveaux.json` | niveaux d'expérience : seuils, déblocages, XP des actions et des chapitres |
 | `energy.json` | panneau, batterie, pompe, réservoir, soleil, usure, réfrigérateur |
-| `general.json` | départ, horloge, famille, marché, absence |
+| `general.json` | départ, horloge, famille, bonheur, marché, absence |
 | `simulation.json` | réglages du joueur automatique |
 
 Après chaque modification, en local :
@@ -286,7 +287,7 @@ Les tests tournent sur `node:test`, le lanceur intégré de Node, un processus p
 fichier qui plante est compté en échec sans arrêter les autres. Quatre suites :
 
 - **moteur** : `tests/engine/*.test.mjs`, un fichier par thème (énergie, potager, cuisine,
-  Étable, automatisation, chapitres, nuit, ville, outils…), chacun n'important que les
+  Étable, automatisation, chapitres, nuit, outils…), chacun n'important que les
   fonctions du moteur dont il se sert. L'aide commune est dans `tests/engine/aide.mjs` :
   `test`, `assert`, `assertEqual` (égalité par `JSON.stringify` : l'ordre des clés compte),
   la lune neutralisée (`avecLune` pour la rallumer) et les états de départ partagés
@@ -316,8 +317,7 @@ npm run smoke
 
 `tests/smoke.mjs` sert le dépôt avec un petit serveur statique Node sur un port libre, ouvre
 `jeu.html` dans Chromium (Playwright), lance une nouvelle partie, puis visite les cartes par
-`window.FermeHote.go` : la mine de la ferme, la ville (qui doit rester fermée), puis, en god
-mode, la ville par la gare, le chemin de transition, la montagne, la plage et la grotte, et
+`window.FermeHote.go` : la mine de la ferme, puis un niveau plus profond, et
 revient à la ferme. Il échoue sur une erreur de la console, une exception de
 la page, une réponse HTTP ≥ 400 ou une carte qui ne s'ouvre pas ; les requêtes vers un autre
 hôte sont coupées. Playwright : celui du dépôt s'il est installé, sinon
@@ -344,10 +344,11 @@ plus légers, pixel pour pixel identiques.
 
 - **Cartes Tiled** : `node scripts/build-map.mjs` (ou `npm run build:map`) fabrique les cartes
   que le jeu charge (`assets/carte_printemps.json`, dont la ferme générée reprend les jeux de
-  tuiles, `infra_monde.json`, `ville.json`, `transition.json`,
-  `montagne.json`, `plage.json`) à partir des cartes de travail `.tmj` et de leurs jeux de
-  tuiles `.tsx`. À relancer après chaque modification dans Tiled (ou d'un générateur
-  `scripts/ville/*.py`, `scripts/infra/carte.py`) ; `--check` vérifie sans écrire. Voir
+  tuiles) à partir de la carte de travail `.tmj` et de ses jeux de tuiles `.tsx`. À relancer
+  après chaque modification dans Tiled ; `--check` vérifie sans écrire. Les tuiles de la grotte
+  sont dessinées par `scripts/carte/grotte.py`. Les jeux de tuiles de la montagne et de la
+  plage, `assets/trouvailles.png` et la faune (`assets/faune.json`, `faune_*.png` : `scripts/carte/faune.py`) restent dans
+  `assets/` comme kit de textures pour les biomes du grand monde. Voir
   [`docs/architecture-phaser.md`](docs/architecture-phaser.md).
 - **Icônes en pixel art** (elles remplacent les emojis à l'affichage) : les dessins sont dans
   `scripts/icones/art_*.py`, et `python3 scripts/icones/build.py` produit `assets/icones.png`
@@ -405,10 +406,10 @@ nuits, aller à un chapitre, et voir l'état complet de la partie.
 |---|---|
 | [`docs/conception.md`](docs/conception.md) | la conception du jeu : règles, valeurs, équilibrage (fait foi) |
 | [`docs/conception-v2.md`](docs/conception-v2.md) | refonte v2 (niveaux d'XP, énergie du personnage, houe…) : saisons retirées et un seul panneau et une seule batterie (version 1.6), niveaux d'expérience (version 1.7) ; le reste n'est pas encore codé |
-| [`docs/carte-generee.md`](docs/carte-generee.md) | la ferme générée : ramassage, Atelier, construction bloc par bloc, étage, bâtiments, transition, anciennes parties |
+| [`docs/carte-generee.md`](docs/carte-generee.md) | la ferme générée : ramassage, Atelier, construction bloc par bloc, étage, bâtiments, mine, anciennes parties |
 | [`docs/architecture-phaser.md`](docs/architecture-phaser.md) | les cartes Phaser : découpage, cartes Tiled, pièges à éviter |
 | [`docs/personnage.md`](docs/personnage.md) | le personnage et ses gestes sur la carte |
-| [`docs/plan-ville.md`](docs/plan-ville.md) | le plan de la ville |
+| [`docs/grand-monde.md`](docs/grand-monde.md) | le grand monde (projet) : une seule carte de biomes, ses étapes |
 | [`docs/vie-ambiance.md`](docs/vie-ambiance.md) | la vie d'ambiance de la carte (vent, nuages, animaux, habitants) |
 | [`docs/icones.md`](docs/icones.md) | les icônes en pixel art, la police et les jauges |
 | [`docs/arbre_technologique.md`](docs/arbre_technologique.md) | proposition d'arbre des technologies v2, historique (`docs/techtree_v2.js`) ; la source de vérité est `data/techtree.json` |

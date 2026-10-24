@@ -4,7 +4,7 @@ import { addItem, countItem, takeItem } from './inventory.js';
 import { atelierConstruit, atelierStatus, buildAtelier, recetteDebloquee } from './atelier.js';
 import { farmSeed, farmTerrain, tileCount } from './terrain.js';
 import { mainCharacter } from './depart.js';
-import { memberHappiness, setHappiness } from './ville.js';
+import { memberHappiness, setHappiness } from './bonheur.js';
 import { openStation } from './kitchen.js';
 import { allPlots, freedRockTiles } from './crops.js';
 import { casesBuissonsCoupes, foretArbres, foretProche, foretSurCase, foulerAutour, grassCut, planterGraine } from './outils.js';

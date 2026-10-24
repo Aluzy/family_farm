@@ -47,10 +47,10 @@ test('encyclopédie : ce qui est connu au début ne compte pas comme nouveau, pu
   setInv(s, { graine_carotte: 1 });
   assert(majEncyclopedie(s).includes('carotte'));
   // une carte visitée
-  assert(!pageConnue(s, 'ville'));
-  noterEncyclopedie(s, 'carte:ville');
-  assert(majEncyclopedie(s).includes('ville'));
-  assertEqual(pagesConnues(s, 'ville').includes('ville'), true);
+  assert(!pageConnue(s, 'grotte'));
+  noterEncyclopedie(s, 'carte:grotte');
+  assert(majEncyclopedie(s).includes('grotte'));
+  assertEqual(pagesConnues(s, 'mine').includes('grotte'), true);
 });
 
 test('encyclopédie : le didacticiel, les outils et les recettes', () => {

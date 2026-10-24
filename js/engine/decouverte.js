@@ -28,7 +28,7 @@ import { ETAPES } from './didacticiel.js';
      piece_close         une pièce close sur la carte ; commerce : le commerce du niveau 10 ;
      courrier            une lettre reçue */
 
-export const CARTES_ENCYCLOPEDIE = ['ville', 'transition', 'montagne', 'plage', 'grotte', 'infra'];
+export const CARTES_ENCYCLOPEDIE = ['grotte'];
 const SEULES = ['depart', 'piece_close', 'commerce', 'courrier', 'technologies'];
 const OUTILS = ['houe', 'hache', 'faux', 'pioche', 'canne'];
 const ANIMAUX = ['poule', 'mouton', 'vache'];

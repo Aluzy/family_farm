@@ -5,13 +5,10 @@
  * jour (le voile est alors caché), doré le soir, bleu et sombre la nuit (on distingue encore
  * les formes). Ce qui est en DOM (étiquettes, bulles, boutons) reste au-dessus, en couleurs.
  *
- * La ferme le règle sur l'heure de son modèle (js/ui/stage.js) ; la ville, la carte de
- * transition, la montagne et la plage sur l'horloge du jeu (HorlogeSortie, js/ui/excursion.js).
- * La grotte a sa propre obscurité (la lumière autour du personnage), les intérieurs restent
- * éclairés, l'infra-monde garde sa lumière à lui.
+ * La ferme le règle sur l'heure de son modèle (js/ui/stage.js). La grotte a sa propre
+ * obscurité (la lumière autour du personnage).
  *
- * Des lumières (voile.eclaire(sources) : les réverbères et les phares, js/carte/ville/
- * eclairage.js) : le voile devient une carte de lumière, une texture de la taille de la vue
+ * Des lumières (voile.eclaire(sources) : les fenêtres et les lanternes de la ferme) : le voile devient une carte de lumière, une texture de la taille de la vue
  * (en px de carte : la lumière a les mêmes gros pixels que le dessin), remplie de la couleur
  * de l'heure, où chaque lumière est ajoutée (une tache dégradée, teintée) avant que la
  * texture multiplie la carte. Sous une lumière, la carte garde ses couleurs (ou prend sa
@@ -113,7 +110,7 @@
     };
   }
 
-  // Le soleil (les ombres portées : js/carte/ferme/soleil.js, js/carte/ville/ombres.js). Il se
+  // Le soleil (les ombres portées : js/carte/ferme/soleil.js). Il se
   // lève à l'est (à droite de la carte) à `lever` h, se couche à l'ouest à `coucher` h, en
   // passant au sud, du côté d'où l'on regarde : les ombres partent vers le haut de la carte et
   // penchent vers la gauche le matin, vers la droite le soir, de `penche` px par px de hauteur au

@@ -1,5 +1,5 @@
 import { DATA } from '../engine/catalog.js';
-import { dishHappiness } from '../engine/ville.js';
+import { dishHappiness } from '../engine/bonheur.js';
 import { countItem, isFridgeable, isPerishable, lotsOf } from '../engine/inventory.js';
 import { fridgeCapacity, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeRoom, fridgeUnits, moveAllToFridge } from '../engine/fridge.js';
 import { isUnlocked } from '../engine/campaign.js';

@@ -1,11 +1,6 @@
-// Fabrique les cartes que le jeu charge à partir des cartes de travail Tiled :
+// Fabrique la carte que le jeu charge à partir de la carte de travail Tiled :
 //
 //   assets/carte_printemps_elargie.tmj → assets/carte_printemps.json   (la carte de la ferme)
-//   assets/infra_monde.tmj             → assets/infra_monde.json       (l'infra-monde, infra-monde.html)
-//   assets/ville.tmj                   → assets/ville.json             (la ville, ville-carte.html)
-//   assets/transition.tmj              → assets/transition.json        (entre la ferme et la ville)
-//   assets/montagne.tmj                → assets/montagne.json          (la montagne, en train vers le nord)
-//   assets/plage.tmj                   → assets/plage.json             (la plage, en train vers le sud)
 //
 //   node scripts/build-map.mjs           (écrit les cartes)
 //   node scripts/build-map.mjs --check   (n'écrit rien : échoue si une carte commitée n'est
@@ -32,46 +27,9 @@ const MAPS = [
     source: 'assets/carte_printemps_elargie.tmj',
     target: 'assets/carte_printemps.json',
     // Rectangles nommés dont js/farm-stage.js a besoin (voir BUILDINGS et bakeGround() ;
-    // vers_la_transition : le bout est du chemin, voir js/carte/ferme/passages.js).
+    // vers_la_transition : le bout est du chemin, qui menait à l'ancienne carte de transition).
     places: ['maison', 'grange', 'moulin', 'serre', 'verger', 'vers_la_transition'],
     oneOf: ['zone_culture_1', 'zone_culture'],       // l'un des deux : la zone de culture
-  },
-  {
-    // fabriquée par scripts/infra/carte.py ; « depart » : où l'habitant apparaît
-    source: 'assets/infra_monde.tmj',
-    target: 'assets/infra_monde.json',
-    main: 'infra_sol',
-    places: ['depart'],
-  },
-  {
-    // fabriquée par scripts/ville/carte.py ; « depart » : où l'on arrive en ville (ville-carte.html)
-    source: 'assets/ville.tmj',
-    target: 'assets/ville.json',
-    main: 'ville_asphalte',
-    places: ['depart'],
-  },
-  {
-    // fabriquée par scripts/ville/transition.py ; entre la ferme et la ville (ville-carte.html?carte=transition)
-    source: 'assets/transition.tmj',
-    target: 'assets/transition.json',
-    main: 'transition_sol',
-    places: ['depart'],
-    // l'ouest de la carte est tiré par le jeu avec les tuiles du kit (propriété « kit ») : ses
-    // jeux de tuiles restent, même sans tuile posée (l'eau de la mare)
-    garde: true,
-  },
-  {
-    // fabriquées par scripts/ville/montagne.py et plage.py ; où mène le train (ville-carte.html?carte=…)
-    source: 'assets/montagne.tmj',
-    target: 'assets/montagne.json',
-    main: 'montagne_sol',
-    places: ['depart'],
-  },
-  {
-    source: 'assets/plage.tmj',
-    target: 'assets/plage.json',
-    main: 'plage_sol',
-    places: ['depart'],
   },
 ];
 

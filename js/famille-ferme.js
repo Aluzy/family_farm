@@ -17,19 +17,12 @@
  *   - chacun a faim en marchant (o.marche(id, px) : le moteur compte 1 point de faim tous les
  *     FAMILLE.FAIM.PX_PAR_POINT px, js/engine/repas.js) ; quand il mange à la boîte à nourriture,
  *     il y va et se baisse (allerManger, appelé par la page : js/ui/loop.js ; o.boite : où elle est) ;
- *   - les enfants vont à l'école le lundi, le mardi, le jeudi et le vendredi ; elle commence à
- *     8 h 45 (CarteKit.ECOLE). Chacun part de la maison le temps qu'il lui faut pour être au bord
- *     de la carte quand il doit marcher jusqu'au bus de la carte de transition
- *     (CarteKit.horaireEcole : sortieFerme) : la longueur de son chemin, à sa vitesse
- *     (departEcole) ; il prend le chemin de l'est et s'efface (parti avant le réveil du
- *     joueur, on ne le voit pas partir). Le soir, il revient par le même bout du chemin, à
- *     l'heure où le bus l'a ramené (retourFerme).
  *
  * Ils marchent par les chemins du personnage (fermier.path : les mêmes cases libres). Avec
  * « animations réduites », ils vont d'un point à l'autre sans marcher.
  *
- *   const famille = FamilleFerme.attach(scene, { fermier, frames, exit: { x, y }, file(perso, enfant), reduced })
- *   famille.sync(model)          // model.famille : [{ id, perso, enfant }], model.heure, model.semaine, model.nuit
+ *   const famille = FamilleFerme.attach(scene, { fermier, frames, file(perso, enfant), reduced })
+ *   famille.sync(model)          // model.famille : [{ id, perso, enfant }], model.heure, model.nuit
  *   famille.update(deltaMs)
  *   famille.info()               // pour les tests : où est chacun
  *   famille.aidePos()            // où est le second adulte (sa bulle « +x »), ou null
@@ -44,7 +37,6 @@
   const K = global.CarteKit;
   const T = K.T;
   const HORAIRE = { sortie: 7, rentree: 18.75, retard: 0.4 };
-  const JOURS_ECOLE = [0, 1, 3, 4];       // lundi, mardi, jeudi, vendredi (0 : lundi)
   const VITESSE = K.VITESSES.famille;     // px/s : { adulte, enfant }
   const ROAM = 6 * T;                      // autour de la maison
   const FADE_S = 0.5;
@@ -69,27 +61,14 @@
       return f || { x: scene.world.w / 2, y: scene.world.h / 2 };
     }
 
-    // L'heure où l'enfant `m` part pour l'école : le bord de la carte à l'heure (sortieFerme),
-    // moins le temps de son chemin depuis la porte (à sa vitesse, et son retard dans la file).
-    // Calculée de nouveau si la porte change.
-    function departEcole(m) {
-      const d = door(), e = o.exit, cle = d.x + ',' + d.y;
-      if (m.ecole && m.ecole.cle === cle) return m.ecole.h;
-      const p = o.fermier && o.fermier.path ? o.fermier.path(d.x, d.y, e.x, e.y) : null;
-      const L = p && p.length ? K.longueur(p, d) : Math.hypot(e.x - d.x, e.y - d.y);
-      m.ecole = { cle, h: K.horaireEcole().sortieFerme - K.heuresDeMarche(L, VITESSE.enfant, m.retard) };
-      return m.ecole.h;
-    }
-
     // Son lit (o.lit), ou null.
     const litDe = (m) => (o.lit && m.rang >= 0 ? o.lit(m.rang) : null);
 
-    // Où il doit être à cette heure : 'lit', 'dedans', 'dehors' ou 'ecole'.
+    // Où il doit être à cette heure : 'lit', 'dedans' ou 'dehors'.
     function voulu(m) {
       if (model && model.nuit && litDe(m)) return 'lit';
       if (!model || model.nuit) return 'dedans';
       const h = model.heure;
-      if (m.enfant && JOURS_ECOLE.includes(model.semaine) && h >= departEcole(m) && h < K.horaireEcole().retourFerme) return 'ecole';
       if (h < HORAIRE.sortie || h >= HORAIRE.rentree) return 'dedans';
       return 'dehors';
     }
@@ -105,7 +84,7 @@
       return {
         id: def.id, key, enfant: !!def.enfant, s,
         x: 0, y: 0, face: 'bas', flip: false, marche: 0,
-        ou: 'dedans',            // dedans, dehors, ecole (où il est vraiment)
+        ou: 'dedans',            // dedans ou dehors (où il est vraiment)
         visible: false, alpha: 0, fade: 0,
         chemin: [], puis: null, attente: rand(0.5, 3),
         // chacun son coin préféré autour de la maison
@@ -193,7 +172,7 @@
 
     function decider(m, dt) {
       const v = voulu(m);
-      const d = door(), e = o.exit;
+      const d = door();
       if (m.repos > 0) m.repos -= dt;
       // la nuit : au lit (son lit a pu changer de place) ; le jour venu, il se lève
       if (m.ou === 'lit') {
@@ -216,7 +195,6 @@
       if (m.ou === 'dehors' && m.visible && m.fade >= 0) {
         if (m.tache && v !== 'dehors') m.tache = null;
         if (v === 'dedans' && !m.puis) aller(m, d.x, d.y, () => disparaitre(m, 'dedans'));
-        else if (v === 'ecole' && !m.puis) aller(m, e.x, e.y, () => disparaitre(m, 'ecole'));
         else if (v === 'dehors' && !m.chemin.length && !m.tache && !soccuper(m)) {
           m.attente -= dt;
           if (m.attente <= 0) { m.attente = rand(3, 8); flanerVers(m); }
@@ -224,15 +202,7 @@
         return;
       }
       if (m.visible) return;          // il s'efface
-      const h = model ? model.heure : 12;
       if (m.ou === 'dedans' && v === 'dehors') { apparaitre(m, d.x, d.y); aller(m, d.x, d.y + T); }
-      // c'est l'heure de l'école et il était encore à la maison : on le voit partir (pas s'il
-      // est déjà bien tard, il est déjà parti)
-      else if (m.ou === 'dedans' && v === 'ecole' && h < departEcole(m) + HORAIRE.retard) { apparaitre(m, d.x, d.y); aller(m, e.x, e.y, () => disparaitre(m, 'ecole')); }
-      else if (m.ou === 'dedans' && v === 'ecole') m.ou = 'ecole';
-      // l'école est finie : il revient par le chemin de l'est
-      else if (m.ou === 'ecole' && v === 'dehors') { apparaitre(m, e.x, e.y); aller(m, d.x + m.coin.dx, d.y + m.coin.dy); }
-      else if (m.ou === 'ecole' && v === 'dedans' && model && !model.nuit && h >= K.horaireEcole().retourFerme) m.ou = 'dedans';
     }
 
     function avancer(m, dt) {
@@ -319,7 +289,7 @@
         }
       },
       info() {
-        return [...membres.values()].map((m) => ({ id: m.id, enfant: m.enfant, ou: m.ou, lit: !!m.couche, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0, tache: m.tache, ecole: m.enfant ? departEcole(m) : null }));
+        return [...membres.values()].map((m) => ({ id: m.id, enfant: m.enfant, ou: m.ou, lit: !!m.couche, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0, tache: m.tache }));
       },
       rejoindre(at) {
         const A = model && model.aide, m = A && membres.get(A.id);
@@ -363,5 +333,5 @@
     };
   }
 
-  global.FamilleFerme = { attach, JOURS_ECOLE, HORAIRE };
+  global.FamilleFerme = { attach, HORAIRE };
 })(window);
