@@ -487,7 +487,7 @@
           const cols = this.grid.cols, places = new Set(sc);
           const labourees = new Set((m.serre || []).map((p) => p.case).filter((c) => places.has(c)));
           list.push({
-            id: 'serre', place: null, window: 'serre', plots: m.serre || [], bac: true,
+            id: 'serre', place: null, window: 'serre', plots: m.serre || [],
             slot: (p) => p.case,
             pos: (c) => (places.has(c) ? { x: (c % cols) * T, y: Math.floor(c / cols) * T } : null),
             at: (wx, wy) => {

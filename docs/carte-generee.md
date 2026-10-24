@@ -959,7 +959,8 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          houe (`serrePlaces` : ni le bac, ni les cases juste derrière ses portes, le passage ;
          `hoe`, `serreHoeStatus` dans `js/engine/crops.js`), une parcelle par case (`case`),
          jusqu'à `SERRE.PARCELLES[niveau - 1]` (`serreCap` ; agrandir la Serre en permet plus) ;
-         une terre vide se rebouche. Les parcelles sont dans des bacs de planches ; ce qui y
+         une terre vide se rebouche. Comme au-dehors : la même terre et les mêmes bordures
+         mi-herbe mi-terre (`syncZoneGround`, `soilLayoutOk`), le glissement de la houe ; ce qui y
          pousse se voit, et un appui y plante, arrose ou récolte comme au potager. Version 50 :
          les parcelles d'avant prennent les cases où la carte les montrait.
          La pièce a un **toit de verre** (`toits` : `verre`, `CarteKit.toit(…, true)`) : des
