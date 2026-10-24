@@ -11,6 +11,7 @@ import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { absoluteHours, dayHour } from './clock.js';
 import { aCruche, eauCruche, puiserCruche } from './cruche.js';
 import { farmTerrain, tileCount } from './terrain.js';
+import { serrePlaces } from './blocs.js';
 
 /* ---------- Lot 2 : Zone de culture (identifiant interne : potager) ---------- */
 
@@ -179,13 +180,20 @@ export function hoeableTiles(state) {
   const n = tileCount(farmTerrain(state));
   const dirt = new Set(state.potager.parcelles.map((p) => p.case));
   const libres = freedRockTiles(state); // une fois pour toute la carte
+  const serre = new Set(serrePlaces(state));   // (les cases de la Serre : à part, plus bas)
   const out = [];
   for (let t = 0; t < n; t++) {
-    if (dirt.has(t) || !isArable(t, state, libres)) continue;
+    if (dirt.has(t) || serre.has(t) || !isArable(t, state, libres)) continue;
     const before = badBorders(state, dirt, t, libres);
     dirt.add(t);
     if (badBorders(state, dirt, t, libres) <= before) out.push(t);
     dirt.delete(t);
+  }
+  // les cases de la Serre pas encore labourées, tant qu'elle a de la place
+  if (serrePlots(state).length < serreCap(state)) {
+    const prises = new Set(serrePlots(state).map((p) => p.case));
+    for (const t of serre) if (!prises.has(t) && !(state.sols && state.sols[t])) out.push(t);
+    out.sort((a, b) => a - b);
   }
   return out;
 }
@@ -203,6 +211,22 @@ export function zoneTile(zone, kase, T = farmTerrain()) {
 // Parcelle (terre) d'une tuile, ou null (herbe).
 export function plotAtTile(state, tile) {
   return state.potager.parcelles.find((p) => p.case === tile) || null;
+}
+
+// La Serre : ses parcelles (labourées à la houe sur les cases de sa pièce, chacune sa case),
+// combien elle en prend à son niveau (DATA.SERRE.PARCELLES ; 0 tant qu'elle n'est pas bâtie),
+// et celle d'une tuile.
+export function serrePlots(state) {
+  return (state.serre && state.serre.construit && state.serre.parcelles) || [];
+}
+
+export function serreCap(state) {
+  const g = state.serre;
+  return g && g.construit ? DATA.SERRE.PARCELLES[Math.max(1, Math.min(DATA.SERRE.PARCELLES.length, g.niveau || 1)) - 1] : 0;
+}
+
+export function serrePlotAt(state, tile) {
+  return serrePlots(state).find((p) => p.case === tile) || null;
 }
 
 // Parcelles de départ d'une partie neuve : les cases DEPART de l'ancienne Zone de culture (du
@@ -244,6 +268,7 @@ export function buyHoe(state) {
 
 // Ce que fait la houe sur une tuile : { action: 'labourer' | 'reboucher' | null, ok, raison }.
 export function hoeStatus(state, tile) {
+  if (Number.isInteger(tile) && serrePlaces(state).includes(tile)) return serreHoeStatus(state, tile);
   const p = Number.isInteger(tile) ? plotAtTile(state, tile) : null;
   if (!p && !isArable(tile, state)) return { action: null, ok: false, raison: 'On ne laboure ici que l\'herbe : pas les chemins, l\'eau, les pierres, les arbres, ni les abords des bâtiments.' };
   if (!hasHoe(state)) return { action: null, ok: false, raison: `Il te faut une houe (Marché, ${DATA.HOUE.PRIX} 💰).` };
@@ -262,11 +287,31 @@ export function hoeStatus(state, tile) {
   return { action: 'labourer', ok: true, raison: '' };
 }
 
-// Numéro libre pour l'identifiant d'une nouvelle parcelle (« potager-n »).
-function nextPlotNumber(list) {
+// La houe dans la Serre (ses cases, serrePlaces) : on y laboure au plus serreCap(state)
+// parcelles, sans plafond de niveau ni bordure (la carte les met dans des bacs de planches).
+function serreHoeStatus(state, tile) {
+  if (!hasHoe(state)) return { action: null, ok: false, raison: `Il te faut une houe (Marché, ${DATA.HOUE.PRIX} 💰).` };
+  const p = serrePlotAt(state, tile);
+  if (p) {
+    if (p.culture) return { action: null, ok: false, raison: 'Terre plantée : récolte d\'abord.' };
+    return { action: 'reboucher', ok: true, raison: '', serre: true };
+  }
+  if (state.sols && state.sols[tile]) return { action: null, ok: false, raison: 'Un plancher : on ne laboure pas ici.' };
+  const cap = serreCap(state);
+  if (serrePlots(state).length >= cap) {
+    const plus = DATA.SERRE.PARCELLES[state.serre.niveau];
+    return { action: 'labourer', ok: false, raison: `La Serre a déjà ses ${cap} parcelles au niveau ${state.serre.niveau}.${plus ? ` Agrandis-la : ${plus} parcelles au niveau suivant.` : ''}` };
+  }
+  if (!canAfford(state, 'labourer')) return { action: 'labourer', ok: false, raison: TIRED };
+  return { action: 'labourer', ok: true, raison: '', serre: true };
+}
+
+// Numéro libre pour l'identifiant d'une nouvelle parcelle (« potager-n », « serre-n »).
+function nextPlotNumber(list, lieu = DATA.POTAGER.LIEU) {
   let n = 0;
+  const re = new RegExp(`^${lieu}-(\\d+)$`);
   for (const p of list) {
-    const m = /^potager-(\d+)$/.exec(p.id);
+    const m = re.exec(p.id);
     if (m) n = Math.max(n, Number(m[1]));
   }
   return n + 1;
@@ -277,13 +322,14 @@ function nextPlotNumber(list) {
 export function hoe(state, tile) {
   const st = hoeStatus(state, tile);
   if (!st.ok) return fail(st.raison);
-  const list = state.potager.parcelles;
+  const lieu = st.serre ? DATA.SERRE.LIEU : DATA.POTAGER.LIEU;
+  const list = st.serre ? state.serre.parcelles : state.potager.parcelles;
   if (st.action === 'reboucher') {
     const i = list.findIndex((p) => p.case === tile);
     const [plot] = list.splice(i, 1);
     return { ok: true, action: 'reboucher', plot };
   }
-  const plot = { ...makePlot(nextPlotNumber(list)), case: tile };
+  const plot = { ...makePlot(nextPlotNumber(list, lieu), lieu), case: tile };
   list.push(plot);
   list.sort((a, b) => a.case - b.case);
   spendEnergy(state, 'labourer');
@@ -560,15 +606,15 @@ export function openSerre(state) {
   const g = state.serre;
   g.construit = true;
   g.niveau = 1;
-  g.parcelles = makePlots(DATA.SERRE.PARCELLES[0], DATA.SERRE.LIEU);
+  // (vide : ses parcelles se labourent à la houe, sur les cases de sa pièce)
+  g.parcelles = [];
 }
 
 export function upgradeSerre(state) {
   const g = state.serre;
   if (!g.construit) return fail('Construis d\'abord la Serre.');
   return upgradeWith(state, serreUpgradeCost(state), 'Serre agrandie', () => {
+    // (de la place pour plus de parcelles, à labourer)
     g.niveau += 1;
-    const target = DATA.SERRE.PARCELLES[g.niveau - 1];
-    for (let n = g.parcelles.length + 1; n <= target; n++) g.parcelles.push(makePlot(n, DATA.SERRE.LIEU));
   });
 }

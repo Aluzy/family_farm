@@ -15,7 +15,7 @@ import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsE
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
-import { caseLibreFoyer, majMoulin, majPoulailler, poserBloc, rangerPieces } from './blocs.js';
+import { caseLibreFoyer, majMoulin, majPoulailler, poserBloc, rangerPieces, serrePlaces } from './blocs.js';
 import { closeFridge, FRIGO_OBJET } from './fridge.js';
 import { ETAPES } from './didacticiel.js';
 import { faucherSousBati } from './outils.js';
@@ -409,7 +409,22 @@ export const MIGRATIONS = {
     const plus = d && !d.fini && Number.isInteger(d.etape) && d.etape > ETAPES.indexOf('abri_ressources');
     return { ...state, version: 49, ...(plus ? { didacticiel: { ...d, etape: d.etape + 1 } } : {}) };
   },
+  // v49 → v50 : les parcelles de la Serre se labourent à la houe, chacune sur sa case. Celles
+  // d'une Serre bâtie prennent les cases où la carte les montrait (les premières de sa pièce,
+  // serrePlaces) ; celles qui n'y tenaient pas s'en vont, sauf une parcelle plantée (elle reste
+  // jusqu'à sa récolte).
+  49: (state) => migrateSerreCases(state),
 };
+
+function migrateSerreCases(old) {
+  const state = { ...JSON.parse(JSON.stringify(old)), version: 50 };
+  const g = state.serre;
+  if (!g || !Array.isArray(g.parcelles)) return state;
+  const places = g.construit && state.carte ? serrePlaces(state) : [];
+  g.parcelles = g.parcelles.map((p, i) => (Number.isInteger(p.case) ? p : i < places.length ? { ...p, case: places[i] } : p))
+    .filter((p) => Number.isInteger(p.case) || p.culture);
+  return state;
+}
 
 function migrateFrigoBloc(old) {
   const state = { ...JSON.parse(JSON.stringify(old)), version: 48 };

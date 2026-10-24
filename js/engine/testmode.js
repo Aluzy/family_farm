@@ -4,8 +4,8 @@ import { batteryCapacity, fail, findDevice, isBroken, tankCapacity } from './dev
 import { noteCompta } from './compta.js';
 import { awakeMsAtHour } from './clock.js';
 import { addItem, countItem, spoil, takeItem } from './inventory.js';
-import { blocAt, blocsPoses, casesBaties, caseLibreFoyer, couchages, herbesSur, majPoulailler, poserBloc } from './blocs.js';
-import { allPlots, makePlot, maxStage, seedItem, zoneTile } from './crops.js';
+import { blocAt, blocsPoses, casesBaties, caseLibreFoyer, couchages, herbesSur, majPoulailler, poserBloc, serrePlaces } from './blocs.js';
+import { allPlots, makePlot, maxStage, seedItem, serreCap, zoneTile } from './crops.js';
 import { farmTerrain } from './terrain.js';
 import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, storeWheat } from './animals.js';
 import { arbreProche, openVerger } from './orchard.js';
@@ -416,7 +416,7 @@ function piece(state, z, w, h, hauteur = 1) {
 //     dans l'inventaire, est celui qui se pose) ;
 //   - 'poulailler', 'etable' : une enceinte (porte dehors), le nichoir ou la mangeoire, et un
 //     enclos de barrières de 6 × 5 cases ;
-//   - 'serre' : une pièce close avec le bac à semis ;
+//   - 'serre' : une pièce close avec le bac à semis, ses cases labourées (testLabourerSerre) ;
 //   - 'moulin' : une tour (murs hauts de MOULIN.HAUTEUR) et sa meule au centre ;
 //   - 'silo' : SILO.LARGEUR colonnes de SILO.HAUTEUR blocs ;
 //   - 'puits', 'panneau', 'batterie', 'citerne', 'pompe', 'station_robot' : posé dehors (la pompe
@@ -478,6 +478,22 @@ export function testBatir(state, id) {
   } else {
     piece(state, z, w, h);
     r = poserDonne(state, 'bac_semis', at(1, 1));
+    if (r.ok) testLabourerSerre(state);
   }
   return r.ok ? { ok: true, coin: at(0, 0) } : r;
+}
+
+// Laboure d'un coup les cases libres de la Serre (sans houe ni énergie), jusqu'à ce que son
+// niveau permet (serreCap). Renvoie combien de parcelles de plus.
+export function testLabourerSerre(state) {
+  const g = state.serre, prises = new Set(g.parcelles.map((p) => p.case));
+  let n = 0;
+  for (const t of serrePlaces(state)) {
+    if (g.parcelles.length >= serreCap(state)) break;
+    if (prises.has(t) || (state.sols && state.sols[t])) continue;
+    g.parcelles.push({ ...makePlot(g.parcelles.length + 1, DATA.SERRE.LIEU), case: t });
+    n += 1;
+  }
+  g.parcelles.sort((a, b) => a.case - b.case);
+  return n;
 }

@@ -6,7 +6,7 @@ import {
   availableEnergy, buildFridge, FRIGO_OBJET, fridgeCoversNight, fridgeNightNeed,
   fridgeCapacity, fridgeUnits, fridgeUpgradeCost, upgradeFridge,
 } from '../engine/fridge.js';
-import { serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
+import { serreCap, serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
 import {
   harvestTree, isTreeAdult, treeAge, treeNextHarvest, treeStageName,
 } from '../engine/orchard.js';
@@ -40,12 +40,13 @@ export function renderSerre() {
   const upBtn =
     up === null
       ? '<button type="button" class="btn" disabled>Serre au niveau maximum</button>'
-      : `<button type="button" class="btn" data-action="upgrade-serre"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${g.niveau + 1}, ${DATA.SERRE.PARCELLES[g.niveau]} parcelles (${costLabel(up)})</button>`;
+      : `<button type="button" class="btn" data-action="upgrade-serre"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${g.niveau + 1}, jusqu'à ${DATA.SERRE.PARCELLES[g.niveau]} parcelles (${costLabel(up)})</button>`;
   return `
     <div class="section-head">
       <h3>${artIcon('serre')}Serre · niveau ${g.niveau}</h3>
       <span class="chips">${autoChip('serre', 'Travaille tout seul, à 100 %, pendant la nuit')}${helpBtn('serre')}</span>
     </div>
+    <p class="muted">${g.parcelles.length} / ${serreCap(state)} parcelles labourées. Prends la houe et laboure les cases de la Serre pour y semer.</p>
     <div class="plots">${g.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
     <div class="row plot-foot">${groupButtons('serre')}${upBtn}</div>
   `;

@@ -37,7 +37,7 @@ import { bottelerSansCarte } from './botteleuse.js';
 import { sleep } from './night.js';
 import { farmSeed, farmTerrain, tileCount } from './terrain.js';
 import { createNewGame, houseRepaired, starterBlock } from './depart.js';
-import { testBatir } from './testmode.js';
+import { testBatir, testLabourerSerre } from './testmode.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose, remplirCruche } from './cruche.js';
 
 /* ==========================================================================
@@ -536,7 +536,8 @@ export function botStepInfo(state, step, eveilS) {
     case 'serre':
       if (!isUnlocked(state, 'serre')) return { locked: true };
       if (built(state.serre)) return { done: true };
-      return state.serre.construit ? { cost: serreUpgradeCost(state), buy: () => upgradeSerre(state) } : botBatir(state, 'serre', DATA.SERRE.PRIX_CONSTRUCTION);
+      // (agrandie, elle laboure ses cases de plus, comme le joueur avec la houe)
+      return state.serre.construit ? { cost: serreUpgradeCost(state), buy: () => { const r = upgradeSerre(state); if (r.ok) testLabourerSerre(state); return r; } } : botBatir(state, 'serre', DATA.SERRE.PRIX_CONSTRUCTION);
     // (le Verger s'ouvre avec le premier arbre planté)
     case 'verger':
       return isUnlocked(state, 'verger') ? { done: true } : { locked: true };
