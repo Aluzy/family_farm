@@ -214,7 +214,11 @@
               lift: () => (this.etageLift ? this.etageLift() : 0),
               couchage: () => this.bedSpot(),
               foyer: () => this.homeDoor(),
-              cle: (lieu) => { const k = this.keyBlockOf(lieu); return k ? { x: k.x, y: k.y + 6 } : null; },
+              // (une ruche pleine, « ruche:<case> » : juste devant elle, sous sa case)
+              cle: (lieu) => {
+                if (String(lieu).startsWith('ruche:')) { const c = Number(String(lieu).slice(6)), cols = this.grid.cols; return Number.isInteger(c) ? { x: (c % cols) * T + T / 2, y: (Math.floor(c / cols) + 1) * T + 6 } : null; }
+                const k = this.keyBlockOf(lieu); return k ? { x: k.x, y: k.y + 6 } : null;
+              },
               arbre: (c) => (this.ctx.carte ? this.treeRect(c) : null),
             });
           } catch (e) { console.warn('[FarmStage] personnage indisponible', e); }
