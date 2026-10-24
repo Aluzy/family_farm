@@ -38,6 +38,9 @@
   // (une porte : celle de planches, ou un de ses modèles, BLOCS_CARTE.hauts.modelesPortes)
   const estPorte = (s) => s === 'porte' || BLOCS_CARTE.hauts.modelesPortes[s] !== undefined;
 
+  // La dalle sous un mur (syncDalle) : les `h` premières rangées de l'image du mur (son dessus,
+  // scripts/carte/blocs.py : 10 px), étirées sur sa case ; sur le sol, sous les parcelles (2).
+  const DALLE = { h: 10, profondeur: 1.4 };
   // La tache de lumière des lanternes : un disque blanc qui s'estompe vers son bord (R px de
   // rayon), teinté et agrandi dans le voile (la même que les réverbères de la ville).
   const R = 32;
@@ -109,9 +112,10 @@
             if ((e.img.frame.name !== f || e.img.texture.key !== key) && !anime) { e.img.setTexture(key, f); changed = true; }
             const li = linteau(b);
             if (this.syncHauts(e, li ? li.h : haut1(b), li && li.frame)) changed = true;
+            this.syncDalle(e);
             continue;
           }
-          if (e) { e.img.destroy(); this.syncHauts(e, 0); }
+          if (e) { e.img.destroy(); this.syncHauts(e, 0); this.syncDalle(e, true); }
           const x = (b.case % cols) * T + T / 2, y = (Math.floor(b.case / cols) + 1) * T;
           const plat = BLOCS_CARTE.plats.includes(b.sorte);
           // (le puits et la citerne : leurs propres images, posées par syncWell et syncTank)
@@ -120,10 +124,11 @@
           B.set(b.case, ne);
           const li = linteau(b);
           this.syncHauts(ne, li ? li.h : haut1(b), li && li.frame);
+          this.syncDalle(ne);
           changed = true;
         }
       }
-      for (const [c, e] of B) if (!seen.has(c)) { e.img.destroy(); this.syncHauts(e, 0); B.delete(c); changed = true; }
+      for (const [c, e] of B) if (!seen.has(c)) { e.img.destroy(); this.syncHauts(e, 0); this.syncDalle(e, true); B.delete(c); changed = true; }
       if (changed) {
         this.sunDirty = true;
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();
@@ -276,6 +281,28 @@
       e.hauteur = h;
       e.img.hauts = L;
       return changed;
+    },
+
+    // La dalle sous un mur (ou une fenêtre) : sa case au sol, dans la matière et la couleur du
+    // dessus du mur (les DALLE.h premières rangées de son image, étirées sur la case), sous tout
+    // le reste. Quand le mur s'efface devant le personnage (stepMurs), c'est elle qu'on voit, et
+    // non l'herbe. `ote` : le mur s'en va, sa dalle aussi.
+    syncDalle(e, ote) {
+      const H = BLOCS_CARTE.hauts;
+      const mur = !ote && e.img && e.img.active && e.img.texture.key === H.key && H.variantes[e.sorte] !== undefined;
+      const f = mur ? e.img.frame.name : null;
+      if (e.dalle && e.dalle.f === f) return;
+      if (e.dalle) { e.dalle.img.destroy(); e.dalle = null; }
+      if (f === null) return;
+      const key = 'dalle_' + H.key + '_' + f;
+      if (!this.textures.exists(key)) {
+        const src = this.textures.getFrame(H.key, f), cv = this.textures.createCanvas(key, T, T);
+        cv.context.imageSmoothingEnabled = false;
+        cv.context.drawImage(src.source.image, src.cutX, src.cutY, T, DALLE.h, 0, 0, T, T);
+        cv.refresh();
+      }
+      const x = e.x - T / 2, y = e.y - T;
+      e.dalle = { f, img: this.add.image(x, y, key).setOrigin(0, 0).setDepth(DALLE.profondeur) };
     },
 
     // Un meuble posé (modèle.blocs : b.meuble = { dessin, largeur, hauteur, bloque, plat, lit }) :

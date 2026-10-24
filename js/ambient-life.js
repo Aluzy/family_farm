@@ -29,7 +29,7 @@
  * chiens : scripts/compagnons/compagnons.py).
  *
  * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced, herd })
- *       → { update(dt), setContext({ hour, trees, folds, herd, felled, compagnons }), scare(x, y),
+ *       → { update(dt), setContext({ hour, trees, folds, herd, felled, compagnons, bati, cols }), scare(x, y),
  *           spawn(type), stats(), chat(activité) }
  */
 (function (global) {
@@ -289,6 +289,7 @@
     // dur : redessiner la carte dans Tiled suffit.
     const water = [];
     const mapTrees = [];              // { x, base (y du pied), top (y du haut du feuillage), r }
+    let bati = new Set(), batiCle = '', batiCols = 0;   // cases bâties (setContext) : la carte en blocs
     let felled = new Set();           // pieds (« x,base ») des arbres abattus à la hache : plus là
     const standing = () => (felled.size ? mapTrees.filter((m) => !felled.has(m.x + ',' + m.base)) : mapTrees);
     const mapBushes = [];             // buissons : { x0, x1 (bords), base (y du pied) }
@@ -391,8 +392,11 @@
     // côté et un peu au-dessus (le corps).
     const fenceCell = (x, y) => fence.has(Math.floor(x / T) * T + ',' + Math.floor(y / T) * T);
     const onFence = (x, y, half) => fence.size > 0 && [x - half, x, x + half].some((a) => fenceCell(a, y) || fenceCell(a, y - 6));
+    // Une case bâtie (un bloc, le dedans d'un bâtiment sous son toit) sous le point (x, y) ?
+    const surBati = (x, y) => bati.size > 0 && batiCols > 0 && bati.has(Math.floor(y / T) * batiCols + Math.floor(x / T));
     function freeAt(x, y) {
       if (x < 8 || y < 8 || x > world.w - 8 || y > world.h - 8) return false;
+      if (surBati(x, y)) return false;
       if (waterSet.has(Math.floor(x / T) * T + ',' + Math.floor(y / T) * T)) return false;
       if (onFence(x, y, 4)) return false;
       for (const r of blocked) if (x > r.x - 8 && x < r.x + r.width + 8 && y > r.y - 8 && y < r.y + r.height + 8) return false;
@@ -459,6 +463,8 @@
             base += drift * dt;
             s.setPosition(x, base + Math.sin(age * f + ph) * amp + Math.sin(age * 5.3) * 2);
             s.setFrame(((age * 9) | 0) % 2 ? 'pap1' : 'pap0');
+            // (au-dessus d'un bâtiment : il ne s'y montre pas, on ne le voit pas dedans)
+            s.setAlpha(Math.max(0, Math.min(1, s.alpha + (surBati(x, s.y) ? -dt : dt) * 4)));
             return inView(x, s.y, MARGIN * 2);
           },
         };
@@ -582,7 +588,12 @@
       // Quelques points lumineux qui tournent et clignotent, au-dessus du voile de lumière,
       // chacun dans son halo (HALO : sa taille, son opacité au plus fort du clignotement).
       lucioles() {
-        const c = freeSpot();
+        // (tout leur tour, ±30 px, hors des bâtiments)
+        let c = null;
+        for (let i = 0; i < 6 && !c; i++) {
+          const q = freeSpot();
+          if (q && [[-30, -24], [30, -24], [-30, 12], [30, 12]].every(([dx, dy]) => !surBati(q.x + dx, q.y + dy))) c = q;
+        }
         if (!c) return null;
         const flies = [];
         for (let i = 0; i < 5; i++) {
@@ -1168,6 +1179,10 @@
       }
       if (c.trees) trees = c.trees.slice();
       if (c.felled) felled = c.felled;
+      if (Array.isArray(c.bati)) {
+        const cle = c.cols + ':' + c.bati.join();
+        if (cle !== batiCle) { batiCle = cle; bati = new Set(c.bati); batiCols = c.cols | 0; }
+      }
       // L'Étable et le Poulailler (leur image, ou rien tant qu'ils ne sont pas affichés) et le
       // nombre de bêtes de chaque espèce.
       if (c.folds) {
