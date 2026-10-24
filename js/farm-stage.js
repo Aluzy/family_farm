@@ -139,6 +139,8 @@
         L.image('terre_bords', v('terre_bords.png'));
         // les sols des biomes du grand monde (scripts/carte/sols_monde.py, js/carte/ferme/sol.js)
         if (this.ctx.monde) L.image('sols_monde', v(this.ctx.monde.tuiles.fichier));
+        // la végétation du grand monde (scripts/carte/vegetation.py, js/carte/ferme/vegetation.js)
+        if (this.ctx.monde) { L.image('vegetation', v('vegetation.png')); L.json('vegetation_cases', v('vegetation.json')); }
       }
 
       create() {
@@ -406,6 +408,7 @@
         this.stepLanterns(time, dt / 1000);      // (avant le voile : leurs lumières y sont posées)
         this.lumiere.step();
         this.syncEauMonde();                    // (les blocs d'eau du grand monde près de la vue : eau-monde.js)
+        this.syncVegetation();                  // (les arbres du grand monde près de la vue : vegetation.js)
         if (this.tileAnims.length) this.stepTileAnims(time);
         this.stepEau(time, dt / 1000);           // (l'eau vivante, js/carte/ferme/eau.js)
         if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
@@ -435,6 +438,7 @@
         this.syncRegions();
         this.cullDecor();
         this.stepOccluders(delta);
+        this.stepVegetation(delta);
         this.stepTallGrass(delta);
         this.stepShards(delta);
         this.stepSprinklers();

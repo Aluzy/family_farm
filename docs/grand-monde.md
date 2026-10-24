@@ -313,6 +313,54 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        téléphone (étape 9) ; les teintes de la prairie (héritées de la ferme) gardent leurs bords
        en marches ; les rives d'herbe (celles de la ferme) aussi ; un coin isolé d'un sol peut
        faire un petit losange.
+   - **Fait (5b)** : la végétation des biomes (décor seulement : couper, cueillir viendront à
+     l'étape 6).
+     - **Les dessins** (`scripts/carte/vegetation.py` → `assets/vegetation.png` et
+       `assets/vegetation.json`, la place et le pied de chaque image ; le relancer redonne la même
+       image) : 29 sortes, 135 images, dans le style des arbres de la ferme (feuillage en petites
+       touffes claires sur fond sombre, lumière en haut à gauche, contour sombre). Forêt : feuillus
+       (trois silhouettes, rond, large comme un chêne, haut ; deux teintes), bouleaux, sapins
+       (étages de branches qui retombent), ronces, souches, troncs couchés, fougères, champignons,
+       touffes ; lande : bruyère (en fleur ou non), ajoncs, genêts, pins tordus, herbes sèches ;
+       marais : saules pleureurs, roseaux et massettes (cinq images chacun : ils penchent), joncs,
+       nénuphars sur l'eau basse ; plage : oyats, chardons bleus, bois flotté ; montagne : sapins
+       rabougris (des trous, une branche morte), rhododendrons, touffes fleuries ; prairie : l'arbre
+       de la ferme et deux autres de sa teinte, ses deux buissons, ses fleurs et ses touffes (celles
+       de `herbe_deco.png`, à la teinte de l'herbe de la case).
+     - **La pose** (`js/engine/monde-vegetation.js`, `vegetationDeRegion`, appelée par
+       `solDeRegion` : dans le Worker, déterministe ; réglée par `data/monde.json`,
+       `VEGETATION`). Une liste par région : `images` et `basses`, `[sorte, x, y, variante]` (le pied,
+       en px). Chaque case tire d'après la table de son biome et de son sol (les taches de la 5a : les
+       sapins sur les aiguilles, les bouleaux et les fougères sur la mousse, les nénuphars sur l'eau
+       basse…), si ses quatre coins ont le même sol et qu'aucun n'est du chemin ; rien sur la ferme
+       et 5 cases autour, autour des lieux (hameaux, grottes, coins de pêche), dans l'eau, sur une
+       falaise, un sommet, la roche nue ou la neige. Les images : moins denses en lisière (de 0,3 à
+       1 selon la part du biome dans 9 × 9 cases), des clairières en forêt (un bruit : des touffes,
+       des fougères, quelques bouleaux), l'écart (de deux tirages trop proches, le plus fort reste :
+       ne dépend que des cases voisines, donc pas de l'ordre des régions) ; les petites plantes et
+       les plantes hautes par taches (un bruit) ; les oyats loin de l'eau, le bois flotté près.
+       Densités mesurées (images, puis petites plantes, par case) : forêt 0,12 et 0,08, marais 0,09
+       et 0,09, lande 0,02 et 0,16, montagne 0,03 et 0,05, prairie 0,003 et 0,04, plage 0 et 0,04 ;
+       bornes testées (`VEGETATION.BORNES`).
+     - **La scène** (`js/carte/ferme/vegetation.js`) : les petites plantes sont peintes dans le
+       canevas de leur région (2,5 ms de plus pour peindre une région, ~31 ms) ; les arbres, buissons
+       et plantes hautes sont des images découpées d'une seule planche (pas de canevas), rangées selon
+       leur pied, créées par blocs de 16 × 16 cases près de la vue seulement (quelques centaines à la
+       fois : ~400 dans une forêt dense), culées hors de la vue ; transparentes quand le personnage
+       passe derrière (le masque de chaque image, comme `decor.js`), avec leur ombre au soleil ; les
+       roseaux et les massettes penchent quand on les traverse (`CarteKit.herbe`).
+     - **La marche** : le pied d'un arbre ou d'un buisson (deux cases pour un tronc couché) est fermé
+       dans la marche de la région (`caseMarchable`) ; les petites plantes et les plantes hautes se
+       traversent ; jamais sur une case de chemin (testé : toutes restent marchables).
+     - **Mesuré** (Chromium sans carte graphique : SwiftShader). Une région dans Node : médiane 4,4
+       à 6,0 ms avant, 5,6 à 8,8 ms après (au plus 20 à 59 avant, 12 à 22 après) ; dans le Worker en
+       jeu, médiane 9 ms avant, 15 à 19 ms après. Le temps d'une image en glissant au-dessus d'une
+       forêt dense (723 images) : 58 ms avant, 62 ms après sans les images des arbres, 78 à 81 ms avec
+       (le JavaScript de la végétation : ~0,05 ms par image ; le reste est le dessin de ~400 images
+       qui se recouvrent, fait par le processeur sous SwiftShader). `npm test` : 31 s avant, 34 s
+       après (les tests de la végétation : 3,6 s).
+     - Reste : sur une vraie carte graphique, mesurer le dessin des arbres sur téléphone (étape 9) ;
+       couper les arbres, cueillir (étape 6) ; les rochers et éboulis en relief (fiche 5c).
 6. **Les ressources et la vie de chaque biome** (2 PR) : ce qui se ramasse, les minerais et
    les grottes de la montagne, la pêche, les animaux à regarder.
 7. **Les habitants et la calèche** (3 PR) : les hameaux bâtis en blocs, leurs familles et

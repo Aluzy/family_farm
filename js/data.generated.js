@@ -2903,6 +2903,98 @@ export const RAW_DATA = {
     "GROTTES": { "NOMBRE": [3, 6], "ECART": 60, "PIED": 4, "FERME": 40 },
     "PECHE": { "MER": 4, "ECART": 60 }
   },
+  "VEGETATION": {
+    "SORTES": [
+      { "nom": "feuillu", "genre": "arbre", "variantes": 6, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "bouleau", "genre": "arbre", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "sapin", "genre": "arbre", "variantes": 4, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "saule", "genre": "arbre", "variantes": 2, "bloque": [[0, 0]], "ecart": 2 },
+      { "nom": "pin_tordu", "genre": "arbre", "variantes": 2, "bloque": [[0, 0]], "ecart": 2 },
+      { "nom": "sapin_nain", "genre": "arbre", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "arbre_pre", "genre": "arbre", "variantes": 3, "bloque": [[0, 0]], "ecart": 2 },
+      { "nom": "buisson_pre", "genre": "buisson", "variantes": 2, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "ronces", "genre": "buisson", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "souche", "genre": "buisson", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "tronc_couche", "genre": "buisson", "variantes": 2, "bloque": [[0, 0], [1, 0]], "ecart": 1 },
+      { "nom": "ajonc", "genre": "buisson", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "genet", "genre": "buisson", "variantes": 2, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "rhododendron", "genre": "buisson", "variantes": 2, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "roseaux", "genre": "haute", "variantes": 3, "penche": true, "ecart": 0 },
+      { "nom": "massette", "genre": "haute", "variantes": 2, "penche": true, "ecart": 0 },
+      { "nom": "fougere", "genre": "basse", "variantes": 4 },
+      { "nom": "champignons", "genre": "basse", "variantes": 4 },
+      { "nom": "touffe_foret", "genre": "basse", "variantes": 3 },
+      { "nom": "bruyere", "genre": "basse", "variantes": 6 },
+      { "nom": "herbe_seche", "genre": "basse", "variantes": 3 },
+      { "nom": "jonc", "genre": "basse", "variantes": 3 },
+      { "nom": "nenuphar", "genre": "basse", "variantes": 4 },
+      { "nom": "oyat", "genre": "basse", "variantes": 4, "eau": [2, 99] },
+      { "nom": "chardon", "genre": "basse", "variantes": 2, "eau": [2, 99] },
+      { "nom": "bois_flotte", "genre": "basse", "variantes": 2, "eau": [0, 3] },
+      { "nom": "touffe_mont", "genre": "basse", "variantes": 3 },
+      { "nom": "fleurs", "genre": "basse", "variantes": 16, "teinte": true },
+      { "nom": "touffe_pre", "genre": "basse", "variantes": 16, "teinte": true }
+    ],
+    "DENSITES": {
+      "foret": {
+        "feuilles": {
+          "feuillu": 0.34,
+          "bouleau": 0.03,
+          "sapin": 0.03,
+          "ronces": 0.012,
+          "souche": 0.006,
+          "tronc_couche": 0.004,
+          "fougere": 0.07,
+          "champignons": 0.015,
+          "touffe_foret": 0.04
+        },
+        "aiguilles": {
+          "sapin": 0.36,
+          "feuillu": 0.03,
+          "souche": 0.008,
+          "tronc_couche": 0.003,
+          "fougere": 0.03,
+          "champignons": 0.03,
+          "touffe_foret": 0.02
+        },
+        "mousse": {
+          "feuillu": 0.22,
+          "bouleau": 0.08,
+          "sapin": 0.04,
+          "souche": 0.008,
+          "tronc_couche": 0.006,
+          "ronces": 0.008,
+          "fougere": 0.16,
+          "champignons": 0.04
+        },
+        "clairiere": { "touffe_foret": 0.1, "fougere": 0.05, "ronces": 0.01, "bouleau": 0.01 }
+      },
+      "lande": {
+        "lande": { "ajonc": 0.022, "genet": 0.012, "pin_tordu": 0.006, "bruyere": 0.18, "herbe_seche": 0.05 },
+        "terre": { "herbe_seche": 0.05, "bruyere": 0.03, "ajonc": 0.004 }
+      },
+      "marais": {
+        "vase": { "saule": 0.012, "roseaux": 0.15, "massette": 0.03, "jonc": 0.14 },
+        "eau_basse": { "nenuphar": 0.12, "roseaux": 0.06, "massette": 0.05 }
+      },
+      "plage": { "sable": { "oyat": 0.12, "chardon": 0.025, "bois_flotte": 0.02 }, "galets": { "bois_flotte": 0.015, "oyat": 0.01 } },
+      "montagne": { "eboulis": { "sapin_nain": 0.05, "rhododendron": 0.02, "touffe_mont": 0.1 } },
+      "prairie": { "herbe": { "arbre_pre": 0.004, "buisson_pre": 0.004, "fleurs": 0.03, "touffe_pre": 0.05 } }
+    },
+    "LISIERE": { "MIN": 0.3, "RAYON": 4 },
+    "CLAIRIERES": { "PAS": 18, "SEUIL": 0.7, "FONDU": 0.06 },
+    "TOUFFES": { "PAS": 5, "MIN": 0.2, "MAX": 1.8 },
+    "FERME": 5,
+    "LIEUX": { "hameaux": 6, "grottes": 3, "peche": 2 },
+    "BORNES": {
+      "foret": { "images": [0.05, 0.16], "basses": [0.03, 0.2] },
+      "lande": { "images": [0.01, 0.05], "basses": [0.05, 0.3] },
+      "marais": { "images": [0.03, 0.14], "basses": [0.03, 0.2] },
+      "plage": { "images": [0, 0], "basses": [0.02, 0.2] },
+      "montagne": { "images": [0.01, 0.08], "basses": [0.02, 0.2] },
+      "prairie": { "images": [0.001, 0.02], "basses": [0.03, 0.15] }
+    }
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,

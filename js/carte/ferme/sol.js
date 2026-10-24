@@ -126,7 +126,7 @@
         this.mondeAbonne = true;
         this.ctx.monde.quandRegion((cle) => {
           const r = this.regions && this.regions.get(cle);
-          if (r && r.tex) { this.paintRegion(r, null, this.regionParts(r).monde); this.eauMondeRegion(r); this.eauMondeCle = null; }
+          if (r && r.tex) { this.paintRegion(r, null, this.regionParts(r).monde); this.eauMondeRegion(r); this.eauMondeCle = null; this.vegetationRegion(r); }
         });
       }
       this.regions = new Map();
@@ -192,10 +192,12 @@
       this.paintRegion(r);
       this.showRegionObjs(r);              // ses arbres, ses barrières, ses rochers (decor.js)
       this.eauMondeRegion(r);              // ses blocs d'eau (eau-monde.js)
+      this.vegetationRegion(r);            // ses arbres, ses buissons (vegetation.js)
     },
 
     dropRegion(r) {
       this.dropEauMonde(r);
+      this.dropVegetation(r);
       this.dropRegionObjs(r);
       if (r.img) r.img.destroy();
       if (r.tex) this.textures.remove(r.tex.key);
@@ -289,6 +291,8 @@
           }
         }
       }
+      // ses petites plantes, sur le sol (vegetation.js) : toutes, ou celles des cases repeintes
+      this.peintVegetation(ctx, reg, cells.length === this.regionParts(r).monde.length ? null : new Set(cells));
     },
 
     // Le sol repeint partout (au démarrage, quand le navigateur a vidé les images) : les régions

@@ -422,6 +422,42 @@ export function validateData(data) {
     for (const cle of ['GRILLE', 'SAUT', 'LENT']) if (!(isInt(PM[cle]) && PM[cle] >= 1)) err(`PLAN_MONDE.${cle}`, `un entier supérieur à 0 ; reçu ${JSON.stringify(PM[cle])}`);
   }
 
+  /* la végétation du grand monde (data/monde.json, lue par js/engine/monde-vegetation.js) */
+  if (data.VEGETATION) {
+    const V = data.VEGETATION, BI = data.BIOMES || [];
+    const genres = ['arbre', 'buisson', 'haute', 'basse'];
+    // les sols : l'herbe de la prairie, ceux de js/engine/monde-sol.js (SOLS_MONDE.sols), la clairière
+    const sols = ['herbe', 'clairiere', 'sable', 'galets', 'eau_basse', 'vase', 'terre', 'lande', 'feuilles', 'aiguilles', 'mousse', 'eboulis', 'roche', 'falaise', 'neige'];
+    const noms = new Set();
+    for (const [k, s] of (V.SORTES || []).entries()) {
+      const ou = `VEGETATION.SORTES[${k}]`;
+      if (!s || typeof s.nom !== 'string' || noms.has(s.nom)) { err(ou, 'un nom, chacun une fois'); continue; }
+      noms.add(s.nom);
+      if (!genres.includes(s.genre)) err(`${ou}.genre`, `l'un de ${genres.join(', ')} ; reçu ${JSON.stringify(s.genre)}`);
+      if (!(isInt(s.variantes) && s.variantes >= 1)) err(`${ou}.variantes`, 'un entier positif');
+      if (s.teinte && s.variantes % 4) err(`${ou}.variantes`, 'par quatre (une par teinte de l\'herbe)');
+      if ((s.genre === 'arbre' || s.genre === 'buisson') && !(Array.isArray(s.bloque) && s.bloque.some(([dx, dy]) => !dx && !dy))) err(`${ou}.bloque`, 'les cases fermées, dont celle du pied [0, 0]');
+      if (s.genre !== 'basse' && !(isInt(s.ecart) && s.ecart >= 0 && s.ecart <= 3)) err(`${ou}.ecart`, 'un entier de 0 à 3');
+    }
+    for (const [b, parSol] of Object.entries(V.DENSITES || {})) {
+      if (!BI.includes(b)) err('VEGETATION.DENSITES', `« ${b} » n'est pas un biome (BIOMES)`);
+      for (const [sol, parts] of Object.entries(parSol)) {
+        if (!sols.includes(sol)) err(`VEGETATION.DENSITES.${b}`, `« ${sol} » n'est pas un sol`);
+        let total = 0;
+        for (const [nom, p] of Object.entries(parts)) {
+          if (!noms.has(nom)) err(`VEGETATION.DENSITES.${b}.${sol}`, `« ${nom} » n'est pas une sorte (SORTES)`);
+          if (!(typeof p === 'number' && p > 0)) err(`VEGETATION.DENSITES.${b}.${sol}.${nom}`, 'une part positive');
+          total += p;
+        }
+        if (total > 1) err(`VEGETATION.DENSITES.${b}.${sol}`, `des parts qui font plus que 1 (${total})`);
+      }
+    }
+    for (const [b, bornes] of Object.entries(V.BORNES || {})) {
+      if (!BI.includes(b)) err('VEGETATION.BORNES', `« ${b} » n'est pas un biome (BIOMES)`);
+      for (const q of ['images', 'basses']) if (!(Array.isArray(bornes[q]) && bornes[q].length === 2 && bornes[q][0] <= bornes[q][1])) err(`VEGETATION.BORNES.${b}.${q}`, '[au moins, au plus]');
+    }
+  }
+
   /* arbre des technologies : chaque clé d'effet est lue par le moteur */
   for (const [id, n] of Object.entries(techtree.noeuds)) {
     for (const cle of Object.keys(n.effet || {})) {

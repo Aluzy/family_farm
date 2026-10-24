@@ -1,6 +1,7 @@
 import { blocGid } from './planche.js';
 import { hache, teinteHerbe } from './ferme-generee.js';
 import { AUCUNE_EAU, BIOME, BIOMES, bruitDuMonde, champsDuMonde, elementsDuMonde, releve } from './monde-gen.js';
+import { reservesDuMonde, vegetationDeRegion, VEGETATION } from './monde-vegetation.js';
 
 /* ---------- le sol du grand monde, région par région (docs/grand-monde.md : fiches 4b et 5a) ---------- */
 
@@ -105,6 +106,8 @@ const profond = (m) => tuile((RS * NS + SOLS_MONDE.CHEMINS + 1) * 16 + m);
 // l'herbe, puis ceux de la planche (2 + leur rang dans SOLS_MONDE.sols).
 const EAU = 0, HERBE = 1;
 const SOL = Object.fromEntries(SOLS_MONDE.sols.map((n, k) => [n, 2 + k]));
+// (le code de chaque sol par son nom, l'herbe comprise : les tables de la végétation)
+const CODES_SOLS = Object.assign({ herbe: HERBE }, SOL);
 
 // Les biomes où l'on ne marche pas : la mer, les lacs, les rivières (sauf à gué), les falaises,
 // les sommets.
@@ -151,6 +154,11 @@ export function contexteSol(graine, cadre, ferme, taille) {
     bords: b('bords', S.PAS_BORDS, 2, W + 1, H + 1), bords2: b('bords2', S.PAS_BORDS, 2, W + 1, H + 1),
     largeur: b('largeur', S.PAS_CHEMIN, 1, W + 1, H + 1),
     derive: b('derive', S.PAS_DERIVE, 2), derive2: b('derive2', S.PAS_DERIVE, 2),
+    // la végétation (monde-vegetation.js) : son hasard, les clairières de la forêt, les taches des
+    // petites plantes ; les cases réservées (autour des lieux), avec les éléments
+    gv: hache(graine + ':vegetation'),
+    clairieres: b('clairieres', VEGETATION.CLAIRIERES.PAS, 2), touffes: b('touffes', VEGETATION.TOUFFES.PAS, 2),
+    reserves: null,
     elements: null, chemins: null, cheminCoins: null, mesures: { elements: 0 },
   };
 }
@@ -213,6 +221,7 @@ export function elementsSol(ctx) {
     }
   }
   ctx.elements = el;
+  ctx.reserves = reservesDuMonde(el, W, H);
   ctx.chemins = chemins;
   ctx.cheminCoins = coins;
   ctx.mesures.elements = Date.now() - t0;
@@ -252,7 +261,8 @@ function solDe(ctx, b, i, x, y) {
 // BORD case autour, borné au monde), couches (Uint16Array, COUCHES tuiles par case de ce rectangle,
 // rangée par rangée ; 0 : rien ; les cases de la ferme n'ont rien), cx0, cy0, cl, ch (la région
 // elle-même), biome, marche (Uint8Array, une valeur par case de la région : son biome, 1 si l'on
-// peut y marcher), ms (la durée du calcul) }.
+// peut y marcher : ni l'eau, ni le pied d'un arbre ou d'un buisson), vegetation ({ images, basses } :
+// monde-vegetation.js), ms (la durée du calcul) }.
 export function solDeRegion(ctx, rx, ry) {
   const t0 = Date.now();
   elementsSol(ctx);
@@ -438,7 +448,12 @@ export function solDeRegion(ctx, rx, ry) {
       marche[y * cl + x] = !FERMES[b] || ctx.chemins[i] === 2 ? 1 : 0;
     }
   }
-  return { cle: rx + ',' + ry, x0, y0, l, h, couches, cx0, cy0, cl, ch: chh, biome, marche, ms: Date.now() - t0 };
+  // la végétation (monde-vegetation.js) : ses images, ses petites plantes ; les pieds des arbres
+  // et des buissons ferment leurs cases
+  const vegetation = vegetationDeRegion(ctx, {
+    cx0, cy0, cl, ch: chh, x0, y0, l, h, cSol, cCh, cTe, cw, kx0, ky0, EAU, codes: CODES_SOLS, marche, biomeDe: (i) => biomeDe(ctx, i),
+  });
+  return { cle: rx + ',' + ry, x0, y0, l, h, couches, cx0, cy0, cl, ch: chh, biome, marche, vegetation, ms: Date.now() - t0 };
 }
 
 // Un aperçu des biomes de tout le monde (une valeur tous les `pas` cases, au milieu de chaque bloc,
