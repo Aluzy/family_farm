@@ -75,7 +75,7 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
      carte.
    - Les jeux de tuiles de la montagne et de la plage, `assets/trouvailles.png`,
      `assets/faune.json` et `faune_*.png` restent dans `assets/`, kit de textures des biomes.
-2. **Le rendu par régions**, sur la ferme d'aujourd'hui (2 PR) : le sol, les arbres, les
+2. ✅ **Le rendu par régions**, sur la ferme d'aujourd'hui (2 PR, fait) : le sol, les arbres, les
    rochers, les fleurs et l'herbe haute chargés par régions de 64 × 64 tuiles autour de la
    caméra, au lieu d'une seule image de la taille de la carte.
    - **Fait (2a)** : le sol. `CarteKit.REGION` (`js/carte/kit.js`) : des régions de 64 × 64
@@ -85,8 +85,13 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
      cases qui changent (terre labourée, chemins) sont repeintes dans les régions dessinées ;
      les autres le seront à jour en reparaissant. La teinte de l'herbe haute se lit région
      par région. Vérifié : chaque région est identique au pixel près à l'ancien sol entier.
-   - **À faire (2b)** : les arbres, les barrières et les rochers (une image chacun,
-     aujourd'hui toutes créées au démarrage), créés et retirés de la même façon.
+   - **Fait (2b)** : les arbres, les buissons, les barrières et les rochers (un canevas et une
+     image chacun) appartiennent à la région où est le milieu de leur image
+     (`placeInRegion`, `js/carte/ferme/decor.js`) : leur image se fait quand la région est
+     dessinée (`showObj`) et s'en va avec elle (`dropObj` ; pas pendant qu'ils tremblent ou
+     repoussent). Un arbre abattu (`o.vu`) ou un rocher cassé reste caché quand son image se
+     refait ; la boîte d'un rocher (`rockBox`) se mesure à sa première image. Les arbres
+     plantés par le joueur gardent leur image.
 3. **Le moteur en coordonnées du monde** (2 à 3 PR) : les cases numérotées sur la largeur du
    monde (migration de tout ce qui est rangé par case), le terrain lu case par case, la nuit
    limitée aux régions visitées, des trajets bornés.

@@ -11,7 +11,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { MAP, ZONE_TILES, ROCKS, MIN_TAP } = F.C;
+  const { ZONE_TILES, ROCKS, MIN_TAP } = F.C;
   const { pixelRatio, reducedMotion } = F;
 
   F.partie({
@@ -52,35 +52,34 @@
       this.occluded.set(layer, all);
     },
 
-    // Les images des rochers, et la place qu'occupent vraiment leurs pixels (box : x0, y0,
-    // x1, y1 en px de carte) : un caillou ne remplit pas sa case.
+    // Les rochers : leur image se fait avec leur région du sol (decor.js, placeInRegion). Leur
+    // boîte (box : x0, y0, x1, y1 en px de carte) est celle de leurs cases, jusqu'à ce que leur
+    // image mesure la place qu'occupent vraiment leurs pixels (rockBox) : un caillou ne remplit
+    // pas sa case.
     makeRocks() {
-      const raw = this.mapRaw;
-      if (!raw || !this.has(MAP.tiles) || !this.rocks) return;
-      const set = (raw.tilesets || []).find((t) => t.image && String(t.image).split('/').pop() === MAP.image);
-      if (!set) return;
-      const img = this.textures.get(MAP.tiles).getSourceImage();
+      if (!this.rocks) return;
       this.rocks.forEach((r, k) => {
-        const key = 'rocher_' + k;
-        if (r.img) r.img.destroy();
-        if (this.textures.exists(key)) this.textures.remove(key);
-        r.tex = this.textures.createCanvas(key, r.w, r.h);
-        this.paintOccluder(r, raw, set, img);
-        r.box = { x0: r.x, y0: r.y, x1: r.x + r.w, y1: r.y + r.h };
-        try {
-          const d = r.tex.getContext().getImageData(0, 0, r.w, r.h).data;
-          let x0 = r.w, y0 = r.h, x1 = -1, y1 = -1;
-          for (let y = 0; y < r.h; y++) {
-            for (let x = 0; x < r.w; x++) {
-              if (d[(y * r.w + x) * 4 + 3] < 128) continue;
-              x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
-            }
-          }
-          if (x1 >= 0) r.box = { x0: r.x + x0, y0: r.y + y0, x1: r.x + x1 + 1, y1: r.y + y1 + 1 };
-        } catch (e) { /* la boîte des cases suffit */ }
-        r.img = this.add.image(r.x, r.y, key).setOrigin(0).setDepth(r.foot);
-        r.img.setVisible(!r.gone);
+        r.key = 'rocher_' + k;
+        r.rocher = true;
+        r.box = r.box || { x0: r.x, y0: r.y, x1: r.x + r.w, y1: r.y + r.h };
+        this.placeInRegion(r);
       });
+    },
+
+    rockBox(r) {
+      if (r.boxVue) return;
+      try {
+        const d = r.tex.getContext().getImageData(0, 0, r.w, r.h).data;
+        let x0 = r.w, y0 = r.h, x1 = -1, y1 = -1;
+        for (let y = 0; y < r.h; y++) {
+          for (let x = 0; x < r.w; x++) {
+            if (d[(y * r.w + x) * 4 + 3] < 128) continue;
+            x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+          }
+        }
+        if (x1 >= 0) r.box = { x0: r.x + x0, y0: r.y + y0, x1: r.x + x1 + 1, y1: r.y + y1 + 1 };
+        r.boxVue = true;
+      } catch (e) { /* la boîte des cases suffit */ }
     },
 
     // Les rochers cassés (modèle.rochers : leurs identifiants) ne sont plus sur la carte ; un

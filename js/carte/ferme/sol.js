@@ -168,9 +168,11 @@
       const c = r.tex.getSourceImage();
       if (c && c.addEventListener) c.addEventListener('contextrestored', () => { if (r.tex) this.paintRegion(r); });
       this.paintRegion(r);
+      this.showRegionObjs(r);              // ses arbres, ses barrières, ses rochers (decor.js)
     },
 
     dropRegion(r) {
+      this.dropRegionObjs(r);
       if (r.img) r.img.destroy();
       if (r.tex) this.textures.remove(r.tex.key);
       r.img = r.tex = null;

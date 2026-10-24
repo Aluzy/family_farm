@@ -197,6 +197,7 @@
         t.gone = gone;
         changed = true;
         const o = this.occluderOf(t);
+        if (o) o.vu = !gone;                 // (pour son image, si elle se refait : decor.js showObj)
         if (!o || !o.img) continue;
         this.tweens.killTweensOf(o.img);
         o.regrowing = false;
