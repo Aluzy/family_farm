@@ -261,7 +261,6 @@ test('fromage d\'alpage : 3 laits d\'alpage en Cuisine (nœud Laiterie), plus ch
   assertEqual(DATA.OBJETS.fromage_alpage.prix, roundPct(3 * DATA.OBJETS.lait_alpage.prix, coef));
   assertEqual(DATA.OBJETS.fromage_alpage.energie, roundPct(3 * DATA.OBJETS.lait_alpage.energie, coef));
   assert(DATA.OBJETS.fromage_alpage.prix > DATA.OBJETS.fromage_frais.prix, 'plus cher que le fromage frais');
-  assertEqual(DATA.VILLE.SORTIES.montagne.butin, { miel: 2 }, 'plus de fromage dans le butin de la montagne');
   const s = atelier();
   setInv(s, { lait_alpage: 3 });
   assertEqual(recipeStatus(s, 'fromage_alpage').code, 'verrouillee');

@@ -1,5 +1,5 @@
 # L'ombre portée d'un arbre seul (assets/ombre_arbre.png, 44 × 12), posée sous les arbres du
-# Verger et des voisins (js/carte/nature.js NATURE.ombre, scripts/ville/ferme.py) : un ovale
+# Verger et des voisins (js/carte/nature.js NATURE.ombre) : un ovale
 # vert très sombre et transparent, plein au milieu, plus léger vers le bord, le bord tramé
 # (matrice de Bayer 4 × 4).
 #

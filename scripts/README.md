@@ -27,9 +27,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from pixel import ASSETS, T, contour  # noqa: E402
 ```
 
-Les modules de `ville/` et `infra/` passent par leur `commun.py`, qui reprend ce qu'il faut de
-`pixel.py` ; les `icones/art_*.py` sont chargés par `icones/build.py`, qui met `scripts/` dans le
-chemin pour eux. N'y vont que les aides vraiment identiques d'un dossier à l'autre : les
+Quelques modules de `carte/`, venus de l'ancienne ville (`scripts/ville/`, retiré avec elle :
+docs/grand-monde.md), passent par `carte/commun.py`, qui reprend ce qu'il faut de `pixel.py` :
+`carte/grotte.py` (les tuiles et les objets des niveaux de la mine : `assets/grotte_tuiles.png`,
+`grotte_objets.png`, `grotte.json`, lus par `js/grotte.js`), `carte/fleche.py` (la flèche bleue des
+passages, `assets/fleche_passage.png`), `carte/briques.py` (les matières de brique et de pierre de
+taille des murs de la ferme, pour `carte/blocs.py`) et `carte/faune.py` (les animaux des biomes à
+venir du grand monde). Les `icones/art_*.py` sont chargés par `icones/build.py`, qui met
+`scripts/` dans le chemin pour eux (`art_ville.py` et `art_boutiques.py` dessinent des icônes
+d'objets toujours utilisées, pas des cartes). N'y vont que les aides vraiment identiques d'un dossier à l'autre : les
 `planche()`, `tsx()`, `coins()`… de chaque dossier font chacun autre chose et restent chez eux.
 
 Une retouche de `pixel.py` touche toutes les images : relancer les générateurs et vérifier que

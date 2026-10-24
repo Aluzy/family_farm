@@ -11,7 +11,7 @@ import { advanceTutorial, skipTutorial, tutorialStep } from '../engine/alerts.js
 import {
   formatDuration, formatNumber, formatQty, formatWh, formatWhRate,
 } from '../engine/format.js';
-import { activeTab, cartesOuvertes, ecranFerme, hoeMode, state } from './store.js';
+import { activeTab, ecranFerme, hoeMode, state } from './store.js';
 import { tel } from './consent.js';
 import { consentBannerPending, consentBannerShown, letterToastShown, storyOpen, uiCalm } from './calme.js';
 import { applyResult } from './game-actions.js';
@@ -79,22 +79,9 @@ const cashCrops = () => Object.keys(DATA.CULTURES).filter((c) => DATA.CULTURES[c
 const luxuryRecipes = () => DATA.ARBRE.noeuds.cui_epicerie.effet.recettes.map((id) => DATA.RECETTES[id]).filter((r) => r && r.coefPrix);
 
 // Les eaux de la canne à pêche et ce qu'on y prend.
-const EAUX = { etang: 'Étang de la ferme', mare: 'Mare de la ferme', lac: 'Lac de la montagne', mer: 'Mer (depuis le ponton de la plage)' };
-// Celles des autres cartes (la montagne, la plage : cartesOuvertes).
+const EAUX = { etang: 'Étang de la ferme', mare: 'Mare de la ferme', lac: 'Lac de montagne', mer: 'Mer' };
+// Celles du grand monde, pas encore là (docs/grand-monde.md).
 const EAUX_AILLEURS = ['lac', 'mer'];
-
-// Le fromage d'alpage (fiche de l'Étable) : herbes de montagne → lait d'alpage → fromage.
-function alpageText() {
-  const V = DATA.ANIMAUX.vache;
-  const herbes = DATA.OBJETS[DATA.PATURAGE.HERBES];
-  const lait = DATA.OBJETS[V.laitAlpage];
-  const r = DATA.RECETTES.fromage_alpage;
-  const fromage = DATA.OBJETS[r.sortie];
-  const laiterie = Object.values(DATA.ARBRE.noeuds).find((n) => n.effet && (n.effet.recettes || []).includes('fromage_alpage'));
-  const nb = (n) => (n === 1 ? 'nuit' : 'nuits');
-  const garde = DATA.CONSERVATION[DATA.PATURAGE.HERBES];
-  return `${fromage.icone} Le ${fromage.nom.toLowerCase()}. À la montagne, cueille les ${herbes.nom.toLowerCase()} dans les prés : ce sont les trouvailles les plus courantes${garde ? `, et elles se gardent ${formatNumber(garde)} ${nb(garde)}` : ''}. Dans l'Étable, touche « Nourrir les vaches aux herbes » : chaque nuit, une vache mange ${formatNumber(V.herbesParNuit)} herbe à la place de ses ${formatStraw(V.pailleParNuit)} et donne du ${lait.nom.toLowerCase()} au lieu du lait. Quand les herbes manquent, elle reprend sa paille. En Cuisine${laiterie ? `, une fois la ${laiterie.nom} débloquée` : ''}, ${formatQty(r.ingredients[0].qte)} ${lait.nom.toLowerCase().replace('lait', 'laits')} font un ${fromage.nom.toLowerCase()}, plus cher que le fromage frais.`;
-}
 
 // Coûts des niveaux 2 à 5 d'un appareil : « 150 · 400 · 900 · 2 000 💰 ».
 function levelCosts(type) {
@@ -173,7 +160,7 @@ const HELP = {
       role: `Les moutons et les vaches vivent à l'Étable et s'achètent au Marché. Un mouton prend ${formatPlaces(P.PLACES_PAR_MOUTON)}, une vache ${formatPlaces(P.PLACES_PAR_VACHE)}. Une place achetée reste acquise.`,
       conso: `Chaque nuit, ${formatStraw(M.pailleParNuit)} par mouton et ${formatStraw(V.pailleParNuit)} par vache. La paille sort de la botteleuse : la faux en main (Marché ou Atelier), chaque touffe d'herbe haute de la carte fauchée donne ${DATA.FAUX.FIBRE} fibre, à ramasser au sol (la touffe repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard) ; ${DATA.BOTTELEUSE.FIBRES} fibres jetées dans la botteleuse font une botte de ${formatStraw(DATA.BOTTELEUSE.PAILLE)}. Elle ne s'achète pas au Marché.`,
       prod: `Un mouton nourri ${M.joursLaine} nuits donne ${M.laineParTonte} laine (à tondre). Une vache nourrie donne ${V.laitParNuit} lait la nuit même.`,
-      note: `L'Étable se bâtit : une enceinte de murs avec la mangeoire (fabriquée à l'Atelier), reliée à un enclos de barrières ; puis ${formatNumber(P.PRIX_PLACE)} 💰 la place, +${formatNumber(P.CROISSANCE - 100)} % à chaque achat. S'il n'y a pas assez de paille, les animaux mangent dans l'ordre de la liste (les moutons, puis les vaches). Un animal qui n'a pas mangé ne donne rien cette nuit-là ; il ne lui arrive rien d'autre.${cartesOuvertes() ? ` ${alpageText()}` : ''}`,
+      note: `L'Étable se bâtit : une enceinte de murs avec la mangeoire (fabriquée à l'Atelier), reliée à un enclos de barrières ; puis ${formatNumber(P.PRIX_PLACE)} 💰 la place, +${formatNumber(P.CROISSANCE - 100)} % à chaque achat. S'il n'y a pas assez de paille, les animaux mangent dans l'ordre de la liste (les moutons, puis les vaches). Un animal qui n'a pas mangé ne donne rien cette nuit-là ; il ne lui arrive rien d'autre.`,
     };
   },
   verger: () => {
@@ -199,7 +186,7 @@ const HELP = {
     role: 'Prépare les plats mijotés. Une préparation à la fois.',
     conso: 'Pas d\'électricité.',
     prod: `${stationRecipesLine('cuisine')}.`,
-    note: `Un plat vaut ${formatNumber(DATA.CUISINE.COEF_PLAT)} % de l'énergie de ses ingrédients (arrondi), et les plats rendent la famille plus heureuse (son bonheur réduit l'énergie que coûtent tes actions) : chaque nuit, le bonheur baisse de ${formatNumber(-DATA.VILLE.BONHEUR.DECLIN)}, et chacun des ${DATA.VILLE.BONHEUR.PLATS_MAX} meilleurs plats différents mangés dans la journée en rend ${DATA.VILLE.BONHEUR.PLATS.cuisine} (Cuisine) ou ${DATA.VILLE.BONHEUR.PLATS.four} (Four), +${DATA.VILLE.BONHEUR.HUILE_FRUIT} avec de l'huile ou un fruit, +${DATA.VILLE.BONHEUR.SPECIALES.bonus} avec du cacao, du café ou de la vanille. Les recettes de luxe (${luxuryRecipes().map((r) => r.nom.toLowerCase()).join(', ')}) se vendent ${[...new Set(luxuryRecipes().map((r) => formatNumber(r.coefPrix)))].join(' ou ')} % du prix de leurs ingrédients au lieu de ${formatNumber(DATA.CUISINE.COEF_PLAT)} %.`,
+    note: `Un plat vaut ${formatNumber(DATA.CUISINE.COEF_PLAT)} % de l'énergie de ses ingrédients (arrondi), et les plats rendent la famille plus heureuse (son bonheur réduit l'énergie que coûtent tes actions) : chaque nuit, le bonheur baisse de ${formatNumber(-DATA.BONHEUR.DECLIN)}, et chacun des ${DATA.BONHEUR.PLATS_MAX} meilleurs plats différents mangés dans la journée en rend ${DATA.BONHEUR.PLATS.cuisine} (Cuisine) ou ${DATA.BONHEUR.PLATS.four} (Four), +${DATA.BONHEUR.HUILE_FRUIT} avec de l'huile ou un fruit, +${DATA.BONHEUR.SPECIALES.bonus} avec du cacao, du café ou de la vanille. Les recettes de luxe (${luxuryRecipes().map((r) => r.nom.toLowerCase()).join(', ')}) se vendent ${[...new Set(luxuryRecipes().map((r) => formatNumber(r.coefPrix)))].join(' ou ')} % du prix de leurs ingrédients au lieu de ${formatNumber(DATA.CUISINE.COEF_PLAT)} %.`,
   }),
   moulin: () => ({
     nom: 'Moulin',
@@ -215,27 +202,8 @@ const HELP = {
     prod: `${stationRecipesLine('presse')}.`,
     note: 'Sans énergie, la préparation se met en pause.',
   }),
-  ville: () => {
-    const M = DATA.VILLE.MARCHE;
-    const B = DATA.VILLE.BONHEUR;
-    const E = DATA.VILLE.ENTREPRISES;
-    const voyages = Object.values(DATA.VILLE.SORTIES).filter((x) => x.lieu === 'voyage');
-    return {
-      nom: 'Ville',
-      icone: '🏙️',
-      lignes: [
-        ['Bonheur', `Chaque soir, au repas, il baisse de ${formatNumber(-B.DECLIN)} pour tous (et de ${formatNumber(-B.FAIM)} de plus si le repas ne couvre pas le besoin). Les plats cuisinés (au plus ${B.PLATS_MAX} différents par repas) et les sorties le font remonter ; les aliments crus ne rapportent rien. Plus la famille est heureuse, moins tes actions coûtent d'énergie.`],
-        ['Sorties', `Toute la famille part ; le temps passe pendant la sortie (retour avant ${DATA.TEMPS.HEURE_NUIT} h). Chaque sortie se fait une fois par jour. Les voyages (${voyages.map((x) => x.nom.toLowerCase()).join(', ')}) sont plus longs et plus chers, et rapportent de quoi cuisiner.`],
-        ['Marché de la ville', `${capitalize(itemNames(Object.keys(DATA.OBJETS).filter((id) => DATA.OBJETS[id].ville)))} : introuvables au marché de la ferme. Un adulte y va (${M.HEURES} h aller-retour, ${formatNumber(M.PRIX)} 💰 de bus) ; le marché reste ouvert jusqu'au soir.`],
-        ...(cartesOuvertes() ? [['Promenade', 'Ton personnage peut aussi aller en ville lui-même : au bout du chemin de la ferme, la navette part de l\'abri de bus et le dépose à la gare. Voir la fiche « Cartes d\'excursion ».']] : []),
-        ...(cartesOuvertes() ? [['Étals', `Aux étals du marché, tu vends les produits de la ferme (${M.CATEGORIES.map((c) => `${c}s`).join(', ')}) ${formatNumber(M.VENTE)} % de leur prix.`],
-        ['Entreprises', `Les entrepôts de la ville s'achètent : ${Object.values(E.LISTE).map((x) => `${x.icone} ${x.nom} ${formatNumber(x.prix)} 💰`).join(' · ')}. Chaque jour à ${E.HEURE} h, une entreprise prend des produits dans le stock de la ferme, les transforme et vend aussitôt ce qu'elle fabrique, plus cher qu'un commerce de la ferme.`],
-        ['Gare', 'Le train mène de la ville à la montagne et à la plage.']] : []),
-      ],
-    };
-  },
-  // Les fiches des outils, de la grotte, de la pêche, de l'Arbre des technologies et des
-  // cartes d'excursion (ouvertes depuis À propos).
+  // Les fiches des outils, de la grotte, de la pêche et de l'Arbre des technologies (ouvertes
+  // depuis À propos).
   outils: () => {
     const C = DATA.PERSONNAGE.COUTS;
     const H = DATA.HACHE;
@@ -246,7 +214,7 @@ const HELP = {
       lignes: [
         ['Achat', `Chaque outil s'achète une fois au Marché, puis se choisit dans la barre d'outils de la carte : ${[DATA.HOUE, H, P, DATA.FAUX, DATA.CANNE].map((o) => `${o.ICONE} ${o.NOM.toLowerCase()} ${formatNumber(o.PRIX)} 💰`).join(' · ')}.`],
         ['Houe', `Change une tuile d'herbe en terre à cultiver : ${formatNumber(C.labourer)} d'énergie la tuile.`],
-        ['Hache', `Touche un arbre (à la ferme ou sur le chemin de la ville) : ${formatNumber(C.couper)} d'énergie par coup, et ${formatNumber(H.BOIS)} bois qui tombe au sol. L'arbre tombe au ${H.COUPES}e coup, lâche ${formatNumber(H.CHUTE)} bois de plus là où il touche le sol, et repousse ${H.RETOUR[0]} à ${H.RETOUR[1]} jours plus tard. Marche sur le bois pour le ramasser. Sur ta ferme, un sapin laisse une pomme de pin, un autre arbre un gland, et il ne repousse pas : plante sa graine sur une case d'herbe libre (Inventaire › « Planter »), un arbre y pousse en ${H.POUSSE[0]} à ${H.POUSSE[1]} jours.`],
+        ['Hache', `Touche un arbre : ${formatNumber(C.couper)} d'énergie par coup, et ${formatNumber(H.BOIS)} bois qui tombe au sol. L'arbre tombe au ${H.COUPES}e coup, lâche ${formatNumber(H.CHUTE)} bois de plus là où il touche le sol, et repousse ${H.RETOUR[0]} à ${H.RETOUR[1]} jours plus tard. Marche sur le bois pour le ramasser. Sur ta ferme, un sapin laisse une pomme de pin, un autre arbre un gland, et il ne repousse pas : plante sa graine sur une case d'herbe libre (Inventaire › « Planter »), un arbre y pousse en ${H.POUSSE[0]} à ${H.POUSSE[1]} jours.`],
         ['Pioche', `Touche un rocher : ${formatNumber(C.piocher)} d'énergie par coup, et ${formatNumber(P.PIERRE)} pierre qui tombe au sol ; il se casse au ${P.COUPS}e coup en lâchant ${formatNumber(P.BRIS)} pierres de plus (marche dessus pour les ramasser) et revient ${P.RETOUR[0]} à ${P.RETOUR[1]} jours plus tard. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : touche-le, ${formatNumber(P.MAIN)} pierre va dans ton inventaire. Dans la grotte, elle prend aussi le minerai.`],
         ['Faux', `Touche une touffe d'herbe haute : ${formatNumber(C.faucher)} d'énergie, et ${formatNumber(DATA.FAUX.FIBRE)} fibre qui tombe au sol (marche dessus pour la ramasser). La touffe repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard. C'est la seule façon d'avoir de la fibre (l'Atelier, la paille de la botteleuse).`],
         ['Coup fort', `Outil en main, garde le doigt appuyé sur ton personnage : il tremble, puis frappe fort quand tu lèves le doigt. La hache ou la pioche comptent ${formatNumber(DATA.COUP_FORT.COUPS)} coups sur l'arbre ou le rocher le plus proche (pour l'énergie de ${formatNumber(DATA.COUP_FORT.ENERGIE)} coups) ; la faux tournoie et fauche toute l'herbe haute autour de lui ; la houe laboure les tuiles autour de lui.`],
@@ -260,7 +228,7 @@ const HELP = {
     icone: '⛏️',
     lignes: [
       ['La mine', 'Sur la ferme, caché dans les bois, un tas de terre avec une porte sombre : touche deux fois le tas (ou avance vers la porte quand tu es devant) pour y entrer. Au premier niveau, l\'échelle te fait ressortir par la porte.'],
-      ...(cartesOuvertes() ? [['La grotte', 'À la montagne (le train, depuis la gare de la ville), des entrées mènent aussi sous terre. Chaque niveau change tous les jours ; on descend par le puits, on remonte par l\'échelle. Il y fait noir : on n\'y voit qu\'autour de soi.']] : [['Sous terre', 'Chaque niveau change tous les jours ; on descend par le puits, on remonte par l\'échelle. Il y fait noir : on n\'y voit qu\'autour de soi.']]),
+      ['Sous terre', 'Chaque niveau change tous les jours ; on descend par le puits, on remonte par l\'échelle. Il y fait noir : on n\'y voit qu\'autour de soi.'],
       ['Minerais', `La pioche en main, touche un minerai dans les murs (${formatNumber(DATA.PERSONNAGE.COUTS.piocher)} d'énergie le coup) : il va dans l'inventaire. Le fer est partout ; le cuivre, l'or et le platine se trouvent de plus en plus bas.`],
       ['Lingots', `Au Four, avec du bois : ${ingotRecipes().map((r) => `${DATA.OBJETS[r.sortie].nom.toLowerCase()} = ${ingredientsText(r)}`).join(' ; ')}.`],
       ['À quoi ça sert', 'Minerais et lingots ne se vendent pas (ce sont des matériaux) : avec le bois et la pierre, ils paient les technologies de l\'Arbre des technologies.'],
@@ -273,8 +241,8 @@ const HELP = {
       nom: 'Pêche',
       icone: '🎣',
       lignes: [
-        // (le lac de la montagne et la mer, les autres cartes fermées : bientôt disponibles)
-        ...Object.entries(C.PRISES).map(([eau, prises]) => [EAUX[eau] || eau, `${capitalize(itemNames(Object.keys(prises)))} ; au plus ${formatNumber(C.JOUR[eau])} prises par jour.${!cartesOuvertes() && EAUX_AILLEURS.includes(eau) ? ' Bientôt disponible !' : ''}`]),
+        // (le lac et la mer, dans le grand monde : bientôt disponibles)
+        ...Object.entries(C.PRISES).map(([eau, prises]) => [EAUX[eau] || eau, `${capitalize(itemNames(Object.keys(prises)))} ; au plus ${formatNumber(C.JOUR[eau])} prises par jour.${EAUX_AILLEURS.includes(eau) ? ' Bientôt disponible !' : ''}`]),
         ['Lancer', `La canne en main (Marché, ${formatNumber(C.PRIX)} 💰), touche l'eau : ${formatNumber(DATA.PERSONNAGE.COUTS.pecher)} d'énergie le lancer, et il arrive que rien ne morde.`],
         ['Poissons', `Frais, ils se gardent peu de nuits : mange-les, vends-les ou cuisine-les (${recipesUsing([...poissons, 'poisson']).join(', ')}).`],
       ],
@@ -295,20 +263,6 @@ const HELP = {
       ],
     };
   },
-  cartes: () => {
-    const trouv = (lieu) => itemNames(Object.keys(DATA.OBJETS).filter((id) => DATA.OBJETS[id].trouvaille === lieu));
-    return {
-      nom: 'Cartes d\'excursion',
-      icone: '🗺️',
-      lignes: [
-        ['Le chemin', 'Au bout du chemin de la ferme, la flèche mène à la campagne : des arbres et des rochers, des voisins, et l\'abri de bus. La navette y passe dans la journée, mène à la gare, en ville, et en revient.'],
-        ['Ville', `Les étals achètent les produits de la ferme ${formatNumber(DATA.VILLE.MARCHE.VENTE)} % de leur prix ; les entreprises s'achètent dans les entrepôts. De la gare, le train part vers la montagne et la plage.`],
-        ['Montagne', `Des trouvailles à ramasser (${trouv('montagne')}), des animaux à regarder, le lac pour pêcher et les entrées des grottes.`],
-        ['Plage', `Des trouvailles à ramasser (${trouv('plage')}) et la pêche en mer depuis le ponton. Pas de grotte.`],
-        ['Bon à savoir', 'Le temps passe comme à la ferme (repas, entreprises, nuit). Les trouvailles vont dans l\'inventaire et se vendent ; ce qu\'on a ramassé revient le lendemain. La nuit, seul le sommeil de ton personnage l\'empêche d\'agir ; la famille, elle, reste à la maison.'],
-      ],
-    };
-  },
   chapitres: () => {
     const c = state.campagne;
     const lignes = [['Chapitres', `La campagne compte ${chapterCount()} chapitres. Remplis tous les objectifs d'un chapitre pour passer au suivant et gagner son XP.`]];
@@ -322,7 +276,7 @@ const HELP = {
     lignes: [
       ['Rôle', 'Un commerce transforme chaque nuit, après le repas de la famille, une partie de la production de la ferme et la vend tout seul, sans passer par le Marché.'],
       ['Coût', 'Ni énergie ni électricité ; chaque pièce vendue rapporte 1 XP.'],
-      ['Valeur', `Il vend ses produits plus cher qu'une recette (${formatNumber(DATA.CUISINE.COEF_PLAT)} % du prix des ingrédients), mais moins qu'une entreprise de la ville.`],
+      ['Valeur', `Il vend ses produits plus cher qu'une recette (${formatNumber(DATA.CUISINE.COEF_PLAT)} % du prix des ingrédients).`],
       ['Choix', `Le premier choix est gratuit. En changer coûte ensuite ${formatNumber(DATA.COMMERCE.CHANGER)} 💰.`],
     ],
   }),
@@ -335,10 +289,9 @@ const HELP = {
   }),
 };
 
-// Les fiches sans bâtiment, ouvertes depuis À propos (celle des cartes d'excursion : quand elles
-// sont ouvertes, cartesOuvertes).
-const FICHES = ['outils', 'grotte', 'peche', 'techno', 'cartes'];
-const fiches = () => FICHES.filter((id) => id !== 'cartes' || cartesOuvertes());
+// Les fiches sans bâtiment, ouvertes depuis À propos.
+const FICHES = ['outils', 'grotte', 'peche', 'techno'];
+const fiches = () => FICHES;
 
 // Le nom des actions de DATA.PERSONNAGE.COUTS, pour la règle de l'énergie.
 const ACTIONS_NOMS = {
@@ -541,7 +494,7 @@ export function openAboutModal() {
   const durees = [...Object.values(DATA.CONSERVATION), ...Object.values(DATA.CONSERVATION_CATEGORIE)];
   const H = DATA.HORS_LIGNE;
   const rules = [
-    `La famille (${adultes} adultes, ${enfants} enfants) mange quand elle a faim : chaque membre (sauf toi) a une jauge, qui baisse quand il marche ou qu'il aide ; à ${DATA.FAMILLE.FAIM.SEUIL}, il va manger dans la boîte à nourriture (fabriquée à l'Atelier, posée dans le foyer, remplie par toi : ${DATA.ATELIER.BOITE.PLATS} aliments différents, ${DATA.ATELIER.BOITE.QUANTITE} de chacun), ou au réfrigérateur une fois construit, d'abord ce qui périme le plus tôt. Les enfants rentrent de l'école affamés et mangent avant d'aller dormir.`,
+    `La famille (${adultes} adultes, ${enfants} enfants) mange quand elle a faim : chaque membre (sauf toi) a une jauge, qui baisse quand il marche ou qu'il aide ; à ${DATA.FAMILLE.FAIM.SEUIL}, il va manger dans la boîte à nourriture (fabriquée à l'Atelier, posée dans le foyer, remplie par toi : ${DATA.ATELIER.BOITE.PLATS} aliments différents, ${DATA.ATELIER.BOITE.QUANTITE} de chacun), ou au réfrigérateur une fois construit, d'abord ce qui périme le plus tôt.`,
     `La journée commence à ${DATA.TEMPS.HEURE_REVEIL} h ; une heure passe toutes les ${DATA.TEMPS.SECONDES_PAR_HEURE} s. À ${DATA.TEMPS.HEURE_NUIT} h, la famille va se coucher et reste à la maison ; la nuit défile à la même vitesse et ton personnage peut encore agir : seul son sommeil arrête les actions. À minuit, la nuit passe (ponte, lait…) et le jour change ; les plantes, elles, poussent ${DATA.TEMPS.POUSSE_HEURES} heures après leur arrosage, à toute heure ; à ${DATA.TEMPS.HEURE_REVEIL} h, c'est le réveil. Pendant la nuit, le bouton « Zzz » envoie ton personnage dans son lit (on ne dort que la nuit) : quand il dort, une heure passe toutes les ${DATA.TEMPS.SECONDES_PAR_HEURE_SOMMEIL} s et son énergie remonte peu à peu (${DATA.PERSONNAGE.SOMMEIL_HEURES} heures de sommeil pour celle du réveil ; éveillé, rien ne revient). L'horloge s'arrête quand le jeu est fermé.`,
     `La nuit : repas, puis une poule nourrie pond, les moutons font leur laine, les vaches donnent leur lait, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
     `Ton énergie (⚡, 0 à ${DATA.PERSONNAGE.MAX}) : chaque action au clic en coûte (${Object.entries(DATA.PERSONNAGE.COUTS).map(([a, n]) => `${ACTIONS_NOMS[a] || a} ${formatNumber(n)}`).join(', ')}), un peu moins quand la famille est heureuse (jusqu'à −${DATA.PERSONNAGE.BONHEUR_REDUCTION} %) et ${DATA.PERSONNAGE.ENDURANCE} % de moins par niveau. Au réveil, elle remonte à ${DATA.PERSONNAGE.REVEIL_BASE}, et jusqu'à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} si le reste de la famille se couche rassasié ; un aliment mangé dans la journée rend sa valeur (son énergie ÷ ${DATA.PERSONNAGE.MANGER_DIVISEUR}, + ${DATA.PERSONNAGE.MANGER_BONUS} %, arrondie au-dessus). Les automatisations ne coûtent rien.`,

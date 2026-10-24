@@ -1,8 +1,7 @@
 /* carte/toit.js — le toit de tuiles d'un bâtiment bâti en blocs, sur toutes les cartes.
  *
- * La ferme (js/carte/ferme/toits.js : un toit sur le dernier niveau de chaque pièce close) et la
- * ville (js/carte/ville/immeuble.js : l'immeuble en blocs) posent le même toit, dessiné comme
- * ceux des immeubles de la ville vus de 3/4 (scripts/ville/immeubles.py toit_croupe) : un toit
+ * La ferme (js/carte/ferme/toits.js : un toit sur le dernier niveau de chaque pièce close) pose
+ * ce toit, dessiné comme ceux des immeubles de l'ancienne ville vus de 3/4 : un toit
  * à croupes, dont l'emprise est celle du bâtiment, murs compris :
  *   - le pan de devant, face à nous ; celui de derrière vu en raccourci, une bande fine et claire en
  *     haut (TOIT.haut de la profondeur, ou en px) ; aux deux bouts, les croupes en triangle (la

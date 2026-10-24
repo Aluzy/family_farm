@@ -1,5 +1,5 @@
 import { DATA } from './catalog.js';
-import { memberHappiness } from './ville.js';
+import { memberHappiness } from './bonheur.js';
 import { fail } from './devices.js';
 import { countItem, takeItem } from './inventory.js';
 import { fridgeCount, takeFromFridge } from './fridge.js';
@@ -13,7 +13,7 @@ import { affames, bonheurRepas, jaugeFamille, repasCoucher, repasJour } from './
 // nom : le rôle fixe (« Adulte 1 ») ; prenom, genre, teint : le profil choisi
 // par le joueur (version 1.1), au départ le rôle, le sexe de DATA et le jaune.
 export function makeMember(def) {
-  return { id: def.id, nom: def.nom, enfant: def.enfant, bonheur: DATA.VILLE.BONHEUR.DEPART, ...defaultMemberProfile(def) };
+  return { id: def.id, nom: def.nom, enfant: def.enfant, bonheur: DATA.BONHEUR.DEPART, ...defaultMemberProfile(def) };
 }
 
 /* ---------- version 1.1 : profil des membres de la famille ---------- */

@@ -14,10 +14,10 @@ import { unlockLevel } from './levels.js';
        cartes (le triporteur, lui, reste au garage : on ne monte pas sur les deux) ;
      - nourri : il a mangé sa ration la nuit d'avant (chevalNuit) ; sinon il va moins vite ;
      - attache : null (à la ferme, dans l'Écurie, ou monté), ou { carte, x, y } : attaché à son
-       poteau sur une carte d'excursion (son nom : 'transition', 'ville'… ; x, y : le pied du
+       poteau sur une autre carte (le grand monde, docs/grand-monde.md ; x, y : le pied du
        poteau, px de la carte).
-   Les cartes disent où est le personnage (lieu : { carte, x, y, proche }) : 'ferme', ou la carte
-   d'excursion ; proche : il est à côté du cheval attaché. */
+   Les cartes disent où est le personnage (lieu : { carte, x, y, proche }) : 'ferme', ou une
+   autre carte ; proche : il est à côté du cheval attaché. */
 
 const C = () => DATA.CHEVAL;
 
@@ -35,7 +35,7 @@ export function vitesseCheval(state) {
   return state.cheval.nourri === false ? C().VITESSE_FAIM : C().VITESSE;
 }
 
-// Où est le cheval : 'monte', 'attache' (sur une carte d'excursion), 'ecurie', ou null (pas de cheval).
+// Où est le cheval : 'monte', 'attache' (sur une autre carte), 'ecurie', ou null (pas de cheval).
 export function chevalOu(state) {
   if (!chevalPossede(state)) return null;
   if (state.cheval.monte) return 'monte';

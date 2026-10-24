@@ -1,8 +1,8 @@
 # Le triporteur du personnage (assets/triporteur.png) : un tricycle à caisse de bois à l'avant
 # (deux roues devant sous la caisse, une derrière sous la selle), cadre vert. Le personnage s'y
 # assoit (ses cases assis_<vue>, js/carte/triporteur.js) ; la carte le pose sur la selle.
-# Le triporteur électrique du livreur de la carte de transition (assets/triporteur_electrique.png,
-# js/carte/ville/livreur.js) : le même, cadre bleu, une batterie jaune sous la selle, la caisse
+# Le triporteur électrique du livreur de l'ancienne carte de transition (assets/triporteur_electrique.png,
+# gardé pour le grand monde) : le même, cadre bleu, une batterie jaune sous la selle, la caisse
 # marquée d'un éclair. Et la caisse de collecte posée au bord du chemin devant chaque maison
 # des voisins (assets/caisse_collecte.png, 16 × 16 : pleine, vide).
 #

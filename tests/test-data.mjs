@@ -114,20 +114,15 @@ refuse('courrier : cadeau inconnu', (d) => { d.COURRIER.cousin_venezuela.cadeaux
 refuse('inventaire de départ : objet inconnu', (d) => { d.DEPART.ETAT_INITIAL.INVENTAIRE.graine_melon = 2; }, 'DEPART.ETAT_INITIAL.INVENTAIRE : « graine_melon »');
 refuse('animal : produit inconnu', (d) => { d.ANIMAUX.poule.produit = 'oeufs'; }, 'ANIMAUX.poule.produit : « oeufs »');
 refuse('commerce : matière inconnue', (d) => { d.COMMERCE.TYPES.cremerie.prend.push('lait_chevre'); }, 'COMMERCE.TYPES.cremerie.prend : « lait_chevre »');
-refuse('entreprise : intrant inconnu', (d) => { d.VILLE.ENTREPRISES.LISTE.confiturerie.intrants.push('mangue'); }, 'VILLE.ENTREPRISES.LISTE.confiturerie.intrants : « mangue »');
-refuse('sortie : butin inconnu', (d) => { d.VILLE.SORTIES.montagne.butin.edelweiss = 1; }, 'VILLE.SORTIES.montagne.butin : « edelweiss »');
-refuse('sortie : cueillette inconnue', (d) => { d.VILLE.SORTIES.foret.cueillettes[0].truffe = 1; }, 'VILLE.SORTIES.foret.cueillettes[0] : « truffe »');
 refuse('grotte : minerai inconnu', (d) => { d.GROTTE.POIDS.argent = { FIXE: 1 }; }, 'GROTTE.POIDS : « minerai_argent »');
 refuse('grotte : aucun niveau', (d) => { d.GROTTE.NIVEAUX = 0; }, 'GROTTE.NIVEAUX : un entier');
 refuse('grotte : une chance au-delà de 1', (d) => { d.GROTTE.MINERAI = 7; }, 'GROTTE.MINERAI : une part entre 0 et 1');
-refuse('navette : horaires à l\'envers', (d) => { d.NAVETTE.HORAIRES = { DEBUT: 22, FIN: 6 }; }, 'NAVETTE.HORAIRES');
-refuse('navette : heure hors de la journée', (d) => { d.NAVETTE.HORAIRES.FIN = 25; }, 'NAVETTE.HORAIRES');
 
 /* ---------- arbre : clés d'effet ; objets qu'on peut obtenir ---------- */
 
 refuse('arbre : clé d\'effet que le moteur ne lit pas', (d) => { d.ARBRE.noeuds.cu_outils.effet.vitesseRecolte = 120; }, '« vitesseRecolte » : aucun code du moteur');
 test('chaque clé d\'effet de EFFETS_TECHNO est lue dans js/', () => {
-  const src = readdirSync('js/engine').map((f) => readFileSync(`js/engine/${f}`, 'utf8')).join('\n') + readFileSync('js/ville-carte.js', 'utf8');
+  const src = readdirSync('js/engine').map((f) => readFileSync(`js/engine/${f}`, 'utf8')).join('\n') + readFileSync('js/grotte.js', 'utf8');
   const lue = (cle) => new RegExp(`(tech(Effects|Pct|Sum|Flag)\\(state, '${cle}'|withBonus\\([^)]*'${cle}'|e\\.${cle}\\b|tech\\('${cle}'\\))`).test(src);
   eq(EFFETS_TECHNO.filter((cle) => !lue(cle)), []);
 });
@@ -138,27 +133,10 @@ test('objet impossible à obtenir : un avertissement, pas une erreur', () => {
   const r = validateData(d);
   eq([r.errors, r.warnings.filter((w) => w.startsWith('OBJETS.melon'))], [[], ['OBJETS.melon : aucun moyen de l\'obtenir (ni récolte, ni recette, ni animal, ni pêche, ni sortie, ni achat, ni inventaire de départ…)']]);
   eq(sourcesOf(d, 'minerai_or'), ['grotte']);
-  eq(sourcesOf(d, 'anchois'), ['pêche mer', 'boutique poissonnerie']);
+  eq(sourcesOf(d, 'anchois'), ['pêche mer']);
 });
 test('le fromage d\'alpage : herbes de montagne (trouvaille) → lait d\'alpage (vache) → fromage (Cuisine)', () => {
-  eq(sourcesOf(DATA, 'herbes_montagne'), ['trouvaille (montagne)']);
+  eq(sourcesOf(DATA, 'herbes_montagne'), ['trouvaille du grand monde (montagne)']);
   eq(sourcesOf(DATA, 'lait_alpage'), ['animal vache']);
-  eq(sourcesOf(DATA, 'fromage_alpage'), ['recette fromage_alpage', 'marché de la ville']);
-});
-test('les trouvailles des cartes (assets/faune.json) sont les objets « trouvaille », chaque genre a ses endroits', () => {
-  const meta = JSON.parse(readFileSync('assets/faune.json', 'utf8')).trouvailles;
-  const objets = Object.keys(DATA.OBJETS).filter((id) => DATA.OBJETS[id].trouvaille);
-  eq(Object.keys(meta).sort(), objets.sort());
-  const genres = {};
-  for (const carte of ['montagne', 'plage']) {
-    const map = JSON.parse(readFileSync(`assets/${carte}.json`, 'utf8'));
-    const couche = map.layers.find((l) => l.name === 'trouvailles');
-    for (const o of couche.objects) {
-      const g = o.properties.find((p) => p.name === 'genre').value;
-      genres[g] = (genres[g] || 0) + 1;
-    }
-  }
-  for (const [id, m] of Object.entries(meta)) if (!genres[m.genre]) throw new Error(`${id} : aucun endroit du genre « ${m.genre} »`);
-  eq(meta.herbes_montagne.genre, 'herbe');
-  if (!(genres.herbe > genres.pierre)) throw new Error(`les herbes, les plus courantes de la montagne : ${JSON.stringify(genres)}`);
+  eq(sourcesOf(DATA, 'fromage_alpage'), ['recette fromage_alpage', 'Marché']);
 });

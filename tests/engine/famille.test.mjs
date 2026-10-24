@@ -62,7 +62,7 @@ test('setMemberProfile : change le prénom, le sexe et la teinte, et le portrait
   assert(setMemberProfile(s, 'enfant-2', { genre: 'm', teint: 5 }).ok);
   assertEqual(memberPortrait(s, 'enfant-2'), '👦🏿');
   // les autres membres ne bougent pas, la santé non plus
-  assertEqual([memberName(s, 'adulte-2'), memberPortrait(s, 'adulte-2'), m.bonheur], ['Adulte 2', '👨', DATA.VILLE.BONHEUR.DEPART]);
+  assertEqual([memberName(s, 'adulte-2'), memberPortrait(s, 'adulte-2'), m.bonheur], ['Adulte 2', '👨', DATA.BONHEUR.DEPART]);
 });
 
 test('setMemberProfile : prénom nettoyé, de 1 à 12 caractères', () => {
@@ -389,7 +389,7 @@ test('version 1.2 : nom et espèce d\'un animal de compagnie, départ, identifia
 /* ---------- version 1.11 (v2, lot 7) : plats et bonheur ---------- */
 
 test('version 1.11 : barème du bonheur des plats (atelier, huile ou fruit, cultures spéciales)', () => {
-  const B = DATA.VILLE.BONHEUR;
+  const B = DATA.BONHEUR;
   assertEqual([B.DECLIN, B.PLATS, B.HUILE_FRUIT, B.SPECIALES, B.PLATS_MAX, B.REPAS_CRU, B.REPAS_PLATS], [-5, { cuisine: 3, four: 5 }, 2, { objets: ['cacao', 'cafe', 'vanille'], bonus: 4 }, 3, undefined, undefined]);
   const table = (ids) => ids.map(dishHappiness);
   assertEqual(table(['soupe_legumes', 'fromage_frais', 'bocal_legumes', 'biere_artisanale']), [3, 3, 3, 3], 'Cuisine');
@@ -414,13 +414,13 @@ test('version 1.11 : les plats mangés dans la journée rendent du bonheur la nu
   sleepOnce(s);
   assertEqual(Object.keys(s.nuit.mange).sort(), ['carotte', 'gratin_patates', 'omelette', 'soupe_legumes']);
   assertEqual(s.nuit.bonheur, -5 + 5 + 5 + 3);
-  assertEqual(averageHappiness(s), DATA.VILLE.BONHEUR.DEPART + 8);
+  assertEqual(averageHappiness(s), DATA.BONHEUR.DEPART + 8);
   // qui a eu faim sans rien trouver perd FAIM de plus
   const t = garden();
   setInv(t, {});
   affamer(t);
   sleepOnce(t);
-  assertEqual([t.nuit.affames.length, findMember(t, 'enfant-1').bonheur, findMember(t, 'adulte-1').bonheur], [3, DATA.VILLE.BONHEUR.DEPART - 5 - 2, DATA.VILLE.BONHEUR.DEPART - 5]);
+  assertEqual([t.nuit.affames.length, findMember(t, 'enfant-1').bonheur, findMember(t, 'adulte-1').bonheur], [3, DATA.BONHEUR.DEPART - 5 - 2, DATA.BONHEUR.DEPART - 5]);
 });
 
 test('animaux de compagnie : chacun sa robe sur la carte, le n-ième chat (ou chien) prend la n-ième', () => {

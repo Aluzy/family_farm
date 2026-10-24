@@ -134,14 +134,14 @@
     "barriere": { "nom": "Barrière", "icone": "🚧", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "chemin": { "nom": "Chemin", "icone": "🟫‍🪨", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "//champignon_lumineux": [
-      "La lanterne scintillante (ATELIER : un champignon lumineux et un morceau d'arbre de l'infra-monde) :",
-      "« cueillette » dit où se prennent ses matières à la main (FermeHote.ramasser, js/ui/excursion.js) :",
-      "les champignons qui luisent au sol de la grotte (js/ville-carte.js, ils repoussent le lendemain),",
-      "les morceaux des arbres tordus de l'infra-monde (js/infra-monde.js : trois coups de hache, l'arbre tombe et en lâche deux).",
-      "Posée sur la ferme, la lanterne éclaire la nuit (BLOCS lanterne, lumiere)."
+      "La lanterne scintillante (ATELIER : un champignon lumineux et deux bois) : « cueillette » dit où",
+      "se prend le champignon à la main (FermeHote.ramasser, js/ui/excursion.js) : au sol de la mine",
+      "(js/grotte.js, ils repoussent le lendemain). Le morceau d'arbre de l'infra-monde, son ancienne",
+      "matière, ne s'obtient plus (« retire »). Posée sur la ferme, la lanterne éclaire la nuit (BLOCS",
+      "lanterne, lumiere)."
     ],
     "champignon_lumineux": { "nom": "Champignon lumineux", "icone": "🍄‍✨", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "cueillette": "grotte" },
-    "bois_infra": { "nom": "Morceau d'arbre de l'infra-monde", "icone": "🪵‍🌈", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "cueillette": "infra" },
+    "bois_infra": { "nom": "Morceau d'arbre de l'infra-monde", "icone": "🪵‍🌈", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "retire": true },
     "bac_fleurs": { "nom": "Bac à fleurs", "icone": "🪴‍🌷", "prix": 60, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "ruche": { "nom": "Ruche", "icone": "🐝", "prix": 200, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "lanterne": { "nom": "Lanterne scintillante", "icone": "🏮", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -223,10 +223,10 @@
     "station_robot": { "nom": "Station du robot", "icone": "🔌", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "cuisiniere": { "nom": "Cuisinière", "icone": "🍳", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "//ammonite": [
-      "Les trouvailles de la montagne (fossiles, pierres) et de la plage (coquillages, corail, perles),",
-      "ramassées sur la carte (js/ville-carte.js, FermeHote.ramasser) : l'identifiant est celui de",
-      "assets/faune.json (trouvailles) ; « trouvaille » dit où (montagne, plage). Ni périssables ni comestibles : elles se vendent. Elles ne se",
-      "rachètent pas au Marché."
+      "Les trouvailles de la montagne (fossiles, pierres, herbes) et de la côte (coquillages, corail,",
+      "perles) : « trouvaille » dit dans quel biome du grand monde elles se trouveront (docs/grand-monde.md,",
+      "étape 6 ; leurs images : assets/trouvailles.png). Ni périssables ni comestibles : elles se vendent.",
+      "Elles ne se rachètent pas au Marché."
     ],
     "ammonite": { "nom": "Ammonite fossile", "icone": "🪨‍🐚", "prix": 6, "mangeable": false, "categorie": "produit", "rachetable": false, "trouvaille": "montagne" },
     "trilobite": { "nom": "Trilobite fossile", "icone": "🪨‍🪲", "prix": 6, "mangeable": false, "categorie": "produit", "rachetable": false, "trouvaille": "montagne" },
@@ -246,7 +246,7 @@
     "herbes_montagne": { "nom": "Herbes de montagne", "icone": "🌿‍🏔️", "prix": 2, "mangeable": false, "categorie": "produit", "rachetable": false, "trouvaille": "montagne", "conservation": 3 },
     "//minerai_fer": [
       "Les minerais de la grotte (fer partout, puis cuivre, or et platine de plus en plus bas), pris à",
-      "la pioche (GROTTE, js/ville-carte.js). Au Four, 4 minerais et du bois donnent un",
+      "la pioche (GROTTE, js/grotte.js). Au Four, 4 minerais et du bois donnent un",
       "lingot (recipes.json : lingot_*). Minerais et lingots (catégorie « matériau ») servent à l'arbre",
       "des technologies : invendables (ni au Marché ni en ville), ils ne se rachètent pas et ne périment pas.",
       "Leur prix, purement indicatif, couvre au moins celui des intrants (lingot ≥ 4 minerais + bois)."
@@ -345,34 +345,37 @@
     ],
     "paille": { "nom": "Paille", "icone": "🪹", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false },
     "//ville": [
-      "Version 1.5 (ville.json) : denrées venues de l'extérieur. \"ville\": true : elles ne",
-      "s'achètent qu'au marché de la ville, pas à celui de la ferme. La cueillette de la forêt",
-      "(champignon, myrtille, châtaigne) ne s'achète nulle part (rachetable: false) : on la",
-      "rapporte de la forêt ; le miel se rapporte aussi de la montagne.",
+      "Version 1.5 : denrées venues de l'extérieur (le poisson, le miel, le sucre, les épices, le",
+      "fromage d'alpage). Elles s'achetaient au marché de la ville ; depuis le grand monde",
+      "(docs/grand-monde.md), au Marché de la ferme. La cueillette de la forêt (champignon,",
+      "myrtille, châtaigne : \"trouvaille\": \"foret\") ne s'achète nulle part (rachetable: false) :",
+      "elle se cueillera dans la forêt du grand monde.",
       "Le fromage d'alpage (fromage au lait de vaches nourries aux herbes de la montagne) se fait en",
       "Cuisine avec 3 laits d'alpage (recipes.fromage_alpage, une transformation : l'objet garde son",
-      "identifiant) ; il s'achète encore au marché de la ville. Son prix suit la règle des plats :",
-      "3 × 12 (lait d'alpage) × 1,3 = 47 ; son énergie aussi : 3 × 18 × 1,3 = 70."
+      "identifiant). Son prix suit la règle des plats : 3 × 12 (lait d'alpage) × 1,3 = 47 ; son",
+      "énergie aussi : 3 × 18 × 1,3 = 70.",
+      "Les produits des boutiques de la ville (croissant, pizza, burger, frites, ordinateur) ne",
+      "s'obtiennent plus (\"retire\": true : ceux des anciennes parties restent dans l'inventaire)."
     ],
-    "poisson": { "nom": "Poisson", "icone": "🐟", "energie": 25, "prix": 4, "mangeable": true, "categorie": "produit", "conservation": 2, "ville": true },
-    "miel": { "nom": "Miel", "icone": "🍯", "energie": 15, "prix": 4, "mangeable": true, "categorie": "produit", "ville": true },
+    "poisson": { "nom": "Poisson", "icone": "🐟", "energie": 25, "prix": 4, "mangeable": true, "categorie": "produit", "conservation": 2 },
+    "miel": { "nom": "Miel", "icone": "🍯", "energie": 15, "prix": 4, "mangeable": true, "categorie": "produit" },
     "//boutiques": [
-      "Les produits des commerces de la ville (VILLE.BOUTIQUES, data/ville.json) : ils ne s'achètent",
-      "que là (« boutique » : la boutique qui les vend), pas au Marché de la ferme. Un plat de boutique",
-      "rend `bonheur` au repas (dishHappiness), comme un plat cuisiné ; l'ordinateur n'est pas un aliment."
+      "Les produits des commerces de la ville, qui ne s'obtiennent plus (\"retire\" : voir //ville). Un",
+      "plat de boutique rend `bonheur` au repas (dishHappiness), comme un plat cuisiné ; l'ordinateur",
+      "n'est pas un aliment."
     ],
-    "croissant": { "nom": "Croissant", "icone": "🥐", "energie": 22, "prix": 5, "mangeable": true, "categorie": "produit", "bonheur": 3, "rachetable": false, "conservation": 2, "boutique": "boulangerie" },
-    "pizza": { "nom": "Pizza", "icone": "🍕", "energie": 80, "prix": 18, "mangeable": true, "categorie": "produit", "bonheur": 5, "rachetable": false, "conservation": 2, "boutique": "pizzeria" },
-    "burger": { "nom": "Burger", "icone": "🍔", "energie": 90, "prix": 16, "mangeable": true, "categorie": "produit", "bonheur": 5, "rachetable": false, "conservation": 2, "boutique": "burger" },
-    "frites": { "nom": "Frites", "icone": "🍟", "energie": 30, "prix": 5, "mangeable": true, "categorie": "produit", "bonheur": 3, "rachetable": false, "conservation": 2, "boutique": "burger" },
-    "ordinateur": { "nom": "Ordinateur", "icone": "💻", "prix": 240, "mangeable": false, "categorie": "produit", "rachetable": false, "boutique": "informatique" },
-    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 70, "prix": 47, "mangeable": true, "categorie": "produit", "conservation": 10, "ville": true },
-    "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "mangeable": false, "categorie": "ingrédient", "ville": true },
-    "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "mangeable": false, "categorie": "ingrédient", "ville": true },
-    "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "mangeable": true, "categorie": "légume", "conservation": 3, "rachetable": false },
-    "myrtille": { "nom": "Myrtille", "icone": "🫐", "energie": 5, "prix": 2, "mangeable": true, "categorie": "fruit", "conservation": 3, "rachetable": false },
+    "croissant": { "nom": "Croissant", "icone": "🥐", "energie": 22, "prix": 5, "mangeable": true, "categorie": "produit", "bonheur": 3, "rachetable": false, "conservation": 2, "retire": true },
+    "pizza": { "nom": "Pizza", "icone": "🍕", "energie": 80, "prix": 18, "mangeable": true, "categorie": "produit", "bonheur": 5, "rachetable": false, "conservation": 2, "retire": true },
+    "burger": { "nom": "Burger", "icone": "🍔", "energie": 90, "prix": 16, "mangeable": true, "categorie": "produit", "bonheur": 5, "rachetable": false, "conservation": 2, "retire": true },
+    "frites": { "nom": "Frites", "icone": "🍟", "energie": 30, "prix": 5, "mangeable": true, "categorie": "produit", "bonheur": 3, "rachetable": false, "conservation": 2, "retire": true },
+    "ordinateur": { "nom": "Ordinateur", "icone": "💻", "prix": 240, "mangeable": false, "categorie": "produit", "rachetable": false, "retire": true },
+    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 70, "prix": 47, "mangeable": true, "categorie": "produit", "conservation": 10 },
+    "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "mangeable": false, "categorie": "ingrédient" },
+    "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "mangeable": false, "categorie": "ingrédient" },
+    "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "mangeable": true, "categorie": "légume", "conservation": 3, "rachetable": false, "trouvaille": "foret" },
+    "myrtille": { "nom": "Myrtille", "icone": "🫐", "energie": 5, "prix": 2, "mangeable": true, "categorie": "fruit", "conservation": 3, "rachetable": false, "trouvaille": "foret" },
     "baies": { "nom": "Baies sauvages", "icone": "🍒", "energie": 5, "prix": 1, "mangeable": true, "categorie": "fruit", "conservation": 2, "rachetable": false },
-    "chataigne": { "nom": "Châtaigne", "icone": "🌰", "energie": 13, "prix": 2, "mangeable": true, "categorie": "fruit", "conservation": 12, "rachetable": false }
+    "chataigne": { "nom": "Châtaigne", "icone": "🌰", "energie": 13, "prix": 2, "mangeable": true, "categorie": "fruit", "conservation": 12, "rachetable": false, "trouvaille": "foret" }
   },
   "//PLATS_RETIRES": [
     "Plats dont la recette a été retirée en version 1.1 (ils demandaient de la",

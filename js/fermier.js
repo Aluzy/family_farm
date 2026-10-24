@@ -615,7 +615,7 @@
       draw(d > 0.01 ? `marche_${face}_${Math.floor(steerWalked / STRIDE) % 4}` : `idle_${face}_0`);
     }
 
-    // Il arrive d'une autre carte (la carte de transition) : il apparaît en (tx, ty) (la case
+    // Il arrive d'une autre carte : il apparaît en (tx, ty) (la case
     // libre la plus proche) et reste là, au lieu de sortir de la maison. `porte` ({ x, y }) : il
     // sort d'une porte (la mine) : il y apparaît, s'éclaire et descend jusqu'en (tx, ty).
     function arrive(tx, ty, porte) {

@@ -1,7 +1,7 @@
 /* carte/eau.js — l'eau vivante des cartes (CarteKit.eauVive, CarteKit.EAU).
  *
  * Des méthodes de scène (posées sur le prototype de la scène de la ferme, js/carte/ferme/eau.js,
- * et de celle des cartes de la ville, js/carte/ville/eau.js) ; chaque scène dit ce qui la
+ * et demain de celles du grand monde) ; chaque scène dit ce qui la
  * concerne :
  *   eauEtendues()   ses étendues d'eau : [{ x, y, tex (une texture canevas : l'eau et ses rives,
  *                   telles que dessinées), sprite (son image, cachée sous le shader), mer }],

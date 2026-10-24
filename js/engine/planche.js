@@ -78,8 +78,8 @@ export const DESSINS_ROCHERS = {
   caillou2: { emprise: [[0, 0]], dessins: [[[0, 0, R(7)]], [[0, 0, R(15)]]] },
 };
 
-// Le tronc creux au bord de l'étang (le passage vers l'infra-monde : HOLLOW dans
-// js/carte/ferme/config.js), deux tuiles côte à côte de « plantes_pierres » : celles du bloc
+// Le tronc creux au bord de l'étang (un décor : il menait à l'infra-monde, retiré du
+// jeu), deux tuiles côte à côte de « plantes_pierres » : celles du bloc
 // « tronc_creux » (scripts/carte/tronc_creux.py). La carte de Tiled garde celui du pack (539, 540).
 export const TRONC_CREUX = [blocGid('tronc_creux', 0), blocGid('tronc_creux', 1)];
 

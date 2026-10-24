@@ -1,0 +1,48 @@
+{
+  "//GROTTE": [
+    "La mine de la ferme (jeu.html?carte=grotte, js/grotte.js) : chaque niveau",
+    "est tiré au hasard chaque jour ; le minerai pioché va dans l'inventaire (minerai_<sorte>).",
+    "Les images, la lumière autour du personnage et le reste de l'affichage sont dans",
+    "js/grotte.js (GROTTE).",
+    "",
+    "LARGEUR, HAUTEUR : la taille d'un niveau, en tuiles. NIVEAUX : le nombre de niveaux (le",
+    "  dernier n'a pas de puits pour descendre).",
+    "MURS : la part de murs semés au départ (0 à 1) ; PASSES : les passes de l'automate",
+    "  cellulaire qui les lisse en salles.",
+    "MINERAI : la chance (0 à 1) qu'un mur au bord du sol porte du minerai, au niveau 0 ; elle",
+    "  grandit de MINERAI_NIVEAU (fraction) par niveau : MINERAI × (1 + niveau × MINERAI_NIVEAU).",
+    "POIDS : le poids de chaque sorte de minerai (l'objet minerai_<sorte>) au niveau n : FIXE",
+    "  partout, sinon max(0, (n − DEPUIS) × PENTE) : le fer partout, les autres de plus en plus",
+    "  bas. La sorte d'un minerai est tirée au prorata des poids.",
+    "COUPS : les coups de pioche pour prendre un minerai (moins avec les Lames affûtées, arbre",
+    "  des technologies) ; COUP : la durée d'un coup, en secondes."
+  ],
+  "GROTTE": {
+    "LARGEUR": 46,
+    "HAUTEUR": 34,
+    "NIVEAUX": 8,
+    "MURS": 0.46,
+    "PASSES": 5,
+    "MINERAI": 0.07,
+    "MINERAI_NIVEAU": 0.06,
+    "POIDS": {
+      "fer": {
+        "FIXE": 1
+      },
+      "cuivre": {
+        "DEPUIS": 1,
+        "PENTE": 0.35
+      },
+      "or": {
+        "DEPUIS": 2.5,
+        "PENTE": 0.18
+      },
+      "platine": {
+        "DEPUIS": 4,
+        "PENTE": 0.1
+      }
+    },
+    "COUPS": 3,
+    "COUP": 0.5
+  }
+}

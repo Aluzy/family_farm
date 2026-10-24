@@ -1,11 +1,9 @@
 import { DATA } from './catalog.js';
 import { floorPercent } from './base.js';
 import { fail } from './devices.js';
-import { awakeMsAtHour } from './clock.js';
-import { weekdayIndex } from './format.js';
 import { addItem, countItem, keepLots, lotList, lotRank, lotsOf, pullLots, pushLots } from './inventory.js';
 import { mainCharacter } from './depart.js';
-import { dishHappiness, memberHappiness, setHappiness } from './ville.js';
+import { dishHappiness, memberHappiness, setHappiness } from './bonheur.js';
 import { noter } from './journal.js';
 
 /* ---------- la boîte à nourriture et la faim de la famille (FAMILLE.FAIM) ---------- */
@@ -220,20 +218,11 @@ export function mangerMembre(state, m, cible = F().MAX) {
   return { ok, mange, energie: jaugeMembre(m), source };
 }
 
-// Les jours d'école, les enfants rentrent à ECOLE.RETOUR_H h avec au plus ECOLE.NIVEAU points.
-function retourEcole(state) {
-  const E = F().ECOLE;
-  const R = repasJour(state);
-  if (R.ecole || !E.JOURS.includes(weekdayIndex(state.day)) || state.awakeMs < awakeMsAtHour(E.RETOUR_H)) return;
-  R.ecole = true;
-  for (const m of mangeurs(state)) if (m.enfant) setJauge(m, Math.min(jaugeMembre(m), E.NIVEAU));
-}
-
-// Un pas de la journée : le retour de l'école, puis chaque membre arrivé à SEUIL va manger ;
+// Un pas de la journée : chaque membre arrivé à SEUIL va manger ;
 // s'il n'y a rien, il a faim (m.affame : il perdra du bonheur la nuit).
 export function repasStep(state) {
   if (!state.famille) return;
-  retourEcole(state);
+  repasJour(state);   // (le compte de la journée existe dès le premier pas, même sans repas)
   for (const m of mangeurs(state)) {
     if (jaugeMembre(m) > F().SEUIL) continue;
     mangerMembre(state, m);
@@ -261,7 +250,7 @@ export function affames(state) {
 // la journée (au plus PLATS_MAX, les meilleurs) ; FAIM en plus pour qui a eu faim. Renvoie la
 // variation commune (sans la faim).
 export function bonheurRepas(state, mange) {
-  const H = DATA.VILLE.BONHEUR;
+  const H = DATA.BONHEUR;
   const plats = Object.keys(mange || {})
     .filter((item) => (mange[item] || 0) > 0)
     .map(dishHappiness)

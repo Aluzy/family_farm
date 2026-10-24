@@ -36,9 +36,9 @@ export function render() {
   // Avec la carte, Famille, Livre de recette et Arbre des technologies n'existent que comme
   // fenêtres de la carte : une page ouverte avant que la carte soit prête y est ramenée.
   if (FERME_LINKS.includes(activeTab) && stageUsable()) {
-    // La Ville (le poteau au bout du chemin), la Famille et l'Arbre des technologies ont leur
-    // propre fenêtre ; le Livre de recette est dans la Maison.
-    const propre = ['ville', 'famille', 'techno'].includes(activeTab) ? activeTab : null;
+    // La Famille et l'Arbre des technologies ont leur propre fenêtre ; le Livre de recette est
+    // dans la Maison.
+    const propre = ['famille', 'techno'].includes(activeTab) ? activeTab : null;
     if (!propre) setMaisonTab(activeTab);
     setActiveTab('ferme');
     setEcranFerme(null);

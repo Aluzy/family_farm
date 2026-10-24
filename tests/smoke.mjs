@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 // Test de fumée du jeu dans un vrai navigateur (Playwright + Chromium), hors CI.
 // Sert le dépôt avec un petit serveur statique Node sur un port libre, ouvre jeu.html, lance une
-// partie (« Partir pour la ferme ») puis visite les cartes par window.FermeHote.go : la mine de
-// la ferme, la ville refusée (les autres cartes sont fermées : DATA.CARTES.AUTRES), puis, en
-// god mode, la ville (gare), le chemin de transition, la montagne, la plage, la grotte, et
-// revient à la ferme.
+// partie (« Partir pour la ferme ») puis visite les niveaux de la mine par window.FermeHote.go
+// (le premier, puis un plus profond), et revient à la ferme.
 // Échoue sur une erreur de la console, une exception de la page ou une réponse HTTP ≥ 400.
 // Sans Playwright ou sans Chromium : message, et sortie 0 (le test est sauté).
 //
@@ -21,23 +19,13 @@ import { fileURLToPath } from 'node:url';
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const VOIR = process.argv.includes('--voir');
 
-// Les cartes visitées (cible donnée à FermeHote.go), dans l'ordre. « god » : le god mode
-// s'allume avant (les autres cartes que la mine ne s'ouvrent qu'ainsi) ; « refusee » : la carte
-// ne doit pas s'ouvrir.
-const MINE = 'ville-carte.html?carte=grotte&grotte=ferme&niveau=1&arrivee=haut';
-const REFUSEE = 'ville-carte.html?carte=ville&arrivee=ferme';
-const GOD = 'god';
+// Les cartes visitées (cible donnée à FermeHote.go), dans l'ordre : « grotte?… », un niveau de
+// la mine ; « jeu.html », la ferme.
 const CARTES = [
-  MINE,
+  'grotte?grotte=ferme&niveau=1&arrivee=haut',
   'jeu.html',
-  REFUSEE,
-  GOD,
-  'ville-carte.html?carte=ville&arrivee=gare',
-  'ville-carte.html?carte=transition&arrivee=ferme',
-  'ville-carte.html?carte=montagne&arrivee=gare',
-  'ville-carte.html?carte=plage&arrivee=gare',
-  'ville-carte.html?carte=grotte&grotte=30&niveau=1&arrivee=haut',
-  'jeu.html',
+  'grotte?grotte=ferme&niveau=4&arrivee=haut',
+  'jeu.html?arrivee=mine',
 ];
 const PAUSE_MS = 1500; // le temps qu'une carte se charge et tourne un peu
 
@@ -120,16 +108,11 @@ try {
   if (await depart.isVisible()) erreurs.push('[nouvelle partie] la fenêtre de départ est toujours ouverte');
   for (const cible of CARTES) {
     etape = cible;
-    if (cible === GOD) {
-      await page.evaluate(async () => { (await import('/js/ui/store.js')).setGodMode(true); });
-      console.log('  · (god mode)');
-      continue;
-    }
     await page.waitForFunction(() => window.FermeHote && typeof window.FermeHote.go === 'function', null, { timeout: 10000 });
     await page.evaluate((c) => window.FermeHote.go(c), cible);
     await page.waitForTimeout(PAUSE_MS);
     // La carte ouverte (l'élément des cartes porte data-carte ; rien de visible à la ferme).
-    const attendue = cible.startsWith('jeu.html') || cible === REFUSEE ? null : new URLSearchParams(cible.split('?')[1]).get('carte');
+    const attendue = cible.startsWith('grotte') ? 'grotte' : null;
     const ouverte = await page.evaluate(() => {
       const el = document.querySelector('[data-carte]');
       return el && !el.hidden ? el.dataset.carte : null;
@@ -150,6 +133,6 @@ if (erreurs.length) {
   for (const e of erreurs) console.log(`  ✗ ${e}`);
   code = 1;
 } else {
-  console.log(`\nTest de fumée : jeu.html, une nouvelle partie et ${CARTES.filter((c) => c !== GOD && c !== REFUSEE && !c.startsWith('jeu.html')).length} cartes sans erreur, en ${duree} s.`);
+  console.log(`\nTest de fumée : jeu.html, une nouvelle partie et ${CARTES.filter((c) => c.startsWith('grotte')).length} niveaux de la mine sans erreur, en ${duree} s.`);
 }
 process.exit(code);

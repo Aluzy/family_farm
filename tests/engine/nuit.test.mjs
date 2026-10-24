@@ -13,7 +13,7 @@ import {
   nightLengthMs, nightSpeed, piles, plannedAutonomy, plant, recipeTime, sellItem, sheepCount,
   simulateOffline, skipNight, sleep, sleepTarget, startNight, startRecipe, STATE_VERSION,
   strawMissing, strawNeed, testAddHens, testAddSeeds, testAddSheep, testBatir, testFillEnergy,
-  testSetEnergyZero, testWoolReady, tick, TIRED, townSellable, water, waterCostFor, weekdayName,
+  testSetEnergyZero, testWoolReady, tick, TIRED, water, waterCostFor, weekdayName,
   weekdayShort, woolReady, yearNumber,
 } from '../../js/engine/index.js';
 import {
@@ -163,10 +163,9 @@ test('minerais et lingots : la grotte remplit l\'inventaire, le Four fond 4 mine
   assertEqual([countItem(s, 'minerai_fer'), countItem(s, 'bois')], [0, 0]);
   runFor(s, recipeTime(s, 'lingot_fer') + 1);
   assertEqual(countItem(s, 'lingot_fer'), 1);
-  // invendables, au Marché comme en ville
+  // invendables au Marché
   s.pompe.allume = true;
   assert(/ne se vend pas/.test(sellItem(s, 'lingot_fer', 1).error));
-  assertEqual(townSellable('lingot_fer'), false);
 });
 
 test('branche Outils : coups en moins, ressources en plus, énergie, minerai, pêche', () => {

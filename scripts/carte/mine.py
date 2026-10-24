@@ -1,7 +1,7 @@
 # L'entrée de la mine, sur la ferme générée : un tas de terre brune de 3 × 3 tuiles, vu de haut
 # à 45° comme les rochers (scripts/carte/rochers.py), avec, au pied de son flanc avant, une porte
 # sombre étayée de poutres. On y entre pour descendre à la mine (les niveaux de la grotte,
-# js/ville-carte.js).
+# js/grotte.js).
 #
 #   python3 scripts/carte/mine.py            écrit assets/mine.png (48 × 48)
 #   python3 scripts/carte/mine.py --apercu   écrit aussi apercu_mine.png

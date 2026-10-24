@@ -1,7 +1,6 @@
 /* carte/jeu.js — le jeu Phaser, un seul pour toutes les cartes (window.CarteJeu).
  *
- * La ferme (js/farm-stage.js), la ville et les cartes qu'on rejoint par elle (js/ville-carte.js)
- * et l'infra-monde (js/infra-monde.js) sont des scènes d'un même Phaser.Game : un seul canvas,
+ * La ferme (js/farm-stage.js) et la mine (js/grotte.js) sont des scènes d'un même Phaser.Game : un seul canvas,
  * un seul contexte WebGL, un seul jeu de textures. Changer de carte, c'est changer de scène :
  *
  *   - la ferme s'endort (scene.sleep) et se réveille telle qu'on l'a laissée (la vue, le
@@ -30,7 +29,7 @@
  *       CarteJeu.cache(clé)       la scène `clé` n'est plus affichée (rien d'autre : la boucle dort) ;
  *       CarteJeu.affichee()       la clé de la scène affichée, ou null ;
  *       CarteJeu.suitTaille(scène, fn)  fn() à chaque changement de taille, tant que la scène vit ;
- *       CarteJeu.zoomEntier(scène)       le zoom entier des cartes vues de près (ville, infra-monde).
+ *       CarteJeu.zoomEntier(scène)       le zoom entier des cartes vues de près (la mine).
  *
  * Script classique, chargé après js/carte/kit.js ; il ne demande Phaser qu'à la création du jeu.
  * Voir docs/architecture-phaser.md (§ 1 quater).
@@ -63,7 +62,7 @@
       // arrondis un par un ouvriraient des fentes entre parcelles voisines) ; les autres cartes
       // arrondissent par leur caméra (zoom entier, setRoundPixels).
       // maxLights : les lumières qu'une vue garde (les plus proches de son centre ; la grotte,
-      // js/carte/ville/lueurs.js).
+      // js/grotte.js).
       render: { antialias: false, antialiasGL: false, roundPixels: false, maxLights: 12 },
       transparent: false,
       backgroundColor: '#6a8157',
@@ -223,7 +222,7 @@
     scene.events.once('destroy', fin);
   }
 
-  // Le zoom des cartes vues de près (la ville, l'infra-monde) : de 2 à 5 pixels d'écran CSS
+  // Le zoom des cartes vues de près (la mine) : de 2 à 5 pixels d'écran CSS
   // par pixel de carte selon la taille de la zone, arrondi à un nombre entier de pixels de
   // l'écran (le canvas est à sa densité) : la caméra et les tuiles tombent sur des pixels entiers.
   function zoomEntier(scene) {

@@ -1488,10 +1488,9 @@ body.didacticiel .stage-chip:not(.hoe):not(.compact), body.didacticiel #tuto-roo
 /* La taille réelle du canvas (× densité de l'écran) est gérée par farm-stage.js. */
 #farm-stage canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: pixelated; cursor: grab; }
 body.has-stage main { display: none; }
-/* Les autres cartes (la ville, la montagne, la plage, les grottes, l'infra-monde : js/ui/excursion.js),
+/* La mine (js/grotte.js, js/ui/excursion.js),
    à la place de celle de la ferme ; le reste de l'écran (carte du joueur, menu, outils) ne change pas. */
 #map-stage { position: fixed; left: 0; right: 0; top: var(--header-h); bottom: var(--dock); z-index: var(--z-stage); overflow: hidden; background: #665951; touch-action: none; -webkit-user-select: none; user-select: none; }
-#map-stage[data-carte="infra"] { background: #1f2943; }
 #map-stage[data-carte="grotte"] { background: #0b090a; }
 #map-stage[hidden] { display: none; }
 /* Le même canvas que la ferme (un seul jeu Phaser, js/carte/jeu.js), posé ici pendant l'excursion. */
@@ -1502,27 +1501,6 @@ body.has-stage main { display: none; }
 #god-bar select { max-width: 52vw; font: inherit; border-radius: 6px; border: 1px solid #b08850; background: #fff8e8; color: #3a2610; padding: 2px 4px; }
 #map-stage .map-retour { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--player-h, 110px) + 16px); z-index: 6; }
 
-/* Les fenêtres des cartes (la gare, l'arrêt de bus, un étal, une entreprise : js/carte/ville/hud.js
-   et marche.js) : des fenêtres du jeu (#modal-root, .modal.bois.item-modal), ce qui leur est propre. */
-.ville-modal { max-width: 400px; }
-.ville-modal p { margin: 0 0 12px; }
-.ville-modal .note { margin: 0 0 8px; font-size: 0.9rem; color: var(--text-muted); }
-.ville-modal .choix { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-.ville-modal .ville-fermer .btn { flex: 1; }
-.ville-modal .rangs { display: flex; flex-direction: column; gap: 6px; max-height: 52vh; overflow: auto; margin: 0 0 10px; }
-.ville-modal .rang { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-elevated); font-size: 0.92rem; font-variant-numeric: tabular-nums; }
-.ville-modal .rang .nom { flex: 1; min-width: 0; }
-.ville-modal .rang .btn { min-height: 36px; padding: 0 10px; font-size: 0.85rem; }
-.ville-modal h4 { margin: 10px 0 6px; font-size: 0.95rem; }
-.ville-modal details { margin: 0 0 8px; }
-.ville-modal summary { cursor: pointer; padding: 6px 0; font-weight: 600; }
-.ville-modal .hausse { color: var(--danger); }
-.ville-modal .baisse { color: var(--accent); }
-.ville-modal .perte { color: var(--danger); }
-.ville-modal .quota { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; }
-.ville-modal .quota .btn { flex: none; min-width: 44px; padding: 0; font-size: 1.2rem; }
-/* la fenêtre du tronc creux, à la ferme (js/carte/ferme/passages.js) */
-.tronc-choix { justify-content: flex-end; }
 body.has-stage { padding-bottom: 0; }
 
 /* ---------- Fenêtres de la carte : au-dessus de la carte et du menu, sous les fenêtres de #modal-root ---------- */

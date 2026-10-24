@@ -13,7 +13,7 @@ import { eatSnack } from './family.js';
 import { boitePosee, depenserMembre, deposerBoite, jaugeMembre, mangeurs, repasStep, valeurAliment } from './repas.js';
 import { actionCost, energyLevel, energyMax } from './stamina.js';
 import { levelBlock } from './levels.js';
-import { averageHappiness, dishHappiness } from './ville.js';
+import { averageHappiness, dishHappiness } from './bonheur.js';
 import {
   allPlots, buyHoe, cropProduct, harvest, hasHoe, hoe, hoeStatus, isArable, isMature, plant, plotAtTile, seedItem, seedStock,
   serreUpgradeCost, soilCount, upgradeSerre, water, waterCost,

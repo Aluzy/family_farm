@@ -26,10 +26,11 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
   carte de transition, la montagne et la plage (leurs textures restent, pour les biomes), le
   train, la navette, le bus et l'école, le livreur, les entreprises, la vente en ville,
   l'économie de la ville, l'infra-monde et son tronc creux.
-- **Ce qui reste** : le modèle des familles autonomes (`js/engine/voisins.js` : foyers,
-  métiers, argent, repas, bonheur, maisons par étapes), pour les habitants du grand monde ; le
-  bonheur de la famille (aujourd'hui dans `js/engine/ville.js`) ; la mine de la ferme et ses
-  niveaux de grotte (aujourd'hui dessinés par `js/ville-carte.js`) ; le cheval.
+- **Ce qui reste** : le modèle des familles autonomes (l'ancien `js/engine/voisins.js` :
+  foyers, métiers, argent, repas, bonheur, maisons par étapes), pour les habitants du grand
+  monde, à reprendre de la branche d'archive à l'étape 7 ; le bonheur de la famille
+  (`js/engine/bonheur.js`) ; la mine de la ferme et ses niveaux de grotte (`js/grotte.js`) ; le
+  cheval.
 - **Le Marché devient une calèche** : elle fait le tour du monde par les chemins, de hameau en
   hameau et jusqu'à la ferme, et achète ce que les habitants et le joueur produisent. On la
   voit passer ; on peut la héler quand elle est près de soi. (À décider : vend-elle aussi ce
@@ -37,13 +38,42 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
 
 ## Les étapes
 
-1. **Le grand ménage** (2 PR). Retirer la ville, la transition, la montagne, la plage, le
+1. ✅ **Le grand ménage** (fait). Retirer la ville, la transition, la montagne, la plage, le
    train, la navette, le bus et l'école, le livreur, les entreprises, la vente en ville,
    l'économie de la ville, l'infra-monde, la fenêtre « Se promener en ville », leurs scripts,
    leurs cartes Tiled et leurs tests. Sortir le bonheur de `ville.js` (`bonheur.js`), les
    familles autonomes de la transition (`habitants.js`), la grotte de la mine de
    `ville-carte.js` (sa propre scène). Garder les textures de la montagne et de la plage dans
    un kit de tuiles du monde. Migrer les sauvegardes.
+   - **Fait** : la ville (`js/ville-carte.js`, `js/carte/ville/`, `ville-carte.html`, l'onglet
+     et la fenêtre Ville, le marché, les boutiques, les entreprises et l'économie de la ville :
+     `js/engine/economie.js`, `entreprises.js`, `ville.js`, `data/ville.json`,
+     `data/economie.json`), la transition (`js/engine/transition.js`), les voisins
+     (`voisins.js`), leurs immeubles, le livreur, le bus et la navette, l'école (les enfants
+     de la ferme n'y vont plus : `FAMILLE.FAIM.ECOLE`, `CarteKit.ECOLE`, `horaireEcole`
+     retirés), la montagne, la plage, le train et la gare, les cartes des trouvailles (les
+     objets restent dans les données, avec leur biome `trouvaille`), l'infra-monde
+     (`js/infra-monde.js`, `infra-monde.html`, le passage du tronc creux, `bois_infra`
+     retiré) et l'horloge des sorties (`HorlogeSortie`) sont retirés, avec leurs scripts
+     (`scripts/ville/`, `scripts/infra/`) et leurs tests.
+   - La grotte est une scène à elle : `js/grotte.js` (`GrotteScene`, `window.Grotte`),
+     réglée par `data/grotte.json` (`GROTTE`) ; ses tuiles par `scripts/carte/grotte.py`, la
+     flèche des passages par `scripts/carte/fleche.py`. `js/ui/excursion.js` ne mène plus
+     qu'à la mine (`jeu.html?carte=grotte&niveau=N…`, le pont `FermeHote`) ; le menu du god
+     mode : la ferme, les niveaux 1, 4 et 8 de la mine.
+   - Le bonheur est dans `js/engine/bonheur.js` (`memberHappiness`, `setHappiness`,
+     `averageHappiness`, `mealHappinessDelta`, `dishHappiness` ; `DATA.BONHEUR`,
+     `data/general.json`).
+   - Les aliments qu'on n'avait qu'en ville (poisson, miel, fromage d'alpage, sucre, épices)
+     se vendent au Marché de la ferme ; les objets des boutiques (croissant, pizza, burger,
+     frites, ordinateur) sont retirés (`"retire": true`).
+   - Le cheval ne se monte qu'à la ferme ; l'attacher à un poteau sur une autre carte
+     reviendra avec le grand monde. Pas de cheval dans la mine.
+   - Sauvegardes : format 51 ; la migration 50 → 51 ôte `ville`, `voisins`, `immeuble`,
+     `economie` et `transitionPris`, et ramène à l'Écurie un cheval attaché sur une autre
+     carte.
+   - Les jeux de tuiles de la montagne et de la plage, `assets/trouvailles.png`,
+     `assets/faune.json` et `faune_*.png` restent dans `assets/`, kit de textures des biomes.
 2. **Le rendu par régions**, sur la ferme d'aujourd'hui (2 PR) : le sol, les arbres, les
    rochers, les fleurs et l'herbe haute chargés par régions de 64 × 64 tuiles autour de la
    caméra, au lieu d'une seule image de la taille de la carte.

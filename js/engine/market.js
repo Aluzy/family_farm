@@ -33,7 +33,7 @@ function setMarketCoef(state, item, coef) {
 
 export function isBuyable(item) {
   const def = DATA.OBJETS[item];
-  return !!def && def.rachetable !== false && !def.ville; // version 1.5 : « ville » = marché de la ville seulement
+  return !!def && def.rachetable !== false && !def.retire;
 }
 
 export function sellPrice(item) {
@@ -70,18 +70,16 @@ export function buyQuote(state, item, qty = 1) {
 // S'arrête quand les pièces manquent. Un item acheté arrive avec sa
 // conservation pleine et l'origine « acheté ». Le blé acheté va au Silo s'il y
 // a de la place (il n'y périme pas), le reste dans l'inventaire.
-// `ville` : achat au marché de la ville (ville.js, buyInTown), le seul où se vendent les
-// objets marqués « ville ».
-export function buyItem(state, item, qty = 1, { ville = false } = {}) {
+export function buyItem(state, item, qty = 1) {
   const def = DATA.OBJETS[item];
   if (!def) return fail('Objet inconnu.');
-  if (!ville && !marcheOuvert(state)) return fail(marcheFerme(state));
-  if (ville ? !def.ville || def.rachetable === false : !isBuyable(item)) return fail(`${def.nom} ne s'achète pas ici.`);
+  if (!marcheOuvert(state)) return fail(marcheFerme(state));
+  if (!isBuyable(item)) return fail(`${def.nom} ne s'achète pas ici.`);
   let bought = 0;
   let cost = 0;
   for (let i = 0; i < qty; i++) {
     const price = buyPrice(state, item);
-    if (!pay(state, price, `${ville ? 'Achat en ville' : 'Achat'} : ${def.nom}`)) break;
+    if (!pay(state, price, `Achat : ${def.nom}`)) break;
     addLot(state, item, 1, DATA.ORIGINE.ACHETE);
     setMarketCoef(state, item, marketCoef(state, item) + DATA.MARCHE.PAS);
     bought += 1;

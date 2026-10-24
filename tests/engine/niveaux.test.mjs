@@ -431,14 +431,11 @@ test('version 1.14 : l\'étal de bocaux prend les légumes qui périment le plus
   assertEqual([rep.commerce.type, rep.commerce.n, rep.commerce.pieces], ['conserverie', 1, 24]);
 });
 
-test('échelle des transformations : recette ×1,3 < commerce ×1,5 < entreprise ×2, sans perte quel que soit l\'intrant', () => {
+test('échelle des transformations : recette ×1,3 < commerce ×1,5, sans perte quel que soit l\'intrant', () => {
   // valeur d'une unité prise : le prix effectif de l'intrant le plus cher
   const valeur = (items) => Math.max(...items.map((it) => DATA.OBJETS[it].prix));
   for (const [id, t] of Object.entries(DATA.COMMERCE.TYPES)) {
     assertEqual(t.prix, Math.round(t.par * valeur(t.prend) * 1.5), `commerce ${id}`);
-  }
-  for (const [id, e] of Object.entries(DATA.VILLE.ENTREPRISES.LISTE)) {
-    assertEqual(e.prixProduit, Math.round(e.par * valeur(e.intrants) * 2), `entreprise ${id}`);
   }
   // un plat « l'un ou l'autre » se vend au moins ce que coûtent ses ingrédients, quelle que soit l'option
   for (const [id, r] of Object.entries(DATA.RECETTES)) {
@@ -448,11 +445,9 @@ test('échelle des transformations : recette ×1,3 < commerce ×1,5 < entreprise
   }
   assertEqual([DATA.OBJETS.bocal_legumes.prix, DATA.OBJETS.quenelle_poisson.prix], [22, 16]);
   assert(ingredientOptions(DATA.RECETTES.quenelle_poisson.ingredients[1]).includes('anchois'), 'l\'anchois fait aussi des quenelles');
-  // les noms : le commerce de la ferme ne reprend pas celui d'une entreprise de la ville ni d'un nœud
-  const villes = Object.values(DATA.VILLE.ENTREPRISES.LISTE).map((e) => e.nom);
+  // les noms : le commerce de la ferme ne reprend pas celui d'un nœud
   const noeuds = Object.values(DATA.ARBRE.noeuds).map((n) => n.nom);
-  for (const t of Object.values(DATA.COMMERCE.TYPES)) assert(!villes.includes(t.nom) && !noeuds.includes(t.nom), t.nom);
-  for (const n of villes) assert(!noeuds.includes(n), n);
+  for (const t of Object.values(DATA.COMMERCE.TYPES)) assert(!noeuds.includes(t.nom), t.nom);
   // les lingots valent au moins leurs 4 minerais et leur bois
   for (const m of ['fer', 'cuivre', 'or', 'platine']) {
     const r = DATA.RECETTES['lingot_' + m];

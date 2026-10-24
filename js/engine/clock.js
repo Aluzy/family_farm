@@ -51,7 +51,7 @@ export function dayHour(state, heure) {
 }
 
 // L'heure de la journée d'après l'éveil, sans repasser à 0 h après minuit (13,5 pour
-// 13 h 30) : sert à prévoir une heure de retour (sorties en ville).
+// 13 h 30) : sert à prévoir une heure de retour.
 export function awakeHours(state) {
   return DATA.TEMPS.HEURE_REVEIL + state.awakeMs / (DATA.TEMPS.SECONDES_PAR_HEURE * 1000);
 }

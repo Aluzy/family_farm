@@ -2,7 +2,7 @@ import { DATA } from './catalog.js';
 import { fail, NO_COINS, pay } from './devices.js';
 import { houseRepaired } from './depart.js';
 import { adultCount, childCount } from './family.js';
-import { memberHappiness, setHappiness } from './ville.js';
+import { memberHappiness, setHappiness } from './bonheur.js';
 import { addItem } from './inventory.js';
 
 /* ---------- Meubles de la maison (Marché, rayon Meubles) ----------

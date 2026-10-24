@@ -9,8 +9,10 @@ sans bâtiment au départ : on ramasse, on fabrique et on construit bloc par blo
   (2304 × 1824 px).
 - **Graine** : la même graine donne toujours la même carte. La sauvegarde ne garde que la
   graine et ce que le joueur a changé (blocs posés, ressources prises).
-- **Accès à la transition** : un chemin garanti mène au bord est. Il se termine sur le
-  rectangle `vers_la_transition`, que la carte générée fournit comme celle de Tiled.
+- **Le chemin vers l'est** : un chemin garanti mène au bord est. Il se termine sur le
+  rectangle `vers_la_transition`, que la carte générée fournit comme celle de Tiled ; il menait
+  à la carte de transition, retirée du jeu (docs/grand-monde.md) : il ne sert plus, la graine de
+  la carte n'a pas changé.
 - **Parties en cours** : une ancienne partie déménage sur une ferme générée à son chargement
   (voir « Les anciennes parties ») ; une nouvelle partie a toujours la carte générée.
 - **Paiement** : les bâtiments se paient en matériaux seulement. Les pièces ne servent qu'à
@@ -72,12 +74,12 @@ l'Écurie construite : une enceinte de murs où est posé le râtelier (`ATELIER
 `ecurie: true`, fabriqué à l'Atelier), une porte sur le dehors, et `CHEVAL.PLACES` cases libres
 (`etatEcurie`, une variante sans enclos d'`etatEnclos`). Il s'y promène tant que le joueur est à
 la ferme (`syncBeasts`, l'entrée `ecurie` de `betesDesEnclos`). Sa case de la barre d'outils met
-le personnage en selle (`toggleCheval`) : il va `VITESSE` fois plus vite sur toutes les cartes,
-assis sur le cheval sellé (`js/carte/cheval.js`, comme le triporteur ; `scripts/personnage/cheval.py`).
-Hors de la ferme, en descendre plante un poteau d'attache et y noue une corde (`CHEVAL.ATTACHE`,
-deux objets de l'Atelier, rendus quand on remonte) : le cheval attend là (`state.cheval.attache` :
-la carte, le point), broute, et un toucher dessus fait remonter (`js/carte/ville/monture.js`). De
-retour à la ferme, il rentre à l'Écurie (`rentrerCheval`). La nuit, après l'Étable, il mange
+le personnage en selle (`toggleCheval`) : il va `VITESSE` fois plus vite, assis sur le cheval
+sellé (`js/carte/cheval.js`, comme le triporteur ; `scripts/personnage/cheval.py`). Pour l'instant
+il ne se monte qu'à la ferme : il n'entre pas dans la mine. L'attacher à un poteau sur une autre
+carte (`CHEVAL.ATTACHE`, l'ancien `js/carte/ville/monture.js`, retiré avec la ville) reviendra avec
+le grand monde (docs/grand-monde.md) ; une partie dont le cheval était attaché ailleurs le
+retrouve à l'Écurie (migration 50 → 51, `rentrerCheval`). La nuit, après l'Étable, il mange
 `RATION` paille (`chevalNuit`) ; sinon il ne va que `VITESSE_FAIM` fois plus vite.
 
 ### L'atelier niveau 1
@@ -133,7 +135,8 @@ Le Marché vend toujours les outils.
 - Arrivé à **20**, le membre mange jusqu'à 100 (`repasStep`, à chaque pas de la journée) : dans la
   **boîte à nourriture** (un bloc de l'Atelier, 3 planches, posé dans une pièce close), d'abord ce
   qui périme le plus tôt ; sur la carte, il va à la boîte et s'y baisse (`allerManger`). Sans rien
-  à manger, il a faim : une alerte, et `VILLE.BONHEUR.FAIM` de bonheur en moins la nuit.
+  à manger, il a faim : une alerte, et `BONHEUR.FAIM` de bonheur en moins la nuit
+  (`js/engine/bonheur.js`, `data/general.json`).
 - Le joueur remplit la boîte (un appui dessus : `js/ui/boite.js`) : **6 aliments différents, 10 de
   chacun** (`ATELIER.BOITE`). Ce qu'elle contient périme comme l'inventaire ; reprise, elle rend
   tout.
@@ -144,8 +147,6 @@ Le Marché vend toujours les outils.
   carte. **Repris**, ce qu'il gardait revient dans l'inventaire (`closeFridge`). Une partie
   d'avant la version 48 voit son frigo posé sur une case libre du foyer (sinon, il attend dans
   l'inventaire).
-- Les jours d'école, les **enfants rentrent à 17 h 30 avec 80 au plus** ; au coucher, ils mangent
-  jusqu'à 100.
 - Un aliment rend sa **valeur** : énergie ÷ 5, + 10 %, arrondie au-dessus (`valeurAliment` :
   carotte 2, baie 2, patate 5, conserve 6), à la famille comme au personnage (l'en-cas).
 - La nuit recopie ce qui a été mangé dans la journée (`feedFamily`) : l'**autonomie** est la part
@@ -195,7 +196,7 @@ Le Marché vend toujours les outils.
   tas, ou le personnage poussé au doigt vers la porte quand il est juste devant, et il y entre
   (`MINE` dans `js/carte/ferme/config.js`, `js/carte/ferme/passages.js`, `entre` dans
   `js/fermier.js`) : il va devant, monte dans la porte en s'effaçant, puis le premier niveau de
-  la grotte s'ouvre (`js/ville-carte.js`, l'entrée « ferme »). Au premier niveau, l'échelle
+  la grotte s'ouvre (`js/grotte.js`, l'entrée « ferme »). Au premier niveau, l'échelle
   ramène à la ferme (`jeu.html?arrivee=mine`) : il sort de la porte en apparaissant et descend
   devant.
 - **Les arbres devant le personnage** s'effacent un peu quand il passe derrière, mais seulement
@@ -205,7 +206,7 @@ Le Marché vend toujours les outils.
   tronc (la case de son pied, `buildGrid` dans `js/fermier.js`) : on passe à côté et derrière,
   sous le feuillage.
 - **Le chemin** est tracé par un A* (`js/engine/chemin.js`), de la porte de la maison au bord
-  est. Le rectangle `vers_la_transition` y est posé.
+  est. Le rectangle `vers_la_transition` y est posé (il ne mène plus nulle part).
 - **Le terrain** (`js/engine/terrain-carte.js`) est calculé d'après la carte, avec les règles de
   `scripts/carte/terres.py`. Un test vérifie qu'il redonne exactement `data/terrain.json` pour la
   carte de Tiled.
@@ -311,10 +312,9 @@ Le Marché vend toujours les outils.
   - **La paroi vitrée** (2 pierres, 1 lingot de fer) est un mur de verre : elle se pose comme un
     mur (elle ferme une pièce) ou à la place d'un mur, comme une fenêtre. Le dessus est en
     métal ; la face est en verre teinté, avec des montants, une traverse tous les 13 px et des
-    reflets en biais. Des parois voisines forment une façade continue (images 97 à 160). Elle
-    servira plus tard à construire des immeubles en verre en ville.
-  - **Les murs aux matières de la ville** reprennent les façades des immeubles de la grande ville
-    (les motifs de `scripts/ville/batiments.py`) : briques rouges, orange, ocre ou bleues
+    reflets en biais. Des parois voisines forment une façade continue (images 97 à 160).
+  - **Les murs aux matières de la ville** reprennent les façades des immeubles de l'ancienne
+    ville (leurs matières, reprises dans `scripts/carte/briques.py`) : briques rouges, orange, ocre ou bleues
     (3 pierres et 1 bois), pierre de taille (5 pierres). Le dessus est de la même matière, un
     peu plus clair ; la face a une corniche en haut et un soubassement gris en bas. Ce sont des
     murs (`mur: true`) : ils ferment une pièce, se raccordent à tous les autres murs, en changent
@@ -325,7 +325,7 @@ Le Marché vend toujours les outils.
     autres (`mur: true`) ; images de `murs_hauts.png` : 371 + masque (`mur_bois`,
     `scripts/carte/blocs.py`).
   - Les murs et la porte d'un mur horizontal sont une case plus hauts que les autres blocs
-    (`assets/murs_hauts.png`, 16 × 40 px, comme les maisons de la transition). Un mur qui cache
+    (`assets/murs_hauts.png`, 16 × 40 px). Un mur qui cache
     le personnage ou un membre de la famille s'efface à moitié, et tous s'effacent en mode
     Construire (`stepMurs`, `BLOCS_CARTE.hauts`).
   - Leurs images (`assets/blocs.png`, générées par `scripts/carte/blocs.py`) sont vues de haut
@@ -368,17 +368,11 @@ Le Marché vend toujours les outils.
 - **La barrière** (1 planche à l'Atelier : 2 barrières) arrête le passage et se raccorde à
   ses voisines, comme les murs (`BLOCS_CARTE.barrieres` + masque, `wallFrame`). Elle ne
   ferme pas de pièce : un enclos de barrières n'est ni une maison ni un bâtiment.
-- **La lanterne scintillante** (à l'Atelier : 1 champignon lumineux et 1 morceau d'arbre de
-  l'infra-monde) éclaire la nuit.
-  - **Ses matières se cueillent à la main** (champ `cueillette` de `data/items.json`, `FermeHote.ramasser`) :
-    - les champignons qui luisent au sol de la grotte (`tapChampignon`, `js/ville-carte.js`) :
-      un champignon cueilli s'éteint et ne repousse que le lendemain ;
-    - les morceaux des arbres tordus de l'infra-monde, la hache en main (`tapTree`, `stepTree`,
-      `fellTree`, `stepPieces` dans `js/infra-monde.js`) :
-      - au troisième coup de hache (un coup par appui), l'arbre tombe ;
-      - il lâche deux morceaux là où sa cime touche le sol ;
-      - on les ramasse en marchant dessus ;
-      - l'arbre repousse le lendemain, et les morceaux laissés au sol y restent jusque-là.
+- **La lanterne scintillante** (à l'Atelier : 1 champignon lumineux et 2 bois) éclaire la nuit.
+  - **Le champignon se cueille à la main** (champ `cueillette` de `data/items.json`,
+    `FermeHote.ramasser`) : il luit au sol de la grotte de la mine (`tapChampignon`,
+    `js/grotte.js`) ; un champignon cueilli s'éteint et ne repousse que le lendemain. (Le
+    morceau d'arbre de l'infra-monde, `bois_infra`, est retiré avec l'infra-monde.)
   - **Où la poser** : dehors, dans la maison ou dans une enceinte vide, mais pas dans un
     bâtiment (comme la batterie). Elle arrête le passage.
   - **Le jour**, elle est éteinte.
@@ -474,8 +468,7 @@ Le Marché vend toujours les outils.
     se pose pas (`etageEnPeril`, `etageHorsEmprise`) : on reprend d'abord ces blocs de l'étage.
     Une fenêtre ou une porte change un mur sans l'enlever : l'étage n'y perd rien.
 - **L'eau vivante** (`js/carte/eau.js`, CarteKit.eauVive, réglages CarteKit.EAU ; à la ferme,
-  `js/carte/ferme/eau.js` ; sur les autres cartes, `js/carte/ville/eau.js` : les fontaines de
-  la ville et de la transition, le lac de la montagne, la mer de la plage) : l'eau de chaque étendue est peinte par un shader, inspiré du
+  `js/carte/ferme/eau.js` ; le shader de la mer servira aux côtes du grand monde) : l'eau de chaque étendue est peinte par un shader, inspiré du
   « 2D Pixel Art Water » de niwho (godotshaders.com, CC0) : de légers traits ondulés au large
   (là où deux bruits qui glissent en sens contraires se croisent), plus sombre au large, de fins
   reflets de lumière au fond près des rives, le ciel de l'heure, une ligne d'écume qui avance et
@@ -490,7 +483,7 @@ Le Marché vend toujours les outils.
   s'élargissent sur l'eau au bouchon de la pêche, quand un poisson saute (de temps en temps),
   quand quelqu'un longe la rive, et au hasard (des insectes). Seulement en WebGL, et pas avec
   « moins d'animations ». La mer a son propre shader (EAU_MER) : la houle, des crêtes
-  parallèles à la plage qui roulent vers elle, des vagues qui se brisent au bord, et le ressac,
+  parallèles au rivage qui roulent vers lui, des vagues qui se brisent au bord, et le ressac,
   qui monte sur le sable et redescend en laissant le sable mouillé ; elle ne renvoie pas de
   reflet net (seulement les ronds et les scintillements).
 - **La lumière des maisons, la nuit** (`js/carte/ferme/fenetres.js`) : les pièces de la
@@ -509,7 +502,7 @@ Le Marché vend toujours les outils.
   - sur ses murs, s'il n'a pas d'escalier ; sur les murs de son étage, au-dessus de ce qu'ils
     ferment, s'il en a un (un étage sans murs tout autour reste une terrasse, sans toit) ;
   - il couvre le bâtiment, murs compris : un toit à croupes vu de 3/4, dessiné comme ceux des
-    immeubles de la ville (`CarteKit.toit`, `js/carte/toit.js`, couleurs dans `CarteKit.TOIT`).
+    immeubles de l'ancienne ville (`CarteKit.toit`, `js/carte/toit.js`, couleurs dans `CarteKit.TOIT`).
     Le pan de devant est grand (les trois quarts de la profondeur), celui de derrière est vu en
     raccourci et plus clair. Les croupes forment des triangles aux deux bouts (la gauche dans la
     lumière, la droite à l'ombre). Les rangs de tuiles font 8 px, avec un faîtage de tuiles
@@ -518,238 +511,18 @@ Le Marché vend toujours les outils.
   - il s'efface quand le personnage entre dans le bâtiment (en bas ou à l'étage) et en mode
     Construire, et à moitié quand le personnage passe derrière (`stepToits`).
 
-## La carte de transition, tirée pour chaque partie
+## Les autres cartes, retirées
 
-La carte entre la ferme et la ville (`ville-carte.html?carte=transition`, 96 × 72 tuiles) a deux
-parties.
-
-- **L'est est fixe**, dessiné par `scripts/ville/transition.py` à partir de la colonne `OUEST`
-  (48) : le bout du chemin, la route, les trottoirs, les réverbères, l'arrêt de bus.
-- **L'ouest est tiré d'après la graine de la partie** (`js/engine/transition.js`,
-  `transitionPlan`). La graine est celle de la ferme générée, sinon celle des voisins
-  (`state.graineVoisins`, tirée à la création de la partie, ou à la première visite d'une
-  ancienne partie). L'ouest contient :
-  - le chemin de terre de la ferme à la route, qui ondule doucement ;
-  - 3 à 5 maisons de voisins, réparties sur toute la largeur, tour à tour au nord et au sud du
-    chemin (chaque côté partagé en bandes de colonnes, une maison par bande) et plus ou moins
-    loin de lui (`ECARTS`). Chacune réserve toute son emprise (11 × 9 cases), où elle
-    s'agrandira. La porte est face
-    au chemin (en bas au nord, en haut au sud), une allée l'y relie. Elles sont bâties
-    avec les blocs de la ferme générée (`assets/blocs.png`) : murs raccordés, porte, plancher,
-    meubles (four ou cuisinière, un lit par membre de la famille, coffre à grain, atelier…).
-    Leurs murs et leur porte sont une case plus hauts, comme ceux de la ferme
-    (`assets/murs_hauts.png`, 16 × 40 px, `murs_hauts()` de `scripts/carte/blocs.py`) ; un mur
-    qui cache quelqu'un derrière lui (le joueur, un voisin, le livreur) s'efface à moitié
-    (`stepMurs`, `BLOCS.hauts`) ;
-  - la mare et son banc, le puits et le tonneau près des maisons, des barrières le long du
-    chemin, des buissons ;
-  - les arbres et les rochers, que l'on coupe et que l'on casse comme avant, l'herbe haute et
-    les fleurs.
-- **Le kit de dessin** : la carte de Tiled n'a que de l'herbe à l'ouest, et porte dans sa
-  propriété `kit` de quoi y dessiner :
-  - les tuiles d'herbe et de chemin pour chaque jeu de coins ;
-  - les fleurs ;
-  - des tampons (des blocs de tuiles, une grille par couche) : la mare, le puits, le tonneau, le
-    banc, les buissons, et les barrières de 2 à 8 tuiles.
-
-  `js/carte/ville/transition.js` (`V.transitionCarte`) en fait la carte de la partie avant que
-  la scène ne la crée : le sol, les tampons, les arbres, les rochers, l'herbe, et le trajet des
-  enfants vers le bus.
-- **Les maisons sont ouvertes** : sans toit ni carte d'intérieur, on voit dedans et on y entre à
-  pied par la porte. Les murs et les meubles arrêtent la marche, le plancher et la porte non
-  (`poseMaison`).
-- **Les familles** : chaque maison a sa famille (`V.voisins`), qu'on voit aller et venir chez
-  elle. De 7 h à 19 h, ses membres sortent par la porte.
-  - Les enfants flânent autour de la maison ; rentrés, tous restent visibles et circulent dans
-    la maison avant de ressortir. Le soir, tout le monde reste chez soi.
-  - **La maison grandit avec la famille** (`maisonPlan`, `js/engine/transition.js` ; les étapes :
-    `VOISINS.MAISON` de `data/ville.json`). Elle n'a d'abord qu'une petite pièce ; chaque nuit, un
-    foyer qui garde sa réserve (`RESERVE`) après l'achat s'offre l'étape suivante, qui lui rend
-    un peu de bonheur : agrandir la pièce principale, construire une chambre (les lits y
-    déménagent), une table et des chaises, la chambre des enfants, un salon, un canapé, une table
-    basse (et une plante), un tapis. La carte dessine la maison à son étape (les grands meubles :
-    ceux de la maison de la ferme, `assets/meuble_*.png`) ; un voisin dit ce que sa famille
-    vient de s'offrir, ou ce pour quoi elle met de côté. Il faut environ deux mois de jeu pour
-    tout bâtir.
-  - **Un lit chacun** : chaque maison a de 3 à 5 lits (paillasse et couverture, `TRANSITION.LITS`,
-    `m.lits`), et sa famille deux adultes et autant d'enfants qu'il reste de lits. De 22 h à 6 h
-    (`TRANSITION_VIE.sommeil`), chacun va à son lit et y dort, sous sa couverture ; au lever, il
-    reprend sa journée. Arrivé sur la carte en pleine nuit, on les trouve déjà couchés.
-  - Les enfants vont à l'école comme ceux de la ferme : le lundi, le mardi, le jeudi et le
-    vendredi, de 8 h 45 à 16 h 45. Le matin, ils vont à pied jusqu'à l'abri, où le bus de l'école
-    les attend ; le soir, ils en descendent et rentrent chez eux. Si le bus est déjà passé (ou
-    sans animations), ils sont déjà partis, ou déjà rentrés.
-- **Les métiers des voisins** : chaque maison est bûcheron ou agriculteur (le plan, tour à tour :
-  il y a toujours les deux) ; l'agriculteur a un champ de 4 × 2 parcelles à côté de sa maison,
-  et chaque maison a un four ou une cuisinière.
-  - **L'économie** (`js/engine/voisins.js`, réglages `VOISINS` de `data/ville.json`) : chaque
-    foyer (`state.voisins.foyers`) a son argent, son garde-manger, son champ et son bonheur. Il
-    naît à la première visite et vit une journée à chaque nuit du jeu (`voisinsNuit`, dans
-    `runNight`), avec les règles de la famille du joueur : le besoin journalier (`FAMILLE.AJ`),
-    le bonheur des repas (`mealHappinessDelta` : les plats cuisinés en rendent, la faim en coûte).
-  - **Le bûcheron** abat 4 arbres de la carte par adulte et par jour (5 bois chacun ; les arbres
-    repoussent comme ceux du joueur), vend le bois au marché et y achète tout ce qu'il mange.
-  - **L'agriculteur** achète ses graines (ou replante ses patates), récolte son champ, garde de
-    quoi cuisiner et vend le reste ; il n'achète que ce qu'il ne produit pas (œufs, huile, farine).
-  - **La cuisine** : chacun cuisine les plats de son métier (`VOISINS.RECETTES`) tant que le besoin
-    n'est pas couvert, puis complète avec des aliments crus. Des plats différents (3 au plus) ;
-    au-delà du besoin, il en cuisine pour le plaisir avec une petite part de son épargne.
-  - **Sur la carte** (`js/carte/ville/metiers.js`) : le bûcheron va abattre l'arbre debout le plus
-    proche en trois coups de hache (`FermeHote.voisinAbat` : l'arbre compte dans sa journée) et
-    rapporte le bois chez lui ; l'agriculteur travaille son champ (houe, arrosoir), dont on voit
-    la terre et les plantes à leur stade ; entre 11 h et 14 h, le second parent part au marché de
-    la ville par la route et en revient son panier plein ; à partir de 17 h 30, un parent cuisine
-    devant le four ou la cuisinière.
-  - Un toucher sur un voisin : il raconte son métier et sa journée d'hier (arbres abattus ou
-    récolte, ventes, plats du dîner), son argent de côté et son bonheur.
-- **Le livreur** (`js/carte/ville/livreur.js` ; le plan : `LIVREUR`, `js/engine/transition.js`) :
-  au-dessus de l'arrêt de bus, son habitation (il vit seul), l'entrepôt et, entre les deux, le
-  parking de son triporteur électrique (la carte de Tiled leur laisse la place : `RESERVE`,
-  `PARKING`, `scripts/ville/transition.py`). Devant chaque maison, dans l'herbe au bord du
-  chemin (une case d'herbe entre elle et l'allée), une caisse de collecte : chaque soir, la
-  famille y met ce qu'elle vend (le bois, les légumes en trop).
-  - Le triporteur ne roule qu'au milieu du chemin, puis de la route (`roule` : un point par
-    colonne, d'après `plan.milieu`) ; il s'arrête au milieu du chemin, devant chaque caisse.
-  - À 6 h, il se lève, va au parking, monte sur son triporteur et part vers la ferme en
-    s'arrêtant à chaque caisse pleine (de l'est à l'ouest), dont il prend les marchandises ; puis
-    il fait demi-tour jusqu'au marché de la ville, au bout de la route.
-  - En y arrivant, la caisse de chaque famille est vendue et son prix lui est aussitôt crédité
-    (`livraison`, `js/engine/voisins.js` ; un « +12 💰 » monte au-dessus de chaque caisse).
-  - Il reste en ville jusqu'à 11 h, revient garer son triporteur, rentre chez lui et se couche
-    à 22 h. Sans le joueur, la tournée se fait quand même : la caisse est vendue au début de la
-    journée suivante, ou à l'arrivée du joueur après 9 h.
-  - Un toucher sur lui : il raconte sa tournée ; sur une caisse : ce qu'elle contient et ce
-    qu'elle vaut au marché.
-- **Les ressources du jour sont pour le joueur** (`ramasserTransition`, `js/engine/transition.js`) :
-  des petites pierres et des morceaux de bois, 36 par jour (`ressourcesDuJour`). Un
-  toucher sur l'une d'elles y envoie le personnage, qui la prend en arrivant. Comme sur la ferme
-  générée : une petite pierre donne une pierre, un morceau de bois du bois,
-  contre l'énergie et l'XP du geste « ramasser » ; pas la nuit, ni épuisé. Ce qu'il a pris est
-  gardé dans la partie (`state.transitionPris`, `{ jour, ids }`) et ne revient pas avant le
-  lendemain.
-
-## Les immeubles d'habitation en blocs de la ville
-
-`js/carte/ville/immeuble.js`, réglages dans `IMMEUBLE` (`js/carte/ville/config.js`).
-
-- **Ils remplacent les immeubles d'habitation** de la ville (`IMMEUBLE.batiments`) : l'immeuble
-  ocre (à l'est, contre le bord), la résidence de verre et la résidence ocre (à l'ouest, le long
-  de la voie ferrée). Au chargement de la carte, `V.immeubleCarte` ôte leurs tuiles et leur
-  emprise ; `makeImmeuble` pose à leur place des immeubles bâtis avec les blocs de la ferme :
-  l'immeuble ocre (22 × 14 cases, 3 niveaux, plan « double »), la résidence de verre (10 × 14
-  cases, 4 niveaux) et la résidence ocre (10 × 14 cases, 5 niveaux), au plan « simple » ; la
-  tour de la gare (12 × 14 cases, 8 niveaux, en pierre de taille), au même plan, en studios :
-  pour un couple, sans le lit de l'enfant (`enfants: 0`).
-- **Les maisons de ville (plan « maison »)** : les rangées de maisons du centre (`maisons_a*`,
-  `maisons_b*`, `IMMEUBLE.retire`) deviennent 17 maisons (`RANGEES` dans la config : 4 + 4 + 3 à
-  l'ouest de la rue, 2 + 2 + 2 à l'est), de 8 à 12 cases de large sur 10 de profondeur, deux
-  niveaux, en briques rouges, orange, ocre ou bleues (`immeuble_ville_<brique>.png`). Au
-  rez-de-chaussée, derrière, la pièce de vie (la cuisine, le four, la table) ; devant, le salon
-  et l'entrée (la porte sur la rue, l'escalier). À l'étage, la chambre des parents, celle des
-  enfants (un lit chacun : 2 dans un T3, 3 dans un T4) et le palier. Chacune loge une famille :
-  deux adultes et ses `enfants` (docs/plan-ville.md).
-- **Les lieux** (`js/carte/ville/lieux.js`, `V.plansLieux`) : les commerces remplacent des
-  bâtiments sans rôle (docs/plan-ville.md) : la boulangerie (la maison bleue), la pizzeria et le
-  fast-food de burgers (les bureaux de l'est), la poissonnerie (les bureaux du marché), le
-  magasin d'informatique (la verrière de l'est). Deux niveaux : la boutique au rez-de-chaussée
-  (la salle des clients, le comptoir, l'atelier ou la cuisine derrière), la réserve et le
-  bureau à l'étage. Leur enseigne surmonte la porte (`enseigne_<lieu>.png`) ; leurs meubles
-  (le four de boulanger, le pétrin, la vitrine, le four à pizza, la friteuse, le grill, l'étal
-  de poissons, le bac à homards, les présentoirs, les étagères, le bureau et son écran) sont
-  dessinés par `scripts/ville/commerces.py`. On achète au comptoir d'une boutique (ou à sa
-  vitrine, son étal, son présentoir) quand un employé y travaille : une fenêtre d'achat
-  (`tapBoutique`, `js/carte/ville/marche.js` ; `VILLE.BOUTIQUES`) ; sinon, la boutique dit ses
-  horaires. Le premier employé d'un lieu se tient derrière son comptoir ou devant le tableau
-  noir (`IMMEUBLE.vie.postes`). Les services et les loisirs prennent la place de
-  la maison à deux ailes (la mairie : l'accueil, la salle des mariages, les bureaux ; à l'étage,
-  la salle du conseil), de la tour (le musée : le squelette de dinosaure, les vitrines, les
-  tableaux, les bustes), des bureaux du centre-est (le cinéma : l'écran et ses fauteuils, la
-  billetterie, la cabine de projection ; les écoles 2 et 3 : une classe par niveau) et des
-  bureaux de la gare (le bureau de négoce : la salle des marchés, la salle de réunion) ; leurs
-  meubles : `scripts/ville/services.py`. Les fabriques prennent la place des usines, des
-  entrepôts et des bureaux de l'ouest (l'usine électronique, la fabrique de matériaux, la
-  fabrique textile, la minoterie, la fabrique de mayonnaise, l'usine informatique) et de la
-  longue maison (la menuiserie, tout en longueur) : l'atelier et ses machines au
-  rez-de-chaussée, les bureaux et la réserve à l'étage ; leurs machines :
-  `scripts/ville/fabriques.py`.
-- **L'immeuble ocre (plan « double »)** : au rez-de-chaussée, le hall occupe le milieu de la moitié de devant (4 × 7 cases) : une
-  porte double sur la rue, une porte de chaque côté vers un logement, et au fond l'escalier qui
-  monte. **À chaque étage**, le palier, de la même taille : le haut de l'escalier d'où l'on
-  vient, l'escalier qui monte au suivant (sauf au dernier) et les deux mêmes logements.
-- **Chaque logement** (`V.planImmeuble`, celui de droite en miroir) a trois pièces :
-  - un petit salon : un canapé, une table basse, un tapis, une plante ;
-  - la pièce de vie : la cuisine, le four, une table et deux chaises ;
-  - derrière, une chambre sur toute la largeur du logement (au-dessus du hall aussi ; un mur
-    mitoyen sépare les deux chambres) : deux lits, deux tables de chevet, une plante.
-- **Les résidences (plan « simple »)**, plus étroites : un logement par niveau, sur toute la
-  largeur. La chambre au fond (deux lits, deux tables de chevet, une plante), la pièce de vie
-  (la cuisine, le four, une table et sa chaise, une plante), le salon devant à gauche (le
-  canapé, la table basse, le tapis) ; le hall (le palier aux étages) devant à droite, avec la
-  porte double sur la rue et l'escalier.
-- **La façade**, comme celle des immeubles de la ville (`immeuble_ville.png`,
-  `immeuble_ville` dans `scripts/carte/blocs.py`) : des étages de 40 px (`IMMEUBLE.dy`) en briques
-  de l'immeuble remplacé (ocre ; bleues pour la résidence de verre, `immeuble_ville_bleu.png`) ; un soubassement gris au rez-de-chaussée, un
-  bandeau de pierre au plancher de chaque étage, une corniche sous le toit ; des pierres d'angle
-  à refends aux angles ; les fenêtres de la ville (linteau, cadre de bois, quatre carreaux,
-  appui), avec de l'espace au-dessus et au-dessous ; la porte double vitrée de l'entrée dans son
-  encadrement de pierre. Les cloisons sont des murs bas, pour qu'on voie le fond des pièces. Un
-  toit de tuiles (`CarteKit.toit`, le même qu'à la ferme) couvre le dernier niveau.
-- **Monter, descendre** : marcher sur une marche de l'escalier fait changer de niveau. Le
-  personnage arrive sur le même escalier, au niveau d'à côté, dessiné remonté de 40 px par
-  niveau, et ne marche que sur ce niveau (`marcheEtage`).
-- **Ce qu'on voit** (`stepImmeuble`) :
-  - dehors : tous les niveaux l'un sur l'autre, et le toit ;
-  - dans un immeuble : son toit s'efface, sa façade de devant s'efface à moitié, le niveau du
-    dessous est en transparence et ceux du dessus sont cachés ; les autres restent vus de dehors ;
-  - à un étage : un voile sombre couvre la ville, l'immeuble et le personnage passent devant ;
-  - un mur juste devant le personnage s'efface un peu.
-
-### Les familles des immeubles
-
-Chaque logement des immeubles (deux par niveau dans l'immeuble ocre, un par niveau dans les
-résidences : 15 familles ; un studio par niveau dans la tour de la gare : 8 couples) et chaque
-maison (17 familles) a sa famille : deux adultes et un enfant (dans un studio, aucun ; dans une
-maison, deux ou trois), tirés comme les voisins de la transition (`V.voisins`, gardés en
-`localStorage`, un lit chacun). Le moteur (`js/engine/voisins.js` : `immeubleFoyer`,
-`immeubleNuit`, `immeubleVue` ; `state.immeuble.foyers`, par logement : `logement_1`… pour
-l'immeuble ocre, `residence_verre_1`…, `residence_ocre_1`… : `VOISINS.IMMEUBLE.LOGEMENTS`) en
-fait des citadins : chaque adulte a son poste (`VOISINS.EMPLOIS`, `data/ville.json` : 80 postes
-pour les 80 adultes, docs/plan-ville.md ; `assigneEmplois` les donne dans l'ordre des
-logements, et chacun garde le sien), et chaque nuit, il touche le salaire de son poste ; la
-famille achète au marché les ingrédients de ses repas (`VOISINS.RECETTES.citadin`), avec les
-mêmes règles que les voisins (besoin, plats, bonheur). Le journal garde ce qu'elle a acheté
-(`achats`).
-
-Sur la carte (`js/carte/ville/habitants.js`), chaque adulte part à pied avant chacun de ses
-services (un ou deux par jour : les horaires de son métier), le temps du trajet avant le début :
-il descend l'escalier, sort, et va à son lieu. Dans un lieu bâti en blocs, il entre et se tient
-à sa place (au rez-de-chaussée, réparties dans la pièce) ; ailleurs (la fromagerie, la
-conserverie, la confiturerie, l'école de la carte, l'amphithéâtre ; la gare pour les chauffeurs,
-les scieurs et les chaudronniers, qui travaillent hors de la ville), il entre et n'est plus sur
-la carte. Entre deux services, il rentre chez lui ; après le dernier, avant 20 h, il passe par
-un étal du marché, rentre le panier plein, et le premier arrivé cuisine devant le four. Ceux qui
-commencent tôt se lèvent plus tôt, ceux qui finissent tard se couchent plus tard. Les enfants
-vont à l'école comme ceux de la ferme (les jours `HorlogeSortie.JOURS_ECOLE`, de
-`CarteKit.ECOLE.debut` h, 8 h 45, à `fin` h, 16 h 45), chacun à l'une des trois écoles (la plus
-proche qui a de la place : `repartitEcoles`) : ils y vont à pied ; à l'école de la carte, ils
-entrent par sa porte (le bout du chemin des enfants qui descendent du bus) ; aux écoles 2 et 3,
-ils prennent place derrière un pupitre. Ils rentrent à pied ; le reste du temps, ils sont au
-logement.
-
-### L'horaire de l'école
-
-L'école commence à 8 h 45 pour tous les enfants : ceux de la ferme, des voisins de la transition et
-des immeubles (`CarteKit.ECOLE`, `js/carte/kit.js`). Chacun part de chez lui le temps qu'il lui
-faut pour y être à l'heure : la longueur de son chemin divisée par sa vitesse (une heure du jeu :
-30 s), avec un peu d'avance. Le bus de l'école suit un horaire compté à rebours depuis 8 h 45
-(`CarteKit.horaireEcole`) : son arrêt en ville le temps que les enfants marchent jusqu'à l'école,
-son arrêt de la transition `ECOLE.bus` h plus tôt ; les enfants de la ferme passent le bord de la
-ferme le temps de marcher jusqu'à cet arrêt. Les enfants de la ferme partent donc de la maison
-selon leur chemin jusqu'au bord de la ferme ; ceux des voisins, selon leur chemin jusqu'à l'abri ;
-ceux des immeubles, selon leur chemin (escaliers compris) jusqu'à la porte de l'école. Le soir,
-l'école finit à 16 h 45, et le bus repart de la ville quand les enfants y sont montés. Tous dorment de 22 h à 6 h. Un habitant marche sur son niveau et
-change de niveau par l'escalier ; on le voit dehors, ou dans son immeuble quand on y est, à son
-niveau. Le toucher : il raconte son travail, ses achats et son dîner d'hier.
+La carte de transition tirée pour chaque partie (les maisons des voisins, leurs familles, leurs
+métiers et leur économie, le livreur et ses caisses de collecte, les ressources du jour), les
+immeubles et les maisons en blocs de la ville, ses lieux (boutiques, services, fabriques), ses
+habitants et l'horaire de l'école (le bus, `CarteKit.ECOLE`, `horaireEcole`) ont été retirés du
+jeu avec la ville (étape 1 de docs/grand-monde.md). Leur code et la description qu'en donnait ce
+document sont sur la branche `archive/jeu-avant-grand-monde` (commit `11a471e`) ; le modèle des
+familles autonomes des voisins (foyers, métiers, argent, repas, bonheur, maisons par étapes) en
+sera repris pour les habitants des hameaux du grand monde (étape 7). Une partie enregistrée
+perd ces données à la migration 50 → 51 (`ville`, `voisins`, `immeuble`, `economie`,
+`transitionPris`) ; les enfants de la ferme ne vont plus à l'école.
 
 ## Les anciennes parties
 

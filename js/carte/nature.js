@@ -2,8 +2,7 @@
  * (CarteKit.NATURE, CarteKit.PECHE, CarteKit.herbe, CarteKit.fondu, CarteKit.MORCEAUX,
  * CarteKit.pointsMorceaux).
  *
- * La ferme (js/carte/ferme/) et la carte de transition, la montagne, la plage
- * (js/carte/ville/nature.js, peche.js) ont la même herbe haute, les mêmes arbres qui
+ * La ferme (js/carte/ferme/), et demain les cartes du grand monde, ont la même herbe haute, les mêmes arbres qui
  * s'éclaircissent devant le personnage, les mêmes arbres qui tombent sous la hache et les
  * mêmes rochers qui éclatent sous la pioche, la même ligne de pêche : un seul réglage ici.
  */

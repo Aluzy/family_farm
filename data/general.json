@@ -108,8 +108,8 @@
       "Version 1.2 : le joueur compose sa famille. De MEMBRES_MIN à MEMBRES_MAX",
       "membres (adultes ou enfants), dont au moins ADULTES_MIN adulte ; la partie",
       "commence avec les quatre membres de MEMBRES. Chacun (sauf le personnage principal)",
-      "a sa jauge de faim (FAIM). AJ ne sert plus qu'au besoin journalier des voisins",
-      "et des habitants de la ville (voisins.js, economie.js)."
+      "a sa jauge de faim (FAIM). AJ servira au besoin journalier des habitants du",
+      "grand monde (docs/grand-monde.md, étape 7)."
     ],
     "COMPOSITION": { "MEMBRES_MIN": 1, "MEMBRES_MAX": 6, "ADULTES_MIN": 1 },
     "//COMPAGNIE": [
@@ -126,10 +126,9 @@
       "réfrigérateur s'il est construit, sinon dans la boîte à nourriture posée dans le foyer (ce que le",
       "joueur y a mis), d'abord ce qui périme le plus tôt. Chaque aliment rend sa valeur (valeurAliment :",
       "énergie ÷ PERSONNAGE.MANGER_DIVISEUR, + PERSONNAGE.MANGER_BONUS %, arrondi au-dessus). S'il n'y a rien à",
-      "manger, il a faim : il perd VILLE.BONHEUR.FAIM de bonheur la nuit. ECOLE : les jours d'école (JOURS, 0 :",
-      "lundi), les enfants rentrent à RETOUR_H h avec au plus NIVEAU points ; au coucher, ils mangent jusqu'à MAX."
+      "manger, il a faim : il perd BONHEUR.FAIM de bonheur la nuit."
     ],
-    "FAIM": { "MAX": 100, "SEUIL": 20, "PX_PAR_POINT": 100, "AIDE": 5, "ECOLE": { "JOURS": [0, 1, 3, 4], "RETOUR_H": 17.5, "NIVEAU": 80 } },
+    "FAIM": { "MAX": 100, "SEUIL": 20, "PX_PAR_POINT": 100, "AIDE": 5 },
     "//RESERVE_DEPART": "Réserve de semences de départ : quantité par item que la famille ne mange jamais. Vide depuis la suppression de la réserve dans l'Inventaire (les semences se rachètent au Marché).",
     "RESERVE_DEPART": {}
   },
@@ -243,12 +242,19 @@
     "à labourer, le semis, le puits et la cruche, l'arrosage."
   ],
   "DIDACTICIEL": { "GRAINES": { "graine_carotte": 6 }, "LABOURS": 3 },
-  "//CARTES": [
-    "Les cartes où le personnage peut aller (js/ui/excursion.js, cartesOuvertes). AUTRES : la carte",
-    "de transition, la ville, la montagne, la plage, leurs grottes et l'infra-monde ; false (la",
-    "première version du jeu) : seules la ferme et sa mine. La flèche au bout du chemin, le tronc",
-    "creux et « Se promener en ville » disparaissent ; le god mode (Options, sous le mode test)",
-    "les rouvre toutes."
+  "//BONHEUR": [
+    "Bonheur de la famille (js/engine/bonheur.js ; docs/conception.md §6.12).",
+    "BONHEUR : une jauge par membre, de 0 à MAX ; un nouveau membre arrive à DEPART.",
+    "  Version 1.11 (v2, lot 7) : chaque nuit la fait varier pour tous de DECLIN, plus le bonheur des",
+    "  plats différents mangés dans la journée (au plus PLATS_MAX, les meilleurs) ; les aliments crus",
+    "  ne donnent rien ; FAIM en plus pour qui a eu faim sans rien à manger (js/engine/repas.js).",
+    "  Bonheur d'un plat : PLATS[atelier] (Cuisine ou Four), + HUILE_FRUIT s'il contient de",
+    "  l'huile ou un fruit (une seule fois), + SPECIALES.bonus s'il contient une des",
+    "  SPECIALES.objets. Un ancien plat sans recette compte comme un plat de la Cuisine.",
+    "  Version 1.8 : le bonheur moyen réduit l'énergie que coûte chaque action (DATA.PERSONNAGE).",
+    "  BULLE : sur la carte, pendant le repas, une bulle 😊 monte au-dessus de chaque convive si",
+    "  la famille a bien mangé : besoin couvert, et les plats lui rapportent au moins BULLE points",
+    "  (sans compter la baisse DECLIN ; un plat du Four, ou deux de la Cuisine)."
   ],
-  "CARTES": { "AUTRES": false }
+  "BONHEUR": { "DEPART": 60, "MAX": 100, "DECLIN": -5, "PLATS": { "cuisine": 3, "four": 5 }, "HUILE_FRUIT": 2, "SPECIALES": { "objets": ["cacao", "cafe", "vanille"], "bonus": 4 }, "PLATS_MAX": 3, "FAIM": -2, "BULLE": 5 }
 }

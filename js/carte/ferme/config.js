@@ -129,16 +129,6 @@
   };
   // Un arbre ou un buisson devant le personnage, qui le cache : son opacité (voir findOccluders).
   const OCCLUDER_ALPHA = K.NATURE.devant;
-  // Le tronc creux au bord de l'étang (en bas à gauche) : ses tuiles dans la couche
-  // `layer` de la carte. Un double appui dessus, le personnage à moins de `near` px, ouvre une
-  // bulle de dialogue au-dessus de lui ; « Oui » mène à l'infra-monde (`page`). Plus loin, le
-  // double appui l'y envoie, comme sur l'herbe.
-  // La sortie vers la ville : le bout est du chemin, au bord de la carte (le rectangle
-  // `vers_la_transition` de la carte, couche « passages » : la sortie est au milieu de son bord
-  // droit). Quand le personnage est tout près, la flèche bleue des passages (CarteKit.FLECHE ;
-  // image 0 : vers la droite) paraît et se balance ; un appui dessus mène à la carte de
-  // transition (`page`). En revenant de là (jeu.html?arrivee=est), le personnage apparaît au
-  // bout du chemin (`arrive`, px du bord). `inset` : la flèche, à tant de px du bord.
   // Ce qu'on ramasse à la main sur la ferme générée (js/carte/ferme/cueillette.js) :
   // assets/ramassables.png (scripts/carte/ramassables.py), une image de 16 × 16 par sorte
   // (`frames`), le pied à `pied` px du haut de sa tuile ; `doigt` : px d'écran autour de lui où
@@ -300,21 +290,14 @@
         frames: { idle: 0, marche0: 1, marche1: 2, marche2: 3, marche3: 4, broute: 5, bas0: 6, bas1: 7, bas2: 8, bas3: 9, haut0: 10, haut1: 11, haut2: 12, haut3: 13 } },
     },
   };
-  const EXIT = { object: 'vers_la_transition', inset: 18, arrive: 34, page: 'ville-carte.html?carte=transition&arrivee=ferme' };
   // L'entrée de la mine, sur la ferme générée (le rectangle `mine` de la carte, couche « batiment » :
   // le tas de terre de 3 × 3 tuiles, MINE dans js/engine/planche.js ; la porte au milieu de son
   // bas). Un double appui sur le tas, ou le personnage poussé vers la porte quand il est juste
   // devant (à `near` px au plus), et il y entre : il va devant (`arrive` px sous le tas), monte
   // dans la porte (`seuil` px au-dessus du bas du tas) en s'effaçant, puis le premier niveau de
-  // la mine s'ouvre (`page` : la grotte de js/ville-carte.js, l'entrée « ferme »). En revenant
-  // de là (jeu.html?arrivee=mine), il sort de la porte et descend devant.
-  const MINE = { object: 'mine', near: 14, arrive: 10, seuil: 6, page: 'ville-carte.html?carte=grotte&grotte=ferme&niveau=1&arrivee=haut' };
-  const HOLLOW = {
-    // (539, 540 : celui du pack, sur la carte de Tiled ; 4150, 4151 : le bloc « tronc_creux » de la
-    // planche, sur la ferme générée, TRONC_CREUX dans js/engine/planche.js)
-    layer: 'plantes_pierres', gids: [539, 540, 4150, 4151], near: 22, page: 'infra-monde.html',
-    text: 'De drôles de couleurs luisent dans le creux du tronc : veux-tu aller voir ?',
-  };
+  // la mine s'ouvre (`page` : js/grotte.js, l'entrée « ferme »). En revenant de là
+  // (jeu.html?arrivee=mine), il sort de la porte et descend devant.
+  const MINE = { object: 'mine', near: 14, arrive: 10, seuil: 6, page: 'grotte?grotte=ferme&niveau=1&arrivee=haut' };
   // L'herbe haute (CarteKit.NATURE.herbe) : la couche d'objets « herbe_haute » de la carte, un
   // point par touffe (type = variante, une rangée de la planche). Une touffe sur une case
   // labourée disparaît. Sa teinte suit l'herbe sur laquelle elle pousse : la couleur du fond
@@ -348,8 +331,6 @@
     puits: { x: 596, y: 390, width: 34, height: 38 },
     // La citerne, juste à droite de la pompe du puits (son tuyau rejoint le moteur).
     citerne: { x: 629, y: 394, width: 24, height: 34 },
-    // La sortie vers la carte de transition (voir EXIT) : rangées 27 à 29, dernière colonne.
-    vers_la_transition: { x: 1136, y: 432, width: 16, height: 48 },
   };
   [[942.9, 510.5], [1024.2, 528.2], [864.1, 545.2], [831.3, 578.6], [958.7, 561.6], [1039.3, 579.2],
     [912, 578], [848.4, 625.2], [944.2, 610.1], [992.1, 627.1], [896.9, 641], [944.8, 673.1]]
@@ -478,7 +459,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, EXIT, MINE, HOLLOW, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, MINE, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

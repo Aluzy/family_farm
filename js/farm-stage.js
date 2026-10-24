@@ -47,7 +47,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, MAP, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, EXIT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
+  const { T, MAP, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
   const { clamp, pixelRatio, reducedMotion, v } = F;
 
   let game = null;          // le jeu Phaser de toutes les cartes (js/carte/jeu.js)
@@ -226,13 +226,12 @@
           } catch (e) { console.warn('[FarmStage] personnage indisponible', e); }
         }
         // Les autres membres de la famille (js/famille-ferme.js, facultatif) : leur journée sur
-        // la carte, l'école des enfants (ils partent par le bout est du chemin).
+        // la carte.
         this.family = null;
         if (global.FamilleFerme && this.fermier) {
           try {
             this.family = global.FamilleFerme.attach(this, {
               fermier: this.fermier, frames: (this.cache.json.get('perso_cases') || cases || {}).frames, reduced: reducedMotion,
-              exit: { x: this.exitAt().x - 12, y: this.exitAt().y },
               // le second adulte a fini au Poulailler ou à l'Étable : ce qu'il a pris, sa bulle
               aide: (lieu, done) => setTimeout(() => done(this.ctx.bridge && this.ctx.bridge.aide ? this.ctx.bridge.aide(lieu) : null), 0),
               gain: (items) => this.showGainAide(items),
@@ -253,7 +252,7 @@
         this.ready = true;
         this.followSnap = true;          // la vue part centrée sur le personnage
         if (this.ctx.lastModel) this.sync(this.ctx.lastModel, true);
-        this.makeExit();
+        this.makeArrivee();
         // (cachée pendant le chargement, une autre carte affichée : js/carte/jeu.js l'endort)
       }
 
@@ -415,7 +414,7 @@
           this.fermier.steer(this.manette.dir());
           this.fermier.update(delta);
         }
-        this.stepExit(time);
+        this.stepMine();
         if (this.family) this.family.update(delta);
         // La vue suit le personnage, centrée sur lui (comme sur les autres cartes).
         if (this.suitPerso()) {
@@ -445,7 +444,6 @@
         this.stepAbeilles(delta / 1000);
         this.stepBotteleuses(dt);
         this.stepRobot(dt);
-        this.placeDialog();
         this.stepFishing(delta);
         this.stepSun();
         this.placeLabels();
@@ -656,7 +654,6 @@
       }
 
       tap(wx, wy) {
-        if (this.tapExit(wx, wy)) return;
         if (this.ambient) this.ambient.scare(wx, wy);   // un appui tout près fait s'envoler les oiseaux
         const hit = this.hitAt(wx, wy);
         // Version 1.19 : dehors, un double appui sur l'herbe ou un chemin y envoie le personnage ;
@@ -672,7 +669,7 @@
             clearTimeout(prev.timer);
             this.lastTap = null;
             if (farmyard) this.goCollect(farmyard, hit.window);
-            else if (!this.askMine(wx, wy) && !this.askHollow(wx, wy)) this.goHere(wx, wy);
+            else if (!this.askMine(wx, wy)) this.goHere(wx, wy);
             return;
           }
           if (prev) clearTimeout(prev.timer);
@@ -716,9 +713,6 @@
       // Au lit (ou en y allant) : rien. La nuit seule n'empêche pas de marcher.
       goHere(wx, wy) {
         if (!this.fermier || (this.ctx.lastModel && this.ctx.lastModel.coucher)) return;
-        // vers le tronc creux : il s'arrête à côté, à sa droite, pas dessus
-        const b = this.hollow();
-        if (b && wx >= b.x0 - 2 && wx <= b.x1 + 2 && wy >= b.y0 - 4 && wy <= b.y1 + 2) { wx = b.x1 + 8; wy = b.y1 - 3; }
         // (à l'étage : le point touché est sur le plancher, remonté)
         const q = this.etagePoint && !this.rang ? this.etagePoint(wx, wy) : { x: wx, y: wy };
         this.fermier.goTo(q.x, q.y);

@@ -49,7 +49,7 @@ test('Lot 10 : une partie simulée est reproductible (même graine, même courbe
   for (const r of a) {
     assert(r.autonomie >= 0 && r.autonomie <= 100, 'autonomie entre 0 et 100');
     assert(r.energie >= 0 && r.energie <= DATA.PERSONNAGE.MAX, 'énergie du personnage entre 0 et le maximum');
-    assert(r.bonheur >= 0 && r.bonheur <= DATA.VILLE.BONHEUR.MAX);
+    assert(r.bonheur >= 0 && r.bonheur <= DATA.BONHEUR.MAX);
     assert(r.pieces >= 0 && r.conserves >= 0 && r.niveau >= 1);
   }
 });

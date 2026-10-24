@@ -59,7 +59,7 @@ export const RAW_DATA = {
     "AJ": { "adulte": 50, "enfant": 25 },
     "COMPOSITION": { "MEMBRES_MIN": 1, "MEMBRES_MAX": 6, "ADULTES_MIN": 1 },
     "COMPAGNIE": { "MAX": 3, "ESPECES": { "chien": { "nom": "Chien", "icone": "🐶" }, "chat": { "nom": "Chat", "icone": "🐱" } } },
-    "FAIM": { "MAX": 100, "SEUIL": 20, "PX_PAR_POINT": 100, "AIDE": 5, "ECOLE": { "JOURS": [0, 1, 3, 4], "RETOUR_H": 17.5, "NIVEAU": 80 } },
+    "FAIM": { "MAX": 100, "SEUIL": 20, "PX_PAR_POINT": 100, "AIDE": 5 },
     "RESERVE_DEPART": {}
   },
   "ROBOT": {
@@ -103,7 +103,17 @@ export const RAW_DATA = {
   "HORS_LIGNE": { "MAX_S": 28800, "PAS_S": 5, "USURE": false, "ECRAN_S": 60 },
   "AIDE": { "ETAPES": ["eau", "potager", "dormir"] },
   "DIDACTICIEL": { "GRAINES": { "graine_carotte": 6 }, "LABOURS": 3 },
-  "CARTES": { "AUTRES": false },
+  "BONHEUR": {
+    "DEPART": 60,
+    "MAX": 100,
+    "DECLIN": -5,
+    "PLATS": { "cuisine": 3, "four": 5 },
+    "HUILE_FRUIT": 2,
+    "SPECIALES": { "objets": ["cacao", "cafe", "vanille"], "bonus": 4 },
+    "PLATS_MAX": 3,
+    "FAIM": -2,
+    "BULLE": 5
+  },
   "NIVEAU_MAX": 5,
   "RESEAU": {
     "panneau": { "whParS": [40, 90, 160, 260, 400], "prixNiveaux": [0, 150, 400, 900, 2000] },
@@ -251,7 +261,7 @@ export const RAW_DATA = {
       "mangeable": false,
       "categorie": "matériau",
       "rachetable": false,
-      "cueillette": "infra"
+      "retire": true
     },
     "bac_fleurs": {
       "nom": "Bac à fleurs",
@@ -557,8 +567,8 @@ export const RAW_DATA = {
       "rachetable": false
     },
     "paille": { "nom": "Paille", "icone": "🪹", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false },
-    "poisson": { "nom": "Poisson", "icone": "🐟", "energie": 25, "prix": 4, "mangeable": true, "categorie": "produit", "ville": true },
-    "miel": { "nom": "Miel", "icone": "🍯", "energie": 15, "prix": 4, "mangeable": true, "categorie": "produit", "ville": true },
+    "poisson": { "nom": "Poisson", "icone": "🐟", "energie": 25, "prix": 4, "mangeable": true, "categorie": "produit" },
+    "miel": { "nom": "Miel", "icone": "🍯", "energie": 15, "prix": 4, "mangeable": true, "categorie": "produit" },
     "croissant": {
       "nom": "Croissant",
       "icone": "🥐",
@@ -568,7 +578,7 @@ export const RAW_DATA = {
       "categorie": "produit",
       "bonheur": 3,
       "rachetable": false,
-      "boutique": "boulangerie"
+      "retire": true
     },
     "pizza": {
       "nom": "Pizza",
@@ -579,7 +589,7 @@ export const RAW_DATA = {
       "categorie": "produit",
       "bonheur": 5,
       "rachetable": false,
-      "boutique": "pizzeria"
+      "retire": true
     },
     "burger": {
       "nom": "Burger",
@@ -590,7 +600,7 @@ export const RAW_DATA = {
       "categorie": "produit",
       "bonheur": 5,
       "rachetable": false,
-      "boutique": "burger"
+      "retire": true
     },
     "frites": {
       "nom": "Frites",
@@ -601,32 +611,43 @@ export const RAW_DATA = {
       "categorie": "produit",
       "bonheur": 3,
       "rachetable": false,
-      "boutique": "burger"
+      "retire": true
     },
-    "ordinateur": {
-      "nom": "Ordinateur",
-      "icone": "💻",
-      "prix": 240,
-      "mangeable": false,
-      "categorie": "produit",
-      "rachetable": false,
-      "boutique": "informatique"
-    },
-    "fromage_alpage": {
-      "nom": "Fromage d'alpage",
-      "icone": "🧀",
-      "energie": 70,
-      "prix": 47,
+    "ordinateur": { "nom": "Ordinateur", "icone": "💻", "prix": 240, "mangeable": false, "categorie": "produit", "rachetable": false, "retire": true },
+    "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 70, "prix": 47, "mangeable": true, "categorie": "produit" },
+    "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "mangeable": false, "categorie": "ingrédient" },
+    "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "mangeable": false, "categorie": "ingrédient" },
+    "champignon": {
+      "nom": "Champignon",
+      "icone": "🍄",
+      "energie": 6,
+      "prix": 2,
       "mangeable": true,
-      "categorie": "produit",
-      "ville": true
+      "categorie": "légume",
+      "rachetable": false,
+      "trouvaille": "foret"
     },
-    "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "mangeable": false, "categorie": "ingrédient", "ville": true },
-    "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "mangeable": false, "categorie": "ingrédient", "ville": true },
-    "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "mangeable": true, "categorie": "légume", "rachetable": false },
-    "myrtille": { "nom": "Myrtille", "icone": "🫐", "energie": 5, "prix": 2, "mangeable": true, "categorie": "fruit", "rachetable": false },
+    "myrtille": {
+      "nom": "Myrtille",
+      "icone": "🫐",
+      "energie": 5,
+      "prix": 2,
+      "mangeable": true,
+      "categorie": "fruit",
+      "rachetable": false,
+      "trouvaille": "foret"
+    },
     "baies": { "nom": "Baies sauvages", "icone": "🍒", "energie": 5, "prix": 1, "mangeable": true, "categorie": "fruit", "rachetable": false },
-    "chataigne": { "nom": "Châtaigne", "icone": "🌰", "energie": 13, "prix": 2, "mangeable": true, "categorie": "fruit", "rachetable": false }
+    "chataigne": {
+      "nom": "Châtaigne",
+      "icone": "🌰",
+      "energie": 13,
+      "prix": 2,
+      "mangeable": true,
+      "categorie": "fruit",
+      "rachetable": false,
+      "trouvaille": "foret"
+    }
   },
   "PLATS_RETIRES": {
     "ragout": { "nom": "Ragoût", "icone": "🍖", "energie": 144, "prix": 36 },
@@ -676,7 +697,7 @@ export const RAW_DATA = {
       "sol_mosaique": { "entrees": { "pierre": 3, "lingot_cuivre": 1 }, "sortie": { "sol_mosaique": 2 } },
       "barriere": { "entrees": { "planche": 1 }, "sortie": { "barriere": 2 } },
       "chemin": { "entrees": { "pierre": 1 }, "sortie": { "chemin": 2 } },
-      "lanterne": { "entrees": { "champignon_lumineux": 1, "bois_infra": 1 }, "sortie": { "lanterne": 1 } },
+      "lanterne": { "entrees": { "champignon_lumineux": 1, "bois": 2 }, "sortie": { "lanterne": 1 } },
       "paillasse": { "entrees": { "fibre": 2 }, "sortie": { "paillasse": 1 } },
       "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 } },
       "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },
@@ -2439,150 +2460,6 @@ export const RAW_DATA = {
       }
     }
   },
-  "VILLE": {
-    "BONHEUR": {
-      "DEPART": 60,
-      "MAX": 100,
-      "DECLIN": -5,
-      "PLATS": { "cuisine": 3, "four": 5 },
-      "HUILE_FRUIT": 2,
-      "SPECIALES": { "objets": ["cacao", "cafe", "vanille"], "bonus": 4 },
-      "PLATS_MAX": 3,
-      "FAIM": -2,
-      "BULLE": 5
-    },
-    "ENFANT_PRIX": 50,
-    "SORTIES": {
-      "parc": {
-        "nom": "Parc",
-        "icone": "🛝",
-        "lieu": "ville",
-        "heures": 2,
-        "prix": 0,
-        "bonheur": { "enfant": 12, "adulte": 4 },
-        "enfants": true,
-        "texte": "Emmener les enfants jouer au parc."
-      },
-      "bibliotheque": {
-        "nom": "Bibliothèque",
-        "icone": "📚",
-        "lieu": "ville",
-        "heures": 2,
-        "prix": 0,
-        "bonheur": { "enfant": 6, "adulte": 8 },
-        "texte": "Lire, emprunter des livres."
-      },
-      "arcade": {
-        "nom": "Salle d'arcade",
-        "icone": "🕹",
-        "lieu": "ville",
-        "heures": 2,
-        "prix": 4,
-        "bonheur": { "enfant": 14, "adulte": 6 },
-        "texte": "Jeux vidéo et flippers."
-      },
-      "cinema": {
-        "nom": "Cinéma",
-        "icone": "🎬",
-        "lieu": "ville",
-        "heures": 3,
-        "prix": 8,
-        "bonheur": { "enfant": 12, "adulte": 12 },
-        "texte": "Un film en famille."
-      },
-      "amphitheatre": {
-        "nom": "Amphithéâtre",
-        "icone": "🎭",
-        "lieu": "ville",
-        "heures": 3,
-        "prix": 6,
-        "bonheur": { "enfant": 8, "adulte": 12 },
-        "texte": "Un spectacle en plein air."
-      },
-      "montagne": {
-        "nom": "Montagne",
-        "icone": "🚆",
-        "lieu": "voyage",
-        "transport": "train",
-        "heures": 8,
-        "prix": 20,
-        "bonheur": { "enfant": 20, "adulte": 20 },
-        "butin": { "miel": 2 },
-        "texte": "Le train jusqu'aux alpages : randonnée et miel."
-      },
-      "foret": {
-        "nom": "Forêt",
-        "icone": "🚌",
-        "lieu": "voyage",
-        "transport": "bus",
-        "heures": 5,
-        "prix": 5,
-        "bonheur": { "enfant": 15, "adulte": 15 },
-        "cueillettes": [{ "champignon": 3 }, { "myrtille": 5 }, { "champignon": 2, "chataigne": 4 }],
-        "texte": "Le bus jusqu'à la forêt : promenade et cueillette du jour."
-      }
-    },
-    "MARCHE": { "HEURES": 2, "PRIX": 3, "VENTE": 130, "CATEGORIES": ["légume", "fruit", "produit", "conserve"] },
-    "BOUTIQUES": {
-      "MARGE": 120,
-      "LISTE": {
-        "boulangerie": { "nom": "La boulangerie", "icone": "🥖", "produit": "pain", "objets": ["pain", "croissant", "tarte_pommes", "pain_epices"] },
-        "pizzeria": { "nom": "La pizzeria", "icone": "🍕", "produit": "pizza", "objets": ["pizza"] },
-        "burger": { "nom": "Le fast-food", "icone": "🍔", "produit": "burger", "objets": ["burger", "frites"] },
-        "poissonnerie": {
-          "nom": "La poissonnerie",
-          "icone": "🐟",
-          "produit": "poisson_v",
-          "objets": ["poisson", "sardine", "anchois", "truite", "dorade", "brochet"]
-        },
-        "informatique": { "nom": "Le magasin d'informatique", "icone": "💻", "produit": "ordinateur", "objets": ["ordinateur"] }
-      }
-    },
-    "ENTREPRISES": {
-      "HEURE": 9,
-      "LISTE": {
-        "conserverie": {
-          "nom": "Conserverie",
-          "icone": "🥫",
-          "prix": 1500,
-          "intrants": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "ail", "poivron", "epinard", "champignon"],
-          "intrantNom": "légumes",
-          "par": 3,
-          "produit": "Boîte de conserve",
-          "prixProduit": 24,
-          "quota": 4,
-          "quotaMax": 30,
-          "texte": "Met en boîte les légumes de la ferme."
-        },
-        "confiturerie": {
-          "nom": "Confiturerie",
-          "icone": "🍓",
-          "prix": 2000,
-          "intrants": ["fraise", "pomme", "poire", "cerise", "abricot", "peche", "myrtille", "chataigne"],
-          "intrantNom": "fruits",
-          "par": 3,
-          "produit": "Pot de confiture",
-          "prixProduit": 24,
-          "quota": 4,
-          "quotaMax": 30,
-          "texte": "Cuit les fruits de la ferme en confiture."
-        },
-        "fromagerie": {
-          "nom": "Fromagerie",
-          "icone": "🧀",
-          "prix": 2500,
-          "intrants": ["lait"],
-          "intrantNom": "litres de lait",
-          "par": 2,
-          "produit": "Fromage",
-          "prixProduit": 32,
-          "quota": 4,
-          "quotaMax": 30,
-          "texte": "Fait du fromage avec le lait de la ferme."
-        }
-      }
-    }
-  },
   "GROTTE": {
     "LARGEUR": 46,
     "HAUTEUR": 34,
@@ -2599,221 +2476,6 @@ export const RAW_DATA = {
     },
     "COUPS": 3,
     "COUP": 0.5
-  },
-  "NAVETTE": { "HORAIRES": { "DEBUT": 6, "FIN": 22 }, "DUREES": { "MONTEE": 0.8, "DEPART": 2.6, "DESCENTE": 0.6, "REPART": 1.2 } },
-  "VOISINS": {
-    "ARGENT": 150,
-    "BUCHERON": { "ARBRES": 4, "BOIS": 5 },
-    "AGRICULTEUR": {
-      "CULTURES": ["patate", "tomate", "courgette", "carotte", "aubergine", "patate"],
-      "RENDEMENT": 200,
-      "GARDE": 6,
-      "ACHATS": ["oeuf", "huile", "farine"]
-    },
-    "RECETTES": {
-      "bucheron": ["tarte_pommes", "gratin_patates", "omelette", "pain"],
-      "agriculteur": ["gratin_patates", "ratatouille", "salade_tomates", "omelette", "pain"],
-      "citadin": ["omelette", "gratin_patates", "salade_tomates", "pain"]
-    },
-    "IMMEUBLE": { "LOGEMENTS": { "logement": 6, "residence_verre": 4, "residence_ocre": 5, "maison": 17, "tour_de_la_gare": 8 }, "LITS": 5 },
-    "EMPLOIS": [
-      { "METIER": "boulanger", "LIEU": "boulangerie", "POSTES": 2, "HORAIRES": [[6, 13]], "SALAIRE": 30 },
-      { "METIER": "poissonnier", "LIEU": "poissonnerie", "POSTES": 1, "HORAIRES": [[7, 13]], "SALAIRE": 30 },
-      { "METIER": "pizzaiolo", "LIEU": "pizzeria", "POSTES": 2, "HORAIRES": [[11, 14], [18, 22]], "SALAIRE": 30 },
-      { "METIER": "equipier", "LIEU": "burger", "POSTES": 2, "HORAIRES": [[11, 14], [18, 22]], "SALAIRE": 24 },
-      { "METIER": "vendeur", "LIEU": "informatique", "POSTES": 1, "HORAIRES": [[9, 19]], "SALAIRE": 24 },
-      { "METIER": "ouvrier", "LIEU": "fromagerie", "POSTES": 3, "HORAIRES": [[8, 17]], "SALAIRE": 26 },
-      { "METIER": "ouvrier", "LIEU": "conserverie", "POSTES": 3, "HORAIRES": [[8, 17]], "SALAIRE": 26 },
-      { "METIER": "ouvrier", "LIEU": "confiturerie", "POSTES": 3, "HORAIRES": [[8, 17]], "SALAIRE": 26 },
-      { "METIER": "ouvrier", "LIEU": "minoterie", "POSTES": 3, "HORAIRES": [[8, 17]], "SALAIRE": 26 },
-      { "METIER": "ouvrier", "LIEU": "textile", "POSTES": 3, "HORAIRES": [[8, 17]], "SALAIRE": 26 },
-      { "METIER": "ouvrier", "LIEU": "mayonnaise", "POSTES": 3, "HORAIRES": [[8, 17]], "SALAIRE": 26 },
-      { "METIER": "ouvrier", "LIEU": "materiaux", "POSTES": 3, "HORAIRES": [[8, 17]], "SALAIRE": 26 },
-      { "METIER": "technicien", "LIEU": "electronique", "POSTES": 3, "HORAIRES": [[8, 17]], "SALAIRE": 36 },
-      { "METIER": "technicien", "LIEU": "usine_info", "POSTES": 3, "HORAIRES": [[8, 17]], "SALAIRE": 36 },
-      { "METIER": "menuisier", "LIEU": "menuiserie", "POSTES": 2, "HORAIRES": [[8, 17]], "SALAIRE": 30 },
-      { "METIER": "enseignant", "LIEU": "ecole", "POSTES": 3, "HORAIRES": [[8.5, 17]], "SALAIRE": 34 },
-      { "METIER": "enseignant", "LIEU": "ecole_2", "POSTES": 3, "HORAIRES": [[8.5, 17]], "SALAIRE": 34 },
-      { "METIER": "enseignant", "LIEU": "ecole_3", "POSTES": 3, "HORAIRES": [[8.5, 17]], "SALAIRE": 34 },
-      { "METIER": "agent", "LIEU": "mairie", "POSTES": 3, "HORAIRES": [[9, 17]], "SALAIRE": 30 },
-      { "METIER": "negociant", "LIEU": "negoce", "POSTES": 8, "HORAIRES": [[8, 18]], "SALAIRE": 40 },
-      { "METIER": "projectionniste", "LIEU": "cinema", "POSTES": 1, "HORAIRES": [[14, 23]], "SALAIRE": 24 },
-      { "METIER": "guide", "LIEU": "musee", "POSTES": 1, "HORAIRES": [[10, 18]], "SALAIRE": 24 },
-      { "METIER": "artiste", "LIEU": "amphitheatre", "POSTES": 2, "HORAIRES": [[14, 22]], "SALAIRE": 24 },
-      { "METIER": "chauffeur", "LIEU": "logistique", "POSTES": 14, "HORAIRES": [[6, 14]], "SALAIRE": 28 },
-      { "METIER": "scieur", "LIEU": "scierie", "POSTES": 3, "HORAIRES": [[8, 17]], "SALAIRE": 26 },
-      { "METIER": "chaudronnier", "LIEU": "chaudronnerie", "POSTES": 2, "HORAIRES": [[8, 17]], "SALAIRE": 32 }
-    ],
-    "METIERS": {
-      "boulanger": "boulanger·ère",
-      "poissonnier": "poissonnier·ère",
-      "pizzaiolo": "pizzaiolo",
-      "equipier": "équipier·ère",
-      "vendeur": "vendeur·euse",
-      "ouvrier": "ouvrier·ère",
-      "technicien": "technicien·ne",
-      "menuisier": "menuisier·ère",
-      "enseignant": "enseignant·e",
-      "agent": "agent·e municipal·e",
-      "negociant": "négociant·e",
-      "projectionniste": "projectionniste",
-      "guide": "guide",
-      "artiste": "artiste",
-      "chauffeur": "chauffeur·euse",
-      "scieur": "scieur·euse",
-      "chaudronnier": "chaudronnier·ère"
-    },
-    "LIEUX": {
-      "boulangerie": "la boulangerie",
-      "poissonnerie": "la poissonnerie",
-      "pizzeria": "la pizzeria",
-      "burger": "le fast-food",
-      "informatique": "le magasin d'informatique",
-      "fromagerie": "la fromagerie",
-      "conserverie": "la conserverie",
-      "confiturerie": "la confiturerie",
-      "minoterie": "la minoterie",
-      "textile": "la fabrique textile",
-      "mayonnaise": "la fabrique de mayonnaise",
-      "materiaux": "la fabrique de matériaux",
-      "electronique": "l'usine électronique",
-      "usine_info": "l'usine informatique",
-      "menuiserie": "la menuiserie",
-      "ecole": "l'école",
-      "ecole_2": "l'école",
-      "ecole_3": "l'école",
-      "mairie": "la mairie",
-      "negoce": "le bureau de négoce",
-      "cinema": "le cinéma",
-      "musee": "le musée",
-      "amphitheatre": "l'amphithéâtre",
-      "logistique": "la logistique, dans la campagne",
-      "scierie": "la scierie, dans la campagne",
-      "chaudronnerie": "la chaudronnerie, à la montagne"
-    },
-    "CONFORT": 100,
-    "PLAISIR": 10,
-    "RATTRAPAGE": 30,
-    "JOURNAL": 5,
-    "MAISON": {
-      "RESERVE": 120,
-      "ETAPES": [
-        { "id": "agrandir", "nom": "agrandir la pièce principale", "prix": 150, "bonheur": 5 },
-        { "id": "chambre", "nom": "construire une chambre", "prix": 250, "bonheur": 8 },
-        { "id": "table", "nom": "acheter une table et des chaises", "prix": 80, "bonheur": 5 },
-        { "id": "chambre_enfants", "nom": "construire la chambre des enfants", "prix": 250, "bonheur": 8 },
-        { "id": "salon", "nom": "construire un salon", "prix": 300, "bonheur": 8 },
-        { "id": "canape", "nom": "acheter un canapé", "prix": 120, "bonheur": 5 },
-        { "id": "table_basse", "nom": "acheter une table basse", "prix": 60, "bonheur": 3 },
-        { "id": "tapis", "nom": "acheter un tapis", "prix": 40, "bonheur": 3 }
-      ]
-    }
-  },
-  "ECONOMIE": {
-    "PRODUITS": {
-      "legume": { "nom": "Légumes", "icone": "🥕", "prix": 2 },
-      "fruit": { "nom": "Fruits", "icone": "🍎", "prix": 3 },
-      "ble": { "nom": "Blé", "icone": "🌾", "prix": 2 },
-      "bois": { "nom": "Bois", "icone": "🪵", "prix": 2 },
-      "lait": { "nom": "Lait", "icone": "🥛", "prix": 6 },
-      "oeuf": { "nom": "Œufs", "icone": "🥚", "prix": 3 },
-      "laine": { "nom": "Laine", "icone": "🐑", "prix": 8 },
-      "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 2 },
-      "poisson": { "nom": "Poisson pêché", "icone": "🐟", "prix": 4 },
-      "minerai": { "nom": "Minerai", "icone": "⛏️", "prix": 4 },
-      "farine": { "nom": "Farine", "icone": "🍚", "prix": 4 },
-      "fromage": { "nom": "Fromage", "icone": "🧀", "prix": 16 },
-      "bocal": { "nom": "Bocaux", "icone": "🫙", "prix": 12 },
-      "confiture": { "nom": "Confiture", "icone": "🍓", "prix": 14 },
-      "mayonnaise": { "nom": "Mayonnaise", "icone": "🥫", "prix": 14 },
-      "tissu": { "nom": "Tissu", "icone": "🧵", "prix": 26 },
-      "planche": { "nom": "Planches", "icone": "🪚", "prix": 6 },
-      "meuble": { "nom": "Meubles", "icone": "🪑", "prix": 60 },
-      "materiau": { "nom": "Matériaux", "icone": "🧱", "prix": 9 },
-      "lingot": { "nom": "Lingots", "icone": "🔩", "prix": 18 },
-      "circuit": { "nom": "Circuits", "icone": "💾", "prix": 24 },
-      "ordinateur": { "nom": "Ordinateurs", "icone": "💻", "prix": 200 },
-      "pain": { "nom": "Pain", "icone": "🥖", "prix": 8 },
-      "pizza": { "nom": "Pizzas", "icone": "🍕", "prix": 18 },
-      "burger": { "nom": "Burgers", "icone": "🍔", "prix": 16 },
-      "poisson_v": { "nom": "Poisson à l'étal", "icone": "🐠", "prix": 6 }
-    },
-    "MATIERES": {
-      "legume": { "categorie": "légume" },
-      "fruit": { "categorie": "fruit" },
-      "ble": { "objets": ["ble"] },
-      "bois": { "objets": ["bois"] },
-      "lait": { "objets": ["lait"] },
-      "oeuf": { "objets": ["oeuf"] },
-      "laine": { "objets": ["laine"] },
-      "pierre": { "objets": ["pierre"] },
-      "poisson": { "objets": ["truite", "brochet", "omble", "dorade", "anchois", "sardine", "poisson"] },
-      "minerai": { "objets": ["minerai_fer", "minerai_cuivre", "minerai_or", "minerai_platine"] }
-    },
-    "PRODUCTEURS": {
-      "agriculteur": { "n": 10, "produit": "legume", "qte": 40 },
-      "arboriculteur": { "n": 4, "produit": "fruit", "qte": 30 },
-      "cerealier": { "n": 3, "produit": "ble", "qte": 60 },
-      "bucheron": { "n": 6, "produit": "bois", "qte": 20 },
-      "eleveur_lait": { "n": 2, "produit": "lait", "qte": 40 },
-      "eleveur_oeuf": { "n": 2, "produit": "oeuf", "qte": 40 },
-      "eleveur_laine": { "n": 3, "produit": "laine", "qte": 10 },
-      "carrier": { "n": 3, "produit": "pierre", "qte": 20 },
-      "pecheur": { "n": 3, "produit": "poisson", "qte": 20 },
-      "mineur": { "n": 3, "produit": "minerai", "qte": 15 }
-    },
-    "VARIATION": 25,
-    "FABRIQUES": [
-      { "lieu": "chaudronnerie", "produit": "lingot", "cap": 20, "recette": { "minerai": 3 } },
-      { "lieu": "minoterie", "produit": "farine", "cap": 300, "recette": { "ble": 1 } },
-      { "lieu": "fromagerie", "produit": "fromage", "cap": 60, "recette": { "lait": 2 } },
-      { "lieu": "scierie", "produit": "planche", "cap": 40, "recette": { "bois": 2 } },
-      { "lieu": "conserverie", "produit": "bocal", "cap": 40, "recette": { "legume": 3 } },
-      { "lieu": "confiturerie", "produit": "confiture", "cap": 40, "recette": { "fruit": 3 } },
-      { "lieu": "mayonnaise", "produit": "mayonnaise", "cap": 40, "recette": { "oeuf": 2 } },
-      { "lieu": "textile", "produit": "tissu", "cap": 20, "recette": { "laine": 2 } },
-      { "lieu": "materiaux", "produit": "materiau", "cap": 30, "recette": { "pierre": 2 } },
-      { "lieu": "electronique", "produit": "circuit", "cap": 20, "recette": { "lingot": 0.5 } },
-      { "lieu": "menuiserie", "produit": "meuble", "cap": 6, "recette": { "planche": 6 } },
-      { "lieu": "usine_info", "produit": "ordinateur", "cap": 10, "recette": { "circuit": 2 } },
-      { "lieu": "boulangerie", "produit": "pain", "cap": 100, "recette": { "farine": 2 }, "comptoir": true },
-      { "lieu": "poissonnerie", "produit": "poisson_v", "cap": 80, "recette": { "poisson": 1 }, "comptoir": true },
-      { "lieu": "pizzeria", "produit": "pizza", "cap": 25, "recette": { "farine": 1, "legume": 1, "fromage": 0.25 }, "comptoir": true },
-      { "lieu": "burger", "produit": "burger", "cap": 25, "recette": { "pain": 0.5, "legume": 1, "fromage": 0.25 }, "comptoir": true }
-    ],
-    "HORS_VILLE": { "foyers": 20, "adultes": 40, "enfants": 26 },
-    "REGIME": { "pain": 25, "pizza": 15, "burger": 15, "poisson_v": 15 },
-    "REPAS": { "pain": "pain", "pizza": "pizza", "burger": "burger", "poisson_v": "poisson" },
-    "BIENS": { "bocal": 0.2, "confiture": 0.2, "mayonnaise": 0.1, "tissu": 0.05, "meuble": 0.01, "materiau": 0.1, "ordinateur": 0.005 },
-    "EXPORT": {
-      "bocal": 20,
-      "confiture": 20,
-      "mayonnaise": 20,
-      "tissu": 10,
-      "meuble": 3,
-      "materiau": 15,
-      "ordinateur": 3,
-      "lingot": 5,
-      "fromage": 10
-    },
-    "EXPORT_PRIX": 90,
-    "CAMIONS": { "n": 7, "capacite": 200 },
-    "STOCK": { "DEPART": 2 },
-    "PRIX": { "ELASTICITE": 0.5, "MIN": 75, "MAX": 150 },
-    "NEGOCE": { "PRIME": 150 },
-    "ENTREPRISES": { "PART": 50 },
-    "CAISSE": { "DEPART": 2000, "IMPOT": 10, "SERVICES": ["ecole", "ecole_2", "ecole_3", "mairie", "negoce", "cinema", "musee", "amphitheatre"] },
-    "LOISIRS": {
-      "SEUIL": 70,
-      "RESERVE": 60,
-      "DECLIN": 3,
-      "LIEUX": {
-        "cinema": { "prix": 8, "bonheur": 12, "cap": 25, "part": 40 },
-        "amphitheatre": { "prix": 6, "bonheur": 10, "cap": 40, "part": 25 },
-        "musee": { "prix": 5, "bonheur": 9, "cap": 20, "part": 35 }
-      }
-    },
-    "RATTRAPAGE": 30
   },
   "DEHORS": { "bac_fleurs": { "nom": "Bac à fleurs", "prix": 60 } },
   "MEUBLES": {

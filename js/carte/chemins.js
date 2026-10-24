@@ -2,13 +2,11 @@
  * (CarteKit.chemin, CarteKit.tendre, CarteKit.plusProche).
  *
  * Toutes les cartes cherchent leurs chemins ici : le personnage de la ferme dehors (cases de
- * 16 px) et dans les intérieurs (grille de 4 px), la famille, la ville et ses voisins,
- * l'infra-monde et son habitant. Une seule recherche, A* avec un tas binaire : 8 directions,
+ * 16 px) et dans les intérieurs (grille de 4 px), la famille, la mine. Une seule recherche, A* avec un tas binaire : 8 directions,
  * sans couper un coin (un pas en diagonale demande ses deux cases de côté libres).
  *
  * Le coût d'un pas en diagonale (`diag`) dépend de la carte : 1,414 à la ferme (le chemin le
- * plus court à l'œil), 1 en ville et dans l'infra-monde, où l'on comptait les pas (le chemin
- * le plus court en nombre de cases, comme leur ancienne recherche en largeur).
+ * plus court à l'œil), ou 1 : on compte les pas (le chemin le plus court en nombre de cases).
  */
 (function (global) {
   'use strict';
