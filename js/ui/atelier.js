@@ -14,6 +14,7 @@ import { countItem } from '../engine/inventory.js';
 import { hasTool, toolDef } from '../engine/outils.js';
 import { categorieBloc } from '../engine/blocs.js';
 import { sortirBotte, verserFibres } from '../engine/botteleuse.js';
+import { verserGrain } from '../engine/distributeur.js';
 import { asleep } from '../engine/night.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
@@ -41,6 +42,19 @@ export function verserFromStage(tile) {
   if (!r.ok) { notify(r.error); return null; }
   const B = DATA.BOTTELEUSE, f = DATA.OBJETS.fibre.icone;
   notify(r.pleine ? `${B.ICONE} ${B.NOM} : ${r.fibres} ${f} reçues, elle se met en marche !` : `${f} ${r.versees} fibre${r.versees > 1 ? 's' : ''} dans l'entonnoir : ${r.fibres} / ${B.FIBRES}.`);
+  persistState();
+  refresh();
+  return r;
+}
+
+// La carte : le personnage a jeté son blé dans l'entonnoir du distributeur de grain dont `tile`
+// est une pièce (js/engine/distributeur.js). Renvoie { ok, versees, grain, plein } ou null.
+export function verserGrainFromStage(tile) {
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
+  const r = verserGrain(state, tile);
+  if (!r.ok) { notify(r.error); return null; }
+  const D = DATA.DISTRIBUTEUR, b = DATA.OBJETS[DATA.SILO.ITEM].icone;
+  notify(`${b} ${r.versees} blé dans le distributeur : ${r.grain} / ${D.CAPACITE}${r.plein ? ', il est plein' : ''}. Il nourrit les poules chaque jour à ${D.HEURE} h.`);
   persistState();
   refresh();
   return r;

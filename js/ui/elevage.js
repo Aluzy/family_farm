@@ -29,6 +29,7 @@ import { registerActions } from './actions.js';
 import { accord, canPay, costLabel, itemsText, plural } from './common.js';
 import { eauCruche } from '../engine/cruche.js';
 import { closeModal, openModal } from './modal.js';
+import { distributeurs } from '../engine/distributeur.js';
 
 /* ---------- Ferme : Silo et Poulailler ---------- */
 
@@ -80,6 +81,15 @@ function enclosChecklist(e, nom, unite) {
   return `<ul class="ingredients">${lignes}</ul>${place}`;
 }
 
+// Le distributeur de grain du Poulailler (js/engine/distributeur.js) : son blé, ou ce qui manque
+// pour qu'il marche ; rien sans distributeur posé.
+function distributeurLigne() {
+  const d = distributeurs(state)[0], D = DATA.DISTRIBUTEUR;
+  if (!d) return '';
+  if (!d.ok) return `<span class="alert">⚠️ ${D.NOM} : ${d.raison}</span>`;
+  return `<span class="muted">${DATA.OBJETS.distributeur.icone} ${D.NOM} : ${d.grain} / ${d.capacite} 🌾. Chaque jour à ${D.HEURE} h, il nourrit les poules qui ne le sont pas encore ; jette-y du blé par son entonnoir.</span>`;
+}
+
 export function renderPoulailler() {
   const p = state.poulailler;
   if (!p.construit) {
@@ -119,6 +129,7 @@ export function renderPoulailler() {
       <span class="card-title"><span class="big" aria-label="Poules nourries sur total">🥚 ${p.nourries} / ${p.poules} nourries</span><span class="chips"><span class="chip num" title="Poules sur places">🐔 ${p.poules} / ${cap}</span><span class="chip num" title="Blé disponible">🌾 ${formatQty(wheatTotal(state))}</span></span></span>
       <span class="bar" role="progressbar" aria-label="Poules nourries" aria-valuemin="0" aria-valuemax="${p.poules}" aria-valuenow="${p.nourries}"><span class="bar-fill" style="width:${p.poules ? Math.round((p.nourries / p.poules) * 100) : 0}%"></span></span>
       ${hint}
+      ${distributeurLigne()}
       <span class="device-actions">
         <button type="button" class="btn primary" data-action="feed-all"${toFeed > 0 && !noWheat ? '' : ' disabled'}>🌾 Nourrir tout</button>
         <button type="button" class="btn" data-action="feed-hen"${toFeed > 0 && !noWheat ? '' : ' disabled'}>Nourrir une poule</button>

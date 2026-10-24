@@ -391,6 +391,10 @@
     'cuisine_tiroirs', 'cuisine_sauge', 'poubelle', 'bibliotheque', 'bibliotheque_vitree', 'lampadaire',
     'coffre_jouets', 'plante_ficus', 'plante_monstera', 'plante_sansevieria', 'plante_cactus', 'plante_fougere',
     'plante_palmier', 'plante_citronnier', 'plante_orchidee', 'plante_aloe', 'plante_bonsai',
+    // le distributeur de grain et sa mangeoire (scripts/batiments/distributeur.py ; leur image
+    // suit le blé qu'ils contiennent)
+    'distributeur_0', 'distributeur_1', 'distributeur_2', 'distributeur_3', 'distributeur_4',
+    'mangeoire_grain_vide', 'mangeoire_grain_pleine',
   ];
   // La couverture seule de chaque lit (meuble_<lit>_drap.png) : posée par-dessus le personnage
   // quand il y dort (js/fermier.js). La paillasse : son lit tant qu'aucun lit n'est acheté.

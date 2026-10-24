@@ -284,7 +284,7 @@
     // que ce qui est debout (le dormeur passe devant sa tête). Renvoie vrai s'il a changé.
     syncMeuble(b) {
       const B = this.blocks, M = b.meuble, key = 'meuble_' + M.dessin, e = B.get(b.case);
-      if (e && e.sorte === b.sorte) return false;
+      if (e && e.sorte === b.sorte && e.dessin === M.dessin) return false;   // (l'image suit son contenu)
       if (e) e.img.destroy();
       B.delete(b.case);
       if (!this.textures.exists(key)) return !!e;
@@ -580,8 +580,10 @@
     // au-dessus, l'autre au-dessous, et sans voisin à côté : celle d'un mur vertical.
     wallFrame(b, at, cols) {
       if (b.sorte === 'barriere') {
-        // (une barrière : celles de ses voisines, BLOCS_CARTE.barrieres + masque)
-        const c = b.case % cols, is = (k) => at.get(k) === 'barriere';
+        // (une barrière : celles de ses voisines, BLOCS_CARTE.barrieres + masque ; un mur voisin
+        // compte aussi, ses lisses vont jusqu'à lui : l'enclos s'appuie sur l'enceinte)
+        const V = BLOCS_CARTE.hauts.variantes;
+        const c = b.case % cols, is = (k) => at.get(k) === 'barriere' || V[at.get(k)] !== undefined;
         return BLOCS_CARTE.barrieres + (is(b.case - cols) ? 1 : 0) + (c < cols - 1 && is(b.case + 1) ? 2 : 0) + (is(b.case + cols) ? 4 : 0) + (c > 0 && is(b.case - 1) ? 8 : 0);
       }
       // (la fenêtre et les pierres d'angle se raccordent comme le mur en pierre)

@@ -22,7 +22,7 @@ import {
   etatPoulailler, etatSilo, farmMap, farmOpen, farmPoint, farmSeed, farmTerrain, faucherSousBati,
   feedLivestock, fellenTrees, FERME_GENEREE, fleursPourAbeilles, freeSheepPlaces, genererFerme,
   genrePiece, goToSleep, grantTech, grassCut, harvestTree, hauteurMur, hauteurSilo, herbesSur, hoe,
-  hoeableTiles, houseRepaired, isArable, isOwned, layEggs, machineDe, mainCharacter,
+  awakeMsAtHour, hoeableTiles, houseRepaired, etatDistributeur, distributeurs, verserGrain, distribuerGrain, grainDans, isArable, isOwned, layEggs, machineDe, mainCharacter,
   majDidacticiel, makeCow, makeSheep, marcheOuvert, morceauxDe, nuitCouchee, nuitSansCouchage,
   objectifDidacticiel, passerDidacticiel, pickUp, piecesCloses, planAbri, planAbriCases, plant,
   poserBloc, blocDebloque, categorieBloc, addItem, poserEtage, poussesArbres, ramassables, ramasser, ramasserMorceau,
@@ -787,6 +787,42 @@ test('ferme générée : l\'enclos du Poulailler ou de l\'Étable peut être gra
   poserBloc(s, 'barriere', t(6, 0));
   assert(etatEtable(s).ok, 'fermé : l\'Étable est là');
   assertEqual([etatEtable(s).enclos.length > 120, s.paturage.construit], [true, true]);
+});
+
+test('ferme générée : le distributeur de grain, raccordé dans l\'enclos, nourrit les poules chaque matin', () => {
+  const D = DATA.DISTRIBUTEUR;
+  const s = reach(chantier('distrib', 80), 'poulailler');
+  setInv(s, { mur_pierre: 30, porte: 2, barriere: 40, nichoir: 1, entonnoir: 1, distributeur: 1, mangeoire_grain: 1 });
+  const z = terrainLibre(s, 16, 12), W = z.W, t = (x, y) => (z.r + y) * W + z.c + x;
+  for (let x = 0; x <= 5; x++) for (let y = 0; y <= 4; y++) if (x === 0 || y === 0 || x === 5 || y === 4) poserBloc(s, 'mur_pierre', t(x, y));
+  poserBloc(s, 'porte', t(2, 4)); poserBloc(s, 'porte', t(5, 2));
+  for (let x = 6; x <= 13; x++) { poserBloc(s, 'barriere', t(x, 0)); poserBloc(s, 'barriere', t(x, 8)); }
+  for (let y = 1; y < 8; y++) poserBloc(s, 'barriere', t(13, y));
+  for (let y = 5; y < 8; y++) poserBloc(s, 'barriere', t(5, y));
+  assert(poserBloc(s, 'nichoir', t(1, 1)).ok);
+  assert(s.poulailler.construit, 'le Poulailler');
+  // la mangeoire : deux cases de large ; une case couverte ne se prend pas
+  assert(poserBloc(s, 'distributeur', t(8, 5)).ok);
+  assertEqual(etatDistributeur(s, t(8, 5)).raison.includes('entonnoir'), true);
+  assert(poserBloc(s, 'entonnoir', t(7, 5)).ok);
+  assertEqual(etatDistributeur(s, t(8, 5)).raison.includes('mangeoire'), true);
+  assert(poserBloc(s, 'mangeoire_grain', t(9, 5)).ok);
+  assertEqual(poserBloc(s, 'barriere', t(10, 5)).ok, false, 'la deuxième case de la mangeoire');
+  assertEqual(distributeurs(s).map((d) => d.ok), [true]);
+  // on y jette le blé (au plus CAPACITE), par n'importe laquelle de ses pièces
+  setInv(s, { ble: D.CAPACITE + 10 });
+  const r = verserGrain(s, t(10, 5));
+  assertEqual([r.ok, r.versees, r.grain, r.plein, countItem(s, 'ble')], [true, D.CAPACITE, D.CAPACITE, true, 10]);
+  assertEqual(verserGrain(s, t(7, 5)).ok, false, 'plein');
+  // chaque jour à HEURE h : les poules pas encore nourries le sont (1 blé pour 2 poules)
+  s.poulailler.poules = 4; s.poulailler.nourries = 1; s.poulailler.restes = 0;
+  s.awakeMs = awakeMsAtHour(D.HEURE - 1);
+  assertEqual(distribuerGrain(s), 0, 'pas avant l\'heure');
+  s.awakeMs = awakeMsAtHour(D.HEURE + 0.1);
+  assertEqual([distribuerGrain(s), s.poulailler.nourries, grainDans(s, t(8, 5))], [3, 4, D.CAPACITE - 2]);
+  // repris : son blé revient
+  reprendreBloc(s, t(8, 5));
+  assertEqual(countItem(s, 'ble') + (s.silo && s.silo.ble ? s.silo.ble : 0) >= 10 + D.CAPACITE - 2, true);
 });
 
 test('ferme générée : le Poulailler monte de niveau s\'il a la place ; les poules en trop ne pondent pas', () => {

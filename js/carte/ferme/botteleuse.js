@@ -12,6 +12,12 @@
  * marchant dessus (cueillette.js, stepPieces). Une machine pleine au chargement de la carte
  * recommence son cycle.
  *
+ * Le distributeur de grain du Poulailler (js/engine/distributeur.js) se sert du même geste :
+ * l'entonnoir, le distributeur, la mangeoire (modèle.distributeurs : [{ case, entonnoir,
+ * mangeoire, cases, grain, capacite, plein, ok }] ; leurs images : chantier.js, syncMeuble). Un
+ * appui sur une de ses pièces : le personnage va devant l'entonnoir et y jette son blé (le
+ * pont : ctx.bridge.verserGrain) ; des grains volent jusqu'à la bouche.
+ *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
  * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).
  */
@@ -54,6 +60,57 @@
       return -1;
     },
 
+    // Les distributeurs de grain du modèle ; `grain` : le blé du joueur (inventaire et Silo).
+    syncDistributeurs(list, grain) {
+      this.distributeurs = new Map((list || []).map((d) => [d.case, d]));
+      this.grainEnMain = grain | 0;
+    },
+
+    // Le distributeur dont une pièce est sous le doigt (la case du distributeur), ou -1. (Son
+    // image dépasse d'une case et demie au-dessus de la sienne, celle de l'entonnoir d'une demie.)
+    distributeurAt(wx, wy) {
+      if (!this.distributeurs || !this.distributeurs.size) return -1;
+      const cols = this.grid.cols, c = Math.floor(wx / T);
+      for (const d of this.distributeurs.values()) {
+        for (const t of d.cases) {
+          const r = Math.floor(t / cols), haut = t === d.case ? 1.5 * T : T / 2;
+          if (t % cols === c && wy >= r * T - haut && wy < (r + 1) * T) return d.case;
+        }
+      }
+      return -1;
+    },
+
+    // Un appui sur le distributeur `m` : le personnage va devant l'entonnoir et y jette son blé
+    // (comme les fibres dans la botteleuse). Ce qui l'empêche : le jeu le dit, sans qu'il bouge.
+    jeterGrain(m) {
+      const d = this.distributeurs && this.distributeurs.get(m), bridge = this.ctx.bridge;
+      if (!d || !bridge || !bridge.verserGrain) return;
+      if (this.ctx.lastModel && this.ctx.lastModel.coucher) return;
+      this.jeterDans(d.entonnoir, () => bridge.verserGrain(m), !d.ok || d.plein || this.grainEnMain < 1, RAMASSABLES.frames.paille);
+    },
+
+    // Le personnage va devant l'entonnoir `e` et y jette (`verser` : le jeu compte ce qui est
+    // versé) ; des brins (l'image `frame` de la planche des ramassables) volent jusqu'à la bouche.
+    // `refus` : rien ne peut y aller, le jeu le dit sans qu'il bouge.
+    jeterDans(e, verser, refus, frame) {
+      if (refus || !this.fermier) { verser(); return; }
+      const cols = this.grid.cols, ex = (e % cols) * T + T / 2, bas = (Math.floor(e / cols) + 1) * T;
+      const ok = (x, y) => this.fermier.standable(x, y);
+      const places = [
+        { x: ex - T + 2, y: bas - 2, face: 'cote', flip: false },
+        { x: ex, y: bas + B.devant, face: 'haut', flip: false },
+        { x: ex, y: bas - T - 2, face: 'bas', flip: false },
+      ];
+      const p = places.find((q) => ok(q.x, q.y));
+      if (!p) { verser(); return; }
+      const bouche = { x: ex, y: bas - B.bouche };
+      const jeter = () => {
+        const r = verser();
+        if (r && r.ok) this.volerBrins(bouche, frame);
+      };
+      if (!this.fermier.jeter(p, p.face, p.flip, jeter)) jeter();
+    },
+
     // Un appui sur la botteleuse `m` (la case de sa machine) : le personnage va devant
     // l'entonnoir et y jette ses fibres. Ce qui l'empêche (rien de raccordé, elle travaille, pas
     // de fibres) : le jeu le dit, sans qu'il bouge.
@@ -81,12 +138,12 @@
       if (!this.fermier.jeter(p, p.face, p.flip, jeter)) jeter();
     },
 
-    // Des brins volent des mains du personnage à la bouche de l'entonnoir.
-    volerBrins(bouche) {
+    // Des brins (des fibres, ou `frame`) volent des mains du personnage à la bouche de l'entonnoir.
+    volerBrins(bouche, frame = RAMASSABLES.frames.fibre) {
       const pos = this.fermier && this.fermier.pos();
       if (!pos || reduit() || !this.has(RAMASSABLES.key)) return;
       for (let k = 0; k < 3; k++) {
-        const img = this.add.image(pos.x + (k - 1) * 3, pos.y - 30, RAMASSABLES.key, RAMASSABLES.frames.fibre).setOrigin(0.5, 1).setScale(0.6).setDepth(bouche.y + 40);
+        const img = this.add.image(pos.x + (k - 1) * 3, pos.y - 30, RAMASSABLES.key, frame).setOrigin(0.5, 1).setScale(0.6).setDepth(bouche.y + 40);
         this.tweens.add({
           targets: img, x: bouche.x + (k - 1) * 2, y: bouche.y, scale: 0.35, delay: k * 60, duration: B.volMs, ease: 'Quad.easeIn',
           onComplete: () => img.destroy(),

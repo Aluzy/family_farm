@@ -354,6 +354,8 @@ export const RAW_DATA = {
     "meule": { "nom": "Meule", "icone": "🪨‍⚙️", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "entonnoir": { "nom": "Entonnoir", "icone": "🔻", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "botteleuse": { "nom": "Botteleuse", "icone": "⚙️‍🌾", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "distributeur": { "nom": "Distributeur de grain", "icone": "🌾‍⚙️", "prix": 18, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "mangeoire_grain": { "nom": "Mangeoire à grain", "icone": "🌾‍🛶", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "convoyeur": { "nom": "Convoyeur", "icone": "🛤️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "pomme_de_pin": { "nom": "Pomme de pin", "icone": "🌲‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "gland": { "nom": "Gland", "icone": "🌳‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
@@ -695,6 +697,8 @@ export const RAW_DATA = {
       "entonnoir": { "entrees": { "planche": 2, "pierre": 1 }, "sortie": { "entonnoir": 1 } },
       "botteleuse": { "entrees": { "planche": 4, "pierre": 6 }, "sortie": { "botteleuse": 1 } },
       "convoyeur": { "entrees": { "planche": 2, "fibre": 2 }, "sortie": { "convoyeur": 2 } },
+      "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler" },
+      "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler" },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
@@ -788,6 +792,23 @@ export const RAW_DATA = {
       "entonnoir": { "nom": "Entonnoir", "objet": "entonnoir", "bloque": true, "botteleuse": "entonnoir" },
       "botteleuse": { "nom": "Botteleuse", "objet": "botteleuse", "bloque": true, "botteleuse": "machine" },
       "convoyeur": { "nom": "Convoyeur", "objet": "convoyeur", "bloque": true, "botteleuse": "convoyeur" },
+      "distributeur": {
+        "nom": "Distributeur de grain",
+        "objet": "distributeur",
+        "dehors": true,
+        "bloque": true,
+        "distributeur": "machine",
+        "dessin": "distributeur"
+      },
+      "mangeoire_grain": {
+        "nom": "Mangeoire à grain",
+        "objet": "mangeoire_grain",
+        "dehors": true,
+        "bloque": true,
+        "distributeur": "mangeoire",
+        "dessin": "mangeoire_grain",
+        "largeur": 2
+      },
       "meuble_chaise": { "nom": "Chaise", "objet": "meuble_chaise", "meuble": "chaise", "dedans": true, "bloque": true },
       "meuble_table": { "nom": "Table", "objet": "meuble_table", "meuble": "table", "dedans": true, "bloque": true, "largeur": 3 },
       "meuble_tapis_1": { "nom": "Tapis tressé", "objet": "meuble_tapis_1", "meuble": "tapis_1", "dedans": true, "plat": true, "largeur": 3 },
@@ -952,7 +973,11 @@ export const RAW_DATA = {
       },
       "maison": { "nom": "Maison", "icone": "🏠", "blocs": ["paillasse", "boite_nourriture", "refrigerateur", "four", "cuisiniere", "lanterne"] },
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
-      "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "mangeoire", "bac_semis", "ruche", "bac_fleurs", "bloc_silo", "meule"] },
+      "elevage": {
+        "nom": "Élevage",
+        "icone": "🐔",
+        "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "bac_semis", "ruche", "bac_fleurs", "bloc_silo", "meule"]
+      },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
       "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur"] }
     },
@@ -974,6 +999,7 @@ export const RAW_DATA = {
     },
     "RAMASSAGE_DEPART": { "RAYON": [2, 7], "petite_pierre": 6, "morceau_bois": 9 }
   },
+  "DISTRIBUTEUR": { "NOM": "Distributeur de grain", "ICONE": "🌾‍⚙️", "CAPACITE": 40, "HEURE": 7 },
   "BOTTELEUSE": { "NOM": "Botteleuse", "ICONE": "⚙️‍🌾", "FIBRES": 10, "VIBRE_S": 3, "PAILLE": 10, "CONVOYEUR": 2 },
   "STATIONS": {
     "four": {

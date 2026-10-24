@@ -17,6 +17,7 @@ import { robotOn } from './automation.js';
 import { couchagesEtage, etageHorsEmprise, rangerEtage } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
 import { botteleuseReprise } from './botteleuse.js';
+import { distributeurReprise } from './distributeur.js';
 import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
@@ -155,7 +156,7 @@ export function casesCouvertes(state) {
   const out = new Map();
   for (const [k, sorte] of Object.entries(blocsPoses(state))) {
     const s = sorteDe(sorte), t = Number(k);
-    if (!s || !s.meuble || ((s.largeur || 1) === 1 && (s.hauteur || 1) === 1)) continue;
+    if (!s || ((s.largeur || 1) === 1 && (s.hauteur || 1) === 1)) continue;
     for (const j of empriseMeuble(state, sorte, t) || []) if (j !== t) out.set(j, t);
   }
   return out;
@@ -537,7 +538,7 @@ export function poseStatus(state, sorte, tile) {
   // (une case sous un buisson coupé : de l'herbe, tant qu'il est coupé ; il ne repousse pas sous ce qui est bâti)
   if (ch !== '#' && ch !== '+' && !(ch === 'o' && freedRockTiles(state).has(tile)) && !(ch === '.' && casesBuissonsCoupes(state).has(tile))) return { ok: false, raison: 'On ne bâtit que sur l\'herbe : pas sur les chemins, l\'eau, les arbres, les rochers ni les bâtiments.' };
   // (l'herbe haute : à faucher d'abord)
-  if ((s.meuble ? empriseMeuble(state, sorte, tile) || [tile] : [tile]).some((j) => herbesSur(state, j).length)) return { ok: false, raison: 'De l\'herbe haute pousse ici : fauche-la d\'abord (la faux).' };
+  if ((empriseMeuble(state, sorte, tile) || [tile]).some((j) => herbesSur(state, j).length)) return { ok: false, raison: 'De l\'herbe haute pousse ici : fauche-la d\'abord (la faux).' };
   if (allPlots(state).some((p) => p.case === tile)) return { ok: false, raison: 'Une terre labourée : rebouche-la d\'abord.' };
   if (s.dedans && !dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dans une pièce close (des murs tout autour, une porte, et au plus ${DATA.ATELIER.PIECE_MAX} cases dedans).` };
   if (s.dehors && dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dehors, pas dans une pièce close.` };
@@ -552,12 +553,15 @@ export function poseStatus(state, sorte, tile) {
   const p = !s.ferme && !s.sol && pieceDe(state, tile);
   const refus = p && refusGenre(state, sorte, p);
   if (refus) return { ok: false, raison: refus };
-  // un meuble de plusieurs cases : toutes libres, dans la même pièce
-  const cases = s.meuble ? empriseMeuble(state, sorte, tile) : [tile];
+  // un meuble (ou un bloc) de plusieurs cases : toutes libres, dans la même pièce (dehors : de
+  // l'herbe, hors de toute pièce)
+  const cases = empriseMeuble(state, sorte, tile);
   if (!cases || cases.length > 1) {
     const couv = casesCouvertes(state), labour = new Set(allPlots(state).map((q) => q.case));
-    const ok = cases && p && cases.every((j) => p.cases.includes(j) && !blocAt(state, j) && !couv.has(j) && !labour.has(j));
-    if (!ok) return { ok: false, raison: `${s.nom} : il lui faut ${s.largeur || 1} × ${s.hauteur || 1} cases libres dans la pièce (vers la droite${(s.hauteur || 1) > 1 ? ' et vers le haut' : ''}).` };
+    const herbe = (j) => { const ch = T.LIGNES[Math.floor(j / T.LARGEUR)][j % T.LARGEUR]; return ch === '#' || ch === '+'; };
+    const libre = (j) => !blocAt(state, j) && !couv.has(j) && !labour.has(j);
+    const ok = cases && (s.dehors ? cases.every((j) => libre(j) && herbe(j) && !dansPiece(state, j) && !herbesSur(state, j).length) : p && cases.every((j) => p.cases.includes(j) && libre(j)));
+    if (!ok) return { ok: false, raison: `${s.nom} : il lui faut ${s.largeur || 1} × ${s.hauteur || 1} cases libres ${s.dehors ? 'sur l\'herbe' : 'dans la pièce'} (vers la droite${(s.hauteur || 1) > 1 ? ' et vers le haut' : ''}).` };
   }
   return { ok: true };
 }
@@ -654,7 +658,7 @@ function poser(state, sorte, tile) {
 // poser). Une paillasse d'une pièce qui s'ouvre reste là, mais on n'y dort plus. Ce qui est
 // posé dessus d'abord (la pompe sur le puits), puis le bloc, puis le sol (le plancher).
 export function reprendreBloc(state, tile, opts) {
-  // (une case couverte par un meuble : le meuble)
+  // (une case couverte par un meuble, un bloc large : lui)
   if (!blocDessus(state, tile) && !blocAt(state, tile) && casesCouvertes(state).has(tile)) tile = casesCouvertes(state).get(tile);
   const dessus = blocDessus(state, tile), bloc = blocAt(state, tile);
   const sorte = dessus || bloc || solAt(state, tile);
@@ -699,6 +703,8 @@ export function reprendreBloc(state, tile, opts) {
   if (s && s.ruche) rucheReprise(state, tile);
   // (une botteleuse : les fibres qu'elle a reçues reviennent, js/engine/botteleuse.js)
   if (s && s.botteleuse === 'machine') botteleuseReprise(state, tile);
+  // (un distributeur de grain : son blé revient, js/engine/distributeur.js)
+  if (s && s.distributeur === 'machine') distributeurReprise(state, tile);
   // (la boîte à nourriture, le réfrigérateur : ce qu'ils contiennent revient dans l'inventaire)
   if (s && s.boite) viderBoite(state);
   if (s && s.frigo) closeFridge(state);
@@ -797,8 +803,9 @@ export function etatEnclos(state, sorteCle) {
     }
     const arbres = new Set(state.verger ? state.verger.arbres.map((a) => a.case) : []);
     const herbe = (t) => { const ch = T.LIGNES[Math.floor(t / W)][t % W]; return ch === '#' || ch === '+'; };
-    e.libresPiece = p.cases.filter((t) => !B[t]);
-    e.libresEnclos = (e.enclos || []).filter((t) => !B[t] && herbe(t) && !arbres.has(t));
+    const couv = casesCouvertes(state);   // (la mangeoire à grain : ses deux cases)
+    e.libresPiece = p.cases.filter((t) => !B[t] && !couv.has(t));
+    e.libresEnclos = (e.enclos || []).filter((t) => !B[t] && !couv.has(t) && herbe(t) && !arbres.has(t));
     e.places = e.enclos ? Math.min(e.libresPiece.length, e.libresEnclos.length) : 0;
   }
   ok.dehors = e.porteDehors !== null;

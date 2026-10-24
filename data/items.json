@@ -200,6 +200,8 @@
     "meule": { "nom": "Meule", "icone": "🪨‍⚙️", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "entonnoir": { "nom": "Entonnoir", "icone": "🔻", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "botteleuse": { "nom": "Botteleuse", "icone": "⚙️‍🌾", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "distributeur": { "nom": "Distributeur de grain", "icone": "🌾‍⚙️", "prix": 18, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "mangeoire_grain": { "nom": "Mangeoire à grain", "icone": "🌾‍🛶", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "convoyeur": { "nom": "Convoyeur", "icone": "🛤️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "//pomme_de_pin": ["Les graines des arbres de la ferme générée (HACHE.GRAINES) : un sapin abattu laisse une pomme de pin,", "un autre arbre un gland ; l'arbre abattu ne repousse pas. Plantées sur une case d'herbe libre (Inventaire › « Planter »), un arbre y pousse."],
     "pomme_de_pin": { "nom": "Pomme de pin", "icone": "🌲‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
