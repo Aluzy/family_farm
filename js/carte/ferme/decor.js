@@ -209,26 +209,40 @@
     },
 
     // La teinte de chaque touffe : la couleur moyenne du fond autour de son pied, divisée par
-    // celle de l'herbe la plus claire (sur laquelle les touffes sont dessinées). Lue une fois
-    // dans le fond entier.
+    // celle de l'herbe la plus claire (sur laquelle les touffes sont dessinées). Lue une fois,
+    // région par région (CarteKit.REGION) : chacune dessinée dans un canevas de travail, qu'on
+    // jette ensuite.
     tintTallGrass() {
-      let tex = null;
-      try { tex = this.textures.get('ground'); } catch (e) { return; }
-      const ctx = tex && tex.getContext && tex.getContext();
-      if (!ctx || !this.grassAll.length) return;
-      const W = ctx.canvas.width, H = ctx.canvas.height;
-      let d;
-      try { d = ctx.getImageData(0, 0, W, H).data; } catch (e) { return; }
-      const under = this.grassAll.map((g) => {
-        let r = 0, v = 0, b = 0, n = 0;
-        for (let y = Math.max(0, g.y - 4); y < Math.min(H, g.y + 2); y++) {
-          for (let x = Math.max(0, g.x - 8); x < Math.min(W, g.x + 8); x++) {
-            const i = (y * W + x) * 4;
-            if (d[i + 3] > 200) { r += d[i]; v += d[i + 1]; b += d[i + 2]; n++; }
-          }
-        }
-        return n ? [r / n, v / n, b / n] : null;
+      if (!this.grassAll.length || !this.regions || !this.planche()) return;
+      const N = K.REGION.tuiles * T;
+      const parRegion = new Map();
+      this.grassAll.forEach((g, k) => {
+        const cle = Math.floor(g.x / N) + ',' + Math.floor(g.y / N);
+        if (!parRegion.has(cle)) parRegion.set(cle, []);
+        parRegion.get(cle).push(k);
       });
+      const under = new Array(this.grassAll.length).fill(null);
+      const cv = global.document.createElement('canvas');
+      for (const [cle, ks] of parRegion) {
+        const r = this.regions.get(cle);
+        if (!r) continue;
+        cv.width = r.w; cv.height = r.h;
+        const ctx = cv.getContext('2d', { willReadFrequently: true });
+        let d;
+        try { this.paintRegion(r, ctx); d = ctx.getImageData(0, 0, r.w, r.h).data; } catch (e) { continue; }
+        for (const k of ks) {
+          const g = this.grassAll[k];
+          let rr = 0, v = 0, b = 0, n = 0;
+          for (let y = Math.max(r.y, g.y - 4); y < Math.min(r.y + r.h, g.y + 2); y++) {
+            for (let x = Math.max(r.x, g.x - 8); x < Math.min(r.x + r.w, g.x + 8); x++) {
+              const i = (((y - r.y) | 0) * r.w + ((x - r.x) | 0)) * 4;
+              if (d[i + 3] > 200) { rr += d[i]; v += d[i + 1]; b += d[i + 2]; n++; }
+            }
+          }
+          under[k] = n ? [rr / n, v / n, b / n] : null;
+        }
+      }
+      cv.width = cv.height = 0;
       const lum = (c) => c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11;
       const seen = under.filter(Boolean).sort((a, b) => lum(a) - lum(b));
       if (!seen.length) return;
