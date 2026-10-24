@@ -480,18 +480,19 @@
         const list = [
           grid('zone', this.grid, m ? m.plots : [], 1, m ? m.cases || 0 : 0),
         ];
-        // la ferme générée : les parcelles de la Serre sur les cases de sa pièce (modèle.serreCases),
-        // pas dans l'intérieur
+        // la ferme générée : les parcelles de la Serre, chacune sur sa case (labourée à la houe),
+        // parmi les cases de sa pièce (modèle.serreCases) ; pas dans l'intérieur
         const sc = m && m.serreCases;
         if (sc) {
-          const cols = this.grid.cols, rang = new Map(sc.map((c, i) => [c, i]));
+          const cols = this.grid.cols, places = new Set(sc);
+          const labourees = new Set((m.serre || []).map((p) => p.case).filter((c) => places.has(c)));
           list.push({
             id: 'serre', place: null, window: 'serre', plots: m.serre || [], bac: true,
-            slot: (p, i) => i,
-            pos: (i) => (i < sc.length ? { x: (sc[i] % cols) * T, y: Math.floor(sc[i] / cols) * T } : null),
+            slot: (p) => p.case,
+            pos: (c) => (places.has(c) ? { x: (c % cols) * T, y: Math.floor(c / cols) * T } : null),
             at: (wx, wy) => {
-              const i = rang.get(Math.floor(wy / T) * cols + Math.floor(wx / T));
-              return i === undefined || i >= (m.serre || []).length ? -1 : i;
+              const c = Math.floor(wy / T) * cols + Math.floor(wx / T);
+              return labourees.has(c) ? c : -1;
             },
           });
         }

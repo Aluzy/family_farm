@@ -6,7 +6,7 @@ import { farmSeed, farmTerrain, tileCount } from './terrain.js';
 import { mainCharacter } from './depart.js';
 import { memberHappiness, setHappiness } from './ville.js';
 import { openStation } from './kitchen.js';
-import { freedRockTiles, openSerre } from './crops.js';
+import { allPlots, freedRockTiles } from './crops.js';
 import { casesBuissonsCoupes, foretArbres, foretProche, foretSurCase, foulerAutour, grassCut, planterGraine } from './outils.js';
 import { fillSilo } from './animals.js';
 import { arbreProche, arbreSurCase, planterArbre } from './orchard.js';
@@ -143,7 +143,7 @@ export function caseBatissable(state, tile, { herbe = false } = {}) {
   const ch = T.LIGNES[r][c];
   if (ch !== '#' && ch !== '+') return false;
   if (!herbe && herbesSur(state, tile).length) return false;
-  return !(state.potager.parcelles || []).some((p) => p.case === tile);
+  return !allPlots(state).some((p) => p.case === tile);
 }
 
 // La case `tile` est-elle sous un rocher ou un arbre de la carte ?
@@ -455,8 +455,15 @@ export function nuitSansCouchage(state) {
 function ouvrirBatiment(state, id) {
   const b = state[id];
   if (!b) return;
-  if (id === 'serre' && !(b.parcelles && b.parcelles.length)) { openSerre(state); return; }
   b.construit = true;
+  // (la Serre : ses parcelles se labourent à la houe, sur les cases de sa pièce ; reposée, elle
+  // garde son niveau, et ses parcelles encore dans sa pièce ou qui ont une culture)
+  if (id === 'serre') {
+    const places = new Set(serrePlaces(state));
+    b.niveau = b.niveau || 1;
+    b.parcelles = (b.parcelles || []).filter((p) => p.culture || places.has(p.case));
+    return;
+  }
   if (!b.niveau && id !== 'paturage') b.niveau = 1;
   if (id === 'poulailler' || id === 'paturage') { majPoulailler(state); return; }   // (pas sans leur enclos : etatEnclos)
   if (id === 'silo') fillSilo(state);   // le blé de l'inventaire y entre, comme à sa réparation
@@ -531,8 +538,8 @@ export function poseStatus(state, sorte, tile) {
   if (ch !== '#' && ch !== '+' && !(ch === 'o' && freedRockTiles(state).has(tile)) && !(ch === '.' && casesBuissonsCoupes(state).has(tile))) return { ok: false, raison: 'On ne bâtit que sur l\'herbe : pas sur les chemins, l\'eau, les arbres, les rochers ni les bâtiments.' };
   // (l'herbe haute : à faucher d'abord)
   if ((s.meuble ? empriseMeuble(state, sorte, tile) || [tile] : [tile]).some((j) => herbesSur(state, j).length)) return { ok: false, raison: 'De l\'herbe haute pousse ici : fauche-la d\'abord (la faux).' };
-  if ((state.potager.parcelles || []).some((p) => p.case === tile)) return { ok: false, raison: 'Une terre labourée : rebouche-la d\'abord.' };
-  if (s.dedans && !dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dans une pièce close (des murs tout autour, et une porte).` };
+  if (allPlots(state).some((p) => p.case === tile)) return { ok: false, raison: 'Une terre labourée : rebouche-la d\'abord.' };
+  if (s.dedans && !dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dans une pièce close (des murs tout autour, une porte, et au plus ${DATA.ATELIER.PIECE_MAX} cases dedans).` };
   if (s.dehors && dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dehors, pas dans une pièce close.` };
   // (un mur qui couperait la pièce de l'escalier : l'étage perdrait ce qui est posé au-dessus)
   if (s.ferme && etageEnPeril(state, { ...blocsPoses(state), [tile]: sorte })) return { ok: false, raison: `${s.nom} : couperait la pièce de l'escalier, et l'étage perdrait ce qui y est posé. Reprends d'abord ces blocs de l'étage.` };
@@ -548,7 +555,7 @@ export function poseStatus(state, sorte, tile) {
   // un meuble de plusieurs cases : toutes libres, dans la même pièce
   const cases = s.meuble ? empriseMeuble(state, sorte, tile) : [tile];
   if (!cases || cases.length > 1) {
-    const couv = casesCouvertes(state), labour = new Set((state.potager.parcelles || []).map((q) => q.case));
+    const couv = casesCouvertes(state), labour = new Set(allPlots(state).map((q) => q.case));
     const ok = cases && p && cases.every((j) => p.cases.includes(j) && !blocAt(state, j) && !couv.has(j) && !labour.has(j));
     if (!ok) return { ok: false, raison: `${s.nom} : il lui faut ${s.largeur || 1} × ${s.hauteur || 1} cases libres dans la pièce (vers la droite${(s.hauteur || 1) > 1 ? ' et vers le haut' : ''}).` };
   }

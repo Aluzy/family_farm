@@ -177,7 +177,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "serre",
      "terme": "Serre",
-     "description": "Un bâtiment qu'on bâtit : une pièce close où l'on pose le bac à semis (fabriqué à l'Atelier). Ses parcelles de culture protégées se placent dans les cases libres de la pièce ; ses murs, quels qu'ils soient, deviennent du verre. C'est le seul endroit où peuvent être cultivés le cacao, la vanille et le café, les cultures de rente ; quelques légumes y poussent aussi.",
+     "description": "Un bâtiment qu'on bâtit : une pièce close où l'on pose le bac à semis (fabriqué à l'Atelier). Ses cases se labourent à la houe : chaque case labourée devient une parcelle de culture protégée, jusqu'à 16 au niveau 1 (agrandir la Serre en permet plus) ; ses murs, quels qu'ils soient, deviennent du verre. C'est le seul endroit où peuvent être cultivés le cacao, la vanille et le café, les cultures de rente ; quelques légumes y poussent aussi.",
      "liens": [
       "piece_close",
       "bloc_cle",
@@ -484,7 +484,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "piece_close",
      "terme": "Pièce close",
-     "description": "Des cases entourées de murs (et de portes), sans toucher le bord de la carte, d'au plus 120 cases, avec au moins une porte. Une pièce close a un toit. Le premier bloc posé dedans décide de ce qu'elle est : la maison (une paillasse, un lit, le four, la cuisinière, un meuble) ou un bâtiment (son bloc clé) ; une pièce vide reste une simple enceinte.",
+     "description": "Des cases entourées de murs (et de portes), sans toucher le bord de la carte, d'au plus 400 cases, avec au moins une porte. Une pièce close a un toit. Le premier bloc posé dedans décide de ce qu'elle est : la maison (une paillasse, un lit, le four, la cuisinière, un meuble) ou un bâtiment (son bloc clé) ; une pièce vide reste une simple enceinte.",
      "liens": [
       "murs",
       "foyer",

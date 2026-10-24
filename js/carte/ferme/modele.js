@@ -238,11 +238,11 @@
       return this.add.image(x, y, def.key, 0).setOrigin(0, 1).setDepth(y);
     },
 
-    // La Serre de la ferme générée : ses parcelles (sur les cases de sa pièce) dans des bacs de
-    // planches ; un rebord autour de chaque groupe de cases voisines.
+    // La Serre de la ferme générée : ses parcelles (labourées sur les cases de sa pièce) dans des
+    // bacs de planches ; un rebord autour de chaque groupe de cases voisines.
     syncSerreBacs(model) {
-      const sc = model.serreCases, n = sc ? Math.min(sc.length, (model.serre || []).length) : 0;
-      const cases = n ? sc.slice(0, n) : [];
+      const places = new Set(model.serreCases || []);
+      const cases = (model.serre || []).map((p) => p.case).filter((c) => places.has(c)).sort((a, b) => a - b);
       const cle = cases.join();
       if (cle === (this.serreBacsCle || '')) return;
       this.serreBacsCle = cle;

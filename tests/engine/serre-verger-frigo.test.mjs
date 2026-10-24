@@ -11,7 +11,7 @@ import {
   isBroken, lotsOf, maintainCost, maxStage, migrate, migrateFridgeCapacity, migrateOrchard,
   MIGRATIONS, moveAllToFridge, moveFromFridge, moveToFridge, newTree, nightPower, plant,
   plantableCrops, poserBloc, readyCrops, repairCost, repairDevice, ripeTrees, scaleEnergie,
-  serreUpgradeCost, shelfLife, STATE_VERSION, testAddSeeds, testBatir, testBuildFridge,
+  serreCap, serreUpgradeCost, shelfLife, STATE_VERSION, testAddSeeds, testBatir, testBuildFridge,
   testBuildSerre, testBuildVerger, testEmptyBatteries, testFillBatteries, testSetLevel,
   testSetWear, tick, toggleDevice, treeInBloom, treeNextHarvest, treeStage, treeStageName,
   unlockLevel, upgradeCost, upgradeFridge, upgradeSerre, water, waterCostFor,
@@ -113,7 +113,7 @@ test('Serre : bâtie en blocs (une pièce close, le bac à semis), 16 parcelles 
   assertEqual(findPlot(s, 'serre-3').lieu, 'serre');
 });
 
-test('Serre : +10 parcelles par niveau jusqu\'à toute sa terre (56), 900 / 1 800 / 3 000 / 5 400 pièces', () => {
+test('Serre : +10 parcelles à labourer par niveau, jusqu\'à 56, 900 / 1 800 / 3 000 / 5 400 pièces', () => {
   const s = garden();
   s.pieces = 100000;
   testBatir(reach(s, 'serre'), 'serre');
@@ -122,9 +122,10 @@ test('Serre : +10 parcelles par niveau jusqu\'à toute sa terre (56), 900 / 1 80
     const cost = serreUpgradeCost(s);
     const before = s.pieces;
     assert(upgradeSerre(s).ok);
-    seen.push([s.serre.niveau, s.serre.parcelles.length, before - s.pieces, cost]);
+    seen.push([s.serre.niveau, serreCap(s), s.serre.parcelles.length, before - s.pieces, cost]);
   }
-  assertEqual(seen, [[2, 26, 900, 900], [3, 36, 1800, 1800], [4, 46, 3000, 3000], [5, 56, 5400, 5400]]);
+  // (de la place pour plus de parcelles ; elles se labourent à la houe)
+  assertEqual(seen, [[2, 26, 16, 900, 900], [3, 36, 16, 1800, 1800], [4, 46, 16, 3000, 3000], [5, 56, 16, 5400, 5400]]);
   assertEqual(serreUpgradeCost(s), null);
   assertEqual(upgradeSerre(s).ok, false, 'niveau maximum');
   assertEqual(upgradeSerre(garden()).ok, false, 'pas construite');
@@ -611,6 +612,21 @@ test('migration v8 (Lot 7) → v9 (Lot 8) → v10 : Serre, Verger et Réfrigéra
   tick(m, 0.2);
   assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
   assertEqual(migreAvant({ v: AVANT_DEMENAGEMENT, t: 0, s: JSON.parse(JSON.stringify(m)) }).version, AVANT_DEMENAGEMENT);
+});
+
+test('migration v49 → v50 : les parcelles de la Serre prennent les cases où la carte les montrait', () => {
+  const s = garden();
+  s.pieces = 5000;
+  testBatir(reach(s, 'serre'), 'serre');
+  const cases = s.serre.parcelles.map((p) => p.case);
+  plant(s, 'serre-2', 'tomate');
+  const v49 = JSON.parse(JSON.stringify(s));
+  v49.version = 49;
+  v49.serre.parcelles = v49.serre.parcelles.map(({ case: _c, ...p }) => p);
+  const m = MIGRATIONS[49](v49);
+  assertEqual(m.version, 50);
+  assertEqual(m.serre.parcelles.map((p) => p.case), cases, 'les premières cases de sa pièce, dans l\'ordre');
+  assertEqual(m.serre.parcelles.find((p) => p.id === 'serre-2').culture, 'tomate');
 });
 
 test('mode test Lot 8 : constructions gratuites, batteries vides', () => {

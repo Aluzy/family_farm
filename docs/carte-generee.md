@@ -376,7 +376,7 @@ Le Marché vend toujours les outils.
   maison, comme un bloc (`ATELIER.BLOCS.bac_fleurs`, `fleurs: true`). Il arrête le passage. Une
   jardinière de planches, des fleurs de cinq couleurs (`BLOCS_CARTE.frames.bac_fleurs`).
 - **Une pièce close** : des cases entourées de murs, de portes ou de l'Atelier, avec au moins une
-  porte. Elle fait au plus 120 cases et ne touche pas le bord de la carte. Les coins ne comptent
+  porte. Elle fait au plus 400 cases (`PIECE_MAX`, 20 × 20 dedans) et ne touche pas le bord de la carte. Les coins ne comptent
   pas : on ne passe pas en diagonale.
 - **Une maison ou un bâtiment, pas les deux** (`genreBloc`, `genrePiece`, `js/engine/blocs.js`) :
   le premier lit ou bloc clé posé dans une enceinte décide de ce qu'elle est.
@@ -932,15 +932,18 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          de 6 h à 19 h, ils broutent dans l'enclos ; la nuit, ils dorment couchés dans l'étable.
      - ✅ **5b-5, la serre** : la Serre quitte la cour.
        - Le **bac à semis** (8 planches, 4 pierres, 4 fibres) se fabrique à l'Atelier. Posé dans
-         une pièce close, il ouvre la Serre au niveau 1 avec ses parcelles (`openSerre`) ;
+         une pièce close, il ouvre la Serre au niveau 1, sans parcelle (`openSerre`) ;
          repris, la Serre n'est plus construite, et ce qui y pousse attend qu'il revienne. On
          ne la répare plus en pièces sur la ferme générée (`buildSerre` refuse).
        - Pas d'intérieur : un appui sur le bac ouvre la fenêtre de la Serre, où ses parcelles
          se travaillent.
-       - **Sur la carte** : ses parcelles se posent sur les cases libres de sa pièce, une par
-         case (`serrePlaces` : ni le bac, ni les cases juste derrière ses portes, le passage),
-         dans des bacs de planches ; ce qui y pousse se voit, et un appui y plante, arrose ou
-         récolte comme au potager. Des parcelles de plus que de cases restent dans la fenêtre.
+       - **Sur la carte** : le joueur laboure lui-même les cases libres de sa pièce avec la
+         houe (`serrePlaces` : ni le bac, ni les cases juste derrière ses portes, le passage ;
+         `hoe`, `serreHoeStatus` dans `js/engine/crops.js`), une parcelle par case (`case`),
+         jusqu'à `SERRE.PARCELLES[niveau - 1]` (`serreCap` ; agrandir la Serre en permet plus) ;
+         une terre vide se rebouche. Les parcelles sont dans des bacs de planches ; ce qui y
+         pousse se voit, et un appui y plante, arrose ou récolte comme au potager. Version 50 :
+         les parcelles d'avant prennent les cases où la carte les montrait.
          La pièce a un **toit de verre** (`toits` : `verre`, `CarteKit.toit(…, true)`) : des
          vitres entre des montants de bois, on voit les cultures au travers.
        - **Ses murs sont en verre** : quels que soient les blocs posés, les murs et la porte de

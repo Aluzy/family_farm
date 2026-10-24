@@ -307,9 +307,9 @@ export function stageModel() {
   // version 1.9 : chaque parcelle de zone a sa case ; la carte en tire la terre et ses bordures
   const zoneVue = () => (p) => ({ ...vue(p), case: p.case });
   const plots = state.potager.parcelles.map(zoneVue(1));
-  // La Serre : ses parcelles se posent dans les bacs de son intérieur (vide tant qu'elle
-  // n'est pas construite). `interieur` dit si le joueur y est entré.
-  const serre = state.serre.construit ? state.serre.parcelles.map(vue) : [];
+  // La Serre : ses parcelles, labourées à la houe sur les cases de sa pièce, chacune avec sa
+  // case (vide tant qu'elle n'est pas construite). `interieur` dit si le joueur y est entré.
+  const serre = state.serre.construit ? state.serre.parcelles.map(zoneVue(1)) : [];
   // Version 1.13 : chaque case achetée du Verger, arbre ou emplacement libre, avec son dessin
   // (assets/verger.png : 0 libre, 1 jeune arbre, puis pour chaque espèce, à partir de
   // 2 + 4 × ARBRES[espèce].dessin : arbuste, arbre, en fleur, en fruits).
