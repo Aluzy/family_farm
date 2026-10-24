@@ -37,3 +37,4 @@ Conventions communes à toutes les fiches :
 | [5a — les sols des biomes, leurs bords et l'eau](5a-sols-des-biomes.md) | 5 | fait |
 | [5b — la végétation des biomes](5b-vegetation.md) | 5 | fait |
 | [5c — les rochers, les falaises et la côte](5c-roches-et-cote.md) | 5 | fait |
+| [6a — couper, casser, cueillir et ramasser dans le monde](6a-ramasser-dans-le-monde.md) | 6 | à faire |
