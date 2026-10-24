@@ -103,7 +103,11 @@
       if (this.ambient) {
         const leafy = [];
         for (const e of this.trees.values()) if (e.key.indexOf('ph_') !== 0 && e.a.stade >= ORCHARD_ADULT) leafy.push(e.sprite);
-        this.ambient.setContext({ hour: model.heure, trees: leafy, herd: model.animaux || {}, compagnons: model.compagnons || [] });
+        // (les cases bâties : les bâtiments en blocs, sous leur toit, et tous les blocs posés ; ni
+        // oiseau, ni luciole, ni papillon n'y vont, ambient-life.js)
+        const bati = (model.blocs || []).map((b) => b.case);
+        for (const t of model.toits || []) for (const c of t.cases) bati.push(c);
+        this.ambient.setContext({ hour: model.heure, trees: leafy, herd: model.animaux || {}, compagnons: model.compagnons || [], bati, cols: this.grid.cols });
       }
       this.placeLabels();
     },
