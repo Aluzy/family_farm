@@ -72,11 +72,29 @@
         const haut = new Map((list || []).filter((b) => b.hauteur > 1).map((b) => [b.case, b.hauteur]));
         const verre = new Set(serre || []);
         const at = new Map((list || []).map((b) => [b.case, verre.has(b.case) && H.variantes[b.sorte] !== undefined ? 'mur_serre' : b.sorte]));
-        // la matière du mur où est percée la porte `b` : celle de son voisin de gauche ou de
-        // droite (un mur horizontal), sinon du dessus ou du dessous ; null : pas de mur
+        // la matière du mur où est percée la porte `b` : celle de ses voisins de gauche ou de
+        // droite (un mur horizontal), sinon du dessus ou du dessous, par-delà les autres portes
+        // (une porte double) ; une fenêtre : la matière où elle est percée (b.mur, la pierre
+        // sans elle) ; une pierre d'angle, une paroi vitrée : on cherche de l'autre côté ;
+        // null : pas de mur
+        const murs = new Map((list || []).filter((b) => b.mur).map((b) => [b.case, b.mur]));
+        const matiere = (k) => {
+          const s = at.get(k);
+          if (H.fenetres.modeles[s] !== undefined) return murs.get(k) || 'mur_pierre';
+          return H.matieresPortes.includes(s) || s === 'mur_serre' ? s : null;
+        };
         const murDe = (b, vertical) => {
-          const v = vertical ? [b.case - cols, b.case + cols] : [b.case - 1, b.case + 1];
-          return v.map((k) => at.get(k)).find((s) => H.variantes[s] !== undefined) || null;
+          const pas = vertical ? cols : 1;
+          let repli = null;
+          for (const d of [-pas, pas]) {
+            let k = b.case + d;
+            for (let n = 0; n < 8 && estPorte(at.get(k)) && (vertical || Math.floor(k / cols) === Math.floor(b.case / cols)); n++) k += d;
+            if (!vertical && Math.floor(k / cols) !== Math.floor(b.case / cols)) continue;
+            const m = matiere(k);
+            if (m && m !== 'mur_pierre') return m;
+            if (m || H.variantes[at.get(k)] !== undefined) repli = repli || m || at.get(k);
+          }
+          return repli;
         };
         const linteau = (b) => {
           if (!estPorte(b.sorte) || !haut.size) return null;
@@ -85,7 +103,7 @@
           // (le mur continue au-dessus de la porte, dans sa matière ; une fenêtre ou une paroi
           // vitrée : un mur en pierre plein)
           const plein = (s, masque) => {
-            if (!s || !this.has(H.key) || H.fenetres.modeles[s] !== undefined || s === 'paroi_vitree') return this.hautFrame(BLOCS_CARTE.murs + masque);
+            if (!s || !this.has(H.key) || H.variantes[s] === undefined || H.fenetres.modeles[s] !== undefined || s === 'paroi_vitree') return this.hautFrame(BLOCS_CARTE.murs + masque);
             return [H.key, H.variantes[s] + masque];
           };
           if (hz > 1) return { h: hz, frame: plein(murDe(b, false), 2 + 8) };
