@@ -21,7 +21,7 @@ import { canFeedHen, feedAllHens, hensToFeed, shear, storeWithSilo, woolReady } 
 import { mainCharacter } from './depart.js';
 import { TIRED } from './stamina.js';
 import { depenserMembre } from './repas.js';
-import { recolterRuche, rucheDuTas } from './ruches.js';
+import { recolterRuche, rucheDuTas, ruchesARecolter } from './ruches.js';
 
 function pileId(lieu, ref) {
   return ref === null || ref === undefined ? lieu : `${lieu}:${ref}`;
@@ -109,21 +109,30 @@ export function aidant(state) {
 }
 
 // Où l'aidant a à faire, dans l'ordre : le Poulailler (des poules à nourrir et du blé, ou des
-// œufs qui attendent), l'Étable (du lait ou de la laine qui attendent, des moutons prêts).
+// œufs qui attendent), l'Étable (du lait ou de la laine qui attendent, des moutons prêts), puis
+// chaque ruche pleine (« ruche:<case> », js/engine/ruches.js : il en récolte le miel).
 export function aideAFaire(state) {
   if (!aidant(state)) return [];
   const a = state.aRamasser || {}, P = state.poulailler, E = state.paturage;
   const out = [];
   if (a.poulailler || (P && P.poules > 0 && hensToFeed(state) > 0 && canFeedHen(state))) out.push('poulailler');
   if (a.etable || (E && (E.moutons || []).some(woolReady))) out.push('etable');
+  for (const r of ruchesARecolter(state)) out.push(r.id);
   return out;
 }
 
-// L'aidant fait le travail du lieu (le Poulailler ou l'Étable) : il nourrit les poules, tond
-// les moutons prêts (sans l'énergie du personnage principal) et prend ce qui attend, qui entre
-// dans l'inventaire. Renvoie { ok, items, nourries }.
+// L'aidant fait le travail du lieu (le Poulailler, l'Étable ou une ruche pleine) : il nourrit
+// les poules, tond les moutons prêts (sans l'énergie du personnage principal), prend ce qui
+// attend ou récolte le miel, qui entre dans l'inventaire. Renvoie { ok, items, nourries }.
 export function aideBetes(state, lieu) {
   if (!aidant(state)) return fail('Il faut un second adulte dans le foyer.');
+  const ruche = rucheDuTas(lieu);
+  if (ruche !== null) {
+    const r = recolterRuche(state, ruche);
+    if (!r.ok) return r;
+    depenserMembre(state, aidant(state).id, DATA.FAMILLE.FAIM.AIDE);
+    return { ok: true, items: r.items, nourries: 0 };
+  }
   const items = {};
   let nourries = 0;
   if (lieu === 'poulailler') {

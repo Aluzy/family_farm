@@ -10,8 +10,9 @@
  *     nous, comme le personnage) et se lève au réveil ; sans lit pour lui, il reste dedans ;
  *   - le jour, ils sortent par la porte et flânent autour de la maison, d'un coin à l'autre ;
  *   - le second adulte du foyer (model.aide, le moteur : aidant) s'occupe des bêtes : le jour,
- *     quand il y a à faire au Poulailler ou à l'Étable (model.aide.lieux), il y va, se baisse
- *     (GESTE s) et nourrit les poules, prend les œufs, le lait et la laine (o.aide : tout entre
+ *     quand il y a à faire au Poulailler, à l'Étable ou à une ruche pleine (model.aide.lieux :
+ *     « ruche:<case> »), il y va, se baisse (GESTE s) et nourrit les poules, prend les œufs, le
+ *     lait et la laine, récolte le miel (o.aide : tout entre
  *     dans l'inventaire ; o.gain : la bulle « +x » au-dessus de lui) ;
  *   - chacun a faim en marchant (o.marche(id, px) : le moteur compte 1 point de faim tous les
  *     FAMILLE.FAIM.PX_PAR_POINT px, js/engine/repas.js) ; quand il mange à la boîte à nourriture,

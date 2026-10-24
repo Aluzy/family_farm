@@ -918,7 +918,7 @@
       // les autres membres de la famille, js/famille-ferme.js).
       path: (x0, y0, x1, y1) => findPath(x0, y0, x1, y1),
       // Où se tenir pour prendre ce qui attend au Poulailler ou à l'Étable ({ x, y }, ou null).
-      lieu: (l) => (l === 'poulailler' ? coopSpot() : l === 'etable' ? barnSpot() : null),
+      lieu: (l) => (l === 'poulailler' ? coopSpot() : l === 'etable' ? barnSpot() : String(l).startsWith('ruche:') && o.cle ? o.cle(l) : null),
       // « Dormir » : il rentre dans la maison (done : il est dedans).
       goHome,
       // La hache : couper l'arbre dont le pied est en `foot` ({ x, y }).

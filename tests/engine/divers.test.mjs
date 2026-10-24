@@ -164,6 +164,14 @@ test('Le second adulte du foyer nourrit les poules et prend les œufs, le lait e
   assertEqual(aideBetes(s, 'etable').items[DATA.ANIMAUX.mouton.laine], DATA.ANIMAUX.mouton.laineParTonte);
   assertEqual([s.energie, aideAFaire(s)], [energie, []]);
   assertEqual(aideBetes(s, 'etable').ok, false, 'plus rien');
+  // une ruche pleine : il en récolte le miel (« ruche:<case> »), elle repart à vide
+  const t = 12 * 144 + 12;
+  s.blocs[t] = DATA.RUCHE.OBJET;
+  s.ruches = { [t]: { nuits: DATA.RUCHE.NUITS } };
+  const miel = countItem(s, DATA.RUCHE.PRODUIT);
+  assertEqual(aideAFaire(s), [`ruche:${t}`]);
+  assertEqual(aideBetes(s, `ruche:${t}`).items, { [DATA.RUCHE.PRODUIT]: DATA.RUCHE.MIEL });
+  assertEqual([countItem(s, DATA.RUCHE.PRODUIT) - miel, aideAFaire(s), aideBetes(s, `ruche:${t}`).ok], [DATA.RUCHE.MIEL, [], false]);
   // seul adulte : personne pour aider
   removeMember(s, 'adulte-2');
   assertEqual([aidant(s), aideAFaire(s)], [null, []]);
