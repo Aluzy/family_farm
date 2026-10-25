@@ -41,3 +41,4 @@ Conventions communes à toutes les fiches :
 | [6b — les grottes de la montagne, la pêche dans le monde et les animaux](6b-grottes-peche-animaux.md) | 6 | fait |
 | [7a — les hameaux bâtis](7a-hameaux.md) | 7 | fait |
 | [7b — les habitants des hameaux](7b-habitants.md) | 7 | fait |
+| [7c — la calèche](7c-caleche.md) | 7 | à faire |
