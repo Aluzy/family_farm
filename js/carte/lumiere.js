@@ -67,17 +67,20 @@
       const nuit = color !== 0xffffff;
       if (rt) rt.setVisible(nuit);
       if (!nuit) return;
+      // (fiche 9a : en qualité « économie », des points de 2 px de carte : quatre fois moins de points à
+      // remplir et à éclairer ; la lumière est une tache douce, la différence ne se voit pas)
+      const p = (K.reglages && K.reglages().lumierePx) || 1;
       const v = scene.cameras.main.worldView;
-      const W = Math.ceil(v.width) + 2 * MARGE, H = Math.ceil(v.height) + 2 * MARGE;
+      const W = Math.ceil((Math.ceil(v.width) + 2 * MARGE) / p), H = Math.ceil((Math.ceil(v.height) + 2 * MARGE) / p);
       if (!rt) rt = scene.add.renderTexture(0, 0, W, H).setOrigin(0).setDepth(depth).setBlendMode(Ph.BlendModes.MULTIPLY);
       else if (rt.width !== W || rt.height !== H) rt.setSize(W, H);
       const x0 = Math.floor(v.x) - MARGE, y0 = Math.floor(v.y) - MARGE;
-      rt.setPosition(x0, y0).setVisible(true);
+      rt.setPosition(x0, y0).setScale(p).setVisible(true);
       rt.fill(color, 1);
       for (const s of sources()) {
-        if (s.x < x0 - 96 || s.y < y0 - 96 || s.x > x0 + W + 96 || s.y > y0 + H + 96) continue;
-        rt.stamp(s.key, s.frame == null ? null : s.frame, s.x - x0, s.y - y0, {
-          tint: s.tint, alpha: s.alpha, scaleX: s.scaleX || 1, scaleY: s.scaleY || 1, rotation: s.rotation || 0,
+        if (s.x < x0 - 96 || s.y < y0 - 96 || s.x > x0 + W * p + 96 || s.y > y0 + H * p + 96) continue;
+        rt.stamp(s.key, s.frame == null ? null : s.frame, (s.x - x0) / p, (s.y - y0) / p, {
+          tint: s.tint, alpha: s.alpha, scaleX: (s.scaleX || 1) / p, scaleY: (s.scaleY || 1) / p, rotation: s.rotation || 0,
           originX: s.originX == null ? 0.5 : s.originX, originY: s.originY == null ? 0.5 : s.originY, blendMode: Ph.BlendModes.ADD,
         });
       }

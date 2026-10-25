@@ -7,7 +7,7 @@ import { chapterCount, mailbox } from './engine/campaign.js';
 import { alertSnapshot } from './engine/alerts.js';
 import { AUTOSAVE_MS, setState, state } from './ui/store.js';
 import {setTelChapter, telDay, telView} from './ui/consent.js';
-import { demenagementAnnonce, loadOrCreateState, persistState } from './ui/storage.js';
+import { demenagementAnnonce, loadOrCreateState, persistState, sauvegardeAnnonce } from './ui/storage.js';
 import { catchUp, frame, onHide, renderLoop, setMailSeen, syncJobs } from './ui/loop.js';
 import { resumeExcursion } from './ui/excursion.js';
 import { render } from './ui/render.js';
@@ -77,6 +77,7 @@ setMailSeen(new Set(mailbox(state).map((l) => l.id))); // les lettres déjà là
 setAlertState(alertSnapshot(state));
 catchUp(); // Lot 11 : le temps passé page fermée depuis la dernière sauvegarde
 demenagementAnnonce(); // une ancienne partie vient de quitter la ferme du grand-père
+sauvegardeAnnonce(); // une sauvegarde illisible : une nouvelle partie (l'ancienne gardée)
 
 // Lot 9 : les chapitres proposés par le mode test viennent de DATA.
 document.getElementById('test-chapter').innerHTML =

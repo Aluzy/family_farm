@@ -43,3 +43,4 @@ Conventions communes à toutes les fiches :
 | [7b — les habitants des hameaux](7b-habitants.md) | 7 | fait |
 | [7c — la calèche](7c-caleche.md) | 7 | fait |
 | [8 — s'orienter : le brouillard, la carte du monde et la boussole](8-s-orienter.md) | 8 | fait |
+| [9a — les anciennes parties et les performances](9a-anciennes-parties-et-performances.md) | 9 | fait |

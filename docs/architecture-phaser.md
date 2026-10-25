@@ -184,6 +184,19 @@ la ferme dormait à côté avec ses propres textures.
   (`CarteJeu.zoomEntier` : 2 à 5 pixels CSS par pixel de carte comme avant, arrondi à un nombre
   entier de pixels de l'écran) et arrondissent par leur caméra. Un écouteur de taille posé par une
   scène passe par `CarteJeu.suitTaille(scène, fn)`, retiré à son arrêt.
+- **La qualité de l'affichage** (fiche 9a, `CarteKit.qualite()`, `reglages()`, `reglerQualite()`) :
+  un réglage de l'appareil (localStorage « ferme-qualite » : `auto`, `economie`, `normale` ; les
+  Options, Affichage), jamais lu par le moteur. En `auto`, un téléphone (écran tactile sans souris,
+  ou un navigateur qui se dit mobile) prend l'économie, un ordinateur la normale. L'économie rend le
+  canvas à la moitié de la densité de l'écran (au moins 1 : chaque pixel du canvas sur 2 × 2 pixels
+  de l'écran), le brouillard en points de 4 px de carte (refait deux fois moins souvent), la carte de
+  lumière de la nuit en points de 2 px, la mer du monde sans son eau vivante (ses tuiles animées), et
+  fait les images des arbres et rochers du monde plus près de la vue. Changée en jeu, elle s'applique
+  tout de suite (`CarteJeu.taille()`, puis chaque partie à sa prochaine image).
+- **Les shaders de Phaser** : `CarteJeu` retouche à leur compilation ceux qui choisissent la texture
+  d'un point dans un lot à plusieurs textures (`outTexDatum == float(i)` devient une comparaison à
+  l'entier le plus proche) : sous un rendu WebGL logiciel (SwiftShader), une image tournée y perdait
+  des morceaux (fiche 9a).
 - **Le clavier** est celui de Phaser (`input.keyboard`), sans capture : rien n'est retenu à la
   page ; `CarteKit.saisie()` laisse les touches au champ qui a le focus ou à la fenêtre ouverte.
 - **Fenêtres des cartes** : celles du jeu, par `FermeHote.modal(html, options)` / `FermeHote.closeModal()` (js/ui/modal.js :

@@ -31,12 +31,26 @@ export function loadOrCreateState() {
   if (!raw) return nouvellePartie();
   try {
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return nouvellePartie();
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return abimee(raw);
     if (typeof parsed.t === 'number' && Number.isFinite(parsed.t)) setSimulatedAt(parsed.t);
+    // (migrate répare une partie abîmée : un champ manquant ou d'un autre type reprend sa valeur de
+    // départ, js/engine/state.js reparerPartie)
     return demenagement(migrate(parsed), raw);
   } catch (e) {
-    return nouvellePartie();
+    return abimee(raw);
   }
+}
+
+// Fiche 9a : une sauvegarde illisible (coupée, pas du JSON, pas une partie) ne bloque pas la page :
+// une nouvelle partie commence, l'ancienne est gardée telle quelle sur l'appareil (SAVE_ABIMEE, jamais
+// écrasée par la nouvelle) et une annonce le dit au chargement (sauvegardeAnnonce).
+export const SAVE_ABIMEE = 'ferme-save-abimee';
+let illisible = false;
+function abimee(raw) {
+  safeStorageSet(SAVE_ABIMEE, raw);
+  illisible = true;
+  setSimulatedAt(Date.now());
+  return nouvellePartie();
 }
 
 // La sauvegarde d'avant le déménagement d'une ancienne partie, gardée sur l'appareil (au cas où).
@@ -66,6 +80,13 @@ export function demenagementAnnonce() {
   demenagee = false;
   persistState();
   notify('🚚 La ferme du grand-père n\'existe plus : ta partie a déménagé sur une terre sauvage. Rien ne s\'est perdu, tes bâtiments sont rebâtis en blocs et l\'Atelier est construit (menu, 🔨 Construire).', { kind: 'info' });
+}
+
+// Au démarrage (js/main.js) : l'annonce d'une sauvegarde illisible, une fois.
+export function sauvegardeAnnonce() {
+  if (!illisible) return;
+  illisible = false;
+  notify('⚠️ Ta sauvegarde n\'a pas pu être relue (elle est abîmée) : une nouvelle partie commence. L\'ancienne reste gardée sur cet appareil, telle quelle.', { kind: 'info' });
 }
 
 export function makeSeed() {

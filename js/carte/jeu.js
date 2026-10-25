@@ -54,6 +54,7 @@
     if (game) return game;
     if (!global.Phaser || !el) return null;
     zone = el;
+    shadersArrondis();
     const r = K.ratio();
     game = new global.Phaser.Game({
       type: global.Phaser.AUTO,
@@ -87,6 +88,37 @@
     global.addEventListener('resize', taille);
     suit(el);
     return game;
+  }
+
+  // Fiche 9a : sous un rendu WebGL logiciel (SwiftShader, llvmpipe : un ordinateur sans carte graphique
+  // utilisable, et les essais dans Chromium sans écran), une image tournée perdait des morceaux (l'arbre
+  // qui bascule sous la hache, l'aigle qui tourne, le poisson qui saute, l'écureuil qui grimpe). La
+  // cause : Phaser 4 dessine en un lot des images de plusieurs textures, et son shader choisit la texture
+  // d'un point par une égalité exacte sur un nombre interpolé d'un sommet à l'autre (« outTexDatum ==
+  // float(i) ») ; sur un triangle tourné, le rendu logiciel ne retombe pas exactement sur l'entier et le
+  // point devient transparent. Le texte de ces shaders (eux seuls : ceux qui lisent outTexDatum) est
+  // retouché à sa compilation pour comparer l'entier le plus proche : le même choix sur une carte
+  // graphique (le nombre y est déjà exact), plus de trou ailleurs ; ni Phaser ni les rotations ne
+  // changent, les lots gardent leurs textures (une texture par lot coûtait 10 à 15 % sur la côte).
+  function shadersArrondis() {
+    for (const nom of ['WebGLRenderingContext', 'WebGL2RenderingContext']) {
+      const P = global[nom] && global[nom].prototype;
+      if (!P || P.shaderSource.fermeArrondi) continue;
+      const source = P.shaderSource;
+      const arrondi = function (shader, texte) {
+        if (typeof texte === 'string' && texte.indexOf('outTexDatum') >= 0) {
+          // (l'entier calculé une fois par point, au début de getTexture : sous un rendu logiciel,
+          // chaque opération de plus par point se paie)
+          const avant = texte;
+          texte = texte.replace(/vec4 getTexture \(vec2 texCoord\)\s*\{/, (m) => m + '\n    float texIdArrondi = floor(outTexDatum + 0.5);');
+          if (texte !== avant) texte = texte.replace(/outTexDatum ==/g, 'texIdArrondi ==');
+          texte = texte.replace(/float texId = outTexDatum;/g, 'float texId = floor(outTexDatum + 0.5);');
+        }
+        return source.call(this, shader, texte);
+      };
+      arrondi.fermeArrondi = true;
+      P.shaderSource = arrondi;
+    }
   }
 
   // Une zone qui reçoit le canvas : sa taille est suivie ; avant chaque geste, Phaser relit la

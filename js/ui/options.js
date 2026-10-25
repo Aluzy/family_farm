@@ -68,6 +68,28 @@ function newGameZoneHtml(confirmer = false) {
     : '<button class="btn danger-outline" type="button" data-action="ask-new-game">Recommencer à zéro</button>';
 }
 
+// Fiche 9a : la qualité de l'affichage des cartes (un réglage de l'appareil, pas de la partie :
+// CarteKit.qualite, js/carte/kit.js). « Auto » : économie sur un téléphone, normale sur un ordinateur.
+const QUALITES = [
+  ['auto', 'Auto'],
+  ['economie', 'Économie'],
+  ['normale', 'Normale'],
+];
+function qualiteHtml() {
+  const K = window.CarteKit;
+  if (!K || !K.qualite) return '';
+  const choisie = K.qualiteChoisie(), vue = K.qualite();
+  return `<div class="stack qualite-choix" role="radiogroup" aria-labelledby="qualite-titre">
+    <span id="qualite-titre">🖼️ Qualité de l'affichage</span>
+    <div class="row">${QUALITES.map(([id, nom]) => `<label class="row check-row"><input type="radio" name="qualite" value="${id}" ${id === choisie ? 'checked' : ''}> ${nom}</label>`).join('')}</div>
+    <p class="muted" id="qualite-note">${qualiteNote(choisie, vue)}</p>
+  </div>`;
+}
+function qualiteNote(choisie, vue) {
+  const en = vue === 'economie' ? 'économie' : 'normale';
+  return `${choisie === 'auto' ? `Ici : ${en}. ` : ''}L'économie dessine l'image un peu moins fine, le brouillard et la nuit en plus gros points, la mer sans ses vagues d'écume, pour rester fluide sur un téléphone. La partie n'en dépend pas.`;
+}
+
 export function openOptionsModal() {
   tel('modal', 'options');
   openModal(`
@@ -81,13 +103,14 @@ export function openOptionsModal() {
           <button class="btn" type="button" data-action="open-about">ℹ️ Règles principales et version</button>
         </div>
       </div>
-      ${state && state.monde ? `<div class="stack">
+      <div class="stack">
         <strong>Affichage</strong>
-        <label class="row check-row">
+        ${qualiteHtml()}
+        ${state && state.monde ? `<label class="row check-row">
           <input type="checkbox" id="boussole-toggle" ${boussoleMontree(state) ? 'checked' : ''}>
           🧭 Montrer la boussole sur la carte (elle mène à la ferme, ou au lieu choisi sur la carte du monde)
-        </label>
-      </div>` : ''}
+        </label>` : ''}
+      </div>
       <details class="more">
         <summary>💾 Sauvegarde</summary>
         <div class="stack">
@@ -133,6 +156,13 @@ export function openOptionsModal() {
   // FLU-38 : sauvegarde repliée, « Recommencer à zéro » en bas, en contour rouge
   document.getElementById('export-area').addEventListener('click', (e) => e.target.select());
 }
+
+document.addEventListener('change', (e) => {
+  if (!e.target || e.target.name !== 'qualite' || !window.CarteKit) return;
+  const vue = window.CarteKit.reglerQualite(e.target.value);
+  const note = document.getElementById('qualite-note');
+  if (note) note.textContent = qualiteNote(e.target.value, vue);
+});
 
 // Fiche 8 : la boussole se montre ou non (state.monde.boussole, js/engine/monde-vu.js).
 document.addEventListener('change', (e) => {

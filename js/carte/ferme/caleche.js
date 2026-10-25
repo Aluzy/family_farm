@@ -104,7 +104,9 @@
       if (!layer) return;
       const f = this.screenFrame();
       const W = this.scale.width / (this.cameras.main.zoom), Hh = this.scale.height / (this.cameras.main.zoom);
-      const p = this.fermier && this.fermier.pos ? this.fermier.pos() : { x: this.cx, y: this.cy };
+      // (pos() est null quand il est dans la maison, ou couché : le milieu de la vue, sans quoi la scène
+      // plantait à chaque image tant qu'il y était, le soir, avec la calèche dans le monde — fiche 9a)
+      const p = (this.fermier && this.fermier.pos && this.fermier.pos()) || { x: this.cx, y: this.cy };
       const loin = Math.hypot(C.x - p.x, C.y - p.y);
       const dedans = C.x > v.x + 8 && C.x < v.right - 8 && C.y - 40 > v.y && C.y < v.bottom;
       // (sous le brouillard du grand monde, rien ne la trahit : ni icône, ni bouton Héler, brouillard.js)

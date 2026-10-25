@@ -4,7 +4,7 @@
  * page le donne à la scène dans son modèle (modèle.brouillard : { vu (la chaîne base64 de la
  * sauvegarde), C, L, H }). Ici, sur ce qui n'a pas été vu :
  *
- *   - un brouillard dans le style du jeu : de gros pixels (BR.px px de carte chacun, sans lissage,
+ *   - un brouillard dans le style du jeu : de gros pixels (2 px de carte chacun, 4 en qualité « économie », sans lissage,
  *     comme le voile de la nuit), en nappes de deux tons qui dérivent lentement (deux bruits qui
  *     glissent au vent ; immobiles avec « animations réduites »). Il est opaque sur toute cellule pas
  *     vue (rien ne s'y devine) et s'éclaircit sur le vu, de BR.deborde - BR.flou à BR.deborde + BR.flou
@@ -26,23 +26,25 @@
 (function (global) {
   'use strict';
 
+  const K = global.CarteKit;
   const F = global.FermeCarte;
   const { T } = F.C;
   const { reducedMotion } = F;
 
-  // px : px de carte par point du brouillard (un diviseur de 32 : le rectangle bouge de deux cases) ; deborde, flou : en cases (voir plus haut) ; marge : px
+  // (la taille d'un point du brouillard, en px de carte — un diviseur de 32 : le rectangle bouge de deux
+  // cases —, et le nombre d'images entre deux dessins quand rien ne bouge, la dérive : brouillardPx et
+  // brouillardImages de CarteKit.reglages, 2 et 4, ou 4 et 8 en qualité « économie », fiche 9a) ; deborde, flou : en cases (voir plus haut) ; marge : px
   // de carte autour de la vue ; ondule : le bord lu jusqu'à tant de px à côté (au plus une case : les
   // cellules pas vues restent opaques) ; fondu : ms ; depth : au-dessus de tout (le voile de la nuit : 1e6, les
   // flèches des passages : 2e6) ; tons : les deux tons des nappes et l'ombre du bord ; nappes : la
-  // taille des deux bruits (px de carte) et leur vent (px de carte par seconde) ; images : refait au
-  // plus toutes les tant d'images quand rien ne bouge (la dérive) ; revue : ce qui se dresse est revu
+  // taille des deux bruits (px de carte) et leur vent (px de carte par seconde) ; revue : ce qui se dresse est revu
   // toutes les tant d'images (et dès que le vu change) ; paliers : les niveaux d'opacité
   // (des aplats, comme le dessin).
   const BR = {
-    px: 2, deborde: 3, flou: 2, ondule: 12, marge: 64, fondu: 1400, depth: 5e6,
+    deborde: 3, flou: 2, ondule: 12, marge: 64, fondu: 1400, depth: 5e6,
     tons: [[205, 211, 219], [232, 235, 238], [168, 178, 192]],
     nappes: [{ pas: 46, vent: [7, 2.5] }, { pas: 19, vent: [-4, 3.5] }],
-    images: 4, revue: 3, paliers: 10,
+    revue: 3, paliers: 10,
   };
 
   // Le bruit des nappes : une grille de 64 × 64 valeurs fixes, qui se répète, lue en douceur.
@@ -131,8 +133,14 @@
     stepBrouillard(time, delta) {
       const B = this.brume;
       if (!B) return;
+      // (le fondu suit l'horloge réelle, comme les déplacements de la vue : Phaser plafonne `delta` — à
+      // 200 ms au-delà de 5 images par seconde, et à 1/60 s tant que la fenêtre n'a pas le focus, d'où une
+      // cellule qui mettait 20 s à se dégager au lieu de 1,4 dans les essais sur le profil mobile, fiche
+      // 9a ; au plus un quart de seconde d'un coup)
+      const maintenant = performance.now(), ecoule = B.t ? Math.min(250, maintenant - B.t) : delta;
+      B.t = maintenant;
       if (B.fondus.size) {
-        const pas = delta / BR.fondu;
+        const pas = ecoule / BR.fondu;
         for (const i of B.fondus) {
           const but = B.bits[i] ? 0 : 1, a = B.aff[i];
           B.aff[i] = a < but ? Math.min(but, a + pas) : Math.max(but, a - pas);
@@ -170,7 +178,9 @@
 
     // La texture du brouillard : la vue et sa marge, en gros pixels.
     dessineBrouillard(time) {
-      const B = this.brume, S = BR.px, C = B.C;
+      // (la qualité du rendu, fiche 9a : en « économie », des points de 4 px de carte, refaits deux fois
+      // moins souvent pour la dérive : CarteKit.reglages)
+      const B = this.brume, Q = K.reglages(), S = Q.brouillardPx, C = B.C;
       const c = this.cameras.main, vw = c.width / c.zoom, vh = c.height / c.zoom;
       const mx = c.scrollX + c.width * c.originX, my = c.scrollY + c.height * c.originY;
       // (le rectangle, calé sur une grille de deux cases : il ne bouge que de deux cases à la fois)
@@ -179,8 +189,9 @@
       const cle = x0 + ',' + y0 + ',' + w + ',' + h;
       const calme = reducedMotion();
       // (refaite quand la vue a glissé de deux cases, pendant un fondu une image sur deux, sinon toutes
-      // les BR.images images pour la dérive)
-      if (cle === B.cle && (calme || B.image % (B.fondus.size ? 2 : BR.images))) return;
+      // les Q.brouillardImages images pour la dérive)
+      if (cle === B.cle && B.px === S && (calme || B.image % (B.fondus.size ? 2 : Q.brouillardImages))) return;
+      B.px = S;
       // les cases du champ : le rectangle et ce qu'il faut autour pour le débord et le flou
       const R = BR.deborde + BR.flou + 1;
       const tx0 = x0 / T - R, ty0 = y0 / T - R, nx = w / T + 2 * R, ny = h / T + 2 * R;

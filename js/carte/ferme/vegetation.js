@@ -65,7 +65,8 @@
     // clôtures, leurs objets ; scripts/carte/hameaux.py) ; leurs toits : hameaux.js
     { cle: 'hameaux', json: 'hameaux_cases', donnees: 'hameau', sortes: 'hameauSortes' },
   ];
-  const BLOC = 16, PRES = 96, LOIN = 384, MASQUE = 4, ECUME = 240;
+  // (PRES et LOIN : 96 et 384 px, ou 32 et 192 en qualité « économie » : CarteKit.reglages, fiche 9a)
+  const BLOC = 16, MASQUE = 4, ECUME = 240;
   const CORPS = { l: 5, h: 26, pied: 2 };
 
   F.partie({
@@ -187,7 +188,7 @@
       const cle = Math.floor(v.x / 64) + ',' + Math.floor(v.y / 64) + ',' + Math.ceil(v.right / 64) + ',' + Math.ceil(v.bottom / 64);
       if (cle === this.vegCle) return;
       this.vegCle = cle;
-      const P = BLOC * T;
+      const P = BLOC * T, Q = K.reglages(), PRES = Q.vegetationPres, LOIN = Q.vegetationLoin;
       // (un arbre déborde de son bloc : sa cime, au-dessus, jusqu'à 80 px)
       const loin = (b, m) => b.x > v.right + m || b.x + P < v.x - m || b.y - 80 > v.bottom + m || b.y + P < v.y - m;
       let change = false;
