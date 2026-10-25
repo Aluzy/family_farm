@@ -1,13 +1,20 @@
 /*
  * La mine de la ferme (jeu.html?carte=grotte&niveau=<n>) : ses niveaux de grotte, sous le tas
- * de terre de la ferme générée (js/carte/ferme/passages.js : on y entre par sa porte).
+ * de terre de la ferme générée (js/carte/ferme/passages.js : on y entre par sa porte). Les grottes
+ * de la montagne du grand monde (fiche 6b : jeu.html?carte=grotte&grotte=grotte_<n>&niveau=<n>) sont
+ * la même scène : on y entre par leur bouche de roche (js/carte/ferme/lieux-monde.js), leurs
+ * réglages et leurs niveaux sont ceux du moteur (js/engine/grotte.js : moins de niveaux, plus de
+ * minerai, des pierres, un filon), et l'échelle du premier niveau ramène devant leur entrée.
  *
  * Chaque niveau est tiré au hasard (le même toute la journée : la graine est l'entrée, le niveau
- * et le jour) par un automate cellulaire, avec les morceaux de scripts/carte/grotte.py. On
+ * et le jour ; pour une grotte du monde, la graine du monde devant) par un automate cellulaire
+ * (js/engine/grotte.js, genererNiveau, que la page donne : FermeHote.niveau), avec les morceaux de
+ * scripts/carte/grotte.py. On
  * descend par le puits, on remonte par l'échelle (des passages, une flèche bleue quand on s'en
  * approche ; au premier niveau, l'échelle ramène à la ferme). Le minerai est pris dans les murs
  * qui touchent le sol, de plus en plus rare et précieux en profondeur (fer, cuivre, or, platine :
- * GROTTE.POIDS, data/grotte.json) ; on le pioche en le touchant, la pioche en main : il va dans
+ * GROTTE.POIDS, data/grotte.json ; dans une grotte de la montagne, du quartz et des améthystes en
+ * plus : GROTTE.MONDE) ; on le pioche en le touchant, la pioche en main : il va dans
  * l'inventaire (FermeHote.miner ; au Four, 4 minerais et du bois font un lingot). Les
  * champignons lumineux se cueillent (FermeHote.ramasser). Il fait noir : on n'y voit qu'autour
  * de soi (des lumières WebGL : la lanterne, le jour qui tombe de l'échelle, les champignons qui
@@ -27,16 +34,20 @@
   const hote = () => global.FermeHote || null;
   const { reduit: reduced, saisie, v } = K;
 
-  // Les réglages de jeu de la grotte (data/grotte.json, GROTTE), que la page du jeu donne
-  // (FermeHote.donnees) ; ici ne restent que les images et la lumière.
-  function donnees() {
-    const H = hote(), d = H && H.donnees ? H.donnees('GROTTE') : null;
-    if (!d) throw new Error('js/grotte.js : réglages GROTTE introuvables (data/grotte.json, FermeHote.donnees)');
+  // Les réglages de jeu de la grotte (data/grotte.json, GROTTE ; js/engine/grotte.js,
+  // reglagesGrotte : la mine de la ferme, ou une grotte de la montagne), que la page du jeu donne
+  // (FermeHote.reglages), et le tirage d'un niveau (FermeHote.niveau) ; ici ne restent que les
+  // images et la lumière.
+  function donnees(id) {
+    const H = hote(), d = H && H.reglages ? H.reglages(id) : null;
+    if (!d || !H.niveau) throw new Error('js/grotte.js : réglages de la grotte introuvables (data/grotte.json, FermeHote.reglages)');
     return d;
   }
   // Les passages (l'échelle, le puits) : la flèche bleue (CarteKit.FLECHE) paraît quand le
   // personnage est assez près ; un toucher dessus mène à l'autre niveau.
-  const PASS = { key: K.FLECHE.key, file: 'assets/' + K.FLECHE.file, near: K.FLECHE.near, sens: K.FLECHE.sens };
+  // (sa propre clé : la page rechargée dans une grotte, la ferme et la grotte chargent la flèche en
+  // même temps, et une même clé serait prise deux fois)
+  const PASS = { key: K.FLECHE.key + '_grotte', file: 'assets/' + K.FLECHE.file, near: K.FLECHE.near, sens: K.FLECHE.sens };
   const SENS_PAS = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] };
   // Le personnage de la partie (CarteKit.planchePerso). `bulle` : la pointe de la bulle « +1 »
   // (CarteKit.bulleGain), en px au-dessus de ses pieds.
@@ -64,14 +75,8 @@
       cristal: { couleur: 0xa86cff, intensite: [0.35, 1.25], rayon: 34, portee: 56, eclat: [1.5, 4], etincelle: 0xf0deff,
         halo: { rayon: 9, intensite: 0.3, attenuation: 0.08 } },
     },
-    get jeu() { return donnees(); },
-    // le poids de chaque minerai au niveau n (GROTTE.POIDS) : FIXE partout (le fer), sinon
-    // max(0, (n − DEPUIS) × PENTE), de plus en plus bas ; { fer: 1, cuivre: …, or: …, platine: … }
-    poids(n) {
-      const out = {};
-      for (const [sorte, p] of Object.entries(this.jeu.POIDS)) out[sorte] = 'FIXE' in p ? p.FIXE : Math.max(0, (n - p.DEPUIS) * p.PENTE);
-      return out;
-    },
+    // les réglages de la grotte `id` (« ferme » : la mine ; « grotte_<n> » : une grotte du monde)
+    jeu(id) { return donnees(id); },
   };
   const clamp01 = (x) => Math.max(0, Math.min(1, x));
   // (fixée à chaque démarrage : Grotte.start(parent, '?niveau=…&arrivee=…'))
@@ -162,101 +167,22 @@
 
     // ---------- le niveau ----------
 
-    // Le niveau du jour, tiré au hasard : des murs semés au hasard, lissés par un automate
-    // cellulaire (un mur entouré de murs le reste, une case entourée de sol s'ouvre), puis seule
-    // la plus grande salle est gardée. L'échelle (on arrive d'en haut) contre un mur, le puits
-    // (on descend) le plus loin possible ; le minerai dans les murs qui bordent le sol.
-    genCave(graine, niveau) {
-      const J = GROTTE.jeu, W = J.LARGEUR, H = J.HAUTEUR;
-      let h = 2166136261;
-      for (let i = 0; i < graine.length; i++) { h ^= graine.charCodeAt(i); h = Math.imul(h, 16777619); }
-      let a = h >>> 0;
-      const rnd = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-      const idx = (x, y) => y * W + x;
-      let g, salle;
-      for (let essai = 0; essai < 8; essai++) {
-        g = new Uint8Array(W * H);                       // 1 : mur, 0 : sol
-        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) g[idx(x, y)] = x < 2 || y < 2 || x >= W - 2 || y >= H - 2 || rnd() < J.MURS ? 1 : 0;
-        for (let p = 0; p < J.PASSES; p++) {
-          const n = new Uint8Array(g);
-          for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-            let k = 0;
-            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) k += g[idx(x + dx, y + dy)];
-            n[idx(x, y)] = k >= 5 ? 1 : k <= 3 ? 0 : g[idx(x, y)];
-          }
-          for (let x = 0; x < W; x++) { n[idx(x, 0)] = n[idx(x, 1)] = n[idx(x, H - 1)] = n[idx(x, H - 2)] = 1; }
-          for (let y = 0; y < H; y++) { n[idx(0, y)] = n[idx(1, y)] = n[idx(W - 1, y)] = n[idx(W - 2, y)] = 1; }
-          g = n;
-        }
-        // la plus grande salle (4-voisins) ; les autres sont rebouchées
-        const zone = new Int32Array(W * H).fill(-1);
-        let best = null;
-        for (let i = 0; i < W * H; i++) {
-          if (g[i] || zone[i] >= 0) continue;
-          const q = [i];
-          zone[i] = i;
-          for (let k = 0; k < q.length; k++) {
-            const c = q[k], cx = c % W, cy = (c - cx) / W;
-            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-              const n = idx(cx + dx, cy + dy);
-              if (!g[n] && zone[n] < 0) { zone[n] = i; q.push(n); }
-            }
-          }
-          if (!best || q.length > best.length) best = q;
-        }
-        if (!best) continue;
-        const garde = new Set(best);
-        for (let i = 0; i < W * H; i++) if (!g[i] && !garde.has(i)) g[i] = 1;
-        salle = best;
-        if (best.length > W * H * 0.28) break;
-      }
-      const sol = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !g[idx(x, y)];
-      const ouvert = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].every(([dx, dy]) => sol(x + dx, y + dy));
-      // l'échelle : une case de sol sous un mur, avec du sol devant (on y arrive)
-      const pieds = salle.map((c) => [c % W, Math.floor(c / W)]).filter(([x, y]) => !sol(x, y - 1) && sol(x, y + 1) && sol(x - 1, y + 1) && sol(x + 1, y + 1));
-      const [ex, ey] = pieds.length ? pieds[Math.floor(rnd() * pieds.length)] : [salle[0] % W, Math.floor(salle[0] / W)];
-      // le puits : la case ouverte la plus loin de l'échelle
-      const dist = new Int32Array(W * H).fill(-1);
-      const q = [idx(ex, ey)];
-      dist[q[0]] = 0;
-      for (let k = 0; k < q.length; k++) {
-        const c = q[k], cx = c % W, cy = (c - cx) / W;
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-          const n = idx(cx + dx, cy + dy);
-          if (sol(cx + dx, cy + dy) && dist[n] < 0) { dist[n] = dist[c] + 1; q.push(n); }
-        }
-      }
-      let px = ex, py = ey + 1, pd = -1;
-      for (const c of salle) { const x = c % W, y = Math.floor(c / W); if (ouvert(x, y) && dist[c] > pd) { pd = dist[c]; px = x; py = y; } }
-      // le minerai : les murs qui bordent le sol, la sorte tirée selon le niveau
-      const poids = GROTTE.poids(niveau), total = Object.values(poids).reduce((s, w) => s + w, 0);
-      const ores = [], decor = [], stalag = [];
-      for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-        if (g[idx(x, y)]) {
-          if (![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => sol(x + dx, y + dy)) || rnd() > J.MINERAI * (1 + niveau * J.MINERAI_NIVEAU)) continue;
-          let r = rnd() * total, kind = 'fer';
-          for (const [k, w] of Object.entries(poids)) { if (r < w) { kind = k; break; } r -= w; }
-          ores.push({ x, y, kind });
-          continue;
-        }
-        const pres = Math.abs(x - ex) + Math.abs(y - ey) < 4 || Math.abs(x - px) + Math.abs(y - py) < 3;
-        const r = rnd();
-        if (pres) continue;
-        if (r < 0.025 && ouvert(x, y)) stalag.push({ x, y, v: rnd() < 0.5 ? 0 : 1 });
-        else if (r < 0.06) decor.push({ x, y, kind: rnd() < 0.6 ? 'champignon' : 'cristal' });
-      }
-      return { W, H, g, sol, echelle: { x: ex, y: ey }, puits: niveau < J.NIVEAUX ? { x: px, y: py } : null, ores, decor, stalag };
-    }
-
+    // Le niveau du jour (js/engine/grotte.js, genererNiveau, que la page donne : FermeHote.niveau) :
+    // des murs semés au hasard, lissés par un automate cellulaire, la plus grande salle gardée ;
+    // l'échelle (on arrive d'en haut) contre un mur, le puits (on descend) le plus loin possible ;
+    // le minerai (et, dans une grotte de la montagne, les pierres) dans les murs qui bordent le sol.
+    // Les réglages de la grotte (FermeHote.reglages : la mine de la ferme, ou une grotte du monde).
     buildCave() {
       const meta = this.cache.json.get('grotte') || { tuiles: {}, objets: [] };
-      // (l'entrée : « ferme », la mine de la ferme ; les graines des niveaux en dépendent)
-      const id = (params.get('grotte') || 'ferme').replace(/[^\w-]/g, '').slice(0, 12) || 'ferme';
-      const niveau = Math.max(1, Math.min(GROTTE.jeu.NIVEAUX, parseInt(params.get('niveau'), 10) || 1));
+      // (l'entrée : « ferme », la mine de la ferme ; « grotte_<n> », une grotte de la montagne du
+      // grand monde ; les graines des niveaux en dépendent)
       const H = hote();
+      const J = this.J = GROTTE.jeu(params.get('grotte'));
+      const id = J.id;
+      const niveau = Math.max(1, Math.min(J.NIVEAUX, parseInt(params.get('niveau'), 10) || 1));
       const h = H && H.maintenant ? H.maintenant() : null;
       const jour = h ? h.jour : Math.floor(Date.now() / 864e5);
-      const c = this.genCave(`${id}:${niveau}:${jour}`, niveau);
+      const c = H.niveau(J, niveau, jour);
       Object.assign(c, { id, niveau, jour, meta });
       this.cave = c;
       const map = this.make.tilemap({ tileWidth: T, tileHeight: T, width: c.W, height: c.H });
@@ -298,13 +224,14 @@
         c.images.push(this.add.image(s.x * T + 8, s.y * T + 15, 'grotte_objets', ob('stalagmite_' + s.v)).setOrigin(0.5, 1).setDepth(s.y * T + 15));
         this.layers.marquage.putTileAt(t('sol_0'), s.x, s.y);
       }
-      // (au premier niveau, l'échelle remonte à la ferme, devant la porte de la mine)
+      // (au premier niveau, l'échelle remonte à la ferme, devant la porte de la mine ; d'une grotte
+      // du monde, dans le monde, devant son entrée)
       const ici = `grotte?grotte=${id}`;
       const pass = (nom, x, y, sens, cible) => ({ name: nom, x: x * T, y: y * T, width: T, height: T, cible, sens });
       c.objects = {
         depart: [{ x: E.x * T + 8, y: (E.y + 1) * T + 12 }],
         arrivees: [{ name: 'haut', x: E.x * T + 8, y: (E.y + 1) * T + 12 }].concat(P ? [{ name: 'bas', x: P.x * T + 8, y: (P.y + 1) * T + 12 }] : []),
-        passages: [pass('remonter', E.x, E.y - 1, 'haut', niveau > 1 ? `${ici}&niveau=${niveau - 1}&arrivee=bas` : 'jeu.html?arrivee=mine')]
+        passages: [pass('remonter', E.x, E.y - 1, 'haut', niveau > 1 ? `${ici}&niveau=${niveau - 1}&arrivee=bas` : `jeu.html?arrivee=${id === 'ferme' ? 'mine' : id}`)]
           .concat(P ? [pass('descendre', P.x, P.y, 'bas', `${ici}&niveau=${niveau + 1}&arrivee=haut`)] : []),
       };
       return map;
@@ -383,7 +310,8 @@
       const lampe = H && H.tech ? H.tech('grotte') : null;
       const f = lampe && lampe.lumiere ? lampe.lumiere / 100 : 1;
       const c = this.cave;
-      this.say(`⛏️ La mine — niveau ${c.niveau}${c.niveau >= GROTTE.jeu.NIVEAUX ? ' (le plus profond)' : ''}`);
+      const J = this.J, filon = J.filon && (c.meta.minerais || {})[J.filon];
+      this.say(`${J.monde ? '⛰️' : '⛏️'} ${J.nom} — niveau ${c.niveau}${c.niveau >= J.NIVEAUX ? ' (le plus profond)' : ''}${filon && c.niveau === 1 ? ` · un filon : ${filon.nom.toLowerCase()}` : ''}`);
       if (this.makeCaveLights(f)) return;
       const L = { r0: GROTTE.lumiere.r0 * f, r1: GROTTE.lumiere.r1 * f, noir: GROTTE.lumiere.noir }, N = 512, Z = 4;
       const cle = 'lumiere_grotte_' + Math.round(f * 100);   // une texture de N px, agrandie Z fois
@@ -565,7 +493,7 @@
       }
       const g = this.mining;
       g.t += dt;
-      const J = GROTTE.jeu;
+      const J = this.J;
       g.frame = 'pioche_cote_' + Math.min(3, Math.floor(g.t / J.COUP * 4));
       if (g.t >= J.COUP) {
         this.chips(m.ore);
@@ -581,7 +509,7 @@
       K.secousse(this, 'coup');
       K.vibre('pioche');
       if (reduced()) return;
-      const col = { fer: 0xd2a88a, cuivre: 0xd67e46, or: 0xf0c846, platine: 0xe6eef8 }[o.kind] || 0x9a9088;
+      const col = { fer: 0xd2a88a, cuivre: 0xd67e46, or: 0xf0c846, platine: 0xe6eef8, quartz: 0xdceaf6, amethyste: 0xa86cd8 }[o.kind] || 0x9a9088;
       for (let i = 0; i < 4; i++) {
         const r = this.add.rectangle(o.x * T + 8, o.y * T + 10, 2, 2, i % 2 ? col : 0x7a7068).setDepth(2e6);
         this.tweens.add({ targets: r, x: r.x + (Math.random() - 0.5) * 22, y: r.y + 6 + Math.random() * 10, alpha: 0, duration: 380, onComplete: () => r.destroy() });

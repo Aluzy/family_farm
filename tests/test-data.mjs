@@ -140,8 +140,8 @@ test('objet impossible à obtenir : un avertissement, pas une erreur', () => {
   d.OBJETS.melon = { nom: 'Melon', icone: '🍈', energie: 9, prix: 2, mangeable: true, categorie: 'fruit', rachetable: false };
   const r = validateData(d);
   eq([r.errors, r.warnings.filter((w) => w.startsWith('OBJETS.melon'))], [[], ['OBJETS.melon : aucun moyen de l\'obtenir (ni récolte, ni recette, ni animal, ni pêche, ni sortie, ni achat, ni inventaire de départ…)']]);
-  eq(sourcesOf(d, 'minerai_or'), ['grotte']);
-  eq(sourcesOf(d, 'anchois'), ['pêche mer']);
+  eq(sourcesOf(d, 'minerai_or'), ['grotte de la montagne', 'grotte']);
+  eq(sourcesOf(d, 'anchois'), ['pêche mer', 'coin de pêche (mer)']);
 });
 test('le fromage d\'alpage : herbes de montagne (trouvaille, récolte du grand monde) → lait d\'alpage (vache) → fromage (Cuisine)', () => {
   eq(sourcesOf(DATA, 'herbes_montagne'), ['trouvaille du grand monde (montagne)', 'récolte du grand monde (touffe_mont)']);

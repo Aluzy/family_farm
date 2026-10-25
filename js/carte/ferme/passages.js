@@ -1,4 +1,5 @@
-/* carte/ferme/passages.js — la scène de la ferme : l'entrée de la mine.
+/* carte/ferme/passages.js — la scène de la ferme : l'entrée de la mine (et le retour des grottes
+ * de la montagne du grand monde : js/carte/ferme/lieux-monde.js).
  *
  * Le tas de terre de la mine : le personnage passe sa porte (vers les niveaux de la grotte,
  * js/grotte.js), et en revient (il sort de la porte et descend devant).
@@ -14,18 +15,21 @@
 
   F.partie({
 
-    // Revenu de la mine (jeu.html?arrivee=mine) : il sort de sa porte, la vue sur lui.
+    // Revenu de la mine (jeu.html?arrivee=mine) : il sort de sa porte, la vue sur lui ; d'une
+    // grotte de la montagne (jeu.html?arrivee=grotte_<n>) : devant son entrée, dans le monde.
     makeArrivee() {
-      const params = new URLSearchParams(global.location.search);
-      if (params.get('arrivee') === 'mine') this.arrive('mine');
+      const params = new URLSearchParams(global.location.search), ou = params.get('arrivee');
+      if (ou === 'mine' || /^grotte_\d+$/.test(ou || '')) this.arrive(ou);
     },
 
-    // Revenu de la mine : devant sa porte, la vue sur lui (l'adresse perd ?arrivee=…).
-    arrive() {
+    // Revenu de la mine : devant sa porte, la vue sur lui (l'adresse perd ?arrivee=…) ; d'une grotte
+    // de la montagne : devant son entrée (lieux-monde.js, arriveGrotte).
+    arrive(ou) {
       const params = new URLSearchParams(global.location.search);
       params.delete('arrivee');
       const q = params.toString();
       global.history.replaceState(null, '', global.location.pathname + (q ? '?' + q : '') + global.location.hash);
+      if (/^grotte_\d+$/.test(ou || '')) { this.arriveGrotte(ou); return; }
       const m = this.mineDoor();
       const at = m && this.fermier && this.fermier.arrive ? this.fermier.arrive(m.x, m.y + MINE.arrive, { x: m.x, y: m.y - MINE.seuil }) : null;
       if (at) this.setCentre(at.x, at.y);

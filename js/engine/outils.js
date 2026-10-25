@@ -13,6 +13,7 @@ import { FERME_GENEREE } from './ferme-generee.js';
 import { genererMonde } from './monde.js';
 import { noter } from './journal.js';
 import { chevalMonte, vitesseCheval } from './cheval.js';
+import { MINERAIS_GROTTE, PIERRES_GROTTE } from './grotte.js';
 
 /* ---------- les outils : houe, pioche, hache, faux, canne à pêche ---------- */
 
@@ -590,20 +591,21 @@ export function faucherSousBati(state) {
 
 /* ---------- la pioche dans la grotte : le minerai ---------- */
 
-const MINERAIS = ['fer', 'cuivre', 'or', 'platine'];
+const MINERAIS = MINERAIS_GROTTE;
 
 // Un minerai pris dans la grotte (la carte compte les coups de pioche, voir hitsNeeded) :
 // minerai_<sorte> dans l'inventaire (un de plus, parfois, avec la Lampe de mineur :
-// grotte.minerai %), l'énergie et l'XP d'un coup de pioche.
+// grotte.minerai %), l'énergie et l'XP d'un coup de pioche. Dans une grotte de la montagne (fiche
+// 6b), une pierre prise dans le mur (quartz, améthyste) : l'objet lui-même.
 export function mineOre(state, sorte) {
   const P = DATA.PIOCHE;
   if (!hasTool(state, 'pioche')) return fail(`Il te faut une pioche (Marché, ${P.PRIX} 💰).`);
-  if (!MINERAIS.includes(sorte)) return fail('Minerai inconnu.');
+  if (!MINERAIS.includes(sorte) && !PIERRES_GROTTE.includes(sorte)) return fail('Minerai inconnu.');
   if (!canAfford(state, 'piocher')) return fail(TIRED);
   const lampe = techFlag(state, 'grotte');
   const pct = lampe && lampe.minerai ? lampe.minerai : 0;
   const n = withBonus(state, 1, pct);
-  const item = 'minerai_' + sorte;
+  const item = PIERRES_GROTTE.includes(sorte) ? sorte : 'minerai_' + sorte;
   addItem(state, item, n);
   noter('ramasse', { item, n });
   spendEnergy(state, 'piocher');
@@ -675,34 +677,59 @@ function respawn(state, partis, tuiles) {
   return revenus;
 }
 
-/* ---------- la canne à pêche : l'étang et la mare de la carte ---------- */
+/* ---------- la canne à pêche : l'étang et la mare de la carte, les eaux du grand monde ---------- */
 
-// La carte dit dans quelle eau on pêche (« etang » ou « mare », voir CANNE.PRISES). Chaque eau
-// donne au plus CANNE.JOUR[eau] prises par jour (state.outils.peche).
+// La carte dit dans quelle eau on pêche (« etang » ou « mare » sur la ferme ; « lac », « riviere »
+// ou « mer » dans le grand monde, voir CANNE.PRISES). Chaque eau donne au plus CANNE.JOUR[eau]
+// prises par jour (state.outils.peche : { jour, prises: { eau: n } }) : les eaux du monde se comptent
+// par sorte (toutes ses rivières ensemble, tous ses lacs, la mer). Un coin de pêche du plan
+// (« peche_<n> », lieux.peche : la carte le dit quand la rive est à CANNE.COINS.RAYON cases de lui)
+// a ses propres chances et ses propres prises du jour (CANNE.COINS), comptées à part, sous son
+// identifiant.
+const COIN = /^peche_\d{1,3}$/;
 function peche(state) {
   const o = outils(state);
   if (!o.peche || o.peche.jour !== state.day) o.peche = { jour: state.day, prises: {} };
   return o.peche;
 }
 
-// Prises que l'eau `eau` peut encore donner aujourd'hui.
-export function fishLeft(state, eau) {
-  const J = DATA.CANNE.JOUR[eau];
+// Le coin de pêche `coin` sur l'eau `eau` (un identifiant du plan, et des réglages pour cette eau),
+// ou null.
+function coinDe(eau, coin) {
+  const C = DATA.CANNE.COINS;
+  return coin && COIN.test(String(coin)) && C && C.PRISES[eau] && C.JOUR[eau] ? String(coin) : null;
+}
+
+// Prises que l'eau `eau` (ou le coin `coin` sur elle) peut encore donner aujourd'hui.
+export function fishLeft(state, eau, coin = null) {
+  const c = coinDe(eau, coin);
+  const J = c ? DATA.CANNE.COINS.JOUR[eau] : DATA.CANNE.JOUR[eau];
   if (!J) return 0;
   const max = J + techSum(state, 'pecheJour');   // le Moulinet en laiton (branche Outils)
   const p = state.outils && state.outils.peche;
-  const faites = p && p.jour === state.day ? p.prises[eau] || 0 : 0;
+  const faites = p && p.jour === state.day ? p.prises[c || eau] || 0 : 0;
   return Math.max(0, max - faites);
 }
 
-// Un lancer dans l'eau `eau` : de l'énergie, puis peut-être un poisson (tiré selon
-// CANNE.PRISES[eau]) dans l'inventaire, avec de l'XP. { ok, poisson: id ou null, reste }.
-export function castLine(state, eau) {
+// (le poisson se fait rare : le message de chaque eau)
+const RARE = {
+  etang: 'dans l\'étang aujourd\'hui : essaie l\'autre eau, ou reviens demain',
+  mare: 'dans la mare aujourd\'hui : essaie l\'autre eau, ou reviens demain',
+  lac: 'dans les lacs aujourd\'hui : essaie une rivière, la mer, ou reviens demain',
+  riviere: 'dans les rivières aujourd\'hui : essaie un lac, la mer, ou reviens demain',
+  mer: 'en mer aujourd\'hui : essaie un lac, une rivière, ou reviens demain',
+};
+
+// Un lancer dans l'eau `eau` (depuis le coin de pêche `coin`, s'il est donné) : de l'énergie, puis
+// peut-être un poisson (tiré selon CANNE.PRISES[eau], ou CANNE.COINS.PRISES[eau] à un coin) dans
+// l'inventaire, avec de l'XP. { ok, poisson: id ou null, reste, coin }.
+export function castLine(state, eau, coin = null) {
   const C = DATA.CANNE;
   if (!hasTool(state, 'canne')) return fail(`Il te faut une canne à pêche (Marché, ${C.PRIX} 💰).`);
-  const chances = C.PRISES[eau];
-  if (!chances) return fail('Touche l\'eau pour y pêcher : l\'étang ou la mare de la ferme.');
-  if (fishLeft(state, eau) <= 0) return fail(eau === 'lac' || eau === 'mer' ? `Le poisson se fait rare ${eau === 'lac' ? 'dans le lac' : 'en mer'} aujourd'hui : reviens demain.` : `Le poisson se fait rare ${eau === 'mare' ? 'dans la mare' : 'dans l\'étang'} aujourd'hui : essaie l'autre eau, ou reviens demain.`);
+  const c = coinDe(eau, coin);
+  const chances = c ? C.COINS.PRISES[eau] : C.PRISES[eau];
+  if (!chances) return fail('Touche l\'eau pour y pêcher : l\'étang ou la mare de la ferme, un lac, une rivière, la mer.');
+  if (fishLeft(state, eau, c) <= 0) return fail(c ? 'Ce coin de pêche ne donne plus rien aujourd\'hui : pêche un peu plus loin, ou reviens demain.' : `Le poisson se fait rare ${RARE[eau] || 'ici aujourd\'hui : reviens demain'}.`);
   if (!canAfford(state, 'pecher')) return fail(TIRED);
   spendEnergy(state, 'pecher');
   const tire = () => {
@@ -719,10 +746,10 @@ export function castLine(state, eau) {
   if (!poisson && touche > 0 && nextRandom(state) * 100 < touche) poisson = tire();
   if (poisson) {
     const p = peche(state);
-    p.prises[eau] = (p.prises[eau] || 0) + 1;
+    p.prises[c || eau] = (p.prises[c || eau] || 0) + 1;
     addItem(state, poisson, 1);
     noter('ramasse', { item: poisson, n: 1 });
     gainActionXp(state, 'pecher');
   }
-  return { ok: true, poisson, reste: fishLeft(state, eau) };
+  return { ok: true, poisson, reste: fishLeft(state, eau, c), coin: c };
 }

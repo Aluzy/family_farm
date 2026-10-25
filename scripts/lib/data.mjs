@@ -118,6 +118,8 @@ export function sourcesOf(data, id) {
     for (const champ of ['produit', 'laine', 'lait', 'laitAlpage']) if (a[champ] === id) out.push(`animal ${aid}`);
   }
   for (const [eau, p] of Object.entries((data.CANNE && data.CANNE.PRISES) || {})) if (id in p) out.push(`pêche ${eau}`);
+  for (const [eau, p] of Object.entries((data.CANNE && data.CANNE.COINS && data.CANNE.COINS.PRISES) || {})) if (id in p) out.push(`coin de pêche (${eau})`);
+  for (const [sorte, p] of Object.entries((data.GROTTE && data.GROTTE.MONDE && data.GROTTE.MONDE.POIDS) || {})) if (id === sorte || id === 'minerai_' + sorte) out.push('grotte de la montagne');
   const A = data.ATELIER;
   for (const [rid, r] of Object.entries((A && A.RECETTES) || {})) if (id in (r.sortie || {})) out.push(`atelier ${rid}`);
   for (const [rid, r] of Object.entries((A && A.RAMASSAGE) || {})) if (r.objet === id) out.push(`ramassage ${rid}`);
@@ -341,6 +343,19 @@ export function validateData(data) {
     if (Object.values(p).some((x) => !isInt(x) || x < 0) || total > 100) err(`CANNE.PRISES.${eau}`, 'des pourcentages entiers, 100 au plus en tout');
     if (!(isInt(CN.JOUR && CN.JOUR[eau]) && CN.JOUR[eau] > 0)) err(`CANNE.JOUR.${eau}`, 'un entier supérieur à 0');
   }
+  // les eaux du grand monde (fiche 6b) et ses coins de pêche (CANNE.COINS : leurs chances, leurs prises)
+  for (const eau of ['lac', 'riviere', 'mer']) if (!(CN.PRISES && CN.PRISES[eau])) err(`CANNE.PRISES.${eau}`, 'une eau du grand monde (la scène y pêche)');
+  const CC = CN.COINS;
+  if (CC) {
+    if (!(isInt(CC.RAYON) && CC.RAYON >= 1)) err('CANNE.COINS.RAYON', 'un entier supérieur à 0 (des cases)');
+    for (const [eau, p] of Object.entries(CC.PRISES || {})) {
+      if (!(CN.PRISES && CN.PRISES[eau])) err(`CANNE.COINS.PRISES.${eau}`, 'une eau de CANNE.PRISES');
+      for (const item of Object.keys(p)) needItem(`CANNE.COINS.PRISES.${eau}`, item);
+      const total = Object.values(p).reduce((a, b) => a + b, 0);
+      if (Object.values(p).some((x) => !isInt(x) || x < 0) || total > 100) err(`CANNE.COINS.PRISES.${eau}`, 'des pourcentages entiers, 100 au plus en tout');
+      if (!(isInt(CC.JOUR && CC.JOUR[eau]) && CC.JOUR[eau] > 0)) err(`CANNE.COINS.JOUR.${eau}`, 'un entier supérieur à 0');
+    }
+  }
   for (const k of ['HACHE', 'PIOCHE', 'FAUX']) if (!(data[k] && isInt(data[k].PRIX) && data[k].PRIX >= 0 && data[k].NOM && data[k].ICONE)) err(k, 'NOM, ICONE et PRIX (un entier positif)');
   const TU = data.NIVEAUX.TUILES;
   if (!Array.isArray(TU) || TU.length !== data.NIVEAUX.SEUILS.length || TU.some((x, i) => !isInt(x) || (i > 0 && x < TU[i - 1]))) err('NIVEAUX.TUILES', 'un entier par niveau, jamais en baisse');
@@ -393,6 +408,27 @@ export function validateData(data) {
       needItem('GROTTE.POIDS', `minerai_${sorte}`);
       const ok = (n) => typeof n === 'number' && n >= 0;
       if (!(p && ('FIXE' in p ? ok(p.FIXE) : ok(p.DEPUIS) && ok(p.PENTE)))) err(`GROTTE.POIDS.${sorte}`, 'FIXE, ou DEPUIS et PENTE : des nombres positifs');
+    }
+    // les grottes de la montagne du grand monde (fiche 6b, js/engine/grotte.js : reglagesGrotte) :
+    // des minerais (minerai_<sorte>) et des pierres (quartz, améthyste : l'objet lui-même), chacun
+    // sa case dans assets/grotte_tuiles.png (scripts/carte/grotte.py)
+    const GM = G.MONDE;
+    if (GM) {
+      if (!(typeof GM.NOM === 'string' && GM.NOM)) err('GROTTE.MONDE.NOM', 'le nom de la grotte');
+      if (!(isInt(GM.NIVEAUX) && GM.NIVEAUX >= 1)) err('GROTTE.MONDE.NIVEAUX', 'un entier supérieur à 0');
+      if (!(typeof GM.MINERAI === 'number' && GM.MINERAI > 0 && GM.MINERAI <= 1)) err('GROTTE.MONDE.MINERAI', 'une part entre 0 et 1');
+      if (!(typeof GM.MINERAI_NIVEAU === 'number' && GM.MINERAI_NIVEAU >= 0)) err('GROTTE.MONDE.MINERAI_NIVEAU', 'un nombre positif');
+      const pierres = ['quartz', 'amethyste'];
+      for (const [sorte, p] of Object.entries(GM.POIDS || {})) {
+        if (pierres.includes(sorte)) needItem('GROTTE.MONDE.POIDS', sorte);
+        else needItem('GROTTE.MONDE.POIDS', `minerai_${sorte}`);
+        const ok = (n) => typeof n === 'number' && n >= 0;
+        if (!(p && ('FIXE' in p ? ok(p.FIXE) : ok(p.DEPUIS) && ok(p.PENTE)))) err(`GROTTE.MONDE.POIDS.${sorte}`, 'FIXE, ou DEPUIS et PENTE : des nombres positifs');
+      }
+      for (const [sorte, f] of Object.entries(GM.FILONS || {})) {
+        if (!(GM.POIDS && sorte in GM.POIDS)) err(`GROTTE.MONDE.FILONS.${sorte}`, 'une sorte de GROTTE.MONDE.POIDS');
+        if (!(typeof f === 'number' && f >= 1)) err(`GROTTE.MONDE.FILONS.${sorte}`, 'un facteur d\'au moins 1');
+      }
     }
   }
 

@@ -143,6 +143,15 @@
         if (this.ctx.monde) { L.image('vegetation', v('vegetation.png')); L.json('vegetation_cases', v('vegetation.json')); }
         // ses rochers, ses falaises, sa côte (scripts/carte/roches.py, js/carte/ferme/vegetation.js)
         if (this.ctx.monde) { L.image('roches', v('roches.png')); L.json('roches_cases', v('roches.json')); }
+        // ses lieux (l'entrée des grottes, les coins de pêche : scripts/carte/lieux.py) et ses bêtes
+        // (scripts/carte/faune.py : une planche par espèce, découpée d'après faune.json ;
+        // js/carte/ferme/faune-monde.js)
+        if (this.ctx.monde) {
+          L.image('lieux_monde', v('lieux_monde.png'));
+          L.json('lieux_monde_cases', v('lieux_monde.json'));
+          L.json('faune_cases', v('faune.json'));
+          for (const e of this.ctx.monde.faune.especes) L.image('faune_' + e.cle, v('faune_' + e.cle + '.png'));
+        }
       }
 
       create() {
@@ -426,6 +435,7 @@
           this.stepRegionPerso();            // (la région où il entre devient vue : js/carte/ferme/sol.js)
         }
         this.stepMine();
+        this.stepLieuxMonde(time);              // (les entrées des grottes du monde, les coins de pêche : lieux-monde.js)
         if (this.family) this.family.update(delta);
         // La vue suit le personnage, centrée sur lui (comme sur les autres cartes).
         if (this.suitPerso()) {
@@ -441,6 +451,7 @@
         this.cullDecor();
         this.stepOccluders(delta);
         this.stepVegetation(delta);
+        this.stepFaune(time, delta);            // (les bêtes du grand monde : faune-monde.js)
         this.stepTallGrass(delta);
         this.stepShards(delta);
         this.stepSprinklers();
@@ -580,6 +591,14 @@
         if (this.niveau) return null;
         const pile = !hoeing ? this.pileAt(wx, wy) : null;
         if (pile) return { pile: pile.id };
+        // le grand monde : l'entrée d'une grotte de la montagne (sa bouche, sa flèche), une bête
+        // (son nom, sa page de l'encyclopédie : js/carte/ferme/lieux-monde.js, faune-monde.js)
+        if (!hoeing && this.ctx.monde) {
+          const grotte = this.grotteMondeAt(wx, wy);
+          if (grotte) return { grotteMonde: grotte };
+          const bete = this.fauneAt(wx, wy);
+          if (bete) return { faune: bete };
+        }
         // la ferme générée : une pierre, un bout de bois à ramasser à la main
         const brin = !hoeing ? this.gatherAt(wx, wy) : null;
         if (brin) return { gather: brin };
@@ -608,7 +627,8 @@
           if (hoeing && z.zone && (p || this.arable(i))) return { hoe: { zone: z.zone, case: i }, place: z.place };
           if (p) return { plot: p, place: z.place, open: z.window };
         }
-        // la canne à pêche en main : l'eau de l'étang ou de la mare sous le doigt s'y pêche
+        // la canne à pêche en main : l'eau de l'étang ou de la mare sous le doigt s'y pêche ; dans le
+        // grand monde, celle d'un lac, d'une rivière, de la mer (peche.js)
         if (this.ctx.lastModel && this.ctx.lastModel.canne) {
           const eau = this.waterAt(wx, wy);
           if (eau) return { fish: eau };
@@ -712,6 +732,8 @@
         if (hit.mine) { this.mine(hit.mine); return; }
         if (hit.scythe) { this.scythe(hit.scythe); return; }
         if (hit.monde) { this.mondeAgir(hit.monde); return; }
+        if (hit.grotteMonde) { this.enterGrotteMonde(hit.grotteMonde); return; }
+        if (hit.faune) { this.fauneTouchee(hit.faune); return; }
         if (hit.fish) { this.goFish(hit.fish, wx, wy); return; }
         if (hit.treeHarvest) { this.ctx.bridge.act('harvest-tree', { id: hit.treeHarvest }); return; }
         const p = hit.plot;
@@ -887,8 +909,8 @@
   }
 
   // Revenu d'une autre carte (js/ui/excursion.js) : le personnage au bout du chemin de l'est
-  // (`est`) ou devant la porte de la mine (`mine`) ; la scène pas encore prête, elle le fera en
-  // se créant (?arrivee=…).
+  // (`est`), devant la porte de la mine (`mine`) ou devant l'entrée d'une grotte de la montagne
+  // (`grotte_<n>`) ; la scène pas encore prête, elle le fera en se créant (?arrivee=…).
   function arrive(ou) { const s = getScene(); if (s && s.ready) s.arrive(ou); }
   // Un membre de la famille va manger à la boîte à nourriture (js/famille-ferme.js) ; false s'il
   // n'est pas dehors sur la carte.

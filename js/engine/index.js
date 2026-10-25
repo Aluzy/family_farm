@@ -19,6 +19,7 @@ export * from './monde.js';
 export * from './monde-gen.js';
 export * from './monde-sol.js';
 export * from './monde-recolte.js';
+export * from './grotte.js';
 export * from './crops.js';
 export * from './depart.js';
 export * from './cruche.js';

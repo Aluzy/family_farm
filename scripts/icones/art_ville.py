@@ -319,6 +319,69 @@ ICONS['🐟‍🦷'] = [
     '................',
 ]
 
+# Les poissons du grand monde qui manquaient (fiche 6b). Goujon (les rivières) : petit, le dos
+# brun-gris semé de taches sombres, le ventre crème, deux barbillons sous la bouche.
+ICONS['🐟‍🪨'] = [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '.....nnnnnn.....',
+    '...nnHtHHtHn..nn',
+    '..nkHHtHHHtHnnHn',
+    '..nCCCCCCCCCnnHn',
+    '...nnCCCCCnn..nn',
+    '...n.nnnnnn.....',
+    '..n.............',
+    '................',
+    '................',
+    '................',
+]
+
+# Saumon (les rivières, surtout aux coins de pêche) : long et fort, le dos bleu-gris, les flancs
+# argentés semés de points noirs, la chair rose qui se devine au ventre, la queue large.
+ICONS['🐟‍🔶'] = [
+    '................',
+    '................',
+    '................',
+    '................',
+    '.....qqqqqqq....',
+    '...qqAAkAAkAqq.q',
+    '..qAAkAAAkAAAqqA',
+    '.qkWWWWWWWWWWqAq',
+    '.qWWpWWpWWWWWqqA',
+    '..qppppppppppqqA',
+    '...qqpppppppq.qq',
+    '.....qqqqqqq....',
+    '................',
+    '................',
+    '................',
+    '................',
+]
+
+# Bar (la mer, aux coins de pêche du rivage) : élancé, le dos gris-bleu foncé, les flancs d'argent,
+# la ligne latérale sombre, la queue en fourche.
+ICONS['🐟‍🌀'] = [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '.....qqqqqqqq...',
+    '...qqAAAAAAAAq.q',
+    '..qkAAAAAAAAAqqA',
+    '..qWAAAAAAAAWqAq',
+    '..qWWWWWWWWWWqqA',
+    '...qqWWWWWWqq..q',
+    '.....qqqqqq.....',
+    '................',
+    '................',
+    '................',
+    '................',
+]
+
 ICONS['🍯'] = [  # pot de miel, couvercle en tissu à carreaux, étiquette
     '................',
     '...RRRRRRRRRR...',

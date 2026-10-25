@@ -416,7 +416,7 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        pendent des falaises des sommets) ; une bande de falaise en biais fait des marches d'une case
        (des colonnes décalées) ; le côté d'une bande nord-sud n'a pas de face (vue de haut, il ne se
        voit pas) ; casser, miner, ramasser (étape 6).
-6. **Les ressources et la vie de chaque biome** (2 PR, 6a fait) : ce qui se ramasse, les minerais et
+6. ✅ **Les ressources et la vie de chaque biome** (2 PR, fait) : ce qui se ramasse, les minerais et
    les grottes de la montagne, la pêche, les animaux à regarder.
    - **Fait (6a)** : couper, casser, cueillir et ramasser dans le monde (`js/engine/monde-recolte.js`,
      `js/carte/ferme/recolte-monde.js` ; les arbres, rochers et herbes de la ferme et leurs
@@ -477,6 +477,72 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        ferme comme dans le monde : une partie de son feuillage manque pendant la chute ; à revoir sur
        une vraie carte graphique) ; le coup fort de la faux ne fauche pas encore les plantes
        du monde ; les fleurs des prés restent du décor (rien à cueillir pour l'instant).
+   - **Fait (6b)** : les grottes de la montagne, la pêche dans le monde et les animaux.
+     - **Les grottes** : chaque entrée du plan (`lieux.grottes`, 3 à 6) a sa bouche de roche dans la
+       montagne (`scripts/carte/lieux.py` → `assets/lieux_monde.png`, `lieux_monde.json` : un éperon de
+       granit, sa face en strates comme les falaises de la 5c, l'arche noire, des éboulis au pied ;
+       enneigé au-dessus du relief `LIEUX.NEIGE`), posée par `js/engine/monde-lieux.js` dans le calcul
+       de la région (le Worker) ; ses cases (`LIEUX.BLOQUE`) ferment la marche, la case devant reste
+       ouverte. Près d'elle, la flèche des passages ; un appui sur la bouche ou la flèche, ou le
+       personnage poussé vers elle, et il y entre (`js/carte/ferme/lieux-monde.js`). C'est la scène de
+       la mine (`GrotteScene`, pas une copie) : le tirage des niveaux est passé dans le moteur
+       (`js/engine/grotte.js`, `genererNiveau`, à l'identique pour la mine : vérifié sur 312 niveaux,
+       une empreinte dans les tests), la page le donne à la scène (`FermeHote.reglages`, `niveau`). Une
+       grotte du monde (`grotte?grotte=grotte_<n>`) a sa graine (« <monde>:<entrée>:<niveau>:<jour> » :
+       la même grotte toute la journée), `GROTTE.MONDE` (`data/grotte.json`) : 5 niveaux, plus de
+       minerai (0,1 au lieu de 0,07, qui grandit plus vite), l'or dès le niveau 1 et le platine dès le
+       2, du quartz et des améthystes dans les murs (l'objet lui-même : `mineOre` ; leurs cases dans
+       `assets/grotte_tuiles.png`, à la fin de la planche), et un filon par entrée (cuivre, or,
+       platine, quartz ou améthyste, son poids doublé ou × 2,5, tiré de la graine du monde et de
+       l'entrée ; dit au premier niveau). En remontant l'échelle du premier niveau
+       (`jeu.html?arrivee=grotte_<n>`), le personnage ressort de l'arche, devant l'entrée, au même
+       jour et à la même heure (le temps a passé comme à la ferme) ; la page rechargée dans la
+       grotte : il attend que la région de l'entrée soit faite. La mine de la ferme ne change pas. Le
+       god mode mène aussi à une grotte de la montagne (niveaux 1 et 4).
+     - **La pêche** : la canne s'utilise au bord de toute eau du monde (`peche.js` : l'eau sous le
+       doigt lue dans sa région, la rive cherchée comme sur la ferme ; même geste, même bouchon, même
+       touche). `CANNE.PRISES` : les lacs (omble, truite), les rivières (nouvelles : truite, goujon),
+       la mer (dorade, sardine, anchois) ; les prises se comptent par eau du monde (tous les lacs
+       ensemble, toutes les rivières, la mer). Les coins de pêche du plan (`lieux.peche`) sont
+       meilleurs (`CANNE.COINS` : à 3 cases au plus ; plus de touches, un poisson rare : le brochet au
+       lac, le saumon en rivière, le bar en mer ; 8 à 12 prises par jour, comptées pour chaque coin,
+       à part de son eau). Leur décor : un ponton de trois cases qui avance sur un lac ou la mer (on
+       marche dessus, on pêche au bout : ses cases s'ouvrent), sinon des piquets, une nasse et un
+       filet sur la rive (les rivières) ; des remous montent de l'eau tout près. Trois objets
+       nouveaux (`data/items.json`, icônes dans `scripts/icones/art_ville.py`, l'encyclopédie, l'aide)
+       : le goujon, le saumon, le bar ; leurs poissons qui sautent (`FISHING.monde`).
+     - **Les animaux** (`js/engine/monde-faune.js`, `data/monde.json` : `FAUNE`) : 14 espèces, posées
+       de façon déterministe par région, dans le Worker (des groupes tirés selon la part de leurs
+       biomes dans la région, sur des cases permises : la terre où l'on marche, l'eau, l'air ; ni la
+       ferme et 8 cases autour, ni un chemin, ni un lieu ; 22 au plus par région) : marmottes et
+       bouquetins en montagne, aigles au-dessus des sommets (leur ombre au sol, leur silhouette), mouettes
+       et crabes sur la plage, dauphins au large, canards (sur les lacs et l'eau basse du marais) et
+       cygnes ; nouvelles (`scripts/carte/faune.py`, dans son style) : chevreuil, renard, lapin,
+       écureuil (forêt ; le renard aussi sur la lande, le lapin dans les prés), lièvre et perdrix
+       (lande). La scène (`js/carte/ferme/faune-monde.js`) : leurs images près de la vue seulement (10
+       à 14 à la fois dans les essais, ~80 dans les régions dessinées), retirées avec leur région ;
+       elles respirent, vont et viennent à 3 cases de leur place, fuient le personnage chacune à sa
+       façon (elles courent, rentrent au terrier, s'envolent, nagent plus loin), le dauphin saute de
+       temps en temps, l'aigle tourne ; la nuit elles dorment ou se cachent ; immobiles avec «
+       animations réduites ». On ne les chasse pas : un appui dit leur nom et ouvre leur page de
+       l'encyclopédie (une catégorie « La faune du grand monde », 15 pages), découverte la première
+       fois qu'on en voit une (`faune:<espèce>`). Rien sur la ferme.
+     - **Sauvegardes** : la forme ne change pas (format 54) : les prises du jour vont dans
+       `state.outils.peche.prises` (par eau, par coin : `peche_<n>`), les bêtes vues dans
+       `state.encyclopedie.evenements` ; pas de migration. Le minerai pris dans une grotte du monde,
+       comme celui de la mine : `localStorage` (« ferme-grottes »), le jour même.
+     - **Mesuré** (Chromium sans carte graphique, SwiftShader, la même graine, 2 parties de chaque,
+       450 images en glissant) : en montagne, 63,7 à 66,4 ms par image avant (médiane 61,5 à 62,9),
+       59,7 à 63,1 ms après (médiane 57,7 à 60,6) ; sur la côte, 69,7 à 76,2 ms avant (médiane 67,4 à
+       72,8), 66,8 à 72,2 ms après (médiane 65 à 68,5) : pas de différence au-delà du bruit. Le
+       JavaScript des bêtes : 0,07 à 0,08 ms par image (au plus 2 ms), celui des lieux 0,01 ms. Une
+       région dans Node (3 mondes) : médiane 6,5 à 9,3 ms avant, 7,0 à 10,5 ms après (90 % : 7,8 à
+       22,1 avant, 11,1 à 23,8 après). `npm test` : 36,4 s avant, 35,9 à 37,1 s après (les tests de la fiche : 3,7 s).
+     - Reste : les grottes de la montagne n'ont pas de dessin à elles (les tuiles de la mine) ; un
+       canard du marais va et vient sur l'eau basse comme sur la vase voisine ; les bêtes ne se
+       voient pas entre elles (deux d'un groupe peuvent se croiser) ; l'aigle tourné est dessiné par
+       le processeur sous SwiftShader (à revoir sur une vraie carte graphique, comme l'arbre qui
+       bascule de la 6a).
 7. **Les habitants et la calèche** (3 PR) : les hameaux bâtis en blocs, leurs familles et
    leurs métiers (bûcheron, pêcheur, mineur, berger, cueilleur) ; la calèche du Marché et sa
    tournée.

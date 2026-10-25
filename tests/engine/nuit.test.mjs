@@ -104,7 +104,7 @@ test('version 1.1.1 : hors-ligne, l\'horloge s\'arrête à l\'éveil minimal (pa
   assertEqual([t.awakeMs, hourOfDay(t), bedtimeDue(t), t.day], [awakeMsAtHour(20), 20, false, 1]);
 });
 
-test('version 1.21 : le lac de la montagne, l\'omble chevalier', () => {
+test('version 1.21 : les lacs (du grand monde, fiche 6b), l\'omble chevalier', () => {
   assertEqual(DATA.OBJETS.omble.nom, 'Omble chevalier');
   assertEqual(DATA.CANNE.PRISES.lac, { omble: 40, truite: 25 });
   const s = garden();
@@ -120,10 +120,10 @@ test('version 1.21 : le lac de la montagne, l\'omble chevalier', () => {
   assertEqual(fishLeft(s, 'lac'), 0, 'quatre prises au plus par jour');
   assert([...prises].every((p) => p === 'omble' || p === 'truite'), 'omble ou truite');
   assert(countItem(s, 'omble') + countItem(s, 'truite') === DATA.CANNE.JOUR.lac);
-  assertEqual(castLine(s, 'lac').error, 'Le poisson se fait rare dans le lac aujourd\'hui : reviens demain.');
+  assertEqual(castLine(s, 'lac').error, 'Le poisson se fait rare dans les lacs aujourd\'hui : essaie une rivière, la mer, ou reviens demain.');
 });
 
-test('version 1.21 : la mer de la plage, dorade, sardine, anchois', () => {
+test('version 1.21 : la mer (du grand monde, fiche 6b), dorade, sardine, anchois', () => {
   assertEqual(['dorade', 'anchois', 'sardine'].map((i) => DATA.OBJETS[i].nom), ['Dorade', 'Anchois', 'Sardine']);
   const s = garden();
   s.outils = { hache: false, pioche: false, canne: true, choisi: 'canne' };
@@ -137,7 +137,7 @@ test('version 1.21 : la mer de la plage, dorade, sardine, anchois', () => {
   }
   assertEqual(fishLeft(s, 'mer'), 0);
   assert([...prises].every((p) => ['dorade', 'sardine', 'anchois'].includes(p)), 'des poissons de mer');
-  assertEqual(castLine(s, 'mer').error, 'Le poisson se fait rare en mer aujourd\'hui : reviens demain.');
+  assertEqual(castLine(s, 'mer').error, 'Le poisson se fait rare en mer aujourd\'hui : essaie un lac, une rivière, ou reviens demain.');
 });
 
 test('minerais et lingots : la grotte remplit l\'inventaire, le Four fond 4 minerais et du bois en 1 lingot', () => {

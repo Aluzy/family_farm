@@ -8,6 +8,8 @@
 #     paroi_0..3        la face d'un mur, au-dessus d'une case de sol (on la voit de face)
 #     fer, cuivre, or, platine   le minerai, posé sur un mur (une couche à part)
 #     champignon, cristal        des décors posés au sol
+#     quartz, amethyste          des cristaux pris dans un mur (les grottes de la montagne du grand
+#                                monde : une couche à part, comme le minerai ; à la fin de la planche)
 #   assets/grotte_objets.png   32 × 32 : echelle (on remonte), trou (on descend), stalagmite_0, _1
 #   assets/grotte.json         le nom de chaque case, les minerais (nom, couleur)
 #
@@ -30,6 +32,12 @@ MINERAIS = {
     'cuivre': {'nom': 'Du minerai de cuivre', 'tons': [(170, 90, 50), (214, 126, 70), (90, 170, 140)]},
     'or': {'nom': 'Une pépite d’or', 'tons': [(196, 150, 40), (240, 200, 70), (255, 240, 160)]},
     'platine': {'nom': 'Du platine, très rare', 'tons': [(170, 180, 196), (212, 222, 236), (255, 255, 255)]},
+}
+# Les pierres des grottes de la montagne (le grand monde) : des cristaux pris dans un mur, qui se
+# piochent comme le minerai (l'objet lui-même : quartz, amethyste). Du plus sombre au plus clair.
+PIERRES = {
+    'quartz': {'nom': 'Un cristal de quartz', 'tons': [(150, 172, 196), (206, 222, 238), (244, 250, 255)]},
+    'amethyste': {'nom': 'Une améthyste', 'tons': [(96, 54, 140), (150, 96, 196), (214, 180, 246)]},
 }
 
 
@@ -128,6 +136,25 @@ def cristal():
     return contour(im, K)
 
 
+def pierre_du_mur(nom):
+    """Des cristaux qui sortent du mur (transparent autour) : trois ou quatre prismes pointus,
+    serrés en touffe, la face gauche éclairée, la droite dans l'ombre, un éclat au bout."""
+    a, b, c = PIERRES[nom]['tons']
+    im = image(T, T)
+    d = dessin(im)
+    prismes = ((3, 13, 3, 8), (6, 13, 4, 11), (10, 13, 3, 7), (8, 9, 2, 5)) if nom == 'quartz' else ((2, 13, 3, 6), (5, 13, 3, 9), (8, 13, 4, 10), (12, 13, 2, 5))
+    for x0, y0, w, h in prismes:
+        mid = x0 + w / 2
+        d.polygon(((x0, y0), (x0, y0 - h + 2), (mid, y0 - h), (x0 + w, y0 - h + 2), (x0 + w, y0)), fill=rgba(b))
+        d.polygon(((mid, y0), (mid, y0 - h), (x0 + w, y0 - h + 2), (x0 + w, y0)), fill=rgba(a))
+        d.line((x0, y0 - 1, x0, y0 - h + 2), fill=rgba(c))
+        d.point((round(mid) - 1, y0 - h + 1), fill=rgba(c))
+    # la gangue : un peu de roche sombre au pied
+    d.line((1, 14, 14, 14), fill=rgba(PAROI[0]))
+    d.line((3, 13, 12, 13), fill=rgba(PAROI[1]))
+    return contour(im, K)
+
+
 def echelle():
     """32 × 32 : l'échelle qui remonte, appuyée contre le haut, la lumière qui tombe du trou."""
     im = image(32, 32)
@@ -183,6 +210,8 @@ def main():
         ajoute(m, minerai(m))
     ajoute('champignon', champignon())
     ajoute('cristal', cristal())
+    for m in PIERRES:
+        ajoute(m, pierre_du_mur(m))
     col = 16
     rows = math.ceil(len(tuiles) / col)
     sheet = image(col * T, rows * T)
@@ -197,7 +226,7 @@ def main():
     with open(os.path.join(ASSETS, 'grotte.json'), 'w') as f:
         json.dump({'tuiles': {n: i for i, n in enumerate(noms)}, 'colonnes': col,
                    'objets': [n for n, _ in objets],
-                   'minerais': {k: {'nom': v['nom']} for k, v in MINERAIS.items()}}, f, ensure_ascii=False, indent=1)
+                   'minerais': {k: {'nom': v['nom']} for k, v in list(MINERAIS.items()) + list(PIERRES.items())}}, f, ensure_ascii=False, indent=1)
         f.write('\n')
     if '--apercu' in sys.argv:
         out = Image.new('RGBA', (max(sheet.width, obj.width) + 8, sheet.height + obj.height + 12), (20, 18, 20, 255))

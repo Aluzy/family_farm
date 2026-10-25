@@ -108,7 +108,9 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | `hache.js`, `pioche.js`, `peche.js` | les arbres, les buissons (la ferme générée : coupés d'un coup, 2 bois pour un grand, 1 pour un petit), les rochers, l'étang et la mare ; chaque coup de hache ou de pioche lâche ses morceaux au sol |
 | `chantier.js` | la ferme générée : les blocs posés (murs, portes, paillasses, Atelier), le mode Construire, les pièces closes, la paillasse où il dort |
 | `cueillette.js` | la ferme générée : ce qu'on ramasse à la main (pierres, bois, herbes), un appui et le personnage le prend ; le bois et la pierre lâchés par la hache et la pioche (`modèle.morceaux`, `state.morceaux` du moteur), que le personnage prend en marchant dessus (`syncPieces`, `stepPieces`) |
-| `passages.js` | l'entrée de la mine (la porte du tas de terre, vers `js/grotte.js`) et le retour de la mine (`?arrivee=mine`) |
+| `passages.js` | l'entrée de la mine (la porte du tas de terre, vers `js/grotte.js`) et le retour de la mine (`?arrivee=mine`) ou d'une grotte de la montagne (`?arrivee=grotte_<n>`) |
+| `lieux-monde.js` | les lieux du grand monde (fiche 6b) : l'entrée des grottes de la montagne (la flèche des passages quand on s'approche, l'appui ou la poussée qui y fait entrer, le retour devant l'entrée, qui attend que sa région soit faite), les coins de pêche (`coinPeche`, leurs remous) |
+| `faune-monde.js` | les bêtes du grand monde (fiche 6b) : leurs images près de la vue, ce qu'elles font (repos, petits trajets, fuite à la façon de chacune, l'aigle qui tourne et son ombre, le dauphin qui saute), la nuit, « animations réduites », un appui (pont `faune`) et la première vue d'une espèce (pont `fauneVue`) |
 | `machines.js` | les asperseurs, le robot |
 | `abeilles.js` | les abeilles des ruches : elles sortent par le trou de vol, butinent les fleurs à portée (`modèle.fleurs`, l'herbe haute fleurie), rentrent ; le jour seulement |
 | `modele.js` | `sync(modèle)` et ce qu'il crée (bâtiments, parcelles, Verger, puits, citerne) |
@@ -119,15 +121,24 @@ est tiré au hasard pour la journée (un automate cellulaire, avec les morceaux 
 `scripts/carte/grotte.py` : `assets/grotte_tuiles.png`, `grotte_objets.png`, `grotte.json`) ; on
 descend par le puits et on remonte par l'échelle (la flèche bleue de `CarteKit.FLECHE`,
 dessinée par `scripts/carte/fleche.py`). Ses réglages de jeu (taille d'un niveau, nombre de
-niveaux, minerai, coups de pioche) sont dans `data/grotte.json` (`GROTTE`), que la page lui donne
-par `FermeHote.donnees('GROTTE')` ; le fichier ne garde que les images et la lumière (la
+niveaux, minerai, coups de pioche) sont dans `data/grotte.json` (`GROTTE`) ; le tirage d'un niveau
+est dans le moteur (`js/engine/grotte.js` : `reglagesGrotte`, `genererNiveau`), que la page lui
+donne (`FermeHote.reglages(id)`, `FermeHote.niveau(J, n, jour)`) ; le fichier ne garde que les
+images et la lumière (la
 lanterne, le jour qui tombe de l'échelle, les champignons et les améthystes : des lumières WebGL,
 sans WebGL une image noire percée autour du personnage). `js/ui/excursion.js` l'ouvre dans
 `#map-stage` (`jeu.html?carte=grotte&niveau=N…`) et lui sert de pont (`FermeHote` : l'heure, le
 personnage, la pioche, le minerai, les messages, `go(cible)` pour changer de niveau ou remonter).
 Le temps passe comme à la ferme : la grotte lit le jour du jeu (`FermeHote.maintenant()`) pour
 tirer ses niveaux, il n'y a plus d'horloge à part (`HorlogeSortie` a été retirée).
-En god mode (⚙️ Options), un menu mène à la ferme et aux niveaux 1, 4 et 8 de la mine.
+Les grottes de la montagne du grand monde (fiche 6b) sont la même scène
+(`jeu.html?carte=grotte&grotte=grotte_<n>&niveau=N…`) : leurs réglages (`GROTTE.MONDE` : moins de
+niveaux, plus de minerai, des pierres, un filon par entrée, d'après la graine du monde de la partie)
+et leurs niveaux viennent du même moteur ; l'échelle du premier niveau ramène devant leur entrée
+(`jeu.html?arrivee=grotte_<n>`, `js/carte/ferme/lieux-monde.js`). La flèche de la grotte a sa propre
+clé de texture (la page rechargée dans une grotte charge la ferme en même temps).
+En god mode (⚙️ Options), un menu mène à la ferme, aux niveaux 1, 4 et 8 de la mine et à une grotte
+de la montagne (niveaux 1 et 4).
 
 ## 1 ter. Le jour et la nuit
 
@@ -262,6 +273,15 @@ poulailler et le moulin n'y ont plus d'image (leur forme de secours).
   et les éclats comme sur la ferme. La marche : `ctx.monde.marchable` lit les cases que les pièces
   prises rendent (`ouvertes`, posé par js/ui/stage.js : `casesOuvertesMonde`). La case du
   personnage va au moteur à chaque pas (pont `ici`) : rien ne repousse sous lui.
+- **Les lieux et les bêtes du monde** (fiche 6b) : chaque région arrive aussi avec ses lieux
+  (`reg.lieux`, `js/engine/monde-lieux.js` : la bouche des grottes, le ponton ou les piquets des
+  coins de pêche ; une troisième planche de `vegetation.js`, `assets/lieux_monde.png`, le ponton posé
+  sur l'eau sous tout le reste) et ses bêtes (`reg.faune`, `js/engine/monde-faune.js`, animées par
+  `js/carte/ferme/faune-monde.js` : leurs images faites à moins de `FAUNE.PRES` px de la vue,
+  retirées au-delà de `FAUNE.LOIN`, quelques dizaines à la fois). Le Worker envoie les lieux du plan
+  avec les éléments (`pret` : `ctx.monde.lieux()`). La pêche dans le monde (`peche.js`) : l'eau sous
+  le doigt est lue dans sa région (`eauMondeSous` : « lac », « riviere », « mer »), la rive trouvée
+  comme sur la ferme ; près d'un coin de pêche du plan, le pont `fish(eau, coin)` pêche au coin.
 - **Relevés du chargement par régions.** Les arbres, buissons et barrières (`findOccluders`,
   `mapTrees`), les rochers (`findRocks`), les tuiles animées (`makeTileAnims`), la terre des
   anciennes zones (`zoneGround`) et les lieux de la vie d'ambiance (`readMap`,

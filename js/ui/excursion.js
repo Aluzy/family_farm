@@ -13,8 +13,10 @@ import { showToast } from './toasts.js';
 import { SOMMEIL_MESSAGE } from './actions.js';
 import { asleep } from '../engine/night.js';
 import { encyclopedieCarte } from './encyclopedie.js';
+import { genererNiveau, idGrotteMonde, reglagesGrotte } from '../engine/grotte.js';
+import { farmTerrain } from '../engine/terrain.js';
 
-/* ---------- la mine de la ferme, dans la page du jeu ----------
+/* ---------- la mine de la ferme et les grottes de la montagne, dans la page du jeu ----------
 
    Les niveaux de la mine (js/grotte.js) s'affichent ici, dans #map-stage, à la place de la carte
    de la ferme : la carte du joueur, la date et l'argent, le menu latéral, la barre d'outils et
@@ -26,7 +28,13 @@ import { encyclopedieCarte } from './encyclopedie.js';
    La mine passe par FermeHote (ci-dessous) : l'heure, le personnage, la pioche, le minerai,
    les messages, et go(cible) pour changer de niveau (« grotte?niveau=… ») ou remonter
    (« jeu.html… » : la ferme). L'adresse de la page suit (jeu.html?carte=grotte&…) : recharger
-   la page y ramène. */
+   la page y ramène.
+
+   Les grottes de la montagne du grand monde (fiche 6b) sont la même scène : « grotte?grotte=
+   grotte_<n>&… » (l'entrée du plan, js/carte/ferme/lieux-monde.js), leurs réglages et leurs
+   niveaux tirés par le moteur (js/engine/grotte.js : reglagesGrotte, d'après la graine du monde
+   de la partie ; genererNiveau). En remontant du premier niveau (« jeu.html?arrivee=grotte_<n> »),
+   le personnage ressort devant l'entrée, dans le monde ; le temps a passé comme ailleurs. */
 
 let active = null;          // les paramètres du niveau affiché (« ?niveau=… »), ou null (la ferme)
 
@@ -85,18 +93,19 @@ function ouvre(search) {
   refresh();
   if (window.Grotte.start(el, search) === false) { rentre(null); return false; }
   encyclopedieCarte('grotte'); // ses pages de l'Encyclopédie se découvrent
+  if (idGrotteMonde(p.get('grotte'))) encyclopedieCarte('grotte_monde');
   return true;
 }
 
 // Retour à la ferme : `arrivee` : le personnage arrive devant la porte de la mine (« mine »),
-// ou là où il était (null).
+// devant l'entrée d'une grotte du monde (« grotte_<n> »), ou là où il était (null).
 function rentre(arrivee = null) {
   if (window.Grotte) window.Grotte.stop();
   active = null;
   const el = mapEl();
   if (el) { el.hidden = true; delete el.dataset.carte; }
   document.body.classList.remove('en-excursion');
-  const ou = arrivee === 'mine' ? arrivee : null;
+  const ou = arrivee === 'mine' || idGrotteMonde(arrivee) ? arrivee : null;
   history.replaceState(null, '', 'jeu.html' + (ou ? '?arrivee=' + ou : ''));
   refresh();
   if (ou && window.FarmStage && window.FarmStage.arrive) window.FarmStage.arrive(ou);
@@ -129,9 +138,14 @@ window.FermeHote = {
   tech: (cle) => techFlag(state, cle),
   // une cueillette (le champignon lumineux) va dans l'inventaire ({ ok, item, n } ou { ok: false })
   ramasser: ramasse,
-  // les réglages de jeu de la mine (data/grotte.json, GROTTE) ; une autre section de DATA n'est
-  // pas donnée à la scène
-  donnees: (cle) => (cle === 'GROTTE' ? DATA[cle] : null),
+  // les réglages de jeu de la grotte `id` (data/grotte.json, GROTTE : la mine de la ferme ; GROTTE.MONDE,
+  // une grotte de la montagne, d'après la graine du monde de la partie) ; le tirage d'un niveau
+  // (js/engine/grotte.js) ; une autre section de DATA n'est pas donnée à la scène
+  reglages: (id) => {
+    const M = idGrotteMonde(id) ? farmTerrain(state).MONDE : null;
+    return reglagesGrotte(M ? id : 'ferme', M ? M.graine : '');
+  },
+  niveau: (J, n, jour) => genererNiveau(J, n, jour),
   say: (t) => showToast(t),
   // le god mode : un toucher pose le personnage, les flèches des niveaux sont toutes là
   god: () => godMode,
@@ -139,12 +153,15 @@ window.FermeHote = {
 
 /* ---------- le god mode : un menu des niveaux ---------- */
 
-// La ferme et quelques niveaux de la mine, pour y aller d'un coup (Options : god mode).
+// La ferme, quelques niveaux de la mine et une grotte de la montagne (la première entrée du plan),
+// pour y aller d'un coup (Options : god mode).
 const DESTINATIONS = [
   ['🌾 La ferme', 'jeu.html'],
   ['⛏️ La mine, niveau 1', 'grotte?niveau=1&arrivee=haut'],
   ['⛏️ La mine, niveau 4', 'grotte?niveau=4&arrivee=haut'],
   ['⛏️ La mine, niveau 8', 'grotte?niveau=8&arrivee=haut'],
+  ['⛰️ Une grotte de la montagne', 'grotte?grotte=grotte_1&niveau=1&arrivee=haut'],
+  ['⛰️ La même, niveau 4', 'grotte?grotte=grotte_1&niveau=4&arrivee=haut'],
 ];
 
 // La barre du god mode (en haut de l'écran) : le menu des niveaux ; rien sans le god mode.

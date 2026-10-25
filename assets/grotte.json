@@ -33,7 +33,9 @@
   "or": 30,
   "platine": 31,
   "champignon": 32,
-  "cristal": 33
+  "cristal": 33,
+  "quartz": 34,
+  "amethyste": 35
  },
  "colonnes": 16,
  "objets": [
@@ -54,6 +56,12 @@
   },
   "platine": {
    "nom": "Du platine, très rare"
+  },
+  "quartz": {
+   "nom": "Un cristal de quartz"
+  },
+  "amethyste": {
+   "nom": "Une améthyste"
   }
  }
 }

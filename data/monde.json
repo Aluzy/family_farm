@@ -365,5 +365,78 @@
       "etoile_mer": { "geste": "ramasser", "fin": { "etoile_mer": [1, 1] }, "retour": [3, 5] },
       "algues": { "geste": "ramasser", "fin": { "algues": [1, 2] }, "retour": [2, 4] }
     }
+  },
+  "//LIEUX": [
+    "Les lieux du plan qui ont leur dessin (fiche 6b, js/engine/monde-lieux.js ; les dessins :",
+    "scripts/carte/lieux.py → assets/lieux_monde.png, lieux_monde.json). SORTES : comme ROCHES.SORTES",
+    "(nom, genre, variantes ; à n'allonger qu'à la fin). L'entrée d'une grotte (lieux.grottes) : la",
+    "bouche de roche posée sur sa case (la variante enneigée au-dessus d'un relief NEIGE) ; ses cases",
+    "BLOQUE (décalages [colonne, rangée] depuis la case de l'entrée) ferment la marche, la case juste",
+    "devant (au sud) reste ouverte : on s'y tient pour entrer. Un coin de pêche (lieux.peche) : un",
+    "ponton qui avance de PONTON cases sur un lac ou la mer (et l'eau continue au-delà), droit depuis la rive",
+    "(on y marche : ses cases s'ouvrent), sinon des piquets sur la rive (les rivières, une eau trop",
+    "étroite)."
+  ],
+  "LIEUX": {
+    "SORTES": [
+      { "nom": "entree_grotte", "genre": "entree", "variantes": 2 },
+      { "nom": "ponton", "genre": "ponton", "variantes": 4 },
+      { "nom": "piquets", "genre": "coin", "variantes": 2 }
+    ],
+    "NEIGE": 0.86,
+    "BLOQUE": [[-1, 0], [0, 0], [1, 0], [-1, -1], [0, -1], [1, -1], [-1, -2], [0, -2], [1, -2]],
+    "PONTON": 3
+  },
+  "//FAUNE": [
+    "Les bêtes du grand monde (fiche 6b : js/engine/monde-faune.js les pose, région par région, dans",
+    "le Worker ; js/carte/ferme/faune-monde.js les anime). On ne les chasse pas : on les regarde, on",
+    "les touche (leur nom, leur page de l'encyclopédie, découverte la première fois qu'on en voit une :",
+    "« faune:<espèce> »). Rien sur la ferme ni à moins de FERME cases d'elle.",
+    "ESPECES : chacune son dessin (assets/faune_<espèce>.png, scripts/carte/faune.py), son nom, où elle",
+    "vit : `lieu` (« terre » : une case où l'on marche ; « eau » : une case d'eau, lac ou mer ; « air » :",
+    "au-dessus, son ombre au sol), `biomes` (et `sols`, `eau` [au moins, au plus] cases de l'eau, `rive`",
+    "[au moins, au plus] cases de la terre ; 0 : sans limite ; `relief` le relief au moins : ses cases permises), `densite`",
+    "(des groupes pour 1 000 cases permises de la région), `groupe` [au moins, au plus] bêtes,",
+    "`vitesse` (px par s), `fuite` (px : le personnage plus près, elle fuit ; 0 : jamais) et sa façon de",
+    "fuir (`fuit` : « court », « terrier » : elle court puis disparaît un moment, « envol », « nage »),",
+    "la nuit (`nuit` : « dort » : immobile, « cache » : invisible), ses images (`images` : repos,",
+    "marche, fuite, vol… : des noms de assets/faune.json ; `variantes` : des jeux d'images, tirés).",
+    "PAR_REGION : au plus tant de bêtes par région ; RAYON : elles vont et viennent à tant de cases au",
+    "plus de leur place ; PRES, LOIN (px) : leurs images sont faites à moins de PRES px de la vue,",
+    "retirées au-delà de LOIN."
+  ],
+  "FAUNE": {
+    "FERME": 8, "PAR_REGION": 22, "RAYON": 3, "PRES": 160, "LOIN": 320,
+    "ESPECES": {
+      "marmotte": { "nom": "Une marmotte", "lieu": "terre", "biomes": ["montagne"], "densite": 1.1, "groupe": [2, 3], "vitesse": 22, "fuite": 72, "fuit": "terrier", "nuit": "cache",
+        "images": { "repos": ["assise_0", "assise_1"], "marche": ["marche_0", "marche_1"], "fuite": ["marche_0", "marche_1"] } },
+      "bouquetin": { "nom": "Un bouquetin", "lieu": "terre", "biomes": ["montagne"], "relief": 0.7, "densite": 0.5, "groupe": [1, 3], "vitesse": 16, "fuite": 64, "fuit": "court", "nuit": "dort",
+        "images": { "repos": ["debout_0", "debout_1"], "marche": ["marche_0", "marche_1", "marche_2", "marche_3"], "fuite": ["marche_0", "marche_1", "marche_2", "marche_3"] } },
+      "aigle": { "nom": "Un aigle royal", "lieu": "air", "biomes": ["montagne", "sommet"], "relief": 0.75, "densite": 0.25, "groupe": [1, 1], "vitesse": 26, "fuite": 0, "fuit": "envol", "nuit": "cache",
+        "images": { "repos": ["vol_0"], "vol": ["vol_0", "vol_1"] } },
+      "mouette": { "nom": "Une mouette", "lieu": "terre", "biomes": ["plage"], "eau": [1, 4], "densite": 9, "groupe": [2, 4], "vitesse": 14, "fuite": 60, "fuit": "envol", "nuit": "dort",
+        "images": { "repos": ["debout_0", "debout_1"], "marche": ["debout_0", "debout_1"], "vol": ["vol_0", "vol_1"] } },
+      "crabe": { "nom": "Un crabe", "lieu": "terre", "biomes": ["plage"], "eau": [1, 3], "densite": 10, "groupe": [1, 2], "vitesse": 12, "fuite": 40, "fuit": "terrier", "nuit": "cache",
+        "images": { "repos": ["marche_0"], "marche": ["marche_0", "marche_1"], "fuite": ["marche_0", "marche_1"] } },
+      "dauphin": { "nom": "Un dauphin", "lieu": "eau", "biomes": ["mer"], "rive": [6, 0], "densite": 0.35, "groupe": [1, 3], "vitesse": 20, "fuite": 0, "fuit": "nage", "nuit": "cache",
+        "images": { "saut": ["saut_0", "saut_1", "saut_2", "saut_3", "gerbe"] } },
+      "canard": { "nom": "Un canard colvert", "lieu": "eau", "biomes": ["lac", "marais"], "sols": ["eau", "eau_basse"], "rive": [1, 5], "densite": 1.6, "groupe": [2, 4], "vitesse": 10, "fuite": 56, "fuit": "nage", "nuit": "dort",
+        "images": { "repos": ["m_nage_0", "m_nage_1"], "marche": ["m_nage_0", "m_nage_1"], "plonge": ["m_plonge_0", "m_plonge_1"] },
+        "variantes": [{}, { "repos": ["f_nage_0", "f_nage_1"], "marche": ["f_nage_0", "f_nage_1"], "plonge": ["f_plonge_0", "f_plonge_1"] }] },
+      "cygne": { "nom": "Un cygne", "lieu": "eau", "biomes": ["lac"], "rive": [1, 6], "densite": 5, "groupe": [1, 2], "vitesse": 8, "fuite": 48, "fuit": "nage", "nuit": "dort",
+        "images": { "repos": ["nage_0", "nage_1"], "marche": ["nage_0", "nage_1"], "plonge": ["plonge_0", "plonge_1"] } },
+      "chevreuil": { "nom": "Un chevreuil", "lieu": "terre", "biomes": ["foret"], "densite": 0.55, "groupe": [1, 3], "vitesse": 18, "fuite": 88, "fuit": "court", "nuit": "dort",
+        "images": { "repos": ["debout_0", "debout_1"], "marche": ["marche_0", "marche_1", "marche_2", "marche_3"], "fuite": ["marche_0", "marche_1", "marche_2", "marche_3"] } },
+      "renard": { "nom": "Un renard roux", "lieu": "terre", "biomes": ["foret", "lande"], "densite": 0.22, "groupe": [1, 1], "vitesse": 20, "fuite": 72, "fuit": "court", "nuit": "dort",
+        "images": { "repos": ["assis_0", "debout_0"], "marche": ["marche_0", "marche_1", "marche_2", "marche_3"], "fuite": ["marche_0", "marche_1", "marche_2", "marche_3"] } },
+      "lapin": { "nom": "Un lapin de garenne", "lieu": "terre", "biomes": ["foret", "prairie"], "densite": 0.6, "groupe": [1, 3], "vitesse": 16, "fuite": 64, "fuit": "terrier", "nuit": "cache",
+        "images": { "repos": ["assis_0", "assis_1"], "marche": ["saut_0", "saut_1"], "fuite": ["saut_0", "saut_1"] } },
+      "ecureuil": { "nom": "Un écureuil roux", "lieu": "terre", "biomes": ["foret"], "densite": 0.9, "groupe": [1, 1], "vitesse": 22, "fuite": 56, "fuit": "terrier", "nuit": "cache",
+        "images": { "repos": ["assis_0", "assis_1"], "marche": ["course_0", "course_1"], "fuite": ["course_0", "course_1"] } },
+      "lievre": { "nom": "Un lièvre", "lieu": "terre", "biomes": ["lande"], "densite": 0.7, "groupe": [1, 2], "vitesse": 18, "fuite": 80, "fuit": "court", "nuit": "dort",
+        "images": { "repos": ["assis_0", "assis_1"], "marche": ["course_0", "course_1"], "fuite": ["course_0", "course_1"] } },
+      "perdrix": { "nom": "Une perdrix grise", "lieu": "terre", "biomes": ["lande"], "densite": 0.6, "groupe": [2, 4], "vitesse": 10, "fuite": 56, "fuit": "envol", "nuit": "dort",
+        "images": { "repos": ["debout_0", "debout_1"], "marche": ["marche_0", "marche_1"], "vol": ["vol_0", "vol_1"] } }
+    }
   }
 }

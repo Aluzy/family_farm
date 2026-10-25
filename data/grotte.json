@@ -15,7 +15,15 @@
     "  partout, sinon max(0, (n − DEPUIS) × PENTE) : le fer partout, les autres de plus en plus",
     "  bas. La sorte d'un minerai est tirée au prorata des poids.",
     "COUPS : les coups de pioche pour prendre un minerai (moins avec les Lames affûtées, arbre",
-    "  des technologies) ; COUP : la durée d'un coup, en secondes."
+    "  des technologies) ; COUP : la durée d'un coup, en secondes.",
+    "",
+    "MONDE : les grottes de la montagne du grand monde (fiche 6b : les entrées du plan, lieux.grottes ;",
+    "  js/engine/grotte.js, reglagesGrotte). Les mêmes niveaux tirés par la même scène, mais NIVEAUX",
+    "  niveaux, plus de minerai (MINERAI, MINERAI_NIVEAU), leurs propres POIDS (l'or et le platine plus",
+    "  tôt ; des pierres : quartz et améthyste, l'objet lui-même dans l'inventaire), et un filon par",
+    "  entrée : l'une des sortes de FILONS, tirée de la graine du monde et de l'entrée, dont le poids",
+    "  est multiplié d'autant. NOM : le nom de la grotte dans les messages. La mine de la ferme garde",
+    "  ses réglages (ceux du dessus)."
   ],
   "GROTTE": {
     "LARGEUR": 46,
@@ -43,6 +51,43 @@
       }
     },
     "COUPS": 3,
-    "COUP": 0.5
+    "COUP": 0.5,
+    "MONDE": {
+      "NOM": "La grotte de la montagne",
+      "NIVEAUX": 5,
+      "MINERAI": 0.1,
+      "MINERAI_NIVEAU": 0.1,
+      "POIDS": {
+        "fer": {
+          "FIXE": 1
+        },
+        "cuivre": {
+          "DEPUIS": 0,
+          "PENTE": 0.4
+        },
+        "or": {
+          "DEPUIS": 0.5,
+          "PENTE": 0.25
+        },
+        "platine": {
+          "DEPUIS": 1.5,
+          "PENTE": 0.14
+        },
+        "quartz": {
+          "FIXE": 0.3
+        },
+        "amethyste": {
+          "DEPUIS": 1,
+          "PENTE": 0.1
+        }
+      },
+      "FILONS": {
+        "cuivre": 2,
+        "or": 2,
+        "platine": 2,
+        "quartz": 2.5,
+        "amethyste": 2.5
+      }
+    }
   }
 }
