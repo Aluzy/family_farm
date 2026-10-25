@@ -27,6 +27,10 @@ export function objectiveValueText(o) {
     case 'maison': case 'panneau': case 'pompe': case 'reservoir': case 'houe': case 'silo':
       return o.ok ? '✅' : '';
     case 'niveau': return `niv. ${n(o.valeur)} / ${formatNumber(o.cible)}`;
+    // fiche 9b : le grand monde
+    case 'caleche': return `${n(o.valeur)} / ${formatNumber(o.cible)} 💰`;
+    case 'monde': return `${n(o.valeur)} / ${formatNumber(o.cible)} %`;
+    case 'grotteMonde': return o.ok ? '✅' : '';
     default: return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
   }
 }

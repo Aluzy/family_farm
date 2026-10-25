@@ -68,7 +68,8 @@ function gardee(nom, avant, m) {
   assertEqual(m.famille.membres.map((x) => [x.id, x.prenom, x.genre, x.enfant]), avant.famille.membres.map((x) => [x.id, x.prenom, x.genre, x.enfant]), `${nom} : la famille`);
   assertEqual([m.famille.nom, m.famille.principal, m.famille.reserve], [avant.famille.nom, avant.famille.principal, avant.famille.reserve], `${nom} : la famille`);
   assertEqual(m.didacticiel, avant.didacticiel, `${nom} : le didacticiel`);
-  assertEqual(m.campagne, avant.campagne, `${nom} : la campagne`);
+  // (fiche 9b, format 59 : les compteurs du grand monde s'y ajoutent, à zéro)
+  assertEqual(m.campagne, { ...avant.campagne, compteurs: { ...avant.campagne.compteurs, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 } }, `${nom} : la campagne`);
   assertEqual(m.progression, avant.progression, `${nom} : le niveau`);
   // les arbres, les rochers et les touffes touchés de la ferme : les mêmes, aux identifiants du monde
   const decale = (o, px = 1) => Object.keys(o || {}).map((id) => { if (avant.version >= 52) return id; const [c, r] = id.split(',').map(Number); return `${c + ox * px},${r + oy * px}`; }).sort();

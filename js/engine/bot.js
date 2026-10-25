@@ -5,10 +5,11 @@ import {
   repairDevice, starterOf, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from './devices.js';
 import { awakeRequired } from './clock.js';
+import { marcheOuvert } from './devices.js';
 import { tick } from './energy.js';
 import { addItem, countItem, expiringSoon, inventoryCounts, lotRank, lotsOf } from './inventory.js';
 import { fridgeLevel, fridgeRate, fridgeUpgradeCost, moveAllToFridge, moveFromFridge, stockCount, upgradeFridge } from './fridge.js';
-import { buyItem, buyPrice, isBuyable, sellItem } from './market.js';
+import { buyItem, buyPrice, isBuyable } from './market.js';
 import { eatSnack } from './family.js';
 import { boitePosee, depenserMembre, deposerBoite, jaugeMembre, mangeurs, repasStep, valeurAliment } from './repas.js';
 import { actionCost, energyLevel, energyMax } from './stamina.js';
@@ -39,6 +40,14 @@ import { casesDuTerrain, farmSeed, farmTerrain } from './terrain.js';
 import { createNewGame, houseRepaired, starterBlock } from './depart.js';
 import { testBatir, testLabourerSerre } from './testmode.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose, remplirCruche } from './cruche.js';
+import { vendreCaleche, poserTournee, tourneeDuPlan } from './caleche.js';
+import { genererMonde } from './monde.js';
+import { elementsSol, solDirect } from './monde-sol.js';
+import { hameauxVus, voirHameau } from './monde-hameaux.js';
+import { peuplerHameau } from './habitants.js';
+import { voirAutour } from './monde-vu.js';
+import { noterEncyclopedie } from './encyclopedie.js';
+import { castLine } from './outils.js';
 
 /* ==========================================================================
    Lot 10 : simulation d'un joueur automatique (conception, sections 8.10 et
@@ -416,6 +425,14 @@ function botGather(state, id) {
 function botObjectives(state) {
   if (!state.campagne || state.campagne.fini) return;
   for (const o of chapterProgress(state).objectifs) {
+    // fiche 9b : vendre à la calèche : le bois qu'il a coupé dans le monde (comme le minerai de la
+    // grotte, il l'a), dès qu'elle commerce avec lui
+    if (o.type === 'caleche' && !o.ok && marcheOuvert(state)) {
+      const prix = Math.max(1, DATA.OBJETS.bois.prix);
+      addItem(state, 'bois', Math.ceil((o.cible - o.valeur) / prix));
+      sellItem(state, 'bois', Math.ceil((o.cible - o.valeur) / prix));
+      continue;
+    }
     if (o.type !== 'objet' || o.ok) continue;
     const manque = o.cible - o.valeur;
     const r = DATA.RECETTES[o.item];
@@ -604,6 +621,10 @@ export function botBuy(state, eveilS) {
 
 /* ---------- ventes et rangement du soir ---------- */
 
+// Fiche 9b : il vend à la calèche (elle passe à la ferme chaque jour : il la retrouve le matin, sans
+// carte) ; ses ventes comptent pour la campagne (« Vendre pour 100 pièces à la calèche »).
+const sellItem = (state, item, qty) => vendreCaleche(state, item, qty, null, { sansPresence: true });
+
 // Vend ce qui périrait demain (hors réserve de semences et ce que la famille mangera ce soir), la laine,
 // le blé en trop et la paille en trop. Avec un réfrigérateur en marche, on range au lieu de vendre.
 export function botSell(state) {
@@ -660,6 +681,73 @@ function botStore(state) {
   }
 }
 
+/* ---------- fiche 9b : sortir dans le grand monde ---------- */
+
+// Les objectifs de la campagne qui se font dans le monde, et que le joueur simulé sait faire.
+const OBJECTIFS_MONDE = new Set(['hameaux', 'monde', 'grotteMonde', 'pecheMer']);
+
+// Ce qu'il sait du monde de sa graine : la tournée de la calèche (le fil des chemins, ses arrêts dans
+// l'ordre), les plans des hameaux, les entrées de grotte, les coins de pêche. Tiré une fois par graine
+// (les éléments du plan : quelques centaines de ms), seulement le jour où un objectif le demande.
+const mondes = new Map();
+function mondeDuBot(state) {
+  const T = farmTerrain(state), g = farmSeed(state);
+  if (!T.MONDE || g === null) return null;
+  if (!mondes.has(g)) {
+    const sol = solDirect(T), el = elementsSol(sol.ctx), cadre = sol.ctx.cadre;
+    const tour = poserTournee(g, tourneeDuPlan({ W: cadre.LARGEUR, chemins: el.chemins, hameaux: el.lieux.hameaux, sortie: cadre.SORTIE, ferme: cadre.FERME }));
+    const plans = new Map(sol.ctx.hameaux.plans.map((p) => [p.id, p]));
+    mondes.set(g, { W: cadre.LARGEUR, tour, plans, lieux: el.lieux, sortie: cadre.SORTIE });
+    while (mondes.size > 3) mondes.delete(mondes.keys().next().value);
+  }
+  return mondes.get(g);
+}
+
+// La case du point k du tour.
+const caseDuTour = (m, k) => Math.floor(m.tour.y[k]) * m.W + Math.floor(m.tour.x[k]);
+const distCases = (m, a, b) => Math.hypot((a % m.W) - (b % m.W), Math.floor(a / m.W) - Math.floor(b / m.W));
+
+// Une excursion par jour, le soir, quand le chapitre en cours demande d'aller dans le monde : il suit
+// le chemin de la calèche jusqu'au prochain hameau qu'il ne connaît pas (ce qu'il voit en route devient
+// vu, le hameau découvert et peuplé) ; une fois tous vus, il fait le tour entier ; il va à l'entrée de
+// grotte la plus proche et y entre ; il pêche dans la mer, à son coin le plus proche. Ce sont les
+// actions du moteur (voirAutour, voirHameau, peuplerHameau, castLine), sans carte : le trajet n'est pas
+// marché pas à pas, et ne coûte que l'énergie de la pêche.
+export function botMonde(state) {
+  const c = state.campagne;
+  if (!c || c.fini) return false;
+  const restants = chapterProgress(state).objectifs.filter((o) => !o.ok && OBJECTIFS_MONDE.has(o.type)).map((o) => o.type);
+  if (!restants.length) return false;
+  const m = mondeDuBot(state);
+  if (!m || !m.tour) return false;
+  const voirJusqua = (k1) => {
+    for (let k = 0; k <= k1; k += 4) voirAutour(state, caseDuTour(m, k));
+  };
+  if (restants.includes('hameaux') || restants.includes('monde')) {
+    const vus = hameauxVus(state);
+    const suivant = m.tour.arrets.find((a) => a.sorte === 'hameau' && !vus[a.id] && m.plans.has(a.id));
+    if (suivant) {
+      voirJusqua(suivant.k);
+      const plan = m.plans.get(suivant.id);
+      voirHameau(state, plan);
+      peuplerHameau(state, plan);
+    } else voirJusqua(m.tour.x.length - 1);
+  }
+  if (restants.includes('grotteMonde')) {
+    const g = [...(m.lieux.grottes || [])].sort((a, b) => distCases(m, a.case, m.sortie) - distCases(m, b.case, m.sortie))[0];
+    if (g) { voirAutour(state, g.case, { biome: 'montagne' }); noterEncyclopedie(state, 'carte:grotte_monde'); }
+  }
+  if (restants.includes('pecheMer')) {
+    const coin = [...(m.lieux.peche || [])].filter((p) => p.eau === 'mer').sort((a, b) => distCases(m, a.case, m.sortie) - distCases(m, b.case, m.sortie))[0];
+    if (coin) {
+      voirAutour(state, coin.case, { biome: 'plage' });
+      if (!hasTool(state, 'canne')) botOutil(state, 'canne');
+      for (let k = 0; k < DATA.SIMULATION.LANCERS_MER && (c.compteurs.pecheMer || 0) < 1; k++) if (!castLine(state, 'mer', coin.id).ok) break;
+    }
+  }
+  return true;
+}
+
 /* ---------- une journée, une partie ---------- */
 
 // Série d'actions du joueur. `soir` : dernière série avant de dormir.
@@ -686,6 +774,7 @@ function botActions(state, strat, options, soir) {
   botMill(state);
   botCook(state);
   if (!soir) return;
+  botMonde(state); // fiche 9b : une sortie dans le grand monde, si le chapitre la demande
   botStore(state); // version 1.10 : ranger d'abord, vendre ce qui n'a pas tenu au frais
   botSell(state);
   botBuy(state, strat.eveilS);

@@ -61,6 +61,7 @@ import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose, remplirCruche } from '../engine/cruche.js';
 import { surbrillanceDidacticiel } from './didacticiel.js';
+import { etapeDidacticiel, horsDeLaFerme } from '../engine/didacticiel.js';
 import { plantationModele } from './plantation.js';
 import { runAction } from './events.js';
 import { calecheDepuisCarte, calecheToucheeDepuisCarte, helerCaleche } from './caleche.js';
@@ -722,6 +723,8 @@ function stageIci(tile) {
     }
   }
   if (change) { persistState(); carteMondeVu(); }
+  // (le didacticiel, fiche 9b : sorti de la ferme, son étape passe)
+  if (etapeDidacticiel(state) === 'sortie' && horsDeLaFerme(state)) refresh();
 }
 
 // Le biome de la case (son nom), d'après l'aperçu des biomes du Web Worker (un par bloc de 8 × 8 cases :

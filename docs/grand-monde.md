@@ -911,8 +911,8 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        monde ne montre pas encore les bêtes vues ni les arbres abattus ; un lieu choisi qui n'est plus vu
        (le mode test a tout caché) rend la boussole à la ferme ; la ferme de la carte du monde n'a pas ses
        bâtiments dessinés (ses blocs, d'une seule couleur).
-9. **La finition** (2 PR) : les anciennes parties, les performances sur mobile (9a, fait), l'aide,
-   l'encyclopédie, le didacticiel (9b, à faire).
+9. ✅ **La finition** (2 PR, fait) : les anciennes parties, les performances sur mobile (9a), l'aide,
+   l'encyclopédie, le didacticiel et la campagne (9b).
    - **Fait (9a)** : les anciennes parties et les performances.
      - **Les sauvegardes témoins** (`tests/engine/temoins.json`) : une partie par grande époque du
        format, écrite par le moteur de la version d'alors (le code de chaque version extrait du
@@ -1022,3 +1022,92 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        pouce, et le choix de « Auto » sur une tablette avec un stylet ou un clavier (elle peut prendre la
        normale) ; la mémoire de la carte graphique d'un vrai téléphone (les régions dessinées, 4 Mo
        chacune, autour de la vue) ; le grand saut qui plantait le rendu n'a pas été revu ici.
+   - **Fait (9b)** : l'aide, l'encyclopédie, le didacticiel et la campagne.
+     - **Le didacticiel** (`js/engine/didacticiel.js`, `js/ui/didacticiel.js`) : après l'arrosage, six étapes
+       du grand monde (`ETAPES_MONDE`), avant « fin » : `carte` (ouvrir la carte du monde : l'anneau sur
+       l'entrée 🧭 du menu ; l'étape passe quand elle s'ouvre), `sortie` (suivre le chemin jusqu'à la sortie
+       de la ferme : ses trois cases allumées sur la carte ; validée par la case du personnage,
+       `state.monde.ici`, hors de la ferme, `horsDeLaFerme`), `recolte_monde` (une prise dans le monde :
+       l'anneau sur la hache ; validée par `state.monde.pris`), `caleche` (l'attendre à 10 h devant la
+       ferme ou la héler : un grand cercle autour d'elle, `{ caleche: true }` dans la surbrillance de la
+       scène, le bouton Héler, où elle est et l'heure dans la bulle ; avant le niveau du Marché, la
+       toucher arrêtée à côté de soi suffit, `rencontreCaleche` : « Le cocher te salue » ; ensuite, il faut
+       lui vendre quelque chose), `hameau_choisir` (le hameau le plus proche de la sortie est montré sur
+       la carte du monde, `montrerLieu`, 6 cases autour de lui ; la carte s'ouvre sur lui et le
+       personnage ; l'anneau sur son repère, puis sur « Y mener la boussole » ; validée par
+       `state.monde.but`), `hameau_aller` (l'anneau sur la boussole ; validée par le hameau découvert).
+       Chacune a son compteur (🛤️, 🪓, 🐴, 🏘️ ; sous la boussole quand elle est là) et son bouton
+       « Passer cette étape » (`passerEtapeDidacticiel`) : aucune ne bloque, la bulle attend sans
+       empêcher de jouer. La forme ne change pas (les étapes sont avant « fin ») : une partie sur
+       l'ancienne bulle de fin reprend à `carte`, une partie plus tôt ou finie ne bouge pas (testé).
+     - **La campagne** (`data/campaign.json`, `js/engine/campaign.js`) : relue, rien n'y demande la ville,
+       le Marché, le train. Sept objectifs nouveaux, comptés dès le début de la partie : `caleche`
+       (pièces gagnées à la calèche), `hameaux` (hameaux découverts), `monde` (% du monde vu),
+       `grotteMonde` (une grotte de la montagne, l'événement `carte:grotte_monde` de l'encyclopédie),
+       `pecheMer` (poissons de mer, `castLine`), `achatsHameaux` (produits du coffre de la calèche),
+       `faune` (espèces vues). Avant / après :
+       - ch. 1 L'héritage : inchangé ;
+       - ch. 2 Le grenier : + vendre pour 50 pièces à la calèche ;
+       - ch. 3 Le poulailler : + découvrir un hameau ;
+       - ch. 4 Le four : + entrer dans une grotte de la montagne, voir 10 % du monde (une partie neuve
+         en voit 7 %) ;
+       - ch. 5 Le troupeau : + découvrir 3 hameaux, pêcher un poisson dans la mer ;
+       - ch. 6 Toute l'année : + acheter 5 produits des hameaux à la calèche, voir 6 bêtes sauvages ;
+       - ch. 7 Famille autonome : + découvrir 5 hameaux, voir 15 % du monde.
+       Les intros des chapitres 2 à 7 en parlent. Sauvegardes : format 59 ; la migration 58 → 59 ajoute
+       les trois compteurs (`calecheVentes`, `achatsHameaux`, `pecheMer`) à zéro.
+     - **Atteignables** : `tests/engine/finition.test.mjs` les joue tous avec les actions du moteur (une
+       vente, le tour par les chemins, les plans des hameaux, une prise de la canne en mer, les arrêts de
+       la calèche puis un achat au coffre, les bêtes notées) ; le tour du monde par les chemins voit 16 à
+       20 % du monde sur six graines. Le joueur automatique (`js/engine/bot.js`) vend à la calèche
+       (`vendreCaleche`, son bois au chapitre 2) et fait une sortie par soir quand le chapitre le demande
+       (`botMonde` : le chemin de la calèche jusqu'au prochain hameau, l'entrée de grotte la plus proche,
+       la canne au coin de mer le plus proche ; `SIMULATION.LANCERS_MER`). Sur 60 nuits (graine 1) :
+       chapitre 2 à la nuit 5, chapitre 3 à la nuit 26 (25 juste avant la fiche ; graines 2, 3, 5, 7 :
+       26, 24, 26, 25 au lieu de 26, 25, 25, 25 : à une nuit près), 1 246 pièces à la nuit 60 (1 169
+       avant) ; le test du chapitre du troupeau le termine toujours.
+     - **L'aide** (`js/ui/aide.js`) : une fiche « Le grand monde » (🧭, depuis À propos) : le pays et ses
+       biomes, chemins et gués, le brouillard, la carte du monde, la boussole, récolter dans le monde, les
+       grottes, la pêche, les bêtes, les hameaux, les habitants, la calèche (sans « le Marché est
+       devenu »), l'Atelier (ce qui ne s'achète plus), le cheval, la qualité de l'affichage ; la fiche des
+       outils n'en garde qu'une ligne ; la hache n'y « repousse » plus sur la ferme.
+     - **L'encyclopédie** : relue en entier. Revues : la calèche, le cheval (il porte partout et rentre à
+       l'Écurie ; le poteau ne sert pas encore), la hache et la pioche (la repousse dans le monde), la
+       lanterne et le fromage d'alpage (plus « bientôt disponible » : le champignon lumineux de la mine,
+       les herbes de montagne du monde), la crème de marrons, la tarte aux myrtilles et le pain d'épices
+       (le miel et les herbes à la place du sucre et des épices ; les châtaignes et les myrtilles des
+       hameaux), les chapitres, la carte, la terre sauvage, l'Atelier (tout ce qu'il fabrique), les
+       graines, le poisson grillé, l'omelette aux champignons, les notifications. Nouvelles : « Le grand
+       monde », « Chemins et gués », « Les métiers des hameaux » (184 pages).
+     - **Les restes trouvés et corrigés** : « la houe / la canne… s'achète au Marché » (deux messages du
+       moteur), « Le Marché est devenu une calèche » (l'aide, l'encyclopédie), une phrase d'ambiance « je
+       ne retournerai vivre en ville », la page d'accueil (`index.html` : le champ, la viande, « Vends
+       tes surplus au Marché » ; deux cartes nouvelles : le grand monde, la calèche).
+     - **Le test anti-restes** (`tests/engine/finition.test.mjs`) : les valeurs des données (hors
+       commentaires), l'encyclopédie, les chaînes de `js/` (hors commentaires et identifiants) et le texte
+       des pages ne contiennent ni « Marché », « ville », « train », « gare », « navette », « bus »,
+       « école », « livreur », « entreprise », « infra-monde », « tronc creux », « boutique »,
+       « immeuble », « citadin » ; exceptions écrites : « en train de », « se gare », le nom de l'objet
+       retiré `bois_infra`. Et aucune page de l'encyclopédie ne se découvre seulement par un objet retiré
+       ni n'en parle (sauf la page des viandes, un historique voulu).
+     - **De bout en bout** (Chromium, `npm run build`, `_site` servi) : une partie neuve, de la première
+       bulle à la fin du didacticiel (les étapes de la ferme faites par le moteur, celles du monde par
+       l'interface : le menu, la marche jusqu'à la sortie, la hache sur un buisson du monde, la calèche à
+       10 h touchée, le hameau choisi sur la carte, la marche par les chemins jusqu'à lui), puis trois
+       nuits : aucune erreur de console, sur ordinateur (1280 × 800) et sur le profil mobile de la 9a
+       (390 × 844, densité 3). `node tests/smoke.mjs` : sans erreur. `npm test` : 867 tests, 52 s.
+
+## Le projet est terminé
+
+Les neuf étapes sont faites. Ce qui reste à vérifier sur un vrai appareil (tout a été mesuré sous
+SwiftShader, sans carte graphique) :
+
+- le coût du shader de la mer, du brouillard et du voile de la nuit sur une vraie carte graphique de
+  téléphone, la chaleur et la batterie ; la mémoire de la carte graphique (les régions dessinées) ;
+- le choix « Auto » de la qualité sur une tablette avec un stylet ou un clavier ;
+- le toucher : la place des boutons au pouce, la bulle du didacticiel et les compteurs sous la
+  boussole, le bouton Héler, le glisser et le pincer de la carte du monde ;
+- l'image tournée (l'arbre qui bascule, l'aigle) et le grand saut d'un coup de la vue, corrigés ou non
+  reproduits sous SwiftShader ;
+- une partie longue jouée à la main, de la terre sauvage aux chapitres du monde (les objectifs sont
+  testés par le moteur et le joueur automatique, pas encore par un joueur).

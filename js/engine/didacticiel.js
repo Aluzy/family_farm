@@ -6,6 +6,11 @@ import { blocAt, blocsPoses, caseBatissable, couchages, piecesCloses } from './b
 import { farmTerrain } from './terrain.js';
 import { hasHoe, soilCount } from './crops.js';
 import { aCruche, puitsPose } from './cruche.js';
+import { marcheOuvert } from './devices.js';
+import { absoluteHours } from './clock.js';
+import { CALECHE, tourneeDe, etatCaleche } from './caleche.js';
+import { hameauxVus } from './monde-hameaux.js';
+import { butBoussole } from './monde-vu.js';
 
 /* ---------- le didacticiel d'une nouvelle partie ----------
    Une nouvelle partie (sur la ferme générée) commence par un didacticiel : une suite d'étapes
@@ -16,18 +21,38 @@ import { aCruche, puitsPose } from './cruche.js';
    qu'il manque. Pendant le didacticiel, l'Atelier ne propose que les recettes déjà débloquées
    (recettesDidacticiel) et le menu Construire que les blocs utiles (blocsDidacticiel).
    state.didacticiel = { etape: indice dans ETAPES, fini, graines (offertes) } ; une ancienne
-   partie n'en a pas : rien n'est caché. */
+   partie n'en a pas : rien n'est caché.
+
+   Fiche 9b : après la ferme, le grand monde (ETAPES_MONDE) : ouvrir la carte du monde (l'interface la
+   valide quand elle s'ouvre), sortir de la ferme par son chemin (la case du personnage, state.monde.ici,
+   hors de la ferme), prendre quelque chose dans le monde (state.monde.pris), rencontrer la calèche à
+   10 h devant la ferme ou la héler (avant le niveau du Marché, où elle ne commerce pas encore : la
+   toucher quand elle est arrêtée à côté, rencontreCaleche ; ensuite, lui vendre quelque chose), choisir
+   un hameau sur la carte du monde pour la boussole (state.monde.but), puis y aller (state.monde.hameaux).
+   Aucune ne bloque : chacune se passe (passerEtapeDidacticiel), et rien n'empêche de jouer pendant
+   qu'elle attend (la calèche ne passe qu'une fois par jour). Ce qu'elles retiennent : d.ventes (les
+   pièces gagnées à la calèche en arrivant à son étape), d.cocher (la calèche rencontrée), d.hameaux (les
+   hameaux connus en arrivant à l'étape du hameau), d.but (le hameau choisi). La forme ne change pas :
+   ces étapes sont avant « fin », et une partie qui était sur l'ancienne bulle de fin (le même indice)
+   reprend à la première d'entre elles. */
 
 export const ETAPES = [
   'sante', 'endurance', 'bonheur', 'xp', 'autonomie', 'argent', 'deplacement',
   'pierres', 'bois', 'atelier', 'atelier_ouvrir', 'faux', 'fibres', 'outils',
   'abri_ressources', 'arbres', 'abri_fabriquer', 'abri_construire', 'paillasses',
-  'houe', 'graines', 'labour', 'semis', 'puits', 'arroser', 'fin',
+  'houe', 'graines', 'labour', 'semis', 'puits', 'arroser',
+  // fiche 9b : le grand monde
+  'carte', 'sortie', 'recolte_monde', 'caleche', 'hameau_choisir', 'hameau_aller',
+  'fin',
 ];
+
+// Les étapes du grand monde : elles se passent une à une (« Passer cette étape »).
+export const ETAPES_MONDE = ['carte', 'sortie', 'recolte_monde', 'caleche', 'hameau_choisir', 'hameau_aller'];
 
 // Les étapes qui se lisent : on passe à la suivante avec « Suivant » (suivantDidacticiel).
 // (atelier_ouvrir : l'interface la valide quand la fenêtre de l'Atelier s'ouvre)
-const A_LIRE = new Set(['sante', 'endurance', 'bonheur', 'xp', 'autonomie', 'argent', 'deplacement', 'atelier_ouvrir', 'arbres', 'graines', 'fin']);
+// (carte : l'interface la valide quand la carte du monde s'ouvre)
+const A_LIRE = new Set(['sante', 'endurance', 'bonheur', 'xp', 'autonomie', 'argent', 'deplacement', 'atelier_ouvrir', 'arbres', 'graines', 'carte', 'fin']);
 
 // Ce que chaque étape débloque, dès qu'on l'atteint : les recettes de l'Atelier, les blocs du
 // menu Construire. (Après le didacticiel : tout.)
@@ -201,17 +226,73 @@ export function objectifDidacticiel(state) {
       return { compteurs: compte(state, besoin), fait: puitsPose(state) && aCruche(state) };
     }
     case 'arroser': return { compteurs: [], fait: state.potager.parcelles.some((p) => p.culture && p.arrose) };
+    // fiche 9b : le grand monde (des compteurs à cocher : 0 / 1)
+    case 'sortie': { const ok = horsDeLaFerme(state); return { compteurs: [{ objet: 'sortie', n: ok ? 1 : 0, besoin: 1 }], fait: ok }; }
+    case 'recolte_monde': { const ok = Object.keys((state.monde && state.monde.pris) || {}).length > 0; return { compteurs: [{ objet: 'prise', n: ok ? 1 : 0, besoin: 1 }], fait: ok }; }
+    case 'caleche': {
+      const d = state.didacticiel, vendre = marcheOuvert(state);
+      const ok = vendre ? ventesCaleche(state) > (d.ventes || 0) : !!d.cocher;
+      return { compteurs: [{ objet: vendre ? 'vente' : 'cocher', n: ok ? 1 : 0, besoin: 1 }], fait: ok, vendre };
+    }
+    case 'hameau_choisir': { const b = butBoussole(state); const ok = !!(b && b.sorte === 'hameau'); return { compteurs: [], fait: ok }; }
+    case 'hameau_aller': {
+      const d = state.didacticiel, vus = hameauxVus(state);
+      const ok = (d.but && !!vus[d.but]) || Object.keys(vus).length > (d.hameaux || 0);
+      return { compteurs: [{ objet: 'hameau', n: ok ? 1 : 0, besoin: 1 }], fait: ok };
+    }
     default: return { compteurs: [], fait: false };
   }
 }
 
-// Ce qui arrive en atteignant une étape (les graines offertes).
+// Ce qui arrive en atteignant une étape : les graines offertes ; ce qu'il faut retenir pour les étapes
+// du monde (les ventes à la calèche jusque-là, les hameaux connus, le hameau choisi).
 function entrer(state) {
-  const d = state.didacticiel;
-  if (ETAPES[d.etape] === 'graines' && !d.graines) {
+  const d = state.didacticiel, e = ETAPES[d.etape];
+  if (e === 'graines' && !d.graines) {
     d.graines = true;
     for (const [item, n] of Object.entries(DATA.DIDACTICIEL.GRAINES)) addItem(state, item, n);
   }
+  if (e === 'caleche') d.ventes = ventesCaleche(state);
+  if (e === 'hameau_choisir') d.hameaux = Object.keys(hameauxVus(state)).length;
+  if (e === 'hameau_aller') { const b = butBoussole(state); d.but = b && b.sorte === 'hameau' ? b.id : null; }
+}
+
+/* -- fiche 9b : le grand monde -- */
+
+// Les pièces gagnées à la calèche depuis le début de la partie (campaign.js : calecheVentes).
+const ventesCaleche = (state) => (state.campagne && state.campagne.compteurs && state.campagne.compteurs.calecheVentes) || 0;
+
+// Le personnage est-il hors de la ferme (sa case : state.monde.ici, que la carte donne à chaque pas) ?
+export function horsDeLaFerme(state) {
+  const t = state.monde && state.monde.ici, T = farmTerrain(state), F = T.FERME;
+  if (!F || !Number.isInteger(t)) return false;
+  const c = t % T.LARGEUR, r = Math.floor(t / T.LARGEUR);
+  return c < F.X || r < F.Y || c >= F.X + F.LARGEUR || r >= F.Y + F.HAUTEUR;
+}
+
+// L'étape de la calèche, avant le niveau du Marché : le personnage (sur la case `ou`) touche la calèche
+// arrêtée à côté de lui (à un arrêt, ou hélée) : la rencontre est faite. → vrai si elle compte.
+export function rencontreCaleche(state, ou) {
+  if (etapeDidacticiel(state) !== 'caleche' || !Number.isInteger(ou)) return false;
+  const tour = tourneeDe(state);
+  if (!tour) return false;
+  const e = etatCaleche(tour, absoluteHours(state), (state.caleche && state.caleche.haltes) || []);
+  if (e.etat !== 'arret' && e.etat !== 'halte') return false;
+  const dist = Math.hypot((ou % tour.W) + 0.5 - e.x, Math.floor(ou / tour.W) + 0.5 - e.y);
+  if (dist > (e.etat === 'halte' ? CALECHE.HELER : CALECHE.PORTEE) + 1e-9) return false;
+  state.didacticiel.cocher = true;
+  return true;
+}
+
+// « Passer cette étape » : une étape du grand monde ne bloque jamais (la calèche est loin, la carte du
+// monde ne s'affiche pas…).
+export function passerEtapeDidacticiel(state) {
+  const e = etapeDidacticiel(state);
+  if (!e) return fail('Le didacticiel est terminé.');
+  if (!ETAPES_MONDE.includes(e)) return fail('Cette étape ne se passe pas : fais ce que demande la bulle.');
+  avancer(state);
+  majDidacticiel(state);
+  return { ok: true, etape: etapeDidacticiel(state) };
 }
 
 // Après chaque changement : tant que l'objectif de l'étape est atteint, l'étape suivante.

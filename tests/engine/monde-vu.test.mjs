@@ -112,7 +112,7 @@ test('migration v57 → v58 : les régions déjà vues deviennent vues en entier
   delete vieille.monde.vu; delete vieille.monde.but; delete vieille.monde.boussole;
   vieille.monde.vues = [...vieille.monde.vues, '7,3', '0,0'];
   const m = migrate({ v: 57, t: 0, s: vieille });
-  assertEqual([m.version, STATE_VERSION, m.monde.but, m.monde.boussole], [58, 58, null, true]);
+  assertEqual([m.version, m.monde.but, m.monde.boussole], [STATE_VERSION, null, true]);
   // chaque case des régions vues, vue ; la ferme aussi ; ailleurs, non
   for (const [rx, ry] of [[7, 3], [0, 0], [3, 3], [6, 4]]) for (const [dx, dy] of [[0, 0], [63, 63], [20, 41]]) assert(caseVue(m, caseEn(m, rx * 64 + dx, ry * 64 + dy)), `${rx},${ry} +${dx},${dy}`);
   assert(caseVue(m, caseEn(m, F.X + 3, F.Y + 3)), 'la ferme');

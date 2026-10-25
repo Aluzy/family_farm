@@ -8,6 +8,13 @@
 // haut à droite, sous le hublot, les compteurs (« 🪨 2 / 3 ») de ce qu'il reste à réunir. Les
 // étapes à lire ont un bouton « Suivant » ; les autres passent d'elles-mêmes quand leur objectif
 // est atteint (majDidacticiel, à chaque rendu). « Passer » arrête le didacticiel.
+//
+// Fiche 9b : les étapes du grand monde (ETAPES_MONDE) : la carte du monde (l'entrée 🧭 du menu ; l'étape
+// passe quand elle s'ouvre), la sortie de la ferme (ses cases allumées sur la carte), une prise dans le
+// monde (la hache dans la barre d'outils), la calèche (un cercle autour d'elle, le bouton Héler, et la
+// case où elle se gare devant la ferme ; il est dit où elle est et l'heure), le hameau voisin (montré sur
+// la carte du monde en arrivant à l'étape : son repère, puis « Y mener la boussole »), puis la boussole
+// jusqu'à lui. Chacune a son bouton « Passer cette étape » : aucune ne bloque.
 
 import { DATA } from '../engine/catalog.js';
 import { countItem } from '../engine/inventory.js';
@@ -16,8 +23,16 @@ import { cibleRecette } from './atelier.js';
 import { cibleBloc } from './chantier.js';
 import { eauCruche, aCruche } from '../engine/cruche.js';
 import {
-  casesAbriAPoser, etapeDidacticiel, ETAPES, majDidacticiel, objectifDidacticiel, passerDidacticiel, planAbri, suivantDidacticiel,
+  casesAbriAPoser, etapeDidacticiel, ETAPES, ETAPES_MONDE, majDidacticiel, objectifDidacticiel, passerDidacticiel, passerEtapeDidacticiel,
+  planAbri, suivantDidacticiel,
 } from '../engine/didacticiel.js';
+import { farmTerrain } from '../engine/terrain.js';
+import { absoluteHours } from '../engine/clock.js';
+import { CALECHE, calecheMaintenant, heureTexte, ouEstCaleche } from '../engine/caleche.js';
+import { unlockLevel } from '../engine/levels.js';
+import { marcheOuvert } from '../engine/devices.js';
+import { boussoleMontree, lieuxDeLaCarte, montrerLieu } from '../engine/monde-vu.js';
+import { solDuMonde } from './monde-sol.js';
 import { buildMode, hoeMode, scytheMode, state } from './store.js';
 import { menuOpen, stageWindow } from './stage-windows.js';
 import { toolbarOpen } from './outils.js';
@@ -73,6 +88,38 @@ function fabriquer(ids) {
 }
 // (pour une étape : sa cible et sa surbrillance, d'après la liste de recettes `ids()`)
 const fabrique = (ids) => ({ cible: () => fabriquer(ids()).cible || null, carte: () => fabriquer(ids()).carte || null });
+
+/* -- fiche 9b : le grand monde -- */
+
+// La carte du monde est-elle ouverte (js/ui/carte-monde.js : une fenêtre par-dessus) ?
+const carteOuverte = () => !!document.querySelector('#modal-root .carte-monde');
+// L'entrée 🧭 du menu (d'abord la flèche, s'il est fermé).
+const menuCarte = () => (menuOpen ? '.nav-btn[data-action="carte-monde-open"]' : '#side-tab');
+// Les trois cases de la sortie de la ferme (le chemin y a trois cases de large) : là où la calèche se gare.
+function casesSortie(sorte = 'porte') {
+  const T = farmTerrain(state), S = T.MONDE && T.MONDE.cadre && T.MONDE.cadre.SORTIE;
+  if (!Number.isInteger(S)) return [];
+  return [S - T.LARGEUR, S, S + T.LARGEUR].map((t) => ({ case: t, sorte }));
+}
+// L'heure du jeu, en mots (« 8 h 15 »).
+const heure = () => heureTexte(absoluteHours(state) % 24);
+// Le premier élément visible de `sel`, ou null (pour une cible qui peut manquer).
+const visibleSel = (sel) => (element(sel) ? sel : null);
+
+// Le hameau voisin, montré sur la carte du monde en arrivant à son étape (le cocher en a parlé) : le plus
+// proche de la sortie de la ferme parmi ceux du plan, sauf si un hameau y est déjà (vu en marchant).
+// Gardé dans state.didacticiel.montre. → vrai si la partie a changé.
+function montrerHameauVoisin() {
+  const d = state.didacticiel, T = farmTerrain(state), sol = T.MONDE ? solDuMonde(T) : null, lieux = sol && sol.lieux();
+  if (!lieux || d.montre) return false;
+  if (lieuxDeLaCarte(state, lieux, T).hameaux.length) { d.montre = true; return true; }
+  const S = T.MONDE.cadre.SORTIE, W = T.LARGEUR, dist = (t) => Math.hypot((t % W) - (S % W), Math.floor(t / W) - Math.floor(S / W));
+  const h = [...(lieux.hameaux || [])].sort((a, b) => dist(a.case) - dist(b.case))[0];
+  if (!h) return false;
+  montrerLieu(state, h.case, 6);
+  d.montre = h.id;
+  return true;
+}
 
 // Les étapes : leur texte (HTML sûr : rien de ce que tape le joueur), et ce qu'elles montrent
 // ({ cible: sélecteur, carte: surbrillance de la scène }).
@@ -137,7 +184,50 @@ const ETAPES_UI = {
     cible: () => (buildMode ? '.build-bar-close' : null),
     carte: () => (buildMode || eauCruche(state) > 0 ? null : { blocs: ['puits'] }),
   },
-  fin: { texte: () => 'Bravo, ta ferme est lancée ! Ta plante poussera une fois arrosée ; récolte-la quand elle sera mûre. La suite est à toi : élevage, cuisine, et bien plus encore.' },
+  // fiche 9b : le grand monde
+  carte: {
+    texte: () => (carteOuverte() ? 'Voici ce que tu as vu du <b>grand monde</b> : ta ferme, au milieu. Le reste est sous le brouillard, il se lèvera à mesure que tu marcheras.'
+      : `Ta plante est arrosée : elle poussera toute seule. Ta ferme n'est qu'un coin du <b>grand monde</b>, caché sous le brouillard. ${menuOpen ? 'Touche 🧭 <b>Carte du monde</b>.' : 'Ouvre la <b>carte du monde</b> : le menu (la flèche), puis 🧭 Carte du monde (ou la touche M).'}`),
+    cible: () => (carteOuverte() ? null : menuCarte()),
+    bouton: () => false,   // (elle passe quand la carte du monde s'ouvre)
+  },
+  sortie: {
+    texte: () => (carteOuverte() ? 'Ferme la carte, puis suis le <b>chemin de terre</b> de ta ferme vers l\'est (à droite) jusqu\'à sa <b>sortie</b>.'
+      : 'Le chemin de terre de ta ferme mène au monde : suis-le vers l\'est (à droite) jusqu\'à la <b>sortie de la ferme</b>, les cases blanches qui brillent. Dehors, le brouillard se lève autour de toi.'),
+    carte: () => ({ cases: casesSortie() }),
+  },
+  recolte_monde: {
+    texte: () => (tenu('hache') || tenu('pioche') ? 'Touche un <b>arbre</b> pour le couper ou un <b>rocher</b> pour le casser. Ce que tu prends repousse quelques jours plus tard.'
+      : stageWindow ? prendreOutil('<b>hache</b>')
+      : 'Dehors, tout se récolte avec les gestes de la ferme : coupe un <b>arbre</b> à la hache, casse un <b>rocher</b> à la pioche, ou ramasse à la main des <b>mûres</b>, des champignons, des galets… (touche-les).'),
+    cible: () => (tenu('hache') || tenu('pioche') ? null : outil('hache')),
+  },
+  caleche: {
+    texte: () => {
+      const vendre = marcheOuvert(state), ou = `${ouEstCaleche(state)} Il est ${heure()}.`;
+      const e = calecheMaintenant(state), garee = e && e.etat === 'arret' && e.arret.sorte === 'ferme';
+      return `La <b>calèche</b> fait le tour du monde et s'arrête chaque jour devant l'entrée de ta ferme vers ${heureTexte(CALECHE.FERME)}, une heure${garee ? '' : ' (les cases qui brillent)'}. ${ou} `
+        + (vendre ? 'Attends-la là, ou hèle-la quand elle passe près de toi (🔔 Héler), puis touche-la et <b>vends-lui</b> quelque chose : une récolte, du bois, des mûres…'
+          : `Va à sa rencontre, ou hèle-la quand elle passe près de toi (🔔 Héler), et <b>touche-la</b> : son cocher commercera avec toi dès le niveau ${unlockLevel('marche')}.`)
+        + ' En attendant, continue ta ferme : la bulle attend.';
+    },
+    cible: () => visibleSel('.caleche-heler:not([hidden])'),
+    // (garée devant la ferme, le cercle autour d'elle suffit : les cases seraient par-dessus)
+    carte: () => { const e = calecheMaintenant(state); return e && e.etat === 'arret' && e.arret.sorte === 'ferme' ? { caleche: true } : { caleche: true, cases: casesSortie() }; },
+  },
+  hameau_choisir: {
+    texte: () => (!carteOuverte() ? `Le cocher t'a parlé d'un <b>hameau</b> voisin : le voici sur ta carte du monde. ${menuOpen ? 'Touche 🧭 <b>Carte du monde</b>.' : 'Ouvre-la (le menu, puis 🧭 Carte du monde).'}`
+      : document.querySelector('[data-action="carte-monde-but"]') ? 'Touche « <b>Y mener la boussole</b> » : elle te montrera le chemin.'
+      : 'Touche le hameau 🏘️ sur la carte (fais-la glisser s\'il le faut) : son nom, sa distance, et la boussole.'),
+    cible: () => (!carteOuverte() ? menuCarte() : visibleSel('[data-action="carte-monde-but"]') || visibleSel('[data-action="carte-monde-lieu"][data-sorte="hameau"]')),
+  },
+  hameau_aller: {
+    texte: () => (carteOuverte() ? 'Ferme la carte : la <b>boussole</b>, sous l\'horloge, te mène au hameau.'
+      : boussoleMontree(state) ? 'Suis l\'aiguille de la <b>boussole</b>, sous l\'horloge : elle montre le hameau, et sa distance en cases est dessous. Les chemins y mènent aussi. Là-bas, entre dans les maisons, parle aux habitants (touche-les).'
+      : 'La boussole est retirée (Options) : suis les <b>chemins</b> jusqu\'au hameau, il est sur ta carte du monde.'),
+    cible: () => (carteOuverte() ? null : visibleSel('.boussole')),
+  },
+  fin: { texte: () => 'Bravo, te voilà dans le grand monde ! Chaque hameau a ses familles et son métier, la montagne ses grottes, la côte sa mer ; la calèche achète ce que tu produis. Ta plante pousse à la ferme : récolte-la quand elle sera mûre. La suite est à toi : élevage, cuisine, et les objectifs des chapitres.' },
 };
 
 // L'abri à fabriquer : la recette dont il manque encore des objets.
@@ -188,8 +278,13 @@ export function surbrillanceDidacticiel() {
 }
 
 // L'icône d'un compteur.
-const icone = (o) => (o === 'terre' ? '🟫' : DATA.OBJETS[o] ? DATA.OBJETS[o].icone : '');
-const libelle = (o) => (o === 'terre' ? 'terres labourées' : nomObjet(o));
+// (des compteurs qui ne sont pas des objets : les terres labourées ; fiche 9b, ce qui se coche)
+const AUTRES = {
+  terre: ['🟫', 'terres labourées'], sortie: ['🛤️', 'sortie de la ferme'], prise: ['🪓', 'prise dans le monde'],
+  cocher: ['🐴', 'calèche rencontrée'], vente: ['🐴', 'vente à la calèche'], hameau: ['🏘️', 'hameau découvert'],
+};
+const icone = (o) => (AUTRES[o] ? AUTRES[o][0] : DATA.OBJETS[o] ? DATA.OBJETS[o].icone : '');
+const libelle = (o) => (AUTRES[o] ? AUTRES[o][1] : nomObjet(o));
 
 // Une fenêtre est-elle ouverte (une fenêtre de la carte, une fenêtre par-dessus) ? La bulle se
 // réduit alors à une ligne en bas de l'écran, pour ne pas gêner ; un appui la déplie (deplie),
@@ -206,6 +301,9 @@ export function renderDidacticiel() {
   if (state && majDidacticiel(state)) persistState();
   // la fenêtre de l'Atelier s'ouvre : l'étape « touche l'Atelier » est faite
   if (state && etapeDidacticiel(state) === 'atelier_ouvrir' && stageWindow === 'atelier' && suivantDidacticiel(state, 'atelier_ouvrir').ok) persistState();
+  // fiche 9b : la carte du monde s'ouvre : l'étape « carte » est faite ; le hameau voisin se montre
+  if (state && etapeDidacticiel(state) === 'carte' && carteOuverte() && suivantDidacticiel(state, 'carte').ok) persistState();
+  if (state && etapeDidacticiel(state) === 'hameau_choisir' && montrerHameauVoisin()) persistState();
   // les graines vues dans l'inventaire, puis l'inventaire refermé : l'étape est faite
   if (state && etapeDidacticiel(state) === 'graines') {
     if (stageWindow === 'inventaire' && ongletGraines()) grainesVues = true;
@@ -227,8 +325,11 @@ export function renderDidacticiel() {
   const o = objectifDidacticiel(state);
   const n = ETAPES.indexOf(etape) + 1;
   const lire = !o && (!e.bouton || e.bouton());
+  const passer = ETAPES_MONDE.includes(etape);
+  // (fiche 9b : hors de la ferme, la boussole est sous l'horloge, à la place des compteurs : ils passent dessous)
+  const bo = element('.boussole'), sous = bo ? ` style="top:${Math.round(bo.getBoundingClientRect().bottom + 6)}px"` : '';
   const compteurs = o && o.compteurs.length
-    ? `<div class="didac-compteurs" aria-label="Ce qu'il te faut">${o.compteurs.map((c) => `<span class="didac-compteur${c.n >= c.besoin ? ' ok' : ''}" title="${libelle(c.objet)}"><span aria-hidden="true">${icone(c.objet)}</span> <span class="num">${Math.min(c.n, c.besoin)} / ${c.besoin}</span><span class="visually-hidden"> ${libelle(c.objet)}</span></span>`).join('')}</div>`
+    ? `<div class="didac-compteurs"${sous} aria-label="Ce qu'il te faut">${o.compteurs.map((c) => `<span class="didac-compteur${c.n >= c.besoin ? ' ok' : ''}" title="${libelle(c.objet)}"><span aria-hidden="true">${icone(c.objet)}</span> <span class="num">${Math.min(c.n, c.besoin)} / ${c.besoin}</span><span class="visually-hidden"> ${libelle(c.objet)}</span></span>`).join('')}</div>`
     : '';
   const fenetre = fenetreOuverte();
   if (!fenetre) deplie = false;
@@ -250,6 +351,7 @@ export function renderDidacticiel() {
       <p id="didac-texte">${e.texte()}</p>
       <div class="didac-pied">
         <button type="button" class="didac-passer" data-action="didacticiel-passer">Passer le didacticiel</button>
+        ${passer ? '<button type="button" class="didac-passer" data-action="didacticiel-passer-etape">Passer cette étape</button>' : ''}
         <span class="muted num">${n} / ${ETAPES.length}</span>
         ${lire ? `<button type="button" class="btn primary" data-action="didacticiel-suivant">${etape === 'fin' ? 'Terminer' : 'Suivant'}</button>` : ''}
         ${fenetre ? '<button type="button" class="didac-replier" data-action="didacticiel-deplier" aria-expanded="true" title="Réduire le didacticiel" aria-label="Réduire le didacticiel">▾</button>' : ''}
@@ -264,6 +366,10 @@ registerActions({
   },
   'didacticiel-suivant': () => {
     const r = suivantDidacticiel(state);
+    if (r.ok) { persistState(); refresh(); }
+  },
+  'didacticiel-passer-etape': () => {
+    const r = passerEtapeDidacticiel(state);
     if (r.ok) { persistState(); refresh(); }
   },
   'didacticiel-passer': () => {

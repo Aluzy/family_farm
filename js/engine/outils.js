@@ -14,6 +14,7 @@ import { genererMonde } from './monde.js';
 import { noter } from './journal.js';
 import { chevalMonte, vitesseCheval } from './cheval.js';
 import { MINERAIS_GROTTE, PIERRES_GROTTE } from './grotte.js';
+import { bumpCounter } from './campaign.js';
 
 /* ---------- les outils : houe, pioche, hache, faux, canne à pêche ---------- */
 
@@ -61,7 +62,7 @@ export function buyTool(state, id) {
   if (id === 'houe') return buyHoe(state);
   const un = def.ARTICLE === 'un';
   if (hasTool(state, id)) return fail(`Tu as déjà ${un ? 'un' : 'une'} ${def.NOM.toLowerCase()}.`);
-  if (!marcheOuvert(state)) return fail(`${un ? 'Le' : 'La'} ${def.NOM.toLowerCase()} s'achète au Marché. ${marcheFerme(state)}`);
+  if (!marcheOuvert(state)) return fail(`${un ? 'Le' : 'La'} ${def.NOM.toLowerCase()} se fabrique à l'Atelier. ${marcheFerme(state)}`);
   if (!canPay(state, def.PRIX)) return fail(NO_COINS);
   const avant = selectedTool(state);
   spend(state, def.PRIX, `Achat : ${def.NOM}`);
@@ -748,6 +749,7 @@ export function castLine(state, eau, coin = null) {
     const p = peche(state);
     p.prises[c || eau] = (p.prises[c || eau] || 0) + 1;
     addItem(state, poisson, 1);
+    if (eau === 'mer') bumpCounter(state, 'pecheMer', 1);   // (la campagne, fiche 9b : pêcher dans la mer)
     noter('ramasse', { item: poisson, n: 1 });
     gainActionXp(state, 'pecher');
   }

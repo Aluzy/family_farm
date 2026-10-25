@@ -9,6 +9,9 @@ import { plantableCrops } from './crops.js';
 import { checkMastery, grantTechPoints, isBuilt, techPoints } from './techtree.js';
 import { gainXp, levelReached, unlockLevel } from './levels.js';
 import { houseRepaired } from './depart.js';
+import { farmTerrain } from './terrain.js';
+import { hameauxVus } from './monde-hameaux.js';
+import { partVue } from './monde-vu.js';
 
 /* ---------- Lot 9 : autonomie et chapitres ---------- */
 
@@ -51,6 +54,10 @@ export function newCampaignCounters() {
     semis: 0, // semis faits au total (toutes cultures)
     arroseesMax: 0, // record de parcelles arrosées le même jour
     objets: {}, // version 1.22 : record de chaque objet suivi par un objectif « objet » { item: qté }
+    // fiche 9b : le grand monde (comptés dès le début de la partie, comme les objets)
+    calecheVentes: 0, // pièces gagnées en vendant à la calèche (caleche.js, vendreCaleche)
+    achatsHameaux: 0, // produits des hameaux achetés à la calèche, son coffre (acheterCaleche)
+    pecheMer: 0, // poissons pêchés dans la mer (outils.js, castLine)
   };
 }
 
@@ -192,6 +199,21 @@ function noteItemRecords(state) {
   }
 }
 
+// Fiche 9b : ce que l'encyclopédie a noté (les cartes visitées, les bêtes vues : encyclopedie.js).
+const evenements = (state) => (state.encyclopedie && state.encyclopedie.evenements && typeof state.encyclopedie.evenements === 'object' ? state.encyclopedie.evenements : {});
+const evenement = (state, e) => !!evenements(state)[e];
+
+// La part du grand monde vue, en % (arrondie vers le bas ; monde-vu.js). Lue à chaque pas d'horloge
+// quand le chapitre en cours la demande : gardée tant que le vu (sa chaîne) ne change pas.
+let vuMemo = { s: null, T: null, pct: 0 };
+function partDuMonde(state) {
+  const s = state.monde && typeof state.monde.vu === 'string' ? state.monde.vu : '';
+  const T = farmTerrain(state);
+  if (!T || !T.FERME) return 0;
+  if (vuMemo.s !== s || vuMemo.T !== T) vuMemo = { s, T, pct: Math.floor(partVue(state, T) * 100 + EPS) };
+  return vuMemo.pct;
+}
+
 // Valeur actuelle d'un objectif.
 export function objectiveValue(state, obj) {
   const k = state.campagne.compteurs;
@@ -223,6 +245,14 @@ export function objectiveValue(state, obj) {
     case 'arrosees': return k.arroseesMax || 0;
     // version 1.22 : le plus d'exemplaires d'un objet (`item`) eus en même temps
     case 'objet': return Math.max(countItem(state, obj.item), (k.objets && k.objets[obj.item]) || 0);
+    // fiche 9b : le grand monde
+    case 'caleche': return Math.floor(k.calecheVentes || 0);
+    case 'achatsHameaux': return Math.floor(k.achatsHameaux || 0);
+    case 'pecheMer': return Math.floor(k.pecheMer || 0);
+    case 'hameaux': return Object.keys(hameauxVus(state)).length;
+    case 'monde': return partDuMonde(state);
+    case 'grotteMonde': return evenement(state, 'carte:grotte_monde') ? 1 : 0;
+    case 'faune': return Object.keys(evenements(state)).filter((e) => e.startsWith('faune:')).length;
     default: return 0;
   }
 }

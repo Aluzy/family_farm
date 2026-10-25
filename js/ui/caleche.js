@@ -10,6 +10,8 @@ import {
   majCaleche, ouEstCaleche, poserTournee, prochainPassage, retenir, tourneeDe, vendablesCaleche, vendreCaleche,
 } from '../engine/caleche.js';
 import { marcheFerme, marcheOuvert } from '../engine/devices.js';
+import { unlockLevel } from '../engine/levels.js';
+import { etapeDidacticiel, rencontreCaleche } from '../engine/didacticiel.js';
 import { farmSeed, farmTerrain } from '../engine/terrain.js';
 import { solDuMonde } from './monde-sol.js';
 import { openStageWindow, stageWindow } from './stage-windows.js';
@@ -298,7 +300,22 @@ export function calecheDepuisCarte() {
 // s'ouvre) ; sinon, où elle va.
 export function calecheToucheeDepuisCarte() {
   const ou = ouPerso();
-  if (!marcheOuvert(state)) { notify(`${CALECHE.ICONE} ${marcheFerme(state)}`, { kind: 'info' }); return; }
+  if (!marcheOuvert(state)) {
+    // (le didacticiel, fiche 9b : avant le niveau du Marché, on la rencontre : hélée en chemin, ou
+    // arrêtée à côté, son cocher te salue)
+    if (etapeDidacticiel(state) === 'caleche') {
+      const h = helable(state, ou);
+      if (h.ok && h.e.etat === 'route') heler(state, ou);
+      if (rencontreCaleche(state, ou)) {
+        persistState();
+        notify(`${CALECHE.ICONE} « Bonjour ! » Le cocher te salue : il passe ici chaque jour vers ${heureTexte(CALECHE.FERME)}, et commercera avec toi dès le niveau ${unlockLevel('marche')}.`, { kind: 'info' });
+        refresh();
+        return;
+      }
+    }
+    notify(`${CALECHE.ICONE} ${marcheFerme(state)}`, { kind: 'info' });
+    return;
+  }
   if (calecheIci(state, ou).ok) { openStageWindow('comptoir'); return; }
   const h = helable(state, ou);
   if (h.ok && h.e.etat === 'route') { if (helerCaleche()) openStageWindow('comptoir'); return; }

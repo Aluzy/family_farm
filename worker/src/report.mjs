@@ -125,7 +125,7 @@ export const INTERFACE_ACTIONS = new Set([
   'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open',
   'cancel-queued', 'ack-chapter', 'commerce-pick', 'commerce-cancel',
   'ask-new-game', 'cancel-new-game', 'copy-export',
-  'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-espece', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-deplier',
+  'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-espece', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', 'four-tab', 'atelier-tab', 'atelier-groupe', 'atelier-choisir', 'silo-agrandir', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,

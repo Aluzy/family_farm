@@ -195,7 +195,7 @@ test('rapport de réveil Lot 9 : autonomie, chapitre en cours et chapitres termi
   const s = boite(atChapter(2), { patate: 6, conserve: 60 });
   // version 1.12 : tout le chapitre 2 est rempli juste avant la nuit
   s.progression.niveau = 3;
-  Object.assign(s.campagne.compteurs, { cultures: ['carotte', 'patate', 'tomate', 'courgette'], semisBle: 1 });
+  Object.assign(s.campagne.compteurs, { cultures: ['carotte', 'patate', 'tomate', 'courgette'], semisBle: 1, calecheVentes: 50 });
   Object.assign(s.silo, { construit: true, ble: 50 });
   affamer(s);
   const r = sleepOnce(s);

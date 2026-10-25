@@ -436,7 +436,7 @@
   // reste `garde` ms, puis s'estompe en `fondu` ms.
   const MATIN = { de: 6, a: 11, approche: 10000, garde: 5000, fondu: 600,
     joueur: 'Encore une belle journée qui commence à la ferme n\'est-ce pas ?',
-    compagnon: 'C\'est tellement apaisant de vivre ici, pour rien au monde je ne retournerai vivre en ville !' };
+    compagnon: 'C\'est tellement apaisant de vivre ici, pour rien au monde je ne repartirais !' };
   // La botteleuse (js/carte/ferme/botteleuse.js, js/engine/botteleuse.js) : un appui sur une de
   // ses pièces, le personnage va à gauche de l'entonnoir (sinon devant lui, `devant` px sous le
   // bas de sa case, sinon derrière) et y jette ses fibres (geste « jeter ») ; des brins (RAMASSABLES : fibre) volent de ses

@@ -6,6 +6,7 @@ import { addLot } from './inventory.js';
 import { buyItem, buyPrice, buyQuote, isBuyable, sellableCount, sellItem } from './market.js';
 import { farmSeed } from './terrain.js';
 import { habitantsDe } from './habitants.js';
+import { bumpCounter } from './campaign.js';
 import { genererMonde } from './monde.js';
 import { elementsDuMonde } from './monde-gen.js';
 import { etatCaleche, heureTournee, tourneeDuPlan, vueDeSens } from './caleche-tournee.js';
@@ -341,6 +342,7 @@ export function acheterCaleche(state, item, qty = 1, ou = null, o = {}) {
   c.coffre[item] = stock - bought;
   if (!c.coffre[item]) delete c.coffre[item];
   J.achete += bought * p;
+  bumpCounter(state, 'achatsHameaux', bought);   // (la campagne, fiche 9b : acheter aux hameaux)
   if (!o.sansPresence) retenir(state, ou);
   return { ok: true, bought, cost: bought * p };
 }
@@ -349,7 +351,11 @@ export function acheterCaleche(state, item, qty = 1, ou = null, o = {}) {
 export function vendreCaleche(state, item, qty, ou = null, o = {}) {
   if (!o.sansPresence) { const ici = calecheIci(state, ou); if (!ici.ok) return fail(ici.raison); }
   const r = sellItem(state, item, qty);
-  if (r.ok) { jourDe(state).vendu += r.gain; if (!o.sansPresence) retenir(state, ou); }
+  if (r.ok) {
+    jourDe(state).vendu += r.gain;
+    bumpCounter(state, 'calecheVentes', r.gain);   // (la campagne, fiche 9b : vendre à la calèche)
+    if (!o.sansPresence) retenir(state, ou);
+  }
   return r;
 }
 

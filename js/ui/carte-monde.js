@@ -7,6 +7,7 @@ import {
   butBoussole, caseVue, choisirBut, directionVers, lieuxDeLaCarte, partVue, vuDe,
 } from '../engine/monde-vu.js';
 import { setupPending } from '../engine/depart.js';
+import { etapeDidacticiel } from '../engine/didacticiel.js';
 import { state } from './store.js';
 import { solDuMonde } from './monde-sol.js';
 import { persistState } from './storage.js';
@@ -85,6 +86,7 @@ function ouvrir(T, sol) {
     sale: true, minuteur: 0, raf: 0, perso: p,
   };
   taille();
+  centrerSurLeHameauMontre();
   C.ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { taille(); C.sale = true; }) : null;
   if (C.ro) C.ro.observe(cadre);
   // l'image du monde : gardée par le sol du monde (js/ui/monde-sol.js), sinon demandée (le Worker la fait ;
@@ -103,6 +105,20 @@ function ouvrir(T, sol) {
   // (une autre fenêtre a pris sa place : la carte s'arrête)
   const boucle = () => { if (!C) return; if (!C.dlg.isConnected) { fermer(); return; } if (C.sale) dessine(); C.raf = requestAnimationFrame(boucle); };
   C.raf = requestAnimationFrame(boucle);
+}
+
+// (le didacticiel, fiche 9b : à l'étape du hameau, la carte s'ouvre sur lui et sur le personnage, les deux
+// dans le cadre : le hameau que le cocher a montré, state.didacticiel.montre)
+function centrerSurLeHameauMontre() {
+  const d = state.didacticiel;
+  if (etapeDidacticiel(state) !== 'hameau_choisir' || !d || typeof d.montre !== 'string') return;
+  const h = ((C.sol.lieux() || {}).hameaux || []).find((x) => x.id === d.montre);
+  if (!h) return;
+  const W = C.T.LARGEUR, hx = (h.case % W) + 0.5, hy = Math.floor(h.case / W) + 0.5;
+  const dx = Math.abs(hx - C.cx) + 8, dy = Math.abs(hy - C.cy) + 8;
+  C.z = Math.max(ZOOM.min, Math.min(ZOOM.depart, (C.w * 0.8) / dx, (C.h * 0.8) / dy));
+  C.cx = (hx + C.cx) / 2;
+  C.cy = (hy + C.cy) / 2;
 }
 
 function fermer() {
@@ -397,6 +413,7 @@ document.addEventListener('keydown', (e) => {
   if (!document.getElementById('farm-stage') || document.getElementById('farm-stage').hidden) return;
   e.preventDefault();
   openCarteMonde();
+  refresh();   // (le didacticiel, fiche 9b : son étape « carte » passe)
 });
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
@@ -406,6 +423,7 @@ registerActions({
     if (C && C.dlg.isConnected) return;
     fermer();
     openCarteMonde();
+    refresh();   // (le didacticiel, fiche 9b : son étape « carte » passe)
   },
   'carte-monde-zoom': (target) => {
     if (C) zoomEn(C.z * (Number(target.dataset.sens) > 0 ? ZOOM.pas : 1 / ZOOM.pas));
@@ -419,6 +437,7 @@ registerActions({
     if (!C) return;
     C.choix = { sorte: target.dataset.sorte, id: target.dataset.id };
     C.sale = true;
+    refresh();   // (le didacticiel montre alors « Y mener la boussole »)
   },
   'carte-monde-but': () => {
     if (!C || !C.choix) return;

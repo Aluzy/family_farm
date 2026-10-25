@@ -372,12 +372,13 @@ export const ENCYCLOPEDIE = {
     {
      "id": "terre_sauvage",
      "terme": "Terre sauvage",
-     "description": "La ferme de chaque partie : une terre de 144 × 114 cases tirée d'une graine (la même graine donne toujours la même ferme), sans aucun bâtiment. Des bois, des étangs, des rochers, des buissons et de l'herbe haute . Tout s'y ramasse, se fabrique et se bâtit bloc par bloc.",
+     "description": "La ferme de chaque partie : une terre de 144 × 114 cases tirée d'une graine (la même graine donne toujours la même ferme), sans aucun bâtiment. Des bois, des étangs, des rochers, des buissons et de l'herbe haute . Tout s'y ramasse, se fabrique et se bâtit bloc par bloc. Elle est posée au milieu du grand monde, dans une prairie ; son chemin de terre sort à l'est, vers les chemins du pays.",
      "liens": [
       "ramassage",
       "atelier",
       "mode_construire",
-      "carte"
+      "carte",
+      "grand_monde"
      ],
      "decouverte": [
       "depart"
@@ -443,12 +444,13 @@ export const ENCYCLOPEDIE = {
     {
      "id": "cheval",
      "terme": "Cheval et Écurie",
-     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Il y vit tant que tu es à la ferme. Sa case de la barre d'outils te met en selle : tu vas 1,8 fois plus vite sur toutes les cartes. Hors de la ferme, pour en descendre, il faut un poteau d'attache et une corde de fibre (Atelier) : il t'attend attaché là, et un toucher dessus te fait remonter. De retour à la ferme, il rentre à l'Écurie. Chaque nuit il mange 2 paille ; sans elle, il ne va que 1,3 fois plus vite le lendemain.",
+     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Sa case de la barre d'outils te met en selle : tu vas 1,8 fois plus vite, sur la ferme comme dans tout le grand monde (pas dans la mine ni dans les grottes). Quand tu en descends, il rentre à l'Écurie. Chaque nuit il mange 2 paille ; sans elle, il ne va que 1,3 fois plus vite le lendemain. Le poteau d'attache et la corde de fibre (Atelier) ne servent pas encore : le cheval rentre toujours à l'Écurie.",
      "liens": [
       "atelier",
       "murs",
       "paille",
-      "fibre"
+      "fibre",
+      "grand_monde"
      ],
      "decouverte": [
       "objet:ratelier",
@@ -471,12 +473,17 @@ export const ENCYCLOPEDIE = {
     {
      "id": "atelier",
      "terme": "Atelier",
-     "description": "Le premier bâtiment : il se construit avec 3 bois et 3 pierres, puis se pose sur la carte. On y fabrique les planches, les murs, les fenêtres, les portes, la paillasse, le plancher, le chemin, la barrière, l'escalier, les blocs clés des bâtiments, le four et la cuisinière, le puits, les appareils (panneau, pompe, citerne, batterie, avec des lingots) et les outils de pierre.",
+     "description": "Le premier bâtiment : il se construit avec 3 bois et 3 pierres, puis se pose sur la carte. On y fabrique les planches, les murs, les fenêtres, les portes, la paillasse, le plancher, le chemin, la barrière, l'escalier, les blocs clés des bâtiments, le four et la cuisinière, le puits, les appareils (panneau, pompe, citerne, batterie, avec des lingots), et tout ce qui ne s'achète pas : les outils (houe, hache, pioche, faux, canne à pêche, triporteur), de quoi attirer les bêtes (le nid garni d'une poule, la pierre à sel et le foin d'un mouton ou d'une vache, le licol et les friandises du cheval), la ruche, le bac à fleurs et les meubles. Seules les semences s'achètent, à la calèche.",
      "liens": [
       "bois_et_pierre",
       "fibre",
       "mode_construire",
-      "lingot"
+      "lingot",
+      "outils",
+      "meubles",
+      "ruche",
+      "cheval",
+      "comptoir"
      ],
      "decouverte": [
       "didacticiel:atelier"
@@ -596,9 +603,10 @@ export const ENCYCLOPEDIE = {
     {
      "id": "lanterne",
      "terme": "Lanterne scintillante",
-     "description": "Bientôt disponible ! Un bloc qui éclaire autour de lui la nuit. Elle se fabrique à l'Atelier avec un champignon lumineux (cueilli dans la mine) et deux bois.",
+     "description": "Un bloc qui éclaire autour de lui la nuit. Elle se fabrique à l'Atelier avec un champignon lumineux (il pousse au sol de la mine, et repousse le lendemain) et deux bois, et se pose sur la ferme, dehors comme dans la maison.",
      "liens": [
-      "atelier"
+      "atelier",
+      "grotte"
      ],
      "decouverte": [
       "objet:lanterne",
@@ -1109,13 +1117,14 @@ export const ENCYCLOPEDIE = {
     {
      "id": "fromage_d_alpage",
      "terme": "Herbes, lait et fromage d'alpage",
-     "description": "Bientôt disponible ! Les herbes de montagne se cueilleront dans les prés de la montagne du grand monde ; elles se gardent 3 nuits. Dans l'Étable, le bouton « Nourrir les vaches aux herbes » les donne aux vaches : chaque nuit, une vache mange 1 herbe à la place de ses 2 pailles et donne du lait d'alpage au lieu du lait ; quand les herbes manquent, elle reprend sa paille. En Cuisine, une fois la Laiterie débloquée, 3 laits d'alpage font un fromage d'alpage, plus cher que le fromage frais. Le fromage d'alpage sert à la raclette.",
+     "description": "Les herbes de montagne se cueillent à la main dans la montagne du grand monde (les touffes fleuries des pentes) ; elles se gardent 3 nuits. Dans l'Étable, le bouton « Nourrir les vaches aux herbes » les donne aux vaches : chaque nuit, une vache mange 1 herbe à la place de ses 2 pailles et donne du lait d'alpage au lieu du lait ; quand les herbes manquent, elle reprend sa paille. En Cuisine, une fois la Laiterie débloquée, 3 laits d'alpage font un fromage d'alpage, plus cher que le fromage frais. Le fromage d'alpage sert à la raclette.",
      "liens": [
       "vache",
       "etable",
       "lait",
       "cuisine",
-      "raclette"
+      "raclette",
+      "recolte_du_monde"
      ],
      "decouverte": [
       "objet:herbes_montagne",
@@ -1230,9 +1239,10 @@ export const ENCYCLOPEDIE = {
     {
      "id": "graines",
      "terme": "Graines",
-     "description": "Obtenues normalement en récoltant les cultures, elles permettent de replanter. Peuvent aussi être achetées à la calèche en dépannage, mais à un prix plus élevé que la production. Les arbres abattus laissent aussi leurs graines : la pomme de pin et le gland.",
+     "description": "Obtenues normalement en récoltant les cultures, elles permettent de replanter. Peuvent aussi être achetées à la calèche (les seules choses qu'elle vend, avec les produits des hameaux) en dépannage, mais à un prix plus élevé que la production. Les arbres abattus laissent aussi leurs graines : la pomme de pin et le gland.",
      "liens": [
-      "graines_d_arbre"
+      "graines_d_arbre",
+      "comptoir"
      ],
      "decouverte": [
       "objet:graine_carotte",
@@ -1574,10 +1584,11 @@ export const ENCYCLOPEDIE = {
     {
      "id": "omelette_aux_champignons",
      "terme": "Omelette aux champignons",
-     "description": "Plat préparé à la cuisine à partir d'œufs et de champignons cueillis en forêt.",
+     "description": "Plat préparé à la cuisine à partir d'œufs et de champignons ramassés à la main dans les forêts du grand monde (ou venus des cueilleurs des hameaux, par la calèche).",
      "liens": [
       "cuisine",
-      "oeuf"
+      "oeuf",
+      "recolte_du_monde"
      ],
      "decouverte": [
       "objet:omelette_champignons",
@@ -1587,7 +1598,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "poisson_grille",
      "terme": "Poisson grillé à l'ail",
-     "description": "Plat préparé à la cuisine à partir d'un poisson et d'ail.",
+     "description": "Plat préparé à la cuisine à partir d'un poisson (de l'étang, d'un lac, d'une rivière ou de la mer) et d'ail.",
      "liens": [
       "cuisine",
       "peche",
@@ -1615,9 +1626,12 @@ export const ENCYCLOPEDIE = {
     {
      "id": "creme_de_marrons",
      "terme": "Crème de marrons",
-     "description": "Plat préparé à la cuisine à partir de châtaignes et de sucre.",
+     "description": "Plat préparé à la cuisine à partir de châtaignes et de miel (ou de sucre, qu'une ancienne partie aurait encore). Les châtaignes viennent des cueilleurs des hameaux, par la calèche.",
      "liens": [
-      "cuisine"
+      "cuisine",
+      "miel",
+      "comptoir",
+      "habitants"
      ],
      "decouverte": [
       "objet:creme_marrons",
@@ -1627,10 +1641,13 @@ export const ENCYCLOPEDIE = {
     {
      "id": "tarte_aux_myrtilles",
      "terme": "Tarte aux myrtilles",
-     "description": "Plat cuit au four à partir de farine, de myrtilles et de sucre.",
+     "description": "Plat cuit au four à partir de farine, de myrtilles et de miel (ou de sucre, qu'une ancienne partie aurait encore). Les myrtilles viennent des cueilleurs des hameaux, par la calèche.",
      "liens": [
       "four",
-      "farine"
+      "farine",
+      "miel",
+      "comptoir",
+      "habitants"
      ],
      "decouverte": [
       "objet:tarte_myrtilles",
@@ -1640,10 +1657,12 @@ export const ENCYCLOPEDIE = {
     {
      "id": "pain_d_epices",
      "terme": "Pain d'épices",
-     "description": "Plat cuit au four à partir de farine, de miel et d'épices.",
+     "description": "Plat cuit au four à partir de farine, de miel et d'herbes de montagne (ou d'épices, qu'une ancienne partie aurait encore).",
      "liens": [
       "four",
-      "farine"
+      "farine",
+      "miel",
+      "fromage_d_alpage"
      ],
      "decouverte": [
       "objet:pain_epices",
@@ -1722,11 +1741,12 @@ export const ENCYCLOPEDIE = {
     {
      "id": "hache",
      "terme": "Hache",
-     "description": "Outil fabriqué une fois à l'Atelier. Hache en main, un appui sur un arbre de la ferme donne un coup : 3 énergie et 1 bois. L'arbre tombe au 3e coup. Sur la ferme, il laisse sa graine (une pomme de pin pour un sapin, un gland pour un autre arbre) et ne repousse pas : on replante sa graine où l'on veut. Sur les autres cartes, il repousse 1 à 3 jours plus tard. Les buissons de la ferme tombent d'un coup, avec leurs baies.",
+     "description": "Outil fabriqué une fois à l'Atelier. Hache en main, un appui sur un arbre de la ferme donne un coup : 3 énergie et 1 bois. L'arbre tombe au 3e coup. Sur la ferme, il laisse sa graine (une pomme de pin pour un sapin, un gland pour un autre arbre) et ne repousse pas : on replante sa graine où l'on veut. Dans le grand monde, il repousse de lui-même 5 à 8 jours plus tard, si l'on est passé par là. Les buissons de la ferme tombent d'un coup, avec leurs baies.",
      "liens": [
       "graines_d_arbre",
       "bois_et_pierre",
-      "buissons"
+      "buissons",
+      "recolte_du_monde"
      ],
      "decouverte": [
       "outil:hache"
@@ -1749,12 +1769,13 @@ export const ENCYCLOPEDIE = {
     {
      "id": "pioche",
      "terme": "Pioche",
-     "description": "Outil fabriqué une fois à l'Atelier. Pioche en main, un appui sur un rocher donne un coup : 3 énergie et 1 pierre. Le rocher se casse au 3e coup et revient 1 à 3 jours plus tard. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : un appui dessus, et 1 pierre va dans l'inventaire. Dans la grotte, elle prend aussi le minerai dans les murs.",
+     "description": "Outil fabriqué une fois à l'Atelier. Pioche en main, un appui sur un rocher donne un coup : 3 énergie et 1 pierre. Le rocher se casse au 3e coup et revient 1 à 3 jours plus tard. Dans le grand monde, elle casse aussi les rochers, les gros blocs et les éboulis de la montagne. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : un appui dessus, et 1 pierre va dans l'inventaire. Dans la grotte, elle prend aussi le minerai dans les murs.",
      "liens": [
       "outils",
       "bois_et_pierre",
       "grotte",
-      "minerai"
+      "minerai",
+      "recolte_du_monde"
      ],
      "decouverte": [
       "outil:pioche"
@@ -1831,14 +1852,16 @@ export const ENCYCLOPEDIE = {
     {
      "id": "comptoir",
      "terme": "La calèche",
-     "description": "Le Marché de la ferme est devenu une calèche : un cheval attelé à une voiture couverte, son cocher, et une lanterne la nuit. Chaque jour, elle fait le tour du monde par les chemins, de hameau en hameau, et passe à la ferme vers 10 h, où elle se gare une heure devant l'entrée ; sur la place de chaque hameau, elle s'arrête une demi-heure, et le soir elle dort dans l'un d'eux. Quand elle approche, une icône au bord de l'écran montre où elle est ; sur un chemin, quand elle passe tout près, on la hèle (un appui sur elle, ou le bouton « Héler ») et elle s'arrête un moment. Arrêtée à côté de toi, elle achète tout ce qui se vend, au prix de vente, et vend les semences (en dépannage : leur prix monte à chaque achat) et ce qu'elle a acheté en chemin à la réserve des hameaux — bois, poisson, pierre, minerai, lait, laine, baies, champignons… —, en quantité limitée, à 150 % de leur prix de vente ; l'argent de ces achats va aux familles des hameaux. Rien d'autre : les outils, les animaux, le cheval, les ruches et les meubles se fabriquent à l'Atelier. Les minerais et les lingots ne se vendent pas. Sa fenêtre, dans le menu, dit où elle est et quand elle passe à la ferme.",
+     "description": "Le commerce de la ferme et du pays : un cheval attelé à une voiture couverte, son cocher, et une lanterne la nuit. Chaque jour, elle fait le tour du monde par les chemins, de hameau en hameau, et passe à la ferme vers 10 h, où elle se gare une heure devant l'entrée, au bout du chemin de la ferme ; sur la place de chaque hameau, elle s'arrête une demi-heure, et le soir elle dort dans l'un d'eux. Quand elle approche, une icône au bord de l'écran montre où elle est ; sur un chemin, quand elle passe tout près, on la hèle (un appui sur elle, ou le bouton « Héler ») et elle s'arrête un moment. Elle commerce avec toi à partir du niveau 3. Arrêtée à côté de toi, elle achète tout ce qui se vend, au prix de vente, et vend les semences (en dépannage : leur prix monte à chaque achat) et ce qu'elle a acheté en chemin à la réserve des hameaux — bois, poisson, pierre, minerai, lait, laine, baies, champignons, châtaignes, myrtilles… —, en quantité limitée, à 150 % de leur prix de vente ; l'argent de ces achats va aux familles des hameaux. Rien d'autre : les outils, les animaux, le cheval, les ruches et les meubles se fabriquent à l'Atelier. Les minerais et les lingots ne se vendent pas. Sa fenêtre, dans le menu, dit où elle est et quand elle passe à la ferme.",
      "liens": [
       "coefficient_dachat",
       "hameaux",
       "habitants",
       "graines",
       "meubles",
-      "verger"
+      "verger",
+      "chemins_et_gues",
+      "atelier"
      ],
      "decouverte": [
       "onglet:comptoir"
@@ -2134,7 +2157,9 @@ export const ENCYCLOPEDIE = {
      "description": "Les chemins du grand monde relient les hameaux, de petits villages de trois à sept maisons bâties des mêmes blocs que la maison de la ferme : des murs, des portes, des fenêtres, des planchers, un toit. Chacun a sa place de terre battue ou de pavés, son puits, son banc et un panneau à son nom ; des ruelles mènent aux portes ; des potagers et des vergers clôturés, des tas de bois, un poulailler et le lieu de travail de son métier : le billot du bûcheron, la barque et les filets du pêcheur, le wagonnet du mineur, l'enclos du berger, la claie du cueilleur. Le pays les façonne : de la pierre et de l'ardoise dans la montagne, de la pierre blanche et des tuiles sur la côte, du bois et du chaume en forêt et sur la lande, du bois et des roseaux au bord du marais. On s'y promène, on entre dans les maisons (le toit s'efface), on touche le panneau pour lire son nom ; la nuit, les fenêtres s'éclairent, et la fumée monte des cheminées. On n'y bâtit pas, on n'y laboure pas, on n'y casse rien et on n'y coupe pas les arbres des jardins : tout est aux habitants, qui y vivent leurs journées. Le premier passage dans un hameau l'annonce et l'inscrit sur cette page.",
      "liens": [
       "habitants",
-      "faune_du_monde"
+      "faune_du_monde",
+      "metiers",
+      "chemins_et_gues"
      ],
      "decouverte": [
       "hameau"
@@ -2146,7 +2171,24 @@ export const ENCYCLOPEDIE = {
      "description": "Chaque maison d'un hameau abrite une famille : un ou deux adultes et quelques enfants, jamais plus que de lits. Le premier adulte fait le métier du hameau — bûcheron, pêcheur, mineur, berger ou cueilleur —, le second le même, un autre, ou il tient le jardin. Ils vivent leurs journées comme la tienne : levés à six heures et demie, les adultes partent au travail (le bûcheron fend au billot et abat les arbres alentour, qui repoussent comme les autres ; le pêcheur pêche depuis la rive ; le mineur pioche devant l'entrée d'une grotte ou au tas de minerai ; le berger soigne ses moutons dans l'enclos ; le cueilleur fait le tour des jardins), les enfants jouent sur la place ; à midi et le soir, tout le monde rentre manger, et la nuit chacun dort dans son lit. Touche un habitant : il s'arrête et te dit son prénom, son métier et un mot selon l'heure et son humeur. Chaque nuit, même loin de toi, chaque famille vit sa journée : son métier produit, son jardin et le poulailler donnent, elle cuisine les plats qu'elle connaît et mange à sa faim (ou non : son bonheur suit les mêmes règles que celui de ta famille) ; ce qui reste va à la réserve du hameau. Le panneau de la place ouvre la fiche du hameau : ses familles, leur bonheur et leur bourse, et sa réserve, qui grandit nuit après nuit. La calèche l'achète à chacun de ses passages (ce qu'elle a pris la dernière fois est dans la fiche), et l'argent va aux bourses des familles.",
      "liens": [
       "hameaux",
-      "bonheur"
+      "bonheur",
+      "metiers",
+      "comptoir"
+     ],
+     "decouverte": [
+      "hameau"
+     ]
+    },
+    {
+     "id": "metiers",
+     "terme": "Les métiers des hameaux",
+     "description": "Chaque hameau a son métier, que le pays lui donne : mineur près d'une grotte de la montagne, pêcheur au bord de l'eau, bûcheron à la lisière d'une forêt, berger sur la lande, cueilleur ailleurs. Le bûcheron fend au billot et abat des arbres alentour (du bois, parfois une pomme de pin) ; le pêcheur pêche depuis la rive le poisson de son eau (sardines, anchois, dorades et bars en mer, truites, ombles et brochets au lac, truites, goujons et saumons en rivière) ; le mineur pioche devant l'entrée d'une grotte ou à son tas de minerai (de la pierre, parfois du fer, du cuivre, du quartz) ; le berger soigne ses moutons (du lait, parfois de la laine) ; le cueilleur rapporte des baies, des champignons, des mûres, des myrtilles et des châtaignes. Le jardinier, lui, tient le potager du foyer. Ce que les familles ne mangent pas va à la réserve du hameau, que la calèche achète et revend : c'est par elle que la ferme a les produits qu'elle ne fait pas.",
+     "liens": [
+      "habitants",
+      "hameaux",
+      "comptoir",
+      "grotte_montagne",
+      "peche"
      ],
      "decouverte": [
       "hameau"
@@ -2162,11 +2204,44 @@ export const ENCYCLOPEDIE = {
     {
      "id": "carte",
      "terme": "Carte de la ferme",
-     "description": "Vue principale du jeu : la ferme, une terre sauvage tirée d'une graine au début de la partie. Comme sur toutes les cartes, la vue suit ton personnage : le doigt posé puis glissé le fait marcher dans cette direction tant qu'il reste posé (il tourne avec le doigt), et un double appui sur l'herbe ou un chemin l'y envoie. Un appui sur ce qu'on a bâti ouvre sa fenêtre ; un appui sur une parcelle la plante, l'arrose ou la récolte ; la houe en main laboure l'herbe touchée, la hache coupe un arbre, la pioche casse un rocher et la canne pêche dans l'eau. Un appui sur une pierre, un morceau de bois, une herbe ou des baies les ramasse. Une pastille rouge signale ce qu'il y a à faire. La carte garde la même apparence toute l'année ; seule sa lumière change avec l'heure.",
+     "description": "Vue principale du jeu : la ferme, une terre sauvage tirée d'une graine au début de la partie, au milieu du grand monde, où l'on marche sans changer de carte. La vue suit ton personnage : le doigt posé puis glissé le fait marcher dans cette direction tant qu'il reste posé (il tourne avec le doigt), et un double appui sur l'herbe ou un chemin l'y envoie. Un appui sur ce qu'on a bâti ouvre sa fenêtre ; un appui sur une parcelle la plante, l'arrose ou la récolte ; la houe en main laboure l'herbe touchée, la hache coupe un arbre, la pioche casse un rocher et la canne pêche dans l'eau. Un appui sur une pierre, un morceau de bois, une herbe ou des baies les ramasse. Une pastille rouge signale ce qu'il y a à faire. La carte garde la même apparence toute l'année ; seule sa lumière change avec l'heure.",
      "liens": [
       "terre_sauvage",
       "ramassage",
-      "mode_construire"
+      "mode_construire",
+      "grand_monde"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "grand_monde",
+     "terme": "Le grand monde",
+     "description": "Une seule carte, vingt fois la ferme : la ferme est posée au milieu, dans une prairie, et le pays s'étend tout autour, fermé par la montagne au nord et à l'ouest, par la mer au sud et à l'est. Les prés entourent la ferme ; plus loin, les forêts profondes (feuillus, bouleaux, sapins, ronciers), les marais (saules, roseaux, eau basse), la lande (bruyère, ajoncs, pins tordus), la montagne et ses éboulis, les sommets enneigés et leurs falaises, la côte et ses plages de sable ou de galets. Des rivières descendent de la montagne à la mer, parfois par un lac. Chaque biome a ses plantes à récolter, ses bêtes, et ses lieux : des hameaux au bout des chemins, des grottes au pied de la montagne, des coins de pêche sur l'eau. Tout est caché sous le brouillard au départ.",
+     "liens": [
+      "chemins_et_gues",
+      "brouillard",
+      "carte_du_monde",
+      "recolte_du_monde",
+      "hameaux",
+      "grotte_montagne",
+      "peche",
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "chemins_et_gues",
+     "terme": "Chemins et gués",
+     "description": "Le chemin de terre de la ferme sort à l'est, et de là partent les chemins du pays : ils relient les hameaux les uns aux autres, en une grande boucle qui fait le tour de la ferme, et la calèche les suit chaque jour. On marche partout sur la terre ferme, mais ni sur la mer, ni sur un lac, ni sur une falaise ou un sommet ; une rivière ne se passe qu'à gué, là où un chemin la croise : trois cases de pierres plates posées sur l'eau. Les arbres, les rochers et les murs ferment leurs cases ; jamais un chemin.",
+     "liens": [
+      "grand_monde",
+      "comptoir",
+      "hameaux",
+      "boussole"
      ],
      "decouverte": [
       "depart"
@@ -2179,7 +2254,8 @@ export const ENCYCLOPEDIE = {
      "liens": [
       "carte_du_monde",
       "boussole",
-      "hameaux"
+      "hameaux",
+      "grand_monde"
      ],
      "decouverte": [
       "depart"
@@ -2309,13 +2385,17 @@ export const ENCYCLOPEDIE = {
     {
      "id": "chapitres",
      "terme": "Chapitres",
-     "description": "7 étapes de l'histoire de la famille, avec leurs objectifs : l'héritage (bâtir le foyer, poser le panneau, la pompe et la citerne, première récolte), le grenier (cultures, Silo, blé), le poulailler (et le premier minerai de fer de la grotte), le four (et le premier lingot de fer), le troupeau, puis l'autonomie. Ils ne débloquent plus rien depuis la version 1.7 : chaque chapitre terminé rapporte de l'expérience, des points de technologie, et ouvre un palier de l'Arbre des technologies.",
+     "description": "7 étapes de l'histoire de la famille, avec leurs objectifs : l'héritage (bâtir le foyer, première récolte), le grenier (cultures, Silo, blé, et les premières ventes à la calèche), le poulailler (le premier minerai de fer de la mine, et un premier hameau du grand monde), le four (le premier lingot de fer, une grotte de la montagne, et une part du monde vue), le troupeau (et d'autres hameaux, un poisson de mer), toute l'année (acheter aux hameaux par la calèche, regarder les bêtes sauvages), puis l'autonomie (et connaître son pays). Ils ne débloquent plus rien depuis la version 1.7 : chaque chapitre terminé rapporte de l'expérience, des points de technologie, et ouvre un palier de l'Arbre des technologies.",
      "liens": [
       "autonomie",
       "points_technologie",
       "niveaux",
       "grotte",
-      "lingot"
+      "lingot",
+      "hameaux",
+      "grotte_montagne",
+      "comptoir",
+      "grand_monde"
      ],
      "decouverte": [
       "depart"
@@ -2536,7 +2616,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "notifications",
      "terme": "Notifications",
-     "description": "Onglet du menu du bas qui liste ce qui demande l'attention : appareils en panne, aliments qui vont périr, parcelles à arroser, poules à nourrir, paille qui manque, récoltes et tontes prêtes. Un appui sur une ligne mène directement à l'endroit concerné. C'est aussi là qu'arrive le courrier.",
+     "description": "Entrée du menu qui liste ce qui demande l'attention : appareils en panne, aliments qui vont périr, parcelles à arroser, poules à nourrir, paille qui manque, récoltes et tontes prêtes. Un appui sur une ligne mène directement à l'endroit concerné. C'est aussi là qu'arrive le courrier.",
      "liens": [
       "carte",
       "courrier",
