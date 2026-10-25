@@ -5,6 +5,7 @@ import { SORTES } from '../engine/monde-vegetation.js';
 import { idObjetMonde, RECOLTE } from '../engine/monde-recolte.js';
 import { SORTES_LIEUX } from '../engine/monde-lieux.js';
 import { ESPECES_FAUNE, FAUNE } from '../engine/monde-faune.js';
+import { HAMEAUX, SORTES_HAMEAUX } from '../engine/monde-hameaux.js';
 import { DATA } from '../engine/catalog.js';
 
 /* ---------- le sol du grand monde pour la scène (docs/grand-monde.md, étape 4 : fiche 4b) ---------- */
@@ -31,7 +32,11 @@ import { DATA } from '../engine/catalog.js';
 //     ou null tant que les éléments ne sont pas tirés), lieuxSortes (LIEUX.SORTES : l'entrée des
 //     grottes, le ponton, les piquets, js/engine/monde-lieux.js), coins (CANNE.COINS.RAYON : à tant
 //     de cases d'un coin de pêche, on pêche « au coin »), faune ({ especes : [{ cle, …FAUNE.ESPECES }],
-//     PRES, LOIN, RAYON } : js/engine/monde-faune.js).
+//     PRES, LOIN, RAYON } : js/engine/monde-faune.js) ;
+//   - les hameaux bâtis (fiche 7a) : hameaux() (leurs plans, js/engine/monde-hameaux.js : maisons,
+//     place, panneau… ; null tant que les éléments ne sont pas tirés), hameauSortes (HAMEAUX.SORTES :
+//     les dessins de assets/hameaux.png, posés comme la végétation : reg.hameau), hameauxStyles
+//     (HAMEAUX.STYLES : le toit de chaque style).
 //
 // Les régions se calculent dans un Web Worker (js/monde-worker.js) : la page ne fait qu'en garder
 // le résultat, en mémoire (le monde entier fait 88 régions, environ 4 Mo : tout se garde ; pas
@@ -70,7 +75,7 @@ export function solDuMonde(T) {
 function client(T, M) {
   const regions = new Map(), demandees = new Set(), abonnes = [];
   const mesures = { elements: null, regions: [], mode: 'worker' };
-  let apercu = null, direct = null, worker = nouveauWorker(), fini = false, lieux = null;
+  let apercu = null, direct = null, worker = nouveauWorker(), fini = false, lieux = null, hameaux = null;
   const couleurs = BIOMES.map((b) => COULEURS_BIOMES[b] || '#6a8157');
   const recu = (r) => {
     regions.set(r.cle, r);
@@ -92,7 +97,7 @@ function client(T, M) {
     direct.tache = setTimeout(() => {
       direct.tache = null;
       if (fini) return;
-      if (!direct.ctx.elements) { elementsSol(direct.ctx); mesures.elements = direct.ctx.mesures.elements; lieux = direct.ctx.elements.lieux; }
+      if (!direct.ctx.elements) { elementsSol(direct.ctx); mesures.elements = direct.ctx.mesures.elements; lieux = direct.ctx.elements.lieux; hameaux = direct.ctx.hameaux.plans; }
       const cle = direct.file.shift();
       if (cle && !regions.has(cle)) { const [rx, ry] = cle.split(',').map(Number); recu(solDeRegion(direct.ctx, rx, ry)); }
       if (direct.file.length) pas();
@@ -103,7 +108,7 @@ function client(T, M) {
       const m = ev.data || {};
       if (fini || m.graine !== M.graine) return;
       if (m.type === 'apercu') apercu = m.apercu;
-      else if (m.type === 'pret') { mesures.elements = m.ms; lieux = m.lieux || null; }
+      else if (m.type === 'pret') { mesures.elements = m.ms; lieux = m.lieux || null; hameaux = m.hameaux || null; }
       else if (m.type === 'region') recu(m.region);
       else if (m.type === 'erreur') { console.warn('[monde] le Worker n\'a pas pu faire la région ' + m.cle + ' : ' + m.message); enDirect(); }
     };
@@ -116,6 +121,7 @@ function client(T, M) {
     regles: RECOLTE.SORTES, idObjet: idObjetMonde, ouvertes: null,
     lieux: () => lieux, lieuxSortes: SORTES_LIEUX, coins: (DATA.CANNE.COINS && DATA.CANNE.COINS.RAYON) || 0,
     faune: { especes: ESPECES_FAUNE.map((cle) => ({ cle, ...FAUNE.ESPECES[cle] })), PRES: FAUNE.PRES, LOIN: FAUNE.LOIN, RAYON: FAUNE.RAYON },
+    hameaux: () => hameaux, hameauSortes: SORTES_HAMEAUX, hameauxStyles: HAMEAUX.STYLES,
     region(rx, ry) {
       const cle = rx + ',' + ry, r = regions.get(cle);
       if (r) return r;

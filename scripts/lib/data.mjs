@@ -538,6 +538,41 @@ export function validateData(data) {
     }
   }
 
+  /* les hameaux bâtis du grand monde (data/monde.json, lus par js/engine/monde-hameaux.js) */
+  if (data.HAMEAUX) {
+    const HA = data.HAMEAUX, genres = ['mur', 'porte', 'meuble', 'barriere', 'objet', 'arbre', 'basse'];
+    const paire = (v) => Array.isArray(v) && v.length === 2 && v.every((n) => isInt(n) && n >= 0) && v[0] <= v[1];
+    for (const cle of ['MAISONS', 'LARGEUR', 'HAUTEUR', 'JARDINS']) if (!paire(HA[cle])) err(`HAMEAUX.${cle}`, '[au moins, au plus] : deux entiers positifs dans l\'ordre');
+    if (paire(HA.MAISONS) && HA.MAISONS[0] < 1) err('HAMEAUX.MAISONS', 'une maison au moins');
+    if (paire(HA.LARGEUR) && HA.LARGEUR[0] < 5) err('HAMEAUX.LARGEUR', '5 cases au moins (des murs, une pièce de trois cases)');
+    if (paire(HA.HAUTEUR) && HA.HAUTEUR[0] < 5) err('HAMEAUX.HAUTEUR', '5 cases au moins');
+    for (const cle of ['RAYON', 'PLACE', 'ESSAIS', 'RUELLE', 'CHAMBRE', 'DEUX_CHAMBRES', 'VERGER', 'TAS', 'RESERVE', 'LIEUX', 'AGRANDI']) if (!(isInt(HA[cle]) && HA[cle] >= 0)) err(`HAMEAUX.${cle}`, `un entier positif ; reçu ${JSON.stringify(HA[cle])}`);
+    const noms = new Map();
+    for (const [k, s2] of (HA.SORTES || []).entries()) {
+      const ou = `HAMEAUX.SORTES[${k}]`;
+      if (!s2 || typeof s2.nom !== 'string' || noms.has(s2.nom)) { err(ou, 'un nom, chacun une fois'); continue; }
+      noms.set(s2.nom, s2);
+      if (!genres.includes(s2.genre)) err(`${ou}.genre`, `l'un de ${genres.join(', ')} ; reçu ${JSON.stringify(s2.genre)}`);
+      if (!(isInt(s2.variantes) && s2.variantes >= 1)) err(`${ou}.variantes`, 'un entier positif');
+      if (s2.genre === 'mur' && s2.variantes !== 16) err(`${ou}.variantes`, '16 (le masque des murs voisins)');
+    }
+    for (const n of HA.BLOQUE || []) if (!noms.has(n)) err('HAMEAUX.BLOQUE', `« ${n} » n'est pas une sorte (SORTES)`);
+    for (const [st, S] of Object.entries(HA.STYLES || {})) {
+      for (const k of ['mur_', 'fenetre_', 'porte_']) if (!noms.has(k + S.mur)) err(`HAMEAUX.STYLES.${st}.mur`, `« ${k}${S.mur} » manque (SORTES)`);
+      if (!noms.has(S.sol) || !noms.has(S.foyer)) err(`HAMEAUX.STYLES.${st}`, 'son sol et son foyer : des sortes (SORTES)');
+      if (!['tuiles', 'ardoise', 'chaume', 'roseaux'].includes(S.toit)) err(`HAMEAUX.STYLES.${st}.toit`, 'tuiles, ardoise, chaume ou roseaux (CarteKit.toit)');
+      if (!['terre', 'paves'].includes(S.place)) err(`HAMEAUX.STYLES.${st}.place`, 'terre ou paves');
+    }
+    if (!HA.STYLES || !HA.STYLES.prairie) err('HAMEAUX.STYLES', '« prairie » manque (le style par défaut)');
+    for (const k of (HA.CARACTERE && HA.CARACTERE.ORDRE) || []) if (!(HA.STYLES || {})[k] || !(HA.CARACTERE.SEUILS[k] > 0)) err('HAMEAUX.CARACTERE', `« ${k} » : un style et un seuil positif`);
+    const metiers = (HA.METIERS && HA.METIERS.ORDRE) || [];
+    if (!metiers.includes('cueilleur')) err('HAMEAUX.METIERS.ORDRE', '« cueilleur » (le métier par défaut) manque');
+    for (const mt of metiers) {
+      const t = (HA.TRAVAIL || {})[mt];
+      if (!t || !['atelier', 'ponton', 'enclos'].includes(t.lieu) || !Array.isArray(t.pieces) || t.pieces.some((n) => !noms.has(n))) err(`HAMEAUX.TRAVAIL.${mt}`, 'son lieu (atelier, ponton, enclos) et ses pièces (des sortes)');
+    }
+  }
+
   /* ce que donne chaque pièce du grand monde (data/monde.json, lu par js/engine/monde-recolte.js) */
   if (data.RECOLTE) {
     const RC = data.RECOLTE, gestes = ['couper', 'casser', 'faucher', 'cueillir', 'ramasser'];

@@ -13,6 +13,8 @@
  *
  *   const { cv, c0, r0, r1, dx } = CarteKit.toit(cases, cols)   // cases : les tuiles couvertes
  *   CarteKit.toit(cases, cols, true)                             // un toit de verre (la Serre)
+ *   CarteKit.toit(cases, cols, false, 'chaume')                  // une autre couverture (les hameaux :
+ *                                                                // ardoise, chaume, roseaux)
  *   textures.addCanvas(clé, cv) ; image en (c0 * T − dx, r0 * T − hauteur), origine en haut à gauche
  *
  * Script classique, chargé après le kit (js/carte/kit.js). Voir docs/architecture-phaser.md.
@@ -49,6 +51,40 @@
     return [teinte(VERRE.vitre, R.ombrage[sens]), VERRE.alpha];
   }
 
+  // Les autres couvertures (les hameaux du grand monde, fiche 7a : js/carte/ferme/hameaux.js) : leurs
+  // tons (la couverture, son arête claire, le rang sombre, le joint), la hauteur d'un rang et la
+  // largeur d'une pièce (px), le grain (0 : des pièces nettes ; plus : des brins qui varient), le
+  // faîtage (ses rangées de couleurs, du haut vers le bas) :
+  //   - l'ardoise de la montagne : de petites plaques gris bleu, nettes, en rangs serrés ;
+  //   - le chaume de la forêt et de la lande : de la paille en rangs épais, ses brins qui varient,
+  //     un faîtage de paille tassée, plus sombre ;
+  //   - les roseaux du marais : le même, plus vert et plus sombre.
+  const COUVERTURES = {
+    ardoise: { tuile: [86, 96, 112], claire: [128, 140, 158], sombre: [48, 54, 66], joint: [62, 70, 84], rang: 5, large: 6, grain: 0,
+      faite: [[40, 31, 31], [118, 128, 146], [92, 102, 118], [70, 78, 92], [48, 54, 66], [40, 31, 31]] },
+    chaume: { tuile: [176, 142, 78], claire: [214, 184, 116], sombre: [112, 84, 42], joint: [146, 112, 58], rang: 6, large: 3, grain: 1,
+      faite: [[40, 31, 31], [150, 118, 62], [132, 100, 52], [120, 90, 46], [96, 72, 36], [40, 31, 31]] },
+    roseaux: { tuile: [150, 136, 82], claire: [188, 176, 116], sombre: [86, 78, 46], joint: [120, 108, 64], rang: 6, large: 3, grain: 1,
+      faite: [[40, 31, 31], [126, 114, 68], [110, 100, 60], [98, 88, 52], [78, 70, 40], [40, 31, 31]] },
+  };
+  const brin = (a, b) => { let h = Math.imul(a * 374761393 + b * 668265263, 1274126177); h ^= h >>> 13; return ((h >>> 0) % 1000) / 1000; };
+
+  // La pièce de couverture C du pixel (x, y) d'un pan dont l'égout est du côté `sens`.
+  function couvre(x, y, sens, C) {
+    const [a, b] = sens === 'bas' || sens === 'haut' ? [x, y] : [y, x];
+    const rang = Math.floor(b / C.rang), ta = (((a + Math.floor(C.large / 2) * (rang % 2)) % C.large) + C.large) % C.large;
+    let tb = ((b % C.rang) + C.rang) % C.rang;
+    if (sens === 'haut' || sens === 'gauche') tb = C.rang - 1 - tb;
+    let c;
+    if (!C.grain) c = tb === 0 ? C.sombre : tb === C.rang - 1 ? C.claire : ta === 0 ? C.joint : mel(C.tuile, C.claire, (tb - 1) / 8);
+    else {
+      // (des brins : chacun sa teinte, plus sombres sous le rang du dessus)
+      const r = brin(Math.floor(a / C.large) * 3 + (a % C.large), rang);
+      c = tb === 0 ? C.sombre : tb === 1 ? mel(C.sombre, C.joint, r) : r < 0.25 ? C.joint : r > 0.8 ? C.claire : mel(C.tuile, C.claire, (tb - 2) / 6);
+    }
+    return teinte(c, R.ombrage[sens]);
+  }
+
   // La tuile du pixel (x, y) d'un pan dont l'égout est du côté `sens` (batiments.py tuile).
   function tuile(x, y, sens) {
     const [a, b] = sens === 'bas' || sens === 'haut' ? [x, y] : [y, x];
@@ -62,7 +98,9 @@
   // L'image d'un toit : un canevas qui couvre les cases `cases` (de la grille à `cols`
   // colonnes) et le débord ; { cv, c0, r0, r1, dx } (dx : le débord, à gauche des cases).
   // `verre` : un toit de verre (la Serre), on voit au travers.
-  function toit(cases, cols, verre = false) {
+  // `couverture` : une autre couverture que la tuile (COUVERTURES : ardoise, chaume, roseaux).
+  function toit(cases, cols, verre = false, couverture = null) {
+    const C = !verre && couverture ? COUVERTURES[couverture] || null : null;
     const S = new Set(cases);
     let c0 = Infinity, c1 = -Infinity, r0 = Infinity, r1 = -Infinity;
     for (const t of cases) {
@@ -104,7 +142,7 @@
           continue;
         }
         const z = zone(x, y);
-        let [c, a] = verre ? vitre(x, y, z) : [tuile(x, y, z), 255];
+        let [c, a] = verre ? vitre(x, y, z) : [C ? couvre(x, y, z, C) : tuile(x, y, z), 255];
         // les arêtiers (là où le pan change), le bord
         if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([u, v]) => zone(x + u, y + v) !== z)) { c = verre ? (z === 'gauche' || z === 'haut' ? VERRE.boisClair : VERRE.boisSombre) : z === 'gauche' || z === 'haut' ? R.claire : R.contour; a = 255; }
         if (x === x0 || x === x1 - 1 || y === 0 || !dedans(x, y - 1) || !dedans(x - 1, y) || !dedans(x + 1, y)) { c = verre ? VERRE.boisSombre : R.contour; a = 255; }
@@ -113,12 +151,12 @@
     }
     // le faîtage : une ligne de tuiles rondes entre les deux croupes
     // (de verre : une poutre de bois, plus fine)
-    const rangs = verre ? [VERRE.boisSombre, VERRE.boisClair, VERRE.bois, VERRE.boisSombre] : [R.contour, R.claire, teinte(R.claire, 1.08), R.tuile, R.sombre, R.contour];
+    const rangs = verre ? [VERRE.boisSombre, VERRE.boisClair, VERRE.bois, VERRE.boisSombre] : C ? C.faite : [R.contour, R.claire, teinte(R.claire, 1.08), R.tuile, R.sombre, R.contour];
     for (let x = x0 + rentre; x < x1 - rentre; x++) {
       for (let k = 0; k < rangs.length; k++) {
         const y = faite - (verre ? 2 : 3) + k;
         if (y < 0 || y >= E || !dedans(x, y)) continue;
-        met(x + D, y, !verre && (x - x0) % 6 === 0 && k > 0 && k < 5 ? R.sombre : rangs[k]);
+        met(x + D, y, !verre && !C && (x - x0) % 6 === 0 && k > 0 && k < 5 ? R.sombre : C && C.grain && k > 0 && k < 5 && brin(x, k) < 0.2 ? C.sombre : rangs[k]);
       }
     }
     g.putImageData(img, 0, 0);

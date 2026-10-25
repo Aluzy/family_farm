@@ -5,6 +5,7 @@ import { bassesRoches, rochesDeRegion } from './monde-roches.js';
 import { reservesDuMonde, vegetationDeRegion, VEGETATION } from './monde-vegetation.js';
 import { lieuxDeRegion } from './monde-lieux.js';
 import { fauneDeRegion } from './monde-faune.js';
+import { hameauxDeRegion, plansDesHameaux, TERRE_HAMEAU } from './monde-hameaux.js';
 
 /* ---------- le sol du grand monde, région par région (docs/grand-monde.md : fiches 4b et 5a) ---------- */
 
@@ -229,6 +230,11 @@ export function elementsSol(ctx) {
   ctx.reserves = reservesDuMonde(el, W, H);
   ctx.chemins = chemins;
   ctx.cheminCoins = coins;
+  // les hameaux bâtis (monde-hameaux.js, fiche 7a) : leur plan, une fois ; ce qu'ils bâtissent est
+  // réservé (ni arbre, ni rocher, ni bête), leur terre battue se peint comme un chemin
+  ctx.hameaux = plansDesHameaux({ graine: ctx.graine, W, H, F, lieux: el.lieux, chemins, biome: (i) => biomeDe(ctx, i) });
+  for (let i = 0; i < W * H; i++) if (ctx.hameaux.emprise[i]) ctx.reserves[i] = 1;
+  ctx.mesures.hameaux = ctx.hameaux.ms;
   ctx.mesures.elements = Date.now() - t0;
   return el;
 }
@@ -276,7 +282,8 @@ function solDe(ctx, b, i, x, y) {
 // elle-même), biome, marche (Uint8Array, une valeur par case de la région : son biome, 1 si l'on
 // peut y marcher : ni l'eau, ni le pied d'un arbre, d'un buisson ou d'un gros rocher, ni une entrée
 // de grotte ; un ponton, oui), vegetation ({ images, basses } : monde-vegetation.js), roches
-// ({ images, basses } : monde-roches.js), lieux ({ images, basses } : monde-lieux.js), faune
+// ({ images, basses } : monde-roches.js), lieux ({ images, basses } : monde-lieux.js), hameau
+// ({ images, basses } : monde-hameaux.js, les hameaux bâtis), faune
 // (Int32Array : monde-faune.js), ms (la durée du calcul) }.
 export function solDeRegion(ctx, rx, ry) {
   const t0 = Date.now();
@@ -329,6 +336,13 @@ export function solDeRegion(ctx, rx, ry) {
   const cw = l + 9, chc = h + 9, kx0 = x0 - 4, ky0 = y0 - 4;
   const cSol = new Uint8Array(cw * chc), cCh = new Uint8Array(cw * chc), cTe = new Uint8Array(cw * chc), cDeep = new Uint8Array(cw * chc);
   const poids = new Float32Array(2 + NS), vus = [];
+  // (un coin de la terre battue d'un hameau : une des quatre cases qui le touchent en est ; la place
+  // et les ruelles se peignent comme le chemin, monde-hameaux.js)
+  const TH = ctx.hameaux.terre;
+  const terreHameau = (X, Y) => {
+    for (let dy = -1; dy <= 0; dy++) for (let dx = -1; dx <= 0; dx++) { const x = X + dx, y = Y + dy; if (x >= 0 && y >= 0 && x < W && y < H && TH[y * W + x] === TERRE_HAMEAU) return true; }
+    return false;
+  };
   for (let y = 0; y < chc; y++) {
     for (let x = 0; x < cw; x++) {
       const X = kx0 + x, Y = ky0 + y, k = y * cw + x;
@@ -385,7 +399,7 @@ export function solDeRegion(ctx, rx, ry) {
           if (ctx.chemins[y2 * W + x2] === 1) n++;
         }
         cCh[k] = s !== EAU && n >= 2 ? 1 : 0;
-      } else cCh[k] = s !== EAU && s !== SOL.falaise && s !== SOL.neige && X >= 0 && Y >= 0 && X <= W && Y <= H && CC[Y * cv + X] ? 1 : 0;
+      } else cCh[k] = s !== EAU && s !== SOL.falaise && s !== SOL.neige && X >= 0 && Y >= 0 && X <= W && Y <= H && (CC[Y * cv + X] || terreHameau(X, Y)) ? 1 : 0;
       cTe[k] = ctx.teinte(X - F.X, Y - F.Y);
     }
   }
@@ -489,10 +503,12 @@ export function solDeRegion(ctx, rx, ry) {
   // des coins de pêche ; ils ferment ou ouvrent leurs cases), puis les bêtes (monde-faune.js), sur la
   // marche finale de la région
   const lieux = lieuxDeRegion(ctx, g);
+  // les hameaux bâtis (monde-hameaux.js) : leurs murs, leurs meubles, leurs clôtures ferment leurs cases
+  const hameau = hameauxDeRegion(ctx, g);
   g.biome = biome;
   g.nomSol = (i) => nomSolDeCase(ctx, i);
   const faune = fauneDeRegion(ctx, g);
-  return { cle: rx + ',' + ry, x0, y0, l, h, couches, cx0, cy0, cl, ch: chh, biome, marche, vegetation, roches, lieux, faune, ms: Date.now() - t0 };
+  return { cle: rx + ',' + ry, x0, y0, l, h, couches, cx0, cy0, cl, ch: chh, biome, marche, vegetation, roches, lieux, hameau, faune, ms: Date.now() - t0 };
 }
 
 // Un aperçu des biomes de tout le monde (une valeur tous les `pas` cases, au milieu de chaque bloc,

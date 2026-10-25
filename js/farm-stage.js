@@ -149,6 +149,9 @@
         if (this.ctx.monde) {
           L.image('lieux_monde', v('lieux_monde.png'));
           L.json('lieux_monde_cases', v('lieux_monde.json'));
+          // les hameaux bâtis (scripts/carte/hameaux.py, js/carte/ferme/hameaux.js)
+          L.image('hameaux', v('hameaux.png'));
+          L.json('hameaux_cases', v('hameaux.json'));
           L.json('faune_cases', v('faune.json'));
           for (const e of this.ctx.monde.faune.especes) L.image('faune_' + e.cle, v('faune_' + e.cle + '.png'));
         }
@@ -436,6 +439,7 @@
         }
         this.stepMine();
         this.stepLieuxMonde(time);              // (les entrées des grottes du monde, les coins de pêche : lieux-monde.js)
+        this.stepHameaux(dt / 1000);            // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
         if (this.family) this.family.update(delta);
         // La vue suit le personnage, centrée sur lui (comme sur les autres cartes).
         if (this.suitPerso()) {
@@ -576,6 +580,10 @@
         const hoeing = !!(this.ctx.lastModel && this.ctx.lastModel.houe);
         let refus = null;                            // en mode houe : une tuile qui ne se laboure pas
         // Version 1.18 : la bulle d'un tas à ramasser passe devant tout.
+        // un hameau du grand monde (js/carte/ferme/hameaux.js) : son panneau ; un outil qui n'a rien
+        // à y faire (il le dit)
+        const ham = this.hameauOutil ? this.hameauOutil(wx, wy) : null;
+        if (ham) return ham;
         // planter un arbre (js/carte/ferme/plantation.js) : la case touchée, rien d'autre
         if (this.plantation) { const c = this.tileAtPoint(wx, wy); return c >= 0 ? { plante: c } : null; }
         // la ferme générée, en mode Construire : la case touchée (poser, reprendre), rien d'autre
@@ -718,6 +726,8 @@
           return;
         }
         if (!hit) return;
+        if (hit.panneau) { if (this.ctx.bridge.hameauPanneau) this.ctx.bridge.hameauPanneau({ id: hit.panneau.id, nom: hit.panneau.nom, style: hit.panneau.style }); return; }
+        if (hit.hameauRefus) { if (this.ctx.bridge.hameauRefus) this.ctx.bridge.hameauRefus(hit.hameauRefus.outil, hit.hameauRefus.nom); return; }
         if (hit.pile) { if (this.fermier && !(this.ctx.lastModel && this.ctx.lastModel.coucher)) this.fermier.fetch(hit.pile); return; }   // il va au lit ou il dort : rien
         if (hit.window) { this.ctx.bridge.act('stage-open', { window: hit.window }); return; }
         if (hit.hoe) { K.vibre('houe'); this.ctx.bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }

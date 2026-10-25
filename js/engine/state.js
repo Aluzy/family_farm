@@ -127,8 +127,9 @@ export function createInitialState(seed = 1) {
   };
   s.carte = { graine: graineDemenagement(s) };
   // les régions du monde vues (terrain.js, voirRegion) : celles de la ferme d'office, puis celles
-  // où le personnage entre ; ce qu'il a pris dans le monde (monde-recolte.js, fiche 6a)
-  s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {} };
+  // où le personnage entre ; ce qu'il a pris dans le monde (monde-recolte.js, fiche 6a) ; les
+  // hameaux où il est allé (monde-hameaux.js, fiche 7a)
+  s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {} };
   s.potager.parcelles = startPlots(farmTerrain(s));
   return s;
 }
@@ -443,6 +444,10 @@ export const MIGRATIONS = {
   // 6a) : ce qui y est pris (state.monde.pris, par l'identifiant de chaque pièce). Une partie
   // existante n'a encore rien pris.
   53: (state) => ({ ...state, monde: { ...(state.monde || { vues: regionsFerme(farmTerrain({ ...state, version: 54 })) }), pris: {} }, version: 54 }),
+  // v54 → v55 : les hameaux bâtis du grand monde (monde-hameaux.js, fiche 7a) : ceux où le
+  // personnage est allé (state.monde.hameaux, par id : { nom, style, jour }). Une partie existante
+  // n'en a encore vu aucun (ils n'étaient pas bâtis).
+  54: (state) => ({ ...state, monde: { ...(state.monde || { vues: regionsFerme(farmTerrain({ ...state, version: 55 })), pris: {} }), hameaux: {} }, version: 55 }),
 };
 
 // Porte les cases d'une partie (numérotées sur la largeur de sa ferme) dans celles du monde, où sa

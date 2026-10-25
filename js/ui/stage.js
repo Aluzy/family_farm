@@ -1,5 +1,5 @@
 import { DATA } from '../engine/catalog.js';
-import { formatLitres } from '../engine/format.js';
+import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
@@ -25,7 +25,8 @@ import { tuilesChemins } from '../engine/ferme-generee.js';
 import { solDuMonde } from './monde-sol.js';
 import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
-import { encyclopedieFaune, openEncyclopedie } from './encyclopedie.js';
+import { encyclopedieFaune, encyclopedieHameau, openEncyclopedie } from './encyclopedie.js';
+import { HAMEAUX, voirHameau } from '../engine/monde-hameaux.js';
 import {
   activeTab, axeMode, buildMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
 } from './store.js';
@@ -711,6 +712,52 @@ function stageFaune(espece) {
   openEncyclopedie('faune_' + espece);
 }
 
+// Le personnage arrive dans un hameau du grand monde (js/carte/ferme/hameaux.js : { id, nom, style }) :
+// la première fois, il est noté dans la sauvegarde (state.monde.hameaux) et une bannière l'annonce, à
+// son nom ; sa page de l'encyclopédie se découvre.
+function stageHameau(h) {
+  if (!voirHameau(state, h)) return;
+  persistState();
+  banniereHameau(h);
+  encyclopedieHameau();
+}
+
+// La bannière d'un hameau découvert : son nom, son pays, quelques secondes en haut de la carte.
+const BANNIERE_MS = 4200;
+function banniereHameau(h) {
+  const el = document.createElement('div');
+  const S = HAMEAUX.STYLES[h.style];
+  el.className = 'hameau-banniere';
+  el.setAttribute('role', 'status');
+  el.innerHTML = `<span class="hameau-banniere-sous">Un hameau ${S ? escapeHtml(S.nom) : ''}</span><strong>${escapeHtml(h.nom)}</strong>`;
+  (document.getElementById('farm-stage') || document.body).appendChild(el);
+  requestAnimationFrame(() => el.classList.add('visible'));
+  setTimeout(() => { el.classList.remove('visible'); setTimeout(() => el.remove(), 700); }, BANNIERE_MS);
+}
+
+// Un appui sur le panneau d'un hameau : son nom.
+function stageHameauPanneau(h) {
+  const S = HAMEAUX.STYLES[h.style];
+  notify(`🪧 ${h.nom}${S ? ` — un hameau ${S.nom}` : ''}`, { kind: 'info' });
+}
+
+// Un outil qui n'a rien à faire dans un hameau (js/carte/ferme/hameaux.js, hameauOutil) : il le dit.
+// (« à Brumeval », « au Gué », « aux Saules », « à la Bruyère » ; « de », « du », « des »…)
+const aNom = (n) => n.replace(/^Les /, 'aux ').replace(/^Le /, 'au ').replace(/^La /, 'à la ').replace(/^L'/, 'à l\'').replace(/^(?!aux |au |à )/, 'à ');
+const deNom = (n) => n.replace(/^Les /, 'des ').replace(/^Le /, 'du ').replace(/^La /, 'de la ').replace(/^L'/, 'de l\'').replace(/^(?!des |du |de )/, 'de ');
+const REFUS_HAMEAU = {
+  hache: (n) => `🪓 On ne coupe pas les arbres des jardins ${deNom(n)} : ils sont aux habitants.`,
+  pioche: (n) => `⛏️ On ne casse rien ${aNom(n)} : les murs, les clôtures et les puits sont aux habitants.`,
+  faux: (n) => `On ne fauche pas les potagers ${deNom(n)} : ils sont aux habitants.`,
+  houe: (n) => `On ne laboure pas ${aNom(n)} : c'est un hameau, pas un champ.`,
+  bati: (n) => `🏘️ On ne bâtit pas ${aNom(n)} : on ne bâtit que sur la ferme.`,
+  planter: (n) => `On ne plante pas d'arbre ${aNom(n)} : on ne plante que sur la ferme.`,
+};
+function stageHameauRefus(outil, nom) {
+  const f = REFUS_HAMEAU[outil];
+  if (f) notify(f(String(nom)), { kind: 'info' });
+}
+
 // Le sol du grand monde pour la carte (js/ui/monde-sol.js), et les cases que ce qui y est pris rend
 // à la marche (casesOuvertesMonde, d'après la partie en cours).
 function mondeDeLaCarte() {
@@ -786,7 +833,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

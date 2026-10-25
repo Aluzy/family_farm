@@ -546,6 +546,91 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
 7. **Les habitants et la calèche** (3 PR) : les hameaux bâtis en blocs, leurs familles et
    leurs métiers (bûcheron, pêcheur, mineur, berger, cueilleur) ; la calèche du Marché et sa
    tournée.
+   - **Fait (7a)** : les hameaux bâtis (vides : les habitants viendront à la fiche 7b, la calèche à la
+     7c ; les maisons sont ouvertes, sans personne, pour qu'on les visite).
+     - **Le plan d'un hameau** (`js/engine/monde-hameaux.js`, `planHameau`, réglé par `data/monde.json` :
+       `HAMEAUX`, vérifié par `scripts/lib/data.mjs`) : tiré de la graine du monde et de l'id du hameau,
+       une fois pour tout le monde avec les éléments (`elementsSol` → `plansDesHameaux`, dans le Worker),
+       dans un carré de `RAYON` (18) cases autour de sa case. Le style vient du pays autour (`caractere` :
+       la part de la montagne, de la côte, du marais, de la forêt, de la lande dans 30 cases, rapportée à
+       son seuil ; sinon la prairie) : pierre et ardoise en montagne, pierre de taille blanche et tuiles
+       sur la côte, bois et chaume en forêt et sur la lande, bois et roseaux au bord du marais (et un
+       platelage de planches devant les maisons), pierre et tuiles dans les prés. Une place de terre
+       battue (3 cases de rayon, pavée en montagne et sur la côte) que traversent les chemins du plan,
+       son puits, son banc et un panneau au nom du hameau là où un chemin arrive ; 3 à 7 maisons de 6 × 5
+       à 11 × 7 cases, la porte au sud, des fenêtres sur la façade, une cloison (une chambre) dès 8 cases
+       de large, deux dès 11 ; chaque pièce a ses meubles (la salle commune : son foyer — four ou
+       cuisinière —, sa table et ses chaises, un buffet ou une armoire, un coffre, un lit clos ; les
+       chambres : des lits d'adulte et d'enfant, un chevet, une armoire), placés contre les murs, et
+       chaque case des pièces se rejoint depuis la porte ; une ruelle de terre (9 cases au plus) relie
+       chaque porte à la place, à un chemin ou à une autre ruelle ; les maisons ne se touchent pas. Puis
+       1 à 3 jardins clôturés (un potager : des rangs de légumes sur la terre ; un verger une fois sur
+       trois : des arbres fruitiers), leur portillon relié par une ruelle ; des tas de bois contre les
+       maisons, un poulailler vide, le lieu de travail du métier (`TRAVAIL` : le billot et les tas de bois
+       du bûcheron, la barque et le séchoir à filets du pêcheur, le wagonnet et le tas de minerai du
+       mineur, l'enclos clôturé et son auge du berger, la claie et les paniers du cueilleur), posés sans
+       couper aucun passage. S'il manque de la place pour 3 maisons : des maisons plus petites (5 × 5),
+       puis un carré plus grand, enfin une place réduite (un hameau coincé entre des falaises).
+     - **Pour la fiche 7b** : le plan garde les maisons (`id`, emprise, porte et case devant, pièces et
+       leurs cases, lits et leur sorte, foyer, fenêtres), le métier que le lieu suggère (`metierDuLieu` :
+       mineur près d'une grotte, pêcheur près de l'eau, bûcheron près de la forêt, berger sur la lande,
+       sinon cueilleur), les lieux de travail (`travail`, le premier porte son `lieu` : atelier, ponton,
+       enclos), les jardins, la place, les ruelles.
+     - **Les dessins** (`scripts/carte/hameaux.py` → `assets/hameaux.png`, `hameaux.json` ; le relancer
+       redonne la même image) : les murs, fenêtres et portes des trois matières repris de
+       `murs_hauts.png` et `blocs.png` (les mêmes blocs que la maison du joueur, leurs 16 raccords), les
+       meubles de `meuble_*.png`, le four et la cuisinière, la barrière, le puits, les sols (plancher,
+       dalles, tomettes, pavés), les arbres en fruits du Verger, les légumes de `crops.png` ; dessinés
+       pour les hameaux, dans le style des blocs : le banc, le panneau, les tas de bois, le billot, la
+       barque, le séchoir à filets, le wagonnet, le tas de minerai, l'auge, la claie, les paniers, le
+       poulailler, le coffre. Les toits : `CarteKit.toit` (js/carte/toit.js) prend une couverture
+       (ardoise, chaume, roseaux ; sans elle, la tuile de la ferme, inchangée).
+     - **La pose** (`hameauxDeRegion`, dans `solDeRegion`) : les murs, fenêtres, meubles qui ferment,
+       clôtures, puits, banc, panneau, dépendances et arbres ferment leurs cases dans la marche de la
+       région ; les portes, les lits, les tapis, les planchers s'ouvrent. La place et les ruelles sont
+       de la terre battue, peinte comme le chemin (ses coins, `monde-sol.js`) ; les planchers, les pavés,
+       la terre et les légumes des potagers sont peints dans le sol de la région. Ce qui est bâti, et 2
+       cases autour, est réservé (`ctx.reserves`) : ni végétation, ni rochers, ni bêtes. Le hameau
+       s'écarte des entrées de grotte et des coins de pêche (4 cases), qui ne bougent pas. Aucun chemin
+       n'est fermé. Vérifié (tests) : le sol, la marche, les arbres et les rochers à plus de 8 cases d'un
+       hameau sont les mêmes qu'un monde sans hameaux bâtis ; rien sur la ferme.
+     - **La scène** (`js/carte/ferme/hameaux.js` ; les pièces : une quatrième planche de `vegetation.js`,
+       des images rangées selon leur pied, par blocs près de la vue, transparentes quand le personnage
+       passe derrière, avec leur ombre) : un toit par maison, posé sur ses murs comme chez lui, fait quand
+       la région du hameau est dessinée et retiré avec elle (une clé de texture neuve à chaque fois : une
+       texture retirée puis refaite sous la même clé plantait le rendu, de temps en temps), qui s'efface
+       quand le personnage est dans la maison et à moitié quand il passe derrière, et porte son ombre au
+       soleil (`sunPrisms`) ; sa cheminée au-dessus
+       du foyer, d'où monte la fumée (pas avec « animations réduites ») ; la nuit, la vitre des fenêtres
+       et le sol devant elles s'éclairent, le dedans aussi quand le toit s'efface (dans le voile, avec les
+       lanternes : `stepFenetresHameaux`). Un appui sur le panneau dit le nom du hameau.
+     - **La marche et les outils** : on entre par les portes, on bute sur les murs, les clôtures, les
+       meubles ; dans un hameau (`hameauOutil`, en premier dans `hitAt`), la houe, le mode Construire et
+       planter un arbre partout, la hache sur un arbre ou dans un jardin, la faux dans un jardin, la
+       pioche sur ce qui est bâti disent qu'on n'y fait pas cela (« On ne casse rien au Gué… ») ; marcher,
+       pêcher restent permis.
+     - **La découverte** : le personnage qui entre dans un hameau le dit à la page (pont `hameau`) ; la
+       première fois, une bannière à son nom (« Un hameau de la forêt — Les Saules ») et la sauvegarde le
+       retient (`state.monde.hameaux`, par id : `{ nom, style, jour }`, `voirHameau`). L'encyclopédie a
+       une catégorie « Les hameaux du grand monde » et sa page « Les hameaux » (condition `hameau`), qui
+       liste ceux qu'on a vus ; l'aide en parle (les outils).
+     - **Sauvegardes** : format 55 ; la migration 54 → 55 donne `state.monde.hameaux = {}`.
+     - **Mesuré** (Chromium sans carte graphique, SwiftShader). Une région avec un hameau dans Node (3
+       mondes, 27 régions, médiane de 7 calculs chacune) : médiane 7,6 à 20,6 ms avant, 7,4 à 15,8 ms
+       après (au plus 13 à 33 avant, 26 à 36 après) ; les éléments (une fois, dans le Worker) : 160 à 205
+       ms avant, 245 à 340 ms après (les plans des hameaux : 80 à 120 ms). Le temps d'une image en
+       traversant cinq hameaux (2 parties de chaque, ~400 images) : moyenne 56,3 et 63,9 ms avant (médiane
+       50 et 66,6), 62,4 et 63,1 ms après (médiane 66,6) : pas de différence au-delà du bruit. `npm test` :
+       39,6 s avant, 44,0 à 44,2 s après (les tests de la fiche : 4,5 à 7 s).
+     - **Corrigé en passant** (fiche 5a) : un bloc d'eau du monde qui s'en allait (`eauBlocOff`,
+       `js/carte/ferme/eau-monde.js`) retirait sa texture alors que le shader de son eau vivante la
+       lisait encore, jusqu'au prochain `syncEau` : le rendu de l'image plantait (« Cannot read
+       properties of undefined (reading 'source') ») quand la vue sautait loin de l'eau (vu aussi sur le
+       jeu d'avant la fiche). Son eau vivante est maintenant défaite d'abord.
+     - Reste : les maisons n'ont pas d'étage, leur porte est toujours au sud ; pas de pilotis au marais
+       (du bois et un platelage) ; le dedans n'a qu'une lueur unie la nuit (pas les rayons des
+       fenêtres de la maison du joueur) ; un hameau sans chemin (coincé entre des falaises, le plan du
+       monde n'a pas pu l'y relier) reste sans chemin.
 8. **S'orienter** (1 à 2 PR) : le brouillard, la carte du monde, une boussole.
 9. **La finition** (1 à 2 PR) : les anciennes parties, les performances sur mobile, l'aide,
    l'encyclopédie, le didacticiel.
