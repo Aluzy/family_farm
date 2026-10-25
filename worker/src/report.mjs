@@ -53,6 +53,8 @@ export const GAME_ACTIONS = {
   'sell-item': 'Vendre',
   'buy-item': 'Acheter à la calèche (une semence, un produit des hameaux)',
   'caleche-heler': 'Héler la calèche',
+  'carte-monde-but': 'Choisir le but de la boussole (carte du monde)',
+  'carte-monde-ferme': 'Ramener la boussole à la ferme',
   'plant-all': 'Planter partout',
   'hoe-many': 'Labourer en glissant',
   'commerce-choose': 'Choisir un commerce',
@@ -132,6 +134,7 @@ export const INTERFACE_ACTIONS = new Set([
   'member-edit', 'member-perso',
   'family-edit', 'family-help', 'pets-edit', 'menu-toggle', 'book-open', 'book-next', 'book-prev', 'book-goto', // essai : le Livre de recette en livre
   'encyclo-open', 'encyclo-page',
+  'carte-monde-open', 'carte-monde-zoom', 'carte-monde-centre', 'carte-monde-lieu', // fiche 8 : la carte du monde (l'ouvrir, la régler, choisir un lieu)
   'arbre-planter', 'arbre-annuler', 'arbre-case', // planter un arbre depuis l'Inventaire : choisir la case // l'Encyclopédie, un livre qui se remplit au fil de la partie
   'inv-item', // Inventaire : fiche d'un objet
   'shop-item', 'market-help', // la calèche : fiche d'un article, aide de l'onglet // Famille : mode modification, aide de la ration quotidienne

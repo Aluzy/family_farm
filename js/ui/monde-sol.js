@@ -7,6 +7,7 @@ import { SORTES_LIEUX } from '../engine/monde-lieux.js';
 import { ESPECES_FAUNE, FAUNE } from '../engine/monde-faune.js';
 import { HAMEAUX, SORTES_HAMEAUX } from '../engine/monde-hameaux.js';
 import { tourneeDuPlan } from '../engine/caleche-tournee.js';
+import { imageDuMonde } from '../engine/monde-carte.js';
 import { DATA } from '../engine/catalog.js';
 
 /* ---------- le sol du grand monde pour la scène (docs/grand-monde.md, étape 4 : fiche 4b) ---------- */
@@ -40,7 +41,10 @@ import { DATA } from '../engine/catalog.js';
 //     (HAMEAUX.STYLES : le toit de chaque style), hameauEnclos (HAMEAUX.ENCLOS : la taille de l'enclos
 //     du berger, où les habitants mènent ses moutons : fiche 7b) ;
 //   - la calèche (fiche 7c) : tournee() (sa tournée, js/engine/caleche-tournee.js : tirée avec les
-//     éléments ; null avant), que la page pose dans le moteur (js/ui/caleche.js, poserTournee).
+//     éléments ; null avant), que la page pose dans le moteur (js/ui/caleche.js, poserTournee) ;
+//   - la carte du monde (fiche 8) : carte(f) (l'image du monde, un pixel par case : js/engine/monde-carte.js ;
+//     { l, h, px }), ou null tant qu'elle n'est pas faite : elle est alors demandée (au Worker, ou faite
+//     ici par morceaux de rangées), et f(carte) est appelée quand elle arrive.
 //
 // Les régions se calculent dans un Web Worker (js/monde-worker.js) : la page ne fait qu'en garder
 // le résultat, en mémoire (le monde entier fait 88 régions, environ 4 Mo : tout se garde ; pas
@@ -80,6 +84,9 @@ function client(T, M) {
   const regions = new Map(), demandees = new Set(), abonnes = [];
   const mesures = { elements: null, regions: [], mode: 'worker' };
   let apercu = null, direct = null, worker = nouveauWorker(), fini = false, lieux = null, hameaux = null, tournee = null;
+  let carte = null, carteVoulue = false, carteRangs = null;
+  const carteAbonnes = [];
+  const carteFaite = (c) => { carte = c; mesures.carte = c.ms; for (const f of carteAbonnes.splice(0)) f(c); };
   const couleurs = BIOMES.map((b) => COULEURS_BIOMES[b] || '#6a8157');
   const recu = (r) => {
     regions.set(r.cle, r);
@@ -108,7 +115,17 @@ function client(T, M) {
       }
       const cle = direct.file.shift();
       if (cle && !regions.has(cle)) { const [rx, ry] = cle.split(',').map(Number); recu(solDeRegion(direct.ctx, rx, ry)); }
-      if (direct.file.length) pas();
+      // (la carte du monde, demandée : quelques rangées par tâche, entre les régions)
+      else if (carteVoulue && !carte) {
+        const cd = direct.ctx.cadre, R = 48;
+        if (!carteRangs) carteRangs = { y: 0, px: new Uint8ClampedArray(cd.LARGEUR * cd.HAUTEUR * 4), ms: 0 };
+        const t0 = Date.now();
+        imageDuMonde(direct.ctx, carteRangs.y, Math.min(cd.HAUTEUR, carteRangs.y + R), carteRangs.px);
+        carteRangs.ms += Date.now() - t0;
+        carteRangs.y += R;
+        if (carteRangs.y >= cd.HAUTEUR) carteFaite({ l: cd.LARGEUR, h: cd.HAUTEUR, px: carteRangs.px, ms: carteRangs.ms });
+      }
+      if (direct.file.length || (carteVoulue && !carte)) pas();
     }, 0);
   };
   if (worker) {
@@ -118,6 +135,7 @@ function client(T, M) {
       if (m.type === 'apercu') apercu = m.apercu;
       else if (m.type === 'pret') { mesures.elements = m.ms; lieux = m.lieux || null; hameaux = m.hameaux || null; tournee = m.tournee || null; }
       else if (m.type === 'region') recu(m.region);
+      else if (m.type === 'carte') carteFaite(m.carte);
       else if (m.type === 'erreur') { console.warn('[monde] le Worker n\'a pas pu faire la région ' + m.cle + ' : ' + m.message); enDirect(); }
     };
     // (un Worker qui ne se charge pas : le calcul en direct)
@@ -141,6 +159,15 @@ function client(T, M) {
     },
     quandRegion(f) { abonnes.push(f); },
     apercu: () => (apercu ? { apercu, couleurs } : null),
+    carte(f) {
+      if (carte) return carte;
+      if (f) carteAbonnes.push(f);
+      if (!carteVoulue) {
+        carteVoulue = true;
+        if (direct) pas(); else if (worker) worker.postMessage({ type: 'carte' });
+      }
+      return null;
+    },
     marchable: (t) => caseMarchable(T, t, sol, sol.ouvertes ? sol.ouvertes() : null),
     mesures: () => mesures,
   };

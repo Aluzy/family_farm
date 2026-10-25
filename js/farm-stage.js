@@ -34,6 +34,7 @@
  *                FarmStage.view() (où en est la vue : repère 0, 1 ou 2, bornes),
  *                FarmStage.hasRoom(id) (l'intérieur d'un bâtiment peut-il être affiché ?),
  *                FarmStage.hasFermier() (le personnage est-il là pour ramasser ?),
+ *                FarmStage.perso() (ses pieds et où il regarde : la carte du monde, fiche 8),
  *                FarmStage.panTo(x, point { x, y } ou id de bâtiment) (glisse jusque-là),
  *                FarmStage.goHome(done) (le personnage rentre dans la maison ; la vue le suit),
  *                FarmStage.mealScene({ convives, heureux }) (le repas : la famille va à table).
@@ -477,6 +478,8 @@
         this.stepRobot(dt);
         this.stepFishing(delta);
         this.stepSun();
+        if (this.stepBrouillard) this.stepBrouillard(time, delta);   // (le brouillard du grand monde : brouillard.js)
+        if (this.stepBoussole) this.stepBoussole();                  // (la boussole : boussole.js)
         this.placeLabels();
         this.placePiles();
         this.placeGain();
@@ -580,6 +583,8 @@
       // Ce qui se trouve sous un point de la carte : une parcelle (exactement sa tuile),
       // sinon une étiquette, sinon le bâtiment ou l'arbre le plus en avant.
       hitAt(wx, wy) {
+        // le brouillard du grand monde (brouillard.js) : rien ne s'y touche (un appui y fait marcher)
+        if (this.sousBrume && this.sousBrume(wx, wy)) return null;
         const hoeing = !!(this.ctx.lastModel && this.ctx.lastModel.houe);
         let refus = null;                            // en mode houe : une tuile qui ne se laboure pas
         // Version 1.18 : la bulle d'un tas à ramasser passe devant tout.
@@ -940,5 +945,14 @@
     const s = getScene();
     return !!(s && s.ready && s.family && s.family.allerManger(id));
   }
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, goHome, allerManger, arrive, scene: getScene }; // scene() : pour le débogage et les tests
+  // Fiche 8 : le personnage pour la carte du monde (js/ui/carte-monde.js) : ses pieds (px de carte) et où
+  // il regarde ({ x, y, face : 'bas', 'haut' ou 'cote', flip : de côté vers la gauche }), ou null.
+  function perso() {
+    const s = getScene();
+    const p = s && s.ready && s.fermier ? s.fermier.pos() : null;
+    if (!p) return null;
+    const r = s.fermier.regard ? s.fermier.regard() : {};
+    return { x: p.x, y: p.y, face: r.face || 'bas', flip: !!r.flip };
+  }
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, arrive, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

@@ -3761,6 +3761,15 @@ export const RAW_DATA = {
     "GARDE": 50,
     "RATTRAPAGE": 3
   },
+  "DECOUVERTE": {
+    "CELLULE": 8,
+    "MARGE_FERME": 12,
+    "RAYON": 12,
+    "RAYONS": { "prairie": 12, "lande": 15, "plage": 15, "falaise": 15, "montagne": 18, "sommet": 22, "foret": 7, "marais": 9 },
+    "NUIT": 0.5,
+    "RAYON_MIN": 5,
+    "ARRIVEE": 4
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,

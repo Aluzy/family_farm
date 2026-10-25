@@ -8,7 +8,7 @@
 import {
   addItem, brokenRocks, casesDeRegion, casesDuTerrain, createInitialState, cutBushes, cutGrass, decalerPartie, farmMap,
   farmTerrain, fellenTrees, FERME_DANS_MONDE, genererFerme, genererMonde, hoeableTiles, migrate, MONDE, poserBloc,
-  ramassables, regionDeCase, regionsFerme, regionsVues, regionVue, STATE_VERSION, terrainOfMap, voirRegion,
+  ramassables, regionDeCase, regionsFerme, regionsVues, regionVue, STATE_VERSION, terrainOfMap, voirRegion, vuInitial,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, avantLeMonde, caseDeLaFerme, garden, sleepOnce, test } from './aide.mjs';
 
@@ -94,7 +94,7 @@ test('les régions vues : celles de la ferme d\'office ; le personnage qui entre
   const s = garden(), T = farmTerrain(s), F = T.FERME, N = MONDE.REGION;
   assertEqual(N, 64);
   assertEqual(regionsFerme(T), ['3,3', '4,3', '5,3', '6,3', '3,4', '4,4', '5,4', '6,4'], 'la ferme (250 + 144, 198 + 114) touche 4 × 2 régions');
-  assertEqual(s.monde, { vues: regionsFerme(T), pris: {}, hameaux: {}, habitants: {} }, 'une partie neuve a vu sa ferme, n\'a rien pris dans le monde, n\'a vu aucun hameau (ni leurs habitants)');
+  assertEqual(s.monde, { vues: regionsFerme(T), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(T), but: null, boussole: true }, 'une partie neuve a vu sa ferme, n\'a rien pris dans le monde, n\'a vu aucun hameau (ni leurs habitants)');
   assertEqual(regionDeCase(LOIN), '1,1');
   assert(!regionVue(s, LOIN), 'pas encore vue');
   assertEqual(voirRegion(s, LOIN), true, 'il y entre : elle devient vue');
@@ -163,7 +163,7 @@ test('migration v52 → v53 : une partie d\'avant a vu les régions de sa ferme,
   const v52 = JSON.parse(JSON.stringify({ ...reste, version: 52 }));
   const m = migrate({ v: 52, t: 0, s: v52 });
   assertEqual(m.version, STATE_VERSION);
-  assertEqual(m.monde, { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {} }, '(puis v53 → v54 : rien de pris ; v54 → v55 : aucun hameau vu ; v55 → v56 : pas d\'habitants)');
+  assertEqual(m.monde, { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s)), but: null, boussole: true }, '(puis v53 → v54 : rien de pris ; v54 → v55 : aucun hameau vu ; v55 → v56 : pas d\'habitants ; v57 → v58 : la ferme et sa prairie vues)');
   assertEqual({ ...m, monde: undefined, version: 0 }, { ...JSON.parse(JSON.stringify(s)), monde: undefined, version: 0 }, 'le reste à l\'identique');
   assertEqual(casesDuTerrain(farmTerrain(m), m), casesDuTerrain(farmTerrain(s), s));
   assert(sleepOnce(m) !== null, 'la partie continue');

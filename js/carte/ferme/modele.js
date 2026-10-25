@@ -29,6 +29,9 @@
 
       // Lumière de l'heure (CarteKit.voile) : en fondu, sauf au premier affichage.
       this.lumiere.set(model.heure, force);
+      // le brouillard du grand monde et la boussole (brouillard.js, boussole.js : fiche 8)
+      if (this.syncBrouillard) this.syncBrouillard(model.brouillard);
+      if (this.syncBoussole) this.syncBoussole(model.boussole);
 
       // Lieux : modèle.batiments[id] = { visible, nom, badge } (ou un simple booléen).
       const shown = model.batiments || {};

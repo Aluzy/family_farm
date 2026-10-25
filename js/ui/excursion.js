@@ -10,7 +10,7 @@ import { axeMode, godMode, hoeMode, pickMode, rodMode, state } from './store.js'
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { showToast } from './toasts.js';
-import { SOMMEIL_MESSAGE } from './actions.js';
+import { ACTIONS, SOMMEIL_MESSAGE } from './actions.js';
 import { asleep } from '../engine/night.js';
 import { encyclopedieCarte } from './encyclopedie.js';
 import { genererNiveau, idGrotteMonde, reglagesGrotte } from '../engine/grotte.js';
@@ -162,6 +162,9 @@ const DESTINATIONS = [
   ['⛏️ La mine, niveau 8', 'grotte?niveau=8&arrivee=haut'],
   ['⛰️ Une grotte de la montagne', 'grotte?grotte=grotte_1&niveau=1&arrivee=haut'],
   ['⛰️ La même, niveau 4', 'grotte?grotte=grotte_1&niveau=4&arrivee=haut'],
+  // (fiche 8 : le brouillard du grand monde, levé ou revenu partout : les actions du mode test, testmode.js)
+  ['🗺️ Brouillard : tout voir', 'action:test-tout-voir'],
+  ['🌫️ Brouillard : tout cacher', 'action:test-tout-cacher'],
 ];
 
 // La barre du god mode (en haut de l'écran) : le menu des niveaux ; rien sans le god mode.
@@ -179,6 +182,7 @@ export function syncGodBar() {
       sel.value = '';
       sel.blur();
       if (!c) return;
+      if (c.startsWith('action:')) { const f = ACTIONS[c.slice(7)]; if (f) f({ dataset: {} }); return; }
       if (asleep(state)) { showToast(SOMMEIL_MESSAGE); return; }
       go(c);
     });

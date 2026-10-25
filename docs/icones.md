@@ -8,7 +8,7 @@ jeu comme sur l'accueil, l'encyclopédie et la page des cookies.
 
 | Fichier | Rôle |
 |---|---|
-| `scripts/icones/art_*.py` | les dessins, une lettre par pixel, regroupés par thème (symboles, cuisine, nature, lieux, outils, gens et horloges, essai) |
+| `scripts/icones/art_*.py` | les dessins, une lettre par pixel, regroupés par thème (symboles, cuisine, nature, lieux, outils, gens et horloges, le grand monde — `art_monde.py` : le hameau, l'entrée d'une grotte, la boussole —, essai) |
 | `scripts/icones/build.py` | assemble la planche et la table ; reprend aussi des cases des planches du jeu (`FROM_SHEET` : les récoltes de `crops.png`) |
 | `scripts/icones/preview.py` | aperçu d'un fichier de dessins : chaque icône agrandie, sur fond clair et sombre, et à taille réelle |
 | `assets/icones.png` | la planche (produite, 16 cases par rangée) |

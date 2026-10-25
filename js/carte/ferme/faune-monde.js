@@ -173,7 +173,7 @@
         if (!b.img) continue;
         this.fauneVit(b, time, dt, p, nuit, calme);
         // la première fois qu'une espèce paraît dans la vue, de jour : sa page se découvre
-        if (!E.vues.has(b.e.cle) && b.img.visible && b.img.alpha > 0.5 && !nuit && b.x > v.x && b.x < v.r && b.y > v.y && b.y < v.b) {
+        if (!E.vues.has(b.e.cle) && b.img.visible && !b.img.brume && b.img.alpha > 0.5 && !nuit && b.x > v.x && b.x < v.r && b.y > v.y && b.y < v.b) {
           E.vues.add(b.e.cle);
           if (this.ctx.bridge && this.ctx.bridge.fauneVue) this.ctx.bridge.fauneVue(b.e.cle);
         }

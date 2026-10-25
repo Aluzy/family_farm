@@ -86,6 +86,9 @@
     return {
       rect,
       get depth() { return rect.depth; },
+      // la couleur affichée ([r, v, b], de 0 à 255 : blanc en plein jour) : le brouillard du grand monde,
+      // posé au-dessus du voile, la prend lui-même (js/carte/ferme/brouillard.js)
+      get rgb() { return now; },
       // 0 en plein jour, 1 au plus noir de la nuit (LIGHT_KEYS : 0x3a4782)
       get nuit() { const l = (now[0] + now[1] + now[2]) / 765; return clamp((1 - l) / (1 - NUIT_L), 0, 1); },
       eclaire(f) { sources = f; rect.setVisible(false); },

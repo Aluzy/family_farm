@@ -60,7 +60,8 @@
     sunCasters() {
       const out = [];
       const sprite = (s, pied) => {
-        if (!s || !s.visible || !s.active || !s.frame || !s.texture || s.texture.key.indexOf('ph_') === 0 || s.angle) return;
+        // (ni ce qui est sous le brouillard du grand monde : brouillard.js)
+        if (!s || !s.visible || s.brume || !s.active || !s.frame || !s.texture || s.texture.key.indexOf('ph_') === 0 || s.angle) return;
         const f = s.frame, w = s.displayWidth, h = s.displayHeight;
         const x = s.x - s.originX * w, y = s.y - s.originY * h;
         out.push({ src: f.source.image, sx: f.cutX, sy: f.cutY, sw: f.cutWidth, shh: f.cutHeight, x, y, w, h, flip: s.flipX, pied: pied == null ? y + h - SOLEIL.base : pied });

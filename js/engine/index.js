@@ -20,6 +20,7 @@ export * from './monde-gen.js';
 export * from './monde-sol.js';
 export * from './monde-recolte.js';
 export * from './monde-hameaux.js';
+export * from './monde-vu.js';
 export * from './habitants.js';
 export * from './grotte.js';
 export * from './crops.js';
