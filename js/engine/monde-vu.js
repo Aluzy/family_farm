@@ -176,6 +176,14 @@ export function voirAutour(state, t, { biome = null, nuit = false } = {}) {
   return voirCellules(state, T, cellulesAutour(T, t, rayonVue(biome, nuit)));
 }
 
+// Un lieu montré de loin (le didacticiel, fiche 9b : le cocher parle du hameau voisin) : les cellules à
+// R cases autour de la case t deviennent vues, comme si on y était passé. → le nombre de cellules nouvelles.
+export function montrerLieu(state, t, R = DECOUVERTE.RAYON) {
+  const T = farmTerrain(state);
+  if (!T.FERME || !Number.isInteger(t) || t < 0 || t >= T.LARGEUR * T.HAUTEUR) return 0;
+  return voirCellules(state, T, cellulesAutour(T, t, R));
+}
+
 // Le vu d'une nouvelle partie : la ferme et sa prairie.
 export function vuInitial(T) {
   if (!T || !T.FERME) return '';

@@ -16,6 +16,7 @@ import {
   depenserMembre, mangeurs, repasStep, sleep, takeItem, testBatir, testFillBatteries, testGoToChapter, testSetBuildingLevel5, tick, unlockLevel,
   zoneTile,
 } from '../../js/engine/index.js';
+import { noterEncyclopedie, toutVoir } from '../../js/engine/index.js';
 
 // Le calendrier lunaire change la pousse, l'eau et les récoltes selon le jour. Les tests écrits
 // avant lui tournent lune neutre (un stade par nuit, rendements et eau de base) ; ceux de la
@@ -314,6 +315,21 @@ export function coldRoom({ charge = true, lest = 50 } = {}) {
   if (lest) s.frigo.items.epinard = [{ qty: lest, nightsLeft: shelfLife('epinard'), origin: defaultOrigin('epinard') }];
   if (charge) testFillBatteries(s);
   s.panneaux[0].allume = false; // seul le frigo consomme, rien ne recharge
+  return s;
+}
+
+// Fiche 9b : les objectifs de la campagne qui se font dans le grand monde (la calèche, les hameaux, le
+// monde vu, une grotte de la montagne, la mer, les bêtes), tous remplis d'un coup : les tests d'un
+// chapitre de la ferme n'ont pas à sortir. (Après testGoToChapter, qui remet les compteurs à zéro.)
+export const OBJECTIFS_MONDE = ['caleche', 'hameaux', 'monde', 'grotteMonde', 'pecheMer', 'achatsHameaux', 'faune'];
+export function mondeFait(s) {
+  const k = s.campagne.compteurs;
+  Object.assign(k, { calecheVentes: 1000, achatsHameaux: 100, pecheMer: 10 });
+  s.monde.hameaux = {};
+  for (let i = 1; i <= 10; i++) s.monde.hameaux['hameau_' + i] = { nom: 'Hameau ' + i, style: 'prairie', jour: 1 };
+  toutVoir(s);
+  noterEncyclopedie(s, 'carte:grotte_monde');
+  for (const e of Object.keys(DATA.FAUNE.ESPECES)) noterEncyclopedie(s, 'faune:' + e);
   return s;
 }
 

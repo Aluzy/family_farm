@@ -5,7 +5,8 @@
  * objets (modèle.surbrillance : { ramassables: sorte } les pierres ou le bois à ramasser, les
  * plus proches du personnage ; { blocs: [sortes] } l'Atelier, le puits) ; et les cases où poser
  * l'abri ({ cases: [{ case, sorte }] } : une case allumée qui pulse, dorée pour un mur, blanche
- * pour la porte, verte pour une paillasse).
+ * pour la porte, verte pour une paillasse). Fiche 9b : { caleche: true } entoure aussi la calèche, d'un
+ * grand cercle (son attelage, quand il est fait près de la vue : js/carte/ferme/caleche.js).
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
  * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).
@@ -18,7 +19,7 @@
 
   // `max` objets entourés au plus (les plus proches du personnage) ; le cercle : `rayon` px de
   // carte (± `pouls` px, `periode` ms), `trait` px, sa couleur.
-  const S = { max: 6, rayon: 11, pouls: 2.5, periode: 900, trait: 1.5, couleur: 0xffd23f };
+  const S = { max: 6, rayon: 11, rayonCaleche: 40, pouls: 2.5, periode: 900, trait: 1.5, couleur: 0xffd23f };
   // Les cases à bâtir : leur couleur selon ce qui s'y pose ; le fond et le bord pulsent.
   const CASES = { mur_bois: 0xffd23f, porte: 0xffffff, paillasse: 0x8be36a, fond: 0.22, bord: 0.55 };
   const { T } = F.C;
@@ -39,6 +40,8 @@
       if (s.ramassables && this.gatherables) {
         for (const g of this.gatherables.values()) if (g.sorte === s.ramassables && !g.busy) out.push({ x: g.x, y: g.y - 5 });
       }
+      // (la calèche : un grand cercle autour de son attelage)
+      if (s.caleche && this.calecheSprite && this.calecheVue) out.push({ x: this.calecheVue.x, y: this.calecheVue.y - 22, r: S.rayonCaleche });
       const p = this.fermier && this.fermier.pos();
       if (p && out.length > S.max) out.sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
       return out.slice(0, S.max);
@@ -64,8 +67,9 @@
         }
       }
       for (const q of this.pointsSurbrillance()) {
-        g.lineStyle(S.trait + 1.5, 0x2a2018, 0.55).strokeCircle(q.x, q.y, r);
-        g.lineStyle(S.trait, S.couleur, 0.65 + 0.35 * k).strokeCircle(q.x, q.y, r);
+        const rq = q.r ? q.r + S.pouls * 2 * k : r;
+        g.lineStyle(S.trait + 1.5, 0x2a2018, 0.55).strokeCircle(q.x, q.y, rq);
+        g.lineStyle(S.trait, S.couleur, 0.65 + 0.35 * k).strokeCircle(q.x, q.y, rq);
       }
     },
   });

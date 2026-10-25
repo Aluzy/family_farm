@@ -478,6 +478,18 @@ export const MIGRATIONS = {
     const monde = state.monde || { vues: regionsFerme(T), pris: {}, hameaux: {}, habitants: {} };
     return { ...state, monde: { ...monde, vu: vuDesRegions(T, monde.vues), but: null, boussole: true }, version: 58 };
   },
+  // v58 → v59 : la campagne du grand monde (fiche 9b) : trois compteurs de plus (les pièces gagnées à la
+  // calèche, les produits des hameaux achetés, les poissons de mer), à zéro ; les autres objectifs du
+  // monde se lisent dans la partie (les hameaux vus, le vu, l'encyclopédie). Le didacticiel ne change pas
+  // de forme : ses étapes du grand monde viennent avant « fin », à la même place ; une partie qui était
+  // sur l'ancienne bulle de fin passe aux étapes du monde (la suite du didacticiel).
+  58: (state) => {
+    const c = state.campagne;
+    if (!c || !c.compteurs || typeof c.compteurs !== 'object') return { ...state, version: 59 };
+    const k = { ...c.compteurs };
+    for (const cle of ['calecheVentes', 'achatsHameaux', 'pecheMer']) if (typeof k[cle] !== 'number') k[cle] = 0;
+    return { ...state, campagne: { ...c, compteurs: k }, version: 59 };
+  },
 };
 
 // Porte les cases d'une partie (numérotées sur la largeur de sa ferme) dans celles du monde, où sa

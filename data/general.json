@@ -239,7 +239,8 @@
     "Le didacticiel d'une nouvelle partie (js/engine/didacticiel.js, js/ui/didacticiel.js) : les jauges, le",
     "déplacement, le ramassage, l'Atelier, la faux, la hache et la pioche, l'abri (des murs en bois, une",
     "porte, une paillasse par membre de la famille), la houe, les graines offertes (GRAINES), LABOURS terres",
-    "à labourer, le semis, le puits et la cruche, l'arrosage."
+    "à labourer, le semis, le puits et la cruche, l'arrosage ; puis le grand monde (fiche 9b) : la carte du monde,",
+    "la sortie de la ferme, une prise dans le monde, la calèche, un hameau choisi pour la boussole et atteint."
   ],
   "DIDACTICIEL": { "GRAINES": { "graine_carotte": 6 }, "LABOURS": 3 },
   "//BONHEUR": [

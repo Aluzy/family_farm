@@ -15,14 +15,16 @@ import {
 } from '../../js/engine/index.js';
 import {
   affamer, assert, assertEqual, atChapter, atelier, boite, coldRoom, farm, fillSheep, garden,
-  holdNights, kwh, ml, nightWithProduced, pature, plantRipe, reach, runFor, setInv, sleepOnce,
+  holdNights, kwh, ml, mondeFait, nightWithProduced, OBJECTIFS_MONDE, pature, plantRipe, reach, runFor, setInv, sleepOnce,
   test, testBase, tireless, versBoite,
 } from './aide.mjs';
+import { vendreCaleche } from '../../js/engine/caleche.js';
 
 /* ---------- Lot 9 : autonomie et chapitres ---------- */
 
+// Les objectifs de la ferme (fiche 9b : ceux du grand monde, à part : OBJECTIFS_MONDE, mondeFait).
 function okList(s) {
-  return chapterProgress(s).objectifs.map((o) => o.ok);
+  return chapterProgress(s).objectifs.filter((o) => !OBJECTIFS_MONDE.includes(o.type)).map((o) => o.ok);
 }
 
 test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent plus rien)', () => {
@@ -31,10 +33,16 @@ test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent p
   assertEqual(L.map((c) => c.debloque), [undefined, undefined, undefined, undefined, undefined, undefined, undefined]);
   assertEqual(L.map((c) => c.objectifs.map((o) => [o.type, o.cible])), [
     [['maison', 1], ['panneau', 1], ['pompe', 1], ['reservoir', 1], ['houe', 1], ['labours', 6], ['semis', 6], ['arrosees', 6], ['recoltes', 1]],
-    [['niveau', 2], ['cultures', 4], ['silo', 1], ['semisBle', 1], ['siloBle', 50]],
-    [['pontes', 7], ['autonomie', 50], ['objet', 4]],
-    [['pains', 5], ['plats', 3], ['objet', 1]], [['laines', 10], ['autonomie', 60]], [['tenue', 1]], [['serie100', 7]],
+    [['niveau', 2], ['cultures', 4], ['silo', 1], ['semisBle', 1], ['siloBle', 50], ['caleche', 50]],
+    [['pontes', 7], ['autonomie', 50], ['objet', 4], ['hameaux', 1]],
+    [['pains', 5], ['plats', 3], ['objet', 1], ['grotteMonde', 1], ['monde', 10]],
+    [['laines', 10], ['autonomie', 60], ['hameaux', 3], ['pecheMer', 1]],
+    [['tenue', 1], ['achatsHameaux', 5], ['faune', 6]],
+    [['serie100', 7], ['hameaux', 5], ['monde', 15]],
   ]);
+  // fiche 9b : chaque chapitre après le premier a ses objectifs du grand monde, aucun ne demande la
+  // ville, le Marché ou le train
+  for (const ch of L.slice(1)) assert(ch.objectifs.some((o) => OBJECTIFS_MONDE.includes(o.type)), `${ch.titre} : un objectif du monde`);
   // version 1.22 : le palier 2 de l'Arbre des technologies (chapitre 3) demande du fer
   assertEqual([L[2].objectifs[2].item, L[3].objectifs[2].item], ['minerai_fer', 'lingot_fer']);
   assertEqual(DATA.ARBRE.PALIERS[2].chapitre, 3);
@@ -48,7 +56,7 @@ test('état initial Lot 9 : chapitre 1, compteurs à zéro, historique vide', ()
   const s = createInitialState(1);
   assertEqual(s.campagne, {
     chapitre: 1, fini: false, annonces: [], historique: [],
-    compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, nuits100: 0, tenue: null, tenueDerniere: null, tenueReussie: false, recoltes: 0, cultures: [], semisBle: 0, labours: 0, semis: 0, arroseesMax: 0, objets: {} },
+    compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, nuits100: 0, tenue: null, tenueDerniere: null, tenueReussie: false, recoltes: 0, cultures: [], semisBle: 0, labours: 0, semis: 0, arroseesMax: 0, objets: {}, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 },
   });
   assertEqual(chapterReached(s), 1);
   assertEqual(lastAutonomy(s), 0);
@@ -278,6 +286,12 @@ test('chapitre 1 « L\'héritage » : foyer, houe, labour, semis, arrosage, prem
   assertEqual([s.silo.ble, s.campagne.chapitre], [49, 2], 'pas encore 50 blés au Silo');
   storeWheat(s, 1);
   updateChapters(s);
+  assertEqual([s.campagne.chapitre, okList(s).every(Boolean)], [2, true], 'fiche 9b : il reste à vendre à la calèche');
+  // (elle passe à la ferme chaque jour : vendre ses carottes)
+  addItem(s, 'carotte', 30);
+  assert(vendreCaleche(s, 'carotte', 30, null, { sansPresence: true }).ok);
+  assert(s.campagne.compteurs.calecheVentes >= 50, `${s.campagne.compteurs.calecheVentes} pièces`);
+  updateChapters(s);
   assertEqual(s.campagne.chapitre, 3);
 });
 
@@ -292,7 +306,7 @@ testBase('version 1.12 : chapitre 2 : la même culture récoltée quatre fois ne
 });
 
 testBase('chapitre 3 : 7 nuits de ponte d\'affilée et 50 % d\'autonomie', () => {
-  const s = boite(atChapter(3), { carotte: 200 }); // des légumes de la ferme : la famille est nourrie par la ferme
+  const s = boite(mondeFait(atChapter(3)), { carotte: 200 }); // des légumes de la ferme : la famille est nourrie par la ferme
   setInv(s, {});
   s.pieces = 5000;
   assert(testBatir(reach(s, 'silo'), 'silo').ok);
@@ -314,7 +328,7 @@ testBase('chapitre 3 : 7 nuits de ponte d\'affilée et 50 % d\'autonomie', () =>
 });
 
 test('chapitre 3 : sept nuits sans l\'autonomie requise ne suffisent pas', () => {
-  const s = atChapter(3);
+  const s = mondeFait(atChapter(3));
   s.campagne.compteurs.serieOeufs = 7;
   s.campagne.historique = [{ nuit: 1, pct: 49, energie: 73 }];
   addItem(s, 'minerai_fer', 4);
@@ -360,6 +374,7 @@ test('séries d\'affilée : elles ne comptent qu\'à partir du chapitre qui les 
 testBase('chapitre 4 : 5 pains et 3 plats différents', () => {
   const s = atelier();
   testGoToChapter(s, 4);
+  mondeFait(s);
   for (let i = 0; i < 5; i++) {
     addItem(s, 'farine', 2);
     s.eauMl = ml(40);
@@ -428,6 +443,7 @@ test('version 1.22 : une partie déjà au-delà du chapitre 4 ne recule pas', ()
 testBase('chapitre 5 : 10 laines et 60 % d\'autonomie', () => {
   const s = pature();
   testGoToChapter(s, 5);
+  mondeFait(s);
   fillSheep(s, 3);
   for (let round = 0; round < 3; round++) {
     testWoolReady(s);
@@ -448,7 +464,7 @@ testBase('chapitre 5 : 10 laines et 60 % d\'autonomie', () => {
 
 // Version 1.6 : l'hiver du chapitre 6 devient une série de 10 nuits d'affilée.
 test('chapitre 6 : 10 nuits d\'affilée à 80 % en moyenne, sans soin', () => {
-  const s = atChapter(6);
+  const s = mondeFait(atChapter(6));
   s.day = 31;
   holdNights(s, 9, 50); // de quoi tout couvrir : 100 %
   assertEqual([s.campagne.chapitre, s.campagne.compteurs.tenue.nuits], [6, 9]);
@@ -461,7 +477,7 @@ test('chapitre 6 : 10 nuits d\'affilée à 80 % en moyenne, sans soin', () => {
 
 test('chapitre 6 : la série commence dès la première nuit du chapitre, quel que soit le jour', () => {
   for (const day of [1, 7, 33]) {
-    const s = atChapter(6);
+    const s = mondeFait(atChapter(6));
     s.day = day;
     holdNights(s, 10, 48);
     assertEqual(s.campagne.chapitre, 7, `départ à la nuit ${day}`);
@@ -469,7 +485,7 @@ test('chapitre 6 : la série commence dès la première nuit du chapitre, quel q
 });
 
 test('chapitre 6 : une moyenne de 76 % ne suffit pas, une nouvelle série suit aussitôt', () => {
-  const s = atChapter(6);
+  const s = mondeFait(atChapter(6));
   // 38 patates (190 points) sur 244 points mangés : 77 %, sous 80 %
   holdNights(s, 10, 38);
   assertEqual(s.campagne.chapitre, 6);
@@ -490,7 +506,7 @@ test('chapitre 6 : la moyenne compte toutes les nuits, pas seulement la dernièr
 });
 
 test('chapitre 7 : 100 % pendant 7 nuits d\'affilée termine la campagne', () => {
-  const s = atChapter(7);
+  const s = mondeFait(atChapter(7));
   for (let night = 1; night <= 6; night++) {
     nightWithProduced(s, 48); // 240 points : 100 %
     assertEqual([s.campagne.compteurs.serie100, s.campagne.fini], [night, false]);
@@ -503,7 +519,7 @@ test('chapitre 7 : 100 % pendant 7 nuits d\'affilée termine la campagne', () =>
 });
 
 test('remise à zéro : une nuit sous 100 % casse la série d\'autonomie', () => {
-  const s = atChapter(7);
+  const s = mondeFait(atChapter(7));
   for (let i = 0; i < 4; i++) nightWithProduced(s, 48);
   assertEqual(s.campagne.compteurs.serie100, 4);
   nightWithProduced(s, 44); // 220 points sur 244 : 90 %

@@ -31,7 +31,7 @@ import {
   reprendreEtage, respawnBushes, respawnRocks, respawnTrees, robotBattery, robotCapacity,
   robotStation, robotTrip, ruchePleine, ruchesARecolter, runRobotCharge, sellItem, serreMurs,
   serrePlaces, setFarmSeed, siloCapacity, simulateOffline, skipNight, solAt, sortirBotte,
-  stableHoused, stablePlaces, starterOf, STATE_VERSION, suivantDidacticiel, migrate, ETAPES, terrainOfMap,
+  stableHoused, stablePlaces, starterOf, STATE_VERSION, suivantDidacticiel, migrate, ETAPES, terrainOfMap, passerEtapeDidacticiel,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools,
   testBuildAtelier, testFarmMap, testSetLevel, toits, tuilesChemins, unlockLevel,
   upgradePoulailler, verserFibres, water,
@@ -1703,7 +1703,9 @@ test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il
   assert(r.ok);
   assertEqual(eauCruche(s), (DATA.CRUCHE.LITRES - r.litres) * 1000, 'l\'eau vient de la cruche');
   majDidacticiel(s);
-  assertEqual(etapeDidacticiel(s), 'fin');
+  // (fiche 9b : puis les étapes du grand monde, tests/engine/finition.test.mjs ; ici, passées une à une)
+  assertEqual(etapeDidacticiel(s), 'carte');
+  while (etapeDidacticiel(s) !== 'fin') assert(passerEtapeDidacticiel(s).ok, `passer ${etapeDidacticiel(s)}`);
   assert(suivantDidacticiel(s).ok);
   assertEqual([etapeDidacticiel(s), recettesDidacticiel(s), blocsDidacticiel(s)], [null, null, null], 'fini : tout est débloqué');
 });

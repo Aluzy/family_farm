@@ -273,7 +273,7 @@ export function hasHoe(state) {
 // L'ancien achat de la houe au Marché (gardé pour les tests ; l'Atelier la fabrique).
 export function buyHoe(state) {
   if (hasHoe(state)) return fail('Tu as déjà une houe.');
-  if (!marcheOuvert(state)) return fail(`La houe s'achète au Marché. ${marcheFerme(state)}`);
+  if (!marcheOuvert(state)) return fail(`La houe se fabrique à l'Atelier. ${marcheFerme(state)}`);
   const cost = DATA.HOUE.PRIX;
   if (!pay(state, cost, 'Achat : Houe')) return fail(NO_COINS);
   state.potager.houe = true;

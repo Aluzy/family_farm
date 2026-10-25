@@ -2300,48 +2300,54 @@ export const RAW_DATA = {
       {
         "titre": "Le grenier",
         "icone": "🌾",
-        "intro": "De nouvelles cultures, un Silo à construire et du blé à rentrer : le grenier de la ferme se remplit.",
+        "intro": "De nouvelles cultures, un Silo à construire et du blé à rentrer : le grenier de la ferme se remplit. Chaque jour vers 10 h, la calèche passe devant l'entrée de la ferme : vends-lui ce que tu as en trop.",
         "objectifs": [
           { "type": "niveau", "cible": 2, "libelle": "Atteindre le niveau 2", "unite": "" },
           { "type": "cultures", "cible": 4, "libelle": "Récolter 4 cultures différentes", "unite": "" },
           { "type": "silo", "cible": 1, "libelle": "Construire le Silo (niveau 3)", "unite": "" },
           { "type": "semisBle", "cible": 1, "libelle": "Planter du blé", "unite": "" },
-          { "type": "siloBle", "cible": 50, "libelle": "Stocker 50 blés au Silo", "unite": "" }
+          { "type": "siloBle", "cible": 50, "libelle": "Stocker 50 blés au Silo", "unite": "" },
+          { "type": "caleche", "cible": 50, "libelle": "Vendre pour 50 pièces à la calèche", "unite": "💰" }
         ]
       },
       {
         "titre": "Le poulailler",
         "icone": "🐔",
-        "intro": "Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé, et la ferme doit nourrir la moitié de la famille. L'Arbre des technologies demande maintenant du fer : une pioche en main, cherche la mine de la ferme, cachée dans les bois, et descends-y.",
+        "intro": "Du blé pour les poules, des œufs chaque nuit. Une ponte régulière demande du blé, et la ferme doit nourrir la moitié de la famille. L'Arbre des technologies demande maintenant du fer : une pioche en main, cherche la mine de la ferme, cachée dans les bois, et descends-y. Et il est temps de sortir de la ferme : suis le chemin de la calèche jusqu'au premier hameau.",
         "objectifs": [
           { "type": "pontes", "cible": 7, "libelle": "Pondre 7 nuits d'affilée", "unite": "nuits" },
           { "type": "autonomie", "cible": 50, "libelle": "Atteindre 50 % d'autonomie", "unite": "%" },
-          { "type": "objet", "item": "minerai_fer", "cible": 4, "libelle": "Rapporter 4 minerais de fer de la mine", "unite": "" }
+          { "type": "objet", "item": "minerai_fer", "cible": 4, "libelle": "Rapporter 4 minerais de fer de la mine", "unite": "" },
+          { "type": "hameaux", "cible": 1, "libelle": "Découvrir un hameau du grand monde", "unite": "" }
         ]
       },
       {
         "titre": "Le four et le livre de recette",
         "icone": "🍞",
-        "intro": "Moudre, presser, cuire : le pain et les plats cuisinés valent plus que leurs ingrédients. Le Four fond aussi le minerai de la grotte, avec du bois : les lingots paient les technologies.",
+        "intro": "Moudre, presser, cuire : le pain et les plats cuisinés valent plus que leurs ingrédients. Le Four fond aussi le minerai de la grotte, avec du bois : les lingots paient les technologies. Les grottes de la montagne, au nord et à l'ouest du monde, en ont bien plus que la mine.",
         "objectifs": [
           { "type": "pains", "cible": 5, "recette": "pain", "libelle": "Cuire 5 pains", "unite": "" },
           { "type": "plats", "cible": 3, "exclut": ["pain"], "libelle": "Préparer 3 plats différents (hors pain)", "unite": "" },
-          { "type": "objet", "item": "lingot_fer", "cible": 1, "libelle": "Fondre un lingot de fer au Four", "unite": "" }
+          { "type": "objet", "item": "lingot_fer", "cible": 1, "libelle": "Fondre un lingot de fer au Four", "unite": "" },
+          { "type": "grotteMonde", "cible": 1, "libelle": "Entrer dans une grotte de la montagne", "unite": "" },
+          { "type": "monde", "cible": 10, "libelle": "Voir 10 % du grand monde", "unite": "%" }
         ]
       },
       {
         "titre": "Le troupeau",
         "icone": "🐑",
-        "intro": "Des moutons pour la laine, des vaches pour le lait. Ils vivent à l'Étable et mangent chaque nuit de la paille : fauche l'herbe haute de la carte avec la faux, puis jette ses fibres dans la botteleuse (Atelier) pour en faire des bottes.",
+        "intro": "Des moutons pour la laine, des vaches pour le lait. Ils vivent à l'Étable et mangent chaque nuit de la paille : fauche l'herbe haute de la carte avec la faux, puis jette ses fibres dans la botteleuse (Atelier) pour en faire des bottes. Les hameaux ont leurs bergers et leurs pêcheurs : va voir comment ils vivent, et tente ta chance à la canne au bord de la mer.",
         "objectifs": [
           { "type": "laines", "cible": 10, "libelle": "Tondre 10 laines", "unite": "" },
-          { "type": "autonomie", "cible": 60, "libelle": "Atteindre 60 % d'autonomie", "unite": "%" }
+          { "type": "autonomie", "cible": 60, "libelle": "Atteindre 60 % d'autonomie", "unite": "%" },
+          { "type": "hameaux", "cible": 3, "libelle": "Découvrir 3 hameaux", "unite": "" },
+          { "type": "pecheMer", "cible": 1, "libelle": "Pêcher un poisson dans la mer", "unite": "" }
         ]
       },
       {
         "titre": "Toute l'année",
         "icone": "📅",
-        "intro": "La Serre, le Verger et le Réfrigérateur pour tenir dans la durée : dix nuits d'affilée bien nourris.",
+        "intro": "La Serre, le Verger et le Réfrigérateur pour tenir dans la durée : dix nuits d'affilée bien nourris. Ce qui manque à la ferme, les hameaux l'ont parfois : la calèche te vend ce qu'elle leur achète. Et le pays a ses bêtes, à regarder sans les chasser.",
         "objectifs": [
           {
             "type": "tenue",
@@ -2350,14 +2356,20 @@ export const RAW_DATA = {
             "moyenne": 80,
             "libelle": "Tenir 10 nuits d'affilée à 80 % d'autonomie en moyenne",
             "unite": ""
-          }
+          },
+          { "type": "achatsHameaux", "cible": 5, "libelle": "Acheter 5 produits des hameaux à la calèche", "unite": "" },
+          { "type": "faune", "cible": 6, "libelle": "Voir 6 bêtes sauvages différentes", "unite": "" }
         ]
       },
       {
         "titre": "Famille autonome",
         "icone": "🏡",
-        "intro": "Le dernier défi : nourrir la famille avec ce que produit la ferme, et rien d'autre.",
-        "objectifs": [{ "type": "serie100", "cible": 7, "libelle": "Atteindre 100 % d'autonomie 7 nuits d'affilée", "unite": "nuits" }]
+        "intro": "Le dernier défi : nourrir la famille avec ce que produit la ferme, et rien d'autre. Et connaître son pays : les hameaux du bout des chemins, la montagne, la côte.",
+        "objectifs": [
+          { "type": "serie100", "cible": 7, "libelle": "Atteindre 100 % d'autonomie 7 nuits d'affilée", "unite": "nuits" },
+          { "type": "hameaux", "cible": 5, "libelle": "Découvrir 5 hameaux", "unite": "" },
+          { "type": "monde", "cible": 15, "libelle": "Voir 15 % du grand monde", "unite": "%" }
+        ]
       }
     ]
   },
@@ -2634,6 +2646,7 @@ export const RAW_DATA = {
     "PAILLE_NUITS": 3,
     "PAILLE_MAX_NUITS": 6,
     "FARINE_MAX": 12,
+    "LANCERS_MER": 8,
     "LITRES_PARCELLE": 3,
     "LITRES_CUISINE": 6,
     "MARCHE_STATIONS": 50,

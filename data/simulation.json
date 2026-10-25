@@ -50,6 +50,8 @@
     "PAILLE_MAX_NUITS": 6,
     "//FARINE_MAX": "farine en stock au-delà de laquelle il vend",
     "FARINE_MAX": 12,
+    "//LANCERS_MER": "fiche 9b : lancers de canne au plus, par sortie, pour pêcher un poisson dans la mer (botMonde)",
+    "LANCERS_MER": 8,
     "//LITRES_PARCELLE": "Estimations pour dimensionner l'eau et l'énergie.",
     "LITRES_PARCELLE": 3,
     "LITRES_CUISINE": 6,
