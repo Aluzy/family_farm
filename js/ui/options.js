@@ -1,5 +1,7 @@
 import { GAME_VERSION } from '../engine/base.js';
-import { godMode, setEcranFerme, testMode } from './store.js';
+import { godMode, setEcranFerme, state, testMode } from './store.js';
+import { boussoleMontree, montrerBoussole } from '../engine/monde-vu.js';
+import { persistState } from './storage.js';
 import { privacySectionHtml, tel } from './consent.js';
 import { copyFromTextarea, exportSaveText, importSaveText } from './storage.js';
 import { morph, refresh } from './render.js';
@@ -79,6 +81,13 @@ export function openOptionsModal() {
           <button class="btn" type="button" data-action="open-about">ℹ️ Règles principales et version</button>
         </div>
       </div>
+      ${state && state.monde ? `<div class="stack">
+        <strong>Affichage</strong>
+        <label class="row check-row">
+          <input type="checkbox" id="boussole-toggle" ${boussoleMontree(state) ? 'checked' : ''}>
+          🧭 Montrer la boussole sur la carte (elle mène à la ferme, ou au lieu choisi sur la carte du monde)
+        </label>
+      </div>` : ''}
       <details class="more">
         <summary>💾 Sauvegarde</summary>
         <div class="stack">
@@ -124,6 +133,14 @@ export function openOptionsModal() {
   // FLU-38 : sauvegarde repliée, « Recommencer à zéro » en bas, en contour rouge
   document.getElementById('export-area').addEventListener('click', (e) => e.target.select());
 }
+
+// Fiche 8 : la boussole se montre ou non (state.monde.boussole, js/engine/monde-vu.js).
+document.addEventListener('change', (e) => {
+  if (!e.target || e.target.id !== 'boussole-toggle') return;
+  montrerBoussole(state, e.target.checked);
+  persistState();
+  refresh();
+});
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 

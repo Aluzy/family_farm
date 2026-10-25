@@ -21,6 +21,9 @@ import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmTerrain, tileCount, voirRegion } from '../engine/terrain.js';
 import { MONDE } from '../engine/monde.js';
+import { BIOMES } from '../engine/monde-gen.js';
+import { boussoleMontree, butBoussole, choisirBut, etatBoussole, lieuxDeLaCarte, voirAutour, vuDe } from '../engine/monde-vu.js';
+import { LIEUX_ICONES, carteMondeVu } from './carte-monde.js';
 import { tuilesChemins } from '../engine/ferme-generee.js';
 import { solDuMonde } from './monde-sol.js';
 import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '../engine/automation.js';
@@ -459,6 +462,10 @@ export function stageModel() {
     // le grand monde : ce qui y est pris (ni dessiné, ni fermé à la marche), ce qui y est cueilli
     // (sans ses fruits), par identifiant (js/engine/monde-recolte.js, js/carte/ferme/recolte-monde.js)
     monde: { pris: mondePris(state), cueillis: mondeCueillis(state) },
+    // ce qui n'a pas été vu du grand monde, sous le brouillard, et la boussole (fiche 8 : js/engine/monde-vu.js,
+    // js/carte/ferme/brouillard.js, boussole.js)
+    brouillard: brouillardModele(),
+    boussole: boussoleModele(),
     // les habitants des hameaux peuplés (js/engine/habitants.js : qui, quel personnage, quel métier,
     // quel lit) et leur horaire (js/carte/ferme/habitants.js) ; ceux d'un hameau déjà vu naissent
     // dès que les plans sont là (une partie d'avant la fiche 7b)
@@ -698,9 +705,58 @@ function stageRegion(tile) {
 }
 
 // La case du personnage sur la carte (à chaque case : rien ne repousse sous lui dans le grand
-// monde, js/engine/monde-recolte.js). Rien à sauvegarder tout de suite.
+// monde, js/engine/monde-recolte.js ; cela ne se sauvegarde pas tout de suite). Fiche 8 : ce qu'il voit
+// de là devient vu (js/engine/monde-vu.js : le rayon de vue du biome de sa case, plus court la nuit) et
+// le brouillard s'y lève (modèle.brouillard, js/carte/ferme/brouillard.js) ; le lieu choisi pour la
+// boussole, une fois atteint, la rend à la ferme. L'un ou l'autre : la partie est sauvegardée.
 function stageIci(tile) {
   noterIci(state, tile);
+  let change = voirAutour(state, tile, { biome: biomeDeCase(tile), nuit: nightActive(state) }) > 0;
+  const T = farmTerrain(state), sol = solDuMonde(T);
+  if (butBoussole(state) && sol) {
+    const e = etatBoussole(state, tile % T.LARGEUR + 0.5, Math.floor(tile / T.LARGEUR) + 0.5, sol.lieux(), T.MONDE.cadre.SORTIE, T);
+    if (e && e.arrive) {
+      choisirBut(state, null);
+      notify(`🧭 Te voilà : ${e.nom}. La boussole montre de nouveau la ferme.`, { kind: 'info' });
+      change = true;
+    }
+  }
+  if (change) { persistState(); carteMondeVu(); }
+}
+
+// Le biome de la case (son nom), d'après l'aperçu des biomes du Web Worker (un par bloc de 8 × 8 cases :
+// js/ui/monde-sol.js), ou null tant qu'il n'est pas là.
+function biomeDeCase(tile) {
+  const T = farmTerrain(state), sol = solDuMonde(T), a = sol && sol.apercu();
+  if (!a) return null;
+  const { pas, l, h, biomes } = a.apercu, c = Math.floor((tile % T.LARGEUR) / pas), r = Math.floor(Math.floor(tile / T.LARGEUR) / pas);
+  return c >= 0 && r >= 0 && c < l && r < h ? BIOMES[biomes[r * l + c]] || null : null;
+}
+
+// Le brouillard pour la carte (js/carte/ferme/brouillard.js) : le vu de la partie (une chaîne base64,
+// un bit par cellule), la taille des cellules et de leur grille ; null sans grand monde.
+function brouillardModele() {
+  const v = vuDe(state);
+  return v ? { vu: v.vu, C: v.C, L: v.L, H: v.H } : null;
+}
+
+// La boussole pour la carte (js/carte/ferme/boussole.js) : le lieu choisi sur la carte du monde (s'il est
+// encore vu), la ferme (le bout de sa sortie), le rectangle de la ferme (en px) ; montree : les Options.
+function boussoleModele() {
+  const T = farmTerrain(state), sol = T.MONDE ? solDuMonde(T) : null;
+  if (!T.FERME || !sol) return null;
+  const W = T.LARGEUR, px = (c) => ({ x: (c % W) * 16 + 8, y: Math.floor(c / W) * 16 + 8 }), F = T.FERME;
+  const b = butBoussole(state), lieux = sol.lieux();
+  let but = null;
+  if (b && lieux) {
+    const L = lieuxDeLaCarte(state, lieux, T), l = (b.sorte === 'hameau' ? L.hameaux : b.sorte === 'grotte' ? L.grottes : L.peche).find((q) => q.id === b.id);
+    if (l) but = { ...px(l.case), nom: l.nom, icone: LIEUX_ICONES[b.sorte] };
+  }
+  return {
+    montree: boussoleMontree(state), but,
+    ferme: { ...px(T.MONDE.cadre.SORTIE), nom: 'La ferme', icone: LIEUX_ICONES.ferme },
+    surFerme: { x0: F.X * 16, y0: F.Y * 16, x1: (F.X + F.LARGEUR) * 16, y1: (F.Y + F.HAUTEUR) * 16 },
+  };
 }
 
 // Une bête du grand monde paraît pour la première fois dans la vue (js/carte/ferme/faune-monde.js) :

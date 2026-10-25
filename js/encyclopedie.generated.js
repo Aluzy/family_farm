@@ -2173,6 +2173,45 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
+     "id": "brouillard",
+     "terme": "Le brouillard",
+     "description": "Le grand monde est caché au départ : seules ta ferme et la prairie autour sont dégagées. Partout ailleurs, un brouillard blanc couvre le pays, et rien de ce qu'il cache ne se devine — ni les arbres, ni les bêtes, ni les maisons, ni la calèche qui passe derrière. Il se lève autour de toi à mesure que tu marches, et ce que tu as vu le reste. Tu vois plus loin en hauteur, dans la montagne et sur les sommets (18 à 22 cases), et à découvert, sur la lande et la côte (15 cases), qu'au milieu des prés (12 cases) ; bien moins dans la forêt dense (7 cases) et le marais (9 cases), et deux fois moins la nuit. Ce que tu as vu s'inscrit sur la carte du monde.",
+     "liens": [
+      "carte_du_monde",
+      "boussole",
+      "hameaux"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "carte_du_monde",
+     "terme": "La carte du monde",
+     "description": "Elle s'ouvre par le menu (« Carte du monde »), la touche M au clavier ou un appui sur la boussole. Elle montre, en petit, tout ce que tu as vu du grand monde — les prés, les forêts, les marais, la lande, la montagne, la côte, les rivières et les lacs, les chemins, ta ferme — et laisse le reste dans le brouillard. Les lieux que tu as découverts y ont leur icône : les hameaux (avec leur nom une fois que tu y es allé), les entrées de grotte, les coins de pêche ; tu y vois aussi ta position et ta direction, et la calèche quand elle passe dans une partie que tu connais. Fais-la glisser du doigt ou à la souris, zoome à deux doigts, à la molette ou avec les boutons ; touche un lieu pour lire son nom et sa distance, et choisis-le pour que la boussole t'y mène.",
+     "liens": [
+      "brouillard",
+      "boussole",
+      "hameaux",
+      "comptoir"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "boussole",
+     "terme": "La boussole",
+     "description": "Une petite boussole de laiton, en haut à droite de l'écran, sous l'horloge : son aiguille rouge montre la ferme, ou le lieu que tu as choisi sur la carte du monde, et dessous s'affichent son nom et sa distance en cases. Sur la ferme, quand aucun lieu n'est choisi, elle se cache. Arrivé au lieu choisi, elle montre de nouveau la ferme. Un appui sur elle ouvre la carte du monde ; les Options la retirent de l'écran.",
+     "liens": [
+      "carte_du_monde",
+      "brouillard"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
      "id": "horloge",
      "terme": "Horloge",
      "description": "La journée va de 6 h à 22 h, la nuit de 22 h à 6 h ; une heure dure 30 secondes. À 22 h, la famille va se coucher et reste à la maison, et la nuit défile à la même vitesse. La nuit n'empêche pas d'agir : seul le sommeil du personnage bloque les actions. À minuit, la nuit passe (ponte, lait, récolte automatique…) et le jour change ; à 6 h, c'est le réveil. L'horloge s'arrête quand le jeu est fermé.",

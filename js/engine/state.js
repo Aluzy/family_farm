@@ -20,6 +20,7 @@ import { closeFridge, FRIGO_OBJET } from './fridge.js';
 import { ETAPES } from './didacticiel.js';
 import { faucherSousBati } from './outils.js';
 import { farmSeed, farmTerrain, regionsFerme } from './terrain.js';
+import { vuDesRegions, vuInitial } from './monde-vu.js';
 import { genererFerme } from './ferme-generee.js';
 import { caseDuMonde, FERME_DANS_MONDE, idDuMonde, MONDE } from './monde.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
@@ -130,8 +131,10 @@ export function createInitialState(seed = 1) {
   s.carte = { graine: graineDemenagement(s) };
   // les régions du monde vues (terrain.js, voirRegion) : celles de la ferme d'office, puis celles
   // où le personnage entre ; ce qu'il a pris dans le monde (monde-recolte.js, fiche 6a) ; les
-  // hameaux où il est allé (monde-hameaux.js, fiche 7a) ; leurs habitants (habitants.js, fiche 7b)
-  s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {} };
+  // hameaux où il est allé (monde-hameaux.js, fiche 7a) ; leurs habitants (habitants.js, fiche 7b) ;
+  // ce qui a été vu (monde-vu.js, fiche 8 : un bit par cellule de 8 × 8 cases, la ferme et sa prairie
+  // d'office), le but de la boussole (null : la ferme) et si elle se montre
+  s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s)), but: null, boussole: true };
   s.potager.parcelles = startPlots(farmTerrain(s));
   return s;
 }
@@ -459,6 +462,15 @@ export const MIGRATIONS = {
   // l'argent, l'inventaire (ce qui a été acheté au Marché reste au joueur), les outils, les animaux, les
   // meubles et les cours du Marché (state.marche : ceux des semences comptent encore) restent.
   56: (state) => ({ ...state, caleche: nouvelleCaleche(), version: 57 }),
+  // v57 → v58 : s'orienter (monde-vu.js, fiche 8) : ce qui a été vu du grand monde, plus fin que les
+  // régions (state.monde.vu : un bit par cellule de 8 × 8 cases, en base64), le but de la boussole
+  // (state.monde.but, null : la ferme) et si elle se montre (state.monde.boussole). Une partie existante
+  // a vu sa ferme et sa prairie, et chaque région déjà vue (state.monde.vues), en entier.
+  57: (state) => {
+    const T = farmTerrain({ ...state, version: 58 });
+    const monde = state.monde || { vues: regionsFerme(T), pris: {}, hameaux: {}, habitants: {} };
+    return { ...state, monde: { ...monde, vu: vuDesRegions(T, monde.vues), but: null, boussole: true }, version: 58 };
+  },
 };
 
 // Porte les cases d'une partie (numérotées sur la largeur de sa ferme) dans celles du monde, où sa

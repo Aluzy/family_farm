@@ -42,6 +42,7 @@ import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from '.
 import { renderAtelier } from './atelier.js';
 import { encyclopedieNouveautes } from './encyclopedie.js';
 import { couchages } from '../engine/blocs.js';
+import { farmTerrain } from '../engine/terrain.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './caleche.js';
 import { renderChapterBanner } from './chapitres.js';
 import { renderBoite } from './boite.js';
@@ -604,6 +605,13 @@ function encyclopedieBouton() {
   return `<button type="button" class="nav-btn" data-action="encyclo-open" title="Encyclopédie" aria-label="${label}"><span class="nav-icon" aria-hidden="true">📖${badge}</span><span class="nav-label">Encyclopédie</span></button>`;
 }
 
+// Fiche 8 : la carte du monde (js/ui/carte-monde.js ; aussi la touche M et la boussole), avec la carte de
+// la ferme et son grand monde.
+function carteMondeBouton() {
+  if (!stageUsable() || !farmTerrain(state).MONDE) return '';
+  return '<button type="button" class="nav-btn" data-action="carte-monde-open" title="Carte du monde (touche M)" aria-label="Carte du monde" aria-keyshortcuts="M"><span class="nav-icon" aria-hidden="true">🧭</span><span class="nav-label">Carte du monde</span></button>';
+}
+
 export function renderTabbar() {
   const current = ['commerce', 'inventaire', 'atelier', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
@@ -640,6 +648,7 @@ export function renderTabbar() {
       .join('') +
       // L'Encyclopédie, un livre qui se remplit au fil de la partie (js/ui/encyclopedie.js)
       encyclopedieBouton() +
+      carteMondeBouton() +
       // Le mode test (activé dans les Options) : son panneau, par-dessus la carte.
       (testMode ? `<button type="button" class="nav-btn${testOpen ? ' active' : ''}" data-action="test-open" title="Mode test" aria-label="Mode test" aria-pressed="${testOpen}"><span class="nav-icon" aria-hidden="true">🧪</span><span class="nav-label">Test</span></button>` : '') +
       // Version 1.4 : les Options ne sont plus dans le bandeau mais ici, au bout du menu.

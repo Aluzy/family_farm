@@ -221,7 +221,7 @@
     hameauxOmbres() {
       const out = [];
       // (pas celui qui s'efface : le personnage est dedans)
-      for (const e of (this.hameauxVus || new Map()).values()) for (const t of e.toits) if (t.img.alpha > 0.5) out.push(t);
+      for (const e of (this.hameauxVus || new Map()).values()) for (const t of e.toits) if (t.img.alpha > 0.5 && !t.img.brume) out.push(t);   // (ni sous le brouillard : brouillard.js)
       return out;
     },
 

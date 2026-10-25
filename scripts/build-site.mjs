@@ -60,7 +60,7 @@ const SOURCEMAP = process.argv.includes('--sourcemap');
 // scripts classiques, hors du regroupement : le kit commun des cartes (js/carte/), la ferme
 // (js/carte/ferme/ et js/farm-stage.js), la mine (js/grotte.js)
 const CARTE_KIT = ['kit', 'chemins', 'nature', 'gestes', 'lumiere', 'eau', 'triporteur', 'cheval', 'toit', 'jeu'].map((n) => `js/carte/${n}.js`);
-const CARTE_FERME = ['config', 'sol', 'decor', 'soleil', 'camera', 'etiquettes', 'hache', 'pioche', 'coupfort', 'moulin', 'cueillette', 'chantier', 'etage', 'toits', 'fenetres', 'eau', 'eau-monde', 'vegetation', 'recolte-monde', 'peche', 'didacticiel', 'plantation', 'passages', 'lieux-monde', 'hameaux', 'habitants', 'caleche', 'faune-monde', 'machines', 'abeilles', 'botteleuse', 'silo', 'foret', 'modele'].map((n) => `js/carte/ferme/${n}.js`);
+const CARTE_FERME = ['config', 'sol', 'decor', 'soleil', 'camera', 'etiquettes', 'hache', 'pioche', 'coupfort', 'moulin', 'cueillette', 'chantier', 'etage', 'toits', 'fenetres', 'eau', 'eau-monde', 'vegetation', 'recolte-monde', 'peche', 'didacticiel', 'plantation', 'passages', 'lieux-monde', 'hameaux', 'habitants', 'caleche', 'faune-monde', 'brouillard', 'boussole', 'machines', 'abeilles', 'botteleuse', 'silo', 'foret', 'modele'].map((n) => `js/carte/ferme/${n}.js`);
 const SCRIPTS = ['js/telemetry.js', ...CARTE_KIT, 'js/ambient-life.js', 'js/fermier.js', 'js/famille-ferme.js', ...CARTE_FERME, 'js/farm-stage.js', 'js/grotte.js'];
 const ENTRY = 'js/main.js';
 const BUNDLE = 'js/jeu.bundle.js';

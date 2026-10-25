@@ -583,6 +583,21 @@ export function validateData(data) {
     for (const cle of ['ACHAT_HAMEAU', 'GARDE']) if (!(isInt(C[cle]) && C[cle] >= 0 && C[cle] <= 100)) err(`CALECHE.${cle}`, 'un % de 0 à 100');
     for (const cle of ['VENTE', 'PRIS', 'COFFRE_MAX', 'RATTRAPAGE']) if (!(isInt(C[cle]) && C[cle] >= 1)) err(`CALECHE.${cle}`, 'un entier positif');
   }
+  /* s'orienter : le vu, le rayon de vue, la boussole (data/monde.json, lus par js/engine/monde-vu.js : fiche 8) */
+  if (data.DECOUVERTE) {
+    const D = data.DECOUVERTE, BI = data.BIOMES || [];
+    // (une cellule divise une région du monde : MONDE.REGION, 64 cases)
+    if (!(isInt(D.CELLULE) && D.CELLULE >= 2 && 64 % D.CELLULE === 0)) err('DECOUVERTE.CELLULE', 'un entier qui divise 64 (la taille des régions)');
+    for (const cle of ['MARGE_FERME', 'ARRIVEE']) if (!(isInt(D[cle]) && D[cle] >= 0)) err(`DECOUVERTE.${cle}`, 'un entier positif ou nul');
+    for (const cle of ['RAYON', 'RAYON_MIN']) if (!(typeof D[cle] === 'number' && D[cle] > 0 && D[cle] <= 40)) err(`DECOUVERTE.${cle}`, 'un nombre de cases, de 0 à 40');
+    // (les biomes du générateur, et ceux de BIOMES)
+    const connus = new Set(['mer', 'plage', 'falaise', 'prairie', 'foret', 'marais', 'lande', 'montagne', 'sommet', 'lac', 'riviere'].concat(Array.isArray(BI) ? BI : []));
+    for (const [b, r] of Object.entries(D.RAYONS || {})) {
+      if (!connus.has(b)) err('DECOUVERTE.RAYONS', `« ${b} » n'est pas un biome (BIOMES)`);
+      if (!(typeof r === 'number' && r >= D.RAYON_MIN && r <= 40)) err(`DECOUVERTE.RAYONS.${b}`, 'un nombre de cases, de RAYON_MIN à 40');
+    }
+    if (!(typeof D.NUIT === 'number' && D.NUIT > 0 && D.NUIT <= 1)) err('DECOUVERTE.NUIT', 'un facteur, de 0 à 1');
+  }
   if (data.HABITANTS) {
     const HB = data.HABITANTS, paire = (v) => Array.isArray(v) && v.length === 2 && v.every((n) => isInt(n) && n >= 0) && v[0] <= v[1];
     for (const cle of ['ADULTES', 'ENFANTS']) if (!paire(HB[cle])) err(`HABITANTS.${cle}`, '[au moins, au plus] : deux entiers positifs dans l\'ordre');

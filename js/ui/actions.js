@@ -22,6 +22,7 @@ export const SOMMEIL_MESSAGE = '💤 Tu dors : attends le réveil.';
 export const SOMMEIL_PERMISES = new Set([
   'sleep', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
   'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'meuble-annule', 'meuble-place',
+  'carte-monde-but', 'carte-monde-ferme', // (fiche 8 : choisir le but de la boussole, rien ne bouge)
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
   'plant', 'boite-deposer', 'boite-reprendre', 'water', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',

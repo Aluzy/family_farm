@@ -2916,3 +2916,151 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .caleche-bandeau.ici { background: rgba(190, 226, 140, 0.55); }
 .caleche-bandeau .caleche-ico { font-size: 1.5rem; flex: none; }
 .caleche-bandeau .caleche-texte { flex: 1 1 180px; }
+/* S'orienter (fiche 8). La boussole (js/carte/ferme/boussole.js) : sous l'horloge, à droite de la carte ;
+   son cadran en gros pixels (un canevas de 30 px agrandi deux fois, sans lissage), dessous le but et sa
+   distance sur une plaque de bois. Un appui ouvre la carte du monde. */
+.boussole {
+  position: absolute;
+  top: calc(118px + env(safe-area-inset-top, 0px) - var(--header-h, 0px));
+  right: calc(12px + env(safe-area-inset-right, 0px));
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.35));
+}
+.boussole[hidden] { display: none; }
+.boussole:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; border-radius: 8px; }
+#farm-stage .boussole canvas.boussole-cadran { display: block; width: 60px !important; height: 60px !important; image-rendering: pixelated; cursor: pointer; }
+.boussole-legende {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 132px;
+  padding: 2px 8px 3px;
+  background: #f6ead0;
+  color: #3a2414;
+  border: 2px solid #5a3a1e;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+.boussole-nom { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 116px; }
+.boussole-distance { color: #6a4a2a; }
+@media (max-width: 560px) {
+  .boussole { top: calc(96px + env(safe-area-inset-top, 0px) - var(--header-h, 0px)); right: 8px; }
+  #farm-stage .boussole canvas.boussole-cadran { width: 48px !important; height: 48px !important; }
+  .boussole-legende { font-size: 0.66rem; max-width: 104px; }
+}
+/* La carte du monde (js/ui/carte-monde.js) : une grande fenêtre bois ; la carte en gros pixels, le
+   brouillard par-dessus, les repères (des boutons) posés sur elle ; dessous, le lieu choisi. */
+.modal.carte-monde {
+  width: min(980px, calc(100vw - 16px));
+  max-width: none;
+  height: min(760px, calc(100dvh - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.modal-backdrop:has(.carte-monde) { align-items: center; padding: 8px; }
+.carte-monde h2 { margin: 0; }
+.carte-monde-cadre {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 180px;
+  overflow: hidden;
+  border: 3px solid var(--color-earth);
+  border-radius: 6px;
+  background: #c9d0d8;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.carte-monde-canevas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; }
+.carte-monde-canevas:active { cursor: grabbing; }
+.carte-monde-reperes { position: absolute; inset: 0; pointer-events: none; }
+.carte-monde-repere {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 0;
+  margin: -14px 0 0 0;
+  padding: 2px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: #3a2414;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.carte-monde-icone {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  background: #f6ead0;
+  border: 2px solid #5a3a1e;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+}
+.carte-monde-icone .px { --pxs: 16px; }
+.carte-monde-repere.ferme .carte-monde-icone { width: 28px; height: 28px; }
+.carte-monde-repere.caleche { pointer-events: none; margin: -2px 0 0 14px; }
+.carte-monde-repere.caleche .carte-monde-icone { width: 20px; height: 20px; background: #ffe9a8; }
+.carte-monde-repere.but .carte-monde-icone { border-color: #c03a24; box-shadow: 0 0 0 2px #ffd36a, 0 2px 3px rgba(0, 0, 0, 0.35); }
+.carte-monde-repere.choisi .carte-monde-icone { background: #ffe9a8; transform: scale(1.15); }
+.carte-monde-repere:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; border-radius: 6px; }
+.carte-monde-nom {
+  padding: 1px 6px;
+  background: rgba(246, 234, 208, 0.92);
+  border: 1px solid #5a3a1e;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.carte-monde-perso { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
+.carte-monde-perso::before {
+  content: '';
+  position: absolute;
+  left: -7px;
+  top: -7px;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border: 2px solid #c03a24;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(58, 36, 20, 0.6);
+}
+.carte-monde-fleche { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.carte-monde-fleche::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: -6px;
+  border: 6px solid transparent;
+  border-left: 9px solid #c03a24;
+  filter: drop-shadow(0 0 1px #3a2414);
+}
+.carte-monde-zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.carte-monde-zoom .btn { min-width: 36px; min-height: 36px; padding: 0; font-size: 1.1rem; font-weight: bold; }
+.carte-monde-attente { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: #3a2414; font-weight: bold; pointer-events: none; }
+.carte-monde-attente[hidden] { display: none; }
+.carte-monde-info { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; min-height: 36px; }
+.carte-monde-info-nom { font-size: 1.05rem; }
+.carte-monde-info-but { color: #8a2c18; font-weight: bold; }
+.carte-monde-aide { margin: 0; font-size: 0.8rem; }
+@media (max-width: 560px) {
+  .carte-monde-aide { display: none; }
+}

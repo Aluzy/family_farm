@@ -20,6 +20,8 @@ import { syncTestDeviceSelect } from './stage-windows.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { chartFrame, itemsText } from './common.js';
+import { toutCacher, toutVoir } from '../engine/monde-vu.js';
+import { carteMondeVu } from './carte-monde.js';
 
 // La partie passe sur la ferme générée d'une autre graine (docs/carte-generee.md), puis la page
 // se recharge (la carte de la ferme se lit au montage de la scène).
@@ -277,5 +279,18 @@ registerActions({
   },
   'test-ferme-generee': () => {
     actionTestFarmMap();
+  },
+  // Fiche 8 : le brouillard du grand monde levé partout, ou revenu partout (sauf la ferme et sa prairie)
+  'test-tout-voir': () => {
+    const result = applyResult(toutVoir(state));
+    persistState();
+    carteMondeVu();
+    if (result.ok) notify('🗺️ Tout le monde est vu : plus de brouillard.');
+  },
+  'test-tout-cacher': () => {
+    const result = applyResult(toutCacher(state));
+    persistState();
+    carteMondeVu();
+    if (result.ok) notify('🌫️ Le brouillard couvre de nouveau le monde (sauf la ferme et sa prairie).');
   },
 });

@@ -834,6 +834,82 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        même vitesse partout (la montagne, le marais) ; les habitants ne lui achètent rien (plus tard, si
        besoin) ; une tournée très longue la fait rouler vite ; au-delà de l'arrêt, sur la place, elle se gare
        là où passe le chemin (parfois devant le puits).
-8. **S'orienter** (1 à 2 PR) : le brouillard, la carte du monde, une boussole.
+8. ✅ **S'orienter** (1 PR, fait) : le brouillard, la carte du monde, une boussole.
+   - **Fait (8)** : le brouillard, la carte du monde et la boussole.
+     - **Le vu** (`js/engine/monde-vu.js`, réglé par `data/monde.json` : `DECOUVERTE`, vérifié par
+       `scripts/lib/data.mjs`) : le monde se découpe en cellules de 8 × 8 cases (81 × 64), vues ou non ;
+       la sauvegarde les garde dans `state.monde.vu`, un bit par cellule en base64 (864 caractères, quel que
+       soit le voyage). La ferme et sa prairie (`MARGE_FERME`, 12 cases autour) sont vues d'office (relues
+       comme vues même si la chaîne est abîmée). À chaque case où passe le personnage (le pont `ici`), la
+       page appelle `voirAutour` avec le biome de sa case (l'aperçu des biomes du Worker, un par bloc de 8 × 8
+       cases) et la nuit : chaque cellule qui touche le cercle de vue devient vue. Le rayon (`RAYONS`, en
+       cases) : 12 dans les prés, 15 à découvert (lande, plage, falaises), 18 en montagne, 22 sur les
+       sommets (on voit de haut), 9 dans le marais, 7 dans la forêt dense ; la nuit, moitié moins
+       (`NUIT`), 5 au moins. Le moteur lit toujours les régions (`state.monde.vues`, ses revues de cases et
+       ses nuits) : tenues à côté, une cellule qui devient vue rend vue sa région (pas la prairie d'office :
+       autour de la ferme, le moteur garde les régions qu'il avait). Le mode test (le panneau, et le menu du
+       god mode) : « Brouillard : tout voir » (sans toucher aux régions du moteur) et « tout cacher ».
+     - **Sauvegardes** : format 58 ; la migration 57 → 58 donne `vu` (la ferme et sa prairie, et chaque
+       région déjà vue en entier ; les régions de la ferme, vues d'office, seulement si le joueur est allé
+       au-delà : il les a traversées), `but: null` (la boussole montre la ferme) et `boussole: true`.
+     - **Le brouillard** (`js/carte/ferme/brouillard.js`) : une seule texture de la taille de la vue (et
+       d'une marge), en gros pixels (2 px de carte), au-dessus de tout, du voile de la nuit compris (il
+       prend lui-même la couleur de l'heure : bleu sombre la nuit, doré le soir). Un champ par case (la
+       cellule de chaque case, étendu de 3 cases sur le vu, flouté de 2) : opaque sur toute cellule pas
+       vue, il s'éclaircit sur le vu en 4 à 5 cases ; son bord ondule (le champ lu jusqu'à 12 px à côté,
+       deux bruits) et s'effiloche, en nappes de deux tons qui dérivent au vent (immobiles avec
+       « animations réduites ») : pas de cases dures. Une cellule qui devient vue se dégage en fondu
+       (1,4 s). Ce qui se dresse (arbres, rochers, falaises, murs, toits, bêtes, habitants, la calèche…)
+       et dont le pied est sur une cellule pas vue n'est pas dessiné du tout (le filtre de la caméra,
+       `cameraFilter` : rien ne dépasse du brouillard), ne porte pas d'ombre et ne se touche pas (un appui
+       sur le brouillard y fait marcher) ; la calèche n'y a ni icône au bord de l'écran ni bouton Héler,
+       une bête n'y découvre pas sa page de l'encyclopédie. La texture n'est refaite que quand la vue a
+       glissé de deux cases, pendant un fondu (une image sur deux) et quatre fois moins souvent pour la
+       dérive ; seul le rectangle qui n'est pas transparent est dessiné ; rien sur la ferme.
+     - **La carte du monde** (`js/ui/carte-monde.js` ; l'image : `js/engine/monde-carte.js`) : une fenêtre
+       (le menu « 🧭 Carte du monde », la touche M, un appui sur la boussole). L'image du monde, un pixel
+       par case dans le style du jeu (les biomes en deux tons semés case par case, le relief ombré, la mer
+       plus sombre au large et son écume, les lacs et les rivières, les falaises, les chemins et leurs gués,
+       les toits et la terre battue des hameaux), est faite par le Web Worker à la première ouverture
+       (message `carte` ; sans Worker, par morceaux de 48 rangées sur la page), puis gardée ; la page y
+       peint la ferme de la partie (son eau, ses chemins, ses arbres, ses rochers, ce qui y est bâti, ses
+       parcelles). Par-dessus, le brouillard (une case sur deux, adouci : opaque sur le pas vu). Les
+       repères : la ferme, les lieux vus (`lieuxDeLaCarte` : hameaux — leur nom une fois visités —,
+       entrées de grotte, coins de pêche ; rien de ce qui n'est pas vu), la calèche dans une partie vue, le
+       personnage et sa direction (`FarmStage.perso`). On la fait glisser, on zoome (deux doigts, molette,
+       + et −), ⌖ revient au personnage ; un appui sur un lieu dit son nom, ce qu'il est, sa distance, et
+       « Y mener la boussole » (`choisirBut`). Elle reste juste ouverte : les repères quatre fois par
+       seconde (chacun garde son élément : un appui n'est jamais perdu), le brouillard et les lieux dès que
+       le vu change. Trois icônes nouvelles (`scripts/icones/art_monde.py`) : 🏘️ le hameau, 🕳️ l'entrée
+       d'une grotte, 🧭 la boussole.
+     - **La boussole** (`js/carte/ferme/boussole.js`) : sous l'horloge, un cadran de laiton en gros pixels
+       (un canevas de 30 px agrandi, redessiné quand l'aiguille tourne d'un cran sur 48), l'aiguille rouge
+       vers le but, dessous son nom et sa distance en cases. Le but : le lieu choisi sur la carte (s'il est
+       vu), sinon la ferme (le bout de sa sortie). Choix : sans lieu choisi, elle se cache sur la ferme (elle
+       y montrerait l'endroit où l'on est) ; un lieu choisi, elle se montre partout ; à `ARRIVEE` (4) cases
+       de lui, un message (« Te voilà ») et elle revient à la ferme. Un appui ouvre la carte du monde ; les
+       Options la retirent (`state.monde.boussole`).
+     - **L'aide et l'encyclopédie** : une ligne « S'orienter » dans l'aide (les outils) ; trois pages
+       (« Le brouillard », « La carte du monde », « La boussole », connues dès le départ).
+     - **Mesuré** (Chromium sans carte graphique, SwiftShader : tout le rendu se fait sur le processeur ;
+       la même graine). Le temps d'une image en marchant le long du chemin de la calèche, de la ferme vers
+       le premier hameau (2 parties de chaque, 2 × 20 s) : moyenne 77,0 et 87,5 ms puis 76,5 et 86,5 ms
+       avant ; 84,5 et 97,7 ms puis 87,8 et 95,3 ms après (médianes 72 à 84 avant, 83 à 95 après) : environ
+       10 % de plus quand le brouillard est dans la vue. Debout au bord du brouillard, en l'ôtant et en le
+       remettant tour à tour (4 × 5 s chacun) : 58 à 67 ms sans, 72 à 79 ms avec ; le JavaScript du
+       brouillard n'en prend que 2,8 ms par image en moyenne (10 ms au plus, à une texture refaite) et la
+       revue de ce qui se dresse 0,3 ms : le reste est le dessin d'une texture translucide sur une bonne part
+       de l'écran par le processeur (comme le voile de la nuit), à revoir sur une vraie carte graphique
+       (étape 9). Sur la ferme, rien (pas de brouillard dans la vue). La mise à jour du vu : 0,03 ms par case
+       en moyenne (sauvegarde comprise, quand une cellule s'ajoute). La carte du monde : l'image dans le
+       Worker, 177 ms (les éléments déjà tirés), hors de la page ; la première ouverture dessinée en 340 ms,
+       les suivantes en 70 à 110 ms. La sauvegarde : 4,2 Ko au départ avant, 5,0 Ko après ; après le tour du
+       monde par les chemins (un quart du monde vu, quatre hameaux visités et leurs habitants), 11,9 Ko,
+       dont 864 caractères pour le vu, toujours les mêmes. `npm test` : 48,9 s avant, 49,2 à 49,7 s
+       après (les tests de la fiche : `tests/engine/monde-vu.test.mjs`, 11 tests, ~2 s).
+     - Reste : le coût du brouillard sur une vraie carte graphique, et sur téléphone (étape 9) ; la carte du
+       monde ne montre pas encore les bêtes vues ni les arbres abattus ; un lieu choisi qui n'est plus vu
+       (le mode test a tout caché) rend la boussole à la ferme ; la ferme de la carte du monde n'a pas ses
+       bâtiments dessinés (ses blocs, d'une seule couleur).
 9. **La finition** (1 à 2 PR) : les anciennes parties, les performances sur mobile, l'aide,
    l'encyclopédie, le didacticiel.

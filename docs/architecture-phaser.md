@@ -113,6 +113,8 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | `hameaux.js` | les hameaux bâtis du grand monde (fiche 7a) : leurs toits (`CarteKit.toit` : tuiles, ardoise, chaume, roseaux), qui s'effacent quand le personnage entre, leurs cheminées et leur fumée, les fenêtres éclairées la nuit (`stepFenetresHameaux`, dans le voile avec les lanternes), l'arrivée (pont `hameau`), le panneau (pont `hameauPanneau`), les outils qui n'ont rien à y faire (`hameauOutil`, en premier dans `hitAt` ; pont `hameauRefus`) ; leurs murs, meubles, clôtures et objets sont une planche de `vegetation.js` |
 | `habitants.js` | les habitants des hameaux (fiche 7b) : faits avec les toits de leur hameau (la planche de leur personnage chargée à la demande), ils suivent l'horaire (`modèle.habitants`) : au lit la nuit (sous la couverture des lits des maisons), au travail le jour avec le geste de leur métier (le bûcheron abat aussi des arbres du monde : `mondeAbat`), les enfants sur la place, à la maison aux repas ; leurs trajets (`fermier.path`, bornés par image), le personnage qu'ils contournent ; un geste fini (pont `habitantAgit`, la bulle « +x »), un appui (`habitantAt`, en premier dans `hitAt` ; pont `habitantParle`, la bulle de parole) ; les moutons de l'enclos du berger |
 | `faune-monde.js` | les bêtes du grand monde (fiche 6b) : leurs images près de la vue, ce qu'elles font (repos, petits trajets, fuite à la façon de chacune, l'aigle qui tourne et son ombre, le dauphin qui saute), la nuit, « animations réduites », un appui (pont `faune`) et la première vue d'une espèce (pont `fauneVue`) |
+| `brouillard.js` | le brouillard du grand monde (fiche 8) : sur les cellules pas vues (`modèle.brouillard`, le vu du moteur), une texture de la taille de la vue en gros pixels, au-dessus de tout (et du voile de la nuit : elle prend la couleur de l'heure), opaque sur le pas vu, ses bords en nappes qui dérivent (immobiles avec « animations réduites »), le fondu d'une cellule qui devient vue ; ce qui se dresse sur une cellule pas vue n'est pas dessiné (le filtre de la caméra : `cameraFilter`), ne porte pas d'ombre et ne se touche pas (`sousBrume`, en premier dans `hitAt`) |
+| `boussole.js` | la boussole (fiche 8) : un bouton dans la zone de la carte, sous l'horloge, son cadran en gros pixels (un canevas redessiné quand l'aiguille tourne d'un cran), le but (`modèle.boussole` : le lieu choisi sur la carte du monde, sinon la ferme ; cachée sur la ferme sans but) et sa distance ; un appui ouvre la carte du monde (pont `act`) |
 | `machines.js` | les asperseurs, le robot |
 | `abeilles.js` | les abeilles des ruches : elles sortent par le trou de vol, butinent les fleurs à portée (`modèle.fleurs`, l'herbe haute fleurie), rentrent ; le jour seulement |
 | `modele.js` | `sync(modèle)` et ce qu'il crée (bâtiments, parcelles, Verger, puits, citerne) |
@@ -309,6 +311,14 @@ poulailler et le moulin n'y ont plus d'image (leur forme de secours).
   (`caleche`), et `js/carte/ferme/caleche.js` la suit en douceur, ne fait l'attelage que près de la vue,
   allume sa lanterne dans le voile, montre l'icône du bord de l'écran et le bouton Héler ; un appui sur
   elle passe par le pont (`calecheTouchee`).
+- **S'orienter** (fiche 8) : le moteur tient le vu (`js/engine/monde-vu.js` : un bit par cellule de 8 × 8
+  cases ; la page le met à jour à chaque case du personnage, pont `ici`, avec le biome de sa case lu dans
+  l'aperçu du Worker) ; le modèle de la carte le donne tel que la sauvegarde le garde (`brouillard` : la
+  chaîne base64), et la boussole son but (`boussole`). La scène dessine le brouillard et la boussole
+  (`brouillard.js`, `boussole.js`), sans rien compter. La carte du monde est une fenêtre de la page
+  (`js/ui/carte-monde.js`) : l'image du monde, un pixel par case, vient du Web Worker (message `carte`,
+  `js/engine/monde-carte.js` ; sans Worker, par morceaux de rangées sur la page), la ferme, le brouillard
+  et les repères y sont posés par la page ; le personnage et sa direction viennent de `FarmStage.perso()`.
 - **Relevés du chargement par régions.** Les arbres, buissons et barrières (`findOccluders`,
   `mapTrees`), les rochers (`findRocks`), les tuiles animées (`makeTileAnims`), la terre des
   anciennes zones (`zoneGround`) et les lieux de la vie d'ambiance (`readMap`,

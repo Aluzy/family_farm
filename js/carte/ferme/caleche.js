@@ -107,9 +107,11 @@
       const p = this.fermier && this.fermier.pos ? this.fermier.pos() : { x: this.cx, y: this.cy };
       const loin = Math.hypot(C.x - p.x, C.y - p.y);
       const dedans = C.x > v.x + 8 && C.x < v.right - 8 && C.y - 40 > v.y && C.y < v.bottom;
+      // (sous le brouillard du grand monde, rien ne la trahit : ni icône, ni bouton Héler, brouillard.js)
+      const brume = !!(this.sousBrume && this.sousBrume(C.x, C.y - 1));
       // l'icône du bord : proche, hors de la vue
       let S = this.calecheSigne;
-      const montre = !dedans && loin <= e.proche;
+      const montre = !dedans && loin <= e.proche && !brume;
       if (montre && !S) {
         const el = document.createElement('button');
         el.type = 'button';
@@ -137,7 +139,7 @@
       }
       // le bouton Héler, au-dessus d'elle (on la voit, elle passe tout près)
       let Hb = this.calecheHelerBtn;
-      const heler = dedans && e.helable && !!this.calecheSprite;
+      const heler = dedans && e.helable && !!this.calecheSprite && !brume;
       if (heler && !Hb) {
         const el = document.createElement('button');
         el.type = 'button';
@@ -187,7 +189,7 @@
     // Un appui sur l'attelage ?
     calecheAt(wx, wy) {
       const s = this.calecheSprite, B = CALECHE.boite;
-      if (!s || !s.visible) return false;
+      if (!s || !s.visible || s.brume) return false;
       return Math.abs(wx - s.x) <= B.l && wy <= s.y + B.bas && wy >= s.y - B.h;
     },
 
