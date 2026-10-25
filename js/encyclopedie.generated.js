@@ -11,7 +11,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "maison",
      "terme": "Maison",
-     "description": "La maison de la famille, c'est le foyer qu'on bâtit soi-même : une pièce close (des murs tout autour et une porte) où l'on pose une paillasse ou un lit. On peut l'agrandir de plusieurs pièces, y poser le four, la cuisinière et les meubles du Marché, et lui ajouter un étage. Le soir, la famille y rentre dormir, et chaque matin le personnage en ressort. Sa fenêtre regroupe la Famille, le Livre de recette, l'Arbre des technologies et les Installations.",
+     "description": "La maison de la famille, c'est le foyer qu'on bâtit soi-même : une pièce close (des murs tout autour et une porte) où l'on pose une paillasse ou un lit. On peut l'agrandir de plusieurs pièces, y poser le four, la cuisinière et les meubles fabriqués à l'Atelier, et lui ajouter un étage. Le soir, la famille y rentre dormir, et chaque matin le personnage en ressort. Sa fenêtre regroupe la Famille, le Livre de recette, l'Arbre des technologies et les Installations.",
      "liens": [
       "foyer",
       "piece_close",
@@ -193,7 +193,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "verger",
      "terme": "Verger",
-     "description": "Les arbres fruitiers de la ferme : pommier, poirier, cerisier, abricotier et pêcher. Un jeune arbre s'achète au Marché et se plante depuis sa fiche de l'Inventaire (« Planter », puis une case en surbrillance sur la carte), dehors, à au moins 3 cases d'un autre arbre planté. L'arbre passe par 4 dessins : jeune arbre, arbuste, arbre (5 nuits chacun), puis arbre en fruits, 15 nuits après sa plantation. Les fruits attendent sur l'arbre : un appui le cueille (6 fruits, 4 énergie, 20 XP), et l'arbre redonne ses fruits 3 nuits plus tard, toute l'année. La Récolte du verger, dans l'Arbre des technologies, les cueille la nuit. Il ne s'arrose pas.",
+     "description": "Les arbres fruitiers de la ferme : pommier, poirier, cerisier, abricotier et pêcher. Un jeune arbre s'achète à la calèche et se plante depuis sa fiche de l'Inventaire (« Planter », puis une case en surbrillance sur la carte), dehors, à au moins 3 cases d'un autre arbre planté. L'arbre passe par 4 dessins : jeune arbre, arbuste, arbre (5 nuits chacun), puis arbre en fruits, 15 nuits après sa plantation. Les fruits attendent sur l'arbre : un appui le cueille (6 fruits, 4 énergie, 20 XP), et l'arbre redonne ses fruits 3 nuits plus tard, toute l'année. La Récolte du verger, dans l'Arbre des technologies, les cueille la nuit. Il ne s'arrose pas.",
      "liens": [
       "pommier",
       "poirier",
@@ -228,7 +228,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "etable",
      "terme": "Étable",
-     "description": "Un bâtiment qu'on bâtit, comme le Poulailler : une pièce close avec la mangeoire (fabriquée à l'Atelier), une porte sur le dehors et un enclos de barrières relié par une autre porte. Un mouton occupe 1 place, une vache 3 ; il faut une case libre par place, dans la pièce et dans l'enclos. Chaque nuit, les moutons et les vaches y mangent de la paille. Les animaux s'achètent au Marché.",
+     "description": "Un bâtiment qu'on bâtit, comme le Poulailler : une pièce close avec la mangeoire (fabriquée à l'Atelier), une porte sur le dehors et un enclos de barrières relié par une autre porte. Un mouton occupe 1 place, une vache 3 ; il faut une case libre par place, dans la pièce et dans l'enclos. Chaque nuit, les moutons et les vaches y mangent de la paille. Les animaux ne s'achètent pas : une pierre à sel et du foin, fabriqués à l'Atelier, en font venir un.",
      "liens": [
       "piece_close",
       "bloc_cle",
@@ -443,7 +443,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "cheval",
      "terme": "Cheval et Écurie",
-     "description": "Le cheval s'achète au Marché (600 pièces) une fois l'Écurie construite : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Il y vit tant que tu es à la ferme. Sa case de la barre d'outils te met en selle : tu vas 1,8 fois plus vite sur toutes les cartes. Hors de la ferme, pour en descendre, il faut un poteau d'attache et une corde de fibre (Atelier) : il t'attend attaché là, et un toucher dessus te fait remonter. De retour à la ferme, il rentre à l'Écurie. Chaque nuit il mange 2 paille ; sans elle, il ne va que 1,3 fois plus vite le lendemain.",
+     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Il y vit tant que tu es à la ferme. Sa case de la barre d'outils te met en selle : tu vas 1,8 fois plus vite sur toutes les cartes. Hors de la ferme, pour en descendre, il faut un poteau d'attache et une corde de fibre (Atelier) : il t'attend attaché là, et un toucher dessus te fait remonter. De retour à la ferme, il rentre à l'Écurie. Chaque nuit il mange 2 paille ; sans elle, il ne va que 1,3 fois plus vite le lendemain.",
      "liens": [
       "atelier",
       "murs",
@@ -608,7 +608,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "meubles",
      "terme": "Meubles",
-     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : ils s'achètent au Marché (rayon Meubles) et se posent dans la maison. Une grille aide à les placer ; les tableaux s'accrochent à un mur.",
+     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : ils se fabriquent à l'Atelier (onglet Meubles : des planches, de la fibre, de la laine, de la pierre, un peu de quartz ou de fer, des baies pour la couleur) et se posent dans la maison. Une grille aide à les placer ; les tableaux s'accrochent à un mur.",
      "liens": [
       "maison",
       "comptoir"
@@ -655,7 +655,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "ruche",
      "terme": "Ruche",
-     "description": "S'achète au Marché (rayon Animaux, 200 pièces) et se pose dehors comme un bloc. Au bout de 2 nuits, elle est pleine : une bulle avec un pot de miel s'affiche au-dessus d'elle, et un appui la récolte (3 pots). Ses abeilles volent vers les fleurs.",
+     "description": "Se fabrique à l'Atelier (des planches, de la fibre tressée, une pierre) et se pose dehors comme un bloc : un essaim vient l'habiter. Au bout de 2 nuits, elle est pleine : une bulle avec un pot de miel s'affiche au-dessus d'elle, et un appui la récolte (3 pots). Ses abeilles volent vers les fleurs.",
      "liens": [
       "miel",
       "abeilles",
@@ -682,7 +682,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "bac_a_fleurs",
      "terme": "Bac à fleurs",
-     "description": "S'achète au Marché (rayon Meubles, 60 pièces) et se pose comme un bloc : les abeilles des ruches viennent y butiner.",
+     "description": "Se fabrique à l'Atelier (des planches et de la pierre) et se pose comme un bloc : les abeilles des ruches viennent y butiner.",
      "liens": [
       "abeilles",
       "ruche",
@@ -739,7 +739,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "laisse_de_mer",
      "terme": "Étoiles de mer, algues et coquillages",
-     "description": "Sur les plages du grand monde, au bord de l'eau, la mer laisse des coquillages (une coquille Saint-Jacques, parfois un bulot avec), des étoiles de mer et des algues : un appui dessus, le personnage va les ramasser à la main. La mer en rapporte d'autres quelques jours plus tard. Ils ne se mangent pas : ils se vendent (la calèche du Marché les achètera).",
+     "description": "Sur les plages du grand monde, au bord de l'eau, la mer laisse des coquillages (une coquille Saint-Jacques, parfois un bulot avec), des étoiles de mer et des algues : un appui dessus, le personnage va les ramasser à la main. La mer en rapporte d'autres quelques jours plus tard. Ils ne se mangent pas : ils se vendent (la calèche les achète).",
      "liens": [
       "recolte_du_monde"
      ],
@@ -962,7 +962,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "pommier",
      "terme": "Pommier",
-     "description": "Arbre fruitier permanent du verger, planté dans le sol (un jeune arbre acheté au Marché). Porte 6 pommes 15 nuits après sa plantation, puis 3 nuits après chaque cueillette, toute l'année.",
+     "description": "Arbre fruitier permanent du verger, planté dans le sol (un jeune arbre acheté à la calèche). Porte 6 pommes 15 nuits après sa plantation, puis 3 nuits après chaque cueillette, toute l'année.",
      "liens": [
       "verger"
      ],
@@ -974,7 +974,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "poirier",
      "terme": "Poirier",
-     "description": "Arbre fruitier permanent du verger, planté dans le sol (un jeune arbre acheté au Marché). Porte 6 poires 15 nuits après sa plantation, puis 3 nuits après chaque cueillette, toute l'année.",
+     "description": "Arbre fruitier permanent du verger, planté dans le sol (un jeune arbre acheté à la calèche). Porte 6 poires 15 nuits après sa plantation, puis 3 nuits après chaque cueillette, toute l'année.",
      "liens": [
       "verger"
      ],
@@ -986,7 +986,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "autres_fruitiers",
      "terme": "Cerisier, abricotier, pêcher",
-     "description": "Arbres fruitiers permanents du verger, comme le pommier et le poirier : un jeune arbre s'achète au Marché et se plante dans le sol. Ils donnent cerises, abricots et pêches, et fleurissent avant de porter leurs fruits.",
+     "description": "Arbres fruitiers permanents du verger, comme le pommier et le poirier : un jeune arbre s'achète à la calèche et se plante dans le sol. Ils donnent cerises, abricots et pêches, et fleurissent avant de porter leurs fruits.",
      "liens": [
       "verger",
       "pommier",
@@ -1011,7 +1011,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "poule",
      "terme": "Poule",
-     "description": "Animal du Poulailler, acheté au Marché. Pond un œuf chaque nuit où elle a été nourrie avec du blé (1 blé pour 2 poules), et cela toute sa vie. Le jour, elle sort dans l'enclos.",
+     "description": "Animal du Poulailler, attiré par un nid garni (de la fibre et du blé, fabriqué à l'Atelier). Pond un œuf chaque nuit où elle a été nourrie avec du blé (1 blé pour 2 poules), et cela toute sa vie. Le jour, elle sort dans l'enclos.",
      "liens": [
       "poulailler",
       "etable",
@@ -1027,7 +1027,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "mouton",
      "terme": "Mouton",
-     "description": "Animal de l'Étable, acheté au Marché, qui occupe 1 place. Il mange 1 paille par nuit ; sa laine est prête à tondre après 2 nuits où il a été nourri. Sans paille, sa laine n'avance pas cette nuit-là, et rien d'autre ne lui arrive. Le second adulte de la famille peut s'occuper des bêtes.",
+     "description": "Animal de l'Étable, venu pour une pierre à sel et du foin (Atelier), qui occupe 1 place. Il mange 1 paille par nuit ; sa laine est prête à tondre après 2 nuits où il a été nourri. Sans paille, sa laine n'avance pas cette nuit-là, et rien d'autre ne lui arrive. Le second adulte de la famille peut s'occuper des bêtes.",
      "liens": [
       "etable",
       "comptoir",
@@ -1041,7 +1041,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "vache",
      "terme": "Vache",
-     "description": "Animal de l'Étable, acheté au Marché, qui occupe 3 places. Elle mange 2 pailles par nuit et donne 1 lait chaque nuit où elle a mangé. Sans paille, elle ne donne pas de lait cette nuit-là, et rien d'autre ne lui arrive. Nourrie aux herbes de montagne (bouton « Nourrir les vaches aux herbes » de l'Étable), elle mange 1 herbe à la place de sa paille et donne du lait d'alpage.",
+     "description": "Animal de l'Étable, venue pour une pierre à sel et du foin (Atelier), qui occupe 3 places. Elle mange 2 pailles par nuit et donne 1 lait chaque nuit où elle a mangé. Sans paille, elle ne donne pas de lait cette nuit-là, et rien d'autre ne lui arrive. Nourrie aux herbes de montagne (bouton « Nourrir les vaches aux herbes » de l'Étable), elle mange 1 herbe à la place de sa paille et donne du lait d'alpage.",
      "liens": [
       "etable",
       "comptoir",
@@ -1083,7 +1083,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "laine",
      "terme": "Laine",
-     "description": "Produit obtenu en tondant un mouton dont la laine est prête, vendu au Marché. Ne se consomme pas et ne périme jamais.",
+     "description": "Produit obtenu en tondant un mouton dont la laine est prête ; il se vend à la calèche, et sert aux tapis, aux lits et au canapé (Atelier). Ne se consomme pas et ne périme jamais.",
      "liens": [
       "mouton",
       "comptoir"
@@ -1109,7 +1109,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "fromage_d_alpage",
      "terme": "Herbes, lait et fromage d'alpage",
-     "description": "Bientôt disponible ! Les herbes de montagne se cueilleront dans les prés de la montagne du grand monde ; elles se gardent 3 nuits. Dans l'Étable, le bouton « Nourrir les vaches aux herbes » les donne aux vaches : chaque nuit, une vache mange 1 herbe à la place de ses 2 pailles et donne du lait d'alpage au lieu du lait ; quand les herbes manquent, elle reprend sa paille. En Cuisine, une fois la Laiterie débloquée, 3 laits d'alpage font un fromage d'alpage, plus cher que le fromage frais. Le fromage d'alpage s'achète aussi au marché de la ville et sert à la raclette.",
+     "description": "Bientôt disponible ! Les herbes de montagne se cueilleront dans les prés de la montagne du grand monde ; elles se gardent 3 nuits. Dans l'Étable, le bouton « Nourrir les vaches aux herbes » les donne aux vaches : chaque nuit, une vache mange 1 herbe à la place de ses 2 pailles et donne du lait d'alpage au lieu du lait ; quand les herbes manquent, elle reprend sa paille. En Cuisine, une fois la Laiterie débloquée, 3 laits d'alpage font un fromage d'alpage, plus cher que le fromage frais. Le fromage d'alpage sert à la raclette.",
      "liens": [
       "vache",
       "etable",
@@ -1143,7 +1143,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "miel",
      "terme": "Miel",
-     "description": "Produit des ruches : une ruche pleine donne 3 pots de miel. Il se vend au Marché.",
+     "description": "Produit des ruches : une ruche pleine donne 3 pots de miel. Il se vend à la calèche.",
      "liens": [
       "ruche",
       "abeilles"
@@ -1192,7 +1192,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "pieces",
      "terme": "Pièces",
-     "description": "Monnaie du jeu, obtenue en vendant les surplus de la ferme au Marché, et dépensée pour les achats, les améliorations et l'agrandissement des surfaces.",
+     "description": "Monnaie du jeu, obtenue en vendant les surplus de la ferme à la calèche, et dépensée pour les achats (des semences, les produits des hameaux), les améliorations et l'agrandissement des surfaces.",
      "liens": [
       "comptoir"
      ],
@@ -1230,7 +1230,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "graines",
      "terme": "Graines",
-     "description": "Obtenues normalement en récoltant les cultures, elles permettent de replanter. Peuvent aussi être achetées au Marché en dépannage, mais à un prix plus élevé que la production. Les arbres abattus laissent aussi leurs graines : la pomme de pin et le gland.",
+     "description": "Obtenues normalement en récoltant les cultures, elles permettent de replanter. Peuvent aussi être achetées à la calèche en dépannage, mais à un prix plus élevé que la production. Les arbres abattus laissent aussi leurs graines : la pomme de pin et le gland.",
      "liens": [
       "graines_d_arbre"
      ],
@@ -1687,7 +1687,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "outils",
      "terme": "Outils",
-     "description": "Cinq outils s'achètent une fois chacun au Marché : la houe (40 pièces), la hache (60), la pioche (60), la faux (50) et la canne à pêche (60) ; les quatre premiers se fabriquent aussi à l'Atelier, avec du bois, de la pierre et de la fibre. On choisit celui qu'on tient dans la barre d'outils de la carte, puis on touche l'herbe, un arbre, un rocher, une touffe d'herbe haute, un minerai ou l'eau. Un appui maintenu sur le personnage qui tient un outil donne un coup fort : il tremble puis frappe quand on relâche ; la hache ou la pioche comptent 2 coups, la faux tournoie et fauche toute l'herbe haute autour de lui, la houe laboure les tuiles autour de lui. Chaque geste coûte de l'énergie et rapporte de l'XP. La branche Outils de l'Arbre des technologies les rend plus efficaces : moins de coups, plus de bois, de pierre, de minerai et de poisson, moins d'énergie.",
+     "description": "Les outils se fabriquent une fois chacun à l'Atelier (onglet Outils) : la houe, la hache, la pioche et la faux avec du bois, de la pierre et de la fibre, la canne à pêche avec du bois, de la fibre et une pierre, et le triporteur avec des lingots, des planches et de la fibre. On choisit celui qu'on tient dans la barre d'outils de la carte, puis on touche l'herbe, un arbre, un rocher, une touffe d'herbe haute, un minerai ou l'eau. Un appui maintenu sur le personnage qui tient un outil donne un coup fort : il tremble puis frappe quand on relâche ; la hache ou la pioche comptent 2 coups, la faux tournoie et fauche toute l'herbe haute autour de lui, la houe laboure les tuiles autour de lui. Chaque geste coûte de l'énergie et rapporte de l'XP. La branche Outils de l'Arbre des technologies les rend plus efficaces : moins de coups, plus de bois, de pierre, de minerai et de poisson, moins d'énergie.",
      "liens": [
       "houe",
       "hache",
@@ -1708,7 +1708,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "houe",
      "terme": "Houe",
-     "description": "Outil acheté une seule fois au Marché (40 pièces). Houe en main (barre d'outils de la carte), un appui sur une tuile d'herbe de la carte la laboure (5 énergie, 10 XP) et un appui sur une terre vide la rebouche, gratuitement. La terre déborde en bordure mi-herbe mi-terre sur les 8 tuiles autour : si l'une d'elles ne peut pas la porter (chemin, eau, pierre, arbre, ou une seule tuile d'herbe prise entre deux terres), la houe refuse et dit pourquoi, comme sur un chemin ou aux abords d'un bâtiment.",
+     "description": "Outil fabriqué une seule fois à l'Atelier, avec du bois, une pierre et de la fibre. Houe en main (barre d'outils de la carte), un appui sur une tuile d'herbe de la carte la laboure (5 énergie, 10 XP) et un appui sur une terre vide la rebouche, gratuitement. La terre déborde en bordure mi-herbe mi-terre sur les 8 tuiles autour : si l'une d'elles ne peut pas la porter (chemin, eau, pierre, arbre, ou une seule tuile d'herbe prise entre deux terres), la houe refuse et dit pourquoi, comme sur un chemin ou aux abords d'un bâtiment.",
      "liens": [
       "outils",
       "potager",
@@ -1722,7 +1722,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "hache",
      "terme": "Hache",
-     "description": "Outil acheté une fois au Marché (60 pièces) ou fabriqué à l'Atelier. Hache en main, un appui sur un arbre de la ferme donne un coup : 3 énergie et 1 bois. L'arbre tombe au 3e coup. Sur la ferme, il laisse sa graine (une pomme de pin pour un sapin, un gland pour un autre arbre) et ne repousse pas : on replante sa graine où l'on veut. Sur les autres cartes, il repousse 1 à 3 jours plus tard. Les buissons de la ferme tombent d'un coup, avec leurs baies.",
+     "description": "Outil fabriqué une fois à l'Atelier. Hache en main, un appui sur un arbre de la ferme donne un coup : 3 énergie et 1 bois. L'arbre tombe au 3e coup. Sur la ferme, il laisse sa graine (une pomme de pin pour un sapin, un gland pour un autre arbre) et ne repousse pas : on replante sa graine où l'on veut. Sur les autres cartes, il repousse 1 à 3 jours plus tard. Les buissons de la ferme tombent d'un coup, avec leurs baies.",
      "liens": [
       "graines_d_arbre",
       "bois_et_pierre",
@@ -1735,7 +1735,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "faux",
      "terme": "Faux",
-     "description": "Outil acheté une fois au Marché (50 pièces) ou fabriqué à l'Atelier. Faux en main, un appui sur une touffe d'herbe haute de la carte la fauche : 3 énergie et 1 fibre qui tombe au sol. La touffe repousse 2 à 4 jours plus tard. C'est la seule façon d'avoir de la fibre, et donc de la paille (la botteleuse).",
+     "description": "Outil fabriqué une fois à l'Atelier. Faux en main, un appui sur une touffe d'herbe haute de la carte la fauche : 3 énergie et 1 fibre qui tombe au sol. La touffe repousse 2 à 4 jours plus tard. C'est la seule façon d'avoir de la fibre, et donc de la paille (la botteleuse).",
      "liens": [
       "outils",
       "fibre",
@@ -1749,7 +1749,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "pioche",
      "terme": "Pioche",
-     "description": "Outil acheté une fois au Marché (60 pièces). Pioche en main, un appui sur un rocher donne un coup : 3 énergie et 1 pierre. Le rocher se casse au 3e coup et revient 1 à 3 jours plus tard. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : un appui dessus, et 1 pierre va dans l'inventaire. Dans la grotte, elle prend aussi le minerai dans les murs.",
+     "description": "Outil fabriqué une fois à l'Atelier. Pioche en main, un appui sur un rocher donne un coup : 3 énergie et 1 pierre. Le rocher se casse au 3e coup et revient 1 à 3 jours plus tard. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : un appui dessus, et 1 pierre va dans l'inventaire. Dans la grotte, elle prend aussi le minerai dans les murs.",
      "liens": [
       "outils",
       "bois_et_pierre",
@@ -1763,7 +1763,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "canne_a_peche",
      "terme": "Canne à pêche",
-     "description": "Outil acheté une fois au Marché (60 pièces). Canne en main, un appui sur l'eau lance la ligne (4 énergie) : dans l'étang ou la mare de la ferme, dans un lac, une rivière ou la mer du grand monde. Il arrive que rien ne morde.",
+     "description": "Outil fabriqué une fois à l'Atelier (du bois, des fibres pour la ligne, une pierre). Canne en main, un appui sur l'eau lance la ligne (4 énergie) : dans l'étang ou la mare de la ferme, dans un lac, une rivière ou la mer du grand monde. Il arrive que rien ne morde.",
      "liens": [
       "outils",
       "peche"
@@ -1775,7 +1775,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "bois_et_pierre",
      "terme": "Bois et pierre",
-     "description": "Ressources de la carte : le bois tombe des arbres coupés à la hache, la pierre des rochers cassés à la pioche ; sur la ferme, on ramasse aussi à la main des petites pierres et des morceaux de bois. Ils ne périment pas et se vendent au Marché, mais servent surtout à l'Atelier (planches, murs, outils…) et à payer les technologies de l'Arbre des technologies ; le bois sert aussi au Four pour fondre les lingots.",
+     "description": "Ressources de la carte : le bois tombe des arbres coupés à la hache, la pierre des rochers cassés à la pioche ; sur la ferme, on ramasse aussi à la main des petites pierres et des morceaux de bois. Ils ne périment pas et se vendent à la calèche, mais servent surtout à l'Atelier (planches, murs, outils…) et à payer les technologies de l'Arbre des technologies ; le bois sert aussi au Four pour fondre les lingots.",
      "liens": [
       "ramassage",
       "atelier",
@@ -1830,13 +1830,14 @@ export const ENCYCLOPEDIE = {
    "entrees": [
     {
      "id": "comptoir",
-     "terme": "Marché",
-     "description": "Lieu d'achat et de vente, dans le menu du bas. On y vend les surplus de la ferme contre des pièces ; on y achète des produits et des graines en dépannage, les animaux (poule, mouton, vache) et les ruches, les outils (houe, hache, pioche, faux, canne à pêche), les jeunes arbres fruitiers, les meubles de la maison et les bacs à fleurs, en choisissant la quantité. Le prix d'achat des produits augmente avec les achats et diminue avec les ventes ; le reste est à prix fixe. Les minerais et les lingots ne se vendent pas.",
+     "terme": "La calèche",
+     "description": "Le Marché de la ferme est devenu une calèche : un cheval attelé à une voiture couverte, son cocher, et une lanterne la nuit. Chaque jour, elle fait le tour du monde par les chemins, de hameau en hameau, et passe à la ferme vers 10 h, où elle se gare une heure devant l'entrée ; sur la place de chaque hameau, elle s'arrête une demi-heure, et le soir elle dort dans l'un d'eux. Quand elle approche, une icône au bord de l'écran montre où elle est ; sur un chemin, quand elle passe tout près, on la hèle (un appui sur elle, ou le bouton « Héler ») et elle s'arrête un moment. Arrêtée à côté de toi, elle achète tout ce qui se vend, au prix de vente, et vend les semences (en dépannage : leur prix monte à chaque achat) et ce qu'elle a acheté en chemin à la réserve des hameaux — bois, poisson, pierre, minerai, lait, laine, baies, champignons… —, en quantité limitée, à 150 % de leur prix de vente ; l'argent de ces achats va aux familles des hameaux. Rien d'autre : les outils, les animaux, le cheval, les ruches et les meubles se fabriquent à l'Atelier. Les minerais et les lingots ne se vendent pas. Sa fenêtre, dans le menu, dit où elle est et quand elle passe à la ferme.",
      "liens": [
       "coefficient_dachat",
-      "ruche",
+      "hameaux",
+      "habitants",
+      "graines",
       "meubles",
-      "bac_a_fleurs",
       "verger"
      ],
      "decouverte": [
@@ -1846,7 +1847,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "coefficient_dachat",
      "terme": "Coefficient d'achat",
-     "description": "Multiplicateur appliqué au prix de vente d'un objet pour déterminer son prix d'achat au Marché. Il augmente à chaque achat et diminue à chaque vente, sans jamais descendre sous un plancher minimal.",
+     "description": "Multiplicateur appliqué au prix de vente d'un objet pour déterminer son prix d'achat à la calèche (les semences). Il augmente à chaque achat et diminue à chaque vente, sans jamais descendre sous un plancher minimal.",
      "liens": [
       "comptoir"
      ],
@@ -1857,7 +1858,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "commerce",
      "terme": "Commerce",
-     "description": "Choisi au niveau 10, dans Maison › Commerce : étal de bocaux (4 légumes → 1 bocal de légumes, vendu 24 pièces), crèmerie (3 laits → 1 fromage, 36 pièces) ou métier à tisser (2 laines → 1 tissu, 36 pièces). Chaque nuit, après le repas de la famille, il transforme jusqu'à son quota et vend tout seul, sans passer par le Marché : 1 XP par pièce gagnée, ni énergie ni électricité. Capacité de 10 transformations par nuit, agrandie à 20, 35 puis 50. Le premier choix est gratuit ; en changer coûte 5 000 pièces. Il vend plus cher qu'une recette (130 % du prix des ingrédients).",
+     "description": "Choisi au niveau 10, dans Maison › Commerce : étal de bocaux (4 légumes → 1 bocal de légumes, vendu 24 pièces), crèmerie (3 laits → 1 fromage, 36 pièces) ou métier à tisser (2 laines → 1 tissu, 36 pièces). Chaque nuit, après le repas de la famille, il transforme jusqu'à son quota et vend tout seul, sans attendre la calèche : 1 XP par pièce gagnée, ni énergie ni électricité. Capacité de 10 transformations par nuit, agrandie à 20, 35 puis 50. Le premier choix est gratuit ; en changer coûte 5 000 pièces. Il vend plus cher qu'une recette (130 % du prix des ingrédients).",
      "liens": [
       "vache",
       "mouton",
@@ -2142,7 +2143,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "habitants",
      "terme": "Les habitants",
-     "description": "Chaque maison d'un hameau abrite une famille : un ou deux adultes et quelques enfants, jamais plus que de lits. Le premier adulte fait le métier du hameau — bûcheron, pêcheur, mineur, berger ou cueilleur —, le second le même, un autre, ou il tient le jardin. Ils vivent leurs journées comme la tienne : levés à six heures et demie, les adultes partent au travail (le bûcheron fend au billot et abat les arbres alentour, qui repoussent comme les autres ; le pêcheur pêche depuis la rive ; le mineur pioche devant l'entrée d'une grotte ou au tas de minerai ; le berger soigne ses moutons dans l'enclos ; le cueilleur fait le tour des jardins), les enfants jouent sur la place ; à midi et le soir, tout le monde rentre manger, et la nuit chacun dort dans son lit. Touche un habitant : il s'arrête et te dit son prénom, son métier et un mot selon l'heure et son humeur. Chaque nuit, même loin de toi, chaque famille vit sa journée : son métier produit, son jardin et le poulailler donnent, elle cuisine les plats qu'elle connaît et mange à sa faim (ou non : son bonheur suit les mêmes règles que celui de ta famille) ; ce qui reste va à la réserve du hameau. Le panneau de la place ouvre la fiche du hameau : ses familles, leur bonheur, et sa réserve, qui grandit nuit après nuit. La calèche viendra l'acheter.",
+     "description": "Chaque maison d'un hameau abrite une famille : un ou deux adultes et quelques enfants, jamais plus que de lits. Le premier adulte fait le métier du hameau — bûcheron, pêcheur, mineur, berger ou cueilleur —, le second le même, un autre, ou il tient le jardin. Ils vivent leurs journées comme la tienne : levés à six heures et demie, les adultes partent au travail (le bûcheron fend au billot et abat les arbres alentour, qui repoussent comme les autres ; le pêcheur pêche depuis la rive ; le mineur pioche devant l'entrée d'une grotte ou au tas de minerai ; le berger soigne ses moutons dans l'enclos ; le cueilleur fait le tour des jardins), les enfants jouent sur la place ; à midi et le soir, tout le monde rentre manger, et la nuit chacun dort dans son lit. Touche un habitant : il s'arrête et te dit son prénom, son métier et un mot selon l'heure et son humeur. Chaque nuit, même loin de toi, chaque famille vit sa journée : son métier produit, son jardin et le poulailler donnent, elle cuisine les plats qu'elle connaît et mange à sa faim (ou non : son bonheur suit les mêmes règles que celui de ta famille) ; ce qui reste va à la réserve du hameau. Le panneau de la place ouvre la fiche du hameau : ses familles, leur bonheur et leur bourse, et sa réserve, qui grandit nuit après nuit. La calèche l'achète à chacun de ses passages (ce qu'elle a pris la dernière fois est dans la fiche), et l'argent va aux bourses des familles.",
      "liens": [
       "hameaux",
       "bonheur"
@@ -2308,7 +2309,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "autonomie",
      "terme": "Autonomie",
-     "description": "Pourcentage de ce que la famille a mangé dans la journée (à la boîte à nourriture ou au réfrigérateur) qui vient de la ferme elle-même. La nourriture achetée au Marché et les conserves de départ ne comptent pas. Un jour où personne n'a mangé garde l'autonomie de la veille.",
+     "description": "Pourcentage de ce que la famille a mangé dans la journée (à la boîte à nourriture ou au réfrigérateur) qui vient de la ferme elle-même. La nourriture achetée à la calèche et les conserves de départ ne comptent pas. Un jour où personne n'a mangé garde l'autonomie de la veille.",
      "liens": [
       "apport_journalier",
       "comptoir",
@@ -2557,7 +2558,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "famille",
      "terme": "Famille",
-     "description": "Quatre personnes au départ (deux adultes, deux enfants), composées avant la première journée sur l'écran « Ta famille » (nom de famille, membres, personnage principal), puis à tout moment dans la fenêtre Famille (carte du joueur, en haut à gauche) : de 1 à 6 membres, dont au moins un adulte. Chacun a un prénom, un sexe, une coiffure (cinq par âge, dont blond) et une couleur de peau au choix. Un nouveau membre arrive avec le bonheur moyen de la famille. Le but du jeu est de nourrir la famille avec la production de la ferme, sans dépendre du Marché.",
+     "description": "Quatre personnes au départ (deux adultes, deux enfants), composées avant la première journée sur l'écran « Ta famille » (nom de famille, membres, personnage principal), puis à tout moment dans la fenêtre Famille (carte du joueur, en haut à gauche) : de 1 à 6 membres, dont au moins un adulte. Chacun a un prénom, un sexe, une coiffure (cinq par âge, dont blond) et une couleur de peau au choix. Un nouveau membre arrive avec le bonheur moyen de la famille. Le but du jeu est de nourrir la famille avec la production de la ferme, sans dépendre de la calèche.",
      "liens": [
       "adulte",
       "enfant",

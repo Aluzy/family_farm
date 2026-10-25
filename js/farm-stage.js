@@ -116,6 +116,8 @@
         // les animaux de compagnie de la famille (js/ambient-life.js) : trois robes de chat, trois de chien
         for (const k of COMPAGNONS) L.spritesheet(k, v(k + '.png'), CAT_FRAME);
         L.spritesheet(K.TRIPORTEUR.key, v(K.TRIPORTEUR.file), { frameWidth: K.TRIPORTEUR.w, frameHeight: K.TRIPORTEUR.h });
+        // la calèche du grand monde (js/carte/ferme/caleche.js, fiche 7c)
+        if (K.CALECHE) L.spritesheet(K.CALECHE.key, v(K.CALECHE.file), { frameWidth: K.CALECHE.w, frameHeight: K.CALECHE.h });
         // le cheval : sellé, seul (à l'Écurie), son poteau (js/carte/cheval.js)
         if (K.chargeCheval) K.chargeCheval(this, v);
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
@@ -440,6 +442,7 @@
         this.stepMine();
         this.stepLieuxMonde(time);              // (les entrées des grottes du monde, les coins de pêche : lieux-monde.js)
         this.stepHameaux(dt / 1000);            // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
+        if (this.stepCaleche) this.stepCaleche(dt / 1000);   // (la calèche : caleche.js)
         if (this.family) this.family.update(delta);
         // La vue suit le personnage, centrée sur lui (comme sur les autres cartes).
         if (this.suitPerso()) {
@@ -583,6 +586,8 @@
         // un hameau du grand monde (js/carte/ferme/hameaux.js) : son panneau ; un outil qui n'a rien
         // à y faire (il le dit)
         // un habitant d'un hameau (js/carte/ferme/habitants.js) : il parle
+        // la calèche du grand monde (js/carte/ferme/caleche.js) : sa fenêtre, ou on la hèle
+        if (!hoeing && this.calecheAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.calecheAt(wx, wy)) return { caleche: true };
         if (!hoeing && this.habitantAt && !(this.ctx.lastModel && this.ctx.lastModel.bati)) {
           const hab = this.habitantAt(wx, wy);
           if (hab) return { habitant: hab };
@@ -731,6 +736,7 @@
           return;
         }
         if (!hit) return;
+        if (hit.caleche) { if (this.ctx.bridge.calecheTouchee) this.ctx.bridge.calecheTouchee(); return; }
         if (hit.habitant) { this.habitantParle(hit.habitant); return; }
         if (hit.panneau) { if (this.ctx.bridge.hameauPanneau) this.ctx.bridge.hameauPanneau({ id: hit.panneau.id, nom: hit.panneau.nom, style: hit.panneau.style }); return; }
         if (hit.hameauRefus) { if (this.ctx.bridge.hameauRefus) this.ctx.bridge.hameauRefus(hit.hameauRefus.outil, hit.hameauRefus.nom); return; }

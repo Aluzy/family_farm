@@ -18,12 +18,12 @@ import { MINERAIS_GROTTE, PIERRES_GROTTE } from './grotte.js';
 /* ---------- les outils : houe, pioche, hache, faux, canne à pêche ---------- */
 
 // La houe garde sa place (state.potager.houe) ; la hache, la pioche, la faux et la canne à pêche,
-// achetées une fois au Marché, sont dans state.outils, avec le dernier outil choisi. Le champ
+// fabriquées une fois à l'Atelier (fiche 7c ; avant, achetées au Marché), sont dans state.outils, avec le dernier outil choisi. Le champ
 // n'existe qu'une fois un outil acheté ou choisi : une partie sans lui n'a que la houe.
 // L'ordre est celui de la barre d'outils de la carte.
 export const OUTILS = ['houe', 'pioche', 'hache', 'faux', 'canne'];
 
-// (le triporteur s'achète comme un outil, mais ne se prend pas en main : enSelle)
+// (le triporteur se fabrique comme un outil, mais ne se prend pas en main : enSelle)
 const CLES = { houe: 'HOUE', hache: 'HACHE', pioche: 'PIOCHE', faux: 'FAUX', canne: 'CANNE', triporteur: 'TRIPORTEUR' };
 
 // { NOM, ICONE, PRIX } d'un outil, ou null.
@@ -53,7 +53,7 @@ function outils(state) {
   return state.outils;
 }
 
-// Achat d'un outil au Marché (une seule fois chacun). Le premier outil acheté devient celui
+// L'ancien achat d'un outil au Marché (gardé pour les tests ; l'Atelier les fabrique). Le premier outil acheté devient celui
 // choisi s'il n'y en avait pas.
 export function buyTool(state, id) {
   const def = toolDef(id);
@@ -82,7 +82,7 @@ export function enSelle(state) {
 // Monter sur le triporteur ou en descendre (un appui dans la barre d'outils).
 export function toggleTriporteur(state) {
   const def = DATA.TRIPORTEUR;
-  if (!hasTool(state, 'triporteur')) return fail(`Il te faut un triporteur (Marché, ${def.PRIX} 💰).`);
+  if (!hasTool(state, 'triporteur')) return fail(`Il te faut un triporteur (à fabriquer à l'Atelier).`);
   if (chevalMonte(state)) return fail('Descends d\'abord de ton cheval.');
   const o = outils(state);
   o.aPied = !o.aPied;
@@ -99,7 +99,7 @@ export function vitesseDeplacement(state) {
 export function selectTool(state, id) {
   const def = toolDef(id);
   if (!def) return fail('Outil inconnu.');
-  if (!hasTool(state, id)) return fail(`Il te faut une ${def.NOM.toLowerCase()} (Marché, ${def.PRIX} 💰).`);
+  if (!hasTool(state, id)) return fail(`Il te faut une ${def.NOM.toLowerCase()} (à fabriquer à l'Atelier).`);
   outils(state).choisi = id;
   return { ok: true, outil: id };
 }
@@ -282,7 +282,7 @@ export function ramasserMorceau(state, n) {
 // `fort` : le coup fort (COUP_FORT : il compte plusieurs coups, pour plus d'énergie).
 export function chopTree(state, id, ou, fort = false) {
   const H = DATA.HACHE;
-  if (!hasTool(state, 'hache')) return fail(`Il te faut une hache (Marché, ${H.PRIX} 💰).`);
+  if (!hasTool(state, 'hache')) return fail(`Il te faut une hache (à fabriquer à l'Atelier).`);
   if (typeof id !== 'string' || !id) return fail('Touche un arbre pour le couper.');
   const b = bushOf(state, id);
   if (b) return cutBush(state, id, b, ou, fort);
@@ -414,7 +414,7 @@ export function brokenRocks(state) {
 // `casse` : le rocher vient de se briser, PIOCHE.BRIS pierres de plus. `ou`, `fort` : comme chopTree.
 export function mineRock(state, id, ou, fort = false) {
   const P = DATA.PIOCHE;
-  if (!hasTool(state, 'pioche')) return fail(`Il te faut une pioche (Marché, ${P.PRIX} 💰).`);
+  if (!hasTool(state, 'pioche')) return fail(`Il te faut une pioche (à fabriquer à l'Atelier).`);
   if (typeof id !== 'string' || !id) return fail('Touche un rocher pour le casser.');
   if (rockGone(state, id)) return fail('Ce rocher est déjà cassé.');
   const f = force(fort);
@@ -475,7 +475,7 @@ export function cutGrass(state) {
 // botteleuse en fait de la paille : js/engine/botteleuse.js.)
 export function scytheGrass(state, id, ou) {
   const X = DATA.FAUX;
-  if (!hasTool(state, 'faux')) return fail(`Il te faut une faux (Marché, ${X.PRIX} 💰).`);
+  if (!hasTool(state, 'faux')) return fail(`Il te faut une faux (à fabriquer à l'Atelier).`);
   if (typeof id !== 'string' || !id) return fail('Touche une touffe d\'herbe haute pour la faucher.');
   if (grassCut(state, id)) return fail('Cette herbe est déjà fauchée.');
   if (!canAfford(state, 'faucher')) return fail(TIRED);
@@ -495,7 +495,7 @@ export function scytheGrass(state, id, ou) {
 // { ok, fauchees: [ids], fibre, morceaux: { coup: [...] } }.
 export function scytheAround(state, ids, ou) {
   const X = DATA.FAUX;
-  if (!hasTool(state, 'faux')) return fail(`Il te faut une faux (Marché, ${X.PRIX} 💰).`);
+  if (!hasTool(state, 'faux')) return fail(`Il te faut une faux (à fabriquer à l'Atelier).`);
   const L = [...new Set((Array.isArray(ids) ? ids : []).filter((id) => typeof id === 'string' && id && !grassCut(state, id)))];
   if (!L.length) return fail('Aucune herbe haute à faucher autour de toi.');
   const E = DATA.COUP_FORT.ENERGIE;
@@ -599,7 +599,7 @@ const MINERAIS = MINERAIS_GROTTE;
 // 6b), une pierre prise dans le mur (quartz, améthyste) : l'objet lui-même.
 export function mineOre(state, sorte) {
   const P = DATA.PIOCHE;
-  if (!hasTool(state, 'pioche')) return fail(`Il te faut une pioche (Marché, ${P.PRIX} 💰).`);
+  if (!hasTool(state, 'pioche')) return fail(`Il te faut une pioche (à fabriquer à l'Atelier).`);
   if (!MINERAIS.includes(sorte) && !PIERRES_GROTTE.includes(sorte)) return fail('Minerai inconnu.');
   if (!canAfford(state, 'piocher')) return fail(TIRED);
   const lampe = techFlag(state, 'grotte');
@@ -725,7 +725,7 @@ const RARE = {
 // l'inventaire, avec de l'XP. { ok, poisson: id ou null, reste, coin }.
 export function castLine(state, eau, coin = null) {
   const C = DATA.CANNE;
-  if (!hasTool(state, 'canne')) return fail(`Il te faut une canne à pêche (Marché, ${C.PRIX} 💰).`);
+  if (!hasTool(state, 'canne')) return fail(`Il te faut une canne à pêche (à fabriquer à l'Atelier).`);
   const c = coinDe(eau, coin);
   const chances = c ? C.COINS.PRISES[eau] : C.PRISES[eau];
   if (!chances) return fail('Touche l\'eau pour y pêcher : l\'étang ou la mare de la ferme, un lac, une rivière, la mer.');

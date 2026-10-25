@@ -64,7 +64,7 @@ export function subtabsHtml(tabs, current, action) {
 
 /* -- Inventaire en cases (comme un sac de jeu vidéo) : le dessin de chaque objet, sa
    quantité en bas à droite, rien d'autre. Un appui ouvre sa fiche (manger, ranger au frigo,
-   sortir du frigo). Les prix ne s'affichent qu'au Marché. -- */
+   sortir du frigo). Les prix ne s'affichent qu'à la calèche. -- */
 
 function inventoryTabs() {
   // Lot 9 : l'onglet Frigo n'apparaît qu'avec le chapitre 6.

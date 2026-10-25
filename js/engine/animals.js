@@ -128,7 +128,34 @@ export function animalPrice(kind) {
   return DATA.ANIMAUX[kind].prix;
 }
 
-// Achat d'une poule au Marché : refusé si le Poulailler n'existe pas, s'il
+// Fiche 7c : un animal ne s'achète plus, il s'attire à l'Atelier (un nid garni pour une poule, une
+// pierre à sel et du foin pour un mouton ou une vache : atelier.js). Pourquoi il ne peut pas venir
+// (null : il peut), et sa venue (sans pièces).
+export function animalRefus(state, kind) {
+  if (kind === 'poule') {
+    const p = state.poulailler;
+    if (!p || !p.construit) return 'Construis d\'abord le Poulailler.';
+    return p.poules >= coopCapacity(state) ? 'Le Poulailler est plein.' : null;
+  }
+  if (kind === 'mouton' || kind === 'vache') {
+    if (!state.paturage || !state.paturage.construit) return 'Prépare d\'abord l\'Étable pour les moutons et les vaches.';
+    if (kind === 'mouton') return freeSheepPlaces(state) <= 0 ? 'L\'Étable est pleine : il lui faut une place de plus.' : null;
+    return freeCowPlaces(state) <= 0 ? `Pas assez de place pour une vache : il lui faut ${DATA.PATURAGE.PLACES_PAR_VACHE} places libres.` : null;
+  }
+  return 'Cet animal ne vient pas à la ferme.';
+}
+
+export function accueillirAnimal(state, kind) {
+  const refus = animalRefus(state, kind);
+  if (refus) return fail(refus);
+  if (kind === 'poule') state.poulailler.poules += 1;
+  else if (kind === 'mouton') state.paturage.moutons.push(makeSheep(state));
+  else state.paturage.vaches.push(makeCow(state));
+  return { ok: true };
+}
+
+// Achat d'une poule au Marché (l'ancien achat, gardé pour les tests ; plus aucune fenêtre ne vend
+// d'animal) : refusé si le Poulailler n'existe pas, s'il
 // est plein ou si les pièces manquent. Pas de revente.
 export function buyAnimal(state, kind) {
   if (kind === 'mouton') return buySheep(state);

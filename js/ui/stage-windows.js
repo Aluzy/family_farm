@@ -42,7 +42,7 @@ import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from '.
 import { renderAtelier } from './atelier.js';
 import { encyclopedieNouveautes } from './encyclopedie.js';
 import { couchages } from '../engine/blocs.js';
-import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './marche.js';
+import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './caleche.js';
 import { renderChapterBanner } from './chapitres.js';
 import { renderBoite } from './boite.js';
 import { boitePosee } from '../engine/repas.js';
@@ -137,18 +137,25 @@ function renderBatiments() {
   return `${renderAteliers()}<div id="bat-eau" class="ancre">${renderInstallationsMaison()}</div>${isUnlocked(state, 'silo') ? renderSilo() : ''}`;
 }
 
-// Version 1.1.1 : les animaux s'achètent au Marché ; l'Étable y mène par un raccourci.
-// (Les arbres, eux, s'achètent toujours au Verger.)
-function lienMarcheAnimaux(libelle) {
-  return `<p class="row"><button type="button" class="btn" ${cibleAttrs({ page: 'comptoir', sous: 'animaux' })}>🛒 ${libelle} au Marché <span aria-hidden="true">›</span></button></p>`;
+// Fiche 7c : les animaux ne s'achètent plus (le Marché est devenu la calèche) : ils s'attirent à
+// l'Atelier (Élevage), la recette dit ce qu'il faut. (Les arbres, eux, se plantent au Verger.)
+function lienAtelierAnimaux(texte) {
+  return `<p class="hint">🔨 ${texte}</p>`;
 }
 
 export function renderAchatPoules() {
-  return state.poulailler.construit ? lienMarcheAnimaux('Acheter des poules') : '';
+  const R = DATA.ATELIER.RECETTES.nid_poule;
+  return state.poulailler.construit ? lienAtelierAnimaux(`Une poule de plus ? Un nid garni (${besoinTexte(R.entrees)}) à l'Atelier, onglet Élevage : une poule du pays vient s'y installer.`) : '';
 }
 
 export function renderAchatTroupeau() {
-  return state.paturage.construit ? lienMarcheAnimaux('Acheter des moutons et des vaches') : '';
+  const R = DATA.ATELIER.RECETTES;
+  return state.paturage.construit ? lienAtelierAnimaux(`Un mouton ou une vache de plus ? Une pierre à sel et du foin, à l'Atelier, onglet Élevage (${besoinTexte(R.sel_mouton.entrees)} pour un mouton, ${besoinTexte(R.sel_vache.entrees)} pour une vache).`) : '';
+}
+
+// « 4 🪨, 6 🪹 » : ce que prend une recette.
+function besoinTexte(entrees) {
+  return Object.entries(entrees).map(([item, n]) => `${n} ${DATA.OBJETS[item].icone}`).join(', ');
 }
 
 
@@ -231,10 +238,10 @@ export const STAGE_WINDOWS = {
     nom: 'Atelier', icone: '🔨', ok: () => true, bois: true, flottante: true,
     corps: () => renderAtelier(),
   },
-  // Marché (menu latéral) : fenêtre flottante comme l'Inventaire ; en-tête : les rayons en
-  // icônes seules et le « ? » du rayon ouvert.
+  // La calèche (menu latéral ; fiche 7c, js/ui/caleche.js) : fenêtre flottante comme l'Inventaire ;
+  // en-tête : les onglets en icônes seules et le « ? » de l'onglet ouvert.
   comptoir: {
-    nom: 'Marché', icone: '🧺', ok: () => tabAvailable('comptoir'), bois: true, flottante: true,
+    nom: 'La calèche', icone: '🐴', ok: () => tabAvailable('comptoir'), bois: true, flottante: true,
     enTete: () => marketTabsHtml(),
     corps: () => renderComptoir(true),
   },
@@ -618,7 +625,7 @@ export function renderTabbar() {
       // « Ferme » ramène sur la carte de la ferme : son bouton est une carte (sans Phaser, la
       // Ferme reste une liste et garde sa maison)
       .map((t) => (t.id === 'ferme' && stageUsable() ? { ...t, label: 'Carte de la ferme', icon: '🗺️' } : t))
-      // FLU-08 : le Marché est là dès le départ (verrouillé) : les onglets ne bougent jamais
+      // FLU-08 : la calèche est là dès le départ (verrouillée) : les onglets ne bougent jamais
       .filter((t) => tabAvailable(t.id) || t.id === 'comptoir')
       .map((t) => {
         if (!tabAvailable(t.id)) {
@@ -758,7 +765,7 @@ registerActions({
     allerAuLieu(target.dataset.window, target.dataset.tab, target.dataset.anchor);
   },
   'switch-tab': (target) => {
-    // L'Inventaire et le Marché, avec la carte, sont des fenêtres flottantes par-dessus elle.
+    // L'Inventaire et la calèche, avec la carte, sont des fenêtres flottantes par-dessus elle.
     if (['installations', 'commerce', 'inventaire', 'atelier', 'comptoir', 'techno', 'notifications'].includes(target.dataset.tab) && stageUsable()) {
       if (target.dataset.tab === 'comptoir') setComptoirTab(comptoirTabAOuvrir()); // FLU-13
       allerAuLieu(target.dataset.tab);

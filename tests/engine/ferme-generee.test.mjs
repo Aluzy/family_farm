@@ -306,7 +306,7 @@ test('ruches : achetées au Marché, posées dehors, pleines au bout de NUITS nu
   const t = z.r * z.W + z.c;
   assertEqual(poserBloc(s, 'ruche', t).ok, true);
   assertEqual([blocAt(s, t), countItem(s, 'ruche'), blocBloque(s, t), ruchePleine(s, t)], ['ruche', 0, true, false]);
-  assertEqual(poserBloc(s, 'ruche', t + 2).error, 'Plus de ruche : achète-en au Marché (rayon Animaux).');
+  assertEqual(poserBloc(s, 'ruche', t + 2).error, 'Plus de ruche : fabrique-en à l\'Atelier.');
   // (une vraie nuit de jeu la fait avancer, js/engine/night.js)
   sleepOnce(s);
   assertEqual(s.ruches[t].nuits, 1);
@@ -377,7 +377,7 @@ test('bac à fleurs : acheté au Marché, posé comme un bloc, ses fleurs attire
   const t = z.r * z.W + z.c;
   assertEqual(poserBloc(s, 'bac_fleurs', t).ok, true);
   assertEqual([blocAt(s, t), blocBloque(s, t)], ['bac_fleurs', true]);
-  assertEqual(poserBloc(s, 'bac_fleurs', t + 2).error, 'Plus de bac à fleurs : achète-en au Marché (rayon Meubles).');
+  assertEqual(poserBloc(s, 'bac_fleurs', t + 2).error, 'Plus de bac à fleurs : fabrique-en à l\'Atelier.');
   // sans ruche, pas d'abeilles (rien à butiner) ; avec une ruche, le bac est une fleur
   assertEqual(fleursPourAbeilles(s), []);
   buyRuche(s);
@@ -1408,7 +1408,7 @@ test('ferme générée : les meubles du Marché se posent à l\'étage, sur tout
   assertEqual([...etageCouvertes(s).keys()], [t + 1, t + 2]);
   assertEqual(poserEtage(s, 'meuble_chaise', t + 2).ok, false, 'une case de la table');
   assert(poserEtage(s, 'meuble_chaise', t + 3).ok, 'à côté');
-  assertEqual(poserEtage(s, 'meuble_chaise', t + 4).error.includes('Marché'), true, 'plus de chaise : au Marché');
+  assertEqual(poserEtage(s, 'meuble_chaise', t + 4).error.includes('Atelier'), true, 'plus de chaise : à l\'Atelier');
   assertEqual(poserEtage(s, 'meuble_tapis_2', (z.r + 5) * W + z.c + 5).ok, false, 'pas hors de l\'étage');
   assertEqual(poserEtage(s, 'meuble_tapis_2', (z.r + 4) * W + z.c + 2).ok, false, 'pas sur la table');
   assert(poserEtage(s, 'meuble_tapis_2', (z.r + 2) * W + z.c + 2).ok, 'au-dessus d\'elle');
@@ -1737,7 +1737,7 @@ test('ferme générée : le Marché ouvre au niveau 3 ; le panneau, la pompe, la
   for (const t of ['panneau', 'pompe', 'reservoir', 'batterie']) removeStarter(s, t);   // (une partie neuve)
   // avant le niveau 3 : le Marché est fermé, sans panneau ni pompe ou avec
   assertEqual(marcheOuvert(s), false);
-  assertEqual(buyItem(s, 'graine_carotte', 1).error, 'Le Marché ouvre au niveau 3.');
+  assertEqual(buyItem(s, 'graine_carotte', 1).error, 'La calèche commerce avec toi à partir du niveau 3.');
   assertEqual(sellItem(s, 'conserve', 1).ok, false);
   assertEqual(buyHoe(s).ok, false);
   // au niveau 3 : il ouvre, sans panneau ni pompe

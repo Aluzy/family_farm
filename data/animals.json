@@ -9,7 +9,7 @@
   ],
   "SILO": { "ITEM": "ble", "PRIX_CONSTRUCTION": 0, "CAPACITE": [20, 50, 100, 200, 400], "PRIX_NIVEAUX": [0, 30, 80, 180, 400] },
   "//RUCHE": [
-    "Les ruches de la ferme générée (js/engine/ruches.js) : une ruche s'achète au Marché",
+    "Les ruches de la ferme générée (js/engine/ruches.js) : une ruche se fabrique à l'Atelier (fiche 7c ; avant, au Marché)",
     "(rayon Animaux, PRIX pièces), arrive dans l'inventaire et se pose dehors comme un bloc",
     "(recipes.json, ATELIER.BLOCS.ruche). Posée, elle se remplit : au bout de NUITS nuits elle",
     "est pleine, et attend qu'on la récolte (MIEL pots de PRODUIT) ; vidée, elle recommence.",
@@ -17,7 +17,7 @@
   ],
   "RUCHE": { "NOM": "Ruche", "ICONE": "🐝", "OBJET": "ruche", "PRIX": 200, "NUITS": 2, "PRODUIT": "miel", "MIEL": 3 },
   "//CHEVAL": [
-    "Le cheval de la ferme générée (js/engine/cheval.js). Il s'achète au Marché (rayon Animaux,",
+    "Le cheval de la ferme générée (js/engine/cheval.js). Il vient à l'Atelier (fiche 7c : un licol et des friandises ; avant, au Marché, rayon Animaux,",
     "PRIX pièces) une fois l'Écurie construite : une enceinte de murs (une pièce close) où le",
     "râtelier est posé, une porte sur le dehors, et PLACES cases libres dans l'enceinte (hors",
     "râtelier ; js/engine/blocs.js, etatEcurie). Il y vit tant que le joueur est à la ferme.",
@@ -32,7 +32,7 @@
   "//POULAILLER": "Poulailler (sections 1.3 et 8.5).",
   "POULAILLER": { "PRIX_CONSTRUCTION": 40, "CAPACITE": [4, 8, 12, 16, 24], "PRIX_NIVEAUX": [0, 100, 220, 450, 900] },
   "//ANIMAUX": [
-    "Animaux achetés au Marché (section 1.4) : prix fixes, sans revente.",
+    "Animaux (section 1.4) : depuis la fiche 7c, ils s'attirent à l'Atelier (ATELIER.RECETTES : nid_poule, sel_mouton, sel_vache) ; prix : l'ancien prix au Marché, sans revente.",
     "Poule : 1 blé nourrit poulesParBle poules (une fois par nuit) ; une poule",
     "nourrie pond oeufsParNuit œuf. Une ration entamée (poule impaire) est",
     "perdue à la fin de la nuit : n poules coûtent ⌈n ÷ poulesParBle⌉ blé.",

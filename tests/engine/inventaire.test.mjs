@@ -234,7 +234,8 @@ test('Marché : prix d\'achat = prix de vente × coefficient, plancher 1,2', () 
   assertEqual(buyPrice(s, 'patate'), 5);
   assertEqual(buyPrice(s, 'carotte'), 3);
   assertEqual(buyPrice(s, 'courgette'), 5);
-  assertEqual(isBuyable('carotte'), true);
+  // fiche 7c : la calèche ne vend plus que les semences (la patate se plante ; la carotte, sa graine)
+  assertEqual([isBuyable('carotte'), isBuyable('patate'), isBuyable('graine_carotte')], [false, true, true]);
 });
 
 test('Marché : le prix d\'achat monte de 0,1 de coefficient par unité, unité par unité', () => {
@@ -309,16 +310,16 @@ test('Marché : graines, coefficient de départ et plancher à 2,0', () => {
 test('Marché : les coefficients sont propres à chaque item et ne redescendent pas avec le temps', () => {
   const s = garden();
   s.pieces = 200;
-  buyItem(s, 'tomate', 4);
-  assertEqual(marketCoef(s, 'tomate'), 160);
+  buyItem(s, 'patate', 4);
+  assertEqual(marketCoef(s, 'patate'), 160);
   assertEqual(marketCoef(s, 'carotte'), 120);
-  const c = marketCoef(s, 'tomate');
+  const c = marketCoef(s, 'patate');
   for (let i = 0; i < 12; i++) {
     s.awakeMs = 30000;
     sleep(s);
     tick(s, 5);
   }
-  assertEqual(marketCoef(s, 'tomate'), c, 'aucune baisse avec les nuits ni le temps');
+  assertEqual(marketCoef(s, 'patate'), c, 'aucune baisse avec les nuits ni le temps');
 });
 
 test('Marché : les conserves ne s\'achètent pas', () => {
@@ -334,33 +335,34 @@ test('Marché : les conserves ne s\'achètent pas', () => {
 
 test('Marché : achat refusé sans pièces, et un achat multiple s\'arrête quand elles manquent', () => {
   const s = garden();
+  setInv(s, {});
   s.pieces = 1;
-  const r = buyItem(s, 'carotte');
+  const r = buyItem(s, 'patate');
   assertEqual(r.ok, false);
-  assertEqual([s.pieces, countItem(s, 'carotte')], [1, 0]);
-  // Lot 12 : carotte à 2 pièces : 2,4 puis 2,6 → 3 puis 3 pièces (arrondi
-  // supérieur) : 1 unité, la 2e dépasse les 2 pièces restantes.
-  s.pieces = 5;
-  const r2 = buyItem(s, 'carotte', 5);
-  assertEqual([r2.ok, r2.bought, r2.cost], [true, 1, 3]);
-  assertEqual(s.pieces, 2);
-  assertEqual(marketCoef(s, 'carotte'), 130);
+  assertEqual([s.pieces, countItem(s, 'patate')], [1, 0]);
+  // Lot 12 : patate à 4 pièces : 4,8 puis 5,2 → 5 puis 6 pièces (arrondi
+  // supérieur) : 1 unité, la 2e dépasse les 3 pièces restantes.
+  s.pieces = 8;
+  const r2 = buyItem(s, 'patate', 5);
+  assertEqual([r2.ok, r2.bought, r2.cost], [true, 1, 5]);
+  assertEqual(s.pieces, 3);
+  assertEqual(marketCoef(s, 'patate'), 130);
 });
 
 test('Marché : un item acheté arrive avec sa conservation pleine et l\'origine « acheté »', () => {
   const s = garden();
   setInv(s, {});
-  addItem(s, 'carotte', 3);
+  addItem(s, 'patate', 3);
   spoil(s);
-  spoil(s); // la carotte produite n'a plus que 4 nuits
+  spoil(s); // la patate produite n'a plus que 5 nuits
   s.pieces = 50;
-  buyItem(s, 'carotte', 2);
-  const lots = lotsOf(s, 'carotte');
+  buyItem(s, 'patate', 2);
+  const lots = lotsOf(s, 'patate');
   assertEqual(lots, [
-    { qty: 3, nightsLeft: 4, origin: 'produit' },
-    { qty: 2, nightsLeft: 6, origin: 'acheté' },
+    { qty: 3, nightsLeft: 5, origin: 'produit' },
+    { qty: 2, nightsLeft: 7, origin: 'acheté' },
   ]);
-  assertEqual([countByOrigin(s, 'carotte', 'produit'), countByOrigin(s, 'carotte', 'acheté')], [3, 2]);
+  assertEqual([countByOrigin(s, 'patate', 'produit'), countByOrigin(s, 'patate', 'acheté')], [3, 2]);
   buyItem(s, 'graine_tomate');
   assertEqual(lotsOf(s, 'graine_tomate').slice(-1)[0].origin, 'acheté');
   assertEqual(lotsOf(s, 'graine_tomate').slice(-1)[0].nightsLeft, null);
@@ -374,9 +376,9 @@ testBase('origine des lots : une récolte donne « produit », le Marché « ach
   assertEqual(countByOrigin(s, 'tomate', 'produit'), 10);
   assertEqual(countByOrigin(s, 'tomate', 'acheté'), 0);
   s.pieces = 20;
-  buyItem(s, 'tomate', 2);
-  assertEqual(countByOrigin(s, 'tomate', 'acheté'), 2);
-  assertEqual(countItem(s, 'tomate'), 12);
+  buyItem(s, 'graine_tomate', 2);
+  assertEqual(countByOrigin(s, 'graine_tomate', 'acheté'), 2);
+  assertEqual(countItem(s, 'tomate'), 10);
 });
 
 test('vente : retire les lots les plus anciens, refuse sans stock et ignore les quantités folles', () => {
@@ -510,7 +512,7 @@ test('migration v3 (Lot 2) → v4 : l\'inventaire devient des lots à conservati
   assertEqual(sleep(d).nuit, 10, 'l\'état migré dort (son foyer rebâti)');
   assertEqual(lotsOf(d, 'carotte')[0].nightsLeft, 5, 'la péremption s\'applique à la carotte migrée');
   d.pieces = 10;
-  assertEqual(buyItem(d, 'carotte').ok, true);
+  assertEqual(buyItem(d, 'graine_carotte').ok, true);
 });
 
 test('migration v1 → version courante : les chaînes de migration mènent à des lots', () => {
@@ -527,9 +529,9 @@ test('migration v1 → version courante : les chaînes de migration mènent à d
 test('sérialisation JSON : lots et coefficients font l\'aller-retour', () => {
   const s = reach(createInitialState(3), 'marche');
   s.pieces = 100;
-  buyItem(s, 'carotte', 3);
+  buyItem(s, 'patate', 3);
   spoil(s);
   const copy = JSON.parse(JSON.stringify(s));
   assertEqual(copy, s);
-  assertEqual(marketCoef(copy, 'carotte'), 150);
+  assertEqual(marketCoef(copy, 'patate'), 150);
 });

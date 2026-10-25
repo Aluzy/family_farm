@@ -97,14 +97,15 @@ export function farmOpen(state) {
   return isOwned(starterOf(state, 'panneau')) && isOwned(starterOf(state, 'pompe'));
 }
 
-// Le Marché de la ferme est-il ouvert ? Au niveau qui débloque « marche » (NIVEAUX).
+// La calèche (le Marché de la ferme, devenu voyageur : caleche.js, fiche 7c) commerce-t-elle avec
+// le joueur ? Au niveau qui débloque « marche » (NIVEAUX).
 export function marcheOuvert(state) {
   return !levelBlock(state, 'marche');
 }
 
-// Pourquoi le Marché est fermé (texte).
+// Pourquoi elle ne commerce pas encore (texte).
 export function marcheFerme() {
-  return `Le Marché ouvre au niveau ${unlockLevel('marche')}.`;
+  return `La calèche commerce avec toi à partir du niveau ${unlockLevel('marche')}.`;
 }
 
 const NOT_OWNED = 'Cet appareil n\'est pas encore acheté.';

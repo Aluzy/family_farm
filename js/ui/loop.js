@@ -19,6 +19,7 @@ import {
 } from './render.js';
 import { watchChapters } from './chapitres.js';
 import { watchLevels } from './niveaux.js';
+import { watchCaleche } from './caleche.js';
 import {
   ALERT_MUTE_AFTER_CATCH_UP_MS, notify, setAlertMuteUntil, setAlertState, watchAlerts,
 } from './toasts.js';
@@ -205,6 +206,7 @@ export function frame(now) {
   watchTechPoints();
   watchDay();
   watchMail();
+  watchCaleche(); // fiche 7c : la tournée posée, les arrêts aux hameaux, son arrivée à la ferme
   watchRobot();
   watchPreparations();
   watchUnlocks();

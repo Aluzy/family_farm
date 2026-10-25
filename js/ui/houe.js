@@ -1,12 +1,9 @@
 import { DATA } from '../engine/catalog.js';
 import {
-  buyHoe, hasHoe, hoe, soilCap, soilCapNext, soilCount,
+  hasHoe, hoe, soilCap, soilCapNext, soilCount,
 } from '../engine/crops.js';
 import { levelReached } from '../engine/levels.js';
-import { selectTool } from '../engine/outils.js';
-import { marcheFerme, marcheOuvert } from '../engine/devices.js';
 import { actionCost, TIRED } from '../engine/stamina.js';
-import { formatCoins } from '../engine/format.js';
 import { hoeMode, setHoeMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
@@ -15,8 +12,7 @@ import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeStageWindow, stageWindow } from './stage-windows.js';
 import { showHoeHint } from './stage.js';
-import { accord, canPay, plural } from './common.js';
-import { closeModal } from './modal.js';
+import { accord, plural } from './common.js';
 
 /* ---------- version 1.9 (v2, lot 5) : la houe ---------- */
 
@@ -29,18 +25,16 @@ export function soilLine() {
   return `<span class="chip${n >= cap ? ' warn' : ''}" title="Tuiles de terre de la ferme sur le plafond du niveau ${levelReached(state)}">🟫 ${n} / ${cap} tuiles${next}</span>`;
 }
 
-// Barre de la houe : l'acheter, ou la prendre. Version 1.15 : la houe laboure partout sur
+// Barre de la houe : où la fabriquer, ou la prendre. Version 1.15 : la houe laboure partout sur
 // la carte ; en mode houe, on touche l'herbe de la carte (plus de grille ici).
 export function hoePanelHtml() {
   const H = DATA.HOUE;
   if (!hasHoe(state)) {
-    // version 1.12 : avant le panneau et la pompe (une terre sauvage : avant son niveau), le
-    // Marché (et donc la houe) est fermé
-    const ouvert = marcheOuvert(state);
+    // fiche 7c : la houe se fabrique à l'Atelier (plus de Marché)
+    const R = DATA.ATELIER.RECETTES.houe.entrees;
     return `
       <div class="hoe-bar">
-        ${ouvert ? '' : `<span class="muted">Marché fermé. ${marcheFerme(state)}</span>`}
-        <button type="button" class="btn" data-action="buy-hoe"${ouvert && canPay(H.PRIX) ? '' : ' disabled'}>Acheter la houe (${formatCoins(H.PRIX)} 💰)</button>
+        <span class="muted">${H.ICONE} Fabrique d'abord la houe à l'Atelier (onglet Outils) : ${Object.entries(R).map(([item, n]) => `${n} ${DATA.OBJETS[item].icone}`).join(', ')}.</span>
       </div>`;
   }
   const bar = `
@@ -55,19 +49,10 @@ export function hoePanelHtml() {
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 
 registerActions({
-  'buy-hoe': () => {
-    const r = buyHoe(state);
-    // la houe achetée devient l'outil choisi (elle va dans la barre d'outils de la carte)
-    if (r.ok) selectTool(state, 'houe');
-    applyResult(r);
-    // achetée depuis sa fiche du Marché : la fiche se ferme (un outil ne s'achète qu'une fois)
-    if (r.ok && document.querySelector('#modal-root .shop-modal')) closeModal();
-    if (r.ok) notify(`${DATA.HOUE.ICONE} Houe achetée : sur la carte, touche la houe dans la barre d'outils, en bas, pour labourer.`);
-  },
   // FLU-42 : la puce « Labourer 6 tuiles » met la houe en main (sans la ranger si elle y est)
   'hoe-take': () => {
     if (!hasHoe(state)) {
-      notify(`Il te faut une houe (${formatCoins(DATA.HOUE.PRIX)} 💰).`);
+      notify('Il te faut une houe : fabrique-la à l\'Atelier.');
       return;
     }
     if (!hoeMode) setHoeMode(true);
@@ -78,7 +63,7 @@ registerActions({
   },
   'hoe-toggle': () => {
     if (!hasHoe(state)) {
-      notify(`Il te faut une houe (${formatCoins(DATA.HOUE.PRIX)} 💰).`);
+      notify('Il te faut une houe : fabrique-la à l\'Atelier.');
       return;
     }
     setHoeMode(!hoeMode);

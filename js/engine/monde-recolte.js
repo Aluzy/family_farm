@@ -208,7 +208,7 @@ function preparer(state, id, geste, depuis, n = 1) {
   const G = GESTES[geste];
   if (G.outil && !hasTool(state, G.outil)) {
     const def = toolDef(G.outil);
-    return { refus: fail(`Il te faut ${def.ARTICLE === 'un' ? 'un' : 'une'} ${def.NOM.toLowerCase()} (Marché, ${def.PRIX} 💰).`) };
+    return { refus: fail(`Il te faut ${def.ARTICLE === 'un' ? 'un' : 'une'} ${def.NOM.toLowerCase()} (à fabriquer à l'Atelier).`) };
   }
   const e = etatObjetMonde(state, id);
   if (estPrise(e)) return { refus: fail('Il n\'y a plus rien ici : ça repoussera.') };

@@ -21,7 +21,7 @@ import { notify } from './toasts.js';
        des hameaux, les peuple dès que les plans sont là (peuplerLesVus) ;
      - les ponts de la carte : un geste fini (habitantDepuisCarte), une phrase (paroleDepuisCarte) ;
      - la fiche du hameau, ouverte depuis le panneau de sa place : ses familles, son métier, sa
-       réserve (ce que la calèche de la fiche 7c achètera). */
+       réserve (que la calèche achète à ses passages : js/engine/caleche.js) et le dernier passage de la calèche. */
 
 const PECHE_RAYON = 45;   // cases : le coin de pêche le plus proche donne son eau au pêcheur
 
@@ -95,7 +95,7 @@ function familleHtml(f) {
   const portraits = f.membres.map((m) => persoHtml(m.perso, m.enfant)).join('');
   const noms = f.membres.map((m) => `<strong>${escapeHtml(m.prenom)}</strong> <span class="muted">${escapeHtml(m.metier)}</span>`).join(', ');
   const b = Math.round(f.bonheur);
-  const repas = f.couverture === null ? '' : ` · repas d'hier : <span class="num">${f.couverture} %</span>`;
+  const repas = (f.couverture === null ? '' : ` · repas d'hier : <span class="num">${f.couverture} %</span>`) + ` · bourse : <span class="num">${formatNumber(Math.round(f.bourse || 0))}</span> 💰`;
   return `<li class="hameau-famille">
       <span class="hameau-portraits">${portraits}</span>
       <span class="hameau-famille-texte"><span class="hameau-noms">${noms}</span>
@@ -115,6 +115,15 @@ function reserveHtml(fi) {
   return `<ul class="hameau-reserve">${li}</ul>`;
 }
 
+// Le dernier passage de la calèche (fiche 7c : js/engine/caleche.js) : ce qu'elle a acheté.
+function calecheHtml(fi) {
+  const c = fi.caleche;
+  if (!c) return '<p class="muted">🐴 La calèche n\'est pas encore passée depuis que tu connais le hameau.</p>';
+  const quand = c.jour === state.day ? 'aujourd\'hui' : c.jour === state.day - 1 ? 'hier' : `le jour ${c.jour}`;
+  const items = Object.entries(c.achats || {}).map(([item, n]) => `${formatNumber(n)} ${(DATA.OBJETS[item] || { icone: '' }).icone}`).join(', ');
+  return `<p class="muted">🐴 La calèche est passée ${quand}${items ? ` : elle a acheté ${items}, pour <span class="num">${formatNumber(c.pieces)}</span> 💰 partagés entre les familles` : ', mais la réserve était vide'}.</p>`;
+}
+
 // La fiche du hameau `h` ({ id, nom, style } : le panneau de sa place) ; sans habitants encore, son
 // nom seulement.
 export function openFicheHameau(h) {
@@ -130,7 +139,8 @@ export function openFicheHameau(h) {
     <h3 class="book-h3">Les familles</h3>
     <ul class="hameau-familles">${fi.familles.map(familleHtml).join('')}</ul>
     <h3 class="book-h3">La réserve du hameau</h3>
-    <p class="muted">Ce que les familles ont mis de côté, nuit après nuit (+ : la nuit dernière) ; la calèche viendra l'acheter.</p>
+    <p class="muted">Ce que les familles ont mis de côté, nuit après nuit (+ : la nuit dernière) ; la calèche l'achète à chacun de ses passages, et paie les familles.</p>
     ${reserveHtml(fi)}
+    ${calecheHtml(fi)}
     <button type="button" class="btn primary" data-action="close-modal" id="hameau-close">Fermer</button>`, { labelledBy: 'hameau-title', className: 'modal bois hameau-modal', focus: '#hameau-close' });
 }

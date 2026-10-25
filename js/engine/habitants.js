@@ -367,6 +367,8 @@ export function ficheHameau(state, id) {
     }),
     reserve: Object.entries(h.reserve).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)),
     hier,
+    // le dernier passage de la calèche (caleche.js, fiche 7c) : { jour, achats, pieces }, ou null
+    caleche: h.caleche && typeof h.caleche === 'object' ? h.caleche : null,
   };
 }
 

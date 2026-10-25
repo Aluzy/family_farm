@@ -9,6 +9,9 @@ import { hasHoe, plotAtTile } from './crops.js';
 import { casesDuTerrain, farmSeed, farmTerrain, regionsVues } from './terrain.js';
 import { casesDeRegion } from './monde.js';
 import { cutBushCases } from './outils.js';
+import { accueillirAnimal, animalRefus } from './animals.js';
+import { accueillirCheval, chevalRefus } from './cheval.js';
+import { ajouterMeuble, meubleRefus } from './meubles.js';
 import { noter } from './journal.js';
 
 /* ---------- la ferme générée : ramasser à la main, l'Atelier ---------- */
@@ -24,8 +27,10 @@ import { noter } from './journal.js';
 //     ceux déjà ramassés aujourd'hui ;
 //   - l'Atelier se construit avec des matériaux (ATELIER.CONSTRUCTION), sans pièces
 //     (state.atelier = { construit, niveau }) ; ses recettes (ATELIER.RECETTES) transforment des
-//     objets de l'inventaire (geste « fabriquer ») : planche, mur en pierre, porte, paillasse, et
-//     les outils de pierre (houe, hache, pioche : comme achetés au Marché).
+//     objets de l'inventaire (geste « fabriquer ») : planche, mur en pierre, porte, paillasse, les
+//     outils (houe, hache, pioche, faux, canne à pêche, triporteur) ; et, depuis que le Marché est
+//     devenu la calèche (fiche 7c), ce qu'il vendait : les animaux qu'on attire (un nid garni, une
+//     pierre à sel et du foin), le cheval (un licol et des friandises), les meubles, la ruche.
 
 export function atelierConstruit(state) {
   return !!(state.atelier && state.atelier.construit);
@@ -227,14 +232,18 @@ export function craftStatus(state, id) {
   if (!atelierConstruit(state)) return { ok: false, raison: 'Il faut d\'abord construire l\'Atelier.', manque: {} };
   if (r.outil && aDejaOutil(state, r.outil)) return { ok: false, raison: 'Tu as déjà cet outil.', manque: {} };
   if (!recetteDebloquee(state, id)) return { ok: false, raison: `Se débloque au niveau ${unlockLevel(r.debloque)}.`, manque: {} };
+  // (ce qui doit trouver sa place : l'animal, le cheval, le meuble)
+  const refus = r.animal ? animalRefus(state, r.animal) : r.cheval ? chevalRefus(state) : r.meuble ? meubleRefus(state, r.meuble) : null;
+  if (refus) return { ok: false, raison: refus, manque: {} };
   const m = manque(state, r.entrees);
   if (Object.keys(m).length) return { ok: false, raison: 'Il manque des matériaux.', manque: m };
   if (!canAfford(state, 'fabriquer')) return { ok: false, raison: TIRED, manque: {} };
   return { ok: true, manque: {} };
 }
 
-// Fabrique la recette `id` à l'Atelier : ses entrées quittent l'inventaire, sa sortie y entre
-// (ou l'outil est là, comme acheté au Marché ; le premier outil devient celui en main).
+// Fabrique la recette `id` à l'Atelier : ses entrées quittent l'inventaire, sa sortie y entre (ou
+// l'outil est là ; l'animal attiré vient au Poulailler ou à l'Étable, le cheval à l'Écurie ; le meuble
+// entre dans l'inventaire, à poser, et donne son bonheur à la famille).
 export function craft(state, id) {
   const st = craftStatus(state, id);
   if (!st.ok) return fail(st.raison);
@@ -244,10 +253,15 @@ export function craft(state, id) {
   else if (r.outil) {
     if (!state.outils || typeof state.outils !== 'object') state.outils = { hache: false, pioche: false, canne: false, choisi: 'houe' };
     state.outils[r.outil] = true;
+    if (r.outil === 'triporteur') state.outils.aPied = false;      // (fabriqué : il monte dessus)
   }
+  if (r.animal) accueillirAnimal(state, r.animal);
+  if (r.cheval) accueillirCheval(state);
+  const items = { ...(r.sortie || {}) };
+  if (r.meuble) { ajouterMeuble(state, r.meuble); items['meuble_' + r.meuble] = 1; }
   for (const [item, n] of Object.entries(r.sortie || {})) addItem(state, item, n);
-  noter('fabrique', { recette: id, items: { ...(r.sortie || {}) }, outil: r.outil || null });
+  noter('fabrique', { recette: id, items, outil: r.outil || null });
   spendEnergy(state, 'fabriquer');
   gainActionXp(state, 'fabriquer');
-  return { ok: true, items: { ...(r.sortie || {}) }, outil: r.outil || null };
+  return { ok: true, items, outil: r.outil || null, animal: r.animal || (r.cheval ? 'cheval' : null) };
 }

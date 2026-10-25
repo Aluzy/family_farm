@@ -5,7 +5,7 @@ import { storeWithSilo } from './animals.js';
 import { farmTerrain } from './terrain.js';
 
 /* ---------- les ruches de la ferme générée ----------
-   Une ruche s'achète au Marché (rayon Animaux, DATA.RUCHE.PRIX), arrive dans l'inventaire
+   Une ruche se fabrique à l'Atelier (fiche 7c ; avant, au Marché), arrive dans l'inventaire
    (l'objet DATA.RUCHE.OBJET) et se pose dehors comme un bloc (DATA.ATELIER.BLOCS.ruche,
    js/engine/blocs.js). state.ruches = { [case]: { nuits } } : les nuits passées depuis qu'elle
    est posée ou vidée. Au bout de DATA.RUCHE.NUITS nuits, elle est pleine ; elle attend alors

@@ -195,10 +195,10 @@ test('Lot 12 : la vente crédite le nouveau montant et le Marché affiche le pri
   // arrondi à l'entier supérieur).
   const t = garden();
   t.pieces = 100;
-  const affiche = buyPrice(t, 'tomate');
-  assertEqual(affiche, Math.ceil(DATA.OBJETS.tomate.prix * 1.2));
+  const affiche = buyPrice(t, 'patate');
+  assertEqual(affiche, Math.ceil(DATA.OBJETS.patate.prix * 1.2));
   const avantAchat = t.pieces;
-  const b = buyItem(t, 'tomate');
+  const b = buyItem(t, 'patate');
   assertEqual([b.ok, b.cost], [true, affiche]);
   assertEqual(t.pieces, avantAchat - affiche);
   // Revendre ce qu'on vient d'acheter reste perdant (achat > vente).
@@ -228,11 +228,11 @@ test('Marché : les articles rangés au frigo se vendent aussi (l\'inventaire pa
   const t = garden();
   t.pieces = 1000;
   construireFrigo(reach(t, 'frigo'));
-  buyItem(t, 'tomate', 3);
-  moveToFridge(t, 'tomate', 3);
-  assertEqual(marketCoef(t, 'tomate'), 150);
-  sellItem(t, 'tomate', 3);
-  assertEqual(marketCoef(t, 'tomate'), 120);
+  buyItem(t, 'patate', 3);
+  moveToFridge(t, 'patate', 3);
+  assertEqual(marketCoef(t, 'patate'), 150);
+  sellItem(t, 'patate', 3);
+  assertEqual(marketCoef(t, 'patate'), 120);
 });
 
 test('Marché : sans frigo, rien ne change pour la vente', () => {

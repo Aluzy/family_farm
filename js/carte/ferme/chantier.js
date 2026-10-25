@@ -23,7 +23,7 @@
  * d'une porte entre deux murs rehaussés, le mur continue (un linteau, aussi haut que le plus
  * bas des deux).
  *
- * Les meubles achetés au Marché (modèle.blocs : b.meuble) ont leur propre dessin et couvrent
+ * Les meubles de la maison (modèle.blocs : b.meuble) ont leur propre dessin et couvrent
  * parfois plusieurs cases (syncMeuble) ; les tableaux s'accrochent à la face des murs
  * (syncTableaux).
  *
@@ -114,7 +114,7 @@
         const haut1 = (b) => (BLOCS_CARTE.ailleurs.includes(b.sorte) ? 1 : b.hauteur || 1);
         for (const b of list || []) {
           seen.add(b.case);
-          // (un meuble acheté au Marché : son propre dessin, assets/meuble_<dessin>.png)
+          // (un meuble de la maison : son propre dessin, assets/meuble_<dessin>.png)
           if (b.meuble) { if (this.syncMeuble(b)) changed = true; continue; }
           let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case), pleine: b.pleine, mur: b.mur }, at, cols);
           const modele = H.modelesPortes[b.sorte];
@@ -401,7 +401,7 @@
       const list = [];
       for (const e of (this.blocks || new Map()).values()) if (e.sorte === 'lanterne') list.push(e);
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
-      if (!list.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires())) return;
+      if (!list.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !this.calecheSprite) return;
       if (!this.lanternLights) {
         this.lanternLights = [];
         lueur(this.textures);
@@ -440,6 +440,7 @@
       this.stepFenetres(out, nuit, dt);
       if (this.stepFenetresHameaux) this.stepFenetresHameaux(out, nuit);   // (les fenêtres des hameaux : hameaux.js)
       this.stepEauLumiere(out, nuit, time);
+      if (this.lumiereCaleche) this.lumiereCaleche(out, nuit, time);   // (la lanterne de la calèche : caleche.js)
     },
 
     // Les sols posés (modèle.sols : [{ case, sorte }], le plancher et les autres modèles), à plat
@@ -756,7 +757,7 @@
       {
         const e = this.blocks && this.blocks.get(c);
         if (e && e.sorte === 'paillasse') return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, depth: e.img.depth, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y } };
-        // un lit acheté au Marché : les pieds sous la couverture, la tête sur l'oreiller
+        // un lit de la maison : les pieds sous la couverture, la tête sur l'oreiller
         if (e && e.lit && this.has('meuble_' + e.dessin + '_drap')) {
           const top = e.img.y - e.img.height;
           // (un lit double, syncLitsDoubles : sa moitié, sous la couverture des deux places)

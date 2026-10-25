@@ -2867,3 +2867,52 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .hameau-reserve li { display: flex; align-items: center; gap: 6px; }
 .hameau-reserve .num { margin-left: auto; font-weight: 700; }
 .hameau-reserve .gain { margin-left: 4px; color: #2f6b3a; font-size: 0.8rem; }
+/* La calèche (fiche 7c, js/carte/ferme/caleche.js, js/ui/caleche.js) : l'icône au bord de l'écran
+   quand elle est proche (sa flèche tournée vers elle ; « Héler » quand elle passe tout près), le
+   bouton Héler au-dessus d'elle, la bulle de son arrivée à la ferme ; dans sa fenêtre, le bandeau
+   (là, ou où elle est et quand elle passe à la ferme). */
+.caleche-signe, .caleche-heler {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #f6ead0;
+  color: #3a2414;
+  border: 2px solid #5a3a1e;
+  border-radius: 999px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1.1;
+  pointer-events: auto;
+  cursor: pointer;
+  will-change: transform;
+}
+.caleche-signe[hidden], .caleche-heler[hidden] { display: none; }
+.caleche-signe-ico { font-size: 1.15rem; }
+.caleche-signe-fleche { display: inline-block; transform: rotate(var(--angle, 0rad)); color: #5a3a1e; }
+.caleche-signe-heler { display: none; font-weight: bold; }
+.caleche-signe.helable .caleche-signe-heler { display: inline; }
+.caleche-signe.helable, .caleche-heler { background: #ffe9a8; animation: caleche-pouls 1.2s ease-in-out infinite; }
+@keyframes caleche-pouls { 50% { box-shadow: 0 0 0 4px rgba(255, 200, 80, 0.55), 0 3px 8px rgba(0, 0, 0, 0.3); } }
+@media (prefers-reduced-motion: reduce) { .caleche-signe.helable, .caleche-heler { animation: none; } }
+.caleche-bulle { font-weight: bold; }
+.caleche-bandeau {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border: 2px solid rgba(90, 58, 30, 0.35);
+  border-radius: 6px;
+  background: rgba(255, 246, 222, 0.6);
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+.caleche-bandeau.ici { background: rgba(190, 226, 140, 0.55); }
+.caleche-bandeau .caleche-ico { font-size: 1.5rem; flex: none; }
+.caleche-bandeau .caleche-texte { flex: 1 1 180px; }

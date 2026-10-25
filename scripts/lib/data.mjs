@@ -388,7 +388,6 @@ export function validateData(data) {
   if (data.SILO) needItem('SILO.ITEM', data.SILO.ITEM);
   if (data.PATURAGE) needItem('PATURAGE.NOURRITURE', data.PATURAGE.NOURRITURE);
   const SIM = data.SIMULATION || {};
-  for (const item of Object.keys(SIM.ACHATS_CUISINE || {})) needItem('SIMULATION.ACHATS_CUISINE', item);
   if (SIM.DEPANNAGE) needItem('SIMULATION.DEPANNAGE.item', SIM.DEPANNAGE.item);
 
   /* la mine (data/grotte.json, lue par sa scène : js/grotte.js) */
@@ -574,6 +573,16 @@ export function validateData(data) {
   }
 
   /* les habitants des hameaux (data/monde.json, lus par js/engine/habitants.js : fiche 7b) */
+  // la calèche (fiche 7c, js/engine/caleche.js)
+  if (data.CALECHE) {
+    const C = data.CALECHE, h = (v) => typeof v === 'number' && v >= 0 && v < 24;
+    for (const cle of ['FERME', 'DEPART']) if (!h(C[cle])) err(`CALECHE.${cle}`, 'une heure, de 0 à 24');
+    for (const cle of ['ARRET_FERME', 'ARRET', 'JOURNEE', 'VITESSE', 'PORTEE', 'HELER', 'PROCHE', 'RETENUE', 'RETENUE_MAX']) if (!(typeof C[cle] === 'number' && C[cle] > 0)) err(`CALECHE.${cle}`, 'un nombre positif');
+    if (C.JOURNEE > 20) err('CALECHE.JOURNEE', 'au plus 20 heures : elle dort la nuit');
+    if (C.PORTEE > C.HELER) err('CALECHE.PORTEE', 'au plus HELER (on la hèle de plus loin qu\'on ne commerce)');
+    for (const cle of ['ACHAT_HAMEAU', 'GARDE']) if (!(isInt(C[cle]) && C[cle] >= 0 && C[cle] <= 100)) err(`CALECHE.${cle}`, 'un % de 0 à 100');
+    for (const cle of ['VENTE', 'PRIS', 'COFFRE_MAX', 'RATTRAPAGE']) if (!(isInt(C[cle]) && C[cle] >= 1)) err(`CALECHE.${cle}`, 'un entier positif');
+  }
   if (data.HABITANTS) {
     const HB = data.HABITANTS, paire = (v) => Array.isArray(v) && v.length === 2 && v.every((n) => isInt(n) && n >= 0) && v[0] <= v[1];
     for (const cle of ['ADULTES', 'ENFANTS']) if (!paire(HB[cle])) err(`HABITANTS.${cle}`, '[au moins, au plus] : deux entiers positifs dans l\'ordre');
@@ -665,8 +674,15 @@ export function validateData(data) {
     for (const [rid, r] of Object.entries(A.RECETTES || {})) {
       for (const [item, n] of Object.entries(r.entrees || {})) { needItem(`ATELIER.RECETTES.${rid}.entrees`, item); if (!isInt(n) || n <= 0) err(`ATELIER.RECETTES.${rid}.entrees.${item}`, 'une quantité entière positive'); }
       for (const item of Object.keys(r.sortie || {})) needItem(`ATELIER.RECETTES.${rid}.sortie`, item);
-      if (!r.sortie === !r.outil) err(`ATELIER.RECETTES.${rid}`, 'une sortie ou un outil (l\'un des deux)');
-      if (r.outil && !['houe', 'hache', 'pioche', 'faux'].includes(r.outil)) err(`ATELIER.RECETTES.${rid}.outil`, 'houe, hache, pioche ou faux');
+      // (fiche 7c : ce que vendait le Marché se fabrique ici : un outil, un animal qu'on attire, le
+      // cheval, un meuble)
+      const effets = ['sortie', 'outil', 'animal', 'cheval', 'meuble'].filter((k) => r[k]);
+      if (effets.length !== 1) err(`ATELIER.RECETTES.${rid}`, 'une sortie, un outil, un animal, le cheval ou un meuble (l\'un des cinq)');
+      if (r.outil && !['houe', 'hache', 'pioche', 'faux', 'canne', 'triporteur'].includes(r.outil)) err(`ATELIER.RECETTES.${rid}.outil`, 'houe, hache, pioche, faux, canne ou triporteur');
+      if (r.animal && !['poule', 'mouton', 'vache'].includes(r.animal)) err(`ATELIER.RECETTES.${rid}.animal`, 'poule, mouton ou vache');
+      if (r.meuble && !(data.MEUBLES && data.MEUBLES[r.meuble])) err(`ATELIER.RECETTES.${rid}.meuble`, `« ${r.meuble} » n'est pas un meuble (MEUBLES)`);
+      if (r.debloque && !(data.NIVEAUX && data.NIVEAUX.ELEMENTS && data.NIVEAUX.ELEMENTS[r.debloque]) && !(data.CULTURES && data.CULTURES[r.debloque])) err(`ATELIER.RECETTES.${rid}.debloque`, `« ${r.debloque} » n'est pas un élément des niveaux`);
+      if ((r.animal || r.cheval || r.meuble) && typeof r.nom !== 'string' && !r.meuble) err(`ATELIER.RECETTES.${rid}.nom`, 'le nom de la recette (elle ne donne pas d\'objet)');
     }
     for (const [bid, b] of Object.entries(A.BLOCS || {})) {
       if (b.objet) needItem(`ATELIER.BLOCS.${bid}.objet`, b.objet);

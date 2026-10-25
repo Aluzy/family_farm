@@ -1,19 +1,19 @@
 {
   "//MEUBLES": [
-    "Meubles de la maison, achetés au Marché (rayon Meubles). Chacun a sa place dans",
+    "Meubles de la maison, fabriqués à l'Atelier (fiche 7c ; avant, achetés au Marché). Chacun a sa place dans",
     "l'intérieur de la maison (assets/maison_interieur.tmj, calque « meubles ») et son dessin",
     "(assets/meuble_<id>.png, scripts/batiments/meubles.py). nom ; piece (cuisine, salon, chambre) ; prix (pièces) ; bonheur :",
-    "ajouté une fois, à l'achat, au bonheur de chaque membre de la famille ; max : combien on",
+    "ajouté une fois, à la fabrication, au bonheur de chaque membre de la famille ; max : combien on",
     "peut en avoir — un nombre (1 si absent), « membres » (un par membre de la famille),",
     "« adultes » ou « enfants » (un lit par adulte, par enfant). Les places des meubles à",
     "plusieurs exemplaires sont numérotées dans la carte : chaise_1…, lit_1… (les lits",
-    "d'adulte d'abord, puis ceux d'enfant). Sur la ferme générée, un meuble acheté arrive dans l'inventaire",
+    "d'adulte d'abord, puis ceux d'enfant). Sur la ferme générée, un meuble fabriqué arrive dans l'inventaire",
     "(meuble_<id>) et se pose dans la maison avec le mode Construire (recipes.json, ATELIER.BLOCS.meuble_<id>)."
   ],
   "//DEHORS": [
-    "Ce qui s'achète au Marché (rayon Meubles) pour le dehors de la ferme générée : il arrive dans",
+    "Pour le dehors de la ferme générée (fabriqué à l'Atelier ; avant, au Marché) : il arrive dans",
     "l'inventaire (l'objet du même nom) et se pose comme un bloc (recipes.json, ATELIER.BLOCS.<id>).",
-    "nom ; prix (pièces, fixe). Le bac à fleurs : ses fleurs attirent les abeilles des ruches."
+    "nom ; prix (l'ancien prix au Marché). Le bac à fleurs : ses fleurs attirent les abeilles des ruches."
   ],
   "DEHORS": {
     "bac_fleurs": { "nom": "Bac à fleurs", "prix": 60 }

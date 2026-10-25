@@ -5,9 +5,9 @@
  * parle ainsi :
  *   - { type: 'init', graine, cadre, ferme, taille } : le monde de la partie. Il répond d'abord
  *     { type: 'apercu', apercu } (les biomes, en gros : le sol provisoire), puis tire les éléments
- *     du monde (rivières, lacs, chemins : une fois) et répond { type: 'pret', ms, lieux, hameaux } (les
- *     lieux du plan : hameaux, entrées de grotte, coins de pêche ; monde-gen.js ; le plan des
- *     hameaux bâtis : monde-hameaux.js) ;
+ *     du monde (rivières, lacs, chemins : une fois) et répond { type: 'pret', ms, lieux, hameaux, tournee }
+ *     (les lieux du plan : hameaux, entrées de grotte, coins de pêche ; monde-gen.js ; le plan des
+ *     hameaux bâtis : monde-hameaux.js ; la tournée de la calèche : caleche-tournee.js) ;
  *   - { type: 'region', rx, ry } : il répond { type: 'region', region } (ses tableaux transférés,
  *     pas copiés), ou { type: 'erreur', cle, message }.
  * Une seule partie à la fois : un nouvel « init » remplace la précédente (et sa file).
@@ -17,6 +17,7 @@
  * comme un module (type: 'module').
  */
 import { apercuDesBiomes, contexteSol, elementsSol, solDeRegion } from './engine/monde-sol.js';
+import { tourneeDuPlan } from './engine/caleche-tournee.js';
 
 let ctx = null;
 const file = [];
@@ -52,7 +53,9 @@ self.onmessage = (ev) => {
       if (c !== ctx) return;
       try {
         elementsSol(c);
-        self.postMessage({ type: 'pret', graine: c.graine, ms: c.mesures.elements, lieux: c.elements.lieux, hameaux: c.hameaux.plans });
+        // (la tournée de la calèche : les chemins du plan, ses arrêts, son horaire : fiche 7c)
+        const cd = c.cadre, tournee = tourneeDuPlan({ W: cd.LARGEUR, chemins: c.elements.chemins, hameaux: c.elements.lieux.hameaux, sortie: cd.SORTIE, ferme: cd.FERME });
+        self.postMessage({ type: 'pret', graine: c.graine, ms: c.mesures.elements, lieux: c.elements.lieux, hameaux: c.hameaux.plans, tournee });
       } catch (e) {
         self.postMessage({ type: 'erreur', graine: c.graine, cle: null, message: String((e && e.message) || e) });
       }

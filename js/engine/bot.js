@@ -1,7 +1,7 @@
 import { DATA, dishPrice, ingredientOptions } from './catalog.js';
 import { EPS } from './base.js';
 import {
-  allDevices, batteryCapacity, canPay, farmOpen, isBroken, isOwned, maintainDevice, marcheOuvert, needsService, panelOutput, pay, pumpFlow,
+  allDevices, batteryCapacity, canPay, farmOpen, isBroken, isOwned, maintainDevice, needsService, panelOutput, pay, pumpFlow,
   repairDevice, starterOf, sunlitMs, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from './devices.js';
 import { awakeRequired } from './clock.js';
@@ -15,11 +15,11 @@ import { actionCost, energyLevel, energyMax } from './stamina.js';
 import { levelBlock } from './levels.js';
 import { averageHappiness, dishHappiness } from './bonheur.js';
 import {
-  allPlots, buyHoe, cropProduct, harvest, hasHoe, hoe, hoeStatus, isArable, isMature, plant, plotAtTile, seedItem, seedStock,
+  allPlots, cropProduct, harvest, hasHoe, hoe, hoeStatus, isArable, isMature, plant, plotAtTile, seedItem, seedStock,
   serreUpgradeCost, soilCount, upgradeSerre, water, waterCost,
 } from './crops.js';
 import {
-  animalPrice, buyAnimal, buyCow, buyPasture, buySheep, canFeedHen, cowCount, freeCowPlaces,
+  accueillirAnimal, buyPasture, canFeedHen, cowCount, freeCowPlaces,
   coopCapacity, coopUpgradeCost, feedAllHens, freeSheepPlaces, hensToFeed, pastureCost, shear, sheepCount,
   strawNeed, strawStock, upgradePoulailler, wheatTotal, woolReady,
 } from './animals.js';
@@ -32,7 +32,7 @@ import {
   readMail, unreadMail,
 } from './campaign.js';
 import { isAutomated } from './automation.js';
-import { buyTool, grassCut, hasTool, scytheGrass } from './outils.js';
+import { grassCut, hasTool, scytheGrass } from './outils.js';
 import { bottelerSansCarte } from './botteleuse.js';
 import { sleep } from './night.js';
 import { casesDuTerrain, farmSeed, farmTerrain } from './terrain.js';
@@ -262,7 +262,7 @@ export function botHoe(state) {
 function botHens(state) {
   const p = state.poulailler;
   if (!p.construit || p.poules <= 0) return;
-  // pas de blé pour les poules : un dépannage au Marché, comme pour les graines
+  // pas de blé pour les poules : un dépannage à la calèche (le blé se sème : elle en vend)
   while (hensToFeed(state) > 0 && !canFeedHen(state) && botBuySeed(state, DATA.SILO.ITEM)) {
     if (canFeedHen(state)) break;
   }
@@ -301,14 +301,21 @@ function botCommerce(state) {
   chooseCommerce(state, best);
 }
 
+// Fiche 7c : un outil se fabrique à l'Atelier (plus de Marché) ; ses matériaux, le joueur simulé
+// les a, comme les ressources de botGather.
+function botOutil(state, id) {
+  if (!state.outils || typeof state.outils !== 'object') state.outils = { hache: false, pioche: false, canne: false, choisi: 'houe' };
+  state.outils[id] = true;
+}
+
 // La paille vient des fibres de la faux (FAUX), bottelées (BOTTELEUSE) : dès qu'il a des
-// moutons ou des vaches, il achète la faux et fauche les touffes de son pré (« pre_0 »… : il
+// moutons ou des vaches, il fabrique la faux et fauche les touffes de son pré (« pre_0 »… : il
 // n'a pas de carte) pour PAILLE_NUITS nuits d'avance, tant qu'il en reste et qu'il a de
 // l'énergie ; ses fibres sont bottelées sans machine (bottelerSansCarte).
 export function botScythe(state) {
   const besoin = strawNeed(state);
   if (besoin <= 0) return;
-  if (!hasTool(state, 'faux') && !buyTool(state, 'faux').ok) return;
+  if (!hasTool(state, 'faux')) botOutil(state, 'faux');
   const voulu = besoin * DATA.SIMULATION.PAILLE_NUITS;
   for (let k = 0; k < DATA.FAUX.BOT_TOUFFES && strawStock(state) < voulu; k++) {
     const id = 'pre_' + k;
@@ -398,17 +405,6 @@ function botStartRecipe(state, id) {
   return startRecipe(state, id).ok === true;
 }
 
-// Version 1.14 : l'huile et la farine qui manquent aux plats s'achètent au Marché.
-function botBuyStaples(state) {
-  if (!marcheOuvert(state)) return;
-  for (const [item, a] of Object.entries(DATA.SIMULATION.ACHATS_CUISINE)) {
-    for (let i = 0; i < a.stock && stockCount(state, item) < a.stock; i++) {
-      if (!isBuyable(item) || buyPrice(state, item) > a.prixMax + EPS || !canPay(state, buyPrice(state, item) + DATA.SIMULATION.CAISSE)) break;
-      if (!buyItem(state, item, 1).ok) break;
-    }
-  }
-}
-
 // Ce qui manque des ressources d'un nœud de l'arbre, mis dans l'inventaire du bot.
 function botGather(state, id) {
   for (const r of techResources(state, id)) if (!r.ok) addItem(state, r.item, r.qte - r.stock);
@@ -438,7 +434,6 @@ function botObjectives(state) {
 
 function botCook(state) {
   if (!state.stations) return;
-  botBuyStaples(state);
   for (const station of Object.keys(DATA.STATIONS)) {
     const st = state.stations[station];
     if (!st.construit || st.tache) continue;
@@ -482,11 +477,11 @@ export function botStepInfo(state, step, eveilS) {
       if (isOwned(starterOf(state, step.id))) return { done: true };
       if (starterBlock(state, step.id) || levelBlock(state, 'energie')) return { locked: true };
       return botBatir(state, step.id, DATA.DEPART.ACHATS[step.id]);
-    // (Marché fermé : la houe se fabrique à l'Atelier ; ses matériaux, le joueur simulé les a,
-    // comme les ressources de botGather)
+    // (fiche 7c : la houe se fabrique à l'Atelier ; ses matériaux, le joueur simulé les a, comme
+    // les ressources de botGather)
     case 'houe':
       if (hasHoe(state)) return { done: true };
-      return marcheOuvert(state) ? { cost: DATA.HOUE.PRIX, buy: () => buyHoe(state) } : { cost: 0, buy: () => { state.potager.houe = true; return { ok: true }; } };
+      return { cost: 0, buy: () => { state.potager.houe = true; return { ok: true }; } };
     case 'silo':
       if (!isUnlocked(state, 'silo')) return { locked: true };
       return state.silo.construit ? { done: true } : botBatir(state, 'silo', DATA.SILO.PRIX_CONSTRUCTION);
@@ -500,7 +495,7 @@ export function botStepInfo(state, step, eveilS) {
       if (p.poules >= step.n) return { done: true };
       if (!p.construit) return botBatir(state, 'poulailler', DATA.POULAILLER.PRIX_CONSTRUCTION);
       if (p.poules >= coopCapacity(state)) return { cost: coopUpgradeCost(state), buy: () => upgradePoulailler(state) };
-      return { cost: animalPrice('poule'), buy: () => buyAnimal(state, 'poule') };
+      return { cost: 0, buy: () => accueillirAnimal(state, 'poule') };
     }
     case 'station': {
       const def = DATA.STATIONS[step.id];
@@ -518,7 +513,7 @@ export function botStepInfo(state, step, eveilS) {
       if (!p.construit) return botBatir(state, 'etable', DATA.PATURAGE.PRIX_CONSTRUCTION);
       if (sheepCount(state) >= step.n) return { done: true };
       if (freeSheepPlaces(state) <= 0) return { cost: pastureCost(state), buy: () => buyPasture(state) };
-      return { cost: animalPrice('mouton'), buy: () => buySheep(state) };
+      return { cost: 0, buy: () => accueillirAnimal(state, 'mouton') };
     }
     // version 1.14 : des vaches pour le lait, et le commerce agrandi
     case 'vaches': {
@@ -527,7 +522,7 @@ export function botStepInfo(state, step, eveilS) {
       if (!p.construit) return botBatir(state, 'etable', DATA.PATURAGE.PRIX_CONSTRUCTION);
       if (cowCount(state) >= step.n) return { done: true };
       if (freeCowPlaces(state) <= 0) return { cost: pastureCost(state), buy: () => buyPasture(state) };
-      return { cost: animalPrice('vache'), buy: () => buyCow(state) };
+      return { cost: 0, buy: () => accueillirAnimal(state, 'vache') };
     }
     case 'commerce': {
       if (!state.commerce.type) return { locked: true };
@@ -595,7 +590,8 @@ export function botBuy(state, eveilS) {
       const info = botStepInfo(state, step, eveilS);
       if (info.done || info.locked) continue;
       // une caisse reste en réserve pour les graines et le blé (sauf pour l'eau et l'énergie)
-      const target = info.cost + (step.type === 'infra' ? 0 : S.CAISSE);
+      // (ce qui ne coûte rien, fabriqué à l'Atelier, ne demande pas de caisse : fiche 7c)
+      const target = info.cost ? info.cost + (step.type === 'infra' ? 0 : S.CAISSE) : 0;
       if (!canPay(state, target)) botRaiseFunds(state, target);
       if (!canPay(state, target)) return;
       if (!info.buy().ok) return;

@@ -1,4 +1,5 @@
 import { DATA } from './catalog.js';
+import { nouvelleCaleche } from './caleche.js';
 import { STATE_VERSION } from './base.js';
 import { batteryCapacity, newDayStats, startFarm } from './devices.js';
 import { addItem, countItem, freshLot, lotRank, lotsFromCounts, pushLots } from './inventory.js';
@@ -114,7 +115,8 @@ export function createInitialState(seed = 1) {
     progression: newProgression(), // version 1.7 : expérience et niveau
     energie: energyMax(), // version 1.8 : l'énergie du personnage (millièmes)
     compta: [], // les Comptes : gains et dépenses récents (voir compta.js)
-    meubles: {}, // meubles de la maison achetés au Marché (absent dans une ancienne sauvegarde : aucun)
+    meubles: {}, // meubles de la maison (fabriqués à l'Atelier ; absent dans une ancienne sauvegarde : aucun)
+    caleche: nouvelleCaleche(), // la calèche (caleche.js, fiche 7c) : son coffre, ses retenues
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),
@@ -452,6 +454,11 @@ export const MIGRATIONS = {
   // de hameau (ses foyers, sa réserve). Ils naissent quand le personnage revient dans un hameau déjà
   // vu (la page donne son plan) : une partie existante n'en a pas encore.
   55: (state) => ({ ...state, monde: { ...(state.monde || { vues: regionsFerme(farmTerrain({ ...state, version: 56 })), pris: {}, hameaux: {} }), habitants: {} }, version: 56 }),
+  // v56 → v57 : le Marché devient la calèche (caleche.js, fiche 7c) : state.caleche (son coffre, les
+  // retenues du jour, l'heure de ses derniers arrêts, les ventes du jour). Rien d'autre ne change :
+  // l'argent, l'inventaire (ce qui a été acheté au Marché reste au joueur), les outils, les animaux, les
+  // meubles et les cours du Marché (state.marche : ceux des semences comptent encore) restent.
+  56: (state) => ({ ...state, caleche: nouvelleCaleche(), version: 57 }),
 };
 
 // Porte les cases d'une partie (numérotées sur la largeur de sa ferme) dans celles du monde, où sa

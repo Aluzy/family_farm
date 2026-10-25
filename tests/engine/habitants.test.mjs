@@ -239,7 +239,7 @@ test('les habitants : une nuit coûte peu (tous les hameaux d\'un monde peuplés
 /* ---------- la sauvegarde, la ferme ---------- */
 
 test('migration v55 → v56 : pas encore d\'habitants, rien d\'autre ne change', () => {
-  assertEqual(STATE_VERSION, 56);
+  // (puis v56 → v57 : la calèche, tests/engine/caleche.test.mjs)
   const s = garden();
   const { habitants, ...monde55 } = s.monde;
   const v55 = copie({ ...s, monde: { ...monde55, hameaux: { hameau_2: { nom: 'Les Saules', style: 'marais', jour: 1 } } }, version: 55 });

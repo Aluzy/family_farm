@@ -60,3 +60,4 @@ export * from './encyclopedie.js';
 export * from './plantation.js';
 export * from './journal.js';
 export * from './repas.js';
+export * from './caleche.js';

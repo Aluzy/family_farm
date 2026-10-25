@@ -11,7 +11,7 @@ import { animateIn } from './animations.js';
 import { renderTutorial } from './aide.js';
 import { renderDidacticiel } from './didacticiel.js';
 import { renderItemModal } from './inventaire.js';
-import { renderShopModal } from './marche.js';
+import { renderShopModal } from './caleche.js';
 import { pixelize, watch } from './pixel-emoji.js';
 import { renderRecipeBook } from './livre.js';
 import { renderEncyclopedie } from './encyclopedie.js';
@@ -44,7 +44,7 @@ export function render() {
     setEcranFerme(null);
     setStageWindow(propre || 'maison');
   }
-  // Avec la carte, l'Inventaire et le Marché sont des fenêtres flottantes par-dessus elle.
+  // Avec la carte, l'Inventaire et la calèche sont des fenêtres flottantes par-dessus elle.
   if (['installations', 'inventaire', 'comptoir'].includes(activeTab) && stageUsable()) {
     setStageWindow(activeTab);
     setActiveTab('ferme');

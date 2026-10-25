@@ -663,5 +663,29 @@
         "faim": ["On n'a pas eu assez à manger hier.", "Le garde-manger est presque vide…"]
       }
     }
+  },
+  "//CALECHE": [
+    "La calèche (fiche 7c, js/engine/caleche.js ; la scène : js/carte/ferme/caleche.js). Elle fait chaque jour",
+    "le tour du monde par les chemins du plan (monde-gen.js : la boucle qui relie la sortie de la ferme et les",
+    "hameaux), dans le sens où ils sont reliés. Ses arrêts : la ferme (la case au bout de sa sortie, devant son",
+    "entrée) et la place de chaque hameau. L'horaire, le même chaque jour : elle arrive à la ferme à FERME h et",
+    "y reste ARRET_FERME h ; chaque hameau la garde ARRET h. Sa vitesse (tuiles par heure de jeu) est celle qui",
+    "fait tenir le tour en JOURNEE heures, au moins VITESSE. Elle dort dans le hameau (le gîte) d'où elle part",
+    "le plus près de DEPART h pour être à la ferme à l'heure. Sa position se calcule d'après le jour et l'heure.",
+    "PORTEE : à tant de cases d'elle (arrêtée), on commerce ; HELER : à tant de cases, on la hèle en chemin ;",
+    "PROCHE : à tant de cases, une icône au bord de l'écran montre où elle est. RETENUE : hélée, ou retenue",
+    "par le commerce, elle attend tant d'heures (RETENUE_MAX au plus par jour, puis elle repart).",
+    "Elle achète la réserve de chaque hameau où elle s'arrête (habitants.js) : ACHAT_HAMEAU % du prix de",
+    "vente, payés aux bourses des foyers ; PRIS au plus de chaque objet par arrêt, son coffre en garde",
+    "COFFRE_MAX de chacun ; chaque matin, elle a vendu en route tout sauf GARDE % de son coffre. Elle revend",
+    "au joueur ce que son coffre porte, à VENTE % du prix de vente, et les semences (au cours du Marché :",
+    "market.js) ; elle lui achète tout ce qui se vend, au prix de vente. RATTRAPAGE : les jours d'arrêts",
+    "rattrapés au plus après une absence."
+  ],
+  "CALECHE": {
+    "NOM": "La calèche", "ICONE": "🐴",
+    "FERME": 10, "ARRET_FERME": 1, "ARRET": 0.5, "DEPART": 6.5, "JOURNEE": 15, "VITESSE": 150,
+    "PORTEE": 4, "HELER": 9, "PROCHE": 70, "RETENUE": 0.5, "RETENUE_MAX": 3,
+    "ACHAT_HAMEAU": 60, "VENTE": 150, "PRIS": 20, "COFFRE_MAX": 40, "GARDE": 50, "RATTRAPAGE": 3
   }
 }

@@ -1,6 +1,6 @@
 /* carte/cheval.js — le cheval du personnage, sur toutes les cartes.
  *
- * Acheté au Marché (le moteur : DATA.CHEVAL, js/engine/cheval.js), il vit à l'Écurie de la ferme
+ * Venu à l'Atelier (un licol et des friandises ; le moteur : DATA.CHEVAL, js/engine/cheval.js), il vit à l'Écurie de la ferme
  * (js/carte/ferme/chantier.js, syncBeasts : assets/cheval.png). Un appui dans la barre d'outils
  * fait monter le personnage en selle ou en descendre. En selle, il va plus vite (le moteur dit
  * combien), assis (ses cases assis_<vue>) sur le cheval sellé (assets/cheval_monte.png,

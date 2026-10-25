@@ -147,7 +147,7 @@ test('triporteur : acheté une fois au Marché, il fait rouler plus vite ; on en
   const s = garden();
   const T = DATA.TRIPORTEUR;
   assertEqual([enSelle(s), vitesseDeplacement(s)], [false, 1], 'à pied sans triporteur');
-  assertEqual(toggleTriporteur(s).error, `Il te faut un triporteur (Marché, ${T.PRIX} 💰).`);
+  assertEqual(toggleTriporteur(s).error, 'Il te faut un triporteur (à fabriquer à l\'Atelier).');
   s.pieces = T.PRIX - 1;
   assertEqual(buyTool(s, 'triporteur').ok, false, 'trop cher');
   s.pieces = T.PRIX + 10;
@@ -164,7 +164,7 @@ test('triporteur : acheté une fois au Marché, il fait rouler plus vite ; on en
 
 test('hache : chaque coup sur un arbre donne du bois, de l\'XP, coûte de l\'énergie ; au COUPES-ième, il tombe', () => {
   const s = garden();
-  assertEqual(chopTree(s, '14,25').error, `Il te faut une hache (Marché, ${DATA.HACHE.PRIX} 💰).`);
+  assertEqual(chopTree(s, '14,25').error, 'Il te faut une hache (à fabriquer à l\'Atelier).');
   s.outils = { hache: true, pioche: false, choisi: 'hache' };
   const [e, xp] = [s.energie, s.progression.xp];
   const r = chopTree(s, '14,25');
@@ -229,7 +229,7 @@ test('hache : un arbre abattu laisse sa graine et ne repousse pas de lui-même ;
 
 test('pioche : chaque coup sur un rocher donne de la pierre ; au COUPS-ième, il est cassé', () => {
   const s = garden();
-  assertEqual(mineRock(s, '25,13').error, `Il te faut une pioche (Marché, ${DATA.PIOCHE.PRIX} 💰).`);
+  assertEqual(mineRock(s, '25,13').error, 'Il te faut une pioche (à fabriquer à l\'Atelier).');
   s.outils = { hache: false, pioche: true, choisi: 'pioche' };
   const [e, xp] = [s.energie, s.progression.xp];
   const r = mineRock(s, '25,13');
@@ -331,7 +331,7 @@ test('coup fort (version 1.24) : la hache et la pioche comptent COUPS coups pour
 
 test('canne à pêche : un lancer coûte de l\'énergie ; une prise (truite, brochet) donne le poisson et de l\'XP ; JOUR prises par eau et par jour', () => {
   const s = garden();
-  assertEqual(castLine(s, 'etang').error, `Il te faut une canne à pêche (Marché, ${DATA.CANNE.PRIX} 💰).`);
+  assertEqual(castLine(s, 'etang').error, 'Il te faut une canne à pêche (à fabriquer à l\'Atelier).');
   s.outils = { canne: true, choisi: 'canne' };
   assertEqual(castLine(s, 'ocean').ok, false, 'eau inconnue');
   const vus = new Set();
@@ -407,7 +407,7 @@ test('pioche : un rocher cassé revient au bout de RETOUR jours, sauf si une par
 test('version 1.9 : labourer une case d\'herbe coûte de l\'énergie et rapporte de l\'XP, dans le plafond', () => {
   const s = garden();
   testSetLevel(s, 1);
-  assertEqual(hoe(s, champ(0, 0)).error, `Il te faut une houe (Marché, ${DATA.HOUE.PRIX} 💰).`);
+  assertEqual(hoe(s, champ(0, 0)).error, 'Il te faut une houe (à fabriquer à l\'Atelier).');
   s.potager.houe = true;
   const [e, xp] = [s.energie, s.progression.xp];
   const r = hoe(s, champ(0, 0));
