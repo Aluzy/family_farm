@@ -2819,3 +2819,51 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .hameau-banniere-sous { font-size: 0.85rem; opacity: 0.8; }
 @media (prefers-reduced-motion: reduce) { .hameau-banniere { transition: none; } }
 .encyclo-hameaux { margin: 0 0 12px; padding-left: 20px; }
+/* Les habitants des hameaux (fiche 7b, js/carte/ferme/habitants.js) : la bulle d'un habitant
+   qu'on touche, au-dessus de sa tête (son prénom, son métier, sa phrase), dans le calque des
+   étiquettes ; la fiche du hameau (js/ui/habitants.js : ses familles, sa réserve). */
+.habitant-bulle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-width: 220px;
+  padding: 6px 10px 7px;
+  background: #f6ead0;
+  color: #3a2414;
+  border: 2px solid #5a3a1e;
+  border-radius: 6px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  font-size: 0.8rem;
+  line-height: 1.25;
+  pointer-events: none;
+  will-change: transform;
+}
+.habitant-bulle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  margin-left: -6px;
+  border: 6px solid transparent;
+  border-top: 6px solid #5a3a1e;
+  border-bottom: 0;
+}
+.habitant-bulle strong { font-size: 0.9rem; }
+.habitant-bulle-metier { font-size: 0.72rem; opacity: 0.75; }
+.habitant-bulle-texte { margin-top: 2px; }
+.hameau-familles, .hameau-reserve { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
+.hameau-famille { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.35); }
+.hameau-portraits { display: flex; flex-shrink: 0; }
+.hameau-portraits .perso-px { --s: var(--portrait-64, 64px); margin-right: -22px; }
+.hameau-portraits .perso-px:last-child { margin-right: 0; }
+.hameau-famille-texte { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.hameau-noms .muted { font-size: 0.85em; }
+.hameau-bonheur { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; flex-wrap: wrap; }
+.hameau-bonheur .bar { width: 70px; }
+.hameau-reserve { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; }
+.hameau-reserve li { display: flex; align-items: center; gap: 6px; }
+.hameau-reserve .num { margin-left: auto; font-weight: 700; }
+.hameau-reserve .gain { margin-left: 4px; color: #2f6b3a; font-size: 0.8rem; }

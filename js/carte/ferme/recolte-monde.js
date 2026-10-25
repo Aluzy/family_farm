@@ -232,7 +232,8 @@
     // Le dernier coup de hache : l'arbre bascule autour de son pied, du côté opposé au
     // personnage, rebondit au sol en lâchant ses feuilles, puis s'efface (comme ceux de la ferme,
     // hache.js fellTree) ; un buisson, une souche, un tronc couché partent en feuilles et en copeaux.
-    mondeAbat(o, anim) {
+    // `calme` : la vue ne tremble pas (un habitant l'abat, js/carte/ferme/habitants.js).
+    mondeAbat(o, anim, calme) {
       const t = o.tombe;
       if (!t) return;
       o.tombe = null;
@@ -263,7 +264,7 @@
           // il touche le sol : feuilles et copeaux, un petit rebond, puis il s'efface
           const len = o.fy - o.y, x0 = t.dir > 0 ? o.fx + len * 0.25 : o.fx - len;
           this.spawnShards({ box: { x0, x1: x0 + len * 0.75, y0: o.fy - 10, y1: o.fy + 2 } }, CHUTE.feuilles, true, null, CHUTE.couleurs);
-          K.secousse(this, 'chute');
+          if (!calme) K.secousse(this, 'chute');
           this.revealPieces(t.fin);
           t.fin = null;
           this.tweens.add({

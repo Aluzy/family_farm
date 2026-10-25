@@ -3480,6 +3480,203 @@ export const RAW_DATA = {
       "fruitier"
     ]
   },
+  "HABITANTS": {
+    "ADULTES": [1, 2],
+    "SEUL": 4,
+    "ENFANTS": [0, 3],
+    "SECOND": { "MEME": 45, "AUTRE": 30, "METIERS": ["cueilleur", "berger", "pecheur", "bucheron"] },
+    "ARGENT": 120,
+    "JOURNAL": 7,
+    "RATTRAPAGE": 7,
+    "GARDE": 6,
+    "RESERVE_MAX": 600,
+    "TRISTE": 30,
+    "HEUREUX": 70,
+    "PRENOMS": {
+      "f": [
+        "Agathe",
+        "Albane",
+        "Alice",
+        "Anaïs",
+        "Anne",
+        "Apolline",
+        "Bérénice",
+        "Blanche",
+        "Camille",
+        "Capucine",
+        "Céleste",
+        "Clémence",
+        "Colette",
+        "Douce",
+        "Élise",
+        "Émeline",
+        "Faustine",
+        "Flavie",
+        "Gabrielle",
+        "Garance",
+        "Hélène",
+        "Iris",
+        "Jeanne",
+        "Joséphine",
+        "Léonie",
+        "Lise",
+        "Lucie",
+        "Madeleine",
+        "Margot",
+        "Marthe",
+        "Maud",
+        "Mélanie",
+        "Ninon",
+        "Odile",
+        "Pauline",
+        "Rose",
+        "Salomé",
+        "Solène",
+        "Suzanne",
+        "Violette"
+      ],
+      "m": [
+        "Achille",
+        "Adrien",
+        "Aimé",
+        "Albin",
+        "Ambroise",
+        "Anatole",
+        "Armand",
+        "Arthur",
+        "Augustin",
+        "Baptiste",
+        "Basile",
+        "Benoît",
+        "Célestin",
+        "Clément",
+        "Côme",
+        "Damien",
+        "Émile",
+        "Étienne",
+        "Eugène",
+        "Félix",
+        "Fernand",
+        "Gaspard",
+        "Gustave",
+        "Henri",
+        "Honoré",
+        "Jules",
+        "Léon",
+        "Louis",
+        "Lucien",
+        "Marius",
+        "Mathurin",
+        "Noé",
+        "Octave",
+        "Paul",
+        "Quentin",
+        "Raphaël",
+        "Simon",
+        "Théo",
+        "Victor",
+        "Yves"
+      ]
+    },
+    "PERSOS": {
+      "adulte": {
+        "f": [1, 2, 4, 5, 6, 11, 13, 15, 16, 17, 19, 20, 21, 22, 24, 26, 27, 28, 30, 31, 32, 34, 35, 37, 38, 40, 41, 42, 46, 47, 49],
+        "m": [3, 7, 8, 9, 10, 12, 14, 18, 23, 25, 29, 33, 36, 39, 43, 44, 45, 48, 50]
+      },
+      "enfant": {
+        "f": [2, 6, 8, 11, 13, 15, 17, 19, 21, 22, 24, 26, 27, 30, 32, 34, 37, 38, 40, 41, 42, 44, 45, 46, 49, 50],
+        "m": [1, 3, 4, 5, 7, 9, 10, 12, 14, 16, 18, 20, 23, 25, 28, 29, 31, 33, 35, 36, 39, 43, 47, 48]
+      }
+    },
+    "METIERS": {
+      "bucheron": {
+        "nom": { "m": "bûcheron", "f": "bûcheronne" },
+        "geste": "couper",
+        "ACTIONS": 4,
+        "donne": { "bois": [3, 5] },
+        "chance": { "pomme_de_pin": 15 },
+        "RECETTES": ["gratin_patates", "soupe_legumes", "compote", "bocal_legumes"]
+      },
+      "pecheur": {
+        "nom": { "m": "pêcheur", "f": "pêcheuse" },
+        "geste": "pecher",
+        "ACTIONS": 6,
+        "une_de": {
+          "mer": { "sardine": 4, "anchois": 3, "dorade": 2, "bar": 1, "poisson": 3 },
+          "lac": { "truite": 4, "omble": 3, "brochet": 1, "poisson": 3 },
+          "riviere": { "truite": 4, "goujon": 4, "saumon": 1, "poisson": 3 }
+        },
+        "nombre": [1, 1],
+        "RECETTES": ["poisson_grille", "gratin_patates", "soupe_legumes", "compote"]
+      },
+      "mineur": {
+        "nom": { "m": "mineur", "f": "mineuse" },
+        "geste": "piocher",
+        "ACTIONS": 5,
+        "donne": { "pierre": [1, 3] },
+        "chance": { "minerai_fer": 30, "minerai_cuivre": 18, "quartz": 6 },
+        "RECETTES": ["gratin_patates", "soupe_legumes", "bocal_legumes", "compote"]
+      },
+      "berger": {
+        "nom": { "m": "berger", "f": "bergère" },
+        "geste": "traire",
+        "ACTIONS": 3,
+        "donne": { "lait": [1, 2] },
+        "chance": { "laine": 35 },
+        "RECETTES": ["fromage_frais", "gratin_patates", "soupe_legumes", "compote"]
+      },
+      "cueilleur": {
+        "nom": { "m": "cueilleur", "f": "cueilleuse" },
+        "geste": "cueillir",
+        "ACTIONS": 6,
+        "une_de": { "*": { "baies": 4, "champignon": 3, "mures": 3, "myrtille": 2, "chataigne": 2 } },
+        "nombre": [1, 2],
+        "RECETTES": ["omelette_champignons", "compote", "gratin_patates", "soupe_legumes"]
+      }
+    },
+    "JARDINIER": { "nom": { "m": "jardinier", "f": "jardinière" }, "RECETTES": ["gratin_patates", "soupe_legumes", "bocal_legumes", "compote"] },
+    "JARDIN": {
+      "FOYER": [2, 3],
+      "JARDINIER": [2, 4],
+      "LEGUMES": { "patate": 4, "carotte": 2, "oignon": 2, "tomate": 1, "courgette": 1, "ail": 1, "epinard": 1 },
+      "POTAGER": [1, 2],
+      "VERGER": [1, 2],
+      "FRUITS": { "pomme": 3, "poire": 2, "cerise": 1, "abricot": 1, "peche": 1 },
+      "OEUFS": [0, 2]
+    },
+    "HORAIRE": { "LEVER": 6.5, "TRAVAIL": 7.5, "MIDI": 12, "REPRISE": 13.5, "RENTREE": 18, "COUCHER": 21.5 },
+    "PHRASES": {
+      "salut": {
+        "matin": ["Bonjour !", "Belle matinée, n'est-ce pas ?", "Le jour se lève à peine."],
+        "jour": ["Bonjour !", "Salut à toi !", "Te voilà de passage ?"],
+        "soir": ["Bonsoir !", "La journée s'achève.", "Le soleil se couche."],
+        "nuit": ["Chut… tout le monde dort.", "Il est bien tard."]
+      },
+      "activite": {
+        "dort": ["(ça dort à poings fermés)", "(un ronflement tranquille)"],
+        "maison": ["On se prépare pour la journée.", "Je range un peu la maison."],
+        "chemin": ["Je file au travail.", "Pardon, je passe !", "Je suis en retard, à tout à l'heure !"],
+        "joue": ["On joue à chat !", "Tu veux jouer avec nous ?", "Je cours plus vite que toi !", "On a vu un lapin près du puits !"],
+        "repas": ["C'est l'heure de manger.", "Ça sent bon à la maison.", "À table !"],
+        "rentre": ["Je rentre à la maison.", "La soupe nous attend.", "Encore une bonne journée."],
+        "soir": ["On se repose un peu avant la nuit.", "Quelle journée !", "Bientôt l'heure d'aller au lit."]
+      },
+      "travail": {
+        "bucheron": ["Le bois ne se coupe pas tout seul !", "Les arbres repousseront, ne t'en fais pas.", "Une bonne flambée cet hiver, grâce à ça."],
+        "pecheur": ["Ça mord, aujourd'hui.", "Chut, tu vas faire fuir les poissons.", "La patience, c'est tout le métier."],
+        "mineur": ["La roche est dure par ici.", "Il y a du fer dans cette montagne.", "Un coup de pioche après l'autre."],
+        "berger": ["Mes bêtes ont bon appétit.", "Le lait sera bon ce soir.", "La laine pousse avec le beau temps."],
+        "cueilleur": ["Les buissons sont pleins de baies.", "Je connais les bons coins à champignons.", "Rien ne vaut les mûres du matin."],
+        "jardinier": ["Le potager demande du soin.", "Les légumes poussent bien cette année.", "Encore un rang à désherber."]
+      },
+      "humeur": {
+        "heureux": ["On vit bien, au hameau.", "La vie est douce, ici.", "On mange bien et on dort bien."],
+        "content": ["Ça va, ça va.", "On ne se plaint pas.", "Les jours se suivent."],
+        "triste": ["On n'a pas le moral, ces temps-ci…", "La fatigue se fait sentir.", "La vie est dure, au hameau."],
+        "faim": ["On n'a pas eu assez à manger hier.", "Le garde-manger est presque vide…"]
+      }
+    }
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,

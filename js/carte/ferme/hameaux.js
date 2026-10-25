@@ -135,6 +135,7 @@
     },
 
     defaireHameau(e) {
+      if (this.defaireHabitants) this.defaireHabitants(e);   // (ses habitants : habitants.js)
       for (const t of e.toits) {
         t.img.destroy();
         if (this.textures.exists(t.key)) this.textures.remove(t.key);
@@ -162,6 +163,7 @@
         }
       }
       if (!this.hameauxVus || !this.hameauxVus.size) return;
+      if (this.stepHabitants) this.stepHabitants(dt);       // (ses habitants : habitants.js, fiche 7b)
       const pas = R.vitesse * dt, v = this.cameras.main.worldView, now = performance.now(), calme = reducedMotion();
       for (const e of this.hameauxVus.values()) {
         for (const t of e.toits) {

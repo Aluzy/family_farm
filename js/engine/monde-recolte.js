@@ -320,6 +320,19 @@ export function ramasserMonde(state, id, depuis) {
   return { ok: true, items };
 }
 
+// Un habitant d'un hameau prend la pièce `id` sous les yeux du joueur (un bûcheron abat un arbre du
+// monde : habitants.js, fiche 7b). Elle suit les règles d'ici : prise jusqu'à son retour (le même
+// tirage que pour le joueur), sa région devient vue (elle repoussera) ; ni outil, ni énergie, ni XP
+// pour le joueur, rien ne tombe au sol (ce qu'elle donne va au foyer de l'habitant). → true, ou
+// false (pas une pièce du monde qui se coupe, ou déjà prise).
+export function prendreParHabitant(state, id) {
+  const o = lireIdMonde(id);
+  if (!o || !o.regle || o.regle.geste !== 'couper' || estPrise(etatObjetMonde(state, id))) return false;
+  ecrire(state, id, { retour: retourDe(state, id, o.regle) });
+  voirRegion(state, o.Y * farmTerrain(state).LARGEUR + o.X);
+  return true;
+}
+
 function donner(state, items) {
   for (const [item, n] of Object.entries(items)) if (n > 0) { addItem(state, item, n); noter('ramasse', { item, n }); }
 }

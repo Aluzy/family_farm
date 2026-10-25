@@ -582,6 +582,11 @@
         // Version 1.18 : la bulle d'un tas à ramasser passe devant tout.
         // un hameau du grand monde (js/carte/ferme/hameaux.js) : son panneau ; un outil qui n'a rien
         // à y faire (il le dit)
+        // un habitant d'un hameau (js/carte/ferme/habitants.js) : il parle
+        if (!hoeing && this.habitantAt && !(this.ctx.lastModel && this.ctx.lastModel.bati)) {
+          const hab = this.habitantAt(wx, wy);
+          if (hab) return { habitant: hab };
+        }
         const ham = this.hameauOutil ? this.hameauOutil(wx, wy) : null;
         if (ham) return ham;
         // planter un arbre (js/carte/ferme/plantation.js) : la case touchée, rien d'autre
@@ -726,6 +731,7 @@
           return;
         }
         if (!hit) return;
+        if (hit.habitant) { this.habitantParle(hit.habitant); return; }
         if (hit.panneau) { if (this.ctx.bridge.hameauPanneau) this.ctx.bridge.hameauPanneau({ id: hit.panneau.id, nom: hit.panneau.nom, style: hit.panneau.style }); return; }
         if (hit.hameauRefus) { if (this.ctx.bridge.hameauRefus) this.ctx.bridge.hameauRefus(hit.hameauRefus.outil, hit.hameauRefus.nom); return; }
         if (hit.pile) { if (this.fermier && !(this.ctx.lastModel && this.ctx.lastModel.coucher)) this.fermier.fetch(hit.pile); return; }   // il va au lit ou il dort : rien

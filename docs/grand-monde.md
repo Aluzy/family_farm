@@ -631,6 +631,116 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        (du bois et un platelage) ; le dedans n'a qu'une lueur unie la nuit (pas les rayons des
        fenêtres de la maison du joueur) ; un hameau sans chemin (coincé entre des falaises, le plan du
        monde n'a pas pu l'y relier) reste sans chemin.
+   - **Fait (7b)** : les habitants des hameaux (la calèche, la vente et l'Atelier viendront à la fiche 7c).
+     - **Les familles** (`js/engine/habitants.js`, `peuplerHameau` ; réglées par `data/monde.json` :
+       `HABITANTS`, vérifié par `scripts/lib/data.mjs`) : chaque maison du plan a son foyer, tiré de la
+       graine du monde, du hameau et de la maison (jamais de `state.rngSeed` : la ferme ne bouge pas) :
+       un ou deux adultes (`ADULTES`, un seul une fois sur 25 : `SEUL`), zéro à trois enfants
+       (`ENFANTS`), jamais plus que de lits (les adultes dans les lits d'adulte d'abord, les enfants
+       dans ceux d'enfant ; chacun a le sien) ; un prénom (`PRENOMS`, 40 par genre) et un personnage
+       des planches existantes (`PERSOS` : ceux d'un adulte ou d'un enfant, rangés par genre d'après
+       leur dessin), sans répétition dans un hameau. Le premier adulte fait le métier du hameau
+       (`metierDuLieu` de la 7a), le second le même (45 %), un autre (30 % : cueilleur, berger,
+       pêcheur ou bûcheron) ou il tient le jardin (le jardinier). Les foyers naissent à la découverte
+       du hameau : la page donne au moteur le plan que le Web Worker a tiré (`js/ui/habitants.js`,
+       `peuplerDepuisCarte`, appelé par le pont `hameau`), avec l'eau où pêchera le pêcheur (le coin de
+       pêche le plus proche du plan du monde, sinon la mer sur la côte, la rivière ailleurs) ; le
+       moteur n'en garde que ce qu'il lui faut (les membres et leur lit, le nombre de potagers et de
+       vergers, le poulailler) : la nuit ne refait jamais le plan. Une partie d'avant, qui a déjà vu des
+       hameaux, les peuple dès que les plans sont là (`peuplerLesVus`).
+     - **La journée** (`habitantsNuit`, appelé par `runNight` avant le jour suivant ; chaque foyer, que
+       le joueur soit là ou non, rattrape au plus `RATTRAPAGE` jours) : chaque adulte fait `ACTIONS`
+       actions de son métier (une de moins quand le foyer est triste, sous `TRISTE`), moins celles
+       faites sous les yeux du joueur : le bûcheron du bois (et parfois une pomme de pin), le pêcheur
+       un poisson de son eau (mer : sardine, anchois, dorade, bar ; lac : truite, omble, brochet ;
+       rivière : truite, goujon, saumon ; ou le poisson du Marché), le mineur de la pierre et parfois du
+       fer, du cuivre, du quartz, le berger du lait et parfois de la laine, le cueilleur des baies, des
+       champignons, des mûres, des myrtilles, des châtaignes (des objets qui existaient tous : aucun
+       nouveau). Le jardin du foyer donne 2 à 3 légumes par membre (plus avec un jardinier), chaque
+       potager du hameau 1 à 2 de plus, chaque verger 1 à 2 fruits, le poulailler 0 à 2 œufs. Le repas,
+       avec les règles de la famille du joueur : le besoin de `FAMILLE.AJ` (50 par adulte, 25 par
+       enfant), les plats de la cuisine du métier (`RECETTES` : gratin, soupe, compote, bocal de
+       légumes ; le poisson grillé du pêcheur, le fromage frais du berger, l'omelette aux champignons
+       du cueilleur), différents d'abord (`BONHEUR.PLATS_MAX`, même le besoin couvert : pour le plaisir),
+       puis d'autres plats, puis des aliments crus ; le bonheur suit `mealHappinessDelta`
+       (`js/engine/bonheur.js` : le déclin, les plats, la faim), de 0 à `BONHEUR.MAX`. Le garde-manger
+       garde `GARDE` (6) aliments de chaque sorte ; le reste, et tout ce qui ne se mange pas (bois,
+       pierre, minerai, laine), va à la **réserve du hameau** (`RESERVE_MAX`, 600 par objet ; ce qui
+       dépasse se perd). La bourse (`ARGENT`, 120) attend la calèche. Le journal garde les `JOURNAL` (7)
+       derniers jours (ce qui a été produit, cueilli au jardin, mangé, la part du repas, le bonheur, ce
+       qui est allé à la réserve, les gestes vus). Simulé sur 20 nuits (3 mondes) : la plupart des
+       foyers mangent à leur faim ; ceux qui vivent de la pierre ou du bois, sans jardinier, ont un
+       repas plus maigre et un bonheur plus bas (de 0 à 60), les pêcheurs et les bergers vivent mieux.
+     - **Ancien modèle** (l'archive : `js/engine/voisins.js`) : repris, la journée vécue chaque nuit
+       que le joueur soit là ou non, le rattrapage, le quota du jour où compte ce que le joueur a vu
+       (`voisinAbat` → `habitantAgit`), le besoin journalier, les plats différents d'abord puis les
+       aliments crus, le bonheur des repas, le journal. Changé : pas de marché ni d'achats (ils mangent
+       ce qu'ils produisent et ce que donnent les jardins, la calèche de la 7c achètera la réserve et
+       remplira la bourse), pas de caisse ni de livreur, pas de maisons par étapes (plus tard), cinq
+       métiers au lieu de deux, une famille tirée par le moteur (plus par la page), une réserve par
+       hameau, et rien ne lit `state.rngSeed`.
+     - **Sous les yeux du joueur** : `habitantAgit(state, hameau, membre, geste, arbre)` : un geste
+       fini compte une fois dans la journée de son foyer (le quota du jour : au-delà, « sa journée est
+       faite » ; la nuit ne refait que ce qui reste) ; un arbre du monde abattu par un bûcheron est pris
+       comme si le joueur l'avait coupé (`prendreParHabitant`, `js/engine/monde-recolte.js` : son jour
+       de retour, sa région vue, il repousse avec les autres ; le même arbre ne compte pas deux fois).
+     - **Sauvegardes** : format 56 ; la migration 55 → 56 donne `state.monde.habitants = {}` (les
+       hameaux déjà vus se peuplent à la visite suivante).
+     - **La scène** (`js/carte/ferme/habitants.js`, des méthodes de la scène de la ferme ; le modèle de
+       la carte : `habitants`, leur personnage, leur métier, leur lit, l'horaire `HABITANTS.HORAIRE`) :
+       les habitants d'un hameau sont faits avec ses toits (la région du hameau dessinée) et s'en vont
+       avec eux ; la planche de chacun se charge à la demande. À la première image, chacun est déjà où
+       l'heure le veut. L'horaire (chacun avec un petit retard à lui) : au lit avant 6 h 30 et après
+       21 h 30 (et toute la nuit), sous la couverture des lits des maisons (`meuble_lit_*_drap`) ; dans
+       la maison jusqu'à 7 h 30 ; au travail jusqu'à midi et de 13 h 30 à 18 h ; le repas à midi et à
+       18 h (le premier adulte cuisine devant le foyer, les autres dans la salle) ; le soir, dedans ou
+       devant la porte. Au travail, le geste de chaque métier (les planches des personnages : hache,
+       pioche, canne, faux, ramasser) : le bûcheron fend au billot ou près des tas de bois et, de temps
+       en temps (un arbre à la fois par hameau, 30 à 60 s pour chacun), abat un arbre du monde à moins
+       de 20 cases (il tremble à chaque coup, bascule et s'efface : `mondeAbat` de la 6a, sans faire
+       trembler la vue) ; le pêcheur pêche depuis la rive la plus proche de sa barque (des places à
+       deux cases l'une de l'autre, cherchées une fois), tourné vers l'eau ; le mineur pioche devant
+       l'entrée de grotte voisine (45 cases au plus ; les premiers) ou au wagonnet et au tas de
+       minerai ; le berger soigne ses moutons dans l'enclos (deux bergers et deux moutons, de la
+       planche de l'Étable ; ils dorment la nuit) ou fauche l'herbe autour ; le cueilleur cueille dans
+       les jardins et près des claies ; le jardinier plante et arrose. Chacun sa place (son rang parmi
+       ceux de son métier). Chaque geste fini compte (le pont `habitantAgit`) et la bulle « +x » monte
+       au-dessus de lui. Les enfants jouent sur la place (ils marchent, courent, s'arrêtent). Ils
+       marchent par les ruelles et les chemins (`fermier.path` : les cases libres du monde, les murs
+       fermés ; trois recherches par image au plus, ou 6 ms) ; loin de la vue, ils sautent à leur but
+       sans chercher ; sans chemin, ils s'effacent et reparaissent ; ils contournent le personnage
+       (un pas de côté ; s'il bouche le passage plus d'une seconde et demie, ils passent). Avec
+       « animations réduites », ils vont d'un point à l'autre sans marcher.
+     - **Parler** : un appui sur un habitant (en premier dans `hitAt`) : il s'arrête, se tourne vers le
+       personnage, et sa bulle dit son prénom, son métier (« bûcheronne », « jardinier », « fils
+       d'Adrien ») et une phrase (`paroleHabitant`, `HABITANTS.PHRASES`) : le salut de l'heure, ce qu'il
+       fait (il dort, se prépare, part au travail, travaille — une phrase par métier —, joue, mange,
+       rentre, se repose), son humeur (heureux, content, triste, ou il a eu faim). Le panneau de la
+       place ouvre la fiche du hameau (`js/ui/habitants.js`, `ficheHameau`) : son métier, ses familles
+       (leurs portraits, leurs prénoms et métiers, leur bonheur, la part du dernier repas) et sa
+       réserve (ce qui y est entré la nuit dernière). Pas de commerce (fiche 7c). L'aide et
+       l'Encyclopédie (la page « Les habitants », découverte avec le premier hameau) en parlent.
+     - **Mesuré** (Chromium sans carte graphique, SwiftShader ; Node pour la nuit). La nuit (3 mondes,
+       tous leurs hameaux peuplés : 30 à 54 foyers, 51 à 81 habitants) : `runNight` d'une partie
+       d'essai 0,10 à 0,15 ms sans habitants, 1,3 à 1,7 ms avec (médianes ; `habitantsNuit` seul :
+       1,1 à 1,5 ms, au plus 2,3 à 4,7 ms). Le temps d'une image dans un hameau de sept maisons à 9 h
+       (la même partie, 2 parties de chaque, ~100 images debout sur la place puis ~90 en marchant) :
+       debout, moyenne 113,8 et 118,1 ms avant, 111,0 et 127,0 ms après (médiane 116,6 à 116,8 dans
+       les quatre) ; en marchant, 111,4 et 110,8 ms avant, 119,6 et 116,7 ms après : pas de différence
+       au-delà du bruit (la machine d'essai, chargée, rendait deux fois moins vite qu'aux fiches
+       précédentes). Le JavaScript des habitants (11 dans la vue) : 0,13 à 0,2 ms par image (au plus 2
+       ms) ; au départ du matin, quand chacun cherche son chemin, 0,5 ms en moyenne, une image à 25 ms
+       au plus (une recherche de chemin vers la rive). `npm test` : 45,0 s avant, 43,9 et 51,4 s après (les
+       tests de la fiche : `tests/engine/habitants.test.mjs`, 9 tests, ~2,5 s).
+     - **Pour la fiche 7c** : la réserve de chaque hameau (`state.monde.habitants[id].reserve`, des
+       objets du jeu et leur nombre), la bourse de chaque foyer (à remplir quand la calèche achète),
+       `ficheHameau` (la fiche, où montrer les ventes), les métiers et ce qu'ils produisent par jour.
+     - Reste : les habitants ne se voient pas entre eux (deux peuvent se croiser ; ils ne se
+       contournent pas) ; l'enclos du berger est petit (5 × 4 cases) ; les poules du poulailler et les
+       animaux du berger hors de l'enclos ne sont pas dessinés ; la nuit, un habitant ne se lève pas
+       pour le joueur qui entre ; un arbre abattu hors de la vue ne l'est que dans les comptes (le
+       moteur ne connaît pas les arbres, que le Worker tire) ; les aliments de la réserve ne périment
+       pas.
 8. **S'orienter** (1 à 2 PR) : le brouillard, la carte du monde, une boussole.
 9. **La finition** (1 à 2 PR) : les anciennes parties, les performances sur mobile, l'aide,
    l'encyclopédie, le didacticiel.

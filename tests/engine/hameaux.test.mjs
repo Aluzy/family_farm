@@ -259,11 +259,12 @@ test('les hameaux : la découverte (la sauvegarde) et sa page de l\'encyclopédi
 
 test('migration v54 → v55 : aucun hameau vu, rien d\'autre ne change', () => {
   const s = garden();
-  const { hameaux, ...monde54 } = s.monde;
+  const { hameaux, habitants, ...monde54 } = s.monde;
   const v54 = JSON.parse(JSON.stringify({ ...s, monde: { ...monde54, pris: { 'sapin:8,14': { retour: 3 } } }, version: 54 }));
   const m = migrate({ v: 54, t: 0, s: v54 });
   assertEqual(m.version, STATE_VERSION);
-  assertEqual(m.monde, { ...v54.monde, hameaux: {} });
+  // (puis v55 → v56 : pas encore d'habitants, tests/engine/habitants.test.mjs)
+  assertEqual(m.monde, { ...v54.monde, hameaux: {}, habitants: {} });
   const { monde: a, version: va, ...ra } = m, { monde: b, version: vb, ...rb } = v54;
   assertEqual(ra, rb, 'le reste ne change pas');
 });

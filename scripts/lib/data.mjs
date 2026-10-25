@@ -573,6 +573,54 @@ export function validateData(data) {
     }
   }
 
+  /* les habitants des hameaux (data/monde.json, lus par js/engine/habitants.js : fiche 7b) */
+  if (data.HABITANTS) {
+    const HB = data.HABITANTS, paire = (v) => Array.isArray(v) && v.length === 2 && v.every((n) => isInt(n) && n >= 0) && v[0] <= v[1];
+    for (const cle of ['ADULTES', 'ENFANTS']) if (!paire(HB[cle])) err(`HABITANTS.${cle}`, '[au moins, au plus] : deux entiers positifs dans l\'ordre');
+    if (paire(HB.ADULTES) && (HB.ADULTES[0] < 1 || HB.ADULTES[1] > 2)) err('HABITANTS.ADULTES', 'un ou deux adultes par foyer');
+    for (const cle of ['ARGENT', 'JOURNAL', 'RATTRAPAGE', 'GARDE', 'RESERVE_MAX']) if (!(isInt(HB[cle]) && HB[cle] >= 0)) err(`HABITANTS.${cle}`, 'un entier positif');
+    for (const cle of ['SEUL', 'TRISTE', 'HEUREUX']) if (!(typeof HB[cle] === 'number' && HB[cle] >= 0 && HB[cle] <= 100)) err(`HABITANTS.${cle}`, 'de 0 à 100');
+    const S = HB.SECOND || {};
+    if (!(S.MEME >= 0 && S.AUTRE >= 0 && S.MEME + S.AUTRE <= 100)) err('HABITANTS.SECOND', 'MEME et AUTRE : des % dont la somme ne passe pas 100');
+    const metiers = (data.HAMEAUX && data.HAMEAUX.METIERS && data.HAMEAUX.METIERS.ORDRE) || [];
+    for (const mt of S.METIERS || []) if (!metiers.includes(mt)) err('HABITANTS.SECOND.METIERS', `« ${mt} » n'est pas un métier (HAMEAUX.METIERS.ORDRE)`);
+    for (const g of ['f', 'm']) {
+      const L = (HB.PRENOMS || {})[g] || [];
+      if (L.length < 20 || new Set(L).size !== L.length || L.some((n) => typeof n !== 'string' || !n || n.length > 12)) err(`HABITANTS.PRENOMS.${g}`, 'au moins 20 prénoms différents, de 12 lettres au plus');
+      for (const age of ['adulte', 'enfant']) {
+        const P = ((HB.PERSOS || {})[age] || {})[g] || [], max = data.FAMILLE.PROFIL[age === 'adulte' ? 'PERSOS' : 'PERSOS_ENFANT'];
+        if (!P.length || P.some((n) => !isInt(n) || n < 1 || n > max) || new Set(P).size !== P.length) err(`HABITANTS.PERSOS.${age}.${g}`, `des personnages de 1 à ${max}, chacun une fois`);
+      }
+    }
+    const gestes = ['couper', 'pecher', 'piocher', 'traire', 'cueillir'];
+    for (const mt of metiers) {
+      const M = (HB.METIERS || {})[mt], ou = `HABITANTS.METIERS.${mt}`;
+      if (!M) { err(ou, 'manque : chaque métier des hameaux a ses habitants'); continue; }
+      if (!M.nom || !M.nom.f || !M.nom.m) err(`${ou}.nom`, '{ f, m }');
+      if (!gestes.includes(M.geste)) err(`${ou}.geste`, `l'un de ${gestes.join(', ')}`);
+      if (!(isInt(M.ACTIONS) && M.ACTIONS >= 1)) err(`${ou}.ACTIONS`, 'un entier positif');
+      for (const [item, q] of Object.entries(M.donne || {})) { needItem(`${ou}.donne`, item); if (!paire(q) || q[0] < 1) err(`${ou}.donne.${item}`, '[au moins, au plus], 1 au moins'); }
+      for (const [eau, t] of Object.entries(M.une_de || {})) {
+        if (!['*', 'mer', 'lac', 'riviere'].includes(eau)) err(`${ou}.une_de`, `« ${eau} » : *, mer, lac ou riviere`);
+        for (const [item, w] of Object.entries(t || {})) { needItem(`${ou}.une_de.${eau}`, item); if (!(w > 0)) err(`${ou}.une_de.${eau}.${item}`, 'un poids positif'); }
+      }
+      if (M.une_de && !paire(M.nombre)) err(`${ou}.nombre`, '[au moins, au plus]');
+      if (!M.donne && !M.une_de) err(ou, 'ce que donne une action : donne ou une_de');
+      for (const [item, p] of Object.entries(M.chance || {})) { needItem(`${ou}.chance`, item); if (!(p > 0 && p <= 100)) err(`${ou}.chance.${item}`, 'un % de 0 à 100'); }
+      for (const r of M.RECETTES || []) if (!(data.RECETTES || {})[r]) err(`${ou}.RECETTES`, `« ${r} » n'est pas une recette`);
+    }
+    for (const r of (HB.JARDINIER && HB.JARDINIER.RECETTES) || []) if (!(data.RECETTES || {})[r]) err('HABITANTS.JARDINIER.RECETTES', `« ${r} » n'est pas une recette`);
+    const J = HB.JARDIN || {};
+    for (const cle of ['FOYER', 'JARDINIER', 'POTAGER', 'VERGER', 'OEUFS']) if (!paire(J[cle])) err(`HABITANTS.JARDIN.${cle}`, '[au moins, au plus]');
+    for (const cle of ['LEGUMES', 'FRUITS']) for (const [item, w] of Object.entries(J[cle] || {})) { needItem(`HABITANTS.JARDIN.${cle}`, item); if (!(w > 0) || !(data.OBJETS[item] || {}).mangeable) err(`HABITANTS.JARDIN.${cle}.${item}`, 'un aliment, un poids positif'); }
+    const HO = HB.HORAIRE || {}, ordre = ['LEVER', 'TRAVAIL', 'MIDI', 'REPRISE', 'RENTREE', 'COUCHER'];
+    if (!ordre.every((k, i) => typeof HO[k] === 'number' && (!i || HO[k] > HO[ordre[i - 1]]))) err('HABITANTS.HORAIRE', `${ordre.join(' < ')}, en heures`);
+    const P = HB.PHRASES || {};
+    for (const [cle, liste] of [['salut', ['matin', 'jour', 'soir', 'nuit']], ['activite', ['dort', 'maison', 'chemin', 'joue', 'repas', 'rentre', 'soir']], ['travail', [...metiers, 'jardinier']], ['humeur', ['heureux', 'content', 'triste', 'faim']]]) {
+      for (const k of liste) if (!(Array.isArray((P[cle] || {})[k]) && P[cle][k].length && P[cle][k].every((t) => typeof t === 'string' && t))) err(`HABITANTS.PHRASES.${cle}.${k}`, 'des phrases');
+    }
+  }
+
   /* ce que donne chaque pièce du grand monde (data/monde.json, lu par js/engine/monde-recolte.js) */
   if (data.RECOLTE) {
     const RC = data.RECOLTE, gestes = ['couper', 'casser', 'faucher', 'cueillir', 'ramasser'];
