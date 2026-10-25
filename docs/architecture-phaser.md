@@ -84,7 +84,7 @@ pas Phaser pour se charger. Ce que chaque carte avait en double y est une seule 
 | `lumiere.js` | le jour et la nuit : `LIGHT_KEYS`, `lumiere(heure)`, `voile(scène, l, h, profondeur)` (§ 1 ter) |
 | `triporteur.js` | le triporteur du personnage (acheté au Marché : `enSelle`, moteur) : `TRIPORTEUR`, `triporteur(scène)` → `place(x, y, vue, retourné, roulé)` pose le tricycle sous lui et dit son image assise ; en selle, il va `TRIPORTEUR.vitesse` fois plus vite (à la ferme ; pas dans la grotte ni un intérieur, ni pendant un geste) |
 | `cheval.js` | le cheval du personnage (`DATA.CHEVAL`, `js/engine/cheval.js`) : monté depuis la barre d'outils, plus rapide, à la ferme seulement pour l'instant (pas dans la mine) ; l'attacher à un poteau sur une autre carte reviendra avec le grand monde |
-| `eau.js`, `toit.js` | l'eau vivante des étendues d'eau (`CarteKit.eauVive` : les étangs de la ferme, les blocs d'eau du grand monde), le toit de tuiles d'un bâtiment bâti en blocs |
+| `eau.js`, `toit.js` | l'eau vivante des étendues d'eau (`CarteKit.eauVive` : les étangs de la ferme, les blocs d'eau du grand monde), le toit de tuiles d'un bâtiment bâti en blocs (ou d'ardoise, de chaume, de roseaux : les hameaux) |
 
 Le coût d'un pas en diagonale est de 1,414 à la ferme (dehors, cases de 16 px, et dans les
 intérieurs, grille de 4 px).
@@ -110,6 +110,7 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | `cueillette.js` | la ferme générée : ce qu'on ramasse à la main (pierres, bois, herbes), un appui et le personnage le prend ; le bois et la pierre lâchés par la hache et la pioche (`modèle.morceaux`, `state.morceaux` du moteur), que le personnage prend en marchant dessus (`syncPieces`, `stepPieces`) |
 | `passages.js` | l'entrée de la mine (la porte du tas de terre, vers `js/grotte.js`) et le retour de la mine (`?arrivee=mine`) ou d'une grotte de la montagne (`?arrivee=grotte_<n>`) |
 | `lieux-monde.js` | les lieux du grand monde (fiche 6b) : l'entrée des grottes de la montagne (la flèche des passages quand on s'approche, l'appui ou la poussée qui y fait entrer, le retour devant l'entrée, qui attend que sa région soit faite), les coins de pêche (`coinPeche`, leurs remous) |
+| `hameaux.js` | les hameaux bâtis du grand monde (fiche 7a) : leurs toits (`CarteKit.toit` : tuiles, ardoise, chaume, roseaux), qui s'effacent quand le personnage entre, leurs cheminées et leur fumée, les fenêtres éclairées la nuit (`stepFenetresHameaux`, dans le voile avec les lanternes), l'arrivée (pont `hameau`), le panneau (pont `hameauPanneau`), les outils qui n'ont rien à y faire (`hameauOutil`, en premier dans `hitAt` ; pont `hameauRefus`) ; leurs murs, meubles, clôtures et objets sont une planche de `vegetation.js` |
 | `faune-monde.js` | les bêtes du grand monde (fiche 6b) : leurs images près de la vue, ce qu'elles font (repos, petits trajets, fuite à la façon de chacune, l'aigle qui tourne et son ombre, le dauphin qui saute), la nuit, « animations réduites », un appui (pont `faune`) et la première vue d'une espèce (pont `fauneVue`) |
 | `machines.js` | les asperseurs, le robot |
 | `abeilles.js` | les abeilles des ruches : elles sortent par le trou de vol, butinent les fleurs à portée (`modèle.fleurs`, l'herbe haute fleurie), rentrent ; le jour seulement |
@@ -282,6 +283,17 @@ poulailler et le moulin n'y ont plus d'image (leur forme de secours).
   avec les éléments (`pret` : `ctx.monde.lieux()`). La pêche dans le monde (`peche.js`) : l'eau sous
   le doigt est lue dans sa région (`eauMondeSous` : « lac », « riviere », « mer »), la rive trouvée
   comme sur la ferme ; près d'un coin de pêche du plan, le pont `fish(eau, coin)` pêche au coin.
+- **Les hameaux bâtis** (fiche 7a) : le Worker tire le plan de chaque hameau avec les éléments
+  (`js/engine/monde-hameaux.js`, `plansDesHameaux` ; envoyés avec `pret` : `ctx.monde.hameaux()`), et
+  chaque région arrive avec sa part (`reg.hameau`, `{ images, basses }` comme la végétation) : une
+  quatrième planche de `vegetation.js` (`assets/hameaux.png`, `scripts/carte/hameaux.py` : les murs,
+  fenêtres et portes repris de `murs_hauts.png` et `blocs.png`, les meubles, la barrière, le puits,
+  les arbres fruitiers, les objets dessinés pour les hameaux) ; les planchers, les pavés et les
+  potagers peints dans le sol de la région ; la place et les ruelles en terre battue, comme le
+  chemin (`monde-sol.js`) ; les murs, meubles et clôtures fermés dans la marche de la région.
+  `js/carte/ferme/hameaux.js` fait les toits (une clé de texture neuve à chaque fois : une texture
+  retirée ne revient pas sous la même clé), la fumée, les lumières de la nuit, l'arrivée et les
+  appuis.
 - **Relevés du chargement par régions.** Les arbres, buissons et barrières (`findOccluders`,
   `mapTrees`), les rochers (`findRocks`), les tuiles animées (`makeTileAnims`), la terre des
   anciennes zones (`zoneGround`) et les lieux de la vie d'ambiance (`readMap`,

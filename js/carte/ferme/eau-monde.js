@@ -140,6 +140,11 @@
     },
 
     eauBlocOff(b) {
+      // (son eau vivante d'abord : son shader lit la texture du bloc, qui s'en va ; la laisser
+      // jusqu'au prochain syncEau faisait planter le rendu de l'image, quand la vue sautait loin
+      // de l'eau)
+      const v = this.eauVive ? this.eauVive.find((e) => e.a === b) : null;
+      if (v) { this.eauDefait(v); this.eauVive = this.eauVive.filter((e) => e !== v); }
       if (b.sprite) b.sprite.destroy();
       if (b.tex) this.textures.remove(b.tex.key);
       b.tex = b.sprite = null;

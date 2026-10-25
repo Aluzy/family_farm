@@ -7,6 +7,7 @@ import { levelReached } from './levels.js';
 import { isUnlocked } from './campaign.js';
 import { recipeUnlocked } from './kitchen.js';
 import { ETAPES } from './didacticiel.js';
+import { hameauxVus } from './monde-hameaux.js';
 
 /* ---------- quand une page de l'encyclopédie se découvre ----------
    Chaque entrée de l'encyclopédie (encyclopedie_ferme_familiale.json) a sa liste
@@ -25,6 +26,7 @@ import { ETAPES } from './didacticiel.js';
                          ou une grotte de la montagne, grotte_monde : une grotte de la montagne)
      faune:<espèce>      une bête du grand monde a été vue (noterEncyclopedie, la première fois :
                          DATA.FAUNE.ESPECES, data/monde.json)
+     hameau              un hameau du grand monde a été vu (state.monde.hameaux, monde-hameaux.js)
      onglet:<onglet>     l'onglet est ouvert (state.unlockedTabs)
      techno:<nœud>       la technologie est acquise ; technologies : un point de technologie gagné
      jour:<n>            la partie a atteint le jour n ; niveau:<n> : le niveau n
@@ -32,7 +34,7 @@ import { ETAPES } from './didacticiel.js';
      courrier            une lettre reçue */
 
 export const CARTES_ENCYCLOPEDIE = ['grotte', 'grotte_monde'];
-const SEULES = ['depart', 'piece_close', 'commerce', 'courrier', 'technologies'];
+const SEULES = ['depart', 'piece_close', 'commerce', 'courrier', 'technologies', 'hameau'];
 const OUTILS = ['houe', 'hache', 'faux', 'pioche', 'canne'];
 const ANIMAUX = ['poule', 'mouton', 'vache'];
 const BATIMENTS = ['silo', 'poulailler', 'paturage', 'serre', 'verger', 'frigo'];
@@ -85,6 +87,7 @@ export function conditionRemplie(state, cond, evenements = {}) {
     case 'didacticiel': return etapeAtteinte(state, v);
     case 'carte': return !!evenements[`carte:${v}`];
     case 'faune': return !!evenements[`faune:${v}`];
+    case 'hameau': return Object.keys(hameauxVus(state)).length > 0;
     case 'onglet': return Array.isArray(state.unlockedTabs) && state.unlockedTabs.includes(v);
     case 'techno': return Array.isArray(state.technologies) && state.technologies.includes(v);
     case 'technologies': return !!((state.pointsTech && state.pointsTech.gagnes > 0) || (Array.isArray(state.technologies) && state.technologies.length));

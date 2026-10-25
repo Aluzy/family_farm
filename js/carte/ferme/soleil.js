@@ -87,7 +87,8 @@
         const r = rect(e.x - T / 2, e.y - T, e.x + T / 2, e.y - SOLEIL.base), v = dy * (e.hauteur || 1);
         out.push({ base: r, sommets: r.map(([x, y]) => [x, y, v]) });
       }
-      for (const t of this.toits || []) {
+      // (et les toits des hameaux du grand monde : hameaux.js)
+      for (const t of (this.toits || []).concat(this.hameauxOmbres ? this.hameauxOmbres() : [])) {
         if (!t.ombre) continue;
         const { x0, y0, x1, y1, v, faite } = t.ombre;
         const r = rect(x0, y0, x1, y1), ym = (y0 + y1) / 2, d = (y1 - y0) / 2;

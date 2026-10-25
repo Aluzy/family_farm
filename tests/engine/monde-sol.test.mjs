@@ -176,6 +176,8 @@ test('marcher dans le monde : ni la mer, ni les lacs, ni les rivières (sauf à 
   const pontons = new Set(), bio = (i) => p.biome[i];
   for (const g of p.lieux.grottes) for (const [dx, dy] of LIEUX.BLOQUE) pieds.add(g.case + dy * W + dx);
   for (const q of p.lieux.peche) for (const i of (pontonDe(q, bio, W, H) || { cases: [] }).cases) pontons.add(i);
+  // (les hameaux bâtis ferment les cases de leurs murs, meubles, clôtures : monde-hameaux.js, fiche 7a)
+  for (let i = 0; i < W * H; i++) if (sol.ctx.hameaux.bloque[i]) pieds.add(i);
   let n = 0, gues = 0;
   const vus = new Set();
   // une case sur 7 de tout le monde, et chaque case de chemin

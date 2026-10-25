@@ -5,8 +5,9 @@
  * parle ainsi :
  *   - { type: 'init', graine, cadre, ferme, taille } : le monde de la partie. Il répond d'abord
  *     { type: 'apercu', apercu } (les biomes, en gros : le sol provisoire), puis tire les éléments
- *     du monde (rivières, lacs, chemins : une fois) et répond { type: 'pret', ms, lieux } (les
- *     lieux du plan : hameaux, entrées de grotte, coins de pêche ; monde-gen.js) ;
+ *     du monde (rivières, lacs, chemins : une fois) et répond { type: 'pret', ms, lieux, hameaux } (les
+ *     lieux du plan : hameaux, entrées de grotte, coins de pêche ; monde-gen.js ; le plan des
+ *     hameaux bâtis : monde-hameaux.js) ;
  *   - { type: 'region', rx, ry } : il répond { type: 'region', region } (ses tableaux transférés,
  *     pas copiés), ou { type: 'erreur', cle, message }.
  * Une seule partie à la fois : un nouvel « init » remplace la précédente (et sa file).
@@ -31,7 +32,7 @@ function suite() {
     if (!q || q.ctx !== ctx) { suite(); return; }
     try {
       const r = solDeRegion(ctx, q.rx, q.ry);
-      self.postMessage({ type: 'region', graine: ctx.graine, region: r }, [r.couches.buffer, r.biome.buffer, r.marche.buffer, r.vegetation.images.buffer, r.vegetation.basses.buffer, r.roches.images.buffer, r.roches.basses.buffer, r.lieux.images.buffer, r.faune.buffer]);
+      self.postMessage({ type: 'region', graine: ctx.graine, region: r }, [r.couches.buffer, r.biome.buffer, r.marche.buffer, r.vegetation.images.buffer, r.vegetation.basses.buffer, r.roches.images.buffer, r.roches.basses.buffer, r.lieux.images.buffer, r.hameau.images.buffer, r.hameau.basses.buffer, r.faune.buffer]);
     } catch (e) {
       self.postMessage({ type: 'erreur', graine: ctx.graine, cle: q.rx + ',' + q.ry, message: String((e && e.message) || e) });
     }
@@ -51,7 +52,7 @@ self.onmessage = (ev) => {
       if (c !== ctx) return;
       try {
         elementsSol(c);
-        self.postMessage({ type: 'pret', graine: c.graine, ms: c.mesures.elements, lieux: c.elements.lieux });
+        self.postMessage({ type: 'pret', graine: c.graine, ms: c.mesures.elements, lieux: c.elements.lieux, hameaux: c.hameaux.plans });
       } catch (e) {
         self.postMessage({ type: 'erreur', graine: c.graine, cle: null, message: String((e && e.message) || e) });
       }
