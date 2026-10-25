@@ -32,6 +32,11 @@
  * sous lui, sur l'eau, dont les quatre dessins tournent (ECUME ms chacun ; immobile avec
  * « animations réduites »).
  *
+ * Ce qui se prend (fiche 6a, recolte-monde.js) : chaque image d'une pièce qui se prend porte son
+ * identifiant (« sorte:x,y », ctx.monde.idObjet) et sa règle (RECOLTE.SORTES) ; une pièce prise a
+ * son image cachée, une plante cueillie son dessin sans fruits (modèle.monde) ; une petite pièce
+ * prise n'est pas peinte. Une région refaite (sortie de la vue puis revenue) se dessine d'après eux.
+ *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype.
  */
 (function (global) {
@@ -92,30 +97,41 @@
         }
         const ecume = [];
         for (const [x, y, w, h, px, py] of table.ecume || []) decoupe(ecume, x, y, w, h, px, py);
-        planches.push({ cle: P.cle, donnees: P.donnees, sortes: M[P.sortes], images, cadres, ecume });
+        // (ce que donne chaque sorte, par son code : RECOLTE.SORTES, ou rien, du décor)
+        const regles = M[P.sortes].map((s) => (M.regles && M.regles[s.nom]) || null);
+        planches.push({ cle: P.cle, donnees: P.donnees, sortes: M[P.sortes], images, cadres, ecume, regles });
       }
       this.veg = { planches };
       this.vegListe = [];        // les arbres, les buissons, les rochers qui ont leur image
       this.vegHerbes = [];       // les plantes hautes qui penchent, qui ont leur image
       this.vegEcumes = [];       // l'écume autour des rochers dans l'eau
+      this.mondeOccupe = this.mondeOccupe || new Set();   // celles dont le geste est en cours
+      this.mondeObjets = new Map();   // les pièces qui se prennent et ont leur image, par identifiant (recolte-monde.js)
       return this.veg;
     },
 
     // Peint les petites plantes et les petites pièces (galets, coquillages…) de la région du monde
-    // `reg` dans `ctx` (déjà décalé en px de la carte), celles des cases `seules` (un Set ; null :
-    // toutes).
+    // `reg` dans `ctx` (déjà décalé en px de la carte) : toutes, ou, `seules` (un Set de cases :
+    // une repeinture, ctx déjà limité à elles, sol.js paintMonde), celles dont le dessin les touche
+    // (celles des cases voisines qui y débordent aussi). Pas celles qui sont prises (modèle.monde).
     peintVegetation(ctx, reg, seules) {
       const V = this.vegetationPrete();
       if (!V) return;
       const W = this.grid.cols;
+      let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+      if (seules) {
+        for (const i of seules) { const c = i % W, r = (i / W) | 0; bx0 = Math.min(bx0, c * T); by0 = Math.min(by0, r * T); bx1 = Math.max(bx1, (c + 1) * T); by1 = Math.max(by1, (r + 1) * T); }
+      }
+      const pris = this.mondeEtat && this.mondeEtat.pris.size ? this.mondeEtat.pris : null, M = this.ctx.monde;
       for (const P of V.planches) {
         if (!reg[P.donnees]) continue;
         const b = reg[P.donnees].basses, tex = this.textures.get(P.cle), src = tex.getSourceImage();
         for (let k = 0; k < b.length; k += 4) {
           const x = b[k + 1], y = b[k + 2];
-          if (seules && !seules.has(Math.floor((y - 1) / T) * W + Math.floor(x / T))) continue;
           const n = P.images[b[k]][b[k + 3]], c = P.cadres[n], f = tex.get(n);
           if (!f) continue;
+          if (seules && (x - c.px >= bx1 || x - c.px + c.w <= bx0 || y - c.py >= by1 || y - c.py + c.h <= by0)) continue;
+          if (pris && P.regles[b[k]] && pris.has(M.idObjet(P.sortes[b[k]].nom, x, y))) continue;
           ctx.drawImage(src, f.cutX, f.cutY, c.w, c.h, x - c.px, y - c.py, c.w, c.h);
         }
       }
@@ -185,12 +201,15 @@
     },
 
     vegBlocOn(b, reg) {
-      const V = this.veg;
+      const V = this.veg, M = this.ctx.monde, E = this.mondeEtat;
       b.objets = [];
       for (let q = 0; q < b.items.length; q += 2) {
         const pl = V.planches[b.items[q]], k = b.items[q + 1], im = reg[pl.donnees].images;
         const s = pl.sortes[im[k]], x = im[k + 1], y = im[k + 2], v = im[k + 3];
-        const penche = !!s.penche, n = pl.images[im[k]][penche ? v * 5 : v], c = pl.cadres[n];
+        // (une pièce qui se prend : son identifiant ; cueillie, son dessin sans fruits)
+        const regle = pl.regles[im[k]], id = regle ? M.idObjet(s.nom, x, y) : null;
+        const vu = id && E && E.cueillis.has(id) && regle.apres != null ? regle.apres : v;
+        const penche = !!s.penche, n = pl.images[im[k]][penche ? vu * 5 : vu], c = pl.cadres[n];
         if (n == null || !c) continue;
         const img = this.add.image(x, y, pl.cle, n).setOrigin(c.px / c.w, c.py / c.h).setDepth(y);
         // (pas d'ombre : les plantes hautes ; les falaises, dont la face regarde le soleil)
@@ -201,12 +220,23 @@
           const e = pl.ecume[0], ce = pl.cadres[e];
           o.ecume = { img: this.add.image(x, y, pl.cle, e).setOrigin(ce.px / ce.w, ce.py / ce.h).setDepth(0.2), images: pl.ecume, k: (x + y) % pl.ecume.length };
         }
+        if (id) {
+          Object.assign(o, { id, regle, nom: s.nom, genre: s.genre, pl, code: im[k], v, fx: x, fy: y });
+          this.mondeObjets.set(id, o);
+          if (E && E.pris.has(id)) img.setVisible(false);
+        }
         b.objets.push(o);
       }
     },
 
     vegBlocOff(b) {
-      for (const o of b.objets || []) { o.img.destroy(); if (o.ecume) o.ecume.img.destroy(); }
+      for (const o of b.objets || []) {
+        if (o.id && this.mondeObjets.get(o.id) === o) this.mondeObjets.delete(o.id);
+        // (une pièce qui tombe ou se brise : son geste finit sans elle)
+        if (o.anim || o.tombe || o.brise) { this.tweens.killTweensOf(o.img); if (this.mondeOccupe) this.mondeOccupe.delete(o.id); }
+        o.img.destroy();
+        if (o.ecume) o.ecume.img.destroy();
+      }
       b.objets = null;
     },
 
@@ -217,6 +247,7 @@
       if (!this.vegListe) return;
       const p = this.fermier ? this.fermier.pos() : null;
       for (const o of this.vegListe) {
+        if (o.anim) continue;      // (une pièce qui tombe, se brise ou repousse : recolte-monde.js)
         // (seulement ceux qui pourraient le cacher : à côté de lui, le pied plus bas que le sien)
         const derriere = !!p && p.y < o.foot && p.x + CORPS.l > o.x && p.x - CORPS.l < o.x + o.w && p.y - CORPS.h < o.y + o.h
           && this.couvre(o, p.x - CORPS.l, p.y - CORPS.h, p.x + CORPS.l, p.y - CORPS.pied);

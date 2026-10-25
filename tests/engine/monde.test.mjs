@@ -94,7 +94,7 @@ test('les régions vues : celles de la ferme d\'office ; le personnage qui entre
   const s = garden(), T = farmTerrain(s), F = T.FERME, N = MONDE.REGION;
   assertEqual(N, 64);
   assertEqual(regionsFerme(T), ['3,3', '4,3', '5,3', '6,3', '3,4', '4,4', '5,4', '6,4'], 'la ferme (250 + 144, 198 + 114) touche 4 × 2 régions');
-  assertEqual(s.monde, { vues: regionsFerme(T) }, 'une partie neuve a vu sa ferme');
+  assertEqual(s.monde, { vues: regionsFerme(T), pris: {} }, 'une partie neuve a vu sa ferme, n\'a rien pris dans le monde');
   assertEqual(regionDeCase(LOIN), '1,1');
   assert(!regionVue(s, LOIN), 'pas encore vue');
   assertEqual(voirRegion(s, LOIN), true, 'il y entre : elle devient vue');
@@ -163,7 +163,7 @@ test('migration v52 → v53 : une partie d\'avant a vu les régions de sa ferme,
   const v52 = JSON.parse(JSON.stringify({ ...reste, version: 52 }));
   const m = migrate({ v: 52, t: 0, s: v52 });
   assertEqual(m.version, STATE_VERSION);
-  assertEqual(m.monde, { vues: regionsFerme(farmTerrain(s)) });
+  assertEqual(m.monde, { vues: regionsFerme(farmTerrain(s)), pris: {} }, '(puis v53 → v54 : rien de pris)');
   assertEqual({ ...m, monde: undefined, version: 0 }, { ...JSON.parse(JSON.stringify(s)), monde: undefined, version: 0 }, 'le reste à l\'identique');
   assertEqual(casesDuTerrain(farmTerrain(m), m), casesDuTerrain(farmTerrain(s), s));
   assert(sleepOnce(m) !== null, 'la partie continue');

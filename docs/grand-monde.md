@@ -416,8 +416,67 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        pendent des falaises des sommets) ; une bande de falaise en biais fait des marches d'une case
        (des colonnes décalées) ; le côté d'une bande nord-sud n'a pas de face (vue de haut, il ne se
        voit pas) ; casser, miner, ramasser (étape 6).
-6. **Les ressources et la vie de chaque biome** (2 PR) : ce qui se ramasse, les minerais et
+6. **Les ressources et la vie de chaque biome** (2 PR, 6a fait) : ce qui se ramasse, les minerais et
    les grottes de la montagne, la pêche, les animaux à regarder.
+   - **Fait (6a)** : couper, casser, cueillir et ramasser dans le monde (`js/engine/monde-recolte.js`,
+     `js/carte/ferme/recolte-monde.js` ; les arbres, rochers et herbes de la ferme et leurs
+     identifiants ne changent pas).
+     - **Ce que donne chaque sorte** (`data/monde.json`, `RECOLTE.SORTES` ; vérifié par
+       `scripts/lib/data.mjs`) : le geste (`couper` à la hache, `casser` à la pioche, `faucher` à la
+       faux, `cueillir` ou `ramasser` à la main), les coups, ce qui tombe à chaque coup et à la fin
+       (`{ objet: [au moins, au plus] }`, plus des chances : la graine d'un arbre), le délai de
+       retour en jours. Les arbres (feuillus, bouleaux, sapins, saules, pins tordus, sapins nains et
+       enneigés, arbres des prés) : 2 ou 3 coups, du bois à chaque coup et 1 à 3 de plus à la chute,
+       parfois une pomme de pin ou un gland ; les buissons (des prés, ajoncs, genêts) : un coup ; les
+       souches et troncs couchés : du bois, de retour en 12 à 20 jours. Les rochers, rochers moussus,
+       gros blocs (5 coups), éboulis et rochers enneigés : de la pierre. La faux : les fougères, la
+       bruyère, les joncs, les roseaux, les massettes et les oyats (de la fibre). À la main : les
+       mûres des ronciers (ceux qui en portent : un roncier en fleur n'en a pas ; cueilli, il reste
+       là, en fleur, jusqu'à son retour), les champignons, les herbes de montagne (les touffes
+       fleuries), le bois flotté, les galets et les pierres (de la pierre), les coquillages (une
+       coquille, parfois un bulot), les étoiles de mer, les algues. Restent du décor : les falaises,
+       les pitons, les rochers dans la mer, l'épave, les fleurs et les touffes des prés et de la
+       forêt, les herbes sèches, les chardons, les nénuphars, les rhododendrons, les congères.
+     - **Trois objets nouveaux** (`data/items.json`, leur icône dans `scripts/icones/art_nature.py`,
+       l'encyclopédie et l'aide) : les mûres (un fruit, mangeable, 2 nuits), l'étoile de mer et les
+       algues (des produits, vendables : la calèche les achètera). Le reste existait.
+     - **Le moteur** : `state.monde.pris[id]`, par l'identifiant de la pièce, « sorte:x,y » (le nom de
+       sa sorte, son pied en px : `idObjetMonde`, le même dans le Worker, la scène et le moteur ;
+       jamais un rang dans une liste) : un nombre (les coups reçus), `{ retour }` (prise : ni dessinée
+       ni fermée à la marche) ou `{ retour, cueilli }`. Une action par geste (`couperMonde`,
+       `casserMonde`, `faucherMonde`, `cueillirMonde`, `ramasserMonde` ; `recolterMonde` choisit) :
+       l'outil, la distance (`RECOLTE.PORTEE` cases du personnage), l'énergie, l'XP et le coup fort
+       de la ferme ; ce qui tombe d'un coup va au sol (`state.morceaux`, à ramasser en marchant
+       dessus), ce qui se prend à la main dans l'inventaire ; le journal (`ramasse`, les actions).
+       Les tirages (quantités, jour du retour) viennent de la pièce et du jour. La région de la pièce
+       devient vue. Au réveil (`repousseMonde`, `night.js`) : les coups reçus s'oublient, ce dont le
+       jour est venu revient, dans une région vue seulement, pas sous le personnage (sa case,
+       `state.monde.ici`, que la carte donne à chaque pas) ; l'entrée s'efface (la sauvegarde ne
+       garde que ce qui manque).
+     - **Sauvegardes** : format 54 ; la migration 53 → 54 donne `state.monde.pris = {}`.
+     - **Le Worker et la scène** : le Worker ne change pas (la pièce donne son identifiant :
+       `idDansRegion`, `objetsDeRegion`). La scène lit `modèle.monde` (`pris`, `cueillis`) : une image
+       prise est cachée (`vegBlocOn` la fait cachée quand sa région revient), une petite pièce prise
+       n'est plus peinte (ses cases et leurs voisines repeintes, le dessin borné à elles : celles des
+       voisines qui y débordent restent justes), un roncier cueilli prend son dessin en fleur. Un
+       appui sur une pièce (avec l'outil qu'il faut, ou à la main) : le personnage y va et fait le
+       geste de la ferme ; l'arbre tremble à chaque coup, bascule au dernier, rebondit en lâchant ses
+       feuilles et s'efface (il ne laisse rien) ; le rocher lâche ses éclats et se brise ; ce qui est
+       pris à la main monte et s'efface, la bulle « +2 » au-dessus de lui. Le coup fort de la hache
+       et de la pioche vise aussi la pièce du monde la plus proche.
+     - **La marche** : `caseMarchable(T, t, sol, ouvertes)` : les cases fermées d'une pièce prise
+       s'ouvrent (`casesOuvertesMonde`, refait seulement quand ce qui est pris change : lu à chaque
+       case d'un trajet). Une repousse ne se fait pas sous le personnage ; une pièce n'est jamais sur
+       un chemin (5b, 5c).
+     - **Mesuré** (Chromium sans carte graphique, SwiftShader) : un coup ou une prise (le moteur, la
+       sauvegarde, la vue rafraîchie) 0,3 à 4,8 ms ; une petite pièce prise, ses 9 cases repeintes :
+       0,1 à 0,4 ms de dessin, 5 à 10 ms avec l'envoi du canevas de la région à la carte graphique
+       (40 à 70 ms en jeu, pendant le geste) ; repeindre une région entière : 26 ms en médiane (rien
+       de tel à un coup). `npm test` : 35,7 s avant (fiche 5c), 37,4 s après (les tests de la récolte : 2,9 s).
+     - Reste : sous SwiftShader, Phaser 4 trace mal une image tournée (l'arbre qui bascule, à la
+       ferme comme dans le monde : une partie de son feuillage manque pendant la chute ; à revoir sur
+       une vraie carte graphique) ; le coup fort de la faux ne fauche pas encore les plantes
+       du monde ; les fleurs des prés restent du décor (rien à cueillir pour l'instant).
 7. **Les habitants et la calèche** (3 PR) : les hameaux bâtis en blocs, leurs familles et
    leurs métiers (bûcheron, pêcheur, mineur, berger, cueilleur) ; la calèche du Marché et sa
    tournée.

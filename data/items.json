@@ -375,7 +375,17 @@
     "champignon": { "nom": "Champignon", "icone": "🍄", "energie": 6, "prix": 2, "mangeable": true, "categorie": "légume", "conservation": 3, "rachetable": false, "trouvaille": "foret" },
     "myrtille": { "nom": "Myrtille", "icone": "🫐", "energie": 5, "prix": 2, "mangeable": true, "categorie": "fruit", "conservation": 3, "rachetable": false, "trouvaille": "foret" },
     "baies": { "nom": "Baies sauvages", "icone": "🍒", "energie": 5, "prix": 1, "mangeable": true, "categorie": "fruit", "conservation": 2, "rachetable": false },
-    "chataigne": { "nom": "Châtaigne", "icone": "🌰", "energie": 13, "prix": 2, "mangeable": true, "categorie": "fruit", "conservation": 12, "rachetable": false, "trouvaille": "foret" }
+    "chataigne": { "nom": "Châtaigne", "icone": "🌰", "energie": 13, "prix": 2, "mangeable": true, "categorie": "fruit", "conservation": 12, "rachetable": false, "trouvaille": "foret" },
+    "//mures": [
+      "Ce qui se prend dans le grand monde (data/monde.json, RECOLTE ; docs/grand-monde.md, fiche 6a) et",
+      "n'existait pas encore : les mûres des ronciers de la forêt (cueillies à la main), l'étoile de mer",
+      "et les algues de la plage (ramassées à la main). Ils se vendent (la calèche les achètera, étape 7) ;",
+      "ils ne se rachètent pas. Le reste (bois, pierre, fibre, champignon, coquille, bulot, herbes de",
+      "montagne, pomme de pin, gland) est déjà là."
+    ],
+    "mures": { "nom": "Mûres", "icone": "🫐‍⚫", "energie": 5, "prix": 2, "mangeable": true, "categorie": "fruit", "conservation": 2, "rachetable": false },
+    "etoile_mer": { "nom": "Étoile de mer", "icone": "⭐‍🌊", "prix": 4, "mangeable": false, "categorie": "produit", "rachetable": false },
+    "algues": { "nom": "Algues", "icone": "🌿‍🌊", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false }
   },
   "//PLATS_RETIRES": [
     "Plats dont la recette a été retirée en version 1.1 (ils demandaient de la",

@@ -592,3 +592,104 @@ def _aubergine():
 
 
 ICONS['🍆'] = _aubergine()
+
+
+# ---------------------------------------------------------------- ce qui se prend dans le grand monde (fiche 6a)
+# Les mûres des ronciers, l'étoile de mer et les algues de la plage (data/items.json : mures,
+# etoile_mer, algues), calculées : des drupes, cinq bras, des brins qui ondulent.
+
+def _mures():
+    """Deux mûres (des drupes violet-noir, un reflet en haut à gauche) et une feuille de ronce."""
+    import math
+    g = vide()
+    poser(g, [
+        '................',
+        '..........mL....',
+        '........mLLLl...',
+        '.......LLlllg...',
+        '........llgg....',
+        '.........g......',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+    ])
+    for cx, cy, r in [(11.0, 7.6, 2.9), (5.2, 10.6, 3.5)]:
+        for y in range(16):
+            for x in range(16):
+                dx, dy = x + 0.5 - cx, y + 0.5 - cy
+                if dx * dx + dy * dy > r * r:
+                    continue
+                # (des drupes : un point clair en haut à gauche de chacune, plus clair vers la lumière)
+                lum = -(dx + dy) / (r * 1.4)
+                if x % 2 == 0 and y % 2 == 0:
+                    g[y][x] = 'u' if lum > 0.45 else 'v' if lum > -0.35 else 'p'
+                else:
+                    g[y][x] = 'p' if lum > 0.1 else 'P'
+        # (la queue, verte, sur le dessus)
+        g[int(cy - r)][int(cx)] = 'l'
+    return contour(g)
+
+
+def _etoile_mer():
+    """Une étoile de mer orange : cinq bras arrondis, ses petits points clairs, l'ombre en bas à droite."""
+    import math
+    g = vide()
+    cx, cy = 8.0, 8.4
+    for y in range(16):
+        for x in range(16):
+            dx, dy = x + 0.5 - cx, y + 0.5 - cy
+            d, a = math.hypot(dx, dy), math.atan2(dy, dx) + math.pi / 2
+            bras = abs(math.cos(a * 2.5)) ** 2.2
+            if d > 2.8 + 4.6 * bras:
+                continue
+            ombre = (dx + dy) / max(d, 0.1)
+            c = 'r' if ombre > 0.75 and d > 2.5 else 'f'
+            if bras > 0.5 and 1.5 < d < 5.5 and round(d) % 2 == 0:
+                c = 'F'
+            if d < 1.2:
+                c = 'F'
+            g[y][x] = c
+    return contour(g)
+
+
+def _algues():
+    """Trois brins d'algue qui ondulent, du vert sombre au vert clair, sur un galet."""
+    import math
+    g = vide()
+    for x0, haut, phase in [(3.5, 3, 0.0), (8.0, 1, 1.9), (12.5, 4, 3.6)]:
+        for y in range(haut, 14):
+            xi = int(round(x0 + 1.0 * math.sin(y * 0.7 + phase)))
+            for k, c in [(0, 'L' if y < haut + 3 else 'l'), (1, 'g')]:
+                if 0 <= xi + k < 16:
+                    g[y][xi + k] = c
+    poser(g, [
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '................',
+        '.....+II~~......',
+        '...+III~~~~~....',
+        '................',
+    ])
+    return contour(g)
+
+
+ICONS['🫐‍⚫'] = _mures()
+ICONS['⭐‍🌊'] = _etoile_mer()
+ICONS['🌿‍🌊'] = _algues()

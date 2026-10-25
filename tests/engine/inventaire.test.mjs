@@ -442,6 +442,8 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
     // les produits des boutiques de la ville (étape 5b ; l'ordinateur ne se mange pas)
     croissant: 20, pizza: 20, burger: 20, frites: 20,
     fromage_alpage: 20, champignon: 20, myrtille: 20, baies: 20, chataigne: 20,
+    // les mûres des ronciers du grand monde (fiche 6a)
+    mures: 20,
     pain: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, compote: 20, tarte_pommes: 20,
     soupe_legumes: 20, salade_tomates: 20, quiche_epinards: 20, fromage_frais: 20, riz_au_lait: 20,
     pain_ail: 20, tarte_fraises: 20, confiture_fraises: 20,

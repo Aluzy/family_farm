@@ -91,6 +91,7 @@
       this.syncHoeGrid(model.labourables);
       this.syncRocks(model.rochers);
       this.syncFelled(model.abattus);
+      if (this.ctx.monde) this.syncMonde(model.monde);   // (ce qui est pris dans le grand monde : recolte-monde.js)
       this.syncCutGrass(model.fauchees);
       this.syncSprinklers(model.asperseurs);
       this.syncRobot(model.robot);

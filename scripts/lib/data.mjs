@@ -133,6 +133,7 @@ export function sourcesOf(data, id) {
   if (data.BOTTELEUSE && data.PATURAGE && id === data.PATURAGE.NOURRITURE) out.push('botteleuse');
   if (id.startsWith('minerai_')) out.push('grotte');
   if (it.trouvaille) out.push(`trouvaille du grand monde (${it.trouvaille})`);
+  for (const [nom, r] of Object.entries((data.RECOLTE && data.RECOLTE.SORTES) || {})) if (id in (r.fin || {}) || id in (r.coup || {}) || id in (r.chance || {})) out.push(`récolte du grand monde (${nom})`);
   if (it.cueillette) out.push(`cueillette (${it.cueillette})`);
   if (data.DEPART && id in data.DEPART.INVENTAIRE) out.push('DEPART.INVENTAIRE');
   if (data.DEPART && data.DEPART.ETAT_INITIAL && id in data.DEPART.ETAT_INITIAL.INVENTAIRE) out.push('DEPART.ETAT_INITIAL.INVENTAIRE');
@@ -498,6 +499,35 @@ export function validateData(data) {
     for (const [b, bornes] of Object.entries(R.BORNES || {})) {
       if (!BI.includes(b)) err('ROCHES.BORNES', `« ${b} » n'est pas un biome (BIOMES)`);
       for (const q of ['images', 'basses']) if (!paire(bornes[q])) err(`ROCHES.BORNES.${b}.${q}`, '[au moins, au plus]');
+    }
+  }
+
+  /* ce que donne chaque pièce du grand monde (data/monde.json, lu par js/engine/monde-recolte.js) */
+  if (data.RECOLTE) {
+    const RC = data.RECOLTE, gestes = ['couper', 'casser', 'faucher', 'cueillir', 'ramasser'];
+    const toutes = [...((data.VEGETATION && data.VEGETATION.SORTES) || []), ...((data.ROCHES && data.ROCHES.SORTES) || [])];
+    if (!(isInt(RC.PORTEE) && RC.PORTEE > 0)) err('RECOLTE.PORTEE', 'un entier positif (des cases)');
+    for (const [nom, r] of Object.entries(RC.SORTES || {})) {
+      const ou = `RECOLTE.SORTES.${nom}`, so = toutes.find((x) => x.nom === nom);
+      if (!so) { err(ou, `« ${nom} » n'est pas une sorte du monde (VEGETATION.SORTES, ROCHES.SORTES)`); continue; }
+      if (['paroi', 'mer', 'epave'].includes(so.genre)) err(ou, `une ${so.genre} reste du décor`);
+      if (!gestes.includes(r.geste)) err(`${ou}.geste`, `l'un de ${gestes.join(', ')} ; reçu ${JSON.stringify(r.geste)}`);
+      const frappe = r.geste === 'couper' || r.geste === 'casser';
+      if (frappe ? !(isInt(r.coups) && r.coups >= 1) : r.coups !== undefined) err(`${ou}.coups`, frappe ? 'un entier positif' : 'seulement pour couper ou casser');
+      if (r.coup !== undefined && !frappe) err(`${ou}.coup`, 'seulement pour couper ou casser');
+      for (const [item, n] of Object.entries(r.coup || {})) { needItem(`${ou}.coup`, item); if (!(isInt(n) && n >= 1)) err(`${ou}.coup.${item}`, 'un entier positif'); }
+      if (!(r.fin && Object.keys(r.fin).length)) err(`${ou}.fin`, 'ce qu\'elle donne : { objet: [au moins, au plus] }');
+      for (const [item, q] of Object.entries(r.fin || {})) { needItem(`${ou}.fin`, item); if (!(Array.isArray(q) && q.length === 2 && isInt(q[0]) && isInt(q[1]) && q[0] >= 1 && q[0] <= q[1])) err(`${ou}.fin.${item}`, '[au moins, au plus], des entiers positifs'); }
+      for (const [item, p] of Object.entries(r.chance || {})) { needItem(`${ou}.chance`, item); if (!(typeof p === 'number' && p > 0 && p <= 100)) err(`${ou}.chance.${item}`, 'un % de 0 à 100'); }
+      if (!(Array.isArray(r.retour) && r.retour.length === 2 && isInt(r.retour[0]) && r.retour[0] >= 1 && r.retour[0] <= r.retour[1])) err(`${ou}.retour`, '[au moins, au plus] jours, 1 au moins');
+      // (au sol, la scène dessine le bois, la pierre, la fibre et les graines d'arbre : js/carte/nature.js, MORCEAUX)
+      if (r.geste !== 'cueillir' && r.geste !== 'ramasser') for (const item of [...Object.keys(r.coup || {}), ...Object.keys(r.fin || {}), ...Object.keys(r.chance || {})]) if (!['bois', 'pierre', 'fibre', 'pomme_de_pin', 'gland'].includes(item)) err(ou, `« ${item} » tomberait au sol, qui n'a pas son image (bois, pierre, fibre, pomme_de_pin, gland)`);
+      if (r.geste === 'cueillir') {
+        if (!(Array.isArray(r.variantes) && r.variantes.length && r.variantes.every((v) => isInt(v) && v >= 0 && v < so.variantes))) err(`${ou}.variantes`, `des variantes de la sorte (0 à ${so.variantes - 1})`);
+        if (!(isInt(r.apres) && r.apres >= 0 && r.apres < so.variantes)) err(`${ou}.apres`, `une variante de la sorte (0 à ${so.variantes - 1})`);
+      } else if (r.variantes !== undefined || r.apres !== undefined) err(ou, 'variantes et apres : seulement pour cueillir');
+      if (r.geste === 'faucher' && so.genre !== 'basse' && so.genre !== 'haute') err(`${ou}.geste`, 'on ne fauche qu\'une petite plante ou une plante haute');
+      if ((r.geste === 'couper' || r.geste === 'casser') && !(Array.isArray(so.bloque) && so.bloque.length)) err(`${ou}.geste`, 'on ne coupe ou ne casse qu\'une pièce qui ferme sa case (bloque)');
     }
   }
 

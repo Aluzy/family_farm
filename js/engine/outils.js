@@ -119,12 +119,12 @@ export function hitsNeeded(state, base) {
 
 // Ce qu'un coup rapporte (`n`) : avec une chance de `pct` % d'en avoir un de plus (la Hotte
 // de bûcheron, recolteBonus ; la Lampe de mineur, grotte.minerai).
-function withBonus(state, n, pct) {
+export function withBonus(state, n, pct) {
   return n + (pct > 0 && nextRandom(state) * 100 < pct ? 1 : 0);
 }
 
 // Le coup fort (version 1.24, COUP_FORT) : { coups, energie } d'un coup, fort ou non.
-function force(fort) {
+export function force(fort) {
   const C = DATA.COUP_FORT;
   return fort ? { coups: C.COUPS, energie: C.ENERGIE } : { coups: 1, energie: 1 };
 }
@@ -257,7 +257,7 @@ export function poserMorceaux(state, item, nb, carte, points, lot) {
 // Ce qu'un coup lâche : `n` morceaux de `item` aux points `ou.coup`, et `extra` de plus (l'arbre
 // qui tombe, le rocher qui se brise) aux points `ou.fin` ; sans `ou`, dans l'inventaire.
 // Renvoie { coup, fin } (les morceaux posés) ou null.
-function lacher(state, item, n, extra, ou) {
+export function lacher(state, item, n, extra, ou) {
   if (!ou || typeof ou.carte !== 'string' || !ou.carte) { addItem(state, item, n + extra); noter('ramasse', { item, n: n + extra }); return null; }
   return { coup: poserMorceaux(state, item, n, ou.carte, ou.coup), fin: poserMorceaux(state, item, extra, ou.carte, ou.fin || ou.coup) };
 }
