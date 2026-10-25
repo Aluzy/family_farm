@@ -111,6 +111,7 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | `passages.js` | l'entrée de la mine (la porte du tas de terre, vers `js/grotte.js`) et le retour de la mine (`?arrivee=mine`) ou d'une grotte de la montagne (`?arrivee=grotte_<n>`) |
 | `lieux-monde.js` | les lieux du grand monde (fiche 6b) : l'entrée des grottes de la montagne (la flèche des passages quand on s'approche, l'appui ou la poussée qui y fait entrer, le retour devant l'entrée, qui attend que sa région soit faite), les coins de pêche (`coinPeche`, leurs remous) |
 | `hameaux.js` | les hameaux bâtis du grand monde (fiche 7a) : leurs toits (`CarteKit.toit` : tuiles, ardoise, chaume, roseaux), qui s'effacent quand le personnage entre, leurs cheminées et leur fumée, les fenêtres éclairées la nuit (`stepFenetresHameaux`, dans le voile avec les lanternes), l'arrivée (pont `hameau`), le panneau (pont `hameauPanneau`), les outils qui n'ont rien à y faire (`hameauOutil`, en premier dans `hitAt` ; pont `hameauRefus`) ; leurs murs, meubles, clôtures et objets sont une planche de `vegetation.js` |
+| `habitants.js` | les habitants des hameaux (fiche 7b) : faits avec les toits de leur hameau (la planche de leur personnage chargée à la demande), ils suivent l'horaire (`modèle.habitants`) : au lit la nuit (sous la couverture des lits des maisons), au travail le jour avec le geste de leur métier (le bûcheron abat aussi des arbres du monde : `mondeAbat`), les enfants sur la place, à la maison aux repas ; leurs trajets (`fermier.path`, bornés par image), le personnage qu'ils contournent ; un geste fini (pont `habitantAgit`, la bulle « +x »), un appui (`habitantAt`, en premier dans `hitAt` ; pont `habitantParle`, la bulle de parole) ; les moutons de l'enclos du berger |
 | `faune-monde.js` | les bêtes du grand monde (fiche 6b) : leurs images près de la vue, ce qu'elles font (repos, petits trajets, fuite à la façon de chacune, l'aigle qui tourne et son ombre, le dauphin qui saute), la nuit, « animations réduites », un appui (pont `faune`) et la première vue d'une espèce (pont `fauneVue`) |
 | `machines.js` | les asperseurs, le robot |
 | `abeilles.js` | les abeilles des ruches : elles sortent par le trou de vol, butinent les fleurs à portée (`modèle.fleurs`, l'herbe haute fleurie), rentrent ; le jour seulement |
@@ -294,6 +295,13 @@ poulailler et le moulin n'y ont plus d'image (leur forme de secours).
   `js/carte/ferme/hameaux.js` fait les toits (une clé de texture neuve à chaque fois : une texture
   retirée ne revient pas sous la même clé), la fumée, les lumières de la nuit, l'arrivée et les
   appuis.
+- **Les habitants des hameaux** (fiche 7b) : le moteur tient leurs foyers (`js/engine/habitants.js` :
+  nés à la découverte d'un hameau, d'après son plan, que la page lui passe : `js/ui/habitants.js`) et
+  leur journée, chaque nuit ; le modèle de la carte n'en donne que ce qu'il faut pour les dessiner
+  (`habitants` : leur personnage, leur métier, leur lit, l'horaire). `js/carte/ferme/habitants.js` les
+  fait vivre près de la vue : la scène ne compte rien elle-même, un geste fini passe par le pont
+  (`habitantAgit` : le moteur le compte une fois, un arbre abattu est pris comme sous la hache du
+  joueur) ; la phrase d'un habitant qu'on touche vient du moteur (`habitantParle`).
 - **Relevés du chargement par régions.** Les arbres, buissons et barrières (`findOccluders`,
   `mapTrees`), les rochers (`findRocks`), les tuiles animées (`makeTileAnims`), la terre des
   anciennes zones (`zoneGround`) et les lieux de la vie d'ambiance (`readMap`,

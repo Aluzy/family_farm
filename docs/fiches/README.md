@@ -40,4 +40,4 @@ Conventions communes à toutes les fiches :
 | [6a — couper, casser, cueillir et ramasser dans le monde](6a-ramasser-dans-le-monde.md) | 6 | fait |
 | [6b — les grottes de la montagne, la pêche dans le monde et les animaux](6b-grottes-peche-animaux.md) | 6 | fait |
 | [7a — les hameaux bâtis](7a-hameaux.md) | 7 | fait |
-| [7b — les habitants des hameaux](7b-habitants.md) | 7 | à faire |
+| [7b — les habitants des hameaux](7b-habitants.md) | 7 | fait |

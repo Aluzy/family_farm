@@ -2130,9 +2130,22 @@ export const ENCYCLOPEDIE = {
     {
      "id": "hameaux",
      "terme": "Les hameaux",
-     "description": "Les chemins du grand monde relient les hameaux, de petits villages de trois à sept maisons bâties des mêmes blocs que la maison de la ferme : des murs, des portes, des fenêtres, des planchers, un toit. Chacun a sa place de terre battue ou de pavés, son puits, son banc et un panneau à son nom ; des ruelles mènent aux portes ; des potagers et des vergers clôturés, des tas de bois, un poulailler et le lieu de travail de son métier : le billot du bûcheron, la barque et les filets du pêcheur, le wagonnet du mineur, l'enclos du berger, la claie du cueilleur. Le pays les façonne : de la pierre et de l'ardoise dans la montagne, de la pierre blanche et des tuiles sur la côte, du bois et du chaume en forêt et sur la lande, du bois et des roseaux au bord du marais. On s'y promène, on entre dans les maisons (le toit s'efface), on touche le panneau pour lire son nom ; la nuit, les fenêtres s'éclairent, et la fumée monte des cheminées. On n'y bâtit pas, on n'y laboure pas, on n'y casse rien et on n'y coupe pas les arbres des jardins : tout est aux habitants, qui arriveront bientôt. Le premier passage dans un hameau l'annonce et l'inscrit sur cette page.",
+     "description": "Les chemins du grand monde relient les hameaux, de petits villages de trois à sept maisons bâties des mêmes blocs que la maison de la ferme : des murs, des portes, des fenêtres, des planchers, un toit. Chacun a sa place de terre battue ou de pavés, son puits, son banc et un panneau à son nom ; des ruelles mènent aux portes ; des potagers et des vergers clôturés, des tas de bois, un poulailler et le lieu de travail de son métier : le billot du bûcheron, la barque et les filets du pêcheur, le wagonnet du mineur, l'enclos du berger, la claie du cueilleur. Le pays les façonne : de la pierre et de l'ardoise dans la montagne, de la pierre blanche et des tuiles sur la côte, du bois et du chaume en forêt et sur la lande, du bois et des roseaux au bord du marais. On s'y promène, on entre dans les maisons (le toit s'efface), on touche le panneau pour lire son nom ; la nuit, les fenêtres s'éclairent, et la fumée monte des cheminées. On n'y bâtit pas, on n'y laboure pas, on n'y casse rien et on n'y coupe pas les arbres des jardins : tout est aux habitants, qui y vivent leurs journées. Le premier passage dans un hameau l'annonce et l'inscrit sur cette page.",
      "liens": [
+      "habitants",
       "faune_du_monde"
+     ],
+     "decouverte": [
+      "hameau"
+     ]
+    },
+    {
+     "id": "habitants",
+     "terme": "Les habitants",
+     "description": "Chaque maison d'un hameau abrite une famille : un ou deux adultes et quelques enfants, jamais plus que de lits. Le premier adulte fait le métier du hameau — bûcheron, pêcheur, mineur, berger ou cueilleur —, le second le même, un autre, ou il tient le jardin. Ils vivent leurs journées comme la tienne : levés à six heures et demie, les adultes partent au travail (le bûcheron fend au billot et abat les arbres alentour, qui repoussent comme les autres ; le pêcheur pêche depuis la rive ; le mineur pioche devant l'entrée d'une grotte ou au tas de minerai ; le berger soigne ses moutons dans l'enclos ; le cueilleur fait le tour des jardins), les enfants jouent sur la place ; à midi et le soir, tout le monde rentre manger, et la nuit chacun dort dans son lit. Touche un habitant : il s'arrête et te dit son prénom, son métier et un mot selon l'heure et son humeur. Chaque nuit, même loin de toi, chaque famille vit sa journée : son métier produit, son jardin et le poulailler donnent, elle cuisine les plats qu'elle connaît et mange à sa faim (ou non : son bonheur suit les mêmes règles que celui de ta famille) ; ce qui reste va à la réserve du hameau. Le panneau de la place ouvre la fiche du hameau : ses familles, leur bonheur, et sa réserve, qui grandit nuit après nuit. La calèche viendra l'acheter.",
+     "liens": [
+      "hameaux",
+      "bonheur"
      ],
      "decouverte": [
       "hameau"

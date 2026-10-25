@@ -36,7 +36,8 @@ import { DATA } from '../engine/catalog.js';
 //   - les hameaux bâtis (fiche 7a) : hameaux() (leurs plans, js/engine/monde-hameaux.js : maisons,
 //     place, panneau… ; null tant que les éléments ne sont pas tirés), hameauSortes (HAMEAUX.SORTES :
 //     les dessins de assets/hameaux.png, posés comme la végétation : reg.hameau), hameauxStyles
-//     (HAMEAUX.STYLES : le toit de chaque style).
+//     (HAMEAUX.STYLES : le toit de chaque style), hameauEnclos (HAMEAUX.ENCLOS : la taille de l'enclos
+//     du berger, où les habitants mènent ses moutons : fiche 7b).
 //
 // Les régions se calculent dans un Web Worker (js/monde-worker.js) : la page ne fait qu'en garder
 // le résultat, en mémoire (le monde entier fait 88 régions, environ 4 Mo : tout se garde ; pas
@@ -121,7 +122,7 @@ function client(T, M) {
     regles: RECOLTE.SORTES, idObjet: idObjetMonde, ouvertes: null,
     lieux: () => lieux, lieuxSortes: SORTES_LIEUX, coins: (DATA.CANNE.COINS && DATA.CANNE.COINS.RAYON) || 0,
     faune: { especes: ESPECES_FAUNE.map((cle) => ({ cle, ...FAUNE.ESPECES[cle] })), PRES: FAUNE.PRES, LOIN: FAUNE.LOIN, RAYON: FAUNE.RAYON },
-    hameaux: () => hameaux, hameauSortes: SORTES_HAMEAUX, hameauxStyles: HAMEAUX.STYLES,
+    hameaux: () => hameaux, hameauSortes: SORTES_HAMEAUX, hameauxStyles: HAMEAUX.STYLES, hameauEnclos: HAMEAUX.ENCLOS,
     region(rx, ry) {
       const cle = rx + ',' + ry, r = regions.get(cle);
       if (r) return r;

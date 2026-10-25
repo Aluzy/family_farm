@@ -27,6 +27,8 @@ import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '
 import { notify } from './toasts.js';
 import { encyclopedieFaune, encyclopedieHameau, openEncyclopedie } from './encyclopedie.js';
 import { HAMEAUX, voirHameau } from '../engine/monde-hameaux.js';
+import { HABITANTS, habitantsPourLaCarte } from '../engine/habitants.js';
+import { habitantDepuisCarte, openFicheHameau, paroleDepuisCarte, peuplerDepuisCarte, peuplerLesVus } from './habitants.js';
 import {
   activeTab, axeMode, buildMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
 } from './store.js';
@@ -456,6 +458,10 @@ export function stageModel() {
     // le grand monde : ce qui y est pris (ni dessiné, ni fermé à la marche), ce qui y est cueilli
     // (sans ses fruits), par identifiant (js/engine/monde-recolte.js, js/carte/ferme/recolte-monde.js)
     monde: { pris: mondePris(state), cueillis: mondeCueillis(state) },
+    // les habitants des hameaux peuplés (js/engine/habitants.js : qui, quel personnage, quel métier,
+    // quel lit) et leur horaire (js/carte/ferme/habitants.js) ; ceux d'un hameau déjà vu naissent
+    // dès que les plans sont là (une partie d'avant la fiche 7b)
+    habitants: { horaire: HABITANTS.HORAIRE, hameaux: (peuplerLesVus(), habitantsPourLaCarte(state)) },
     // les botteleuses (js/engine/botteleuse.js : l'entonnoir, la machine, le convoyeur ; pleine,
     // elle vibre VIBRE_S s et sa botte sort) et les fibres de l'inventaire, à y jeter
     botteleuses: botteleuses(state),
@@ -715,11 +721,16 @@ function stageFaune(espece) {
 // Le personnage arrive dans un hameau du grand monde (js/carte/ferme/hameaux.js : { id, nom, style }) :
 // la première fois, il est noté dans la sauvegarde (state.monde.hameaux) et une bannière l'annonce, à
 // son nom ; sa page de l'encyclopédie se découvre.
+// Ses habitants naissent (js/ui/habitants.js : peuplerDepuisCarte, le plan du hameau ; fiche 7b), la
+// première fois, ou à la première visite d'une partie d'avant eux.
 function stageHameau(h) {
-  if (!voirHameau(state, h)) return;
+  // (appelé pendant l'image de la carte : la vue se refait juste après)
+  const nes = peuplerDepuisCarte(h.id);
+  if (!voirHameau(state, h)) { if (nes) setTimeout(refresh, 0); return; }
   persistState();
   banniereHameau(h);
   encyclopedieHameau();
+  setTimeout(refresh, 0);
 }
 
 // La bannière d'un hameau découvert : son nom, son pays, quelques secondes en haut de la carte.
@@ -735,10 +746,10 @@ function banniereHameau(h) {
   setTimeout(() => { el.classList.remove('visible'); setTimeout(() => el.remove(), 700); }, BANNIERE_MS);
 }
 
-// Un appui sur le panneau d'un hameau : son nom.
+// Un appui sur le panneau d'un hameau : sa fiche (ses familles, sa réserve : js/ui/habitants.js), ou
+// son nom tant qu'il n'a pas d'habitants.
 function stageHameauPanneau(h) {
-  const S = HAMEAUX.STYLES[h.style];
-  notify(`🪧 ${h.nom}${S ? ` — un hameau ${S.nom}` : ''}`, { kind: 'info' });
+  openFicheHameau(h);
 }
 
 // Un outil qui n'a rien à faire dans un hameau (js/carte/ferme/hameaux.js, hameauOutil) : il le dit.
@@ -833,7 +844,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
