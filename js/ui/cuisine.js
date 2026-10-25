@@ -174,7 +174,7 @@ export function renderMoulin() {
       <div class="card station mill ancre${job ? ' busy' : ''}" id="moulin-moudre">
         <span class="card-title"><span>🌾 Moudre : <span class="num">${formatQty(wheat)}</span> ${accord(wheat, 'blé')}</span><span class="chip">${formatNumber(each)} s par blé</span></span>
         <div class="row item-actions lot-btns">${lot(1)}${lot(5)}${lot(10)}</div>
-        ${wheat < 1 ? '<span class="alert">Pas de blé à moudre : récolte du blé, ou achètes-en au Marché.</span>' : ''}
+        ${wheat < 1 ? '<span class="alert">Pas de blé à moudre : récolte du blé (la calèche en vend, pour le semer).</span>' : ''}
         ${stopped && (job || wheat >= 1) ? `<span class="alert">${isBroken(d) ? '⛔ Le Moulin est en panne : il faut le réparer.' : '⚠️ Le Moulin est arrêté : remets-le en marche.'}</span>` : ''}
         ${work}
       </div>

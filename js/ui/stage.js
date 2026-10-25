@@ -60,6 +60,7 @@ import { aCruche, crucheCapacite, eauCruche, puitsPose, remplirCruche } from '..
 import { surbrillanceDidacticiel } from './didacticiel.js';
 import { plantationModele } from './plantation.js';
 import { runAction } from './events.js';
+import { calecheDepuisCarte, calecheToucheeDepuisCarte, helerCaleche } from './caleche.js';
 
 
 // Le Poulailler et l'Étable, bâtis (js/engine/blocs.js, etatEnclos) : les cases libres de
@@ -403,7 +404,7 @@ export function stageModel() {
     // le décor de la cuisine, toujours là
     evier: { dessin: 'evier' }, plan: { dessin: 'plan' }, fenetre: { dessin: 'fenetre' }, plante: { dessin: 'plante' },
   };
-  // Meubles achetés au Marché : chacun à sa place (chaise_1…, lit_1… : les lits d'adulte d'abord ;
+  // Meubles de la maison (fabriqués à l'Atelier) : chacun à sa place (chaise_1…, lit_1… : les lits d'adulte d'abord ;
   // sans lit d'adulte, la première place a une paillasse, où le personnage dort).
   for (const id of Object.keys(DATA.MEUBLES)) {
     const n = furnitureCount(state, id);
@@ -844,7 +845,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
@@ -903,7 +904,7 @@ const OBJECTIF_CIBLES = {
   panneau: { fenetre: 'installations' },
   pompe: { fenetre: 'installations' },
   reservoir: { fenetre: 'installations' },
-  houe: { page: 'comptoir', sous: 'acheter' },
+  houe: { fenetre: 'atelier' },   // (fiche 7c : la houe se fabrique à l'Atelier)
   recoltes: { fenetre: 'zone' },
   cultures: { fenetre: 'zone' },
   semisBle: { fenetre: 'zone' },

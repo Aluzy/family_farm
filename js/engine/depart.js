@@ -194,7 +194,7 @@ export function installStarter(state, type) {
     obj.allume = true;
     obj.prix = DATA.DEPART.ACHATS[type]; // entretien et réparation suivent le prix payé
   }
-  // panneau et pompe : la Zone de culture et le Marché s'ouvrent
+  // panneau et pompe : la Zone de culture et la calèche s'ouvrent
   if (farmOpen(state)) unlockTab(state, 'comptoir');
   updateChapters(state);
 }

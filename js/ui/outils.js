@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { asleep } from '../engine/night.js';
 import { SOMMEIL_MESSAGE } from './actions.js';
-import { buyTool, castLine, chopTree, enSelle, hasTool, mineRock, OUTILS, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass, selectTool, toggleTriporteur, toolDef } from '../engine/outils.js';
+import { castLine, chopTree, enSelle, hasTool, mineRock, OUTILS, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass, selectTool, toggleTriporteur, toolDef } from '../engine/outils.js';
 import { recolterMonde } from '../engine/monde-recolte.js';
 import { axeMode, hoeMode, pickMode, rodMode, scytheMode, setAxeMode, setHoeMode, setPickMode, setRodMode, setScytheMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
@@ -10,7 +10,6 @@ import { notify } from './toasts.js';
 import { ACTIONS, registerActions } from './actions.js';
 import { persistState } from './storage.js';
 import { closeStageWindow, stageInterior, stageWindow } from './stage-windows.js';
-import { closeModal } from './modal.js';
 import { buildSlotHtml } from './chantier.js';
 import { setBuildMode } from './store.js';
 import { chevalMonte, chevalOu, chevalPossede, toggleCheval } from '../engine/cheval.js';
@@ -50,7 +49,7 @@ export function toolBarHtml() {
   const cases = OUTILS.map((id) => {
     const def = toolDef(id);
     if (!hasTool(state, id)) {
-      return `<span class="tool-slot vide" title="${def.NOM} : au Marché" aria-hidden="true"></span>`;
+      return `<span class="tool-slot vide" title="${def.NOM} : à fabriquer à l'Atelier" aria-hidden="true"></span>`;
     }
     const tenu = id === main;
     const label = tenu ? `${def.NOM} en main : la ranger` : `Prendre : ${def.NOM}`;
@@ -299,15 +298,5 @@ registerActions({
   'rod-toggle': () => {
     setRodMode(false);
     refresh();
-  },
-  'buy-tool': (target) => {
-    const id = target.dataset.outil;
-    const r = applyResult(buyTool(state, id));
-    if (!r.ok) return;
-    // achetée depuis sa fiche du Marché : la fiche se ferme (un outil ne s'achète qu'une fois)
-    if (document.querySelector('#modal-root .shop-modal')) closeModal();
-    const def = toolDef(id);
-    if (def.ARTICLE === 'un') notify(`${def.ICONE} ${def.NOM} acheté : te voilà en selle ! Sa case, dans la barre d'outils, te fait monter ou descendre.`);
-    else notify(`${def.ICONE} ${def.NOM} achetée : elle est dans la barre d'outils, en bas de la carte.`);
   },
 });

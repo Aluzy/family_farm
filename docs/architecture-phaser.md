@@ -302,6 +302,13 @@ poulailler et le moulin n'y ont plus d'image (leur forme de secours).
   fait vivre près de la vue : la scène ne compte rien elle-même, un geste fini passe par le pont
   (`habitantAgit` : le moteur le compte une fois, un arbre abattu est pris comme sous la hache du
   joueur) ; la phrase d'un habitant qu'on touche vient du moteur (`habitantParle`).
+- **La calèche** (fiche 7c) : sa tournée ne dépend que du plan et de l'heure
+  (`js/engine/caleche-tournee.js` : tirée par le Web Worker avec les éléments, posée dans le moteur par la
+  page) ; le commerce et les arrêts aux hameaux sont au moteur (`js/engine/caleche.js`). Sa position
+  n'entre pas dans le modèle (il changerait à chaque pas) : la scène la demande au pont à chaque image
+  (`caleche`), et `js/carte/ferme/caleche.js` la suit en douceur, ne fait l'attelage que près de la vue,
+  allume sa lanterne dans le voile, montre l'icône du bord de l'écran et le bouton Héler ; un appui sur
+  elle passe par le pont (`calecheTouchee`).
 - **Relevés du chargement par régions.** Les arbres, buissons et barrières (`findOccluders`,
   `mapTrees`), les rochers (`findRocks`), les tuiles animées (`makeTileAnims`), la terre des
   anciennes zones (`zoneGround`) et les lieux de la vie d'ambiance (`readMap`,

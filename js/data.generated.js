@@ -735,7 +735,66 @@ export const RAW_DATA = {
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
-      "faux": { "entrees": { "bois": 3, "pierre": 2 }, "outil": "faux" }
+      "faux": { "entrees": { "bois": 3, "pierre": 2 }, "outil": "faux" },
+      "canne": { "entrees": { "bois": 3, "fibre": 4, "pierre": 1 }, "outil": "canne" },
+      "triporteur": { "entrees": { "lingot_fer": 4, "lingot_cuivre": 1, "planche": 4, "fibre": 2 }, "outil": "triporteur" },
+      "nid_poule": { "nom": "Nid garni : une poule", "entrees": { "fibre": 4, "ble": 3 }, "animal": "poule", "debloque": "poulailler" },
+      "sel_mouton": {
+        "nom": "Pierre à sel et foin : un mouton",
+        "entrees": { "pierre": 4, "paille": 6, "fibre": 4 },
+        "animal": "mouton",
+        "debloque": "moutons"
+      },
+      "sel_vache": {
+        "nom": "Pierre à sel et foin : une vache",
+        "entrees": { "pierre": 6, "paille": 12, "planche": 2 },
+        "animal": "vache",
+        "debloque": "moutons"
+      },
+      "licol_cheval": {
+        "nom": "Licol et friandises : un cheval",
+        "entrees": { "corde": 2, "carotte": 6, "pomme": 4 },
+        "cheval": true,
+        "debloque": "ecurie"
+      },
+      "ruche": { "entrees": { "planche": 4, "fibre": 8, "pierre": 1 }, "sortie": { "ruche": 1 } },
+      "bac_fleurs": { "entrees": { "planche": 3, "pierre": 2, "fibre": 1 }, "sortie": { "bac_fleurs": 1 } },
+      "meuble_chaise": { "entrees": { "planche": 2, "fibre": 1 }, "meuble": "chaise" },
+      "meuble_table": { "entrees": { "planche": 5, "bois": 2 }, "meuble": "table" },
+      "meuble_tapis_1": { "entrees": { "fibre": 8 }, "meuble": "tapis_1" },
+      "meuble_tapis_2": { "entrees": { "laine": 3, "baies": 2 }, "meuble": "tapis_2" },
+      "meuble_tapis_3": { "entrees": { "laine": 3, "myrtille": 2 }, "meuble": "tapis_3" },
+      "meuble_lit_adulte": { "entrees": { "planche": 6, "laine": 2, "fibre": 4 }, "meuble": "lit_adulte" },
+      "meuble_lit_enfant": { "entrees": { "planche": 4, "laine": 1, "fibre": 3 }, "meuble": "lit_enfant" },
+      "meuble_chevet": { "entrees": { "planche": 2, "bois": 1 }, "meuble": "chevet" },
+      "meuble_canape": { "entrees": { "planche": 6, "laine": 4, "fibre": 4 }, "meuble": "canape" },
+      "meuble_table_basse": { "entrees": { "planche": 3, "pierre": 1 }, "meuble": "table_basse" },
+      "meuble_tableau_1": { "entrees": { "planche": 2, "baies": 2, "fibre": 1 }, "meuble": "tableau_1" },
+      "meuble_tableau_2": { "entrees": { "planche": 2, "mures": 2, "fibre": 1 }, "meuble": "tableau_2" },
+      "meuble_tableau_3": { "entrees": { "planche": 2, "myrtille": 2, "coquille": 1 }, "meuble": "tableau_3" },
+      "meuble_buffet": { "entrees": { "planche": 8, "lingot_fer": 1 }, "meuble": "buffet" },
+      "meuble_commode": { "entrees": { "planche": 7 }, "meuble": "commode" },
+      "meuble_armoire_chene": { "entrees": { "planche": 10, "bois": 2 }, "meuble": "armoire_chene" },
+      "meuble_armoire_peinte": { "entrees": { "planche": 10, "baies": 3, "myrtille": 3 }, "meuble": "armoire_peinte" },
+      "meuble_armoire_glace": { "entrees": { "planche": 8, "quartz": 2 }, "meuble": "armoire_glace" },
+      "meuble_cuisine_porte": { "entrees": { "planche": 3, "pierre": 2 }, "meuble": "cuisine_porte" },
+      "meuble_cuisine_tiroirs": { "entrees": { "planche": 4, "pierre": 2 }, "meuble": "cuisine_tiroirs" },
+      "meuble_cuisine_sauge": { "entrees": { "planche": 3, "pierre": 2, "quartz": 1 }, "meuble": "cuisine_sauge" },
+      "meuble_poubelle": { "entrees": { "lingot_fer": 1 }, "meuble": "poubelle" },
+      "meuble_bibliotheque": { "entrees": { "planche": 5 }, "meuble": "bibliotheque" },
+      "meuble_bibliotheque_vitree": { "entrees": { "planche": 8, "quartz": 2 }, "meuble": "bibliotheque_vitree" },
+      "meuble_lampadaire": { "entrees": { "lingot_fer": 1, "champignon_lumineux": 1, "fibre": 2 }, "meuble": "lampadaire" },
+      "meuble_coffre_jouets": { "entrees": { "planche": 4, "baies": 1 }, "meuble": "coffre_jouets" },
+      "meuble_plante_ficus": { "entrees": { "pierre": 2, "fibre": 3 }, "meuble": "plante_ficus" },
+      "meuble_plante_monstera": { "entrees": { "pierre": 2, "fibre": 4 }, "meuble": "plante_monstera" },
+      "meuble_plante_sansevieria": { "entrees": { "pierre": 1, "fibre": 2 }, "meuble": "plante_sansevieria" },
+      "meuble_plante_cactus": { "entrees": { "pierre": 2, "fibre": 1 }, "meuble": "plante_cactus" },
+      "meuble_plante_fougere": { "entrees": { "pierre": 2, "fibre": 3 }, "meuble": "plante_fougere" },
+      "meuble_plante_palmier": { "entrees": { "pierre": 3, "fibre": 4 }, "meuble": "plante_palmier" },
+      "meuble_plante_citronnier": { "entrees": { "pierre": 3, "fibre": 4 }, "meuble": "plante_citronnier" },
+      "meuble_plante_orchidee": { "entrees": { "pierre": 1, "fibre": 2, "baies": 1 }, "meuble": "plante_orchidee" },
+      "meuble_plante_aloe": { "entrees": { "pierre": 1, "fibre": 1 }, "meuble": "plante_aloe" },
+      "meuble_plante_bonsai": { "entrees": { "pierre": 2, "pomme_de_pin": 1, "fibre": 1 }, "meuble": "plante_bonsai" }
     },
     "BLOCS": {
       "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true, "mur": true },
@@ -1303,21 +1362,21 @@ export const RAW_DATA = {
       "icone": "🫙‍🌰",
       "station": "cuisine",
       "temps": 25,
-      "ingredients": [{ "item": "chataigne", "qte": 4 }, { "item": "sucre", "qte": 1 }]
+      "ingredients": [{ "item": "chataigne", "qte": 4 }, { "ou": ["sucre", "miel"], "qte": 1 }]
     },
     "tarte_myrtilles": {
       "nom": "Tarte aux myrtilles",
       "icone": "🥧‍🫐",
       "station": "four",
       "temps": 30,
-      "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "myrtille", "qte": 4 }, { "item": "sucre", "qte": 1 }]
+      "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "myrtille", "qte": 4 }, { "ou": ["sucre", "miel"], "qte": 1 }]
     },
     "pain_epices": {
       "nom": "Pain d'épices",
       "icone": "🍞‍🍯",
       "station": "four",
       "temps": 30,
-      "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "miel", "qte": 1 }, { "item": "epices", "qte": 1 }]
+      "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "miel", "qte": 1 }, { "ou": ["epices", "herbes_montagne"], "qte": 1 }]
     },
     "mayonnaise": { "nom": "Mayonnaise", "icone": "🫙‍🥚", "station": "cuisine", "temps": 10, "ingredients": [{ "item": "oeuf", "qte": 3 }] },
     "quenelle_poisson": {
@@ -2204,7 +2263,7 @@ export const RAW_DATA = {
       {
         "titre": "L'héritage",
         "icone": "🏚️",
-        "intro": "La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; achète une houe au Marché, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
+        "intro": "La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; fabrique une houe à l'Atelier, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "introSauvage": "Une terre sauvage est à ta famille, sans maison ni bâtiment. Ramasse des pierres et du bois, construis l'Atelier, fabriques-y une faux pour faucher l'herbe haute (ses fibres), puis bâtis ton foyer : une pièce close et une paillasse. Fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
           {
@@ -2231,7 +2290,7 @@ export const RAW_DATA = {
             "unite": ""
           },
           { "type": "reservoir", "sauvage": false, "cible": 1, "libelle": "Acheter le réservoir", "libelleSauvage": "Poser la citerne", "unite": "" },
-          { "type": "houe", "cible": 1, "libelle": "Acheter une houe au Marché", "libelleSauvage": "Fabriquer une houe à l'Atelier", "unite": "" },
+          { "type": "houe", "cible": 1, "libelle": "Fabriquer une houe à l'Atelier", "libelleSauvage": "Fabriquer une houe à l'Atelier", "unite": "" },
           { "type": "labours", "cible": 6, "libelle": "Labourer 6 tuiles", "unite": "" },
           { "type": "semis", "cible": 6, "libelle": "Planter 6 parcelles", "unite": "" },
           { "type": "arrosees", "cible": 6, "libelle": "Arroser tes parcelles", "unite": "" },
@@ -2380,7 +2439,12 @@ export const RAW_DATA = {
       { "debloque": ["commerce"] }
     ],
     "ELEMENTS": {
-      "marche": { "sauvage": true, "nom": "Marché", "icone": "🧺", "note": "acheter des graines, des outils et des animaux, vendre tes récoltes" },
+      "marche": {
+        "sauvage": true,
+        "nom": "La calèche",
+        "icone": "🐴",
+        "note": "elle passe à la ferme chaque jour : vends-lui tes récoltes, achète-lui des graines et les produits des hameaux"
+      },
       "energie": {
         "sauvage": true,
         "nom": "Énergie et eau",
@@ -2388,7 +2452,7 @@ export const RAW_DATA = {
         "note": "panneau solaire, pompe, citerne et batterie : l'automatisation commence"
       },
       "silo": { "nom": "Silo", "icone": "🛖", "note": "stock de blé ; le blé ne se plante qu'une fois le Silo construit" },
-      "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (les poules s'achètent au Marché)" },
+      "poulailler": { "nom": "Poulailler", "icone": "🐔", "note": "poules et œufs (une poule s'attire à l'Atelier : un nid garni)" },
       "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tartes" },
       "cuisine": { "nom": "Cuisine", "icone": "🍳", "note": "omelette, ratatouille, compote, soupe, et le Livre de recette" },
       "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "la farine" },
@@ -2567,7 +2631,6 @@ export const RAW_DATA = {
     "BLE_MAX": 40,
     "STOCK_FARINE": 4,
     "STOCK_HUILE": 6,
-    "ACHATS_CUISINE": { "huile": { "stock": 6, "prixMax": 10 }, "farine": { "stock": 6, "prixMax": 6 } },
     "PAILLE_NUITS": 3,
     "PAILLE_MAX_NUITS": 6,
     "FARINE_MAX": 12,
@@ -3676,6 +3739,27 @@ export const RAW_DATA = {
         "faim": ["On n'a pas eu assez à manger hier.", "Le garde-manger est presque vide…"]
       }
     }
+  },
+  "CALECHE": {
+    "NOM": "La calèche",
+    "ICONE": "🐴",
+    "FERME": 10,
+    "ARRET_FERME": 1,
+    "ARRET": 0.5,
+    "DEPART": 6.5,
+    "JOURNEE": 15,
+    "VITESSE": 150,
+    "PORTEE": 4,
+    "HELER": 9,
+    "PROCHE": 70,
+    "RETENUE": 0.5,
+    "RETENUE_MAX": 3,
+    "ACHAT_HAMEAU": 60,
+    "VENTE": 150,
+    "PRIS": 20,
+    "COFFRE_MAX": 40,
+    "GARDE": 50,
+    "RATTRAPAGE": 3
   },
   "CONSERVATION": {
     "carotte": 6,

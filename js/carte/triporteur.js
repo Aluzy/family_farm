@@ -1,6 +1,6 @@
 /* carte/triporteur.js — le triporteur du personnage, sur toutes les cartes.
  *
- * Acheté au Marché (le moteur : DATA.TRIPORTEUR, enSelle), il va dans la barre d'outils, où un
+ * Fabriqué à l'Atelier (le moteur : DATA.TRIPORTEUR, enSelle), il va dans la barre d'outils, où un
  * appui fait monter le personnage dessus ou en descendre. En selle, il roule TRIPORTEUR.vitesse
  * fois plus vite qu'à pied, assis (ses cases assis_<vue>) sur le tricycle (assets/triporteur.png,
  * scripts/personnage/triporteur.py : par vue et par coup de pédale, une couche derrière lui et

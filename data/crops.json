@@ -245,14 +245,14 @@
     "ZONE2": { "ID": "zone2", "NOM": "Champ", "ICONE": "🌾", "CASES": 64, "COLONNES": 8, "DEBLOCAGE": "moulin" }
   },
   "//HOUE": [
-    "Version 1.9 (v2, lot 5) : la houe, achetée une fois au Marché (PRIX). Avec elle,",
+    "Version 1.9 (v2, lot 5) : la houe, fabriquée une fois à l'Atelier (fiche 7c ; PRIX : l'ancien prix au Marché). Avec elle,",
     "un clic sur une case d'herbe la laboure (terre : une parcelle vide), un clic sur",
     "une terre vide la rebouche (herbe, gratuit, sans XP). Coût en énergie :",
     "PERSONNAGE.COUTS.labourer ; XP : NIVEAUX.XP.labourer."
   ],
   "HOUE": { "NOM": "Houe", "ICONE": "⛏️", "PRIX": 40 },
   "//OUTILS": [
-    "La hache, la pioche, la faux et la canne à pêche s'achètent une fois au Marché, comme la houe.",
+    "La hache, la pioche, la faux et la canne à pêche se fabriquent une fois à l'Atelier, comme la houe.",
     "Les outils achetés vont dans la barre d'outils, en bas de la carte : un appui sur un",
     "outil le prend en main (un second appui le range). ⚒ est la pioche dans les textes",
     "(⛏ est la houe)."
@@ -337,10 +337,10 @@
     }
   },
   "//TRIPORTEUR": [
-    "Le triporteur s'achète une fois au Marché, comme les outils. Il va dans la barre d'outils,",
+    "Le triporteur se fabrique une fois à l'Atelier, comme les outils. Il va dans la barre d'outils,",
     "où un appui fait monter le personnage dessus ou en descendre (state.outils.aPied : à pied).",
     "En selle, il se déplace VITESSE fois plus vite sur les cartes, dehors (pas dans un intérieur",
-    "de la ferme ni dans la grotte). ARTICLE : « un » (les textes du Marché)."
+    "de la ferme ni dans la grotte). ARTICLE : « un » (les textes de l'Atelier)."
   ],
   "TRIPORTEUR": { "NOM": "Triporteur", "ICONE": "🛺", "ARTICLE": "un", "PRIX": 450, "VITESSE": 3 },
   "//SERRE": [
@@ -350,7 +350,7 @@
   ],
   "SERRE": { "LIEU": "serre", "PRIX_CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "PRIX_NIVEAUX": [0, 900, 1800, 3000, 5400] },
   "//VERGER": [
-    "Verger (sections 1.3, 1.4 et 8.4). Les arbres s'achètent au Marché à prix",
+    "Verger (sections 1.3, 1.4 et 8.4). Les arbres s'achètent à la calèche à prix",
     "fixe et se plantent sur un emplacement libre. Un arbre est adulte MATURITE",
     "nuits après sa plantation ; adulte, il donne FRUITS fruits cette nuit-là puis",
     "toutes les PERIODE nuits, toute l'année (version 1.6 : plus de saisons). Pas d'arrosage.",

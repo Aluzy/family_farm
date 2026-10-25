@@ -7,8 +7,9 @@ import { stockCount, takeStock } from './fridge.js';
 import { refreshUnlocks } from './techtree.js';
 import { fillSilo } from './animals.js';
 import { gainActionXp } from './levels.js';
+import { isGraineComptoir } from './crops.js';
 
-/* ---------- Lot 3 : Marché ---------- */
+/* ---------- Lot 3 : Marché (fiche 7c : la calèche, caleche.js, en garde les prix et les cours) ---------- */
 
 // Plancher du coefficient d'achat d'un item (1,2 ; 2,0 pour les graines).
 export function marketFloor(item) {
@@ -31,9 +32,13 @@ function setMarketCoef(state, item, coef) {
   else state.marche[item] = c;
 }
 
+// Ce qui s'achète encore (fiche 7c : le Marché est devenu la calèche, qui ne vend que les semences
+// à leur cours, et ce que son coffre porte des hameaux : caleche.js) : les graines, les jeunes arbres
+// et ce qui se plante soi-même (le blé, la patate… : isGraineComptoir). Le reste se cultive, se
+// cuisine ou se fabrique à l'Atelier.
 export function isBuyable(item) {
   const def = DATA.OBJETS[item];
-  return !!def && def.rachetable !== false && !def.retire;
+  return !!def && def.rachetable !== false && !def.retire && isGraineComptoir(item);
 }
 
 export function sellPrice(item) {

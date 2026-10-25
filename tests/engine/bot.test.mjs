@@ -170,17 +170,12 @@ test('Lot 10 : le joueur vend ce qui périt demain, jamais la réserve', () => {
   assert(s.pieces > piecesAvant, 'la vente rapporte des pièces');
 });
 
-test('Lot 10 : le joueur n\'achète la houe qu\'en gardant sa caisse', () => {
+test('fiche 7c : le joueur fabrique sa houe (plus de Marché), sans toucher à ses pièces', () => {
   const s = partie(1);
   s.inventaire = {};
-  const cout = DATA.HOUE.PRIX;
-  s.pieces = cout + DATA.SIMULATION.CAISSE - 1;
+  s.pieces = DATA.SIMULATION.CAISSE - 1;
   botBuy(s, 60);
-  assertEqual(hasHoe(s), false, 'il lui manque une pièce pour garder la caisse');
-  s.pieces = cout + DATA.SIMULATION.CAISSE;
-  botBuy(s, 60);
-  assertEqual(hasHoe(s), true);
-  assertEqual(s.pieces, DATA.SIMULATION.CAISSE);
+  assertEqual([hasHoe(s), s.pieces], [true, DATA.SIMULATION.CAISSE - 1]);
 });
 
 test('version 1.9 : le joueur automatique laboure jusqu\'au plafond, en gardant de l\'énergie', () => {

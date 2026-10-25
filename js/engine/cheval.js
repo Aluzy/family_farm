@@ -6,7 +6,8 @@ import { isUnlocked } from './campaign.js';
 import { unlockLevel } from './levels.js';
 
 /* ---------- le cheval de la ferme générée ----------
-   Il s'achète au Marché (rayon Animaux, DATA.CHEVAL.PRIX) une fois l'Écurie construite (son
+   Il vient à l'Atelier (fiche 7c : un licol et des friandises, ATELIER.RECETTES.licol_cheval ; avant,
+   le Marché, DATA.CHEVAL.PRIX) une fois l'Écurie construite (son
    râtelier dans une enceinte de murs qui a une porte sur le dehors et CHEVAL.PLACES cases libres :
    js/engine/blocs.js, etatEcurie). state.cheval = null (pas de cheval) ou { monte, nourri,
    attache } :
@@ -45,11 +46,20 @@ export function chevalOu(state) {
 // Peut-on acheter le cheval ? null, ou la raison.
 export function chevalRefus(state) {
   if (chevalPossede(state)) return 'Tu as déjà ton cheval.';
-  if (!isUnlocked(state, 'ecurie')) return `Le cheval s'achète à partir du niveau ${unlockLevel('ecurie')} (l'Écurie).`;
+  if (!isUnlocked(state, 'ecurie')) return `Le cheval vient à partir du niveau ${unlockLevel('ecurie')} (l'Écurie).`;
   if (!etatEcurie(state).ok) return 'Construis d\'abord l\'Écurie : une enceinte de murs avec une porte sur le dehors, son râtelier, et la place pour lui.';
   return null;
 }
 
+// Fiche 7c : le cheval vient à l'Atelier (un licol et des friandises : atelier.js), sans pièces.
+export function accueillirCheval(state) {
+  const refus = chevalRefus(state);
+  if (refus) return fail(refus);
+  state.cheval = { monte: false, nourri: true, attache: null };
+  return { ok: true };
+}
+
+// L'ancien achat au Marché (gardé pour les tests).
 export function buyCheval(state) {
   const refus = chevalRefus(state);
   if (refus) return fail(refus);
@@ -66,7 +76,7 @@ export function attacheManque(state) {
 // Monter en selle. `lieu` : { carte, proche } (proche : à côté du cheval attaché). À la ferme,
 // il sort de l'Écurie ; sur une autre carte, il faut être à côté de lui, attaché là.
 export function monterCheval(state, lieu = { carte: 'ferme' }) {
-  if (!chevalPossede(state)) return fail(`Il te faut un cheval (Marché, ${C().PRIX} 💰).`);
+  if (!chevalPossede(state)) return fail('Il te faut un cheval : un licol et des friandises, à l\'Atelier.');
   const ch = state.cheval;
   if (ch.monte) return { ok: true, monte: true };
   if (ch.attache) {

@@ -9,7 +9,7 @@ import { farmTerrain } from './terrain.js';
 /* ---------- Lot 8 : Verger ---------- */
 
 // state.verger = { construit, compteur, arbres } (places et achetes : les emplacements de
-// l'ancien Verger, sans usage). Un jeune arbre, acheté au Marché, se plante dans le sol, sur
+// l'ancien Verger, sans usage). Un jeune arbre, acheté à la calèche, se plante dans le sol, sur
 // l'herbe, dehors (blocs.js : les blocs « arbre ») ; tree.case est sa case de la carte. Le premier
 // planté ouvre le Verger : ses arbres poussent et donnent leurs fruits.
 

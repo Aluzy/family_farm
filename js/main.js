@@ -39,7 +39,7 @@ import './ui/techno.js';
 import './ui/famille.js';
 import './ui/notifications.js';
 import './ui/inventaire.js';
-import './ui/marche.js';
+import './ui/caleche.js';
 import './ui/chapitres.js';
 import './ui/niveaux.js';
 import './ui/energie.js';

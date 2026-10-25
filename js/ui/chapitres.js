@@ -110,7 +110,7 @@ export function renderAutonomyCard() {
     <div class="card autonomy-card">
       <span class="card-title"><span>🌿 Autonomie</span><span class="chip">${DATA.AUTONOMIE.GRAPHIQUE_NUITS} dernières nuits</span></span>
       <span class="big">${formatPercent(lastAutonomy(state))}</span>
-      <span class="muted">Dernière nuit : la part de ce que la famille a mangé qui vient de la ferme. Les conserves et les achats du Marché ne comptent pas. Aujourd'hui : <strong class="num">${formatPercent(plannedAutonomy(state))}</strong>.${goal ? ` Objectif du chapitre : ${goal.cible} % (ligne pointillée).` : ''}</span>
+      <span class="muted">Dernière nuit : la part de ce que la famille a mangé qui vient de la ferme. Les conserves et les achats à la calèche ne comptent pas. Aujourd'hui : <strong class="num">${formatPercent(plannedAutonomy(state))}</strong>.${goal ? ` Objectif du chapitre : ${goal.cible} % (ligne pointillée).` : ''}</span>
       ${autonomyChartHtml()}
     </div>`;
 }

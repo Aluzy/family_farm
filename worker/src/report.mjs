@@ -51,12 +51,8 @@ export const GAME_ACTIONS = {
   'cow-herbs': 'Nourrir les vaches aux herbes de montagne',
   'start-recipe': 'Cuisiner (préparer une recette)',
   'sell-item': 'Vendre',
-  'buy-item': 'Acheter un produit ou une graine',
-  'buy-animal': 'Acheter un animal',
-  'buy-meuble': 'Acheter un meuble',
-  'buy-ruche': 'Acheter une ruche',
-  'buy-cheval': 'Acheter le cheval',
-  'buy-dehors': 'Acheter un bac à fleurs (ou autre objet du dehors)',
+  'buy-item': 'Acheter à la calèche (une semence, un produit des hameaux)',
+  'caleche-heler': 'Héler la calèche',
   'plant-all': 'Planter partout',
   'hoe-many': 'Labourer en glissant',
   'commerce-choose': 'Choisir un commerce',
@@ -83,11 +79,9 @@ export const GAME_ACTIONS = {
   'upgrade': 'Améliorer ou agrandir',
   'upgrade-serre': 'Améliorer ou agrandir',
   'upgrade-poulailler': 'Améliorer ou agrandir',
-  'buy-hoe': 'Acheter la houe',
   'hoe': 'Labourer ou reboucher à la houe',
   'hoe-toggle': 'Prendre ou ranger la houe',
   'hoe-take': 'Prendre la houe (objectif du chapitre)',
-  'buy-tool': 'Acheter un outil (pioche, hache, canne à pêche)',
   'atelier-fabriquer': 'Fabriquer à l\'Atelier (ferme générée)',
   'bloc': 'Poser ou reprendre un bloc (ferme générée)',
   'arbre-oui': 'Planter un arbre (graine ou jeune arbre, depuis l\'Inventaire)',
@@ -140,7 +134,7 @@ export const INTERFACE_ACTIONS = new Set([
   'encyclo-open', 'encyclo-page',
   'arbre-planter', 'arbre-annuler', 'arbre-case', // planter un arbre depuis l'Inventaire : choisir la case // l'Encyclopédie, un livre qui se remplit au fil de la partie
   'inv-item', // Inventaire : fiche d'un objet
-  'shop-item', 'market-help', 'market-subtab', // Marché : fiche d'un article, aide de l'onglet // Famille : mode modification, aide de la ration quotidienne
+  'shop-item', 'market-help', // la calèche : fiche d'un article, aide de l'onglet // Famille : mode modification, aide de la ration quotidienne
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
   'mail-open', // version 1.3 : ouvrir une lettre du courrier
   'toolbar-toggle', // la barre d'outils de la carte : la ranger, la sortir

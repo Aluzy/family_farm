@@ -82,7 +82,7 @@ const ETAPES_UI = {
   bonheur: { texte: () => 'Le sourire, c\'est le <b>bonheur</b> de ta famille : de bons repas, un lit pour chacun, et il grimpe.', cible: () => '.player-gauge:nth-child(3)' },
   xp: { texte: () => 'L\'étoile, c\'est ton <b>niveau</b> ; l\'anneau doré autour de ton portrait, ton <b>expérience</b> (XP) : chaque action t\'en rapporte. Anneau plein, tu passes au niveau suivant et de nouvelles choses se débloquent.', cible: () => '.player-level' },
   autonomie: { texte: () => 'La pousse, c\'est l\'<b>autonomie</b> de ta ferme : la part de ce que mange ta famille que tu as produit toi-même. Le but du jeu : 100 % !', cible: () => '.player-auto' },
-  argent: { texte: () => 'Et voici ton <b>argent</b>, pour acheter au Marché quand il ouvrira.', cible: () => '.player-money' },
+  argent: { texte: () => 'Et voici ton <b>argent</b>, pour commercer avec la calèche quand elle passera à la ferme.', cible: () => '.player-money' },
   deplacement: { texte: () => 'Pour <b>te déplacer</b>, pose ton doigt sur la carte et fais-le glisser : ton personnage marche dans cette direction tant que ton doigt reste posé, et la carte le suit.' },
   pierres: { texte: () => 'Pour <b>ramasser</b>, touche simplement l\'objet : ton personnage va le chercher. Commence par les <b>petites pierres</b> (entourées sur la carte) : il en faut pour l\'Atelier.', carte: () => ({ ramassables: 'petite_pierre' }) },
   bois: { texte: () => 'Parfait ! Maintenant, ramasse des <b>morceaux de bois</b>.', carte: () => ({ ramassables: 'morceau_bois' }) },
@@ -119,7 +119,7 @@ const ETAPES_UI = {
   graines: {
     texte: () => (stageWindow !== 'inventaire' ? 'Un cadeau t\'attend dans ton <b>inventaire</b> : ouvre le menu, puis l\'Inventaire.'
       : !ongletGraines() ? 'Ouvre l\'onglet des <b>graines</b> : un cadeau t\'y attend. (Ton inventaire range par onglets tout ce que tu as ramassé et fabriqué.)'
-      : `Ferme ton inventaire (✕), puis prends la houe : on t'offre ${Object.entries(DATA.DIDACTICIEL.GRAINES).map(([o, n]) => `<b>${n} ${nomObjet(o)}</b>`).join(', ')} (elles brillent) pour ton premier potager !`),
+      : `Ferme ton inventaire (✕), puis prends la houe : on t'offre ${Object.entries(DATA.DIDACTICIEL.GRAINES).map(([o, n]) => `<b>${n} ${nomObjet(o)}</b>`).join(', ')} (elles brillent) pour ton premier potager ! Plus tard, la calèche qui passe à la ferme vers ${DATA.CALECHE.FERME} h t'en vendra d'autres.`),
     cible: () => (stageWindow !== 'inventaire' ? menu('inventaire') : !ongletGraines() ? '.inv-tab[data-tab="graines"]' : '#stage-window-close'),
     bouton: () => false,
   },

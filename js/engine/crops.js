@@ -270,7 +270,7 @@ export function hasHoe(state) {
   return !!(state.potager && state.potager.houe);
 }
 
-// Achat de la houe au Marché (une seule fois).
+// L'ancien achat de la houe au Marché (gardé pour les tests ; l'Atelier la fabrique).
 export function buyHoe(state) {
   if (hasHoe(state)) return fail('Tu as déjà une houe.');
   if (!marcheOuvert(state)) return fail(`La houe s'achète au Marché. ${marcheFerme(state)}`);
@@ -285,7 +285,7 @@ export function hoeStatus(state, tile) {
   if (Number.isInteger(tile) && serrePlaces(state).includes(tile)) return serreHoeStatus(state, tile);
   const p = Number.isInteger(tile) ? plotAtTile(state, tile) : null;
   if (!p && !isArable(tile, state)) return { action: null, ok: false, raison: 'On ne laboure ici que l\'herbe : pas les chemins, l\'eau, les pierres, les arbres, ni les abords des bâtiments.' };
-  if (!hasHoe(state)) return { action: null, ok: false, raison: `Il te faut une houe (Marché, ${DATA.HOUE.PRIX} 💰).` };
+  if (!hasHoe(state)) return { action: null, ok: false, raison: `Il te faut une houe (à fabriquer à l'Atelier).` };
   if (p) {
     if (p.culture) return { action: null, ok: false, raison: 'Terre plantée : récolte d\'abord.' };
     if (!soilLayoutOk(state, tile, false)) return { action: 'reboucher', ok: false, raison: SOIL_LAYOUT_REFUS, dessin: true };
@@ -304,7 +304,7 @@ export function hoeStatus(state, tile) {
 // La houe dans la Serre (ses cases, serrePlaces) : comme au-dehors (la même terre, les mêmes
 // bordures, soilLayoutOk), au plus serreCap(state) parcelles, sans le plafond de niveau.
 function serreHoeStatus(state, tile) {
-  if (!hasHoe(state)) return { action: null, ok: false, raison: `Il te faut une houe (Marché, ${DATA.HOUE.PRIX} 💰).` };
+  if (!hasHoe(state)) return { action: null, ok: false, raison: `Il te faut une houe (à fabriquer à l'Atelier).` };
   const p = serrePlotAt(state, tile);
   if (p) {
     if (p.culture) return { action: null, ok: false, raison: 'Terre plantée : récolte d\'abord.' };

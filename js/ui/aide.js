@@ -121,7 +121,7 @@ const HELP = {
     role: `Planter, arroser, récolter : toutes les cultures poussent ici, sur n'importe quelle parcelle. Une plante arrosée gagne un stade ${DATA.TEMPS.POUSSE_HEURES} heures plus tard (de jour comme de nuit), puis redemande de l'eau ; sans eau, elle attend. La parcelle se libère après la récolte ; sur la carte, ta récolte entre dans l'inventaire quand ton personnage la ramasse (une bulle « +x » au-dessus de lui). Chaque culture arrive à son niveau (⭐ dans le bandeau). Le blé nourrit les poules et donne la farine ; il ne se plante qu'une fois le Silo construit. Le tournesol donne l'huile, le riz et le houblon servent en cuisine.`,
     conso: `Eau par arrosage : ${cropsLine('potager', 'eau')}.`,
     prod: `${cropsLine('potager', 'recolte')}.`,
-    note: `Version 1.15 : toute l'herbe de la carte se cultive. La houe (Marché, ${DATA.HOUE.PRIX} 💰) change une tuile d'herbe en terre, ${DATA.PERSONNAGE.COUTS.labourer} d'énergie la tuile ; une terre vide se rebouche gratuitement. Pas sur les chemins, l'eau, les pierres, les arbres et les arbustes, ni aux abords des bâtiments (Poulailler, Étable, Moulin, Serre, Verger). Le nombre de tuiles de terre est plafonné par le niveau (${DATA.NIVEAUX.TUILES.filter((x, i, a) => a.indexOf(x) === i).join(' / ')}). L'arrosage, la récolte et le semis automatiques s'acquièrent dans l'Arbre des technologies (branches Eau et Culture)  : la récolte et le semis, par un robot qui, chaque matin à ${DATA.ROBOT.HEURE} h, dresse sa liste de tâches et les fait une à une (il roule jusqu'à la parcelle puis travaille ${DATA.ROBOT.MINUTES} minutes). Sa batterie tient ${DATA.ROBOT.BATTERIE.TACHES} tâches à 100 % d'autonomie ; vide, il rentre à sa station de charge, à côté de la maison, et reprend sa liste une fois rechargé. La station prend l'électricité de la ferme (${DATA.ROBOT.BATTERIE.WH_TACHE} Wh par tâche, ${DATA.ROBOT.BATTERIE.CHARGE_WH_S} Wh/s), quand il est au repos et la nuit. Un appui sur le robot ou sa station : sa batterie, et +${DATA.ROBOT.BATTERIE.PALIER_PCT} % d'autonomie pour ${DATA.ROBOT.BATTERIE.PALIER_PRIX} 💰 ; l'arrosage, tous les matins à ${DATA.TEMPS.ARROSAGE_HEURE} h, par des asperseurs qui tournent au milieu des cultures (une plante arrosée à ${DATA.TEMPS.ARROSAGE_HEURE} h gagne son stade le lendemain à la même heure) ; ils repassent dans la journée pour les plantes qui ont soif plus tard (semées après ${DATA.TEMPS.ARROSAGE_HEURE} h).`,
+    note: `Version 1.15 : toute l'herbe de la carte se cultive. La houe (fabriquée à l'Atelier) change une tuile d'herbe en terre, ${DATA.PERSONNAGE.COUTS.labourer} d'énergie la tuile ; une terre vide se rebouche gratuitement. Pas sur les chemins, l'eau, les pierres, les arbres et les arbustes, ni aux abords des bâtiments (Poulailler, Étable, Moulin, Serre, Verger). Le nombre de tuiles de terre est plafonné par le niveau (${DATA.NIVEAUX.TUILES.filter((x, i, a) => a.indexOf(x) === i).join(' / ')}). L'arrosage, la récolte et le semis automatiques s'acquièrent dans l'Arbre des technologies (branches Eau et Culture)  : la récolte et le semis, par un robot qui, chaque matin à ${DATA.ROBOT.HEURE} h, dresse sa liste de tâches et les fait une à une (il roule jusqu'à la parcelle puis travaille ${DATA.ROBOT.MINUTES} minutes). Sa batterie tient ${DATA.ROBOT.BATTERIE.TACHES} tâches à 100 % d'autonomie ; vide, il rentre à sa station de charge, à côté de la maison, et reprend sa liste une fois rechargé. La station prend l'électricité de la ferme (${DATA.ROBOT.BATTERIE.WH_TACHE} Wh par tâche, ${DATA.ROBOT.BATTERIE.CHARGE_WH_S} Wh/s), quand il est au repos et la nuit. Un appui sur le robot ou sa station : sa batterie, et +${DATA.ROBOT.BATTERIE.PALIER_PCT} % d'autonomie pour ${DATA.ROBOT.BATTERIE.PALIER_PRIX} 💰 ; l'arrosage, tous les matins à ${DATA.TEMPS.ARROSAGE_HEURE} h, par des asperseurs qui tournent au milieu des cultures (une plante arrosée à ${DATA.TEMPS.ARROSAGE_HEURE} h gagne son stade le lendemain à la même heure) ; ils repassent dans la journée pour les plantes qui ont soif plus tard (semées après ${DATA.TEMPS.ARROSAGE_HEURE} h).`,
   }),
   serre: () => ({
     nom: 'Serre',
@@ -143,7 +143,7 @@ const HELP = {
   },
   poulailler: () => ({
     nom: 'Poulailler',
-    role: 'Loge les poules, achetées au Marché. Une poule pond toute sa vie, tant qu\'elle est nourrie.',
+    role: 'Loge les poules, attirées par un nid garni (Atelier, onglet Élevage). Une poule pond toute sa vie, tant qu\'elle est nourrie.',
     conso: `1 blé pour ${DATA.ANIMAUX.poule.poulesParBle} poules nourries (une ration entamée se perd à la fin de la nuit).`,
     prod: `${DATA.ANIMAUX.poule.oeufsParNuit} œuf par nuit et par poule nourrie (${DATA.OBJETS.oeuf.energie} énergie).`,
     note: `Poules par niveau : ${listNum(DATA.POULAILLER.CAPACITE, '')}. Avec la Mangeoire à trémie (Arbre des technologies, branche Élevage), les poules sont nourries toutes seules pendant la nuit.`,
@@ -155,8 +155,8 @@ const HELP = {
     const P = DATA.PATURAGE;
     return {
       nom: 'Moutons et vaches',
-      role: `Les moutons et les vaches vivent à l'Étable et s'achètent au Marché. Un mouton prend ${formatPlaces(P.PLACES_PAR_MOUTON)}, une vache ${formatPlaces(P.PLACES_PAR_VACHE)}. Une place achetée reste acquise.`,
-      conso: `Chaque nuit, ${formatStraw(M.pailleParNuit)} par mouton et ${formatStraw(V.pailleParNuit)} par vache. La paille sort de la botteleuse : la faux en main (Marché ou Atelier), chaque touffe d'herbe haute de la carte fauchée donne ${DATA.FAUX.FIBRE} fibre, à ramasser au sol (la touffe repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard) ; ${DATA.BOTTELEUSE.FIBRES} fibres jetées dans la botteleuse font une botte de ${formatStraw(DATA.BOTTELEUSE.PAILLE)}. Elle ne s'achète pas au Marché.`,
+      role: `Les moutons et les vaches vivent à l'Étable ; une pierre à sel et du foin (Atelier, onglet Élevage) en font venir un. Un mouton prend ${formatPlaces(P.PLACES_PAR_MOUTON)}, une vache ${formatPlaces(P.PLACES_PAR_VACHE)}. Une place achetée reste acquise.`,
+      conso: `Chaque nuit, ${formatStraw(M.pailleParNuit)} par mouton et ${formatStraw(V.pailleParNuit)} par vache. La paille sort de la botteleuse : la faux en main (Atelier), chaque touffe d'herbe haute de la carte fauchée donne ${DATA.FAUX.FIBRE} fibre, à ramasser au sol (la touffe repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard) ; ${DATA.BOTTELEUSE.FIBRES} fibres jetées dans la botteleuse font une botte de ${formatStraw(DATA.BOTTELEUSE.PAILLE)}. Elle ne s'achète pas : la calèche n'en vend pas.`,
       prod: `Un mouton nourri ${M.joursLaine} nuits donne ${M.laineParTonte} laine (à tondre). Une vache nourrie donne ${V.laitParNuit} lait la nuit même.`,
       note: `L'Étable se bâtit : une enceinte de murs avec la mangeoire (fabriquée à l'Atelier), reliée à un enclos de barrières ; puis ${formatNumber(P.PRIX_PLACE)} 💰 la place, +${formatNumber(P.CROISSANCE - 100)} % à chaque achat. S'il n'y a pas assez de paille, les animaux mangent dans l'ordre de la liste (les moutons, puis les vaches). Un animal qui n'a pas mangé ne donne rien cette nuit-là ; il ne lui arrive rien d'autre.`,
     };
@@ -165,7 +165,7 @@ const HELP = {
     const V = DATA.VERGER;
     return {
       nom: 'Verger',
-      role: 'Pommiers, poiriers et autres fruitiers : achète un jeune arbre au Marché (rayon Graines) et plante-le dans le sol, dehors, avec la case 🔨, loin des autres arbres. Il pousse en 4 dessins (jeune arbre, arbuste, arbre, arbre en fruits) et reste en place.',
+      role: 'Pommiers, poiriers et autres fruitiers : achète un jeune arbre à la calèche (onglet Acheter, les semences) et plante-le dans le sol, dehors, avec la case 🔨, loin des autres arbres. Il pousse en 4 dessins (jeune arbre, arbuste, arbre, arbre en fruits) et reste en place.',
       conso: `Aucune : pas d'arrosage. Cueillir un arbre en fruits coûte ${formatNumber(DATA.PERSONNAGE.COUTS.cueillir)} énergie (rien avec la Récolte du verger de l'Arbre des technologies).`,
       prod: `${V.FRUITS} fruits ${nightsLabel(V.MATURITE)} après la plantation, puis ${V.PERIODE} nuits après chaque cueillette, toute l'année. Les fruits attendent sur l'arbre : un appui sur l'arbre les cueille.`,
       note: '',
@@ -210,7 +210,7 @@ const HELP = {
       nom: 'Outils',
       icone: '🛠️',
       lignes: [
-        ['Achat', `Chaque outil s'achète une fois au Marché, puis se choisit dans la barre d'outils de la carte : ${[DATA.HOUE, H, P, DATA.FAUX, DATA.CANNE].map((o) => `${o.ICONE} ${o.NOM.toLowerCase()} ${formatNumber(o.PRIX)} 💰`).join(' · ')}.`],
+        ['Fabrication', `Chaque outil se fabrique une fois à l'Atelier (onglet Outils), puis se choisit dans la barre d'outils de la carte : ${[DATA.HOUE, H, P, DATA.FAUX, DATA.CANNE, DATA.TRIPORTEUR].map((o) => `${o.ICONE} ${o.NOM.toLowerCase()}`).join(' · ')}.`],
         ['Houe', `Change une tuile d'herbe en terre à cultiver : ${formatNumber(C.labourer)} d'énergie la tuile.`],
         ['Hache', `Touche un arbre : ${formatNumber(C.couper)} d'énergie par coup, et ${formatNumber(H.BOIS)} bois qui tombe au sol. L'arbre tombe au ${H.COUPES}e coup, lâche ${formatNumber(H.CHUTE)} bois de plus là où il touche le sol, et repousse ${H.RETOUR[0]} à ${H.RETOUR[1]} jours plus tard. Marche sur le bois pour le ramasser. Sur ta ferme, un sapin laisse une pomme de pin, un autre arbre un gland, et il ne repousse pas : plante sa graine sur une case d'herbe libre (Inventaire › « Planter »), un arbre y pousse en ${H.POUSSE[0]} à ${H.POUSSE[1]} jours.`],
         ['Pioche', `Touche un rocher : ${formatNumber(C.piocher)} d'énergie par coup, et ${formatNumber(P.PIERRE)} pierre qui tombe au sol ; il se casse au ${P.COUPS}e coup en lâchant ${formatNumber(P.BRIS)} pierres de plus (marche dessus pour les ramasser) et revient ${P.RETOUR[0]} à ${P.RETOUR[1]} jours plus tard. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : touche-le, ${formatNumber(P.MAIN)} pierre va dans ton inventaire. Dans la grotte, elle prend aussi le minerai.`],
@@ -218,6 +218,7 @@ const HELP = {
         ['Dans le grand monde', `Hors de la ferme, les mêmes gestes : la hache abat les arbres, les buissons, les souches et les troncs couchés (un arbre en ${formatNumber(DATA.RECOLTE.SORTES.feuillu.coups)} coups) ; la pioche casse les rochers, les gros blocs et les éboulis ; la faux fauche les fougères, la bruyère, les joncs, les roseaux et les oyats. À la main (touche-les), cueille les mûres des ronciers et ramasse les champignons, les herbes de montagne, le bois flotté, les galets, les coquillages, les étoiles de mer et les algues. Ce qui est pris revient quelques jours plus tard (${DATA.RECOLTE.SORTES.feuillu.retour[0]} à ${DATA.RECOLTE.SORTES.feuillu.retour[1]} jours pour un arbre), si tu es passé par là.`],
         ['Les hameaux', `Les chemins du grand monde mènent à des hameaux de ${DATA.HAMEAUX.MAISONS[0]} à ${DATA.HAMEAUX.MAISONS[1]} maisons, bâties de murs, de portes et de fenêtres comme ta maison, dans le style du pays (pierre et ardoise en montagne, pierre blanche et tuiles sur la côte, bois et chaume en forêt et sur la lande, bois et roseaux au bord du marais). Promène-toi sur la place, entre dans les maisons par leur porte (le toit s'efface). On n'y bâtit pas, on n'y laboure pas, on n'y casse rien et on n'y coupe pas les arbres des jardins. Le premier passage dans un hameau l'annonce et l'inscrit dans l'Encyclopédie.`],
         ['Les habitants', `Chaque maison d'un hameau a sa famille (un ou deux adultes, des enfants), et chaque hameau son métier : bûcheron, pêcheur, mineur, berger ou cueilleur. Le matin, les adultes partent travailler (le bûcheron abat aussi des arbres alentour, qui repoussent comme les autres), les enfants jouent sur la place ; à midi et le soir, tout le monde rentre manger, et la nuit chacun dort dans son lit. Touche un habitant : il te dit son prénom, son métier et un mot selon l'heure et son humeur. Touche le panneau de la place : la fiche du hameau montre ses familles, leur bonheur et la réserve du hameau. Chaque nuit, même loin de toi, chaque famille vit sa journée : elle produit, mange, est plus ou moins heureuse, et met ce qui lui reste à la réserve, que la calèche viendra acheter.`],
+        ['La calèche', `Le Marché est devenu une calèche : chaque jour, elle fait le tour du monde par les chemins, de hameau en hameau, et passe à la ferme vers ${DATA.CALECHE.FERME} h (elle s'y gare une heure, devant l'entrée). Une icône au bord de l'écran montre où elle est quand elle approche ; sur un chemin, quand elle passe tout près, touche-la ou le bouton « Héler » : elle s'arrête. Arrêtée à côté de toi, elle t'achète tout ce qui se vend (au prix de vente) et te vend des semences et ce qu'elle a acheté en chemin à la réserve des hameaux (bois, poisson, pierre, lait, laine, baies…), dont l'argent va aux familles. Le soir, elle dort dans un hameau. Les outils, les animaux et les meubles se fabriquent à l'Atelier.`],
         ['Les bêtes du monde', 'Marmottes, bouquetins et aigles en montagne, mouettes, crabes et dauphins sur la côte, canards et cygnes sur les lacs et le marais, chevreuils, renards, lapins et écureuils en forêt, lièvres et perdrix sur la lande : on ne les chasse pas, on les regarde. Elles fuient si tu t\'approches trop. Touche une bête : son nom et sa page de l\'Encyclopédie (elle se découvre la première fois que tu en vois une).'],
         ['Coup fort', `Outil en main, garde le doigt appuyé sur ton personnage : il tremble, puis frappe fort quand tu lèves le doigt. La hache ou la pioche comptent ${formatNumber(DATA.COUP_FORT.COUPS)} coups sur l'arbre ou le rocher le plus proche (pour l'énergie de ${formatNumber(DATA.COUP_FORT.ENERGIE)} coups) ; la faux tournoie et fauche toute l'herbe haute autour de lui ; la houe laboure les tuiles autour de lui.`],
         ['Canne à pêche', `Touche l'eau : ${formatNumber(C.pecher)} d'énergie le lancer (voir la fiche « Pêche »).`],
@@ -246,7 +247,7 @@ const HELP = {
       lignes: [
         ...Object.entries(C.PRISES).map(([eau, prises]) => [EAUX[eau] || eau, `${capitalize(itemNames(Object.keys(prises)))} ; au plus ${formatNumber(C.JOUR[eau])} prises par jour.`]),
         ['Coins de pêche', `Dans le grand monde, un ponton, ou des piquets et une nasse, et des remous sur l'eau : pêche tout près, c'est un meilleur coin (plus de touches, ${itemNames(Object.values(C.COINS.PRISES).flatMap((p) => Object.keys(p)).filter((p, k, l) => l.indexOf(p) === k && !Object.values(C.PRISES).some((q) => p in q)))} en plus, jusqu'à ${formatNumber(C.COINS.JOUR.mer)} prises par jour en mer), compté à part de son eau.`],
-        ['Lancer', `La canne en main (Marché, ${formatNumber(C.PRIX)} 💰), touche l'eau : ${formatNumber(DATA.PERSONNAGE.COUTS.pecher)} d'énergie le lancer, et il arrive que rien ne morde.`],
+        ['Lancer', `La canne en main (Atelier : du bois, des fibres et une pierre), touche l'eau : ${formatNumber(DATA.PERSONNAGE.COUTS.pecher)} d'énergie le lancer, et il arrive que rien ne morde.`],
         ['Poissons', `Frais, ils se gardent peu de nuits : mange-les, vends-les ou cuisine-les (${recipesUsing([...poissons, 'poisson']).join(', ')}).`],
       ],
     };
@@ -277,7 +278,7 @@ const HELP = {
     nom: 'Commerce',
     icone: '🏪',
     lignes: [
-      ['Rôle', 'Un commerce transforme chaque nuit, après le repas de la famille, une partie de la production de la ferme et la vend tout seul, sans passer par le Marché.'],
+      ['Rôle', 'Un commerce transforme chaque nuit, après le repas de la famille, une partie de la production de la ferme et la vend tout seul, sans attendre la calèche.'],
       ['Coût', 'Ni énergie ni électricité ; chaque pièce vendue rapporte 1 XP.'],
       ['Valeur', `Il vend ses produits plus cher qu'une recette (${formatNumber(DATA.CUISINE.COEF_PLAT)} % du prix des ingrédients).`],
       ['Choix', `Le premier choix est gratuit. En changer coûte ensuite ${formatNumber(DATA.COMMERCE.CHANGER)} 💰.`],
@@ -336,13 +337,13 @@ const TUTO = {
     texte: () => (!farmOpen(state) && !houseRepaired(state)
       ? 'Une terre sauvage, sans maison : ramasse les petites pierres et les morceaux de bois (un appui dessus), cueille les baies des buissons pour reprendre des forces (même épuisé) ou coupe-les à la hache pour leur bois, pose l\'Atelier (menu, 🔨 Construire) et touche-le pour y fabriquer une faux pour faucher l\'herbe haute (ses fibres), puis des murs, une porte et une paillasse, puis bâtis une pièce close avec la case 🔨 de la barre d\'outils (la porte se pose sur une case libre, ou à la place d\'un mur). Ce sera ton foyer : on y dort.'
       : !farmOpen(state)
-      ? `Ton foyer est bâti. Ici, tout se fait d'abord à la main : fabrique à l'Atelier un puits et une cruche, pose le puits dehors avec la case 🔨, remplis la cruche au puits (un appui dessus) et arrose tes plantes. Le Marché ouvre au niveau ${unlockLevel('marche')}. Au niveau ${unlockLevel('energie')}, le panneau solaire, la pompe, la citerne et la batterie (il faut des lingots : le minerai de la grotte, fondu au four) pomperont l'eau pour toi : l'automatisation commence.`
+      ? `Ton foyer est bâti. Ici, tout se fait d'abord à la main : fabrique à l'Atelier un puits et une cruche, pose le puits dehors avec la case 🔨, remplis la cruche au puits (un appui dessus) et arrose tes plantes. La calèche, qui passe à la ferme chaque jour vers ${DATA.CALECHE.FERME} h, commerce avec toi à partir du niveau ${unlockLevel('marche')}. Au niveau ${unlockLevel('energie')}, le panneau solaire, la pompe, la citerne et la batterie (il faut des lingots : le minerai de la grotte, fondu au four) pomperont l'eau pour toi : l'automatisation commence.`
       : `Le panneau solaire charge la batterie de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.POMPE.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : maintiens le doigt sur la citerne pour voir son niveau.${stageUsable() ? ' Sur la carte, touche le panneau solaire ou la batterie pour l\'énergie, le puits ou la citerne pour l\'eau.' : ''}`),
   },
   potager: {
     titre: '🌱 La zone de culture',
     // FLU-19 : plus de parcelle avant le labour ; on achète la houe, on laboure, puis on plante
-    texte: () => `${hasHoe(state) ? 'Ta houe' : `Achète d'abord la houe au Marché (${formatNumber(DATA.HOUE.PRIX)} 💰) : elle`} change l'herbe en terre ; les graines s'achètent dans l'onglet Graines du Marché. ${stageUsable()
+    texte: () => `${hasHoe(state) ? 'Ta houe' : 'Fabrique d\'abord la houe à l\'Atelier : elle'} change l'herbe en terre ; les graines s'achètent à la calèche (onglet Acheter), quand elle passe à la ferme vers ${DATA.CALECHE.FERME} h. ${stageUsable()
       ? `Prends-la (bouton ${DATA.HOUE.ICONE} en bas à droite) et touche l'herbe foncée (les cases vertes) pour labourer. Range-la, puis touche une terre labourée pour planter, et touche-la encore pour l'arroser`
       : 'Laboure, puis touche « Planter » sur une parcelle vide, puis « Arroser »'}. Une plante arrosée gagne un stade ${DATA.TEMPS.POUSSE_HEURES} heures plus tard, puis redemande de l'eau : les carottes sont mûres en ${daysLabel(DATA.CULTURES.carotte.stades)}. ${stageUsable() ? 'Mûre, elle se balance : touche-la pour récolter, puis replante.' : 'Après la récolte, replante.'}`,
   },
@@ -405,7 +406,7 @@ export function renderTutorial() {
 // l'écran, sinon la puce d'objectif (qui y mène, FLU-01). L'anneau suit l'état de la partie :
 // il avance dès que l'objectif est atteint. Avec la houe en main, ce sont les cases vertes.
 const GUIDE_BOUTONS = {
-  houe: ['[data-action="buy-hoe"]', '[data-action="shop-item"][data-kind="houe"]'],
+  houe: ['[data-action="atelier-fabriquer"][data-recette="houe"]:not([disabled])'],
   labours: ['.tool-slot[data-outil="houe"]'],
   semis: ['#modal-root [data-action="plant-all"][data-crop="carotte"]:not([disabled])', '#modal-root [data-action="plant"]:not([disabled])', '[data-action="plant-all-open"]:not([disabled])', '[data-action="plant-open"]:not([disabled])'],
   arrosees: ['[data-action="water-all"]:not([disabled])', '[data-action="water"]:not([disabled])'],
@@ -416,8 +417,8 @@ const GUIDE_GRAINES = [
   '[data-action="buy-item"][data-item="graine_carotte"][data-q="10"]:not([disabled])',
   '[data-action="buy-item"][data-item="graine_carotte"][data-q="5"]:not([disabled])',
   '[data-action="buy-item"][data-item="graine_carotte"]:not([disabled])',
-  '[data-action="shop-item"][data-item="graine_carotte"]', // Marché en cases : d'abord la fiche
-  '[data-action="comptoir-tab"][data-tab="graines"]',
+  '[data-action="shop-item"][data-item="graine_carotte"]', // la calèche en cases : d'abord la fiche
+  '[data-action="comptoir-tab"][data-tab="acheter"]',
   '.nav-btn[data-tab="comptoir"]',
   '#stage-window-close',
 ];
@@ -441,7 +442,7 @@ function guideElement() {
   if (!c || c.fini || c.chapitre !== 1) return null;
   const o = chapterProgress(state).objectifs.find((x) => !x.ok);
   if (!o || !GUIDE_BOUTONS[o.type]) return null;
-  // Planter sans aucune graine : d'abord le Marché, onglet Graines
+  // Planter sans aucune graine : d'abord la calèche, onglet Acheter
   const sansGraines = o.type === 'semis' && !plantableCropsFor(state, 'potager').some((c) => seedStock(state, c) > 0);
   const liste = sansGraines && !document.querySelector('#modal-root .modal:not(.shop-modal)') ? GUIDE_GRAINES : GUIDE_BOUTONS[o.type];
   for (const sel of liste) {
@@ -459,7 +460,7 @@ function guideElement() {
   // la puce est sous une fenêtre de la carte : d'abord la fermer
   const close = document.getElementById('stage-window-close');
   if (shown(close)) return close;
-  // ailleurs (Marché, Inventaire…) : le retour à la Ferme
+  // ailleurs (la calèche, Inventaire…) : le retour à la Ferme
   const ferme = document.querySelector('.nav-btn[data-tab="ferme"]');
   return shown(ferme) ? viaMenu(ferme) : null;
 }
@@ -502,7 +503,7 @@ export function openAboutModal() {
     `La nuit : repas, puis une poule nourrie pond, les moutons font leur laine, les vaches donnent leur lait, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
     `Ton énergie (⚡, 0 à ${DATA.PERSONNAGE.MAX}) : chaque action au clic en coûte (${Object.entries(DATA.PERSONNAGE.COUTS).map(([a, n]) => `${ACTIONS_NOMS[a] || a} ${formatNumber(n)}`).join(', ')}), un peu moins quand la famille est heureuse (jusqu'à −${DATA.PERSONNAGE.BONHEUR_REDUCTION} %) et ${DATA.PERSONNAGE.ENDURANCE} % de moins par niveau. Au réveil, elle remonte à ${DATA.PERSONNAGE.REVEIL_BASE}, et jusqu'à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} si le reste de la famille se couche rassasié ; un aliment mangé dans la journée rend sa valeur (son énergie ÷ ${DATA.PERSONNAGE.MANGER_DIVISEUR}, + ${DATA.PERSONNAGE.MANGER_BONUS} %, arrondie au-dessus). Les automatisations ne coûtent rien.`,
     `Électricité : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe (son eau sert aussi aux asperseurs de l'arrosage automatique), moulin, presse, réfrigérateur, station de charge du robot. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.USURE.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.USURE.TAUX_ENTRETIEN)} % de son prix, le réparer après une panne ${formatNumber(DATA.USURE.TAUX_REPARATION)} % (arrondis à l'entier supérieur).`,
-    `Marché : prix de vente fixes. Prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur. Chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient d'achat, chaque unité vendue en retire ${formatNumber(M.PAS)} (plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %).`,
+    `La calèche : elle fait chaque jour le tour du monde par les chemins et passe à la ferme vers ${DATA.CALECHE.FERME} h ; on commerce avec elle quand elle est arrêtée à côté de soi (ou hélée sur un chemin). Prix de vente fixes. Elle vend les semences (prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur ; chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient, chaque unité vendue en retire ${formatNumber(M.PAS)}, plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %) et ce qu'elle achète aux hameaux (à ${DATA.CALECHE.VENTE} % du prix de vente). Les outils, les animaux et les meubles se fabriquent à l'Atelier.`,
     `Autonomie = part de ce que la famille a mangé dans la journée qui vient de la ferme. ${chapterCount()} chapitres mènent à une famille autonome.`,
     `Arbre des technologies : ${Object.keys(DATA.ARBRE.noeuds).length} technologies en ${DATA.ARBRE.branches.length} branches, payées en points de technologie (PT : chapitres terminés, jalons de maîtrise, mode libre), en pièces et en ressources (bois, pierre, puis lingots fondus au Four avec le minerai de la grotte). Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
     `Absence : jusqu'à ${formatDuration(H.MAX_S)} sont rattrapées au retour (énergie, eau, préparations, réfrigérateur), sans nuit${H.USURE ? '' : ' et sans usure'}. Ce temps compte comme temps d'éveil.`,

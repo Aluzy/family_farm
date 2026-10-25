@@ -114,7 +114,7 @@ export function renderPoulailler() {
   // Une ligne d'état, courte ; les règles (rations, ponte, niveaux) sont dans « ? ».
   let hint;
   if (p.poules > cap) hint = `<span class="alert">⚠️ ${plural(p.poules - cap, 'poule')} de trop pour la place : elles ne pondent pas.</span>`;
-  else if (p.poules === 0) hint = '<span class="muted">Aucune poule : achètes-en au Marché.</span>';
+  else if (p.poules === 0) hint = '<span class="muted">Aucune poule : attire-en une avec un nid garni (Atelier, onglet Élevage).</span>';
   else if (toFeed === 0) hint = '<span class="muted">✅ Toutes nourries : elles pondront cette nuit.</span>';
   else if (isAutomated(state, 'poulailler')) hint = '<span class="muted">🤖 Nourries toutes seules cette nuit.</span>';
   else if (noWheat) hint = '<span class="alert">⚠️ Pas assez de blé.</span>';
@@ -283,7 +283,7 @@ export function renderPaturage() {
   const missing = strawMissing(state);
   const fed = strawPlan();
   let hint = '';
-  if (sCount === 0 && cCount === 0) hint = '<span class="muted">Aucun animal : achètes-en au Marché.</span>';
+  if (sCount === 0 && cCount === 0) hint = '<span class="muted">Aucun animal : une pierre à sel et du foin (Atelier, onglet Élevage) en font venir.</span>';
   else if (occupied > places) hint = '<span class="alert">⚠️ Des bêtes de trop pour la place : elles ne donnent rien.</span>';
   else if (sFree === 0) hint = '<span class="alert">⚠️ Plus de place : achètes-en une.</span>';
   // Les places s'achètent à la suite, tant que les pièces suffisent (voir buyPasture()).

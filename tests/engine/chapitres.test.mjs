@@ -4,7 +4,7 @@
    ========================================================================== */
 
 import {
-  addItem, addLot, autonomyHistory, autonomyPercent, buyAnimal, buyItem, chapterProgress,
+  acheterCaleche, addItem, addLot, autonomyHistory, autonomyPercent, buyAnimal, buyItem, chapterProgress,
   chapterReached, completeChapter, countItem, createInitialState, createNewGame, DATA, farmTerrain,
   feedAllHens, findPlot, formatPercent, harvest, hoe, holdStatus, lastAutonomy, lotsOf, mailText,
   maxStage, moveToFridge, objectiveValue, plannedAutonomy, plant, plantableCrops,
@@ -86,11 +86,13 @@ test('autonomie : les conserves n\'y comptent pas ; un jour sans repas garde cel
   assertEqual([r3.energieMangee, r3.autonomie, lastAutonomy(s)], [0, 100, 100]);
 });
 
-test('autonomie : un achat du Marché n\'y compte pas, une récolte oui', () => {
+test('autonomie : un achat à la calèche n\'y compte pas, une récolte oui', () => {
   const s = farm();
   setInv(s, { conserve: 60 });
   s.pieces = 500;
-  assert(buyItem(s, 'carotte', 4).ok, 'acheter 4 carottes');
+  // (fiche 7c : des carottes d'un hameau, dans le coffre de la calèche)
+  s.caleche = { coffre: { carotte: 4 }, haltes: [], fait: null, jour: null };
+  assert(acheterCaleche(s, 'carotte', 4, null, { sansPresence: true }).ok, 'acheter 4 carottes');
   addItem(s, 'carotte', 15); // récoltées
   assertEqual(lotsOf(s, 'carotte').map((l) => [l.qty, l.origin]).sort(), [[4, 'acheté'], [15, 'produit']].sort());
   versBoite(s);

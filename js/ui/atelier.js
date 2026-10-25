@@ -12,6 +12,8 @@ import { atelierConstruit, craft, craftStatus, ramasser, recetteDebloquee } from
 import { recettesDidacticiel } from '../engine/didacticiel.js';
 import { countItem } from '../engine/inventory.js';
 import { hasTool, toolDef } from '../engine/outils.js';
+import { cowCount, sheepCount } from '../engine/animals.js';
+import { chevalPossede } from '../engine/cheval.js';
 import { categorieBloc } from '../engine/blocs.js';
 import { sortirBotte, verserFibres } from '../engine/botteleuse.js';
 import { verserGrain } from '../engine/distributeur.js';
@@ -98,8 +100,9 @@ const ONGLETS = () => [
   ...Object.entries(DATA.ATELIER.CATEGORIES).map(([id, c]) => ({ id, nom: c.nom, icone: c.icone })),
 ];
 
-// L'objet que donne la recette `id` (null : un outil), et le bloc de cet objet (ou null).
-const sortieDe = (id) => { const r = DATA.ATELIER.RECETTES[id]; return r.sortie ? Object.keys(r.sortie)[0] : null; };
+// L'objet que donne la recette `id` (null : un outil, un animal, le cheval ; un meuble : son objet,
+// meuble_<id>), et le bloc de cet objet (ou null).
+const sortieDe = (id) => { const r = DATA.ATELIER.RECETTES[id]; return r.sortie ? Object.keys(r.sortie)[0] : r.meuble ? 'meuble_' + r.meuble : null; };
 function blocDe(id) {
   const o = sortieDe(id);
   return o ? Object.keys(DATA.ATELIER.BLOCS).find((s) => DATA.ATELIER.BLOCS[s].objet === o) || null : null;
@@ -111,6 +114,8 @@ export function ongletRecette(id) {
   const r = DATA.ATELIER.RECETTES[id];
   if (!r) return 'materiaux';
   if (r.outil) return 'outils';
+  // (fiche 7c : les bêtes qu'on attire, le cheval : l'Élevage)
+  if (r.animal || r.cheval) return 'elevage';
   const b = blocDe(id);
   return (b && categorieBloc(b)) || 'materiaux';
 }
@@ -155,18 +160,25 @@ export function cibleRecette(id) {
   return `[data-action="atelier-choisir"][data-recette="${id}"]`;
 }
 
-// L'icône de ce que fabrique la recette, son nom, et combien on en a (un outil : ✓ s'il est à nous).
+// L'icône de ce que fabrique la recette, son nom, et combien on en a (un outil : ✓ s'il est à nous ;
+// une bête : combien il y en a à la ferme ; le cheval : ✓).
 function icone(id) {
   const r = DATA.ATELIER.RECETTES[id];
+  if (r.animal) return DATA.ANIMAUX[r.animal].icone;
+  if (r.cheval) return DATA.CHEVAL.ICONE;
   return r.outil ? toolDef(r.outil).ICONE : DATA.OBJETS[sortieDe(id)].icone;
 }
+// (les outils de pierre ; la canne et le triporteur ne le sont pas)
+const DE_PIERRE = ['houe', 'hache', 'pioche', 'faux'];
 function nom(id) {
   const r = DATA.ATELIER.RECETTES[id];
-  const n = r.outil ? `${toolDef(r.outil).NOM} de pierre` : DATA.OBJETS[sortieDe(id)].nom;
+  const n = r.nom || (r.outil ? `${toolDef(r.outil).NOM}${DE_PIERRE.includes(r.outil) ? ' de pierre' : ''}` : DATA.OBJETS[sortieDe(id)].nom);
   return n.charAt(0).toUpperCase() + n.slice(1);
 }
 function stock(id) {
   const r = DATA.ATELIER.RECETTES[id];
+  if (r.animal) return String(r.animal === 'poule' ? state.poulailler.poules : r.animal === 'mouton' ? sheepCount(state) : cowCount(state));
+  if (r.cheval) return chevalPossede(state) ? '✓' : '';
   return r.outil ? (hasTool(state, r.outil) ? '✓' : '') : String(countItem(state, sortieDe(id)));
 }
 
@@ -180,7 +192,7 @@ function caseRecette(id, choisie) {
 // le bouton Fabriquer (grisé, avec ce qui manque).
 function detailHtml(id) {
   const r = DATA.ATELIER.RECETTES[id], st = craftStatus(state, id), n = stock(id);
-  const garde = r.outil ? (n ? 'déjà dans ta barre d\'outils' : '') : `${n} en stock`;
+  const garde = r.outil || r.cheval ? (n ? (r.cheval ? 'il est à l\'Écurie' : 'déjà dans ta barre d\'outils') : '') : r.animal ? `${n} à la ferme` : `${n} en stock`;
   const donne = r.sortie ? Object.entries(r.sortie).map(([item, q]) => `<span class="chip">${q} ${DATA.OBJETS[item].icone}</span>`).join('') : `<span class="chip">${icone(id)}</span>`;
   return `
     <div class="card atelier-detail" id="atelier-${id}">
@@ -254,7 +266,12 @@ registerActions({
   'atelier-fabriquer': (target) => {
     const r = craft(state, target.dataset.recette);
     if (!r.ok) { notify(r.error); return; }
-    notify(r.outil ? `${toolDef(r.outil).ICONE} ${toolDef(r.outil).NOM} de pierre fabriquée.` : `${itemsText(r.items, 'gain')}`);
+    const R = DATA.ATELIER.RECETTES[target.dataset.recette];
+    if (r.animal === 'cheval') notify(`${DATA.CHEVAL.ICONE} Un cheval s'approche, attiré par les friandises : le voilà à l'Écurie. Monte en selle avec sa case de la barre d'outils.`);
+    else if (r.animal) notify(`${DATA.ANIMAUX[r.animal].icone} ${r.animal === 'poule' ? 'Une poule du pays vient s\'installer au Poulailler' : `${r.animal === 'mouton' ? 'Un mouton' : 'Une vache'} des prés voisins vient à l'Étable`}.`);
+    else if (r.outil) notify(`${toolDef(r.outil).ICONE} ${nom(target.dataset.recette)} : ${toolDef(r.outil).ARTICLE === 'un' ? 'fabriqué' : 'fabriquée'}.`);
+    else if (R.meuble) notify(`🏠 ${DATA.MEUBLES[R.meuble].nom} : dans l'inventaire, à poser dans la maison avec 🔨${DATA.MEUBLES[R.meuble].bonheur ? ` · 😊 +${DATA.MEUBLES[R.meuble].bonheur}` : ''}`);
+    else notify(`${itemsText(r.items, 'gain')}`);
     persistState();
     refresh();
   },

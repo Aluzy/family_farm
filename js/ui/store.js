@@ -22,7 +22,7 @@ export const TABS = [
   { id: 'atelier', label: 'Construire', icon: '🔨' }, // la ferme générée : le menu Construire (l'Atelier : touché sur la carte)
   { id: 'recettes', label: 'Livre de recette', icon: '📖' },
   { id: 'techno', label: 'Arbre des technologies', icon: '🌳' },
-  { id: 'comptoir', label: 'Marché', icon: '🧺' },
+  { id: 'comptoir', label: 'Calèche', icon: '🐴' }, // le Marché devenu la calèche (fiche 7c, js/ui/caleche.js)
   { id: 'notifications', label: 'Notifications', icon: '✉️' },
 ];
 
@@ -43,7 +43,7 @@ export function tabAvailable(id) {
   if (id === 'techno' && !techTreeShown()) return false;
   if (id === 'commerce') return isUnlocked(state, 'commerce');
   if (id === 'atelier') return true;
-  // le Marché ouvre à son niveau (devices.js, marcheOuvert)
+  // la calèche commerce à partir du niveau du Marché (devices.js, marcheOuvert)
   if (id === 'comptoir') return marcheOuvert(state);
   return ALWAYS_TABS.includes(id) || state.unlockedTabs.includes(id);
 }
@@ -165,12 +165,12 @@ export function setInvTab(value) {
   invTab = value;
   return value;
 }
-export let comptoirTab = 'vendre'; // Marché : 'vendre', 'acheter', 'graines' ou 'animaux'
+export let comptoirTab = 'vendre'; // la calèche : 'vendre' ou 'acheter'
 export function setComptoirTab(value) {
   comptoirTab = value;
   return value;
 }
-export let comptoirTabChoisi = 'vendre'; // FLU-13 : le dernier onglet du Marché choisi par le joueur
+export let comptoirTabChoisi = 'vendre'; // FLU-13 : le dernier onglet de la calèche choisi par le joueur
 export function setComptoirTabChoisi(value) {
   comptoirTabChoisi = value;
   return value;

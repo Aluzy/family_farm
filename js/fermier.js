@@ -23,7 +23,7 @@
  * l'ancien dessin de la case (« retenue ») jusqu'au coup de houe ou au geste de la main, puis
  * montre le nouveau. Une retenue ne dure jamais plus de HOLD_MS.
  *
- * Le triporteur (acheté au Marché, modèle.triporteur : il est en selle) : dehors, quand il
+ * Le triporteur (fabriqué à l'Atelier, modèle.triporteur : il est en selle) : dehors, quand il
  * marche ou attend, il y est assis (js/carte/triporteur.js) et va TRIPORTEUR.vitesse fois plus
  * vite ; pendant un geste ou dans un intérieur, il en descend. De même son cheval (modèle.cheval,
  * modèle.chevalVitesse : js/carte/cheval.js), qui passe avant le triporteur.

@@ -35,7 +35,7 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
   hameau et jusqu'à la ferme, et achète ce que les habitants et le joueur produisent. On la
   voit passer ; on peut la héler quand elle est près de soi. Elle ne vend que les produits des
   habitants et les graines ; ce que vend le Marché aujourd'hui (outils, animaux, meubles,
-  aliments) se fabriquera à l'Atelier (décidé).
+  aliments) se fabrique à l'Atelier (fait : fiche 7c).
 
 ## Les étapes
 
@@ -543,7 +543,7 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        voient pas entre elles (deux d'un groupe peuvent se croiser) ; l'aigle tourné est dessiné par
        le processeur sous SwiftShader (à revoir sur une vraie carte graphique, comme l'arbre qui
        bascule de la 6a).
-7. **Les habitants et la calèche** (3 PR) : les hameaux bâtis en blocs, leurs familles et
+7. ✅ **Les habitants et la calèche** (3 PR, fait) : les hameaux bâtis en blocs, leurs familles et
    leurs métiers (bûcheron, pêcheur, mineur, berger, cueilleur) ; la calèche du Marché et sa
    tournée.
    - **Fait (7a)** : les hameaux bâtis (vides : les habitants viendront à la fiche 7b, la calèche à la
@@ -741,6 +741,99 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        pour le joueur qui entre ; un arbre abattu hors de la vue ne l'est que dans les comptes (le
        moteur ne connaît pas les arbres, que le Worker tire) ; les aliments de la réserve ne périment
        pas.
+   - **Fait (7c)** : la calèche, le Marché qui fait le tour du monde.
+     - **La tournée** (`js/engine/caleche-tournee.js`, réglée par `data/monde.json` : `CALECHE`, vérifié par
+       `scripts/lib/data.mjs`) : la boucle des chemins du plan (`monde-gen.js` : la sortie de la ferme et les
+       hameaux dans l'ordre de leur angle, chacun relié au suivant ; un lien que le plan n'a pas pu tracer :
+       tout droit), lissée comme le chemin dessiné (une moyenne sur sept cases), la ferme en tête. Ses arrêts :
+       la ferme (la case au bout de sa sortie, devant l'entrée) et la place de chaque hameau, découvert ou non.
+       L'horaire est le même chaque jour : à la ferme à `FERME` (10 h) pendant `ARRET_FERME` (1 h), une
+       demi-heure (`ARRET`) sur chaque place ; la vitesse fait tenir le tour (sans l'arrêt du gîte) en
+       `JOURNEE` (15 h), au moins `VITESSE` (150 tuiles par heure de jeu) : 150 à 216 tuiles par heure sur
+       cinq mondes essayés (un tour de 1 540 à 2 480 tuiles), soit 5 à 7 tuiles par seconde réelle, un peu
+       plus vite que le personnage à pied, à peu près comme lui à cheval. Elle dort dans le gîte : le hameau d'où elle part au plus près de
+       `DEPART` (6 h 30) pour être à la ferme à l'heure ; elle y revient le soir (20 h à 22 h selon le
+       monde), après le tour complet. Sa position (`etatCaleche(tour, heure, retenues)`) se calcule d'après le
+       jour et l'heure, par une recherche dans les distances cumulées du tour (aucune simulation pas à pas :
+       on la retrouve où l'heure la veut après une absence) ; seules les retenues du jour la décalent :
+       hélée en chemin (`heler`, à `HELER` cases au plus) ou retenue par le commerce (`retenir`, tant que sa
+       fenêtre est ouverte à côté d'elle), elle attend `RETENUE` (une demi-heure de plus à chaque fois) et
+       reprend sa route d'autant plus tard, au plus `RETENUE_MAX` (3 h) par jour. La tournée ne dépend que du
+       plan : le Web Worker du sol la tire avec les éléments (`js/monde-worker.js`, message `pret`), la page
+       la pose dans le moteur (`poserTournee`, `js/ui/caleche.js`) ; dans Node, `tourneeDuMonde(graine)`
+       (les éléments du plan, ~200 ms ; vérifié : la même que celle du Worker).
+     - **Le commerce** (`js/engine/caleche.js`) : quand elle est arrêtée à `PORTEE` (4) cases du personnage —
+       à un arrêt, ou hélée — (`calecheIci` ; pas la nuit au gîte, ni en roulant sans la héler, ni avant le
+       niveau du Marché, 3), elle lui achète tout ce qui se vend, au prix de vente et au cours du Marché
+       (`sellItem`, gardés : la ferme et ses récoltes se vendent au même prix), et ne vend que les semences
+       (`isBuyable` : les graines, les jeunes arbres, ce qui se plante soi-même — blé, patate… —, au cours du
+       Marché qui monte à chaque achat) et ce que son coffre porte, à `VENTE` (150 %) du prix de vente, autant
+       qu'elle en a. À chaque hameau où elle s'arrête (`majCaleche`, d'après l'heure, au plus `RATTRAPAGE`
+       jours après une absence), elle achète sa réserve (`habitants.js`) : `PRIS` (20) au plus de chaque objet
+       par arrêt, `COFFRE_MAX` (40) de chacun dans son coffre, à `ACHAT_HAMEAU` (60 %) du prix de vente ; la
+       somme va aux bourses des foyers, en parts égales ; chaque matin, elle a vendu en route tout sauf `GARDE`
+       (50 %) de son coffre (elle continue d'acheter). Le dernier passage reste dans le hameau
+       (`habitants[id].caleche`), que la fiche du hameau montre avec la bourse de chaque famille. La fenêtre
+       (`js/ui/caleche.js`, l'ancienne fenêtre du Marché, renommée) : Vendre et Acheter (les semences, puis
+       « Des hameaux » : le coffre, son stock), et un bandeau : là (« Le cocher t'attend »), à portée de voix
+       (le bouton Héler), ou loin (où elle est — un hameau qu'on n'a pas vu n'est pas nommé — et quand elle
+       passe à la ferme). Hors de sa présence, les cases restent visibles, pâlies.
+     - **L'Atelier** reprend ce que vendait le Marché (`data/recipes.json`, `ATELIER.RECETTES`, de nouvelles
+       sortes de recettes : `animal`, `cheval`, `meuble`, et `outil` pour la canne et le triporteur) : la canne
+       à pêche (3 bois, 4 fibres, 1 pierre), le triporteur (4 lingots de fer, 1 de cuivre, 4 planches, 2
+       fibres) ; les bêtes qu'on attire, s'il y a la place (un choix : comme on n'élève pas de rien, un appât
+       où une bête du pays vient s'installer) : le nid garni d'une poule (4 fibres, 3 blés ; dès le
+       Poulailler), la pierre à sel et le foin d'un mouton (4 pierres, 6 pailles, 4 fibres) ou d'une vache (6
+       pierres, 12 pailles, 2 planches ; dès les moutons), le licol et les friandises du cheval (2 cordes, 6
+       carottes, 4 pommes ; dès l'Écurie) ; la ruche (4 planches, 8 fibres, 1 pierre), le bac à fleurs (3
+       planches, 2 pierres, 1 fibre) ; les 36 meubles (des planches, du bois, de la fibre, de la laine pour
+       les tapis, les lits et le canapé, de la pierre, du fer, du quartz pour la glace et les vitres, du cuivre,
+       un champignon lumineux pour le lampadaire, des baies, des mûres et des myrtilles pour la couleur, un
+       coquillage pour le tableau de la mer, une pomme de pin pour le bonsaï). Elles se rangent dans les
+       onglets (Outils, Meubles, Élevage : les bêtes et le cheval). Un meuble fabriqué compte comme un achat
+       d'autrefois (`ajouterMeuble` : le bonheur de chacun, une fois, l'objet à poser) ; les fonctions d'achat
+       du moteur (`buyAnimal`, `buyFurniture`, `buyTool`…) restent pour les tests, aucune fenêtre ne les
+       appelle. Les aliments ne se fabriquent pas : ils se cultivent, se cuisinent, ou viennent des hameaux
+       par la calèche. Le sucre et les épices, qu'on ne trouvait qu'au Marché : la crème de marrons et la
+       tarte aux myrtilles prennent aussi du miel, le pain d'épices des herbes de montagne (des recettes « l'un
+       ou l'autre »).
+     - **Ce qui change ailleurs** : la campagne (« Fabriquer une houe à l'Atelier » partout), le didacticiel
+       (l'argent « pour commercer avec la calèche » ; au moment des graines, elle t'en vendra d'autres ; la
+       houe et les graines du début ne changent pas), l'aide (une ligne « La calèche » dans les outils, la
+       houe, les poules, l'Étable, les règles), l'encyclopédie (la page « La calèche » à la place du Marché ;
+       les outils, les bêtes, le cheval, la ruche, les meubles fabriqués à l'Atelier), le niveau 3 (« La
+       calèche »), l'Étable et le Poulailler (où fabriquer leurs bêtes), le menu (« Calèche » 🐴). Le joueur
+       automatique (`js/engine/bot.js`) vend comme avant (la calèche passe à la ferme chaque jour), achète ses
+       graines, mais fabrique sa houe, sa faux et fait venir ses bêtes sans pièces (ses matériaux, il les a,
+       comme pour l'arbre) ; il n'achète plus d'huile ni de farine (`SIMULATION.ACHATS_CUISINE` retiré) ; sa
+       partie de 60 nuits atteint les mêmes chapitres aux mêmes nuits (2 à la nuit 5, 3 à la nuit 26) et
+       garde plus de pièces (1 169 au lieu de 1 020 à la nuit 60).
+     - **La scène** (`js/carte/ferme/caleche.js` ; le dessin : `scripts/carte/caleche.py` → `assets/caleche.png`) :
+       le cheval bai de `scripts/personnage/cheval.py` (de profil, de face, de dos, ses quatre temps du pas)
+       attelé par deux brancards à une voiture couverte (une caisse peinte, une bâche sur des arceaux, des
+       roues cerclées de fer dont les rayons tournent), le cocher sur son banc, une lanterne ; trois vues
+       (retournée pour la gauche), cinq cases chacune (quatre temps, l'arrêt), une rangée de nuit (la
+       lanterne allumée). La page lui donne sa position à chaque image (le pont `caleche` ; elle n'entre pas
+       dans le modèle, qui changerait à chaque pas) ; la scène la suit en douceur (le moteur avance par pas
+       de 0,2 s), ne fait l'attelage que près de la vue (200 px autour) et le défait au-delà. La nuit, la
+       lueur de sa lanterne entre dans le voile de l'heure (avec les lanternes de la ferme). À son arrivée à
+       la ferme, une bulle (« Ding, ding ! ») et un toast. Quand elle est à 70 cases du personnage et hors de
+       la vue, une icône au bord de l'écran montre sa direction ; à 9 cases sur un chemin, un bouton « Héler »
+       au-dessus d'elle (ou sur l'icône) ; un appui sur elle ouvre sa fenêtre, ou la hèle.
+     - **Sauvegardes** : format 57 ; la migration 56 → 57 donne `state.caleche` (son coffre, les retenues du
+       jour, l'heure de ses derniers arrêts, les ventes du jour) ; l'argent, l'inventaire (ce qui avait été
+       acheté au Marché reste au joueur), les outils, les bêtes, les meubles et les cours du Marché restent.
+     - **Mesuré** (Chromium sans carte graphique, SwiftShader). Le temps d'une image debout devant la ferme
+       (150 images, deux fois chaque) : la calèche loin, moyenne 46,8 et 45,7 ms ; garée à côté, 51,3 et 49,2
+       ms ; médiane 50,0 ms dans les quatre (le bruit de la machine d'essai). Le JavaScript de la calèche
+       (`stepCaleche`) : 0,05 à 0,14 ms par image en moyenne (au plus 12 ms, une fois, quand l'attelage est
+       défait). La tournée : 180 à 500 ms dans Node avec les éléments (dans le Worker, elle ne compte presque
+       rien : les éléments sont déjà là). `npm test` : 46,6 s avant, 47,7 à 53,6 s après (les tests de la fiche :
+       `tests/engine/caleche.test.mjs`, 12 tests, 3 à 4 s).
+     - Reste : la calèche ne voit pas le personnage ni les habitants (elle passe à travers) ; elle roule à la
+       même vitesse partout (la montagne, le marais) ; les habitants ne lui achètent rien (plus tard, si
+       besoin) ; une tournée très longue la fait rouler vite ; au-delà de l'arrêt, sur la place, elle se gare
+       là où passe le chemin (parfois devant le puits).
 8. **S'orienter** (1 à 2 PR) : le brouillard, la carte du monde, une boussole.
 9. **La finition** (1 à 2 PR) : les anciennes parties, les performances sur mobile, l'aide,
    l'encyclopédie, le didacticiel.

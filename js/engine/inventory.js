@@ -7,7 +7,7 @@ import { techSum } from './techtree.js';
 // rangés du plus ancien au plus récent. nightsLeft vaut null pour un item qui
 // ne périme pas. origin vaut « produit » ou « acheté ». Tout le reste du code
 // passe uniquement par countItem, addItem et takeItem (et par buyItem au
-// Marché, qui pose l'origine « acheté »).
+// calèche, qui pose l'origine « acheté »).
 
 // Conservation d'un item en nuits, ou null s'il ne périme jamais.
 export function shelfLife(item) {

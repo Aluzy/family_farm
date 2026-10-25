@@ -147,7 +147,7 @@ test('minerais et lingots : la grotte remplit l\'inventaire, le Four fond 4 mine
     assertEqual(DATA.RECETTES['lingot_' + m].ingredients[0], { item: 'minerai_' + m, qte: 4 });
   }
   const s = atelier();
-  assertEqual(mineOre(s, 'fer').error, `Il te faut une pioche (Marché, ${DATA.PIOCHE.PRIX} 💰).`);
+  assertEqual(mineOre(s, 'fer').error, 'Il te faut une pioche (à fabriquer à l\'Atelier).');
   s.outils = { hache: false, pioche: true, choisi: 'pioche' };
   const e = s.energie;
   const r = mineOre(s, 'fer');

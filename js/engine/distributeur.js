@@ -74,7 +74,7 @@ export function verserGrain(state, tile) {
   if (!e.ok) return fail(e.raison);
   if (e.plein) return fail(`Le distributeur est plein (${e.capacite} ${DATA.OBJETS[DATA.SILO.ITEM].nom.toLowerCase()}).`);
   const a = countWithSilo(state, DATA.SILO.ITEM);
-  if (a < 1) return fail('Il te faut du blé : récolte-le au champ, ou achète-le au Marché.');
+  if (a < 1) return fail('Il te faut du blé : récolte-le au champ (la calèche vend du blé à semer).');
   const n = Math.min(a, e.capacite - e.grain);
   if (!takeWithSilo(state, DATA.SILO.ITEM, n)) return fail('Il te faut du blé.');
   etats(state)[m] = { grain: e.grain + n };

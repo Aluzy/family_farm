@@ -22,7 +22,7 @@ import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
-import { meubleSrc } from './marche.js';
+import { meubleSrc } from './caleche.js';
 
 // Le niveau le plus haut où l'on construit (les rangs d'un mur rehaussé : 0 au sol, jusqu'à
 // HAUTEUR_MAX - 1 ; 1 est aussi l'étage d'une pièce à escalier), et celui où l'on construit
@@ -37,7 +37,7 @@ export const niveauBati = () => (niveau() === 1 && etageEmprise(state).size ? 1 
 export const niveauRang = () => (niveauBati() ? 0 : niveau());
 const MURS = () => Object.keys(DATA.ATELIER.BLOCS).filter((s) => DATA.ATELIER.BLOCS[s].mur);
 // (à l'étage : seulement ceux qui s'y posent ; plus haut que le sol : les murs)
-// (les meubles du Marché : seulement ceux qu'on a en main, ou celui qu'on pose)
+// (les meubles de la maison : seulement ceux qu'on a en main, ou celui qu'on pose)
 const enMain = (s) => !DATA.ATELIER.BLOCS[s].meuble || s === buildMode || blocsEnMain(state, s) > 0;
 // (pendant le didacticiel : seulement les blocs qu'il a débloqués, js/engine/didacticiel.js)
 const vu = (s) => { const v = blocsDidacticiel(state); return !v || v.has(s); };
@@ -217,7 +217,7 @@ if (typeof document !== 'undefined') {
   }, true);
 }
 
-// La pose d'un meuble du Marché : un meuble en main (pas un tableau, qui s'accroche à un mur),
+// La pose d'un meuble de la maison : un meuble en main (pas un tableau, qui s'accroche à un mur),
 // au sol ou à l'étage, la carte montre un quadrillage ; un appui sur une case y pose son aperçu,
 // calé sur la grille (vert : il tient là ; rouge : non), sans le poser ; ✔️ le pose, ❌ sort de
 // ce mode. poseMeuble : { sorte, case } (l'aperçu), ou null.
