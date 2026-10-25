@@ -3,6 +3,8 @@ import { hache, teinteHerbe } from './ferme-generee.js';
 import { AUCUNE_EAU, BIOME, BIOMES, bruitDuMonde, champsDuMonde, elementsDuMonde, releve } from './monde-gen.js';
 import { bassesRoches, rochesDeRegion } from './monde-roches.js';
 import { reservesDuMonde, vegetationDeRegion, VEGETATION } from './monde-vegetation.js';
+import { lieuxDeRegion } from './monde-lieux.js';
+import { fauneDeRegion } from './monde-faune.js';
 
 /* ---------- le sol du grand monde, région par région (docs/grand-monde.md : fiches 4b et 5a) ---------- */
 
@@ -231,6 +233,14 @@ export function elementsSol(ctx) {
   return el;
 }
 
+// Le nom du sol de la case i (« herbe », « sable », « eau_basse »…, « eau » : SOLS_MONDE.sols), sans
+// les bords naturels (les bêtes du grand monde, monde-faune.js : les canards sur l'eau basse du marais).
+export function nomSolDeCase(ctx, i) {
+  elementsSol(ctx);
+  const W = ctx.cadre.LARGEUR, s = solDe(ctx, biomeDe(ctx, i), i, i % W, Math.floor(i / W));
+  return s === EAU ? 'eau' : s === HERBE ? 'herbe' : SOLS_MONDE.sols[s - 2];
+}
+
 // Le biome de la case i (les eaux posées comprises).
 function biomeDe(ctx, i) {
   const e = ctx.elements.eaux[i];
@@ -264,9 +274,10 @@ function solDe(ctx, b, i, x, y) {
 // BORD case autour, borné au monde), couches (Uint16Array, COUCHES tuiles par case de ce rectangle,
 // rangée par rangée ; 0 : rien ; les cases de la ferme n'ont rien), cx0, cy0, cl, ch (la région
 // elle-même), biome, marche (Uint8Array, une valeur par case de la région : son biome, 1 si l'on
-// peut y marcher : ni l'eau, ni le pied d'un arbre, d'un buisson ou d'un gros rocher), vegetation
-// ({ images, basses } : monde-vegetation.js), roches ({ images, basses } : monde-roches.js), ms (la
-// durée du calcul) }.
+// peut y marcher : ni l'eau, ni le pied d'un arbre, d'un buisson ou d'un gros rocher, ni une entrée
+// de grotte ; un ponton, oui), vegetation ({ images, basses } : monde-vegetation.js), roches
+// ({ images, basses } : monde-roches.js), lieux ({ images, basses } : monde-lieux.js), faune
+// (Int32Array : monde-faune.js), ms (la durée du calcul) }.
 export function solDeRegion(ctx, rx, ry) {
   const t0 = Date.now();
   elementsSol(ctx);
@@ -474,7 +485,14 @@ export function solDeRegion(ctx, rx, ry) {
   g.apresTirages = (t) => { tir = t; r = rochesDeRegion(ctx, g, t); return r.pris; };
   const vegetation = vegetationDeRegion(ctx, g);
   const roches = { images: Int32Array.from(r.images), basses: bassesRoches(ctx, g, r, tir, vegetation.basses) };
-  return { cle: rx + ',' + ry, x0, y0, l, h, couches, cx0, cy0, cl, ch: chh, biome, marche, vegetation, roches, ms: Date.now() - t0 };
+  // les lieux qui ont leur dessin (monde-lieux.js : l'entrée des grottes, les pontons et les piquets
+  // des coins de pêche ; ils ferment ou ouvrent leurs cases), puis les bêtes (monde-faune.js), sur la
+  // marche finale de la région
+  const lieux = lieuxDeRegion(ctx, g);
+  g.biome = biome;
+  g.nomSol = (i) => nomSolDeCase(ctx, i);
+  const faune = fauneDeRegion(ctx, g);
+  return { cle: rx + ',' + ry, x0, y0, l, h, couches, cx0, cy0, cl, ch: chh, biome, marche, vegetation, roches, lieux, faune, ms: Date.now() - t0 };
 }
 
 // Un aperçu des biomes de tout le monde (une valeur tous les `pas` cases, au milieu de chaque bloc,

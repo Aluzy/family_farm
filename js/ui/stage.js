@@ -25,6 +25,7 @@ import { tuilesChemins } from '../engine/ferme-generee.js';
 import { solDuMonde } from './monde-sol.js';
 import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
+import { encyclopedieFaune, openEncyclopedie } from './encyclopedie.js';
 import {
   activeTab, axeMode, buildMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
 } from './store.js';
@@ -694,6 +695,22 @@ function stageIci(tile) {
   noterIci(state, tile);
 }
 
+// Une bête du grand monde paraît pour la première fois dans la vue (js/carte/ferme/faune-monde.js) :
+// sa page de l'encyclopédie se découvre (« faune:<espèce> »).
+function stageFauneVue(espece) {
+  if (DATA.FAUNE && DATA.FAUNE.ESPECES[espece]) encyclopedieFaune(espece);
+}
+
+// Un appui sur une bête du grand monde : son nom, et sa page de l'encyclopédie (découverte s'il le
+// faut). On ne la chasse pas.
+function stageFaune(espece) {
+  const e = DATA.FAUNE && DATA.FAUNE.ESPECES[espece];
+  if (!e) return;
+  encyclopedieFaune(espece);
+  notify(`👀 ${e.nom} — sa page dans l'Encyclopédie.`, { kind: 'info' });
+  openEncyclopedie('faune_' + espece);
+}
+
 // Le sol du grand monde pour la carte (js/ui/monde-sol.js), et les cases que ce qui y est pris rend
 // à la marche (casesOuvertesMonde, d'après la partie en cours).
 function mondeDeLaCarte() {
@@ -769,7 +786,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

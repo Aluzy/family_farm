@@ -256,17 +256,19 @@ export function morceauFromStage(n) {
   return r;
 }
 
-// La carte : la canne en main, le joueur a touché l'eau `eau` (« etang » ou « mare »). La
-// prise (s'il y en a une) entre dans l'inventaire tout de suite ; la carte montre ensuite le
-// personnage qui lance, attend la touche et ferre. Renvoie { poisson } (null : rien n'a
-// mordu), ou null (un message : il dort, sans énergie, le poisson se fait rare).
-export function fishFromStage(eau) {
+// La carte : la canne en main, le joueur a touché l'eau `eau` (« etang » ou « mare » sur la
+// ferme ; « lac », « riviere » ou « mer » dans le grand monde), depuis le coin de pêche `coin`
+// (« peche_<n> », s'il pêche près de l'un d'eux). La prise (s'il y en a une) entre dans
+// l'inventaire tout de suite ; la carte montre ensuite le personnage qui lance, attend la touche
+// et ferre. Renvoie { poisson, coin } (poisson null : rien n'a mordu), ou null (un message : il
+// dort, sans énergie, le poisson se fait rare).
+export function fishFromStage(eau, coin = null) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = castLine(state, eau);
+  const r = castLine(state, eau, coin);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
-  return { poisson: r.poisson };
+  return { poisson: r.poisson, coin: r.coin };
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */

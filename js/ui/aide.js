@@ -78,10 +78,8 @@ const cashCrops = () => Object.keys(DATA.CULTURES).filter((c) => DATA.CULTURES[c
 // `coefPrix` % du prix de leurs ingrédients.
 const luxuryRecipes = () => DATA.ARBRE.noeuds.cui_epicerie.effet.recettes.map((id) => DATA.RECETTES[id]).filter((r) => r && r.coefPrix);
 
-// Les eaux de la canne à pêche et ce qu'on y prend.
-const EAUX = { etang: 'Étang de la ferme', mare: 'Mare de la ferme', lac: 'Lac de montagne', mer: 'Mer' };
-// Celles du grand monde, pas encore là (docs/grand-monde.md).
-const EAUX_AILLEURS = ['lac', 'mer'];
+// Les eaux de la canne à pêche et ce qu'on y prend (la ferme ; le grand monde, fiche 6b).
+const EAUX = { etang: 'Étang de la ferme', mare: 'Mare de la ferme', lac: 'Lacs du monde', riviere: 'Rivières du monde', mer: 'Mer' };
 
 // Coûts des niveaux 2 à 5 d'un appareil : « 150 · 400 · 900 · 2 000 💰 ».
 function levelCosts(type) {
@@ -218,6 +216,7 @@ const HELP = {
         ['Pioche', `Touche un rocher : ${formatNumber(C.piocher)} d'énergie par coup, et ${formatNumber(P.PIERRE)} pierre qui tombe au sol ; il se casse au ${P.COUPS}e coup en lâchant ${formatNumber(P.BRIS)} pierres de plus (marche dessus pour les ramasser) et revient ${P.RETOUR[0]} à ${P.RETOUR[1]} jours plus tard. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : touche-le, ${formatNumber(P.MAIN)} pierre va dans ton inventaire. Dans la grotte, elle prend aussi le minerai.`],
         ['Faux', `Touche une touffe d'herbe haute : ${formatNumber(C.faucher)} d'énergie, et ${formatNumber(DATA.FAUX.FIBRE)} fibre qui tombe au sol (marche dessus pour la ramasser). La touffe repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard. C'est la seule façon d'avoir de la fibre (l'Atelier, la paille de la botteleuse).`],
         ['Dans le grand monde', `Hors de la ferme, les mêmes gestes : la hache abat les arbres, les buissons, les souches et les troncs couchés (un arbre en ${formatNumber(DATA.RECOLTE.SORTES.feuillu.coups)} coups) ; la pioche casse les rochers, les gros blocs et les éboulis ; la faux fauche les fougères, la bruyère, les joncs, les roseaux et les oyats. À la main (touche-les), cueille les mûres des ronciers et ramasse les champignons, les herbes de montagne, le bois flotté, les galets, les coquillages, les étoiles de mer et les algues. Ce qui est pris revient quelques jours plus tard (${DATA.RECOLTE.SORTES.feuillu.retour[0]} à ${DATA.RECOLTE.SORTES.feuillu.retour[1]} jours pour un arbre), si tu es passé par là.`],
+        ['Les bêtes du monde', 'Marmottes, bouquetins et aigles en montagne, mouettes, crabes et dauphins sur la côte, canards et cygnes sur les lacs et le marais, chevreuils, renards, lapins et écureuils en forêt, lièvres et perdrix sur la lande : on ne les chasse pas, on les regarde. Elles fuient si tu t\'approches trop. Touche une bête : son nom et sa page de l\'Encyclopédie (elle se découvre la première fois que tu en vois une).'],
         ['Coup fort', `Outil en main, garde le doigt appuyé sur ton personnage : il tremble, puis frappe fort quand tu lèves le doigt. La hache ou la pioche comptent ${formatNumber(DATA.COUP_FORT.COUPS)} coups sur l'arbre ou le rocher le plus proche (pour l'énergie de ${formatNumber(DATA.COUP_FORT.ENERGIE)} coups) ; la faux tournoie et fauche toute l'herbe haute autour de lui ; la houe laboure les tuiles autour de lui.`],
         ['Canne à pêche', `Touche l'eau : ${formatNumber(C.pecher)} d'énergie le lancer (voir la fiche « Pêche »).`],
         ['Bois et pierre', 'Ils se vendent, et paient les technologies avec les lingots. La branche Outils de l\'Arbre des technologies rend les outils plus efficaces.'],
@@ -233,6 +232,7 @@ const HELP = {
       ['Minerais', `La pioche en main, touche un minerai dans les murs (${formatNumber(DATA.PERSONNAGE.COUTS.piocher)} d'énergie le coup) : il va dans l'inventaire. Le fer est partout ; le cuivre, l'or et le platine se trouvent de plus en plus bas.`],
       ['Lingots', `Au Four, avec du bois : ${ingotRecipes().map((r) => `${DATA.OBJETS[r.sortie].nom.toLowerCase()} = ${ingredientsText(r)}`).join(' ; ')}.`],
       ['À quoi ça sert', 'Minerais et lingots ne se vendent pas (ce sont des matériaux) : avec le bois et la pierre, ils paient les technologies de l\'Arbre des technologies.'],
+      ['Grottes de la montagne', `Dans le grand monde, au pied de la montagne, des bouches de roche : approche-toi (une flèche paraît), touche la bouche ou avance vers elle pour entrer. ${formatNumber(DATA.GROTTE.MONDE.NIVEAUX)} niveaux, plus riches que la mine : l'or et le platine dès le haut, du quartz et des améthystes à piocher, un filon dans chacune. En remontant, tu ressors devant l'entrée.`],
     ],
   }),
   peche: () => {
@@ -242,8 +242,8 @@ const HELP = {
       nom: 'Pêche',
       icone: '🎣',
       lignes: [
-        // (le lac et la mer, dans le grand monde : bientôt disponibles)
-        ...Object.entries(C.PRISES).map(([eau, prises]) => [EAUX[eau] || eau, `${capitalize(itemNames(Object.keys(prises)))} ; au plus ${formatNumber(C.JOUR[eau])} prises par jour.${EAUX_AILLEURS.includes(eau) ? ' Bientôt disponible !' : ''}`]),
+        ...Object.entries(C.PRISES).map(([eau, prises]) => [EAUX[eau] || eau, `${capitalize(itemNames(Object.keys(prises)))} ; au plus ${formatNumber(C.JOUR[eau])} prises par jour.`]),
+        ['Coins de pêche', `Dans le grand monde, un ponton, ou des piquets et une nasse, et des remous sur l'eau : pêche tout près, c'est un meilleur coin (plus de touches, ${itemNames(Object.values(C.COINS.PRISES).flatMap((p) => Object.keys(p)).filter((p, k, l) => l.indexOf(p) === k && !Object.values(C.PRISES).some((q) => p in q)))} en plus, jusqu'à ${formatNumber(C.COINS.JOUR.mer)} prises par jour en mer), compté à part de son eau.`],
         ['Lancer', `La canne en main (Marché, ${formatNumber(C.PRIX)} 💰), touche l'eau : ${formatNumber(DATA.PERSONNAGE.COUTS.pecher)} d'énergie le lancer, et il arrive que rien ne morde.`],
         ['Poissons', `Frais, ils se gardent peu de nuits : mange-les, vends-les ou cuisine-les (${recipesUsing([...poissons, 'poisson']).join(', ')}).`],
       ],

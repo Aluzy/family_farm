@@ -333,7 +333,7 @@ test('canne à pêche : un lancer coûte de l\'énergie ; une prise (truite, bro
   const s = garden();
   assertEqual(castLine(s, 'etang').error, `Il te faut une canne à pêche (Marché, ${DATA.CANNE.PRIX} 💰).`);
   s.outils = { canne: true, choisi: 'canne' };
-  assertEqual(castLine(s, 'riviere').ok, false, 'eau inconnue');
+  assertEqual(castLine(s, 'ocean').ok, false, 'eau inconnue');
   const vus = new Set();
   let lancers = 0, rien = 0;
   const J = DATA.CANNE.JOUR.etang;

@@ -157,6 +157,17 @@ export function encyclopedieCarte(carte) {
   majDecouvertes(true);
 }
 
+// Une bête du grand monde vue pour la première fois (js/carte/ferme/faune-monde.js) : sa page se
+// découvre (« faune:<espèce> »). Renvoie true si c'est nouveau.
+export function encyclopedieFaune(espece) {
+  if (!state) return false;
+  const e = state.encyclopedie && state.encyclopedie.evenements;
+  if (e && e[`faune:${espece}`]) return false;
+  noterEncyclopedie(state, `faune:${espece}`);
+  majDecouvertes(true);
+  return true;
+}
+
 // Appelé à chaque rendu : les découvertes, puis la page ouverte.
 export function renderEncyclopedie() {
   majDecouvertes();

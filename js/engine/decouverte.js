@@ -21,14 +21,17 @@ import { ETAPES } from './didacticiel.js';
      famille:enfant      un enfant dans la famille ; famille:animal : un animal de compagnie
      construit:<bât.>    state[<bât.>].construit (silo, poulailler, paturage, serre, verger, frigo)
      didacticiel:<étape> le didacticiel a atteint l'étape (ou il est fini, ou la partie n'en a pas)
-     carte:<carte>       la carte a été visitée (noterEncyclopedie, à l'arrivée)
+     carte:<carte>       la carte a été visitée (noterEncyclopedie, à l'arrivée ; grotte : la mine
+                         ou une grotte de la montagne, grotte_monde : une grotte de la montagne)
+     faune:<espèce>      une bête du grand monde a été vue (noterEncyclopedie, la première fois :
+                         DATA.FAUNE.ESPECES, data/monde.json)
      onglet:<onglet>     l'onglet est ouvert (state.unlockedTabs)
      techno:<nœud>       la technologie est acquise ; technologies : un point de technologie gagné
      jour:<n>            la partie a atteint le jour n ; niveau:<n> : le niveau n
      piece_close         une pièce close sur la carte ; commerce : le commerce du niveau 10 ;
      courrier            une lettre reçue */
 
-export const CARTES_ENCYCLOPEDIE = ['grotte'];
+export const CARTES_ENCYCLOPEDIE = ['grotte', 'grotte_monde'];
 const SEULES = ['depart', 'piece_close', 'commerce', 'courrier', 'technologies'];
 const OUTILS = ['houe', 'hache', 'faux', 'pioche', 'canne'];
 const ANIMAUX = ['poule', 'mouton', 'vache'];
@@ -81,6 +84,7 @@ export function conditionRemplie(state, cond, evenements = {}) {
     case 'construit': return !!(state[v] && state[v].construit);
     case 'didacticiel': return etapeAtteinte(state, v);
     case 'carte': return !!evenements[`carte:${v}`];
+    case 'faune': return !!evenements[`faune:${v}`];
     case 'onglet': return Array.isArray(state.unlockedTabs) && state.unlockedTabs.includes(v);
     case 'techno': return Array.isArray(state.technologies) && state.technologies.includes(v);
     case 'technologies': return !!((state.pointsTech && state.pointsTech.gagnes > 0) || (Array.isArray(state.technologies) && state.technologies.length));
@@ -109,6 +113,7 @@ export function erreurCondition(cond) {
     construit: () => BATIMENTS.includes(v),
     didacticiel: () => ETAPES.includes(v),
     carte: () => CARTES_ENCYCLOPEDIE.includes(v),
+    faune: () => !!(DATA.FAUNE && DATA.FAUNE.ESPECES && DATA.FAUNE.ESPECES[v]),
     onglet: () => typeof v === 'string' && v.length > 0,
     techno: () => !!DATA.ARBRE.noeuds[v],
     jour: () => Number(v) >= 1,

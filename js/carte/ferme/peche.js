@@ -1,7 +1,11 @@
-/* carte/ferme/peche.js — la scène de la ferme : la canne à pêche, l'étang et la mare.
+/* carte/ferme/peche.js — la scène de la ferme : la canne à pêche, l'étang et la mare, les eaux du
+ * grand monde.
  *
  * Les eaux de la carte, la rive d'où pêcher, le lancer, le bouchon (CarteKit.PECHE), la touche,
- * le poisson qui saute jusqu'au personnage.
+ * le poisson qui saute jusqu'au personnage. Le grand monde (fiche 6b) : toute son eau se pêche
+ * (« lac », « riviere », « mer » : le biome de la case touchée, d'après sa région, ctx.monde), avec le
+ * même geste ; une rive à moins de CANNE.COINS.RAYON cases d'un coin de pêche du plan (lieux-monde.js,
+ * coinPeche) pêche « au coin » (ses chances, ses prises du jour : le moteur, castLine).
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
  * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).
@@ -44,10 +48,35 @@
       return (this.waterMap = map);
     },
 
-    // L'eau qui se pêche sous le point (wx, wy), ou null.
+    // L'eau qui se pêche sous le point (wx, wy), ou null : celle de la ferme, sinon celle du monde.
     waterAt(wx, wy) {
       const w = this.waters().get(Math.floor(wx / T) * T + ',' + Math.floor(wy / T) * T);
-      return w && w.eau ? w : null;
+      if (w && w.eau) return w;
+      const eau = this.eauMondeSous(wx, wy);
+      return eau ? this.eauMonde(eau) : null;
+    },
+
+    // L'eau du grand monde sous le point (wx, wy) : « lac », « riviere », « mer », ou null (pas d'eau,
+    // la ferme, une région pas encore faite, un ponton ou un gué : on y marche).
+    eauMondeSous(wx, wy) {
+      const M = this.ctx.monde;
+      if (!M || wx < 0 || wy < 0) return null;
+      const c = Math.floor(wx / T), r = Math.floor(wy / T), N = K.REGION.tuiles, F = M.ferme;
+      if (c >= F.X && r >= F.Y && c < F.X + F.LARGEUR && r < F.Y + F.HAUTEUR) return null;
+      const reg = M.region(Math.floor(c / N), Math.floor(r / N));
+      if (!reg) return null;
+      const k = (r - reg.cy0) * reg.cl + c - reg.cx0;
+      if (k < 0 || k >= reg.biome.length || reg.marche[k] === 1) return null;
+      const b = M.biomes[reg.biome[k]];
+      return b === 'lac' || b === 'riviere' || b === 'mer' ? b : null;
+    },
+
+    // Une eau du grand monde (« lac », « riviere », « mer ») pour la pêche : { eau, monde, cells }
+    // (cells.has(« x,y ») : cette case, en px, est-elle de cette eau ?), une par sorte d'eau.
+    eauMonde(eau) {
+      this.eauxMonde = this.eauxMonde || {};
+      if (!this.eauxMonde[eau]) this.eauxMonde[eau] = { eau, monde: true, cells: { has: (k) => { const [x, y] = k.split(','); return this.eauMondeSous(+x, +y) === eau; } } };
+      return this.eauxMonde[eau];
     },
 
     // La rive d'où pêcher vers (wx, wy) : la case libre la plus proche qui touche (côtés)
@@ -73,13 +102,15 @@
       }
       if (!best) return null;
       const { c, r, dc, dr } = best;
+      // (le grand monde : un coin de pêche du plan tout près de la rive choisie)
+      const coin = w.monde && this.coinPeche ? this.coinPeche(w.eau, c, r) : null;
       let n = 1;
       while (n < FISHING.reach[1] && isW(c + dc * (n + 1), r + dr * (n + 1))) n++;
       n = Math.max(FISHING.reach[0], Math.min(n, FISHING.reach[0] + Math.floor(Math.random() * (FISHING.reach[1] - FISHING.reach[0] + 1))));
       const tc = c + dc * n, tr = r + dr * n;
       const jitter = () => (Math.random() - 0.5) * 6;
       return {
-        spot: best.spot,
+        spot: best.spot, coin,
         face: dc ? 'cote' : dr > 0 ? 'bas' : 'haut', flip: dc < 0,
         target: { x: tc * T + T / 2 + (dc ? 0 : jitter()), y: tr * T + T / 2 + (dr ? 0 : jitter()) },
       };
@@ -92,7 +123,7 @@
       if (this.fishing) return;                    // une ligne à la fois
       const rive = this.shoreFor(w, wx, wy);
       if (!rive && this.fermier) return;
-      const got = this.ctx.bridge && this.ctx.bridge.fish ? this.ctx.bridge.fish(w.eau) : null;
+      const got = this.ctx.bridge && this.ctx.bridge.fish ? this.ctx.bridge.fish(w.eau, rive && rive.coin ? rive.coin.id : null) : null;
       if (!got) return;
       const F = { got, target: rive ? rive.target : { x: wx, y: wy }, face: rive ? rive.face : 'bas', bob: null, line: null, t: 0, phase: 'go', reeled: 0 };
       this.fishing = F;
@@ -158,6 +189,11 @@
     landCatch(F, tip) {
       const poisson = F.got.poisson;
       const p = this.fermier && this.fermier.pos();
+      // (à un coin de pêche du monde : une étoile au-dessus de lui, à la prise)
+      if (poisson && F.got.coin && p) {
+        const t = K.texte(this, p.x, p.y - 44, '★', 10).setDepth(p.y + 50);
+        this.tweens.add({ targets: t, y: t.y - 6, alpha: 0, delay: 600, duration: 500, onComplete: () => t.destroy() });
+      }
       if (!poisson) {
         if (!p) return;
         const t = K.texte(this, p.x, p.y - 34, '…', 10).setDepth(p.y + 50);
@@ -227,9 +263,10 @@
       L.setDepth(p ? (tip.face === 'haut' ? p.y - 0.5 : p.y + 0.5) : by);
     },
 
-    // L'image d'un poisson (FISHING.fish), faite une fois.
+    // L'image d'un poisson (FISHING.fish, ceux de la ferme ; FISHING.monde, ceux du grand monde),
+    // faite une fois.
     fishTexture(id) {
-      const rows = FISHING.fish[id];
+      const rows = FISHING.fish[id] || FISHING.monde[id];
       if (!rows) return null;
       const key = 'poisson_' + id;
       if (this.textures.exists(key)) return key;

@@ -76,10 +76,22 @@
   // pixels, une lettre par couleur de `fishColors`).
   const FISHING = {
     etang: 30, mare: 4, reach: [1, 3], castMs: 420, reelMs: 260, jumpMs: 520,
-    fishColors: { k: '#23301f', g: '#5f7d3c', l: '#8fae5c', p: '#e08a86', w: '#eef0e4', G: '#3e5a2e', y: '#e2d77e', c: '#e8e0c0' },
+    fishColors: { k: '#23301f', g: '#5f7d3c', l: '#8fae5c', p: '#e08a86', w: '#eef0e4', G: '#3e5a2e', y: '#e2d77e', c: '#e8e0c0',
+      d: '#2c4a6a', b: '#5a7a9a', s: '#c8d4dc', o: '#e0905a', r: '#c8604a', a: '#d8b04a', n: '#8a7a60' },
     fish: {
       truite: ['..kkkkk...', '.kglgglk.k', 'kkpppppkkk', '.kwwwwwk.k', '..kkkkk...'],
       brochet: ['..kkkkkkkk...', 'kkGyGGyGGyk.k', 'cwGGyGGyGGkkk', '.kcccccccck.k', '..kkkkkkkk...'],
+    },
+    // les poissons du grand monde (fiche 6b : ses lacs, ses rivières, sa mer), qui sautent jusqu'au
+    // personnage comme ceux de la ferme ; pas dans l'eau des étangs de la ferme (eau.js : FISHING.fish)
+    monde: {
+      omble: ['..kkkkk...', '.kdbsbdk.k', 'kkrrrrrkkk', '.korrrok.k', '..kkkkk...'],
+      dorade: ['..kkkk...', '.kbbbbk.k', 'kassssskk', 'ksssssskk', '.kwwwwk.k', '..kkkk...'],
+      sardine: ['.kkkkkk..', 'kdbdbddkk', 'kssssssk.', '.kkkkkkkk'],
+      anchois: ['.kkkkk..', 'kbbbbbkk', '.kssssk.', '..kkkk..'],
+      goujon: ['.kkkkk..', 'knbnbnkk', 'kccccck.', '.kkkkkk.'],
+      saumon: ['..kkkkkk...', '.kbsbsbsk.k', 'kksssssskkk', '.kppppppk.k', '..kkkkkk...'],
+      bar: ['..kkkkkk...', '.kbbbbbbk.k', 'kksssssskkk', '.kwwwwwwk.k', '..kkkkkk...'],
     },
   };
   // Les rochers de la carte (couche ZONE_TILES.plantes), qui se cassent à la pioche : un rocher

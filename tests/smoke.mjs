@@ -2,7 +2,8 @@
 // Test de fumée du jeu dans un vrai navigateur (Playwright + Chromium), hors CI.
 // Sert le dépôt avec un petit serveur statique Node sur un port libre, ouvre jeu.html, lance une
 // partie (« Partir pour la ferme ») puis visite les niveaux de la mine par window.FermeHote.go
-// (le premier, puis un plus profond), et revient à la ferme.
+// (le premier, puis un plus profond), revient à la ferme, puis visite une grotte de la montagne du
+// grand monde (la première entrée du plan, deux niveaux) et en ressort devant son entrée.
 // Échoue sur une erreur de la console, une exception de la page ou une réponse HTTP ≥ 400.
 // Sans Playwright ou sans Chromium : message, et sortie 0 (le test est sauté).
 //
@@ -26,6 +27,10 @@ const CARTES = [
   'jeu.html',
   'grotte?grotte=ferme&niveau=4&arrivee=haut',
   'jeu.html?arrivee=mine',
+  'grotte?grotte=grotte_1&niveau=1&arrivee=haut',
+  'grotte?grotte=grotte_1&niveau=2&arrivee=haut',
+  'grotte?grotte=grotte_1&niveau=1&arrivee=bas',
+  'jeu.html?arrivee=grotte_1',
 ];
 const PAUSE_MS = 1500; // le temps qu'une carte se charge et tourne un peu
 
@@ -118,6 +123,19 @@ try {
       return el && !el.hidden ? el.dataset.carte : null;
     });
     if (ouverte !== attendue) erreurs.push(`[${cible}] carte affichée : ${ouverte ?? 'aucune'}, attendue : ${attendue ?? 'aucune (la ferme)'}`);
+    // revenu d'une grotte de la montagne : le personnage devant son entrée, dans le monde (la
+    // région de l'entrée peut demander un instant : js/carte/ferme/lieux-monde.js, arriveGrotte)
+    const m = /arrivee=(grotte_\d+)/.exec(cible);
+    if (m && cible.startsWith('jeu.html')) {
+      const ou = await page.waitForFunction((id) => {
+        const s = window.FarmStage && FarmStage.scene(), L = s && s.ctx.monde && s.ctx.monde.lieux();
+        const g = L && L.grottes.find((q) => q.id === id), p = s && s.fermier && s.fermier.pos();
+        if (!g || !p || s.arriveeGrotte) return null;
+        const W = s.grid.cols, x = (g.case % W) * 16 + 8, y = Math.floor(g.case / W) * 16 + 14;
+        return { d: Math.hypot(p.x - x, p.y - y) };
+      }, m[1], { timeout: 20000 }).then((h) => h.jsonValue()).catch(() => null);
+      if (!ou || ou.d > 40) erreurs.push(`[${cible}] le personnage n'est pas ressorti devant l'entrée (${ou ? Math.round(ou.d) + ' px' : 'introuvable'})`);
+    }
     console.log(`  · ${cible}`);
   }
 } catch (e) {
@@ -133,6 +151,6 @@ if (erreurs.length) {
   for (const e of erreurs) console.log(`  ✗ ${e}`);
   code = 1;
 } else {
-  console.log(`\nTest de fumée : jeu.html, une nouvelle partie et ${CARTES.filter((c) => c.startsWith('grotte')).length} niveaux de la mine sans erreur, en ${duree} s.`);
+  console.log(`\nTest de fumée : jeu.html, une nouvelle partie et ${CARTES.filter((c) => c.startsWith('grotte')).length} niveaux de grotte (la mine, une grotte de la montagne) sans erreur, en ${duree} s.`);
 }
 process.exit(code);

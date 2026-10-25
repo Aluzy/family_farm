@@ -130,6 +130,108 @@
     "gerbe"
    ],
    "nom": "Un dauphin"
+  },
+  "chevreuil": {
+   "image": "faune_chevreuil.png",
+   "frameWidth": 32,
+   "frameHeight": 32,
+   "anchor": {
+    "x": 16,
+    "y": 30
+   },
+   "frames": [
+    "debout_0",
+    "debout_1",
+    "marche_0",
+    "marche_1",
+    "marche_2",
+    "marche_3"
+   ],
+   "nom": "Un chevreuil"
+  },
+  "renard": {
+   "image": "faune_renard.png",
+   "frameWidth": 32,
+   "frameHeight": 32,
+   "anchor": {
+    "x": 16,
+    "y": 30
+   },
+   "frames": [
+    "assis_0",
+    "debout_0",
+    "marche_0",
+    "marche_1",
+    "marche_2",
+    "marche_3"
+   ],
+   "nom": "Un renard roux"
+  },
+  "lapin": {
+   "image": "faune_lapin.png",
+   "frameWidth": 16,
+   "frameHeight": 16,
+   "anchor": {
+    "x": 8,
+    "y": 15
+   },
+   "frames": [
+    "assis_0",
+    "assis_1",
+    "saut_0",
+    "saut_1"
+   ],
+   "nom": "Un lapin de garenne"
+  },
+  "ecureuil": {
+   "image": "faune_ecureuil.png",
+   "frameWidth": 16,
+   "frameHeight": 16,
+   "anchor": {
+    "x": 8,
+    "y": 15
+   },
+   "frames": [
+    "assis_0",
+    "assis_1",
+    "course_0",
+    "course_1"
+   ],
+   "nom": "Un écureuil roux"
+  },
+  "lievre": {
+   "image": "faune_lievre.png",
+   "frameWidth": 16,
+   "frameHeight": 16,
+   "anchor": {
+    "x": 8,
+    "y": 15
+   },
+   "frames": [
+    "assis_0",
+    "assis_1",
+    "course_0",
+    "course_1"
+   ],
+   "nom": "Un lièvre"
+  },
+  "perdrix": {
+   "image": "faune_perdrix.png",
+   "frameWidth": 16,
+   "frameHeight": 16,
+   "anchor": {
+    "x": 8,
+    "y": 15
+   },
+   "frames": [
+    "debout_0",
+    "debout_1",
+    "marche_0",
+    "marche_1",
+    "vol_0",
+    "vol_1"
+   ],
+   "nom": "Une perdrix grise"
   }
  },
  "trouvailles": {

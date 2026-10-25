@@ -32,6 +32,11 @@
  * sous lui, sur l'eau, dont les quatre dessins tournent (ECUME ms chacun ; immobile avec
  * « animations réduites »).
  *
+ * Les lieux du plan qui ont leur dessin (fiche 6b, js/engine/monde-lieux.js : reg.lieux, de même
+ * forme) suivent encore le même chemin, avec leur planche (assets/lieux_monde.png,
+ * scripts/carte/lieux.py) : la bouche des grottes de la montagne, rangée selon son pied ; le ponton
+ * d'un coin de pêche, posé sur l'eau sous tout le reste (le personnage y marche) ; les piquets.
+ *
  * Ce qui se prend (fiche 6a, recolte-monde.js) : chaque image d'une pièce qui se prend porte son
  * identifiant (« sorte:x,y », ctx.monde.idObjet) et sa règle (RECOLTE.SORTES) ; une pièce prise a
  * son image cachée, une plante cueillie son dessin sans fruits (modèle.monde) ; une petite pièce
@@ -50,6 +55,9 @@
   const PLANCHES = [
     { cle: 'vegetation', json: 'vegetation_cases', donnees: 'vegetation', sortes: 'sortes' },
     { cle: 'roches', json: 'roches_cases', donnees: 'roches', sortes: 'roches' },
+    // les lieux qui ont leur dessin (fiche 6b, js/engine/monde-lieux.js : l'entrée des grottes, le
+    // ponton et les piquets des coins de pêche ; scripts/carte/lieux.py)
+    { cle: 'lieux_monde', json: 'lieux_monde_cases', donnees: 'lieux', sortes: 'lieuxSortes' },
   ];
   const BLOC = 16, PRES = 96, LOIN = 384, MASQUE = 4, ECUME = 240;
   const CORPS = { l: 5, h: 26, pied: 2 };
@@ -211,9 +219,11 @@
         const vu = id && E && E.cueillis.has(id) && regle.apres != null ? regle.apres : v;
         const penche = !!s.penche, n = pl.images[im[k]][penche ? vu * 5 : vu], c = pl.cadres[n];
         if (n == null || !c) continue;
-        const img = this.add.image(x, y, pl.cle, n).setOrigin(c.px / c.w, c.py / c.h).setDepth(y);
-        // (pas d'ombre : les plantes hautes ; les falaises, dont la face regarde le soleil)
-        const o = { img, x: x - c.px, y: y - c.py, w: c.w, h: c.h, foot: y, mask: c.mask, alpha: 1, ombre: s.genre !== 'haute' && s.genre !== 'paroi' };
+        // (un ponton : sur l'eau, sous tout ce qui marche dessus ; il ne cache rien)
+        const ponton = s.genre === 'ponton';
+        const img = this.add.image(x, y, pl.cle, n).setOrigin(c.px / c.w, c.py / c.h).setDepth(ponton ? 0.3 : y);
+        // (pas d'ombre : les plantes hautes ; les falaises, dont la face regarde le soleil ; le ponton)
+        const o = { img, x: x - c.px, y: y - c.py, w: c.w, h: c.h, foot: ponton ? -Infinity : y, mask: c.mask, alpha: 1, ombre: s.genre !== 'haute' && s.genre !== 'paroi' && !ponton };
         if (penche) o.herbe = { img, fleurs: null, x, y, base: n, t: -1, dir: 1, inside: false };
         if (s.genre === 'mer' && pl.ecume.length) {
           // l'écume autour, sur l'eau (sous le rocher), chaque rocher à son moment

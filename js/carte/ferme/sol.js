@@ -126,7 +126,7 @@
         this.mondeAbonne = true;
         this.ctx.monde.quandRegion((cle) => {
           const r = this.regions && this.regions.get(cle);
-          if (r && r.tex) { this.paintRegion(r, null, this.regionParts(r).monde); this.eauMondeRegion(r); this.eauMondeCle = null; this.vegetationRegion(r); }
+          if (r && r.tex) { this.paintRegion(r, null, this.regionParts(r).monde); this.eauMondeRegion(r); this.eauMondeCle = null; this.vegetationRegion(r); this.fauneRegion(r); }
         });
       }
       this.regions = new Map();
@@ -195,9 +195,11 @@
       this.showRegionObjs(r);              // ses arbres, ses barrières, ses rochers (decor.js)
       this.eauMondeRegion(r);              // ses blocs d'eau (eau-monde.js)
       this.vegetationRegion(r);            // ses arbres, ses buissons (vegetation.js)
+      this.fauneRegion(r);                 // ses bêtes (faune-monde.js)
     },
 
     dropRegion(r) {
+      this.dropFaune(r);
       this.dropEauMonde(r);
       this.dropVegetation(r);
       this.dropRegionObjs(r);

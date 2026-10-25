@@ -15,6 +15,7 @@ import {
 } from '../../js/engine/index.js';
 import { SORTES_ROCHES } from '../../js/engine/monde-roches.js';
 import { SORTES } from '../../js/engine/monde-vegetation.js';
+import { LIEUX, pontonDe } from '../../js/engine/monde-lieux.js';
 import { blocGid } from '../../js/engine/planche.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
@@ -170,6 +171,11 @@ test('marcher dans le monde : ni la mer, ni les lacs, ni les rivières (sauf à 
       for (let k = 0; k < ro.length; k += 4) for (const [dx, dy] of SORTES_ROCHES[ro[k]].bloque || []) pieds.add((Math.floor((ro[k + 2] - 1) / 16) + dy) * W + Math.floor(ro[k + 1] / 16) + dx);
     }
   }
+  // (les entrées des grottes ferment leurs cases ; les pontons des coins de pêche ouvrent les leurs,
+  // sur l'eau : monde-lieux.js, fiche 6b)
+  const pontons = new Set(), bio = (i) => p.biome[i];
+  for (const g of p.lieux.grottes) for (const [dx, dy] of LIEUX.BLOQUE) pieds.add(g.case + dy * W + dx);
+  for (const q of p.lieux.peche) for (const i of (pontonDe(q, bio, W, H) || { cases: [] }).cases) pontons.add(i);
   let n = 0, gues = 0;
   const vus = new Set();
   // une case sur 7 de tout le monde, et chaque case de chemin
@@ -179,7 +185,7 @@ test('marcher dans le monde : ni la mer, ni les lacs, ni les rivières (sauf à 
     const c = t % W, r = Math.floor(t / W), b = p.biome[t], ok = caseMarchable(T, t);
     if (c >= F.X && r >= F.Y && c < F.X + F.LARGEUR && r < F.Y + F.HAUTEUR) { assert(ok, 'la ferme'); continue; }
     if (b === BIOME.riviere && large.has(t)) { assert(ok, `un gué en ${c},${r}`); gues++; continue; }
-    assertEqual(ok, !fermes.has(b) && !pieds.has(t), `${p.BIOMES[b]} en ${c},${r}`);
+    assertEqual(ok, (!fermes.has(b) && !pieds.has(t)) || pontons.has(t), `${p.BIOMES[b]} en ${c},${r}`);
     n++;
   }
   assert(n > 40000, 'des cases vues');

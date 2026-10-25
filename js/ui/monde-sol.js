@@ -3,6 +3,9 @@ import { apercuDesBiomes, caseMarchable, COULEURS_BIOMES, contexteSol, elementsS
 import { SORTES_ROCHES } from '../engine/monde-roches.js';
 import { SORTES } from '../engine/monde-vegetation.js';
 import { idObjetMonde, RECOLTE } from '../engine/monde-recolte.js';
+import { SORTES_LIEUX } from '../engine/monde-lieux.js';
+import { ESPECES_FAUNE, FAUNE } from '../engine/monde-faune.js';
+import { DATA } from '../engine/catalog.js';
 
 /* ---------- le sol du grand monde pour la scène (docs/grand-monde.md, étape 4 : fiche 4b) ---------- */
 
@@ -23,7 +26,12 @@ import { idObjetMonde, RECOLTE } from '../engine/monde-recolte.js';
 //   - ce qui se prend (fiche 6a, js/engine/monde-recolte.js) : regles (RECOLTE.SORTES, ce que donne
 //     chaque sorte), idObjet(sorte, x, y) (l'identifiant d'une pièce, le même que le moteur) ;
 //     ouvertes : une fonction que la page pose (js/ui/stage.js) et qui donne les cases que les
-//     pièces prises rendent à la marche (casesOuvertesMonde), lues par marchable.
+//     pièces prises rendent à la marche (casesOuvertesMonde), lues par marchable ;
+//   - les lieux et les bêtes (fiche 6b) : lieux() (les lieux du plan, { hameaux, grottes, peche },
+//     ou null tant que les éléments ne sont pas tirés), lieuxSortes (LIEUX.SORTES : l'entrée des
+//     grottes, le ponton, les piquets, js/engine/monde-lieux.js), coins (CANNE.COINS.RAYON : à tant
+//     de cases d'un coin de pêche, on pêche « au coin »), faune ({ especes : [{ cle, …FAUNE.ESPECES }],
+//     PRES, LOIN, RAYON } : js/engine/monde-faune.js).
 //
 // Les régions se calculent dans un Web Worker (js/monde-worker.js) : la page ne fait qu'en garder
 // le résultat, en mémoire (le monde entier fait 88 régions, environ 4 Mo : tout se garde ; pas
@@ -62,7 +70,7 @@ export function solDuMonde(T) {
 function client(T, M) {
   const regions = new Map(), demandees = new Set(), abonnes = [];
   const mesures = { elements: null, regions: [], mode: 'worker' };
-  let apercu = null, direct = null, worker = nouveauWorker(), fini = false;
+  let apercu = null, direct = null, worker = nouveauWorker(), fini = false, lieux = null;
   const couleurs = BIOMES.map((b) => COULEURS_BIOMES[b] || '#6a8157');
   const recu = (r) => {
     regions.set(r.cle, r);
@@ -84,7 +92,7 @@ function client(T, M) {
     direct.tache = setTimeout(() => {
       direct.tache = null;
       if (fini) return;
-      if (!direct.ctx.elements) { elementsSol(direct.ctx); mesures.elements = direct.ctx.mesures.elements; }
+      if (!direct.ctx.elements) { elementsSol(direct.ctx); mesures.elements = direct.ctx.mesures.elements; lieux = direct.ctx.elements.lieux; }
       const cle = direct.file.shift();
       if (cle && !regions.has(cle)) { const [rx, ry] = cle.split(',').map(Number); recu(solDeRegion(direct.ctx, rx, ry)); }
       if (direct.file.length) pas();
@@ -95,7 +103,7 @@ function client(T, M) {
       const m = ev.data || {};
       if (fini || m.graine !== M.graine) return;
       if (m.type === 'apercu') apercu = m.apercu;
-      else if (m.type === 'pret') mesures.elements = m.ms;
+      else if (m.type === 'pret') { mesures.elements = m.ms; lieux = m.lieux || null; }
       else if (m.type === 'region') recu(m.region);
       else if (m.type === 'erreur') { console.warn('[monde] le Worker n\'a pas pu faire la région ' + m.cle + ' : ' + m.message); enDirect(); }
     };
@@ -106,6 +114,8 @@ function client(T, M) {
   const sol = {
     ferme: M.cadre.FERME, tuiles: SOLS_MONDE, taille: M.taille, biomes: BIOMES, sortes: SORTES, roches: SORTES_ROCHES,
     regles: RECOLTE.SORTES, idObjet: idObjetMonde, ouvertes: null,
+    lieux: () => lieux, lieuxSortes: SORTES_LIEUX, coins: (DATA.CANNE.COINS && DATA.CANNE.COINS.RAYON) || 0,
+    faune: { especes: ESPECES_FAUNE.map((cle) => ({ cle, ...FAUNE.ESPECES[cle] })), PRES: FAUNE.PRES, LOIN: FAUNE.LOIN, RAYON: FAUNE.RAYON },
     region(rx, ry) {
       const cle = rx + ',' + ry, r = regions.get(cle);
       if (r) return r;

@@ -1763,7 +1763,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "canne_a_peche",
      "terme": "Canne à pêche",
-     "description": "Outil acheté une fois au Marché (60 pièces). Canne en main, un appui sur l'eau lance la ligne (4 énergie) : dans l'étang ou la mare de la ferme. Il arrive que rien ne morde.",
+     "description": "Outil acheté une fois au Marché (60 pièces). Canne en main, un appui sur l'eau lance la ligne (4 énergie) : dans l'étang ou la mare de la ferme, dans un lac, une rivière ou la mer du grand monde. Il arrive que rien ne morde.",
      "liens": [
       "outils",
       "peche"
@@ -1789,9 +1789,10 @@ export const ENCYCLOPEDIE = {
     {
      "id": "minerai",
      "terme": "Minerai",
-     "description": "Fer, cuivre, or et platine, pris à la pioche dans les murs de la mine (la grotte) : le fer est partout, les autres de plus en plus rares et profonds. Le minerai va dans l'inventaire ; c'est un matériau, qui ne se mange pas et ne se vend pas. Au Four, 4 minerais et du bois font un lingot.",
+     "description": "Fer, cuivre, or et platine, pris à la pioche dans les murs de la mine (la grotte) : le fer est partout, les autres de plus en plus rares et profonds. Les grottes de la montagne en ont davantage, l'or et le platine dès les premiers niveaux, et des pierres (quartz, améthyste). Le minerai va dans l'inventaire ; c'est un matériau, qui ne se mange pas et ne se vend pas. Au Four, 4 minerais et du bois font un lingot.",
      "liens": [
       "grotte",
+      "grotte_montagne",
       "pioche",
       "lingot",
       "four"
@@ -1876,11 +1877,12 @@ export const ENCYCLOPEDIE = {
     {
      "id": "grotte",
      "terme": "Grotte",
-     "description": "Sous la ferme, par l'entrée de la mine (un tas de terre et sa porte sombre, caché dans les bois : on ressort par elle) : des niveaux tirés au hasard chaque jour, de plus en plus profonds. On descend par le puits, on remonte par l'échelle ; il fait noir, on n'y voit qu'autour de soi. La pioche en main, on y prend le minerai des murs : du fer partout, du cuivre, de l'or et du platine plus bas.",
+     "description": "Sous la ferme, par l'entrée de la mine (un tas de terre et sa porte sombre, caché dans les bois : on ressort par elle) : des niveaux tirés au hasard chaque jour, de plus en plus profonds. On descend par le puits, on remonte par l'échelle ; il fait noir, on n'y voit qu'autour de soi. La pioche en main, on y prend le minerai des murs : du fer partout, du cuivre, de l'or et du platine plus bas. La montagne du grand monde a ses propres grottes, plus riches.",
      "liens": [
       "minerai",
       "pioche",
-      "lingot"
+      "lingot",
+      "grotte_montagne"
      ],
      "decouverte": [
       "carte:grotte",
@@ -1890,7 +1892,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "peche",
      "terme": "Pêche et poissons",
-     "description": "À la canne : truite et brochet dans l'étang (6 prises par jour au plus) et la mare (3) de la ferme. Les lacs, les rivières et la mer du grand monde viendront avec leurs poissons. Chaque lancer coûte 4 énergie. Le poisson frais se garde 2 nuits : il se mange, se vend ou se cuisine (poisson grillé à l'ail, quenelle de poisson).",
+     "description": "À la canne : truite et brochet dans l'étang (6 prises par jour au plus) et la mare (3) de la ferme. Dans le grand monde, on pêche au bord de toute eau, avec le même geste : l'omble chevalier et la truite dans les lacs (4 prises par jour, tous les lacs ensemble), la truite et le goujon dans les rivières (5), la dorade, la sardine et l'anchois en mer (8). Les coins de pêche (un ponton, ou des piquets et une nasse ; des remous sur l'eau) sont de meilleurs coins : plus de touches, un poisson plus rare (le brochet au lac, le saumon en rivière, le bar en mer) et leurs propres prises du jour (8 au lac, 8 en rivière, 12 en mer, pour chaque coin). Chaque lancer coûte 4 énergie. Le poisson frais se garde 2 nuits : il se mange, se vend ou se cuisine (poisson grillé à l'ail, quenelle de poisson).",
      "liens": [
       "canne_a_peche",
       "poisson_grille",
@@ -1899,7 +1901,223 @@ export const ENCYCLOPEDIE = {
      "decouverte": [
       "outil:canne",
       "objet:truite",
-      "objet:brochet"
+      "objet:brochet",
+      "objet:omble",
+      "objet:goujon",
+      "objet:dorade"
+     ]
+    },
+    {
+     "id": "grotte_montagne",
+     "terme": "Grottes de la montagne",
+     "description": "Au pied de la montagne du grand monde, des bouches de roche s'ouvrent dans la pente : chacune mène à sa grotte, avec la flèche des passages quand on s'en approche. Ce sont des niveaux de grotte comme ceux de la mine (le même jour, la même grotte ; un autre jour, une autre), 5 niveaux de profondeur, mais plus riches : plus de minerai dans les murs, l'or et le platine dès les premiers niveaux, des cristaux de quartz et des améthystes à piocher, et dans chacune un filon (du cuivre, de l'or, du platine, du quartz ou de l'améthyste en abondance). En remontant l'échelle du premier niveau, on ressort devant l'entrée, dans le monde, au même jour et à la même heure.",
+     "liens": [
+      "grotte",
+      "minerai",
+      "pioche"
+     ],
+     "decouverte": [
+      "carte:grotte_monde",
+      "objet:quartz",
+      "objet:amethyste"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "faune",
+   "icone": "🦌",
+   "nom": "La faune du grand monde",
+   "entrees": [
+    {
+     "id": "faune_du_monde",
+     "terme": "La faune du grand monde",
+     "description": "Chaque biome du grand monde a ses bêtes : marmottes, bouquetins et aigles dans la montagne, mouettes, crabes et dauphins sur la côte et au large, canards et cygnes sur les lacs et le marais, chevreuils, renards, lapins et écureuils dans la forêt, lièvres et perdrix sur la lande. Elles vivent leur vie autour de leur coin, fuient quand on s'approche (chacune à sa façon : elle court, s'envole, nage plus loin ou se cache dans son terrier), dorment ou se cachent la nuit. On ne les chasse pas : on les regarde. La page de chaque bête se découvre la première fois qu'on en voit une ; un appui sur une bête dit son nom et ouvre sa page. Rien de tout cela sur la ferme.",
+     "liens": [
+      "faune_marmotte",
+      "faune_bouquetin",
+      "faune_aigle",
+      "faune_mouette",
+      "faune_crabe",
+      "faune_dauphin",
+      "faune_canard",
+      "faune_cygne",
+      "faune_chevreuil",
+      "faune_renard",
+      "faune_lapin",
+      "faune_ecureuil",
+      "faune_lievre",
+      "faune_perdrix"
+     ],
+     "decouverte": [
+      "faune:marmotte",
+      "faune:bouquetin",
+      "faune:aigle",
+      "faune:mouette",
+      "faune:crabe",
+      "faune:dauphin",
+      "faune:canard",
+      "faune:cygne",
+      "faune:chevreuil",
+      "faune:renard",
+      "faune:lapin",
+      "faune:ecureuil",
+      "faune:lievre",
+      "faune:perdrix"
+     ]
+    },
+    {
+     "id": "faune_marmotte",
+     "terme": "Marmotte",
+     "description": "Elle vit en colonie sur les pentes de la montagne, entre les éboulis : assise sur ses pattes arrière, elle guette. Le personnage approche, elle détale et plonge dans son terrier ; elle en ressort un moment plus tard, quand tout est calme. La nuit, elle dort sous terre. On ne la chasse pas : on la regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:marmotte"
+     ]
+    },
+    {
+     "id": "faune_bouquetin",
+     "terme": "Bouquetin",
+     "description": "Le bouquetin des Alpes, ses grandes cornes annelées : il broute haut dans la montagne, près des sommets, seul ou en petite harde. Il s'écarte d'un pas sûr quand on s'approche, sans se presser. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:bouquetin"
+     ]
+    },
+    {
+     "id": "faune_aigle",
+     "terme": "Aigle royal",
+     "description": "Il tourne en grands cercles au-dessus des sommets, porté par l'air chaud ; son ombre court sur les rochers. On le regarde, on ne l'approche pas. La nuit, il a regagné son aire. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:aigle"
+     ]
+    },
+    {
+     "id": "faune_mouette",
+     "terme": "Mouette",
+     "description": "Sur la plage, au bord de l'eau, elles se tiennent à plusieurs, le bec au vent. Quand on arrive, elles s'envolent toutes et vont se poser plus loin, puis reviennent. On ne la chasse pas : on la regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:mouette"
+     ]
+    },
+    {
+     "id": "faune_crabe",
+     "terme": "Crabe",
+     "description": "Il trotte de côté sur le sable mouillé, près des vagues. Une ombre, un pas : il file et s'enfouit dans le sable, d'où il ressort plus tard. La nuit, on ne le voit pas. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:crabe"
+     ]
+    },
+    {
+     "id": "faune_dauphin",
+     "terme": "Dauphin",
+     "description": "Au large, loin du rivage, un dauphin saute hors de l'eau de temps en temps, et retombe dans une gerbe d'écume. Il faut savoir regarder la mer un moment. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:dauphin"
+     ]
+    },
+    {
+     "id": "faune_canard",
+     "terme": "Canard colvert",
+     "description": "Le mâle à la tête verte, la cane toute brune : ils nagent par petits groupes sur les lacs et l'eau basse du marais, et plongent la tête sous l'eau pour manger. On approche, ils s'éloignent en nageant. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:canard"
+     ]
+    },
+    {
+     "id": "faune_cygne",
+     "terme": "Cygne",
+     "description": "Grand et blanc, le cou en S : il glisse lentement sur les lacs, plonge le cou dans l'eau, et s'écarte sans hâte quand on vient au bord. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:cygne"
+     ]
+    },
+    {
+     "id": "faune_chevreuil",
+     "terme": "Chevreuil",
+     "description": "Le chevreuil de nos forêts, sa robe fauve et son miroir blanc : il broute dans les clairières et les sous-bois. Au moindre bruit, il bondit et s'enfuit entre les arbres. La nuit, il se couche dans les fourrés. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:chevreuil"
+     ]
+    },
+    {
+     "id": "faune_renard",
+     "terme": "Renard roux",
+     "description": "Roux, la gorge blanche et la queue en panache, il rôde seul à la lisière des bois et sur la lande, assis à guetter ou trottant le nez au sol. Il garde ses distances : on approche, il file. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:renard"
+     ]
+    },
+    {
+     "id": "faune_lapin",
+     "terme": "Lapin de garenne",
+     "description": "Dans les prés au bord des bois et en forêt, il grignote, assis, les oreilles dressées. Le personnage approche : quelques bonds, et il disparaît dans son terrier, pour en ressortir quand tout est calme. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:lapin"
+     ]
+    },
+    {
+     "id": "faune_ecureuil",
+     "terme": "Écureuil roux",
+     "description": "Il descend au pied des arbres de la forêt chercher des noisettes, la queue en panache relevée. Surpris, il file et grimpe se cacher dans les branches. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:ecureuil"
+     ]
+    },
+    {
+     "id": "faune_lievre",
+     "terme": "Lièvre",
+     "description": "Plus grand que le lapin, fauve, de très longues oreilles au bout noir : il vit à découvert sur la lande. Il compte sur sa vitesse : on approche, il détale en zigzag. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:lievre"
+     ]
+    },
+    {
+     "id": "faune_perdrix",
+     "terme": "Perdrix grise",
+     "description": "Ronde, la face orangée : elles picorent en petite compagnie dans la bruyère de la lande, et s'envolent toutes ensemble dans un bruit d'ailes quand on arrive trop près. On ne la chasse pas : on la regarde, et un appui dessus dit son nom.",
+     "liens": [
+      "faune_du_monde"
+     ],
+     "decouverte": [
+      "faune:perdrix"
      ]
     }
    ]

@@ -7,6 +7,11 @@
 #   la plage      la mouette (debout, en vol), le crabe (de dessus), le dauphin (son saut)
 #   la ville      sur le lac du parc : le cygne et le canard colvert (le mâle, la cane), qui
 #                 nagent ou plongent la tête sous l'eau
+#   la forêt      le chevreuil (debout, il broute, en marche), le renard roux (assis, debout, en
+#                 marche), le lapin de garenne (assis, il saute), l'écureuil roux (assis, il court)
+#   la lande      le lièvre (assis, il file), la perdrix grise (debout, elle picore, marche, vol)
+#                 (fiche 6b : les bêtes du grand monde, js/carte/ferme/faune-monde.js ; les espèces
+#                 d'avant sont dessinées comme avant, au pixel près)
 #   trouvailles   l'ammonite et le trilobite (fossiles), le quartz et l'améthyste (pierres),
 #                 les herbes de montagne (herbe : dans les prés),
 #                 la coquille Saint-Jacques et le bulot (coquillages), le corail, la perle
@@ -347,6 +352,240 @@ def canard(sorte, pose, k):
     return im
 
 
+# ---------- la forêt (fiche 6b) ----------
+
+CHEV = (168, 104, 58)
+CHEV_S = (118, 70, 40)
+CHEV_C = (206, 150, 96)
+BLANC_CHEV = (236, 226, 206)
+
+
+def chevreuil(k, marche):
+    """32 × 32, de profil (vers la droite), les sabots en bas au milieu (y 29) : plus fin et plus
+    haut sur pattes que le bouquetin, la robe fauve, le miroir blanc sous la queue, les bois courts
+    (le brocard). marche : k la foulée (0..3) ; sinon k : la tête levée (0) ou baissée (il broute)."""
+    im = image(32, 32)
+    pas = [(-2, 2), (0, 0), (2, -2), (0, 0)][k % 4] if marche else (0, 0)
+    for x0, dx, ton in ((10, pas[0], CHEV_S), (12, -pas[0], CHEV), (20, pas[1], CHEV_S), (22, -pas[1], CHEV)):
+        trait(im, [(x0, 18), (x0 + dx * 0.5, 24), (x0 + dx, 29)], ton, 1)
+        px(im, x0 + dx, 29, (52, 40, 32))
+    ellipse(im, 8, 12, 25, 19, CHEV, CHEV_S, CHEV_C)             # le corps
+    ellipse(im, 11, 16, 22, 19, CHEV_C)                           # le ventre clair
+    ellipse(im, 6, 12, 9, 16, BLANC_CHEV)                         # le miroir
+    px(im, 7, 11, CHEV_S)                                          # la queue, minuscule
+    baisse = not marche and k % 2 == 1
+    hy = 15 if baisse else 4
+    trait(im, [(22, 14), (24, hy + 5), (25, hy + 3)], CHEV, 3)    # le cou
+    ellipse(im, 23, hy, 29, hy + 4, CHEV, CHEV_S, CHEV_C)         # la tête
+    px(im, 29, hy + 3, (40, 30, 26))                               # le museau noir
+    px(im, 28, hy + 4, BLANC_CHEV)
+    px(im, 26, hy + 1, K)                                          # l'œil
+    for x, y in ((24, hy - 1), (23, hy - 2)):                      # l'oreille
+        px(im, x, y, CHEV_S)
+    trait(im, [(26, hy), (26, hy - 3), (27, hy - 4)], (96, 74, 52), 1)   # les bois
+    px(im, 25, hy - 3, (96, 74, 52))
+    return fini(im)
+
+
+ROUX = (212, 102, 38)
+ROUX_S = (150, 66, 26)
+ROUX_C = (238, 150, 78)
+CREME = (244, 232, 214)
+
+
+def renard(k, marche):
+    """32 × 32 (le dessin tient en 26 × 14), de profil (vers la droite), les pattes en bas au milieu
+    (y 29) : roux, la gorge et le bout de la queue blancs, les pattes noires, le museau pointu.
+    marche : k la foulée ; sinon k : assis la queue autour (0) ou debout le nez au vent (1)."""
+    im = image(32, 32)
+    if not marche and k == 0:
+        # assis : le dos rond, la queue enroulée devant les pattes
+        ellipse(im, 9, 18, 24, 29, ROUX, ROUX_S, ROUX_C)
+        ellipse(im, 6, 25, 22, 29, ROUX, ROUX_S, ROUX_C)            # la queue, posée
+        ellipse(im, 6, 26, 9, 29, CREME)
+        ellipse(im, 17, 19, 22, 27, CREME, teinte(CREME, 0.85))     # la gorge
+        trait(im, [(20, 25), (20, 29)], (44, 30, 26))
+        hy = 12
+    else:
+        pas = [(-2, 2), (0, 0), (2, -2), (0, 0)][k % 4] if marche else (0, 0)
+        for x0, dx in ((10, pas[0]), (11, -pas[0]), (20, pas[1]), (21, -pas[1])):
+            trait(im, [(x0, 23), (x0 + dx, 29)], (44, 30, 26), 1)
+        ellipse(im, 8, 18, 24, 25, ROUX, ROUX_S, ROUX_C)             # le corps
+        ellipse(im, 12, 22, 21, 25, CREME)
+        # la queue en panache, horizontale
+        ellipse(im, 0, 17, 10, 22, ROUX, ROUX_S, ROUX_C)
+        ellipse(im, 0, 18, 3, 21, CREME)
+        hy = 13
+    ellipse(im, 21, hy, 27, hy + 5, ROUX, ROUX_S, ROUX_C)           # la tête
+    trait(im, [(27, hy + 3), (30, hy + 4)], ROUX, 2)                 # le museau
+    px(im, 31, hy + 4, K)
+    px(im, 28, hy + 5, CREME)
+    px(im, 29, hy + 5, CREME)
+    px(im, 25, hy + 2, K)                                            # l'œil
+    for x, y in ((22, hy - 1), (23, hy - 2), (23, hy - 1), (24, hy - 1)):   # l'oreille pointue
+        px(im, x, y, ROUX_S)
+    px(im, 23, hy - 3, (44, 30, 26))
+    return fini(im)
+
+
+LAPIN = (150, 122, 96)
+LAPIN_S = (104, 82, 64)
+LAPIN_C = (190, 166, 136)
+
+
+def lapin(pose, k):
+    """16 × 16, de profil (vers la droite), les pattes en bas au milieu : le lapin de garenne, gris
+    brun, la queue blanche. pose 'assis' (k : les oreilles dressées ou couchées) ou 'saut' (k :
+    ramassé, détendu)."""
+    im = image(16, 16)
+    if pose == 'assis':
+        ellipse(im, 3, 8, 11, 15, LAPIN, LAPIN_S, LAPIN_C)
+        ellipse(im, 2, 11, 4, 13, (244, 242, 236))                  # la queue
+        ellipse(im, 8, 5, 13, 10, LAPIN, LAPIN_S, LAPIN_C)          # la tête
+        px(im, 11, 7, K)
+        px(im, 13, 8, (120, 80, 70))
+        if k == 0:
+            trait(im, [(9, 5), (8, 1)], LAPIN_S, 1)
+            trait(im, [(10, 5), (10, 1)], LAPIN, 1)
+            px(im, 10, 2, (214, 170, 160))
+        else:
+            trait(im, [(9, 6), (5, 4)], LAPIN_S, 1)
+            trait(im, [(9, 5), (6, 3)], LAPIN, 1)
+        px(im, 10, 14, LAPIN_S)
+        px(im, 11, 14, LAPIN_S)
+    else:
+        dy = 0 if k == 0 else -2
+        ellipse(im, 2, 8 + dy, 12, 13 + dy, LAPIN, LAPIN_S, LAPIN_C)
+        ellipse(im, 1, 8 + dy, 3, 10 + dy, (244, 242, 236))
+        ellipse(im, 10, 5 + dy, 14, 9 + dy, LAPIN, LAPIN_S, LAPIN_C)
+        px(im, 12, 6 + dy, K)
+        trait(im, [(10, 6 + dy), (7, 3 + dy)], LAPIN_S, 1)
+        if k == 0:
+            trait(im, [(3, 13), (6, 14)], LAPIN_S, 1)               # les pattes arrière, ramassées
+            px(im, 11, 14, LAPIN_S)
+        else:
+            trait(im, [(3, 11 + dy), (0, 14)], LAPIN_S, 1)          # détendu : pattes arrière tendues
+            trait(im, [(11, 12 + dy), (14, 14)], LAPIN_S, 1)
+    return fini(im)
+
+
+ECUR = (186, 82, 36)
+ECUR_S = (128, 52, 24)
+ECUR_C = (226, 128, 70)
+
+
+def ecureuil(pose, k):
+    """16 × 16, de profil (vers la droite) : l'écureuil roux, la grande queue en panache relevée
+    dans le dos, les pinceaux aux oreilles. pose 'assis' (il grignote : k les pattes avant) ou
+    'course' (k : ramassé, étiré)."""
+    im = image(16, 16)
+    if pose == 'assis':
+        # la queue : une crosse qui remonte dans le dos et se recourbe
+        ellipse(im, 1, 3, 6, 14, ECUR, ECUR_S, ECUR_C)
+        ellipse(im, 2, 1, 7, 5, ECUR, ECUR_S, ECUR_C)
+        ellipse(im, 5, 8, 11, 15, ECUR, ECUR_S, ECUR_C)             # le corps
+        ellipse(im, 8, 10, 10, 14, CREME)                            # le ventre
+        ellipse(im, 8, 4, 12, 8, ECUR, ECUR_S, ECUR_C)               # la tête
+        px(im, 11, 5, K)
+        px(im, 12, 7, (60, 30, 20))
+        px(im, 9, 3, ECUR_S)
+        px(im, 9, 2, (60, 30, 20))                                   # le pinceau
+        px(im, 11, 9 + k, (110, 78, 40))                             # la noisette
+        px(im, 10, 9 + k, ECUR_S)
+    else:
+        d = 0 if k == 0 else 1
+        ellipse(im, 4, 9 - d, 12, 13, ECUR, ECUR_S, ECUR_C)
+        ellipse(im, 0, 5 - d, 5, 10, ECUR, ECUR_S, ECUR_C)           # la queue derrière, relevée
+        ellipse(im, 10, 7 - d, 14, 11 - d, ECUR, ECUR_S, ECUR_C)
+        px(im, 12, 8 - d, K)
+        px(im, 11, 6 - d, ECUR_S)
+        if d:
+            trait(im, [(5, 12), (3, 14)], ECUR_S)
+            trait(im, [(11, 12), (13, 14)], ECUR_S)
+        else:
+            trait(im, [(6, 13), (7, 14)], ECUR_S)
+            trait(im, [(10, 13), (9, 14)], ECUR_S)
+    return fini(im)
+
+
+# ---------- la lande (fiche 6b) ----------
+
+LIEVRE = (170, 138, 92)
+LIEVRE_S = (118, 92, 60)
+LIEVRE_C = (208, 182, 136)
+
+
+def lievre(pose, k):
+    """16 × 16, de profil (vers la droite) : plus grand et plus fauve que le lapin, de très longues
+    oreilles au bout noir, les pattes arrière longues. pose 'assis' (k : les oreilles) ou 'course'
+    (k : ramassé, étiré : il file)."""
+    im = image(16, 16)
+    if pose == 'assis':
+        ellipse(im, 2, 8, 11, 15, LIEVRE, LIEVRE_S, LIEVRE_C)
+        ellipse(im, 9, 5, 14, 10, LIEVRE, LIEVRE_S, LIEVRE_C)
+        px(im, 12, 7, (190, 120, 40))                                 # l'œil doré
+        px(im, 14, 8, (110, 70, 60))
+        ox = 0 if k == 0 else 1
+        trait(im, [(10, 5), (9 - ox, 0)], LIEVRE_S, 1)
+        trait(im, [(11, 5), (11 - ox, 0)], LIEVRE, 1)
+        px(im, 9 - ox, 0, K)
+        px(im, 11 - ox, 0, K)
+        trait(im, [(3, 14), (8, 14)], LIEVRE_S)
+    else:
+        e = k == 1
+        ellipse(im, 2, 8, 12, 12, LIEVRE, LIEVRE_S, LIEVRE_C)
+        ellipse(im, 10, 5, 15, 9, LIEVRE, LIEVRE_S, LIEVRE_C)
+        px(im, 13, 6, (190, 120, 40))
+        trait(im, [(11, 5), (6, 3)], LIEVRE_S, 1)                    # les oreilles couchées
+        px(im, 6, 3, K)
+        if e:
+            trait(im, [(3, 11), (0, 13)], LIEVRE_S, 1)
+            trait(im, [(11, 11), (15, 13)], LIEVRE_S, 1)
+        else:
+            trait(im, [(4, 12), (8, 14)], LIEVRE_S, 1)
+            trait(im, [(10, 12), (8, 14)], LIEVRE_S, 1)
+    return fini(im)
+
+
+PERDRIX = (150, 140, 124)
+PERDRIX_S = (104, 96, 86)
+PERDRIX_C = (196, 186, 166)
+ORANGE_P = (214, 130, 62)
+
+
+def perdrix(pose, k):
+    """16 × 16, de profil (vers la droite) : la perdrix grise, ronde, la face orangée, le fer à
+    cheval brun sur le ventre, les flancs rayés de roux. pose 'debout' (k : elle picore), 'marche'
+    (k : les pattes) ou 'vol' (k : les ailes, vues de côté)."""
+    im = image(16, 16)
+    if pose == 'vol':
+        ellipse(im, 4, 6, 12, 11, PERDRIX, PERDRIX_S, PERDRIX_C)
+        ellipse(im, 10, 4, 14, 8, ORANGE_P, teinte(ORANGE_P, 0.8))
+        px(im, 12, 5, K)
+        px(im, 15, 6, (90, 80, 60))
+        y = 1 if k == 0 else 11
+        trait(im, [(6, 7), (4, y), (9, y)], PERDRIX_S, 1)
+        trait(im, [(7, 7), (6, y + (1 if k == 0 else -1))], PERDRIX_C, 1)
+        return fini(im)
+    bas = 1 if pose == 'debout' and k == 1 else 0
+    ellipse(im, 3, 7 + bas, 12, 13, PERDRIX, PERDRIX_S, PERDRIX_C)
+    for x in (5, 7, 9):
+        px(im, x, 10, (176, 98, 52))                                   # les rayures des flancs
+    px(im, 9, 11, (110, 70, 40))
+    px(im, 10, 11, (110, 70, 40))                                       # le fer à cheval
+    hx, hy = (10, 4) if not bas else (11, 8)
+    ellipse(im, hx, hy, hx + 4, hy + 4, ORANGE_P, teinte(ORANGE_P, 0.8))
+    px(im, hx + 2, hy + 1, K)
+    px(im, hx + 5, hy + 2, (90, 80, 60))
+    trait(im, [(2, 8 + bas), (3, 9 + bas)], PERDRIX_S)                  # la queue courte
+    d = k if pose == 'marche' else 0
+    px(im, 7 - d, 14, (150, 120, 90))
+    px(im, 9 + d, 14, (150, 120, 90))
+    px(im, 7 - d, 15, (150, 120, 90))
+    px(im, 9 + d, 15, (150, 120, 90))
+    return fini(im)
+
+
 # ---------- les trouvailles ----------
 
 def trouvaille(nom):
@@ -474,6 +713,26 @@ ESPECES = {
                'images': [(f'{s}_{p}_{k}', (lambda s=s, p=p, k=k: canard(s, p, k))) for s in ('m', 'f') for p in ('nage', 'plonge') for k in (0, 1)]},
     'dauphin': {'taille': (32, 32), 'ancre': (16, 24), 'nom': 'Un dauphin',
                 'images': [(f'saut_{k}', (lambda k=k: dauphin(k))) for k in range(4)] + [('gerbe', lambda: dauphin(4))]},
+    # la forêt et la lande du grand monde (fiche 6b)
+    'chevreuil': {'taille': (32, 32), 'ancre': (16, 30), 'nom': 'Un chevreuil',
+                  'images': [('debout_0', lambda: chevreuil(0, False)), ('debout_1', lambda: chevreuil(1, False))]
+                  + [(f'marche_{k}', (lambda k=k: chevreuil(k, True))) for k in range(4)]},
+    'renard': {'taille': (32, 32), 'ancre': (16, 30), 'nom': 'Un renard roux',
+               'images': [('assis_0', lambda: renard(0, False)), ('debout_0', lambda: renard(1, False))]
+               + [(f'marche_{k}', (lambda k=k: renard(k, True))) for k in range(4)]},
+    'lapin': {'taille': (16, 16), 'ancre': (8, 15), 'nom': 'Un lapin de garenne',
+              'images': [('assis_0', lambda: lapin('assis', 0)), ('assis_1', lambda: lapin('assis', 1)),
+                         ('saut_0', lambda: lapin('saut', 0)), ('saut_1', lambda: lapin('saut', 1))]},
+    'ecureuil': {'taille': (16, 16), 'ancre': (8, 15), 'nom': 'Un écureuil roux',
+                 'images': [('assis_0', lambda: ecureuil('assis', 0)), ('assis_1', lambda: ecureuil('assis', 1)),
+                            ('course_0', lambda: ecureuil('course', 0)), ('course_1', lambda: ecureuil('course', 1))]},
+    'lievre': {'taille': (16, 16), 'ancre': (8, 15), 'nom': 'Un lièvre',
+               'images': [('assis_0', lambda: lievre('assis', 0)), ('assis_1', lambda: lievre('assis', 1)),
+                          ('course_0', lambda: lievre('course', 0)), ('course_1', lambda: lievre('course', 1))]},
+    'perdrix': {'taille': (16, 16), 'ancre': (8, 15), 'nom': 'Une perdrix grise',
+                'images': [('debout_0', lambda: perdrix('debout', 0)), ('debout_1', lambda: perdrix('debout', 1)),
+                           ('marche_0', lambda: perdrix('marche', 0)), ('marche_1', lambda: perdrix('marche', 1)),
+                           ('vol_0', lambda: perdrix('vol', 0)), ('vol_1', lambda: perdrix('vol', 1))]},
 }
 
 

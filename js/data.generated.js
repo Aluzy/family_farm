@@ -182,6 +182,9 @@ export const RAW_DATA = {
     "dorade": { "nom": "Dorade", "icone": "🐟‍⭐", "energie": 36, "prix": 10, "mangeable": true, "categorie": "produit", "rachetable": false },
     "anchois": { "nom": "Anchois", "icone": "🐟‍💧", "energie": 14, "prix": 3, "mangeable": true, "categorie": "produit", "rachetable": false },
     "sardine": { "nom": "Sardine", "icone": "🐟‍🌊", "energie": 20, "prix": 4, "mangeable": true, "categorie": "produit", "rachetable": false },
+    "goujon": { "nom": "Goujon", "icone": "🐟‍🪨", "energie": 12, "prix": 2, "mangeable": true, "categorie": "produit", "rachetable": false },
+    "saumon": { "nom": "Saumon", "icone": "🐟‍🔶", "energie": 42, "prix": 13, "mangeable": true, "categorie": "produit", "rachetable": false },
+    "bar": { "nom": "Bar", "icone": "🐟‍🌀", "energie": 38, "prix": 12, "mangeable": true, "categorie": "produit", "rachetable": false },
     "pierre": { "nom": "Pierre", "icone": "🪨", "prix": 3, "mangeable": false, "categorie": "produit", "rachetable": false },
     "fibre": { "nom": "Fibre", "icone": "🪢", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "planche": { "nom": "Planche", "icone": "🪚", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -1538,9 +1541,19 @@ export const RAW_DATA = {
       "etang": { "truite": 50, "brochet": 25 },
       "mare": { "truite": 55, "brochet": 5 },
       "lac": { "omble": 40, "truite": 25 },
-      "mer": { "dorade": 15, "sardine": 30, "anchois": 30 }
+      "mer": { "dorade": 15, "sardine": 30, "anchois": 30 },
+      "riviere": { "truite": 40, "goujon": 30 }
     },
-    "JOUR": { "etang": 6, "mare": 3, "lac": 4, "mer": 8 }
+    "JOUR": { "etang": 6, "mare": 3, "lac": 4, "mer": 8, "riviere": 5 },
+    "COINS": {
+      "RAYON": 3,
+      "PRISES": {
+        "lac": { "omble": 45, "truite": 20, "brochet": 15 },
+        "riviere": { "truite": 35, "goujon": 20, "saumon": 20 },
+        "mer": { "dorade": 20, "sardine": 25, "anchois": 20, "bar": 15 }
+      },
+      "JOUR": { "lac": 8, "riviere": 8, "mer": 12 }
+    }
   },
   "TRIPORTEUR": { "NOM": "Triporteur", "ICONE": "🛺", "ARTICLE": "un", "PRIX": 450, "VITESSE": 3 },
   "SERRE": { "LIEU": "serre", "PRIX_CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "PRIX_NIVEAUX": [0, 900, 1800, 3000, 5400] },
@@ -2478,7 +2491,22 @@ export const RAW_DATA = {
       "platine": { "DEPUIS": 4, "PENTE": 0.1 }
     },
     "COUPS": 3,
-    "COUP": 0.5
+    "COUP": 0.5,
+    "MONDE": {
+      "NOM": "La grotte de la montagne",
+      "NIVEAUX": 5,
+      "MINERAI": 0.1,
+      "MINERAI_NIVEAU": 0.1,
+      "POIDS": {
+        "fer": { "FIXE": 1 },
+        "cuivre": { "DEPUIS": 0, "PENTE": 0.4 },
+        "or": { "DEPUIS": 0.5, "PENTE": 0.25 },
+        "platine": { "DEPUIS": 1.5, "PENTE": 0.14 },
+        "quartz": { "FIXE": 0.3 },
+        "amethyste": { "DEPUIS": 1, "PENTE": 0.1 }
+      },
+      "FILONS": { "cuivre": 2, "or": 2, "platine": 2, "quartz": 2.5, "amethyste": 2.5 }
+    }
   },
   "DEHORS": { "bac_fleurs": { "nom": "Bac à fleurs", "prix": 60 } },
   "MEUBLES": {
@@ -3117,6 +3145,214 @@ export const RAW_DATA = {
       "algues": { "geste": "ramasser", "fin": { "algues": [1, 2] }, "retour": [2, 4] }
     }
   },
+  "LIEUX": {
+    "SORTES": [
+      { "nom": "entree_grotte", "genre": "entree", "variantes": 2 },
+      { "nom": "ponton", "genre": "ponton", "variantes": 4 },
+      { "nom": "piquets", "genre": "coin", "variantes": 2 }
+    ],
+    "NEIGE": 0.86,
+    "BLOQUE": [[-1, 0], [0, 0], [1, 0], [-1, -1], [0, -1], [1, -1], [-1, -2], [0, -2], [1, -2]],
+    "PONTON": 3
+  },
+  "FAUNE": {
+    "FERME": 8,
+    "PAR_REGION": 22,
+    "RAYON": 3,
+    "PRES": 160,
+    "LOIN": 320,
+    "ESPECES": {
+      "marmotte": {
+        "nom": "Une marmotte",
+        "lieu": "terre",
+        "biomes": ["montagne"],
+        "densite": 1.1,
+        "groupe": [2, 3],
+        "vitesse": 22,
+        "fuite": 72,
+        "fuit": "terrier",
+        "nuit": "cache",
+        "images": { "repos": ["assise_0", "assise_1"], "marche": ["marche_0", "marche_1"], "fuite": ["marche_0", "marche_1"] }
+      },
+      "bouquetin": {
+        "nom": "Un bouquetin",
+        "lieu": "terre",
+        "biomes": ["montagne"],
+        "relief": 0.7,
+        "densite": 0.5,
+        "groupe": [1, 3],
+        "vitesse": 16,
+        "fuite": 64,
+        "fuit": "court",
+        "nuit": "dort",
+        "images": {
+          "repos": ["debout_0", "debout_1"],
+          "marche": ["marche_0", "marche_1", "marche_2", "marche_3"],
+          "fuite": ["marche_0", "marche_1", "marche_2", "marche_3"]
+        }
+      },
+      "aigle": {
+        "nom": "Un aigle royal",
+        "lieu": "air",
+        "biomes": ["montagne", "sommet"],
+        "relief": 0.75,
+        "densite": 0.25,
+        "groupe": [1, 1],
+        "vitesse": 26,
+        "fuite": 0,
+        "fuit": "envol",
+        "nuit": "cache",
+        "images": { "repos": ["vol_0"], "vol": ["vol_0", "vol_1"] }
+      },
+      "mouette": {
+        "nom": "Une mouette",
+        "lieu": "terre",
+        "biomes": ["plage"],
+        "eau": [1, 4],
+        "densite": 9,
+        "groupe": [2, 4],
+        "vitesse": 14,
+        "fuite": 60,
+        "fuit": "envol",
+        "nuit": "dort",
+        "images": { "repos": ["debout_0", "debout_1"], "marche": ["debout_0", "debout_1"], "vol": ["vol_0", "vol_1"] }
+      },
+      "crabe": {
+        "nom": "Un crabe",
+        "lieu": "terre",
+        "biomes": ["plage"],
+        "eau": [1, 3],
+        "densite": 10,
+        "groupe": [1, 2],
+        "vitesse": 12,
+        "fuite": 40,
+        "fuit": "terrier",
+        "nuit": "cache",
+        "images": { "repos": ["marche_0"], "marche": ["marche_0", "marche_1"], "fuite": ["marche_0", "marche_1"] }
+      },
+      "dauphin": {
+        "nom": "Un dauphin",
+        "lieu": "eau",
+        "biomes": ["mer"],
+        "rive": [6, 0],
+        "densite": 0.35,
+        "groupe": [1, 3],
+        "vitesse": 20,
+        "fuite": 0,
+        "fuit": "nage",
+        "nuit": "cache",
+        "images": { "saut": ["saut_0", "saut_1", "saut_2", "saut_3", "gerbe"] }
+      },
+      "canard": {
+        "nom": "Un canard colvert",
+        "lieu": "eau",
+        "biomes": ["lac", "marais"],
+        "sols": ["eau", "eau_basse"],
+        "rive": [1, 5],
+        "densite": 1.6,
+        "groupe": [2, 4],
+        "vitesse": 10,
+        "fuite": 56,
+        "fuit": "nage",
+        "nuit": "dort",
+        "images": { "repos": ["m_nage_0", "m_nage_1"], "marche": ["m_nage_0", "m_nage_1"], "plonge": ["m_plonge_0", "m_plonge_1"] },
+        "variantes": [{}, { "repos": ["f_nage_0", "f_nage_1"], "marche": ["f_nage_0", "f_nage_1"], "plonge": ["f_plonge_0", "f_plonge_1"] }]
+      },
+      "cygne": {
+        "nom": "Un cygne",
+        "lieu": "eau",
+        "biomes": ["lac"],
+        "rive": [1, 6],
+        "densite": 5,
+        "groupe": [1, 2],
+        "vitesse": 8,
+        "fuite": 48,
+        "fuit": "nage",
+        "nuit": "dort",
+        "images": { "repos": ["nage_0", "nage_1"], "marche": ["nage_0", "nage_1"], "plonge": ["plonge_0", "plonge_1"] }
+      },
+      "chevreuil": {
+        "nom": "Un chevreuil",
+        "lieu": "terre",
+        "biomes": ["foret"],
+        "densite": 0.55,
+        "groupe": [1, 3],
+        "vitesse": 18,
+        "fuite": 88,
+        "fuit": "court",
+        "nuit": "dort",
+        "images": {
+          "repos": ["debout_0", "debout_1"],
+          "marche": ["marche_0", "marche_1", "marche_2", "marche_3"],
+          "fuite": ["marche_0", "marche_1", "marche_2", "marche_3"]
+        }
+      },
+      "renard": {
+        "nom": "Un renard roux",
+        "lieu": "terre",
+        "biomes": ["foret", "lande"],
+        "densite": 0.22,
+        "groupe": [1, 1],
+        "vitesse": 20,
+        "fuite": 72,
+        "fuit": "court",
+        "nuit": "dort",
+        "images": {
+          "repos": ["assis_0", "debout_0"],
+          "marche": ["marche_0", "marche_1", "marche_2", "marche_3"],
+          "fuite": ["marche_0", "marche_1", "marche_2", "marche_3"]
+        }
+      },
+      "lapin": {
+        "nom": "Un lapin de garenne",
+        "lieu": "terre",
+        "biomes": ["foret", "prairie"],
+        "densite": 0.6,
+        "groupe": [1, 3],
+        "vitesse": 16,
+        "fuite": 64,
+        "fuit": "terrier",
+        "nuit": "cache",
+        "images": { "repos": ["assis_0", "assis_1"], "marche": ["saut_0", "saut_1"], "fuite": ["saut_0", "saut_1"] }
+      },
+      "ecureuil": {
+        "nom": "Un écureuil roux",
+        "lieu": "terre",
+        "biomes": ["foret"],
+        "densite": 0.9,
+        "groupe": [1, 1],
+        "vitesse": 22,
+        "fuite": 56,
+        "fuit": "terrier",
+        "nuit": "cache",
+        "images": { "repos": ["assis_0", "assis_1"], "marche": ["course_0", "course_1"], "fuite": ["course_0", "course_1"] }
+      },
+      "lievre": {
+        "nom": "Un lièvre",
+        "lieu": "terre",
+        "biomes": ["lande"],
+        "densite": 0.7,
+        "groupe": [1, 2],
+        "vitesse": 18,
+        "fuite": 80,
+        "fuit": "court",
+        "nuit": "dort",
+        "images": { "repos": ["assis_0", "assis_1"], "marche": ["course_0", "course_1"], "fuite": ["course_0", "course_1"] }
+      },
+      "perdrix": {
+        "nom": "Une perdrix grise",
+        "lieu": "terre",
+        "biomes": ["lande"],
+        "densite": 0.6,
+        "groupe": [2, 4],
+        "vitesse": 10,
+        "fuite": 56,
+        "fuit": "envol",
+        "nuit": "dort",
+        "images": { "repos": ["debout_0", "debout_1"], "marche": ["marche_0", "marche_1"], "vol": ["vol_0", "vol_1"] }
+      }
+    }
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,
@@ -3137,6 +3373,9 @@ export const RAW_DATA = {
     "dorade": 2,
     "anchois": 2,
     "sardine": 2,
+    "goujon": 2,
+    "saumon": 2,
+    "bar": 2,
     "herbes_montagne": 3,
     "oignon": 6,
     "ail": 7,

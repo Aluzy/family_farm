@@ -317,12 +317,24 @@
     "(profond, le brochet y vit) ; « mare » : la petite mare ; « lac » : le lac de la montagne (l'omble",
     "chevalier y vit, version 1.21 ; on y pêche depuis sa rive) ; « mer » : la mer de la plage (depuis",
     "le ponton ou le rivage : dorade, sardine, anchois). JOUR[eau] : prises au plus par",
-    "jour dans chaque eau (ensuite, le poisson se fait rare jusqu'au lendemain)."
+    "jour dans chaque eau (ensuite, le poisson se fait rare jusqu'au lendemain).",
+    "Le grand monde (fiche 6b) : on pêche au bord de toute son eau, avec le même geste. « lac » : ses",
+    "lacs ; « riviere » : ses rivières (truite, goujon) ; « mer » : sa mer, depuis la plage. Les prises",
+    "se comptent par eau du monde (toutes les rivières ensemble, tous les lacs, la mer : JOUR[eau]).",
+    "COINS : les coins de pêche du plan (lieux.peche, un ponton ou des piquets : à RAYON cases au plus",
+    "de leur case, et sur leur eau) sont de meilleurs coins : leurs propres chances (PRISES[eau], un",
+    "poisson plus rare : le brochet au lac, le saumon en rivière, le bar en mer) et leurs propres",
+    "prises par jour (JOUR[eau], comptées pour chaque coin, à part de son eau)."
   ],
   "CANNE": {
     "NOM": "Canne à pêche", "ICONE": "🎣", "PRIX": 60,
-    "PRISES": { "etang": { "truite": 50, "brochet": 25 }, "mare": { "truite": 55, "brochet": 5 }, "lac": { "omble": 40, "truite": 25 }, "mer": { "dorade": 15, "sardine": 30, "anchois": 30 } },
-    "JOUR": { "etang": 6, "mare": 3, "lac": 4, "mer": 8 }
+    "PRISES": { "etang": { "truite": 50, "brochet": 25 }, "mare": { "truite": 55, "brochet": 5 }, "lac": { "omble": 40, "truite": 25 }, "mer": { "dorade": 15, "sardine": 30, "anchois": 30 }, "riviere": { "truite": 40, "goujon": 30 } },
+    "JOUR": { "etang": 6, "mare": 3, "lac": 4, "mer": 8, "riviere": 5 },
+    "COINS": {
+      "RAYON": 3,
+      "PRISES": { "lac": { "omble": 45, "truite": 20, "brochet": 15 }, "riviere": { "truite": 35, "goujon": 20, "saumon": 20 }, "mer": { "dorade": 20, "sardine": 25, "anchois": 20, "bar": 15 } },
+      "JOUR": { "lac": 8, "riviere": 8, "mer": 12 }
+    }
   },
   "//TRIPORTEUR": [
     "Le triporteur s'achète une fois au Marché, comme les outils. Il va dans la barre d'outils,",
