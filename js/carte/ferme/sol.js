@@ -184,8 +184,11 @@
     },
 
     showRegion(r) {
-      const key = 'sol_' + r.rx + '_' + r.ry;
-      if (this.textures.exists(key)) this.textures.remove(key);
+      // (une clé neuve à chaque fois, comme les toits des hameaux : une texture retirée puis refaite sous
+      // la même clé, d'un grand saut de la vue à l'autre, peut encore être lue par le rendu de l'image
+      // en cours — fiche 9a)
+      this.solN = (this.solN || 0) + 1;
+      const key = 'sol_' + r.rx + '_' + r.ry + '_' + this.solN;
       r.tex = this.textures.createCanvas(key, r.w, r.h);
       r.img = this.add.image(r.x, r.y, key).setOrigin(0).setDepth(0);
       // (canevas rendu vide par le navigateur : on le redessine)

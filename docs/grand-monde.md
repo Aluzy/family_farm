@@ -911,5 +911,114 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        monde ne montre pas encore les bêtes vues ni les arbres abattus ; un lieu choisi qui n'est plus vu
        (le mode test a tout caché) rend la boussole à la ferme ; la ferme de la carte du monde n'a pas ses
        bâtiments dessinés (ses blocs, d'une seule couleur).
-9. **La finition** (1 à 2 PR) : les anciennes parties, les performances sur mobile, l'aide,
-   l'encyclopédie, le didacticiel.
+9. **La finition** (2 PR) : les anciennes parties, les performances sur mobile (9a, fait), l'aide,
+   l'encyclopédie, le didacticiel (9b, à faire).
+   - **Fait (9a)** : les anciennes parties et les performances.
+     - **Les sauvegardes témoins** (`tests/engine/temoins.json`) : une partie par grande époque du
+       format, écrite par le moteur de la version d'alors (le code de chaque version extrait du
+       dépôt, ses fonctions et les aides de ses tests : `createInitialState`, `testBatir`,
+       `poserBloc`, `buyAnimal`, `plant`, `chopTree`, `couperMonde`, `peuplerHameau`, `majCaleche`…),
+       puis deux à quatre nuits jouées : format 50 (le dernier d'avant le grand monde, le cheval
+       attaché en ville), 51 (le grand ménage fait, la ferme seule), 52 (la ferme posée dans le monde),
+       54 (un arbre du monde abattu), 57 (un hameau vu et ses habitants, la calèche). Chacune est
+       avancée : la maison et son foyer, le Silo, le Poulailler et ses poules, l'Étable (deux moutons,
+       une vache), le four, la cuisinière, l'Atelier, l'Écurie et le cheval, six cultures, un arbre
+       abattu et un autre entamé, un rocher cassé, une touffe fauchée, le didacticiel à sa 4ᵉ étape.
+       Celles d'avant la ferme générée (format 46, la ferme du grand-père) restent celles de
+       `anciennes-parties.json`. Le test (`tests/engine/temoins.test.mjs`) les migre jusqu'à
+       aujourd'hui et vérifie que rien ne se perd ni ne se double : l'argent, le jour, l'inventaire (le
+       cheval laissé en ville rend son poteau et sa corde), chaque bloc à sa case du monde, les sols et
+       les hauteurs, les bâtiments, les bêtes, le cheval à l'Écurie, les parcelles et leurs cases (une
+       par case, sous aucun bloc), la famille, le didacticiel, la campagne, le niveau, les arbres,
+       rochers et touffes touchés (aux identifiants du monde), la ferme en `FERME_DANS_MONDE`, vue avec
+       sa prairie, ce qui a été pris dans le monde, les hameaux et leurs habitants, la calèche ; une
+       deuxième migration ne change rien ; puis quatre nuits. Ce qu'elle a révélé : rien de perdu dans
+       le moteur. Dans Chromium (chaque témoin posé dans `localStorage`) : la page s'ouvre sans erreur,
+       les blocs et les parcelles sont exactement ceux de la migration du moteur, le personnage est
+       sur sa ferme, les régions du monde autour sont dessinées.
+     - **Une sauvegarde abîmée** (`reparerPartie`, `js/engine/state.js`, appelée par `migrate` à la
+       version courante, et à la place d'une migration qui échoue) : chaque champ d'une partie neuve,
+       et ceux de ses objets, qui manque ou n'a pas le bon type (un nombre qui n'en est pas un, une
+       liste à la place d'un objet…) reprend sa valeur de départ ; le reste est gardé ; une partie saine
+       n'y change pas d'un octet (testé sur tous les témoins) et ne coûte rien (aucune ferme n'est
+       faite : `createInitialState(graine, { sansFerme: true })`, le modèle des champs). Testé : dix-neuf
+       façons d'abîmer une partie (sans inventaire, l'argent en texte, sans famille, sans monde, le vu
+       en nombre, les blocs en liste…) : la migration et quatre nuits passent. Une sauvegarde
+       illisible (pas du JSON, coupée) ne bloque plus la page sans rien dire : une nouvelle partie
+       commence, l'ancienne reste gardée sur l'appareil (« ferme-save-abimee ») et un message le dit.
+     - **La qualité de l'affichage** (`CarteKit.qualite`, `js/carte/kit.js` ; docs/architecture-phaser.md) :
+       un réglage de l'appareil (les Options, Affichage : « Auto », « Économie », « Normale » ;
+       `localStorage`), jamais lu par le moteur (testé : aucun fichier du moteur ne le lit, la même
+       partie donne le même résultat). En « Auto », un téléphone prend l'économie, un ordinateur la
+       normale (rien n'y change). L'économie : le canvas à la moitié de la densité de l'écran (chaque
+       pixel sur 2 × 2 pixels de l'écran, net ; quatre fois moins de pixels à dessiner : le gros du
+       gain, le dessin étant l'essentiel du temps d'une image), le brouillard en points de 4 px de carte
+       refaits deux fois moins souvent, la carte de lumière de la nuit en points de 2 px, la mer sans
+       son eau vivante (ses tuiles animées : le shader de la houle était le plus cher), les arbres,
+       rochers et hameaux du monde faits à 32 px de la vue au lieu de 96 (défaits à 192 au lieu de 384).
+       L'aide en a une ligne (les outils). Tests : `tests/engine/qualite.test.mjs`.
+     - **Mesuré** (Chromium sans carte graphique, SwiftShader ; la partie du témoin v57, la même graine ;
+       temps moyen d'une image en ms, et son 90ᵉ centile, sur 7 s debout à chaque endroit). Le profil
+       mobile : 390 × 844, densité 3, processeur ralenti × 4 (DevTools, `Emulation.setCPUThrottlingRate`).
+
+       | Endroit (mobile) | Avant | Après, « Auto » (économie) | Après, « Normale » |
+       |---|---|---|---|
+       | La ferme | 236,7 (250) | 75,2 (100) | 255,3 (317) |
+       | Forêt dense | 261,7 (300) | 79,2 (100) | 247,7 (300) |
+       | Côte | 276,3 (317) | 72,5 (83) | 331,0 (400) |
+       | Hameau habité | 227,4 (267) | 87,9 (117) | 271,8 (333) |
+       | Bord du brouillard | 250,6 (300) | 73,0 (83) | 220,8 (250) |
+       | La nuit, à la ferme | 199,5 (250) | 68,3 (83) | 216,1 (250) |
+       | La nuit, en forêt | 297,2 (333) | 89,7 (117) | 288,0 (333) |
+       | Carte du monde, 1ʳᵉ ouverture | 1 247 ms | 756 ms | 1 280 ms |
+       | Démarrage, nouvelle partie | 12,98 s | 9,01 s | 12,61 s |
+       | Démarrage, partie avancée | 13,51 s | 9,83 s | 13,15 s |
+
+       Sur le profil mobile, chaque endroit passe de 4 à 12-14 images par seconde (trois fois moins de
+       temps par image) ; la qualité normale y reste celle d'avant. Sur ordinateur (1280 × 800, la
+       qualité normale, la même que la page d'avant, les deux versions servies côte à côte et mesurées
+       en alternance, trois fois chacune) : la ferme 56,9 → 54,9 ms, la forêt 86,7 → 86,3, la côte
+       74,4 → 77,5, le hameau 98,6 → 97,6 ; démarrage d'une nouvelle partie 2,64 → 2,61 s, d'une partie
+       avancée 2,95 → 2,85 s : rien au-delà du bruit de la machine d'essai (± 10 à 15 % d'une série à
+       l'autre). Le JavaScript ne compte presque pas (un profil de 6 s en forêt, sur mobile : 83 % du
+       temps hors du JavaScript, dans le dessin) : c'est le nombre de pixels qui coûte.
+     - **La mémoire** : après les endroits durs, le tas JavaScript est à 32 Mo, avant comme après, 210
+       textures de Phaser. Allers-retours lointains répétés (la côte, un hameau, la forêt, le bord du
+       brouillard, puis la ferme ; 12 tours sur ordinateur, 4 sur mobile) : les textures de Phaser (562
+       à 564) et les objets de la scène (3 211 à 3 212) reviennent au même niveau à chaque tour ; le tas
+       monte de 1 à 2 Mo sur les premiers tours puis à peine (une comparaison de deux images du tas : du
+       code compilé, pas des objets du jeu). Deux fuites de la carte graphique, trouvées en comptant les
+       textures et les tampons WebGL vivants (4 à 5 de plus de chaque à chaque aller-retour le long de
+       l'eau) et corrigées dans `js/carte/eau.js` : une DynamicTexture de Phaser 4 naît avec une texture
+       aussitôt remplacée et jamais rendue (`dynamique` l'efface), un Shader ne rend pas son tampon de
+       sommets à sa destruction (`shaderDefait`). Après : 13 tampons et 571 textures WebGL vivants à
+       chaque retour à la ferme.
+     - **Les défauts corrigés** :
+       - l'image tournée mal tracée sous SwiftShader (l'arbre qui bascule, l'aigle, le poisson qui
+         saute, l'écureuil qui grimpe) : la cause est dans le shader des lots de Phaser 4, qui choisit
+         la texture d'un point par une égalité exacte sur un nombre interpolé (`outTexDatum ==
+         float(i)`), que le rendu logiciel ne retombe pas exactement sur l'entier dans un triangle
+         tourné : le point devenait transparent (reproduit dans une page seule : trois textures dans le
+         lot suffisent). `CarteJeu` retouche ces shaders à leur compilation (l'entier le plus proche,
+         calculé une fois par point) : plus de trou, sans image pré-tournée ni autre changement ;
+         mesuré : pas de coût (une texture par lot, l'autre contournement essayé, coûtait 10 à 15 % sur
+         la côte) ;
+       - la scène plantait à chaque image (« Cannot read properties of null (reading 'x') »,
+         `calecheSignes`, depuis la fiche 7c) tant que le personnage était dans la maison ou couché,
+         avec la calèche dans le monde : plus rien ne se dessinait (le soir, une partie rouverte dans la
+         maison) ;
+       - le grand saut d'un coup : non reproduit (99 sauts au hasard dans le monde, la vue posée d'un
+         coup toutes les trois images, et plus de 40 allers-retours lointains : aucune erreur) ; par prudence,
+         le sol d'une région et les blocs d'eau prennent une clé de texture neuve à chaque fois, comme
+         les toits des hameaux (une texture retirée puis refaite sous la même clé plantait le rendu) ;
+       - le fondu du brouillard suit l'horloge réelle (Phaser plafonne `delta` quand la fenêtre n'a
+         pas le focus ou sous 5 images par seconde : une cellule y mettait 20 s à se dégager).
+     - `npm test` : 49,6 s avant, 51,4 s après (les tests de la fiche : `temoins.test.mjs`, 9 tests, ~3 s ;
+       `qualite.test.mjs`, 4 tests).
+     - Reste, et ce qui ne se vérifie que sur un vrai téléphone : toutes les mesures sont faites sous
+       SwiftShader (le dessin par le processeur) ; sur une vraie carte graphique de téléphone, le coût
+       du shader de la mer, du brouillard et du voile de la nuit est à mesurer (le réglage « Auto » y
+       prend déjà l'économie), comme la chaleur et la batterie, le toucher et la place des boutons au
+       pouce, et le choix de « Auto » sur une tablette avec un stylet ou un clavier (elle peut prendre la
+       normale) ; la mémoire de la carte graphique d'un vrai téléphone (les régions dessinées, 4 Mo
+       chacune, autour de la vue) ; le grand saut qui plantait le rendu n'a pas été revu ici.

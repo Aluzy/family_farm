@@ -17,8 +17,17 @@
   F.partie(Object.assign({}, K.eauVive, {
 
     // (au grand monde, les étangs de la ferme et les blocs d'eau dans la vue : eau-monde.js)
+    // Fiche 9a : en qualité « économie » (CarteKit.reglages().merVivante), la mer du grand monde n'a pas
+    // d'eau vivante (le shader de la houle, de l'écume et du ressac, le plus cher à dessiner) : ses tuiles
+    // animées seulement ; les lacs, les rivières et les étangs gardent la leur. La liste filtrée est
+    // gardée tant que la liste d'origine et la qualité ne changent pas (syncEau compare les listes).
     eauEtendues() {
-      return this.eauListe || this.animAreas;
+      const l = this.eauListe || this.animAreas;
+      if (!this.eauListe || K.reglages().merVivante) return l;
+      const f = this.eauSansMer;
+      if (f && f.de === l) return f.liste;
+      this.eauSansMer = { de: l, liste: l.filter((a) => !a.mer) };
+      return this.eauSansMer.liste;
     },
 
     eauHeure() {

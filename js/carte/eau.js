@@ -400,6 +400,33 @@ void main() {
     return { D, DL: mer ? distance(eau, w, h) : null, cap };
   }
 
+  // Fiche 9a : deux fuites de la carte graphique de Phaser 4, à chaque eau vivante faite puis défaite
+  // (la vue qui va et vient le long de la mer : 4 à 5 textures et autant de tampons de plus par
+  // aller-retour, jamais rendus).
+  //   - Une DynamicTexture naît avec une première texture (celle de sa source), aussitôt remplacée par
+  //     celle de son contexte de dessin : la première n'est plus à personne. dynamique() la fait comme
+  //     addDynamicTexture et efface celle qui reste orpheline.
+  //   - Un Shader (add.shader) a son propre nœud de rendu, dont le tampon de sommets n'est pas rendu à
+  //     sa destruction : shaderDefait() le rend.
+  function dynamique(scene, cle, w, h) {
+    const R = scene.sys.renderer, faire = R && R.createTextureFromSource, crees = [];
+    if (faire) R.createTextureFromSource = function (...args) { const t = faire.apply(this, args); crees.push(t); return t; };
+    let tex;
+    try {
+      tex = scene.textures.addDynamicTexture(cle, w, h);
+    } finally {
+      if (faire) R.createTextureFromSource = faire;
+    }
+    const garde = tex && tex.source[0] ? tex.source[0].glTexture : null;
+    for (const t of crees) if (t && t !== garde && t.destroy) t.destroy();
+    return tex;
+  }
+  function shaderDefait(sh) {
+    const tampon = sh && sh.renderNode && sh.renderNode.vertexBufferLayout ? sh.renderNode.vertexBufferLayout.buffer : null;
+    sh.destroy();
+    if (tampon && tampon.webGLBuffer && tampon.destroy) tampon.destroy();
+  }
+
   K.EAU = EAU;
   K.eauVive = {
 
@@ -453,12 +480,12 @@ void main() {
       const cle = commune ? `eau_carte_${id}_monde` : `eau_carte_${id}_${i}`;
       if (commune && !this.eauCommune) {
         this.eauCommune = {
-          carte: this.textures.addDynamicTexture(cle, w, h), t: -1,
+          carte: dynamique(this, cle, w, h), t: -1,
           ta: this.make.tileSprite({ x: 0, y: 0, width: w, height: h, key: 'eau_vague_a' }, false).setOrigin(0),
           tb: this.make.tileSprite({ x: 0, y: 0, width: w, height: h, key: 'eau_vague_b' }, false).setOrigin(0).setAlpha(0.5),
         };
       }
-      const carte = commune ? this.eauCommune.carte : this.textures.addDynamicTexture(cle, w, h);
+      const carte = commune ? this.eauCommune.carte : dynamique(this, cle, w, h);
       const ta = commune ? this.eauCommune.ta : this.make.tileSprite({ x: 0, y: 0, width: w, height: h, key: 'eau_vague_a' }, false).setOrigin(0);
       const tb = commune ? this.eauCommune.tb : this.make.tileSprite({ x: 0, y: 0, width: w, height: h, key: 'eau_vague_b' }, false).setOrigin(0).setAlpha(0.5);
       // l'eau elle-même : le shader (EAU_FRAG) à la place de l'image de l'étendue (cachée)
@@ -503,7 +530,7 @@ void main() {
       else for (const k of this.waters().keys()) { const [x, y] = k.split(',').map(Number); if (x >= a.x && y >= a.y && x < a.x + w && y < a.y + h) eau.push({ x, y }); }
       // les reflets et les ronds : une texture par étendue, découpée à l'eau (`sec` : ce qui
       // n'est pas de l'eau, effacé), qui ondule avec elle, juste au-dessus de l'eau
-      const refl = this.textures.addDynamicTexture(`eau_refl_${id}_${i}`, w, h);
+      const refl = dynamique(this, `eau_refl_${id}_${i}`, w, h);
       const reflet = this.add.image(a.x, a.y, `eau_refl_${id}_${i}`).setOrigin(0).setDepth(a.sprite.depth + 0.0005);
       reflet.enableFilters();
       const fx2 = reflet.filters.internal.addDisplacement(cle, (2 * E.ondule) / w, (2 * E.ondule) / h);
@@ -525,7 +552,8 @@ void main() {
     eauDefait(v) {
       if (v.a.sprite && v.a.sprite.active) { if (v.a.monde) v.a.sprite.setVisible(!this.tilesStill); else v.a.sprite.setAlpha(1); }
       v.a.vive = false;
-      for (const o of [...(v.commune ? [] : [v.ta, v.tb]), v.terre, v.reflet, v.secImg, v.shader, ...v.brillants.map((b) => b.img)]) o.destroy();
+      for (const o of [...(v.commune ? [] : [v.ta, v.tb]), v.terre, v.reflet, v.secImg, ...v.brillants.map((b) => b.img)]) o.destroy();
+      shaderDefait(v.shader);
       for (const k of [...(v.commune ? [] : ['carte']), 'rive', 'refl', 'sec', 'champ']) this.textures.remove(`eau_${k}_${v.id}_${v.i}`);
     },
 

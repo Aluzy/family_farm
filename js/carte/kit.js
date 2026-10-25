@@ -7,6 +7,8 @@
  *   - T, la tuile (16 px) ; v(fichier), l'adresse versionnée d'un fichier de assets/ ;
  *   - reduit(), le réglage « réduire les animations » (une seule requête, lue à chaque image) ;
  *   - ratio(), la densité de l'écran à laquelle le canvas des cartes est rendu (plafonnée à 3) ;
+ *   - qualite(), reglages(), reglerQualite() : la qualité du rendu (fiche 9a : « économie » sur un
+ *     téléphone, « normale » sur un ordinateur, ou au choix dans les Options) ;
  *   - extrude(), les planches de tuiles à bord répété (pas de liseré au zoom non entier), faites
  *     une fois par planche ;
  *   - planche(), planchePerso() : la planche d'un personnage (assets/personnages/) ;
@@ -55,7 +57,70 @@
   // Le canvas des cartes (un seul pour toutes : js/carte/jeu.js) est rendu à la densité de
   // l'écran, plafonnée à 3 : la ferme, au zoom non entier, garde des pixels réguliers ; les
   // autres cartes y prennent un zoom entier en pixels de l'écran.
-  function ratio() { return Math.min(3, Math.max(1, global.devicePixelRatio || 1)); }
+  // Fiche 9a : en qualité « économie » (un téléphone), la moitié de cette densité (au moins 1) : quatre
+  // fois moins de pixels à dessiner, chacun posé sur deux pixels de l'écran en largeur et en hauteur
+  // (net, sans flou : le canvas garde « image-rendering: pixelated »).
+  function ratio() {
+    const d = Math.min(3, Math.max(1, global.devicePixelRatio || 1));
+    return reglages().demiDensite ? Math.max(1, d / 2) : d;
+  }
+
+  // Fiche 9a : la qualité du rendu des cartes, un réglage de l'appareil (pas de la partie : le moteur
+  // ne le voit jamais), gardé dans localStorage (QUALITE.cle) : « auto » (par défaut), « economie » ou
+  // « normale ». En « auto », un téléphone ou une tablette (un écran tactile sans souris, ou un
+  // navigateur qui se dit mobile) prend « economie », un ordinateur « normale » : sur ordinateur, rien ne
+  // change. Ce que l'économie règle (QUALITE.reglages) :
+  //   - demiDensite : le canvas à la moitié de la densité de l'écran (ratio) ;
+  //   - brouillardPx, brouillardImages : le brouillard du grand monde en points de 4 px de carte au lieu
+  //     de 2 (quatre fois moins de points à calculer et à envoyer à la carte graphique), refait deux fois
+  //     moins souvent pour sa dérive (js/carte/ferme/brouillard.js) ;
+  //   - lumierePx : la carte de lumière de la nuit (le voile et ses lueurs) en points de 2 px de carte
+  //     (js/carte/lumiere.js) ;
+  //   - merVivante : la mer du grand monde sans son eau vivante (le shader de la houle, de l'écume et du
+  //     ressac) : ses tuiles animées seulement, comme avec « animations réduites » ; les lacs, les
+  //     rivières et les étangs gardent la leur (js/carte/eau.js) ;
+  //   - vegetationPres, vegetationLoin : les images des arbres, des rochers et des hameaux du monde
+  //     faites plus près de la vue, et défaites plus tôt (js/carte/ferme/vegetation.js).
+  const QUALITE = {
+    cle: 'ferme-qualite',
+    choix: ['auto', 'economie', 'normale'],
+    reglages: {
+      normale: { demiDensite: false, brouillardPx: 2, brouillardImages: 4, lumierePx: 1, merVivante: true, vegetationPres: 96, vegetationLoin: 384 },
+      economie: { demiDensite: true, brouillardPx: 4, brouillardImages: 8, lumierePx: 2, merVivante: false, vegetationPres: 32, vegetationLoin: 192 },
+    },
+  };
+  let qualiteVue = null;          // la qualité en vigueur (calculée une fois, puis à chaque changement)
+  function qualiteChoisie() {
+    try {
+      const q = global.localStorage.getItem(QUALITE.cle);
+      return QUALITE.choix.includes(q) ? q : 'auto';
+    } catch (e) {
+      return 'auto';
+    }
+  }
+  function appareilMobile() {
+    const N = global.navigator || {};
+    if (N.userAgentData && typeof N.userAgentData.mobile === 'boolean' && N.userAgentData.mobile) return true;
+    const mm = (q) => !!(global.matchMedia && global.matchMedia(q).matches);
+    return mm('(pointer: coarse)') && !mm('(any-pointer: fine)');
+  }
+  function qualite() {
+    if (!qualiteVue) {
+      const q = qualiteChoisie();
+      qualiteVue = q === 'auto' ? (appareilMobile() ? 'economie' : 'normale') : q;
+    }
+    return qualiteVue;
+  }
+  function reglages() { return QUALITE.reglages[qualite()]; }
+  // Change le réglage (« auto », « economie » ou « normale ») ; le canvas se refait à sa densité
+  // (CarteJeu.taille), le reste suit à la prochaine image.
+  function reglerQualite(q) {
+    if (!QUALITE.choix.includes(q)) return qualite();
+    try { global.localStorage.setItem(QUALITE.cle, q); } catch (e) { /* le temps de la visite */ }
+    qualiteVue = q === 'auto' ? (appareilMobile() ? 'economie' : 'normale') : q;
+    if (global.CarteJeu && global.CarteJeu.taille) global.CarteJeu.taille();
+    return qualiteVue;
+  }
 
   // Les planches de tuiles « extrudées » : chaque tuile recopiée avec un bord d'un pixel qui
   // répète son propre bord (marge 1, espacement 2). Quand la caméra tombe entre deux pixels
@@ -260,7 +325,7 @@
   }
 
   global.CarteKit = Object.assign(global.CarteKit || {}, {
-    T, v, reduit, ratio, extrude, planche, planchePerso, saisie, regard, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
+    T, v, reduit, ratio, QUALITE, qualite, qualiteChoisie, reglages, reglerQualite, extrude, planche, planchePerso, saisie, regard, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
     cycle, imageA, animTuiles, pasAnimTuiles, FLECHE, balance, TEXTE, texte,
   });
 })(window);

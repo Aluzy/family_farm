@@ -132,8 +132,9 @@
     },
 
     eauBlocOn(b) {
-      const key = 'eau_monde_' + b.x + '_' + b.y;
-      if (this.textures.exists(key)) this.textures.remove(key);
+      // (une clé neuve à chaque fois : voir sol.js showRegion, fiche 9a)
+      this.eauMondeN = (this.eauMondeN || 0) + 1;
+      const key = 'eau_monde_' + b.x + '_' + b.y + '_' + this.eauMondeN;
       b.tex = this.textures.createCanvas(key, b.w, b.h);
       b.sprite = this.add.image(b.x, b.y, key).setOrigin(0).setDepth(0.1).setVisible(!this.tilesStill);
       this.paintMondeArea(b);

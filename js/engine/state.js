@@ -100,7 +100,9 @@ function startLot11() {
 }
 
 // La ferme de la partie est générée d'après sa graine (state.carte.graine, tirée de `seed`).
-export function createInitialState(seed = 1) {
+// `sansFerme` (reparerPartie, fiche 9a) : la forme d'une partie neuve sans rien calculer de sa ferme ni
+// du monde (les régions et le vu vides, pas de parcelles) : un modèle des champs et de leurs types.
+export function createInitialState(seed = 1, { sansFerme = false } = {}) {
   const s = {
     version: STATE_VERSION,
     day: 1,
@@ -134,6 +136,11 @@ export function createInitialState(seed = 1) {
   // hameaux où il est allé (monde-hameaux.js, fiche 7a) ; leurs habitants (habitants.js, fiche 7b) ;
   // ce qui a été vu (monde-vu.js, fiche 8 : un bit par cellule de 8 × 8 cases, la ferme et sa prairie
   // d'office), le but de la boussole (null : la ferme) et si elle se montre
+  if (sansFerme) {
+    s.monde = { vues: [], pris: {}, hameaux: {}, habitants: {}, vu: '', but: null, boussole: true };
+    s.potager.parcelles = [];
+    return s;
+  }
   s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s)), but: null, boussole: true };
   s.potager.parcelles = startPlots(farmTerrain(s));
   return s;
@@ -1218,18 +1225,68 @@ export function migrateToIntegers(old) {
 // Applique les migrations successives à une sauvegarde { v, t, s } (ou à un
 // état brut) jusqu'à atteindre la version courante (ou `jusqua` : les tests des
 // anciennes migrations s'arrêtent avant le déménagement, v46 → v47). Ne lance jamais
-// d'exception : une entrée invalide retombe sur un état migré au mieux.
+// d'exception : une entrée invalide retombe sur un état migré au mieux. Fiche 9a : une migration
+// qui échoue sur une sauvegarde abîmée (un champ manquant, un type faux) ne fait plus planter la
+// page : la partie est réparée telle qu'elle est (reparerPartie) ; arrivée à la version courante,
+// elle l'est aussi (une partie saine n'y change pas d'un octet).
 export function migrate(save, jusqua = STATE_VERSION) {
-  let state = save && typeof save === 'object' && save.s && typeof save.s === 'object'
+  let state = save && typeof save === 'object' && save.s && typeof save.s === 'object' && !Array.isArray(save.s)
     ? { ...save.s }
-    : (save && typeof save === 'object' ? { ...save } : {});
-  let version = typeof state.version === 'number' ? state.version : 0;
+    : (save && typeof save === 'object' && !Array.isArray(save) && !('s' in save) ? { ...save } : {});
+  let version = typeof state.version === 'number' && Number.isInteger(state.version) ? state.version : 0;
   let guard = 0;
   while (MIGRATIONS[version] && version < jusqua && guard < 1000) {
-    state = MIGRATIONS[version](state);
+    try {
+      state = MIGRATIONS[version](state);
+    } catch (e) {
+      state = { ...reparerPartie(state), version: STATE_VERSION };
+      version = STATE_VERSION;
+      break;
+    }
     version = typeof state.version === 'number' ? state.version : version + 1;
     guard++;
   }
   if (typeof state.version !== 'number') state.version = version;
+  if (state.version === STATE_VERSION && jusqua === STATE_VERSION) state = reparerPartie(state);
+  return state;
+}
+
+// Fiche 9a : une partie abîmée (une sauvegarde coupée, bricolée, un champ manquant ou d'un autre type)
+// reprend les valeurs d'une partie de départ là où elles manquent ou sont fausses : chaque champ d'une
+// partie neuve (createInitialState) et ceux de ses objets (un niveau plus bas) ; un nombre qui n'en est
+// pas un (ou pas fini), un texte, un booléen, une liste ou un objet d'un autre type. Ce qui est juste
+// (et tout ce qu'une partie neuve n'a pas) reste tel quel ; une valeur de départ nulle accepte tout. La
+// ferme est celle de la partie (sa graine) : sans graine lisible, celle d'une partie neuve ; des parcelles
+// remises à zéro sont vides ; des régions vues ou un vu remis sont ceux de sa ferme (et des régions qu'elle
+// garde). Une partie saine ne coûte presque rien (aucune ferme n'est faite). Renvoie la partie (modifiée).
+let modeleDepart = null;
+export function reparerPartie(old) {
+  const state = old && typeof old === 'object' && !Array.isArray(old) ? old : {};
+  const seed = Number.isInteger(state.rngSeed) && state.rngSeed >= 0 ? state.rngSeed : 1;
+  // (le modèle : la forme d'une partie neuve, faite une fois, sans sa ferme ni le monde — ce qui en
+  // dépend, refait plus bas pour la ferme de la partie s'il a fallu le remettre ; ses valeurs sont
+  // copiées, jamais prêtées)
+  const depart = modeleDepart || (modeleDepart = createInitialState(seed, { sansFerme: true }));
+  if (!state.carte || typeof state.carte !== 'object' || Array.isArray(state.carte)) state.carte = { graine: graineDemenagement({ rngSeed: seed }) };
+  const remis = new Set();
+  const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+  const juste = (v, d) => {
+    if (d === null || d === undefined) return true;
+    if (typeof d === 'number') return typeof v === 'number' && Number.isFinite(v);
+    if (Array.isArray(d)) return Array.isArray(v);
+    if (typeof d === 'object') return objet(v);
+    return typeof v === typeof d;
+  };
+  const repare = (o, cle, d, chemin, niveau) => {
+    if (!juste(o[cle], d)) { o[cle] = JSON.parse(JSON.stringify(d)); remis.add(chemin); return; }
+    if (niveau < 1 && objet(d)) for (const k of Object.keys(d)) repare(o[cle], k, d[k], `${chemin}.${k}`, niveau + 1);
+  };
+  for (const k of Object.keys(depart)) if (k !== 'version' && k !== 'carte') repare(state, k, depart[k], k, 0);
+  if (remis.has('rngSeed')) state.rngSeed = seed;
+  if (remis.has('monde') || remis.has('monde.vues') || remis.has('monde.vu')) {
+    const T = farmTerrain(state);
+    if (remis.has('monde') || remis.has('monde.vues')) state.monde.vues = regionsFerme(T);
+    if (remis.has('monde') || remis.has('monde.vu')) state.monde.vu = vuDesRegions(T, state.monde.vues);
+  }
   return state;
 }
