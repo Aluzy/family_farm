@@ -1,4 +1,5 @@
 import { registerActions } from './actions.js';
+import { son } from './son.js';
 
 /* ---------- fenêtres de #modal-root : ouverture, focus, fermeture ---------- */
 
@@ -69,7 +70,7 @@ export function openModal(html, {
   dismiss = true, focus = null, preventScroll = false, onClose = null,
 } = {}) {
   const root = modalRoot();
-  if (!root.childElementCount) restoreFocus = rememberFocus();
+  if (!root.childElementCount) { restoreFocus = rememberFocus(); son('ouvre'); }
   onCloseModal = onClose;
   const aria = labelledBy ? ` aria-labelledby="${labelledBy}"` : label ? ` aria-label="${label}"` : '';
   root.innerHTML = `
@@ -85,6 +86,7 @@ export function openModal(html, {
 export function closeModal() {
   const root = modalRoot();
   if (!root.childElementCount) return;
+  son('ferme');
   const after = onCloseModal;
   const restore = restoreFocus;
   onCloseModal = null;

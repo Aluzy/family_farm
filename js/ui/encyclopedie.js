@@ -152,7 +152,7 @@ function majDecouvertes(force = false) {
   const noms = neuves.map((id) => entreeEncyclopedie(id).terme);
   showToast(neuves.length === 1
     ? `📖 Nouvelle page dans l'Encyclopédie : ${noms[0]}`
-    : `📖 ${neuves.length} nouvelles pages dans l'Encyclopédie : ${noms.slice(0, 3).join(', ')}${neuves.length > 3 ? '…' : ''}`);
+    : `📖 ${neuves.length} nouvelles pages dans l'Encyclopédie : ${noms.slice(0, 3).join(', ')}${neuves.length > 3 ? '…' : ''}`, { son: 'decouverte' });
 }
 
 // Le nombre de pages pas encore lues (le badge du menu).

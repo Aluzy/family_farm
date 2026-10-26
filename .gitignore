@@ -17,3 +17,6 @@ __pycache__/
 
 # Aperçus produits par les générateurs Python (scripts/…), jamais commités
 apercu_*.png
+
+# Fichiers de travail des générateurs de sons (scripts/son/fabrique.py) : masters WAV, jamais commités
+scripts/son/_sortie/

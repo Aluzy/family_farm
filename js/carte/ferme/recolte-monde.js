@@ -207,6 +207,7 @@
         this.revealPieces(M2.coup);
         K.vibre(fort ? 'fort' : 'hache');
         if (fort) K.secousse(this, 'fort');
+        if (global.FermeSon) global.FermeSon.joue('hache', { x: foot.x, y: foot.y, depuis: 0.16, gain: fort ? 1.25 : 1, vitesse: fort ? 0.9 : 1, ecart: 0 });
         if (o.tombe && !o.queued) { this.mondeAbat(o, true); return; }
         this.mondeTremble(o);
       };
@@ -258,6 +259,8 @@
       // (il penche déjà un peu : son ombre s'en va, un arbre qui penche n'en porte pas, soleil.js)
       const img = o.img.setAlpha(1).setAngle(t.dir * 0.5);
       this.sunDirty = true;
+      // le craquement puis le fracas (js/son.js) ; abattu par un habitant : de là où il est
+      if (global.FermeSon) global.FermeSon.joue('arbre_tombe', { x: o.fx, y: o.fy, depuis: 1.7 - CHUTE.ms / 1000, portee: 30 });
       this.tweens.add({
         targets: img, angle: t.dir * CHUTE.angle, duration: CHUTE.ms, ease: 'Quad.easeIn',
         onComplete: () => {
@@ -299,6 +302,7 @@
         this.revealPieces(M2.coup);
         K.secousse(this, fort ? 'fort' : 'coup');
         K.vibre(fort ? 'fort' : 'pioche');
+        if (global.FermeSon) global.FermeSon.joue('pioche', { x: foot.x, y: foot.y, depuis: 0.14, gain: fort ? 1.25 : 1, vitesse: fort ? 0.9 : 1, ecart: 0 });
         if (o.brise && !o.queued) { this.mondeBrise(o, true); return; }
         this.mondeTremble(o);
         const p = this.fermier && this.fermier.pos();
@@ -312,6 +316,7 @@
       const b = o.brise;
       if (!b) return;
       o.brise = null;
+      if (anim && global.FermeSon) global.FermeSon.joue('retrait', { x: o.fx, y: o.fy, vitesse: 0.75, gain: 1.3, delai: 0.05 });
       if (o.filet) { o.filet.remove(); o.filet = null; }
       this.revealPieces(b.fin);
       const fin = () => {
@@ -359,6 +364,7 @@
       this.time.delayedCall(FILET_MS, fin);
       const hit = () => {
         K.vibre('ramasse');
+        if (global.FermeSon) global.FermeSon.joue('faux', { x: foot.x, y: foot.y, ecart: 0 });
         if (!img || reducedMotion()) { fin(); return; }
         if (o) o.anim = true;
         this.spawnShards({ box: { x0: h.x - 5, x1: h.x + 5, y0: h.y - 10, y1: h.y } }, 6, true, null, VERTS);

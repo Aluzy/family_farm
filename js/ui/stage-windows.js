@@ -52,6 +52,7 @@ import { registerActions } from './actions.js';
 import { toolBarHtml, toolbarOpen } from './outils.js';
 import { rememberFocus } from './modal.js';
 import { jaugeClasse, plural } from './common.js';
+import { son } from './son.js';
 
 /* ---------- Fenêtres de la carte ---------- */
 
@@ -411,6 +412,7 @@ export function openStageWindow(id) {
   // la Maison : ses onglets, ou les Installations s'il n'y en a pas
   if (id === 'maison') id = maisonOuInstallations();
   if (id === 'maison') maisonTab = maisonTabChoisi;
+  if (stageWindow !== id) son(stageWindow ? 'onglet' : 'ouvre');
   stageWindow = id;
   stageReturn = null;
   renderStageWindow(); // tout de suite, sans attendre la cadence de rendu
@@ -418,6 +420,7 @@ export function openStageWindow(id) {
 }
 
 export function closeStageWindow() {
+  if (stageWindow) son('ferme');
   stageWindow = null;
   stageReturn = null;
   renderStageWindow();
@@ -774,6 +777,7 @@ registerActions({
     allerAuLieu(target.dataset.window, target.dataset.tab, target.dataset.anchor);
   },
   'switch-tab': (target) => {
+    son('onglet');
     // L'Inventaire et la calèche, avec la carte, sont des fenêtres flottantes par-dessus elle.
     if (['installations', 'commerce', 'inventaire', 'atelier', 'comptoir', 'techno', 'notifications'].includes(target.dataset.tab) && stageUsable()) {
       if (target.dataset.tab === 'comptoir') setComptoirTab(comptoirTabAOuvrir()); // FLU-13

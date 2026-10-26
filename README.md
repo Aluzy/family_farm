@@ -124,7 +124,7 @@ l'argent et les biens produits pendant l'absence.
 
 `jeu.html` ne contient que la structure de la page. Elle charge `css/jeu.css`, des scripts
 classiques (`js/telemetry.js`, le suivi de session ; `vendor/phaser.min.js` ; `js/carte/*.js`,
-les outils communs des cartes ; `js/ambient-life.js`, la vie d'ambiance ; `js/fermier.js`, le
+les outils communs des cartes ; `js/son.js`, le son ; `js/ambient-life.js`, la vie d'ambiance ; `js/fermier.js`, le
 personnage ; `js/famille-ferme.js`, la famille ; `js/carte/ferme/*.js` et `js/farm-stage.js`,
 la carte de la ferme ; `js/grotte.js`, la grotte de la mine), puis `js/main.js`, point
 d'entrée de **modules ES** :
@@ -138,6 +138,7 @@ d'entrée de **modules ES** :
 | `js/farm-stage.js`, `js/carte/ferme/` | la carte Phaser de la ferme, une partie par fichier (le sol, le décor, la hache, les blocs, l'étage, les toits, les abeilles, les arbres plantés…) |
 | `js/grotte.js` | la scène Phaser de la grotte de la mine (`window.Grotte`), réglée par `data/grotte.json` |
 | `js/ambient-life.js`, `js/fermier.js`, `js/famille-ferme.js` | la vie d'ambiance, le personnage et la famille sur la carte (scripts classiques, hors modules ; voir docs/personnage.md) |
+| `js/son.js`, `js/ui/son.js`, `assets/son/` | le son (`window.FermeSon`) : musique, ambiances, bruits des gestes et de l'interface, la partie « Son » des Options ; voir [`docs/son.md`](docs/son.md) |
 | `scripts/` | outils Node et Python : données, carte, site, vérifications, simulation, icônes (voir plus bas) |
 | `tests/` | les tests (`npm test`) : moteur, données, suivi de session, rapport quotidien |
 | `worker/`, `wrangler.toml`, `scripts/collect-server.mjs` | collecte des sessions et rapport quotidien (voir « Suivi de session ») |
@@ -367,6 +368,13 @@ plus légers, pixel pour pixel identiques.
 - **Citerne** : `python3 scripts/batiments/citerne.py` génère `assets/citerne.png`, la citerne
   (le réservoir) posée en bloc ; son tube de niveau suit l'eau du réservoir.
 
+### Son
+
+Tous les sons (`assets/son/`, 107 sons en 175 fichiers `.ogg`, avec leur double `.m4a` pour
+Safari) sont synthétisés par `scripts/son/` (Python 3, numpy, scipy et ffmpeg) :
+`python3 scripts/son/fabrique.py` les refait tous, les encode et met à jour la table de
+`js/son.js`. Aucun échantillon tiers. Voir [`docs/son.md`](docs/son.md).
+
 ### Simulation d'équilibrage
 
 ```sh
@@ -417,6 +425,7 @@ nuits, aller à un chapitre, et voir l'état complet de la partie.
 | [`docs/grand-monde.md`](docs/grand-monde.md) | le grand monde (projet) : une seule carte de biomes, ses étapes |
 | [`docs/vie-ambiance.md`](docs/vie-ambiance.md) | la vie d'ambiance de la carte (vent, nuages, animaux, habitants) |
 | [`docs/icones.md`](docs/icones.md) | les icônes en pixel art, la police et les jauges |
+| [`docs/son.md`](docs/son.md) | le son : musique, ambiances, bruits, où chacun est joué, réglages, comment en ajouter |
 | [`docs/arbre_technologique.md`](docs/arbre_technologique.md) | proposition d'arbre des technologies v2, historique (`docs/techtree_v2.js`) ; la source de vérité est `data/techtree.json` |
 | [`worker/README.md`](worker/README.md) | installation du Worker Cloudflare et du rapport quotidien |
 
@@ -464,4 +473,5 @@ son nom brut suivi de « (non répertorié) ». `node scripts/check-actions.mjs`
 ## Crédits
 
 - Graphismes, icônes et illustrations : originaux (dessinés par les générateurs de `scripts/`)
+- Musique et sons : originaux (synthétisés par les générateurs de `scripts/son/`)
 - Moteur d'affichage : Phaser 4 (licence MIT)

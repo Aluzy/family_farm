@@ -127,6 +127,8 @@
         this.revealPieces(M2.coup);
         K.vibre(fort ? 'fort' : 'hache');
         if (fort) K.secousse(this, 'fort');
+        // le coup (le fichier commence par l'élan : on part à l'impact)
+        if (global.FermeSon) global.FermeSon.joue(t.buisson ? 'recolte' : 'hache', { x: t.foot.x, y: t.foot.y, depuis: t.buisson ? 0 : 0.16, gain: fort ? 1.25 : 1, vitesse: fort ? 0.9 : 1, ecart: 0 });
         if (t.falling && !t.queued) { this.fellTree(t, true); return; }
         this.shakeTree(t);
       };
@@ -149,6 +151,9 @@
         // (un arbre planté : le jeu ne l'a plus, il quitte la scène ; foret.js)
         if (t.plante && this.ctx.lastModel) this.syncForet(this.ctx.lastModel.foret);
       };
+      // le son de la chute : le craquement pendant qu'il bascule (CHUTE.ms), le fracas quand il touche
+      // le sol ; un buisson : un froissement
+      if (anim && global.FermeSon) global.FermeSon.joue(t.buisson ? 'arracher' : 'arbre_tombe', { x: t.foot.x, y: t.foot.y, depuis: t.buisson || reducedMotion() ? 0 : 1.7 - CHUTE.ms / 1000 });
       if (!o || !o.img || !anim || reducedMotion() || !this.textures.exists(o.img.texture.key)) { done(); lache(); return; }
       if (t.buisson) {
         // un buisson ne bascule pas : il part en feuilles et en brindilles

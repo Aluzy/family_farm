@@ -395,6 +395,7 @@
       this.time.delayedCall(9000, fin);           // (filet : le coup n'a pas été donné)
       const hit = () => {
         K.vibre('pioche');
+        if (global.FermeSon) global.FermeSon.joue('faux', { x: pied.x, y: pied.y, ecart: 0 });
         const imgs = [g.img, g.fleurs].filter(Boolean);
         if (!imgs.length || reducedMotion()) { fin(); return; }
         this.tweens.add({ targets: imgs, scaleY: 0.2, alpha: 0, duration: 220, ease: 'Quad.easeIn',

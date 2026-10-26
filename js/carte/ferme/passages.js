@@ -64,6 +64,7 @@
       const m = this.mineDoor();
       if (!m || this.enMine || !this.fermier || !this.fermier.entre) return;
       this.enMine = true;
+      if (global.FermeSon) global.FermeSon.joue('porte_ouvre', { x: m.x, y: m.y });
       this.fermier.entre({ x: m.x, y: m.y + MINE.arrive }, { x: m.x, y: m.y - MINE.seuil }, () => {
         this.enMine = false;
         if (global.FermeHote) global.FermeHote.go(MINE.page);

@@ -6,6 +6,7 @@ import { state } from './store.js';
 import { tel } from './consent.js';
 import { cibleAlerte } from './stage.js';
 import { deviceName } from './ferme.js';
+import { son } from './son.js';
 
 /* ---------- Lot 11 : notifications légères ---------- */
 
@@ -47,9 +48,12 @@ export function setAlertMuteUntil(value) {
 
 // L'unique façon d'afficher un message au joueur. `kind` : 'info' (par défaut), 'alerte',
 // 'repas' ou 'lettre' ; `cible` (voir cibleAlerte) : la notification devient un bouton qui
-// mène au menu concerné ; `duree` (ms) : à la place de la durée de lecture (notifyDuration).
-export function notify(message, { kind = 'info', cible = null, duree = 0 } = {}) {
+// mène au menu concerné ; `duree` (ms) : à la place de la durée de lecture (notifyDuration) ;
+// `son` : son bruit (une clé de js/son.js), à la place de celui de son genre, ou false.
+const SON_GENRE = { info: 'info', alerte: 'alerte', repas: 'cloche', lettre: 'reussite' };
+export function notify(message, { kind = 'info', cible = null, duree = 0, son: bruit } = {}) {
   const root = document.getElementById('toast-root');
+  if (bruit !== false) son(bruit || SON_GENRE[kind] || 'info');
   for (const el of Array.from(root.children)) {
     if (el.dataset.msg === message) el.remove();
   }
@@ -74,8 +78,8 @@ export function notify(message, { kind = 'info', cible = null, duree = 0 } = {})
 }
 
 // Pour js/ui/excursion.js (FermeHote.say des autres cartes) : une notification simple.
-export function showToast(message) {
-  notify(message);
+export function showToast(message, options) {
+  notify(message, options);
 }
 
 function alertMessage(ev) {

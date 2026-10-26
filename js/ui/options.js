@@ -9,6 +9,7 @@ import { openAboutModal } from './aide.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
+import { sonHtml } from './son.js';
 
 /* ---------- options (modale) ---------- */
 
@@ -103,6 +104,7 @@ export function openOptionsModal() {
           <button class="btn" type="button" data-action="open-about">ℹ️ Règles principales et version</button>
         </div>
       </div>
+      ${sonHtml()}
       <div class="stack">
         <strong>Affichage</strong>
         ${qualiteHtml()}
