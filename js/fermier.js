@@ -47,6 +47,8 @@
   const HOLD_MS = 9000;          // une case n'est jamais retenue plus longtemps
   const MAX_VISITS = 4;          // cases d'un même geste où il va lui-même ; les autres suivent en cascade
   const CASCADE_MS = 90;         // entre deux cases de la cascade
+  // le bruit de chaque geste du potager, au coup (js/son.js)
+  const GESTE_SON = { labourer: 'houe', planter: 'semis', arroser: 'arrosage', recolter: 'recolte' };
   const TELEPORT = 24 * T;       // chemin plus long : il apparaît directement sur place
   const TELEPORT_FAR = 70 * T;   // le matin, il traverse la ferme jusqu'au Poulailler
   // Les trajets dans le grand monde : la recherche du chemin ne regarde que les cases autour du
@@ -195,8 +197,21 @@
     const enSelle = () => !!(monture() && selles[monture()] && shown && !home && !where);
     const vitesse = () => (!enSelle() ? 1 : monture() === 'cheval' ? ctx.chevalVitesse || 1 : K.TRIPORTEUR.vitesse);
     let drawn = '';
+    // le son des pas (js/son.js) : un pas aux images 0 et 2 de la marche ; en selle, les sabots
+    // ou le pédalier, tant qu'il avance
+    const PAS = /^(marche|panier)_\w+_(\d)$/;
+    let pasVu = -1;
+    function bruitPas(name) {
+      const S = global.FermeSon, mp = PAS.exec(name);
+      if (!S || !mp) { pasVu = -1; return; }
+      if (enSelle()) { S.pas(x, y, monture(), roule); return; }
+      const k = +mp[2];
+      if (k !== pasVu && (k === 0 || k === 2)) S.pas(x, y, null, 0);
+      pasVu = k;
+    }
     function draw(name) {
       drawn = name;
+      bruitPas(name);
       if (enSelle() && ROULE.test(name)) {
         roule += Math.hypot(x - rx, y - ry);
         for (const k in selles) if (k !== monture() && selles[k]) selles[k].cache();
@@ -419,6 +434,7 @@
           face: st.face, flip: st.flip,
           onHit: () => {
             release(c);
+            if (global.FermeSon) { const p = tileXY(c); global.FermeSon.joue(GESTE_SON[type] || 'houe', { x: p.x, y: p.y, depuis: type === 'labourer' ? 0.12 : 0 }); }
             if (type === 'recolter') take(`parcelle:${c}`);
             // Après le dernier geste, les autres cases changent une à une autour de lui.
             if (n === visits.length - 1) {
@@ -871,6 +887,7 @@
       stepZ(L.x, L.y - 32 + 5, couche.t);
       if (!couche.slept && couche.t >= (reduced() ? 0.8 : ASLEEP_S)) {
         couche.slept = true;
+        if (global.FermeSon) global.FermeSon.joue('dodo');
         if (o.asleep && !ctx.dort) o.asleep();
       }
     }

@@ -136,6 +136,8 @@
       }
       if (change) {
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();
+        if (global.FermeSon && this.etageSonPret) global.FermeSon.joue('echelle', { gain: 0.8 });   // l'escalier (js/son.js)
+        this.etageSonPret = true;
         // on arrive en haut (ou en bas) de l'escalier le plus proche
         if (this.fermier && this.fermier.arrive && etage) {
           const p = this.fermier.pos(), cols = this.grid.cols;

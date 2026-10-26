@@ -161,6 +161,6 @@ registerActions({
     const id = target.dataset.id;
     const result = applyResult(buyTech(state, id));
     const res = Object.entries(result.ressources || {}).map(([item, q]) => `, −${formatNumber(q)} ${DATA.OBJETS[item].icone}`).join('');
-    if (result.ok) notify(`${DATA.ARBRE.noeuds[id].icone} ${DATA.ARBRE.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰${res})`);
+    if (result.ok) notify(`${DATA.ARBRE.noeuds[id].icone} ${DATA.ARBRE.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰${res})`, { son: 'techno' });
   },
 });

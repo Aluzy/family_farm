@@ -3064,3 +3064,8 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 @media (max-width: 560px) {
   .carte-monde-aide { display: none; }
 }
+
+/* Options › Son (js/ui/son.js) : un curseur par volume */
+.son-curseur { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 1.2fr); align-items: center; gap: 12px; min-height: 44px; }
+.son-curseur input[type="range"] { width: 100%; accent-color: var(--accent); }
+@media (max-width: 420px) { .son-curseur { grid-template-columns: 1fr; gap: 4px; } }

@@ -290,6 +290,7 @@
     // Elle fuit le personnage (en p) : chacune à sa façon (`fuit`).
     fauneFuit(b, p) {
       const e = b.e, a = Math.atan2(b.y - p.y, b.x - p.x);
+      if (global.FermeSon) global.FermeSon.cri(e.cle, b.x, b.y, 0.7);
       if (e.fuit === 'envol') {
         b.etat = 'envol'; b.haut = 0;
         b.tx = b.x + Math.cos(a) * 400; b.ty = b.y + Math.sin(a) * 400;
@@ -336,6 +337,7 @@
     // Un appui sur une bête : son nom et sa page de l'encyclopédie (la page) ; elle ne fuit pas pour
     // autant.
     fauneTouchee(b) {
+      if (global.FermeSon) global.FermeSon.cri(b.e.cle, b.x, b.y);   // son cri (js/son.js)
       if (this.ctx.bridge && this.ctx.bridge.faune) this.ctx.bridge.faune(b.e.cle);
     },
 

@@ -152,6 +152,7 @@
       F.bob = g;
       F.line = this.add.graphics();
       F.phase = 'cast';
+      if (global.FermeSon) global.FermeSon.joue('lancer', { ecart: 0 });
       const t0 = { k: 0 };
       this.tweens.add({
         targets: t0, k: 1, duration: reducedMotion() ? 1 : FISHING.castMs, ease: 'Sine.easeOut',
@@ -159,7 +160,7 @@
           const k = t0.k;
           g.setPosition(from.x + (F.target.x - from.x) * k, from.y + (F.target.y - from.y) * k - Math.sin(k * Math.PI) * 14);
         },
-        onComplete: () => { F.phase = 'wait'; F.t = 0; this.ripple(F.target.x, F.target.y + 1); },
+        onComplete: () => { F.phase = 'wait'; F.t = 0; this.ripple(F.target.x, F.target.y + 1); if (global.FermeSon) global.FermeSon.joue('plouf', { x: F.target.x, y: F.target.y, gain: 0.7 }); },
       });
     },
 
@@ -169,6 +170,7 @@
       F.t = 0;
       this.ripple(F.target.x, F.target.y + 1);
       K.vibre('touche');
+      if (global.FermeSon) global.FermeSon.joue('touche', { x: F.target.x, y: F.target.y });
       const p = this.fermier && this.fermier.pos();
       if (p) {
         const mark = K.texte(this, p.x, p.y - 36, '!', 12).setDepth(p.y + 50);
@@ -178,6 +180,7 @@
 
     reelLine(F) {
       F.phase = 'reel';
+      if (global.FermeSon) global.FermeSon.joue('moulinet', { gain: 0.8 });
       const tip = (this.fermier && this.fermier.rodTip()) || { x: F.target.x, y: F.target.y - 20 };
       if (F.bob) {
         this.tweens.add({ targets: F.bob, x: tip.x, y: tip.y, duration: FISHING.reelMs, ease: 'Quad.easeIn', onComplete: () => this.endFishing(F) });
@@ -195,12 +198,14 @@
         this.tweens.add({ targets: t, y: t.y - 6, alpha: 0, delay: 600, duration: 500, onComplete: () => t.destroy() });
       }
       if (!poisson) {
+        if (global.FermeSon) global.FermeSon.joue('rate', { delai: 0.3 });
         if (!p) return;
         const t = K.texte(this, p.x, p.y - 34, '…', 10).setDepth(p.y + 50);
         this.tweens.add({ targets: t, y: t.y - 6, alpha: 0, delay: 500, duration: 500, onComplete: () => t.destroy() });
         return;
       }
       const key = this.fishTexture(poisson);
+      if (global.FermeSon) global.FermeSon.joue('prise', { x: F.target.x, y: F.target.y, portee: 30 });
       if (!key || !p || reducedMotion()) { this.showGain({ [poisson]: 1 }); return; }
       this.ripple(F.target.x, F.target.y + 1);
       const img = this.add.image(F.target.x, F.target.y, key).setDepth(p.y + 40).setFlipX(p.x < F.target.x);

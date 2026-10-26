@@ -511,12 +511,12 @@ registerActions({
   },
   'feed-hen': () => {
     const result = applyResult(feedHen(state));
-    if (result.ok) notify('🌾 Une poule nourrie (1 blé pour 2 poules)');
+    if (result.ok) notify('🌾 Une poule nourrie (1 blé pour 2 poules)', { son: 'grain' });
   },
   'feed-all': () => {
     const result = applyResult(feedAllHens(state));
     if (result.ok) {
-      notify(`${plural(result.nourries, 'poule')} ${accord(result.nourries, 'nourrie')}.`);
+      notify(`${plural(result.nourries, 'poule')} ${accord(result.nourries, 'nourrie')}.`, { son: 'grain' });
     }
   },
 
@@ -530,7 +530,7 @@ registerActions({
   },
   'shear': (target) => {
     const result = applyResult(shear(state, target.dataset.id));
-    if (result.ok && !result.aRamasser) notify(`✂️ Tonte : +${result.laine} 🧶`);
+    if (result.ok && !result.aRamasser) notify(`✂️ Tonte : +${result.laine} 🧶`, { son: 'tonte' });
   },
   'plant-all-open': (target) => {
     openPlantAllModal(target.dataset.lieu);

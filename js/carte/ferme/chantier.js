@@ -59,6 +59,13 @@
     textures.addCanvas('lueur', cv);
   }
 
+  // la matière d'un bloc, pour le bruit de sa pose (js/son.js : pose_bois, pose_pierre, pose_metal)
+  function matiereBloc(sorte) {
+    if (/lanterne|panneau|batterie|fer|station|botteleuse|entonnoir|cuisiniere|vitr|convoyeur/.test(sorte)) return 'metal';
+    if (/pierre|brique|four|meule|puits|citerne|silo|dalle|paves|carrelage|marbre|mosaique|tomettes/.test(sorte)) return 'pierre';
+    return 'bois';
+  }
+
   F.partie({
 
     // Les images des blocs : celles du modèle, créées, changées ou ôtées. Les murs et la porte
@@ -141,13 +148,23 @@
           const img = this.add.image(x, y, key, f).setOrigin(0.5, 1).setDepth(plat ? y - T : y).setVisible(!BLOCS_CARTE.ailleurs.includes(b.sorte));
           const ne = { case: b.case, sorte: b.sorte, x, y, img };
           B.set(b.case, ne);
+          (this.sonPoses || (this.sonPoses = [])).push(ne);
           const li = linteau(b);
           this.syncHauts(ne, li ? li.h : haut1(b), li && li.frame);
           this.syncDalle(ne);
           changed = true;
         }
       }
-      for (const [c, e] of B) if (!seen.has(c)) { e.img.destroy(); this.syncHauts(e, 0); this.syncDalle(e, true); B.delete(c); changed = true; }
+      let retraits = null;
+      for (const [c, e] of B) if (!seen.has(c)) { e.img.destroy(); this.syncHauts(e, 0); this.syncDalle(e, true); B.delete(c); changed = true; retraits = e; }
+      // le son d'un bloc posé ou retiré (js/son.js) ; pas au premier dessin de la ferme
+      const poses = this.sonPoses || [];
+      this.sonPoses = null;
+      if (this.blocsVus && global.FermeSon) {
+        if (poses.length) { const e = poses[0]; global.FermeSon.joue('pose_' + matiereBloc(e.sorte), { x: e.x, y: e.y }); }
+        else if (retraits) global.FermeSon.joue('retrait', { x: retraits.x, y: retraits.y });
+      }
+      this.blocsVus = true;
       if (changed) {
         this.sunDirty = true;
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();

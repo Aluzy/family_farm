@@ -12,6 +12,7 @@ import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions, sameHandler } from './actions.js';
 import { closeModal } from './modal.js';
+import { sonMatin } from './son.js';
 
 /* ---------- actions du moteur (jamais d'accès direct à state depuis l'UI) ---------- */
 
@@ -29,7 +30,7 @@ function actionNewGame() {
 // Applique le résultat d'une action du moteur : message si elle est refusée,
 // puis rafraîchissement immédiat (sans attendre la cadence de 5 par seconde).
 export function applyResult(result) {
-  if (result && result.ok === false) notify(result.error);
+  if (result && result.ok === false) notify(result.error, { son: 'erreur' });
   refresh();
   return result;
 }
@@ -57,6 +58,7 @@ export function actionNightStart() {
 // la journée continue sans s'arrêter.
 export function wakeUp() {
   state.reveil = false;
+  sonMatin();
   // la ferme générée : qui a dormi sans paillasse dans une pièce close (js/engine/blocs.js)
   const sans = state.report && state.report.sansCouchage;
   if (sans && sans.length) {

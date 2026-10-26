@@ -165,6 +165,7 @@
     // elle reste un instant puis s'estompe ; une prise qui arrive avant qu'elle ait disparu s'y
     // additionne.
     showGain(items) {
+      if (global.FermeSon) global.FermeSon.prise(items, { gain: 0.8, ecart: 0.08 });   // le bruit de ce qu'il prend (js/son.js)
       if (!this.gain) this.gain = K.bulleGain(this.ctx.labelLayer, (item) => ((this.ctx.bridge && this.ctx.bridge.icone) ? this.ctx.bridge.icone(item) : item));
       this.gain.montre(items);
       this.placeGain();
