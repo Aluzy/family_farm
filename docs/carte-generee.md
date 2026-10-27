@@ -110,16 +110,18 @@ Le Marché vend toujours les outils.
   ❌ sort de ce mode (js/ui/chantier.js `meubleModele`, js/carte/ferme/chantier.js `syncPoseMeuble`).
 - Deux lits adulte posés côte à côte (la même rangée) deviennent sur la carte un lit deux places
   (`assets/meuble_lit_double.png`, `syncLitsDoubles`) ; ils restent deux lits, deux couchages.
-- La nuit (22 h → 6 h), chaque membre de la famille dort dans un lit : le k-ième a le (k + 2)-ième
-  couchage (le premier est au personnage du joueur, comme dans le moteur, `nuitSansCouchage`) ; il
-  y va, s'y couche sous la couverture et se lève au réveil (js/famille-ferme.js, `bedSpots`). Sans
+- La nuit (22 h → 6 h ; les enfants dès 20 h et jusqu'à 8 h), chaque membre de la famille dort dans
+  un lit : le k-ième a le (k + 2)-ième couchage (le premier est au personnage du joueur, comme dans
+  le moteur, `nuitSansCouchage`) ; il y va, s'y couche sous la couverture et se lève à son heure (js/famille-ferme.js, `bedSpots`). Sans
   lit pour lui, il reste dans la maison.
-- Fiche 16 : la famille ne s'efface plus. Avant 7 h et à partir de 18 h 45, elle est dans la maison
-  (le bâtiment du foyer, sous son toit : `homeInside`, ses places et ses chaises) : elle y entre par
-  la porte, en marchant, va d'une place à l'autre, et de 18 h 45 à 20 h 30 chacun s'assoit sur une
-  chaise (la k-ième au k-ième membre, tourné vers la table qui la touche ; les autres restent
-  debout) ; on la voit quand le toit se lève (le personnage dans la maison). Sans maison, elle se
-  tient devant la porte du foyer. Le foyer est la porte de la pièce où l'on dort : quand c'est une
+- Fiche 16 : la famille ne s'efface plus ; fiche 16b : son horaire (`FAMILLE.HORAIRE`). Le jour et
+  le soir, elle est dehors autour de la maison, sans repas à table (chacun mange quand il a faim : il
+  va au réfrigérateur ou à la boîte, s'y baisse et repart). Les enfants vont au lit à 20 h et se
+  lèvent à 8 h, le compagnon va au lit à 22 h et se lève avec le personnage : chacun rejoint la
+  maison à pied, entre par la porte et se couche ; on le voit quand le toit se lève (le personnage
+  dans la maison). Sans lit pour lui, il reste dans la maison (le bâtiment du foyer, sous son toit :
+  `homeInside`, ses places), d'une place à l'autre ; sans maison, il se tient devant la porte du
+  foyer. Le foyer est la porte de la pièce où l'on dort : quand c'est une
   chambre qu'on rejoint par la salle, on se tient devant une porte d'entrée du même bâtiment, dehors
   (`frontDoor`), et non plus dans le mur, sous la porte de la chambre. Personne ne passe au travers
   d'un mur, d'un meuble ou d'un bloc : les chemins (`js/fermier.js`) ne touchent que des cases

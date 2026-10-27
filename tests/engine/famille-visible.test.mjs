@@ -1,5 +1,6 @@
 /* ==========================================================================
-   Tests : la famille reste visible et ne traverse pas les murs (fiche 16).
+   Tests : la famille reste visible et ne traverse pas les murs (fiche 16) ; sa soirée dehors,
+   ses repas quand elle a faim, son coucher et son lever (fiche 16b).
    Les scripts de la carte (js/carte/kit.js, chemins.js, …, js/fermier.js, js/famille-ferme.js,
    js/carte/ferme/chantier.js, habitants.js) sont chargés dans une fenêtre d'essai, sans Phaser :
    la scène est une maquette (ses images ne dessinent rien, elles gardent seulement leur état).
@@ -8,14 +9,17 @@
      n'a pas de chemin, et on sait qu'il est hors d'atteinte (info.impossible) ;
    - devant la porte du foyer : dehors, devant la porte d'entrée, même quand le foyer est une
      chambre qu'on rejoint par la salle (et non plus dans le mur, sous la porte de la chambre) ;
-   - ce que chacun doit faire à chaque heure (FamilleFerme.voulu) ;
-   - une journée de 6 h à 23 h simulée : chaque membre est toujours visible (dehors, dans la
-     maison, à table ou au lit), ne pose jamais le pied dans un mur et n'en traverse aucun ;
+   - ce que chacun doit faire à chaque heure (FamilleFerme.voulu, FAMILLE.HORAIRE) : dehors jusqu'au
+     coucher, les enfants au lit de 20 h à 8 h, le compagnon de 22 h au lever du personnage ;
+   - une journée de 6 h à 23 h simulée, et le matin d'après : chaque membre est toujours visible
+     (dehors, dans la maison ou au lit), ne pose jamais le pied dans un mur et n'en traverse aucun ;
+     à 19 h tous dehors, personne à table ; qui a faim va à la boîte, s'y sert et repart ;
    - un habitant d'un hameau dont le but est enfermé reste où il est (ni saut, ni traversée).
    Lancer seul : node --test tests/engine/famille-visible.test.mjs (ou node tests/run-tests.mjs famille-visible).
    ========================================================================== */
 
 import { readFileSync } from 'node:fs';
+import { DATA } from '../../js/engine/index.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
 const SCRIPTS = [
@@ -196,31 +200,43 @@ test('l\'intérieur de la maison : ses places sont libres, ses chaises tournées
 
 /* ---------- la journée ---------- */
 
-test('à chaque heure, où chacun doit être (FamilleFerme.voulu)', () => {
-  const v = FamilleFerme.voulu;
-  assertEqual(v(6, false, true), 'dedans', '6 h : dans la maison (avant, ils n\'étaient nulle part)');
-  assertEqual(v(6.99, false, true), 'dedans');
-  assertEqual(v(7, false, true), 'dehors');
-  assertEqual(v(15, false, false), 'dehors');
-  assertEqual(v(18.75, false, true), 'dedans', '18 h 45 : on rentre (avant : on s\'effaçait à la porte)');
-  assertEqual(v(21.9, false, true), 'dedans');
-  assertEqual(v(22, true, true), 'lit');
-  assertEqual(v(23, true, false), 'dedans', 'sans lit pour lui : dans la maison');
-  assert(FamilleFerme.aTable(19, false) && !FamilleFerme.aTable(18.5, false) && !FamilleFerme.aTable(20.5, false) && !FamilleFerme.aTable(19, true), 'à table de 18 h 45 à 20 h 30');
+test('à chaque heure, où chacun doit être (FamilleFerme.voulu, FAMILLE.HORAIRE)', () => {
+  const H = DATA.FAMILLE.HORAIRE, v = (h, nuit, lit, enfant) => FamilleFerme.voulu(h, nuit, lit, enfant, H);
+  assertEqual([H.COUCHER_ENFANTS, H.LEVER_ENFANTS, H.COUCHER_ADULTES], [20, 8, 22], 'les heures du joueur (data/general.json)');
+  // le compagnon : levé avec le personnage (la nuit finie), dehors jusqu'à 22 h
+  assertEqual(v(6, false, true, false), 'dehors', '6 h : le compagnon se lève avec le personnage');
+  assertEqual(v(18.75, false, true, false), 'dehors', '18 h 45 : plus de rentrée générale');
+  assertEqual(v(19, false, true, false), 'dehors', '19 h : plus de repas à table');
+  assertEqual(v(21.9, false, true, false), 'dehors');
+  assertEqual(v(22, false, true, false), 'lit', '22 h : le compagnon va au lit (même avant la nuit)');
+  assertEqual(v(23, true, true, false), 'lit');
+  assertEqual(v(23, true, false, false), 'dedans', 'sans lit pour lui : dans la maison');
+  // les enfants : au lit de 20 h à 8 h
+  assertEqual(v(6, false, true, true), 'lit', '6 h : les enfants dorment encore');
+  assertEqual(v(7.99, false, true, true), 'lit');
+  assertEqual(v(8, false, true, true), 'dehors', '8 h : ils se lèvent');
+  assertEqual(v(19.99, false, true, true), 'dehors', 'le soir, ils jouent dehors');
+  assertEqual(v(20, false, true, true), 'lit', '20 h : au lit');
+  assertEqual(v(20, false, false, true), 'dedans', 'sans lit : dans la maison');
+  assertEqual(v(3, true, true, true), 'lit');
+  assert(FamilleFerme.couche(12, true, false, H) && !FamilleFerme.couche(12, false, true, H), 'la nuit, tous couchés ; à midi, personne');
 });
 
-test('une journée de 6 h à 23 h : chacun reste visible, entre et sort par la porte, ne traverse aucun mur', () => {
+test('une journée de 6 h à 23 h et le matin d\'après : visibles, par la porte, jamais au travers d\'un mur ; dehors le soir, au lit à 20 h et 22 h ; qui a faim va se servir', () => {
   const F = ferme(), s = scene(F);
   const lits = F.lits.map(([c, r]) => ({ x: c * T + T / 2, y: (r - 1) * T + 27, depth: (r + 1) * T - T / 2, drap: { key: 'drap', x: c * T + T / 2, y: (r + 1) * T } }));
+  // où se servir : devant la boîte à nourriture (comme js/farm-stage.js)
+  const B = s.blocks.get(at(X0 + 1, Y0 + 1)), spot = { x: B.x, y: B.y + 8 };
   const fam = FamilleFerme.attach(s, {
     fermier: s.fermier, frames: [], reduced: () => false, file: () => '',
-    maison: () => s.homeInside(), lit: (k) => lits[k + 1] || null,
+    maison: () => s.homeInside(), lit: (k) => lits[k + 1] || null, boite: () => spot,
   });
   s.family = fam;
-  const model = { famille: [{ id: 'adulte-2', perso: 1 }, { id: 'enfant-1', perso: 1, enfant: true }, { id: 'enfant-2', perso: 2, enfant: true }], heure: 6, nuit: false, aide: null };
-  const prec = new Map(), fautes = [];
-  const quart = (h) => {
-    model.heure = h; model.nuit = h >= 22;
+  const model = { famille: [{ id: 'adulte-2', perso: 1 }, { id: 'enfant-1', perso: 1, enfant: true }, { id: 'enfant-2', perso: 2, enfant: true }], heure: 6, nuit: false, aide: null, horaire: DATA.FAMILLE.HORAIRE };
+  const prec = new Map(), fautes = [], servis = new Map();
+  let faim = null;
+  const quart = (h, nuit) => {
+    model.heure = h % 24; model.nuit = nuit;
     fam.sync(model);
     // un quart d'heure de jeu : 7,5 s (30 s par heure), par pas de 50 ms
     for (let k = 0; k < 150; k++) {
@@ -228,24 +244,46 @@ test('une journée de 6 h à 23 h : chacun reste visible, entre et sort par la p
       for (const q of fam.info()) {
         if (!q.visible) fautes.push(`${h} h : ${q.id} invisible`);
         const d = prec.get(q.id);
-        if (!q.lit && !q.assis) {
+        if (!q.lit) {
           if (fermee(F, q.x, q.y)) fautes.push(`${h} h : ${q.id} dans un mur (${q.x}, ${q.y})`);
-          else if (d && !d.lit && !d.assis && traverse(F, d, q)) fautes.push(`${h} h : ${q.id} traverse un mur de (${d.x}, ${d.y}) à (${q.x}, ${q.y})`);
+          else if (d && !d.lit && traverse(F, d, q)) fautes.push(`${h} h : ${q.id} traverse un mur de (${d.x}, ${d.y}) à (${q.x}, ${q.y})`);
         }
+        // (qui a faim : arrivé à la boîte, il s'y sert)
+        if (faim && q.id === faim.id && Math.hypot(q.x - spot.x, q.y - spot.y) < 2) faim.arrive = true;
+        if (faim && q.id === faim.id && faim.arrive && q.tache !== 'boite' && !faim.fini) { faim.fini = h; servis.set(q.id, h); }
         prec.set(q.id, q);
       }
     }
     return fam.info();
   };
   const etat = {};
-  for (let h = 6; h <= 23; h += 0.25) etat[h] = quart(h);
+  for (let h = 6; h <= 23; h += 0.25) {
+    // à 19 h, l'adulte a faim (le moteur l'a fait manger : js/ui/loop.js l'envoie se servir)
+    if (h === 19) { assert(fam.allerManger('adulte-2'), 'il va se servir'); faim = { id: 'adulte-2' }; }
+    if (h === 15) { assert(fam.allerManger('enfant-2'), 'l\'enfant aussi'); }
+    etat[h] = quart(h, h >= 22);
+    if (h === 15.75) faim = null;
+  }
+  // la nuit, puis le matin d'après (la nuit finie à 6 h : le compagnon se lève avec le personnage)
+  for (let h = 23.25; h < 30; h += 0.25) quart(h, true);
+  for (let h = 30; h <= 33; h += 0.25) etat[h] = quart(h, false);
   assertEqual(fautes.slice(0, 5), [], 'toujours visibles, jamais dans un mur');
-  const ou = (h) => etat[h].map((q) => q.ou + (q.assis ? '/assis' : '')).join(' ');
-  assertEqual(ou(6.75), 'dedans dedans dedans', '6 h 45 : dans la maison');
+  const ou = (h) => etat[h].map((q) => q.ou).join(' ');
   assertEqual(ou(12), 'dehors dehors dehors', 'midi : dehors');
-  assertEqual(ou(19.75), 'dedans/assis dedans/assis dedans/assis', '19 h 45 : à table');
-  assertEqual(ou(21.5), 'dedans dedans dedans', '21 h 30 : dans la maison');
-  assertEqual(ou(23), 'lit lit lit', '23 h : au lit');
+  assertEqual(ou(18.75), 'dehors dehors dehors', '18 h 45 : dehors, plus de rentrée');
+  assertEqual(ou(19).split(' ').slice(1), ['dehors', 'dehors'], '19 h : les enfants dehors (l\'adulte qui a faim est à la boîte), personne à table');
+  assert(etat[19].every((q) => !('assis' in q)), 'plus de chaises');
+  assert(servis.get('adulte-2') >= 19 && servis.get('adulte-2') < 20, `à 19 h, il est allé à la boîte, s'y est servi et en est reparti (${servis.get('adulte-2')})`);
+  assertEqual(ou(19.75), 'dehors dehors dehors', 'puis il reprend sa soirée dehors');
+  assertEqual(ou(20.75), 'dehors lit lit', '20 h : les enfants rentrent et se couchent');
+  assertEqual(ou(21.75), 'dehors lit lit');
+  assertEqual(ou(22.75), 'lit lit lit', '22 h : le compagnon aussi');
+  assertEqual(ou(30.75), 'dehors lit lit', 'le matin : le compagnon sort avec le personnage, les enfants dorment');
+  assertEqual(ou(33), 'dehors dehors dehors', '8 h : les enfants sortent');
+  // sans endroit où se servir, il n'y va pas
+  const sans = FamilleFerme.attach(s, { fermier: s.fermier, frames: [], reduced: () => false, file: () => '', maison: () => s.homeInside(), lit: () => null, boite: () => null });
+  sans.sync(model);
+  assertEqual(sans.allerManger('adulte-2'), false, 'rien où se servir : il n\'y va pas');
 });
 
 /* ---------- les habitants des hameaux ---------- */

@@ -441,8 +441,10 @@ export function stageModel() {
   }
   const ramasser = tas.map((p) => ({ id: p.id, lieu: p.lieu, ref: p.ref, texte: itemsText(p.items, 'bulle') })); // « 🥕 6 🌱 2 » : les emojis deviennent des icônes
   return {
-    // la nuit (22 h → 6 h) : la lumière ; la famille reste dedans (le joueur, lui, peut agir)
+    // la nuit (22 h → 6 h) : la lumière ; la famille est au lit (le joueur, lui, peut agir)
     nuit: nightActive(state),
+    // fiche 16b : quand la famille va au lit et se lève (js/famille-ferme.js : les enfants, les adultes)
+    horaire: DATA.FAMILLE.HORAIRE,
     // le joueur a appuyé sur « Dormir » : le personnage va à son lit (js/fermier.js) ; il y
     // dort (la nuit défile en accéléré), même quand on regarde la carte de la ferme
     coucher: (coucher || asleep(state)) && nightActive(state),
@@ -882,11 +884,10 @@ function mondeDeLaCarte() {
 }
 
 // Sans la carte de la ferme à l'écran (une autre carte, pas de carte) : le second adulte fait
-// quand même son travail aux heures où il est dehors (comme js/famille-ferme.js, HORAIRE).
-const AIDE_HEURES = [7, 18.75];
+// quand même son travail aux heures où il est dehors (comme js/famille-ferme.js : levé avec le
+// personnage, au lit à FAMILLE.HORAIRE.COUCHER_ADULTES).
 function aideSansCarte() {
-  const h = clockHours(state);
-  if (nightActive(state) || h < AIDE_HEURES[0] || h >= AIDE_HEURES[1]) return;
+  if (nightActive(state) || clockHours(state) >= DATA.FAMILLE.HORAIRE.COUCHER_ADULTES) return;
   for (const lieu of aideAFaire(state)) aideBetes(state, lieu);
 }
 

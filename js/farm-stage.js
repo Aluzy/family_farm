@@ -267,7 +267,7 @@
               },
               // la nuit, le k-ième membre dort dans le (k + 2)-ième couchage (le premier : le personnage)
               lit: (k) => (this.bedSpots ? this.bedSpots()[k + 1] || null : null),
-              // l'intérieur de la maison du foyer : ses places, ses chaises (chantier.js, homeInside)
+              // l'intérieur de la maison du foyer : ses places (chantier.js, homeInside)
               maison: () => (this.homeInside ? this.homeInside() : null),
               file: (perso, enfant) => v(K.planche(perso, enfant)),
             });

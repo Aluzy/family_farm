@@ -8,7 +8,7 @@ import {
   buildFridge, caseLibreFoyer, countItem, craft, DATA, depenserMembre, deposerBoite, farmTerrain, findMember, jaugeFamille,
   jaugeMembre, mainCharacter, mangeurs, marcherMembre, placeBoite, poserBloc, poseStatus,
   fridgeCount, migrate, moveToFridge, repasStep, reprendreBloc, reprendreBoite, sleepTarget, snackEnergy, sourceRepas, spoil,
-  STATE_VERSION, startNight, testAddHens, testAddWheat, testBatir, testFarmMap, tick, valeurAliment, wakeEnergy,
+  ecouterJournal, STATE_VERSION, startNight, testAddHens, testAddWheat, testBatir, testFarmMap, tick, valeurAliment, wakeEnergy,
 } from '../../js/engine/index.js';
 import {
   affamer, assert, assertEqual, construireFrigo, AVANT_DEMENAGEMENT, boite, garden, migreAvant, reach, setInv,
@@ -215,4 +215,44 @@ test('migration v45 → v46 : le repas du jour disparaît, la boîte arrive vide
   v45.repas = { heure: 19, besoin: 150, energie: 150, couverture: 100, mange: { conserve: 6 } };
   const m = migreAvant({ v: 45, t: 0, s: v45 });
   assertEqual([m.version, 'repas' in m, m.boite, m.repasJour, jaugeFamille(m)], [AVANT_DEMENAGEMENT, false, { items: {} }, null, 100]);
+});
+
+// Fiche 16b : plus de repas à table ; chacun mange quand il a faim (repasStep), à n'importe
+// quelle heure, et la carte l'envoie se servir à chaque repas pris (le journal : « repasMembre »).
+test('fiche 16b : il mange quand il a faim, à toute heure ; sans rien à manger, il n\'y va pas en boucle', () => {
+  const s = boite(garden(), { conserve: 100 });
+  const notes = [];
+  const fin = ecouterJournal((type, d) => { if (type === 'repasMembre' || type === 'faim') notes.push([type, d.id]); });
+  try {
+    const m = findMember(s, 'adulte-2');
+    // le soir (19 h 30) comme le matin : au seuil, il mange
+    for (const h of [19.5, 7]) {
+      s.awakeMs = awakeMsAtHour(h);
+      depenserMembre(s, m.id, 100 - DATA.FAMILLE.FAIM.SEUIL);
+      repasStep(s);
+      assertEqual(jaugeMembre(m), DATA.FAMILLE.FAIM.MAX, `${h} h : rassasié`);
+    }
+    assertEqual(notes, [['repasMembre', 'adulte-2'], ['repasMembre', 'adulte-2']], 'un repas, une fois, à chaque faim');
+    // la boîte vide : une seule alerte, et pas de repas (la carte ne l'envoie pas à la boîte)
+    s.boite.items = {};
+    notes.length = 0;
+    depenserMembre(s, m.id, 100);
+    for (let k = 0; k < 50; k++) repasStep(s);
+    assertEqual(notes, [['faim', 'adulte-2']], 'il a faim une fois, et ne va pas se servir');
+  } finally { fin(); }
+});
+
+test('fiche 16b : la nuit ne compte pas deux fois ce qu\'il a mangé le jour, et la famille n\'a pas faim sans repas à table', () => {
+  const s = boite(garden(), { conserve: 100 });
+  const enfant = findMember(s, 'enfant-1'), adulte = findMember(s, 'adulte-2');
+  // l'enfant a faim l'après-midi : il mange jusqu'à rassasié ; l'adulte, lui, n'a pas eu faim
+  depenserMembre(s, enfant.id, 100 - DATA.FAMILLE.FAIM.SEUIL);
+  repasStep(s);
+  const reste = boiteCount(s, 'conserve');
+  const mangeJour = 100 - reste;
+  assert(mangeJour > 0 && jaugeMembre(enfant) === 100, 'il a mangé dans la journée');
+  // la nuit : les enfants rassasiés ne remangent pas au coucher ; l'adulte rassasié, rien
+  const r = sleepOnce(s);
+  assertEqual([r.mange, boiteCount(s, 'conserve')], [{ conserve: mangeJour }, reste], 'la nuit recopie la journée, sans repas de plus');
+  assertEqual([s.nuit.affames, r.couverture, jaugeMembre(adulte)], [[], 100, 100], 'personne n\'a faim');
 });

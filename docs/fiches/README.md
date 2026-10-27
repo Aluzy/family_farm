@@ -58,4 +58,4 @@ Conventions communes à toutes les fiches :
 | [20 — la marche des personnages](20-la-marche.md) | — | à faire (après 16 à 19) |
 | [21 — toucher le champ n'ouvre plus de fenêtre](21-champ-sans-fenetre.md) | — | fait |
 | [14b — le brouillard couvre aussi la ferme](14b-brouillard-sur-la-ferme.md) | — | fait |
-| [16b — la soirée de la famille : dehors jusqu'au coucher, manger quand on a faim](16b-soiree-de-la-famille.md) | — | à faire |
+| [16b — la soirée de la famille : dehors jusqu'au coucher, manger quand on a faim](16b-soiree-de-la-famille.md) | — | fait |

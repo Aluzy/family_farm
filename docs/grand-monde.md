@@ -1272,3 +1272,29 @@ SwiftShader, sans carte graphique) :
   Les tests : `tests/engine/famille-visible.test.mjs` (8 tests, les scripts de la carte chargés sans
   navigateur : les chemins par les portes, sans coin coupé ; un but enfermé ; la porte du foyer ;
   l'intérieur de la maison ; les heures ; une journée simulée de 6 h à 23 h ; un habitant enfermé).
+- **Fiche 16b — la soirée de la famille : dehors jusqu'au coucher, manger quand on a faim** (fait).
+  Le repas à table de 18 h 45 à 20 h 30 de la fiche 16 n'était pas ce que voulait le joueur ; le reste
+  de la fiche 16 (toujours visible, aucun mur traversé, la porte du foyer dehors) demeure.
+  - L'horaire (`FAMILLE.HORAIRE`, `data/general.json`, passé à la carte par le modèle :
+    `horaire`) : le jour et le soir, la famille est dehors autour de la maison (les enfants jouent,
+    les adultes flânent) ; plus de rentrée générale ni de repas à table. Les enfants vont au lit à
+    20 h (`COUCHER_ENFANTS`) et se lèvent à 8 h (`LEVER_ENFANTS`) ; le compagnon va au lit à 22 h
+    (`COUCHER_ADULTES`) et se lève avec le personnage (à la fin de la nuit). Chacun rejoint la maison
+    à pied, entre par la porte et se couche dans son lit ; le matin, il sort par la porte
+    (`FamilleFerme.voulu`, `couche`). Le second adulte fait son travail aux bêtes aux heures où il est
+    dehors, même sans la carte à l'écran (`aideSansCarte`, `js/ui/stage.js`).
+  - La faim : un membre dont la jauge tombe à `FAMILLE.FAIM.SEUIL` mange, à n'importe quelle heure
+    (`repasStep`, inchangé) ; sur la carte, il va au réfrigérateur ou à la boîte à nourriture, s'y
+    baisse, puis reprend le trajet qu'il faisait (`allerManger` ; avant, seulement à la boîte, et pas
+    s'il était occupé : il y va maintenant ensuite). Rien à manger : le moteur ne le fait pas manger,
+    une seule alerte « a faim », et il ne va pas à la boîte.
+  - Le calcul de la nuit : le repas à table n'existait que sur la carte, le moteur ne l'a jamais
+    compté. La nuit recopie ce que la famille a mangé dans la journée (`state.repasJour`), sans rien
+    y ajouter pour qui est rassasié ; les enfants sont seulement complétés jusqu'à `FAIM.MAX` au
+    coucher de la nuit (`repasCoucher`, une fois par jour, comme avant). Pas de double repas, et pas
+    de famille affamée faute de table.
+  - Les tests : `tests/engine/famille-visible.test.mjs` (les heures de chacun ; une journée de 6 h à
+    23 h et le matin d'après : dehors à 19 h, l'adulte affamé va à la boîte, s'y sert et repart, les
+    enfants au lit à 20 h, le compagnon à 22 h, lui dehors à 6 h, eux à 8 h) et
+    `tests/engine/repas.test.mjs` (manger à toute heure, pas de boucle sans rien à manger, pas de
+    double compte la nuit).

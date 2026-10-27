@@ -780,8 +780,9 @@
       return null;
     },
 
-    // L'intérieur de la maison (le bâtiment du foyer, sous son toit), où la famille se tient le
-    // matin, le soir et quand elle rentre manger (js/famille-ferme.js), ou null sans maison :
+    // L'intérieur de la maison (le bâtiment du foyer, sous son toit), où se tient un membre de la
+    // famille couché sans lit pour lui (js/famille-ferme.js ; fiche 16b : plus de repas à table, les
+    // chaises restent décrites), ou null sans maison :
     //   { dedans(x, y) : ses pieds sont-ils dans la maison ?,
     //     places : [{ x, y }] (les pieds au milieu des cases libres : ni bloc, ni meuble, ni le
     //       passage juste derrière une porte),

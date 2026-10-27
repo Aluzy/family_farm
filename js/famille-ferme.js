@@ -3,26 +3,32 @@
  * du joueur (js/fermier.js), chacun avec son personnage (assets/personnages/perso_NN.png ; les
  * enfants, leurs planches à eux : assets/personnages/enfant_NN.png), font leur journée :
  *
- *   - avant 7 h et à partir de 18 h 45 (le repas est à 19 h), ils sont dans la maison (o.maison :
- *     l'intérieur du bâtiment du foyer, sous son toit, js/carte/ferme/chantier.js homeInside) :
- *     ils y entrent par la porte, en marchant, et y restent visibles (on les voit quand le toit
- *     se lève, le personnage dedans) ; ils y vont d'une place à l'autre, et de 18 h 45 à 20 h 30
- *     chacun s'assoit sur une chaise (o.maison().chaises : une par membre, dans l'ordre ; tourné
- *     vers la table), les autres restent debout ; sans maison, ils se tiennent devant la porte du
- *     foyer (o.porte) ;
- *   - sur la ferme générée, pendant la nuit (model.nuit, 22 h → 6 h), chacun dort dans son lit
- *     (o.lit(k) : le k-ième membre a le (k + 2)-ième couchage, le premier est au personnage du
- *     joueur) : il y va, s'y couche sous la couverture (debout entre le lit et elle, tourné vers
- *     nous, comme le personnage) et se lève au réveil ; sans lit pour lui, il reste dans la maison ;
- *   - le jour, ils sortent par la porte et flânent autour de la maison, d'un coin à l'autre ;
+ *   - fiche 16b : le jour et le soir, ils sont dehors autour de la maison, jusqu'à leur coucher :
+ *     les enfants jouent et les adultes flânent, d'un coin à l'autre ; il n'y a plus de rentrée
+ *     générale, ni de repas à table à heure fixe (chacun mange quand il a faim, plus bas) ;
+ *   - le coucher (model.horaire : FAMILLE.HORAIRE, data/general.json) : les enfants vont au lit à
+ *     COUCHER_ENFANTS (20 h), les adultes (le compagnon) à COUCHER_ADULTES (22 h), et tous pendant
+ *     la nuit (model.nuit, 22 h → 6 h) ; chacun rejoint la maison à pied, entre par la porte et se
+ *     couche dans son lit (o.lit(k) : le k-ième membre a le (k + 2)-ième couchage, le premier est
+ *     au personnage du joueur), sous la couverture (debout entre le lit et elle, tourné vers nous,
+ *     comme le personnage) : on l'y voit quand le toit se lève ; sans lit pour lui, il reste dans
+ *     la maison (o.maison : l'intérieur du bâtiment du foyer, sous son toit,
+ *     js/carte/ferme/chantier.js homeInside), d'une place à l'autre ; sans maison, il se tient
+ *     devant la porte du foyer ;
+ *   - le matin : les adultes se lèvent avec le personnage (à la fin de la nuit), les enfants à
+ *     LEVER_ENFANTS (8 h) ; chacun sort par la porte ;
  *   - le second adulte du foyer (model.aide, le moteur : aidant) s'occupe des bêtes : le jour,
  *     quand il y a à faire au Poulailler, à l'Étable ou à une ruche pleine (model.aide.lieux :
  *     « ruche:<case> »), il y va, se baisse (GESTE s) et nourrit les poules, prend les œufs, le
  *     lait et la laine, récolte le miel (o.aide : tout entre
  *     dans l'inventaire ; o.gain : la bulle « +x » au-dessus de lui) ;
  *   - chacun a faim en marchant (o.marche(id, px) : le moteur compte 1 point de faim tous les
- *     FAMILLE.FAIM.PX_PAR_POINT px, js/engine/repas.js) ; quand il mange à la boîte à nourriture,
- *     il y va et se baisse (allerManger, appelé par la page : js/ui/loop.js ; o.boite : où elle est) ;
+ *     FAMILLE.FAIM.PX_PAR_POINT px, js/engine/repas.js) ; quand sa jauge tombe à FAIM.SEUIL, à
+ *     n'importe quelle heure, il mange (le moteur : repasStep) : sur la carte, il va au
+ *     réfrigérateur ou à la boîte à nourriture, s'y baisse, puis reprend ce qu'il faisait
+ *     (allerManger, appelé par la page : js/ui/loop.js ; o.boite : où se servir). Occupé (il se
+ *     baisse, il parle), il y va ensuite ; au lit, ou sans chemin, il n'y va pas. S'il n'y a rien
+ *     à manger, le moteur ne le fait pas manger et il n'y va pas (une seule alerte « a faim ») ;
  *
  * Ils marchent par les chemins du personnage (fermier.path : les mêmes cases libres ; les murs,
  * les meubles et les blocs qui ferment se contournent, on passe par les portes). Un trajet sans
@@ -42,17 +48,14 @@
  *                                // s'y arrête et se tourne vers lui ; true quand il y est ;
  *                                // rejoindre(null) : il reprend sa journée
  *
- * Ce qu'il fait à une heure donnée ne dépend que de l'heure et de ce qu'il y a (FamilleFerme.voulu,
- * testé sans navigateur : tests/engine/famille-visible.test.mjs).
+ * Ce qu'il fait à une heure donnée ne dépend que de l'heure, de l'horaire, de son âge et de ce
+ * qu'il y a (FamilleFerme.voulu, testé sans navigateur : tests/engine/famille-visible.test.mjs).
  */
 (function (global) {
   'use strict';
 
   const K = global.CarteKit;
   const T = K.T;
-  // sortie : ils sortent ; rentree : ils rentrent (le repas est à 19 h) ; repas : jusque-là, chacun
-  // sur sa chaise
-  const HORAIRE = { sortie: 7, rentree: 18.75, repas: 20.5 };
   const VITESSE = K.VITESSES.famille;     // px/s : { adulte, enfant }
   const ROAM = 6 * T;                      // autour de la maison
   const FADE_S = 0.5;
@@ -67,15 +70,21 @@
 
   const rand = (a, b) => a + Math.random() * (b - a);
 
-  // Où un membre doit être à l'heure `heure` (la nuit : `nuit`), avec ou sans lit (`lit`) :
-  // 'lit', 'dedans' (dans la maison) ou 'dehors'. Et s'il doit être à table (assis).
-  function voulu(heure, nuit, lit) {
-    if (nuit && lit) return 'lit';
-    if (nuit) return 'dedans';
-    if (heure < HORAIRE.sortie || heure >= HORAIRE.rentree) return 'dedans';
-    return 'dehors';
+  // Est-il couché à l'heure `heure` (la nuit : `nuit`) ? Un enfant de COUCHER_ENFANTS à
+  // LEVER_ENFANTS, un adulte à partir de COUCHER_ADULTES ; tous, la nuit (un adulte se lève avec
+  // le personnage, quand elle finit). `horaire` : FAMILLE.HORAIRE (sans lui : la nuit seulement).
+  function couche(heure, nuit, enfant, horaire) {
+    if (nuit) return true;
+    const H = horaire || {};
+    if (enfant) return heure >= H.COUCHER_ENFANTS || heure < H.LEVER_ENFANTS;
+    return heure >= H.COUCHER_ADULTES;
   }
-  const aTable = (heure, nuit) => !nuit && heure >= HORAIRE.rentree && heure < HORAIRE.repas;
+  // Où un membre (un enfant : `enfant`) doit être à l'heure `heure`, avec ou sans lit (`lit`) :
+  // 'lit', 'dedans' (couché, mais sans lit pour lui : dans la maison) ou 'dehors'.
+  function voulu(heure, nuit, lit, enfant, horaire) {
+    if (!couche(heure, nuit, enfant, horaire)) return 'dehors';
+    return lit ? 'lit' : 'dedans';
+  }
 
   function attach(scene, o) {
     const F = {};
@@ -99,9 +108,7 @@
     const litDe = (m) => (o.lit && m.rang >= 0 ? o.lit(m.rang) : null);
     const heure = () => (model ? model.heure : 12);
     const nuit = () => !model || !!model.nuit;
-    const ouVeut = (m) => voulu(heure(), nuit(), !!litDe(m));
-    // Sa chaise à table (le k-ième membre, la k-ième chaise), ou null.
-    const chaiseDe = (m, H) => (H && m.rang >= 0 && m.rang < H.chaises.length ? H.chaises[m.rang] : null);
+    const ouVeut = (m) => voulu(heure(), nuit(), !!litDe(m), m.enfant, model && model.horaire);
 
     // la planche d'un membre : celle de son personnage d'adulte ou d'enfant
     const cle = (def) => (def.enfant ? 'enfant_' : 'perso_') + def.perso;
@@ -122,13 +129,13 @@
         retard: k * 0.7, cote: ((k % 3) - 1) * 6, pause: 0,
         tache: null, geste: 0, repos: 0,     // le second adulte : le lieu où il va, son geste
         rang: -1, couche: null, drap: null,  // la nuit : son rang (son lit, o.lit), son lit s'il y dort
-        assis: null,                         // à table : sa chaise (o.maison().chaises)
+        faim: false, reprise: null,          // il a mangé : il va se servir (faim), puis reprend ça
       };
     }
 
     // Il se couche dans son lit `L` (o.lit) : debout entre le lit et sa couverture.
     function coucher(m, L) {
-      m.couche = L; m.assis = null; m.chemin = []; m.puis = null; m.but = null; m.tache = null;
+      m.couche = L; m.faim = false; m.reprise = null; m.chemin = []; m.puis = null; m.but = null; m.tache = null;
       // (un enfant est plus petit, ENFANT_RANGEES de scripts/personnage/chibi.py : remonté, la tête sur l'oreiller)
       m.x = L.x; m.y = L.y - (m.enfant ? ENFANT_DY : 0); m.face = 'bas'; m.flip = false;
       montrer(m);
@@ -142,17 +149,6 @@
       if (m.drap) m.drap.setVisible(false);
       // (un lit de l'étage : il se lève en bas de l'escalier)
       if (L && L.via) { m.x = L.via.x; m.y = L.via.y; } else if (libre(m.x, m.y + 4)) m.y += 4;
-    }
-    // Il s'assoit sur la chaise `c` (o.maison().chaises), tourné vers la table.
-    function asseoir(m, c) {
-      m.assis = c; m.chemin = []; m.puis = null; m.but = null;
-      m.x = c.x; m.y = c.y; m.face = c.face; m.flip = c.flip;
-    }
-    // Il se lève de sa chaise : à côté d'elle, d'où il s'y était assis.
-    function debout(m) {
-      const c = m.assis;
-      m.assis = null;
-      if (c) { m.x = c.pied.x; m.y = c.pied.y; }
     }
 
     function dessiner(m, nom) {
@@ -240,9 +236,37 @@
     function finirTache(m) {
       const lieu = m.tache;
       m.tache = null;
+      if (lieu === 'boite') { reprendre(m); return; }   // il a mangé (le moteur l'a déjà fait)
       m.repos = REPOS;
-      if (lieu === 'boite' || !lieu) return;   // il a mangé (le moteur l'a déjà fait)
+      if (!lieu) return;
       o.aide(lieu, (items) => { if (items && o.gain) o.gain(items); });
+    }
+
+    // Il a mangé (le moteur, js/engine/repas.js) : il va se servir au réfrigérateur ou à la boîte
+    // (o.boite) et s'y baisse ; ce qu'il faisait (m.reprise : où il allait, pour quoi) l'attend.
+    // Sans endroit où se servir, ou sans chemin : il n'y va pas (et ne réessaie pas).
+    function allerSeServir(m) {
+      m.faim = false;
+      const spot = o.boite ? o.boite() : null;
+      if (!spot) return false;
+      const fin = m.chemin.length ? m.chemin[m.chemin.length - 1] : null;
+      const avant = fin && m.but ? { x: fin.x, y: fin.y, but: m.but, puis: m.puis, tache: m.tache } : null;
+      const bloque = m.bloque;
+      if (!aller(m, spot.x, spot.y, () => { m.face = 'haut'; m.flip = false; m.geste = reduced() ? 0.01 : GESTE; }, ouVeut(m))) {
+        m.bloque = bloque;
+        return false;
+      }
+      m.reprise = avant;
+      m.tache = 'boite';
+      m.pause = 0;
+      return true;
+    }
+    // Il s'est servi : il reprend son trajet d'avant, si l'heure le veut encore.
+    function reprendre(m) {
+      const r = m.reprise;
+      m.reprise = null;
+      if (!r || r.but !== ouVeut(m)) return;
+      if (aller(m, r.x, r.y, r.puis, r.but)) { m.tache = r.tache || null; m.pause = 0; }
     }
 
     function decider(m, dt) {
@@ -257,11 +281,10 @@
         else return;
       }
       const H = maison();
-      // à table : il y reste jusqu'à la fin du repas (sa chaise a pu changer, ou disparaître)
-      if (m.assis) {
-        const c = v === 'dedans' && aTable(heure(), nuit()) ? chaiseDe(m, H) : null;
-        if (c && c.x === m.assis.x && c.y === m.assis.y) return;
-        debout(m);
+      // il a mangé : il va se servir (sauf à l'heure d'aller au lit : il y va)
+      if (m.faim) {
+        if (v === 'lit') m.faim = false;
+        else if (allerSeServir(m)) return;
       }
       // (un trajet pour ce que l'heure veut encore : il continue ; sinon il l'abandonne)
       if (m.chemin.length || m.puis) {
@@ -287,14 +310,12 @@
           if (m.attente <= 0) { m.attente = rand(4, 10); devantPorte(m); }
           return;
         }
-        const c = aTable(heure(), nuit()) ? chaiseDe(m, H) : null;
-        if (c) { aller(m, c.pied.x, c.pied.y, () => asseoir(m, c), 'dedans'); return; }
         if (!H.dedans(m.x, m.y)) { if (!placeDedans(m, H)) m.bloque = rand(BLOQUE[0], BLOQUE[1]); return; }
         m.attente -= dt;
         if (m.attente <= 0) { m.attente = rand(5, 12); placeDedans(m, H); }
         return;
       }
-      // le jour : il sort (par la porte), flâne, ou s'occupe des bêtes
+      // le jour et le soir : il sort (par la porte), flâne (les enfants jouent), ou s'occupe des bêtes
       if (H && H.dedans(m.x, m.y) && !m.tache) { flanerVers(m); return; }
       if (!m.chemin.length && !m.tache && !soccuper(m)) {
         m.attente -= dt;
@@ -320,14 +341,12 @@
     }
 
     // Au chargement de la page (ou sa planche arrivée) : il est déjà là où l'heure le veut
-    // (dehors : près de son coin ; dans la maison : à table, ou à une place ; au lit).
+    // (dehors : près de son coin ; dans la maison : à une place ; au lit).
     function placer(m) {
       const v = ouVeut(m), H = maison(), d = door();
       m.alpha = 1; m.fade = 0; m.visible = true;
       if (v === 'lit') { coucher(m, litDe(m)); return; }
       if (v === 'dedans' && H) {
-        const c = aTable(heure(), nuit()) ? chaiseDe(m, H) : null;
-        if (c) { asseoir(m, c); return; }
         if (H.places.length) { const q = H.places[Math.floor(Math.random() * H.places.length)]; m.x = q.x; m.y = q.y; return; }
       }
       const p = v === 'dehors' ? placeLibre(d.x + m.coin.dx, d.y + m.coin.dy) : placeLibre(d.x, d.y);
@@ -335,7 +354,7 @@
     }
 
     return {
-      // Les membres et l'heure (le modèle de la carte, js/ui/stage.js).
+      // Les membres, l'heure et l'horaire (le modèle de la carte, js/ui/stage.js).
       sync(next) {
         model = next;
         const defs = (next && next.famille) || [];
@@ -352,9 +371,9 @@
           n.rang = defs.indexOf(def);
           // (un autre personnage pour lui : la nouvelle planche, à la même place)
           if (m) {
-            Object.assign(n, { x: m.x, y: m.y, couche: null, assis: null, alpha: 1, visible: true, coin: m.coin });
+            Object.assign(n, { x: m.x, y: m.y, couche: null, alpha: 1, visible: true, coin: m.coin });
             m.s.destroy(); if (m.drap) m.drap.destroy();
-            if (m.couche) coucher(n, m.couche); else if (m.assis) asseoir(n, m.assis);
+            if (m.couche) coucher(n, m.couche);
           } else placer(n);
           membres.set(def.id, n);
         }
@@ -375,7 +394,7 @@
           }
           // (le second adulte parle avec le personnage : il s'arrête et se tourne vers lui ; son
           // chemin l'attend)
-          const parle = m.parle && !m.couche && !m.assis && m.visible;
+          const parle = m.parle && !m.couche && m.visible;
           if (parle) ({ face: m.face, flip: m.flip } = K.regard(m.parle.x - m.x, m.parle.y - m.y));
           if (!parle && !m.rejoint) decider(m, dt);
           const marche = !parle && avancer(m, dt);
@@ -396,12 +415,6 @@
             if (m.drap) m.drap.setDepth(z(0.2));
             continue;
           }
-          // à table : assis sur sa chaise, juste devant elle
-          if (m.assis) {
-            dessiner(m, F[`assis_${m.face}_0`] !== undefined ? `assis_${m.face}_0` : `idle_${m.face}_0`);
-            m.s.setDepth(m.assis.depth);
-            continue;
-          }
           dessiner(m, marche ? `marche_${m.face}_${Math.floor(m.marche / PAS) % 4}` : `idle_${m.face}_${Math.floor(performance.now() / 600) % 2}`);
         }
       },
@@ -410,7 +423,7 @@
         return [...membres.values()].map((m) => ({
           id: m.id, enfant: m.enfant,
           ou: m.couche ? 'lit' : H && H.dedans(m.x, m.y) ? 'dedans' : 'dehors',
-          voulu: ouVeut(m), lit: !!m.couche, assis: !!m.assis, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0, tache: m.tache,
+          voulu: ouVeut(m), lit: !!m.couche, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0, tache: m.tache,
         }));
       },
       rejoindre(at) {
@@ -422,7 +435,7 @@
         }
         if (m.parle) return true;
         // (debout ; s'il se baisse au Poulailler ou à l'Étable, il finit d'abord)
-        if (!m.visible || m.couche || m.assis || m.geste > 0) return false;
+        if (!m.visible || m.couche || m.geste > 0) return false;
         m.tache = null;
         // sa place : à côté du personnage, du côté où il arrive (sinon de l'autre)
         const c = m.x <= at.x ? -1 : 1;
@@ -439,12 +452,12 @@
         }
         return false;
       },
+      // Il vient de manger (le moteur) : il ira se servir dès qu'il le peut (s'il se baisse ou
+      // parle, ensuite) ; au lit, ou sans endroit où se servir, non : → false.
       allerManger(id) {
         const m = membres.get(id);
-        const spot = o.boite ? o.boite() : null;
-        if (!m || !spot || !m.visible || m.couche || m.assis || m.geste > 0 || m.parle || m.rejoint) return false;
-        if (!aller(m, spot.x, spot.y, () => { m.face = 'haut'; m.flip = false; m.geste = reduced() ? 0.01 : GESTE; }, ouVeut(m))) return false;
-        m.tache = 'boite';
+        if (!m || !m.visible || m.couche || !o.boite || !o.boite()) return false;
+        if (m.tache !== 'boite') m.faim = true;
         return true;
       },
       aidePos() {
@@ -455,5 +468,5 @@
     };
   }
 
-  global.FamilleFerme = { attach, HORAIRE, voulu, aTable };
+  global.FamilleFerme = { attach, voulu, couche };
 })(window);
