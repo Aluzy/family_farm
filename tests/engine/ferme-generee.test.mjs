@@ -30,7 +30,7 @@ import {
   recettesDidacticiel, regrowGrass, removeStarter, remplirCruche, remplirRuches, reprendreBloc,
   reprendreEtage, respawnBushes, respawnRocks, respawnTrees, robotBattery, robotCapacity,
   robotStation, robotTrip, ruchePleine, ruchesARecolter, runRobotCharge, sellItem, serreMurs,
-  serrePlaces, setFarmSeed, siloCapacity, simulateOffline, skipNight, solAt, sortirBotte,
+  nightActive, serrePlaces, setFarmSeed, siloCapacity, simulateOffline, skipNight, solAt, sortirBotte,
   stableHoused, stablePlaces, starterOf, STATE_VERSION, suivantDidacticiel, migrate, ETAPES, terrainOfMap, passerEtapeDidacticiel,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools,
   testBuildAtelier, testFarmMap, testSetLevel, toits, tuilesChemins, unlockLevel,
@@ -1832,6 +1832,19 @@ test('ferme générée : sans paillasse dans une pièce close, on ne dort pas (n
   assert(poserBloc(s, 'paillasse', p.dedans).ok);
   s.nuitEnCours = { ms: 0, minuit: false };
   assertEqual([goToSleep(s).ok, asleep(s)], [true, true]);
+  // la partie reprise la nuit (une page rechargée, ou le jeu fermé quelques heures de nuit) : le jeu ne le
+  // couche pas, il est éveillé comme il l'était ; jeu fermé, la nuit lui a rendu de l'énergie
+  s.nuitEnCours = { ms: 0, minuit: false };
+  simulateOffline(s, 5);
+  assertEqual([nightActive(s), asleep(s)], [true, false], 'page rechargée : éveillé');
+  s.energie = 0;
+  simulateOffline(s, 100);
+  assertEqual([nightActive(s), asleep(s)], [true, false], 'des heures de nuit, jeu fermé : éveillé au retour');
+  assert(s.energie > 0, 'la nuit passée jeu fermé rend de l\'énergie');
+  // il dormait (« Dormir ») quand le jeu a été fermé : il dort toujours au retour
+  assert(goToSleep(s).ok);
+  simulateOffline(s, 5);
+  assertEqual(asleep(s), true);
 });
 
 test('didacticiel : les cases de l\'abri s\'allument, à la taille de la famille ; posées, elles forment l\'abri', () => {

@@ -1,8 +1,9 @@
 /* fermier.js — le personnage de la carte (version provisoire).
  *
- * Il vit dans le foyer (une pièce close de la ferme générée) : le jour il en sort, se tient
- * devant, et fait sur la carte ce que le joueur vient de faire (labourer, planter, arroser,
- * récolter).
+ * Il vit dans le foyer (une pièce close de la ferme générée) : il en sort, se tient devant, et
+ * fait sur la carte ce que le joueur vient de faire (labourer, planter, arroser, récolter). Une
+ * partie reprise la nuit le montre aussi dehors, devant le foyer, éveillé ; s'il dormait déjà
+ * (« Dormir »), couché sur sa paillasse. La vue le suit toujours.
  *
  * Il ne dort que dans son lit. Le soir, il reste dehors jusqu'à ce que le joueur appuie sur
  * « Dormir » (modèle.coucher) : il marche alors jusqu'à son couchage (goHome : une paillasse ou
@@ -60,7 +61,6 @@
   const MARGE = 48;
   const TRAJET_MAX = 150;
   const RECHERCHE_MAX = 8000;
-  const OUT = [6, 21.5];         // heures où il est dehors
   const FADE_S = 0.25;
   const HOME_MAX = 30 * T;       // « Dormir » : il arrive à la porte de moins loin que ça (il se presse)
   const ASLEEP_S = 2.4;          // couché depuis ce temps, il dort : la nuit passe
@@ -623,7 +623,12 @@
     }
     // Le tas le plus proche qu'il n'a pas encore prévu d'aller prendre.
     function schedule() {
-      const outHours = ctx.hour >= OUT[0] && ctx.hour < OUT[1];
+      // Il dort déjà au montage de la carte (une partie reprise après « Dormir ») : il est
+      // couché sur sa paillasse, la vue sur lui (pas caché dans le foyer).
+      if (ctx.dort && home && !couche && o.couchage) {
+        const lit = o.couchage();
+        if (lit) { x = lit.x; y = lit.y; couche = { lit, t: 0, slept: true }; appear(); return; }
+      }
       // Il dort, et la ferme générée lui a une paillasse : il va s'y coucher.
       const lit = ctx.dort && !home && shown && o.couchage ? o.couchage() : null;
       if (lit) {
@@ -640,7 +645,9 @@
         jobs.push(wait(FADE_S));
         return;
       }
-      if (outHours && home) {
+      // Au foyer sans dormir : il en sort (le matin, ou une partie reprise la nuit : dehors
+      // jusqu'à ce que le joueur le couche, la vue sur lui).
+      if (home && !ctx.dort && !ctx.coucher) {
         const d = door();
         x = d.x; y = d.y; face = 'bas'; flip = false;
         appear();

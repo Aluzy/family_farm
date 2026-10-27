@@ -1406,3 +1406,10 @@ SwiftShader, sans carte graphique) :
   'enfant'), soit `CarteKit.CADENCE` = 8 images par seconde, deux pas, à la vitesse de marche de
   chacun ; les pieds glissent un peu sur le sol, comme dans la plupart des jeux en pixel art.
   Encore ralentie ensuite : `CarteKit.CADENCE` = 6 images par seconde, un pas et demi.
+
+- Partie reprise la nuit : le personnage n'est plus caché « dans le foyer » (la vue restait
+  figée, sans personne à suivre) ; il est dehors devant le foyer, éveillé, la vue sur lui
+  (`js/fermier.js`, schedule) ; s'il dormait déjà (« Dormir »), il est couché sur sa paillasse.
+  Le retour ne le couche plus d'office (`simulateOffline`, `js/engine/offline.js`) : la nuit
+  passée jeu fermé rend toujours son énergie (s'il a une paillasse dans une pièce close), mais au
+  retour il est éveillé comme il l'était ; c'est le joueur qui le couche.
