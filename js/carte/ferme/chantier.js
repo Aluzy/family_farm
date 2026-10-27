@@ -849,6 +849,31 @@
       }
       return out;
     },
+    // Fiche 17 : le lit (ou la paillasse) sous le doigt, qu'on choisit pour le personnage : son
+    // couchage, comme modèle.couchages l'écrit (en bas, sa case ; à l'étage, « etage:<case> »),
+    // ou null. Seulement là où on le voit : sous un toit, quand le toit est levé (le personnage
+    // dans le bâtiment) ; à l'étage, quand on le regarde.
+    litAt(wx, wy) {
+      const cols = this.grid.cols;
+      const vu = (k) => !(this.toits || []).some((t) => t.dedans.has(k) && t.img.alpha > 0.5);
+      if (this.niveau) {
+        if (!this.etageLits || !this.etagePoint) return null;
+        const q = this.etagePoint(wx, wy), k = this.tileAtPoint(q.x, q.y);
+        if (k < 0) return null;
+        // (un lit fait deux cases de haut : sa case, celle du pied ; la tête, la case au-dessus)
+        const e = this.etageLits.get(k), sous = this.etageLits.get(k + cols);
+        if (e) return 'etage:' + k;
+        if (sous && !sous.paillasse) return 'etage:' + (k + cols);
+        return null;
+      }
+      const k = this.tileAtPoint(wx, wy);
+      if (k < 0 || !vu(k)) return null;
+      for (const e of (this.blocks || new Map()).values()) {
+        if (e.sorte === 'paillasse' ? e.case === k : e.lit && (e.cases || [e.case]).includes(k)) return e.case;
+      }
+      return null;
+    },
+
     bedSpotOf(c) {
       // un couchage de l'étage (« etage:<tuile> ») : js/carte/ferme/etage.js
       if (typeof c === 'string') return c.startsWith('etage:') && this.etageBedSpot ? this.etageBedSpot(Number(c.slice(6))) : null;

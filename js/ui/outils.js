@@ -11,6 +11,7 @@ import { ACTIONS, registerActions } from './actions.js';
 import { persistState } from './storage.js';
 import { closeStageWindow, stageInterior, stageWindow } from './stage-windows.js';
 import { buildSlotHtml } from './chantier.js';
+import { crucheSlotHtml } from './cruche.js';
 import { setBuildMode } from './store.js';
 import { chevalMonte, chevalOu, chevalPossede, toggleCheval } from '../engine/cheval.js';
 
@@ -44,7 +45,8 @@ function enMain() {
 export function toolBarHtml() {
   const bati = buildSlotHtml();             // la ferme générée : le mode Construire (js/ui/chantier.js)
   const tri = hasTool(state, 'triporteur'), cheval = chevalPossede(state);
-  if (!OUTILS.some((id) => hasTool(state, id)) && !tri && !cheval && !bati) return '';
+  const cruche = crucheSlotHtml();          // la cruche et sa jauge (fiche 17, js/ui/cruche.js)
+  if (!OUTILS.some((id) => hasTool(state, id)) && !tri && !cheval && !bati && !cruche) return '';
   const main = enMain();
   const cases = OUTILS.map((id) => {
     const def = toolDef(id);
@@ -54,7 +56,7 @@ export function toolBarHtml() {
     const tenu = id === main;
     const label = tenu ? `${def.NOM} en main : la ranger` : `Prendre : ${def.NOM}`;
     return `<button type="button" class="tool-slot${tenu ? ' active' : ''}" data-action="tool-use" data-outil="${id}" aria-pressed="${tenu}" aria-label="${label}" title="${label}">${def.ICONE}</button>`;
-  }).join('') + (tri ? triporteurSlot() : '') + (cheval ? chevalSlot() : '') + bati;
+  }).join('') + cruche + (tri ? triporteurSlot() : '') + (cheval ? chevalSlot() : '') + bati;
   const tab = `<button type="button" class="tool-bar-tab" data-action="toolbar-toggle" aria-expanded="${toolbarOpen}" aria-label="${toolbarOpen ? 'Ranger la barre d\'outils' : 'Sortir la barre d\'outils'}" title="Outils">${BARRE_FLECHE}</button>`;
   return tab + `<div class="tool-bar-body" role="toolbar" aria-label="Outils"${toolbarOpen ? '' : ' inert'}>${cases}</div>`;
 }

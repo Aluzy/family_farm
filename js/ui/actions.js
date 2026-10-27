@@ -35,6 +35,7 @@ export const SOMMEIL_BLOQUEES = new Set([
   'hoe', 'hoe-toggle', 'hoe-take', 'upgrade-tank', 'robot-autonomie', 'upgrade-fridge', 'maintain', 'repair', 'eat', 'fridge-in',
   'fridge-in-all', 'fridge-out', 'toggle', 'semis-set', 'cow-herbs',
   'sac-poser', 'sac-retirer', 'sac-remplir', 'sac-reprendre', 'sac-manger', // (fiche 11 : le sac, comme la boîte et « Manger »)
+  'cruche-remplir', 'lit-oui', // (fiche 17 : aller au puits, choisir son lit)
 ]);
 
 // Plusieurs actions, une même fonction (elle reçoit le nom de l'action en 3e argument).

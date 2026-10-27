@@ -124,6 +124,9 @@ export const GAME_ACTIONS = {
   'sac-remplir': 'Remplir le sac à provisions',
   'sac-reprendre': 'Remplir le sac à provisions',
   'sac-manger': 'Manger un en-cas',
+  // fiche 17 : la cruche remplie au puits, choisir son lit
+  'cruche-remplir': 'Aller remplir la cruche au puits (barre d\'outils)',
+  'lit-oui': 'Choisir son lit',
 };
 
 // Clics d'interface : navigation, fenêtres, réglages de quantité. Comptés à
@@ -149,6 +152,7 @@ export const INTERFACE_ACTIONS = new Set([
   'pet-edit', 'pet-espece', // version 1.2 : fiche d'un animal de compagnie
   'mail-open', // version 1.3 : ouvrir une lettre du courrier
   'toolbar-toggle', // la barre d'outils de la carte : la ranger, la sortir
+  'lit-choisir', // fiche 17 : un lit touché sur la carte, la question « Tu veux choisir ce lit ? »
 ]);
 
 // Signaux utiles à la décision, affichés à part.

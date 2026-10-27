@@ -1312,3 +1312,20 @@ SwiftShader, sans carte graphique) :
     22 h ; lui dehors à 6 h, eux à 8 h) et `tests/engine/repas.test.mjs` (manger à toute heure, pas
     de boucle sans rien à manger, le dernier repas des enfants à 20 h une seule fois, rien pendant
     leur sommeil, pas de double compte la nuit).
+- **Fiche 17 — la cruche (jauge, aller au puits) et choisir son lit** (fait). La cruche a sa case
+  dans la barre d'outils (`crucheSlotHtml`, `js/ui/cruche.js`) : son icône, une jauge d'eau bleue (de
+  bas en haut) et les litres qui restent ; elle baisse à chaque arrosage et remonte au puits. La
+  cruche n'est pas un outil qu'on prend en main : sa jauge reste donc toujours en vue, à côté des
+  outils. Un appui sur le puits, ou sur cette case, envoie le personnage au puits
+  (`js/carte/ferme/puits.js`, `fermier.puiser`) : un vrai chemin (par les portes, autour des murs,
+  jamais sauté), à côté du puits, tourné vers lui ; il plonge la cruche et la remonte, et alors
+  seulement le jeu la remplit (`remplirCruche(state, casePuits)` ne remplit que sur la case d'un
+  puits posé). Un puits enfermé, une maison sans porte : « aucun chemin n'y mène » ; plus de 90 cases
+  de chemin (ou hors de portée, loin dans le grand monde) : « trop loin ». Un appui sur un lit ou une
+  paillasse (toit levé, ou à l'étage) demande « Tu veux choisir ce lit ? » (`lit-choisir`) ; Oui
+  (`choisirLit`, `js/engine/blocs.js`) en fait le premier couchage, celui du personnage : il y va
+  dormir ; le membre qui y dormait prend l'ancien lit du personnage, les autres gardent le leur. Le
+  choix est gardé (`state.litPrincipal`, sauvegarde v61) ; un lit repris ne compte plus. Les tests :
+  `tests/engine/cruche-lit.test.mjs` (la jauge, le remplissage au puits seulement, le choix du lit,
+  sa sauvegarde, et sur la carte sans navigateur : la marche jusqu'au puits par la porte, les puits
+  enfermés ou trop loin, le lit sous le doigt).

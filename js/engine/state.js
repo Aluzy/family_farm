@@ -123,6 +123,7 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     meubles: {}, // meubles de la maison (fabriqués à l'Atelier ; absent dans une ancienne sauvegarde : aucun)
     caleche: nouvelleCaleche(), // la calèche (caleche.js, fiche 7c) : son coffre, ses retenues
     equipement: nouvelEquipement(), // fiche 11 : les pièces de chaque membre, le sac (equipement.js)
+    litPrincipal: null, // fiche 17 : le lit choisi par le personnage principal (blocs.js choisirLit ; null : le premier)
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),
@@ -496,6 +497,9 @@ export const MIGRATIONS = {
   // v59 → v60 : l'équipement de la famille et le sac à provisions (equipement.js, fiche 11) : personne
   // n'est équipé, pas de sac.
   59: (state) => ({ ...state, equipement: nouvelEquipement(), version: 60 }),
+  // v60 → v61 : choisir son lit (blocs.js choisirLit, fiche 17) : le personnage principal n'en a pas
+  // encore choisi, il garde le premier couchage (l'ordre des pièces), comme avant.
+  60: (state) => ({ ...state, litPrincipal: null, version: 61 }),
 };
 
 // Porte les cases d'une partie (numérotées sur la largeur de sa ferme) dans celles du monde, où sa
