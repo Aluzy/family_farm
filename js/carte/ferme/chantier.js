@@ -59,9 +59,12 @@
     textures.addCanvas('lueur', cv);
   }
 
+  // les blocs qui éclairent la nuit (stepLanterns) : leurs réglages sont BLOCS_CARTE[sorte]
+  const LUMIERES = ['lanterne', 'candelabre'];
+
   // la matière d'un bloc, pour le bruit de sa pose (js/son.js : pose_bois, pose_pierre, pose_metal)
   function matiereBloc(sorte) {
-    if (/lanterne|panneau|batterie|fer|station|botteleuse|entonnoir|cuisiniere|vitr|convoyeur/.test(sorte)) return 'metal';
+    if (/lanterne|candelabre|panneau|batterie|fer|station|botteleuse|entonnoir|cuisiniere|vitr|convoyeur/.test(sorte)) return 'metal';
     if (/pierre|brique|four|meule|puits|citerne|silo|dalle|paves|carrelage|marbre|mosaique|tomettes/.test(sorte)) return 'pierre';
     return 'bois';
   }
@@ -134,7 +137,7 @@
           if (e && e.sorte === b.sorte) {
             // (les flammes du four, la meule qui moud, la lanterne allumée : stepFires, stepLanterns choisissent leur image)
             // (la botteleuse qui travaille, sa bande qui tourne : botteleuse.js)
-            const anime = b.sorte === BLOCS_CARTE.feu.sorte || b.sorte === BLOCS_CARTE.meule.sorte || b.sorte === 'lanterne' || (this.botteCycles && this.botteCycles.size && ['botteleuse', 'convoyeur'].includes(b.sorte));
+            const anime = b.sorte === BLOCS_CARTE.feu.sorte || b.sorte === BLOCS_CARTE.meule.sorte || LUMIERES.includes(b.sorte) || (this.botteCycles && this.botteCycles.size && ['botteleuse', 'convoyeur'].includes(b.sorte));
             if ((e.img.frame.name !== f || e.img.texture.key !== key) && !anime) { e.img.setTexture(key, f); changed = true; }
             const li = linteau(b);
             if (this.syncHauts(e, li ? li.h : haut1(b), li && li.frame)) changed = true;
@@ -409,14 +412,15 @@
       }
     },
 
-    // Les lanternes scintillantes (BLOCS_CARTE.lanterne) : éteintes le jour ; quand la nuit tombe,
-    // elles s'allument, leurs deux images alternent au hasard et chacune pose sa lumière dans le
-    // voile de l'heure (CarteKit.voile, eclaire : une flaque cyan sur l'herbe et la vitre), qui
-    // vacille un peu ; un petit halo par-dessus (WebGL).
+    // Les lanternes scintillantes (BLOCS_CARTE.lanterne) et les candélabres (BLOCS_CARTE.candelabre,
+    // fiche 15) : éteints le jour ; quand la nuit tombe, ils s'allument, leurs deux images alternent
+    // au hasard (la lanterne scintille, les flammes des bougies bougent) et chacun pose sa lumière
+    // dans le voile de l'heure (CarteKit.voile, eclaire : une flaque sur l'herbe, cyan ou chaude, et
+    // la lueur de la vitre ou des bougies), qui vacille un peu ; un petit halo par-dessus (WebGL).
     stepLanterns(time, dt) {
-      const L = BLOCS_CARTE.lanterne, V = this.lumiere;
+      const V = this.lumiere;
       const list = [];
-      for (const e of (this.blocks || new Map()).values()) if (e.sorte === 'lanterne') list.push(e);
+      for (const e of (this.blocks || new Map()).values()) if (LUMIERES.includes(e.sorte)) list.push(e);
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
       if (!list.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !this.calecheSprite) return;
       if (!this.lanternLights) {
@@ -426,23 +430,28 @@
       }
       const out = this.lanternLights;
       out.length = 0;
-      const nuit = V.nuit, on = nuit > L.allume, calme = global.CarteKit.reduit();
+      const nuit = V.nuit, on = nuit > BLOCS_CARTE.lanterne.allume, calme = global.CarteKit.reduit();
       const Ph = global.Phaser, webgl = this.sys.renderer.type === (Ph && Ph.WEBGL);
+      const haut = this.has(BLOCS_CARTE.hauts.key);
       for (const e of list) {
+        const L = BLOCS_CARTE[e.sorte];
+        // (son image éteinte ; le candélabre sans la planche des murs hauts : la lanterne éteinte,
+        // sans flammes, qui ne change pas d'image)
+        const eteinte = e.sorte === 'lanterne' ? BLOCS_CARTE.frames.lanterne : haut ? BLOCS_CARTE.hauts.candelabre : null;
         if (e.phase == null) { e.phase = Math.random() * 7; e.flip = 0; e.k = 1; }
         if (!on) {
-          if (e.img.frame.name !== BLOCS_CARTE.frames.lanterne) e.img.setFrame(BLOCS_CARTE.frames.lanterne);
+          if (eteinte !== null && e.img.frame.name !== eteinte) e.img.setFrame(eteinte);
           if (e.halo) e.halo.setVisible(false);
           continue;
         }
-        // elle scintille : une image ou l'autre, et une lumière qui vacille
+        // il scintille : une image ou l'autre, et une lumière qui vacille
         if (!calme && (e.flip -= dt) <= 0) {
           e.flip = (0.4 + Math.random()) / L.fps;
           e.frame = L.allumee[Math.random() < 0.5 ? 0 : 1];
           e.k = 1 - L.vacille + Math.random() * L.vacille * 2;
         }
         const frame = calme ? L.allumee[0] : e.frame || L.allumee[0];
-        if (e.img.frame.name !== frame) e.img.setFrame(frame);
+        if (eteinte !== null && e.img.frame.name !== frame) e.img.setFrame(frame);
         const k = (calme ? 1 : e.k * (0.92 + 0.08 * Math.sin(time / 300 + e.phase))) * Math.min(1, nuit / 0.4);
         const S = L.sol, W = L.vitre;
         out.push({ key: 'lueur', x: e.x + S.dx, y: e.y + S.dy, tint: S.teinte, alpha: S.alpha * k, scaleX: S.rayon / R, scaleY: (S.rayon * S.aplati) / R });
@@ -573,7 +582,11 @@
     // (BLOCS_CARTE.hauts.variantes, BLOCS_CARTE.hauts.fenetres), sinon
     // celle du mur de blocs.png.
     blocImage(b, at, cols) {
-      const f = this.wallFrame(b, at, cols), H = BLOCS_CARTE.hauts;
+      const H = BLOCS_CARTE.hauts;
+      // (le candélabre, deux blocs de haut : son image dans la planche des murs hauts, éteint ;
+      // sans elle, la lanterne éteinte)
+      if (b.sorte === 'candelabre') return this.has(H.key) ? [H.key, H.candelabre] : [BLOCS_CARTE.key, BLOCS_CARTE.frames.lanterne];
+      const f = this.wallFrame(b, at, cols);
       // (une fenêtre, une paroi vitrée : prolongée par sa voisine de même sorte, à gauche, à
       // droite, si leurs faces se voient toutes deux)
       const J = H.joints[b.sorte], face = (k) => H.variantes[at.get(k + cols)] === undefined;

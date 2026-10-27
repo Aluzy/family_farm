@@ -1330,6 +1330,32 @@ test('ferme générée : la lanterne scintillante (un champignon lumineux de la 
   assertEqual(poserBloc(s, 'lanterne', p.dedans + 1).ok, false, 'pas dans un bâtiment');
 });
 
+test('ferme générée : le candélabre (fiche 15 : fer, miel, fibre) éclaire comme la lanterne, dehors comme dedans, sans faire la maison', () => {
+  const s = reach(chantier('cand1'), 'poulailler');
+  setInv(s, { lingot_fer: 2, miel: 3, fibre: 1, mur_pierre: 30, porte: 2, paillasse: 1 });
+  assert(craft(s, 'candelabre').ok);
+  assertEqual([countItem(s, 'candelabre'), countItem(s, 'lingot_fer'), countItem(s, 'miel'), countItem(s, 'fibre')], [1, 0, 1, 0]);
+  assertEqual(craft(s, 'candelabre').ok, false, 'plus de fer');
+  const B = DATA.ATELIER.BLOCS.candelabre;
+  assert(B.lumiere && B.bloque && !B.dedans && !B.dehors);
+  assertEqual(categorieBloc('candelabre'), 'maison', 'dans l\'onglet Maison de Construire');
+  assert(ETAGE_BLOCS.includes('candelabre'), 'il se pose aussi à l\'étage');
+  // dehors : il arrête le passage ; repris, il revient dans l'inventaire
+  const z = terrainLibre(s, 12, 5), dehors = (z.r + 2) * z.W + z.c + 8;
+  assert(poserBloc(s, 'candelabre', dehors).ok);
+  assertEqual([blocAt(s, dehors), blocBloque(s, dehors), countItem(s, 'candelabre')], ['candelabre', true, 0]);
+  reprendreBloc(s, dehors);
+  // dans une enceinte vide : un décor, la pièce reste une enceinte ; puis la paillasse en fait la maison
+  const p = murs(z, 5, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserPorte(s, p.porte);
+  assert(poserBloc(s, 'candelabre', p.dedans + 1).ok, 'dans une enceinte vide');
+  assertEqual(genrePiece(s, p.dedans + 1), null, 'un décor : pas la maison');
+  assert(poserBloc(s, 'paillasse', p.dedans).ok);
+  assertEqual(genrePiece(s, p.dedans + 1), 'maison');
+  assertEqual(blocAt(s, p.dedans + 1), 'candelabre', 'il reste dans la maison');
+});
+
 test('ferme générée : la station du robot est un bloc à poser dehors ; sans elle, il ne se recharge pas', () => {
   const s = chantier('robot1');
   setInv(s, { station_robot: 1 });

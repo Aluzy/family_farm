@@ -149,6 +149,7 @@
     "bac_fleurs": { "nom": "Bac à fleurs", "icone": "🪴‍🌷", "prix": 60, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "ruche": { "nom": "Ruche", "icone": "🐝", "prix": 200, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "lanterne": { "nom": "Lanterne scintillante", "icone": "🏮", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "candelabre": { "nom": "Candélabre", "icone": "🕯", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "porte": { "nom": "Porte", "icone": "🚪", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "porte_chene": { "nom": "Porte en chêne", "icone": "🚪‍🟤", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "porte_vitree": { "nom": "Porte vitrée", "icone": "🚪‍🪟", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },

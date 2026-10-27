@@ -223,7 +223,10 @@
       // murs (scripts/carte/blocs.py fenetres_hautes) : depuis leur image `modeles`, la fenêtre
       // à carreaux dans chaque matière, seule puis prolongée à gauche, à droite, des deux côtés
       // (`prolonge` : 4 × 16 images par matière) ; les autres modèles, 16 images par matière
-      fenetres: { modeles: { mur_fenetre: 441, fenetre_ronde: 889, fenetre_cintree: 1001, fenetre_volets: 1113, fenetre_vitrail: 1225 }, prolonge: ['mur_fenetre'] } },
+      fenetres: { modeles: { mur_fenetre: 441, fenetre_ronde: 889, fenetre_cintree: 1001, fenetre_volets: 1113, fenetre_vitrail: 1225 }, prolonge: ['mur_fenetre'] },
+      // le candélabre (fiche 15 : deux blocs de haut, scripts/carte/blocs.py candelabre), rangé après
+      // les fenêtres : éteint, puis allumé (BLOCS_CARTE.candelabre.allumee)
+      candelabre: 1337 },
     // la barrière : 16 images raccordées aux barrières voisines (barrieres + masque, comme les murs)
     barrieres: 50,
     // la lanterne scintillante (un bloc `lumiere`, chantier.js stepLanterns) : éteinte le jour
@@ -237,6 +240,17 @@
       sol: { rayon: 54, aplati: 0.72, teinte: 0x8ff5e0, alpha: 0.95, dx: 2, dy: -5 },
       vitre: { rayon: 11, teinte: 0xd8fff6, alpha: 0.9, dx: 4, dy: -11 },
       halo: { couleur: 0x4ff0d2, rayon: 20, intensite: 0.09, attenuation: 0.08 },
+    },
+    // le candélabre (fiche 15 : un bloc `lumiere` comme la lanterne, chantier.js stepLanterns), deux
+    // blocs de haut : son image dans la planche des murs hauts (hauts.candelabre ; sans elle, celle
+    // de la lanterne éteinte), allumé avec la lanterne ; ses flammes (les images `allumee`) bougent,
+    // sa lumière est chaude : une large flaque `sol` au pied, la lueur des bougies `vitre` (en haut,
+    // dy px au-dessus du pied de la case), un halo
+    candelabre: {
+      allumee: [1338, 1339], fps: 5, vacille: 0.1,
+      sol: { rayon: 62, aplati: 0.7, teinte: 0xffc070, alpha: 0.95, dx: 0, dy: -6 },
+      vitre: { rayon: 16, teinte: 0xffe2a8, alpha: 0.95, dx: 0, dy: -32 },
+      halo: { couleur: 0xffb050, rayon: 22, intensite: 0.1, attenuation: 0.08 },
     },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
     // le plancher des pièces (`piece` : unie, sur ce qu'on voit de chaque case) ; sur les vitres des
@@ -257,7 +271,7 @@
     // la meule qui moud (le Moulin en marche) : sa pierre et sa manivelle tournent (`fps` images
     // par seconde, un tour en 8 images ; chantier.js stepFires)
     meule: { sorte: 'meule', frames: [81, 82, 83, 84, 85, 86, 87, 88], fps: 8 },
-    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'bloc_silo', 'meule', 'lanterne', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur', 'boite_nourriture'],
+    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'bloc_silo', 'meule', 'lanterne', 'candelabre', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur', 'boite_nourriture'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png ; la
     // station du robot : station_robot.png, machines.js ; les blocs de silo : silo.js)
     ailleurs: ['puits', 'citerne', 'station_robot', 'bloc_silo'],

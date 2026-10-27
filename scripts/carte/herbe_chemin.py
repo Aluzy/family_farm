@@ -14,12 +14,15 @@
 #   rangées 5 à 12  les raccords herbe / chemin, une rangée par (teinte d'herbe, teinte de
 #                   chemin) : 16 tuiles, une par combinaison de coins (« coins de Wang ») ; la
 #                   tuile n a du chemin au coin haut-gauche si n & 8, haut-droit si n & 4,
-#                   bas-gauche si n & 2, bas-droit si n & 1 ;
+#                   bas-gauche si n & 2, bas-droit si n & 1 ; leur bord (fiche 15 :
+#                   scripts/carte/bord_chemin.py) a des coins arrondis, ondule et laisse
+#                   déborder des brins d'herbe sur le chemin ;
 #   rangées 13 à 15 les raccords d'une herbe à la suivante, plus foncée (mêmes coins : la plus
 #                   foncée aux coins marqués), par une frontière tramée.
 # Raccords : l'herbe n'a aucune forme qui traverse un bord (des points et des traits courts
 # posés à l'intérieur), donc toute tuile d'herbe se pose à côté de toute autre ; le bord du
-# chemin ne dépend, le long d'un côté, que des deux coins de ce côté, donc deux raccords qui
+# chemin ne dépend, le long d'un côté, que des deux coins de ce côté (et de bruits périodiques
+# sur 16 px, les mêmes dans toutes les tuiles), donc deux raccords qui
 # partagent un côté se rejoignent. assets/herbe_chemin.tsx décrit le tout pour Tiled (un jeu
 # de coins « herbe et chemin » : peindre au pinceau de terrain).
 import colorsys
@@ -32,6 +35,8 @@ from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
 from pixel import ASSETS, BAYER, ROOT, T, cote_a_cote, wangid  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # bord_chemin.py
+import bord_chemin as BC  # noqa: E402
 MODELE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'tuile_herbe_chemin.png')
 SORTIE = os.path.join(ASSETS, 'herbe_chemin')
 COLS = 16
@@ -141,23 +146,31 @@ def champ(x, y, coins):
 
 
 def raccord(fond_herbe, fond_chemin, n, t_chemin):
-    """Tuile de raccord n (coins : n & 8 haut-gauche, 4 haut-droit, 2 bas-gauche, 1 bas-droit)."""
-    coins = [(n >> 3) & 1, (n >> 2) & 1, (n >> 1) & 1, n & 1]
+    """Tuile de raccord n (coins : n & 8 haut-gauche, 4 haut-droit, 2 bas-gauche, 1 bas-droit). Le
+    bord (scripts/carte/bord_chemin.py, fiche 15) : arrondi aux coins, ondulé, des brins d'herbe
+    qui débordent sur le chemin (leur pointe plus claire) ; côté chemin, la terre tassée plus
+    sombre au ras de l'herbe, et un peu d'ombre sous elle."""
     bord = [teinte(c, t_chemin) for c in BORD]
     out = fond_herbe.copy()
     px = out.load()
     pc = fond_chemin.load()
-    f = [[champ(x, y, coins) for x in range(T)] for y in range(T)]
+    ph = fond_herbe.load()
+    # (la pointe des brins : le ton le plus clair de cette herbe, déjà dans sa palette)
+    clair = max((ph[x, y][:3] for y in range(T) for x in range(T)), key=lambda c: 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2])
+    D = lambda x, y: BC.champ(n, x, y) >= 0  # noqa: E731
     for y in range(T):
         for x in range(T):
-            v = f[y][x]
-            if v >= 0.5:
-                px[x, y] = pc[x, y]
-            # la bordure, côté herbe, comme dans le modèle : brun olive, plus sombre au bord
-            elif v >= 0.40:
-                px[x, y] = bord[0 if v >= 0.45 else 1] + (255,)
-            elif v >= 0.33 and BAYER[y % 4][x % 4] < 9:
-                px[x, y] = bord[2 if v >= 0.37 else 3] + (255,)
+            if D(x, y):
+                c = pc[x, y]
+                if not D(x, y - 1):
+                    c = bord[1] + (255,)          # au pied de l'herbe du dessus : son ombre
+                elif not (D(x - 1, y) and D(x + 1, y) and D(x - 1, y - 1) and D(x + 1, y - 1)):
+                    c = bord[0] + (255,)          # la terre tassée au ras de l'herbe, sur les côtés
+                elif not D(x, y - 2) and BAYER[y % 4][x % 4] < 8:
+                    c = bord[0] + (255,)          # l'ombre qui s'estompe
+                px[x, y] = c
+            elif BC.champ(n, x, y, brins=False) >= 0 and (D(x, y - 1) or D(x, y + 1)):
+                px[x, y] = clair + (255,)         # la pointe d'un brin, sur le chemin
     return out
 
 

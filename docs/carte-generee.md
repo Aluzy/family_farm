@@ -365,6 +365,14 @@ Le Marché vend toujours les outils.
     les teintes de la carte : `terrain.SOMMETS`, `terrain.TEINTES`).
   - La scène remplace ces tuiles du sol et efface les fleurs des cases de chemin
     (`syncPaths`, `drawLayer`) ; seules les cases qui changent sont repeintes.
+  - Le bord des chemins (fiche 15, `scripts/carte/bord_chemin.py`, commun aux raccords de
+    `herbe_chemin` et au chemin posé sur les sols du grand monde, `scripts/carte/sols_monde.py`) :
+    des coins arrondis (un quart de disque un peu aplati autour d'un coin seul, son creux autour
+    d'un coin d'herbe seul), un bord qui ondule d'un bruit périodique sur 16 px (le même dans
+    toutes les tuiles : il passe d'une tuile à l'autre sans couture) et des brins d'herbe qui
+    débordent sur le chemin, la pointe plus claire ; la terre tassée plus sombre au ras de
+    l'herbe et son ombre sous elle. Ce sont les mêmes tuiles, aux mêmes places : le dessin des
+    régions ne coûte rien de plus.
 - **La barrière** (1 planche à l'Atelier : 2 barrières) arrête le passage et se raccorde à
   ses voisines, comme les murs (`BLOCS_CARTE.barrieres` + masque, `wallFrame`). Elle ne
   ferme pas de pièce : un enclos de barrières n'est ni une maison ni un bâtiment.
@@ -379,6 +387,20 @@ Le Marché vend toujours les outils.
   - **Quand la nuit tombe**, ses deux images alternent au hasard pour la faire scintiller.
     Elle pose aussi sa lumière dans le voile de l'heure : une flaque cyan sur l'herbe et sa vitre,
     qui vacillent un peu, plus un petit halo (`stepLanterns`, `BLOCS_CARTE.lanterne`).
+- **Le candélabre** (fiche 15 ; à l'Atelier : 2 lingots de fer, 2 miels pour la cire des bougies,
+  1 fibre pour les mèches) : un pied de fer forgé (trois pattes recourbées, une tige torsadée à
+  deux nœuds, deux bras en volute) et trois bougies, deux blocs de haut sur sa case, un demi-bloc
+  de large pour le pied et la tige.
+  - **Où le poser** : comme la lanterne (un bloc `lumiere` sans genre, un décor : il ne fait
+    d'une pièce ni la maison ni un bâtiment), dehors, dans la maison, dans une enceinte vide et à
+    l'étage (`ETAGE_BLOCS`) ; onglet Maison de Construire. Il arrête le passage.
+  - **Son image** : dans la planche des murs hauts (`murs_hauts.png`, après les fenêtres :
+    `BLOCS_CARTE.hauts.candelabre`, `scripts/carte/blocs.py` `candelabre`), éteint puis allumé
+    en deux images ; sans cette planche, celle de la lanterne éteinte. Comme les murs hauts, il
+    s'efface un peu devant quelqu'un et en mode Construire.
+  - **Quand la nuit tombe** (avec les lanternes : `stepLanterns`, `BLOCS_CARTE.candelabre`), ses
+    flammes bougent et il pose une lumière chaude dans le voile de l'heure : une flaque sur
+    l'herbe, la lueur des bougies en haut, un halo.
 - **La ruche** (au Marché, rayon Animaux : 200 pièces ; `DATA.RUCHE`, `js/engine/ruches.js`)
   arrive dans l'inventaire et se pose dehors, sur l'herbe, comme un bloc. Elle arrête le passage.
   - **Elle se remplit la nuit** (`remplirRuches`) : au bout de `RUCHE.NUITS` nuits (2), elle est

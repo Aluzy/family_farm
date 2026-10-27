@@ -277,6 +277,7 @@ export const RAW_DATA = {
     },
     "ruche": { "nom": "Ruche", "icone": "🐝", "prix": 200, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "lanterne": { "nom": "Lanterne scintillante", "icone": "🏮", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "candelabre": { "nom": "Candélabre", "icone": "🕯", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "porte": { "nom": "Porte", "icone": "🚪", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "porte_chene": { "nom": "Porte en chêne", "icone": "🚪‍🟤", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "porte_vitree": { "nom": "Porte vitrée", "icone": "🚪‍🪟", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -713,6 +714,7 @@ export const RAW_DATA = {
       "barriere": { "entrees": { "planche": 1 }, "sortie": { "barriere": 2 } },
       "chemin": { "entrees": { "pierre": 1 }, "sortie": { "chemin": 2 } },
       "lanterne": { "entrees": { "champignon_lumineux": 1, "bois": 2 }, "sortie": { "lanterne": 1 } },
+      "candelabre": { "entrees": { "lingot_fer": 2, "miel": 2, "fibre": 1 }, "sortie": { "candelabre": 1 } },
       "paillasse": { "entrees": { "fibre": 2 }, "sortie": { "paillasse": 1 } },
       "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 } },
       "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },
@@ -864,6 +866,7 @@ export const RAW_DATA = {
       "chemin": { "nom": "Chemin", "objet": "chemin", "sol": true, "dehors": true },
       "barriere": { "nom": "Barrière", "objet": "barriere", "bloque": true },
       "lanterne": { "nom": "Lanterne scintillante", "objet": "lanterne", "bloque": true, "lumiere": true },
+      "candelabre": { "nom": "Candélabre", "objet": "candelabre", "bloque": true, "lumiere": true },
       "four": { "nom": "Four", "objet": "four_pierre", "dedans": true, "bloque": true, "station": "four" },
       "cuisiniere": { "nom": "Cuisinière", "objet": "cuisiniere", "dedans": true, "bloque": true, "station": "cuisine" },
       "meule": { "nom": "Meule", "objet": "meule", "dedans": true, "bloque": true, "unique": true, "station": "moulin", "debloque": "moulin" },
@@ -1095,7 +1098,11 @@ export const RAW_DATA = {
           "escalier"
         ]
       },
-      "maison": { "nom": "Maison", "icone": "🏠", "blocs": ["paillasse", "boite_nourriture", "refrigerateur", "four", "cuisiniere", "lanterne"] },
+      "maison": {
+        "nom": "Maison",
+        "icone": "🏠",
+        "blocs": ["paillasse", "boite_nourriture", "refrigerateur", "four", "cuisiniere", "lanterne", "candelabre"]
+      },
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
       "elevage": {
         "nom": "Élevage",

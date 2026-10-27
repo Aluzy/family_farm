@@ -70,6 +70,9 @@ function recipesUsing(items) {
 // Ce que demande une recette : « 4 minerai de fer + 3 bois ».
 const ingredientsText = (r) => r.ingredients.map((i) => `${formatQty(i.qte)} ${ingredientOptions(i).map((it) => DATA.OBJETS[it].nom.toLowerCase()).join(' ou ')}`).join(' + ');
 
+// Ce que prend une recette de l'Atelier : « 2 lingot de fer, 2 miel, 1 fibre ».
+const recetteAtelier = (id) => Object.entries(DATA.ATELIER.RECETTES[id].entrees).map(([o, n]) => `${n} ${DATA.OBJETS[o].nom.toLowerCase()}`).join(', ');
+
 // Les lingots fondus au Four (recettes lingot_*).
 const ingotRecipes = () => Object.values(DATA.RECETTES).filter((r) => r.sortie && /^lingot_/.test(r.sortie));
 
@@ -245,6 +248,8 @@ const HELP = {
         ['La calèche', `Chaque jour, elle fait le tour du pays par les chemins, de hameau en hameau, et s'arrête devant l'entrée de ta ferme vers ${C.FERME} h, une heure. Une icône au bord de l'écran montre où elle est quand elle approche ; sur un chemin, quand elle passe tout près, touche-la ou le bouton « Héler » : elle s'arrête. Arrêtée à côté de toi (dès le niveau ${unlockLevel('marche')}), elle t'achète tout ce qui se vend, au prix de vente, et te vend des semences et ce qu'elle a acheté en chemin à la réserve des hameaux (bois, poisson, pierre, lait, laine, baies…), dont l'argent va aux familles. Le soir, elle dort dans un hameau. Sa fenêtre (le menu) dit où elle est.`],
         ['L\'Atelier', 'Seules les semences s\'achètent : les outils, les bêtes (un nid garni pour une poule, une pierre à sel et du foin pour un mouton ou une vache, un licol et des friandises pour le cheval), la ruche, le bac à fleurs et les meubles se fabriquent à l\'Atelier, avec ce que tu récoltes à la ferme et dans le monde. Les aliments se cultivent, se cuisinent, ou viennent des hameaux par la calèche.'],
         ['Le cheval', 'En selle, il te porte partout dans le pays, plus vite qu\'à pied ; quand tu en descends, il rentre à l\'Écurie.'],
+        // fiche 15 : les blocs qui éclairent la nuit (BLOCS lumiere : js/carte/ferme/chantier.js, stepLanterns)
+        ['Éclairer la nuit', `La lanterne scintillante (${recetteAtelier('lanterne')}) et le candélabre, un pied de fer forgé haut de deux blocs et ses trois bougies (${recetteAtelier('candelabre')}), se fabriquent à l'Atelier et se posent avec 🔨 Construire, dehors comme dans la maison : la nuit, ils s'allument et éclairent autour d'eux.`],
         ['Qualité de l\'affichage', 'Sur un téléphone, le jeu se dessine en qualité « économie » pour rester fluide : l\'image un peu moins fine, le brouillard et la lumière de la nuit en plus gros points, la mer sans ses vagues d\'écume, les arbres faits plus près de toi. Les Options (Affichage) la règlent : « Auto » (économie sur un téléphone, normale sur un ordinateur), « Économie » ou « Normale ». Ta partie n\'en dépend pas.'],
       ],
     };

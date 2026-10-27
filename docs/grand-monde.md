@@ -1181,3 +1181,18 @@ SwiftShader, sans carte graphique) :
   « Arroser tout », « Récolter tout », le semis automatique) s'ouvre d'un appui long sur une parcelle,
   à la ligne de celle-ci, et toujours depuis les notifications d'arrosage et de récolte et la puce
   d'objectif (« Y aller ») : rien ne disparaît. L'aide, l'encyclopédie et la fin du didacticiel le disent.
+- **Fiche 15 — le décor : les bords des chemins et les candélabres** (fait) : les bords des chemins,
+  sur la ferme (les raccords de `assets/herbe_chemin.png`) comme dans le grand monde (le chemin posé
+  sur les autres sols, `assets/sols_monde.png`), ont une forme commune (`scripts/carte/bord_chemin.py`) :
+  des coins arrondis, un bord qui ondule d'un bruit périodique sur 16 px (sans couture d'une tuile à
+  l'autre) et des brins d'herbe qui débordent sur le chemin. Ce ne sont que des tuiles redessinées,
+  aux mêmes places : le dessin des régions ne change pas (mesuré dans Chromium, `paintRegion` sur les
+  régions affichées, la même graine, trois essais avant et après : au mieux 29 à 31 ms par région
+  sur la ferme et 31 à 32 ms dans le monde avant, 29 à 31 et 31 à 34 ms après, autant aux bruits de
+  mesure près). Le candélabre est un nouveau bloc `lumiere`
+  (à l'Atelier : 2 lingots de fer, 2 miels, 1 fibre ; onglet Maison de Construire), deux blocs de
+  haut et un demi-bloc de large : un pied de fer forgé et trois bougies (son image dans
+  `assets/murs_hauts.png`, `BLOCS_CARTE.hauts.candelabre`), qui s'allument la nuit avec les
+  lanternes (`stepLanterns`, `BLOCS_CARTE.candelabre` : une lumière chaude). Un décor, dehors comme
+  dans la maison ou à l'étage ; son icône 🕯, sa page d'encyclopédie et sa ligne d'aide (« Éclairer
+  la nuit », fiche « Le grand monde »).

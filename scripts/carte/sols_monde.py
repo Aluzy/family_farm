@@ -23,7 +23,8 @@
 #                 transparente ailleurs ; la tuile 0 est vide ;
 #   les RIVES     le même, posé sur l'eau : une rive (le bord mouillé, l'écume au pied).
 # Puis CHEMINS rangées du chemin posé sur un sol autre que l'herbe (mêmes coins ; sa texture est
-# celle du chemin plein de la planche de la ferme, herbe_chemin rangée 4 : ils se raccordent), et
+# celle du chemin plein de la planche de la ferme, herbe_chemin rangée 4 : ils se raccordent ; son
+# bord, celui des raccords du chemin de la ferme : scripts/carte/bord_chemin.py, fiche 15), et
 # une rangée de gués : des pierres plates posées sur l'eau, 8 variantes, et une rangée d'eau
 # profonde posée sur l'eau peu profonde (mêmes coins).
 #
@@ -46,6 +47,8 @@ from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
 from pixel import ASSETS, BAYER, T, apercu  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # bord_chemin.py
+import bord_chemin as BC  # noqa: E402
 
 SORTIE = os.path.join(ASSETS, 'sols_monde.png')
 PLANCHE_FERME = os.path.join(ASSETS, 'farm_spring_summer.png')
@@ -601,23 +604,29 @@ def texture_chemin():
 
 
 def chemin(n, j, tex):
-    """Le chemin de la ferme sur les coins n (variante j), posé sur un autre sol : son bord tassé
-    plus sombre, une ombre légère au pied du sol d'à côté."""
+    """Le chemin de la ferme sur les coins n (variante j), posé sur un autre sol. Son bord est
+    celui du chemin de la ferme (scripts/carte/bord_chemin.py, fiche 15 : les coins arrondis, le
+    bord ondulé, les brins du sol d'à côté qui débordent, ici des trous où il se voit), plus le
+    bruit propre à la variante loin des côtés ; la terre tassée plus sombre au ras du sol d'à côté,
+    et l'ombre de ce sol sous lui."""
     im = Image.new('RGBA', (T, T), (0, 0, 0, 0))
     if n == 0:
         return im
-    D = lambda x, y: dedans(n, j + 7, x, y)  # noqa: E731
+    D = lambda x, y: BC.champ(n, x, y, variante=j) >= 0  # noqa: E731
     for y in range(T):
         for x in range(T):
-            if D(x, y):
-                c = tex[x, y]
-                if not all(D(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-                    c = mel3(c, (84, 54, 32), 0.45)       # le bord tassé
-                elif not all(D(x + dx, y + dy) for dx, dy in ((2, 0), (-2, 0), (0, 2), (0, -2))):
-                    c = mel3(c, (120, 80, 50), 0.15)
-                im.putpixel((x, y), c + (255,))
-            elif D(x, y - 1) or D(x - 1, y):
-                im.putpixel((x, y), (40, 30, 20, 70))    # un peu d'ombre au pied
+            if not D(x, y):
+                continue
+            c = tex[x, y]
+            if not D(x, y - 1):
+                c = mel3(c, (84, 54, 32), 0.5)        # au pied du sol du dessus : son ombre
+            elif not all(D(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (1, -1), (-1, -1))):
+                c = mel3(c, (84, 54, 32), 0.32)       # le bord tassé, sur les côtés
+            elif not D(x, y - 2) and trame(x, y) < 0:
+                c = mel3(c, (84, 54, 32), 0.2)        # l'ombre qui s'estompe
+            elif not all(D(x + dx, y + dy) for dx, dy in ((2, 0), (-2, 0), (0, 2))):
+                c = mel3(c, (120, 80, 50), 0.12)
+            im.putpixel((x, y), c + (255,))
     return im
 
 

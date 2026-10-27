@@ -566,7 +566,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "etage",
      "terme": "Étage",
-     "description": "Un escalier posé dans une pièce close ouvre un étage au-dessus d'elle et de ses murs : on y monte par l'escalier, et l'on y pose des murs, des fenêtres, des portes, des paillasses, des lits, des lanternes et des meubles. Le toit de la maison se pose alors sur les murs de l'étage.",
+     "description": "Un escalier posé dans une pièce close ouvre un étage au-dessus d'elle et de ses murs : on y monte par l'escalier, et l'on y pose des murs, des fenêtres, des portes, des paillasses, des lits, des lanternes, des candélabres et des meubles. Le toit de la maison se pose alors sur les murs de l'étage.",
      "liens": [
       "piece_close",
       "murs",
@@ -606,11 +606,27 @@ export const ENCYCLOPEDIE = {
      "description": "Un bloc qui éclaire autour de lui la nuit. Elle se fabrique à l'Atelier avec un champignon lumineux (il pousse au sol de la mine, et repousse le lendemain) et deux bois, et se pose sur la ferme, dehors comme dans la maison.",
      "liens": [
       "atelier",
-      "grotte"
+      "grotte",
+      "candelabre"
      ],
      "decouverte": [
       "objet:lanterne",
       "objet:champignon_lumineux"
+     ]
+    },
+    {
+     "id": "candelabre",
+     "terme": "Candélabre",
+     "description": "Un pied de fer forgé, haut de deux blocs, et trois bougies : la nuit, elles s'allument et l'éclairent d'une lumière chaude, comme la lanterne. Il se fabrique à l'Atelier avec 2 lingots de fer, 2 pots de miel (la cire des ruches, pour les bougies) et 1 fibre (les mèches), et se pose comme un bloc avec 🔨 Construire (onglet Maison), dehors comme dans la maison ou à l'étage. C'est un décor : il ne fait d'une pièce ni la maison ni un bâtiment.",
+     "liens": [
+      "lanterne",
+      "atelier",
+      "ruche",
+      "lingot",
+      "mode_construire"
+     ],
+     "decouverte": [
+      "objet:candelabre"
      ]
     },
     {
