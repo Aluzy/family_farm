@@ -2,7 +2,8 @@
 
 Le jeu a une bande-son complète : quatre thèmes de musique, les ambiances de la ferme et des
 biomes du grand monde, les bêtes, les machines, chaque geste du personnage et les fenêtres de
-l'interface. Tout est synthétisé pour le jeu par `scripts/son/` : aucun échantillon tiers.
+l'interface. Tout est synthétisé pour le jeu par `scripts/son/`, sauf les bêtes de la ferme :
+de vrais enregistrements libres de droits (voir « Les bêtes de la ferme » et `assets/son/CREDITS.md`).
 
 ## Découpage
 
@@ -51,8 +52,8 @@ n'entrent pas dans la sauvegarde.
   la voilure du Moulin (`moulinTour.enMarche`), la meule (`meuleOn`), le four (`fireOn`), la
   pompe, les asperseurs en marche, le robot au travail, les ruches (de 7 h à 19 h 30), les mares
   et étangs, les hameaux (leurs bruits de travail, le jour) ;
-- **les bêtes**, de temps en temps : poules, vaches, moutons et chevaux de la ferme (le jour,
-  près de lui), le chat et le chien de la famille, la faune du grand monde près de la vue ;
+- **les bêtes de la ferme et leurs enclos** (voir plus bas), le chat et le chien de la famille,
+  la faune du grand monde près de la vue ;
 - **la musique** : le thème du matin (5 h 30-17 h), du soir (17 h-21 h), de la nuit, celui de la
   mine sous terre. « Par moments » (le réglage par défaut) : deux à trois minutes de musique,
   puis une à deux minutes et demie de monde seul.
@@ -104,6 +105,50 @@ FermeSon.boucles()                   // ce qui tourne (tests, débogage)
 Chaque clé a plusieurs variantes quand le bruit revient souvent : jamais deux fois la même de
 suite, avec un peu de hauteur et de volume au hasard.
 
+## Les bêtes de la ferme
+
+Poules, vaches, moutons et cheval sont **de vrais enregistrements**, cinq par bête (le jeu en
+tire un au hasard à chaque cri), plus des poussins, un agneau et une clochette de vache. Ils
+viennent de jeux libres qui documentent la provenance de chaque son (Stendhal, VoxeLibre,
+0 A.D.), et la plupart de Freesound et SoundBible. Leur licence est notée fichier par fichier
+dans `scripts/son/enregistrements/credits.json`, et recopiée dans `assets/son/CREDITS.md` :
+
+- **CC0 et domaine public** (13 fichiers) : aucune obligation ;
+- **CC BY 3.0** (5 fichiers : deux poules, un hennissement, deux ébrouements) : citer l'auteur ;
+- **CC BY-SA 3.0** (3 fichiers de 0 A.D. : deux vaches, le petit rire du cheval) : citer
+  Wildfire Games, et ces fichiers (et leurs modifications) restent sous CC BY-SA.
+
+`assets/son/CREDITS.md`, publié avec le site, tient lieu de crédits. Les enregistrements nettoyés
+(silences coupés, volumes égalisés) sont gardés en FLAC dans `scripts/son/enregistrements/` ;
+`vers_jeu.py` les encode comme les autres sons.
+
+Restent synthétisés, faute d'enregistrement libre accessible : **le coq du réveil** (trois
+variantes, réglées sur des mesures générales de chants de coq : hauteur ≈ 750 Hz, formants
+≈ 880 / 1 680 / 2 970 Hz) et **les sabots** (une diagonale de trot par fichier, sur pierre
+ferrée, terre battue et herbe), avec les fonds des enclos (`scripts/son/betes.py`). Un vrai chant
+de coq ou de vrais sabots libres (CC0) se mettraient à leur place : un fichier dans
+`enregistrements/`, une ligne dans `credits.json` et dans `vers_jeu.py`.
+
+**À l'approche d'un enclos** (`directeur`, `ENCLOS` dans `js/son.js`), pour chaque sorte de bête
+de la ferme (`FarmStage.scene().beasts`) :
+
+- son **fond** monte en approchant, jusqu'à 14 cases (`ENCLOS_PORTEE`) : paille et roucoulements
+  au Poulailler, souffle et mastication à l'Étable, pas et sonnailles des moutons ; la nuit,
+  quand elles sont rentrées, le fond seul, plus bas ;
+- leurs **cris** reviennent toutes les 4 à 9 s à moins de 6 cases, toutes les 12 à 25 s plus
+  loin (le cheval : 35 à 80 s) ;
+- en arrivant à moins de 7 cases (`SALUT_CASES`), **une ou deux bêtes saluent**, une fois par
+  minute au plus ;
+- de temps en temps, ce qu'on entend en plus : les poussins, la clochette d'une vache, le cheval
+  qui s'ébroue.
+
+À cheval, les sabots suivent le rythme d'un vrai trot (une diagonale toutes les 0,32 s tant
+qu'il avance), sur le sol sous lui.
+
+`scripts/son/analyse.py` et `betes_reelles.py` sont les outils d'analyse qui ont servi à
+comparer les synthèses à de vrais cris (corpus ESC-50, sous licence non commerciale : les mesures
+qui en sortent restent dans `_sortie/`, jamais commitées, et rien n'en vient dans le jeu).
+
 ## Ajouter ou changer un son
 
 1. Le dessiner dans `scripts/son/sons2.py` (une fonction qui rend un tableau numpy, puis une
@@ -118,8 +163,6 @@ suite, avec un peu de hauteur et de volume au hasard.
 ## Limites connues
 
 - Il n'y a ni pluie ni météo dans le jeu : le son n'en a pas non plus.
-- Les voix des bêtes sont synthétisées (formants) : crédibles de loin, moins de près. De vraies
-  prises de son (enregistrées pour le projet) pourraient les remplacer sans toucher au code,
-  sous les mêmes noms de fichiers.
+- Le coq et les sabots sont encore synthétisés (voir « Les bêtes de la ferme »).
 - Les portes posées en blocs ne s'animent pas : elles ne sonnent pas. Les habitants des hameaux
   n'ont pas de voix.

@@ -3,6 +3,7 @@
 À lancer depuis scripts/son/ après musique.py, sons1.py et sons2.py (voir fabrique.py)."""
 import os, subprocess, glob, json
 M1 = MM = '_sortie/pack/masters_wav'; M2 = '_sortie/pack2/audio'
+REC = 'enregistrements'; BETES = '_sortie/betes'   # les vrais enregistrements ; betes.py
 DEST = '../../assets/son'
 def g(pat):
     r = sorted(glob.glob(pat)); assert r, pat; return r
@@ -38,18 +39,24 @@ T = {
  # cris ponctuels
  'oiseau': ('nature', g(f'{M1}/ambient/oneshots/bird_call_*.wav')),
  'chouette': ('nature', g(f'{M1}/ambient/oneshots/owl_01.wav')),
- 'poule': ('animaux', g(f'{M2}/sfx/animals/hen_*.wav')),
- 'coq': ('animaux', g(f'{M2}/sfx/animals/rooster_*.wav')),
- 'vache': ('animaux', g(f'{M2}/sfx/animals/cow_*.wav')),
- 'mouton': ('animaux', g(f'{M2}/sfx/animals/sheep_*.wav')),
+ # les bêtes de la ferme : de vrais enregistrements libres de droits (enregistrements/credits.json)
+ 'poule': ('animaux', g(f'{REC}/poule_*.flac')),
+ 'poussins': ('animaux', g(f'{REC}/poussins_*.flac')),
+ 'vache': ('animaux', g(f'{REC}/vache_*.flac')),
+ 'clochette': ('animaux', g(f'{REC}/clochette.flac')),
+ 'mouton': ('animaux', g(f'{REC}/mouton_*.flac') + g(f'{REC}/agneau_*.flac')),
+ 'coq': ('animaux', g(f'{BETES}/coq_*.wav')),
+ 'fond_poulailler': ('ambiance', g(f'{BETES}/fond_poulailler.wav')),
+ 'fond_etable': ('ambiance', g(f'{BETES}/fond_etable.wav')),
+ 'fond_bergerie': ('ambiance', g(f'{BETES}/fond_bergerie.wav')),
  'chat': ('animaux', g(f'{M2}/sfx/animals/cat_0*.wav')),
  'ronron': ('animaux', g(f'{M2}/sfx/animals/cat_purr_*.wav')),
  'chien': ('animaux', g(f'{M2}/sfx/animals/dog_*.wav')),
- 'cheval': ('animaux', g(f'{M2}/sfx/animals/horse_neigh_*.wav')),
- 'ebrouement': ('animaux', g(f'{M2}/sfx/animals/horse_snort_*.wav')),
- 'sabots_herbe': ('animaux', g(f'{M2}/sfx/animals/hooves_grass_*.wav')),
- 'sabots_terre': ('animaux', g(f'{M2}/sfx/animals/hooves_dirt_*.wav')),
- 'sabots_pierre': ('animaux', g(f'{M2}/sfx/animals/hooves_stone_*.wav')),
+ 'cheval': ('animaux', g(f'{REC}/cheval_[123].flac')),          # deux hennissements, un petit rire grave
+ 'ebrouement': ('animaux', g(f'{REC}/cheval_[45].flac')),       # il s'ébroue, il souffle
+ 'sabots_herbe': ('animaux', g(f'{BETES}/sabots_herbe_*.wav')),
+ 'sabots_terre': ('animaux', g(f'{BETES}/sabots_terre_*.wav')),
+ 'sabots_pierre': ('animaux', g(f'{BETES}/sabots_pierre_*.wav')),
  'oeuf': ('animaux', g(f'{M2}/sfx/animals/egg_*.wav')),
  'lait': ('animaux', g(f'{M2}/sfx/animals/milk_*.wav')),
  'tonte': ('animaux', g(f'{M2}/sfx/animals/shear_*.wav')),
@@ -133,6 +140,21 @@ for key, (folder, srcs) in T.items():
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', src, '-c:a', 'aac', '-b:a', br, out + '.m4a'], check=True)
         files.append(rel)
     table[key] = files
+# les crédits des enregistrements (CC BY et CC BY-SA demandent de citer l'auteur)
+cred = json.load(open(f'{REC}/credits.json', encoding='utf-8'))
+lignes = ['# Crédits des sons', '', "Tous les sons du jeu sont synthétisés par scripts/son/, sauf ces vrais enregistrements d'animaux,",
+          'libres de droits, trouvés dans des jeux libres qui documentent leur provenance (Stendhal, VoxeLibre, 0 A.D.).',
+          'CC0 et domaine public : aucune obligation. CC BY : citer l\'auteur. CC BY-SA : citer l\'auteur, et le fichier',
+          '(et ses modifications) reste sous CC BY-SA (https://creativecommons.org/licenses/by-sa/3.0/).', '',
+          '| Fichier du jeu | Son | Auteur | Licence | Source |', '|---|---|---|---|---|']
+for cle, (dossier, srcs) in T.items():
+    for i, src in enumerate(srcs):
+        nom = os.path.basename(src).rsplit('.', 1)[0]
+        if src.startswith(REC) and nom in cred:
+            c = cred[nom]; base = cle if len(srcs) == 1 else f'{cle}_{i+1}'
+            lignes.append(f"| {dossier}/{base} | {c['titre']} | {c['auteur']} | {c['licence']} | {c['source']} |")
+open(f'{DEST}/CREDITS.md', 'w', encoding='utf-8').write('\n'.join(lignes) + '\n')
+
 # la table des fichiers, dans js/son.js (entre « const FICHIERS = { » et « }; »)
 JS = '../../js/son.js'
 corps = '{\n' + ',\n'.join(f'    {k}: {json.dumps(v)}' for k, v in table.items()) + ',\n  }'
