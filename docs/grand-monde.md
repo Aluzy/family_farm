@@ -1249,3 +1249,26 @@ SwiftShader, sans carte graphique) :
     la réparation d'un vu perdu (`vuDesRegions`) les posent encore. Les objectifs « voir 10 % / 15 % du
     grand monde » ne comptent plus la ferme d'office pour une nouvelle partie (environ 7 % de moins au
     départ) : elle se découvre vite en y travaillant.
+- **Fiche 16 — la famille reste visible et ne traverse pas les murs** (fait). Les causes trouvées
+  (reproduites dans Chromium sur une journée de 6 h à 23 h, une maison de deux pièces : la salle,
+  et la chambre qu'on ne rejoint que par elle) :
+  - la famille s'effaçait à la porte à 18 h 45 et ne reparaissait qu'à 7 h (le matin, de 6 h à 7 h,
+    et toute la nuit pour qui n'avait pas de lit, elle n'était nulle part) ; un enfant « disparaissait »
+    ainsi chaque soir et chaque matin. Maintenant elle rentre dans la maison et y reste (ses places,
+    ses chaises à table de 18 h 45 à 20 h 30, ses lits la nuit) : `js/famille-ferme.js`
+    (`FamilleFerme.voulu`, `aTable`), `homeInside` (`js/carte/ferme/chantier.js`) ;
+  - le foyer (la porte de la pièce où l'on dort, `foyerPorte`) peut être la porte d'une chambre
+    intérieure : on se tenait sous elle, dans le mur de la salle ; la famille y apparaissait et en
+    sortait au travers du mur. `homeDoor` donne maintenant le devant d'une porte d'entrée (`frontDoor`) ;
+  - un trajet sans chemin se faisait en ligne droite, au travers de tout (la famille), ou d'un saut
+    (le personnage, un habitant) jusque dans une pièce sans porte ; le pas de côté d'un membre (pour ne
+    pas marcher l'un dans l'autre) ou d'un habitant (pour contourner le personnage) pouvait couper un
+    mur. Un but hors d'atteinte est maintenant reconnu (`CarteKit.chemin(…, { info })` :
+    `info.epuise`, et `fermier.path(…, info)` : `info.impossible`, par une recherche à rebours) : on
+    reste où l'on est ; les pas de côté ne se font que là où la ligne est libre ;
+  - la ligne droite des chemins tendus (`lineFree`) regardait un point tous les 4 px et coupait des
+    coins de mur (17 traversées dans un hameau en une journée, avant) : elle suit maintenant toutes
+    les cases qu'elle touche, au milieu et à 3 px de chaque épaule.
+  Les tests : `tests/engine/famille-visible.test.mjs` (8 tests, les scripts de la carte chargés sans
+  navigateur : les chemins par les portes, sans coin coupé ; un but enfermé ; la porte du foyer ;
+  l'intérieur de la maison ; les heures ; une journée simulée de 6 h à 23 h ; un habitant enfermé).

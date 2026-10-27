@@ -15,7 +15,10 @@
   //   g = { cols, rows, libre(i) → la case i se traverse-t-elle ? }
   //   o = { diag (coût d'un pas en diagonale, 1,414 par défaut), max (cases examinées au plus),
   //         boite ({ c0, r0, c1, r1 } : la recherche ne sort pas des colonnes c0 à c1 - 1 ni des
-  //         rangées r0 à r1 - 1 ; par défaut toute la grille) }
+  //         rangées r0 à r1 - 1 ; par défaut toute la grille), info (un objet : sans chemin,
+  //         info.epuise dit si toutes les cases qu'on rejoint du départ ont été vues, c'est-à-dire
+  //         si le but est sûrement hors d'atteinte dans la boîte, et pas seulement trop loin pour
+  //         `max`) }
   // Renvoie les cases du chemin, sans le départ, jusqu'au but compris ([] : on y est déjà), ou
   // null s'il n'y a pas de chemin (dans la boîte). La case de départ n'a pas besoin d'être libre.
   // Le grand monde (644 × 510 cases) ne se parcourt pas en entier pour un trajet : la boîte, autour
@@ -83,7 +86,10 @@
         }
       }
     }
-    if (from[g0] < 0) return null;
+    if (from[g0] < 0) {
+      if (o && o.info) o.info.epuise = !heap.length;
+      return null;
+    }
     const cells = [];
     for (let i = g0; i !== s0; i = from[i]) cells.push((br0 + ((i / bw) | 0)) * cols + bc0 + (i % bw));
     return cells.reverse();

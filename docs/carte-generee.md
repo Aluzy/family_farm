@@ -113,7 +113,19 @@ Le Marché vend toujours les outils.
 - La nuit (22 h → 6 h), chaque membre de la famille dort dans un lit : le k-ième a le (k + 2)-ième
   couchage (le premier est au personnage du joueur, comme dans le moteur, `nuitSansCouchage`) ; il
   y va, s'y couche sous la couverture et se lève au réveil (js/famille-ferme.js, `bedSpots`). Sans
-  lit pour lui, il reste dans la maison, comme avant.
+  lit pour lui, il reste dans la maison.
+- Fiche 16 : la famille ne s'efface plus. Avant 7 h et à partir de 18 h 45, elle est dans la maison
+  (le bâtiment du foyer, sous son toit : `homeInside`, ses places et ses chaises) : elle y entre par
+  la porte, en marchant, va d'une place à l'autre, et de 18 h 45 à 20 h 30 chacun s'assoit sur une
+  chaise (la k-ième au k-ième membre, tourné vers la table qui la touche ; les autres restent
+  debout) ; on la voit quand le toit se lève (le personnage dans la maison). Sans maison, elle se
+  tient devant la porte du foyer. Le foyer est la porte de la pièce où l'on dort : quand c'est une
+  chambre qu'on rejoint par la salle, on se tient devant une porte d'entrée du même bâtiment, dehors
+  (`frontDoor`), et non plus dans le mur, sous la porte de la chambre. Personne ne passe au travers
+  d'un mur, d'un meuble ou d'un bloc : les chemins (`js/fermier.js`) ne touchent que des cases
+  libres, coins compris, à 3 px de chaque épaule ; un but hors d'atteinte (une pièce sans porte, un
+  but enfermé) ne se rejoint pas : le personnage, un membre de la famille ou un habitant reste où il
+  est (`path(…, info)` : `info.impossible`).
 - Version 1.26 : une case où se trouve une ressource de la carte (herbe haute, rocher, arbre) ne
   se bâtit qu'une fois la ressource récoltée (fauchée, cassée, abattue ; terrain `HERBES`, `ROCHERS`,
   `ARBRES`). Rien ne repousse sur une case bâtie ni dans une pièce close (`casesBaties`) ; une

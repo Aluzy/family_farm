@@ -170,6 +170,7 @@
       this.blocsVus = true;
       if (changed) {
         this.sunDirty = true;
+        this.blocsN = (this.blocsN || 0) + 1;     // (l'intérieur de la maison est à refaire : homeInside)
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();
       }
       this.bati = !!bati;
@@ -745,14 +746,80 @@
     // Le foyer : devant la porte de la pièce où l'on dort (modèle.foyer : sa case), sinon devant
     // l'Atelier, sinon (ferme générée) la place de l'ancienne maison ; null sur la ferme dessinée. Le personnage, la famille et le robot s'y rendent comme à la porte
     // de la maison (la ferme générée n'en a pas).
+    // Le foyer est la porte de la pièce où l'on dort : elle peut donner dans une autre pièce (une
+    // chambre qu'on rejoint par la salle) ; on se tient alors devant une porte d'entrée du même
+    // bâtiment, dehors (frontDoor), et pas dans le mur sous la porte de la chambre (fiche 16).
     homeDoor() {
       const m = this.ctx.lastModel, cols = this.grid.cols;
       const c = m && Number.isInteger(m.foyer) ? m.foyer : null;
-      if (c !== null) return { x: (c % cols) * T + T / 2, y: (Math.floor(c / cols) + 1) * T + 6 };
+      if (c !== null) return this.frontDoor(c) || { x: (c % cols) * T + T / 2, y: (Math.floor(c / cols) + 1) * T + 6 };
       for (const e of (this.blocks || new Map()).values()) if (e.sorte === 'atelier') return { x: e.x, y: e.y + 8 };
       // rien de bâti : au bord de la Zone de culture, sur la place de l'ancienne maison
       const z = this.ctx.carte && this.objects.zone_culture;
       return z ? { x: Math.round(z.x + z.width / 2), y: Math.round(z.y - 20) } : null;
+    },
+
+    // Devant une porte d'entrée du bâtiment de la porte `porte` (une case) : la case libre, hors
+    // de tout bâtiment, qui touche la porte (dessous d'abord, puis dessus, à gauche, à droite) ;
+    // `porte` d'abord, puis les autres portes du bâtiment. Ses pieds { x, y }, ou null.
+    frontDoor(porte) {
+      const cols = this.grid.cols, B = this.blocks || new Map(), toits = this.toits || [];
+      const bat = toits.find((t) => t.dedans.has(porte));
+      const bati = (k) => toits.some((t) => t.dedans.has(k));
+      const libre = (x, y) => !this.fermier || !this.fermier.standable || this.fermier.standable(x, y);
+      const portes = [porte].concat(bat ? [...bat.dedans].filter((k) => k !== porte && estPorte((B.get(k) || {}).sorte)) : []);
+      for (const d of portes) {
+        const c = d % cols, r = Math.floor(d / cols);
+        for (const [dc, dr] of [[0, 1], [0, -1], [-1, 0], [1, 0]]) {
+          const k = (r + dr) * cols + c + dc;
+          if (c + dc < 0 || c + dc >= cols || bati(k)) continue;
+          const p = { x: (c + dc) * T + T / 2, y: dr > 0 ? (r + 1) * T + 6 : (r + dr + 1) * T - 2 };
+          if (libre(p.x, p.y)) return p;
+        }
+      }
+      return null;
+    },
+
+    // L'intérieur de la maison (le bâtiment du foyer, sous son toit), où la famille se tient le
+    // matin, le soir et quand elle rentre manger (js/famille-ferme.js), ou null sans maison :
+    //   { dedans(x, y) : ses pieds sont-ils dans la maison ?,
+    //     places : [{ x, y }] (les pieds au milieu des cases libres : ni bloc, ni meuble, ni le
+    //       passage juste derrière une porte),
+    //     chaises : [{ x, y (les pieds, assis), face, flip, depth, pied: { x, y } (d'où il s'y
+    //       assoit, une case libre à côté) }] (tournées vers la table qui les touche) }
+    // Refait quand les blocs ou les toits changent.
+    homeInside() {
+      const m = this.ctx.lastModel, cols = this.grid.cols, toits = this.toits || [];
+      const c = m && Number.isInteger(m.foyer) ? m.foyer : null;
+      const bat = c === null ? null : toits.find((t) => t.maison && t.dedans.has(c)) || toits.find((t) => t.maison);
+      if (!bat) return null;
+      const cle = bat.key + ':' + (this.blocsN || 0);
+      if (this.maisonVue && this.maisonVue.cle === cle) return this.maisonVue.val;
+      const B = this.blocks || new Map(), pris = new Map(), portes = [];
+      for (const e of B.values()) {
+        for (const k of e.cases || [e.case]) pris.set(k, e);
+        if (estPorte(e.sorte)) portes.push(e.case);
+      }
+      const passage = new Set();
+      for (const d of portes) for (const k of [d - 1, d + 1, d - cols, d + cols]) passage.add(k);
+      const libre = (x, y) => !this.fermier || !this.fermier.standable || this.fermier.standable(x, y);
+      const pied = (k) => ({ x: (k % cols) * T + T / 2, y: (Math.floor(k / cols) + 1) * T - 3 });
+      const vide = (k) => bat.dedans.has(k) && !pris.has(k) && libre(pied(k).x, pied(k).y);
+      const places = [...bat.dedans].filter((k) => vide(k) && !passage.has(k)).map(pied);
+      const chaises = [];
+      for (const e of B.values()) {
+        if (e.sorte !== 'meuble_chaise' || !bat.dedans.has(e.case)) continue;
+        const k = e.case;
+        const cote = [k + cols, k - 1, k + 1, k - cols].find((j) => vide(j));
+        if (cote === undefined) continue;
+        // (tournée vers la table qui la touche, sinon vers nous)
+        const table = [k - cols, k - 1, k + 1, k + cols].find((j) => pris.has(j) && /table/.test(pris.get(j).sorte));
+        const vers = table === undefined ? { face: 'bas', flip: false } : global.CarteKit.regard((table % cols) - (k % cols), Math.floor(table / cols) - Math.floor(k / cols));
+        chaises.push({ x: e.x, y: e.y - BLOCS_CARTE.assisDy, face: vers.face, flip: vers.flip, depth: e.img.depth + 0.1, pied: pied(cote) });
+      }
+      const val = { dedans: (x, y) => bat.dedans.has(Math.floor((y - 1) / T) * cols + Math.floor(x / T)), places, chaises };
+      this.maisonVue = { cle, val };
+      return val;
     },
 
     // Le four ou la cuisinière sous le doigt : la fenêtre de sa station, ou null (le
