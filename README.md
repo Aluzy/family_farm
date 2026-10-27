@@ -371,7 +371,7 @@ plus légers, pixel pour pixel identiques.
 ### Son
 
 Les sons (`assets/son/`, avec leur double `.m4a` pour Safari) sont synthétisés par `scripts/son/`
-(Python 3, numpy, scipy et ffmpeg), sauf le cheval, de vrais enregistrements libres
+(Python 3, numpy, scipy et ffmpeg), sauf les bêtes de la ferme, de vrais enregistrements libres
 (`scripts/son/enregistrements/`, crédits dans `assets/son/CREDITS.md`) :
 `python3 scripts/son/fabrique.py` les refait tous, les encode et met à jour la table de
 `js/son.js`. Aucun échantillon tiers. Voir [`docs/son.md`](docs/son.md).
@@ -474,7 +474,7 @@ son nom brut suivi de « (non répertorié) ». `node scripts/check-actions.mjs`
 ## Crédits
 
 - Graphismes, icônes et illustrations : originaux (dessinés par les générateurs de `scripts/`)
-- Musique et sons : originaux (synthétisés par les générateurs de `scripts/son/`), sauf le
-  cheval : de vrais enregistrements libres de droits, auteurs et licences dans
+- Musique et sons : originaux (synthétisés par les générateurs de `scripts/son/`), sauf les bêtes de
+  la ferme : de vrais enregistrements libres de droits, auteurs et licences dans
   [`assets/son/CREDITS.md`](assets/son/CREDITS.md)
 - Moteur d'affichage : Phaser 4 (licence MIT)

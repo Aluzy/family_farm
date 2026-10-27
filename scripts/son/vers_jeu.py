@@ -39,8 +39,12 @@ T = {
  # cris ponctuels
  'oiseau': ('nature', g(f'{M1}/ambient/oneshots/bird_call_*.wav')),
  'chouette': ('nature', g(f'{M1}/ambient/oneshots/owl_01.wav')),
- # le Poulailler, l'Étable et la bergerie sont silencieux : les enregistrements des poules, vaches
- # et moutons restent dans enregistrements/ (avec leurs crédits), prêts à revenir, mais hors du jeu
+ # les bêtes de la ferme : de vrais enregistrements libres de droits (enregistrements/credits.json)
+ 'poule': ('animaux', g(f'{REC}/poule_*.flac')),
+ 'poussins': ('animaux', g(f'{REC}/poussins_*.flac')),
+ 'vache': ('animaux', g(f'{REC}/vache_*.flac')),
+ 'clochette': ('animaux', g(f'{REC}/clochette.flac')),
+ 'mouton': ('animaux', g(f'{REC}/mouton_*.flac') + g(f'{REC}/agneau_*.flac')),
  'coq': ('animaux', g(f'{BETES}/coq_*.wav')),
  'chat': ('animaux', g(f'{M2}/sfx/animals/cat_0*.wav')),
  'ronron': ('animaux', g(f'{M2}/sfx/animals/cat_purr_*.wav')),
