@@ -1279,22 +1279,36 @@ SwiftShader, sans carte graphique) :
     `horaire`) : le jour et le soir, la famille est dehors autour de la maison (les enfants jouent,
     les adultes flânent) ; plus de rentrée générale ni de repas à table. Les enfants vont au lit à
     20 h (`COUCHER_ENFANTS`) et se lèvent à 8 h (`LEVER_ENFANTS`) ; le compagnon va au lit à 22 h
-    (`COUCHER_ADULTES`) et se lève avec le personnage (à la fin de la nuit). Chacun rejoint la maison
-    à pied, entre par la porte et se couche dans son lit ; le matin, il sort par la porte
-    (`FamilleFerme.voulu`, `couche`). Le second adulte fait son travail aux bêtes aux heures où il est
-    dehors, même sans la carte à l'écran (`aideSansCarte`, `js/ui/stage.js`).
+    (`COUCHER_ADULTES`) et se lève avec le personnage (à la fin de la nuit) ; tous les adultes
+    suivent l'horaire du compagnon. Chacun rejoint la maison à pied, entre par la porte et se couche
+    dans son lit ; le matin, il sort par la porte (`FamilleFerme.voulu`, `couche`). Le second adulte
+    s'occupe des bêtes jusqu'à 19 h (`FIN_TRAVAIL_ADULTES`), puis ne travaille plus et flâne près de
+    la maison jusqu'à 22 h ; sans la carte à l'écran aussi (`aideSansCarte`, `js/ui/stage.js`).
+  - Les jeux des enfants (`js/famille-ferme.js`, `commencerJeu`, `jouer`) : dehors, à deux, ils se
+    poursuivent (l'un court après l'autre par les chemins ; attrapé, c'est l'autre qui court) ou font
+    la ronde (un cercle libre entre eux, chacun d'un côté) ; seuls, ils sautent sur place ou tournent
+    sur eux-mêmes. En jouant, ils vont 1,7 fois plus vite et font de petits bonds (l'image monte de
+    quelques px, les pieds restent sur leur case) ; les cases de la ronde et de la fuite sont libres et
+    dégagées, les côtés sans mur : rien ne traverse un mur. Avec « animations réduites », ils ne jouent
+    pas.
   - La faim : un membre dont la jauge tombe à `FAMILLE.FAIM.SEUIL` mange, à n'importe quelle heure
     (`repasStep`, inchangé) ; sur la carte, il va au réfrigérateur ou à la boîte à nourriture, s'y
     baisse, puis reprend le trajet qu'il faisait (`allerManger` ; avant, seulement à la boîte, et pas
     s'il était occupé : il y va maintenant ensuite). Rien à manger : le moteur ne le fait pas manger,
     une seule alerte « a faim », et il ne va pas à la boîte.
+  - Le dernier repas des enfants : à 20 h, avant le lit (`repasStep` appelle `repasCoucher` quand
+    l'horloge passe `COUCHER_ENFANTS`), ils mangent jusqu'à `FAIM.MAX`, une fois par jour ; sur la
+    carte, ils vont à la boîte ou au frigo, s'y servent, puis vont au lit. Le repas de 22 h pendant
+    leur sommeil (`startNight`) est supprimé ; rien à manger : ils se couchent quand même. La nuit
+    (`feedFamily`) ne le fait que pour une journée finie avant 20 h (le joueur automatique, les
+    essais : `sleep`), jamais deux fois.
   - Le calcul de la nuit : le repas à table n'existait que sur la carte, le moteur ne l'a jamais
     compté. La nuit recopie ce que la famille a mangé dans la journée (`state.repasJour`), sans rien
-    y ajouter pour qui est rassasié ; les enfants sont seulement complétés jusqu'à `FAIM.MAX` au
-    coucher de la nuit (`repasCoucher`, une fois par jour, comme avant). Pas de double repas, et pas
-    de famille affamée faute de table.
+    y ajouter pour qui est rassasié. Pas de double repas, et pas de famille affamée faute de table.
   - Les tests : `tests/engine/famille-visible.test.mjs` (les heures de chacun ; une journée de 6 h à
-    23 h et le matin d'après : dehors à 19 h, l'adulte affamé va à la boîte, s'y sert et repart, les
-    enfants au lit à 20 h, le compagnon à 22 h, lui dehors à 6 h, eux à 8 h) et
-    `tests/engine/repas.test.mjs` (manger à toute heure, pas de boucle sans rien à manger, pas de
-    double compte la nuit).
+    23 h et le matin d'après : les enfants jouent, à deux et seuls, sans traverser de mur ; l'adulte
+    travaille au Poulailler l'après-midi et plus après 19 h ; dehors à 19 h, l'adulte affamé va à la
+    boîte, s'y sert et repart ; à 20 h les enfants vont à la boîte puis au lit ; le compagnon au lit à
+    22 h ; lui dehors à 6 h, eux à 8 h) et `tests/engine/repas.test.mjs` (manger à toute heure, pas
+    de boucle sans rien à manger, le dernier repas des enfants à 20 h une seule fois, rien pendant
+    leur sommeil, pas de double compte la nuit).

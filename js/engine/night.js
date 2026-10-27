@@ -5,7 +5,7 @@ import { awakeRequired, bedtimeDue, midnightMs, nightActive, nightLengthMs } fro
 import { expiringSoon, spoil } from './inventory.js';
 import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridge.js';
 import { feedFamily, newNightStats } from './family.js';
-import { jaugeFamille, repasCoucher } from './repas.js';
+import { jaugeFamille } from './repas.js';
 import { growDue, readyCrops } from './crops.js';
 import { energyMax, restoreEnergy, wakeEnergy } from './stamina.js';
 import { feedLivestock, fillSilo, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
@@ -163,7 +163,7 @@ export function sleep(state) {
 export function startNight(state) {
   if (nightActive(state) || !bedtimeDue(state)) return false;
   state.nuitEnCours = { ms: 0, minuit: false };
-  repasCoucher(state); // les enfants mangent avant d'aller dormir
+  // (les enfants ont pris leur dernier repas à 20 h, avant leur lit : repas.js repasStep)
   return true;
 }
 

@@ -6,6 +6,7 @@ import { mainCharacter } from './depart.js';
 import { dishHappiness, memberHappiness, setHappiness } from './bonheur.js';
 import { noter } from './journal.js';
 import { faimAidePct, faimMarchePct } from './equipement.js';
+import { clockHours, nightActive } from './clock.js';
 
 /* ---------- la boîte à nourriture et la faim de la famille (FAMILLE.FAIM) ---------- */
 
@@ -226,7 +227,9 @@ export function mangerMembre(state, m, cible = F().MAX) {
 }
 
 // Un pas de la journée : chaque membre arrivé à SEUIL va manger ;
-// s'il n'y a rien, il a faim (m.affame : il perdra du bonheur la nuit).
+// s'il n'y a rien, il a faim (m.affame : il perdra du bonheur la nuit). Fiche 16b : à
+// FAMILLE.HORAIRE.COUCHER_ENFANTS (20 h), avant d'aller au lit, les enfants prennent leur dernier
+// repas (repasCoucher) ; la carte les envoie à la boîte ou au frigo, puis au lit.
 export function repasStep(state) {
   if (!state.famille) return;
   repasJour(state);   // (le compte de la journée existe dès le premier pas, même sans repas)
@@ -238,9 +241,13 @@ export function repasStep(state) {
       noter('faim', { id: m.id, source: sourceRepas(state) });
     }
   }
+  if (!nightActive(state) && clockHours(state) >= DATA.FAMILLE.HORAIRE.COUCHER_ENFANTS) repasCoucher(state);
 }
 
-// Au coucher, les enfants mangent jusqu'à MAX (une fois par jour).
+// Au coucher des enfants (20 h, repasStep), ils mangent jusqu'à MAX, une fois par jour : leur
+// dernier repas, avant le lit (rien à manger : ils se couchent quand même). Plus de repas à
+// 22 h pendant leur sommeil (fiche 16b) ; la nuit (feedFamily) ne le fait que pour une journée
+// finie avant 20 h (le joueur automatique, les essais : sleep), et jamais deux fois.
 export function repasCoucher(state) {
   const R = repasJour(state);
   if (R.coucher) return;

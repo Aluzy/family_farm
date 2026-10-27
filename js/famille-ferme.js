@@ -4,10 +4,17 @@
  * enfants, leurs planches à eux : assets/personnages/enfant_NN.png), font leur journée :
  *
  *   - fiche 16b : le jour et le soir, ils sont dehors autour de la maison, jusqu'à leur coucher :
- *     les enfants jouent et les adultes flânent, d'un coin à l'autre ; il n'y a plus de rentrée
- *     générale, ni de repas à table à heure fixe (chacun mange quand il a faim, plus bas) ;
+ *     les adultes flânent, d'un coin à l'autre, et les enfants jouent (FamilleFerme : jouer) : à
+ *     deux, ils se poursuivent (l'un court après l'autre, et quand il l'attrape, c'est l'autre qui
+ *     court) ou font la ronde (ils courent en rond, chacun d'un côté du cercle) ; seuls, ils
+ *     sautent sur place ou tournent sur eux-mêmes ; en jouant, ils vont plus vite et font de petits
+ *     bonds (un décalage de l'image, les pieds ne quittent pas leur case : rien ne traverse un
+ *     mur). Il n'y a plus de rentrée générale, ni de repas à table à heure fixe (chacun mange quand
+ *     il a faim, plus bas) ;
  *   - le coucher (model.horaire : FAMILLE.HORAIRE, data/general.json) : les enfants vont au lit à
- *     COUCHER_ENFANTS (20 h), les adultes (le compagnon) à COUCHER_ADULTES (22 h), et tous pendant
+ *     COUCHER_ENFANTS (20 h), après leur dernier repas (le moteur les fait manger à 20 h : ils vont
+ *     d'abord à la boîte ou au frigo, s'y servent, puis vont au lit ; rien à manger : au lit
+ *     directement), les adultes (le compagnon, et tous les adultes) à COUCHER_ADULTES (22 h), et tous pendant
  *     la nuit (model.nuit, 22 h → 6 h) ; chacun rejoint la maison à pied, entre par la porte et se
  *     couche dans son lit (o.lit(k) : le k-ième membre a le (k + 2)-ième couchage, le premier est
  *     au personnage du joueur), sous la couverture (debout entre le lit et elle, tourné vers nous,
@@ -18,6 +25,7 @@
  *   - le matin : les adultes se lèvent avec le personnage (à la fin de la nuit), les enfants à
  *     LEVER_ENFANTS (8 h) ; chacun sort par la porte ;
  *   - le second adulte du foyer (model.aide, le moteur : aidant) s'occupe des bêtes : le jour,
+ *     jusqu'à FIN_TRAVAIL_ADULTES (19 h ; ensuite il flâne près de la maison, sans plus travailler),
  *     quand il y a à faire au Poulailler, à l'Étable ou à une ruche pleine (model.aide.lieux :
  *     « ruche:<case> »), il y va, se baisse (GESTE s) et nourrit les poules, prend les œufs, le
  *     lait et la laine, récolte le miel (o.aide : tout entre
@@ -67,6 +75,11 @@
   const PAS_COMPTE = 50;                   // px : la marche est comptée au moteur par tranches d'autant (o.marche)
   const BLOQUE = [2, 4];                   // s : sans chemin, il attend avant de réessayer
   const DEVANT = 2 * T;                    // sans maison : il reste à moins de ça de la porte
+  // les jeux des enfants : en jouant, ils vont VITE fois plus vite et font des bonds de BOND px (en
+  // courant) ou de SAUT px (sauter sur place) ; la ronde : un cercle de RAYON px, TOURS tours ; la
+  // poursuite dure POURSUITE s, sauter ou tourner SEUL s ; un camarade de jeu, à moins de PROCHE px
+  // (on le rejoint en courant)
+  const JEU = { VITE: 1.7, BOND: 1.5, SAUT: 4, RAYON: 18, TOURS: 2, POURSUITE: [6, 10], SEUL: [2, 3.5], PROCHE: 14 * T, ATTRAPE: 12 };
 
   const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -130,12 +143,13 @@
         tache: null, geste: 0, repos: 0,     // le second adulte : le lieu où il va, son geste
         rang: -1, couche: null, drap: null,  // la nuit : son rang (son lit, o.lit), son lit s'il y dort
         faim: false, reprise: null,          // il a mangé : il va se servir (faim), puis reprend ça
+        jeu: null, vite: 1, haut: 0,         // un enfant qui joue : son jeu, sa vitesse, son bond (px)
       };
     }
 
     // Il se couche dans son lit `L` (o.lit) : debout entre le lit et sa couverture.
     function coucher(m, L) {
-      m.couche = L; m.faim = false; m.reprise = null; m.chemin = []; m.puis = null; m.but = null; m.tache = null;
+      m.couche = L; m.faim = false; m.reprise = null; m.jeu = null; m.vite = 1; m.haut = 0; m.chemin = []; m.puis = null; m.but = null; m.tache = null;
       // (un enfant est plus petit, ENFANT_RANGEES de scripts/personnage/chibi.py : remonté, la tête sur l'oreiller)
       m.x = L.x; m.y = L.y - (m.enfant ? ENFANT_DY : 0); m.face = 'bas'; m.flip = false;
       montrer(m);
@@ -154,7 +168,8 @@
     function dessiner(m, nom) {
       const k = F[nom];
       if (k !== undefined) m.s.setFrame(k);
-      m.s.setPosition(Math.round(m.x), Math.round(m.y)).setFlipX(m.flip).setDepth(m.y).setAlpha(m.alpha);
+      // (un bond : l'image monte, les pieds restent sur leur case)
+      m.s.setPosition(Math.round(m.x), Math.round(m.y - (m.haut || 0))).setFlipX(m.flip).setDepth(m.y).setAlpha(m.alpha);
     }
 
     // Le chemin du fermier, un pas de côté (m.cote) aux points où rien ne le gêne (ils ne
@@ -221,11 +236,14 @@
       return false;
     }
 
+    // Les adultes travaillent-ils encore (avant FIN_TRAVAIL_ADULTES) ?
+    const travaille = () => !(model && model.horaire) || heure() < model.horaire.FIN_TRAVAIL_ADULTES;
+
     // Le second adulte : y a-t-il à faire au Poulailler ou à l'Étable ? Il y va, se baisse
     // (m.geste), puis le jeu fait le travail (o.aide) et la bulle monte (o.gain).
     function soccuper(m) {
       const A = model && model.aide;
-      if (!A || A.id !== m.id || m.enfant || m.tache || m.repos > 0 || !o.aide) return false;
+      if (!A || A.id !== m.id || m.enfant || m.tache || m.repos > 0 || !o.aide || !travaille()) return false;
       const lieu = (A.lieux || []).find((l) => o.fermier && o.fermier.lieu && o.fermier.lieu(l));
       if (!lieu) return false;
       const spot = o.fermier.lieu(lieu);
@@ -238,7 +256,7 @@
       m.tache = null;
       if (lieu === 'boite') { reprendre(m); return; }   // il a mangé (le moteur l'a déjà fait)
       m.repos = REPOS;
-      if (!lieu) return;
+      if (!lieu || !travaille()) return;   // (19 h passé : il ne travaille plus)
       o.aide(lieu, (items) => { if (items && o.gain) o.gain(items); });
     }
 
@@ -252,7 +270,9 @@
       const fin = m.chemin.length ? m.chemin[m.chemin.length - 1] : null;
       const avant = fin && m.but ? { x: fin.x, y: fin.y, but: m.but, puis: m.puis, tache: m.tache } : null;
       const bloque = m.bloque;
-      if (!aller(m, spot.x, spot.y, () => { m.face = 'haut'; m.flip = false; m.geste = reduced() ? 0.01 : GESTE; }, ouVeut(m))) {
+      // (chacun sa place devant elle, d'un pas de côté s'il y a la place : ils ne se servent pas l'un dans l'autre)
+      const tx = m.cote && libre(spot.x + m.cote, spot.y) && o.fermier && o.fermier.ligneLibre && o.fermier.ligneLibre(spot.x, spot.y, spot.x + m.cote, spot.y) ? spot.x + m.cote : spot.x;
+      if (!aller(m, tx, spot.y, () => { m.face = 'haut'; m.flip = false; m.geste = reduced() ? 0.01 : GESTE; }, ouVeut(m))) {
         m.bloque = bloque;
         return false;
       }
@@ -269,6 +289,121 @@
       if (aller(m, r.x, r.y, r.puis, r.but)) { m.tache = r.tache || null; m.pause = 0; }
     }
 
+    // Fiche 16b : les jeux des enfants, dehors. Un enfant joue-t-il volontiers (dehors, libre) ?
+    function libreJeu(m) {
+      const H = maison();
+      return m.enfant && m.visible && !reduced() && !m.couche && !m.tache && !m.faim && !m.geste && !m.parle && !m.rejoint && !m.jeu
+        && ouVeut(m) === 'dehors' && !(H && H.dedans(m.x, m.y));
+    }
+    // Il arrête de jouer : là où il est (une case libre), à sa vitesse.
+    function finJeu(m) {
+      if (!m.jeu) return;
+      m.jeu = null; m.vite = 1; m.haut = 0; m.attente = rand(1, 3);
+      m.chemin = []; m.puis = null; m.but = null;
+    }
+    function jeu(m, type, ami, t) {
+      m.jeu = { type, ami: ami || null, t: t || 0, age: 0, repath: 0 };
+      m.vite = type === 'sauter' || type === 'tourner' ? 1 : JEU.VITE;
+      m.pause = 0; m.bloque = 0;
+    }
+    // Il commence un jeu : avec un autre enfant libre tout près (la poursuite, la ronde), ou seul
+    // (sauter, tourner) ; ou rien (il flâne) → false.
+    function commencerJeu(m) {
+      if (!libreJeu(m)) return false;
+      const ami = [...membres.values()].find((a) => a !== m && libreJeu(a) && Math.hypot(a.x - m.x, a.y - m.y) < JEU.PROCHE);
+      if (ami && Math.random() < 0.75) {
+        if (Math.random() < 0.5 && ronde(m, ami)) return true;
+        if (poursuite(m, ami)) return true;
+      }
+      if (Math.random() < 0.65) {
+        m.chemin = []; m.puis = null; m.but = null;
+        jeu(m, Math.random() < 0.5 ? 'sauter' : 'tourner', null, rand(JEU.SEUL[0], JEU.SEUL[1]));
+        return true;
+      }
+      return false;
+    }
+    // La ronde : un cercle entre eux deux, dont chaque point est libre et chaque côté sans mur ;
+    // chacun en part d'un côté et en fait TOURS tours.
+    function ronde(a, b) {
+      const L = o.fermier && o.fermier.ligneLibre;
+      if (!L) return false;
+      const N = 8, cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+      const pts = [];
+      for (let k = 0; k < N; k++) pts.push({ x: cx + Math.cos((k / N) * 2 * Math.PI) * JEU.RAYON, y: cy + Math.sin((k / N) * 2 * Math.PI) * JEU.RAYON * 0.7 });
+      if (!pts.every((q, k) => libre(q.x, q.y) && L(q.x, q.y, pts[(k + 1) % N].x, pts[(k + 1) % N].y))) return false;
+      const k0 = { a: 0, b: N / 2 };
+      if (!L(a.x, a.y, pts[k0.a].x, pts[k0.a].y) || !L(b.x, b.y, pts[k0.b].x, pts[k0.b].y)) return false;
+      for (const [m, k, ami] of [[a, k0.a, b], [b, k0.b, a]]) {
+        const ch = [pts[k]];
+        for (let i = 1; i <= N * JEU.TOURS; i++) ch.push(pts[(k + i) % N]);
+        m.chemin = ch; m.puis = null; m.but = 'dehors';
+        jeu(m, 'ronde', ami);
+      }
+      return true;
+    }
+    // La poursuite : a se sauve (fuir), b court après lui (par les chemins, sans mur).
+    function poursuite(a, b) {
+      const t = rand(JEU.POURSUITE[0], JEU.POURSUITE[1]);
+      jeu(a, 'fuit', b, t);
+      if (!fuir(a)) { a.jeu = null; a.vite = 1; return false; }
+      b.chemin = []; b.puis = null; b.but = null;
+      jeu(b, 'court', a, t);
+      b.jeu.repath = 0.4;
+      return true;
+    }
+    // Il se sauve vers une case libre près de lui, dehors, sans s'éloigner de la maison.
+    function fuir(m) {
+      const d = door(), H = maison();
+      for (let i = 0; i < 8; i++) {
+        const tx = Math.round(m.x + rand(-3 * T, 3 * T)), ty = Math.round(m.y + rand(-2 * T, 2 * T));
+        // (une case dégagée : pas au ras d'un mur, à 4 px près de chaque côté)
+        if (Math.hypot(tx - d.x, ty - d.y) > ROAM + 2 * T || (H && H.dedans(tx, ty)) || ![[0, 0], [-4, 0], [4, 0], [0, -4], [0, 4]].every(([dx, dy]) => libre(tx + dx, ty + dy))) continue;
+        if (aller(m, tx, ty, null, 'dehors')) { m.pause = 0; return true; }
+        m.bloque = 0;
+      }
+      return false;
+    }
+    // Un pas de son jeu.
+    function jouer(m, dt) {
+      const j = m.jeu;
+      j.age += dt;
+      const bond = () => Math.abs(Math.sin(j.age * Math.PI * 3)) * JEU.BOND;
+      if (j.type === 'ronde') {
+        if (!m.chemin.length) { finJeu(m); return; }
+        m.haut = bond();
+        return;
+      }
+      j.t -= dt;
+      if (j.t <= 0) { finJeu(m); return; }
+      if (j.type === 'sauter') { m.haut = Math.abs(Math.sin(j.age * Math.PI * 2.5)) * JEU.SAUT; return; }
+      if (j.type === 'tourner') {
+        const [face, flip] = [['bas', false], ['cote', false], ['haut', false], ['cote', true]][Math.floor(j.age / 0.25) % 4];
+        m.face = face; m.flip = flip;
+        m.haut = Math.abs(Math.sin(j.age * Math.PI * 2)) * JEU.BOND;
+        return;
+      }
+      // (la poursuite : sans camarade, elle s'arrête)
+      const ami = j.ami;
+      if (!ami || !ami.jeu || ami.jeu.ami !== m) { finJeu(m); return; }
+      m.haut = m.chemin.length ? bond() : 0;
+      if (j.type === 'fuit') {
+        if (!m.chemin.length && !fuir(m)) finJeu(m);
+        return;
+      }
+      j.repath -= dt;
+      if (j.repath > 0) return;
+      j.repath = 0.5;
+      if (Math.hypot(ami.x - m.x, ami.y - m.y) <= JEU.ATTRAPE) {
+        // attrapé : c'est l'autre qui court, lui se sauve
+        m.chemin = []; ami.chemin = [];
+        j.type = 'fuit'; ami.jeu.type = 'court'; ami.jeu.repath = 0.8;
+        if (!fuir(m)) finJeu(m);
+        return;
+      }
+      if (aller(m, ami.x, ami.y, null, 'dehors')) m.pause = 0;
+      else finJeu(m);
+    }
+
     function decider(m, dt) {
       const v = ouVeut(m);
       if (m.repos > 0) m.repos -= dt;
@@ -281,14 +416,18 @@
         else return;
       }
       const H = maison();
-      // il a mangé : il va se servir (sauf à l'heure d'aller au lit : il y va)
-      if (m.faim) {
-        if (v === 'lit') m.faim = false;
-        else if (allerSeServir(m)) return;
-      }
-      // (un trajet pour ce que l'heure veut encore : il continue ; sinon il l'abandonne)
+      // un enfant qui joue : jusqu'à la fin du jeu, s'il est toujours dehors et n'a pas mangé
+      if (m.jeu && (v !== 'dehors' || m.faim)) finJeu(m);
+      if (m.jeu) { jouer(m, dt); return; }
+      // il a mangé : il va se servir, même à l'heure d'aller au lit (le dernier repas des enfants,
+      // à 20 h : la boîte, puis le lit)
+      if (m.faim && allerSeServir(m)) return;
+      // 19 h passé : un adulte qui allait aux bêtes n'y va plus
+      if (m.tache && m.tache !== 'boite' && !travaille()) { m.chemin = []; m.puis = null; m.but = null; m.tache = null; }
+      // (un trajet pour ce que l'heure veut encore, ou vers la boîte : il continue ; sinon il
+      // l'abandonne)
       if (m.chemin.length || m.puis) {
-        if (m.but === v) return;
+        if (m.but === v || m.tache === 'boite') return;
         m.chemin = []; m.puis = null; m.but = null; m.tache = null;
       }
       if (m.bloque > 0) return;
@@ -319,7 +458,8 @@
       if (H && H.dedans(m.x, m.y) && !m.tache) { flanerVers(m); return; }
       if (!m.chemin.length && !m.tache && !soccuper(m)) {
         m.attente -= dt;
-        if (m.attente <= 0) { m.attente = rand(3, 8); flanerVers(m); }
+        // (un enfant joue plus souvent qu'il ne flâne)
+        if (m.attente <= 0) { m.attente = m.enfant ? rand(1, 3) : rand(3, 8); if (!(m.enfant && commencerJeu(m))) flanerVers(m); }
       }
     }
 
@@ -330,7 +470,7 @@
         return false;
       }
       const to = m.chemin[0];
-      const dx = to.x - m.x, dy = to.y - m.y, l = Math.hypot(dx, dy), st = (m.enfant ? VITESSE.enfant : VITESSE.adulte) * dt;
+      const dx = to.x - m.x, dy = to.y - m.y, l = Math.hypot(dx, dy), st = (m.enfant ? VITESSE.enfant : VITESSE.adulte) * (m.vite || 1) * dt;
       ({ face: m.face, flip: m.flip } = K.regard(dx, dy));
       if (l <= st) { m.x = to.x; m.y = to.y; m.chemin.shift(); } else { m.x += (dx / l) * st; m.y += (dy / l) * st; }
       m.marche += Math.min(l, st);
@@ -424,6 +564,7 @@
           id: m.id, enfant: m.enfant,
           ou: m.couche ? 'lit' : H && H.dedans(m.x, m.y) ? 'dedans' : 'dehors',
           voulu: ouVeut(m), lit: !!m.couche, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0, tache: m.tache,
+          jeu: m.jeu ? m.jeu.type : null, haut: m.haut || 0,
         }));
       },
       rejoindre(at) {

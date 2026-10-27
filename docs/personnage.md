@@ -92,8 +92,9 @@ ajouter : le JSON donne l'ordre).
   lui, reste un instant puis s'estompe ; une prise qui arrive avant qu'elle ait disparu s'y
   additionne.
 - **Le second adulte du foyer** (un adulte qui n'est pas le personnage principal : `aidant`,
-  `js/engine/ramassage.js`) s'occupe des bêtes tout seul. Le jour et le soir (de son lever, avec le
-  personnage, à son coucher à 22 h : `FAMILLE.HORAIRE`), quand il y a à faire au Poulailler (des poules à nourrir et du blé, des œufs) ou à l'Étable (du lait, de la
+  `js/engine/ramassage.js`) s'occupe des bêtes tout seul. Le jour (de son lever, avec le personnage,
+  à 19 h : `FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES` ; ensuite il flâne jusqu'à son coucher), quand il
+  y a à faire au Poulailler (des poules à nourrir et du blé, des œufs) ou à l'Étable (du lait, de la
   laine, des moutons prêts à tondre : `aideAFaire`), il y va, se baisse, puis nourrit les poules,
   tond les moutons (sans l'énergie du personnage principal) et prend ce qui attend : tout entre
   dans l'inventaire, une bulle « +x » monte au-dessus de lui (`aideBetes`,

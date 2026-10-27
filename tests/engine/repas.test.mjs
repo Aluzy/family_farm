@@ -256,3 +256,42 @@ test('fiche 16b : la nuit ne compte pas deux fois ce qu\'il a mangé le jour, et
   assertEqual([r.mange, boiteCount(s, 'conserve')], [{ conserve: mangeJour }, reste], 'la nuit recopie la journée, sans repas de plus');
   assertEqual([s.nuit.affames, r.couverture, jaugeMembre(adulte)], [[], 100, 100], 'personne n\'a faim');
 });
+
+test('fiche 16b : le dernier repas des enfants à 20 h, avant le lit, une fois ; plus rien à 22 h ni pendant la nuit', () => {
+  const s = boite(garden(), { conserve: 100 });
+  const notes = [];
+  const fin = ecouterJournal((type, d) => { if (type === 'repasMembre' || type === 'faim') notes.push([type, d.id]); });
+  try {
+    const enfants = mangeurs(s).filter((m) => m.enfant), adulte = findMember(s, 'adulte-2');
+    for (const m of mangeurs(s)) depenserMembre(s, m.id, 40);
+    assertEqual(DATA.FAMILLE.HORAIRE.COUCHER_ENFANTS, 20);
+    s.awakeMs = awakeMsAtHour(19.9);
+    repasStep(s);
+    assertEqual([notes, enfants.map(jaugeMembre)], [[], [60, 60]], '19 h 54 : pas encore');
+    s.awakeMs = awakeMsAtHour(20);
+    repasStep(s);
+    assertEqual(notes, [['repasMembre', 'enfant-1'], ['repasMembre', 'enfant-2']], '20 h : les enfants mangent (la carte les envoie à la boîte, puis au lit)');
+    assertEqual([...enfants.map(jaugeMembre), jaugeMembre(adulte)], [100, 100, 60], 'rassasiés ; l\'adulte, lui, n\'a pas faim');
+    const reste = boiteCount(s, 'conserve');
+    // une fois : ni plus tard dans la soirée, ni à 22 h (la nuit qui commence), ni à minuit
+    for (const m of enfants) depenserMembre(s, m.id, 10);
+    s.awakeMs = awakeMsAtHour(21);
+    repasStep(s);
+    s.awakeMs = awakeMsAtHour(22);
+    assert(startNight(s), 'la nuit commence');
+    const r = sleepOnce(s);
+    assertEqual([notes.length, boiteCount(s, 'conserve'), r.mange.conserve], [2, reste, 100 - reste], 'pas de repas pendant leur sommeil, ni compté deux fois');
+  } finally { fin(); }
+});
+
+test('fiche 16b : à 20 h, rien à manger : pas de repas, ils vont au lit quand même', () => {
+  const s = boite(garden(), {});
+  const notes = [];
+  const fin = ecouterJournal((type, d) => { if (type === 'repasMembre' || type === 'faim') notes.push([type, d.id]); });
+  try {
+    for (const m of mangeurs(s)) depenserMembre(s, m.id, 40);
+    s.awakeMs = awakeMsAtHour(20);
+    for (let k = 0; k < 20; k++) repasStep(s);
+    assertEqual(notes, [], 'au-dessus du seuil : pas d\'alerte, et pas de repas (la carte ne les envoie pas à la boîte)');
+  } finally { fin(); }
+});

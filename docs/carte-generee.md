@@ -116,8 +116,10 @@ Le Marché vend toujours les outils.
   lit pour lui, il reste dans la maison.
 - Fiche 16 : la famille ne s'efface plus ; fiche 16b : son horaire (`FAMILLE.HORAIRE`). Le jour et
   le soir, elle est dehors autour de la maison, sans repas à table (chacun mange quand il a faim : il
-  va au réfrigérateur ou à la boîte, s'y baisse et repart). Les enfants vont au lit à 20 h et se
-  lèvent à 8 h, le compagnon va au lit à 22 h et se lève avec le personnage : chacun rejoint la
+  va au réfrigérateur ou à la boîte, s'y baisse et repart). Les enfants jouent (la poursuite, la
+  ronde, sauter, tourner) ; les adultes flânent, et ne s'occupent plus des bêtes après 19 h. À 20 h,
+  les enfants vont manger à la boîte ou au frigo, puis au lit ; ils se lèvent à 8 h. Les adultes
+  vont au lit à 22 h et se lèvent avec le personnage : chacun rejoint la
   maison à pied, entre par la porte et se couche ; on le voit quand le toit se lève (le personnage
   dans la maison). Sans lit pour lui, il reste dans la maison (le bâtiment du foyer, sous son toit :
   `homeInside`, ses places), d'une place à l'autre ; sans maison, il se tient devant la porte du

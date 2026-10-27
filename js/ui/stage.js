@@ -884,10 +884,10 @@ function mondeDeLaCarte() {
 }
 
 // Sans la carte de la ferme à l'écran (une autre carte, pas de carte) : le second adulte fait
-// quand même son travail aux heures où il est dehors (comme js/famille-ferme.js : levé avec le
-// personnage, au lit à FAMILLE.HORAIRE.COUCHER_ADULTES).
+// quand même son travail aux heures où il travaille (comme js/famille-ferme.js : levé avec le
+// personnage, jusqu'à FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES ; ensuite il flâne).
 function aideSansCarte() {
-  if (nightActive(state) || clockHours(state) >= DATA.FAMILLE.HORAIRE.COUCHER_ADULTES) return;
+  if (nightActive(state) || clockHours(state) >= DATA.FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES) return;
   for (const lieu of aideAFaire(state)) aideBetes(state, lieu);
 }
 

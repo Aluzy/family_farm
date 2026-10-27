@@ -13,7 +13,9 @@
      coucher, les enfants au lit de 20 h à 8 h, le compagnon de 22 h au lever du personnage ;
    - une journée de 6 h à 23 h simulée, et le matin d'après : chaque membre est toujours visible
      (dehors, dans la maison ou au lit), ne pose jamais le pied dans un mur et n'en traverse aucun ;
-     à 19 h tous dehors, personne à table ; qui a faim va à la boîte, s'y sert et repart ;
+     à 19 h tous dehors, personne à table ; qui a faim va à la boîte, s'y sert et repart ; les
+     enfants jouent (à deux et seuls), mangent à 20 h puis se couchent ; l'adulte ne travaille plus
+     aux bêtes après 19 h ;
    - un habitant d'un hameau dont le but est enfermé reste où il est (ni saut, ni traversée).
    Lancer seul : node --test tests/engine/famille-visible.test.mjs (ou node tests/run-tests.mjs famille-visible).
    ========================================================================== */
@@ -99,11 +101,14 @@ function scene(F) {
 // Une case fermée sous le point (x, y) (les pieds) ?
 const fermee = (F, x, y) => F.fermees.includes(at(Math.floor(x / T), Math.floor((y - 1) / T)));
 // Le segment de a à b passe-t-il par une case fermée (un point tous les 0,25 px) ?
-function traverse(F, a, b) {
+function traverse(F, a, b, dans = fermee) {
   const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) * 4));
-  for (let k = 1; k <= n; k++) if (fermee(F, a.x + ((b.x - a.x) * k) / n, a.y + ((b.y - a.y) * k) / n)) return true;
+  for (let k = 1; k <= n; k++) if (dans(F, a.x + ((b.x - a.x) * k) / n, a.y + ((b.y - a.y) * k) / n)) return true;
   return false;
 }
+// La même, pour une position arrondie au pixel (famille.info) : fermée à ½ px près de tous côtés
+// (au ras d'une porte, x = 223,6 s'arrondit à 224, dans la case du mur voisin).
+const fermeeArrondi = (F, x, y) => [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]].every(([a, b]) => fermee(F, x + a, y + b));
 const pieds = (c, r) => ({ x: c * T + T / 2, y: (r + 1) * T - 3 });
 
 /* ---------- les chemins ---------- */
@@ -202,7 +207,7 @@ test('l\'intérieur de la maison : ses places sont libres, ses chaises tournées
 
 test('à chaque heure, où chacun doit être (FamilleFerme.voulu, FAMILLE.HORAIRE)', () => {
   const H = DATA.FAMILLE.HORAIRE, v = (h, nuit, lit, enfant) => FamilleFerme.voulu(h, nuit, lit, enfant, H);
-  assertEqual([H.COUCHER_ENFANTS, H.LEVER_ENFANTS, H.COUCHER_ADULTES], [20, 8, 22], 'les heures du joueur (data/general.json)');
+  assertEqual([H.COUCHER_ENFANTS, H.LEVER_ENFANTS, H.FIN_TRAVAIL_ADULTES, H.COUCHER_ADULTES], [20, 8, 19, 22], 'les heures du joueur (data/general.json)');
   // le compagnon : levé avec le personnage (la nuit finie), dehors jusqu'à 22 h
   assertEqual(v(6, false, true, false), 'dehors', '6 h : le compagnon se lève avec le personnage');
   assertEqual(v(18.75, false, true, false), 'dehors', '18 h 45 : plus de rentrée générale');
@@ -222,19 +227,24 @@ test('à chaque heure, où chacun doit être (FamilleFerme.voulu, FAMILLE.HORAIR
   assert(FamilleFerme.couche(12, true, false, H) && !FamilleFerme.couche(12, false, true, H), 'la nuit, tous couchés ; à midi, personne');
 });
 
-test('une journée de 6 h à 23 h et le matin d\'après : visibles, par la porte, jamais au travers d\'un mur ; dehors le soir, au lit à 20 h et 22 h ; qui a faim va se servir', () => {
+test('une journée de 6 h à 23 h et le matin d\'après : visibles, par la porte, jamais au travers d\'un mur ; les enfants jouent ; l\'adulte flâne après 19 h ; les enfants mangent à 20 h puis se couchent ; le compagnon à 22 h', () => {
   const F = ferme(), s = scene(F);
   const lits = F.lits.map(([c, r]) => ({ x: c * T + T / 2, y: (r - 1) * T + 27, depth: (r + 1) * T - T / 2, drap: { key: 'drap', x: c * T + T / 2, y: (r + 1) * T } }));
-  // où se servir : devant la boîte à nourriture (comme js/farm-stage.js)
-  const B = s.blocks.get(at(X0 + 1, Y0 + 1)), spot = { x: B.x, y: B.y + 8 };
+  // où se servir : devant la boîte à nourriture (comme js/farm-stage.js) ; le Poulailler, dehors
+  const B = s.blocks.get(at(X0 + 1, Y0 + 1)), spot = { x: B.x, y: B.y + 8 }, poulailler = pieds(X0 + 3, Y0 + H + 4);
+  s.fermier.lieu = (l) => (l === 'poulailler' ? poulailler : null);
+  const travail = [];
   const fam = FamilleFerme.attach(s, {
     fermier: s.fermier, frames: [], reduced: () => false, file: () => '',
     maison: () => s.homeInside(), lit: (k) => lits[k + 1] || null, boite: () => spot,
+    // (le second adulte a fini au Poulailler : l'heure du travail fait)
+    aide: (lieu, done) => { travail.push(model.heure); done(null); },
   });
   s.family = fam;
   const model = { famille: [{ id: 'adulte-2', perso: 1 }, { id: 'enfant-1', perso: 1, enfant: true }, { id: 'enfant-2', perso: 2, enfant: true }], heure: 6, nuit: false, aide: null, horaire: DATA.FAMILLE.HORAIRE };
-  const prec = new Map(), fautes = [], servis = new Map();
-  let faim = null;
+  const prec = new Map(), fautes = [], jeux = new Set(), bonds = new Set();
+  // qui va se servir : arrivé à la boîte, puis reparti (l'heure où il en repart)
+  const faims = new Map();
   const quart = (h, nuit) => {
     model.heure = h % 24; model.nuit = nuit;
     fam.sync(model);
@@ -245,12 +255,13 @@ test('une journée de 6 h à 23 h et le matin d\'après : visibles, par la porte
         if (!q.visible) fautes.push(`${h} h : ${q.id} invisible`);
         const d = prec.get(q.id);
         if (!q.lit) {
-          if (fermee(F, q.x, q.y)) fautes.push(`${h} h : ${q.id} dans un mur (${q.x}, ${q.y})`);
-          else if (d && !d.lit && traverse(F, d, q)) fautes.push(`${h} h : ${q.id} traverse un mur de (${d.x}, ${d.y}) à (${q.x}, ${q.y})`);
+          if (fermeeArrondi(F, q.x, q.y)) fautes.push(`${h} h : ${q.id} dans un mur (${q.x}, ${q.y})`);
+          else if (d && !d.lit && traverse(F, d, q, fermeeArrondi)) fautes.push(`${h} h : ${q.id} traverse un mur de (${d.x}, ${d.y}) à (${q.x}, ${q.y})`);
         }
-        // (qui a faim : arrivé à la boîte, il s'y sert)
-        if (faim && q.id === faim.id && Math.hypot(q.x - spot.x, q.y - spot.y) < 2) faim.arrive = true;
-        if (faim && q.id === faim.id && faim.arrive && q.tache !== 'boite' && !faim.fini) { faim.fini = h; servis.set(q.id, h); }
+        if (q.jeu) { jeux.add(q.jeu); if (q.haut > 0) bonds.add(q.id); }
+        const f = faims.get(q.id);
+        if (f && Math.hypot(q.x - spot.x, q.y - spot.y) < 8) f.arrive = true;
+        if (f && f.arrive && q.tache !== 'boite' && f.fini === undefined) f.fini = h;
         prec.set(q.id, q);
       }
     }
@@ -258,24 +269,38 @@ test('une journée de 6 h à 23 h et le matin d\'après : visibles, par la porte
   };
   const etat = {};
   for (let h = 6; h <= 23; h += 0.25) {
-    // à 19 h, l'adulte a faim (le moteur l'a fait manger : js/ui/loop.js l'envoie se servir)
-    if (h === 19) { assert(fam.allerManger('adulte-2'), 'il va se servir'); faim = { id: 'adulte-2' }; }
-    if (h === 15) { assert(fam.allerManger('enfant-2'), 'l\'enfant aussi'); }
+    // l'après-midi, le second adulte a à faire au Poulailler
+    if (h === 16) model.aide = { id: 'adulte-2', lieux: ['poulailler'] };
+    // à 19 h, l'adulte a faim ; à 20 h, les enfants prennent leur dernier repas (le moteur les a
+    // fait manger : js/ui/loop.js les envoie se servir)
+    if (h === 19) { assert(fam.allerManger('adulte-2'), 'il va se servir'); faims.set('adulte-2', {}); }
+    if (h === 20) for (const id of ['enfant-1', 'enfant-2']) { assert(fam.allerManger(id), `${id} va manger`); faims.set(id, {}); }
     etat[h] = quart(h, h >= 22);
-    if (h === 15.75) faim = null;
   }
   // la nuit, puis le matin d'après (la nuit finie à 6 h : le compagnon se lève avec le personnage)
+  model.aide = null;
   for (let h = 23.25; h < 30; h += 0.25) quart(h, true);
   for (let h = 30; h <= 33; h += 0.25) etat[h] = quart(h, false);
-  assertEqual(fautes.slice(0, 5), [], 'toujours visibles, jamais dans un mur');
+  assertEqual(fautes.slice(0, 5), [], 'toujours visibles, jamais dans un mur (même en jouant)');
   const ou = (h) => etat[h].map((q) => q.ou).join(' ');
   assertEqual(ou(12), 'dehors dehors dehors', 'midi : dehors');
   assertEqual(ou(18.75), 'dehors dehors dehors', '18 h 45 : dehors, plus de rentrée');
-  assertEqual(ou(19).split(' ').slice(1), ['dehors', 'dehors'], '19 h : les enfants dehors (l\'adulte qui a faim est à la boîte), personne à table');
-  assert(etat[19].every((q) => !('assis' in q)), 'plus de chaises');
-  assert(servis.get('adulte-2') >= 19 && servis.get('adulte-2') < 20, `à 19 h, il est allé à la boîte, s'y est servi et en est reparti (${servis.get('adulte-2')})`);
-  assertEqual(ou(19.75), 'dehors dehors dehors', 'puis il reprend sa soirée dehors');
-  assertEqual(ou(20.75), 'dehors lit lit', '20 h : les enfants rentrent et se couchent');
+  // les jeux des enfants : à deux (la ronde, la poursuite) et seuls (sauter, tourner), en bondissant
+  assert(jeux.has('sauter') || jeux.has('tourner'), `seuls, ils sautent ou tournent (${[...jeux]})`);
+  assert(jeux.has('ronde') || jeux.has('fuit'), `à deux, ils font la ronde ou se poursuivent (${[...jeux]})`);
+  assertEqual([...bonds].sort(), ['enfant-1', 'enfant-2'], 'de petits bonds');
+  // le travail aux bêtes : l'après-midi, oui ; après 19 h, non
+  assert(travail.some((h) => h >= 16 && h < 19), `il travaille l'après-midi (${travail})`);
+  assertEqual(travail.filter((h) => h >= 19), [], 'après 19 h, il ne travaille plus');
+  assert(etat[19.5][0].ou === 'dehors' && !etat[19.5][0].tache, '19 h 30 : il flâne dehors');
+  const fa = faims.get('adulte-2');
+  assert(fa.arrive && fa.fini >= 19 && fa.fini < 20, `à 19 h, il est allé à la boîte, s'y est servi et en est reparti (${JSON.stringify(fa)})`);
+  // 20 h : les enfants vont à la boîte, s'y servent, puis vont au lit
+  for (const id of ['enfant-1', 'enfant-2']) {
+    const f = faims.get(id);
+    assert(f.arrive && f.fini >= 20 && f.fini < 20.75, `${id} : à la boîte à 20 h, puis reparti (${JSON.stringify(f)})`);
+  }
+  assertEqual(ou(20.75), 'dehors lit lit', '20 h 45 : les enfants ont mangé et se sont couchés');
   assertEqual(ou(21.75), 'dehors lit lit');
   assertEqual(ou(22.75), 'lit lit lit', '22 h : le compagnon aussi');
   assertEqual(ou(30.75), 'dehors lit lit', 'le matin : le compagnon sort avec le personnage, les enfants dorment');
