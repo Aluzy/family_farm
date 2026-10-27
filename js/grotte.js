@@ -672,7 +672,7 @@
         const r = this.allure.pas(vx, vy, moved, { face: this.face, flip: H.flipX });
         this.face = r.face; H.setFlipX(r.flip);
         this.walked += moved;
-        const k = K.imageMarche(this.walked);
+        const k = K.imageMarche(this.walked, 'grotte');
         H.setFrame(this.frame.de('marche', this.face, k));
         // un pas sur la roche aux images 0 et 2 (js/son.js)
         if (k !== this.pasVu && (k === 0 || k === 2) && global.FermeSon) global.FermeSon.pas(P.x, P.y, null, 0);

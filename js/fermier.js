@@ -329,7 +329,7 @@
           const d = Math.min(left, v * dt);
           if (left > 0.01) { x += (dx / left) * d; y += (dy / left) * d; lookWalk(dx, dy, d); }
           walked += d;
-          draw(`marche_${face}_${K.imageMarche(walked)}`);
+          draw(`marche_${face}_${K.imageMarche(walked, 'fermier')}`);
           if (left - d > 0.3) return false;
           path.shift();
           return !path.length;
@@ -705,7 +705,7 @@
       lookWalk(steer.x, steer.y, d);
       // (arrêté contre un obstacle : debout ; il repartira par un passage)
       if (d > 0.01) steerWalked += d; else steerWalked = 0;
-      draw(d > 0.01 ? `marche_${face}_${K.imageMarche(steerWalked)}` : `idle_${face}_0`);
+      draw(d > 0.01 ? `marche_${face}_${K.imageMarche(steerWalked, 'fermier')}` : `idle_${face}_0`);
     }
 
     // Il arrive d'une autre carte : il apparaît en (tx, ty) (la case
@@ -743,7 +743,7 @@
           const d = Math.min(left, SPEED * 0.6 * dt);
           if (left > 0.01) { x += (dx / left) * d; y += (dy / left) * d; lookWalk(dx, dy, d); }
           walked += d;
-          draw(`marche_${face}_${K.imageMarche(walked)}`);
+          draw(`marche_${face}_${K.imageMarche(walked, 'fermier')}`);
           return left - d <= 0.3;
         },
       };

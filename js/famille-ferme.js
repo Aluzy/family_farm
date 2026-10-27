@@ -596,7 +596,7 @@
             if (m.drap) m.drap.setDepth(z(0.2));
             continue;
           }
-          dessiner(m, marche ? `marche_${m.face}_${K.imageMarche(m.marche, m.enfant)}` : `idle_${m.face}_${Math.floor(performance.now() / 600) % 2}`);
+          dessiner(m, marche ? `marche_${m.face}_${K.imageMarche(m.marche, m.enfant ? 'enfant' : 'adulte')}` : `idle_${m.face}_${Math.floor(performance.now() / 600) % 2}`);
         }
       },
       info() {
