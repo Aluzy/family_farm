@@ -57,3 +57,4 @@ Conventions communes à toutes les fiches :
 | [19 — le compagnon aide à la ferme](19-le-compagnon-aide.md) | — | à faire (après 16 et 17) |
 | [20 — la marche des personnages](20-la-marche.md) | — | à faire (après 16 à 19) |
 | [21 — toucher le champ n'ouvre plus de fenêtre](21-champ-sans-fenetre.md) | — | fait |
+| [14b — le brouillard couvre aussi la ferme](14b-brouillard-sur-la-ferme.md) | — | à faire |
