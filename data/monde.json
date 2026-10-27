@@ -692,7 +692,8 @@
   "//DECOUVERTE": [
     "S'orienter (fiche 8, js/engine/monde-vu.js ; la scène : js/carte/ferme/brouillard.js, boussole.js ; la carte",
     "du monde : js/ui/carte-monde.js). Le monde se découpe en cellules de CELLULE × CELLULE cases, vues ou non (un",
-    "bit chacune dans la sauvegarde) : au départ, la ferme et sa prairie (MARGE_FERME cases autour de la ferme) ;",
+    "bit chacune dans la sauvegarde) : au départ, rien que le cercle de vue du personnage, la ferme comprise (fiche",
+    "14b ; MARGE_FERME : la prairie autour de la ferme, vue avec elle par les parties d'avant la fiche 8) ;",
     "puis chaque cellule qui touche le cercle de vue du personnage, à chaque case où il passe. Le rayon de ce",
     "cercle (en cases) : celui du biome où il est (RAYONS ; RAYON pour un biome qui n'y est pas) : plus grand en",
     "hauteur (la montagne, les sommets) et à découvert (la lande, la côte), plus petit dans la forêt dense et le",

@@ -840,15 +840,15 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
      - **Le vu** (`js/engine/monde-vu.js`, réglé par `data/monde.json` : `DECOUVERTE`, vérifié par
        `scripts/lib/data.mjs`) : le monde se découpe en cellules de 8 × 8 cases (81 × 64), vues ou non ;
        la sauvegarde les garde dans `state.monde.vu`, un bit par cellule en base64 (864 caractères, quel que
-       soit le voyage). La ferme et sa prairie (`MARGE_FERME`, 12 cases autour) sont vues d'office (relues
-       comme vues même si la chaîne est abîmée). À chaque case où passe le personnage (le pont `ici`), la
+       soit le voyage). Rien n'est vu d'office, la ferme non plus (fiche 14b) : une nouvelle partie ne voit
+       que le cercle de vue autour de la case où le personnage apparaît. À chaque case où passe le personnage (le pont `ici`), la
        page appelle `voirAutour` avec le biome de sa case (l'aperçu des biomes du Worker, un par bloc de 8 × 8
        cases) et la nuit : chaque cellule qui touche le cercle de vue devient vue. Le rayon (`RAYONS`, en
        cases) : 12 dans les prés, 15 à découvert (lande, plage, falaises), 18 en montagne, 22 sur les
        sommets (on voit de haut), 9 dans le marais, 7 dans la forêt dense ; la nuit, moitié moins
        (`NUIT`), 5 au moins. Le moteur lit toujours les régions (`state.monde.vues`, ses revues de cases et
-       ses nuits) : tenues à côté, une cellule qui devient vue rend vue sa région (pas la prairie d'office :
-       autour de la ferme, le moteur garde les régions qu'il avait). Le mode test (le panneau, et le menu du
+       ses nuits) : tenues à côté, une cellule qui devient vue rend vue sa région ; celles de la ferme
+       restent vues d'office pour le moteur (sous le brouillard, la ferme vit comme avant). Le mode test (le panneau, et le menu du
        god mode) : « Brouillard : tout voir » (sans toucher aux régions du moteur) et « tout cacher ».
      - **Sauvegardes** : format 58 ; la migration 57 → 58 donne `vu` (la ferme et sa prairie, et chaque
        région déjà vue en entier ; les régions de la ferme, vues d'office, seulement si le joueur est allé
@@ -1207,6 +1207,8 @@ SwiftShader, sans carte graphique) :
     vu vide, abîmé ou tronqué : la ferme et sa prairie ne sont jamais dessous. (Dans Chromium, ni une
     nouvelle partie ni les témoins, ni le profil mobile, ni le rendu sans WebGL n'ont montré de brouillard
     sur la ferme avec le code d'avant : la cause d'origine n'a pas été reproduite.)
+  - (corrigé par la fiche 14b, plus bas : la ferme n'est plus vue d'office, la protection de la scène est
+    retirée.)
   - la mine : la flèche bleue des passages est retirée (`CarteKit.FLECHE`, `assets/fleche_passage.png`,
     `scripts/carte/fleche.py`), dans les niveaux comme devant les bouches des grottes du monde ; le dessin
     montre déjà l'échelle (et le jour qui en tombe) et le trou du puits. Un appui sur l'échelle ou le puits
@@ -1221,3 +1223,29 @@ SwiftShader, sans carte graphique) :
     debout), et la page de la pêche les icônes de tous les poissons que la canne prend.
     `scripts/build-encyclopedie.mjs` les lit dans `assets/` (`visuels`, `icones` de
     `js/encyclopedie.generated.js`), dans le jeu comme sur `encyclopedie.html`.
+- **Fiche 14b — le brouillard couvre aussi la ferme** (fait) : la fiche 14 avait compris l'inverse de la
+  demande ; le joueur veut que tout soit à découvrir, la ferme comprise.
+  - Retiré : la ferme et sa prairie vues d'office dans le moteur (`monde-vu.js` : leurs bits ne sont plus
+    posés à la création ni relus comme posés), dans la scène (`js/carte/ferme/brouillard.js` : plus de
+    rectangle `ferme`) et la protection de la fiche 14 (`brouillardDe`, `rectFerme`,
+    `modèle.brouillard.ferme` ; `js/ui/stage.js` donne `{ vu, C, L, H }`).
+  - Une nouvelle partie ne voit que le cercle de vue (12 cases, `RAYON`) autour de la case où le
+    personnage apparaît (`vuInitial(T, caseDepart(T))`) ; le reste de la ferme se découvre en marchant.
+    Le mode test « tout cacher » recouvre aussi la ferme (sauf autour du personnage).
+  - Le moteur n'en dépend pas : ses régions vues (`state.monde.vues`) gardent celles de la ferme
+    d'office ; cultures, bêtes, famille et bâtiments vivent sous le brouillard. À l'écran, ce qui se dresse
+    sous le brouillard ne se dessine pas, sur la ferme comme ailleurs (les bêtes, la famille, la calèche).
+  - Ce qui est construit : ce qui a été vu une fois le reste ; le joueur bâtit et plante sous ses yeux,
+    donc rien de ce qu'il a fait n'est voilé. Le repère de la ferme reste sur la carte du monde et la
+    boussole y mène toujours (le personnage sait où est sa ferme) ; la ferme dessinée y apparaît une fois vue.
+  - Le didacticiel : les pierres et le bois du premier jour sont à 7 cases au plus du départ, dans le
+    cercle de vue ; l'Atelier et le puits, le joueur les pose lui-même ; les cases qui brillent plus loin
+    (l'abri, la sortie de la ferme où se gare la calèche) se dégagent quand la bulle les montre
+    (`montrerLieu`, 4 cases autour, `js/ui/didacticiel.js`). Le texte de la carte du monde ne dit plus
+    « ta ferme » vue en entier. La scène n'entoure plus rien sous le brouillard (les cercles dorés autour
+    des pierres ou du bois cachés, `js/carte/ferme/didacticiel.js`).
+  - Les anciennes parties gardent ce qu'elles ont vu, sans changement de format : leur chaîne porte déjà
+    les bits de la ferme et de sa prairie (posés par l'ancien `vuInitial`), et la migration 57 → 58 comme
+    la réparation d'un vu perdu (`vuDesRegions`) les posent encore. Les objectifs « voir 10 % / 15 % du
+    grand monde » ne comptent plus la ferme d'office pour une nouvelle partie (environ 7 % de moins au
+    départ) : elle se découvre vite en y travaillant.

@@ -2473,7 +2473,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "brouillard",
      "terme": "Le brouillard",
-     "description": "Le grand monde est caché au départ : seules ta ferme et la prairie autour sont dégagées. Partout ailleurs, un brouillard blanc couvre le pays, et rien de ce qu'il cache ne se devine — ni les arbres, ni les bêtes, ni les maisons, ni la calèche qui passe derrière. Il se lève autour de toi à mesure que tu marches, et ce que tu as vu le reste. Tu vois plus loin en hauteur, dans la montagne et sur les sommets (18 à 22 cases), et à découvert, sur la lande et la côte (15 cases), qu'au milieu des prés (12 cases) ; bien moins dans la forêt dense (7 cases) et le marais (9 cases), et deux fois moins la nuit. Ce que tu as vu s'inscrit sur la carte du monde.",
+     "description": "Tout est caché au départ, ta ferme comprise : seuls les alentours de ton personnage sont dégagés. Partout ailleurs, un brouillard blanc couvre le pays, et rien de ce qu'il cache ne se devine — ni les arbres, ni les bêtes, ni les maisons, ni la calèche qui passe derrière. Il se lève autour de toi à mesure que tu marches, et ce que tu as vu le reste. Tu vois plus loin en hauteur, dans la montagne et sur les sommets (18 à 22 cases), et à découvert, sur la lande et la côte (15 cases), qu'au milieu des prés (12 cases) ; bien moins dans la forêt dense (7 cases) et le marais (9 cases), et deux fois moins la nuit. Ce que tu as vu s'inscrit sur la carte du monde.",
      "liens": [
       "carte_du_monde",
       "boussole",

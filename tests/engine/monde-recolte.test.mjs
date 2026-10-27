@@ -208,7 +208,8 @@ test('migration v53 → v54 : rien de pris dans le monde, rien d\'autre ne chang
   const v53 = JSON.parse(JSON.stringify({ ...s, monde, version: 53 }));
   const m = migrate({ v: 53, t: 0, s: v53 });
   assertEqual(m.version, STATE_VERSION);
-  assertEqual(m.monde, { ...monde, pris: {} });
+  // (le vu : refait par la migration v57 → v58, la ferme et sa prairie d'une partie d'avant la fiche 8)
+  assertEqual({ ...m.monde, vu: undefined }, { ...monde, pris: {}, vu: undefined });
   assertEqual({ ...m, monde: undefined }, { ...JSON.parse(JSON.stringify(s)), monde: undefined });
   assert(sleepOnce(m) !== null, 'la partie continue');
   // ce qui est pris passe la sauvegarde

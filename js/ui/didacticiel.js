@@ -15,6 +15,13 @@
 // case où elle se gare devant la ferme ; il est dit où elle est et l'heure), le hameau voisin (montré sur
 // la carte du monde en arrivant à l'étape : son repère, puis « Y mener la boussole »), puis la boussole
 // jusqu'à lui. Chacune a son bouton « Passer cette étape » : aucune ne bloque.
+//
+// Fiche 14b : la ferme est sous le brouillard au départ, comme le monde. La première étape qui touche la
+// carte (les pierres et le bois du premier jour) n'a besoin que du cercle de vue où le personnage apparaît
+// (ils sont à 7 cases de lui au plus) ; l'Atelier et le puits, le joueur les pose lui-même sous ses yeux.
+// Les cases qui brillent plus loin (l'abri, la sortie de la ferme où se gare la calèche) se dégagent quand
+// la bulle les montre (degagerCible : montrerLieu, comme le hameau voisin), pour ne jamais pointer vers un
+// coin voilé.
 
 import { DATA } from '../engine/catalog.js';
 import { countItem } from '../engine/inventory.js';
@@ -122,6 +129,21 @@ function montrerHameauVoisin() {
   return true;
 }
 
+// Les cases qui brillent sur la carte (la surbrillance de l'étape : l'abri, la sortie de la ferme) se
+// dégagent du brouillard, DEGAGE cases autour de chacune (fiche 14b). Une fois par liste de cases. → vrai si
+// la partie a changé (des cellules nouvelles).
+const DEGAGE = 4;
+let degagees = '';
+function degagerCible() {
+  const s = surbrillanceDidacticiel(), cases = s && Array.isArray(s.cases) ? s.cases : [];
+  const cle = cases.map((c) => c.case).join(',');
+  if (!cases.length || cle === degagees) return false;
+  degagees = cle;
+  let n = 0;
+  for (const c of cases) n += montrerLieu(state, c.case, DEGAGE);
+  return n > 0;
+}
+
 // Les étapes : leur texte (HTML sûr : rien de ce que tape le joueur), et ce qu'elles montrent
 // ({ cible: sélecteur, carte: surbrillance de la scène }).
 const ETAPES_UI = {
@@ -187,7 +209,7 @@ const ETAPES_UI = {
   },
   // fiche 9b : le grand monde
   carte: {
-    texte: () => (carteOuverte() ? 'Voici ce que tu as vu du <b>grand monde</b> : ta ferme, au milieu. Le reste est sous le brouillard, il se lèvera à mesure que tu marcheras.'
+    texte: () => (carteOuverte() ? 'Voici ce que tu as vu du <b>grand monde</b> : les coins de ta ferme où tu es passé, au milieu. Le reste est sous le brouillard, il se lèvera à mesure que tu marcheras.'
       : `Ta plante est arrosée : elle poussera toute seule. Ta ferme n'est qu'un coin du <b>grand monde</b>, caché sous le brouillard. ${menuOpen ? 'Touche 🧭 <b>Carte du monde</b>.' : 'Ouvre la <b>carte du monde</b> : le menu (la flèche), puis 🧭 Carte du monde (ou la touche M).'}`),
     cible: () => (carteOuverte() ? null : menuCarte()),
     bouton: () => false,   // (elle passe quand la carte du monde s'ouvre)
@@ -305,6 +327,8 @@ export function renderDidacticiel() {
   // fiche 9b : la carte du monde s'ouvre : l'étape « carte » est faite ; le hameau voisin se montre
   if (state && etapeDidacticiel(state) === 'carte' && carteOuverte() && suivantDidacticiel(state, 'carte').ok) persistState();
   if (state && etapeDidacticiel(state) === 'hameau_choisir' && montrerHameauVoisin()) persistState();
+  // fiche 14b : ce que la bulle allume sur la carte n'est pas sous le brouillard
+  if (state && degagerCible()) persistState();
   // les graines vues dans l'inventaire, puis l'inventaire refermé : l'étape est faite
   if (state && etapeDidacticiel(state) === 'graines') {
     if (stageWindow === 'inventaire' && ongletGraines()) grainesVues = true;

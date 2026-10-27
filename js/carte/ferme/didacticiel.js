@@ -6,7 +6,8 @@
  * plus proches du personnage ; { blocs: [sortes] } l'Atelier, le puits) ; et les cases où poser
  * l'abri ({ cases: [{ case, sorte }] } : une case allumée qui pulse, dorée pour un mur, blanche
  * pour la porte, verte pour une paillasse). Fiche 9b : { caleche: true } entoure aussi la calèche, d'un
- * grand cercle (son attelage, quand il est fait près de la vue : js/carte/ferme/caleche.js).
+ * grand cercle (son attelage, quand il est fait près de la vue : js/carte/ferme/caleche.js). Fiche 14b :
+ * rien n'est entouré sous le brouillard (la ferme y est aussi) ; les cases à bâtir, la page les dégage.
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
  * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).
@@ -42,6 +43,11 @@
       }
       // (la calèche : un grand cercle autour de son attelage)
       if (s.caleche && this.calecheSprite && this.calecheVue) out.push({ x: this.calecheVue.x, y: this.calecheVue.y - 22, r: S.rayonCaleche });
+      // (fiche 14b : rien sous le brouillard du grand monde, la ferme comprise : un cercle n'y trahit rien ;
+      // brouillard.js)
+      const vus = this.sousBrume ? out.filter((q) => !this.sousBrume(q.x, q.y + 5)) : out;
+      out.length = 0;
+      out.push(...vus);
       const p = this.fermier && this.fermier.pos();
       if (p && out.length > S.max) out.sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
       return out.slice(0, S.max);

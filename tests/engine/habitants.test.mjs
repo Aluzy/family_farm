@@ -245,7 +245,8 @@ test('migration v55 → v56 : pas encore d\'habitants, rien d\'autre ne change',
   const v55 = copie({ ...s, monde: { ...monde55, hameaux: { hameau_2: { nom: 'Les Saules', style: 'marais', jour: 1 } } }, version: 55 });
   const m = migrate({ v: 55, t: 0, s: v55 });
   assertEqual(m.version, STATE_VERSION);
-  assertEqual(m.monde, { ...v55.monde, habitants: {} });
+  // (le vu : refait par la migration v57 → v58, la ferme et sa prairie d'une partie d'avant la fiche 8)
+  assertEqual({ ...m.monde, vu: undefined }, { ...v55.monde, habitants: {}, vu: undefined });
   const { monde: a, version: va, ...ra } = m, { monde: b, version: vb, ...rb } = v55;
   assertEqual(ra, rb, 'le reste ne change pas');
   // la sauvegarde garde les habitants
