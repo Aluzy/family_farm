@@ -271,7 +271,9 @@ registerActions({
     else if (r.animal) notify(`${DATA.ANIMAUX[r.animal].icone} ${r.animal === 'poule' ? 'Une poule du pays vient s\'installer au Poulailler' : `${r.animal === 'mouton' ? 'Un mouton' : 'Une vache'} des prés voisins vient à l'Étable`}.`);
     else if (r.outil) notify(`${toolDef(r.outil).ICONE} ${nom(target.dataset.recette)} : ${toolDef(r.outil).ARTICLE === 'un' ? 'fabriqué' : 'fabriquée'}.`);
     else if (R.meuble) notify(`🏠 ${DATA.MEUBLES[R.meuble].nom} : dans l'inventaire, à poser dans la maison avec 🔨${DATA.MEUBLES[R.meuble].bonheur ? ` · 😊 +${DATA.MEUBLES[R.meuble].bonheur}` : ''}`);
-    else notify(`${itemsText(r.items, 'gain')}`);
+    // fiche 10 : « Fabriquer » répété fait monter une seule notification (« +1 », « +2 »…) ;
+    // une autre recette en commence une autre
+    else notify(null, { cumul: { cle: `atelier:${target.dataset.recette}`, quantites: r.items, texte: (t) => itemsText(t, 'gain') } });
     persistState();
     refresh();
   },

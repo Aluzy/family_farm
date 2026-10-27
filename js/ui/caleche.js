@@ -339,14 +339,16 @@ registerActions({
     const item = target.dataset.item;
     const result = applyResult(acheterCaleche(state, item, Math.max(1, Number(target.dataset.q) || 1), ouPerso()));
     if (result.ok) {
-      notify(`Acheté à la calèche : ${result.bought} ${DATA.OBJETS[item].icone} (−${formatCoins(result.cost)} 💰)`);
+      // fiche 10 : les achats répétés d'un même objet se cumulent (quantité et prix)
+      notify(null, { cumul: { cle: `caleche-achat:${item}`, quantites: { n: result.bought, prix: result.cost }, texte: (t) => `Acheté à la calèche : ${formatQty(t.n)} ${DATA.OBJETS[item].icone} (−${formatCoins(t.prix)} 💰)` } });
       refresh();
     }
   },
   'sell-item': (target) => {
     const item = target.dataset.item;
     const result = applyResult(vendreCaleche(state, item, Math.max(1, Number(target.dataset.q) || 1), ouPerso()));
-    if (result.ok) notify(`Vendu à la calèche : ${result.sold} ${DATA.OBJETS[item].icone} (+${formatCoins(result.gain)} 💰)`);
+    // fiche 10 : les ventes répétées d'un même objet se cumulent (« +30 💰 » puis « +60 💰 »)
+    if (result.ok) notify(null, { cumul: { cle: `caleche-vente:${item}`, quantites: { n: result.sold, gain: result.gain }, texte: (t) => `Vendu à la calèche : ${formatQty(t.n)} ${DATA.OBJETS[item].icone} (+${formatCoins(t.gain)} 💰)` } });
   },
 });
 

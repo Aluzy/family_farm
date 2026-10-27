@@ -23,7 +23,7 @@ import { artIcon, treeArt } from './animations.js';
 import { helpBtn } from './aide.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
-import { canPay, costLabel } from './common.js';
+import { canPay, costLabel, itemsText } from './common.js';
 
 /* ---------- Lot 8 : Serre, Verger, Réfrigérateur ---------- */
 
@@ -164,7 +164,8 @@ registerActions({
 
   'harvest-tree': (target) => {
     const result = applyResult(harvestTree(state, target.dataset.id));
-    if (result.ok && !result.aRamasser) notify(`+${result.qty} ${DATA.OBJETS[result.item].icone}`);
+    // fiche 10 : cueillir arbre après arbre fait monter une seule notification par fruit
+    if (result.ok && !result.aRamasser) notify(null, { cumul: { cle: `verger:${result.item}`, quantites: { [result.item]: result.qty }, texte: (t) => itemsText(t, 'gain') } });
   },
 
   'upgrade-fridge': () => {
