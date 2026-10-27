@@ -1,3 +1,4 @@
+import { finAide } from '../engine/compagnon.js';
 import { DATA, ingredientOptions } from '../engine/catalog.js';
 import { houseRepaired } from '../engine/depart.js';
 import { GAME_VERSION, STATE_VERSION } from '../engine/base.js';
@@ -255,6 +256,8 @@ const HELP = {
         ['Éclairer la nuit', `La lanterne scintillante (${recetteAtelier('lanterne')}) et le candélabre, un pied de fer forgé haut de deux blocs et ses trois bougies (${recetteAtelier('candelabre')}), se fabriquent à l'Atelier et se posent avec 🔨 Construire, dehors comme dans la maison : la nuit, ils s'allument et éclairent autour d'eux.`],
         // fiche 17 : choisir son lit
         ['Ton lit', 'Ton personnage dort dans le premier lit (ou la première paillasse) de tes pièces closes. Touche un autre lit, toit levé ou à l\'étage : « Tu veux choisir ce lit ? ». Oui, il y dormira ; le membre de la famille qui y dormait prend ton ancien lit.'],
+        // fiche 19 : le compagnon aide à la ferme (js/engine/compagnon.js)
+        ['Ton compagnon aide', `L'autre adulte de la famille s'occupe des bêtes et, de ${DATA.COMPAGNON.HEURES[0]} h à ${finAide()} h (le soir, il ne travaille plus), quand il n'a pas trop faim, prend des initiatives : il arrose quelques légumes qui ont soif (${DATA.COMPAGNON.ARROSER.PAR_FOIS} à la fois, ${DATA.COMPAGNON.ARROSER.PAR_JOUR} par jour au plus ; sans eau au réservoir, avec sa cruche, qu'il remplit au puits), prépare un repas à la cuisinière quand la famille a faim (le plat va au réfrigérateur ou dans la boîte à nourriture : chacun le mange quand il a faim) et ramasse un peu de bois ou de pierres autour de la ferme. Chaque tâche lui donne faim, rien ne te coûte d'énergie, et une notification dit ce qu'il a fait. Dans la Famille, décoche « Le laisser aider à la ferme » pour qu'il te laisse faire.`],
         ['Qualité de l\'affichage', 'Sur un téléphone, le jeu se dessine en qualité « économie » pour rester fluide : l\'image un peu moins fine, le brouillard et la lumière de la nuit en plus gros points, la mer sans ses vagues d\'écume, les arbres faits plus près de toi. Les Options (Affichage) la règlent : « Auto » (économie sur un téléphone, normale sur un ordinateur), « Économie » ou « Normale ». Ta partie n\'en dépend pas.'],
       ],
     };

@@ -147,7 +147,7 @@ Le Marché vend toujours les outils.
 - Il n'y a **plus de repas à 19 h**. Chaque membre de la famille, sauf le personnage principal, a
   une **jauge de faim** de 0 à 100 (`FAMILLE.FAIM`, `js/engine/repas.js`). Elle baisse d'un point
   tous les 100 pixels marchés sur la carte (`js/famille-ferme.js` → `marcherMembre`) et de
-  `FAIM.AIDE` points par tâche du second adulte aux bêtes (`aideBetes`).
+  `FAIM.AIDE` points par tâche du second adulte aux bêtes (`aideBetes`), et de 2 à 4 par initiative (fiche 19 : `DATA.COMPAGNON`).
 - Arrivé à **20**, le membre mange jusqu'à 100 (`repasStep`, à chaque pas de la journée) : dans la
   **boîte à nourriture** (un bloc de l'Atelier, 3 planches, posé dans une pièce close), d'abord ce
   qui périme le plus tôt ; sur la carte, il va à la boîte et s'y baisse (`allerManger`). Sans rien
@@ -287,6 +287,10 @@ Le Marché vend toujours les outils.
   une paillasse d'une pièce close (toit levé, ou à l'étage) demande « Tu veux choisir ce lit ? ».
   Oui : il devient le premier couchage (`state.litPrincipal`), celui du personnage principal ;
   le membre qui y dormait prend l'ancien lit du personnage, les autres gardent le leur.
+- **Le compagnon aide** (fiche 19, `js/engine/compagnon.js`) : l'autre adulte arrose quelques
+  légumes qui ont soif (avec sa cruche, qu'il remplit au puits, quand le réservoir est vide), prépare
+  un repas à la cuisinière quand la famille a faim (le plat dans la boîte ou au réfrigérateur) et
+  ramasse le bois et les pierres posés près de la maison ; une option dans la Famille.
 - **L'Encyclopédie dans le jeu** (`js/engine/encyclopedie.js`, `js/engine/decouverte.js`,
   `js/ui/encyclopedie.js`) : 📖 dans le menu latéral ouvre un livre, comme le Livre de recette
   (`livre()` de `js/ui/livre.js`) : le sommaire (pages découvertes par catégorie, nouvelles

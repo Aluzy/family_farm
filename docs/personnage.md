@@ -100,6 +100,9 @@ ajouter : le JSON donne l'ordre).
   dans l'inventaire, une bulle « +x » monte au-dessus de lui (`aideBetes`,
   `js/famille-ferme.js`). Sans la carte de la ferme à l'écran (une autre carte affichée), il le
   fait quand même, aux mêmes heures.
+  Fiche 19 : il prend aussi des initiatives (arroser quelques légumes, remplir sa cruche au puits,
+  cuisiner quand la famille a faim, ramasser du bois et des pierres : `js/engine/compagnon.js`,
+  voir `docs/grand-monde.md`) ; la Famille permet de le laisser faire ou non.
 - **Poulailler et Étable** (version 1.19) : ils ne se vident plus d'eux-mêmes. Un double appui
   sur le bâtiment (ou un appui sur sa bulle) l'y envoie (`collect`) : au Poulailler, il prend les
   œufs ; à l'Étable, il tond les moutons prêts (énergie de la tonte, comme le bouton « Tondre » ;

@@ -143,6 +143,27 @@
     "//RESERVE_DEPART": "Réserve de semences de départ : quantité par item que la famille ne mange jamais. Vide depuis la suppression de la réserve dans l'Inventaire (les semences se rachètent au Marché).",
     "RESERVE_DEPART": {}
   },
+  "//COMPAGNON": [
+    "Fiche 19 : le compagnon (le second adulte du foyer, js/engine/compagnon.js) prend de lui-même des",
+    "initiatives à la ferme, de HEURES[0] à HEURES[1] h (jamais après FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES), tant que sa jauge de faim (FAMILLE.FAIM) est d'au",
+    "moins FAIM_MIN. Pour chaque action : PAR_JOUR sorties au plus par jour, ECART_H heures de jeu entre deux",
+    "sorties, FAIM points de sa jauge par sortie (moins avec son tablier). ARROSER : PAR_FOIS légumes qui ont",
+    "soif par sortie (une plante = une sortie dans le compte du jour), l'eau du réservoir, sinon sa cruche,",
+    "qu'il remplit au puits. CUISINER : quand la jauge moyenne de la famille est sous FAIM_FAMILLE, la",
+    "première recette de RECETTES débloquée dont il a les ingrédients, à la cuisinière ; le plat va au",
+    "réfrigérateur, sinon dans la boîte à nourriture. RAMASSER : un objet de SORTES (dans cet ordre) posé",
+    "ce matin sur l'herbe, à moins de RAYON cases de l'entrée de la ferme. ABSENCE_S : une absence (jeu fermé ou",
+    "en arrière-plan) d'au moins tant de secondes le fait travailler d'un coup, sans dessin (simulateOffline) ;",
+    "une absence plus courte (recharger la page) non : sur la carte, on le voit faire."
+  ],
+  "COMPAGNON": {
+    "HEURES": [8, 18],
+    "ABSENCE_S": 60,
+    "FAIM_MIN": 30,
+    "ARROSER": { "PAR_FOIS": 3, "PAR_JOUR": 6, "ECART_H": 3, "FAIM": 2 },
+    "CUISINER": { "PAR_JOUR": 1, "ECART_H": 4, "FAIM": 4, "FAIM_FAMILLE": 70, "RECETTES": ["soupe_legumes", "ratatouille", "omelette", "omelette_champignons", "poisson_grille", "raclette", "salade_tomates", "riz_au_lait", "compote"] },
+    "RAMASSER": { "PAR_JOUR": 3, "ECART_H": 2, "FAIM": 2, "RAYON": 24, "SORTES": ["morceau_bois", "petite_pierre"] }
+  },
   "//ROBOT": [
     "Le robot de la ferme (récolte et semis automatiques, Arbre des technologies) : tous les jours",
     "à HEURE, il dresse sa liste de tâches (récolter les parcelles mûres, puis les replanter) et",

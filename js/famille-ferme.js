@@ -29,7 +29,12 @@
  *     quand il y a à faire au Poulailler, à l'Étable ou à une ruche pleine (model.aide.lieux :
  *     « ruche:<case> »), il y va, se baisse (GESTE s) et nourrit les poules, prend les œufs, le
  *     lait et la laine, récolte le miel (o.aide : tout entre
- *     dans l'inventaire ; o.gain : la bulle « +x » au-dessus de lui) ;
+ *     dans l'inventaire ; o.gain : la bulle « +x » au-dessus de lui) ; fiche 19 : il prend aussi
+ *     des initiatives (les lieux suivants : « arroser:<case> », « puits:<case> », « cuisiner »,
+ *     « ramasser:<id> », js/engine/compagnon.js) : o.lieu (js/carte/ferme/compagnon.js) dit où se
+ *     tenir et le geste (GESTES) ; il y va, fait son geste, puis o.aide fait le travail (la plante
+ *     arrosée, sa cruche pleine, le plat préparé, le bois ramassé) et la bulle le dit (« +1 💧 ») ;
+ *     une tâche sans chemin est laissée ECHEC s, il passe à la suivante ;
  *   - chacun a faim en marchant (o.marche(id, px) : le moteur compte 1 point de faim tous les
  *     FAMILLE.FAIM.PX_PAR_POINT px, js/engine/repas.js) ; quand sa jauge tombe à FAIM.SEUIL, à
  *     n'importe quelle heure, il mange (le moteur : repasStep) : sur la carte, il va au
@@ -80,6 +85,20 @@
   // poursuite dure POURSUITE s, sauter ou tourner SEUL s ; un camarade de jeu, à moins de PROCHE px
   // (on le rejoint en courant)
   const JEU = { VITE: 1.7, BOND: 1.5, SAUT: 4, RAYON: 18, TOURS: 2, POURSUITE: [6, 10], SEUL: [2, 3.5], PROCHE: 14 * T, ATTRAPE: 12 };
+  const ECHEC = 20;                        // s : une tâche du second adulte sans chemin est laissée d'autant
+
+  // Les gestes du second adulte (fiche 19), les images de son personnage (assets/personnages/
+  // cases.json), en séquence sur `dur` s : aux bêtes et à la boîte, il se baisse (ramasse_<n>) ;
+  // ses initiatives (js/carte/ferme/compagnon.js lieuCompagnon : spot.geste) : arroser un légume
+  // (la cruche penchée), puiser au puits (penché sur la margelle, comme le personnage), cuisiner à
+  // la cuisinière, ramasser du bois ou une pierre.
+  const GESTES = {
+    betes: { dur: GESTE, seq: [0, 1, 2], nom: (vue, n) => `ramasse_${n}` },
+    arroser: { dur: 1.4, seq: [0, 1, 2, 1, 2, 2], nom: (vue, n) => `arrose_${vue}_${n}` },
+    puiser: { dur: 2, seq: [0, 1, 2, 2, 1, 2, 2, 1, 0], nom: (vue, n) => `plante_${vue}_${n}` },
+    cuisiner: { dur: 2.6, seq: [0, 1, 2, 3, 2, 3, 2, 1, 0], nom: (vue, n) => `cuisine_${n}` },
+    ramasser: { dur: 1.2, seq: [0, 1, 2, 1, 2, 0], nom: (vue, n) => `ramasse_${n}` },
+  };
 
   const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -141,6 +160,7 @@
         // en file : un peu de retard au départ, un pas de côté sur le chemin
         retard: k * 0.7, cote: ((k % 3) - 1) * 6, pause: 0,
         tache: null, geste: 0, repos: 0,     // le second adulte : le lieu où il va, son geste
+        anim: GESTES.betes, echecs: new Map(), // (son geste en cours ; les tâches sans chemin : lieu → s)
         rang: -1, couche: null, drap: null,  // la nuit : son rang (son lit, o.lit), son lit s'il y dort
         faim: false, reprise: null,          // il a mangé : il va se servir (faim), puis reprend ça
         jeu: null, vite: 1, haut: 0,         // un enfant qui joue : son jeu, sa vitesse, son bond (px)
@@ -239,17 +259,30 @@
     // Les adultes travaillent-ils encore (avant FIN_TRAVAIL_ADULTES) ?
     const travaille = () => !(model && model.horaire) || heure() < model.horaire.FIN_TRAVAIL_ADULTES;
 
-    // Le second adulte : y a-t-il à faire au Poulailler ou à l'Étable ? Il y va, se baisse
-    // (m.geste), puis le jeu fait le travail (o.aide) et la bulle monte (o.gain).
+    // Où se tenir pour le lieu `l` ({ x, y, face?, flip?, geste? }) : une initiative du compagnon
+    // (o.lieu, js/carte/ferme/compagnon.js), sinon le Poulailler, l'Étable, une ruche (fermier.lieu).
+    const lieuDe = (l) => (o.lieu ? o.lieu(l) : null) || (o.fermier && o.fermier.lieu ? o.fermier.lieu(l) : null);
+
+    // Le second adulte : y a-t-il à faire au Poulailler ou à l'Étable (ou une de ses initiatives) ?
+    // Il y va, fait son geste (m.geste, m.anim), puis le jeu fait le travail (o.aide) et la bulle
+    // monte (o.gain). Une tâche sans chemin est laissée ECHEC s (m.echecs) : il essaie la suivante.
     function soccuper(m) {
       const A = model && model.aide;
       if (!A || A.id !== m.id || m.enfant || m.tache || m.repos > 0 || !o.aide || !travaille()) return false;
-      const lieu = (A.lieux || []).find((l) => o.fermier && o.fermier.lieu && o.fermier.lieu(l));
-      if (!lieu) return false;
-      const spot = o.fermier.lieu(lieu);
-      if (!aller(m, spot.x, spot.y, () => { m.face = 'cote'; m.flip = false; m.geste = reduced() ? 0.01 : GESTE; }, 'dehors')) { m.repos = REPOS; return false; }
-      m.tache = lieu;
-      return true;
+      const now = performance.now() / 1000;
+      for (const [l, t] of m.echecs) if (now - t > ECHEC) m.echecs.delete(l);
+      for (const lieu of A.lieux || []) {
+        if (m.echecs.has(lieu)) continue;
+        const spot = lieuDe(lieu);
+        if (!spot) continue;
+        const anim = GESTES[spot.geste] || GESTES.betes;
+        const fin = () => { m.face = spot.face || 'cote'; m.flip = !!spot.flip; m.anim = anim; m.geste = reduced() ? 0.01 : anim.dur; };
+        if (!aller(m, spot.x, spot.y, fin, 'dehors')) { m.echecs.set(lieu, now); m.bloque = 0; continue; }
+        m.tache = lieu;
+        return true;
+      }
+      m.repos = REPOS;
+      return false;
     }
     function finirTache(m) {
       const lieu = m.tache;
@@ -272,7 +305,7 @@
       const bloque = m.bloque;
       // (chacun sa place devant elle, d'un pas de côté s'il y a la place : ils ne se servent pas l'un dans l'autre)
       const tx = m.cote && libre(spot.x + m.cote, spot.y) && o.fermier && o.fermier.ligneLibre && o.fermier.ligneLibre(spot.x, spot.y, spot.x + m.cote, spot.y) ? spot.x + m.cote : spot.x;
-      if (!aller(m, tx, spot.y, () => { m.face = 'haut'; m.flip = false; m.geste = reduced() ? 0.01 : GESTE; }, ouVeut(m))) {
+      if (!aller(m, tx, spot.y, () => { m.face = 'haut'; m.flip = false; m.anim = GESTES.betes; m.geste = reduced() ? 0.01 : GESTE; }, ouVeut(m))) {
         m.bloque = bloque;
         return false;
       }
@@ -530,7 +563,12 @@
           if (m.geste > 0) {
             m.geste -= dt;
             if (m.geste <= 0) { m.geste = 0; finirTache(m); }
-            else { dessiner(m, `ramasse_${Math.min(2, Math.floor((1 - m.geste / GESTE) * 3))}`); continue; }
+            else {
+              const A = m.anim || GESTES.betes, k = Math.min(A.seq.length - 1, Math.floor((1 - m.geste / A.dur) * A.seq.length));
+              const nom = A.nom(m.face, A.seq[k]);
+              dessiner(m, F[nom] !== undefined ? nom : `ramasse_${Math.min(2, k)}`);
+              continue;
+            }
           }
           // (le second adulte parle avec le personnage : il s'arrête et se tourne vers lui ; son
           // chemin l'attend)
@@ -609,5 +647,5 @@
     };
   }
 
-  global.FamilleFerme = { attach, voulu, couche };
+  global.FamilleFerme = { attach, voulu, couche, GESTES };
 })(window);

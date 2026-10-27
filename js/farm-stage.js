@@ -257,6 +257,8 @@
               // le second adulte a fini au Poulailler ou à l'Étable : ce qu'il a pris, sa bulle
               aide: (lieu, done) => setTimeout(() => done(this.ctx.bridge && this.ctx.bridge.aide ? this.ctx.bridge.aide(lieu) : null), 0),
               gain: (items) => this.showGainAide(items),
+              // fiche 19 : ses initiatives (arroser, puiser, cuisiner, ramasser) : où se tenir, son geste
+              lieu: (l) => (this.lieuCompagnon ? this.lieuCompagnon(l) : null),
               // la marche donne faim (js/engine/repas.js) ; le réfrigérateur posé (sinon la boîte à
               // nourriture) : où s'y servir, devant lui
               marche: (id, px) => { if (this.ctx.bridge && this.ctx.bridge.marche) this.ctx.bridge.marche(id, px); },

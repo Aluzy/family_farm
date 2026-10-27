@@ -2876,7 +2876,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "adulte",
      "terme": "Adulte",
-     "description": "Membre de la famille. La famille en compte deux au départ, et toujours au moins un. Le second adulte s'occupe des bêtes, ce qui lui donne faim.",
+     "description": "Membre de la famille. La famille en compte deux au départ, et toujours au moins un. Le second adulte s'occupe des bêtes et, le jour, aide à la ferme de lui-même (il arrose quelques légumes, prépare un repas quand la famille a faim, ramasse du bois ou des pierres), ce qui lui donne faim ; la Famille permet de le laisser faire ou non.",
      "liens": [
       "apport_journalier",
       "famille"

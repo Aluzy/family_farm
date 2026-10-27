@@ -27,6 +27,7 @@ import { caseDuMonde, FERME_DANS_MONDE, idDuMonde, MONDE } from './monde.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
 import { nouvelEquipement } from './equipement.js';
 import { BIENVENUE, nouvelleBienvenue } from './bienvenue.js';
+import { nouveauCompagnon } from './compagnon.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -126,6 +127,9 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     equipement: nouvelEquipement(), // fiche 11 : les pièces de chaque membre, le sac (equipement.js)
     litPrincipal: null, // fiche 17 : le lit choisi par le personnage principal (blocs.js choisirLit ; null : le premier)
     bienvenue: nouvelleBienvenue(), // fiche 18 : la visite de bienvenue du deuxième jour (bienvenue.js)
+    // fiche 19 : le compagnon aide à la ferme (compagnon.js) : l'option, ce qu'il a fait aujourd'hui, sa
+    // cruche. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
+    compagnon: nouveauCompagnon(),
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),
