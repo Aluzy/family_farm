@@ -1370,3 +1370,34 @@ SwiftShader, sans carte graphique) :
   qu'il a fait aujourd'hui. Le format de sauvegarde ne change pas : `state.compagnon` manque dans une
   partie d'avant, `reparerPartie` le remet. Le joueur automatique n'en dépend pas (il passe par `tick`).
   Les tests : `tests/engine/compagnon.test.mjs`.
+- **Fiche 20 — la marche des personnages** (fait). Les cases de marche des 100 planches
+  (`assets/personnages/`, `scripts/personnage/chibi.py` : `jambes_marche`, `bras_marche`) sont
+  redessinées, avec les mêmes noms, la même taille et la même place (`cases.json` ne change pas ;
+  les autres cases restent au pixel près) : un vrai cycle de quatre images (contact, passage, contact
+  de l'autre pied, passage). De profil, les jambes sont refaites d'après les couleurs du modèle, en
+  biais de la hanche au pied, et se croisent (avant, elles s'écartaient puis revenaient sans jamais
+  passer l'une devant l'autre, et au contact les deux pieds se confondaient) ; au passage (marche et panier),
+  les deux jambes droites côte à côte, comme debout : la jambe d'appui sous le corps, l'autre juste
+  devant, son pied décollé d'un pixel, sans genou plié. De face et de dos, le talon de derrière se décolle au contact et
+  la jambe qui passe se lève de 2 px (1 pour un enfant). Le corps monte d'un pixel au passage. Les bras
+  sont refaits comme ceux des gestes (la manche du modèle, la main de sa peau : `MAINS`, `bras_marche`)
+  et se balancent à l'opposé des jambes : de profil, le bras proche nettement devant au contact d'un
+  pied, le long du corps au passage, derrière le dos au contact de l'autre (passé sur le corps, un
+  contour l'en détache ; la main du bras lointain, plus sombre, dépasse alors du ventre) ; de face et
+  de dos, les deux bras en opposition, le bras qui vient vers nous descend et s'écarte du corps, celui
+  qui s'éloigne remonte derrière la hanche (3 px d'écart entre les deux mains), et au passage ils
+  reviennent le long du corps. Un enfant a de plus petits pas et balance un peu moins les bras. Le panier d'œufs garde ses
+  mains et prend les nouvelles jambes. Sur la carte (`CarteKit.imageMarche`, `CarteKit.PAS`) : une
+  image tous les 3 px parcourus (2 pour un enfant) au lieu de 4 ; de profil, le pied posé recule
+  d'autant dans la case que le corps avance sur la carte : il ne glisse plus, à toutes les vitesses
+  (à pied, avec les bottes, pressé : les images défilent plus vite). Le départ commence par un passage,
+  la pose la plus proche de la pose debout (avant : par les jambes écartées, ou au milieu du cycle). Le
+  regard est lissé le long du chemin (`CarteKit.allure`) et retenu près de la diagonale
+  (`CarteKit.regard(dx, dy, avant)`) : sur une diagonale ou un chemin en escalier, le personnage ne bat
+  plus du profil à la face à chaque case. Le personnage (`js/fermier.js`), la famille
+  (`js/famille-ferme.js` : ses trajets, les jeux des enfants, le compagnon), les habitants
+  (`js/carte/ferme/habitants.js`), le visiteur de bienvenue (`js/carte/ferme/visite.js`) et la mine (`js/grotte.js`)
+  s'en servent. Le cocher reste assis sur son banc (ses cases `assis_*` ne changent pas). Les tests :
+  `tests/engine/marche.test.mjs` (l'image du pas, et sur les 100 planches : le pied posé recule de 3 px,
+  ou 2, par image, au passage un pied au sol et l'autre côte à côte, décollé d'un pixel, le rebond, les bras en opposition de face et de dos
+  et une main devant au contact de profil ; le regard retenu et lissé).

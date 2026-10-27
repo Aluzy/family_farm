@@ -14,7 +14,8 @@
  *   - planche(), planchePerso() : la planche d'un personnage (assets/personnages/) ;
  *   - saisie() : le joueur écrit dans un champ de la page, ou une fenêtre est ouverte (le clavier
  *     n'est pas aux cartes) ;
- *   - regard(dx, dy) : de face, de dos ou de profil selon le sens de la marche ;
+ *   - regard(dx, dy) : de face, de dos ou de profil selon le sens de la marche ; PAS,
+ *     imageMarche(), allure() : l'image du pas selon le chemin parcouru, le regard lissé (fiche 20) ;
  *   - cases(noms) : les cases d'une planche par leur nom (une table, pas une recherche par image) ;
  *   - VITESSES : la vitesse de marche de chacun, carte par carte (px/s) ;
  *   - REGION : le découpage du sol en régions (docs/grand-monde.md, étape 2) ;
@@ -184,9 +185,47 @@
     gauche: Object.freeze({ face: 'cote', flip: true }), droite: Object.freeze({ face: 'cote', flip: false }),
     bas: Object.freeze({ face: 'bas', flip: false }), haut: Object.freeze({ face: 'haut', flip: false }),
   };
-  function regard(dx, dy) {
-    if (Math.abs(dx) > Math.abs(dy) * 0.8) return dx < 0 ? REGARDS.gauche : REGARDS.droite;
+  // `avant` (facultatif : le regard qu'il a déjà) : un peu de retenue près de la diagonale (fiche
+  // 20) ; de profil, il le reste tant que le pas est plus de côté que 0,6 fois vertical ; de face ou
+  // de dos, il ne se met de profil qu'au-delà de la diagonale. Sur une diagonale, il ne bat plus
+  // d'une vue à l'autre.
+  function regard(dx, dy, avant) {
+    const seuil = !avant ? 0.8 : avant.face === 'cote' ? 0.6 : 1.05;
+    if (Math.abs(dx) > Math.abs(dy) * seuil) return dx < 0 ? REGARDS.gauche : REGARDS.droite;
     return dy > 0 ? REGARDS.bas : REGARDS.haut;
+  }
+
+  // La marche (fiche 20). Les cases marche_<vue>_0..3 des planches de personnages
+  // (scripts/personnage/chibi.py) : contact, passage, contact de l'autre pied, passage. On passe à
+  // l'image suivante tous les PAS px parcourus : de profil, le pied posé recule d'autant dans la
+  // case, le corps avance d'autant sur la carte, le pied ne glisse pas sur le sol (plus vite il va,
+  // plus vite les images défilent) ; un enfant a de plus petits pas. imageMarche(parcouru, enfant) :
+  // l'image après `parcouru` px depuis le départ ; elle commence par un passage (l'image 1, la plus
+  // proche de la pose debout), pas par les jambes écartées.
+  const PAS = { adulte: 3, enfant: 2 };
+  function imageMarche(parcouru, enfant) {
+    return (Math.floor(parcouru / (enfant ? PAS.enfant : PAS.adulte)) + 1) & 3;
+  }
+  // allure() : le regard d'un marcheur, d'après le sens de ses pas lissé sur quelques px (LISSE) :
+  // un chemin en escalier (une diagonale faite de pas droits et de pas en biais) ne le fait pas
+  // tourner à chaque case ; un vrai virage (plus de 60°), un demi-tour, il les suit tout de suite.
+  //   .pas(dx, dy, d, actuel) → { face, flip } : (dx, dy) le sens du pas, d les px parcourus,
+  //   actuel le regard qu'il a (s'il a été tourné d'ailleurs, le lissage repart de zéro).
+  const LISSE = 10;
+  function allure() {
+    let vx = 0, vy = 0, r = null;
+    return {
+      pas(dx, dy, d, actuel) {
+        const l = Math.hypot(dx, dy);
+        if (actuel && r && (actuel.face !== r.face || actuel.flip !== r.flip)) r = null;
+        if (l < 1e-6) return r || actuel || REGARDS.bas;
+        const ux = dx / l, uy = dy / l;
+        if (!r || ux * vx + uy * vy < 0.5) { vx = ux; vy = uy; }
+        else { const w = Math.min(1, (d || 0) / LISSE); vx += (ux - vx) * w; vy += (uy - vy) * w; }
+        r = regard(vx, vy, r || actuel);
+        return r;
+      },
+    };
   }
 
   // Les cases d'une planche par leur nom (la liste `frames` de son JSON) : une table faite une
@@ -318,7 +357,7 @@
   }
 
   global.CarteKit = Object.assign(global.CarteKit || {}, {
-    T, v, reduit, ratio, QUALITE, qualite, qualiteChoisie, reglages, reglerQualite, extrude, planche, planchePerso, saisie, regard, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
+    T, v, reduit, ratio, QUALITE, qualite, qualiteChoisie, reglages, reglerQualite, extrude, planche, planchePerso, saisie, regard, PAS, imageMarche, allure, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
     cycle, imageA, animTuiles, pasAnimTuiles, TEXTE, texte,
   });
 })(window);

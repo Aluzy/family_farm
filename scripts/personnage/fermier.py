@@ -522,8 +522,9 @@ def frames(figure=figure):
         F[f'idle_{vue}_0'] = figure(vue)
         F[f'idle_{vue}_1'] = figure(vue, b=1)
         for k in range(4):
-            F[f'marche_{vue}_{k}'] = figure(vue, walk=k, b=-1 if k in (1, 3) else 0,
-                                            hands=None if vue != 'cote' else ((9 - (k == 0) * 2 + (k == 2) * 2, 22), (7 + (k == 0) * 2 - (k == 2) * 2, 22)))
+            # (le corps au plus haut au passage, images 1 et 3 ; les bras se balancent : la
+            # figure les dessine, scripts/personnage/chibi.py)
+            F[f'marche_{vue}_{k}'] = figure(vue, walk=k, b=-1 if k in (1, 3) else 0)
     # labourer
     F['houe_cote_0'] = figure('cote', hands=((10, 20), (9, 21)), after=hoe(11, 21, 5, 9, [(4, 9), (4, 10), (5, 8)]))
     F['houe_cote_1'] = figure('cote', b=-1, hands=((9, 11), (8, 12)), after=hoe(9, 12, 3, 4, [(2, 4), (2, 5), (3, 3)]))
