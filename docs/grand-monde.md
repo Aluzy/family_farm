@@ -1405,3 +1405,4 @@ SwiftShader, sans carte graphique) :
   un enfant) : une image tous les `CarteKit.FOULEE[qui]` px (`qui` : 'fermier', 'grotte', 'adulte',
   'enfant'), soit `CarteKit.CADENCE` = 8 images par seconde, deux pas, à la vitesse de marche de
   chacun ; les pieds glissent un peu sur le sol, comme dans la plupart des jeux en pixel art.
+  Encore ralentie ensuite : `CarteKit.CADENCE` = 6 images par seconde, un pas et demi.

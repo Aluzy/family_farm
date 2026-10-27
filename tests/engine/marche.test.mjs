@@ -1,7 +1,7 @@
 /* ==========================================================================
    Tests : la marche des personnages (fiche 20).
    - l'image du pas suit les px parcourus (CarteKit.imageMarche) : une image tous les FOULEE px, de
-     quoi faire CADENCE (8) images par seconde à la vitesse de marche de chacun, pas plus (une marche
+     quoi faire CADENCE (6) images par seconde à la vitesse de marche de chacun, pas plus (une marche
      posée, pas frénétique), en commençant par un passage (l'image 1) ;
    - sur les planches (assets/personnages/), de profil, le pied posé recule d'autant d'une image à
      l'autre : le corps avance de PAS px, le pied reste sur place (pas de glissade) ; au passage, on
@@ -61,8 +61,8 @@ function pose(planche, nom) {
   return { talons, pieds, tete };
 }
 
-test("l'image du pas : une tous les FOULEE px (8 images par seconde), en commençant par un passage", () => {
-  assertEqual([K.PAS.adulte, K.PAS.enfant, K.CADENCE], [3, 2, 8]);
+test("l'image du pas : une tous les FOULEE px (6 images par seconde), en commençant par un passage", () => {
+  assertEqual([K.PAS.adulte, K.PAS.enfant, K.CADENCE], [3, 2, 6]);
   // à sa vitesse de marche, chacun fait CADENCE images par seconde (deux pas)
   const v = { fermier: K.VITESSES.fermier, grotte: K.VITESSES.grotte, adulte: K.VITESSES.famille.adulte, enfant: K.VITESSES.famille.enfant };
   for (const qui of Object.keys(v)) {
@@ -70,7 +70,7 @@ test("l'image du pas : une tous les FOULEE px (8 images par seconde), en commen�
     for (let t = 1; t <= 1000; t++) { const k = K.imageMarche(v[qui] * t / 1000, qui); if (k !== avant) changements++; avant = k; }
     assertEqual(changements, K.CADENCE, `${qui} : images par seconde`);
   }
-  const f = K.FOULEE.enfant;   // 4 px
+  const f = K.FOULEE.enfant;
   assertEqual([0, f - 0.1, f, 2 * f, 3 * f, 4 * f].map((d) => K.imageMarche(d, 'enfant')), [1, 1, 2, 3, 0, 1]);
   assertEqual(K.imageMarche(0), K.imageMarche(0, 'adulte'));
 });

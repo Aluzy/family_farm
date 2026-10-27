@@ -199,13 +199,13 @@
   // (scripts/personnage/chibi.py) : contact, passage, contact de l'autre pied, passage. De profil,
   // le pied posé recule de PAS px d'une image à l'autre (un enfant a de plus petits pas). On passe à
   // l'image suivante tous les FOULEE[qui] px parcourus : de quoi faire CADENCE images par seconde à
-  // la vitesse de marche de chacun (VITESSES), deux pas par seconde, une allure posée (à une image
+  // la vitesse de marche de chacun (VITESSES), un pas et demi par seconde, une allure posée (à une image
   // tous les PAS px, le pied ne glissait pas mais la marche était frénétique) ; plus vite il va,
   // plus vite les images défilent. imageMarche(parcouru, qui) : l'image après `parcouru` px depuis
   // le départ, `qui` le marcheur ('fermier', 'grotte', 'adulte' par défaut ou 'enfant') ; elle
   // commence par un passage (l'image 1, la plus proche de la pose debout), pas par les jambes écartées.
   const PAS = { adulte: 3, enfant: 2 };
-  const CADENCE = 8;
+  const CADENCE = 6;
   function imageMarche(parcouru, qui) {
     return (Math.floor(parcouru / FOULEE[qui || 'adulte']) + 1) & 3;
   }
