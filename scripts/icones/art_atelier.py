@@ -263,6 +263,26 @@ ICONS = {
         '.....mmmmmm.....',
         '................',
     ],
+    # candélabre (fiche 15) : trois bougies allumées dans leurs bobèches, deux bras en volute, la
+    # tige à son nœud et le pied de fer forgé
+    '🕯': [
+        '.......Y........',
+        '......yYy.......',
+        '.......wv.......',
+        '..Y....wv....Y..',
+        '.yYy...wv...yYy.',
+        '..wv...wv...wv..',
+        '..wv...ev...wv..',
+        '.mnnm.mnnm.mnnm.',
+        '..mnnnnpnnnnnm..',
+        '...mm..pm..mm...',
+        '.......pm.......',
+        '......mpnm......',
+        '.......pm.......',
+        '.......nm.......',
+        '.....mnpnnm.....',
+        '....mm....mm....',
+    ],
     # paillasse : un sac de toile bourré de paille, posé au sol
     '🛏': [
         '................',
