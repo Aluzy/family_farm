@@ -53,7 +53,7 @@
     clochette: ["animaux/clochette"],
     mouton: ["animaux/mouton_1", "animaux/mouton_2", "animaux/mouton_3", "animaux/mouton_4", "animaux/mouton_5", "animaux/mouton_6"],
     coq: ["animaux/coq_1", "animaux/coq_2", "animaux/coq_3"],
-    chat: ["animaux/chat_1", "animaux/chat_2"],
+    chat: ["animaux/chat_1", "animaux/chat_2", "animaux/chat_3"],
     ronron: ["animaux/ronron"],
     chien: ["animaux/chien_1", "animaux/chien_2", "animaux/chien_3"],
     cheval: ["animaux/cheval_1", "animaux/cheval_2", "animaux/cheval_3"],
@@ -72,6 +72,7 @@
     dauphin: ["faune/dauphin"],
     lievre: ["faune/lievre"],
     bouquetin: ["faune/bouquetin"],
+    renard: ["faune/renard_1", "faune/renard_2", "faune/renard_3"],
     hache: ["outils/hache_1", "outils/hache_2", "outils/hache_3"],
     arbre_tombe: ["outils/arbre_tombe"],
     pioche: ["outils/pioche_1", "outils/pioche_2", "outils/pioche_3"],
@@ -141,7 +142,7 @@
     arbre_tombe: ['effets', 0.85], dodo: ['interface', 0.45], echelle: ['effets', 0.6], ouvre: ['interface', 0.35],
     ferme: ['interface', 0.3], onglet: ['interface', 0.35], info: ['interface', 0.3], niveau: ['interface', 0.6],
     chapitre: ['interface', 0.6], techno: ['interface', 0.55], cloche: ['interface', 0.45], coq: ['monde', 0.55],
-    clochette: ['monde', 0.35], poussins: ['monde', 0.3], ebrouement: ['monde', 0.5],
+    clochette: ['monde', 0.35], poussins: ['monde', 0.3], ebrouement: ['monde', 0.5], renard: ['monde', 0.6],
   };
   const DUCK = new Set(['niveau', 'chapitre', 'techno', 'arbre_tombe']);   // la musique s'efface un instant
 
@@ -434,7 +435,10 @@
   const SALUT_CASES = 7, ENCLOS_PORTEE = 14;
   const CRI = { aigle: ['aigle', 1], mouette: ['aigle', 1.45], cygne: ['cygne', 1], canard: ['cygne', 1.35], ecureuil: ['ecureuil', 1],
     marmotte: ['marmotte', 1], dauphin: ['dauphin', 1], bouquetin: ['bouquetin', 1], lievre: ['lievre', 1], lapin: ['lievre', 1.15],
-    renard: ['chien', 1.5], chevreuil: ['lievre', 0.8], perdrix: ['oiseau', 0.8] };
+    renard: ['renard', 1.5], chevreuil: ['lievre', 0.8], perdrix: ['oiseau', 0.8] };
+  // le chat et le chien de la famille : l'attente entre deux cris (s), la portée (cases), et la chance
+  // d'un second cri juste après
+  const COMPAGNON = { chien: { attente: [30, 80], portee: 24, encore: 0.4 }, chat: { attente: [40, 100], portee: 22, encore: 0.15 } };
 
   function directeur() {
     if (!ctx || ctx.state !== 'running') return;
@@ -547,11 +551,22 @@
         if (pb.d < ENCLOS_PORTEE + 4 && bientot('bete:' + k, a1, a2)) { const o = une(); joue(E.cri, { x: o.x, y: o.y, portee: 20, ecart: 2 }); }
         if (E.plus && pb.d < 10 && bientot('plus:' + k, E.plus[1], E.plus[2])) { const o = une(); joue(E.plus[0], { x: o.x, y: o.y, portee: 14, ecart: 2 }); }
       }
-      // le chat et le chien de la famille
+      // le chat et le chien de la famille, de temps en temps, le jour : ni la nuit, ni pendant qu'ils
+      // dorment (le chien n'a pas de toit, il dort sur place : `nuit` du compagnon ne vaut que pour le
+      // chat, l'heure compte pour les deux). Le chien porte loin, et aboie parfois deux fois de suite.
       const st = FS.ambient && FS.ambient.stats ? FS.ambient.stats() : null;
-      if (st && st.compagnons) for (const cp of st.compagnons) {
+      const eveilles = {};
+      if (st && st.compagnons && !nuit && !dort) for (const cp of st.compagnons) {
         const sorte = /chien/.test(cp.planche) ? 'chien' : /chat/.test(cp.planche) ? 'chat' : null;
-        if (sorte && !cp.nuit && bientot('compagnon:' + sorte, 40, 110)) joue(sorte, { x: cp.x, y: cp.y, portee: 16, ecart: 5 });
+        if (sorte && !cp.nuit && cp.etat !== 'dort' && cp.etat !== 'sieste') (eveilles[sorte] = eveilles[sorte] || []).push(cp);
+      }
+      for (const sorte in COMPAGNON) {
+        const C = COMPAGNON[sorte], qui = eveilles[sorte];
+        if (!qui) { delete etat.prochain['compagnon:' + sorte]; continue; }
+        if (!bientot('compagnon:' + sorte, C.attente[0], C.attente[1])) continue;
+        const cp = qui[(Math.random() * qui.length) | 0];
+        joue(sorte, { x: cp.x, y: cp.y, portee: C.portee, ecart: 5 });
+        if (Math.random() < C.encore) joue(sorte, { x: cp.x, y: cp.y, portee: C.portee, delai: hasard(0.8, 1.4), ecart: 0 });
       }
       // la faune du grand monde, près de la vue
       if (FS.fauneEtat && FS.fauneEtat.betes) for (const bt of FS.fauneEtat.betes) {

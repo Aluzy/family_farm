@@ -1,9 +1,10 @@
-"""Les enregistrements libres (CC0) de l'arrosoir, de la hulotte et de la grenouille : téléchargés, coupés, égalisés.
+"""Les enregistrements libres (CC0) de l'arrosoir, de la hulotte, de la grenouille, du chat et du chien : téléchargés,
+coupés, égalisés.
 
 - l'arrosoir : « Watering with a Watering Can » de Bricklover sur Freesound (CC0). L'original
   (MP3) demande un compte : on prend l'aperçu de haute qualité que Freesound publie (Ogg 192 kb/s),
   bien assez pour un bruit d'une seconde et demie ;
-- la hulotte et la grenouille : BigSoundBank (https://bigsoundbank.com, Joseph Sardin et quelques
+- la hulotte, la grenouille, le chat et le chien : BigSoundBank (https://bigsoundbank.com, Joseph Sardin et quelques
   contributeurs), qui publie ses prises de son sous CC0, en AIFF sans perte.
 
 CC0 : aucune obligation ; les auteurs sont tout de même cités dans assets/son/CREDITS.md. Pour
@@ -56,6 +57,22 @@ SONS = {
     # silence pour que la reprise ne s'entende pas, au niveau de l'ancienne boucle synthétisée
     'grenouilles': bsb('0819', 'one-frog-s0819.html', 'Joseph Sardin', "Une grenouille qui chante près d'une petite mare, la nuit",
                    [(1.2, 12.6)], (0.02, 0.02), -21),
+    # le chat de la famille : trois miaulements d'un même chat domestique, pris de près dans une pièce
+    # calme (le fond est à plus de 50 dB sous le cri), au niveau des bêtes de la ferme
+    'chat_1': bsb('1902', 'meow-cat-14-s1902.html', 'Joseph Sardin', "Chat domestique : un « miaou » qui demande",
+                  [(0.07, 1.75)], (0.02, 0.3), -15),
+    'chat_2': bsb('1890', 'meow-cat-2-s1890.html', 'Joseph Sardin', "Chat domestique : un petit roulement, puis « miaou »",
+                  [(0.05, 2.2)], (0.02, 0.2), -15),
+    'chat_3': bsb('1889', 'meow-cat-1-s1889.html', 'Joseph Sardin', "Chat domestique : un long « miaaou »",
+                  [(1.29, 2.95)], (0.01, 0.2), -15),
+    # le chien de la famille : un chien de traîneau, seul, enregistré dehors (un chien de travail, pas
+    # un molosse) : deux « wouf-wouf » et un aboiement seul, au niveau des bêtes de la ferme
+    'chien_1': bsb('2954', 'barking-dog-2-s2954.html', 'Joseph Sardin', "Chien de traîneau, seul dehors : deux aboiements",
+                   [(0.03, 0.95)], (0.01, 0.3), -14),
+    'chien_2': bsb('2954', 'barking-dog-2-s2954.html', 'Joseph Sardin', "Chien de traîneau, seul dehors : un aboiement",
+                   [(4.99, 5.70)], (0.01, 0.25), -14),
+    'chien_3': bsb('2954', 'barking-dog-2-s2954.html', 'Joseph Sardin', "Chien de traîneau, seul dehors : deux aboiements",
+                   [(11.74, 12.70)], (0.01, 0.3), -14),
 }
 
 

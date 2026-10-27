@@ -2,7 +2,7 @@
 
 Tous les sons du jeu sont synthétisés par scripts/son/, sauf ces vrais enregistrements libres de droits :
 les bêtes de la ferme, trouvées dans des jeux libres qui documentent leur provenance (Stendhal, VoxeLibre, 0 A.D.),
-l'arrosoir (Freesound), la hulotte et la grenouille (BigSoundBank).
+l'arrosoir (Freesound), la hulotte, la grenouille, le chat et le chien de la famille (BigSoundBank).
 CC0 et domaine public : aucune obligation. CC BY : citer l'auteur. CC BY-SA : citer l'auteur, et le fichier
 (et ses modifications) reste sous CC BY-SA (https://creativecommons.org/licenses/by-sa/3.0/).
 
@@ -32,6 +32,12 @@ CC0 et domaine public : aucune obligation. CC BY : citer l'auteur. CC BY-SA : ci
 | animaux/mouton_4 | Bêlement éraillé | cognito perceptu | CC0 | https://freesound.org/people/cognito%20perceptu/sounds/88423/ |
 | animaux/mouton_5 | Agneau | cognito perceptu | CC0 | https://freesound.org/people/cognito%20perceptu/sounds/88423/ |
 | animaux/mouton_6 | Agneau (bonus) | cognito perceptu | CC0 | https://freesound.org/people/cognito%20perceptu/sounds/88423/ |
+| animaux/chat_1 | Chat domestique : un « miaou » qui demande | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/meow-cat-14-s1902.html |
+| animaux/chat_2 | Chat domestique : un petit roulement, puis « miaou » | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/meow-cat-2-s1890.html |
+| animaux/chat_3 | Chat domestique : un long « miaaou » | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/meow-cat-1-s1889.html |
+| animaux/chien_1 | Chien de traîneau, seul dehors : deux aboiements | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/barking-dog-2-s2954.html |
+| animaux/chien_2 | Chien de traîneau, seul dehors : un aboiement | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/barking-dog-2-s2954.html |
+| animaux/chien_3 | Chien de traîneau, seul dehors : deux aboiements | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/barking-dog-2-s2954.html |
 | animaux/cheval_1 | Hennissement | foxen10 | CC0 | https://freesound.org/people/foxen10/sounds/149024/ |
 | animaux/cheval_2 | Hennissement plus aigu | Jonathan Shaw (InspectorJ) | CC BY 3.0 | https://freesound.org/people/InspectorJ/sounds/419231/ |
 | animaux/cheval_3 | Petit rire grave (« hu-hu-hu ») | Wildfire Games (0 A.D.) | CC BY-SA 3.0 | https://www.wildfiregames.com/ |
