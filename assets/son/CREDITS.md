@@ -2,12 +2,13 @@
 
 Tous les sons du jeu sont synthétisés par scripts/son/, sauf ces vrais enregistrements libres de droits :
 les bêtes de la ferme, trouvées dans des jeux libres qui documentent leur provenance (Stendhal, VoxeLibre, 0 A.D.),
-l'arrosoir (Freesound) et la hulotte (BigSoundBank).
+l'arrosoir (Freesound), la hulotte et la grenouille (BigSoundBank).
 CC0 et domaine public : aucune obligation. CC BY : citer l'auteur. CC BY-SA : citer l'auteur, et le fichier
 (et ses modifications) reste sous CC BY-SA (https://creativecommons.org/licenses/by-sa/3.0/).
 
 | Fichier du jeu | Son | Auteur | Licence | Source |
 |---|---|---|---|---|
+| ambiance/grenouilles | Une grenouille qui chante près d'une petite mare, la nuit | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/one-frog-s0819.html |
 | nature/hibou_1 | Hulotte : « hou… » puis « hou-hou-houuu » | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/tawny-owl-1-s1763.html |
 | nature/hibou_2 | Hulotte : « hou… » puis « hou-hou-houuu » | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/tawny-owl-2-s1764.html |
 | nature/hibou_3 | Hulotte : un « houuu » seul | Le tiroir du fond (BigSoundBank) | CC0 | https://bigsoundbank.com/tawny-owl-3-s3459.html |

@@ -20,7 +20,7 @@ T = {
  'grillons_soir': ('ambiance', g(f'{M1}/ambient/crickets_dusk_01.wav')),
  'grillons_nuit': ('ambiance', g(f'{M1}/ambient/crickets_night_01.wav')),
  'vent': ('ambiance', g(f'{M1}/ambient/wind_light.wav')),
- 'grenouilles': ('ambiance', g(f'{M2}/ambient/frogs_night_01.wav')),
+ 'grenouilles': ('ambiance', g(f'{REC}/grenouilles.flac')),     # une vraie grenouille, la nuit (libres.py)
  'foret': ('ambiance', g(f'{M2}/ambient/forest_loop.wav')),
  'montagne': ('ambiance', g(f'{M2}/ambient/mountain_wind_loop.wav')),
  'hameau': ('ambiance', g(f'{M2}/ambient/village_loop.wav')),
@@ -138,7 +138,7 @@ for key, (folder, srcs) in T.items():
 cred = json.load(open(f'{REC}/credits.json', encoding='utf-8'))
 lignes = ['# Crédits des sons', '', "Tous les sons du jeu sont synthétisés par scripts/son/, sauf ces vrais enregistrements libres de droits :",
           "les bêtes de la ferme, trouvées dans des jeux libres qui documentent leur provenance (Stendhal, VoxeLibre, 0 A.D.),",
-          "l'arrosoir (Freesound) et la hulotte (BigSoundBank).",
+          "l'arrosoir (Freesound), la hulotte et la grenouille (BigSoundBank).",
           'CC0 et domaine public : aucune obligation. CC BY : citer l\'auteur. CC BY-SA : citer l\'auteur, et le fichier',
           '(et ses modifications) reste sous CC BY-SA (https://creativecommons.org/licenses/by-sa/3.0/).', '',
           '| Fichier du jeu | Son | Auteur | Licence | Source |', '|---|---|---|---|---|']

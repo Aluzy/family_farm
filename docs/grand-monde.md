@@ -1167,5 +1167,6 @@ SwiftShader, sans carte graphique) :
   entiers « hou… hou-hou-houuu », deux « hou » seuls ; BigSoundBank, CC0) remplace la chouette
   synthétisée : une à deux minutes entre deux chants, 20 à 45 s en forêt ou à sa lisière, d'où elle
   chante. Les boucles d'eau (`mer`, `lac`, `riviere`, la mare de la ferme) sont retirées : plus rien ne
-  monte en approchant d'une rive ; restent les pas dans l'eau et les grenouilles la nuit. Les
+  monte en approchant d'une rive ; restent les pas dans l'eau et les grenouilles la nuit (une vraie
+  grenouille, « One frog » de Joseph Sardin, BigSoundBank, CC0, en boucle de 11,4 s). Les
   enregistrements sont coupés et égalisés par `scripts/son/libres.py` (voir `docs/son.md`).

@@ -8,9 +8,9 @@
  * le personnage, les bâtiments en marche, les bêtes proches) pour régler les ambiances.
  *
  * Les sons sont dans assets/son/ (.ogg, et .m4a pour Safari), synthétisés pour le jeu par
- * scripts/son/, sauf de vrais enregistrements libres de droits : les bêtes de la ferme, l'arrosoir
- * et la hulotte (voir docs/son.md et assets/son/CREDITS.md). Les réglages sont ceux de l'appareil (localStorage
- * « ferme-son »), dans ⚙️ Options › Son.
+ * scripts/son/, sauf de vrais enregistrements libres de droits : les bêtes de la ferme, l'arrosoir,
+ * la hulotte et la grenouille (voir docs/son.md et assets/son/CREDITS.md). Les réglages sont ceux
+ * de l'appareil (localStorage « ferme-son »), dans ⚙️ Options › Son.
  *
  * Bus : musique, nature (ambiances), monde (bâtiments, bêtes, machines), effets (gestes),
  * interface. Les distances sont en pixels de la carte (T = 16 px la case).

@@ -1,10 +1,10 @@
-"""Les enregistrements libres (CC0) de l'arrosoir et de la hulotte : téléchargés, coupés, égalisés.
+"""Les enregistrements libres (CC0) de l'arrosoir, de la hulotte et de la grenouille : téléchargés, coupés, égalisés.
 
 - l'arrosoir : « Watering with a Watering Can » de Bricklover sur Freesound (CC0). L'original
   (MP3) demande un compte : on prend l'aperçu de haute qualité que Freesound publie (Ogg 192 kb/s),
   bien assez pour un bruit d'une seconde et demie ;
-- la hulotte : BigSoundBank (https://bigsoundbank.com, Joseph Sardin et quelques contributeurs),
-  qui publie ses prises de son sous CC0, en AIFF sans perte.
+- la hulotte et la grenouille : BigSoundBank (https://bigsoundbank.com, Joseph Sardin et quelques
+  contributeurs), qui publie ses prises de son sous CC0, en AIFF sans perte.
 
 CC0 : aucune obligation ; les auteurs sont tout de même cités dans assets/son/CREDITS.md. Pour
 chaque son du jeu, ce script :
@@ -33,7 +33,7 @@ UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chr
 ARROSOIR = dict(url='https://cdn.freesound.org/previews/532/532890_8919922-hq.ogg',
                 source='https://freesound.org/people/Bricklover/sounds/532890/', auteur='Bricklover (Freesound)',
                 titre="Arrosoir versé sur la terre", fondus=(0.06, 0.5), niveau=-17, passe_haut=120)
-def hulotte(n, page, auteur, titre, coupes, fondus, niveau):
+def bsb(n, page, auteur, titre, coupes, fondus, niveau):
     return dict(url=f'https://bigsoundbank.com/UPLOAD/aiff/{n}.aiff', source='https://bigsoundbank.com/' + page,
                 auteur=auteur + ' (BigSoundBank)', titre=titre, coupes=coupes, fondus=fondus, niveau=niveau, passe_haut=60)
 
@@ -44,14 +44,18 @@ SONS = {
     'arrosage_2': dict(ARROSOIR, coupes=[(4.2, 5.6)]),
     'arrosage_3': dict(ARROSOIR, coupes=[(7.0, 8.4)]),
     # la hulotte (Strix aluco), la nuit : deux chants entiers, deux « hou » seuls
-    'hibou_1': hulotte('1763', 'tawny-owl-1-s1763.html', 'Joseph Sardin', "Hulotte : « hou… » puis « hou-hou-houuu »",
-                       [(0.1, 1.9), (3.9, 7.8)], (0.02, 0.3), -12),
-    'hibou_2': hulotte('1764', 'tawny-owl-2-s1764.html', 'Joseph Sardin', "Hulotte : « hou… » puis « hou-hou-houuu »",
-                       [(0.0, 1.9), (3.9, 7.5)], (0.02, 0.3), -12),
-    'hibou_3': hulotte('3459', 'tawny-owl-3-s3459.html', 'Le tiroir du fond', "Hulotte : un « houuu » seul",
-                       [(0.0, 1.31)], (0.02, 0.1), -14),
-    'hibou_4': hulotte('3460', 'tawny-owl-4-s3460.html', 'Le tiroir du fond', "Hulotte : un « hou-houuu » qui monte",
-                       [(0.0, 1.37)], (0.02, 0.1), -14),
+    'hibou_1': bsb('1763', 'tawny-owl-1-s1763.html', 'Joseph Sardin', "Hulotte : « hou… » puis « hou-hou-houuu »",
+                   [(0.1, 1.9), (3.9, 7.8)], (0.02, 0.3), -12),
+    'hibou_2': bsb('1764', 'tawny-owl-2-s1764.html', 'Joseph Sardin', "Hulotte : « hou… » puis « hou-hou-houuu »",
+                   [(0.0, 1.9), (3.9, 7.5)], (0.02, 0.3), -12),
+    'hibou_3': bsb('3459', 'tawny-owl-3-s3459.html', 'Le tiroir du fond', "Hulotte : un « houuu » seul",
+                   [(0.0, 1.31)], (0.02, 0.1), -14),
+    'hibou_4': bsb('3460', 'tawny-owl-4-s3460.html', 'Le tiroir du fond', "Hulotte : un « hou-houuu » qui monte",
+                   [(0.0, 1.37)], (0.02, 0.1), -14),
+    # la grenouille près des mares, la nuit : une boucle (le jeu la répète), coupée de silence à
+    # silence pour que la reprise ne s'entende pas, au niveau de l'ancienne boucle synthétisée
+    'grenouilles': bsb('0819', 'one-frog-s0819.html', 'Joseph Sardin', "Une grenouille qui chante près d'une petite mare, la nuit",
+                   [(1.2, 12.6)], (0.02, 0.02), -21),
 }
 
 
