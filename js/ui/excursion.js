@@ -5,6 +5,7 @@ import { mainCharacter, setupPending } from '../engine/depart.js';
 import { memberPerso } from '../engine/family.js';
 import { depositOreNotebook, hitsNeeded, mineOre } from '../engine/outils.js';
 import { techFlag } from '../engine/techtree.js';
+import { lumiereGrotte } from '../engine/equipement.js';
 import { addItem } from '../engine/inventory.js';
 import { axeMode, godMode, hoeMode, pickMode, rodMode, state } from './store.js';
 import { persistState } from './storage.js';
@@ -136,6 +137,8 @@ window.FermeHote = {
   verser: (carnet) => joue(depositOreNotebook(state, carnet)),
   coups: (base) => hitsNeeded(state, base),
   tech: (cle) => techFlag(state, cle),
+  // fiche 11 : la lumière que donne l'équipement du personnage (le casque à lampe), en %
+  lumiere: () => lumiereGrotte(state),
   // une cueillette (le champignon lumineux) va dans l'inventaire ({ ok, item, n } ou { ok: false })
   ramasser: ramasse,
   // les réglages de jeu de la grotte `id` (data/grotte.json, GROTTE : la mine de la ferme ; GROTTE.MONDE,

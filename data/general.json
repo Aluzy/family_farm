@@ -240,9 +240,10 @@
     "déplacement, le ramassage, l'Atelier, la faux, la hache et la pioche, l'abri (des murs en bois, une",
     "porte, une paillasse par membre de la famille), la houe, les graines offertes (GRAINES), LABOURS terres",
     "à labourer, le semis, le puits et la cruche, l'arrosage ; puis le grand monde (fiche 9b) : la carte du monde,",
-    "la sortie de la ferme, une prise dans le monde, la calèche, un hameau choisi pour la boussole et atteint."
+    "la sortie de la ferme, une prise dans le monde, la calèche, un hameau choisi pour la boussole et atteint. Fiche 11 : à l'étape",
+    "de la carte du monde, un premier sac à provisions (SAC : l'objet, déjà porté, et ce qu'il contient) est offert."
   ],
-  "DIDACTICIEL": { "GRAINES": { "graine_carotte": 6 }, "LABOURS": 3 },
+  "DIDACTICIEL": { "GRAINES": { "graine_carotte": 6 }, "LABOURS": 3, "SAC": { "objet": "sac_petit", "provisions": { "baies": 4 } } },
   "//BONHEUR": [
     "Bonheur de la famille (js/engine/bonheur.js ; docs/conception.md §6.12).",
     "BONHEUR : une jauge par membre, de 0 à MAX ; un nouveau membre arrive à DEPART.",

@@ -195,7 +195,8 @@
     const ROULE = /^(marche|panier|idle)_(bas|haut|cote)_\d$/;
     let roule = 0, rx = 0, ry = 0;
     const enSelle = () => !!(monture() && selles[monture()] && shown && !home && !where);
-    const vitesse = () => (!enSelle() ? 1 : monture() === 'cheval' ? ctx.chevalVitesse || 1 : K.TRIPORTEUR.vitesse);
+    // (à pied : ctx.pied, ses bottes dans le marais et la montagne, fiche 11 : modèle.pied)
+    const vitesse = () => (!enSelle() ? ctx.pied || 1 : monture() === 'cheval' ? ctx.chevalVitesse || 1 : K.TRIPORTEUR.vitesse);
     let drawn = '';
     // le son des pas (js/son.js) : un pas aux images 0 et 2 de la marche ; en selle, les sabots
     // ou le pédalier, tant qu'il avance
@@ -475,6 +476,7 @@
       ctx.triporteur = !!raw.triporteur;
       ctx.cheval = !!raw.cheval;
       ctx.chevalVitesse = raw.chevalVitesse || 1;
+      ctx.pied = raw.pied || 1;
       ctx.coucher = !!raw.coucher;
       ctx.dort = !!raw.dort;
       pilesNow = new Map((raw.ramasser || []).map((p) => [p.id, p]));

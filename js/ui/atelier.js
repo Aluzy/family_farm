@@ -15,6 +15,8 @@ import { hasTool, toolDef } from '../engine/outils.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { chevalPossede } from '../engine/cheval.js';
 import { categorieBloc } from '../engine/blocs.js';
+import { estEquipement } from '../engine/equipement.js';
+import { effetTexte } from './fiche-membre.js';
 import { sortirBotte, verserFibres } from '../engine/botteleuse.js';
 import { verserGrain } from '../engine/distributeur.js';
 import { asleep } from '../engine/night.js';
@@ -97,6 +99,8 @@ const GROUPES = [
 const ONGLETS = () => [
   { id: 'outils', nom: 'Outils', icone: '⛏️' },
   { id: 'materiaux', nom: 'Matériaux', icone: DATA.OBJETS.planche.icone },
+  // fiche 11 : l'équipement de la famille et les sacs à provisions (js/engine/equipement.js)
+  { id: 'equipement', nom: 'Équipement', icone: DATA.OBJETS.sac_petit.icone },
   ...Object.entries(DATA.ATELIER.CATEGORIES).map(([id, c]) => ({ id, nom: c.nom, icone: c.icone })),
 ];
 
@@ -116,6 +120,7 @@ export function ongletRecette(id) {
   if (r.outil) return 'outils';
   // (fiche 7c : les bêtes qu'on attire, le cheval : l'Élevage)
   if (r.animal || r.cheval) return 'elevage';
+  if (estEquipement(sortieDe(id))) return 'equipement';
   const b = blocDe(id);
   return (b && categorieBloc(b)) || 'materiaux';
 }
@@ -200,6 +205,7 @@ function detailHtml(id) {
       <div class="atelier-detail-txt">
         <span class="atelier-detail-nom">${nom(id)}${garde ? ` <span class="muted">(${garde})</span>` : ''}</span>
         <span class="chips">${besoinHtml(r.entrees)}<span class="atelier-fleche" aria-hidden="true">➜</span>${donne}</span>
+        ${estEquipement(sortieDe(id)) ? `<span class="muted">${effetTexte(sortieDe(id))} Se porte depuis la Famille.</span>` : ''}
       </div>
       <button type="button" class="btn${st.ok ? ' primary' : ''}" data-action="atelier-fabriquer" data-recette="${id}"${st.ok ? '' : ` disabled title="${st.raison}"`}>Fabriquer</button>
     </div>`;

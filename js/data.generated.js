@@ -102,7 +102,7 @@ export const RAW_DATA = {
   "AUTONOMIE": { "HISTORIQUE_MAX": 1000, "GRAPHIQUE_NUITS": 20 },
   "HORS_LIGNE": { "MAX_S": 28800, "PAS_S": 5, "USURE": false, "ECRAN_S": 60 },
   "AIDE": { "ETAPES": ["eau", "potager", "dormir"] },
-  "DIDACTICIEL": { "GRAINES": { "graine_carotte": 6 }, "LABOURS": 3 },
+  "DIDACTICIEL": { "GRAINES": { "graine_carotte": 6 }, "LABOURS": 3, "SAC": { "objet": "sac_petit", "provisions": { "baies": 4 } } },
   "BONHEUR": {
     "DEPART": 60,
     "MAX": 100,
@@ -287,6 +287,15 @@ export const RAW_DATA = {
     "porte_blanche": { "nom": "Porte blanche", "icone": "🚪‍⬜", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "paillasse": { "nom": "Paillasse", "icone": "🛏️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "boite_nourriture": { "nom": "Boîte à nourriture", "icone": "🧺", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "casque_lampe": { "nom": "Casque à lampe", "icone": "⛑‍💡", "prix": 30, "mangeable": false, "categorie": "équipement", "rachetable": false },
+    "chapeau_paille": { "nom": "Chapeau de paille", "icone": "👒‍🌾", "prix": 6, "mangeable": false, "categorie": "équipement", "rachetable": false },
+    "bottes": { "nom": "Bottes de marche", "icone": "👢‍🟫", "prix": 10, "mangeable": false, "categorie": "équipement", "rachetable": false },
+    "gants_travail": { "nom": "Gants de travail", "icone": "🧤‍🟫", "prix": 14, "mangeable": false, "categorie": "équipement", "rachetable": false },
+    "tablier": { "nom": "Tablier de jardinier", "icone": "🥼‍🌱", "prix": 8, "mangeable": false, "categorie": "équipement", "rachetable": false },
+    "salopette": { "nom": "Salopette solide", "icone": "👖‍🔧", "prix": 34, "mangeable": false, "categorie": "équipement", "rachetable": false },
+    "manteau_chaud": { "nom": "Manteau chaud", "icone": "🧥‍❄", "prix": 36, "mangeable": false, "categorie": "équipement", "rachetable": false },
+    "sac_petit": { "nom": "Petit sac à provisions", "icone": "🎒‍🌿", "prix": 5, "mangeable": false, "categorie": "équipement", "rachetable": false },
+    "sac_grand": { "nom": "Grand sac à provisions", "icone": "🎒‍🧶", "prix": 20, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "refrigerateur": { "nom": "Réfrigérateur", "icone": "🧊", "prix": 120, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_chaise": { "nom": "Chaise", "icone": "🪑", "prix": 7, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_table": { "nom": "Table", "icone": "🍽️", "prix": 22, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -756,6 +765,19 @@ export const RAW_DATA = {
         "entrees": { "corde": 2, "carotte": 6, "pomme": 4 },
         "cheval": true,
         "debloque": "ecurie"
+      },
+      "sac_petit": { "entrees": { "fibre": 6 }, "sortie": { "sac_petit": 1 } },
+      "sac_grand": { "entrees": { "laine": 3, "fibre": 6 }, "sortie": { "sac_grand": 1 }, "debloque": "moutons" },
+      "chapeau_paille": { "entrees": { "paille": 4, "fibre": 1 }, "sortie": { "chapeau_paille": 1 } },
+      "tablier": { "entrees": { "fibre": 8 }, "sortie": { "tablier": 1 } },
+      "bottes": { "entrees": { "planche": 1, "fibre": 6 }, "sortie": { "bottes": 1 } },
+      "gants_travail": { "entrees": { "laine": 2, "fibre": 3 }, "sortie": { "gants_travail": 1 }, "debloque": "moutons" },
+      "manteau_chaud": { "entrees": { "laine": 6, "fibre": 2 }, "sortie": { "manteau_chaud": 1 }, "debloque": "moutons" },
+      "salopette": { "entrees": { "laine": 4, "fibre": 4, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "debloque": "moutons" },
+      "casque_lampe": {
+        "entrees": { "lingot_fer": 2, "lingot_cuivre": 1, "champignon_lumineux": 2 },
+        "sortie": { "casque_lampe": 1 },
+        "debloque": "four"
       },
       "ruche": { "entrees": { "planche": 4, "fibre": 8, "pierre": 1 }, "sortie": { "ruche": 1 } },
       "bac_fleurs": { "entrees": { "planche": 3, "pierre": 2, "fibre": 1 }, "sortie": { "bac_fleurs": 1 } },
@@ -2622,6 +2644,31 @@ export const RAW_DATA = {
     "plante_orchidee": { "nom": "Orchidée", "piece": "chambre", "prix": 35, "bonheur": 2 },
     "plante_aloe": { "nom": "Aloe vera", "piece": "cuisine", "prix": 20, "bonheur": 1 },
     "plante_bonsai": { "nom": "Bonsaï", "piece": "salon", "prix": 70, "bonheur": 3 }
+  },
+  "EQUIPEMENT": {
+    "CASES": 3,
+    "PLACES": { "tete": "Tête", "corps": "Corps", "mains": "Mains", "pieds": "Pieds" },
+    "PIECES": {
+      "casque_lampe": { "place": "tete", "enfant": false, "grotte": 140, "vueNuit": 150 },
+      "chapeau_paille": {
+        "place": "tete",
+        "enfant": true,
+        "economie": { "labourer": 10, "planter": 10, "arroser": 10, "recolter": 10, "cueillir": 10, "faucher": 10 },
+        "soleil": [11, 17]
+      },
+      "bottes": { "place": "pieds", "enfant": true, "pied": { "marais": 130, "montagne": 120, "sommet": 120 }, "faimMarche": 25 },
+      "gants_travail": { "place": "mains", "enfant": false, "economie": { "couper": 20, "piocher": 20 } },
+      "tablier": {
+        "place": "corps",
+        "enfant": true,
+        "economie": { "labourer": 15, "planter": 15, "arroser": 15, "recolter": 15, "cueillir": 15 },
+        "faimAide": 25
+      },
+      "salopette": { "place": "corps", "enfant": false, "toutes": 8 },
+      "manteau_chaud": { "place": "corps", "enfant": true, "toutes": 15, "horsFerme": true }
+    },
+    "SACS": { "sac_petit": { "portions": 6 }, "sac_grand": { "portions": 12 } },
+    "ALERTE": { "PRESQUE_VIDE": 2, "ENERGIE": 30 }
   },
   "SIMULATION": {
     "NUITS": 80,

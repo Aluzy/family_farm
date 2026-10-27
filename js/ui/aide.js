@@ -26,6 +26,7 @@ import { artPx, REDUCED_MOTION } from './animations.js';
 import { openOptionsModal } from './options.js';
 import { registerActions } from './actions.js';
 import { openModal } from './modal.js';
+import { effetTexte } from './fiche-membre.js';
 
 /* ---------- Lot 11 : aide sur chaque bâtiment ---------- */
 
@@ -274,6 +275,25 @@ const HELP = {
       ],
     };
   },
+  // Fiche 11 : l'équipement de la famille et le sac à provisions (aussi le « ? » de la fiche d'un membre).
+  equipement: () => {
+    const Q = DATA.EQUIPEMENT, O = DATA.OBJETS, R = DATA.ATELIER.RECETTES;
+    const recette = (id) => Object.entries(R[id].entrees).map(([o, n]) => `${n} ${O[o].nom.toLowerCase()}`).join(', ');
+    const pieces = Object.keys(Q.PIECES);
+    const enfant = pieces.filter((id) => Q.PIECES[id].enfant).map((id) => O[id].nom.toLowerCase());
+    return {
+      nom: 'Équipement et sac à provisions',
+      icone: '🎒',
+      lignes: [
+        ['La fiche', `Dans la Famille, un onglet par membre ouvre sa fiche : ${Q.CASES} cases d'équipement à gauche, son portrait au milieu (on y voit ce qu'il porte), ses jauges à droite. Touche une case vide pour l'équiper d'une pièce de l'inventaire, une case pleine pour la retirer : elle revient dans l'inventaire. Une pièce portée n'est plus dans l'inventaire et ne se vend pas.`],
+        ['Les règles', `Une pièce par place : ${Object.values(Q.PLACES).map((p) => p.toLowerCase()).join(', ')} (pas deux chapeaux, pas un tablier sur une salopette). Un enfant porte ce qui existe à sa taille : ${enfant.join(', ')}.`],
+        ...pieces.map((id) => [O[id].nom, `${effetTexte(id)} Atelier : ${recette(id)}${R[id].debloque ? ` (dès le niveau ${unlockLevel(R[id].debloque)})` : ''}.`]),
+        ['Pour qui ?', 'Les effets valent pour toi, le personnage principal. Pour un autre membre, seulement dans ce qu\'il fait de lui-même sur la ferme : les bottes lui donnent moins faim quand il marche, le tablier quand il t\'aide ; les autres pièces se voient sur lui, sans plus.'],
+        ['Le sac à provisions', `Ta fiche a une quatrième case : ton sac (${Object.entries(Q.SACS).map(([id, s]) => `${O[id].nom.toLowerCase()}, ${s.portions} portions : ${recette(id)}`).join(' ; ')}). Touche-le pour le remplir, à la ferme, d'aliments de l'inventaire ou du réfrigérateur ; ce qu'il contient périme comme dans l'inventaire.`],
+        ['En expédition', 'Loin de la ferme, tu ne manges que ce qu\'il y a dans ton sac : « Manger » y puise, et dit quand il est vide. Une alerte prévient quand tu sors avec un sac vide ou presque, et quand ton énergie baisse loin de la ferme, le sac vide. Sur la ferme, rien ne change.'],
+      ],
+    };
+  },
   techno: () => {
     const T = DATA.ARBRE;
     const noeuds = Object.values(T.noeuds);
@@ -316,7 +336,7 @@ const HELP = {
 };
 
 // Les fiches sans bâtiment, ouvertes depuis À propos.
-const FICHES = ['monde', 'outils', 'grotte', 'peche', 'techno'];
+const FICHES = ['monde', 'outils', 'equipement', 'grotte', 'peche', 'techno'];
 const fiches = () => FICHES;
 
 // Le nom des actions de DATA.PERSONNAGE.COUTS, pour la règle de l'énergie.

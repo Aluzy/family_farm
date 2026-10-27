@@ -21,6 +21,7 @@ import { renderAutonomyCard } from './chapitres.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
+import { renderFicheMembre } from './fiche-membre.js';
 
 /* ---------- Famille ---------- */
 
@@ -53,6 +54,9 @@ function taillesPortraits() {
   for (const t of [40, 48, 64]) root.setProperty(`--portrait-${t}`, `${(Math.max(1, Math.round((t * r) / 32)) * 32) / r}px`);
   // la taille d'un pixel des dessins de la carte du joueur (assets/hud) : environ 2 px CSS
   root.setProperty('--hud-px', `${Math.max(1, Math.round(2 * r)) / r}px`);
+  // (fiche 11 : le membre en pied de sa fiche, environ 4 px CSS par pixel du dessin, 3 sur un petit écran)
+  const k = window.innerWidth < 380 ? 3 : 4;
+  root.setProperty('--fiche-px', `${Math.max(1, Math.round(k * r)) / r}px`);
 }
 if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.documentElement) {
   taillesPortraits();
@@ -400,12 +404,16 @@ function repasCardHtml() {
       </div>`;
 }
 
+// Fiche 11 : la fiche du membre choisi (son onglet) vient d'abord : son équipement, son portrait, ses
+// jauges (js/ui/fiche-membre.js). La liste des membres (le prénom, l'apparence, le personnage
+// principal, les départs) ne paraît qu'en mode modification.
 export function renderFamille() {
   return `
     <h2>👨‍👩‍👧‍👦 Famille${familyNameHtml() ? ` ${familyNameHtml()}` : ''}</h2>
+    ${renderFicheMembre()}
     <button type="button" class="btn${familyEditing ? ' primary' : ''} family-edit-btn" data-action="family-edit" aria-pressed="${familyEditing}">${familyEditing ? '✅ Terminer' : '✏️ Modifier la famille'}</button>
-    <ul class="member-rows">${state.famille.membres.map(portraitCard).join('')}</ul>
-    ${familyEditing ? renderFamilyAdd() : ''}
+    ${familyEditing ? `<ul class="member-rows">${state.famille.membres.map(portraitCard).join('')}</ul>
+    ${renderFamilyAdd()}` : ''}
     <div class="cards">${repasCardHtml()}
     </div>
     ${renderPets()}

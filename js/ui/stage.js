@@ -62,6 +62,7 @@ import { itemsText } from './common.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose, remplirCruche } from '../engine/cruche.js';
 import { surbrillanceDidacticiel } from './didacticiel.js';
 import { etapeDidacticiel, horsDeLaFerme } from '../engine/didacticiel.js';
+import { alerteFaim, alerteSortie, vitessePied } from '../engine/equipement.js';
 import { plantationModele } from './plantation.js';
 import { runAction } from './events.js';
 import { calecheDepuisCarte, calecheToucheeDepuisCarte, helerCaleche } from './caleche.js';
@@ -216,6 +217,7 @@ function premiereParcelle(lieu, quoi) {
 export function cibleAlerte(type, id) {
   switch (type) {
     case 'peremption': return { page: 'inventaire', sous: 'frais' };
+    case 'sacVide': return { fenetre: 'famille' }; // (fiche 11 : la fiche du personnage, son sac)
     case 'panne': case 'entretien': return lieuAppareil(id || alertSnapshot(state)[type][0]);
     case 'batteriesVides': return { ecran: 'batteries' };
     case 'frigoCoupe': return { fenetre: 'installations', ancre: 'dev-frigo' };
@@ -521,7 +523,7 @@ export function stageModel() {
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
-    houe, hache, pioche, faux, canne, triporteur: enSelle(state), cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, triporteur: enSelle(state), cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), pied: piedIci, rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -725,6 +727,28 @@ function stageIci(tile) {
   if (change) { persistState(); carteMondeVu(); }
   // (le didacticiel, fiche 9b : sorti de la ferme, son étape passe)
   if (etapeDidacticiel(state) === 'sortie' && horsDeLaFerme(state)) refresh();
+  expedition(tile);
+}
+
+// Fiche 11 : l'expédition. En sortant de la ferme, une alerte si le sac à provisions manque, est vide
+// ou presque (loin de la ferme, il ne mange que ce qu'il contient) ; loin de la ferme, une alerte (une
+// fois par sortie) quand l'énergie baisse et que le sac est vide. Ses bottes : sa vitesse à pied dans
+// le biome de sa case (modèle.pied, js/fermier.js).
+let piedIci = 1, dehorsAvant = null, faimDite = false;
+function expedition(tile) {
+  const dehors = horsDeLaFerme(state);
+  if (dehors && dehorsAvant === false) {
+    const t = alerteSortie(state);
+    if (t) notify(`🎒 ${t}`, { kind: 'alerte', cible: { fenetre: 'famille' } });
+  }
+  if (!dehors) faimDite = false;
+  else if (!faimDite && alerteFaim(state)) {
+    faimDite = true;
+    notify('🎒 Ton énergie baisse et ton sac à provisions est vide : rentre à la ferme pour manger.', { kind: 'alerte', cible: { fenetre: 'famille' } });
+  }
+  dehorsAvant = dehors;
+  const v = vitessePied(state, biomeDeCase(tile));
+  if (v !== piedIci) { piedIci = v; setLastRenderAt(0); refresh(); }
 }
 
 // Le biome de la case (son nom), d'après l'aperçu des biomes du Web Worker (un par bloc de 8 × 8 cases :

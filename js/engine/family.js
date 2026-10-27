@@ -7,6 +7,7 @@ import { newStableReport } from './animals.js';
 import { energyMax, snackEnergy } from './stamina.js';
 import { newAutoReport } from './automation.js';
 import { affames, bonheurRepas, jaugeFamille, repasCoucher, repasJour } from './repas.js';
+import { enExpedition, portionsSac, premierDuSac, prendreDuSac, rendreEquipement, sacPorte } from './equipement.js';
 
 /* ---------- Lot 2 : famille (version 1.8 : plus de santé) ---------- */
 
@@ -200,6 +201,7 @@ export function removeMember(state, id) {
   if (raison) return fail(raison);
   const f = state.famille;
   f.membres = f.membres.filter((m) => m.id !== id);
+  rendreEquipement(state, id); // (fiche 11 : ses pièces reviennent dans l'inventaire)
   return { ok: true, id };
 }
 
@@ -319,17 +321,26 @@ export function feedFamily(state) {
 }
 
 // Version 1.8 : manger un aliment en journée (inventaire d'abord, puis frigo) rend
-// de l'énergie au personnage (snackEnergy), jusqu'au maximum.
-export function eatSnack(state, item) {
+// de l'énergie au personnage (snackEnergy), jusqu'au maximum. Fiche 11 : loin de la ferme (en
+// expédition), il ne mange que ce qu'il y a dans son sac à provisions (equipement.js) ; `duSac` : dans
+// le sac même sur la ferme (le bouton « Manger » du sac) ; `item` null : ce qui périt le plus tôt dans
+// le sac.
+export function eatSnack(state, item, { duSac = false } = {}) {
+  const loin = duSac || enExpedition(state);
+  if (loin && !item) item = premierDuSac(state);
   const def = DATA.OBJETS[item];
+  if (loin && !sacPorte(state)) return fail('Loin de la ferme, tu ne manges que ce qu\'il y a dans ton sac à provisions, et tu n\'en as pas.');
+  if (loin && !portionsSac(state)) return fail(`Ton sac à provisions est vide${enExpedition(state) ? ' : rentre à la ferme pour manger' : ''}.`);
   if (!def || !def.mangeable) return fail('Cela ne se mange pas.');
   if ((Number(state.energie) || 0) >= energyMax()) return fail('Ton énergie est déjà au maximum.');
-  if (countItem(state, item) > 0) takeItem(state, item, 1);
+  if (loin) {
+    if (!prendreDuSac(state, item)) return fail(`Pas de ${def.nom.toLowerCase()} dans ton sac${enExpedition(state) ? ' : loin de la ferme, tu ne manges que ce qu\'il contient' : ''}.`);
+  } else if (countItem(state, item) > 0) takeItem(state, item, 1);
   else if (fridgeCount(state, item) > 0) takeFromFridge(state, item, 1);
   else return fail(`Plus de ${def.nom.toLowerCase()}.`);
   const gain = snackEnergy(state, item);
   state.energie = Math.min(energyMax(), (Number(state.energie) || 0) + gain);
-  return { ok: true, gain, energie: state.energie };
+  return { ok: true, gain, energie: state.energie, item, ...(loin ? { sac: portionsSac(state) } : {}) };
 }
 
 export function findMember(state, id) {

@@ -305,11 +305,13 @@
     // ---------- la lumière ----------
 
     // La lumière autour du personnage : les lumières WebGL (makeCaveLights), sinon une image
-    // noire percée autour de lui. La Lampe de mineur (arbre des technologies) éclaire plus loin.
+    // noire percée autour de lui. La Lampe de mineur (arbre des technologies) éclaire plus loin, et
+    // le casque à lampe (fiche 11 : FermeHote.lumiere, en %) aussi ; les deux se multiplient.
     makeLight() {
       const H = hote();
       const lampe = H && H.tech ? H.tech('grotte') : null;
-      const f = lampe && lampe.lumiere ? lampe.lumiere / 100 : 1;
+      const casque = H && H.lumiere ? H.lumiere() / 100 : 1;
+      const f = (lampe && lampe.lumiere ? lampe.lumiere / 100 : 1) * casque;
       const c = this.cave;
       const J = this.J, filon = J.filon && (c.meta.minerais || {})[J.filon];
       this.say(`${J.monde ? '⛰️' : '⛏️'} ${J.nom} — niveau ${c.niveau}${c.niveau >= J.NIVEAUX ? ' (le plus profond)' : ''}${filon && c.niveau === 1 ? ` · un filon : ${filon.nom.toLowerCase()}` : ''}`);

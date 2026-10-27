@@ -61,7 +61,7 @@ export function loadData(root = ROOT) {
 
 /* ---------- vérification ---------- */
 
-const CATEGORIES = ['légume', 'fruit', 'graine', 'ingrédient', 'produit', 'conserve', 'matériau'];
+const CATEGORIES = ['légume', 'fruit', 'graine', 'ingrédient', 'produit', 'conserve', 'matériau', 'équipement'];
 const LIEUX = ['potager', 'serre'];
 const MODES_GRAINES = ['recolte', 'plant'];
 
@@ -707,6 +707,44 @@ export function validateData(data) {
       needItem(`ATELIER.RAMASSAGE.${rid}.objet`, r.objet);
       if (!isInt(r.nombre) || r.nombre < 0) err(`ATELIER.RAMASSAGE.${rid}.nombre`, 'un entier positif ou nul');
       if (r.quantite !== undefined && (!isInt(r.quantite) || r.quantite < 1)) err(`ATELIER.RAMASSAGE.${rid}.quantite`, 'un entier au moins égal à 1');
+    }
+  }
+  // Fiche 11 : l'équipement de la famille et les sacs à provisions (data/equipement.json).
+  const E = data.EQUIPEMENT;
+  if (E) {
+    if (!isInt(E.CASES) || E.CASES < 1) err('EQUIPEMENT.CASES', 'un entier au moins égal à 1');
+    const places = Object.keys(E.PLACES || {});
+    const actions = Object.keys((data.PERSONNAGE && data.PERSONNAGE.COUTS) || {});
+    const biomes = Object.keys((data.DECOUVERTE && data.DECOUVERTE.RAYONS) || {});
+    const pct = (where, v) => { if (!(typeof v === 'number' && v > 0 && v <= 300)) err(where, 'un pourcentage (de 1 à 300)'); };
+    for (const [id, p] of Object.entries(E.PIECES || {})) {
+      const where = `EQUIPEMENT.PIECES.${id}`;
+      if (!items[id]) err(where, `« ${id} » n'est pas un objet (OBJETS)`);
+      else if (items[id].categorie !== 'équipement') err(where, 'son objet doit être de la catégorie « équipement »');
+      if (!places.includes(p.place)) err(`${where}.place`, `une place parmi ${places.join(', ')}`);
+      if (typeof p.enfant !== 'boolean') err(`${where}.enfant`, 'true ou false');
+      for (const [a, v] of Object.entries(p.economie || {})) {
+        if (!actions.includes(a)) err(`${where}.economie.${a}`, 'un geste de PERSONNAGE.COUTS');
+        if (!(isInt(v) && v > 0 && v < 100)) err(`${where}.economie.${a}`, 'un pourcentage entier (1 à 99)');
+      }
+      if (p.toutes !== undefined && !(isInt(p.toutes) && p.toutes > 0 && p.toutes < 100)) err(`${where}.toutes`, 'un pourcentage entier (1 à 99)');
+      if (p.soleil !== undefined && !(Array.isArray(p.soleil) && p.soleil.length === 2 && p.soleil[0] < p.soleil[1])) err(`${where}.soleil`, '[de, à] heures');
+      for (const [b, v] of Object.entries(p.pied || {})) { if (!biomes.includes(b)) err(`${where}.pied.${b}`, 'un biome de DECOUVERTE.RAYONS'); pct(`${where}.pied.${b}`, v); }
+      for (const k of ['grotte', 'vueNuit']) if (p[k] !== undefined) pct(`${where}.${k}`, p[k]);
+      for (const k of ['faimMarche', 'faimAide']) if (p[k] !== undefined && !(isInt(p[k]) && p[k] > 0 && p[k] < 100)) err(`${where}.${k}`, 'un pourcentage entier (1 à 99)');
+    }
+    for (const [id, sac] of Object.entries(E.SACS || {})) {
+      if (!items[id]) err(`EQUIPEMENT.SACS.${id}`, `« ${id} » n'est pas un objet (OBJETS)`);
+      if (!isInt(sac.portions) || sac.portions < 1) err(`EQUIPEMENT.SACS.${id}.portions`, 'un entier au moins égal à 1');
+      if (E.PIECES && E.PIECES[id]) err(`EQUIPEMENT.SACS.${id}`, 'un sac n\'est pas une pièce d\'équipement');
+    }
+    for (const [id, it] of Object.entries(items)) {
+      if (it.categorie === 'équipement' && !(E.PIECES && E.PIECES[id]) && !(E.SACS && E.SACS[id])) err(`OBJETS.${id}`, 'un équipement sans réglage (EQUIPEMENT.PIECES ou SACS)');
+    }
+    const S = data.DIDACTICIEL && data.DIDACTICIEL.SAC;
+    if (S) {
+      if (!(E.SACS && E.SACS[S.objet])) err('DIDACTICIEL.SAC.objet', 'un sac de EQUIPEMENT.SACS');
+      for (const item of Object.keys(S.provisions || {})) if (!(items[item] && items[item].mangeable)) err(`DIDACTICIEL.SAC.provisions.${item}`, 'un aliment');
     }
   }
   for (const id of Object.keys(items)) {

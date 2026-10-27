@@ -2714,6 +2714,136 @@ export const ENCYCLOPEDIE = {
      "decouverte": [
       "famille:animal"
      ]
+    },
+    {
+     "id": "equipement",
+     "terme": "Équipement de la famille",
+     "description": "Dans la fenêtre Famille, un onglet par membre ouvre sa fiche : 3 cases d'équipement, son portrait en pied (on y voit ce qu'il porte) et ses jauges. Une case vide se remplit d'une pièce de l'inventaire, une case pleine la rend à l'inventaire ; une pièce portée ne se vend pas. Une pièce par place (tête, corps, mains, pieds) ; un enfant porte seulement ce qui existe à sa taille. Les pièces se fabriquent à l'Atelier (onglet Équipement). Leurs effets, modestes, valent pour le personnage principal ; pour un autre membre, seulement dans ce qu'il fait de lui-même sur la ferme (marcher, aider).",
+     "liens": [
+      "casque_a_lampe",
+      "chapeau_de_paille",
+      "bottes_de_marche",
+      "gants_de_travail",
+      "tablier_de_jardinier",
+      "salopette_solide",
+      "manteau_chaud",
+      "sac_a_provisions",
+      "atelier"
+     ],
+     "decouverte": [
+      "objet:casque_lampe",
+      "objet:chapeau_paille",
+      "objet:bottes",
+      "objet:gants_travail",
+      "objet:tablier",
+      "objet:salopette",
+      "objet:manteau_chaud",
+      "objet:sac_petit",
+      "objet:sac_grand"
+     ]
+    },
+    {
+     "id": "casque_a_lampe",
+     "terme": "Casque à lampe",
+     "description": "Un casque jaune, une lampe au front, fabriqué à l'Atelier avec deux lingots de fer, un lingot de cuivre et deux champignons lumineux (dès le niveau du Four). Sur la tête du personnage principal, il éclaire 140 % autour de lui dans la mine et les grottes (la Lampe de mineur de l'Arbre s'y cumule), et la nuit, dans le grand monde, il voit plus loin (150 % du rayon). Pour les adultes seulement.",
+     "liens": [
+      "equipement",
+      "grotte",
+      "grotte_montagne",
+      "carte_du_monde"
+     ],
+     "decouverte": [
+      "objet:casque_lampe"
+     ]
+    },
+    {
+     "id": "chapeau_de_paille",
+     "terme": "Chapeau de paille",
+     "description": "Tressé à l'Atelier avec de la paille et une fibre. Au soleil, de 11 h à 17 h, le personnage principal se fatigue moins pour labourer, planter, arroser, récolter, cueillir et faucher (10 % d'énergie en moins). Il existe en taille enfant.",
+     "liens": [
+      "equipement",
+      "energie_personnage"
+     ],
+     "decouverte": [
+      "objet:chapeau_paille"
+     ]
+    },
+    {
+     "id": "bottes_de_marche",
+     "terme": "Bottes de marche",
+     "description": "Des bottes à semelle de bois, fabriquées à l'Atelier avec une planche et des fibres. À pied, le personnage principal va plus vite dans le marais (130 %) et en montagne (120 %). Un autre membre qui les porte a moins faim en marchant sur la ferme (25 % de moins). Elles existent en taille enfant.",
+     "liens": [
+      "equipement",
+      "grand_monde"
+     ],
+     "decouverte": [
+      "objet:bottes"
+     ]
+    },
+    {
+     "id": "gants_de_travail",
+     "terme": "Gants de travail",
+     "description": "Des gants de laine et de fibre, fabriqués à l'Atelier dès le niveau des moutons. Le personnage principal dépense 20 % d'énergie de moins pour couper (la hache) et piocher (la pioche). Pour les adultes seulement.",
+     "liens": [
+      "equipement",
+      "hache",
+      "pioche"
+     ],
+     "decouverte": [
+      "objet:gants_travail"
+     ]
+    },
+    {
+     "id": "tablier_de_jardinier",
+     "terme": "Tablier de jardinier",
+     "description": "Un tablier vert de fibres tressées, fabriqué à l'Atelier. Le personnage principal dépense 15 % d'énergie de moins pour labourer, planter, arroser, récolter et cueillir. Un autre membre qui le porte a moins faim quand il aide (25 % de moins). Il se porte sur le corps, comme la salopette et le manteau : un des trois. Il existe en taille enfant.",
+     "liens": [
+      "equipement",
+      "potager"
+     ],
+     "decouverte": [
+      "objet:tablier"
+     ]
+    },
+    {
+     "id": "salopette_solide",
+     "terme": "Salopette solide",
+     "description": "Une salopette de laine épaisse aux boucles de fer, fabriquée à l'Atelier dès le niveau des moutons. Le personnage principal dépense 8 % d'énergie de moins pour tous ses gestes. Pour les adultes seulement.",
+     "liens": [
+      "equipement",
+      "energie_personnage"
+     ],
+     "decouverte": [
+      "objet:salopette"
+     ]
+    },
+    {
+     "id": "manteau_chaud",
+     "terme": "Manteau chaud",
+     "description": "Un manteau de laine rouge au col fourré, fabriqué à l'Atelier dès le niveau des moutons. Loin de la ferme, dans le vent et le froid du grand monde, le personnage principal dépense 15 % d'énergie de moins pour tous ses gestes. Il existe en taille enfant.",
+     "liens": [
+      "equipement",
+      "grand_monde"
+     ],
+     "decouverte": [
+      "objet:manteau_chaud"
+     ]
+    },
+    {
+     "id": "sac_a_provisions",
+     "terme": "Sac à provisions",
+     "description": "La quatrième case de la fiche du personnage principal. Le petit sac (fibres) tient 6 portions, le grand (laine et fibres, dès le niveau des moutons) 12 ; un premier sac est offert au didacticiel, avant de sortir de la ferme. Il se remplit à la ferme, d'aliments de l'inventaire ou du réfrigérateur, et ce qu'il contient périme comme dans l'inventaire. Loin de la ferme, le personnage ne mange que ce qu'il y a dans son sac : « Manger » y puise et dit quand il est vide ; une alerte prévient quand on sort avec un sac vide ou presque, et quand l'énergie baisse loin de la ferme, le sac vide. Sur la ferme, rien ne change.",
+     "liens": [
+      "equipement",
+      "energie_personnage",
+      "grand_monde",
+      "personnage_principal"
+     ],
+     "decouverte": [
+      "objet:sac_petit",
+      "objet:sac_grand",
+      "didacticiel:sortie"
+     ]
     }
    ]
   }

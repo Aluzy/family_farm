@@ -23,6 +23,7 @@ export const SOMMEIL_PERMISES = new Set([
   'sleep', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
   'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'meuble-annule', 'meuble-place',
   'carte-monde-but', 'carte-monde-ferme', // (fiche 8 : choisir le but de la boussole, rien ne bouge)
+  'fiche-case', 'fiche-equiper', // (fiche 11 : habiller la famille, rien ne bouge sur la ferme)
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
   'plant', 'boite-deposer', 'boite-reprendre', 'water', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
@@ -33,6 +34,7 @@ export const SOMMEIL_BLOQUEES = new Set([
   'build-station', 'atelier-fabriquer', 'bloc', 'arbre-planter', 'arbre-case', 'arbre-oui', 'build-toggle', 'silo-agrandir', 'build-pick', 'build-tab', 'build-groupe', 'meuble-ok', 'build-level-menu', 'build-level', 'etage-toggle', 'upgrade', 'upgrade-serre', 'upgrade-poulailler', 'axe-toggle', 'pick-toggle', 'rod-toggle', 'scythe-toggle',
   'hoe', 'hoe-toggle', 'hoe-take', 'upgrade-tank', 'robot-autonomie', 'upgrade-fridge', 'maintain', 'repair', 'eat', 'fridge-in',
   'fridge-in-all', 'fridge-out', 'toggle', 'semis-set', 'cow-herbs',
+  'sac-poser', 'sac-retirer', 'sac-remplir', 'sac-reprendre', 'sac-manger', // (fiche 11 : le sac, comme la boîte et « Manger »)
 ]);
 
 // Plusieurs actions, une même fonction (elle reçoit le nom de l'action en 3e argument).

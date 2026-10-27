@@ -15,6 +15,7 @@
     "niveaux.json",
     "grotte.json",
     "meubles.json",
+    "equipement.json",
     "simulation.json",
     "terrain.json",
     "monde.json"

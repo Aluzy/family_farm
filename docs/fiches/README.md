@@ -46,3 +46,4 @@ Conventions communes à toutes les fiches :
 | [9a — les anciennes parties et les performances](9a-anciennes-parties-et-performances.md) | 9 | fait |
 | [9b — l'aide, l'encyclopédie, le didacticiel et la campagne](9b-aide-encyclopedie-didacticiel.md) | 9 | fait |
 | [10 — les notifications qui se cumulent](10-notifications-cumulees.md) | — | fait |
+| [11 — l'équipement de la famille et le sac à provisions](11-equipement-de-la-famille.md) | — | fait |

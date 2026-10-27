@@ -8,6 +8,7 @@ import { hensToFeed, sheepToShear, strawMissing } from './animals.js';
 import { techAuto } from './techtree.js';
 import { unreadMail } from './campaign.js';
 import { createNewGame } from './depart.js';
+import { enExpedition, portionsSac } from './equipement.js';
 
 /* ---------- Lot 11 : alertes (notifications de l'interface) ---------- */
 
@@ -61,6 +62,9 @@ export function getNotifications(state) {
   add('frigoCoupe', 1, '❄️', snap.frigoCoupe ? 1 : 0, 'Réfrigérateur sans courant', 'Réfrigérateur sans courant');
   const perissent = Object.values(expiringSoon(state)).reduce((t, n) => t + n, 0);
   add('peremption', 1, '⏳', perissent, '1 aliment périra cette nuit', '{n} aliments périront cette nuit');
+  // fiche 11 : loin de la ferme, il ne mange que ce qu'il y a dans son sac à provisions
+  const sacVide = enExpedition(state) && portionsSac(state) === 0;
+  add('sacVide', 1, '🎒', sacVide ? 1 : 0, 'Sac à provisions vide loin de la ferme : rentre pour manger', 'Sac à provisions vide loin de la ferme : rentre pour manger');
 
   // 2 : à faire aujourd'hui pour que la nuit se passe bien.
   const plots = allPlots(state).filter((p) => p.culture);
