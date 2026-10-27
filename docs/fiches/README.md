@@ -57,5 +57,6 @@ Conventions communes à toutes les fiches :
 | [19 — le compagnon aide à la ferme](19-le-compagnon-aide.md) | — | fait |
 | [20 — la marche des personnages](20-la-marche.md) | — | fait |
 | [21 — toucher le champ n'ouvre plus de fenêtre](21-champ-sans-fenetre.md) | — | fait |
+| [22 — le chevreuil et le bouquetin redessinés](22-chevreuil-bouquetin.md) | — | en cours |
 | [14b — le brouillard couvre aussi la ferme](14b-brouillard-sur-la-ferme.md) | — | fait |
 | [16b — la soirée de la famille : dehors jusqu'au coucher, manger quand on a faim](16b-soiree-de-la-famille.md) | — | fait |
