@@ -1,12 +1,17 @@
 # Crédits des sons
 
-Tous les sons du jeu sont synthétisés par scripts/son/, sauf ces vrais enregistrements d'animaux,
-libres de droits, trouvés dans des jeux libres qui documentent leur provenance (Stendhal, VoxeLibre, 0 A.D.).
+Tous les sons du jeu sont synthétisés par scripts/son/, sauf ces vrais enregistrements libres de droits :
+les bêtes de la ferme, trouvées dans des jeux libres qui documentent leur provenance (Stendhal, VoxeLibre, 0 A.D.),
+l'arrosoir (Freesound) et la hulotte (BigSoundBank).
 CC0 et domaine public : aucune obligation. CC BY : citer l'auteur. CC BY-SA : citer l'auteur, et le fichier
 (et ses modifications) reste sous CC BY-SA (https://creativecommons.org/licenses/by-sa/3.0/).
 
 | Fichier du jeu | Son | Auteur | Licence | Source |
 |---|---|---|---|---|
+| nature/hibou_1 | Hulotte : « hou… » puis « hou-hou-houuu » | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/tawny-owl-1-s1763.html |
+| nature/hibou_2 | Hulotte : « hou… » puis « hou-hou-houuu » | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/tawny-owl-2-s1764.html |
+| nature/hibou_3 | Hulotte : un « houuu » seul | Le tiroir du fond (BigSoundBank) | CC0 | https://bigsoundbank.com/tawny-owl-3-s3459.html |
+| nature/hibou_4 | Hulotte : un « hou-houuu » qui monte | Le tiroir du fond (BigSoundBank) | CC0 | https://bigsoundbank.com/tawny-owl-4-s3460.html |
 | animaux/poule_1 | « Côôt » qui monte | Rudmer_Rotteveel | CC0 | https://freesound.org/people/Rudmer_Rotteveel/sounds/316921/ |
 | animaux/poule_2 | Petits gloussements en série | evsecrets | CC0 | https://freesound.org/people/evsecrets/sounds/346961/ |
 | animaux/poule_3 | Gloussements plus longs | evsecrets | CC0 | https://freesound.org/people/evsecrets/sounds/346961/ |
@@ -31,3 +36,6 @@ CC0 et domaine public : aucune obligation. CC BY : citer l'auteur. CC BY-SA : ci
 | animaux/cheval_3 | Petit rire grave (« hu-hu-hu ») | Wildfire Games (0 A.D.) | CC BY-SA 3.0 | https://www.wildfiregames.com/ |
 | animaux/ebrouement_1 | Il s'ébroue | Andune | CC BY 3.0 | https://freesound.org/people/Andune/sounds/61605/ |
 | animaux/ebrouement_2 | Il souffle par les naseaux | ERH | CC BY 3.0 | https://freesound.org/people/ERH/sounds/32043/ |
+| outils/arrosage_1 | Arrosoir versé sur la terre | Bricklover (Freesound) | CC0 | https://freesound.org/people/Bricklover/sounds/532890/ |
+| outils/arrosage_2 | Arrosoir versé sur la terre | Bricklover (Freesound) | CC0 | https://freesound.org/people/Bricklover/sounds/532890/ |
+| outils/arrosage_3 | Arrosoir versé sur la terre | Bricklover (Freesound) | CC0 | https://freesound.org/people/Bricklover/sounds/532890/ |

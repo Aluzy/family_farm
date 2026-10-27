@@ -7,8 +7,9 @@
  * « directeur » lit 4 fois par seconde ce que les cartes montrent déjà (l'heure, le biome sous
  * le personnage, les bâtiments en marche, les bêtes proches) pour régler les ambiances.
  *
- * Les sons sont dans assets/son/ (.ogg, et .m4a pour Safari), tous synthétisés pour le jeu par
- * scripts/son/ (voir docs/son.md). Les réglages sont ceux de l'appareil (localStorage
+ * Les sons sont dans assets/son/ (.ogg, et .m4a pour Safari), synthétisés pour le jeu par
+ * scripts/son/, sauf de vrais enregistrements libres de droits : les bêtes de la ferme, l'arrosoir
+ * et la hulotte (voir docs/son.md et assets/son/CREDITS.md). Les réglages sont ceux de l'appareil (localStorage
  * « ferme-son »), dans ⚙️ Options › Son.
  *
  * Bus : musique, nature (ambiances), monde (bâtiments, bêtes, machines), effets (gestes),
@@ -32,9 +33,6 @@
     grillons_nuit: ["ambiance/grillons_nuit"],
     vent: ["ambiance/vent"],
     grenouilles: ["ambiance/grenouilles"],
-    mer: ["ambiance/mer"],
-    lac: ["ambiance/lac"],
-    riviere: ["ambiance/riviere"],
     foret: ["ambiance/foret"],
     montagne: ["ambiance/montagne"],
     hameau: ["ambiance/hameau"],
@@ -48,7 +46,7 @@
     pedalier: ["ambiance/pedalier"],
     moulinet: ["ambiance/moulinet"],
     oiseau: ["nature/oiseau_1", "nature/oiseau_2", "nature/oiseau_3", "nature/oiseau_4", "nature/oiseau_5", "nature/oiseau_6", "nature/oiseau_7", "nature/oiseau_8"],
-    chouette: ["nature/chouette"],
+    hibou: ["nature/hibou_1", "nature/hibou_2", "nature/hibou_3", "nature/hibou_4"],
     poule: ["animaux/poule_1", "animaux/poule_2", "animaux/poule_3", "animaux/poule_4", "animaux/poule_5"],
     poussins: ["animaux/poussins_1", "animaux/poussins_2"],
     vache: ["animaux/vache_1", "animaux/vache_2", "animaux/vache_3", "animaux/vache_4", "animaux/vache_5"],
@@ -82,7 +80,7 @@
     houe: ["outils/houe_1", "outils/houe_2", "outils/houe_3"],
     faux: ["outils/faux_1", "outils/faux_2", "outils/faux_3"],
     semis: ["outils/semis_1", "outils/semis_2"],
-    arrosage: ["outils/arrosage_1", "outils/arrosage_2"],
+    arrosage: ["outils/arrosage_1", "outils/arrosage_2", "outils/arrosage_3"],
     remplir: ["outils/remplir"],
     recolte: ["outils/recolte_1", "outils/recolte_2", "outils/recolte_3"],
     arracher: ["outils/arracher_1", "outils/arracher_2"],
@@ -420,8 +418,10 @@
     const e = espace(o.x, o.y, portee);
     boucle(nom, cle, e ? e.g * niveau : 0, 0.8, e ? e.pan : 0);
   }
-  const NATURE = ['oiseaux_matin', 'oiseaux_jour', 'grillons_soir', 'grillons_nuit', 'vent', 'grenouilles', 'mer', 'lac', 'riviere', 'foret', 'montagne', 'grotte'];
-  const SOURCES = ['moulin', 'meule', 'feu', 'pompe', 'asperseur', 'robot', 'abeilles', 'hameau', 'mare'];
+  // pas de fond d'eau : ni la mer, ni les lacs, ni les rivières, ni les mares n'ont de boucle (le
+  // bruit montait dès qu'on approchait d'une rive) ; restent les pas dans l'eau et les grenouilles
+  const NATURE = ['oiseaux_matin', 'oiseaux_jour', 'grillons_soir', 'grillons_nuit', 'vent', 'grenouilles', 'foret', 'montagne', 'grotte'];
+  const SOURCES = ['moulin', 'meule', 'feu', 'pompe', 'asperseur', 'robot', 'abeilles', 'hameau'];
   // les bêtes de la ferme : le cri de chaque sorte, et ce qu'on entend en plus de temps en temps
   // (les poussins, la clochette d'une vache, le cheval qui s'ébroue). Pas de fond d'ambiance
   // autour des bâtiments : seulement les cris.
@@ -450,7 +450,7 @@
     if (aff === 'grotte') {
       niv.grotte = 1;
       for (const k of NATURE) boucle('n:' + k, k, niv[k], 3);
-      for (const k of SOURCES) boucle('s:' + k, k === 'meule' ? 'moulin' : k === 'mare' ? 'lac' : k, 0, 1.5);
+      for (const k of SOURCES) boucle('s:' + k, k === 'meule' ? 'moulin' : k, 0, 1.5);
       musique('musique_mine');
       return;
     }
@@ -466,24 +466,20 @@
 
     // le biome sous lui
     const b = FS && p ? biome(FS, p.x, p.y) : 'ferme';
-    if (b === 'mer' || b === 'plage') { niv.mer = 1; niv.oiseaux_jour *= 0.4; niv.oiseaux_matin *= 0.4; niv.grillons_nuit *= 0.4; }
-    else if (b === 'falaise') { niv.mer = 0.6; niv.montagne = 0.5; }
+    if (b === 'mer' || b === 'plage') { niv.oiseaux_jour *= 0.4; niv.oiseaux_matin *= 0.4; niv.grillons_nuit *= 0.4; }
+    else if (b === 'falaise') niv.montagne = 0.5;
     else if (b === 'foret') { niv.foret = 1; niv.oiseaux_jour = Math.max(niv.oiseaux_jour, 0.6 * (1 - niv.grillons_nuit)); }
-    else if (b === 'marais') { niv.lac = 0.5; niv.grenouilles = nuit ? 1 : 0.25; }
+    else if (b === 'marais') niv.grenouilles = nuit ? 1 : 0.25;
     else if (b === 'montagne' || b === 'sommet') { niv.montagne = b === 'sommet' ? 1 : 0.75; niv.oiseaux_jour *= 0.3; niv.oiseaux_matin *= 0.3; niv.grillons_nuit *= 0.2; niv.grillons_soir *= 0.2; niv.vent *= 0.4; }
-    else if (b === 'lac') niv.lac = 1;
-    else if (b === 'riviere') niv.riviere = 1;
     else if (b === 'lande') niv.vent += 0.3;
 
-    // l'eau du grand monde autour de lui (à 5 cases dans 8 directions)
-    if (FS && p && FS.eauMondeSous && b !== 'ferme') {
-      let n = { mer: 0, lac: 0, riviere: 0 };
-      for (let a = 0; a < 8; a++) {
-        const w = FS.eauMondeSous(p.x + Math.cos(a * Math.PI / 4) * 5 * T, p.y + Math.sin(a * Math.PI / 4) * 5 * T);
-        if (w) n[w]++;
-      }
-      niv.mer = Math.max(niv.mer, n.mer / 5); niv.lac = Math.max(niv.lac, n.lac / 5); niv.riviere = Math.max(niv.riviere, n.riviere / 4);
+    // la forêt autour de lui (à 6 cases dans 8 directions) : la hulotte y chante plus souvent, et de là
+    const bois = [];
+    if (FS && p && b !== 'ferme') for (let a = 0; a < 8; a++) {
+      const x = p.x + Math.cos(a * Math.PI / 4) * 6 * T, y = p.y + Math.sin(a * Math.PI / 4) * 6 * T;
+      if (biome(FS, x, y) === 'foret') bois.push({ x, y });
     }
+    const foret = b === 'foret' ? 1 : bois.length / 8;
 
     // sous un toit (une pièce close, un hameau) : le dehors s'étouffe ; endormi : un peu aussi
     let dedans = false;
@@ -510,7 +506,8 @@
       const ruches = FS.ruchesAbeilles && h >= 7 && h < 19.5 ? Array.from(FS.ruchesAbeilles.values()) : [];
       const pr = proche(ruches, p); source('s:abeilles', 'abeilles', pr && pr.o, p, 8);
 
-      // les mares et étangs de la ferme (cases d'eau ; liste faite une fois)
+      // les mares et étangs de la ferme (cases d'eau ; liste faite une fois) : pas de bruit d'eau,
+      // seulement les grenouilles la nuit, de près
       const eaux = FS.waters ? FS.waters() : null;
       if (eaux && eaux.size !== etat.eauxN) {
         etat.eauxN = eaux.size;
@@ -518,7 +515,6 @@
         for (const w of eaux.values()) for (const k of w.cells) { const [x, y] = k.split(',').map(Number); etat.eaux.push({ x: x + T / 2, y: y + T / 2 }); }
       }
       const pe = etat.eaux && etat.eaux.length ? proche(etat.eaux, p) : null;
-      source('s:mare', 'lac', pe && pe.o, p, 9, 0.8);
       if (pe && pe.d < 10 && nuit) boucle('n:grenouilles', 'grenouilles', (1 - pe.d / 10) * etouffe, 3);
 
       // les hameaux : leurs bruits de travail, le jour
@@ -566,10 +562,21 @@
       }
     }
 
-    // les petits oiseaux du jour, la chouette la nuit
+    // les petits oiseaux du jour ; la nuit, la hulotte (« hou… hou-hou-houuu »), de loin en loin :
+    // une à deux minutes entre deux chants, 20 à 45 s en forêt ou à sa lisière, d'où elle chante
     if (!dort && !dedans && b !== 'mer' && b !== 'sommet') {
       if (!nuit && h > 5.5 && bientot('oiseau', 4, 12)) joue('oiseau', { x: p ? p.x + hasard(-12, 12) * T : null, y: p ? p.y + hasard(-10, 10) * T : null, portee: 18, gain: hasard(0.4, 1) });
-      if (nuit && bientot('chouette', 35, 80)) joue('chouette', { x: p ? p.x + hasard(-15, 15) * T : null, y: p ? p.y - 8 * T : null, portee: 22 });
+      if (nuit) {
+        const now = ctx.currentTime, enForet = foret > 0.3;
+        // en arrivant en forêt, une attente prise ailleurs (jusqu'à 2 min) se raccourcit
+        if (enForet && etat.prochain.hibou > now + 45) etat.prochain.hibou = now + hasard(8, 30);
+        if (enForet ? bientot('hibou', 20, 45) : bientot('hibou', 60, 120)) {
+          const o = bois.length ? bois[(Math.random() * bois.length) | 0] : null;
+          const x = o ? o.x + hasard(-3, 3) * T : p ? p.x + hasard(-15, 15) * T : null;
+          const y = o ? o.y + hasard(-3, 3) * T : p ? p.y - 8 * T : null;
+          joue('hibou', { x, y, portee: 26, gain: enForet ? 1 : 0.75, varie: 0.02, ecart: 10 });
+        }
+      }
     }
 
     // la musique : le matin et le jour, le soir, la nuit ; rien pendant le sommeil

@@ -21,9 +21,6 @@ T = {
  'grillons_nuit': ('ambiance', g(f'{M1}/ambient/crickets_night_01.wav')),
  'vent': ('ambiance', g(f'{M1}/ambient/wind_light.wav')),
  'grenouilles': ('ambiance', g(f'{M2}/ambient/frogs_night_01.wav')),
- 'mer': ('ambiance', g(f'{M2}/ambient/sea_loop.wav')),
- 'lac': ('ambiance', g(f'{M2}/ambient/lake_loop.wav')),
- 'riviere': ('ambiance', g(f'{M1}/environment/stream_loop.wav')),
  'foret': ('ambiance', g(f'{M2}/ambient/forest_loop.wav')),
  'montagne': ('ambiance', g(f'{M2}/ambient/mountain_wind_loop.wav')),
  'hameau': ('ambiance', g(f'{M2}/ambient/village_loop.wav')),
@@ -38,7 +35,7 @@ T = {
  'moulinet': ('ambiance', g(f'{M2}/sfx/fishing/reel_loop.wav')),
  # cris ponctuels
  'oiseau': ('nature', g(f'{M1}/ambient/oneshots/bird_call_*.wav')),
- 'chouette': ('nature', g(f'{M1}/ambient/oneshots/owl_01.wav')),
+ 'hibou': ('nature', g(f'{REC}/hibou_*.flac')),                 # la hulotte, de vrais enregistrements (libres.py)
  # les bêtes de la ferme : de vrais enregistrements libres de droits (enregistrements/credits.json)
  'poule': ('animaux', g(f'{REC}/poule_*.flac')),
  'poussins': ('animaux', g(f'{REC}/poussins_*.flac')),
@@ -74,7 +71,7 @@ T = {
  'houe': ('outils', g(f'{M2}/sfx/tools/hoe_*.wav')),
  'faux': ('outils', g(f'{M2}/sfx/tools/scythe_*.wav')),
  'semis': ('outils', g(f'{M2}/sfx/tools/sow_*.wav')),
- 'arrosage': ('outils', g(f'{M1}/sfx/tools/watering_*.wav')),
+ 'arrosage': ('outils', g(f'{REC}/arrosage_*.flac')),           # un vrai arrosoir (libres.py)
  'remplir': ('outils', g(f'{M2}/sfx/tools/water_fill_*.wav')),
  'recolte': ('outils', g(f'{M1}/sfx/harvest/harvest_leaf_*.wav')),
  'arracher': ('outils', g(f'{M1}/sfx/harvest/harvest_root_*.wav')),
@@ -139,8 +136,9 @@ for key, (folder, srcs) in T.items():
     table[key] = files
 # les crédits des enregistrements (CC BY et CC BY-SA demandent de citer l'auteur)
 cred = json.load(open(f'{REC}/credits.json', encoding='utf-8'))
-lignes = ['# Crédits des sons', '', "Tous les sons du jeu sont synthétisés par scripts/son/, sauf ces vrais enregistrements d'animaux,",
-          'libres de droits, trouvés dans des jeux libres qui documentent leur provenance (Stendhal, VoxeLibre, 0 A.D.).',
+lignes = ['# Crédits des sons', '', "Tous les sons du jeu sont synthétisés par scripts/son/, sauf ces vrais enregistrements libres de droits :",
+          "les bêtes de la ferme, trouvées dans des jeux libres qui documentent leur provenance (Stendhal, VoxeLibre, 0 A.D.),",
+          "l'arrosoir (Freesound) et la hulotte (BigSoundBank).",
           'CC0 et domaine public : aucune obligation. CC BY : citer l\'auteur. CC BY-SA : citer l\'auteur, et le fichier',
           '(et ses modifications) reste sous CC BY-SA (https://creativecommons.org/licenses/by-sa/3.0/).', '',
           '| Fichier du jeu | Son | Auteur | Licence | Source |', '|---|---|---|---|---|']

@@ -48,7 +48,7 @@ Conventions communes à toutes les fiches :
 | [10 — les notifications qui se cumulent](10-notifications-cumulees.md) | — | fait |
 | [11 — l'équipement de la famille et le sac à provisions](11-equipement-de-la-famille.md) | — | fait |
 | [12 — le cheval retouché et la calèche avec un vrai cocher](12-cheval-retouche-et-caleche.md) | — | fait |
-| [13 — trois sons : la cruche, le hibou, plus de bruit d'eau](13-sons.md) | — | à faire |
+| [13 — trois sons : la cruche, le hibou, plus de bruit d'eau](13-sons.md) | — | fait |
 | [14 — petites corrections : brouillard, mine, canards, encyclopédie](14-petites-corrections.md) | — | à faire |
 | [15 — le décor : bords des chemins et candélabres](15-decor.md) | — | à faire |
 | [16 — la famille reste visible et ne traverse pas les murs](16-famille-visible.md) | — | à faire |
