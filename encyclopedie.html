@@ -94,6 +94,9 @@
       box-shadow:0 8px 24px rgba(30,58,42,.04);scroll-margin-top:90px;transition:.2s box-shadow,.2s border-color;
     }
     .entry:target{border-color:var(--green-2);box-shadow:0 0 0 3px rgba(54,116,81,.18)}
+    .betes{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin:0 0 8px}
+    .bete{display:block;image-rendering:pixelated}
+    .poisson{font-size:30px;line-height:1}
     .entry h3{margin:0 0 8px;font-size:16px;letter-spacing:-.01em}
     .entry p{margin:0 0 10px;color:#4b584f;font-size:13.5px}
     .links{display:flex;flex-wrap:wrap;gap:6px}
@@ -303,6 +306,7 @@
           <div class="links"><a class="chip" href="#poulailler">Poulailler</a><a class="chip" href="#botteleuse">Botteleuse</a><a class="chip" href="#atelier">Atelier</a><a class="chip" href="#ble">Blé</a></div>
         </article>
         <article class="entry" id="cheval" data-search="cheval et écurie le cheval vient à la ferme une fois l&#x27;écurie construite, attiré par un licol et des friandises fabriqués à l&#x27;atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (atelier) et 2 cases libres. sa case de la barre d&#x27;outils te met en selle : tu vas 1,8 fois plus vite, sur la ferme comme dans tout le grand monde (pas dans la mine ni dans les grottes). quand tu en descends, il rentre à l&#x27;écurie. chaque nuit il mange 2 paille ; sans elle, il ne va que 1,3 fois plus vite le lendemain. le poteau d&#x27;attache et la corde de fibre (atelier) ne servent pas encore : le cheval rentre toujours à l&#x27;écurie.">
+          <div class="betes"><span class="bete" role="img" aria-label="Cheval et Écurie" style="width:144px;height:120px;background:url(assets/cheval.png) 0px 0/2016px 120px no-repeat"></span></div>
           <h3>Cheval et Écurie</h3>
           <p>Le cheval vient à la ferme une fois l&#x27;Écurie construite, attiré par un licol et des friandises fabriqués à l&#x27;Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Sa case de la barre d&#x27;outils te met en selle : tu vas 1,8 fois plus vite, sur la ferme comme dans tout le grand monde (pas dans la mine ni dans les grottes). Quand tu en descends, il rentre à l&#x27;Écurie. Chaque nuit il mange 2 paille ; sans elle, il ne va que 1,3 fois plus vite le lendemain. Le poteau d&#x27;attache et la corde de fibre (Atelier) ne servent pas encore : le cheval rentre toujours à l&#x27;Écurie.</p>
           <div class="links"><a class="chip" href="#atelier">Atelier</a><a class="chip" href="#murs">Murs, fenêtres et portes</a><a class="chip" href="#paille">Paille</a><a class="chip" href="#fibre">Fibre</a><a class="chip" href="#grand_monde">Le grand monde</a></div>
@@ -528,16 +532,19 @@
       </div>
       <div class="entry-grid">
         <article class="entry" id="poule" data-search="poule animal du poulailler, attiré par un nid garni (de la fibre et du blé, fabriqué à l&#x27;atelier). pond un œuf chaque nuit où elle a été nourrie avec du blé (1 blé pour 2 poules), et cela toute sa vie. le jour, elle sort dans l&#x27;enclos.">
+          <div class="betes"><span class="bete" role="img" aria-label="Poule" style="width:48px;height:48px;background:url(assets/poule.png) 0px 0/816px 48px no-repeat"></span></div>
           <h3>Poule</h3>
           <p>Animal du Poulailler, attiré par un nid garni (de la fibre et du blé, fabriqué à l&#x27;Atelier). Pond un œuf chaque nuit où elle a été nourrie avec du blé (1 blé pour 2 poules), et cela toute sa vie. Le jour, elle sort dans l&#x27;enclos.</p>
           <div class="links"><a class="chip" href="#poulailler">Poulailler</a><a class="chip" href="#etable">Étable</a><a class="chip" href="#comptoir">La calèche</a><a class="chip" href="#silo">Silo</a><a class="chip" href="#ble">Blé</a><a class="chip" href="#oeuf">Œuf</a></div>
         </article>
         <article class="entry" id="mouton" data-search="mouton animal de l&#x27;étable, venu pour une pierre à sel et du foin (atelier), qui occupe 1 place. il mange 1 paille par nuit ; sa laine est prête à tondre après 2 nuits où il a été nourri. sans paille, sa laine n&#x27;avance pas cette nuit-là, et rien d&#x27;autre ne lui arrive. le second adulte de la famille peut s&#x27;occuper des bêtes.">
+          <div class="betes"><span class="bete" role="img" aria-label="Mouton" style="width:96px;height:72px;background:url(assets/mouton.png) 0px 0/768px 72px no-repeat"></span></div>
           <h3>Mouton</h3>
           <p>Animal de l&#x27;Étable, venu pour une pierre à sel et du foin (Atelier), qui occupe 1 place. Il mange 1 paille par nuit ; sa laine est prête à tondre après 2 nuits où il a été nourri. Sans paille, sa laine n&#x27;avance pas cette nuit-là, et rien d&#x27;autre ne lui arrive. Le second adulte de la famille peut s&#x27;occuper des bêtes.</p>
           <div class="links"><a class="chip" href="#etable">Étable</a><a class="chip" href="#comptoir">La calèche</a><a class="chip" href="#paille">Paille</a><a class="chip" href="#laine">Laine</a></div>
         </article>
         <article class="entry" id="vache" data-search="vache animal de l&#x27;étable, venue pour une pierre à sel et du foin (atelier), qui occupe 3 places. elle mange 2 pailles par nuit et donne 1 lait chaque nuit où elle a mangé. sans paille, elle ne donne pas de lait cette nuit-là, et rien d&#x27;autre ne lui arrive. nourrie aux herbes de montagne (bouton « nourrir les vaches aux herbes » de l&#x27;étable), elle mange 1 herbe à la place de sa paille et donne du lait d&#x27;alpage.">
+          <div class="betes"><span class="bete" role="img" aria-label="Vache" style="width:96px;height:72px;background:url(assets/vache.png) 0px 0/1440px 72px no-repeat"></span></div>
           <h3>Vache</h3>
           <p>Animal de l&#x27;Étable, venue pour une pierre à sel et du foin (Atelier), qui occupe 3 places. Elle mange 2 pailles par nuit et donne 1 lait chaque nuit où elle a mangé. Sans paille, elle ne donne pas de lait cette nuit-là, et rien d&#x27;autre ne lui arrive. Nourrie aux herbes de montagne (bouton « Nourrir les vaches aux herbes » de l&#x27;Étable), elle mange 1 herbe à la place de sa paille et donne du lait d&#x27;alpage.</p>
           <div class="links"><a class="chip" href="#etable">Étable</a><a class="chip" href="#comptoir">La calèche</a><a class="chip" href="#paille">Paille</a><a class="chip" href="#lait">Lait</a><a class="chip" href="#fromage_d_alpage">Herbes, lait et fromage d&#x27;alpage</a></div>
@@ -878,13 +885,14 @@
           <div class="links"><a class="chip" href="#minerai">Minerai</a><a class="chip" href="#pioche">Pioche</a><a class="chip" href="#lingot">Lingot</a><a class="chip" href="#grotte_montagne">Grottes de la montagne</a></div>
         </article>
         <article class="entry" id="peche" data-search="pêche et poissons à la canne : truite et brochet dans l&#x27;étang (6 prises par jour au plus) et la mare (3) de la ferme. dans le grand monde, on pêche au bord de toute eau, avec le même geste : l&#x27;omble chevalier et la truite dans les lacs (4 prises par jour, tous les lacs ensemble), la truite et le goujon dans les rivières (5), la dorade, la sardine et l&#x27;anchois en mer (8). les coins de pêche (un ponton, ou des piquets et une nasse ; des remous sur l&#x27;eau) sont de meilleurs coins : plus de touches, un poisson plus rare (le brochet au lac, le saumon en rivière, le bar en mer) et leurs propres prises du jour (8 au lac, 8 en rivière, 12 en mer, pour chaque coin). chaque lancer coûte 4 énergie. le poisson frais se garde 2 nuits : il se mange, se vend ou se cuisine (poisson grillé à l&#x27;ail, quenelle de poisson).">
+          <div class="betes"><span class="poisson">🐟‍🌈</span><span class="poisson">🐟‍🦷</span><span class="poisson">🐟‍❄</span><span class="poisson">🐟‍⭐</span><span class="poisson">🐟‍🌊</span><span class="poisson">🐟‍💧</span><span class="poisson">🐟‍🪨</span><span class="poisson">🐟‍🔶</span><span class="poisson">🐟‍🌀</span></div>
           <h3>Pêche et poissons</h3>
           <p>À la canne : truite et brochet dans l&#x27;étang (6 prises par jour au plus) et la mare (3) de la ferme. Dans le grand monde, on pêche au bord de toute eau, avec le même geste : l&#x27;omble chevalier et la truite dans les lacs (4 prises par jour, tous les lacs ensemble), la truite et le goujon dans les rivières (5), la dorade, la sardine et l&#x27;anchois en mer (8). Les coins de pêche (un ponton, ou des piquets et une nasse ; des remous sur l&#x27;eau) sont de meilleurs coins : plus de touches, un poisson plus rare (le brochet au lac, le saumon en rivière, le bar en mer) et leurs propres prises du jour (8 au lac, 8 en rivière, 12 en mer, pour chaque coin). Chaque lancer coûte 4 énergie. Le poisson frais se garde 2 nuits : il se mange, se vend ou se cuisine (poisson grillé à l&#x27;ail, quenelle de poisson).</p>
           <div class="links"><a class="chip" href="#canne_a_peche">Canne à pêche</a><a class="chip" href="#poisson_grille">Poisson grillé à l&#x27;ail</a><a class="chip" href="#quenelle_de_poisson">Quenelle de poisson</a></div>
         </article>
-        <article class="entry" id="grotte_montagne" data-search="grottes de la montagne au pied de la montagne du grand monde, des bouches de roche s&#x27;ouvrent dans la pente : chacune mène à sa grotte, avec la flèche des passages quand on s&#x27;en approche. ce sont des niveaux de grotte comme ceux de la mine (le même jour, la même grotte ; un autre jour, une autre), 5 niveaux de profondeur, mais plus riches : plus de minerai dans les murs, l&#x27;or et le platine dès les premiers niveaux, des cristaux de quartz et des améthystes à piocher, et dans chacune un filon (du cuivre, de l&#x27;or, du platine, du quartz ou de l&#x27;améthyste en abondance). en remontant l&#x27;échelle du premier niveau, on ressort devant l&#x27;entrée, dans le monde, au même jour et à la même heure.">
+        <article class="entry" id="grotte_montagne" data-search="grottes de la montagne au pied de la montagne du grand monde, des bouches de roche s&#x27;ouvrent dans la pente : chacune mène à sa grotte (on y entre en touchant sa bouche, ou en s&#x27;y poussant juste devant). ce sont des niveaux de grotte comme ceux de la mine (le même jour, la même grotte ; un autre jour, une autre), 5 niveaux de profondeur, mais plus riches : plus de minerai dans les murs, l&#x27;or et le platine dès les premiers niveaux, des cristaux de quartz et des améthystes à piocher, et dans chacune un filon (du cuivre, de l&#x27;or, du platine, du quartz ou de l&#x27;améthyste en abondance). en remontant l&#x27;échelle du premier niveau, on ressort devant l&#x27;entrée, dans le monde, au même jour et à la même heure.">
           <h3>Grottes de la montagne</h3>
-          <p>Au pied de la montagne du grand monde, des bouches de roche s&#x27;ouvrent dans la pente : chacune mène à sa grotte, avec la flèche des passages quand on s&#x27;en approche. Ce sont des niveaux de grotte comme ceux de la mine (le même jour, la même grotte ; un autre jour, une autre), 5 niveaux de profondeur, mais plus riches : plus de minerai dans les murs, l&#x27;or et le platine dès les premiers niveaux, des cristaux de quartz et des améthystes à piocher, et dans chacune un filon (du cuivre, de l&#x27;or, du platine, du quartz ou de l&#x27;améthyste en abondance). En remontant l&#x27;échelle du premier niveau, on ressort devant l&#x27;entrée, dans le monde, au même jour et à la même heure.</p>
+          <p>Au pied de la montagne du grand monde, des bouches de roche s&#x27;ouvrent dans la pente : chacune mène à sa grotte (on y entre en touchant sa bouche, ou en s&#x27;y poussant juste devant). Ce sont des niveaux de grotte comme ceux de la mine (le même jour, la même grotte ; un autre jour, une autre), 5 niveaux de profondeur, mais plus riches : plus de minerai dans les murs, l&#x27;or et le platine dès les premiers niveaux, des cristaux de quartz et des améthystes à piocher, et dans chacune un filon (du cuivre, de l&#x27;or, du platine, du quartz ou de l&#x27;améthyste en abondance). En remontant l&#x27;échelle du premier niveau, on ressort devant l&#x27;entrée, dans le monde, au même jour et à la même heure.</p>
           <div class="links"><a class="chip" href="#grotte">Grotte</a><a class="chip" href="#minerai">Minerai</a><a class="chip" href="#pioche">Pioche</a></div>
         </article></div>
     </section>
@@ -903,71 +911,85 @@
           <div class="links"><a class="chip" href="#faune_marmotte">Marmotte</a><a class="chip" href="#faune_bouquetin">Bouquetin</a><a class="chip" href="#faune_aigle">Aigle royal</a><a class="chip" href="#faune_mouette">Mouette</a><a class="chip" href="#faune_crabe">Crabe</a><a class="chip" href="#faune_dauphin">Dauphin</a><a class="chip" href="#faune_canard">Canard colvert</a><a class="chip" href="#faune_cygne">Cygne</a><a class="chip" href="#faune_chevreuil">Chevreuil</a><a class="chip" href="#faune_renard">Renard roux</a><a class="chip" href="#faune_lapin">Lapin de garenne</a><a class="chip" href="#faune_ecureuil">Écureuil roux</a><a class="chip" href="#faune_lievre">Lièvre</a><a class="chip" href="#faune_perdrix">Perdrix grise</a></div>
         </article>
         <article class="entry" id="faune_marmotte" data-search="marmotte elle vit en colonie sur les pentes de la montagne, entre les éboulis : assise sur ses pattes arrière, elle guette. le personnage approche, elle détale et plonge dans son terrier ; elle en ressort un moment plus tard, quand tout est calme. la nuit, elle dort sous terre. on ne la chasse pas : on la regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Marmotte" style="width:48px;height:48px;background:url(assets/faune_marmotte.png) 0px 0/192px 48px no-repeat"></span></div>
           <h3>Marmotte</h3>
           <p>Elle vit en colonie sur les pentes de la montagne, entre les éboulis : assise sur ses pattes arrière, elle guette. Le personnage approche, elle détale et plonge dans son terrier ; elle en ressort un moment plus tard, quand tout est calme. La nuit, elle dort sous terre. On ne la chasse pas : on la regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_bouquetin" data-search="bouquetin le bouquetin des alpes, ses grandes cornes annelées : il broute haut dans la montagne, près des sommets, seul ou en petite harde. il s&#x27;écarte d&#x27;un pas sûr quand on s&#x27;approche, sans se presser. on ne le chasse pas : on le regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Bouquetin" style="width:96px;height:96px;background:url(assets/faune_bouquetin.png) 0px 0/576px 96px no-repeat"></span></div>
           <h3>Bouquetin</h3>
           <p>Le bouquetin des Alpes, ses grandes cornes annelées : il broute haut dans la montagne, près des sommets, seul ou en petite harde. Il s&#x27;écarte d&#x27;un pas sûr quand on s&#x27;approche, sans se presser. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_aigle" data-search="aigle royal il tourne en grands cercles au-dessus des sommets, porté par l&#x27;air chaud ; son ombre court sur les rochers. on le regarde, on ne l&#x27;approche pas. la nuit, il a regagné son aire. on ne le chasse pas : on le regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Aigle royal" style="width:96px;height:96px;background:url(assets/faune_aigle.png) 0px 0/192px 96px no-repeat"></span></div>
           <h3>Aigle royal</h3>
           <p>Il tourne en grands cercles au-dessus des sommets, porté par l&#x27;air chaud ; son ombre court sur les rochers. On le regarde, on ne l&#x27;approche pas. La nuit, il a regagné son aire. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_mouette" data-search="mouette sur la plage, au bord de l&#x27;eau, elles se tiennent à plusieurs, le bec au vent. quand on arrive, elles s&#x27;envolent toutes et vont se poser plus loin, puis reviennent. on ne la chasse pas : on la regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Mouette" style="width:48px;height:48px;background:url(assets/faune_mouette.png) 0px 0/192px 48px no-repeat"></span></div>
           <h3>Mouette</h3>
           <p>Sur la plage, au bord de l&#x27;eau, elles se tiennent à plusieurs, le bec au vent. Quand on arrive, elles s&#x27;envolent toutes et vont se poser plus loin, puis reviennent. On ne la chasse pas : on la regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_crabe" data-search="crabe il trotte de côté sur le sable mouillé, près des vagues. une ombre, un pas : il file et s&#x27;enfouit dans le sable, d&#x27;où il ressort plus tard. la nuit, on ne le voit pas. on ne le chasse pas : on le regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Crabe" style="width:48px;height:48px;background:url(assets/faune_crabe.png) 0px 0/96px 48px no-repeat"></span></div>
           <h3>Crabe</h3>
           <p>Il trotte de côté sur le sable mouillé, près des vagues. Une ombre, un pas : il file et s&#x27;enfouit dans le sable, d&#x27;où il ressort plus tard. La nuit, on ne le voit pas. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_dauphin" data-search="dauphin au large, loin du rivage, un dauphin saute hors de l&#x27;eau de temps en temps, et retombe dans une gerbe d&#x27;écume. il faut savoir regarder la mer un moment. on ne le chasse pas : on le regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Dauphin" style="width:96px;height:96px;background:url(assets/faune_dauphin.png) -96px 0/480px 96px no-repeat"></span></div>
           <h3>Dauphin</h3>
           <p>Au large, loin du rivage, un dauphin saute hors de l&#x27;eau de temps en temps, et retombe dans une gerbe d&#x27;écume. Il faut savoir regarder la mer un moment. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_canard" data-search="canard colvert le mâle à la tête verte, la cane toute brune : ils nagent par petits groupes sur les lacs et l&#x27;eau basse du marais, et plongent la tête sous l&#x27;eau pour manger. on approche, ils s&#x27;éloignent en nageant. on ne le chasse pas : on le regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Canard colvert" style="width:48px;height:48px;background:url(assets/faune_canard.png) 0px 0/768px 48px no-repeat"></span><span class="bete" role="img" aria-label="Canard colvert" style="width:48px;height:48px;background:url(assets/faune_canard.png) -384px 0/768px 48px no-repeat"></span><span class="bete" role="img" aria-label="Canard colvert" style="width:48px;height:48px;background:url(assets/faune_canard.png) -192px 0/768px 48px no-repeat"></span></div>
           <h3>Canard colvert</h3>
           <p>Le mâle à la tête verte, la cane toute brune : ils nagent par petits groupes sur les lacs et l&#x27;eau basse du marais, et plongent la tête sous l&#x27;eau pour manger. On approche, ils s&#x27;éloignent en nageant. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_cygne" data-search="cygne grand et blanc, le cou en s : il glisse lentement sur les lacs, plonge le cou dans l&#x27;eau, et s&#x27;écarte sans hâte quand on vient au bord. on ne le chasse pas : on le regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Cygne" style="width:96px;height:96px;background:url(assets/faune_cygne.png) 0px 0/384px 96px no-repeat"></span></div>
           <h3>Cygne</h3>
           <p>Grand et blanc, le cou en S : il glisse lentement sur les lacs, plonge le cou dans l&#x27;eau, et s&#x27;écarte sans hâte quand on vient au bord. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_chevreuil" data-search="chevreuil le chevreuil de nos forêts, sa robe fauve et son miroir blanc : il broute dans les clairières et les sous-bois. au moindre bruit, il bondit et s&#x27;enfuit entre les arbres. la nuit, il se couche dans les fourrés. on ne le chasse pas : on le regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Chevreuil" style="width:96px;height:96px;background:url(assets/faune_chevreuil.png) 0px 0/576px 96px no-repeat"></span></div>
           <h3>Chevreuil</h3>
           <p>Le chevreuil de nos forêts, sa robe fauve et son miroir blanc : il broute dans les clairières et les sous-bois. Au moindre bruit, il bondit et s&#x27;enfuit entre les arbres. La nuit, il se couche dans les fourrés. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_renard" data-search="renard roux roux, la gorge blanche et la queue en panache, il rôde seul à la lisière des bois et sur la lande, assis à guetter ou trottant le nez au sol. il garde ses distances : on approche, il file. on ne le chasse pas : on le regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Renard roux" style="width:96px;height:96px;background:url(assets/faune_renard.png) 0px 0/576px 96px no-repeat"></span></div>
           <h3>Renard roux</h3>
           <p>Roux, la gorge blanche et la queue en panache, il rôde seul à la lisière des bois et sur la lande, assis à guetter ou trottant le nez au sol. Il garde ses distances : on approche, il file. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_lapin" data-search="lapin de garenne dans les prés au bord des bois et en forêt, il grignote, assis, les oreilles dressées. le personnage approche : quelques bonds, et il disparaît dans son terrier, pour en ressortir quand tout est calme. on ne le chasse pas : on le regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Lapin de garenne" style="width:48px;height:48px;background:url(assets/faune_lapin.png) 0px 0/192px 48px no-repeat"></span></div>
           <h3>Lapin de garenne</h3>
           <p>Dans les prés au bord des bois et en forêt, il grignote, assis, les oreilles dressées. Le personnage approche : quelques bonds, et il disparaît dans son terrier, pour en ressortir quand tout est calme. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_ecureuil" data-search="écureuil roux il descend au pied des arbres de la forêt chercher des noisettes, la queue en panache relevée. surpris, il file et grimpe se cacher dans les branches. on ne le chasse pas : on le regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Écureuil roux" style="width:48px;height:48px;background:url(assets/faune_ecureuil.png) 0px 0/192px 48px no-repeat"></span></div>
           <h3>Écureuil roux</h3>
           <p>Il descend au pied des arbres de la forêt chercher des noisettes, la queue en panache relevée. Surpris, il file et grimpe se cacher dans les branches. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_lievre" data-search="lièvre plus grand que le lapin, fauve, de très longues oreilles au bout noir : il vit à découvert sur la lande. il compte sur sa vitesse : on approche, il détale en zigzag. on ne le chasse pas : on le regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Lièvre" style="width:48px;height:48px;background:url(assets/faune_lievre.png) 0px 0/192px 48px no-repeat"></span></div>
           <h3>Lièvre</h3>
           <p>Plus grand que le lapin, fauve, de très longues oreilles au bout noir : il vit à découvert sur la lande. Il compte sur sa vitesse : on approche, il détale en zigzag. On ne le chasse pas : on le regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>
         </article>
         <article class="entry" id="faune_perdrix" data-search="perdrix grise ronde, la face orangée : elles picorent en petite compagnie dans la bruyère de la lande, et s&#x27;envolent toutes ensemble dans un bruit d&#x27;ailes quand on arrive trop près. on ne la chasse pas : on la regarde, et un appui dessus dit son nom.">
+          <div class="betes"><span class="bete" role="img" aria-label="Perdrix grise" style="width:48px;height:48px;background:url(assets/faune_perdrix.png) 0px 0/288px 48px no-repeat"></span></div>
           <h3>Perdrix grise</h3>
           <p>Ronde, la face orangée : elles picorent en petite compagnie dans la bruyère de la lande, et s&#x27;envolent toutes ensemble dans un bruit d&#x27;ailes quand on arrive trop près. On ne la chasse pas : on la regarde, et un appui dessus dit son nom.</p>
           <div class="links"><a class="chip" href="#faune_du_monde">La faune du grand monde</a></div>

@@ -15,6 +15,12 @@
 // Chaque entrée dit quand elle se découvre (« decouverte » : des conditions, voir
 // js/engine/decouverte.js) ; une condition inconnue est une erreur.
 //
+// Fiche 14 : les pages des bêtes montrent leur dessin d'aujourd'hui, pris dans les planches du jeu
+// (« visuels » : une case de la planche, lue ici dans assets/ ; voir VISUELS plus bas) : les bêtes de
+// la ferme et le cheval (scripts/carte/betes.py, scripts/personnage/cheval.py), la faune du grand monde
+// (scripts/carte/faune.py, assets/faune.json : les cases par leur nom) ; la page de la pêche, les icônes
+// de ses poissons (« icones », celles du jeu). Une planche ou une case introuvable est une erreur.
+//
 // Usage : node scripts/build-encyclopedie.mjs          (réécrit encyclopedie.html et js/encyclopedie.generated.js)
 //         node scripts/build-encyclopedie.mjs --check  (vérifie qu'ils sont à jour, sans écrire)
 
@@ -27,6 +33,7 @@ import { erreurCondition } from '../js/engine/decouverte.js';
 
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
 const jsonPath = join(here, 'encyclopedie_ferme_familiale.json');
+const assets = join(here, 'assets');
 const htmlPath = join(here, 'encyclopedie.html');
 const jeuPath = join(here, 'js', 'encyclopedie.generated.js');
 
@@ -60,6 +67,60 @@ function remplir(texte, id) {
   });
 }
 
+// La taille d'une planche PNG (sa largeur et sa hauteur, lues dans son en-tête IHDR).
+function taillePng(fichier) {
+  const b = readFileSync(join(assets, fichier));
+  if (b.toString('latin1', 12, 16) !== 'IHDR') throw new Error(`assets/${fichier} : pas une image PNG`);
+  return { l: b.readUInt32BE(16), hh: b.readUInt32BE(20) };
+}
+
+// Les dessins des bêtes (fiche 14). Les bêtes de la ferme et le cheval : leur planche, la taille d'une case
+// (celle de js/carte/ferme/config.js, HERD_SHEETS, et de js/carte/cheval.js) et la case montrée (à
+// l'arrêt, de profil). La faune : la planche de l'espèce (assets/faune.json), la première image de son
+// repos (ou de son vol, de son saut), celle de chaque variante (la cane) et, pour le canard, debout sur
+// ses pattes. → { id de l'entrée : [{ image, w, h, x, l, hh }] } (x : le bord gauche de la case, en px ;
+// l, hh : la taille de la planche).
+const BETES_FERME = {
+  poule: { image: 'poule.png', w: 16, h: 16, cases: [0] },
+  mouton: { image: 'mouton.png', w: 32, h: 24, cases: [0] },
+  vache: { image: 'vache.png', w: 32, h: 24, cases: [0] },
+  cheval: { image: 'cheval.png', w: 48, h: 40, cases: [0] },
+};
+function visuels() {
+  const out = {};
+  const casesDe = (image, w, h, cases) => {
+    const { l, hh } = taillePng(image);
+    return cases.map((k) => {
+      if ((k + 1) * w > l || h > hh) throw new Error(`assets/${image} : pas de case ${k} de ${w} × ${h}`);
+      return { image, w, h, x: k * w, l, hh };
+    });
+  };
+  for (const [id, b] of Object.entries(BETES_FERME)) out[id] = casesDe(b.image, b.w, b.h, b.cases);
+  const meta = JSON.parse(readFileSync(join(assets, 'faune.json'), 'utf8')).especes;
+  for (const [esp, e] of Object.entries(DATA.FAUNE.ESPECES)) {
+    const m = meta[esp];
+    if (!m) throw new Error(`assets/faune.json : pas d'espèce ${esp}`);
+    const premiere = (im) => (im.repos || im.vol || [])[0] || (im.saut || [])[1];
+    const noms = [premiere(e.images), ...(e.variantes || []).map((v) => v.repos && v.repos[0]), e.images.terre_repos && e.images.terre_repos[0]];
+    const cases = [...new Set(noms.filter(Boolean))].map((n) => {
+      const k = m.frames.indexOf(n);
+      if (k < 0) throw new Error(`assets/faune.json : pas de case « ${n} » pour ${esp}`);
+      return k;
+    });
+    out[`faune_${esp}`] = casesDe(m.image, m.frameWidth, m.frameHeight, cases);
+  }
+  return out;
+}
+const VISUELS = visuels();
+// Les icônes des poissons (la page de la pêche) : celles de chaque poisson que la canne peut prendre
+// (DATA.CANNE : ses prises, et celles des coins de pêche), dans l'ordre où ils y paraissent.
+const poissons = () => {
+  const noms = [];
+  for (const table of [DATA.CANNE.PRISES, DATA.CANNE.COINS.PRISES]) for (const eau of Object.values(table)) for (const n of Object.keys(eau)) if (DATA.OBJETS[n] && !noms.includes(n)) noms.push(n);
+  return noms.map((n) => DATA.OBJETS[n].icone);
+};
+const ICONES = { peche: poissons };
+
 // Tous les termes, pour le libellé des liens ; un lien vers un terme inconnu est une erreur.
 const termes = new Map();
 for (const c of data.categories) {
@@ -86,7 +147,11 @@ const jeu = {
     id: c.id,
     icone: c.icone,
     nom: c.nom,
-    entrees: c.entrees.map((e) => ({ id: e.id, terme: e.terme, description: remplir(e.description, e.id), liens: e.liens || [], decouverte: e.decouverte })),
+    entrees: c.entrees.map((e) => ({
+      id: e.id, terme: e.terme, description: remplir(e.description, e.id), liens: e.liens || [], decouverte: e.decouverte,
+      ...(VISUELS[e.id] ? { visuels: VISUELS[e.id] } : {}),
+      ...(ICONES[e.id] ? { icones: ICONES[e.id]() } : {}),
+    })),
   })),
 };
 const jeuSource = `// FICHIER GÉNÉRÉ par scripts/build-encyclopedie.mjs à partir de encyclopedie_ferme_familiale.json.
@@ -101,8 +166,12 @@ function entree(e) {
     if (!termes.has(id)) throw new Error(`« ${e.id} » renvoie vers un terme inconnu : ${id}`);
     return `<a class="chip" href="#${id}">${esc(termes.get(id))}</a>`;
   });
+  // (le dessin de la bête, en gros pixels : trois fois sa taille, comme dans le jeu)
+  const k = 3;
+  const dessins = (VISUELS[e.id] || []).map((v) => `<span class="bete" role="img" aria-label="${esc(e.terme)}" style="width:${v.w * k}px;height:${v.h * k}px;background:url(assets/${v.image}) ${-v.x * k}px 0/${v.l * k}px ${v.hh * k}px no-repeat"></span>`).join('')
+    + (ICONES[e.id] ? ICONES[e.id]().map((i) => `<span class="poisson">${i}</span>`).join('') : '');
   return `        <article class="entry" id="${e.id}" data-search="${esc(`${e.terme} ${description}`.toLowerCase())}">
-          <h3>${esc(e.terme)}</h3>
+          ${dessins ? `<div class="betes">${dessins}</div>\n          ` : ''}<h3>${esc(e.terme)}</h3>
           <p>${esc(description)}</p>
           ${liens.length ? `<div class="links">${liens.join('')}</div>` : ''}
         </article>`;

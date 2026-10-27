@@ -107,10 +107,18 @@
     "m_nage_1",
     "m_plonge_0",
     "m_plonge_1",
+    "m_debout_0",
+    "m_debout_1",
+    "m_marche_0",
+    "m_marche_1",
     "f_nage_0",
     "f_nage_1",
     "f_plonge_0",
-    "f_plonge_1"
+    "f_plonge_1",
+    "f_debout_0",
+    "f_debout_1",
+    "f_marche_0",
+    "f_marche_1"
    ],
    "nom": "Un canard colvert"
   },

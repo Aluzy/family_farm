@@ -68,14 +68,23 @@ export function deBase64(s, n) {
 
 /* ---------- les cellules vues ---------- */
 
-// Les cellules de la ferme et de sa prairie (MARGE_FERME cases autour), vues d'office : [indices].
+// Le rectangle des cellules de la ferme et de sa prairie (MARGE_FERME cases autour), vues d'office :
+// [x0, y0, x1, y1] (bornes comprises, en cellules), ou null (un terrain sans monde).
+export function rectFerme(T) {
+  if (!T || !T.FERME) return null;
+  const { C, L, H } = grilleVu(T), F = T.FERME, M = DECOUVERTE.MARGE_FERME;
+  return [
+    Math.max(0, Math.floor((F.X - M) / C)), Math.max(0, Math.floor((F.Y - M) / C)),
+    Math.min(L - 1, Math.floor((F.X + F.LARGEUR + M - 1) / C)), Math.min(H - 1, Math.floor((F.Y + F.HAUTEUR + M - 1) / C)),
+  ];
+}
+
+// Les cellules de la ferme et de sa prairie, vues d'office : [indices].
 const fermes = new WeakMap();
 export function cellulesFerme(T) {
   if (!T || !T.FERME) return [];
   if (fermes.has(T)) return fermes.get(T);
-  const { C, L, H } = grilleVu(T), F = T.FERME, M = DECOUVERTE.MARGE_FERME, out = [];
-  const x0 = Math.max(0, Math.floor((F.X - M) / C)), x1 = Math.min(L - 1, Math.floor((F.X + F.LARGEUR + M - 1) / C));
-  const y0 = Math.max(0, Math.floor((F.Y - M) / C)), y1 = Math.min(H - 1, Math.floor((F.Y + F.HAUTEUR + M - 1) / C));
+  const { L } = grilleVu(T), [x0, y0, x1, y1] = rectFerme(T), out = [];
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) out.push(y * L + x);
   fermes.set(T, out);
   return out;
@@ -102,6 +111,14 @@ export function vuDe(state, T = farmTerrain(state)) {
   if (!T || !T.FERME) return null;
   const g = grilleVu(T), bits = bitsDe(state, T);
   return { ...g, bits, vu: versBase64(bits) };
+}
+
+// Le brouillard que la page donne à la scène de la ferme (modèle.brouillard, js/carte/ferme/brouillard.js) :
+// { vu (la chaîne base64 : la ferme et sa prairie toujours posées), C, L, H, ferme (rectFerme : la scène
+// les tient pour vues quoi que dise la chaîne, fiche 14) }, ou null sans grand monde.
+export function brouillardDe(state, T = farmTerrain(state)) {
+  const v = vuDe(state, T);
+  return v ? { vu: v.vu, C: v.C, L: v.L, H: v.H, ferme: rectFerme(T) } : null;
 }
 
 // La cellule (cx, cy) est-elle vue ?

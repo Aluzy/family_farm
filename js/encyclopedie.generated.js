@@ -456,6 +456,16 @@ export const ENCYCLOPEDIE = {
       "objet:ratelier",
       "objet:corde",
       "objet:poteau_attache"
+     ],
+     "visuels": [
+      {
+       "image": "cheval.png",
+       "w": 48,
+       "h": 40,
+       "x": 0,
+       "l": 672,
+       "hh": 40
+      }
      ]
     },
     {
@@ -1046,6 +1056,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "animal:poule"
+     ],
+     "visuels": [
+      {
+       "image": "poule.png",
+       "w": 16,
+       "h": 16,
+       "x": 0,
+       "l": 272,
+       "hh": 16
+      }
      ]
     },
     {
@@ -1060,6 +1080,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "animal:mouton"
+     ],
+     "visuels": [
+      {
+       "image": "mouton.png",
+       "w": 32,
+       "h": 24,
+       "x": 0,
+       "l": 256,
+       "hh": 24
+      }
      ]
     },
     {
@@ -1075,6 +1105,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "animal:vache"
+     ],
+     "visuels": [
+      {
+       "image": "vache.png",
+       "w": 32,
+       "h": 24,
+       "x": 0,
+       "l": 480,
+       "hh": 24
+      }
      ]
     },
     {
@@ -1945,12 +1985,23 @@ export const ENCYCLOPEDIE = {
       "objet:omble",
       "objet:goujon",
       "objet:dorade"
+     ],
+     "icones": [
+      "🐟‍🌈",
+      "🐟‍🦷",
+      "🐟‍❄",
+      "🐟‍⭐",
+      "🐟‍🌊",
+      "🐟‍💧",
+      "🐟‍🪨",
+      "🐟‍🔶",
+      "🐟‍🌀"
      ]
     },
     {
      "id": "grotte_montagne",
      "terme": "Grottes de la montagne",
-     "description": "Au pied de la montagne du grand monde, des bouches de roche s'ouvrent dans la pente : chacune mène à sa grotte, avec la flèche des passages quand on s'en approche. Ce sont des niveaux de grotte comme ceux de la mine (le même jour, la même grotte ; un autre jour, une autre), 5 niveaux de profondeur, mais plus riches : plus de minerai dans les murs, l'or et le platine dès les premiers niveaux, des cristaux de quartz et des améthystes à piocher, et dans chacune un filon (du cuivre, de l'or, du platine, du quartz ou de l'améthyste en abondance). En remontant l'échelle du premier niveau, on ressort devant l'entrée, dans le monde, au même jour et à la même heure.",
+     "description": "Au pied de la montagne du grand monde, des bouches de roche s'ouvrent dans la pente : chacune mène à sa grotte (on y entre en touchant sa bouche, ou en s'y poussant juste devant). Ce sont des niveaux de grotte comme ceux de la mine (le même jour, la même grotte ; un autre jour, une autre), 5 niveaux de profondeur, mais plus riches : plus de minerai dans les murs, l'or et le platine dès les premiers niveaux, des cristaux de quartz et des améthystes à piocher, et dans chacune un filon (du cuivre, de l'or, du platine, du quartz ou de l'améthyste en abondance). En remontant l'échelle du premier niveau, on ressort devant l'entrée, dans le monde, au même jour et à la même heure.",
      "liens": [
       "grotte",
       "minerai",
@@ -2015,6 +2066,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:marmotte"
+     ],
+     "visuels": [
+      {
+       "image": "faune_marmotte.png",
+       "w": 16,
+       "h": 16,
+       "x": 0,
+       "l": 64,
+       "hh": 16
+      }
      ]
     },
     {
@@ -2026,6 +2087,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:bouquetin"
+     ],
+     "visuels": [
+      {
+       "image": "faune_bouquetin.png",
+       "w": 32,
+       "h": 32,
+       "x": 0,
+       "l": 192,
+       "hh": 32
+      }
      ]
     },
     {
@@ -2037,6 +2108,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:aigle"
+     ],
+     "visuels": [
+      {
+       "image": "faune_aigle.png",
+       "w": 32,
+       "h": 32,
+       "x": 0,
+       "l": 64,
+       "hh": 32
+      }
      ]
     },
     {
@@ -2048,6 +2129,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:mouette"
+     ],
+     "visuels": [
+      {
+       "image": "faune_mouette.png",
+       "w": 16,
+       "h": 16,
+       "x": 0,
+       "l": 64,
+       "hh": 16
+      }
      ]
     },
     {
@@ -2059,6 +2150,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:crabe"
+     ],
+     "visuels": [
+      {
+       "image": "faune_crabe.png",
+       "w": 16,
+       "h": 16,
+       "x": 0,
+       "l": 32,
+       "hh": 16
+      }
      ]
     },
     {
@@ -2070,6 +2171,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:dauphin"
+     ],
+     "visuels": [
+      {
+       "image": "faune_dauphin.png",
+       "w": 32,
+       "h": 32,
+       "x": 32,
+       "l": 160,
+       "hh": 32
+      }
      ]
     },
     {
@@ -2081,6 +2192,32 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:canard"
+     ],
+     "visuels": [
+      {
+       "image": "faune_canard.png",
+       "w": 16,
+       "h": 16,
+       "x": 0,
+       "l": 256,
+       "hh": 16
+      },
+      {
+       "image": "faune_canard.png",
+       "w": 16,
+       "h": 16,
+       "x": 128,
+       "l": 256,
+       "hh": 16
+      },
+      {
+       "image": "faune_canard.png",
+       "w": 16,
+       "h": 16,
+       "x": 64,
+       "l": 256,
+       "hh": 16
+      }
      ]
     },
     {
@@ -2092,6 +2229,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:cygne"
+     ],
+     "visuels": [
+      {
+       "image": "faune_cygne.png",
+       "w": 32,
+       "h": 32,
+       "x": 0,
+       "l": 128,
+       "hh": 32
+      }
      ]
     },
     {
@@ -2103,6 +2250,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:chevreuil"
+     ],
+     "visuels": [
+      {
+       "image": "faune_chevreuil.png",
+       "w": 32,
+       "h": 32,
+       "x": 0,
+       "l": 192,
+       "hh": 32
+      }
      ]
     },
     {
@@ -2114,6 +2271,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:renard"
+     ],
+     "visuels": [
+      {
+       "image": "faune_renard.png",
+       "w": 32,
+       "h": 32,
+       "x": 0,
+       "l": 192,
+       "hh": 32
+      }
      ]
     },
     {
@@ -2125,6 +2292,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:lapin"
+     ],
+     "visuels": [
+      {
+       "image": "faune_lapin.png",
+       "w": 16,
+       "h": 16,
+       "x": 0,
+       "l": 64,
+       "hh": 16
+      }
      ]
     },
     {
@@ -2136,6 +2313,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:ecureuil"
+     ],
+     "visuels": [
+      {
+       "image": "faune_ecureuil.png",
+       "w": 16,
+       "h": 16,
+       "x": 0,
+       "l": 64,
+       "hh": 16
+      }
      ]
     },
     {
@@ -2147,6 +2334,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:lievre"
+     ],
+     "visuels": [
+      {
+       "image": "faune_lievre.png",
+       "w": 16,
+       "h": 16,
+       "x": 0,
+       "l": 64,
+       "hh": 16
+      }
      ]
     },
     {
@@ -2158,6 +2355,16 @@ export const ENCYCLOPEDIE = {
      ],
      "decouverte": [
       "faune:perdrix"
+     ],
+     "visuels": [
+      {
+       "image": "faune_perdrix.png",
+       "w": 16,
+       "h": 16,
+       "x": 0,
+       "l": 96,
+       "hh": 16
+      }
      ]
     }
    ]

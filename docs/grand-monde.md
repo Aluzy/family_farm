@@ -58,8 +58,8 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
      retiré) et l'horloge des sorties (`HorlogeSortie`) sont retirés, avec leurs scripts
      (`scripts/ville/`, `scripts/infra/`) et leurs tests.
    - La grotte est une scène à elle : `js/grotte.js` (`GrotteScene`, `window.Grotte`),
-     réglée par `data/grotte.json` (`GROTTE`) ; ses tuiles par `scripts/carte/grotte.py`, la
-     flèche des passages par `scripts/carte/fleche.py`. `js/ui/excursion.js` ne mène plus
+     réglée par `data/grotte.json` (`GROTTE`) ; ses tuiles par `scripts/carte/grotte.py` (la
+     flèche bleue des passages, `scripts/carte/fleche.py`, est retirée par la fiche 14). `js/ui/excursion.js` ne mène plus
      qu'à la mine (`jeu.html?carte=grotte&niveau=N…`, le pont `FermeHote`) ; le menu du god
      mode : la ferme, les niveaux 1, 4 et 8 de la mine.
    - Le bonheur est dans `js/engine/bonheur.js` (`memberHappiness`, `setHappiness`,
@@ -1196,3 +1196,28 @@ SwiftShader, sans carte graphique) :
   lanternes (`stepLanterns`, `BLOCS_CARTE.candelabre` : une lumière chaude). Un décor, dehors comme
   dans la maison ou à l'étage ; son icône 🕯, sa page d'encyclopédie et sa ligne d'aide (« Éclairer
   la nuit », fiche « Le grand monde »).
+- **Fiche 14 — petites corrections : le brouillard sur la ferme, la mine, les canards, l'encyclopédie**
+  (fait) :
+  - le brouillard sur la ferme : le moteur la tenait déjà pour vue d'office (`monde-vu.js` : ses cellules
+    relues comme posées, quel que soit le vu), mais la scène (`js/carte/ferme/brouillard.js`) ne
+    dépendait que de la chaîne base64 qu'on lui donnait ; elle reçoit désormais aussi le rectangle des
+    cellules de la ferme et de sa prairie (`brouillardDe(state)` → `modèle.brouillard.ferme`, `rectFerme`)
+    et les tient pour vues quoi que dise la chaîne. Un test (`tests/engine/monde-vu.test.mjs`) lit le
+    brouillard comme la scène, sur une nouvelle partie, chaque témoin des anciennes parties migré et un
+    vu vide, abîmé ou tronqué : la ferme et sa prairie ne sont jamais dessous. (Dans Chromium, ni une
+    nouvelle partie ni les témoins, ni le profil mobile, ni le rendu sans WebGL n'ont montré de brouillard
+    sur la ferme avec le code d'avant : la cause d'origine n'a pas été reproduite.)
+  - la mine : la flèche bleue des passages est retirée (`CarteKit.FLECHE`, `assets/fleche_passage.png`,
+    `scripts/carte/fleche.py`), dans les niveaux comme devant les bouches des grottes du monde ; le dessin
+    montre déjà l'échelle (et le jour qui en tombe) et le trou du puits. Un appui sur l'échelle ou le puits
+    y mène (de loin, le personnage y marche d'abord), et le personnage poussé vers lui, tout près, y passe
+    (`js/grotte.js`, `passageAt`, `versPassage`, `stepPassages`).
+  - les canards : hors de l'eau et du marais (une rive, de l'herbe), un canard se tient sur ses pattes
+    (`fauneSurEau` dans `js/carte/ferme/faune-monde.js` : une case d'eau dessinée ou du marais) ; ses
+    cases `debout` et `marche` (le colvert, la cane) sont dessinées par `scripts/carte/faune.py` et
+    nommées dans `data/monde.json` (`terre_repos`, `terre_marche`). Dans l'eau ou le marais, il nage.
+  - l'encyclopédie : les pages des bêtes montrent leur dessin d'aujourd'hui, une case des planches du jeu
+    (la poule, le mouton, la vache, le cheval, chaque bête de la faune ; le canard, la cane et le canard
+    debout), et la page de la pêche les icônes de tous les poissons que la canne prend.
+    `scripts/build-encyclopedie.mjs` les lit dans `assets/` (`visuels`, `icones` de
+    `js/encyclopedie.generated.js`), dans le jeu comme sur `encyclopedie.html`.

@@ -10,8 +10,8 @@
  * et le jour ; pour une grotte du monde, la graine du monde devant) par un automate cellulaire
  * (js/engine/grotte.js, genererNiveau, que la page donne : FermeHote.niveau), avec les morceaux de
  * scripts/carte/grotte.py. On
- * descend par le puits, on remonte par l'échelle (des passages, une flèche bleue quand on s'en
- * approche ; au premier niveau, l'échelle ramène à la ferme). Le minerai est pris dans les murs
+ * descend par le puits, on remonte par l'échelle (des passages : un appui dessus, ou le personnage
+ * qui s'y pousse, y mène ; au premier niveau, l'échelle ramène à la ferme). Le minerai est pris dans les murs
  * qui touchent le sol, de plus en plus rare et précieux en profondeur (fer, cuivre, or, platine :
  * GROTTE.POIDS, data/grotte.json ; dans une grotte de la montagne, du quartz et des améthystes en
  * plus : GROTTE.MONDE) ; on le pioche en le touchant, la pioche en main : il va dans
@@ -43,12 +43,13 @@
     if (!d || !H.niveau) throw new Error('js/grotte.js : réglages de la grotte introuvables (data/grotte.json, FermeHote.reglages)');
     return d;
   }
-  // Les passages (l'échelle, le puits) : la flèche bleue (CarteKit.FLECHE) paraît quand le
-  // personnage est assez près ; un toucher dessus mène à l'autre niveau.
-  // (sa propre clé : la page rechargée dans une grotte, la ferme et la grotte chargent la flèche en
-  // même temps, et une même clé serait prise deux fois)
-  const PASS = { key: K.FLECHE.key + '_grotte', file: 'assets/' + K.FLECHE.file, near: K.FLECHE.near, sens: K.FLECHE.sens };
-  const SENS_PAS = { droite: [1, 0], gauche: [-1, 0], haut: [0, -1], bas: [0, 1] };
+  // Les passages (l'échelle, le puits) : ils se voient (l'échelle, le jour qui en tombe ; le trou du
+  // puits), sans flèche par-dessus (fiche 14 : la flèche bleue d'avant est retirée). Un appui sur l'un
+  // d'eux (à `prise` px près) y mène : tout de suite si le personnage est à moins de `pres` px, sinon
+  // il y marche d'abord ; le personnage poussé vers lui (au doigt, aux flèches), à moins de `pousse`
+  // px, y passe aussi (une fois la poussée lâchée depuis l'arrivée : celui qui arrive en tenant la
+  // flèche du haut, sous le puits, n'y redescend pas).
+  const PASS = { pres: 80, prise: 12, pousse: 30 };
   // Le personnage de la partie (CarteKit.planchePerso). `bulle` : la pointe de la bulle « +1 »
   // (CarteKit.bulleGain), en px au-dessus de ses pieds.
   const HERO = { key: 'heros', w: 16, h: 32, foot: 30, speed: K.VITESSES.grotte, stride: 4, bulle: 26 };
@@ -99,7 +100,6 @@
       this.heroKey = HERO.key + ':' + sheet.file;
       this.load.spritesheet(this.heroKey, v(sheet.file), { frameWidth: HERO.w, frameHeight: HERO.h });
       this.load.json(this.heroKey + '_noms', v(sheet.names));
-      this.load.spritesheet(PASS.key, v(PASS.file), { frameWidth: K.FLECHE.size, frameHeight: K.FLECHE.size });
     }
 
     create() {
@@ -139,19 +139,19 @@
       this.fitZoom();
       global.CarteJeu.suitTaille(this, () => this.fitZoom());
 
-      this.makePassages(c.objects.passages);
+      this.makePassages(c.objects.passages, c.objects.arrivees);
       this.makeLight();
       this.say('💡 Glisse le doigt pour marcher (ou touche deux fois le sol) · la pioche en main (barre d\'outils) : un minerai · un champignon lumineux pour le cueillir · l\'échelle pour remonter');
 
-      // un toucher : sur une flèche, changer de niveau ; sur un minerai, le piocher ; sur un
+      // un toucher : sur l'échelle ou le puits, changer de niveau ; sur un minerai, le piocher ; sur un
       // champignon, le cueillir ; ailleurs, un double appui : y aller (CarteKit.APPUI)
       const slop = K.APPUI.glisse * K.ratio();
       this.dbl = K.doubleAppui();
       this.input.on('pointerup', (p) => {
         if (p.getDistance() > slop || this.mining) return;
         const w = cam.getWorldPoint(p.x, p.y);
-        const a = this.passages.find((q) => q.arrow.visible && Math.abs(w.x - q.arrow.x) <= 18 && Math.abs(w.y - q.arrow.y) <= 18);
-        if (a) { this.leave(a); return; }
+        const a = this.passageAt(w.x, w.y);
+        if (a) { this.versPassage(a); return; }
         if (this.tapOre(w) || this.tapChampignon(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
         K.astuceMarche(p);
@@ -249,29 +249,65 @@
 
     // ---------- les passages, la vue ----------
 
-    makePassages(objs) {
+    // (pied : là où l'on se tient devant lui, l'arrivée du même côté : sous l'échelle, sous le puits)
+    makePassages(objs, arrivees) {
       this.passages = objs.map((o) => {
-        const x = o.x + o.width / 2, y = o.sens === 'haut' ? o.y + 16 : o.sens === 'bas' ? o.y + o.height - 16 : o.y + o.height / 2;
-        const arrow = this.add.image(Math.round(x), Math.round(y), PASS.key, PASS.sens.indexOf(o.sens)).setDepth(2e6).setVisible(false);
-        return { name: o.name, cible: o.cible, sens: o.sens, rect: o, x, y, arrow, near: PASS.near };
-      }).filter(() => this.textures.exists(PASS.key));
+        const x = o.x + o.width / 2, y = o.y + o.height / 2;
+        const a = (arrivees || []).find((r) => r.name === (o.sens === 'haut' ? 'haut' : 'bas'));
+        return { name: o.name, cible: o.cible, sens: o.sens, rect: o, x, y, pied: a ? { x: a.x, y: a.y } : { x, y: y + T } };
+      });
+      this.passageVise = null;
+      this.pousseLibre = false;
     }
 
-    // Chaque image : une flèche paraît près du personnage et se balance dans son sens.
-    stepPassages(time) {
+    // La distance (px) du personnage au passage q (à son rectangle).
+    distPassage(q) {
+      const P = this.heroPos, r = q.rect;
+      return Math.hypot(Math.max(r.x - P.x, 0, P.x - r.x - r.width), Math.max(r.y - P.y, 0, P.y - r.y - r.height));
+    }
+
+    // Le passage sous le point (wx, wy) : son rectangle, à PASS.prise px près (l'échelle monte au-dessus
+    // de sa case : le rectangle de l'échelle est la case du haut, son pied est juste dessous), ou null.
+    passageAt(wx, wy) {
+      const m = PASS.prise;
+      return this.passages.find((q) => {
+        const r = q.rect, bas = q.sens === 'haut' ? r.height + T : r.height;
+        return wx >= r.x - m && wx <= r.x + r.width + m && wy >= r.y - m && wy <= r.y + bas + m;
+      }) || null;
+    }
+
+    // Un appui sur le passage q : y passer s'il est tout près (ou en god mode), sinon y marcher d'abord.
+    versPassage(q) {
+      if (this.god() || this.distPassage(q) <= PASS.pres) { this.leave(q); return; }
+      this.passageVise = q;
+      this.goTo(q.pied.x, q.pied.y);
+    }
+
+    // Chaque image : arrivé au passage visé, ou poussé vers un passage tout proche, il y passe.
+    stepPassages() {
+      const v = this.passageVise;
+      if (v && (this.distPassage(v) <= PASS.pousse || !this.path.length)) {
+        this.passageVise = null;
+        if (this.distPassage(v) <= PASS.pres) { this.leave(v); return; }
+      }
+      const j = this.manette && this.manette.dir(), k = saisie() ? null : this.keys;
+      let dx = 0, dy = 0;
+      if (j) { dx = j.x; dy = j.y; } else if (k) {
+        dx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.Q.isDown || k.A.isDown ? 1 : 0);
+        dy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.Z.isDown || k.W.isDown ? 1 : 0);
+      }
+      const l = Math.hypot(dx, dy);
+      if (!l) this.pousseLibre = true;
+      if (!l || this.mining || !this.pousseLibre) return;
       const P = this.heroPos;
       for (const q of this.passages) {
-        const r = q.rect;
-        const d = Math.hypot(Math.max(r.x - P.x, 0, P.x - r.x - r.width), Math.max(r.y - P.y, 0, P.y - r.y - r.height));
-        q.arrow.setVisible(d <= q.near || this.god());
-        if (!q.arrow.visible) continue;
-        const k = K.balance(time);
-        const [dx, dy] = SENS_PAS[q.sens];
-        q.arrow.setPosition(Math.round(q.x + dx * k), Math.round(q.y + dy * k));
+        if (this.distPassage(q) > PASS.pousse) continue;
+        const ox = q.x - P.x, oy = q.y - P.y, lo = Math.hypot(ox, oy) || 1;
+        if ((dx * ox + dy * oy) / (l * lo) > 0.7) { this.leave(q); return; }
       }
     }
 
-    // Le god mode (Options du jeu) : un toucher pose le personnage, les flèches sont toutes là.
+    // Le god mode (Options du jeu) : un toucher pose le personnage, un passage s'y prend de loin.
     god() {
       const H = hote();
       return !!(H && H.god && H.god());
@@ -597,7 +633,7 @@
 
     update(time, delta) {
       const dt = Math.min(delta, 100) / 1000;
-      this.stepPassages(time);
+      this.stepPassages();
       this.stepMine(dt);
       this.stepChampignon();
       this.stepCaveLights(time, dt);

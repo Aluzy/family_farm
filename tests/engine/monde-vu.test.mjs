@@ -13,12 +13,13 @@
    Lancer seul : node --test tests/engine/monde-vu.test.mjs (ou node tests/run-tests.mjs monde-vu).
    ========================================================================== */
 
+import { readFileSync } from 'node:fs';
 import {
-  createInitialState, DATA, elementsSol, farmTerrain, migrate, regionDeCase, regionVue, solDirect, STATE_VERSION, voirHameau,
+  createInitialState, createNewGame, DATA, elementsSol, farmTerrain, migrate, regionDeCase, regionVue, solDirect, STATE_VERSION, voirHameau,
 } from '../../js/engine/index.js';
 import {
-  boussoleMontree, butBoussole, caseVue, cellulesFerme, choisirBut, deBase64, DECOUVERTE, directionVers, etatBoussole, grilleVu,
-  lieuxDeLaCarte, montrerBoussole, partVue, rayonVue, toutCacher, toutVoir, versBase64, voirAutour, vuDe, vuDesRegions,
+  boussoleMontree, brouillardDe, butBoussole, caseVue, cellulesFerme, choisirBut, deBase64, DECOUVERTE, directionVers, etatBoussole, grilleVu,
+  lieuxDeLaCarte, montrerBoussole, partVue, rayonVue, rectFerme, toutCacher, toutVoir, versBase64, voirAutour, vuDe, vuDesRegions,
 } from '../../js/engine/monde-vu.js';
 import { imageDuMonde } from '../../js/engine/monde-carte.js';
 import { assert, assertEqual, sleepOnce, test } from './aide.mjs';
@@ -124,6 +125,39 @@ test('migration v57 → v58 : les régions déjà vues deviennent vues en entier
   assertEqual(migrate({ v: 57, t: 0, s: casaniere }).monde.vu, s.monde.vu);
   // le reste de la partie ne bouge pas
   assertEqual([m.monde.vues, m.monde.pris, m.monde.hameaux, m.pieces, m.inventaire], [vieille.monde.vues, vieille.monde.pris, vieille.monde.hameaux, s.pieces, s.inventaire]);
+});
+
+// Fiche 14 : le brouillard que la scène reçoit (brouillardDe : modèle.brouillard) laisse toujours la ferme
+// et sa prairie dégagées, lu comme la scène le lit (js/carte/ferme/brouillard.js : la chaîne base64, un
+// bit par cellule, la cellule cx, cy au bit cy × L + cx ; plus le rectangle `ferme`, vu d'office) : une
+// nouvelle partie, chaque témoin des anciennes parties migré, un vu vide, abîmé ou tronqué.
+test('le brouillard de la scène : la ferme et sa prairie dégagées (nouvelle partie, anciennes parties, vu abîmé)', () => {
+  const TEMOINS = JSON.parse(readFileSync(new URL('./temoins.json', import.meta.url), 'utf8'));
+  const parties = [['nouvelle', createNewGame(11)], ['initiale', partie(4)]];
+  for (const ep of ['v50', 'v51', 'v52', 'v54', 'v57']) parties.push([ep, migrate(copie(TEMOINS[ep]))]);
+  for (const [nom, s0] of parties) {
+    for (const [cas, vu] of [['tel quel', undefined], ['vide', ''], ['abîmé', '!!**'], ['tronqué', 'AAAA']]) {
+      const s = copie(s0);
+      if (vu !== undefined) s.monde.vu = vu;
+      const T = farmTerrain(s), F = T.FERME, M = DECOUVERTE.MARGE_FERME, b = brouillardDe(s);
+      assert(b && b.L * b.H > 0, `${nom} (${cas}) : un brouillard`);
+      const o = deBase64(b.vu, Math.ceil((b.L * b.H) / 8));
+      const R = b.ferme, dansR = (cx, cy) => cx >= R[0] && cy >= R[1] && cx <= R[2] && cy <= R[3];
+      const pose = (i) => (o[i >> 3] >> (i & 7)) & 1;
+      // chaque case de la ferme et de sa prairie : sa cellule posée dans la chaîne, et dans le rectangle
+      let manque = 0;
+      for (let r = F.Y - M; r < F.Y + F.HAUTEUR + M; r += 3) {
+        for (let c = F.X - M; c < F.X + F.LARGEUR + M; c += 3) {
+          const cx = Math.floor(c / b.C), cy = Math.floor(r / b.C);
+          if (!pose(cy * b.L + cx) || !dansR(cx, cy)) manque++;
+        }
+      }
+      assertEqual(manque, 0, `${nom} (${cas}) : des cases de la ferme sous le brouillard`);
+      assertEqual(R, rectFerme(T), `${nom} (${cas}) : le rectangle de la ferme`);
+      // et le brouillard ailleurs (une partie neuve n'a rien vu loin de la ferme)
+      if (nom === 'nouvelle') assert(!dansR(2, 2) && !pose(2 * b.L + 2), 'loin de la ferme : sous le brouillard');
+    }
+  }
 });
 
 /* ---------- la carte du monde ---------- */

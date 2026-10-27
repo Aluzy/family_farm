@@ -3385,8 +3385,23 @@ export const RAW_DATA = {
         "fuite": 56,
         "fuit": "nage",
         "nuit": "dort",
-        "images": { "repos": ["m_nage_0", "m_nage_1"], "marche": ["m_nage_0", "m_nage_1"], "plonge": ["m_plonge_0", "m_plonge_1"] },
-        "variantes": [{}, { "repos": ["f_nage_0", "f_nage_1"], "marche": ["f_nage_0", "f_nage_1"], "plonge": ["f_plonge_0", "f_plonge_1"] }]
+        "images": {
+          "repos": ["m_nage_0", "m_nage_1"],
+          "marche": ["m_nage_0", "m_nage_1"],
+          "plonge": ["m_plonge_0", "m_plonge_1"],
+          "terre_repos": ["m_debout_0", "m_debout_1"],
+          "terre_marche": ["m_marche_0", "m_marche_1"]
+        },
+        "variantes": [
+          {},
+          {
+            "repos": ["f_nage_0", "f_nage_1"],
+            "marche": ["f_nage_0", "f_nage_1"],
+            "plonge": ["f_plonge_0", "f_plonge_1"],
+            "terre_repos": ["f_debout_0", "f_debout_1"],
+            "terre_marche": ["f_marche_0", "f_marche_1"]
+          }
+        ]
       },
       "cygne": {
         "nom": "Un cygne",

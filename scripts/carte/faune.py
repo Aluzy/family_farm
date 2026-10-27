@@ -6,7 +6,8 @@
 #                 l'aigle (vu de dessus, en vol : son ombre court au sol)
 #   la plage      la mouette (debout, en vol), le crabe (de dessus), le dauphin (son saut)
 #   la ville      sur le lac du parc : le cygne et le canard colvert (le mâle, la cane), qui
-#                 nagent ou plongent la tête sous l'eau
+#                 nagent ou plongent la tête sous l'eau ; le canard, hors de l'eau, debout ou
+#                 en marche sur ses pattes (fiche 14)
 #   la forêt      le chevreuil (debout, il broute, en marche), le renard roux (assis, debout, en
 #                 marche), le lapin de garenne (assis, il saute), l'écureuil roux (assis, il court)
 #   la lande      le lièvre (assis, il file), la perdrix grise (debout, elle picore, marche, vol)
@@ -276,6 +277,7 @@ def dauphin(k):
 
 REMOUS = (214, 236, 246)
 BEC_CYGNE = (232, 122, 44)
+PATTE_CANARD = (232, 132, 44)
 COLVERT = {'tete': (40, 112, 64), 'tete_s': (24, 76, 44), 'poitrail': (118, 70, 50), 'corps': (176, 174, 168),
            'corps_s': (130, 128, 124), 'bec': (226, 198, 64), 'queue': (40, 40, 46)}
 CANE = {'tete': (132, 98, 64), 'tete_s': (96, 70, 46), 'poitrail': (150, 112, 72), 'corps': (156, 118, 76),
@@ -326,7 +328,8 @@ def cygne(pose, k):
 def canard(sorte, pose, k):
     """16 × 16, de profil (vers la droite), posé sur l'eau (la surface : y = 12). sorte : le
     colvert ('m') ou la cane ('f') ; pose 'nage' (k : la tête bouge) ou 'plonge' (la tête sous
-    l'eau, la queue en l'air)."""
+    l'eau, la queue en l'air) ; hors de l'eau (fiche 14) : 'debout' (k : la tête bouge) ou 'marche'
+    (k : les pattes)."""
     C = COLVERT if sorte == 'm' else CANE
     im = image(16, 16)
     if pose == 'nage':
@@ -342,10 +345,32 @@ def canard(sorte, pose, k):
         if sorte == 'm':
             px(im, 10, 8, (238, 238, 232))
             px(im, 11, 8, (238, 238, 232))
-    else:
+    elif pose == 'plonge':
         ellipse(im, 4, 7, 11, 14, C['corps'], C['corps_s'])
         trait(im, [(4, 8), (3, 5), (4, 3)], C['queue'], 2)
         ellipse(im, 5, 6, 9, 9, teinte(C['corps'], 0.9), C['corps_s'])
+    else:
+        # (fiche 14) sur la terre : debout sur ses pattes orange, le pied sur la ligne y = 12 (l'ancre,
+        # comme la surface de l'eau quand il nage) ; 'debout' (k : la tête bouge), 'marche' (k : les
+        # pattes, l'une après l'autre)
+        d = k if pose == 'marche' else 0
+        for x, dx in ((6, -d), (9, d)):
+            px(im, x, 11, PATTE_CANARD)
+            px(im, x + dx, 12, PATTE_CANARD)
+            px(im, x + dx + 1, 12, PATTE_CANARD)
+        trait(im, [(2, 7), (3, 8)], C['queue'])
+        ellipse(im, 2, 5, 12, 11, C['corps'], C['corps_s'])
+        ellipse(im, 9, 6, 13, 11, C['poitrail'], teinte(C['poitrail'], 0.8))
+        ellipse(im, 4, 5, 10, 8, teinte(C['corps'], 0.9), C['corps_s'])       # l'aile
+        h = k if pose == 'debout' else 0
+        ellipse(im, 10, 1 + h, 13, 5 + h, C['tete'], C['tete_s'])
+        px(im, 12, 2 + h, K)
+        px(im, 14, 3 + h, C['bec'])
+        px(im, 15, 3 + h, C['bec'])
+        if sorte == 'm':
+            px(im, 10, 6, (238, 238, 232))
+            px(im, 11, 6, (238, 238, 232))
+        return fini(im)
     im = fini(im)
     sous_l_eau(im, 12)
     remous(im, 2, 13, 12, k)
@@ -710,7 +735,7 @@ ESPECES = {
               'images': [('nage_0', lambda: cygne('nage', 0)), ('nage_1', lambda: cygne('nage', 1)),
                          ('plonge_0', lambda: cygne('plonge', 0)), ('plonge_1', lambda: cygne('plonge', 1))]},
     'canard': {'taille': (16, 16), 'ancre': (8, 12), 'nom': 'Un canard colvert',
-               'images': [(f'{s}_{p}_{k}', (lambda s=s, p=p, k=k: canard(s, p, k))) for s in ('m', 'f') for p in ('nage', 'plonge') for k in (0, 1)]},
+               'images': [(f'{s}_{p}_{k}', (lambda s=s, p=p, k=k: canard(s, p, k))) for s in ('m', 'f') for p in ('nage', 'plonge', 'debout', 'marche') for k in (0, 1)]},
     'dauphin': {'taille': (32, 32), 'ancre': (16, 24), 'nom': 'Un dauphin',
                 'images': [(f'saut_{k}', (lambda k=k: dauphin(k))) for k in range(4)] + [('gerbe', lambda: dauphin(4))]},
     # la forêt et la lande du grand monde (fiche 6b)

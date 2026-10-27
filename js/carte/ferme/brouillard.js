@@ -2,7 +2,9 @@
  *
  * Le moteur retient ce qui a été vu (js/engine/monde-vu.js : un bit par cellule de 8 × 8 cases) ; la
  * page le donne à la scène dans son modèle (modèle.brouillard : { vu (la chaîne base64 de la
- * sauvegarde), C, L, H }). Ici, sur ce qui n'a pas été vu :
+ * sauvegarde), C, L, H, ferme (le rectangle des cellules de la ferme et de sa prairie : [x0, y0, x1,
+ * y1]) }). La ferme et sa prairie sont toujours vues ici, quoi que dise la chaîne (fiche 14 : la scène
+ * ne dépend plus d'elle pour la ferme). Ici, sur ce qui n'a pas été vu :
  *
  *   - un brouillard dans le style du jeu : de gros pixels (2 px de carte chacun, 4 en qualité « économie », sans lissage,
  *     comme le voile de la nuit), en nappes de deux tons qui dérivent lentement (deux bruits qui
@@ -35,8 +37,7 @@
   // cases —, et le nombre d'images entre deux dessins quand rien ne bouge, la dérive : brouillardPx et
   // brouillardImages de CarteKit.reglages, 2 et 4, ou 4 et 8 en qualité « économie », fiche 9a) ; deborde, flou : en cases (voir plus haut) ; marge : px
   // de carte autour de la vue ; ondule : le bord lu jusqu'à tant de px à côté (au plus une case : les
-  // cellules pas vues restent opaques) ; fondu : ms ; depth : au-dessus de tout (le voile de la nuit : 1e6, les
-  // flèches des passages : 2e6) ; tons : les deux tons des nappes et l'ombre du bord ; nappes : la
+  // cellules pas vues restent opaques) ; fondu : ms ; depth : au-dessus de tout (le voile de la nuit : 1e6) ; tons : les deux tons des nappes et l'ombre du bord ; nappes : la
   // taille des deux bruits (px de carte) et leur vent (px de carte par seconde) ; revue : ce qui se dresse est revu
   // toutes les tant d'images (et dès que le vu change) ; paliers : les niveaux d'opacité
   // (des aplats, comme le dessin).
@@ -98,8 +99,11 @@
       if (m.vu === B.vu) return;
       B.vu = m.vu;
       const o = octets(m.vu, Math.ceil((B.L * B.H) / 8));
+      // (la ferme et sa prairie : vues d'office)
+      const R = Array.isArray(m.ferme) && m.ferme.length === 4 ? m.ferme : null;
+      const ferme = (i) => { const x = i % B.L, y = (i / B.L) | 0; return !!R && x >= R[0] && y >= R[1] && x <= R[2] && y <= R[3]; };
       for (let i = 0; i < B.L * B.H; i++) {
-        const b = (o[i >> 3] >> (i & 7)) & 1;
+        const b = ferme(i) ? 1 : (o[i >> 3] >> (i & 7)) & 1;
         if (b === B.bits[i] && !premier) continue;
         B.bits[i] = b;
         if (premier) B.aff[i] = b ? 0 : 1;

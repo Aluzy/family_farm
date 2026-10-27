@@ -2,9 +2,8 @@
  *
  * Les entrées des grottes de la montagne (le plan : lieux.grottes, ctx.monde.lieux() ; leur bouche de
  * roche est une image de la végétation, vegetation.js, posée par js/engine/monde-lieux.js) :
- *   - la flèche bleue des passages (CarteKit.FLECHE, comme dans la mine) paraît au-dessus de la bouche
- *     quand le personnage s'en approche ; un appui sur la flèche ou sur la bouche, ou le personnage
- *     poussé vers elle quand il est juste devant, et il y entre : il va devant, passe dans l'arche en
+ *   - un appui sur la bouche (son arche sombre se voit : pas de flèche par-dessus, fiche 14), ou le
+ *     personnage poussé vers elle quand il est juste devant, et il y entre : il va devant, passe dans l'arche en
  *     s'effaçant, puis la grotte s'ouvre (js/grotte.js : « grotte?grotte=grotte_<n>&niveau=1 ») ;
  *   - en remontant du premier niveau (jeu.html?arrivee=grotte_<n>, passages.js arrive), il ressort
  *     de l'arche et descend devant elle. La région de l'entrée peut ne pas être encore faite (la page
@@ -39,15 +38,14 @@
       const W = this.grid.cols;
       this.grottesListe = (L.grottes || []).map((g) => {
         const X = g.case % W, Y = Math.floor(g.case / W), x = X * T + T / 2, y = Y * T + T - 2;
-        return { id: g.id, x, y, devant: { x, y: y + BOUCHE.devant }, fleche: null };
+        return { id: g.id, x, y, devant: { x, y: y + BOUCHE.devant } };
       });
       return this.grottesListe;
     },
 
-    // L'entrée sous le point (wx, wy) (sa bouche, ou sa flèche visible), ou null.
+    // L'entrée sous le point (wx, wy) (sa bouche), ou null.
     grotteMondeAt(wx, wy) {
       for (const g of this.grottesMonde()) {
-        if (g.fleche && g.fleche.visible && Math.abs(wx - g.fleche.x) <= 18 && Math.abs(wy - g.fleche.y) <= 18) return g;
         if (Math.abs(wx - g.x) <= BOUCHE.l && wy <= g.y + 4 && wy >= g.y - BOUCHE.h) return g;
       }
       return null;
@@ -81,8 +79,8 @@
       if (at) { this.followSnap = true; this.setCentre(at.x, at.y); }
     },
 
-    // À chaque image : l'arrivée qui attend ; la flèche de chaque entrée près du personnage, qui se
-    // balance ; le personnage poussé vers une bouche, juste devant, y entre ; les remous des coins.
+    // À chaque image : l'arrivée qui attend ; le personnage poussé vers une bouche, juste devant, y
+    // entre ; les remous des coins.
     stepLieuxMonde(time) {
       if (!this.ctx.monde) return;
       if (this.arriveeGrotte) {
@@ -95,13 +93,6 @@
       if (p && grottes.length) {
         const dir = this.manette ? this.manette.dir() : null;
         for (const g of grottes) {
-          const d = Math.hypot(p.x - g.devant.x, p.y - g.devant.y);
-          const voit = d <= K.FLECHE.near;
-          if (voit && !g.fleche && this.textures.exists(K.FLECHE.key)) g.fleche = this.add.image(g.x, g.y - BOUCHE.h - 14, K.FLECHE.key, K.FLECHE.sens.indexOf('haut')).setDepth(2e6);
-          if (g.fleche) {
-            g.fleche.setVisible(voit);
-            if (voit) g.fleche.setPosition(g.x, Math.round(g.y - BOUCHE.h - 14 - K.balance(time)));
-          }
           if (dir && dir.y < -0.6 && Math.abs(dir.x) < 0.6 && Math.abs(p.x - g.x) <= BOUCHE.pres && p.y >= g.y && p.y - g.y <= BOUCHE.devant + BOUCHE.pres) this.enterGrotteMonde(g);
         }
       }

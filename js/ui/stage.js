@@ -22,7 +22,7 @@ import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmTerrain, tileCount, voirRegion } from '../engine/terrain.js';
 import { MONDE } from '../engine/monde.js';
 import { BIOMES } from '../engine/monde-gen.js';
-import { boussoleMontree, butBoussole, choisirBut, etatBoussole, lieuxDeLaCarte, voirAutour, vuDe } from '../engine/monde-vu.js';
+import { boussoleMontree, brouillardDe, butBoussole, choisirBut, etatBoussole, lieuxDeLaCarte, voirAutour } from '../engine/monde-vu.js';
 import { LIEUX_ICONES, carteMondeVu } from './carte-monde.js';
 import { tuilesChemins } from '../engine/ferme-generee.js';
 import { solDuMonde } from './monde-sol.js';
@@ -761,10 +761,10 @@ function biomeDeCase(tile) {
 }
 
 // Le brouillard pour la carte (js/carte/ferme/brouillard.js) : le vu de la partie (une chaîne base64,
-// un bit par cellule), la taille des cellules et de leur grille ; null sans grand monde.
+// un bit par cellule), la taille des cellules et de leur grille, le rectangle de la ferme et de sa
+// prairie (vues d'office) ; null sans grand monde (js/engine/monde-vu.js, brouillardDe).
 function brouillardModele() {
-  const v = vuDe(state);
-  return v ? { vu: v.vu, C: v.C, L: v.L, H: v.H } : null;
+  return brouillardDe(state);
 }
 
 // La boussole pour la carte (js/carte/ferme/boussole.js) : le lieu choisi sur la carte du monde (s'il est

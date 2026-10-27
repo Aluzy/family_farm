@@ -2482,6 +2482,11 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 .book-sub { margin: 0 0 12px; text-align: center; font-style: italic; color: #7a5434; }
 .book-h3 { margin: 14px 0 6px; font-size: 1.02rem; color: #6b3f1c; border-bottom: 1px solid rgba(var(--color-earth-rgb), 0.4); }
 .book-dish { text-align: center; font-size: 3.2rem; line-height: 1.1; margin-top: 6px; }
+/* fiche 14 : le dessin d'une bête (sa case de la planche du jeu, en gros pixels) */
+.encyclo-betes { display: flex; justify-content: center; align-items: flex-end; flex-wrap: wrap; gap: 12px; min-height: 96px; }
+.encyclo-bete { display: block; background-repeat: no-repeat; image-rendering: pixelated; }
+/* (les poissons de la page de la pêche : leurs icônes, plus petites, sur deux rangées s'il le faut) */
+.book-dish.encyclo-icones { font-size: 2.2rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; }
 .book-meta { margin: 0 0 6px; text-align: center; font-family: inherit; font-size: 0.85rem; color: #6b4a2a; }
 .book-ingredients { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .book-ingredients li.missing { color: #8a2e22; }

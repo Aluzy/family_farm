@@ -85,7 +85,7 @@ function entreeHtml(id) {
   const c = CATEGORIES.find((x) => x.id === e.categorie);
   const liens = e.liens.map((l) => lien(l)).join('');
   return `
-    <div class="book-dish" aria-hidden="true">${iconeEntree(e) || c.icone}</div>
+    ${dessinEntree(e, c)}
     <p class="encyclo-categorie"><button type="button" class="encyclo-lien-texte" data-action="book-goto" data-page="${numero('categorie', c.id)}">${c.icone} ${escapeHtml(c.nom)}</button></p>
     <h2 class="book-title">${escapeHtml(e.terme)}</h2>
     <p class="encyclo-texte">${escapeHtml(e.description)}</p>
@@ -99,6 +99,25 @@ function hameauxHtml() {
   if (!vus.length) return '';
   const li = vus.map((h) => `<li><strong>${escapeHtml(h.nom)}</strong>, un hameau ${escapeHtml((HAMEAUX.STYLES[h.style] || HAMEAUX.STYLES.prairie).nom)} <span class="muted">(jour ${h.jour})</span></li>`).join('');
   return `<h3 class="book-h3">Ceux qu'on a vus</h3><ul class="encyclo-hameaux">${li}</ul>`;
+}
+
+// Fiche 14 : le dessin d'une bête, celui de la carte (une case de sa planche : e.visuels, tirés des
+// planches du jeu par scripts/build-encyclopedie.mjs), agrandi en gros pixels à environ 96 px de haut ;
+// l'adresse de la planche porte son empreinte sur le site en ligne.
+function betesHtml(e) {
+  const v = window.FERME_ASSET_VERSIONS;
+  return e.visuels.map((d) => {
+    const k = Math.max(2, Math.min(6, Math.floor(96 / d.h))), src = `assets/${d.image}${v && v[d.image] ? `?v=${v[d.image]}` : ''}`;
+    return `<span class="encyclo-bete" style="width:${d.w * k}px;height:${d.h * k}px;background-image:url('${src}');background-position:${-d.x * k}px 0;background-size:${d.l * k}px ${d.hh * k}px"></span>`;
+  }).join('');
+}
+
+// Ce qui illustre une entrée : le dessin de ses bêtes, les icônes de ses poissons, sinon l'icône du
+// premier objet qui la fait découvrir, sinon celle de sa catégorie.
+function dessinEntree(e, c) {
+  if (e.visuels && e.visuels.length) return `<div class="book-dish encyclo-betes" role="img" aria-label="${escapeHtml(e.terme)}">${betesHtml(e)}</div>`;
+  if (e.icones && e.icones.length) return `<div class="book-dish encyclo-icones" aria-hidden="true">${e.icones.map((i) => `<span>${i}</span>`).join('')}</div>`;
+  return `<div class="book-dish" aria-hidden="true">${iconeEntree(e) || c.icone}</div>`;
 }
 
 // L'icône d'une entrée : celle du premier objet (ou de la première culture) qui la fait découvrir.
