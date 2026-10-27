@@ -52,7 +52,7 @@ n'entrent pas dans la sauvegarde.
   la voilure du Moulin (`moulinTour.enMarche`), la meule (`meuleOn`), le four (`fireOn`), la
   pompe, les asperseurs en marche, le robot au travail, les ruches (de 7 h à 19 h 30), les mares
   et étangs, les hameaux (leurs bruits de travail, le jour) ;
-- **les bêtes de la ferme et leurs enclos** (voir plus bas), le chat et le chien de la famille,
+- **les cris des bêtes de la ferme** (voir plus bas), le chat et le chien de la famille,
   la faune du grand monde près de la vue ;
 - **la musique** : le thème du matin (5 h 30-17 h), du soir (17 h-21 h), de la nuit, celui de la
   mine sous terre. « Par moments » (le réglage par défaut) : deux à trois minutes de musique,
@@ -125,16 +125,14 @@ dans `scripts/son/enregistrements/credits.json`, et recopiée dans `assets/son/C
 Restent synthétisés, faute d'enregistrement libre accessible : **le coq du réveil** (trois
 variantes, réglées sur des mesures générales de chants de coq : hauteur ≈ 750 Hz, formants
 ≈ 880 / 1 680 / 2 970 Hz) et **les sabots** (une diagonale de trot par fichier, sur pierre
-ferrée, terre battue et herbe), avec les fonds des enclos (`scripts/son/betes.py`). Un vrai chant
+ferrée, terre battue et herbe), dans `scripts/son/betes.py`. Un vrai chant
 de coq ou de vrais sabots libres (CC0) se mettraient à leur place : un fichier dans
 `enregistrements/`, une ligne dans `credits.json` et dans `vers_jeu.py`.
 
 **À l'approche d'un enclos** (`directeur`, `ENCLOS` dans `js/son.js`), pour chaque sorte de bête
 de la ferme (`FarmStage.scene().beasts`) :
 
-- son **fond** monte en approchant, jusqu'à 14 cases (`ENCLOS_PORTEE`) : paille et roucoulements
-  au Poulailler, souffle et mastication à l'Étable, pas et sonnailles des moutons ; la nuit,
-  quand elles sont rentrées, le fond seul, plus bas ;
+- pas de fond d'ambiance autour des bâtiments : seulement les cris ;
 - leurs **cris** reviennent toutes les 4 à 9 s à moins de 6 cases, toutes les 12 à 25 s plus
   loin (le cheval : 35 à 80 s) ;
 - en arrivant à moins de 7 cases (`SALUT_CASES`), **une ou deux bêtes saluent**, une fois par

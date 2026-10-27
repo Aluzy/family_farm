@@ -6,16 +6,14 @@ d'enregistrement libre accessible :
 - le coq du réveil : voix synthétique (source glottique + formants) réglée sur des mesures
   générales de chants de coq — hauteur médiane ≈ 750 Hz, formants ≈ 880 / 1 680 / 2 970 Hz,
   quatre syllabes dont la dernière longue (≈ 1,4 s en tout) ;
-- les sabots : une diagonale de trot (deux sabots presque ensemble) par fichier, sur trois sols ;
-- les fonds des enclos : paille et roucoulements, souffle et mastication avec une clochette,
-  pas et sonnailles des moutons (boucles, sans cris : le jeu y ajoute les vrais).
+- les sabots : une diagonale de trot (deux sabots presque ensemble) par fichier, sur trois sols.
 
 Usage : python3 betes.py [dossier]  (défaut _sortie/betes)
 """
 import os, sys, wave
 import numpy as np
 from synthlib import SR, highpass
-from animaux import source_glottique, formants, courbe, env, plein_air, pic, suite, fond_poulailler, fond_etable, fond_bergerie, boucle
+from animaux import source_glottique, formants, courbe, env, plein_air, pic, suite
 from betes_reelles import SABOTS, impact
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), '_sortie', 'betes')
@@ -67,7 +65,4 @@ if __name__ == '__main__':
     for sol, modele in (('pierre', SABOTS[0]), ('terre', SABOTS[1]), ('herbe', SABOTS[2])):
         for k in range(4):
             sauve(f'sabots_{sol}_{k+1}', diagonale(modele, 600 + 10 * k + len(sol)))
-    sauve('fond_poulailler', boucle(fond_poulailler()))
-    sauve('fond_etable', boucle(fond_etable(cloche=False)))   # la clochette : le vrai enregistrement, joué à part
-    sauve('fond_bergerie', boucle(fond_bergerie()))
     print('ok')
