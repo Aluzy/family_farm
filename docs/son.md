@@ -2,8 +2,9 @@
 
 Le jeu a une bande-son complète : quatre thèmes de musique, les ambiances de la ferme et des
 biomes du grand monde, les bêtes, les machines, chaque geste du personnage et les fenêtres de
-l'interface. Tout est synthétisé pour le jeu par `scripts/son/`, sauf les bêtes de la ferme :
-de vrais enregistrements libres de droits (voir « Les bêtes de la ferme » et `assets/son/CREDITS.md`).
+l'interface. Tout est synthétisé pour le jeu par `scripts/son/`, sauf les bêtes de la ferme,
+l'arrosoir, la hulotte et la grenouille : de vrais enregistrements libres de droits (voir « Les
+bêtes de la ferme », « L'arrosoir, la hulotte et la grenouille » et `assets/son/CREDITS.md`).
 
 ## Découpage
 
@@ -12,7 +13,7 @@ de vrais enregistrements libres de droits (voir « Les bêtes de la ferme » et 
 | `js/son.js` | le moteur (`window.FermeSon`, script classique chargé après le kit des cartes) : Web Audio, cinq bus, les boucles, le « directeur » des ambiances, les pas |
 | `js/ui/son.js` | côté interface (module ES) : `son(clé)` pour les écrans, l'écoute du journal (pièces, Atelier), la partie « Son » des Options |
 | `assets/son/` | les sons, `.ogg` (Vorbis) et `.m4a` (AAC, pour Safari qui ne lit pas l'Ogg), rangés par dossier |
-| `scripts/son/` | les générateurs : `musique.py`, `sons1.py`, `sons2.py` (synthèse), `vers_jeu.py` (encodage et table de `js/son.js`), `fabrique.py` (tout) |
+| `scripts/son/` | les générateurs : `musique.py`, `sons1.py`, `sons2.py` (synthèse), `libres.py` (les enregistrements libres de l'arrosoir, de la hulotte et de la grenouille, coupés et égalisés), `vers_jeu.py` (encodage et table de `js/son.js`), `fabrique.py` (tout) |
 
 Le moteur ne lit jamais l'état du jeu et ne change rien à la partie. Sans Web Audio, avant le
 premier geste du joueur (les navigateurs ne jouent rien avant), ou le son coupé, chaque appel
@@ -24,7 +25,7 @@ ne fait rien : les scènes et l'interface l'appellent toujours par
 | Bus | Curseur des Options | Contenu |
 |---|---|---|
 | musique | 🎵 Musique | les thèmes |
-| nature | 🌳 Ambiance | oiseaux, grillons, vent, mer, lac, rivière, forêt, montagne, grotte, grenouilles, cris d'oiseaux et chouette |
+| nature | 🌳 Ambiance | oiseaux, grillons, vent, forêt, montagne, grotte, grenouilles, cris d'oiseaux et hulotte |
 | monde | 🌳 Ambiance | bêtes de la ferme et du grand monde, moulin, four, pompe, asperseurs, robot, ruches, hameaux, botteleuse |
 | effets | 🪓 Gestes | outils, pas, ramassage, pêche, construction, échelle |
 | interface | 🔔 Fenêtres et messages | fenêtres, onglets, notifications, pièces, niveau, chapitre, technologie |
@@ -42,16 +43,21 @@ n'entrent pas dans la sauvegarde.
 `FarmStage.scene().ctx.lastModel`, `FermeHote.maintenant()`) et règle les boucles, en fondus :
 
 - **l'heure** : oiseaux du matin (vers 7 h), du jour (9 h-18 h), grillons du soir (vers 20 h) et
-  de la nuit, un peu plus de vent la nuit ; de petits cris d'oiseaux le jour, la chouette la nuit ;
-- **le biome sous le personnage** (le grand monde, comme `eauMondeSous`) : mer et plage, falaise,
+  de la nuit, un peu plus de vent la nuit ; de petits cris d'oiseaux le jour ;
+- **la hulotte la nuit** (`hibou`) : un chant toutes les une à deux minutes, toutes les 20 à 45 s
+  en forêt ou à moins de 6 cases d'elle (le biome sondé dans 8 directions), et alors depuis les
+  arbres ; ni en mer, ni au sommet, ni sous un toit ;
+- **le biome sous le personnage** (le grand monde) : mer et plage (moins d'oiseaux), falaise,
   forêt, marais (grenouilles la nuit), montagne et sommet (le vent qui siffle, moins d'oiseaux),
-  lac, rivière, lande ; et l'eau du monde à 5 cases autour de lui ;
+  lande. **Pas de fond d'eau** : la mer, les lacs, les rivières et les mares n'ont pas de boucle
+  (leur bruit montait dès qu'on approchait d'une rive) ; restent les pas dans l'eau et, la nuit,
+  les grenouilles près des mares de la ferme ;
 - **sous un toit** (une pièce close, une maison de hameau) : le dehors s'étouffe ; **endormi** :
   la nature baisse, la musique se tait ;
 - **ce qui tourne sur la ferme**, placé dans l'espace (volume selon la distance, gauche-droite) :
   la voilure du Moulin (`moulinTour.enMarche`), la meule (`meuleOn`), le four (`fireOn`), la
-  pompe, les asperseurs en marche, le robot au travail, les ruches (de 7 h à 19 h 30), les mares
-  et étangs, les hameaux (leurs bruits de travail, le jour) ;
+  pompe, les asperseurs en marche, le robot au travail, les ruches (de 7 h à 19 h 30), les
+  hameaux (leurs bruits de travail, le jour) ;
 - **les cris des bêtes de la ferme** (voir plus bas), le chat et le chien de la famille,
   la faune du grand monde près de la vue ;
 - **la musique** : le thème du matin (5 h 30-17 h), du soir (17 h-21 h), de la nuit, celui de la
@@ -146,6 +152,27 @@ qu'il avance), sur le sol sous lui.
 `scripts/son/analyse.py` et `betes_reelles.py` sont les outils d'analyse qui ont servi à
 comparer les synthèses à de vrais cris (corpus ESC-50, sous licence non commerciale : les mesures
 qui en sortent restent dans `_sortie/`, jamais commitées, et rien n'en vient dans le jeu).
+
+## L'arrosoir, la hulotte et la grenouille
+
+D'autres vrais enregistrements, sous CC0, préparés par `scripts/son/libres.py` (télécharger,
+couper les grondements, garder les passages choisis, fondus, volume égalisé sur la tranche de
+100 ms la plus forte, crêtes arrondies) qui écrit les FLAC dans `enregistrements/` et leur ligne
+dans `credits.json` :
+
+- **l'arrosage à la cruche** (`arrosage`, trois variantes d'1,4 s, au niveau des autres gestes) :
+  « Watering with a Watering Can » de Bricklover sur Freesound, un arrosoir versé sur la terre ; trois
+  moments du même versé, le premier avec l'eau qui part. L'original (MP3) demande un compte : on
+  prend l'aperçu Ogg de haute qualité que Freesound publie ;
+- **la hulotte** (`hibou`, quatre variantes) : deux chants entiers de Joseph Sardin (« hou… », puis
+  « hou-hou-houuu » ; 5,5 et 5,7 s, le long silence entre les deux raccourci) et deux « hou » seuls
+  du « Tiroir du fond » (1,3 et 1,4 s), sur BigSoundBank, en AIFF sans perte ;
+- **la grenouille** (`grenouilles`, une boucle de 11,4 s) : « One frog » de Joseph Sardin sur
+  BigSoundBank, une grenouille qui chante la nuit près d'une petite mare, sans autre bruit, coupée
+  de silence à silence pour que la reprise de la boucle ne s'entende pas. Elle chante la nuit à
+  moins de 10 cases des mares et étangs de la ferme, et dans le marais (un peu le jour aussi). Les
+  autres grenouilles de BigSoundBank ont une cascade, du vent ou des oiseaux derrière : écartées,
+  puisque le jeu n'a plus de bruit d'eau.
 
 ## Ajouter ou changer un son
 

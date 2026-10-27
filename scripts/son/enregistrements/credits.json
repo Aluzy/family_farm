@@ -166,5 +166,61 @@
   "source": "https://freesound.org/people/ERH/sounds/32043/",
   "titre": "Il souffle par les naseaux",
   "duree": 1.2
+ },
+ "arrosage_1": {
+  "auteur": "Bricklover (Freesound)",
+  "licence": "CC0",
+  "source": "https://freesound.org/people/Bricklover/sounds/532890/",
+  "titre": "Arrosoir versé sur la terre",
+  "duree": 1.4
+ },
+ "arrosage_2": {
+  "auteur": "Bricklover (Freesound)",
+  "licence": "CC0",
+  "source": "https://freesound.org/people/Bricklover/sounds/532890/",
+  "titre": "Arrosoir versé sur la terre",
+  "duree": 1.4
+ },
+ "arrosage_3": {
+  "auteur": "Bricklover (Freesound)",
+  "licence": "CC0",
+  "source": "https://freesound.org/people/Bricklover/sounds/532890/",
+  "titre": "Arrosoir versé sur la terre",
+  "duree": 1.4
+ },
+ "hibou_1": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/tawny-owl-1-s1763.html",
+  "titre": "Hulotte : « hou… » puis « hou-hou-houuu »",
+  "duree": 5.67
+ },
+ "hibou_2": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/tawny-owl-2-s1764.html",
+  "titre": "Hulotte : « hou… » puis « hou-hou-houuu »",
+  "duree": 5.47
+ },
+ "hibou_3": {
+  "auteur": "Le tiroir du fond (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/tawny-owl-3-s3459.html",
+  "titre": "Hulotte : un « houuu » seul",
+  "duree": 1.31
+ },
+ "hibou_4": {
+  "auteur": "Le tiroir du fond (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/tawny-owl-4-s3460.html",
+  "titre": "Hulotte : un « hou-houuu » qui monte",
+  "duree": 1.37
+ },
+ "grenouilles": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/one-frog-s0819.html",
+  "titre": "Une grenouille qui chante près d'une petite mare, la nuit",
+  "duree": 11.4
  }
 }

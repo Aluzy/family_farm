@@ -1161,3 +1161,12 @@ SwiftShader, sans carte graphique) :
   un personnage du jeu, `perso_08` (casquette et veste bleu marine, moustache), assis sur le banc comme
   le cavalier (ses cases `assis_cote_0`, `assis_bas_0`, `assis_haut_0`), les rênes de ses mains au mors.
   Les images gardent leur taille et leurs cases : le JS ne change pas.
+- **Fiche 13 — trois sons : l'arrosage à la cruche, le hibou la nuit, plus de bruit d'eau** (fait) :
+  l'arrosage (`arrosage`, trois variantes d'1,4 s) est un vrai arrosoir versé sur la terre
+  (Bricklover, Freesound, CC0) ; la nuit, une vraie hulotte (`hibou`, quatre variantes : deux chants
+  entiers « hou… hou-hou-houuu », deux « hou » seuls ; BigSoundBank, CC0) remplace la chouette
+  synthétisée : une à deux minutes entre deux chants, 20 à 45 s en forêt ou à sa lisière, d'où elle
+  chante. Les boucles d'eau (`mer`, `lac`, `riviere`, la mare de la ferme) sont retirées : plus rien ne
+  monte en approchant d'une rive ; restent les pas dans l'eau et les grenouilles la nuit (une vraie
+  grenouille, « One frog » de Joseph Sardin, BigSoundBank, CC0, en boucle de 11,4 s). Les
+  enregistrements sont coupés et égalisés par `scripts/son/libres.py` (voir `docs/son.md`).
