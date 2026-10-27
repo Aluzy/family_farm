@@ -313,6 +313,22 @@
             this.ctx.bridge.act('silo-agrandir', {});
           }, LONG_PRESS_MS);
         }
+        // Fiche 21 : appui maintenu sur une parcelle (sans outil en main) : la fenêtre de sa zone,
+        // à la ligne de cette parcelle (toutes les parcelles, Planter partout, Arroser tout,
+        // le semis automatique). L'appui simple, lui, n'ouvre plus de fenêtre (plotTap).
+        if (!this.drag.labour && !this.drag.fort) {
+          const h = this.hitAt(wp.x, wp.y);
+          if (h && h.plot && h.open) {
+            const d = this.drag;
+            d.holdTimer = setTimeout(() => {
+              if (this.drag !== d || d.moved) return;
+              d.held = true;
+              this.setHover(null);
+              K.vibre('houe');
+              this.ctx.bridge.act('aller', { window: h.open, anchor: `plot-${h.plot.id}` });
+            }, LONG_PRESS_MS);
+          }
+        }
         // Appui maintenu sur la citerne : une bulle dit combien de litres elle contient.
         if (!this.drag.labour && this.onTank(wp.x, wp.y)) {
           const d = this.drag;
@@ -431,6 +447,7 @@
         if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
         if (this.tankTipUntil && performance.now() >= this.tankTipUntil) this.showTankTip(false);
         this.syncTankTip();
+        this.syncCaseTip();                     // (fiche 21 : la bulle d'une case de culture)
         // Filet de sécurité : le fond est vérifié toutes les quelques secondes.
         if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false, true); }
         if (this.ambient) this.ambient.update(delta);
@@ -500,7 +517,7 @@
       // emplacements de chaque intérieur. `pos(i)` = coin haut-gauche de la i-ième parcelle
       // (null s'il n'y a plus d'emplacement), `at(x, y)` = rang de la parcelle sous un point
       // (-1 : aucune), `place` = lieu dont le nom s'affiche au survol, `window` = fenêtre
-      // ouverte par une parcelle où il n'y a rien à faire.
+      // ouverte par un appui long sur une de ses parcelles (fiche 21 : plus par un appui simple).
       zones(model) {
         const m = model || this.ctx.lastModel;
         // Version 1.9 : chaque parcelle a sa case (p.case) dans une grille fixe de `cases`
@@ -709,8 +726,8 @@
         if (best && best.tree) {
           if (best.tree.fruits) return { treeHarvest: best.tree.id };
         }
-        // L'herbe (même labourable) n'ouvre rien : la fenêtre de la Zone de culture s'ouvre par
-        // une parcelle déjà labourée, ou en mode houe. En mode houe, une tuile qui ne se laboure
+        // L'herbe (même labourable) n'ouvre rien, une parcelle non plus (fiche 21 : un geste ou
+        // une bulle ; sa fenêtre, d'un appui long). En mode houe, une tuile qui ne se laboure
         // pas dit pourquoi (le moteur refuse).
         return best ? { window: best.window } : refus;
       }
@@ -763,11 +780,20 @@
         if (hit.faune) { this.fauneTouchee(hit.faune); return; }
         if (hit.fish) { this.goFish(hit.fish, wx, wy); return; }
         if (hit.treeHarvest) { this.ctx.bridge.act('harvest-tree', { id: hit.treeHarvest }); return; }
+        this.plotTap(hit, wx, wy);
+      }
+
+      // Fiche 21 : un appui sur une parcelle y fait le geste possible (semer, récolter, arroser),
+      // comme avant ; s'il n'y a rien à faire (déjà arrosée, en train de pousser, une terre sans
+      // graine à semer), plus de fenêtre : la page (bridge.parcelle) donne le texte d'une petite
+      // bulle au-dessus de la case. La fenêtre de la zone s'ouvre d'un appui long (onDown).
+      plotTap(hit, wx, wy) {
         const p = hit.plot;
+        const bulle = this.ctx.bridge.parcelle ? this.ctx.bridge.parcelle(p.id) : null;
+        if (bulle) { this.showCaseTip(bulle, Math.floor(wx / T) * T + T / 2, Math.floor(wy / T) * T); return; }
         if (!p.culture) this.ctx.bridge.act('plant-open', { id: p.id });
         else if (p.mature) this.ctx.bridge.act('harvest', { id: p.id });
-        else if (!p.arrosee) this.ctx.bridge.act('water', { id: p.id });
-        else this.ctx.bridge.act('stage-open', { window: hit.open });   // rien à faire sur la carte : la fenêtre de sa zone
+        else this.ctx.bridge.act('water', { id: p.id });
       }
 
       // Version 1.19 : le personnage va ramasser au Poulailler ou à l'Étable. Rien à y prendre :

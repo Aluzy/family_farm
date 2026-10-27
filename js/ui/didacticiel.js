@@ -228,7 +228,7 @@ const ETAPES_UI = {
       : 'La boussole est retirée (Options) : suis les <b>chemins</b> jusqu\'au hameau, il est sur ta carte du monde.'),
     cible: () => (carteOuverte() ? null : visibleSel('.boussole')),
   },
-  fin: { texte: () => 'Bravo, te voilà dans le grand monde ! Chaque hameau a ses familles et son métier, la montagne ses grottes, la côte sa mer ; la calèche achète ce que tu produis. Ta plante pousse à la ferme : récolte-la quand elle sera mûre. La suite est à toi : élevage, cuisine, et les objectifs des chapitres.' },
+  fin: { texte: () => 'Bravo, te voilà dans le grand monde ! Chaque hameau a ses familles et son métier, la montagne ses grottes, la côte sa mer ; la calèche achète ce que tu produis. Ta plante pousse à la ferme : touche-la, une bulle te dit quand elle grandira ; récolte-la quand elle sera mûre. La suite est à toi : élevage, cuisine, et les objectifs des chapitres.' },
 };
 
 // L'abri à fabriquer : la recette dont il manque encore des objets.

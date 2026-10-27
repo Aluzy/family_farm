@@ -6,11 +6,11 @@ import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.
 import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
 import { memberPerso, petSheets } from '../engine/family.js';
-import { allPlots, growHoursLeft, hoeableTiles, terrainLines, isMature, maxStage, soilCap, soilCount } from '../engine/crops.js';
+import { allPlots, findPlot, growHoursLeft, hoeableTiles, terrainLines, isMature, maxStage, seedStock, soilCap, soilCount } from '../engine/crops.js';
 import { ripeTrees, treeInBloom, treeStage } from '../engine/orchard.js';
 import { coopCapacity, sheepToShear, stableHoused, woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
-import { chapterProgress, isUnlocked } from '../engine/campaign.js';
+import { chapterProgress, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
 import { marcherMembre } from '../engine/repas.js';
@@ -853,6 +853,25 @@ function stageHameauRefus(outil, nom) {
   if (f) notify(f(String(nom)), { kind: 'info' });
 }
 
+// Fiche 21 : un appui sur une parcelle de la carte. Un geste possible (semer, arroser, récolter) :
+// null, la scène le fait comme avant. Rien à faire : le texte de la petite bulle qu'elle pose
+// au-dessus de la case, à la place de l'ancienne fenêtre de la zone (qui s'ouvre maintenant d'un
+// appui long, des notifications et de la puce d'objectif).
+function stageParcelle(id) {
+  const p = findPlot(state, id);
+  if (!p) return null;
+  if (!p.culture) {
+    // (une terre sans aucune graine à y semer : la fenêtre du choix n'aurait que des boutons grisés)
+    return plantableCropsFor(state, p.lieu).some((c) => seedStock(state, c) > 0) ? null : 'Terre labourée · aucune graine à semer';
+  }
+  if (isMature(p) || !p.arrose) return null;
+  const def = DATA.CULTURES[p.culture];
+  const h = growHoursLeft(state, p);
+  const mure = p.stade + 1 >= maxStage(p);   // (ce stade-ci est le dernier)
+  const quand = h >= 1 ? `${mure ? 'mûre' : 'un stade'} dans ${Math.ceil(h)} h` : mure ? 'bientôt mûre' : 'pousse bientôt';
+  return `${def.icone} ${def.nom} · arrosée · ${quand}`;
+}
+
 // Le sol du grand monde pour la carte (js/ui/monde-sol.js), et les cases que ce qui y est pris rend
 // à la marche (casesOuvertesMonde, d'après la partie en cours).
 function mondeDeLaCarte() {
@@ -928,7 +947,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
@@ -982,6 +1001,10 @@ function stageOnView(v) {
 // Fluidité (FLU-01) : la puce d'objectif mène là où l'objectif se fait. Type d'objectif →
 // cible (voir cibleAttrs) ; 'niveaux' : la fenêtre Niveaux ; un type absent : la liste des
 // chapitres.
+// Fiche 21 : un appui sur une parcelle n'ouvre plus la fenêtre de la zone (un geste, ou une
+// bulle) ; ces raccourcis vers { fenetre: 'zone' }, comme les notifications d'arrosage et de
+// récolte (cibleAlerte) et celle du robot, restent avec l'appui long sur une parcelle les chemins
+// vers elle et ses boutons de groupe (Planter partout, Arroser tout, Récolter tout).
 const OBJECTIF_CIBLES = {
   maison: { fenetre: 'installations' },
   panneau: { fenetre: 'installations' },

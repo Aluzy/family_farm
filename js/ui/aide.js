@@ -387,7 +387,7 @@ const TUTO = {
     // FLU-19 : plus de parcelle avant le labour ; on achète la houe, on laboure, puis on plante
     texte: () => `${hasHoe(state) ? 'Ta houe' : 'Fabrique d\'abord la houe à l\'Atelier : elle'} change l'herbe en terre ; les graines s'achètent à la calèche (onglet Acheter), quand elle passe à la ferme vers ${DATA.CALECHE.FERME} h. ${stageUsable()
       ? `Prends-la (bouton ${DATA.HOUE.ICONE} en bas à droite) et touche l'herbe foncée (les cases vertes) pour labourer. Range-la, puis touche une terre labourée pour planter, et touche-la encore pour l'arroser`
-      : 'Laboure, puis touche « Planter » sur une parcelle vide, puis « Arroser »'}. Une plante arrosée gagne un stade ${DATA.TEMPS.POUSSE_HEURES} heures plus tard, puis redemande de l'eau : les carottes sont mûres en ${daysLabel(DATA.CULTURES.carotte.stades)}. ${stageUsable() ? 'Mûre, elle se balance : touche-la pour récolter, puis replante.' : 'Après la récolte, replante.'}`,
+      : 'Laboure, puis touche « Planter » sur une parcelle vide, puis « Arroser »'}. Une plante arrosée gagne un stade ${DATA.TEMPS.POUSSE_HEURES} heures plus tard, puis redemande de l'eau : les carottes sont mûres en ${daysLabel(DATA.CULTURES.carotte.stades)}. ${stageUsable() ? 'Mûre, elle se balance : touche-la pour récolter, puis replante. Arrosée, elle n\'a besoin de rien : une bulle dit quand elle grandira. Maintiens le doigt sur une terre pour la fenêtre de la zone (Planter partout, Arroser tout, Récolter tout).' : 'Après la récolte, replante.'}`,
   },
   dormir: {
     titre: '😴 Dormir',

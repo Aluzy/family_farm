@@ -15,6 +15,7 @@
   const F = global.FermeCarte;
   const { T, TREE_OBJECT, MIN_TAP, LABEL_GAP, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN } = F.C;
   const { pixelRatio } = F;
+  const CASE_TIP_MS = 2600;   // fiche 21 : la bulle d'une case de culture reste ce temps après l'appui
 
   F.partie({
 
@@ -67,6 +68,48 @@
       const maxX = this.scale.width / dpr - this.tipW - 4;
       const tr = 'translate(' + Math.round(Math.max(4, Math.min(x, maxX))) + 'px,' + Math.round(y) + 'px)';
       if (tr !== this.tipTr) { this.tipTr = tr; el.style.transform = tr; }
+    },
+
+    /* ---------- fiche 21 : la bulle d'une case de culture ---------- */
+
+    // Une parcelle où il n'y a rien à faire (déjà arrosée, qui pousse, une terre sans graine) n'ouvre
+    // plus de fenêtre : une petite bulle dit, quelques secondes, où elle en est (« 🥕 Carotte ·
+    // arrosée · mûre dans 3 h »). Il n'y en a qu'une : un nouvel appui, sur cette case ou une autre,
+    // la reprend (texte, place) et relance sa durée ; elles ne s'empilent pas. (x, y) : le haut de
+    // la case, en px de carte. Même dessin que la bulle de la citerne (.stage-tip).
+    showCaseTip(text, x, y) {
+      if (!this.caseTip) {
+        const el = document.createElement('div');
+        el.className = 'stage-tip case-tip';
+        el.setAttribute('role', 'status');
+        this.ctx.labelLayer.appendChild(el);
+        this.caseTip = el;
+      }
+      const el = this.caseTip;
+      // (le texte gardé à part : les émojis deviennent des icônes dans le DOM, js/ui/pixel-emoji.js)
+      if (this.caseTipText !== text) { this.caseTipText = text; el.textContent = text; this.caseTipW = 0; }
+      if (el.hidden) { el.hidden = false; this.caseTipW = 0; }
+      this.caseTipAt = { x, y };
+      this.caseTipUntil = performance.now() + CASE_TIP_MS;
+      this.syncCaseTip();
+    },
+
+    // Chaque image : la bulle suit sa case (la vue suit le personnage), puis s'efface à son heure.
+    syncCaseTip() {
+      const el = this.caseTip;
+      if (!el || el.hidden) return;
+      if (performance.now() >= this.caseTipUntil) { el.hidden = true; this.caseTipTr = null; return; }
+      if (!this.caseTipW) { this.caseTipW = el.offsetWidth; this.caseTipH = el.offsetHeight; }
+      const dpr = pixelRatio();
+      const cam = this.cameras.main;
+      const k = cam.zoom / dpr;
+      const left = this.cx - this.scale.width / cam.zoom / 2;
+      const top = this.cy - this.scale.height / cam.zoom / 2;
+      const x = (this.caseTipAt.x - left) * k - this.caseTipW / 2;
+      const y = Math.max(0, (this.caseTipAt.y - top) * k - this.caseTipH - LABEL_GAP);
+      const maxX = this.scale.width / dpr - this.caseTipW - 4;
+      const tr = 'translate(' + Math.round(Math.max(4, Math.min(x, maxX))) + 'px,' + Math.round(y) + 'px)';
+      if (tr !== this.caseTipTr) { this.caseTipTr = tr; el.style.transform = tr; }
     },
 
     /* ---------- version 1.18 : ce qui attend d'être ramassé ---------- */
