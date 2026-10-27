@@ -98,12 +98,16 @@ export function simulateOffline(state, seconds) {
   const before = offlineSnapshot(state);
   let left = Math.round(simule * 1000);
   // Version 1.19 : parti en pleine nuit, la nuit continue (minuit compris) ; le reste de
-  // l'absence suit la règle habituelle à partir du réveil. Jeu fermé, le personnage dort, s'il a
-  // où dormir (sur la ferme générée, une paillasse dans une pièce close : nuitCouchee).
+  // l'absence suit la règle habituelle à partir du réveil. Jeu fermé, la nuit rend son énergie,
+  // s'il a où dormir (sur la ferme générée, une paillasse dans une pièce close : nuitCouchee) ;
+  // mais au retour, la nuit pas finie, il est éveillé comme il l'était : le jeu ne le couche pas
+  // (c'est le joueur, avec « Dormir »).
   if (nightActive(state)) {
     const reste = nightLengthMs() - state.nuitEnCours.ms;
+    const dormait = !!state.nuitEnCours.dort;
     state.nuitEnCours.dort = nuitCouchee(state);
     advanceNight(state, left);
+    if (nightActive(state)) state.nuitEnCours.dort = dormait;
     left = Math.max(0, left - reste);
   }
   const eveilMax = Math.max(state.awakeMs, awakeRequired(state) * 1000);
