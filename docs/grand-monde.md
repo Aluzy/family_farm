@@ -1170,3 +1170,14 @@ SwiftShader, sans carte graphique) :
   monte en approchant d'une rive ; restent les pas dans l'eau et les grenouilles la nuit (une vraie
   grenouille, « One frog » de Joseph Sardin, BigSoundBank, CC0, en boucle de 11,4 s). Les
   enregistrements sont coupés et égalisés par `scripts/son/libres.py` (voir `docs/son.md`).
+- **Fiche 21 — toucher le champ n'ouvre plus de fenêtre** (fait) : un appui sur une parcelle (Zone de
+  culture ou Serre) y fait le geste possible, comme avant (semer : le choix de la graine ; arroser ;
+  récolter). S'il n'y a rien à faire (déjà arrosée, en train de pousser, une terre sans aucune graine
+  à semer), plus de fenêtre : une petite bulle, au-dessus de la case, deux secondes et demie
+  (« 🥕 Carotte · arrosée · mûre dans 3 h », « … · un stade dans 2 h », « Terre labourée · aucune
+  graine à semer »). Il n'y en a qu'une : un nouvel appui la reprend, elles ne s'empilent pas (le
+  texte vient de la page, `stageParcelle` dans `js/ui/stage.js` ; la bulle, `showCaseTip` dans
+  `js/carte/ferme/etiquettes.js`). La fenêtre de la zone (toutes les parcelles, « Planter partout »,
+  « Arroser tout », « Récolter tout », le semis automatique) s'ouvre d'un appui long sur une parcelle,
+  à la ligne de celle-ci, et toujours depuis les notifications d'arrosage et de récolte et la puce
+  d'objectif (« Y aller ») : rien ne disparaît. L'aide, l'encyclopédie et la fin du didacticiel le disent.

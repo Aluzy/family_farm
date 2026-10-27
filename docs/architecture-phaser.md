@@ -439,7 +439,11 @@ dimensions et ses rectangles dans `DEFAULT_W`, `DEFAULT_H` et `DEFAULT_OBJECTS`
   interactif Phaser : `hitAt()` teste d'abord les parcelles (exactement la tuile), puis le
   bâtiment le plus en avant (zone d'au moins 44 px CSS, pour la pancarte du verger).
   - parcelle vide → `plant-open` ; mûre → `harvest` ; en croissance et sèche → `water` ;
-    déjà arrosée → fenêtre « Zone de culture » ;
+    rien à faire (déjà arrosée, en train de pousser, une terre sans graine à semer) → aucune
+    fenêtre (fiche 21) : `bridge.parcelle(id)` donne le texte d'une bulle posée quelques secondes
+    au-dessus de la case (`showCaseTip`, une seule, reprise à chaque appui) ;
+  - appui long (450 ms) sur une parcelle → la fenêtre de sa zone (« Zone de culture » ou
+    « Serre »), à la ligne de cette parcelle (action `aller`) ;
   - bâtiment → `stage-open` avec sa fenêtre.
 
 ## 4. La zone et ses boutons (DOM)
