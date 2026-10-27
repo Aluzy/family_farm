@@ -82,6 +82,7 @@ ICONS = {
 
 
 def icons():
-    """La tête du cheval, de profil : prise dans sa planche (case 0, au repos)."""
+    """La tête du cheval, de profil : prise dans sa planche (case 0, au repos : la tête retouchée
+    à la main, fiche 12, qui va jusqu'au contour du bout du nez, colonne 45)."""
     planche = Image.open(os.path.join(ASSETS, 'cheval.png')).convert('RGBA')
-    return {'🐴': planche.crop((29, 0, 45, 16)).copy()}
+    return {'🐴': planche.crop((30, 0, 46, 16)).copy()}

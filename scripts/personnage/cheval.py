@@ -19,6 +19,35 @@
 #     bois pleine de foin au-dessus d'une auge, à 45° comme les blocs.
 # Lumière en haut à gauche, contour sombre.
 #
+# Les retouches du joueur (fiche 12, docs/fiches/12-cheval-retouche.png) : il a redessiné à la main
+# les cases 0 (au repos) et 5 (il broute). Ce script les redonne au pixel près (main() le vérifie
+# quand la planche retouchée est là) : leurs têtes sont des motifs recopiés lettre pour lettre
+# (TETE_HAUTE, ENCOLURE_BASSE, TETE_BASSE), le reste suit les règles qu'on en a tirées, appliquées
+# aussi aux cases qu'il n'a pas touchées (les quatre temps du pas, de face, de dos), au cheval sellé
+# et à l'attelage de la calèche (scripts/carte/caleche.py) :
+#   - la tête haute : le chanfrein droit, d'un pixel plus étroit (le contour suit la pente du front
+#     au nez, sans marche) ; l'oreille de 2 px, pointue (sa pointe d'un pixel, ombrée 's'), détachée
+#     du front par le contour ; le toupet noir sur le front, le reflet 'c' au-dessus de l'œil ;
+#   - le bout du nez : un bloc carré 'n' de 3 à 4 px, plus large que le chanfrein (il dépasse d'un
+#     pixel vers l'avant), le naseau 'e' au milieu du bloc (et non plus dans son coin) ; le menton
+#     plat, la ganache et le dessous de la mâchoire fermés par une ligne droite de contour ;
+#   - la crinière : deux pixels de crins 'm' (un reflet 'M' tous les trois) le long de l'encolure, le
+#     contour posé directement sur eux ; elle s'arrête au garrot en s'amincissant (plus de crins sur le
+#     dos) ; tête baissée, elle devient une bande épaisse (3 à 4 px) qui fait tout le dessus de
+#     l'encolure, une mèche dressée au garrot, et le toupet tombe sur le front ;
+#   - la tête baissée (il broute) : verticale, le chanfrein droit sur l'avant, la liste blanche le
+#     long de ce bord jusqu'au nez carré ; pas d'oreille visible ;
+#   - le poitrail : il rentre en biais (POITRAIL) jusqu'à l'avant-bras, sans bosse devant les
+#     antérieurs ; le dos : la croupe ronde, sans le pixel qui dépassait au-dessus ;
+#   - les sabots : deux pixels 'h', juste sous le canon (plus de pince ni de talon qui dépasse) ; dans
+#     chaque paire, la jambe de droite finit une rangée plus haut (37) que celle de gauche (38), et
+#     entre les deux sabots posés le contour s'ouvre d'un pixel ; au repos, d'aplomb, un coin de
+#     contour arrondit le dessous des sabots ;
+#   - la queue, les couleurs de la robe, la balzane, la liste : inchangées.
+# De face et de dos (pas de retouche à reprendre telle quelle) : les mêmes règles, à leur échelle —
+# les oreilles pointues (leur pointe 's'), le bout du nez carré, plus large que le chanfrein, les
+# naseaux dedans, la liste arrêtée au-dessus ; la crinière arrêtée au garrot, ses reflets 'M'.
+#
 #   python3 scripts/personnage/cheval.py            écrit les images
 #   python3 scripts/personnage/cheval.py --apercu   écrit aussi apercu_cheval.png (agrandi)
 import os
@@ -44,8 +73,15 @@ ANNEAU = (11, 17)                # l'anneau du poteau (px de son image) : là o�
 
 
 class Toile:
+    """Le dessin d'une case : des lettres de ROBE par pixel, puis le contour (image()) ; les
+    motifs dessinés à la main (MOTIFS) se posent par-dessus, après le contour, tels quels."""
+
     def __init__(self):
         self.px = {}
+        self.motifs = []          # [(x0, y0, rangées)] : posés après le contour
+        self.apres = {}           # des lettres posées après le contour et les motifs (la bride)
+        self.trous = set()        # des pixels de contour ôtés (entre deux sabots)
+        self.coins = set()        # des pixels de contour ajoutés (les coins sous les sabots)
 
     def put(self, x, y, c):
         if 0 <= x < W and 0 <= y < H:
@@ -70,31 +106,108 @@ class Toile:
                 if m.getpixel((x, y)):
                     self.put(x, y, c)
 
+    def motif(self, x0, y0, rangees):
+        """Un motif de MOTIFS, son coin haut-gauche en (x0, y0) : il remplace tout ce qu'il
+        couvre, son contour compris ('o' : le contour, '.' : transparent)."""
+        self.motifs.append((x0, y0, rangees))
+
     def image(self):
         im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
         for (x, y), c in self.px.items():
             im.putpixel((x, y), ROBE[c] + (255,))
-        return contour(im, OUT)
+        im = contour(im, OUT)
+        for x0, y0, rangees in self.motifs:
+            for j, r in enumerate(rangees):
+                for i, c in enumerate(r):
+                    x, y = x0 + i, y0 + j
+                    if 0 <= x < W and 0 <= y < H:
+                        im.putpixel((x, y), (0, 0, 0, 0) if c == '.' else (OUT if c == 'o' else ROBE[c]) + (255,))
+        for (x, y), c in self.apres.items():
+            if 0 <= x < W and 0 <= y < H:
+                im.putpixel((x, y), ROBE[c] + (255,))
+        for x, y in self.trous:
+            if 0 <= x < W and 0 <= y < H and im.getpixel((x, y))[:3] == OUT:
+                im.putpixel((x, y), (0, 0, 0, 0))
+        for x, y in self.coins:
+            if 0 <= x < W and 0 <= y < H and not im.getpixel((x, y))[3]:
+                im.putpixel((x, y), OUT + (255,))
+        return im
+
+
+# ---------- les motifs dessinés à la main (fiche 12) ----------
+# Repris lettre pour lettre des cases retouchées par le joueur (0 : au repos ; 5 : il broute),
+# contour compris : la tête haute, son encolure et sa crinière (coin haut-gauche en (28, 0)) ;
+# la tête baissée vers l'herbe, en deux morceaux (en (28, 12), puis en (34, 24)).
+TETE_HAUTE = [
+    '.....oso............',
+    '.....obbo...........',
+    '.....obbo...........',
+    '....ommbboo.........',
+    '....omcccbbo........',
+    '...ommmbbbbbo.......',
+    '...ommbbebwbbo......',
+    '...omMbbbbbwwbo.....',
+    '..ommbbbbbbbbwbo....',
+    '..ommbbsssbbbbbbo...',
+    '..omMbbsssbbbbnnno..',
+    '.ommbbbsssbbbbneno..',
+    '.ommbbbbbbbbbnnnno..',
+    'oomMbbbbbbbooonnno..',
+    'ommbbbbbbbo...ooo...',
+    'bmbbbbbbbbo.........',
+    'bbbbbbbbbbo.........',
+]
+ENCOLURE_BASSE = [
+    '....................',
+    '..oo.o..............',
+    'oommomo.............',
+    'bbmmmmmo............',
+    'bbbmmmmo............',
+    'bbbbmmmmo...........',
+    'bbbbbmmmmo..........',
+    'bbbbbbmmmo..........',
+    'bbbbbbbmmmo.........',
+    'bbbbbbbbmmooooo.....',
+    'bbbbbbbbbbbbbbbo....',
+    'bbbbbbbbbbbbbmo.....',
+]
+TETE_BASSE = [
+    'bbbbbbbo......',
+    'bbbbbbbmm.....',
+    'obbbbebmo.....',
+    '.obbbbbwo.....',
+    '..obbbbwo.....',
+    '..obbbbwo.....',
+    '..obbbbwwo....',
+    '...obbbbwo....',
+    '...obbnnno....',
+    '....onneno....',
+    '....onnnno....',
+    '.....oooo.....',
+]
+# le poitrail (tête haute) : la dernière colonne du corps, par rangée (19..26) ; il rentre en
+# biais jusqu'à l'avant-bras
+POITRAIL = {20: 35, 21: 35, 22: 34, 23: 34, 24: 33, 25: 33, 26: 32}
 
 
 # ---------- de profil ----------
 
-def jambe(t, x, y0, lev, fonce, arriere=False):
-    """Une jambe (x : son bord gauche) du corps (y0) au sol (37) : l'avant-bras ou la cuisse de
-    3 px, le canon de 2 ; lev : le sabot levé de lev px, replié vers l'arrière."""
+def jambe(t, x, y0, lev, fonce, arriere=False, courte=False):
+    """Une jambe (x : son bord gauche) du corps (y0) au sol : l'avant-bras ou la cuisse de 3 px,
+    le canon de 2, le sabot de 2 sous le canon (rangée 38 ; courte : 37, la jambe de droite de
+    la paire) ; lev : le sabot levé de lev px, replié vers l'arrière."""
     c1, c2 = ('s', 'S') if fonce else ('b', 's')
     genou = 30 if arriere else 31
     for y in range(y0, genou):
         t.put(x, y, c1); t.put(x + 1, y, c1); t.put(x + 2, y, c2)
     if arriere:                                   # le jarret, en arrière
         t.put(x - 1, y0 + 1, c1); t.put(x - 1, y0 + 2, c1)
-    bas = 37 - lev
+    bas = 37 - lev - (1 if courte and not lev else 0)
     dx = -1 if lev else 0
     for y in range(genou, bas + 1):
         d = dx if y > genou + 1 else 0
         t.put(x + 1 + d, y, c1); t.put(x + 2 + d, y, c2)
     t.rect(x + 1 + dx, bas + 1, x + 2 + dx, bas + 1, 'h')
-    t.put(x + dx if lev else x + 3, bas + 1, 'h')
 
 
 # les quatre temps du pas : le sabot levé (px) de l'antérieur proche, l'antérieur loin, le
@@ -102,57 +215,68 @@ def jambe(t, x, y0, lev, fonce, arriere=False):
 PAS = [(0, 3, 3, 0), (0, 0, 0, 0), (3, 0, 0, 3), (0, 0, 0, 0)]
 
 
-def profil(pose='idle', k=0, selle=False):
+def profil(pose='idle', k=0, selle=False, harnais=False):
     """De profil, tourné vers la droite : 'idle', 'marche' (temps k) ou 'broute' ; sellé et bridé
-    (selle) sous le cavalier."""
+    (selle) sous le cavalier ; harnais : bridé, le collier et la sellette de l'attelage (la
+    calèche, scripts/carte/caleche.py, qui tire les rênes jusqu'aux mains du cocher)."""
     t = Toile()
     lev = PAS[k] if pose == 'marche' else (0, 0, 0, 0)
     u = 1 if pose == 'marche' and k % 2 == 1 else 0
-    jambe(t, 30, 24 - u, lev[1], True); jambe(t, 13, 24 - u, lev[3], True, True)   # côté loin
+    # côté loin : l'antérieur est la jambe de droite de sa paire (courte), le postérieur celle de gauche
+    jambe(t, 30, 24 - u, lev[1], True, courte=True); jambe(t, 13, 24 - u, lev[3], True, True)
     # la queue, tombante, épaisse en haut
     for i, (x, y) in enumerate([(10, 15), (8, 16), (7, 17), (6, 18), (6, 19), (5, 20), (5, 21), (5, 22),
                                 (5, 23), (5, 24), (6, 25), (6, 26), (7, 27)]):
         for j in range(3 if i < 6 else 2):
             t.put(x + j, y - u, 'M' if (j == 0 and i % 3 == 1) else 'm')
-    # le corps : le dos creusé, la croupe ronde, le ventre
+    # le corps : le dos creusé, la croupe ronde (sans bosse), le ventre
     t.poly([(11, 16 - u), (14, 13 - u), (20, 14 - u), (27, 14 - u), (33, 15 - u), (36, 19 - u), (35, 25 - u),
             (31, 27 - u), (17, 27 - u), (12, 25 - u), (10, 20 - u)], 'b')
+    t.px.pop((14, 13 - u), None)
     t.rect(14, 14 - u, 19, 14 - u, 'c'); t.rect(12, 15 - u, 22, 15 - u, 'c'); t.rect(11, 16 - u, 14, 19 - u, 'c')
     t.rect(17, 26 - u, 30, 27 - u, 's'); t.rect(12, 23 - u, 16, 25 - u, 's')
     t.rect(13, 18 - u, 14, 21 - u, 'b')
     if pose == 'broute':
         t.poly([(29, 15), (33, 14), (40, 25), (37, 28), (31, 21)], 'b')            # l'encolure baissée
-        for i in range(10):
-            t.put(30 + i * 9 // 10, 14 + i, 'm'); t.put(31 + i * 9 // 10, 14 + i, 'm')
-        t.poly([(36, 24), (41, 23), (44, 33), (40, 35), (37, 30)], 'b')             # la tête, vers l'herbe
-        t.rect(40, 33, 43, 35, 'n'); t.put(42, 34, 'e')
-        t.put(39, 26, 'e'); t.put(42, 26, 's'); t.put(42, 25, 's')
-        t.rect(41, 28, 41, 31, 'w')
+        t.motif(28, 12, ENCOLURE_BASSE); t.motif(34, 24, TETE_BASSE)
     else:
         t.poly([(29, 16 - u), (33, 6 - u), (37, 6 - u), (37, 12 - u), (36, 21 - u), (31, 22 - u)], 'b')   # l'encolure
         t.rect(34, 13 - u, 36, 21 - u, 'b')
-        for i in range(12):                                          # la crinière
-            x, y = 29 + i * 4 // 12, 16 - i - u
-            t.put(x, y, 'm'); t.put(x + 1, y, 'M' if i % 3 == 0 else 'm')
-        t.poly([(33, 3 - u), (38, 3 - u), (42, 7 - u), (44, 11 - u), (42, 13 - u), (38, 12 - u), (35, 9 - u)], 'b')   # la tête
-        t.rect(41, 10 - u, 43, 12 - u, 'n'); t.put(43, 10 - u, 'e')
-        t.put(38, 6 - u, 'w'); t.rect(39, 7 - u, 40, 7 - u, 'w'); t.put(41, 8 - u, 'w')   # la liste
-        t.put(36, 6 - u, 'e')                                         # l'œil
-        t.rect(34, 1 - u, 35, 2 - u, 'b'); t.put(34, 0 - u, 's')      # l'oreille
-        t.rect(33, 3 - u, 34, 5 - u, 'm')                             # le toupet
-        t.rect(35, 9 - u, 37, 11 - u, 's')                            # la ganache
-        t.rect(34, 4 - u, 36, 4 - u, 'c')
-        if selle:                                                     # la bride, les rênes
-            t.rect(36, 4 - u, 36, 10 - u, 'L'); t.rect(37, 10 - u, 41, 10 - u, 'L')
+        for y, x in POITRAIL.items():                                 # le poitrail rentré
+            for xx in range(x + 1, W):
+                t.px.pop((xx, y - u), None)
+        t.motif(28, -u, TETE_HAUTE)
+        if selle or harnais:                                          # la bride : la têtière, la muserolle
+            for y in range(4, 11):
+                t.apres[(37, y - u)] = 'L'
+            for x in range(38, 42):
+                t.apres[(x, 10 - u)] = 'L'
+        if selle:                                                     # les rênes, jusqu'au garrot
             for i in range(9):
-                t.put(40 - i * 13 // 9, 11 + i * 4 // 9 - u, 'L')
-    jambe(t, 27, 24 - u, lev[0], False); jambe(t, 16, 24 - u, lev[2], False, True)   # côté proche
+                t.apres[(41 - i * 12 // 9, 12 + i * 3 // 9 - u)] = 'L'
+        if harnais:                                                   # le collier, à la base de l'encolure
+            for i in range(9):
+                t.apres[(31 + i * 5 // 9, 14 + i - u)] = 'L'
+                t.apres[(32 + i * 5 // 9, 14 + i - u)] = 'l'
+    # côté proche : l'antérieur est la jambe de gauche de sa paire, le postérieur celle de droite (courte)
+    jambe(t, 27, 24 - u, lev[0], False); jambe(t, 16, 24 - u, lev[2], False, True, courte=True)
     t.rect(28, 35 - lev[0], 29, 36 - lev[0], 'w')                     # la balzane
+    # (entre les deux sabots posés d'une paire, le contour s'ouvre d'un pixel)
+    if not lev[0] and not lev[1]:
+        t.trous.add((30, 38))
+    if not lev[2] and not lev[3]:
+        t.trous.add((16, 38))
+    if pose == 'idle':                       # au repos, d'aplomb : les sabots arrondis d'un coin de contour
+        t.coins.update({(13, 39), (19, 38), (27, 39), (33, 38)})
     if selle:                                                         # la selle sur son tapis
-        t.rect(17, 15 - u, 28, 19 - u, 'B'); t.rect(17, 19 - u, 28, 19 - u, 'L')
+        t.rect(17, 15 - u, 27, 19 - u, 'B'); t.rect(17, 19 - u, 27, 19 - u, 'L')
         t.rect(18, 13 - u, 26, 15 - u, 'L'); t.rect(18, 13 - u, 19, 12 - u, 'l'); t.rect(25, 12 - u, 26, 13 - u, 'L')
         t.rect(20, 13 - u, 24, 13 - u, 'l')
         t.rect(21, 20 - u, 21, 25 - u, 'h'); t.rect(20, 26 - u, 22, 26 - u, 'f')   # l'étrivière, l'étrier
+    if harnais:                                                       # la sellette et sa sangle
+        t.rect(20, 13 - u, 24, 15 - u, 'L'); t.rect(21, 13 - u, 23, 13 - u, 'l')
+        t.rect(22, 16 - u, 22, 26 - u, 'L')
+        t.rect(25, 18 - u, 30, 18 - u, 'L')                           # le trait, du collier vers la voiture
     return t
 
 
@@ -182,14 +306,16 @@ def face(k=0, couche='tout', selle=False):
     if couche != 'corps':
         t.ovale(20, 4 - up, 27, 18 - up, 'b', 2)                      # la tête, longue
         t.rect(20, 4 - up, 21, 13 - up, 'c')
-        t.ovale(21, 14 - up, 26, 19 - up, 'n', 1)                     # le bout du nez
-        t.put(22, 17 - up, 'e'); t.put(25, 17 - up, 'e')
-        t.rect(23, 6 - up, 24, 15 - up, 'w')                          # la liste
+        t.rect(21, 15 - up, 26, 18 - up, 'n')                         # le bout du nez, carré, plus large
+        t.put(22, 16 - up, 'e'); t.put(25, 16 - up, 'e')              # les naseaux, dedans
+        t.rect(23, 6 - up, 24, 13 - up, 'w')                          # la liste, jusqu'au-dessus du nez
         t.put(20, 8 - up, 'e'); t.put(27, 8 - up, 'e')                # les yeux
-        t.rect(19, 1 - up, 20, 4 - up, 'b'); t.rect(27, 1 - up, 28, 4 - up, 'b')   # les oreilles
-        t.put(19, 2 - up, 's'); t.put(28, 2 - up, 's')
+        t.rect(19, 2 - up, 20, 4 - up, 'b'); t.rect(27, 2 - up, 28, 4 - up, 'b')   # les oreilles, pointues
+        t.put(19, 1 - up, 's'); t.put(28, 1 - up, 's')
         t.rect(22, 3 - up, 25, 6 - up, 'm')                           # le toupet
-        t.rect(16, 13 - up, 17, 22 - up, 'm'); t.rect(30, 13 - up, 31, 22 - up, 'm')   # la crinière, des deux côtés
+        for x in (16, 30):                                            # la crinière, des deux côtés, jusqu'au garrot
+            t.rect(x, 13 - up, x + 1, 19 - up, 'm')
+            t.put(x if x < 20 else x + 1, 14 - up, 'M'); t.put(x if x < 20 else x + 1, 17 - up, 'M')
         if selle:                                                     # la bride ; les bottes du cavalier
             t.rect(20, 14 - up, 20, 16 - up, 'L'); t.rect(27, 14 - up, 27, 16 - up, 'L')
             t.rect(14, 18 - up, 14, 22 - up, 'L'); t.rect(33, 18 - up, 33, 22 - up, 'L')
@@ -203,7 +329,8 @@ def dos(k=0, couche='tout', selle=False):
     t = Toile()
     g, d, up = TEMPS[k]
     if couche != 'croupe':
-        t.rect(21, 2 - up, 22, 5 - up, 'b'); t.rect(25, 2 - up, 26, 5 - up, 'b')   # les oreilles, au loin
+        t.rect(21, 3 - up, 22, 5 - up, 'b'); t.rect(25, 3 - up, 26, 5 - up, 'b')   # les oreilles, pointues, au loin
+        t.put(21, 2 - up, 's'); t.put(26, 2 - up, 's')
         t.ovale(20, 4 - up, 27, 13 - up, 'm', 2)                      # la nuque, la crinière
         t.rect(23, 5 - up, 24, 15 - up, 'M')
         if selle:                                                     # la selle, sous le cavalier
@@ -306,7 +433,26 @@ def ratelier():
     return t.fini()
 
 
+RETOUCHE = os.path.join(os.path.dirname(ASSETS), 'docs', 'fiches', '12-cheval-retouche.png')
+RETOUCHEES = (0, 5)             # les cases retouchées par le joueur
+
+
+def verifie(planche):
+    """Les cases retouchées sont-elles, au pixel près, celles de la planche du joueur ?"""
+    if not os.path.exists(RETOUCHE):
+        return
+    ref = Image.open(RETOUCHE).convert('RGBA')
+    for c in RETOUCHEES:
+        boite = (c * W, 0, c * W + W, H)
+        a, b = planche.crop(boite).load(), ref.crop(boite).load()
+        ecarts = [(x, y) for y in range(H) for x in range(W)
+                  if (a[x, y] if a[x, y][3] else 0) != (b[x, y] if b[x, y][3] else 0)]
+        if ecarts:
+            sys.exit(f'cheval.png, case {c} : {len(ecarts)} pixels diffèrent de la retouche ({ecarts[:5]}…)')
+
+
 def main():
+    verifie(planche_seul())
     images = {'cheval.png': planche_seul(), 'cheval_monte.png': planche_monte(),
               'poteau_attache.png': poteau(), 'meuble_ratelier.png': ratelier()}
     for nom, im in images.items():
