@@ -1111,3 +1111,22 @@ SwiftShader, sans carte graphique) :
   reproduits sous SwiftShader ;
 - une partie longue jouée à la main, de la terre sauvage aux chapitres du monde (les objectifs sont
   testés par le moteur et le joueur automatique, pas encore par un joueur).
+
+## Après le projet
+
+- **Fiche 10 — les notifications qui se cumulent** (fait) : un geste répété vite ne fait plus une
+  pile de notifications identiques ; une seule reste affichée et sa quantité monte (« +1 🧱 », « +2 »,
+  … « +5 »), puis disparaît comme les autres une durée complète après le dernier appui. `notify`
+  (`js/ui/toasts.js`) prend l'option `cumul: { cle, quantites, texte }` : une notification de même clé
+  encore affichée additionne `quantites` (chaque objet à part, les dépenses en négatif, l'argent
+  compris), prend le texte `texte(totaux)` et repart pour une durée complète ; sinon une nouvelle
+  naît de l'appui seul ; sans l'option, rien ne change. Le compte, sans le DOM, est dans
+  `js/ui/notif-cumul.js` (`additionner`, `cumulSuivant`), testé par `tests/engine/notif-cumul.test.mjs`.
+  Pour les lecteurs d'écran, `#toast-root` n'est plus atomique (seule la notification qui arrive ou
+  change est lue), une notification cumulée se relit en entier (`aria-atomic`) et reste `aria-busy`
+  pendant la rafale (700 ms sans appui) : la quantité est lue une fois, pas « +1, +2, +3 ». Les gestes
+  cumulés : « Fabriquer » à l'Atelier (clé : la recette ; une autre recette en commence une autre),
+  acheter et vendre à la calèche (par objet : la quantité et les pièces), « Manger » (l'énergie),
+  verser du blé au Moulin, cueillir aux arbres du Verger (par fruit), récolter les parcelles, nourrir
+  une poule, ranger au frigo et en sortir (par objet). Les alertes, les repas et les lettres ne changent
+  pas.

@@ -329,7 +329,8 @@ registerActions({
     const result = applyResult(startMilling(state, Math.max(1, Number(target.dataset.q) || 1)));
     if (result.ok) {
       syncJobs();
-      notify(`⚙️ ${plural(result.quantite, 'blé', formatNumber(result.quantite))} au Moulin`);
+      // fiche 10 : les lots versés à la suite au Moulin se cumulent
+      notify(null, { cumul: { cle: 'moulin', quantites: { n: result.quantite }, texte: (t) => `⚙️ ${plural(t.n, 'blé', formatNumber(t.n))} au Moulin` } });
       refresh();
     }
   },

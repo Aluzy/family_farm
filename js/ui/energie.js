@@ -71,6 +71,7 @@ export function eatButton(item, texte = '') {
 registerActions({
   'eat': (target) => {
     const r = applyResult(eatSnack(state, target.dataset.item));
-    if (r && r.ok) notify(`⚡ +${formatEnergyGain(r.gain)} énergie`);
+    // fiche 10 : manger plusieurs fois de suite additionne l'énergie dans une seule notification
+    if (r && r.ok) notify(null, { cumul: { cle: 'manger', quantites: { gain: r.gain }, texte: (t) => `⚡ +${formatEnergyGain(t.gain)} énergie` } });
   },
 });

@@ -501,7 +501,8 @@ registerActions({
   'harvest': (target) => {
     const result = applyResult(harvest(state, target.dataset.id));
     // version 1.18 : ce qui attend le personnage s'annonce par sa bulle, au ramassage
-    if (result.ok && !result.aRamasser) notify(harvestToast(result));
+    // fiche 10 : récolter parcelle après parcelle cumule la récolte dans une seule notification
+    if (result.ok && !result.aRamasser) notify(null, { cumul: { cle: 'recolte', quantites: result.items, texte: (t) => harvestToast({ items: t }) } });
   },
 
 
@@ -511,7 +512,8 @@ registerActions({
   },
   'feed-hen': () => {
     const result = applyResult(feedHen(state));
-    if (result.ok) notify('🌾 Une poule nourrie (1 blé pour 2 poules)');
+    // fiche 10 : « Nourrir une poule » répété compte les poules nourries
+    if (result.ok) notify(null, { cumul: { cle: 'nourrir-poule', quantites: { n: 1 }, texte: (t) => `🌾 ${t.n > 1 ? `${plural(t.n, 'poule')} nourries` : 'Une poule nourrie'} (1 blé pour 2 poules)` } });
   },
   'feed-all': () => {
     const result = applyResult(feedAllHens(state));
