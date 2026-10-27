@@ -63,6 +63,30 @@ export const RAW_DATA = {
     "HORAIRE": { "COUCHER_ENFANTS": 20, "LEVER_ENFANTS": 8, "FIN_TRAVAIL_ADULTES": 19, "COUCHER_ADULTES": 22 },
     "RESERVE_DEPART": {}
   },
+  "COMPAGNON": {
+    "HEURES": [8, 18],
+    "ABSENCE_S": 60,
+    "FAIM_MIN": 30,
+    "ARROSER": { "PAR_FOIS": 3, "PAR_JOUR": 6, "ECART_H": 3, "FAIM": 2 },
+    "CUISINER": {
+      "PAR_JOUR": 1,
+      "ECART_H": 4,
+      "FAIM": 4,
+      "FAIM_FAMILLE": 70,
+      "RECETTES": [
+        "soupe_legumes",
+        "ratatouille",
+        "omelette",
+        "omelette_champignons",
+        "poisson_grille",
+        "raclette",
+        "salade_tomates",
+        "riz_au_lait",
+        "compote"
+      ]
+    },
+    "RAMASSER": { "PAR_JOUR": 3, "ECART_H": 2, "FAIM": 2, "RAYON": 24, "SORTES": ["morceau_bois", "petite_pierre"] }
+  },
   "ROBOT": {
     "HEURE": 6,
     "MINUTES": 4,

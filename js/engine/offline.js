@@ -9,6 +9,7 @@ import { millPending, millTimeLeft, taskTimeLeft } from './kitchen.js';
 import { refreshUnlocks } from './techtree.js';
 import { updateChapters } from './campaign.js';
 import { nuitCouchee } from './blocs.js';
+import { journeeCompagnon } from './compagnon.js';
 
 /* ---------- Lot 11 : progression hors-ligne ---------- */
 
@@ -111,11 +112,17 @@ export function simulateOffline(state, seconds) {
     farmStep(state, dtMs, { usure: !!H.USURE, eveilMax }); // le même pas que tick
     left -= dtMs;
   }
+  // fiche 19 : une vraie absence (COMPAGNON.ABSENCE_S au moins ; pas une page rechargée, où on le
+  // voit faire sur la carte) : le compagnon a fait ce qu'il fait à cette heure-là (le moteur, sans
+  // dessin) ; ce qu'il a ramassé compte dans le bilan (terminees), le détail dans report.compagnon
+  const compagnon = simule >= DATA.COMPAGNON.ABSENCE_S ? journeeCompagnon(state) : [];
   if (simule > 0) {
     refreshUnlocks(state);
     updateChapters(state);
   }
-  return offlineReport(state, before, demande, simule);
+  const report = offlineReport(state, before, demande, simule);
+  if (compagnon.length) report.compagnon = compagnon.map((r) => ({ action: r.action, items: r.items }));
+  return report;
 }
 
 // Additionne deux bilans hors-ligne successifs (le second suit le premier) :

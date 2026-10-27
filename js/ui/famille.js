@@ -7,6 +7,8 @@ import {
 import { escapeHtml, formatNumber, formatPercent } from '../engine/format.js';
 import { affames, boiteCounts, jaugeFamille, jaugeMembre, sourceRepas } from '../engine/repas.js';
 import { sleepTarget } from '../engine/night.js';
+import { aidant } from '../engine/ramassage.js';
+import { compagnonAide, faitsCompagnon, finAide, laisserAider } from '../engine/compagnon.js';
 import { energyLevel } from '../engine/stamina.js';
 import { itemsText } from './common.js';
 import { energyDetailsHtml } from './energie.js';
@@ -404,6 +406,29 @@ function repasCardHtml() {
       </div>`;
 }
 
+// Fiche 19 : le compagnon (le second adulte) prend des initiatives à la ferme : l'option de le
+// laisser faire, et ce qu'il a fait aujourd'hui (js/engine/compagnon.js).
+function compagnonCardHtml() {
+  const m = aidant(state);
+  if (!m) return '';
+  const C = DATA.COMPAGNON, f = faitsCompagnon(state), on = compagnonAide(state);
+  const fait = [
+    f.arroser ? `💧 ${f.arroser} légume${f.arroser > 1 ? 's' : ''} arrosé${f.arroser > 1 ? 's' : ''}` : '',
+    f.cuisiner ? `🍲 ${f.cuisiner} repas préparé${f.cuisiner > 1 ? 's' : ''}` : '',
+    f.ramasser ? `🧺 ${f.ramasser} ramassage${f.ramasser > 1 ? 's' : ''}` : '',
+  ].filter(Boolean).join(' · ');
+  return `
+      <div class="card">
+        <span class="card-title"><span>🤝 L'aide de ${memberNameHtml(m.id)}</span></span>
+        <label class="row check-row">
+          <input type="checkbox" id="compagnon-toggle" ${on ? 'checked' : ''}>
+          Le laisser aider à la ferme de lui-même
+        </label>
+        <span class="muted">De ${C.HEURES[0]} h à ${finAide()} h, quand il n'a pas trop faim, il arrose quelques légumes qui ont soif (il remplit sa cruche au puits), prépare un plat à la cuisinière quand la famille a faim (chacun le mange quand il a faim) et ramasse un peu de bois ou de pierres autour de la ferme. Chaque tâche lui donne faim. Les bêtes, il s'en occupe toujours.</span>
+        ${on ? `<span class="muted">Aujourd'hui : ${fait || 'rien encore'}.</span>` : ''}
+      </div>`;
+}
+
 // Fiche 11 : la fiche du membre choisi (son onglet) vient d'abord : son équipement, son portrait, ses
 // jauges (js/ui/fiche-membre.js). La liste des membres (le prénom, l'apparence, le personnage
 // principal, les départs) ne paraît qu'en mode modification.
@@ -414,7 +439,7 @@ export function renderFamille() {
     <button type="button" class="btn${familyEditing ? ' primary' : ''} family-edit-btn" data-action="family-edit" aria-pressed="${familyEditing}">${familyEditing ? '✅ Terminer' : '✏️ Modifier la famille'}</button>
     ${familyEditing ? `<ul class="member-rows">${state.famille.membres.map(portraitCard).join('')}</ul>
     ${renderFamilyAdd()}` : ''}
-    <div class="cards">${repasCardHtml()}
+    <div class="cards">${repasCardHtml()}${compagnonCardHtml()}
     </div>
     ${renderPets()}
     <details class="more">
@@ -423,6 +448,14 @@ export function renderFamille() {
       <div class="cards">${energyDetailsHtml()}</div>
     </details>`;
 }
+
+// Fiche 19 : l'option du compagnon (state.compagnon.aide).
+document.addEventListener('change', (e) => {
+  if (!e.target || e.target.id !== 'compagnon-toggle') return;
+  laisserAider(state, e.target.checked);
+  persistState();
+  refresh();
+});
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 

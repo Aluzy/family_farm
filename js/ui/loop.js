@@ -178,8 +178,27 @@ ecouterJournal((type, d) => {
     notify(`🍽️ ${memberName(state, d.id)} a faim : ${ou}. Sans manger, la famille perdra du bonheur cette nuit.`, { kind: 'alerte', cible: { fenetre: 'famille' } });
   } else if (type === 'repasMembre' && (d.source === 'boite' || d.source === 'frigo') && window.FarmStage && window.FarmStage.allerManger) {
     window.FarmStage.allerManger(d.id);
+  } else if (type === 'compagnon') {
+    direCompagnon(d);
   }
 });
+
+// Fiche 19 : le compagnon a pris une initiative (js/engine/compagnon.js) : une notification le dit
+// (celles qui se répètent, arroser et ramasser, se cumulent : « a arrosé 3 plantes »). Un appui
+// mène à la Famille (son option, ce qu'il a fait aujourd'hui).
+function direCompagnon(d) {
+  const nom = memberName(state, d.id), cible = { fenetre: 'famille' };
+  if (d.action === 'arroser') {
+    notify(null, { cumul: { cle: 'compagnon-arroser', quantites: { n: d.n || 1 }, texte: (t) => `💧 ${nom} a arrosé ${plural(t.n, 'légume')} qui avai${t.n > 1 ? 'en' : ''}t soif.` }, cible, son: false });
+  } else if (d.action === 'ramasser') {
+    notify(null, { cumul: { cle: 'compagnon-ramasser', quantites: d.items, texte: (t) => `🧺 ${nom} a ramassé ${itemsText(t)} autour de la ferme.` }, cible, son: false });
+  } else if (d.action === 'cuisiner') {
+    const [item] = Object.keys(d.items || {}), o = DATA.OBJETS[item];
+    if (!o) return;
+    const ou = d.ou === 'frigo' ? 'au réfrigérateur' : d.ou === 'boite' ? 'dans la boîte à nourriture' : 'dans l\'inventaire';
+    notify(`${o.icone} ${nom} a cuisiné à la cuisinière : ${o.nom.toLowerCase()} (${ou}).`, { kind: 'repas', cible });
+  }
+}
 
 export function frame(now) {
   const wall = Date.now();

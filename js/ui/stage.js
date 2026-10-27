@@ -13,6 +13,7 @@ import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
+import { estTacheCompagnon, faireCompagnon, journeeCompagnon, tachesCompagnon } from '../engine/compagnon.js';
 import { marcherMembre } from '../engine/repas.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
 import { TIRED } from '../engine/stamina.js';
@@ -457,8 +458,9 @@ export function stageModel() {
     perso: memberPerso(mainCharacter(state)),
     // les autres membres de la famille, qui font leur journée sur la carte (js/famille-ferme.js)
     famille: state.famille.membres.filter((m) => m !== mainCharacter(state)).map((m) => ({ id: m.id, perso: memberPerso(m), enfant: !!m.enfant })),
-    // le second adulte du foyer et où il a à faire (le Poulailler, l'Étable : aideAFaire)
-    aide: aidant(state) ? { id: aidant(state).id, lieux: aideAFaire(state) } : null,
+    // le second adulte du foyer et où il a à faire (le Poulailler, l'Étable : aideAFaire ; fiche 19 :
+    // puis ses initiatives, arroser, cuisiner, ramasser, js/engine/compagnon.js tachesCompagnon)
+    aide: aidant(state) ? { id: aidant(state).id, lieux: [...aideAFaire(state), ...tachesCompagnon(state)] } : null,
     // les fleurs où butinent les abeilles des ruches (des cases ; la carte y ajoute l'herbe haute fleurie)
     fleurs: fleursPourAbeilles(state),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
@@ -695,8 +697,10 @@ function stagePickup(id) {
 // il prend ce qui l'attend (et tond les moutons prêts). Renvoie ce qu'il a pris, ou null.
 // Le second adulte du foyer a fini au Poulailler ou à l'Étable (appelé par la carte) : ce qu'il
 // a pris ({ item: qté }), ou null.
+// Fiche 19 : ou il a fini une de ses initiatives (arroser une plante, remplir sa cruche au puits,
+// cuisiner, ramasser) : ce qu'elle a donné (une plante arrosée : { arrose: 1 }, la bulle « +1 💧 »).
 function stageAide(lieu) {
-  const r = aideBetes(state, lieu);
+  const r = estTacheCompagnon(lieu) ? faireCompagnon(state, lieu) : aideBetes(state, lieu);
   if (!r.ok) return null;
   persistState();
   refresh();
@@ -895,6 +899,8 @@ function mondeDeLaCarte() {
 function aideSansCarte() {
   if (nightActive(state) || clockHours(state) >= DATA.FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES) return;
   for (const lieu of aideAFaire(state)) aideBetes(state, lieu);
+  // (fiche 19 : ses initiatives aussi, d'un coup, sans dessin)
+  if (journeeCompagnon(state).length) persistState();
 }
 
 function stageCollect(lieu) {
@@ -955,7 +961,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

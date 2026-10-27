@@ -1349,3 +1349,24 @@ SwiftShader, sans carte graphique) :
     (la nuit pose le plat d'une visite qui n'a pas eu lieu). Sauvegarde : `STATE_VERSION` 62 (la
     place 60 → 61 est laissée à une autre fiche ; ici, elle ne change rien) ; une partie plus loin
     que le jour 2 ne reçoit pas de visite. Les tests : `tests/engine/bienvenue.test.mjs`.
+- **Fiche 19 — le compagnon aide à la ferme** (fait). L'autre adulte du foyer (`aidant`) prend, en plus
+  des bêtes, trois initiatives (`js/engine/compagnon.js`, réglées dans `DATA.COMPAGNON`,
+  `data/general.json`) : **arroser** quelques légumes de la Zone de culture qui ont soif (3 par sortie,
+  6 par jour, 3 h entre deux sorties ; l'eau du réservoir, sinon sa cruche à lui, qu'il remplit au
+  puits posé : la tâche « puits ») ; **faire à manger** quand la jauge moyenne de la famille passe sous
+  70 (la première recette de la liste débloquée dont il a les ingrédients, à la cuisinière bâtie ; le
+  plat va au réfrigérateur, sinon dans la boîte à nourriture, sinon dans l'inventaire ; une fois par
+  jour) ; **ramasser** un morceau de bois (puis une petite pierre) posé ce matin à moins de 24 cases de
+  l'entrée de la ferme (3 par jour, 2 h d'écart). De 8 h à 18 h (jamais après la fin du travail des
+  adultes, `FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES`, 19 h : `finAide`), pas la nuit, pas sous 30 de faim, pas
+  pendant le didacticiel de la ferme ; chaque action lui coûte de la faim (2 à 4 points, moins avec
+  son tablier), rien au personnage (ni énergie, ni expérience, ni objectif de chapitre). Sur la carte
+  (`js/famille-ferme.js` ; où se tenir : `js/carte/ferme/compagnon.js`, `lieuCompagnon`), il y va par
+  le chemin du personnage, fait son geste (la cruche penchée, penché sur le puits, à la cuisinière,
+  baissé), puis le jeu fait le travail et la bulle « +1 💧 », « +1 🍳 », « +1 🪵 » monte ; une tâche
+  sans chemin est laissée 20 s. Sans la carte et pendant une absence (`simulateOffline`), le moteur le
+  fait d'un coup (`journeeCompagnon`). Une notification dit ce qu'il a fait (cumulée pour l'arrosage et
+  le ramassage). Dans la Famille, une carte « L'aide de … » : l'option (`state.compagnon.aide`) et ce
+  qu'il a fait aujourd'hui. Le format de sauvegarde ne change pas : `state.compagnon` manque dans une
+  partie d'avant, `reparerPartie` le remet. Le joueur automatique n'en dépend pas (il passe par `tick`).
+  Les tests : `tests/engine/compagnon.test.mjs`.

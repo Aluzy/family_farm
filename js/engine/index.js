@@ -27,6 +27,7 @@ export * from './grotte.js';
 export * from './crops.js';
 export * from './depart.js';
 export * from './cruche.js';
+export * from './compagnon.js';
 export * from './didacticiel.js';
 export * from './animals.js';
 export * from './orchard.js';
