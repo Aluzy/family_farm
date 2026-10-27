@@ -59,7 +59,8 @@ import { buildChipHtml, meubleModele, niveauBati, niveauRang } from './chantier.
 import { escaliers, etageBlocs, etageEmprise, fenetresEtage, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
-import { aCruche, crucheCapacite, eauCruche, puitsPose, remplirCruche } from '../engine/cruche.js';
+import { aCruche, crucheCapacite, eauCruche, puitsPose } from '../engine/cruche.js';
+import { allerAuPuits, puiserFromStage } from './cruche.js';
 import { surbrillanceDidacticiel } from './didacticiel.js';
 import { etapeDidacticiel, horsDeLaFerme } from '../engine/didacticiel.js';
 import { alerteFaim, alerteSortie, vitessePied } from '../engine/equipement.js';
@@ -949,7 +950,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }
@@ -1117,13 +1118,10 @@ function stagePanToScreen(i) {
 
 registerActions({
   'stage-open': (target) => {
-    // le puits, la cruche en main : il la remplit (js/engine/cruche.js) ; sinon sa fenêtre
+    // le puits, la cruche pas pleine : le personnage va la remplir au puits (fiche 17,
+    // js/ui/cruche.js) ; sinon sa fenêtre
     if (target.dataset.window === 'eau' && aCruche(state) && puitsPose(state) && eauCruche(state) < crucheCapacite()) {
-      const r = remplirCruche(state);
-      if (!r.ok) { notify(r.error); return; }
-      notify(`${DATA.OBJETS.cruche.icone} Cruche remplie : ${r.litres} L pour arroser.`);
-      persistState();
-      refresh();
+      allerAuPuits();
       return;
     }
     openStageWindow(target.dataset.window);

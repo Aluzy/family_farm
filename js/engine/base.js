@@ -17,7 +17,7 @@ export function mulberry32(seed) {
   };
 }
 
-export const STATE_VERSION = 60;
+export const STATE_VERSION = 61;
 // Version du jeu, affichée dans les Options (À propos) : la dernière version notée dans le
 // code et les données (« version 1.22 » : les objectifs « objet »).
 export const GAME_VERSION = '1.22.0';

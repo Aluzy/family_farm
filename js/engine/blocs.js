@@ -390,8 +390,59 @@ export function dansPiece(state, tile) {
 
 // Les paillasses et les lits où l'on peut dormir : ceux des pièces closes (leurs cases, dans
 // l'ordre des pièces), puis ceux de l'étage (« etage:<tuile> », etage.js couchagesEtage).
+// Le premier revient au personnage principal, les suivants à la famille (dans l'ordre de
+// state.famille.membres, sans lui : nuitSansCouchage, et la carte, js/famille-ferme.js). Le lit
+// qu'il a choisi (state.litPrincipal, fiche 17 : choisirLit) passe en tête, et celui qui était en
+// tête prend sa place : le membre qui l'avait reçoit l'ancien lit du personnage, personne
+// d'autre ne change de lit. Un lit choisi qui n'est plus un couchage (repris, sa pièce ouverte)
+// ne compte plus : l'ordre des pièces revient.
 export function couchages(state) {
-  return piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state));
+  const l = piecesCloses(state).flatMap((p) => p.paillasses).concat(couchagesEtage(state));
+  const k = l.indexOf(state.litPrincipal);
+  if (k > 0) [l[0], l[k]] = [l[k], l[0]];
+  return l;
+}
+
+// Un couchage (une case du bas, ou « etage:<case> ») tel que couchages() l'écrit, ou null.
+function idCouchage(id) {
+  if (Number.isInteger(id)) return id;
+  if (typeof id === 'string' && /^\d+$/.test(id)) return Number(id);
+  if (typeof id === 'string' && /^etage:\d+$/.test(id)) return id;
+  return null;
+}
+
+// Les dormeurs, dans l'ordre des couchages : le personnage principal, puis la famille.
+function dormeurs(state) {
+  const principal = mainCharacter(state);
+  return [principal].concat(((state.famille && state.famille.membres) || []).filter((m) => m !== principal)).filter(Boolean);
+}
+
+// Qui dort dans le couchage `id` cette nuit (un membre de la famille), ou null : un lit libre,
+// ou qui n'est pas un couchage.
+export function dormeurDuLit(state, id) {
+  const k = couchages(state).indexOf(idCouchage(id));
+  return k < 0 ? null : dormeurs(state)[k] || null;
+}
+
+// Le couchage du personnage principal (le premier), ou null.
+export function litDuPrincipal(state) {
+  return couchages(state)[0] ?? null;
+}
+
+// Fiche 17 : le personnage principal choisit le couchage `id` (un lit, une paillasse d'une pièce
+// close ; en bas, sa case ; à l'étage, « etage:<case> »). Il y dormira ; le membre qui l'avait
+// reçu prend son ancien lit (couchages). Gardé dans la partie (state.litPrincipal).
+// { ok, deja, cede: le membre qui change de lit (ou null) }
+export function choisirLit(state, id) {
+  const lit = idCouchage(id);
+  if (lit === null) return fail('Ce n\'est pas un lit.');
+  if (!couchages(state).includes(lit)) {
+    return fail('On ne dort que dans une pièce close (des murs tout autour et une porte) : ce lit n\'en est pas une.');
+  }
+  if (litDuPrincipal(state) === lit) { state.litPrincipal = lit; return { ok: true, deja: true, cede: null }; }
+  const cede = dormeurDuLit(state, lit);
+  state.litPrincipal = lit;
+  return { ok: true, deja: false, cede };
 }
 
 // Une case libre du foyer (la première pièce close qui a une paillasse), pas juste derrière une
@@ -445,9 +496,7 @@ export function nuitCouchee(state) {
 // principal d'abord ; chaque membre sans couchage perd ATELIER.BONHEUR_SANS_COUCHAGE de bonheur.
 // Renvoie les membres sans couchage.
 export function nuitSansCouchage(state) {
-  const principal = mainCharacter(state);
-  const ordre = [principal].concat(state.famille.membres.filter((m) => m !== principal)).filter(Boolean);
-  const sans = ordre.slice(couchages(state).length);
+  const sans = dormeurs(state).slice(couchages(state).length);
   for (const m of sans) setHappiness(m, memberHappiness(m) + DATA.ATELIER.BONHEUR_SANS_COUCHAGE);
   return sans;
 }

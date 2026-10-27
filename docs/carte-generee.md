@@ -278,8 +278,15 @@ Le Marché vend toujours les outils.
   didacticiel, l'Atelier ne montre que les recettes qu'il a débloquées, le menu Construire que les
   blocs utiles ; « Passer le didacticiel » débloque tout (les graines sont offertes quand même).
 - **La cruche à eau** (`js/engine/cruche.js`, `DATA.CRUCHE`) : un objet de l'Atelier (3 bois).
-  Un appui sur le puits posé la remplit (10 L) ; une plante arrosée y puise son eau quand la
-  citerne n'en a pas assez.
+  Elle se remplit au puits posé (10 L) : un appui sur le puits, ou sur la case de la cruche dans
+  la barre d'outils, et le personnage y marche par un vrai chemin, puise, puis la cruche est pleine
+  (fiche 17 : `js/carte/ferme/puits.js`, `remplirCruche(state, casePuits)` ne remplit que sur la
+  case d'un puits) ; une plante arrosée y puise son eau quand la citerne n'en a pas assez. Sa
+  jauge (bleue, de bas en haut, et ses litres) est sur sa case de la barre d'outils.
+- **Choisir son lit** (fiche 17, `choisirLit` de `js/engine/blocs.js`) : un appui sur un lit ou
+  une paillasse d'une pièce close (toit levé, ou à l'étage) demande « Tu veux choisir ce lit ? ».
+  Oui : il devient le premier couchage (`state.litPrincipal`), celui du personnage principal ;
+  le membre qui y dormait prend l'ancien lit du personnage, les autres gardent le leur.
 - **L'Encyclopédie dans le jeu** (`js/engine/encyclopedie.js`, `js/engine/decouverte.js`,
   `js/ui/encyclopedie.js`) : 📖 dans le menu latéral ouvre un livre, comme le Livre de recette
   (`livre()` de `js/ui/livre.js`) : le sommaire (pages découvertes par catégorie, nouvelles

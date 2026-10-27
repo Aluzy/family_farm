@@ -255,11 +255,11 @@ test('sac : ce qu\'il contient périme comme l\'inventaire ; les alertes de l\'e
 /* ---------- la sauvegarde ---------- */
 
 test('migration v59 → v60 : personne n\'est équipé, pas de sac ; la partie se répare et se relit', () => {
-  assertEqual(STATE_VERSION, 60);
+  assert(STATE_VERSION >= 60);
   const neuve = createInitialState(4);
   assertEqual(neuve.equipement, { membres: {}, sac: null });
   const { equipement, ...v59 } = copie(neuve);
-  const m = migrate({ v: 59, t: 0, s: { ...v59, version: 59 } });
+  const m = migrate({ v: 59, t: 0, s: { ...v59, version: 59 } }, 60);
   assertEqual([m.version, m.equipement], [60, { membres: {}, sac: null }]);
   // une partie équipée se sauvegarde et se relit telle quelle
   const s = partie(1);

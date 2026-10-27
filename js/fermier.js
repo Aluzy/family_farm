@@ -82,6 +82,9 @@
     // jeter des fibres dans l'entonnoir de la botteleuse : la brassée contre lui, au-dessus de
     // sa tête, lancée (hit : les brins partent)
     jeter: { anim: 'jette', frames: [0, 1, 1, 2, 2], dur: [0.22, 0.3, 0.18, 0.1, 0.3], hit: 3 },
+    // remplir la cruche au puits (fiche 17) : penché sur la margelle, il plonge la cruche, la
+    // remonte, la replonge et se redresse (hit : elle est pleine)
+    puiser: { anim: 'plante', frames: [0, 1, 2, 2, 1, 2, 2, 1, 0], dur: [0.16, 0.16, 0.3, 0.2, 0.14, 0.24, 0.3, 0.16, 0.14], hit: 7 },
   };
 
   // Le bout de la canne à pêche dans chaque image peche_<vue>_<n> (x, y dans la case de
@@ -310,6 +313,8 @@
           // qu'on ne peut pas atteindre, une pièce sans porte, enfermé : il reste aussi où il est,
           // il ne passe pas au travers d'un mur, fiche 16)
           else if (!path && (lift() > 0 || info.impossible)) path = [];
+          // (opts.marche : un vrai trajet, toujours marché, jamais sauté ; sans chemin, il reste là)
+          else if (opts && opts.marche && !reduced()) { if (!path) path = []; }
           else if (!path || reduced() || len > (opts && opts.far ? TELEPORT_FAR : TELEPORT)) { x = tx; y = ty; path = []; }
         },
         step(dt) {
@@ -829,6 +834,25 @@
       return true;
     }
 
+    // Fiche 17 : la cruche à remplir. Il marche jusqu'en `spot` (à côté du puits) par un vrai
+    // chemin (opts.marche : ni saut ni traversée), tourné vers le puits (`face`, `flip`), et y
+    // puise ; onHit(arrive) au moment où la cruche remonte pleine : `arrive` dit s'il est bien
+    // au puits (un chemin fermé en route : il est resté en chemin). Le doigt qui le dirige
+    // l'en détourne : la marche et le geste sont oubliés (comme un double appui). false : il ne
+    // peut pas se tenir là.
+    function puiser(spot, face, flip, onHit) {
+      if (!blocked) buildGrid();
+      if (!freeAt(spot.x, spot.y)) return false;
+      if (job && job.idle) job = null;
+      const w = walkTo(spot.x, spot.y, { far: true, marche: true });
+      w.joueur = true;
+      const plonge = act('puiser', { face, flip, onHit: () => onHit(Math.hypot(x - spot.x, y - spot.y) <= T / 2) });
+      plonge.joueur = true;
+      jobs = [w, plonge, wait(rand(0.4, 0.8))].concat(jobs.filter((j) => !j.idle));
+      idleAge = 0;
+      return true;
+    }
+
     // La canne à pêche en main, le joueur a touché l'eau : il va sur la rive en `spot`, tourné
     // vers l'eau (`face`, `flip`), lance (hooks.cast), attend la touche `wait` secondes
     // (hooks.bite), puis ferre (hooks.reel). Renvoie false s'il ne peut pas y aller.
@@ -1034,6 +1058,8 @@
       gather,
       // La botteleuse : jeter ses fibres dans l'entonnoir, depuis `spot`.
       jeter,
+      // Le puits : y aller et remplir la cruche, depuis `spot` (fiche 17).
+      puiser,
       // La canne à pêche : pêcher depuis `spot`, et où est le bout de la canne.
       fish,
       rodTip,

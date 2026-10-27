@@ -39,7 +39,7 @@ import { sleep } from './night.js';
 import { casesDuTerrain, farmSeed, farmTerrain } from './terrain.js';
 import { createNewGame, houseRepaired, starterBlock } from './depart.js';
 import { testBatir, testLabourerSerre } from './testmode.js';
-import { aCruche, crucheCapacite, eauCruche, puitsPose, remplirCruche } from './cruche.js';
+import { aCruche, crucheCapacite, eauCruche, puitsCases, puitsPose, remplirCruche } from './cruche.js';
 import { vendreCaleche, poserTournee, tourneeDuPlan } from './caleche.js';
 import { genererMonde } from './monde.js';
 import { elementsSol, solDirect } from './monde-sol.js';
@@ -221,8 +221,8 @@ export function botFarm(state) {
   }
   const thirsty = allPlots(state).filter((p) => p.culture && !p.arrose && !isMature(p));
   thirsty.sort((a, b) => b.stade - a.stade);
-  // (la cruche vide : remplie au puits, puis la parcelle arrosée)
-  for (const p of thirsty) if (!water(state, p.id).ok && remplirCruche(state).ok) water(state, p.id);
+  // (la cruche vide : il va la remplir au puits, puis la parcelle arrosée)
+  for (const p of thirsty) if (!water(state, p.id).ok && remplirCruche(state, puitsCases(state)[0]).ok) water(state, p.id);
 }
 
 // Avant la pompe : le puits (posé d'un coup, testBatir) et la cruche (fabriquée à l'Atelier :
@@ -231,7 +231,7 @@ function botEau(state) {
   if (!houseRepaired(state)) return;
   if (!puitsPose(state)) testBatir(state, 'puits');
   if (!aCruche(state)) addItem(state, 'cruche', 1);
-  if (eauCruche(state) < crucheCapacite()) remplirCruche(state);
+  if (eauCruche(state) < crucheCapacite()) remplirCruche(state, puitsCases(state)[0]);
 }
 
 // Tuiles labourables, des plus proches de l'ancienne Zone de culture aux plus lointaines

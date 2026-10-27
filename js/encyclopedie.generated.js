@@ -93,7 +93,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "cruche",
      "terme": "Cruche à eau",
-     "description": "Avant la pompe et la citerne, on arrose avec elle. Elle se fabrique à l'Atelier (3 bois) ; un appui sur le puits posé sur la ferme la remplit (10 litres). Une plante qu'on touche pour l'arroser y puise son eau quand la citerne n'en a pas assez.",
+     "description": "Avant la pompe et la citerne, on arrose avec elle. Elle se fabrique à l'Atelier (3 bois) ; elle se remplit au puits posé sur la ferme (10 litres) : un appui sur le puits, ou sur la cruche de la barre d'outils, et le personnage y marche, puise, et la cruche est pleine. Une plante qu'on touche pour l'arroser y puise son eau quand la citerne n'en a pas assez ; la jauge bleue de la cruche, dans la barre d'outils, dit ce qui reste.",
      "liens": [
       "puit",
       "reservoir"
@@ -546,7 +546,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "foyer",
      "terme": "Foyer",
-     "description": "La pièce close où l'on dort, avec une paillasse ou un lit. Tant qu'il n'existe pas, rien d'autre ne s'installe (panneau, pompe…). Chaque nuit, il faut un couchage par membre de la famille, dans une pièce close : sans lui, un membre perd -8 de bonheur. Le personnage rentre au foyer le soir et en ressort le matin.",
+     "description": "La pièce close où l'on dort, avec une paillasse ou un lit. Tant qu'il n'existe pas, rien d'autre ne s'installe (panneau, pompe…). Chaque nuit, il faut un couchage par membre de la famille, dans une pièce close : sans lui, un membre perd -8 de bonheur. Le personnage rentre au foyer le soir et en ressort le matin. Le premier couchage est le sien ; un appui sur un autre lit lui demande s'il le choisit : il y dormira, et le membre qui y dormait prend son ancien lit.",
      "liens": [
       "maison",
       "piece_close",

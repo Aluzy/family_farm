@@ -2764,6 +2764,23 @@ span.encyclo-item.encyclo-inconnue { color: #a08463; }
 .tool-slot:active { transform: translateY(1px); }
 .tool-slot:focus-visible { outline: 3px solid var(--color-sun); outline-offset: -2px; }
 .tool-slot.vide { cursor: default; opacity: 0.6; }
+/* La cruche (fiche 17, js/ui/cruche.js) : son icône, une jauge d'eau à sa droite (bleue, de bas
+   en haut, dans un tube sombre comme les jauges du HUD) et ses litres en bas à gauche. Vide :
+   le tube rougit un peu, il faut aller au puits. */
+.cruche-slot { position: relative; }
+.cruche-slot .cruche-icone { font-size: 1.35rem; line-height: 1; transform: translateX(-3px); }
+.cruche-jauge {
+  position: absolute; right: 5px; top: 7px; bottom: 7px; width: 7px;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  background: #4a3524; border-radius: 2px; box-shadow: inset 0 0 0 1px #2c2416; overflow: hidden;
+}
+.cruche-jauge > span { display: block; width: 100%; background: linear-gradient(90deg, #3a86c8, #7cc4f0); transition: height 0.3s ease-out; }
+.cruche-slot.vide-eau .cruche-jauge { box-shadow: inset 0 0 0 1px var(--color-tomato); }
+.cruche-litres {
+  position: absolute; left: 4px; bottom: 2px;
+  font-size: 0.62rem; font-weight: 800; line-height: 1; color: #2c2416;
+}
+@media (prefers-reduced-motion: reduce) { .cruche-jauge > span { transition: none; } }
 /* La languette, au-dessus du milieu de la barre : le même bois, le même fond. */
 .tool-bar-tab {
   position: relative;

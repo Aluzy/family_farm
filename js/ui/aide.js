@@ -223,6 +223,8 @@ const HELP = {
         ['Dans le grand monde', 'Hors de la ferme, les mêmes gestes : la hache, la pioche et la faux y prennent le bois, la pierre et la fibre, et la main cueille et ramasse (voir la fiche « Le grand monde »).'],
         ['Coup fort', `Outil en main, garde le doigt appuyé sur ton personnage : il tremble, puis frappe fort quand tu lèves le doigt. La hache ou la pioche comptent ${formatNumber(DATA.COUP_FORT.COUPS)} coups sur l'arbre ou le rocher le plus proche (pour l'énergie de ${formatNumber(DATA.COUP_FORT.ENERGIE)} coups) ; la faux tournoie et fauche toute l'herbe haute autour de lui ; la houe laboure les tuiles autour de lui.`],
         ['Canne à pêche', `Touche l'eau : ${formatNumber(C.pecher)} d'énergie le lancer (voir la fiche « Pêche »).`],
+        // fiche 17 : la cruche, sa jauge, le puits
+        ['Cruche', `Avant la pompe, on arrose avec elle (${formatNumber(DATA.CRUCHE.LITRES)} L). Sa case, dans la barre d'outils, montre l'eau qui reste (la jauge bleue). Touche-la, ou touche le puits : ton personnage y marche, puise, et elle est pleine. Trop loin, ou sans chemin jusqu'au puits : il te le dit.`],
         ['Bois et pierre', 'Ils se vendent, et paient les technologies avec les lingots. La branche Outils de l\'Arbre des technologies rend les outils plus efficaces.'],
       ],
     };
@@ -250,6 +252,8 @@ const HELP = {
         ['Le cheval', 'En selle, il te porte partout dans le pays, plus vite qu\'à pied ; quand tu en descends, il rentre à l\'Écurie.'],
         // fiche 15 : les blocs qui éclairent la nuit (BLOCS lumiere : js/carte/ferme/chantier.js, stepLanterns)
         ['Éclairer la nuit', `La lanterne scintillante (${recetteAtelier('lanterne')}) et le candélabre, un pied de fer forgé haut de deux blocs et ses trois bougies (${recetteAtelier('candelabre')}), se fabriquent à l'Atelier et se posent avec 🔨 Construire, dehors comme dans la maison : la nuit, ils s'allument et éclairent autour d'eux.`],
+        // fiche 17 : choisir son lit
+        ['Ton lit', 'Ton personnage dort dans le premier lit (ou la première paillasse) de tes pièces closes. Touche un autre lit, toit levé ou à l\'étage : « Tu veux choisir ce lit ? ». Oui, il y dormira ; le membre de la famille qui y dormait prend ton ancien lit.'],
         ['Qualité de l\'affichage', 'Sur un téléphone, le jeu se dessine en qualité « économie » pour rester fluide : l\'image un peu moins fine, le brouillard et la lumière de la nuit en plus gros points, la mer sans ses vagues d\'écume, les arbres faits plus près de toi. Les Options (Affichage) la règlent : « Auto » (économie sur un téléphone, normale sur un ordinateur), « Économie » ou « Normale ». Ta partie n\'en dépend pas.'],
       ],
     };
@@ -384,7 +388,7 @@ const TUTO = {
     texte: () => (!farmOpen(state) && !houseRepaired(state)
       ? 'Une terre sauvage, sans maison : ramasse les petites pierres et les morceaux de bois (un appui dessus), cueille les baies des buissons pour reprendre des forces (même épuisé) ou coupe-les à la hache pour leur bois, pose l\'Atelier (menu, 🔨 Construire) et touche-le pour y fabriquer une faux pour faucher l\'herbe haute (ses fibres), puis des murs, une porte et une paillasse, puis bâtis une pièce close avec la case 🔨 de la barre d\'outils (la porte se pose sur une case libre, ou à la place d\'un mur). Ce sera ton foyer : on y dort.'
       : !farmOpen(state)
-      ? `Ton foyer est bâti. Ici, tout se fait d'abord à la main : fabrique à l'Atelier un puits et une cruche, pose le puits dehors avec la case 🔨, remplis la cruche au puits (un appui dessus) et arrose tes plantes. La calèche, qui passe à la ferme chaque jour vers ${DATA.CALECHE.FERME} h, commerce avec toi à partir du niveau ${unlockLevel('marche')}. Au niveau ${unlockLevel('energie')}, le panneau solaire, la pompe, la citerne et la batterie (il faut des lingots : le minerai de la grotte, fondu au four) pomperont l'eau pour toi : l'automatisation commence.`
+      ? `Ton foyer est bâti. Ici, tout se fait d'abord à la main : fabrique à l'Atelier un puits et une cruche, pose le puits dehors avec la case 🔨, remplis la cruche au puits (un appui dessus : ton personnage y va et puise ; sa jauge bleue, dans la barre d'outils, dit l'eau qui reste) et arrose tes plantes. La calèche, qui passe à la ferme chaque jour vers ${DATA.CALECHE.FERME} h, commerce avec toi à partir du niveau ${unlockLevel('marche')}. Au niveau ${unlockLevel('energie')}, le panneau solaire, la pompe, la citerne et la batterie (il faut des lingots : le minerai de la grotte, fondu au four) pomperont l'eau pour toi : l'automatisation commence.`
       : `Le panneau solaire charge la batterie de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.POMPE.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : maintiens le doigt sur la citerne pour voir son niveau.${stageUsable() ? ' Sur la carte, touche le panneau solaire ou la batterie pour l\'énergie, le puits ou la citerne pour l\'eau.' : ''}`),
   },
   potager: {

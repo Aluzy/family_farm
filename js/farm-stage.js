@@ -629,6 +629,11 @@
         }
         // un escalier (un essai, js/carte/ferme/etage.js) : monter, descendre ; à l'étage, rien d'autre
         if (this.escalierAt && this.escalierAt(wx, wy) >= 0) return { etage: true };
+        // un lit, une paillasse (là où on les voit : toit levé, ou à l'étage) : le choisir (fiche 17)
+        if (!hoeing && this.litAt) {
+          const lit = this.litAt(wx, wy);
+          if (lit !== null) return { lit };
+        }
         if (this.niveau) return null;
         const pile = !hoeing ? this.pileAt(wx, wy) : null;
         if (pile) return { pile: pile.id };
@@ -741,7 +746,9 @@
         // sur ces bâtiments (leur fenêtre) attend donc DOUBLE_TAP_MS de voir s'il n'est pas
         // suivi d'un second.
         const farmyard = hit && (hit.window === 'poulailler' || hit.window === 'etable') ? hit.window : null;
-        if (!hit || farmyard) {
+        // (un lit, fiche 17 : l'appui simple demande si on le choisit ; un double appui y marche)
+        const lit = hit && hit.lit !== undefined ? hit.lit : null;
+        if (!hit || farmyard || lit !== null) {
           if (!hit) K.astuceMarche(this.input.activePointer);   // un essai de marche : le geste s'explique, une fois
           const now = performance.now(), prev = this.lastTap;
           const near = prev && Math.hypot(wx - prev.x, wy - prev.y) <= (DOUBLE_TAP_PX * pixelRatio()) / this.cameras.main.zoom;
@@ -754,7 +761,13 @@
           }
           if (prev) clearTimeout(prev.timer);
           const tapNow = { t: now, x: wx, y: wy, timer: 0 };
-          if (hit) tapNow.timer = setTimeout(() => { if (this.lastTap === tapNow) this.lastTap = null; this.ctx.bridge.act('stage-open', { window: hit.window }); }, DOUBLE_TAP_MS);
+          if (hit) {
+            tapNow.timer = setTimeout(() => {
+              if (this.lastTap === tapNow) this.lastTap = null;
+              if (lit !== null) this.ctx.bridge.act('lit-choisir', { lit: String(lit) });
+              else this.ctx.bridge.act('stage-open', { window: hit.window });
+            }, DOUBLE_TAP_MS);
+          }
           this.lastTap = tapNow;
           return;
         }
@@ -981,5 +994,12 @@
     const r = s.fermier.regard ? s.fermier.regard() : {};
     return { x: p.x, y: p.y, face: r.face || 'bas', flip: !!r.flip };
   }
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, arrive, scene: getScene }; // scene() : pour le débogage et les tests
+  // Fiche 17 : le personnage va remplir la cruche au puits (js/carte/ferme/puits.js) : { ok } ou
+  // { ok: false, raison } ('sans' : pas de carte, de personnage ou de puits ; 'ferme' : aucun
+  // chemin ; 'loin' : trop loin). Le jeu remplit la cruche quand il y puise (bridge.puiser).
+  function allerAuPuits() {
+    const s = getScene();
+    return s && s.ready && s.allerAuPuits ? s.allerAuPuits() : { ok: false, raison: 'sans' };
+  }
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, arrive, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

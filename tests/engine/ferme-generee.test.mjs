@@ -1723,7 +1723,7 @@ test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il
   majDidacticiel(s);
   assertEqual(etapeDidacticiel(s), 'arroser');
   assertEqual(water(s, s.potager.parcelles[0].id).error, 'La cruche est vide : remplis-la au puits (touche-le).');
-  assert(remplirCruche(s).ok);
+  assert(remplirCruche(s, z.r * z.W + z.c + N + 4 + 2).ok);
   assertEqual(eauCruche(s), DATA.CRUCHE.LITRES * 1000);
   const r = water(s, s.potager.parcelles[0].id);
   assert(r.ok);
