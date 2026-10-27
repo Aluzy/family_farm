@@ -1401,3 +1401,7 @@ SwiftShader, sans carte graphique) :
   `tests/engine/marche.test.mjs` (l'image du pas, et sur les 100 planches : le pied posé recule de 3 px,
   ou 2, par image, au passage un pied au sol et l'autre côte à côte, décollé d'un pixel, le rebond, les bras en opposition de face et de dos
   et une main devant au contact de profil ; le regard retenu et lissé).
+  Puis, la marche paraissant frénétique (près de 20 images par seconde pour le personnage, 16 pour
+  un enfant) : une image tous les `CarteKit.FOULEE[qui]` px (`qui` : 'fermier', 'grotte', 'adulte',
+  'enfant'), soit `CarteKit.CADENCE` = 8 images par seconde, deux pas, à la vitesse de marche de
+  chacun ; les pieds glissent un peu sur le sol, comme dans la plupart des jeux en pixel art.

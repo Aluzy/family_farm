@@ -655,7 +655,7 @@
           let nom;
           if (m.couche) nom = `dort_bas_${Math.floor(now / 1600) % 2}`;
           else if (image) nom = image;
-          else if (marche) nom = `marche_${m.face}_${K.imageMarche(m.marche, m.def.enfant)}`;
+          else if (marche) nom = `marche_${m.face}_${K.imageMarche(m.marche, m.def.enfant ? 'enfant' : 'adulte')}`;
           else nom = `idle_${m.face}_${Math.floor((now + m.rang * 300) / 600) % 2}`;
           s.setFrame(C(nom)).setPosition(Math.round(m.x), Math.round(m.y)).setFlipX(m.flip).setAlpha(m.alpha);
           s.setDepth(m.couche ? m.couche.depth + 0.1 : m.y);

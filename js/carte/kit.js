@@ -196,15 +196,18 @@
   }
 
   // La marche (fiche 20). Les cases marche_<vue>_0..3 des planches de personnages
-  // (scripts/personnage/chibi.py) : contact, passage, contact de l'autre pied, passage. On passe à
-  // l'image suivante tous les PAS px parcourus : de profil, le pied posé recule d'autant dans la
-  // case, le corps avance d'autant sur la carte, le pied ne glisse pas sur le sol (plus vite il va,
-  // plus vite les images défilent) ; un enfant a de plus petits pas. imageMarche(parcouru, enfant) :
-  // l'image après `parcouru` px depuis le départ ; elle commence par un passage (l'image 1, la plus
-  // proche de la pose debout), pas par les jambes écartées.
+  // (scripts/personnage/chibi.py) : contact, passage, contact de l'autre pied, passage. De profil,
+  // le pied posé recule de PAS px d'une image à l'autre (un enfant a de plus petits pas). On passe à
+  // l'image suivante tous les FOULEE[qui] px parcourus : de quoi faire CADENCE images par seconde à
+  // la vitesse de marche de chacun (VITESSES), deux pas par seconde, une allure posée (à une image
+  // tous les PAS px, le pied ne glissait pas mais la marche était frénétique) ; plus vite il va,
+  // plus vite les images défilent. imageMarche(parcouru, qui) : l'image après `parcouru` px depuis
+  // le départ, `qui` le marcheur ('fermier', 'grotte', 'adulte' par défaut ou 'enfant') ; elle
+  // commence par un passage (l'image 1, la plus proche de la pose debout), pas par les jambes écartées.
   const PAS = { adulte: 3, enfant: 2 };
-  function imageMarche(parcouru, enfant) {
-    return (Math.floor(parcouru / (enfant ? PAS.enfant : PAS.adulte)) + 1) & 3;
+  const CADENCE = 8;
+  function imageMarche(parcouru, qui) {
+    return (Math.floor(parcouru / FOULEE[qui || 'adulte']) + 1) & 3;
   }
   // allure() : le regard d'un marcheur, d'après le sens de ses pas lissé sur quelques px (LISSE) :
   // un chemin en escalier (une diagonale faite de pas droits et de pas en biais) ne le fait pas
@@ -253,6 +256,11 @@
     fermier: 58,                                   // le personnage, à la ferme (js/fermier.js)
     famille: { adulte: 26, enfant: 32 },           // les autres membres, à la ferme (js/famille-ferme.js)
     grotte: 48,                                    // le personnage, dans la mine (js/grotte.js)
+  };
+  // px parcourus par image de marche (imageMarche) : CADENCE images par seconde à ces vitesses
+  const FOULEE = {
+    fermier: VITESSES.fermier / CADENCE, grotte: VITESSES.grotte / CADENCE,
+    adulte: VITESSES.famille.adulte / CADENCE, enfant: VITESSES.famille.enfant / CADENCE,
   };
 
   // Le sol d'une carte n'est pas une seule image de sa taille (le grand monde serait bien trop
@@ -357,7 +365,7 @@
   }
 
   global.CarteKit = Object.assign(global.CarteKit || {}, {
-    T, v, reduit, ratio, QUALITE, qualite, qualiteChoisie, reglages, reglerQualite, extrude, planche, planchePerso, saisie, regard, PAS, imageMarche, allure, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
+    T, v, reduit, ratio, QUALITE, qualite, qualiteChoisie, reglages, reglerQualite, extrude, planche, planchePerso, saisie, regard, PAS, CADENCE, FOULEE, imageMarche, allure, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
     cycle, imageA, animTuiles, pasAnimTuiles, TEXTE, texte,
   });
 })(window);

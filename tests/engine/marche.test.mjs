@@ -1,7 +1,8 @@
 /* ==========================================================================
    Tests : la marche des personnages (fiche 20).
-   - l'image du pas suit les px parcourus (CarteKit.imageMarche) : une image tous les PAS px (3 pour
-     un adulte, 2 pour un enfant), en commençant par un passage (l'image 1) ;
+   - l'image du pas suit les px parcourus (CarteKit.imageMarche) : une image tous les FOULEE px, de
+     quoi faire CADENCE (8) images par seconde à la vitesse de marche de chacun, pas plus (une marche
+     posée, pas frénétique), en commençant par un passage (l'image 1) ;
    - sur les planches (assets/personnages/), de profil, le pied posé recule d'autant d'une image à
      l'autre : le corps avance de PAS px, le pied reste sur place (pas de glissade) ; au passage, on
      voit les deux jambes, droites, côte à côte : la jambe d'appui au sol, l'autre juste devant, son
@@ -60,12 +61,18 @@ function pose(planche, nom) {
   return { talons, pieds, tete };
 }
 
-test("l'image du pas : une tous les PAS px, en commençant par un passage", () => {
-  assertEqual([K.PAS.adulte, K.PAS.enfant], [3, 2]);
-  const adulte = [0, 1, 2, 3, 4.5, 6, 8.9, 9, 11.9, 12].map((d) => K.imageMarche(d));
-  assertEqual(adulte, [1, 1, 1, 2, 2, 3, 3, 0, 0, 1]);
-  const enfant = [0, 1.9, 2, 4, 6, 8].map((d) => K.imageMarche(d, true));
-  assertEqual(enfant, [1, 1, 2, 3, 0, 1]);
+test("l'image du pas : une tous les FOULEE px (8 images par seconde), en commençant par un passage", () => {
+  assertEqual([K.PAS.adulte, K.PAS.enfant, K.CADENCE], [3, 2, 8]);
+  // à sa vitesse de marche, chacun fait CADENCE images par seconde (deux pas)
+  const v = { fermier: K.VITESSES.fermier, grotte: K.VITESSES.grotte, adulte: K.VITESSES.famille.adulte, enfant: K.VITESSES.famille.enfant };
+  for (const qui of Object.keys(v)) {
+    let changements = 0, avant = K.imageMarche(0, qui);
+    for (let t = 1; t <= 1000; t++) { const k = K.imageMarche(v[qui] * t / 1000, qui); if (k !== avant) changements++; avant = k; }
+    assertEqual(changements, K.CADENCE, `${qui} : images par seconde`);
+  }
+  const f = K.FOULEE.enfant;   // 4 px
+  assertEqual([0, f - 0.1, f, 2 * f, 3 * f, 4 * f].map((d) => K.imageMarche(d, 'enfant')), [1, 1, 2, 3, 0, 1]);
+  assertEqual(K.imageMarche(0), K.imageMarche(0, 'adulte'));
 });
 
 test('les planches : de profil, le pied posé ne glisse pas ; au passage, les deux jambes côte à côte', () => {

@@ -58,7 +58,7 @@ Avant que la planche choisie soit chargée, la carte montre la fermière.
 | Cases | Pour |
 |---|---|
 | `idle_<vue>_0..1` | debout, il respire |
-| `marche_<vue>_0..3` | marcher : contact, passage, contact de l'autre pied, passage ; l'image suit la distance parcourue (`CarteKit.imageMarche` : une tous les 3 px pour un adulte, 2 pour un enfant, en commençant par un passage) |
+| `marche_<vue>_0..3` | marcher : contact, passage, contact de l'autre pied, passage ; l'image suit la distance parcourue (`CarteKit.imageMarche(parcouru, qui)` : une tous les `CarteKit.FOULEE[qui]` px, soit 8 images par seconde, deux pas, à la vitesse de marche de chacun, en commençant par un passage) |
 | `houe_<vue>_0..3` | labourer ; la case change au coup (image 3) |
 | `plante_<vue>_0..2` | planter (et récolter) |
 | `arrose_<vue>_0..2` | arroser |
