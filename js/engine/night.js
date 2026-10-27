@@ -21,6 +21,7 @@ import { collectLeftovers } from './ramassage.js';
 import { regrowGrass, respawnBushes, respawnRocks, respawnTrees } from './outils.js';
 import { repousseMonde } from './monde-recolte.js';
 import { habitantsNuit } from './habitants.js';
+import { bienvenueNuit } from './bienvenue.js';
 import { remplirRuches } from './ruches.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 
@@ -258,6 +259,8 @@ export function runNight(state) {
   // les habitants des hameaux vivent leur journée, que le joueur soit là ou non (habitants.js,
   // fiche 7b ; ni la ferme ni sa famille n'en dépendent)
   habitantsNuit(state);
+  // la visite de bienvenue (bienvenue.js, fiche 18) qui n'a pas eu lieu : son plat attend devant la porte
+  bienvenueNuit(state);
   recordNight(state); // Lot 9 : autonomie de la nuit, séries et tenue (nuit encore = state.day)
   state.day += 1;
   state.awakeMs = 0;

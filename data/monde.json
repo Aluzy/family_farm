@@ -706,5 +706,30 @@
     "RAYONS": { "prairie": 12, "lande": 15, "plage": 15, "falaise": 15, "montagne": 18, "sommet": 22, "foret": 7, "marais": 9 },
     "NUIT": 0.5, "RAYON_MIN": 5,
     "ARRIVEE": 4
+  },
+  "//BIENVENUE": [
+    "La visite de bienvenue (fiche 18, js/engine/bienvenue.js ; la scène : js/carte/ferme/visite.js ; la page :",
+    "js/ui/bienvenue.js). Une fois par partie, le jour JOUR, de HEURE à FIN h, un habitant du hameau le plus proche",
+    "de la ferme (un adulte, tiré de la graine du monde) vient à pied jusqu'à la porte du foyer, frappe (TOC) et",
+    "attend ATTENTE s (de jeu réel) que le personnage soit à PROCHE px de lui. Alors il dit une phrase d'accueil",
+    "(PHRASES, l'une d'elles ; {prenom}, {hameau} (« de Brume-Haute »), {plat}) et donne un plat de sa cuisine",
+    "(PLATS, selon le métier de son hameau ; « * » sans hameau ou pour un autre métier ; DITS : comment il le dit) :",
+    "+1 à l'inventaire. Le",
+    "personnage n'est pas venu (ou la journée a passé sans visite, ou la scène de la ferme n'était pas ouverte) :",
+    "le plat est posé devant la porte (ABSENT) et donné quand le personnage y revient (à PROCHE px de la porte).",
+    "Sans hameau connu (les plans du monde pas encore là), un voisin sans hameau (VOISIN)."
+  ],
+  "BIENVENUE": {
+    "JOUR": 2, "HEURE": 11, "FIN": 17, "ATTENTE": 45, "PROCHE": 64,
+    "PLATS": { "bucheron": "gratin_patates", "pecheur": "tarte_pommes", "mineur": "gratin_patates", "berger": "raclette", "cueilleur": "tarte_myrtilles", "*": "gratin_patates" },
+    "DITS": { "gratin_patates": "un gratin de patates tout chaud", "tarte_pommes": "une tarte aux pommes", "raclette": "une raclette", "tarte_myrtilles": "une tarte aux myrtilles" },
+    "TOC": "Toc, toc ! Il y a quelqu'un ?",
+    "PHRASES": [
+      "Bienvenue ! Je suis {prenom}, {hameau}. Je vous ai apporté un bon plat : {plat}. Bonne installation !",
+      "Bonjour, et bienvenue parmi nous ! Moi, c'est {prenom}, {hameau}. Tenez, un bon plat pour vous : {plat}.",
+      "Bienvenue chez vous ! {prenom}, {hameau}. Une ferme, ça creuse : je vous ai apporté {plat}."
+    ],
+    "VOISIN": { "m": "votre voisin", "f": "votre voisine" },
+    "ABSENT": "Personne… Je laisse le plat devant la porte."
   }
 }

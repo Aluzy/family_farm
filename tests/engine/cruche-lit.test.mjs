@@ -138,11 +138,11 @@ test('le lit choisi est repris : le personnage retrouve le premier couchage', ()
 });
 
 test('migration v60 → v61 : pas de lit choisi ; le choix se sauvegarde et se relit', () => {
-  assertEqual(STATE_VERSION, 61);
+  assertEqual(STATE_VERSION >= 61, true);
   const neuve = createInitialState(4);
   assertEqual(neuve.litPrincipal, null);
   const { litPrincipal, ...v60 } = copie(neuve);
-  const m = migrate({ v: 60, t: 0, s: { ...v60, version: 60 } });
+  const m = migrate({ v: 60, t: 0, s: { ...v60, version: 60 } }, 61);
   assertEqual([m.version, m.litPrincipal], [61, null]);
   // une partie qui a choisi son lit : relue telle quelle, le même lit en tête
   const s = partie(3);

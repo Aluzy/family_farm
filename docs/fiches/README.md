@@ -53,7 +53,7 @@ Conventions communes à toutes les fiches :
 | [15 — le décor : bords des chemins et candélabres](15-decor.md) | — | fait |
 | [16 — la famille reste visible et ne traverse pas les murs](16-famille-visible.md) | — | fait |
 | [17 — la cruche (jauge, aller au puits) et choisir son lit](17-cruche-et-lit.md) | — | fait |
-| [18 — choisir ses enfants au démarrage et la visite de bienvenue](18-demarrage-et-accueil.md) | — | à faire (après 16) |
+| [18 — choisir ses enfants au démarrage et la visite de bienvenue](18-demarrage-et-accueil.md) | — | fait |
 | [19 — le compagnon aide à la ferme](19-le-compagnon-aide.md) | — | à faire (après 16 et 17) |
 | [20 — la marche des personnages](20-la-marche.md) | — | à faire (après 16 à 19) |
 | [21 — toucher le champ n'ouvre plus de fenêtre](21-champ-sans-fenetre.md) | — | fait |

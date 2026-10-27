@@ -1329,3 +1329,23 @@ SwiftShader, sans carte graphique) :
   `tests/engine/cruche-lit.test.mjs` (la jauge, le remplissage au puits seulement, le choix du lit,
   sa sauvegarde, et sur la carte sans navigateur : la marche jusqu'au puits par la porte, les puits
   enfermés ou trop loin, le lit sous le doigt).
+- **Fiche 18 — choisir ses enfants au démarrage et la visite de bienvenue** (fait) :
+  - à l'accueil d'une nouvelle partie (`js/ui/depart.js`), chaque enfant se choisit comme les
+    adultes : son personnage parmi les personnages d'enfants (la grille, `PERSOS_ENFANT`), puis son
+    prénom sous son portrait ; la dernière question montre la famille choisie (portraits, prénoms,
+    animaux). `composeFamily` reçoit le personnage de chaque enfant (il n'est plus tiré au hasard).
+    Une partie déjà commencée ne change pas ;
+  - le jour 2, de 11 h à 17 h, un adulte du hameau le plus proche de la ferme (ses habitants naissent
+    alors s'ils n'étaient pas nés : on le retrouvera chez lui) vient à pied jusqu'à la porte du foyer
+    (`js/engine/bienvenue.js`, `js/carte/ferme/visite.js`, `js/ui/bienvenue.js` ; les réglages :
+    `BIENVENUE` dans `data/monde.json`). Il paraît juste hors de la vue, du côté de son hameau, et
+    suit les cases libres (`fermier.path` ; un départ d'où l'on n'atteint pas la porte est écarté), frappe
+    (« Toc, toc ! ») et attend 45 s ; le personnage s'approche : sa phrase d'accueil, un plat de la
+    cuisine de son hameau (gratin de patates, tarte, raclette…, +1 à l'inventaire, une notification),
+    puis il repart d'où il est venu et s'efface au loin. Une seule fois par partie (`state.bienvenue`,
+    format 62). Le personnage absent (loin, dans la mine, la page fermée, la nuit tombée) : le plat
+    est posé devant la porte (son icône s'y voit) et donné quand le personnage y revient — choix
+    motivé : rien ne se perd au sol ni ne se ramasse par erreur, et la visite ne bloque jamais rien
+    (la nuit pose le plat d'une visite qui n'a pas eu lieu). Sauvegarde : `STATE_VERSION` 62 (la
+    place 60 → 61 est laissée à une autre fiche ; ici, elle ne change rien) ; une partie plus loin
+    que le jour 2 ne reçoit pas de visite. Les tests : `tests/engine/bienvenue.test.mjs`.

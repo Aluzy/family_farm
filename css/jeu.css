@@ -1955,6 +1955,11 @@ main .ancre { scroll-margin-top: 150px; }
 .accueil-persos .perso-btn { padding: 0; overflow: hidden; }
 .accueil-persos .perso-btn .perso-px { --s: 64px; }
 .accueil-portrait .perso-px { --s: 64px; }
+/* La famille choisie, à la dernière question (fiche 18) : chacun son portrait et son prénom. */
+.accueil-famille { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; }
+.accueil-membre { display: flex; flex-direction: column; align-items: center; max-width: 72px; font-size: 0.85em; text-align: center; overflow-wrap: anywhere; }
+.accueil-membre .perso-px { --s: 64px; }
+.accueil-animal-icone { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; font-size: 32px; }
 .accueil-espece.active { outline: 3px solid var(--color-sun); outline-offset: 0; }
 .accueil-modal .pose-meuble-ok, .accueil-modal .pose-meuble-non { width: 56px; height: 56px; }
 .accueil-suite {
@@ -2951,6 +2956,22 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .habitant-bulle strong { font-size: 0.9rem; }
 .habitant-bulle-metier { font-size: 0.72rem; opacity: 0.75; }
 .habitant-bulle-texte { margin-top: 2px; }
+/* La visite de bienvenue (fiche 18, js/carte/ferme/visite.js) : le plat posé devant la porte, qui
+   attend le retour du personnage. */
+.visite-plat {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 2px 4px;
+  font-size: 1.1rem;
+  line-height: 1;
+  background: #f6ead0;
+  border: 2px solid #5a3a1e;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  will-change: transform;
+}
 .hameau-familles, .hameau-reserve { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
 .hameau-famille { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; background: rgba(255, 255, 255, 0.35); }
 .hameau-portraits { display: flex; flex-shrink: 0; }
