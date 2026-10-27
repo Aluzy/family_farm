@@ -101,40 +101,7 @@ def marmotte(pose, k):
     return fini(im)
 
 
-BOUQ = (150, 128, 100)
-BOUQ_S = (108, 92, 72)
-BOUQ_C = (196, 180, 150)
-CORNE = (122, 108, 90)
-
-
-def bouquetin(k, marche):
-    """32 × 32, de profil (vers la droite), les sabots en bas au milieu (y 29). marche : k la
-    foulée (0..3) ; sinon k : la tête baissée (il broute) ou levée."""
-    im = image(32, 32)
-    # les pattes : deux devant, deux derrière ; en marche elles se croisent
-    pas = [(-2, 2), (0, 0), (2, -2), (0, 0)][k % 4] if marche else (0, 0)
-    for x0, dx, ton in ((9, pas[0], BOUQ_S), (12, -pas[0], BOUQ), (20, pas[1], BOUQ_S), (23, -pas[1], BOUQ)):
-        trait(im, [(x0, 19), (x0 + dx * 0.5, 24), (x0 + dx, 29)], ton, 1)
-        trait(im, [(x0 + 1, 19), (x0 + 1 + dx * 0.5, 24), (x0 + 1 + dx, 29)], ton, 1)
-        px(im, x0 + dx, 29, (52, 44, 40))
-        px(im, x0 + 1 + dx, 29, (52, 44, 40))
-    ellipse(im, 6, 11, 26, 21, BOUQ, BOUQ_S, BOUQ_C)            # le corps
-    ellipse(im, 9, 17, 22, 21, BOUQ_C)                           # le ventre
-    ellipse(im, 4, 12, 7, 15, BOUQ_S)                            # la queue
-    baisse = not marche and k % 2 == 1
-    hy = 14 if baisse else 6
-    trait(im, [(23, 15), (26, hy + 4)], BOUQ, 3)                 # le cou
-    ellipse(im, 24, hy, 30, hy + 5, BOUQ, BOUQ_S, BOUQ_C)        # la tête
-    px(im, 29, hy + 4, (60, 50, 44))
-    px(im, 27, hy + 2, K)
-    trait(im, [(28, hy + 5), (28, hy + 8)], BOUQ_S, 1)           # la barbiche
-    # les cornes : un grand arc vers l'arrière, annelé
-    cornes = [(25, hy), (23, hy - 3), (20, hy - 5), (17, hy - 4), (16, hy - 2)]
-    trait(im, cornes, CORNE, 2)
-    for x, y in cornes[1:4]:
-        px(im, x, y, teinte(CORNE, 1.3))
-    px(im, 26, hy - 1, BOUQ_S)                                   # l'oreille
-    return fini(im)
+# (le bouquetin : plus bas, avec le chevreuil, d'après le dessin du joueur, fiche 22)
 
 
 AIGLE = (110, 74, 44)
@@ -379,37 +346,262 @@ def canard(sorte, pose, k):
 
 # ---------- la forêt (fiche 6b) ----------
 
-CHEV = (168, 104, 58)
-CHEV_S = (118, 70, 40)
-CHEV_C = (206, 150, 96)
-BLANC_CHEV = (236, 226, 206)
+# Le chevreuil (et le bouquetin, de la montagne) : les dessins du joueur (fiche 22).
+#
+# La première image (debout_0) de chacun est celle que le joueur a dessinée, gardée au pixel près :
+# une grille de lettres, une lettre par couleur ('.' : transparent). La tête baissée (il broute)
+# est dessinée de même, sur son corps. La marche en est tirée : le corps reste, les pattes sont
+# redessinées, chacune d'après sa colonne dans le dessin du joueur (ses couleurs, sa longueur) :
+# les pattes proches sont plus longues, les lointaines (la vue plonge un peu) plus courtes de deux
+# pixels et décalées ; en marche, les proches et les lointaines vont en sens contraire.
+
+PAL_CHEV = {
+    'A': (40, 31, 31),  # le contour
+    'B': (96, 74, 52),  # les bois
+    'C': (118, 70, 40),  # l'ombre, les pattes lointaines
+    'D': (206, 150, 96),  # le ventre, le dos éclairé
+    'E': (168, 104, 58),  # la robe fauve, les pattes proches
+    'F': (236, 226, 206),  # le miroir blanc
+    'G': (52, 40, 32),  # les sabots
+}
+
+CHEV_DEBOUT = [
+    '..........................AA....',
+    '.........................ABBA...',
+    '.......................AABBA....',
+    '......................ACAABA....',
+    '.......................ACABAA...',
+    '.......................ADDBEEA..',
+    '......................ADEEEAEAA.',
+    '......................AEEEEECEEA',
+    '......................AEECCCCCCE',
+    '......................AEEECAAAAA',
+    '......................AEEEA.....',
+    '.......A..............AEEEA.....',
+    '......ACA.AAAAAAAAAAAAEEEA......',
+    '......AFCADDDDDDDDEEEEEEEA......',
+    '......AFFDDDDDDEEEEEEEEEEA......',
+    '......AFFDDEEEEEEEEEEEEEEA......',
+    '......AFFEEEEEEEEEEEEEEEEA......',
+    '.......AEEEDDDDDDDDDDDECA.......',
+    '........AEEDDDDDDDDDDDDCA.......',
+    '.........ACDDDDDDDDDDDEA........',
+    '.........ACAEAAAAAAACAEA........',
+    '.........ACAEA.....ACAEA........',
+    '.........ACAEA.....ACAEA........',
+    '.........ACAEA.....ACAEA........',
+    '.........ACAEA.....ACAEA........',
+    '.........ACAEA.....ACAEA........',
+    '.........ACAEA.....ACAEA........',
+    '.........ACAEA.....ACAEA........',
+    '.........AGAEA.....AGAEA........',
+    '..........AAEA......AAEA........',
+    '...........AGA.......AGA........',
+    '............A.........A.........',
+]
+
+CHEV_BROUTE = [
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '.......A........................',
+    '......ACA.AAAAAAAAAAAAAAA.......',
+    '......AFCADDDDDDDDEEEEEEEA......',
+    '......AFFDDDDDDEEEEEEEEEEEA..A..',
+    '......AFFDDEEEEEEEEEEEEEEEEAABA.',
+    '......AFFEEEEEEEEEEEEEEEEEEECBA.',
+    '.......AEEEDDDDDDDDDDDECAEEEEBAA',
+    '........AEEDDDDDDDDDDDDCAEEEEDDA',
+    '.........ACDDDDDDDDDDDEAAEEEEEDA',
+    '.........ACAEAAAAAAACAEA.AEEAEDA',
+    '.........ACAEA.....ACAEA.ACEEEEA',
+    '.........ACAEA.....ACAEA..ACEEEA',
+    '.........ACAEA.....ACAEA..ACEEEA',
+    '.........ACAEA.....ACAEA..ACCEEA',
+    '.........ACAEA.....ACAEA...ACEEA',
+    '.........ACAEA.....ACAEA...AACEA',
+    '.........ACAEA.....ACAEA.....AGA',
+    '.........AGAEA.....AGAEA......A.',
+    '..........AAEA......AAEA........',
+    '...........AGA.......AGA........',
+    '............A.........A.........',
+]
+
+PAL_BOUQ = {
+    'A': (40, 31, 31),  # le contour
+    'B': (122, 108, 90),  # les cornes
+    'C': (162, 152, 140),  # leur reflet
+    'D': (108, 92, 72),  # l'ombre, les pattes proches
+    'E': (196, 180, 150),  # le ventre, le dos éclairé
+    'F': (150, 128, 100),  # la robe, les pattes lointaines
+    'G': (60, 50, 44),  # la bouche
+    'H': (123, 104, 82),  # le genou (patte lointaine)
+    'I': (81, 68, 54),  # le jarret (patte proche)
+    'J': (52, 44, 40),  # les sabots
+}
+
+BOUQ_DEBOUT = [
+    '...................AA...........',
+    '.................AABCAA.........',
+    '................ACBBBBBA........',
+    '...............ABBAAABBCA.......',
+    '...............ABA...ABBBAA.....',
+    '...............ABA....ABBADAAA..',
+    '................A......ABBEFFFAA',
+    '.......................AEBFAFFFF',
+    '.......................AFFFFFFDA',
+    '......................AFFFFFDDDD',
+    '........AAAAAAAAAAAAAAFFFDDDDGAA',
+    '.......AFFFFEEEEEEEFFFFFFFFADA..',
+    '......AFFEEEEEEEFFFFFFFFFFFADA..',
+    '......AFFEEEEFFFFFFFFFFFFFAADA..',
+    '......AFEEFFFFFFFFFFFFFFFFAADA..',
+    '......AEFFFFFFFFFFFFFFFFFFA.A...',
+    '......AFFFFFFFFFFFFFFFFFFDA.....',
+    '......AFFFEEEEEEEEEEEDDFDDA.....',
+    '.......AFEEEEEEEEEEEEEDDDA......',
+    '........AEEEEEEEEEEEEEDFA.......',
+    '........ADEEEEEEEEEEEDAFA.......',
+    '........ADDAFAAAAAAADDAFA.......',
+    '........ADDAFA.....ADDAHA.......',
+    '........ADDAHA.....ADDAFA.......',
+    '........ADIAFA.....ADIAFA.......',
+    '........ADIAFA.....ADIAFA.......',
+    '........ADDAFA.....ADDAFA.......',
+    '........ADDAJA.....ADDAJA.......',
+    '........ADDAA......ADDAA........',
+    '........AJJA.......AJJA.........',
+    '.........AA.........AA..........',
+    '................................',
+]
+
+BOUQ_BROUTE = [
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '......................AA........',
+    '....................AABCAA......',
+    '...................ACBBBBBA.....',
+    '..................ABBAAABBCA....',
+    '..................ABA...ABBBA...',
+    '..................ABA....ABBA...',
+    '........AAAAAAAAAAAAAAAAAAABBA..',
+    '.......AFFFFEEEEEEFFFFFFFFAABA..',
+    '......AFFEEEEEEEFFFFFFFFFFFAA...',
+    '......AFFEEEEFFFFFFFFFFFFFFFEA..',
+    '......AFEEFFFFFFFFFFFFFFFFFFEEA.',
+    '......AEFFFFFFFFFFFFFFFFFFFFAEFA',
+    '......AFFFFFFFFFFFFFFFFFFDFFFFFA',
+    '......AFFFEEEEEEEEEEEDDFDDAFFFFA',
+    '.......AFEEEEEEEEEEEEEDDDA.ADFFA',
+    '........AEEEEEEEEEEEEEDFA..ADFFA',
+    '........ADEEEEEEEEEEEDAFA..ADFFA',
+    '........ADDAFAAAAAAADDAFA...ADFA',
+    '........ADDAFA.....ADDAHA...ADFA',
+    '........ADDAHA.....ADDAFA...ADDA',
+    '........ADIAFA.....ADIAFA...ADGA',
+    '........ADIAFA.....ADIAFA..ADAA.',
+    '........ADDAFA.....ADDAFA..ADA..',
+    '........ADDAJA.....ADDAJA...A...',
+    '........ADDAA......ADDAA........',
+    '........AJJA.......AJJA.........',
+    '.........AA.........AA..........',
+    '................................',
+]
+
+# Les pattes de chacun : (colonnes dans le dessin du joueur, proche ?, devant ?), et la première
+# rangée sous le ventre (y0), d'où elles partent.
+PATTES_CHEV = {'y0': 20, 'pattes': [([10], False, False), ([12], True, False), ([20], False, True), ([22], True, True)]}
+PATTES_BOUQ = {'y0': 21, 'pattes': [([9, 10], True, False), ([12], False, False), ([20, 21], True, True), ([23], False, True)]}
+
+# La foulée, en 4 images : deux paires en diagonale (devant-proche avec derrière-lointaine, et
+# l'inverse), chacune (déplacement du sabot, levée) ; tour à tour l'une pose et l'autre passe,
+# repliée. Les lointaines ne s'écartent que d'un pixel et ne se lèvent que d'un.
+FOULEE = [((2, 0), (-2, 0)), ((0, 0), (0, 2)), ((-2, 0), (2, 0)), ((0, 2), (0, 0))]
+
+
+def contour_grille(g):
+    """Le contour du joueur : un pixel de contour ('A') sur chaque case vide voisine (haut, bas,
+    gauche, droite) d'une case peinte."""
+    h, w = len(g), len(g[0])
+    out = [list(r) for r in g]
+    for y in range(h):
+        for x in range(w):
+            if g[y][x] == '.' and any(0 <= x + dx < w and 0 <= y + dy < h and g[y + dy][x + dx] not in '.A'
+                                      for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                out[y][x] = 'A'
+    return [''.join(r) for r in out]
+
+
+def foulee(debout, pattes, k):
+    """L'image k (0..3) de la marche, tirée du dessin debout : le corps tel quel, les pattes
+    redessinées, inclinées (le sabot en avant ou en arrière) ou levées (plus courtes, repliées)."""
+    y0 = pattes['y0']
+    g = [list(r) if y < y0 else ['.'] * 32 for y, r in enumerate(debout)]
+    paire_a, paire_b = FOULEE[k % 4]
+    # les lointaines d'abord : les proches passent devant
+    for cols, proche, devant in sorted(pattes['pattes'], key=lambda p: p[1]):
+        dx, leve = paire_a if proche == devant else paire_b
+        if not proche:
+            dx, leve = (dx > 0) - (dx < 0), min(leve, 1)
+        # la patte du joueur, rangée par rangée (jusqu'au sabot)
+        rangs = []
+        for y in range(y0, 32):
+            s = ''.join(debout[y][x] for x in cols)
+            if all(c in '.A' for c in s):
+                break
+            rangs.append(s)
+        if leve:
+            rangs = rangs[:len(rangs) - 1 - leve] + rangs[-1:]
+        n = len(rangs)
+        for i, s in enumerate(rangs):
+            f = i / (n - 1)
+            if leve:
+                d = 1 if proche and f > 0.5 else 0
+            else:
+                d = int(abs(dx) * f + 0.5) * (1 if dx > 0 else -1)
+            for j, c in enumerate(s):
+                if c not in '.A':
+                    g[y0 + i][cols[0] + j + d] = c
+    return contour_grille([''.join(r) for r in g])
+
+
+def de_grille(g, pal):
+    im = image(32, 32)
+    for y, r in enumerate(g):
+        for x, c in enumerate(r):
+            if c != '.':
+                im.putpixel((x, y), pal[c] + (255,))
+    return im
 
 
 def chevreuil(k, marche):
-    """32 × 32, de profil (vers la droite), les sabots en bas au milieu (y 29) : plus fin et plus
-    haut sur pattes que le bouquetin, la robe fauve, le miroir blanc sous la queue, les bois courts
-    (le brocard). marche : k la foulée (0..3) ; sinon k : la tête levée (0) ou baissée (il broute)."""
-    im = image(32, 32)
-    pas = [(-2, 2), (0, 0), (2, -2), (0, 0)][k % 4] if marche else (0, 0)
-    for x0, dx, ton in ((10, pas[0], CHEV_S), (12, -pas[0], CHEV), (20, pas[1], CHEV_S), (22, -pas[1], CHEV)):
-        trait(im, [(x0, 18), (x0 + dx * 0.5, 24), (x0 + dx, 29)], ton, 1)
-        px(im, x0 + dx, 29, (52, 40, 32))
-    ellipse(im, 8, 12, 25, 19, CHEV, CHEV_S, CHEV_C)             # le corps
-    ellipse(im, 11, 16, 22, 19, CHEV_C)                           # le ventre clair
-    ellipse(im, 6, 12, 9, 16, BLANC_CHEV)                         # le miroir
-    px(im, 7, 11, CHEV_S)                                          # la queue, minuscule
-    baisse = not marche and k % 2 == 1
-    hy = 15 if baisse else 4
-    trait(im, [(22, 14), (24, hy + 5), (25, hy + 3)], CHEV, 3)    # le cou
-    ellipse(im, 23, hy, 29, hy + 4, CHEV, CHEV_S, CHEV_C)         # la tête
-    px(im, 29, hy + 3, (40, 30, 26))                               # le museau noir
-    px(im, 28, hy + 4, BLANC_CHEV)
-    px(im, 26, hy + 1, K)                                          # l'œil
-    for x, y in ((24, hy - 1), (23, hy - 2)):                      # l'oreille
-        px(im, x, y, CHEV_S)
-    trait(im, [(26, hy), (26, hy - 3), (27, hy - 4)], (96, 74, 52), 1)   # les bois
-    px(im, 25, hy - 3, (96, 74, 52))
-    return fini(im)
+    """32 × 32, de profil (vers la droite), les sabots en bas au milieu (y 30 les proches, 28 les
+    lointaines) : le dessin du joueur, fin et haut sur pattes, la robe fauve, le miroir blanc, les
+    bois courts (le brocard), le museau pointé en avant. marche : k la foulée (0..3) ; sinon k :
+    la tête levée (0) ou baissée dans l'herbe (il broute)."""
+    if marche:
+        return de_grille(foulee(CHEV_DEBOUT, PATTES_CHEV, k), PAL_CHEV)
+    return de_grille(CHEV_BROUTE if k % 2 else CHEV_DEBOUT, PAL_CHEV)
+
+
+def bouquetin(k, marche):
+    """32 × 32, de profil (vers la droite), les sabots en bas au milieu (y 29 les proches, 27 les
+    lointaines) : le dessin du joueur, trapu, l'encolure épaisse, la barbiche, les grandes cornes
+    annelées en arc vers l'arrière. marche : k la foulée (0..3) ; sinon k : la tête levée (0) ou
+    baissée dans l'herbe (il broute)."""
+    if marche:
+        return de_grille(foulee(BOUQ_DEBOUT, PATTES_BOUQ, k), PAL_BOUQ)
+    return de_grille(BOUQ_BROUTE if k % 2 else BOUQ_DEBOUT, PAL_BOUQ)
 
 
 ROUX = (212, 102, 38)
