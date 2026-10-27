@@ -3853,6 +3853,35 @@ export const RAW_DATA = {
     "RAYON_MIN": 5,
     "ARRIVEE": 4
   },
+  "BIENVENUE": {
+    "JOUR": 2,
+    "HEURE": 11,
+    "FIN": 17,
+    "ATTENTE": 45,
+    "PROCHE": 64,
+    "PLATS": {
+      "bucheron": "gratin_patates",
+      "pecheur": "tarte_pommes",
+      "mineur": "gratin_patates",
+      "berger": "raclette",
+      "cueilleur": "tarte_myrtilles",
+      "*": "gratin_patates"
+    },
+    "DITS": {
+      "gratin_patates": "un gratin de patates tout chaud",
+      "tarte_pommes": "une tarte aux pommes",
+      "raclette": "une raclette",
+      "tarte_myrtilles": "une tarte aux myrtilles"
+    },
+    "TOC": "Toc, toc ! Il y a quelqu'un ?",
+    "PHRASES": [
+      "Bienvenue ! Je suis {prenom}, {hameau}. Je vous ai apporté un bon plat : {plat}. Bonne installation !",
+      "Bonjour, et bienvenue parmi nous ! Moi, c'est {prenom}, {hameau}. Tenez, un bon plat pour vous : {plat}.",
+      "Bienvenue chez vous ! {prenom}, {hameau}. Une ferme, ça creuse : je vous ai apporté {plat}."
+    ],
+    "VOISIN": { "m": "votre voisin", "f": "votre voisine" },
+    "ABSENT": "Personne… Je laisse le plat devant la porte."
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,

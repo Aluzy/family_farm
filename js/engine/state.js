@@ -26,6 +26,7 @@ import { genererFerme } from './ferme-generee.js';
 import { caseDuMonde, FERME_DANS_MONDE, idDuMonde, MONDE } from './monde.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
 import { nouvelEquipement } from './equipement.js';
+import { BIENVENUE, nouvelleBienvenue } from './bienvenue.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -124,6 +125,7 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     caleche: nouvelleCaleche(), // la calèche (caleche.js, fiche 7c) : son coffre, ses retenues
     equipement: nouvelEquipement(), // fiche 11 : les pièces de chaque membre, le sac (equipement.js)
     litPrincipal: null, // fiche 17 : le lit choisi par le personnage principal (blocs.js choisirLit ; null : le premier)
+    bienvenue: nouvelleBienvenue(), // fiche 18 : la visite de bienvenue du deuxième jour (bienvenue.js)
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),
@@ -500,6 +502,13 @@ export const MIGRATIONS = {
   // v60 → v61 : choisir son lit (blocs.js choisirLit, fiche 17) : le personnage principal n'en a pas
   // encore choisi, il garde le premier couchage (l'ordre des pièces), comme avant.
   60: (state) => ({ ...state, litPrincipal: null, version: 61 }),
+  // v61 → v62 : la visite de bienvenue (bienvenue.js, fiche 18). Une partie qui n'a pas passé le jour
+  // de la visite l'attend ; une partie plus avancée ne la reçoit pas (« faite », sans plat).
+  61: (state) => {
+    const b = nouvelleBienvenue();
+    if ((Number(state.day) || 1) > BIENVENUE.JOUR) b.etat = 'faite';
+    return { ...state, bienvenue: b, version: 62 };
+  },
 };
 
 // Porte les cases d'une partie (numérotées sur la largeur de sa ferme) dans celles du monde, où sa

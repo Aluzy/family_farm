@@ -77,17 +77,18 @@ export function renderStarterCards() {
 /* -- l'accueil d'une nouvelle partie : un dialogue, écran par écran -- */
 
 // Le joueur décrit sa famille en répondant aux questions d'une petite fenêtre de dialogue (la
-// police des dialogues) : son personnage, son prénom, son nom ; un compagnon ; des enfants ; des
-// animaux de compagnie. À la fin, « C'est parti ! » installe la famille (composeFamily) sur une
+// police des dialogues) : son personnage, son prénom, son nom ; un compagnon ; des enfants (le
+// personnage et le prénom de chacun, fiche 18) ; des animaux de compagnie. La dernière question
+// montre la famille choisie (ses portraits, ses prénoms). À la fin, « C'est parti ! » installe la famille (composeFamily) sur une
 // ferme générée d'après une graine au hasard. Les prénoms tapés restent dans `accueil` (et
 // passent par escapeHtml()) : jamais dans un attribut data-* ni dans tel().
 const accueil = {
   etape: 'bienvenue', perso: 0, prenom: '', nom: '',
   compagnon: null,                 // { perso, prenom } dès qu'il y en a un
-  nbEnfants: 1, enfants: [],       // les prénoms, dans l'ordre
+  nbEnfants: 1, enfants: [],       // [{ perso, prenom }], dans l'ordre (perso 0 : pas encore choisi)
   animaux: [],                     // [{ espece, nom }]
   animal: { espece: 'chien', nom: '' },
-  k: 0,                            // l'enfant dont on demande le prénom
+  k: 0,                            // l'enfant dont on demande le personnage, puis le prénom
   erreur: '',
 };
 
@@ -100,9 +101,24 @@ const seul = () => !accueil.compagnon && !accueil.enfants.length && !accueil.ani
 const fleche = (actif = true) => `<button type="button" class="accueil-suite" data-action="accueil-suite"${actif ? '' : ' disabled'} aria-label="Suivant" title="Suivant"><span aria-hidden="true"></span></button>`;
 const ouiNon = () => `<div class="accueil-choix"><button type="button" class="btn primary" data-action="accueil-oui">Oui</button><button type="button" class="btn" data-action="accueil-non">Non</button></div>`;
 const champ = (valeur, max, label, attrs = '') => `<input type="text" id="accueil-champ" class="member-input accueil-champ" maxlength="${max}" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="${label}" value="${escapeHtml(valeur)}"${attrs}>`;
-const grille = (choisi, enfant = false) => `<div class="perso-grid accueil-persos">${Array.from({ length: enfant ? DATA.FAMILLE.PROFIL.PERSOS_ENFANT : DATA.FAMILLE.PROFIL.PERSOS }, (_, i) => i + 1)
-  .map((n) => `<button type="button" class="btn perso-btn${n === choisi ? ' active' : ''}" data-action="accueil-perso" data-perso="${n}" aria-pressed="${n === choisi}" aria-label="Personnage ${n}">${persoHtml(n)}</button>`).join('')}</div>`;
-const portrait = (n) => (n ? `<div class="accueil-portrait">${persoHtml(n)}</div>` : '');
+const grille = (choisi, enfant = false) => `<div class="perso-grid accueil-persos${enfant ? ' accueil-persos-enfant' : ''}">${Array.from({ length: enfant ? DATA.FAMILLE.PROFIL.PERSOS_ENFANT : DATA.FAMILLE.PROFIL.PERSOS }, (_, i) => i + 1)
+  .map((n) => `<button type="button" class="btn perso-btn${n === choisi ? ' active' : ''}" data-action="accueil-perso" data-perso="${n}" aria-pressed="${n === choisi}" aria-label="${enfant ? 'Enfant' : 'Personnage'} ${n}">${persoHtml(n, enfant)}</button>`).join('')}</div>`;
+const portrait = (n, enfant = false) => (n ? `<div class="accueil-portrait">${persoHtml(n, enfant)}</div>` : '');
+// L'enfant `k` ({ perso, prenom } ; perso 0 tant qu'il n'est pas choisi).
+const enfantK = (k = accueil.k) => (accueil.enfants[k] || (accueil.enfants[k] = { perso: 0, prenom: '' }));
+const deLEnfant = () => (accueil.nbEnfants === 1 ? 'de l\'enfant' : `du ${ORDINAUX[accueil.k]} enfant`);
+// La famille choisie, à la dernière question : chacun son portrait et son prénom (les prénoms
+// tapés passent par escapeHtml()).
+function familleChoisie() {
+  const A = accueil;
+  const un = (n, prenom, enfant) => `<li class="accueil-membre">${persoHtml(n, enfant)}<span>${escapeHtml(prenom)}</span></li>`;
+  const gens = [un(A.perso, A.prenom, false)];
+  if (A.compagnon) gens.push(un(A.compagnon.perso, A.compagnon.prenom, false));
+  for (const e of A.enfants) gens.push(un(e.perso, e.prenom, true));
+  const E = DATA.FAMILLE.COMPAGNIE.ESPECES;
+  const betes = A.animaux.map((a) => `<li class="accueil-membre accueil-animal"><span class="accueil-animal-icone" aria-hidden="true">${(E[a.espece] || {}).icone || ''}</span><span>${escapeHtml(a.nom)}</span></li>`);
+  return `<ul class="accueil-famille" aria-label="Ta famille">${gens.concat(betes).join('')}</ul>`;
+}
 
 // Le texte et ce qui se règle, pour l'écran en cours.
 function ecranAccueil() {
@@ -128,8 +144,10 @@ function ecranAccueil() {
       return [A.compagnon ? 'Est-ce qu\'ils ont des enfants ?' : 'Est-ce qu\'il a des enfants ?', ouiNon()];
     case 'enfants-nombre':
       return ['Combien ?', `<input type="number" id="accueil-champ" class="member-input accueil-champ accueil-nombre" min="1" max="${enfantsMax()}" step="1" inputmode="numeric" aria-label="Nombre d'enfants" value="${A.nbEnfants}">${fleche()}`];
+    case 'enfant-perso':
+      return [`Choisis le personnage ${deLEnfant()} :`, grille(enfantK().perso, true) + fleche(enfantK().perso > 0)];
     case 'enfant-prenom':
-      return [A.nbEnfants === 1 ? 'Quel est son prénom ?' : `Quel est le prénom du ${ORDINAUX[A.k]} enfant ?`, champ(A.enfants[A.k] || '', P.PRENOM_MAX, `Prénom de l'enfant ${A.k + 1}`) + fleche()];
+      return [A.nbEnfants === 1 ? 'Quel est son prénom ?' : `Quel est le prénom du ${ORDINAUX[A.k]} enfant ?`, portrait(enfantK().perso, true) + champ(enfantK().prenom, P.PRENOM_MAX, `Prénom de l'enfant ${A.k + 1}`) + fleche()];
     case 'animal':
       return ['Un (ou des) animal de compagnie ?', ouiNon()];
     case 'animal-nom': {
@@ -140,7 +158,7 @@ function ecranAccueil() {
     case 'animal-autre':
       return ['Un autre ?', ouiNon()];
     default:
-      return [`Parfait ! Une super aventure ${seul() ? 't\'attend' : 'vous attend'} !`, '<div class="accueil-choix"><button type="button" class="btn primary" data-action="setup-start">C\'est parti !</button></div>'];
+      return [`Parfait ! Une super aventure ${seul() ? 't\'attend' : 'vous attend'} !`, `${familleChoisie()}<div class="accueil-choix"><button type="button" class="btn primary" data-action="setup-start">C'est parti !</button></div>`];
   }
 }
 
@@ -201,14 +219,15 @@ function suiteAccueil() {
       A.nbEnfants = n;
       A.enfants = A.enfants.slice(0, n);
       A.k = 0;
-      return allerA('enfant-prenom');
+      return allerA('enfant-perso');
     }
+    case 'enfant-perso': return enfantK().perso ? allerA('enfant-prenom') : refus('Choisis un personnage.');
     case 'enfant-prenom': {
       const t = cleanFirstName(valeurChamp());
       const e = prenom(t);
       if (e) return refus(e);
-      A.enfants[A.k] = t;
-      if (A.k + 1 < A.nbEnfants) { A.k += 1; return allerA('enfant-prenom'); }
+      enfantK().prenom = t;
+      if (A.k + 1 < A.nbEnfants) { A.k += 1; return allerA('enfant-perso'); }
       return allerA('animal');
     }
     case 'animal-nom': {
@@ -267,6 +286,7 @@ registerActions({
   'accueil-perso': (target) => {
     const n = Number(target.dataset.perso);
     if (accueil.etape === 'compagnon-perso') accueil.compagnon.perso = n;
+    else if (accueil.etape === 'enfant-perso') enfantK().perso = n;
     else accueil.perso = n;
     accueil.erreur = '';
     openSetupModal();
@@ -277,11 +297,12 @@ registerActions({
     openSetupModal();
   },
   'setup-start': () => {
-    const A = accueil, P = DATA.FAMILLE.PROFIL;
-    // les enfants : un personnage d'enfant au hasard (il se change dans la Famille)
+    const A = accueil;
+    // les enfants : le personnage et le prénom choisis pour chacun (fiche 18 ; ils se changent
+    // encore dans la Famille)
     const r = composeFamily(state, {
       perso: A.perso, prenom: A.prenom, nom: A.nom, compagnon: A.compagnon,
-      enfants: A.enfants.map((prenom) => ({ prenom, perso: 1 + Math.floor(Math.random() * P.PERSOS_ENFANT) })),
+      enfants: A.enfants.map((e) => ({ prenom: e.prenom, perso: e.perso })),
       animaux: A.animaux,
     });
     const f = r.ok ? finishSetup(state) : r;
