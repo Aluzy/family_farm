@@ -56,3 +56,4 @@ Conventions communes à toutes les fiches :
 | [18 — choisir ses enfants au démarrage et la visite de bienvenue](18-demarrage-et-accueil.md) | — | à faire (après 16) |
 | [19 — le compagnon aide à la ferme](19-le-compagnon-aide.md) | — | à faire (après 16 et 17) |
 | [20 — la marche des personnages](20-la-marche.md) | — | à faire (après 16 à 19) |
+| [21 — toucher le champ n'ouvre plus de fenêtre](21-champ-sans-fenetre.md) | — | à faire |
