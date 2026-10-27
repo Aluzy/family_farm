@@ -72,7 +72,7 @@
   const VITESSE = K.VITESSES.famille;     // px/s : { adulte, enfant }
   const ROAM = 6 * T;                      // autour de la maison
   const FADE_S = 0.5;
-  const PAS = 4;                           // px par image de marche
+  // (l'image du pas : CarteKit.imageMarche, d'après les px parcourus depuis le départ, m.marche)
   const GESTE = 1.2;                       // s : le second adulte se baisse au Poulailler, à l'Étable
   const REPOS = 3;                         // s avant de chercher autre chose à faire
   const ENFANT_DY = 4;                     // px : un enfant couché est remonté d'autant (il est plus petit)
@@ -504,7 +504,8 @@
       }
       const to = m.chemin[0];
       const dx = to.x - m.x, dy = to.y - m.y, l = Math.hypot(dx, dy), st = (m.enfant ? VITESSE.enfant : VITESSE.adulte) * (m.vite || 1) * dt;
-      ({ face: m.face, flip: m.flip } = K.regard(dx, dy));
+      // (le regard lissé : une diagonale en escalier ne le fait pas tourner à chaque case)
+      ({ face: m.face, flip: m.flip } = (m.allure || (m.allure = K.allure())).pas(dx, dy, Math.min(l, st), m));
       if (l <= st) { m.x = to.x; m.y = to.y; m.chemin.shift(); } else { m.x += (dx / l) * st; m.y += (dy / l) * st; }
       m.marche += Math.min(l, st);
       // (la marche donne faim : comptée au moteur par tranches de PAS_COMPTE px)
@@ -576,6 +577,8 @@
           if (parle) ({ face: m.face, flip: m.flip } = K.regard(m.parle.x - m.x, m.parle.y - m.y));
           if (!parle && !m.rejoint) decider(m, dt);
           const marche = !parle && avancer(m, dt);
+          // (arrêté, il repartira par un passage : m.marche compte depuis le départ)
+          if (!marche) m.marche = 0;
           if (m.fade) {
             m.alpha = Math.max(0, Math.min(1, m.alpha + (m.fade * dt) / FADE_S));
             if (m.alpha >= 1 && m.fade > 0) m.fade = 0;
@@ -593,7 +596,7 @@
             if (m.drap) m.drap.setDepth(z(0.2));
             continue;
           }
-          dessiner(m, marche ? `marche_${m.face}_${Math.floor(m.marche / PAS) % 4}` : `idle_${m.face}_${Math.floor(performance.now() / 600) % 2}`);
+          dessiner(m, marche ? `marche_${m.face}_${K.imageMarche(m.marche, m.enfant)}` : `idle_${m.face}_${Math.floor(performance.now() / 600) % 2}`);
         }
       },
       info() {

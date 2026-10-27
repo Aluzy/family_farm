@@ -52,7 +52,7 @@
   const PASS = { pres: 80, prise: 12, pousse: 30 };
   // Le personnage de la partie (CarteKit.planchePerso). `bulle` : la pointe de la bulle « +1 »
   // (CarteKit.bulleGain), en px au-dessus de ses pieds.
-  const HERO = { key: 'heros', w: 16, h: 32, foot: 30, speed: K.VITESSES.grotte, stride: 4, bulle: 26 };
+  const HERO = { key: 'heros', w: 16, h: 32, foot: 30, speed: K.VITESSES.grotte, bulle: 26 };
   // La grotte (assets/grotte_tuiles.png, grotte_objets.png, grotte.json : scripts/carte/grotte.py) :
   // la lumière autour du personnage (px : nette jusqu'à r0, noire à partir de r1), ce qu'on a
   // pioché (localStorage `store`) ; un champignon lumineux se cueille à moins de `cueille` px.
@@ -666,15 +666,21 @@
       const moved = Math.hypot(P.x - x0, P.y - y0);
       if (this.mining) H.setFrame(this.frame(this.mining.frame));
       else if (moved > 0) {
-        const r = K.regard(vx, vy);
+        // (le regard lissé, CarteKit.allure ; l'image du pas d'après les px parcourus depuis le
+        // départ, CarteKit.imageMarche : il part par un passage)
+        if (!this.allure) this.allure = K.allure();
+        const r = this.allure.pas(vx, vy, moved, { face: this.face, flip: H.flipX });
         this.face = r.face; H.setFlipX(r.flip);
         this.walked += moved;
-        const k = Math.floor(this.walked / HERO.stride) % 4;
+        const k = K.imageMarche(this.walked);
         H.setFrame(this.frame.de('marche', this.face, k));
         // un pas sur la roche aux images 0 et 2 (js/son.js)
         if (k !== this.pasVu && (k === 0 || k === 2) && global.FermeSon) global.FermeSon.pas(P.x, P.y, null, 0);
         this.pasVu = k;
-      } else H.setFrame(this.frame.de('idle', this.face, Math.floor(time / 600) % 2));   // debout : il respire
+      } else {
+        H.setFrame(this.frame.de('idle', this.face, Math.floor(time / 600) % 2));   // debout : il respire
+        this.walked = 0;
+      }
       H.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y);
       this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5);
       this.placeGain();

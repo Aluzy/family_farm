@@ -42,7 +42,7 @@
   const K = global.CarteKit;
   const T = K.T;
   const SPEED = K.VITESSES.fermier;   // px de carte par seconde
-  const STRIDE = 4;              // px par image de marche : les pieds suivent la distance
+  // (l'image du pas : CarteKit.imageMarche, d'après les px parcourus ; les pieds suivent la distance)
   const BREATH_S = 0.8;          // debout : secondes par souffle
   const HOLD_MS = 9000;          // une case n'est jamais retenue plus longtemps
   const MAX_VISITS = 4;          // cases d'un même geste où il va lui-même ; les autres suivent en cascade
@@ -269,8 +269,11 @@
       }
       rx = x; ry = y;
     }
-    function look(dx, dy) {
-      ({ face, flip } = K.regard(dx, dy));
+    // en marchant : le regard lissé (CarteKit.allure : une diagonale en escalier ne le fait pas
+    // tourner à chaque case) ; d : les px de ce pas
+    const allure = K.allure();
+    function lookWalk(dx, dy, d) {
+      ({ face, flip } = allure.pas(dx, dy, d, { face, flip }));
     }
 
     /* ---------- dehors : le foyer, le Poulailler ---------- */
@@ -324,10 +327,9 @@
           const dx = p.x - x, dy = p.y - y, left = Math.hypot(dx, dy);
           const v = SPEED * vitesse() * (opts && opts.hurry ? 2 : 1) * Math.min(1, 0.4 + age * 3);
           const d = Math.min(left, v * dt);
-          if (left > 0.01) { x += (dx / left) * d; y += (dy / left) * d; look(dx, dy); }
+          if (left > 0.01) { x += (dx / left) * d; y += (dy / left) * d; lookWalk(dx, dy, d); }
           walked += d;
-          const k = Math.floor(walked / STRIDE) % 4;
-          draw(`marche_${face}_${k}`);
+          draw(`marche_${face}_${K.imageMarche(walked)}`);
           if (left - d > 0.3) return false;
           path.shift();
           return !path.length;
@@ -683,7 +685,7 @@
     let steer = null, steerWalked = 0;
     function steerTo(dir) {
       if (passe) return;
-      if (dir && !ctx.coucher && !ctx.dort) { steer = dir; return; }
+      if (dir && !ctx.coucher && !ctx.dort) { if (!steer) steerWalked = 0; steer = dir; return; }
       if (!steer) return;
       steer = null;
       idleAge = 0;
@@ -700,9 +702,10 @@
       if (libre(nx, ny)) { mx = nx; my = ny; } else if (libre(nx, y)) mx = nx; else if (libre(x, ny)) my = ny;
       const d = Math.hypot(mx - x, my - y);
       x = mx; y = my;
-      look(steer.x, steer.y);
-      steerWalked += d;
-      draw(d > 0.01 ? `marche_${face}_${Math.floor(steerWalked / STRIDE) % 4}` : `idle_${face}_0`);
+      lookWalk(steer.x, steer.y, d);
+      // (arrêté contre un obstacle : debout ; il repartira par un passage)
+      if (d > 0.01) steerWalked += d; else steerWalked = 0;
+      draw(d > 0.01 ? `marche_${face}_${K.imageMarche(steerWalked)}` : `idle_${face}_0`);
     }
 
     // Il arrive d'une autre carte : il apparaît en (tx, ty) (la case
@@ -738,9 +741,9 @@
         step(dt) {
           const dx = tx - x, dy = ty - y, left = Math.hypot(dx, dy);
           const d = Math.min(left, SPEED * 0.6 * dt);
-          if (left > 0.01) { x += (dx / left) * d; y += (dy / left) * d; look(dx, dy); }
+          if (left > 0.01) { x += (dx / left) * d; y += (dy / left) * d; lookWalk(dx, dy, d); }
           walked += d;
-          draw(`marche_${face}_${Math.floor(walked / STRIDE) % 4}`);
+          draw(`marche_${face}_${K.imageMarche(walked)}`);
           return left - d <= 0.3;
         },
       };

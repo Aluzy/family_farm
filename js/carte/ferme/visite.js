@@ -30,7 +30,7 @@
   const { T } = F.C;
   const { reducedMotion } = F;
   const VITESSE = K.VITESSES.famille.adulte;   // px/s
-  const PAS = 4;                               // px par image de marche
+  // (l'image du pas : CarteKit.imageMarche, d'après les px parcourus depuis le départ, m.marche)
   const FADE_S = 0.5;
   const LOIN = 320;                            // px hors de la vue : il saute au but
   const VU = 48;                               // px hors de la vue : son image n'est pas dessinée
@@ -76,12 +76,15 @@
           m.x = b.x; m.y = b.y; m.chemin = [];
         } else {
           const to = m.chemin[0], dx = to.x - m.x, dy = to.y - m.y, l = Math.hypot(dx, dy), st = VITESSE * dt;
-          ({ face: m.face, flip: m.flip } = K.regard(dx, dy));
+          // (le regard lissé : une diagonale en escalier ne le fait pas tourner à chaque case)
+          ({ face: m.face, flip: m.flip } = (m.allure || (m.allure = K.allure())).pas(dx, dy, Math.min(l, st), m));
           if (l <= st) { m.x = to.x; m.y = to.y; m.chemin.shift(); } else { m.x += (dx / l) * st; m.y += (dy / l) * st; }
           m.marche += Math.min(l, st);
           marche = true;
         }
       }
+      // (arrêté, il repartira par un passage : m.marche compte depuis le départ)
+      if (!marche) m.marche = 0;
       const pres = joueur && Math.hypot(joueur.x - m.x, joueur.y - m.y) <= m.proche;
       if (m.phase === 'vient' && !m.chemin.length) {
         // à la porte : il frappe, tourné vers elle
@@ -125,7 +128,7 @@
       const s = m.s, dedans = m.x > vue.x - VU && m.x < vue.right + VU && m.y > vue.y - VU && m.y < vue.bottom + VU + 32;
       s.setVisible(dedans && m.alpha > 0);
       if (!dedans) { if (m.bulle) this.visiteBulleOff(m); return; }
-      const nom = marche ? `marche_${m.face}_${Math.floor(m.marche / PAS) % 4}` : `idle_${m.face}_${Math.floor(now / 600) % 2}`;
+      const nom = marche ? `marche_${m.face}_${K.imageMarche(m.marche)}` : `idle_${m.face}_${Math.floor(now / 600) % 2}`;
       s.setFrame(C(nom)).setPosition(Math.round(m.x), Math.round(m.y)).setFlipX(m.flip).setAlpha(m.alpha).setDepth(m.y);
       // sa bulle
       if (m.bulle) {

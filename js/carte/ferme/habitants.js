@@ -39,7 +39,7 @@
   const { T, BLOCS_CARTE } = F.C;
   const { reducedMotion, v } = F;
   const VITESSE = K.VITESSES.famille;     // px/s : { adulte, enfant }
-  const PAS = 4;                           // px par image de marche
+  // (l'image du pas : CarteKit.imageMarche, d'après les px parcourus depuis le départ, m.marche)
   const FADE_S = 0.4;
   const TRAJETS = { n: 3, ms: 6 };         // recherches de chemin par image : au plus n, ou ms
   const LOIN = 320;                        // px hors de la vue : il saute au but
@@ -360,7 +360,8 @@
       }
       if (m.evite > 0) m.evite -= dt;
       const ll = Math.hypot(dx, dy), st = (m.def.enfant ? VITESSE.enfant : VITESSE.adulte) * m.vite * dt, cible = m.chemin[0];
-      ({ face: m.face, flip: m.flip } = K.regard(dx, dy));
+      // (le regard lissé : une diagonale en escalier ne le fait pas tourner à chaque case)
+      ({ face: m.face, flip: m.flip } = (m.allure || (m.allure = K.allure())).pas(dx, dy, Math.min(ll, st), m));
       if (ll <= st) { m.x = cible.x; m.y = cible.y; m.chemin.shift(); } else { m.x += (dx / ll) * st; m.y += (dy / ll) * st; }
       m.marche += Math.min(ll, st);
       return true;
@@ -618,6 +619,8 @@
             }
           }
           const marche = !parle && !m.saut && this.habAvancer(m, dt, joueur);
+          // (arrêté, il repartira par un passage : m.marche compte depuis le départ)
+          if (!marche) m.marche = 0;
           if (m.fade > 0) { m.alpha = Math.min(1, m.alpha + dt / FADE_S); if (m.alpha >= 1) m.fade = 0; }
           if (calme) m.alpha = 1;
           // le geste : pas à pas ; au coup, il compte
@@ -652,7 +655,7 @@
           let nom;
           if (m.couche) nom = `dort_bas_${Math.floor(now / 1600) % 2}`;
           else if (image) nom = image;
-          else if (marche) nom = `marche_${m.face}_${Math.floor(m.marche / PAS) % 4}`;
+          else if (marche) nom = `marche_${m.face}_${K.imageMarche(m.marche, m.def.enfant)}`;
           else nom = `idle_${m.face}_${Math.floor((now + m.rang * 300) / 600) % 2}`;
           s.setFrame(C(nom)).setPosition(Math.round(m.x), Math.round(m.y)).setFlipX(m.flip).setAlpha(m.alpha);
           s.setDepth(m.couche ? m.couche.depth + 0.1 : m.y);
