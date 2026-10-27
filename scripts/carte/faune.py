@@ -348,12 +348,16 @@ def canard(sorte, pose, k):
 
 # Le chevreuil (et le bouquetin, de la montagne) : les dessins du joueur (fiche 22).
 #
-# La première image (debout_0) de chacun est celle que le joueur a dessinée, gardée au pixel près :
-# une grille de lettres, une lettre par couleur ('.' : transparent). La tête baissée (il broute)
-# est dessinée de même, sur son corps. La marche en est tirée : le corps reste, les pattes sont
-# redessinées, chacune d'après sa colonne dans le dessin du joueur (ses couleurs, sa longueur) :
-# les pattes proches sont plus longues, les lointaines (la vue plonge un peu) plus courtes de deux
-# pixels et décalées ; en marche, les proches et les lointaines vont en sens contraire.
+# La première image (debout_0) de chacun est celle que le joueur a dessinée, gardée au pixel près,
+# museau compris (il dépassait de sa case : tout l'animal est poussé de 5 pixels vers la gauche,
+# dans les 6 images) : une grille de lettres, une lettre par couleur ('.' : transparent).
+# Les autres en sont tirées :
+#   - il broute : sa tête, telle quelle (même taille, mêmes yeux, oreilles, bois ou cornes),
+#     tournée d'un quart de tour, le museau au sol, au bout d'une encolure qui descend ;
+#   - la marche : le corps reste, les pattes sont redessinées d'après leurs colonnes dans le
+#     dessin (couleurs, longueur). Les lointaines (la vue plonge un peu) sont plus courtes de deux
+#     pixels ; elles ont la largeur des proches, qui ne les cachent qu'en passant devant ; en
+#     marche, proches et lointaines vont en sens contraire.
 
 PAL_CHEV = {
     'A': (40, 31, 31),  # le contour
@@ -366,73 +370,38 @@ PAL_CHEV = {
 }
 
 CHEV_DEBOUT = [
-    '..........................AA....',
-    '.........................ABBA...',
-    '.......................AABBA....',
-    '......................ACAABA....',
-    '.......................ACABAA...',
-    '.......................ADDBEEA..',
-    '......................ADEEEAEAA.',
-    '......................AEEEEECEEA',
-    '......................AEECCCCCCE',
-    '......................AEEECAAAAA',
-    '......................AEEEA.....',
-    '.......A..............AEEEA.....',
-    '......ACA.AAAAAAAAAAAAEEEA......',
-    '......AFCADDDDDDDDEEEEEEEA......',
-    '......AFFDDDDDDEEEEEEEEEEA......',
-    '......AFFDDEEEEEEEEEEEEEEA......',
-    '......AFFEEEEEEEEEEEEEEEEA......',
-    '.......AEEEDDDDDDDDDDDECA.......',
-    '........AEEDDDDDDDDDDDDCA.......',
-    '.........ACDDDDDDDDDDDEA........',
-    '.........ACAEAAAAAAACAEA........',
-    '.........ACAEA.....ACAEA........',
-    '.........ACAEA.....ACAEA........',
-    '.........ACAEA.....ACAEA........',
-    '.........ACAEA.....ACAEA........',
-    '.........ACAEA.....ACAEA........',
-    '.........ACAEA.....ACAEA........',
-    '.........ACAEA.....ACAEA........',
-    '.........AGAEA.....AGAEA........',
-    '..........AAEA......AAEA........',
-    '...........AGA.......AGA........',
-    '............A.........A.........',
-]
-
-CHEV_BROUTE = [
-    '................................',
-    '................................',
-    '................................',
-    '................................',
-    '................................',
-    '................................',
-    '................................',
-    '................................',
-    '................................',
-    '................................',
-    '................................',
-    '.......A........................',
-    '......ACA.AAAAAAAAAAAAAAA.......',
-    '......AFCADDDDDDDDEEEEEEEA......',
-    '......AFFDDDDDDEEEEEEEEEEEA..A..',
-    '......AFFDDEEEEEEEEEEEEEEEEAABA.',
-    '......AFFEEEEEEEEEEEEEEEEEEECBA.',
-    '.......AEEEDDDDDDDDDDDECAEEEEBAA',
-    '........AEEDDDDDDDDDDDDCAEEEEDDA',
-    '.........ACDDDDDDDDDDDEAAEEEEEDA',
-    '.........ACAEAAAAAAACAEA.AEEAEDA',
-    '.........ACAEA.....ACAEA.ACEEEEA',
-    '.........ACAEA.....ACAEA..ACEEEA',
-    '.........ACAEA.....ACAEA..ACEEEA',
-    '.........ACAEA.....ACAEA..ACCEEA',
-    '.........ACAEA.....ACAEA...ACEEA',
-    '.........ACAEA.....ACAEA...AACEA',
-    '.........ACAEA.....ACAEA.....AGA',
-    '.........AGAEA.....AGAEA......A.',
-    '..........AAEA......AAEA........',
-    '...........AGA.......AGA........',
-    '............A.........A.........',
+    '.....................AA.........',
+    '....................ABBA........',
+    '..................AABBA.........',
+    '.................ACAABA.........',
+    '..................ACABAA........',
+    '..................ADDBEEA.......',
+    '.................ADEEEAEAA......',
+    '.................AEEEEECEEA.....',
+    '.................AEECCCCCCEA....',
+    '.................AEEECAAAAA.....',
+    '.................AEEEA..........',
+    '..A..............AEEEA..........',
+    '.ACA.AAAAAAAAAAAAEEEA...........',
+    '.AFCADDDDDDDDEEEEEEEA...........',
+    '.AFFDDDDDDEEEEEEEEEEA...........',
+    '.AFFDDEEEEEEEEEEEEEEA...........',
+    '.AFFEEEEEEEEEEEEEEEEA...........',
+    '..AEEEDDDDDDDDDDDECA............',
+    '...AEEDDDDDDDDDDDDCA............',
+    '....ACDDDDDDDDDDDEA.............',
+    '....ACAEAAAAAAACAEA.............',
+    '....ACAEA.....ACAEA.............',
+    '....ACAEA.....ACAEA.............',
+    '....ACAEA.....ACAEA.............',
+    '....ACAEA.....ACAEA.............',
+    '....ACAEA.....ACAEA.............',
+    '....ACAEA.....ACAEA.............',
+    '....ACAEA.....ACAEA.............',
+    '....AGAEA.....AGAEA.............',
+    '.....AAEA......AAEA.............',
+    '......AGA.......AGA.............',
+    '.......A.........A..............',
 ]
 
 PAL_BOUQ = {
@@ -449,79 +418,57 @@ PAL_BOUQ = {
 }
 
 BOUQ_DEBOUT = [
-    '...................AA...........',
-    '.................AABCAA.........',
-    '................ACBBBBBA........',
-    '...............ABBAAABBCA.......',
-    '...............ABA...ABBBAA.....',
-    '...............ABA....ABBADAAA..',
-    '................A......ABBEFFFAA',
-    '.......................AEBFAFFFF',
-    '.......................AFFFFFFDA',
-    '......................AFFFFFDDDD',
-    '........AAAAAAAAAAAAAAFFFDDDDGAA',
-    '.......AFFFFEEEEEEEFFFFFFFFADA..',
-    '......AFFEEEEEEEFFFFFFFFFFFADA..',
-    '......AFFEEEEFFFFFFFFFFFFFAADA..',
-    '......AFEEFFFFFFFFFFFFFFFFAADA..',
-    '......AEFFFFFFFFFFFFFFFFFFA.A...',
-    '......AFFFFFFFFFFFFFFFFFFDA.....',
-    '......AFFFEEEEEEEEEEEDDFDDA.....',
-    '.......AFEEEEEEEEEEEEEDDDA......',
-    '........AEEEEEEEEEEEEEDFA.......',
-    '........ADEEEEEEEEEEEDAFA.......',
-    '........ADDAFAAAAAAADDAFA.......',
-    '........ADDAFA.....ADDAHA.......',
-    '........ADDAHA.....ADDAFA.......',
-    '........ADIAFA.....ADIAFA.......',
-    '........ADIAFA.....ADIAFA.......',
-    '........ADDAFA.....ADDAFA.......',
-    '........ADDAJA.....ADDAJA.......',
-    '........ADDAA......ADDAA........',
-    '........AJJA.......AJJA.........',
-    '.........AA.........AA..........',
+    '..............AA................',
+    '............AABCAA..............',
+    '...........ACBBBBBA.............',
+    '..........ABBAAABBCA............',
+    '..........ABA...ABBBAA..........',
+    '..........ABA....ABBADAAA.......',
+    '...........A......ABBEFFFAAA....',
+    '..................AEBFAFFFFFA...',
+    '..................AFFFFFFDAFA...',
+    '.................AFFFFFDDDDDA...',
+    '...AAAAAAAAAAAAAAFFFDDDDGAAA....',
+    '..AFFFFEEEEEEEFFFFFFFFADA.......',
+    '.AFFEEEEEEEFFFFFFFFFFFADA.......',
+    '.AFFEEEEFFFFFFFFFFFFFAADA.......',
+    '.AFEEFFFFFFFFFFFFFFFFAADA.......',
+    '.AEFFFFFFFFFFFFFFFFFFA.A........',
+    '.AFFFFFFFFFFFFFFFFFFDA..........',
+    '.AFFFEEEEEEEEEEEDDFDDA..........',
+    '..AFEEEEEEEEEEEEEDDDA...........',
+    '...AEEEEEEEEEEEEEDFA............',
+    '...ADEEEEEEEEEEEDAFA............',
+    '...ADDAFAAAAAAADDAFA............',
+    '...ADDAFA.....ADDAHA............',
+    '...ADDAHA.....ADDAFA............',
+    '...ADIAFA.....ADIAFA............',
+    '...ADIAFA.....ADIAFA............',
+    '...ADDAFA.....ADDAFA............',
+    '...ADDAJA.....ADDAJA............',
+    '...ADDAA......ADDAA.............',
+    '...AJJA.......AJJA..............',
+    '....AA.........AA...............',
     '................................',
 ]
 
-BOUQ_BROUTE = [
-    '................................',
-    '................................',
-    '................................',
-    '................................',
-    '......................AA........',
-    '....................AABCAA......',
-    '...................ACBBBBBA.....',
-    '..................ABBAAABBCA....',
-    '..................ABA...ABBBA...',
-    '..................ABA....ABBA...',
-    '........AAAAAAAAAAAAAAAAAAABBA..',
-    '.......AFFFFEEEEEEFFFFFFFFAABA..',
-    '......AFFEEEEEEEFFFFFFFFFFFAA...',
-    '......AFFEEEEFFFFFFFFFFFFFFFEA..',
-    '......AFEEFFFFFFFFFFFFFFFFFFEEA.',
-    '......AEFFFFFFFFFFFFFFFFFFFFAEFA',
-    '......AFFFFFFFFFFFFFFFFFFDFFFFFA',
-    '......AFFFEEEEEEEEEEEDDFDDAFFFFA',
-    '.......AFEEEEEEEEEEEEEDDDA.ADFFA',
-    '........AEEEEEEEEEEEEEDFA..ADFFA',
-    '........ADEEEEEEEEEEEDAFA..ADFFA',
-    '........ADDAFAAAAAAADDAFA...ADFA',
-    '........ADDAFA.....ADDAHA...ADFA',
-    '........ADDAHA.....ADDAFA...ADDA',
-    '........ADIAFA.....ADIAFA...ADGA',
-    '........ADIAFA.....ADIAFA..ADAA.',
-    '........ADDAFA.....ADDAFA..ADA..',
-    '........ADDAJA.....ADDAJA...A...',
-    '........ADDAA......ADDAA........',
-    '........AJJA.......AJJA.........',
-    '.........AA.........AA..........',
-    '................................',
-]
+# Il broute : ce qui part du dessin debout (la tête et l'encolure), la tête (tournée d'un quart de
+# tour autour de `pivot`, qui vient en `cible`), l'encolure qui descend (un polygone, peint de
+# la robe, contour refait).
+BROUTE_CHEV = {'efface': lambda x, y: (y <= 11 and x >= 16) or (y == 12 and 17 <= x <= 19),
+               'tete': lambda x, y: y <= 9, 'pivot': (23, 7), 'cible': (23, 24), 'robe': 'E',
+               'cou': [(16.5, 12.5), (21.5, 17.5), (23.5, 18.5), (21.5, 21.5), (19.5, 19.5), (18.5, 17.5)]}
+BROUTE_BOUQ = {'efface': lambda x, y: (y <= 9 and x >= 10) or (y == 10 and x >= 17) or (11 <= y <= 15 and x >= 21),
+               'tete': lambda x, y: (y <= 9 and x >= 10) or (y == 10 and x >= 20), 'pivot': (23, 8), 'cible': (22, 23),
+               'robe': 'F', 'cou': [(16.5, 10.5), (21.5, 13.5), (24.5, 18.5), (20.5, 21.5), (19.5, 19.5), (19.5, 17.5)]}
 
-# Les pattes de chacun : (colonnes dans le dessin du joueur, proche ?, devant ?), et la première
-# rangée sous le ventre (y0), d'où elles partent.
-PATTES_CHEV = {'y0': 20, 'pattes': [([10], False, False), ([12], True, False), ([20], False, True), ([22], True, True)]}
-PATTES_BOUQ = {'y0': 21, 'pattes': [([9, 10], True, False), ([12], False, False), ([20, 21], True, True), ([23], False, True)]}
+# Les pattes : (colonnes dans le dessin, colonnes qu'elle occupe, proche ?, devant ?), et la
+# rangée sous le ventre (y0) d'où elles partent. Une lointaine plus fine dans le dessin n'y est
+# qu'en partie cachée : dégagée, elle a la largeur de la proche.
+PATTES_CHEV = {'y0': 20, 'pattes': [([5], [5], False, False), ([7], [7], True, False),
+                                    ([15], [15], False, True), ([17], [17], True, True)]}
+PATTES_BOUQ = {'y0': 21, 'pattes': [([4, 5], [4, 5], True, False), ([7], [6, 7], False, False),
+                                    ([15, 16], [15, 16], True, True), ([18], [17, 18], False, True)]}
 
 # La foulée, en 4 images : deux paires en diagonale (devant-proche avec derrière-lointaine, et
 # l'inverse), chacune (déplacement du sabot, levée) ; tour à tour l'une pose et l'autre passe,
@@ -542,36 +489,66 @@ def contour_grille(g):
     return [''.join(r) for r in out]
 
 
+def dans(poly, x, y):
+    """Le point (x, y) est-il dans le polygone ?"""
+    c = False
+    for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]):
+        if (y0 > y) != (y1 > y) and x < x0 + (y - y0) * (x1 - x0) / (y1 - y0):
+            c = not c
+    return c
+
+
+def broute(debout, b):
+    """La tête baissée : la tête du dessin, tournée d'un quart de tour (le museau vers le sol),
+    au bout de l'encolure."""
+    g = [[('.' if b['efface'](x, y) or (c == 'A' and y < 20) else c) for x, c in enumerate(r)]
+         for y, r in enumerate(debout)]
+    (cx, cy), (tx, ty) = b['pivot'], b['cible']
+    tete = {(tx - (y - cy), ty + (x - cx)): c for y, r in enumerate(debout) for x, c in enumerate(r)
+            if c != '.' and b['tete'](x, y)}
+    bord = {p for p, c in tete.items()
+            if c == 'A' and any((p[0] + dx, p[1] + dy) not in tete for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))}
+    for (x, y), c in tete.items():
+        g[y][x] = c
+    for y in range(32):
+        for x in range(32):
+            if dans(b['cou'], x + 0.5, y + 0.5) and (g[y][x] == '.' or (x, y) in bord or (g[y][x] == 'A' and (x, y) not in tete)):
+                g[y][x] = b['robe']
+    return contour_grille([''.join(r) for r in g])
+
+
 def foulee(debout, pattes, k):
-    """L'image k (0..3) de la marche, tirée du dessin debout : le corps tel quel, les pattes
-    redessinées, inclinées (le sabot en avant ou en arrière) ou levées (plus courtes, repliées)."""
+    """L'image k (0..3) de la marche : le corps du dessin, les pattes redessinées, inclinées (le
+    sabot en avant ou en arrière) ou levées (plus courtes, repliées)."""
     y0 = pattes['y0']
     g = [list(r) if y < y0 else ['.'] * 32 for y, r in enumerate(debout)]
+    lointaine = set()
     paire_a, paire_b = FOULEE[k % 4]
     # les lointaines d'abord : les proches passent devant
-    for cols, proche, devant in sorted(pattes['pattes'], key=lambda p: p[1]):
+    for src, cols, proche, devant in sorted(pattes['pattes'], key=lambda p: p[2]):
         dx, leve = paire_a if proche == devant else paire_b
         if not proche:
             dx, leve = (dx > 0) - (dx < 0), min(leve, 1)
-        # la patte du joueur, rangée par rangée (jusqu'au sabot)
-        rangs = []
+        rangs = []   # la patte du dessin, rangée par rangée, jusqu'au sabot
         for y in range(y0, 32):
-            s = ''.join(debout[y][x] for x in cols)
+            s = ''.join(debout[y][x] for x in src)
             if all(c in '.A' for c in s):
                 break
-            rangs.append(s)
+            rangs.append(s[0] * len(cols) if len(src) < len(cols) else s)
         if leve:
             rangs = rangs[:len(rangs) - 1 - leve] + rangs[-1:]
         n = len(rangs)
         for i, s in enumerate(rangs):
             f = i / (n - 1)
-            if leve:
-                d = 1 if proche and f > 0.5 else 0
-            else:
-                d = int(abs(dx) * f + 0.5) * (1 if dx > 0 else -1)
+            d = (1 if proche and f > 0.5 else 0) if leve else int(abs(dx) * f + 0.5) * (1 if dx > 0 else -1)
+            y = y0 + i
             for j, c in enumerate(s):
-                if c not in '.A':
-                    g[y0 + i][cols[0] + j + d] = c
+                g[y][cols[0] + j + d] = c
+                (lointaine.add if not proche else lointaine.discard)((cols[0] + j + d, y))
+            if proche:   # devant une lointaine : un trait de contour entre les deux
+                for x in (cols[0] + d - 1, cols[-1] + d + 1):
+                    if (x, y) in lointaine:
+                        g[y][x] = 'A'
     return contour_grille([''.join(r) for r in g])
 
 
@@ -585,23 +562,23 @@ def de_grille(g, pal):
 
 
 def chevreuil(k, marche):
-    """32 × 32, de profil (vers la droite), les sabots en bas au milieu (y 30 les proches, 28 les
+    """32 × 32, de profil (vers la droite), les sabots en bas (y 30 les proches, 28 les
     lointaines) : le dessin du joueur, fin et haut sur pattes, la robe fauve, le miroir blanc, les
     bois courts (le brocard), le museau pointé en avant. marche : k la foulée (0..3) ; sinon k :
     la tête levée (0) ou baissée dans l'herbe (il broute)."""
     if marche:
         return de_grille(foulee(CHEV_DEBOUT, PATTES_CHEV, k), PAL_CHEV)
-    return de_grille(CHEV_BROUTE if k % 2 else CHEV_DEBOUT, PAL_CHEV)
+    return de_grille(broute(CHEV_DEBOUT, BROUTE_CHEV) if k % 2 else CHEV_DEBOUT, PAL_CHEV)
 
 
 def bouquetin(k, marche):
-    """32 × 32, de profil (vers la droite), les sabots en bas au milieu (y 29 les proches, 27 les
+    """32 × 32, de profil (vers la droite), les sabots en bas (y 29 les proches, 27 les
     lointaines) : le dessin du joueur, trapu, l'encolure épaisse, la barbiche, les grandes cornes
     annelées en arc vers l'arrière. marche : k la foulée (0..3) ; sinon k : la tête levée (0) ou
     baissée dans l'herbe (il broute)."""
     if marche:
         return de_grille(foulee(BOUQ_DEBOUT, PATTES_BOUQ, k), PAL_BOUQ)
-    return de_grille(BOUQ_BROUTE if k % 2 else BOUQ_DEBOUT, PAL_BOUQ)
+    return de_grille(broute(BOUQ_DEBOUT, BROUTE_BOUQ) if k % 2 else BOUQ_DEBOUT, PAL_BOUQ)
 
 
 ROUX = (212, 102, 38)
