@@ -5,19 +5,23 @@
 #   - assets/caleche.png (cases de 96 × 64, les roues et les sabots sur la rangée 60, le milieu de
 #     l'attelage au milieu de la case) : une voiture couverte (une caisse de planches sur deux essieux,
 #     une bâche de toile tendue sur des arceaux, les roues cerclées de fer et leurs rayons), son
-#     cocher sur le banc (un chapeau, une veste verte, les rênes), une lanterne accrochée à l'avant,
-#     le cheval attelé par deux brancards. Trois vues : 'cote' (de profil, vers la droite : la scène la
-#     retourne pour la gauche), 'bas' (elle vient vers nous : le cheval devant, la voiture derrière),
-#     'haut' (elle s'en va : la voiture devant, le cheval au-delà). Par vue, cinq cases : les quatre
-#     temps du pas, les roues tournées d'un huitième de tour à chaque temps (k = 0..3), puis 4 : à
-#     l'arrêt. Deux rangées : le jour (la lanterne éteinte), la nuit (allumée). La case de la vue v,
-#     du temps k, de la rangée r : r × 15 + v × 5 + k (v : cote 0, bas 1, haut 2).
+#     cocher sur le banc (un vrai personnage du jeu, COCHER, assis dans ses cases assis_<vue>_0
+#     comme le cavalier de assets/cheval_monte.png ; de profil et de face, les rênes de ses mains au
+#     mors ; de dos, sa tête dépasse de la bâche), une lanterne accrochée à l'avant, le cheval
+#     attelé par deux brancards (harnaché : cheval.profil(harnais=True)). Trois vues : 'cote' (de
+#     profil, vers la droite : la scène la retourne pour la gauche), 'bas' (elle vient vers nous :
+#     le cheval devant, la voiture derrière), 'haut' (elle s'en va : la voiture devant, le cheval
+#     au-delà). Par vue, cinq cases : les quatre temps du pas, les roues tournées d'un huitième de
+#     tour à chaque temps (k = 0..3), puis 4 : à l'arrêt. Deux rangées : le jour (la lanterne
+#     éteinte), la nuit (allumée). La case de la vue v, du temps k, de la rangée r :
+#     r × 15 + v × 5 + k (v : cote 0, bas 1, haut 2).
 #   - LANTERNE : où est la flamme de la lanterne dans chaque vue (px de la case, de profil vers la
 #     droite) : la scène y pose la lueur de la nuit (js/carte/ferme/caleche.js, CALECHE.lanterne).
 # Lumière en haut à gauche, contour sombre.
 #
 #   python3 scripts/carte/caleche.py            écrit l'image
 #   python3 scripts/carte/caleche.py --apercu   écrit aussi apercu_caleche.png (agrandi)
+import json
 import math
 import os
 import sys
@@ -34,9 +38,14 @@ W, H = 96, 64
 SOL = 60                               # la rangée des roues et des sabots
 OUT = (40, 26, 18)
 ROUGE = [(86, 30, 26), (132, 48, 38), (170, 70, 52)]         # la caisse peinte
-VESTE = [(30, 58, 40), (48, 88, 56), (70, 118, 72)]          # le cocher
-PEAU = [(168, 112, 82), (212, 156, 118), (236, 190, 150)]
-CHAPEAU = [(44, 32, 24), (72, 52, 36), (98, 74, 52)]
+RENES = (70, 40, 30)
+# le cocher : un personnage du jeu (assets/personnages/), toujours le même, que sa casquette et sa
+# veste bleu marine, sa moustache, distinguent de la famille ; assis (ses cases assis_<vue>_0), et
+# où il est dans la case de chaque vue (le coin haut-gauche de sa case de 16 × 32) ; MAINS : ses
+# mains dans sa case de profil (assis_cote_0), d'où partent les rênes
+COCHER = 'perso_08'
+PLACE_COCHER = {'cote': (37, 4), 'bas': (40, -3), 'haut': (40, -4)}
+MAINS = {'cote': [(13, 25)], 'bas': [(4, 25), (11, 25)]}
 VERRE = {'jour': [(88, 70, 40), (126, 102, 58)], 'nuit': [(236, 168, 64), (255, 236, 150)]}
 LANTERNE = {'cote': (55, 27), 'bas': (68, 20), 'haut': (25, 31)}
 VUES = ['cote', 'bas', 'haut']
@@ -58,7 +67,15 @@ class Toile:
                 self.put(x, y, c)
 
     def colle(self, im, x, y):
-        self.im.alpha_composite(im, (x, y))
+        """Une image posée en (x, y) (elle peut déborder du cadre)."""
+        calque = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+        calque.paste(im, (x, y))
+        self.im.alpha_composite(calque)
+
+    def fini(self):
+        """Le contour sombre, puis on continue d'y dessiner (les rênes : un pixel, sans contour)."""
+        self.im = contour(self.im, OUT)
+        self.px = self.im.load()
 
 
 def roue(t, cx, cy, r, phase, face=False):
@@ -126,24 +143,25 @@ def lanterne(t, x, y, nuit):
     t.rect(x - 1, y + 2, x + 1, y + 2, FER[0])
 
 
-def cocher(t, x, y, vue):
-    """Le cocher assis (x : son milieu, y : le haut de son chapeau)."""
-    if vue == 'haut':                                        # de dos : son chapeau dépasse
-        t.rect(x - 3, y + 1, x + 3, y + 1, CHAPEAU[0]); t.rect(x - 2, y - 1, x + 2, y, CHAPEAU[1])
-        return
-    t.rect(x - 3, y + 2, x + 3, y + 2, CHAPEAU[0])           # le bord du chapeau
-    t.rect(x - 2, y, x + 2, y + 1, CHAPEAU[1]); t.put(x - 1, y, CHAPEAU[2])
-    t.rect(x - 2, y + 3, x + 2, y + 6, PEAU[1]); t.put(x - 2, y + 3, PEAU[2])
-    if vue == 'bas':
-        t.put(x - 1, y + 4, OUT); t.put(x + 1, y + 4, OUT)
-    else:
-        t.put(x + 1, y + 4, OUT); t.put(x + 2, y + 5, PEAU[0])
-    t.rect(x - 3, y + 7, x + 3, y + 12, VESTE[1]); t.rect(x - 3, y + 7, x - 2, y + 12, VESTE[2])
-    t.rect(x + 2, y + 8, x + 3, y + 12, VESTE[0])
-    if vue == 'cote':
-        t.rect(x + 3, y + 10, x + 5, y + 10, VESTE[1]); t.put(x + 6, y + 10, PEAU[1])   # le bras, les rênes
-    else:
-        t.put(x - 4, y + 11, PEAU[1]); t.put(x + 4, y + 11, PEAU[1])
+def cocher(vue):
+    """Le cocher : la case assis_<vue>_0 de son personnage (COCHER, 16 × 32, ses pieds en bas),
+    telle quelle, comme le cavalier de assets/cheval_monte.png."""
+    with open(os.path.join(ASSETS, 'personnages', 'cases.json'), encoding='utf-8') as f:
+        cases = json.load(f)
+    fw, fh = cases['frameWidth'], cases['frameHeight']
+    i = cases['frames'].index(f'assis_{vue}_0')
+    planche = Image.open(os.path.join(ASSETS, 'personnages', COCHER + '.png')).convert('RGBA')
+    cols = planche.width // fw
+    return planche.crop(((i % cols) * fw, (i // cols) * fh, (i % cols + 1) * fw, (i // cols + 1) * fh))
+
+
+def renes(t, a, b, mou=1):
+    """Les rênes, de a (les mains du cocher) à b (le mors), un peu lâches."""
+    (x0, y0), (x1, y1) = a, b
+    n = max(abs(x1 - x0), abs(y1 - y0))
+    for i in range(n + 1):
+        s = i / max(1, n)
+        t.put(x0 + (x1 - x0) * s, y0 + (y1 - y0) * s + mou * 4 * s * (1 - s), RENES)
 
 
 def ombre(im, cx, w, h):
@@ -171,21 +189,20 @@ def de_profil(k, nuit):
     arceaux(t, [12, 22, 32, 41], 14, 38)
     t.rect(43, 33, 53, 35, BOIS[2]); t.rect(43, 33, 53, 33, BOIS[3])   # le banc du cocher
     t.rect(51, 35, 52, 44, BOIS[1])
-    cocher(t, 47, 20, 'cote')
+    ox, oy = PLACE_COCHER['cote']
+    t.colle(cocher('cote'), ox, oy)                          # assis sur le banc, les jambes devant
     lanterne(t, *LANTERNE['cote'], nuit)
     roue(t, 18, SOL - 8, 8, rp)                               # la grande roue arrière
     roue(t, 45, SOL - 6, 6, rp)                               # la petite roue avant
     for i in range(34):                                       # le brancard, jusqu'au poitrail du cheval
         t.put(50 + i, 44 - i * 6 // 34, BOIS[2]); t.put(50 + i, 45 - i * 6 // 34, BOIS[1])
-    for i in range(34):                                       # les rênes, de ses mains au mors
-        t.put(53 + i, 30 - (i * 6) // 34 + (2 if 6 < i < 24 else 0), (70, 40, 30))
-    h = cheval.profil('marche' if marche else 'idle', k % 4, selle=True)
-    h.px = {p: c for p, c in h.px.items() if c not in ('B',)}  # (pas de tapis de selle : un harnais)
-    hi = h.image()
-    t.colle(hi, 50, SOL - 38)
-    for x in range(68, 82):                                   # la sangle du harnais
-        t.put(x, SOL - 38 + 17, (70, 40, 30))
-    return contour(t.im, OUT)
+    pose = 'marche' if marche else 'idle'
+    u = 1 if marche and k % 2 == 1 else 0                     # (le cheval monte d'un px entre deux pas)
+    t.colle(cheval.profil(pose, k % 4, harnais=True).image(), 50, SOL - 38)
+    t.fini()
+    (mx, my), = MAINS['cote']
+    renes(t, (ox + mx, oy + my), (50 + 41, SOL - 38 + 11 - u), mou=2)   # des mains au mors
+    return t.im
 
 
 def de_face(k, nuit):
@@ -196,15 +213,19 @@ def de_face(k, nuit):
     bache(t, 26, 70, 2, 24)
     arceaux(t, [36, 48, 60], 2, 24)
     t.rect(40, 24, 56, 26, BOIS[2])                           # le banc
-    cocher(t, 48, 11, 'bas')
     lanterne(t, *LANTERNE['bas'], nuit)
     roue(t, 22, 44, 9, k if marche else 0, face=True)
     roue(t, 74, 44, 9, k if marche else 0, face=True)
+    ox, oy = PLACE_COCHER['bas']
+    t.colle(cocher('bas'), ox, oy)                            # assis sur le banc, de face
     for y in range(40, 52):                                   # les brancards
         t.put(33, y, BOIS[2]); t.put(63, y, BOIS[2])
-    hi = cheval.face(k if marche else 4, 'tout', selle=False).image()
-    t.colle(hi, 24, SOL - 38)
-    return contour(t.im, OUT)
+    up = cheval.TEMPS[k if marche else 4][2]
+    t.colle(cheval.face(k if marche else 4, 'tout', selle=False).image(), 24, SOL - 38)
+    t.fini()
+    for (mx, my), bx in zip(MAINS['bas'], (20, 27)):           # les rênes, des mains au mors
+        renes(t, (ox + mx, oy + my), (24 + bx, SOL - 38 + 16 - up), mou=0)
+    return t.im
 
 
 def de_dos(k, nuit):
@@ -212,8 +233,8 @@ def de_dos(k, nuit):
     t = Toile()
     marche = k < 4
     hi = cheval.dos(k if marche else 4, 'tout', selle=False).image()
-    t.colle(hi, 24, 2)
-    cocher(t, 48, 16, 'haut')
+    t.colle(hi, 24, -1)                                       # au-delà du cocher : sa nuque, ses oreilles
+    t.colle(cocher('haut'), *PLACE_COCHER['haut'])           # de dos, sur le banc : sa tête dépasse de la bâche
     bache(t, 26, 70, 17, 44, ouverte=True)
     arceaux(t, [27, 69], 17, 44)
     t.rect(24, 44, 72, 54, ROUGE[1]); t.rect(24, 44, 72, 45, ROUGE[2]); t.rect(24, 53, 72, 54, ROUGE[0])

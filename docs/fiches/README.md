@@ -47,4 +47,4 @@ Conventions communes à toutes les fiches :
 | [9b — l'aide, l'encyclopédie, le didacticiel et la campagne](9b-aide-encyclopedie-didacticiel.md) | 9 | fait |
 | [10 — les notifications qui se cumulent](10-notifications-cumulees.md) | — | fait |
 | [11 — l'équipement de la famille et le sac à provisions](11-equipement-de-la-famille.md) | — | fait |
-| [12 — le cheval retouché et la calèche avec un vrai cocher](12-cheval-retouche-et-caleche.md) | — | à faire |
+| [12 — le cheval retouché et la calèche avec un vrai cocher](12-cheval-retouche-et-caleche.md) | — | fait |

@@ -811,7 +811,8 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
      - **La scène** (`js/carte/ferme/caleche.js` ; le dessin : `scripts/carte/caleche.py` → `assets/caleche.png`) :
        le cheval bai de `scripts/personnage/cheval.py` (de profil, de face, de dos, ses quatre temps du pas)
        attelé par deux brancards à une voiture couverte (une caisse peinte, une bâche sur des arceaux, des
-       roues cerclées de fer dont les rayons tournent), le cocher sur son banc, une lanterne ; trois vues
+       roues cerclées de fer dont les rayons tournent), le cocher sur son banc (depuis la fiche 12, un vrai
+       personnage du jeu, `perso_08`, assis dans ses cases `assis_<vue>_0`, les rênes en main), une lanterne ; trois vues
        (retournée pour la gauche), cinq cases chacune (quatre temps, l'arrêt), une rangée de nuit (la
        lanterne allumée). La page lui donne sa position à chaque image (le pont `caleche` ; elle n'entre pas
        dans le modèle, qui changerait à chaque pas) ; la scène la suit en douceur (le moteur avance par pas
@@ -1149,3 +1150,14 @@ SwiftShader, sans carte graphique) :
   de la carte du monde. Le moteur : `js/engine/equipement.js` ; la sauvegarde passe au format 60
   (`state.equipement`, migration : personne n'est équipé, pas de sac). Sur la carte, les planches
   des personnages ne montrent pas l'équipement (il faudrait un calque par case de geste).
+- **Fiche 12 — le cheval retouché, généralisé, et la calèche avec un vrai cocher** (fait) : le joueur a
+  retouché deux cases du cheval de profil (au repos, il broute : `docs/fiches/12-cheval-retouche.png`) ;
+  `scripts/personnage/cheval.py` les redonne au pixel près (ses motifs `TETE_HAUTE`, `ENCOLURE_BASSE`,
+  `TETE_BASSE`, et les règles écrites en tête du fichier : le bout du nez carré, le poitrail rentré, la
+  crinière arrêtée au garrot, le dos sans bosse, les sabots de deux pixels, décalés d'une rangée dans
+  chaque paire) et applique ces règles aux autres cases (les quatre temps du pas, de face, de dos), au
+  cheval sellé (`assets/cheval_monte.png`), à l'icône 🐴 et à l'attelage de la calèche
+  (`scripts/carte/caleche.py`, harnaché : la bride, le collier, la sellette). Le cocher de la calèche est
+  un personnage du jeu, `perso_08` (casquette et veste bleu marine, moustache), assis sur le banc comme
+  le cavalier (ses cases `assis_cote_0`, `assis_bas_0`, `assis_haut_0`), les rênes de ses mains au mors.
+  Les images gardent leur taille et leurs cases : le JS ne change pas.
