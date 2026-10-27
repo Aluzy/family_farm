@@ -4,6 +4,7 @@ import { techEffects, techFlag } from './techtree.js';
 import { averageHappiness } from './bonheur.js';
 import { noter } from './journal.js';
 import { valeurAliment } from './repas.js';
+import { economiePct } from './equipement.js';
 
 /* ---------- version 1.8 (v2, lot 4) : l'énergie du personnage ---------- */
 
@@ -41,7 +42,9 @@ export function actionCost(state, action, n = 1) {
   const pct = happinessCostPct(state) * (100 - enduranceReduction(state));
   // arbre des technologies (branche Outils) : economie = { action: % en moins }, cumulés
   const outils = techEffects(state, 'economie').reduce((m, e) => (e[action] ? (m * (100 - e[action])) / 100 : m), 100);
-  return Math.ceil((base * pct * outils) / 1000000);
+  // fiche 11 : l'équipement du personnage principal (gants, tablier, chapeau au soleil…), en % aussi
+  const equipe = economiePct(state, action), brut = (base * pct * outils) / 1000000;
+  return Math.ceil(equipe === 100 ? brut : (brut * equipe) / 100);
 }
 
 // Le personnage a-t-il assez d'énergie pour cette action ?

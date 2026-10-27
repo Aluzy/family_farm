@@ -1,0 +1,43 @@
+{
+  "//EQUIPEMENT": [
+    "L'équipement de la famille et le sac à provisions (fiche 11 ; le moteur : js/engine/equipement.js ; la fiche de",
+    "chaque membre : js/ui/fiche-membre.js ; les dessins : scripts/personnage/equipement.py, scripts/icones/art_equipement.py).",
+    "Chaque membre de la famille a CASES cases d'équipement ; chaque pièce (PIECES, un objet de data/items.json, fabriqué",
+    "à l'Atelier) a sa place (PLACES : la tête, le corps, les mains, les pieds) et un membre ne porte qu'une pièce par",
+    "place (pas deux chapeaux, pas un tablier sur une salopette). enfant : la pièce existe en taille enfant (sinon elle ne",
+    "va qu'aux adultes : le casque, les gants et la salopette sont des affaires de grand). Une pièce portée n'est plus",
+    "dans l'inventaire (elle ne se vend pas) ; retirée, elle y revient. Ses effets, modestes, valent pour le personnage",
+    "principal :",
+    "  economie : { action: % } d'énergie en moins pour ces gestes (PERSONNAGE.COUTS) ; toutes : % en moins pour tous ;",
+    "  soleil : [de, à] heures : l'économie ne vaut qu'au soleil, de jour entre ces heures ; horsFerme : elle ne vaut",
+    "  que loin de la ferme (dans le grand monde) ;",
+    "  grotte : la lumière autour de lui dans la mine et les grottes, en % (multipliée par la Lampe de mineur de l'Arbre) ;",
+    "  vueNuit : le rayon de vue la nuit dans le grand monde (DECOUVERTE), en % ;",
+    "  pied : { biome: % } sa vitesse à pied dans ces biomes du grand monde (pas en selle).",
+    "Pour un autre membre, ce qu'il fait de lui-même : faimMarche, % de faim en moins quand il marche sur la ferme ;",
+    "faimAide, % de faim en moins quand il aide (les récoltes, les bêtes). Les autres pièces se voient seulement.",
+    "SACS : le sac à provisions du personnage principal (une quatrième case), et combien de portions (d'aliments) il",
+    "contient. Hors de la ferme, le personnage ne mange que ce qu'il y a dans son sac ; le sac se remplit à la ferme,",
+    "depuis l'inventaire ou le réfrigérateur, et ce qu'il contient périme comme dans l'inventaire.",
+    "ALERTE : on sort avec PRESQUE_VIDE portions ou moins (ou sans sac) : une alerte ; loin de la ferme, le sac vide et",
+    "l'énergie sous ENERGIE : une autre."
+  ],
+  "EQUIPEMENT": {
+    "CASES": 3,
+    "PLACES": { "tete": "Tête", "corps": "Corps", "mains": "Mains", "pieds": "Pieds" },
+    "PIECES": {
+      "casque_lampe": { "place": "tete", "enfant": false, "grotte": 140, "vueNuit": 150 },
+      "chapeau_paille": { "place": "tete", "enfant": true, "economie": { "labourer": 10, "planter": 10, "arroser": 10, "recolter": 10, "cueillir": 10, "faucher": 10 }, "soleil": [11, 17] },
+      "bottes": { "place": "pieds", "enfant": true, "pied": { "marais": 130, "montagne": 120, "sommet": 120 }, "faimMarche": 25 },
+      "gants_travail": { "place": "mains", "enfant": false, "economie": { "couper": 20, "piocher": 20 } },
+      "tablier": { "place": "corps", "enfant": true, "economie": { "labourer": 15, "planter": 15, "arroser": 15, "recolter": 15, "cueillir": 15 }, "faimAide": 25 },
+      "salopette": { "place": "corps", "enfant": false, "toutes": 8 },
+      "manteau_chaud": { "place": "corps", "enfant": true, "toutes": 15, "horsFerme": true }
+    },
+    "SACS": {
+      "sac_petit": { "portions": 6 },
+      "sac_grand": { "portions": 12 }
+    },
+    "ALERTE": { "PRESQUE_VIDE": 2, "ENERGIE": 30 }
+  }
+}

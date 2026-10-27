@@ -20,7 +20,7 @@ import { fail } from './devices.js';
 import { canFeedHen, feedAllHens, hensToFeed, shear, storeWithSilo, woolReady } from './animals.js';
 import { mainCharacter } from './depart.js';
 import { TIRED } from './stamina.js';
-import { depenserMembre } from './repas.js';
+import { aiderMembre } from './repas.js';
 import { recolterRuche, rucheDuTas, ruchesARecolter } from './ruches.js';
 
 function pileId(lieu, ref) {
@@ -130,7 +130,7 @@ export function aideBetes(state, lieu) {
   if (ruche !== null) {
     const r = recolterRuche(state, ruche);
     if (!r.ok) return r;
-    depenserMembre(state, aidant(state).id, DATA.FAMILLE.FAIM.AIDE);
+    aiderMembre(state, aidant(state).id);
     return { ok: true, items: r.items, nourries: 0 };
   }
   const items = {};
@@ -148,6 +148,6 @@ export function aideBetes(state, lieu) {
   const r = pickUp(state, lieu);
   if (r.ok) for (const [item, qty] of Object.entries(r.items)) items[item] = (items[item] || 0) + qty;
   if (!nourries && !Object.keys(items).length) return fail('Rien à faire ici.');
-  depenserMembre(state, aidant(state).id, DATA.FAMILLE.FAIM.AIDE); // l'aide lui donne faim (repas.js)
+  aiderMembre(state, aidant(state).id); // l'aide lui donne faim (repas.js)
   return { ok: true, items, nourries };
 }

@@ -8,13 +8,14 @@ import { isUnlocked } from './campaign.js';
 import { recipeUnlocked } from './kitchen.js';
 import { ETAPES } from './didacticiel.js';
 import { hameauxVus } from './monde-hameaux.js';
+import { equipementDe } from './equipement.js';
 
 /* ---------- quand une page de l'encyclopédie se découvre ----------
    Chaque entrée de l'encyclopédie (encyclopedie_ferme_familiale.json) a sa liste
    « decouverte » : des conditions « sorte:valeur » ; la première remplie fait découvrir la page
    (js/engine/encyclopedie.js). Les sortes :
      depart              connue dès le début de la partie
-     objet:<objet>       l'objet est dans l'inventaire ou au frigo, ou posé sur la carte (bloc)
+     objet:<objet>       l'objet est dans l'inventaire ou au frigo, posé sur la carte (bloc), ou porté (équipement)
      outil:<outil>       l'outil est à nous (houe, hache, faux, pioche, canne)
      culture:<culture>   la récolte, sa graine, ou une parcelle qui la porte
      recette:<recette>   la recette se lit dans le Livre de recette (débloquée, atelier construit)
@@ -48,8 +49,14 @@ function pose(state, id) {
   return false;
 }
 
+// (fiche 11 : une pièce portée par un membre, le sac porté, comptent aussi)
+function porteParQuelquun(state, id) {
+  const q = equipementDe(state);
+  return (q.sac && q.sac.objet === id) || Object.values(q.membres).some((c) => Array.isArray(c) && c.includes(id));
+}
+
 function objet(state, id) {
-  return countItem(state, id) > 0 || !!(state.frigo && state.frigo.items && state.frigo.items[id] && state.frigo.items[id].length) || pose(state, id);
+  return countItem(state, id) > 0 || porteParQuelquun(state, id) || !!(state.frigo && state.frigo.items && state.frigo.items[id] && state.frigo.items[id].length) || pose(state, id);
 }
 
 function animal(state, id) {

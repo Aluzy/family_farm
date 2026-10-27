@@ -11,6 +11,7 @@ import { absoluteHours } from './clock.js';
 import { CALECHE, tourneeDe, etatCaleche } from './caleche.js';
 import { hameauxVus } from './monde-hameaux.js';
 import { butBoussole } from './monde-vu.js';
+import { offrirSac } from './equipement.js';
 
 /* ---------- le didacticiel d'une nouvelle partie ----------
    Une nouvelle partie (sur la ferme générée) commence par un didacticiel : une suite d'étapes
@@ -20,7 +21,7 @@ import { butBoussole } from './monde-vu.js';
    l'étape suivante vient d'elle-même (majDidacticiel). Les compteurs (« 🪨 2 / 3 ») disent ce
    qu'il manque. Pendant le didacticiel, l'Atelier ne propose que les recettes déjà débloquées
    (recettesDidacticiel) et le menu Construire que les blocs utiles (blocsDidacticiel).
-   state.didacticiel = { etape: indice dans ETAPES, fini, graines (offertes) } ; une ancienne
+   state.didacticiel = { etape: indice dans ETAPES, fini, graines (offertes), sac (offert : fiche 11) } ; une ancienne
    partie n'en a pas : rien n'est caché.
 
    Fiche 9b : après la ferme, le grand monde (ETAPES_MONDE) : ouvrir la carte du monde (l'interface la
@@ -56,7 +57,7 @@ const A_LIRE = new Set(['sante', 'endurance', 'bonheur', 'xp', 'autonomie', 'arg
 
 // Ce que chaque étape débloque, dès qu'on l'atteint : les recettes de l'Atelier, les blocs du
 // menu Construire. (Après le didacticiel : tout.)
-const RECETTES = { faux: ['faux'], outils: ['hache', 'pioche'], abri_fabriquer: ['planche', 'mur_bois', 'porte', 'paillasse'], houe: ['houe'], puits: ['puits_pierre', 'cruche'] };
+const RECETTES = { faux: ['faux'], outils: ['hache', 'pioche'], abri_fabriquer: ['planche', 'mur_bois', 'porte', 'paillasse'], houe: ['houe'], puits: ['puits_pierre', 'cruche'], carte: ['sac_petit'] };
 const BLOCS = { atelier: ['atelier'], abri_construire: ['mur_bois', 'porte'], paillasses: ['paillasse'], puits: ['puits'] };
 
 export function didacticielActif(state) {
@@ -244,17 +245,28 @@ export function objectifDidacticiel(state) {
   }
 }
 
-// Ce qui arrive en atteignant une étape : les graines offertes ; ce qu'il faut retenir pour les étapes
-// du monde (les ventes à la calèche jusque-là, les hameaux connus, le hameau choisi).
+// Ce qui arrive en atteignant une étape : les graines offertes ; avant de sortir de la ferme (l'étape
+// de la carte du monde), le premier sac à provisions, déjà porté et garni (fiche 11 : loin de la
+// ferme, on ne mange que ce qu'il contient) ; ce qu'il faut retenir pour les étapes du monde (les
+// ventes à la calèche jusque-là, les hameaux connus, le hameau choisi).
 function entrer(state) {
   const d = state.didacticiel, e = ETAPES[d.etape];
   if (e === 'graines' && !d.graines) {
     d.graines = true;
     for (const [item, n] of Object.entries(DATA.DIDACTICIEL.GRAINES)) addItem(state, item, n);
   }
+  if (e === 'carte') donnerSac(state);
   if (e === 'caleche') d.ventes = ventesCaleche(state);
   if (e === 'hameau_choisir') d.hameaux = Object.keys(hameauxVus(state)).length;
   if (e === 'hameau_aller') { const b = butBoussole(state); d.but = b && b.sorte === 'hameau' ? b.id : null; }
+}
+
+// Le premier sac à provisions, une fois (d.sac).
+function donnerSac(state) {
+  const d = state.didacticiel;
+  if (d.sac) return;
+  d.sac = true;
+  offrirSac(state);
 }
 
 /* -- fiche 9b : le grand monde -- */
@@ -331,6 +343,7 @@ export function passerDidacticiel(state) {
   if (!didacticielActif(state)) return fail('Le didacticiel est terminé.');
   const d = state.didacticiel;
   if (!d.graines) { d.graines = true; for (const [item, n] of Object.entries(DATA.DIDACTICIEL.GRAINES)) addItem(state, item, n); }
+  donnerSac(state);
   d.fini = true;
   return { ok: true };
 }

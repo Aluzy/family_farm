@@ -24,6 +24,7 @@ import { vuDesRegions, vuInitial } from './monde-vu.js';
 import { genererFerme } from './ferme-generee.js';
 import { caseDuMonde, FERME_DANS_MONDE, idDuMonde, MONDE } from './monde.js';
 import { convertirPartie, graineDemenagement } from './demenagement.js';
+import { nouvelEquipement } from './equipement.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -120,6 +121,7 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     compta: [], // les Comptes : gains et dépenses récents (voir compta.js)
     meubles: {}, // meubles de la maison (fabriqués à l'Atelier ; absent dans une ancienne sauvegarde : aucun)
     caleche: nouvelleCaleche(), // la calèche (caleche.js, fiche 7c) : son coffre, ses retenues
+    equipement: nouvelEquipement(), // fiche 11 : les pièces de chaque membre, le sac (equipement.js)
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),
@@ -490,6 +492,9 @@ export const MIGRATIONS = {
     for (const cle of ['calecheVentes', 'achatsHameaux', 'pecheMer']) if (typeof k[cle] !== 'number') k[cle] = 0;
     return { ...state, campagne: { ...c, compteurs: k }, version: 59 };
   },
+  // v59 → v60 : l'équipement de la famille et le sac à provisions (equipement.js, fiche 11) : personne
+  // n'est équipé, pas de sac.
+  59: (state) => ({ ...state, equipement: nouvelEquipement(), version: 60 }),
 };
 
 // Porte les cases d'une partie (numérotées sur la largeur de sa ferme) dans celles du monde, où sa

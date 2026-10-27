@@ -17,7 +17,7 @@ import {
   blocsDidacticiel, blocsEnMain, blocsPoses, botteleuses, buildAtelier, buildStation, bushCut,
   bushOf, buyDehors, buyFurniture, buyHoe, buyItem, buyPasture, buyRuche, caseDepart,
   casesAbriAPoser, casesBuissonsCoupes, chopTree, commencerDidacticiel, coopCapacity, couchages,
-  couchagesEtage, countItem, craft, craftStatus, createInitialState, createNewGame, cutBushes,
+  couchagesEtage, countItem, craft, sacCounts, sacPorte, craftStatus, createInitialState, createNewGame, cutBushes,
   dansPiece, DATA, eatSnack, eauCruche, escaliers, especeArbre, ETAGE_BLOCS, etageBlocs, fenetresEtage, fenetresPosees,
   etageCouvertes, etageEmprise, etapeDidacticiel, etatBotteleuse, etatEtable, etatMoulin,
   etatPoulailler, etatSilo, farmMap, farmOpen, farmPoint, farmSeed, farmTerrain, faucherSousBati,
@@ -1705,6 +1705,8 @@ test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il
   majDidacticiel(s);
   // (fiche 9b : puis les étapes du grand monde, tests/engine/finition.test.mjs ; ici, passées une à une)
   assertEqual(etapeDidacticiel(s), 'carte');
+  // (fiche 11 : avant de sortir de la ferme, le premier sac à provisions, offert, porté et garni)
+  assertEqual([sacPorte(s), sacCounts(s), recettesDidacticiel(s).has('sac_petit')], [DATA.DIDACTICIEL.SAC.objet, DATA.DIDACTICIEL.SAC.provisions, true]);
   while (etapeDidacticiel(s) !== 'fin') assert(passerEtapeDidacticiel(s).ok, `passer ${etapeDidacticiel(s)}`);
   assert(suivantDidacticiel(s).ok);
   assertEqual([etapeDidacticiel(s), recettesDidacticiel(s), blocsDidacticiel(s)], [null, null, null], 'fini : tout est débloqué');

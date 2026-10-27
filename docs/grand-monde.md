@@ -1130,3 +1130,22 @@ SwiftShader, sans carte graphique) :
   verser du blé au Moulin, cueillir aux arbres du Verger (par fruit), récolter les parcelles, nourrir
   une poule, ranger au frigo et en sortir (par objet). Les alertes, les repas et les lettres ne changent
   pas.
+- **Fiche 11 — l'équipement de la famille et le sac à provisions** (fait) : dans la fenêtre Famille,
+  un onglet par membre (le personnage principal, puis les adultes, puis les enfants) ouvre sa fiche
+  (`js/ui/fiche-membre.js`, d'après le croquis `docs/fiches/11-croquis.jpg`) : à gauche trois cases
+  d'équipement, au milieu le membre en pied dans un cadre avec ses pièces (les calques de
+  `assets/personnages/equipement.png`, `scripts/personnage/equipement.py`), à droite ses jauges, sous
+  lui son prénom et son rôle (« en expédition », « a faim », « dort »). Sept pièces, fabriquées à
+  l'Atelier (onglet Équipement) et réglées dans `data/equipement.json` : casque à lampe (lumière des
+  grottes, vue la nuit), chapeau de paille (gestes des champs au soleil), bottes de marche (vitesse
+  à pied dans le marais et la montagne), gants de travail (couper, piocher), tablier de jardinier
+  (labourer, planter, arroser, récolter, cueillir), salopette solide (tous les gestes) et manteau
+  chaud (tous les gestes loin de la ferme). Une pièce par place (tête, corps, mains, pieds) ; le
+  casque, les gants et la salopette n'ont pas de taille enfant. Les effets valent pour le personnage
+  principal ; pour un autre membre, la faim en marchant (bottes) et en aidant (tablier). Le
+  personnage principal a une quatrième case, son sac à provisions (6 ou 12 portions), rempli à la
+  ferme depuis l'inventaire ou le frigo : loin de la ferme, il ne mange que ce qu'il contient (alertes
+  à la sortie et quand l'énergie baisse le sac vide) ; le didacticiel en offre un, garni, à l'étape
+  de la carte du monde. Le moteur : `js/engine/equipement.js` ; la sauvegarde passe au format 60
+  (`state.equipement`, migration : personne n'est équipé, pas de sac). Sur la carte, les planches
+  des personnages ne montrent pas l'équipement (il faudrait un calque par case de geste).

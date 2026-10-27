@@ -68,6 +68,8 @@ function gardee(nom, avant, m) {
   assertEqual(m.famille.membres.map((x) => [x.id, x.prenom, x.genre, x.enfant]), avant.famille.membres.map((x) => [x.id, x.prenom, x.genre, x.enfant]), `${nom} : la famille`);
   assertEqual([m.famille.nom, m.famille.principal, m.famille.reserve], [avant.famille.nom, avant.famille.principal, avant.famille.reserve], `${nom} : la famille`);
   assertEqual(m.didacticiel, avant.didacticiel, `${nom} : le didacticiel`);
+  // (fiche 11, format 60 : personne n'est équipé, pas de sac à provisions)
+  assertEqual(m.equipement, { membres: {}, sac: null }, `${nom} : l'équipement`);
   // (fiche 9b, format 59 : les compteurs du grand monde s'y ajoutent, à zéro)
   assertEqual(m.campagne, { ...avant.campagne, compteurs: { ...avant.campagne.compteurs, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 } }, `${nom} : la campagne`);
   assertEqual(m.progression, avant.progression, `${nom} : le niveau`);

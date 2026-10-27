@@ -1,6 +1,7 @@
 import { DATA } from './catalog.js';
 import { MONDE } from './monde.js';
 import { farmTerrain, regionsFerme, regionsVues } from './terrain.js';
+import { vueNuitPct } from './equipement.js';
 
 /* ---------- s'orienter : ce qui a été vu du grand monde, la boussole (fiche 8) ----------
 
@@ -169,11 +170,13 @@ function voirCellules(state, T, cellules) {
 }
 
 // Le personnage est sur la case t (le biome de sa case, son nom ; la nuit ou non) : ce qu'il voit
-// devient vu. → le nombre de cellules nouvelles.
+// devient vu (fiche 11 : la nuit, le casque à lampe voit plus loin, equipement.js vueNuitPct). → le
+// nombre de cellules nouvelles.
 export function voirAutour(state, t, { biome = null, nuit = false } = {}) {
   const T = farmTerrain(state);
   if (!T.FERME || !Number.isInteger(t) || t < 0 || t >= T.LARGEUR * T.HAUTEUR) return 0;
-  return voirCellules(state, T, cellulesAutour(T, t, rayonVue(biome, nuit)));
+  const lampe = nuit ? vueNuitPct(state) : 100;
+  return voirCellules(state, T, cellulesAutour(T, t, lampe === 100 ? rayonVue(biome, nuit) : (rayonVue(biome, nuit) * lampe) / 100));
 }
 
 // Un lieu montré de loin (le didacticiel, fiche 9b : le cocher parle du hameau voisin) : les cellules à

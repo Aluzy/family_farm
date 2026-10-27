@@ -5,6 +5,7 @@ import { addItem, countItem, keepLots, lotList, lotRank, lotsOf, pullLots, pushL
 import { mainCharacter } from './depart.js';
 import { dishHappiness, memberHappiness, setHappiness } from './bonheur.js';
 import { noter } from './journal.js';
+import { faimAidePct, faimMarchePct } from './equipement.js';
 
 /* ---------- la boîte à nourriture et la faim de la famille (FAMILLE.FAIM) ---------- */
 
@@ -62,9 +63,15 @@ export function depenserMembre(state, id, points) {
   return jaugeMembre(m);
 }
 
-// Le membre `id` a marché `px` pixels sur la carte : 1 point tous les PX_PAR_POINT pixels.
+// Le membre `id` a marché `px` pixels sur la carte : 1 point tous les PX_PAR_POINT pixels (fiche 11 :
+// moins avec ses bottes, equipement.js faimMarchePct).
 export function marcherMembre(state, id, px) {
-  return depenserMembre(state, id, (Number(px) || 0) / F().PX_PAR_POINT);
+  return depenserMembre(state, id, ((Number(px) || 0) / F().PX_PAR_POINT) * (faimMarchePct(state, id) / 100));
+}
+
+// Le membre `id` a aidé (FAIM.AIDE points ; fiche 11 : moins avec son tablier, faimAidePct).
+export function aiderMembre(state, id, points = F().AIDE) {
+  return depenserMembre(state, id, (points * faimAidePct(state, id)) / 100);
 }
 
 /* -- la boîte -- */

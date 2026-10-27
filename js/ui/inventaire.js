@@ -1,4 +1,6 @@
 import { DATA } from '../engine/catalog.js';
+import { estEquipement, sacDef } from '../engine/equipement.js';
+import { effetTexte } from './fiche-membre.js';
 import { dishHappiness } from '../engine/bonheur.js';
 import { countItem, isFridgeable, isPerishable, lotsOf } from '../engine/inventory.js';
 import { fridgeCapacity, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeRoom, fridgeUnits, moveAllToFridge } from '../engine/fridge.js';
@@ -157,6 +159,8 @@ function itemBodyHtml(o) {
   const aPlanter = o.lieu === 'sac' && stageUsable() && sorteAPlanter(o.item);
   if (it.categorie === 'graine' && !sorteAPlanter(o.item)) lines.push('🌱 Se sème dans la Zone de culture.');
   if (aPlanter) lines.push('🌳 Se plante dehors, sur une case d\'herbe libre, loin des autres arbres.');
+  // fiche 11 : une pièce d'équipement, un sac à provisions
+  if (estEquipement(o.item)) lines.push(`🧰 ${effetTexte(o.item)} ${sacDef(o.item) ? 'Il se porte dans la quatrième case de ta fiche (Famille).' : 'Elle se porte : Famille, la fiche d\'un membre, une case vide.'}`);
   let actions = '';
   if (o.lieu === 'frigo') {
     actions = `

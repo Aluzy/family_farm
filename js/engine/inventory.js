@@ -210,6 +210,8 @@ export function spoil(state) {
   const perdus = ageLots(state.inventaire, 1, {});
   // (la boîte à nourriture ne garde pas au frais : ce qu'elle contient périme aussi)
   if (state.boite && state.boite.items) ageLots(state.boite.items, 1, perdus);
+  // (fiche 11 : le sac à provisions non plus)
+  if (state.equipement && state.equipement.sac && state.equipement.sac.items) ageLots(state.equipement.sac.items, 1, perdus);
   if (!state.nuit.perdus) state.nuit.perdus = {};
   for (const [item, n] of Object.entries(perdus)) {
     state.nuit.perdus[item] = (state.nuit.perdus[item] || 0) + n;

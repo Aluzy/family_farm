@@ -2634,6 +2634,81 @@ span.encyclo-item.encyclo-inconnue { color: #a08463; }
 .perso-btn .perso-px { --s: 32px; }
 .perso-btn.active { outline: 3px solid var(--color-sun); outline-offset: 0; }
 
+/* ---------- Fiche 11 : la fiche d'un membre (js/ui/fiche-membre.js ; le croquis du joueur) ----------
+   À gauche, la colonne des cases d'équipement (et celle du sac pour le personnage principal) ; au
+   milieu, le membre en pied dans un cadre, ses pièces dessinées par-dessus (des calques de
+   assets/personnages/equipement.png, la même géométrie que .perso-px : une rangée de 32 pixels par
+   pièce, la colonne de l'adulte puis celle de l'enfant) ; sous lui, son prénom et son rôle ; à
+   droite, ses jauges ; en bas, un onglet par membre. --fiche-px : la taille d'un pixel du dessin
+   (environ 4 px CSS, un nombre entier de pixels de l'écran : js/ui/famille.js). */
+.fiche-membre {
+  margin: 4px 0 12px; padding: 10px 10px 0;
+  background: var(--wood-cream); border: 3px solid var(--wood-dark); border-radius: 10px;
+  box-shadow: inset 0 0 0 2px var(--wood-light);
+}
+.fiche-corps { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 10px; align-items: start; }
+.fiche-cases { display: flex; flex-direction: column; gap: 8px; }
+.fiche-case {
+  position: relative; width: 52px; height: 52px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--wood-paper); border: 2px solid var(--wood-dark); border-radius: 6px;
+  box-shadow: inset 0 0 0 2px var(--wood-light); cursor: pointer; color: var(--wood-ink);
+}
+.fiche-case.vide { border-style: dashed; color: var(--text-muted); font-size: 1.4rem; box-shadow: none; }
+.fiche-case.sac { margin-top: 6px; border-color: var(--color-leaf-dark); }
+.fiche-case.sac.vide { font-size: 1.5rem; opacity: 0.8; }
+.fiche-case-icone { font-size: 2rem; line-height: 1; }
+.fiche-case-n {
+  position: absolute; right: -6px; bottom: -8px; padding: 0 4px; border-radius: 999px;
+  background: var(--wood-paper); border: 2px solid var(--wood-dark);
+  font-size: 0.7rem; font-weight: 800; line-height: 1.3; color: var(--wood-ink);
+}
+.fiche-case:focus-visible, .fiche-onglet:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.fiche-centre { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.fiche-cadre {
+  padding: 6px 10px; border: 3px solid var(--wood-dark); border-radius: 4px;
+  background: linear-gradient(#cfe6f2, #e9f3d6 70%, #b9d38f 70%);
+  box-shadow: inset 0 0 0 2px var(--wood-light);
+}
+.fiche-perso { position: relative; display: block; --s: calc(var(--fiche-px, 4px) * 32); width: calc(var(--s) / 2); height: var(--s); }
+.fiche-perso .perso-px { --s: calc(var(--fiche-px, 4px) * 32); position: absolute; left: calc(var(--s) / -4); top: 0; }
+.fiche-perso .fiche-calque { background-size: var(--s) auto; }
+.fiche-nom {
+  margin: 0; padding: 3px 10px; max-width: 150px; text-align: center; overflow-wrap: anywhere;
+  background: var(--wood-paper); border: 2px solid var(--wood-dark); border-radius: 999px; font-size: 0.9rem;
+}
+.fiche-jauges { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding-top: 4px; }
+.fiche-jauge { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 6px; align-items: center; }
+.fiche-jauge-nom { grid-column: 1 / -1; font-size: 0.85rem; font-weight: 700; color: var(--wood-ink); }
+.fiche-jauge .bar { height: 12px; border-color: var(--wood-dark); }
+.fiche-jauge .num { font-size: 0.8rem; }
+.fiche-aide { align-self: flex-end; }
+.fiche-onglets {
+  display: flex; gap: 4px; margin: 10px -10px 0; padding: 0 6px; overflow-x: auto;
+  border-top: 3px solid var(--wood-dark); scrollbar-width: thin;
+}
+.fiche-onglet {
+  flex: 0 0 auto; min-height: 40px; max-width: 46%; padding: 4px 10px; margin-bottom: 4px;
+  background: var(--wood-paper); border: 2px solid var(--wood-dark); border-top: 0; border-radius: 0 0 8px 8px;
+  color: var(--wood-ink); font: inherit; font-size: 0.9rem; cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fiche-onglet.active { background: var(--color-sun); font-weight: 800; }
+.choix-pieces { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.choix-piece { display: flex; align-items: center; gap: 10px; }
+.choix-piece .item-icon { font-size: 1.8rem; }
+.choix-piece-texte { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.choix-piece.non .choix-piece-texte { opacity: 0.7; }
+.sac-modal .sac-vide { margin: 4px 0; }
+.sac-modal .boite-ligne > .row { flex-wrap: nowrap; }
+@media (max-width: 420px) {
+  .fiche-corps { gap: 6px; }
+  .fiche-case { width: 46px; height: 46px; }
+  .fiche-case-icone { font-size: 1.7rem; }
+  .fiche-cadre { padding: 4px 6px; }
+  .fiche-nom { max-width: 110px; }
+}
+
 /* La barre d'outils (js/ui/outils.js) : en bas au milieu de la carte, dans le cadre bois des
    cartes flottantes (bordure de 3 px, fond crème, filet clair) ; une case par outil, l'outil
    dessiné à 32 px. Rangée, elle glisse sous le bord de l'écran et n'en dépasse que sa languette. */

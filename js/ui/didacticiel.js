@@ -194,7 +194,7 @@ const ETAPES_UI = {
   },
   sortie: {
     texte: () => (carteOuverte() ? 'Ferme la carte, puis suis le <b>chemin de terre</b> de ta ferme vers l\'est (à droite) jusqu\'à sa <b>sortie</b>.'
-      : 'Le chemin de terre de ta ferme mène au monde : suis-le vers l\'est (à droite) jusqu\'à la <b>sortie de la ferme</b>, les cases blanches qui brillent. Dehors, le brouillard se lève autour de toi.'),
+      : 'Le chemin de terre de ta ferme mène au monde : suis-le vers l\'est (à droite) jusqu\'à la <b>sortie de la ferme</b>, les cases blanches qui brillent. Dehors, le brouillard se lève autour de toi. Ta famille t\'a préparé un 🎒 <b>sac à provisions</b> : loin de la ferme, tu ne manges que ce qu\'il contient (ta fiche, dans la Famille).'),
     carte: () => ({ cases: casesSortie() }),
   },
   recolte_monde: {
