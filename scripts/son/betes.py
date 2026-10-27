@@ -67,7 +67,4 @@ if __name__ == '__main__':
     for sol, modele in (('pierre', SABOTS[0]), ('terre', SABOTS[1]), ('herbe', SABOTS[2])):
         for k in range(4):
             sauve(f'sabots_{sol}_{k+1}', diagonale(modele, 600 + 10 * k + len(sol)))
-    sauve('fond_poulailler', boucle(fond_poulailler()))
-    sauve('fond_etable', boucle(fond_etable(cloche=False)))   # la clochette : le vrai enregistrement, joué à part
-    sauve('fond_bergerie', boucle(fond_bergerie()))
     print('ok')

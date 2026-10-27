@@ -49,15 +49,7 @@
     moulinet: ["ambiance/moulinet"],
     oiseau: ["nature/oiseau_1", "nature/oiseau_2", "nature/oiseau_3", "nature/oiseau_4", "nature/oiseau_5", "nature/oiseau_6", "nature/oiseau_7", "nature/oiseau_8"],
     chouette: ["nature/chouette"],
-    poule: ["animaux/poule_1", "animaux/poule_2", "animaux/poule_3", "animaux/poule_4", "animaux/poule_5"],
-    poussins: ["animaux/poussins_1", "animaux/poussins_2"],
-    vache: ["animaux/vache_1", "animaux/vache_2", "animaux/vache_3", "animaux/vache_4", "animaux/vache_5"],
-    clochette: ["animaux/clochette"],
-    mouton: ["animaux/mouton_1", "animaux/mouton_2", "animaux/mouton_3", "animaux/mouton_4", "animaux/mouton_5", "animaux/mouton_6"],
     coq: ["animaux/coq_1", "animaux/coq_2", "animaux/coq_3"],
-    fond_poulailler: ["ambiance/fond_poulailler"],
-    fond_etable: ["ambiance/fond_etable"],
-    fond_bergerie: ["ambiance/fond_bergerie"],
     chat: ["animaux/chat_1", "animaux/chat_2"],
     ronron: ["animaux/ronron"],
     chien: ["animaux/chien_1", "animaux/chien_2", "animaux/chien_3"],
@@ -146,8 +138,7 @@
     arbre_tombe: ['effets', 0.85], dodo: ['interface', 0.45], echelle: ['effets', 0.6], ouvre: ['interface', 0.35],
     ferme: ['interface', 0.3], onglet: ['interface', 0.35], info: ['interface', 0.3], niveau: ['interface', 0.6],
     chapitre: ['interface', 0.6], techno: ['interface', 0.55], cloche: ['interface', 0.45], coq: ['monde', 0.55],
-    fond_poulailler: ['monde', 0.45], fond_etable: ['monde', 0.5], fond_bergerie: ['monde', 0.45],
-    clochette: ['monde', 0.35], poussins: ['monde', 0.3], ebrouement: ['monde', 0.5],
+    ebrouement: ['monde', 0.5],
   };
   const DUCK = new Set(['niveau', 'chapitre', 'techno', 'arbre_tombe']);   // la musique s'efface un instant
 
@@ -425,16 +416,7 @@
     boucle(nom, cle, e ? e.g * niveau : 0, 0.8, e ? e.pan : 0);
   }
   const NATURE = ['oiseaux_matin', 'oiseaux_jour', 'grillons_soir', 'grillons_nuit', 'vent', 'grenouilles', 'mer', 'lac', 'riviere', 'foret', 'montagne', 'grotte'];
-  const SOURCES = ['moulin', 'meule', 'feu', 'pompe', 'asperseur', 'robot', 'abeilles', 'hameau', 'mare', 'fond_poulailler', 'fond_etable', 'fond_bergerie'];
-  // les enclos (le Poulailler, l'Étable, les moutons) : leur fond, le cri de leurs bêtes, et ce qu'on y
-  // entend en plus de temps en temps (les poussins, la clochette d'une vache)
-  const ENCLOS = {
-    poule: { fond: 'fond_poulailler', cri: 'poule', plus: ['poussins', 30, 70] },
-    vache: { fond: 'fond_etable', cri: 'vache', plus: ['clochette', 6, 14] },
-    mouton: { fond: 'fond_bergerie', cri: 'mouton' },
-    cheval: { fond: null, cri: 'cheval', plus: ['ebrouement', 25, 60] },
-  };
-  const SALUT_CASES = 7, ENCLOS_PORTEE = 14;
+  const SOURCES = ['moulin', 'meule', 'feu', 'pompe', 'asperseur', 'robot', 'abeilles', 'hameau', 'mare'];
   const CRI = { aigle: ['aigle', 1], mouette: ['aigle', 1.45], cygne: ['cygne', 1], canard: ['cygne', 1.35], ecureuil: ['ecureuil', 1],
     marmotte: ['marmotte', 1], dauphin: ['dauphin', 1], bouquetin: ['bouquetin', 1], lievre: ['lievre', 1], lapin: ['lievre', 1.15],
     renard: ['chien', 1.5], chevreuil: ['lievre', 0.8], perdrix: ['oiseau', 0.8] };
@@ -530,32 +512,15 @@
       const ph = toitsH.length ? proche(toitsH, p) : null;
       source('s:hameau', 'hameau', ph && ph.o, p, 30, h >= 7 && h < 19 ? 1 : 0.15);
 
-      // les bêtes de la ferme et leurs enclos : le fond (paille, souffle, sonnailles) monte quand on
-      // approche ; de près, elles crient plus souvent ; en arrivant à moins de SALUT_CASES cases, une ou
-      // deux saluent (une fois par minute au plus). La nuit, elles sont rentrées : le fond seul, plus bas.
+      // le Poulailler, l'Étable et la bergerie restent silencieux (ni fond ni cris à l'approche) ;
+      // le cheval hennit ou s'ébroue de temps en temps, près de lui. Les poules ne servent qu'à
+      // savoir si le coq chante au réveil.
       const parSorte = {};
       if (FS.beasts) for (const o of FS.beasts.values()) (parSorte[o.kind] = parSorte[o.kind] || []).push(o);
       etat.poules = !!parSorte.poule;
-      const jour = FS.beastDay !== false && !dort;
-      etat.salut = etat.salut || {}; etat.ici = etat.ici || {};
-      for (const k in ENCLOS) {
-        const E = ENCLOS[k], betes = parSorte[k];
-        const pb = betes ? proche(betes, p) : null;
-        if (E.fond) source('s:' + E.fond, E.fond, pb && pb.o, p, ENCLOS_PORTEE, jour ? 1 : 0.35);
-        if (!pb || !jour) { etat.ici[k] = false; continue; }
-        const une = () => betes[(Math.random() * betes.length) | 0];
-        const ici = pb.d <= SALUT_CASES, now = ctx.currentTime;
-        if (ici && !etat.ici[k] && now - (etat.salut[k] || -1e9) > 60) {
-          etat.salut[k] = now;
-          const a = une(); joue(E.cri, { x: a.x, y: a.y, portee: 20, ecart: 0 });
-          if (Math.random() < 0.7) { const b = une(); joue(E.cri, { x: b.x, y: b.y, portee: 20, delai: hasard(0.8, 1.5), ecart: 0 }); }
-          etat.prochain['bete:' + k] = now + hasard(4, 8);
-        }
-        etat.ici[k] = ici;
-        const [a1, a2] = k === 'cheval' ? [35, 80] : pb.d < 6 ? [4, 9] : [12, 25];
-        if (pb.d < ENCLOS_PORTEE + 4 && bientot('bete:' + k, a1, a2)) { const o = une(); joue(E.cri, { x: o.x, y: o.y, portee: 20, ecart: 2 }); }
-        if (E.plus && pb.d < 10 && bientot('plus:' + k, E.plus[1], E.plus[2])) { const o = une(); joue(E.plus[0], { x: o.x, y: o.y, portee: 14, ecart: 2 }); }
-      }
+      const chevaux = FS.beastDay !== false && !dort ? parSorte.cheval : null;
+      const pc = chevaux ? proche(chevaux, p) : null;
+      if (pc && pc.d < 18 && bientot('bete:cheval', 35, 80)) { const o = chevaux[(Math.random() * chevaux.length) | 0]; joue(Math.random() < 0.6 ? 'cheval' : 'ebrouement', { x: o.x, y: o.y, portee: 20, ecart: 2 }); }
       // le chat et le chien de la famille
       const st = FS.ambient && FS.ambient.stats ? FS.ambient.stats() : null;
       if (st && st.compagnons) for (const cp of st.compagnons) {
