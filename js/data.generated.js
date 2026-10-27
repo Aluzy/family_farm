@@ -60,6 +60,7 @@ export const RAW_DATA = {
     "COMPOSITION": { "MEMBRES_MIN": 1, "MEMBRES_MAX": 6, "ADULTES_MIN": 1 },
     "COMPAGNIE": { "MAX": 3, "ESPECES": { "chien": { "nom": "Chien", "icone": "🐶" }, "chat": { "nom": "Chat", "icone": "🐱" } } },
     "FAIM": { "MAX": 100, "SEUIL": 20, "PX_PAR_POINT": 100, "AIDE": 5 },
+    "HORAIRE": { "COUCHER_ENFANTS": 20, "LEVER_ENFANTS": 8, "FIN_TRAVAIL_ADULTES": 19, "COUCHER_ADULTES": 22 },
     "RESERVE_DEPART": {}
   },
   "ROBOT": {

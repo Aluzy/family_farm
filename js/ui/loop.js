@@ -168,13 +168,14 @@ function watchDay() {
 let midnightSeen = false;
 
 // La faim de la famille (js/engine/repas.js) : un membre qui a faim et ne trouve rien à manger
-// le fait savoir (un appui mène à la Famille) ; sur la carte, celui qui mange va à la boîte
-// à nourriture (js/famille-ferme.js).
+// le fait savoir (un appui mène à la Famille) ; sur la carte, celui qui mange va au
+// réfrigérateur ou à la boîte à nourriture (js/famille-ferme.js : fiche 16b, à n'importe quelle
+// heure ; il n'y a rien à manger : il ne mange pas, il n'y va pas).
 ecouterJournal((type, d) => {
   if (type === 'faim') {
     const ou = d.source === 'frigo' ? 'le réfrigérateur est vide' : d.source === 'boite' ? 'la boîte à nourriture est vide' : d.source === 'inventaire' ? 'il n\'y a plus rien à manger dans l\'inventaire' : 'il n\'y a pas de boîte à nourriture dans le foyer (fabrique-la à l\'Atelier)';
     notify(`🍽️ ${memberName(state, d.id)} a faim : ${ou}. Sans manger, la famille perdra du bonheur cette nuit.`, { kind: 'alerte', cible: { fenetre: 'famille' } });
-  } else if (type === 'repasMembre' && d.source === 'boite' && window.FarmStage && window.FarmStage.allerManger) {
+  } else if (type === 'repasMembre' && (d.source === 'boite' || d.source === 'frigo') && window.FarmStage && window.FarmStage.allerManger) {
     window.FarmStage.allerManger(d.id);
   }
 });

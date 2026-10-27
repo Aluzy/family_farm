@@ -311,10 +311,16 @@
       const loin = (q) => q.x < vue.x - LOIN || q.x > vue.right + LOIN || q.y < vue.y - LOIN || q.y > vue.bottom + LOIN;
       // (loin de la vue, ou sans marche : il y est)
       if (reducedMotion() || !this.fermier || (loin(m) && loin(d))) { m.x = d.x; m.y = d.y; if (d.puis) d.puis(); return; }
-      const p = this.fermier.path(m.x, m.y, d.x, d.y);
+      const info = {};
+      const p = this.fermier.path(m.x, m.y, d.x, d.y, info);
+      // (déjà sur la case du but : il y va tout droit)
+      if (p && !p.length && !p.droit) { m.chemin = [{ x: d.x, y: d.y }]; m.puis = d.puis; m.vite = d.vite; return; }
       if (!p || !p.length) {
         if (p && p.droit) { m.attente = rand(1, 3); return; }
-        // (pas de chemin : il s'efface et reparaît là-bas)
+        // (un but qu'on ne peut pas atteindre, enfermé : il reste où il est, sans passer au
+        // travers d'un mur ni sauter, et l'heure suivante le mènera ailleurs (fiche 16))
+        if (info.impossible) { m.attente = rand(2, 4); return; }
+        // (trop loin pour la recherche : il s'efface et reparaît là-bas)
         m.saut = { x: d.x, y: d.y, puis: d.puis };
         m.fade = -1;
         return;
@@ -345,7 +351,9 @@
             m.evite = EVITE.repos;
             const cotes = [1, -1].map((s) => ({ x: m.x - uy * EVITE.cote * s + ux * 6, y: m.y + ux * EVITE.cote * s + uy * 6 }))
               .sort((a, b) => Math.hypot(b.x - joueur.x, b.y - joueur.y) - Math.hypot(a.x - joueur.x, a.y - joueur.y));
-            const c = cotes.find((q) => this.libre(q.x, q.y));
+            // (un pas de côté, s'il ne coupe pas un mur, ni pour y aller ni pour reprendre son chemin)
+            const L = this.fermier && this.fermier.ligneLibre ? this.fermier.ligneLibre : () => true;
+            const c = cotes.find((q) => this.libre(q.x, q.y) && L(m.x, m.y, q.x, q.y) && L(q.x, q.y, to.x, to.y));
             if (c) { m.chemin.unshift(c); dx = c.x - m.x; dy = c.y - m.y; } else { m.pause = 0.5; m.gene = (m.gene || 0) + 0.5; return false; }
           }
         }
@@ -372,7 +380,7 @@
     habLever(m) {
       m.couche = null;
       if (m.drap) m.drap.setVisible(false);
-      m.y += 4;
+      if (this.libre(m.x, m.y + 4)) m.y += 4;
     },
 
     /* ---------- la journée ---------- */

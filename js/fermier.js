@@ -138,10 +138,39 @@
     const free = (c, r) => c >= 0 && r >= 0 && c < cols && r < rows && !blocked[r * cols + c] && (!marche || marche(r * cols + c));
     const cellOf = (x, y) => [Math.floor(x / T), Math.floor((y - 1) / T)];
     const freeAt = (x, y) => { const [c, r] = cellOf(x, y); return free(c, r); };
-    function lineFree(x0, y0, x1, y1) {
-      const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 4));
-      for (let i = 1; i < n; i++) if (!freeAt(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n)) return false;
+    // La ligne droite de (x0, y0) à (x1, y1) ne passe-t-elle que par des cases libres ? Toutes
+    // les cases qu'elle touche, une à une (un point tous les quelques px laissait couper le coin
+    // d'un mur : fiche 16), pour sa ligne du milieu et ses deux bords, à EPAULES px de part et
+    // d'autre (il ne frôle pas un mur de l'épaule). La case d'où part chaque ligne ne compte pas
+    // (il peut se tenir au ras d'un mur, ou en sortir).
+    const EPAULES = 3;
+    function cellsFree(x0, y0, x1, y1) {
+      // (les pieds : la case de (x, y - 1), comme cellOf)
+      const ya = y0 - 1, dx = x1 - x0, dy = y1 - y0;
+      let c = Math.floor(x0 / T), r = Math.floor(ya / T);
+      const c0 = c, r0 = r, sx = dx > 0 ? 1 : -1, sy = dy > 0 ? 1 : -1;
+      const pasX = dx ? T / Math.abs(dx) : Infinity, pasY = dy ? T / Math.abs(dy) : Infinity;
+      // (la part de la ligne faite quand elle passe le prochain bord vertical, horizontal)
+      let tx = dx ? (sx > 0 ? (c + 1) * T - x0 : x0 - c * T) / Math.abs(dx) : Infinity;
+      let ty = dy ? (sy > 0 ? (r + 1) * T - ya : ya - r * T) / Math.abs(dy) : Infinity;
+      const ok = (cc, rr) => (cc === c0 && rr === r0) || free(cc, rr);
+      for (let n = 0; n < 4 * (cols + rows); n++) {
+        if (!ok(c, r)) return false;
+        if (tx > 1 && ty > 1) return true;
+        if (Math.abs(tx - ty) < 1e-9) {
+          // (par un coin : les deux cases qui le bordent comptent)
+          if (!ok(c + sx, r) || !ok(c, r + sy)) return false;
+          c += sx; r += sy; tx += pasX; ty += pasY;
+        } else if (tx < ty) { c += sx; tx += pasX; } else { r += sy; ty += pasY; }
+      }
       return true;
+    }
+    function lineFree(x0, y0, x1, y1) {
+      const l = Math.hypot(x1 - x0, y1 - y0);
+      if (!cellsFree(x0, y0, x1, y1)) return false;
+      if (l < 0.5) return true;
+      const ox = (-(y1 - y0) / l) * EPAULES, oy = ((x1 - x0) / l) * EPAULES;
+      return cellsFree(x0 + ox, y0 + oy, x1 + ox, y1 + oy) && cellsFree(x0 - ox, y0 - oy, x1 - ox, y1 - oy);
     }
     // Le chemin le plus court sur les cases (CarteKit.chemin : A*, 8 directions, sans couper
     // les coins), puis tendu : il va tout droit tant que rien ne le gêne. null : pas de chemin.
@@ -157,17 +186,26 @@
       return out;
     }
     let grid = null;
-    function findPath(x0, y0, x1, y1) {
+    // `info` (un objet, facultatif) : sans chemin, info.impossible dit si le but est sûrement
+    // hors d'atteinte (une case fermée, une pièce sans porte, enfermé derrière des blocs : la
+    // recherche partie du but a vu toutes les cases qu'il rejoint) ; sinon il est seulement trop
+    // loin pour la recherche (RECHERCHE_MAX).
+    function findPath(x0, y0, x1, y1, info) {
       if (!blocked) buildGrid();
+      if (info) info.impossible = false;
       const [sc, sr] = cellOf(x0, y0);
       const [gc, gr] = cellOf(x1, y1);
       if (Math.max(Math.abs(gc - sc), Math.abs(gr - sr)) > TRAJET_MAX) return straight(x0, y0, x1, y1);
+      if (!free(gc, gr)) { if (info) info.impossible = true; return null; }
       if (lineFree(x0, y0, x1, y1)) return [{ x: x1, y: y1 }];
-      if (!free(gc, gr)) return null;
       if (!grid) grid = { cols, rows, libre: marche ? (i) => !blocked[i] && marche(i) : (i) => !blocked[i] };
       const boite = K.boite(sc, sr, gc, gr, MARGE, cols, rows);
       const cells = K.chemin(grid, sr * cols + sc, gr * cols + gc, { boite, max: RECHERCHE_MAX });
-      if (!cells) return null;
+      if (!cells) {
+        // (le but enfermé : la recherche à rebours, partie de lui, a vite tout vu)
+        if (info) { const r = {}; K.chemin(grid, gr * cols + gc, sr * cols + sc, { boite, max: RECHERCHE_MAX, info: r }); info.impossible = !!r.epuise; }
+        return null;
+      }
       const pts = cells.map((i) => ({ x: (i % cols) * T + T / 2, y: ((i / cols) | 0) * T + T - 2 }));
       pts[pts.length - 1] = { x: x1, y: y1 };
       return K.tendre(pts, x0, y0, lineFree);
@@ -262,13 +300,16 @@
         start() {
           // Rentré dans la maison : il en ressort par la porte.
           if (!shown) { const d = door(); x = d.x; y = d.y; face = 'bas'; flip = false; appear(); }
-          path = findPath(x, y, tx, ty);
+          const info = {};
+          path = findPath(x, y, tx, ty, info);
           const len = path ? pathLength(x, y, path) : 0;
           // (trop loin pour chercher : il marche tout droit, jusqu'où il peut)
           if (path && path.droit) { if (opts && opts.max && len > opts.max && !reduced()) skipAlong(path, len - opts.max); }
           else if (path && opts && opts.max && len > opts.max && !reduced()) skipAlong(path, len - opts.max);
-          // (à l'étage, sans chemin : il ne saute pas hors de l'étage, il reste où il est)
-          else if (!path && lift() > 0) path = [];
+          // (à l'étage, sans chemin : il ne saute pas hors de l'étage, il reste où il est ; un but
+          // qu'on ne peut pas atteindre, une pièce sans porte, enfermé : il reste aussi où il est,
+          // il ne passe pas au travers d'un mur, fiche 16)
+          else if (!path && (lift() > 0 || info.impossible)) path = [];
           else if (!path || reduced() || len > (opts && opts.far ? TELEPORT_FAR : TELEPORT)) { x = tx; y = ty; path = []; }
         },
         step(dt) {
@@ -967,7 +1008,12 @@
       passe: () => passe,
       // Un chemin par les cases libres, de (x0, y0) à (x1, y1) : [{ x, y }…] ou null (pour
       // les autres membres de la famille, js/famille-ferme.js).
-      path: (x0, y0, x1, y1) => findPath(x0, y0, x1, y1),
+      // `info` (facultatif) : sans chemin, info.impossible (le but hors d'atteinte, voir findPath).
+      path: (x0, y0, x1, y1, info) => findPath(x0, y0, x1, y1, info),
+      // La ligne droite de (x0, y0) à (x1, y1) ne touche-t-elle que des cases libres (voir lineFree) ?
+      ligneLibre: (x0, y0, x1, y1) => { if (!blocked) buildGrid(); return lineFree(x0, y0, x1, y1); },
+      // Le point libre le plus proche de (x, y) (6 cases au plus), ou null.
+      librePres: (px, py) => nearestFree(px, py),
       // Où se tenir pour prendre ce qui attend au Poulailler ou à l'Étable ({ x, y }, ou null).
       lieu: (l) => (l === 'poulailler' ? coopSpot() : l === 'etable' ? barnSpot() : String(l).startsWith('ruche:') && o.cle ? o.cle(l) : null),
       // « Dormir » : il rentre dans la maison (done : il est dedans).

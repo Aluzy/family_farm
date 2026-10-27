@@ -129,6 +129,17 @@
       "manger, il a faim : il perd BONHEUR.FAIM de bonheur la nuit."
     ],
     "FAIM": { "MAX": 100, "SEUIL": 20, "PX_PAR_POINT": 100, "AIDE": 5 },
+    "//HORAIRE": [
+      "Fiche 16b : la journée de la famille sur la carte de la ferme (js/famille-ferme.js). Le jour et le soir,",
+      "elle est dehors autour de la maison, sans repas à table : chacun mange quand il a faim (FAIM.SEUIL), à la",
+      "boîte à nourriture ou au réfrigérateur. Les enfants jouent (ils se poursuivent, font la ronde, sautent,",
+      "tournent sur place) ; à COUCHER_ENFANTS heures, ils prennent leur dernier repas (ils vont à la boîte ou au",
+      "frigo, js/engine/repas.js repasStep), puis vont au lit ; ils se lèvent à LEVER_ENFANTS heures. Les adultes",
+      "(le compagnon) s'occupent des bêtes jusqu'à FIN_TRAVAIL_ADULTES heures, puis flânent près de la maison ;",
+      "ils vont au lit à COUCHER_ADULTES heures et se lèvent avec le personnage principal (à la fin de la nuit).",
+      "Chacun rejoint la maison à pied et entre par la porte ; sans lit pour lui, il reste dans la maison."
+    ],
+    "HORAIRE": { "COUCHER_ENFANTS": 20, "LEVER_ENFANTS": 8, "FIN_TRAVAIL_ADULTES": 19, "COUCHER_ADULTES": 22 },
     "//RESERVE_DEPART": "Réserve de semences de départ : quantité par item que la famille ne mange jamais. Vide depuis la suppression de la réserve dans l'Inventaire (les semences se rachètent au Marché).",
     "RESERVE_DEPART": {}
   },

@@ -110,10 +110,26 @@ Le Marché vend toujours les outils.
   ❌ sort de ce mode (js/ui/chantier.js `meubleModele`, js/carte/ferme/chantier.js `syncPoseMeuble`).
 - Deux lits adulte posés côte à côte (la même rangée) deviennent sur la carte un lit deux places
   (`assets/meuble_lit_double.png`, `syncLitsDoubles`) ; ils restent deux lits, deux couchages.
-- La nuit (22 h → 6 h), chaque membre de la famille dort dans un lit : le k-ième a le (k + 2)-ième
-  couchage (le premier est au personnage du joueur, comme dans le moteur, `nuitSansCouchage`) ; il
-  y va, s'y couche sous la couverture et se lève au réveil (js/famille-ferme.js, `bedSpots`). Sans
-  lit pour lui, il reste dans la maison, comme avant.
+- La nuit (22 h → 6 h ; les enfants dès 20 h et jusqu'à 8 h), chaque membre de la famille dort dans
+  un lit : le k-ième a le (k + 2)-ième couchage (le premier est au personnage du joueur, comme dans
+  le moteur, `nuitSansCouchage`) ; il y va, s'y couche sous la couverture et se lève à son heure (js/famille-ferme.js, `bedSpots`). Sans
+  lit pour lui, il reste dans la maison.
+- Fiche 16 : la famille ne s'efface plus ; fiche 16b : son horaire (`FAMILLE.HORAIRE`). Le jour et
+  le soir, elle est dehors autour de la maison, sans repas à table (chacun mange quand il a faim : il
+  va au réfrigérateur ou à la boîte, s'y baisse et repart). Les enfants jouent (la poursuite, la
+  ronde, sauter, tourner) ; les adultes flânent, et ne s'occupent plus des bêtes après 19 h. À 20 h,
+  les enfants vont manger à la boîte ou au frigo, puis au lit ; ils se lèvent à 8 h. Les adultes
+  vont au lit à 22 h et se lèvent avec le personnage : chacun rejoint la
+  maison à pied, entre par la porte et se couche ; on le voit quand le toit se lève (le personnage
+  dans la maison). Sans lit pour lui, il reste dans la maison (le bâtiment du foyer, sous son toit :
+  `homeInside`, ses places), d'une place à l'autre ; sans maison, il se tient devant la porte du
+  foyer. Le foyer est la porte de la pièce où l'on dort : quand c'est une
+  chambre qu'on rejoint par la salle, on se tient devant une porte d'entrée du même bâtiment, dehors
+  (`frontDoor`), et non plus dans le mur, sous la porte de la chambre. Personne ne passe au travers
+  d'un mur, d'un meuble ou d'un bloc : les chemins (`js/fermier.js`) ne touchent que des cases
+  libres, coins compris, à 3 px de chaque épaule ; un but hors d'atteinte (une pièce sans porte, un
+  but enfermé) ne se rejoint pas : le personnage, un membre de la famille ou un habitant reste où il
+  est (`path(…, info)` : `info.impossible`).
 - Version 1.26 : une case où se trouve une ressource de la carte (herbe haute, rocher, arbre) ne
   se bâtit qu'une fois la ressource récoltée (fauchée, cassée, abattue ; terrain `HERBES`, `ROCHERS`,
   `ARBRES`). Rien ne repousse sur une case bâtie ni dans une pièce close (`casesBaties`) ; une
