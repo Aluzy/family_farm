@@ -264,7 +264,8 @@ test('migration v54 → v55 : aucun hameau vu, rien d\'autre ne change', () => {
   const m = migrate({ v: 54, t: 0, s: v54 });
   assertEqual(m.version, STATE_VERSION);
   // (puis v55 → v56 : pas encore d'habitants, tests/engine/habitants.test.mjs)
-  assertEqual(m.monde, { ...v54.monde, hameaux: {}, habitants: {} });
+  // (le vu : refait par la migration v57 → v58, la ferme et sa prairie d'une partie d'avant la fiche 8)
+  assertEqual({ ...m.monde, vu: undefined }, { ...v54.monde, hameaux: {}, habitants: {}, vu: undefined });
   const { monde: a, version: va, ...ra } = m, { monde: b, version: vb, ...rb } = v54;
   assertEqual(ra, rb, 'le reste ne change pas');
 });

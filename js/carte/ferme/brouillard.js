@@ -2,7 +2,8 @@
  *
  * Le moteur retient ce qui a été vu (js/engine/monde-vu.js : un bit par cellule de 8 × 8 cases) ; la
  * page le donne à la scène dans son modèle (modèle.brouillard : { vu (la chaîne base64 de la
- * sauvegarde), C, L, H }). Ici, sur ce qui n'a pas été vu :
+ * sauvegarde), C, L, H }). La ferme n'y a pas de place à part (fiche 14b : elle se découvre en marchant,
+ * comme le reste du monde). Ici, sur ce qui n'a pas été vu :
  *
  *   - un brouillard dans le style du jeu : de gros pixels (2 px de carte chacun, 4 en qualité « économie », sans lissage,
  *     comme le voile de la nuit), en nappes de deux tons qui dérivent lentement (deux bruits qui
@@ -13,7 +14,7 @@
  *     se dessine dans une seule texture, de la taille de la vue (et d'une marge), posée au-dessus de
  *     tout (au-dessus du voile de la nuit : il prend lui-même la couleur de l'heure) ; refaite quand la
  *     vue a glissé, pendant un fondu, et quelques fois par seconde pour la dérive ; rien quand la vue
- *     est loin de tout brouillard (la ferme) ;
+ *     est loin de tout brouillard (une ferme déjà découverte) ;
  *   - une cellule qui devient vue se dégage en fondu (BR.fondu ms) ;
  *   - ce qui se dresse (un arbre, un rocher, une falaise, un toit, une bête, un habitant, la calèche…)
  *     dont le pied est sur une cellule pas vue n'est pas dessiné du tout (le filtre de la caméra :
@@ -35,8 +36,7 @@
   // cases —, et le nombre d'images entre deux dessins quand rien ne bouge, la dérive : brouillardPx et
   // brouillardImages de CarteKit.reglages, 2 et 4, ou 4 et 8 en qualité « économie », fiche 9a) ; deborde, flou : en cases (voir plus haut) ; marge : px
   // de carte autour de la vue ; ondule : le bord lu jusqu'à tant de px à côté (au plus une case : les
-  // cellules pas vues restent opaques) ; fondu : ms ; depth : au-dessus de tout (le voile de la nuit : 1e6, les
-  // flèches des passages : 2e6) ; tons : les deux tons des nappes et l'ombre du bord ; nappes : la
+  // cellules pas vues restent opaques) ; fondu : ms ; depth : au-dessus de tout (le voile de la nuit : 1e6) ; tons : les deux tons des nappes et l'ombre du bord ; nappes : la
   // taille des deux bruits (px de carte) et leur vent (px de carte par seconde) ; revue : ce qui se dresse est revu
   // toutes les tant d'images (et dès que le vu change) ; paliers : les niveaux d'opacité
   // (des aplats, comme le dessin).

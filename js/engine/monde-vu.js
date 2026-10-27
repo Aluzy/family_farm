@@ -14,16 +14,18 @@ import { vueNuitPct } from './equipement.js';
    8 × 8, soit 81 × 64 cellules pour un monde de 644 × 510 cases), vues ou non. La sauvegarde les garde
    dans state.monde.vu : un bit par cellule (la cellule cx, cy est le bit cy × L + cx, L cellules par
    rangée ; le bit k est le bit k % 8 de l'octet k >> 3), en base64 — 864 caractères, quel que soit le
-   voyage. La ferme et sa prairie (MARGE_FERME cases autour d'elle) sont vues d'office : leurs bits sont
-   posés au départ et relus comme posés quoi qu'il arrive (cellulesFerme).
+   voyage. Rien n'est vu d'office, la ferme non plus (fiche 14b : tout est à découvrir) : une nouvelle partie
+   ne voit que le cercle de vue autour de la case où le personnage apparaît (vuInitial), et la ferme se
+   découvre en marchant comme le reste du monde. Ce qui a été vu une fois le reste : la maison, les cultures,
+   tout ce que le joueur bâtit ou plante l'est sous ses yeux (il ne bâtit rien hors de sa vue), et reste vu.
 
    Le personnage voit autour de lui (voirAutour, appelé par la page à chaque case où il passe, avec le
    biome de sa case et l'heure) : chaque cellule qui touche le cercle de vue, d'un rayon de RAYONS[biome]
    cases (RAYON pour un biome qui n'y est pas ; NUIT fois moins la nuit, RAYON_MIN au moins). Une cellule
    qui devient vue rend vue sa région (state.monde.vues, terrain.js : ce que le moteur lit pour borner ses
-   revues de cases, la nuit, les repousses ; tenu à côté du vu, plus grossier). La prairie vue d'office ne
-   rend pas vues ses régions : autour de la ferme, le moteur garde les régions qu'il avait (celles de la
-   ferme), comme avant.
+   revues de cases, la nuit, les repousses ; tenu à côté du vu, plus grossier). Les régions de la ferme
+   restent vues d'office pour le moteur (regionsFerme, terrain.js) : sous le brouillard, la ferme vit
+   comme avant (ses cultures, ses bêtes, sa famille, ses bâtiments) ; le brouillard ne cache qu'à l'écran.
 
    Rien ici ne lit le hasard ni l'horloge : le vu ne dépend que des cases passées, des biomes et de la
    nuit (testé : déterministe). */
@@ -68,14 +70,16 @@ export function deBase64(s, n) {
 
 /* ---------- les cellules vues ---------- */
 
-// Les cellules de la ferme et de sa prairie (MARGE_FERME cases autour), vues d'office : [indices].
+// Les cellules de la ferme et de sa prairie (MARGE_FERME cases autour) : [indices]. Elles ne servent plus
+// qu'aux parties d'avant la fiche 8, qui avaient vu leur ferme (la migration 57 → 58 et la réparation d'un
+// vu perdu : vuDesRegions) ; une nouvelle partie ne les voit pas d'office (fiche 14b).
 const fermes = new WeakMap();
 export function cellulesFerme(T) {
   if (!T || !T.FERME) return [];
   if (fermes.has(T)) return fermes.get(T);
   const { C, L, H } = grilleVu(T), F = T.FERME, M = DECOUVERTE.MARGE_FERME, out = [];
-  const x0 = Math.max(0, Math.floor((F.X - M) / C)), x1 = Math.min(L - 1, Math.floor((F.X + F.LARGEUR + M - 1) / C));
-  const y0 = Math.max(0, Math.floor((F.Y - M) / C)), y1 = Math.min(H - 1, Math.floor((F.Y + F.HAUTEUR + M - 1) / C));
+  const x0 = Math.max(0, Math.floor((F.X - M) / C)), y0 = Math.max(0, Math.floor((F.Y - M) / C));
+  const x1 = Math.min(L - 1, Math.floor((F.X + F.LARGEUR + M - 1) / C)), y1 = Math.min(H - 1, Math.floor((F.Y + F.HAUTEUR + M - 1) / C));
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) out.push(y * L + x);
   fermes.set(T, out);
   return out;
@@ -91,7 +95,6 @@ function bitsDe(state, T) {
   const s = state && state.monde && typeof state.monde.vu === 'string' ? state.monde.vu : '';
   if (memo.s === s && memo.n === n && memo.T === T) return memo.bits;
   const bits = deBase64(s, n);
-  for (const i of cellulesFerme(T)) pose(bits, i);
   memo = { s, n, T, bits };
   return bits;
 }
@@ -187,21 +190,25 @@ export function montrerLieu(state, t, R = DECOUVERTE.RAYON) {
   return voirCellules(state, T, cellulesAutour(T, t, R));
 }
 
-// Le vu d'une nouvelle partie : la ferme et sa prairie.
-export function vuInitial(T) {
+// Le vu d'une nouvelle partie (fiche 14b) : rien, sauf le cercle de vue (RAYON cases : la prairie, de jour)
+// autour de la case `t` où le personnage apparaît (caseDepart, atelier.js) ; sans case, rien du tout. Le
+// didacticiel n'a besoin au départ que de ce cercle (les pierres et le bois du premier jour sont à 7 cases au
+// plus : DATA.ATELIER.RAMASSAGE_DEPART) ; ce qu'il montre plus loin, il le dégage (js/ui/didacticiel.js).
+export function vuInitial(T, t = null) {
   if (!T || !T.FERME) return '';
   const { L, H } = grilleVu(T), bits = new Uint8Array(Math.ceil((L * H) / 8));
-  for (const i of cellulesFerme(T)) pose(bits, i);
+  if (Number.isInteger(t) && t >= 0 && t < T.LARGEUR * T.HAUTEUR) for (const i of cellulesAutour(T, t, DECOUVERTE.RAYON)) pose(bits, i);
   return versBase64(bits);
 }
 
-// Le vu d'une partie d'avant la fiche 8 (la migration 57 → 58, state.js) : la ferme et sa prairie, et
-// chaque région déjà vue (« rx,ry »), en entier. Les régions de la ferme étaient vues d'office (pas
+// Le vu d'une partie d'avant la fiche 8 (la migration 57 → 58, state.js ; et la réparation d'un vu perdu) :
+// la ferme et sa prairie (elle les avait vues : elles le restent), et chaque région déjà vue (« rx,ry »), en entier. Les régions de la ferme étaient vues d'office (pas
 // parcourues : regionsFerme, terrain.js) : elles ne comptent que si le joueur est allé au-delà (une autre
 // région vue : il les a traversées) ; sinon, la partie repart comme une nouvelle (la ferme et sa prairie).
 export function vuDesRegions(T, vues) {
   if (!T || !T.FERME) return '';
-  const { C, L, H } = grilleVu(T), N = MONDE.REGION, k = N / C, bits = deBase64(vuInitial(T), Math.ceil((L * H) / 8));
+  const { C, L, H } = grilleVu(T), N = MONDE.REGION, k = N / C, bits = new Uint8Array(Math.ceil((L * H) / 8));
+  for (const i of cellulesFerme(T)) pose(bits, i);
   const ferme = new Set(regionsFerme(T)), liste = Array.isArray(vues) ? vues : [];
   const parti = liste.some((cle) => !ferme.has(String(cle)));
   for (const cle of parti ? liste : []) {
@@ -212,7 +219,8 @@ export function vuDesRegions(T, vues) {
   return versBase64(bits);
 }
 
-// Le mode test : tout le monde vu, ou plus rien que la ferme et sa prairie. Les régions du moteur n'y
+// Le mode test : tout le monde vu, ou plus rien que le cercle de vue autour du personnage (sa case :
+// state.monde.ici ; fiche 14b : la ferme se recouvre aussi). Les régions du moteur n'y
 // changent pas (state.monde.vues : tout voir d'un coup n'y met pas les 88 régions du monde, que le
 // moteur passerait alors en revue chaque nuit).
 export function toutVoir(state) {
@@ -226,7 +234,7 @@ export function toutVoir(state) {
 export function toutCacher(state) {
   const T = farmTerrain(state);
   if (!T.FERME) return { ok: false };
-  state.monde.vu = vuInitial(T);
+  state.monde.vu = vuInitial(T, state.monde.ici);
   return { ok: true };
 }
 

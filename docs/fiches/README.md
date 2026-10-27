@@ -49,7 +49,7 @@ Conventions communes à toutes les fiches :
 | [11 — l'équipement de la famille et le sac à provisions](11-equipement-de-la-famille.md) | — | fait |
 | [12 — le cheval retouché et la calèche avec un vrai cocher](12-cheval-retouche-et-caleche.md) | — | fait |
 | [13 — trois sons : la cruche, le hibou, plus de bruit d'eau](13-sons.md) | — | fait |
-| [14 — petites corrections : brouillard, mine, canards, encyclopédie](14-petites-corrections.md) | — | à faire |
+| [14 — petites corrections : brouillard, mine, canards, encyclopédie](14-petites-corrections.md) | — | fait |
 | [15 — le décor : bords des chemins et candélabres](15-decor.md) | — | fait |
 | [16 — la famille reste visible et ne traverse pas les murs](16-famille-visible.md) | — | à faire |
 | [17 — la cruche (jauge, aller au puits) et choisir son lit](17-cruche-et-lit.md) | — | à faire (après 16) |
@@ -57,3 +57,4 @@ Conventions communes à toutes les fiches :
 | [19 — le compagnon aide à la ferme](19-le-compagnon-aide.md) | — | à faire (après 16 et 17) |
 | [20 — la marche des personnages](20-la-marche.md) | — | à faire (après 16 à 19) |
 | [21 — toucher le champ n'ouvre plus de fenêtre](21-champ-sans-fenetre.md) | — | fait |
+| [14b — le brouillard couvre aussi la ferme](14b-brouillard-sur-la-ferme.md) | — | fait |

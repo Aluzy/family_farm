@@ -19,7 +19,6 @@
  *   - VITESSES : la vitesse de marche de chacun, carte par carte (px/s) ;
  *   - REGION : le découpage du sol en régions (docs/grand-monde.md, étape 2) ;
  *   - cycle(), imageA(), animTuiles(), pasAnimTuiles() : les tuiles animées de Tiled ;
- *   - FLECHE, balance() : la flèche bleue des passages (la mine, ses niveaux) ;
  *   - TEXTE, texte() : les petits textes qui montent au-dessus du personnage (« … »).
  *
  * Le reste du kit est dans les fichiers voisins, chargés juste après celui-ci : chemins.js
@@ -309,12 +308,6 @@
     }
   }
 
-  // La flèche bleue des passages (assets/fleche_passage.png, scripts/carte/fleche.py : images
-  // droite, gauche, haut, bas, de 32 px) : elle paraît quand le personnage est à moins de
-  // `near` px du passage et se balance de `bob` px, un aller-retour en 2π × `periode` ms.
-  const FLECHE = { key: 'fleche_passage', file: 'fleche_passage.png', size: 32, near: 80, bob: 3, periode: 220, sens: ['droite', 'gauche', 'haut', 'bas'] };
-  const balance = (time) => (reduit() ? 0 : Math.round(Math.sin(time / FLECHE.periode) * FLECHE.bob));
-
   // Les petits textes au-dessus du personnage (« ! » à la touche, « … ») : une
   // police, des couleurs, un contour. `taille` en px de carte ; rendus à 4 fois leur taille
   // pour rester nets au zoom.
@@ -326,6 +319,6 @@
 
   global.CarteKit = Object.assign(global.CarteKit || {}, {
     T, v, reduit, ratio, QUALITE, qualite, qualiteChoisie, reglages, reglerQualite, extrude, planche, planchePerso, saisie, regard, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
-    cycle, imageA, animTuiles, pasAnimTuiles, FLECHE, balance, TEXTE, texte,
+    cycle, imageA, animTuiles, pasAnimTuiles, TEXTE, texte,
   });
 })(window);

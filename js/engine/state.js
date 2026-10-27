@@ -18,6 +18,7 @@ import { energyMax } from './stamina.js';
 import { caseLibreFoyer, majMoulin, majPoulailler, poserBloc, rangerPieces, serrePlaces } from './blocs.js';
 import { closeFridge, FRIGO_OBJET } from './fridge.js';
 import { ETAPES } from './didacticiel.js';
+import { caseDepart } from './atelier.js';
 import { faucherSousBati } from './outils.js';
 import { farmSeed, farmTerrain, regionsFerme } from './terrain.js';
 import { vuDesRegions, vuInitial } from './monde-vu.js';
@@ -136,14 +137,14 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
   // les régions du monde vues (terrain.js, voirRegion) : celles de la ferme d'office, puis celles
   // où le personnage entre ; ce qu'il a pris dans le monde (monde-recolte.js, fiche 6a) ; les
   // hameaux où il est allé (monde-hameaux.js, fiche 7a) ; leurs habitants (habitants.js, fiche 7b) ;
-  // ce qui a été vu (monde-vu.js, fiche 8 : un bit par cellule de 8 × 8 cases, la ferme et sa prairie
-  // d'office), le but de la boussole (null : la ferme) et si elle se montre
+  // ce qui a été vu (monde-vu.js, fiche 8 : un bit par cellule de 8 × 8 cases ; fiche 14b : rien que le
+  // cercle de vue autour de la case où le personnage apparaît, la ferme se découvre en marchant), le but de la boussole (null : la ferme) et si elle se montre
   if (sansFerme) {
     s.monde = { vues: [], pris: {}, hameaux: {}, habitants: {}, vu: '', but: null, boussole: true };
     s.potager.parcelles = [];
     return s;
   }
-  s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s)), but: null, boussole: true };
+  s.monde = { vues: regionsFerme(farmTerrain(s)), pris: {}, hameaux: {}, habitants: {}, vu: vuInitial(farmTerrain(s), caseDepart(farmTerrain(s))), but: null, boussole: true };
   s.potager.parcelles = startPlots(farmTerrain(s));
   return s;
 }

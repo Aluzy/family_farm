@@ -2,7 +2,9 @@
    Tests du moteur : s'orienter (fiche 8 : js/engine/monde-vu.js, js/engine/monde-carte.js).
    - le vu : marcher découvre ce qui est autour (les cellules de 8 × 8 cases qui touchent le cercle
      de vue) ; la forêt et la nuit voient moins loin, la montagne plus loin ; déterministe ;
-   - la ferme et sa prairie vues d'office (même avec un vu abîmé) ; les régions vues déduites ;
+   - rien de vu d'office, la ferme comprise (fiche 14b : le cercle de vue autour de la case de départ),
+     mais ses régions restent vues pour le moteur ; les anciennes parties gardent leur ferme vue ; les
+     régions vues déduites ;
    - la sauvegarde compacte (864 caractères, quel que soit le voyage) et la migration v57 → v58
      (les régions déjà vues deviennent vues en entier) ;
    - la carte n'expose rien de non vu (les lieux pas encore vus en sont absents ; un hameau n'a son
@@ -13,12 +15,14 @@
    Lancer seul : node --test tests/engine/monde-vu.test.mjs (ou node tests/run-tests.mjs monde-vu).
    ========================================================================== */
 
+import { readFileSync } from 'node:fs';
 import {
-  createInitialState, DATA, elementsSol, farmTerrain, migrate, regionDeCase, regionVue, solDirect, STATE_VERSION, voirHameau,
+  caseDepart, createInitialState, createNewGame, DATA, elementsSol, farmTerrain, migrate, regionDeCase, regionsFerme, regionVue, solDirect,
+  STATE_VERSION, voirHameau,
 } from '../../js/engine/index.js';
 import {
-  boussoleMontree, butBoussole, caseVue, cellulesFerme, choisirBut, deBase64, DECOUVERTE, directionVers, etatBoussole, grilleVu,
-  lieuxDeLaCarte, montrerBoussole, partVue, rayonVue, toutCacher, toutVoir, versBase64, voirAutour, vuDe, vuDesRegions,
+  boussoleMontree, butBoussole, caseVue, cellulesAutour, cellulesFerme, choisirBut, deBase64, DECOUVERTE, directionVers, etatBoussole, grilleVu,
+  lieuxDeLaCarte, montrerBoussole, montrerLieu, partVue, rayonVue, toutCacher, toutVoir, versBase64, voirAutour, vuDe, vuDesRegions, vuInitial,
 } from '../../js/engine/monde-vu.js';
 import { imageDuMonde } from '../../js/engine/monde-carte.js';
 import { assert, assertEqual, sleepOnce, test } from './aide.mjs';
@@ -33,17 +37,26 @@ const nbVues = (s) => Math.round(partVue(s) * grilleVu(farmTerrain(s)).L * grill
 
 /* ---------- le vu ---------- */
 
-test('le vu : la ferme et sa prairie d\'office, rien d\'autre au départ', () => {
-  const s = partie(), T = farmTerrain(s), F = T.FERME, M = DECOUVERTE.MARGE_FERME;
-  for (const [c, r] of [[F.X, F.Y], [F.X + F.LARGEUR - 1, F.Y + F.HAUTEUR - 1], [F.X - M, F.Y + 10], [F.X + F.LARGEUR + M - 1, F.Y]]) assert(caseVue(s, caseEn(s, c, r)), `(${c}, ${r}) vue d'office`);
-  for (const [c, r] of [[F.X - M - 9, F.Y], [F.X + F.LARGEUR + M + 8, F.Y], [10, 10], [600, 480]]) assert(!caseVue(s, caseEn(s, c, r)), `(${c}, ${r}) pas vue`);
-  assertEqual(nbVues(s), cellulesFerme(T).length);
-  // même un vu abîmé (ou vide) garde la ferme
+test('le vu : rien d\'office, la ferme comprise : le cercle de vue autour de la case de départ (fiche 14b)', () => {
+  const s = partie(), T = farmTerrain(s), F = T.FERME, W = T.LARGEUR, d0 = caseDepart(T), R = DECOUVERTE.RAYON;
+  // autour du personnage : vu ; le reste de la ferme (ses coins, sa prairie) et le monde : pas vu
+  for (const t of [d0, d0 + R - 1, d0 - R + 1, d0 + (R - 1) * W, d0 - (R - 1) * W]) assert(caseVue(s, t), `${t} : à portée de vue`);
+  for (const [c, r] of [[F.X, F.Y], [F.X + F.LARGEUR - 1, F.Y + F.HAUTEUR - 1], [F.X, F.Y + F.HAUTEUR - 1], [F.X + F.LARGEUR - 1, F.Y], [F.X - 6, F.Y + 10], [10, 10], [600, 480]]) assert(!caseVue(s, caseEn(s, c, r)), `(${c}, ${r}) pas vue`);
+  assertEqual(nbVues(s), cellulesAutour(T, d0, R).length);
+  assertEqual(s.monde.vu, vuInitial(T, d0));
+  assert(nbVues(s) < cellulesFerme(T).length / 4, 'bien moins que la ferme');
+  // la ferme vit sous le brouillard : ses régions restent vues pour le moteur (ses revues, ses nuits)
+  for (const [c, r] of [[F.X, F.Y], [F.X + F.LARGEUR - 1, F.Y + F.HAUTEUR - 1]]) assert(regionVue(s, caseEn(s, c, r)), `(${c}, ${r}) : sa région, vue pour le moteur`);
+  assertEqual(s.monde.vues, regionsFerme(T));
+  // une nouvelle partie (l'accueil) : de même
+  const n = createNewGame(11), Tn = farmTerrain(n);
+  assertEqual(nbVues(n), cellulesAutour(Tn, caseDepart(Tn), R).length);
+  // un vu vide ou abîmé : rien de vu (pas de ferme d'office), sans erreur
   const t = copie(s);
-  t.monde.vu = 'n\'importe quoi';
-  assert(caseVue(t, caseEn(t, F.X + 5, F.Y + 5)) && caseVue(t, caseEn(t, F.X - M, F.Y)), 'la ferme reste vue');
   t.monde.vu = '';
-  assertEqual(nbVues(t), cellulesFerme(T).length);
+  assertEqual(nbVues(t), 0);
+  t.monde.vu = 'n\'importe quoi';
+  assert(!caseVue(t, caseEn(t, F.X, F.Y)), 'la ferme n\'est pas vue d\'office');
 });
 
 test('le vu : marcher découvre ce qui est autour (le cercle de vue), une fois', () => {
@@ -82,10 +95,9 @@ test('le vu : les régions des cellules vues deviennent vues (ce que lit le mote
   assert(!regionVue(s, t) && !s.monde.vues.includes(cle), 'pas vue au départ');
   voirAutour(s, t, { biome: 'prairie' });
   assert(regionVue(s, t) && s.monde.vues.includes(cle), 'sa région devient vue');
-  // chaque cellule vue est dans une région vue, une fois chacune (sauf la prairie vue d'office : le moteur
-  // garde, autour de la ferme, les régions qu'il avait)
-  const { C, L, H, bits } = vuDe(s), office = new Set(cellulesFerme(farmTerrain(s)));
-  for (let i = 0; i < L * H; i++) if ((bits[i >> 3] >> (i & 7)) & 1 && !office.has(i)) assert(regionVue(s, caseEn(s, (i % L) * C, Math.floor(i / L) * C)), `cellule ${i}`);
+  // chaque cellule vue est dans une région vue, une fois chacune
+  const { C, L, H, bits } = vuDe(s);
+  for (let i = 0; i < L * H; i++) if ((bits[i >> 3] >> (i & 7)) & 1) assert(regionVue(s, caseEn(s, (i % L) * C, Math.floor(i / L) * C)), `cellule ${i}`);
   assertEqual(new Set(s.monde.vues).size, s.monde.vues.length);
 });
 
@@ -101,8 +113,12 @@ test('la sauvegarde : un bit par cellule, en base64, la même taille quel que so
   // après un long voyage (tout le monde vu), la même taille
   toutVoir(s);
   assertEqual([s.monde.vu.length, Math.round(partVue(s) * 100)], [Math.ceil(n / 3) * 4, 100]);
+  // tout cacher : la ferme aussi ; rien que le cercle autour du personnage (sa case, s'il en a une)
   toutCacher(s);
-  assertEqual(nbVues(s), cellulesFerme(farmTerrain(s)).length);
+  assertEqual(nbVues(s), 0);
+  s.monde.ici = caseDepart(farmTerrain(s));
+  toutCacher(s);
+  assertEqual(s.monde.vu, vuInitial(farmTerrain(s), s.monde.ici));
   assertEqual([s.monde.but, s.monde.boussole], [null, true]);
 });
 
@@ -118,12 +134,67 @@ test('migration v57 → v58 : les régions déjà vues deviennent vues en entier
   assert(caseVue(m, caseEn(m, F.X + 3, F.Y + 3)), 'la ferme');
   for (const [c, r] of [[600, 480], [70, 300], [520, 30]]) assert(!caseVue(m, r * W + c), `(${c}, ${r}) pas vue`);
   assertEqual(m.monde.vu, vuDesRegions(T, vieille.monde.vues));
-  // une partie qui n'a vu que les régions de sa ferme (vues d'office, pas parcourues) : comme une nouvelle
+  // une partie qui n'a vu que les régions de sa ferme (vues d'office, pas parcourues) : sa ferme et sa
+  // prairie (elle les avait vues : pas de nouveau brouillard dessus, fiche 14b), rien d'autre
   const casaniere = copie(vieille);
   casaniere.monde.vues = casaniere.monde.vues.filter((k) => k !== '7,3' && k !== '0,0');
-  assertEqual(migrate({ v: 57, t: 0, s: casaniere }).monde.vu, s.monde.vu);
+  const mc = migrate({ v: 57, t: 0, s: casaniere });
+  assertEqual(nbVues(mc), cellulesFerme(T).length);
+  assert(cellulesFerme(T).every((i) => (vuDe(mc).bits[i >> 3] >> (i & 7)) & 1), 'sa ferme et sa prairie, vues');
   // le reste de la partie ne bouge pas
   assertEqual([m.monde.vues, m.monde.pris, m.monde.hameaux, m.pieces, m.inventaire], [vieille.monde.vues, vieille.monde.pris, vieille.monde.hameaux, s.pieces, s.inventaire]);
+});
+
+// Fiche 14b : le brouillard que la scène reçoit (modèle.brouillard : la chaîne du vu, lue comme la scène la lit,
+// js/carte/ferme/brouillard.js : un bit par cellule, la cellule cx, cy au bit cy × L + cx ; plus rien de vu
+// d'office). Une nouvelle partie : la ferme sous le brouillard, sauf autour du personnage ; elle se découvre en
+// marchant. Une ancienne partie (chaque témoin migré ; une partie de la fiche 8 à 14, dont le vu portait
+// la ferme et sa prairie) : sa ferme reste découverte, et le reste en marchant ; un vu perdu (pas une
+// chaîne) se refait depuis les régions, ferme comprise (reparerPartie).
+const fermeVue = (s) => {
+  const T = farmTerrain(s), F = T.FERME, M = DECOUVERTE.MARGE_FERME, v = vuDe(s), o = deBase64(v.vu, Math.ceil((v.L * v.H) / 8));
+  let vues = 0, n = 0;
+  for (let r = F.Y - M; r < F.Y + F.HAUTEUR + M; r += 3) {
+    for (let c = F.X - M; c < F.X + F.LARGEUR + M; c += 3) {
+      const i = Math.floor(r / v.C) * v.L + Math.floor(c / v.C);
+      n++;
+      vues += (o[i >> 3] >> (i & 7)) & 1;
+    }
+  }
+  return vues / n;
+};
+test('le brouillard de la scène : la ferme d\'une nouvelle partie dessous, celle d\'une ancienne découverte (fiche 14b)', () => {
+  const TEMOINS = JSON.parse(readFileSync(new URL('./temoins.json', import.meta.url), 'utf8'));
+  // une nouvelle partie : la ferme presque toute sous le brouillard ; elle se lève en marchant
+  const s = createNewGame(11), T = farmTerrain(s), F = T.FERME, W = T.LARGEUR;
+  assert(fermeVue(s) > 0 && fermeVue(s) < 0.15, `la ferme d'une nouvelle partie, sous le brouillard (${fermeVue(s)})`);
+  for (let c = F.X; c < F.X + F.LARGEUR; c += 4) voirAutour(s, (F.Y + (F.HAUTEUR >> 1)) * W + c, { biome: 'prairie' });
+  const avant = fermeVue(s);
+  assert(fermeVue(s) > 0.15 && fermeVue(s) < 0.6, `traversée d'ouest en est : découverte en partie (${fermeVue(s)})`);
+  for (let c = F.X; c < F.X + F.LARGEUR; c += 4) voirAutour(s, (F.Y + 20) * W + c, { biome: 'prairie' });
+  assert(fermeVue(s) > avant, 'une autre traversée en découvre davantage');
+  // les anciennes parties : leur ferme et sa prairie restent découvertes
+  const anciennes = [];
+  for (const ep of ['v50', 'v51', 'v52', 'v54', 'v57']) anciennes.push([ep, migrate(copie(TEMOINS[ep]))]);
+  const f8 = partie(4);
+  f8.monde.vu = vuDesRegions(farmTerrain(f8), regionsFerme(farmTerrain(f8)));   // (le vu de départ des fiches 8 à 14)
+  anciennes.push(['fiche 8', migrate({ v: STATE_VERSION, t: 0, s: copie(f8) })]);
+  for (const [nom, a] of anciennes) {
+    assertEqual(fermeVue(a), 1, `${nom} : la ferme découverte`);
+    voirAutour(a, aLEst(a, 40), { biome: 'prairie' });
+    assertEqual(fermeVue(a), 1, `${nom} : en marchant, elle le reste`);
+    const perdu = copie(a);
+    delete perdu.monde.vu;
+    assertEqual(fermeVue(migrate({ v: STATE_VERSION, t: 0, s: perdu })), 1, `${nom} : un vu perdu se refait, ferme comprise`);
+  }
+});
+
+// Fiche 14b : le didacticiel dégage ce qu'il montre loin du personnage (montrerLieu : la sortie de la ferme).
+test('le didacticiel dégage la sortie de la ferme qu\'il montre', () => {
+  const s = createNewGame(11), T = farmTerrain(s), S = T.MONDE.cadre.SORTIE;
+  assert(!caseVue(s, S), 'la sortie, sous le brouillard au départ');
+  assert(montrerLieu(s, S, 4) > 0 && caseVue(s, S) && caseVue(s, S - T.LARGEUR) && caseVue(s, S + T.LARGEUR), 'montrée : dégagée');
+  assertEqual(montrerLieu(s, S, 4), 0);
 });
 
 /* ---------- la carte du monde ---------- */
@@ -222,9 +293,10 @@ test('la boussole : le lieu choisi sur la carte (s\'il est vu), jusqu\'à l\'att
 
 test('la ferme et le reste du jeu inchangés : voir loin ne change pas la ferme ni la nuit sur elle', () => {
   const a = partie(9), b = copie(a);
-  // la ferme : rien de nouveau quand on y marche
+  // la ferme se découvre en marchant (fiche 14b), sans rien y changer d'autre
   const F = farmTerrain(a).FERME;
-  assertEqual(voirAutour(a, caseEn(a, F.X + 30, F.Y + 30), { biome: 'prairie' }), 0);
+  assert(voirAutour(a, caseEn(a, F.X + 30, F.Y + 30), { biome: 'prairie' }) > 0, 'la ferme se découvre');
+  voirAutour(b, caseEn(b, F.X + 30, F.Y + 30), { biome: 'prairie' });
   // b voit loin à l'est ; trois nuits chacune : la ferme, l'inventaire, l'argent, la famille, les mêmes
   for (let d = 0; d < 160; d += 2) voirAutour(b, aLEst(b, d), { biome: 'prairie' });
   for (let n = 0; n < 3; n++) { sleepOnce(a); sleepOnce(b); }

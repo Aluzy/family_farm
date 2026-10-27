@@ -1,4 +1,4 @@
-# Outils communs des cartes (venus de l'ancienne ville : grotte.py, fleche.py, briques.py,
+# Outils communs des cartes (venus de l'ancienne ville : grotte.py, briques.py,
 # faune.py) : les toiles du monde (une par matière et par
 # couche), les planches de tuiles 16 × 16 qu'on en découpe (une par matière), l'écriture des jeux
 # de tuiles Tiled (.tsx) et quelques aides de dessin.

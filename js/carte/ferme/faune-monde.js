@@ -11,7 +11,8 @@
  * Ce qu'elles font (stepFaune, à chaque image) :
  *   - au repos, elles respirent (deux images) ; de temps en temps, elles vont un peu plus loin, à
  *     FAUNE.RAYON cases au plus de leur place, sur une case permise à leur espèce (la terre où l'on
- *     marche, l'eau) ; un canard ou un cygne plonge la tête sous l'eau ;
+ *     marche, l'eau) ; un canard ou un cygne plonge la tête sous l'eau ; un canard sorti de l'eau
+ *     (hors du marais) se tient sur ses pattes et y marche (fauneSurEau, fiche 14) ;
  *   - le personnage à moins de `fuite` px : elles fuient, chacune à sa façon (`fuit`) : « court »
  *     (le bouquetin, le chevreuil, le renard, le lièvre : loin de lui, vite), « terrier » (la
  *     marmotte, le lapin, l'écureuil, le crabe : une courte course, puis elles disparaissent un
@@ -102,6 +103,7 @@
 
     fauneImage(b) {
       const e = b.e;
+      this.fauneTerre(b);
       b.img = this.add.sprite(Math.round(b.x), Math.round(b.y), e.tex, this.fauneCadre(b, 'repos', 0)).setOrigin(e.ox, e.oy);
       if (e.lieu === 'air') b.img.setScale(AIR.echelle);
       if (e.lieu === 'terre') b.ombre = this.add.ellipse(b.x, b.y, Math.max(6, e.w * 0.45), 3, 0x1e1a18, 0.22);
@@ -119,7 +121,10 @@
     },
 
     // Le nom de l'image `n` (au modulo) de la suite `suite` de la bête (ses images, ou celles du repos).
+    // Une bête d'eau sur la terre (b.terre : le canard hors de l'eau et du marais, fiche 14) prend ses
+    // images debout sur ses pattes (terre_repos, terre_marche), si elle en a.
     fauneCadre(b, suite, n) {
+      if (b.terre && b.imgs.terre_repos) suite = suite === 'marche' || suite === 'fuite' ? 'terre_marche' : 'terre_repos';
       const l = b.imgs[suite] || b.imgs.repos || b.imgs.vol || b.imgs.saut;
       return l[((n % l.length) + l.length) % l.length];
     },
@@ -138,6 +143,27 @@
       if (e.lieu === 'terre') return reg.marche[k] === 1;
       if (e.lieu === 'eau') return reg.marche[k] === 0 || bio === 'marais';
       return true;
+    },
+
+    // (fiche 14) Le point (x, y) est-il sur l'eau, pour une bête d'eau ? Une case d'eau dessinée (sa
+    // première tuile est une tuile animée de la planche, comme pour l'eau qui bouge : eau-monde.js) ou une
+    // case du marais (son eau basse, ses herbes : le canard y nage). Ailleurs (une rive, l'herbe d'un
+    // bord de lac), elle est sur la terre. Sans de quoi le dire (la région, la planche) : sur l'eau.
+    fauneSurEau(x, y) {
+      const M = this.ctx.monde, c = Math.floor(x / T), r = Math.floor(y / T), N = K.REGION.tuiles;
+      const reg = M.region(Math.floor(c / N), Math.floor(r / N));
+      if (!reg) return true;
+      const k = (r - reg.cy0) * reg.cl + c - reg.cx0;
+      if (k < 0 || k >= reg.biome.length || M.biomes[reg.biome[k]] === 'marais') return true;
+      const P = this.planche();
+      if (!P || !reg.couches || !M.tuiles) return true;
+      const v = reg.couches[((r - reg.y0) * reg.l + c - reg.x0) * M.tuiles.COUCHES];
+      return !!v && v < M.tuiles.DECALAGE && this.tileFrames(P.set).has(v - P.set.firstgid);
+    },
+
+    // Une bête d'eau qui a des images sur ses pattes (le canard) : est-elle sur la terre ? (b.terre)
+    fauneTerre(b) {
+      b.terre = b.e.lieu === 'eau' && !!b.imgs.terre_repos && !this.fauneSurEau(b.x, b.y);
     },
 
     // Un pas vers (tx, ty), `v` px/s : false si la case d'après ne lui est pas permise (il s'arrête).
@@ -183,6 +209,7 @@
     // Ce que fait la bête `b` à cette image, et son image.
     fauneVit(b, time, dt, p, nuit, calme) {
       const e = b.e, img = b.img;
+      this.fauneTerre(b);         // (le canard : sur l'eau, ou sur ses pattes)
       // la nuit : cachée, ou endormie (sa première image, immobile)
       const cachee = nuit && e.nuit === 'cache';
       if (calme || (nuit && e.nuit === 'dort') || cachee) {
@@ -232,7 +259,7 @@
         case 'repos': {
           if (b.t <= 0) {
             // plus loin, autour de sa place ; un canard, un cygne plonge parfois la tête
-            if (b.imgs.plonge && Math.random() < 0.3) { b.etat = 'plonge'; b.t = entre(1, 2.2); break; }
+            if (b.imgs.plonge && !b.terre && Math.random() < 0.3) { b.etat = 'plonge'; b.t = entre(1, 2.2); break; }
             const R = this.ctx.monde.faune.RAYON * T, a = Math.random() * Math.PI * 2, r = Math.random() * R;
             const x = b.hx + Math.cos(a) * r, y = b.hy + Math.sin(a) * r;
             if (this.faunePeut(b, x, y)) { b.etat = 'marche'; b.tx = x; b.ty = y; b.t = 8; } else b.t = entre(...REPOS.attente);
