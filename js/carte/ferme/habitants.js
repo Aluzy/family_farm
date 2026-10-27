@@ -518,6 +518,7 @@
           return;
         }
         this.mondeTremble(o);
+        if (global.FermeSon) global.FermeSon.joue('hache', { x: o.fx, y: o.fy, depuis: 0.16, portee: 28, ecart: 0 });   // le bûcheron (js/son.js)
         m.coups = (m.coups || 0) + 1;
         if (m.coups < 3) return;
         m.coups = 0;

@@ -6,6 +6,7 @@ import { tel } from './consent.js';
 import { refresh } from './render.js';
 import { registerActions } from './actions.js';
 import { openModal } from './modal.js';
+import { son } from './son.js';
 
 /* ---------- version 1.7 : niveaux d'expérience ---------- */
 
@@ -39,6 +40,7 @@ function openLevelUpModal() {
   const a = state.progression.annonces[0];
   if (!a) return;
   tel('modal', 'level');
+  son('niveau', { delai: 0.15 });
   openModal(`
     <h2 id="level-title">⭐ Niveau ${a.niveau} atteint</h2>
     ${unlocksHtml(a.niveau) ? `<h3>✨ Nouveautés</h3>${unlocksHtml(a.niveau)}` : '<p class="muted">Rien de nouveau à ce niveau.</p>'}

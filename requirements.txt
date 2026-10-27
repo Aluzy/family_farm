@@ -1,3 +1,5 @@
-# Générateurs d’images en Python (scripts/**/*.py) : pip install -r requirements.txt
+# Générateurs d’images et de sons en Python (scripts/**/*.py) : pip install -r requirements.txt
 Pillow>=10
 fonttools>=4.40  # scripts/police/police_dialogue.py (la police des fenêtres de dialogue)
+numpy>=1.26      # scripts/son/ (les sons du jeu ; il faut aussi ffmpeg)
+scipy>=1.11

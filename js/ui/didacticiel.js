@@ -42,6 +42,7 @@ import { registerActions } from './actions.js';
 import { stageUsable } from './stage.js';
 import { setupPending } from '../engine/depart.js';
 import { consentBannerPending, consentBannerShown, storyOpen } from './calme.js';
+import { son } from './son.js';
 
 const nomObjet = (o) => (DATA.OBJETS[o] ? DATA.OBJETS[o].nom.toLowerCase() : o);
 const fabricable = (id) => craftStatus(state, id).ok;
@@ -298,7 +299,7 @@ let grainesVues = false;    // l'étape des graines : on les a vues dans l'inven
 export function renderDidacticiel() {
   const root = document.getElementById('didacticiel-root');
   if (!root) return;
-  if (state && majDidacticiel(state)) persistState();
+  if (state && majDidacticiel(state)) { persistState(); son('reussite'); }
   // la fenêtre de l'Atelier s'ouvre : l'étape « touche l'Atelier » est faite
   if (state && etapeDidacticiel(state) === 'atelier_ouvrir' && stageWindow === 'atelier' && suivantDidacticiel(state, 'atelier_ouvrir').ok) persistState();
   // fiche 9b : la carte du monde s'ouvre : l'étape « carte » est faite ; le hameau voisin se montre

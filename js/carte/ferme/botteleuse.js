@@ -41,7 +41,11 @@
       for (const b of list || []) {
         seen.add(b.case);
         this.botteleuses.set(b.case, b);
-        if (b.ok && b.pleine && !this.botteCycles.has(b.case)) this.botteCycles.set(b.case, { phase: 'vibre', t: 0, img: null });
+        if (b.ok && b.pleine && !this.botteCycles.has(b.case)) {
+          this.botteCycles.set(b.case, { phase: 'vibre', t: 0, img: null });
+          const cols = this.grid && this.grid.cols;   // la machine se met en marche (js/son.js)
+          if (global.FermeSon && cols) global.FermeSon.joue('botteleuse', { x: (b.case % cols) * T + T / 2, y: (Math.floor(b.case / cols) + 1) * T, portee: 16 });
+        }
       }
       for (const c of [...this.botteleuses.keys()]) if (!seen.has(c)) { this.botteleuses.delete(c); this.finCycle(c); }
     },

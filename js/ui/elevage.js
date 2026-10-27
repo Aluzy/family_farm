@@ -513,12 +513,12 @@ registerActions({
   'feed-hen': () => {
     const result = applyResult(feedHen(state));
     // fiche 10 : « Nourrir une poule » répété compte les poules nourries
-    if (result.ok) notify(null, { cumul: { cle: 'nourrir-poule', quantites: { n: 1 }, texte: (t) => `🌾 ${t.n > 1 ? `${plural(t.n, 'poule')} nourries` : 'Une poule nourrie'} (1 blé pour 2 poules)` } });
+    if (result.ok) notify(null, { cumul: { cle: 'nourrir-poule', quantites: { n: 1 }, texte: (t) => `🌾 ${t.n > 1 ? `${plural(t.n, 'poule')} nourries` : 'Une poule nourrie'} (1 blé pour 2 poules)` }, son: 'grain' });
   },
   'feed-all': () => {
     const result = applyResult(feedAllHens(state));
     if (result.ok) {
-      notify(`${plural(result.nourries, 'poule')} ${accord(result.nourries, 'nourrie')}.`);
+      notify(`${plural(result.nourries, 'poule')} ${accord(result.nourries, 'nourrie')}.`, { son: 'grain' });
     }
   },
 
@@ -532,7 +532,7 @@ registerActions({
   },
   'shear': (target) => {
     const result = applyResult(shear(state, target.dataset.id));
-    if (result.ok && !result.aRamasser) notify(`✂️ Tonte : +${result.laine} 🧶`);
+    if (result.ok && !result.aRamasser) notify(`✂️ Tonte : +${result.laine} 🧶`, { son: 'tonte' });
   },
   'plant-all-open': (target) => {
     openPlantAllModal(target.dataset.lieu);

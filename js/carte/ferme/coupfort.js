@@ -83,7 +83,7 @@
         const m = !t && this.mondeProche ? this.mondeProche('couper', p, C.portee) : null;
         if (t) this.chop(t, true);
         else if (m) this.mondeAgir(m, true);
-        else this.fermier.actHere('couper', () => K.secousse(this, 'fort'));
+        else this.fermier.actHere('couper', () => { K.secousse(this, 'fort'); if (global.FermeSon) global.FermeSon.joue('coup_vide'); });
         return;
       }
       if (outil === 'pioche') {
@@ -91,7 +91,7 @@
         const m = !r && this.mondeProche ? this.mondeProche('casser', p, C.portee) : null;
         if (r) this.mine(r, true);
         else if (m) this.mondeAgir(m, true);
-        else this.fermier.actHere('piocher', () => K.secousse(this, 'fort'));
+        else this.fermier.actHere('piocher', () => { K.secousse(this, 'fort'); if (global.FermeSon) global.FermeSon.joue('coup_vide'); });
         return;
       }
       if (outil === 'faux') { this.spinScythe(p); return; }
@@ -134,6 +134,7 @@
       const hit = () => {
         K.vibre('fort');
         K.secousse(this, 'fort');
+        if (global.FermeSon) global.FermeSon.joue('faux', { gain: 1.3, vitesse: 0.85, ecart: 0 });
         this.swoosh(p);
         const imgs = touffes.flatMap((g) => [g.img, g.fleurs]).filter(Boolean);
         if (!imgs.length || reducedMotion()) { fin(); return; }
@@ -180,6 +181,7 @@
       this.fermier.actHere('labourer', () => {
         K.vibre('fort');
         K.secousse(this, 'fort');
+        if (global.FermeSon) global.FermeSon.joue('houe', { depuis: 0.12, gain: 1.3, vitesse: 0.85, ecart: 0 });
         if (cases.length) this.ctx.bridge.act('hoe-many', { cases: cases.join(',') });
       });
     },

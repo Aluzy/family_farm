@@ -7,6 +7,7 @@ import { tel } from './consent.js';
 import { cibleAlerte } from './stage.js';
 import { deviceName } from './ferme.js';
 import { cumulSuivant } from './notif-cumul.js';
+import { son } from './son.js';
 
 /* ---------- Lot 11 : notifications légères ---------- */
 
@@ -51,12 +52,16 @@ export function setAlertMuteUntil(value) {
 // L'unique façon d'afficher un message au joueur. `kind` : 'info' (par défaut), 'alerte',
 // 'repas' ou 'lettre' ; `cible` (voir cibleAlerte) : la notification devient un bouton qui
 // mène au menu concerné ; `duree` (ms) : à la place de la durée de lecture (notifyDuration) ;
+// `son` : son bruit (une clé de js/son.js), à la place de celui de son genre, ou false ;
 // `cumul` (fiche 10) : { cle, quantites, texte } pour un geste que le joueur répète vite. Si une
 // notification de même `cle` est encore affichée, `quantites` ({ nom: nombre }, négatif pour une
 // dépense) s'ajoute à ses totaux, son texte devient `texte(totaux)` et elle repart pour une durée
 // complète, sans nouvelle notification ; sinon elle naît avec `texte(quantites)`. Dans ce cas
 // `message` est ignoré (on peut passer null).
-export function notify(message, { kind = 'info', cible = null, duree = 0, cumul = null } = {}) {
+const SON_GENRE = { info: 'info', alerte: 'alerte', repas: 'cloche', lettre: 'reussite' };
+export function notify(message, { kind = 'info', cible = null, duree = 0, son: bruit, cumul = null } = {}) {
+  // chaque appui garde son bruit, même quand la notification se cumule
+  if (bruit !== false) son(bruit || SON_GENRE[kind] || 'info');
   if (cumul) { notifyCumul(cumul, { kind, cible, duree }); return; }
   const root = document.getElementById('toast-root');
   for (const el of Array.from(root.children)) {
@@ -142,8 +147,8 @@ function notifyCumul({ cle, quantites, texte }, { kind, cible, duree }) {
 }
 
 // Pour js/ui/excursion.js (FermeHote.say des autres cartes) : une notification simple.
-export function showToast(message) {
-  notify(message);
+export function showToast(message, options) {
+  notify(message, options);
 }
 
 function alertMessage(ev) {

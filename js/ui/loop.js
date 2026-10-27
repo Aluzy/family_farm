@@ -25,6 +25,7 @@ import {
 } from './toasts.js';
 import { openModal } from './modal.js';
 import { accord, itemsText, plural } from './common.js';
+import { son } from './son.js';
 
 // Lot 11 : heure (Date.now) jusqu'à laquelle la partie a été simulée. Elle est
 // écrite dans la sauvegarde ({ v, t, s } : t = simulatedAt) ; au chargement, ou
@@ -79,7 +80,7 @@ function watchPreparations() {
     if (was && !job) {
       const r = DATA.RECETTES[was];
       const out = DATA.OBJETS[recipeOutput(was)];
-      notify(`${out.icone} ${r.transformation ? out.nom : r.nom} : prêt !`);
+      notify(`${out.icone} ${r.transformation ? out.nom : r.nom} : prêt !`, { son: 'cuisine' });
     }
     lastJobs[id] = job ? job.recette : null;
   }
@@ -250,6 +251,7 @@ function watchAbsence() {
 // Une petite fenêtre du jeu (cadre bois, en-tête et ✕ comme les fenêtres de la carte) : la date,
 // l'argent, et les biens produits pendant l'absence (ce que les ateliers ont ajouté aux stocks).
 function openAbsenceModal(r) {
+  son('retour', { delai: 0.2 });
   const biens = Object.entries(r.terminees || {}).filter(([item, n]) => DATA.OBJETS[item] && n > 0)
     .map(([item, n]) => `<li><span aria-hidden="true">${DATA.OBJETS[item].icone}</span> ${DATA.OBJETS[item].nom}<strong class="num">+${formatNumber(n)}</strong></li>`);
   openModal(`

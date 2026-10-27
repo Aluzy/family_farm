@@ -292,6 +292,7 @@
     leave(q) {
       if (this.leaving) return;
       this.leaving = true;
+      if (global.FermeSon) global.FermeSon.joue('echelle');
       this.cameras.main.fadeOut(reduced() ? 0 : 250, 0, 0, 0);
       this.time.delayedCall(reduced() ? 0 : 260, () => { const H = hote(); if (H) H.go(q.cible); });
     }
@@ -508,6 +509,7 @@
     chips(o) {
       K.secousse(this, 'coup');
       K.vibre('pioche');
+      if (global.FermeSon) global.FermeSon.joue(o.kind ? 'pioche_minerai' : 'pioche', { x: o.x * T + 8, y: o.y * T + 10, depuis: 0.14, ecart: 0 });
       if (reduced()) return;
       const col = { fer: 0xd2a88a, cuivre: 0xd67e46, or: 0xf0c846, platine: 0xe6eef8, quartz: 0xdceaf6, amethyste: 0xa86cd8 }[o.kind] || 0x9a9088;
       for (let i = 0; i < 4; i++) {
@@ -545,6 +547,7 @@
     // Ce que le personnage prend ({ objet: qté }) : la bulle « +1 » au-dessus de lui
     // (CarteKit.bulleGain, la même qu'à la ferme), dans une couche posée sur la carte.
     popGain(items) {
+      if (global.FermeSon) global.FermeSon.prise(items, { ecart: 0.08 });   // minerai, champignon (js/son.js)
       if (!this.gain) {
         const zone = this.game.canvas && this.game.canvas.parentNode;
         if (!zone) return;
@@ -628,7 +631,11 @@
         const r = K.regard(vx, vy);
         this.face = r.face; H.setFlipX(r.flip);
         this.walked += moved;
-        H.setFrame(this.frame.de('marche', this.face, Math.floor(this.walked / HERO.stride) % 4));
+        const k = Math.floor(this.walked / HERO.stride) % 4;
+        H.setFrame(this.frame.de('marche', this.face, k));
+        // un pas sur la roche aux images 0 et 2 (js/son.js)
+        if (k !== this.pasVu && (k === 0 || k === 2) && global.FermeSon) global.FermeSon.pas(P.x, P.y, null, 0);
+        this.pasVu = k;
       } else H.setFrame(this.frame.de('idle', this.face, Math.floor(time / 600) % 2));   // debout : il respire
       H.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y);
       this.shadow.setPosition(Math.round(P.x), Math.round(P.y)).setDepth(P.y - 0.5);

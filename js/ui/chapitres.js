@@ -11,6 +11,7 @@ import { registerActions } from './actions.js';
 import { helpBtn } from './aide.js';
 import { closeModal, openModal } from './modal.js';
 import { accord, chartFrame, plural } from './common.js';
+import { son } from './son.js';
 
 /* ---------- Lot 9 : chapitres, autonomie, graphique ---------- */
 
@@ -125,6 +126,7 @@ function openChapterModal() {
   const c = state.campagne;
   const a = c && c.annonces[0];
   if (!a) return;
+  son('chapitre', { delai: 0.15 });
   const L = DATA.CHAPITRES.liste;
   const done = L[a.chapitre - 1];
   const next = L[a.chapitre] || null;

@@ -155,6 +155,7 @@
         this.revealPieces(M2.coup);
         K.secousse(this, fort ? 'fort' : 'coup');
         K.vibre(fort ? 'fort' : 'pioche');
+        if (global.FermeSon) global.FermeSon.joue('pioche', { x: foot.x, y: foot.y, depuis: 0.14, gain: fort ? 1.25 : 1, vitesse: fort ? 0.9 : 1, ecart: 0 });
         if (r.breaking && !r.queued) { this.breakRock(r, true); return; }
         this.shakeRock(r);
         const p = this.fermier && this.fermier.pos();
@@ -210,6 +211,7 @@
     // Le dernier coup : une gerbe d'éclats, le rocher s'affaisse et s'efface.
     breakRock(r, anim) {
       if (r.breakTimer) { r.breakTimer.remove(); r.breakTimer = null; }
+      if (anim && global.FermeSon) global.FermeSon.joue('retrait', { x: r.x + (r.w || 16) / 2, y: r.y + (r.h || 16), vitesse: 0.75, gain: 1.3, delai: 0.05 });   // il s'effondre
       this.revealPieces(r.finPieces);            // ses pierres, autour de lui
       r.finPieces = null;
       r.breaking = false;
