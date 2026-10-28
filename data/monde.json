@@ -55,7 +55,9 @@
     "  rayon de terre libre autour ; dans la prairie, la lande, sur la plage ou à la lisière d'une",
     "  forêt (une terre ouverte à LISIERE tuiles) ; la note d'une place : un tirage, plus OUVERT",
     "  sur une terre ouverte, plus LOIN_BONUS au plus selon sa distance à la ferme (jusqu'à LOIN",
-    "  tuiles) ; NOMS : les noms qu'on leur donne (tirés sans répétition).",
+    "  tuiles) ; NOMS : les noms qu'on leur donne (tirés sans répétition) ; GUE : le nom du hameau le plus proche de la",
+    "  ferme, toujours (le Gué du récit, docs/recit/bible.md : le hameau natal de Maurice ; sa première maison est celle",
+    "  de Maurice, fermée, sans foyer).",
     "CHEMINS : COUTS, le prix d'un pas sur chaque biome (absent : on n'y passe pas ; « riviere » :",
     "  un pont ; « chemin » : un chemin déjà posé, à peine moins cher que la prairie, pour que la",
     "  boucle se ferme au lieu de faire le grand tour par les chemins posés) ; MEANDRE : l'écart",
@@ -91,7 +93,7 @@
     },
     "LACS": { "NOMBRE": [2, 4], "TAILLE": [40, 180], "ECART": 50 },
     "HAMEAUX": {
-      "NOMBRE": [6, 10], "ECART": 75, "FERME": 45, "PLACE": 3, "LISIERE": 4, "OUVERT": 0.3, "LOIN": 150, "LOIN_BONUS": 0.6,
+      "NOMBRE": [6, 10], "GUE": "Le Gué", "ECART": 75, "FERME": 45, "PLACE": 3, "LISIERE": 4, "OUVERT": 0.3, "LOIN": 150, "LOIN_BONUS": 0.6,
       "NOMS": ["Les Saules", "Brumeval", "Roche-Claire", "Le Moulinet", "Fontfroide", "Les Genêts", "Hautepierre",
         "Le Gué", "Bois-Joli", "Les Mouettes", "Combelongue", "Pré-Fleuri", "La Bruyère", "L'Étang-Vieux",
         "Les Ajoncs", "Sablons", "Val-Doré", "Le Hameau des Pins", "Chantelune", "Les Roseaux"]

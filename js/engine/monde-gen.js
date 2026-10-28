@@ -566,6 +566,16 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
   const hameaux = hameauxCases.sort((a, b) => angle(a) - angle(b)).map((i, n) => ({
     id: 'hameau_' + (n + 1), case: i, nom: noms.length ? noms.splice(Math.floor(rh() * noms.length), 1)[0] : 'Hameau ' + (n + 1),
   }));
+  // Le récit (docs/recit/bible.md) : le hameau le plus proche de la ferme est toujours Le Gué (PH.GUE), le
+  // hameau natal de Maurice (gue: true). Les tirages ne changent pas : s'il avait tiré ce nom, l'autre
+  // hameau prend celui du plus proche (au plus deux noms échangés).
+  if (PH.GUE && hameaux.length) {
+    const proche = hameaux.reduce((a, b) => (distFerme(b.case) < distFerme(a.case) ? b : a));
+    const autre = hameaux.find((h) => h.nom === PH.GUE);
+    if (autre && autre !== proche) autre.nom = proche.nom;
+    proche.nom = PH.GUE;
+    proche.gue = true;
+  }
 
   /* -- les chemins : la sortie de la ferme et les hameaux, en un tour du monde -- */
   // Les hameaux et la sortie de la ferme, dans l'ordre de leur angle autour du centre de la ferme,

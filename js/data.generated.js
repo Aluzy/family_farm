@@ -3042,6 +3042,7 @@ export const RAW_DATA = {
     "LACS": { "NOMBRE": [2, 4], "TAILLE": [40, 180], "ECART": 50 },
     "HAMEAUX": {
       "NOMBRE": [6, 10],
+      "GUE": "Le Gué",
       "ECART": 75,
       "FERME": 45,
       "PLACE": 3,
@@ -3912,6 +3913,15 @@ export const RAW_DATA = {
     "PALIER_NOMS": ["inconnu", "poli", "cordial", "proche", "intime"],
     "CONFIANCE": { "DEPART": 50, "MAX": 100, "NIVEAUX": { "reservee": 0, "cordiale": 40, "chaleureuse": 70 } },
     "AGES": { "RECENT": 3, "SOUVENIR": 14 },
+    "EMPREINTE": {
+      "TUILE": 1,
+      "ARBRE_ABATTU": 2,
+      "ARBRE_PLANTE": -2,
+      "BETES": { "poule": 1, "mouton": 2, "vache": 3 },
+      "MACHINES": { "station_robot": 40, "botteleuse": 15, "distributeur": 15, "convoyeur": 5, "entonnoir": 5, "panneau": 5, "batterie": 5 },
+      "NIVEAUX": { "basse": 0, "moyenne": 120, "haute": 220 }
+    },
+    "DERIVE": { "NUITS": 3, "POINTS": { "basse": 0, "moyenne": 0, "haute": -1 }, "PLANCHER": 20 },
     "ACTES": [
       { "numero": 1, "titre": "L'arrivée", "chapitre": 1, "nuits": 0 },
       { "numero": 2, "titre": "Le petit de Maurice", "chapitre": 3, "nuits": 10 },

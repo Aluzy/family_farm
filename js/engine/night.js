@@ -22,6 +22,7 @@ import { regrowGrass, respawnBushes, respawnRocks, respawnTrees } from './outils
 import { repousseMonde } from './monde-recolte.js';
 import { habitantsNuit } from './habitants.js';
 import { bienvenueNuit } from './bienvenue.js';
+import { recitNuit } from './recit.js';
 import { remplirRuches } from './ruches.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 
@@ -261,6 +262,8 @@ export function runNight(state) {
   habitantsNuit(state);
   // la visite de bienvenue (bienvenue.js, fiche 18) qui n'a pas eu lieu : son plat attend devant la porte
   bienvenueNuit(state);
+  // le récit (recit.js, docs/recit/) : le niveau de l'empreinte de la ferme, la dérive de la confiance des hameaux
+  recitNuit(state);
   recordNight(state); // Lot 9 : autonomie de la nuit, séries et tenue (nuit encore = state.day)
   state.day += 1;
   state.awakeMs = 0;

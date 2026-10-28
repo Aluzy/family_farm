@@ -53,7 +53,9 @@ La maladie de Philomène n'est jamais un sujet du récit.
 Le monde généré devient Céron sans changer de forme : un massif volcanique au nord et à l'ouest, la
 mer au sud et à l'est, la terre de Maurice au centre. Cinq hameaux et quelques lieux deviennent
 garantis dans chaque partie ; les autres restent générés (leurs noms, leurs métiers, leurs
-habitants combinatoires).
+habitants combinatoires). Fait (lot 3a) : le Gué est toujours le hameau le plus proche de la ferme,
+quel que soit son milieu ; la maison de Maurice y est la première maison du plan, fermée, sans
+habitant.
 
 | Lieu garanti | Milieu | Ce qu'on y fait | Qui y vit | Rôle |
 |---|---|---|---|---|

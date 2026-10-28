@@ -73,8 +73,9 @@ ou d'Odile, les consignes restant dans les objectifs.
 ## 2. Les décisions et les fins
 
 Le joueur ne choisit jamais dans un menu : il décide par ses actes. Deux mesures cachées : l'**empreinte
-de la ferme** (calculée : tuiles labourées, arbres coupés et replantés, machines posées) et la
-**confiance de chaque hameau**.
+de la ferme** (calculée : tuiles labourées, arbres abattus et replantés, bêtes, machines posées ;
+`RECIT.EMPREINTE`, seuils provisoires 120 et 220 points) et la **confiance de chaque hameau**
+(qui dérive lentement la nuit quand l'empreinte est haute : `RECIT.DERIVE`).
 
 | Décision | Quand | Options | Conséquences |
 |---|---|---|---|

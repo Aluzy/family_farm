@@ -7,6 +7,8 @@ import { chapterReached } from './campaign.js';
 import { findMember, memberName } from './family.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
+import { soilCount } from './crops.js';
+import { fellenTrees } from './outils.js';
 
 /* ---------- le récit de Céron : la mémoire, les relations et les répliques (docs/recit/) ----------
 
@@ -323,4 +325,65 @@ export function jouerScene(state, id, ctx = {}) {
   appliquerEffet(state, s.effet, s.lignes[0] && s.lignes[0].qui, ctx);
   const lignes = s.lignes.map((l) => ({ qui: l.qui, nom: RECIT.PERSONNAGES[l.qui].nom, texte: texteRecit(state, l.texte, ctx) }));
   return { ok: true, id, lignes };
+}
+
+/* ---------- l'empreinte de la ferme et la confiance des hameaux (lot 2) ----------
+
+   L'empreinte dit la place que prend la ferme sur l'île (docs/recit/aventure.md, « les décisions et les
+   fins ») : elle se calcule de l'état de la ferme (RECIT.EMPREINTE), jamais stockée. Elle ne s'affiche
+   pas en jauge : les répliques, les veillées et les fins la lisent. */
+
+const nb = (v) => (Array.isArray(v) ? v.length : Math.max(0, Math.floor(Number(v) || 0)));
+
+// L'empreinte de la ferme : { points, niveau, detail: { tuiles, abattus, plantes, betes, machines } }.
+// Les points ne descendent pas sous 0 (une ferme qui a replanté plus qu'elle n'a pris n'a pas de
+// « dette » à rendre).
+export function empreinteFerme(state) {
+  const E = RECIT.EMPREINTE;
+  const tuiles = state.potager ? soilCount(state) : 0;
+  const abattus = state.outils ? fellenTrees(state).length : 0;
+  const plantes = state.foret ? nb(state.foret.arbres) : 0;
+  const betes = {
+    poule: state.poulailler ? nb(state.poulailler.poules) : 0,
+    mouton: state.paturage ? nb(state.paturage.moutons) : 0,
+    vache: state.paturage ? nb(state.paturage.vaches) : 0,
+  };
+  const machines = {};
+  for (const sorte of Object.values(objet(state.blocs) ? state.blocs : {})) if (sorte in E.MACHINES) machines[sorte] = (machines[sorte] || 0) + 1;
+  let points = tuiles * E.TUILE + abattus * E.ARBRE_ABATTU + plantes * E.ARBRE_PLANTE;
+  for (const [b, n] of Object.entries(betes)) points += n * (E.BETES[b] || 0);
+  for (const [m, n] of Object.entries(machines)) points += n * E.MACHINES[m];
+  points = Math.max(0, entier(points));
+  let niveau = 'basse';
+  for (const [nom, seuil] of Object.entries(E.NIVEAUX)) if (points >= seuil) niveau = nom;
+  return { points, niveau, detail: { tuiles, abattus, plantes, betes, machines } };
+}
+
+// Les hameaux découverts (leurs ids).
+function hameauxConnus(state) {
+  return state.monde && objet(state.monde.hameaux) ? Object.keys(state.monde.hameaux) : [];
+}
+
+// La nuit du récit (appelée par runNight, avant que le jour change) : le niveau de l'empreinte est
+// noté comme fait (son dernier jour suit : « fait_recent: empreinte.haute » veut dire « la ferme
+// est grande en ce moment ») ; toutes les DERIVE.NUITS nuits, la confiance des hameaux découverts
+// dérive selon ce niveau, sans passer sous DERIVE.PLANCHER par cette seule dérive. Renvoie
+// { niveau, points, derive } (derive : les points appliqués à chaque hameau cette nuit, 0 sinon).
+export function recitNuit(state) {
+  recitDe(state);
+  const e = empreinteFerme(state);
+  if (e.niveau !== 'basse') noterFait(state, `empreinte.${e.niveau}`);
+  const D = RECIT.DERIVE;
+  let derive = 0;
+  if (jourDe(state) % D.NUITS === 0) {
+    derive = D.POINTS[e.niveau] || 0;
+    if (derive) {
+      for (const h of hameauxConnus(state)) {
+        const avant = confiance(state, h);
+        const apres = derive < 0 ? Math.max(Math.min(avant, D.PLANCHER), avant + derive) : avant + derive;
+        if (apres !== avant) ajouterConfiance(state, h, apres - avant);
+      }
+    }
+  }
+  return { niveau: e.niveau, points: e.points, derive };
 }

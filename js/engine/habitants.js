@@ -91,7 +91,8 @@ export function peuplerHameau(state, plan, o = {}) {
   const tire = (listes, genre) => (listes[genre].length ? listes[genre].shift() : listes[autre(genre)].shift());
   const metier = METIERS[plan.metier] ? plan.metier : 'cueilleur';
   const S = HABITANTS.SECOND;
-  const foyers = plan.maisons.map((mz) => {
+  // (la maison de Maurice, au Gué, reste fermée : personne n'y vit ; docs/recit/bible.md)
+  const foyers = plan.maisons.filter((mz) => mz.id !== plan.maisonMaurice).map((mz) => {
     // (la composition : la graine du monde, le hameau, la maison)
     const rm = rngDe(`${g}:habitants:${plan.id}:${mz.id}`);
     const lits = Array.isArray(mz.lits) ? mz.lits : [];

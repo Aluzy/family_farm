@@ -1,4 +1,4 @@
-/* ==========================================================================
+/* ===================================================================
    Tests du moteur : le récit de Céron (js/engine/recit.js, data/recit.json, docs/recit/).
    - les faits : notés avec leur premier et leur dernier jour, leur nombre ; leur âge (récent,
      souvenir, ancien) ;
@@ -15,8 +15,9 @@
 import {
   awakeMsAtHour, composeFamily, createInitialState, createNewGame, DATA, finishSetup, migrate, reparerPartie, STATE_VERSION,
 } from '../../js/engine/index.js';
+import { runNight, makePlot } from '../../js/engine/index.js';
 import {
-  acteEnCours, aFait, ageFait, ageSouvenir, ajouterConfiance, ajouterFragment, ajouterRelation, carnet, choisirReplique,
+  acteEnCours, empreinteFerme, recitNuit, aFait, ageFait, ageSouvenir, ajouterConfiance, ajouterFragment, ajouterRelation, carnet, choisirReplique,
   conditionsVraies, confiance, foisFait, jouerScene, niveauConfiance, noterFait, nouveauRecit, palier, palierNom, parler,
   recitDe, relation, repliquesPossibles, RECIT, scenesPossibles, texteRecit,
 } from '../../js/engine/recit.js';
@@ -301,4 +302,73 @@ test('récit : Odile vouvoie jusqu\'à ce qu\'elle tutoie', () => {
   assertEqual([...vues], ['odile.vous'], 'avant la première veillée, seulement le vouvoiement');
   noterFait(s, 'odile.tutoie');
   assert(!repliquesPossibles(s, 'odile').some((e) => e.id === 'odile.vous'), 'ensuite, plus jamais');
+});
+
+/* ---------- lot 2 : l'empreinte de la ferme et la dérive de la confiance ---------- */
+
+// Une ferme de `tuiles` tuiles labourées, `poules` poules, et des blocs posés ({ sorte: nombre }).
+function ferme(s, { tuiles = 0, poules = 0, blocs = {}, plantes = 0 } = {}) {
+  s.potager.parcelles = Array.from({ length: tuiles }, (_, i) => makePlot(i));
+  s.poulailler.poules = poules;
+  s.blocs = {};
+  let c = 900000;
+  for (const [sorte, n] of Object.entries(blocs)) for (let i = 0; i < n; i++) s.blocs[c++] = sorte;
+  if (!s.foret) s.foret = { arbres: [] };
+  s.foret.arbres = Array.from({ length: plantes }, (_, i) => 800000 + i);
+  return s;
+}
+
+test('récit : l\'empreinte de la ferme se calcule de son état', () => {
+  const E = RECIT.EMPREINTE;
+  const s = nouvelle();
+  ferme(s);
+  assertEqual([empreinteFerme(s).points, empreinteFerme(s).niveau], [0, 'basse']);
+  ferme(s, { tuiles: 50, poules: 8, blocs: { station_robot: 1, mur: 30 } });
+  const e = empreinteFerme(s);
+  assertEqual(e.points, 50 * E.TUILE + 8 * E.BETES.poule + E.MACHINES.station_robot, 'les murs ne comptent pas');
+  assertEqual(e.detail.machines, { station_robot: 1 });
+  // replanter fait baisser, sans jamais passer sous 0
+  ferme(s, { tuiles: 50, plantes: 5 });
+  assertEqual(empreinteFerme(s).points, 50 * E.TUILE + 5 * E.ARBRE_PLANTE);
+  ferme(s, { plantes: 500 });
+  assertEqual(empreinteFerme(s).points, 0);
+  // les niveaux
+  ferme(s, { tuiles: E.NIVEAUX.moyenne });
+  assertEqual(empreinteFerme(s).niveau, 'moyenne');
+  ferme(s, { tuiles: E.NIVEAUX.haute });
+  assertEqual(empreinteFerme(s).niveau, 'haute');
+});
+
+test('récit : la nuit note le niveau de l\'empreinte et fait dériver la confiance des hameaux connus', () => {
+  const D = RECIT.DERIVE;
+  const s = nouvelle();
+  s.monde.hameaux = { h1: { nom: 'Le Gué' }, h2: { nom: 'Les Genêts' } };
+  ferme(s, { tuiles: 10 });
+  // une petite ferme : rien n'est noté, rien ne bouge
+  a(s, D.NUITS);
+  assertEqual(recitNuit(s), { niveau: 'basse', points: 10, derive: D.POINTS.basse });
+  assertEqual([aFait(s, 'empreinte.moyenne'), aFait(s, 'empreinte.haute')], [false, false]);
+  // une grande ferme : le fait est noté chaque nuit (son dernier jour suit) ; la dérive, toutes les NUITS nuits
+  ferme(s, { tuiles: RECIT.EMPREINTE.NIVEAUX.haute });
+  a(s, D.NUITS + 1);
+  assertEqual(recitNuit(s).derive, 0, 'pas une nuit de dérive');
+  assertEqual(confiance(s, 'h1'), RECIT.CONFIANCE.DEPART);
+  a(s, 2 * D.NUITS);
+  assertEqual(recitNuit(s).derive, D.POINTS.haute);
+  assertEqual([confiance(s, 'h1'), confiance(s, 'h2')], [RECIT.CONFIANCE.DEPART + D.POINTS.haute, RECIT.CONFIANCE.DEPART + D.POINTS.haute]);
+  assertEqual(recitDe(s).faits['empreinte.haute'], [D.NUITS + 1, 2 * D.NUITS, 2]);
+  // la dérive seule ne descend pas sous le plancher ; une confiance déjà plus basse n'est pas touchée
+  ajouterConfiance(s, 'h1', -100);
+  ajouterConfiance(s, 'h1', D.PLANCHER + 1);
+  ajouterConfiance(s, 'h2', -100);
+  ajouterConfiance(s, 'h2', D.PLANCHER - 5);
+  for (let k = 3; k <= 12; k++) { a(s, k * D.NUITS); recitNuit(s); }
+  assertEqual([confiance(s, 'h1'), confiance(s, 'h2')], [D.PLANCHER, D.PLANCHER - 5]);
+});
+
+test('récit : runNight passe par la nuit du récit', () => {
+  const s = nouvelle();
+  ferme(s, { tuiles: RECIT.EMPREINTE.NIVEAUX.haute });
+  runNight(s);
+  assert(aFait(s, 'empreinte.haute'), 'la nuit a noté le niveau de la ferme');
 });

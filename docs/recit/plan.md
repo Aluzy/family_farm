@@ -10,8 +10,8 @@ se termine par une validation avant le suivant.
 |---|---|---|---|---|---|
 | 0. Bible | Ce dossier | `docs/recit/` | — | P1 | fait |
 | 1. Moteur du récit | Faits, relations, confiance, répliques dites, carnet ; actes ; conditions ; choix déterministe ; scènes ; validation | `js/engine/recit.js`, `data/recit.json`, `scripts/lib/data.mjs`, `tests/engine/recit.test.mjs` | — | P1 | fait |
-| 2. Empreinte et confiance | Calcul de l'empreinte ; montée et baisse de la confiance des hameaux | `js/engine/recit.js`, `crops.js`, `orchard.js`, `devices.js`, `automation.js` ; calibrage avec `scripts/simulate.mjs` | 1 | P1 | à faire |
-| 3a. Le Gué et la maison de Maurice | Un hameau garanti près de la ferme, la maison fermée à clé | `js/engine/monde-gen.js`, `monde-hameaux.js`, `js/monde-worker.js`, `data/monde.json` | — | P1 | à faire |
+| 2. Empreinte et confiance | Calcul de l'empreinte ; montée et baisse de la confiance des hameaux | `js/engine/recit.js`, `crops.js`, `orchard.js`, `devices.js`, `automation.js` ; calibrage avec `scripts/simulate.mjs` | 1 | P1 | fait |
+| 3a. Le Gué et la maison de Maurice | Un hameau garanti près de la ferme, la maison fermée à clé | `js/engine/monde-gen.js`, `monde-hameaux.js`, `js/engine/habitants.js`, `data/monde.json` | — | P1 | fait |
 | 4. Personnages écrits et scènes | Achille comme cocher nommé (fiche 12) ; Odile et les autres dans leur hameau ; la fenêtre de scène ; les bulles branchées sur le récit | `js/engine/habitants.js`, `caleche.js`, `js/carte/ferme/habitants.js`, `js/ui/scene.js` | 1 | P1 | à faire |
 | 5. Première séquence jouable | L'acte I complet (ci-dessous) | `data/recit.json`, `data/campaign.json`, `js/ui/caleche.js`, `js/ui/didacticiel.js`, `js/ui/carnet.js` | 1, 3a, 4 | P1 | à faire |
 | 6. Acte II | Veillées, Frida et son atelier, la fortune de Maurice, les promesses | `data/recit.json`, `js/engine/lune.js`, `data/recipes.json` | 5 | P2 | à faire |

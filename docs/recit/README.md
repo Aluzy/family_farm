@@ -31,6 +31,12 @@ l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
   conditions et les réglages. Aucune phrase d'histoire dans le code.
 - `js/engine/recit.js` : la mémoire (`state.recit` : faits, relations, confiance, répliques dites,
   carnet), les actes, l'évaluation des conditions, le choix des répliques et des scènes.
+- L'empreinte de la ferme et la dérive nocturne de la confiance des hameaux : `empreinteFerme` et
+  `recitNuit` (`js/engine/recit.js`, appelée par `runNight`), réglées par `RECIT.EMPREINTE` et
+  `RECIT.DERIVE`.
+- Le Gué : le hameau le plus proche de la ferme porte toujours ce nom (`PLAN_MONDE.HAMEAUX.GUE`,
+  `js/engine/monde-gen.js`) ; sa première maison est celle de Maurice (`maisonMaurice` dans son plan,
+  `js/engine/monde-hameaux.js`), sans foyer (`peuplerHameau`, `js/engine/habitants.js`).
 - `scripts/lib/data.mjs` : la validation du récit à la construction des données.
 - Tests : `tests/engine/recit.test.mjs`, `tests/test-data.mjs`.
 

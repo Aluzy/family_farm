@@ -105,7 +105,8 @@ export function metierDuLieu(c, r, parts, lieux, W) {
 
 // planHameau(m, h[, rayon, serre]) → le plan du hameau h ({ id, case, nom }) ; `m` : le monde ({ graine, W, H, F (la
 // ferme), lieux (ceux du plan), chemins (Uint8Array : 1 un chemin, 2 un gué), biome(i) }). Le plan :
-// { id, nom, case, style, metier, cadre: { x0, y0, x1, y1 } (les cases bâties, bornes comprises),
+// { id, nom, case, style, metier, [gue, maisonMaurice : le Gué du récit et l'id de la maison de Maurice],
+//   cadre: { x0, y0, x1, y1 } (les cases bâties, bornes comprises),
 //   place: { centre, cases, puits, banc, panneau }, maisons: [{ id, x0, y0, l, h, porte, devant,
 //   pieces: [{ genre, cases }], lits: [{ case, sorte }], foyer, fenetres, dedans }], jardins: [{ genre,
 //   cases, portillon }], travail: [{ genre, case }], ruelles: [cases] } ; et, à part (pas envoyés à la
@@ -610,6 +611,8 @@ export function planHameau(m, h, rayon = HAMEAUX.RAYON, serre = false) {
   return {
     plan: {
       id: h.id, nom: h.nom, case: h.case, style, metier,
+      // le Gué (le récit) : sa première maison est celle de Maurice, fermée, sans foyer (habitants.js)
+      ...(h.gue && plans.length ? { gue: true, maisonMaurice: plans[0].id } : {}),
       cadre: { x0: gx0 + x0, y0: gy0 + y0, x1: gx0 + x1, y1: gy0 + y1 },
       place: {
         centre: h.case, cases: place.map((j) => monde(j % N, (j / N) | 0)),

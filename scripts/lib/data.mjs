@@ -449,6 +449,7 @@ export function validateData(data) {
     fourchette('LACS.TAILLE', (PM.LACS || {}).TAILLE);
     const H = PM.HAMEAUX || {};
     if (!(Array.isArray(H.NOMS) && H.NOMS.length && H.NOMS.every((n) => typeof n === 'string' && n))) err('PLAN_MONDE.HAMEAUX.NOMS', 'une liste de noms');
+    if (H.GUE !== undefined && !(typeof H.GUE === 'string' && H.GUE)) err('PLAN_MONDE.HAMEAUX.GUE', 'le nom du hameau le plus proche de la ferme');
     for (const [b, c] of Object.entries((PM.CHEMINS || {}).COUTS || {})) {
       if (b !== 'chemin' && !(Array.isArray(BI) && BI.includes(b))) err('PLAN_MONDE.CHEMINS.COUTS', `« ${b} » n'est pas un biome (BIOMES)`);
       if (!(typeof c === 'number' && c > 0)) err(`PLAN_MONDE.CHEMINS.COUTS.${b}`, `un nombre positif ; reçu ${JSON.stringify(c)}`);
@@ -828,6 +829,17 @@ export function validateData(data) {
       if (e.confiance !== undefined && !isInt(e.confiance)) err(`${where}.effet.confiance`, 'des points entiers');
       if (e.fragment !== undefined && !frags.includes(e.fragment)) err(`${where}.effet.fragment`, 'une page de RECIT.FRAGMENTS');
     };
+    const EM = R.EMPREINTE || {};
+    for (const k of ['TUILE', 'ARBRE_ABATTU', 'ARBRE_PLANTE']) if (!isInt(EM[k])) err(`RECIT.EMPREINTE.${k}`, 'un entier');
+    for (const [b, n] of Object.entries(EM.BETES || {})) { if (!['poule', 'mouton', 'vache'].includes(b)) err(`RECIT.EMPREINTE.BETES.${b}`, 'poule, mouton ou vache'); if (!isInt(n)) err(`RECIT.EMPREINTE.BETES.${b}`, 'un entier'); }
+    const blocs = Object.keys((data.ATELIER && data.ATELIER.BLOCS) || {});
+    for (const [m, n] of Object.entries(EM.MACHINES || {})) { if (!blocs.includes(m)) err(`RECIT.EMPREINTE.MACHINES.${m}`, 'un bloc de ATELIER.BLOCS'); if (!isInt(n)) err(`RECIT.EMPREINTE.MACHINES.${m}`, 'un entier'); }
+    const niv = EM.NIVEAUX || {};
+    if (!(niv.basse === 0 && isInt(niv.moyenne) && isInt(niv.haute) && niv.moyenne > 0 && niv.haute > niv.moyenne)) err('RECIT.EMPREINTE.NIVEAUX', 'basse à 0, puis moyenne et haute, entiers croissants');
+    const DV = R.DERIVE || {};
+    if (!(isInt(DV.NUITS) && DV.NUITS >= 1)) err('RECIT.DERIVE.NUITS', 'un entier au moins égal à 1');
+    if (!(isInt(DV.PLANCHER) && DV.PLANCHER >= 0 && DV.PLANCHER <= C.MAX)) err('RECIT.DERIVE.PLANCHER', `un entier de 0 à ${C.MAX}`);
+    for (const n of Object.keys(DV.POINTS || {})) { if (!(n in niv)) err(`RECIT.DERIVE.POINTS.${n}`, 'un niveau de RECIT.EMPREINTE.NIVEAUX'); if (!isInt(DV.POINTS[n])) err(`RECIT.DERIVE.POINTS.${n}`, 'un entier'); }
     const ids = new Set();
     const unique = (where, id) => { if (typeof id !== 'string' || !id) err(where, 'un id'); else if (ids.has(id)) err(where, `id « ${id} » en double`); else ids.add(id); };
     const prio = (where, p) => { if (p !== undefined && !(isInt(p) && p >= 0 && p <= 100)) err(`${where}.priorite`, 'un entier de 0 à 100'); };

@@ -60,7 +60,8 @@ test('les habitants : des familles déterministes, pas plus nombreuses que les l
     assertEqual(copie(habitantsDe(a)), copie(habitantsDe(b)), `${graine} : le même tirage`);
     for (const p of plans(graine)) {
       const h = habitantsDe(a)[p.id];
-      assertEqual(h.foyers.map((f) => f.maison), p.maisons.map((m) => m.id), 'un foyer par maison, dans l\'ordre');
+      // (sauf la maison de Maurice, au Gué : personne n'y vit, docs/recit/bible.md)
+      assertEqual(h.foyers.map((f) => f.maison), p.maisons.filter((m) => m.id !== p.maisonMaurice).map((m) => m.id), 'un foyer par maison, dans l\'ordre');
       assertEqual(h.metier, p.metier);
       const prenoms = new Set(), persos = new Set();
       for (const f of h.foyers) {
