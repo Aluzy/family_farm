@@ -73,14 +73,10 @@ SONS = {
                    [(4.99, 5.70)], (0.01, 0.25), -14),
     'chien_3': bsb('2954', 'barking-dog-2-s2954.html', 'Joseph Sardin', "Chien de traîneau, seul dehors : deux aboiements",
                    [(11.74, 12.70)], (0.01, 0.3), -14),
-    # le coq du réveil (6 h) : trois coqs, trois enregistrements, un « cocorico » entier chacun ; un
-    # peu plus fort que les autres bêtes, le chant d'un coq porte loin
+    # le coq du réveil (6 h) : un « cocorico » entier ; un peu plus fort que les autres bêtes, le
+    # chant d'un coq porte loin
     'coq_1': bsb('0283', 'song-of-rooster-s0283.html', 'Joseph Sardin', "Coq : un cocorico franc, de près",
                  [(0.0, 2.2)], (0.01, 0.3), -11),
-    'coq_2': bsb('0104', 'rooster-s0104.html', 'Joseph Sardin', "Coq : un cocorico dans la cour, un peu plus loin",
-                 [(1.5, 4.0)], (0.05, 0.3), -11),
-    'coq_3': bsb('0704', 'crowing-4-s0704.html', 'Joseph Sardin', "Coq : un long cocorico qui retombe",
-                 [(0.2, 2.75)], (0.02, 0.3), -11),
 }
 
 

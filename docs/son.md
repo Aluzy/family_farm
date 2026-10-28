@@ -129,8 +129,8 @@ dans `scripts/son/enregistrements/credits.json`, et recopiée dans `assets/son/C
 (silences coupés, volumes égalisés) sont gardés en FLAC dans `scripts/son/enregistrements/` ;
 `vers_jeu.py` les encode comme les autres sons.
 
-**Le coq du réveil** est lui aussi un vrai enregistrement : trois cocoricos de trois coqs
-différents (BigSoundBank, CC0, `scripts/son/libres.py`), un peu plus forts que les autres bêtes.
+**Le coq du réveil** est lui aussi un vrai enregistrement : un cocorico (BigSoundBank, CC0,
+`scripts/son/libres.py`), un peu plus fort que les autres bêtes.
 
 Restent synthétisés, faute d'enregistrement libre accessible, **les sabots** (une diagonale de
 trot par fichier, sur pierre ferrée, terre battue et herbe), dans `scripts/son/betes.py`. De

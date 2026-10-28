@@ -52,7 +52,7 @@
     vache: ["animaux/vache_1", "animaux/vache_2", "animaux/vache_3", "animaux/vache_4", "animaux/vache_5"],
     clochette: ["animaux/clochette"],
     mouton: ["animaux/mouton_1", "animaux/mouton_2", "animaux/mouton_3", "animaux/mouton_4", "animaux/mouton_5", "animaux/mouton_6"],
-    coq: ["animaux/coq_1", "animaux/coq_2", "animaux/coq_3"],
+    coq: ["animaux/coq"],
     chat: ["animaux/chat_1", "animaux/chat_2", "animaux/chat_3"],
     ronron: ["animaux/ronron"],
     chien: ["animaux/chien_1", "animaux/chien_2", "animaux/chien_3"],
