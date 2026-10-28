@@ -11,7 +11,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, SFX, TREE_OBJECT, ORCHARD_ADULT, TREE_BODY, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, FERMIER_FRAME, ZONE_LABEL_UP } = F.C;
+  const { T, SFX, TREE_OBJECT, ORCHARD_ADULT, TREE_BODY, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, FERMIER_FRAME, ZONE_LABEL_UP, BLOCS_CARTE, SOLEIL } = F.C;
   const { clamp, reducedMotion, v } = F;
 
   F.partie({
@@ -76,7 +76,10 @@
           const x = at.x + T / 2, y = at.y + T / 2;
           let e = this.plots.get(p.id);
           if (!e) {
-            e = { soil: this.add.image(x, y, 'ph_dry').setDepth(2), crop: null, key: '', tween: null };
+            // la terre de la parcelle : à plat sur le sol (au-dessus du plancher de la Serre), sous
+            // les ombres du soleil (soleil.js) qui s'y portent comme sur l'herbe
+            const terre = (BLOCS_CARTE.solDepth + SOLEIL.depth) / 2;
+            e = { soil: this.add.image(x, y, 'ph_dry').setDepth(terre), crop: null, key: '', tween: null };
             this.plots.set(p.id, e);
           }
           e.soil.setPosition(x, y).setTexture(p.arrosee ? this.tex('soil_wet', 'ph_wet') : this.tex('soil_dry', 'ph_dry'));

@@ -395,7 +395,7 @@
       if (this.hoeGrid) { this.hoeGrid.destroy(); this.hoeGrid = null; }
       if (!tiles || !tiles.length) return;
       const W = this.grid.cols;
-      const g = this.add.graphics().setDepth(1.5);       // sur le sol, sous les parcelles (2)
+      const g = this.add.graphics().setDepth(1.5);       // sur le sol (et la terre des parcelles)
       g.fillStyle(0xb6f08c, 0.28);
       g.lineStyle(1, 0xd8ffbe, 0.55);
       for (const t of tiles) {
