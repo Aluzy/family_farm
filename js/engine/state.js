@@ -561,6 +561,13 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v64 → v65 : le récit, lot 11 : la lettre de la Serre vient d'Adèle (adele_serre) et non plus du cousin Mateo
+  // (cousin_venezuela) ; la lettre reçue garde sa place, lue ou non, sous son nouveau nom.
+  64: (state) => ({
+    ...state,
+    ...(Array.isArray(state.courrier) ? { courrier: state.courrier.map((l) => (l && l.id === 'cousin_venezuela' ? { ...l, id: 'adele_serre' } : l)) } : {}),
+    version: 65,
+  }),
 };
 
 // Porte les cases d'une partie (numérotées sur la largeur de sa ferme) dans celles du monde, où sa

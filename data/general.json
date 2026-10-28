@@ -30,13 +30,7 @@
       "Les appareils de départ sont offerts : prix d'achat 0, donc entretien",
       "et réparation gratuits pour eux (l'entretien vaut 20 % du prix d'achat)."
     ],
-    "PRIX_APPAREIL": 0,
-    "//HISTOIRE": "Texte d'ouverture (section 3.1), montré une fois la famille installée ; {nom} : le nom de famille.",
-    "HISTOIRE": [
-      "Printemps 2021. Après des mois enfermés dans un appartement trop petit, la famille {nom} décide de tout quitter.",
-      "Le grand-père, disparu l'hiver dernier, leur a laissé sa ferme : quelques hectares au bout d'un chemin de terre, une maison aux volets fermés, un moulin qui ne tourne plus. « Elle n'attend que vous », disait sa dernière lettre.",
-      "Les cartons sont dans le coffre. Il est temps de redonner vie à la ferme."
-    ]
+    "PRIX_APPAREIL": 0
   },
   "//TEMPS": [
     "Temps : la journée commence à 6 h au réveil.",

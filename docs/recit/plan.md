@@ -20,7 +20,7 @@ se termine par une validation avant le suivant.
 | 8. Exploration | Compagnon qui garde la ferme (fiche 19), tente et bivouac, l'équipement (fiche 11) complété de la tente | `compagnon.js`, `night.js`, `equipement.js`, `blocs.js`, `data/equipement.json`, `js/ui/depart.js`, `js/ui/fiche-membre.js`, `js/ui/stage-windows.js`, `js/ui/loop.js` | 1 | P2 | fait |
 | 9. Actes III et IV | L'enveloppe, l'usure des maisons, la seconde veillée, la fête et ses fins, les lettres d'Adèle, les arcs de Théo et d'Achille | `data/recit.json`, `data/campaign.json`, `js/engine/recit.js`, `js/engine/usure.js`, `js/engine/habitants.js`, `js/ui/habitants.js`, `js/carte/ferme/hameaux.js` | 2, 6, 7 | P3 | fait |
 | 10. Le fil de la lune | Fragments, lanterne, repas à Johnny, galerie secrète, pierre et pousse accélérée | `js/engine/fil-lune.js`, `js/grotte.js`, `js/ui/excursion.js`, `js/engine/crops.js`, `data/recit.json`, `scripts/carte/galerie.py` | 3b, 6 | P3 | fait |
-| 11. Textes et encyclopédie | Retirer « Printemps 2021 », Adèle à la place de Mateo, intros des chapitres, pages des hameaux et des personnages | `data/general.json`, `data/campaign.json`, `encyclopedie_ferme_familiale.json` | 5 | P2 | à faire |
+| 11. Textes et encyclopédie | Retirer « Printemps 2021 », Adèle à la place de Mateo, intros des chapitres, pages des hameaux et des personnages | `data/general.json`, `data/campaign.json`, `encyclopedie_ferme_familiale.json`, `js/engine/decouverte.js` | 5 | P2 | fait |
 
 ## La première séquence jouable (lot 5)
 
@@ -219,6 +219,25 @@ Rien ne le signale (`js/engine/fil-lune.js`, `RECIT.FIL`) ; seules les pages du 
 - Pas fait : le souvenir de Lise (facultatif : Lise n'habite pas encore les Genêts) ; Johnny qui maigrit sans
   visite.
 - Icônes pixel : la lanterne-tempête, la pierre. Tests : `tests/engine/fil-lune.test.mjs`.
+
+## Les textes et l'encyclopédie (lot 11)
+
+- Le texte d'ouverture « Printemps 2021 » (`DEPART.HISTOIRE`) est retiré : la scène de l'arrivée aux Mouettes le
+  remplace depuis le lot 5.
+- La lettre de la Serre vient d'Adèle, au retour d'un voyage sur le continent américain (`adele_serre`, les
+  mêmes graines) ; migration 64 → 65 : une partie qui avait la lettre du cousin Mateo (`cousin_venezuela`) la
+  garde sous son nouveau nom, lue ou non.
+- Les intros des chapitres s'ouvrent sur une phrase d'Adèle (1, 5), d'Achille (2, 4, 7) ou d'Odile (3, 6) ; ce
+  qu'il faut faire reste dans l'intro et les objectifs.
+- L'encyclopédie : une catégorie « L'île de Céron » (33 pages) : l'île, Cadolon, le calendrier de lune ; les
+  personnages (Maurice, Adèle, Achille, Odile, Fernand, Frida, Basile, Théo, Garance, Johnny) ; les hameaux
+  garantis et les lieux (la maison de Maurice, la cale du bac, l'épave, la cabane, l'atelier de Frida) ; le
+  carnet, les promesses, la veillée, la fête, les toits, l'enveloppe, la cloche, la tente, la lanterne, la
+  pierre. Elles se découvrent par les faits du récit (la condition `fait:<fait>`, `js/engine/decouverte.js`) :
+  une rencontre, une visite, un objet. Rien n'y dit le fil de la lune avant qu'on l'ait suivi ; la page de la
+  pierre est « secret » : dans le livre du jeu seulement, absente de la page publique (`encyclopedie.html`). Mises à jour :
+  le courrier, la famille, l'adulte (le compagnon), l'équipement (la lanterne, la tente).
+- Tests : `tests/engine/textes-recit.test.mjs`.
 
 ## Les critères de qualité narrative
 

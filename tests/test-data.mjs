@@ -110,7 +110,7 @@ test('culture sans découpe : un avertissement, pas une erreur', () => {
 
 /* ---------- ce que les autres tables citent ---------- */
 
-refuse('courrier : cadeau inconnu', (d) => { d.COURRIER.cousin_venezuela.cadeaux.mangue = 1; }, '« mangue »');
+refuse('courrier : cadeau inconnu', (d) => { d.COURRIER.adele_serre.cadeaux.mangue = 1; }, '« mangue »');
 refuse('inventaire de départ : objet inconnu', (d) => { d.DEPART.ETAT_INITIAL.INVENTAIRE.graine_melon = 2; }, 'DEPART.ETAT_INITIAL.INVENTAIRE : « graine_melon »');
 refuse('animal : produit inconnu', (d) => { d.ANIMAUX.poule.produit = 'oeufs'; }, 'ANIMAUX.poule.produit : « oeufs »');
 refuse('île : un atelier d\'un hameau qui n\'est pas garanti', (d) => { d.ILE.ATELIERS.scierie.hameau = 'les_saules'; }, 'un hameau garanti');

@@ -2420,6 +2420,441 @@ export const ENCYCLOPEDIE = {
    ]
   },
   {
+   "id": "ile",
+   "icone": "🌙",
+   "nom": "L'île de Céron",
+   "entrees": [
+    {
+     "id": "ceron",
+     "terme": "Céron",
+     "description": "La petite île de l'archipel des Terres Lointaines, où ta famille s'installe : un massif volcanique au nord et à l'ouest, la mer au sud et à l'est, la terre de ton grand-père au milieu. Les premiers arrivants l'ont peuplée il y a cinq siècles ; leurs descendants y vivent près de la nature, sans rien faire venir d'ailleurs, et avec des usages : on ne ferme pas sa porte, on ne coupe pas un arbre sans en replanter un, personne ne chasse, on veille les soirs de pleine lune.",
+     "liens": [
+      "cadolon",
+      "calendrier_lune",
+      "hameaux",
+      "maurice"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "cadolon",
+     "terme": "Cadolon",
+     "description": "La grande île, d'où vient ta famille : une escale entre deux continents, ses quais, ses machines, son bruit. Un bac la relie à Céron, depuis la cale des Mouettes, pour les passagers, le courrier et les petits colis. Ici, on dit « ceux d'en face » pour ses habitants ; beaucoup d'enfants de Céron y sont partis, quelques anciens en sont revenus.",
+     "liens": [
+      "ceron",
+      "cale_bac",
+      "adele"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "calendrier_lune",
+     "terme": "Le calendrier de lune",
+     "description": "Céron suit le calendrier des premiers arrivants : douze mois de quatorze jours, de Solaria à Silentia, et les phases de la lune. Chacune a sa coutume : quand la lune monte, on sème (« ce qui monte avec la lune pousse avec elle ») ; à la pleine lune, on récolte et l'on veille ; quand elle descend, on économise l'eau et l'on répare ; aux nuits noires, la terre se repose, on raconte et l'on ne sème rien.",
+     "liens": [
+      "ceron",
+      "veillee_lune"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "maurice",
+     "terme": "Maurice",
+     "description": "Ton grand-père, mort il y a un an. Né à Céron, parti enfant, revenu veuf avec ta mère, il a mené la calèche de l'île pendant trente-cinq ans. Il gagnait bien et ne gardait rien : les toits, les scies, les pompes des hameaux, c'est lui qui les payait. On parle encore de lui partout, et de toi comme de son petit. Il a laissé des carnets de tournée un peu partout.",
+     "liens": [
+      "achille",
+      "maison_maurice",
+      "carnet",
+      "promesses"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
+     "id": "adele",
+     "terme": "Adèle",
+     "description": "Ta mère. Élevée à Céron par Maurice, partie à Cadolon adolescente, elle y vit toujours. Elle ne viendra pas sur l'île : elle écrit. Ses lettres arrivent par le bac, aux moments qui comptent, et parlent des petites choses de l'île ; ses « au fait » ramènent toujours un souvenir.",
+     "liens": [
+      "courrier",
+      "maurice",
+      "cadolon"
+     ],
+     "decouverte": [
+      "courrier"
+     ]
+    },
+    {
+     "id": "achille",
+     "terme": "Achille",
+     "description": "Le cocher de l'île depuis que Maurice a arrêté. Né aux Mouettes, il vit au Gué, à l'écurie de la calèche. Bourru, ponctuel, il parle à son cheval plus qu'aux gens et sait tout ce qui se dit d'un hameau à l'autre. Il passe à la ferme chaque jour vers dix heures, achète ce que tu as en trop, porte ce que tu confies. Il garde deux carnets de Maurice.",
+     "liens": [
+      "comptoir",
+      "le_gue",
+      "maurice",
+      "promesses"
+     ],
+     "decouverte": [
+      "fait:achille.cle"
+     ]
+    },
+    {
+     "id": "odile",
+     "terme": "Odile",
+     "description": "L'ancienne du Gué, voisine de Maurice depuis toujours ; elle a vu grandir ta mère. Elle tient aux coutumes et à la lune, commence volontiers ses phrases par « On ne… », et vouvoie les nouveaux jusqu'à leur première veillée de pleine lune. Elle voudrait voir la maison de Maurice revivre.",
+     "liens": [
+      "le_gue",
+      "maison_maurice",
+      "veillee_lune",
+      "calendrier_lune"
+     ],
+     "decouverte": [
+      "fait:odile.rencontre"
+     ]
+    },
+    {
+     "id": "fernand",
+     "terme": "Fernand",
+     "description": "L'ancien des Mouettes, revenu sur l'île après quarante ans de mécanique au port de Cadolon. Il veut pêcher en paix et compare tout à « là-bas ». Il a accueilli ta famille sur la cale, le jour du bac.",
+     "liens": [
+      "les_mouettes",
+      "cale_bac",
+      "cadolon"
+     ],
+     "decouverte": [
+      "fait:arrivee"
+     ]
+    },
+    {
+     "id": "frida",
+     "terme": "Frida",
+     "description": "La scientifique de l'île, venue il y a cinquante ans observer les bêtes et les plantes, et restée. Elle s'est occupée de ta mère toute petite. Elle fabrique le robot, sa station et les automatisations, dans son atelier au bord de l'eau ; les anciens l'ont adoptée, ses machines beaucoup moins. Elle a toujours un chiffre à donner.",
+     "liens": [
+      "atelier_frida",
+      "robot",
+      "automatisation"
+     ],
+     "decouverte": [
+      "fait:frida.rencontre"
+     ]
+    },
+    {
+     "id": "basile",
+     "terme": "Basile",
+     "description": "Le scieur et ébéniste de Bois-Joli : la scierie, les meubles de l'île. Il parle du bois comme d'une personne et tient au bois juste : on replante ce qu'on coupe. Il voudrait que son fils Théo reprenne l'atelier.",
+     "liens": [
+      "bois_joli",
+      "theo",
+      "commerce"
+     ],
+     "decouverte": [
+      "fait:visite.bois_joli"
+     ]
+    },
+    {
+     "id": "theo",
+     "terme": "Théo",
+     "description": "Le fils de Basile, quinze ans, le meilleur de l'île pour réparer une roue ou une pompe. Il rêve de Cadolon et de machines, et passe ses journées chez Frida en cachette. Ce qu'il deviendra dépend un peu de ce que l'île lui offre.",
+     "liens": [
+      "basile",
+      "bois_joli",
+      "frida"
+     ],
+     "decouverte": [
+      "fait:theo.rencontre"
+     ]
+    },
+    {
+     "id": "garance",
+     "terme": "Garance",
+     "description": "La tisserande et bergère des Genêts. Franche, juste, attachée au fait main, elle juge d'un mot. Maurice lui avait promis un toit avant les pluies ; son métier à tisser fait le tissu de l'île.",
+     "liens": [
+      "les_genets",
+      "promesses",
+      "commerce"
+     ],
+     "decouverte": [
+      "fait:visite.genets",
+      "fait:promesse.toit_garance.commencee"
+     ]
+    },
+    {
+     "id": "johnny",
+     "terme": "Johnny",
+     "description": "Un vieil homme qui vit seul dans une cabane, au fond de la forêt, sans lampe. Il accueille tout le monde comme la première fois, et parle de la lune, de la roche, des marées. Quelqu'un lui apportait à manger, avant.",
+     "liens": [
+      "cabane_johnny"
+     ],
+     "decouverte": [
+      "fait:johnny.visite"
+     ]
+    },
+    {
+     "id": "le_gue",
+     "terme": "Le Gué",
+     "description": "Le hameau le plus proche de la ferme, au croisement des chemins : celui de Maurice, d'Odile et d'Achille, qui y a l'écurie de la calèche. On y veille les soirs de pleine lune. Au Gué, on ne ferme pas sa porte.",
+     "liens": [
+      "odile",
+      "achille",
+      "maison_maurice",
+      "veillee_lune"
+     ],
+     "decouverte": [
+      "fait:visite.gue",
+      "fait:achille.cle"
+     ]
+    },
+    {
+     "id": "maison_maurice",
+     "terme": "La maison de Maurice",
+     "description": "Sa maison d'enfance, au Gué : la première du hameau, vide depuis sa mort, jamais fermée. Il n'y a rien à prendre : il donnait tout. Odile y passe quand elle peut.",
+     "liens": [
+      "maurice",
+      "le_gue",
+      "odile",
+      "carnet"
+     ],
+     "decouverte": [
+      "fait:odile.rencontre"
+     ]
+    },
+    {
+     "id": "les_mouettes",
+     "terme": "Les Mouettes",
+     "description": "Le hameau des pêcheurs, sur la côte : les barques, les filets, et la cale du bac. C'est la seule porte de Céron vers l'extérieur : on y arrive, on y reçoit le courrier. Fernand y pêche.",
+     "liens": [
+      "fernand",
+      "cale_bac",
+      "peche"
+     ],
+     "decouverte": [
+      "fait:visite.mouettes",
+      "fait:lieu.cale"
+     ]
+    },
+    {
+     "id": "brumeval",
+     "terme": "Brumeval",
+     "description": "Le hameau de la montagne volcanique : des mineurs, des sources chaudes, l'île ancienne. C'est là qu'a lieu, une fois l'an, la fête des premiers arrivants.",
+     "liens": [
+      "fete_premiers",
+      "grotte_montagne"
+     ],
+     "decouverte": [
+      "fait:visite.brumeval",
+      "fait:fete.annonce"
+     ]
+    },
+    {
+     "id": "bois_joli",
+     "terme": "Bois-Joli",
+     "description": "Le hameau de la forêt : des bûcherons, la scierie et l'atelier d'ébéniste de Basile, qui vend les meubles de l'île. On y parle beaucoup de rester ou de partir.",
+     "liens": [
+      "basile",
+      "theo",
+      "commerce"
+     ],
+     "decouverte": [
+      "fait:visite.bois_joli"
+     ]
+    },
+    {
+     "id": "les_genets",
+     "terme": "Les Genêts",
+     "description": "Le hameau de la lande : des bergers, la bergerie, le métier à tisser et la couture de Garance. Le plus attaché aux façons anciennes.",
+     "liens": [
+      "garance",
+      "commerce"
+     ],
+     "decouverte": [
+      "fait:visite.genets"
+     ]
+    },
+    {
+     "id": "cale_bac",
+     "terme": "La cale du bac",
+     "description": "Une jetée de pierre, aux Mouettes, où le bac de Cadolon accoste : c'est par là que ta famille est arrivée. On peut marcher jusqu'au bout et regarder le bac amarré.",
+     "liens": [
+      "les_mouettes",
+      "cadolon",
+      "fernand"
+     ],
+     "decouverte": [
+      "fait:lieu.cale"
+     ]
+    },
+    {
+     "id": "epave",
+     "terme": "L'épave",
+     "description": "Une vieille coque couchée sur une plage, le mât cassé, loin des hameaux. Personne n'y touche. Fernand dit qu'elle ne sort d'aucun chantier qu'il connaisse.",
+     "liens": [
+      "les_mouettes"
+     ],
+     "decouverte": [
+      "fait:lieu.epave"
+     ]
+    },
+    {
+     "id": "cabane_johnny",
+     "terme": "La cabane de la forêt",
+     "description": "Une cabane de rondins au fond de la forêt, loin des chemins, sans électricité : celle de Johnny.",
+     "liens": [
+      "johnny"
+     ],
+     "decouverte": [
+      "fait:lieu.cabane"
+     ]
+    },
+    {
+     "id": "atelier_frida",
+     "terme": "L'atelier de Frida",
+     "description": "Une bâtisse au bord de l'eau, entre deux hameaux, pleine d'outils et de pièces de métal : on y sent l'huile. Frida y fabrique ses machines.",
+     "liens": [
+      "frida",
+      "robot"
+     ],
+     "decouverte": [
+      "fait:lieu.atelier"
+     ]
+    },
+    {
+     "id": "carnet",
+     "terme": "Le carnet",
+     "description": "Ton carnet, dans le menu : les pages que tu as trouvées, dans l'ordre où elles sont venues. Des carnets de tournée de Maurice, des notes, des bribes ; rien n'y dit ce qu'il faut en faire.",
+     "liens": [
+      "maurice",
+      "promesses"
+     ],
+     "decouverte": [
+      "fait:odile.rencontre"
+     ]
+    },
+    {
+     "id": "promesses",
+     "terme": "Les promesses de Maurice",
+     "description": "Son carnet de tournée en garde trois qu'il n'a pas pu tenir : le toit de Garance, les lames de la scie de Bois-Joli, la pompe des Mouettes. Personne ne te les demande. Si tu veux les tenir, confie à Achille, à la calèche, ce qu'il faut, en une ou plusieurs fois : il les porte, comme Maurice faisait. Une promesse tenue, l'île s'en souvient.",
+     "liens": [
+      "achille",
+      "comptoir",
+      "garance",
+      "basile",
+      "fernand"
+     ],
+     "decouverte": [
+      "fait:odile.rencontre"
+     ]
+    },
+    {
+     "id": "veillee_lune",
+     "terme": "La veillée de pleine lune",
+     "description": "Les soirs de pleine lune, de 19 h à 22 h, l'île veille ensemble : au Gué d'abord, puis, une fois que tu as ta place, chez toi. On mange, on regarde la lune, on parle de ce qui s'est passé ; on parle aussi de toi. Y être compte.",
+     "liens": [
+      "le_gue",
+      "odile",
+      "calendrier_lune"
+     ],
+     "decouverte": [
+      "fait:veillee.1"
+     ]
+    },
+    {
+     "id": "fete_premiers",
+     "terme": "La fête des premiers arrivants",
+     "description": "Une fois l'an, à la pleine lune, à Brumeval : un repas cuit dans la terre chaude, et l'île fête ceux qui sont arrivés les premiers, et ceux qui viennent d'arriver. Achille l'annonce à la calèche. Ce qu'on y dit de toi dépend de ce que tu as fait de ta ferme.",
+     "liens": [
+      "brumeval",
+      "achille"
+     ],
+     "decouverte": [
+      "fait:fete.annonce"
+     ]
+    },
+    {
+     "id": "toits",
+     "terme": "Les toits des hameaux",
+     "description": "Depuis que Maurice ne les paie plus, les maisons s'usent : un toit troué se voit de loin. Sur place, la fiche du hameau dit lesquels prennent l'eau ; avec des planches et des pierres, tu peux les réparer, et le hameau s'en souvient.",
+     "liens": [
+      "hameaux",
+      "maurice"
+     ],
+     "decouverte": [
+      "fait:toits.uses"
+     ]
+    },
+    {
+     "id": "enveloppe_maurice",
+     "terme": "L'enveloppe de Maurice",
+     "description": "Une enveloppe cachetée, retrouvée par le notaire, à ton nom. Maurice a écrit dessus : « Pour les toits de Céron : Odile saura. Ou pour toi, si tu en as plus besoin qu'eux. Tu sauras. » L'ouvrir (sa fiche, dans l'inventaire), c'est la garder ; on peut aussi la porter à Odile.",
+     "liens": [
+      "maurice",
+      "odile",
+      "toits"
+     ],
+     "decouverte": [
+      "objet:enveloppe_maurice",
+      "fait:enveloppe.ouverte",
+      "fait:enveloppe.donnee"
+     ]
+    },
+    {
+     "id": "cloche_maurice",
+     "terme": "La cloche de Maurice",
+     "description": "La cloche de sa calèche. Il la sonnait deux fois devant chaque maison : une pour dire bonjour, une pour dire qu'il repartait.",
+     "liens": [
+      "maurice",
+      "fete_premiers"
+     ],
+     "decouverte": [
+      "objet:cloche_maurice"
+     ]
+    },
+    {
+     "id": "tente",
+     "terme": "Tente et bivouac",
+     "description": "La tente se fabrique à l'Atelier et se porte depuis la fiche du personnage, à côté du sac. Loin de la ferme, la nuit, « Dormir » la plante là où il est : il y dort, son énergie remonte comme dans un lit, et il se réveille au même endroit. Sans tente, il rentre dormir à la ferme. Pendant ce temps, ton compagnon garde la ferme.",
+     "liens": [
+      "sac_a_provisions",
+      "adulte",
+      "bouton_dormir"
+     ],
+     "decouverte": [
+      "objet:tente"
+     ]
+    },
+    {
+     "id": "lanterne_tempete",
+     "terme": "Lanterne-tempête",
+     "description": "Une petite lanterne de fer à porter à la main (une case d'équipement), fabriquée à l'Atelier. La nuit, dans le grand monde, on voit un peu plus loin. Et à sa lumière, on remarque ce que le jour cache.",
+     "liens": [
+      "equipement"
+     ],
+     "decouverte": [
+      "objet:lanterne_tempete"
+     ]
+    },
+    {
+     "id": "pierre_lune",
+     "terme": "La pierre",
+     "description": "Un galet clair, tiède, qui luit faiblement dans le noir. Posé sur la ferme, il y reste. Depuis, tout y pousse plus vite ; les nuits de pleine lune, la ferme luit un peu. Frida dit que c'est peut-être le sol.",
+     "liens": [
+      "calendrier_lune",
+      "frida",
+      "johnny"
+     ],
+     "decouverte": [
+      "objet:pierre_lune",
+      "fait:pierre.posee"
+     ]
+    }
+   ]
+  },
+  {
    "id": "mecaniques",
    "icone": "⚙️",
    "nom": "Mécaniques de jeu",
@@ -2854,9 +3289,11 @@ export const ENCYCLOPEDIE = {
     {
      "id": "courrier",
      "terme": "Courrier",
-     "description": "Lettres que la famille reçoit au fil de la partie, à lire dans l'onglet Notifications ; une lettre lue y reste, pour être relue. La première arrive quand la Serre se débloque : un cousin du Venezuela envoie une fève de cacao, une gousse de vanille et un grain de café, à planter dans la Serre.",
+     "description": "Lettres que la famille reçoit au fil de la partie, à lire dans l'onglet Notifications ; une lettre lue y reste, pour être relue. Le notaire écrit au début, et au niveau 9 (l'enveloppe de Maurice) ; ta mère, Adèle, écrit à l'arrivée, puis aux moments qui comptent : la première récolte, la première veillée, le robot, la fête. Quand la Serre se débloque, elle rapporte de voyage une fève de cacao, une gousse de vanille et un grain de café, à planter dans la Serre.",
      "liens": [
       "notifications",
+      "adele",
+      "enveloppe_maurice",
       "serre",
       "cacao",
       "vanille",
@@ -2876,7 +3313,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "adulte",
      "terme": "Adulte",
-     "description": "Membre de la famille. La famille en compte deux au départ, et toujours au moins un. Le second adulte s'occupe des bêtes et, le jour, aide à la ferme de lui-même (il arrose quelques légumes, prépare un repas quand la famille a faim, ramasse du bois ou des pierres), ce qui lui donne faim ; la Famille permet de le laisser faire ou non.",
+     "description": "Membre de la famille. La famille en compte deux au départ : le personnage principal et son compagnon, qui vient toujours. Le second adulte s'occupe des bêtes et, le jour, aide à la ferme de lui-même (il arrose quelques légumes, prépare un repas quand la famille a faim, ramasse du bois ou des pierres), ce qui lui donne faim ; la Famille permet de le laisser faire ou non. Quand tu pars explorer, il garde la ferme et, à ton retour, il te dit ce qu'il a fait.",
      "liens": [
       "apport_journalier",
       "famille"
@@ -2900,7 +3337,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "famille",
      "terme": "Famille",
-     "description": "Quatre personnes au départ (deux adultes, deux enfants), composées avant la première journée sur l'écran « Ta famille » (nom de famille, membres, personnage principal), puis à tout moment dans la fenêtre Famille (carte du joueur, en haut à gauche) : de 1 à 6 membres, dont au moins un adulte. Chacun a un prénom, un sexe, une coiffure (cinq par âge, dont blond) et une couleur de peau au choix. Un nouveau membre arrive avec le bonheur moyen de la famille. Le but du jeu est de nourrir la famille avec la production de la ferme, sans dépendre de la calèche.",
+     "description": "Deux adultes au départ (le personnage principal et son compagnon), et, si tu veux, des enfants et un animal, composés avant la première journée sur l'écran « Ta famille » (nom de famille, membres, personnage principal), puis à tout moment dans la fenêtre Famille (carte du joueur, en haut à gauche) : de 1 à 6 membres, dont au moins un adulte. Chacun a un prénom, un sexe, une coiffure (cinq par âge, dont blond) et une couleur de peau au choix. Un nouveau membre arrive avec le bonheur moyen de la famille. Le but du jeu est de nourrir la famille avec la production de la ferme, sans dépendre de la calèche.",
      "liens": [
       "adulte",
       "enfant",
@@ -2950,7 +3387,9 @@ export const ENCYCLOPEDIE = {
       "tablier_de_jardinier",
       "salopette_solide",
       "manteau_chaud",
+      "lanterne_tempete",
       "sac_a_provisions",
+      "tente",
       "atelier"
      ],
      "decouverte": [
@@ -2961,8 +3400,10 @@ export const ENCYCLOPEDIE = {
       "objet:tablier",
       "objet:salopette",
       "objet:manteau_chaud",
+      "objet:lanterne_tempete",
       "objet:sac_petit",
-      "objet:sac_grand"
+      "objet:sac_grand",
+      "objet:tente"
      ]
     },
     {
