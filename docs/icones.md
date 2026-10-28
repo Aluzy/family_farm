@@ -1,17 +1,17 @@
 # Les icônes en pixel art (à la place des emojis)
 
 Les textes du jeu (données, messages, aide, encyclopédie) gardent leurs emojis. À l'affichage,
-chaque emoji qui a son icône est remplacé par une case de 16×16 de `assets/icones.png`, dans le
+chaque emoji qui a son icône est remplacé par une case de `assets/icones.png`, dans le
 jeu comme sur l'accueil, l'encyclopédie et la page des cookies.
 
 ## Fichiers
 
 | Fichier | Rôle |
 |---|---|
-| [`assets/icones/*.png`](../assets/icones) | **la source** : une image de 16×16 par icône, retouchée telle quelle ; [galerie](../assets/icones/README.md) |
+| [`assets/icones/*.png`](../assets/icones) | **la source** : une image de 16×16 par icône (ou de 32×32 pour un dessin plus fin), retouchée telle quelle ; [galerie](../assets/icones/README.md) |
 | `assets/icones/icones.json` | emoji (sans U+FE0F) → fichier ; le fichier porte le nom Unicode anglais de l'emoji (💰 → `money_bag.png`, une suite : `seedling+cucumber.png`) |
 | `scripts/icones/build.py` | assemble la planche et la table, refait les galeries et leurs aperçus agrandis (`apercu/`) |
-| `assets/icones.png` | la planche (produite, 16 cases par rangée) |
+| `assets/icones.png` | la planche (produite, 16 cases de 32×32 par rangée : une icône de 16×16 y est doublée, sans rien changer à l'écran) |
 | `js/ui/icones.generated.js` | emoji → rang dans la planche, et l'empreinte de la planche (produit) |
 | `js/ui/pixel-emoji.js` | le remplacement à l'affichage |
 | `js/icones-page.js` | branche le remplacement sur les pages hors du jeu |
@@ -47,7 +47,7 @@ sont aussi en pixel art :
 
 ## Ajouter ou retoucher une icône
 
-1. Retoucher le PNG de `assets/icones/` (16×16, fond transparent) dans un logiciel de pixel art,
+1. Retoucher le PNG de `assets/icones/` (16×16 ou 32×32, fond transparent) dans un logiciel de pixel art,
    sans anticrénelage. Une nouvelle icône : déposer son PNG, puis l'ajouter à
    `assets/icones/icones.json` (emoji sans U+FE0F → fichier). Un dessin : `assets/dessins/`, son
    nom de fichier est son nom dans le jeu.
@@ -60,6 +60,10 @@ occupe 12 à 15 px.
 
 Le sens dans le jeu l'emporte sur le sens Unicode : 🫘 est la vanille (deux gousses), 🪹 la
 paille (une botte), 🥒 la courgette (celle de la carte), 🥣 la farine.
+
+Une icône de 32×32 garde ses traits d'un pixel : nette dans la barre d'outils (affichée à 32 px),
+elle est plus fine que les autres dans le texte (vers 20 px), où certains de ses pixels sautent.
+La houe ⛏, la pioche ⚒ et la hache 🪓 sont dessinées ainsi.
 
 ## Comment le remplacement marche
 
