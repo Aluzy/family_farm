@@ -144,6 +144,7 @@
       "sel_vache": { "nom": "Pierre à sel et foin : une vache", "entrees": { "pierre": 6, "paille": 12, "planche": 2 }, "animal": "vache", "debloque": "moutons" },
       "licol_cheval": { "nom": "Licol et friandises : un cheval", "entrees": { "corde": 2, "carotte": 6, "pomme": 4 }, "cheval": true, "debloque": "ecurie" },
       "sac_petit": { "entrees": { "fibre": 6 }, "sortie": { "sac_petit": 1 } },
+      "tente": { "entrees": { "fibre": 12, "planche": 2, "corde": 2 }, "sortie": { "tente": 1 } },
       "sac_grand": { "entrees": { "laine": 3, "fibre": 6 }, "sortie": { "sac_grand": 1 }, "debloque": "moutons" },
       "chapeau_paille": { "entrees": { "paille": 4, "fibre": 1 }, "sortie": { "chapeau_paille": 1 } },
       "tablier": { "entrees": { "fibre": 8 }, "sortie": { "tablier": 1 } },

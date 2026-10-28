@@ -120,7 +120,7 @@ export function ongletRecette(id) {
   if (r.outil) return 'outils';
   // (fiche 7c : les bêtes qu'on attire, le cheval : l'Élevage)
   if (r.animal || r.cheval) return 'elevage';
-  if (estEquipement(sortieDe(id))) return 'equipement';
+  if (estEquipement(sortieDe(id)) || sortieDe(id) === DATA.EQUIPEMENT.TENTE) return 'equipement';
   const b = blocDe(id);
   return (b && categorieBloc(b)) || 'materiaux';
 }
@@ -205,7 +205,7 @@ function detailHtml(id) {
       <div class="atelier-detail-txt">
         <span class="atelier-detail-nom">${nom(id)}${garde ? ` <span class="muted">(${garde})</span>` : ''}</span>
         <span class="chips">${besoinHtml(r.entrees)}<span class="atelier-fleche" aria-hidden="true">➜</span>${donne}</span>
-        ${estEquipement(sortieDe(id)) ? `<span class="muted">${effetTexte(sortieDe(id))} Se porte depuis la Famille.</span>` : ''}
+        ${estEquipement(sortieDe(id)) ? `<span class="muted">${effetTexte(sortieDe(id))} Se porte depuis la Famille.</span>` : sortieDe(id) === DATA.EQUIPEMENT.TENTE ? '<span class="muted">Pour dormir loin de la ferme. Se porte depuis la Famille (à côté du sac).</span>' : ''}
       </div>
       <button type="button" class="btn${st.ok ? ' primary' : ''}" data-action="atelier-fabriquer" data-recette="${id}"${st.ok ? '' : ` disabled title="${st.raison}"`}>Fabriquer</button>
     </div>`;

@@ -69,6 +69,10 @@ l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
   le remboursement des commerces), `js/engine/ile.js` (commander, retirer, acheter un meuble, la veillée),
   les commandes par le cocher (`js/ui/caleche.js`, l'onglet Commandes : les actions `ile-commander` et
   `ile-meuble`) ; la fiche du hameau les nomme (`js/ui/habitants.js`).
+- L'exploration (lot 8) : la tente (`poserTente`, `retirerTente`, `tentePortee`, `js/engine/equipement.js`),
+  le bivouac (`dormirSousTente`, `js/engine/night.js` ; `bivouacEnCours`, `js/engine/blocs.js` ; `actionGoToBed`,
+  `js/ui/stage-windows.js`), la garde du compagnon (`noterGarde`, `retourCompagnon`, `js/engine/compagnon.js` ;
+  `watchGarde`, `js/ui/loop.js` ; les phrases dans `RECIT.COMPAGNON`).
 - `scripts/lib/data.mjs` : la validation du récit à la construction des données.
 - Tests : `tests/engine/recit.test.mjs`, `tests/engine/recit-monde.test.mjs`, `tests/engine/recit-acte2.test.mjs`,
   `tests/test-data.mjs`.

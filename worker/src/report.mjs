@@ -117,6 +117,7 @@ export const GAME_ACTIONS = {
   // fiche 11 : l'équipement de la famille, le sac à provisions
   'fiche-case': 'Équiper la famille',
   'fiche-equiper': 'Équiper la famille',
+  'fiche-tente': 'Porter ou ranger la tente (le bivouac, le récit)',
   'sac-poser': 'Remplir le sac à provisions',
   'sac-retirer': 'Remplir le sac à provisions',
   'sac-remplir': 'Remplir le sac à provisions',

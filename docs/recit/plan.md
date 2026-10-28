@@ -17,7 +17,7 @@ se termine par une validation avant le suivant.
 | 6. Acte II | La première veillée, Frida à la ferme, la fortune de Maurice, les promesses confiées à Achille (l'atelier de Frida vient avec le lot 3b) | `data/recit.json`, `js/engine/recit.js`, `js/ui/caleche.js`, `js/ui/loop.js`, `js/ui/stage.js` | 5 | P2 | fait |
 | 3b. Les autres lieux garantis | Bois-Joli, Les Genêts, Les Mouettes, Brumeval, cabane de Johnny, atelier de Frida, l'épave | `monde-gen.js`, `monde-hameaux.js`, `monde-lieux.js`, `scripts/carte/lieux.py` | 3a | P2 | fait |
 | 7. Économie de l'île | Tissage et couture aux Genêts ; scierie et ébéniste à Bois-Joli ; l'Atelier ne fait plus de meubles ; les commerces du niveau 10 disparaissent | `js/engine/ile.js`, `data/ile.json`, `js/ui/habitants.js`, `data/meubles.json`, `data/recipes.json`, `data/niveaux.json` | 3b | P2 | fait |
-| 8. Exploration | Compagnon qui garde la ferme (fiche 19), tente et bivouac, l'équipement (fiche 11) complété de la tente | `compagnon.js`, `night.js`, `equipement.js`, `data/equipement.json` | 1 | P2 | à faire |
+| 8. Exploration | Compagnon qui garde la ferme (fiche 19), tente et bivouac, l'équipement (fiche 11) complété de la tente | `compagnon.js`, `night.js`, `equipement.js`, `blocs.js`, `data/equipement.json`, `js/ui/depart.js`, `js/ui/fiche-membre.js`, `js/ui/stage-windows.js`, `js/ui/loop.js` | 1 | P2 | fait |
 | 9. Actes III et IV | L'enveloppe, l'usure des maisons, la seconde veillée, la fête et ses fins, les lettres d'Adèle, les arcs de Théo et d'Achille | `data/recit.json`, `data/campaign.json`, `habitants.js` | 2, 6, 7 | P3 | à faire |
 | 10. Le fil de la lune | Fragments, lanterne, repas à Johnny, galerie secrète, pierre et pousse accélérée | `js/engine/grotte.js`, `js/grotte.js`, `js/engine/crops.js`, `data/grotte.json` | 3b, 6 | P3 | à faire |
 | 11. Textes et encyclopédie | Retirer « Printemps 2021 », Adèle à la place de Mateo, intros des chapitres, pages des hameaux et des personnages | `data/general.json`, `data/campaign.json`, `encyclopedie_ferme_familiale.json` | 5 | P2 | à faire |
@@ -113,6 +113,30 @@ l'atelier de Frida (lot 3b) ; les veillées suivantes (acte III).
 - Décision du lot 8 : loin de la ferme, ce que donne un geste tombe au sol, comme sur la ferme ; ramassé, il
   entre dans l'inventaire de la ferme (il n'y a qu'un inventaire : rien ne change, `js/engine/outils.js`
   ramasserMorceau).
+
+## L'exploration (lot 8)
+
+- **Le compagnon est obligatoire** au départ (`js/ui/depart.js` : l'écran « avec un compagnon ? » est ôté,
+  on choisit directement son personnage et son prénom). Le moteur (`composeFamily`) l'accepte encore absent :
+  les anciennes parties et les tests sans compagnon marchent.
+- **Il garde la ferme** : il faisait déjà ses gestes pendant que le joueur est loin (fiche 19) ; ce qu'il fait
+  quand le joueur explore ou bivouaque est compté (`noterGarde`, `state.compagnon.garde`), et au retour à la
+  ferme il le dit chaleureusement, une fois (`retourCompagnon`, `watchGarde` dans `js/ui/loop.js`) : les
+  phrases de `RECIT.COMPAGNON` (un accueil, puis arroser, cuisiner, ramasser, bêtes, au plus trois, puis la fin :
+  « La maison était trop calme sans toi. Assieds-toi et raconte-moi tout. »). Ton plus chaleureux demandé à la
+  relecture du lot 8.
+- **La tente** (nouvel objet, `EQUIPEMENT.TENTE`) : elle se fabrique à l'Atelier (onglet équipement : 12 fibres,
+  2 planches, 2 cordes, recette provisoire) et se porte dans une case de la fiche du personnage, à côté du
+  sac (`poserTente`, `retirerTente`, l'action `fiche-tente`). La clé `equipement.tente` n'existe que si elle
+  est portée (rien à migrer).
+- **Le bivouac** : loin de la ferme, la nuit, sa tente portée, « Dormir » plante la tente là où il est
+  (`dormirSousTente`, `state.bivouac`) au lieu de le faire rentrer ; l'énergie remonte comme dans un lit ; il
+  ne prend pas de couchage de la maison (`nuitSansCouchage`) ; le bivouac finit avec la nuit et il se réveille
+  au même endroit. La tente est dessinée là (`assets/tente.png`, `scripts/carte/tente.py`). Sans tente, il
+  rentre dormir à la ferme (une notification le dit).
+- Icônes pixel ajoutées : ⛺ 🧵 🪡 🪑 📓 💌. Corrigé en passant : la notification « mal dormi » nommait
+  « Adulte 2 » au lieu du prénom.
+- Tests : `tests/engine/exploration.test.mjs`.
 
 ## Les critères de qualité narrative
 

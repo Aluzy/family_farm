@@ -384,6 +384,9 @@ export function validateData(data) {
   // Commerces de la ferme, bonheur, Silo, Étable, joueur simulé.
   // (Les meubles, eux, ne citent aucun objet : rien à vérifier.)
   // L'économie de l'île (data/ile.json, le récit lot 7) : les ateliers des hameaux garantis, la veillée.
+  // La tente du bivouac (le récit, lot 8 : data/equipement.json TENTE) : un objet d'équipement.
+  const TE = data.EQUIPEMENT && data.EQUIPEMENT.TENTE;
+  if (TE !== undefined) { needItem('EQUIPEMENT.TENTE', TE); if (items[TE] && items[TE].categorie !== 'équipement') err('EQUIPEMENT.TENTE', 'un objet de la catégorie « équipement »'); }
   const IL = data.ILE;
   if (IL) {
     const garantis = ((data.PLAN_MONDE && data.PLAN_MONDE.HAMEAUX && data.PLAN_MONDE.HAMEAUX.GARANTIS) || []).map((g) => g.id);
@@ -810,7 +813,7 @@ export function validateData(data) {
       if (E.PIECES && E.PIECES[id]) err(`EQUIPEMENT.SACS.${id}`, 'un sac n\'est pas une pièce d\'équipement');
     }
     for (const [id, it] of Object.entries(items)) {
-      if (it.categorie === 'équipement' && !(E.PIECES && E.PIECES[id]) && !(E.SACS && E.SACS[id])) err(`OBJETS.${id}`, 'un équipement sans réglage (EQUIPEMENT.PIECES ou SACS)');
+      if (it.categorie === 'équipement' && !(E.PIECES && E.PIECES[id]) && !(E.SACS && E.SACS[id]) && E.TENTE !== id) err(`OBJETS.${id}`, 'un équipement sans réglage (EQUIPEMENT.PIECES, SACS ou TENTE)');
     }
     const S = data.DIDACTICIEL && data.DIDACTICIEL.SAC;
     if (S) {
@@ -969,6 +972,11 @@ export function validateData(data) {
       if (!P.besoin || typeof P.besoin !== 'object' || !Object.keys(P.besoin).length) err(`${where}.besoin`, '{ objet: quantité }');
       else for (const [item, n] of Object.entries(P.besoin)) { needItem(`${where}.besoin`, item); if (!(isInt(n) && n >= 1)) err(`${where}.besoin.${item}`, 'un entier au moins égal à 1'); }
       effet(where, P.effet, P.qui);
+    }
+    // Ce que dit le compagnon au retour d'une exploration (lot 8) : des textes, pour des actions connues.
+    for (const [k, t] of Object.entries(R.COMPAGNON || {})) {
+      if (!['debut', 'arroser', 'cuisiner', 'ramasser', 'betes', 'fin'].includes(k)) err(`RECIT.COMPAGNON.${k}`, 'debut, arroser, cuisiner, ramasser, betes ou fin');
+      if (typeof t !== 'string' || !t) err(`RECIT.COMPAGNON.${k}`, 'un texte');
     }
     // Les saluts selon la confiance : un niveau de CONFIANCE.NIVEAUX, une liste de textes (bulle courte).
     for (const [n, liste] of Object.entries(R.SALUTS || {})) {

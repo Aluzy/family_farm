@@ -488,15 +488,23 @@ export function serreMurs(state) {
 
 // La famille dort-elle cette nuit ? Il faut une paillasse dans une pièce close pour le
 // personnage principal (la première lui revient).
+// (le récit, lot 8 : sous sa tente, loin de la ferme, le personnage principal a où dormir : le bivouac)
 export function nuitCouchee(state) {
-  return couchages(state).length > 0;
+  return couchages(state).length > 0 || bivouacEnCours(state);
+}
+
+// Le personnage principal dort-il sous sa tente cette nuit (state.bivouac : { case }, night.js) ?
+export function bivouacEnCours(state) {
+  return !!(state && state.bivouac && Number.isInteger(state.bivouac.case));
 }
 
 // La nuit (runNight) : il faut une paillasse d'une pièce close par personne, le personnage
 // principal d'abord ; chaque membre sans couchage perd ATELIER.BONHEUR_SANS_COUCHAGE de bonheur.
 // Renvoie les membres sans couchage.
 export function nuitSansCouchage(state) {
-  const sans = dormeurs(state).slice(couchages(state).length);
+  // (sous sa tente, le personnage principal ne prend pas de couchage de la maison)
+  const d = bivouacEnCours(state) ? dormeurs(state).slice(1) : dormeurs(state);
+  const sans = d.slice(couchages(state).length);
   for (const m of sans) setHappiness(m, memberHappiness(m) + DATA.ATELIER.BONHEUR_SANS_COUCHAGE);
   return sans;
 }

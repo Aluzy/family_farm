@@ -26,8 +26,9 @@ import { clockHours, nightActive } from './clock.js';
    (family.js eatSnack) ; sur la ferme, rien ne change.
 
    state.equipement = { membres: { <id>: [pièce | null, …] (CASES cases) }, sac: null |
-   { objet, items: { item: [lots] } } } (format 60 ; une partie d'avant : personne n'est équipé,
-   pas de sac). */
+   { objet, items: { item: [lots] } }, tente (le récit, lot 8 : vrai si le personnage principal porte sa
+   tente, une case à part ; absent : non) } (format 60 ; une partie d'avant : personne n'est équipé,
+   pas de sac, pas de tente). */
 
 const E = () => DATA.EQUIPEMENT;
 
@@ -59,7 +60,34 @@ export function equipementDe(state) {
   if (!q.membres || typeof q.membres !== 'object' || Array.isArray(q.membres)) q.membres = {};
   if (q.sac !== null && (!q.sac || typeof q.sac !== 'object' || !sacDef(q.sac.objet))) q.sac = null;
   if (q.sac && (!q.sac.items || typeof q.sac.items !== 'object' || Array.isArray(q.sac.items))) q.sac.items = {};
+  if (q.tente !== undefined && q.tente !== true) delete q.tente;   // (absente : pas portée)
   return q;
+}
+
+/* -- la tente (le récit, lot 8) : une case à part, à côté du sac ; le bivouac : night.js dormirSousTente -- */
+
+// Le personnage principal porte-t-il sa tente ?
+export function tentePortee(state) {
+  return equipementDe(state).tente === true;
+}
+
+// Il prend la tente de l'inventaire dans sa case.
+export function poserTente(state) {
+  const item = E().TENTE;
+  if (tentePortee(state)) return fail('Tu portes déjà ta tente.');
+  if (countItem(state, item) < 1) return fail(`Pas de ${DATA.OBJETS[item].nom.toLowerCase()} dans l'inventaire : elle se fabrique à l'Atelier.`);
+  takeItem(state, item, 1);
+  equipementDe(state).tente = true;
+  return { ok: true };
+}
+
+// La tente revient dans l'inventaire (pas pendant qu'il dort dessous).
+export function retirerTente(state) {
+  if (!tentePortee(state)) return fail('Tu ne portes pas de tente.');
+  if (state.bivouac) return fail('Tu dors sous ta tente.');
+  delete equipementDe(state).tente;
+  addItem(state, E().TENTE, 1);
+  return { ok: true };
 }
 
 function membre(state, id) {

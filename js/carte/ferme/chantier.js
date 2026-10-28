@@ -835,6 +835,10 @@
 
     // Où il se couche : la première paillasse (ou le premier lit) d'une pièce close (modèle.couchages), ou null.
     bedSpot() {
+      // (le récit, lot 8 : le bivouac — loin de la ferme, il dort sous sa tente, plantée là où il est ; la
+      // tente le couvre comme la couverture d'une paillasse : assets/tente.png, scripts/carte/tente.py)
+      const b = this.ctx.lastModel && this.ctx.lastModel.bivouac;
+      if (b && this.has('tente')) return { x: b.x, y: b.y - 2, depth: b.y, drap: { key: 'tente', frame: undefined, x: b.x, y: b.y + 3 } };
       return this.bedSpots()[0] || null;
     },
 

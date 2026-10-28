@@ -150,6 +150,7 @@
         // js/carte/ferme/faune-monde.js)
         if (this.ctx.monde) {
           L.image('lieux_monde', v('lieux_monde.png'));
+          L.image('tente', v('tente.png')); // le récit, lot 8 : la tente du bivouac (scripts/carte/tente.py)
           L.json('lieux_monde_cases', v('lieux_monde.json'));
           // les hameaux bâtis (scripts/carte/hameaux.py, js/carte/ferme/hameaux.js)
           L.image('hameaux', v('hameaux.png'));

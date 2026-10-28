@@ -77,7 +77,7 @@ export function renderStarterCards() {
 /* -- l'accueil d'une nouvelle partie : un dialogue, écran par écran -- */
 
 // Le joueur décrit sa famille en répondant aux questions d'une petite fenêtre de dialogue (la
-// police des dialogues) : son personnage, son prénom, son nom ; un compagnon ; des enfants (le
+// police des dialogues) : son personnage, son prénom, son nom ; son compagnon (obligatoire : le récit, lot 8) ; des enfants (le
 // personnage et le prénom de chacun, fiche 18) ; des animaux de compagnie. La dernière question
 // montre la famille choisie (ses portraits, ses prénoms). À la fin, « C'est parti ! » installe la famille (composeFamily) sur une
 // ferme générée d'après une graine au hasard. Les prénoms tapés restent dans `accueil` (et
@@ -134,10 +134,8 @@ function ecranAccueil() {
       return ['Et son nom ?', portrait(A.perso) + champ(A.nom, D.NOM_MAX, 'Nom') + fleche()];
     case 'confirme':
       return [`OK, donc c'est ${escapeHtml(A.prenom)} ${escapeHtml(A.nom)}, c'est bien ça ?`, `${portrait(A.perso)}<div class="accueil-choix"><button type="button" class="pose-meuble-ok" data-action="accueil-oui" aria-label="Oui, c'est bien ça" title="Oui">✔️</button><button type="button" class="pose-meuble-non" data-action="accueil-non" aria-label="Non, changer" title="Changer">❌</button></div>`];
-    case 'compagnon':
-      return ['Est-ce qu\'il a un compagnon ?', ouiNon()];
     case 'compagnon-perso':
-      return ['Choisis le personnage du compagnon :', grille(A.compagnon.perso) + fleche(A.compagnon.perso > 0)];
+      return ['Qui partage sa vie ? Choisis le personnage du compagnon (il gardera la ferme quand tu partiras explorer) :', grille(A.compagnon.perso) + fleche(A.compagnon.perso > 0)];
     case 'compagnon-prenom':
       return ['Quel est son prénom ?', portrait(A.compagnon.perso) + champ(A.compagnon.prenom, P.PRENOM_MAX, 'Prénom du compagnon') + fleche()];
     case 'enfants':
@@ -245,9 +243,10 @@ function suiteAccueil() {
 function reponseAccueil(oui) {
   const A = accueil;
   switch (A.etape) {
-    case 'confirme': return allerA(oui ? 'compagnon' : 'perso');
-    case 'compagnon':
-      if (!oui) { A.compagnon = null; return allerA('enfants'); }
+    // (le récit, lot 8 : le compagnon est obligatoire, docs/recit/personnages.md : il garde la ferme
+    // quand le joueur explore ; plus de question, on le choisit tout de suite)
+    case 'confirme':
+      if (!oui) return allerA('perso');
       if (!A.compagnon) A.compagnon = { perso: 0, prenom: '' };
       return allerA('compagnon-perso');
     case 'enfants':

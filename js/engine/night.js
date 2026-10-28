@@ -24,6 +24,7 @@ import { bienvenueNuit } from './bienvenue.js';
 import { recitNuit } from './recit.js';
 import { remplirRuches } from './ruches.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
+import { enExpedition, tentePortee } from './equipement.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // ce que la famille a mangé dans la journée (repas.js ; énergie au réveil), puis pousse. Lot 4 : la
@@ -152,6 +153,7 @@ export function sleep(state) {
   growDue(state);
   report.energieReveil = state.energie;
   report.pretes = readyCrops(state);
+  state.bivouac = null;
   return report;
 }
 
@@ -186,6 +188,7 @@ export function advanceNight(state, dtMs) {
   if (n.ms >= nightLengthMs()) {
     state.nuitEnCours = null;
     state.reveil = true;
+    state.bivouac = null; // (le récit, lot 8 : la tente se replie au réveil)
     // l'énergie et les plantes mûres au réveil, pas à minuit
     if (state.report) { state.report.energieReveil = state.energie; state.report.pretes = readyCrops(state); }
     event = 'reveil';
@@ -224,6 +227,18 @@ export const SANS_COUCHAGE = 'Sans paillasse dans une pièce close (des murs tou
 export function goToSleep(state) {
   if (!nightActive(state)) return fail(`On ne dort que la nuit, de ${DATA.TEMPS.HEURE_NUIT} h à ${DATA.TEMPS.HEURE_REVEIL} h.`);
   if (!nuitCouchee(state)) return fail(SANS_COUCHAGE);
+  state.nuitEnCours.dort = true;
+  return { ok: true };
+}
+
+// Le bivouac (le récit, lot 8) : loin de la ferme (enExpedition), la nuit, sa tente portée, le personnage
+// dort là où il est (state.bivouac = { case, jour }) au lieu de rentrer à son lit ; l'énergie remonte comme
+// dans un lit (nuitCouchee) ; la famille dort à la ferme. Le bivouac finit avec la nuit.
+export function dormirSousTente(state) {
+  if (!nightActive(state)) return fail(`On ne dort que la nuit, de ${DATA.TEMPS.HEURE_NUIT} h à ${DATA.TEMPS.HEURE_REVEIL} h.`);
+  if (!tentePortee(state)) return fail('Il te faut ta tente (à porter, dans ta fiche).');
+  if (!enExpedition(state)) return fail('À la ferme, on dort dans son lit.');
+  state.bivouac = { case: state.monde.ici, jour: state.day };
   state.nuitEnCours.dort = true;
   return { ok: true };
 }

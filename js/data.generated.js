@@ -320,6 +320,7 @@ export const RAW_DATA = {
     "tablier": { "nom": "Tablier de jardinier", "icone": "🥼‍🌱", "prix": 8, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "salopette": { "nom": "Salopette solide", "icone": "👖‍🔧", "prix": 34, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "manteau_chaud": { "nom": "Manteau chaud", "icone": "🧥‍❄", "prix": 36, "mangeable": false, "categorie": "équipement", "rachetable": false },
+    "tente": { "nom": "Tente", "icone": "⛺", "prix": 12, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "sac_petit": { "nom": "Petit sac à provisions", "icone": "🎒‍🌿", "prix": 5, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "sac_grand": { "nom": "Grand sac à provisions", "icone": "🎒‍🧶", "prix": 20, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "refrigerateur": { "nom": "Réfrigérateur", "icone": "🧊", "prix": 120, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -795,6 +796,7 @@ export const RAW_DATA = {
         "debloque": "ecurie"
       },
       "sac_petit": { "entrees": { "fibre": 6 }, "sortie": { "sac_petit": 1 } },
+      "tente": { "entrees": { "fibre": 12, "planche": 2, "corde": 2 }, "sortie": { "tente": 1 } },
       "sac_grand": { "entrees": { "laine": 3, "fibre": 6 }, "sortie": { "sac_grand": 1 }, "debloque": "moutons" },
       "chapeau_paille": { "entrees": { "paille": 4, "fibre": 1 }, "sortie": { "chapeau_paille": 1 } },
       "tablier": { "entrees": { "fibre": 8 }, "sortie": { "tablier": 1 } },
@@ -2632,6 +2634,7 @@ export const RAW_DATA = {
       "manteau_chaud": { "place": "corps", "enfant": true, "toutes": 15, "horsFerme": true }
     },
     "SACS": { "sac_petit": { "portions": 6 }, "sac_grand": { "portions": 12 } },
+    "TENTE": "tente",
     "ALERTE": { "PRESQUE_VIDE": 2, "ENERGIE": 30 }
   },
   "SIMULATION": {
@@ -4072,6 +4075,14 @@ export const RAW_DATA = {
         "effet": { "fait": "veillee.ferme", "relation": { "odile": 5 }, "confiance_partout": 5 }
       }
     ],
+    "COMPAGNON": {
+      "debut": "Te voilà ! Viens là, que je te voie.",
+      "arroser": "J'ai arrosé le potager tous les jours, tout pousse bien, tu verras.",
+      "cuisiner": "Je t'ai gardé une assiette au chaud, elle t'attend sur la table.",
+      "ramasser": "J'ai rentré du bois et des pierres, pour qu'on ne manque de rien.",
+      "betes": "Les bêtes ont bien mangé ; elles guettaient le chemin, elles aussi.",
+      "fin": "La maison était trop calme sans toi. Assieds-toi et raconte-moi tout."
+    },
     "LIEUX": {
       "cabane": [
         {

@@ -14,7 +14,7 @@ information.
   et pourtant étranger à ses usages. Il garde quelques souvenirs d'enfance de Céron et ignore
   presque tout de Maurice. Son arc : de « petit de Maurice » à quelqu'un d'ici.
 - **Le compagnon** (`compagnon`) : le second adulte, obligatoire. Il garde la ferme quand le joueur
-  explore (fiche 19 : il arrose, cuisine, ramasse). Il parle sobrement de ce qu'il a fait.
+  explore (fiche 19 : il arrose, cuisine, ramasse). Il dit avec chaleur ce qu'il a fait et sa joie de le revoir.
 - **Les enfants** : chacun penche, au fil du jeu, vers « rester » ou « Cadolon » selon ce qu'il vit
   sur l'île. C'est un sentiment exprimé, sans conséquence de jeu. Lise les attire vers « rester ».
 
@@ -138,7 +138,7 @@ des enfants du joueur.
 | Lise | Questions et secrets | Bêtes, cachettes | « Mais je dis pas. » | Mentir | « Tu sais où dort le renard ? Moi oui. Mais je dis pas. » |
 | Frida | Précise, enjouée, chiffrée | Mesures, bêtes, machines | Un nombre dans la phrase | Le mysticisme | « 14 % de mieux à la pleine lune. Les anciens disent que c'est la lune. Moi je dis que c'est intéressant. » |
 | Johnny | Au présent, émerveillé, par fragments | La lune, la roche, la mer | Se coupe, reprend autre chose | Le passé sur lui-même, la tristesse | « Regarde comme la lune brille aujourd'hui, c'est fascinant. On dirait qu'elle cherche… Tu as faim ? » |
-| Le compagnon | Sobre, affectueux | Ce qu'il a fait à la ferme | Un détail concret | Les reproches | « Les poules ont pondu. J'ai gardé un œuf pour toi, il est sur la table. » |
+| Le compagnon | Chaleureux, affectueux | Ce qu'il a fait à la ferme | Un détail concret | Les reproches | « Les poules ont pondu. J'ai gardé un œuf pour toi, il est sur la table. » |
 | Maurice (carnets) | Notes sèches | Ce que chacun a en trop ou en manque | « J. » pour Johnny | Les sentiments écrits | « Genêts : toit de Garance, avant les pluies. J. : soupe, pain. » |
 
 ## Les relations

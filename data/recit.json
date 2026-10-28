@@ -48,6 +48,10 @@
     "{ personnage: points }), confiance (des points pour le hameau où l'on est), fragment (une page du carnet),",
     "montrer (une scène seulement : « gue », le Gué se montre sur la carte du monde ; la page s'en charge),",
     "confiance_partout (des points pour chaque hameau découvert : une veillée, une promesse tenue).",
+    "COMPAGNON : ce que dit le compagnon quand le joueur rentre d'une exploration (le récit, lot 8 :",
+    "js/engine/compagnon.js retourCompagnon) : debut, puis une phrase par chose qu'il a faite pendant la",
+    "garde (arroser, cuisiner, ramasser, betes, au plus trois ; {n} : combien de fois), puis fin. Chaleureux : il est",
+    "heureux de retrouver le joueur et le dit (docs/recit/personnages.md).",
     "LIEUX : ce que le joueur lit en entrant dans une bâtisse du récit (cabane, atelier) ou en touchant l'épave : la",
     "première entrée dont les conditions sont vraies ; le fait « lieu.<sorte> » est noté (le fil de la lune, plus tard).",
     "PROMESSES : les promesses que Maurice n'a pas pu tenir (le carnet carnet_promesses les ouvre) ; { titre, qui",
@@ -242,6 +246,14 @@
         "effet": { "fait": "veillee.ferme", "relation": { "odile": 5 }, "confiance_partout": 5 }
       }
     ],
+    "COMPAGNON": {
+      "debut": "Te voilà ! Viens là, que je te voie.",
+      "arroser": "J'ai arrosé le potager tous les jours, tout pousse bien, tu verras.",
+      "cuisiner": "Je t'ai gardé une assiette au chaud, elle t'attend sur la table.",
+      "ramasser": "J'ai rentré du bois et des pierres, pour qu'on ne manque de rien.",
+      "betes": "Les bêtes ont bien mangé ; elles guettaient le chemin, elles aussi.",
+      "fin": "La maison était trop calme sans toi. Assieds-toi et raconte-moi tout."
+    },
     "LIEUX": {
       "cabane": [
         { "quand": { "lune": "pleine", "heure": [20, 5] }, "texte": "La cabane est vide, le lit froid. Dans les bois, quelqu'un marche sous la lune." },

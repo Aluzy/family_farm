@@ -91,7 +91,12 @@ try {
   await page.locator('#accueil-champ').fill('Martin');
   await touch('[data-action="accueil-suite"]', 'Nom, suivant');
   await touch('[data-action="accueil-oui"]', 'C\'est bien ça');
-  for (const q of ['Compagnon', 'Enfants', 'Animal']) await touch('[data-action="accueil-non"]', `${q} : non`);
+  // (le récit, lot 8 : le compagnon est obligatoire)
+  await touch('[data-action="accueil-perso"]', 'Compagnon : son personnage');
+  await touch('[data-action="accueil-suite"]', 'Suivant');
+  await page.locator('#accueil-champ').fill('Hugo');
+  await touch('[data-action="accueil-suite"]', 'Prénom du compagnon, suivant');
+  for (const q of ['Enfants', 'Animal']) await touch('[data-action="accueil-non"]', `${q} : non`);
   await touch('[data-action="setup-start"]', 'C\'est parti !');
   await touch('#modal-root .story-modal .btn.primary', 'En route');
   await touch('[data-action="consent-refuse"]', 'Bandeau du suivi : Refuser');

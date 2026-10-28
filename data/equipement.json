@@ -19,6 +19,9 @@
     "SACS : le sac à provisions du personnage principal (une quatrième case), et combien de portions (d'aliments) il",
     "contient. Hors de la ferme, le personnage ne mange que ce qu'il y a dans son sac ; le sac se remplit à la ferme,",
     "depuis l'inventaire ou le réfrigérateur, et ce qu'il contient périme comme dans l'inventaire.",
+    "TENTE : l'objet de la tente (le récit, lot 8) : le personnage principal la porte dans une case à part (à côté du",
+    "sac) ; loin de la ferme, la nuit, il dort sous sa tente là où il est (le bivouac : js/engine/night.js",
+    "dormirSousTente), au lieu de rentrer à son lit ; la famille dort à la ferme, le compagnon la garde.",
     "ALERTE : on sort avec PRESQUE_VIDE portions ou moins (ou sans sac) : une alerte ; loin de la ferme, le sac vide et",
     "l'énergie sous ENERGIE : une autre."
   ],
@@ -38,6 +41,7 @@
       "sac_petit": { "portions": 6 },
       "sac_grand": { "portions": 12 }
     },
+    "TENTE": "tente",
     "ALERTE": { "PRESQUE_VIDE": 2, "ENERGIE": 30 }
   }
 }

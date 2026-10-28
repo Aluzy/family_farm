@@ -5,7 +5,8 @@ import { allDevices, isOwned, marcheFerme, starterOf } from '../engine/devices.j
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { familyNameHtml } from './depart.js';
 import { nightActive } from '../engine/clock.js';
-import { asleep, sleepTarget } from '../engine/night.js';
+import { asleep, dormirSousTente, sleepTarget } from '../engine/night.js';
+import { enExpedition, tentePortee } from '../engine/equipement.js';
 import { memberPerso } from '../engine/family.js';
 import { affames, jaugeFamille } from '../engine/repas.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
@@ -53,6 +54,7 @@ import { toolBarHtml, toolbarOpen } from './outils.js';
 import { rememberFocus } from './modal.js';
 import { jaugeClasse, plural } from './common.js';
 import { son } from './son.js';
+import { persistState } from './storage.js';
 
 /* ---------- Fenêtres de la carte ---------- */
 
@@ -729,6 +731,19 @@ export function actionGoToBed() {
   const scene = window.FarmStage;
   // On dort sur une paillasse d'une pièce close (js/engine/blocs.js), dehors sur la carte ; sans
   // elle, la famille ne dort pas : la nuit passe sans rendre d'énergie.
+  // le récit, lot 8 : loin de la ferme, sa tente portée, il dort là où il est (le bivouac) ; sans tente, il
+  // rentre à son lit
+  if (enExpedition(state) && tentePortee(state)) {
+    const r = dormirSousTente(state);
+    if (!r.ok) { notify(r.error); return; }
+    persistState();
+    setCoucher(true);
+    refresh();
+    notify('⛺ Tu plantes ta tente pour la nuit. À la ferme, ton compagnon veille.', { kind: 'info' });
+    if (scene && scene.hasFermier && scene.hasFermier() && scene.goHome) scene.goHome(() => {});
+    return;
+  }
+  if (enExpedition(state) && couchages(state).length) notify('🛏 Sans tente, tu rentres dormir à la ferme.', { kind: 'info' });
   if (!couchages(state).length) { notify('🛏 Sans paillasse dans une pièce close (des murs tout autour et une porte), on ne peut pas dormir : la nuit passe sans rendre d\'énergie.'); return; }
   if (!(scene && scene.hasFermier && scene.hasFermier() && scene.goHome)) { actionSleep(); return; }
   if (stageInterior) leaveInterior();

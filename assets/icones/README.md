@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 422 icônes de 16×16 qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 428 icônes de 16×16 qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -39,6 +39,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/helmet_with_white_cross+electric_light_bulb.png" width="48" height="48" alt=""> | ⛑‍💡 | [`helmet_with_white_cross+electric_light_bulb.png`](helmet_with_white_cross+electric_light_bulb.png) |
 | <img src="apercu/no_entry.png" width="48" height="48" alt=""> | ⛔ | [`no_entry.png`](no_entry.png) |
 | <img src="apercu/fountain.png" width="48" height="48" alt=""> | ⛲ | [`fountain.png`](fountain.png) |
+| <img src="apercu/tent.png" width="48" height="48" alt=""> | ⛺ | [`tent.png`](tent.png) |
 | <img src="apercu/black_scissors.png" width="48" height="48" alt=""> | ✂ | [`black_scissors.png`](black_scissors.png) |
 | <img src="apercu/white_heavy_check_mark.png" width="48" height="48" alt=""> | ✅ | [`white_heavy_check_mark.png`](white_heavy_check_mark.png) |
 | <img src="apercu/envelope.png" width="48" height="48" alt=""> | ✉ | [`envelope.png`](envelope.png) |
@@ -287,6 +288,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/woman_skin_type_6+emoji_component_red_hair.png" width="48" height="48" alt=""> | 👩🏿‍🦰 | [`woman_skin_type_6+emoji_component_red_hair.png`](woman_skin_type_6+emoji_component_red_hair.png) |
 | <img src="apercu/woman_skin_type_6+emoji_component_curly_hair.png" width="48" height="48" alt=""> | 👩🏿‍🦱 | [`woman_skin_type_6+emoji_component_curly_hair.png`](woman_skin_type_6+emoji_component_curly_hair.png) |
 | <img src="apercu/woman_skin_type_6+emoji_component_white_hair.png" width="48" height="48" alt=""> | 👩🏿‍🦳 | [`woman_skin_type_6+emoji_component_white_hair.png`](woman_skin_type_6+emoji_component_white_hair.png) |
+| <img src="apercu/love_letter.png" width="48" height="48" alt=""> | 💌 | [`love_letter.png`](love_letter.png) |
 | <img src="apercu/gem_stone.png" width="48" height="48" alt=""> | 💎 | [`gem_stone.png`](gem_stone.png) |
 | <img src="apercu/gem_stone+large_purple_circle.png" width="48" height="48" alt=""> | 💎‍🟣 | [`gem_stone+large_purple_circle.png`](gem_stone+large_purple_circle.png) |
 | <img src="apercu/droplet.png" width="48" height="48" alt=""> | 💧 | [`droplet.png`](droplet.png) |
@@ -295,6 +297,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/personal_computer.png" width="48" height="48" alt=""> | 💻 | [`personal_computer.png`](personal_computer.png) |
 | <img src="apercu/calendar.png" width="48" height="48" alt=""> | 📅 | [`calendar.png`](calendar.png) |
 | <img src="apercu/clipboard.png" width="48" height="48" alt=""> | 📋 | [`clipboard.png`](clipboard.png) |
+| <img src="apercu/notebook.png" width="48" height="48" alt=""> | 📓 | [`notebook.png`](notebook.png) |
 | <img src="apercu/open_book.png" width="48" height="48" alt=""> | 📖 | [`open_book.png`](open_book.png) |
 | <img src="apercu/books.png" width="48" height="48" alt=""> | 📚 | [`books.png`](books.png) |
 | <img src="apercu/scroll.png" width="48" height="48" alt=""> | 📜 | [`scroll.png`](scroll.png) |
@@ -408,8 +411,10 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/brick+window.png" width="48" height="48" alt=""> | 🧱‍🪟 | [`brick+window.png`](brick+window.png) |
 | <img src="apercu/brick+rock.png" width="48" height="48" alt=""> | 🧱‍🪨 | [`brick+rock.png`](brick+rock.png) |
 | <img src="apercu/brick+wood.png" width="48" height="48" alt=""> | 🧱‍🪵 | [`brick+wood.png`](brick+wood.png) |
+| <img src="apercu/spool_of_thread.png" width="48" height="48" alt=""> | 🧵 | [`spool_of_thread.png`](spool_of_thread.png) |
 | <img src="apercu/ball_of_yarn.png" width="48" height="48" alt=""> | 🧶 | [`ball_of_yarn.png`](ball_of_yarn.png) |
 | <img src="apercu/basket.png" width="48" height="48" alt=""> | 🧺 | [`basket.png`](basket.png) |
+| <img src="apercu/chair.png" width="48" height="48" alt=""> | 🪑 | [`chair.png`](chair.png) |
 | <img src="apercu/axe.png" width="48" height="48" alt=""> | 🪓 | [`axe.png`](axe.png) |
 | <img src="apercu/carpentry_saw.png" width="48" height="48" alt=""> | 🪚 | [`carpentry_saw.png`](carpentry_saw.png) |
 | <img src="apercu/ladder.png" width="48" height="48" alt=""> | 🪜 | [`ladder.png`](ladder.png) |
@@ -418,6 +423,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/window+rainbow.png" width="48" height="48" alt=""> | 🪟‍🌈 | [`window+rainbow.png`](window+rainbow.png) |
 | <img src="apercu/window+crescent_moon.png" width="48" height="48" alt=""> | 🪟‍🌙 | [`window+crescent_moon.png`](window+crescent_moon.png) |
 | <img src="apercu/window+large_green_square.png" width="48" height="48" alt=""> | 🪟‍🟩 | [`window+large_green_square.png`](window+large_green_square.png) |
+| <img src="apercu/sewing_needle.png" width="48" height="48" alt=""> | 🪡 | [`sewing_needle.png`](sewing_needle.png) |
 | <img src="apercu/knot.png" width="48" height="48" alt=""> | 🪢 | [`knot.png`](knot.png) |
 | <img src="apercu/bucket.png" width="48" height="48" alt=""> | 🪣 | [`bucket.png`](bucket.png) |
 | <img src="apercu/rock.png" width="48" height="48" alt=""> | 🪨 | [`rock.png`](rock.png) |

@@ -15,7 +15,7 @@ import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
-import { estTacheCompagnon, faireCompagnon, journeeCompagnon, tachesCompagnon } from '../engine/compagnon.js';
+import { estTacheCompagnon, faireCompagnon, journeeCompagnon, noterGarde, tachesCompagnon } from '../engine/compagnon.js';
 import { marcherMembre } from '../engine/repas.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
 import { TIRED } from '../engine/stamina.js';
@@ -454,6 +454,8 @@ export function stageModel() {
     // le joueur a appuyé sur « Dormir » : le personnage va à son lit (js/fermier.js) ; il y
     // dort (la nuit défile en accéléré), même quand on regarde la carte de la ferme
     coucher: (coucher || asleep(state)) && nightActive(state),
+    // le récit, lot 8 : sa tente plantée, le bivouac de la nuit (le pied de la tente, px) ; null sinon
+    bivouac: state.bivouac && Number.isInteger(state.bivouac.case) ? { x: (state.bivouac.case % farmTerrain(state).LARGEUR) * 16 + 8, y: Math.floor(state.bivouac.case / farmTerrain(state).LARGEUR) * 16 + 14 } : null,
     dort: asleep(state),
     ramasser,
     // version 1.17 : le personnage du joueur sur la carte (son numéro dans le catalogue)
@@ -702,8 +704,10 @@ function stagePickup(id) {
 // Fiche 19 : ou il a fini une de ses initiatives (arroser une plante, remplir sa cruche au puits,
 // cuisiner, ramasser) : ce qu'elle a donné (une plante arrosée : { arrose: 1 }, la bulle « +1 💧 »).
 function stageAide(lieu) {
-  const r = estTacheCompagnon(lieu) ? faireCompagnon(state, lieu) : aideBetes(state, lieu);
+  const betes = !estTacheCompagnon(lieu);
+  const r = betes ? aideBetes(state, lieu) : faireCompagnon(state, lieu);
   if (!r.ok) return null;
+  if (betes) noterGarde(state, 'betes');   // (le récit, lot 8 : il garde la ferme quand le joueur explore)
   persistState();
   refresh();
   return r.items;
@@ -942,7 +946,7 @@ function mondeDeLaCarte() {
 // personnage, jusqu'à FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES ; ensuite il flâne).
 function aideSansCarte() {
   if (nightActive(state) || clockHours(state) >= DATA.FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES) return;
-  for (const lieu of aideAFaire(state)) aideBetes(state, lieu);
+  for (const lieu of aideAFaire(state)) if (aideBetes(state, lieu).ok) noterGarde(state, 'betes');
   // (fiche 19 : ses initiatives aussi, d'un coup, sans dessin)
   if (journeeCompagnon(state).length) persistState();
 }
