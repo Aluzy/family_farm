@@ -1,8 +1,8 @@
 # La courgette dans assets/crops.png (rangée 11), cases de 16 × 16 :
 #   colonne 0 : les graines dans leur trou de semis (comme les autres cultures, scripts/carte/cultures.py) ;
 #   colonnes 1 à 3 : le plant qui pousse (jeune pousse, plant en fleur, plant avec ses courgettes) ;
-#   colonne 4 : la courgette récoltée (icône 🥒, scripts/icones/build.py ; son sachet de
-#   graines en est tiré, scripts/icones/art_graines.py).
+#   colonne 4 : la courgette récoltée (son icône 🥒 et celle de son sachet de graines en ont
+#   été tirées une fois : assets/icones/cucumber.png et seedling+cucumber.png ; une retouche ici ne les change pas).
 # Chaque case est redessinée en entier : le script peut être relancé.
 # data/crops.json : "sprite": { "r": 11, "h": 16, "c": [0, 1, 2, 3] }.
 #

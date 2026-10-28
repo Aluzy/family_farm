@@ -55,6 +55,9 @@ const ASSETS_HORS_SITE = [
   // images lues seulement par les générateurs (scripts/carte/*.py) ou par Tiled, dont aucune
   // carte construite ne pose de tuile (la vérification plus bas le garantit)
   /^(arbre_clair|pin_clair|barrieres|bordure_eau|bordure_eau_herbe|eau|herbe_chemin|herbe_deco)\.png$/,
+  // les icônes une par une et leurs galeries (scripts/icones/build.py) : le jeu lit les planches
+  /^(icones|dessins)(\/|$)/,
+  /^police\.json$/,
 ];
 const SOURCEMAP = process.argv.includes('--sourcemap');
 // scripts classiques, hors du regroupement : le kit commun des cartes (js/carte/), la ferme

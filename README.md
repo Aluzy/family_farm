@@ -356,10 +356,10 @@ plus légers, pixel pour pixel identiques.
   `node scripts/monde/apercu.mjs <graine> [fichier.png]` en écrit une image pour le relire (sans
   fichier : `apercu_monde.png` à la racine, ignoré par git). Voir
   [`docs/grand-monde.md`](docs/grand-monde.md), étape 4.
-- **Icônes en pixel art** (elles remplacent les emojis à l'affichage) : les dessins sont dans
-  `scripts/icones/art_*.py`, et `python3 scripts/icones/build.py` produit `assets/icones.png`
-  et `js/ui/icones.generated.js` (Python 3 avec Pillow). `scripts/icones/preview.py` montre un
-  aperçu d'un fichier de dessins. Détails : [`docs/icones.md`](docs/icones.md).
+- **Icônes en pixel art** (elles remplacent les emojis à l'affichage) : une image PNG par icône
+  dans [`assets/icones/`](assets/icones) (avec une galerie), à retoucher telle quelle ;
+  `python3 scripts/icones/build.py` les assemble en `assets/icones.png` et
+  `js/ui/icones.generated.js` (Python 3 avec Pillow). Détails : [`docs/icones.md`](docs/icones.md).
 - **Police des fenêtres de dialogue** (essai) : `python3 scripts/police/police_dialogue.py` fait
   `assets/police_dialogue.woff` (avec fontTools) d'après l'alphabet dessiné à la main de
   `scripts/police/originaux/` ; `css/jeu.css` la pose sur les fenêtres (`.modal`).

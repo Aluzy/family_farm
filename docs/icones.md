@@ -8,13 +8,18 @@ jeu comme sur l'accueil, l'encyclopédie et la page des cookies.
 
 | Fichier | Rôle |
 |---|---|
-| `scripts/icones/art_*.py` | les dessins, une lettre par pixel, regroupés par thème (symboles, cuisine, nature, lieux, outils, gens et horloges, le grand monde — `art_monde.py` : le hameau, l'entrée d'une grotte, la boussole —, essai) |
-| `scripts/icones/build.py` | assemble la planche et la table ; reprend aussi des cases des planches du jeu (`FROM_SHEET` : les récoltes de `crops.png`) |
-| `scripts/icones/preview.py` | aperçu d'un fichier de dessins : chaque icône agrandie, sur fond clair et sombre, et à taille réelle |
+| [`assets/icones/*.png`](../assets/icones) | **la source** : une image de 16×16 par icône, retouchée telle quelle ; [galerie](../assets/icones/README.md) |
+| `assets/icones/icones.json` | emoji (sans U+FE0F) → fichier ; le fichier porte le nom Unicode anglais de l'emoji (💰 → `money_bag.png`, une suite : `seedling+cucumber.png`) |
+| `scripts/icones/build.py` | assemble la planche et la table, refait les galeries et leurs aperçus agrandis (`apercu/`) |
 | `assets/icones.png` | la planche (produite, 16 cases par rangée) |
 | `js/ui/icones.generated.js` | emoji → rang dans la planche, et l'empreinte de la planche (produit) |
 | `js/ui/pixel-emoji.js` | le remplacement à l'affichage |
 | `js/icones-page.js` | branche le remplacement sur les pages hors du jeu |
+
+Les icônes étaient autrefois dessinées en texte (`scripts/icones/art_*.py`, une lettre par
+pixel) ; leurs PNG en ont été tirés une fois pour toutes. Celles qui étaient calculées à partir
+d'autres (sachets de graines, couleurs de peau, cases de `crops.png` ou `trouvailles.png`) sont
+désormais indépendantes : retoucher la tomate ne change pas son sachet.
 
 ## Dessins, police et jauges (sans emoji)
 
@@ -24,9 +29,10 @@ sont aussi en pixel art :
 
 | Fichier | Rôle |
 |---|---|
-| `scripts/icones/art_batiments.py`, `art_verger.py`, `art_jeu.py` | dessins nommés (`ART` ou `art()`), jusqu'à 32×32 |
-| `assets/art.png` | leur planche, cases de 32×32 (produite) |
-| `assets/police.png` | la police pixel : chiffres, `#`, `s`, `h`, `x`, `/` (produite depuis `FONT` de `art_jeu.py`), une rangée sombre et une blanche |
+| [`assets/dessins/*.png`](../assets/dessins) | **la source** : un dessin par fichier, jusqu'à 32×32, nommé comme dans le jeu ; [galerie](../assets/dessins/README.md) |
+| `assets/art.png` | leur planche, cases de 32×32 où le dessin est centré et posé sur le bas (produite) |
+| `assets/police.png` | la police pixel (la source) : chiffres, `#`, `s`, `h`, `x`, `/`, une rangée sombre et une blanche |
+| `assets/police.json` | sa hauteur, et pour chaque caractère `[x, largeur]` dans `police.png` |
 | `js/ui/pixel-art.js` | `artHtml(nom)`, `pxText('#12')`, `pxGauge(valeur, max, libellé)` |
 
 - Les fiches de parcelle (Zone de culture, Champ, Serre) : « #n » en police pixel, le nom et
@@ -41,10 +47,12 @@ sont aussi en pixel art :
 
 ## Ajouter ou retoucher une icône
 
-1. Dessiner dans le fichier `art_*.py` du thème : 16 chaînes de 16 lettres, chaque lettre
-   définie dans `PALETTE`, `.` pour le transparent. La clé est l'emoji sans U+FE0F.
-2. `python3 scripts/icones/preview.py scripts/icones/art_xxx.py -o apercu.png` et regarder.
-3. `python3 scripts/icones/build.py` : refait `assets/icones.png` et `js/ui/icones.generated.js`.
+1. Retoucher le PNG de `assets/icones/` (16×16, fond transparent) dans un logiciel de pixel art,
+   sans anticrénelage. Une nouvelle icône : déposer son PNG, puis l'ajouter à
+   `assets/icones/icones.json` (emoji sans U+FE0F → fichier). Un dessin : `assets/dessins/`, son
+   nom de fichier est son nom dans le jeu.
+2. `python3 scripts/icones/build.py` : refait `assets/icones.png`, `assets/art.png`,
+   `js/ui/icones.generated.js` et les galeries.
 
 Style commun : contour de 1 px dans une teinte très sombre de la couleur de l'objet (jamais du
 noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticrénelage, l'objet

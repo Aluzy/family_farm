@@ -882,7 +882,7 @@ TROUVAILLES = [
     ('bulot', 'coquillage', 'Un bulot'),
     ('corail', 'corail', 'Une branche de corail'),
     ('perle', 'perle', 'Une perle, dans son huître'),
-    # (à la fin : les cases des autres ne bougent pas, scripts/icones/build.py les reprend)
+    # (à la fin : les cases des autres ne bougent pas ; leurs icônes en ont été tirées, assets/icones/)
     ('herbes_montagne', 'herbe', 'Des herbes de montagne'),
 ]
 

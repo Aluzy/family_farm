@@ -6,8 +6,8 @@
 # Les arbres fruitiers sont les feuillus du jeu (scripts/carte/originaux/arbre_feuillu.png, l'arbre
 # de assets/arbre_clair.png), le feuillage un peu teinté selon l'espèce. Une planche de cases de
 # 80×80 (la place d'un arbre du Verger), chaque dessin posé pied au bas de la case, centré :
-#   0 emplacement libre   butte de terre labourée (plot-soil des icônes)
-#   1 jeune arbre         jeune plant et son tuteur (tree-young des icônes)
+#   0 emplacement libre   butte de terre labourée (assets/dessins/plot-soil.png)
+#   1 jeune arbre         jeune plant et son tuteur (assets/dessins/tree-young.png)
 #   puis, pour chaque espèce de ESPECES (dans cet ordre), quatre cases :
 #   2 + 4i     arbuste    un petit feuillu (le feuillage du grand, resserré), son tronc
 #   3 + 4i     arbre      le feuillu, feuillage de l'espèce
@@ -24,8 +24,6 @@ from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
 from pixel import ASSETS, ROOT, apercu, hasard  # noqa: E402
-sys.path.insert(0, os.path.join(ROOT, 'scripts', 'icones'))
-import art_verger as A  # noqa: E402
 
 CASE = 80
 ARBRE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'arbre_feuillu.png')
@@ -166,6 +164,10 @@ def arbuste(im):
     return out
 
 
+def dessin(nom):
+    return Image.open(os.path.join(ASSETS, 'dessins', nom + '.png')).convert('RGBA')
+
+
 def foot(im):
     """Case de 80×80 avec le dessin centré, pied sur le bas."""
     out = Image.new('RGBA', (CASE, CASE), (0, 0, 0, 0))
@@ -177,7 +179,7 @@ def foot(im):
 
 def planche():
     base = feuillu()
-    cases = [foot(A.soil()), foot(A.young_tree())]
+    cases = [foot(dessin('plot-soil')), foot(dessin('tree-young'))]
     for i, (nom, esp) in enumerate(ESPECES.items()):
         arbre = teinter(base, *esp['feuilles'])
         fleur = teinter(base, 0, 1, 1, esp['rose']) if 'rose' in esp else avec_fleurs(arbre, esp, 11 + i)
