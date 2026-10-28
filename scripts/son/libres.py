@@ -1,10 +1,10 @@
-"""Les enregistrements libres (CC0) de l'arrosoir, de la hulotte, de la grenouille, du chat et du chien : téléchargés,
+"""Les enregistrements libres (CC0) de l'arrosoir, de la hulotte, de la grenouille, du chat, du chien et du coq : téléchargés,
 coupés, égalisés.
 
 - l'arrosoir : « Watering with a Watering Can » de Bricklover sur Freesound (CC0). L'original
   (MP3) demande un compte : on prend l'aperçu de haute qualité que Freesound publie (Ogg 192 kb/s),
   bien assez pour un bruit d'une seconde et demie ;
-- la hulotte, la grenouille, le chat et le chien : BigSoundBank (https://bigsoundbank.com, Joseph Sardin et quelques
+- la hulotte, la grenouille, le chat, le chien et le coq : BigSoundBank (https://bigsoundbank.com, Joseph Sardin et quelques
   contributeurs), qui publie ses prises de son sous CC0, en AIFF sans perte.
 
 CC0 : aucune obligation ; les auteurs sont tout de même cités dans assets/son/CREDITS.md. Pour
@@ -73,6 +73,14 @@ SONS = {
                    [(4.99, 5.70)], (0.01, 0.25), -14),
     'chien_3': bsb('2954', 'barking-dog-2-s2954.html', 'Joseph Sardin', "Chien de traîneau, seul dehors : deux aboiements",
                    [(11.74, 12.70)], (0.01, 0.3), -14),
+    # le coq du réveil (6 h) : trois coqs, trois enregistrements, un « cocorico » entier chacun ; un
+    # peu plus fort que les autres bêtes, le chant d'un coq porte loin
+    'coq_1': bsb('0283', 'song-of-rooster-s0283.html', 'Joseph Sardin', "Coq : un cocorico franc, de près",
+                 [(0.0, 2.2)], (0.01, 0.3), -11),
+    'coq_2': bsb('0104', 'rooster-s0104.html', 'Joseph Sardin', "Coq : un cocorico dans la cour, un peu plus loin",
+                 [(1.5, 4.0)], (0.05, 0.3), -11),
+    'coq_3': bsb('0704', 'crowing-4-s0704.html', 'Joseph Sardin', "Coq : un long cocorico qui retombe",
+                 [(0.2, 2.75)], (0.02, 0.3), -11),
 }
 
 

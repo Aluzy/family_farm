@@ -49,7 +49,7 @@ T = {
  'vache': ('animaux', g(f'{REC}/vache_*.flac')),
  'clochette': ('animaux', g(f'{REC}/clochette.flac')),
  'mouton': ('animaux', g(f'{REC}/mouton_*.flac') + g(f'{REC}/agneau_*.flac')),
- 'coq': ('animaux', g(f'{BETES}/coq_*.wav')),
+ 'coq': ('animaux', g(f'{REC}/coq_*.flac')),                    # le coq du réveil, de vrais chants (libres.py)
  'chat': ('animaux', g(f'{REC}/chat_*.flac')),                  # le chat de la famille, de vrais miaulements (libres.py)
  'ronron': ('animaux', g(f'{M2}/sfx/animals/cat_purr_*.wav')),
  'chien': ('animaux', g(f'{REC}/chien_*.flac')),                # le chien de la famille, de vrais aboiements (libres.py)
@@ -159,7 +159,7 @@ for key, (folder, srcs) in T.items():
 cred = json.load(open(f'{REC}/credits.json', encoding='utf-8'))
 lignes = ['# Crédits des sons', '', "Tous les sons du jeu sont synthétisés par scripts/son/, sauf ces vrais enregistrements libres de droits :",
           "les bêtes de la ferme, trouvées dans des jeux libres qui documentent leur provenance (Stendhal, VoxeLibre, 0 A.D.),",
-          "l'arrosoir (Freesound), la hulotte, la grenouille, le chat et le chien de la famille (BigSoundBank).",
+          "l'arrosoir (Freesound), la hulotte, la grenouille, le coq, le chat et le chien de la famille (BigSoundBank).",
           'CC0 et domaine public : aucune obligation. CC BY : citer l\'auteur. CC BY-SA : citer l\'auteur, et le fichier',
           '(et ses modifications) reste sous CC BY-SA (https://creativecommons.org/licenses/by-sa/3.0/).', '',
           '| Fichier du jeu | Son | Auteur | Licence | Source |', '|---|---|---|---|---|']

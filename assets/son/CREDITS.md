@@ -2,7 +2,7 @@
 
 Tous les sons du jeu sont synthétisés par scripts/son/, sauf ces vrais enregistrements libres de droits :
 les bêtes de la ferme, trouvées dans des jeux libres qui documentent leur provenance (Stendhal, VoxeLibre, 0 A.D.),
-l'arrosoir (Freesound), la hulotte, la grenouille, le chat et le chien de la famille (BigSoundBank).
+l'arrosoir (Freesound), la hulotte, la grenouille, le coq, le chat et le chien de la famille (BigSoundBank).
 CC0 et domaine public : aucune obligation. CC BY : citer l'auteur. CC BY-SA : citer l'auteur, et le fichier
 (et ses modifications) reste sous CC BY-SA (https://creativecommons.org/licenses/by-sa/3.0/).
 
@@ -32,6 +32,9 @@ CC0 et domaine public : aucune obligation. CC BY : citer l'auteur. CC BY-SA : ci
 | animaux/mouton_4 | Bêlement éraillé | cognito perceptu | CC0 | https://freesound.org/people/cognito%20perceptu/sounds/88423/ |
 | animaux/mouton_5 | Agneau | cognito perceptu | CC0 | https://freesound.org/people/cognito%20perceptu/sounds/88423/ |
 | animaux/mouton_6 | Agneau (bonus) | cognito perceptu | CC0 | https://freesound.org/people/cognito%20perceptu/sounds/88423/ |
+| animaux/coq_1 | Coq : un cocorico franc, de près | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/song-of-rooster-s0283.html |
+| animaux/coq_2 | Coq : un cocorico dans la cour, un peu plus loin | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/rooster-s0104.html |
+| animaux/coq_3 | Coq : un long cocorico qui retombe | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/crowing-4-s0704.html |
 | animaux/chat_1 | Chat domestique : un « miaou » qui demande | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/meow-cat-14-s1902.html |
 | animaux/chat_2 | Chat domestique : un petit roulement, puis « miaou » | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/meow-cat-2-s1890.html |
 | animaux/chat_3 | Chat domestique : un long « miaaou » | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/meow-cat-1-s1889.html |

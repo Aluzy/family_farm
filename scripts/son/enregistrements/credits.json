@@ -264,5 +264,26 @@
   "source": "https://bigsoundbank.com/barking-dog-2-s2954.html",
   "titre": "Chien de traîneau, seul dehors : deux aboiements",
   "duree": 0.96
+ },
+ "coq_1": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/song-of-rooster-s0283.html",
+  "titre": "Coq : un cocorico franc, de près",
+  "duree": 2.2
+ },
+ "coq_2": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/rooster-s0104.html",
+  "titre": "Coq : un cocorico dans la cour, un peu plus loin",
+  "duree": 2.5
+ },
+ "coq_3": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/crowing-4-s0704.html",
+  "titre": "Coq : un long cocorico qui retombe",
+  "duree": 2.55
  }
 }
