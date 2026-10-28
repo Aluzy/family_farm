@@ -21,7 +21,9 @@
  *   - l'aigle tourne en rond au-dessus des sommets, haut (son ombre court au sol, sous lui) ; le
  *     dauphin saute de temps en temps hors de l'eau, au large ;
  *   - la nuit (modèle.nuit), elles dorment (immobiles) ou se cachent (`nuit`) ;
- *   - avec « animations réduites », elles restent immobiles (leur première image, à leur place).
+ *   - avec « animations réduites », elles restent immobiles (leur première image, à leur place) ;
+ *   - elles s'écrasent et s'étirent un peu (js/carte/ressort.js, fauneRessort) : à chaque pas, à
+ *     chaque souffle au repos, quand elles détalent ou s'envolent ; pas l'aigle, qui tourne là-haut.
  * On ne les chasse pas : un appui sur une bête dit son nom et ouvre sa page de l'encyclopédie (le
  * pont : ctx.bridge.faune) ; la première fois qu'une espèce paraît dans la vue, sa page se découvre
  * (ctx.bridge.fauneVue). Rien sur la ferme.
@@ -109,6 +111,9 @@
       if (e.lieu === 'terre') b.ombre = this.add.ellipse(b.x, b.y, Math.max(6, e.w * 0.45), 3, 0x1e1a18, 0.22);
       // (l'ombre d'un oiseau en vol : sa silhouette, sombre, au sol sous lui)
       if (e.lieu === 'air') b.ombre = this.add.sprite(b.x, b.y, e.tex, this.fauneCadre(b, 'vol', 0)).setOrigin(e.ox, e.oy).setTint(0x1e1a18).setTintMode(global.Phaser.TintModes.FILL).setAlpha(AIR.ombre).setDepth(1.5);
+      // (son ressort : écrasée, étirée ; l'aigle n'en a pas)
+      b.res = e.lieu !== 'air' && K.ressort ? K.ressort() : null;
+      b.vu = null;
       this.fauneEtat.vivantes++;
     },
 
@@ -116,7 +121,7 @@
       if (!b.img) return;
       b.img.destroy();
       if (b.ombre) b.ombre.destroy();
-      b.img = b.ombre = null;
+      b.img = b.ombre = b.res = null;
       this.fauneEtat.vivantes--;
     },
 
@@ -216,6 +221,8 @@
         if (e.images.saut) { img.setVisible(false); return; }
         if (b.etat !== 'repos' && b.etat !== 'vol') { b.x = b.hx; b.y = b.hy; b.etat = e.lieu === 'air' ? 'vol' : 'repos'; }
         b.alpha = 1;
+        if (b.res) { b.res.calme(img); b.vu = null; }
+        if (b.ombre && e.lieu === 'terre') b.ombre.setScale(1);
         img.setFrame(this.fauneCadre(b, e.lieu === 'air' ? 'vol' : 'repos', 0)).setAlpha(1).setVisible(!cachee);
         this.faunePlace(b, e.lieu === 'air' ? b.hx + b.rayon : b.x, e.lieu === 'air' ? b.hy : b.y);
         if (b.ombre) b.ombre.setVisible(!cachee);
@@ -309,15 +316,38 @@
           break;
         default: break;
       }
-      img.setVisible(b.alpha > 0.02).setAlpha(b.alpha).setFrame(this.fauneCadre(b, suite, n));
+      const cadre = this.fauneCadre(b, suite, n);
+      img.setVisible(b.alpha > 0.02).setAlpha(b.alpha).setFrame(cadre);
       if (e.lieu !== 'air') img.setFlipX(b.flip);
+      if (b.res) this.fauneRessort(b, suite, n, cadre, dt);
       this.faunePlace(b, b.x, b.y);
+    },
+
+    // Son ressort (js/carte/ressort.js), quand son image change : un pas (les images paires d'une
+    // marche, d'une fuite, d'une nage : une patte se pose ; les impaires : entre deux pas), un souffle
+    // au repos, la tête sous l'eau, un battement d'ailes ; étirée tant qu'elle s'envole.
+    fauneRessort(b, suite, n, cadre, dt) {
+      const C = K.RESSORT.COUPS, R = b.res;
+      if (cadre !== b.vu) {
+        if (b.vu != null) {
+          if (suite === 'marche' || suite === 'fuite') R.pousse(n % 2 ? C.passage : C.pas);
+          else if (suite === 'repos') R.pousse(n % 2 ? C.souffle : -C.souffle);
+          else if (suite === 'plonge') R.pousse(C.bouchee);
+          else if (suite === 'vol') R.pousse(C.ailes * 0.5);
+        }
+        b.vu = cadre;
+      }
+      R.maj(dt, b.etat === 'envol' ? K.RESSORT.TENU.air : 0).applique(b.img);
+      // (l'ombre au sol s'élargit avec elle quand elle s'écrase)
+      if (b.ombre && b.e.lieu === 'terre') b.ombre.setScale(b.img.scaleX, 1);
     },
 
     // Elle fuit le personnage (en p) : chacune à sa façon (`fuit`).
     fauneFuit(b, p) {
       const e = b.e, a = Math.atan2(b.y - p.y, b.x - p.x);
       if (global.FermeSon) global.FermeSon.cri(e.cle, b.x, b.y, 0.7);
+      // (elle part d'un bond ; sur l'eau, d'un simple coup de pattes)
+      if (b.res) b.res.pousse(K.RESSORT.COUPS.elan * (e.fuit === 'nage' ? 0.3 : e.fuit === 'envol' ? 1 : 0.6));
       if (e.fuit === 'envol') {
         b.etat = 'envol'; b.haut = 0;
         b.tx = b.x + Math.cos(a) * 400; b.ty = b.y + Math.sin(a) * 400;
