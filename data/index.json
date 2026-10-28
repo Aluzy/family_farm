@@ -18,6 +18,7 @@
     "equipement.json",
     "simulation.json",
     "terrain.json",
-    "monde.json"
+    "monde.json",
+    "recit.json"
   ]
 }

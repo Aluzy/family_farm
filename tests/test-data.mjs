@@ -148,3 +148,20 @@ test('le fromage d\'alpage : herbes de montagne (trouvaille, récolte du grand m
   eq(sourcesOf(DATA, 'lait_alpage'), ['animal vache']);
   eq(sourcesOf(DATA, 'fromage_alpage'), ['recette fromage_alpage', 'Marché']);
 });
+
+/* ---------- le récit de Céron (data/recit.json) ---------- */
+
+const R0 = (d) => d.RECIT.REPLIQUES[0];
+refuse('récit : un personnage inconnu', (d) => { R0(d).qui = 'personne'; }, 'un personnage de RECIT.PERSONNAGES');
+refuse('récit : une condition inconnue', (d) => { R0(d).quand = { meteo: 'pluie' }; }, 'condition inconnue');
+refuse('récit : une phase de lune inconnue', (d) => { R0(d).quand = { lune: 'rousse' }; }, 'une phase parmi');
+refuse('récit : un palier hors des paliers', (d) => { R0(d).quand = { palier_min: 9 }; }, 'un rang de palier');
+refuse('récit : des conditions jamais vraies', (d) => { R0(d).quand = { fait: 'x', sans_fait: 'x' }; }, 'jamais vraie');
+refuse('récit : une bulle trop longue', (d) => { R0(d).texte = 'a'.repeat(d.RECIT.BULLE_MAX + 1); }, 'au plus');
+refuse('récit : {prenom} compte pour un prénom entier', (d) => { R0(d).texte = `{prenom}${'a'.repeat(d.RECIT.BULLE_MAX - 5)}`; }, 'au plus');
+refuse('récit : une variable inconnue', (d) => { R0(d).texte = 'Bonjour {inconnu}.'; }, 'variable inconnue');
+refuse('récit : une seule variante de genre', (d) => { R0(d).texte = { m: 'Le petit' }; }, 'les deux variantes de genre');
+refuse('récit : un id en double', (d) => { d.RECIT.REPLIQUES[1].id = R0(d).id; }, 'en double');
+refuse('récit : un effet inconnu', (d) => { R0(d).effet = { magie: 1 }; }, 'effet inconnu');
+refuse('récit : une page de carnet inconnue', (d) => { d.RECIT.SCENES[0].effet.fragment = 'page_perdue'; }, 'une page de RECIT.FRAGMENTS');
+refuse('récit : une scène sans ligne', (d) => { d.RECIT.SCENES[0].lignes = []; }, 'au moins une ligne');

@@ -3906,6 +3906,238 @@ export const RAW_DATA = {
     "VOISIN": { "m": "votre voisin", "f": "votre voisine" },
     "ABSENT": "Personne… Je laisse le plat devant la porte."
   },
+  "RECIT": {
+    "RELATION_MAX": 100,
+    "PALIERS": [0, 10, 25, 45, 70],
+    "PALIER_NOMS": ["inconnu", "poli", "cordial", "proche", "intime"],
+    "CONFIANCE": { "DEPART": 50, "MAX": 100, "NIVEAUX": { "reservee": 0, "cordiale": 40, "chaleureuse": 70 } },
+    "AGES": { "RECENT": 3, "SOUVENIR": 14 },
+    "ACTES": [
+      { "numero": 1, "titre": "L'arrivée", "chapitre": 1, "nuits": 0 },
+      { "numero": 2, "titre": "Le petit de Maurice", "chapitre": 3, "nuits": 10 },
+      { "numero": 3, "titre": "Ce que devient la ferme", "chapitre": 5, "nuits": 25 },
+      { "numero": 4, "titre": "D'ici", "chapitre": 7, "nuits": 45 }
+    ],
+    "BULLE_MAX": 110,
+    "VARIABLE_MAX": 16,
+    "VARIABLES": ["hameau", "objet", "quand"],
+    "PERSONNAGES": {
+      "adele": { "nom": "Adèle", "role": "la mère du personnage principal", "lieu": "Cadolon" },
+      "maurice": { "nom": "Maurice", "role": "le grand-père, l'ancien cocher (mort il y a un an)", "lieu": "Le Gué" },
+      "achille": { "nom": "Achille", "role": "le cocher", "lieu": "Le Gué" },
+      "odile": { "nom": "Odile", "role": "l'ancienne restée", "lieu": "Le Gué" },
+      "fernand": { "nom": "Fernand", "role": "l'ancien revenu de Cadolon", "lieu": "Les Mouettes" },
+      "garance": { "nom": "Garance", "role": "la tisserande", "lieu": "Les Genêts" },
+      "lise": { "nom": "Lise", "role": "la fille de Garance", "lieu": "Les Genêts" },
+      "basile": { "nom": "Basile", "role": "le scieur et ébéniste", "lieu": "Bois-Joli" },
+      "theo": { "nom": "Théo", "role": "le fils de Basile", "lieu": "Bois-Joli" },
+      "frida": { "nom": "Frida", "role": "la scientifique", "lieu": "son atelier de l'étang" },
+      "johnny": { "nom": "Johnny", "role": "l'ermite", "lieu": "sa cabane de la forêt" },
+      "compagnon": { "nom": "le compagnon", "role": "le second adulte de la famille", "lieu": "la ferme" }
+    },
+    "FRAGMENTS": {
+      "carnet_promesses": {
+        "titre": "Un carnet de tournée de Maurice",
+        "texte": "Genêts : toit de Garance, avant les pluies. Bois-Joli : lames de la scie. Mouettes : la pompe, encore. J. : soupe, pain."
+      },
+      "note_j": {
+        "titre": "La note « J. »",
+        "texte": "J. : soupe, pain. Il a encore parlé de la lune. Il dit qu'il l'a « rentrée sous la terre du milieu »."
+      },
+      "page_bord": { "titre": "Une page de bord délavée", "texte": "Le croquis d'une pierre, le mot « fragment », une date qu'on ne lit plus." },
+      "releves_frida": {
+        "titre": "Les relevés de Frida",
+        "texte": "Une carte de l'île : les récoltes de pleine lune gagnent le plus au centre, là où est la ferme."
+      },
+      "johnny_pleine": {
+        "titre": "Johnny, une nuit de pleine lune",
+        "texte": "« Regarde comme la lune brille aujourd'hui, c'est fascinant. On dirait qu'elle cherche quelque chose. »"
+      },
+      "johnny_noire": { "titre": "Johnny, une nuit noire", "texte": "« Quand il fait tout noir, je l'entends sous les arbres. »" },
+      "johnny_croissante": {
+        "titre": "Johnny, sous la lune croissante",
+        "texte": "« J'avais un caillou qui brillait. Je l'ai mis au chaud, dans le noir, pour qu'il dorme. »"
+      },
+      "souvenir_lise": {
+        "titre": "Ce que Lise a vu",
+        "texte": "« Une nuit de pleine lune, j'ai vu le vieux de la forêt marcher vers les bois de chez toi. »"
+      }
+    },
+    "SCENES": [
+      {
+        "id": "arrivee",
+        "quand": { "jour_min": 1, "sans_fait": "arrivee" },
+        "priorite": 100,
+        "lignes": [
+          { "qui": "fernand", "texte": "Les héritiers de Maurice. Ça se voit, vous avez l'air perdus." },
+          { "qui": "fernand", "texte": "La terre, c'est par là. Suivez le chemin. La calèche passe demain." }
+        ],
+        "effet": { "fait": "arrivee", "relation": { "fernand": 10 } }
+      },
+      {
+        "id": "arrivee_enfants",
+        "quand": { "fait": "arrivee", "sans_fait": "arrivee_enfants", "enfants": true, "jour_min": 1 },
+        "priorite": 90,
+        "lignes": [{ "qui": "fernand", "texte": "Toi, le petit, tu tiendras pas une semaine sans écran. On parie ?" }],
+        "effet": { "fait": "arrivee_enfants" }
+      },
+      {
+        "id": "achille_cle",
+        "quand": { "chapitre_min": 2, "lieu": "ferme", "sans_fait": "achille.cle" },
+        "priorite": 100,
+        "lignes": [
+          { "qui": "achille", "texte": "Ho." },
+          { "qui": "achille", "texte": "Toi, t'as les yeux de ta mère." },
+          { "qui": "achille", "texte": "Tiens. La clé de chez Maurice, au Gué. Il voulait que ça te revienne." },
+          { "qui": "achille", "texte": "Il a laissé des carnets partout. Moi, j'en ai deux. Je les garde." },
+          { "qui": "achille", "texte": "Je passe tous les jours vers dix heures. T'as du surplus, je prends." }
+        ],
+        "effet": { "fait": "achille.cle", "relation": { "achille": 10 } }
+      },
+      {
+        "id": "odile_maison",
+        "quand": { "fait": "achille.cle", "lieu": "maison_maurice", "sans_fait": "odile.rencontre" },
+        "priorite": 100,
+        "lignes": [
+          { "qui": "odile", "texte": { "m": "Vous êtes le petit d'Adèle.", "f": "Vous êtes la petite d'Adèle." } },
+          { "qui": "odile", "texte": "Elle vous a dit de passer me voir, j'imagine. Elle dit toujours ça." },
+          { "qui": "odile", "texte": "Il n'y a rien à prendre là-dedans. Il donnait tout." },
+          { "qui": "odile", "texte": "On se tutoiera quand vous aurez passé une pleine lune ici." }
+        ],
+        "effet": { "fait": "odile.rencontre", "relation": { "odile": 10 }, "fragment": "carnet_promesses" }
+      }
+    ],
+    "REPLIQUES": [
+      {
+        "id": "achille.poli.surplus",
+        "qui": "achille",
+        "quand": { "fait": "achille.cle", "palier_max": 1 },
+        "texte": "Ho. Tu vends ou pas ?",
+        "priorite": 10,
+        "repos_jours": 2
+      },
+      {
+        "id": "achille.poli.cheval",
+        "qui": "achille",
+        "quand": { "fait": "achille.cle", "palier_max": 1 },
+        "texte": "Touche pas le cheval. Il mord les gens qu'il connaît pas.",
+        "priorite": 10,
+        "repos_jours": 3
+      },
+      {
+        "id": "achille.cordial.oeufs",
+        "qui": "achille",
+        "quand": { "palier_min": 2 },
+        "texte": "Ho. Garde-moi tes œufs, les Genêts en réclament.",
+        "priorite": 10,
+        "repos_jours": 4
+      },
+      {
+        "id": "achille.cordial.gue",
+        "qui": "achille",
+        "quand": { "palier_min": 2 },
+        "texte": "Odile demande après toi. Elle demande après tout le monde, remarque.",
+        "priorite": 10,
+        "repos_jours": 5
+      },
+      {
+        "id": "achille.soir",
+        "qui": "achille",
+        "quand": { "heure": [18, 22] },
+        "texte": "Il dort debout, lui. Pas moi.",
+        "priorite": 15,
+        "repos_jours": 4
+      },
+      {
+        "id": "achille.pleine",
+        "qui": "achille",
+        "quand": { "lune": "pleine" },
+        "texte": "Pleine lune. Ce soir, tout le monde est dehors. Même moi.",
+        "priorite": 20,
+        "repos_jours": 10
+      },
+      {
+        "id": "achille.vente_recente",
+        "qui": "achille",
+        "quand": { "fait_recent": "vente.caleche" },
+        "texte": "Ce que tu m'as vendu est parti en une matinée. Continue.",
+        "priorite": 40,
+        "repos_jours": 7
+      },
+      {
+        "id": "odile.vous",
+        "qui": "odile",
+        "quand": { "fait": "odile.rencontre", "sans_fait": "odile.tutoie" },
+        "texte": "Bonjour. Vous tenez le coup, là-haut ?",
+        "priorite": 10,
+        "repos_jours": 2
+      },
+      {
+        "id": "odile.nuits_noires",
+        "qui": "odile",
+        "quand": { "lune": "nouvelle", "fait": "odile.rencontre" },
+        "texte": "On ne sème pas aux nuits noires. Ta mère non plus ne m'écoutait pas.",
+        "priorite": 60,
+        "repos_jours": 14
+      },
+      {
+        "id": "odile.croissante",
+        "qui": "odile",
+        "quand": { "lune": "croissante", "fait": "odile.tutoie" },
+        "texte": "On sème quand elle monte. Ce qui monte avec la lune pousse avec elle.",
+        "priorite": 20,
+        "repos_jours": 14
+      },
+      {
+        "id": "odile.maigre",
+        "qui": "odile",
+        "quand": { "fait": "odile.rencontre", "palier_min": 1 },
+        "texte": "Tu manges, au moins ? Adèle avait dit que je te trouverais maigre.",
+        "priorite": 10,
+        "repos_jours": 6
+      },
+      {
+        "id": "odile.enfants",
+        "qui": "odile",
+        "quand": { "fait": "odile.rencontre", "enfants": true },
+        "texte": "Et tes petits, ils savent ce que c'est, une nuit noire ?",
+        "priorite": 15,
+        "une_fois": true
+      },
+      {
+        "id": "odile.maison",
+        "qui": "odile",
+        "quand": { "fait": "odile.rencontre", "palier_min": 2 },
+        "texte": "La maison de Maurice respire mieux quand quelqu'un y passe.",
+        "priorite": 10,
+        "repos_jours": 7
+      },
+      {
+        "id": "fernand.peche",
+        "qui": "fernand",
+        "quand": { "fait": "arrivee" },
+        "texte": "Là-bas, on aurait fait une réunion pour ça. Ici, on pêche.",
+        "priorite": 10,
+        "repos_jours": 5
+      },
+      {
+        "id": "fernand.calme",
+        "qui": "fernand",
+        "quand": { "fait": "arrivee", "heure": [5, 9] },
+        "texte": "Tu fais du bruit. Les poissons aussi ont des oreilles.",
+        "priorite": 15,
+        "repos_jours": 6
+      },
+      {
+        "id": "fernand.cadolon",
+        "qui": "fernand",
+        "quand": { "palier_min": 2 },
+        "texte": "Tu regrettes Cadolon ? Moi, quarante ans. Puis plus du tout.",
+        "priorite": 10,
+        "une_fois": true
+      }
+    ]
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,

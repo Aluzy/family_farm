@@ -28,6 +28,7 @@ import { convertirPartie, graineDemenagement } from './demenagement.js';
 import { nouvelEquipement } from './equipement.js';
 import { BIENVENUE, nouvelleBienvenue } from './bienvenue.js';
 import { nouveauCompagnon } from './compagnon.js';
+import { nouveauRecit } from './recit.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -130,6 +131,9 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     // fiche 19 : le compagnon aide à la ferme (compagnon.js) : l'option, ce qu'il a fait aujourd'hui, sa
     // cruche. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
     compagnon: nouveauCompagnon(),
+    // le récit de Céron (recit.js, docs/recit/) : les faits, les relations, la confiance des hameaux, les
+    // répliques dites, le carnet. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
+    recit: nouveauRecit(),
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),

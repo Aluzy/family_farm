@@ -747,6 +747,85 @@ export function validateData(data) {
       for (const item of Object.keys(S.provisions || {})) if (!(items[item] && items[item].mangeable)) err(`DIDACTICIEL.SAC.provisions.${item}`, 'un aliment');
     }
   }
+  // Le récit de Céron (data/recit.json, js/engine/recit.js) : les personnages, les conditions, les effets,
+  // la longueur des bulles et les variantes de genre.
+  const R = data.RECIT;
+  if (R) {
+    const persos = Object.keys(R.PERSONNAGES || {});
+    const frags = Object.keys(R.FRAGMENTS || {});
+    const phases = ((data.LUNE && data.LUNE.PHASES) || []).map((p) => p.id);
+    const nbPaliers = (R.PALIERS || []).length;
+    if (!Array.isArray(R.PALIERS) || R.PALIERS[0] !== 0 || R.PALIERS.some((x, i) => !isInt(x) || (i > 0 && x <= R.PALIERS[i - 1]) || x > R.RELATION_MAX)) err('RECIT.PALIERS', 'des entiers croissants, le premier à 0, jusqu\'à RELATION_MAX');
+    if (!Array.isArray(R.PALIER_NOMS) || R.PALIER_NOMS.length !== nbPaliers) err('RECIT.PALIER_NOMS', 'un nom par palier');
+    const C = R.CONFIANCE || {};
+    if (!(isInt(C.MAX) && isInt(C.DEPART) && C.DEPART >= 0 && C.DEPART <= C.MAX)) err('RECIT.CONFIANCE', 'MAX et DEPART entiers, DEPART entre 0 et MAX');
+    if (!(isInt((R.AGES || {}).RECENT) && R.AGES.SOUVENIR > R.AGES.RECENT)) err('RECIT.AGES', 'RECENT entier, SOUVENIR plus grand');
+    (R.ACTES || []).forEach((a, i) => { if (a.numero !== i + 1 || !isInt(a.chapitre) || !isInt(a.nuits)) err(`RECIT.ACTES[${i}]`, 'numero (dans l\'ordre), chapitre et nuits entiers'); });
+    const prenomMax = (data.FAMILLE && data.FAMILLE.PROFIL && data.FAMILLE.PROFIL.PRENOM_MAX) || 12;
+    const nomMax = (data.DEPART && data.DEPART.NOM_MAX) || 20;
+    const VARS = new Set(['prenom', 'nom', ...(R.VARIABLES || [])]);
+    const texte = (where, t) => {
+      const variantes = t && typeof t === 'object' && !Array.isArray(t) ? [t.m, t.f] : [t];
+      if (t && typeof t === 'object' && !(typeof t.m === 'string' && typeof t.f === 'string')) { err(where, 'les deux variantes de genre, m et f'); return; }
+      for (const v of variantes) {
+        if (typeof v !== 'string' || !v.trim()) { err(where, 'un texte'); continue; }
+        for (const [, k] of v.matchAll(/\{(\w+)\}/g)) if (!VARS.has(k)) err(where, `variable inconnue {${k}}`);
+        const long = v.replace(/\{(\w+)\}/g, (_, k) => 'x'.repeat(k === 'prenom' ? prenomMax : k === 'nom' ? nomMax : R.VARIABLE_MAX)).length;
+        if (long > R.BULLE_MAX) err(where, `${long} caractères : ${R.BULLE_MAX} au plus`);
+      }
+    };
+    const quand = (where, q) => {
+      for (const [k, v] of Object.entries(q || {})) {
+        const w = `${where}.quand.${k}`;
+        const ids = Array.isArray(v) ? v : [v];
+        switch (k) {
+          case 'heure': if (!(Array.isArray(v) && v.length === 2 && v.every((h) => isInt(h) && h >= 0 && h <= 24) && v[0] !== v[1])) err(w, '[de, à] heures entières'); break;
+          case 'lune': if (!ids.every((p) => phases.includes(p))) err(w, `une phase parmi ${phases.join(', ')}`); break;
+          case 'lieu': case 'humeur': if (!ids.every((x) => typeof x === 'string' && x)) err(w, 'un texte ou une liste de textes'); break;
+          case 'palier_min': case 'palier_max': if (!(isInt(v) && v >= 0 && v < nbPaliers)) err(w, `un rang de palier (0 à ${nbPaliers - 1})`); break;
+          case 'confiance_min': case 'confiance_max': if (!(isInt(v) && v >= 0 && v <= C.MAX)) err(w, `un entier de 0 à ${C.MAX}`); break;
+          case 'fait': case 'sans_fait': case 'fait_recent': case 'fait_souvenir': if (!ids.every((x) => typeof x === 'string' && x)) err(w, 'un fait ou une liste de faits'); break;
+          case 'acte_min': case 'acte_max': if (!(isInt(v) && v >= 1 && v <= (R.ACTES || []).length)) err(w, 'un numéro d\'acte'); break;
+          case 'chapitre_min': case 'jour_min': if (!(isInt(v) && v >= 1)) err(w, 'un entier au moins égal à 1'); break;
+          case 'genre': if (v !== 'm' && v !== 'f') err(w, 'm ou f'); break;
+          case 'enfants': if (typeof v !== 'boolean') err(w, 'true ou false'); break;
+          default: err(w, 'condition inconnue');
+        }
+      }
+      if (q && isInt(q.palier_min) && isInt(q.palier_max) && q.palier_min > q.palier_max) err(`${where}.quand`, 'palier_min plus grand que palier_max : jamais vraie');
+      if (q && isInt(q.acte_min) && isInt(q.acte_max) && q.acte_min > q.acte_max) err(`${where}.quand`, 'acte_min plus grand que acte_max : jamais vraie');
+      for (const f of [].concat(q && q.fait || [])) if ([].concat(q.sans_fait || []).includes(f)) err(`${where}.quand`, `« ${f} » à la fois exigé et exclu : jamais vraie`);
+    };
+    const effet = (where, e, qui) => {
+      if (!e) return;
+      for (const k of Object.keys(e)) if (!['fait', 'relation', 'confiance', 'fragment'].includes(k)) err(`${where}.effet.${k}`, 'effet inconnu');
+      if (e.relation !== undefined) {
+        if (typeof e.relation === 'number') { if (!isInt(e.relation) || !qui) err(`${where}.effet.relation`, 'des points entiers (pour le personnage qui parle)'); }
+        else for (const [p, n] of Object.entries(e.relation)) { if (!persos.includes(p)) err(`${where}.effet.relation.${p}`, 'un personnage de RECIT.PERSONNAGES'); if (!isInt(n)) err(`${where}.effet.relation.${p}`, 'des points entiers'); }
+      }
+      if (e.confiance !== undefined && !isInt(e.confiance)) err(`${where}.effet.confiance`, 'des points entiers');
+      if (e.fragment !== undefined && !frags.includes(e.fragment)) err(`${where}.effet.fragment`, 'une page de RECIT.FRAGMENTS');
+    };
+    const ids = new Set();
+    const unique = (where, id) => { if (typeof id !== 'string' || !id) err(where, 'un id'); else if (ids.has(id)) err(where, `id « ${id} » en double`); else ids.add(id); };
+    const prio = (where, p) => { if (p !== undefined && !(isInt(p) && p >= 0 && p <= 100)) err(`${where}.priorite`, 'un entier de 0 à 100'); };
+    for (const [id, f] of Object.entries(R.FRAGMENTS || {})) { if (typeof f.titre !== 'string' || typeof f.texte !== 'string') err(`RECIT.FRAGMENTS.${id}`, 'un titre et un texte'); }
+    (R.REPLIQUES || []).forEach((e, i) => {
+      const where = `RECIT.REPLIQUES[${i}]${e && e.id ? ` (${e.id})` : ''}`;
+      unique(where, e.id);
+      if (!persos.includes(e.qui)) err(`${where}.qui`, 'un personnage de RECIT.PERSONNAGES');
+      quand(where, e.quand); texte(`${where}.texte`, e.texte); prio(where, e.priorite); effet(where, e.effet, e.qui);
+      if (e.une_fois !== undefined && typeof e.une_fois !== 'boolean') err(`${where}.une_fois`, 'true ou false');
+      if (e.repos_jours !== undefined && !(isInt(e.repos_jours) && e.repos_jours >= 0)) err(`${where}.repos_jours`, 'un entier positif ou nul');
+    });
+    (R.SCENES || []).forEach((s, i) => {
+      const where = `RECIT.SCENES[${i}]${s && s.id ? ` (${s.id})` : ''}`;
+      unique(where, s.id);
+      if (!Array.isArray(s.lignes) || !s.lignes.length) err(`${where}.lignes`, 'au moins une ligne');
+      (s.lignes || []).forEach((l, j) => { if (!persos.includes(l.qui)) err(`${where}.lignes[${j}].qui`, 'un personnage de RECIT.PERSONNAGES'); texte(`${where}.lignes[${j}].texte`, l.texte); });
+      quand(where, s.quand); prio(where, s.priorite); effet(where, s.effet, s.lignes && s.lignes[0] && s.lignes[0].qui);
+    });
+  }
   for (const id of Object.keys(items)) {
     if (!sourcesOf(data, id).length) warn(`OBJETS.${id}`, 'aucun moyen de l\'obtenir (ni récolte, ni recette, ni animal, ni pêche, ni sortie, ni achat, ni inventaire de départ…)');
   }

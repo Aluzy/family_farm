@@ -65,3 +65,4 @@ export * from './journal.js';
 export * from './repas.js';
 export * from './caleche.js';
 export * from './equipement.js';
+export * from './recit.js';
