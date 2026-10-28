@@ -483,7 +483,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "atelier",
      "terme": "Atelier",
-     "description": "Le premier bâtiment : il se construit avec 3 bois et 3 pierres, puis se pose sur la carte. On y fabrique les planches, les murs, les fenêtres, les portes, la paillasse, le plancher, le chemin, la barrière, l'escalier, les blocs clés des bâtiments, le four et la cuisinière, le puits, les appareils (panneau, pompe, citerne, batterie, avec des lingots), et tout ce qui ne s'achète pas : les outils (houe, hache, pioche, faux, canne à pêche, triporteur), de quoi attirer les bêtes (le nid garni d'une poule, la pierre à sel et le foin d'un mouton ou d'une vache, le licol et les friandises du cheval), la ruche, le bac à fleurs et les meubles. Seules les semences s'achètent, à la calèche.",
+     "description": "Le premier bâtiment : il se construit avec 3 bois et 3 pierres, puis se pose sur la carte. On y fabrique les planches, les murs, les fenêtres, les portes, la paillasse, le plancher, le chemin, la barrière, l'escalier, les blocs clés des bâtiments, le four et la cuisinière, le puits, les appareils (panneau, pompe, citerne, batterie, avec des lingots), et tout ce qui ne s'achète pas : les outils (houe, hache, pioche, faux, canne à pêche, triporteur), de quoi attirer les bêtes (le nid garni d'une poule, la pierre à sel et le foin d'un mouton ou d'une vache, le licol et les friandises du cheval), la ruche et le bac à fleurs. Les meubles s'achètent dans les hameaux (Bois-Joli, Les Genêts) ; la scierie de Bois-Joli fait plus de planches que l'Atelier, contre un jour d'attente.",
      "liens": [
       "bois_et_pierre",
       "fibre",
@@ -642,7 +642,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "meubles",
      "terme": "Meubles",
-     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : ils se fabriquent à l'Atelier (onglet Meubles : des planches, de la fibre, de la laine, de la pierre, un peu de quartz ou de fer, des baies pour la couleur) et se posent dans la maison. Une grille aide à les placer ; les tableaux s'accrochent à un mur.",
+     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : ils se commandent au cocher, à la calèche : l'ébéniste de Bois-Joli et les tapis des Genêts, une fois ces hameaux connus ; puis ils se posent dans la maison. Une grille aide à les placer ; les tableaux s'accrochent à un mur.",
      "liens": [
       "maison",
       "comptoir"
@@ -1936,15 +1936,15 @@ export const ENCYCLOPEDIE = {
     },
     {
      "id": "commerce",
-     "terme": "Commerce",
-     "description": "Choisi au niveau 10, dans Maison › Commerce : étal de bocaux (4 légumes → 1 bocal de légumes, vendu 24 pièces), crèmerie (3 laits → 1 fromage, 36 pièces) ou métier à tisser (2 laines → 1 tissu, 36 pièces). Chaque nuit, après le repas de la famille, il transforme jusqu'à son quota et vend tout seul, sans attendre la calèche : 1 XP par pièce gagnée, ni énergie ni électricité. Capacité de 10 transformations par nuit, agrandie à 20, 35 puis 50. Le premier choix est gratuit ; en changer coûte 5 000 pièces. Il vend plus cher qu'une recette (130 % du prix des ingrédients).",
+     "terme": "Les ateliers des hameaux",
+     "description": "Les ateliers des hameaux : à Bois-Joli, la scierie (2 bois → 3 planches, prêtes le lendemain) et l'ébéniste, qui vend les meubles ; aux Genêts, le métier à tisser (2 laines → 1 tissu) et la couture (gants, manteau chaud, salopette, dans ce tissu), et les tapis. On leur passe commande par le cocher, à la calèche (l'onglet Commandes), une fois le hameau connu : il porte ce qu'il faut, et rapporte la commande à son passage suivant ; l'argent va aux familles du hameau. Au niveau 10, la ferme accueille la veillée de pleine lune : les voisins viennent, de 19 h à 22 h, et chaque hameau t'en sait gré.",
      "liens": [
-      "vache",
       "mouton",
-      "comptoir"
+      "comptoir",
+      "meubles"
      ],
      "decouverte": [
-      "commerce"
+      "hameau"
      ]
     }
    ]
@@ -3006,7 +3006,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "gants_de_travail",
      "terme": "Gants de travail",
-     "description": "Des gants de laine et de fibre, fabriqués à l'Atelier dès le niveau des moutons. Le personnage principal dépense 20 % d'énergie de moins pour couper (la hache) et piocher (la pioche). Pour les adultes seulement.",
+     "description": "Des gants de tissu de laine, cousus aux Genêts. Le personnage principal dépense 20 % d'énergie de moins pour couper (la hache) et piocher (la pioche). Pour les adultes seulement.",
      "liens": [
       "equipement",
       "hache",
@@ -3031,7 +3031,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "salopette_solide",
      "terme": "Salopette solide",
-     "description": "Une salopette de laine épaisse aux boucles de fer, fabriquée à l'Atelier dès le niveau des moutons. Le personnage principal dépense 8 % d'énergie de moins pour tous ses gestes. Pour les adultes seulement.",
+     "description": "Une salopette de laine épaisse aux boucles de fer, cousue aux Genêts. Le personnage principal dépense 8 % d'énergie de moins pour tous ses gestes. Pour les adultes seulement.",
      "liens": [
       "equipement",
       "energie_personnage"
@@ -3043,7 +3043,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "manteau_chaud",
      "terme": "Manteau chaud",
-     "description": "Un manteau de laine rouge au col fourré, fabriqué à l'Atelier dès le niveau des moutons. Loin de la ferme, dans le vent et le froid du grand monde, le personnage principal dépense 15 % d'énergie de moins pour tous ses gestes. Il existe en taille enfant.",
+     "description": "Un manteau de laine rouge au col fourré, cousu aux Genêts. Loin de la ferme, dans le vent et le froid du grand monde, le personnage principal dépense 15 % d'énergie de moins pour tous ses gestes. Il existe en taille enfant.",
      "liens": [
       "equipement",
       "grand_monde"

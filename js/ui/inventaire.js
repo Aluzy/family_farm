@@ -6,7 +6,9 @@ import { countItem, isFridgeable, isPerishable, lotsOf } from '../engine/invento
 import { fridgeCapacity, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeRoom, fridgeUnits, moveAllToFridge } from '../engine/fridge.js';
 import { isUnlocked } from '../engine/campaign.js';
 import { sorteAPlanter } from '../engine/plantation.js';
-import { formatQty } from '../engine/format.js';
+import { formatNumber, formatQty } from '../engine/format.js';
+import { ouvrirEnveloppe, RECIT } from '../engine/recit.js';
+import { persistState } from './storage.js';
 import { invTab, state } from './store.js';
 import { eatButton } from './energie.js';
 import { applyResult } from './game-actions.js';
@@ -160,6 +162,9 @@ function itemBodyHtml(o) {
   if (it.categorie === 'graine' && !sorteAPlanter(o.item)) lines.push('🌱 Se sème dans la Zone de culture.');
   if (aPlanter) lines.push('🌳 Se plante dehors, sur une case d\'herbe libre, loin des autres arbres.');
   // fiche 11 : une pièce d'équipement, un sac à provisions
+  // le récit, lot 9 : l'enveloppe de Maurice (ce qu'il a écrit dessus ; l'ouvrir la garde, js/engine/recit.js)
+  if (o.item === RECIT.ENVELOPPE.OBJET) lines.push('📜 « Pour les toits de Céron : Odile saura. Ou pour toi, si tu en as plus besoin qu\'eux. Tu sauras. M. »');
+  if (o.item === 'cloche_maurice') lines.push('🔔 La cloche de la calèche de Maurice. Deux coups devant chaque maison : un pour bonjour, un pour au revoir.');
   if (estEquipement(o.item)) lines.push(`🧰 ${effetTexte(o.item)} ${sacDef(o.item) ? 'Il se porte dans la quatrième case de ta fiche (Famille).' : 'Elle se porte : Famille, la fiche d\'un membre, une case vide.'}`);
   let actions = '';
   if (o.lieu === 'frigo') {
@@ -168,6 +173,7 @@ function itemBodyHtml(o) {
       <button type="button" class="btn" data-action="fridge-out" data-item="${o.item}" data-qty="all">Tout sortir</button>`;
   } else {
     if (aPlanter) actions += `<button type="button" class="btn primary" data-action="arbre-planter" data-item="${o.item}">🌱 Planter</button>`;
+    if (o.item === RECIT.ENVELOPPE.OBJET) actions += '<button type="button" class="btn" data-action="enveloppe-ouvrir">✉️ L\'ouvrir</button>';
     if (it.mangeable) actions += eatButton(o.item, 'Manger');
     if (state.frigo.construit && isFridgeable(o.item)) {
       const off = fridgeRoom(state) < 1 ? ' disabled title="Le frigo est plein"' : '';
@@ -212,6 +218,13 @@ export function renderItemModal() {
 registerActions({
   'inv-item': (target) => {
     openItemModal(target.dataset.item, target.dataset.lieu);
+  },
+  // le récit, lot 9 : ouvrir l'enveloppe de Maurice, c'est la garder (ses pièces) ; la fiche se ferme
+  'enveloppe-ouvrir': () => {
+    const r = applyResult(ouvrirEnveloppe(state));
+    if (!r.ok) return;
+    persistState();
+    notify(`✉️ Dans l'enveloppe, ${formatNumber(r.pieces)} 💰, et rien d'autre. Elles sont à toi.`, { kind: 'info' });
   },
   'fridge-in-all': () => {
     const result = applyResult(moveAllToFridge(state));

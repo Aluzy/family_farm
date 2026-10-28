@@ -175,6 +175,14 @@ test('marcher dans le monde : ni la mer, ni les lacs, ni les rivières (sauf à 
   // sur l'eau : monde-lieux.js, fiche 6b)
   const pontons = new Set(), bio = (i) => p.biome[i];
   for (const g of p.lieux.grottes) for (const [dx, dy] of LIEUX.BLOQUE) pieds.add(g.case + dy * W + dx);
+  // (les lieux du récit dessinés ferment leurs cases bloque : l'épave ; la cabane et l'atelier sont bâtis,
+  // leurs murs dans sol.ctx.hameaux.bloque, docs/recit/)
+  for (const l of p.lieux.recit || []) for (const [dx, dy] of (LIEUX.SORTES.find((x) => x.nom === l.sorte) || {}).bloque || []) pieds.add(l.case + dy * W + dx);
+  // (la cale du bac ouvre sa jetée, sur la mer, comme un ponton : le récit)
+  for (const l of (p.lieux.recit || []).filter((x) => x.sorte === 'cale')) {
+    const [dx, dy] = [[0, -1], [0, 1], [-1, 0], [1, 0]][l.sens];
+    for (let k = 1; k <= LIEUX.CALE; k++) pontons.add(l.case + (dy * W + dx) * k);
+  }
   for (const q of p.lieux.peche) for (const i of (pontonDe(q, bio, W, H) || { cases: [] }).cases) pontons.add(i);
   // (les hameaux bâtis ferment les cases de leurs murs, meubles, clôtures : monde-hameaux.js, fiche 7a)
   for (let i = 0; i < W * H; i++) if (sol.ctx.hameaux.bloque[i]) pieds.add(i);

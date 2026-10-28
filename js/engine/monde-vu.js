@@ -242,7 +242,7 @@ export function toutCacher(state) {
 
 // Les lieux du plan (monde-gen.js : { hameaux: [{ id, case, nom }], grottes: [{ id, case }], peche:
 // [{ id, case, eau }] }) que la carte du monde montre : ceux dont la case est vue, et rien d'autre. Un
-// hameau vu de loin n'a pas de nom tant que le personnage n'y est pas allé (state.monde.hameaux).
+// hameau vu de loin n'a pas de nom tant que le personnage n'y est pas allé (state.monde.hameaux), sauf le Gué.
 // → { hameaux: [{ id, case, nom, connu }], grottes: [{ id, case, nom }], peche: [{ id, case, eau, nom }] }.
 export function lieuxDeLaCarte(state, lieux, T = farmTerrain(state)) {
   const out = { hameaux: [], grottes: [], peche: [] };
@@ -251,7 +251,8 @@ export function lieuxDeLaCarte(state, lieux, T = farmTerrain(state)) {
   for (const h of lieux.hameaux || []) {
     if (!caseVue(state, h.case, T)) continue;
     const c = connus[h.id];
-    out.hameaux.push({ id: h.id, case: h.case, nom: c ? c.nom : 'Un hameau', connu: !!c });
+    // (le Gué garde son nom : la lettre d'Adèle et le cocher en parlent avant qu'on y aille ; le récit)
+    out.hameaux.push({ id: h.id, case: h.case, nom: c ? c.nom : h.gue && h.nom ? h.nom : 'Un hameau', connu: !!c });
   }
   for (const g of lieux.grottes || []) if (caseVue(state, g.case, T)) out.grottes.push({ id: g.id, case: g.case, nom: 'Une grotte' });
   const EAUX = { lac: 'au lac', riviere: 'à la rivière', mer: 'en mer' };

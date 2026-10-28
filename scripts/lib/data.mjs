@@ -61,7 +61,7 @@ export function loadData(root = ROOT) {
 
 /* ---------- vérification ---------- */
 
-const CATEGORIES = ['légume', 'fruit', 'graine', 'ingrédient', 'produit', 'conserve', 'matériau', 'équipement'];
+const CATEGORIES = ['légume', 'fruit', 'graine', 'ingrédient', 'produit', 'conserve', 'matériau', 'équipement', 'souvenir'];
 const LIEUX = ['potager', 'serre'];
 const MODES_GRAINES = ['recolte', 'plant'];
 
@@ -123,7 +123,9 @@ export function sourcesOf(data, id) {
   const A = data.ATELIER;
   for (const [rid, r] of Object.entries((A && A.RECETTES) || {})) if (id in (r.sortie || {})) out.push(`atelier ${rid}`);
   for (const [rid, r] of Object.entries((A && A.RAMASSAGE) || {})) if (r.objet === id) out.push(`ramassage ${rid}`);
-  for (const [bid, b] of Object.entries((A && A.BLOCS) || {})) if (b.meuble && b.objet === id && data.MEUBLES && data.MEUBLES[b.meuble]) out.push(`meuble ${b.meuble} (Marché)`);
+  for (const [bid, b] of Object.entries((A && A.BLOCS) || {})) if (b.meuble && b.objet === id && data.MEUBLES && data.MEUBLES[b.meuble]) out.push(`meuble ${b.meuble} (un hameau)`);
+  // le récit, lot 7 : ce que font les ateliers des hameaux (data/ile.json)
+  for (const [aid, at] of Object.entries((data.ILE && data.ILE.ATELIERS) || {})) for (const r of Object.values(at.recettes || {})) if (id in (r.sortie || {})) out.push(`atelier du hameau ${aid}`);
   if (data.DEHORS && data.DEHORS[id]) out.push('Marché (dehors)');
   if (data.RUCHE && id === data.RUCHE.OBJET) out.push('ruche (Marché)');
   for (const b of Object.values((A && A.BLOCS) || {})) if (b.frigo && b.objet === id && data.FRIGO) out.push('achat du Réfrigérateur');
@@ -141,6 +143,9 @@ export function sourcesOf(data, id) {
   if (data.DEPART && data.DEPART.ETAT_INITIAL && id in data.DEPART.ETAT_INITIAL.INVENTAIRE) out.push('DEPART.ETAT_INITIAL.INVENTAIRE');
   if (data.FAMILLE && id in data.FAMILLE.RESERVE_DEPART) out.push('FAMILY.RESERVE_DEPART');
   for (const [lid, l] of Object.entries(data.COURRIER || {})) if (id in (l.cadeaux || {})) out.push(`courrier ${lid}`);
+  // (le récit, lot 9 : une scène ou une réplique qui donne un objet, la cloche de Maurice à la fête)
+  const R = data.RECIT || {};
+  for (const e of [...(R.SCENES || []), ...(R.REPLIQUES || [])]) if (e && e.effet && e.effet.donner && id in e.effet.donner) out.push(`récit ${e.id}`);
   if (it.rachetable !== false) out.push('Marché');
   if (it.retire) out.push('ancienne sauvegarde (retire)');
   return out;
@@ -378,11 +383,52 @@ export function validateData(data) {
     for (const cadeau of Object.keys(lettre.cadeaux || {})) needItem(`${where}.cadeaux`, cadeau);
     const q = lettre.quand || {};
     if (q.debloque !== undefined && !elements.includes(q.debloque)) err(where, `quand.debloque « ${q.debloque} » inconnu (NIVEAUX.ELEMENTS)`);
+    // (le récit, lot 9 : le chapitre atteint, un fait du récit, des jours après lui)
+    if (q.chapitre !== undefined && !(isInt(q.chapitre) && q.chapitre >= 1 && q.chapitre <= data.CHAPITRES.liste.length)) err(where, 'quand.chapitre : un chapitre de la campagne');
+    if (q.fait !== undefined && !(Array.isArray(q.fait) ? q.fait : [q.fait]).every((f) => typeof f === 'string' && f)) err(where, 'quand.fait : un fait ou une liste de faits');
+    if (q.apres !== undefined && (q.fait === undefined || !(isInt(q.apres) && q.apres >= 1))) err(where, 'quand.apres : un nombre de jours (avec quand.fait)');
+    for (const k of Object.keys(q)) if (!['depart', 'debloque', 'niveau', 'chapitre', 'fait', 'apres'].includes(k)) err(where, `quand.${k} : condition inconnue`);
   }
   // Commerces de la ferme, bonheur, Silo, Étable, joueur simulé.
   // (Les meubles, eux, ne citent aucun objet : rien à vérifier.)
-  const C = data.COMMERCE || {};
-  for (const [id, t] of Object.entries(C.TYPES || {})) for (const item of t.prend || []) needItem(`COMMERCE.TYPES.${id}.prend`, item);
+  // L'économie de l'île (data/ile.json, le récit lot 7) : les ateliers des hameaux garantis, la veillée.
+  // La tente du bivouac (le récit, lot 8 : data/equipement.json TENTE) : un objet d'équipement.
+  const TE = data.EQUIPEMENT && data.EQUIPEMENT.TENTE;
+  if (TE !== undefined) { needItem('EQUIPEMENT.TENTE', TE); if (items[TE] && items[TE].categorie !== 'équipement') err('EQUIPEMENT.TENTE', 'un objet de la catégorie « équipement »'); }
+  const IL = data.ILE;
+  if (IL) {
+    const garantis = ((data.PLAN_MONDE && data.PLAN_MONDE.HAMEAUX && data.PLAN_MONDE.HAMEAUX.GARANTIS) || []).map((g) => g.id);
+    const persosR = Object.keys((data.RECIT && data.RECIT.PERSONNAGES) || {});
+    for (const [aid, at] of Object.entries(IL.ATELIERS || {})) {
+      const w = `ILE.ATELIERS.${aid}`;
+      if (!(typeof at.nom === 'string' && at.nom)) err(`${w}.nom`, 'un nom');
+      if (!garantis.includes(at.hameau)) err(`${w}.hameau`, `un hameau garanti (${garantis.join(', ')})`);
+      if (at.qui !== undefined && !persosR.includes(at.qui)) err(`${w}.qui`, 'un personnage de RECIT.PERSONNAGES');
+      if (at.sorte === 'commande') {
+        if (!(isInt(at.jours) && at.jours >= 0) || !(isInt(at.max) && at.max >= 1)) err(w, 'jours (entier, 0 ou plus) et max (entier, 1 ou plus)');
+        if (!at.recettes || !Object.keys(at.recettes).length) err(`${w}.recettes`, 'au moins une recette');
+        for (const [rid, r] of Object.entries(at.recettes || {})) {
+          const wr = `${w}.recettes.${rid}`;
+          for (const k of ['entrees', 'sortie']) {
+            if (!r[k] || !Object.keys(r[k]).length) err(`${wr}.${k}`, '{ objet: quantité }');
+            for (const [item, n] of Object.entries(r[k] || {})) { needItem(`${wr}.${k}`, item); if (!(isInt(n) && n >= 1)) err(`${wr}.${k}.${item}`, 'un entier, 1 ou plus'); }
+          }
+          if (!(isInt(r.pieces) && r.pieces >= 0)) err(`${wr}.pieces`, 'un entier, 0 ou plus');
+        }
+      } else if (at.sorte === 'meubles') {
+        if (!Object.values(data.MEUBLES || {}).some((m) => (m.vendeur || 'bois_joli') === at.hameau)) err(w, 'aucun meuble de MEUBLES n\'a ce hameau pour vendeur');
+      } else err(`${w}.sorte`, '« commande » ou « meubles »');
+    }
+    // chaque meuble a son vendeur (un hameau qui a un atelier « meubles »)
+    const vendeurs = Object.values(IL.ATELIERS || {}).filter((at) => at.sorte === 'meubles').map((at) => at.hameau);
+    for (const [mid, m] of Object.entries(data.MEUBLES || {})) if (!vendeurs.includes(m.vendeur || 'bois_joli')) err(`MEUBLES.${mid}.vendeur`, `un hameau qui vend des meubles (${vendeurs.join(', ')})`);
+    const V = IL.VEILLEE || {};
+    if (!(Array.isArray(V.HEURES) && V.HEURES.length === 2 && V.HEURES.every((h) => isInt(h) && h >= 0 && h <= 24) && V.HEURES[0] < V.HEURES[1])) err('ILE.VEILLEE.HEURES', '[de, à[ heures entières, de < à');
+    if (!(isInt(V.CONFIANCE) && V.CONFIANCE >= 0)) err('ILE.VEILLEE.CONFIANCE', 'un entier, 0 ou plus');
+    if (!elements.includes('veillee')) err('NIVEAUX.ELEMENTS', 'l\'élément « veillee » manque (la veillée à la ferme)');
+    const RB = IL.REMBOURSEMENT || {};
+    if (!(Array.isArray(RB.PRIX_NIVEAUX) && RB.PRIX_NIVEAUX.every((n) => isInt(n) && n >= 0))) err('ILE.REMBOURSEMENT.PRIX_NIVEAUX', 'des entiers, 0 ou plus');
+  }
   const B = data.BONHEUR || {};
   for (const item of (B.SPECIALES && B.SPECIALES.objets) || []) needItem('BONHEUR.SPECIALES.objets', item);
   if (data.SILO) needItem('SILO.ITEM', data.SILO.ITEM);
@@ -449,6 +495,42 @@ export function validateData(data) {
     fourchette('LACS.TAILLE', (PM.LACS || {}).TAILLE);
     const H = PM.HAMEAUX || {};
     if (!(Array.isArray(H.NOMS) && H.NOMS.length && H.NOMS.every((n) => typeof n === 'string' && n))) err('PLAN_MONDE.HAMEAUX.NOMS', 'une liste de noms');
+    if (H.GUE !== undefined && !(typeof H.GUE === 'string' && H.GUE)) err('PLAN_MONDE.HAMEAUX.GUE', 'le nom du hameau le plus proche de la ferme');
+    // les hameaux garantis du récit : un id, un nom (pas celui du Gué, pas deux fois), un pays, un métier
+    const paysOk = ['cote', 'montagne', 'foret', 'lande'], metiers = Object.keys((data.HAMEAUX && data.HAMEAUX.METIERS && data.HAMEAUX.METIERS.NOMS) || {});
+    const vusG = new Set([H.GUE]);
+    (H.GARANTIS || []).forEach((g, k) => {
+      const w = `PLAN_MONDE.HAMEAUX.GARANTIS[${k}]`;
+      if (!(typeof g.id === 'string' && g.id && g.id !== 'gue')) err(`${w}.id`, 'un id (pas « gue »)');
+      if (!(typeof g.nom === 'string' && g.nom) || vusG.has(g.nom)) err(`${w}.nom`, 'un nom, pris par aucun autre hameau garanti');
+      vusG.add(g.nom);
+      if (!paysOk.includes(g.pays)) err(`${w}.pays`, `un pays parmi ${paysOk.join(', ')}`);
+      if (g.metier !== undefined && !metiers.includes(g.metier)) err(`${w}.metier`, `un métier parmi ${metiers.join(', ')}`);
+    });
+    const PRc = data.PLAN_MONDE.RECIT || {};
+    for (const [lieu, cles] of Object.entries({ CABANE: ['CHEMIN', 'HAMEAU', 'FERME'], ATELIER: ['HAMEAU'], EPAVE: ['HAMEAU'] })) {
+      for (const c of cles) if (PRc[lieu] && !(isInt(PRc[lieu][c]) && PRc[lieu][c] >= 0)) err(`PLAN_MONDE.RECIT.${lieu}.${c}`, 'un entier positif ou nul');
+    }
+    // les bâtisses du récit (la cabane, l'atelier : monde-hameaux.js planBatisse) : un style, une taille, la porte
+    // et les fenêtres dans le mur du bas, des meubles et des objets de la planche des hameaux
+    const HS = (data.HAMEAUX && data.HAMEAUX.SORTES || []).map((x) => x.nom);
+    for (const [id, b] of Object.entries((data.HAMEAUX && data.HAMEAUX.BATISSES) || {})) {
+      const w = `HAMEAUX.BATISSES.${id}`;
+      if (!((data.HAMEAUX.STYLES || {})[b.style])) err(`${w}.style`, 'un style de HAMEAUX.STYLES');
+      if (!(isInt(b.l) && isInt(b.h) && b.l >= 3 && b.h >= 3)) err(w, 'l et h : des entiers, 3 au moins');
+      if (!(isInt(b.porte) && b.porte > 0 && b.porte < b.l - 1)) err(`${w}.porte`, 'une colonne du mur du bas, hors des coins');
+      for (const x of b.fenetres || []) if (!(isInt(x) && x > 0 && x < b.l - 1 && x !== b.porte)) err(`${w}.fenetres`, 'des colonnes du mur du bas, hors des coins et de la porte');
+      for (const [nom, x, y] of [...(b.meubles || []), ...(b.dehors || [])]) {
+        if (!HS.includes(nom)) err(w, `« ${nom} » n'est pas une pièce de HAMEAUX.SORTES`);
+        if (!(isInt(x) && isInt(y))) err(w, `« ${nom} » : une place en cases entières`);
+      }
+      for (const [nom, x, y] of b.meubles || []) if (!(x >= 1 && y >= 1 && x < b.l - 1 && y < b.h - 1)) err(w, `« ${nom} » : dedans, hors des murs`);
+    }
+    for (const so of (data.LIEUX && data.LIEUX.SORTES) || []) {
+      if (so.genre !== 'recit') continue;
+      if (!(Array.isArray(so.bloque) && so.bloque.every((d) => Array.isArray(d) && d.length === 2 && d.every(isInt)))) err(`LIEUX.SORTES.${so.nom}.bloque`, 'des décalages [colonne, rangée] entiers');
+      if (!(Array.isArray(so.boite) && so.boite.length === 2 && so.boite.every((n) => isInt(n) && n > 0))) err(`LIEUX.SORTES.${so.nom}.boite`, '[demi-largeur, hauteur] en px');
+    }
     for (const [b, c] of Object.entries((PM.CHEMINS || {}).COUTS || {})) {
       if (b !== 'chemin' && !(Array.isArray(BI) && BI.includes(b))) err('PLAN_MONDE.CHEMINS.COUTS', `« ${b} » n'est pas un biome (BIOMES)`);
       if (!(typeof c === 'number' && c > 0)) err(`PLAN_MONDE.CHEMINS.COUTS.${b}`, `un nombre positif ; reçu ${JSON.stringify(c)}`);
@@ -739,12 +821,210 @@ export function validateData(data) {
       if (E.PIECES && E.PIECES[id]) err(`EQUIPEMENT.SACS.${id}`, 'un sac n\'est pas une pièce d\'équipement');
     }
     for (const [id, it] of Object.entries(items)) {
-      if (it.categorie === 'équipement' && !(E.PIECES && E.PIECES[id]) && !(E.SACS && E.SACS[id])) err(`OBJETS.${id}`, 'un équipement sans réglage (EQUIPEMENT.PIECES ou SACS)');
+      if (it.categorie === 'équipement' && !(E.PIECES && E.PIECES[id]) && !(E.SACS && E.SACS[id]) && E.TENTE !== id) err(`OBJETS.${id}`, 'un équipement sans réglage (EQUIPEMENT.PIECES, SACS ou TENTE)');
     }
     const S = data.DIDACTICIEL && data.DIDACTICIEL.SAC;
     if (S) {
       if (!(E.SACS && E.SACS[S.objet])) err('DIDACTICIEL.SAC.objet', 'un sac de EQUIPEMENT.SACS');
       for (const item of Object.keys(S.provisions || {})) if (!(items[item] && items[item].mangeable)) err(`DIDACTICIEL.SAC.provisions.${item}`, 'un aliment');
+    }
+  }
+  // Le récit de Céron (data/recit.json, js/engine/recit.js) : les personnages, les conditions, les effets,
+  // la longueur des bulles et les variantes de genre.
+  const R = data.RECIT;
+  if (R) {
+    const persos = Object.keys(R.PERSONNAGES || {});
+    const frags = Object.keys(R.FRAGMENTS || {});
+    const phases = ((data.LUNE && data.LUNE.PHASES) || []).map((p) => p.id);
+    // (le récit, lot 9 : les hameaux garantis, le Gué compris ; les fins)
+    const garantisR = ['gue', ...(((data.PLAN_MONDE && data.PLAN_MONDE.HAMEAUX && data.PLAN_MONDE.HAMEAUX.GARANTIS) || []).map((g) => g.id))];
+    const finsR = (R.FINS && R.FINS.LISTE) || [];
+    const nbPaliers = (R.PALIERS || []).length;
+    if (!Array.isArray(R.PALIERS) || R.PALIERS[0] !== 0 || R.PALIERS.some((x, i) => !isInt(x) || (i > 0 && x <= R.PALIERS[i - 1]) || x > R.RELATION_MAX)) err('RECIT.PALIERS', 'des entiers croissants, le premier à 0, jusqu\'à RELATION_MAX');
+    if (!Array.isArray(R.PALIER_NOMS) || R.PALIER_NOMS.length !== nbPaliers) err('RECIT.PALIER_NOMS', 'un nom par palier');
+    const C = R.CONFIANCE || {};
+    if (!(isInt(C.MAX) && isInt(C.DEPART) && C.DEPART >= 0 && C.DEPART <= C.MAX)) err('RECIT.CONFIANCE', 'MAX et DEPART entiers, DEPART entre 0 et MAX');
+    const seuilsC = Object.values(C.NIVEAUX || {});
+    if (!(seuilsC.length && seuilsC[0] === 0 && seuilsC.every((x, i) => isInt(x) && x <= C.MAX && (i === 0 || x > seuilsC[i - 1])))) err('RECIT.CONFIANCE.NIVEAUX', 'des seuils entiers croissants, le premier à 0');
+    if (!(isInt((R.AGES || {}).RECENT) && R.AGES.SOUVENIR > R.AGES.RECENT)) err('RECIT.AGES', 'RECENT entier, SOUVENIR plus grand');
+    const nbChapitres = ((data.CHAPITRES && data.CHAPITRES.liste) || []).length;
+    (R.ACTES || []).forEach((a, i) => {
+      const avant = R.ACTES[i - 1];
+      if (a.numero !== i + 1 || !isInt(a.chapitre) || !isInt(a.nuits)) err(`RECIT.ACTES[${i}]`, 'numero (dans l\'ordre), chapitre et nuits entiers');
+      else if (a.chapitre < 1 || a.chapitre > nbChapitres) err(`RECIT.ACTES[${i}].chapitre`, `un chapitre de la campagne (1 à ${nbChapitres}) : sinon l'acte ne s'ouvre jamais`);
+      else if (avant && (a.chapitre < avant.chapitre || a.nuits < avant.nuits)) err(`RECIT.ACTES[${i}]`, 'chapitre et nuits au moins ceux de l\'acte d\'avant');
+    });
+    const prenomMax = (data.FAMILLE && data.FAMILLE.PROFIL && data.FAMILLE.PROFIL.PRENOM_MAX) || 12;
+    const nomMax = (data.DEPART && data.DEPART.NOM_MAX) || 20;
+    const VARS = new Set(['prenom', 'nom', ...(R.VARIABLES || [])]);
+    // (la longueur que prend une variable dans une bulle : le prénom et le nom les plus longs permis, le
+    // plus long nom de hameau, le plus long nom d'objet avec son article ; les autres, VARIABLE_MAX)
+    const plusLong = (noms) => Math.max(0, ...noms.map((n) => String(n || '').length));
+    const H0 = (data.PLAN_MONDE && data.PLAN_MONDE.HAMEAUX) || {};
+    const longueurs = {
+      prenom: prenomMax, nom: nomMax,
+      hameau: plusLong([...(H0.NOMS || []), H0.GUE].filter(Boolean)),
+      objet: plusLong(Object.values(items).map((o) => o.nom)) + 'les '.length,
+    };
+    const texte = (where, t) => {
+      const variantes = t && typeof t === 'object' && !Array.isArray(t) ? [t.m, t.f] : [t];
+      if (t && typeof t === 'object' && !(typeof t.m === 'string' && typeof t.f === 'string')) { err(where, 'les deux variantes de genre, m et f'); return; }
+      for (const v of variantes) {
+        if (typeof v !== 'string' || !v.trim()) { err(where, 'un texte'); continue; }
+        for (const [, k] of v.matchAll(/\{(\w+)\}/g)) if (!VARS.has(k)) err(where, `variable inconnue {${k}}`);
+        const long = v.replace(/\{(\w+)\}/g, (_, k) => 'x'.repeat(k in longueurs ? longueurs[k] : R.VARIABLE_MAX)).length;
+        if (long > R.BULLE_MAX) err(where, `${long} caractères : ${R.BULLE_MAX} au plus`);
+      }
+    };
+    const quand = (where, q) => {
+      for (const [k, v] of Object.entries(q || {})) {
+        const w = `${where}.quand.${k}`;
+        const ids = Array.isArray(v) ? v : [v];
+        switch (k) {
+          case 'heure': if (!(Array.isArray(v) && v.length === 2 && v.every((h) => isInt(h) && h >= 0 && h <= 24) && v[0] !== v[1])) err(w, '[de, à] heures entières'); break;
+          case 'lune': if (!ids.every((p) => phases.includes(p))) err(w, `une phase parmi ${phases.join(', ')}`); break;
+          case 'lieu': if (!ids.every((x) => typeof x === 'string' && x)) err(w, 'un texte ou une liste de textes'); break;
+          case 'humeur': if (!ids.every((x) => (R.HUMEURS || []).includes(x))) err(w, `une humeur parmi ${(R.HUMEURS || []).join(', ')}`); break;
+          case 'palier_min': case 'palier_max': if (!(isInt(v) && v >= 0 && v < nbPaliers)) err(w, `un rang de palier (0 à ${nbPaliers - 1})`); break;
+          case 'confiance_min': case 'confiance_max': if (!(isInt(v) && v >= 0 && v <= C.MAX)) err(w, `un entier de 0 à ${C.MAX}`); break;
+          case 'fait': case 'sans_fait': case 'fait_recent': case 'fait_souvenir': if (!ids.every((x) => typeof x === 'string' && x)) err(w, 'un fait ou une liste de faits'); break;
+          case 'acte_min': case 'acte_max': if (!(isInt(v) && v >= 1 && v <= (R.ACTES || []).length)) err(w, 'un numéro d\'acte'); break;
+          case 'chapitre_min': case 'jour_min': case 'jour_max': if (!(isInt(v) && v >= 1)) err(w, 'un entier au moins égal à 1'); break;
+          case 'installee': if (typeof v !== 'boolean') err(w, 'true ou false'); break;
+          case 'genre': if (v !== 'm' && v !== 'f') err(w, 'm ou f'); break;
+          case 'enfants': case 'machines': if (typeof v !== 'boolean') err(w, 'true ou false'); break;
+          case 'debloque': if (!Object.keys(data.NIVEAUX.ELEMENTS).includes(v)) err(w, 'un élément de NIVEAUX.ELEMENTS'); break;
+          case 'empreinte': if (!ids.every((x) => x in ((R.EMPREINTE && R.EMPREINTE.NIVEAUX) || {}))) err(w, 'un niveau de RECIT.EMPREINTE.NIVEAUX'); break;
+          case 'objet': if (!ids.every((x) => typeof x === 'string' && items[x])) err(w, 'un objet de OBJETS ou une liste'); break;
+          case 'touche': if (!ids.every((x) => persos.includes(x))) err(w, 'un personnage de RECIT.PERSONNAGES ou une liste'); break;
+          case 'voie': if (v !== 'petite' && v !== 'grande') err(w, 'petite ou grande'); break;
+          case 'fin': if (!ids.every((x) => finsR.includes(x))) err(w, `une fin parmi ${finsR.join(', ')}`); break;
+          case 'hameaux_min': if (!(isInt(v) && v >= 1)) err(w, 'un entier au moins égal à 1'); break;
+          default: err(w, 'condition inconnue');
+        }
+      }
+      if (q && isInt(q.palier_min) && isInt(q.palier_max) && q.palier_min > q.palier_max) err(`${where}.quand`, 'palier_min plus grand que palier_max : jamais vraie');
+      if (q && isInt(q.acte_min) && isInt(q.acte_max) && q.acte_min > q.acte_max) err(`${where}.quand`, 'acte_min plus grand que acte_max : jamais vraie');
+      if (q && isInt(q.jour_min) && isInt(q.jour_max) && q.jour_min > q.jour_max) err(`${where}.quand`, 'jour_min plus grand que jour_max : jamais vraie');
+      for (const f of [].concat(q && q.fait || [])) if ([].concat(q.sans_fait || []).includes(f)) err(`${where}.quand`, `« ${f} » à la fois exigé et exclu : jamais vraie`);
+    };
+    // (montrer : une scène seulement, la page montre le lieu sur la carte du monde, js/ui/scene.js)
+    const effet = (where, e, qui, scene = false) => {
+      if (!e) return;
+      for (const k of Object.keys(e)) if (!['fait', 'relation', 'confiance', 'confiance_partout', 'fragment', 'donner', 'prendre', ...(scene ? ['montrer'] : [])].includes(k)) err(`${where}.effet.${k}`, 'effet inconnu');
+      if (e.confiance_partout !== undefined && !isInt(e.confiance_partout)) err(`${where}.effet.confiance_partout`, 'des points entiers');
+      if (e.montrer !== undefined && !(Array.isArray(e.montrer) ? e.montrer : [e.montrer]).every((g) => garantisR.includes(g))) err(`${where}.effet.montrer`, `un hameau garanti ou une liste (${garantisR.join(', ')})`);
+      for (const k of ['donner', 'prendre']) {
+        if (e[k] === undefined) continue;
+        if (!e[k] || typeof e[k] !== 'object' || Array.isArray(e[k]) || !Object.keys(e[k]).length) { err(`${where}.effet.${k}`, '{ objet: quantité }'); continue; }
+        for (const [item, n] of Object.entries(e[k])) { needItem(`${where}.effet.${k}`, item); if (!(isInt(n) && n >= 1)) err(`${where}.effet.${k}.${item}`, 'un entier au moins égal à 1'); }
+      }
+      if (e.fait !== undefined && !(Array.isArray(e.fait) ? e.fait : [e.fait]).every((f) => typeof f === 'string' && f)) err(`${where}.effet.fait`, 'un fait ou une liste de faits');
+      if (e.relation !== undefined) {
+        if (typeof e.relation === 'number') { if (!isInt(e.relation) || !qui) err(`${where}.effet.relation`, 'des points entiers (pour le personnage qui parle)'); }
+        else if (!e.relation || typeof e.relation !== 'object' || Array.isArray(e.relation)) err(`${where}.effet.relation`, 'des points, ou { personnage: points }');
+        else for (const [p, n] of Object.entries(e.relation)) { if (!persos.includes(p)) err(`${where}.effet.relation.${p}`, 'un personnage de RECIT.PERSONNAGES'); if (!isInt(n)) err(`${where}.effet.relation.${p}`, 'des points entiers'); }
+      }
+      if (e.confiance !== undefined && !isInt(e.confiance)) err(`${where}.effet.confiance`, 'des points entiers');
+      if (e.fragment !== undefined && !frags.includes(e.fragment)) err(`${where}.effet.fragment`, 'une page de RECIT.FRAGMENTS');
+    };
+    const EM = R.EMPREINTE || {};
+    for (const k of ['TUILE', 'ARBRE_ABATTU', 'ARBRE_PLANTE']) if (!isInt(EM[k])) err(`RECIT.EMPREINTE.${k}`, 'un entier');
+    for (const [b, n] of Object.entries(EM.BETES || {})) { if (!['poule', 'mouton', 'vache'].includes(b)) err(`RECIT.EMPREINTE.BETES.${b}`, 'poule, mouton ou vache'); if (!isInt(n)) err(`RECIT.EMPREINTE.BETES.${b}`, 'un entier'); }
+    const blocs = Object.keys((data.ATELIER && data.ATELIER.BLOCS) || {});
+    for (const [m, n] of Object.entries(EM.MACHINES || {})) { if (!blocs.includes(m)) err(`RECIT.EMPREINTE.MACHINES.${m}`, 'un bloc de ATELIER.BLOCS'); if (!isInt(n)) err(`RECIT.EMPREINTE.MACHINES.${m}`, 'un entier'); }
+    const niv = EM.NIVEAUX || {};
+    if (!(niv.basse === 0 && isInt(niv.moyenne) && isInt(niv.haute) && niv.moyenne > 0 && niv.haute > niv.moyenne)) err('RECIT.EMPREINTE.NIVEAUX', 'basse à 0, puis moyenne et haute, entiers croissants');
+    const DV = R.DERIVE || {};
+    if (!(isInt(DV.NUITS) && DV.NUITS >= 1)) err('RECIT.DERIVE.NUITS', 'un entier au moins égal à 1');
+    if (!(isInt(DV.PLANCHER) && DV.PLANCHER >= 0 && DV.PLANCHER <= C.MAX)) err('RECIT.DERIVE.PLANCHER', `un entier de 0 à ${C.MAX}`);
+    for (const n of Object.keys(DV.POINTS || {})) { if (!(n in niv)) err(`RECIT.DERIVE.POINTS.${n}`, 'un niveau de RECIT.EMPREINTE.NIVEAUX'); if (!isInt(DV.POINTS[n])) err(`RECIT.DERIVE.POINTS.${n}`, 'un entier'); }
+    // Le récit, lot 9 : les fins, l'enveloppe, l'usure des toits, la tournée d'Achille.
+    const FI = R.FINS || {};
+    if (!(FI.GRANDE in niv)) err('RECIT.FINS.GRANDE', 'un niveau de RECIT.EMPREINTE.NIVEAUX');
+    for (const k of ['ENTRETIEN', 'NATURE']) if (!(isInt(FI[k]) && FI[k] >= 0)) err(`RECIT.FINS.${k}`, 'un entier positif ou nul');
+    for (const k of ['promesse', 'toit', 'enveloppe']) if (!(FI.POIDS && isInt(FI.POIDS[k]) && FI.POIDS[k] >= 0)) err(`RECIT.FINS.POIDS.${k}`, 'un entier positif ou nul');
+    if (JSON.stringify(finsR) !== JSON.stringify(['nouveau_maurice', 'voisin_tranquille', 'autrement', 'riche'])) err('RECIT.FINS.LISTE', 'les quatre fins : nouveau_maurice, voisin_tranquille, autrement, riche');
+    const EV = R.ENVELOPPE || {};
+    needItem('RECIT.ENVELOPPE.OBJET', EV.OBJET);
+    if (!(isInt(EV.PIECES) && EV.PIECES > 0) || !isInt(EV.CONFIANCE)) err('RECIT.ENVELOPPE', 'PIECES (un entier positif) et CONFIANCE (un entier)');
+    const US = R.USURE || {};
+    for (const k of ['ACTE', 'NUITS', 'MAX', 'CONFIANCE', 'ENVELOPPE_CONFIANCE']) if (!(isInt(US[k]) && US[k] >= 1)) err(`RECIT.USURE.${k}`, 'un entier au moins égal à 1');
+    if (isInt(US.ACTE) && US.ACTE > (R.ACTES || []).length) err('RECIT.USURE.ACTE', 'un numéro d\'acte');
+    if (!US.REPARER || typeof US.REPARER !== 'object' || !Object.keys(US.REPARER).length) err('RECIT.USURE.REPARER', '{ objet: quantité }');
+    else for (const [item, n] of Object.entries(US.REPARER)) { needItem('RECIT.USURE.REPARER', item); if (!(isInt(n) && n >= 1)) err(`RECIT.USURE.REPARER.${item}`, 'un entier au moins égal à 1'); }
+    if (!Array.isArray(R.TOURNEE) || !R.TOURNEE.length || !R.TOURNEE.every((g) => garantisR.includes(g))) err('RECIT.TOURNEE', 'une liste de hameaux garantis');
+    const ids = new Set();
+    const unique = (where, id) => { if (typeof id !== 'string' || !id) err(where, 'un id'); else if (ids.has(id)) err(where, `id « ${id} » en double`); else ids.add(id); };
+    const prio = (where, p) => { if (p !== undefined && !(isInt(p) && p >= 0 && p <= 100)) err(`${where}.priorite`, 'un entier de 0 à 100'); };
+    const nbPersos = (data.FAMILLE && data.FAMILLE.PROFIL && data.FAMILLE.PROFIL.PERSOS) || 50;
+    for (const [id, p] of Object.entries(R.PERSONNAGES || {})) {
+      const where = `RECIT.PERSONNAGES.${id}`;
+      if (typeof p.nom !== 'string' || !p.nom) err(`${where}.nom`, 'un nom');
+      if (p.perso !== undefined && !(isInt(p.perso) && p.perso >= 1 && p.perso <= nbPersos)) err(`${where}.perso`, `une planche de personnage (1 à ${nbPersos})`);
+      if (p.habite !== undefined) {
+        if (!garantisR.includes(p.habite.hameau)) err(`${where}.habite.hameau`, `un hameau garanti (${garantisR.join(', ')})`);
+        if (p.habite.genre !== 'm' && p.habite.genre !== 'f') err(`${where}.habite.genre`, 'm ou f');
+        if (!isInt(p.perso)) err(`${where}.perso`, 'un personnage qui habite un hameau a une apparence');
+        if (p.habite.enfant !== undefined && typeof p.habite.enfant !== 'boolean') err(`${where}.habite.enfant`, 'true ou false');
+        if (p.habite.metier !== undefined && !((data.HABITANTS && data.HABITANTS.METIERS) || {})[p.habite.metier]) err(`${where}.habite.metier`, 'un métier de HABITANTS.METIERS');
+        if (p.habite.avec !== undefined) {
+          const a = R.PERSONNAGES[p.habite.avec];
+          if (!a || !a.habite || a.habite.avec || a.habite.hameau !== p.habite.hameau) err(`${where}.habite.avec`, 'un personnage qui a son propre foyer dans le même hameau');
+        }
+      }
+    }
+    for (const [id, f] of Object.entries(R.FRAGMENTS || {})) { if (typeof f.titre !== 'string' || typeof f.texte !== 'string') err(`RECIT.FRAGMENTS.${id}`, 'un titre et un texte'); }
+    (R.REPLIQUES || []).forEach((e, i) => {
+      const where = `RECIT.REPLIQUES[${i}]${e && e.id ? ` (${e.id})` : ''}`;
+      unique(where, e.id);
+      if (!persos.includes(e.qui)) err(`${where}.qui`, 'un personnage de RECIT.PERSONNAGES');
+      quand(where, e.quand); texte(`${where}.texte`, e.texte); prio(where, e.priorite); effet(where, e.effet, e.qui);
+      if (e.une_fois !== undefined && typeof e.une_fois !== 'boolean') err(`${where}.une_fois`, 'true ou false');
+      if (e.repos_jours !== undefined && !(isInt(e.repos_jours) && e.repos_jours >= 0)) err(`${where}.repos_jours`, 'un entier positif ou nul');
+    });
+    (R.SCENES || []).forEach((s, i) => {
+      const where = `RECIT.SCENES[${i}]${s && s.id ? ` (${s.id})` : ''}`;
+      unique(where, s.id);
+      if (!Array.isArray(s.lignes) || !s.lignes.length) err(`${where}.lignes`, 'au moins une ligne');
+      (s.lignes || []).forEach((l, j) => {
+        if (!persos.includes(l.qui)) err(`${where}.lignes[${j}].qui`, 'un personnage de RECIT.PERSONNAGES');
+        if (l.nom !== undefined && !(typeof l.nom === 'string' && l.nom)) err(`${where}.lignes[${j}].nom`, 'un nom');
+        texte(`${where}.lignes[${j}].texte`, l.texte);
+        // (une ligne conditionnelle ; la première, elle, est toujours dite : elle porte les conditions de la scène)
+        if (l.quand !== undefined) { if (j === 0) err(`${where}.lignes[0].quand`, 'la première ligne est toujours dite'); else quand(`${where}.lignes[${j}]`, l.quand); }
+      });
+      quand(where, s.quand); prio(where, s.priorite); effet(where, s.effet, s.lignes && s.lignes[0] && s.lignes[0].qui, true);
+    });
+    // Les lieux du récit : une sorte de lieux.recit (LIEUX.SORTES de genre « recit »), une liste d'entrées
+    // { quand, texte } ; la dernière sans condition (le lieu dit toujours quelque chose).
+    const sortesRecit = ((data.LIEUX && data.LIEUX.SORTES) || []).filter((x) => x.genre === 'recit' || x.recit === true).map((x) => x.nom).concat(Object.keys((data.HAMEAUX && data.HAMEAUX.BATISSES) || {}));
+    for (const [sorte, liste] of Object.entries(R.LIEUX || {})) {
+      const where = `RECIT.LIEUX.${sorte}`;
+      if (!sortesRecit.includes(sorte)) err(where, `une sorte de lieu du récit (${sortesRecit.join(', ')})`);
+      if (!Array.isArray(liste) || !liste.length) { err(where, 'une liste de textes'); continue; }
+      liste.forEach((e, j) => { texte(`${where}[${j}].texte`, e.texte); if (e.quand !== undefined) quand(`${where}[${j}]`, e.quand); });
+      if (liste[liste.length - 1].quand) err(`${where}[${liste.length - 1}]`, 'la dernière entrée est sans condition');
+    }
+    // Les promesses de Maurice : à qui, ce qu'il faut (des objets connus, des quantités entières), l'effet.
+    for (const [id, P] of Object.entries(R.PROMESSES || {})) {
+      const where = `RECIT.PROMESSES.${id}`;
+      if (typeof P.titre !== 'string' || !P.titre) err(`${where}.titre`, 'un titre');
+      if (!persos.includes(P.qui)) err(`${where}.qui`, 'un personnage de RECIT.PERSONNAGES');
+      if (!P.besoin || typeof P.besoin !== 'object' || !Object.keys(P.besoin).length) err(`${where}.besoin`, '{ objet: quantité }');
+      else for (const [item, n] of Object.entries(P.besoin)) { needItem(`${where}.besoin`, item); if (!(isInt(n) && n >= 1)) err(`${where}.besoin.${item}`, 'un entier au moins égal à 1'); }
+      effet(where, P.effet, P.qui);
+    }
+    // Ce que dit le compagnon au retour d'une exploration (lot 8) : des textes, pour des actions connues.
+    for (const [k, t] of Object.entries(R.COMPAGNON || {})) {
+      if (!['debut', 'arroser', 'cuisiner', 'ramasser', 'betes', 'fin'].includes(k)) err(`RECIT.COMPAGNON.${k}`, 'debut, arroser, cuisiner, ramasser, betes ou fin');
+      if (typeof t !== 'string' || !t) err(`RECIT.COMPAGNON.${k}`, 'un texte');
+    }
+    // Les saluts selon la confiance : un niveau de CONFIANCE.NIVEAUX, une liste de textes (bulle courte).
+    for (const [n, liste] of Object.entries(R.SALUTS || {})) {
+      if (!(n in ((R.CONFIANCE && R.CONFIANCE.NIVEAUX) || {}))) err(`RECIT.SALUTS.${n}`, 'un niveau de RECIT.CONFIANCE.NIVEAUX');
+      if (!Array.isArray(liste) || !liste.length) err(`RECIT.SALUTS.${n}`, 'une liste de saluts');
+      else liste.forEach((t, j) => texte(`RECIT.SALUTS.${n}[${j}]`, t));
     }
   }
   for (const id of Object.keys(items)) {

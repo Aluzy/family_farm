@@ -571,12 +571,16 @@ test('tenue : état du suivi pour l\'interface', () => {
   assertEqual(holdStatus(atChapter(5)).etat, 'attente', 'avant le chapitre 6 : rien n\'est suivi');
 });
 
-test('terre sauvage : ni le chapitre 1 ni les lettres du notaire ne parlent de la ferme du grand-père', () => {
+// Le récit (docs/recit/) : la terre sauvage est celle du grand-père, Maurice. Les textes en parlent ; ils ne
+// parlent plus de la ferme d'avant (sa maison, son moulin, ses dépendances).
+test('terre sauvage : le chapitre 1 et les lettres du notaire parlent de la terre du grand-père, pas de sa ferme', () => {
   const s = createNewGame(1);
   const p = chapterProgress(s);
-  assertEqual(/grand-père/.test(p.intro), false, p.intro);
+  assertEqual(/grand-père/.test(p.intro), true, p.intro);
+  assertEqual(/moulin|dépendances|répare la maison/i.test(p.intro), false, p.intro);
   // (le panneau, la pompe et la citerne n'arrivent qu'avec l'automatisation : pas d'objectif)
   assertEqual(p.objectifs.slice(0, 3).map((o) => o.libelle), ['Bâtir le foyer (une pièce close, une paillasse)', 'Fabriquer une houe à l\'Atelier', 'Labourer 6 tuiles']);
   assertEqual(p.objectifs.filter((o) => ['panneau', 'pompe', 'reservoir'].includes(o.type)).length, 0);
-  for (const id of ['notaire_heritage', 'notaire_legs']) assertEqual(mailText(s, id).some((l) => /grand-père|moulin/.test(l)), false, id);
+  for (const id of ['notaire_heritage', 'notaire_legs']) assertEqual(mailText(s, id).some((l) => /moulin|dépendances/.test(l)), false, id);
+  assertEqual(mailText(s, 'notaire_heritage').some((l) => /grand-père, Maurice/.test(l)), true, 'le notaire nomme Maurice');
 });

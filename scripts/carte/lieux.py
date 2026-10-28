@@ -23,6 +23,16 @@
 #                   le milieu de son bout du côté de la rive (sur la limite de la case de la rive).
 #   piquets         deux piquets de bois plantés sur la rive, une nasse d'osier et un filet qui sèche
 #                   entre eux (au bord d'une rivière, ou d'une eau trop étroite pour un ponton).
+#
+# Le lieu du récit qui est un dessin (docs/recit/bible.md ; lieux.recit du plan, monde-gen.js ; la cabane de
+# Johnny et l'atelier de Frida sont bâtis en blocs, comme les maisons des hameaux : monde-hameaux.js) :
+#   epave           l'épave de Johnny : la coque d'un voilier couchée sur le sable, ses membrures à nu,
+#                   le mât cassé, un lambeau de voile.
+#   cale            la cale du bac, aux Mouettes (le récit : la seule porte vers Cadolon, par où la famille
+#                   est arrivée) : une jetée de pierre de cinq cases qui avance dans la mer depuis la rive,
+#                   ses bittes d'amarrage, et le bac amarré le long de son bout (un bateau ponté, sa cabine,
+#                   ses bouées) ; 0 vers le nord, 1 vers le sud, 2 vers l'ouest, 3 vers l'est. Le pied :
+#                   comme le ponton, le milieu du bout de la jetée du côté de la rive.
 import json
 import math
 import os
@@ -222,6 +232,158 @@ def piquets(k):
     return R.ombre_sous(out, 12, h - 2, 10, 2.2, alpha=70), 12, h - 1
 
 
+# ---------- les lieux du récit ----------
+
+def _toile(w, h):
+    im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    return im, im.load()
+
+
+def _pose(q, w, h, x, y, c):
+    if 0 <= x < w and 0 <= y < h:
+        q[x, y] = tuple(c[:3]) + (255,)
+
+
+MOUSSE = [(58, 84, 40), (82, 112, 52), (110, 140, 66)]
+VOILE = [(176, 168, 146), (206, 198, 176)]
+SABLE = [(196, 168, 116), (214, 186, 132), (230, 206, 156)]
+
+
+def epave_recit():
+    """L'épave de Johnny : 72 × 40 px. La coque d'un petit voilier couchée sur le flanc, sur le sable : le
+    bordé sombre et délavé, les membrures à nu là où les planches manquent, le pont penché, le mât
+    cassé couché en travers, un lambeau de voile ; du sable poussé contre elle. Le pied : le milieu du bas."""
+    w, h = 72, 40
+    im, q = _toile(w, h)
+    B, G = R.BOIS, R.BOIS_GRIS
+    cx, cy, rx, ry = 34, 24, 30, 11
+    for y in range(h):
+        for x in range(w):
+            u, v = (x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry
+            larg = 1 - max(0.0, u) ** 2.2                       # la proue pointe à droite
+            if abs(u) > 1 or v * v > larg or v < -0.85:
+                continue
+            if v < -0.25:
+                c = G[3] if x % 4 else G[2]                      # le pont, penché vers nous
+            else:
+                k = int((v + 0.25) * 8) % 2
+                c = G[1] if k else G[2]                          # le bordé, en virures
+                trou = 0.12 + 0.05 * math.sin(y * 1.7) < u < 0.42 + 0.04 * math.cos(y * 1.3)
+                if trou and v > 0.05:                            # les planches arrachées : les membrures
+                    c = B[3] if x % 3 == 0 else NOIR[2] if v < 0.6 else NOIR[1]
+            if hasard(931, x // 3, y // 2) < 0.12:
+                c = MOUSSE[0]                                    # des algues sèches
+            _pose(q, w, h, x, y, c)
+    # le mât cassé, couché en travers vers la gauche, et un lambeau de voile
+    for d in range(34):
+        x, y = 46 - d, 1 + int(d * 0.42)
+        _pose(q, w, h, x, y, G[5])
+        _pose(q, w, h, x, y + 1, G[3])
+        _pose(q, w, h, x, y + 2, G[1])
+    for y in range(4, 16):
+        for x in range(22, 34):
+            haut = 1 + int((46 - x) * 0.42) + 2
+            if y > haut and y - haut < 9 - (x - 22) * 0.5 and hasard(932, x, y) < 0.9:
+                _pose(q, w, h, x, y, VOILE[1] if (x + 2 * y) % 5 else VOILE[0])
+    # le sable poussé contre la coque, en bas
+    for y in range(28, h):
+        for x in range(4, 66):
+            if q[x, y][3] == 0 and hasard(933, x, y) < 0.5 and abs(x - cx) < 30 - (y - 28):
+                _pose(q, w, h, x, y, SABLE[2] if hasard(934, x, y) < 0.5 else SABLE[1])
+    out = R.avec_contour(im, CONTOUR)
+    return out, 34, h - 2
+
+
+# ---------- la cale du bac ----------
+
+PEINTURE = [(52, 70, 96), (74, 98, 132), (104, 134, 170)]     # la coque du bac, bleue
+BLANC = [(170, 166, 156), (206, 202, 192), (236, 232, 222)]    # le pont, la cabine
+ROUGE = [(120, 36, 30), (170, 58, 46), (214, 96, 76)]          # la ligne de flottaison, les bouées
+CORDE = (196, 176, 128)
+
+
+def cale_nord():
+    """La cale vers le nord, vue de dessus : 46 × 82 px. La jetée (18 px de large, 80 de long) en blocs de
+    granit, plus clairs sur le dessus, joints sombres, deux bittes d'amarrage ; le bac le long de son bout, à
+    droite : la coque bleue, le pont clair, la cabine, un cordage jusqu'à la bitte. → (image, px, py)."""
+    L, lj = 80, 18
+    w, h = lj + 28, L + 2
+    im, q = _toile(w, h)
+    G = R.GRANIT
+    # la jetée : des blocs de 6 × 4 px, en quinconce, une arête claire en haut à gauche de chacun
+    for y in range(L):
+        for x in range(lj):
+            rang = y // 4
+            dx = (x + (3 if rang % 2 else 0)) % 6
+            if dx == 0 or y % 4 == 0:
+                c = G[2]                                    # les joints
+            elif dx == 1 or y % 4 == 1:
+                c = G[6]                                    # l'arête éclairée
+            else:
+                c = G[5] if hasard(811, x // 6, rang) < 0.6 else G[4]
+            if x == lj - 1:
+                c = G[1]                                    # le flanc droit, dans l'ombre
+            _pose(q, w, h, x, h - 1 - y, c)
+    # les bittes d'amarrage, près du bout, et une à mi-longueur
+    for (bx, by) in ((lj - 5, 10), (lj - 5, 30), (3, 52)):
+        for yy in range(by, by + 4):
+            for xx in range(bx, bx + 3):
+                _pose(q, w, h, xx, yy, NOIR[2] if yy == by + 3 else G[1] if xx == bx else G[0])
+    # le bac : la coque (22 × 52 px), arrondie à la proue (vers le large), contre la jetée
+    x0, y0, bl, bh = lj + 2, 4, 22, 52
+    for y in range(bh):
+        t = y / bh
+        demi = bl / 2 if t > 0.18 else bl / 2 * math.sqrt(max(0.0, t / 0.18))   # la proue en pointe arrondie
+        for x in range(bl):
+            u = abs(x + 0.5 - bl / 2)
+            if u > demi:
+                continue
+            bord = u > demi - 2.2
+            if bord:
+                c = ROUGE[1] if x < bl / 2 else ROUGE[0]                       # le liston rouge
+            elif u > demi - 5.5:
+                c = PEINTURE[2] if x < bl / 2 else PEINTURE[0] if u > demi - 4 else PEINTURE[1]   # la coque, éclairée à gauche
+            else:
+                c = BLANC[1] if (y // 3) % 2 else BLANC[0]                     # le pont, en lattes
+            _pose(q, w, h, x0 + x, y0 + y, c)
+    # la cabine, au milieu du pont : son toit de bois (en planches, plus sombre à droite), son ombre portée
+    for y in range(20, 38):
+        for x in range(6, bl - 6):
+            if y >= 36:
+                c = NOIR[3] if x > 7 else BLANC[0]                           # l'ombre de la cabine sur le pont
+            elif x in (6, bl - 7) or y in (20, 35):
+                c = R.BOIS[1]                                                # son bord
+            else:
+                c = R.BOIS[4] if x < bl / 2 else R.BOIS[3]
+                if y % 4 == 0:
+                    c = R.BOIS[2]
+            _pose(q, w, h, x0 + x, y0 + y, c)
+    # une bouée de chaque côté de la poupe, le cordage jusqu'à la bitte
+    for (cx, cy) in ((x0 + 3, y0 + bh - 6), (x0 + bl - 4, y0 + bh - 6)):
+        for yy in range(cy - 2, cy + 2):
+            for xx in range(cx - 2, cx + 2):
+                _pose(q, w, h, xx, yy, ROUGE[2] if (xx + yy) % 2 else BLANC[2])
+    for k in range(6):
+        _pose(q, w, h, lj - 4 + k, 12 + (k // 3), CORDE)
+    out = R.avec_contour(im, CONTOUR)
+    return out, lj // 2, h
+
+
+def cale(sens):
+    """La cale dans le sens `sens` : celle du nord, retournée ou couchée. → (image, px, py)."""
+    im, px, py = cale_nord()
+    w, h = im.size
+    if sens == 0:
+        return im, px, py
+    if sens == 1:                                   # vers le sud : retournée de haut en bas
+        return im.transpose(Image.FLIP_TOP_BOTTOM), px, h - py
+    # vers l'ouest ou l'est : couchée (le bac passe au sud de la jetée)
+    t = im.transpose(Image.TRANSPOSE)               # (x, y) → (y, x) : le nord devient l'ouest
+    if sens == 2:
+        return t, py, px
+    return t.transpose(Image.FLIP_LEFT_RIGHT), h - py, px
+
+
 # ---------- la planche ----------
 
 def charge_sortes():
@@ -235,6 +397,8 @@ def dessins():
         'entree_grotte': [entree(0), entree(1)],
         'ponton': [ponton(s) for s in range(4)],
         'piquets': [piquets(0), piquets(1)],
+        'epave': [epave_recit()],
+        'cale': [cale(s) for s in range(4)],
     }
 
 

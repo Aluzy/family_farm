@@ -55,8 +55,11 @@ test('les hameaux : des plans déterministes, les mêmes d\'un calcul à l\'autr
     elementsSol(ctx2);
     assertEqual(JSON.stringify(ctx2.hameaux.plans), JSON.stringify(m.H.plans), 'le même plan');
     assertEqual(ctx2.hameaux.pieces.map((p) => p.join()).join('|'), m.H.pieces.map((p) => p.join()).join('|'), 'les mêmes pièces');
-    assertEqual(m.H.plans.map((p) => p.id), m.ctx.elements.lieux.hameaux.map((h) => h.id), 'un plan par hameau du plan du monde');
-    for (const p of m.H.plans) {
+    // (puis les bâtisses du récit, la cabane et l'atelier : une maison chacune, docs/recit/, recit-monde.test.mjs)
+    const hameaux = m.H.plans.filter((p) => !p.batisse);
+    assertEqual(hameaux.map((p) => p.id), m.ctx.elements.lieux.hameaux.map((h) => h.id), 'un plan par hameau du plan du monde');
+    assertEqual(m.H.plans.filter((p) => p.batisse).map((p) => p.batisse), ['cabane', 'atelier'], 'puis les bâtisses du récit');
+    for (const p of hameaux) {
       assert(p.maisons.length >= HAMEAUX.MAISONS[0] && p.maisons.length <= HAMEAUX.MAISONS[1], `${graine} ${p.id} : ${p.maisons.length} maisons`);
       assert(STYLES_HAMEAUX.includes(p.style), p.style);
       assert(HAMEAUX.METIERS.ORDRE.includes(p.metier), p.metier);
@@ -152,6 +155,8 @@ test('les hameaux : chaque pièce close a ses lits ; les murs et les clôtures f
       for (const t of ferme) assert(!marche(t), `${p.id} : un mur ferme sa case`);
       for (const t of portes) assert(marche(t), `${p.id} : une porte s'ouvre`);
       for (const mz of p.maisons) {
+        // (l'atelier de Frida n'a pas de lit : on n'y dort pas)
+        if (p.batisse === 'atelier') { assert(mz.lits.length === 0 && mz.foyer !== null, 'l\'atelier : un poêle, pas de lit'); continue; }
         assert(mz.lits.length >= 1, `${mz.id} : des lits`);
         assert(mz.pieces.some((q) => q.genre === 'salle'), `${mz.id} : sa salle commune`);
         for (const q of mz.pieces) {

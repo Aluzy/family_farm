@@ -150,6 +150,7 @@
         // js/carte/ferme/faune-monde.js)
         if (this.ctx.monde) {
           L.image('lieux_monde', v('lieux_monde.png'));
+          L.image('tente', v('tente.png')); // le récit, lot 8 : la tente du bivouac (scripts/carte/tente.py)
           L.json('lieux_monde_cases', v('lieux_monde.json'));
           // les hameaux bâtis (scripts/carte/hameaux.py, js/carte/ferme/hameaux.js)
           L.image('hameaux', v('hameaux.png'));
@@ -647,6 +648,8 @@
         if (!hoeing && this.ctx.monde) {
           const grotte = this.grotteMondeAt(wx, wy);
           if (grotte) return { grotteMonde: grotte };
+          const lieu = this.lieuRecitAt(wx, wy);
+          if (lieu) return { lieuRecit: lieu };
           const bete = this.fauneAt(wx, wy);
           if (bete) return { faune: bete };
         }
@@ -797,6 +800,7 @@
         if (hit.scythe) { this.scythe(hit.scythe); return; }
         if (hit.monde) { this.mondeAgir(hit.monde); return; }
         if (hit.grotteMonde) { this.enterGrotteMonde(hit.grotteMonde); return; }
+        if (hit.lieuRecit) { this.lieuRecitTouche(hit.lieuRecit); return; }
         if (hit.faune) { this.fauneTouchee(hit.faune); return; }
         if (hit.fish) { this.goFish(hit.fish, wx, wy); return; }
         if (hit.treeHarvest) { this.ctx.bridge.act('harvest-tree', { id: hit.treeHarvest }); return; }

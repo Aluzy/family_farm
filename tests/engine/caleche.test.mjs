@@ -129,6 +129,7 @@ test('le commerce : à la ferme à l\'heure, on vend une récolte et on achète 
   assertEqual(ouEstCaleche(s), 'Elle est arrêtée à la ferme.');
   const v = vendreCaleche(s, 'carotte', 4, ici);
   assertEqual([v.ok, v.gain, countItem(s, 'carotte')], [true, 4 * DATA.OBJETS.carotte.prix, 6], 'au prix de vente du Marché');
+  assertEqual(s.recit.faits['vente.caleche'][2], 1, 'le récit note la vente (Achille s\'en souvient)');
   const a = acheterCaleche(s, 'graine_carotte', 2, ici);
   assert(a.ok && countItem(s, 'graine_carotte') >= 2, 'des graines');
   assertEqual(acheterCaleche(s, 'carotte', 1, ici).ok, false, 'elle ne vend pas de carottes (son coffre n\'en a pas)');
@@ -248,12 +249,13 @@ test('les hameaux : après une absence, au plus RATTRAPAGE jours d\'arrêts', ()
 
 /* ---------- l'Atelier ---------- */
 
-test('l\'Atelier : chaque objet que vendait le Marché a sa recette', () => {
+test('l\'Atelier : chaque objet que vendait le Marché a sa recette (sauf les meubles)', () => {
   const R = Object.values(DATA.ATELIER.RECETTES);
   for (const o of ['houe', 'hache', 'pioche', 'faux', 'canne', 'triporteur']) assert(R.some((r) => r.outil === o), `l'outil ${o}`);
   for (const a of ['poule', 'mouton', 'vache']) assert(R.some((r) => r.animal === a), `l'animal ${a}`);
   assert(R.some((r) => r.cheval), 'le cheval');
-  for (const m of Object.keys(DATA.MEUBLES)) assert(R.some((r) => r.meuble === m), `le meuble ${m}`);
+  // (le récit, lot 7 : les meubles ne se fabriquent plus, ils s'achètent dans les hameaux, ile.test.mjs)
+  for (const m of Object.keys(DATA.MEUBLES)) assert(!R.some((r) => r.meuble === m), `le meuble ${m} ne se fabrique plus`);
   for (const d of [...Object.keys(DATA.DEHORS || {}), DATA.RUCHE.OBJET]) assert(R.some((r) => r.sortie && r.sortie[d]), `${d}`);
   // les aliments ne s'achètent plus : ils se cultivent, se cuisinent, ou viennent des hameaux (le coffre)
   for (const [id, def] of Object.entries(DATA.OBJETS)) {
@@ -264,7 +266,7 @@ test('l\'Atelier : chaque objet que vendait le Marché a sa recette', () => {
   }
 });
 
-test('l\'Atelier : une poule s\'attire, un meuble se fabrique (sans pièces)', () => {
+test('l\'Atelier : une poule s\'attire (sans pièces), un meuble ne se fabrique plus', () => {
   const s = ranch();
   s.carte.graine = '1';
   tireless(s);
@@ -275,12 +277,7 @@ test('l\'Atelier : une poule s\'attire, un meuble se fabrique (sans pièces)', (
   const r = craft(s, 'nid_poule');
   assert(r.ok, r.error);
   assertEqual([s.poulailler.poules, s.pieces], [avant + 1, pieces]);
-  setInv(s, DATA.ATELIER.RECETTES.meuble_table.entrees);
-  const m = craft(s, 'meuble_table');
-  assert(m.ok, m.error);
-  assertEqual([countItem(s, 'meuble_table'), s.meubles.table], [1, 1]);
-  setInv(s, DATA.ATELIER.RECETTES.meuble_table.entrees);
-  assertEqual(craft(s, 'meuble_table').ok, false, 'une seule table');
+  assertEqual(craft(s, 'meuble_table').ok, false, 'plus de meuble à l\'Atelier (le récit, lot 7)');
   setInv(s, DATA.ATELIER.RECETTES.canne.entrees);
   assert(craft(s, 'canne').ok && s.outils.canne, 'la canne à pêche');
 });

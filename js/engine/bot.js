@@ -24,7 +24,6 @@ import {
   coopCapacity, coopUpgradeCost, feedAllHens, freeSheepPlaces, hensToFeed, pastureCost, shear, sheepCount,
   strawNeed, strawStock, upgradePoulailler, wheatTotal, woolReady,
 } from './animals.js';
-import { chooseCommerce, commerceStock, commerceUpgradeCost, upgradeCommerce } from './commerce.js';
 import { harvestTree, ripeTrees } from './orchard.js';
 import { buildStation, millPending, recipeUnlocked, startMilling, startRecipe } from './kitchen.js';
 import { buyTech, hasTech, techPoints, techResources, techStatus } from './techtree.js';
@@ -301,15 +300,6 @@ function botMail(state) {
   for (const l of unreadMail(state)) readMail(state, l.id);
 }
 
-// Version 1.14 : au niveau 10, le joueur automatique choisit le commerce qui a le plus
-// de matière (laits, laines ou légumes, rapportés à la recette).
-function botCommerce(state) {
-  if (state.commerce.type || !isUnlocked(state, 'commerce')) return;
-  const types = Object.keys(DATA.COMMERCE.TYPES);
-  const best = types.reduce((a, t) => (commerceStock(state, t) / DATA.COMMERCE.TYPES[t].par > commerceStock(state, a) / DATA.COMMERCE.TYPES[a].par ? t : a), types[0]);
-  chooseCommerce(state, best);
-}
-
 // Fiche 7c : un outil se fabrique à l'Atelier (plus de Marché) ; ses matériaux, le joueur simulé
 // les a, comme les ressources de botGather.
 function botOutil(state, id) {
@@ -532,7 +522,7 @@ export function botStepInfo(state, step, eveilS) {
       if (freeSheepPlaces(state) <= 0) return { cost: pastureCost(state), buy: () => buyPasture(state) };
       return { cost: 0, buy: () => accueillirAnimal(state, 'mouton') };
     }
-    // version 1.14 : des vaches pour le lait, et le commerce agrandi
+    // version 1.14 : des vaches pour le lait
     case 'vaches': {
       if (!isUnlocked(state, 'moutons')) return { locked: true };
       const p = state.paturage;
@@ -540,11 +530,6 @@ export function botStepInfo(state, step, eveilS) {
       if (cowCount(state) >= step.n) return { done: true };
       if (freeCowPlaces(state) <= 0) return { cost: pastureCost(state), buy: () => buyPasture(state) };
       return { cost: 0, buy: () => accueillirAnimal(state, 'vache') };
-    }
-    case 'commerce': {
-      if (!state.commerce.type) return { locked: true };
-      if (state.commerce.niveau >= step.niveau) return { done: true };
-      return { cost: commerceUpgradeCost(state), buy: () => upgradeCommerce(state) };
     }
     case 'serre':
       if (!isUnlocked(state, 'serre')) return { locked: true };
@@ -770,7 +755,6 @@ function botActions(state, strat, options, soir) {
   botFarm(state);
   botHoe(state);
   botOrchard(state);
-  botCommerce(state);
   botMill(state);
   botCook(state);
   if (!soir) return;

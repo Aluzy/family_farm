@@ -1,0 +1,49 @@
+{
+  "//ILE": [
+    "L'économie de l'île (docs/recit/aventure.md ; le récit, lot 7 ; le moteur : js/engine/ile.js). Ce que les",
+    "hameaux garantis font pour le joueur : il passe commande au cocher, à la calèche (l'onglet Commandes,",
+    "js/ui/caleche.js), une fois le hameau connu ; le cocher porte ce qu'il faut et rapporte ce qui est fait.",
+    "",
+    "ATELIERS : chacun appartient à un hameau garanti (hameau : un id de PLAN_MONDE.HAMEAUX.GARANTIS) et à celui",
+    "qui le tient (qui : un personnage de RECIT.PERSONNAGES) ; sorte :",
+    "  - « commande » : le joueur confie ce qu'il faut (entrees) au cocher, qui rapporte ce qui est fait (sortie)",
+    "    JOURS jours plus tard, à son arrêt près du joueur ; une commande compte au plus MAX lots ; pieces : ce que coûte un lot,",
+    "    payé aux foyers du hameau (leur bourse) ; recettes : { id: { nom, entrees, sortie, pieces } } ;",
+    "  - « meubles » : on commande au cocher les meubles de MEUBLES dont le vendeur est ce hameau (au prix du",
+    "    meuble, payé aux foyers du hameau) ; il les a dans la calèche.",
+    "La scierie de Bois-Joli rend 3 planches pour 2 bois (l'Atelier : 1 pour 2, tout de suite) contre un jour",
+    "d'attente. L'Atelier ne fabrique plus de meubles ; les vêtements de laine (gants, manteau, salopette) se",
+    "cousent aux Genêts, dans le tissu que tisse Garance.",
+    "",
+    "VEILLEE : la veillée de pleine lune à la ferme (l'élément « veillee », niveau 10, à la place des commerces) :",
+    "les nuits de pleine lune, de HEURES[0] à HEURES[1] h, le joueur à la ferme, les voisins viennent veiller ;",
+    "la première fois, la scène veillee_ferme (data/recit.json) ; ensuite, une fois par pleine lune, CONFIANCE",
+    "points pour chaque hameau découvert.",
+    "REMBOURSEMENT : une partie d'avant qui avait un commerce (version 62) reçoit ce qu'elle y avait mis : la somme",
+    "des PRIX_NIVEAUX jusqu'à son niveau (le choix était gratuit ; le changement de commerce n'est pas compté)."
+  ],
+  "ILE": {
+    "ATELIERS": {
+      "scierie": {
+        "nom": "La scierie", "icone": "🪚", "hameau": "bois_joli", "qui": "basile", "sorte": "commande", "jours": 1, "max": 20,
+        "recettes": { "planches": { "nom": "Scier du bois", "entrees": { "bois": 2 }, "sortie": { "planche": 3 }, "pieces": 0 } }
+      },
+      "ebeniste": { "nom": "L'ébéniste", "icone": "🪑", "hameau": "bois_joli", "qui": "basile", "sorte": "meubles" },
+      "tissage": {
+        "nom": "Le métier à tisser", "icone": "🧵", "hameau": "genets", "qui": "garance", "sorte": "commande", "jours": 1, "max": 20,
+        "recettes": { "tissu": { "nom": "Tisser la laine", "entrees": { "laine": 2 }, "sortie": { "tissu": 1 }, "pieces": 0 } }
+      },
+      "couture": {
+        "nom": "La couture", "icone": "🪡", "hameau": "genets", "qui": "garance", "sorte": "commande", "jours": 1, "max": 3,
+        "recettes": {
+          "gants_travail": { "nom": "Des gants de travail", "entrees": { "tissu": 1 }, "sortie": { "gants_travail": 1 }, "pieces": 8 },
+          "manteau_chaud": { "nom": "Un manteau chaud", "entrees": { "tissu": 3 }, "sortie": { "manteau_chaud": 1 }, "pieces": 20 },
+          "salopette": { "nom": "Une salopette", "entrees": { "tissu": 2, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "pieces": 15 }
+        }
+      },
+      "tapis": { "nom": "Les tapis", "icone": "🧶", "hameau": "genets", "qui": "garance", "sorte": "meubles" }
+    },
+    "VEILLEE": { "HEURES": [19, 22], "CONFIANCE": 2 },
+    "REMBOURSEMENT": { "PRIX_NIVEAUX": [0, 3000, 8000, 20000] }
+  }
+}

@@ -1,10 +1,12 @@
 import { DATA } from '../engine/catalog.js';
+import { carnet } from '../engine/recit.js';
 import { energyLevel, enduranceReduction } from '../engine/stamina.js';
 import { allDevices, isOwned, marcheFerme, starterOf } from '../engine/devices.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { familyNameHtml } from './depart.js';
 import { nightActive } from '../engine/clock.js';
-import { asleep, sleepTarget } from '../engine/night.js';
+import { asleep, dormirSousTente, sleepTarget } from '../engine/night.js';
+import { enExpedition, tentePortee } from '../engine/equipement.js';
 import { memberPerso } from '../engine/family.js';
 import { affames, jaugeFamille } from '../engine/repas.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
@@ -36,7 +38,6 @@ import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frig
 import { renderAteliers, renderMoulin, renderRecettes, renderStationFenetre } from './cuisine.js';
 import { renderTechno } from './techno.js';
 import { persoHtml, renderFamille } from './famille.js';
-import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
 import { renderAtelier } from './atelier.js';
@@ -53,6 +54,7 @@ import { toolBarHtml, toolbarOpen } from './outils.js';
 import { rememberFocus } from './modal.js';
 import { jaugeClasse, plural } from './common.js';
 import { son } from './son.js';
+import { persistState } from './storage.js';
 
 /* ---------- Fenêtres de la carte ---------- */
 
@@ -111,8 +113,6 @@ export function setAncreVoulue(value) {
 export const MAISON_TABS = [
   // FLU-04 : `court` s'affiche sur l'onglet, `label` reste le nom complet (infobulle, lecteurs d'écran)
   { id: 'recettes', label: 'Livre de recette', court: 'Recettes', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
-  // version 1.14 : le commerce du niveau 10
-  { id: 'commerce', label: 'Commerce', icon: '🏪', ok: () => isUnlocked(state, 'commerce'), corps: () => renderCommerce() },
 ];
 
 // La Famille et l'Arbre des technologies ne sont plus des onglets de la Maison : la Famille a
@@ -302,12 +302,6 @@ export const STAGE_WINDOWS = {
   installations: {
     nom: 'Installations', icone: '🏗️', ok: () => true, haute: true, bois: true,
     corps: () => renderBatiments(),
-  },
-  // Commerce (menu latéral, au niveau qui le débloque) : l'étal de bocaux, la crèmerie ou le
-  // tissage, son niveau et ses quotas ; aussi un onglet de la Maison.
-  commerce: {
-    nom: 'Commerce', icone: '🏪', ok: () => isUnlocked(state, 'commerce'), haute: true, bois: true,
-    corps: () => renderCommerce(),
   },
   // Calendrier lunaire (carte en haut à droite) : le mois, ses phases de lune et leurs effets.
   calendrier: {
@@ -615,8 +609,15 @@ function carteMondeBouton() {
   return '<button type="button" class="nav-btn" data-action="carte-monde-open" title="Carte du monde (touche M)" aria-label="Carte du monde" aria-keyshortcuts="M"><span class="nav-icon" aria-hidden="true">🧭</span><span class="nav-label">Carte du monde</span></button>';
 }
 
+// Le récit : le carnet du joueur (js/ui/carnet.js), dès sa première page.
+function carnetBouton() {
+  const n = carnet(state).length;
+  if (!n) return '';
+  return `<button type="button" class="nav-btn" data-action="carnet-open" title="Carnet" aria-label="Carnet (${n > 1 ? `${n} pages` : '1 page'})"><span class="nav-icon" aria-hidden="true">📓</span><span class="nav-label">Carnet</span></button>`;
+}
+
 export function renderTabbar() {
-  const current = ['commerce', 'inventaire', 'atelier', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
+  const current = ['inventaire', 'atelier', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
   const nav = document.getElementById('bottom-nav');
   if (!menuClickBound) {
@@ -651,6 +652,7 @@ export function renderTabbar() {
       .join('') +
       // L'Encyclopédie, un livre qui se remplit au fil de la partie (js/ui/encyclopedie.js)
       encyclopedieBouton() +
+      carnetBouton() +
       carteMondeBouton() +
       // Le mode test (activé dans les Options) : son panneau, par-dessus la carte.
       (testMode ? `<button type="button" class="nav-btn${testOpen ? ' active' : ''}" data-action="test-open" title="Mode test" aria-label="Mode test" aria-pressed="${testOpen}"><span class="nav-icon" aria-hidden="true">🧪</span><span class="nav-label">Test</span></button>` : '') +
@@ -668,7 +670,6 @@ const TAB_RENDERERS = {
   inventaire: () => [renderInventaire()],
   comptoir: () => [renderComptoir()],
   recettes: () => [backToFerme() + renderRecettes()],
-  commerce: () => [backToFerme() + renderCommerce()],
   techno: () => [backToFerme() + renderTechno()],
   notifications: () => [renderNotifications()],
 };
@@ -730,6 +731,19 @@ export function actionGoToBed() {
   const scene = window.FarmStage;
   // On dort sur une paillasse d'une pièce close (js/engine/blocs.js), dehors sur la carte ; sans
   // elle, la famille ne dort pas : la nuit passe sans rendre d'énergie.
+  // le récit, lot 8 : loin de la ferme, sa tente portée, il dort là où il est (le bivouac) ; sans tente, il
+  // rentre à son lit
+  if (enExpedition(state) && tentePortee(state)) {
+    const r = dormirSousTente(state);
+    if (!r.ok) { notify(r.error); return; }
+    persistState();
+    setCoucher(true);
+    refresh();
+    notify('⛺ Tu plantes ta tente pour la nuit. À la ferme, ton compagnon veille.', { kind: 'info' });
+    if (scene && scene.hasFermier && scene.hasFermier() && scene.goHome) scene.goHome(() => {});
+    return;
+  }
+  if (enExpedition(state) && couchages(state).length) notify('🛏 Sans tente, tu rentres dormir à la ferme.', { kind: 'info' });
   if (!couchages(state).length) { notify('🛏 Sans paillasse dans une pièce close (des murs tout autour et une porte), on ne peut pas dormir : la nuit passe sans rendre d\'énergie.'); return; }
   if (!(scene && scene.hasFermier && scene.hasFermier() && scene.goHome)) { actionSleep(); return; }
   if (stageInterior) leaveInterior();
@@ -779,7 +793,7 @@ registerActions({
   'switch-tab': (target) => {
     son('onglet');
     // L'Inventaire et la calèche, avec la carte, sont des fenêtres flottantes par-dessus elle.
-    if (['installations', 'commerce', 'inventaire', 'atelier', 'comptoir', 'techno', 'notifications'].includes(target.dataset.tab) && stageUsable()) {
+    if (['installations', 'inventaire', 'atelier', 'comptoir', 'techno', 'notifications'].includes(target.dataset.tab) && stageUsable()) {
       if (target.dataset.tab === 'comptoir') setComptoirTab(comptoirTabAOuvrir()); // FLU-13
       allerAuLieu(target.dataset.tab);
       return;

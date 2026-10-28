@@ -1,14 +1,14 @@
 import { DATA, recipeOutput } from '../engine/catalog.js';
 import { setupPending } from '../engine/depart.js';
 import { watchSetup } from './depart.js';
-import { bedtimeDue, nightActive } from '../engine/clock.js';
+import { absoluteHours, bedtimeDue, nightActive } from '../engine/clock.js';
 import { tick } from '../engine/energy.js';
 import { memberName } from '../engine/family.js';
 import { ecouterJournal } from '../engine/journal.js';
 import { mailbox } from '../engine/campaign.js';
 import { mergeOfflineReports, simulateOffline } from '../engine/offline.js';
 import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
-import { formatCoins, formatDay, formatNumber } from '../engine/format.js';
+import { escapeHtml, formatCoins, formatDay, formatNumber } from '../engine/format.js';
 import { MAX_FRAME_MS, RENDER_THROTTLE_MS, state, tabAvailable, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
 import { showConsentBanner } from './consent.js';
@@ -19,7 +19,14 @@ import {
 } from './render.js';
 import { watchChapters } from './chapitres.js';
 import { watchLevels } from './niveaux.js';
-import { watchCaleche } from './caleche.js';
+import { sceneCaleche, watchCaleche } from './caleche.js';
+import { proposerScene } from './scene.js';
+import { lieuDuPerso } from './stage.js';
+import { aFait, acteEnCours, deHameau } from '../engine/recit.js';
+import { veilleeFerme, veilleeFermePossible } from '../engine/ile.js';
+import { enExpedition } from '../engine/equipement.js';
+import { retourCompagnon } from '../engine/compagnon.js';
+import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
 import {
   ALERT_MUTE_AFTER_CATCH_UP_MS, notify, setAlertMuteUntil, setAlertState, watchAlerts,
@@ -111,6 +118,64 @@ function watchRobot() {
   const manque = r.sansGraine ? ` ; ${r.sansGraine} sans graine` : '';
   notify(`🤖 Le robot a fini sa liste : ${[recolte ? `récolté ${recolte}` : '', semis].filter(Boolean).join(', ') || 'rien à faire'}${manque}.`, { cible: { fenetre: 'zone' } });
   persistState();
+}
+
+// Le récit (docs/recit/, js/ui/scene.js) : une scène qui peut se jouer s'ouvre quand l'écran est calme,
+// après la famille composée et le bandeau des cookies, au lieu où est le personnage (lieuDuPerso :
+// l'arrivée, Frida à la ferme, la veillée au Gué), puis la calèche garée à la ferme, le joueur à côté (la
+// clé, la fortune de Maurice). La maison de Maurice a son déclencheur (stage.js).
+function watchRecit() {
+  if (setupPending(state) || consentBannerShown() || consentBannerPending() || !uiCalm()) return;
+  const ici = lieuDuPerso();
+  if (!proposerScene(ici || {})) sceneCaleche();
+  inviterVeillee();
+  watchGarde();
+  // le récit, lot 7 : la veillée à la ferme, une fois par pleine lune (la première est une scène)
+  if (ici && ici.lieu === 'ferme' && veilleeFermePossible(state) && veilleeFerme(state).ok) {
+    persistState();
+    notify('🌕 Les voisins des hameaux sont venus veiller à la ferme, sous la pleine lune. Ils s\'en souviendront.', { kind: 'info' });
+  }
+  // une partie d'avant le lot 7 : ce que son commerce valait lui a été rendu (la migration 62 → 63)
+  if (state.remboursementCommerce) {
+    notify(`🏪 Les commerces de la ferme ferment : les veillées de pleine lune les remplacent. ${formatNumber(state.remboursementCommerce)} 💰 te sont rendus.`, { kind: 'info' });
+    delete state.remboursementCommerce;
+    persistState();
+  }
+}
+
+// Le récit, lot 8 : rentré d'une exploration (le personnage revient sur la ferme), le compagnon dit ce qu'il
+// a fait pendant la garde (retourCompagnon), une fois, quand l'écran est calme.
+let dehors = null;
+function watchGarde() {
+  const e = enExpedition(state);
+  if (dehors === null || e) { dehors = e; return; }
+  if (!dehors || !uiCalm()) return;
+  dehors = false;
+  const r = retourCompagnon(state);
+  if (!r) return;
+  persistState();
+  notify(`🏡 ${escapeHtml(r.prenom)} : « ${escapeHtml(r.texte)} »`, { kind: 'info' });
+}
+
+// La veillée (le récit, lot 6) : un soir de pleine lune, à partir de 17 h, une seule annonce par pleine
+// lune, tant que la première veillée n'a pas eu lieu et que l'acte II est ouvert. Le récit, lot 9 : de même
+// pour la seconde (l'acte III) et pour la fête des premiers arrivants à Brumeval (annoncée par Achille).
+let veilleeAnnoncee = null;
+function inviterVeillee() {
+  if (moonPhase(state.day).id !== 'pleine' || veilleeAnnoncee === state.day) return;
+  const h = absoluteHours(state) % 24;
+  if (h < 17 || h >= 22) return;
+  const acte = acteEnCours(state);
+  let texte = null;
+  if (aFait(state, 'fete.annonce') && !aFait(state, 'fete') && acte >= 4) {
+    const brumeval = (DATA.PLAN_MONDE.HAMEAUX.GARANTIS || []).find((g) => g.id === 'brumeval');
+    texte = `🌕 Pleine lune : ce soir, la fête des premiers arrivants, à ${brumeval ? brumeval.nom : 'Brumeval'}, de 19 h à 23 h.`;
+  } else if (aFait(state, 'odile.rencontre') && ((!aFait(state, 'veillee.1') && acte >= 2) || (aFait(state, 'veillee.1') && !aFait(state, 'veillee.2') && acte >= 3))) {
+    texte = `🌕 Pleine lune : ce soir, on veille sur la place ${deHameau(DATA.PLAN_MONDE.HAMEAUX.GUE)}, de 19 h à 22 h.`;
+  }
+  if (!texte) return;
+  veilleeAnnoncee = state.day;
+  notify(texte, { kind: 'info' });
 }
 
 function watchMail() {
@@ -225,6 +290,7 @@ export function frame(now) {
   simulatedAt = wall;
   watchSetup(); // version 1.12 : la configuration de la famille passe avant tout
   if (consentBannerDue()) showConsentBanner(); // FLU-17 : après l'histoire, la carte seule 500 ms
+  watchRecit(); // le récit : ses scènes, avant les lettres (une fenêtre à la fois)
   watchTechPoints();
   watchDay();
   watchMail();

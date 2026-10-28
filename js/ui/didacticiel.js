@@ -40,6 +40,7 @@ import { unlockLevel } from '../engine/levels.js';
 import { marcheOuvert } from '../engine/devices.js';
 import { boussoleMontree, lieuxDeLaCarte, montrerLieu } from '../engine/monde-vu.js';
 import { solDuMonde } from './monde-sol.js';
+import { deHameau, nomCocher } from '../engine/recit.js';
 import { buildMode, hoeMode, scytheMode, state } from './store.js';
 import { menuOpen, stageWindow } from './stage-windows.js';
 import { toolbarOpen } from './outils.js';
@@ -114,15 +115,16 @@ const heure = () => heureTexte(absoluteHours(state) % 24);
 // Le premier élément visible de `sel`, ou null (pour une cible qui peut manquer).
 const visibleSel = (sel) => (element(sel) ? sel : null);
 
-// Le hameau voisin, montré sur la carte du monde en arrivant à son étape (le cocher en a parlé) : le plus
-// proche de la sortie de la ferme parmi ceux du plan, sauf si un hameau y est déjà (vu en marchant).
+// Le hameau voisin, montré sur la carte du monde en arrivant à son étape (le cocher en a parlé) : le Gué (le
+// récit : le plus proche de la ferme, gue vrai, monde-gen.js), sinon le plus proche de la sortie de la ferme
+// parmi ceux du plan ; sauf si un hameau y est déjà (vu en marchant).
 // Gardé dans state.didacticiel.montre. → vrai si la partie a changé.
 function montrerHameauVoisin() {
   const d = state.didacticiel, T = farmTerrain(state), sol = T.MONDE ? solDuMonde(T) : null, lieux = sol && sol.lieux();
   if (!lieux || d.montre) return false;
   if (lieuxDeLaCarte(state, lieux, T).hameaux.length) { d.montre = true; return true; }
   const S = T.MONDE.cadre.SORTIE, W = T.LARGEUR, dist = (t) => Math.hypot((t % W) - (S % W), Math.floor(t / W) - Math.floor(S / W));
-  const h = [...(lieux.hameaux || [])].sort((a, b) => dist(a.case) - dist(b.case))[0];
+  const h = (lieux.hameaux || []).find((x) => x.gue) || [...(lieux.hameaux || [])].sort((a, b) => dist(a.case) - dist(b.case))[0];
   if (!h) return false;
   montrerLieu(state, h.case, 6);
   d.montre = h.id;
@@ -239,7 +241,7 @@ const ETAPES_UI = {
     carte: () => { const e = calecheMaintenant(state); return e && e.etat === 'arret' && e.arret.sorte === 'ferme' ? { caleche: true } : { caleche: true, cases: casesSortie() }; },
   },
   hameau_choisir: {
-    texte: () => (!carteOuverte() ? `Le cocher t'a parlé d'un <b>hameau</b> voisin : le voici sur ta carte du monde. ${menuOpen ? 'Touche 🧭 <b>Carte du monde</b>.' : 'Ouvre-la (le menu, puis 🧭 Carte du monde).'}`
+    texte: () => (!carteOuverte() ? `${nomCocher(state)} t'a parlé ${deHameau(DATA.PLAN_MONDE.HAMEAUX.GUE)}, le <b>hameau</b> voisin : le voici sur ta carte du monde. ${menuOpen ? 'Touche 🧭 <b>Carte du monde</b>.' : 'Ouvre-la (le menu, puis 🧭 Carte du monde).'}`
       : document.querySelector('[data-action="carte-monde-but"]') ? 'Touche « <b>Y mener la boussole</b> » : elle te montrera le chemin.'
       : 'Touche le hameau 🏘️ sur la carte (fais-la glisser s\'il le faut) : son nom, sa distance, et la boussole.'),
     cible: () => (!carteOuverte() ? menuCarte() : visibleSel('[data-action="carte-monde-but"]') || visibleSel('[data-action="carte-monde-lieu"][data-sorte="hameau"]')),

@@ -23,12 +23,13 @@ export const SOMMEIL_PERMISES = new Set([
   'sleep', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
   'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'meuble-annule', 'meuble-place',
   'carte-monde-but', 'carte-monde-ferme', // (fiche 8 : choisir le but de la boussole, rien ne bouge)
-  'fiche-case', 'fiche-equiper', // (fiche 11 : habiller la famille, rien ne bouge sur la ferme)
+  'fiche-case', 'fiche-equiper', 'fiche-tente', // (fiche 11 : habiller la famille ; le récit, lot 8 : la tente)
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
   'plant', 'boite-deposer', 'boite-reprendre', 'water', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
-  'sell-item', 'buy-item', 'caleche-heler', 'cheval-toggle', 'plant-all', 'hoe-many', 'commerce-choose',
-  'commerce-upgrade', 'commerce-quota-dec', 'commerce-quota-inc', 'commerce-quota-max', 'harvest-tree',
+  'sell-item', 'buy-item', 'caleche-heler', 'promesse-confier', 'ile-commander', 'ile-meuble', 'cheval-toggle', 'plant-all', 'hoe-many',
+  'toit-reparer', 'enveloppe-ouvrir', // (le récit, lot 9 : réparer un toit de hameau, ouvrir l'enveloppe de Maurice)
+  'harvest-tree',
   'buy-pasture', 'mill-start', 'mill-cancel',
   'buy-tech', 'build-fridge',
   'build-station', 'atelier-fabriquer', 'bloc', 'arbre-planter', 'arbre-case', 'arbre-oui', 'build-toggle', 'silo-agrandir', 'build-pick', 'build-tab', 'build-groupe', 'meuble-ok', 'build-level-menu', 'build-level', 'etage-toggle', 'upgrade', 'upgrade-serre', 'upgrade-poulailler', 'axe-toggle', 'pick-toggle', 'rod-toggle', 'scythe-toggle',

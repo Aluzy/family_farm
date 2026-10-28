@@ -1,4 +1,6 @@
 import { DATA } from '../engine/catalog.js';
+import { proposerScene } from './scene.js';
+import { noterVisite, toucherLieu } from '../engine/recit.js';
 import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
@@ -13,7 +15,7 @@ import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
-import { estTacheCompagnon, faireCompagnon, journeeCompagnon, tachesCompagnon } from '../engine/compagnon.js';
+import { estTacheCompagnon, faireCompagnon, journeeCompagnon, noterGarde, tachesCompagnon } from '../engine/compagnon.js';
 import { marcherMembre } from '../engine/repas.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
 import { TIRED } from '../engine/stamina.js';
@@ -31,7 +33,8 @@ import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '
 import { notify } from './toasts.js';
 import { encyclopedieFaune, encyclopedieHameau, openEncyclopedie } from './encyclopedie.js';
 import { HAMEAUX, voirHameau } from '../engine/monde-hameaux.js';
-import { HABITANTS, habitantsPourLaCarte } from '../engine/habitants.js';
+import { garantiDuHameau, HABITANTS, habitantsPourLaCarte } from '../engine/habitants.js';
+import { tousLesToitsUses } from '../engine/usure.js';
 import { bienvenueModele } from '../engine/bienvenue.js';
 import { visiteDepuisCarte } from './bienvenue.js';
 import { habitantDepuisCarte, openFicheHameau, paroleDepuisCarte, peuplerDepuisCarte, peuplerLesVus } from './habitants.js';
@@ -452,6 +455,10 @@ export function stageModel() {
     // le joueur a appuyé sur « Dormir » : le personnage va à son lit (js/fermier.js) ; il y
     // dort (la nuit défile en accéléré), même quand on regarde la carte de la ferme
     coucher: (coucher || asleep(state)) && nightActive(state),
+    // le récit, lot 9 : les toits abîmés des hameaux ({ hameau: [maisons] } : js/carte/ferme/hameaux.js les troue)
+    toitsUses: tousLesToitsUses(state),
+    // le récit, lot 8 : sa tente plantée, le bivouac de la nuit (le pied de la tente, px) ; null sinon
+    bivouac: state.bivouac && Number.isInteger(state.bivouac.case) ? { x: (state.bivouac.case % farmTerrain(state).LARGEUR) * 16 + 8, y: Math.floor(state.bivouac.case / farmTerrain(state).LARGEUR) * 16 + 14 } : null,
     dort: asleep(state),
     ramasser,
     // version 1.17 : le personnage du joueur sur la carte (son numéro dans le catalogue)
@@ -700,8 +707,10 @@ function stagePickup(id) {
 // Fiche 19 : ou il a fini une de ses initiatives (arroser une plante, remplir sa cruche au puits,
 // cuisiner, ramasser) : ce qu'elle a donné (une plante arrosée : { arrose: 1 }, la bulle « +1 💧 »).
 function stageAide(lieu) {
-  const r = estTacheCompagnon(lieu) ? faireCompagnon(state, lieu) : aideBetes(state, lieu);
+  const betes = !estTacheCompagnon(lieu);
+  const r = betes ? aideBetes(state, lieu) : faireCompagnon(state, lieu);
   if (!r.ok) return null;
+  if (betes) noterGarde(state, 'betes');   // (le récit, lot 8 : il garde la ferme quand le joueur explore)
   persistState();
   refresh();
   return r.items;
@@ -830,6 +839,51 @@ function stageHameau(h) {
   setTimeout(refresh, 0);
 }
 
+// Le récit : le personnage entre dans une maison de hameau (js/carte/ferme/hameaux.js) ; celle de Maurice,
+// au Gué, est le lieu de la scène d'Odile (odile_maison, data/recit.json ; js/ui/scene.js). Elle n'est pas
+// fermée : on ne ferme pas, au Gué ; la clé d'Achille dit que la maison est au joueur. (appelé pendant
+// l'image de la carte : la fenêtre s'ouvre juste après)
+// Le hameau où est le personnage (le pont hameauIci de la scène), ou null.
+let hameauActuel = null;
+function stageHameauIci(id) { hameauActuel = typeof id === 'string' ? id : null; }
+
+// Le lieu du récit où est le personnage (js/engine/recit.js, la condition lieu) : { lieu, hameau } —
+// « gue » au Gué, l'id d'un autre hameau, « ferme » dans l'enceinte de la ferme, « monde » ailleurs ;
+// null sans carte (le personnage n'est pas posé).
+export function lieuDuPerso() {
+  const S = window.FarmStage, t = S && S.persoCase ? S.persoCase() : -1;
+  if (!stageUsable() || !Number.isInteger(t) || t < 0) return null;
+  if (hameauActuel) {
+    // (un hameau garanti : son id du récit, « gue », « brumeval »… ; y être note la visite, le récit lot 9 :
+    // la tournée d'Achille ; une fois par jour, rien à sauver sinon)
+    const g = garantiDuHameau(state, hameauActuel);
+    if (g && noterVisite(state, g)) persistState();
+    return { lieu: g || hameauActuel, hameau: hameauActuel };
+  }
+  const T = farmTerrain(state), F = T.FERME;
+  if (!F) return { lieu: 'ferme', hameau: null };
+  const x = t % T.LARGEUR, y = Math.floor(t / T.LARGEUR);
+  const dedans = x >= F.X && x < F.X + F.LARGEUR && y >= F.Y && y < F.Y + F.HAUTEUR;
+  return { lieu: dedans ? 'ferme' : 'monde', hameau: null };
+}
+
+// Le récit (lot 3b) : un lieu du récit touché (l'épave : js/carte/ferme/lieux-monde.js) ou une bâtisse où
+// l'on entre (la cabane de Johnny, l'atelier de Frida : stageMaison) : ce qu'on y lit (RECIT.LIEUX,
+// toucherLieu), en notification.
+function stageLieuRecit(l) {
+  const r = l ? toucherLieu(state, l.sorte, lieuDuPerso() || {}) : null;
+  if (!r) return;
+  persistState();
+  setTimeout(() => notify(r.texte, { kind: 'info' }), 0);
+}
+
+function stageMaison(m) {
+  // (une bâtisse du récit, la cabane de Johnny, l'atelier de Frida : y entrer, c'est la découvrir)
+  if (m && m.batisse) { stageLieuRecit({ sorte: m.batisse }); return; }
+  if (!m || !m.maurice) return;
+  setTimeout(() => proposerScene({ lieu: 'maison_maurice', hameau: m.hameau }), 0);
+}
+
 // La bannière d'un hameau découvert : son nom, son pays, quelques secondes en haut de la carte.
 const BANNIERE_MS = 4200;
 function banniereHameau(h) {
@@ -898,7 +952,7 @@ function mondeDeLaCarte() {
 // personnage, jusqu'à FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES ; ensuite il flâne).
 function aideSansCarte() {
   if (nightActive(state) || clockHours(state) >= DATA.FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES) return;
-  for (const lieu of aideAFaire(state)) aideBetes(state, lieu);
+  for (const lieu of aideAFaire(state)) if (aideBetes(state, lieu).ok) noterGarde(state, 'betes');
   // (fiche 19 : ses initiatives aussi, d'un coup, sans dessin)
   if (journeeCompagnon(state).length) persistState();
 }
@@ -961,7 +1015,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

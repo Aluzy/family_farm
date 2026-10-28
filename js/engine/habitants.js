@@ -21,9 +21,12 @@ import { lireIdMonde, objetPris, prendreParHabitant } from './monde-recolte.js';
 
    state.monde.habitants = { [id du hameau]: {
      nom, metier, style, eau (celle du pêcheur : mer, lac, riviere), jour (sa découverte),
-     jardins: { potager, verger } (leur nombre), poulailler (bool), reserve: { objet: n },
+     jardins: { potager, verger } (leur nombre), poulailler (bool), reserve: { objet: n }, garanti (un
+     hameau garanti du récit : « gue », « bois_joli »… ; absent pour les autres), commandes (les commandes
+     du joueur à ses ateliers, js/engine/ile.js ; absent : aucune),
      foyers: [{ maison (son id), membres: [{ id, prenom, genre, enfant, perso, metier (null : le
-       jardin ; un enfant : null), lit (son rang dans les lits de la maison, ou null) }],
+       jardin ; un enfant : null), lit (son rang dans les lits de la maison, ou null), recit (un
+       personnage écrit du récit : son id dans RECIT.PERSONNAGES ; absent pour les autres) }],
        bourse, garde: { objet: n } (le garde-manger), bonheur, jour (le dernier jour vécu),
        vus: null | { jour, n: { membre: actions }, items } (ce qu'il a fait sous les yeux du joueur
        aujourd'hui), journal: [journées] }] } }
@@ -71,13 +74,29 @@ export function hameauHabite(state, id) {
   return habitantsDe(state)[id] || null;
 }
 
+// Le hameau garanti que sont les habitants `hameauId` : « gue », « bois_joli », « genets »… ou null.
+// (le plan l'a donné à leur naissance ; une partie plus ancienne : d'après le nom du hameau ; un hameau vu
+// mais pas encore peuplé : d'après le nom noté à sa découverte, state.monde.hameaux)
+export function garantiDuHameau(state, hameauId) {
+  const h = habitantsDe(state)[hameauId];
+  if (h && typeof h.garanti === 'string') return h.garanti;
+  const vu = state && state.monde && state.monde.hameaux && state.monde.hameaux[hameauId];
+  const nom = (h && h.nom) || (vu && vu.nom);
+  if (!nom) return null;
+  const PH = DATA.PLAN_MONDE.HAMEAUX;
+  if (nom === PH.GUE) return 'gue';
+  const g = (PH.GARANTIS || []).find((x) => x.nom === nom);
+  return g ? g.id : null;
+}
+
 /* ---------- la naissance des foyers ---------- */
 
 // Le hameau `plan` (planHameau(…).plan : maisons, lits, métier, jardins, travail) est découvert :
 // chaque maison prend son foyer, une fois. `o.eau` : l'eau où pêche son pêcheur (le coin de pêche le
 // plus proche ; sinon la mer sur la côte, la rivière ailleurs). → les habitants du hameau, ou null.
 export function peuplerHameau(state, plan, o = {}) {
-  if (!state || !state.monde || typeof state.monde !== 'object' || !plan || !plan.id || !Array.isArray(plan.maisons)) return null;
+  // (une bâtisse du récit, la cabane, l'atelier : personne n'y naît, monde-hameaux.js planBatisse)
+  if (!state || !state.monde || typeof state.monde !== 'object' || !plan || !plan.id || !Array.isArray(plan.maisons) || plan.batisse) return null;
   if (!state.monde.habitants || typeof state.monde.habitants !== 'object') state.monde.habitants = {};
   const H = state.monde.habitants;
   if (H[plan.id]) return H[plan.id];
@@ -91,7 +110,8 @@ export function peuplerHameau(state, plan, o = {}) {
   const tire = (listes, genre) => (listes[genre].length ? listes[genre].shift() : listes[autre(genre)].shift());
   const metier = METIERS[plan.metier] ? plan.metier : 'cueilleur';
   const S = HABITANTS.SECOND;
-  const foyers = plan.maisons.map((mz) => {
+  // (la maison de Maurice, au Gué, reste fermée : personne n'y vit ; docs/recit/bible.md)
+  const foyers = plan.maisons.filter((mz) => mz.id !== plan.maisonMaurice).map((mz) => {
     // (la composition : la graine du monde, le hameau, la maison)
     const rm = rngDe(`${g}:habitants:${plan.id}:${mz.id}`);
     const lits = Array.isArray(mz.lits) ? mz.lits : [];
@@ -125,14 +145,113 @@ export function peuplerHameau(state, plan, o = {}) {
     }
     return { maison: mz.id, membres, bourse: HABITANTS.ARGENT, garde: {}, bonheur: DATA.BONHEUR.DEPART, jour: state.day - 1, vus: null, journal: [] };
   });
+  // Le récit (docs/recit/personnages.md) : les personnages écrits qui vivent dans ce hameau garanti y ont
+  // leur foyer (installerEcrits, plus bas).
   const jardins = { potager: 0, verger: 0 };
   for (const j of plan.jardins || []) if (j.genre in jardins) jardins[j.genre]++;
   const eau = ['mer', 'lac', 'riviere'].includes(o.eau) ? o.eau : plan.style === 'cote' ? 'mer' : 'riviere';
   H[plan.id] = {
     nom: String(plan.nom || plan.id), metier, style: plan.style || 'prairie', eau, jour: state.day,
     jardins, poulailler: (plan.travail || []).some((t) => t.genre === 'poulailler'), reserve: {}, foyers,
+    ...(plan.garanti ? { garanti: plan.garanti } : {}),
   };
+  installerEcrits(state, plan.id, plan, () => tire(prenoms, 'f'), () => tire(prenoms, 'm'));
   return H[plan.id];
+}
+
+/* ---------- les personnages écrits dans leur hameau (le récit) ----------
+
+   RECIT.PERSONNAGES[].habite = { hameau (un hameau garanti : « gue », « bois_joli »…), genre, enfant
+   (facultatif), metier (facultatif ; absent : le jardin), avec (facultatif : un autre personnage écrit, dont
+   il partage le foyer : Théo chez Basile) }. Chacun qui n'a pas de « avec » prend, seul, un foyer du hameau
+   (le premier libre, dans l'ordre des maisons) avec son prénom, son apparence et l'id de son personnage
+   (recit : ses répliques) ; ceux qui ont « avec » rejoignent ce foyer. Le lit : le premier du foyer qui
+   convient (adulte, enfant). Personne d'autre dans le hameau ne garde leur prénom ni leur apparence.
+
+   À la naissance du hameau (peuplerHameau), et pour un hameau peuplé avant que le personnage y habite (une
+   partie d'avant le lot 9 : Basile et Théo à Bois-Joli) : la famille générée de ce foyer est remplacée,
+   une fois (un personnage déjà là ne bouge plus). Un personnage parti (« parti » : Théo, s'il quitte l'île,
+   js/engine/recit.js) ne revient pas. → le nombre de personnages installés. */
+export function installerEcrits(state, hameauId, plan = null, prenomF = null, prenomM = null) {
+  const h = habitantsDe(state)[hameauId];
+  if (!h || !Array.isArray(h.foyers)) return 0;
+  const g = garantiDuHameau(state, hameauId);
+  const P = (DATA.RECIT && DATA.RECIT.PERSONNAGES) || {};
+  const recit = (state.recit && typeof state.recit === 'object' && state.recit.faits) || {};
+  const ecrits = Object.entries(P).filter(([rid, d]) => d.habite && d.habite.hameau === g && !(Array.isArray(recit[`${rid}.parti`])));
+  const present = (rid) => h.foyers.some((f) => (f.membres || []).some((m) => m.recit === rid));
+  const aPlacer = ecrits.filter(([rid]) => !present(rid));
+  if (!aPlacer.length) return 0;
+  const rnd = rngDe(`${graineDe(state)}:habitants:${hameauId}:recit`);
+  const nouveauPrenom = (genre) => {
+    const f = genre === 'f' ? prenomF : prenomM;
+    if (f) { const p = f(); if (p) return p; }
+    const L = HABITANTS.PRENOMS[genre] || HABITANTS.PRENOMS.m;
+    return L[Math.floor(rnd() * L.length)] || 'Jean';
+  };
+  const litsDe = (f) => {
+    const mz = plan && Array.isArray(plan.maisons) ? plan.maisons.find((x) => x.id === f.maison) : null;
+    return mz && Array.isArray(mz.lits) ? mz.lits : null;
+  };
+  let n = 0;
+  // (sans le plan, un hameau peuplé avant : les lits de la famille remplacée restent au foyer)
+  const litsLibres = new Map();
+  // (d'abord ceux qui ont leur propre foyer : le premier foyer sans personnage écrit)
+  // (son foyer : le premier sans personnage écrit, qui a assez de lits pour lui et ceux qui vivent avec lui ;
+  // sans le plan, les lits de la famille qu'il remplace)
+  const nbLits = (f) => { const L = litsDe(f); return L ? L.length : (f.membres || []).filter((m) => Number.isInteger(m.lit)).length; };
+  for (const [rid, d] of aPlacer.filter(([, x]) => !x.habite.avec)) {
+    const besoin = 1 + ecrits.filter(([, x]) => x.habite.avec === rid).length;
+    const libres = h.foyers.filter((x) => !(x.membres || []).some((m) => m.recit));
+    const f = libres.find((x) => nbLits(x) >= besoin) || libres[0];
+    if (!f) continue;
+    const lits = litsDe(f), q = lits ? lits.findIndex((l) => l.sorte === (d.habite.enfant ? 'lit_enfant' : 'lit_adulte')) : -1;
+    const anciens = (f.membres || []).map((m) => m.lit).filter((l) => Number.isInteger(l));
+    const lit = lits ? (q >= 0 ? q : lits.length ? 0 : null) : (anciens.length ? anciens.shift() : null);
+    litsLibres.set(f, anciens);
+    f.membres = [{ id: `${f.maison}:0`, prenom: d.nom, genre: d.habite.genre, enfant: !!d.habite.enfant, perso: d.perso, metier: d.habite.metier || null, lit, recit: rid }];
+    n++;
+  }
+  // (puis ceux qui partagent un foyer : chez le personnage `avec`, s'il est là)
+  for (const [rid, d] of aPlacer.filter(([, x]) => x.habite.avec)) {
+    const f = h.foyers.find((x) => (x.membres || []).some((m) => m.recit === d.habite.avec));
+    if (!f) continue;
+    const pris = new Set(f.membres.map((m) => m.lit));
+    const lits = litsDe(f);
+    let q = lits ? lits.findIndex((l, k) => !pris.has(k) && l.sorte === (d.habite.enfant ? 'lit_enfant' : 'lit_adulte')) : -1;
+    if (q < 0 && lits) q = lits.findIndex((l, k) => !pris.has(k));
+    if (!lits) { const L = (litsLibres.get(f) || []).filter((l) => !pris.has(l)); q = L.length ? L[0] : -1; }
+    if (q < 0) continue;   // (pas de lit pour lui : il n'est pas là, cette fois)
+    const id = `${f.maison}:${f.membres.length}`;
+    f.membres.push({ id, prenom: d.nom, genre: d.habite.genre, enfant: !!d.habite.enfant, perso: d.perso, metier: d.habite.metier || null, lit: q, recit: rid });
+    n++;
+  }
+  // (personne d'autre n'a leur prénom ni leur apparence)
+  for (const [, d] of ecrits) {
+    for (const f of h.foyers) for (const m of f.membres || []) {
+      if (m.recit) continue;
+      if (m.prenom === d.nom) m.prenom = nouveauPrenom(m.genre);
+      if (!!m.enfant === !!d.habite.enfant && m.perso === d.perso) {
+        const L = HABITANTS.PERSOS[m.enfant ? 'enfant' : 'adulte'][m.genre] || [];
+        const libres = L.filter((p) => p !== d.perso);
+        if (libres.length) m.perso = libres[Math.floor(rnd() * libres.length)];
+      }
+    }
+  }
+  return n;
+}
+
+// Un personnage écrit quitte son hameau (Théo, s'il part : js/engine/recit.js) : il est retiré de son foyer.
+// → true s'il y était.
+export function retirerEcrit(state, rid) {
+  let retire = false;
+  for (const h of Object.values(habitantsDe(state))) {
+    for (const f of (h && h.foyers) || []) {
+      const k = (f.membres || []).findIndex((m) => m.recit === rid);
+      if (k >= 0 && f.membres.length > 1) { f.membres.splice(k, 1); retire = true; }
+    }
+  }
+  return retire;
 }
 
 /* ---------- le travail ---------- */
@@ -326,7 +445,9 @@ export function metierHabitant(h, m) {
 
 // Toucher un habitant : { prenom, metier, texte } (son salut selon l'heure, ce qu'il fait,
 // son humeur) ; `o` : { heure, activite (dort, maison, chemin, travail, joue, repas, rentre, soir),
-// n (le rang de l'appui : une autre phrase à chaque fois) }. null : personne de ce nom.
+// n (le rang de l'appui : une autre phrase à chaque fois), salut (un salut qui remplace celui de
+// l'heure : la confiance du hameau, paroleHameau dans recit.js) }. null : personne de ce nom.
+// Un foyer qui a eu faim ne parle pas de passer à table : la phrase du repas saute.
 export function paroleHabitant(state, hameauId, membreId, o = {}) {
   const h = hameauHabite(state, hameauId), t = trouver(h, membreId);
   if (!t) return null;
@@ -336,10 +457,12 @@ export function paroleHabitant(state, hameauId, membreId, o = {}) {
   const heure = Number(o.heure) || 12;
   const out = { prenom: m.prenom, metier: metierHabitant(h, m), texte: '' };
   if (o.activite === 'dort') { out.texte = un(P.activite.dort); return out; }
-  const salut = un(P.salut[heure < 10 ? 'matin' : heure < 18 ? 'jour' : heure < 22 ? 'soir' : 'nuit']);
-  const fait = o.activite === 'travail' ? un(P.travail[m.metier] || P.travail.jardinier) : un(P.activite[o.activite] || P.activite.maison);
+  const salutHeure = un(P.salut[heure < 10 ? 'matin' : heure < 18 ? 'jour' : heure < 22 ? 'soir' : 'nuit']);
+  const salut = typeof o.salut === 'string' && o.salut ? o.salut : salutHeure;
   const dernier = f.journal && f.journal[f.journal.length - 1];
   const humeur = dernier && dernier.couverture < 100 ? 'faim' : f.bonheur >= HABITANTS.HEUREUX ? 'heureux' : f.bonheur < HABITANTS.TRISTE ? 'triste' : 'content';
+  const fait = o.activite === 'travail' ? un(P.travail[m.metier] || P.travail.jardinier)
+    : o.activite === 'repas' && humeur === 'faim' ? '' : un(P.activite[o.activite] || P.activite.maison);
   out.texte = [salut, fait, un(P.humeur[humeur])].filter(Boolean).join(' ');
   out.humeur = humeur;
   return out;

@@ -167,6 +167,15 @@
     "tablier": { "nom": "Tablier de jardinier", "icone": "🥼‍🌱", "prix": 8, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "salopette": { "nom": "Salopette solide", "icone": "👖‍🔧", "prix": 34, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "manteau_chaud": { "nom": "Manteau chaud", "icone": "🧥‍❄", "prix": 36, "mangeable": false, "categorie": "équipement", "rachetable": false },
+    "tente": { "nom": "Tente", "icone": "⛺", "prix": 12, "mangeable": false, "categorie": "équipement", "rachetable": false },
+    "//souvenirs": [
+      "Le récit, lot 9 (data/recit.json, docs/recit/aventure.md) : des souvenirs de Maurice, ni vendus ni rachetés.",
+      "L'enveloppe arrive avec la seconde lettre du notaire, au niveau 9 : l'ouvrir la garde (RECIT.ENVELOPPE.PIECES",
+      "pièces), la porter à Odile la donne. La cloche de sa calèche : Odile la donne à la fête, à celui qui a",
+      "entretenu l'île comme lui (la fin « nouveau_maurice »)."
+    ],
+    "enveloppe_maurice": { "nom": "Enveloppe de Maurice", "icone": "✉️", "prix": 0, "mangeable": false, "categorie": "souvenir", "rachetable": false, "invendable": true },
+    "cloche_maurice": { "nom": "Cloche de Maurice", "icone": "🔔", "prix": 0, "mangeable": false, "categorie": "souvenir", "rachetable": false, "invendable": true },
     "sac_petit": { "nom": "Petit sac à provisions", "icone": "🎒‍🌿", "prix": 5, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "sac_grand": { "nom": "Grand sac à provisions", "icone": "🎒‍🧶", "prix": 20, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "refrigerateur": { "nom": "Réfrigérateur", "icone": "🧊", "prix": 120, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -210,6 +219,7 @@
     "nichoir": { "nom": "Nichoir", "icone": "🪺", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "mangeoire": { "nom": "Mangeoire", "icone": "🛶", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "ratelier": { "nom": "Râtelier", "icone": "🌾‍🪜", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "tissu": { "nom": "Tissu de laine", "icone": "🧵", "prix": 18, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "corde": { "nom": "Corde", "icone": "➰", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "poteau_attache": { "nom": "Poteau d'attache", "icone": "🪵‍🔗", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "bac_semis": { "nom": "Bac à semis", "icone": "🎍", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },

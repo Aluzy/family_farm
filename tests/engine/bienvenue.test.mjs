@@ -97,7 +97,8 @@ test('la visite : le visiteur est un adulte du hameau le plus proche, toujours l
   const T = genererMonde(s.carte.graine).terrain, F = T.FERME, W = T.LARGEUR;
   const cx = F.X + (F.LARGEUR >> 1), cy = F.Y + (F.HAUTEUR >> 1);
   const d = (p) => Math.hypot((p.case % W) - cx, Math.floor(p.case / W) - cy);
-  const proche = [...P].sort((x, y) => d(x) - d(y))[0];
+  // (un hameau : pas une bâtisse du récit, la cabane, l'atelier)
+  const proche = P.filter((x) => !x.batisse).sort((x, y) => d(x) - d(y))[0];
   assertEqual(v.hameauId, proche.id);
   assertEqual(v.depart, proche.case);
   // ses habitants sont nés : le visiteur est l'un d'eux, un adulte
@@ -197,16 +198,16 @@ test('la visite : la journée passée sans visite (la scène fermée, la mine) :
 });
 
 test('migration v61 → v62 : la visite attendue avant le jour 2, déjà passée après', () => {
-  assertEqual(STATE_VERSION, 62);
+  assertEqual(STATE_VERSION >= 62, true);
   const neuve = createInitialState(4);
   assertEqual(neuve.bienvenue, { etat: 'attendue', qui: null, plat: null, remis: null, jour: null });
   for (const [jour, etat] of [[1, 'attendue'], [2, 'attendue'], [3, 'faite'], [40, 'faite']]) {
     const { bienvenue, ...v61 } = copie({ ...neuve, day: jour });
     const m = migrate({ v: 61, t: 0, s: { ...v61, version: 61 } });
-    assertEqual([m.version, m.bienvenue.etat, m.bienvenue.qui], [62, etat, null], `jour ${jour}`);
+    assertEqual([m.version, m.bienvenue.etat, m.bienvenue.qui], [STATE_VERSION, etat, null], `jour ${jour}`);
   }
   // depuis v60 (la place v60 → v61 d'une autre fiche) : jusqu'au bout
   const { bienvenue, ...v60 } = copie({ ...neuve, day: 9 });
   const m = migrate({ v: 60, t: 0, s: { ...v60, version: 60 } });
-  assertEqual([m.version, m.bienvenue.etat], [62, 'faite']);
+  assertEqual([m.version, m.bienvenue.etat], [STATE_VERSION, 'faite']);
 });

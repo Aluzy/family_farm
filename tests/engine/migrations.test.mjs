@@ -58,7 +58,8 @@ test('migration v15 → v16 : une partie sans animaux ne perd ni ne gagne rien',
   assertEqual(m.nuit.etable, newStableReport());
   // même forme qu'une partie neuve (state.ville en plus : la migration v50 → v51 l'ôte), et la
   // partie continue
-  assertEqual(Object.keys(m).filter((k) => k !== 'ville').sort(), Object.keys(ancienne(9)).sort());
+  // (le commerce du niveau 10 : encore là à cette version ; retiré en version 63, le récit lot 7)
+  assertEqual(Object.keys(m).filter((k) => k !== 'ville').sort(), [...Object.keys(ancienne(9)), 'commerce'].sort());
   assertEqual(Object.keys(m.paturage), Object.keys(createInitialState(9).paturage));
   assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
   // une partie déjà en version 16 n'est pas retouchée

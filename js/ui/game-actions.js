@@ -3,6 +3,7 @@ import { maintainDevice, repairDevice } from '../engine/devices.js';
 import { countItem } from '../engine/inventory.js';
 import { fridgeCount, moveFromFridge, moveToFridge } from '../engine/fridge.js';
 import { goToSleep, startNight } from '../engine/night.js';
+import { memberName } from '../engine/family.js';
 import { newGameFrom } from '../engine/alerts.js';
 import { setActiveTab, setCoucher, setEcranFerme, setState, state } from './store.js';
 import { telDay, telNight } from './consent.js';
@@ -62,7 +63,7 @@ export function wakeUp() {
   // la ferme générée : qui a dormi sans paillasse dans une pièce close (js/engine/blocs.js)
   const sans = state.report && state.report.sansCouchage;
   if (sans && sans.length) {
-    const noms = state.famille.membres.filter((m) => sans.includes(m.id)).map((m) => m.nom);
+    const noms = state.famille.membres.filter((m) => sans.includes(m.id)).map((m) => memberName(state, m.id));   // (son prénom, pas « Adulte 2 »)
     notify(`🛏 Sans paillasse dans une pièce close : ${noms.join(', ')} ${noms.length > 1 ? 'ont' : 'a'} mal dormi (${DATA.ATELIER.BONHEUR_SANS_COUCHAGE} 😊).`);
   }
   setCoucher(false); // il se lève

@@ -3,7 +3,13 @@ import { escapeHtml, formatNumber } from '../engine/format.js';
 import { clockHours } from '../engine/clock.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { HAMEAUX, hameauxVus } from '../engine/monde-hameaux.js';
-import { ficheHameau, habitantAgit, habitantsDe, paroleHabitant, peuplerHameau } from '../engine/habitants.js';
+import { ficheHameau, garantiDuHameau, habitantAgit, habitantsDe, installerEcrits, peuplerHameau } from '../engine/habitants.js';
+import { paroleHameau } from '../engine/recit.js';
+import { reparerToit, toitsUses, USURE } from '../engine/usure.js';
+import { proposerScene } from './scene.js';
+import { registerActions } from './actions.js';
+import { applyResult } from './game-actions.js';
+import { ateliersDuHameau } from '../engine/ile.js';
 import { solDuMonde } from './monde-sol.js';
 import { persoHtml } from './famille.js';
 import { openModal } from './modal.js';
@@ -57,7 +63,12 @@ export function peuplerDepuisCarte(id) {
 // naissent dès que les plans sont là. Appelé à chaque modèle de la carte : ne coûte presque rien.
 export function peuplerLesVus() {
   const H = habitantsDe(state), vus = Object.keys(hameauxVus(state));
-  if (!vus.some((id) => !H[id])) return false;
+  // (le récit, lot 9 : les personnages écrits d'un hameau peuplé avant qu'ils y habitent, Basile et Théo à
+  // Bois-Joli, s'y installent : installerEcrits ne fait rien quand ils y sont déjà)
+  let installes = false;
+  for (const id of Object.keys(H)) if (installerEcrits(state, id)) installes = true;
+  if (installes) persistState();
+  if (!vus.some((id) => !H[id])) return installes;
   const sol = solActuel(), plans = sol && sol.hameaux ? sol.hameaux() : null;
   if (!plans) return false;
   let fait = false;
@@ -82,9 +93,17 @@ export function habitantDepuisCarte(hameau, id, geste, piece) {
   return r;
 }
 
-// Le pont de la carte : ce que dit l'habitant qu'on touche ({ hameau, id, activite, n }).
+// Le pont de la carte : ce que dit l'habitant qu'on touche ({ hameau, id, activite, n }). Un personnage
+// écrit du récit (Odile au Gué…) dit une réplique du récit, notée dans la partie (paroleHameau).
 export function paroleDepuisCarte(o) {
-  return paroleHabitant(state, o.hameau, o.id, { heure: clockHours(state), activite: o.activite, n: o.n });
+  // (le récit, lot 9 : toucher un personnage écrit peut ouvrir sa scène, Odile et l'enveloppe, Théo, Basile ;
+  // la scène tient lieu de bulle)
+  const h = habitantsDe(state)[o.hameau];
+  const m = h && (h.foyers || []).flatMap((f) => f.membres || []).find((x) => x.id === o.id);
+  if (m && m.recit && o.activite !== 'dort' && proposerScene({ lieu: garantiDuHameau(state, o.hameau) || o.hameau, hameau: o.hameau, touche: m.recit })) return null;
+  const r = paroleHameau(state, o.hameau, o.id, { heure: clockHours(state), activite: o.activite, n: o.n });
+  if (r && r.recit) persistState();
+  return r;
 }
 
 /* ---------- la fiche du hameau ---------- */
@@ -124,8 +143,35 @@ function calecheHtml(fi) {
   return `<p class="muted">🐴 La calèche est passée ${quand}${items ? ` : elle a acheté ${items}, pour <span class="num">${formatNumber(c.pieces)}</span> 💰 partagés entre les familles` : ', mais la réserve était vide'}.</p>`;
 }
 
+/* -- le récit, lot 7 : les ateliers des hameaux garantis (js/engine/ile.js, data/ile.json) : la fiche les
+   nomme ; on leur passe commande par le cocher, à la calèche (js/ui/caleche.js, l'onglet Commandes). -- */
+
+/* -- le récit, lot 9 : les toits abîmés du hameau (js/engine/usure.js) : on les répare d'ici, sur place. -- */
+
+function toitsHtml(hid) {
+  const L = toitsUses(state, hid);
+  if (!L.length) return '';
+  const fi = ficheHameau(state, hid);
+  const qui = (maison) => {
+    const f = fi && fi.familles.find((x) => x.maison === maison);
+    const a = f && f.membres.find((m) => !m.enfant);
+    return a ? `chez ${escapeHtml(a.prenom)}` : 'une maison';
+  };
+  const cout = Object.entries(USURE.REPARER).map(([item, n]) => `${n} ${(DATA.OBJETS[item] || { icone: '' }).icone}`).join(' ');
+  const li = L.map((maison) => `<li class="row"><span>🏚 Le toit, ${qui(maison)}, prend l'eau.</span>
+      <button type="button" class="btn" data-action="toit-reparer" data-hameau="${escapeHtml(hid)}" data-maison="${escapeHtml(maison)}">🔨 Réparer (${cout})</button></li>`).join('');
+  return `<h3 class="book-h3">Les toits</h3><ul class="hameau-toits">${li}</ul>`;
+}
+
+function ateliersHtml(hid) {
+  const A = ateliersDuHameau(state, hid);
+  if (!A.length) return '';
+  const noms = A.map((a) => `<span aria-hidden="true">${a.icone || ''}</span> ${escapeHtml(a.nom.toLowerCase())}`).join(', ');
+  return `<p class="muted ile-annonce">Ses ateliers travaillent pour toi : ${noms}. Passe commande au cocher, à la calèche ; il porte et il rapporte.</p>`;
+}
+
 // La fiche du hameau `h` ({ id, nom, style } : le panneau de sa place) ; sans habitants encore, son
-// nom seulement.
+// nom seulement. Le récit, lot 7 : ses ateliers (un hameau garanti), nommés.
 export function openFicheHameau(h) {
   const S = HAMEAUX.STYLES[h.style];
   peuplerDepuisCarte(h.id);
@@ -136,11 +182,28 @@ export function openFicheHameau(h) {
   openModal(`
     <h2 id="hameau-title">🪧 ${escapeHtml(fi.nom)}</h2>
     <p class="muted">Un hameau ${S ? escapeHtml(S.nom) : ''}, un hameau de ${escapeHtml(metiers)} : ${fi.familles.length} familles, ${gens} habitants.</p>
+    ${ateliersHtml(h.id)}
+    ${toitsHtml(h.id)}
     <h3 class="book-h3">Les familles</h3>
     <ul class="hameau-familles">${fi.familles.map(familleHtml).join('')}</ul>
     <h3 class="book-h3">La réserve du hameau</h3>
     <p class="muted">Ce que les familles ont mis de côté, nuit après nuit (+ : la nuit dernière) ; la calèche l'achète à chacun de ses passages, et paie les familles.</p>
     ${reserveHtml(fi)}
     ${calecheHtml(fi)}
-    <button type="button" class="btn primary" data-action="close-modal" id="hameau-close">Fermer</button>`, { labelledBy: 'hameau-title', className: 'modal bois hameau-modal', focus: '#hameau-close' });
+    <button type="button" class="btn primary" data-action="close-modal" id="hameau-close">Fermer</button>`, { labelledBy: 'hameau-title', className: 'modal bois hameau-modal', focus: '#hameau-close', preventScroll: true });
 }
+
+/* ---------- actions de cet écran (voir ui/actions.js) ---------- */
+
+registerActions({
+  // le récit, lot 9 : réparer un toit abîmé (la fiche du hameau, sur place) ; la fiche se refait
+  'toit-reparer': (target) => {
+    const id = target.dataset.hameau;
+    const r = applyResult(reparerToit(state, id, target.dataset.maison));
+    if (!r.ok) return;
+    persistState();
+    notify('🔨 Le toit est réparé. Le hameau s\'en souviendra.', { kind: 'info' });
+    const vu = state.monde && state.monde.hameaux && state.monde.hameaux[id];
+    openFicheHameau({ id, nom: (vu && vu.nom) || '', style: (vu && vu.style) || '' });
+  },
+});

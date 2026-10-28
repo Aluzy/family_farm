@@ -424,6 +424,7 @@ nuits, aller à un chapitre, et voir l'état complet de la partie.
 | [`docs/architecture-phaser.md`](docs/architecture-phaser.md) | les cartes Phaser : découpage, cartes Tiled, pièges à éviter |
 | [`docs/personnage.md`](docs/personnage.md) | le personnage et ses gestes sur la carte |
 | [`docs/grand-monde.md`](docs/grand-monde.md) | le grand monde (projet) : une seule carte de biomes, ses étapes |
+| [`docs/recit/`](docs/recit/README.md) | le récit de Céron : la bible, les personnages, l'aventure, les dialogues et le plan (moteur : `js/engine/recit.js`, textes : `data/recit.json`) |
 | [`docs/vie-ambiance.md`](docs/vie-ambiance.md) | la vie d'ambiance de la carte (vent, nuages, animaux, habitants) |
 | [`docs/icones.md`](docs/icones.md) | les icônes en pixel art, la police et les jauges |
 | [`docs/son.md`](docs/son.md) | le son : musique, ambiances, bruits, où chacun est joué, réglages, comment en ajouter |

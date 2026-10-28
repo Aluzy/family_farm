@@ -541,9 +541,10 @@ test('version 1.3 : une partie d\'avant la version 1.3, Serre déjà ouverte, re
   assertEqual(m.courrier, [], 'la migration ne distribue rien elle-même');
   const cacao = countItem(m, 'cacao');
   tick(m, 0.2);
-  assertEqual([m.courrier.map((l) => [l.id, l.lu]), countItem(m, 'cacao') - cacao], [[['cousin_venezuela', false]], 1]);
+  // (le récit, lot 9 : la lettre d'Adèle sur la première récolte arrive aussi, le chapitre 2 passé)
+  assertEqual([m.courrier.map((l) => [l.id, l.lu]), countItem(m, 'cacao') - cacao], [[['adele_recolte', false], ['cousin_venezuela', false]], 1]);
   // boîte abîmée : elle est refaite, sans plantage
   const t = atChapter(7);
   t.courrier = 'x';
-  assertEqual([unreadMail(t), deliverMail(t), t.courrier.length], [[], ['cousin_venezuela'], 1]);
+  assertEqual([unreadMail(t), deliverMail(t), t.courrier.length], [[], ['adele_recolte', 'cousin_venezuela'], 2]);
 });

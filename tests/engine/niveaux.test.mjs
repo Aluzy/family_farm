@@ -1,17 +1,17 @@
 /* ==========================================================================
-   Tests du moteur : niveaux d'expérience (version 1.7), niveaux 9 et 10 (version 1.14).
+   Tests du moteur : niveaux d'expérience (version 1.7), niveaux 9 et 10 (version 1.14 ; le niveau 10 : la veillée, le récit lot 7).
    Lancer seul : node --test tests/engine/niveaux.test.mjs (ou node tests/run-tests.mjs niveaux).
    ========================================================================== */
 
 import {
-  acknowledgeChapter, acknowledgeLevel, actionXp, addItem, awakeMsAtHour, chooseCommerce,
-  commerceCapacity, commerceChoiceCost, commerceNight, countItem, createInitialState, cropUnlocked,
+  acknowledgeChapter, acknowledgeLevel, actionXp, addItem, aFait, awakeMsAtHour,
+  countItem, createInitialState, cropUnlocked,
   DATA, deliverMail, feedAllHens, findPlot, gainXp, harvest, ingredientOptions, isUnlocked,
   levelForXp, levelProgress, levelReached, levelUnlocks, lotsOf, mailReceived, makeDevice,
-  maxStage, newCampaignCounters, newCommerce, openFridge, openSerre, plant, plantableCropsFor,
-  readMail, sellItem, setCommerceQuota, shear, startMilling, startRecipe, STATE_VERSION,
+  maxStage, migrate, newCampaignCounters, openFridge, openSerre, ouvrirEnveloppe, plant, plantableCropsFor,
+  readMail, sellItem, shear, startMilling, startRecipe, STATE_VERSION,
   tankCapacity, testBatir, testCompleteChapter, testGoToChapter, testSetLevel, testWoolReady, tick,
-  unlockLevel, updateChapters, upgradeCommerce, water,
+  unlockLevel, updateChapters, water,
 } from '../../js/engine/index.js';
 import {
   affamer, assert, assertEqual, atChapter, atelier, auto5, AVANT_DEMENAGEMENT, boite, farm,
@@ -355,7 +355,9 @@ function atLevel10() {
   return s;
 }
 
-test('version 1.14 : au niveau 9, le notaire verse 15 000 pièces à l\'ouverture, une seule fois, sans XP', () => {
+// Le récit, lot 9 : la seconde lettre du notaire apporte l'enveloppe de Maurice (un objet) au lieu des 15 000
+// pièces (version 1.14) ; l'ouvrir les garde, une fois, sans XP (js/engine/recit.js ouvrirEnveloppe).
+test('version 1.14, le récit lot 9 : au niveau 9, le notaire envoie l\'enveloppe ; l\'ouvrir donne 15 000 pièces, une fois, sans XP', () => {
   const s = farm();
   testSetLevel(s, 8);
   deliverMail(s);
@@ -363,80 +365,47 @@ test('version 1.14 : au niveau 9, le notaire verse 15 000 pièces à l\'ouvertur
   testSetLevel(s, 9);
   deliverMail(s);
   assert(mailReceived(s, 'notaire_legs'));
+  assertEqual(countItem(s, 'enveloppe_maurice'), 1, 'l\'enveloppe est dans l\'inventaire');
   const p = s.pieces, xp = s.progression.xp;
-  assertEqual(readMail(s, 'notaire_legs').pieces, 15000);
-  assertEqual([s.pieces - p, s.progression.xp - xp], [15000, 0]);
-  assertEqual(readMail(s, 'notaire_legs').pieces, 0, 'relue : rien de plus');
+  assertEqual(readMail(s, 'notaire_legs').pieces, 0, 'la lettre ne verse rien');
+  assertEqual(ouvrirEnveloppe(s).pieces, 15000);
+  assertEqual([s.pieces - p, s.progression.xp - xp, countItem(s, 'enveloppe_maurice'), aFait(s, 'enveloppe.ouverte')], [15000, 0, 0, true]);
+  assertEqual(ouvrirEnveloppe(s).ok, false, 'une fois');
   assertEqual(s.pieces - p, 15000);
 });
 
-test('version 1.14 : le commerce se choisit au niveau 10, le changement coûte 5 000', () => {
+// Le récit, lot 7 (docs/recit/plan.md) : les commerces du niveau 10 disparaissent ; la veillée à la ferme les
+// remplace (js/engine/ile.js, data/ile.json).
+test('le récit, lot 7 : au niveau 10, la veillée à la ferme ; plus de commerce', () => {
   const s = farm();
   testSetLevel(s, 9);
-  assertEqual(chooseCommerce(s, 'cremerie').ok, false, 'pas avant le niveau 10');
+  assertEqual(isUnlocked(s, 'veillee'), false, 'pas avant le niveau 10');
   const t = atLevel10();
-  assertEqual(commerceChoiceCost(t, 'cremerie'), 0);
-  assertEqual(chooseCommerce(t, 'cremerie').cost, 0);
-  assertEqual([t.commerce.type, t.commerce.quota, commerceCapacity(t)], ['cremerie', 10, 10]);
-  assertEqual(chooseCommerce(t, 'cremerie').ok, false, 'déjà choisi');
-  const p = t.pieces;
-  assertEqual(chooseCommerce(t, 'tissage').ok, true);
-  assertEqual([t.commerce.type, p - t.pieces], ['tissage', 5000]);
-  assertEqual(chooseCommerce(t, 'boulangerie').ok, false);
+  assertEqual(isUnlocked(t, 'veillee'), true);
+  assertEqual(unlockLevel('veillee'), 10);
+  assertEqual('commerce' in t, false, 'plus d\'état du commerce');
+  assertEqual(DATA.COMMERCE, undefined);
 });
 
-test('version 1.14 : capacité 10 / 20 / 35 / 50 pour 3 000, 8 000, 20 000', () => {
-  const s = atLevel10();
-  assertEqual(upgradeCommerce(s).ok, false, 'sans commerce');
-  chooseCommerce(s, 'conserverie');
-  const paid = [];
-  for (let i = 0; i < 3; i++) {
-    const p = s.pieces;
-    assert(upgradeCommerce(s).ok);
-    paid.push([p - s.pieces, commerceCapacity(s)]);
-  }
-  assertEqual(paid, [[3000, 20], [8000, 35], [20000, 50]]);
-  assertEqual(s.commerce.quota, 50, 'un quota au maximum suit la capacité');
-  assertEqual(upgradeCommerce(s).ok, false, 'niveau maximum');
-  assertEqual(setCommerceQuota(s, 80).quota, 50);
-  assertEqual(setCommerceQuota(s, -3).quota, 0);
+test('le récit, lot 7 : migration v62 → v63, le commerce rendu (la somme des niveaux payés)', () => {
+  const s = farm();
+  const avec = (commerce) => {
+    const old = JSON.parse(JSON.stringify(s));
+    old.version = 62;
+    old.commerce = commerce;
+    return migrate({ v: 62, t: 0, s: old });
+  };
+  const m = avec({ type: 'cremerie', niveau: 3, quota: 35 });
+  assertEqual([m.version, 'commerce' in m, m.pieces - s.pieces, m.remboursementCommerce], [STATE_VERSION, false, 11000, 11000]);
+  const n = avec({ type: null, niveau: 1, quota: 10 });
+  assertEqual([n.pieces - s.pieces, 'remboursementCommerce' in n, 'commerce' in n], [0, false, false], 'sans commerce choisi : rien');
+  const q = avec({ type: 'tissage', niveau: 9, quota: 50 });
+  assertEqual(q.pieces - s.pieces, 31000, 'un niveau trop grand : le maximum');
 });
 
-test('version 1.14 : la crèmerie vend chaque nuit 3 laits → 1 fromage à 36, 1 XP par pièce', () => {
-  const s = atLevel10();
-  chooseCommerce(s, 'cremerie');
-  setCommerceQuota(s, 4);
-  setInv(s, { conserve: 500, lait: 14 });
-  const p = s.pieces, xp = s.progression.xp;
-  const r = commerceNight(s);
-  assertEqual([r.n, r.pieces], [4, 144]);
-  assertEqual([countItem(s, 'lait'), s.pieces - p, s.progression.xp - xp], [2, 144, 144]);
-  const r2 = commerceNight(s);
-  assertEqual([r2.n, r2.pieces], [0, 0], 'moins de 3 laits : rien');
-});
-
-test('version 1.14 : l\'étal de bocaux prend les légumes qui périment le plus tôt, après le repas', () => {
-  const s = atLevel10();
-  chooseCommerce(s, 'conserverie');
-  setCommerceQuota(s, 1);
-  setInv(s, { conserve: 500 });
-  addItem(s, 'patate', 4);
-  addItem(s, 'tomate', 4);
-  lotsOf(s, 'tomate')[0].nightsLeft = 1;
-  const r = commerceNight(s);
-  assertEqual([r.n, r.pieces, countItem(s, 'tomate'), countItem(s, 'patate')], [1, 24, 0, 4]);
-  // dans la nuit complète, la famille mange d'abord ; le rapport du réveil compte la vente
-  addItem(s, 'patate', 40);
-  const rep = sleepOnce(s);
-  assertEqual([rep.commerce.type, rep.commerce.n, rep.commerce.pieces], ['conserverie', 1, 24]);
-});
-
-test('échelle des transformations : recette ×1,3 < commerce ×1,5, sans perte quel que soit l\'intrant', () => {
+test('échelle des transformations : une recette sans perte quel que soit l\'intrant', () => {
   // valeur d'une unité prise : le prix effectif de l'intrant le plus cher
   const valeur = (items) => Math.max(...items.map((it) => DATA.OBJETS[it].prix));
-  for (const [id, t] of Object.entries(DATA.COMMERCE.TYPES)) {
-    assertEqual(t.prix, Math.round(t.par * valeur(t.prend) * 1.5), `commerce ${id}`);
-  }
   // un plat « l'un ou l'autre » se vend au moins ce que coûtent ses ingrédients, quelle que soit l'option
   for (const [id, r] of Object.entries(DATA.RECETTES)) {
     if (r.transformation || !r.ingredients.some((ing) => ing.ou)) continue;
@@ -445,9 +414,6 @@ test('échelle des transformations : recette ×1,3 < commerce ×1,5, sans perte 
   }
   assertEqual([DATA.OBJETS.bocal_legumes.prix, DATA.OBJETS.quenelle_poisson.prix], [22, 16]);
   assert(ingredientOptions(DATA.RECETTES.quenelle_poisson.ingredients[1]).includes('anchois'), 'l\'anchois fait aussi des quenelles');
-  // les noms : le commerce de la ferme ne reprend pas celui d'un nœud
-  const noeuds = Object.values(DATA.ARBRE.noeuds).map((n) => n.nom);
-  for (const t of Object.values(DATA.COMMERCE.TYPES)) assert(!noeuds.includes(t.nom), t.nom);
   // les lingots valent au moins leurs 4 minerais et leur bois
   for (const m of ['fer', 'cuivre', 'or', 'platine']) {
     const r = DATA.RECETTES['lingot_' + m];
@@ -456,12 +422,12 @@ test('échelle des transformations : recette ×1,3 < commerce ×1,5, sans perte 
   }
 });
 
-test('migration v30 → v31 : un commerce vide', () => {
+test('migration v30 → v31 : un commerce vide (avant son retrait, en v63)', () => {
   const s = farm();
   const old = JSON.parse(JSON.stringify(s));
   old.version = 30;
   delete old.commerce;
   const m = migreAvant({ v: 30, t: 0, s: old });
-  assertEqual(m.commerce, newCommerce());
+  assertEqual(m.commerce, { type: null, niveau: 1, quota: 10 }, 'sa forme d\'alors (retiré en v63)');
   assertEqual(m.version, AVANT_DEMENAGEMENT);
 });

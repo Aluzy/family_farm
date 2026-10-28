@@ -21,7 +21,8 @@ import { inventoryCounts } from '../engine/inventory.js';
 import { fridgeCounts } from '../engine/fridge.js';
 import {
   capaciteSac, casesMembre, choixPieces, enExpedition, equiper, pieceDef, piecesEquipement, placeSac, portionsSac,
-  poserSac, remplirSac, reprendreSac, retirerPiece, retirerSac, sacCounts, sacDef, sacPorte, sacsDisponibles,
+  poserSac, poserTente, remplirSac, reprendreSac, retirerPiece, retirerSac, retirerTente, sacCounts, sacDef, sacPorte, sacsDisponibles,
+  tentePortee,
 } from '../engine/equipement.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
 import { state } from './store.js';
@@ -124,6 +125,14 @@ function caseSacHtml() {
   return `<button type="button" class="fiche-case sac" data-action="fiche-sac" aria-label="${o.nom} : ${n} portion${n > 1 ? 's' : ''} sur ${capaciteSac(state)}. Ouvrir le sac" title="${o.nom} : ${n} / ${capaciteSac(state)}"><span class="fiche-case-icone" aria-hidden="true">${o.icone}</span><span class="fiche-case-n num">${n}/${capaciteSac(state)}</span></button>`;
 }
 
+// Le récit, lot 8 : la case de la tente (à côté du sac) : portée, ou vide ; un appui la prend de
+// l'inventaire, ou la range.
+function caseTenteHtml() {
+  const o = DATA.OBJETS[DATA.EQUIPEMENT.TENTE];
+  if (!tentePortee(state)) return `<button type="button" class="fiche-case tente vide" data-action="fiche-tente" aria-label="Case de la tente, vide : prendre la tente de l'inventaire" title="Tente"><span aria-hidden="true">${o.icone}</span></button>`;
+  return `<button type="button" class="fiche-case tente" data-action="fiche-tente" aria-label="${o.nom} : portée (pour dormir loin de la ferme). La ranger" title="${o.nom} : portée"><span class="fiche-case-icone" aria-hidden="true">${o.icone}</span></button>`;
+}
+
 // Ce que fait une pièce, en une phrase (d'après data/equipement.json).
 export function effetTexte(item) {
   const p = pieceDef(item);
@@ -160,7 +169,7 @@ function ongletsHtml(ouvert) {
 export function renderFicheMembre() {
   const m = membreOuvert();
   if (!m) return '';
-  const cases = casesMembre(state, m.id).map((item, k) => caseHtml(m, k, item)).join('') + (estPrincipal(m) ? caseSacHtml() : '');
+  const cases = casesMembre(state, m.id).map((item, k) => caseHtml(m, k, item)).join('') + (estPrincipal(m) ? caseSacHtml() + caseTenteHtml() : '');
   return `
     <section class="fiche-membre" aria-label="Fiche de ${nomHtml(m)}">
       <div class="fiche-corps">
@@ -293,6 +302,12 @@ registerActions({
     }
   },
   'fiche-sac': () => openSac(),
+  // le récit, lot 8 : la tente, portée ou rangée
+  'fiche-tente': () => {
+    const portee = tentePortee(state);
+    const r = apres(applyResult(portee ? retirerTente(state) : poserTente(state)));
+    if (r.ok) notify(portee ? '⛺ La tente est rangée dans l\'inventaire.' : '⛺ Tu portes ta tente : loin de la ferme, la nuit, tu dormiras là où tu es (Dormir).');
+  },
   'sac-poser': (target) => {
     const r = apres(applyResult(poserSac(state, target.dataset.item)));
     if (r.ok) notify(`${DATA.OBJETS[r.item].icone} ${DATA.OBJETS[r.item].nom} : remplis-le avant de partir.`);

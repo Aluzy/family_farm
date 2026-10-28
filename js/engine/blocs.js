@@ -488,15 +488,23 @@ export function serreMurs(state) {
 
 // La famille dort-elle cette nuit ? Il faut une paillasse dans une pièce close pour le
 // personnage principal (la première lui revient).
+// (le récit, lot 8 : sous sa tente, loin de la ferme, le personnage principal a où dormir : le bivouac)
 export function nuitCouchee(state) {
-  return couchages(state).length > 0;
+  return couchages(state).length > 0 || bivouacEnCours(state);
+}
+
+// Le personnage principal dort-il sous sa tente cette nuit (state.bivouac : { case }, night.js) ?
+export function bivouacEnCours(state) {
+  return !!(state && state.bivouac && Number.isInteger(state.bivouac.case));
 }
 
 // La nuit (runNight) : il faut une paillasse d'une pièce close par personne, le personnage
 // principal d'abord ; chaque membre sans couchage perd ATELIER.BONHEUR_SANS_COUCHAGE de bonheur.
 // Renvoie les membres sans couchage.
 export function nuitSansCouchage(state) {
-  const sans = dormeurs(state).slice(couchages(state).length);
+  // (sous sa tente, le personnage principal ne prend pas de couchage de la maison)
+  const d = bivouacEnCours(state) ? dormeurs(state).slice(1) : dormeurs(state);
+  const sans = d.slice(couchages(state).length);
   for (const m of sans) setHappiness(m, memberHappiness(m) + DATA.ATELIER.BONHEUR_SANS_COUCHAGE);
   return sans;
 }
@@ -528,7 +536,7 @@ export function poseStatus(state, sorte, tile) {
   if (!s) return { ok: false, raison: 'Bloc inconnu.' };
   const T = farmTerrain(state);
   if (!Number.isInteger(tile) || tile < 0 || tile >= tileCount(T)) return { ok: false, raison: 'Hors de la ferme.' };
-  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.frigo ? 'Achète d\'abord le Réfrigérateur (sa fenêtre, dans les Installations).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier (Meubles).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: sorte === 'atelier' ? 'L\'Atelier est déjà posé (ou pas encore construit).' : s.frigo ? 'Achète d\'abord le Réfrigérateur (sa fenêtre, dans les Installations).' : s.meuble ? `Plus de ${s.nom.toLowerCase()} : achète-en un dans un hameau (l'ébéniste de Bois-Joli, les tapis des Genêts).` : s.marche ? `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` : s.semis ? `Plus de ${s.nom.toLowerCase()} : abats ${s.semis === 'pin' ? 'un sapin' : 'un arbre'} pour en avoir.` : `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
   // le bloc clé d'un bâtiment (ou la meule du Moulin) : pas avant le niveau où il se débloque
   const verrou = s.batiment || s.debloque;
   if (verrou && !isUnlocked(state, verrou)) return { ok: false, raison: `${s.nom} : se pose à partir du niveau ${unlockLevel(verrou)}.` };

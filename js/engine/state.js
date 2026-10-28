@@ -9,7 +9,7 @@ import {
 import { makePlot, seedItem, startPlots, zoneTile } from './crops.js';
 import { newStableReport } from './animals.js';
 import { newTechPoints } from './techtree.js';
-import { newCommerce } from './commerce.js';
+import { remboursementCommerce } from './ile.js';
 import { newAutoReport, robotOn, robotStation } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
 import { newTutorial } from './alerts.js';
@@ -28,6 +28,7 @@ import { convertirPartie, graineDemenagement } from './demenagement.js';
 import { nouvelEquipement } from './equipement.js';
 import { BIENVENUE, nouvelleBienvenue } from './bienvenue.js';
 import { nouveauCompagnon } from './compagnon.js';
+import { nouveauRecit } from './recit.js';
 
 // Lot 2 : inventaire de départ, potager, famille et compte rendu de la nuit.
 // Lot 3 : l'inventaire de départ, en lots à conservation pleine.
@@ -88,7 +89,6 @@ function startLot8() {
   return {
     serre: { construit: false, niveau: 1, parcelles: [] },
     verger: { construit: false, places: DATA.VERGER.EMPLACEMENTS_DEPART, achetes: 0, compteur: 0, arbres: [] },
-    commerce: newCommerce(), // version 1.14 : le commerce du niveau 10
     frigo: { construit: false, niveau: 1, appareil: null, items: {}, alimenteMs: 0, eveilMs: 0, panneNuit: false, alimente: true },
   };
 }
@@ -130,6 +130,9 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     // fiche 19 : le compagnon aide à la ferme (compagnon.js) : l'option, ce qu'il a fait aujourd'hui, sa
     // cruche. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
     compagnon: nouveauCompagnon(),
+    // le récit de Céron (recit.js, docs/recit/) : les faits, les relations, la confiance des hameaux, les
+    // répliques dites, le carnet. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
+    recit: nouveauRecit(),
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),
@@ -340,7 +343,8 @@ export const MIGRATIONS = {
   27: (state) => migrateFridgeCapacity(state),
   28: (state) => migrateDepart(state),
   29: (state) => migrateOrchard(state),
-  30: (state) => ({ ...state, version: 31, commerce: state.commerce && typeof state.commerce === 'object' ? state.commerce : newCommerce() }),
+  // (le commerce du niveau 10 : retiré en version 63, voir plus bas ; sa forme d'alors, pour la suite des migrations)
+  30: (state) => ({ ...state, version: 31, commerce: state.commerce && typeof state.commerce === 'object' ? state.commerce : { type: null, niveau: 1, quota: 10 } }),
   31: (state) => migrateFreeSoil(state),
   // FLU-06 : la bulle de la première houe en main ne s'affiche pas à qui a déjà labouré
   32: (state) => ({ ...state, version: 33, ...(state.potager && typeof state.potager === 'object' ? { potager: { ...state.potager, houeVue: !!(state.potager.houe && Array.isArray(state.potager.parcelles) && state.potager.parcelles.length) } } : {}) }),
@@ -512,6 +516,50 @@ export const MIGRATIONS = {
     const b = nouvelleBienvenue();
     if ((Number(state.day) || 1) > BIENVENUE.JOUR) b.etat = 'faite';
     return { ...state, bienvenue: b, version: 62 };
+  },
+  // v62 → v63 : le récit, lot 7 (l'économie de l'île) : les commerces du niveau 10 disparaissent (la veillée à
+  // la ferme les remplace) ; ce qui y avait été mis est rendu (remboursementCommerce, js/engine/ile.js),
+  // compté comme un gain de la journée (compta : remboursement).
+  62: (state) => {
+    const { commerce, ...reste } = state;
+    const rendu = remboursementCommerce(commerce);
+    const out = { ...reste, version: 63 };
+    if (rendu > 0) {
+      out.pieces = (Number(state.pieces) || 0) + rendu;
+      out.remboursementCommerce = rendu;
+    }
+    return out;
+  },
+  // v63 → v64 : le récit, lot 9 (l'enveloppe de Maurice). La seconde lettre du notaire apporte l'enveloppe (un
+  // objet) au lieu de ses 15 000 pièces : une partie qui les a déjà reçues l'a ouverte (le fait
+  // « enveloppe.ouverte », pour la fin de l'aventure) ; une partie qui a la lettre sans l'avoir ouverte reçoit
+  // l'enveloppe dans son inventaire (la lettre est marquée : ses pièces ne seront plus versées).
+  // Les nouvelles lettres d'Adèle dont le moment est passé (la première récolte : le chapitre 3 atteint ; la
+  // première veillée, déjà faite) arrivent déjà lues, à leur place dans le courrier : rien n'est annoncé.
+  63: (state) => {
+    const out = { ...state, version: 64 };
+    if (Array.isArray(state.courrier)) {
+      const j = Math.max(1, Math.floor(Number(state.day) || 1));
+      const faits = state.recit && state.recit.faits && typeof state.recit.faits === 'object' ? state.recit.faits : {};
+      const passees = [];
+      if (state.campagne && Number(state.campagne.chapitre) >= 3) passees.push('adele_recolte');
+      if (Array.isArray(faits['veillee.1'])) passees.push('adele_veillee');
+      const ont = new Set(state.courrier.map((x) => x && x.id));
+      out.courrier = [...state.courrier, ...passees.filter((id) => !ont.has(id)).map((id) => ({ id, nuit: j, lu: true }))];
+    }
+    const l = Array.isArray(out.courrier) ? out.courrier.find((x) => x && x.id === 'notaire_legs') : null;
+    if (!l) return out;
+    if (l.verse) {
+      const r = out.recit && typeof out.recit === 'object' && !Array.isArray(out.recit) ? out.recit : nouveauRecit();
+      const faits = r.faits && typeof r.faits === 'object' && !Array.isArray(r.faits) ? r.faits : {};
+      const j = Math.max(1, Math.floor(Number(state.day) || 1));
+      if (!Array.isArray(faits['enveloppe.ouverte'])) faits['enveloppe.ouverte'] = [j, j, 1];
+      out.recit = { ...r, faits };
+    } else {
+      out.courrier = out.courrier.map((x) => (x === l ? { ...x, verse: true } : x));
+      addItem(out, DATA.RECIT.ENVELOPPE.OBJET, 1);
+    }
+    return out;
   },
 };
 

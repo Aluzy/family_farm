@@ -11,7 +11,6 @@ import { energyMax, restoreEnergy, wakeEnergy } from './stamina.js';
 import { feedLivestock, fillSilo, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
 import { chevalNuit } from './cheval.js';
 import { growOrchard } from './orchard.js';
-import { commerceNight } from './commerce.js';
 import { finishPreparations } from './kitchen.js';
 import { refreshUnlocks } from './techtree.js';
 import { autoMaintain, autoTasks, newAutoReport, rainNight, robotNight } from './automation.js';
@@ -22,8 +21,10 @@ import { regrowGrass, respawnBushes, respawnRocks, respawnTrees } from './outils
 import { repousseMonde } from './monde-recolte.js';
 import { habitantsNuit } from './habitants.js';
 import { bienvenueNuit } from './bienvenue.js';
+import { recitNuit } from './recit.js';
 import { remplirRuches } from './ruches.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
+import { enExpedition, tentePortee } from './equipement.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
 // ce que la famille a mangé dans la journée (repas.js ; énergie au réveil), puis pousse. Lot 4 : la
@@ -44,7 +45,7 @@ import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 // mange sa paille juste après l'Étable (chevalNuit, js/engine/cheval.js).
 // Chaque étape reçoit l'état et le modifie.
 // La pousse des cultures n'en fait plus partie : elle suit l'horloge (growDue).
-export const NIGHT_STEPS = [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, chevalNuit, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, robotNight, fridgeNight, fillSilo, spoil];
+export const NIGHT_STEPS = [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, chevalNuit, growOrchard, finishPreparations, autoMaintain, nightPower, robotNight, fridgeNight, fillSilo, spoil];
 
 /* ---------- la nuit ---------- */
 
@@ -98,8 +99,6 @@ export function buildMorningReport(state) {
     // Lot 8 : fruits du verger, nuit du frigo (mWh prélevés, panne de froid, lots
     // qui ont perdu une nuit) et contenu du frigo.
     fruits: { ...(state.nuit.fruits || {}) },
-    // Version 1.14 : ce que le commerce a vendu cette nuit.
-    commerce: { type: null, n: 0, pieces: 0, ...(state.nuit.commerce || {}) },
     frigo: {
       construit: !!state.frigo.construit,
       mwh: (state.nuit.frigo || {}).mwh || 0,
@@ -154,6 +153,7 @@ export function sleep(state) {
   growDue(state);
   report.energieReveil = state.energie;
   report.pretes = readyCrops(state);
+  state.bivouac = null;
   return report;
 }
 
@@ -188,6 +188,7 @@ export function advanceNight(state, dtMs) {
   if (n.ms >= nightLengthMs()) {
     state.nuitEnCours = null;
     state.reveil = true;
+    state.bivouac = null; // (le récit, lot 8 : la tente se replie au réveil)
     // l'énergie et les plantes mûres au réveil, pas à minuit
     if (state.report) { state.report.energieReveil = state.energie; state.report.pretes = readyCrops(state); }
     event = 'reveil';
@@ -230,6 +231,18 @@ export function goToSleep(state) {
   return { ok: true };
 }
 
+// Le bivouac (le récit, lot 8) : loin de la ferme (enExpedition), la nuit, sa tente portée, le personnage
+// dort là où il est (state.bivouac = { case, jour }) au lieu de rentrer à son lit ; l'énergie remonte comme
+// dans un lit (nuitCouchee) ; la famille dort à la ferme. Le bivouac finit avec la nuit.
+export function dormirSousTente(state) {
+  if (!nightActive(state)) return fail(`On ne dort que la nuit, de ${DATA.TEMPS.HEURE_NUIT} h à ${DATA.TEMPS.HEURE_REVEIL} h.`);
+  if (!tentePortee(state)) return fail('Il te faut ta tente (à porter, dans ta fiche).');
+  if (!enExpedition(state)) return fail('À la ferme, on dort dans son lit.');
+  state.bivouac = { case: state.monde.ici, jour: state.day };
+  state.nuitEnCours.dort = true;
+  return { ok: true };
+}
+
 // Le personnage dort-il dans son lit ?
 export function asleep(state) {
   return nightActive(state) && !!state.nuitEnCours.dort;
@@ -261,6 +274,8 @@ export function runNight(state) {
   habitantsNuit(state);
   // la visite de bienvenue (bienvenue.js, fiche 18) qui n'a pas eu lieu : son plat attend devant la porte
   bienvenueNuit(state);
+  // le récit (recit.js, docs/recit/) : le niveau de l'empreinte de la ferme, la dérive de la confiance des hameaux
+  recitNuit(state);
   recordNight(state); // Lot 9 : autonomie de la nuit, séries et tenue (nuit encore = state.day)
   state.day += 1;
   state.awakeMs = 0;
