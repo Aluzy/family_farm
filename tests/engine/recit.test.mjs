@@ -72,11 +72,11 @@ test('récit : les faits gardent leur premier jour, leur dernier jour et leur no
 test('récit : les relations sont des entiers bornés, rangés en paliers', () => {
   const s = nouvelle();
   assertEqual([relation(s, 'achille'), palier(s, 'achille'), palierNom(s, 'achille')], [0, 0, 'inconnu']);
-  assertEqual(ajouterRelation(s, 'achille', 12.6), 13);
+  assertEqual(ajouterRelation(s, 'achille', 12.6), { ok: true, valeur: 13 });
   assertEqual([palier(s, 'achille'), palierNom(s, 'achille')], [1, 'poli']);
-  assertEqual(ajouterRelation(s, 'achille', 500), RECIT.RELATION_MAX);
+  assertEqual(ajouterRelation(s, 'achille', 500).valeur, RECIT.RELATION_MAX);
   assertEqual(palierNom(s, 'achille'), 'intime');
-  assertEqual(ajouterRelation(s, 'achille', -1000), 0);
+  assertEqual(ajouterRelation(s, 'achille', -1000).valeur, 0);
   assert(!ajouterRelation(s, 'personne', 5).ok, 'un personnage inconnu est refusé');
   assertEqual(Object.keys(recitDe(s).relations), ['achille']);
 });
@@ -84,7 +84,7 @@ test('récit : les relations sont des entiers bornés, rangés en paliers', () =
 test('récit : la confiance des hameaux part de DEPART et se range en trois niveaux', () => {
   const s = nouvelle();
   assertEqual([confiance(s, 'h3'), niveauConfiance(s, 'h3')], [RECIT.CONFIANCE.DEPART, 'cordiale']);
-  ajouterConfiance(s, 'h3', 25);
+  assertEqual(ajouterConfiance(s, 'h3', 25), { ok: true, valeur: 75 });
   assertEqual([confiance(s, 'h3'), niveauConfiance(s, 'h3')], [75, 'chaleureuse']);
   ajouterConfiance(s, 'h3', -70);
   assertEqual([confiance(s, 'h3'), niveauConfiance(s, 'h3')], [5, 'reservee']);
@@ -110,6 +110,9 @@ test('récit : un acte s\'ouvre avec son chapitre ET ses nuits', () => {
   s.campagne.chapitre = 7;
   assertEqual(acteEnCours(a(s, 30)), 3);
   assertEqual(acteEnCours(a(s, 46)), 4);
+  // la campagne finie compte pour tous ses chapitres (chapterReached), même si `chapitre` est resté en arrière
+  s.campagne.chapitre = 5;
+  assertEqual(acteEnCours(s), 3);
   s.campagne.fini = true;
   assertEqual(acteEnCours(s), 4, 'la campagne finie : le dernier acte');
 });
@@ -119,6 +122,10 @@ test('récit : les conditions de chaque sorte', () => {
   const vrai = (q, qui = 'achille', ctx = {}) => conditionsVraies(s, q, qui, ctx);
   assert(vrai({}), 'aucune condition : vrai');
   assertEqual([vrai({ heure: [18, 22] }), vrai({ heure: [6, 12] }), vrai({ heure: [19, 3] }), vrai({ heure: [22, 6] })], [true, false, true, false]);
+  // le côté matin d'une plage qui passe minuit (2 h, la nuit en cours)
+  const nuit = a(nouvelle(), 5, 10);
+  nuit.nuitEnCours = { ms: 4 * DATA.TEMPS.SECONDES_PAR_HEURE * 1000, minuit: true };
+  assertEqual([conditionsVraies(nuit, { heure: [22, 6] }), conditionsVraies(nuit, { heure: [6, 22] })], [true, false]);
   assertEqual([vrai({ lune: 'pleine' }), vrai({ lune: ['nouvelle', 'pleine'] }), vrai({ lune: 'nouvelle' })], [true, true, false]);
   assertEqual([vrai({ lieu: 'ferme' }, 'achille', { lieu: 'ferme' }), vrai({ lieu: ['h1', 'h2'] }, 'achille', { lieu: 'ferme' }), vrai({ lieu: 'ferme' })], [true, false, false]);
   ajouterRelation(s, 'achille', 30);
@@ -129,6 +136,10 @@ test('récit : les conditions de chaque sorte', () => {
   assertEqual([vrai({ fait_recent: 'x' }), vrai({ fait_souvenir: 'x' }), vrai({ fait_recent: 'y' })], [true, true, false]);
   assertEqual([vrai({ acte_min: 1 }), vrai({ acte_min: 2 }), vrai({ acte_max: 1 })], [true, false, true]);
   assertEqual([vrai({ chapitre_min: 1 }), vrai({ chapitre_min: 2 }), vrai({ jour_min: s.day }), vrai({ jour_min: s.day + 1 })], [true, false, true, false]);
+  assertEqual([vrai({ jour_max: s.day }), vrai({ jour_max: s.day - 1 })], [true, false]);
+  assertEqual(vrai({ installee: true }), true);
+  const avantDepart = createNewGame(9);
+  assertEqual([conditionsVraies(avantDepart, { installee: true }), conditionsVraies(avantDepart, { installee: false })], [false, true]);
   const genre = s.famille.membres.find((m) => m.id === s.famille.principal).genre;
   assertEqual([vrai({ genre }), vrai({ genre: genre === 'f' ? 'm' : 'f' })], [true, false]);
   assertEqual([vrai({ enfants: true }), vrai({ enfants: false })], [true, false]);
@@ -167,8 +178,8 @@ test('récit : la réplique choisie est la plus prioritaire, et le choix est dé
 });
 
 test('récit : parler note la réplique ; « une fois » ne revient pas, le repos se compte en jours', () => {
-  const s = a(nouvelle(), jourDeLune('croissante'), 10);
-  noterFait(s, 'odile.rencontre');
+  const s = a(nouvelle(), jourDeLune('decroissante'), 10);
+  noterFait(s, ['odile.rencontre', 'odile.tutoie']);
   ajouterRelation(s, 'odile', 30);
   // « odile.enfants » (une fois, 15) d'abord
   assertEqual(parler(s, 'odile').id, 'odile.enfants');
@@ -239,4 +250,55 @@ test('récit : une ancienne partie sans récit le retrouve vide, sans changer de
   pasObjet.recit = 7;
   reparerPartie(pasObjet);
   assertEqual(pasObjet.recit, nouveauRecit());
+});
+
+test('récit : les effets d\'une réplique (fait, relation, confiance) passent par parler', () => {
+  const s = a(nouvelle(), 3, 10);
+  const essai = { id: 'essai.effets', qui: 'fernand', quand: {}, texte: 'Essai.', priorite: 100, une_fois: true, effet: { fait: ['essai.a', 'essai.b'], relation: 7, confiance: -4 } };
+  RECIT.REPLIQUES.push(essai);
+  try {
+    assertEqual(parler(s, 'fernand', { hameau: 'h9' }).id, 'essai.effets');
+    assertEqual([aFait(s, 'essai.a'), aFait(s, 'essai.b'), relation(s, 'fernand'), confiance(s, 'h9')], [true, true, 7, RECIT.CONFIANCE.DEPART - 4]);
+    // sans hameau dans le contexte, l'effet de confiance ne s'applique nulle part
+    recitDe(s).dites = {};
+    parler(s, 'fernand');
+    assertEqual([relation(s, 'fernand'), Object.keys(recitDe(s).confiance)], [14, ['h9']]);
+  } finally {
+    RECIT.REPLIQUES.splice(RECIT.REPLIQUES.indexOf(essai), 1);
+  }
+});
+
+test('récit : les entrées abîmées de la sauvegarde ne faussent rien', () => {
+  const s = a(nouvelle(), 10);
+  const r = recitDe(s);
+  r.faits = { texte: [1, 2, 'z'], lettres: ['a', 'b', 'c'], vides: [null, null, null], court: [1, 2] };
+  for (const id of Object.keys(r.faits)) assertEqual([aFait(s, id), ageFait(s, id), foisFait(s, id)], [false, null, 0], id);
+  assert(noterFait(s, 'texte'), 'une entrée abîmée se refait comme une première fois');
+  assertEqual(r.faits.texte, [10, 10, 1]);
+  // un texte n'est pas un nombre : ni pour la relation, ni pour la confiance
+  r.relations.achille = '30';
+  r.confiance.h1 = '70';
+  assertEqual([relation(s, 'achille'), confiance(s, 'h1')], [0, RECIT.CONFIANCE.DEPART]);
+});
+
+test('récit : l\'arrivée ne se joue ni avant le départ, ni dans une partie avancée', () => {
+  assertEqual(scenesPossibles(createNewGame(4)), [], 'la famille n\'est pas encore composée');
+  const vieille = a(nouvelle(), 150);
+  vieille.campagne.chapitre = 7;
+  delete vieille.recit;
+  const m = migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(vieille)) });
+  assertEqual(scenesPossibles(m, { lieu: 'ferme' }), ['achille_cle'], 'une ancienne partie : la clé, pas l\'arrivée');
+});
+
+test('récit : Odile vouvoie jusqu\'à ce qu\'elle tutoie', () => {
+  const s = a(nouvelle(), 3, 10);
+  jouerScene(s, 'arrivee');
+  s.campagne.chapitre = 2;
+  jouerScene(s, 'achille_cle', { lieu: 'ferme' });
+  jouerScene(s, 'odile_maison', { lieu: 'maison_maurice' });
+  const vues = new Set();
+  for (let n = 0; n < 30; n++) { const r = choisirReplique(s, 'odile', { n }); if (r) vues.add(r.id); }
+  assertEqual([...vues], ['odile.vous'], 'avant la première veillée, seulement le vouvoiement');
+  noterFait(s, 'odile.tutoie');
+  assert(!repliquesPossibles(s, 'odile').some((e) => e.id === 'odile.vous'), 'ensuite, plus jamais');
 });

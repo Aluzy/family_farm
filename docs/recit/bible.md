@@ -37,7 +37,7 @@ Les dates sont comptées depuis l'arrivée du joueur (année 0). Âges retenus :
 | Année 0 | Le joueur et sa famille arrivent à Céron par le bac. |
 | il y a 1 an | Mort de Maurice. Le joueur hérite de sa terre sauvage. |
 | il y a 17 ans | Maurice prend sa retraite et passe la tournée à Achille, qu'il a formé. Les maisons qu'il entretenait commencent lentement à se dégrader. |
-| il y a environ 35 ans | Johnny, explorateur scientifique déjà amnésique, arrive en bateau ; le bateau s'échoue sur la plage (l'épave). Il cache une pierre de lune, puis oublie tout, jusqu'à l'avoir rapportée. Maurice le découvre, lui rend visite pendant ses tournées, lui apporte des repas. |
+| il y a environ 35 ans | Johnny, explorateur scientifique sujet à l'amnésie, arrive en bateau ; le bateau s'échoue sur la plage (l'épave). Il cache une pierre de lune, puis oublie où, et jusqu'à l'avoir rapportée. Maurice le découvre, lui rend visite pendant ses tournées, lui apporte des repas. |
 | il y a 30 ans | Naissance du joueur à Cadolon. Bastien, son père, artiste, part en tournée sur le continent américain pendant la grossesse et ne revient pas. Adèle revient plusieurs fois à Céron avec le joueur enfant, chercher des souvenirs de sa mère. |
 | il y a environ 50 ans | Frida, jeune naturaliste, arrive en expédition d'observation de la faune et de la flore, et reste. Elle s'occupe d'Adèle toute petite quand Maurice est sur les routes. Plus tard, relation avec Maurice. |
 | il y a 41 ans | Adèle, adolescente, part en internat à Cadolon ; elle y fait ses études et y reste. |

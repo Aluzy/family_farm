@@ -15,7 +15,7 @@
     "ACTES : les quatre actes de l'aventure ; un acte s'ouvre quand la campagne a atteint son chapitre ET que",
     "la famille a passé ses nuits sur l'île (docs/recit/aventure.md : les planchers de nuits).",
     "BULLE_MAX : la longueur d'une bulle ou d'une ligne de scène, en caractères ({prenom} compté pour",
-    "FAMILLE.PROFIL.PRENOM_MAX, {nom} pour DEPART.NOM_MAX, une autre variable pour VARIABLE_MAX).",
+    "FAMILLE.PROFIL.PRENOM_MAX, {nom} pour DEPART.NOM_MAX, les autres : voir plus bas).",
     "PERSONNAGES : les personnages écrits (docs/recit/personnages.md) ; nom, rôle et lieu de vie.",
     "",
     "Une réplique : { id, qui (un personnage), quand (les conditions), texte (une chaîne, ou { m, f } selon le",
@@ -26,13 +26,16 @@
     "pleine, decroissante, nouvelle), lieu (un lieu ou une liste : celui que la page donne), palier_min /",
     "palier_max (la relation avec `qui`, par rang de palier), confiance_min / confiance_max (le hameau où l'on",
     "est), fait / sans_fait (un fait ou une liste : tous présents / aucun), fait_recent / fait_souvenir (un fait",
-    "noté il y a au plus AGES.RECENT / AGES.SOUVENIR jours), acte_min / acte_max, chapitre_min, jour_min, genre",
+    "noté il y a au plus AGES.RECENT / AGES.SOUVENIR jours), acte_min / acte_max, chapitre_min, jour_min / jour_max,",
+    "installee (true : la famille est composée), genre",
     "(m ou f : le personnage principal), enfants (true / false : la famille a des enfants), humeur (une humeur",
     "ou une liste : celle que la page donne).",
     "Effets (effet) : fait (un fait ou une liste, noté avec son jour), relation (des points pour `qui`, ou",
     "{ personnage: points }), confiance (des points pour le hameau où l'on est), fragment (une page du carnet).",
     "Variables d'un texte : {prenom} (le personnage principal), {nom} (la famille), et celles que la page donne",
-    "(VARIABLES)."
+    "(VARIABLES). Pour la longueur d'une bulle, {hameau} compte pour le plus long nom de hameau (PLAN_MONDE.HAMEAUX),",
+    "{objet} pour le plus long nom d'objet (OBJETS) avec son article, une autre variable pour VARIABLE_MAX.",
+    "HUMEURS : celles que la page peut donner (celles des foyers des hameaux, habitants.js)."
   ],
   "RECIT": {
     "RELATION_MAX": 100,
@@ -48,6 +51,7 @@
     ],
     "BULLE_MAX": 110,
     "VARIABLE_MAX": 16,
+    "HUMEURS": ["heureux", "content", "triste", "faim"],
     "VARIABLES": ["hameau", "objet", "quand"],
     "PERSONNAGES": {
       "adele": { "nom": "Adèle", "role": "la mère du personnage principal", "lieu": "Cadolon" },
@@ -100,7 +104,7 @@
     "SCENES": [
       {
         "id": "arrivee",
-        "quand": { "jour_min": 1, "sans_fait": "arrivee" },
+        "quand": { "installee": true, "jour_max": 1, "sans_fait": "arrivee" },
         "priorite": 100,
         "lignes": [
           { "qui": "fernand", "texte": "Les héritiers de Maurice. Ça se voit, vous avez l'air perdus." },
@@ -110,10 +114,10 @@
       },
       {
         "id": "arrivee_enfants",
-        "quand": { "fait": "arrivee", "sans_fait": "arrivee_enfants", "enfants": true, "jour_min": 1 },
+        "quand": { "installee": true, "jour_max": 1, "fait": "arrivee", "sans_fait": "arrivee_enfants", "enfants": true },
         "priorite": 90,
         "lignes": [
-          { "qui": "fernand", "texte": "Toi, le petit, tu tiendras pas une semaine sans écran. On parie ?" }
+          { "qui": "fernand", "texte": "Et ces petits-là, ils tiendront pas une semaine sans écran. On parie ?" }
         ],
         "effet": { "fait": "arrivee_enfants" }
       },
@@ -152,11 +156,11 @@
       { "id": "achille.pleine", "qui": "achille", "quand": { "lune": "pleine" }, "texte": "Pleine lune. Ce soir, tout le monde est dehors. Même moi.", "priorite": 20, "repos_jours": 10 },
       { "id": "achille.vente_recente", "qui": "achille", "quand": { "fait_recent": "vente.caleche" }, "texte": "Ce que tu m'as vendu est parti en une matinée. Continue.", "priorite": 40, "repos_jours": 7 },
       { "id": "odile.vous", "qui": "odile", "quand": { "fait": "odile.rencontre", "sans_fait": "odile.tutoie" }, "texte": "Bonjour. Vous tenez le coup, là-haut ?", "priorite": 10, "repos_jours": 2 },
-      { "id": "odile.nuits_noires", "qui": "odile", "quand": { "lune": "nouvelle", "fait": "odile.rencontre" }, "texte": "On ne sème pas aux nuits noires. Ta mère non plus ne m'écoutait pas.", "priorite": 60, "repos_jours": 14 },
+      { "id": "odile.nuits_noires", "qui": "odile", "quand": { "lune": "nouvelle", "fait": ["odile.rencontre", "odile.tutoie"] }, "texte": "On ne sème pas aux nuits noires. Ta mère non plus ne m'écoutait pas.", "priorite": 60, "repos_jours": 14 },
       { "id": "odile.croissante", "qui": "odile", "quand": { "lune": "croissante", "fait": "odile.tutoie" }, "texte": "On sème quand elle monte. Ce qui monte avec la lune pousse avec elle.", "priorite": 20, "repos_jours": 14 },
-      { "id": "odile.maigre", "qui": "odile", "quand": { "fait": "odile.rencontre", "palier_min": 1 }, "texte": "Tu manges, au moins ? Adèle avait dit que je te trouverais maigre.", "priorite": 10, "repos_jours": 6 },
-      { "id": "odile.enfants", "qui": "odile", "quand": { "fait": "odile.rencontre", "enfants": true }, "texte": "Et tes petits, ils savent ce que c'est, une nuit noire ?", "priorite": 15, "une_fois": true },
-      { "id": "odile.maison", "qui": "odile", "quand": { "fait": "odile.rencontre", "palier_min": 2 }, "texte": "La maison de Maurice respire mieux quand quelqu'un y passe.", "priorite": 10, "repos_jours": 7 },
+      { "id": "odile.maigre", "qui": "odile", "quand": { "fait": ["odile.rencontre", "odile.tutoie"], "palier_min": 1 }, "texte": "Tu manges, au moins ? Adèle avait dit que je te trouverais maigre.", "priorite": 10, "repos_jours": 6 },
+      { "id": "odile.enfants", "qui": "odile", "quand": { "fait": ["odile.rencontre", "odile.tutoie"], "enfants": true }, "texte": "Et tes petits, ils savent ce que c'est, une nuit noire ?", "priorite": 15, "une_fois": true },
+      { "id": "odile.maison", "qui": "odile", "quand": { "fait": ["odile.rencontre", "odile.tutoie"], "palier_min": 2 }, "texte": "La maison de Maurice respire mieux quand quelqu'un y passe.", "priorite": 10, "repos_jours": 7 },
       { "id": "fernand.peche", "qui": "fernand", "quand": { "fait": "arrivee" }, "texte": "Là-bas, on aurait fait une réunion pour ça. Ici, on pêche.", "priorite": 10, "repos_jours": 5 },
       { "id": "fernand.calme", "qui": "fernand", "quand": { "fait": "arrivee", "heure": [5, 9] }, "texte": "Tu fais du bruit. Les poissons aussi ont des oreilles.", "priorite": 15, "repos_jours": 6 },
       { "id": "fernand.cadolon", "qui": "fernand", "quand": { "palier_min": 2 }, "texte": "Tu regrettes Cadolon ? Moi, quarante ans. Puis plus du tout.", "priorite": 10, "une_fois": true }

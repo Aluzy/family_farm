@@ -48,6 +48,10 @@ const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const liste = (v) => (v === undefined || v === null ? [] : Array.isArray(v) ? v : [v]);
 const entier = (v) => Math.round(Number(v) || 0);
 const borne = (v, max) => Math.max(0, Math.min(max, entier(v)));
+// Un nombre de la sauvegarde (relation, confiance) : un nombre fini, sinon rien (un texte n'en est pas un).
+const nombre = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+// Une entrée de fait saine : trois entiers [premier jour, dernier jour, nombre de fois], sinon rien.
+const faitSain = (f) => Array.isArray(f) && f.length === 3 && f.every((x) => Number.isInteger(x)) ? f : null;
 const jourDe = (state) => Math.max(1, Math.floor(Number(state && state.day) || 1));
 
 // Le récit de la partie (réparé au besoin : un champ manquant ou d'un autre type est remis vide).
@@ -68,27 +72,28 @@ export function noterFait(state, fait) {
   let premier = false;
   liste(fait).forEach((id, i) => {
     if (typeof id !== 'string' || !id) return;
-    const f = r.faits[id];
-    if (Array.isArray(f) && f.length === 3) r.faits[id] = [f[0], j, f[2] + 1];
+    const f = faitSain(r.faits[id]);
+    if (f) r.faits[id] = [f[0], j, f[2] + 1];
     else { r.faits[id] = [j, j, 1]; if (i === 0) premier = true; }
   });
   return premier;
 }
 
+// (une entrée abîmée de la sauvegarde compte comme un fait jamais noté : le prochain noterFait la refait)
 export function aFait(state, id) {
-  return Array.isArray(recitDe(state).faits[id]);
+  return !!faitSain(recitDe(state).faits[id]);
 }
 
 // Le nombre de fois qu'un fait a été noté (0 s'il ne l'a jamais été).
 export function foisFait(state, id) {
-  const f = recitDe(state).faits[id];
-  return Array.isArray(f) ? f[2] : 0;
+  const f = faitSain(recitDe(state).faits[id]);
+  return f ? f[2] : 0;
 }
 
 // L'âge d'un fait, en jours depuis la dernière fois qu'il a été noté (0 : aujourd'hui), ou null.
 export function ageFait(state, id) {
-  const f = recitDe(state).faits[id];
-  return Array.isArray(f) ? Math.max(0, jourDe(state) - f[1]) : null;
+  const f = faitSain(recitDe(state).faits[id]);
+  return f ? Math.max(0, jourDe(state) - f[1]) : null;
 }
 
 // « recent », « souvenir » ou « ancien » (AGES) ; null pour un fait jamais noté.
@@ -101,15 +106,16 @@ export function ageSouvenir(state, id) {
 /* ---------- les relations ---------- */
 
 export function relation(state, perso) {
-  return borne(recitDe(state).relations[perso], RECIT.RELATION_MAX);
+  const v = nombre(recitDe(state).relations[perso]);
+  return v === null ? 0 : borne(v, RECIT.RELATION_MAX);
 }
 
-// Ajoute (ou retire) des points de relation à un personnage écrit ; renvoie la nouvelle valeur.
+// Ajoute (ou retire) des points de relation à un personnage écrit : { ok, valeur } (la nouvelle valeur).
 export function ajouterRelation(state, perso, points) {
   if (!RECIT.PERSONNAGES[perso]) return fail('Personnage inconnu.');
   const r = recitDe(state);
   r.relations[perso] = borne(relation(state, perso) + entier(points), RECIT.RELATION_MAX);
-  return r.relations[perso];
+  return { ok: true, valeur: r.relations[perso] };
 }
 
 // Le rang du palier (0 : inconnu … 4 : intime).
@@ -127,18 +133,20 @@ export function palierNom(state, perso) {
 /* ---------- la confiance des hameaux ---------- */
 
 export function confiance(state, hameau) {
-  const v = recitDe(state).confiance[hameau];
-  return typeof v === 'number' && Number.isFinite(v) ? borne(v, RECIT.CONFIANCE.MAX) : RECIT.CONFIANCE.DEPART;
+  const v = nombre(recitDe(state).confiance[hameau]);
+  return v === null ? RECIT.CONFIANCE.DEPART : borne(v, RECIT.CONFIANCE.MAX);
 }
 
+// Ajoute (ou retire) des points de confiance à un hameau : { ok, valeur } (la nouvelle valeur).
 export function ajouterConfiance(state, hameau, points) {
   if (typeof hameau !== 'string' || !hameau) return fail('Hameau inconnu.');
   const r = recitDe(state);
   r.confiance[hameau] = borne(confiance(state, hameau) + entier(points), RECIT.CONFIANCE.MAX);
-  return r.confiance[hameau];
+  return { ok: true, valeur: r.confiance[hameau] };
 }
 
-// « reservee », « cordiale » ou « chaleureuse ».
+// « reservee », « cordiale » ou « chaleureuse » : le plus haut niveau atteint (les seuils sont croissants,
+// le premier à 0 : build-data.mjs le vérifie).
 export function niveauConfiance(state, hameau) {
   const v = confiance(state, hameau);
   let nom = null;
@@ -221,6 +229,10 @@ export function conditionsVraies(state, quand, qui = null, ctx = {}) {
       case 'acte_max': if (acteEnCours(state) > v) return false; break;
       case 'chapitre_min': if (!state.campagne || chapterReached(state) < v) return false; break;
       case 'jour_min': if (jourDe(state) < v) return false; break;
+      // (jour_max : une scène de début de partie ne se joue pas dans une partie plus avancée ; installee :
+      // la famille est composée — une partie neuve, avant l'écran de départ, ne l'est pas)
+      case 'jour_max': if (jourDe(state) > v) return false; break;
+      case 'installee': if ((!state.famille || state.famille.configuree !== false) !== v) return false; break;
       case 'genre': if (genreJoueur(state) !== v) return false; break;
       case 'enfants': if (aDesEnfants(state) !== v) return false; break;
       case 'humeur': if (!liste(v).includes(ctx.humeur)) return false; break;

@@ -3920,6 +3920,7 @@ export const RAW_DATA = {
     ],
     "BULLE_MAX": 110,
     "VARIABLE_MAX": 16,
+    "HUMEURS": ["heureux", "content", "triste", "faim"],
     "VARIABLES": ["hameau", "objet", "quand"],
     "PERSONNAGES": {
       "adele": { "nom": "Adèle", "role": "la mère du personnage principal", "lieu": "Cadolon" },
@@ -3966,7 +3967,7 @@ export const RAW_DATA = {
     "SCENES": [
       {
         "id": "arrivee",
-        "quand": { "jour_min": 1, "sans_fait": "arrivee" },
+        "quand": { "installee": true, "jour_max": 1, "sans_fait": "arrivee" },
         "priorite": 100,
         "lignes": [
           { "qui": "fernand", "texte": "Les héritiers de Maurice. Ça se voit, vous avez l'air perdus." },
@@ -3976,9 +3977,9 @@ export const RAW_DATA = {
       },
       {
         "id": "arrivee_enfants",
-        "quand": { "fait": "arrivee", "sans_fait": "arrivee_enfants", "enfants": true, "jour_min": 1 },
+        "quand": { "installee": true, "jour_max": 1, "fait": "arrivee", "sans_fait": "arrivee_enfants", "enfants": true },
         "priorite": 90,
-        "lignes": [{ "qui": "fernand", "texte": "Toi, le petit, tu tiendras pas une semaine sans écran. On parie ?" }],
+        "lignes": [{ "qui": "fernand", "texte": "Et ces petits-là, ils tiendront pas une semaine sans écran. On parie ?" }],
         "effet": { "fait": "arrivee_enfants" }
       },
       {
@@ -4075,7 +4076,7 @@ export const RAW_DATA = {
       {
         "id": "odile.nuits_noires",
         "qui": "odile",
-        "quand": { "lune": "nouvelle", "fait": "odile.rencontre" },
+        "quand": { "lune": "nouvelle", "fait": ["odile.rencontre", "odile.tutoie"] },
         "texte": "On ne sème pas aux nuits noires. Ta mère non plus ne m'écoutait pas.",
         "priorite": 60,
         "repos_jours": 14
@@ -4091,7 +4092,7 @@ export const RAW_DATA = {
       {
         "id": "odile.maigre",
         "qui": "odile",
-        "quand": { "fait": "odile.rencontre", "palier_min": 1 },
+        "quand": { "fait": ["odile.rencontre", "odile.tutoie"], "palier_min": 1 },
         "texte": "Tu manges, au moins ? Adèle avait dit que je te trouverais maigre.",
         "priorite": 10,
         "repos_jours": 6
@@ -4099,7 +4100,7 @@ export const RAW_DATA = {
       {
         "id": "odile.enfants",
         "qui": "odile",
-        "quand": { "fait": "odile.rencontre", "enfants": true },
+        "quand": { "fait": ["odile.rencontre", "odile.tutoie"], "enfants": true },
         "texte": "Et tes petits, ils savent ce que c'est, une nuit noire ?",
         "priorite": 15,
         "une_fois": true
@@ -4107,7 +4108,7 @@ export const RAW_DATA = {
       {
         "id": "odile.maison",
         "qui": "odile",
-        "quand": { "fait": "odile.rencontre", "palier_min": 2 },
+        "quand": { "fait": ["odile.rencontre", "odile.tutoie"], "palier_min": 2 },
         "texte": "La maison de Maurice respire mieux quand quelqu'un y passe.",
         "priorite": 10,
         "repos_jours": 7

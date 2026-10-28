@@ -23,7 +23,8 @@ manuelle possible. Le moteur : `js/engine/recit.js` ; les textes : `data/recit.j
 5. On réagit aux actes, pas aux menus : pas de choix de réplique.
 6. Cohérence avec l'état du monde : personne ne dit « tout le monde dort » en étant debout, ne
    parle d'hiver, ou ne remercie d'un don qui n'a pas eu lieu.
-7. Le joueur est tutoyé. Exceptions voulues : le notaire, et Odile jusqu'à la première veillée.
+7. Le joueur est tutoyé. Exceptions voulues : le notaire, et Odile jusqu'à la première veillée de pleine
+   lune (fait `odile.tutoie`) ; ses répliques au tutoiement l'exigent.
 8. Le genre du personnage principal s'écrit par deux variantes (`{ "m": …, "f": … }`), jamais par
    « (e) ».
 
@@ -65,7 +66,8 @@ L'empreinte de la ferme n'est pas stockée : elle se calcule (lot 2).
 
 Conditions : `heure`, `lune`, `lieu`, `palier_min` / `palier_max`, `confiance_min` /
 `confiance_max`, `fait` / `sans_fait`, `fait_recent` / `fait_souvenir`, `acte_min` / `acte_max`,
-`chapitre_min`, `jour_min`, `genre`, `enfants`, `humeur`. Effets : `fait`, `relation`, `confiance`,
+`chapitre_min`, `jour_min` / `jour_max`, `installee` (la famille est composée), `genre`, `enfants`, `humeur`
+(une de `RECIT.HUMEURS`). Effets : `fait`, `relation`, `confiance`,
 `fragment`. Variables : `{prenom}`, `{nom}` et celles que la page donne (`hameau`, `objet`,
 `quand`). Le détail est dans l'en-tête de `data/recit.json` ; la validation dans
 `scripts/lib/data.mjs`.
@@ -96,7 +98,7 @@ Ordre de grandeur visé : environ 800 répliques (40 par personnage écrit, 120 
 
 | Axe | Condition | Exemple (Achille, à la ferme) |
 |---|---|---|
-| Relation | `palier_min`, `palier_max` | Poli : « Ho. Tu vends ou pas ? » Proche : « Ho. Garde-moi tes œufs, les Genêts en réclament. » |
+| Relation | `palier_min`, `palier_max` | Poli : « Ho. Tu vends ou pas ? » Cordial : « Ho. Garde-moi tes œufs, les Genêts en réclament. » |
 | Événements vécus | `fait`, `sans_fait`, âge du fait | « Pas mal, ta tournée. Le cheval t'aime bien. » |
 | Connaissances | Faits que le personnage peut savoir | Il ne parle du robot que s'il l'a vu, ou si on le lui a dit |
 | Lieu et moment | `lieu`, `heure`, `lune` | Le soir : « Il dort debout, lui. Pas moi. » |
@@ -116,7 +118,8 @@ Variantes de genre entre crochets [masculin / féminin]. Les scènes de l'acte I
 
 Début de partie, la famille composée. Fernand : « Les héritiers de Maurice. Ça se voit, vous avez
 l'air perdus. » « La terre, c'est par là. Suivez le chemin. La calèche passe demain. » Avec des
-enfants (`arrivee_enfants`) : « Toi, le petit, tu tiendras pas une semaine sans écran. On parie ? »
+enfants (`arrivee_enfants`) : « Et ces petits-là, ils tiendront pas une semaine sans écran. On parie ? »
+Les deux scènes exigent une famille composée et le jour 1 : une partie plus avancée ne les joue pas.
 Effets : fait `arrivee`, Fernand « poli ». Les Mouettes n'est pas compté comme découvert.
 
 ### La première lettre d'Adèle (S, lettre)
@@ -154,7 +157,7 @@ présents, fait `odile.tutoie`.
 
 ### Frida vient à la ferme (S)
 
-Palier « Automatisation ». « Alors c'est toi. La dernière fois que je t'ai vu, tu tenais dans un
+Palier « Automatisation ». « Alors c'est toi. La dernière fois que je t'ai [vu / vue], tu tenais dans un
 panier. » « Je fabrique des machines. Ici, on dit que ce n'est pas bien. Moi je dis que ça dépend de
 ce qu'on en fait. » « Un robot qui récolte, une station pour le recharger. Trois heures gagnées par
 jour. Pour l'île, ou pour toi. » Empreinte basse : « Ta ferme est petite. Tant mieux : une machine y

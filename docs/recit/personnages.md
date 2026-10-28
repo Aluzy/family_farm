@@ -87,8 +87,8 @@ information.
 
 82 ans, n'a jamais quitté l'île ; voisine de Maurice, elle a vu grandir Adèle. Tient à la
 tradition, à la constance, à la lune ; veut voir la maison de Maurice rouverte. Réfractaire à tout
-changement, elle adorait pourtant Maurice, revenu de Cadolon. Elle vouvoie le joueur jusqu'à sa
-première pleine lune sur l'île. Arc : du jugement à la transmission (un savoir, la cloche de la
+changement, elle adorait pourtant Maurice, revenu de Cadolon. Elle vouvoie le joueur jusqu'à la
+première veillée de pleine lune. Arc : du jugement à la transmission (un savoir, la cloche de la
 calèche de Maurice).
 
 ### Fernand, l'ancien revenu, Les Mouettes (`fernand`)

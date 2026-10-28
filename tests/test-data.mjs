@@ -158,7 +158,14 @@ refuse('récit : une phase de lune inconnue', (d) => { R0(d).quand = { lune: 'ro
 refuse('récit : un palier hors des paliers', (d) => { R0(d).quand = { palier_min: 9 }; }, 'un rang de palier');
 refuse('récit : des conditions jamais vraies', (d) => { R0(d).quand = { fait: 'x', sans_fait: 'x' }; }, 'jamais vraie');
 refuse('récit : une bulle trop longue', (d) => { R0(d).texte = 'a'.repeat(d.RECIT.BULLE_MAX + 1); }, 'au plus');
-refuse('récit : {prenom} compte pour un prénom entier', (d) => { R0(d).texte = `{prenom}${'a'.repeat(d.RECIT.BULLE_MAX - 5)}`; }, 'au plus');
+refuse('récit : {prenom} compte pour un prénom entier', (d) => { R0(d).texte = `{prenom}${'a'.repeat(d.RECIT.BULLE_MAX - '{prenom}'.length)}`; }, 'au plus');
+refuse('récit : {hameau} compte pour le plus long nom de hameau', (d) => { R0(d).texte = `{hameau}${'a'.repeat(d.RECIT.BULLE_MAX - '{hameau}'.length)}`; }, 'au plus');
+refuse('récit : une humeur inconnue', (d) => { R0(d).quand = { humeur: 'grognon' }; }, 'une humeur parmi');
+refuse('récit : jour_min après jour_max', (d) => { R0(d).quand = { jour_min: 5, jour_max: 2 }; }, 'jamais vraie');
+refuse('récit : une relation nulle dans un effet', (d) => { R0(d).effet = { relation: null }; }, 'des points, ou');
+refuse('récit : un fait d\'effet qui n\'est pas un texte', (d) => { R0(d).effet = { fait: 3 }; }, 'un fait ou une liste de faits');
+refuse('récit : un acte sur un chapitre qui n\'existe pas', (d) => { d.RECIT.ACTES[3].chapitre = 9; }, 'un chapitre de la campagne');
+refuse('récit : des seuils de confiance dans le désordre', (d) => { d.RECIT.CONFIANCE.NIVEAUX = { chaleureuse: 70, reservee: 0, cordiale: 40 }; }, 'des seuils entiers croissants');
 refuse('récit : une variable inconnue', (d) => { R0(d).texte = 'Bonjour {inconnu}.'; }, 'variable inconnue');
 refuse('récit : une seule variante de genre', (d) => { R0(d).texte = { m: 'Le petit' }; }, 'les deux variantes de genre');
 refuse('récit : un id en double', (d) => { d.RECIT.REPLIQUES[1].id = R0(d).id; }, 'en double');
