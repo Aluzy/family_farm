@@ -3,8 +3,9 @@
 Le jeu a une bande-son complète : quatre thèmes de musique, les ambiances de la ferme et des
 biomes du grand monde, les bêtes, les machines, chaque geste du personnage et les fenêtres de
 l'interface. Tout est synthétisé pour le jeu par `scripts/son/`, sauf les bêtes de la ferme,
-l'arrosoir, la hulotte et la grenouille : de vrais enregistrements libres de droits (voir « Les
-bêtes de la ferme », « L'arrosoir, la hulotte et la grenouille » et `assets/son/CREDITS.md`).
+le chat et le chien de la famille, l'arrosoir, la hulotte et la grenouille : de vrais enregistrements
+libres de droits (voir « Les bêtes de la ferme », « Le chat et le chien de la famille », « L'arrosoir,
+la hulotte et la grenouille » et `assets/son/CREDITS.md`).
 
 ## Découpage
 
@@ -13,7 +14,7 @@ bêtes de la ferme », « L'arrosoir, la hulotte et la grenouille » et `assets/
 | `js/son.js` | le moteur (`window.FermeSon`, script classique chargé après le kit des cartes) : Web Audio, cinq bus, les boucles, le « directeur » des ambiances, les pas |
 | `js/ui/son.js` | côté interface (module ES) : `son(clé)` pour les écrans, l'écoute du journal (pièces, Atelier), la partie « Son » des Options |
 | `assets/son/` | les sons, `.ogg` (Vorbis) et `.m4a` (AAC, pour Safari qui ne lit pas l'Ogg), rangés par dossier |
-| `scripts/son/` | les générateurs : `musique.py`, `sons1.py`, `sons2.py` (synthèse), `libres.py` (les enregistrements libres de l'arrosoir, de la hulotte et de la grenouille, coupés et égalisés), `vers_jeu.py` (encodage et table de `js/son.js`), `fabrique.py` (tout) |
+| `scripts/son/` | les générateurs : `musique.py`, `sons1.py`, `sons2.py` (synthèse), `libres.py` (les enregistrements libres de l'arrosoir, de la hulotte, de la grenouille, du chat et du chien, coupés et égalisés), `vers_jeu.py` (encodage et table de `js/son.js` ; `vers_jeu.py clé…` n'encode que ces clés), `fabrique.py` (tout) |
 
 Le moteur ne lit jamais l'état du jeu et ne change rien à la partie. Sans Web Audio, avant le
 premier geste du joueur (les navigateurs ne jouent rien avant), ou le son coupé, chaque appel
@@ -152,6 +153,26 @@ qu'il avance), sur le sol sous lui.
 `scripts/son/analyse.py` et `betes_reelles.py` sont les outils d'analyse qui ont servi à
 comparer les synthèses à de vrais cris (corpus ESC-50, sous licence non commerciale : les mesures
 qui en sortent restent dans `_sortie/`, jamais commitées, et rien n'en vient dans le jeu).
+
+## Le chat et le chien de la famille
+
+Quand la famille a un chat ou un chien (`stats().compagnons` de `js/ambient-life.js`), il se fait
+entendre de temps en temps (`COMPAGNON` dans `js/son.js`) : le chien toutes les 30 à 80 s (deux
+fois sur cinq, il aboie deux fois de suite), jusqu'à 24 cases ; le chat toutes les 40 à 100 s,
+jusqu'à 22 cases. Ni la nuit (de 21 h à 5 h 30), ni quand le personnage dort, ni quand la bête dort (le chat
+sur son toit, la sieste) : le chien n'a pas de toit et dort sur place, son `nuit` reste faux, c'est
+l'heure qui le fait taire.
+
+Ce sont de vrais enregistrements de Joseph Sardin sur BigSoundBank, sous CC0, préparés par
+`libres.py` (au niveau des bêtes de la ferme) :
+
+- **le chat** (`chat`, trois variantes de 1,7 à 2,2 s) : trois miaulements d'un chat domestique pris
+  de près dans une pièce calme (« Meow cat #14 », « #2 » avec son petit roulement, « #1 ») ;
+- **le chien** (`chien`, trois variantes de 0,7 à 1 s) : un chien de traîneau seul, dehors
+  (« Barking Dog #2 ») : deux « wouf-wouf » et un aboiement seul. Pas un molosse : un chien de
+  travail de taille moyenne, sans grognement.
+
+Le renard du grand monde ne crie pas (il n'a pas de vrai cri libre de droits).
 
 ## L'arrosoir, la hulotte et la grenouille
 

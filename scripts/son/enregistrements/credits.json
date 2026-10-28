@@ -222,5 +222,47 @@
   "source": "https://bigsoundbank.com/one-frog-s0819.html",
   "titre": "Une grenouille qui chante près d'une petite mare, la nuit",
   "duree": 11.4
+ },
+ "chat_1": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/meow-cat-14-s1902.html",
+  "titre": "Chat domestique : un « miaou » qui demande",
+  "duree": 1.68
+ },
+ "chat_2": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/meow-cat-2-s1890.html",
+  "titre": "Chat domestique : un petit roulement, puis « miaou »",
+  "duree": 2.15
+ },
+ "chat_3": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/meow-cat-1-s1889.html",
+  "titre": "Chat domestique : un long « miaaou »",
+  "duree": 1.66
+ },
+ "chien_1": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/barking-dog-2-s2954.html",
+  "titre": "Chien de traîneau, seul dehors : deux aboiements",
+  "duree": 0.92
+ },
+ "chien_2": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/barking-dog-2-s2954.html",
+  "titre": "Chien de traîneau, seul dehors : un aboiement",
+  "duree": 0.71
+ },
+ "chien_3": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/barking-dog-2-s2954.html",
+  "titre": "Chien de traîneau, seul dehors : deux aboiements",
+  "duree": 0.96
  }
 }
