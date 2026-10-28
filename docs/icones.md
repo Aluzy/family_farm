@@ -63,7 +63,7 @@ paille (une botte), 🥒 la courgette (celle de la carte), 🥣 la farine.
 
 Une icône de 32×32 garde ses traits d'un pixel : nette dans la barre d'outils (affichée à 32 px),
 elle est plus fine que les autres dans le texte (vers 20 px), où certains de ses pixels sautent.
-La houe ⛏, la pioche ⚒ et la hache 🪓 sont dessinées ainsi.
+La houe ⛏, la pioche ⚒, la hache 🪓 et la canne à pêche 🎣 sont dessinées ainsi.
 
 ## Comment le remplacement marche
 
