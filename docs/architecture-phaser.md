@@ -600,7 +600,7 @@ est la poignée de débogage posée par `js/main.js`).
 
 ## Version 1.3 : le courrier
 
-- **Données** : `DATA.COURRIER` décrit chaque lettre : sa condition (`quand.debloque` : un élément ouvert par la campagne), ses cadeaux, son texte. Pour l'instant une seule : `cousin_venezuela`, à l'ouverture de la Serre (chapitre 6), avec 1 cacao, 1 vanille et 1 café.
+- **Données** : `DATA.COURRIER` décrit chaque lettre : sa condition (`quand.debloque` : un élément ouvert par la campagne), ses cadeaux, son texte. Parmi elles : `adele_serre` (le récit, lot 11 : la lettre d'Adèle, au retour d'un voyage), à l'ouverture de la Serre, avec 1 cacao, 1 vanille et 1 café ; les autres sont décrites dans `docs/recit/`.
 - **Moteur** : `deliverMail(state)`, appelée par `updateChapters()` (donc à chaque pas de jeu et à chaque nuit), fait arriver une lettre une seule fois : cadeaux dans l'inventaire, lettre dans `state.courrier` (`{ id, nuit, lu }`). `readMail()` la marque lue ; `notificationCount()` compte les lettres non lues.
 - **Parties existantes** : une partie où la Serre est déjà ouverte reçoit la lettre et ses graines au premier pas de jeu après la mise à jour.
 - **Interface** : la lettre non lue est en tête de l'onglet Notifications (« Courrier »), puis rangée en bas (« Courrier lu ») ; `openMailModal()` l'affiche comme une feuille de papier, avec un raccourci vers la Serre. À l'arrivée, une annonce cliquable s'affiche (`watchMail()`).

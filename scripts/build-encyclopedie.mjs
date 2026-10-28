@@ -160,9 +160,14 @@ const jeuSource = `// FICHIER GÉNÉRÉ par scripts/build-encyclopedie.mjs à pa
 export const ENCYCLOPEDIE = ${JSON.stringify(jeu, null, 1)};
 `;
 
+// Le récit, lot 11 : une entrée « secret » (la pierre du fil de la lune, que rien ne doit signaler) n'est que
+// dans le livre du jeu, découverte quand on l'a trouvée ; la page publique ne la montre pas, ni les liens vers elle.
+const secrets = new Set(data.categories.flatMap((c) => c.entrees.filter((e) => e.secret).map((e) => e.id)));
+const publiques = (c) => c.entrees.filter((e) => !secrets.has(e.id));
+
 function entree(e) {
   const description = remplir(e.description, e.id);
-  const liens = (e.liens || []).map((id) => {
+  const liens = (e.liens || []).filter((id) => !secrets.has(id) || !termes.has(id)).map((id) => {
     if (!termes.has(id)) throw new Error(`« ${e.id} » renvoie vers un terme inconnu : ${id}`);
     return `<a class="chip" href="#${id}">${esc(termes.get(id))}</a>`;
   });
@@ -187,12 +192,12 @@ function section(c) {
         </div>
       </div>
       <div class="entry-grid">
-${c.entrees.map(entree).join('\n')}</div>
+${publiques(c).map(entree).join('\n')}</div>
     </section>`;
 }
 
 const menu = data.categories
-  .map((c) => `<a class="catlink" href="#cat-${c.id}">${c.icone} ${esc(c.nom)} <span>${c.entrees.length}</span></a>`)
+  .map((c) => `<a class="catlink" href="#cat-${c.id}">${c.icone} ${esc(c.nom)} <span>${publiques(c).length}</span></a>`)
   .join('');
 
 function remplacer(texte, debut, fin, contenu) {

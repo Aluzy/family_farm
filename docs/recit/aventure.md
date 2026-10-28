@@ -34,7 +34,7 @@ ou d'Odile, les consignes restant dans les objectifs.
 ### Acte I — L'arrivée
 
 - **L'arrivée aux Mouettes (S)** : le bac accoste ; Fernand, sur la cale. Remplace le texte
-  d'ouverture « Printemps 2021 » (`DEPART.HISTOIRE`), qui n'est plus affiché.
+  d'ouverture « Printemps 2021 », retiré des données au lot 11.
 - **La première lettre d'Adèle (S)**, le premier soir, avec la lettre du notaire raccourcie.
 - **L'événement déclencheur (S)** : au premier arrêt de la calèche à la ferme (chapitre 2), Achille
   remet la clé de la maison de Maurice au Gué. Remplace la réplique actuelle du cocher et la phrase

@@ -32,7 +32,9 @@ import { equipementDe } from './equipement.js';
      techno:<nœud>       la technologie est acquise ; technologies : un point de technologie gagné
      jour:<n>            la partie a atteint le jour n ; niveau:<n> : le niveau n
      piece_close         une pièce close sur la carte ; veillee : la veillée à la ferme (niveau 10) ;
-     courrier            une lettre reçue */
+     courrier            une lettre reçue
+     fait:<fait>         un fait du récit est noté (state.recit.faits, js/engine/recit.js : « odile.rencontre »,
+                         « visite.bois_joli », « lieu.cale »… ; le récit, lot 11 : les pages de l'île de Céron) */
 
 export const CARTES_ENCYCLOPEDIE = ['grotte', 'grotte_monde'];
 const SEULES = ['depart', 'piece_close', 'veillee', 'courrier', 'technologies', 'hameau'];
@@ -103,6 +105,7 @@ export function conditionRemplie(state, cond, evenements = {}) {
     case 'piece_close': return piecesCloses(state).length > 0;
     case 'veillee': return isUnlocked(state, 'veillee');
     case 'courrier': return Array.isArray(state.courrier) && state.courrier.length > 0;
+    case 'fait': return !!(state.recit && state.recit.faits && Array.isArray(state.recit.faits[v]));
     default: return false;
   }
 }
@@ -128,6 +131,7 @@ export function erreurCondition(cond) {
     techno: () => !!DATA.ARBRE.noeuds[v],
     jour: () => Number(v) >= 1,
     niveau: () => Number(v) >= 1,
+    fait: () => /^[a-z0-9_]+(\.[a-z0-9_]+)*$/.test(v || ''),
   }[sorte];
   if (!ok) return `sorte de condition inconnue : ${cond}`;
   return ok() ? null : `valeur inconnue : ${cond}`;
