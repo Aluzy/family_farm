@@ -249,7 +249,8 @@ function chercheur(N, W, diag = false) {
 // sa source à son embouchure, en cases voisines), finRivieres: ['mer' | 'lac' | 'riviere'…] (où
 // chacune se jette : la case après sa dernière), lacs: [[cases…]…], eaux (Uint8Array, une valeur
 // par tuile : BIOME.lac, BIOME.riviere ou AUCUNE_EAU), chemins: [[cases…]…] (en cases voisines),
-// lieux: { hameaux: [{ id, case, nom }], grottes: [{ id, case }], peche: [{ id, case, eau }] } }.
+// lieux: { hameaux: [{ id, case, nom[, gue, garanti] }], grottes: [{ id, case }], peche: [{ id, case, eau }],
+// recit: [{ id, sorte (cabane, atelier, epave), case }] } }.
 // `lire` : le relevé des champs (releve), à partager avec qui le complétera ; sans lui, il s'en
 // fait un.
 export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(graine, cadre), cadre)) {
@@ -566,15 +567,47 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
   const hameaux = hameauxCases.sort((a, b) => angle(a) - angle(b)).map((i, n) => ({
     id: 'hameau_' + (n + 1), case: i, nom: noms.length ? noms.splice(Math.floor(rh() * noms.length), 1)[0] : 'Hameau ' + (n + 1),
   }));
-  // Le récit (docs/recit/bible.md) : le hameau le plus proche de la ferme est toujours Le Gué (PH.GUE), le
-  // hameau natal de Maurice (gue: true). Les tirages ne changent pas : s'il avait tiré ce nom, l'autre
-  // hameau prend celui du plus proche (au plus deux noms échangés).
+  // Le récit (docs/recit/bible.md) : les hameaux garantis. Le plus proche de la ferme est toujours Le Gué
+  // (PH.GUE), le hameau natal de Maurice (gue: true, garanti: « gue ») ; puis chaque hameau de
+  // PH.GARANTIS, dans l'ordre, prend le hameau qui reste dont le pays (pays : la côte, la montagne, la
+  // forêt, la lande, sa part dans un cercle de HAMEAUX.CARACTERE.RAYON cases, comme le style d'un
+  // hameau, monde-hameaux.js caractere) pèse le plus — à part égale, le plus proche de la ferme. Les
+  // tirages ne changent pas : seuls les noms bougent. Un hameau qui avait tiré un nom garanti sans le
+  // recevoir prend un nom libéré (celui qu'avait tiré un hameau garanti), sinon le premier nom libre.
   if (PH.GUE && hameaux.length) {
     const proche = hameaux.reduce((a, b) => (distFerme(b.case) < distFerme(a.case) ? b : a));
-    const autre = hameaux.find((h) => h.nom === PH.GUE);
-    if (autre && autre !== proche) autre.nom = proche.nom;
-    proche.nom = PH.GUE;
+    const garantis = [{ id: 'gue', nom: PH.GUE, h: proche }];
+    const CA = DATA.HAMEAUX.CARACTERE, RC = CA.RAYON;
+    const part = (i, pays) => {
+      let n = 0, total = 0;
+      const c = col(i), r = rang(i);
+      for (let y = Math.max(0, r - RC); y <= Math.min(H - 1, r + RC); y += CA.PAS) {
+        for (let x = Math.max(0, c - RC); x <= Math.min(W - 1, c + RC); x += CA.PAS) {
+          if ((x - c) ** 2 + (y - r) ** 2 > RC * RC) continue;
+          const b = bio(y * W + x);
+          total++;
+          if (pays === 'cote' ? [plage, mer, BIOME.falaise].includes(b) : pays === 'montagne' ? [montagne, sommet].includes(b) : b === BIOME[pays]) n++;
+        }
+      }
+      return total ? n / total : 0;
+    };
+    for (const G of PH.GARANTIS || []) {
+      const libres = hameaux.filter((h) => !garantis.some((g) => g.h === h));
+      if (!libres.length) break;
+      const notes = libres.map((h) => ({ h, p: part(h.case, G.pays) }));
+      notes.sort((a, b) => b.p - a.p || distFerme(a.h.case) - distFerme(b.h.case));
+      garantis.push({ id: G.id, nom: G.nom, h: notes[0].h });
+    }
+    const nomsGarantis = new Set(garantis.map((g) => g.nom));
+    const liberes = garantis.map((g) => g.h.nom).filter((n) => !nomsGarantis.has(n));
+    for (const g of garantis) { g.h.nom = g.nom; g.h.garanti = g.id; }
     proche.gue = true;
+    const pris = new Set(hameaux.map((h) => h.nom));
+    for (const h of hameaux) {
+      if (h.garanti || !nomsGarantis.has(h.nom)) continue;
+      h.nom = liberes.shift() || PH.NOMS.find((n) => !pris.has(n) && !nomsGarantis.has(n)) || 'Hameau ' + h.id.slice(7);
+      pris.add(h.nom);
+    }
   }
 
   /* -- les chemins : la sortie de la ferme et les hameaux, en un tour du monde -- */
@@ -750,7 +783,100 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
   }
   for (const i of surMer) ajoute(i, 'mer');
 
-  return { rivieres, finRivieres, lacs, eaux, chemins, lieux: { hameaux, grottes, peche } };
+  /* -- les lieux du récit (docs/recit/bible.md) : la cabane de Johnny, l'atelier de Frida, l'épave -- */
+  // (une case chacun, dans lieux.recit : { id, sorte, case } ; leur dessin : monde-lieux.js. La
+  // distance aux chemins se lit sur la grille grossière : un parcours en largeur depuis ses cases de
+  // chemin, en cases grossières, fois GRILLE.)
+  const PR = P.RECIT || {}, rRecit = hasard('recit'), recit = [];
+  const loinChemin = new Int32Array(CW * CH).fill(-1), file = [];
+  for (let u = 0; u < CW * CH; u++) if (cheminGros[u]) { loinChemin[u] = 0; file.push(u); }
+  for (let k = 0; k < file.length; k++) {
+    const u = file[k], x = u % CW, y = Math.floor(u / CW);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const v = (y + dy) * CW + x + dx;
+      if (x + dx < 0 || y + dy < 0 || x + dx >= CW || y + dy >= CH || loinChemin[v] >= 0) continue;
+      loinChemin[v] = loinChemin[u] + 1; file.push(v);
+    }
+  }
+  const distChemin = (i) => (loinChemin[gros(i)] < 0 ? Infinity : loinChemin[gros(i)] * K);
+  const distHameaux = (i) => hameaux.reduce((m, h) => Math.min(m, Math.hypot(col(i) - col(h.case), rang(i) - rang(h.case))), Infinity);
+  // (tout autour, sur `r` cases, le même biome que `b` : le lieu tient, la marche aussi)
+  const entoure = (i, r, ok) => {
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      const x = col(i) + dx, y = rang(i) + dy;
+      if (x < 0 || y < 0 || x >= W || y >= H || !ok(y * W + x)) return false;
+    }
+    return true;
+  };
+  // une bâtisse (HAMEAUX.BATISSES : la cabane, l'atelier, monde-hameaux.js planBatisse) tient-elle devant
+  // la case i (la case devant sa porte) ? Sa maison, ses objets et une case autour : ni eau, ni falaise,
+  // ni sommet, ni chemin, ni ferme ; loin des entrées de grotte et des coins de pêche.
+  const BA = DATA.HAMEAUX.BATISSES || {};
+  const tient = (i, sorte) => {
+    const b = BA[sorte];
+    if (!b) return true;
+    for (let dy = -(b.h + 1); dy <= 1; dy++) {
+      for (let dx = -(b.porte + 3); dx <= b.l - b.porte + 2; dx++) {
+        const x = col(i) + dx, y = rang(i) + dy, j = y * W + x;
+        if (x < 3 || y < 3 || x >= W - 3 || y >= H - 3) return false;
+        if ([mer, lac, riviere, BIOME.falaise, sommet].includes(bio(j)) || surChemin[j] || dansFerme(j)) return false;
+      }
+    }
+    return [...grottes, ...peche].every((l) => Math.hypot(col(i) - col(l.case), rang(i) - rang(l.case)) >= 10);
+  };
+  // le meilleur candidat : la note la plus haute ; à note égale, l'ordre d'un tirage (mélangé avant)
+  const meilleur = (liste, note) => {
+    let best = null, bn = -Infinity;
+    for (const i of melange(rRecit, liste)) { const n = note(i); if (n > bn) { bn = n; best = i; } }
+    return best;
+  };
+  // la cabane de Johnny : au fond de la forêt, la plus loin des chemins
+  if (PR.CABANE) {
+    const C = PR.CABANE, cands = [];
+    for (let y = 10; y < H - 10; y += 3) for (let x = 10; x < W - 10; x += 3) {
+      const i = y * W + x;
+      if (bio(i) !== foret || distFerme(i) < C.FERME || distChemin(i) < C.CHEMIN || distHameaux(i) < C.HAMEAU) continue;
+      if (entoure(i, 3, (j) => bio(j) === foret) && tient(i, 'cabane')) cands.push(i);
+    }
+    const i = meilleur(cands, (j) => Math.min(distChemin(j), 60));
+    if (i !== null) recit.push({ id: 'cabane_johnny', sorte: 'cabane', case: i });
+  }
+  // l'atelier de Frida : sur la rive d'un lac (sinon d'une rivière), entre deux hameaux
+  if (PR.ATELIER && hameaux.length >= 2) {
+    const C = PR.ATELIER, rives = { lac: [], riviere: [] };
+    for (let y = 8; y < H - 8; y += 2) for (let x = 8; x < W - 8; x += 2) {
+      const i = y * W + x;
+      if (![prairie, lande, foret].includes(bio(i)) || dansFerme(i) || distFerme(i) < 10) continue;
+      if (!entoure(i, 1, (j) => [prairie, lande, foret].includes(bio(j)))) continue;
+      // (l'eau tout près de la bâtisse : à 7 cases au plus de côté, 4 devant)
+      const pres = (eau) => {
+        for (let dy = -6; dy <= 4; dy++) for (let dx = -7; dx <= 7; dx++) if (bio(i + dy * W + dx) === BIOME[eau]) return true;
+        return false;
+      };
+      for (const eau of ['lac', 'riviere']) if (pres(eau) && tient(i, 'atelier')) { rives[eau].push(i); break; }
+    }
+    const note = (i) => {
+      const d = hameaux.map((h) => Math.hypot(col(i) - col(h.case), rang(i) - rang(h.case))).sort((a, b) => a - b);
+      return d[0] < C.HAMEAU ? -Infinity : -(d[0] + d[1]);
+    };
+    const liste = rives.lac.some((i) => note(i) > -Infinity) ? rives.lac : rives.riviere;
+    const i = meilleur(liste, note);
+    if (i !== null && note(i) > -Infinity) recit.push({ id: 'atelier_frida', sorte: 'atelier', case: i });
+  }
+  // l'épave : sur la plage, au bord de la mer, loin des hameaux et des chemins
+  if (PR.EPAVE) {
+    const C = PR.EPAVE, cands = [];
+    for (let y = 6; y < H - 6; y += 2) for (let x = 6; x < W - 6; x += 2) {
+      const i = y * W + x;
+      if (bio(i) !== plage || distHameaux(i) < C.HAMEAU || distFerme(i) < 20) continue;
+      if (![1, -1, W, -W].some((d) => bio(i + 2 * d) === mer)) continue;
+      if (entoure(i, 1, (j) => bio(j) === plage)) cands.push(i);
+    }
+    const i = meilleur(cands, (j) => Math.min(distChemin(j), 40) + Math.min(distHameaux(j), 80) / 4);
+    if (i !== null) recit.push({ id: 'epave', sorte: 'epave', case: i });
+  }
+
+  return { rivieres, finRivieres, lacs, eaux, chemins, lieux: { hameaux, grottes, peche, recit } };
 }
 
 /* ---------- 3. une région ---------- */

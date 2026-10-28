@@ -8,6 +8,9 @@
  *   - en remontant du premier niveau (jeu.html?arrivee=grotte_<n>, passages.js arrive), il ressort
  *     de l'arche et descend devant elle. La région de l'entrée peut ne pas être encore faite (la page
  *     rechargée dans la grotte) : il attend qu'elle arrive.
+ * Les lieux du récit qui sont un dessin (lieux.recit : l'épave ; la cabane et l'atelier sont bâtis, comme les
+ * maisons des hameaux : hameaux.js) : un appui sur le dessin le dit à la page (ctx.bridge.lieuRecit : ce qu'on
+ * y lit, js/ui/stage.js).
  * Les coins de pêche (lieux.peche : un ponton ou des piquets) : de petits remous montent de l'eau
  * devant eux, de temps en temps (pas avec « animations réduites ») ; la pêche y est meilleure
  * (peche.js : coinPeche).
@@ -97,6 +100,32 @@
         }
       }
       this.stepRemous(time);
+    },
+
+    /* ---------- les lieux du récit ---------- */
+
+    // Les lieux du récit du plan : [{ id, sorte, x, y (le pied, px), l, h (la boîte d'appui : demi-largeur,
+    // hauteur ; LIEUX.SORTES, ctx.monde.lieuxSortes) }], ou [].
+    lieuxRecit() {
+      if (this.lieuxRecitListe) return this.lieuxRecitListe;
+      const M = this.ctx.monde, L = M && M.lieux ? M.lieux() : null;
+      if (!L) return [];
+      const W = this.grid.cols, sortes = (M && M.lieuxSortes) || [];
+      this.lieuxRecitListe = (L.recit || []).filter((l) => sortes.some((x) => x.nom === l.sorte)).map((l) => {
+        const S = sortes.find((x) => x.nom === l.sorte), [bl, bh] = S.boite || [20, 36];
+        return { id: l.id, sorte: l.sorte, x: (l.case % W) * T + T / 2, y: Math.floor(l.case / W) * T + T - 2, l: bl, h: bh };
+      });
+      return this.lieuxRecitListe;
+    },
+
+    // Le lieu du récit sous le point (wx, wy) (son dessin), ou null.
+    lieuRecitAt(wx, wy) {
+      for (const q of this.lieuxRecit()) if (Math.abs(wx - q.x) <= q.l && wy <= q.y + 3 && wy >= q.y - q.h) return q;
+      return null;
+    },
+
+    lieuRecitTouche(q) {
+      if (q && this.ctx.bridge && this.ctx.bridge.lieuRecit) this.ctx.bridge.lieuRecit({ id: q.id, sorte: q.sorte });
     },
 
     /* ---------- les coins de pêche ---------- */

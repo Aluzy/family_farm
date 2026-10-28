@@ -84,7 +84,7 @@ test('Odile vit seule dans le premier foyer du Gué, avec son prénom et son app
 
 test('les autres hameaux n\'ont pas de personnage écrit', () => {
   const { s, plans } = gueDe(5);
-  for (const p of plans.filter((x) => !x.gue)) assert(!peuplerHameau(s, p).foyers.some((f) => f.membres.some((m) => m.recit)), p.id);
+  for (const p of plans.filter((x) => !x.gue && !x.batisse)) assert(!peuplerHameau(s, p).foyers.some((f) => f.membres.some((m) => m.recit)), p.id);
 });
 
 test('toucher Odile : la phrase des habitants avant de la connaître, puis ses répliques', () => {
@@ -166,4 +166,83 @@ test('les bulles : le salut suit la confiance du hameau, chez les adultes seulem
   assert(paroles(adultes).some((t) => /Tu restes manger \?|Entre donc\./.test(t)), 'chaleureux, parfois');
   if (enfants.length) assert(!paroles(enfants).some((t) => /Tu restes manger \?|Entre donc\./.test(t)), 'un enfant garde son salut');
   for (const t of [...froid, ...paroles(adultes)]) assert(t.length > 0 && !/\{/.test(t), t);
+});
+
+/* ---------- lot 3b : les autres lieux garantis (docs/recit/bible.md) ---------- */
+
+import { toucherLieu, aFait as aFait3b } from '../../js/engine/recit.js';
+
+const GARANTIS = DATA.PLAN_MONDE.HAMEAUX.GARANTIS;
+
+test('les hameaux garantis : chaque nom une fois, dans chaque monde, et leur métier', () => {
+  assertEqual(GARANTIS.map((g) => g.nom), ['Les Mouettes', 'Brumeval', 'Bois-Joli', 'Les Genêts']);
+  for (const g of GRAINES) {
+    const m = genererMonde(g), H = m.plan.lieux.hameaux;
+    for (const G of [{ id: 'gue', nom: GUE }, ...GARANTIS]) {
+      const ceux = H.filter((h) => h.nom === G.nom);
+      assertEqual(ceux.length, 1, `${g} : un seul ${G.nom}`);
+      assertEqual(ceux[0].garanti, G.id, `${g} : ${G.nom} marqué`);
+    }
+    assertEqual(new Set(H.map((h) => h.nom)).size, H.length, `${g} : aucun nom en double`);
+    assertEqual(H.filter((h) => h.garanti).length, 5, `${g} : cinq hameaux garantis`);
+  }
+  // le métier : celui du hameau garanti, quand son pays l'entoure (les plans des hameaux)
+  const s = createNewGame(5);
+  const sol = solDirect(genererMonde(s.carte.graine).terrain);
+  elementsSol(sol.ctx);
+  for (const G of GARANTIS) {
+    const p = sol.ctx.hameaux.plans.find((x) => x.garanti === G.id);
+    assert(p && p.nom === G.nom, G.nom);
+    assertEqual(p.metier, G.metier, `${G.nom} : ${G.metier}`);
+  }
+});
+
+test('les lieux du récit : la cabane en forêt, l\'atelier au bord de l\'eau, l\'épave sur la plage', () => {
+  for (const g of GRAINES) {
+    const m = genererMonde(g), p = m.plan, W = m.terrain.LARGEUR, R = p.lieux.recit;
+    const b = (i) => p.BIOMES[p.biome[i]];
+    const de = (sorte) => R.find((x) => x.sorte === sorte);
+    assertEqual(R.map((x) => x.sorte), ['cabane', 'atelier', 'epave'], `${g} : les trois lieux`);
+    assertEqual(b(de('cabane').case), 'foret', `${g} : la cabane en forêt`);
+    assertEqual(b(de('epave').case), 'plage', `${g} : l'épave sur la plage`);
+    const a = de('atelier').case;
+    let eau = false;
+    for (let dy = -6; dy <= 4; dy++) for (let dx = -7; dx <= 7; dx++) if (['lac', 'riviere'].includes(b(a + dy * W + dx))) eau = true;
+    assert(eau, `${g} : l'atelier au bord d'un lac ou d'une rivière`);
+    const loinHameaux = (i) => Math.min(...p.lieux.hameaux.map((h) => Math.hypot((i % W) - (h.case % W), Math.floor(i / W) - Math.floor(h.case / W))));
+    assert(loinHameaux(de('cabane').case) >= DATA.PLAN_MONDE.RECIT.CABANE.HAMEAU, `${g} : la cabane à l'écart`);
+    assert(!p.chemins.some((ch) => ch.some((t) => Math.hypot((t % W) - (de('cabane').case % W), Math.floor(t / W) - Math.floor(de('cabane').case / W)) < 8)), `${g} : loin des chemins`);
+  }
+});
+
+test('toucher un lieu du récit : son texte, le fait noté', () => {
+  const s = createNewGame(5);
+  const r = toucherLieu(s, 'epave');
+  assert(r && /coque/.test(r.texte), r && r.texte);
+  assert(aFait3b(s, 'lieu.epave'));
+  assert(/Personne/.test(toucherLieu(s, 'atelier').texte), 'avant de connaître Frida');
+  noter(s, 'frida.rencontre');
+  assert(/Frida/.test(toucherLieu(s, 'atelier').texte), 'après');
+  assertEqual(toucherLieu(s, 'moulin'), null);
+});
+
+test('la cabane et l\'atelier : bâtis comme une maison de hameau, sans habitant ; y entrer les découvre', () => {
+  const s = createNewGame(5);
+  const sol = solDirect(genererMonde(s.carte.graine).terrain);
+  elementsSol(sol.ctx);
+  const W = genererMonde(s.carte.graine).terrain.LARGEUR;
+  for (const sorte of ['cabane', 'atelier']) {
+    const p = sol.ctx.hameaux.plans.find((x) => x.batisse === sorte);
+    assert(p, sorte);
+    assertEqual(p.maisons.length, 1, `${sorte} : une maison`);
+    const mz = p.maisons[0], B = DATA.HAMEAUX.BATISSES[sorte];
+    assertEqual([mz.l, mz.h, mz.devant], [B.l, B.h, p.case], `${sorte} : sa taille, sa porte devant la case du lieu`);
+    assertEqual(mz.dedans.length, (B.l - 2) * (B.h - 2));
+    // ses murs ferment (sauf la porte), on entre par la porte
+    for (let y = mz.y0; y < mz.y0 + mz.h; y++) for (let x = mz.x0; x < mz.x0 + mz.l; x++) {
+      const t = y * W + x, bord = x === mz.x0 || y === mz.y0 || x === mz.x0 + mz.l - 1 || y === mz.y0 + mz.h - 1;
+      if (bord) assertEqual(!!sol.ctx.hameaux.bloque[t], t !== mz.porte, `${sorte} : le mur en ${x},${y}`);
+    }
+    assertEqual(peuplerHameau(s, p), null, `${sorte} : personne n'y vit`);
+  }
 });

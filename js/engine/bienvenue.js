@@ -66,7 +66,7 @@ function milieuFerme(state) {
 }
 
 // Le visiteur (voir qui, plus haut), d'après les plans des hameaux du monde (`plans` : ceux de
-// planHameau, js/engine/monde-hameaux.js ; null ou vide : un voisin sans hameau). Le hameau le plus
+// planHameau, js/engine/monde-hameaux.js, sans les bâtisses du récit ; null ou vide : un voisin sans hameau). Le hameau le plus
 // proche du milieu de la ferme ; ses habitants naissent s'ils ne l'étaient pas (peuplerHameau : le
 // visiteur est l'un d'eux, qu'on retrouvera chez lui) ; un adulte, tiré de la graine du monde.
 export function choisirVisiteur(state, plans) {
@@ -75,7 +75,7 @@ export function choisirVisiteur(state, plans) {
   let plan = null;
   if (Array.isArray(plans) && plans.length && m0 !== null) {
     const d = (p) => Math.hypot((p.case % W) - (m0 % W), Math.floor(p.case / W) - Math.floor(m0 / W));
-    plan = plans.filter((p) => p && p.id && Number.isInteger(p.case) && Array.isArray(p.maisons)).sort((a, b) => d(a) - d(b) || (a.id < b.id ? -1 : 1))[0] || null;
+    plan = plans.filter((p) => p && p.id && !p.batisse && Number.isInteger(p.case) && Array.isArray(p.maisons)).sort((a, b) => d(a) - d(b) || (a.id < b.id ? -1 : 1))[0] || null;
   }
   const h = plan ? habitantsDe(state)[plan.id] || peuplerHameau(state, plan) : null;
   const adultes = h ? h.foyers.flatMap((f) => f.membres.filter((m) => !m.enfant)) : [];

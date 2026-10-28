@@ -119,7 +119,9 @@ export function planHameau(m, h, rayon = HAMEAUX.RAYON, serre = false) {
   const entre = ([a, b]) => a + Math.floor(rnd() * (b - a + 1));
   const { style, parts } = caractere(cx, cy, W, H, m.biome);
   const S = HAMEAUX.STYLES[style];
-  const metier = metierDuLieu(cx, cy, parts, m.lieux, W);
+  // (un hameau garanti du récit, PLAN_MONDE.HAMEAUX.GARANTIS : son métier, si un peu de son pays l'entoure)
+  const G = (DATA.PLAN_MONDE.HAMEAUX.GARANTIS || []).find((g) => g.id === h.garanti);
+  const metier = G && G.metier && parts[G.pays] > 0 ? G.metier : metierDuLieu(cx, cy, parts, m.lieux, W);
   // le carré : ses cases (j, local) ↔ celles du monde (i)
   const dans = (x, y) => x >= 0 && y >= 0 && x < N && y < N;
   const monde = (x, y) => (gy0 + y) * W + gx0 + x;
@@ -610,7 +612,7 @@ export function planHameau(m, h, rayon = HAMEAUX.RAYON, serre = false) {
   }
   return {
     plan: {
-      id: h.id, nom: h.nom, case: h.case, style, metier,
+      id: h.id, nom: h.nom, case: h.case, style, metier, ...(h.garanti ? { garanti: h.garanti } : {}),
       // le Gué (le récit) : sa première maison est celle de Maurice, vide, sans foyer (habitants.js)
       ...(h.gue && plans.length ? { gue: true, maisonMaurice: plans[0].id } : {}),
       cadre: { x0: gx0 + x0, y0: gy0 + y0, x1: gx0 + x1, y1: gy0 + y1 },
@@ -629,17 +631,90 @@ export function planHameau(m, h, rayon = HAMEAUX.RAYON, serre = false) {
   };
 }
 
+/* ---------- les bâtisses du récit : la cabane de Johnny, l'atelier de Frida (lot 3b) ----------
+
+   Bâties comme les maisons des hameaux, avec les mêmes pièces (murs, fenêtres, porte, planchers,
+   meubles ; le toit de leur style, qui s'efface quand on entre : js/carte/ferme/hameaux.js) : un plan
+   de hameau d'une seule maison, sans place, sans habitants, marqué `batisse` (la sorte du lieu). Leur
+   case (lieux.recit, monde-gen.js) est celle devant la porte. Leur forme : HAMEAUX.BATISSES
+   (data/monde.json). */
+
+const BATISSES = HAMEAUX.BATISSES || {};
+export const SORTES_BATISSES = Object.keys(BATISSES);
+
+
+// planBatisse(m, l) → { plan, pieces, basses, bloque, terre, emprise } comme planHameau, pour le lieu
+// `l` ({ id, sorte, case }) ; null pour une sorte qui n'est pas bâtie (l'épave : un dessin).
+export function planBatisse(m, l) {
+  const B = BATISSES[l.sorte];
+  if (!B) return null;
+  const { W } = m, S = HAMEAUX.STYLES[B.style], M = MATIERES[S.mur];
+  const X = l.case % W, Y = Math.floor(l.case / W);
+  const x0 = X - B.porte, y0 = Y - B.h, ix = (x, y) => (y0 + y) * W + x0 + x;
+  const pieces = [], basses = [], bloque = new Set();
+  const pose = (nom, cx, cy, v = 0) => {
+    const so = SORTES_HAMEAUX[SORTE_HAMEAU[nom]], lg = so.largeur || 1;
+    (so.genre === 'basse' ? basses : pieces).push(SORTE_HAMEAU[nom], cx * T + (lg * T) / 2, (cy + 1) * T - (so.pied || 0), v);
+    if (BLOQUE[SORTE_HAMEAU[nom]]) for (let k = 0; k < lg; k++) bloque.add(cy * W + cx + k);
+  };
+  // les murs (la porte au milieu du bas, les fenêtres de la façade), leur masque comme planHameau
+  const murs = new Map();
+  for (let y = 0; y < B.h; y++) for (let x = 0; x < B.l; x++) if (x === 0 || y === 0 || x === B.l - 1 || y === B.h - 1) murs.set(ix(x, y), 'mur');
+  murs.set(ix(B.porte, B.h - 1), 'porte');
+  for (const x of B.fenetres) murs.set(ix(x, B.h - 1), 'fenetre');
+  const estMur = (j) => { const t = murs.get(j); return t === 'mur' || t === 'fenetre'; };
+  for (const [j, t] of murs) {
+    const cx = j % W, cy = Math.floor(j / W);
+    if (t === 'porte') { pose('porte_' + M, cx, cy); continue; }
+    const v = (estMur(j - W) ? 1 : 0) + (estMur(j + 1) || murs.get(j + 1) === 'porte' ? 2 : 0) + (estMur(j + W) ? 4 : 0) + (estMur(j - 1) || murs.get(j - 1) === 'porte' ? 8 : 0);
+    pose((t === 'fenetre' ? 'fenetre_' : 'mur_') + M, cx, cy, v);
+    bloque.add(j);
+  }
+  // le plancher, puis les meubles
+  const dedans = [];
+  for (let y = 1; y < B.h - 1; y++) for (let x = 1; x < B.l - 1; x++) dedans.push(ix(x, y));
+  const sol = new Set(dedans);
+  for (const j of dedans) pose(S.sol, j % W, Math.floor(j / W), (sol.has(j - W) ? 1 : 0) + (sol.has(j + 1) ? 2 : 0) + (sol.has(j + W) ? 4 : 0) + (sol.has(j - 1) ? 8 : 0));
+  const lits = [];
+  let foyer = null;
+  for (const [nom, x, y] of B.meubles) {
+    pose(nom, x0 + x, y0 + y);
+    if (nom.startsWith('lit_')) lits.push({ case: ix(x, y), sorte: nom });
+    if (nom === 'four' || nom === 'cuisiniere') foyer = ix(x, y);
+  }
+  for (const [nom, dx, dy] of B.dehors) pose(nom, X + dx, Y + dy);
+  // ce que le monde en garde : la terre battue devant la porte, l'emprise (la maison et RESERVE cases)
+  const terre = [l.case, l.case - 1, l.case + 1, l.case + W];
+  const emprise = new Set(), RES = HAMEAUX.RESERVE;
+  for (let y = -RES; y < B.h + RES + 1; y++) for (let x = -RES - 3; x < B.l + RES + 3; x++) emprise.add(ix(x, y));
+  const maison = {
+    id: l.id + '_maison', x0, y0, l: B.l, h: B.h, porte: ix(B.porte, B.h - 1), devant: l.case,
+    pieces: [{ genre: 'salle', cases: dedans }], lits, foyer, fenetres: B.fenetres.map((x) => ix(x, B.h - 1)), dedans,
+  };
+  return {
+    plan: {
+      id: l.id, nom: l.sorte === 'cabane' ? 'Une cabane' : 'Un atelier', case: l.case, style: B.style, metier: null, batisse: l.sorte,
+      cadre: { x0: x0 - 3, y0: y0 - 1, x1: x0 + B.l + 2, y1: Y + 1 },
+      place: { centre: l.case, cases: [], puits: null, banc: null, panneau: null },
+      maisons: [maison], jardins: [], travail: [], ruelles: [],
+    },
+    pieces, basses, bloque: [...bloque], terre, emprise: [...emprise].sort((a, b) => a - b),
+  };
+}
+
 /* ---------- tous les hameaux d'un monde ---------- */
 
-// plansDesHameaux(m) → { plans (planHameau(…).plan de chacun, dans l'ordre du plan), pieces, basses
+// plansDesHameaux(m) → { plans (planHameau(…).plan de chacun, dans l'ordre du plan, puis les bâtisses du
+// récit : planBatisse), pieces, basses
 // (une liste par hameau), bloque, terre (Uint8Array, une valeur par case du monde : 1 une case
 // fermée ; TERRE_HAMEAU la terre battue), emprise (Uint8Array : 1 une case réservée), ms }.
 export function plansDesHameaux(m) {
   const t0 = Date.now(), N = m.W * m.H;
   const bloque = new Uint8Array(N), terre = new Uint8Array(N), emprise = new Uint8Array(N);
   const plans = [], pieces = [], basses = [];
-  for (const h of (m.lieux && m.lieux.hameaux) || []) {
-    const r = planHameau(m, h);
+  // (les hameaux, puis les bâtisses du récit : la cabane, l'atelier ; leurs plans sont marqués `batisse`)
+  const batisses = ((m.lieux && m.lieux.recit) || []).map((l) => planBatisse(m, l)).filter(Boolean);
+  for (const r of [...((m.lieux && m.lieux.hameaux) || []).map((h) => planHameau(m, h)), ...batisses]) {
     plans.push(r.plan);
     pieces.push(r.pieces);
     basses.push(r.basses);

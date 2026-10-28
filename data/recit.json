@@ -48,6 +48,8 @@
     "{ personnage: points }), confiance (des points pour le hameau où l'on est), fragment (une page du carnet),",
     "montrer (une scène seulement : « gue », le Gué se montre sur la carte du monde ; la page s'en charge),",
     "confiance_partout (des points pour chaque hameau découvert : une veillée, une promesse tenue).",
+    "LIEUX : ce que le joueur lit en entrant dans une bâtisse du récit (cabane, atelier) ou en touchant l'épave : la",
+    "première entrée dont les conditions sont vraies ; le fait « lieu.<sorte> » est noté (le fil de la lune, plus tard).",
     "PROMESSES : les promesses que Maurice n'a pas pu tenir (le carnet carnet_promesses les ouvre) ; { titre, qui",
     "(celui à qui elle a été faite), besoin ({ objet: quantité }), effet (quand elle est tenue) }. Le joueur confie",
     "ce qu'il a à Achille, en une ou plusieurs fois (livrerPromesse) : « promesse.<id>.commencee » est noté au",
@@ -227,6 +229,19 @@
         "effet": { "fait": "maurice.fortune", "relation": { "achille": 5 } }
       }
     ],
+    "LIEUX": {
+      "cabane": [
+        { "quand": { "lune": "pleine", "heure": [20, 5] }, "texte": "La cabane est vide, le lit froid. Dans les bois, quelqu'un marche sous la lune." },
+        { "texte": "Une cabane de rondins, sans lampe. Une tasse sèche sur la table. Personne." }
+      ],
+      "atelier": [
+        { "quand": { "fait": "frida.rencontre" }, "texte": "L'atelier de Frida. Ça sent l'huile et le métal chaud. Elle n'est pas là." },
+        { "texte": "Un atelier plein d'outils et de pièces de métal. Ça sent l'huile. Personne." }
+      ],
+      "epave": [
+        { "texte": "Une vieille coque couchée sur le sable, le mât cassé. Ici, personne n'y touche." }
+      ]
+    },
     "PROMESSES": {
       "toit_garance": {
         "titre": "Le toit de Garance, aux Genêts",

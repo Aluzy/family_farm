@@ -346,6 +346,20 @@ export function jouerScene(state, id, ctx = {}) {
 
 const nb = (v) => (Array.isArray(v) ? v.length : Math.max(0, Math.floor(Number(v) || 0)));
 
+/* ---------- les lieux du récit (lot 3b) ---------- */
+
+// Le joueur touche le lieu du récit `sorte` (cabane, atelier, epave : lieux.recit du plan) : le texte de
+// la première entrée de RECIT.LIEUX[sorte] dont les conditions sont vraies, et le fait « lieu.<sorte> »
+// noté. → { texte } ou null (une sorte inconnue).
+export function toucherLieu(state, sorte, ctx = {}) {
+  const liste = (RECIT.LIEUX || {})[sorte];
+  if (!Array.isArray(liste)) return null;
+  const e = liste.find((x) => conditionsVraies(state, x.quand, null, ctx));
+  if (!e) return null;
+  noterFait(state, `lieu.${sorte}`);
+  return { texte: texteRecit(state, e.texte, ctx) };
+}
+
 /* ---------- les promesses de Maurice (lot 6) ---------- */
 
 // Les promesses ouvertes : celles que le carnet de Maurice a fait connaître (la page carnet_promesses).

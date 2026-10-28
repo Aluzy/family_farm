@@ -31,7 +31,8 @@ function plans(graine) {
   if (!plansDe.has(graine)) {
     const sol = solDirect(genererMonde(graine).terrain);
     elementsSol(sol.ctx);
-    plansDe.set(graine, sol.ctx.hameaux.plans);
+    // (les hameaux seulement : les bâtisses du récit, la cabane et l'atelier, n'ont pas d'habitants)
+    plansDe.set(graine, sol.ctx.hameaux.plans.filter((p) => !p.batisse));
   }
   return plansDe.get(graine);
 }

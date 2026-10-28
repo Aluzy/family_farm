@@ -450,6 +450,41 @@ export function validateData(data) {
     const H = PM.HAMEAUX || {};
     if (!(Array.isArray(H.NOMS) && H.NOMS.length && H.NOMS.every((n) => typeof n === 'string' && n))) err('PLAN_MONDE.HAMEAUX.NOMS', 'une liste de noms');
     if (H.GUE !== undefined && !(typeof H.GUE === 'string' && H.GUE)) err('PLAN_MONDE.HAMEAUX.GUE', 'le nom du hameau le plus proche de la ferme');
+    // les hameaux garantis du récit : un id, un nom (pas celui du Gué, pas deux fois), un pays, un métier
+    const paysOk = ['cote', 'montagne', 'foret', 'lande'], metiers = Object.keys((data.HAMEAUX && data.HAMEAUX.METIERS && data.HAMEAUX.METIERS.NOMS) || {});
+    const vusG = new Set([H.GUE]);
+    (H.GARANTIS || []).forEach((g, k) => {
+      const w = `PLAN_MONDE.HAMEAUX.GARANTIS[${k}]`;
+      if (!(typeof g.id === 'string' && g.id && g.id !== 'gue')) err(`${w}.id`, 'un id (pas « gue »)');
+      if (!(typeof g.nom === 'string' && g.nom) || vusG.has(g.nom)) err(`${w}.nom`, 'un nom, pris par aucun autre hameau garanti');
+      vusG.add(g.nom);
+      if (!paysOk.includes(g.pays)) err(`${w}.pays`, `un pays parmi ${paysOk.join(', ')}`);
+      if (g.metier !== undefined && !metiers.includes(g.metier)) err(`${w}.metier`, `un métier parmi ${metiers.join(', ')}`);
+    });
+    const PRc = data.PLAN_MONDE.RECIT || {};
+    for (const [lieu, cles] of Object.entries({ CABANE: ['CHEMIN', 'HAMEAU', 'FERME'], ATELIER: ['HAMEAU'], EPAVE: ['HAMEAU'] })) {
+      for (const c of cles) if (PRc[lieu] && !(isInt(PRc[lieu][c]) && PRc[lieu][c] >= 0)) err(`PLAN_MONDE.RECIT.${lieu}.${c}`, 'un entier positif ou nul');
+    }
+    // les bâtisses du récit (la cabane, l'atelier : monde-hameaux.js planBatisse) : un style, une taille, la porte
+    // et les fenêtres dans le mur du bas, des meubles et des objets de la planche des hameaux
+    const HS = (data.HAMEAUX && data.HAMEAUX.SORTES || []).map((x) => x.nom);
+    for (const [id, b] of Object.entries((data.HAMEAUX && data.HAMEAUX.BATISSES) || {})) {
+      const w = `HAMEAUX.BATISSES.${id}`;
+      if (!((data.HAMEAUX.STYLES || {})[b.style])) err(`${w}.style`, 'un style de HAMEAUX.STYLES');
+      if (!(isInt(b.l) && isInt(b.h) && b.l >= 3 && b.h >= 3)) err(w, 'l et h : des entiers, 3 au moins');
+      if (!(isInt(b.porte) && b.porte > 0 && b.porte < b.l - 1)) err(`${w}.porte`, 'une colonne du mur du bas, hors des coins');
+      for (const x of b.fenetres || []) if (!(isInt(x) && x > 0 && x < b.l - 1 && x !== b.porte)) err(`${w}.fenetres`, 'des colonnes du mur du bas, hors des coins et de la porte');
+      for (const [nom, x, y] of [...(b.meubles || []), ...(b.dehors || [])]) {
+        if (!HS.includes(nom)) err(w, `« ${nom} » n'est pas une pièce de HAMEAUX.SORTES`);
+        if (!(isInt(x) && isInt(y))) err(w, `« ${nom} » : une place en cases entières`);
+      }
+      for (const [nom, x, y] of b.meubles || []) if (!(x >= 1 && y >= 1 && x < b.l - 1 && y < b.h - 1)) err(w, `« ${nom} » : dedans, hors des murs`);
+    }
+    for (const so of (data.LIEUX && data.LIEUX.SORTES) || []) {
+      if (so.genre !== 'recit') continue;
+      if (!(Array.isArray(so.bloque) && so.bloque.every((d) => Array.isArray(d) && d.length === 2 && d.every(isInt)))) err(`LIEUX.SORTES.${so.nom}.bloque`, 'des décalages [colonne, rangée] entiers');
+      if (!(Array.isArray(so.boite) && so.boite.length === 2 && so.boite.every((n) => isInt(n) && n > 0))) err(`LIEUX.SORTES.${so.nom}.boite`, '[demi-largeur, hauteur] en px');
+    }
     for (const [b, c] of Object.entries((PM.CHEMINS || {}).COUTS || {})) {
       if (b !== 'chemin' && !(Array.isArray(BI) && BI.includes(b))) err('PLAN_MONDE.CHEMINS.COUTS', `« ${b} » n'est pas un biome (BIOMES)`);
       if (!(typeof c === 'number' && c > 0)) err(`PLAN_MONDE.CHEMINS.COUTS.${b}`, `un nombre positif ; reçu ${JSON.stringify(c)}`);
@@ -880,6 +915,16 @@ export function validateData(data) {
       });
       quand(where, s.quand); prio(where, s.priorite); effet(where, s.effet, s.lignes && s.lignes[0] && s.lignes[0].qui, true);
     });
+    // Les lieux du récit : une sorte de lieux.recit (LIEUX.SORTES de genre « recit »), une liste d'entrées
+    // { quand, texte } ; la dernière sans condition (le lieu dit toujours quelque chose).
+    const sortesRecit = ((data.LIEUX && data.LIEUX.SORTES) || []).filter((x) => x.genre === 'recit').map((x) => x.nom).concat(Object.keys((data.HAMEAUX && data.HAMEAUX.BATISSES) || {}));
+    for (const [sorte, liste] of Object.entries(R.LIEUX || {})) {
+      const where = `RECIT.LIEUX.${sorte}`;
+      if (!sortesRecit.includes(sorte)) err(where, `une sorte de lieu du récit (${sortesRecit.join(', ')})`);
+      if (!Array.isArray(liste) || !liste.length) { err(where, 'une liste de textes'); continue; }
+      liste.forEach((e, j) => { texte(`${where}[${j}].texte`, e.texte); if (e.quand !== undefined) quand(`${where}[${j}]`, e.quand); });
+      if (liste[liste.length - 1].quand) err(`${where}[${liste.length - 1}]`, 'la dernière entrée est sans condition');
+    }
     // Les promesses de Maurice : à qui, ce qu'il faut (des objets connus, des quantités entières), l'effet.
     for (const [id, P] of Object.entries(R.PROMESSES || {})) {
       const where = `RECIT.PROMESSES.${id}`;

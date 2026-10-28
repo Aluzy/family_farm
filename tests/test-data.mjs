@@ -182,4 +182,13 @@ refuse('récit : une promesse qui demande un objet inconnu', (d) => { d.RECIT.PR
 refuse('récit : une promesse sans quantité entière', (d) => { d.RECIT.PROMESSES.toit_garance.besoin.planche = 0; }, 'un entier au moins égal à 1');
 refuse('récit : une promesse faite à un inconnu', (d) => { d.RECIT.PROMESSES.toit_garance.qui = 'gaston'; }, 'un personnage de RECIT.PERSONNAGES');
 refuse('récit : confiance_partout non entière', (d) => { d.RECIT.PROMESSES.toit_garance.effet.confiance_partout = 1.5; }, 'des points entiers');
+refuse('monde : deux hameaux garantis du même nom', (d) => { d.PLAN_MONDE.HAMEAUX.GARANTIS[1].nom = 'Les Mouettes'; }, 'pris par aucun autre hameau garanti');
+refuse('monde : un hameau garanti au pays inconnu', (d) => { d.PLAN_MONDE.HAMEAUX.GARANTIS[0].pays = 'desert'; }, 'un pays parmi');
+refuse('monde : un hameau garanti au métier inconnu', (d) => { d.PLAN_MONDE.HAMEAUX.GARANTIS[0].metier = 'astronaute'; }, 'un métier parmi');
+refuse('monde : un lieu du récit sans cases fermées', (d) => { d.LIEUX.SORTES.find((x) => x.nom === 'epave').bloque = 'tout'; }, 'des décalages');
+refuse('monde : une bâtisse au meuble inconnu', (d) => { d.HAMEAUX.BATISSES.cabane.meubles.push(['piano', 1, 1]); }, '« piano » n\'est pas une pièce');
+refuse('monde : une bâtisse au meuble dans le mur', (d) => { d.HAMEAUX.BATISSES.atelier.meubles[0][1] = 0; }, 'dedans, hors des murs');
+refuse('monde : une bâtisse au style inconnu', (d) => { d.HAMEAUX.BATISSES.cabane.style = 'gothique'; }, 'un style de HAMEAUX.STYLES');
+refuse('récit : un texte pour un lieu inconnu', (d) => { d.RECIT.LIEUX.moulin = [{ texte: 'Un moulin.' }]; }, 'une sorte de lieu du récit');
+refuse('récit : un lieu dont la dernière entrée a des conditions', (d) => { d.RECIT.LIEUX.epave = [{ quand: { lune: 'pleine' }, texte: 'La coque luit.' }]; }, 'la dernière entrée est sans condition');
 refuse('récit : un salut trop long', (d) => { d.RECIT.SALUTS.reservee = ['x'.repeat(200)]; }, 'caractères');

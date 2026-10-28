@@ -158,7 +158,8 @@
       const ici = p ? Math.floor((p.y - 1) / T) * W + Math.floor(p.x / T) : -1;
       // (l'arrivée : la page le note, la première fois une bannière)
       if (ici >= 0) {
-        const h = this.hameauDeCase(ici, 1), id = h ? h.id : null;
+        // (une bâtisse du récit, la cabane, l'atelier : pas un hameau, rien à découvrir ni à peupler)
+        const h0 = this.hameauDeCase(ici, 1), h = h0 && !h0.batisse ? h0 : null, id = h ? h.id : null;
         if (id !== this.hameauIci) {
           this.hameauIci = id;
           if (h && this.ctx.bridge && this.ctx.bridge.hameau) this.ctx.bridge.hameau({ id: h.id, nom: h.nom, style: h.style });
@@ -174,7 +175,7 @@
       const maison = dans ? dans.t.maison.id : null;
       if (maison !== this.maisonIci) {
         this.maisonIci = maison;
-        if (dans && this.ctx.bridge && this.ctx.bridge.maison) this.ctx.bridge.maison({ hameau: dans.e.plan.id, maison, maurice: dans.e.plan.maisonMaurice === maison });
+        if (dans && this.ctx.bridge && this.ctx.bridge.maison) this.ctx.bridge.maison({ hameau: dans.e.plan.id, maison, maurice: dans.e.plan.maisonMaurice === maison, batisse: dans.e.plan.batisse || null });
       }
       if (this.stepHabitants) this.stepHabitants(dt);       // (ses habitants : habitants.js, fiche 7b)
       const pas = R.vitesse * dt, v = this.cameras.main.worldView, now = performance.now(), calme = reducedMotion();

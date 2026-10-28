@@ -78,7 +78,8 @@ export function hameauHabite(state, id) {
 // chaque maison prend son foyer, une fois. `o.eau` : l'eau où pêche son pêcheur (le coin de pêche le
 // plus proche ; sinon la mer sur la côte, la rivière ailleurs). → les habitants du hameau, ou null.
 export function peuplerHameau(state, plan, o = {}) {
-  if (!state || !state.monde || typeof state.monde !== 'object' || !plan || !plan.id || !Array.isArray(plan.maisons)) return null;
+  // (une bâtisse du récit, la cabane, l'atelier : personne n'y naît, monde-hameaux.js planBatisse)
+  if (!state || !state.monde || typeof state.monde !== 'object' || !plan || !plan.id || !Array.isArray(plan.maisons) || plan.batisse) return null;
   if (!state.monde.habitants || typeof state.monde.habitants !== 'object') state.monde.habitants = {};
   const H = state.monde.habitants;
   if (H[plan.id]) return H[plan.id];

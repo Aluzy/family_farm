@@ -3085,6 +3085,12 @@ export const RAW_DATA = {
         "Le Hameau des Pins",
         "Chantelune",
         "Les Roseaux"
+      ],
+      "GARANTIS": [
+        { "id": "mouettes", "nom": "Les Mouettes", "pays": "cote", "metier": "pecheur" },
+        { "id": "brumeval", "nom": "Brumeval", "pays": "montagne", "metier": "mineur" },
+        { "id": "bois_joli", "nom": "Bois-Joli", "pays": "foret", "metier": "bucheron" },
+        { "id": "genets", "nom": "Les Genêts", "pays": "lande", "metier": "berger" }
       ]
     },
     "CHEMINS": {
@@ -3102,7 +3108,8 @@ export const RAW_DATA = {
       "LONGE_COUT": 1
     },
     "GROTTES": { "NOMBRE": [3, 6], "ECART": 60, "PIED": 4, "FERME": 40 },
-    "PECHE": { "MER": 4, "ECART": 60 }
+    "PECHE": { "MER": 4, "ECART": 60 },
+    "RECIT": { "CABANE": { "CHEMIN": 14, "HAMEAU": 45, "FERME": 60 }, "ATELIER": { "HAMEAU": 40 }, "EPAVE": { "HAMEAU": 30 } }
   },
   "VEGETATION": {
     "SORTES": [
@@ -3186,7 +3193,7 @@ export const RAW_DATA = {
     "CLAIRIERES": { "PAS": 18, "SEUIL": 0.7, "FONDU": 0.06 },
     "TOUFFES": { "PAS": 5, "MIN": 0.2, "MAX": 1.8 },
     "FERME": 5,
-    "LIEUX": { "hameaux": 6, "grottes": 3, "peche": 2 },
+    "LIEUX": { "hameaux": 6, "grottes": 3, "peche": 2, "recit": 4 },
     "BORNES": {
       "foret": { "images": [0.05, 0.16], "basses": [0.03, 0.2] },
       "lande": { "images": [0.01, 0.05], "basses": [0.05, 0.3] },
@@ -3319,7 +3326,14 @@ export const RAW_DATA = {
     "SORTES": [
       { "nom": "entree_grotte", "genre": "entree", "variantes": 2 },
       { "nom": "ponton", "genre": "ponton", "variantes": 4 },
-      { "nom": "piquets", "genre": "coin", "variantes": 2 }
+      { "nom": "piquets", "genre": "coin", "variantes": 2 },
+      {
+        "nom": "epave",
+        "genre": "recit",
+        "variantes": 1,
+        "bloque": [[-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, -1], [0, -1], [1, -1]],
+        "boite": [34, 36]
+      }
     ],
     "NEIGE": 0.86,
     "BLOQUE": [[-1, 0], [0, 0], [1, 0], [-1, -1], [0, -1], [1, -1], [-1, -2], [0, -2], [1, -2]],
@@ -3562,6 +3576,26 @@ export const RAW_DATA = {
       "PAS": 2,
       "ORDRE": ["montagne", "cote", "marais", "foret", "lande"],
       "SEUILS": { "montagne": 0.25, "cote": 0.2, "marais": 0.2, "foret": 0.3, "lande": 0.4 }
+    },
+    "BATISSES": {
+      "cabane": {
+        "style": "foret",
+        "l": 5,
+        "h": 4,
+        "porte": 2,
+        "fenetres": [3],
+        "meubles": [["four", 1, 1], ["lit_adulte", 3, 2], ["chaise", 1, 2]],
+        "dehors": [["tas_bois", 3, -1], ["billot", -2, 0]]
+      },
+      "atelier": {
+        "style": "montagne",
+        "l": 7,
+        "h": 5,
+        "porte": 4,
+        "fenetres": [1, 2],
+        "meubles": [["table", 1, 1], ["armoire", 4, 1], ["cuisiniere", 5, 3], ["coffre", 1, 3], ["chaise", 2, 2]],
+        "dehors": [["tas_minerai", 3, -1], ["wagonnet", -3, 0]]
+      }
     },
     "STYLES": {
       "montagne": { "nom": "de la montagne", "mur": "pierre", "toit": "ardoise", "sol": "sol_dalles", "place": "paves", "foyer": "four" },
@@ -4111,6 +4145,20 @@ export const RAW_DATA = {
         "effet": { "fait": "maurice.fortune", "relation": { "achille": 5 } }
       }
     ],
+    "LIEUX": {
+      "cabane": [
+        {
+          "quand": { "lune": "pleine", "heure": [20, 5] },
+          "texte": "La cabane est vide, le lit froid. Dans les bois, quelqu'un marche sous la lune."
+        },
+        { "texte": "Une cabane de rondins, sans lampe. Une tasse sèche sur la table. Personne." }
+      ],
+      "atelier": [
+        { "quand": { "fait": "frida.rencontre" }, "texte": "L'atelier de Frida. Ça sent l'huile et le métal chaud. Elle n'est pas là." },
+        { "texte": "Un atelier plein d'outils et de pièces de métal. Ça sent l'huile. Personne." }
+      ],
+      "epave": [{ "texte": "Une vieille coque couchée sur le sable, le mât cassé. Ici, personne n'y touche." }]
+    },
     "PROMESSES": {
       "toit_garance": {
         "titre": "Le toit de Garance, aux Genêts",

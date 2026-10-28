@@ -97,7 +97,8 @@ test('la visite : le visiteur est un adulte du hameau le plus proche, toujours l
   const T = genererMonde(s.carte.graine).terrain, F = T.FERME, W = T.LARGEUR;
   const cx = F.X + (F.LARGEUR >> 1), cy = F.Y + (F.HAUTEUR >> 1);
   const d = (p) => Math.hypot((p.case % W) - cx, Math.floor(p.case / W) - cy);
-  const proche = [...P].sort((x, y) => d(x) - d(y))[0];
+  // (un hameau : pas une bâtisse du récit, la cabane, l'atelier)
+  const proche = P.filter((x) => !x.batisse).sort((x, y) => d(x) - d(y))[0];
   assertEqual(v.hameauId, proche.id);
   assertEqual(v.depart, proche.case);
   // ses habitants sont nés : le visiteur est l'un d'eux, un adulte

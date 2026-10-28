@@ -57,7 +57,9 @@
     "  sur une terre ouverte, plus LOIN_BONUS au plus selon sa distance à la ferme (jusqu'à LOIN",
     "  tuiles) ; NOMS : les noms qu'on leur donne (tirés sans répétition) ; GUE : le nom du hameau le plus proche de la",
     "  ferme, toujours (le Gué du récit, docs/recit/bible.md : le hameau natal de Maurice ; sa première maison est celle",
-    "  de Maurice, fermée, sans foyer).",
+    "  de Maurice, vide, sans foyer). GARANTIS : les autres hameaux du récit, dans l'ordre où ils choisissent : chacun prend",
+    "  le hameau qui reste dont le pays (cote, montagne, foret, lande) pèse le plus autour de lui ; metier : celui de",
+    "  ses habitants, si un peu de ce pays l'entoure (sinon celui que le lieu suggère, monde-hameaux.js).",
     "CHEMINS : COUTS, le prix d'un pas sur chaque biome (absent : on n'y passe pas ; « riviere » :",
     "  un pont ; « chemin » : un chemin déjà posé, à peine moins cher que la prairie, pour que la",
     "  boucle se ferme au lieu de faire le grand tour par les chemins posés) ; MEANDRE : l'écart",
@@ -71,7 +73,13 @@
     "GROTTES : leur nombre (au moins, au plus) au pied de la montagne (une terre basse à PIED",
     "  tuiles), à ECART tuiles l'une de l'autre, à FERME tuiles de la ferme au moins.",
     "PECHE : MER, le nombre de coins de pêche sur le rivage, à ECART tuiles l'un de l'autre ; un",
-    "  coin par lac et par rivière."
+    "  coin par lac et par rivière.",
+    "RECIT : les lieux garantis du récit (docs/recit/bible.md), une case chacun, dans lieux.recit ({ id, sorte, case }) :",
+    "  la cabane de Johnny (dans la forêt, à CHEMIN tuiles au moins de tout chemin, HAMEAU de tout hameau, FERME de la",
+    "  ferme : la plus loin des chemins), l'atelier de Frida (sur la rive d'un lac, ou d'une rivière s'il n'y a pas de",
+    "  lac : la rive la plus près de deux hameaux à la fois, à HAMEAU tuiles au moins de chacun), l'épave (sur la plage,",
+    "  au bord de la mer, à HAMEAU tuiles au moins de tout hameau : la plus loin des chemins). Sans place qui convienne,",
+    "  un lieu manque (rare : un monde sans forêt profonde, sans plage)."
   ],
   "PLAN_MONDE": {
     "LENT": 4, "GRILLE": 6, "SAUT": 3, "DECALAGE": 0.3, "ONDULE": { "PAS": 12, "AMPLITUDE": 0.35 },
@@ -96,14 +104,25 @@
       "NOMBRE": [6, 10], "GUE": "Le Gué", "ECART": 75, "FERME": 45, "PLACE": 3, "LISIERE": 4, "OUVERT": 0.3, "LOIN": 150, "LOIN_BONUS": 0.6,
       "NOMS": ["Les Saules", "Brumeval", "Roche-Claire", "Le Moulinet", "Fontfroide", "Les Genêts", "Hautepierre",
         "Le Gué", "Bois-Joli", "Les Mouettes", "Combelongue", "Pré-Fleuri", "La Bruyère", "L'Étang-Vieux",
-        "Les Ajoncs", "Sablons", "Val-Doré", "Le Hameau des Pins", "Chantelune", "Les Roseaux"]
+        "Les Ajoncs", "Sablons", "Val-Doré", "Le Hameau des Pins", "Chantelune", "Les Roseaux"],
+      "GARANTIS": [
+        { "id": "mouettes", "nom": "Les Mouettes", "pays": "cote", "metier": "pecheur" },
+        { "id": "brumeval", "nom": "Brumeval", "pays": "montagne", "metier": "mineur" },
+        { "id": "bois_joli", "nom": "Bois-Joli", "pays": "foret", "metier": "bucheron" },
+        { "id": "genets", "nom": "Les Genêts", "pays": "lande", "metier": "berger" }
+      ]
     },
     "CHEMINS": {
       "COUTS": { "prairie": 2, "lande": 3, "plage": 4, "foret": 5, "marais": 14, "montagne": 22, "riviere": 24, "chemin": 2.5 },
       "MEANDRE": 1.5, "PAS_MEANDRE": 40, "POIDS": 2, "PRES_FERME": 14, "PRES_FERME_COUT": 3, "REPRISE_MAX": 20000, "ESSAIS": 4, "LISSE": 10, "RAPPROCHE": 5, "LONGE": 8, "LONGE_COUT": 1
     },
     "GROTTES": { "NOMBRE": [3, 6], "ECART": 60, "PIED": 4, "FERME": 40 },
-    "PECHE": { "MER": 4, "ECART": 60 }
+    "PECHE": { "MER": 4, "ECART": 60 },
+    "RECIT": {
+      "CABANE": { "CHEMIN": 14, "HAMEAU": 45, "FERME": 60 },
+      "ATELIER": { "HAMEAU": 40 },
+      "EPAVE": { "HAMEAU": 30 }
+    }
   },
   "//VEGETATION": [
     "La végétation du grand monde (docs/grand-monde.md, fiche 5b), posée région par région par",
@@ -196,7 +215,7 @@
     "CLAIRIERES": { "PAS": 18, "SEUIL": 0.7, "FONDU": 0.06 },
     "TOUFFES": { "PAS": 5, "MIN": 0.2, "MAX": 1.8 },
     "FERME": 5,
-    "LIEUX": { "hameaux": 6, "grottes": 3, "peche": 2 },
+    "LIEUX": { "hameaux": 6, "grottes": 3, "peche": 2, "recit": 4 },
     "BORNES": {
       "foret": { "images": [0.05, 0.16], "basses": [0.03, 0.2] },
       "lande": { "images": [0.01, 0.05], "basses": [0.05, 0.3] },
@@ -377,13 +396,17 @@
     "devant (au sud) reste ouverte : on s'y tient pour entrer. Un coin de pêche (lieux.peche) : un",
     "ponton qui avance de PONTON cases sur un lac ou la mer (et l'eau continue au-delà), droit depuis la rive",
     "(on y marche : ses cases s'ouvrent), sinon des piquets sur la rive (les rivières, une eau trop",
-    "étroite)."
+    "étroite). Les lieux du récit qui sont un dessin (lieux.recit, genre « recit » : l'épave ; la cabane et l'atelier",
+    "sont bâtis, HAMEAUX.BATISSES) : posés sur leur case, le pied au bas de la case ; bloque : les cases qu'ils",
+    "ferment (comme BLOQUE) ; boite : la demi-largeur et la hauteur (px) de la boîte d'appui au-dessus du pied (les",
+    "toucher : RECIT.LIEUX, data/recit.json)."
   ],
   "LIEUX": {
     "SORTES": [
       { "nom": "entree_grotte", "genre": "entree", "variantes": 2 },
       { "nom": "ponton", "genre": "ponton", "variantes": 4 },
-      { "nom": "piquets", "genre": "coin", "variantes": 2 }
+      { "nom": "piquets", "genre": "coin", "variantes": 2 },
+      { "nom": "epave", "genre": "recit", "variantes": 1, "bloque": [[-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, -1], [0, -1], [1, -1]], "boite": [34, 36] }
     ],
     "NEIGE": 0.86,
     "BLOQUE": [[-1, 0], [0, 0], [1, 0], [-1, -1], [0, -1], [1, -1], [-1, -2], [0, -2], [1, -2]],
@@ -469,6 +492,11 @@
     "une part EAU du pays, ou un coin de pêche à PECHE cases ; bûcheron : la forêt pour une part FORET ;",
     "berger : la lande pour une part LANDE ; sinon cueilleur. TRAVAIL : les pièces du lieu de travail",
     "de chaque métier (l'enclos du berger : ENCLOS cases, clôturé, son auge dedans).",
+    "BATISSES : la cabane de Johnny et l'atelier de Frida (le récit, lieux.recit), bâties avec les mêmes pièces",
+    "qu'une maison de hameau (planBatisse) : style (HAMEAUX.STYLES : murs, toit, sol), l × h cases (murs compris), la",
+    "porte (sa colonne, dans le mur du bas), les fenêtres de la façade (leurs colonnes), les meubles [nom, colonne,",
+    "rangée] depuis le coin haut gauche (un meuble haut : sa case du bas), les objets du dehors [nom, dx, dy] depuis",
+    "la case devant la porte (celle du lieu).",
     "SORTES : les dessins de la planche (nom, genre, variantes ; à n'allonger qu'à la fin) : les murs,",
     "fenêtres et portes de chaque matière (16 variantes : le masque des murs voisins, comme à la ferme),",
     "les meubles et blocs de la ferme, la barrière, les objets du hameau, les arbres fruitiers ; les",
@@ -483,6 +511,10 @@
     "RESERVE": 2, "LIEUX": 4, "ENCLOS": [5, 4], "AGRANDI": 8, "PETITE": [5, 5],
     "CARACTERE": { "RAYON": 30, "PAS": 2, "ORDRE": ["montagne", "cote", "marais", "foret", "lande"],
       "SEUILS": { "montagne": 0.25, "cote": 0.2, "marais": 0.2, "foret": 0.3, "lande": 0.4 } },
+    "BATISSES": {
+      "cabane": { "style": "foret", "l": 5, "h": 4, "porte": 2, "fenetres": [3], "meubles": [["four", 1, 1], ["lit_adulte", 3, 2], ["chaise", 1, 2]], "dehors": [["tas_bois", 3, -1], ["billot", -2, 0]] },
+      "atelier": { "style": "montagne", "l": 7, "h": 5, "porte": 4, "fenetres": [1, 2], "meubles": [["table", 1, 1], ["armoire", 4, 1], ["cuisiniere", 5, 3], ["coffre", 1, 3], ["chaise", 2, 2]], "dehors": [["tas_minerai", 3, -1], ["wagonnet", -3, 0]] }
+    },
     "STYLES": {
       "montagne": { "nom": "de la montagne", "mur": "pierre", "toit": "ardoise", "sol": "sol_dalles", "place": "paves", "foyer": "four" },
       "cote": { "nom": "de la côte", "mur": "taille", "toit": "tuiles", "sol": "sol_tomettes", "place": "paves", "foyer": "cuisiniere" },

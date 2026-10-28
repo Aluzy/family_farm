@@ -1,5 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import { proposerScene } from './scene.js';
+import { toucherLieu } from '../engine/recit.js';
 import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
@@ -856,7 +857,19 @@ export function lieuDuPerso() {
   return { lieu: dedans ? 'ferme' : 'monde', hameau: null };
 }
 
+// Le récit (lot 3b) : un lieu du récit touché (l'épave : js/carte/ferme/lieux-monde.js) ou une bâtisse où
+// l'on entre (la cabane de Johnny, l'atelier de Frida : stageMaison) : ce qu'on y lit (RECIT.LIEUX,
+// toucherLieu), en notification.
+function stageLieuRecit(l) {
+  const r = l ? toucherLieu(state, l.sorte, lieuDuPerso() || {}) : null;
+  if (!r) return;
+  persistState();
+  setTimeout(() => notify(r.texte, { kind: 'info' }), 0);
+}
+
 function stageMaison(m) {
+  // (une bâtisse du récit, la cabane de Johnny, l'atelier de Frida : y entrer, c'est la découvrir)
+  if (m && m.batisse) { stageLieuRecit({ sorte: m.batisse }); return; }
   if (!m || !m.maurice) return;
   setTimeout(() => proposerScene({ lieu: 'maison_maurice', hameau: m.hameau }), 0);
 }
@@ -992,7 +1005,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

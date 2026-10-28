@@ -73,6 +73,10 @@ habitant, jamais fermée (on ne ferme pas, au Gué).
 | L'épave | Sur une plage | Le bateau de Johnny. Lieu silencieux. |
 | Les grottes de la montagne | Massif volcanique | Minerais, cristaux, obscurité. |
 
+Fait (lot 3b) : les quatre hameaux et les trois lieux isolés existent dans chaque monde (voir
+`plan.md`, « Les autres lieux garantis »). L'atelier de Frida est au bord d'un lac, le plus souvent ;
+sinon d'une rivière.
+
 ## 4. Société, coutumes et calendrier
 
 ### Qui vit sur l'île

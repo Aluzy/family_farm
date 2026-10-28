@@ -37,6 +37,11 @@ l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
 - Le Gué : le hameau le plus proche de la ferme porte toujours ce nom (`PLAN_MONDE.HAMEAUX.GUE`,
   `js/engine/monde-gen.js`) ; sa première maison est celle de Maurice (`maisonMaurice` dans son plan,
   `js/engine/monde-hameaux.js`), sans foyer (`peuplerHameau`, `js/engine/habitants.js`).
+- Les autres lieux garantis (lot 3b) : les hameaux de `PLAN_MONDE.HAMEAUX.GARANTIS` (`garanti` dans le plan,
+  leur métier forcé : `planHameau`), et `lieux.recit` (`js/engine/monde-gen.js`) : la cabane et l'atelier bâtis
+  comme une maison de hameau (`planBatisse`, `HAMEAUX.BATISSES` ; leur plan est marqué `batisse`, sans
+  habitants ni découverte), l'épave dessinée (`js/engine/monde-lieux.js`, `scripts/carte/lieux.py`, touchée par
+  `lieuRecitAt`) ; entrer ou toucher appelle `toucherLieu` (`js/engine/recit.js`).
 - Les personnages écrits sur la carte : `RECIT.PERSONNAGES[].habite` installe Odile, seule, dans le
   premier foyer du Gué à sa découverte (`peuplerHameau`), avec son apparence (`perso`) et l'id de son
   personnage (`recit`) ; la toucher passe par `paroleHameau` (`js/engine/recit.js`) : une réplique du

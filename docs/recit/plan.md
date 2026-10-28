@@ -15,7 +15,7 @@ se termine par une validation avant le suivant.
 | 4. Personnages écrits et scènes | Achille comme cocher nommé (fiche 12) ; Odile et les autres dans leur hameau ; la fenêtre de scène ; les bulles branchées sur le récit | `js/engine/habitants.js`, `recit.js`, `caleche.js`, `js/ui/habitants.js`, `js/ui/caleche.js`, `js/ui/scene.js` | 1 | P1 | fait |
 | 5. Première séquence jouable | L'acte I complet (ci-dessous) | `data/recit.json`, `data/campaign.json`, `js/ui/caleche.js`, `js/ui/didacticiel.js`, `js/ui/carnet.js` | 1, 3a, 4 | P1 | fait |
 | 6. Acte II | La première veillée, Frida à la ferme, la fortune de Maurice, les promesses confiées à Achille (l'atelier de Frida vient avec le lot 3b) | `data/recit.json`, `js/engine/recit.js`, `js/ui/caleche.js`, `js/ui/loop.js`, `js/ui/stage.js` | 5 | P2 | fait |
-| 3b. Les autres lieux garantis | Bois-Joli, Les Genêts, Les Mouettes, Brumeval, cabane de Johnny, atelier de Frida, l'épave | `monde-gen.js`, `monde-roches.js`, `monde-lieux.js` | 3a | P2 | à faire |
+| 3b. Les autres lieux garantis | Bois-Joli, Les Genêts, Les Mouettes, Brumeval, cabane de Johnny, atelier de Frida, l'épave | `monde-gen.js`, `monde-hameaux.js`, `monde-lieux.js`, `scripts/carte/lieux.py` | 3a | P2 | fait |
 | 7. Économie de l'île | Tissage et couture aux Genêts ; scierie et ébéniste à Bois-Joli ; l'Atelier ne fait plus de meubles ; les commerces du niveau 10 disparaissent | `habitants.js`, `blocs.js`, `data/items.json`, `data/meubles.json`, `data/recipes.json`, `data/niveaux.json` | 3b | P2 | à faire |
 | 8. Exploration | Compagnon qui garde la ferme (fiche 19), tente et bivouac, l'équipement (fiche 11) complété de la tente | `compagnon.js`, `night.js`, `equipement.js`, `data/equipement.json` | 1 | P2 | à faire |
 | 9. Actes III et IV | L'enveloppe, l'usure des maisons, la seconde veillée, la fête et ses fins, les lettres d'Adèle, les arcs de Théo et d'Achille | `data/recit.json`, `data/campaign.json`, `habitants.js` | 2, 6, 7 | P3 | à faire |
@@ -72,6 +72,26 @@ monde avant qu'on y soit allé (la lettre d'Adèle et le cocher en parlent).
 Reste pour plus tard : la confiance du hameau de chaque promesse (les Genêts, Bois-Joli et Les Mouettes
 n'existent qu'avec le lot 3b ; en attente, une promesse tenue donne 3 points à chaque hameau découvert) ;
 l'atelier de Frida (lot 3b) ; les veillées suivantes (acte III).
+
+## Les autres lieux garantis (lot 3b)
+
+- **Les hameaux** : après le Gué, Les Mouettes, Brumeval, Bois-Joli et Les Genêts prennent, dans cet
+  ordre, le hameau dont le pays (la côte, la montagne, la forêt, la lande) pèse le plus autour de lui
+  (`PLAN_MONDE.HAMEAUX.GARANTIS`). Seuls les noms bougent ; un hameau qui avait tiré un de ces noms en
+  reçoit un libéré. Leurs habitants ont le métier du lieu : pêcheurs, mineurs, bûcherons, bergers (le
+  tissage et la scierie viendront avec le lot 7). Vérifié sur 100 mondes : les cinq noms, une fois
+  chacun, sans doublon.
+- **Les lieux isolés** (`lieux.recit` du plan, `PLAN_MONDE.RECIT`) : la cabane de Johnny au fond de la
+  forêt, loin des chemins et des hameaux ; l'atelier de Frida sur la rive d'un lac (sinon d'une
+  rivière), le plus près de deux hameaux à la fois ; l'épave sur une plage au bord de la mer, loin des
+  hameaux. Présents dans les 100 mondes. La cabane et l'atelier sont bâtis en blocs de construction, comme
+  les maisons des hameaux (`HAMEAUX.BATISSES`, `planBatisse` : murs, porte, fenêtres, plancher, meubles,
+  toit qui s'efface quand on entre) ; y entrer donne un texte (`RECIT.LIEUX`) et note le fait
+  `lieu.<sorte>`. L'épave est un dessin (`scripts/carte/lieux.py`), qu'on touche. Ils ne sont pas montrés sur la carte
+  du monde : on les trouve en marchant (le fil de la lune n'est jamais signalé).
+- **Les anciennes parties** : comme pour le Gué, le monde tiré de la même graine peut changer de noms de
+  hameaux ; un hameau déjà visité garde le nom noté dans la partie (la décision sur les anciennes parties
+  reste ouverte).
 
 ## Les critères de qualité narrative
 
