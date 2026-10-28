@@ -129,12 +129,13 @@ dans `scripts/son/enregistrements/credits.json`, et recopiée dans `assets/son/C
 (silences coupés, volumes égalisés) sont gardés en FLAC dans `scripts/son/enregistrements/` ;
 `vers_jeu.py` les encode comme les autres sons.
 
-Restent synthétisés, faute d'enregistrement libre accessible : **le coq du réveil** (trois
-variantes, réglées sur des mesures générales de chants de coq : hauteur ≈ 750 Hz, formants
-≈ 880 / 1 680 / 2 970 Hz) et **les sabots** (une diagonale de trot par fichier, sur pierre
-ferrée, terre battue et herbe), dans `scripts/son/betes.py`. Un vrai chant
-de coq ou de vrais sabots libres (CC0) se mettraient à leur place : un fichier dans
-`enregistrements/`, une ligne dans `credits.json` et dans `vers_jeu.py`.
+**Le coq du réveil** est lui aussi un vrai enregistrement : un cocorico (BigSoundBank, CC0,
+`scripts/son/libres.py`), un peu plus fort que les autres bêtes.
+
+Restent synthétisés, faute d'enregistrement libre accessible, **les sabots** (une diagonale de
+trot par fichier, sur pierre ferrée, terre battue et herbe), dans `scripts/son/betes.py`. De
+vrais sabots libres (CC0) se mettraient à leur place : un fichier dans `enregistrements/`, une
+ligne dans `credits.json` et dans `vers_jeu.py`.
 
 **À l'approche d'un enclos** (`directeur`, `ENCLOS` dans `js/son.js`), pour chaque sorte de bête
 de la ferme (`FarmStage.scene().beasts`) :
@@ -209,6 +210,6 @@ dans `credits.json` :
 ## Limites connues
 
 - Il n'y a ni pluie ni météo dans le jeu : le son n'en a pas non plus.
-- Le coq et les sabots sont encore synthétisés (voir « Les bêtes de la ferme »).
+- Les sabots sont encore synthétisés (voir « Les bêtes de la ferme »).
 - Les portes posées en blocs ne s'animent pas : elles ne sonnent pas. Les habitants des hameaux
   n'ont pas de voix.
