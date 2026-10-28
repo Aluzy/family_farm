@@ -579,7 +579,7 @@ function gainStage(state, p) {
   if (isMoonPhase(state, 'croissante') && DATA.LUNE.POUSSE_CHANCE > 0 && p.stade < maxStage(p) && nextRandom(state) * 100 < DATA.LUNE.POUSSE_CHANCE) p.stade += 1;
 }
 
-// La pousse suit l'horloge : une plante arrosée gagne son stade TIME.POUSSE_HEURES heures
+// La pousse suit l'horloge (le récit, lot 10 : heuresPousse, plus vite avec la pierre de lune) : une plante arrosée gagne son stade TIME.POUSSE_HEURES heures
 // d'horloge après son arrosage (p.arroseH, heure absolue), de jour comme de nuit, puis
 // redemande de l'eau. La lune joue au moment où le stade est gagné (voir growAll). Une
 // plante arrosée sans heure connue (ancienne sauvegarde) compte depuis 6 h du jour. Appelée
@@ -592,7 +592,7 @@ export function growDue(state) {
   for (const p of allPlots(state)) {
     if (!p.arrose) continue;
     if (!Number.isFinite(p.arroseH)) p.arroseH = Math.min(debutJour, now);
-    if (now + EPS < p.arroseH + DATA.TEMPS.POUSSE_HEURES) continue;
+    if (now + EPS < p.arroseH + heuresPousse(state)) continue;
     if (p.culture && p.stade < maxStage(p)) gainStage(state, p);
     p.arrose = false;
     delete p.arroseH;
@@ -605,7 +605,15 @@ export function growDue(state) {
 export function growHoursLeft(state, plot) {
   if (!plot || !plot.arrose) return null;
   const debut = Number.isFinite(plot.arroseH) ? plot.arroseH : dayHour(state, DATA.TEMPS.HEURE_REVEIL);
-  return Math.max(0, debut + DATA.TEMPS.POUSSE_HEURES - absoluteHours(state));
+  return Math.max(0, debut + heuresPousse(state) - absoluteHours(state));
+}
+
+// Les heures d'un cycle de pousse : TEMPS.POUSSE_HEURES ; la pierre de lune posée sur la ferme (le récit, lot 10 :
+// le fait « pierre.posee », js/engine/fil-lune.js), RECIT.FIL.PIERRE.POUSSE fois moins (tout y pousse plus vite).
+export function heuresPousse(state) {
+  const f = state && state.recit && state.recit.faits;
+  const pierre = !!f && Array.isArray(f['pierre.posee']);
+  return DATA.TEMPS.POUSSE_HEURES * (pierre ? DATA.RECIT.FIL.PIERRE.POUSSE : 1);
 }
 
 /* ---------- Lot 8 : Serre ---------- */

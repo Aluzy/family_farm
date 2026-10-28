@@ -19,6 +19,8 @@
     "SACS : le sac à provisions du personnage principal (une quatrième case), et combien de portions (d'aliments) il",
     "contient. Hors de la ferme, le personnage ne mange que ce qu'il y a dans son sac ; le sac se remplit à la ferme,",
     "depuis l'inventaire ou le réfrigérateur, et ce qu'il contient périme comme dans l'inventaire.",
+    "La lanterne-tempête (le récit, lot 10) : portée à la main, elle éclaire un peu la nuit dans le grand monde ;",
+    "c'est elle qui fait voir, la nuit, ce qu'il y a dans l'épave (RECIT.LIEUX.epave : la condition equipe).",
     "TENTE : l'objet de la tente (le récit, lot 8) : le personnage principal la porte dans une case à part (à côté du",
     "sac) ; loin de la ferme, la nuit, il dort sous sa tente là où il est (le bivouac : js/engine/night.js",
     "dormirSousTente), au lieu de rentrer à son lit ; la famille dort à la ferme, le compagnon la garde.",
@@ -35,7 +37,8 @@
       "gants_travail": { "place": "mains", "enfant": false, "economie": { "couper": 20, "piocher": 20 } },
       "tablier": { "place": "corps", "enfant": true, "economie": { "labourer": 15, "planter": 15, "arroser": 15, "recolter": 15, "cueillir": 15 }, "faimAide": 25 },
       "salopette": { "place": "corps", "enfant": false, "toutes": 8 },
-      "manteau_chaud": { "place": "corps", "enfant": true, "toutes": 15, "horsFerme": true }
+      "manteau_chaud": { "place": "corps", "enfant": true, "toutes": 15, "horsFerme": true },
+      "lanterne_tempete": { "place": "mains", "enfant": false, "vueNuit": 130 }
     },
     "SACS": {
       "sac_petit": { "portions": 6 },

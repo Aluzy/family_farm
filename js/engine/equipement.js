@@ -184,7 +184,7 @@ export function rendreEquipement(state, id) {
 /* -- les effets -- */
 
 // Les pièces que porte le personnage principal.
-function piecesPrincipal(state) {
+export function piecesPrincipal(state) {
   const p = principal(state);
   return p ? piecesPortees(state, p.id) : [];
 }

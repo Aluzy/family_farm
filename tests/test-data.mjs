@@ -192,6 +192,11 @@ refuse('récit : réparer un toit avec un objet inconnu', (d) => { d.RECIT.USURE
 refuse('récit : une tournée hors des hameaux garantis', (d) => { d.RECIT.TOURNEE = ['cadolon']; }, 'une liste de hameaux garantis');
 refuse('courrier : un chapitre qui n\'existe pas', (d) => { d.COURRIER.adele_recolte.quand = { chapitre: 99 }; }, 'quand.chapitre');
 refuse('courrier : des jours après, sans fait', (d) => { d.COURRIER.adele_recolte.quand = { chapitre: 2, apres: 3 }; }, 'quand.apres');
+// (le récit, lot 10 : le fil de la lune)
+refuse('récit : une page inconnue au carnet en condition', (d) => { R0(d).quand = { fragment: 'page_perdue' }; }, 'une page de RECIT.FRAGMENTS');
+refuse('récit : porter ce qui ne se porte pas', (d) => { R0(d).quand = { equipe: 'planche' }; }, 'une pièce de EQUIPEMENT.PIECES');
+refuse('récit : la galerie sous la mine', (d) => { d.RECIT.FIL.GALERIE.NIVEAU = 99; }, 'un niveau de la mine de la ferme');
+refuse('récit : une pierre qui ne pousse rien', (d) => { d.RECIT.FIL.PIERRE.POUSSE = 0; }, 'RECIT.FIL.PIERRE.POUSSE');
 refuse('courrier : une condition inconnue', (d) => { d.COURRIER.adele_recolte.quand = { lune: 'pleine' }; }, 'condition inconnue');
 refuse('récit : montrer depuis une réplique (une scène seulement)', (d) => { R0(d).effet = { montrer: 'gue' }; }, 'effet inconnu');
 refuse('récit : un salut pour un niveau de confiance inconnu', (d) => { d.RECIT.SALUTS.glaciale = ['Hm.']; }, 'un niveau de RECIT.CONFIANCE.NIVEAUX');

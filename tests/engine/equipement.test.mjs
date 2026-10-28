@@ -31,9 +31,9 @@ const dedans = (s) => { const F = farmTerrain(s).FERME; s.monde.ici = (F.Y + 10)
 
 /* ---------- équiper et retirer ---------- */
 
-test('équipement : les données (7 pièces, deux sacs, chacune un objet fabriqué à l\'Atelier ou cousu aux Genêts)', () => {
+test('équipement : les données (8 pièces, la lanterne-tempête comprise, deux sacs, chacune un objet fabriqué à l\'Atelier ou cousu aux Genêts)', () => {
   const Q = DATA.EQUIPEMENT;
-  assertEqual(Object.keys(Q.PIECES).length, 7);
+  assertEqual(Object.keys(Q.PIECES).length, 8);
   assertEqual(Object.keys(Q.SACS), ['sac_petit', 'sac_grand']);
   for (const id of [...Object.keys(Q.PIECES), ...Object.keys(Q.SACS)]) {
     assertEqual(DATA.OBJETS[id].categorie, 'équipement', id);

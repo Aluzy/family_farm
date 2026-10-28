@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 429 icônes de 16×16 qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 431 icônes de 16×16 qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -417,6 +417,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/basket.png" width="48" height="48" alt=""> | 🧺 | [`basket.png`](basket.png) |
 | <img src="apercu/chair.png" width="48" height="48" alt=""> | 🪑 | [`chair.png`](chair.png) |
 | <img src="apercu/axe.png" width="48" height="48" alt=""> | 🪓 | [`axe.png`](axe.png) |
+| <img src="apercu/lanterne_tempete.png" width="48" height="48" alt=""> | 🪔 | [`lanterne_tempete.png`](lanterne_tempete.png) |
 | <img src="apercu/carpentry_saw.png" width="48" height="48" alt=""> | 🪚 | [`carpentry_saw.png`](carpentry_saw.png) |
 | <img src="apercu/ladder.png" width="48" height="48" alt=""> | 🪜 | [`ladder.png`](ladder.png) |
 | <img src="apercu/window.png" width="48" height="48" alt=""> | 🪟 | [`window.png`](window.png) |
@@ -430,6 +431,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/rock.png" width="48" height="48" alt=""> | 🪨 | [`rock.png`](rock.png) |
 | <img src="apercu/rock+gear.png" width="48" height="48" alt=""> | 🪨‍⚙ | [`rock+gear.png`](rock+gear.png) |
 | <img src="apercu/rock+medium_white_circle.png" width="48" height="48" alt=""> | 🪨‍⚪ | [`rock+medium_white_circle.png`](rock+medium_white_circle.png) |
+| <img src="apercu/pierre_lune.png" width="48" height="48" alt=""> | 🪨‍🌙 | [`pierre_lune.png`](pierre_lune.png) |
 | <img src="apercu/rock+spiral_shell.png" width="48" height="48" alt=""> | 🪨‍🐚 | [`rock+spiral_shell.png`](rock+spiral_shell.png) |
 | <img src="apercu/rock+nut_and_bolt.png" width="48" height="48" alt=""> | 🪨‍🔩 | [`rock+nut_and_bolt.png`](rock+nut_and_bolt.png) |
 | <img src="apercu/rock+large_orange_circle.png" width="48" height="48" alt=""> | 🪨‍🟠 | [`rock+large_orange_circle.png`](rock+large_orange_circle.png) |

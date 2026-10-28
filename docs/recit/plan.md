@@ -19,7 +19,7 @@ se termine par une validation avant le suivant.
 | 7. Économie de l'île | Tissage et couture aux Genêts ; scierie et ébéniste à Bois-Joli ; l'Atelier ne fait plus de meubles ; les commerces du niveau 10 disparaissent | `js/engine/ile.js`, `data/ile.json`, `js/ui/habitants.js`, `data/meubles.json`, `data/recipes.json`, `data/niveaux.json` | 3b | P2 | fait |
 | 8. Exploration | Compagnon qui garde la ferme (fiche 19), tente et bivouac, l'équipement (fiche 11) complété de la tente | `compagnon.js`, `night.js`, `equipement.js`, `blocs.js`, `data/equipement.json`, `js/ui/depart.js`, `js/ui/fiche-membre.js`, `js/ui/stage-windows.js`, `js/ui/loop.js` | 1 | P2 | fait |
 | 9. Actes III et IV | L'enveloppe, l'usure des maisons, la seconde veillée, la fête et ses fins, les lettres d'Adèle, les arcs de Théo et d'Achille | `data/recit.json`, `data/campaign.json`, `js/engine/recit.js`, `js/engine/usure.js`, `js/engine/habitants.js`, `js/ui/habitants.js`, `js/carte/ferme/hameaux.js` | 2, 6, 7 | P3 | fait |
-| 10. Le fil de la lune | Fragments, lanterne, repas à Johnny, galerie secrète, pierre et pousse accélérée | `js/engine/grotte.js`, `js/grotte.js`, `js/engine/crops.js`, `data/grotte.json` | 3b, 6 | P3 | à faire |
+| 10. Le fil de la lune | Fragments, lanterne, repas à Johnny, galerie secrète, pierre et pousse accélérée | `js/engine/fil-lune.js`, `js/grotte.js`, `js/ui/excursion.js`, `js/engine/crops.js`, `data/recit.json`, `scripts/carte/galerie.py` | 3b, 6 | P3 | fait |
 | 11. Textes et encyclopédie | Retirer « Printemps 2021 », Adèle à la place de Mateo, intros des chapitres, pages des hameaux et des personnages | `data/general.json`, `data/campaign.json`, `encyclopedie_ferme_familiale.json` | 5 | P2 | à faire |
 
 ## La première séquence jouable (lot 5)
@@ -193,6 +193,32 @@ l'atelier de Frida (lot 3b) ; les veillées suivantes (acte III).
 - Décision : la partie commence toujours à la ferme (la scène d'arrivée raconte le débarquement) ; la cale
   existe pour qu'on puisse y revenir.
 - Le dessin : `scripts/carte/lieux.py` (`cale`, quatre sens), posé comme un ponton (`js/engine/monde-lieux.js`).
+
+## Le fil de la lune (lot 10)
+
+Rien ne le signale (`js/engine/fil-lune.js`, `RECIT.FIL`) ; seules les pages du carnet s'annoncent.
+
+- **La note « J. »** : Achille, à la calèche, une fois « proche », après la fortune de Maurice (`note_j`).
+- **La page de bord** : à l'épave, la nuit, la lanterne-tempête à la main. La lanterne est une pièce
+  d'équipement (les mains, un peu de vue la nuit), fabriquée à l'Atelier (1 lingot de fer, 1 planche,
+  1 champignon lumineux : provisoire) ; dessinée sur le portrait. Une entrée de `RECIT.LIEUX` peut maintenant
+  avoir son effet (la page), et les conditions `equipe`, `fragment`, `sans_fragment`, `plat` existent.
+- **Les relevés de Frida** : la deuxième fois qu'on entre dans son atelier, Frida rencontrée (`frida_releves`).
+- **Johnny** (`visiteJohnny`) : on entre dans sa cabane ; il accueille sans se souvenir ; un plat cuisiné
+  apporté, un par jour, est un repas ; après trois repas, la nuit (20 h – 6 h), une bribe par phase (croissante,
+  pleine, nouvelle) va au carnet ; tard les nuits de pleine lune (23 h – 5 h), la cabane est vide. Johnny ne se
+  montre pas sur la carte : sa voix seulement.
+- **La galerie secrète** : les six pages au carnet, une nuit de pleine lune, de 22 h à 4 h : au niveau 4 de la
+  mine de la ferme, une fissure d'une lumière froide sur une paroi (`fissureDuNiveau`) ; on y passe : une
+  petite chambre fixe (`niveauGalerie`, `niveau=galerie`), une couverture, une tasse, des phases de lune
+  gravées, la pierre (un appui la prend). Les images : `assets/galerie.png` (`scripts/carte/galerie.py`).
+- **La pierre** : sa fiche dans l'inventaire, à la ferme : « La poser sur la ferme » (`poserPierre`). Tout y
+  pousse plus vite, tout le temps : un stade toutes les 18 heures au lieu de 24 (`heuresPousse`, provisoire,
+  pas encore calibré avec le joueur automatique) ; la ferme luit faiblement les nuits de pleine lune (une
+  lueur bleutée, `js/carte/ferme/chantier.js`). Frida doute (`frida_pierre`) ; Johnny : « Ah. Elle est rentrée. »
+- Pas fait : le souvenir de Lise (facultatif : Lise n'habite pas encore les Genêts) ; Johnny qui maigrit sans
+  visite.
+- Icônes pixel : la lanterne-tempête, la pierre. Tests : `tests/engine/fil-lune.test.mjs`.
 
 ## Les critères de qualité narrative
 
