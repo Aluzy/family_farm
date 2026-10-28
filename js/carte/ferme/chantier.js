@@ -39,7 +39,7 @@
   const estPorte = (s) => s === 'porte' || BLOCS_CARTE.hauts.modelesPortes[s] !== undefined;
 
   // La dalle sous un mur (syncDalle) : les `h` premières rangées de l'image du mur (son dessus,
-  // scripts/carte/blocs.py : 10 px), étirées sur sa case ; sur le sol, sous les parcelles (2).
+  // scripts/carte/blocs.py : 10 px), étirées sur sa case ; sur le sol.
   // Sous une porte, le seuil : une planche de chêne de x0 à x1, de y0 à y1 (px de la case).
   const DALLE = { h: 10, profondeur: 1.4, seuil: { x0: 1, x1: 15, y0: 4, y1: 12, bois: '#8a5a34', clair: '#b07a48', sombre: '#3a2414' } };
   // La tache de lumière des lanternes : un disque blanc qui s'estompe vers son bord (R px de
