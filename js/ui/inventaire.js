@@ -8,6 +8,7 @@ import { isUnlocked } from '../engine/campaign.js';
 import { sorteAPlanter } from '../engine/plantation.js';
 import { formatNumber, formatQty } from '../engine/format.js';
 import { ouvrirEnveloppe, RECIT } from '../engine/recit.js';
+import { FIL, poserPierre } from '../engine/fil-lune.js';
 import { persistState } from './storage.js';
 import { invTab, state } from './store.js';
 import { eatButton } from './energie.js';
@@ -16,7 +17,7 @@ import { fridgeIcon } from './serre-verger-frigo.js';
 import { pxText } from './pixel-art.js';
 import { tel } from './consent.js';
 import { morph } from './render.js';
-import { stageUsable } from './stage.js';
+import { lieuDuPerso, stageUsable } from './stage.js';
 import { accord, costLabel, itemsText, plural } from './common.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
@@ -164,6 +165,8 @@ function itemBodyHtml(o) {
   // fiche 11 : une pièce d'équipement, un sac à provisions
   // le récit, lot 9 : l'enveloppe de Maurice (ce qu'il a écrit dessus ; l'ouvrir la garde, js/engine/recit.js)
   if (o.item === RECIT.ENVELOPPE.OBJET) lines.push('📜 « Pour les toits de Céron : Odile saura. Ou pour toi, si tu en as plus besoin qu\'eux. Tu sauras. M. »');
+  // le récit, lot 10 : la pierre de lune (la poser sur la ferme : js/engine/fil-lune.js poserPierre)
+  if (o.item === FIL.PIERRE.OBJET) lines.push('🌙 Une pierre tiède, qui luit faiblement dans le noir.');
   if (o.item === 'cloche_maurice') lines.push('🔔 La cloche de la calèche de Maurice. Deux coups devant chaque maison : un pour bonjour, un pour au revoir.');
   if (estEquipement(o.item)) lines.push(`🧰 ${effetTexte(o.item)} ${sacDef(o.item) ? 'Il se porte dans la quatrième case de ta fiche (Famille).' : 'Elle se porte : Famille, la fiche d\'un membre, une case vide.'}`);
   let actions = '';
@@ -174,6 +177,7 @@ function itemBodyHtml(o) {
   } else {
     if (aPlanter) actions += `<button type="button" class="btn primary" data-action="arbre-planter" data-item="${o.item}">🌱 Planter</button>`;
     if (o.item === RECIT.ENVELOPPE.OBJET) actions += '<button type="button" class="btn" data-action="enveloppe-ouvrir">✉️ L\'ouvrir</button>';
+    if (o.item === FIL.PIERRE.OBJET && (lieuDuPerso() || {}).lieu === 'ferme') actions += '<button type="button" class="btn" data-action="pierre-poser">🪨 La poser sur la ferme</button>';
     if (it.mangeable) actions += eatButton(o.item, 'Manger');
     if (state.frigo.construit && isFridgeable(o.item)) {
       const off = fridgeRoom(state) < 1 ? ' disabled title="Le frigo est plein"' : '';
@@ -225,6 +229,13 @@ registerActions({
     if (!r.ok) return;
     persistState();
     notify(`✉️ Dans l'enveloppe, ${formatNumber(r.pieces)} 💰, et rien d'autre. Elles sont à toi.`, { kind: 'info' });
+  },
+  // le récit, lot 10 : la pierre posée sur la ferme (elle quitte l'inventaire ; la fiche se ferme)
+  'pierre-poser': () => {
+    const r = applyResult(poserPierre(state));
+    if (!r.ok) return;
+    persistState();
+    notify('🪨 La pierre est posée. La terre, dessous, est tiède.', { kind: 'info' });
   },
   'fridge-in-all': () => {
     const result = applyResult(moveAllToFridge(state));

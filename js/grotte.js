@@ -25,6 +25,12 @@
  * ferme. js/ui/excursion.js l'ouvre (Grotte.start) et passe d'un niveau à l'autre
  * (FermeHote.go). C'est le personnage principal de la partie qui s'y promène, à pied.
  * Voir docs/architecture-phaser.md.
+ *
+ * Le récit, lot 10 (le fil de la lune, js/engine/fil-lune.js) : une nuit de pleine lune, les fragments au
+ * carnet, une fissure éclairée d'une lumière froide s'ouvre dans une paroi d'un niveau de la mine
+ * (c.fissure, que la page donne : FermeHote.niveau) ; elle mène à la galerie (« niveau=galerie ») : une
+ * petite chambre fixe, une couverture, une tasse, des phases de lune gravées, et la pierre (un appui : elle
+ * va dans l'inventaire, FermeHote.pierre). Les images : assets/galerie.png (scripts/carte/galerie.py).
  */
 (function (global) {
   'use strict';
@@ -75,7 +81,13 @@
         halo: { rayon: 10, intensite: 0.35, attenuation: 0.08 } },
       cristal: { couleur: 0xa86cff, intensite: [0.35, 1.25], rayon: 34, portee: 56, eclat: [1.5, 4], etincelle: 0xf0deff,
         halo: { rayon: 9, intensite: 0.3, attenuation: 0.08 } },
+      // (le récit, lot 10 : la lumière froide de la fissure, la lueur de la pierre)
+      fissure: { couleur: 0x9fd4ff, intensite: 1.4, rayon: 90 },
+      pierre: { couleur: 0xcfeaff, intensite: [0.6, 1.3], rayon: 48, periode: 5 },
     },
+    // la galerie (le récit) : ses images (assets/galerie.png, cases de 32 px : la fissure, la couverture, la
+    // tasse, les gravures, la pierre) ; la pierre se prend à moins de `prend` px
+    galerie: { image: 'assets/galerie.png', cases: { fissure: 0, couverture: 1, tasse: 2, gravures: 3, pierre: 4 }, prend: 22 },
     // les réglages de la grotte `id` (« ferme » : la mine ; « grotte_<n> » : une grotte du monde)
     jeu(id) { return donnees(id); },
   };
@@ -94,6 +106,7 @@
       this.load.image('grotte_tuiles', v(GROTTE.tiles));
       this.load.spritesheet('grotte_objets', v(GROTTE.objets), { frameWidth: 32, frameHeight: 32 });
       this.load.json('grotte', v(GROTTE.meta));
+      this.load.spritesheet('galerie', v(GROTTE.galerie.image), { frameWidth: 32, frameHeight: 32 });
       // (la planche du personnage par son fichier : les textures restent d'une visite à l'autre,
       // et le personnage de la partie peut changer)
       const sheet = K.planchePerso();
@@ -152,7 +165,7 @@
         const w = cam.getWorldPoint(p.x, p.y);
         const a = this.passageAt(w.x, w.y);
         if (a) { this.versPassage(a); return; }
-        if (this.tapOre(w) || this.tapChampignon(w)) { this.dbl.oublie(); return; }
+        if (this.tapOre(w) || this.tapChampignon(w) || this.tapPierre(w)) { this.dbl.oublie(); return; }
         if (this.god()) { this.teleport(w.x, w.y); return; }
         K.astuceMarche(p);
         if (this.dbl.appui(w.x, w.y, cam.zoom)) this.goTo(w.x, w.y);
@@ -179,7 +192,8 @@
       const H = hote();
       const J = this.J = GROTTE.jeu(params.get('grotte'));
       const id = J.id;
-      const niveau = Math.max(1, Math.min(J.NIVEAUX, parseInt(params.get('niveau'), 10) || 1));
+      // (« galerie » : la petite chambre du fil de la lune, derrière la fissure de la mine de la ferme)
+      const niveau = params.get('niveau') === 'galerie' && id === 'ferme' ? 'galerie' : Math.max(1, Math.min(J.NIVEAUX, parseInt(params.get('niveau'), 10) || 1));
       const h = H && H.maintenant ? H.maintenant() : null;
       const jour = h ? h.jour : Math.floor(Date.now() / 864e5);
       const c = H.niveau(J, niveau, jour);
@@ -217,8 +231,20 @@
       for (const d of c.decor) this.layers.marquage.putTileAt(t(d.kind), d.x, d.y);
       // les objets : l'échelle, le puits, les stalagmites (on ne passe pas à travers)
       const ob = (n) => Math.max(0, meta.objets.indexOf(n));
-      const E = c.echelle, P = c.puits;
-      c.images = [this.add.image(E.x * T + 8, E.y * T + 15, 'grotte_objets', ob('echelle')).setOrigin(0.5, 1).setDepth(E.y * T)];
+      const E = c.echelle, P = c.puits, GA = GROTTE.galerie.cases;
+      // (dans la galerie, on revient par la fissure, sur la paroi au-dessus de l'arrivée : pas d'échelle)
+      c.images = [c.galerie
+        ? this.add.image(E.x * T + 8, E.y * T, 'galerie', GA.fissure).setOrigin(0.5, 1).setDepth(E.y * T - T)
+        : this.add.image(E.x * T + 8, E.y * T + 15, 'grotte_objets', ob('echelle')).setOrigin(0.5, 1).setDepth(E.y * T)];
+      // la fissure d'un niveau (la nuit qu'il faut) : sur sa paroi, le pied au bas de la case
+      const F = c.fissure;
+      if (F) c.images.push(this.add.image(F.x * T + 8, (F.y + 1) * T, 'galerie', GA.fissure).setOrigin(0.5, 1).setDepth(F.y * T));
+      // la galerie : la couverture, la tasse, les gravures (sur la paroi), la pierre (si elle est là)
+      if (c.galerie) {
+        const O = c.objets, poseObjet = (k, o, mur) => this.add.image(o.x * T + 8, (o.y + 1) * T + (mur ? 0 : 2), 'galerie', GA[k]).setOrigin(0.5, 1).setDepth(mur ? o.y * T : (o.y + 1) * T);
+        c.images.push(poseObjet('couverture', O.couverture), poseObjet('tasse', O.tasse), poseObjet('gravures', O.gravures, true));
+        if (!(H && H.pierrePrise && H.pierrePrise())) { this.pierreImg = poseObjet('pierre', O.pierre); c.images.push(this.pierreImg); }
+      }
       if (P) c.images.push(this.add.image(P.x * T + 8, P.y * T + 12, 'grotte_objets', ob('trou')).setOrigin(0.5, 0.75).setDepth(P.y * T - 8));
       for (const s of c.stalag) {
         c.images.push(this.add.image(s.x * T + 8, s.y * T + 15, 'grotte_objets', ob('stalagmite_' + s.v)).setOrigin(0.5, 1).setDepth(s.y * T + 15));
@@ -227,12 +253,17 @@
       // (au premier niveau, l'échelle remonte à la ferme, devant la porte de la mine ; d'une grotte
       // du monde, dans le monde, devant son entrée)
       const ici = `grotte?grotte=${id}`;
-      const pass = (nom, x, y, sens, cible) => ({ name: nom, x: x * T, y: y * T, width: T, height: T, cible, sens });
+      const pass = (nom, x, y, sens, cible, arrivee) => ({ name: nom, x: x * T, y: y * T, width: T, height: T, cible, sens, arrivee });
+      // (la galerie : on remonte par la fissure, vers le niveau d'où l'on vient, devant elle)
+      const remonter = c.galerie ? `${ici}&niveau=${c.retour}&arrivee=fissure`
+        : niveau > 1 ? `${ici}&niveau=${niveau - 1}&arrivee=bas` : `jeu.html?arrivee=${id === 'ferme' ? 'mine' : id}`;
       c.objects = {
         depart: [{ x: E.x * T + 8, y: (E.y + 1) * T + 12 }],
-        arrivees: [{ name: 'haut', x: E.x * T + 8, y: (E.y + 1) * T + 12 }].concat(P ? [{ name: 'bas', x: P.x * T + 8, y: (P.y + 1) * T + 12 }] : []),
-        passages: [pass('remonter', E.x, E.y - 1, 'haut', niveau > 1 ? `${ici}&niveau=${niveau - 1}&arrivee=bas` : `jeu.html?arrivee=${id === 'ferme' ? 'mine' : id}`)]
-          .concat(P ? [pass('descendre', P.x, P.y, 'bas', `${ici}&niveau=${niveau + 1}&arrivee=haut`)] : []),
+        arrivees: [{ name: 'haut', x: E.x * T + 8, y: (E.y + 1) * T + 12 }].concat(P ? [{ name: 'bas', x: P.x * T + 8, y: (P.y + 1) * T + 12 }] : [])
+          .concat(F ? [{ name: 'fissure', x: F.x * T + 8, y: (F.y + 1) * T + 12 }] : []),
+        passages: [pass('remonter', E.x, E.y - 1, 'haut', remonter)]
+          .concat(P ? [pass('descendre', P.x, P.y, 'bas', `${ici}&niveau=${niveau + 1}&arrivee=haut`)] : [])
+          .concat(F ? [pass('fissure', F.x, F.y, 'haut', `${ici}&niveau=galerie&arrivee=haut`, 'fissure')] : []),
       };
       return map;
     }
@@ -253,7 +284,7 @@
     makePassages(objs, arrivees) {
       this.passages = objs.map((o) => {
         const x = o.x + o.width / 2, y = o.y + o.height / 2;
-        const a = (arrivees || []).find((r) => r.name === (o.sens === 'haut' ? 'haut' : 'bas'));
+        const a = (arrivees || []).find((r) => r.name === (o.arrivee || (o.sens === 'haut' ? 'haut' : 'bas')));
         return { name: o.name, cible: o.cible, sens: o.sens, rect: o, x, y, pied: a ? { x: a.x, y: a.y } : { x, y: y + T } };
       });
       this.passageVise = null;
@@ -350,7 +381,8 @@
       const f = (lampe && lampe.lumiere ? lampe.lumiere / 100 : 1) * casque;
       const c = this.cave;
       const J = this.J, filon = J.filon && (c.meta.minerais || {})[J.filon];
-      this.say(`${J.monde ? '⛰️' : '⛏️'} ${J.nom} — niveau ${c.niveau}${c.niveau >= J.NIVEAUX ? ' (le plus profond)' : ''}${filon && c.niveau === 1 ? ` · un filon : ${filon.nom.toLowerCase()}` : ''}`);
+      if (c.galerie) this.say('🌙 Une petite chambre, derrière la paroi. Quelqu\'un a dormi ici.');
+      else this.say(`${J.monde ? '⛰️' : '⛏️'} ${J.nom} — niveau ${c.niveau}${c.niveau >= J.NIVEAUX ? ' (le plus profond)' : ''}${filon && c.niveau === 1 ? ` · un filon : ${filon.nom.toLowerCase()}` : ''}`);
       if (this.makeCaveLights(f)) return;
       const L = { r0: GROTTE.lumiere.r0 * f, r1: GROTTE.lumiere.r1 * f, noir: GROTTE.lumiere.noir }, N = 512, Z = 4;
       const cle = 'lumiere_grotte_' + Math.round(f * 100);   // une texture de N px, agrandie Z fois
@@ -384,7 +416,14 @@
       const la = L.lanterne;
       this.lanterne = this.lights.addLight(this.heroPos.x, this.heroPos.y - la.haut, GROTTE.lumiere.r1 * f * la.rayon, la.couleur, la.intensite);
       const E = c.echelle, ec = L.echelle;
-      this.lights.addLight(E.x * T + 8, E.y * T + 10, ec.rayon, ec.couleur, ec.intensite);
+      // (le récit, lot 10 : dans la galerie, la fissure du retour donne sa lumière froide à la place du jour)
+      if (c.galerie) this.lights.addLight(E.x * T + 8, E.y * T - 8, L.fissure.rayon, L.fissure.couleur, L.fissure.intensite);
+      else this.lights.addLight(E.x * T + 8, E.y * T + 10, ec.rayon, ec.couleur, ec.intensite);
+      if (c.fissure) this.lights.addLight(c.fissure.x * T + 8, c.fissure.y * T + 8, L.fissure.rayon, L.fissure.couleur, L.fissure.intensite);
+      if (this.pierreImg) {
+        const o = c.objets.pierre;
+        this.pierreLueur = this.lights.addLight(o.x * T + 8, o.y * T + 8, L.pierre.rayon, L.pierre.couleur, L.pierre.intensite[1]);
+      }
       this.lueurs = c.decor.map((d) => {
         const s = L[d.kind];
         const x = d.x * T + 8, y = d.y * T + 11;
@@ -411,6 +450,11 @@
     // s'avivent près de lui ; les spores et les étincelles, dans la vue seulement.
     stepCaveLights(time, dt) {
       if (!this.lueurs) return;
+      // (la pierre de la galerie respire, lentement)
+      if (this.pierreLueur) {
+        const p = GROTTE.lueurs.pierre, k = reduced() ? 0.5 : 0.5 + 0.5 * Math.sin((time / 1000) * (Math.PI * 2) / p.periode);
+        this.pierreLueur.setIntensity(p.intensite[0] + (p.intensite[1] - p.intensite[0]) * k);
+      }
       const P = this.heroPos, L = GROTTE.lueurs;
       this.lanterne.setPosition(P.x, P.y - L.lanterne.haut);
       const calme = reduced(), t = time / 1000;
@@ -491,6 +535,32 @@
       const x = d.x * T + 8, y = d.y * T + 13, P = this.heroPos;
       if (Math.hypot(x - P.x, y - P.y) > GROTTE.cueille) this.goTo(x, y);
       return true;
+    }
+
+    // La pierre de la galerie (le récit, lot 10) : le personnage y va et la prend (stepPierre) ; elle va dans
+    // l'inventaire (FermeHote.pierre), une fois.
+    tapPierre(w) {
+      const c = this.cave;
+      if (!c.galerie || !this.pierreImg) return false;
+      const o = c.objets.pierre;
+      if (Math.floor(w.x / T) !== o.x || Math.abs(Math.floor(w.y / T) - o.y) > 1) return false;
+      this.versPierre = true;
+      const P = this.heroPos, x = o.x * T + 8, y = o.y * T + 13;
+      if (Math.hypot(x - P.x, y - P.y) > GROTTE.galerie.prend) this.goTo(x - T, y);
+      return true;
+    }
+
+    stepPierre() {
+      if (!this.versPierre || this.path.length || !this.pierreImg) return;
+      this.versPierre = false;
+      const o = this.cave.objets.pierre, P = this.heroPos;
+      if (Math.hypot(o.x * T + 8 - P.x, o.y * T + 13 - P.y) > GROTTE.galerie.prend + T) return;
+      const H = hote(), r = H && H.pierre ? H.pierre() : null;
+      if (!r || !r.ok) return;
+      this.pierreImg.destroy();
+      this.pierreImg = null;
+      if (this.pierreLueur) { this.lights.removeLight(this.pierreLueur); this.pierreLueur = null; }
+      this.popGain({ [r.item]: 1 });
     }
 
     stepChampignon() {
@@ -636,6 +706,7 @@
       this.stepPassages();
       this.stepMine(dt);
       this.stepChampignon();
+      this.stepPierre();
       this.stepCaveLights(time, dt);
       const P = this.heroPos;
       const x0 = P.x, y0 = P.y;

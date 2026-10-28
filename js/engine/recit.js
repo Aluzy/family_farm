@@ -13,6 +13,7 @@ import { garantiDuHameau, habitantsDe, paroleHabitant, retirerEcrit } from './ha
 import { usureNuit } from './usure.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { earn } from './compta.js';
+import { piecesPrincipal } from './equipement.js';
 
 /* ---------- le récit de Céron : la mémoire, les relations et les répliques (docs/recit/) ----------
 
@@ -256,6 +257,12 @@ export function conditionsVraies(state, quand, qui = null, ctx = {}) {
       case 'voie': if (finAventure(state).voie !== v) return false; break;
       case 'fin': if (!liste(v).includes(finAventure(state).fin)) return false; break;
       case 'hameaux_min': if (hameauxConnus(state).length < v) return false; break;
+      // (le récit, lot 10) equipe : une pièce portée par le personnage principal (la lanterne-tempête) ;
+      // plat : il a un plat cuisiné ; fragment / sans_fragment : une page (ou une liste) au carnet, ou non.
+      case 'equipe': if (!liste(v).every((id) => piecesPrincipal(state).includes(id))) return false; break;
+      case 'plat': if (Object.keys(DATA.OBJETS).some((id) => DATA.OBJETS[id].plat && !DATA.OBJETS[id].retire && countItem(state, id) >= 1) !== v) return false; break;
+      case 'fragment': if (!liste(v).every((id) => recitDe(state).carnet.includes(id))) return false; break;
+      case 'sans_fragment': if (liste(v).some((id) => recitDe(state).carnet.includes(id))) return false; break;
       default: return false; // une condition inconnue n'est jamais vraie (build-data.mjs les refuse)
     }
   }
@@ -365,13 +372,18 @@ const nb = (v) => (Array.isArray(v) ? v.length : Math.max(0, Math.floor(Number(v
 // Le joueur touche le lieu du récit `sorte` (cabane, atelier, epave : lieux.recit du plan) : le texte de
 // la première entrée de RECIT.LIEUX[sorte] dont les conditions sont vraies, et le fait « lieu.<sorte> »
 // noté. → { texte } ou null (une sorte inconnue).
+// Le récit, lot 10 : une entrée peut avoir ses effets (la page de bord de l'épave, à la lanterne) : appliqués
+// quand elle est lue ; → { texte, fragment (la page gagnée, ou null) }.
 export function toucherLieu(state, sorte, ctx = {}) {
   const liste = (RECIT.LIEUX || {})[sorte];
   if (!Array.isArray(liste)) return null;
   const e = liste.find((x) => conditionsVraies(state, x.quand, null, ctx));
   if (!e) return null;
   noterFait(state, `lieu.${sorte}`);
-  return { texte: texteRecit(state, e.texte, ctx) };
+  const avant = recitDe(state).carnet.length;
+  appliquerEffet(state, e.effet, null, ctx);
+  const fragment = recitDe(state).carnet.length > avant ? recitDe(state).carnet[recitDe(state).carnet.length - 1] : null;
+  return { texte: texteRecit(state, e.texte, ctx), fragment };
 }
 
 /* ---------- les promesses de Maurice (lot 6) ---------- */

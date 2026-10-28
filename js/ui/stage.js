@@ -1,6 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { proposerScene } from './scene.js';
-import { noterVisite, toucherLieu } from '../engine/recit.js';
+import { aFait, noterVisite, RECIT, toucherLieu } from '../engine/recit.js';
+import { fermeLuit, visiteJohnny } from '../engine/fil-lune.js';
 import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
@@ -457,6 +458,8 @@ export function stageModel() {
     coucher: (coucher || asleep(state)) && nightActive(state),
     // le récit, lot 9 : les toits abîmés des hameaux ({ hameau: [maisons] } : js/carte/ferme/hameaux.js les troue)
     toitsUses: tousLesToitsUses(state),
+    // le récit, lot 10 : la ferme luit, la pierre de lune posée, les nuits de pleine lune (son centre, son rayon, px)
+    fermeLuit: fermeLuit(state) ? (() => { const F = farmTerrain(state).FERME; return F ? { x: (F.X + F.LARGEUR / 2) * 16, y: (F.Y + F.HAUTEUR / 2) * 16, rayon: Math.max(F.LARGEUR, F.HAUTEUR) * 9 } : null; })() : null,
     // le récit, lot 8 : sa tente plantée, le bivouac de la nuit (le pied de la tente, px) ; null sinon
     bivouac: state.bivouac && Number.isInteger(state.bivouac.case) ? { x: (state.bivouac.case % farmTerrain(state).LARGEUR) * 16 + 8, y: Math.floor(state.bivouac.case / farmTerrain(state).LARGEUR) * 16 + 14 } : null,
     dort: asleep(state),
@@ -870,15 +873,38 @@ export function lieuDuPerso() {
 // Le récit (lot 3b) : un lieu du récit touché (l'épave : js/carte/ferme/lieux-monde.js) ou une bâtisse où
 // l'on entre (la cabane de Johnny, l'atelier de Frida : stageMaison) : ce qu'on y lit (RECIT.LIEUX,
 // toucherLieu), en notification.
+// Le récit, lot 10 : une page du carnet gagnée là (la page de bord, à l'épave) est annoncée ensuite.
 function stageLieuRecit(l) {
   const r = l ? toucherLieu(state, l.sorte, lieuDuPerso() || {}) : null;
   if (!r) return;
   persistState();
-  setTimeout(() => notify(r.texte, { kind: 'info' }), 0);
+  setTimeout(() => { notify(r.texte, { kind: 'info' }); annoncerPage(r.fragment); }, 0);
+}
+
+// Une page de plus au carnet (le fil de la lune : rien d'autre n'est dit).
+function annoncerPage(id) {
+  const page = id && RECIT.FRAGMENTS[id];
+  if (page) notify(`📓 Une page de plus dans ton carnet : « ${page.titre} ».`, { kind: 'info' });
+}
+
+// Le récit, lot 10 : chez Johnny, la visite (js/engine/fil-lune.js visiteJohnny : son accueil, un repas
+// apporté, une bribe la nuit) ; chez Frida, une scène peut se jouer (ses relevés), sinon ce qu'on y voit.
+function stageCabane() {
+  const r = visiteJohnny(state);
+  persistState();
+  setTimeout(() => {
+    notify(r.absent ? r.texte : `🧓 Johnny : « ${escapeHtml(r.texte)} »`, { kind: 'info' });
+    annoncerPage(r.fragment);
+  }, 0);
 }
 
 function stageMaison(m) {
   // (une bâtisse du récit, la cabane de Johnny, l'atelier de Frida : y entrer, c'est la découvrir)
+  if (m && m.batisse === 'cabane') { stageCabane(); return; }
+  if (m && m.batisse === 'atelier' && aFait(state, 'lieu.atelier')) {
+    setTimeout(() => { if (!proposerScene({ lieu: 'atelier' })) stageLieuRecit({ sorte: 'atelier' }); }, 0);
+    return;
+  }
   if (m && m.batisse) { stageLieuRecit({ sorte: m.batisse }); return; }
   if (!m || !m.maurice) return;
   setTimeout(() => proposerScene({ lieu: 'maison_maurice', hameau: m.hameau }), 0);

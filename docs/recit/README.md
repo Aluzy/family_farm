@@ -80,6 +80,11 @@ l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
   `js/engine/habitants.js`) ; les scènes au toucher (`paroleDepuisCarte`, `js/ui/habitants.js`) ; les lettres
   (`mailDue`, `js/engine/campaign.js`) ; l'enveloppe dans l'inventaire (`js/ui/inventaire.js`, l'action
   `enveloppe-ouvrir`) ; les annonces de veillée et de fête (`inviterVeillee`, `js/ui/loop.js`).
+- Le fil de la lune (lot 10) : `js/engine/fil-lune.js` (`visiteJohnny`, `galerieOuverte`, `fissureDuNiveau`,
+  `niveauGalerie`, `prendrePierre`, `poserPierre`, `fermeLuit`) ; la cabane et l'atelier (`stageMaison`,
+  `js/ui/stage.js`) ; la galerie dans la mine (`FermeHote.niveau`, `FermeHote.pierre`, `js/ui/excursion.js` ;
+  `js/grotte.js`) ; la pierre dans l'inventaire (`js/ui/inventaire.js`, l'action `pierre-poser`) ; la pousse
+  (`heuresPousse`, `js/engine/crops.js`).
 - `scripts/lib/data.mjs` : la validation du récit à la construction des données.
 - Tests : `tests/engine/recit.test.mjs`, `tests/engine/recit-monde.test.mjs`, `tests/engine/recit-acte2.test.mjs`,
   `tests/test-data.mjs`.

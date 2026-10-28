@@ -46,8 +46,9 @@ MATS = {
     'jean': ('#22305a', '#34508a', '#5a7cb8'),
     'laine': ('#5a1a24', '#8a2a3a', '#b8485a'),
     'fourrure': ('#c8bca8', '#ece4d4', '#ffffff'),
+    'fer': ('#3a3e44', '#6a7078', '#a0a8b0'),        # la lanterne-tempête
 }
-FIXE = {'lampe': (255, 250, 214, 255), 'halo': (255, 222, 120, 255), 'bouton': (242, 192, 64, 255)}
+FIXE = {'lampe': (255, 250, 214, 255), 'halo': (255, 222, 120, 255), 'bouton': (242, 192, 64, 255), 'flamme': (255, 196, 92, 255)}
 
 
 def calque(formes):
@@ -146,9 +147,18 @@ def manteau_chaud(g):
     return calque([('laine', corps | manches), ('fourrure', col), ('bouton', boutons)])
 
 
+def lanterne_tempete(g):
+    # (le récit, lot 10) une petite lanterne pendue à la main droite : son anse, sa cage de fer, sa flamme
+    m, x1 = g['mains'], g['mainD']
+    anse = {(x1, m + 1), (x1 + 1, m + 1)}
+    cage = rect(x1, m + 2, x1 + 2, m + 5)
+    flamme = {(x1 + 1, m + 3), (x1 + 1, m + 4)}
+    return calque([('fer', anse | cage), ('flamme', flamme)])
+
+
 PIECES = {
     'casque_lampe': casque_lampe, 'chapeau_paille': chapeau_paille, 'bottes': bottes, 'gants_travail': gants_travail,
-    'tablier': tablier, 'salopette': salopette, 'manteau_chaud': manteau_chaud,
+    'tablier': tablier, 'salopette': salopette, 'manteau_chaud': manteau_chaud, 'lanterne_tempete': lanterne_tempete,
 }
 
 

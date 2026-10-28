@@ -143,6 +143,8 @@ export function sourcesOf(data, id) {
   if (data.DEPART && data.DEPART.ETAT_INITIAL && id in data.DEPART.ETAT_INITIAL.INVENTAIRE) out.push('DEPART.ETAT_INITIAL.INVENTAIRE');
   if (data.FAMILLE && id in data.FAMILLE.RESERVE_DEPART) out.push('FAMILY.RESERVE_DEPART');
   for (const [lid, l] of Object.entries(data.COURRIER || {})) if (id in (l.cadeaux || {})) out.push(`courrier ${lid}`);
+  // (le récit, lot 10 : la pierre de lune, prise dans la galerie secrète de la mine)
+  if (data.RECIT && data.RECIT.FIL && data.RECIT.FIL.PIERRE && data.RECIT.FIL.PIERRE.OBJET === id) out.push('la galerie secrète');
   // (le récit, lot 9 : une scène ou une réplique qui donne un objet, la cloche de Maurice à la fête)
   const R = data.RECIT || {};
   for (const e of [...(R.SCENES || []), ...(R.REPLIQUES || [])]) if (e && e.effet && e.effet.donner && id in e.effet.donner) out.push(`récit ${e.id}`);
@@ -900,6 +902,9 @@ export function validateData(data) {
           case 'voie': if (v !== 'petite' && v !== 'grande') err(w, 'petite ou grande'); break;
           case 'fin': if (!ids.every((x) => finsR.includes(x))) err(w, `une fin parmi ${finsR.join(', ')}`); break;
           case 'hameaux_min': if (!(isInt(v) && v >= 1)) err(w, 'un entier au moins égal à 1'); break;
+          case 'equipe': if (!ids.every((x) => ((data.EQUIPEMENT && data.EQUIPEMENT.PIECES) || {})[x])) err(w, 'une pièce de EQUIPEMENT.PIECES ou une liste'); break;
+          case 'plat': if (typeof v !== 'boolean') err(w, 'true ou false'); break;
+          case 'fragment': case 'sans_fragment': if (!ids.every((x) => frags.includes(x))) err(w, 'une page de RECIT.FRAGMENTS ou une liste'); break;
           default: err(w, 'condition inconnue');
         }
       }
@@ -954,6 +959,26 @@ export function validateData(data) {
     if (!US.REPARER || typeof US.REPARER !== 'object' || !Object.keys(US.REPARER).length) err('RECIT.USURE.REPARER', '{ objet: quantité }');
     else for (const [item, n] of Object.entries(US.REPARER)) { needItem('RECIT.USURE.REPARER', item); if (!(isInt(n) && n >= 1)) err(`RECIT.USURE.REPARER.${item}`, 'un entier au moins égal à 1'); }
     if (!Array.isArray(R.TOURNEE) || !R.TOURNEE.length || !R.TOURNEE.every((g) => garantisR.includes(g))) err('RECIT.TOURNEE', 'une liste de hameaux garantis');
+    // Le récit, lot 10 : le fil de la lune (js/engine/fil-lune.js).
+    const FL = R.FIL || {};
+    if (!Array.isArray(FL.FRAGMENTS) || !FL.FRAGMENTS.length || !FL.FRAGMENTS.every((f) => frags.includes(f))) err('RECIT.FIL.FRAGMENTS', 'une liste de pages de RECIT.FRAGMENTS');
+    const heures = (w, v) => { if (!(Array.isArray(v) && v.length === 2 && v.every((h) => isInt(h) && h >= 0 && h <= 24) && v[0] !== v[1])) err(w, '[de, à] heures entières'); };
+    const GA = FL.GALERIE || {};
+    const nbNiveaux = data.GROTTE && data.GROTTE.NIVEAUX;
+    if (isInt(nbNiveaux) && nbNiveaux > 0 && !(isInt(GA.NIVEAU) && GA.NIVEAU >= 1 && GA.NIVEAU <= nbNiveaux)) err('RECIT.FIL.GALERIE.NIVEAU', 'un niveau de la mine de la ferme (GROTTE.NIVEAUX)');
+    if (!phases.includes(GA.LUNE)) err('RECIT.FIL.GALERIE.LUNE', 'une phase de lune');
+    heures('RECIT.FIL.GALERIE.HEURES', GA.HEURES);
+    const CH = GA.CHAMBRE || {}, S = CH.SALLE || [];
+    if (!(isInt(CH.LARGEUR) && isInt(CH.HAUTEUR) && S.length === 4 && S.every(isInt) && S[0] >= 2 && S[1] >= 2 && S[2] < CH.LARGEUR - 2 && S[3] < CH.HAUTEUR - 2 && S[2] - S[0] >= 3 && S[3] - S[1] >= 3)) err('RECIT.FIL.GALERIE.CHAMBRE', 'LARGEUR, HAUTEUR et SALLE [x0, y0, x1, y1] : au moins 4 × 4 cases, deux cases de mur autour');
+    needItem('RECIT.FIL.PIERRE.OBJET', (FL.PIERRE || {}).OBJET);
+    if (!(typeof (FL.PIERRE || {}).POUSSE === 'number' && FL.PIERRE.POUSSE > 0 && FL.PIERRE.POUSSE <= 1)) err('RECIT.FIL.PIERRE.POUSSE', 'un nombre de 0 (exclu) à 1');
+    heures('RECIT.FIL.LUEUR', FL.LUEUR);
+    const JO = FL.JOHNNY || {};
+    if (!(isInt(JO.REPAS) && JO.REPAS >= 1)) err('RECIT.FIL.JOHNNY.REPAS', 'un entier au moins égal à 1');
+    heures('RECIT.FIL.JOHNNY.NUIT', JO.NUIT); heures('RECIT.FIL.JOHNNY.DEHORS', JO.DEHORS);
+    for (const [ph, f] of Object.entries(JO.BRIBES || {})) { if (!phases.includes(ph)) err(`RECIT.FIL.JOHNNY.BRIBES.${ph}`, 'une phase de lune'); if (!frags.includes(f)) err(`RECIT.FIL.JOHNNY.BRIBES.${ph}`, 'une page de RECIT.FRAGMENTS'); }
+    for (const k of ['ACCUEIL', 'REPAS_TEXTES']) { if (!Array.isArray(JO[k]) || !JO[k].length) err(`RECIT.FIL.JOHNNY.${k}`, 'une liste de textes'); else JO[k].forEach((t, j) => texte(`RECIT.FIL.JOHNNY.${k}[${j}]`, t)); }
+    for (const k of ['DEJA', 'PIERRE', 'VIDE']) texte(`RECIT.FIL.JOHNNY.${k}`, JO[k]);
     const ids = new Set();
     const unique = (where, id) => { if (typeof id !== 'string' || !id) err(where, 'un id'); else if (ids.has(id)) err(where, `id « ${id} » en double`); else ids.add(id); };
     const prio = (where, p) => { if (p !== undefined && !(isInt(p) && p >= 0 && p <= 100)) err(`${where}.priorite`, 'un entier de 0 à 100'); };
@@ -1003,7 +1028,7 @@ export function validateData(data) {
       const where = `RECIT.LIEUX.${sorte}`;
       if (!sortesRecit.includes(sorte)) err(where, `une sorte de lieu du récit (${sortesRecit.join(', ')})`);
       if (!Array.isArray(liste) || !liste.length) { err(where, 'une liste de textes'); continue; }
-      liste.forEach((e, j) => { texte(`${where}[${j}].texte`, e.texte); if (e.quand !== undefined) quand(`${where}[${j}]`, e.quand); });
+      liste.forEach((e, j) => { texte(`${where}[${j}].texte`, e.texte); if (e.quand !== undefined) quand(`${where}[${j}]`, e.quand); effet(`${where}[${j}]`, e.effet, null); });
       if (liste[liste.length - 1].quand) err(`${where}[${liste.length - 1}]`, 'la dernière entrée est sans condition');
     }
     // Les promesses de Maurice : à qui, ce qu'il faut (des objets connus, des quantités entières), l'effet.

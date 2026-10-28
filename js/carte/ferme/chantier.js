@@ -423,7 +423,8 @@
       const list = [];
       for (const e of (this.blocks || new Map()).values()) if (LUMIERES.includes(e.sorte)) list.push(e);
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
-      if (!list.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !this.calecheSprite) return;
+      const luit = this.ctx.lastModel && this.ctx.lastModel.fermeLuit;
+      if (!list.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !this.calecheSprite && !luit) return;
       if (!this.lanternLights) {
         this.lanternLights = [];
         lueur(this.textures);
@@ -468,6 +469,12 @@
       if (this.stepFenetresHameaux) this.stepFenetresHameaux(out, nuit);   // (les fenêtres des hameaux : hameaux.js)
       this.stepEauLumiere(out, nuit, time);
       if (this.lumiereCaleche) this.lumiereCaleche(out, nuit, time);   // (la lanterne de la calèche : caleche.js)
+      // (le récit, lot 10 : la pierre de lune posée, les nuits de pleine lune, la ferme luit faiblement : une
+      // grande lueur bleutée, à peine, qui respire ; model.fermeLuit : son centre et son rayon, px)
+      if (luit) {
+        const k = (calme ? 0.8 : 0.8 + 0.2 * Math.sin(time / 1800)) * Math.min(1, nuit / 0.4);
+        out.push({ key: 'lueur', x: luit.x, y: luit.y, tint: 0x9fc8ff, alpha: 0.22 * k, scaleX: luit.rayon / R, scaleY: (luit.rayon * 0.8) / R });
+      }
     },
 
     // Les sols posés (modèle.sols : [{ case, sorte }], le plancher et les autres modèles), à plat

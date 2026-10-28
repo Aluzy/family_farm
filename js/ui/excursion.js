@@ -16,6 +16,7 @@ import { asleep } from '../engine/night.js';
 import { encyclopedieCarte } from './encyclopedie.js';
 import { genererNiveau, idGrotteMonde, reglagesGrotte } from '../engine/grotte.js';
 import { farmTerrain } from '../engine/terrain.js';
+import { FIL, fissureDuNiveau, galerieOuverte, niveauGalerie, prendrePierre } from '../engine/fil-lune.js';
 
 /* ---------- la mine de la ferme et les grottes de la montagne, dans la page du jeu ----------
 
@@ -148,7 +149,17 @@ window.FermeHote = {
     const M = idGrotteMonde(id) ? farmTerrain(state).MONDE : null;
     return reglagesGrotte(M ? id : 'ferme', M ? M.graine : '');
   },
-  niveau: (J, n, jour) => genererNiveau(J, n, jour),
+  // (le récit, lot 10 : la galerie secrète de la mine de la ferme, js/engine/fil-lune.js ; « galerie » : la petite
+  // chambre ; au niveau FIL.GALERIE.NIVEAU, quand elle s'ouvre, la fissure qui y mène)
+  niveau: (J, n, jour) => {
+    if (n === 'galerie') return niveauGalerie();
+    const c = genererNiveau(J, n, jour);
+    if (J.id === 'ferme' && n === FIL.GALERIE.NIVEAU && galerieOuverte(state)) c.fissure = fissureDuNiveau(c);
+    return c;
+  },
+  // la pierre de la galerie : prise, elle va dans l'inventaire ({ ok, item } ou un refus) ; déjà prise ?
+  pierre: () => joue(prendrePierre(state)),
+  pierrePrise: () => !!(state.recit && state.recit.faits && state.recit.faits['pierre.trouvee']),
   say: (t) => showToast(t),
   // le god mode : un toucher pose le personnage, les flèches des niveaux sont toutes là
   god: () => godMode,

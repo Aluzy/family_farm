@@ -85,7 +85,19 @@
     "nuits, au plus MAX par hameau ; REPARER : ce que coûte un toit ; CONFIANCE : ce qu'il donne à son hameau ;",
     "ENVELOPPE_CONFIANCE : un toit réparé par Odile, une nuit, après le don de l'enveloppe.",
     "TOURNEE : les hameaux garantis où passer pendant la tournée d'Achille (le cheval boite, js/engine/recit.js",
-    "noterVisite)."
+    "noterVisite).",
+    "",
+    "Le récit, lot 10 (le fil de la lune, js/engine/fil-lune.js) :",
+    "Conditions de plus : equipe (une pièce ou une liste, portée par le personnage principal : la lanterne-tempête),",
+    "plat (true / false : il a un plat cuisiné), fragment / sans_fragment (une page ou une liste : au carnet, ou non).",
+    "Une entrée de LIEUX peut avoir un effet (appliqué quand elle est lue : la page de bord, à l'épave).",
+    "FIL : FRAGMENTS (les pages qu'il faut au carnet pour que la galerie s'ouvre) ; GALERIE : NIVEAU (celui de la mine",
+    "de la ferme où se voit la fissure), LUNE et HEURES (quand), CHAMBRE (la petite chambre : LARGEUR, HAUTEUR, SALLE",
+    "[x0, y0, x1, y1]) ; PIERRE : OBJET, POUSSE (le cycle de pousse multiplié, la pierre posée sur la ferme) ; LUEUR :",
+    "les heures où la ferme luit, les nuits de pleine lune ; JOHNNY : REPAS (les repas avant ses bribes), NUIT (les",
+    "heures de ses bribes), DEHORS (les heures où il n'est pas chez lui, les nuits de pleine lune), BRIBES (la page de",
+    "chaque phase), ACCUEIL, REPAS_TEXTES (le premier repas, le deuxième…), DEJA (un deuxième plat le même jour),",
+    "PIERRE (la pierre posée), VIDE (la cabane vide)."
   ],
   "RECIT": {
     "RELATION_MAX": 100,
@@ -110,6 +122,72 @@
     "ENVELOPPE": { "OBJET": "enveloppe_maurice", "PIECES": 15000, "CONFIANCE": 5 },
     "USURE": { "ACTE": 3, "NUITS": 4, "MAX": 2, "REPARER": { "planche": 6, "pierre": 4 }, "CONFIANCE": 5, "ENVELOPPE_CONFIANCE": 3 },
     "TOURNEE": ["genets", "bois_joli"],
+    "FIL": {
+      "FRAGMENTS": [
+        "note_j",
+        "page_bord",
+        "releves_frida",
+        "johnny_pleine",
+        "johnny_noire",
+        "johnny_croissante"
+      ],
+      "GALERIE": {
+        "NIVEAU": 4,
+        "LUNE": "pleine",
+        "HEURES": [
+          22,
+          4
+        ],
+        "CHAMBRE": {
+          "LARGEUR": 16,
+          "HAUTEUR": 14,
+          "SALLE": [
+            5,
+            5,
+            10,
+            9
+          ]
+        }
+      },
+      "PIERRE": {
+        "OBJET": "pierre_lune",
+        "POUSSE": 0.75
+      },
+      "LUEUR": [
+        20,
+        6
+      ],
+      "JOHNNY": {
+        "REPAS": 3,
+        "NUIT": [
+          20,
+          6
+        ],
+        "DEHORS": [
+          23,
+          5
+        ],
+        "BRIBES": {
+          "pleine": "johnny_pleine",
+          "nouvelle": "johnny_noire",
+          "croissante": "johnny_croissante"
+        },
+        "ACCUEIL": [
+          "Tu es nouveau ? Tu es déjà venu ? Ça ne fait rien. Assieds-toi.",
+          "Les crabes marchent de côté par politesse. Je crois.",
+          "Regarde la mousse sur ce rondin. Elle n'était pas là hier. Ou si.",
+          "Ah, quelqu'un. Il y a de la place. Il y a toujours de la place."
+        ],
+        "REPAS_TEXTES": [
+          "Oh, à manger. Quelqu'un m'en apportait, avant. De la soupe, souvent. Il parlait peu.",
+          "Tu reviens avec à manger. C'est gentil. Je l'ai déjà dit, peut-être.",
+          "Ça sent bon. Assieds-toi, on va regarder par la fenêtre en mangeant."
+        ],
+        "DEJA": "J'ai encore ce que tu m'as apporté tout à l'heure. Garde le tien.",
+        "PIERRE": "Ah. Elle est rentrée.",
+        "VIDE": "La cabane est vide, le lit froid. Dans les bois, quelqu'un marche sous la lune."
+      }
+    },
     "ACTES": [
       { "numero": 1, "titre": "L'arrivée", "chapitre": 1, "nuits": 0 },
       { "numero": 2, "titre": "Le petit de Maurice", "chapitre": 3, "nuits": 10 },
@@ -273,6 +351,39 @@
           { "qui": "odile", "texte": "On reviendra. Les soirs de pleine lune, laisse la porte ouverte." }
         ],
         "effet": { "fait": "veillee.ferme", "relation": { "odile": 5 }, "confiance_partout": 5 }
+      },
+      {
+        "id": "note_j",
+        "quand": { "lieu": "caleche_ferme", "palier_min": 3, "fait": "maurice.fortune", "sans_fragment": "note_j" },
+        "priorite": 75,
+        "lignes": [
+          { "qui": "achille", "texte": "Tiens. Un des deux carnets de Maurice. Je l'ai assez lu." },
+          { "qui": "achille", "texte": "Des « J. » partout. Un vieux fou qu'il aimait bien. Il lui portait la soupe." },
+          { "qui": "achille", "texte": "Fais-en ce que tu veux. Moi, je garde l'autre." }
+        ],
+        "effet": { "fragment": "note_j", "relation": { "achille": 5 } }
+      },
+      {
+        "id": "frida_releves",
+        "quand": { "lieu": "atelier", "fait": ["frida.rencontre", "lieu.atelier"], "sans_fragment": "releves_frida" },
+        "priorite": 90,
+        "lignes": [
+          { "qui": "frida", "texte": "Ah, toi. Pousse les boulons, assieds-toi." },
+          { "qui": "frida", "texte": "Tu veux un chiffre ? 14 % de mieux aux récoltes de pleine lune. Pas partout : au centre de l'île." },
+          { "qui": "frida", "texte": "Là où est ta ferme. Les anciens disent que c'est la lune. Moi, je dis que c'est intéressant." },
+          { "qui": "frida", "texte": "Tiens, garde la carte. J'en ai fait trois. Je ne sais pas ce qu'elle cherche, cette lune." }
+        ],
+        "effet": { "fragment": "releves_frida", "relation": { "frida": 10 } }
+      },
+      {
+        "id": "frida_pierre",
+        "quand": { "lieu": "atelier", "fait": ["frida.rencontre", "pierre.posee"], "sans_fait": "frida.pierre" },
+        "priorite": 95,
+        "lignes": [
+          { "qui": "frida", "texte": "Ta ferme pousse plus vite. 25 % plus vite. J'ai mesuré, ne fais pas cette tête." },
+          { "qui": "frida", "texte": "C'est peut-être le sol. Peut-être pas." }
+        ],
+        "effet": { "fait": "frida.pierre", "relation": { "frida": 5 } }
       },
       {
         "id": "enveloppe_odile",
@@ -496,6 +607,7 @@
         { "texte": "Un atelier plein d'outils et de pièces de métal. Ça sent l'huile. Personne." }
       ],
       "epave": [
+        { "quand": { "heure": [20, 6], "equipe": "lanterne_tempete", "sans_fragment": "page_bord" }, "texte": "À la lanterne, sous une membrure, une page de bord délavée. On ne lit presque plus rien.", "effet": { "fragment": "page_bord" } },
         { "texte": "Une vieille coque couchée sur le sable, le mât cassé. Ici, personne n'y touche." }
       ],
       "cale": [
