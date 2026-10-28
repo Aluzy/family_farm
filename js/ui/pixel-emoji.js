@@ -4,7 +4,7 @@
 // l'affichage change. Un emoji connu devient <i class="px" role="img" aria-label="💰"> (ou le
 // nom de l'objet, voir setEmojiNames),
 // une case de 16×16 de assets/icones.png. La planche et la table (icones.generated.js) sont
-// produites par scripts/icones/build.py à partir des dessins de scripts/icones/art_*.py.
+// assemblées par scripts/icones/build.py à partir des PNG de assets/icones/.
 //
 // Deux chemins :
 //   - pixelize(fragment) : appelé par morph() sur le gabarit, avant la comparaison, pour

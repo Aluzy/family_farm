@@ -344,7 +344,7 @@ def porte_verticale(tons=None):
 # l'ordre de BLOCS_CARTE.hauts.modelesPortes) : chacune peint son battant (une fonction de la
 # rangée u et de la colonne v d'un battant de w × h px : sa couleur), et les tons de son chant
 # quand elle est ouverte dans un mur vertical (porte_verticale : clair, moyen, sombre, ombre).
-# Le même battant, plus petit, fait l'icône de son objet (scripts/icones/art_blocs.py).
+# Le même battant, plus petit, a servi à dessiner l'icône de son objet (assets/icones/).
 CHENE = [(48, 28, 16), (78, 46, 26), (106, 66, 38), (140, 92, 54)]
 GRANGE = [(84, 22, 20), (132, 38, 32), (168, 54, 42), (200, 86, 66)]
 BLANC_GRANGE = (232, 228, 214)

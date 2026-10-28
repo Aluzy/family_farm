@@ -429,7 +429,7 @@ export const ICONES = {
 "🫙‍🥚": 421
 };
 // Dessins de 32×32 (assets/art.png) : nom → rang, ART_COLS cases par rangée.
-export const ART_VERSION = 'ad63329278';
+export const ART_VERSION = 'bd0be71d50';
 export const ART_COLS = 8;
 export const ART_ROWS = 5;
 export const ART = {

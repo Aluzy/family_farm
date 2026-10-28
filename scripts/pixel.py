@@ -1,6 +1,6 @@
 # Outils communs à tous les générateurs d'images (scripts/<dossier>/*.py) : les chemins du
 # dépôt, quelques aides de dessin au pixel (contour, mélange de couleurs, hasard fixe, aperçu
-# agrandi…) et les couleurs partagées par plusieurs dossiers.
+# agrandi…).
 #
 # Les générateurs se lancent depuis la racine du dépôt (python3 scripts/<dossier>/<fichier>.py) :
 # Python ne voit alors que leur propre dossier. Chacun ajoute donc scripts/ au chemin avant
@@ -23,14 +23,6 @@ T = 16                        # une tuile de la carte : 16 × 16 px
 
 # Trame ordonnée 4 × 4 (seuils de 0 à 15) : un fondu tramé entre deux couleurs, sans demi-teinte.
 BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
-
-# ---------- couleurs partagées ----------
-
-# Les icônes (scripts/icones/art_*.py) : l'or et l'eau de l'essai (art_essai.py), repris tels quels
-# par les lots suivants (les mêmes lettres pour les mêmes couleurs).
-PALETTE_OR = {'K': '#3a2414', 'Y': '#fbe38a', 'y': '#f2c040', 'o': '#c7862a', 'O': '#8a5418'}
-PALETTE_EAU = {'q': '#163a5c', 'd': '#2a70b0', 'b': '#4aa0e0', 'B': '#c4e8ff'}
-
 
 # ---------- couleurs ----------
 
