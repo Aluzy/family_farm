@@ -835,6 +835,27 @@ function stageHameau(h) {
 // au Gué, est le lieu de la scène d'Odile (odile_maison, data/recit.json ; js/ui/scene.js). Elle n'est pas
 // fermée : on ne ferme pas, au Gué ; la clé d'Achille dit que la maison est au joueur. (appelé pendant
 // l'image de la carte : la fenêtre s'ouvre juste après)
+// Le hameau où est le personnage (le pont hameauIci de la scène), ou null.
+let hameauActuel = null;
+function stageHameauIci(id) { hameauActuel = typeof id === 'string' ? id : null; }
+
+// Le lieu du récit où est le personnage (js/engine/recit.js, la condition lieu) : { lieu, hameau } —
+// « gue » au Gué, l'id d'un autre hameau, « ferme » dans l'enceinte de la ferme, « monde » ailleurs ;
+// null sans carte (le personnage n'est pas posé).
+export function lieuDuPerso() {
+  const S = window.FarmStage, t = S && S.persoCase ? S.persoCase() : -1;
+  if (!stageUsable() || !Number.isInteger(t) || t < 0) return null;
+  if (hameauActuel) {
+    const vu = state.monde && state.monde.hameaux && state.monde.hameaux[hameauActuel];
+    return { lieu: vu && vu.nom === DATA.PLAN_MONDE.HAMEAUX.GUE ? 'gue' : hameauActuel, hameau: hameauActuel };
+  }
+  const T = farmTerrain(state), F = T.FERME;
+  if (!F) return { lieu: 'ferme', hameau: null };
+  const x = t % T.LARGEUR, y = Math.floor(t / T.LARGEUR);
+  const dedans = x >= F.X && x < F.X + F.LARGEUR && y >= F.Y && y < F.Y + F.HAUTEUR;
+  return { lieu: dedans ? 'ferme' : 'monde', hameau: null };
+}
+
 function stageMaison(m) {
   if (!m || !m.maurice) return;
   setTimeout(() => proposerScene({ lieu: 'maison_maurice', hameau: m.hameau }), 0);
@@ -971,7 +992,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, maison: stageMaison, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) stageBroken = true;
     } catch (err) {
       stageBroken = true;
     }

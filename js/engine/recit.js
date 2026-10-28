@@ -10,6 +10,7 @@ import { farmSeed } from './terrain.js';
 import { soilCount } from './crops.js';
 import { fellenTrees } from './outils.js';
 import { habitantsDe, paroleHabitant } from './habitants.js';
+import { countItem, takeItem } from './inventory.js';
 
 /* ---------- le récit de Céron : la mémoire, les relations et les répliques (docs/recit/) ----------
 
@@ -25,7 +26,9 @@ import { habitantsDe, paroleHabitant } from './habitants.js';
      relations: { [personnage]: points } — de 0 à RELATION_MAX, entiers ; leur palier se lit dans PALIERS ;
      confiance: { [hameau]: points } — de 0 à CONFIANCE.MAX, entiers ; absent : CONFIANCE.DEPART ;
      dites: { [réplique ou scène]: jour } — le dernier jour où elle a été dite (une scène, jouée) ;
-     carnet: [fragment] — les pages du carnet du joueur, dans l'ordre où elles sont venues.
+     carnet: [fragment] — les pages du carnet du joueur, dans l'ordre où elles sont venues ;
+     promesses: { [promesse]: { [objet]: quantité donnée } } — ce que le joueur a déjà confié à Achille
+       pour chaque promesse de Maurice (lot 6).
    }
 
    Absent d'une partie d'avant (ou abîmé) : recitDe le remet vide, et reparerPartie le remet au
@@ -44,7 +47,7 @@ import { habitantsDe, paroleHabitant } from './habitants.js';
 export const RECIT = DATA.RECIT;
 
 export function nouveauRecit() {
-  return { faits: {}, relations: {}, confiance: {}, dites: {}, carnet: [] };
+  return { faits: {}, relations: {}, confiance: {}, dites: {}, carnet: [], promesses: {} };
 }
 
 const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -61,7 +64,7 @@ const jourDe = (state) => Math.max(1, Math.floor(Number(state && state.day) || 1
 export function recitDe(state) {
   if (!objet(state.recit)) state.recit = nouveauRecit();
   const r = state.recit;
-  for (const k of ['faits', 'relations', 'confiance', 'dites']) if (!objet(r[k])) r[k] = {};
+  for (const k of ['faits', 'relations', 'confiance', 'dites', 'promesses']) if (!objet(r[k])) r[k] = {};
   if (!Array.isArray(r.carnet)) r.carnet = [];
   return r;
 }
@@ -240,6 +243,8 @@ export function conditionsVraies(state, quand, qui = null, ctx = {}) {
       case 'genre': if (genreJoueur(state) !== v) return false; break;
       case 'enfants': if (aDesEnfants(state) !== v) return false; break;
       case 'humeur': if (!liste(v).includes(ctx.humeur)) return false; break;
+      case 'empreinte': if (!liste(v).includes(empreinteFerme(state).niveau)) return false; break;
+      case 'machines': if ((Object.keys(empreinteFerme(state).detail.machines).length > 0) !== v) return false; break;
       default: return false; // une condition inconnue n'est jamais vraie (build-data.mjs les refuse)
     }
   }
@@ -292,6 +297,7 @@ function appliquerEffet(state, effet, qui, ctx) {
   else if (objet(effet.relation)) for (const [p, n] of Object.entries(effet.relation)) ajouterRelation(state, p, n);
   if (typeof effet.confiance === 'number' && ctx.hameau) ajouterConfiance(state, ctx.hameau, effet.confiance);
   if (effet.fragment) ajouterFragment(state, effet.fragment);
+  if (typeof effet.confiance_partout === 'number') for (const h of hameauxConnus(state)) ajouterConfiance(state, h, effet.confiance_partout);
 }
 
 // `qui` parle : la réplique choisie est notée comme dite aujourd'hui et ses effets appliqués.
@@ -323,10 +329,12 @@ export function jouerScene(state, id, ctx = {}) {
   const s = RECIT.SCENES.find((x) => x.id === id);
   if (!s) return fail('Scène inconnue.');
   if (!scenesPossibles(state, ctx).includes(id)) return fail('Cette scène ne peut pas se jouer maintenant.');
+  // (une ligne peut porter le nom sous lequel le joueur connaît encore le personnage : « Le cocher » ; une
+  // ligne qui a ses conditions n'est dite que si elles sont vraies, évaluées avant les effets de la scène)
+  const dites = s.lignes.filter((l) => !l.quand || conditionsVraies(state, l.quand, l.qui, ctx));
   recitDe(state).dites[id] = jourDe(state);
   appliquerEffet(state, s.effet, s.lignes[0] && s.lignes[0].qui, ctx);
-  // (une ligne peut porter le nom sous lequel le joueur connaît encore le personnage : « Le cocher »)
-  const lignes = s.lignes.map((l) => ({ qui: l.qui, nom: l.nom || RECIT.PERSONNAGES[l.qui].nom, texte: texteRecit(state, l.texte, ctx) }));
+  const lignes = dites.map((l) => ({ qui: l.qui, nom: l.nom || RECIT.PERSONNAGES[l.qui].nom, texte: texteRecit(state, l.texte, ctx) }));
   return { ok: true, id, lignes };
 }
 
@@ -337,6 +345,52 @@ export function jouerScene(state, id, ctx = {}) {
    pas en jauge : les répliques, les veillées et les fins la lisent. */
 
 const nb = (v) => (Array.isArray(v) ? v.length : Math.max(0, Math.floor(Number(v) || 0)));
+
+/* ---------- les promesses de Maurice (lot 6) ---------- */
+
+// Les promesses ouvertes : celles que le carnet de Maurice a fait connaître (la page carnet_promesses).
+// → [{ id, titre, qui, besoin, donne, manque, commencee, tenue }], dans l'ordre de RECIT.PROMESSES ; []
+// tant que le carnet n'est pas trouvé. (donne : { objet: quantité confiée } ; manque : ce qui reste)
+export function promesses(state) {
+  if (!recitDe(state).carnet.includes('carnet_promesses')) return [];
+  return Object.keys(RECIT.PROMESSES || {}).map((id) => etatPromesse(state, id));
+}
+
+export function etatPromesse(state, id) {
+  const P = RECIT.PROMESSES[id];
+  if (!P) return null;
+  const d = objet(recitDe(state).promesses[id]) ? recitDe(state).promesses[id] : {};
+  const donne = {}, manque = {};
+  for (const [item, n] of Object.entries(P.besoin)) {
+    donne[item] = Math.min(n, Math.max(0, entier(d[item])));
+    if (donne[item] < n) manque[item] = n - donne[item];
+  }
+  return { id, titre: P.titre, qui: P.qui, besoin: { ...P.besoin }, donne, manque, commencee: aFait(state, `promesse.${id}.commencee`), tenue: aFait(state, `promesse.${id}`) };
+}
+
+// Le joueur confie à Achille ce qu'il a de ce qui manque à la promesse `id` (son inventaire : les
+// matériaux ne vont pas au frigo). Le premier don note « promesse.<id>.commencee » ; le dernier,
+// « promesse.<id> » et les effets de la promesse. → { ok, donnes: { objet: n }, tenue } ou un refus.
+export function livrerPromesse(state, id) {
+  const e = etatPromesse(state, id);
+  if (!e || !promesses(state).some((p) => p.id === id)) return fail('Promesse inconnue.');
+  if (e.tenue) return fail('Cette promesse est déjà tenue.');
+  const r = recitDe(state);
+  if (!objet(r.promesses[id])) r.promesses[id] = {};
+  const donnes = {};
+  for (const [item, n] of Object.entries(e.manque)) {
+    const pris = takeItem(state, item, Math.min(n, Math.floor(countItem(state, item))));
+    if (pris > 0) { donnes[item] = pris; r.promesses[id][item] = e.donne[item] + pris; }
+  }
+  if (!Object.keys(donnes).length) return fail('Tu n\'as rien de ce qu\'il manque.');
+  noterFait(state, `promesse.${id}.commencee`);
+  const tenue = !Object.keys(etatPromesse(state, id).manque).length;
+  if (tenue) {
+    noterFait(state, `promesse.${id}`);
+    appliquerEffet(state, RECIT.PROMESSES[id].effet, RECIT.PROMESSES[id].qui, {});
+  }
+  return { ok: true, donnes, tenue };
+}
 
 // L'empreinte de la ferme : { points, niveau, detail: { tuiles, abattus, plantes, betes, machines } }.
 // Les points ne descendent pas sous 0 (une ferme qui a replanté plus qu'elle n'a pris n'a pas de

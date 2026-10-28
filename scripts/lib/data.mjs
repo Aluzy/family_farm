@@ -808,7 +808,8 @@ export function validateData(data) {
           case 'chapitre_min': case 'jour_min': case 'jour_max': if (!(isInt(v) && v >= 1)) err(w, 'un entier au moins égal à 1'); break;
           case 'installee': if (typeof v !== 'boolean') err(w, 'true ou false'); break;
           case 'genre': if (v !== 'm' && v !== 'f') err(w, 'm ou f'); break;
-          case 'enfants': if (typeof v !== 'boolean') err(w, 'true ou false'); break;
+          case 'enfants': case 'machines': if (typeof v !== 'boolean') err(w, 'true ou false'); break;
+          case 'empreinte': if (!ids.every((x) => x in ((R.EMPREINTE && R.EMPREINTE.NIVEAUX) || {}))) err(w, 'un niveau de RECIT.EMPREINTE.NIVEAUX'); break;
           default: err(w, 'condition inconnue');
         }
       }
@@ -820,7 +821,8 @@ export function validateData(data) {
     // (montrer : une scène seulement, la page montre le lieu sur la carte du monde, js/ui/scene.js)
     const effet = (where, e, qui, scene = false) => {
       if (!e) return;
-      for (const k of Object.keys(e)) if (!['fait', 'relation', 'confiance', 'fragment', ...(scene ? ['montrer'] : [])].includes(k)) err(`${where}.effet.${k}`, 'effet inconnu');
+      for (const k of Object.keys(e)) if (!['fait', 'relation', 'confiance', 'confiance_partout', 'fragment', ...(scene ? ['montrer'] : [])].includes(k)) err(`${where}.effet.${k}`, 'effet inconnu');
+      if (e.confiance_partout !== undefined && !isInt(e.confiance_partout)) err(`${where}.effet.confiance_partout`, 'des points entiers');
       if (e.montrer !== undefined && e.montrer !== 'gue') err(`${where}.effet.montrer`, 'un lieu garanti (« gue »)');
       if (e.fait !== undefined && !(Array.isArray(e.fait) ? e.fait : [e.fait]).every((f) => typeof f === 'string' && f)) err(`${where}.effet.fait`, 'un fait ou une liste de faits');
       if (e.relation !== undefined) {
@@ -873,9 +875,20 @@ export function validateData(data) {
         if (!persos.includes(l.qui)) err(`${where}.lignes[${j}].qui`, 'un personnage de RECIT.PERSONNAGES');
         if (l.nom !== undefined && !(typeof l.nom === 'string' && l.nom)) err(`${where}.lignes[${j}].nom`, 'un nom');
         texte(`${where}.lignes[${j}].texte`, l.texte);
+        // (une ligne conditionnelle ; la première, elle, est toujours dite : elle porte les conditions de la scène)
+        if (l.quand !== undefined) { if (j === 0) err(`${where}.lignes[0].quand`, 'la première ligne est toujours dite'); else quand(`${where}.lignes[${j}]`, l.quand); }
       });
       quand(where, s.quand); prio(where, s.priorite); effet(where, s.effet, s.lignes && s.lignes[0] && s.lignes[0].qui, true);
     });
+    // Les promesses de Maurice : à qui, ce qu'il faut (des objets connus, des quantités entières), l'effet.
+    for (const [id, P] of Object.entries(R.PROMESSES || {})) {
+      const where = `RECIT.PROMESSES.${id}`;
+      if (typeof P.titre !== 'string' || !P.titre) err(`${where}.titre`, 'un titre');
+      if (!persos.includes(P.qui)) err(`${where}.qui`, 'un personnage de RECIT.PERSONNAGES');
+      if (!P.besoin || typeof P.besoin !== 'object' || !Object.keys(P.besoin).length) err(`${where}.besoin`, '{ objet: quantité }');
+      else for (const [item, n] of Object.entries(P.besoin)) { needItem(`${where}.besoin`, item); if (!(isInt(n) && n >= 1)) err(`${where}.besoin.${item}`, 'un entier au moins égal à 1'); }
+      effet(where, P.effet, P.qui);
+    }
     // Les saluts selon la confiance : un niveau de CONFIANCE.NIVEAUX, une liste de textes (bulle courte).
     for (const [n, liste] of Object.entries(R.SALUTS || {})) {
       if (!(n in ((R.CONFIANCE && R.CONFIANCE.NIVEAUX) || {}))) err(`RECIT.SALUTS.${n}`, 'un niveau de RECIT.CONFIANCE.NIVEAUX');

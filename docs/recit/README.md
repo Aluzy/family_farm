@@ -55,8 +55,14 @@ l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
 - Les bulles : le salut des adultes des hameaux suit la confiance (`RECIT.SALUTS`, `paroleHameau`) ;
   la faim chasse la phrase du repas (`paroleHabitant`). Le cocher dit une réplique à chaque fenêtre de
   la calèche ouverte près de lui ; une vente à la calèche note le fait `vente.caleche`.
+- L'acte II (lot 6) : le lieu du personnage (`lieuDuPerso`, `js/ui/stage.js` : « gue », un hameau, « ferme »,
+  « monde ») est donné aux scènes à chaque image ; la veillée au Gué, Frida à la ferme, la fortune de
+  Maurice à la calèche. L'annonce de la veillée : `inviterVeillee` (`js/ui/loop.js`). Les promesses :
+  `promesses`, `etatPromesse`, `livrerPromesse` (`js/engine/recit.js`, `state.recit.promesses`), confiées
+  dans l'onglet Vendre de la calèche (`js/ui/caleche.js`, l'action `promesse-confier`).
 - `scripts/lib/data.mjs` : la validation du récit à la construction des données.
-- Tests : `tests/engine/recit.test.mjs`, `tests/engine/recit-monde.test.mjs`, `tests/test-data.mjs`.
+- Tests : `tests/engine/recit.test.mjs`, `tests/engine/recit-monde.test.mjs`, `tests/engine/recit-acte2.test.mjs`,
+  `tests/test-data.mjs`.
 
 **Attention, le test anti-restes** (`tests/engine/finition.test.mjs`) interdit dans tous les
 textes du jeu les mots « ville », « Marché », « train », « école », « bus », « boutique »… Les

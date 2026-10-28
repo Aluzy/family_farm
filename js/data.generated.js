@@ -4040,9 +4040,122 @@ export const RAW_DATA = {
           { "qui": "odile", "texte": "On se tutoiera quand vous aurez passé une pleine lune ici." }
         ],
         "effet": { "fait": "odile.rencontre", "relation": { "odile": 10 }, "fragment": "carnet_promesses" }
+      },
+      {
+        "id": "veillee_1",
+        "quand": { "acte_min": 2, "lieu": "gue", "lune": "pleine", "heure": [19, 22], "fait": "odile.rencontre", "sans_fait": "veillee.1" },
+        "priorite": 100,
+        "lignes": [
+          { "qui": "odile", "texte": "Asseyez-vous. Les soirs de pleine lune, on la regarde ensemble." },
+          {
+            "qui": "garance",
+            "quand": { "fait": "promesse.toit_garance.commencee" },
+            "texte": "Il paraît que t'as commencé mon toit. On verra s'il tient."
+          },
+          {
+            "qui": "garance",
+            "quand": { "sans_fait": "promesse.toit_garance.commencee", "machines": true },
+            "texte": "Il paraît que t'as une machine qui travaille pour toi. Ici, on travaille pour nous."
+          },
+          {
+            "qui": "fernand",
+            "quand": {
+              "sans_fait": ["promesse.toit_garance.commencee", "promesse.scie_bois_joli.commencee", "promesse.pompe_mouettes.commencee"],
+              "machines": false
+            },
+            "texte": "Personne a encore d'avis sur toi. Profites-en, ça dure pas."
+          },
+          { "qui": "odile", "texte": "Bon. Tu as vu une pleine lune ici. On peut se tutoyer." },
+          { "qui": "achille", "texte": "Maurice venait jamais aux veillées. Toujours sur la route. Toi, t'es là. C'est déjà ça." }
+        ],
+        "effet": { "fait": ["veillee.1", "odile.tutoie"], "relation": { "odile": 10, "achille": 15 }, "confiance_partout": 5 }
+      },
+      {
+        "id": "frida_ferme",
+        "quand": { "acte_min": 2, "chapitre_min": 4, "lieu": "ferme", "sans_fait": "frida.rencontre" },
+        "priorite": 90,
+        "lignes": [
+          {
+            "qui": "frida",
+            "nom": "Une inconnue",
+            "texte": {
+              "m": "Alors c'est toi. La dernière fois que je t'ai vu, tu tenais dans un panier.",
+              "f": "Alors c'est toi. La dernière fois que je t'ai vue, tu tenais dans un panier."
+            }
+          },
+          { "qui": "frida", "texte": "Frida. Je fabrique des machines. Ici, on dit que ce n'est pas bien." },
+          { "qui": "frida", "texte": "Moi je dis que ça dépend de ce qu'on en fait." },
+          { "qui": "frida", "texte": "Un robot qui récolte, une station pour le recharger. Trois heures gagnées par jour. Pour l'île, ou pour toi." },
+          { "qui": "frida", "quand": { "empreinte": "basse" }, "texte": "Ta ferme est petite. Tant mieux : une machine y ferait moins de bruit." },
+          {
+            "qui": "frida",
+            "quand": { "empreinte": ["moyenne", "haute"] },
+            "texte": "Ta ferme grandit vite. Tu vas avoir besoin de moi, ou de beaucoup de bras."
+          },
+          { "qui": "frida", "texte": "Réfléchis. Mon atelier est au bord de l'étang." }
+        ],
+        "effet": { "fait": "frida.rencontre", "relation": { "frida": 10 } }
+      },
+      {
+        "id": "maurice_fortune",
+        "quand": { "acte_min": 2, "lieu": "caleche_ferme", "jour_min": 21, "palier_min": 2, "fait": "veillee.1", "sans_fait": "maurice.fortune" },
+        "priorite": 80,
+        "lignes": [
+          { "qui": "achille", "texte": "Tu crois qu'il t'a laissé quoi, Maurice ?" },
+          { "qui": "achille", "texte": "Il gagnait bien. Il gardait rien." },
+          { "qui": "achille", "texte": "Le toit des Genêts, la scie de Bois-Joli, la pompe des Mouettes : c'est lui." },
+          { "qui": "achille", "texte": "Quand il a arrêté, plus personne a payé. Ça se voit, maintenant." },
+          { "qui": "achille", "texte": "Ton héritage, c'est cette terre. Et ce que les gens pensent de toi à cause de lui." },
+          { "qui": "achille", "texte": "Ça aussi, ça se dépense." }
+        ],
+        "effet": { "fait": "maurice.fortune", "relation": { "achille": 5 } }
       }
     ],
+    "PROMESSES": {
+      "toit_garance": {
+        "titre": "Le toit de Garance, aux Genêts",
+        "qui": "garance",
+        "besoin": { "planche": 20, "pierre": 10, "laine": 5 },
+        "effet": { "relation": { "garance": 15, "achille": 5 }, "confiance_partout": 3 }
+      },
+      "scie_bois_joli": {
+        "titre": "Les lames de la scie, à Bois-Joli",
+        "qui": "basile",
+        "besoin": { "lingot_fer": 6, "planche": 10 },
+        "effet": { "relation": { "basile": 15, "achille": 5 }, "confiance_partout": 3 }
+      },
+      "pompe_mouettes": {
+        "titre": "La pompe des Mouettes",
+        "qui": "fernand",
+        "besoin": { "lingot_cuivre": 4, "lingot_fer": 4, "corde": 2 },
+        "effet": { "relation": { "fernand": 15, "achille": 5 }, "confiance_partout": 3 }
+      }
+    },
     "REPLIQUES": [
+      {
+        "id": "achille.veillee",
+        "qui": "achille",
+        "quand": { "acte_min": 2, "fait": "odile.rencontre", "sans_fait": "veillee.1", "lune": ["croissante", "pleine"] },
+        "texte": "La pleine lune arrive. On veille au Gué, le soir, de sept à dix. Viens donc.",
+        "priorite": 30,
+        "repos_jours": 2
+      },
+      {
+        "id": "achille.promesses",
+        "qui": "achille",
+        "quand": { "fait": "odile.rencontre", "palier_max": 2 },
+        "texte": "Les promesses de Maurice ? Donne-moi ce qu'il faut, je les porte. C'est sur ma route.",
+        "priorite": 25,
+        "repos_jours": 4
+      },
+      {
+        "id": "achille.fortune",
+        "qui": "achille",
+        "quand": { "fait": "maurice.fortune" },
+        "texte": "Maurice payait les toits. Toi, fais comme tu peux. Personne t'en demande autant.",
+        "priorite": 12,
+        "une_fois": true
+      },
       {
         "id": "achille.poli.surplus",
         "qui": "achille",
@@ -4098,6 +4211,14 @@ export const RAW_DATA = {
         "texte": "Ce que tu m'as vendu est parti en une matinée. Continue.",
         "priorite": 40,
         "repos_jours": 7
+      },
+      {
+        "id": "odile.veillee",
+        "qui": "odile",
+        "quand": { "acte_min": 2, "sans_fait": ["veillee.1", "odile.tutoie"], "fait": "odile.rencontre" },
+        "texte": "Les soirs de pleine lune, on veille sur la place, de sept à dix. Vous viendrez ?",
+        "priorite": 30,
+        "repos_jours": 3
       },
       {
         "id": "odile.vous",

@@ -20,7 +20,8 @@
  *     (dans le voile de l'heure, avec les lanternes de la ferme : chantier.js stepLanterns) ;
  *   - l'arrivée : le personnage qui entre dans un hameau le dit à la page (ctx.bridge.hameau : la
  *     première fois, une bannière à son nom, js/ui/stage.js) ; et la maison où il entre (ctx.bridge.maison :
- *     { hameau, maison, maurice } ; le récit, la maison de Maurice au Gué) ;
+ *     { hameau, maison, maurice } ; le récit, la maison de Maurice au Gué) ; et, à chaque changement, le
+ *     hameau où il est, ou null (ctx.bridge.hameauIci : le récit, la veillée au Gué) ;
  *   - le panneau qu'on touche dit le nom du hameau ; les outils qui n'y ont rien à faire le disent
  *     (on n'y casse rien, on n'y bâtit pas, on n'y laboure pas, on n'y coupe pas les arbres des
  *     jardins : hameauOutil, appelé en premier par hitAt, js/farm-stage.js).
@@ -161,6 +162,8 @@
         if (id !== this.hameauIci) {
           this.hameauIci = id;
           if (h && this.ctx.bridge && this.ctx.bridge.hameau) this.ctx.bridge.hameau({ id: h.id, nom: h.nom, style: h.style });
+          // (où il est, à chaque changement, null en sortant : le récit, js/ui/stage.js lieuDuPerso)
+          if (this.ctx.bridge && this.ctx.bridge.hameauIci) this.ctx.bridge.hameauIci(id);
         }
       }
       if (!this.hameauxVus || !this.hameauxVus.size) return;

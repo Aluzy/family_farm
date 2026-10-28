@@ -14,7 +14,7 @@ se termine par une validation avant le suivant.
 | 3a. Le Gué et la maison de Maurice | Un hameau garanti près de la ferme, la maison de Maurice (vide, jamais fermée) | `js/engine/monde-gen.js`, `monde-hameaux.js`, `js/engine/habitants.js`, `data/monde.json` | — | P1 | fait |
 | 4. Personnages écrits et scènes | Achille comme cocher nommé (fiche 12) ; Odile et les autres dans leur hameau ; la fenêtre de scène ; les bulles branchées sur le récit | `js/engine/habitants.js`, `recit.js`, `caleche.js`, `js/ui/habitants.js`, `js/ui/caleche.js`, `js/ui/scene.js` | 1 | P1 | fait |
 | 5. Première séquence jouable | L'acte I complet (ci-dessous) | `data/recit.json`, `data/campaign.json`, `js/ui/caleche.js`, `js/ui/didacticiel.js`, `js/ui/carnet.js` | 1, 3a, 4 | P1 | fait |
-| 6. Acte II | Veillées, Frida et son atelier, la fortune de Maurice, les promesses | `data/recit.json`, `js/engine/lune.js`, `data/recipes.json` | 5 | P2 | à faire |
+| 6. Acte II | La première veillée, Frida à la ferme, la fortune de Maurice, les promesses confiées à Achille (l'atelier de Frida vient avec le lot 3b) | `data/recit.json`, `js/engine/recit.js`, `js/ui/caleche.js`, `js/ui/loop.js`, `js/ui/stage.js` | 5 | P2 | fait |
 | 3b. Les autres lieux garantis | Bois-Joli, Les Genêts, Les Mouettes, Brumeval, cabane de Johnny, atelier de Frida, l'épave | `monde-gen.js`, `monde-roches.js`, `monde-lieux.js` | 3a | P2 | à faire |
 | 7. Économie de l'île | Tissage et couture aux Genêts ; scierie et ébéniste à Bois-Joli ; l'Atelier ne fait plus de meubles ; les commerces du niveau 10 disparaissent | `habitants.js`, `blocs.js`, `data/items.json`, `data/meubles.json`, `data/recipes.json`, `data/niveaux.json` | 3b | P2 | à faire |
 | 8. Exploration | Compagnon qui garde la ferme (fiche 19), tente et bivouac, l'équipement (fiche 11) complété de la tente | `compagnon.js`, `night.js`, `equipement.js`, `data/equipement.json` | 1 | P2 | à faire |
@@ -53,6 +53,25 @@ Ce qui a changé en route : la maison de Maurice n'est pas fermée (on ne ferme 
 d'Achille dit qu'elle est au joueur (« On ferme pas, ici. C'est pour dire que c'est à toi. »). La scène
 d'arrivée attend que le joueur ait répondu au bandeau des cookies. Le Gué garde son nom sur la carte du
 monde avant qu'on y soit allé (la lettre d'Adèle et le cocher en parlent).
+
+## L'acte II (lot 6)
+
+- **La première veillée** : au Gué, une nuit de pleine lune, de 19 h à 22 h, l'acte II ouvert et Odile
+  rencontrée. Une annonce le soir de pleine lune (à partir de 17 h), Achille et Odile en parlent avant.
+  Ses lignes dépendent de ce que le joueur a fait (une promesse commencée, une machine posée, rien) :
+  une ligne de scène peut avoir ses conditions. Odile tutoie ensuite ; chaque hameau découvert gagne
+  5 points de confiance (`confiance_partout`) ; Achille devient « cordial ».
+- **Frida** vient à la ferme au chapitre 4 (le palier « Automatisation » de l'arbre) ; elle parle de la
+  taille de la ferme (la condition `empreinte`).
+- **La fortune de Maurice** : Achille, à la calèche garée à la ferme, une fois « cordial », après la
+  veillée et la nuit 20.
+- **Les promesses** (`RECIT.PROMESSES`) : le toit de Garance, les lames de la scie de Bois-Joli, la pompe
+  des Mouettes. Le carnet de Maurice les ouvre ; le joueur confie ce qu'il a à Achille, à la calèche, en
+  une ou plusieurs fois (`livrerPromesse`). Les quantités sont provisoires.
+
+Reste pour plus tard : la confiance du hameau de chaque promesse (les Genêts, Bois-Joli et Les Mouettes
+n'existent qu'avec le lot 3b ; en attente, une promesse tenue donne 3 points à chaque hameau découvert) ;
+l'atelier de Frida (lot 3b) ; les veillées suivantes (acte III).
 
 ## Les critères de qualité narrative
 

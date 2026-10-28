@@ -25,7 +25,8 @@ import { morph, refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
-import { nomCocher, parler } from '../engine/recit.js';
+import { livrerPromesse, nomCocher, parler, promesses } from '../engine/recit.js';
+import { itemsText } from './common.js';
 import { proposerScene } from './scene.js';
 
 /* ---------- la calèche (fiche 7c : le Marché qui fait le tour du monde) ----------
@@ -174,12 +175,31 @@ function bandeauHtml(p) {
   return `<div class="caleche-bandeau${p.ici ? ' ici' : ''}" role="status"><span aria-hidden="true" class="caleche-ico">${CALECHE.ICONE}</span><span class="caleche-texte">${p.texte}</span>${bouton}</div>`;
 }
 
+// Le récit (lot 6) : les promesses de Maurice que son carnet a fait connaître, en haut de l'onglet Vendre.
+// Chacune dit ce qu'il faut, ce qui est déjà confié, et propose de confier au cocher ce que le joueur a de
+// ce qui manque (la calèche là). Une promesse tenue reste, cochée.
+function promessesHtml(p) {
+  const liste = promesses(state);
+  if (!liste.length) return '';
+  const ligne = (e) => {
+    const besoins = Object.entries(e.besoin).map(([item, n]) => {
+      const it = DATA.OBJETS[item];
+      return `<span class="promesse-besoin${e.donne[item] >= n ? ' ok' : ''}"><span aria-hidden="true">${it.icone}</span> ${it.nom} ${e.donne[item]}/${n}</span>`;
+    }).join('');
+    const peut = !e.tenue && p.ici && Object.keys(e.manque).some((item) => Math.floor(countItem(state, item)) > 0);
+    const bouton = e.tenue ? '<span class="promesse-tenue">✓ Tenue</span>'
+      : `<button type="button" class="btn small" data-action="promesse-confier" data-id="${e.id}"${peut ? '' : ' disabled'}>Confier à ${nomCocher(state, false)}</button>`;
+    return `<li class="promesse${e.tenue ? ' tenue' : ''}"><div class="promesse-titre">${escapeHtml(e.titre)}</div><div class="promesse-besoins">${besoins}</div>${bouton}</li>`;
+  };
+  return `<h3 class="section-title">📜 Les promesses de Maurice</h3><ul class="promesses">${liste.map(ligne).join('')}</ul>`;
+}
+
 // `fenetre` : dans la fenêtre flottante de la carte, les onglets sont dans son en-tête.
 export function renderComptoir(fenetre = false) {
   const tab = currentTab(), p = presence();
   let body;
   if (tab.id === 'vendre') {
-    body = slotsHtml(vendablesCaleche(state).map((k) => sellSlot(k, p.ici)), 'Tu n\'as rien à vendre pour l\'instant.');
+    body = promessesHtml(p) + slotsHtml(vendablesCaleche(state).map((k) => sellSlot(k, p.ici)), 'Tu n\'as rien à vendre pour l\'instant.');
   } else {
     const etal = etalCaleche(state, seedForSale);
     const graines = etal.filter((o) => o.sorte === 'semence'), coffre = etal.filter((o) => o.sorte === 'coffre');
@@ -374,6 +394,15 @@ registerActions({
     const result = applyResult(vendreCaleche(state, item, Math.max(1, Number(target.dataset.q) || 1), ouPerso()));
     // fiche 10 : les ventes répétées d'un même objet se cumulent (« +30 💰 » puis « +60 💰 »)
     if (result.ok) notify(null, { cumul: { cle: `caleche-vente:${item}`, quantites: { n: result.sold, gain: result.gain }, texte: (t) => `Vendu à la calèche : ${formatQty(t.n)} ${DATA.OBJETS[item].icone} (+${formatCoins(t.gain)} 💰)` } });
+  },
+  // le récit (lot 6) : confier au cocher ce qu'on a pour une promesse de Maurice (la calèche là)
+  'promesse-confier': (target) => {
+    if (!calecheIci(state, ouPerso()).ok) { notify(`${CALECHE.ICONE} La calèche n'est pas là.`); return; }
+    const r = livrerPromesse(state, target.dataset.id);
+    if (!r.ok) { notify(r.error); return; }
+    persistState();
+    notify(`${CALECHE.ICONE} ${nomCocher(state)} charge ${itemsText(r.donnes)}. ${r.tenue ? '« C\'est tout. Il aurait été content. »' : '« Je porte ça. Il en manque encore. »'}`, { kind: 'info' });
+    refresh();
   },
 });
 

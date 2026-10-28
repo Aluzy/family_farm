@@ -48,7 +48,7 @@ function jourDeLune(id) {
 test('récit : une partie neuve a un récit vide', () => {
   const s = createInitialState(1);
   assertEqual(s.recit, nouveauRecit());
-  assertEqual(s.recit, { faits: {}, relations: {}, confiance: {}, dites: {}, carnet: [] });
+  assertEqual(s.recit, { faits: {}, relations: {}, confiance: {}, dites: {}, carnet: [], promesses: {} });
 });
 
 test('récit : les faits gardent leur premier jour, leur dernier jour et leur nombre', () => {

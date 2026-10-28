@@ -53,6 +53,7 @@ export const GAME_ACTIONS = {
   'sell-item': 'Vendre',
   'buy-item': 'Acheter à la calèche (une semence, un produit des hameaux)',
   'caleche-heler': 'Héler la calèche',
+  'promesse-confier': 'Confier au cocher de quoi tenir une promesse de Maurice (le récit)',
   'carte-monde-but': 'Choisir le but de la boussole (carte du monde)',
   'carte-monde-ferme': 'Ramener la boussole à la ferme',
   'plant-all': 'Planter partout',

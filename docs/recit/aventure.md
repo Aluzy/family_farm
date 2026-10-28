@@ -46,6 +46,8 @@ ou d'Odile, les consignes restant dans les objectifs.
 
 - **Le premier carnet (C)** : les promesses que Maurice n'a pas pu tenir (le toit de Garance, la
   scie de Bois-Joli, la pompe des Mouettes). Chacune ouvre un arc ; aucune n'est imposée.
+  Le joueur confie à Achille, à la calèche, ce qu'il faut pour chacune, en une ou plusieurs fois :
+  Maurice faisait la même tournée.
 - **La première veillée de pleine lune (S)** : l'île rencontre la famille ; l'accueil varie selon ce
   que le joueur a fait (C). Odile le tutoie désormais.
 - **Frida vient à la ferme (S)** quand le palier « Automatisation » de l'arbre s'ouvre : elle

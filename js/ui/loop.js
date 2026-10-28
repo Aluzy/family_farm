@@ -1,7 +1,7 @@
 import { DATA, recipeOutput } from '../engine/catalog.js';
 import { setupPending } from '../engine/depart.js';
 import { watchSetup } from './depart.js';
-import { bedtimeDue, nightActive } from '../engine/clock.js';
+import { absoluteHours, bedtimeDue, nightActive } from '../engine/clock.js';
 import { tick } from '../engine/energy.js';
 import { memberName } from '../engine/family.js';
 import { ecouterJournal } from '../engine/journal.js';
@@ -21,6 +21,9 @@ import { watchChapters } from './chapitres.js';
 import { watchLevels } from './niveaux.js';
 import { sceneCaleche, watchCaleche } from './caleche.js';
 import { proposerScene } from './scene.js';
+import { lieuDuPerso } from './stage.js';
+import { aFait, acteEnCours, deHameau } from '../engine/recit.js';
+import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
 import {
   ALERT_MUTE_AFTER_CATCH_UP_MS, notify, setAlertMuteUntil, setAlertState, watchAlerts,
@@ -115,11 +118,25 @@ function watchRobot() {
 }
 
 // Le récit (docs/recit/, js/ui/scene.js) : une scène qui peut se jouer s'ouvre quand l'écran est calme,
-// après la famille composée et le bandeau des cookies : l'arrivée (sans lieu), la clé du cocher (la calèche
-// garée à la ferme, le joueur à côté). Les autres lieux ont leur déclencheur (la maison de Maurice : stage.js).
+// après la famille composée et le bandeau des cookies, au lieu où est le personnage (lieuDuPerso :
+// l'arrivée, Frida à la ferme, la veillée au Gué), puis la calèche garée à la ferme, le joueur à côté (la
+// clé, la fortune de Maurice). La maison de Maurice a son déclencheur (stage.js).
 function watchRecit() {
   if (setupPending(state) || consentBannerShown() || consentBannerPending() || !uiCalm()) return;
-  if (!proposerScene({})) sceneCaleche();
+  if (!proposerScene(lieuDuPerso() || {})) sceneCaleche();
+  inviterVeillee();
+}
+
+// La veillée (le récit, lot 6) : un soir de pleine lune, à partir de 17 h, une seule annonce par pleine
+// lune, tant que la première veillée n'a pas eu lieu et que l'acte II est ouvert.
+let veilleeAnnoncee = null;
+function inviterVeillee() {
+  if (aFait(state, 'veillee.1') || !aFait(state, 'odile.rencontre') || acteEnCours(state) < 2) return;
+  if (moonPhase(state.day).id !== 'pleine' || veilleeAnnoncee === state.day) return;
+  const h = absoluteHours(state) % 24;
+  if (h < 17 || h >= 22) return;
+  veilleeAnnoncee = state.day;
+  notify(`🌕 Pleine lune : ce soir, on veille sur la place ${deHameau(DATA.PLAN_MONDE.HAMEAUX.GUE)}, de 19 h à 22 h.`, { kind: 'info' });
 }
 
 function watchMail() {

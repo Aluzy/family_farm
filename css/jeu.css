@@ -2941,6 +2941,14 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .carnet-page + .carnet-page { border-top: 1px dashed currentColor; padding-top: 10px; }
 .carnet-page p { margin: 0; line-height: 1.5; font-style: italic; }
 .carnet-modal .btn { min-height: 44px; }
+/* Les promesses de Maurice (le récit, lot 6 : js/ui/caleche.js), en haut de l'onglet Vendre de la calèche. */
+.promesses { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.promesse { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.promesse-titre { flex: 1 1 100%; font-weight: 600; }
+.promesse-besoins { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 0.9rem; }
+.promesse-besoin.ok { opacity: 0.6; text-decoration: line-through; }
+.promesse .btn { min-height: 44px; }
+.promesse.tenue .promesse-titre { opacity: 0.7; }
 
 .habitant-bulle {
   position: absolute;
