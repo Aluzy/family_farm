@@ -229,6 +229,8 @@ def main():
     with open(os.path.join(ROOT, 'js', 'ui', 'icones.generated.js'), 'w', encoding='utf8') as f:
         f.write(js)
     print(f'{len(order)} icônes, planche {sheet.width}×{sheet.height} ; {len(names)} dessins, art.png {asheet.width}×{asheet.height}')
+    import export  # les icônes une par une dans icones/, à télécharger et retoucher
+    export.main()
 
 
 if __name__ == '__main__':

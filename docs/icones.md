@@ -15,6 +15,7 @@ jeu comme sur l'accueil, l'encyclopédie et la page des cookies.
 | `js/ui/icones.generated.js` | emoji → rang dans la planche, et l'empreinte de la planche (produit) |
 | `js/ui/pixel-emoji.js` | le remplacement à l'affichage |
 | `js/icones-page.js` | branche le remplacement sur les pages hors du jeu |
+| `scripts/icones/export.py` | range chaque icône dans son propre PNG sous [`icones/`](../icones) (16×16 et agrandie), avec une galerie : à télécharger depuis GitHub et retoucher ; lancé aussi par `build.py` |
 
 ## Dessins, police et jauges (sans emoji)
 
