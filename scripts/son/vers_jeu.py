@@ -69,7 +69,6 @@ T = {
  'dauphin': ('faune', g(f'{M2}/sfx/wildlife/dolphin_*.wav')),
  'lievre': ('faune', g(f'{M2}/sfx/wildlife/hare_*.wav')),
  'bouquetin': ('faune', g(f'{M2}/sfx/wildlife/ibex_*.wav')),
- 'renard': ('faune', g(f'{M2}/sfx/animals/dog_*.wav')),         # l'ancien aboiement synthétisé, joué plus aigu
  # gestes
  'hache': ('outils', g(f'{M1}/sfx/tools/axe_wood_*.wav')),
  'arbre_tombe': ('outils', g(f'{M1}/sfx/tools/tree_fall_*.wav')),

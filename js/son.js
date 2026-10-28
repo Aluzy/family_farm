@@ -72,7 +72,6 @@
     dauphin: ["faune/dauphin"],
     lievre: ["faune/lievre"],
     bouquetin: ["faune/bouquetin"],
-    renard: ["faune/renard_1", "faune/renard_2", "faune/renard_3"],
     hache: ["outils/hache_1", "outils/hache_2", "outils/hache_3"],
     arbre_tombe: ["outils/arbre_tombe"],
     pioche: ["outils/pioche_1", "outils/pioche_2", "outils/pioche_3"],
@@ -142,7 +141,7 @@
     arbre_tombe: ['effets', 0.85], dodo: ['interface', 0.45], echelle: ['effets', 0.6], ouvre: ['interface', 0.35],
     ferme: ['interface', 0.3], onglet: ['interface', 0.35], info: ['interface', 0.3], niveau: ['interface', 0.6],
     chapitre: ['interface', 0.6], techno: ['interface', 0.55], cloche: ['interface', 0.45], coq: ['monde', 0.55],
-    clochette: ['monde', 0.35], poussins: ['monde', 0.3], ebrouement: ['monde', 0.5], renard: ['monde', 0.6],
+    clochette: ['monde', 0.35], poussins: ['monde', 0.3], ebrouement: ['monde', 0.5],
   };
   const DUCK = new Set(['niveau', 'chapitre', 'techno', 'arbre_tombe']);   // la musique s'efface un instant
 
@@ -435,7 +434,7 @@
   const SALUT_CASES = 7, ENCLOS_PORTEE = 14;
   const CRI = { aigle: ['aigle', 1], mouette: ['aigle', 1.45], cygne: ['cygne', 1], canard: ['cygne', 1.35], ecureuil: ['ecureuil', 1],
     marmotte: ['marmotte', 1], dauphin: ['dauphin', 1], bouquetin: ['bouquetin', 1], lievre: ['lievre', 1], lapin: ['lievre', 1.15],
-    renard: ['renard', 1.5], chevreuil: ['lievre', 0.8], perdrix: ['oiseau', 0.8] };
+    chevreuil: ['lievre', 0.8], perdrix: ['oiseau', 0.8] };
   // le chat et le chien de la famille : l'attente entre deux cris (s), la portée (cases), et la chance
   // d'un second cri juste après
   const COMPAGNON = { chien: { attente: [30, 80], portee: 24, encore: 0.4 }, chat: { attente: [40, 100], portee: 22, encore: 0.15 } };

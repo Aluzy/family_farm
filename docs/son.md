@@ -172,8 +172,7 @@ Ce sont de vrais enregistrements de Joseph Sardin sur BigSoundBank, sous CC0, pr
   (« Barking Dog #2 ») : deux « wouf-wouf » et un aboiement seul. Pas un molosse : un chien de
   travail de taille moyenne, sans grognement.
 
-Le renard du grand monde garde son cri à lui (`renard`) : l'ancien aboiement synthétisé, joué une
-fois et demie plus aigu (`CRI.renard`).
+Le renard du grand monde ne crie pas (il n'a pas de vrai cri libre de droits).
 
 ## L'arrosoir, la hulotte et la grenouille
 
