@@ -490,8 +490,9 @@
         if (img) { if (img.frame.name !== frame) img.setFrame(frame); continue; }
         const x = col * T + T / 2, y = (Math.floor(c / cols) + 1) * T;
         S.set(c, this.add.image(x, y, BLOCS_CARTE.key, frame).setOrigin(0.5, 1).setDepth(BLOCS_CARTE.solDepth));
+        this.floorsN = (this.floorsN || 0) + 1;       // (les touffes d'herbe autour : herbes.js)
       }
-      for (const [c, img] of S) if (!at.has(c)) { img.destroy(); S.delete(c); }
+      for (const [c, img] of S) if (!at.has(c)) { img.destroy(); S.delete(c); this.floorsN = (this.floorsN || 0) + 1; }
     },
 
     // Les bêtes du Poulailler et de l'Étable de la ferme générée (modèle.enclos : [{ id, piece,

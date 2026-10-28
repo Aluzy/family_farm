@@ -478,6 +478,7 @@
           }
         }
         this.syncRegions();
+        this.syncHerbes();                      // (les touffes au pied des murs et des sols : herbes.js)
         this.cullDecor();
         this.stepOccluders(delta);
         this.stepVegetation(delta);
