@@ -2924,6 +2924,16 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 /* Les habitants des hameaux (fiche 7b, js/carte/ferme/habitants.js) : la bulle d'un habitant
    qu'on touche, au-dessus de sa tête (son prénom, son métier, sa phrase), dans le calque des
    étiquettes ; la fiche du hameau (js/ui/habitants.js : ses familles, sa réserve). */
+/* Le récit : la fenêtre d'une scène (js/ui/scene.js) — un portrait, un nom, une réplique, « Suite ». */
+.scene-modal { max-width: 420px; }
+.scene-ligne { display: flex; gap: 12px; align-items: flex-start; }
+.scene-portrait { flex: none; display: block; }
+.scene-parole { min-width: 0; }
+.scene-nom { margin: 0 0 4px; font-size: 1.05rem; }
+.scene-texte { margin: 0; font-size: 1.05rem; line-height: 1.5; min-height: 3em; }
+.scene-pied { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; }
+.scene-pied .btn { min-height: 44px; min-width: 44px; }
+
 .habitant-bulle {
   position: absolute;
   left: 0;

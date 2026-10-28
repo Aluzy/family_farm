@@ -218,7 +218,9 @@ test('récit : les scènes de l\'acte I se jouent une fois, dans l\'ordre de leu
   s.campagne.chapitre = 2;
   assertEqual(scenesPossibles(s, { lieu: 'hameau' }), []);
   assertEqual(scenesPossibles(s, { lieu: 'ferme' }), ['achille_cle']);
-  assert(jouerScene(s, 'achille_cle', { lieu: 'ferme' }).ok);
+  const cle = jouerScene(s, 'achille_cle', { lieu: 'ferme' });
+  assert(cle.ok, cle.error);
+  assertEqual(cle.lignes.map((l) => l.nom), ['Le cocher', 'Le cocher', 'Achille', 'Achille', 'Achille', 'Achille'], 'il se présente à la troisième ligne');
   // Odile, devant la maison de Maurice, au genre du personnage principal ; la page du carnet
   const m = s.famille.membres.find((x) => x.id === s.famille.principal);
   m.genre = 'f';

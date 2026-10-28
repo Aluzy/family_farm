@@ -3,7 +3,8 @@ import { escapeHtml, formatNumber } from '../engine/format.js';
 import { clockHours } from '../engine/clock.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { HAMEAUX, hameauxVus } from '../engine/monde-hameaux.js';
-import { ficheHameau, habitantAgit, habitantsDe, paroleHabitant, peuplerHameau } from '../engine/habitants.js';
+import { ficheHameau, habitantAgit, habitantsDe, peuplerHameau } from '../engine/habitants.js';
+import { paroleHameau } from '../engine/recit.js';
 import { solDuMonde } from './monde-sol.js';
 import { persoHtml } from './famille.js';
 import { openModal } from './modal.js';
@@ -82,9 +83,12 @@ export function habitantDepuisCarte(hameau, id, geste, piece) {
   return r;
 }
 
-// Le pont de la carte : ce que dit l'habitant qu'on touche ({ hameau, id, activite, n }).
+// Le pont de la carte : ce que dit l'habitant qu'on touche ({ hameau, id, activite, n }). Un personnage
+// écrit du récit (Odile au Gué…) dit une réplique du récit, notée dans la partie (paroleHameau).
 export function paroleDepuisCarte(o) {
-  return paroleHabitant(state, o.hameau, o.id, { heure: clockHours(state), activite: o.activite, n: o.n });
+  const r = paroleHameau(state, o.hameau, o.id, { heure: clockHours(state), activite: o.activite, n: o.n });
+  if (r && r.recit) persistState();
+  return r;
 }
 
 /* ---------- la fiche du hameau ---------- */

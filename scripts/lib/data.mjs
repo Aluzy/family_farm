@@ -843,6 +843,17 @@ export function validateData(data) {
     const ids = new Set();
     const unique = (where, id) => { if (typeof id !== 'string' || !id) err(where, 'un id'); else if (ids.has(id)) err(where, `id « ${id} » en double`); else ids.add(id); };
     const prio = (where, p) => { if (p !== undefined && !(isInt(p) && p >= 0 && p <= 100)) err(`${where}.priorite`, 'un entier de 0 à 100'); };
+    const nbPersos = (data.FAMILLE && data.FAMILLE.PROFIL && data.FAMILLE.PROFIL.PERSOS) || 50;
+    for (const [id, p] of Object.entries(R.PERSONNAGES || {})) {
+      const where = `RECIT.PERSONNAGES.${id}`;
+      if (typeof p.nom !== 'string' || !p.nom) err(`${where}.nom`, 'un nom');
+      if (p.perso !== undefined && !(isInt(p.perso) && p.perso >= 1 && p.perso <= nbPersos)) err(`${where}.perso`, `une planche de personnage (1 à ${nbPersos})`);
+      if (p.habite !== undefined) {
+        if (p.habite.hameau !== 'gue') err(`${where}.habite.hameau`, 'un hameau garanti (« gue »)');
+        if (p.habite.genre !== 'm' && p.habite.genre !== 'f') err(`${where}.habite.genre`, 'm ou f');
+        if (!isInt(p.perso)) err(`${where}.perso`, 'un personnage qui habite un hameau a une apparence');
+      }
+    }
     for (const [id, f] of Object.entries(R.FRAGMENTS || {})) { if (typeof f.titre !== 'string' || typeof f.texte !== 'string') err(`RECIT.FRAGMENTS.${id}`, 'un titre et un texte'); }
     (R.REPLIQUES || []).forEach((e, i) => {
       const where = `RECIT.REPLIQUES[${i}]${e && e.id ? ` (${e.id})` : ''}`;
@@ -856,7 +867,11 @@ export function validateData(data) {
       const where = `RECIT.SCENES[${i}]${s && s.id ? ` (${s.id})` : ''}`;
       unique(where, s.id);
       if (!Array.isArray(s.lignes) || !s.lignes.length) err(`${where}.lignes`, 'au moins une ligne');
-      (s.lignes || []).forEach((l, j) => { if (!persos.includes(l.qui)) err(`${where}.lignes[${j}].qui`, 'un personnage de RECIT.PERSONNAGES'); texte(`${where}.lignes[${j}].texte`, l.texte); });
+      (s.lignes || []).forEach((l, j) => {
+        if (!persos.includes(l.qui)) err(`${where}.lignes[${j}].qui`, 'un personnage de RECIT.PERSONNAGES');
+        if (l.nom !== undefined && !(typeof l.nom === 'string' && l.nom)) err(`${where}.lignes[${j}].nom`, 'un nom');
+        texte(`${where}.lignes[${j}].texte`, l.texte);
+      });
       quand(where, s.quand); prio(where, s.priorite); effet(where, s.effet, s.lignes && s.lignes[0] && s.lignes[0].qui);
     });
   }

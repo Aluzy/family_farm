@@ -25,6 +25,7 @@ import { morph, refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
+import { nomCocher } from '../engine/recit.js';
 
 /* ---------- la calèche (fiche 7c : le Marché qui fait le tour du monde) ----------
 
@@ -88,7 +89,7 @@ function presence() {
   if (ici.ok) {
     const e = ici.e;
     const ou2 = e.etat === 'halte' ? 'arrêtée sur le chemin, pour toi' : e.arret && e.arret.sorte === 'ferme' ? 'arrêtée devant la ferme' : 'arrêtée sur la place';
-    return { ici: true, texte: `La calèche est là, ${ou2}. Le cocher t'attend tant que tu commerces.` };
+    return { ici: true, texte: `La calèche est là, ${ou2}. ${nomCocher(state)} t'attend tant que tu commerces.` };
   }
   const h = helable(state, ou);
   if (h.ok && ici.e && ici.e.etat === 'route') return { ici: false, helable: true, texte: 'La calèche passe tout près : hèle-la pour qu\'elle s\'arrête !' };
@@ -246,7 +247,7 @@ export function retenirCaleche() {
 export function helerCaleche() {
   const r = heler(state, ouPerso());
   if (!r.ok) { notify(r.error); return false; }
-  if (!r.deja) notify(`${CALECHE.ICONE} « Ho ! » Le cocher arrête la calèche pour toi.`);
+  if (!r.deja) notify(`${CALECHE.ICONE} « Ho ! » ${nomCocher(state)} arrête la calèche pour toi.`);
   refresh();
   return true;
 }

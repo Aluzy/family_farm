@@ -3935,8 +3935,8 @@ export const RAW_DATA = {
     "PERSONNAGES": {
       "adele": { "nom": "Adèle", "role": "la mère du personnage principal", "lieu": "Cadolon" },
       "maurice": { "nom": "Maurice", "role": "le grand-père, l'ancien cocher (mort il y a un an)", "lieu": "Le Gué" },
-      "achille": { "nom": "Achille", "role": "le cocher", "lieu": "Le Gué" },
-      "odile": { "nom": "Odile", "role": "l'ancienne restée", "lieu": "Le Gué" },
+      "achille": { "nom": "Achille", "role": "le cocher", "lieu": "Le Gué", "perso": 8 },
+      "odile": { "nom": "Odile", "role": "l'ancienne restée", "lieu": "Le Gué", "perso": 16, "habite": { "hameau": "gue", "genre": "f" } },
       "fernand": { "nom": "Fernand", "role": "l'ancien revenu de Cadolon", "lieu": "Les Mouettes" },
       "garance": { "nom": "Garance", "role": "la tisserande", "lieu": "Les Genêts" },
       "lise": { "nom": "Lise", "role": "la fille de Garance", "lieu": "Les Genêts" },
@@ -3997,8 +3997,9 @@ export const RAW_DATA = {
         "quand": { "chapitre_min": 2, "lieu": "ferme", "sans_fait": "achille.cle" },
         "priorite": 100,
         "lignes": [
-          { "qui": "achille", "texte": "Ho." },
-          { "qui": "achille", "texte": "Toi, t'as les yeux de ta mère." },
+          { "qui": "achille", "nom": "Le cocher", "texte": "Ho." },
+          { "qui": "achille", "nom": "Le cocher", "texte": "Toi, t'as les yeux de ta mère." },
+          { "qui": "achille", "texte": "Achille. Je mène la calèche depuis que ton grand-père a arrêté." },
           { "qui": "achille", "texte": "Tiens. La clé de chez Maurice, au Gué. Il voulait que ça te revienne." },
           { "qui": "achille", "texte": "Il a laissé des carnets partout. Moi, j'en ai deux. Je les garde." },
           { "qui": "achille", "texte": "Je passe tous les jours vers dix heures. T'as du surplus, je prends." }

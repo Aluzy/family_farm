@@ -9,6 +9,7 @@ import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
 import { soilCount } from './crops.js';
 import { fellenTrees } from './outils.js';
+import { habitantsDe, paroleHabitant } from './habitants.js';
 
 /* ---------- le récit de Céron : la mémoire, les relations et les répliques (docs/recit/) ----------
 
@@ -323,7 +324,8 @@ export function jouerScene(state, id, ctx = {}) {
   if (!scenesPossibles(state, ctx).includes(id)) return fail('Cette scène ne peut pas se jouer maintenant.');
   recitDe(state).dites[id] = jourDe(state);
   appliquerEffet(state, s.effet, s.lignes[0] && s.lignes[0].qui, ctx);
-  const lignes = s.lignes.map((l) => ({ qui: l.qui, nom: RECIT.PERSONNAGES[l.qui].nom, texte: texteRecit(state, l.texte, ctx) }));
+  // (une ligne peut porter le nom sous lequel le joueur connaît encore le personnage : « Le cocher »)
+  const lignes = s.lignes.map((l) => ({ qui: l.qui, nom: l.nom || RECIT.PERSONNAGES[l.qui].nom, texte: texteRecit(state, l.texte, ctx) }));
   return { ok: true, id, lignes };
 }
 
@@ -386,4 +388,39 @@ export function recitNuit(state) {
     }
   }
   return { niveau: e.niveau, points: e.points, derive };
+}
+
+/* ---------- les personnages écrits sur la carte (lot 4) ---------- */
+
+// Le nom du cocher pour le joueur : « Achille » une fois qu'il s'est présenté (la scène de la clé), « le
+// cocher » avant. `majuscule` : en début de phrase.
+export function nomCocher(state, majuscule = true) {
+  if (aFait(state, 'achille.cle')) return RECIT.PERSONNAGES.achille.nom;
+  return majuscule ? 'Le cocher' : 'le cocher';
+}
+
+// Le membre `membreId` des habitants du hameau `hameauId`, ou null.
+function membreDuHameau(state, hameauId, membreId) {
+  const h = habitantsDe(state)[hameauId];
+  if (!h || !Array.isArray(h.foyers)) return null;
+  for (const f of h.foyers) for (const m of f.membres || []) if (m.id === membreId) return m;
+  return null;
+}
+
+// Toucher un habitant (le pont de la carte) : sa bulle { prenom, metier, texte, humeur[, recit] }. Un
+// personnage écrit (m.recit) dit une réplique du récit (parler : elle est notée, ses effets
+// appliqués) ; s'il n'a rien à dire, ou pour les autres, la phrase des habitants (paroleHabitant). `o` :
+// { heure, activite, n } comme paroleHabitant ; le contexte du récit : le lieu (« gue » au Gué, sinon
+// l'id du hameau), le hameau, l'humeur de son foyer, le rang de l'appui, le nom du hameau ({hameau}).
+export function paroleHameau(state, hameauId, membreId, o = {}) {
+  const base = paroleHabitant(state, hameauId, membreId, o);
+  if (!base) return null;
+  const m = membreDuHameau(state, hameauId, membreId);
+  if (!m || !m.recit || !RECIT.PERSONNAGES[m.recit] || o.activite === 'dort') return base;
+  const h = habitantsDe(state)[hameauId];
+  const plan = state.monde && state.monde.hameaux && state.monde.hameaux[hameauId];
+  const nomH = (h && h.nom) || (plan && plan.nom) || '';
+  const lieu = nomH === DATA.PLAN_MONDE.HAMEAUX.GUE ? 'gue' : hameauId;
+  const r = parler(state, m.recit, { lieu, hameau: hameauId, humeur: base.humeur, n: o.n, vars: { hameau: nomH } });
+  return r ? { ...base, texte: r.texte, recit: r.id } : base;
 }

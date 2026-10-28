@@ -23,7 +23,8 @@ import { lireIdMonde, objetPris, prendreParHabitant } from './monde-recolte.js';
      nom, metier, style, eau (celle du pêcheur : mer, lac, riviere), jour (sa découverte),
      jardins: { potager, verger } (leur nombre), poulailler (bool), reserve: { objet: n },
      foyers: [{ maison (son id), membres: [{ id, prenom, genre, enfant, perso, metier (null : le
-       jardin ; un enfant : null), lit (son rang dans les lits de la maison, ou null) }],
+       jardin ; un enfant : null), lit (son rang dans les lits de la maison, ou null), recit (un
+       personnage écrit du récit : son id dans RECIT.PERSONNAGES ; absent pour les autres) }],
        bourse, garde: { objet: n } (le garde-manger), bonheur, jour (le dernier jour vécu),
        vus: null | { jour, n: { membre: actions }, items } (ce qu'il a fait sous les yeux du joueur
        aujourd'hui), journal: [journées] }] } }
@@ -126,6 +127,27 @@ export function peuplerHameau(state, plan, o = {}) {
     }
     return { maison: mz.id, membres, bourse: HABITANTS.ARGENT, garde: {}, bonheur: DATA.BONHEUR.DEPART, jour: state.day - 1, vus: null, journal: [] };
   });
+  // Le récit (docs/recit/personnages.md) : les personnages écrits qui vivent dans ce hameau garanti
+  // (RECIT.PERSONNAGES[].habite ; « gue » : le Gué) occupent, seuls, les premiers foyers, avec leur prénom
+  // et leur apparence ; ils portent l'id de leur personnage (recit : leurs répliques, js/engine/recit.js).
+  // Personne d'autre dans le hameau n'a leur prénom ni leur apparence.
+  const ecrits = Object.entries((DATA.RECIT && DATA.RECIT.PERSONNAGES) || {})
+    .filter(([, d]) => d.habite && d.habite.hameau === 'gue' && plan.gue);
+  ecrits.forEach(([rid, d], k) => {
+    const f = foyers[k];
+    if (!f) return;
+    const mz = plan.maisons.find((x) => x.id === f.maison) || {};
+    const lits = Array.isArray(mz.lits) ? mz.lits : [];
+    const q = lits.findIndex((l) => l.sorte === 'lit_adulte');
+    f.membres = [{ id: `${f.maison}:0`, prenom: d.nom, genre: d.habite.genre, enfant: false, perso: d.perso, metier: d.habite.metier || null, lit: q >= 0 ? q : lits.length ? 0 : null, recit: rid }];
+  });
+  for (const [, d] of ecrits) {
+    for (const f of foyers) for (const m of f.membres) {
+      if (m.recit) continue;
+      if (m.prenom === d.nom) m.prenom = tire(prenoms, m.genre) || 'Jean';
+      if (!m.enfant && m.perso === d.perso) m.perso = tire(persos.adulte, m.genre) || 1;
+    }
+  }
   const jardins = { potager: 0, verger: 0 };
   for (const j of plan.jardins || []) if (j.genre in jardins) jardins[j.genre]++;
   const eau = ['mer', 'lac', 'riviere'].includes(o.eau) ? o.eau : plan.style === 'cote' ? 'mer' : 'riviere';

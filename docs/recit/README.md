@@ -37,6 +37,13 @@ l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
 - Le Gué : le hameau le plus proche de la ferme porte toujours ce nom (`PLAN_MONDE.HAMEAUX.GUE`,
   `js/engine/monde-gen.js`) ; sa première maison est celle de Maurice (`maisonMaurice` dans son plan,
   `js/engine/monde-hameaux.js`), sans foyer (`peuplerHameau`, `js/engine/habitants.js`).
+- Les personnages écrits sur la carte : `RECIT.PERSONNAGES[].habite` installe Odile, seule, dans le
+  premier foyer du Gué à sa découverte (`peuplerHameau`), avec son apparence (`perso`) et l'id de son
+  personnage (`recit`) ; la toucher passe par `paroleHameau` (`js/engine/recit.js`) : une réplique du
+  récit si elle en a une, sinon la phrase des habitants. Le cocher s'appelle « Achille » dans les messages
+  de la calèche une fois qu'il s'est présenté (`nomCocher`).
+- La fenêtre des scènes : `js/ui/scene.js` (`ouvrirScene`, `proposerScene`) ; une scène est notée dès
+  qu'elle s'ouvre et ne revient jamais ; elle attend un écran calme. Les déclencheurs viennent au lot 5.
 - `scripts/lib/data.mjs` : la validation du récit à la construction des données.
 - Tests : `tests/engine/recit.test.mjs`, `tests/test-data.mjs`.
 

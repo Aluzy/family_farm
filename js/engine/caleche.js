@@ -10,6 +10,7 @@ import { bumpCounter } from './campaign.js';
 import { genererMonde } from './monde.js';
 import { elementsDuMonde } from './monde-gen.js';
 import { etatCaleche, heureTournee, tourneeDuPlan, vueDeSens } from './caleche-tournee.js';
+import { nomCocher } from './recit.js';
 
 /* ---------- la calèche : le Marché qui fait le tour du monde (docs/grand-monde.md, fiche 7c) ----------
 
@@ -113,7 +114,7 @@ export function calecheIci(state, ou) {
   const dist = distanceA(tour, e, ou);
   // (hélée, le cocher attend celui qui l'a hélée : d'aussi loin qu'on la hèle)
   if (dist > (e.etat === 'halte' ? CALECHE.HELER : CALECHE.PORTEE) + EPS) return { ok: false, raison: `La calèche n'est pas là. ${ouEstCaleche(state, e)}`, e, dist };
-  if (e.etat === 'gite') return { ok: false, raison: `Le cocher dort : la calèche repart vers ${heureTexte(CALECHE.FERME + tour.matin)}.`, e, dist };
+  if (e.etat === 'gite') return { ok: false, raison: `${nomCocher(state)} dort : la calèche repart vers ${heureTexte(CALECHE.FERME + tour.matin)}.`, e, dist };
   if (e.etat === 'route') return { ok: false, raison: 'La calèche roule : hèle-la pour qu\'elle s\'arrête.', e, dist };
   return { ok: true, e, dist };
 }
@@ -125,7 +126,7 @@ export function helable(state, ou) {
   const e = etatCaleche(tour, absoluteHours(state), calecheDe(state).haltes);
   const dist = distanceA(tour, e, ou);
   if (dist > CALECHE.HELER + EPS) return { ok: false, raison: 'La calèche est trop loin pour t\'entendre.', e, dist };
-  if (e.etat === 'gite') return { ok: false, raison: 'Le cocher dort.', e, dist };
+  if (e.etat === 'gite') return { ok: false, raison: `${nomCocher(state)} dort.`, e, dist };
   return { ok: true, e, dist };
 }
 
@@ -154,7 +155,7 @@ export function heler(state, ou) {
   if (!h.ok) return fail(h.raison);
   if (h.e.etat !== 'route') return { ok: true, deja: true, e: h.e };
   const plus = retenue(state, absoluteHours(state));
-  if (plus <= 0) return fail('Le cocher est pressé : il a déjà trop attendu aujourd\'hui.');
+  if (plus <= 0) return fail(`${nomCocher(state)} est pressé : il a déjà trop attendu aujourd'hui.`);
   return { ok: true, deja: false, e: etatCaleche(tourneeDe(state), absoluteHours(state), calecheDe(state).haltes) };
 }
 

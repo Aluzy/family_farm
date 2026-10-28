@@ -41,6 +41,7 @@ import './ui/notifications.js';
 import './ui/inventaire.js';
 import './ui/caleche.js';
 import './ui/chapitres.js';
+import './ui/scene.js';
 import './ui/niveaux.js';
 import './ui/energie.js';
 import './ui/houe.js';

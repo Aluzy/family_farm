@@ -70,7 +70,8 @@ test('les habitants : des familles déterministes, pas plus nombreuses que les l
         assert(f.membres.length <= Math.max(1, mz.lits.length), `${f.maison} : ${f.membres.length} membres pour ${mz.lits.length} lits`);
         assert(adultes.length >= HABITANTS.ADULTES[0] && adultes.length <= HABITANTS.ADULTES[1], 'un ou deux adultes');
         assert(enfants.length <= HABITANTS.ENFANTS[1], 'trois enfants au plus');
-        assertEqual(adultes[0].metier, p.metier, 'le premier adulte fait le métier du hameau');
+        // (sauf un personnage écrit du récit, qui a le sien : Odile, au Gué, tient son jardin)
+        if (!adultes[0].recit) assertEqual(adultes[0].metier, p.metier, 'le premier adulte fait le métier du hameau');
         assert(!adultes[1] || adultes[1].metier === null || HABITANTS.METIERS[adultes[1].metier], 'le second : un métier ou le jardin');
         const litsPris = f.membres.map((m) => m.lit).filter((l) => l !== null);
         assertEqual(new Set(litsPris).size, litsPris.length, 'chacun son lit');
