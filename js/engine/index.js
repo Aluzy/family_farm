@@ -50,7 +50,7 @@ export * from './testmode.js';
 export * from './state.js';
 export * from './format.js';
 export * from './bot.js';
-export * from './commerce.js';
+export * from './ile.js';
 export * from './meubles.js';
 export * from './compta.js';
 export * from './outils.js';

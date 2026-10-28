@@ -19,6 +19,7 @@
     "simulation.json",
     "terrain.json",
     "monde.json",
-    "recit.json"
+    "recit.json",
+    "ile.json"
   ]
 }

@@ -25,7 +25,10 @@ import { morph, refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
-import { livrerPromesse, nomCocher, parler, promesses } from '../engine/recit.js';
+import { aFait, livrerPromesse, nomCocher, parler, promesses, RECIT } from '../engine/recit.js';
+import { acheterMeubleHameau, ateliersConnus, commander, commandesDe, lotsPossibles, meublesDuHameau, retirerToutes } from '../engine/ile.js';
+import { habitantsDe } from '../engine/habitants.js';
+import { meubleRefus } from '../engine/meubles.js';
 import { itemsText } from './common.js';
 import { proposerScene } from './scene.js';
 
@@ -36,13 +39,18 @@ import { proposerScene } from './scene.js';
    et ne vend que les semences et ce que son coffre porte des hameaux (Acheter). On commerce quand
    elle est arrêtée à côté du personnage : à la ferme vers CALECHE.FERME h, dans un hameau, ou hélée
    sur un chemin (le bouton Héler, quand elle passe tout près). Hors de sa présence, la fenêtre dit
-   où elle est et quand elle passe à la ferme ; les cases restent visibles (ses prix), pâlies.
-   Les outils, les animaux, les meubles se fabriquent à l'Atelier (js/ui/atelier.js). */
+   où elle est et quand elle passe à la ferme ; les cases restent visibles (ses prix), pâlies. Le récit :
+   l'onglet Commandes (les promesses de Maurice, les ateliers des hameaux, les meubles), ce que porte le cocher.
+   Les outils et les animaux se fabriquent à l'Atelier (js/ui/atelier.js) ; les meubles se commandent (Commandes). */
 
 const COMPTOIR_TABS = [
   { id: 'vendre', label: 'Vendre', icon: '💰' },
   { id: 'acheter', label: 'Acheter', icon: '🛒' },
+  // le récit (lots 6 et 7) : ce que porte le cocher — les promesses de Maurice, les commandes aux ateliers
+  // des hameaux, les meubles ; l'onglet n'est là que s'il y a quelque chose
+  { id: 'commandes', label: 'Commandes', icon: '📜', ok: () => promesses(state).length > 0 || ateliersConnus(state).length > 0 },
 ];
+const tabsOuverts = () => COMPTOIR_TABS.filter((t) => !t.ok || t.ok());
 
 // Dessin d'un meuble (assets/meuble_<id>.png), avec l'empreinte du fichier sur le site en ligne
 // (le mode Construire en a besoin : js/ui/chantier.js).
@@ -73,21 +81,23 @@ export function comptoirTabAOuvrir() {
 }
 
 function currentTab() {
-  return COMPTOIR_TABS.find((t) => t.id === comptoirTab) || COMPTOIR_TABS[0];
+  return tabsOuverts().find((t) => t.id === comptoirTab) || COMPTOIR_TABS[0];
 }
 
 // Explication de chaque onglet, derrière le bouton « ? » (FLU-25).
 function helpText(tab) {
   const C = CALECHE;
   const tour = `${horaireCaleche()} Elle fait chaque jour le tour du monde par les chemins, s'arrête une demi-heure sur la place de chaque hameau et dort dans l'un d'eux. Sur un chemin, quand elle passe tout près, hèle-la : elle s'arrête un moment. Tant que tu commerces avec elle, elle t'attend (${C.RETENUE_MAX} heures au plus par jour).`;
+  if (tab === 'commandes') return `${nomCocher(state)} porte aux hameaux ce que tu lui confies, et en rapporte ce qu'ils ont fait pour toi : les promesses de Maurice ; les commandes aux ateliers des hameaux où tu es allé (prêtes le lendemain, il te les rend à son passage) ; les meubles de l'ébéniste et les tapis des Genêts, payés à la commande. L'argent va aux familles du hameau.`;
   if (tab === 'vendre') return `${tour} Elle t'achète tout ce qui se vend, même rangé au frigo (l'inventaire part en premier), à prix fixe. Chaque unité vendue baisse de ${DATA.MARCHE.PAS} points le cours d'achat de l'objet, sans passer sous son plancher.`;
-  return `${tour} Elle vend les semences (leur prix monte un peu à chaque achat : produire les tiennes reste plus rentable) et ce qu'elle a acheté aux hameaux en chemin (le bois, le poisson, la pierre, le lait, la laine, les baies…), en quantité limitée, à ${C.VENTE} % de leur prix de vente. Les outils, les animaux et les meubles se fabriquent à l'Atelier.`;
+  return `${tour} Elle vend les semences (leur prix monte un peu à chaque achat : produire les tiennes reste plus rentable) et ce qu'elle a acheté aux hameaux en chemin (le bois, le poisson, la pierre, le lait, la laine, les baies…), en quantité limitée, à ${C.VENTE} % de leur prix de vente. Les outils et les animaux se fabriquent à l'Atelier ; les meubles se commandent au cocher (Commandes).`;
 }
 
 // Le récit (docs/recit/dialogues.md) : à chaque fenêtre ouverte près d'elle, le cocher dit une réplique
 // (parler : notée, au repos ensuite) ; le bandeau la montre le jour même. { jour, texte } ou null.
 let parole = null;
 function ecouterCocher() {
+  rendreCommandes();
   const r = parler(state, 'achille', { lieu: 'caleche' });
   parole = r ? { jour: state.day, texte: r.texte } : null;
   if (r) persistState();
@@ -125,7 +135,7 @@ function presence() {
 // En-tête : les onglets en icônes seules, et le « ? » de l'onglet ouvert.
 export function marketTabsHtml() {
   const cur = currentTab().id;
-  return `<div class="inv-tabs" role="group" aria-label="La calèche">${COMPTOIR_TABS
+  return `<div class="inv-tabs" role="group" aria-label="La calèche">${tabsOuverts()
     .map((t) => `<button type="button" class="inv-tab${t.id === cur ? ' active' : ''}" data-action="comptoir-tab" data-tab="${t.id}" aria-pressed="${t.id === cur}" title="${t.label}" aria-label="${t.label}"><span aria-hidden="true">${t.icon}</span></button>`)
     .join('')}<button type="button" class="btn help-btn shop-help" data-action="market-help" aria-label="Aide : ${currentTab().label}" title="Comment ça marche">?</button></div>`;
 }
@@ -188,18 +198,67 @@ function promessesHtml(p) {
     }).join('');
     const peut = !e.tenue && p.ici && Object.keys(e.manque).some((item) => Math.floor(countItem(state, item)) > 0);
     const bouton = e.tenue ? '<span class="promesse-tenue">✓ Tenue</span>'
-      : `<button type="button" class="btn small" data-action="promesse-confier" data-id="${e.id}"${peut ? '' : ' disabled'}>Confier à ${nomCocher(state, false)}</button>`;
+      : `<button type="button" class="btn small" data-action="promesse-confier" data-id="${e.id}"${peut ? '' : ' disabled'}>Confier ${aFait(state, 'achille.cle') ? `à ${nomCocher(state)}` : 'au cocher'}</button>`;
     return `<li class="promesse${e.tenue ? ' tenue' : ''}"><div class="promesse-titre">${escapeHtml(e.titre)}</div><div class="promesse-besoins">${besoins}</div>${bouton}</li>`;
   };
   return `<h3 class="section-title">📜 Les promesses de Maurice</h3><ul class="promesses">${liste.map(ligne).join('')}</ul>`;
+}
+
+// Le récit, lot 7 : les ateliers des hameaux où le joueur est allé (js/engine/ile.js, data/ile.json) ; on
+// commande au cocher, la calèche là. Une commande : ce qu'il faut, ce qu'on reprend, les lots (×1, ×5, tout).
+const icoObjet = (item) => (DATA.OBJETS[item] || { icone: '' }).icone;
+const objetsTexte = (m) => Object.entries(m).map(([item, n]) => `${formatQty(n)} <span aria-hidden="true">${icoObjet(item)}</span>`).join(' + ');
+function recetteHtml(p, a, rid, r) {
+  const max = p.ici ? lotsPossibles(state, a.hameau, a.id, rid) : 0;
+  const bouton = (n, label) => `<button type="button" class="btn small" data-action="ile-commander" data-hameau="${a.hameau}" data-atelier="${a.id}" data-recette="${rid}" data-lots="${n}"${n >= 1 && n <= max ? '' : ' disabled'}>${label}</button>`;
+  const lots = [bouton(1, '×1')];
+  if (max >= 5) lots.push(bouton(5, '×5'));
+  if (max > 1 && max !== 5) lots.push(bouton(max, `Tout (×${max})`));
+  const prix = r.pieces > 0 ? ` + ${formatCoins(r.pieces)} 💰` : '';
+  return `<li class="ile-recette"><span>${escapeHtml(r.nom)} : ${objetsTexte(r.entrees)}${prix} → ${objetsTexte(r.sortie)}</span><span class="row">${lots.join('')}</span></li>`;
+}
+function atelierHtml(p, a) {
+  const hameau = (habitantsDe(state)[a.hameau] || {}).nom || '';
+  const qui = a.qui && RECIT.PERSONNAGES[a.qui] ? `, chez ${escapeHtml(RECIT.PERSONNAGES[a.qui].nom)}` : '';
+  const titre = `<h4 class="ile-atelier-titre"><span aria-hidden="true">${a.icone || ''}</span> ${escapeHtml(a.nom)} <span class="muted">— ${escapeHtml(hameau)}${qui}</span></h4>`;
+  if (a.sorte === 'meubles') {
+    const li = meublesDuHameau(state, a.hameau).map((id) => {
+      const m = DATA.MEUBLES[id], refus = meubleRefus(state, id) || ((Number(state.pieces) || 0) < m.prix ? 'Pas assez de pièces.' : null);
+      const off = !p.ici || refus;
+      return `<li class="ile-meuble"><span>${escapeHtml(m.nom)} <span class="muted num">${formatCoins(m.prix)} 💰</span></span><button type="button" class="btn small" data-action="ile-meuble" data-hameau="${a.hameau}" data-meuble="${id}"${off ? ` disabled title="${escapeHtml(refus || 'La calèche n\'est pas là.')}"` : ''}>Commander</button></li>`;
+    }).join('');
+    return `${titre}<ul class="ile-liste">${li}</ul>`;
+  }
+  const enCours = commandesDe(state, a.hameau).filter((c) => c.atelier === a.id).map((c) => {
+    const sortie = {};
+    for (const [item, q] of Object.entries(a.recettes[c.recette].sortie)) sortie[item] = q * c.lots;
+    return `${objetsTexte(sortie)} (${c.pret <= state.day ? 'prêt : à son prochain arrêt près de toi' : c.pret === state.day + 1 ? 'prêt demain' : `prêt le jour ${c.pret}`})`;
+  });
+  return `${titre}<ul class="ile-liste">${Object.entries(a.recettes).map(([rid, r]) => recetteHtml(p, a, rid, r)).join('')}</ul>${enCours.length ? `<p class="muted">En cours : ${enCours.join(', ')}.</p>` : ''}`;
+}
+function ateliersHtml(p) {
+  const A = ateliersConnus(state);
+  if (!A.length) return '';
+  return `<h3 class="section-title">🔨 Les ateliers des hameaux</h3>${A.map((a) => atelierHtml(p, a)).join('')}`;
+}
+
+// Le cocher rend les commandes prêtes (à chaque fenêtre ouverte près de lui). → vrai s'il a rendu quelque chose.
+function rendreCommandes() {
+  const r = retirerToutes(state);
+  if (!Object.keys(r.items).length) return false;
+  persistState();
+  notify(`${CALECHE.ICONE} ${nomCocher(state)} te rend ta commande : ${Object.entries(r.items).map(([item, n]) => `${formatQty(n)} ${icoObjet(item)} ${(DATA.OBJETS[item] || { nom: item }).nom.toLowerCase()}`).join(', ')}.`, { kind: 'info' });
+  return true;
 }
 
 // `fenetre` : dans la fenêtre flottante de la carte, les onglets sont dans son en-tête.
 export function renderComptoir(fenetre = false) {
   const tab = currentTab(), p = presence();
   let body;
-  if (tab.id === 'vendre') {
-    body = promessesHtml(p) + slotsHtml(vendablesCaleche(state).map((k) => sellSlot(k, p.ici)), 'Tu n\'as rien à vendre pour l\'instant.');
+  if (tab.id === 'commandes') {
+    body = promessesHtml(p) + ateliersHtml(p) || '<p class="hint">Rien à lui confier pour l\'instant.</p>';
+  } else if (tab.id === 'vendre') {
+    body = slotsHtml(vendablesCaleche(state).map((k) => sellSlot(k, p.ici)), 'Tu n\'as rien à vendre pour l\'instant.');
   } else {
     const etal = etalCaleche(state, seedForSale);
     const graines = etal.filter((o) => o.sorte === 'semence'), coffre = etal.filter((o) => o.sorte === 'coffre');
@@ -394,6 +453,26 @@ registerActions({
     const result = applyResult(vendreCaleche(state, item, Math.max(1, Number(target.dataset.q) || 1), ouPerso()));
     // fiche 10 : les ventes répétées d'un même objet se cumulent (« +30 💰 » puis « +60 💰 »)
     if (result.ok) notify(null, { cumul: { cle: `caleche-vente:${item}`, quantites: { n: result.sold, gain: result.gain }, texte: (t) => `Vendu à la calèche : ${formatQty(t.n)} ${DATA.OBJETS[item].icone} (+${formatCoins(t.gain)} 💰)` } });
+  },
+  // le récit (lot 7) : commander à un atelier de hameau, acheter un meuble, par le cocher (la calèche là)
+  'ile-commander': (target) => {
+    if (!calecheIci(state, ouPerso()).ok) { notify(`${CALECHE.ICONE} La calèche n'est pas là.`); return; }
+    const { hameau, atelier, recette } = target.dataset;
+    const r = commander(state, hameau, atelier, recette, Number(target.dataset.lots) || 1);
+    if (!r.ok) { notify(r.error); return; }
+    persistState();
+    const A = DATA.ILE.ATELIERS[atelier];
+    notify(`${CALECHE.ICONE} ${nomCocher(state)} prend ta commande : ${A.recettes[recette].nom.toLowerCase()} (×${r.lots}). « Je te rapporte ça ${r.pret === state.day + 1 ? 'demain' : `le jour ${r.pret}`}. »`, { kind: 'info' });
+    refresh();
+  },
+  'ile-meuble': (target) => {
+    if (!calecheIci(state, ouPerso()).ok) { notify(`${CALECHE.ICONE} La calèche n'est pas là.`); return; }
+    const { hameau, meuble } = target.dataset;
+    const r = acheterMeubleHameau(state, hameau, meuble);
+    if (!r.ok) { notify(r.error); return; }
+    persistState();
+    notify(`${CALECHE.ICONE} ${DATA.MEUBLES[meuble].nom} : ${nomCocher(state)} le sort de la calèche, il est dans ton inventaire (à poser dans la maison).`, { kind: 'info' });
+    refresh();
   },
   // le récit (lot 6) : confier au cocher ce qu'on a pour une promesse de Maurice (la calèche là)
   'promesse-confier': (target) => {

@@ -65,6 +65,10 @@ l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
   Maurice à la calèche. L'annonce de la veillée : `inviterVeillee` (`js/ui/loop.js`). Les promesses :
   `promesses`, `etatPromesse`, `livrerPromesse` (`js/engine/recit.js`, `state.recit.promesses`), confiées
   dans l'onglet Vendre de la calèche (`js/ui/caleche.js`, l'action `promesse-confier`).
+- L'économie de l'île (lot 7) : `data/ile.json` (les ateliers des hameaux garantis, la veillée à la ferme,
+  le remboursement des commerces), `js/engine/ile.js` (commander, retirer, acheter un meuble, la veillée),
+  les commandes par le cocher (`js/ui/caleche.js`, l'onglet Commandes : les actions `ile-commander` et
+  `ile-meuble`) ; la fiche du hameau les nomme (`js/ui/habitants.js`).
 - `scripts/lib/data.mjs` : la validation du récit à la construction des données.
 - Tests : `tests/engine/recit.test.mjs`, `tests/engine/recit-monde.test.mjs`, `tests/engine/recit-acte2.test.mjs`,
   `tests/test-data.mjs`.

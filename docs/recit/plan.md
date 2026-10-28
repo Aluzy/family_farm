@@ -16,7 +16,7 @@ se termine par une validation avant le suivant.
 | 5. Première séquence jouable | L'acte I complet (ci-dessous) | `data/recit.json`, `data/campaign.json`, `js/ui/caleche.js`, `js/ui/didacticiel.js`, `js/ui/carnet.js` | 1, 3a, 4 | P1 | fait |
 | 6. Acte II | La première veillée, Frida à la ferme, la fortune de Maurice, les promesses confiées à Achille (l'atelier de Frida vient avec le lot 3b) | `data/recit.json`, `js/engine/recit.js`, `js/ui/caleche.js`, `js/ui/loop.js`, `js/ui/stage.js` | 5 | P2 | fait |
 | 3b. Les autres lieux garantis | Bois-Joli, Les Genêts, Les Mouettes, Brumeval, cabane de Johnny, atelier de Frida, l'épave | `monde-gen.js`, `monde-hameaux.js`, `monde-lieux.js`, `scripts/carte/lieux.py` | 3a | P2 | fait |
-| 7. Économie de l'île | Tissage et couture aux Genêts ; scierie et ébéniste à Bois-Joli ; l'Atelier ne fait plus de meubles ; les commerces du niveau 10 disparaissent | `habitants.js`, `blocs.js`, `data/items.json`, `data/meubles.json`, `data/recipes.json`, `data/niveaux.json` | 3b | P2 | à faire |
+| 7. Économie de l'île | Tissage et couture aux Genêts ; scierie et ébéniste à Bois-Joli ; l'Atelier ne fait plus de meubles ; les commerces du niveau 10 disparaissent | `js/engine/ile.js`, `data/ile.json`, `js/ui/habitants.js`, `data/meubles.json`, `data/recipes.json`, `data/niveaux.json` | 3b | P2 | fait |
 | 8. Exploration | Compagnon qui garde la ferme (fiche 19), tente et bivouac, l'équipement (fiche 11) complété de la tente | `compagnon.js`, `night.js`, `equipement.js`, `data/equipement.json` | 1 | P2 | à faire |
 | 9. Actes III et IV | L'enveloppe, l'usure des maisons, la seconde veillée, la fête et ses fins, les lettres d'Adèle, les arcs de Théo et d'Achille | `data/recit.json`, `data/campaign.json`, `habitants.js` | 2, 6, 7 | P3 | à faire |
 | 10. Le fil de la lune | Fragments, lanterne, repas à Johnny, galerie secrète, pierre et pousse accélérée | `js/engine/grotte.js`, `js/grotte.js`, `js/engine/crops.js`, `data/grotte.json` | 3b, 6 | P3 | à faire |
@@ -93,6 +93,27 @@ l'atelier de Frida (lot 3b) ; les veillées suivantes (acte III).
   hameaux ; un hameau déjà visité garde le nom noté dans la partie (la décision sur les anciennes parties
   reste ouverte).
 
+## L'économie de l'île (lot 7)
+
+- **Les ateliers des hameaux** (`data/ile.json`, `js/engine/ile.js`) : on leur passe commande par le cocher, à
+  la calèche (l'onglet Commandes, avec les promesses), une fois le hameau connu (décision du lot 8) ; le
+  cocher rend les commandes prêtes à son arrêt près du joueur. La fiche du hameau les nomme : à Bois-Joli, la scierie de Basile (2 bois → 3 planches, prêtes le lendemain ; l'Atelier
+  garde sa recette, 2 bois → 1 planche, tout de suite) et l'ébéniste, qui vend les meubles ; aux Genêts, le
+  métier à tisser de Garance (2 laines → 1 tissu, nouvel objet), la couture (gants, manteau chaud, salopette :
+  du tissu et quelques pièces) et les tapis. Une commande se reprend au passage suivant ; l'argent va aux
+  familles du hameau (leur bourse). Les commandes sont gardées avec les habitants (`commandes`).
+- **L'Atelier** ne fabrique plus de meubles, ni les vêtements de laine (le tablier, le chapeau, les bottes,
+  les sacs et le casque y restent).
+- **Le niveau 10** : les commerces disparaissent ; la veillée à la ferme les remplace (l'élément
+  `veillee`) : un soir de pleine lune, le joueur à la ferme, les voisins viennent (la première fois, la
+  scène `veillee_ferme` ; ensuite une fois par pleine lune, de la confiance pour chaque hameau). Une
+  ancienne partie qui avait un commerce reçoit ce qu'elle y avait mis (migration 62 → 63 : la somme des
+  niveaux payés ; une notification le dit).
+- Le joueur automatique n'achète plus de commerce ; les ateliers des hameaux ne lui servent pas encore.
+- Décision du lot 8 : loin de la ferme, ce que donne un geste tombe au sol, comme sur la ferme ; ramassé, il
+  entre dans l'inventaire de la ferme (il n'y a qu'un inventaire : rien ne change, `js/engine/outils.js`
+  ramasserMorceau).
+
 ## Les critères de qualité narrative
 
 - **Tests automatiques** : ids uniques, personnages connus, conditions connues et jamais
@@ -136,7 +157,9 @@ Les tranches 3 à 5 peuvent changer d'ordre ; 2 et 6 précèdent 7.
 - Le carnet du joueur, sans marqueur de quête.
 - Les scènes attendent un écran libre ; l'enveloppe est un objet, pas un bouton.
 - L'Atelier ne fabrique plus de meubles ; les planches y restent.
-- Les commerces du niveau 10 disparaissent.
+- Les commerces du niveau 10 disparaissent ; la ferme accueille une veillée de pleine lune à la place (le
+  commerce d'une ancienne partie est remboursé).
+- La scierie de Bois-Joli : 3 planches pour 2 bois, contre un jour d'attente.
 - L'inventaire du joueur : 3 équipements, une tente, un sac de nourriture (fiche 11 pour
   l'équipement et le sac).
 - Format de sauvegarde : `state.recit` est remis par `reparerPartie`, sans changer de version.
@@ -145,10 +168,6 @@ Les tranches 3 à 5 peuvent changer d'ordre ; 2 et 6 précèdent 7.
 
 - **Les anciennes parties** : proposé, l'histoire complète pour les nouvelles parties ; pour une
   ancienne, la clé au prochain passage de la calèche et le hameau le plus proche dans le rôle du Gué.
-- **La scierie** : proposé, un meilleur rendement que l'Atelier (3 planches pour 2 bois) contre un
-  jour d'attente.
-- **Le niveau 10**, sans les commerces : proposé, la ferme peut accueillir une veillée de pleine lune.
-  Un commerce déjà ouvert dans une ancienne partie : proposé, le remboursement de la somme investie.
 - **L'inventaire** : les équipements de la fiche 11 sont des vêtements (tête, corps, mains, pieds) ;
   où vont le bois et la pierre ramassés au loin (proposé : une hotte, liée au nœud « Hotte de
   bûcheron ») ?

@@ -58,11 +58,8 @@ export const GAME_ACTIONS = {
   'carte-monde-ferme': 'Ramener la boussole à la ferme',
   'plant-all': 'Planter partout',
   'hoe-many': 'Labourer en glissant',
-  'commerce-choose': 'Choisir un commerce',
-  'commerce-upgrade': 'Agrandir le commerce',
-  'commerce-quota-dec': 'Régler le commerce',
-  'commerce-quota-inc': 'Régler le commerce',
-  'commerce-quota-max': 'Régler le commerce',
+  'ile-commander': 'Commander à un atelier de hameau (la scierie, le tissage, la couture : le récit)',
+  'ile-meuble': 'Acheter un meuble dans un hameau (l\'ébéniste, les tapis)',
   'harvest-tree': 'Cueillir un arbre',
   'buy-pasture': 'Acheter une place à l\'Étable',
   'mill-start': 'Moudre du blé au Moulin',
@@ -135,7 +132,7 @@ export const GAME_ACTIONS = {
 export const INTERFACE_ACTIONS = new Set([
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',
   'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open',
-  'cancel-queued', 'ack-chapter', 'commerce-pick', 'commerce-cancel',
+  'cancel-queued', 'ack-chapter',
   'scene-suite', 'scene-fermer', 'carnet-open', // le récit : la réplique suivante d'une scène, la fermer ; ouvrir le carnet
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-espece', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier',

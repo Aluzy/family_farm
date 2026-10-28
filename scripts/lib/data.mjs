@@ -123,7 +123,9 @@ export function sourcesOf(data, id) {
   const A = data.ATELIER;
   for (const [rid, r] of Object.entries((A && A.RECETTES) || {})) if (id in (r.sortie || {})) out.push(`atelier ${rid}`);
   for (const [rid, r] of Object.entries((A && A.RAMASSAGE) || {})) if (r.objet === id) out.push(`ramassage ${rid}`);
-  for (const [bid, b] of Object.entries((A && A.BLOCS) || {})) if (b.meuble && b.objet === id && data.MEUBLES && data.MEUBLES[b.meuble]) out.push(`meuble ${b.meuble} (Marché)`);
+  for (const [bid, b] of Object.entries((A && A.BLOCS) || {})) if (b.meuble && b.objet === id && data.MEUBLES && data.MEUBLES[b.meuble]) out.push(`meuble ${b.meuble} (un hameau)`);
+  // le récit, lot 7 : ce que font les ateliers des hameaux (data/ile.json)
+  for (const [aid, at] of Object.entries((data.ILE && data.ILE.ATELIERS) || {})) for (const r of Object.values(at.recettes || {})) if (id in (r.sortie || {})) out.push(`atelier du hameau ${aid}`);
   if (data.DEHORS && data.DEHORS[id]) out.push('Marché (dehors)');
   if (data.RUCHE && id === data.RUCHE.OBJET) out.push('ruche (Marché)');
   for (const b of Object.values((A && A.BLOCS) || {})) if (b.frigo && b.objet === id && data.FRIGO) out.push('achat du Réfrigérateur');
@@ -381,8 +383,41 @@ export function validateData(data) {
   }
   // Commerces de la ferme, bonheur, Silo, Étable, joueur simulé.
   // (Les meubles, eux, ne citent aucun objet : rien à vérifier.)
-  const C = data.COMMERCE || {};
-  for (const [id, t] of Object.entries(C.TYPES || {})) for (const item of t.prend || []) needItem(`COMMERCE.TYPES.${id}.prend`, item);
+  // L'économie de l'île (data/ile.json, le récit lot 7) : les ateliers des hameaux garantis, la veillée.
+  const IL = data.ILE;
+  if (IL) {
+    const garantis = ((data.PLAN_MONDE && data.PLAN_MONDE.HAMEAUX && data.PLAN_MONDE.HAMEAUX.GARANTIS) || []).map((g) => g.id);
+    const persosR = Object.keys((data.RECIT && data.RECIT.PERSONNAGES) || {});
+    for (const [aid, at] of Object.entries(IL.ATELIERS || {})) {
+      const w = `ILE.ATELIERS.${aid}`;
+      if (!(typeof at.nom === 'string' && at.nom)) err(`${w}.nom`, 'un nom');
+      if (!garantis.includes(at.hameau)) err(`${w}.hameau`, `un hameau garanti (${garantis.join(', ')})`);
+      if (at.qui !== undefined && !persosR.includes(at.qui)) err(`${w}.qui`, 'un personnage de RECIT.PERSONNAGES');
+      if (at.sorte === 'commande') {
+        if (!(isInt(at.jours) && at.jours >= 0) || !(isInt(at.max) && at.max >= 1)) err(w, 'jours (entier, 0 ou plus) et max (entier, 1 ou plus)');
+        if (!at.recettes || !Object.keys(at.recettes).length) err(`${w}.recettes`, 'au moins une recette');
+        for (const [rid, r] of Object.entries(at.recettes || {})) {
+          const wr = `${w}.recettes.${rid}`;
+          for (const k of ['entrees', 'sortie']) {
+            if (!r[k] || !Object.keys(r[k]).length) err(`${wr}.${k}`, '{ objet: quantité }');
+            for (const [item, n] of Object.entries(r[k] || {})) { needItem(`${wr}.${k}`, item); if (!(isInt(n) && n >= 1)) err(`${wr}.${k}.${item}`, 'un entier, 1 ou plus'); }
+          }
+          if (!(isInt(r.pieces) && r.pieces >= 0)) err(`${wr}.pieces`, 'un entier, 0 ou plus');
+        }
+      } else if (at.sorte === 'meubles') {
+        if (!Object.values(data.MEUBLES || {}).some((m) => (m.vendeur || 'bois_joli') === at.hameau)) err(w, 'aucun meuble de MEUBLES n\'a ce hameau pour vendeur');
+      } else err(`${w}.sorte`, '« commande » ou « meubles »');
+    }
+    // chaque meuble a son vendeur (un hameau qui a un atelier « meubles »)
+    const vendeurs = Object.values(IL.ATELIERS || {}).filter((at) => at.sorte === 'meubles').map((at) => at.hameau);
+    for (const [mid, m] of Object.entries(data.MEUBLES || {})) if (!vendeurs.includes(m.vendeur || 'bois_joli')) err(`MEUBLES.${mid}.vendeur`, `un hameau qui vend des meubles (${vendeurs.join(', ')})`);
+    const V = IL.VEILLEE || {};
+    if (!(Array.isArray(V.HEURES) && V.HEURES.length === 2 && V.HEURES.every((h) => isInt(h) && h >= 0 && h <= 24) && V.HEURES[0] < V.HEURES[1])) err('ILE.VEILLEE.HEURES', '[de, à[ heures entières, de < à');
+    if (!(isInt(V.CONFIANCE) && V.CONFIANCE >= 0)) err('ILE.VEILLEE.CONFIANCE', 'un entier, 0 ou plus');
+    if (!elements.includes('veillee')) err('NIVEAUX.ELEMENTS', 'l\'élément « veillee » manque (la veillée à la ferme)');
+    const RB = IL.REMBOURSEMENT || {};
+    if (!(Array.isArray(RB.PRIX_NIVEAUX) && RB.PRIX_NIVEAUX.every((n) => isInt(n) && n >= 0))) err('ILE.REMBOURSEMENT.PRIX_NIVEAUX', 'des entiers, 0 ou plus');
+  }
   const B = data.BONHEUR || {};
   for (const item of (B.SPECIALES && B.SPECIALES.objets) || []) needItem('BONHEUR.SPECIALES.objets', item);
   if (data.SILO) needItem('SILO.ITEM', data.SILO.ITEM);
@@ -844,6 +879,7 @@ export function validateData(data) {
           case 'installee': if (typeof v !== 'boolean') err(w, 'true ou false'); break;
           case 'genre': if (v !== 'm' && v !== 'f') err(w, 'm ou f'); break;
           case 'enfants': case 'machines': if (typeof v !== 'boolean') err(w, 'true ou false'); break;
+          case 'debloque': if (!Object.keys(data.NIVEAUX.ELEMENTS).includes(v)) err(w, 'un élément de NIVEAUX.ELEMENTS'); break;
           case 'empreinte': if (!ids.every((x) => x in ((R.EMPREINTE && R.EMPREINTE.NIVEAUX) || {}))) err(w, 'un niveau de RECIT.EMPREINTE.NIVEAUX'); break;
           default: err(w, 'condition inconnue');
         }

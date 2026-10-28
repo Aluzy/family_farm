@@ -329,16 +329,6 @@ const HELP = {
     else lignes.push(['Mode libre', 'La famille est autonome. Continue de monter en niveau, à ton rythme.']);
     return { nom: 'Chapitres', icone: '📜', lignes };
   },
-  commerce: () => ({
-    nom: 'Commerce',
-    icone: '🏪',
-    lignes: [
-      ['Rôle', 'Un commerce transforme chaque nuit, après le repas de la famille, une partie de la production de la ferme et la vend tout seul, sans attendre la calèche.'],
-      ['Coût', 'Ni énergie ni électricité ; chaque pièce vendue rapporte 1 XP.'],
-      ['Valeur', `Il vend ses produits plus cher qu'une recette (${formatNumber(DATA.CUISINE.COEF_PLAT)} % du prix des ingrédients).`],
-      ['Choix', `Le premier choix est gratuit. En changer coûte ensuite ${formatNumber(DATA.COMMERCE.CHANGER)} 💰.`],
-    ],
-  }),
   frigo: () => ({
     nom: 'Réfrigérateur',
     role: `Les aliments rangés au frais ne vieillissent plus, tant qu'il est alimenté. Capacité : ${DATA.FRIGO.CAPACITE.join(' / ')} unités selon le niveau ; plein, « Ranger » est grisé et « Tout ranger » range d'abord ce qui périme le plus tôt.`,

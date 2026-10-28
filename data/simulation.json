@@ -126,14 +126,11 @@
       { "type": "poules", "n": 16 },
       { "type": "serre", "niveau": 2 },
       { "type": "serre", "niveau": 3 },
-      { "//": "version 1.14 : la fin de partie (vaches, commerce, verger plein)", "type": "vaches", "n": 4 },
-      { "type": "commerce", "niveau": 2 },
+      { "//": "version 1.14 : la fin de partie (vaches, verger plein ; le récit, lot 7 : plus de commerce)", "type": "vaches", "n": 4 },
       { "type": "arbres", "n": 8 },
       { "type": "vaches", "n": 8 },
-      { "type": "commerce", "niveau": 3 },
       { "type": "moutons", "n": 10 },
-      { "type": "arbres", "n": 12 },
-      { "type": "commerce", "niveau": 4 }
+      { "type": "arbres", "n": 12 }
     ],
     "//JALONS": "Vérifications de la section 8.10 : jalons d'autonomie (nuit visée, % visé) et tolérance en nuits.",
     "JALONS": [{ "nuit": 8, "pct": 35 }, { "nuit": 15, "pct": 50 }, { "nuit": 25, "pct": 75 }, { "nuit": 40, "pct": 90 }, { "nuit": 60, "pct": 100 }],

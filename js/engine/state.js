@@ -9,7 +9,7 @@ import {
 import { makePlot, seedItem, startPlots, zoneTile } from './crops.js';
 import { newStableReport } from './animals.js';
 import { newTechPoints } from './techtree.js';
-import { newCommerce } from './commerce.js';
+import { remboursementCommerce } from './ile.js';
 import { newAutoReport, robotOn, robotStation } from './automation.js';
 import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsElement } from './campaign.js';
 import { newTutorial } from './alerts.js';
@@ -89,7 +89,6 @@ function startLot8() {
   return {
     serre: { construit: false, niveau: 1, parcelles: [] },
     verger: { construit: false, places: DATA.VERGER.EMPLACEMENTS_DEPART, achetes: 0, compteur: 0, arbres: [] },
-    commerce: newCommerce(), // version 1.14 : le commerce du niveau 10
     frigo: { construit: false, niveau: 1, appareil: null, items: {}, alimenteMs: 0, eveilMs: 0, panneNuit: false, alimente: true },
   };
 }
@@ -344,7 +343,8 @@ export const MIGRATIONS = {
   27: (state) => migrateFridgeCapacity(state),
   28: (state) => migrateDepart(state),
   29: (state) => migrateOrchard(state),
-  30: (state) => ({ ...state, version: 31, commerce: state.commerce && typeof state.commerce === 'object' ? state.commerce : newCommerce() }),
+  // (le commerce du niveau 10 : retiré en version 63, voir plus bas ; sa forme d'alors, pour la suite des migrations)
+  30: (state) => ({ ...state, version: 31, commerce: state.commerce && typeof state.commerce === 'object' ? state.commerce : { type: null, niveau: 1, quota: 10 } }),
   31: (state) => migrateFreeSoil(state),
   // FLU-06 : la bulle de la première houe en main ne s'affiche pas à qui a déjà labouré
   32: (state) => ({ ...state, version: 33, ...(state.potager && typeof state.potager === 'object' ? { potager: { ...state.potager, houeVue: !!(state.potager.houe && Array.isArray(state.potager.parcelles) && state.potager.parcelles.length) } } : {}) }),
@@ -516,6 +516,19 @@ export const MIGRATIONS = {
     const b = nouvelleBienvenue();
     if ((Number(state.day) || 1) > BIENVENUE.JOUR) b.etat = 'faite';
     return { ...state, bienvenue: b, version: 62 };
+  },
+  // v62 → v63 : le récit, lot 7 (l'économie de l'île) : les commerces du niveau 10 disparaissent (la veillée à
+  // la ferme les remplace) ; ce qui y avait été mis est rendu (remboursementCommerce, js/engine/ile.js),
+  // compté comme un gain de la journée (compta : remboursement).
+  62: (state) => {
+    const { commerce, ...reste } = state;
+    const rendu = remboursementCommerce(commerce);
+    const out = { ...reste, version: 63 };
+    if (rendu > 0) {
+      out.pieces = (Number(state.pieces) || 0) + rendu;
+      out.remboursementCommerce = rendu;
+    }
+    return out;
   },
 };
 

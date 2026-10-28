@@ -40,7 +40,7 @@
     "palier_max (la relation avec `qui`, par rang de palier), confiance_min / confiance_max (le hameau où l'on",
     "est), fait / sans_fait (un fait ou une liste : tous présents / aucun), fait_recent / fait_souvenir (un fait",
     "noté il y a au plus AGES.RECENT / AGES.SOUVENIR jours), acte_min / acte_max, chapitre_min, jour_min / jour_max,",
-    "installee (true : la famille est composée), empreinte (un niveau ou une liste : celui de la ferme maintenant),",
+    "installee (true : la famille est composée), debloque (un élément de NIVEAUX.ELEMENTS que la partie a débloqué), empreinte (un niveau ou une liste : celui de la ferme maintenant),",
     "machines (true / false : une machine de EMPREINTE.MACHINES est posée), genre",
     "(m ou f : le personnage principal), enfants (true / false : la famille a des enfants), humeur (une humeur",
     "ou une liste : celle que la page donne).",
@@ -227,6 +227,19 @@
           { "qui": "achille", "texte": "Ça aussi, ça se dépense." }
         ],
         "effet": { "fait": "maurice.fortune", "relation": { "achille": 5 } }
+      }
+,
+      {
+        "id": "veillee_ferme",
+        "quand": { "debloque": "veillee", "lieu": "ferme", "lune": "pleine", "heure": [19, 22], "sans_fait": "veillee.ferme" },
+        "priorite": 95,
+        "lignes": [
+          { "qui": "odile", "texte": "On a vu ta lumière depuis le chemin. Alors on est venus." },
+          { "qui": "fernand", "texte": "Chez toi, la lune se voit mieux. C'est la terre du milieu, ça." },
+          { "qui": "achille", "texte": "Ton grand-père aurait aimé voir ça. Du monde, chez lui." },
+          { "qui": "odile", "texte": "On reviendra. Les soirs de pleine lune, laisse la porte ouverte." }
+        ],
+        "effet": { "fait": "veillee.ferme", "relation": { "odile": 5 }, "confiance_partout": 5 }
       }
     ],
     "LIEUX": {

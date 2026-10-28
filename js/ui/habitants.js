@@ -5,6 +5,7 @@ import { farmTerrain } from '../engine/terrain.js';
 import { HAMEAUX, hameauxVus } from '../engine/monde-hameaux.js';
 import { ficheHameau, habitantAgit, habitantsDe, peuplerHameau } from '../engine/habitants.js';
 import { paroleHameau } from '../engine/recit.js';
+import { ateliersDuHameau } from '../engine/ile.js';
 import { solDuMonde } from './monde-sol.js';
 import { persoHtml } from './famille.js';
 import { openModal } from './modal.js';
@@ -128,8 +129,18 @@ function calecheHtml(fi) {
   return `<p class="muted">🐴 La calèche est passée ${quand}${items ? ` : elle a acheté ${items}, pour <span class="num">${formatNumber(c.pieces)}</span> 💰 partagés entre les familles` : ', mais la réserve était vide'}.</p>`;
 }
 
+/* -- le récit, lot 7 : les ateliers des hameaux garantis (js/engine/ile.js, data/ile.json) : la fiche les
+   nomme ; on leur passe commande par le cocher, à la calèche (js/ui/caleche.js, l'onglet Commandes). -- */
+
+function ateliersHtml(hid) {
+  const A = ateliersDuHameau(state, hid);
+  if (!A.length) return '';
+  const noms = A.map((a) => `<span aria-hidden="true">${a.icone || ''}</span> ${escapeHtml(a.nom.toLowerCase())}`).join(', ');
+  return `<p class="muted ile-annonce">Ses ateliers travaillent pour toi : ${noms}. Passe commande au cocher, à la calèche ; il porte et il rapporte.</p>`;
+}
+
 // La fiche du hameau `h` ({ id, nom, style } : le panneau de sa place) ; sans habitants encore, son
-// nom seulement.
+// nom seulement. Le récit, lot 7 : ses ateliers (un hameau garanti), nommés.
 export function openFicheHameau(h) {
   const S = HAMEAUX.STYLES[h.style];
   peuplerDepuisCarte(h.id);
@@ -140,11 +151,12 @@ export function openFicheHameau(h) {
   openModal(`
     <h2 id="hameau-title">🪧 ${escapeHtml(fi.nom)}</h2>
     <p class="muted">Un hameau ${S ? escapeHtml(S.nom) : ''}, un hameau de ${escapeHtml(metiers)} : ${fi.familles.length} familles, ${gens} habitants.</p>
+    ${ateliersHtml(h.id)}
     <h3 class="book-h3">Les familles</h3>
     <ul class="hameau-familles">${fi.familles.map(familleHtml).join('')}</ul>
     <h3 class="book-h3">La réserve du hameau</h3>
     <p class="muted">Ce que les familles ont mis de côté, nuit après nuit (+ : la nuit dernière) ; la calèche l'achète à chacun de ses passages, et paie les familles.</p>
     ${reserveHtml(fi)}
     ${calecheHtml(fi)}
-    <button type="button" class="btn primary" data-action="close-modal" id="hameau-close">Fermer</button>`, { labelledBy: 'hameau-title', className: 'modal bois hameau-modal', focus: '#hameau-close' });
+    <button type="button" class="btn primary" data-action="close-modal" id="hameau-close">Fermer</button>`, { labelledBy: 'hameau-title', className: 'modal bois hameau-modal', focus: '#hameau-close', preventScroll: true });
 }

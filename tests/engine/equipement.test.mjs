@@ -31,13 +31,15 @@ const dedans = (s) => { const F = farmTerrain(s).FERME; s.monde.ici = (F.Y + 10)
 
 /* ---------- équiper et retirer ---------- */
 
-test('équipement : les données (7 pièces, deux sacs, chacune un objet fabriqué à l\'Atelier)', () => {
+test('équipement : les données (7 pièces, deux sacs, chacune un objet fabriqué à l\'Atelier ou cousu aux Genêts)', () => {
   const Q = DATA.EQUIPEMENT;
   assertEqual(Object.keys(Q.PIECES).length, 7);
   assertEqual(Object.keys(Q.SACS), ['sac_petit', 'sac_grand']);
   for (const id of [...Object.keys(Q.PIECES), ...Object.keys(Q.SACS)]) {
     assertEqual(DATA.OBJETS[id].categorie, 'équipement', id);
-    assert(DATA.ATELIER.RECETTES[id] && DATA.ATELIER.RECETTES[id].sortie[id] === 1, `${id} : sa recette`);
+    // (le récit, lot 7 : les vêtements de laine se cousent aux Genêts, data/ile.json)
+    const couture = Object.values(DATA.ILE.ATELIERS.couture.recettes).some((r) => r.sortie[id] === 1);
+    assert((DATA.ATELIER.RECETTES[id] && DATA.ATELIER.RECETTES[id].sortie[id] === 1) || couture, `${id} : sa recette`);
   }
 });
 

@@ -11,7 +11,6 @@ import { energyMax, restoreEnergy, wakeEnergy } from './stamina.js';
 import { feedLivestock, fillSilo, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
 import { chevalNuit } from './cheval.js';
 import { growOrchard } from './orchard.js';
-import { commerceNight } from './commerce.js';
 import { finishPreparations } from './kitchen.js';
 import { refreshUnlocks } from './techtree.js';
 import { autoMaintain, autoTasks, newAutoReport, rainNight, robotNight } from './automation.js';
@@ -45,7 +44,7 @@ import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 // mange sa paille juste après l'Étable (chevalNuit, js/engine/cheval.js).
 // Chaque étape reçoit l'état et le modifie.
 // La pousse des cultures n'en fait plus partie : elle suit l'horloge (growDue).
-export const NIGHT_STEPS = [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, chevalNuit, growOrchard, finishPreparations, commerceNight, autoMaintain, nightPower, robotNight, fridgeNight, fillSilo, spoil];
+export const NIGHT_STEPS = [collectLeftovers, feedFamily, rainNight, autoTasks, layEggs, feedLivestock, chevalNuit, growOrchard, finishPreparations, autoMaintain, nightPower, robotNight, fridgeNight, fillSilo, spoil];
 
 /* ---------- la nuit ---------- */
 
@@ -99,8 +98,6 @@ export function buildMorningReport(state) {
     // Lot 8 : fruits du verger, nuit du frigo (mWh prélevés, panne de froid, lots
     // qui ont perdu une nuit) et contenu du frigo.
     fruits: { ...(state.nuit.fruits || {}) },
-    // Version 1.14 : ce que le commerce a vendu cette nuit.
-    commerce: { type: null, n: 0, pieces: 0, ...(state.nuit.commerce || {}) },
     frigo: {
       construit: !!state.frigo.construit,
       mwh: (state.nuit.frigo || {}).mwh || 0,

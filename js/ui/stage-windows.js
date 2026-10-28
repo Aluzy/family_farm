@@ -37,7 +37,6 @@ import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frig
 import { renderAteliers, renderMoulin, renderRecettes, renderStationFenetre } from './cuisine.js';
 import { renderTechno } from './techno.js';
 import { persoHtml, renderFamille } from './famille.js';
-import { renderCommerce } from './commerce.js';
 import { renderNotifications } from './notifications.js';
 import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
 import { renderAtelier } from './atelier.js';
@@ -112,8 +111,6 @@ export function setAncreVoulue(value) {
 export const MAISON_TABS = [
   // FLU-04 : `court` s'affiche sur l'onglet, `label` reste le nom complet (infobulle, lecteurs d'écran)
   { id: 'recettes', label: 'Livre de recette', court: 'Recettes', icon: '📖', ok: () => tabAvailable('recettes'), corps: () => renderRecettes() },
-  // version 1.14 : le commerce du niveau 10
-  { id: 'commerce', label: 'Commerce', icon: '🏪', ok: () => isUnlocked(state, 'commerce'), corps: () => renderCommerce() },
 ];
 
 // La Famille et l'Arbre des technologies ne sont plus des onglets de la Maison : la Famille a
@@ -303,12 +300,6 @@ export const STAGE_WINDOWS = {
   installations: {
     nom: 'Installations', icone: '🏗️', ok: () => true, haute: true, bois: true,
     corps: () => renderBatiments(),
-  },
-  // Commerce (menu latéral, au niveau qui le débloque) : l'étal de bocaux, la crèmerie ou le
-  // tissage, son niveau et ses quotas ; aussi un onglet de la Maison.
-  commerce: {
-    nom: 'Commerce', icone: '🏪', ok: () => isUnlocked(state, 'commerce'), haute: true, bois: true,
-    corps: () => renderCommerce(),
   },
   // Calendrier lunaire (carte en haut à droite) : le mois, ses phases de lune et leurs effets.
   calendrier: {
@@ -624,7 +615,7 @@ function carnetBouton() {
 }
 
 export function renderTabbar() {
-  const current = ['commerce', 'inventaire', 'atelier', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
+  const current = ['inventaire', 'atelier', 'comptoir', 'techno'].includes(stageWindow) ? stageWindow : FERME_LINKS.includes(activeTab) ? 'ferme' : activeTab;
   const alerts = notificationCount(state);
   const nav = document.getElementById('bottom-nav');
   if (!menuClickBound) {
@@ -677,7 +668,6 @@ const TAB_RENDERERS = {
   inventaire: () => [renderInventaire()],
   comptoir: () => [renderComptoir()],
   recettes: () => [backToFerme() + renderRecettes()],
-  commerce: () => [backToFerme() + renderCommerce()],
   techno: () => [backToFerme() + renderTechno()],
   notifications: () => [renderNotifications()],
 };
@@ -788,7 +778,7 @@ registerActions({
   'switch-tab': (target) => {
     son('onglet');
     // L'Inventaire et la calèche, avec la carte, sont des fenêtres flottantes par-dessus elle.
-    if (['installations', 'commerce', 'inventaire', 'atelier', 'comptoir', 'techno', 'notifications'].includes(target.dataset.tab) && stageUsable()) {
+    if (['installations', 'inventaire', 'atelier', 'comptoir', 'techno', 'notifications'].includes(target.dataset.tab) && stageUsable()) {
       if (target.dataset.tab === 'comptoir') setComptoirTab(comptoirTabAOuvrir()); // FLU-13
       allerAuLieu(target.dataset.tab);
       return;

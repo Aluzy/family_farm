@@ -21,7 +21,9 @@ import { lireIdMonde, objetPris, prendreParHabitant } from './monde-recolte.js';
 
    state.monde.habitants = { [id du hameau]: {
      nom, metier, style, eau (celle du pêcheur : mer, lac, riviere), jour (sa découverte),
-     jardins: { potager, verger } (leur nombre), poulailler (bool), reserve: { objet: n },
+     jardins: { potager, verger } (leur nombre), poulailler (bool), reserve: { objet: n }, garanti (un
+     hameau garanti du récit : « gue », « bois_joli »… ; absent pour les autres), commandes (les commandes
+     du joueur à ses ateliers, js/engine/ile.js ; absent : aucune),
      foyers: [{ maison (son id), membres: [{ id, prenom, genre, enfant, perso, metier (null : le
        jardin ; un enfant : null), lit (son rang dans les lits de la maison, ou null), recit (un
        personnage écrit du récit : son id dans RECIT.PERSONNAGES ; absent pour les autres) }],
@@ -155,6 +157,7 @@ export function peuplerHameau(state, plan, o = {}) {
   H[plan.id] = {
     nom: String(plan.nom || plan.id), metier, style: plan.style || 'prairie', eau, jour: state.day,
     jardins, poulailler: (plan.travail || []).some((t) => t.genre === 'poulailler'), reserve: {}, foyers,
+    ...(plan.garanti ? { garanti: plan.garanti } : {}),
   };
   return H[plan.id];
 }

@@ -113,7 +113,10 @@ test('culture sans découpe : un avertissement, pas une erreur', () => {
 refuse('courrier : cadeau inconnu', (d) => { d.COURRIER.cousin_venezuela.cadeaux.mangue = 1; }, '« mangue »');
 refuse('inventaire de départ : objet inconnu', (d) => { d.DEPART.ETAT_INITIAL.INVENTAIRE.graine_melon = 2; }, 'DEPART.ETAT_INITIAL.INVENTAIRE : « graine_melon »');
 refuse('animal : produit inconnu', (d) => { d.ANIMAUX.poule.produit = 'oeufs'; }, 'ANIMAUX.poule.produit : « oeufs »');
-refuse('commerce : matière inconnue', (d) => { d.COMMERCE.TYPES.cremerie.prend.push('lait_chevre'); }, 'COMMERCE.TYPES.cremerie.prend : « lait_chevre »');
+refuse('île : un atelier d\'un hameau qui n\'est pas garanti', (d) => { d.ILE.ATELIERS.scierie.hameau = 'les_saules'; }, 'un hameau garanti');
+refuse('île : une commande qui demande un objet inconnu', (d) => { d.ILE.ATELIERS.scierie.recettes.planches.entrees.chene = 1; }, '« chene »');
+refuse('île : un meuble sans vendeur', (d) => { d.MEUBLES.chaise.vendeur = 'mouettes'; }, 'un hameau qui vend des meubles');
+refuse('île : la veillée sans l\'élément du niveau 10', (d) => { delete d.NIVEAUX.ELEMENTS.veillee; d.NIVEAUX.liste[9].debloque = []; d.RECIT.SCENES = d.RECIT.SCENES.filter((x) => x.id !== 'veillee_ferme'); }, 'l\'élément « veillee » manque');
 refuse('grotte : minerai inconnu', (d) => { d.GROTTE.POIDS.argent = { FIXE: 1 }; }, 'GROTTE.POIDS : « minerai_argent »');
 refuse('grotte : aucun niveau', (d) => { d.GROTTE.NIVEAUX = 0; }, 'GROTTE.NIVEAUX : un entier');
 refuse('grotte : une chance au-delà de 1', (d) => { d.GROTTE.MINERAI = 7; }, 'GROTTE.MINERAI : une part entre 0 et 1');

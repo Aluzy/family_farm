@@ -3,7 +3,7 @@ import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { hourOfDay } from './clock.js';
 import { moonPhase } from './lune.js';
-import { chapterReached } from './campaign.js';
+import { chapterReached, isUnlocked } from './campaign.js';
 import { findMember, memberName } from './family.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
@@ -243,6 +243,7 @@ export function conditionsVraies(state, quand, qui = null, ctx = {}) {
       case 'genre': if (genreJoueur(state) !== v) return false; break;
       case 'enfants': if (aDesEnfants(state) !== v) return false; break;
       case 'humeur': if (!liste(v).includes(ctx.humeur)) return false; break;
+      case 'debloque': if (!state.campagne || !isUnlocked(state, v)) return false; break;
       case 'empreinte': if (!liste(v).includes(empreinteFerme(state).niveau)) return false; break;
       case 'machines': if ((Object.keys(empreinteFerme(state).detail.machines).length > 0) !== v) return false; break;
       default: return false; // une condition inconnue n'est jamais vraie (build-data.mjs les refuse)

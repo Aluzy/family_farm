@@ -23,6 +23,7 @@ import { sceneCaleche, watchCaleche } from './caleche.js';
 import { proposerScene } from './scene.js';
 import { lieuDuPerso } from './stage.js';
 import { aFait, acteEnCours, deHameau } from '../engine/recit.js';
+import { veilleeFerme, veilleeFermePossible } from '../engine/ile.js';
 import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
 import {
@@ -123,8 +124,20 @@ function watchRobot() {
 // clé, la fortune de Maurice). La maison de Maurice a son déclencheur (stage.js).
 function watchRecit() {
   if (setupPending(state) || consentBannerShown() || consentBannerPending() || !uiCalm()) return;
-  if (!proposerScene(lieuDuPerso() || {})) sceneCaleche();
+  const ici = lieuDuPerso();
+  if (!proposerScene(ici || {})) sceneCaleche();
   inviterVeillee();
+  // le récit, lot 7 : la veillée à la ferme, une fois par pleine lune (la première est une scène)
+  if (ici && ici.lieu === 'ferme' && veilleeFermePossible(state) && veilleeFerme(state).ok) {
+    persistState();
+    notify('🌕 Les voisins des hameaux sont venus veiller à la ferme, sous la pleine lune. Ils s\'en souviendront.', { kind: 'info' });
+  }
+  // une partie d'avant le lot 7 : ce que son commerce valait lui a été rendu (la migration 62 → 63)
+  if (state.remboursementCommerce) {
+    notify(`🏪 Les commerces de la ferme ferment : les veillées de pleine lune les remplacent. ${formatNumber(state.remboursementCommerce)} 💰 te sont rendus.`, { kind: 'info' });
+    delete state.remboursementCommerce;
+    persistState();
+  }
 }
 
 // La veillée (le récit, lot 6) : un soir de pleine lune, à partir de 17 h, une seule annonce par pleine

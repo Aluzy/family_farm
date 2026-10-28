@@ -398,6 +398,7 @@ export const RAW_DATA = {
     "nichoir": { "nom": "Nichoir", "icone": "🪺", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "mangeoire": { "nom": "Mangeoire", "icone": "🛶", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "ratelier": { "nom": "Râtelier", "icone": "🌾‍🪜", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "tissu": { "nom": "Tissu de laine", "icone": "🧵", "prix": 18, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "corde": { "nom": "Corde", "icone": "➰", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "poteau_attache": { "nom": "Poteau d'attache", "icone": "🪵‍🔗", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "bac_semis": { "nom": "Bac à semis", "icone": "🎍", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -798,52 +799,13 @@ export const RAW_DATA = {
       "chapeau_paille": { "entrees": { "paille": 4, "fibre": 1 }, "sortie": { "chapeau_paille": 1 } },
       "tablier": { "entrees": { "fibre": 8 }, "sortie": { "tablier": 1 } },
       "bottes": { "entrees": { "planche": 1, "fibre": 6 }, "sortie": { "bottes": 1 } },
-      "gants_travail": { "entrees": { "laine": 2, "fibre": 3 }, "sortie": { "gants_travail": 1 }, "debloque": "moutons" },
-      "manteau_chaud": { "entrees": { "laine": 6, "fibre": 2 }, "sortie": { "manteau_chaud": 1 }, "debloque": "moutons" },
-      "salopette": { "entrees": { "laine": 4, "fibre": 4, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "debloque": "moutons" },
       "casque_lampe": {
         "entrees": { "lingot_fer": 2, "lingot_cuivre": 1, "champignon_lumineux": 2 },
         "sortie": { "casque_lampe": 1 },
         "debloque": "four"
       },
       "ruche": { "entrees": { "planche": 4, "fibre": 8, "pierre": 1 }, "sortie": { "ruche": 1 } },
-      "bac_fleurs": { "entrees": { "planche": 3, "pierre": 2, "fibre": 1 }, "sortie": { "bac_fleurs": 1 } },
-      "meuble_chaise": { "entrees": { "planche": 2, "fibre": 1 }, "meuble": "chaise" },
-      "meuble_table": { "entrees": { "planche": 5, "bois": 2 }, "meuble": "table" },
-      "meuble_tapis_1": { "entrees": { "fibre": 8 }, "meuble": "tapis_1" },
-      "meuble_tapis_2": { "entrees": { "laine": 3, "baies": 2 }, "meuble": "tapis_2" },
-      "meuble_tapis_3": { "entrees": { "laine": 3, "myrtille": 2 }, "meuble": "tapis_3" },
-      "meuble_lit_adulte": { "entrees": { "planche": 6, "laine": 2, "fibre": 4 }, "meuble": "lit_adulte" },
-      "meuble_lit_enfant": { "entrees": { "planche": 4, "laine": 1, "fibre": 3 }, "meuble": "lit_enfant" },
-      "meuble_chevet": { "entrees": { "planche": 2, "bois": 1 }, "meuble": "chevet" },
-      "meuble_canape": { "entrees": { "planche": 6, "laine": 4, "fibre": 4 }, "meuble": "canape" },
-      "meuble_table_basse": { "entrees": { "planche": 3, "pierre": 1 }, "meuble": "table_basse" },
-      "meuble_tableau_1": { "entrees": { "planche": 2, "baies": 2, "fibre": 1 }, "meuble": "tableau_1" },
-      "meuble_tableau_2": { "entrees": { "planche": 2, "mures": 2, "fibre": 1 }, "meuble": "tableau_2" },
-      "meuble_tableau_3": { "entrees": { "planche": 2, "myrtille": 2, "coquille": 1 }, "meuble": "tableau_3" },
-      "meuble_buffet": { "entrees": { "planche": 8, "lingot_fer": 1 }, "meuble": "buffet" },
-      "meuble_commode": { "entrees": { "planche": 7 }, "meuble": "commode" },
-      "meuble_armoire_chene": { "entrees": { "planche": 10, "bois": 2 }, "meuble": "armoire_chene" },
-      "meuble_armoire_peinte": { "entrees": { "planche": 10, "baies": 3, "myrtille": 3 }, "meuble": "armoire_peinte" },
-      "meuble_armoire_glace": { "entrees": { "planche": 8, "quartz": 2 }, "meuble": "armoire_glace" },
-      "meuble_cuisine_porte": { "entrees": { "planche": 3, "pierre": 2 }, "meuble": "cuisine_porte" },
-      "meuble_cuisine_tiroirs": { "entrees": { "planche": 4, "pierre": 2 }, "meuble": "cuisine_tiroirs" },
-      "meuble_cuisine_sauge": { "entrees": { "planche": 3, "pierre": 2, "quartz": 1 }, "meuble": "cuisine_sauge" },
-      "meuble_poubelle": { "entrees": { "lingot_fer": 1 }, "meuble": "poubelle" },
-      "meuble_bibliotheque": { "entrees": { "planche": 5 }, "meuble": "bibliotheque" },
-      "meuble_bibliotheque_vitree": { "entrees": { "planche": 8, "quartz": 2 }, "meuble": "bibliotheque_vitree" },
-      "meuble_lampadaire": { "entrees": { "lingot_fer": 1, "champignon_lumineux": 1, "fibre": 2 }, "meuble": "lampadaire" },
-      "meuble_coffre_jouets": { "entrees": { "planche": 4, "baies": 1 }, "meuble": "coffre_jouets" },
-      "meuble_plante_ficus": { "entrees": { "pierre": 2, "fibre": 3 }, "meuble": "plante_ficus" },
-      "meuble_plante_monstera": { "entrees": { "pierre": 2, "fibre": 4 }, "meuble": "plante_monstera" },
-      "meuble_plante_sansevieria": { "entrees": { "pierre": 1, "fibre": 2 }, "meuble": "plante_sansevieria" },
-      "meuble_plante_cactus": { "entrees": { "pierre": 2, "fibre": 1 }, "meuble": "plante_cactus" },
-      "meuble_plante_fougere": { "entrees": { "pierre": 2, "fibre": 3 }, "meuble": "plante_fougere" },
-      "meuble_plante_palmier": { "entrees": { "pierre": 3, "fibre": 4 }, "meuble": "plante_palmier" },
-      "meuble_plante_citronnier": { "entrees": { "pierre": 3, "fibre": 4 }, "meuble": "plante_citronnier" },
-      "meuble_plante_orchidee": { "entrees": { "pierre": 1, "fibre": 2, "baies": 1 }, "meuble": "plante_orchidee" },
-      "meuble_plante_aloe": { "entrees": { "pierre": 1, "fibre": 1 }, "meuble": "plante_aloe" },
-      "meuble_plante_bonsai": { "entrees": { "pierre": 2, "pomme_de_pin": 1, "fibre": 1 }, "meuble": "plante_bonsai" }
+      "bac_fleurs": { "entrees": { "planche": 3, "pierre": 2, "fibre": 1 }, "sortie": { "bac_fleurs": 1 } }
     },
     "BLOCS": {
       "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true, "mur": true },
@@ -2516,7 +2478,7 @@ export const RAW_DATA = {
       { "debloque": ["cacao", "vanille", "cafe", "serre", "energie"] },
       { "debloque": ["frigo"] },
       { "debloque": [], "note": "un courrier du notaire : un héritage caché" },
-      { "debloque": ["commerce"] }
+      { "debloque": ["veillee"] }
     ],
     "ELEMENTS": {
       "marche": {
@@ -2547,11 +2509,7 @@ export const RAW_DATA = {
         "icone": "🐴",
         "note": "un cheval à monter sur toutes les cartes, la corde et le poteau pour l'attacher"
       },
-      "commerce": {
-        "nom": "Commerce",
-        "icone": "🏪",
-        "note": "étal de bocaux, crèmerie ou métier à tisser : il vend chaque nuit une partie de la production"
-      },
+      "veillee": { "nom": "Veillée à la ferme", "icone": "🌕", "note": "les soirs de pleine lune, les voisins des hameaux viennent veiller chez toi" },
       "frigo": { "nom": "Réfrigérateur", "icone": "🧊", "note": "conservation sans péremption" }
     },
     "XP": {
@@ -2579,46 +2537,6 @@ export const RAW_DATA = {
     "TUILES": [12, 24, 40, 60, 84, 112, 144, 180, 220, 264],
     "CHAPITRES_XP": [200, 500, 1000, 2500, 2000, 4000, 8000],
     "CHAPITRE_NIVEAU": [1, 2, 3, 6, 6, 8, 8, 8]
-  },
-  "COMMERCE": {
-    "CAPACITE": [10, 20, 35, 50],
-    "PRIX_NIVEAUX": [0, 3000, 8000, 20000],
-    "CHANGER": 5000,
-    "TYPES": {
-      "conserverie": {
-        "nom": "Étal de bocaux",
-        "le": "l'étal de bocaux",
-        "icone": "🫙",
-        "produit": "bocal de légumes",
-        "produits": "bocaux de légumes",
-        "prend": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "ail", "poivron", "epinard"],
-        "matiere": "légumes",
-        "par": 4,
-        "prix": 24
-      },
-      "cremerie": {
-        "nom": "Crèmerie",
-        "le": "la crèmerie",
-        "icone": "🧀",
-        "produit": "fromage",
-        "produits": "fromages",
-        "prend": ["lait"],
-        "matiere": "laits",
-        "par": 3,
-        "prix": 36
-      },
-      "tissage": {
-        "nom": "Métier à tisser",
-        "le": "le métier à tisser",
-        "icone": "🧵",
-        "produit": "tissu",
-        "produits": "tissus",
-        "prend": ["laine"],
-        "matiere": "laines",
-        "par": 2,
-        "prix": 36
-      }
-    }
   },
   "GROTTE": {
     "LARGEUR": 46,
@@ -2656,9 +2574,9 @@ export const RAW_DATA = {
   "MEUBLES": {
     "chaise": { "nom": "Chaise", "piece": "cuisine", "prix": 30, "bonheur": 1, "max": "membres" },
     "table": { "nom": "Table", "piece": "cuisine", "prix": 90, "bonheur": 3 },
-    "tapis_1": { "nom": "Tapis tressé", "piece": "salon", "prix": 40, "bonheur": 2 },
-    "tapis_2": { "nom": "Tapis rouge", "piece": "chambre", "prix": 50, "bonheur": 2 },
-    "tapis_3": { "nom": "Tapis bleu", "piece": "cuisine", "prix": 60, "bonheur": 2 },
+    "tapis_1": { "vendeur": "genets", "nom": "Tapis tressé", "piece": "salon", "prix": 40, "bonheur": 2 },
+    "tapis_2": { "vendeur": "genets", "nom": "Tapis rouge", "piece": "chambre", "prix": 50, "bonheur": 2 },
+    "tapis_3": { "vendeur": "genets", "nom": "Tapis bleu", "piece": "cuisine", "prix": 60, "bonheur": 2 },
     "lit_adulte": { "nom": "Lit adulte", "piece": "chambre", "prix": 120, "bonheur": 4, "max": "adultes" },
     "lit_enfant": { "nom": "Lit enfant", "piece": "chambre", "prix": 90, "bonheur": 4, "max": "enfants" },
     "chevet": { "nom": "Table de chevet", "piece": "chambre", "prix": 35, "bonheur": 1 },
@@ -2806,13 +2724,10 @@ export const RAW_DATA = {
       { "type": "serre", "niveau": 2 },
       { "type": "serre", "niveau": 3 },
       { "type": "vaches", "n": 4 },
-      { "type": "commerce", "niveau": 2 },
       { "type": "arbres", "n": 8 },
       { "type": "vaches", "n": 8 },
-      { "type": "commerce", "niveau": 3 },
       { "type": "moutons", "n": 10 },
-      { "type": "arbres", "n": 12 },
-      { "type": "commerce", "niveau": 4 }
+      { "type": "arbres", "n": 12 }
     ],
     "JALONS": [{ "nuit": 8, "pct": 35 }, { "nuit": 15, "pct": 50 }, { "nuit": 25, "pct": 75 }, { "nuit": 40, "pct": 90 }, { "nuit": 60, "pct": 100 }],
     "TOLERANCE_NUITS": 10,
@@ -4143,6 +4058,18 @@ export const RAW_DATA = {
           { "qui": "achille", "texte": "Ça aussi, ça se dépense." }
         ],
         "effet": { "fait": "maurice.fortune", "relation": { "achille": 5 } }
+      },
+      {
+        "id": "veillee_ferme",
+        "quand": { "debloque": "veillee", "lieu": "ferme", "lune": "pleine", "heure": [19, 22], "sans_fait": "veillee.ferme" },
+        "priorite": 95,
+        "lignes": [
+          { "qui": "odile", "texte": "On a vu ta lumière depuis le chemin. Alors on est venus." },
+          { "qui": "fernand", "texte": "Chez toi, la lune se voit mieux. C'est la terre du milieu, ça." },
+          { "qui": "achille", "texte": "Ton grand-père aurait aimé voir ça. Du monde, chez lui." },
+          { "qui": "odile", "texte": "On reviendra. Les soirs de pleine lune, laisse la porte ouverte." }
+        ],
+        "effet": { "fait": "veillee.ferme", "relation": { "odile": 5 }, "confiance_partout": 5 }
       }
     ],
     "LIEUX": {
@@ -4341,6 +4268,48 @@ export const RAW_DATA = {
         "une_fois": true
       }
     ]
+  },
+  "ILE": {
+    "ATELIERS": {
+      "scierie": {
+        "nom": "La scierie",
+        "icone": "🪚",
+        "hameau": "bois_joli",
+        "qui": "basile",
+        "sorte": "commande",
+        "jours": 1,
+        "max": 20,
+        "recettes": { "planches": { "nom": "Scier du bois", "entrees": { "bois": 2 }, "sortie": { "planche": 3 }, "pieces": 0 } }
+      },
+      "ebeniste": { "nom": "L'ébéniste", "icone": "🪑", "hameau": "bois_joli", "qui": "basile", "sorte": "meubles" },
+      "tissage": {
+        "nom": "Le métier à tisser",
+        "icone": "🧵",
+        "hameau": "genets",
+        "qui": "garance",
+        "sorte": "commande",
+        "jours": 1,
+        "max": 20,
+        "recettes": { "tissu": { "nom": "Tisser la laine", "entrees": { "laine": 2 }, "sortie": { "tissu": 1 }, "pieces": 0 } }
+      },
+      "couture": {
+        "nom": "La couture",
+        "icone": "🪡",
+        "hameau": "genets",
+        "qui": "garance",
+        "sorte": "commande",
+        "jours": 1,
+        "max": 3,
+        "recettes": {
+          "gants_travail": { "nom": "Des gants de travail", "entrees": { "tissu": 1 }, "sortie": { "gants_travail": 1 }, "pieces": 8 },
+          "manteau_chaud": { "nom": "Un manteau chaud", "entrees": { "tissu": 3 }, "sortie": { "manteau_chaud": 1 }, "pieces": 20 },
+          "salopette": { "nom": "Une salopette", "entrees": { "tissu": 2, "lingot_fer": 1 }, "sortie": { "salopette": 1 }, "pieces": 15 }
+        }
+      },
+      "tapis": { "nom": "Les tapis", "icone": "🧶", "hameau": "genets", "qui": "garance", "sorte": "meubles" }
+    },
+    "VEILLEE": { "HEURES": [19, 22], "CONFIANCE": 2 },
+    "REMBOURSEMENT": { "PRIX_NIVEAUX": [0, 3000, 8000, 20000] }
   },
   "CONSERVATION": {
     "carotte": 6,

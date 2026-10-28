@@ -31,11 +31,11 @@ import { equipementDe } from './equipement.js';
      onglet:<onglet>     l'onglet est ouvert (state.unlockedTabs)
      techno:<nœud>       la technologie est acquise ; technologies : un point de technologie gagné
      jour:<n>            la partie a atteint le jour n ; niveau:<n> : le niveau n
-     piece_close         une pièce close sur la carte ; commerce : le commerce du niveau 10 ;
+     piece_close         une pièce close sur la carte ; veillee : la veillée à la ferme (niveau 10) ;
      courrier            une lettre reçue */
 
 export const CARTES_ENCYCLOPEDIE = ['grotte', 'grotte_monde'];
-const SEULES = ['depart', 'piece_close', 'commerce', 'courrier', 'technologies', 'hameau'];
+const SEULES = ['depart', 'piece_close', 'veillee', 'courrier', 'technologies', 'hameau'];
 const OUTILS = ['houe', 'hache', 'faux', 'pioche', 'canne'];
 const ANIMAUX = ['poule', 'mouton', 'vache'];
 const BATIMENTS = ['silo', 'poulailler', 'paturage', 'serre', 'verger', 'frigo'];
@@ -101,7 +101,7 @@ export function conditionRemplie(state, cond, evenements = {}) {
     case 'jour': return state.day >= Number(v);
     case 'niveau': return levelReached(state) >= Number(v);
     case 'piece_close': return piecesCloses(state).length > 0;
-    case 'commerce': return isUnlocked(state, 'commerce');
+    case 'veillee': return isUnlocked(state, 'veillee');
     case 'courrier': return Array.isArray(state.courrier) && state.courrier.length > 0;
     default: return false;
   }

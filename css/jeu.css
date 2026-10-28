@@ -3009,6 +3009,13 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .hameau-bonheur .bar { width: 70px; }
 .hameau-reserve { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; }
 .hameau-reserve li { display: flex; align-items: center; gap: 6px; }
+/* Le récit, lot 7 : les ateliers d'un hameau garanti (js/ui/habitants.js) — une ligne par recette ou par meuble,
+   le texte à gauche, les boutons à droite (ils passent dessous sur un téléphone étroit). */
+.ile-atelier-titre { margin: 10px 0 4px; font-size: 1rem; }
+.ile-liste { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
+.ile-recette, .ile-meuble { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; }
+.ile-recette .row { gap: 6px; margin: 0; }
+.ile-liste .btn { min-height: 44px; }
 .hameau-reserve .num { margin-left: auto; font-weight: 700; }
 .hameau-reserve .gain { margin-left: 4px; color: #2f6b3a; font-size: 0.8rem; }
 /* La calèche (fiche 7c, js/carte/ferme/caleche.js, js/ui/caleche.js) : l'icône au bord de l'écran
