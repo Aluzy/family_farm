@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { fail, NO_COINS, pay } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
-import { habitantsDe } from './habitants.js';
+import { garantiDuHameau, habitantsDe } from './habitants.js';
 import { ajouterMeuble, meubleRefus } from './meubles.js';
 import { isUnlocked } from './campaign.js';
 import { hourOfDay } from './clock.js';
@@ -28,17 +28,8 @@ import { aFait, ageFait, ajouterConfiance, noterFait } from './recit.js';
 
 export const ILE = DATA.ILE;
 
-// Le hameau garanti que sont les habitants `hameauId` : « gue », « bois_joli », « genets »… ou null.
-// (le plan l'a donné à leur naissance ; une partie plus ancienne : d'après le nom du hameau)
-export function garantiDuHameau(state, hameauId) {
-  const h = habitantsDe(state)[hameauId];
-  if (!h) return null;
-  if (typeof h.garanti === 'string') return h.garanti;
-  const PH = DATA.PLAN_MONDE.HAMEAUX;
-  if (h.nom === PH.GUE) return 'gue';
-  const g = (PH.GARANTIS || []).find((x) => x.nom === h.nom);
-  return g ? g.id : null;
-}
+// Le hameau garanti que sont les habitants `hameauId` (js/engine/habitants.js, le récit s'en sert aussi).
+export { garantiDuHameau };
 
 // Les ateliers du hameau `hameauId` : [{ id, nom, icone, sorte, qui, recettes, jours, max }] ([] : aucun).
 export function ateliersDuHameau(state, hameauId) {

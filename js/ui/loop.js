@@ -158,15 +158,24 @@ function watchGarde() {
 }
 
 // La veillée (le récit, lot 6) : un soir de pleine lune, à partir de 17 h, une seule annonce par pleine
-// lune, tant que la première veillée n'a pas eu lieu et que l'acte II est ouvert.
+// lune, tant que la première veillée n'a pas eu lieu et que l'acte II est ouvert. Le récit, lot 9 : de même
+// pour la seconde (l'acte III) et pour la fête des premiers arrivants à Brumeval (annoncée par Achille).
 let veilleeAnnoncee = null;
 function inviterVeillee() {
-  if (aFait(state, 'veillee.1') || !aFait(state, 'odile.rencontre') || acteEnCours(state) < 2) return;
   if (moonPhase(state.day).id !== 'pleine' || veilleeAnnoncee === state.day) return;
   const h = absoluteHours(state) % 24;
   if (h < 17 || h >= 22) return;
+  const acte = acteEnCours(state);
+  let texte = null;
+  if (aFait(state, 'fete.annonce') && !aFait(state, 'fete') && acte >= 4) {
+    const brumeval = (DATA.PLAN_MONDE.HAMEAUX.GARANTIS || []).find((g) => g.id === 'brumeval');
+    texte = `🌕 Pleine lune : ce soir, la fête des premiers arrivants, à ${brumeval ? brumeval.nom : 'Brumeval'}, de 19 h à 23 h.`;
+  } else if (aFait(state, 'odile.rencontre') && ((!aFait(state, 'veillee.1') && acte >= 2) || (aFait(state, 'veillee.1') && !aFait(state, 'veillee.2') && acte >= 3))) {
+    texte = `🌕 Pleine lune : ce soir, on veille sur la place ${deHameau(DATA.PLAN_MONDE.HAMEAUX.GUE)}, de 19 h à 22 h.`;
+  }
+  if (!texte) return;
   veilleeAnnoncee = state.day;
-  notify(`🌕 Pleine lune : ce soir, on veille sur la place ${deHameau(DATA.PLAN_MONDE.HAMEAUX.GUE)}, de 19 h à 22 h.`, { kind: 'info' });
+  notify(texte, { kind: 'info' });
 }
 
 function watchMail() {

@@ -30,7 +30,7 @@ import { solDuMonde } from './monde-sol.js';
    de but) et annoncer la page du carnet gagnée (effet « fragment », js/ui/carnet.js). */
 
 let scene = null; // { id, lignes: [{ qui, nom, texte }], i }
-let aMontrer = null; // un lieu à montrer sur la carte du monde dès que ses lieux sont tirés (« gue »)
+let aMontrer = null; // les hameaux garantis à montrer sur la carte du monde dès que ses lieux sont tirés ([« gue »…])
 
 // Une autre fenêtre a pu prendre la place de la scène (openModal remplace sans fermer) : la scène est
 // alors finie (elle est notée dès son ouverture : rien ne se perd).
@@ -38,18 +38,24 @@ function oublierSiRemplacee() {
   if (scene && !document.getElementById('scene-modal')) scene = null;
 }
 
-// Le Gué sur la carte du monde : son cercle vu (montrerLieu), la boussole menée vers lui si elle n'a pas de
-// but. Les lieux du monde viennent du Web Worker (monde-sol.js) : tant qu'ils manquent, on réessaie.
+// Les hameaux garantis à montrer (le Gué, Brumeval pour la fête, les Genêts et Bois-Joli pour la tournée
+// d'Achille) sur la carte du monde : leur cercle vu (montrerLieu), la boussole menée vers le premier si elle
+// n'a pas de but. Les lieux du monde viennent du Web Worker (monde-sol.js) : tant qu'ils manquent, on réessaie.
 function montrerEnAttente() {
-  if (aMontrer !== 'gue') return;
+  if (!aMontrer || !aMontrer.length) return;
   const T = farmTerrain(state), sol = T.MONDE ? solDuMonde(T) : null, lieux = sol && sol.lieux();
   if (!T.MONDE) { aMontrer = null; return; }
   if (!lieux) return;
+  const ids = aMontrer;
   aMontrer = null;
-  const h = (lieux.hameaux || []).find((x) => x.gue);
-  if (!h) return;
-  montrerLieu(state, h.case, 6);
-  if (!butBoussole(state)) choisirBut(state, { sorte: 'hameau', id: h.id });
+  let premier = true;
+  for (const g of ids) {
+    const h = (lieux.hameaux || []).find((x) => x.garanti === g || (g === 'gue' && x.gue));
+    if (!h) continue;
+    montrerLieu(state, h.case, 6);
+    if (premier && !butBoussole(state)) choisirBut(state, { sorte: 'hameau', id: h.id });
+    premier = false;
+  }
   persistState();
 }
 
@@ -57,7 +63,7 @@ function ligneHtml() {
   const l = scene.lignes[scene.i];
   const P = RECIT.PERSONNAGES[l.qui] || {};
   const derniere = scene.i >= scene.lignes.length - 1;
-  const portrait = P.perso ? `<span class="scene-portrait">${persoHtml(P.perso)}</span>` : '';
+  const portrait = P.perso ? `<span class="scene-portrait">${persoHtml(P.perso, !!(P.habite && P.habite.enfant))}</span>` : '';
   return `
     <div class="scene-ligne">
       ${portrait}
@@ -82,7 +88,7 @@ export function ouvrirScene(id, ctx = {}) {
   persistState();
   scene = { id, lignes: r.lignes, i: 0 };
   const effet = (RECIT.SCENES.find((x) => x.id === id) || {}).effet || {};
-  if (effet.montrer) aMontrer = effet.montrer;
+  if (effet.montrer) aMontrer = Array.isArray(effet.montrer) ? effet.montrer.slice() : [effet.montrer];
   montrerEnAttente();
   openModal(ligneHtml(), {
     labelledBy: 'scene-nom', id: 'scene-modal', className: 'modal bois scene-modal story-modal', focus: '#scene-bouton',

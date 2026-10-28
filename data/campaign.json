@@ -159,28 +159,27 @@
     "début d'une nouvelle partie, une fois la famille installée. Version 1.14 :",
     "`quand.niveau` : la lettre arrive au niveau d'expérience donné ; `pieces` : pièces",
     "versées une seule fois, à l'ouverture de la lettre (sans XP). Le récit (docs/recit/) : une ligne",
-    "peut être { m, f }, selon le genre du personnage principal (mailText, comme les répliques du récit)."
+    "peut être { m, f }, selon le genre du personnage principal (mailText, comme les répliques du récit).",
+    "Le récit, lot 9 : `quand.chapitre` : le chapitre de la campagne atteint ; `quand.fait` : un fait du récit (ou une",
+    "liste) noté (state.recit, js/engine/recit.js) ; `quand.apres` (avec fait) : au moins ce nombre de jours depuis",
+    "qu'il l'a été la première fois. Toutes les clés d'une lettre doivent être vraies. La seconde lettre du notaire",
+    "apporte l'enveloppe de Maurice (un objet) au lieu de ses 15 000 pièces : l'ouvrir les garde, la porter à Odile",
+    "les donne (RECIT.ENVELOPPE). Les lettres d'Adèle suivent l'aventure : la première récolte, la première veillée,",
+    "le robot, puis une lettre selon la fin de la fête ; Théo écrit s'il part."
   ],
   "COURRIER": {
     "notaire_legs": {
       "quand": { "niveau": 9 },
-      "pieces": 15000,
+      "cadeaux": { "enveloppe_maurice": 1 },
       "icone": "📜",
       "objet": "Une seconde lettre du notaire",
       "expediteur": "Maître Durand, notaire",
       "lieu": "Étude de Saint-Aubin",
       "texte": [
         "Madame, Monsieur {nom},",
-        "En rangeant les papiers de votre grand-père, j'ai retrouvé une enveloppe à votre nom, cachetée de sa main.",
-        "« Votre grand-père vous a aussi légué 15 000 pièces, faites-en bon usage ! »",
-        "Il savait, je crois, que vous remettriez la ferme debout. Les pièces vous sont versées à l'ouverture de ce courrier.",
-        "Je vous prie d'agréer mes salutations distinguées."
-      ],
-      "texteSauvage": [
-        "Madame, Monsieur {nom},",
-        "En rangeant les papiers de la succession, j'ai retrouvé une enveloppe à votre nom, cachetée.",
-        "« Ces 15 000 pièces sont aussi pour vous, faites-en bon usage ! »",
-        "Vous avez fait beaucoup de cette terre. Les pièces vous sont versées à l'ouverture de ce courrier.",
+        "En rangeant les papiers de votre grand-père, j'ai retrouvé une enveloppe à votre nom, cachetée de sa main. Je vous la fais suivre telle quelle.",
+        "Il a écrit sur le dessus : « Pour les toits de Céron : Odile saura. Ou pour toi, si tu en as plus besoin qu'eux. Tu sauras. M. »",
+        "Je ne l'ai pas ouverte. Elle est épaisse.",
         "Je vous prie d'agréer mes salutations distinguées."
       ],
       "signature": "Maître Durand"
@@ -220,6 +219,130 @@
         "Écris-moi. Embrasse tout le monde."
       ],
       "signature": "Maman"
+    },
+    "adele_recolte": {
+      "quand": {"chapitre": 2},
+      "icone": "💌",
+      "objet": "Une lettre de ta mère",
+      "expediteur": "Adèle",
+      "lieu": "Cadolon",
+      "texte": [
+        {"m": "Mon grand,", "f": "Ma grande,"},
+        "Les nouvelles vont vite : Odile m'a écrit avant toi. Il paraît que tu as fait ta première récolte !",
+        "Papa faisait toujours la même chose, le jour de la première récolte : il en portait un panier à quelqu'un. Jamais le même.",
+        "Au fait, le grand arbre tordu au-dessus du Gué, il s'y arrêtait toujours en rentrant. Je n'ai jamais su pourquoi.",
+        "Mange un peu de ce que tu as fait pousser. Pour moi.",
+        "Je t'embrasse."
+      ],
+      "signature": "Maman"
+    },
+    "adele_veillee": {
+      "quand": {"fait": "veillee.1"},
+      "icone": "💌",
+      "objet": "Une lettre de ta mère",
+      "expediteur": "Adèle",
+      "lieu": "Cadolon",
+      "texte": [
+        {"m": "Mon grand,", "f": "Ma grande,"},
+        {"m": "Odile t'a tutoyé ! Elle m'a écrit trois lignes pour me le dire, c'est beaucoup pour elle.", "f": "Odile t'a tutoyée ! Elle m'a écrit trois lignes pour me le dire, c'est beaucoup pour elle."},
+        "Moi, elle m'a tutoyée à six ans et vouvoyée à seize, le jour où j'ai pris le bac. Elle n'est jamais revenue au tu.",
+        "Des veillées, je me souviens surtout du froid sur les jambes, et de papa qui n'y venait jamais : il était sur la route.",
+        "Au fait, dis bonjour à Frida, si tu la croises au bord de son étang. Elle me faisait un peu peur, et je l'adorais.",
+        "Je t'embrasse."
+      ],
+      "signature": "Maman"
+    },
+    "adele_robot": {
+      "quand": {"fait": "machine.station_robot"},
+      "icone": "💌",
+      "objet": "Une lettre de ta mère",
+      "expediteur": "Adèle",
+      "lieu": "Cadolon",
+      "texte": [
+        {"m": "Mon grand,", "f": "Ma grande,"},
+        "Un robot ! Frida doit être aux anges. Elle en dessinait déjà sur les nappes de la cuisine quand j'avais ton âge.",
+        "Fais attention aux anciens. Pas pour toi : pour eux. Odile a mis dix ans à accepter le panneau solaire de papa.",
+        "Au fait, papa disait que les machines, c'est comme les chevaux : tout dépend de qui tient les rênes.",
+        "Je t'embrasse fort."
+      ],
+      "signature": "Maman"
+    },
+    "adele_fete_maurice": {
+      "quand": {"fait": "fin.nouveau_maurice"},
+      "icone": "💌",
+      "objet": "Une lettre de ta mère",
+      "expediteur": "Adèle",
+      "lieu": "Cadolon",
+      "texte": [
+        {"m": "Mon grand,", "f": "Ma grande,"},
+        "Odile t'a donné la cloche. Je l'ai su avant ta lettre : on en parle jusque sur le quai de Cadolon.",
+        "Cette cloche, je l'entendais arriver de loin quand j'étais petite. Papa la sonnait deux fois devant chaque maison : une pour dire bonjour, une pour dire qu'il repartait.",
+        "Je ne sais pas comment tu as fait. Si, je sais : tu as fait comme lui.",
+        {"m": "Je suis fière de toi, mon grand. Je viendrai peut-être, un jour. Pas tout de suite.", "f": "Je suis fière de toi, ma grande. Je viendrai peut-être, un jour. Pas tout de suite."}
+      ],
+      "signature": "Maman"
+    },
+    "adele_fete_voisin": {
+      "quand": {"fait": "fin.voisin_tranquille"},
+      "icone": "💌",
+      "objet": "Une lettre de ta mère",
+      "expediteur": "Adèle",
+      "lieu": "Cadolon",
+      "texte": [
+        {"m": "Mon grand,", "f": "Ma grande,"},
+        "Fernand t'emmène pêcher ? Alors c'est fait : tu es d'ici. Il n'a jamais emmené personne, pas même papa.",
+        "Tu n'as pas fait de bruit. C'est ce que les gens de Céron préfèrent, même s'ils ne le disent pas.",
+        "Au fait, à la cale des Mouettes, il y a une pierre plate où papa s'asseyait pour attendre le bac. Assieds-toi dessus, pour moi.",
+        "Je t'embrasse."
+      ],
+      "signature": "Maman"
+    },
+    "adele_fete_autrement": {
+      "quand": {"fait": "fin.autrement"},
+      "icone": "💌",
+      "objet": "Une lettre de ta mère",
+      "expediteur": "Adèle",
+      "lieu": "Cadolon",
+      "texte": [
+        {"m": "Mon grand,", "f": "Ma grande,"},
+        "Frida m'a écrit. Frida, qui n'écrit jamais ! Quatre pages, dont trois de chiffres. La quatrième parlait de toi.",
+        "Elle dit que tu as fait ce qu'elle n'a jamais réussi : montrer à l'île qu'une machine peut la servir.",
+        "Papa aurait râlé. Puis il serait venu voir. Puis il aurait râlé un peu moins.",
+        "Je suis fière de toi, tu sais."
+      ],
+      "signature": "Maman"
+    },
+    "adele_fete_riche": {
+      "quand": {"fait": "fin.riche"},
+      "icone": "💌",
+      "objet": "Une lettre de ta mère",
+      "expediteur": "Adèle",
+      "lieu": "Cadolon",
+      "texte": [
+        {"m": "Mon grand,", "f": "Ma grande,"},
+        "On m'a raconté la fête. Ta ferme est la plus grande de l'île, paraît-il : on la voit depuis le bac.",
+        "Je ne te fais pas de reproche. Je n'ai jamais su ce qu'il fallait faire, là-bas, moi non plus.",
+        {"m": "Tu es heureux, là-bas ? C'est la seule chose que je veux savoir.", "f": "Tu es heureuse, là-bas ? C'est la seule chose que je veux savoir."},
+        "Au fait, Odile aime les visites. Même quand elle dit le contraire.",
+        "Je t'embrasse."
+      ],
+      "signature": "Maman"
+    },
+    "theo_cadolon": {
+      "quand": {"fait": "theo.part", "apres": 5},
+      "icone": "✉️",
+      "objet": "Une lettre de Théo",
+      "expediteur": "Théo",
+      "lieu": "Cadolon",
+      "texte": [
+        "Salut,",
+        "Cadolon, c'est grand. Il y a des machines partout, même pour ouvrir les portes. Au début, j'ai trouvé ça génial.",
+        "Je travaille dans un atelier du port. On répare des moteurs de bateaux. Le chef dit que j'ai des mains. Frida disait pareil, en mieux.",
+        "Le soir, je pense à la scie. Elle grinçait à la troisième planche, toujours. Ici, rien ne grince. C'est bizarre.",
+        "Tu peux dire à papa que je mange bien ? Toi, il te croira.",
+        "Et dis à Achille que sa roue arrière gauche, faut la graisser."
+      ],
+      "signature": "Théo"
     },
     "cousin_venezuela": {
       "quand": { "debloque": "serre" },

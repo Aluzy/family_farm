@@ -4,11 +4,11 @@
    ========================================================================== */
 
 import {
-  acknowledgeChapter, acknowledgeLevel, actionXp, addItem, awakeMsAtHour,
+  acknowledgeChapter, acknowledgeLevel, actionXp, addItem, aFait, awakeMsAtHour,
   countItem, createInitialState, cropUnlocked,
   DATA, deliverMail, feedAllHens, findPlot, gainXp, harvest, ingredientOptions, isUnlocked,
   levelForXp, levelProgress, levelReached, levelUnlocks, lotsOf, mailReceived, makeDevice,
-  maxStage, migrate, newCampaignCounters, openFridge, openSerre, plant, plantableCropsFor,
+  maxStage, migrate, newCampaignCounters, openFridge, openSerre, ouvrirEnveloppe, plant, plantableCropsFor,
   readMail, sellItem, shear, startMilling, startRecipe, STATE_VERSION,
   tankCapacity, testBatir, testCompleteChapter, testGoToChapter, testSetLevel, testWoolReady, tick,
   unlockLevel, updateChapters, water,
@@ -355,7 +355,9 @@ function atLevel10() {
   return s;
 }
 
-test('version 1.14 : au niveau 9, le notaire verse 15 000 pièces à l\'ouverture, une seule fois, sans XP', () => {
+// Le récit, lot 9 : la seconde lettre du notaire apporte l'enveloppe de Maurice (un objet) au lieu des 15 000
+// pièces (version 1.14) ; l'ouvrir les garde, une fois, sans XP (js/engine/recit.js ouvrirEnveloppe).
+test('version 1.14, le récit lot 9 : au niveau 9, le notaire envoie l\'enveloppe ; l\'ouvrir donne 15 000 pièces, une fois, sans XP', () => {
   const s = farm();
   testSetLevel(s, 8);
   deliverMail(s);
@@ -363,10 +365,12 @@ test('version 1.14 : au niveau 9, le notaire verse 15 000 pièces à l\'ouvertur
   testSetLevel(s, 9);
   deliverMail(s);
   assert(mailReceived(s, 'notaire_legs'));
+  assertEqual(countItem(s, 'enveloppe_maurice'), 1, 'l\'enveloppe est dans l\'inventaire');
   const p = s.pieces, xp = s.progression.xp;
-  assertEqual(readMail(s, 'notaire_legs').pieces, 15000);
-  assertEqual([s.pieces - p, s.progression.xp - xp], [15000, 0]);
-  assertEqual(readMail(s, 'notaire_legs').pieces, 0, 'relue : rien de plus');
+  assertEqual(readMail(s, 'notaire_legs').pieces, 0, 'la lettre ne verse rien');
+  assertEqual(ouvrirEnveloppe(s).pieces, 15000);
+  assertEqual([s.pieces - p, s.progression.xp - xp, countItem(s, 'enveloppe_maurice'), aFait(s, 'enveloppe.ouverte')], [15000, 0, 0, true]);
+  assertEqual(ouvrirEnveloppe(s).ok, false, 'une fois');
   assertEqual(s.pieces - p, 15000);
 });
 

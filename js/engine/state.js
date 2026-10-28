@@ -530,6 +530,37 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v63 → v64 : le récit, lot 9 (l'enveloppe de Maurice). La seconde lettre du notaire apporte l'enveloppe (un
+  // objet) au lieu de ses 15 000 pièces : une partie qui les a déjà reçues l'a ouverte (le fait
+  // « enveloppe.ouverte », pour la fin de l'aventure) ; une partie qui a la lettre sans l'avoir ouverte reçoit
+  // l'enveloppe dans son inventaire (la lettre est marquée : ses pièces ne seront plus versées).
+  // Les nouvelles lettres d'Adèle dont le moment est passé (la première récolte : le chapitre 3 atteint ; la
+  // première veillée, déjà faite) arrivent déjà lues, à leur place dans le courrier : rien n'est annoncé.
+  63: (state) => {
+    const out = { ...state, version: 64 };
+    if (Array.isArray(state.courrier)) {
+      const j = Math.max(1, Math.floor(Number(state.day) || 1));
+      const faits = state.recit && state.recit.faits && typeof state.recit.faits === 'object' ? state.recit.faits : {};
+      const passees = [];
+      if (state.campagne && Number(state.campagne.chapitre) >= 3) passees.push('adele_recolte');
+      if (Array.isArray(faits['veillee.1'])) passees.push('adele_veillee');
+      const ont = new Set(state.courrier.map((x) => x && x.id));
+      out.courrier = [...state.courrier, ...passees.filter((id) => !ont.has(id)).map((id) => ({ id, nuit: j, lu: true }))];
+    }
+    const l = Array.isArray(out.courrier) ? out.courrier.find((x) => x && x.id === 'notaire_legs') : null;
+    if (!l) return out;
+    if (l.verse) {
+      const r = out.recit && typeof out.recit === 'object' && !Array.isArray(out.recit) ? out.recit : nouveauRecit();
+      const faits = r.faits && typeof r.faits === 'object' && !Array.isArray(r.faits) ? r.faits : {};
+      const j = Math.max(1, Math.floor(Number(state.day) || 1));
+      if (!Array.isArray(faits['enveloppe.ouverte'])) faits['enveloppe.ouverte'] = [j, j, 1];
+      out.recit = { ...r, faits };
+    } else {
+      out.courrier = out.courrier.map((x) => (x === l ? { ...x, verse: true } : x));
+      addItem(out, DATA.RECIT.ENVELOPPE.OBJET, 1);
+    }
+    return out;
+  },
 };
 
 // Porte les cases d'une partie (numérotées sur la largeur de sa ferme) dans celles du monde, où sa

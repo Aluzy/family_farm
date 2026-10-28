@@ -18,7 +18,7 @@ se termine par une validation avant le suivant.
 | 3b. Les autres lieux garantis | Bois-Joli, Les Genêts, Les Mouettes, Brumeval, cabane de Johnny, atelier de Frida, l'épave | `monde-gen.js`, `monde-hameaux.js`, `monde-lieux.js`, `scripts/carte/lieux.py` | 3a | P2 | fait |
 | 7. Économie de l'île | Tissage et couture aux Genêts ; scierie et ébéniste à Bois-Joli ; l'Atelier ne fait plus de meubles ; les commerces du niveau 10 disparaissent | `js/engine/ile.js`, `data/ile.json`, `js/ui/habitants.js`, `data/meubles.json`, `data/recipes.json`, `data/niveaux.json` | 3b | P2 | fait |
 | 8. Exploration | Compagnon qui garde la ferme (fiche 19), tente et bivouac, l'équipement (fiche 11) complété de la tente | `compagnon.js`, `night.js`, `equipement.js`, `blocs.js`, `data/equipement.json`, `js/ui/depart.js`, `js/ui/fiche-membre.js`, `js/ui/stage-windows.js`, `js/ui/loop.js` | 1 | P2 | fait |
-| 9. Actes III et IV | L'enveloppe, l'usure des maisons, la seconde veillée, la fête et ses fins, les lettres d'Adèle, les arcs de Théo et d'Achille | `data/recit.json`, `data/campaign.json`, `habitants.js` | 2, 6, 7 | P3 | à faire |
+| 9. Actes III et IV | L'enveloppe, l'usure des maisons, la seconde veillée, la fête et ses fins, les lettres d'Adèle, les arcs de Théo et d'Achille | `data/recit.json`, `data/campaign.json`, `js/engine/recit.js`, `js/engine/usure.js`, `js/engine/habitants.js`, `js/ui/habitants.js`, `js/carte/ferme/hameaux.js` | 2, 6, 7 | P3 | fait |
 | 10. Le fil de la lune | Fragments, lanterne, repas à Johnny, galerie secrète, pierre et pousse accélérée | `js/engine/grotte.js`, `js/grotte.js`, `js/engine/crops.js`, `data/grotte.json` | 3b, 6 | P3 | à faire |
 | 11. Textes et encyclopédie | Retirer « Printemps 2021 », Adèle à la place de Mateo, intros des chapitres, pages des hameaux et des personnages | `data/general.json`, `data/campaign.json`, `encyclopedie_ferme_familiale.json` | 5 | P2 | à faire |
 
@@ -137,6 +137,50 @@ l'atelier de Frida (lot 3b) ; les veillées suivantes (acte III).
 - Icônes pixel ajoutées : ⛺ 🧵 🪡 🪑 📓 💌. Corrigé en passant : la notification « mal dormi » nommait
   « Adulte 2 » au lieu du prénom.
 - Tests : `tests/engine/exploration.test.mjs`.
+
+## Les actes III et IV (lot 9)
+
+- **L'enveloppe de Maurice** : au niveau 9, la seconde lettre du notaire apporte l'enveloppe (un objet,
+  `enveloppe_maurice`, catégorie « souvenir », ni vendue ni rachetée) au lieu des 15 000 pièces. Le mot de
+  Maurice est sur le dessus : « Pour les toits de Céron : Odile saura. Ou pour toi, si tu en as plus besoin
+  qu'eux. Tu sauras. M. » L'ouvrir (sa fiche, dans l'inventaire) garde les pièces (`ouvrirEnveloppe`,
+  `enveloppe.ouverte`) ; toucher Odile l'enveloppe en poche joue la scène `enveloppe_odile` et la donne
+  (`enveloppe.donnee`) : les toits abîmés sont réparés, un par nuit, et plus aucun ne s'abîme. Migration
+  63 → 64 : une partie qui avait reçu les pièces a ouvert l'enveloppe ; une partie qui avait la lettre sans
+  l'avoir ouverte reçoit l'enveloppe.
+- **L'usure des toits** (`js/engine/usure.js`, `RECIT.USURE`) : à partir de l'acte III, toutes les 4 nuits, un
+  toit s'abîme dans un hameau découvert (au plus 2 par hameau). Il se voit sur la carte (des trous dans la
+  couverture, `js/carte/ferme/hameaux.js`). On le répare depuis la fiche du hameau, sur place (6 planches,
+  4 pierres : provisoire) : la confiance du hameau gagne 5 points.
+- **La seconde veillée** (`veillee_2`) : au Gué, à la pleine lune de l'acte III ; elle parle de la ferme
+  (l'empreinte, les machines, les promesses, l'enveloppe, les toits). Une annonce le soir, comme la première.
+- **La voie et la fin** (`finAventure`, `RECIT.FINS`) : grande ferme quand l'empreinte est haute ; ce que le
+  joueur a rendu (l'entretien : une promesse tenue 1, un toit réparé 1, l'enveloppe donnée 3 ; la nature : les
+  arbres plantés). Petite et 4 points d'entretien : « le nouveau Maurice » ; petite, sinon : « le voisin
+  tranquille » ; grande, 4 points et 10 arbres : « celui qui a fait autrement » ; grande, sinon : « le riche
+  d'à côté ». Seuils provisoires.
+- **La fête des premiers arrivants** : Achille l'annonce à la calèche à l'acte IV (`fete_annonce`, Brumeval
+  montré sur la carte) ; à Brumeval, une nuit de pleine lune, de 19 h à 23 h, la scène de la fin
+  (`fete_<fin>`) se joue et la fige (`fin.<id>`). Le nouveau Maurice reçoit la cloche de la calèche de Maurice
+  (`cloche_maurice`). Une annonce le soir.
+- **Les lettres** (`COURRIER`, conditions `chapitre`, `fait`, `apres`) : Adèle à la première récolte, à la
+  première veillée, au robot (`machine.station_robot`, noté la nuit), puis une lettre par fin ; Théo, cinq
+  jours après son départ. Une ancienne partie reçoit, déjà lues, celles dont le moment est passé.
+- **Théo et Basile** vivent à Bois-Joli, dans le même foyer (`habite.avec`, `installerEcrits` : un Bois-Joli
+  peuplé avant les reçoit). Toucher Théo : la rencontre, puis, à l'acte III, il veut partir (`theo_confie`) ;
+  toucher Basile, c'est lui parler : Théo devient l'apprenti d'Achille (le joueur a fait sa tournée), reprend
+  l'atelier en le modernisant (une machine à la ferme), ou part (il quitte Bois-Joli la nuit suivante ; sa
+  lettre arrive cinq jours après). Une scène peut maintenant s'ouvrir au toucher d'un personnage (`touche`).
+- **La relève d'Achille** : à l'acte III, à la calèche, Achille « cordial » : son cheval boite (plutôt que lui
+  malade : la bible interdit la maladie comme sujet) ; il demande qu'on passe aux Genêts et à Bois-Joli
+  (`noterVisite`, `tournee.<hameau>`, les deux hameaux montrés). Fait, il le remercie (`achille.tournee`) ; à
+  l'acte IV, il dit qui reprendra : Théo (apprenti), un jeune d'un hameau (6 hameaux découverts), ou personne.
+- Des répliques de plus : Achille, Odile, Fernand, Basile et Théo (les toits, l'enveloppe, l'empreinte à
+  l'acte III, la fête, la cloche).
+- Le lieu d'un hameau garanti est maintenant son id (`gue`, `bois_joli`, `brumeval`…) ; l'effet `montrer`
+  accepte un hameau garanti ou une liste ; les effets `donner` et `prendre` ; les conditions `objet`, `touche`,
+  `voie`, `fin`, `hameaux_min`.
+- Tests : `tests/engine/recit-actes34.test.mjs`.
 
 ## Les critères de qualité narrative
 

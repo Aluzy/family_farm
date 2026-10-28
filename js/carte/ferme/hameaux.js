@@ -16,6 +16,8 @@
  *     s'efface quand le personnage est dans la maison, à moitié quand il passe derrière (comme chez
  *     lui, toits.js) ; sa cheminée (au-dessus du foyer), d'où monte la fumée (pas avec « animations
  *     réduites ») ;
+ *   - un toit abîmé (le récit, lot 9 : js/engine/usure.js ; model.toitsUses) : sa couverture trouée (abimer) ;
+ *     refait quand il s'abîme ou qu'on le répare (majToits) ;
  *   - la nuit, les fenêtres de la façade s'éclairent et leur lumière tombe sur le sol devant elles
  *     (dans le voile de l'heure, avec les lanternes de la ferme : chantier.js stepLanterns) ;
  *   - l'arrivée : le personnage qui entre dans un hameau le dit à la page (ctx.bridge.hameau : la
@@ -77,6 +79,40 @@
     }
   }
 
+  // Un toit abîmé (le récit, lot 9) : sur la couverture déjà peinte (cv), trois ou quatre trous aux bords
+  // irréguliers (le noir du dedans, une poutre de la charpente) et, au-dessus de chacun, des tuiles cassées,
+  // plus claires ; tirés de l'id de la maison (le même dessin à chaque fois). On ne peint que là où le toit est
+  // opaque.
+  function abimer(cv, id) {
+    const g = cv.getContext('2d'), W = cv.width, H = cv.height;
+    const px = g.getImageData(0, 0, W, H), d = px.data;
+    let h = 2166136261;
+    for (const c of String(id)) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+    const rnd = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0) / 4294967296);
+    const pose = (x, y, [r, v, b]) => {
+      if (x < 0 || y < 0 || x >= W || y >= H) return;
+      const k = (y * W + x) * 4;
+      if (d[k + 3] < 200) return;
+      d[k] = r; d[k + 1] = v; d[k + 2] = b;
+    };
+    // (le noir du dedans, la charpente qu'on voit dans le trou, le bord clair des tuiles cassées)
+    const NOIR = [26, 20, 18], POUTRE = [92, 62, 38], CLAIR = [204, 178, 136];
+    const trous = 3 + Math.floor(rnd() * 2);
+    for (let n = 0; n < trous; n++) {
+      const l = Math.max(7, Math.floor(W * (0.1 + rnd() * 0.08))), t = 5 + Math.floor(rnd() * 4);
+      const cx = Math.floor(W * 0.2 + rnd() * (W * 0.6 - l)), cy = Math.floor(H * 0.25 + rnd() * (H * 0.45 - t));
+      for (let y = 0; y < t; y++) for (let x = 0; x < l; x++) {
+        // (un trou aux bords irréguliers : les coins rognés, un peu de hasard sur le pourtour)
+        const bord = x === 0 || x === l - 1 || y === 0 || y === t - 1;
+        if (bord && ((x === 0 || x === l - 1) && (y === 0 || y === t - 1) || rnd() < 0.35)) continue;
+        pose(cx + x, cy + y, x % 5 === 2 && y > 0 ? POUTRE : NOIR);
+      }
+      // (les tuiles cassées au-dessus du trou : une rangée claire, ébréchée)
+      for (let x = -1; x <= l; x++) if (rnd() < 0.7) pose(cx + x, cy - 1, CLAIR);
+    }
+    g.putImageData(px, 0, 0);
+  }
+
   F.partie({
 
     // Les plans des hameaux (ctx.monde.hameaux()), ou [] tant que le Worker ne les a pas donnés.
@@ -104,6 +140,7 @@
         const vu = !!(r && r.tex), e = this.hameauxVus.get(p.id);
         if (vu && !e) this.hameauxVus.set(p.id, this.faireHameau(p));
         else if (!vu && e) { this.defaireHameau(e); this.hameauxVus.delete(p.id); }
+        else if (e) this.majToits(e);
       }
     },
 
@@ -118,6 +155,8 @@
         // la même clé, le rendu pourrait en garder l'ancienne)
         this.hameauxN = (this.hameauxN || 0) + 1;
         const { cv, c0, r0, r1, dx } = K.toit(cases, W, false, TOITS[couverture]), key = `toit_${m.id}_${this.hameauxN}`;
+        const use = this.toitUse(p.id, m.id);
+        if (use) abimer(cv, m.id);
         this.textures.addCanvas(key, cv);
         // (posé sur les murs, remonté de la hauteur de leur face, comme chez lui : toits.js)
         const x = c0 * T - dx, y = r0 * T - BLOCS_CARTE.etage.dy, z = (r1 + 1) * T + R.z;
@@ -130,10 +169,34 @@
         }
         // (son ombre au soleil, soleil.js sunPrisms : posé à etage.dy px sur l'emprise, comme toits.js)
         const ombre = { x0: m.x0 * T, x1: (m.x0 + m.l) * T, y0: r0 * T, y1: (r1 + 1) * T, v: BLOCS_CARTE.etage.dy, faite: Math.max(0, cv.height - (r1 + 1 - r0) * T) };
-        return { key, img, cheminee, ombre, dedans: new Set(m.dedans), x0: x, x1: x + cv.width, y0: y, y1: y + cv.height, pied: (r1 + 1) * T, maison: m };
+        return { key, img, cheminee, ombre, dedans: new Set(m.dedans), x0: x, x1: x + cv.width, y0: y, y1: y + cv.height, pied: (r1 + 1) * T, maison: m, use, cases, couverture };
       });
       this.sunDirty = true;
       return { plan: p, style, toits, fumees: [] };
+    },
+
+    // Le toit de la maison `maison` du hameau `id` est-il abîmé ? (le modèle de la page : model.toitsUses)
+    toitUse(id, maison) {
+      const U = (this.ctx.lastModel && this.ctx.lastModel.toitsUses) || {};
+      return Array.isArray(U[id]) && U[id].includes(maison);
+    },
+
+    // Un toit qui s'abîme ou qu'on répare : sa texture est refaite (une clé neuve, l'ancienne retirée).
+    majToits(e) {
+      const W = this.grid.cols;
+      for (const t of e.toits) {
+        const use = this.toitUse(e.plan.id, t.maison.id);
+        if (use === t.use) continue;
+        const { cv } = K.toit(t.cases, W, false, TOITS[t.couverture]);
+        if (use) abimer(cv, t.maison.id);
+        this.hameauxN = (this.hameauxN || 0) + 1;
+        const key = `toit_${t.maison.id}_${this.hameauxN}`;
+        this.textures.addCanvas(key, cv);
+        t.img.setTexture(key);
+        if (this.textures.exists(t.key)) this.textures.remove(t.key);
+        t.key = key;
+        t.use = use;
+      }
     },
 
     defaireHameau(e) {

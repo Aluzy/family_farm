@@ -110,13 +110,15 @@ un changement qui sauve son métier, ou préserver sa façon de faire avec l'aid
 
 50 ans, tient la scierie et l'atelier d'ébéniste ; c'est chez lui que l'on achète les meubles.
 Tient au bois juste (on replante ce qu'on coupe). Veut que son fils reprenne l'atelier, et lui
-interdit tout ce qui l'intéresse. Arc : laisser Théo choisir.
+interdit tout ce qui l'intéresse. Arc : laisser Théo choisir. Vit à Bois-Joli avec Théo (lot 9 :
+`habite`, apparence 18, bûcheron).
 
 ### Théo, l'enfant qui veut partir, Bois-Joli (`theo`)
 
 15 ans, fils de Basile. Rêve de Cadolon, mais c'est le meilleur de l'île pour réparer une calèche.
 Passe ses journées chez Frida en cachette. Arc : partir, reprendre l'atelier en le modernisant, ou
-devenir le prochain cocher, selon ce que l'île lui offre.
+devenir le prochain cocher, selon ce que l'île lui offre (lot 9 : décidé quand le joueur parle à Basile,
+selon qu'il a fait la tournée d'Achille ou posé une machine). Vit chez Basile (apparence d'enfant 18).
 
 ### Lise, l'enfant qui veut rester, Les Genêts (`lise`)
 

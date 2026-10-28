@@ -61,7 +61,7 @@ ou d'Odile, les consignes restant dans les objectifs.
   coupé, les machines.
 - **La seconde veillée (C)** porte sur la ferme du joueur.
 - **L'enveloppe de Maurice (S)**, au niveau 9 : la lettre existante (15 000 pièces) devient une
-  décision.
+  décision (lot 9 : l'enveloppe est un objet ; l'ouvrir la garde, toucher Odile en l'ayant la donne).
 - **Les arcs arrivent à leur point de bascule (C)** : Théo, la laine de Garance, la relève
   d'Achille.
 
@@ -106,7 +106,7 @@ Personne ne quitte l'île : un foyer malheureux parle de partir, sans partir.
 |---|---|---|---|---|
 | Le toit de Garance | Le premier carnet | Réunir planches, pierre, laine ; livrer ; plus tard, l'atelier manque de laine (É) | Toit réparé, confiance des Genêts ; laine fournie par la ferme ou cardeuse de Frida acceptée à contrecœur | Construction, moutons, tissage |
 | Théo et Basile | Rencontrer Théo | Le robot ; l'inquiétude de Basile ; parler à son père | Il part (une lettre de lui), reprend l'atelier en le modernisant, ou devient l'apprenti d'Achille | Automatisations, scierie |
-| La relève d'Achille | Confiance d'Achille | L'aider sur la tournée un jour où il est malade ; trouver qui reprendra | Théo, un jeune d'un hameau généré, ou personne | Calèche, cheval |
+| La relève d'Achille | Confiance d'Achille | L'aider sur la tournée un jour où son cheval boite (lot 9 : pas la maladie, interdite comme sujet) ; trouver qui reprendra | Théo, un jeune d'un hameau généré, ou personne | Calèche, cheval |
 | Odile et la maison de Maurice | Ouvrir la maison | Respecter les coutumes de lune ; revenir ; porter une lettre entre elle et Adèle | Coutumes et cloche transmises, ou réserve | Calendrier de lune, courrier |
 | Les machines de Frida | Le palier « Automatisation » | Ses commandes ; une machine utile à tout un hameau | Les anciens l'acceptent, ou Frida se retire | Arbre technologique, robot |
 | La pompe des Mouettes | Le carnet de Maurice | Aider Fernand à la réparer en cachette | Fernand devient le pont entre Frida et les anciens | Eau, pompe |

@@ -10,7 +10,7 @@
    ========================================================================== */
 
 import { createNewGame, DATA, elementsSol, genererMonde, solDirect } from '../../js/engine/index.js';
-import { habitantsDe, peuplerHameau } from '../../js/engine/habitants.js';
+import { habitantsDe, installerEcrits, peuplerHameau, retirerEcrit } from '../../js/engine/habitants.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
 const GUE = DATA.PLAN_MONDE.HAMEAUX.GUE;
@@ -82,9 +82,41 @@ test('Odile vit seule dans le premier foyer du Gué, avec son prénom et son app
   }
 });
 
-test('les autres hameaux n\'ont pas de personnage écrit', () => {
+test('les hameaux où n\'habite aucun personnage écrit n\'en ont pas', () => {
   const { s, plans } = gueDe(5);
-  for (const p of plans.filter((x) => !x.gue && !x.batisse)) assert(!peuplerHameau(s, p).foyers.some((f) => f.membres.some((m) => m.recit)), p.id);
+  const habites = new Set(Object.values(R4.PERSONNAGES).filter((d) => d.habite).map((d) => d.habite.hameau));
+  for (const p of plans.filter((x) => !x.gue && !x.batisse && !habites.has(x.garanti))) assert(!peuplerHameau(s, p).foyers.some((f) => f.membres.some((m) => m.recit)), p.id);
+});
+
+// Le récit, lot 9 : Basile et Théo à Bois-Joli, dans le même foyer, chacun son lit ; un Bois-Joli peuplé avant
+// (une partie d'avant le lot 9) les reçoit ensuite (installerEcrits), une fois ; Théo parti ne revient pas.
+test('Basile et Théo vivent ensemble à Bois-Joli ; un Bois-Joli peuplé avant les reçoit', () => {
+  for (const seed of [5, 11, 23]) {
+    const { s, plans } = gueDe(seed);
+    const plan = plans.find((p) => p.garanti === 'bois_joli');
+    const h = peuplerHameau(s, plan);
+    const f = h.foyers.find((x) => x.membres.some((m) => m.recit === 'basile'));
+    assert(f, `${seed} : Basile a son foyer`);
+    assertEqual(f.membres.map((m) => [m.prenom, m.enfant, m.recit]), [['Basile', false, 'basile'], ['Théo', true, 'theo']], `${seed} : Basile et Théo`);
+    const mz = plan.maisons.find((x) => x.id === f.maison);
+    assert(f.membres.every((m) => Number.isInteger(m.lit) && m.lit < mz.lits.length) && f.membres[0].lit !== f.membres[1].lit, `${seed} : chacun son lit`);
+    const autres = h.foyers.flatMap((x) => x.membres).filter((m) => !m.recit);
+    assert(!autres.some((m) => m.prenom === 'Basile' || m.prenom === 'Théo'), `${seed} : personne d'autre ne porte leur prénom`);
+    // une partie d'avant : le foyer de Basile redevient une famille générée, puis il revient
+    const vieux = createNewGame(seed);
+    vieux.monde.habitants = JSON.parse(JSON.stringify(habitantsDe(s)));
+    const hb = vieux.monde.habitants[plan.id];
+    hb.foyers = hb.foyers.map((x) => (x.membres.some((m) => m.recit) ? { ...x, membres: [{ ...x.membres[0], prenom: 'Jean', recit: undefined }, { ...x.membres[1], prenom: 'Paul', recit: undefined }] } : x));
+    for (const x of hb.foyers) for (const m of x.membres) delete m.recit;
+    assertEqual(installerEcrits(vieux, plan.id), 2, `${seed} : les deux arrivent`);
+    assertEqual(installerEcrits(vieux, plan.id), 0, `${seed} : une fois`);
+    const fb = hb.foyers.find((x) => x.membres.some((m) => m.recit === 'basile'));
+    assertEqual(fb.membres.map((m) => m.recit), ['basile', 'theo']);
+    // Théo parti
+    noter(vieux, 'theo.parti');
+    assert(retirerEcrit(vieux, 'theo'));
+    assertEqual(installerEcrits(vieux, plan.id), 0, `${seed} : Théo ne revient pas`);
+  }
 });
 
 test('toucher Odile : la phrase des habitants avant de la connaître, puis ses répliques', () => {

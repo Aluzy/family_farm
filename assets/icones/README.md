@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 428 icônes de 16×16 qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 429 icônes de 16×16 qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -309,6 +309,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/battery.png" width="48" height="48" alt=""> | 🔋 | [`battery.png`](battery.png) |
 | <img src="apercu/right_pointing_magnifying_glass.png" width="48" height="48" alt=""> | 🔎 | [`right_pointing_magnifying_glass.png`](right_pointing_magnifying_glass.png) |
 | <img src="apercu/lock.png" width="48" height="48" alt=""> | 🔒 | [`lock.png`](lock.png) |
+| <img src="apercu/bell.png" width="48" height="48" alt=""> | 🔔 | [`bell.png`](bell.png) |
 | <img src="apercu/fire.png" width="48" height="48" alt=""> | 🔥 | [`fire.png`](fire.png) |
 | <img src="apercu/electric_torch.png" width="48" height="48" alt=""> | 🔦 | [`electric_torch.png`](electric_torch.png) |
 | <img src="apercu/wrench.png" width="48" height="48" alt=""> | 🔧 | [`wrench.png`](wrench.png) |

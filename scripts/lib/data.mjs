@@ -61,7 +61,7 @@ export function loadData(root = ROOT) {
 
 /* ---------- vérification ---------- */
 
-const CATEGORIES = ['légume', 'fruit', 'graine', 'ingrédient', 'produit', 'conserve', 'matériau', 'équipement'];
+const CATEGORIES = ['légume', 'fruit', 'graine', 'ingrédient', 'produit', 'conserve', 'matériau', 'équipement', 'souvenir'];
 const LIEUX = ['potager', 'serre'];
 const MODES_GRAINES = ['recolte', 'plant'];
 
@@ -143,6 +143,9 @@ export function sourcesOf(data, id) {
   if (data.DEPART && data.DEPART.ETAT_INITIAL && id in data.DEPART.ETAT_INITIAL.INVENTAIRE) out.push('DEPART.ETAT_INITIAL.INVENTAIRE');
   if (data.FAMILLE && id in data.FAMILLE.RESERVE_DEPART) out.push('FAMILY.RESERVE_DEPART');
   for (const [lid, l] of Object.entries(data.COURRIER || {})) if (id in (l.cadeaux || {})) out.push(`courrier ${lid}`);
+  // (le récit, lot 9 : une scène ou une réplique qui donne un objet, la cloche de Maurice à la fête)
+  const R = data.RECIT || {};
+  for (const e of [...(R.SCENES || []), ...(R.REPLIQUES || [])]) if (e && e.effet && e.effet.donner && id in e.effet.donner) out.push(`récit ${e.id}`);
   if (it.rachetable !== false) out.push('Marché');
   if (it.retire) out.push('ancienne sauvegarde (retire)');
   return out;
@@ -380,6 +383,11 @@ export function validateData(data) {
     for (const cadeau of Object.keys(lettre.cadeaux || {})) needItem(`${where}.cadeaux`, cadeau);
     const q = lettre.quand || {};
     if (q.debloque !== undefined && !elements.includes(q.debloque)) err(where, `quand.debloque « ${q.debloque} » inconnu (NIVEAUX.ELEMENTS)`);
+    // (le récit, lot 9 : le chapitre atteint, un fait du récit, des jours après lui)
+    if (q.chapitre !== undefined && !(isInt(q.chapitre) && q.chapitre >= 1 && q.chapitre <= data.CHAPITRES.liste.length)) err(where, 'quand.chapitre : un chapitre de la campagne');
+    if (q.fait !== undefined && !(Array.isArray(q.fait) ? q.fait : [q.fait]).every((f) => typeof f === 'string' && f)) err(where, 'quand.fait : un fait ou une liste de faits');
+    if (q.apres !== undefined && (q.fait === undefined || !(isInt(q.apres) && q.apres >= 1))) err(where, 'quand.apres : un nombre de jours (avec quand.fait)');
+    for (const k of Object.keys(q)) if (!['depart', 'debloque', 'niveau', 'chapitre', 'fait', 'apres'].includes(k)) err(where, `quand.${k} : condition inconnue`);
   }
   // Commerces de la ferme, bonheur, Silo, Étable, joueur simulé.
   // (Les meubles, eux, ne citent aucun objet : rien à vérifier.)
@@ -828,6 +836,9 @@ export function validateData(data) {
     const persos = Object.keys(R.PERSONNAGES || {});
     const frags = Object.keys(R.FRAGMENTS || {});
     const phases = ((data.LUNE && data.LUNE.PHASES) || []).map((p) => p.id);
+    // (le récit, lot 9 : les hameaux garantis, le Gué compris ; les fins)
+    const garantisR = ['gue', ...(((data.PLAN_MONDE && data.PLAN_MONDE.HAMEAUX && data.PLAN_MONDE.HAMEAUX.GARANTIS) || []).map((g) => g.id))];
+    const finsR = (R.FINS && R.FINS.LISTE) || [];
     const nbPaliers = (R.PALIERS || []).length;
     if (!Array.isArray(R.PALIERS) || R.PALIERS[0] !== 0 || R.PALIERS.some((x, i) => !isInt(x) || (i > 0 && x <= R.PALIERS[i - 1]) || x > R.RELATION_MAX)) err('RECIT.PALIERS', 'des entiers croissants, le premier à 0, jusqu\'à RELATION_MAX');
     if (!Array.isArray(R.PALIER_NOMS) || R.PALIER_NOMS.length !== nbPaliers) err('RECIT.PALIER_NOMS', 'un nom par palier');
@@ -884,6 +895,11 @@ export function validateData(data) {
           case 'enfants': case 'machines': if (typeof v !== 'boolean') err(w, 'true ou false'); break;
           case 'debloque': if (!Object.keys(data.NIVEAUX.ELEMENTS).includes(v)) err(w, 'un élément de NIVEAUX.ELEMENTS'); break;
           case 'empreinte': if (!ids.every((x) => x in ((R.EMPREINTE && R.EMPREINTE.NIVEAUX) || {}))) err(w, 'un niveau de RECIT.EMPREINTE.NIVEAUX'); break;
+          case 'objet': if (!ids.every((x) => typeof x === 'string' && items[x])) err(w, 'un objet de OBJETS ou une liste'); break;
+          case 'touche': if (!ids.every((x) => persos.includes(x))) err(w, 'un personnage de RECIT.PERSONNAGES ou une liste'); break;
+          case 'voie': if (v !== 'petite' && v !== 'grande') err(w, 'petite ou grande'); break;
+          case 'fin': if (!ids.every((x) => finsR.includes(x))) err(w, `une fin parmi ${finsR.join(', ')}`); break;
+          case 'hameaux_min': if (!(isInt(v) && v >= 1)) err(w, 'un entier au moins égal à 1'); break;
           default: err(w, 'condition inconnue');
         }
       }
@@ -895,9 +911,14 @@ export function validateData(data) {
     // (montrer : une scène seulement, la page montre le lieu sur la carte du monde, js/ui/scene.js)
     const effet = (where, e, qui, scene = false) => {
       if (!e) return;
-      for (const k of Object.keys(e)) if (!['fait', 'relation', 'confiance', 'confiance_partout', 'fragment', ...(scene ? ['montrer'] : [])].includes(k)) err(`${where}.effet.${k}`, 'effet inconnu');
+      for (const k of Object.keys(e)) if (!['fait', 'relation', 'confiance', 'confiance_partout', 'fragment', 'donner', 'prendre', ...(scene ? ['montrer'] : [])].includes(k)) err(`${where}.effet.${k}`, 'effet inconnu');
       if (e.confiance_partout !== undefined && !isInt(e.confiance_partout)) err(`${where}.effet.confiance_partout`, 'des points entiers');
-      if (e.montrer !== undefined && e.montrer !== 'gue') err(`${where}.effet.montrer`, 'un lieu garanti (« gue »)');
+      if (e.montrer !== undefined && !(Array.isArray(e.montrer) ? e.montrer : [e.montrer]).every((g) => garantisR.includes(g))) err(`${where}.effet.montrer`, `un hameau garanti ou une liste (${garantisR.join(', ')})`);
+      for (const k of ['donner', 'prendre']) {
+        if (e[k] === undefined) continue;
+        if (!e[k] || typeof e[k] !== 'object' || Array.isArray(e[k]) || !Object.keys(e[k]).length) { err(`${where}.effet.${k}`, '{ objet: quantité }'); continue; }
+        for (const [item, n] of Object.entries(e[k])) { needItem(`${where}.effet.${k}`, item); if (!(isInt(n) && n >= 1)) err(`${where}.effet.${k}.${item}`, 'un entier au moins égal à 1'); }
+      }
       if (e.fait !== undefined && !(Array.isArray(e.fait) ? e.fait : [e.fait]).every((f) => typeof f === 'string' && f)) err(`${where}.effet.fait`, 'un fait ou une liste de faits');
       if (e.relation !== undefined) {
         if (typeof e.relation === 'number') { if (!isInt(e.relation) || !qui) err(`${where}.effet.relation`, 'des points entiers (pour le personnage qui parle)'); }
@@ -918,6 +939,21 @@ export function validateData(data) {
     if (!(isInt(DV.NUITS) && DV.NUITS >= 1)) err('RECIT.DERIVE.NUITS', 'un entier au moins égal à 1');
     if (!(isInt(DV.PLANCHER) && DV.PLANCHER >= 0 && DV.PLANCHER <= C.MAX)) err('RECIT.DERIVE.PLANCHER', `un entier de 0 à ${C.MAX}`);
     for (const n of Object.keys(DV.POINTS || {})) { if (!(n in niv)) err(`RECIT.DERIVE.POINTS.${n}`, 'un niveau de RECIT.EMPREINTE.NIVEAUX'); if (!isInt(DV.POINTS[n])) err(`RECIT.DERIVE.POINTS.${n}`, 'un entier'); }
+    // Le récit, lot 9 : les fins, l'enveloppe, l'usure des toits, la tournée d'Achille.
+    const FI = R.FINS || {};
+    if (!(FI.GRANDE in niv)) err('RECIT.FINS.GRANDE', 'un niveau de RECIT.EMPREINTE.NIVEAUX');
+    for (const k of ['ENTRETIEN', 'NATURE']) if (!(isInt(FI[k]) && FI[k] >= 0)) err(`RECIT.FINS.${k}`, 'un entier positif ou nul');
+    for (const k of ['promesse', 'toit', 'enveloppe']) if (!(FI.POIDS && isInt(FI.POIDS[k]) && FI.POIDS[k] >= 0)) err(`RECIT.FINS.POIDS.${k}`, 'un entier positif ou nul');
+    if (JSON.stringify(finsR) !== JSON.stringify(['nouveau_maurice', 'voisin_tranquille', 'autrement', 'riche'])) err('RECIT.FINS.LISTE', 'les quatre fins : nouveau_maurice, voisin_tranquille, autrement, riche');
+    const EV = R.ENVELOPPE || {};
+    needItem('RECIT.ENVELOPPE.OBJET', EV.OBJET);
+    if (!(isInt(EV.PIECES) && EV.PIECES > 0) || !isInt(EV.CONFIANCE)) err('RECIT.ENVELOPPE', 'PIECES (un entier positif) et CONFIANCE (un entier)');
+    const US = R.USURE || {};
+    for (const k of ['ACTE', 'NUITS', 'MAX', 'CONFIANCE', 'ENVELOPPE_CONFIANCE']) if (!(isInt(US[k]) && US[k] >= 1)) err(`RECIT.USURE.${k}`, 'un entier au moins égal à 1');
+    if (isInt(US.ACTE) && US.ACTE > (R.ACTES || []).length) err('RECIT.USURE.ACTE', 'un numéro d\'acte');
+    if (!US.REPARER || typeof US.REPARER !== 'object' || !Object.keys(US.REPARER).length) err('RECIT.USURE.REPARER', '{ objet: quantité }');
+    else for (const [item, n] of Object.entries(US.REPARER)) { needItem('RECIT.USURE.REPARER', item); if (!(isInt(n) && n >= 1)) err(`RECIT.USURE.REPARER.${item}`, 'un entier au moins égal à 1'); }
+    if (!Array.isArray(R.TOURNEE) || !R.TOURNEE.length || !R.TOURNEE.every((g) => garantisR.includes(g))) err('RECIT.TOURNEE', 'une liste de hameaux garantis');
     const ids = new Set();
     const unique = (where, id) => { if (typeof id !== 'string' || !id) err(where, 'un id'); else if (ids.has(id)) err(where, `id « ${id} » en double`); else ids.add(id); };
     const prio = (where, p) => { if (p !== undefined && !(isInt(p) && p >= 0 && p <= 100)) err(`${where}.priorite`, 'un entier de 0 à 100'); };
@@ -927,9 +963,15 @@ export function validateData(data) {
       if (typeof p.nom !== 'string' || !p.nom) err(`${where}.nom`, 'un nom');
       if (p.perso !== undefined && !(isInt(p.perso) && p.perso >= 1 && p.perso <= nbPersos)) err(`${where}.perso`, `une planche de personnage (1 à ${nbPersos})`);
       if (p.habite !== undefined) {
-        if (p.habite.hameau !== 'gue') err(`${where}.habite.hameau`, 'un hameau garanti (« gue »)');
+        if (!garantisR.includes(p.habite.hameau)) err(`${where}.habite.hameau`, `un hameau garanti (${garantisR.join(', ')})`);
         if (p.habite.genre !== 'm' && p.habite.genre !== 'f') err(`${where}.habite.genre`, 'm ou f');
         if (!isInt(p.perso)) err(`${where}.perso`, 'un personnage qui habite un hameau a une apparence');
+        if (p.habite.enfant !== undefined && typeof p.habite.enfant !== 'boolean') err(`${where}.habite.enfant`, 'true ou false');
+        if (p.habite.metier !== undefined && !((data.HABITANTS && data.HABITANTS.METIERS) || {})[p.habite.metier]) err(`${where}.habite.metier`, 'un métier de HABITANTS.METIERS');
+        if (p.habite.avec !== undefined) {
+          const a = R.PERSONNAGES[p.habite.avec];
+          if (!a || !a.habite || a.habite.avec || a.habite.hameau !== p.habite.hameau) err(`${where}.habite.avec`, 'un personnage qui a son propre foyer dans le même hameau');
+        }
       }
     }
     for (const [id, f] of Object.entries(R.FRAGMENTS || {})) { if (typeof f.titre !== 'string' || typeof f.texte !== 'string') err(`RECIT.FRAGMENTS.${id}`, 'un titre et un texte'); }

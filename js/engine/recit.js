@@ -9,8 +9,10 @@ import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
 import { soilCount } from './crops.js';
 import { fellenTrees } from './outils.js';
-import { habitantsDe, paroleHabitant } from './habitants.js';
-import { countItem, takeItem } from './inventory.js';
+import { garantiDuHameau, habitantsDe, paroleHabitant, retirerEcrit } from './habitants.js';
+import { usureNuit } from './usure.js';
+import { addItem, countItem, takeItem } from './inventory.js';
+import { earn } from './compta.js';
 
 /* ---------- le récit de Céron : la mémoire, les relations et les répliques (docs/recit/) ----------
 
@@ -246,6 +248,14 @@ export function conditionsVraies(state, quand, qui = null, ctx = {}) {
       case 'debloque': if (!state.campagne || !isUnlocked(state, v)) return false; break;
       case 'empreinte': if (!liste(v).includes(empreinteFerme(state).niveau)) return false; break;
       case 'machines': if ((Object.keys(empreinteFerme(state).detail.machines).length > 0) !== v) return false; break;
+      // (le récit, lot 9) objet : le joueur a cet objet (ou ces objets) dans son inventaire ; touche : le
+      // personnage qu'il vient de toucher (la page le donne) ; voie et fin : ce que devient sa ferme
+      // (finAventure) ; hameaux_min : le nombre de hameaux découverts.
+      case 'objet': if (!liste(v).every((id) => countItem(state, id) >= 1)) return false; break;
+      case 'touche': if (!liste(v).includes(ctx.touche)) return false; break;
+      case 'voie': if (finAventure(state).voie !== v) return false; break;
+      case 'fin': if (!liste(v).includes(finAventure(state).fin)) return false; break;
+      case 'hameaux_min': if (hameauxConnus(state).length < v) return false; break;
       default: return false; // une condition inconnue n'est jamais vraie (build-data.mjs les refuse)
     }
   }
@@ -299,6 +309,9 @@ function appliquerEffet(state, effet, qui, ctx) {
   if (typeof effet.confiance === 'number' && ctx.hameau) ajouterConfiance(state, ctx.hameau, effet.confiance);
   if (effet.fragment) ajouterFragment(state, effet.fragment);
   if (typeof effet.confiance_partout === 'number') for (const h of hameauxConnus(state)) ajouterConfiance(state, h, effet.confiance_partout);
+  // (le récit, lot 9 : un objet qu'on reçoit, un objet qu'on donne : l'enveloppe de Maurice, la cloche)
+  if (objet(effet.prendre)) for (const [item, n] of Object.entries(effet.prendre)) takeItem(state, item, Math.min(entier(n), Math.floor(countItem(state, item))));
+  if (objet(effet.donner)) for (const [item, n] of Object.entries(effet.donner)) if (DATA.OBJETS[item]) addItem(state, item, entier(n));
 }
 
 // `qui` parle : la réplique choisie est notée comme dite aujourd'hui et ses effets appliqués.
@@ -431,8 +444,63 @@ export function empreinteFerme(state) {
   return { points, niveau, detail: { tuiles, abattus, plantes, betes, machines } };
 }
 
+/* ---------- ce que devient la ferme : la voie et la fin (le récit, lot 9) ----------
+
+   Deux mesures (docs/recit/aventure.md, « les décisions et les fins ») : la voie, petite exploitation ou
+   grande ferme (l'empreinte au niveau FINS.GRANDE ou plus) ; ce que le joueur a rendu à l'île : l'entretien
+   (les promesses de Maurice tenues, les toits réparés, l'enveloppe portée à Odile : FINS.POIDS) et la
+   nature (les arbres plantés). La fin en découle, jamais choisie dans un menu :
+     - petite, l'entretien à FINS.ENTRETIEN ou plus : « nouveau_maurice » ; sinon « voisin_tranquille » ;
+     - grande, l'entretien à FINS.ENTRETIEN et la nature à FINS.NATURE ou plus : « autrement » ; sinon « riche ».
+   La fête la fige (le fait « fin.<id> » : les lettres d'Adèle d'après la lisent) ; avant, elle suit la ferme.
+   → { voie, entretien, nature, fin }. */
+export function finAventure(state) {
+  const F = RECIT.FINS, P = F.POIDS;
+  const e = empreinteFerme(state);
+  const voie = Object.keys(RECIT.EMPREINTE.NIVEAUX).indexOf(e.niveau) >= Object.keys(RECIT.EMPREINTE.NIVEAUX).indexOf(F.GRANDE) ? 'grande' : 'petite';
+  const tenues = Object.keys(RECIT.PROMESSES || {}).filter((id) => aFait(state, `promesse.${id}`)).length;
+  const entretien = tenues * P.promesse + foisFait(state, 'toit.repare') * P.toit + (aFait(state, 'enveloppe.donnee') ? P.enveloppe : 0);
+  const nature = e.detail.plantes;
+  const figee = (F.LISTE || []).find((id) => aFait(state, `fin.${id}`));
+  const fin = figee || (voie === 'petite'
+    ? (entretien >= F.ENTRETIEN ? 'nouveau_maurice' : 'voisin_tranquille')
+    : (entretien >= F.ENTRETIEN && nature >= F.NATURE ? 'autrement' : 'riche'));
+  return { voie, entretien, nature, fin };
+}
+
+/* ---------- l'enveloppe de Maurice (le récit, lot 9) ----------
+
+   Au niveau 9, la lettre du notaire apporte l'enveloppe (un objet, ENVELOPPE.OBJET) au lieu des pièces : le
+   joueur l'ouvre (il garde ENVELOPPE.PIECES pièces : « enveloppe.ouverte ») ou la porte à Odile, au Gué (la
+   scène enveloppe_odile : « enveloppe.donnee », les toits usés réparés les nuits suivantes, js/engine/usure.js). */
+export function ouvrirEnveloppe(state) {
+  const E = RECIT.ENVELOPPE;
+  if (countItem(state, E.OBJET) < 1) return fail('Tu n\'as pas l\'enveloppe.');
+  takeItem(state, E.OBJET, 1);
+  earn(state, E.PIECES, 'L\'enveloppe de Maurice');
+  noterFait(state, 'enveloppe.ouverte');
+  return { ok: true, pieces: E.PIECES };
+}
+
+/* ---------- les visites des hameaux garantis (le récit, lot 9) ----------
+
+   La page dit où est le personnage (lieuDuPerso) : dans un hameau garanti, « visite.<garanti> » est noté (une
+   fois par jour suffit) ; pendant la tournée d'Achille (le cheval boite : « achille.tournee.demandee », pas
+   encore « achille.tournee »), « tournee.<garanti> » aussi : il demande qu'on passe aux Genêts et à Bois-Joli
+   à sa place (RECIT.TOURNEE). → true si un fait vient d'être noté. */
+export function noterVisite(state, garanti) {
+  if (typeof garanti !== 'string' || !garanti) return false;
+  let note = false;
+  if (ageFait(state, `visite.${garanti}`) !== 0) { noterFait(state, `visite.${garanti}`); note = true; }
+  if (aFait(state, 'achille.tournee.demandee') && !aFait(state, 'achille.tournee') && (RECIT.TOURNEE || []).includes(garanti) && !aFait(state, `tournee.${garanti}`)) {
+    noterFait(state, `tournee.${garanti}`);
+    note = true;
+  }
+  return note;
+}
+
 // Les hameaux découverts (leurs ids).
-function hameauxConnus(state) {
+export function hameauxConnus(state) {
   return state.monde && objet(state.monde.hameaux) ? Object.keys(state.monde.hameaux) : [];
 }
 
@@ -445,6 +513,8 @@ export function recitNuit(state) {
   recitDe(state);
   const e = empreinteFerme(state);
   if (e.niveau !== 'basse') noterFait(state, `empreinte.${e.niveau}`);
+  // (le récit, lot 9 : chaque sorte de machine posée, « machine.<sorte> » : la lettre d'Adèle sur le robot)
+  for (const sorte of Object.keys(e.detail.machines)) noterFait(state, `machine.${sorte}`);
   const D = RECIT.DERIVE;
   let derive = 0;
   if (jourDe(state) % D.NUITS === 0) {
@@ -457,7 +527,11 @@ export function recitNuit(state) {
       }
     }
   }
-  return { niveau: e.niveau, points: e.points, derive };
+  // (le récit, lot 9) les toits des hameaux (js/engine/usure.js) ; Théo, s'il part, quitte Bois-Joli la nuit
+  // qui suit la scène (« theo.parti » : il ne revient pas ; sa lettre vient plus tard, data/campaign.json)
+  const usure = usureNuit(state);
+  if (aFait(state, 'theo.part') && !aFait(state, 'theo.parti')) { retirerEcrit(state, 'theo'); noterFait(state, 'theo.parti'); }
+  return { niveau: e.niveau, points: e.points, derive, usure };
 }
 
 /* ---------- les personnages écrits sur la carte (lot 4) ---------- */
@@ -513,7 +587,7 @@ export function paroleHameau(state, hameauId, membreId, o = {}) {
   const h = habitantsDe(state)[hameauId];
   const plan = state.monde && state.monde.hameaux && state.monde.hameaux[hameauId];
   const nomH = (h && h.nom) || (plan && plan.nom) || '';
-  const lieu = nomH === DATA.PLAN_MONDE.HAMEAUX.GUE ? 'gue' : hameauId;
-  const r = parler(state, m.recit, { lieu, hameau: hameauId, humeur: base.humeur, n: o.n, vars: { hameau: nomH } });
+  const lieu = garantiDuHameau(state, hameauId) || hameauId;
+  const r = parler(state, m.recit, { lieu, hameau: hameauId, humeur: base.humeur, n: o.n, touche: m.recit, vars: { hameau: nomH } });
   return r ? { ...base, texte: r.texte, recit: r.id } : base;
 }

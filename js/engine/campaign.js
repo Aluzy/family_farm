@@ -12,7 +12,7 @@ import { houseRepaired } from './depart.js';
 import { farmTerrain } from './terrain.js';
 import { hameauxVus } from './monde-hameaux.js';
 import { partVue } from './monde-vu.js';
-import { genreJoueur } from './recit.js';
+import { ageFait, aFait, genreJoueur } from './recit.js';
 
 /* ---------- Lot 9 : autonomie et chapitres ---------- */
 
@@ -326,13 +326,27 @@ export function unreadMail(state) {
   return mailbox(state).filter((l) => !l.lu);
 }
 
-// La condition d'une lettre est-elle remplie ?
+// La condition d'une lettre est-elle remplie ? Toutes ses clés doivent l'être (une lettre sans clé connue
+// n'arrive jamais). Le récit, lot 9 : chapitre (le chapitre de la campagne atteint), fait (un fait du récit,
+// ou une liste : tous notés) et apres (avec fait : au moins ce nombre de jours depuis que le premier l'a été).
 function mailDue(state, def) {
   const q = def.quand || {};
-  if (q.depart) return !!(state.departV2 && state.famille && state.famille.configuree);
-  if (q.debloque) return !!state.campagne && isUnlocked(state, q.debloque);
-  if (q.niveau) return levelReached(state) >= q.niveau; // version 1.14
-  return false;
+  const tests = [];
+  if (q.depart) tests.push(!!(state.departV2 && state.famille && state.famille.configuree));
+  if (q.debloque) tests.push(!!state.campagne && isUnlocked(state, q.debloque));
+  if (q.niveau) tests.push(levelReached(state) >= q.niveau); // version 1.14
+  if (q.chapitre) tests.push(!!state.campagne && chapterReached(state) >= q.chapitre);
+  if (q.fait) {
+    const faits = Array.isArray(q.fait) ? q.fait : [q.fait];
+    tests.push(faits.every((f) => aFait(state, f)) && (!q.apres || ageFait(state, faits[0]) !== null && premierJour(state, faits[0]) + q.apres <= state.day));
+  }
+  return tests.length > 0 && tests.every(Boolean);
+}
+
+// Le jour où le fait `id` a été noté la première fois (state.recit.faits : [premier, dernier, fois]).
+function premierJour(state, id) {
+  const f = state.recit && state.recit.faits && state.recit.faits[id];
+  return Array.isArray(f) && Number.isInteger(f[0]) ? f[0] : state.day;
 }
 
 // Fait arriver les lettres dont la condition vient d'être remplie : les cadeaux

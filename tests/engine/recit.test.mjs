@@ -348,7 +348,8 @@ test('récit : la nuit note le niveau de l\'empreinte et fait dériver la confia
   ferme(s, { tuiles: 10 });
   // une petite ferme : rien n'est noté, rien ne bouge
   a(s, D.NUITS);
-  assertEqual(recitNuit(s), { niveau: 'basse', points: 10, derive: D.POINTS.basse });
+  const nuit = recitNuit(s);
+  assertEqual([nuit.niveau, nuit.points, nuit.derive], ['basse', 10, D.POINTS.basse]);
   assertEqual([aFait(s, 'empreinte.moyenne'), aFait(s, 'empreinte.haute')], [false, false]);
   // une grande ferme : le fait est noté chaque nuit (son dernier jour suit) ; la dérive, toutes les NUITS nuits
   ferme(s, { tuiles: RECIT.EMPREINTE.NIVEAUX.haute });

@@ -1,6 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import { proposerScene } from './scene.js';
-import { toucherLieu } from '../engine/recit.js';
+import { noterVisite, toucherLieu } from '../engine/recit.js';
 import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
@@ -33,7 +33,8 @@ import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '
 import { notify } from './toasts.js';
 import { encyclopedieFaune, encyclopedieHameau, openEncyclopedie } from './encyclopedie.js';
 import { HAMEAUX, voirHameau } from '../engine/monde-hameaux.js';
-import { HABITANTS, habitantsPourLaCarte } from '../engine/habitants.js';
+import { garantiDuHameau, HABITANTS, habitantsPourLaCarte } from '../engine/habitants.js';
+import { tousLesToitsUses } from '../engine/usure.js';
 import { bienvenueModele } from '../engine/bienvenue.js';
 import { visiteDepuisCarte } from './bienvenue.js';
 import { habitantDepuisCarte, openFicheHameau, paroleDepuisCarte, peuplerDepuisCarte, peuplerLesVus } from './habitants.js';
@@ -454,6 +455,8 @@ export function stageModel() {
     // le joueur a appuyé sur « Dormir » : le personnage va à son lit (js/fermier.js) ; il y
     // dort (la nuit défile en accéléré), même quand on regarde la carte de la ferme
     coucher: (coucher || asleep(state)) && nightActive(state),
+    // le récit, lot 9 : les toits abîmés des hameaux ({ hameau: [maisons] } : js/carte/ferme/hameaux.js les troue)
+    toitsUses: tousLesToitsUses(state),
     // le récit, lot 8 : sa tente plantée, le bivouac de la nuit (le pied de la tente, px) ; null sinon
     bivouac: state.bivouac && Number.isInteger(state.bivouac.case) ? { x: (state.bivouac.case % farmTerrain(state).LARGEUR) * 16 + 8, y: Math.floor(state.bivouac.case / farmTerrain(state).LARGEUR) * 16 + 14 } : null,
     dort: asleep(state),
@@ -851,8 +854,11 @@ export function lieuDuPerso() {
   const S = window.FarmStage, t = S && S.persoCase ? S.persoCase() : -1;
   if (!stageUsable() || !Number.isInteger(t) || t < 0) return null;
   if (hameauActuel) {
-    const vu = state.monde && state.monde.hameaux && state.monde.hameaux[hameauActuel];
-    return { lieu: vu && vu.nom === DATA.PLAN_MONDE.HAMEAUX.GUE ? 'gue' : hameauActuel, hameau: hameauActuel };
+    // (un hameau garanti : son id du récit, « gue », « brumeval »… ; y être note la visite, le récit lot 9 :
+    // la tournée d'Achille ; une fois par jour, rien à sauver sinon)
+    const g = garantiDuHameau(state, hameauActuel);
+    if (g && noterVisite(state, g)) persistState();
+    return { lieu: g || hameauActuel, hameau: hameauActuel };
   }
   const T = farmTerrain(state), F = T.FERME;
   if (!F) return { lieu: 'ferme', hameau: null };

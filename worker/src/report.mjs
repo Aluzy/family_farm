@@ -60,6 +60,8 @@ export const GAME_ACTIONS = {
   'hoe-many': 'Labourer en glissant',
   'ile-commander': 'Commander à un atelier de hameau (la scierie, le tissage, la couture : le récit)',
   'ile-meuble': 'Acheter un meuble dans un hameau (l\'ébéniste, les tapis)',
+  'toit-reparer': 'Réparer le toit abîmé d\'une maison de hameau (le récit)',
+  'enveloppe-ouvrir': 'Ouvrir l\'enveloppe de Maurice et garder ses pièces (le récit)',
   'harvest-tree': 'Cueillir un arbre',
   'buy-pasture': 'Acheter une place à l\'Étable',
   'mill-start': 'Moudre du blé au Moulin',
