@@ -4,7 +4,7 @@
 Usage (depuis la racine du dépôt) : python3 scripts/icones/build.py
 
 Rien n'est dessiné ici : les PNG sont la source, retouchés tels quels.
-  assets/icones/*.png         les icônes d'emoji, 16×16
+  assets/icones/*.png         les icônes d'emoji, 16×16, ou 32×32 pour un dessin plus fin (CELL)
   assets/icones/icones.json   emoji (sans U+FE0F) → fichier ; une suite (👨‍👩‍👧‍👦, 👩🏽) est un seul emoji
   assets/dessins/*.png        les dessins sans emoji (bâtiments, arbres, bêtes, boutons), au plus
                               32×32 ; le nom du fichier est leur nom dans le jeu (js/ui/pixel-art.js)
@@ -28,6 +28,9 @@ from pixel import ASSETS, ROOT  # noqa: E402
 ICONES_DIR = os.path.join(ASSETS, 'icones')
 DESSINS_DIR = os.path.join(ASSETS, 'dessins')
 COLS = 16
+# Une case de la planche : 32×32. Une icône de 16×16 y est doublée (rien ne change à l'écran :
+# la page étire la case à la taille de l'icône) ; une de 32×32 y garde ses traits d'un pixel.
+CELL = 32
 ART_CELL = 32
 ART_COLS = 8
 
@@ -49,8 +52,10 @@ def load_icons():
         if not os.path.exists(path):
             sys.exit(f'icones.json : {e} → {file}, fichier absent de assets/icones/')
         im = png(path)
-        if im.size != (16, 16):
-            sys.exit(f'assets/icones/{file} : {im.width}×{im.height} au lieu de 16×16')
+        if im.size not in ((16, 16), (CELL, CELL)):
+            sys.exit(f'assets/icones/{file} : {im.width}×{im.height} au lieu de 16×16 ou {CELL}×{CELL}')
+        if im.size != (CELL, CELL):
+            im = im.resize((CELL, CELL), Image.NEAREST)
         icons[e.replace('️', '')] = im
     orphans = sorted(set(pngs(ICONES_DIR)) - set(table.values()))
     for file in orphans:
@@ -81,12 +86,15 @@ def version_of(path):
         return hashlib.sha256(f.read()).hexdigest()[:10]
 
 
-def apercus(folder, files, zoom):
+def apercus(folder, files, zoom=None, taille=None):
+    """Les aperçus agrandis : `zoom` fois, ou à `taille` px de large (une icône de 16 ou de 32 px)."""
     out = os.path.join(folder, 'apercu')
     shutil.rmtree(out, ignore_errors=True)
     os.makedirs(out)
     for file in files:
         im = png(os.path.join(folder, file))
+        if taille:
+            zoom = max(1, taille // im.width)
         im.resize((im.width * zoom, im.height * zoom), Image.NEAREST).save(os.path.join(out, file), optimize=True)
 
 
@@ -114,7 +122,7 @@ def galerie_icones(table):
     md = [
         '# Les icônes d\'emoji',
         '',
-        f'Les {len(table)} icônes de 16×16 qui remplacent les emojis à l\'affichage. Une nouvelle icône :',
+        f'Les {len(table)} icônes (16×16, ou {CELL}×{CELL} pour les plus fines) qui remplacent les emojis à l\'affichage. Une nouvelle icône :',
         'déposer son PNG ici, l\'ajouter à `icones.json` (emoji → fichier), puis lancer le script.',
         '',
         *AIDE,
@@ -155,9 +163,9 @@ def main():
     table, icons = load_icons()
     order = sorted(icons)  # la planche et la table sont refaites ensemble : l'ordre peut changer
     rows = (len(order) + COLS - 1) // COLS
-    sheet = Image.new('RGBA', (COLS * 16, rows * 16), (0, 0, 0, 0))
+    sheet = Image.new('RGBA', (COLS * CELL, rows * CELL), (0, 0, 0, 0))
     for n, e in enumerate(order):
-        sheet.alpha_composite(icons[e], ((n % COLS) * 16, (n // COLS) * 16))
+        sheet.alpha_composite(icons[e], ((n % COLS) * CELL, (n // COLS) * CELL))
     version = save_versioned(sheet, 'icones.png')
 
     art = load_art()
@@ -195,7 +203,7 @@ def main():
     with open(os.path.join(ROOT, 'js', 'ui', 'icones.generated.js'), 'w', encoding='utf8') as f:
         f.write(js)
 
-    apercus(ICONES_DIR, sorted(table.values()), 8)
+    apercus(ICONES_DIR, sorted(table.values()), taille=128)
     write(os.path.join(ICONES_DIR, 'README.md'), galerie_icones(table))
     dessins = pngs(DESSINS_DIR)
     apercus(DESSINS_DIR, dessins, 4)

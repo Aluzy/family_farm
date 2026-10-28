@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 431 icônes de 16×16 qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 431 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
