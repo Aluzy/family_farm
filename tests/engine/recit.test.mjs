@@ -214,11 +214,11 @@ test('récit : les scènes de l\'acte I se jouent une fois, dans l\'ordre de leu
   assertEqual(scenesPossibles(s), ['arrivee_enfants']);
   assert(jouerScene(s, 'arrivee_enfants').ok);
   // la clé d'Achille : le chapitre 2, à la ferme
-  assertEqual(scenesPossibles(s, { lieu: 'ferme' }), []);
+  assertEqual(scenesPossibles(s, { lieu: 'caleche_ferme' }), []);
   s.campagne.chapitre = 2;
   assertEqual(scenesPossibles(s, { lieu: 'hameau' }), []);
-  assertEqual(scenesPossibles(s, { lieu: 'ferme' }), ['achille_cle']);
-  const cle = jouerScene(s, 'achille_cle', { lieu: 'ferme' });
+  assertEqual(scenesPossibles(s, { lieu: 'caleche_ferme' }), ['achille_cle']);
+  const cle = jouerScene(s, 'achille_cle', { lieu: 'caleche_ferme' });
   assert(cle.ok, cle.error);
   assertEqual(cle.lignes.map((l) => l.nom), ['Le cocher', 'Le cocher', 'Achille', 'Achille', 'Achille', 'Achille'], 'il se présente à la troisième ligne');
   // Odile, devant la maison de Maurice, au genre du personnage principal ; la page du carnet
@@ -290,14 +290,14 @@ test('récit : l\'arrivée ne se joue ni avant le départ, ni dans une partie av
   vieille.campagne.chapitre = 7;
   delete vieille.recit;
   const m = migrate({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(vieille)) });
-  assertEqual(scenesPossibles(m, { lieu: 'ferme' }), ['achille_cle'], 'une ancienne partie : la clé, pas l\'arrivée');
+  assertEqual(scenesPossibles(m, { lieu: 'caleche_ferme' }), ['achille_cle'], 'une ancienne partie : la clé, pas l\'arrivée');
 });
 
 test('récit : Odile vouvoie jusqu\'à ce qu\'elle tutoie', () => {
   const s = a(nouvelle(), 3, 10);
   jouerScene(s, 'arrivee');
   s.campagne.chapitre = 2;
-  jouerScene(s, 'achille_cle', { lieu: 'ferme' });
+  jouerScene(s, 'achille_cle', { lieu: 'caleche_ferme' });
   jouerScene(s, 'odile_maison', { lieu: 'maison_maurice' });
   const vues = new Set();
   for (let n = 0; n < 30; n++) { const r = choisirReplique(s, 'odile', { n }); if (r) vues.add(r.id); }

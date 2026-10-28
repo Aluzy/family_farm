@@ -197,7 +197,8 @@ function principal(state) {
   return findMember(state, f.principal) || f.membres.find((m) => !m.enfant) || f.membres[0] || null;
 }
 
-function genreJoueur(state) {
+// Le genre du personnage principal : 'f' ou 'm' (par défaut).
+export function genreJoueur(state) {
   const m = principal(state);
   return m && m.genre === 'f' ? 'f' : 'm';
 }
@@ -392,6 +393,16 @@ export function recitNuit(state) {
 
 /* ---------- les personnages écrits sur la carte (lot 4) ---------- */
 
+// Le nom d'un hameau précédé de « de » (« du Gué », « des Genêts », « de la Combe », « de Brumeval »).
+export function deHameau(nom) {
+  const n = String(nom || '');
+  if (/^Le /.test(n)) return 'du ' + n.slice(3);
+  if (/^Les /.test(n)) return 'des ' + n.slice(4);
+  if (/^La /.test(n)) return 'de la ' + n.slice(3);
+  if (/^L'/.test(n)) return "de l'" + n.slice(2);
+  return (/^[aeiouyhàâéèêëîïôûAEIOUYHÀÂÉÈÊËÎÏÔÛ]/.test(n) ? "d'" : 'de ') + n;
+}
+
 // Le nom du cocher pour le joueur : « Achille » une fois qu'il s'est présenté (la scène de la clé), « le
 // cocher » avant. `majuscule` : en début de phrase.
 export function nomCocher(state, majuscule = true) {
@@ -407,15 +418,28 @@ function membreDuHameau(state, hameauId, membreId) {
   return null;
 }
 
+// Le salut d'un adulte du hameau `hameauId` selon la confiance de son hameau (RECIT.SALUTS), une fois sur
+// deux (tiré avec la graine du monde, le jour et le rang de l'appui) ; null : celui de l'heure (un enfant,
+// quelqu'un qui dort, l'autre fois sur deux, un niveau sans liste).
+function salutConfiance(state, hameauId, m, o) {
+  if (m.enfant || o.activite === 'dort') return null;
+  const liste = (RECIT.SALUTS || {})[niveauConfiance(state, hameauId)];
+  if (!Array.isArray(liste) || !liste.length) return null;
+  const rnd = mulberry32(hache(`${farmSeed(state) || 'monde'}:salut:${m.id}:${jourDe(state)}:${entier(o.n)}`));
+  if (rnd() < 0.5) return null;
+  return texteRecit(state, liste[Math.floor(rnd() * liste.length)]) || null;
+}
+
 // Toucher un habitant (le pont de la carte) : sa bulle { prenom, metier, texte, humeur[, recit] }. Un
 // personnage écrit (m.recit) dit une réplique du récit (parler : elle est notée, ses effets
 // appliqués) ; s'il n'a rien à dire, ou pour les autres, la phrase des habitants (paroleHabitant). `o` :
 // { heure, activite, n } comme paroleHabitant ; le contexte du récit : le lieu (« gue » au Gué, sinon
 // l'id du hameau), le hameau, l'humeur de son foyer, le rang de l'appui, le nom du hameau ({hameau}).
 export function paroleHameau(state, hameauId, membreId, o = {}) {
-  const base = paroleHabitant(state, hameauId, membreId, o);
-  if (!base) return null;
   const m = membreDuHameau(state, hameauId, membreId);
+  const salut = m ? salutConfiance(state, hameauId, m, o) : null;
+  const base = paroleHabitant(state, hameauId, membreId, salut ? { ...o, salut } : o);
+  if (!base) return null;
   if (!m || !m.recit || !RECIT.PERSONNAGES[m.recit] || o.activite === 'dort') return base;
   const h = habitantsDe(state)[hameauId];
   const plan = state.monde && state.monde.hameaux && state.monde.hameaux[hameauId];

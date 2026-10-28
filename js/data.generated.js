@@ -2318,7 +2318,7 @@ export const RAW_DATA = {
         "titre": "L'héritage",
         "icone": "🏚️",
         "intro": "La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; fabrique une houe à l'Atelier, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
-        "introSauvage": "Une terre sauvage est à ta famille, sans maison ni bâtiment. Ramasse des pierres et du bois, construis l'Atelier, fabriques-y une faux pour faucher l'herbe haute (ses fibres), puis bâtis ton foyer : une pièce close et une paillasse. Fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
+        "introSauvage": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. Celle de ton grand-père est à ta famille, sans maison ni bâtiment. Ramasse des pierres et du bois, construis l'Atelier, fabriques-y une faux pour faucher l'herbe haute (ses fibres), puis bâtis ton foyer : une pièce close et une paillasse. Fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
           {
             "type": "maison",
@@ -2354,7 +2354,7 @@ export const RAW_DATA = {
       {
         "titre": "Le grenier",
         "icone": "🌾",
-        "intro": "De nouvelles cultures, un Silo à construire et du blé à rentrer : le grenier de la ferme se remplit. Chaque jour vers 10 h, la calèche passe devant l'entrée de la ferme : vends-lui ce que tu as en trop.",
+        "intro": "« Un grenier, ça se remplit pas en un jour », dit le cocher. De nouvelles cultures, un Silo à construire et du blé à rentrer. Chaque jour vers 10 h, la calèche s'arrête devant l'entrée de la ferme : son cocher a quelque chose pour toi, et il te prendra ce que tu as en trop.",
         "objectifs": [
           { "type": "niveau", "cible": 2, "libelle": "Atteindre le niveau 2", "unite": "" },
           { "type": "cultures", "cible": 4, "libelle": "Récolter 4 cultures différentes", "unite": "" },
@@ -2466,12 +2466,26 @@ export const RAW_DATA = {
       ],
       "texteSauvage": [
         "Madame, Monsieur {nom},",
-        "J'ai l'honneur de vous confirmer que la terre du bout du chemin vous revient désormais : quelques hectares d'herbe, de bois et d'étangs, sans maison ni dépendances.",
-        "Je dois cependant vous prévenir : tout y est à bâtir. Il faudra ramasser, fabriquer et construire avant de pouvoir y dormir au sec.",
-        "Commencez par un abri ; le reste viendra.",
-        "Je vous prie d'agréer mes salutations distinguées, et mes vœux de réussite."
+        "La terre de votre grand-père, Maurice, au bout du chemin, vous revient : de l'herbe, du bois et des étangs, sans maison.",
+        "Tout y est à bâtir. Commencez par un abri ; le reste viendra.",
+        "Je vous prie d'agréer mes salutations distinguées."
       ],
       "signature": "Maître Durand"
+    },
+    "adele_arrivee": {
+      "quand": { "depart": true },
+      "icone": "💌",
+      "objet": "Une lettre de ta mère",
+      "expediteur": "Adèle",
+      "lieu": "Cadolon",
+      "texte": [
+        { "m": "Mon grand,", "f": "Ma grande," },
+        "Le bac a dû te paraître long. Pour moi aussi, à ton âge, et pourtant je le prenais dans l'autre sens.",
+        "Ne te laisse pas impressionner par la terre. Elle n'a l'air de rien, mais elle est bonne. Papa disait qu'il suffisait de l'écouter. Je n'ai jamais su ce qu'il entendait.",
+        "Au fait, si tu passes au Gué, dis bonjour à Odile. Elle va te trouver maigre.",
+        "Écris-moi. Embrasse tout le monde."
+      ],
+      "signature": "Maman"
     },
     "cousin_venezuela": {
       "quand": { "debloque": "serre" },
@@ -3819,9 +3833,9 @@ export const RAW_DATA = {
     "PHRASES": {
       "salut": {
         "matin": ["Bonjour !", "Belle matinée, n'est-ce pas ?", "Le jour se lève à peine."],
-        "jour": ["Bonjour !", "Salut à toi !", "Te voilà de passage ?"],
+        "jour": ["Belle journée !", "Salut à toi !", "Tiens, de la visite !"],
         "soir": ["Bonsoir !", "La journée s'achève.", "Le soleil se couche."],
-        "nuit": ["Chut… tout le monde dort.", "Il est bien tard."]
+        "nuit": ["Il est tard. Chez nous, tout le monde dort déjà.", "Il est bien tard."]
       },
       "activite": {
         "dort": ["(ça dort à poings fermés)", "(un ronflement tranquille)"],
@@ -3833,7 +3847,11 @@ export const RAW_DATA = {
         "soir": ["On se repose un peu avant la nuit.", "Quelle journée !", "Bientôt l'heure d'aller au lit."]
       },
       "travail": {
-        "bucheron": ["Le bois ne se coupe pas tout seul !", "Les arbres repousseront, ne t'en fais pas.", "Une bonne flambée cet hiver, grâce à ça."],
+        "bucheron": [
+          "Le bois ne se coupe pas tout seul !",
+          "Les arbres repousseront, ne t'en fais pas.",
+          "Une bonne flambée pour les nuits fraîches."
+        ],
         "pecheur": ["Ça mord, aujourd'hui.", "Chut, tu vas faire fuir les poissons.", "La patience, c'est tout le métier."],
         "mineur": ["La roche est dure par ici.", "Il y a du fer dans cette montagne.", "Un coup de pioche après l'autre."],
         "berger": ["Mes bêtes ont bon appétit.", "Le lait sera bon ce soir.", "La laine pousse avec le beau temps."],
@@ -3932,6 +3950,11 @@ export const RAW_DATA = {
     "VARIABLE_MAX": 16,
     "HUMEURS": ["heureux", "content", "triste", "faim"],
     "VARIABLES": ["hameau", "objet", "quand"],
+    "SALUTS": {
+      "reservee": ["Bonjour.", "Ah. Bonjour."],
+      "cordiale": [{ "m": "Tiens, le petit de Maurice.", "f": "Tiens, la petite de Maurice." }, "Ah, te revoilà."],
+      "chaleureuse": ["{prenom} ! Tu restes manger ?", "Ah, {prenom} ! Entre donc."]
+    },
     "PERSONNAGES": {
       "adele": { "nom": "Adèle", "role": "la mère du personnage principal", "lieu": "Cadolon" },
       "maurice": { "nom": "Maurice", "role": "le grand-père, l'ancien cocher (mort il y a un an)", "lieu": "Le Gué" },
@@ -3994,17 +4017,17 @@ export const RAW_DATA = {
       },
       {
         "id": "achille_cle",
-        "quand": { "chapitre_min": 2, "lieu": "ferme", "sans_fait": "achille.cle" },
+        "quand": { "chapitre_min": 2, "lieu": "caleche_ferme", "sans_fait": "achille.cle" },
         "priorite": 100,
         "lignes": [
           { "qui": "achille", "nom": "Le cocher", "texte": "Ho." },
           { "qui": "achille", "nom": "Le cocher", "texte": "Toi, t'as les yeux de ta mère." },
           { "qui": "achille", "texte": "Achille. Je mène la calèche depuis que ton grand-père a arrêté." },
-          { "qui": "achille", "texte": "Tiens. La clé de chez Maurice, au Gué. Il voulait que ça te revienne." },
+          { "qui": "achille", "texte": "Tiens, la clé de chez Maurice, au Gué. On ferme pas, ici. C'est pour dire que c'est à toi." },
           { "qui": "achille", "texte": "Il a laissé des carnets partout. Moi, j'en ai deux. Je les garde." },
           { "qui": "achille", "texte": "Je passe tous les jours vers dix heures. T'as du surplus, je prends." }
         ],
-        "effet": { "fait": "achille.cle", "relation": { "achille": 10 } }
+        "effet": { "fait": "achille.cle", "relation": { "achille": 10 }, "montrer": "gue" }
       },
       {
         "id": "odile_maison",

@@ -110,3 +110,60 @@ test('le cocher : « le cocher » avant de se présenter, Achille ensuite', () =
   noter(s, 'achille.cle');
   assertEqual([nomCocher(s), nomCocher(s, false)], ['Achille', 'Achille']);
 });
+
+/* ---------- lot 5 : la première séquence jouable (docs/recit/plan.md) ---------- */
+
+import { ajouterConfiance, deHameau, genreJoueur } from '../../js/engine/recit.js';
+import { paroleHabitant } from '../../js/engine/habitants.js';
+import { deliverMail, mailText } from '../../js/engine/campaign.js';
+import { composeFamily, finishSetup } from '../../js/engine/depart.js';
+
+test('les lettres du départ : le notaire nomme Maurice, puis la lettre d\'Adèle, au genre du joueur', () => {
+  const s = createNewGame(5);
+  assert(composeFamily(s, { perso: 3, prenom: 'Léa', nom: 'Martin' }).ok && finishSetup(s).ok, 'la famille installée');
+  deliverMail(s);
+  const ids = s.courrier.map((l) => l.id);
+  assert(ids.includes('notaire_heritage') && ids.includes('adele_arrivee'), ids.join(', '));
+  assert(ids.indexOf('notaire_heritage') < ids.indexOf('adele_arrivee'), 'le notaire d\'abord');
+  const t = mailText(s, 'adele_arrivee');
+  assert(t.every((l) => typeof l === 'string' && l), 'des lignes de texte, la variante choisie');
+  assertEqual(t[0], genreJoueur(s) === 'f' ? 'Ma grande,' : 'Mon grand,');
+  assert(t.some((l) => /Odile/.test(l)) && t.some((l) => /Gué/.test(l)), 'elle parle d\'Odile, au Gué');
+  assertEqual(deliverMail(s), [], 'une seule fois');
+});
+
+test('deHameau : « du Gué », « des Genêts », « de la Combe », « de Brumeval », « d\'Orgeval »', () => {
+  assertEqual(['Le Gué', 'Les Genêts', 'La Combe', 'Brumeval', 'Orgeval', "L'Anse"].map(deHameau),
+    ['du Gué', 'des Genêts', 'de la Combe', 'de Brumeval', "d'Orgeval", "de l'Anse"]);
+});
+
+test('les bulles : la faim chasse la phrase du repas ; un salut donné remplace celui de l\'heure', () => {
+  const { s, plan, h } = gueDe(5);
+  const f = h.foyers[1], m = f.membres.find((x) => !x.enfant);
+  const repas = DATA.HABITANTS.PHRASES.activite.repas;
+  f.journal = [{ couverture: 50 }];
+  for (let n = 0; n < 12; n++) {
+    const r = paroleHabitant(s, plan.id, m.id, { heure: 12, activite: 'repas', n });
+    assertEqual(r.humeur, 'faim');
+    assert(!repas.some((x) => r.texte.includes(x)), r.texte);
+  }
+  const r = paroleHabitant(s, plan.id, m.id, { heure: 12, activite: 'maison', n: 0, salut: 'Bonjour.' });
+  assert(r.texte.startsWith('Bonjour. '), r.texte);
+});
+
+test('les bulles : le salut suit la confiance du hameau, chez les adultes seulement', () => {
+  const { s, plan, h } = gueDe(5);
+  const adultes = h.foyers.slice(1).flatMap((f) => f.membres).filter((m) => !m.enfant);
+  const enfants = h.foyers.slice(1).flatMap((f) => f.membres).filter((m) => m.enfant);
+  const saluts = (niveau) => R4.SALUTS[niveau].map((t) => (typeof t === 'object' ? t[genreJoueur(s)] : t));
+  const paroles = (liste) => liste.flatMap((m) => [...Array(10).keys()].map((n) => paroleHameau(s, plan.id, m.id, { heure: 12, activite: 'maison', n }).texte));
+  ajouterConfiance(s, plan.id, -100);   // réservée
+  const froid = paroles(adultes);
+  assert(froid.some((t) => saluts('reservee').some((x) => t.startsWith(x + ' '))), 'un « Bonjour. » réservé, parfois');
+  assert(froid.some((t) => !saluts('reservee').some((x) => t.startsWith(x + ' '))), 'et le salut de l\'heure, l\'autre fois');
+  assert(!froid.some((t) => saluts('chaleureuse').some((x) => t.startsWith(x.replace('{prenom}', '').trim()))), 'jamais chaleureux');
+  ajouterConfiance(s, plan.id, 100);    // chaleureuse
+  assert(paroles(adultes).some((t) => /Tu restes manger \?|Entre donc\./.test(t)), 'chaleureux, parfois');
+  if (enfants.length) assert(!paroles(enfants).some((t) => /Tu restes manger \?|Entre donc\./.test(t)), 'un enfant garde son salut');
+  for (const t of [...froid, ...paroles(adultes)]) assert(t.length > 0 && !/\{/.test(t), t);
+});

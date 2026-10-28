@@ -129,6 +129,7 @@ test('le commerce : à la ferme à l\'heure, on vend une récolte et on achète 
   assertEqual(ouEstCaleche(s), 'Elle est arrêtée à la ferme.');
   const v = vendreCaleche(s, 'carotte', 4, ici);
   assertEqual([v.ok, v.gain, countItem(s, 'carotte')], [true, 4 * DATA.OBJETS.carotte.prix, 6], 'au prix de vente du Marché');
+  assertEqual(s.recit.faits['vente.caleche'][2], 1, 'le récit note la vente (Achille s\'en souvient)');
   const a = acheterCaleche(s, 'graine_carotte', 2, ici);
   assert(a.ok && countItem(s, 'graine_carotte') >= 2, 'des graines');
   assertEqual(acheterCaleche(s, 'carotte', 1, ici).ok, false, 'elle ne vend pas de carottes (son coffre n\'en a pas)');

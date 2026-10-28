@@ -19,7 +19,8 @@
  *   - la nuit, les fenêtres de la façade s'éclairent et leur lumière tombe sur le sol devant elles
  *     (dans le voile de l'heure, avec les lanternes de la ferme : chantier.js stepLanterns) ;
  *   - l'arrivée : le personnage qui entre dans un hameau le dit à la page (ctx.bridge.hameau : la
- *     première fois, une bannière à son nom, js/ui/stage.js) ;
+ *     première fois, une bannière à son nom, js/ui/stage.js) ; et la maison où il entre (ctx.bridge.maison :
+ *     { hameau, maison, maurice } ; le récit, la maison de Maurice au Gué) ;
  *   - le panneau qu'on touche dit le nom du hameau ; les outils qui n'y ont rien à faire le disent
  *     (on n'y casse rien, on n'y bâtit pas, on n'y laboure pas, on n'y coupe pas les arbres des
  *     jardins : hameauOutil, appelé en premier par hitAt, js/farm-stage.js).
@@ -163,6 +164,15 @@
         }
       }
       if (!this.hameauxVus || !this.hameauxVus.size) return;
+      // (la maison où il entre : la page le note, ctx.bridge.maison ; le récit y joue ses scènes, la maison
+      // de Maurice au Gué : maurice vrai, js/ui/stage.js)
+      let dans = null;
+      if (ici >= 0) for (const e of this.hameauxVus.values()) for (const t of e.toits) if (!dans && t.dedans.has(ici)) dans = { e, t };
+      const maison = dans ? dans.t.maison.id : null;
+      if (maison !== this.maisonIci) {
+        this.maisonIci = maison;
+        if (dans && this.ctx.bridge && this.ctx.bridge.maison) this.ctx.bridge.maison({ hameau: dans.e.plan.id, maison, maurice: dans.e.plan.maisonMaurice === maison });
+      }
       if (this.stepHabitants) this.stepHabitants(dt);       // (ses habitants : habitants.js, fiche 7b)
       const pas = R.vitesse * dt, v = this.cameras.main.worldView, now = performance.now(), calme = reducedMotion();
       for (const e of this.hameauxVus.values()) {

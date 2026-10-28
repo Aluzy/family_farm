@@ -135,7 +135,7 @@ export const INTERFACE_ACTIONS = new Set([
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',
   'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open',
   'cancel-queued', 'ack-chapter', 'commerce-pick', 'commerce-cancel',
-  'scene-suite', 'scene-fermer', // le récit : la réplique suivante d'une scène, la fermer
+  'scene-suite', 'scene-fermer', 'carnet-open', // le récit : la réplique suivante d'une scène, la fermer ; ouvrir le carnet
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-espece', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier',
   'do-export', 'do-import', 'tuto-skip', 'do-new-game',

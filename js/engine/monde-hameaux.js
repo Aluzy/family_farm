@@ -611,7 +611,7 @@ export function planHameau(m, h, rayon = HAMEAUX.RAYON, serre = false) {
   return {
     plan: {
       id: h.id, nom: h.nom, case: h.case, style, metier,
-      // le Gué (le récit) : sa première maison est celle de Maurice, fermée, sans foyer (habitants.js)
+      // le Gué (le récit) : sa première maison est celle de Maurice, vide, sans foyer (habitants.js)
       ...(h.gue && plans.length ? { gue: true, maisonMaurice: plans[0].id } : {}),
       cadre: { x0: gx0 + x0, y0: gy0 + y0, x1: gx0 + x1, y1: gy0 + y1 },
       place: {

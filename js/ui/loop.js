@@ -19,7 +19,8 @@ import {
 } from './render.js';
 import { watchChapters } from './chapitres.js';
 import { watchLevels } from './niveaux.js';
-import { watchCaleche } from './caleche.js';
+import { sceneCaleche, watchCaleche } from './caleche.js';
+import { proposerScene } from './scene.js';
 import { watchBienvenue } from './bienvenue.js';
 import {
   ALERT_MUTE_AFTER_CATCH_UP_MS, notify, setAlertMuteUntil, setAlertState, watchAlerts,
@@ -111,6 +112,14 @@ function watchRobot() {
   const manque = r.sansGraine ? ` ; ${r.sansGraine} sans graine` : '';
   notify(`🤖 Le robot a fini sa liste : ${[recolte ? `récolté ${recolte}` : '', semis].filter(Boolean).join(', ') || 'rien à faire'}${manque}.`, { cible: { fenetre: 'zone' } });
   persistState();
+}
+
+// Le récit (docs/recit/, js/ui/scene.js) : une scène qui peut se jouer s'ouvre quand l'écran est calme,
+// après la famille composée et le bandeau des cookies : l'arrivée (sans lieu), la clé du cocher (la calèche
+// garée à la ferme, le joueur à côté). Les autres lieux ont leur déclencheur (la maison de Maurice : stage.js).
+function watchRecit() {
+  if (setupPending(state) || consentBannerShown() || consentBannerPending() || !uiCalm()) return;
+  if (!proposerScene({})) sceneCaleche();
 }
 
 function watchMail() {
@@ -225,6 +234,7 @@ export function frame(now) {
   simulatedAt = wall;
   watchSetup(); // version 1.12 : la configuration de la famille passe avant tout
   if (consentBannerDue()) showConsentBanner(); // FLU-17 : après l'histoire, la carte seule 500 ms
+  watchRecit(); // le récit : ses scènes, avant les lettres (une fenêtre à la fois)
   watchTechPoints();
   watchDay();
   watchMail();

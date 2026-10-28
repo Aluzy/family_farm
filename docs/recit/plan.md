@@ -11,9 +11,9 @@ se termine par une validation avant le suivant.
 | 0. Bible | Ce dossier | `docs/recit/` | — | P1 | fait |
 | 1. Moteur du récit | Faits, relations, confiance, répliques dites, carnet ; actes ; conditions ; choix déterministe ; scènes ; validation | `js/engine/recit.js`, `data/recit.json`, `scripts/lib/data.mjs`, `tests/engine/recit.test.mjs` | — | P1 | fait |
 | 2. Empreinte et confiance | Calcul de l'empreinte ; montée et baisse de la confiance des hameaux | `js/engine/recit.js`, `crops.js`, `orchard.js`, `devices.js`, `automation.js` ; calibrage avec `scripts/simulate.mjs` | 1 | P1 | fait |
-| 3a. Le Gué et la maison de Maurice | Un hameau garanti près de la ferme, la maison fermée à clé | `js/engine/monde-gen.js`, `monde-hameaux.js`, `js/engine/habitants.js`, `data/monde.json` | — | P1 | fait |
+| 3a. Le Gué et la maison de Maurice | Un hameau garanti près de la ferme, la maison de Maurice (vide, jamais fermée) | `js/engine/monde-gen.js`, `monde-hameaux.js`, `js/engine/habitants.js`, `data/monde.json` | — | P1 | fait |
 | 4. Personnages écrits et scènes | Achille comme cocher nommé (fiche 12) ; Odile et les autres dans leur hameau ; la fenêtre de scène ; les bulles branchées sur le récit | `js/engine/habitants.js`, `recit.js`, `caleche.js`, `js/ui/habitants.js`, `js/ui/caleche.js`, `js/ui/scene.js` | 1 | P1 | fait |
-| 5. Première séquence jouable | L'acte I complet (ci-dessous) | `data/recit.json`, `data/campaign.json`, `js/ui/caleche.js`, `js/ui/didacticiel.js`, `js/ui/carnet.js` | 1, 3a, 4 | P1 | à faire |
+| 5. Première séquence jouable | L'acte I complet (ci-dessous) | `data/recit.json`, `data/campaign.json`, `js/ui/caleche.js`, `js/ui/didacticiel.js`, `js/ui/carnet.js` | 1, 3a, 4 | P1 | fait |
 | 6. Acte II | Veillées, Frida et son atelier, la fortune de Maurice, les promesses | `data/recit.json`, `js/engine/lune.js`, `data/recipes.json` | 5 | P2 | à faire |
 | 3b. Les autres lieux garantis | Bois-Joli, Les Genêts, Les Mouettes, Brumeval, cabane de Johnny, atelier de Frida, l'épave | `monde-gen.js`, `monde-roches.js`, `monde-lieux.js` | 3a | P2 | à faire |
 | 7. Économie de l'île | Tissage et couture aux Genêts ; scierie et ébéniste à Bois-Joli ; l'Atelier ne fait plus de meubles ; les commerces du niveau 10 disparaissent | `habitants.js`, `blocs.js`, `data/items.json`, `data/meubles.json`, `data/recipes.json`, `data/niveaux.json` | 3b | P2 | à faire |
@@ -30,7 +30,7 @@ De l'arrivée par le bac jusqu'à la maison de Maurice ouverte : environ 10 nuit
 2. La première lettre d'Adèle et la lettre du notaire raccourcie.
 3. Achille et la clé, au premier arrêt de la calèche ; la réplique du cocher et la phrase du
    didacticiel corrigées.
-4. Le Gué, hameau garanti ; la maison de Maurice fermée à clé.
+4. Le Gué, hameau garanti ; la maison de Maurice, vide (on ne ferme pas, au Gué).
 5. Odile devant la maison et le premier carnet de Maurice, rangé dans le carnet du joueur.
 6. Les bulles des habitants du Gué sur le nouveau système, incohérences de l'audit corrigées.
 7. Les intros des chapitres 1 et 2 dans la voix d'Adèle et d'Achille.
@@ -38,14 +38,21 @@ De l'arrivée par le bac jusqu'à la maison de Maurice ouverte : environ 10 nuit
 
 Critères d'achèvement :
 
-- [ ] Une nouvelle partie joue les quatre moments dans l'ordre, chacun une seule fois.
-- [ ] Sauter une scène ou quitter la partie au milieu ne bloque rien.
-- [ ] Le Gué existe dans 100 mondes tirés au hasard, près de la ferme, sans casser les autres hameaux.
-- [ ] Les habitants du Gué se souviennent d'un don pendant 14 jours, en trois répliques selon l'âge du souvenir.
-- [ ] Aucune bulle de plus de 110 caractères ; variantes de genre présentes.
-- [ ] Une ancienne partie se charge sans erreur et reçoit la clé au prochain passage de la calèche.
-- [ ] `npm test` vert, dont le test anti-restes.
-- [ ] Sur téléphone (390 × 844 px), jamais deux fenêtres à la fois.
+- [x] Une nouvelle partie joue les quatre moments dans l'ordre, chacun une seule fois.
+- [x] Sauter une scène ou quitter la partie au milieu ne bloque rien.
+- [x] Le Gué existe dans 100 mondes tirés au hasard, près de la ferme, sans casser les autres hameaux.
+- [ ] Les habitants du Gué se souviennent d'un don pendant 14 jours, en trois répliques selon l'âge du
+  souvenir. Reporté : le jeu n'a pas encore de geste pour donner aux habitants (les conditions
+  `fait_recent` et `fait_souvenir` sont prêtes) ; à faire avec l'économie de l'île (lot 7).
+- [x] Aucune bulle de plus de 110 caractères ; variantes de genre présentes.
+- [x] Une ancienne partie se charge sans erreur et reçoit la clé au prochain passage de la calèche.
+- [x] `npm test` vert, dont le test anti-restes.
+- [x] Sur téléphone (390 × 844 px), jamais deux fenêtres à la fois.
+
+Ce qui a changé en route : la maison de Maurice n'est pas fermée (on ne ferme pas, au Gué) ; la clé
+d'Achille dit qu'elle est au joueur (« On ferme pas, ici. C'est pour dire que c'est à toi. »). La scène
+d'arrivée attend que le joueur ait répondu au bandeau des cookies. Le Gué garde son nom sur la carte du
+monde avant qu'on y soit allé (la lettre d'Adèle et le cocher en parlent).
 
 ## Les critères de qualité narrative
 

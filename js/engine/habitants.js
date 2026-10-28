@@ -349,7 +349,9 @@ export function metierHabitant(h, m) {
 
 // Toucher un habitant : { prenom, metier, texte } (son salut selon l'heure, ce qu'il fait,
 // son humeur) ; `o` : { heure, activite (dort, maison, chemin, travail, joue, repas, rentre, soir),
-// n (le rang de l'appui : une autre phrase à chaque fois) }. null : personne de ce nom.
+// n (le rang de l'appui : une autre phrase à chaque fois), salut (un salut qui remplace celui de
+// l'heure : la confiance du hameau, paroleHameau dans recit.js) }. null : personne de ce nom.
+// Un foyer qui a eu faim ne parle pas de passer à table : la phrase du repas saute.
 export function paroleHabitant(state, hameauId, membreId, o = {}) {
   const h = hameauHabite(state, hameauId), t = trouver(h, membreId);
   if (!t) return null;
@@ -359,10 +361,12 @@ export function paroleHabitant(state, hameauId, membreId, o = {}) {
   const heure = Number(o.heure) || 12;
   const out = { prenom: m.prenom, metier: metierHabitant(h, m), texte: '' };
   if (o.activite === 'dort') { out.texte = un(P.activite.dort); return out; }
-  const salut = un(P.salut[heure < 10 ? 'matin' : heure < 18 ? 'jour' : heure < 22 ? 'soir' : 'nuit']);
-  const fait = o.activite === 'travail' ? un(P.travail[m.metier] || P.travail.jardinier) : un(P.activite[o.activite] || P.activite.maison);
+  const salutHeure = un(P.salut[heure < 10 ? 'matin' : heure < 18 ? 'jour' : heure < 22 ? 'soir' : 'nuit']);
+  const salut = typeof o.salut === 'string' && o.salut ? o.salut : salutHeure;
   const dernier = f.journal && f.journal[f.journal.length - 1];
   const humeur = dernier && dernier.couverture < 100 ? 'faim' : f.bonheur >= HABITANTS.HEUREUX ? 'heureux' : f.bonheur < HABITANTS.TRISTE ? 'triste' : 'content';
+  const fait = o.activite === 'travail' ? un(P.travail[m.metier] || P.travail.jardinier)
+    : o.activite === 'repas' && humeur === 'faim' ? '' : un(P.activite[o.activite] || P.activite.maison);
   out.texte = [salut, fait, un(P.humeur[humeur])].filter(Boolean).join(' ');
   out.humeur = humeur;
   return out;

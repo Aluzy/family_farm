@@ -133,8 +133,8 @@ Effets : fait `arrivee`, Fernand « poli ». Les Mouettes n'est pas compté comm
 
 ### Achille et la clé (S, scène `achille_cle`) — l'événement déclencheur
 
-Chapitre 2, calèche arrêtée à la ferme. « Ho. » « Toi, t'as les yeux de ta mère. » « Tiens. La clé
-de chez Maurice, au Gué. Il voulait que ça te revienne. » « Il a laissé des carnets partout. Moi,
+Chapitre 2, calèche garée devant la ferme, le joueur à côté (`caleche_ferme`). « Ho. » « Toi, t'as les yeux de ta mère. » « Tiens, la clé
+de chez Maurice, au Gué. On ferme pas, ici. C'est pour dire que c'est à toi. » « Il a laissé des carnets partout. Moi,
 j'en ai deux. Je les garde. » « Je passe tous les jours vers dix heures. T'as du surplus, je
 prends. » Effets : la clé, Le Gué sur la carte, fait `achille.cle`.
 

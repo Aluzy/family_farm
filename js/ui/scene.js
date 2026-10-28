@@ -7,6 +7,10 @@ import { registerActions } from './actions.js';
 import { closeModal, focusModal, modalDialog, openModal } from './modal.js';
 import { modalOpen, uiCalm } from './calme.js';
 import { persoHtml } from './famille.js';
+import { notify } from './toasts.js';
+import { farmTerrain } from '../engine/terrain.js';
+import { butBoussole, choisirBut, montrerLieu } from '../engine/monde-vu.js';
+import { solDuMonde } from './monde-sol.js';
 
 /* ---------- les scènes du récit (docs/recit/dialogues.md, « les formats ») ----------
 
@@ -17,10 +21,37 @@ import { persoHtml } from './famille.js';
 
    ouvrirScene(id, ctx) : ouvre la scène `id` si elle peut se jouer (ctx : le contexte du récit, voir
    js/engine/recit.js) ; proposerScene(ctx) : ouvre la plus prioritaire de celles qui peuvent se jouer,
-   si l'écran est calme. Les déclencheurs (l'arrivée, la calèche à la ferme, la maison de Maurice) les
-   appellent (lot 5). */
+   si l'écran est calme. Les déclencheurs : la boucle (loop.js : l'arrivée, sans lieu), la calèche garée à
+   la ferme (caleche.js : « caleche_ferme »), la maison de Maurice (stage.js : « maison_maurice »).
+
+   La fenêtre porte aussi la classe story-modal (calme.js, storyOpen) : l'heure ne tourne pas pendant une
+   scène, et la bulle du didacticiel attend. Après la scène, la page fait ce que le moteur ne peut pas
+   faire : montrer le Gué sur la carte du monde (effet « montrer », la boussole y est menée si elle n'a pas
+   de but) et annoncer la page du carnet gagnée (effet « fragment », js/ui/carnet.js). */
 
 let scene = null; // { id, lignes: [{ qui, nom, texte }], i }
+let aMontrer = null; // un lieu à montrer sur la carte du monde dès que ses lieux sont tirés (« gue »)
+
+// Une autre fenêtre a pu prendre la place de la scène (openModal remplace sans fermer) : la scène est
+// alors finie (elle est notée dès son ouverture : rien ne se perd).
+function oublierSiRemplacee() {
+  if (scene && !document.getElementById('scene-modal')) scene = null;
+}
+
+// Le Gué sur la carte du monde : son cercle vu (montrerLieu), la boussole menée vers lui si elle n'a pas de
+// but. Les lieux du monde viennent du Web Worker (monde-sol.js) : tant qu'ils manquent, on réessaie.
+function montrerEnAttente() {
+  if (aMontrer !== 'gue') return;
+  const T = farmTerrain(state), sol = T.MONDE ? solDuMonde(T) : null, lieux = sol && sol.lieux();
+  if (!T.MONDE) { aMontrer = null; return; }
+  if (!lieux) return;
+  aMontrer = null;
+  const h = (lieux.hameaux || []).find((x) => x.gue);
+  if (!h) return;
+  montrerLieu(state, h.case, 6);
+  if (!butBoussole(state)) choisirBut(state, { sorte: 'hameau', id: h.id });
+  persistState();
+}
 
 function ligneHtml() {
   const l = scene.lignes[scene.i];
@@ -44,20 +75,31 @@ function ligneHtml() {
 // Ouvre la scène `id` si elle peut se jouer maintenant (et si aucune fenêtre n'est ouverte) ; elle
 // est notée tout de suite dans la partie. → true si elle s'est ouverte.
 export function ouvrirScene(id, ctx = {}) {
+  oublierSiRemplacee();
   if (scene || modalOpen()) return false;
   const r = jouerScene(state, id, ctx);
   if (!r.ok) return false;
   persistState();
   scene = { id, lignes: r.lignes, i: 0 };
+  const effet = (RECIT.SCENES.find((x) => x.id === id) || {}).effet || {};
+  if (effet.montrer) aMontrer = effet.montrer;
+  montrerEnAttente();
   openModal(ligneHtml(), {
-    labelledBy: 'scene-nom', id: 'scene-modal', className: 'modal bois scene-modal', focus: '#scene-bouton',
-    onClose: () => { scene = null; refresh(); },
+    labelledBy: 'scene-nom', id: 'scene-modal', className: 'modal bois scene-modal story-modal', focus: '#scene-bouton',
+    onClose: () => {
+      scene = null;
+      const page = effet.fragment && RECIT.FRAGMENTS[effet.fragment];
+      if (page) notify(`📓 Une page de plus dans ton carnet : « ${page.titre} ».`, { kind: 'info' });
+      refresh();
+    },
   });
   return true;
 }
 
 // Ouvre la plus prioritaire des scènes qui peuvent se jouer dans ce contexte, si l'écran est calme.
 export function proposerScene(ctx = {}) {
+  montrerEnAttente();
+  oublierSiRemplacee();
   if (scene || !uiCalm()) return false;
   const ids = scenesPossibles(state, ctx);
   return ids.length ? ouvrirScene(ids[0], ctx) : false;
@@ -65,6 +107,7 @@ export function proposerScene(ctx = {}) {
 
 // La scène ouverte (pour les tests et le déclencheur) : son id, ou null.
 export function sceneOuverte() {
+  oublierSiRemplacee();
   return scene ? scene.id : null;
 }
 

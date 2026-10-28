@@ -16,7 +16,7 @@ import { farmSeed, farmTerrain } from '../engine/terrain.js';
 import { solDuMonde } from './monde-sol.js';
 import { openStageWindow, stageWindow } from './stage-windows.js';
 import { persistState } from './storage.js';
-import { formatCoins, formatQty } from '../engine/format.js';
+import { escapeHtml, formatCoins, formatQty } from '../engine/format.js';
 import { comptoirTab, comptoirTabChoisi, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { pxText } from './pixel-art.js';
@@ -25,7 +25,8 @@ import { morph, refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
-import { nomCocher } from '../engine/recit.js';
+import { nomCocher, parler } from '../engine/recit.js';
+import { proposerScene } from './scene.js';
 
 /* ---------- la calèche (fiche 7c : le Marché qui fait le tour du monde) ----------
 
@@ -82,6 +83,27 @@ function helpText(tab) {
   return `${tour} Elle vend les semences (leur prix monte un peu à chaque achat : produire les tiennes reste plus rentable) et ce qu'elle a acheté aux hameaux en chemin (le bois, le poisson, la pierre, le lait, la laine, les baies…), en quantité limitée, à ${C.VENTE} % de leur prix de vente. Les outils, les animaux et les meubles se fabriquent à l'Atelier.`;
 }
 
+// Le récit (docs/recit/dialogues.md) : à chaque fenêtre ouverte près d'elle, le cocher dit une réplique
+// (parler : notée, au repos ensuite) ; le bandeau la montre le jour même. { jour, texte } ou null.
+let parole = null;
+function ecouterCocher() {
+  const r = parler(state, 'achille', { lieu: 'caleche' });
+  parole = r ? { jour: state.day, texte: r.texte } : null;
+  if (r) persistState();
+}
+
+// Le récit : la calèche garée devant la ferme, le joueur à côté, est le lieu de la scène de la clé
+// (achille_cle, data/recit.json ; js/ui/scene.js). Appelée à chaque image (loop.js) et quand on la
+// touche. → true si une scène s'est ouverte.
+// (à portée de commerce, CALECHE.PORTEE, même avant que le cocher commerce : niveau du Marché)
+export function sceneCaleche() {
+  const e = calecheMaintenant(state), tour = tourneeDe(state), ou = ouPerso();
+  if (!e || !tour || e.etat !== 'arret' || !e.arret || e.arret.sorte !== 'ferme' || !Number.isInteger(ou)) return false;
+  const W = tour.W;
+  if (Math.hypot((ou % W) + 0.5 - e.x, Math.floor(ou / W) + 0.5 - e.y) > CALECHE.PORTEE + EPS) return false;
+  return proposerScene({ lieu: 'caleche_ferme' });
+}
+
 // La calèche : là (et on peut commercer), à portée de voix, ou loin. { ici, helable, texte }.
 function presence() {
   const ou = ouPerso();
@@ -89,7 +111,8 @@ function presence() {
   if (ici.ok) {
     const e = ici.e;
     const ou2 = e.etat === 'halte' ? 'arrêtée sur le chemin, pour toi' : e.arret && e.arret.sorte === 'ferme' ? 'arrêtée devant la ferme' : 'arrêtée sur la place';
-    return { ici: true, texte: `La calèche est là, ${ou2}. ${nomCocher(state)} t'attend tant que tu commerces.` };
+    const dit = parole && parole.jour === state.day ? ` ${nomCocher(state)} : « ${escapeHtml(parole.texte)} »` : '';
+    return { ici: true, texte: `La calèche est là, ${ou2}. ${nomCocher(state)} t'attend tant que tu commerces.${dit}` };
   }
   const h = helable(state, ou);
   if (h.ok && ici.e && ici.e.etat === 'route') return { ici: false, helable: true, texte: 'La calèche passe tout près : hèle-la pour qu\'elle s\'arrête !' };
@@ -300,6 +323,7 @@ export function calecheDepuisCarte() {
 // Un appui sur la calèche : là, sa fenêtre ; en chemin et tout près, on la hèle (et sa fenêtre
 // s'ouvre) ; sinon, où elle va.
 export function calecheToucheeDepuisCarte() {
+  if (sceneCaleche()) return;
   const ou = ouPerso();
   if (!marcheOuvert(state)) {
     // (le didacticiel, fiche 9b : avant le niveau du Marché, on la rencontre : hélée en chemin, ou
@@ -309,7 +333,7 @@ export function calecheToucheeDepuisCarte() {
       if (h.ok && h.e.etat === 'route') heler(state, ou);
       if (rencontreCaleche(state, ou)) {
         persistState();
-        notify(`${CALECHE.ICONE} « Bonjour ! » Le cocher te salue : il passe ici chaque jour vers ${heureTexte(CALECHE.FERME)}, et commercera avec toi dès le niveau ${unlockLevel('marche')}.`, { kind: 'info' });
+        notify(`${CALECHE.ICONE} « Ho. » ${nomCocher(state)} te salue d'un signe : il passe ici chaque jour vers ${heureTexte(CALECHE.FERME)}, et commercera avec toi dès le niveau ${unlockLevel('marche')}. « ${DATA.PLAN_MONDE.HAMEAUX.GUE}, c'est le hameau d'à côté. Va voir. »`, { kind: 'info' });
         refresh();
         return;
       }
@@ -317,9 +341,9 @@ export function calecheToucheeDepuisCarte() {
     notify(`${CALECHE.ICONE} ${marcheFerme(state)}`, { kind: 'info' });
     return;
   }
-  if (calecheIci(state, ou).ok) { openStageWindow('comptoir'); return; }
+  if (calecheIci(state, ou).ok) { ecouterCocher(); openStageWindow('comptoir'); return; }
   const h = helable(state, ou);
-  if (h.ok && h.e.etat === 'route') { if (helerCaleche()) openStageWindow('comptoir'); return; }
+  if (h.ok && h.e.etat === 'route') { if (helerCaleche()) { ecouterCocher(); openStageWindow('comptoir'); } return; }
   const e = calecheMaintenant(state);
   notify(`${CALECHE.ICONE} ${h.ok ? '' : 'Approche-toi : '}${ouEstCaleche(state, e)} ${prochainPassage(state)}`, { kind: 'info' });
 }

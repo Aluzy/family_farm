@@ -39,7 +39,7 @@ ou d'Odile, les consignes restant dans les objectifs.
 - **L'événement déclencheur (S)** : au premier arrêt de la calèche à la ferme (chapitre 2), Achille
   remet la clé de la maison de Maurice au Gué. Remplace la réplique actuelle du cocher et la phrase
   du didacticiel « Le cocher t'a parlé d'un hameau ».
-- **Le Gué (C)**, hameau garanti près de la ferme ; la maison de Maurice, fermée à clé.
+- **Le Gué (C)**, hameau garanti près de la ferme ; la maison de Maurice, vide et jamais fermée (on ne ferme pas, au Gué).
 - **Odile devant la maison (C)** et le premier carnet de Maurice, rangé dans le carnet du joueur.
 
 ### Acte II — Le petit de Maurice

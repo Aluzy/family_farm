@@ -638,9 +638,9 @@
     "PHRASES": {
       "salut": {
         "matin": ["Bonjour !", "Belle matinée, n'est-ce pas ?", "Le jour se lève à peine."],
-        "jour": ["Bonjour !", "Salut à toi !", "Te voilà de passage ?"],
+        "jour": ["Belle journée !", "Salut à toi !", "Tiens, de la visite !"],
         "soir": ["Bonsoir !", "La journée s'achève.", "Le soleil se couche."],
-        "nuit": ["Chut… tout le monde dort.", "Il est bien tard."]
+        "nuit": ["Il est tard. Chez nous, tout le monde dort déjà.", "Il est bien tard."]
       },
       "activite": {
         "dort": ["(ça dort à poings fermés)", "(un ronflement tranquille)"],
@@ -652,7 +652,7 @@
         "soir": ["On se repose un peu avant la nuit.", "Quelle journée !", "Bientôt l'heure d'aller au lit."]
       },
       "travail": {
-        "bucheron": ["Le bois ne se coupe pas tout seul !", "Les arbres repousseront, ne t'en fais pas.", "Une bonne flambée cet hiver, grâce à ça."],
+        "bucheron": ["Le bois ne se coupe pas tout seul !", "Les arbres repousseront, ne t'en fais pas.", "Une bonne flambée pour les nuits fraîches."],
         "pecheur": ["Ça mord, aujourd'hui.", "Chut, tu vas faire fuir les poissons.", "La patience, c'est tout le métier."],
         "mineur": ["La roche est dure par ici.", "Il y a du fer dans cette montagne.", "Un coup de pioche après l'autre."],
         "berger": ["Mes bêtes ont bon appétit.", "Le lait sera bon ce soir.", "La laine pousse avec le beau temps."],

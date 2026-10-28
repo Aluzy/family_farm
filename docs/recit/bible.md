@@ -54,8 +54,8 @@ Le monde généré devient Céron sans changer de forme : un massif volcanique a
 mer au sud et à l'est, la terre de Maurice au centre. Cinq hameaux et quelques lieux deviennent
 garantis dans chaque partie ; les autres restent générés (leurs noms, leurs métiers, leurs
 habitants combinatoires). Fait (lot 3a) : le Gué est toujours le hameau le plus proche de la ferme,
-quel que soit son milieu ; la maison de Maurice y est la première maison du plan, fermée, sans
-habitant.
+quel que soit son milieu ; la maison de Maurice y est la première maison du plan, vide, sans
+habitant, jamais fermée (on ne ferme pas, au Gué).
 
 | Lieu garanti | Milieu | Ce qu'on y fait | Qui y vit | Rôle |
 |---|---|---|---|---|

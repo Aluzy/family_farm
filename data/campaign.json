@@ -12,7 +12,7 @@
         "titre": "L'héritage",
         "icone": "🏚️",
         "intro": "La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; fabrique une houe à l'Atelier, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
-        "introSauvage": "Une terre sauvage est à ta famille, sans maison ni bâtiment. Ramasse des pierres et du bois, construis l'Atelier, fabriques-y une faux pour faucher l'herbe haute (ses fibres), puis bâtis ton foyer : une pièce close et une paillasse. Fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
+        "introSauvage": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. Celle de ton grand-père est à ta famille, sans maison ni bâtiment. Ramasse des pierres et du bois, construis l'Atelier, fabriques-y une faux pour faucher l'herbe haute (ses fibres), puis bâtis ton foyer : une pièce close et une paillasse. Fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
           { "type": "maison", "cible": 1, "libelle": "Réparer la maison", "libelleSauvage": "Bâtir le foyer (une pièce close, une paillasse)", "unite": "" },
           { "type": "panneau", "sauvage": false, "cible": 1, "libelle": "Acheter le panneau solaire", "libelleSauvage": "Poser le panneau solaire", "unite": "" },
@@ -28,7 +28,7 @@
       {
         "titre": "Le grenier",
         "icone": "🌾",
-        "intro": "De nouvelles cultures, un Silo à construire et du blé à rentrer : le grenier de la ferme se remplit. Chaque jour vers 10 h, la calèche passe devant l'entrée de la ferme : vends-lui ce que tu as en trop.",
+        "intro": "« Un grenier, ça se remplit pas en un jour », dit le cocher. De nouvelles cultures, un Silo à construire et du blé à rentrer. Chaque jour vers 10 h, la calèche s'arrête devant l'entrée de la ferme : son cocher a quelque chose pour toi, et il te prendra ce que tu as en trop.",
         "objectifs": [
           { "type": "niveau", "cible": 2, "libelle": "Atteindre le niveau 2", "unite": "" },
           { "type": "cultures", "cible": 4, "libelle": "Récolter 4 cultures différentes", "unite": "" },
@@ -158,7 +158,8 @@
     "`{nom}` y devient le nom de la famille ; `quand.depart` : la lettre arrive au",
     "début d'une nouvelle partie, une fois la famille installée. Version 1.14 :",
     "`quand.niveau` : la lettre arrive au niveau d'expérience donné ; `pieces` : pièces",
-    "versées une seule fois, à l'ouverture de la lettre (sans XP)."
+    "versées une seule fois, à l'ouverture de la lettre (sans XP). Le récit (docs/recit/) : une ligne",
+    "peut être { m, f }, selon le genre du personnage principal (mailText, comme les répliques du récit)."
   ],
   "COURRIER": {
     "notaire_legs": {
@@ -199,12 +200,26 @@
       ],
       "texteSauvage": [
         "Madame, Monsieur {nom},",
-        "J'ai l'honneur de vous confirmer que la terre du bout du chemin vous revient désormais : quelques hectares d'herbe, de bois et d'étangs, sans maison ni dépendances.",
-        "Je dois cependant vous prévenir : tout y est à bâtir. Il faudra ramasser, fabriquer et construire avant de pouvoir y dormir au sec.",
-        "Commencez par un abri ; le reste viendra.",
-        "Je vous prie d'agréer mes salutations distinguées, et mes vœux de réussite."
+        "La terre de votre grand-père, Maurice, au bout du chemin, vous revient : de l'herbe, du bois et des étangs, sans maison.",
+        "Tout y est à bâtir. Commencez par un abri ; le reste viendra.",
+        "Je vous prie d'agréer mes salutations distinguées."
       ],
       "signature": "Maître Durand"
+    },
+    "adele_arrivee": {
+      "quand": { "depart": true },
+      "icone": "💌",
+      "objet": "Une lettre de ta mère",
+      "expediteur": "Adèle",
+      "lieu": "Cadolon",
+      "texte": [
+        { "m": "Mon grand,", "f": "Ma grande," },
+        "Le bac a dû te paraître long. Pour moi aussi, à ton âge, et pourtant je le prenais dans l'autre sens.",
+        "Ne te laisse pas impressionner par la terre. Elle n'a l'air de rien, mais elle est bonne. Papa disait qu'il suffisait de l'écouter. Je n'ai jamais su ce qu'il entendait.",
+        "Au fait, si tu passes au Gué, dis bonjour à Odile. Elle va te trouver maigre.",
+        "Écris-moi. Embrasse tout le monde."
+      ],
+      "signature": "Maman"
     },
     "cousin_venezuela": {
       "quand": { "debloque": "serre" },

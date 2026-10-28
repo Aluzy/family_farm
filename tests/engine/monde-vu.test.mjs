@@ -218,13 +218,16 @@ test('la carte n\'expose rien de non vu : les lieux pas encore vus en sont absen
   const vide = lieuxDeLaCarte(s, lieux);
   assertEqual(vide.hameaux.length + vide.grottes.length + vide.peche.length, [...lieux.hameaux, ...lieux.grottes, ...lieux.peche].filter((l) => caseVue(s, l.case)).length);
   for (const l of [...vide.hameaux, ...vide.grottes, ...vide.peche]) assert(caseVue(s, l.case), `${l.id} est vu`);
-  // un hameau vu de loin : sans nom ; visité : son nom
-  const h = lieux.hameaux.find((q) => !caseVue(s, q.case));
+  // un hameau vu de loin : sans nom (sauf le Gué, le récit : on en parle avant d'y aller) ; visité : son nom
+  const h = lieux.hameaux.find((q) => !q.gue && !caseVue(s, q.case));
   voirAutour(s, h.case, { biome: 'prairie' });
   const vu = lieuxDeLaCarte(s, lieux).hameaux.find((q) => q.id === h.id);
   assertEqual([vu.nom, vu.connu], ['Un hameau', false]);
   voirHameau(s, { id: h.id, nom: h.nom, style: 'foret' });
   assertEqual(lieuxDeLaCarte(s, lieux).hameaux.find((q) => q.id === h.id).nom, h.nom);
+  const gue = lieux.hameaux.find((q) => q.gue);
+  voirAutour(s, gue.case, { biome: 'prairie' });
+  assertEqual(lieuxDeLaCarte(s, lieux).hameaux.find((q) => q.id === gue.id).nom, 'Le Gué');
   // les autres hameaux pas vus restent absents
   for (const q of lieux.hameaux) if (!caseVue(s, q.case)) assert(!lieuxDeLaCarte(s, lieux).hameaux.some((x) => x.id === q.id), `${q.id} absent`);
   // tout vu : tous les lieux
@@ -268,7 +271,7 @@ test('la boussole : direction et distance ; cachée sur la ferme sans but ; la f
 test('la boussole : le lieu choisi sur la carte (s\'il est vu), jusqu\'à l\'atteindre', () => {
   const { s: s0, T, lieux } = MONDE_ESSAI();
   const s = copie(s0), W = T.LARGEUR, F = T.FERME, sortie = (F.Y + 40) * W + F.X + F.LARGEUR;
-  const h = lieux.hameaux.find((q) => !caseVue(s, q.case));
+  const h = lieux.hameaux.find((q) => !q.gue && !caseVue(s, q.case));
   // pas vu : il ne se choisit pas
   assertEqual(choisirBut(s, { sorte: 'hameau', id: h.id }, lieux).ok, false);
   assertEqual(butBoussole(s), null);

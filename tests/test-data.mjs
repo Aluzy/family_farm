@@ -172,3 +172,7 @@ refuse('récit : un id en double', (d) => { d.RECIT.REPLIQUES[1].id = R0(d).id; 
 refuse('récit : un effet inconnu', (d) => { R0(d).effet = { magie: 1 }; }, 'effet inconnu');
 refuse('récit : une page de carnet inconnue', (d) => { d.RECIT.SCENES[0].effet.fragment = 'page_perdue'; }, 'une page de RECIT.FRAGMENTS');
 refuse('récit : une scène sans ligne', (d) => { d.RECIT.SCENES[0].lignes = []; }, 'au moins une ligne');
+refuse('récit : montrer un lieu qui n\'est pas garanti', (d) => { d.RECIT.SCENES[0].effet.montrer = 'brumeval'; }, 'un lieu garanti');
+refuse('récit : montrer depuis une réplique (une scène seulement)', (d) => { R0(d).effet = { montrer: 'gue' }; }, 'effet inconnu');
+refuse('récit : un salut pour un niveau de confiance inconnu', (d) => { d.RECIT.SALUTS.glaciale = ['Hm.']; }, 'un niveau de RECIT.CONFIANCE.NIVEAUX');
+refuse('récit : un salut trop long', (d) => { d.RECIT.SALUTS.reservee = ['x'.repeat(200)]; }, 'caractères');

@@ -12,6 +12,7 @@ import { houseRepaired } from './depart.js';
 import { farmTerrain } from './terrain.js';
 import { hameauxVus } from './monde-hameaux.js';
 import { partVue } from './monde-vu.js';
+import { genreJoueur } from './recit.js';
 
 /* ---------- Lot 9 : autonomie et chapitres ---------- */
 
@@ -271,10 +272,12 @@ export function chapterProgress(state, chapitre = state.campagne.chapitre) {
   return { chapitre, titre: def.titre, icone: def.icone, intro: def.introSauvage || def.intro, objectifs, fait: objectifs.every((o) => o.ok) };
 }
 
-// Le texte de la lettre `id` : sa version d'une terre sauvage (texteSauvage) s'il y en a une.
+// Le texte de la lettre `id` : sa version d'une terre sauvage (texteSauvage) s'il y en a une. Une ligne
+// { m, f } prend la variante du genre du personnage principal (texteRecit, le récit) ; {nom} reste à
+// remplacer par la page.
 export function mailText(state, id) {
   const def = DATA.COURRIER[id];
-  return def.texteSauvage || def.texte;
+  return (def.texteSauvage || def.texte).map((l) => (l && typeof l === 'object' ? l[genreJoueur(state)] || l.m || '' : l));
 }
 
 // Terminer le chapitre en cours : on l'annonce, puis le suivant s'ouvre (ou la

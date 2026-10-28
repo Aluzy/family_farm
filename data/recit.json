@@ -33,7 +33,9 @@
     "ce nombre de jours après l'avoir dite), effet }. Une scène : { id, quand, lignes : [{ qui, texte, nom (facultatif : le nom affiché, si le joueur ne le connaît pas encore) }],",
     "priorite, effet } ; elle se joue une seule fois.",
     "Conditions (quand) : heure [de, à[ (à < de : à cheval sur minuit), lune (une phase ou une liste : croissante,",
-    "pleine, decroissante, nouvelle), lieu (un lieu ou une liste : celui que la page donne), palier_min /",
+    "pleine, decroissante, nouvelle), lieu (un lieu ou une liste : celui que la page donne ; caleche_ferme : la",
+    "calèche garée à la ferme, le joueur à côté ; maison_maurice : dans la maison de Maurice ; gue : au Gué ; sinon",
+    "l'id du hameau ; rien : la ferme, quand l'écran est calme), palier_min /",
     "palier_max (la relation avec `qui`, par rang de palier), confiance_min / confiance_max (le hameau où l'on",
     "est), fait / sans_fait (un fait ou une liste : tous présents / aucun), fait_recent / fait_souvenir (un fait",
     "noté il y a au plus AGES.RECENT / AGES.SOUVENIR jours), acte_min / acte_max, chapitre_min, jour_min / jour_max,",
@@ -41,11 +43,14 @@
     "(m ou f : le personnage principal), enfants (true / false : la famille a des enfants), humeur (une humeur",
     "ou une liste : celle que la page donne).",
     "Effets (effet) : fait (un fait ou une liste, noté avec son jour), relation (des points pour `qui`, ou",
-    "{ personnage: points }), confiance (des points pour le hameau où l'on est), fragment (une page du carnet).",
+    "{ personnage: points }), confiance (des points pour le hameau où l'on est), fragment (une page du carnet),",
+    "montrer (une scène seulement : « gue », le Gué se montre sur la carte du monde ; la page s'en charge).",
     "Variables d'un texte : {prenom} (le personnage principal), {nom} (la famille), et celles que la page donne",
     "(VARIABLES). Pour la longueur d'une bulle, {hameau} compte pour le plus long nom de hameau (PLAN_MONDE.HAMEAUX),",
     "{objet} pour le plus long nom d'objet (OBJETS) avec son article, une autre variable pour VARIABLE_MAX.",
-    "HUMEURS : celles que la page peut donner (celles des foyers des hameaux, habitants.js)."
+    "HUMEURS : celles que la page peut donner (celles des foyers des hameaux, habitants.js).",
+    "SALUTS : le salut d'un adulte des hameaux selon la confiance de son hameau (docs/recit/dialogues.md, la refonte",
+    "des bulles) : une fois sur deux, il remplace celui de l'heure ; un niveau sans liste garde celui de l'heure."
   ],
   "RECIT": {
     "RELATION_MAX": 100,
@@ -72,6 +77,11 @@
     "VARIABLE_MAX": 16,
     "HUMEURS": ["heureux", "content", "triste", "faim"],
     "VARIABLES": ["hameau", "objet", "quand"],
+    "SALUTS": {
+      "reservee": ["Bonjour.", "Ah. Bonjour."],
+      "cordiale": [{ "m": "Tiens, le petit de Maurice.", "f": "Tiens, la petite de Maurice." }, "Ah, te revoilà."],
+      "chaleureuse": ["{prenom} ! Tu restes manger ?", "Ah, {prenom} ! Entre donc."]
+    },
     "PERSONNAGES": {
       "adele": { "nom": "Adèle", "role": "la mère du personnage principal", "lieu": "Cadolon" },
       "maurice": { "nom": "Maurice", "role": "le grand-père, l'ancien cocher (mort il y a un an)", "lieu": "Le Gué" },
@@ -142,17 +152,17 @@
       },
       {
         "id": "achille_cle",
-        "quand": { "chapitre_min": 2, "lieu": "ferme", "sans_fait": "achille.cle" },
+        "quand": { "chapitre_min": 2, "lieu": "caleche_ferme", "sans_fait": "achille.cle" },
         "priorite": 100,
         "lignes": [
           { "qui": "achille", "nom": "Le cocher", "texte": "Ho." },
           { "qui": "achille", "nom": "Le cocher", "texte": "Toi, t'as les yeux de ta mère." },
           { "qui": "achille", "texte": "Achille. Je mène la calèche depuis que ton grand-père a arrêté." },
-          { "qui": "achille", "texte": "Tiens. La clé de chez Maurice, au Gué. Il voulait que ça te revienne." },
+          { "qui": "achille", "texte": "Tiens, la clé de chez Maurice, au Gué. On ferme pas, ici. C'est pour dire que c'est à toi." },
           { "qui": "achille", "texte": "Il a laissé des carnets partout. Moi, j'en ai deux. Je les garde." },
           { "qui": "achille", "texte": "Je passe tous les jours vers dix heures. T'as du surplus, je prends." }
         ],
-        "effet": { "fait": "achille.cle", "relation": { "achille": 10 } }
+        "effet": { "fait": "achille.cle", "relation": { "achille": 10 }, "montrer": "gue" }
       },
       {
         "id": "odile_maison",

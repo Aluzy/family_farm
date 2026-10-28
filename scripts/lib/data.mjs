@@ -817,9 +817,11 @@ export function validateData(data) {
       if (q && isInt(q.jour_min) && isInt(q.jour_max) && q.jour_min > q.jour_max) err(`${where}.quand`, 'jour_min plus grand que jour_max : jamais vraie');
       for (const f of [].concat(q && q.fait || [])) if ([].concat(q.sans_fait || []).includes(f)) err(`${where}.quand`, `« ${f} » à la fois exigé et exclu : jamais vraie`);
     };
-    const effet = (where, e, qui) => {
+    // (montrer : une scène seulement, la page montre le lieu sur la carte du monde, js/ui/scene.js)
+    const effet = (where, e, qui, scene = false) => {
       if (!e) return;
-      for (const k of Object.keys(e)) if (!['fait', 'relation', 'confiance', 'fragment'].includes(k)) err(`${where}.effet.${k}`, 'effet inconnu');
+      for (const k of Object.keys(e)) if (!['fait', 'relation', 'confiance', 'fragment', ...(scene ? ['montrer'] : [])].includes(k)) err(`${where}.effet.${k}`, 'effet inconnu');
+      if (e.montrer !== undefined && e.montrer !== 'gue') err(`${where}.effet.montrer`, 'un lieu garanti (« gue »)');
       if (e.fait !== undefined && !(Array.isArray(e.fait) ? e.fait : [e.fait]).every((f) => typeof f === 'string' && f)) err(`${where}.effet.fait`, 'un fait ou une liste de faits');
       if (e.relation !== undefined) {
         if (typeof e.relation === 'number') { if (!isInt(e.relation) || !qui) err(`${where}.effet.relation`, 'des points entiers (pour le personnage qui parle)'); }
@@ -872,8 +874,14 @@ export function validateData(data) {
         if (l.nom !== undefined && !(typeof l.nom === 'string' && l.nom)) err(`${where}.lignes[${j}].nom`, 'un nom');
         texte(`${where}.lignes[${j}].texte`, l.texte);
       });
-      quand(where, s.quand); prio(where, s.priorite); effet(where, s.effet, s.lignes && s.lignes[0] && s.lignes[0].qui);
+      quand(where, s.quand); prio(where, s.priorite); effet(where, s.effet, s.lignes && s.lignes[0] && s.lignes[0].qui, true);
     });
+    // Les saluts selon la confiance : un niveau de CONFIANCE.NIVEAUX, une liste de textes (bulle courte).
+    for (const [n, liste] of Object.entries(R.SALUTS || {})) {
+      if (!(n in ((R.CONFIANCE && R.CONFIANCE.NIVEAUX) || {}))) err(`RECIT.SALUTS.${n}`, 'un niveau de RECIT.CONFIANCE.NIVEAUX');
+      if (!Array.isArray(liste) || !liste.length) err(`RECIT.SALUTS.${n}`, 'une liste de saluts');
+      else liste.forEach((t, j) => texte(`RECIT.SALUTS.${n}[${j}]`, t));
+    }
   }
   for (const id of Object.keys(items)) {
     if (!sourcesOf(data, id).length) warn(`OBJETS.${id}`, 'aucun moyen de l\'obtenir (ni récolte, ni recette, ni animal, ni pêche, ni sortie, ni achat, ni inventaire de départ…)');

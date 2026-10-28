@@ -43,9 +43,20 @@ l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
   récit si elle en a une, sinon la phrase des habitants. Le cocher s'appelle « Achille » dans les messages
   de la calèche une fois qu'il s'est présenté (`nomCocher`).
 - La fenêtre des scènes : `js/ui/scene.js` (`ouvrirScene`, `proposerScene`) ; une scène est notée dès
-  qu'elle s'ouvre et ne revient jamais ; elle attend un écran calme. Les déclencheurs viennent au lot 5.
+  qu'elle s'ouvre et ne revient jamais ; elle attend un écran calme et arrête l'heure le temps de la
+  lire (classe `story-modal`). Les déclencheurs : la boucle (`watchRecit`, `js/ui/loop.js` : l'arrivée,
+  après le bandeau des cookies), la calèche garée à la ferme et le joueur à côté (`sceneCaleche`,
+  `js/ui/caleche.js` : la clé d'Achille), l'entrée dans la maison de Maurice (le pont `maison` de
+  `js/carte/ferme/hameaux.js`, `stageMaison` dans `js/ui/stage.js` : Odile). L'effet `montrer` montre
+  le Gué sur la carte du monde et y mène la boussole ; l'effet `fragment` s'annonce à la fermeture.
+- Le carnet du joueur : `js/ui/carnet.js`, une entrée 📓 du menu dès la première page.
+- Les lettres : la lettre d'Adèle (`adele_arrivee`) et celle du notaire arrivent au départ
+  (`data/campaign.json`, `COURRIER`) ; une ligne `{ m, f }` suit le genre du joueur (`mailText`).
+- Les bulles : le salut des adultes des hameaux suit la confiance (`RECIT.SALUTS`, `paroleHameau`) ;
+  la faim chasse la phrase du repas (`paroleHabitant`). Le cocher dit une réplique à chaque fenêtre de
+  la calèche ouverte près de lui ; une vente à la calèche note le fait `vente.caleche`.
 - `scripts/lib/data.mjs` : la validation du récit à la construction des données.
-- Tests : `tests/engine/recit.test.mjs`, `tests/test-data.mjs`.
+- Tests : `tests/engine/recit.test.mjs`, `tests/engine/recit-monde.test.mjs`, `tests/test-data.mjs`.
 
 **Attention, le test anti-restes** (`tests/engine/finition.test.mjs`) interdit dans tous les
 textes du jeu les mots « ville », « Marché », « train », « école », « bus », « boutique »… Les

@@ -10,7 +10,7 @@ import { bumpCounter } from './campaign.js';
 import { genererMonde } from './monde.js';
 import { elementsDuMonde } from './monde-gen.js';
 import { etatCaleche, heureTournee, tourneeDuPlan, vueDeSens } from './caleche-tournee.js';
-import { nomCocher } from './recit.js';
+import { nomCocher, noterFait } from './recit.js';
 
 /* ---------- la calèche : le Marché qui fait le tour du monde (docs/grand-monde.md, fiche 7c) ----------
 
@@ -355,6 +355,7 @@ export function vendreCaleche(state, item, qty, ou = null, o = {}) {
   if (r.ok) {
     jourDe(state).vendu += r.gain;
     bumpCounter(state, 'calecheVentes', r.gain);   // (la campagne, fiche 9b : vendre à la calèche)
+    noterFait(state, 'vente.caleche');               // (le récit : Achille s'en souvient, data/recit.json)
     if (!o.sansPresence) retenir(state, ou);
   }
   return r;
