@@ -243,6 +243,7 @@
       }
       ctx.restore();
       if (!ctx0) r.tex.refresh();
+      this.solPeint = (this.solPeint || 0) + 1;       // (les touffes d'herbe en lisent les couleurs : herbes.js)
     },
 
     // Les cases d'une région, de la ferme d'un côté, du monde autour de l'autre (dans l'ordre de la

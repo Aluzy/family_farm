@@ -479,6 +479,21 @@
   // pied.
   const SOLEIL = { pas: 0.1, base: 2, depth: 0.06, marge: 96, portee: 200 };
 
+  // Les touffes d'herbe au pied de ce qui est posé sur l'herbe (js/carte/ferme/herbes.js) : le
+  // bas des murs, le pied des poteaux de barrière, le bas et les côtés des sols posés dehors.
+  // Une touffe tous les `pas` px (au hasard entre les deux), en éventail (`touffe` : décalage,
+  // hauteur, penchant de la pointe de chaque brin ; `petite` sous un poteau) ; sur les côtés d'un
+  // sol, des brins penchés vers lui, une rangée sur `cotes`. Leurs couleurs : celles de l'herbe
+  // juste dessous (sa teinte sombre `teintes[0]`, moyenne, claire : des quantiles de sa luminance),
+  // lues dans le sol peint, sur `fenetre` px de part et d'autre et de profondeur ; sans assez
+  // d'herbe dessous (`herbeMin` de ses pixels), rien. Devant un mur : `dessus` au-dessus de son
+  // image ; sur un sol, à `plat` (au-dessus des sols, sous la terre des parcelles et les ombres).
+  const HERBES = {
+    pas: [6, 10], cotes: 0.15, fenetre: 4, herbeMin: 0.4, teintes: [0.1, 0.45, 0.75], dessus: 0.02, plat: 0.052,
+    touffe: [[-2, 2, -1], [-1, 4, -1], [0, 5, 0], [1, 4, 1], [2, 2, 1]],
+    petite: [[-1, 3, -1], [0, 4, 0], [1, 3, 1]],
+  };
+
   const clamp = (v, lo, hi) => (hi < lo ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
 
   // Le canvas est rendu à la densité de l'écran (plafonnée à 3, CarteKit.ratio) : avec un zoom
@@ -487,7 +502,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, MINE, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, MINE, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL, HERBES },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,
