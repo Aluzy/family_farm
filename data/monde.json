@@ -79,7 +79,10 @@
     "  ferme : la plus loin des chemins), l'atelier de Frida (sur la rive d'un lac, ou d'une rivière s'il n'y a pas de",
     "  lac : la rive la plus près de deux hameaux à la fois, à HAMEAU tuiles au moins de chacun), l'épave (sur la plage,",
     "  au bord de la mer, à HAMEAU tuiles au moins de tout hameau : la plus loin des chemins). Sans place qui convienne,",
-    "  un lieu manque (rare : un monde sans forêt profonde, sans plage)."
+    "  un lieu manque (rare : un monde sans forêt profonde, sans plage).",
+    "  La cale du bac aux Mouettes (CALE) : une case de terre au bord de la mer, à RAYON tuiles au plus du hameau et",
+    "  HAMEAU au moins, à PECHE tuiles au moins d'un coin de pêche, d'où la jetée de LIEUX.CALE cases avance dans la",
+    "  mer avec la place du bac le long de son bout (monde-gen.js calePossible) : la plus près du hameau ; { sens }."
   ],
   "PLAN_MONDE": {
     "LENT": 4, "GRILLE": 6, "SAUT": 3, "DECALAGE": 0.3, "ONDULE": { "PAS": 12, "AMPLITUDE": 0.35 },
@@ -121,7 +124,8 @@
     "RECIT": {
       "CABANE": { "CHEMIN": 14, "HAMEAU": 45, "FERME": 60 },
       "ATELIER": { "HAMEAU": 40 },
-      "EPAVE": { "HAMEAU": 30 }
+      "EPAVE": { "HAMEAU": 30 },
+      "CALE": { "RAYON": 40, "HAMEAU": 8, "PECHE": 8 }
     }
   },
   "//VEGETATION": [
@@ -399,18 +403,23 @@
     "étroite). Les lieux du récit qui sont un dessin (lieux.recit, genre « recit » : l'épave ; la cabane et l'atelier",
     "sont bâtis, HAMEAUX.BATISSES) : posés sur leur case, le pied au bas de la case ; bloque : les cases qu'ils",
     "ferment (comme BLOQUE) ; boite : la demi-largeur et la hauteur (px) de la boîte d'appui au-dessus du pied (les",
-    "toucher : RECIT.LIEUX, data/recit.json)."
+    "toucher : RECIT.LIEUX, data/recit.json).",
+    "La cale du bac (le récit : lieux.recit, sorte « cale », aux Mouettes) : posée comme un ponton (genre « ponton » :",
+    "sur l'eau, sous ce qui marche dessus), une jetée de CALE cases dans le sens du plan, le bac amarré le long de son",
+    "bout ; ses cases s'ouvrent à la marche ; recit : un lieu du récit qu'on touche (le bac, boite autour de lui)."
   ],
   "LIEUX": {
     "SORTES": [
       { "nom": "entree_grotte", "genre": "entree", "variantes": 2 },
       { "nom": "ponton", "genre": "ponton", "variantes": 4 },
       { "nom": "piquets", "genre": "coin", "variantes": 2 },
-      { "nom": "epave", "genre": "recit", "variantes": 1, "bloque": [[-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, -1], [0, -1], [1, -1]], "boite": [34, 36] }
+      { "nom": "epave", "genre": "recit", "variantes": 1, "bloque": [[-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, -1], [0, -1], [1, -1]], "boite": [34, 36] },
+      { "nom": "cale", "genre": "ponton", "variantes": 4, "recit": true, "boite": [14, 28] }
     ],
     "NEIGE": 0.86,
     "BLOQUE": [[-1, 0], [0, 0], [1, 0], [-1, -1], [0, -1], [1, -1], [-1, -2], [0, -2], [1, -2]],
-    "PONTON": 3
+    "PONTON": 3,
+    "CALE": 5
   },
   "//FAUNE": [
     "Les bêtes du grand monde (fiche 6b : js/engine/monde-faune.js les pose, région par région, dans",

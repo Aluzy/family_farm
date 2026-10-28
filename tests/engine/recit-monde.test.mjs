@@ -229,12 +229,24 @@ test('les hameaux garantis : chaque nom une fois, dans chaque monde, et leur mé
   }
 });
 
-test('les lieux du récit : la cabane en forêt, l\'atelier au bord de l\'eau, l\'épave sur la plage', () => {
+test('les lieux du récit : la cabane en forêt, l\'atelier au bord de l\'eau, l\'épave sur la plage, la cale aux Mouettes', () => {
   for (const g of GRAINES) {
     const m = genererMonde(g), p = m.plan, W = m.terrain.LARGEUR, R = p.lieux.recit;
     const b = (i) => p.BIOMES[p.biome[i]];
     const de = (sorte) => R.find((x) => x.sorte === sorte);
-    assertEqual(R.map((x) => x.sorte), ['cabane', 'atelier', 'epave'], `${g} : les trois lieux`);
+    assertEqual(R.map((x) => x.sorte), ['cabane', 'atelier', 'epave', 'cale'], `${g} : les quatre lieux`);
+    // la cale du bac : sur la terre, au bord de la mer, près des Mouettes ; sa jetée et la place du bac sur la mer
+    const cale = de('cale'), mo = p.lieux.hameaux.find((h) => h.garanti === 'mouettes');
+    const d = Math.hypot((cale.case % W) - (mo.case % W), Math.floor(cale.case / W) - Math.floor(mo.case / W));
+    const C = DATA.PLAN_MONDE.RECIT.CALE;
+    assert(d >= C.HAMEAU && d <= C.RAYON, `${g} : la cale près des Mouettes (${d})`);
+    assert(!['mer', 'lac', 'riviere', 'falaise', 'sommet'].includes(b(cale.case)), `${g} : la cale part de la terre`);
+    const [dx, dy] = [[0, -1], [0, 1], [-1, 0], [1, 0]][cale.sens], [bx, by] = cale.sens < 2 ? [1, 0] : [0, 1];
+    for (let k = 1; k <= DATA.LIEUX.CALE + 1; k++) {
+      const j = cale.case + (dy * W + dx) * k;
+      assertEqual(b(j), 'mer', `${g} : la jetée sur la mer (${k})`);
+      if (k >= DATA.LIEUX.CALE - 3) assert(b(j + by * W + bx) === 'mer' && b(j + 2 * (by * W + bx)) === 'mer', `${g} : la place du bac (${k})`);
+    }
     assertEqual(b(de('cabane').case), 'foret', `${g} : la cabane en forêt`);
     assertEqual(b(de('epave').case), 'plage', `${g} : l'épave sur la plage`);
     const a = de('atelier').case;
@@ -256,6 +268,11 @@ test('toucher un lieu du récit : son texte, le fait noté', () => {
   noter(s, 'frida.rencontre');
   assert(/Frida/.test(toucherLieu(s, 'atelier').texte), 'après');
   assertEqual(toucherLieu(s, 'moulin'), null);
+  // le bac de la cale : les premiers jours, il repart ; la nuit, il dort ; sinon, la porte vers Cadolon
+  s.day = 2;
+  assert(/repart demain/.test(toucherLieu(s, 'cale').texte));
+  s.day = 10;
+  assert(/Cadolon/.test(toucherLieu(s, 'cale').texte) && aFait3b(s, 'lieu.cale'));
 });
 
 test('la cabane et l\'atelier : bâtis comme une maison de hameau, sans habitant ; y entrer les découvre', () => {

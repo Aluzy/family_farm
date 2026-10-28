@@ -3171,7 +3171,12 @@ export const RAW_DATA = {
     },
     "GROTTES": { "NOMBRE": [3, 6], "ECART": 60, "PIED": 4, "FERME": 40 },
     "PECHE": { "MER": 4, "ECART": 60 },
-    "RECIT": { "CABANE": { "CHEMIN": 14, "HAMEAU": 45, "FERME": 60 }, "ATELIER": { "HAMEAU": 40 }, "EPAVE": { "HAMEAU": 30 } }
+    "RECIT": {
+      "CABANE": { "CHEMIN": 14, "HAMEAU": 45, "FERME": 60 },
+      "ATELIER": { "HAMEAU": 40 },
+      "EPAVE": { "HAMEAU": 30 },
+      "CALE": { "RAYON": 40, "HAMEAU": 8, "PECHE": 8 }
+    }
   },
   "VEGETATION": {
     "SORTES": [
@@ -3395,11 +3400,13 @@ export const RAW_DATA = {
         "variantes": 1,
         "bloque": [[-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, -1], [0, -1], [1, -1]],
         "boite": [34, 36]
-      }
+      },
+      { "nom": "cale", "genre": "ponton", "variantes": 4, "recit": true, "boite": [14, 28] }
     ],
     "NEIGE": 0.86,
     "BLOQUE": [[-1, 0], [0, 0], [1, 0], [-1, -1], [0, -1], [1, -1], [-1, -2], [0, -2], [1, -2]],
-    "PONTON": 3
+    "PONTON": 3,
+    "CALE": 5
   },
   "FAUNE": {
     "FERME": 8,
@@ -4541,7 +4548,12 @@ export const RAW_DATA = {
         { "quand": { "fait": "frida.rencontre" }, "texte": "L'atelier de Frida. Ça sent l'huile et le métal chaud. Elle n'est pas là." },
         { "texte": "Un atelier plein d'outils et de pièces de métal. Ça sent l'huile. Personne." }
       ],
-      "epave": [{ "texte": "Une vieille coque couchée sur le sable, le mât cassé. Ici, personne n'y touche." }]
+      "epave": [{ "texte": "Une vieille coque couchée sur le sable, le mât cassé. Ici, personne n'y touche." }],
+      "cale": [
+        { "quand": { "jour_max": 3 }, "texte": "Le bac qui vous a amenés repart demain matin. Fernand dit qu'il revient toujours, lui." },
+        { "quand": { "heure": [20, 6] }, "texte": "Le bac dort contre la cale. Une lanterne se balance à la poupe. Cadolon, c'est par là." },
+        { "texte": "La cale du bac, aux Mouettes. C'est par là que vous êtes arrivés. Le bac repart pour Cadolon à l'aube." }
+      ]
     },
     "PROMESSES": {
       "toit_garance": {

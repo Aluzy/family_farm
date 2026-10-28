@@ -998,7 +998,7 @@ export function validateData(data) {
     });
     // Les lieux du récit : une sorte de lieux.recit (LIEUX.SORTES de genre « recit »), une liste d'entrées
     // { quand, texte } ; la dernière sans condition (le lieu dit toujours quelque chose).
-    const sortesRecit = ((data.LIEUX && data.LIEUX.SORTES) || []).filter((x) => x.genre === 'recit').map((x) => x.nom).concat(Object.keys((data.HAMEAUX && data.HAMEAUX.BATISSES) || {}));
+    const sortesRecit = ((data.LIEUX && data.LIEUX.SORTES) || []).filter((x) => x.genre === 'recit' || x.recit === true).map((x) => x.nom).concat(Object.keys((data.HAMEAUX && data.HAMEAUX.BATISSES) || {}));
     for (const [sorte, liste] of Object.entries(R.LIEUX || {})) {
       const where = `RECIT.LIEUX.${sorte}`;
       if (!sortesRecit.includes(sorte)) err(where, `une sorte de lieu du récit (${sortesRecit.join(', ')})`);

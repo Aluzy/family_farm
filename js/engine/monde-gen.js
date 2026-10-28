@@ -250,7 +250,7 @@ function chercheur(N, W, diag = false) {
 // chacune se jette : la case après sa dernière), lacs: [[cases…]…], eaux (Uint8Array, une valeur
 // par tuile : BIOME.lac, BIOME.riviere ou AUCUNE_EAU), chemins: [[cases…]…] (en cases voisines),
 // lieux: { hameaux: [{ id, case, nom[, gue, garanti] }], grottes: [{ id, case }], peche: [{ id, case, eau }],
-// recit: [{ id, sorte (cabane, atelier, epave), case }] } }.
+// recit: [{ id, sorte (cabane, atelier, epave, cale), case[, sens : la cale] }] } }.
 // `lire` : le relevé des champs (releve), à partager avec qui le complétera ; sans lui, il s'en
 // fait un.
 export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(graine, cadre), cadre)) {
@@ -875,8 +875,53 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
     const i = meilleur(cands, (j) => Math.min(distChemin(j), 40) + Math.min(distHameaux(j), 80) / 4);
     if (i !== null) recit.push({ id: 'epave', sorte: 'epave', case: i });
   }
+  // la cale du bac, aux Mouettes (la seule porte vers Cadolon, par où la famille est arrivée) : une case de
+  // terre au bord de la mer, à CALE.RAYON tuiles au plus du hameau et HAMEAU au moins (hors de ses maisons),
+  // d'où une jetée de LIEUX.CALE cases avance droit dans la mer, l'eau assez large pour le bac amarré le long
+  // de son bout (calePossible) ; la plus près du hameau. Sans place (un monde où Les Mouettes n'a pas de
+  // rivage), pas de cale. (Aucun tirage : les autres lieux ne bougent pas.)
+  const mouettes = PR.CALE && hameaux.find((h) => h.garanti === 'mouettes');
+  if (mouettes) {
+    const C = PR.CALE, hx = col(mouettes.case), hy = rang(mouettes.case);
+    let best = null, bd = Infinity;
+    for (let y = Math.max(4, hy - C.RAYON); y <= Math.min(H - 5, hy + C.RAYON); y++) {
+      for (let x = Math.max(4, hx - C.RAYON); x <= Math.min(W - 5, hx + C.RAYON); x++) {
+        const i = y * W + x, d = Math.hypot(x - hx, y - hy);
+        if (d > C.RAYON || d < C.HAMEAU || d >= bd || [mer, lac, riviere, BIOME.falaise, sommet].includes(bio(i)) || dansFerme(i)) continue;
+        if (peche.some((p) => Math.hypot(col(p.case) - x, rang(p.case) - y) < C.PECHE)) continue;
+        const sens = calePossible(i, (j) => bio(j) === mer, W, H, DATA.LIEUX.CALE);
+        if (sens !== null) { best = { i, sens }; bd = d; }
+      }
+    }
+    if (best) recit.push({ id: 'cale_bac', sorte: 'cale', case: best.i, sens: best.sens });
+  }
 
   return { rivieres, finRivieres, lacs, eaux, chemins, lieux: { hameaux, grottes, peche, recit } };
+}
+
+// La cale du bac (le récit) : depuis la case de terre `i`, une jetée de L cases peut-elle avancer droit dans
+// la mer (`mer(j)`), avec de l'eau au-delà de son bout, de part et d'autre de lui, et le long de ses quatre
+// dernières cases d'un côté, sur deux cases (le bac amarré : à l'est d'une jetée nord ou sud, au sud d'une
+// jetée ouest ou est) ? → son sens (0 nord, 1 sud, 2 ouest, 3 est), le premier qui convient, ou null.
+// (js/engine/monde-lieux.js lit les mêmes cases : celles de la jetée s'ouvrent à la marche.)
+export function calePossible(i, mer, W, H, L) {
+  const c = i % W, r = Math.floor(i / W);
+  const SENS = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+  for (let sens = 0; sens < 4; sens++) {
+    const [dx, dy] = SENS[sens], [bx, by] = sens < 2 ? [1, 0] : [0, 1];
+    const eau = (x, y) => x >= 0 && y >= 0 && x < W && y < H && mer(y * W + x);
+    let ok = true;
+    for (let k = 1; k <= L + 1 && ok; k++) {
+      const x = c + dx * k, y = r + dy * k;
+      if (!eau(x, y)) ok = false;
+      // (le bac, le long des quatre dernières cases et au-delà, sur deux cases de large ; de l'eau de l'autre
+      // côté du bout)
+      if (ok && k >= L - 3 && !(eau(x + bx, y + by) && eau(x + 2 * bx, y + 2 * by))) ok = false;
+      if (ok && k >= L && !eau(x - bx, y - by)) ok = false;
+    }
+    if (ok) return sens;
+  }
+  return null;
 }
 
 /* ---------- 3. une région ---------- */

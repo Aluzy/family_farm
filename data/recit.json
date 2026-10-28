@@ -52,7 +52,7 @@
     "js/engine/compagnon.js retourCompagnon) : debut, puis une phrase par chose qu'il a faite pendant la",
     "garde (arroser, cuisiner, ramasser, betes, au plus trois ; {n} : combien de fois), puis fin. Chaleureux : il est",
     "heureux de retrouver le joueur et le dit (docs/recit/personnages.md).",
-    "LIEUX : ce que le joueur lit en entrant dans une bâtisse du récit (cabane, atelier) ou en touchant l'épave : la",
+    "LIEUX : ce que le joueur lit en entrant dans une bâtisse du récit (cabane, atelier) ou en touchant l'épave, le bac de la cale : la",
     "première entrée dont les conditions sont vraies ; le fait « lieu.<sorte> » est noté (le fil de la lune, plus tard).",
     "PROMESSES : les promesses que Maurice n'a pas pu tenir (le carnet carnet_promesses les ouvre) ; { titre, qui",
     "(celui à qui elle a été faite), besoin ({ objet: quantité }), effet (quand elle est tenue) }. Le joueur confie",
@@ -497,6 +497,11 @@
       ],
       "epave": [
         { "texte": "Une vieille coque couchée sur le sable, le mât cassé. Ici, personne n'y touche." }
+      ],
+      "cale": [
+        { "quand": { "jour_max": 3 }, "texte": "Le bac qui vous a amenés repart demain matin. Fernand dit qu'il revient toujours, lui." },
+        { "quand": { "heure": [20, 6] }, "texte": "Le bac dort contre la cale. Une lanterne se balance à la poupe. Cadolon, c'est par là." },
+        { "texte": "La cale du bac, aux Mouettes. C'est par là que vous êtes arrivés. Le bac repart pour Cadolon à l'aube." }
       ]
     },
     "PROMESSES": {

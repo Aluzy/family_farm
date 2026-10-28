@@ -182,6 +182,18 @@ l'atelier de Frida (lot 3b) ; les veillées suivantes (acte III).
   `voie`, `fin`, `hameaux_min`.
 - Tests : `tests/engine/recit-actes34.test.mjs`.
 
+## La cale du bac (après le lot 9)
+
+- Aux Mouettes, la cale du bac : la seule porte vers Cadolon, par où la famille est arrivée (docs/recit/bible.md).
+  Un lieu du récit de plus (`lieux.recit`, sorte `cale`, monde-gen.js `calePossible`) : une case de terre au bord
+  de la mer, la plus près du hameau (à 8 tuiles au moins, 40 au plus, loin des coins de pêche), d'où une jetée
+  de pierre de 5 cases avance droit dans la mer, le bac amarré le long de son bout. Présente dans les 48 mondes
+  essayés. On marche jusqu'au bout de la jetée ; toucher le bac donne un texte (`RECIT.LIEUX.cale` : les
+  premiers jours, il repart ; la nuit, il dort ; sinon, la porte vers Cadolon) et note `lieu.cale`.
+- Décision : la partie commence toujours à la ferme (la scène d'arrivée raconte le débarquement) ; la cale
+  existe pour qu'on puisse y revenir.
+- Le dessin : `scripts/carte/lieux.py` (`cale`, quatre sens), posé comme un ponton (`js/engine/monde-lieux.js`).
+
 ## Les critères de qualité narrative
 
 - **Tests automatiques** : ids uniques, personnages connus, conditions connues et jamais

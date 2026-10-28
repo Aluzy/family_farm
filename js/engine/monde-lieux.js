@@ -23,6 +23,9 @@ import { BIOME } from './monde-gen.js';
 
      - Les lieux du récit (lieux.recit : la cabane de Johnny, l'atelier de Frida, l'épave ; docs/recit/) :
        leur dessin posé sur leur case, leurs cases `bloque` fermées (data/monde.json, LIEUX.SORTES).
+     - La cale du bac aux Mouettes (lieux.recit, sorte « cale », son sens : monde-gen.js calePossible) :
+       posée comme un ponton, le pied au bord de la case de la rive ; ses LIEUX.CALE cases s'ouvrent à la
+       marche (on va au bout, voir le bac).
 
    Une image appartient à la région de la case de son lieu ; un ponton à cheval sur deux régions
    ouvre ses cases dans chacune (le même calcul, du plan seul). */
@@ -107,6 +110,17 @@ export function lieuxDeRegion(ctx, g) {
     const S = SORTES_LIEUX[SORTE_LIEU[l.sorte]];
     if (!S) continue;
     const X = l.case % W, Y = Math.floor(l.case / W);
+    if (S.genre === 'ponton') {
+      // (la cale du bac : sa jetée ouverte à la marche, son dessin au bord de la rive, comme un ponton)
+      if (X < cx0 - 8 || Y < cy0 - 8 || X > cx0 + cl + 7 || Y > cy0 + ch + 7) continue;
+      const [dx, dy] = SENS[l.sens] || SENS[0];
+      for (let k = 1; k <= LIEUX.CALE; k++) pose(X + dx * k, Y + dy * k, 1);
+      if (dans(X, Y)) {
+        const [x, y] = [[X * T + T / 2, Y * T], [X * T + T / 2, (Y + 1) * T], [X * T, Y * T + T / 2], [(X + 1) * T, Y * T + T / 2]][l.sens] || [X * T + T / 2, Y * T];
+        images.push(SORTE_LIEU[l.sorte], x, y, l.sens || 0);
+      }
+      continue;
+    }
     if (X < cx0 - 3 || Y < cy0 - 3 || X > cx0 + cl + 3 || Y > cy0 + ch + 3) continue;
     for (const [dx, dy] of S.bloque || []) pose(X + dx, Y + dy, 0);
     if (dans(X, Y)) images.push(SORTE_LIEU[l.sorte], X * T + T / 2, Y * T + T - 2, 0);

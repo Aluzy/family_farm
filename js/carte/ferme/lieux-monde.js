@@ -8,9 +8,9 @@
  *   - en remontant du premier niveau (jeu.html?arrivee=grotte_<n>, passages.js arrive), il ressort
  *     de l'arche et descend devant elle. La région de l'entrée peut ne pas être encore faite (la page
  *     rechargée dans la grotte) : il attend qu'elle arrive.
- * Les lieux du récit qui sont un dessin (lieux.recit : l'épave ; la cabane et l'atelier sont bâtis, comme les
- * maisons des hameaux : hameaux.js) : un appui sur le dessin le dit à la page (ctx.bridge.lieuRecit : ce qu'on
- * y lit, js/ui/stage.js).
+ * Les lieux du récit qui sont un dessin (lieux.recit : l'épave, la cale du bac aux Mouettes ; la cabane et
+ * l'atelier sont bâtis, comme les maisons des hameaux : hameaux.js) : un appui sur le dessin (pour la cale : le
+ * bac) le dit à la page (ctx.bridge.lieuRecit : ce qu'on y lit, js/ui/stage.js).
  * Les coins de pêche (lieux.peche : un ponton ou des piquets) : de petits remous montent de l'eau
  * devant eux, de temps en temps (pas avec « animations réduites ») ; la pêche y est meilleure
  * (peche.js : coinPeche).
@@ -113,6 +113,13 @@
       const W = this.grid.cols, sortes = (M && M.lieuxSortes) || [];
       this.lieuxRecitListe = (L.recit || []).filter((l) => sortes.some((x) => x.nom === l.sorte)).map((l) => {
         const S = sortes.find((x) => x.nom === l.sorte), [bl, bh] = S.boite || [20, 36];
+        // (la cale du bac : on touche le bac, amarré le long du bout de la jetée, à l'est d'une jetée nord ou
+        // sud, au sud d'une jetée ouest ou est ; le pied de sa boîte au bas de sa troisième case de jetée)
+        if (S.genre === 'ponton') {
+          const [dx, dy] = [[0, -1], [0, 1], [-1, 0], [1, 0]][l.sens] || [0, -1], [bx, by] = l.sens < 2 ? [1, 0] : [0, 1];
+          const c = (l.case % W) + dx * 3.5 + bx * 1.5, r = Math.floor(l.case / W) + dy * 3.5 + by * 1.5;
+          return { id: l.id, sorte: l.sorte, x: c * T + T / 2, y: r * T + T / 2 + bh / 2, l: bl, h: bh };
+        }
         return { id: l.id, sorte: l.sorte, x: (l.case % W) * T + T / 2, y: Math.floor(l.case / W) * T + T - 2, l: bl, h: bh };
       });
       return this.lieuxRecitListe;
