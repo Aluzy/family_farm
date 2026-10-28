@@ -160,7 +160,7 @@ test('migration v60 → v61 : pas de lit choisi ; le choix se sauvegarde et se r
 /* ---------- la carte : aller au puits, toucher un lit ---------- */
 
 const SCRIPTS = [
-  'js/carte/kit.js', 'js/carte/chemins.js', 'js/carte/nature.js', 'js/carte/gestes.js', 'js/carte/lumiere.js', 'js/carte/eau.js',
+  'js/carte/kit.js', 'js/carte/chemins.js', 'js/carte/nature.js', 'js/carte/gestes.js', 'js/carte/lumiere.js', 'js/carte/eau.js', 'js/carte/ressort.js',
   'js/carte/triporteur.js', 'js/carte/cheval.js', 'js/carte/toit.js', 'js/fermier.js',
   'js/carte/ferme/config.js', 'js/carte/ferme/chantier.js', 'js/carte/ferme/puits.js',
 ];

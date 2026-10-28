@@ -25,7 +25,7 @@ import { DATA } from '../../js/engine/index.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
 const SCRIPTS = [
-  'js/carte/kit.js', 'js/carte/chemins.js', 'js/carte/nature.js', 'js/carte/gestes.js', 'js/carte/lumiere.js', 'js/carte/eau.js',
+  'js/carte/kit.js', 'js/carte/chemins.js', 'js/carte/nature.js', 'js/carte/gestes.js', 'js/carte/lumiere.js', 'js/carte/eau.js', 'js/carte/ressort.js',
   'js/carte/triporteur.js', 'js/carte/cheval.js', 'js/carte/toit.js', 'js/fermier.js', 'js/famille-ferme.js',
   'js/carte/ferme/config.js', 'js/carte/ferme/chantier.js', 'js/carte/ferme/habitants.js',
 ];

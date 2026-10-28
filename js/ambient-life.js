@@ -11,6 +11,9 @@
  *   - Les bêtes de la ferme : à 7 h les portes de l'Étable s'ouvrent et vaches et moutons
  *     sortent dans l'enclos ; à 6 h la porte du Poulailler s'ouvre et les poules sortent en
  *     liberté. Tous rentrent à 19 h.
+ *   - Les chats, les chiens, les bêtes de la ferme et les oiseaux s'écrasent et s'étirent un peu
+ *     à chaque pas, chaque pose, chaque bond (js/carte/ressort.js : coupPose et les sauts) ;
+ *     l'écureuil, tout petit et souvent sur un tronc, garde sa taille.
  *
  * Règles (voir docs/vie-ambiance.md) :
  *   1. Ce fichier est facultatif : sans lui, farm-stage.js affiche la même carte, immobile.
@@ -181,6 +184,36 @@
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = (list) => list[(Math.random() * list.length) | 0];
   const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+  // L'écrasement et l'étirement des bêtes (js/carte/ressort.js) : sans ce fichier, aucun ressort et
+  // les bêtes gardent leur taille ; rien d'autre ne change.
+  const nouveauRessort = () => (global.CarteKit.ressort ? global.CarteKit.ressort() : null);
+  const RES = global.CarteKit.RESSORT || { COUPS: {}, TENU: {} };
+  const C = RES.COUPS, TENU = RES.TENU;
+  // L'impulsion quand l'image d'une bête change de `avant` à `apres` (les noms de CAT_FRAMES,
+  // GRAZER_FRAMES, HEN_FRAMES) : une patte qui se pose, une bête qui s'assoit, se couche, se
+  // relève, respire, broute, picore, bat des ailes ; 0 pour le reste.
+  function coupPose(avant, apres) {
+    if (apres === 'marche0' || apres === 'marche1' || /^(bas|haut)[02]$/.test(apres)) return C.pas;
+    if (/^(bas|haut)[13]$/.test(apres)) return C.passage;
+    if (apres === 'idle' || apres === 'pas') {
+      if (/^marche/.test(avant)) return C.passage;
+      if (/^(assis|couche|boule)/.test(avant)) return C.releve;
+      if (/^picore/.test(avant) || /^broute/.test(avant)) return C.tete;
+      return 0;
+    }
+    if (apres === 'assis') return /^(couche|boule)/.test(avant) ? C.tete : C.assoit;
+    if (/^(boule|couchee)[01]$/.test(apres) && /^(boule|couchee)[01]$/.test(avant)) return apres.endsWith('1') ? C.souffle : -C.souffle;
+    if (apres === 'couche' || /^couchee/.test(apres) || apres === 'couvee') return /^boule/.test(avant) ? C.tete : C.couche;
+    if (/^boule/.test(apres)) return C.couche;
+    if (apres === 'broute0') return avant === 'broute1' ? C.bouchee : C.bouchee * 1.5;
+    if (apres === 'broute1') return C.tete;
+    if (apres === 'picore0') return avant === 'picore1' ? C.tete : C.bouchee;
+    if (apres === 'picore1') return C.bouchee * 1.4;
+    if (apres === 'gratte' || apres === 'leche') return C.bouchee * 0.7;
+    if (apres === 'ailes') return C.ailes;
+    return 0;
+  }
   // Tirage pondéré : { marche: 5, assis: 3 } rend « marche » cinq fois sur huit.
   function pickWeighted(weights) {
     let total = 0;
@@ -483,46 +516,64 @@
         const s = sprite(from.x, from.y, 'ois_vol0').setOrigin(0.5, 1).setDepth(FLY_DEPTH).setFlipX(dir < 0);
         let state = 'arrive', age = 0, x = from.x, y = from.y, face = dir;
         let stay = rand(6, 14), wait = rand(0.4, 1), hop = null, pecks = 0;
-        const leave = () => { if (state === 'part') return; state = 'part'; age = 0; face = Math.random() < 0.5 ? 1 : -1; s.setDepth(FLY_DEPTH); };
+        const res = nouveauRessort();             // écrasé, étiré (js/carte/ressort.js)
+        let tenu = 0;
+        const leave = () => { if (state === 'part') return; state = 'part'; age = 0; face = Math.random() < 0.5 ? 1 : -1; s.setDepth(FLY_DEPTH); if (res) res.pousse(C.elan); };
+        // (À chaque image : ce qu'il fait, puis son ressort.)
+        function step(dt) {
+          tenu = 0;
+          const encore = vit(dt);
+          if (res) res.maj(dt, tenu).applique(s);
+          return encore;
+        }
+        function vit(dt) {
+          age += dt;
+          if (state === 'arrive') {
+            const k = clamp01(age / 1.4), e = 1 - (1 - k) * (1 - k);
+            x = from.x + (spot.x - from.x) * e; y = from.y + (spot.y - from.y) * e;
+            s.setFrame(((age * 10) | 0) % 2 ? 'ois_vol1' : 'ois_vol0');
+            if (k >= 1) { state = 'sol'; age = 0; s.setFrame('ois_sol').setDepth(y); if (res) res.pousse(C.pose); }
+          } else if (state === 'sol') {
+            if (hop) {                          // petit saut en cloche
+              hop.k += dt / 0.22;
+              const k = clamp01(hop.k);
+              x = hop.x0 + hop.dx * k; y = hop.y0 + hop.dy * k;
+              s.setPosition(x, y - Math.sin(k * Math.PI) * 3);
+              tenu = TENU.air * 0.8 * Math.abs(Math.cos(k * Math.PI));
+              if (k >= 1) { hop = null; s.setDepth(y); if (res) res.pousse(C.atterrit * 0.6); }
+              return true;
+            }
+            wait -= dt;
+            if (pecks > 0 && wait <= 0) {
+              pecks--; wait = 0.16;
+              const pique = s.frame.name !== 'ois_pic';
+              s.setFrame(pique ? 'ois_pic' : 'ois_sol');
+              if (res) res.pousse(pique ? C.bouchee * 1.4 : C.tete);
+            } else if (wait <= 0) {
+              s.setFrame('ois_sol');
+              if (age > stay || !inView(x, y, MARGIN)) leave();
+              else if (Math.random() < 0.45) {
+                const dx = rand(5, 11) * (Math.random() < 0.5 ? -1 : 1), dy = rand(-4, 4);
+                if (freeAt(x + dx, y + dy)) {
+                  hop = { x0: x, y0: y, dx, dy, k: 0 }; face = dx > 0 ? 1 : -1; s.setFlipX(face < 0);
+                  if (res) res.pousse(C.elan * 0.5);
+                }
+                wait = rand(0.3, 0.9);
+              } else { pecks = 2 * ((rand(1, 4)) | 0); wait = 0.1; }
+            }
+          } else {                              // 'part' : monte en accélérant
+            const sp = 40 + age * 140;
+            x += face * sp * dt; y -= sp * 0.75 * dt;
+            s.setFlipX(face < 0).setFrame(((age * 12) | 0) % 2 ? 'ois_vol1' : 'ois_vol0');
+            if (!inView(x, y, MARGIN * 2)) return false;
+          }
+          s.setPosition(x, y);
+          return true;
+        }
         return {
           sprites: [s],
           scare(px, py) { if (state !== 'part' && Math.hypot(px - x, py - y) < SCARE_R) leave(); },
-          step(dt) {
-            age += dt;
-            if (state === 'arrive') {
-              const k = clamp01(age / 1.4), e = 1 - (1 - k) * (1 - k);
-              x = from.x + (spot.x - from.x) * e; y = from.y + (spot.y - from.y) * e;
-              s.setFrame(((age * 10) | 0) % 2 ? 'ois_vol1' : 'ois_vol0');
-              if (k >= 1) { state = 'sol'; age = 0; s.setFrame('ois_sol').setDepth(y); }
-            } else if (state === 'sol') {
-              if (hop) {                          // petit saut en cloche
-                hop.k += dt / 0.22;
-                const k = clamp01(hop.k);
-                x = hop.x0 + hop.dx * k; y = hop.y0 + hop.dy * k;
-                s.setPosition(x, y - Math.sin(k * Math.PI) * 3);
-                if (k >= 1) { hop = null; s.setDepth(y); }
-                return true;
-              }
-              wait -= dt;
-              if (pecks > 0 && wait <= 0) { pecks--; wait = 0.16; s.setFrame(s.frame.name === 'ois_pic' ? 'ois_sol' : 'ois_pic'); }
-              else if (wait <= 0) {
-                s.setFrame('ois_sol');
-                if (age > stay || !inView(x, y, MARGIN)) leave();
-                else if (Math.random() < 0.45) {
-                  const dx = rand(5, 11) * (Math.random() < 0.5 ? -1 : 1), dy = rand(-4, 4);
-                  if (freeAt(x + dx, y + dy)) { hop = { x0: x, y0: y, dx, dy, k: 0 }; face = dx > 0 ? 1 : -1; s.setFlipX(face < 0); }
-                  wait = rand(0.3, 0.9);
-                } else { pecks = 2 * ((rand(1, 4)) | 0); wait = 0.1; }
-              }
-            } else {                              // 'part' : monte en accélérant
-              const sp = 40 + age * 140;
-              x += face * sp * dt; y -= sp * 0.75 * dt;
-              s.setFlipX(face < 0).setFrame(((age * 12) | 0) % 2 ? 'ois_vol1' : 'ois_vol0');
-              if (!inView(x, y, MARGIN * 2)) return false;
-            }
-            s.setPosition(x, y);
-            return true;
-          },
+          step,
         };
       },
 
@@ -696,6 +747,9 @@
       let stirAt = 0, stir = 0;        // sommeil : date du prochain demi-réveil, et ce qu'il en reste
       const breath = rand(1.1, 1.6);   // sommeil : secondes par souffle
       const s = scene.add.image(x, y, sheet, 0).setOrigin(0.5, 1);
+      const res = nouveauRessort();    // écrasé, étiré (js/carte/ressort.js)
+      let vu = null;                   // l'image dessinée à l'image d'avant
+      let tenu = 0;                    // la pose tenue à cette image (ramassé, en l'air, un bond)
       // Le jeu s'ouvre de nuit ou avant le lever du jour : il dort déjà sur son toit.
       if (catHome && ctx.hour != null && !ctx.day && (ctx.dusk || ctx.hour < 12)) {
         night = true; st = 'dort'; x = catHome.roof.x; y = catHome.roof.y; stirAt = rand(15, 35);
@@ -707,6 +761,9 @@
       function draw(frame, dy, angle) {
         const up = st === 'saute' || st === 'descend' || st === 'dort' || st === 'reveil';
         s.setFrame(F[frame]).setPosition(x, y + (dy || 0)).setFlipX(face < 0).setAngle(angle || 0).setDepth(up ? catHome.depth : y);
+        // (pendant un saut, c'est le saut qui donne l'élan et l'atterrissage, pas l'image)
+        if (res && frame !== vu) { if (vu && st !== 'saute' && st !== 'descend') res.pousse(coupPose(vu, frame)); vu = frame; }
+        if (st === 'course' && dy) tenu = -dy * TENU.bond;   // un petit bond à chaque foulée
       }
 
       function enter(name) {
@@ -770,7 +827,14 @@
         return !path.length;
       }
 
+      // À chaque image : ce qu'il fait, puis son ressort.
       function step(dt) {
+        tenu = 0;
+        vit(dt);
+        if (res) res.maj(dt, tenu).applique(s);
+      }
+
+      function vit(dt) {
         age += dt;
         if (catHome && !night && ctx.dusk && CAT_NEXT[st]) goToBed();   // la nuit tombe : il rentre
         if (rise > 0) { rise -= dt; age = 0; draw('assis'); return; }
@@ -784,11 +848,14 @@
           else if (done) next();
         } else if (st === 'vise') {                  // ramassé au pied du mur, il vise le toit
           draw('assis');
-          if (age >= len) { jump = { x0: x, y0: y, x1: catHome.roof.x, y1: catHome.roof.y }; enter('saute'); }
+          tenu = TENU.vise * clamp01(age / 0.25);      // il se ramasse avant de bondir
+          if (age >= len) { jump = { x0: x, y0: y, x1: catHome.roof.x, y1: catHome.roof.y }; enter('saute'); if (res) res.pousse(C.elan); }
         } else if (st === 'saute' || st === 'descend') {
           const k = clamp01(age / CAT_JUMP_S), e = k * k * (3 - 2 * k);
           x = jump.x0 + (jump.x1 - jump.x0) * e; y = jump.y0 + (jump.y1 - jump.y0) * e;
           draw('marche0', -Math.sin(k * Math.PI) * 5, (st === 'saute' ? -1 : 1) * face * 28 * (1 - k));
+          tenu = TENU.air * Math.abs(Math.cos(k * Math.PI));   // étiré en montant et en retombant
+          if (k >= 1 && res) res.pousse(C.atterrit);
           if (k >= 1 && st === 'saute') { enter('dort'); stirAt = rand(15, 35); }
           else if (k >= 1) { night = false; enter('debout'); }
         } else if (st === 'dort') {                  // en boule : il respire, et lève parfois la tête
@@ -797,7 +864,8 @@
           if (ctx.day && age > 2) { enter('reveil'); len = rand(2, 4); }
         } else if (st === 'reveil') {                // il lève la tête, s'assoit, puis saute à terre
           draw(age < len * 0.6 ? 'couche' : 'assis');
-          if (age >= len) { jump = { x0: x, y0: y, x1: catHome.foot.x, y1: catHome.foot.y }; enter('descend'); }
+          if (age > len - 0.25) tenu = TENU.vise * clamp01((age - len + 0.25) / 0.25);
+          if (age >= len) { jump = { x0: x, y0: y, x1: catHome.foot.x, y1: catHome.foot.y }; enter('descend'); if (res) res.pousse(C.elan * 0.6); }
         } else {                                     // sur place : debout, assis, toilette, couché, sieste
           if (st === 'toilette') draw(((age / 0.28) | 0) % 2 ? 'assis' : 'leche');
           else if (st === 'sieste') draw(((age / breath) | 0) % 2 ? 'boule1' : 'boule0');
@@ -813,7 +881,10 @@
         scare(px, py) {
           const d = Math.hypot(px - x, py - y);
           if (st === 'dort') { if (d < SCARE_R / 2 && stir <= 0) stir = rand(1.5, 3); return; }
-          if (d < SCARE_R && CAT_NEXT[st] && st !== 'course') begin('course', Math.atan2(y - py, x - px));
+          if (d < SCARE_R && CAT_NEXT[st] && st !== 'course') {
+            begin('course', Math.atan2(y - py, x - px));
+            if (res && st === 'course') res.pousse(C.elan * 0.6);   // il détale d'un bond
+          }
         },
         // Pour les essais : chat('toilette') lance une activité de CAT_NEXT, chat('nuit') l'envoie se coucher.
         force(name) {
@@ -823,6 +894,8 @@
         },
         info: () => ({ planche: sheet, etat: st, avant: before, x: Math.round(x), y: Math.round(y), nuit: night, toit: catHome ? catHome.roof : null }),
         destroy() { petAt[sheet] = CAT_NEXT[st] ? { x, y } : null; s.destroy(); },
+        // Pour les essais : l'écart du ressort à sa taille de repos (0 sans ressort).
+        ressort: () => (res ? res.valeur() : 0),
       };
     }
 
@@ -945,6 +1018,8 @@
       let path = [], speed = 0, stride = 2, walked = 0;   // déplacement en cours
       let vue = 'profil';                                 // profil, bas (vers nous), haut (de dos)
       const s = scene.add.image(0, 0, o.herd[kind], 0).setOrigin(0.5, 1).setVisible(false);
+      const res = nouveauRessort();     // écrasée, étirée (js/carte/ressort.js)
+      let vu = null, tenu = 0;          // l'image d'avant ; la pose tenue à cette image
       // (la poule a ses vues de face et de dos ; les autres, ou une planche d'avant : de profil seulement)
       const vues = H.frames.includes('haut3') && s.texture.frameTotal - 1 > H.frames.indexOf('haut3');
 
@@ -975,6 +1050,8 @@
         const front = (st === 'sort' || st === 'rentre') && foldUp(f) ? f.sprite.depth + 0.6 : 0;
         s.setFrame(F[frame]).setPosition(me.x, me.y + (dy || 0)).setFlipX(face < 0 && !/^(bas|haut)\d/.test(frame)).setDepth(Math.max(me.y, front))
           .setAlpha(alpha == null ? 1 : alpha).setVisible(true);
+        if (res && frame !== vu) { if (vu) res.pousse(coupPose(vu, frame)); vu = frame; }
+        if (dy) tenu = -dy * TENU.bond;     // la course : un petit bond à chaque foulée
       }
       // Avance le long du chemin ; renvoie la distance qui reste jusqu'au dernier point.
       function advance(dt) {
@@ -1010,7 +1087,14 @@
         return st !== 'dedans' && (hit(me) || (to && hit(to)));
       };
       me.destroy = () => s.destroy();
+      me.ressort = () => (res ? res.valeur() : 0);
+      // À chaque image : ce qu'elle fait, puis son ressort.
       me.step = (dt, out, doorOpen) => {
+        tenu = 0;
+        vit(dt, out, doorOpen);
+        if (res && s.visible) res.maj(dt, tenu).applique(s);
+      };
+      const vit = (dt, out, doorOpen) => {
         me.age += dt;
         if (st === 'dedans') {
           // Elle attend son tour derrière la porte ouverte, puis sort et gagne une place.
@@ -1213,7 +1297,7 @@
     function stats() {
       const by = {};
       for (const a of actors) by[a.type] = (by[a.type] || 0) + 1;
-      return { on, actors: actors.length, by, water: water.length, mapTrees: mapTrees.length, wood: wood.size, orchard: trees.length, compagnons: pets.map((p) => p.info()), troupeau: herd.map((b) => b.kind + ' ' + b.state() + ' ' + Math.round(b.x) + ',' + Math.round(b.y)), portes: Object.fromEntries(Object.keys(folds).map((n) => [n, folds[n].k])), clock: t, next: Object.assign({}, next) };
+      return { on, actors: actors.length, by, water: water.length, mapTrees: mapTrees.length, wood: wood.size, orchard: trees.length, compagnons: pets.map((p) => p.info()), troupeau: herd.map((b) => b.kind + ' ' + b.state() + ' ' + Math.round(b.x) + ',' + Math.round(b.y)), portes: Object.fromEntries(Object.keys(folds).map((n) => [n, folds[n].k])), ressorts: pets.map((p) => p.ressort()).concat(herd.map((b) => b.ressort())), clock: t, next: Object.assign({}, next) };
     }
 
     return {

@@ -185,6 +185,30 @@ La poule :
 Au-delà du nombre « au plus », les bêtes du jeu ne sont pas dessinées : l'enclos et la zone du
 Poulailler sont trop petits pour qu'elles restent à l'écart les unes des autres.
 
+## 4 bis. Écrasées, étirées (squash and stretch)
+
+Les chats, les chiens, les vaches, les moutons, les poules et les oiseaux de passage, et la faune
+du grand monde (`js/carte/ferme/faune-monde.js`), s'écrasent et s'étirent un peu au fil de ce
+qu'ils font : une patte qui se pose, une bête qui s'assoit, se couche, se relève, respire, broute
+ou picore, un bond, un atterrissage, un envol. Aucune image de plus : seulement l'échelle de
+l'image, l'origine aux pieds.
+
+- `js/carte/ressort.js` (`CarteKit.ressort()`) : un ressort par bête. Un événement lui donne une
+  impulsion (`RESSORT.COUPS`), une pose tenue s'y ajoute tant qu'elle dure (`RESSORT.TENU` : ramassé
+  avant de sauter, étiré en l'air). L'image prend `scaleY = 1 + s`, `scaleX = 1 / scaleY` (le volume
+  reste le même) ; `s` reste entre `RESSORT.min` et `RESSORT.max` (−26 % et +30 %). Calculé par pas
+  de 1/60 s au plus : sur un téléphone qui peine, il s'amortit comme sur un ordinateur.
+- Ici, `coupPose(avant, apres)` donne l'impulsion quand l'image d'une bête change (un pas, une
+  pose) ; les sauts du chat sur son toit, la course, les bonds de l'oiseau ont la leur.
+- Pas de ressort : les papillons, les feuilles, les lucioles, l'écureuil (6 px, souvent sur un
+  tronc), l'aigle (il tourne là-haut, tourné dans le sens de son vol) ; ni les personnages, ni le
+  cheval (on s'assoit dessus).
+- Le réglage de l'effet tient dans `RESSORT` : `ampleur` (0 le coupe), la raideur, l'amorti, les
+  impulsions. « Réduire les animations » : la vie d'ambiance s'arrête, la faune reste immobile à sa
+  taille.
+- Essai : `FarmStage.scene().ambient.stats().ressorts`, l'écart de chaque animal de compagnie et
+  de chaque bête de la ferme à sa taille de repos ; les tests : `tests/engine/ressort.test.mjs`.
+
 ## 5. Budget
 
 - 8 bêtes ou feuilles au plus à la fois (`MAX_ACTORS`), tous types confondus, et un plafond par type.
