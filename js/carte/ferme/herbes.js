@@ -1,7 +1,9 @@
 /* carte/ferme/herbes.js — la scène de la ferme : les touffes d'herbe au pied de ce qui est posé.
  *
  * Là où un mur, un poteau de barrière ou un sol posé dehors touche l'herbe, la ligne était
- * nette. De petites touffes en éventail (HERBES) l'adoucissent : le long du bas des murs (pas
+ * nette. Les sols : ceux posés sur la ferme (chantier.js syncFloors), et les dalles des hameaux de
+ * tout le grand monde (planchers, dalles, tomettes, pavés de la place : peints dans le sol de leur
+ * région, js/engine/monde-hameaux.js). De petites touffes en éventail (HERBES) l'adoucissent : le long du bas des murs (pas
  * devant les portes : on y passe), une petite sous chaque poteau, au bas d'un sol posé dehors,
  * et quelques brins penchés sur ses côtés. Pas sur le haut d'un sol : vue de dessus, l'herbe
  * de derrière ne passe pas devant lui.
@@ -44,7 +46,8 @@
       this.herbesCle = cle;
       for (const o of this.herbes || []) { o.img.destroy(); this.textures.remove(o.key); }
       this.herbes = [];
-      const cols = this.grid.cols, B = this.blocks || new Map(), S = this.floors || new Map();
+      const cols = this.grid.cols, B = this.blocks || new Map();
+      const S = new Set([...(this.floors || new Map()).keys(), ...this.dallesHameaux()]);
       const pris = (c) => B.has(c) || S.has(c);
       const couches = new Map();         // rangée et sorte -> { profondeur, pixels: [[x, y, couleur]] }
       const couche = (k, profondeur) => couches.get(k) || couches.set(k, { profondeur, pixels: [] }).get(k);
@@ -71,7 +74,7 @@
       }
 
       // les sols posés dehors : leur bas, leurs côtés
-      for (const c of S.keys()) {
+      for (const c of S) {
         const col = c % cols, r = Math.floor(c / cols), x0 = col * T, y0 = r * T;
         const C = couche('s' + r, HERBES.plat);
         const rng = hasard(c * 104729 + 7);
@@ -107,6 +110,21 @@
         cv.refresh();
         this.herbes.push({ key, img: this.add.image(x0, y0, key).setOrigin(0).setDepth(C.profondeur) });
       }
+    },
+
+    // Les cases des dalles des hameaux, dans les régions dessinées : les « basses » de leur plan
+    // (reg.hameau.basses : [sorte, x, y, variante], le pied en px) dont la sorte est un sol
+    // (HERBES.dallesHameaux).
+    dallesHameaux() {
+      const M = this.ctx.monde, out = [];
+      if (!M || !M.hameauSortes) return out;
+      const W = this.grid.cols, sortes = M.hameauSortes.map((s) => HERBES.dallesHameaux.test(s.nom));
+      for (const r of this.regions ? this.regions.values() : []) {
+        const reg = r.tex && M.region(r.rx, r.ry), b = reg && reg.hameau && reg.hameau.basses;
+        if (!b) continue;
+        for (let q = 0; q < b.length; q += 4) if (sortes[b[q]]) out.push(Math.floor((b[q + 2] - 1) / T) * W + Math.floor(b[q + 1] / T));
+      }
+      return out;
     },
 
     // Le bas d'une image (clé, image) : sa largeur `w`, sa hauteur `h`, sa rangée la plus basse

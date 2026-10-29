@@ -483,13 +483,16 @@
   // bas des murs, le pied des poteaux de barrière, le bas et les côtés des sols posés dehors.
   // Une touffe tous les `pas` px (au hasard entre les deux), en éventail (`touffe` : décalage,
   // hauteur, penchant de la pointe de chaque brin ; `petite` sous un poteau) ; sur les côtés d'un
-  // sol, des brins penchés vers lui, une rangée sur `cotes`. Leurs couleurs : celles de l'herbe
+  // sol (ceux de la ferme, et les dalles des hameaux : `dallesHameaux`), des brins penchés vers lui,
+  // une rangée sur `cotes`. Leurs couleurs : celles de l'herbe
   // juste dessous (sa teinte sombre `teintes[0]`, moyenne, claire : des quantiles de sa luminance),
   // lues dans le sol peint, sur `fenetre` px de part et d'autre et de profondeur ; sans assez
   // d'herbe dessous (`herbeMin` de ses pixels), rien. Devant un mur : `dessus` au-dessus de son
   // image ; sur un sol, à `plat` (au-dessus des sols, sous la terre des parcelles et les ombres).
   const HERBES = {
     pas: [6, 10], cotes: 0.15, fenetre: 4, herbeMin: 0.4, teintes: [0.1, 0.45, 0.75], dessus: 0.02, plat: 0.052,
+    // les dalles des hameaux (assets/hameaux.json) : leurs planchers, dalles, tomettes, pavés
+    dallesHameaux: /^(sol_|paves$)/,
     touffe: [[-2, 2, -1], [-1, 4, -1], [0, 5, 0], [1, 4, 1], [2, 2, 1]],
     petite: [[-1, 3, -1], [0, 4, 0], [1, 3, 1]],
   };
