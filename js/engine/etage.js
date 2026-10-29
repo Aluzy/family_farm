@@ -17,7 +17,7 @@ import { blocsEnMain, blocsPoses, changeMur, empriseMeuble, genreBloc, hauteurMu
 import { farmTerrain } from './terrain.js';
 
 // Les blocs qui se posent à l'étage : des murs, des portes, une paillasse, une lanterne, un
-// candélabre, une barrière, et les meubles qui se posent au sol (pas les tableaux, accrochés à un mur ;
+// réverbère, une barrière, et les meubles qui se posent au sol (pas les tableaux, accrochés à un mur ;
 // pas le réfrigérateur, qui reste en bas, où la famille mange).
 export const ETAGE_BLOCS = ['mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'porte', 'porte_chene', 'porte_vitree', 'porte_grange', 'porte_bleue', 'porte_fer', 'porte_ecurie', 'porte_blanche', 'paillasse', 'lanterne', 'candelabre', 'barriere']
   .concat(Object.keys(DATA.ATELIER.BLOCS).filter((k) => DATA.ATELIER.BLOCS[k].meuble && !DATA.ATELIER.BLOCS[k].sur && !DATA.ATELIER.BLOCS[k].frigo));

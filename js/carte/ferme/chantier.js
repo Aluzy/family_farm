@@ -413,11 +413,11 @@
       }
     },
 
-    // Les lanternes scintillantes (BLOCS_CARTE.lanterne) et les candélabres (BLOCS_CARTE.candelabre,
+    // Les lanternes scintillantes (BLOCS_CARTE.lanterne) et les réverbères (BLOCS_CARTE.candelabre,
     // fiche 15) : éteints le jour ; quand la nuit tombe, ils s'allument, leurs deux images alternent
-    // au hasard (la lanterne scintille, les flammes des bougies bougent) et chacun pose sa lumière
+    // au hasard (la lanterne scintille, la lueur du réverbère vacille) et chacun pose sa lumière
     // dans le voile de l'heure (CarteKit.voile, eclaire : une flaque sur l'herbe, cyan ou chaude, et
-    // la lueur de la vitre ou des bougies), qui vacille un peu ; un petit halo par-dessus (WebGL).
+    // la lueur de la vitre), qui vacille un peu ; un petit halo par-dessus (WebGL).
     stepLanterns(time, dt) {
       const V = this.lumiere;
       const list = [];
@@ -437,7 +437,7 @@
       const haut = this.has(BLOCS_CARTE.hauts.key);
       for (const e of list) {
         const L = BLOCS_CARTE[e.sorte];
-        // (son image éteinte ; le candélabre sans la planche des murs hauts : la lanterne éteinte,
+        // (son image éteinte ; le réverbère sans la planche des murs hauts : la lanterne éteinte,
         // sans flammes, qui ne change pas d'image)
         const eteinte = e.sorte === 'lanterne' ? BLOCS_CARTE.frames.lanterne : haut ? BLOCS_CARTE.hauts.candelabre : null;
         if (e.phase == null) { e.phase = Math.random() * 7; e.flip = 0; e.k = 1; }
@@ -592,7 +592,7 @@
     // celle du mur de blocs.png.
     blocImage(b, at, cols) {
       const H = BLOCS_CARTE.hauts;
-      // (le candélabre, deux blocs de haut : son image dans la planche des murs hauts, éteint ;
+      // (le réverbère, deux blocs de haut : son image dans la planche des murs hauts, éteint ;
       // sans elle, la lanterne éteinte)
       if (b.sorte === 'candelabre') return this.has(H.key) ? [H.key, H.candelabre] : [BLOCS_CARTE.key, BLOCS_CARTE.frames.lanterne];
       const f = this.wallFrame(b, at, cols);

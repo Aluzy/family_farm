@@ -576,7 +576,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "etage",
      "terme": "Étage",
-     "description": "Un escalier posé dans une pièce close ouvre un étage au-dessus d'elle et de ses murs : on y monte par l'escalier, et l'on y pose des murs, des fenêtres, des portes, des paillasses, des lits, des lanternes, des candélabres et des meubles. Le toit de la maison se pose alors sur les murs de l'étage.",
+     "description": "Un escalier posé dans une pièce close ouvre un étage au-dessus d'elle et de ses murs : on y monte par l'escalier, et l'on y pose des murs, des fenêtres, des portes, des paillasses, des lits, des lanternes, des réverbères et des meubles. Le toit de la maison se pose alors sur les murs de l'étage.",
      "liens": [
       "piece_close",
       "murs",
@@ -626,12 +626,12 @@ export const ENCYCLOPEDIE = {
     },
     {
      "id": "candelabre",
-     "terme": "Candélabre",
-     "description": "Un pied de fer forgé, haut de deux blocs, et trois bougies : la nuit, elles s'allument et l'éclairent d'une lumière chaude, comme la lanterne. Il se fabrique à l'Atelier avec 2 lingots de fer, 2 pots de miel (la cire des ruches, pour les bougies) et 1 fibre (les mèches), et se pose comme un bloc avec 🔨 Construire (onglet Maison), dehors comme dans la maison ou à l'étage. C'est un décor : il ne fait d'une pièce ni la maison ni un bâtiment.",
+     "terme": "Réverbère",
+     "description": "Une lanterne à huile sous son chapeau, sur un fût de fonte haut de deux blocs et un socle de pierre : la nuit, elle s'allume et éclaire autour d'elle d'une lumière chaude, comme la lanterne. Il se fabrique à l'Atelier avec 2 lingots de fer, 1 pierre (le socle), 1 huile de tournesol (pour la lampe) et 1 fibre (la mèche), et se pose comme un bloc avec 🔨 Construire (onglet Maison), dehors comme dans la maison ou à l'étage. C'est un décor : il ne fait d'une pièce ni la maison ni un bâtiment. Il a remplacé le candélabre et ses bougies.",
      "liens": [
       "lanterne",
       "atelier",
-      "ruche",
+      "huile",
       "lingot",
       "mode_construire"
      ],

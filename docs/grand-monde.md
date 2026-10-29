@@ -1195,7 +1195,9 @@ SwiftShader, sans carte graphique) :
   `assets/murs_hauts.png`, `BLOCS_CARTE.hauts.candelabre`), qui s'allument la nuit avec les
   lanternes (`stepLanterns`, `BLOCS_CARTE.candelabre` : une lumière chaude). Un décor, dehors comme
   dans la maison ou à l'étage ; son icône 🕯, sa page d'encyclopédie et sa ligne d'aide (« Éclairer
-  la nuit », fiche « Le grand monde »).
+  la nuit », fiche « Le grand monde »). Le candélabre a depuis été remplacé par le **réverbère** (la
+  même sorte `candelabre` : un socle de pierre, un fût de fonte et une lanterne à huile ; 2 lingots
+  de fer, 1 pierre, 1 huile, 1 fibre ; icône 🏮‍🔩 ; `docs/carte-generee.md`).
 - **Fiche 14 — petites corrections : le brouillard sur la ferme, la mine, les canards, l'encyclopédie**
   (fait) :
   - le brouillard sur la ferme : le moteur la tenait déjà pour vue d'office (`monde-vu.js` : ses cellules

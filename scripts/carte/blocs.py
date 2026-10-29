@@ -6,7 +6,7 @@
 #   python3 scripts/carte/blocs.py            écrit assets/blocs.png et assets/murs_hauts.png
 #                                             (les murs une case plus hauts des maisons de la
 #                                             carte de transition, voir murs_hauts() ; puis le
-#                                             candélabre, deux blocs de haut : candelabre())
+#                                             réverbère, deux blocs de haut : reverbere())
 #   python3 scripts/carte/blocs.py --apercu   écrit aussi apercu_blocs.png (la planche, puis
 #                                             une pièce close sur l'herbe de la carte)
 #
@@ -1502,24 +1502,22 @@ LANTERNE = len(DESSINS)                          # la lanterne éteinte, puis al
 DESSINS += [lanterne(), lanterne(0), lanterne(1)]
 
 
-# ---------- le candélabre (fiche 15) ----------
+# ---------- le réverbère (fiche 15 : il remplace le candélabre) ----------
 #
 # Deux blocs de haut, un demi-bloc de large : ses images (16 × 40, comme les murs hauts) vont dans
-# assets/murs_hauts.png, après les fenêtres (BLOCS_CARTE.candelabre : éteint, puis allumé en deux
-# images qui alternent). Un pied de fer forgé (trois pattes recourbées, une tige torsadée et ses deux
-# nœuds), deux bras en volute et trois bougies de cire dans leurs bobèches ; allumé, trois flammes
-# (sans contour : elles luisent).
+# assets/murs_hauts.png, après les fenêtres (BLOCS_CARTE.candelabre : la sorte garde son nom de
+# candélabre ; éteint, puis allumé en deux images qui alternent). Un socle de pierre, un fût de
+# fonte (sa bague, sa console), et en haut une lanterne vitrée sous son chapeau et son fleuron ;
+# allumée, sa vitre luit (la flamme de la lampe à huile, qui vacille).
 
-FORGE = [(20, 20, 24), (38, 38, 44), (60, 60, 68), (92, 92, 102), (138, 138, 150)]     # le fer forgé, noirci
-CIRE = [(168, 146, 104), (216, 198, 158), (240, 230, 204), (255, 250, 234)]             # la cire, du pied au reflet
-# les trois bougies : (x de gauche, largeur, rangée du haut, rangée de la bobèche) ; celle du
-# milieu plus grosse et plus haute
-BOUGIES = [(4, 1, 10, 14), (7, 2, 5, 11), (11, 1, 10, 14)]
+FORGE = [(20, 20, 24), (38, 38, 44), (60, 60, 68), (92, 92, 102), (138, 138, 150)]     # la fonte, noircie
+SOCLE = [(92, 86, 76), (128, 120, 106), (164, 156, 140), (196, 188, 170)]               # la pierre du socle
+VITRE_LAMPE = [(54, 66, 78), (84, 100, 114), (130, 150, 164)]                           # la vitre, éteinte
 
 
-def candelabre(flamme=None):
-    """Le candélabre, éteint (flamme None : les mèches noires) ou allumé (flamme 0 ou 1 : les deux
-    images de ses flammes, qui alternent la nuit)."""
+def reverbere(flamme=None):
+    """Le réverbère, éteint (flamme None : la vitre sombre) ou allumé (flamme 0 ou 1 : les deux
+    images de sa lueur, qui alternent la nuit)."""
     global H, BAS, FACE
     garde = H, BAS, FACE
     H += HAUTEUR_EN_PLUS
@@ -1527,63 +1525,50 @@ def candelabre(flamme=None):
     try:
         t = Toile()
         b = BAS
-        # le pied : trois pattes recourbées (celle du milieu vient vers nous), sous un collet
-        for x, y in ((4, b), (5, b), (5, b - 1), (6, b - 2), (10, b), (11, b), (10, b - 1), (9, b - 2)):
-            t.put(x, y, FORGE[2])
-        for x in (7, 8):
-            t.put(x, b, FORGE[1])
-            t.put(x, b - 1, FORGE[2])
-        t.put(4, b - 1, FORGE[3])                   # le bout des volutes, relevé
-        t.put(11, b - 1, FORGE[1])
+        # le socle : une pierre taillée, plus large en bas, éclairée à gauche
+        for y, x0, x1 in ((b, 4, 11), (b - 1, 4, 11), (b - 2, 5, 10), (b - 3, 5, 10)):
+            for x in range(x0, x1 + 1):
+                t.put(x, y, SOCLE[3] if x == x0 else SOCLE[0] if x == x1 else SOCLE[1] if y >= b - 1 else SOCLE[2])
+        # le pied du fût, évasé, puis le fût de fonte jusqu'à la lanterne
         for x in range(6, 10):
-            t.put(x, b - 3, FORGE[3] if x < 8 else FORGE[2])     # le collet
-        # la tige, torsadée (le reflet passe d'un côté à l'autre), de la bobèche du haut au collet
-        for y in range(14, b - 3):
-            torsade = (y // 2) % 3
-            t.put(7, y, FORGE[4] if torsade == 0 else FORGE[3])
-            t.put(8, y, FORGE[2] if torsade == 1 else FORGE[1])
-        # ses deux nœuds, ronds
-        for y0 in (b - 11, 21):
-            for x in range(6, 10):
-                t.put(x, y0, FORGE[3] if x < 8 else FORGE[2])
-                t.put(x, y0 + 1, FORGE[2] if x < 8 else FORGE[1])
-            t.put(6, y0, FORGE[4])
-        # les deux bras en volute : un U de la tige aux bobèches de côté
-        for x in range(5, 11):
-            t.put(x, 16, FORGE[3] if x < 8 else FORGE[2])
-            t.put(x, 17, FORGE[1])
-        for x, y in ((4, 15), (4, 16), (11, 15), (11, 16)):
-            t.put(x, y, FORGE[2] if x == 4 else FORGE[1])
-        for y in range(12, 16):                     # la tige monte jusqu'à la bobèche du milieu
-            t.put(7, y, FORGE[3])
+            t.put(x, b - 4, FORGE[3] if x < 8 else FORGE[1])
+        for y in range(13, b - 4):
+            t.put(7, y, FORGE[4] if y % 6 == 0 else FORGE[3])
             t.put(8, y, FORGE[1])
-        # les bobèches (des coupelles de fer) et les bougies
-        for x0, l, y0, yb in BOUGIES:
-            for x in range(x0 - 1, x0 + l + 1):
-                t.put(x, yb, FORGE[3] if x <= x0 else FORGE[2])
-            for y in range(y0, yb):
-                t.put(x0, y, CIRE[2] if l > 1 else CIRE[1])
-                if l > 1:
-                    t.put(x0 + 1, y, CIRE[1])
-            t.put(x0, y0, CIRE[3])                  # le haut, éclairé
-            t.put(x0 + l - 1, y0 + 2, CIRE[3])      # une coulure de cire
-        im = t.fini()
-        px = im.load()
-        for k, (x0, l, y0, yb) in enumerate(BOUGIES):
-            if flamme is None:
-                px[x0 + l - 1, y0 - 1] = OUT + (255,)    # la mèche
-                continue
-            # la flamme : son cœur clair, son tour orangé ; elle penche d'un côté, puis de l'autre
-            d = (flamme + k) % 2
-            xm = x0 + l - 1
-            for x, y, c in ((xm, y0 - 1, FEU[4]), (xm - d, y0 - 2, FEU[3]), (xm + 1 - d, y0 - 2, FEU[2]), (xm - d + (1 if l > 1 else 0), y0 - 3, FEU[2])):
-                px[x, y] = c + (255,)
-        return im
+        # la bague, au tiers du fût
+        for x in range(6, 10):
+            t.put(x, b - 12, FORGE[3] if x < 8 else FORGE[2])
+            t.put(x, b - 11, FORGE[2] if x < 8 else FORGE[1])
+        # la console sous la lanterne : deux petites volutes
+        for x, y in ((6, 13), (5, 12), (9, 13), (10, 12)):
+            t.put(x, y, FORGE[2] if x < 8 else FORGE[1])
+        # la lanterne : un fond de fonte, la vitre entre ses montants, le chapeau, le fleuron
+        for x in range(5, 11):
+            t.put(x, 11, FORGE[2] if x < 8 else FORGE[1])
+        on = flamme is not None
+        for y in range(5, 11):
+            for x in range(5, 11):
+                if x in (5, 10):
+                    c = FORGE[3] if x == 5 else FORGE[1]
+                elif on:
+                    # la lueur : claire au milieu, plus chaude au bord ; la flamme monte d'un côté puis de l'autre
+                    coeur = 7 <= y <= 9 and 7 - (flamme if y == 7 else 0) <= x <= 8 + (1 - flamme if y == 7 else 0)
+                    c = FEU[4] if coeur else FEU[3] if 6 <= x <= 9 and 6 <= y <= 10 else FEU[2]
+                else:
+                    c = VITRE_LAMPE[2] if (x == 6 and y <= 7) else VITRE_LAMPE[1] if x < 8 else VITRE_LAMPE[0]
+                t.put(x, y, c)
+        for y, x0, x1 in ((4, 4, 11), (3, 5, 10), (2, 6, 9)):          # le chapeau, qui déborde
+            for x in range(x0, x1 + 1):
+                t.put(x, y, FORGE[4] if x == x0 else FORGE[3] if x < 8 else FORGE[2])
+        t.put(7, 1, FORGE[3])                                          # le fleuron
+        t.put(8, 1, FORGE[2])
+        t.put(7, 0, FORGE[4])
+        return t.fini()
     finally:
         H, BAS, FACE = garde
 
 
-CANDELABRE = [candelabre(), candelabre(0), candelabre(1)]
+REVERBERE = [reverbere(), reverbere(0), reverbere(1)]
 
 
 # ---------- l'escalier (un essai : l'étage, js/engine/etage.js) ----------
@@ -2095,9 +2080,9 @@ def main():
     print(f'assets/blocs.png : {len(DESSINS)} images de {W} × {H}')
     hauts, h = murs_hauts()
     fen = fenetres_hautes()
-    grille(hauts + fen + CANDELABRE, W, h, COLONNES_HAUTS).save(os.path.join(ASSETS, 'murs_hauts.png'))
+    grille(hauts + fen + REVERBERE, W, h, COLONNES_HAUTS).save(os.path.join(ASSETS, 'murs_hauts.png'))
     print(f'assets/murs_hauts.png : {len(hauts)} murs puis {len(fen)} fenêtres (à partir de {len(hauts)}), '
-          f'puis le candélabre (à partir de {len(hauts) + len(fen)}), images de {W} × {h}')
+          f'puis le réverbère (à partir de {len(hauts) + len(fen)}), images de {W} × {h}')
     if '--apercu' in sys.argv:
         apercu_piece(sheet)
 

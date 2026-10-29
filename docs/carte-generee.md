@@ -414,20 +414,20 @@ Le Marché vend toujours les outils.
   - **Quand la nuit tombe**, ses deux images alternent au hasard pour la faire scintiller.
     Elle pose aussi sa lumière dans le voile de l'heure : une flaque cyan sur l'herbe et sa vitre,
     qui vacillent un peu, plus un petit halo (`stepLanterns`, `BLOCS_CARTE.lanterne`).
-- **Le candélabre** (fiche 15 ; à l'Atelier : 2 lingots de fer, 2 miels pour la cire des bougies,
-  1 fibre pour les mèches) : un pied de fer forgé (trois pattes recourbées, une tige torsadée à
-  deux nœuds, deux bras en volute) et trois bougies, deux blocs de haut sur sa case, un demi-bloc
-  de large pour le pied et la tige.
+- **Le réverbère** (fiche 15, il a remplacé le candélabre : sa sorte garde le nom `candelabre`, les
+  parties d'avant n'ont rien à migrer ; à l'Atelier : 2 lingots de fer, 1 pierre, 1 huile pour la
+  lampe, 1 fibre pour la mèche) : un socle de pierre, un fût de fonte (sa bague, sa console) et
+  une lanterne vitrée sous son chapeau, deux blocs de haut sur sa case, un demi-bloc de large.
   - **Où le poser** : comme la lanterne (un bloc `lumiere` sans genre, un décor : il ne fait
     d'une pièce ni la maison ni un bâtiment), dehors, dans la maison, dans une enceinte vide et à
     l'étage (`ETAGE_BLOCS`) ; onglet Maison de Construire. Il arrête le passage.
   - **Son image** : dans la planche des murs hauts (`murs_hauts.png`, après les fenêtres :
-    `BLOCS_CARTE.hauts.candelabre`, `scripts/carte/blocs.py` `candelabre`), éteint puis allumé
+    `BLOCS_CARTE.hauts.candelabre`, `scripts/carte/blocs.py` `reverbere`), éteint puis allumé
     en deux images ; sans cette planche, celle de la lanterne éteinte. Comme les murs hauts, il
     s'efface un peu devant quelqu'un et en mode Construire.
-  - **Quand la nuit tombe** (avec les lanternes : `stepLanterns`, `BLOCS_CARTE.candelabre`), ses
-    flammes bougent et il pose une lumière chaude dans le voile de l'heure : une flaque sur
-    l'herbe, la lueur des bougies en haut, un halo.
+  - **Quand la nuit tombe** (avec les lanternes : `stepLanterns`, `BLOCS_CARTE.candelabre`), sa
+    lanterne luit et vacille, et il pose une lumière chaude dans le voile de l'heure : une flaque
+    sur l'herbe, la lueur de la lanterne en haut, un halo.
 - **La ruche** (au Marché, rayon Animaux : 200 pièces ; `DATA.RUCHE`, `js/engine/ruches.js`)
   arrive dans l'inventaire et se pose dehors, sur l'herbe, comme un bloc. Elle arrête le passage.
   - **Elle se remplit la nuit** (`remplirRuches`) : au bout de `RUCHE.NUITS` nuits (2), elle est
