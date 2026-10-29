@@ -1,6 +1,7 @@
 /* carte/ferme/camera.js — la scène de la ferme : la caméra (zoom, glissement, repères).
  *
- * Le zoom (VIEW_ROWS rangées en hauteur), le centre de la vue borné à la carte, l'élan après un
+ * Le zoom (VIEW_ROWS rangées en hauteur ; sur téléphone, deux doigts pincés le réduisent
+ * jusqu'à ZOOM.min : pincement), le centre de la vue borné à la carte, l'élan après un
  * glissement, les trois repères et ce que la page en sait (onView), panTo().
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
@@ -10,7 +11,8 @@
   'use strict';
 
   const F = global.FermeCarte;
-  const { T, VIEW_ROWS, INERTIA_MS, PAN_MS } = F.C;
+  const K = global.CarteKit;
+  const { T, VIEW_ROWS, ZOOM, INERTIA_MS, PAN_MS } = F.C;
   const { clamp, reducedMotion } = F;
 
   F.partie({
@@ -18,14 +20,16 @@
     /* ---------- caméra : zoom, glissement, élan ---------- */
 
     // Zoom : VIEW_ROWS rangées sont visibles en hauteur (toute la carte si elle est plus
-    // petite) et la zone est entièrement couverte (jamais de bande, jamais rien hors de la
-    // carte). Le centre courant est conservé.
+    // petite), fois le dézoom du pincement (zoomK, de ZOOM.min à 1), et la zone est
+    // entièrement couverte (jamais de bande, jamais rien hors de la carte). Le centre courant
+    // est conservé.
     fit() {
       const w = this.scale.width, h = this.scale.height;
       if (!w || !h) return;
       const cam = this.cameras.main;
       cam.setSize(w, h);
-      cam.setZoom(Math.max(h / Math.min(this.world.h, VIEW_ROWS * T), w / this.world.w));
+      const plein = Math.max(h / this.world.h, w / this.world.w);
+      cam.setZoom(Math.max(plein, Math.max(h / Math.min(this.world.h, VIEW_ROWS * T), w / this.world.w) * (this.zoomK || 1)));
       cam.setBounds(0, 0, this.world.w, this.world.h);
       this.setCentre(this.cx, this.cy);
     },
@@ -39,6 +43,62 @@
       this.cy = clamp(cy, vh / 2, this.world.h - vh / 2);
       cam.centerOn(this.cx, this.cy);
       return Math.abs(this.cx - cx) < 0.01 && Math.abs(this.cy - cy) < 0.01;
+    },
+
+    // Sur téléphone et tablette : deux doigts pincés ou écartés sur la carte règlent le zoom,
+    // du zoom de départ (le plus proche) à ZOOM.min fois lui ; le point entre les deux doigts
+    // reste sous eux. Les doigts sont lus sur le canvas lui-même (Phaser ne suit qu'un doigt) :
+    // le deuxième posé annule ce que faisait le premier (glissement, marche, appui maintenu,
+    // labour, coup fort) ; ensuite, jusqu'à ce que les doigts soient levés, ils ne font rien
+    // d'autre. Rien à la souris, rien sur ordinateur.
+    makePincement() {
+      const cv = this.game.canvas;
+      if (!cv || !K.appareilMobile() || cv.dataset.pincement) return;
+      cv.dataset.pincement = '1';
+      const ecart = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+      const milieu = (t) => {
+        const r = cv.getBoundingClientRect();
+        return { x: (((t[0].clientX + t[1].clientX) / 2 - r.left) * this.scale.width) / r.width, y: (((t[0].clientY + t[1].clientY) / 2 - r.top) * this.scale.height) / r.height };
+      };
+      cv.addEventListener('touchstart', (e) => {
+        if (e.touches.length < 2 || !this.scene.isActive()) return;
+        const d = this.drag;
+        if (d) {
+          clearTimeout(d.holdTimer);
+          if (d.fort) this.chargeCancel(d);
+          if (d.labour) this.clearLabourMarks();
+          this.drag = null;
+        }
+        if (this.manette) this.manette.stop();
+        this.vx = this.vy = 0;
+        this.pan = null;
+        this.setHover(null);
+        this.pince = { d: ecart(e.touches) || 1, k: this.zoomK || 1 };
+      }, { passive: true });
+      cv.addEventListener('touchmove', (e) => {
+        const P = this.pince;
+        if (!P || e.touches.length < 2) return;
+        if (this.manette) this.manette.stop();
+        this.zoomer(P.k * (ecart(e.touches) / P.d), milieu(e.touches));
+      }, { passive: true });
+      const fin = (e) => { if (!e.touches.length) this.pince = null; };
+      cv.addEventListener('touchend', fin, { passive: true });
+      cv.addEventListener('touchcancel', fin, { passive: true });
+    },
+
+    // Le dézoom `k` (borné à ZOOM.min…1), le point `a` de l'écran (px du canvas) gardé sous
+    // le doigt.
+    zoomer(k, a) {
+      const cam = this.cameras.main, z0 = cam.zoom;
+      k = clamp(k, ZOOM.min, 1);
+      if (k === this.zoomK) return;
+      const w = this.scale.width, h = this.scale.height;
+      const px = this.cx + (a.x - w / 2) / z0, py = this.cy + (a.y - h / 2) / z0;
+      this.zoomK = k;
+      this.fit();
+      const z = cam.zoom;
+      // (dehors, la vue reste sur le personnage : seul le zoom change)
+      if (!this.suitPerso()) this.setCentre(px - (a.x - w / 2) / z, py - (a.y - h / 2) / z);
     },
 
     stepInertia(dt) {

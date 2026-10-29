@@ -365,7 +365,7 @@
   }
 
   global.CarteKit = Object.assign(global.CarteKit || {}, {
-    T, v, reduit, ratio, QUALITE, qualite, qualiteChoisie, reglages, reglerQualite, extrude, planche, planchePerso, saisie, regard, PAS, CADENCE, FOULEE, imageMarche, allure, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
+    T, v, reduit, ratio, appareilMobile, QUALITE, qualite, qualiteChoisie, reglages, reglerQualite, extrude, planche, planchePerso, saisie, regard, PAS, CADENCE, FOULEE, imageMarche, allure, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
     cycle, imageA, animTuiles, pasAnimTuiles, TEXTE, texte,
   });
 })(window);
