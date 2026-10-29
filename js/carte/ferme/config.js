@@ -228,8 +228,8 @@
       // à carreaux dans chaque matière, seule puis prolongée à gauche, à droite, des deux côtés
       // (`prolonge` : 4 × 16 images par matière) ; les autres modèles, 16 images par matière
       fenetres: { modeles: { mur_fenetre: 441, fenetre_ronde: 889, fenetre_cintree: 1001, fenetre_volets: 1113, fenetre_vitrail: 1225 }, prolonge: ['mur_fenetre'] },
-      // le candélabre (fiche 15 : deux blocs de haut, scripts/carte/blocs.py candelabre), rangé après
-      // les fenêtres : éteint, puis allumé (BLOCS_CARTE.candelabre.allumee)
+      // le réverbère (la sorte « candelabre », fiche 15 : deux blocs de haut, scripts/carte/blocs.py
+      // reverbere), rangé après les fenêtres : éteint, puis allumé (BLOCS_CARTE.candelabre.allumee)
       candelabre: 1337 },
     // la barrière : 16 images raccordées aux barrières voisines (barrieres + masque, comme les murs)
     barrieres: 50,
@@ -245,15 +245,16 @@
       vitre: { rayon: 11, teinte: 0xd8fff6, alpha: 0.9, dx: 4, dy: -11 },
       halo: { couleur: 0x4ff0d2, rayon: 20, intensite: 0.09, attenuation: 0.08 },
     },
-    // le candélabre (fiche 15 : un bloc `lumiere` comme la lanterne, chantier.js stepLanterns), deux
-    // blocs de haut : son image dans la planche des murs hauts (hauts.candelabre ; sans elle, celle
-    // de la lanterne éteinte), allumé avec la lanterne ; ses flammes (les images `allumee`) bougent,
-    // sa lumière est chaude : une large flaque `sol` au pied, la lueur des bougies `vitre` (en haut,
-    // dy px au-dessus du pied de la case), un halo
+    // le réverbère (la sorte « candelabre », qui a remplacé le candélabre ; fiche 15 : un bloc
+    // `lumiere` comme la lanterne, chantier.js stepLanterns), deux blocs de haut : son image dans la
+    // planche des murs hauts (hauts.candelabre ; sans elle, celle de la lanterne éteinte), allumé
+    // avec la lanterne ; sa lueur (les images `allumee`) vacille, sa lumière est chaude : une large
+    // flaque `sol` au pied, la lueur de sa lanterne `vitre` (en haut, dy px au-dessus du pied de la
+    // case), un halo
     candelabre: {
       allumee: [1338, 1339], fps: 5, vacille: 0.1,
       sol: { rayon: 62, aplati: 0.7, teinte: 0xffc070, alpha: 0.95, dx: 0, dy: -6 },
-      vitre: { rayon: 16, teinte: 0xffe2a8, alpha: 0.95, dx: 0, dy: -32 },
+      vitre: { rayon: 16, teinte: 0xffe2a8, alpha: 0.95, dx: 0, dy: -33 },
       halo: { couleur: 0xffb050, rayon: 22, intensite: 0.1, attenuation: 0.08 },
     },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur

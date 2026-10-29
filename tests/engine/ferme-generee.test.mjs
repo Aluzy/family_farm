@@ -1330,11 +1330,12 @@ test('ferme générée : la lanterne scintillante (un champignon lumineux de la 
   assertEqual(poserBloc(s, 'lanterne', p.dedans + 1).ok, false, 'pas dans un bâtiment');
 });
 
-test('ferme générée : le candélabre (fiche 15 : fer, miel, fibre) éclaire comme la lanterne, dehors comme dedans, sans faire la maison', () => {
+test('ferme générée : le réverbère (fiche 15, la sorte candelabre : fer, pierre, huile, fibre) éclaire comme la lanterne, dehors comme dedans, sans faire la maison', () => {
   const s = reach(chantier('cand1'), 'poulailler');
-  setInv(s, { lingot_fer: 2, miel: 3, fibre: 1, mur_pierre: 30, porte: 2, paillasse: 1 });
+  setInv(s, { lingot_fer: 2, pierre: 1, huile: 2, fibre: 1, mur_pierre: 30, porte: 2, paillasse: 1 });
   assert(craft(s, 'candelabre').ok);
-  assertEqual([countItem(s, 'candelabre'), countItem(s, 'lingot_fer'), countItem(s, 'miel'), countItem(s, 'fibre')], [1, 0, 1, 0]);
+  assertEqual([countItem(s, 'candelabre'), countItem(s, 'lingot_fer'), countItem(s, 'pierre'), countItem(s, 'huile'), countItem(s, 'fibre')], [1, 0, 0, 1, 0]);
+  assertEqual(DATA.OBJETS.candelabre.nom, 'Réverbère');
   assertEqual(craft(s, 'candelabre').ok, false, 'plus de fer');
   const B = DATA.ATELIER.BLOCS.candelabre;
   assert(B.lumiere && B.bloque && !B.dedans && !B.dehors);

@@ -253,7 +253,7 @@ const HELP = {
         ['L\'Atelier', 'Seules les semences s\'achètent : les outils, les bêtes (un nid garni pour une poule, une pierre à sel et du foin pour un mouton ou une vache, un licol et des friandises pour le cheval), la ruche, le bac à fleurs et les meubles se fabriquent à l\'Atelier, avec ce que tu récoltes à la ferme et dans le monde. Les aliments se cultivent, se cuisinent, ou viennent des hameaux par la calèche.'],
         ['Le cheval', 'En selle, il te porte partout dans le pays, plus vite qu\'à pied ; quand tu en descends, il rentre à l\'Écurie.'],
         // fiche 15 : les blocs qui éclairent la nuit (BLOCS lumiere : js/carte/ferme/chantier.js, stepLanterns)
-        ['Éclairer la nuit', `La lanterne scintillante (${recetteAtelier('lanterne')}) et le candélabre, un pied de fer forgé haut de deux blocs et ses trois bougies (${recetteAtelier('candelabre')}), se fabriquent à l'Atelier et se posent avec 🔨 Construire, dehors comme dans la maison : la nuit, ils s'allument et éclairent autour d'eux.`],
+        ['Éclairer la nuit', `La lanterne scintillante (${recetteAtelier('lanterne')}) et le réverbère, une lanterne à huile sur un fût de fonte haut de deux blocs (${recetteAtelier('candelabre')}), se fabriquent à l'Atelier et se posent avec 🔨 Construire, dehors comme dans la maison : la nuit, ils s'allument et éclairent autour d'eux.`],
         // fiche 17 : choisir son lit
         ['Ton lit', 'Ton personnage dort dans le premier lit (ou la première paillasse) de tes pièces closes. Touche un autre lit, toit levé ou à l\'étage : « Tu veux choisir ce lit ? ». Oui, il y dormira ; le membre de la famille qui y dormait prend ton ancien lit.'],
         // fiche 19 : le compagnon aide à la ferme (js/engine/compagnon.js)

@@ -76,7 +76,7 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   (nichoir : le Poulailler, mangeoire : l'Étable, bac à semis : la Serre, meule : le Moulin) ;
   le **Silo** se bâtit dehors en blocs de silo (2 colonnes de 3 blocs, 10 blés par bloc ; un
   appui long dessus pour l'agrandir). Murs rehaussés, étage par un escalier, toits, meubles, chemins,
-  barrières, lanternes, candélabres, ruches et bacs à fleurs se posent de la même façon.
+  barrières, lanternes, réverbères, ruches et bacs à fleurs se posent de la même façon.
 - **Outils** (Marché ou Atelier) : la **houe** laboure l'herbe ; la **hache** coupe arbres et
   buissons (un sapin laisse une pomme de pin, un autre arbre un gland : un arbre abattu ne
   repousse pas, mais une graine se plante sur n'importe quelle case d'herbe libre) ; la

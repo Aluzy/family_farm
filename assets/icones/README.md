@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 431 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 432 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -140,6 +140,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/house_with_garden.png" width="48" height="48" alt=""> | 🏡 | [`house_with_garden.png`](house_with_garden.png) |
 | <img src="apercu/convenience_store.png" width="48" height="48" alt=""> | 🏪 | [`convenience_store.png`](convenience_store.png) |
 | <img src="apercu/izakaya_lantern.png" width="48" height="48" alt=""> | 🏮 | [`izakaya_lantern.png`](izakaya_lantern.png) |
+| <img src="apercu/izakaya_lantern+nut_and_bolt.png" width="48" height="48" alt=""> | 🏮‍🔩 | [`izakaya_lantern+nut_and_bolt.png`](izakaya_lantern+nut_and_bolt.png) |
 | <img src="apercu/amphora.png" width="48" height="48" alt=""> | 🏺 | [`amphora.png`](amphora.png) |
 | <img src="apercu/cow.png" width="48" height="48" alt=""> | 🐄 | [`cow.png`](cow.png) |
 | <img src="apercu/snail.png" width="48" height="48" alt=""> | 🐌 | [`snail.png`](snail.png) |
