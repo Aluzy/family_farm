@@ -12,7 +12,7 @@
  * Un appui sur le silo (ou ses caisses) ouvre la fenêtre du Silo (siloAt) ; un appui long, le mode
  * Construire avec un bloc de silo en main (js/farm-stage.js) ; en mode Construire, un appui sur
  * l'image vise la case du pied de sa colonne (siloCaseAt). Le personnage qui passe derrière le
- * voit à travers (stepSilo).
+ * voit à travers (stepSilo). Il porte une ombre au soleil (js/carte/ferme/soleil.js, sunCasters).
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype : `this` est la
  * scène, `this.ctx` ce que la page lui a donné au montage (voir docs/architecture-phaser.md).
@@ -21,7 +21,7 @@
   'use strict';
 
   const F = global.FermeCarte;
-  const { T } = F.C;
+  const { T, SOLEIL } = F.C;
 
   // `bloc` px de haut par bloc ; le couvercle d'une caisse, `dessus` px.
   // Ce qu'il faut pour un silo (DATA.ATELIER.SILO) : `largeur` colonnes hautes de `hauteur` blocs.
@@ -180,11 +180,13 @@
       }
     }
     g.putImageData(img, 0, 0);
+    cv.sol = bas;   // (le sol sous le milieu du fût : `bas` px au-dessus du bas de l'image)
     return cv;
   }
 
   // L'image des colonnes `cols` : un canvas (largeur : les colonnes ; hauteur : la plus haute,
-  // son couvercle ou son dôme).
+  // son couvercle ou son dôme) ; `sol` : la hauteur du sol au-dessus de son bas (le pied du fût,
+  // pour son ombre ; 0 pour des caisses).
   function dessin(cols) {
     const n = cols.length, maxH = Math.max(...cols.map((c) => c.h));
     // les colonnes pleines côte à côte, de même hauteur : un corps pour elles
@@ -206,6 +208,7 @@
       if (p.cv) g.drawImage(p.cv, p.i * T, H - p.cv.height);
       else for (let j = 0; j < p.caisses; j++) caisse(g, p.i * T, H - j * S.bloc, j === p.caisses - 1);
     }
+    cv.sol = Math.max(0, ...parts.map((p) => (p.cv ? p.cv.sol : 0)));
     return cv;
   }
 
@@ -225,7 +228,7 @@
       const c0 = cols[0].case % W, r = Math.floor(cols[0].case / W);
       const x = c0 * T, y = (r + 1) * T;
       const img = this.add.image(x, y, tex).setOrigin(0, 1).setDepth(y);
-      this.silo = { cle, tex, img, cols, x, y, w: cv.width, h: cv.height, forme: cols.some((c) => c.pleine) };
+      this.silo = { cle, tex, img, cols, x, y, w: cv.width, h: cv.height, forme: cols.some((c) => c.pleine), pied: y - Math.max(SOLEIL.base, cv.sol) };
       this.sunDirty = true;
     },
 

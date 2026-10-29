@@ -6,7 +6,7 @@
  * matin, vers la droite le soir, longues quand le soleil est bas, courtes à midi (presque
  * cachées derrière). Elles s'estompent à l'aube et au crépuscule ; la nuit, il n'y en a pas.
  *
- * Ce qui porte une ombre : les bâtiments, le puits, la citerne, les arbres du verger, et les
+ * Ce qui porte une ombre : les bâtiments, le puits, la citerne, le silo, les arbres du verger, et les
  * arbres, buissons, barrières et rochers de la carte (leurs images, js/carte/ferme/decor.js,
  * pioche.js). Chaque ombre est la silhouette de son image, posée sur son pied et inclinée
  * (une transformation du canevas : cisaillement et écrasement). Les murs bâtis en blocs et les
@@ -68,6 +68,7 @@
       };
       sprite(this.well);
       sprite(this.tank);
+      if (this.silo) sprite(this.silo.img, this.silo.pied);
       for (const e of (this.trees || new Map()).values()) sprite(e.sprite);
       for (const o of (this.occluders || []).concat(this.rocks || [])) if (o.img && o.tex && !o.gone) sprite(o.img, o.foot);
       // les arbres et les buissons du grand monde près de la vue (vegetation.js)
