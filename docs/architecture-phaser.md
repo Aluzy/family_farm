@@ -104,7 +104,7 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | `sol.js` | textures et dessins de secours, sol cuit par régions (`bakeGround`, `syncRegions`, `paintRegion`, `drawLayer` ; la ferme générée, `ctx.carte`, à la place de la carte de Tiled ; le sol du grand monde autour, `paintMonde`, `ctx.monde`), terre labourée, grille de la houe, tuiles animées (repeintes dans la vue seulement), réparation du fond |
 | `decor.js` | arbres, buissons et barrières (`findOccluders`), herbe haute ; hors de la vue, ni eux ni les rochers ne sont dessinés (`cullDecor`) |
 | `soleil.js` | les ombres portées qui suivent le soleil : silhouettes des bâtiments, arbres, barrières et rochers, inclinées selon l'heure (vers la gauche le matin, la droite le soir, courtes à midi), peintes dans un seul canevas qui couvre la vue et une marge (`SOLEIL`) |
-| `camera.js` | zoom, glissement, élan, repères, `panTo` |
+| `camera.js` | zoom (et dézoom à deux doigts), glissement, élan, repères, `panTo` |
 | `etiquettes.js` | étiquettes, bulles des tas (et des ruches pleines), bulle « +x », bulle de la citerne, bulles du dialogue du matin (DOM) |
 | `hache.js`, `pioche.js`, `peche.js` | les arbres, les buissons (la ferme générée : coupés d'un coup, 2 bois pour un grand, 1 pour un petit), les rochers, l'étang et la mare ; chaque coup de hache ou de pioche lâche ses morceaux au sol |
 | `chantier.js` | la ferme générée : les blocs posés (murs, portes, paillasses, Atelier), le mode Construire, les pièces closes, la paillasse où il dort |
@@ -418,6 +418,13 @@ dimensions et ses rectangles dans `DEFAULT_W`, `DEFAULT_H` et `DEFAULT_OBJECTS`
   montre deux rangées de plus, à la même échelle. Sur un téléphone de 390 px de large, on voit
   environ 11 tuiles de large ; sur un ordinateur, une quarantaine. La carte étant plus grande
   que la vue dans les deux sens, elle glisse aussi de haut en bas.
+- **Dézoom au doigt** (téléphone et tablette seulement : `CarteKit.appareilMobile`) : deux doigts
+  pincés ou écartés sur la ferme multiplient ce zoom par un facteur de `ZOOM.min` (1 / √3) à 1.
+  Le zoom de départ est le plus proche ; au plus loin, la vue couvre environ trois écrans (de
+  11 × 21 à environ 18 × 36 tuiles sur un téléphone). Le point entre les doigts reste sous eux ;
+  dehors, la vue reste sur le personnage. Phaser ne suit qu'un doigt : les deux doigts sont lus
+  sur le canvas (`camera.js`, `makePincement`), et le deuxième posé annule ce que faisait le
+  premier (glissement, marche, appui maintenu, labour, coup fort). Rien sur ordinateur.
 - **Trois repères** (`makeScreens()`), calculés depuis les rectangles de la carte : l'étable
   (`grange`), la maison avec la zone de culture, le moulin avec la serre. Ce sont les trois
   points du bas de la carte : un appui y fait glisser la vue, en largeur et en hauteur ; le

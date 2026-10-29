@@ -190,6 +190,7 @@
         this.manette = K.manette(this, () => this.suitPerso() && !!this.drag && !this.drag.labour && !this.drag.held && !this.drag.meuble
           && !this.fishing && !(this.ctx.lastModel && this.ctx.lastModel.coucher));
         I.on('gameout', () => { if (!this.drag) this.setHover(null); });
+        this.makePincement();            // sur téléphone : deux doigts règlent le zoom (camera.js)
         I.on('wheel', (p, over, dx, dy) => { if (this.suitPerso()) return; this.vx = this.vy = 0; this.pan = null; this.setCentre(this.cx + ((dx || dy) * pixelRatio()) / this.cameras.main.zoom, this.cy); });
         this.scale.on('resize', () => this.fit());
         this.fit();
@@ -285,8 +286,8 @@
 
       onDown(pointer) {
         // Un deuxième doigt est ignoré ; le même pointeur qui rappuie repart de zéro (cas d'un
-        // relâchement perdu, par exemple hors de la fenêtre).
-        if (this.drag && this.drag.id !== pointer.id) return;
+        // relâchement perdu, par exemple hors de la fenêtre). Pendant un pincement, rien.
+        if (this.pince || (this.drag && this.drag.id !== pointer.id)) return;
         this.vx = this.vy = 0;
         this.pan = null;
         const wp = this.cameras.main.getWorldPoint(pointer.x, pointer.y);

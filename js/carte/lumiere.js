@@ -73,7 +73,9 @@
       const v = scene.cameras.main.worldView;
       const W = Math.ceil((Math.ceil(v.width) + 2 * MARGE) / p), H = Math.ceil((Math.ceil(v.height) + 2 * MARGE) / p);
       if (!rt) rt = scene.add.renderTexture(0, 0, W, H).setOrigin(0).setDepth(depth).setBlendMode(Ph.BlendModes.MULTIPLY);
-      else if (rt.width !== W || rt.height !== H) rt.setSize(W, H);
+      // (resize : sa texture aussi ; setSize ne change que la taille de l'objet, et la carte de
+      // lumière ne couvrirait plus la vue agrandie : le dézoom au doigt, l'écran tourné)
+      else if (rt.width !== W || rt.height !== H) rt.resize(W, H);
       const x0 = Math.floor(v.x) - MARGE, y0 = Math.floor(v.y) - MARGE;
       rt.setPosition(x0, y0).setScale(p).setVisible(true);
       rt.fill(color, 1);

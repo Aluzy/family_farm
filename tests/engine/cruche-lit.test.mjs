@@ -313,3 +313,11 @@ test('toucher un lit : le couchage sous le doigt, seulement quand le toit est le
   assertEqual(s.litAt(c(F.PAILLASSE - COLS).x, c(F.PAILLASSE - COLS).y), null, 'au-dessus d\'une paillasse : rien');
   assertEqual(s.litAt(c(at(X0 + 4, Y0 + 2)).x, c(at(X0 + 4, Y0 + 2)).y), null, 'le sol de la maison');
 });
+
+test('les blocs qui bloquent (DATA, bloque) ferment leur case sur la carte : ruche, bac à fleurs…', () => {
+  const B = FermeCarte.C.BLOCS_CARTE;
+  // (un meuble, ou un bloc dessiné comme lui, porte son « bloque » dans le modèle : stage.js, meubleDe)
+  const manquent = Object.entries(DATA.ATELIER.BLOCS).filter(([id, b]) => b.bloque && !b.meuble && !b.dessin && !B.bloquent.includes(id)).map(([id]) => id);
+  assertEqual(manquent, []);
+  assert(B.bloquent.includes('ruche') && B.bloquent.includes('bac_fleurs'));
+});
