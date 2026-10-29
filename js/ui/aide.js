@@ -291,7 +291,19 @@ const HELP = {
   // Fiche 11 : l'équipement de la famille et le sac à provisions (aussi le « ? » de la fiche d'un membre).
   equipement: () => {
     const Q = DATA.EQUIPEMENT, O = DATA.OBJETS, R = DATA.ATELIER.RECETTES;
-    const recette = (id) => Object.entries(R[id].entrees).map(([o, n]) => `${n} ${O[o].nom.toLowerCase()}`).join(', ');
+    const liste = (e) => Object.entries(e).map(([o, n]) => `${n} ${O[o].nom.toLowerCase()}`).join(', ');
+    const recette = (id) => liste(R[id].entrees);
+    // (une pièce qui ne se fabrique pas à l'Atelier : elle se commande à l'atelier d'un hameau,
+    // data/ile.json, comme les vêtements de laine cousus aux Genêts)
+    const hameau = (id) => {
+      for (const A of Object.values(DATA.ILE.ATELIERS)) {
+        const r = Object.values(A.recettes || {}).find((x) => x.sortie && id in x.sortie);
+        const h = DATA.PLAN_MONDE.HAMEAUX.GARANTIS.find((x) => x.id === A.hameau);
+        if (r) return `${A.nom}${h ? ` (${h.nom})` : ''} : ${liste(r.entrees)}${r.pieces ? `, ${formatNumber(r.pieces)} pièces` : ''}`;
+      }
+      return null;
+    };
+    const source = (id) => (R[id] ? `Atelier : ${recette(id)}${R[id].debloque ? ` (dès le niveau ${unlockLevel(R[id].debloque)})` : ''}` : hameau(id));
     const pieces = Object.keys(Q.PIECES);
     const enfant = pieces.filter((id) => Q.PIECES[id].enfant).map((id) => O[id].nom.toLowerCase());
     return {
@@ -300,9 +312,9 @@ const HELP = {
       lignes: [
         ['La fiche', `Dans la Famille, un onglet par membre ouvre sa fiche : ${Q.CASES} cases d'équipement à gauche, son portrait au milieu (on y voit ce qu'il porte), ses jauges à droite. Touche une case vide pour l'équiper d'une pièce de l'inventaire, une case pleine pour la retirer : elle revient dans l'inventaire. Une pièce portée n'est plus dans l'inventaire et ne se vend pas.`],
         ['Les règles', `Une pièce par place : ${Object.values(Q.PLACES).map((p) => p.toLowerCase()).join(', ')} (pas deux chapeaux, pas un tablier sur une salopette). Un enfant porte ce qui existe à sa taille : ${enfant.join(', ')}.`],
-        ...pieces.map((id) => [O[id].nom, `${effetTexte(id)} Atelier : ${recette(id)}${R[id].debloque ? ` (dès le niveau ${unlockLevel(R[id].debloque)})` : ''}.`]),
+        ...pieces.map((id) => [O[id].nom, `${effetTexte(id)}${source(id) ? ` ${source(id)}.` : ''}`]),
         ['Pour qui ?', 'Les effets valent pour toi, le personnage principal. Pour un autre membre, seulement dans ce qu\'il fait de lui-même sur la ferme : les bottes lui donnent moins faim quand il marche, le tablier quand il t\'aide ; les autres pièces se voient sur lui, sans plus.'],
-        ['Le sac à provisions', `Ta fiche a une quatrième case : ton sac (${Object.entries(Q.SACS).map(([id, s]) => `${O[id].nom.toLowerCase()}, ${s.portions} portions : ${recette(id)}`).join(' ; ')}). Touche-le pour le remplir, à la ferme, d'aliments de l'inventaire ou du réfrigérateur ; ce qu'il contient périme comme dans l'inventaire.`],
+        ['Le sac à provisions', `Ta fiche a une quatrième case : ton sac (${Object.entries(Q.SACS).map(([id, s]) => `${O[id].nom.toLowerCase()}, ${s.portions} portions${source(id) ? `, ${source(id)}` : ''}`).join(' ; ')}). Touche-le pour le remplir, à la ferme, d'aliments de l'inventaire ou du réfrigérateur ; ce qu'il contient périme comme dans l'inventaire.`],
         ['En expédition', 'Loin de la ferme, tu ne manges que ce qu\'il y a dans ton sac : « Manger » y puise, et dit quand il est vide. Une alerte prévient quand tu sors avec un sac vide ou presque, et quand ton énergie baisse loin de la ferme, le sac vide. Sur la ferme, rien ne change.'],
       ],
     };

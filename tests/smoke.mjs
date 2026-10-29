@@ -116,6 +116,13 @@ try {
   await depart.click();
   await page.waitForTimeout(PAUSE_MS);
   if (await depart.isVisible()) erreurs.push('[nouvelle partie] la fenêtre de départ est toujours ouverte');
+  // le médaillon du joueur, en haut à gauche : la Famille (la fiche du personnage, son équipement, son aide)
+  etape = 'médaillon';
+  await clic('.player-head');
+  const fiche = page.locator('.stage-window .help-btn').first();
+  await fiche.waitFor({ state: 'visible', timeout: 10000 }).catch(() => erreurs.push('[médaillon] la fiche de la Famille ne s\'ouvre pas'));
+  if (await fiche.isVisible()) { await fiche.click(); await clic('#help-close'); }
+  await clic('#stage-window-close');
   for (const cible of CARTES) {
     etape = cible;
     await page.waitForFunction(() => window.FermeHote && typeof window.FermeHote.go === 'function', null, { timeout: 10000 });
