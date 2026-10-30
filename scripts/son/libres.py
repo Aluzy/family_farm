@@ -1,10 +1,10 @@
-"""Les enregistrements libres (CC0) de l'arrosoir, de la hulotte, de la grenouille, du chat, du chien et du coq : téléchargés,
+"""Les enregistrements libres (CC0) de l'arrosoir, de la hulotte, de la grenouille, du chat, du chien, du coq et du galop : téléchargés,
 coupés, égalisés.
 
 - l'arrosoir : « Watering with a Watering Can » de Bricklover sur Freesound (CC0). L'original
   (MP3) demande un compte : on prend l'aperçu de haute qualité que Freesound publie (Ogg 192 kb/s),
   bien assez pour un bruit d'une seconde et demie ;
-- la hulotte, la grenouille, le chat, le chien et le coq : BigSoundBank (https://bigsoundbank.com, Joseph Sardin et quelques
+- la hulotte, la grenouille, le chat, le chien, le coq et le galop : BigSoundBank (https://bigsoundbank.com, Joseph Sardin et quelques
   contributeurs), qui publie ses prises de son sous CC0, en AIFF sans perte.
 
 CC0 : aucune obligation ; les auteurs sont tout de même cités dans assets/son/CREDITS.md. Pour
@@ -14,7 +14,8 @@ chaque son du jeu, ce script :
 3. garde les passages choisis à l'écoute (COUPES, en secondes dans l'original), recollés par un
    fondu de 30 ms : pour la hulotte, le long silence entre le premier « hou » et la suite est
    raccourci, le chant reste entier ;
-4. pose un fondu d'entrée et de sortie, et égalise le volume : la tranche de 100 ms la plus forte
+4. pose un fondu d'entrée et de sortie (une boucle, `boucle` s : son début se fond dans la suite de
+   l'enregistrement, qui vient après sa fin ; la reprise est continue, sans fondu ni trou), et égalise le volume : la tranche de 100 ms la plus forte
    au niveau voulu (dB RMS, comme les sons voisins du jeu), les crêtes arrondies sous 0,95 ;
 5. écrit enregistrements/<nom>.flac et sa ligne dans enregistrements/credits.json.
 
@@ -77,6 +78,11 @@ SONS = {
     # chant d'un coq porte loin
     'coq_1': bsb('0283', 'song-of-rooster-s0283.html', 'Joseph Sardin', "Coq : un cocorico franc, de près",
                  [(0.0, 2.2)], (0.01, 0.3), -11),
+    # le cheval monté, au galop : une boucle (le jeu la répète tant qu'il avance) de six foulées
+    # régulières d'un vrai cheval dans l'herbe haute, coupée dans le creux entre deux foulées (le
+    # temps de suspension) aux deux bouts, à la même phase : la reprise ne s'entend pas
+    'galop': dict(bsb('1850', 'horse-gallop-tall-grass-s1850.html', 'Joseph Sardin', "Un cheval au galop dans l'herbe haute",
+                      [(18.28, 22.26)], (0, 0), -14), boucle=0.08),
 }
 
 
@@ -104,10 +110,17 @@ def recolle(x, coupes, xf=0.03):
 
 
 def prepare(nom, o):
-    x = recolle(original(o), o['coupes'])
+    brut = original(o)
+    x = recolle(brut, o['coupes'])
+    if o.get('boucle'):
+        # (le début reçoit en fondu enchaîné ce qui suit la fin dans l'enregistrement : à la reprise, la
+        # fin de la boucle continue sur ce qui la suivait vraiment)
+        k, fin = int(o['boucle'] * SR), int(o['coupes'][-1][1] * SR)
+        r = np.linspace(0, 1, k)
+        x[:k] = x[:k] * r + brut[fin:fin + k] * (1 - r)
     a, b = int(o['fondus'][0] * SR), int(o['fondus'][1] * SR)
-    x[:a] *= np.linspace(0, 1, a) ** 2
-    x[-b:] *= np.linspace(1, 0, b) ** 2
+    if a: x[:a] *= np.linspace(0, 1, a) ** 2
+    if b: x[-b:] *= np.linspace(1, 0, b) ** 2
     h = SR // 10
     fort = max(np.sqrt(np.mean(x[i:i + h] ** 2)) for i in range(0, len(x) - h, h // 2))
     x *= 10 ** (o['niveau'] / 20) / fort

@@ -271,5 +271,12 @@
   "source": "https://bigsoundbank.com/song-of-rooster-s0283.html",
   "titre": "Coq : un cocorico franc, de près",
   "duree": 2.2
+ },
+ "galop": {
+  "auteur": "Joseph Sardin (BigSoundBank)",
+  "licence": "CC0",
+  "source": "https://bigsoundbank.com/horse-gallop-tall-grass-s1850.html",
+  "titre": "Un cheval au galop dans l'herbe haute",
+  "duree": 3.98
  }
 }

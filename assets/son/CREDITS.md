@@ -44,6 +44,7 @@ CC0 et domaine public : aucune obligation. CC BY : citer l'auteur. CC BY-SA : ci
 | animaux/cheval_3 | Petit rire grave (« hu-hu-hu ») | Wildfire Games (0 A.D.) | CC BY-SA 3.0 | https://www.wildfiregames.com/ |
 | animaux/ebrouement_1 | Il s'ébroue | Andune | CC BY 3.0 | https://freesound.org/people/Andune/sounds/61605/ |
 | animaux/ebrouement_2 | Il souffle par les naseaux | ERH | CC BY 3.0 | https://freesound.org/people/ERH/sounds/32043/ |
+| animaux/galop | Un cheval au galop dans l'herbe haute | Joseph Sardin (BigSoundBank) | CC0 | https://bigsoundbank.com/horse-gallop-tall-grass-s1850.html |
 | outils/arrosage_1 | Arrosoir versé sur la terre | Bricklover (Freesound) | CC0 | https://freesound.org/people/Bricklover/sounds/532890/ |
 | outils/arrosage_2 | Arrosoir versé sur la terre | Bricklover (Freesound) | CC0 | https://freesound.org/people/Bricklover/sounds/532890/ |
 | outils/arrosage_3 | Arrosoir versé sur la terre | Bricklover (Freesound) | CC0 | https://freesound.org/people/Bricklover/sounds/532890/ |
