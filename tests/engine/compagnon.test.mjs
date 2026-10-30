@@ -16,7 +16,7 @@
 import { readFileSync } from 'node:fs';
 import { affamer, assert, assertEqual, atelier, boite, construireFrigo, garden, growZone, partie, reach, setInv, test } from './aide.mjs';
 import {
-  addItem, aidant, aRamasserCompagnon, awakeMsAtHour, boiteCount, compagnonEmpeche, countItem, createInitialState, DATA,
+  addItem, aidant, aRamasserCompagnon, arroseesCompagnon, awakeMsAtHour, boiteCount, compagnonEmpeche, countItem, createInitialState, DATA,
   ecouterJournal, eauCompagnon, finAide, faireCompagnon, faitsCompagnon, fridgeCount, jaugeMembre, journeeCompagnon, laisserAider,
   migrate, plant, plantesASoif, ramassables, recipeOutput, removeMember, reparerPartie, seedItem, simulateOffline,
   startNight, tachesCompagnon,
@@ -48,6 +48,8 @@ test('arroser : quelques légumes par sortie, un écart entre deux sorties, une 
   assertEqual(r.map((x) => x.action), Array(C.ARROSER.PAR_FOIS).fill('arroser'), 'une sortie : PAR_FOIS légumes');
   assertEqual(s.potager.parcelles.filter((p) => p.arrose).length, C.ARROSER.PAR_FOIS);
   assertEqual(faitsCompagnon(s).arroser, C.ARROSER.PAR_FOIS);
+  // les cases qu'il a arrosées : la carte ne les prend pas pour des gestes du joueur (stage.js, parAuto)
+  assertEqual(arroseesCompagnon(s).sort(), s.potager.parcelles.filter((p) => p.arrose).map((p) => p.case).sort());
   assert(s.eauMl < eau, 'l\'eau du réservoir');
   assertEqual(s.energie, energie, 'l\'énergie du personnage ne bouge pas');
   assertEqual(jaugeMembre(m), faim - C.ARROSER.PAR_FOIS * C.ARROSER.FAIM, 'chaque plante lui donne faim');
@@ -64,7 +66,7 @@ test('arroser : quelques légumes par sortie, un écart entre deux sorties, une 
   // le lendemain, ça recommence
   s.day += 1;
   heure(s, 9);
-  assertEqual(faitsCompagnon(s).arroser, 0);
+  assertEqual([faitsCompagnon(s).arroser, arroseesCompagnon(s)], [0, []]);
   assertEqual(sortes(s, 'arroser:').length, 1);
   // une plante déjà arrosée, mûre ou sans culture n'a pas soif
   const p = plantesASoif(s)[0];

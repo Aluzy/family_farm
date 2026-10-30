@@ -16,7 +16,7 @@ import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
-import { estTacheCompagnon, faireCompagnon, journeeCompagnon, noterGarde, tachesCompagnon } from '../engine/compagnon.js';
+import { arroseesCompagnon, estTacheCompagnon, faireCompagnon, journeeCompagnon, noterGarde, tachesCompagnon } from '../engine/compagnon.js';
 import { marcherMembre } from '../engine/repas.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
 import { TIRED } from '../engine/stamina.js';
@@ -660,8 +660,8 @@ function robotModel() {
   };
 }
 
-// Ce que les automatisations ont fait aujourd'hui dans la Zone de culture (« recolter:12 »,
-// « planter:12 », « arroser:12 ») : le personnage ne va pas refaire ces gestes sur la carte.
+// Ce que les automatisations et le compagnon ont fait aujourd'hui dans la Zone de culture
+// (« recolter:12 », « planter:12 », « arroser:12 ») : le personnage ne va pas refaire ces gestes sur la carte.
 function autoDone() {
   const out = [];
   const r = state.robot;
@@ -673,6 +673,8 @@ function autoDone() {
   }
   const I = state.irrigation;
   if (I && I.jour === state.day) for (const c of I.faites || I.cases || []) out.push(`arroser:${c}`);
+  // (le compagnon arrose de lui-même, fiche 19 : il fait son geste, pas le personnage)
+  for (const c of arroseesCompagnon(state)) out.push(`arroser:${c}`);
   return out;
 }
 

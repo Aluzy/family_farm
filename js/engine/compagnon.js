@@ -53,7 +53,8 @@ import { enExpedition } from './equipement.js';
 
    state.compagnon = { aide, jour, arroser, cuisiner, ramasser (faits ce jour-là), serie
    (plantes arrosées dans la sortie en cours), prochain: { action: heure absolue }, ml (sa cruche),
-   derniere (la case de la dernière plante arrosée : il continue par la plus proche), garde (le récit, lot 8 :
+   derniere (la case de la dernière plante arrosée : il continue par la plus proche), arrosees (les cases
+   qu'il a arrosées ce jour-là : la carte ne les prend pas pour des gestes du joueur), garde (le récit, lot 8 :
    ce qu'il a fait pendant que le joueur explorait, noterGarde) }. Le champ
    n'existe pas dans une sauvegarde d'avant : reparerPartie (state.js) le remet tel qu'une partie
    neuve l'a, sans changer le format. */
@@ -74,8 +75,15 @@ export function etatCompagnon(state) {
     c.jour = state.day;
     for (const a of ACTIONS_COMPAGNON) c[a] = 0;
     c.serie = 0;
+    c.arrosees = [];
   }
   return c;
+}
+
+// Les cases qu'il a arrosées aujourd'hui (sans rien changer à l'état : le modèle de la carte, js/ui/stage.js).
+export function arroseesCompagnon(state) {
+  const c = state.compagnon;
+  return c && c.jour === state.day && Array.isArray(c.arrosees) ? c.arrosees : [];
 }
 
 // L'option : le laisser prendre ses initiatives (vrai par défaut).
@@ -272,6 +280,8 @@ export function faireCompagnon(state, lieu) {
     p.arroseH = absoluteHours(state);   // elle gagne son stade POUSSE_HEURES heures plus tard
     noteWateredPlots(state);
     c.derniere = p.case;
+    if (!Array.isArray(c.arrosees)) c.arrosees = [];
+    c.arrosees.push(p.case);
     c.serie += 1;
     // (la sortie finit après PAR_FOIS plantes, ou quand plus rien n'a soif)
     const fin = c.serie >= C().ARROSER.PAR_FOIS || c.arroser + 1 >= C().ARROSER.PAR_JOUR || !plantesASoif(state).length;
