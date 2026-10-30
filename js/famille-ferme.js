@@ -34,7 +34,11 @@
  *     « ramasser:<id> », js/engine/compagnon.js) : o.lieu (js/carte/ferme/compagnon.js) dit où se
  *     tenir et le geste (GESTES) ; il y va, fait son geste, puis o.aide fait le travail (la plante
  *     arrosée, sa cruche pleine, le plat préparé, le bois ramassé) et la bulle le dit (« +1 💧 ») ;
- *     une tâche sans chemin est laissée ECHEC s, il passe à la suivante ;
+ *     une tâche sans chemin est laissée ECHEC s, il passe à la suivante ; il enchaîne ses tâches de
+ *     là où il est (SOUFFLE s entre deux), sans repasser par la maison ;
+ *   - un adulte qui flâne ne bouge pas pour rien (FLANE) : il reste un moment où il arrive, ne fait
+ *     pas de trajet de quelques pas, ne vise jamais une case de la maison (son coin peut y tomber) ;
+ *     dans la maison, il change de place rarement, dans la pièce où il est ;
  *   - chacun a faim en marchant (o.marche(id, px) : le moteur compte 1 point de faim tous les
  *     FAMILLE.FAIM.PX_PAR_POINT px, js/engine/repas.js) ; quand sa jauge tombe à FAIM.SEUIL, à
  *     n'importe quelle heure, il mange (le moteur : repasStep) : sur la carte, il va au
@@ -75,6 +79,12 @@
   // (l'image du pas : CarteKit.imageMarche, d'après les px parcourus depuis le départ, m.marche)
   const GESTE = 1.2;                       // s : le second adulte se baisse au Poulailler, à l'Étable
   const REPOS = 3;                         // s avant de chercher autre chose à faire
+  const SOUFFLE = 1;                       // s : le second adulte, entre deux tâches qui s'enchaînent
+  // Un adulte qui flâne ne bouge pas pour rien : il reste RESTE s (au hasard entre les deux) là où
+  // il est arrivé, et ne fait pas un trajet de moins de PAS_MIN px (il reste où il est, et regarde
+  // ailleurs) ; dans la maison, il change de place toutes les DEDANS s, de préférence pour une place
+  // de la pièce où il est (à moins de PIECE px).
+  const FLANE = { RESTE: [10, 25], PAS_MIN: 3 * T, DEDANS: [20, 45], PIECE: 6 * T };
   const ENFANT_DY = 4;                     // px : un enfant couché est remonté d'autant (il est plus petit)
   const COTE = 20;                         // px : le second adulte qui vient parler, à côté du personnage
   const PAS_COMPTE = 50;                   // px : la marche est comptée au moteur par tranches d'autant (o.marche)
@@ -231,12 +241,28 @@
     // Une case libre près du coin de la maison qu'il préfère.
     function flanerVers(m) {
       const d = door();
-      for (let i = 0; i < 8; i++) {
+      // (un adulte déjà près de son coin, dehors, y reste : il regarde ailleurs)
+      const H = maison();
+      if (!m.enfant && !(H && H.dedans(m.x, m.y)) && Math.hypot(m.x - d.x - m.coin.dx, m.y - d.y - m.coin.dy) < 2 * T + FLANE.PAS_MIN) { tourner(m); return; }
+      // (jamais dans la maison : son coin peut y tomber, dans une grande maison ; il y arriverait, en
+      // ressortirait aussitôt, et y reviendrait, en rond)
+      for (let i = 0; i < 12; i++) {
         const tx = d.x + m.coin.dx + rand(-2 * T, 2 * T), ty = d.y + m.coin.dy + rand(-2 * T, 2 * T);
-        if (!libre(tx, ty)) continue;
+        if (!libre(tx, ty) || (H && H.dedans(tx, ty))) continue;
+        if (!m.enfant && Math.hypot(tx - m.x, ty - m.y) < FLANE.PAS_MIN) continue;
         if (aller(m, tx, ty, null, 'dehors')) return;
       }
+      // (sinon son coin est pris, ou dans la maison : il s'en choisit un autre, et va devant la porte
+      // s'il n'y est pas déjà)
+      m.coin = { dx: rand(-ROAM, ROAM), dy: rand(T, ROAM) };
+      if (Math.hypot(m.x - d.x, m.y - d.y) > FLANE.PAS_MIN && aller(m, d.x, d.y, null, 'dehors')) return;
       m.attente = rand(1, 3);
+      if (H && H.dedans(m.x, m.y)) m.bloque = rand(BLOQUE[0], BLOQUE[1]);   // (pas de sortie : il réessaie plus tard)
+    }
+    // Il reste où il est, et se tourne d'un autre côté.
+    function tourner(m) {
+      const v = ['bas', 'cote', 'cote', 'haut'][Math.floor(Math.random() * 4)];
+      m.face = v; m.flip = v === 'cote' && Math.random() < 0.5;
     }
     // Sans maison : une place libre devant la porte.
     function devantPorte(m) {
@@ -249,8 +275,12 @@
     // Dans la maison : une place libre au hasard (H.places).
     function placeDedans(m, H) {
       if (!H.places.length) return false;
+      // (déjà dans la maison : une place de la pièce où il est, s'il y en a une, et pas à côté de lui)
+      const ici = H.dedans(m.x, m.y);
+      const pres = ici ? H.places.filter((q) => { const l = Math.hypot(q.x - m.x, q.y - m.y); return l < FLANE.PIECE && l >= FLANE.PAS_MIN; }) : [];
+      const choix = pres.length ? pres : H.places;
       for (let i = 0; i < 6; i++) {
-        const q = H.places[Math.floor(Math.random() * H.places.length)];
+        const q = choix[Math.floor(Math.random() * choix.length)];
         if (aller(m, q.x + rand(-3, 3), q.y, null, 'dedans')) return true;
       }
       return false;
@@ -274,7 +304,7 @@
       for (const lieu of A.lieux || []) {
         if (m.echecs.has(lieu)) continue;
         const spot = lieuDe(lieu);
-        if (!spot) continue;
+        if (!spot) { m.echecs.set(lieu, now); continue; }   // (pas de place libre : laissée, comme sans chemin)
         const anim = GESTES[spot.geste] || GESTES.betes;
         const fin = () => { m.face = spot.face || 'cote'; m.flip = !!spot.flip; m.anim = anim; m.geste = reduced() ? 0.01 : anim.dur; };
         if (!aller(m, spot.x, spot.y, fin, 'dehors')) { m.echecs.set(lieu, now); m.bloque = 0; continue; }
@@ -284,11 +314,16 @@
       m.repos = REPOS;
       return false;
     }
+    // Le second adulte a-t-il une tâche à faire (qu'il n'a pas laissée faute de place ou de chemin) ?
+    function aFaire(m) {
+      const A = model && model.aide;
+      return !!A && A.id === m.id && !m.enfant && !!o.aide && travaille() && (A.lieux || []).some((l) => !m.echecs.has(l));
+    }
     function finirTache(m) {
       const lieu = m.tache;
       m.tache = null;
       if (lieu === 'boite') { reprendre(m); return; }   // il a mangé (le moteur l'a déjà fait)
-      m.repos = REPOS;
+      m.repos = SOUFFLE;                                 // (la suivante, s'il y en a une, juste après)
       if (!lieu || !travaille()) return;   // (19 h passé : il ne travaille plus)
       o.aide(lieu, (items) => { if (items && o.gain) o.gain(items); });
     }
@@ -460,6 +495,8 @@
       // (un trajet pour ce que l'heure veut encore, ou vers la boîte : il continue ; sinon il
       // l'abandonne)
       if (m.chemin.length || m.puis) {
+        // (le second adulte qui flâne : une tâche l'interrompt, il y va de là où il est)
+        if (m.but === 'dehors' && v === 'dehors' && !m.tache && aFaire(m) && soccuper(m)) return;
         if (m.but === v || m.tache === 'boite') return;
         m.chemin = []; m.puis = null; m.but = null; m.tache = null;
       }
@@ -484,15 +521,17 @@
         }
         if (!H.dedans(m.x, m.y)) { if (!placeDedans(m, H)) m.bloque = rand(BLOQUE[0], BLOQUE[1]); return; }
         m.attente -= dt;
-        if (m.attente <= 0) { m.attente = rand(5, 12); placeDedans(m, H); }
+        if (m.attente <= 0) { m.attente = m.enfant ? rand(5, 12) : rand(FLANE.DEDANS[0], FLANE.DEDANS[1]); placeDedans(m, H); }
         return;
       }
       // le jour et le soir : il sort (par la porte), flâne (les enfants jouent), ou s'occupe des bêtes
       if (H && H.dedans(m.x, m.y) && !m.tache) { flanerVers(m); return; }
       if (!m.chemin.length && !m.tache && !soccuper(m)) {
+        // (une autre tâche l'attend : il souffle, puis y va de là, sans repasser par la maison)
+        if (aFaire(m)) return;
         m.attente -= dt;
-        // (un enfant joue plus souvent qu'il ne flâne)
-        if (m.attente <= 0) { m.attente = m.enfant ? rand(1, 3) : rand(3, 8); if (!(m.enfant && commencerJeu(m))) flanerVers(m); }
+        // (un enfant joue plus souvent qu'il ne flâne ; un adulte reste un moment où il est)
+        if (m.attente <= 0) { m.attente = m.enfant ? rand(1, 3) : rand(FLANE.RESTE[0], FLANE.RESTE[1]); if (!(m.enfant && commencerJeu(m))) flanerVers(m); }
       }
     }
 
