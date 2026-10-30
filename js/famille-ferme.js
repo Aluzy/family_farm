@@ -248,8 +248,10 @@
         if (!m.enfant && Math.hypot(tx - m.x, ty - m.y) < FLANE.PAS_MIN) continue;
         if (aller(m, tx, ty, null, 'dehors')) return;
       }
-      // (sinon : devant la porte, s'il n'y est pas déjà)
-      if (H && H.dedans(m.x, m.y) && aller(m, d.x, d.y, null, 'dehors')) return;
+      // (sinon son coin est pris, ou dans la maison : il s'en choisit un autre, et va devant la porte
+      // s'il n'y est pas déjà)
+      m.coin = { dx: rand(-ROAM, ROAM), dy: rand(T, ROAM) };
+      if (Math.hypot(m.x - d.x, m.y - d.y) > FLANE.PAS_MIN && aller(m, d.x, d.y, null, 'dehors')) return;
       m.attente = rand(1, 3);
       if (H && H.dedans(m.x, m.y)) m.bloque = rand(BLOQUE[0], BLOQUE[1]);   // (pas de sortie : il réessaie plus tard)
     }
