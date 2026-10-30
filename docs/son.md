@@ -72,7 +72,7 @@ Dans la mine : la grotte (le grondement, les gouttes) et son thème, rien de la 
 | Moment | Clé | Où |
 |---|---|---|
 | un pas (images 0 et 2 de la marche) ; le sol : plancher, chemin, terre labourée, eau, biome | `pas_herbe`, `pas_terre`, `pas_pierre`, `pas_bois`, `pas_sable`, `pas_eau`, `pas_feuilles` | `js/fermier.js` (`bruitPas`), `js/grotte.js` (la roche) |
-| à cheval, à triporteur | `sabots_*`, `ebrouement` ; `pedalier`, `sonnette` | `FermeSon.pas` |
+| à cheval | `sabots_*`, `ebrouement` | `FermeSon.pas` |
 | houe, semis, arrosage, récolte (au coup) | `houe`, `semis`, `arrosage`, `recolte` | `js/fermier.js` (`GESTE_SON`) |
 | hache, arbre qui tombe, buisson | `hache`, `arbre_tombe`, `recolte`, `arracher` | `hache.js`, `recolte-monde.js`, `habitants.js` (le bûcheron) |
 | pioche, rocher brisé, minerai | `pioche`, `retrait`, `pioche_minerai` | `pioche.js`, `recolte-monde.js`, `js/grotte.js` |
@@ -101,7 +101,7 @@ quand il touche le sol.
 ```js
 FermeSon.joue(clé, { x, y, portee, gain, vitesse, varie, delai, depuis, prio, ecart })
 // x, y : en px de la carte (sinon sur le personnage) ; portee en cases (22) ; ecart : pas deux fois plus près (s)
-FermeSon.pas(x, y, monture, roule)   // un pas, ou les sabots / le pédalier
+FermeSon.pas(x, y, monture, roule)   // un pas, ou les sabots
 FermeSon.prise(items, options)       // le bruit de ce qui est pris ({ objet: n })
 FermeSon.cri(espèce, x, y, gain)     // le cri d'une bête du grand monde
 FermeSon.matin()                     // 6 h

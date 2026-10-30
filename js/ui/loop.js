@@ -141,6 +141,12 @@ function watchRecit() {
     delete state.remboursementCommerce;
     persistState();
   }
+  // une partie qui avait le triporteur : il n'existe plus, ses matériaux sont rendus (la migration 65 → 66)
+  if (state.triporteurRendu) {
+    notify('🔧 Le triporteur n\'existe plus : ses matériaux (fer, cuivre, planches, fibres) sont revenus dans ton inventaire.', { kind: 'info' });
+    delete state.triporteurRendu;
+    persistState();
+  }
 }
 
 // Le récit, lot 8 : rentré d'une exploration (le personnage revient sur la ferme), le compagnon dit ce qu'il

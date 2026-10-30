@@ -20,7 +20,7 @@ import { estTacheCompagnon, faireCompagnon, journeeCompagnon, noterGarde, taches
 import { marcherMembre } from '../engine/repas.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
 import { TIRED } from '../engine/stamina.js';
-import { brokenRocks, cutBushes, cutGrass, enSelle, fellenTrees, morceauxDe, poussesArbres, arbresPlantes } from '../engine/outils.js';
+import { brokenRocks, cutBushes, cutGrass, fellenTrees, morceauxDe, poussesArbres, arbresPlantes } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmTerrain, tileCount, voirRegion } from '../engine/terrain.js';
@@ -543,7 +543,7 @@ export function stageModel() {
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
-    houe, hache, pioche, faux, canne, triporteur: enSelle(state), cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), pied: piedIci, rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), pied: piedIci, rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 

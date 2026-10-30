@@ -28,7 +28,7 @@ import { noter } from './journal.js';
 //   - l'Atelier se construit avec des matériaux (ATELIER.CONSTRUCTION), sans pièces
 //     (state.atelier = { construit, niveau }) ; ses recettes (ATELIER.RECETTES) transforment des
 //     objets de l'inventaire (geste « fabriquer ») : planche, mur en pierre, porte, paillasse, les
-//     outils (houe, hache, pioche, faux, canne à pêche, triporteur) ; et, depuis que le Marché est
+//     outils (houe, hache, pioche, faux, canne à pêche) ; et, depuis que le Marché est
 //     devenu la calèche (fiche 7c), ce qu'il vendait : les animaux qu'on attire (un nid garni, une
 //     pierre à sel et du foin), le cheval (un licol et des friandises), les meubles, la ruche.
 
@@ -253,7 +253,6 @@ export function craft(state, id) {
   else if (r.outil) {
     if (!state.outils || typeof state.outils !== 'object') state.outils = { hache: false, pioche: false, canne: false, choisi: 'houe' };
     state.outils[r.outil] = true;
-    if (r.outil === 'triporteur') state.outils.aPied = false;      // (fabriqué : il monte dessus)
   }
   if (r.animal) accueillirAnimal(state, r.animal);
   if (r.cheval) accueillirCheval(state);

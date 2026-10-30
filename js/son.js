@@ -43,7 +43,6 @@
     asperseur: ["ambiance/asperseur"],
     pompe: ["ambiance/pompe"],
     robot: ["ambiance/robot"],
-    pedalier: ["ambiance/pedalier"],
     moulinet: ["ambiance/moulinet"],
     oiseau: ["nature/oiseau_1", "nature/oiseau_2", "nature/oiseau_3", "nature/oiseau_4", "nature/oiseau_5", "nature/oiseau_6", "nature/oiseau_7", "nature/oiseau_8"],
     hibou: ["nature/hibou_1", "nature/hibou_2", "nature/hibou_3", "nature/hibou_4"],
@@ -103,7 +102,6 @@
     botteleuse: ["machines/botteleuse"],
     silo: ["machines/silo"],
     echelle: ["monde/echelle"],
-    sonnette: ["monde/sonnette"],
     dodo: ["monde/dodo"],
     pas_herbe: ["pas/pas_herbe_1", "pas/pas_herbe_2", "pas/pas_herbe_3", "pas/pas_herbe_4"],
     pas_terre: ["pas/pas_terre_1", "pas/pas_terre_2", "pas/pas_terre_3", "pas/pas_terre_4"],
@@ -137,7 +135,7 @@
     machines: ['monde', 0.55], monde: ['effets', 0.6], pas: ['effets', 0.4], interface: ['interface', 0.5] };
   const PROPRE = {
     moulin: ['monde', 0.5], feu: ['monde', 0.45], asperseur: ['monde', 0.35], pompe: ['monde', 0.35], robot: ['monde', 0.4],
-    abeilles: ['monde', 0.4], hameau: ['monde', 0.5], pedalier: ['effets', 0.3], moulinet: ['effets', 0.45],
+    abeilles: ['monde', 0.4], hameau: ['monde', 0.5], moulinet: ['effets', 0.45],
     arbre_tombe: ['effets', 0.85], dodo: ['interface', 0.45], echelle: ['effets', 0.6], ouvre: ['interface', 0.35],
     ferme: ['interface', 0.3], onglet: ['interface', 0.35], info: ['interface', 0.3], niveau: ['interface', 0.6],
     chapitre: ['interface', 0.6], techno: ['interface', 0.55], cloche: ['interface', 0.45], coq: ['monde', 0.55],
@@ -599,14 +597,13 @@
 
   /* ---------- aides pour les scènes ---------- */
 
-  // un pas du personnage (x, y : ses pieds) ; en selle : les sabots ou le pédalier
-  let foulee = 0, sabotJoue = 0, montureVue = null, pedaleJusqua = 0;
+  // un pas du personnage (x, y : ses pieds) ; en selle : les sabots
+  let foulee = 0, sabotJoue = 0, montureVue = null;
   function pas(x, y, monture, roule) {
     if (!ctx) return;
     if (monture !== montureVue) {
       montureVue = monture;
       if (monture === 'cheval') joue('ebrouement', { gain: 0.7 });
-      if (monture === 'triporteur') joue('sonnette', { gain: 0.6 });
     }
     const s = sol(x, y);
     if (monture === 'cheval') {
@@ -618,12 +615,6 @@
         joue(s === 'pierre' ? 'sabots_pierre' : s === 'herbe' || s === 'feuilles' ? 'sabots_herbe' : 'sabots_terre', { ecart: 0.25, varie: 0.03 });
       }
       foulee = roule;
-      return;
-    }
-    if (monture === 'triporteur') {
-      pedaleJusqua = ctx.currentTime + 0.35;
-      boucle('pedalier', 'pedalier', 1, 0.15);
-      clearTimeout(pas.t); pas.t = setTimeout(() => { if (ctx.currentTime >= pedaleJusqua - 0.01) boucle('pedalier', 'pedalier', 0, 0.3); }, 400);
       return;
     }
     joue('pas_' + s, { ecart: 0.12, varie: 0.06 });

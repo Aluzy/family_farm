@@ -568,7 +568,25 @@ export const MIGRATIONS = {
     ...(Array.isArray(state.courrier) ? { courrier: state.courrier.map((l) => (l && l.id === 'cousin_venezuela' ? { ...l, id: 'adele_serre' } : l)) } : {}),
     version: 65,
   }),
+  // v65 → v66 : le triporteur disparaît du jeu. Une partie qui en avait un le perd ; ce qu'il avait
+  // coûté à l'Atelier (TRIPORTEUR_RENDU) revient dans son inventaire, annoncé par une notification
+  // (state.triporteurRendu, js/ui/loop.js).
+  65: (state) => {
+    const out = { ...state, version: 66 };
+    const o = state.outils;
+    if (!o || typeof o !== 'object') return out;
+    const { triporteur, aPied, ...reste } = o;
+    out.outils = reste;
+    if (triporteur) {
+      for (const [id, n] of Object.entries(TRIPORTEUR_RENDU)) addItem(out, id, n);
+      out.triporteurRendu = true;
+    }
+    return out;
+  },
 };
+
+// Ce que coûtait le triporteur à l'Atelier, rendu par la migration 65 → 66.
+export const TRIPORTEUR_RENDU = { lingot_fer: 4, lingot_cuivre: 1, planche: 4, fibre: 2 };
 
 // Porte les cases d'une partie (numérotées sur la largeur de sa ferme) dans celles du monde, où sa
 // ferme est posée en FERME_DANS_MONDE : les blocs, les sols, les étages, les fenêtres, les

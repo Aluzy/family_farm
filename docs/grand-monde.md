@@ -781,7 +781,7 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
      - **L'Atelier** reprend ce que vendait le Marché (`data/recipes.json`, `ATELIER.RECETTES`, de nouvelles
        sortes de recettes : `animal`, `cheval`, `meuble`, et `outil` pour la canne et le triporteur) : la canne
        à pêche (3 bois, 4 fibres, 1 pierre), le triporteur (4 lingots de fer, 1 de cuivre, 4 planches, 2
-       fibres) ; les bêtes qu'on attire, s'il y a la place (un choix : comme on n'élève pas de rien, un appât
+       fibres ; retiré du jeu depuis : la migration 65 → 66 rend ses matériaux) ; les bêtes qu'on attire, s'il y a la place (un choix : comme on n'élève pas de rien, un appât
        où une bête du pays vient s'installer) : le nid garni d'une poule (4 fibres, 3 blés ; dès le
        Poulailler), la pierre à sel et le foin d'un mouton (4 pierres, 6 pailles, 4 fibres) ou d'une vache (6
        pierres, 12 pailles, 2 planches ; dès les moutons), le licol et les friandises du cheval (2 cordes, 6

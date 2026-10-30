@@ -6,13 +6,13 @@
 import {
   actionCost, actionsLeft, actionXp, borderMask, brokenRocks, buyHoe, buyTool, caillou, canBorder,
   castLine, chopsLeft, chopTree, countItem, createInitialState, cutGrass, DATA, eatSnack,
-  enduranceReduction, energyLevel, energyMax, enSelle, farmTerrain, fellenTrees, findPlot,
+  enduranceReduction, energyLevel, energyMax, farmTerrain, fellenTrees, findPlot,
   fishLeft, grassCut, happinessCostPct, hasHoe, hasTool, hoe, hoeableTiles, hoeStatus, isArable,
-  isBuyable, makePlot, makePlots, marcheOuvert, migrateEnergy, migrateHoe, mineRock, morceauxDe,
+  isBuyable, makePlot, makePlots, marcheOuvert, migrate, migrateEnergy, migrateHoe, mineRock, morceauxDe,
   OUTILS, ownedTools, plant, plantAll, plotAtTile, ramasserCaillou, ramasserMorceau, respawnRocks,
   respawnTrees, restoreEnergy, rockGone, runNight, scytheAround, scytheGrass, selectedTool,
   selectTool, snackEnergy, soilCap, soilCount, terrainLines, testFillEnergy, testSetEnergyZero,
-  testSetLevel, TIRED, toggleTriporteur, toolDef, vitesseDeplacement, wakeEnergy, water, zoneTile,
+  testSetLevel, TIRED, toolDef, TRIPORTEUR_RENDU, vitesseDeplacement, wakeEnergy, water, zoneTile,
 } from '../../js/engine/index.js';
 import {
   assert, assertEqual, AVANT_DEMENAGEMENT, champ, garden, growZone, migreAvant, setInv, sleepOnce,
@@ -143,23 +143,24 @@ test('outils : une partie avec la houe seule l\'a sur le bouton ; le Marché fer
   assertEqual([marcheOuvert(t), buyTool(t, 'hache').ok], [false, false], 'le Marché ouvre à son niveau');
 });
 
-test('triporteur : acheté une fois au Marché, il fait rouler plus vite ; on en descend et on y remonte', () => {
+test('le triporteur n\'existe plus : la migration 65 → 66 le retire et rend ses matériaux', () => {
+  assert(!('TRIPORTEUR' in DATA) && !toolDef('triporteur') && !hasTool(garden(), 'triporteur'));
+  assert(!Object.values(DATA.ATELIER.RECETTES).some((r) => r.outil === 'triporteur'), 'plus de recette à l\'Atelier');
   const s = garden();
-  const T = DATA.TRIPORTEUR;
-  assertEqual([enSelle(s), vitesseDeplacement(s)], [false, 1], 'à pied sans triporteur');
-  assertEqual(toggleTriporteur(s).error, 'Il te faut un triporteur (à fabriquer à l\'Atelier).');
-  s.pieces = T.PRIX - 1;
-  assertEqual(buyTool(s, 'triporteur').ok, false, 'trop cher');
-  s.pieces = T.PRIX + 10;
-  const choisi = selectedTool(s);
-  assertEqual(buyTool(s, 'triporteur').ok, true);
-  assertEqual([s.pieces, enSelle(s), vitesseDeplacement(s), selectedTool(s)], [10, true, T.VITESSE, choisi], 'en selle tout de suite, sans changer d\'outil en main');
-  assert(!OUTILS.includes('triporteur') && !ownedTools(s).includes('triporteur'), 'il ne se prend pas en main');
-  assertEqual(buyTool(s, 'triporteur').error, 'Tu as déjà un triporteur.');
-  assertEqual(toggleTriporteur(s).enSelle, false);
-  assertEqual(vitesseDeplacement(s), 1, 'descendu : à pied');
-  assertEqual(toggleTriporteur(s).enSelle, true);
-  assertEqual(T.VITESSE, 3, 'trois fois plus vite');
+  assertEqual(vitesseDeplacement(s), 1, 'à pied');
+  // une partie qui l'avait (en selle) : il disparaît, ses matériaux reviennent, une notification l'annonce
+  s.outils = { hache: true, pioche: false, canne: false, choisi: 'hache', triporteur: true, aPied: false };
+  setInv(s, { lingot_fer: 1 });
+  const m = migrate({ v: 65, t: 0, s: { ...JSON.parse(JSON.stringify(s)), version: 65 } }, 66);
+  assertEqual(m.version, 66);
+  assertEqual(m.outils, { hache: true, pioche: false, canne: false, choisi: 'hache' });
+  assertEqual(Object.entries(TRIPORTEUR_RENDU).map(([o]) => countItem(m, o)), [5, 1, 4, 2]);
+  assertEqual([m.triporteurRendu, selectedTool(m)], [true, 'hache']);
+  // une partie sans lui : rien ne change
+  const t = garden();
+  t.outils = { hache: true, pioche: false, canne: false, choisi: 'hache', aPied: true };
+  const n = migrate({ v: 65, t: 0, s: { ...JSON.parse(JSON.stringify(t)), version: 65 } }, 66);
+  assertEqual([n.outils, n.triporteurRendu], [{ hache: true, pioche: false, canne: false, choisi: 'hache' }, undefined]);
 });
 
 test('hache : chaque coup sur un arbre donne du bois, de l\'XP, coûte de l\'énergie ; au COUPES-ième, il tombe', () => {

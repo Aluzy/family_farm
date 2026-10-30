@@ -75,7 +75,7 @@ l'Écurie construite : une enceinte de murs où est posé le râtelier (`ATELIER
 (`etatEcurie`, une variante sans enclos d'`etatEnclos`). Il s'y promène tant que le joueur est à
 la ferme (`syncBeasts`, l'entrée `ecurie` de `betesDesEnclos`). Sa case de la barre d'outils met
 le personnage en selle (`toggleCheval`) : il va `VITESSE` fois plus vite, assis sur le cheval
-sellé (`js/carte/cheval.js`, comme le triporteur ; `scripts/personnage/cheval.py`). Pour l'instant
+sellé (`js/carte/cheval.js`, `scripts/personnage/cheval.py`). Pour l'instant
 il ne se monte qu'à la ferme : il n'entre pas dans la mine. L'attacher à un poteau sur une autre
 carte (`CHEVAL.ATTACHE`, l'ancien `js/carte/ville/monture.js`, retiré avec la ville) reviendra avec
 le grand monde (docs/grand-monde.md) ; une partie dont le cheval était attaché ailleurs le

@@ -173,7 +173,7 @@ function icone(id) {
   if (r.cheval) return DATA.CHEVAL.ICONE;
   return r.outil ? toolDef(r.outil).ICONE : DATA.OBJETS[sortieDe(id)].icone;
 }
-// (les outils de pierre ; la canne et le triporteur ne le sont pas)
+// (les outils de pierre ; la canne ne l'est pas)
 const DE_PIERRE = ['houe', 'hache', 'pioche', 'faux'];
 function nom(id) {
   const r = DATA.ATELIER.RECETTES[id];
