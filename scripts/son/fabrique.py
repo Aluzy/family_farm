@@ -5,6 +5,6 @@ Les masters WAV et les fichiers de travail vont dans scripts/son/_sortie/ (jamai
 Tout est tiré de graines fixes : relancer redonne les mêmes sons."""
 import os, subprocess, sys
 ICI = os.path.dirname(os.path.abspath(__file__))
-for script in ('musique.py', 'sons1.py', 'sons2.py', 'betes.py', 'vers_jeu.py'):
+for script in ('musique.py', 'sons1.py', 'sons2.py', 'vers_jeu.py'):
     print('·', script, flush=True)
     subprocess.run([sys.executable, script], cwd=ICI, check=True)

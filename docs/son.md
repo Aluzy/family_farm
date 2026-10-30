@@ -72,7 +72,7 @@ Dans la mine : la grotte (le grondement, les gouttes) et son thème, rien de la 
 | Moment | Clé | Où |
 |---|---|---|
 | un pas (images 0 et 2 de la marche) ; le sol : plancher, chemin, terre labourée, eau, biome | `pas_herbe`, `pas_terre`, `pas_pierre`, `pas_bois`, `pas_sable`, `pas_eau`, `pas_feuilles` | `js/fermier.js` (`bruitPas`), `js/grotte.js` (la roche) |
-| à cheval | `sabots_*`, `ebrouement` | `FermeSon.pas` |
+| à cheval | `galop` (une boucle), `ebrouement` | `FermeSon.pas` |
 | houe, semis, arrosage, récolte (au coup) | `houe`, `semis`, `arrosage`, `recolte` | `js/fermier.js` (`GESTE_SON`) |
 | hache, arbre qui tombe, buisson | `hache`, `arbre_tombe`, `recolte`, `arracher` | `hache.js`, `recolte-monde.js`, `habitants.js` (le bûcheron) |
 | pioche, rocher brisé, minerai | `pioche`, `retrait`, `pioche_minerai` | `pioche.js`, `recolte-monde.js`, `js/grotte.js` |
@@ -101,7 +101,7 @@ quand il touche le sol.
 ```js
 FermeSon.joue(clé, { x, y, portee, gain, vitesse, varie, delai, depuis, prio, ecart })
 // x, y : en px de la carte (sinon sur le personnage) ; portee en cases (22) ; ecart : pas deux fois plus près (s)
-FermeSon.pas(x, y, monture, roule)   // un pas, ou les sabots
+FermeSon.pas(x, y, monture, roule)   // un pas, ou le galop
 FermeSon.prise(items, options)       // le bruit de ce qui est pris ({ objet: n })
 FermeSon.cri(espèce, x, y, gain)     // le cri d'une bête du grand monde
 FermeSon.matin()                     // 6 h
@@ -132,10 +132,12 @@ dans `scripts/son/enregistrements/credits.json`, et recopiée dans `assets/son/C
 **Le coq du réveil** est lui aussi un vrai enregistrement : un cocorico (BigSoundBank, CC0,
 `scripts/son/libres.py`), un peu plus fort que les autres bêtes.
 
-Restent synthétisés, faute d'enregistrement libre accessible, **les sabots** (une diagonale de
-trot par fichier, sur pierre ferrée, terre battue et herbe), dans `scripts/son/betes.py`. De
-vrais sabots libres (CC0) se mettraient à leur place : un fichier dans `enregistrements/`, une
-ligne dans `credits.json` et dans `vers_jeu.py`.
+**Le galop** du cheval monté aussi : un vrai cheval au galop dans l'herbe haute (BigSoundBank,
+CC0, « Horse gallop tall grass », `libres.py`). Six foulées régulières (une toutes les 0,66 s
+environ) forment une boucle de 4 s, coupée dans le creux entre deux foulées ; son début se fond
+dans ce qui suivait sa fin dans l'enregistrement (`boucle`), et la reprise ne s'entend pas.
+BigSoundBank n'a pas d'autre vrai galop (ses galops sur terre ou béton sont des bruitages) : le
+même sert sur tous les sols. Il remplace les sabots synthétisés (l'ancien `betes.py`).
 
 **À l'approche d'un enclos** (`directeur`, `ENCLOS` dans `js/son.js`), pour chaque sorte de bête
 de la ferme (`FarmStage.scene().beasts`) :
@@ -148,8 +150,8 @@ de la ferme (`FarmStage.scene().beasts`) :
 - de temps en temps, ce qu'on entend en plus : les poussins, la clochette d'une vache, le cheval
   qui s'ébroue.
 
-À cheval, les sabots suivent le rythme d'un vrai trot (une diagonale toutes les 0,32 s tant
-qu'il avance), sur le sol sous lui.
+À cheval, la boucle du galop joue tant qu'il avance (`FermeSon.pas`, appelé à chaque image de
+marche) et s'éteint en un tiers de seconde quand il s'arrête ; en montant en selle, il s'ébroue.
 
 `scripts/son/analyse.py` et `betes_reelles.py` sont les outils d'analyse qui ont servi à
 comparer les synthèses à de vrais cris (corpus ESC-50, sous licence non commerciale : les mesures
@@ -210,6 +212,6 @@ dans `credits.json` :
 ## Limites connues
 
 - Il n'y a ni pluie ni météo dans le jeu : le son n'en a pas non plus.
-- Les sabots sont encore synthétisés (voir « Les bêtes de la ferme »).
+- Le galop est le même sur tous les sols (voir « Les bêtes de la ferme »).
 - Les portes posées en blocs ne s'animent pas : elles ne sonnent pas. Les habitants des hameaux
   n'ont pas de voix.

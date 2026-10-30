@@ -57,9 +57,7 @@
     chien: ["animaux/chien_1", "animaux/chien_2", "animaux/chien_3"],
     cheval: ["animaux/cheval_1", "animaux/cheval_2", "animaux/cheval_3"],
     ebrouement: ["animaux/ebrouement_1", "animaux/ebrouement_2"],
-    sabots_herbe: ["animaux/sabots_herbe_1", "animaux/sabots_herbe_2", "animaux/sabots_herbe_3", "animaux/sabots_herbe_4"],
-    sabots_terre: ["animaux/sabots_terre_1", "animaux/sabots_terre_2", "animaux/sabots_terre_3", "animaux/sabots_terre_4"],
-    sabots_pierre: ["animaux/sabots_pierre_1", "animaux/sabots_pierre_2", "animaux/sabots_pierre_3", "animaux/sabots_pierre_4"],
+    galop: ["animaux/galop"],
     oeuf: ["animaux/oeuf"],
     lait: ["animaux/lait"],
     tonte: ["animaux/tonte"],
@@ -139,7 +137,7 @@
     arbre_tombe: ['effets', 0.85], dodo: ['interface', 0.45], echelle: ['effets', 0.6], ouvre: ['interface', 0.35],
     ferme: ['interface', 0.3], onglet: ['interface', 0.35], info: ['interface', 0.3], niveau: ['interface', 0.6],
     chapitre: ['interface', 0.6], techno: ['interface', 0.55], cloche: ['interface', 0.45], coq: ['monde', 0.55],
-    clochette: ['monde', 0.35], poussins: ['monde', 0.3], ebrouement: ['monde', 0.5],
+    clochette: ['monde', 0.35], poussins: ['monde', 0.3], ebrouement: ['monde', 0.5], galop: ['effets', 0.55],
   };
   const DUCK = new Set(['niveau', 'chapitre', 'techno', 'arbre_tombe']);   // la musique s'efface un instant
 
@@ -597,27 +595,27 @@
 
   /* ---------- aides pour les scènes ---------- */
 
-  // un pas du personnage (x, y : ses pieds) ; en selle : les sabots
-  let foulee = 0, sabotJoue = 0, montureVue = null;
+  // un pas du personnage (x, y : ses pieds) ; en selle : le galop
+  let foulee = 0, galopJusqua = 0, montureVue = null;
   function pas(x, y, monture, roule) {
     if (!ctx) return;
     if (monture !== montureVue) {
       montureVue = monture;
       if (monture === 'cheval') joue('ebrouement', { gain: 0.7 });
     }
-    const s = sol(x, y);
     if (monture === 'cheval') {
-      // au trot : une diagonale (deux sabots) toutes les 0,32 s tant qu'il avance, au rythme d'un vrai
-      // trot plutôt qu'à celui des images (un pas toutes les 7 px : bien trop serré au son)
-      const now = ctx.currentTime;
-      if (roule !== foulee && now - sabotJoue >= 0.32) {
-        sabotJoue = now;
-        joue(s === 'pierre' ? 'sabots_pierre' : s === 'herbe' || s === 'feuilles' ? 'sabots_herbe' : 'sabots_terre', { ecart: 0.25, varie: 0.03 });
+      // le galop d'un vrai cheval (une boucle de six foulées) tant qu'il avance ; arrêté, il
+      // s'éteint en un tiers de seconde
+      if (roule !== foulee) {
+        galopJusqua = ctx.currentTime + 0.3;
+        boucle('galop', 'galop', 1, 0.12);
+        clearTimeout(pas.t);
+        pas.t = setTimeout(() => { if (ctx.currentTime >= galopJusqua - 0.01) boucle('galop', 'galop', 0, 0.35); }, 350);
       }
       foulee = roule;
       return;
     }
-    joue('pas_' + s, { ecart: 0.12, varie: 0.06 });
+    joue('pas_' + sol(x, y), { ecart: 0.12, varie: 0.06 });
   }
 
   // les gains ramassés : le bon bruit selon ce qui est pris ({ item: n })

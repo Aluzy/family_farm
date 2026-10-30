@@ -8,7 +8,7 @@ Usage : python3 vers_jeu.py            (tout : assets/son/ est refait)
 import os, subprocess, glob, json, re, sys
 SEULES = set(sys.argv[1:])
 M1 = MM = '_sortie/pack/masters_wav'; M2 = '_sortie/pack2/audio'
-REC = 'enregistrements'; BETES = '_sortie/betes'   # les vrais enregistrements ; betes.py
+REC = 'enregistrements'   # les vrais enregistrements
 DEST = '../../assets/son'
 def g(pat):
     r = sorted(glob.glob(pat))
@@ -54,9 +54,7 @@ T = {
  'chien': ('animaux', g(f'{REC}/chien_*.flac')),                # le chien de la famille, de vrais aboiements (libres.py)
  'cheval': ('animaux', g(f'{REC}/cheval_[123].flac')),          # deux hennissements, un petit rire grave
  'ebrouement': ('animaux', g(f'{REC}/cheval_[45].flac')),       # il s'ébroue, il souffle
- 'sabots_herbe': ('animaux', g(f'{BETES}/sabots_herbe_*.wav')),
- 'sabots_terre': ('animaux', g(f'{BETES}/sabots_terre_*.wav')),
- 'sabots_pierre': ('animaux', g(f'{BETES}/sabots_pierre_*.wav')),
+ 'galop': ('animaux', g(f'{REC}/galop.flac')),                  # le cheval monté, en boucle (libres.py)
  'oeuf': ('animaux', g(f'{M2}/sfx/animals/egg_*.wav')),
  'lait': ('animaux', g(f'{M2}/sfx/animals/milk_*.wav')),
  'tonte': ('animaux', g(f'{M2}/sfx/animals/shear_*.wav')),
