@@ -97,6 +97,7 @@
       this.findRocks();                     // les rochers aussi (la pioche les casse)
       this.zoneOver = this.zoneGround();   // version 1.9 : les anciennes zones commencent en herbe
       this.dirt = new Set();                // version 1.15 : tuiles labourées de la carte
+      this.bacs = new Set();                // celles de la Serre, des bacs (drawZoneDirt)
       this.zoneKey = '';
       this.makeRegions();
       this.makeOccluders();
@@ -408,22 +409,23 @@
     },
 
     // Version 1.15 : la terre suit les parcelles (leur tuile), celles de la Serre comprises (sur
-    // les cases de sa pièce : la même terre, les mêmes bordures qu'au-dehors) ; seules les
+    // les cases de sa pièce : des bacs en planches, drawZoneDirt) ; seules les
     // tuiles qui changent, et leurs voisines (leur bordure), sont repeintes.
     syncZoneGround(model) {
       const raw = this.mapRaw;
       if (!raw) return;
       const W = raw.width;
       const serre = new Set(model.serreCases || []);
-      const now = new Set((model.plots || []).map((p) => p.case).filter((c) => typeof c === 'number')
-        .concat((model.serre || []).map((p) => p.case).filter((c) => serre.has(c))));
-      const key = [...now].sort((a, b) => a - b).join();
+      const bacs = (model.serre || []).map((p) => p.case).filter((c) => serre.has(c));
+      const now = new Set((model.plots || []).map((p) => p.case).filter((c) => typeof c === 'number').concat(bacs));
+      const key = [...now].sort((a, b) => a - b).join() + '|' + bacs.sort((a, b) => a - b).join();
       if (key === this.zoneKey) return;
       this.zoneKey = key;
       const changed = [];
       for (const t of now) if (!this.dirt.has(t)) changed.push(t);
       for (const t of this.dirt) if (!now.has(t)) changed.push(t);
       this.dirt = now;
+      this.bacs = new Set(bacs);
       const cells = new Set();
       for (const t of changed) {
         const c = t % W, r = Math.floor(t / W);
@@ -509,13 +511,18 @@
 
     // La terre labourée (voir ZONE_TILES), sur le sol et sous les couches du dessus : une
     // tuile labourée est toute en terre, une tuile d'herbe voisine porte la bordure de ses
-    // coins. `only` : repeinture partielle (ces tuiles seulement).
+    // coins. Dans la Serre (this.bacs), une case labourée est un bac en planches sur sa case
+    // seule (terre_serre.png, scripts/carte/terre_serre.py), d'un seul tenant avec les bacs de
+    // ses côtés ; pas de bordure autour. `only` : repeinture partielle (ces tuiles seulement).
     drawZoneDirt(ctx, raw, only) {
       if (!this.dirt || !this.dirt.size || !this.has('terre_bords')) return;
       const W = raw.width, H = raw.height, tw = raw.tilewidth, th = raw.tileheight;
       const img = this.textures.get('terre_bords').getSourceImage();
+      const bacs = this.has('terre_serre') && this.bacs && this.bacs.size ? this.bacs : null;
+      const imgBac = bacs ? this.textures.get('terre_serre').getSourceImage() : null;
       const dirt = this.dirt;
-      const at = (c, r) => c >= 0 && r >= 0 && c < W && r < H && dirt.has(r * W + c);
+      const at = (c, r) => c >= 0 && r >= 0 && c < W && r < H && dirt.has(r * W + c) && !(bacs && bacs.has(r * W + c));
+      const bac = (c, r) => c >= 0 && r >= 0 && c < W && r < H && bacs.has(r * W + c);
       let cells = only;
       if (!cells) {
         cells = new Set();
@@ -526,6 +533,15 @@
       }
       for (const t of cells) {
         const c = t % W, r = Math.floor(t / W);
+        if (bacs && bacs.has(t)) {
+          const n = (bac(c, r - 1) ? 8 : 0) | (bac(c + 1, r) ? 4 : 0) | (bac(c, r + 1) ? 2 : 0) | (bac(c - 1, r) ? 1 : 0);
+          ctx.drawImage(imgBac, n * tw, 0, tw, th, c * tw, r * th, tw, th);
+          // les coins rentrants : les deux voisines d'un coin sont des bacs, pas la diagonale
+          [[1, -1], [-1, -1], [1, 1], [-1, 1]].forEach(([dc, dr], k) => {
+            if (bac(c + dc, r) && bac(c, r + dr) && !bac(c + dc, r + dr)) ctx.drawImage(imgBac, (16 + k) * tw, 0, tw, th, c * tw, r * th, tw, th);
+          });
+          continue;
+        }
         const m = dirt.has(t) ? 15
           : ((at(c - 1, r - 1) || at(c, r - 1) || at(c - 1, r)) ? 8 : 0)
           | ((at(c, r - 1) || at(c + 1, r - 1) || at(c + 1, r)) ? 4 : 0)

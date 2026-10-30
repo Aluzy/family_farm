@@ -189,27 +189,20 @@ export function hoeableTiles(state) {
     if (badBorders(state, dirt, t, libres) <= before) out.push(t);
     dirt.delete(t);
   }
-  // les cases de la Serre pas encore labourées, tant qu'elle a de la place (les mêmes bordures
-  // qu'au-dehors)
+  // les cases de la Serre pas encore labourées, tant qu'elle a de la place : toutes (un bac en
+  // planches sur sa case, sans bordure sur les voisines)
   if (serrePlots(state).length < serreCap(state)) {
-    for (const t of serre) {
-      if (dirt.has(t) || (state.sols && state.sols[t])) continue;
-      const before = badBorders(state, dirt, t, libres);
-      dirt.add(t);
-      if (badBorders(state, dirt, t, libres) <= before) out.push(t);
-      dirt.delete(t);
-    }
+    const labourees = new Set(serrePlots(state).map((p) => p.case));
+    for (const t of serre) if (!labourees.has(t) && !(state.sols && state.sols[t])) out.push(t);
     out.sort((a, b) => a - b);
   }
   return out;
 }
 
-// Les tuiles de terre labourée de la ferme : la Zone de culture et la Serre (ses parcelles
-// sur les cases de sa pièce), pour le dessin de leurs bordures.
+// Les tuiles de terre labourée de la ferme qui débordent en bordure sur l'herbe : celles de la
+// Zone de culture (la Serre a ses bacs, sur leur case : pas de bordure).
 function dirtTiles(state) {
-  const out = new Set(state.potager.parcelles.map((p) => p.case));
-  for (const p of serrePlots(state)) if (Number.isInteger(p.case)) out.add(p.case);
-  return out;
+  return new Set(state.potager.parcelles.map((p) => p.case));
 }
 
 const SOIL_LAYOUT_REFUS = 'La terre déborde en bordure sur les 8 tuiles autour : elles doivent pouvoir devenir mi-herbe mi-terre (pas de chemin, d\'eau, de pierre ni d\'arbre à côté, et pas une seule tuile d\'herbe prise entre deux terres).';
@@ -301,14 +294,14 @@ export function hoeStatus(state, tile) {
   return { action: 'labourer', ok: true, raison: '' };
 }
 
-// La houe dans la Serre (ses cases, serrePlaces) : comme au-dehors (la même terre, les mêmes
-// bordures, soilLayoutOk), au plus serreCap(state) parcelles, sans le plafond de niveau.
+// La houe dans la Serre (ses cases, serrePlaces) : au plus serreCap(state) parcelles, sans le
+// plafond de niveau. Une case labourée de la Serre est un bac en planches, sur sa case seule
+// (pas de bordure sur les voisines, soilLayoutOk) : toutes ses cases se labourent.
 function serreHoeStatus(state, tile) {
   if (!hasHoe(state)) return { action: null, ok: false, raison: `Il te faut une houe (à fabriquer à l'Atelier).` };
   const p = serrePlotAt(state, tile);
   if (p) {
     if (p.culture) return { action: null, ok: false, raison: 'Terre plantée : récolte d\'abord.' };
-    if (!soilLayoutOk(state, tile, false)) return { action: 'reboucher', ok: false, raison: SOIL_LAYOUT_REFUS, dessin: true };
     return { action: 'reboucher', ok: true, raison: '', serre: true };
   }
   if (state.sols && state.sols[tile]) return { action: null, ok: false, raison: 'Un plancher : on ne laboure pas ici.' };
@@ -317,7 +310,6 @@ function serreHoeStatus(state, tile) {
     const plus = DATA.SERRE.PARCELLES[state.serre.niveau];
     return { action: 'labourer', ok: false, raison: `La Serre a déjà ses ${cap} parcelles au niveau ${state.serre.niveau}.${plus ? ` Agrandis-la : ${plus} parcelles au niveau suivant.` : ''}` };
   }
-  if (!soilLayoutOk(state, tile, true)) return { action: 'labourer', ok: false, raison: SOIL_LAYOUT_REFUS, dessin: true };
   if (!canAfford(state, 'labourer')) return { action: 'labourer', ok: false, raison: TIRED };
   return { action: 'labourer', ok: true, raison: '', serre: true };
 }

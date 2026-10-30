@@ -138,6 +138,8 @@
         L.spritesheet('arbre_clair_sp', v('arbre_clair_sp.png'), { frameWidth: 56, frameHeight: 64 });
         L.spritesheet('pin_clair_sp', v('pin_clair_sp.png'), { frameWidth: 72, frameHeight: 64 });
         L.image('terre_bords', v('terre_bords.png'));
+        L.image('terre_serre', v('terre_serre.png'));   // les bacs de la Serre (scripts/carte/terre_serre.py)
+        L.image('soil_wet_serre', v('soil_wet_serre.png'));
         // les sols des biomes du grand monde (scripts/carte/sols_monde.py, js/carte/ferme/sol.js)
         if (this.ctx.monde) L.image('sols_monde', v(this.ctx.monde.tuiles.fichier));
         // la végétation du grand monde (scripts/carte/vegetation.py, js/carte/ferme/vegetation.js)

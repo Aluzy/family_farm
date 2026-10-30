@@ -957,6 +957,11 @@ test('ferme générée : un bac à semis posé dans une pièce close construit l
   const r1 = hoe(s, a);
   assertEqual([r1.ok, r1.action, r1.plot.lieu, r1.plot.case, r1.plot.id], [true, 'labourer', 'serre', a, 'serre-1']);
   assert(hoe(s, b).ok);
+  // des bacs, sur leur case seule : c se laboure, même en laissant une herbe prise entre deux
+  // terres (b et c ; au-dehors, sa bordure ne se dessinerait pas, soilLayoutOk), et se rebouche
+  const c = b + 2;
+  assert(serrePlaces(s).includes(c) && hoeableTiles(s).includes(c), 'entre deux bacs');
+  assertEqual([hoe(s, c).ok, hoe(s, c).action], [true, 'reboucher']);
   assertEqual([s.serre.parcelles.length, s.potager.parcelles.some((q) => q.case === a), hoeableTiles(s).includes(a)], [2, false, false]);
   assertEqual(poserBloc(s, 'mur_pierre', a).ok, false, 'pas de bloc sur une terre labourée');
   assertEqual(hoe(s, b).action, 'reboucher', 'une terre vide se rebouche');
