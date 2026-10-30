@@ -240,13 +240,18 @@
       // (un adulte déjà près de son coin, dehors, y reste : il regarde ailleurs)
       const H = maison();
       if (!m.enfant && !(H && H.dedans(m.x, m.y)) && Math.hypot(m.x - d.x - m.coin.dx, m.y - d.y - m.coin.dy) < 2 * T + FLANE.PAS_MIN) { tourner(m); return; }
-      for (let i = 0; i < 8; i++) {
+      // (jamais dans la maison : son coin peut y tomber, dans une grande maison ; il y arriverait, en
+      // ressortirait aussitôt, et y reviendrait, en rond)
+      for (let i = 0; i < 12; i++) {
         const tx = d.x + m.coin.dx + rand(-2 * T, 2 * T), ty = d.y + m.coin.dy + rand(-2 * T, 2 * T);
-        if (!libre(tx, ty)) continue;
+        if (!libre(tx, ty) || (H && H.dedans(tx, ty))) continue;
         if (!m.enfant && Math.hypot(tx - m.x, ty - m.y) < FLANE.PAS_MIN) continue;
         if (aller(m, tx, ty, null, 'dehors')) return;
       }
+      // (sinon : devant la porte, s'il n'y est pas déjà)
+      if (H && H.dedans(m.x, m.y) && aller(m, d.x, d.y, null, 'dehors')) return;
       m.attente = rand(1, 3);
+      if (H && H.dedans(m.x, m.y)) m.bloque = rand(BLOQUE[0], BLOQUE[1]);   // (pas de sortie : il réessaie plus tard)
     }
     // Il reste où il est, et se tourne d'un autre côté.
     function tourner(m) {
