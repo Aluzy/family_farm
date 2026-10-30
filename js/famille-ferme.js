@@ -34,7 +34,11 @@
  *     « ramasser:<id> », js/engine/compagnon.js) : o.lieu (js/carte/ferme/compagnon.js) dit où se
  *     tenir et le geste (GESTES) ; il y va, fait son geste, puis o.aide fait le travail (la plante
  *     arrosée, sa cruche pleine, le plat préparé, le bois ramassé) et la bulle le dit (« +1 💧 ») ;
- *     une tâche sans chemin est laissée ECHEC s, il passe à la suivante ;
+ *     une tâche sans chemin est laissée ECHEC s, il passe à la suivante ; il enchaîne ses tâches de
+ *     là où il est (SOUFFLE s entre deux), sans repasser par la maison ;
+ *   - un adulte qui flâne ne bouge pas pour rien (FLANE) : il reste un moment où il arrive, ne fait
+ *     pas de trajet de quelques pas, ne vise jamais une case de la maison (son coin peut y tomber) ;
+ *     dans la maison, il change de place rarement, dans la pièce où il est ;
  *   - chacun a faim en marchant (o.marche(id, px) : le moteur compte 1 point de faim tous les
  *     FAMILLE.FAIM.PX_PAR_POINT px, js/engine/repas.js) ; quand sa jauge tombe à FAIM.SEUIL, à
  *     n'importe quelle heure, il mange (le moteur : repasStep) : sur la carte, il va au
