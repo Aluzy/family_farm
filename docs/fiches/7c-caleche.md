@@ -27,7 +27,7 @@ animaux, meubles, aliments) se fabrique désormais à l'Atelier.
     réserve de chaque hameau, `state.monde.habitants[id].reserve`, les bourses des foyers,
     `ficheHameau`), `js/carte/ferme/habitants.js` ; le cheval (`js/carte/cheval.js`,
     `scripts/carte/cheval.py`) pour le dessin de l'attelage ; `js/carte/triporteur.js` (un
-    véhicule qui suit un trajet) ; `js/engine/clock.js`, `js/engine/night.js`.
+    véhicule qui suit un trajet ; retiré du jeu depuis, avec le triporteur) ; `js/engine/clock.js`, `js/engine/night.js`.
 
 ## À faire
 

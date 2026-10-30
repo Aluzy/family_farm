@@ -38,7 +38,6 @@ T = {
  'asperseur': ('ambiance', g(f'{M2}/environment/sprinkler_loop.wav')),
  'pompe': ('ambiance', g(f'{M2}/environment/pump_loop.wav')),
  'robot': ('ambiance', g(f'{M2}/environment/robot_loop.wav')),
- 'pedalier': ('ambiance', g(f'{M2}/sfx/world/pedal_loop.wav')),
  'moulinet': ('ambiance', g(f'{M2}/sfx/fishing/reel_loop.wav')),
  # cris ponctuels
  'oiseau': ('nature', g(f'{M1}/ambient/oneshots/bird_call_*.wav')),
@@ -101,7 +100,6 @@ T = {
  'botteleuse': ('machines', g(f'{M2}/sfx/machines/baler_*.wav')),
  'silo': ('machines', g(f'{M2}/sfx/machines/grain_*.wav')),
  'echelle': ('monde', g(f'{M2}/sfx/world/ladder_*.wav')),
- 'sonnette': ('monde', g(f'{M2}/sfx/world/tricycle_bell_*.wav')),
  'dodo': ('monde', g(f'{M2}/sfx/world/sleep_*.wav')),
  # pas
  **{f'pas_{fr}': ('pas', g(f'{src}/sfx/footsteps/{en}_*.wav')) for fr, en, src in (

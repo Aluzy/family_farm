@@ -23,7 +23,7 @@ import {
   etatPoulailler, etatSilo, farmMap, farmOpen, farmPoint, farmSeed, farmTerrain, faucherSousBati,
   feedLivestock, fellenTrees, FERME_GENEREE, fleursPourAbeilles, freeSheepPlaces, genererFerme,
   genrePiece, goToSleep, grantTech, grassCut, harvestTree, hauteurMur, hauteurSilo, herbesSur, hoe,
-  awakeMsAtHour, buyCheval, chevalMonte, chevalNuit, chevalOu, chevalRefus, descendreCheval, etatEcurie, monterCheval, rentrerCheval, toggleCheval, toggleTriporteur, vitesseCheval, vitesseDeplacement, hoeableTiles, houseRepaired, etatDistributeur, distributeurs, verserGrain, distribuerGrain, grainDans, isArable, isOwned, layEggs, machineDe, mainCharacter,
+  awakeMsAtHour, buyCheval, chevalMonte, chevalNuit, chevalOu, chevalRefus, descendreCheval, etatEcurie, monterCheval, rentrerCheval, toggleCheval, vitesseCheval, vitesseDeplacement, hoeableTiles, houseRepaired, etatDistributeur, distributeurs, verserGrain, distribuerGrain, grainDans, isArable, isOwned, layEggs, machineDe, mainCharacter,
   majDidacticiel, makeCow, makeSheep, marcheOuvert, morceauxDe, nuitCouchee, nuitSansCouchage,
   objectifDidacticiel, passerDidacticiel, pickUp, piecesCloses, planAbri, planAbriCases, plant,
   poserBloc, blocDebloque, categorieBloc, addItem, poserEtage, poussesArbres, ramassables, ramasser, ramasserMorceau,
@@ -844,10 +844,9 @@ test('ferme générée : le cheval vit à l\'Écurie, on le monte, on l\'attache
   // acheté au Marché : il est à l'Écurie, nourri
   assert(buyCheval(s).ok);
   assertEqual([chevalOu(s), buyCheval(s).ok], ['ecurie', false]);
-  // monté à la ferme : plus vite ; le triporteur reste au garage
+  // monté à la ferme : plus vite
   assert(toggleCheval(s, { carte: 'ferme' }).ok);
   assertEqual([chevalMonte(s), vitesseDeplacement(s)], [true, C.VITESSE]);
-  assertEqual(toggleTriporteur(s).ok, false);
   // hors de la ferme : pas de poteau ni de corde, il faut rester en selle
   setInv(s, { corde: 1 });
   const refus = descendreCheval(s, { carte: 'ville', x: 100, y: 200 });

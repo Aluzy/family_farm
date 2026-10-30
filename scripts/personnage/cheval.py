@@ -5,8 +5,8 @@
 #     6..9 : de face (il vient vers nous), quatre temps ; 10..13 : de dos (il s'en va), de même.
 #     Il vit dans l'Écurie (js/carte/ferme/chantier.js, syncBeasts) et attend, attaché au poteau,
 #     sur les cartes d'excursion (js/carte/cheval.js).
-#   - assets/cheval_monte.png (mêmes cases) : le cheval sellé sous le personnage, comme le
-#     triporteur (scripts/personnage/triporteur.py) : pour chaque vue (bas : de face ; haut : de
+#   - assets/cheval_monte.png (mêmes cases) : le cheval sellé sous le personnage : pour chaque
+#     vue (bas : de face ; haut : de
 #     dos ; cote : de profil), pour chaque temps du pas (0..3, puis 4 : à l'arrêt), la couche
 #     « dessous » (derrière le cavalier) puis « dessus » (devant lui). C'est le même cheval que
 #     seul : de face, sa tête et les bottes passent devant le cavalier ; de dos, sa croupe et sa

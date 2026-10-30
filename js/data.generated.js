@@ -798,7 +798,6 @@ export const RAW_DATA = {
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
       "faux": { "entrees": { "bois": 3, "pierre": 2 }, "outil": "faux" },
       "canne": { "entrees": { "bois": 3, "fibre": 4, "pierre": 1 }, "outil": "canne" },
-      "triporteur": { "entrees": { "lingot_fer": 4, "lingot_cuivre": 1, "planche": 4, "fibre": 2 }, "outil": "triporteur" },
       "nid_poule": { "nom": "Nid garni : une poule", "entrees": { "fibre": 4, "ble": 3 }, "animal": "poule", "debloque": "poulailler" },
       "sel_mouton": {
         "nom": "Pierre à sel et foin : un mouton",
@@ -1656,7 +1655,6 @@ export const RAW_DATA = {
       "JOUR": { "lac": 8, "riviere": 8, "mer": 12 }
     }
   },
-  "TRIPORTEUR": { "NOM": "Triporteur", "ICONE": "🛺", "ARTICLE": "un", "PRIX": 450, "VITESSE": 3 },
   "SERRE": { "LIEU": "serre", "PRIX_CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "PRIX_NIVEAUX": [0, 900, 1800, 3000, 5400] },
   "VERGER": {
     "PRIX_CONSTRUCTION": 0,

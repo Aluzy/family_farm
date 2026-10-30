@@ -251,7 +251,7 @@ test('les hameaux : après une absence, au plus RATTRAPAGE jours d\'arrêts', ()
 
 test('l\'Atelier : chaque objet que vendait le Marché a sa recette (sauf les meubles)', () => {
   const R = Object.values(DATA.ATELIER.RECETTES);
-  for (const o of ['houe', 'hache', 'pioche', 'faux', 'canne', 'triporteur']) assert(R.some((r) => r.outil === o), `l'outil ${o}`);
+  for (const o of ['houe', 'hache', 'pioche', 'faux', 'canne']) assert(R.some((r) => r.outil === o), `l'outil ${o}`);
   for (const a of ['poule', 'mouton', 'vache']) assert(R.some((r) => r.animal === a), `l'animal ${a}`);
   assert(R.some((r) => r.cheval), 'le cheval');
   // (le récit, lot 7 : les meubles ne se fabriquent plus, ils s'achètent dans les hameaux, ile.test.mjs)

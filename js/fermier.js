@@ -24,10 +24,9 @@
  * l'ancien dessin de la case (« retenue ») jusqu'au coup de houe ou au geste de la main, puis
  * montre le nouveau. Une retenue ne dure jamais plus de HOLD_MS.
  *
- * Le triporteur (fabriqué à l'Atelier, modèle.triporteur : il est en selle) : dehors, quand il
- * marche ou attend, il y est assis (js/carte/triporteur.js) et va TRIPORTEUR.vitesse fois plus
- * vite ; pendant un geste ou dans un intérieur, il en descend. De même son cheval (modèle.cheval,
- * modèle.chevalVitesse : js/carte/cheval.js), qui passe avant le triporteur.
+ * Son cheval (modèle.cheval : il est en selle ; modèle.chevalVitesse : js/carte/cheval.js) :
+ * dehors, quand il marche ou attend, il y est assis et va plus vite ; pendant un geste ou dans un
+ * intérieur, il en descend.
  *
  * Image : assets/fermier.png (cases de 16 × 32), noms des cases dans assets/fermier.json
  * (scripts/personnage/fermier.py). Sans elles, pas de personnage : rien d'autre ne change.
@@ -227,20 +226,20 @@
       const k = F[name];
       if (k !== undefined) s.setFrame(k);
     }
-    // le triporteur (js/carte/triporteur.js) ou le cheval (js/carte/cheval.js) : dehors, quand
-    // il marche ou attend, il y est assis et va plus vite (ctx.triporteur, ctx.cheval : le
-    // modèle dit qu'il est en selle, et sur quoi) ; pendant un geste, dans un intérieur, il en descend
-    const selles = { triporteur: K.triporteur ? K.triporteur(scene) : null, cheval: K.cheval ? K.cheval(scene) : null };
-    const monture = () => (ctx.cheval ? 'cheval' : ctx.triporteur ? 'triporteur' : null);
+    // le cheval (js/carte/cheval.js) : dehors, quand il marche ou attend, il y est assis et va
+    // plus vite (ctx.cheval : le modèle dit qu'il est en selle) ; pendant un geste, dans un
+    // intérieur, il en descend
+    const selles = { cheval: K.cheval ? K.cheval(scene) : null };
+    const monture = () => (ctx.cheval ? 'cheval' : null);
     const cacheSelles = () => { for (const k in selles) if (selles[k]) selles[k].cache(); };
     const ROULE = /^(marche|panier|idle)_(bas|haut|cote)_\d$/;
     let roule = 0, rx = 0, ry = 0;
     const enSelle = () => !!(monture() && selles[monture()] && shown && !home && !where);
     // (à pied : ctx.pied, ses bottes dans le marais et la montagne, fiche 11 : modèle.pied)
-    const vitesse = () => (!enSelle() ? ctx.pied || 1 : monture() === 'cheval' ? ctx.chevalVitesse || 1 : K.TRIPORTEUR.vitesse);
+    const vitesse = () => (!enSelle() ? ctx.pied || 1 : ctx.chevalVitesse || 1);
     let drawn = '';
-    // le son des pas (js/son.js) : un pas aux images 0 et 2 de la marche ; en selle, les sabots
-    // ou le pédalier, tant qu'il avance
+    // le son des pas (js/son.js) : un pas aux images 0 et 2 de la marche ; en selle, les sabots,
+    // tant qu'il avance
     const PAS = /^(marche|panier)_\w+_(\d)$/;
     let pasVu = -1;
     function bruitPas(name) {
@@ -521,7 +520,6 @@
     function filter(model) {
       const raw = model;
       ctx.hour = raw.heure == null ? 12 : raw.heure;
-      ctx.triporteur = !!raw.triporteur;
       ctx.cheval = !!raw.cheval;
       ctx.chevalVitesse = raw.chevalVitesse || 1;
       ctx.pied = raw.pied || 1;
@@ -984,7 +982,7 @@
 
     function update(delta) {
       const dt = Math.min(delta, 50) / 1000;
-      // (rentré, caché, descendu : plus de triporteur sous lui ; draw le repose s'il roule)
+      // (rentré, caché, descendu : plus de cheval sous lui ; draw le repose s'il avance)
       if (!enSelle() || !s.visible || !ROULE.test(drawn)) cacheSelles();
       // Retenues trop longues (onglet caché, chemin bloqué) : la case se montre.
       if (holds.size) {

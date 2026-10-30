@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { asleep } from '../engine/night.js';
 import { SOMMEIL_MESSAGE } from './actions.js';
-import { castLine, chopTree, enSelle, hasTool, mineRock, OUTILS, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass, selectTool, toggleTriporteur, toolDef } from '../engine/outils.js';
+import { castLine, chopTree, hasTool, mineRock, OUTILS, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass, selectTool, toolDef } from '../engine/outils.js';
 import { recolterMonde } from '../engine/monde-recolte.js';
 import { axeMode, hoeMode, pickMode, rodMode, scytheMode, setAxeMode, setHoeMode, setPickMode, setRodMode, setScytheMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
@@ -18,10 +18,10 @@ import { chevalMonte, chevalOu, chevalPossede, toggleCheval } from '../engine/ch
 /* ---------- la barre d'outils, en bas de la carte ---------- */
 
 // Une case par outil (OUTILS, dans l'ordre de la barre), qui montre l'outil une fois acheté.
-// Un appui prend l'outil en main ; un second appui sur l'outil en main le range. Le triporteur,
-// une fois acheté, a sa case au bout : un appui y fait monter le personnage, un autre l'en
-// fait descendre (il roule plus vite : js/carte/triporteur.js). De même le cheval (js/engine/
-// cheval.js) : hors de la ferme, en descendre l'attache à un poteau, là. La barre se
+// Un appui prend l'outil en main ; un second appui sur l'outil en main le range. Le cheval
+// (js/engine/cheval.js), une fois acheté, a sa case au bout : un appui y fait monter le
+// personnage, un autre l'en fait descendre ; hors de la ferme, en descendre l'attache à un
+// poteau, là. La barre se
 // range comme le menu : sa languette, au-dessus d'elle, la fait glisser hors de l'écran.
 export let toolbarOpen = true;
 
@@ -44,9 +44,9 @@ function enMain() {
 // dès qu'un outil est acheté.
 export function toolBarHtml() {
   const bati = buildSlotHtml();             // la ferme générée : le mode Construire (js/ui/chantier.js)
-  const tri = hasTool(state, 'triporteur'), cheval = chevalPossede(state);
+  const cheval = chevalPossede(state);
   const cruche = crucheSlotHtml();          // la cruche et sa jauge (fiche 17, js/ui/cruche.js)
-  if (!OUTILS.some((id) => hasTool(state, id)) && !tri && !cheval && !bati && !cruche) return '';
+  if (!OUTILS.some((id) => hasTool(state, id)) && !cheval && !bati && !cruche) return '';
   const main = enMain();
   const cases = OUTILS.map((id) => {
     const def = toolDef(id);
@@ -56,16 +56,9 @@ export function toolBarHtml() {
     const tenu = id === main;
     const label = tenu ? `${def.NOM} en main : la ranger` : `Prendre : ${def.NOM}`;
     return `<button type="button" class="tool-slot${tenu ? ' active' : ''}" data-action="tool-use" data-outil="${id}" aria-pressed="${tenu}" aria-label="${label}" title="${label}">${def.ICONE}</button>`;
-  }).join('') + cruche + (tri ? triporteurSlot() : '') + (cheval ? chevalSlot() : '') + bati;
+  }).join('') + cruche + (cheval ? chevalSlot() : '') + bati;
   const tab = `<button type="button" class="tool-bar-tab" data-action="toolbar-toggle" aria-expanded="${toolbarOpen}" aria-label="${toolbarOpen ? 'Ranger la barre d\'outils' : 'Sortir la barre d\'outils'}" title="Outils">${BARRE_FLECHE}</button>`;
   return tab + `<div class="tool-bar-body" role="toolbar" aria-label="Outils"${toolbarOpen ? '' : ' inert'}>${cases}</div>`;
-}
-
-// La case du triporteur : allumée quand le personnage est en selle.
-function triporteurSlot() {
-  const def = toolDef('triporteur'), monte = enSelle(state);
-  const label = monte ? `${def.NOM} : en descendre` : `${def.NOM} : monter dessus`;
-  return `<button type="button" class="tool-slot${monte ? ' active' : ''}" data-action="tool-use" data-outil="triporteur" aria-pressed="${monte}" aria-label="${label}" title="${label}">${def.ICONE}</button>`;
 }
 
 // La case du cheval : allumée quand le personnage est en selle.
@@ -94,13 +87,6 @@ function useCheval() {
 function useTool(id) {
   const def = toolDef(id);
   if (!hasTool(state, id)) return;
-  if (id === 'triporteur') {
-    const r = applyResult(toggleTriporteur(state));
-    if (!r.ok) return;
-    persistState();
-    notify(r.enSelle ? `${def.ICONE} En selle : tu vas ${DATA.TRIPORTEUR.VITESSE} fois plus vite sur la carte.` : `${def.ICONE} Tu descends du triporteur : à pied.`);
-    return;
-  }
   if (enMain() === id) {                     // l'outil en main : le ranger
     if (id === 'houe') ACTIONS['hoe-toggle']();
     else { setAxeMode(false); setPickMode(false); setRodMode(false); setScytheMode(false); refresh(); }

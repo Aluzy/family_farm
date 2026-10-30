@@ -22,7 +22,7 @@ restent sur la branche `archive/jeu-avant-grand-monde`.
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
  ├─ js/telemetry.js       suivi de session (script classique)
  ├─ vendor/phaser.min.js  Phaser 4.2.1 (≈ 1,4 Mo)
- ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, chemins.js, nature.js, gestes.js, lumiere.js, eau.js, ressort.js, triporteur.js, cheval.js, toit.js ;
+ ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, chemins.js, nature.js, gestes.js, lumiere.js, eau.js, ressort.js, cheval.js, toit.js ;
  │                        jeu.js, le jeu Phaser de toutes les cartes (CarteJeu, voir § 1 quater)
  ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat, les bêtes de l'Étable et du Poulailler (voir docs/vie-ambiance.md)
  ├─ js/fermier.js         le personnage, facultatif : il refait sur la carte les gestes du joueur (voir docs/personnage.md)
@@ -83,7 +83,6 @@ pas Phaser pour se charger. Ce que chaque carte avait en double y est une seule 
 | `gestes.js` | les gestes et leurs effets, pareils sur toutes les cartes : `APPUI` et `doubleAppui()` (un appui sur ce qui se touche : le personnage y va et fait son geste, un coup par appui ; un double appui ailleurs : il y marche), `MANETTE` et `manette()` (le doigt posé puis glissé : il marche dans la direction du glissement tant que le doigt reste posé, rien ne s'affiche), `astuceMarche()` (la bulle qui explique ce geste, une fois par appareil, au premier essai de marche au doigt), `SECOUSSE` et `secousse()` (la vue tremble un peu quand un arbre tombe et à chaque coup de pioche), `BULLE` et `bulleGain()` (la bulle « +1 🪵 » au-dessus du personnage, en DOM). Sur toutes les cartes, la caméra suit le personnage |
 | `lumiere.js` | le jour et la nuit : `LIGHT_KEYS`, `lumiere(heure)`, `voile(scène, l, h, profondeur)` (§ 1 ter) |
 | `ressort.js` | l'écrasement et l'étirement des bêtes (squash and stretch) : `RESSORT` (raideur, amorti, bornes, `COUPS`, `TENU`), `ressort()` → `pousse(impulsion)`, `maj(dt, tenu)`, `applique(image, échelle)`, `calme()` ; les animaux seulement (`js/ambient-life.js`, `js/carte/ferme/faune-monde.js`, voir docs/vie-ambiance.md § 4 bis) |
-| `triporteur.js` | le triporteur du personnage (acheté au Marché : `enSelle`, moteur) : `TRIPORTEUR`, `triporteur(scène)` → `place(x, y, vue, retourné, roulé)` pose le tricycle sous lui et dit son image assise ; en selle, il va `TRIPORTEUR.vitesse` fois plus vite (à la ferme ; pas dans la grotte ni un intérieur, ni pendant un geste) |
 | `cheval.js` | le cheval du personnage (`DATA.CHEVAL`, `js/engine/cheval.js`) : monté depuis la barre d'outils, plus rapide, à la ferme seulement pour l'instant (pas dans la mine) ; l'attacher à un poteau sur une autre carte reviendra avec le grand monde |
 | `eau.js`, `toit.js` | l'eau vivante des étendues d'eau (`CarteKit.eauVive` : les étangs de la ferme, les blocs d'eau du grand monde), le toit de tuiles d'un bâtiment bâti en blocs (ou d'ardoise, de chaume, de roseaux : les hameaux) |
 

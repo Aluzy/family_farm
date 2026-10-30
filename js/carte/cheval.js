@@ -5,7 +5,7 @@
  * fait monter le personnage en selle ou en descendre. En selle, il va plus vite (le moteur dit
  * combien), assis (ses cases assis_<vue>) sur le cheval sellé (assets/cheval_monte.png,
  * scripts/personnage/cheval.py : par vue et par temps du pas, une couche derrière lui et une
- * devant). Comme le triporteur (js/carte/triporteur.js), dont il a la même façon de faire.
+ * devant).
  * Hors de la ferme, descendu, il attend attaché à son poteau (attache) : il broute, la corde va
  * de l'anneau du poteau à son licol ; un toucher dessus le fait monter.
  *

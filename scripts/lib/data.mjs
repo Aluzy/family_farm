@@ -777,7 +777,7 @@ export function validateData(data) {
       // cheval, un meuble)
       const effets = ['sortie', 'outil', 'animal', 'cheval', 'meuble'].filter((k) => r[k]);
       if (effets.length !== 1) err(`ATELIER.RECETTES.${rid}`, 'une sortie, un outil, un animal, le cheval ou un meuble (l\'un des cinq)');
-      if (r.outil && !['houe', 'hache', 'pioche', 'faux', 'canne', 'triporteur'].includes(r.outil)) err(`ATELIER.RECETTES.${rid}.outil`, 'houe, hache, pioche, faux, canne ou triporteur');
+      if (r.outil && !['houe', 'hache', 'pioche', 'faux', 'canne'].includes(r.outil)) err(`ATELIER.RECETTES.${rid}.outil`, 'houe, hache, pioche, faux ou canne');
       if (r.animal && !['poule', 'mouton', 'vache'].includes(r.animal)) err(`ATELIER.RECETTES.${rid}.animal`, 'poule, mouton ou vache');
       if (r.meuble && !(data.MEUBLES && data.MEUBLES[r.meuble])) err(`ATELIER.RECETTES.${rid}.meuble`, `« ${r.meuble} » n'est pas un meuble (MEUBLES)`);
       if (r.debloque && !(data.NIVEAUX && data.NIVEAUX.ELEMENTS && data.NIVEAUX.ELEMENTS[r.debloque]) && !(data.CULTURES && data.CULTURES[r.debloque])) err(`ATELIER.RECETTES.${rid}.debloque`, `« ${r.debloque} » n'est pas un élément des niveaux`);

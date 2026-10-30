@@ -12,7 +12,7 @@ import { unlockLevel } from './levels.js';
    js/engine/blocs.js, etatEcurie). state.cheval = null (pas de cheval) ou { monte, nourri,
    attache } :
      - monte : le personnage est en selle ; il va vitesseCheval fois plus vite sur toutes les
-       cartes (le triporteur, lui, reste au garage : on ne monte pas sur les deux) ;
+       cartes ;
      - nourri : il a mangé sa ration la nuit d'avant (chevalNuit) ; sinon il va moins vite ;
      - attache : null (à la ferme, dans l'Écurie, ou monté), ou { carte, x, y } : attaché à son
        poteau sur une autre carte (le grand monde, docs/grand-monde.md ; x, y : le pied du
@@ -88,7 +88,6 @@ export function monterCheval(state, lieu = { carte: 'ferme' }) {
     return fail('Ton cheval est resté à l\'Écurie, à la ferme.');
   }
   ch.monte = true;
-  if (state.outils) state.outils.aPied = true;              // (le triporteur reste au garage)
   return { ok: true, monte: true };
 }
 

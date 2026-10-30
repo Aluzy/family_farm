@@ -115,7 +115,6 @@
         L.spritesheet(F.C.BLOCS_CARTE.hauts.key, v(F.C.BLOCS_CARTE.hauts.file), F.C.BLOCS_CARTE.hauts.frame);
         // les animaux de compagnie de la famille (js/ambient-life.js) : trois robes de chat, trois de chien
         for (const k of COMPAGNONS) L.spritesheet(k, v(k + '.png'), CAT_FRAME);
-        L.spritesheet(K.TRIPORTEUR.key, v(K.TRIPORTEUR.file), { frameWidth: K.TRIPORTEUR.w, frameHeight: K.TRIPORTEUR.h });
         // la calèche du grand monde (js/carte/ferme/caleche.js, fiche 7c)
         if (K.CALECHE) L.spritesheet(K.CALECHE.key, v(K.CALECHE.file), { frameWidth: K.CALECHE.w, frameHeight: K.CALECHE.h });
         // le cheval : sellé, seul (à l'Écurie), son poteau (js/carte/cheval.js)
