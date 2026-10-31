@@ -82,7 +82,10 @@
             e = { soil: this.add.image(x, y, 'ph_dry').setDepth(terre), crop: null, key: '', tween: null };
             this.plots.set(p.id, e);
           }
-          e.soil.setPosition(x, y).setTexture(p.arrosee ? this.tex('soil_wet', 'ph_wet') : this.tex('soil_dry', 'ph_dry'));
+          // (dans la Serre, la terre est celle de son bac, dessinée au sol avec ses planches,
+          // drawZoneDirt : rien par-dessus, sauf la tache humide d'une parcelle arrosée)
+          if (z.id === 'serre' && this.has('soil_wet_serre')) e.soil.setPosition(x, y).setTexture('soil_wet_serre').setVisible(!!p.arrosee);
+          else e.soil.setPosition(x, y).setTexture(p.arrosee ? this.tex('soil_wet', 'ph_wet') : this.tex('soil_dry', 'ph_dry')).setVisible(true);
           this.syncCrop(e, p, x, y);
         });
         // Étiquette de la zone : calée à gauche sur les parcelles, au-dessus de la barrière.
