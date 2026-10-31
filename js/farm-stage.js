@@ -106,6 +106,8 @@
       preload() {
         const L = this.load;
         L.setPath(this.ctx.base);
+        // l'écran de chargement (jeu.html) : les images comptent pour 10 à 70 %
+        L.on('progress', (p) => { if (global.Chargement) global.Chargement.avance(0.1 + 0.6 * p); });
         L.on('loaderror', (file) => this.missing.add(file.key));
         L.image('crops', v('crops.png'));
         L.image('soil_dry', v('soil_dry.png'));
@@ -279,6 +281,8 @@
           } catch (e) { console.warn('[FarmStage] famille indisponible', e); }
         }
         this.ready = true;
+        this.chargement = !!global.Chargement;   // l'écran de chargement attend la vue dessinée (update)
+        if (this.chargement) global.Chargement.avance(0.75);
         this.followSnap = true;          // la vue part centrée sur le personnage
         if (this.ctx.lastModel) this.sync(this.ctx.lastModel, true);
         this.makeArrivee();
@@ -440,6 +444,14 @@
 
       update(time, delta) {
         const dt = Math.min(delta, 50);
+        // L'écran de chargement (jeu.html) s'efface quand la vue est entièrement dessinée (vueDessinee :
+        // les régions sous la caméra, leur sol du grand monde arrivé), la carte affichée ; pas pendant
+        // la configuration d'une nouvelle partie (l'écran y est caché, il attend la ferme qui suit).
+        if (this.chargement && this.ctx.visible && !document.body.classList.contains('configuration')) {
+          const part = this.vueDessinee();
+          global.Chargement.avance(0.75 + 0.25 * part);
+          if (part >= 1) { this.chargement = false; global.Chargement.fini(); }
+        }
         // Déplacement et fondu suivent l'horloge réelle : ils durent le même temps même
         // si les images sont lentes (Phaser plafonne `delta`).
         if (this.pan) this.stepPan();

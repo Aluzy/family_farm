@@ -3227,3 +3227,46 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .son-curseur { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 1.2fr); align-items: center; gap: 12px; min-height: 44px; }
 .son-curseur input[type="range"] { width: 100%; accent-color: var(--accent); }
 @media (max-width: 420px) { .son-curseur { grid-template-columns: 1fr; gap: 4px; } }
+
+/* L'écran de chargement (jeu.html, #chargement) : par-dessus tout, sur le fond de la page, le
+   temps que la carte soit dessinée. Quatre carottes du potager (assets/crops.png, la carotte :
+   ligne 23, colonnes 0 à 3, une case de 16 × 32 agrandie 4 fois sans lissage) poussent stade par
+   stade dans une bande de terre (assets/soil_dry.png), puis l'écran s'efface en fondu. */
+.chargement {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 24px;
+  background: var(--bg);
+  color: var(--text);
+  transition: opacity 0.4s ease-out;
+}
+.chargement.fini { opacity: 0; pointer-events: none; }
+.chargement-titre { font-size: 32px; color: var(--text); }
+.chargement-rang { display: flex; flex-direction: column; align-items: stretch; }
+.chargement-plants { display: flex; gap: 4px; padding: 0 10px; margin-bottom: -28px; position: relative; z-index: 1; }
+.chargement-plants i {
+  width: 64px;
+  height: 128px;
+  background: url('../assets/crops.png') no-repeat 0 -1408px / 1024px 1920px;
+  image-rendering: pixelated;
+}
+.chargement-plants i[data-stade="1"] { background-position: -64px -1408px; }
+.chargement-plants i[data-stade="2"] { background-position: -128px -1408px; }
+.chargement-plants i[data-stade="3"] { background-position: -192px -1408px; }
+.chargement-terre {
+  height: 40px;
+  border: 3px solid var(--color-earth);
+  border-radius: 4px;
+  background: url('../assets/soil_dry.png') 0 0 / 64px 64px;
+  image-rendering: pixelated;
+  box-shadow: inset 0 0 0 2px var(--wood-light), 0 4px 0 rgba(58, 36, 20, 0.35);
+}
+.chargement-texte { font-size: 20px; color: var(--color-earth); }
+@media (prefers-color-scheme: dark) { .chargement-texte { color: var(--wood-light); } }
+@media (prefers-reduced-motion: reduce) { .chargement { transition: none; } }

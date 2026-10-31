@@ -8,6 +8,46 @@
 </head>
 <body>
 
+<!-- L'écran de chargement (css/jeu.css, .chargement) : par-dessus tout dès la première image, le
+     temps que la carte soit entièrement dessinée ; quatre carottes y poussent avec le chargement
+     (window.Chargement.avance(p), p de 0 à 1 ; fini() le retire : js/farm-stage.js). -->
+<div class="chargement" id="chargement" role="status" aria-live="polite">
+  <div class="chargement-titre">Ferme Familiale</div>
+  <div class="chargement-rang" aria-hidden="true">
+    <div class="chargement-plants"><i></i><i></i><i></i><i></i></div>
+    <div class="chargement-terre"></div>
+  </div>
+  <div class="chargement-texte">Les carottes poussent… <span id="chargement-pct">0 %</span></div>
+</div>
+<script>
+// Le chargement : avance(p) fait pousser les carottes (elles ne reculent jamais), fini() les mûrit
+// et efface l'écran. Sans fin au bout de 30 s (une erreur, une autre carte), l'écran s'efface seul.
+(function () {
+  var el = document.getElementById('chargement'), pct = document.getElementById('chargement-pct');
+  var plants = el.querySelectorAll('.chargement-plants i'), fait = 0, parti = false;
+  function avance(p) {
+    p = Math.max(fait, Math.min(1, Number(p) || 0));
+    fait = p;
+    // une vague de gauche à droite : la i-ème carotte part un stade après la précédente (4 stades)
+    var n = Math.floor(p * 6 + 1e-9);
+    for (var i = 0; i < plants.length; i++) plants[i].dataset.stade = Math.max(0, Math.min(3, n - i));
+    pct.textContent = Math.round(p * 100) + ' %';
+  }
+  function fini() {
+    if (parti) return;
+    parti = true;
+    avance(1);
+    setTimeout(function () {
+      el.classList.add('fini');
+      setTimeout(function () { el.remove(); }, 450);
+    }, 350);
+  }
+  window.Chargement = { avance: avance, fini: fini };
+  avance(0.04);
+  setTimeout(fini, 30000);
+})();
+</script>
+
 <h1 class="visually-hidden">Ferme Familiale</h1>
 <div class="player-card" id="player-card"></div>
 

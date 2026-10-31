@@ -703,6 +703,8 @@
 
     update(time, delta) {
       const dt = Math.min(delta, 100) / 1000;
+      // (le jeu lancé dans une grotte : l'écran de chargement, jeu.html, s'efface à sa première image)
+      if (global.Chargement && !this.chargeFini) { this.chargeFini = true; global.Chargement.fini(); }
       this.stepPassages();
       this.stepMine(dt);
       this.stepChampignon();
