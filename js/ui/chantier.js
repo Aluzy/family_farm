@@ -15,7 +15,7 @@ import { atelierConstruit, craft, craftStatus } from '../engine/atelier.js';
 import { countItem } from '../engine/inventory.js';
 import { blocsDidacticiel } from '../engine/didacticiel.js';
 import { setStageWindow, stageWindow } from './stage-windows.js';
-import { blocAt, blocDebloque, blocDessus, blocsEnMain, categorieBloc, changeMur, changeSol, couchages, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
+import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, deplacerBloc, deplacerStatus, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
 import { ETAGE_BLOCS, etageCouvertes, etageEmprise, poseEtageStatus, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
@@ -174,12 +174,15 @@ export function buildChipHtml() {
   const niveaux = Array.from({ length: max + 1 }, (_, i) => max - i).map((n) => `<button type="button" class="build-level-item${n === lvl ? ' active' : ''}" data-action="build-level" data-niveau="${n}" aria-pressed="${n === lvl}" aria-label="Niveau ${n}">${n}</button>`).join('');
   // l'outil pièce : un mur en main, au sol ; allumé, un glissement trace le pourtour d'une pièce
   const murEnMain = !!(buildMode && DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].mur) && !niveau();
+  // la gomme (un bloc qui se trace en main) et Annuler (au sol, s'il y a quelque chose à défaire)
+  const gomme = traceInfo() || modeGomme ? `<button type="button" class="build-piece build-gomme${modeGomme ? ' on' : ''}" data-action="build-gomme" aria-pressed="${modeGomme}" aria-label="Gomme : glisser pour reprendre les blocs" title="Gomme : glisse pour reprendre les blocs de cette sorte"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M3 10.5 9.5 4l3.5 3.5L6.5 14H4z" fill="#fbd98c" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6.4 7.1l3.5 3.5" stroke="currentColor" stroke-width="1.6"/><path d="M8 14h5" stroke="currentColor" stroke-width="1.6"/></svg></button>` : '';
+  const annuler = !niveau() ? `<button type="button" class="build-piece build-annuler" data-action="build-annuler"${histoire.length ? '' : ' disabled'} aria-label="Annuler la dernière opération" title="Annuler la dernière opération"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M5 4 2 7l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M2.5 7H10a3.5 3.5 0 0 1 0 7H7" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>` : '';
   const outilPiece = murEnMain ? `<button type="button" class="build-piece${modePiece ? ' on' : ''}" data-action="build-piece" aria-pressed="${modePiece}" aria-label="Outil pièce : glisser d'un coin à l'autre pour poser tous les murs d'une pièce" title="Outil pièce : glisse d'un coin à l'autre pour poser les murs du pourtour"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><rect x="2" y="3" width="12" height="10" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="7" y="11.5" width="2.6" height="2.6" fill="#fbd98c"/></svg></button>` : '';
   const choixNiveau = `<div class="build-level"><button type="button" class="build-level-btn" data-action="build-level-menu" aria-haspopup="true" aria-expanded="${niveauListe}" aria-label="Niveau de construction : ${lvl}" title="Niveau de construction (appui long : glisser jusqu'au niveau)">${lvl}</button><div class="build-level-list" role="group" aria-label="Niveaux"${niveauListe ? '' : ' hidden'}>${niveaux}</div></div>`;
   // la pose d'un meuble : ✔️ le pose là où est son aperçu, ❌ sort de ce mode
   const m = meubleModele(), ap = m && m.apercu;
   const pose = m ? `<div class="pose-meuble" role="group" aria-label="Poser le meuble"><span class="pose-meuble-txt">${ap ? (ap.ok ? 'Le poser ici ?' : 'Il ne tient pas ici') : 'Touche une case pour placer le meuble'}</span><button type="button" class="pose-meuble-ok" data-action="meuble-ok"${ap && ap.ok ? '' : ' disabled'} aria-label="Poser le meuble ici" title="Poser le meuble ici">✔️</button><button type="button" class="pose-meuble-non" data-action="meuble-annule" aria-label="Sortir de la pose du meuble" title="Sortir de la pose du meuble">❌</button></div>` : '';
-  return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons">${outilPiece}${choixNiveau}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>`;
+  return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons">${annuler}${gomme}${outilPiece}${choixNiveau}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>`;
 }
 
 // L'appui long sur le carré du niveau : la liste s'ouvre ; en glissant, le niveau sous le doigt
@@ -259,20 +262,71 @@ export function traceInfo() {
   if (!buildMode || niveau() || meubleEnMain()) return null;
   const b = DATA.ATELIER.BLOCS[buildMode];
   if (!b || b.porte || b.silo || !(b.mur || (b.sol && !b.meuble) || buildMode === 'barriere')) return null;
-  return { forme: b.sol ? 'libre' : modePiece && b.mur ? 'piece' : 'ligne', stock: blocsEnMain(state, buildMode) };
+  return { forme: b.sol ? 'libre' : modePiece && b.mur ? 'piece' : 'ligne', stock: blocsEnMain(state, buildMode), gomme: modeGomme };
 }
 // La case `c` pour le tracé (le stock à part : la carte le borne) : 'ok', le bloc en main s'y
 // pose ; 'fait', elle a déjà ce qu'il faut (un mur pour un mur, une barrière pour une barrière,
 // un sol pour un sol) ; false, rien ne s'y pose.
+// (d'abord ce qui y est déjà : le moteur dit qu'un mur se pose sur un mur, pour le rehausser, et un
+// sol sur un sol, pour le changer ; un tracé, lui, les laisse tels quels)
 export function tracePosable(c) {
   if (!buildMode) return false;
-  if (poseStatus(state, buildMode, c).ok) return 'ok';
   const b = DATA.ATELIER.BLOCS[buildMode], x = blocAt(state, c), bx = x && DATA.ATELIER.BLOCS[x];
   if (b.mur ? bx && bx.mur : buildMode === 'barriere' ? x === 'barriere' : b.sol && solAt(state, c)) return 'fait';
-  return false;
+  return poseStatus(state, buildMode, c).ok ? 'ok' : false;
 }
 // L'outil pièce (le bouton au bout de la barre, un mur en main) : un glissement trace une pièce.
 let modePiece = false;
+// La gomme (le bouton à côté) : un glissement reprend, au lieu de poser, les blocs de la même
+// famille que celui en main sur les cases tracées (les cases « fait » de tracePosable).
+let modeGomme = false;
+
+// Annuler (le bouton ↶ de la barre) : les dernières opérations au sol, la plus récente en haut
+// (HISTOIRE_MAX au plus ; oubliées quand on range le mode Construire). Une opération est une
+// liste de gestes, défaits ensemble : { deplace: case, de, sorte } (défait : le ramener sur `de`),
+// { pose: case, sorte } (défait : reprendre), { reprise:
+// case, sorte } (défait : reposer), { change: case, avant, apres } (défait : reposer `avant`).
+const HISTOIRE_MAX = 30;
+let histoire = [];
+function noter(gestes) {
+  if (!gestes.length) return;
+  histoire.push(gestes);
+  if (histoire.length > HISTOIRE_MAX) histoire.shift();
+}
+// La pipette : le bloc posé sur la case `c` au sol (celui que reprendrait un appui ; un meuble, sur
+// n'importe laquelle de ses cases), s'il se pose à ce niveau, sinon null.
+export function pipetteSorte(c) {
+  if (!buildMode || niveau()) return null;
+  const couvert = casesCouvertes(state).get(c);
+  const s = surCase(c) || (couvert !== undefined ? surCase(couvert) : null);
+  return s && SORTES().includes(s) ? s : null;
+}
+// Déplacer un bloc posé (js/farm-stage.js) : un glissement parti d'un meuble ou d'un bloc seul (la
+// lanterne, le four, la ruche… : pas un mur, une porte, un sol, une barrière, le silo, qui se
+// tracent et se gomment) l'emporte jusqu'où on le lâche. Au sol seulement. Pour la carte :
+// { sorte, ancre (sa case d'ancrage) } ou null.
+export function deplacable(c) {
+  if (!buildMode || niveau() || meubleEnMain()) return null;
+  const couvert = casesCouvertes(state).get(c), ancre = couvert !== undefined && !surCase(c) ? couvert : c;
+  const sorte = surCase(ancre), b = sorte && DATA.ATELIER.BLOCS[sorte];
+  if (!b || b.mur || b.sol || b.porte || b.silo || b.semis || b.arbre || sorte === 'barriere') return null;
+  return { sorte, ancre };
+}
+// L'aperçu du déplacement : tiendrait-il, ancré sur `vers` ? { ok, cases }.
+export function deplacePossible(de, vers) {
+  const r = deplacerStatus(state, de, vers);
+  return { ok: r.ok, cases: r.cases };
+}
+// Défaire un changement : le nouveau bloc repris (une fenêtre percée rend son mur), puis l'ancien
+// reposé s'il n'est pas revenu de lui-même (un mur, un sol, une porte remplacés).
+function defaireChange(g) {
+  if (surCase(g.change) !== g.apres) return { ok: false };
+  const r = reprendreBloc(state, g.change);
+  if (!r.ok || surCase(g.change) === g.avant) return r;
+  return poserBloc(state, g.avant, g.change);
+}
+// Ce qui est sur la case `c` au sol : le bloc du dessus, le bloc, le sol (ce que reprend un appui).
+const surCase = (c) => blocDessus(state, c) || blocAt(state, c) || solAt(state, c) || null;
 
 // Fabriquer sur place ce qui manque : un tracé en voulait plus qu'on n'en avait en main. La
 // recette de l'Atelier qui donne ce bloc (celle de son nom, sinon une dont la sortie le contient),
@@ -320,7 +374,7 @@ function blocDuNiveau() {
 registerActions({
   'build-toggle': () => {
     onglet = null; bulle = null;
-    if (buildMode) { poseMeuble = null; setBuildMode(null); refresh(); return; }
+    if (buildMode) { poseMeuble = null; histoire = []; modeGomme = false; setBuildMode(null); refresh(); return; }
     if (!chantierOuvert()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     if (stageWindow) setStageWindow(null);    // (depuis le menu latéral : on revient sur la carte)
@@ -457,9 +511,67 @@ registerActions({
     const reprend = b ? !surLibre && !changeMur(b, buildMode) && !empile : sol && solAt(state, c) && !changeSol(solAt(state, c), buildMode);
     // (un meuble en main, sur une case libre : son aperçu, pas encore posé)
     if (!reprend && meubleEnMain()) { poseMeuble = { sorte: buildMode, case: c }; refresh(); return; }
+    const avant = surCase(c);
     const r = reprend ? reprendreBloc(state, c) : poserBloc(state, buildMode, c);
     if (!r.ok) { notify(r.error); return; }
+    // (pour Annuler : la reprise, la pose, ou le changement d'un mur, d'un sol ; pas le silo)
+    if (reprend) noter([{ reprise: c, sorte: r.sorte || avant }]);
+    else if (!empile) noter([avant && avant !== buildMode && !surLibre ? { change: c, avant, apres: buildMode } : { pose: c, sorte: buildMode }]);
     persistState();
+    refresh();
+  },
+  // Annuler la dernière opération au sol : ses gestes défaits, du dernier au premier.
+  'build-annuler': () => {
+    if (!buildMode) return;
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    const gestes = histoire.pop();
+    if (!gestes) { notify('Rien à annuler.'); return; }
+    let n = 0;
+    for (const g of [...gestes].reverse()) {
+      const r = g.deplace !== undefined ? (surCase(g.deplace) === g.sorte ? deplacerBloc(state, g.deplace, g.de) : { ok: false })
+        : g.pose !== undefined ? (surCase(g.pose) === g.sorte ? reprendreBloc(state, g.pose) : { ok: false })
+        : g.reprise !== undefined ? poserBloc(state, g.sorte, g.reprise)
+          : defaireChange(g);
+      if (r.ok) n += 1;
+    }
+    if (n) persistState();
+    refresh();
+    notify(n ? `↶ Annulé${gestes.length > 1 ? ` : ${n} bloc${n > 1 ? 's' : ''}` : ''}${n < gestes.length ? ` (${gestes.length - n} n'ont pas pu l'être)` : ''}.` : 'Rien n\'a pu être annulé (ce qui a été posé a changé depuis).');
+  },
+  // La pipette (un appui maintenu sur un bloc posé, js/farm-stage.js) : ce bloc en main, son onglet
+  // ouvert ; un meuble, il en faut un en main pour le reprendre (sinon le choisir n'aurait pas de sens).
+  'bloc-pipette': (target) => {
+    const s = pipetteSorte(Number(target.dataset.case));
+    if (!s) return;
+    poseMeuble = null;
+    bulle = null;
+    const g = groupeDe(s);
+    if (g) choisi[g.id] = s;
+    onglet = categorieBloc(s) || onglet;
+    setBuildMode(s);
+    const n = blocsEnMain(state, s);
+    notify(`🎯 ${DATA.ATELIER.BLOCS[s].nom} en main${n ? ` · ${n}` : ' · plus aucun : un tracé proposera d\'en fabriquer'}.`, { duree: CONSEIL_MS });
+    refresh();
+  },
+  // Déplacer (un glissement parti d'un meuble ou d'un bloc seul, js/farm-stage.js) : de sa case
+  // d'ancrage `de` à `vers` ; s'il ne tient pas là, il reste où il était.
+  'bloc-deplacer': (target) => {
+    if (!buildMode) return;
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    const de = Number(target.dataset.de), vers = Number(target.dataset.vers);
+    if (!Number.isInteger(de) || !Number.isInteger(vers) || de === vers) return;
+    const r = deplacerBloc(state, de, vers);
+    if (!r.ok) { notify(r.error); refresh(); return; }
+    noter([{ deplace: vers, de: r.de, sorte: r.sorte }]);
+    persistState();
+    refresh();
+    notify(`✋ Déplacé : ${DATA.ATELIER.BLOCS[r.sorte].nom.toLowerCase()}.`, { duree: CONSEIL_MS });
+  },
+  // La gomme : allumée, un glissement reprend les blocs de la sorte en main au lieu d'en poser.
+  'build-gomme': () => {
+    if (!buildMode) return;
+    modeGomme = !modeGomme;
+    if (modeGomme) notify('🧽 Gomme : glisse sur des blocs de cette sorte pour les reprendre (ils reviennent dans l\'inventaire).', { duree: CONSEIL_MS * 2 });
     refresh();
   },
   // L'outil pièce : allumé, un glissement d'un coin à l'autre trace le pourtour d'une pièce.
@@ -476,13 +588,32 @@ registerActions({
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const cases = String(target.dataset.cases || '').split(',').map(Number).filter((c) => Number.isInteger(c) && c >= 0);
     const sorte = buildMode, nom = DATA.ATELIER.BLOCS[sorte].nom.toLowerCase();
+    // la gomme : les blocs de cette famille repris, case par case
+    if (target.dataset.gomme === '1') {
+      const gestes = [];
+      let raison = '';
+      for (const c of cases) {
+        if (tracePosable(c) !== 'fait') continue;
+        const avant = surCase(c), r = reprendreBloc(state, c);
+        if (r.ok) gestes.push({ reprise: c, sorte: r.sorte || avant });
+        else raison = raison || r.error;
+      }
+      noter(gestes);
+      if (gestes.length) persistState();
+      refresh();
+      if (gestes.length) notify(`🧽 ${gestes.length} bloc${gestes.length > 1 ? 's' : ''} repris${raison ? ` · ${raison}` : ''}`);
+      else if (raison) notify(raison);
+      return;
+    }
     // (dans l'ordre du tracé ; quand la main est vide, les cases qui restent attendent leurs blocs)
     let n = 0, raison = '', i = 0;
+    const gestes = [];
     for (; i < cases.length && blocsEnMain(state, sorte); i++) {
       const r = poserBloc(state, sorte, cases[i]);
-      if (r.ok) n += 1;
+      if (r.ok) { n += 1; gestes.push({ pose: cases[i], sorte }); }
       else raison = raison || r.error;
     }
+    noter(gestes);
     const restants = cases.slice(i);
     if (n) persistState();
     refresh();
@@ -508,10 +639,13 @@ registerActions({
     }
     const nom = DATA.ATELIER.BLOCS[a.sorte].nom.toLowerCase();
     let n = 0;
+    const gestes = [];
     for (const c of a.cases) {
       if (!blocsEnMain(state, a.sorte)) break;
-      if (poserBloc(state, a.sorte, c).ok) n += 1;
+      if (poserBloc(state, a.sorte, c).ok) { n += 1; gestes.push({ pose: c, sorte: a.sorte }); }
     }
+    // (Annuler reprend ces blocs : ils reviennent dans l'inventaire, la fabrication reste faite)
+    noter(gestes);
     if (faits || n) persistState();
     refresh();
     const manque = a.cases.length - n;
@@ -532,6 +666,7 @@ registerActions({
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const r = (niveauBati() ? poserEtage : poserBloc)(state, poseMeuble.sorte, poseMeuble.case);
     if (!r.ok) { notify(r.error); return; }
+    if (!niveauBati()) noter([{ pose: poseMeuble.case, sorte: poseMeuble.sorte }]);
     poseMeuble = null;
     if (!blocsEnMain(state, buildMode)) quitteMeuble();     // (plus de ce meuble : on en sort)
     persistState();

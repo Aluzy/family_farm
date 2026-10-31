@@ -344,6 +344,89 @@ export function pieceDe(state, tile) {
   return piecesCloses(state).find((p) => p.cases.includes(tile)) || null;
 }
 
+// Les conseils du mode Construire (js/ui/chantier.js, la carte : js/carte/ferme/chantier.js) : ce
+// qui manque aux enceintes, et ce que sont les pièces closes.
+//   trous : les cases libres qui, fermées d'un mur, fermeraient une enceinte de plus (le mur qui
+//           manque : une case dans l'alignement d'un mur, ou un coin) ;
+//   sansPorte : les enceintes fermées sans porte ([cases]) : ce ne sont pas encore des pièces ;
+//   pieces : chaque pièce close, { cases, genre, texte } (« Maison · 2 couchages », « Le Poulailler »,
+//           « Pièce vide » et ce qui la ferait devenir quelque chose).
+// Calculé une fois par état des blocs posés (le cache, comme piecesCloses).
+let conseilsCle = null, conseilsListe = null;
+export function conseilsPieces(state) {
+  const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR, max = DATA.ATELIER.PIECE_MAX;
+  const cle = W + ':' + JSON.stringify(B);
+  if (cle === conseilsCle) return conseilsListe;
+  const ferme = (t, plus) => t === plus || !!(sorteDe(B[t]) && sorteDe(B[t]).ferme);
+  const voisins = (i) => { const c = i % W, r = Math.floor(i / W); return [c > 0 ? i - 1 : -1, c < W - 1 ? i + 1 : -1, r > 0 ? i - W : -1, r < H - 1 ? i + W : -1]; };
+  // l'étendue de la case `d` (un mur de plus en `plus`) : ses cases, ses bords, ou null si elle est ouverte
+  const etendue = (d, plus) => {
+    const cases = [], bord = new Set(), pile = [d], vus = new Set([d]);
+    while (pile.length) {
+      const i = pile.pop(), c = i % W, r = Math.floor(i / W);
+      cases.push(i);
+      if (c === 0 || r === 0 || c === W - 1 || r === H - 1 || cases.length > max) return null;
+      for (const j of voisins(i)) {
+        if (j < 0) continue;
+        if (ferme(j, plus)) { bord.add(j); continue; }
+        if (!vus.has(j)) { vus.add(j); pile.push(j); }
+      }
+    }
+    return { cases, bord };
+  };
+  // les enceintes d'aujourd'hui (fermées, avec ou sans porte)
+  const dedans = new Set(), enceintes = [];
+  for (const k of Object.keys(B)) {
+    const b = Number(k);
+    if (!ferme(b)) continue;
+    for (const d of voisins(b)) {
+      if (d < 0 || ferme(d) || dedans.has(d)) continue;
+      const e = etendue(d, -1);
+      if (!e) continue;
+      for (const t of e.cases) dedans.add(t);
+      enceintes.push(e);
+    }
+  }
+  // les trous : près d'un mur, une case libre hors des enceintes, entre deux murs alignés ou dans un
+  // coin ; fermée, une de ses voisines serait dans une enceinte neuve
+  const candidats = [], vues = new Set();
+  for (const k of Object.keys(B)) {
+    const b = Number(k);
+    if (!ferme(b)) continue;
+    for (const c of voisins(b)) {
+      if (c < 0 || vues.has(c) || ferme(c) || dedans.has(c) || B[c]) continue;
+      vues.add(c);
+      const [g, d, h, bas] = voisins(c).map((j) => j >= 0 && ferme(j));
+      if (!((g && d) || (h && bas) || ((g || d) && (h || bas)))) continue;
+      // (ce que fermerait un mur sur c : les cases des enceintes neuves autour de lui)
+      const ferme2 = new Set();
+      for (const j of voisins(c)) {
+        if (j < 0 || ferme(j) || dedans.has(j) || ferme2.has(j)) continue;
+        const e = etendue(j, c);
+        if (e) for (const t of e.cases) ferme2.add(t);
+      }
+      if (ferme2.size) candidats.push({ c, ferme2 });
+    }
+  }
+  // (une case qu'un autre candidat enfermerait est dans la pièce, pas dans son mur : ce n'est pas
+  // le trou ; murée, elle ne ferait qu'un réduit)
+  const trous = candidats.filter((x) => !candidats.some((y) => y !== x && y.ferme2.has(x.c))).map((x) => x.c);
+  const portesDe = (e) => [...e.bord].filter((t) => sorteDe(B[t]).porte);
+  const sansPorte = enceintes.filter((e) => !portesDe(e).length).map((e) => e.cases.sort((x, y) => x - y));
+  const NOMS = { maison: 'Maison', poulailler: 'Le Poulailler', paturage: 'L\'Étable', serre: 'La Serre', silo: 'Le Silo', moulin: 'Le Moulin', ecurie: 'L\'Écurie' };
+  const pieces = piecesCloses(state).map((p) => {
+    const genre = genreDe(B, p);
+    const lits = p.paillasses.length;
+    const texte = genre === 'maison' ? `Maison${lits ? ` · ${lits} couchage${lits > 1 ? 's' : ''}` : ' · sans lit : pose une paillasse'}`
+      : genre ? NOMS[genre] || genre
+        : 'Pièce vide : une paillasse en fait une maison ; un bloc clé (nichoir, mangeoire, bac à semis, meule), un bâtiment';
+    return { cases: p.cases, genre, texte };
+  });
+  conseilsCle = cle;
+  conseilsListe = { trous: trous.sort((x, y) => x - y), sansPorte, pieces };
+  return conseilsListe;
+}
+
 // Le genre de la pièce close de la tuile ('maison', l'id d'un bâtiment) ou null.
 export function genrePiece(state, tile) {
   const p = pieceDe(state, tile);
@@ -622,6 +705,32 @@ export function poseStatus(state, sorte, tile) {
     if (!ok) return { ok: false, raison: `${s.nom} : il lui faut ${s.largeur || 1} × ${s.hauteur || 1} cases libres ${s.dehors ? 'sur l\'herbe' : 'dans la pièce'} (vers la droite${(s.hauteur || 1) > 1 ? ' et vers le haut' : ''}).` };
   }
   return { ok: true };
+}
+
+// Déplacer un bloc posé (le mode Construire, js/ui/chantier.js) : celui de la case `de` (un meuble,
+// une de ses cases) repris, puis reposé avec sa case d'ancrage sur `vers`. S'il ne tient pas là, il
+// est reposé où il était, et rien n'a changé : { ok: false, raison }. Sinon { ok: true, sorte, de
+// (son ancienne case d'ancrage), vers }.
+export function deplacerBloc(state, de, vers) {
+  const r = reprendreBloc(state, de);
+  if (!r.ok) return r;
+  if (r.case === vers) { poserBloc(state, r.sorte, r.case); return { ok: true, sorte: r.sorte, de: r.case, vers }; }
+  const st = poseStatus(state, r.sorte, vers);
+  if (!st.ok) { poserBloc(state, r.sorte, r.case); return fail(st.raison); }
+  const p = poserBloc(state, r.sorte, vers);
+  if (!p.ok) { poserBloc(state, r.sorte, r.case); return p; }
+  return { ok: true, sorte: r.sorte, de: r.case, vers };
+}
+
+// Le bloc de la case `de` tiendrait-il, ancré sur `vers` ? Sur une copie de la partie : rien ne
+// change. { ok, raison, cases } (cases : celles qu'il couvrirait, pour l'aperçu).
+export function deplacerStatus(state, de, vers) {
+  const copie = structuredClone(state);
+  const r = reprendreBloc(copie, de);
+  if (!r.ok) return { ok: false, raison: r.error, cases: [vers] };
+  const cases = empriseMeuble(copie, r.sorte, vers) || [vers];
+  const st = poseStatus(copie, r.sorte, vers);
+  return { ok: st.ok, raison: st.ok ? '' : st.raison, cases };
 }
 
 // Pose `sorte` sur `tile` ; l'herbe haute des cases voisines qui déborde sur ce qui est bâti

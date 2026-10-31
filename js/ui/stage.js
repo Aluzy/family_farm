@@ -61,8 +61,8 @@ import { chevalMonte, chevalOu, vitesseCheval } from '../engine/cheval.js';
 import { countWithSilo } from '../engine/animals.js';
 import { countItem } from '../engine/inventory.js';
 import { ramassables } from '../engine/atelier.js';
-import { blocsPoses, blocsDessusPoses, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
-import { buildChipHtml, meubleModele, niveauBati, niveauRang, traceInfo, tracePosable } from './chantier.js';
+import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
+import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable } from './chantier.js';
 import { escaliers, etageBlocs, etageEmprise, fenetresEtage, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
@@ -531,7 +531,9 @@ export function stageModel() {
     fourAllume: !!(state.stations.four && state.stations.four.construit && state.stations.four.tache),
     // le Moulin moud-il ? sa meule (son bloc) tourne (js/carte/ferme/chantier.js, stepFires)
     meuleTourne: batiments.moulin.enMarche,
-    bati: buildMode && !stageInterior ? { sorte: buildMode, rang: niveauRang(), meuble: meubleModele() } : null,
+    // (les conseils : le mur qui manque, l'enceinte sans porte, ce qu'est chaque pièce ; au sol,
+    // pas à l'étage : conseilsPieces, js/engine/blocs.js)
+    bati: buildMode && !stageInterior ? { sorte: buildMode, rang: niveauRang(), meuble: meubleModele(), conseils: !niveauBati() && !niveauRang() ? conseilsPieces(state) : null } : null,
     // l'étage (un essai, js/engine/etage.js) et le niveau où est le personnage (0 : en bas)
     ...etageModel(),
     pieces: buildMode && !stageInterior ? piecesCloses(state).map((p) => p.cases) : null,
@@ -1043,7 +1045,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
     } catch (err) {
       stageBroken = true;
       if (window.Chargement) window.Chargement.fini();

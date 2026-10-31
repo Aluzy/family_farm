@@ -120,6 +120,46 @@ Le Marché vend toujours les outils.
   en chemin) ; le compte, au-dessus du coin tenu, dit ce qu'il en manque (« 6 / 10 · il en manque
   4 »), comme le message de la pose. Les murs déjà posés comptent comme faits : on agrandit ou on
   ferme une pièce commencée. La porte se pose ensuite sur un mur, d'un appui, comme avant.
+- **Annuler** : le bouton ↶ au bout de la barre défait la dernière opération au sol, et ainsi de
+  suite jusqu'aux 30 dernières (oubliées quand on range le mode Construire) : un bloc posé ou
+  repris d'un appui, un mur, un sol ou une porte changés (le nouveau repris, l'ancien reposé ; une
+  fenêtre percée rend son mur), un tracé entier, les blocs fabriqués sur place (ils reviennent dans
+  l'inventaire, la fabrication reste faite), un meuble posé. Ce qui a changé depuis (un bloc repris
+  à la main entre-temps) est laissé tel quel, et le message le dit.
+- **La gomme** : le bouton à côté de l'outil pièce, un bloc qui se trace en main ; allumée, un
+  glissement parti d'un bloc de la même famille (un mur pour un mur, une barrière, un sol) reprend
+  ceux qu'il traverse (cases orangées, « 4 à reprendre ») : ils reviennent dans l'inventaire.
+  Annuler les remet. Un tracé, avec ou sans gomme, laisse tels quels les murs et les sols déjà
+  posés : le moteur accepterait d'y poser le même bloc (pour rehausser un mur, changer un sol),
+  le tracé, lui, ne le fait pas (`tracePosable` les dit « fait » avant de demander au moteur).
+- **La pipette** : au sol, un appui maintenu sans bouger (`LONG_PRESS_MS`) sur un bloc posé le prend
+  en main, son onglet ouvert (« 🎯 Mur en bois en main · 4 ») ; un meuble, sur n'importe laquelle
+  de ses cases, s'il en reste un en main. Le bloc n'est pas repris : l'appui simple, lui, le
+  reprend toujours. Pratique pour continuer un mur avec la même matière. La carte : le minuteur de
+  `onDown` (js/farm-stage.js) ; la page : `pipetteSorte` et l'action `bloc-pipette`.
+- **Déplacer un bloc posé** : au sol, un glissement parti d'un meuble (sur n'importe laquelle de
+  ses cases) ou d'un bloc seul (la lanterne, le réverbère, le four, la ruche, la paillasse… : pas
+  un mur, une porte, un sol, une barrière, le silo, qui se tracent et se gomment) l'emporte case
+  par case, quel que soit le bloc en main ; son emprise est marquée en vert s'il tient là, en rouge
+  sinon. Lâché, il y est reposé ; s'il ne tient pas, il reste où il était. Le moteur :
+  `deplacerBloc` (repris, puis reposé, ou remis à sa place) et `deplacerStatus` (le même essai sur
+  une copie de la partie, pour l'aperçu : seulement quand la case visée change) ; la page :
+  `deplacable`, `deplacePossible`, l'action `bloc-deplacer` ; Annuler le ramène. Un appui maintenu
+  sans bouger reste la pipette.
+- **Les conseils sur les pièces** : en mode Construire, au sol, la carte dit ce qui manque aux
+  enceintes et ce que sont les pièces (`conseilsPieces`, js/engine/blocs.js ; dessinés par
+  `drawConseils`, js/carte/ferme/chantier.js, seulement quand ils changent) :
+  - **le mur qui manque** : une case libre qui, murée, fermerait une enceinte de plus (dans
+    l'alignement d'un mur, ou dans un coin) est cernée de rouge, « mur ? » au-dessus ; une case qui
+    serait dans l'enceinte qu'un autre trou fermerait n'en est pas un (elle ne ferait qu'un réduit) ;
+  - **l'enceinte sans porte** : fermée mais sans porte, ses cases sont teintées d'orangé, « Pas de
+    porte : pose-la sur un mur » ;
+  - **ce qu'est chaque pièce close**, au milieu de ses cases : « Maison · 2 couchages » (« sans lit :
+    pose une paillasse »), « Le Poulailler », « L'Étable »…, ou « Pièce vide : une paillasse en fait
+    une maison ; un bloc clé (nichoir, mangeoire, bac à semis, meule), un bâtiment ».
+  Un seul trou se repère (un mur qui manque) ; une enceinte ouverte de deux cases ou plus ne se
+  devine pas. Le calcul : les enceintes d'aujourd'hui une fois, puis, pour chaque case libre près
+  d'un mur, une étendue bornée à `PIECE_MAX` cases autour d'elle ; mis en cache par état des blocs.
 - **Fabriquer sur place ce qui manque** : un tracé (ligne, sol ou pièce) qui en veut plus qu'on
   n'en a en main pose d'abord ce qu'on a, dans l'ordre du tracé ; puis une fenêtre propose de
   fabriquer le reste avec la recette de l'Atelier qui donne ce bloc (`recetteDuBloc`), son coût

@@ -33,7 +33,7 @@ export const SOMMEIL_BLOQUEES = new Set([
   'harvest-tree',
   'buy-pasture', 'mill-start', 'mill-cancel',
   'buy-tech', 'build-fridge',
-  'build-station', 'atelier-fabriquer', 'bloc', 'bloc-many', 'bloc-fabriquer', 'arbre-planter', 'arbre-case', 'arbre-oui', 'build-toggle', 'silo-agrandir', 'build-pick', 'build-tab', 'build-groupe', 'meuble-ok', 'build-level-menu', 'build-level', 'build-piece', 'etage-toggle', 'upgrade', 'upgrade-serre', 'upgrade-poulailler', 'axe-toggle', 'pick-toggle', 'rod-toggle', 'scythe-toggle',
+  'build-station', 'atelier-fabriquer', 'bloc', 'bloc-many', 'bloc-fabriquer', 'arbre-planter', 'arbre-case', 'arbre-oui', 'build-toggle', 'silo-agrandir', 'build-pick', 'build-tab', 'build-groupe', 'meuble-ok', 'build-level-menu', 'build-level', 'build-piece', 'build-gomme', 'build-annuler', 'bloc-pipette', 'bloc-deplacer', 'etage-toggle', 'upgrade', 'upgrade-serre', 'upgrade-poulailler', 'axe-toggle', 'pick-toggle', 'rod-toggle', 'scythe-toggle',
   'hoe', 'hoe-toggle', 'hoe-take', 'upgrade-tank', 'robot-autonomie', 'upgrade-fridge', 'maintain', 'repair', 'eat', 'fridge-in',
   'fridge-in-all', 'fridge-out', 'toggle', 'semis-set', 'cow-herbs',
   'sac-poser', 'sac-retirer', 'sac-remplir', 'sac-reprendre', 'sac-manger', // (fiche 11 : le sac, comme la boîte et « Manger »)
