@@ -170,10 +170,9 @@
       return best;
     },
 
-    // Le personnage va le prendre : le moteur le met dans l'inventaire au moment du geste.
+    // Le personnage va le prendre (la file des gestes, file.js : il scintille en attendant) : le
+    // moteur le met dans l'inventaire au moment du geste.
     gather(g) {
-      if (this.ctx.lastModel && this.ctx.lastModel.coucher) return;   // au lit (ou en y allant) : rien
-      g.busy = true;
       const prendre = () => {
         const got = this.ctx.bridge && this.ctx.bridge.ramasser ? this.ctx.bridge.ramasser(g.id) : null;
         if (!got || !got.ok) { g.busy = false; return; }
@@ -182,7 +181,11 @@
         for (const img of g.imgs) this.tweens.add({ targets: img, y: img.y - 6, alpha: 0, duration: 260, ease: 'Sine.easeOut', onComplete: () => img.destroy() });
         this.gatherables.delete(g.id);
       };
-      if (!this.fermier || !this.fermier.gather(g.foot || { x: g.x, y: g.y }, prendre)) prendre();
+      this.geste({
+        cle: 'ramasse:' + g.id, seul: true, images: () => g.imgs,
+        valide: () => !g.busy && this.gatherables.get(g.id) === g, faire: () => { g.busy = true; }, coup: prendre,
+        lance: (opts) => this.fermier.gather(g.foot || { x: g.x, y: g.y }, prendre, opts),
+      });
     },
   });
 })(window);

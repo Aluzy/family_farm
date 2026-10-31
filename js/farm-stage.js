@@ -559,6 +559,7 @@
         this.stepToits(dt / 1000);
         this.stepVoilure(dt / 1000);
         this.stepPieces();
+        this.stepFile(delta);                   // (la file des gestes du joueur, leurs reflets : file.js)
         this.stepBeasts(time, delta / 1000);
         this.stepAbeilles(delta / 1000);
         this.stepBotteleuses(dt);

@@ -36,6 +36,33 @@ a plus d'herbes à ramasser : la fibre vient de l'herbe haute fauchée (la faux,
 fibre au sol par touffe, à ramasser en marchant dessus). La faux se fabrique à l'Atelier sans
 fibre (3 bois, 2 pierres) : c'est le premier outil à faire.
 
+### La file des gestes : chaque appui, un geste réel
+
+`js/carte/ferme/file.js`. Un appui sur une cible (une touffe à faucher, un arbre, un rocher, un
+caillou ou un objet à ramasser, une pièce du grand monde, l'entonnoir de la botteleuse ou du
+distributeur) n'est qu'une intention : le jeu ne compte rien tout de suite. Le personnage y va à
+pied (jamais de saut : sans chemin, une bulle « Je ne peux pas aller jusque-là. »), dans l'ordre
+des appuis ; c'est quand il arrive et lève l'outil que le moteur joue l'action (l'énergie, la
+fibre, le bois, l'usure). Ainsi :
+
+- **à l'appui**, seulement une vérification (`gestePossible`, `js/ui/outils.js`) : il dort, ou
+  plus assez d'énergie pour ce geste et ceux du même genre qui attendent : le message, rien ne
+  part ;
+- **en attendant**, la cible scintille : un reflet irisé (bleu, violet, rose, or) qui ondule sur
+  son dessin (une copie de ses images peinte d'un dégradé, en mode `ADD`), éteint quand le geste
+  commence ; une cible qui ne prend qu'un geste (une touffe, un caillou) ignore un second appui,
+  un arbre ou un rocher en prend autant que d'appuis ;
+- **un geste qui n'a plus lieu d'être** (la touffe déjà fauchée, l'arbre tombé, la pièce prise
+  par un habitant) est sauté : ni marche, ni geste dans le vide ;
+- **un geste oublié** (la manette : le joueur prend la main ; « Dormir » ; une autre carte) ne
+  coûte rien : son reflet s'en va ;
+- le coup fort (appui maintenu sur le personnage) reste immédiat, hors de la file.
+
+Côté personnage (`js/fermier.js`) : `enchaine` met chaque geste (sa marche, son coup, un souffle)
+après ceux qui attendent ; `opts.valide()` dit au départ s'il a encore lieu d'être,
+`opts.avant(arrive)` est appelé juste avant le coup (là, la scène joue l'action ; false : pas de
+geste) ; `attend(onHit)` dit si un geste est encore prévu.
+
 ### La botteleuse : des fibres, des bottes de paille
 
 Trois sortes de blocs de l'Atelier (`ATELIER.BLOCS` : `botteleuse` « entonnoir », « machine »,
