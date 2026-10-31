@@ -190,7 +190,7 @@
         // Dehors, le doigt posé puis glissé : le personnage marche dans sa direction tant qu'il
         // reste posé (CarteKit.manette) ; pas quand la houe laboure, ni la bulle de la citerne,
         // ni pendant la pêche, ni au lit.
-        this.manette = K.manette(this, () => this.suitPerso() && !!this.drag && !this.drag.labour && !this.drag.held && !this.drag.meuble
+        this.manette = K.manette(this, () => this.suitPerso() && !!this.drag && !this.drag.labour && !this.drag.trace && !this.drag.held && !this.drag.meuble
           && !this.fishing && !(this.ctx.lastModel && this.ctx.lastModel.coucher));
         I.on('gameout', () => { if (!this.drag) this.setHover(null); });
         this.makePincement();            // sur téléphone : deux doigts règlent le zoom (camera.js)
@@ -307,10 +307,13 @@
           labour: null,
           // la pose d'un meuble : un glissement parti de son aperçu le déplace, case par case
           meuble: null,
+          // en mode Construire, un glissement parti d'une case où le bloc se pose : une ligne de blocs
+          trace: null,
         };
         const mc = this.meubleSous ? this.meubleSous(wp.x, wp.y) : null;
         if (mc !== null) { this.drag.meuble = { case: mc, c: Math.floor(wp.x / T), r: Math.floor(wp.y / T), dernier: mc }; return; }
         if (!this.drag.fort) this.drag.labour = this.labourStart(wp.x, wp.y);
+        if (!this.drag.fort && !this.drag.labour) this.drag.trace = this.traceStart(wp.x, wp.y);
         // Appui maintenu sur le silo (hors du mode Construire) : le mode Construire, un bloc de
         // silo en main, pour l'agrandir (js/ui/chantier.js).
         if (!this.drag.labour && !this.drag.fort && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.siloAt(wp.x, wp.y)) {
@@ -385,6 +388,11 @@
           if (d.moved) this.labourTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
           return;
         }
+        if (d.trace) {
+          if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) { d.moved = true; this.setHover(null); }
+          if (d.moved) this.traceTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
+          return;
+        }
         if (d.held) return;              // bulle de la citerne : la carte ne bouge pas
         // Dehors, la vue suit le personnage (comme sur les autres cartes) : un glissement ne la
         // déplace pas, il annule seulement l'appui.
@@ -424,6 +432,14 @@
         // Au doigt, rien ne « survole » : le nom reste un instant, puis s'efface.
         if (pointer.wasTouch && this.hoverId) this.hoverUntil = performance.now() + LABEL_HOLD_MS;
         if (d.meuble && d.moved) return;           // l'aperçu du meuble a glissé : il reste où il est
+        if (d.trace && d.moved) {
+          this.clearTraceMarks();
+          // (toutes les cases où le bloc se pose, dans l'ordre : au-delà du stock, la page propose de
+          // fabriquer ce qui manque, js/ui/chantier.js)
+          const poses = d.trace.cases.filter((c, i) => d.trace.etat[i] === 'ok');
+          if (poses.length) this.ctx.bridge.act('bloc-many', { cases: poses.join(',') });
+          return;
+        }
         if (d.labour && d.moved) {
           this.clearLabourMarks();
           if (d.labour.tiles.length) this.ctx.bridge.act('hoe-many', { cases: d.labour.tiles.join(',') });
@@ -602,6 +618,82 @@
         }
         L.last = { x: wp.x, y: wp.y };
         this.labourMarks = L.marks;
+      }
+
+      // Construire en glissant (js/ui/chantier.js, traceInfo) : un glissement parti d'une case où
+      // le bloc en main se pose (ou qui l'a déjà) trace ses cases ; les murs et les barrières, une
+      // ligne droite (la rangée ou la colonne de départ, selon le sens dominant du doigt), les sols,
+      // toutes les cases traversées ; l'outil pièce, le pourtour d'un rectangle d'un coin à l'autre. Chaque case est marquée, verte si le bloc s'y pose (tant qu'il en reste
+      // en main), rouge sinon, et un compte suit le doigt ; au relâchement, les cases vertes sont
+      // envoyées ensemble (bloc-many : une seule sauvegarde).
+      traceStart(wx, wy) {
+        const m = this.ctx.lastModel, T0 = this.ctx.bridge && this.ctx.bridge.trace;
+        if (!m || !m.bati || m.bati.meuble || !T0) return null;
+        const info = T0.info();
+        if (!info) return null;
+        const c = this.tileAtPoint(wx, wy);
+        if (c < 0 || !T0.posable(c)) return null;
+        return { info, depart: c, cases: [c], etat: [], ok: [], seen: new Set([c]), last: { x: wx, y: wy } };
+      }
+
+      traceTo(d, wp) {
+        const L = d.trace, W = this.grid.cols, T0 = this.ctx.bridge.trace;
+        const c0 = L.depart % W, r0 = Math.floor(L.depart / W);
+        const c1 = Math.floor(wp.x / T), r1 = Math.floor(wp.y / T);
+        if (L.info.forme === 'piece') {
+          // l'outil pièce : le pourtour du rectangle de coins (c0, r0) et (c1, r1), dans le sens
+          // des aiguilles d'une montre depuis le coin haut-gauche (un stock trop court s'arrête
+          // donc en chemin, pas au hasard)
+          const xa = Math.min(c0, c1), xb = Math.max(c0, c1), ya = Math.min(r0, r1), yb = Math.max(r0, r1);
+          const tour = [];
+          for (let x = xa; x <= xb; x++) tour.push([x, ya]);
+          for (let y = ya + 1; y <= yb; y++) tour.push([xb, y]);
+          if (yb > ya) for (let x = xb - 1; x >= xa; x--) tour.push([x, yb]);
+          if (xb > xa) for (let y = yb - 1; y > ya; y--) tour.push([xa, y]);
+          L.cases = tour.filter(([x, y]) => x >= 0 && x < W && y >= 0).map(([x, y]) => y * W + x);
+        } else if (L.info.forme === 'ligne') {
+          // la ligne droite, du départ à la case sous le doigt, sur l'axe où le doigt est allé le plus loin
+          const horiz = Math.abs(c1 - c0) >= Math.abs(r1 - r0), n = horiz ? c1 - c0 : r1 - r0, pas = Math.sign(n);
+          L.cases = [];
+          for (let k = 0; k <= Math.abs(n); k++) L.cases.push(horiz ? r0 * W + c0 + k * pas : (r0 + k * pas) * W + c0);
+        } else {
+          // les sols : toutes les cases traversées, dans l'ordre (comme la houe)
+          const steps = Math.max(1, Math.ceil(Math.hypot(wp.x - L.last.x, wp.y - L.last.y) / 4));
+          for (let k = 0; k <= steps; k++) {
+            const x = L.last.x + ((wp.x - L.last.x) * k) / steps, y = L.last.y + ((wp.y - L.last.y) * k) / steps;
+            const t = Math.floor(y / T) * W + Math.floor(x / T);
+            if (L.seen.has(t)) continue;
+            L.seen.add(t);
+            L.cases.push(t);
+          }
+          L.last = { x: wp.x, y: wp.y };
+        }
+        // vertes tant qu'il reste des blocs en main ; rouges au-delà, ou là où le bloc ne se pose
+        // pas ; cernées seulement là où il y a déjà ce qu'il faut (un mur pour un mur : 'fait')
+        let reste = L.info.stock;
+        const avant = L.ok.filter(Boolean).length;
+        L.etat = L.cases.map((c) => T0.posable(c));
+        L.ok = L.etat.map((e) => { const ok = e === 'ok' && reste > 0; if (ok) reste -= 1; return ok; });
+        const n = L.ok.filter(Boolean).length, besoin = L.etat.filter((e) => e === 'ok').length;
+        L.manque = Math.max(0, besoin - L.info.stock);
+        if (n > avant) K.vibre('houe');
+        this.clearTraceMarks();
+        // (comme la grille de la houe : un carré clair cerné, vert ou rouge, lisible sur l'herbe)
+        this.traceMarks = L.cases.map((c, i) => {
+          const fait = L.etat[i] === 'fait';
+          return this.add.rectangle((c % W) * T + T / 2, Math.floor(c / W) * T + T / 2, T - 3, T - 3, L.ok[i] ? 0xb6f08c : 0xff8a70, fait ? 0 : 0.55)
+            .setStrokeStyle(1, fait ? 0xffffff : L.ok[i] ? 0xeaffd8 : 0xffe0d8, 0.95).setDepth(1e5);
+        });
+        // (le compte : au-dessus de la case sous le doigt ; pour une pièce, du coin qu'il tient)
+        const fin = L.info.forme === 'piece' ? Math.max(0, r1) * W + Math.max(0, Math.min(W - 1, c1)) : L.cases[L.cases.length - 1];
+        this.traceMarks.push(this.add.text((fin % W) * T + T / 2, Math.floor(fin / W) * T - 2, L.manque ? `${n} / ${besoin} · il en manque ${L.manque}` : `${n} / ${L.info.stock}`, {
+          fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '8px', color: '#4a2a10', backgroundColor: '#fff1d2', padding: { x: 2, y: 0 },
+        }).setOrigin(0.5, 1).setDepth(1e5 + 1).setResolution(6));
+      }
+
+      clearTraceMarks() {
+        for (const r of this.traceMarks || []) r.destroy();
+        this.traceMarks = null;
       }
 
       clearLabourMarks() {

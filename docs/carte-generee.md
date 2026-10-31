@@ -102,6 +102,33 @@ Le Marché vend toujours les outils.
 
 - On pose chaque mur sur une case de la carte ; la porte aussi, directement sur une case libre,
   ou sur un mur, à sa place (comme une fenêtre : le mur revient dans l'inventaire).
+- **Construire en glissant** : avec un mur (fenêtres comprises), une barrière, un sol ou le chemin
+  en main, au sol, un glissement du doigt parti d'une case où le bloc se pose en pose toute une
+  rangée. Les murs et les barrières suivent une ligne droite (la rangée ou la colonne de départ,
+  selon le sens où le doigt va le plus loin) ; les sols, toutes les cases traversées. Pendant le
+  geste, chaque case est marquée, vert clair si le bloc s'y pose (tant qu'il en reste en main),
+  rouge sinon, et un compte « posés / en main » suit le doigt ; au relâchement, les cases vertes
+  reçoivent leur bloc ensemble, une seule sauvegarde, un seul message (« 6 × mur en pierre
+  posés · encore 3 en main »). Un glissement parti d'ailleurs fait toujours défiler la carte ; un
+  appui pose ou reprend un bloc, comme avant. Une case qui a déjà ce qu'il faut (un mur pour un
+  mur, une barrière, un sol) n'est que cernée de blanc : un tracé peut partir d'elle, et continuer
+  ou fermer ce qui est commencé. La carte : `traceStart`, `traceTo` (js/farm-stage.js) ; la page :
+  `traceInfo`, `tracePosable` et l'action `bloc-many` (js/ui/chantier.js).
+- **L'outil pièce** : un mur en main, au sol, un carré au bout de la barre (à côté du niveau,
+  `build-piece`) l'allume. Un glissement d'un coin à l'autre trace alors le pourtour du rectangle,
+  dans le sens des aiguilles d'une montre depuis le coin haut-gauche (un stock trop court s'arrête
+  en chemin) ; le compte, au-dessus du coin tenu, dit ce qu'il en manque (« 6 / 10 · il en manque
+  4 »), comme le message de la pose. Les murs déjà posés comptent comme faits : on agrandit ou on
+  ferme une pièce commencée. La porte se pose ensuite sur un mur, d'un appui, comme avant.
+- **Fabriquer sur place ce qui manque** : un tracé (ligne, sol ou pièce) qui en veut plus qu'on
+  n'en a en main pose d'abord ce qu'on a, dans l'ordre du tracé ; puis une fenêtre propose de
+  fabriquer le reste avec la recette de l'Atelier qui donne ce bloc (`recetteDuBloc`), son coût
+  affiché (« 4 fois la recette de l'Atelier : 16 pierres »), et de le poser sur les cases qui
+  attendent (`bloc-fabriquer`). Sans de quoi tout faire, elle propose ce que l'inventaire permet
+  (« Tu as de quoi en fabriquer 2 sur 4 ») ; sans de quoi en faire un seul, un message dit ce qu'il
+  faudrait ; un bloc qui ne se fabrique pas à l'Atelier (un atelier de hameau), ou une recette
+  pas encore débloquée, le dit aussi. La fabrication coûte ce qu'elle coûte à l'Atelier (matériaux,
+  énergie, expérience : `craft`).
 - Un espace entièrement entouré de murs, avec au moins une porte, devient une **pièce close**.
 - Les autres bâtiments suivent la même logique.
 - Un meuble du Marché en main (pas un tableau) : la carte se quadrille ; un appui sur une case y

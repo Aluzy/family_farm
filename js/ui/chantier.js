@@ -11,7 +11,8 @@
 // js/engine/blocs.js ; la carte : js/carte/ferme/chantier.js.
 
 import { DATA } from '../engine/catalog.js';
-import { atelierConstruit } from '../engine/atelier.js';
+import { atelierConstruit, craft, craftStatus } from '../engine/atelier.js';
+import { countItem } from '../engine/inventory.js';
 import { blocsDidacticiel } from '../engine/didacticiel.js';
 import { setStageWindow, stageWindow } from './stage-windows.js';
 import { blocAt, blocDebloque, blocDessus, blocsEnMain, categorieBloc, changeMur, changeSol, couchages, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
@@ -23,6 +24,8 @@ import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { meubleSrc } from './caleche.js';
+import { closeModal, openModal } from './modal.js';
+import { itemsText } from './common.js';
 
 // Le niveau le plus haut où l'on construit (les rangs d'un mur rehaussé : 0 au sol, jusqu'à
 // HAUTEUR_MAX - 1 ; 1 est aussi l'étage d'une pièce à escalier), et celui où l'on construit
@@ -169,11 +172,14 @@ export function buildChipHtml() {
   // plus haut en haut), qui s'ouvre sous lui
   const max = niveauMax(), lvl = niveau();
   const niveaux = Array.from({ length: max + 1 }, (_, i) => max - i).map((n) => `<button type="button" class="build-level-item${n === lvl ? ' active' : ''}" data-action="build-level" data-niveau="${n}" aria-pressed="${n === lvl}" aria-label="Niveau ${n}">${n}</button>`).join('');
+  // l'outil pièce : un mur en main, au sol ; allumé, un glissement trace le pourtour d'une pièce
+  const murEnMain = !!(buildMode && DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].mur) && !niveau();
+  const outilPiece = murEnMain ? `<button type="button" class="build-piece${modePiece ? ' on' : ''}" data-action="build-piece" aria-pressed="${modePiece}" aria-label="Outil pièce : glisser d'un coin à l'autre pour poser tous les murs d'une pièce" title="Outil pièce : glisse d'un coin à l'autre pour poser les murs du pourtour"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><rect x="2" y="3" width="12" height="10" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="7" y="11.5" width="2.6" height="2.6" fill="#fbd98c"/></svg></button>` : '';
   const choixNiveau = `<div class="build-level"><button type="button" class="build-level-btn" data-action="build-level-menu" aria-haspopup="true" aria-expanded="${niveauListe}" aria-label="Niveau de construction : ${lvl}" title="Niveau de construction (appui long : glisser jusqu'au niveau)">${lvl}</button><div class="build-level-list" role="group" aria-label="Niveaux"${niveauListe ? '' : ' hidden'}>${niveaux}</div></div>`;
   // la pose d'un meuble : ✔️ le pose là où est son aperçu, ❌ sort de ce mode
   const m = meubleModele(), ap = m && m.apercu;
   const pose = m ? `<div class="pose-meuble" role="group" aria-label="Poser le meuble"><span class="pose-meuble-txt">${ap ? (ap.ok ? 'Le poser ici ?' : 'Il ne tient pas ici') : 'Touche une case pour placer le meuble'}</span><button type="button" class="pose-meuble-ok" data-action="meuble-ok"${ap && ap.ok ? '' : ' disabled'} aria-label="Poser le meuble ici" title="Poser le meuble ici">✔️</button><button type="button" class="pose-meuble-non" data-action="meuble-annule" aria-label="Sortir de la pose du meuble" title="Sortir de la pose du meuble">❌</button></div>` : '';
-  return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons">${choixNiveau}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>`;
+  return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons">${outilPiece}${choixNiveau}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>`;
 }
 
 // L'appui long sur le carré du niveau : la liste s'ouvre ; en glissant, le niveau sous le doigt
@@ -242,6 +248,70 @@ function quitteMeuble() {
   setBuildMode(SORTES().find((s) => autre(s) && blocsEnMain(state, s) > 0) || SORTES().find(autre) || null);
 }
 
+// Construire en glissant (js/farm-stage.js, traceStart) : les murs (fenêtres comprises), les
+// barrières, les sols et le chemin se posent d'un glissement du doigt parti d'une case où le
+// bloc en main se pose ; au sol seulement, pas un meuble. Les murs et les barrières suivent une
+// ligne droite (la rangée ou la colonne de départ), les sols toutes les cases traversées. Pour
+// la carte : null (le bloc ne se trace pas), ou { ligne, stock } (combien on en a en main).
+// La forme du tracé : « ligne » (murs, barrières), « libre » (sols), « piece » (l'outil pièce,
+// un mur en main : le pourtour d'un rectangle, du coin de départ au coin sous le doigt).
+export function traceInfo() {
+  if (!buildMode || niveau() || meubleEnMain()) return null;
+  const b = DATA.ATELIER.BLOCS[buildMode];
+  if (!b || b.porte || b.silo || !(b.mur || (b.sol && !b.meuble) || buildMode === 'barriere')) return null;
+  return { forme: b.sol ? 'libre' : modePiece && b.mur ? 'piece' : 'ligne', stock: blocsEnMain(state, buildMode) };
+}
+// La case `c` pour le tracé (le stock à part : la carte le borne) : 'ok', le bloc en main s'y
+// pose ; 'fait', elle a déjà ce qu'il faut (un mur pour un mur, une barrière pour une barrière,
+// un sol pour un sol) ; false, rien ne s'y pose.
+export function tracePosable(c) {
+  if (!buildMode) return false;
+  if (poseStatus(state, buildMode, c).ok) return 'ok';
+  const b = DATA.ATELIER.BLOCS[buildMode], x = blocAt(state, c), bx = x && DATA.ATELIER.BLOCS[x];
+  if (b.mur ? bx && bx.mur : buildMode === 'barriere' ? x === 'barriere' : b.sol && solAt(state, c)) return 'fait';
+  return false;
+}
+// L'outil pièce (le bouton au bout de la barre, un mur en main) : un glissement trace une pièce.
+let modePiece = false;
+
+// Fabriquer sur place ce qui manque : un tracé en voulait plus qu'on n'en avait en main. La
+// recette de l'Atelier qui donne ce bloc (celle de son nom, sinon une dont la sortie le contient),
+// ou null (un bloc qui ne se fabrique pas à l'Atelier : celui d'un atelier de hameau).
+function recetteDuBloc(sorte) {
+  const b = DATA.ATELIER.BLOCS[sorte], obj = b && b.objet, R = DATA.ATELIER.RECETTES;
+  if (!obj) return null;
+  if (R[sorte] && R[sorte].sortie && R[sorte].sortie[obj]) return sorte;
+  return Object.keys(R).find((k) => R[k].sortie && R[k].sortie[obj] && !R[k].outil && !R[k].meuble) || null;
+}
+// Combien de fois la recette `id` peut se faire avec l'inventaire (sans compter l'énergie).
+function foisPossibles(id) {
+  const e = DATA.ATELIER.RECETTES[id].entrees || {};
+  return Math.min(...Object.entries(e).map(([item, n]) => Math.floor(countItem(state, item) / n)));
+}
+// Le tracé qui attend ses blocs : { sorte, cases, id, fois } (la fenêtre « Fabriquer et poser »).
+let enAttente = null;
+// La fenêtre : il manque `cases.length` blocs `sorte` ; les fabriquer (autant que les matériaux le
+// permettent) et les poser ? Sans recette, ou sans de quoi en faire un seul : un message.
+function proposerFabrication(sorte, cases) {
+  const b = DATA.ATELIER.BLOCS[sorte], nom = b.nom.toLowerCase(), n = cases.length, id = recetteDuBloc(sorte);
+  if (!id) { notify(`Il manque ${n} × ${nom}, qui ne se fabrique pas à l'Atelier.`); return; }
+  const R = DATA.ATELIER.RECETTES[id], par = R.sortie[b.objet], voulu = Math.ceil(n / par);
+  const st = craftStatus(state, id);
+  if (!st.ok && st.raison !== 'Il manque des matériaux.') { notify(`Il manque ${n} × ${nom} · ${st.raison}`); return; }
+  const fois = Math.min(voulu, foisPossibles(id));
+  const cout = Object.fromEntries(Object.entries(R.entrees || {}).map(([item, q]) => [item, q * voulu]));
+  if (!fois) { notify(`Il manque ${n} × ${nom} · pour les fabriquer, il faut ${itemsText(cout, 'nom')}.`); return; }
+  enAttente = { sorte, cases, id, fois };
+  const faits = Math.min(n, fois * par), coutFait = Object.fromEntries(Object.entries(R.entrees || {}).map(([item, q]) => [item, q * fois]));
+  const partiel = faits < n ? `<p>Tu as de quoi en fabriquer ${faits} sur ${n} : le reste du tracé attendra.</p>` : '';
+  openModal(`
+    <h2 id="bloc-fabriquer-titre"><span aria-hidden="true">${DATA.ATELIER.ICONE}</span> Il manque ${n} × ${nom}</h2>
+    <p>Les fabriquer et les poser maintenant ? ${fois > 1 ? `${fois} fois la recette` : 'La recette'} de l'Atelier : ${itemsText(coutFait, 'nom')}.</p>
+    ${partiel}
+    <div class="row"><button type="button" class="btn primary" data-action="bloc-fabriquer">Fabriquer et poser ${faits}</button><button type="button" class="btn" data-action="close-modal">Non merci</button></div>`,
+  { labelledBy: 'bloc-fabriquer-titre', className: 'modal bois item-modal', focus: '[data-action="bloc-fabriquer"]', onClose: () => { enAttente = null; } });
+}
+
 // (le bloc en main : un de ceux qui se posent au niveau où l'on construit)
 function blocDuNiveau() {
   if (buildMode && !SORTES().includes(buildMode)) setBuildMode(SORTES().find((s) => blocsEnMain(state, s) > 0) || SORTES()[0]);
@@ -259,7 +329,7 @@ registerActions({
     // (le dernier mur choisi, ou le premier bloc qu'on a encore)
     setBuildMode(choisi.murs && SORTES().includes(choisi.murs) && blocsEnMain(state, choisi.murs) > 0 ? choisi.murs : SORTES().find((s) => blocsEnMain(state, s) > 0) || SORTES()[0]);
     // (un rappel bref, à chaque ouverture : il ne cache pas longtemps la puce des blocs)
-    notify(`${DATA.ATELIER.ICONE} Touche une case pour poser, un bloc pour le reprendre.`, { duree: CONSEIL_MS });
+    notify(`${DATA.ATELIER.ICONE} Touche une case pour poser, un bloc pour le reprendre ; glisse pour poser toute une ligne.`, { duree: CONSEIL_MS });
     refresh();
   },
   // Un appui long sur le silo (js/carte/ferme/silo.js) : le mode Construire, un bloc de silo
@@ -391,6 +461,62 @@ registerActions({
     if (!r.ok) { notify(r.error); return; }
     persistState();
     refresh();
+  },
+  // L'outil pièce : allumé, un glissement d'un coin à l'autre trace le pourtour d'une pièce.
+  'build-piece': () => {
+    if (!buildMode) return;
+    modePiece = !modePiece;
+    if (modePiece) notify('▭ Glisse d\'un coin à l\'autre de la pièce : ses murs se posent tout autour. Puis touche un mur avec une porte en main.', { duree: CONSEIL_MS * 2 });
+    refresh();
+  },
+  // Un glissement en mode Construire (traceInfo) : le bloc en main posé sur les cases tracées,
+  // dans l'ordre, jusqu'au bout du stock ; une seule sauvegarde, un seul message.
+  'bloc-many': (target) => {
+    if (!traceInfo()) return;
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    const cases = String(target.dataset.cases || '').split(',').map(Number).filter((c) => Number.isInteger(c) && c >= 0);
+    const sorte = buildMode, nom = DATA.ATELIER.BLOCS[sorte].nom.toLowerCase();
+    // (dans l'ordre du tracé ; quand la main est vide, les cases qui restent attendent leurs blocs)
+    let n = 0, raison = '', i = 0;
+    for (; i < cases.length && blocsEnMain(state, sorte); i++) {
+      const r = poserBloc(state, sorte, cases[i]);
+      if (r.ok) n += 1;
+      else raison = raison || r.error;
+    }
+    const restants = cases.slice(i);
+    if (n) persistState();
+    refresh();
+    const reste = blocsEnMain(state, sorte);
+    if (n) notify(`${DATA.ATELIER.ICONE} ${n} × ${nom} posé${n > 1 ? 's' : ''}${restants.length ? ` · il en manque ${restants.length}` : reste ? ` · encore ${reste} en main` : ' · plus rien en main'}${raison ? ` · ${raison}` : ''}`);
+    else if (raison && !restants.length) notify(raison);
+    // (il en manque : les fabriquer sur place, si l'Atelier sait les faire)
+    if (restants.length) proposerFabrication(sorte, restants);
+  },
+  // La fenêtre « Fabriquer et poser » : la recette autant de fois que prévu, puis la pose des cases
+  // qui attendaient, dans l'ordre du tracé.
+  'bloc-fabriquer': () => {
+    const a = enAttente;
+    enAttente = null;
+    closeModal();
+    if (!a) return;
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    let faits = 0, raison = '';
+    for (let k = 0; k < a.fois; k++) {
+      const r = craft(state, a.id);
+      if (!r.ok) { raison = r.error; break; }
+      faits += 1;
+    }
+    const nom = DATA.ATELIER.BLOCS[a.sorte].nom.toLowerCase();
+    let n = 0;
+    for (const c of a.cases) {
+      if (!blocsEnMain(state, a.sorte)) break;
+      if (poserBloc(state, a.sorte, c).ok) n += 1;
+    }
+    if (faits || n) persistState();
+    refresh();
+    const manque = a.cases.length - n;
+    if (n) notify(`${DATA.ATELIER.ICONE} ${n} × ${nom} fabriqué${n > 1 ? 's' : ''} et posé${n > 1 ? 's' : ''}${manque ? ` · il en manque encore ${manque}` : ''}${raison ? ` · ${raison}` : ''}`);
+    else notify(raison || `Rien n'a pu être posé.`);
   },
   // La pose d'un meuble : l'aperçu glissé du doigt sur la case `case` (js/farm-stage.js) ;
   // ✔️ le pose là où est son aperçu ; ❌ sort de ce mode.
