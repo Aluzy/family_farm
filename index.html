@@ -3,185 +3,249 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Ferme Familiale — un jeu de gestion agricole où tu construis l'autonomie alimentaire d'une famille.">
-  <meta name="theme-color" content="#183b2a">
+  <meta name="description" content="Ferme Familiale — un jeu de gestion agricole en pixel art où tu construis l'autonomie alimentaire d'une famille.">
+  <meta name="theme-color" content="#8a5a34">
   <title>Ferme Familiale — Construis ton autonomie</title>
   <style>
-    :root{
-      --ink:#183326;
-      --muted:#647268;
-      --cream:#fbf7ed;
-      --paper:#fffdf8;
-      --green:#24543c;
-      --green-2:#367451;
-      --lime:#b9d77a;
-      --yellow:#f3c95b;
-      --orange:#df8b4e;
-      --line:#e7dfcf;
-      --shadow:0 22px 60px rgba(30,58,42,.12);
-      --radius:24px;
+    /* Le style du jeu (css/jeu.css) : sa police en pixels (assets/police_dialogue.woff), ses
+       cadres de bois sur fond crème, ses couleurs (le soleil, la feuille, la terre), et une
+       vraie vue de la ferme (assets/accueil_ferme.png, une partie du jeu à l'échelle de ses
+       pixels, agrandie sans lissage). */
+    @font-face {
+      font-family: 'Ferme Dialogue';
+      src: url('assets/police_dialogue.woff') format('woff');
+      font-display: swap;
     }
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{
-      margin:0;color:var(--ink);background:var(--cream);
-      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      line-height:1.6;
+    :root {
+      --color-sun: #f2a71b;
+      --color-leaf: #4f8a3d;
+      --color-earth: #8a5a34;
+      --wood-ink: #4a2a10;
+      --wood-dark: #3a2414;
+      --wood-light: #d9a066;
+      --wood-glow: rgba(217, 160, 102, 0.9);
+      --wood-cream: #fff4dc;
+      --wood-paper: #fff1d2;
+      --wood-bg: rgba(250, 232, 196, 0.97);
+      --accent: #3a7530;
+      --accent-dark: #2b5a23;
+      --night: #1f2a44;
+      --night-2: #2c3b5e;
+      --bg: #faf6ee;
+      --bg-band: #f1e4c6;
+      --text: #2c2416;
+      --text-muted: #6b5f4a;
     }
-    a{text-decoration:none;color:inherit}
-    .wrap{width:min(1120px,calc(100% - 40px));margin:auto}
-    .nav{
-      position:absolute;z-index:5;top:0;left:0;right:0;
-      padding:22px 0;
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #1c1a14; --bg-band: #26231b; --text: #f2ecdd; --text-muted: #b9ae95; }
     }
-    .nav-inner{display:flex;align-items:center;justify-content:space-between}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:-.03em}
-    .brand-mark{
-      width:38px;height:38px;border-radius:12px;background:var(--green);
-      display:grid;place-items:center;color:#fff;font-size:21px;
-      box-shadow:0 8px 20px rgba(36,84,60,.2)
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      font-family: 'Ferme Dialogue', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-synthesis: none;
+      font-size-adjust: ex-height 0.47;
+      font-size: 17px;
+      line-height: 1.5;
     }
-    .nav-links{display:flex;gap:28px;color:#496052;font-weight:650;font-size:14px}
-    .nav-cta{background:var(--green);color:white;padding:10px 16px;border-radius:999px;font-weight:800;font-size:14px}
-    .hero{
-      min-height:720px;display:flex;align-items:center;overflow:hidden;position:relative;
-      background:
-        radial-gradient(circle at 82% 22%,rgba(243,201,91,.38),transparent 24%),
-        radial-gradient(circle at 16% 80%,rgba(185,215,122,.32),transparent 27%),
-        linear-gradient(145deg,#f8f2df 0%,#eef2df 100%);
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, strong, b { font-weight: normal; }
+    .wrap { width: min(1120px, calc(100% - 32px)); margin: auto; }
+
+    /* le cadre de bois du jeu (.modal.bois, la barre d'outils) */
+    .bois {
+      background: var(--wood-bg);
+      color: var(--wood-ink);
+      border: 3px solid var(--color-earth);
+      border-radius: 8px;
+      box-shadow: inset 0 0 0 2px var(--wood-glow), 0 4px 0 rgba(58, 36, 20, 0.35);
     }
-    .hero:before{
-      content:"";position:absolute;inset:auto -10% -170px;height:390px;
-      background:#a8c870;border-radius:50% 50% 0 0/35% 35% 0 0;opacity:.7;
+    .bois p, .bois span { color: #7a5434; }
+
+    /* boutons : le vert du jeu ou le papier du bois, cadrés de terre */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 48px; padding: 0 20px;
+      border: 3px solid var(--color-earth); border-radius: 6px;
+      font-size: 18px; cursor: pointer;
+      transition: transform 0.1s;
     }
-    .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:70px;align-items:center;position:relative;z-index:1;padding-top:60px}
-    .eyebrow{
-      display:inline-flex;gap:8px;align-items:center;background:#edf4df;color:#356141;
-      border:1px solid #d8e5c3;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:850;
-      text-transform:uppercase;letter-spacing:.08em;
+    .btn:hover { transform: translateY(-2px); }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible, .nav a:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: inset 0 0 0 2px #6fae5a, 0 3px 0 var(--wood-dark); }
+    .btn-secondary { background: var(--wood-paper); color: var(--wood-ink); box-shadow: inset 0 0 0 2px var(--wood-glow), 0 3px 0 var(--wood-dark); }
+    .btn .px { --pxs: 24px; }
+
+    /* l'en-tête : une planche de bois */
+    .nav { position: sticky; top: 0; z-index: 5; padding: 8px 0; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 8px 6px 6px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; }
+    .medaillon {
+      width: 44px; height: 44px; flex: none; border-radius: 50%;
+      display: grid; place-items: center;
+      background: var(--wood-cream);
+      border: 3px solid var(--color-earth);
+      box-shadow: inset 0 0 0 2px var(--color-sun);
     }
-    h1{font-size:clamp(46px,6vw,76px);line-height:.98;letter-spacing:-.065em;margin:20px 0 22px;max-width:700px}
-    .hero h1 span{color:var(--green-2)}
-    .lead{font-size:19px;color:#536258;max-width:600px;margin:0 0 30px}
-    .actions{display:flex;gap:12px;flex-wrap:wrap}
-    .btn{
-      display:inline-flex;align-items:center;justify-content:center;gap:9px;
-      padding:14px 21px;border-radius:14px;font-weight:850;border:1px solid transparent;
-      transition:.2s transform,.2s box-shadow,.2s background;
+    .medaillon .px { --pxs: 28px; }
+    .nav-links { display: flex; gap: 22px; font-size: 16px; }
+    .nav-links a:hover { color: var(--accent); }
+    .nav .btn { min-height: 40px; font-size: 16px; padding: 0 16px; }
+
+    /* l'accueil : la vue de la ferme, et un panneau de bois par-dessus */
+    /* (la prairie : le vert de l'herbe du jeu, tramé comme ses tuiles) */
+    .hero {
+      position: relative; margin-top: -80px; padding: 124px 0 64px; overflow: hidden;
+      background-color: #6f9f3c;
+      background-image:
+        repeating-conic-gradient(rgba(255, 255, 255, 0.045) 0 25%, transparent 0 50%),
+        repeating-conic-gradient(rgba(0, 0, 0, 0.05) 0 25%, transparent 0 50%);
+      background-size: 8px 8px, 20px 20px;
+      border-bottom: 3px solid var(--color-earth);
     }
-    .btn:hover{transform:translateY(-2px)}
-    .btn-primary{background:var(--green);color:#fff;box-shadow:0 12px 28px rgba(36,84,60,.2)}
-    .btn-secondary{background:rgba(255,255,255,.72);border-color:var(--line)}
-    .micro{font-size:12px;color:#778078;margin-top:12px}
-    .scene{
-      position:relative;height:440px;border-radius:34px;background:#f8f4e8;border:1px solid rgba(36,84,60,.1);
-      box-shadow:var(--shadow);overflow:hidden;transform:rotate(1deg)
+    .hero-grid { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 28px; align-items: center; }
+    .cadre { padding: 8px; }
+    .hero-img {
+      display: block; width: 100%; height: auto; aspect-ratio: 526 / 390;
+      border: 2px solid var(--wood-dark); border-radius: 3px;
+      image-rendering: pixelated;
     }
-    .sun{position:absolute;right:52px;top:42px;width:72px;height:72px;background:#f3c95b;border-radius:50%;box-shadow:0 0 0 15px rgba(243,201,91,.13)}
-    .cloud{position:absolute;width:130px;height:28px;background:#fff;border-radius:30px;top:75px;left:38px;opacity:.75}
-    .cloud:before,.cloud:after{content:"";position:absolute;background:#fff;border-radius:50%}
-    .cloud:before{width:48px;height:48px;left:25px;top:-20px}.cloud:after{width:58px;height:58px;right:22px;top:-28px}
-    .mountain{position:absolute;bottom:175px;left:-20px;width:500px;height:180px;background:#87a967;clip-path:polygon(0 100%,34% 25%,51% 61%,69% 5%,100% 100%)}
-    .ground{position:absolute;bottom:0;left:0;right:0;height:205px;background:#8bb45e}
-    .field{position:absolute;bottom:30px;left:40px;width:285px;height:120px;background:#c69a5e;border-radius:12px;transform:skewY(-5deg);box-shadow:inset 0 0 0 8px rgba(120,80,38,.12)}
-    .rows{position:absolute;inset:12px;background:repeating-linear-gradient(90deg,transparent 0 24px,rgba(102,66,34,.2) 25px 27px)}
-    .house{position:absolute;bottom:128px;right:52px;width:150px;height:115px;background:#f5dfb5;border:5px solid #734e35;border-bottom-width:8px;border-radius:4px}
-    .roof{position:absolute;top:-58px;left:-18px;width:180px;height:90px;background:#8b5138;clip-path:polygon(50% 0,100% 65%,96% 80%,4% 80%,0 65%)}
-    .door{position:absolute;bottom:0;left:58px;width:34px;height:58px;background:#704c35;border-radius:5px 5px 0 0}
-    .window{position:absolute;bottom:42px;left:15px;width:31px;height:31px;background:#9bd1d6;border:4px solid #704c35}
-    .tree{position:absolute;bottom:125px;left:345px;width:16px;height:65px;background:#65472e}
-    .tree:before{content:"";position:absolute;width:95px;height:95px;left:-40px;top:-65px;background:#4c814f;border-radius:52% 48% 55% 45%}
-    .animal{position:absolute;font-size:42px;filter:drop-shadow(0 5px 2px rgba(0,0,0,.12))}
-    .chicken{bottom:47px;right:245px}.sheep{bottom:50px;right:178px}.cow{bottom:47px;right:83px;font-size:48px}
-    .stats{
-      display:flex;gap:18px;position:absolute;bottom:16px;left:20px;right:20px;
-      background:rgba(255,255,255,.9);backdrop-filter:blur(8px);padding:13px 16px;border-radius:16px;
-      border:1px solid rgba(36,84,60,.1);font-size:12px;font-weight:750;color:#536258
+    .hero-panel { padding: 28px 30px 26px; }
+    .ruban {
+      display: inline-block; padding: 2px 14px; margin-bottom: 8px;
+      background: #fbd98c; border: 2px solid var(--color-earth); border-radius: 4px;
+      font-size: 14px; color: var(--wood-ink);
     }
-    .stats span{color:var(--green);font-weight:900}
-    section{padding:105px 0}
-    .section-head{max-width:700px;margin-bottom:42px}
-    .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--green-2);font-weight:900}
-    h2{font-size:clamp(32px,4vw,50px);line-height:1.04;letter-spacing:-.045em;margin:9px 0 14px}
-    .section-head p{color:var(--muted);font-size:17px;margin:0}
-    .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-    .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:27px;box-shadow:0 8px 28px rgba(30,58,42,.045)}
-    .icon{width:48px;height:48px;border-radius:15px;background:#edf4df;display:grid;place-items:center;font-size:25px;margin-bottom:20px}
-    .card h3{margin:0 0 7px;font-size:19px}.card p{margin:0;color:var(--muted);font-size:14px}
-    .dark{background:#183326;color:#f7f5ec;position:relative;overflow:hidden}
-    .dark:before{content:"";position:absolute;width:460px;height:460px;border-radius:50%;background:#24543c;right:-190px;top:-170px;z-index:0;pointer-events:none}
-    .dark > .wrap{position:relative;z-index:1}
-    .dark .section-head p{color:#b8c5bd}.dark .kicker{color:#c9e58d}
-    .loop{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;position:relative;z-index:1}
-    .step{padding:22px 15px;border:1px solid rgba(255,255,255,.11);border-radius:18px;background:rgba(255,255,255,.055)}
-    .step b{display:block;font-size:12px;color:#c9e58d;margin-bottom:9px}.step strong{display:block;font-size:15px}.step span{display:block;color:#b8c5bd;font-size:12px;margin-top:5px}
-    .progress{display:grid;grid-template-columns:1fr 1fr;gap:45px;align-items:center}
-    .chapters{display:grid;gap:12px}
-    .chapter{display:flex;gap:16px;align-items:center;background:var(--paper);border:1px solid var(--line);padding:15px 18px;border-radius:16px}
-    .num{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:#edf4df;color:var(--green);font-weight:900}
-    .chapter strong{display:block;font-size:14px}.chapter span{font-size:12px;color:var(--muted)}
-    .quote{
-      background:#eaf1dc;border:1px solid #d6e2bd;border-radius:30px;padding:45px;
-      font-size:25px;line-height:1.25;letter-spacing:-.025em;position:relative
+    h1 { font-size: clamp(34px, 5vw, 52px); line-height: 1.05; margin: 6px 0 14px; color: var(--wood-dark); }
+    h1 em { font-style: normal; color: var(--accent); }
+    .lead { font-size: 19px; margin: 0 0 22px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .micro { font-size: 14px; margin-top: 14px; }
+    .jauges { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 18px; padding-top: 14px; border-top: 2px dashed var(--wood-light); font-size: 15px; color: var(--wood-ink); }
+
+    section { padding: 80px 0; }
+    .section-head { max-width: 720px; margin-bottom: 34px; }
+    .kicker { display: inline-block; font-size: 15px; color: var(--color-earth); border-bottom: 3px solid var(--color-sun); }
+    h2 { font-size: clamp(30px, 4vw, 42px); line-height: 1.1; margin: 10px 0 12px; }
+    .section-head p { color: var(--text-muted); font-size: 18px; margin: 0; }
+
+    /* les cartes : des fiches de bois, l'icône dans sa case (.item-icon du jeu) */
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .card { padding: 20px 20px 22px; }
+    .icon {
+      width: 60px; height: 60px; margin-bottom: 14px;
+      display: grid; place-items: center;
+      border: 3px solid var(--color-earth); border-radius: 6px;
+      background: #ead0a0; box-shadow: inset 0 0 0 2px var(--wood-light);
+      font-size: 30px;
     }
-    .quote small{display:block;font-size:12px;color:#60705f;margin-top:18px;letter-spacing:.04em}
-    .cta{
-      text-align:center;background:linear-gradient(135deg,#e9f0d9,#fbf7ed);border-top:1px solid var(--line);border-bottom:1px solid var(--line)
+    .icon .px { --pxs: 40px; }
+    .card h3 { margin: 0 0 6px; font-size: 21px; color: var(--wood-dark); }
+    .card p { margin: 0; font-size: 16px; }
+
+    /* la journée : la nuit du jeu, des cases comme celles de la barre d'outils */
+    .nuit { background: var(--night); color: #f2ecdd; position: relative; overflow: hidden; }
+    .nuit:before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background-image: radial-gradient(#fff 1px, transparent 1.5px), radial-gradient(#ffe9a8 1px, transparent 1.5px);
+      background-size: 90px 70px, 140px 110px; background-position: 10px 20px, 60px 45px; opacity: 0.35;
     }
-    .cta p{color:var(--muted);max-width:600px;margin:0 auto 26px}
-    footer{padding:28px 0;color:#758078;font-size:12px}
-    .footer-inner{display:flex;justify-content:space-between;gap:20px;align-items:center}
-    @media(max-width:850px){
-      .nav-links{display:none}.hero{min-height:auto;padding:120px 0 70px}.hero-grid{grid-template-columns:1fr;gap:45px}
-      .scene{height:360px;transform:none}.feature-grid{grid-template-columns:1fr}.loop{grid-template-columns:1fr 1fr}.progress{grid-template-columns:1fr}
+    .nuit > .wrap { position: relative; }
+    .nuit .kicker { color: #fbd98c; }
+    .nuit .section-head p { color: #c9cfe0; }
+    .loop { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .step { padding: 16px 14px; text-align: center; }
+    .step b { display: block; font-size: 14px; color: var(--color-earth); }
+    .step strong { display: block; font-size: 19px; margin: 6px 0 2px; color: var(--wood-dark); }
+    .step strong .px { --pxs: 32px; display: block; margin: 0 auto 6px; }
+    .step span { display: block; font-size: 15px; }
+
+    /* la progression : les sept chapitres, comme les lettres du jeu */
+    .progress { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; align-items: start; }
+    .chapters { display: grid; gap: 10px; }
+    .chapter { display: flex; gap: 14px; align-items: center; padding: 10px 14px; }
+    .num {
+      width: 38px; height: 38px; flex: none; display: grid; place-items: center;
+      border-radius: 50%; background: var(--color-sun); color: var(--wood-dark);
+      border: 3px solid var(--color-earth); font-size: 18px;
     }
-    @media(max-width:520px){
-      .wrap{width:min(100% - 28px,1120px)}section{padding:75px 0}h1{font-size:47px}.lead{font-size:17px}
-      .scene{height:310px}.field{left:18px;width:210px}.house{right:22px;transform:scale(.8);transform-origin:bottom right}
-      .tree{left:260px}.cow{right:25px}.sheep{right:105px}.chicken{right:175px}
-      .loop{grid-template-columns:1fr}.quote{padding:30px;font-size:21px}.footer-inner{flex-direction:column;align-items:flex-start}
+    .chapter strong { display: block; font-size: 18px; color: var(--wood-dark); }
+    .chapter span { font-size: 15px; }
+    .lettre {
+      position: sticky; top: 90px;
+      background: #fdf6e3; color: #3a2a12;
+      border: 3px solid var(--color-earth); border-radius: 8px;
+      box-shadow: inset 0 0 0 2px #d9c9a0, 0 4px 0 rgba(58, 36, 20, 0.35);
+      padding: 30px 30px 24px; font-size: 23px; line-height: 1.35;
     }
+    .lettre small { display: block; margin-top: 16px; font-size: 15px; color: var(--color-earth); }
+
+    .cta { text-align: center; background: var(--bg-band); border-top: 3px solid var(--color-earth); border-bottom: 3px solid var(--color-earth); }
+    .cta p { color: var(--text-muted); max-width: 600px; margin: 0 auto 24px; font-size: 18px; }
+    .cta .actions { justify-content: center; }
+    footer { padding: 24px 0 32px; color: var(--text-muted); font-size: 15px; }
+    .footer-inner { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+    footer a { text-decoration: underline; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hero { padding: 92px 0 40px; }
+      .hero-grid { grid-template-columns: 1fr; gap: 18px; }
+      .hero-panel { padding: 22px 20px; }
+      .loop { grid-template-columns: 1fr 1fr; }
+      .progress { grid-template-columns: 1fr; }
+      .lettre { position: static; }
+    }
+    @media (max-width: 520px) {
+      body { font-size: 16px; }
+      section { padding: 56px 0; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .loop { grid-template-columns: 1fr; }
+      .btn { width: 100%; }
+      .nav .btn { width: auto; }
+      .brand span:last-child { font-size: 18px; }
+      .lettre { padding: 22px; font-size: 20px; }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
   </style>
 </head>
 <body>
   <header class="nav">
-    <div class="wrap nav-inner">
+    <div class="wrap nav-inner bois">
       <a class="brand" href="#">
-        <span class="brand-mark">🌱</span><span>Ferme Familiale</span>
+        <span class="medaillon">🌾</span><span>Ferme Familiale</span>
       </a>
-      <nav class="nav-links">
+      <nav class="nav-links" aria-label="Sections">
         <a href="#concept">Le concept</a>
-        <a href="#systemes">Les systèmes</a>
+        <a href="#systemes">Ta journée</a>
         <a href="#progression">Progression</a>
         <a href="encyclopedie.html">Encyclopédie</a>
       </nav>
-      <a class="nav-cta" href="jeu.html">Jouer</a>
+      <a class="btn btn-primary" href="jeu.html">Jouer</a>
     </div>
   </header>
 
   <main>
     <section class="hero">
       <div class="wrap hero-grid">
-        <div>
-          <div class="eyebrow">🌾 Jeu de gestion · Autonomie · Famille</div>
-          <h1>Construis une ferme capable de <span>nourrir toute la famille.</span></h1>
-          <p class="lead">Cultive, élève, cuisine et gère tes ressources pour faire progresser ton foyer vers l'autonomie alimentaire. Ici, chaque journée est un choix.</p>
+        <div class="hero-panel bois">
+          <div class="ruban">Jeu de gestion · Autonomie · Famille</div>
+          <h1>Construis une ferme capable de <em>nourrir toute la famille.</em></h1>
+          <p class="lead">Cultive, élève, cuisine et gère tes ressources pour mener ton foyer vers l'autonomie alimentaire. Ici, chaque journée est un choix.</p>
           <div class="actions">
             <a class="btn btn-primary" href="jeu.html">🌱 Jouer gratuitement</a>
-            <a class="btn btn-secondary" href="#concept">Découvrir le jeu ↓</a>
             <a class="btn btn-secondary" href="encyclopedie.html">📖 Encyclopédie</a>
           </div>
-          <div class="micro">Aucune installation · Fonctionne directement dans ton navigateur</div>
+          <div class="micro">Aucune installation · Directement dans ton navigateur, sur ordinateur ou téléphone</div>
+          <div class="jauges"><span>👨‍👩‍👧‍👦 la famille</span><span>⚡ l'énergie</span><span>💧 l'eau</span><span>🌾 les récoltes</span></div>
         </div>
-
-        <div class="scene" aria-label="Illustration d'une ferme familiale">
-          <div class="sun"></div><div class="cloud"></div><div class="mountain"></div>
-          <div class="ground"></div>
-          <div class="field"><div class="rows"></div></div>
-          <div class="tree"></div>
-          <div class="house"><div class="roof"></div><div class="window"></div><div class="door"></div></div>
-          <div class="animal chicken">🐔</div><div class="animal sheep">🐑</div><div class="animal cow">🐄</div>
-          <div class="stats"><div>👨‍👩‍👧‍👦 <span>4</span> membres</div><div>⚡ <span>Énergie</span></div><div>💧 <span>Eau</span></div><div>🌾 <span>Ressources</span></div></div>
+        <div class="cadre bois">
+          <img class="hero-img" src="assets/accueil_ferme.png" width="526" height="390" alt="Une ferme du jeu : la maison, le poulailler et son silo, le puits, la serre et un potager de carottes, de tomates, de courgettes et de fraises">
         </div>
       </div>
     </section>
@@ -190,34 +254,36 @@
       <div class="wrap">
         <div class="section-head">
           <div class="kicker">Le concept</div>
-          <h2>Plus qu'un jeu de ferme : un petit système à faire fonctionner.</h2>
+          <h2>Plus qu'un jeu de ferme : un petit système à faire tourner.</h2>
           <p>La famille consomme chaque jour. À toi d'organiser la production, l'énergie, l'eau, le stockage et les transformations pour couvrir ses besoins.</p>
         </div>
         <div class="feature-grid">
-          <article class="card"><div class="icon">🥕</div><h3>Cultive ta nourriture</h3><p>Potager, serre et verger permettent de produire une grande variété de ressources, des légumes aux cultures de rente.</p></article>
-          <article class="card"><div class="icon">🐄</div><h3>Développe l'élevage</h3><p>Poules, moutons et vaches alimentent ta cuisine en œufs, lait et laine.</p></article>
-          <article class="card"><div class="icon">🍲</div><h3>Transforme tes récoltes</h3><p>Moulin, presse, four et cuisine créent des chaînes de production pour fabriquer des aliments plus utiles et plus rentables.</p></article>
-          <article class="card"><div class="icon">☀️</div><h3>Maîtrise ton énergie</h3><p>Panneaux solaires, batteries, pompe et appareils forment un réseau vivant qu'il faut dimensionner et entretenir.</p></article>
-          <article class="card"><div class="icon">💧</div><h3>Gère l'eau</h3><p>Le puits et la pompe alimentent les cultures. L'eau devient une ressource à planifier au même titre que l'énergie.</p></article>
-          <article class="card"><div class="icon">🧭</div><h3>Explore le grand monde</h3><p>Autour de la ferme, un grand pays caché sous le brouillard : forêts, marais, lande, montagne et côte, leurs grottes, leurs coins de pêche et leurs bêtes, et des hameaux habités au bout des chemins.</p></article>
-          <article class="card"><div class="icon">🐴</div><h3>Commerce avec la calèche</h3><p>Elle fait chaque jour le tour du pays et s'arrête devant ta ferme : vends-lui tes surplus, achète-lui des graines et ce qu'elle a pris aux hameaux. Le reste se fabrique à l'Atelier.</p></article>
+          <article class="card bois"><div class="icon">🥕</div><h3>Cultive ta nourriture</h3><p>Potager, serre et verger donnent une grande variété de récoltes, des légumes aux fruits.</p></article>
+          <article class="card bois"><div class="icon">🐄</div><h3>Développe l'élevage</h3><p>Poules, moutons, vaches et abeilles fournissent œufs, lait, laine et miel.</p></article>
+          <article class="card bois"><div class="icon">🍲</div><h3>Transforme tes récoltes</h3><p>Moulin, presse, four et cuisine forment des chaînes de production pour des aliments plus nourrissants.</p></article>
+          <article class="card bois"><div class="icon">☀️</div><h3>Maîtrise ton énergie</h3><p>Panneau solaire, batterie, pompe et appareils forment un réseau vivant qu'il faut dimensionner et entretenir.</p></article>
+          <article class="card bois"><div class="icon">🔨</div><h3>Bâtis bloc par bloc</h3><p>Murs, portes, fenêtres, toits et étages : la maison, le poulailler, l'étable et la serre se construisent à ta façon.</p></article>
+          <article class="card bois"><div class="icon">🧭</div><h3>Explore le grand monde</h3><p>Autour de la ferme, un pays caché sous le brouillard : forêts, marais, lande, montagne et côte, leurs grottes, et des hameaux habités au bout des chemins.</p></article>
+          <article class="card bois"><div class="icon">🐴</div><h3>Commerce avec la calèche</h3><p>Elle fait le tour du pays et passe devant ta ferme : vends-lui tes surplus, achète-lui des graines et ce qu'elle rapporte des hameaux.</p></article>
+          <article class="card bois"><div class="icon">💧</div><h3>Gère l'eau</h3><p>Le puits et la pompe alimentent les cultures : l'eau se planifie au même titre que l'énergie.</p></article>
+          <article class="card bois"><div class="icon">👨‍👩‍👧‍👦</div><h3>Prends soin de la famille</h3><p>Chacun a ses besoins, son équipement et son humeur ; ton compagnon t'aide aux tâches de la ferme.</p></article>
         </div>
       </div>
     </section>
 
-    <section class="dark" id="systemes">
+    <section class="nuit" id="systemes">
       <div class="wrap">
         <div class="section-head">
           <div class="kicker">Ta journée</div>
           <h2>Planifie. Produis. Dors. Recommence.</h2>
-          <p>Le temps ne file pas tout seul : tu décides quand la journée se termine. Les flux d'énergie et d'eau continuent, tandis que les événements quotidiens se résolvent pendant la nuit.</p>
+          <p>Une heure passe toutes les trente secondes. La famille mange le soir ; la nuit, les poules pondent, les plantes poussent et la ferme avance.</p>
         </div>
         <div class="loop">
-          <div class="step"><b>01</b><strong>🌱 Produire</strong><span>Planter, arroser, récolter</span></div>
-          <div class="step"><b>02</b><strong>🐔 Nourrir</strong><span>Gérer les animaux et le silo</span></div>
-          <div class="step"><b>03</b><strong>⚙️ Transformer</strong><span>Moudre, presser, cuisiner</span></div>
-          <div class="step"><b>04</b><strong>🛒 Échanger</strong><span>Vendre à la calèche, fabriquer à l'Atelier</span></div>
-          <div class="step"><b>05</b><strong>🌙 Dormir</strong><span>Faire avancer la ferme</span></div>
+          <div class="step bois"><b>01</b><strong>🌱 Produire</strong><span>Planter, arroser, récolter</span></div>
+          <div class="step bois"><b>02</b><strong>🐔 Nourrir</strong><span>Les bêtes et le silo</span></div>
+          <div class="step bois"><b>03</b><strong>⚙️ Transformer</strong><span>Moudre, presser, cuisiner</span></div>
+          <div class="step bois"><b>04</b><strong>💰 Échanger</strong><span>Vendre à la calèche, fabriquer à l'Atelier</span></div>
+          <div class="step bois"><b>05</b><strong>🌙 Dormir</strong><span>Faire avancer la ferme</span></div>
         </div>
       </div>
     </section>
@@ -227,21 +293,22 @@
         <div>
           <div class="section-head">
             <div class="kicker">Ta progression</div>
-            <h2>De la petite ferme à l'autonomie.</h2>
-            <p>Chaque amélioration ouvre de nouvelles possibilités. Construis progressivement un écosystème où les ressources se répondent.</p>
+            <h2>De la terre sauvage à l'autonomie.</h2>
+            <p>Sept chapitres racontent l'installation de la famille ; dix niveaux et un arbre des technologies ouvrent de nouvelles possibilités.</p>
           </div>
           <div class="chapters">
-            <div class="chapter"><div class="num">1</div><div><strong>Les premiers besoins</strong><span>Poser les bases de la production familiale.</span></div></div>
-            <div class="chapter"><div class="num">2</div><div><strong>Eau & cultures</strong><span>Développer le potager et sécuriser l'arrosage.</span></div></div>
-            <div class="chapter"><div class="num">3</div><div><strong>Élevage & transformation</strong><span>Créer de nouvelles chaînes de production.</span></div></div>
-            <div class="chapter"><div class="num">4</div><div><strong>Cuisine & recettes</strong><span>Transformer les ingrédients en repas.</span></div></div>
-            <div class="chapter"><div class="num">5</div><div><strong>Le grand monde</strong><span>Sortir de la ferme, découvrir les hameaux, la montagne et la côte.</span></div></div>
-            <div class="chapter"><div class="num">6–7</div><div><strong>Autonomie</strong><span>Optimiser le système jusqu'à l'indépendance.</span></div></div>
+            <div class="chapter bois"><div class="num">1</div><div><strong>L'héritage</strong><span>Réparer la maison, l'eau et le soleil ; la première récolte.</span></div></div>
+            <div class="chapter bois"><div class="num">2</div><div><strong>Le grenier</strong><span>Faire des réserves pour les jours sans récolte.</span></div></div>
+            <div class="chapter bois"><div class="num">3</div><div><strong>Le poulailler</strong><span>Les premières bêtes et leurs œufs.</span></div></div>
+            <div class="chapter bois"><div class="num">4</div><div><strong>Le four et le livre de recette</strong><span>Transformer les récoltes en repas.</span></div></div>
+            <div class="chapter bois"><div class="num">5</div><div><strong>Le troupeau</strong><span>Moutons et vaches : la laine et le lait.</span></div></div>
+            <div class="chapter bois"><div class="num">6</div><div><strong>Toute l'année</strong><span>Produire sans relâche, nuit après nuit.</span></div></div>
+            <div class="chapter bois"><div class="num">7</div><div><strong>Famille autonome</strong><span>Nourrir toute la famille de ce que la ferme produit.</span></div></div>
           </div>
         </div>
-        <div class="quote">
+        <div class="lettre">
           « La ferme n'est pas une collection de bâtiments. C'est un équilibre entre ce que la famille consomme et ce que la terre peut produire. »
-          <small>FERME FAMILIALE · PHILOSOPHIE DU JEU</small>
+          <small>Ferme Familiale · la philosophie du jeu</small>
         </div>
       </div>
     </section>
@@ -250,8 +317,8 @@
       <div class="wrap">
         <div class="kicker">Ta ferme t'attend</div>
         <h2>Alors… que vas-tu produire aujourd'hui ?</h2>
-        <p>Commence avec une petite exploitation et construis, nuit après nuit, un système capable de nourrir toute la famille.</p>
-        <div class="actions" style="justify-content:center">
+        <p>Commence sur une terre sauvage et construis, nuit après nuit, une ferme capable de nourrir toute la famille.</p>
+        <div class="actions">
           <a class="btn btn-primary" href="jeu.html">🌾 Commencer une partie</a>
           <a class="btn btn-secondary" href="encyclopedie.html">📖 Consulter l'encyclopédie</a>
         </div>
@@ -261,8 +328,8 @@
 
   <footer>
     <div class="wrap footer-inner">
-      <div>🌱 <strong>Ferme Familiale</strong> — un jeu de gestion agricole.</div>
-      <div>Version 0.11.0 · Jouable dans ton navigateur · <a href="cookies.html">Cookies et confidentialité</a></div>
+      <div>🌱 Ferme Familiale — un jeu de gestion agricole en pixel art.</div>
+      <div>Jouable dans ton navigateur · <a href="cookies.html">Cookies et confidentialité</a></div>
     </div>
   </footer>
 <script type="module" src="js/icones-page.js"></script>
