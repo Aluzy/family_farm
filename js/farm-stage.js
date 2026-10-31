@@ -434,8 +434,10 @@
         if (d.meuble && d.moved) return;           // l'aperçu du meuble a glissé : il reste où il est
         if (d.trace && d.moved) {
           this.clearTraceMarks();
-          const poses = d.trace.cases.filter((c, i) => d.trace.ok[i]);
-          if (poses.length) this.ctx.bridge.act('bloc-many', { cases: poses.join(','), manque: d.trace.manque || 0 });
+          // (toutes les cases où le bloc se pose, dans l'ordre : au-delà du stock, la page propose de
+          // fabriquer ce qui manque, js/ui/chantier.js)
+          const poses = d.trace.cases.filter((c, i) => d.trace.etat[i] === 'ok');
+          if (poses.length) this.ctx.bridge.act('bloc-many', { cases: poses.join(',') });
           return;
         }
         if (d.labour && d.moved) {

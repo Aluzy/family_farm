@@ -88,6 +88,7 @@ export const GAME_ACTIONS = {
   'atelier-fabriquer': 'Fabriquer à l\'Atelier (ferme générée)',
   'bloc': 'Poser ou reprendre un bloc (ferme générée)',
   'bloc-many': 'Poser une ligne de blocs en glissant',
+  'bloc-fabriquer': 'Fabriquer et poser les blocs qui manquent à un tracé',
   'arbre-oui': 'Planter un arbre (graine ou jeune arbre, depuis l\'Inventaire)',
   'build-toggle': 'Construire : ouvrir ou ranger (ferme générée)',
   'build-pick': 'Construire : choisir un bloc (ferme générée)',
