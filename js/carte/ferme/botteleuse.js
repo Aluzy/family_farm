@@ -98,6 +98,22 @@
     // `refus` : rien ne peut y aller, le jeu le dit sans qu'il bouge.
     jeterDans(e, verser, refus, frame) {
       if (refus || !this.fermier) { verser(); return; }
+      const p = this.devantEntonnoir(e);
+      if (!p) { verser(); return; }
+      const jeter = () => {
+        const r = verser();
+        if (r && r.ok) this.volerBrins(p.bouche, frame);
+      };
+      this.geste({
+        cle: 'entonnoir:' + e, seul: true, images: () => this.imagesEntonnoir(e), coup: jeter,
+        lance: (opts) => this.fermier.jeter(p, p.face, p.flip, jeter, opts),
+      });
+    },
+
+    // Où se tenir pour jeter dans l'entonnoir `e` : à sa gauche (de profil, tourné vers lui : on
+    // le voit), sinon devant (sous lui, de dos), sinon derrière (de face) ; { x, y, face, flip,
+    // bouche } ou null.
+    devantEntonnoir(e) {
       const cols = this.grid.cols, ex = (e % cols) * T + T / 2, bas = (Math.floor(e / cols) + 1) * T;
       const ok = (x, y) => this.fermier.standable(x, y);
       const places = [
@@ -106,40 +122,36 @@
         { x: ex, y: bas - T - 2, face: 'bas', flip: false },
       ];
       const p = places.find((q) => ok(q.x, q.y));
-      if (!p) { verser(); return; }
-      const bouche = { x: ex, y: bas - B.bouche };
-      const jeter = () => {
-        const r = verser();
-        if (r && r.ok) this.volerBrins(bouche, frame);
-      };
-      if (!this.fermier.jeter(p, p.face, p.flip, jeter)) jeter();
+      return p ? Object.assign({ bouche: { x: ex, y: bas - B.bouche } }, p) : null;
     },
 
-    // Un appui sur la botteleuse `m` (la case de sa machine) : le personnage va devant
-    // l'entonnoir et y jette ses fibres. Ce qui l'empêche (rien de raccordé, elle travaille, pas
-    // de fibres) : le jeu le dit, sans qu'il bouge.
+    // L'entonnoir `e` (son bloc) : ses images, pour le reflet de la file des gestes (file.js).
+    imagesEntonnoir(e) {
+      const bloc = this.blocks && this.blocks.get(e);
+      return bloc && bloc.img ? [bloc.img] : [];
+    },
+
+    // Un appui sur la botteleuse `m` (la case de sa machine) : l'entonnoir scintille (la file des
+    // gestes, file.js), le personnage y va et y jette ses fibres. Rien de raccordé : le jeu le dit
+    // tout de suite, sans qu'il bouge. Ce qui l'empêche à l'arrivée (elle travaille, elle est
+    // pleine, pas de fibres en main) : le jeu le dit là-bas, sans geste.
     jeterFibres(m) {
       const b = this.botteleuses && this.botteleuses.get(m), bridge = this.ctx.bridge;
       if (!b || !bridge || !bridge.verser) return;
       if (this.ctx.lastModel && this.ctx.lastModel.coucher) return;   // au lit (ou en y allant) : rien
-      if (!b.ok || b.pleine || this.botteCycles.has(m) || this.fibresEnMain < 1 || !this.fermier) { bridge.verser(m); return; }
-      const cols = this.grid.cols, e = b.entonnoir, ex = (e % cols) * T + T / 2, bas = (Math.floor(e / cols) + 1) * T;
-      const ok = (x, y) => this.fermier.standable(x, y);
-      // à sa gauche (de profil, tourné vers lui : on le voit), sinon devant (sous lui, de dos),
-      // sinon derrière (de face)
-      const places = [
-        { x: ex - T + 2, y: bas - 2, face: 'cote', flip: false },
-        { x: ex, y: bas + B.devant, face: 'haut', flip: false },
-        { x: ex, y: bas - T - 2, face: 'bas', flip: false },
-      ];
-      const p = places.find((q) => ok(q.x, q.y));
+      const prete = () => b.ok && !b.pleine && !this.botteCycles.has(m) && this.fibresEnMain >= 1;
+      if (!b.ok || !this.fermier) { bridge.verser(m); return; }
+      const p = this.devantEntonnoir(b.entonnoir);
       if (!p) { bridge.verser(m); return; }
-      const bouche = { x: ex, y: bas - B.bouche };
       const jeter = () => {
         const r = bridge.verser(m);
-        if (r && r.ok) this.volerBrins(bouche);
+        if (r && r.ok) this.volerBrins(p.bouche);
       };
-      if (!this.fermier.jeter(p, p.face, p.flip, jeter)) jeter();
+      this.geste({
+        cle: 'entonnoir:' + b.entonnoir, seul: true, images: () => this.imagesEntonnoir(b.entonnoir),
+        faire: () => { if (prete()) return true; bridge.verser(m); return false; }, coup: jeter,
+        lance: (opts) => this.fermier.jeter(p, p.face, p.flip, jeter, opts),
+      });
     },
 
     // Des brins (des fibres, ou `frame`) volent des mains du personnage à la bouche de l'entonnoir.

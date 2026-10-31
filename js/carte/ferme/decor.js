@@ -333,8 +333,8 @@
     },
 
     // Une touffe se voit sauf sur une case labourée ou fauchée (elle repousse : modèle.fauchees).
-    // Fauchée par le jeu mais pas encore par le personnage (g.tombe : il y va, le coup n'est pas
-    // donné), elle reste debout jusqu'à son coup de faux.
+    // Fauchée par le jeu mais pas encore par le personnage (g.tombe : il lève la faux), elle reste
+    // debout jusqu'à son coup.
     showGrass(g) {
       if (!g.img) return;
       const v = g.tombe || (!g.cut && !(this.dirt && this.dirt.has(g.cell)));
@@ -376,18 +376,14 @@
       return best;
     },
 
-    // Un coup de faux sur la touffe `g` : le jeu le compte tout de suite (this.ctx.bridge.scythe)
-    // et pose la fibre au sol ; le personnage va à côté et fauche (après les coups déjà demandés,
-    // dans l'ordre) ; au coup, la touffe se couche et s'efface, la fibre paraît à son pied. Si
-    // son geste n'est plus prévu (« Dormir », une autre carte…), elle s'efface sans lui.
+    // Un coup de faux sur la touffe `g` (la file des gestes, file.js) : elle scintille ; le
+    // personnage va à côté (après les gestes déjà demandés, dans l'ordre) ; arrivé, le jeu compte
+    // le coup (this.ctx.bridge.scythe) et il fauche ; au coup, la touffe se couche et s'efface, la
+    // fibre paraît à son pied. Si son geste est oublié en plein élan, elle s'efface sans lui.
     scythe(g) {
       const pied = { x: g.x, y: Math.round(g.y) };
       const ou = { carte: 'ferme', coup: [{ x: pied.x, y: pied.y }] };
-      const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.scythe ? this.ctx.bridge.scythe(g.id, ou) : null));
-      if (!got) return;
-      const M2 = got.morceaux || { coup: [], fin: [] };
-      g.tombe = true;
-      let filet = null;
+      let M2 = null, filet = null;
       const fin = () => {
         if (filet) { filet.remove(); filet = null; }
         if (!g.tombe) return;
@@ -397,6 +393,7 @@
         this.revealPieces(M2.coup);
       };
       const hit = () => {
+        if (!M2) return;
         K.vibre('pioche');
         if (global.FermeSon) global.FermeSon.joue('faux', { x: pied.x, y: pied.y, ecart: 0 });
         const imgs = [g.img, g.fleurs].filter(Boolean);
@@ -405,11 +402,22 @@
           onComplete: () => { for (const i of imgs) i.setScale(1).setAlpha(1); fin(); } });
         this.revealPieces(M2.coup);
       };
-      if (!this.fermier || !this.fermier.scythe || !this.fermier.scythe(pied, hit, () => g.tombe)) { hit(); return; }
-      // (filet : le geste a été oublié, le coup ne sera pas donné)
-      filet = this.time.addEvent({ delay: 1000, loop: true, callback: () => {
-        if (!this.fermier.attend || !this.fermier.attend(hit)) fin();
-      } });
+      const faire = () => {
+        const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.scythe ? this.ctx.bridge.scythe(g.id, ou) : null));
+        if (!got) return false;
+        M2 = got.morceaux || { coup: [], fin: [] };
+        g.tombe = true;
+        // (filet : le geste a été oublié avant le coup)
+        filet = this.time.addEvent({ delay: 1000, loop: true, callback: () => {
+          if (!this.fermier || !this.fermier.attend || !this.fermier.attend(hit)) fin();
+        } });
+        return true;
+      };
+      this.geste({
+        cle: 'herbe:' + g.id, seul: true, action: 'faucher', images: () => [g.img, g.fleurs],
+        valide: () => !g.cut && !g.tombe, faire, coup: hit,
+        lance: (opts) => !!this.fermier.scythe && this.fermier.scythe(pied, hit, opts),
+      });
     },
 
     dropGrass(g) {

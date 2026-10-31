@@ -3,6 +3,7 @@ import { asleep } from '../engine/night.js';
 import { SOMMEIL_MESSAGE } from './actions.js';
 import { castLine, chopTree, hasTool, mineRock, OUTILS, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass, selectTool, toolDef } from '../engine/outils.js';
 import { recolterMonde } from '../engine/monde-recolte.js';
+import { canAfford, TIRED } from '../engine/stamina.js';
 import { axeMode, hoeMode, pickMode, rodMode, scytheMode, setAxeMode, setHoeMode, setPickMode, setRodMode, setScytheMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
@@ -157,6 +158,16 @@ export function scytheChipHtml() {
 export function rodChipHtml() {
   if (!rodMode || !hasTool(state, 'canne') || stageInterior) return '';
   return `<button type="button" class="stage-chip hoe axe" data-action="rod-toggle" aria-pressed="true" aria-label="Canne à pêche en main : touche l'eau pour pêcher. Ranger la canne" title="Touche l'eau de l'étang ou de la mare pour y pêcher"><span class="stage-chip-pill"><span aria-hidden="true">${DATA_ICONE('canne')}</span><span class="stage-chip-text">Pêche</span><span class="stage-chip-val num">🐟‍🌈</span><span class="stage-chip-go" aria-hidden="true">✕</span></span></button>`;
+}
+
+// La carte (js/carte/ferme/file.js) : le joueur demande un geste (un coup de hache, de faux…),
+// le `n`-ième en attente qui coûte l'énergie de `action` (null : un geste qui n'en coûte pas).
+// Le jeu ne le joue qu'à l'arrivée du personnage ; ici, on dit tout de suite s'il pourra avoir
+// lieu (il dort, plus assez d'énergie pour celui-ci et ceux qui attendent : un message, false).
+export function gesteFromStage(action, n = 1) {
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return false; }
+  if (action && !canAfford(state, action, n)) { notify(TIRED); return false; }
+  return true;
 }
 
 // La carte (farm-stage.js, ou une autre : FermeHote.couper) : la hache en main, le joueur a

@@ -129,28 +129,35 @@
         .map((r) => ({ x0: r.box.x0, x1: r.box.x1, base: r.foot }));
     },
 
-    // Un coup de pioche sur le rocher `r` : le jeu compte le coup tout de suite (this.ctx.bridge.mine)
-    // et pose sa pierre au sol ; le personnage va au rocher et frappe ; au coup, des éclats
-    // sautent et la pierre tombe à son pied (à ramasser en marchant dessus). Au dernier coup, le
-    // rocher se brise en une gerbe d'éclats, lâche ses pierres autour de lui et disparaît.
-    // `fort` : le coup fort (coupfort.js : il compte plusieurs coups, la vue tremble plus).
+    // Un coup de pioche sur le rocher `r` (la file des gestes, file.js) : il scintille ; le
+    // personnage va au rocher ; arrivé, le jeu compte le coup (this.ctx.bridge.mine) et pose sa
+    // pierre au sol ; il frappe : des éclats sautent et la pierre tombe à son pied (à ramasser en
+    // marchant dessus). Au dernier coup, le rocher se brise en une gerbe d'éclats, lâche ses
+    // pierres autour de lui et disparaît. `fort` : le coup fort (coupfort.js : tout de suite, il
+    // compte plusieurs coups, la vue tremble plus).
     mine(r, fort) {
-      const b0 = r.box || { x0: r.x, x1: r.x + r.w };
-      const pied = { x: Math.round((b0.x0 + b0.x1) / 2), y: r.foot };
-      const ou = this.piecePoints(pied, this.strikeSide(pied, Math.max(8, (b0.x1 - b0.x0) / 2 + 5)), null);
-      const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.mine ? this.ctx.bridge.mine(r.id, ou, !!fort) : null));
-      if (!got) return;
-      const M2 = got.morceaux || { coup: [], fin: [] };
-      this.time.delayedCall(9000, () => this.revealPieces(M2.coup));   // (filet : le coup n'a pas été donné)
-      if (got.casse) r.finPieces = M2.fin;
-      r.queued = (r.queued || 0) + 1;
-      if (got.casse) {
-        r.breaking = true;
-        // filet de sécurité : le personnage n'a pas donné le coup (la nuit, un autre lieu…)
-        if (r.breakTimer) r.breakTimer.remove();
-        r.breakTimer = this.time.delayedCall(9000, () => { if (r.breaking) this.breakRock(r, false); });
-      }
+      const b = r.box || { x0: r.x, x1: r.x + r.w };
+      const foot = { x: Math.round((b.x0 + b.x1) / 2), y: r.foot };
+      let M2 = null;
+      const faire = () => {
+        const ou = this.piecePoints(foot, this.strikeSide(foot, Math.max(8, (b.x1 - b.x0) / 2 + 5)), null);
+        const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.mine ? this.ctx.bridge.mine(r.id, ou, !!fort) : null));
+        if (!got) return false;
+        M2 = got.morceaux || { coup: [], fin: [] };
+        const M = M2;
+        this.time.delayedCall(9000, () => this.revealPieces(M.coup));   // (filet : le coup n'a pas été donné)
+        if (got.casse) r.finPieces = M2.fin;
+        r.queued = (r.queued || 0) + 1;
+        if (got.casse) {
+          r.breaking = true;
+          // filet de sécurité : le personnage n'a pas donné le coup (la nuit, un autre lieu…)
+          if (r.breakTimer) r.breakTimer.remove();
+          r.breakTimer = this.time.delayedCall(9000, () => { if (r.breaking) this.breakRock(r, false); });
+        }
+        return true;
+      };
       const hit = () => {
+        if (!M2) return;
         r.queued = Math.max(0, r.queued - 1);
         this.revealPieces(M2.coup);
         K.secousse(this, fort ? 'fort' : 'coup');
@@ -161,17 +168,19 @@
         const p = this.fermier && this.fermier.pos();
         this.spawnShards(r, ROCKS.shards, false, p ? p.x : null);
       };
-      const b = r.box || { x0: r.x, x1: r.x + r.w };
-      const foot = { x: Math.round((b.x0 + b.x1) / 2), y: r.foot };
-      if (!this.fermier || !this.fermier.mine(foot, (b.x1 - b.x0) / 2, hit)) hit();
+      this.geste({
+        cle: 'rocher:' + r.id, immediat: !!fort, action: 'piocher', images: () => [r.img],
+        valide: () => !r.gone && !r.breaking, faire, coup: hit,
+        lance: (opts) => this.fermier.mine(foot, (b.x1 - b.x0) / 2, hit, opts),
+      });
     },
 
     // Un caillou (un rocher d'une seule tuile), sans la pioche : le personnage va le ramasser à
-    // la main (le geste de la cueillette) ; le jeu met sa pierre dans l'inventaire au moment du
-    // geste (this.ctx.bridge.caillou), le caillou monte un peu et s'efface.
+    // la main (le geste de la cueillette, la file des gestes : il scintille en attendant) ; le
+    // jeu met sa pierre dans l'inventaire au moment du geste (this.ctx.bridge.caillou), le caillou
+    // monte un peu et s'efface.
     pickRock(r) {
-      if (r.picking || (this.ctx.lastModel && this.ctx.lastModel.coucher)) return;   // au lit (ou en y allant) : rien
-      r.picking = true;
+      if (r.picking) return;
       const prendre = () => {
         const got = this.ctx.bridge && this.ctx.bridge.caillou ? this.ctx.bridge.caillou(r.id) : null;
         r.picking = false;
@@ -189,7 +198,11 @@
         });
       };
       const b = r.box || { x0: r.x, x1: r.x + r.w };
-      if (!this.fermier || !this.fermier.gather({ x: Math.round((b.x0 + b.x1) / 2), y: r.foot }, prendre)) prendre();
+      this.geste({
+        cle: 'caillou:' + r.id, seul: true, images: () => [r.img],
+        valide: () => !r.gone, faire: () => { r.picking = true; }, coup: prendre,
+        lance: (opts) => this.fermier.gather({ x: Math.round((b.x0 + b.x1) / 2), y: r.foot }, prendre, opts),
+      });
     },
 
     // Le rocher tressaute d'un pixel sous le coup.

@@ -99,30 +99,37 @@
       return best;
     },
 
-    // Un coup de hache sur l'arbre `t` : le jeu compte le coup tout de suite (this.ctx.bridge.chop)
-    // et pose son bois au sol ; le personnage va au tronc, frappe, et au coup l'arbre tremble et
-    // le morceau tombe à son pied (à ramasser en marchant dessus). Au dernier coup (got.tombe),
-    // l'arbre tombe (fellTree) et lâche les siens là où sa cime touche le sol. `fort` : le coup
-    // fort (coupfort.js : il compte plusieurs coups, la vue tremble plus).
+    // Un coup de hache sur l'arbre `t` (la file des gestes, file.js) : il scintille ; le personnage
+    // va au tronc ; arrivé, le jeu compte le coup (this.ctx.bridge.chop) et pose son bois au sol ;
+    // il frappe, et au coup l'arbre tremble et le morceau tombe à son pied (à ramasser en marchant
+    // dessus). Au dernier coup (got.tombe), l'arbre tombe (fellTree) et lâche les siens là où sa
+    // cime touche le sol. `fort` : le coup fort (coupfort.js : tout de suite, il compte plusieurs
+    // coups, la vue tremble plus).
     chop(t, fort) {
       // (l'arbre tombera du côté opposé au personnage, comme fellTree ; ses morceaux aussi)
       // (devant un buisson, il se place au bout de son pied : il ne marche pas dedans)
       const dx = t.buisson ? (t.x1 - t.x0) / 2 + 2 : 11;
-      const p = this.strikeSide(t.foot, dx);
-      const ou = this.piecePoints(t.foot, p, p.x > t.foot.x ? -1 : 1);
-      const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.chop ? this.ctx.bridge.chop(t.id, ou, !!fort) : null));
-      if (!got) return;
-      const M2 = got.morceaux || { coup: [], fin: [] };
-      this.time.delayedCall(9000, () => this.revealPieces(M2.coup));   // (filet : le coup n'a pas été donné)
-      if (got.tombe) t.finPieces = M2.fin;
-      t.queued = (t.queued || 0) + 1;
-      if (got.tombe) {
-        t.falling = true;
-        // filet de sécurité : le personnage n'a pas donné le coup (la nuit, un autre lieu…)
-        if (t.fallTimer) t.fallTimer.remove();
-        t.fallTimer = this.time.delayedCall(9000, () => { if (t.falling) this.fellTree(t, false); });
-      }
+      let M2 = null;
+      const faire = () => {
+        const p = this.strikeSide(t.foot, dx);
+        const ou = this.piecePoints(t.foot, p, p.x > t.foot.x ? -1 : 1);
+        const got = this.holdPieces(() => (this.ctx.bridge && this.ctx.bridge.chop ? this.ctx.bridge.chop(t.id, ou, !!fort) : null));
+        if (!got) return false;
+        M2 = got.morceaux || { coup: [], fin: [] };
+        const M = M2;
+        this.time.delayedCall(9000, () => this.revealPieces(M.coup));   // (filet : le coup n'a pas été donné)
+        if (got.tombe) t.finPieces = M2.fin;
+        t.queued = (t.queued || 0) + 1;
+        if (got.tombe) {
+          t.falling = true;
+          // filet de sécurité : le personnage n'a pas donné le coup (la nuit, un autre lieu…)
+          if (t.fallTimer) t.fallTimer.remove();
+          t.fallTimer = this.time.delayedCall(9000, () => { if (t.falling) this.fellTree(t, false); });
+        }
+        return true;
+      };
       const hit = () => {
+        if (!M2) return;
         t.queued = Math.max(0, t.queued - 1);
         this.revealPieces(M2.coup);
         K.vibre(fort ? 'fort' : 'hache');
@@ -132,7 +139,12 @@
         if (t.falling && !t.queued) { this.fellTree(t, true); return; }
         this.shakeTree(t);
       };
-      if (!this.fermier || !this.fermier.chop(t.foot, hit, dx)) hit();
+      this.geste({
+        cle: 'arbre:' + t.id, immediat: !!fort, action: 'couper',
+        images: () => { const o = this.occluderOf(t); return o ? [o.img] : []; },
+        valide: () => !t.gone && !t.falling, faire, coup: hit,
+        lance: (opts) => this.fermier.chop(t.foot, hit, dx, opts),
+      });
     },
 
     // Le dernier coup de hache : l'arbre bascule autour de son pied, du côté opposé au

@@ -61,7 +61,8 @@
   const TRAJET_MAX = 150;
   const RECHERCHE_MAX = 8000;
   const FADE_S = 0.25;
-  const HOME_MAX = 30 * T;       // « Dormir » : il arrive à la porte de moins loin que ça (il se presse)
+  const HOME_MAX = 30 * T;
+  const MARCHE_GESTE = { far: true, marche: true };   // vers un geste : toujours à pied (pas de saut)       // « Dormir » : il arrive à la porte de moins loin que ça (il se presse)
   const ASLEEP_S = 2.4;          // couché depuis ce temps, il dort : la nuit passe
   const Z_S = 1.8;               // un « Z » monte pendant ce temps ; trois à la fois
   // Gestes : images (suffixe de la vue), durée de chacune (s), image du coup (la case change).
@@ -690,7 +691,13 @@
     let steer = null, steerWalked = 0;
     function steerTo(dir) {
       if (passe) return;
-      if (dir && !ctx.coucher && !ctx.dort) { if (!steer) steerWalked = 0; steer = dir; return; }
+      if (dir && !ctx.coucher && !ctx.dort) {
+        // (il prend la main : les gestes que le joueur avait demandés sont oubliés ; celui qui est
+        // en cours finit d'abord)
+        if (!steer) { steerWalked = 0; jobs = jobs.filter((j) => !j.geste); if (job && job.geste && job.walk) job = null; }
+        steer = dir;
+        return;
+      }
       if (!steer) return;
       steer = null;
       idleAge = 0;
@@ -797,40 +804,47 @@
     // gauche, sinon à droite), tourné vers lui, et donne un coup de hache. onHit : au coup.
     // Renvoie false s'il n'y a pas de place près du tronc (onHit est alors appelé tout de suite).
     // `dx` : à quelle distance du pied il se place (un buisson est plus large qu'un tronc).
-    function chop(foot, onHit, dx) {
-      return strike('couper', foot, dx || 11, onHit);
+    // `opts` (facultatif, pour ces gestes) : voir enchaine (valide, avant).
+    function chop(foot, onHit, dx, opts) {
+      return strike('couper', foot, dx || 11, onHit, opts);
     }
     // La pioche en main, le joueur a touché un rocher (son pied en `foot`, sa demi-largeur
     // `half`) : il se place à côté, le fer de la pioche tombe sur le rocher.
-    function mine(foot, half, onHit) {
-      return strike('piocher', foot, Math.max(8, half + 5), onHit);
+    function mine(foot, half, onHit, opts) {
+      return strike('piocher', foot, Math.max(8, half + 5), onHit, opts);
     }
     // La faux en main, le joueur a touché une touffe d'herbe haute (son pied en `foot`) : il se
     // place à côté, la lame balaie l'herbe à ses pieds.
-    // `valide` (facultatif) : la touffe est-elle encore à faucher ? Quand vient son tour, sinon,
-    // il n'y va pas (rien à faucher : ni marche, ni geste dans le vide).
-    function scythe(foot, onHit, valide) {
-      return strike('faucher', foot, 7, onHit, valide);
+    function scythe(foot, onHit, opts) {
+      return strike('faucher', foot, 7, onHit, opts);
     }
     // La ferme générée : prendre à la main ce qui est au sol en `foot` (une pierre, un bout de
     // bois, une herbe) ; il se baisse à côté.
-    function gather(foot, onHit) {
-      return strike('cueille', foot, 9, onHit);
+    function gather(foot, onHit, opts) {
+      return strike('cueille', foot, 9, onHit, opts);
     }
-    // Un geste (un coup d'outil, des fibres jetées) : les gestes se suivent dans l'ordre où le
-    // joueur les a demandés (le dernier après les autres), avant le reste (les tas à prendre).
-    // `valide` (facultatif) : quand vient son tour, le geste a-t-il encore lieu d'être ? Sinon,
-    // sa marche et son geste sont sautés. Le geste porte `cible` (son onHit : voir attend).
-    function enchaine(list, onHit, valide) {
+    // Un geste (un coup d'outil, des fibres jetées) : une marche jusqu'en `spot`, le geste, un
+    // souffle. Les gestes se suivent dans l'ordre où le joueur les a demandés (le dernier après
+    // les autres), avant le reste (les tas à prendre). Ils marchent toujours (jamais de saut : sans
+    // chemin, il reste où il est). Chacun porte `cible` (son onHit : voir attend).
+    // `opts` (facultatif) :
+    //   valide() : quand vient son tour, le geste a-t-il encore lieu d'être ? Sinon, sa marche et
+    //     son geste sont sautés (rien à faire là-bas : ni marche, ni geste dans le vide) ;
+    //   avant(arrive) : arrivé, juste avant le geste ; `arrive` : il est bien à sa place (sinon,
+    //     pas de chemin jusque-là). Renvoie false : le geste n'a pas lieu (le jeu l'a refusé).
+    function enchaine(list, onHit, opts, spot) {
+      const valide = opts && opts.valide, avant = opts && opts.avant;
+      let saute = false;
       for (const j of list) {
         j.geste = true;
         j.cible = onHit;
-        if (valide) {
-          const start = j.start, step = j.step;
-          let saute = false;
-          j.start = function () { saute = !valide(); if (!saute) start.call(this); };
-          j.step = function (dt) { return saute || step.call(this, dt); };
-        }
+        const start = j.start, step = j.step;
+        j.start = function () {
+          if (!saute && valide && !valide()) saute = true;
+          if (!saute && j.coup && avant && avant(!spot || Math.hypot(x - spot.x, y - spot.y) <= T * 0.75) === false) saute = true;
+          if (!saute) start.call(this);
+        };
+        j.step = function (dt) { return saute || step.call(this, dt); };
       }
       if (job && job.idle) job = null;
       const reste = jobs.filter((j) => !j.idle);
@@ -839,11 +853,13 @@
       jobs = reste.slice(0, k).concat(list, reste.slice(k));
       idleAge = 0;
     }
+    // Le coup d'un geste (le seul de sa liste à appeler `avant`).
+    function coup(j) { j.coup = true; return j; }
     // Le geste dont le coup appelle `onHit` est-il encore à faire (en cours ou en attente) ?
     function attend(onHit) {
       return !!onHit && ((job && job.cible === onHit) || jobs.some((j) => j.cible === onHit));
     }
-    function strike(name, foot, dx, onHit, valide) {
+    function strike(name, foot, dx, onHit, opts) {
       if (!blocked) buildGrid();
       const sides = [{ x: foot.x - dx, flip: false }, { x: foot.x + dx, flip: true }];
       let spot = null, side = sides[0];
@@ -852,17 +868,17 @@
         spot = nearestFree(foot.x - dx, foot.y + 1);
         if (spot) side = spot.x <= foot.x ? sides[0] : sides[1];
       }
-      if (!spot) { if (onHit) onHit(); return false; }
-      enchaine([walkTo(spot.x, spot.y), act(name, { face: 'cote', flip: side.flip, onHit }), wait(rand(0.4, 1))], onHit, valide);
+      if (!spot) return false;      // (pas de place près de la cible : l'appelant fait le geste de loin)
+      enchaine([walkTo(spot.x, spot.y, MARCHE_GESTE), coup(act(name, { face: 'cote', flip: side.flip, onHit })), wait(rand(0.4, 1))], onHit, opts, spot);
       return true;
     }
 
     // La botteleuse : il va en `spot` (devant l'entonnoir), tourné vers lui (`face`, `flip`), et
     // y jette ses fibres (onHit : quand elles partent). Renvoie false s'il ne peut pas y aller.
-    function jeter(spot, face, flip, onHit) {
+    function jeter(spot, face, flip, onHit, opts) {
       if (!blocked) buildGrid();
       if (!freeAt(spot.x, spot.y)) return false;
-      enchaine([walkTo(spot.x, spot.y), act('jeter', { face, flip, onHit }), wait(rand(0.4, 0.8))], onHit);
+      enchaine([walkTo(spot.x, spot.y, MARCHE_GESTE), coup(act('jeter', { face, flip, onHit })), wait(rand(0.4, 0.8))], onHit, opts, spot);
       return true;
     }
 
@@ -1027,10 +1043,10 @@
       }
       if (steer && (ctx.coucher || ctx.dort)) steerTo(null);
       if (steer && (!job || job.idle || job.walk)) {
-        // une marche vers un geste reprendra au relâchement ; double appui : oublié
-        if (job && !job.idle && !job.joueur) jobs.unshift(job);
+        // une marche vers un tas reprendra au relâchement ; double appui : oublié
+        if (job && !job.idle && !job.joueur && !job.geste) jobs.unshift(job);
         job = null;
-        jobs = jobs.filter((j) => !j.idle && !j.joueur);
+        jobs = jobs.filter((j) => !j.idle && !j.joueur && !j.geste);
         stepSteer(dt);
         return;
       }

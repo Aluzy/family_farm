@@ -183,26 +183,33 @@
 
     /* ---------- la hache ---------- */
 
+    // La hache (la file des gestes, file.js : la pièce scintille, le coup compte à l'arrivée).
     mondeCouper(h, fort) {
       const o = h.o, foot = { x: h.x, y: h.y };
       const arbre = o.genre === 'arbre' || o.nom === 'sapin_neige';
       const dx = arbre ? 11 : Math.max(9, Math.round(o.w / 2) + 2);
-      const p = this.strikeSide(foot, dx), dir = p.x > foot.x ? -1 : 1;
-      const ou = this.piecePoints(foot, p, arbre ? dir : null);
-      this.mondeOccupe.add(o.id);
-      const got = this.holdPieces(() => this.mondeDemande(h, { ou, fort: !!fort }));
-      if (!got || !got.tombe) this.mondeOccupe.delete(o.id);
-      if (!got) return;
-      const M2 = got.morceaux || { coup: [], fin: [] };
-      this.time.delayedCall(FILET_MS, () => this.revealPieces(M2.coup));
-      o.queued = (o.queued || 0) + 1;
-      if (got.tombe) {
-        this.mondeNote(o.id, false);
-        o.tombe = { dir, fin: M2.fin, arbre };
-        if (o.filet) o.filet.remove();
-        o.filet = this.time.delayedCall(FILET_MS, () => { if (o.tombe) this.mondeAbat(o, false); });
-      }
+      let M2 = null;
+      const faire = () => {
+        const p = this.strikeSide(foot, dx), dir = p.x > foot.x ? -1 : 1;
+        const ou = this.piecePoints(foot, p, arbre ? dir : null);
+        this.mondeOccupe.add(o.id);
+        const got = this.holdPieces(() => this.mondeDemande(h, { ou, fort: !!fort }));
+        if (!got || !got.tombe) this.mondeOccupe.delete(o.id);
+        if (!got) return false;
+        M2 = got.morceaux || { coup: [], fin: [] };
+        const M = M2;
+        this.time.delayedCall(FILET_MS, () => this.revealPieces(M.coup));
+        o.queued = (o.queued || 0) + 1;
+        if (got.tombe) {
+          this.mondeNote(o.id, false);
+          o.tombe = { dir, fin: M2.fin, arbre };
+          if (o.filet) o.filet.remove();
+          o.filet = this.time.delayedCall(FILET_MS, () => { if (o.tombe) this.mondeAbat(o, false); });
+        }
+        return true;
+      };
       const hit = () => {
+        if (!M2) return;
         o.queued = Math.max(0, o.queued - 1);
         this.revealPieces(M2.coup);
         K.vibre(fort ? 'fort' : 'hache');
@@ -211,7 +218,16 @@
         if (o.tombe && !o.queued) { this.mondeAbat(o, true); return; }
         this.mondeTremble(o);
       };
-      if (!this.fermier || !this.fermier.chop(foot, hit, dx)) hit();
+      this.geste({
+        cle: 'monde:' + o.id, immediat: !!fort, action: 'couper', images: () => [o.img],
+        valide: () => this.mondeDebout(o), faire, coup: hit,
+        lance: (opts) => this.fermier.chop(foot, hit, dx, opts),
+      });
+    },
+
+    // La pièce `o` du grand monde est-elle encore là, à prendre (pas abattue, brisée ou prise) ?
+    mondeDebout(o) {
+      return !!(o.img && o.img.active && o.img.visible) && !o.tombe && !o.brise && !o.anim && (!this.mondeObjets || this.mondeObjets.get(o.id) === o);
     },
 
     // La pièce tremble d'un pixel sous le coup.
@@ -282,22 +298,28 @@
 
     mondeCasser(h, fort) {
       const o = h.o, foot = { x: h.x, y: h.y }, half = Math.round(o.w / 2);
-      const ou = this.piecePoints(foot, this.strikeSide(foot, Math.max(8, half + 5)), null);
-      this.mondeOccupe.add(o.id);
-      const got = this.holdPieces(() => this.mondeDemande(h, { ou, fort: !!fort }));
-      if (!got || !got.casse) this.mondeOccupe.delete(o.id);
-      if (!got) return;
-      const M2 = got.morceaux || { coup: [], fin: [] };
-      this.time.delayedCall(FILET_MS, () => this.revealPieces(M2.coup));
-      o.queued = (o.queued || 0) + 1;
-      if (got.casse) {
-        this.mondeNote(o.id, false);
-        o.brise = { fin: M2.fin };
-        if (o.filet) o.filet.remove();
-        o.filet = this.time.delayedCall(FILET_MS, () => { if (o.brise) this.mondeBrise(o, false); });
-      }
       const box = { x0: o.x + 1, x1: o.x + o.w - 1, y0: o.y + 1, y1: o.fy };
+      let M2 = null;
+      const faire = () => {
+        const ou = this.piecePoints(foot, this.strikeSide(foot, Math.max(8, half + 5)), null);
+        this.mondeOccupe.add(o.id);
+        const got = this.holdPieces(() => this.mondeDemande(h, { ou, fort: !!fort }));
+        if (!got || !got.casse) this.mondeOccupe.delete(o.id);
+        if (!got) return false;
+        M2 = got.morceaux || { coup: [], fin: [] };
+        const M = M2;
+        this.time.delayedCall(FILET_MS, () => this.revealPieces(M.coup));
+        o.queued = (o.queued || 0) + 1;
+        if (got.casse) {
+          this.mondeNote(o.id, false);
+          o.brise = { fin: M2.fin };
+          if (o.filet) o.filet.remove();
+          o.filet = this.time.delayedCall(FILET_MS, () => { if (o.brise) this.mondeBrise(o, false); });
+        }
+        return true;
+      };
       const hit = () => {
+        if (!M2) return;
         o.queued = Math.max(0, o.queued - 1);
         this.revealPieces(M2.coup);
         K.secousse(this, fort ? 'fort' : 'coup');
@@ -308,7 +330,11 @@
         const p = this.fermier && this.fermier.pos();
         this.spawnShards({ box }, ROCKS.shards, false, p ? p.x : null);
       };
-      if (!this.fermier || !this.fermier.mine(foot, half, hit)) hit();
+      this.geste({
+        cle: 'monde:' + o.id, immediat: !!fort, action: 'piocher', images: () => [o.img],
+        valide: () => this.mondeDebout(o), faire, coup: hit,
+        lance: (opts) => this.fermier.mine(foot, half, hit, opts),
+      });
     },
 
     // Le dernier coup de pioche : une gerbe d'éclats, le rocher s'affaisse et s'efface (pioche.js).
@@ -345,24 +371,29 @@
     mondeFaucher(h) {
       const foot = { x: h.x, y: h.y }, o = h.o;
       const ou = { carte: 'ferme', coup: [{ x: h.x + 3, y: h.y + 1 }], fin: [] };
-      this.mondeOccupe.add(h.id);
-      const got = this.holdPieces(() => this.mondeDemande(h, { ou }));
-      if (!got) { this.mondeOccupe.delete(h.id); return; }
-      this.mondeNote(h.id, false);
-      const M2 = got.morceaux || { coup: [], fin: [] };
-      // (la petite pièce : une image passagère par-dessus le sol repeint)
-      const img = o ? o.img : this.mondeImagePetite(h);
-      let fait = false;
+      let M2 = null, img = null, fait = false, attente = null;
       const fin = () => {
-        if (fait) return;
+        if (fait || !M2) return;
         fait = true;
         this.revealPieces(M2.coup);
         this.mondeOccupe.delete(h.id);
         if (o) { o.anim = false; o.img.setScale(1).setAlpha(1); this.mondeMontre(o, false); } else if (img) img.destroy();
       };
-      if (!o) this.mondeSync(h);
-      this.time.delayedCall(FILET_MS, fin);
+      const faire = () => {
+        this.mondeOccupe.add(h.id);
+        const got = this.holdPieces(() => this.mondeDemande(h, { ou }));
+        if (!got) { this.mondeOccupe.delete(h.id); return false; }
+        this.mondeNote(h.id, false);
+        M2 = got.morceaux || { coup: [], fin: [] };
+        // (la petite pièce : une image passagère par-dessus le sol repeint)
+        img = o ? o.img : (attente || this.mondeImagePetite(h));
+        attente = null;
+        if (!o) this.mondeSync(h);
+        this.time.delayedCall(FILET_MS, fin);
+        return true;
+      };
       const hit = () => {
+        if (!M2) return;
         K.vibre('ramasse');
         if (global.FermeSon) global.FermeSon.joue('faux', { x: foot.x, y: foot.y, ecart: 0 });
         if (!img || reducedMotion()) { fin(); return; }
@@ -370,7 +401,14 @@
         this.spawnShards({ box: { x0: h.x - 5, x1: h.x + 5, y0: h.y - 10, y1: h.y } }, 6, true, null, VERTS);
         this.tweens.add({ targets: img, scaleY: 0.2, alpha: 0, duration: 220, ease: 'Quad.easeIn', onComplete: fin });
       };
-      if (!this.fermier || !this.fermier.scythe(foot, hit)) hit();
+      this.geste({
+        cle: 'monde:' + h.id, seul: true, action: 'faucher',
+        // (la petite pièce est peinte dans le sol : une image passagère porte son reflet)
+        images: () => (o ? [o.img] : [attente || (attente = this.mondeImagePetite(h))]),
+        lache: () => { if (attente) { attente.destroy(); attente = null; } },
+        valide: () => !this.mondeOccupe.has(h.id) && (!o || this.mondeDebout(o)), faire, coup: hit,
+        lance: (opts) => this.fermier.scythe(foot, hit, opts),
+      });
     },
 
     // La petite pièce prise : ses cases repeintes sans elle tout de suite (le modèle a changé
@@ -386,7 +424,6 @@
     // sans ses mûres), la bulle « +2 » au-dessus de lui.
     mondePrendre(h) {
       if (this.mondeOccupe.has(h.id)) return;
-      this.mondeOccupe.add(h.id);
       const o = h.o;
       const prendre = () => {
         const got = this.mondeDemande(h, {});
@@ -412,7 +449,15 @@
         if (o) o.anim = true;
         this.tweens.add({ targets: img, y: img.y - 6, alpha: 0, duration: 260, ease: 'Sine.easeOut', onComplete: fin });
       };
-      if (!this.fermier || !this.fermier.gather({ x: h.x, y: h.y }, prendre)) prendre();
+      let attente = null;
+      this.geste({
+        cle: 'monde:' + h.id, seul: true,
+        images: () => (o ? [o.img] : [attente || (attente = this.mondeImagePetite(h))]),
+        lache: () => { if (attente) { attente.destroy(); attente = null; } },
+        valide: () => !this.mondeOccupe.has(h.id) && (!o || this.mondeDebout(o)),
+        faire: () => { this.mondeOccupe.add(h.id); }, coup: prendre,
+        lance: (opts) => this.fermier.gather({ x: h.x, y: h.y }, prendre, opts),
+      });
     },
 
     // Le coup fort (coupfort.js) dans le monde : la pièce la plus proche du personnage qui se coupe
