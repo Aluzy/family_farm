@@ -4,14 +4,18 @@ Un jeu de gestion agricole familiale en pixel art : une famille (quatre personne
 s'installe sur une **terre sauvage** et doit, à terme, se nourrir de ce que la ferme produit.
 On y ramasse des pierres et du bois, on fauche l'herbe haute (des fibres, des bottes de paille par la botteleuse), on fabrique à l'Atelier, on **construit bloc
 par bloc** (murs, portes, fenêtres, étage, toits), on cultive, on élève poules, moutons, vaches
-et abeilles, on cuisine, et l'on descend à la mine, cachée dans les bois de la ferme. Le jeu
-n'a que ces deux lieux : la ferme et sa mine (une grotte à plusieurs niveaux). Les anciennes
-autres cartes (la ville, le chemin de transition, la montagne, la plage, le train, l'école,
-l'infra-monde) ont été retirées pour faire place au **grand monde**, une seule carte faite de
-biomes et découverte en marchant (projet : [`docs/grand-monde.md`](docs/grand-monde.md)) ; le
-jeu d'avant est gardé tel quel sur la branche `archive/jeu-avant-grand-monde`.
+et abeilles, on cuisine, et l'on descend à la mine, cachée dans les bois de la ferme. La ferme
+est au centre du **grand monde**, une seule carte de biomes (prairie, forêt profonde, marais,
+lande, montagne, côte, mer) cachée au départ et découverte en marchant ou à cheval : des
+hameaux et leurs habitants, des grottes, de quoi ramasser, pêcher et chasser des yeux, et la
+**calèche** de son cocher qui fait le tour des hameaux (voir
+[`docs/grand-monde.md`](docs/grand-monde.md)). Un récit, celui de l'île de Céron, se découvre
+au fil des rencontres ([`docs/recit/`](docs/recit/README.md)). Les anciennes autres cartes (la
+ville, le chemin de transition, la montagne, la plage, le train, l'école, l'infra-monde) ont
+été retirées pour faire place au grand monde ; le jeu d'avant est gardé tel quel sur la branche
+`archive/jeu-avant-grand-monde`.
 
-- **Version** : 1.22.0 (affichée dans ⚙️ Options › À propos ; format de sauvegarde 51)
+- **Version** : 1.22.0 (affichée dans ⚙️ Options › À propos ; format de sauvegarde 66)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi, et
   [`docs/carte-generee.md`](docs/carte-generee.md) pour la ferme générée et la construction
   (autres documents : voir « Documentation » plus bas)
@@ -24,9 +28,10 @@ jeu d'avant est gardé tel quel sur la branche `archive/jeu-avant-grand-monde`.
   et traceurs). Le jeu se sert en HTTP (voir Structure) ; les autres pages s'ouvrent aussi depuis le disque.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
-- **Cartes** : la ferme et la mine sont des cartes en pixel art (Phaser 4,
-  `vendor/phaser.min.js`, scène de la ferme dans `js/farm-stage.js` et `js/carte/ferme/`,
-  scène de la grotte dans `js/grotte.js`, images dans `assets/`) ; voir
+- **Cartes** : le grand monde (avec la ferme) et les grottes sont des cartes en pixel art
+  (Phaser 4, `vendor/phaser.min.js` ; scène du monde et de la ferme dans `js/farm-stage.js` et
+  `js/carte/ferme/`, dessinée par régions ; scène des grottes dans `js/grotte.js` ; images dans
+  `assets/`). Sur téléphone et tablette, deux doigts pincés dézooment la vue ; voir
   [`docs/architecture-phaser.md`](docs/architecture-phaser.md). Tous les graphismes sont
   originaux, dessinés par les générateurs Python de `scripts/`.
 
@@ -67,7 +72,8 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
 
 - **Départ** : on compose la famille (nom, 1 à 6 membres dont au moins un adulte, jusqu'à
   3 chiens ou chats, personnage principal), puis on choisit une graine : elle tire la ferme,
-  une terre sauvage de 144 × 114 cases, sans bâtiment. 1 500 💰 pour commencer.
+  une terre sauvage de 144 × 114 cases, sans bâtiment, et le grand monde autour. 300 💰 pour
+  commencer ; un didacticiel guide les premiers gestes.
 - **Ramasser, fabriquer, construire** : petites pierres, morceaux de bois et herbes se
   ramassent à la main ; l'**Atelier** (3 bois et 3 pierres) fabrique planches, murs, portes,
   fenêtres, paillasses, outils… Le mode **Construire** (🔨) pose les blocs sur la carte : une
@@ -77,18 +83,29 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   le **Silo** se bâtit dehors en blocs de silo (2 colonnes de 3 blocs, 10 blés par bloc ; un
   appui long dessus pour l'agrandir). Murs rehaussés, étage par un escalier, toits, meubles, chemins,
   barrières, lanternes, réverbères, ruches et bacs à fleurs se posent de la même façon.
-- **Outils** (Marché ou Atelier) : la **houe** laboure l'herbe ; la **hache** coupe arbres et
+- **Outils** (à l'Atelier) : la **houe** laboure l'herbe (dans la Serre, chaque case labourée
+  est un bac en planches) ; la **hache** coupe arbres et
   buissons (un sapin laisse une pomme de pin, un autre arbre un gland : un arbre abattu ne
   repousse pas, mais une graine se plante sur n'importe quelle case d'herbe libre) ; la
   **pioche** casse les rochers (et le minerai de la grotte) ; la **faux** fauche l'herbe haute
   (la paille des bêtes) ; la **canne à pêche** pêche dans l'étang, la mare, le lac et la mer.
+- **Le grand monde** : le brouillard se lève autour du personnage ; la carte du monde et la
+  boussole montrent ce qui a été vu. Le **cheval** (l'Écurie) va plus vite. Dans les **hameaux**
+  vivent des familles qui ont leurs métiers ; certains ont un atelier qui travaille sur commande.
+  La **calèche** passe par les chemins : on la hèle pour acheter graines et produits des
+  habitants, vendre ceux de la ferme et passer commande au cocher. Loin de la ferme, le
+  personnage ne mange que ce que contient son **sac à provisions**.
+- **La famille** : chaque membre a son **équipement** (casque à lampe, chapeau, bottes, gants,
+  tablier, salopette, manteau, fabriqués à l'Atelier) : des gestes moins fatigants, la lumière
+  des grottes, une marche plus rapide dans le marais et la montagne ; le
+  second adulte, le **compagnon**, aide aux tâches de la ferme (bêtes, ruches, arrosage).
 - **Le temps** : la journée commence à 6 h, une heure dure 30 s ; la famille mange à 19 h et
   se couche à 22 h ; à minuit, la nuit passe (ponte, laine, lait, aliments qui vieillissent).
   La nuit, « Zzz » envoie le personnage au lit : endormi, une heure passe en 3 s et son
   énergie remonte. Il ne dort que quand on l'envoie se coucher. Les plantes poussent 24 h
   après leur arrosage.
-- **La famille** a besoin de 150 énergie par jour (50 par adulte, 25 par enfant) ; elle mange
-  au repas du soir, d'abord ce qui périme le plus tôt. Le second adulte s'occupe des bêtes.
+- **Les repas** : la famille a besoin de 150 énergie par jour (50 par adulte, 25 par enfant) ;
+  elle mange au repas du soir, d'abord ce qui périme le plus tôt.
 - **Électricité et eau** circulent en temps réel : panneau (de 7 h à 19 h) → batterie →
   pompe, moulin, presse, réfrigérateur, station du robot. Les appareils s'usent.
 - **Dix niveaux d'expérience** (⭐) débloquent cultures, bâtiments et ateliers ; un **arbre
@@ -212,17 +229,21 @@ Toutes les valeurs du jeu sont dans `data/`, un fichier JSON par domaine :
 | `items.json` | objets (aliments, graines, produits, matériaux), plats retirés, durées de conservation |
 | `recipes.json` | ateliers et recettes, l'Atelier de la ferme générée et ses blocs |
 | `crops.json` | cultures, zone de culture, serre, verger, outils (houe, hache, pioche, faux, canne) |
-| `animals.json` | silo, poulailler, animaux, étable, ruches |
+| `animals.json` | silo, poulailler, animaux, étable, ruches, cheval |
 | `meubles.json` | meubles de la maison, objets du dehors (bac à fleurs) |
+| `equipement.json` | l'équipement de la famille et le sac à provisions |
 | `terrain.json` | le terrain de la carte de Tiled et la génération de la ferme |
 | `grotte.json` | la grotte de la mine : niveaux, minerais, réglages de la scène |
-| `monde.json` | le grand monde : les biomes (`BIOMES`) et les réglages de son générateur (`PLAN_MONDE`) |
+| `monde.json` | le grand monde : les biomes (`BIOMES`), les réglages de son générateur (`PLAN_MONDE`), sa végétation, ses roches, ce qui s'y ramasse, sa faune, les hameaux, leurs habitants et la calèche |
+| `recit.json` | le récit de Céron : personnages, répliques, scènes, carnet (voir `docs/recit/`) |
+| `ile.json` | l'économie de l'île : les ateliers des hameaux, la veillée, le remboursement |
 | `techtree.json` | arbre des technologies |
 | `campaign.json` | chapitres et courrier |
 | `niveaux.json` | niveaux d'expérience : seuils, déblocages, XP des actions et des chapitres |
 | `energy.json` | panneau, batterie, pompe, réservoir, soleil, usure, réfrigérateur |
-| `general.json` | départ, horloge, famille, bonheur, marché, absence |
+| `general.json` | départ, horloge, famille, compagnon, bonheur, prix de vente, absence, didacticiel |
 | `simulation.json` | réglages du joueur automatique |
+| `index.json` | la liste des fichiers, dans l'ordre où `build-data.mjs` les assemble (un nouveau fichier s'y ajoute) |
 
 Après chaque modification, en local :
 
@@ -240,7 +261,7 @@ recettes s'utilisent l'une l'autre, si une recette n'est ni libre ni débloquée
 Le message dit où (`recipes.pain.ingredients[0] : « farinee » n'est ni un objet…`).
 
 **Ajouter une recette** : une entrée dans `recipes.json` suffit pour qu'elle existe en jeu
-(objet, Livre de recette, Marché). Quelques tests du moteur comptent les recettes ou en
+(objet, Livre de recette, prix à la calèche). Quelques tests du moteur comptent les recettes ou en
 fixent la liste : ils échouent tant qu'on ne les a pas mis à jour, c'est voulu.
 L'encyclopédie se complète à part.
 
@@ -319,13 +340,13 @@ npm run smoke
 
 `tests/smoke.mjs` sert le dépôt avec un petit serveur statique Node sur un port libre, ouvre
 `jeu.html` dans Chromium (Playwright), lance une nouvelle partie, puis visite les cartes par
-`window.FermeHote.go` : la mine de la ferme, puis un niveau plus profond, et
-revient à la ferme. Il échoue sur une erreur de la console, une exception de
+`window.FermeHote.go` : la mine de la ferme, puis un niveau plus profond, revient à la ferme,
+puis visite une grotte de la montagne du grand monde (deux niveaux) et en ressort. Il échoue sur une erreur de la console, une exception de
 la page, une réponse HTTP ≥ 400 ou une carte qui ne s'ouvre pas ; les requêtes vers un autre
 hôte sont coupées. Playwright : celui du dépôt s'il est installé, sinon
 `/opt/node-tools/node_modules/playwright` ; navigateurs : `PLAYWRIGHT_BROWSERS_PATH` (par
 défaut `/opt/pw-browsers`). Sans Playwright ou sans Chromium, il le dit et sort sans erreur.
-`node tests/smoke.mjs --voir` ouvre une fenêtre. Compter une vingtaine de secondes.
+`node tests/smoke.mjs --voir` ouvre une fenêtre. Compter une trentaine de secondes.
 
 GitHub relance ces vérifications à chaque push sur `main` et à chaque pull request
 (`.github/workflows/site.yml`) et ne met le site en ligne que si elles passent toutes. Il
@@ -367,14 +388,22 @@ plus légers, pixel pour pixel identiques.
   posé en bloc ; la pompe s'y ajoute une fois posée dessus et vibre légèrement quand elle tourne.
 - **Citerne** : `python3 scripts/batiments/citerne.py` génère `assets/citerne.png`, la citerne
   (le réservoir) posée en bloc ; son tube de niveau suit l'eau du réservoir.
+- **Terre labourée** : `python3 scripts/carte/terre_bords.py` (la terre du dehors et ses
+  bordures sur l'herbe), `scripts/carte/terre_arrosee.py` (la terre mouillée) et
+  `scripts/carte/terre_serre.py` (les bacs en planches de la Serre).
+- **Blocs de la carte** : `python3 scripts/carte/blocs.py` dessine les blocs posés en mode
+  Construire (murs, portes, fenêtres, meubles du dehors, ruches, réverbères…).
 
 ### Son
 
 Les sons (`assets/son/`, avec leur double `.m4a` pour Safari) sont synthétisés par `scripts/son/`
-(Python 3, numpy, scipy et ffmpeg), sauf les bêtes de la ferme, de vrais enregistrements libres
-(`scripts/son/enregistrements/`, crédits dans `assets/son/CREDITS.md`) :
-`python3 scripts/son/fabrique.py` les refait tous, les encode et met à jour la table de
-`js/son.js`. Aucun échantillon tiers. Voir [`docs/son.md`](docs/son.md).
+(Python 3, numpy, scipy et ffmpeg) : `python3 scripts/son/fabrique.py` les refait tous, les
+encode et met à jour la table de `js/son.js`. Quelques-uns sont de vrais enregistrements libres
+de droits : les bêtes de la ferme (`scripts/son/enregistrements/`), l'arrosoir, la hulotte, la
+grenouille, le coq, le chat, le chien et le galop du cheval (coupés et égalisés par
+`scripts/son/libres.py`, posés dans le jeu par `scripts/son/vers_jeu.py`) ; leurs auteurs et
+licences sont dans [`assets/son/CREDITS.md`](assets/son/CREDITS.md). Voir
+[`docs/son.md`](docs/son.md).
 
 ### Simulation d'équilibrage
 
@@ -423,11 +452,14 @@ nuits, aller à un chapitre, et voir l'état complet de la partie.
 | [`docs/carte-generee.md`](docs/carte-generee.md) | la ferme générée : ramassage, Atelier, construction bloc par bloc, étage, bâtiments, mine, anciennes parties |
 | [`docs/architecture-phaser.md`](docs/architecture-phaser.md) | les cartes Phaser : découpage, cartes Tiled, pièges à éviter |
 | [`docs/personnage.md`](docs/personnage.md) | le personnage et ses gestes sur la carte |
-| [`docs/grand-monde.md`](docs/grand-monde.md) | le grand monde (projet) : une seule carte de biomes, ses étapes |
+| [`docs/grand-monde.md`](docs/grand-monde.md) | le grand monde : une seule carte de biomes, ses neuf étapes (terminées) et ce qui a suivi |
+| [`docs/fiches/`](docs/fiches/README.md) | les fiches de tâches du grand monde et d'après (une fiche, une PR) |
 | [`docs/recit/`](docs/recit/README.md) | le récit de Céron : la bible, les personnages, l'aventure, les dialogues et le plan (moteur : `js/engine/recit.js`, textes : `data/recit.json`) |
 | [`docs/vie-ambiance.md`](docs/vie-ambiance.md) | la vie d'ambiance de la carte (vent, nuages, animaux, habitants) |
 | [`docs/icones.md`](docs/icones.md) | les icônes en pixel art, la police et les jauges |
 | [`docs/son.md`](docs/son.md) | le son : musique, ambiances, bruits, où chacun est joué, réglages, comment en ajouter |
+| [`docs/test-utilisateur.md`](docs/test-utilisateur.md) | le protocole d'un test sans aide, avec des bêta-testeuses |
+| [`docs/taches-fluidite.json`](docs/taches-fluidite.json) | les tâches de fluidité (audit d'ergonomie de la version 1.14), lues par `scripts/mesure-touches.mjs` |
 | [`docs/arbre_technologique.md`](docs/arbre_technologique.md) | proposition d'arbre des technologies v2, historique (`docs/techtree_v2.js`) ; la source de vérité est `data/techtree.json` |
 | [`worker/README.md`](worker/README.md) | installation du Worker Cloudflare et du rapport quotidien |
 
@@ -476,6 +508,7 @@ son nom brut suivi de « (non répertorié) ». `node scripts/check-actions.mjs`
 
 - Graphismes, icônes et illustrations : originaux (dessinés par les générateurs de `scripts/`)
 - Musique et sons : originaux (synthétisés par les générateurs de `scripts/son/`), sauf les bêtes de
-  la ferme : de vrais enregistrements libres de droits, auteurs et licences dans
+  la ferme, l'arrosoir, la hulotte, la grenouille, le coq, le chat, le chien et le galop : de vrais
+  enregistrements libres de droits, auteurs et licences dans
   [`assets/son/CREDITS.md`](assets/son/CREDITS.md)
 - Moteur d'affichage : Phaser 4 (licence MIT)
