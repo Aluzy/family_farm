@@ -169,11 +169,14 @@ export function buildChipHtml() {
   // plus haut en haut), qui s'ouvre sous lui
   const max = niveauMax(), lvl = niveau();
   const niveaux = Array.from({ length: max + 1 }, (_, i) => max - i).map((n) => `<button type="button" class="build-level-item${n === lvl ? ' active' : ''}" data-action="build-level" data-niveau="${n}" aria-pressed="${n === lvl}" aria-label="Niveau ${n}">${n}</button>`).join('');
+  // l'outil pièce : un mur en main, au sol ; allumé, un glissement trace le pourtour d'une pièce
+  const murEnMain = !!(buildMode && DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].mur) && !niveau();
+  const outilPiece = murEnMain ? `<button type="button" class="build-piece${modePiece ? ' on' : ''}" data-action="build-piece" aria-pressed="${modePiece}" aria-label="Outil pièce : glisser d'un coin à l'autre pour poser tous les murs d'une pièce" title="Outil pièce : glisse d'un coin à l'autre pour poser les murs du pourtour"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><rect x="2" y="3" width="12" height="10" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="7" y="11.5" width="2.6" height="2.6" fill="#fbd98c"/></svg></button>` : '';
   const choixNiveau = `<div class="build-level"><button type="button" class="build-level-btn" data-action="build-level-menu" aria-haspopup="true" aria-expanded="${niveauListe}" aria-label="Niveau de construction : ${lvl}" title="Niveau de construction (appui long : glisser jusqu'au niveau)">${lvl}</button><div class="build-level-list" role="group" aria-label="Niveaux"${niveauListe ? '' : ' hidden'}>${niveaux}</div></div>`;
   // la pose d'un meuble : ✔️ le pose là où est son aperçu, ❌ sort de ce mode
   const m = meubleModele(), ap = m && m.apercu;
   const pose = m ? `<div class="pose-meuble" role="group" aria-label="Poser le meuble"><span class="pose-meuble-txt">${ap ? (ap.ok ? 'Le poser ici ?' : 'Il ne tient pas ici') : 'Touche une case pour placer le meuble'}</span><button type="button" class="pose-meuble-ok" data-action="meuble-ok"${ap && ap.ok ? '' : ' disabled'} aria-label="Poser le meuble ici" title="Poser le meuble ici">✔️</button><button type="button" class="pose-meuble-non" data-action="meuble-annule" aria-label="Sortir de la pose du meuble" title="Sortir de la pose du meuble">❌</button></div>` : '';
-  return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons">${choixNiveau}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>`;
+  return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons">${outilPiece}${choixNiveau}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>`;
 }
 
 // L'appui long sur le carré du niveau : la liste s'ouvre ; en glissant, le niveau sous le doigt
@@ -247,16 +250,26 @@ function quitteMeuble() {
 // bloc en main se pose ; au sol seulement, pas un meuble. Les murs et les barrières suivent une
 // ligne droite (la rangée ou la colonne de départ), les sols toutes les cases traversées. Pour
 // la carte : null (le bloc ne se trace pas), ou { ligne, stock } (combien on en a en main).
+// La forme du tracé : « ligne » (murs, barrières), « libre » (sols), « piece » (l'outil pièce,
+// un mur en main : le pourtour d'un rectangle, du coin de départ au coin sous le doigt).
 export function traceInfo() {
   if (!buildMode || niveau() || meubleEnMain()) return null;
   const b = DATA.ATELIER.BLOCS[buildMode];
   if (!b || b.porte || b.silo || !(b.mur || (b.sol && !b.meuble) || buildMode === 'barriere')) return null;
-  return { ligne: !b.sol, stock: blocsEnMain(state, buildMode) };
+  return { forme: b.sol ? 'libre' : modePiece && b.mur ? 'piece' : 'ligne', stock: blocsEnMain(state, buildMode) };
 }
-// Le bloc en main se pose-t-il sur la case `c` (sans compter le stock : la carte le borne) ?
+// La case `c` pour le tracé (le stock à part : la carte le borne) : 'ok', le bloc en main s'y
+// pose ; 'fait', elle a déjà ce qu'il faut (un mur pour un mur, une barrière pour une barrière,
+// un sol pour un sol) ; false, rien ne s'y pose.
 export function tracePosable(c) {
-  return !!buildMode && poseStatus(state, buildMode, c).ok;
+  if (!buildMode) return false;
+  if (poseStatus(state, buildMode, c).ok) return 'ok';
+  const b = DATA.ATELIER.BLOCS[buildMode], x = blocAt(state, c), bx = x && DATA.ATELIER.BLOCS[x];
+  if (b.mur ? bx && bx.mur : buildMode === 'barriere' ? x === 'barriere' : b.sol && solAt(state, c)) return 'fait';
+  return false;
 }
+// L'outil pièce (le bouton au bout de la barre, un mur en main) : un glissement trace une pièce.
+let modePiece = false;
 
 // (le bloc en main : un de ceux qui se posent au niveau où l'on construit)
 function blocDuNiveau() {
@@ -408,6 +421,13 @@ registerActions({
     persistState();
     refresh();
   },
+  // L'outil pièce : allumé, un glissement d'un coin à l'autre trace le pourtour d'une pièce.
+  'build-piece': () => {
+    if (!buildMode) return;
+    modePiece = !modePiece;
+    if (modePiece) notify('▭ Glisse d\'un coin à l\'autre de la pièce : ses murs se posent tout autour. Puis touche un mur avec une porte en main.', { duree: CONSEIL_MS * 2 });
+    refresh();
+  },
   // Un glissement en mode Construire (traceInfo) : le bloc en main posé sur les cases tracées,
   // dans l'ordre, jusqu'au bout du stock ; une seule sauvegarde, un seul message.
   'bloc-many': (target) => {
@@ -425,7 +445,9 @@ registerActions({
     if (n) persistState();
     refresh();
     const reste = blocsEnMain(state, sorte);
-    if (n) notify(`${DATA.ATELIER.ICONE} ${n} × ${nom} posé${n > 1 ? 's' : ''}${reste ? ` · encore ${reste} en main` : ' · plus rien en main'}${raison ? ` · ${raison}` : ''}`);
+    // (le tracé en voulait plus qu'on n'en avait en main : combien il en manque)
+    const manque = Math.max(0, Number(target.dataset.manque) || 0);
+    if (n) notify(`${DATA.ATELIER.ICONE} ${n} × ${nom} posé${n > 1 ? 's' : ''}${manque ? ` · il en manque ${manque}` : reste ? ` · encore ${reste} en main` : ' · plus rien en main'}${raison && !manque ? ` · ${raison}` : ''}`);
     else if (raison) notify(raison);
   },
   // La pose d'un meuble : l'aperçu glissé du doigt sur la case `case` (js/farm-stage.js) ;

@@ -3270,3 +3270,18 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .chargement-texte { font-size: 20px; color: var(--color-earth); }
 @media (prefers-color-scheme: dark) { .chargement-texte { color: var(--wood-light); } }
 @media (prefers-reduced-motion: reduce) { .chargement { transition: none; } }
+
+/* L'outil pièce (js/ui/chantier.js, build-piece) : un carré du même bois que celui du niveau, à
+   côté de lui ; allumé, il prend le jaune de la case choisie. */
+.build-piece {
+  box-sizing: border-box;
+  width: 34px; height: 34px; padding: 0;
+  display: grid; place-items: center;
+  background: rgba(var(--wood-bg-rgb), 0.92);
+  border: 3px solid var(--color-earth); border-radius: 6px;
+  box-shadow: inset 0 0 0 2px var(--wood-glow);
+  color: var(--color-earth);
+  cursor: pointer;
+}
+.build-piece.on { background: #fbd98c; box-shadow: inset 0 0 0 2px var(--color-earth); }
+.build-piece:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; }

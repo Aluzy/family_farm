@@ -110,9 +110,16 @@ Le Marché vend toujours les outils.
   rouge sinon, et un compte « posés / en main » suit le doigt ; au relâchement, les cases vertes
   reçoivent leur bloc ensemble, une seule sauvegarde, un seul message (« 6 × mur en pierre
   posés · encore 3 en main »). Un glissement parti d'ailleurs fait toujours défiler la carte ; un
-  appui pose ou reprend un bloc, comme avant. La carte : `traceStart`, `traceTo`
-  (js/farm-stage.js) ; la page : `traceInfo`, `tracePosable` et l'action `bloc-many`
-  (js/ui/chantier.js).
+  appui pose ou reprend un bloc, comme avant. Une case qui a déjà ce qu'il faut (un mur pour un
+  mur, une barrière, un sol) n'est que cernée de blanc : un tracé peut partir d'elle, et continuer
+  ou fermer ce qui est commencé. La carte : `traceStart`, `traceTo` (js/farm-stage.js) ; la page :
+  `traceInfo`, `tracePosable` et l'action `bloc-many` (js/ui/chantier.js).
+- **L'outil pièce** : un mur en main, au sol, un carré au bout de la barre (à côté du niveau,
+  `build-piece`) l'allume. Un glissement d'un coin à l'autre trace alors le pourtour du rectangle,
+  dans le sens des aiguilles d'une montre depuis le coin haut-gauche (un stock trop court s'arrête
+  en chemin) ; le compte, au-dessus du coin tenu, dit ce qu'il en manque (« 6 / 10 · il en manque
+  4 »), comme le message de la pose. Les murs déjà posés comptent comme faits : on agrandit ou on
+  ferme une pièce commencée. La porte se pose ensuite sur un mur, d'un appui, comme avant.
 - Un espace entièrement entouré de murs, avec au moins une porte, devient une **pièce close**.
 - Les autres bâtiments suivent la même logique.
 - Un meuble du Marché en main (pas un tableau) : la carte se quadrille ; un appui sur une case y
