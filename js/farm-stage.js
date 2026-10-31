@@ -190,7 +190,7 @@
         // Dehors, le doigt posé puis glissé : le personnage marche dans sa direction tant qu'il
         // reste posé (CarteKit.manette) ; pas quand la houe laboure, ni la bulle de la citerne,
         // ni pendant la pêche, ni au lit.
-        this.manette = K.manette(this, () => this.suitPerso() && !!this.drag && !this.drag.labour && !this.drag.trace && !this.drag.held && !this.drag.meuble
+        this.manette = K.manette(this, () => this.suitPerso() && !!this.drag && !this.drag.labour && !this.drag.trace && !this.drag.deplace && !this.drag.held && !this.drag.meuble
           && !this.fishing && !(this.ctx.lastModel && this.ctx.lastModel.coucher));
         I.on('gameout', () => { if (!this.drag) this.setHover(null); });
         this.makePincement();            // sur téléphone : deux doigts règlent le zoom (camera.js)
@@ -309,6 +309,8 @@
           meuble: null,
           // en mode Construire, un glissement parti d'une case où le bloc se pose : une ligne de blocs
           trace: null,
+          // en mode Construire, un glissement parti d'un meuble ou d'un bloc seul : le déplacer
+          deplace: null,
         };
         const mc = this.meubleSous ? this.meubleSous(wp.x, wp.y) : null;
         if (mc !== null) { this.drag.meuble = { case: mc, c: Math.floor(wp.x / T), r: Math.floor(wp.y / T), dernier: mc }; return; }
@@ -319,6 +321,9 @@
         const mb = this.ctx.lastModel && this.ctx.lastModel.bati;
         if (mb && !mb.rang && !mb.meuble && !this.drag.fort && !this.drag.labour) {
           const hb = this.hitAt(wp.x, wp.y);
+          // déplacer : un glissement parti d'un meuble ou d'un bloc seul (js/ui/chantier.js, deplacable)
+          const dp = !this.drag.trace && hb && hb.bati !== undefined && this.ctx.bridge.trace ? this.ctx.bridge.trace.deplacable(hb.bati) : null;
+          if (dp) this.drag.deplace = { ...dp, prise: hb.bati, vers: dp.ancre, ok: true };
           if (hb && hb.bati !== undefined && this.ctx.bridge.trace && this.ctx.bridge.trace.pipette(hb.bati)) {
             const d = this.drag;
             d.holdTimer = setTimeout(() => {
@@ -406,6 +411,11 @@
           if (d.moved) this.labourTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
           return;
         }
+        if (d.deplace && !d.held) {
+          if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) { d.moved = true; clearTimeout(d.holdTimer); this.setHover(null); }
+          if (d.moved) this.deplaceTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
+          return;
+        }
         if (d.trace) {
           if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) { d.moved = true; this.setHover(null); }
           if (d.moved) this.traceTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
@@ -450,6 +460,12 @@
         // Au doigt, rien ne « survole » : le nom reste un instant, puis s'efface.
         if (pointer.wasTouch && this.hoverId) this.hoverUntil = performance.now() + LABEL_HOLD_MS;
         if (d.meuble && d.moved) return;           // l'aperçu du meuble a glissé : il reste où il est
+        if (d.deplace && d.moved) {
+          this.clearTraceMarks();
+          const D = d.deplace;
+          if (D.ok && D.vers !== D.ancre) this.ctx.bridge.act('bloc-deplacer', { de: D.ancre, vers: D.vers });
+          return;
+        }
         if (d.trace && d.moved) {
           this.clearTraceMarks();
           // (toutes les cases où le bloc se pose, dans l'ordre : au-delà du stock, la page propose de
@@ -712,6 +728,24 @@
         this.traceMarks.push(this.add.text((fin % W) * T + T / 2, Math.floor(fin / W) * T - 2, L.info.gomme ? `${n} à reprendre` : L.manque ? `${n} / ${besoin} · il en manque ${L.manque}` : `${n} / ${L.info.stock}`, {
           fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '8px', color: '#4a2a10', backgroundColor: '#fff1d2', padding: { x: 2, y: 0 },
         }).setOrigin(0.5, 1).setDepth(1e5 + 1).setResolution(6));
+      }
+
+      // Déplacer un bloc posé : sa case d'ancrage suit le doigt (le décalage depuis la case prise),
+      // son emprise marquée en vert s'il tient là, en rouge sinon (js/ui/chantier.js, deplacePossible,
+      // calculé sur une copie de la partie, seulement quand la case visée change).
+      deplaceTo(d, wp) {
+        const D = d.deplace, W = this.grid.cols;
+        const dc = Math.floor(wp.x / T) - (D.prise % W), dr = Math.floor(wp.y / T) - Math.floor(D.prise / W);
+        const col = (D.ancre % W) + dc, row = Math.floor(D.ancre / W) + dr;
+        if (col < 0 || col >= W || row < 0) return;
+        const vers = row * W + col;
+        if (vers === D.vers && this.traceMarks) return;
+        D.vers = vers;
+        const p = vers === D.ancre ? { ok: true, cases: [] } : this.ctx.bridge.trace.deplacePossible(D.ancre, vers);
+        D.ok = p.ok;
+        this.clearTraceMarks();
+        this.traceMarks = (p.cases || []).map((c) => this.add.rectangle((c % W) * T + T / 2, Math.floor(c / W) * T + T / 2, T - 3, T - 3, p.ok ? 0xb6f08c : 0xff8a70, 0.55)
+          .setStrokeStyle(1, p.ok ? 0xeaffd8 : 0xffe0d8, 0.95).setDepth(1e5));
       }
 
       clearTraceMarks() {

@@ -26,7 +26,7 @@ import {
   awakeMsAtHour, buyCheval, chevalMonte, chevalNuit, chevalOu, chevalRefus, descendreCheval, etatEcurie, monterCheval, rentrerCheval, toggleCheval, vitesseCheval, vitesseDeplacement, hoeableTiles, houseRepaired, etatDistributeur, distributeurs, verserGrain, distribuerGrain, grainDans, isArable, isOwned, layEggs, machineDe, mainCharacter,
   majDidacticiel, makeCow, makeSheep, marcheOuvert, morceauxDe, nuitCouchee, nuitSansCouchage,
   objectifDidacticiel, passerDidacticiel, pickUp, piecesCloses, planAbri, planAbriCases, plant,
-  poserBloc, blocDebloque, categorieBloc, addItem, poserEtage, poussesArbres, ramassables, ramasser, ramasserMorceau,
+  poserBloc, deplacerBloc, deplacerStatus, blocDebloque, categorieBloc, addItem, poserEtage, poussesArbres, ramassables, ramasser, ramasserMorceau,
   recettesDidacticiel, regrowGrass, removeStarter, remplirCruche, remplirRuches, reprendreBloc,
   reprendreEtage, respawnBushes, respawnRocks, respawnTrees, robotBattery, robotCapacity,
   robotStation, robotTrip, ruchePleine, ruchesARecolter, runRobotCharge, sellItem, serreMurs,
@@ -1307,6 +1307,20 @@ test('ferme générée : la barrière arrête le passage sans fermer de pièce ;
   assert(poserBloc(s, 'nichoir', p.dedans).ok);
   assertEqual(poserBloc(s, 'chemin', p.dedans + 1).ok, false, 'le chemin : dehors');
   assert(poserBloc(s, 'plancher', p.dedans + 1).ok, 'un plancher au Poulailler, après le nichoir');
+});
+
+test('ferme générée : déplacer un bloc posé (le mode Construire) ; refusé, il reste où il était', () => {
+  const s = chantier('dep');
+  setInv(s, { lanterne: 1, mur_pierre: 1 });
+  const z = terrainLibre(s, 6, 3), a = (z.r + 1) * z.W + z.c + 1, b = a + 2, mur = a + 3;
+  assert(poserBloc(s, 'lanterne', a).ok);
+  assert(poserBloc(s, 'mur_pierre', mur).ok);
+  // l'aperçu : sur une copie, rien ne change
+  assertEqual([deplacerStatus(s, a, b).ok, deplacerStatus(s, a, mur).ok, blocAt(s, a)], [true, false, 'lanterne']);
+  const r = deplacerBloc(s, a, b);
+  assertEqual([r.ok, r.de, r.vers, blocAt(s, a), blocAt(s, b), countItem(s, 'lanterne')], [true, a, b, null, 'lanterne', 0]);
+  // sur un mur : refusé, elle reste où elle était (et rien ne revient dans l'inventaire)
+  assertEqual([deplacerBloc(s, b, mur).ok, blocAt(s, b), blocAt(s, mur), countItem(s, 'lanterne')], [false, 'lanterne', 'mur_pierre', 0]);
 });
 
 test('ferme générée : la lanterne scintillante (un champignon lumineux de la mine et du bois) éclaire, dehors ou dans la maison', () => {

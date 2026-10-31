@@ -624,6 +624,32 @@ export function poseStatus(state, sorte, tile) {
   return { ok: true };
 }
 
+// Déplacer un bloc posé (le mode Construire, js/ui/chantier.js) : celui de la case `de` (un meuble,
+// une de ses cases) repris, puis reposé avec sa case d'ancrage sur `vers`. S'il ne tient pas là, il
+// est reposé où il était, et rien n'a changé : { ok: false, raison }. Sinon { ok: true, sorte, de
+// (son ancienne case d'ancrage), vers }.
+export function deplacerBloc(state, de, vers) {
+  const r = reprendreBloc(state, de);
+  if (!r.ok) return r;
+  if (r.case === vers) { poserBloc(state, r.sorte, r.case); return { ok: true, sorte: r.sorte, de: r.case, vers }; }
+  const st = poseStatus(state, r.sorte, vers);
+  if (!st.ok) { poserBloc(state, r.sorte, r.case); return fail(st.raison); }
+  const p = poserBloc(state, r.sorte, vers);
+  if (!p.ok) { poserBloc(state, r.sorte, r.case); return p; }
+  return { ok: true, sorte: r.sorte, de: r.case, vers };
+}
+
+// Le bloc de la case `de` tiendrait-il, ancré sur `vers` ? Sur une copie de la partie : rien ne
+// change. { ok, raison, cases } (cases : celles qu'il couvrirait, pour l'aperçu).
+export function deplacerStatus(state, de, vers) {
+  const copie = structuredClone(state);
+  const r = reprendreBloc(copie, de);
+  if (!r.ok) return { ok: false, raison: r.error, cases: [vers] };
+  const cases = empriseMeuble(copie, r.sorte, vers) || [vers];
+  const st = poseStatus(copie, r.sorte, vers);
+  return { ok: st.ok, raison: st.ok ? '' : st.raison, cases };
+}
+
 // Pose `sorte` sur `tile` ; l'herbe haute des cases voisines qui déborde sur ce qui est bâti
 // est foulée (fauchée, sans paille : foulerAutour).
 export function poserBloc(state, sorte, tile) {

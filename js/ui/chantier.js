@@ -15,7 +15,7 @@ import { atelierConstruit, craft, craftStatus } from '../engine/atelier.js';
 import { countItem } from '../engine/inventory.js';
 import { blocsDidacticiel } from '../engine/didacticiel.js';
 import { setStageWindow, stageWindow } from './stage-windows.js';
-import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
+import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, deplacerBloc, deplacerStatus, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
 import { ETAGE_BLOCS, etageCouvertes, etageEmprise, poseEtageStatus, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
@@ -283,7 +283,8 @@ let modeGomme = false;
 
 // Annuler (le bouton ↶ de la barre) : les dernières opérations au sol, la plus récente en haut
 // (HISTOIRE_MAX au plus ; oubliées quand on range le mode Construire). Une opération est une
-// liste de gestes, défaits ensemble : { pose: case, sorte } (défait : reprendre), { reprise:
+// liste de gestes, défaits ensemble : { deplace: case, de, sorte } (défait : le ramener sur `de`),
+// { pose: case, sorte } (défait : reprendre), { reprise:
 // case, sorte } (défait : reposer), { change: case, avant, apres } (défait : reposer `avant`).
 const HISTOIRE_MAX = 30;
 let histoire = [];
@@ -299,6 +300,22 @@ export function pipetteSorte(c) {
   const couvert = casesCouvertes(state).get(c);
   const s = surCase(c) || (couvert !== undefined ? surCase(couvert) : null);
   return s && SORTES().includes(s) ? s : null;
+}
+// Déplacer un bloc posé (js/farm-stage.js) : un glissement parti d'un meuble ou d'un bloc seul (la
+// lanterne, le four, la ruche… : pas un mur, une porte, un sol, une barrière, le silo, qui se
+// tracent et se gomment) l'emporte jusqu'où on le lâche. Au sol seulement. Pour la carte :
+// { sorte, ancre (sa case d'ancrage) } ou null.
+export function deplacable(c) {
+  if (!buildMode || niveau() || meubleEnMain()) return null;
+  const couvert = casesCouvertes(state).get(c), ancre = couvert !== undefined && !surCase(c) ? couvert : c;
+  const sorte = surCase(ancre), b = sorte && DATA.ATELIER.BLOCS[sorte];
+  if (!b || b.mur || b.sol || b.porte || b.silo || b.semis || b.arbre || sorte === 'barriere') return null;
+  return { sorte, ancre };
+}
+// L'aperçu du déplacement : tiendrait-il, ancré sur `vers` ? { ok, cases }.
+export function deplacePossible(de, vers) {
+  const r = deplacerStatus(state, de, vers);
+  return { ok: r.ok, cases: r.cases };
 }
 // Défaire un changement : le nouveau bloc repris (une fenêtre percée rend son mur), puis l'ancien
 // reposé s'il n'est pas revenu de lui-même (un mur, un sol, une porte remplacés).
@@ -511,7 +528,8 @@ registerActions({
     if (!gestes) { notify('Rien à annuler.'); return; }
     let n = 0;
     for (const g of [...gestes].reverse()) {
-      const r = g.pose !== undefined ? (surCase(g.pose) === g.sorte ? reprendreBloc(state, g.pose) : { ok: false })
+      const r = g.deplace !== undefined ? (surCase(g.deplace) === g.sorte ? deplacerBloc(state, g.deplace, g.de) : { ok: false })
+        : g.pose !== undefined ? (surCase(g.pose) === g.sorte ? reprendreBloc(state, g.pose) : { ok: false })
         : g.reprise !== undefined ? poserBloc(state, g.sorte, g.reprise)
           : defaireChange(g);
       if (r.ok) n += 1;
@@ -534,6 +552,20 @@ registerActions({
     const n = blocsEnMain(state, s);
     notify(`🎯 ${DATA.ATELIER.BLOCS[s].nom} en main${n ? ` · ${n}` : ' · plus aucun : un tracé proposera d\'en fabriquer'}.`, { duree: CONSEIL_MS });
     refresh();
+  },
+  // Déplacer (un glissement parti d'un meuble ou d'un bloc seul, js/farm-stage.js) : de sa case
+  // d'ancrage `de` à `vers` ; s'il ne tient pas là, il reste où il était.
+  'bloc-deplacer': (target) => {
+    if (!buildMode) return;
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    const de = Number(target.dataset.de), vers = Number(target.dataset.vers);
+    if (!Number.isInteger(de) || !Number.isInteger(vers) || de === vers) return;
+    const r = deplacerBloc(state, de, vers);
+    if (!r.ok) { notify(r.error); refresh(); return; }
+    noter([{ deplace: vers, de: r.de, sorte: r.sorte }]);
+    persistState();
+    refresh();
+    notify(`✋ Déplacé : ${DATA.ATELIER.BLOCS[r.sorte].nom.toLowerCase()}.`, { duree: CONSEIL_MS });
   },
   // La gomme : allumée, un glissement reprend les blocs de la sorte en main au lieu d'en poser.
   'build-gomme': () => {

@@ -137,6 +137,15 @@ Le Marché vend toujours les outils.
   de ses cases, s'il en reste un en main. Le bloc n'est pas repris : l'appui simple, lui, le
   reprend toujours. Pratique pour continuer un mur avec la même matière. La carte : le minuteur de
   `onDown` (js/farm-stage.js) ; la page : `pipetteSorte` et l'action `bloc-pipette`.
+- **Déplacer un bloc posé** : au sol, un glissement parti d'un meuble (sur n'importe laquelle de
+  ses cases) ou d'un bloc seul (la lanterne, le réverbère, le four, la ruche, la paillasse… : pas
+  un mur, une porte, un sol, une barrière, le silo, qui se tracent et se gomment) l'emporte case
+  par case, quel que soit le bloc en main ; son emprise est marquée en vert s'il tient là, en rouge
+  sinon. Lâché, il y est reposé ; s'il ne tient pas, il reste où il était. Le moteur :
+  `deplacerBloc` (repris, puis reposé, ou remis à sa place) et `deplacerStatus` (le même essai sur
+  une copie de la partie, pour l'aperçu : seulement quand la case visée change) ; la page :
+  `deplacable`, `deplacePossible`, l'action `bloc-deplacer` ; Annuler le ramène. Un appui maintenu
+  sans bouger reste la pipette.
 - **Fabriquer sur place ce qui manque** : un tracé (ligne, sol ou pièce) qui en veut plus qu'on
   n'en a en main pose d'abord ce qu'on a, dans l'ordre du tracé ; puis une fenêtre propose de
   fabriquer le reste avec la recette de l'Atelier qui donne ce bloc (`recetteDuBloc`), son coût
