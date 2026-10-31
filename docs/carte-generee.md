@@ -120,6 +120,18 @@ Le Marché vend toujours les outils.
   en chemin) ; le compte, au-dessus du coin tenu, dit ce qu'il en manque (« 6 / 10 · il en manque
   4 »), comme le message de la pose. Les murs déjà posés comptent comme faits : on agrandit ou on
   ferme une pièce commencée. La porte se pose ensuite sur un mur, d'un appui, comme avant.
+- **Annuler** : le bouton ↶ au bout de la barre défait la dernière opération au sol, et ainsi de
+  suite jusqu'aux 30 dernières (oubliées quand on range le mode Construire) : un bloc posé ou
+  repris d'un appui, un mur, un sol ou une porte changés (le nouveau repris, l'ancien reposé ; une
+  fenêtre percée rend son mur), un tracé entier, les blocs fabriqués sur place (ils reviennent dans
+  l'inventaire, la fabrication reste faite), un meuble posé. Ce qui a changé depuis (un bloc repris
+  à la main entre-temps) est laissé tel quel, et le message le dit.
+- **La gomme** : le bouton à côté de l'outil pièce, un bloc qui se trace en main ; allumée, un
+  glissement parti d'un bloc de la même famille (un mur pour un mur, une barrière, un sol) reprend
+  ceux qu'il traverse (cases orangées, « 4 à reprendre ») : ils reviennent dans l'inventaire.
+  Annuler les remet. Un tracé, avec ou sans gomme, laisse tels quels les murs et les sols déjà
+  posés : le moteur accepterait d'y poser le même bloc (pour rehausser un mur, changer un sol),
+  le tracé, lui, ne le fait pas (`tracePosable` les dit « fait » avant de demander au moteur).
 - **Fabriquer sur place ce qui manque** : un tracé (ligne, sol ou pièce) qui en veut plus qu'on
   n'en a en main pose d'abord ce qu'on a, dans l'ordre du tracé ; puis une fenêtre propose de
   fabriquer le reste avec la recette de l'Atelier qui donne ce bloc (`recetteDuBloc`), son coût

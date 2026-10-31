@@ -436,8 +436,8 @@
           this.clearTraceMarks();
           // (toutes les cases où le bloc se pose, dans l'ordre : au-delà du stock, la page propose de
           // fabriquer ce qui manque, js/ui/chantier.js)
-          const poses = d.trace.cases.filter((c, i) => d.trace.etat[i] === 'ok');
-          if (poses.length) this.ctx.bridge.act('bloc-many', { cases: poses.join(',') });
+          const gomme = d.trace.info.gomme, poses = d.trace.cases.filter((c, i) => d.trace.etat[i] === (gomme ? 'fait' : 'ok'));
+          if (poses.length) this.ctx.bridge.act('bloc-many', { cases: poses.join(','), gomme: gomme ? 1 : 0 });
           return;
         }
         if (d.labour && d.moved) {
@@ -632,7 +632,9 @@
         const info = T0.info();
         if (!info) return null;
         const c = this.tileAtPoint(wx, wy);
-        if (c < 0 || !T0.posable(c)) return null;
+        // (la gomme part d'un bloc à reprendre ; sinon, d'une case où le bloc se pose, ou qui l'a déjà)
+        const e = c < 0 ? false : T0.posable(c);
+        if (!e || (info.gomme && e !== 'fait')) return null;
         return { info, depart: c, cases: [c], etat: [], ok: [], seen: new Set([c]), last: { x: wx, y: wy } };
       }
 
@@ -673,7 +675,8 @@
         let reste = L.info.stock;
         const avant = L.ok.filter(Boolean).length;
         L.etat = L.cases.map((c) => T0.posable(c));
-        L.ok = L.etat.map((e) => { const ok = e === 'ok' && reste > 0; if (ok) reste -= 1; return ok; });
+        // (la gomme : les cases qui ont ce bloc, sans limite de stock)
+        L.ok = L.etat.map((e) => { if (L.info.gomme) return e === 'fait'; const ok = e === 'ok' && reste > 0; if (ok) reste -= 1; return ok; });
         const n = L.ok.filter(Boolean).length, besoin = L.etat.filter((e) => e === 'ok').length;
         L.manque = Math.max(0, besoin - L.info.stock);
         if (n > avant) K.vibre('houe');
@@ -681,12 +684,14 @@
         // (comme la grille de la houe : un carré clair cerné, vert ou rouge, lisible sur l'herbe)
         this.traceMarks = L.cases.map((c, i) => {
           const fait = L.etat[i] === 'fait';
+          // (la gomme : orangé là où un bloc sera repris, cerné de blanc ailleurs)
+          if (L.info.gomme) return this.add.rectangle((c % W) * T + T / 2, Math.floor(c / W) * T + T / 2, T - 3, T - 3, 0xffb347, L.ok[i] ? 0.6 : 0).setStrokeStyle(1, 0xffffff, 0.95).setDepth(1e5);
           return this.add.rectangle((c % W) * T + T / 2, Math.floor(c / W) * T + T / 2, T - 3, T - 3, L.ok[i] ? 0xb6f08c : 0xff8a70, fait ? 0 : 0.55)
             .setStrokeStyle(1, fait ? 0xffffff : L.ok[i] ? 0xeaffd8 : 0xffe0d8, 0.95).setDepth(1e5);
         });
         // (le compte : au-dessus de la case sous le doigt ; pour une pièce, du coin qu'il tient)
         const fin = L.info.forme === 'piece' ? Math.max(0, r1) * W + Math.max(0, Math.min(W - 1, c1)) : L.cases[L.cases.length - 1];
-        this.traceMarks.push(this.add.text((fin % W) * T + T / 2, Math.floor(fin / W) * T - 2, L.manque ? `${n} / ${besoin} · il en manque ${L.manque}` : `${n} / ${L.info.stock}`, {
+        this.traceMarks.push(this.add.text((fin % W) * T + T / 2, Math.floor(fin / W) * T - 2, L.info.gomme ? `${n} à reprendre` : L.manque ? `${n} / ${besoin} · il en manque ${L.manque}` : `${n} / ${L.info.stock}`, {
           fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '8px', color: '#4a2a10', backgroundColor: '#fff1d2', padding: { x: 2, y: 0 },
         }).setOrigin(0.5, 1).setDepth(1e5 + 1).setResolution(6));
       }
