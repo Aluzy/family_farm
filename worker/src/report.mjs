@@ -87,6 +87,7 @@ export const GAME_ACTIONS = {
   'hoe-take': 'Prendre la houe (objectif du chapitre)',
   'atelier-fabriquer': 'Fabriquer à l\'Atelier (ferme générée)',
   'bloc': 'Poser ou reprendre un bloc (ferme générée)',
+  'bloc-many': 'Poser une ligne de blocs en glissant',
   'arbre-oui': 'Planter un arbre (graine ou jeune arbre, depuis l\'Inventaire)',
   'build-toggle': 'Construire : ouvrir ou ranger (ferme générée)',
   'build-pick': 'Construire : choisir un bloc (ferme générée)',

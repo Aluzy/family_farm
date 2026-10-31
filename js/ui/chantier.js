@@ -242,6 +242,22 @@ function quitteMeuble() {
   setBuildMode(SORTES().find((s) => autre(s) && blocsEnMain(state, s) > 0) || SORTES().find(autre) || null);
 }
 
+// Construire en glissant (js/farm-stage.js, traceStart) : les murs (fenêtres comprises), les
+// barrières, les sols et le chemin se posent d'un glissement du doigt parti d'une case où le
+// bloc en main se pose ; au sol seulement, pas un meuble. Les murs et les barrières suivent une
+// ligne droite (la rangée ou la colonne de départ), les sols toutes les cases traversées. Pour
+// la carte : null (le bloc ne se trace pas), ou { ligne, stock } (combien on en a en main).
+export function traceInfo() {
+  if (!buildMode || niveau() || meubleEnMain()) return null;
+  const b = DATA.ATELIER.BLOCS[buildMode];
+  if (!b || b.porte || b.silo || !(b.mur || (b.sol && !b.meuble) || buildMode === 'barriere')) return null;
+  return { ligne: !b.sol, stock: blocsEnMain(state, buildMode) };
+}
+// Le bloc en main se pose-t-il sur la case `c` (sans compter le stock : la carte le borne) ?
+export function tracePosable(c) {
+  return !!buildMode && poseStatus(state, buildMode, c).ok;
+}
+
 // (le bloc en main : un de ceux qui se posent au niveau où l'on construit)
 function blocDuNiveau() {
   if (buildMode && !SORTES().includes(buildMode)) setBuildMode(SORTES().find((s) => blocsEnMain(state, s) > 0) || SORTES()[0]);
@@ -259,7 +275,7 @@ registerActions({
     // (le dernier mur choisi, ou le premier bloc qu'on a encore)
     setBuildMode(choisi.murs && SORTES().includes(choisi.murs) && blocsEnMain(state, choisi.murs) > 0 ? choisi.murs : SORTES().find((s) => blocsEnMain(state, s) > 0) || SORTES()[0]);
     // (un rappel bref, à chaque ouverture : il ne cache pas longtemps la puce des blocs)
-    notify(`${DATA.ATELIER.ICONE} Touche une case pour poser, un bloc pour le reprendre.`, { duree: CONSEIL_MS });
+    notify(`${DATA.ATELIER.ICONE} Touche une case pour poser, un bloc pour le reprendre ; glisse pour poser toute une ligne.`, { duree: CONSEIL_MS });
     refresh();
   },
   // Un appui long sur le silo (js/carte/ferme/silo.js) : le mode Construire, un bloc de silo
@@ -391,6 +407,26 @@ registerActions({
     if (!r.ok) { notify(r.error); return; }
     persistState();
     refresh();
+  },
+  // Un glissement en mode Construire (traceInfo) : le bloc en main posé sur les cases tracées,
+  // dans l'ordre, jusqu'au bout du stock ; une seule sauvegarde, un seul message.
+  'bloc-many': (target) => {
+    if (!traceInfo()) return;
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    const cases = String(target.dataset.cases || '').split(',').map(Number).filter((c) => Number.isInteger(c) && c >= 0);
+    const sorte = buildMode, nom = DATA.ATELIER.BLOCS[sorte].nom.toLowerCase();
+    let n = 0, raison = '';
+    for (const c of cases) {
+      const r = poserBloc(state, sorte, c);
+      if (r.ok) { n += 1; continue; }
+      raison = raison || r.error;
+      if (!blocsEnMain(state, sorte)) break;
+    }
+    if (n) persistState();
+    refresh();
+    const reste = blocsEnMain(state, sorte);
+    if (n) notify(`${DATA.ATELIER.ICONE} ${n} × ${nom} posé${n > 1 ? 's' : ''}${reste ? ` · encore ${reste} en main` : ' · plus rien en main'}${raison ? ` · ${raison}` : ''}`);
+    else if (raison) notify(raison);
   },
   // La pose d'un meuble : l'aperçu glissé du doigt sur la case `case` (js/farm-stage.js) ;
   // ✔️ le pose là où est son aperçu ; ❌ sort de ce mode.

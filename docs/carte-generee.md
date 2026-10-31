@@ -102,6 +102,17 @@ Le Marché vend toujours les outils.
 
 - On pose chaque mur sur une case de la carte ; la porte aussi, directement sur une case libre,
   ou sur un mur, à sa place (comme une fenêtre : le mur revient dans l'inventaire).
+- **Construire en glissant** : avec un mur (fenêtres comprises), une barrière, un sol ou le chemin
+  en main, au sol, un glissement du doigt parti d'une case où le bloc se pose en pose toute une
+  rangée. Les murs et les barrières suivent une ligne droite (la rangée ou la colonne de départ,
+  selon le sens où le doigt va le plus loin) ; les sols, toutes les cases traversées. Pendant le
+  geste, chaque case est marquée, vert clair si le bloc s'y pose (tant qu'il en reste en main),
+  rouge sinon, et un compte « posés / en main » suit le doigt ; au relâchement, les cases vertes
+  reçoivent leur bloc ensemble, une seule sauvegarde, un seul message (« 6 × mur en pierre
+  posés · encore 3 en main »). Un glissement parti d'ailleurs fait toujours défiler la carte ; un
+  appui pose ou reprend un bloc, comme avant. La carte : `traceStart`, `traceTo`
+  (js/farm-stage.js) ; la page : `traceInfo`, `tracePosable` et l'action `bloc-many`
+  (js/ui/chantier.js).
 - Un espace entièrement entouré de murs, avec au moins une porte, devient une **pièce close**.
 - Les autres bâtiments suivent la même logique.
 - Un meuble du Marché en main (pas un tableau) : la carte se quadrille ; un appui sur une case y
