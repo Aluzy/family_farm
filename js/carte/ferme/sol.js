@@ -212,6 +212,24 @@
       r.img = r.tex = null;
     },
 
+    // La part de la vue entièrement dessinée, de 0 à 1 (l'écran de chargement, jeu.html : il
+    // s'efface à 1) : les régions sous la caméra montrées, et, dans le grand monde, leur sol hors
+    // de la ferme arrivé du Web Worker (avant, un sol provisoire d'une couleur unie : quandRegion).
+    vueDessinee() {
+      if (!this.regions) return 0;
+      const c = this.cameras.main, vw = c.width / c.zoom, vh = c.height / c.zoom;
+      const mx = c.scrollX + c.width * c.originX, my = c.scrollY + c.height * c.originY;
+      const x0 = mx - vw / 2, y0 = my - vh / 2, x1 = mx + vw / 2, y1 = my + vh / 2;
+      const M = this.ctx.monde;
+      let n = 0, prets = 0;
+      for (const r of this.regions.values()) {
+        if (r.x > x1 || r.x + r.w < x0 || r.y > y1 || r.y + r.h < y0) continue;
+        n += 1;
+        if (r.tex && (!M || !this.regionParts(r).monde.length || M.region(r.rx, r.ry))) prets += 1;
+      }
+      return n ? prets / n : 1;
+    },
+
     // Les régions dessinées en ce moment.
     shownRegions() {
       return [...(this.regions || new Map()).values()].filter((r) => r.tex);
