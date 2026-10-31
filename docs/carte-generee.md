@@ -146,6 +146,20 @@ Le Marché vend toujours les outils.
   une copie de la partie, pour l'aperçu : seulement quand la case visée change) ; la page :
   `deplacable`, `deplacePossible`, l'action `bloc-deplacer` ; Annuler le ramène. Un appui maintenu
   sans bouger reste la pipette.
+- **Les conseils sur les pièces** : en mode Construire, au sol, la carte dit ce qui manque aux
+  enceintes et ce que sont les pièces (`conseilsPieces`, js/engine/blocs.js ; dessinés par
+  `drawConseils`, js/carte/ferme/chantier.js, seulement quand ils changent) :
+  - **le mur qui manque** : une case libre qui, murée, fermerait une enceinte de plus (dans
+    l'alignement d'un mur, ou dans un coin) est cernée de rouge, « mur ? » au-dessus ; une case qui
+    serait dans l'enceinte qu'un autre trou fermerait n'en est pas un (elle ne ferait qu'un réduit) ;
+  - **l'enceinte sans porte** : fermée mais sans porte, ses cases sont teintées d'orangé, « Pas de
+    porte : pose-la sur un mur » ;
+  - **ce qu'est chaque pièce close**, au milieu de ses cases : « Maison · 2 couchages » (« sans lit :
+    pose une paillasse »), « Le Poulailler », « L'Étable »…, ou « Pièce vide : une paillasse en fait
+    une maison ; un bloc clé (nichoir, mangeoire, bac à semis, meule), un bâtiment ».
+  Un seul trou se repère (un mur qui manque) ; une enceinte ouverte de deux cases ou plus ne se
+  devine pas. Le calcul : les enceintes d'aujourd'hui une fois, puis, pour chaque case libre près
+  d'un mur, une étendue bornée à `PIECE_MAX` cases autour d'elle ; mis en cache par état des blocs.
 - **Fabriquer sur place ce qui manque** : un tracé (ligne, sol ou pièce) qui en veut plus qu'on
   n'en a en main pose d'abord ce qu'on a, dans l'ordre du tracé ; puis une fenêtre propose de
   fabriquer le reste avec la recette de l'Atelier qui donne ce bloc (`recetteDuBloc`), son coût

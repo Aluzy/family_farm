@@ -175,6 +175,7 @@
       }
       this.bati = !!bati;
       this.drawRooms(bati ? pieces : null);
+      this.drawConseils(bati ? bati.conseils : null);
       this.syncRang(bati && bati.rang ? bati.rang : 0, pieces, changed);
       this.syncPoseMeuble(bati && bati.meuble);
       this.syncLitsDoubles();
@@ -743,6 +744,47 @@
       if (!pieces) return;
       g.fillStyle(BLOCS_CARTE.voile, BLOCS_CARTE.voileAlpha);
       for (const p of pieces) for (const c of p) g.fillRect((c % cols) * T, Math.floor(c / cols) * T, T, T);
+    },
+
+    // Les conseils du mode Construire (modèle.bati.conseils, js/engine/blocs.js conseilsPieces) :
+    // le mur qui manque à une enceinte (sa case cernée de rouge), l'enceinte fermée sans porte (ses
+    // cases teintées d'orangé, « Pas de porte »), et au milieu de chaque pièce close ce qu'elle est
+    // (« Maison · 2 couchages », « Le Poulailler ») ou ce qui la ferait devenir quelque chose.
+    // Redessinés seulement quand ils changent.
+    drawConseils(k) {
+      const cle = k ? JSON.stringify(k) : '';
+      if (cle === this.conseilsKey) return;
+      this.conseilsKey = cle;
+      if (!this.conseilsGfx) this.conseilsGfx = this.add.graphics().setDepth(1e5 - 2);
+      const g = this.conseilsGfx, cols = this.grid.cols;
+      g.clear();
+      for (const t of this.conseilsTextes || []) t.destroy();
+      this.conseilsTextes = [];
+      if (!k) return;
+      const carre = (c) => [(c % cols) * T, Math.floor(c / cols) * T];
+      g.fillStyle(0xffb347, 0.28);
+      for (const e of k.sansPorte) for (const c of e) { const [x, y] = carre(c); g.fillRect(x, y, T, T); }
+      for (const c of k.trous) {
+        const [x, y] = carre(c);
+        g.fillStyle(0xff5a3c, 0.4).fillRect(x + 1, y + 1, T - 2, T - 2);
+        g.lineStyle(1, 0xffe0d8, 0.95).strokeRect(x + 1.5, y + 1.5, T - 3, T - 3);
+      }
+      // une étiquette au milieu des cases (leur rectangle), du papier du jeu
+      const etiquette = (cases, texte) => {
+        let c0 = Infinity, c1 = -Infinity, r0 = Infinity, r1 = -Infinity;
+        for (const c of cases) { const x = c % cols, y = Math.floor(c / cols); c0 = Math.min(c0, x); c1 = Math.max(c1, x); r0 = Math.min(r0, y); r1 = Math.max(r1, y); }
+        const l = Math.max(3, c1 - c0 + 1) * T - 4;
+        this.conseilsTextes.push(this.add.text((c0 + c1 + 1) / 2 * T, (r0 + r1 + 1) / 2 * T, texte, {
+          fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '6px', color: '#4a2a10', backgroundColor: 'rgba(255,241,210,0.88)',
+          padding: { x: 2, y: 1 }, align: 'center', wordWrap: { width: Math.max(texte.length > 40 ? 120 : 70, l) },
+        }).setOrigin(0.5).setDepth(1e5 - 1).setResolution(8));
+      };
+      for (const e of k.sansPorte) etiquette(e, 'Pas de porte : pose-la sur un mur');
+      for (const p of k.pieces) etiquette(p.cases, p.texte);
+      if (k.trous.length) {
+        // (le mur qui manque : un petit « mur ? » au-dessus de chaque trou)
+        for (const c of k.trous) { const [x, y] = carre(c); this.conseilsTextes.push(this.add.text(x + T / 2, y - 1, 'mur ?', { fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '6px', color: '#ffffff', backgroundColor: 'rgba(193,68,46,0.9)', padding: { x: 2, y: 0 } }).setOrigin(0.5, 1).setDepth(1e5 - 1).setResolution(8)); }
+      }
     },
 
     // La case sous le doigt (son numéro), ou -1 hors de la carte.

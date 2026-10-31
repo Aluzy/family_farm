@@ -26,7 +26,7 @@ import {
   awakeMsAtHour, buyCheval, chevalMonte, chevalNuit, chevalOu, chevalRefus, descendreCheval, etatEcurie, monterCheval, rentrerCheval, toggleCheval, vitesseCheval, vitesseDeplacement, hoeableTiles, houseRepaired, etatDistributeur, distributeurs, verserGrain, distribuerGrain, grainDans, isArable, isOwned, layEggs, machineDe, mainCharacter,
   majDidacticiel, makeCow, makeSheep, marcheOuvert, morceauxDe, nuitCouchee, nuitSansCouchage,
   objectifDidacticiel, passerDidacticiel, pickUp, piecesCloses, planAbri, planAbriCases, plant,
-  poserBloc, deplacerBloc, deplacerStatus, blocDebloque, categorieBloc, addItem, poserEtage, poussesArbres, ramassables, ramasser, ramasserMorceau,
+  poserBloc, conseilsPieces, deplacerBloc, deplacerStatus, blocDebloque, categorieBloc, addItem, poserEtage, poussesArbres, ramassables, ramasser, ramasserMorceau,
   recettesDidacticiel, regrowGrass, removeStarter, remplirCruche, remplirRuches, reprendreBloc,
   reprendreEtage, respawnBushes, respawnRocks, respawnTrees, robotBattery, robotCapacity,
   robotStation, robotTrip, ruchePleine, ruchesARecolter, runRobotCharge, sellItem, serreMurs,
@@ -1307,6 +1307,26 @@ test('ferme générée : la barrière arrête le passage sans fermer de pièce ;
   assert(poserBloc(s, 'nichoir', p.dedans).ok);
   assertEqual(poserBloc(s, 'chemin', p.dedans + 1).ok, false, 'le chemin : dehors');
   assert(poserBloc(s, 'plancher', p.dedans + 1).ok, 'un plancher au Poulailler, après le nichoir');
+});
+
+test('ferme générée : les conseils du mode Construire (le mur qui manque, la porte, ce qu\'est la pièce)', () => {
+  const s = chantier('cons');
+  setInv(s, { mur_pierre: 30, porte: 2, paillasse: 1 });
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5), trou = p.murs[3];
+  // un mur de moins (et un mur à la place de la porte) : le trou est signalé, seul
+  for (const t of [...p.murs, p.porte]) if (t !== trou) poserBloc(s, 'mur_pierre', t);
+  let k = conseilsPieces(s);
+  assertEqual([k.trous, k.sansPorte.length, k.pieces.length], [[trou], 0, 0]);
+  // fermé sans porte : une enceinte, pas encore une pièce
+  poserBloc(s, 'mur_pierre', trou);
+  k = conseilsPieces(s);
+  assertEqual([k.trous.length, k.sansPorte.length, k.sansPorte[0].length, k.pieces.length], [0, 1, 9, 0]);
+  // la porte (à la place d'un mur) : une pièce vide, puis une maison avec une paillasse
+  assert(poserBloc(s, 'porte', p.porte).ok);
+  k = conseilsPieces(s);
+  assertEqual([k.sansPorte.length, k.pieces.length, k.pieces[0].genre, k.pieces[0].texte.startsWith('Pièce vide')], [0, 1, null, true]);
+  assert(poserBloc(s, 'paillasse', p.dedans).ok);
+  assertEqual(conseilsPieces(s).pieces[0].texte, 'Maison · 1 couchage');
 });
 
 test('ferme générée : déplacer un bloc posé (le mode Construire) ; refusé, il reste où il était', () => {

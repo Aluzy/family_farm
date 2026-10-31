@@ -61,7 +61,7 @@ import { chevalMonte, chevalOu, vitesseCheval } from '../engine/cheval.js';
 import { countWithSilo } from '../engine/animals.js';
 import { countItem } from '../engine/inventory.js';
 import { ramassables } from '../engine/atelier.js';
-import { blocsPoses, blocsDessusPoses, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
+import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteursPosees, piecesCloses, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable } from './chantier.js';
 import { escaliers, etageBlocs, etageEmprise, fenetresEtage, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
@@ -531,7 +531,9 @@ export function stageModel() {
     fourAllume: !!(state.stations.four && state.stations.four.construit && state.stations.four.tache),
     // le Moulin moud-il ? sa meule (son bloc) tourne (js/carte/ferme/chantier.js, stepFires)
     meuleTourne: batiments.moulin.enMarche,
-    bati: buildMode && !stageInterior ? { sorte: buildMode, rang: niveauRang(), meuble: meubleModele() } : null,
+    // (les conseils : le mur qui manque, l'enceinte sans porte, ce qu'est chaque pièce ; au sol,
+    // pas à l'étage : conseilsPieces, js/engine/blocs.js)
+    bati: buildMode && !stageInterior ? { sorte: buildMode, rang: niveauRang(), meuble: meubleModele(), conseils: !niveauBati() && !niveauRang() ? conseilsPieces(state) : null } : null,
     // l'étage (un essai, js/engine/etage.js) et le niveau où est le personnage (0 : en bas)
     ...etageModel(),
     pieces: buildMode && !stageInterior ? piecesCloses(state).map((p) => p.cases) : null,
