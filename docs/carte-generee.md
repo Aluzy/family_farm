@@ -132,6 +132,11 @@ Le Marché vend toujours les outils.
   Annuler les remet. Un tracé, avec ou sans gomme, laisse tels quels les murs et les sols déjà
   posés : le moteur accepterait d'y poser le même bloc (pour rehausser un mur, changer un sol),
   le tracé, lui, ne le fait pas (`tracePosable` les dit « fait » avant de demander au moteur).
+- **La pipette** : au sol, un appui maintenu sans bouger (`LONG_PRESS_MS`) sur un bloc posé le prend
+  en main, son onglet ouvert (« 🎯 Mur en bois en main · 4 ») ; un meuble, sur n'importe laquelle
+  de ses cases, s'il en reste un en main. Le bloc n'est pas repris : l'appui simple, lui, le
+  reprend toujours. Pratique pour continuer un mur avec la même matière. La carte : le minuteur de
+  `onDown` (js/farm-stage.js) ; la page : `pipetteSorte` et l'action `bloc-pipette`.
 - **Fabriquer sur place ce qui manque** : un tracé (ligne, sol ou pièce) qui en veut plus qu'on
   n'en a en main pose d'abord ce qu'on a, dans l'ordre du tracé ; puis une fenêtre propose de
   fabriquer le reste avec la recette de l'Atelier qui donne ce bloc (`recetteDuBloc`), son coût

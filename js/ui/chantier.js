@@ -15,7 +15,7 @@ import { atelierConstruit, craft, craftStatus } from '../engine/atelier.js';
 import { countItem } from '../engine/inventory.js';
 import { blocsDidacticiel } from '../engine/didacticiel.js';
 import { setStageWindow, stageWindow } from './stage-windows.js';
-import { blocAt, blocDebloque, blocDessus, blocsEnMain, categorieBloc, changeMur, changeSol, couchages, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
+import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
 import { ETAGE_BLOCS, etageCouvertes, etageEmprise, poseEtageStatus, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
@@ -292,6 +292,14 @@ function noter(gestes) {
   histoire.push(gestes);
   if (histoire.length > HISTOIRE_MAX) histoire.shift();
 }
+// La pipette : le bloc posé sur la case `c` au sol (celui que reprendrait un appui ; un meuble, sur
+// n'importe laquelle de ses cases), s'il se pose à ce niveau, sinon null.
+export function pipetteSorte(c) {
+  if (!buildMode || niveau()) return null;
+  const couvert = casesCouvertes(state).get(c);
+  const s = surCase(c) || (couvert !== undefined ? surCase(couvert) : null);
+  return s && SORTES().includes(s) ? s : null;
+}
 // Défaire un changement : le nouveau bloc repris (une fenêtre percée rend son mur), puis l'ancien
 // reposé s'il n'est pas revenu de lui-même (un mur, un sol, une porte remplacés).
 function defaireChange(g) {
@@ -511,6 +519,21 @@ registerActions({
     if (n) persistState();
     refresh();
     notify(n ? `↶ Annulé${gestes.length > 1 ? ` : ${n} bloc${n > 1 ? 's' : ''}` : ''}${n < gestes.length ? ` (${gestes.length - n} n'ont pas pu l'être)` : ''}.` : 'Rien n\'a pu être annulé (ce qui a été posé a changé depuis).');
+  },
+  // La pipette (un appui maintenu sur un bloc posé, js/farm-stage.js) : ce bloc en main, son onglet
+  // ouvert ; un meuble, il en faut un en main pour le reprendre (sinon le choisir n'aurait pas de sens).
+  'bloc-pipette': (target) => {
+    const s = pipetteSorte(Number(target.dataset.case));
+    if (!s) return;
+    poseMeuble = null;
+    bulle = null;
+    const g = groupeDe(s);
+    if (g) choisi[g.id] = s;
+    onglet = categorieBloc(s) || onglet;
+    setBuildMode(s);
+    const n = blocsEnMain(state, s);
+    notify(`🎯 ${DATA.ATELIER.BLOCS[s].nom} en main${n ? ` · ${n}` : ' · plus aucun : un tracé proposera d\'en fabriquer'}.`, { duree: CONSEIL_MS });
+    refresh();
   },
   // La gomme : allumée, un glissement reprend les blocs de la sorte en main au lieu d'en poser.
   'build-gomme': () => {

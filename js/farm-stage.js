@@ -314,6 +314,24 @@
         if (mc !== null) { this.drag.meuble = { case: mc, c: Math.floor(wp.x / T), r: Math.floor(wp.y / T), dernier: mc }; return; }
         if (!this.drag.fort) this.drag.labour = this.labourStart(wp.x, wp.y);
         if (!this.drag.fort && !this.drag.labour) this.drag.trace = this.traceStart(wp.x, wp.y);
+        // La pipette (mode Construire, au sol) : un appui maintenu sans bouger sur un bloc posé le
+        // prend en main (js/ui/chantier.js, bloc-pipette) ; le tracé qui en partait est oublié.
+        const mb = this.ctx.lastModel && this.ctx.lastModel.bati;
+        if (mb && !mb.rang && !mb.meuble && !this.drag.fort && !this.drag.labour) {
+          const hb = this.hitAt(wp.x, wp.y);
+          if (hb && hb.bati !== undefined && this.ctx.bridge.trace && this.ctx.bridge.trace.pipette(hb.bati)) {
+            const d = this.drag;
+            d.holdTimer = setTimeout(() => {
+              if (this.drag !== d || d.moved) return;
+              d.held = true;
+              d.trace = null;
+              this.clearTraceMarks();
+              this.setHover(null);
+              K.vibre('houe');
+              this.ctx.bridge.act('bloc-pipette', { case: hb.bati });
+            }, LONG_PRESS_MS);
+          }
+        }
         // Appui maintenu sur le silo (hors du mode Construire) : le mode Construire, un bloc de
         // silo en main, pour l'agrandir (js/ui/chantier.js).
         if (!this.drag.labour && !this.drag.fort && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.siloAt(wp.x, wp.y)) {

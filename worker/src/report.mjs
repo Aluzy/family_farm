@@ -101,6 +101,7 @@ export const GAME_ACTIONS = {
   'build-piece': 'Construire : allumer ou éteindre l\'outil pièce (ferme générée)',
   'build-gomme': 'Construire : allumer ou éteindre la gomme (ferme générée)',
   'build-annuler': 'Construire : annuler la dernière opération (ferme générée)',
+  'bloc-pipette': 'Construire : prendre en main un bloc posé (appui maintenu, ferme générée)',
   'build-level': 'Construire : choisir le niveau (ferme générée)',
   'etage-toggle': 'Monter ou descendre l\'escalier (ferme générée, essai)',
   'tool-use': 'Prendre ou ranger un outil (barre d\'outils)',
