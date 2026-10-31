@@ -9,8 +9,8 @@
   <style>
     /* Le style du jeu (css/jeu.css) : sa police en pixels (assets/police_dialogue.woff), ses
        cadres de bois sur fond crème, ses couleurs (le soleil, la feuille, la terre), et une
-       vraie vue de la ferme (assets/accueil_ferme.png, une partie du jeu à l'échelle de ses
-       pixels, agrandie sans lissage). */
+       vraie ferme du jeu vue de loin (assets/accueil_ferme.webp : une capture au zoom 1, un
+       pixel du jeu par pixel de l'écran, sans lissage). */
     @font-face {
       font-family: 'Ferme Dialogue';
       src: url('assets/police_dialogue.woff') format('woff');
@@ -97,23 +97,20 @@
     .nav .btn { min-height: 40px; font-size: 16px; padding: 0 16px; }
 
     /* l'accueil : la vue de la ferme, et un panneau de bois par-dessus */
-    /* (la prairie : le vert de l'herbe du jeu, tramé comme ses tuiles) */
+    /* la ferme vue de loin, à sa taille (3600 × 1000 : un pixel du jeu par pixel, jamais
+       redimensionnée) : son bord gauche (x = 1130 dans l'image, les ruches) juste à droite
+       du panneau, qui se pose sur les bois ; sur un grand écran, toute la ferme se voit */
     .hero {
-      position: relative; margin-top: -80px; padding: 124px 0 64px; overflow: hidden;
-      background-color: #6f9f3c;
-      background-image:
-        repeating-conic-gradient(rgba(255, 255, 255, 0.045) 0 25%, transparent 0 50%),
-        repeating-conic-gradient(rgba(0, 0, 0, 0.05) 0 25%, transparent 0 50%);
-      background-size: 8px 8px, 20px 20px;
+      position: relative; margin-top: -80px; padding: 140px 0 120px; overflow: hidden;
       border-bottom: 3px solid var(--color-earth);
     }
-    .hero-grid { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 28px; align-items: center; }
-    .cadre { padding: 8px; }
     .hero-img {
-      display: block; width: 100%; height: auto; aspect-ratio: 526 / 390;
-      border: 2px solid var(--wood-dark); border-radius: 3px;
+      position: absolute; inset: 0;
+      background: #6f9f3c url('assets/accueil_ferme.webp') no-repeat;
+      background-position: calc(max(16px, (100vw - 1120px) / 2) + 560px - 1130px) calc(50% + 20px);
       image-rendering: pixelated;
     }
+    .hero-grid { position: relative; display: grid; grid-template-columns: minmax(0, 540px) 1fr; }
     .hero-panel { padding: 28px 30px 26px; }
     .ruban {
       display: inline-block; padding: 2px 14px; margin-bottom: 8px;
@@ -193,8 +190,11 @@
 
     @media (max-width: 900px) {
       .nav-links { display: none; }
-      .hero { padding: 92px 0 40px; }
-      .hero-grid { grid-template-columns: 1fr; gap: 18px; }
+      /* (la ferme sous le panneau : une bande de 340 px, son centre au milieu de la bande ; à
+         moitié taille, toujours un pixel de l'écran au moins par pixel du jeu sur un téléphone) */
+      .hero { padding: 92px 0 340px; }
+      .hero-img { background-size: 1800px 500px; background-position: left calc(50vw - 830px) bottom -60px; }
+      .hero-grid { grid-template-columns: 1fr; }
       .hero-panel { padding: 22px 20px; }
       .loop { grid-template-columns: 1fr 1fr; }
       .progress { grid-template-columns: 1fr; }
@@ -232,6 +232,7 @@
 
   <main>
     <section class="hero">
+      <div class="hero-img" role="img" aria-label="Une ferme du jeu vue de loin : la grande maison et la serre, le moulin, le silo, les étables, les potagers clos, le verger, les mares et les bois autour"></div>
       <div class="wrap hero-grid">
         <div class="hero-panel bois">
           <div class="ruban">Jeu de gestion · Autonomie · Famille</div>
@@ -243,9 +244,6 @@
           </div>
           <div class="micro">Aucune installation · Directement dans ton navigateur, sur ordinateur ou téléphone</div>
           <div class="jauges"><span>👨‍👩‍👧‍👦 la famille</span><span>⚡ l'énergie</span><span>💧 l'eau</span><span>🌾 les récoltes</span></div>
-        </div>
-        <div class="cadre bois">
-          <img class="hero-img" src="assets/accueil_ferme.png" width="526" height="390" alt="Une ferme du jeu : la maison, le poulailler et son silo, le puits, la serre et un potager de carottes, de tomates, de courgettes et de fraises">
         </div>
       </div>
     </section>
