@@ -25,7 +25,8 @@ ville, le chemin de transition, la montagne, la plage, le train, l'école, l'inf
   `index.html` (page d'accueil), `jeu.html` (le jeu, dont le style est dans
   `css/` et le code dans `js/`) et `encyclopedie.html` (glossaire du jeu, généré depuis
   `encyclopedie_ferme_familiale.json` par `node scripts/build-encyclopedie.mjs`), plus `cookies.html` (politique de cookies
-  et traceurs). Le jeu se sert en HTTP (voir Structure) ; les autres pages s'ouvrent aussi depuis le disque.
+  et traceurs). Les quatre pages ont le même design, celui du jeu (voir « Les pages du site »).
+  Le jeu se sert en HTTP (voir Structure) ; les autres pages s'ouvrent aussi depuis le disque.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
 - **Cartes** : le grand monde (avec la ferme) et les grottes sont des cartes en pixel art
@@ -33,7 +34,8 @@ ville, le chemin de transition, la montagne, la plage, le train, l'école, l'inf
   `js/carte/ferme/`, dessinée par régions ; scène des grottes dans `js/grotte.js` ; images dans
   `assets/`). Sur téléphone et tablette, deux doigts pincés dézooment la vue ; voir
   [`docs/architecture-phaser.md`](docs/architecture-phaser.md). Tous les graphismes sont
-  originaux, dessinés par les générateurs Python de `scripts/`.
+  originaux, dessinés par les générateurs Python de `scripts/` (la vue de la ferme des pages
+  du site est une capture du jeu).
 
 ## Jouer
 
@@ -219,6 +221,36 @@ action déclarée deux fois est refusée au chargement. Pour ajouter un bouton :
 `data-action` dans le gabarit, sa fonction dans le `registerActions` du même module, et son
 classement dans `worker/src/report.mjs` (action de jeu ou clic d'interface) ;
 `node scripts/check-actions.mjs` signale ce qui manque.
+
+### Les pages du site
+
+Les quatre pages partagent le design du jeu (`css/jeu.css`) : sa police en pixels
+(`assets/police_dialogue.woff`), ses cadres de bois sur fond crème (bordure terre de 3 px, filet
+clair intérieur), ses boutons vert ou papier, le médaillon, et les icônes en pixel art à la place
+des emojis (`js/icones-page.js`). Thème sombre et téléphone compris.
+
+- **`index.html`, l'accueil** : son style est dans la page. En tête, une vraie ferme du jeu vue de
+  loin, `assets/accueil_ferme.webp` (3600 × 1000, WebP sans perte) : une capture au zoom 1 (un
+  pixel du jeu par pixel), jamais redimensionnée sur ordinateur, à moitié taille sur téléphone,
+  affichée sans lissage (`image-rendering: pixelated`). Pour la refaire : ouvrir une partie
+  dans Chromium, zoom de la carte à 1 (`zoomK` de la scène, `js/carte/ferme/camera.js`),
+  interface et brouillard masqués, et recadrer la capture autour de la ferme.
+- **`jeu.html`, le jeu** : un écran de chargement le couvre dès la première image
+  (`#chargement`, son style en fin de `css/jeu.css`) : quatre carottes du potager
+  (`assets/crops.png`) poussent avec le chargement, puis l'écran s'efface en fondu.
+  `window.Chargement.avance(p)` (p de 0 à 1) et `fini()`, définis par le petit script de la page :
+  les images de la scène comptent pour 10 à 70 % (le chargeur de Phaser, `js/farm-stage.js`), la
+  scène créée 75 %, puis la part de la vue dessinée (`vueDessinee`, `js/carte/ferme/sol.js` : les
+  régions sous la caméra et, dans le grand monde, leur sol arrivé du Web Worker). L'écran est
+  caché pendant la configuration d'une nouvelle partie, s'efface à la première image d'une
+  grotte, aussitôt si la carte ne peut pas s'afficher, et au plus tard au bout de 30 s.
+- **`encyclopedie.html`, l'encyclopédie** : son style est dans la page ; le générateur
+  (`scripts/build-encyclopedie.mjs`) n'en réécrit que le compte des entrées (le ruban de
+  l'en-tête), le menu des catégories et les sections, à partir de
+  `encyclopedie_ferme_familiale.json`.
+- **`cookies.html`, la politique de cookies** : le texte dans une lettre crème, comme le courrier
+  du jeu. Changer sa mise en forme ne demande rien ; changer son texte, si ce qui est collecté
+  change, demande de changer `POLICY_VERSION` (voir « Suivi de session »).
 
 ### Données
 
