@@ -3,7 +3,8 @@
 //
 // Le JSON fait foi pour le contenu (catégories, termes, descriptions, liens) ;
 // la page garde sa mise en forme, son en-tête, son pied et sa recherche. Seuls
-// le menu des catégories et les sections de <main> sont réécrits.
+// le compte des entrées (le ruban de l'en-tête), le menu des catégories et les
+// sections de <main> sont réécrits.
 //
 // Les descriptions peuvent citer les données du jeu (data/*.json) : {{DATA.chemin}} y
 // devient la valeur (un nombre est écrit à la française : « 1 500 »), et quelques
@@ -207,7 +208,9 @@ function remplacer(texte, debut, fin, contenu) {
   return texte.slice(0, a + debut.length) + contenu + texte.slice(b);
 }
 
-let out = remplacer(page, '<nav class="cat-nav">', '</nav>', `\n        ${menu}\n      `);
+const publiquesTotal = data.categories.reduce((t, c) => t + publiques(c).length, 0);
+let out = remplacer(page, '<div class="ruban">', '</div>', `📖 ${formatNumber(publiquesTotal)} entrées · ${data.categories.length} catégories`);
+out = remplacer(out, '<nav class="cat-nav">', '</nav>', `\n        ${menu}\n      `);
 out = remplacer(out, '<main class="wrap">', '    <p class="no-results"', `\n    \n${data.categories.map(section).join('\n')}\n`);
 
 const total = data.categories.reduce((t, c) => t + c.entrees.length, 0);
