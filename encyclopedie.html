@@ -4,148 +4,192 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Encyclopédie de Ferme Familiale — tous les bâtiments, cultures, animaux, ressources, recettes et mécaniques du jeu.">
-  <meta name="theme-color" content="#183b2a">
+  <meta name="theme-color" content="#8a5a34">
   <title>Encyclopédie — Ferme Familiale</title>
   <style>
-    :root{
-      --ink:#183326;
-      --muted:#647268;
-      --cream:#fbf7ed;
-      --paper:#fffdf8;
-      --green:#24543c;
-      --green-2:#367451;
-      --lime:#b9d77a;
-      --yellow:#f3c95b;
-      --orange:#df8b4e;
-      --line:#e7dfcf;
-      --shadow:0 22px 60px rgba(30,58,42,.12);
-      --radius:24px;
+    /* Le style du jeu (css/jeu.css), comme la page d'accueil : sa police en pixels
+       (assets/police_dialogue.woff), ses cadres de bois sur fond crème, ses couleurs (le soleil,
+       la feuille, la terre), et en tête une ferme du jeu vue de loin (assets/accueil_ferme.webp). */
+    @font-face {
+      font-family: 'Ferme Dialogue';
+      src: url('assets/police_dialogue.woff') format('woff');
+      font-display: swap;
     }
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{
-      margin:0;color:var(--ink);background:var(--cream);
-      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      line-height:1.6;
+    :root {
+      --color-sun: #f2a71b;
+      --color-earth: #8a5a34;
+      --wood-ink: #4a2a10;
+      --wood-dark: #3a2414;
+      --wood-light: #d9a066;
+      --wood-glow: rgba(217, 160, 102, 0.9);
+      --wood-cream: #fff4dc;
+      --wood-paper: #fff1d2;
+      --wood-bg: rgba(250, 232, 196, 0.97);
+      --accent: #3a7530;
+      --bg: #faf6ee;
+      --text: #2c2416;
+      --text-muted: #6b5f4a;
     }
-    a{text-decoration:none;color:inherit}
-    .wrap{width:min(1120px,calc(100% - 40px));margin:auto}
-    .nav{
-      position:sticky;z-index:20;top:0;left:0;right:0;
-      padding:16px 0;background:rgba(251,247,237,.88);backdrop-filter:blur(10px);
-      border-bottom:1px solid var(--line);
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #1c1a14; --text: #f2ecdd; --text-muted: #b9ae95; }
     }
-    .nav-inner{display:flex;align-items:center;justify-content:space-between}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:-.03em}
-    .brand-mark{
-      width:38px;height:38px;border-radius:12px;background:var(--green);
-      display:grid;place-items:center;color:#fff;font-size:21px;
-      box-shadow:0 8px 20px rgba(36,84,60,.2)
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      font-family: 'Ferme Dialogue', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-synthesis: none;
+      font-size-adjust: ex-height 0.47;
+      font-size: 17px;
+      line-height: 1.5;
     }
-    .nav-links{display:flex;gap:24px;color:#496052;font-weight:650;font-size:14px;align-items:center}
-    .nav-links a:hover{color:var(--green)}
-    .nav-cta{background:var(--green);color:white;padding:10px 16px;border-radius:999px;font-weight:800;font-size:14px}
-    header.hero{
-      padding:64px 0 40px;
-      background:
-        radial-gradient(circle at 82% 22%,rgba(243,201,91,.30),transparent 30%),
-        radial-gradient(circle at 16% 80%,rgba(185,215,122,.28),transparent 32%),
-        linear-gradient(145deg,#f8f2df 0%,#eef2df 100%);
-      border-bottom:1px solid var(--line);
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, strong, b { font-weight: normal; }
+    .wrap { width: min(1120px, calc(100% - 32px)); margin: auto; }
+
+    /* le cadre de bois du jeu (.modal.bois, la barre d'outils) */
+    .bois, .entry {
+      background: var(--wood-bg);
+      color: var(--wood-ink);
+      border: 3px solid var(--color-earth);
+      border-radius: 8px;
+      box-shadow: inset 0 0 0 2px var(--wood-glow), 0 4px 0 rgba(58, 36, 20, 0.35);
     }
-    .eyebrow{
-      display:inline-flex;gap:8px;align-items:center;background:#edf4df;color:#356141;
-      border:1px solid #d8e5c3;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:850;
-      text-transform:uppercase;letter-spacing:.08em;
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 40px; padding: 0 16px;
+      border: 3px solid var(--color-earth); border-radius: 6px; font-size: 16px;
+      background: var(--accent); color: #fff; box-shadow: inset 0 0 0 2px #6fae5a, 0 3px 0 var(--wood-dark);
     }
-    h1{font-size:clamp(34px,5vw,54px);line-height:1.02;letter-spacing:-.045em;margin:16px 0 10px;max-width:700px}
-    .lead{font-size:17px;color:#536258;max-width:640px;margin:0 0 26px}
-    .search-box{
-      display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line);
-      border-radius:16px;padding:12px 16px;box-shadow:var(--shadow);max-width:520px;
+    .btn:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
+
+    /* l'en-tête : une planche de bois */
+    .nav { position: sticky; top: 0; z-index: 20; padding: 8px 0; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 8px 6px 6px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; }
+    .medaillon {
+      width: 44px; height: 44px; flex: none; border-radius: 50%; display: grid; place-items: center;
+      background: var(--wood-cream); border: 3px solid var(--color-earth); box-shadow: inset 0 0 0 2px var(--color-sun);
     }
-    .search-box input{
-      border:none;outline:none;background:transparent;font-size:15px;color:var(--ink);width:100%;
-      font-family:inherit;
+    .medaillon .px { --pxs: 28px; }
+    .nav-links { display: flex; gap: 22px; font-size: 16px; }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* la tête de page : la ferme vue de loin, un panneau de bois par-dessus */
+    header.hero {
+      margin-top: -80px; padding: 116px 0 40px;
+      background: #6f9f3c url('assets/accueil_ferme.webp') no-repeat;
+      background-position: calc(50% - 300px) 42%;
+      image-rendering: pixelated;
+      border-bottom: 3px solid var(--color-earth);
     }
-    .search-box input::placeholder{color:#9aa89e}
-    .search-count{font-size:12px;color:var(--muted);margin-top:10px}
-    .cat-nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
-    .catlink{
-      display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);
-      border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;color:#3c4a40;
-      transition:.15s transform,.15s box-shadow;
+    .hero-panel { max-width: 760px; padding: 24px 26px 22px; }
+    .ruban {
+      display: inline-block; padding: 2px 14px;
+      background: #fbd98c; border: 2px solid var(--color-earth); border-radius: 4px; font-size: 15px;
     }
-    .catlink:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(30,58,42,.08)}
-    .catlink span{color:var(--green-2);font-weight:900}
-    main{padding:50px 0 20px}
-    .category{padding:36px 0;border-bottom:1px solid var(--line)}
-    .category:last-child{border-bottom:none}
-    .cat-head{display:flex;align-items:center;gap:16px;margin-bottom:24px;scroll-margin-top:90px}
-    .cat-icon{
-      width:52px;height:52px;border-radius:16px;background:#edf4df;display:grid;place-items:center;
-      font-size:26px;flex-shrink:0;
+    h1 { font-size: clamp(32px, 5vw, 46px); line-height: 1.05; margin: 10px 0 8px; color: var(--wood-dark); }
+    .lead { font-size: 18px; color: #7a5434; margin: 0 0 18px; }
+    .search-box {
+      display: flex; align-items: center; gap: 10px; max-width: 540px; padding: 8px 12px;
+      background: var(--wood-cream); border: 3px solid var(--color-earth); border-radius: 6px;
+      box-shadow: inset 0 0 0 2px var(--wood-light);
     }
-    .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--green-2);font-weight:900}
-    h2{font-size:clamp(24px,3vw,32px);line-height:1.08;letter-spacing:-.03em;margin:4px 0 0}
-    .entry-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-    .entry{
-      background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:20px;
-      box-shadow:0 8px 24px rgba(30,58,42,.04);scroll-margin-top:90px;transition:.2s box-shadow,.2s border-color;
+    .search-box input {
+      border: none; outline: none; background: transparent; width: 100%;
+      font: inherit; font-size: 17px; color: var(--wood-ink);
     }
-    .entry:target{border-color:var(--green-2);box-shadow:0 0 0 3px rgba(54,116,81,.18)}
-    .betes{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin:0 0 8px}
-    .bete{display:block;image-rendering:pixelated}
-    .poisson{font-size:30px;line-height:1}
-    .entry h3{margin:0 0 8px;font-size:16px;letter-spacing:-.01em}
-    .entry p{margin:0 0 10px;color:#4b584f;font-size:13.5px}
-    .links{display:flex;flex-wrap:wrap;gap:6px}
-    .chip{
-      font-size:11.5px;font-weight:700;background:#f1f6e6;color:#3c6146;border:1px solid #dce8c6;
-      border-radius:999px;padding:4px 10px;
+    .search-box input::placeholder { color: #a8865e; }
+    .search-count { font-size: 15px; color: #7a5434; margin-top: 8px; min-height: 1em; }
+    /* les catégories : des étiquettes de papier, comme les onglets de l'inventaire */
+    .cat-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .catlink {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+      background: var(--wood-paper); color: var(--wood-ink);
+      border: 2px solid var(--color-earth); border-radius: 5px; font-size: 15px;
+      box-shadow: 0 2px 0 rgba(58, 36, 20, 0.35);
     }
-    .chip:hover{background:#e2eecb}
-    .entry.hidden{display:none}
-    .category.hidden{display:none}
-    footer{padding:28px 0;color:#758078;font-size:12px;border-top:1px solid var(--line)}
-    .footer-inner{display:flex;justify-content:space-between;gap:20px;align-items:center}
-    .no-results{display:none;color:var(--muted);font-size:15px;padding:40px 0;text-align:center}
-    @media(max-width:850px){
-      .nav-links{display:none}.entry-grid{grid-template-columns:1fr 1fr}
+    .catlink:hover { background: #fbd98c; }
+    .catlink span { color: var(--color-earth); }
+
+    main { padding: 30px 0 20px; }
+    .categorie { padding: 30px 0; border-bottom: 3px dashed rgba(138, 90, 52, 0.35); scroll-margin-top: 72px; }
+    .categorie:last-of-type { border-bottom: none; }
+    .cat-head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; scroll-margin-top: 90px; }
+    .cat-icon {
+      width: 60px; height: 60px; flex: none; display: grid; place-items: center;
+      border: 3px solid var(--color-earth); border-radius: 6px;
+      background: #ead0a0; box-shadow: inset 0 0 0 2px var(--wood-light); font-size: 30px;
     }
-    @media(max-width:560px){
-      .wrap{width:min(100% - 28px,1120px)}.entry-grid{grid-template-columns:1fr}
-      header.hero{padding:44px 0 30px}.footer-inner{flex-direction:column;align-items:flex-start}
+    .cat-icon .px { --pxs: 40px; }
+    .kicker { display: inline-block; font-size: 15px; color: var(--color-earth); border-bottom: 3px solid var(--color-sun); }
+    h2 { font-size: clamp(26px, 3vw, 34px); line-height: 1.1; margin: 4px 0 0; }
+    .entry-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .entry { padding: 16px 18px 18px; scroll-margin-top: 90px; }
+    .entry:target { box-shadow: inset 0 0 0 2px var(--wood-glow), 0 0 0 4px var(--color-sun); }
+    .betes { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin: 0 0 8px; }
+    .bete { display: block; image-rendering: pixelated; }
+    .poisson { font-size: 30px; line-height: 1; }
+    .poisson .px { --pxs: 36px; }
+    .entry h3 { margin: 0 0 6px; font-size: 20px; color: var(--wood-dark); }
+    .entry p { margin: 0 0 10px; font-size: 15px; color: #5c3a1c; }
+    .links { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      font-size: 14px; padding: 1px 8px;
+      background: var(--wood-paper); color: var(--wood-ink);
+      border: 2px solid var(--wood-light); border-radius: 4px;
     }
+    .chip:hover { border-color: var(--color-earth); background: #fbd98c; }
+    .entry.hidden, .categorie.hidden { display: none; }
+    .no-results { display: none; color: var(--text-muted); font-size: 18px; padding: 40px 0; text-align: center; }
+    footer { padding: 24px 0 32px; color: var(--text-muted); font-size: 15px; border-top: 3px solid var(--color-earth); }
+    .footer-inner { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+    footer a { text-decoration: underline; }
+    @media (max-width: 850px) {
+      .nav-links { display: none; }
+      .entry-grid { grid-template-columns: 1fr 1fr; }
+      header.hero { background-size: 1800px 500px; background-position: calc(50% - 150px) 30%; }
+    }
+    @media (max-width: 560px) {
+      .entry-grid { grid-template-columns: 1fr; }
+      header.hero { padding: 96px 0 24px; }
+      .hero-panel { padding: 18px 16px; }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   </style>
 </head>
 <body>
   <header class="nav">
-    <div class="wrap nav-inner">
+    <div class="wrap nav-inner bois">
       <a class="brand" href="index.html">
-        <span class="brand-mark">🌱</span><span>Ferme Familiale</span>
+        <span class="medaillon">📖</span><span>Ferme Familiale</span>
       </a>
-      <nav class="nav-links">
+      <nav class="nav-links" aria-label="Pages">
         <a href="index.html">Accueil</a>
         <a href="index.html#concept">Le concept</a>
         <a href="encyclopedie.html">Encyclopédie</a>
       </nav>
-      <a class="nav-cta" href="jeu.html">Jouer</a>
+      <a class="btn" href="jeu.html">Jouer</a>
     </div>
   </header>
 
   <header class="hero">
     <div class="wrap">
-      <div class="eyebrow">📖 104 entrées · 7 catégories</div>
+     <div class="hero-panel bois">
+      <div class="ruban">📖 226 entrées · 14 catégories</div>
       <h1>L'encyclopédie de la ferme.</h1>
       <p class="lead">Tous les bâtiments, cultures, animaux, ressources, recettes et mécaniques du jeu, expliqués et reliés entre eux.</p>
       <div class="search-box">
-        🔎 <input type="search" id="search" placeholder="Rechercher un terme (ex. « batterie », « pain »…)" autocomplete="off">
+        🔎 <input type="search" id="search" placeholder="Rechercher un terme (ex. « batterie », « pain »…)" autocomplete="off" aria-label="Rechercher un terme">
       </div>
-      <div class="search-count" id="search-count"></div>
+      <div class="search-count" id="search-count" aria-live="polite"></div>
       <nav class="cat-nav">
         <a class="catlink" href="#cat-batiments">🏗️ Bâtiments &amp; infrastructures <span>22</span></a><a class="catlink" href="#cat-construction">🔨 Ramassage &amp; construction <span>26</span></a><a class="catlink" href="#cat-cultures">🌾 Cultures &amp; plantes <span>20</span></a><a class="catlink" href="#cat-animaux">🐄 Animaux &amp; produits animaux <span>10</span></a><a class="catlink" href="#cat-ressources">📦 Ressources, ingrédients &amp; stockage <span>10</span></a><a class="catlink" href="#cat-recettes">🍲 Recettes &amp; plats <span>27</span></a><a class="catlink" href="#cat-outils">🛠️ Outils &amp; matériaux <span>9</span></a><a class="catlink" href="#cat-commerce">🏪 Commerce <span>3</span></a><a class="catlink" href="#cat-mine">🏙️ Mine &amp; pêche <span>3</span></a><a class="catlink" href="#cat-faune">🦌 La faune du grand monde <span>15</span></a><a class="catlink" href="#cat-hameaux">🏘️ Les hameaux du grand monde <span>3</span></a><a class="catlink" href="#cat-ile">🌙 L&#x27;île de Céron <span>32</span></a><a class="catlink" href="#cat-mecaniques">⚙️ Mécaniques de jeu <span>32</span></a><a class="catlink" href="#cat-famille">👨‍👩‍👧‍👦 Famille <span>14</span></a>
       </nav>
+     </div>
     </div>
   </header>
 
@@ -1445,7 +1489,7 @@
 
   <footer>
     <div class="wrap footer-inner">
-      <div>🌱 <strong>Ferme Familiale</strong> — un jeu de gestion agricole.</div>
+      <div>🌱 Ferme Familiale — un jeu de gestion agricole en pixel art.</div>
       <div><a href="index.html">Accueil</a> · <a href="jeu.html">Jouer</a> · <a href="cookies.html">Cookies et confidentialité</a></div>
     </div>
   </footer>
@@ -1453,7 +1497,7 @@
   <script>
     const input = document.getElementById('search');
     const entries = Array.from(document.querySelectorAll('.entry'));
-    const categories = Array.from(document.querySelectorAll('.category'));
+    const categories = Array.from(document.querySelectorAll('.categorie'));
     const countEl = document.getElementById('search-count');
     const noResults = document.getElementById('no-results');
 
