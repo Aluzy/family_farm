@@ -457,7 +457,7 @@ Le Marché vend toujours les outils.
     et seul le dernier mur montre sa face.
   - Une porte percée dans un mur vertical montre son seuil, vu de haut, et son battant
     ouvert.
-- **Le plancher** (2 planches à l'Atelier) se pose à plat sur l'herbe, dans une pièce ou
+- **Le plancher** (2 bois à l'Atelier) se pose à plat sur l'herbe, dans une pièce ou
   dehors en terrasse.
   - Il ne prend pas la place d'un bloc : les meubles, le four ou la paillasse se posent
     dessus (`state.sols`, `solAt`).

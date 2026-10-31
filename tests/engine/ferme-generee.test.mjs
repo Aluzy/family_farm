@@ -521,8 +521,8 @@ test('ferme générée : des murs tout autour et une porte font une pièce close
 
 test('ferme générée : le plancher se pose à plat, sous les blocs, et se reprend en dernier', () => {
   const s = chantier('b3');
-  setInv(s, { planche: 2 });
-  assertEqual(craft(s, 'plancher').items, { plancher: 1 }, '2 planches : un plancher');
+  setInv(s, { bois: 2 });
+  assertEqual(craft(s, 'plancher').items, { plancher: 1 }, '2 bois : un plancher');
   setInv(s, { mur_pierre: 40, porte: 2, paillasse: 1, plancher: 3 });
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
