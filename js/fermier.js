@@ -807,15 +807,43 @@
     }
     // La faux en main, le joueur a touché une touffe d'herbe haute (son pied en `foot`) : il se
     // place à côté, la lame balaie l'herbe à ses pieds.
-    function scythe(foot, onHit) {
-      return strike('faucher', foot, 7, onHit);
+    // `valide` (facultatif) : la touffe est-elle encore à faucher ? Quand vient son tour, sinon,
+    // il n'y va pas (rien à faucher : ni marche, ni geste dans le vide).
+    function scythe(foot, onHit, valide) {
+      return strike('faucher', foot, 7, onHit, valide);
     }
     // La ferme générée : prendre à la main ce qui est au sol en `foot` (une pierre, un bout de
     // bois, une herbe) ; il se baisse à côté.
     function gather(foot, onHit) {
       return strike('cueille', foot, 9, onHit);
     }
-    function strike(name, foot, dx, onHit) {
+    // Un geste (un coup d'outil, des fibres jetées) : les gestes se suivent dans l'ordre où le
+    // joueur les a demandés (le dernier après les autres), avant le reste (les tas à prendre).
+    // `valide` (facultatif) : quand vient son tour, le geste a-t-il encore lieu d'être ? Sinon,
+    // sa marche et son geste sont sautés. Le geste porte `cible` (son onHit : voir attend).
+    function enchaine(list, onHit, valide) {
+      for (const j of list) {
+        j.geste = true;
+        j.cible = onHit;
+        if (valide) {
+          const start = j.start, step = j.step;
+          let saute = false;
+          j.start = function () { saute = !valide(); if (!saute) start.call(this); };
+          j.step = function (dt) { return saute || step.call(this, dt); };
+        }
+      }
+      if (job && job.idle) job = null;
+      const reste = jobs.filter((j) => !j.idle);
+      let k = 0;
+      for (let i = 0; i < reste.length; i++) if (reste[i].geste) k = i + 1;
+      jobs = reste.slice(0, k).concat(list, reste.slice(k));
+      idleAge = 0;
+    }
+    // Le geste dont le coup appelle `onHit` est-il encore à faire (en cours ou en attente) ?
+    function attend(onHit) {
+      return !!onHit && ((job && job.cible === onHit) || jobs.some((j) => j.cible === onHit));
+    }
+    function strike(name, foot, dx, onHit, valide) {
       if (!blocked) buildGrid();
       const sides = [{ x: foot.x - dx, flip: false }, { x: foot.x + dx, flip: true }];
       let spot = null, side = sides[0];
@@ -825,9 +853,7 @@
         if (spot) side = spot.x <= foot.x ? sides[0] : sides[1];
       }
       if (!spot) { if (onHit) onHit(); return false; }
-      if (job && job.idle) job = null;
-      jobs = [walkTo(spot.x, spot.y), act(name, { face: 'cote', flip: side.flip, onHit }), wait(rand(0.4, 1))].concat(jobs.filter((j) => !j.idle));
-      idleAge = 0;
+      enchaine([walkTo(spot.x, spot.y), act(name, { face: 'cote', flip: side.flip, onHit }), wait(rand(0.4, 1))], onHit, valide);
       return true;
     }
 
@@ -836,9 +862,7 @@
     function jeter(spot, face, flip, onHit) {
       if (!blocked) buildGrid();
       if (!freeAt(spot.x, spot.y)) return false;
-      if (job && job.idle) job = null;
-      jobs = [walkTo(spot.x, spot.y), act('jeter', { face, flip, onHit }), wait(rand(0.4, 0.8))].concat(jobs.filter((j) => !j.idle));
-      idleAge = 0;
+      enchaine([walkTo(spot.x, spot.y), act('jeter', { face, flip, onHit }), wait(rand(0.4, 0.8))], onHit);
       return true;
     }
 
@@ -1056,6 +1080,8 @@
       mine,
       // La faux : faucher la touffe d'herbe haute dont le pied est en `foot`.
       scythe,
+      // Le geste dont le coup appelle `onHit` est-il encore à faire (en cours ou en attente) ?
+      attend,
       // Le coup fort : la charge (il tremble), un geste sur place, le tournoiement de la faux.
       charge,
       actHere,
