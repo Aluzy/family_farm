@@ -332,11 +332,12 @@
       }
     },
 
-    // Une touffe se voit sauf sur une case labourée, fauchée (elle repousse : modèle.fauchees) ou
-    // pendant qu'elle tombe sous la faux.
+    // Une touffe se voit sauf sur une case labourée ou fauchée (elle repousse : modèle.fauchees).
+    // Fauchée par le jeu mais pas encore par le personnage (g.tombe : il y va, le coup n'est pas
+    // donné), elle reste debout jusqu'à son coup de faux.
     showGrass(g) {
       if (!g.img) return;
-      const v = !g.cut && !g.tombe && !(this.dirt && this.dirt.has(g.cell));
+      const v = g.tombe || (!g.cut && !(this.dirt && this.dirt.has(g.cell)));
       g.img.setVisible(v);
       if (g.fleurs) g.fleurs.setVisible(v);
     },
@@ -376,8 +377,9 @@
     },
 
     // Un coup de faux sur la touffe `g` : le jeu le compte tout de suite (this.ctx.bridge.scythe)
-    // et pose la fibre au sol ; le personnage va à côté et fauche ; au coup, la touffe se couche
-    // et s'efface, la fibre paraît à son pied.
+    // et pose la fibre au sol ; le personnage va à côté et fauche (après les coups déjà demandés,
+    // dans l'ordre) ; au coup, la touffe se couche et s'efface, la fibre paraît à son pied. Si
+    // son geste n'est plus prévu (« Dormir », une autre carte…), elle s'efface sans lui.
     scythe(g) {
       const pied = { x: g.x, y: Math.round(g.y) };
       const ou = { carte: 'ferme', coup: [{ x: pied.x, y: pied.y }] };
@@ -385,14 +387,15 @@
       if (!got) return;
       const M2 = got.morceaux || { coup: [], fin: [] };
       g.tombe = true;
+      let filet = null;
       const fin = () => {
+        if (filet) { filet.remove(); filet = null; }
         if (!g.tombe) return;
         g.tombe = false;
         g.cut = true;
         this.showGrass(g);
         this.revealPieces(M2.coup);
       };
-      this.time.delayedCall(9000, fin);           // (filet : le coup n'a pas été donné)
       const hit = () => {
         K.vibre('pioche');
         if (global.FermeSon) global.FermeSon.joue('faux', { x: pied.x, y: pied.y, ecart: 0 });
@@ -402,7 +405,11 @@
           onComplete: () => { for (const i of imgs) i.setScale(1).setAlpha(1); fin(); } });
         this.revealPieces(M2.coup);
       };
-      if (!this.fermier || !this.fermier.scythe || !this.fermier.scythe(pied, hit)) hit();
+      if (!this.fermier || !this.fermier.scythe || !this.fermier.scythe(pied, hit, () => g.tombe)) { hit(); return; }
+      // (filet : le geste a été oublié, le coup ne sera pas donné)
+      filet = this.time.addEvent({ delay: 1000, loop: true, callback: () => {
+        if (!this.fermier.attend || !this.fermier.attend(hit)) fin();
+      } });
     },
 
     dropGrass(g) {
