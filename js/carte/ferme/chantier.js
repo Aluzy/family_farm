@@ -246,7 +246,9 @@
     syncRang(n, pieces, changed) {
       const R = BLOCS_CARTE.rang, dy = BLOCS_CARTE.etage.dy, cols = this.grid.cols;
       // (le bloc en main compte : les cases où il se pose ne sont pas en rouge)
-      const m = this.ctx.lastModel, solsHaut = (m && m.solsEtage) || [];
+      // (les sols du niveau : au niveau 1, modèle.solsEtage ; plus haut, modèle.solsHauts)
+      const m = this.ctx.lastModel;
+      const solsHaut = n === 1 ? (m && m.solsEtage) || [] : ((m && m.solsHauts) || []).filter((q) => q.niveau === n);
       const cle = JSON.stringify(pieces) + (m && m.bati ? m.bati.sorte : '') + JSON.stringify(solsHaut);
       if (n === (this.rang || 0) && !changed && (!n || this.rangCle === cle)) return;
       const avant = this.rangImgs || [];
@@ -266,15 +268,15 @@
       const g = this.rangGfx.setDepth(this.etageZ(0));
       g.fillStyle(BLOCS_CARTE.voile, BLOCS_CARTE.voileAlpha * 0.6);
       for (const p of pieces || []) for (const c of p) g.fillRect((c % cols) * T, Math.floor(c / cols) * T - n * dy, T, T);
-      // au niveau 1 : les sols qui y sont posés (raccordés aux leurs, comme en bas : syncFloors)
-      if (n === 1 && this.has(BLOCS_CARTE.key)) {
+      // les sols posés à ce niveau (raccordés aux leurs, comme en bas : syncFloors)
+      if (this.has(BLOCS_CARTE.key)) {
         const at = new Map(solsHaut.map((q) => [q.case, q.sorte]));
         for (const [c, so] of at) {
           const col = c % cols, est = (k) => at.get(k) === so;
           const mq = (est(c - cols) ? 1 : 0) + (col < cols - 1 && est(c + 1) ? 2 : 0) + (est(c + cols) ? 4 : 0) + (col > 0 && est(c - 1) ? 8 : 0);
           const f = (BLOCS_CARTE.modelesSols[so] !== undefined ? BLOCS_CARTE.modelesSols[so] : BLOCS_CARTE.sols) + mq;
           const y = (Math.floor(c / cols) + 1) * T;
-          this.rangSols.push(this.add.image(col * T + T / 2, y - dy, BLOCS_CARTE.key, f).setOrigin(0.5, 1).setDepth(this.etageZ(y - T - 0.5)));
+          this.rangSols.push(this.add.image(col * T + T / 2, y - n * dy, BLOCS_CARTE.key, f).setOrigin(0.5, 1).setDepth(this.etageZ(y - T - 0.5)));
         }
       }
       g.fillStyle(R.place, R.placeAlpha);
