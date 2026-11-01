@@ -18,7 +18,7 @@ import { setStageWindow, stageWindow } from './stage-windows.js';
 import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, deplacerBloc, deplacerStatus, hauteurPile, matiereDessus, poserBloc, rehausser, rehausseStatus, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
-import { ETAGE_BLOCS, etageCouvertes, etageEmprise, poseEtageStatus, poserEtage, reprendreEtage, etageBlocs, poseSolEtageStatus, poserSolEtage, reprendreSolEtage, solsEtage } from '../engine/etage.js';
+import { ETAGE_BLOCS, etage2Emprise, etageCouvertes, etageEmprise, poseEtageStatus, poserEtage, reprendreEtage, etageBlocs, poseSolEtageStatus, poserSolEtage, reprendreSolEtage, solsEtage } from '../engine/etage.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -512,7 +512,7 @@ registerActions({
     if (!chantierOuvert()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     if (stageWindow) setStageWindow(null);    // (depuis le menu latéral : on revient sur la carte)
-    setBuildLevel(etageVue ? 1 : 0);          // (on construit d'abord là où l'on est)
+    setBuildLevel(etageVue);                  // (on construit d'abord là où l'on est)
     niveauListe = false;
     // (le dernier mur choisi, ou le premier bloc qu'on a encore)
     setBuildMode(choisi.murs && SORTES().includes(choisi.murs) && blocsEnMain(state, choisi.murs) > 0 ? choisi.murs : SORTES().find((s) => blocsEnMain(state, s) > 0) || SORTES()[0]);
@@ -541,13 +541,18 @@ registerActions({
     }, 50);
   },
   // L'escalier (un essai, js/engine/etage.js) : monter à l'étage, ou en redescendre.
-  'etage-toggle': () => {
+  // (la carte dit où mène l'escalier touché : data-niveau ; sans lui, en bas ↔ l'étage)
+  'etage-toggle': (target) => {
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
-    if (!etageVue && !etageEmprise(state).size) return;
-    setEtageVue(!etageVue);
+    const d = target && target.dataset && target.dataset.niveau;
+    const vers = d !== undefined ? Number(d) : etageVue ? 0 : 1;
+    if (vers >= 1 && !etageEmprise(state).size) return;
+    if (vers >= 2 && !etage2Emprise(state).size) return;
+    setEtageVue(vers);
     // (en construisant : on construit là où l'on arrive)
-    if (buildMode) { setBuildLevel(etageVue ? 1 : 0); blocDuNiveau(); }
-    notify(etageVue ? '🪜 À l\'étage : touche l\'escalier pour redescendre.' : '🪜 En bas.', { duree: CONSEIL_MS });
+    if (buildMode) { setBuildLevel(etageVue); blocDuNiveau(); }
+    notify(etageVue === 2 ? '🪜 Au niveau 2 : touche le haut de l\'escalier pour redescendre.'
+      : etageVue ? `🪜 À l'étage : touche l'escalier pour redescendre${etage2Emprise(state).size ? ', celui de l\'étage pour monter' : ''}.` : '🪜 En bas.', { duree: CONSEIL_MS });
     refresh();
   },
   // Le carré du niveau : un appui simple ouvre ou ferme la liste des niveaux.

@@ -12,7 +12,7 @@ import {
 import { readFileSync } from 'node:fs';
 import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
-  isArable as arable, poseEtageStatus, casesSolEtage, piecesNiveau, piecesNiveau1, poseSolEtageStatus, poserSolEtage, solsEtage, hauteurPile, matiereDessus, rehausser, rehausseStatus, rehaussesPosees,
+  isArable as arable, etage2Emprise, escaliersEtage, poseEtageStatus, casesSolEtage, piecesNiveau, piecesNiveau1, poseSolEtageStatus, poserSolEtage, solsEtage, hauteurPile, matiereDessus, rehausser, rehausseStatus, rehaussesPosees,
   arbresPlantes, asleep, atelierConstruit, atelierStatus, blocAt, blocBloque, blocDessus,
   blocsDidacticiel, blocsEnMain, blocsPoses, botteleuses, buildAtelier, buildStation, bushCut,
   bushOf, buyDehors, buyFurniture, buyHoe, buyItem, buyPasture, buyRuche, caseDepart,
@@ -1212,7 +1212,7 @@ test('mode Construire, niveaux 1 et 2 : au-dessus d\'une fenêtre ou d\'une port
 
 test('niveau 1 : des sols dans une pièce dont les murs y montent ; avec l\'escalier, les murs rehaussés sont ceux de l\'étage', () => {
   const s = chantier('sol-etage');
-  setInv(s, { mur_pierre: 60, porte: 1, plancher: 6, sol_carrelage: 2, escalier: 1, paillasse: 1 });
+  setInv(s, { mur_pierre: 60, porte: 1, plancher: 6, sol_carrelage: 2, escalier: 2, paillasse: 1 });
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5), W = z.W;
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
   poserPorte(s, p.porte);
@@ -1241,6 +1241,12 @@ test('niveau 1 : des sols dans une pièce dont les murs y montent ; avec l\'esca
   assertEqual([piecesNiveau(s, 2).length, casesSolEtage(s, 2).size], [1, 9], 'au-dessus de l\'escalier aussi');
   assertEqual(poserSolEtage(s, 'plancher', dedans, 2).ok, true);
   assertEqual([solsEtage(s, 2)[dedans], solsEtage(s)[dedans]], ['plancher', 'sol_carrelage'], 'chaque niveau a ses sols');
+  // le second escalier, posé à l'étage dans la pièce du niveau 2 : on y monte
+  assertEqual(etage2Emprise(s).size, 0);
+  const haut = p.dedans + 2 * W;
+  assertEqual(poseEtageStatus(s, 'escalier', p.dedans + 2).ok, false, 'pas sur le haut du premier');
+  assert(poserEtage(s, 'escalier', haut).ok);
+  assertEqual([etage2Emprise(s).size, escaliersEtage(s), casesSolEtage(s, 2).has(haut)], [25, [haut], false]);
   const avant2 = countItem(s, 'plancher');
   assert(reprendreBloc(s, p.murs[0]).ok);
   assertEqual([solsEtage(s, 2)[dedans], countItem(s, 'plancher')], [undefined, avant2 + 1], 'un mur redescendu : le sol du niveau 2 revient');

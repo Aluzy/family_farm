@@ -64,7 +64,7 @@ import { countItem } from '../engine/inventory.js';
 import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, piecesCloses, rehaussesPosees, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable } from './chantier.js';
-import { escaliers, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, solsEtage, toits } from '../engine/etage.js';
+import { escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, solsEtage, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose } from '../engine/cruche.js';
@@ -637,11 +637,17 @@ function sprinklerSpots() {
 // Plus d'étage, ou le coucher : on redescend.
 function etageModel() {
   const emprise = etageEmprise(state);
-  if ((!emprise.size || coucher || asleep(state) || stageInterior) && etageVue) setEtageVue(false);
+  if ((!emprise.size || coucher || asleep(state) || stageInterior) && etageVue) setEtageVue(0);
   if (!emprise.size) return { etage: null, niveau: 0 };
+  // le niveau 2 (par l'escalier de l'étage) : son emprise, ses escaliers, les murs du bas qui y
+  // montent plus haut (ils l'arrêtent)
+  const e2 = etage2Emprise(state);
+  if (!e2.size && etageVue > 1) setEtageVue(1);
+  const tri = (l) => [...l].sort((a, b) => a - b);
+  const etage2 = e2.size ? { emprise: tri(e2), escaliers: escaliersEtage(state).filter((t) => e2.has(t)), hauts: tri([...e2].filter((t) => hauteurPile(state, t) >= 3)) } : null;
   return {
-    etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte), ...(fenetresEtage(state)[c] ? { mur: fenetresEtage(state)[c] } : {}) })), escaliers: escaliers(state), hauts: [...emprise].filter((t) => hauteurPile(state, t) >= 2).sort((a, b) => a - b) },
-    niveau: etageVue ? 1 : 0,
+    etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte), ...(fenetresEtage(state)[c] ? { mur: fenetresEtage(state)[c] } : {}) })), escaliers: escaliers(state), hauts: [...emprise].filter((t) => hauteurPile(state, t) >= 2).sort((a, b) => a - b), etage2 },
+    niveau: etageVue,
     vueNiveau: buildMode && !stageInterior ? niveauBati() : null,
   };
 }

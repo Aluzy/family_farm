@@ -23,10 +23,10 @@ import { addItem, takeItem } from './inventory.js';
 import { blocsEnMain, blocsPoses, changeMur, changeSol, empriseMeuble, genreBloc, hauteurMur, hauteurPile, piecesCloses, solsPoses } from './blocs.js';
 import { farmTerrain } from './terrain.js';
 
-// Les blocs qui se posent à l'étage : des murs, des portes, une paillasse, une lanterne, un
+// Les blocs qui se posent à l'étage : un escalier (vers le niveau 2), des murs, des portes, une paillasse, une lanterne, un
 // réverbère, une barrière, et les meubles qui se posent au sol (pas les tableaux, accrochés à un mur ;
 // pas le réfrigérateur, qui reste en bas, où la famille mange).
-export const ETAGE_BLOCS = ['mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'porte', 'porte_chene', 'porte_vitree', 'porte_grange', 'porte_bleue', 'porte_fer', 'porte_ecurie', 'porte_blanche', 'paillasse', 'lanterne', 'candelabre', 'barriere']
+export const ETAGE_BLOCS = ['escalier', 'mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'porte', 'porte_chene', 'porte_vitree', 'porte_grange', 'porte_bleue', 'porte_fer', 'porte_ecurie', 'porte_blanche', 'paillasse', 'lanterne', 'candelabre', 'barriere']
   .concat(Object.keys(DATA.ATELIER.BLOCS).filter((k) => DATA.ATELIER.BLOCS[k].meuble && !DATA.ATELIER.BLOCS[k].sur && !DATA.ATELIER.BLOCS[k].frigo));
 
 // Les blocs posés à l'étage : { [tuile]: sorte }.
@@ -62,6 +62,23 @@ export function etageCouvertes(state) {
 // Les escaliers posés (leurs cases).
 export function escaliers(state) {
   return Object.entries(blocsPoses(state)).filter(([, s]) => s === 'escalier').map(([t]) => Number(t));
+}
+// Les escaliers posés à l'étage, qui montent au niveau 2 (leurs cases).
+export function escaliersEtage(state) {
+  return Object.entries(etageBlocs(state)).filter(([, s]) => s === 'escalier').map(([t]) => Number(t));
+}
+
+// L'emprise du niveau 2 : les pièces du niveau 2 (piecesNiveau) où un escalier de l'étage est
+// posé, et les murs qui les bordent. On y monte par cet escalier ; on y marche sur ses sols
+// (state.solsHauts[2]), entre les murs du bas qui montent au niveau 3. Un Set de tuiles.
+export function etage2Emprise(state) {
+  const out = new Set(), E = etageBlocs(state), un = etageEmprise(state);
+  if (!un.size) return out;
+  for (const p of piecesNiveau(state, 2)) {
+    if (!p.cases.some((t) => E[t] === 'escalier' && un.has(t))) continue;
+    for (const t of avecMurs(state, p.cases)) out.add(t);
+  }
+  return out;
 }
 
 // Une pièce close et les blocs qui ferment autour d'elle (les huit voisines) : un Set de tuiles.
@@ -185,6 +202,8 @@ export function poseEtageStatus(state, sorte, tile) {
   if (!etageEmprise(state).has(tile)) return { ok: false, raison: 'À l\'étage, on ne bâtit qu\'au-dessus d\'une pièce close qui a un escalier.' };
   if (blocsPoses(state)[tile] === 'escalier') return { ok: false, raison: 'Ici, c\'est le haut de l\'escalier.' };
   if (hauteurPile(state, tile) >= 2) return { ok: false, raison: 'Le mur du bas monte jusqu\'ici : il est déjà le mur de l\'étage.' };
+  // (le second escalier : dans une pièce dont les murs montent tous au niveau 2)
+  if (sorte === 'escalier' && !casesSolEtage(state, 2).has(tile)) return { ok: false, raison: 'L\'escalier de l\'étage se pose dans une pièce dont les murs montent tous au niveau 2.' };
   if (etageBlocs(state)[tile] && !changeMur(etageBlocs(state)[tile], sorte)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
   const couvertes = etageCouvertes(state);
   if (couvertes.has(tile)) return { ok: false, raison: 'Un meuble occupe cette case.' };
@@ -323,6 +342,8 @@ export function casesSolEtage(state, n = 1) {
     for (const p of piecesCloses(state)) if (p.cases.some((t) => B[t] === 'escalier')) for (const t of p.cases) out.add(t);
     for (const t of [...out]) if (B[t] === 'escalier') out.delete(t);
   }
+  // (au niveau 2 : pas sur le haut de l'escalier de l'étage)
+  if (n === 2) { const E = etageBlocs(state); for (const t of [...out]) if (E[t] === 'escalier') out.delete(t); }
   for (const t of [...out]) if (hauteurPile(state, t) >= 1) out.delete(t);
   return out;
 }
