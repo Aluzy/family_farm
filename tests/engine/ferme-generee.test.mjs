@@ -12,7 +12,7 @@ import {
 import { readFileSync } from 'node:fs';
 import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
-  isArable as arable, poseEtageStatus, casesSolEtage, piecesNiveau1, poseSolEtageStatus, poserSolEtage, solsEtage, hauteurPile, matiereDessus, rehausser, rehausseStatus, rehaussesPosees,
+  isArable as arable, poseEtageStatus, casesSolEtage, piecesNiveau, piecesNiveau1, poseSolEtageStatus, poserSolEtage, solsEtage, hauteurPile, matiereDessus, rehausser, rehausseStatus, rehaussesPosees,
   arbresPlantes, asleep, atelierConstruit, atelierStatus, blocAt, blocBloque, blocDessus,
   blocsDidacticiel, blocsEnMain, blocsPoses, botteleuses, buildAtelier, buildStation, bushCut,
   bushOf, buyDehors, buyFurniture, buyHoe, buyItem, buyPasture, buyRuche, caseDepart,
@@ -1237,7 +1237,14 @@ test('niveau 1 : des sols dans une pièce dont les murs y montent ; avec l\'esca
   // des murs plus hauts que l'étage : le toit se pose sur le plus bas d'entre eux
   for (const t of [...p.murs, p.porte]) assert(rehausser(s, 'mur_pierre', t).ok);
   assert(toits(s).some((t) => t.niveau === 2 && t.cases.includes(dedans)), 'un toit au niveau 2');
-  for (const t of [...p.murs, p.porte]) assert(reprendreBloc(s, t).ok);
+  // au niveau 2, les mêmes règles : un sol dans une pièce dont les murs y montent tous
+  assertEqual([piecesNiveau(s, 2).length, casesSolEtage(s, 2).size], [1, 9], 'au-dessus de l\'escalier aussi');
+  assertEqual(poserSolEtage(s, 'plancher', dedans, 2).ok, true);
+  assertEqual([solsEtage(s, 2)[dedans], solsEtage(s)[dedans]], ['plancher', 'sol_carrelage'], 'chaque niveau a ses sols');
+  const avant2 = countItem(s, 'plancher');
+  assert(reprendreBloc(s, p.murs[0]).ok);
+  assertEqual([solsEtage(s, 2)[dedans], countItem(s, 'plancher')], [undefined, avant2 + 1], 'un mur redescendu : le sol du niveau 2 revient');
+  for (const t of [...p.murs, p.porte]) if (t !== p.murs[0]) assert(reprendreBloc(s, t).ok);
   assertEqual(poseEtageStatus(s, 'mur_pierre', p.murs[3]).ok, false, 'le mur rehaussé est déjà là');
   assert(poserEtage(s, 'paillasse', dedans + 1).ok);
   assertEqual(couchagesEtage(s), ['etage:' + (dedans + 1)], 'une paillasse dans la pièce de l\'étage');

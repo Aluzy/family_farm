@@ -54,7 +54,7 @@ export function createNewGame(seed = 1, famille = null) {
 export function setFarmSeed(state, graine) {
   state.carte = { graine: String(graine) };
   state.potager.parcelles = state.potager.parcelles.length ? startPlots(farmTerrain(state)) : [];
-  for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'rehausses', 'etage', 'solsEtage']) if (state[k]) state[k] = {};
+  for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'rehausses', 'etage', 'solsEtage', 'solsHauts']) if (state[k]) state[k] = {};
   if (state.outils) { state.outils.arbres = {}; state.outils.rochers = {}; }
   majPoulailler(state);
   return { ok: true, graine: state.carte.graine };

@@ -64,7 +64,7 @@ import { countItem } from '../engine/inventory.js';
 import { ramassables } from '../engine/atelier.js';
 import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, piecesCloses, rehaussesPosees, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable } from './chantier.js';
-import { escaliers, etageBlocs, etageEmprise, fenetresEtage, solsEtage, toits } from '../engine/etage.js';
+import { escaliers, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, solsEtage, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose } from '../engine/cruche.js';
@@ -532,6 +532,8 @@ export function stageModel() {
     sols: Object.entries(solsPoses(state)).filter(([, k]) => k !== 'chemin').map(([c, sorte]) => ({ case: Number(c), sorte })),
     // (les sols posés au niveau 1 : sur l'étage, ou dans une pièce dont les murs y montent)
     solsEtage: Object.entries(solsEtage(state)).map(([c, sorte]) => ({ case: Number(c), sorte })),
+    // (plus haut : ceux du niveau 2, { case, sorte, niveau })
+    solsHauts: niveauxSols().filter((n) => n > 1).flatMap((n) => Object.entries(solsEtage(state, n)).map(([c, sorte]) => ({ case: Number(c), sorte, niveau: n }))),
     // les chemins posés : les tuiles du sol qu'ils changent ([[case, tuile]]) et leurs cases
     chemins: cheminsDuSol(T),
     // le Poulailler et l'Étable de la ferme générée : leurs cases libres et les bêtes qui y ont leur place
