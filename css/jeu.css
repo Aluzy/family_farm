@@ -1681,7 +1681,14 @@ body.has-stage { padding-bottom: 0; }
    paillasses. La bulle des murs s'ouvre sous la case des murs. */
 body.construction #player-card,
 body.construction #hud,
-body.construction .stage-hud > :not(.build-dock):not(.pose-meuble) { display: none !important; }
+body.construction #side-menu,
+body.construction #tool-bar,
+body.construction .boussole,
+body.construction .stage-bubble,
+body.construction .stage-parole,
+body.construction .habitant-bulle,
+body.construction .stage-nav,
+body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-outils) { display: none !important; }
 .build-dock {
   --slot: 52px;
   position: fixed;
@@ -1770,14 +1777,55 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble) { display: no
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: var(--slot);
-  grid-template-rows: var(--slot);
+  grid-template-rows: repeat(2, var(--slot));   /* les blocs sur deux lignes */
   gap: 5px;
   overflow-x: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   padding-bottom: 1px;
 }
-.build-bar-bout { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; height: var(--slot); }
+.build-bar-bout { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+/* Les outils (annuler, la gomme, l'outil pièce, le niveau) : une petite fenêtre du même bois, à part,
+   sur la droite ; un appui long la rend déplaçable : elle s'irise (comme ce qui attend un geste sur la
+   carte) et suit le doigt (js/ui/chantier.js). */
+.build-outils {
+  position: fixed;
+  top: calc(196px + env(safe-area-inset-top));
+  right: calc(8px + env(safe-area-inset-right));
+  z-index: var(--z-fab);
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 4px 5px 6px;
+  color: var(--wood-ink);
+  background: rgba(var(--wood-bg-rgb), 0.94);
+  border: 3px solid var(--color-earth);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 2px var(--wood-glow);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  pointer-events: auto;   /* (le HUD de la carte laisse passer les appuis : pas elle) */
+}
+.build-outils-prise { font-size: 0.8rem; line-height: 1; color: var(--color-earth); opacity: 0.7; cursor: grab; }
+.build-outils .build-level-list { right: calc(100% + 6px); top: 0; }
+.build-outils.deplace { cursor: grabbing; animation: outils-irise 1.4s linear infinite; }
+.build-outils.deplace::after {
+  content: ''; position: absolute; inset: -3px; border-radius: 8px; pointer-events: none;
+  background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.55) 45%, transparent 70%) -200% 0 / 300% 100% no-repeat,
+    linear-gradient(135deg, rgba(71, 150, 227, 0.35), rgba(145, 119, 199, 0.35), rgba(202, 102, 115, 0.35), rgba(232, 182, 90, 0.35), rgba(124, 200, 200, 0.35));
+  mix-blend-mode: screen;
+  animation: outils-reflet 1.4s linear infinite;
+}
+@keyframes outils-irise {
+  0% { border-color: #4796e3; box-shadow: inset 0 0 0 2px var(--wood-glow), 0 0 12px 3px #4796e3; }
+  25% { border-color: #9177c7; box-shadow: inset 0 0 0 2px var(--wood-glow), 0 0 12px 3px #9177c7; }
+  50% { border-color: #ca6673; box-shadow: inset 0 0 0 2px var(--wood-glow), 0 0 12px 3px #ca6673; }
+  75% { border-color: #e8b65a; box-shadow: inset 0 0 0 2px var(--wood-glow), 0 0 12px 3px #e8b65a; }
+  100% { border-color: #4796e3; box-shadow: inset 0 0 0 2px var(--wood-glow), 0 0 12px 3px #4796e3; }
+}
+@keyframes outils-reflet { from { background-position: -200% 0, 0 0; } to { background-position: 200% 0, 0 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .build-outils.deplace, .build-outils.deplace::after { animation: none; }
+  .build-outils.deplace { border-color: #9177c7; box-shadow: inset 0 0 0 2px var(--wood-glow), 0 0 12px 3px #9177c7; }
+}
 .build-bar-boutons { display: flex; gap: 4px; }
 .build-bar-head { font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
 .build-bar-close {

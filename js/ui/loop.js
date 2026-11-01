@@ -294,6 +294,8 @@ export function frame(now) {
   let ticked = false;
   // version 1.12 : pas d'heure avant le départ ; FLU-21 : ni pendant l'histoire ou une bulle d'aide
   const horlogeArretee = setupPending(state) || storyOpen();
+  // le mode Construire fige le monde : ni l'heure, ni les plantes, ni la famille ne bougent
+  if (document.body.classList.contains('construction')) accumulatorMs = 0;
   while (accumulatorMs >= TICK_MS) {
     tick(state, TICK_MS / 1000, horlogeArretee);
     accumulatorMs -= TICK_MS;

@@ -160,6 +160,7 @@
       const k = rang++;
       const key = cle(def);
       const s = scene.add.sprite(0, 0, key, F.idle_bas_0 || 0).setOrigin(0.5, 1).setVisible(false).setAlpha(0);
+      s.personnage = true;   // (caché en mode Construire : farm-stage.js figer)
       return {
         id: def.id, key, enfant: !!def.enfant, s,
         x: 0, y: 0, face: 'bas', flip: false, marche: 0,
