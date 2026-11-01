@@ -126,7 +126,7 @@ export function renderFridgeCard() {
     <div class="card fridge ancre ${ok ? 'cold' : 'warm'}" id="dev-frigo">
       <span class="card-title"><span>${artIcon('frigo')}${fridgeIcon()} Réfrigérateur</span><span class="chips"><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span>${helpBtn('frigo')}</span></span>
       ${badge}
-      <span class="muted">${ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté.'} · onglet Inventaire › Frigo</span>
+      <span class="muted">${ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté.'}</span>
       ${fridgeFillHtml()}
       ${alert}
       ${fridgeUpgradeHtml()}

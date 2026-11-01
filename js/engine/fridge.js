@@ -169,6 +169,42 @@ export function moveAllToFridge(state, garder = {}) {
   return { ok: true, moved, items, reste: total - moved };
 }
 
+// Les unités de `item` de l'inventaire qui périssent à la prochaine nuit (les lots à qui il
+// reste une nuit).
+export function expiringTonight(state, item) {
+  return lotsOf(state, item).filter((l) => l.nightsLeft === 1).reduce((t, l) => t + l.qty, 0);
+}
+
+// Ce qui, dans l'inventaire, périt à la prochaine nuit et peut aller au frigo : { item: quantité }.
+export function expiringToFridge(state) {
+  const out = {};
+  for (const item of Object.keys(state.inventaire || {})) {
+    if (!isFridgeable(item)) continue;
+    const n = Math.floor(expiringTonight(state, item) + EPS);
+    if (n > 0) out[item] = n;
+  }
+  return out;
+}
+
+// « Les mettre au frais » : range au frigo ce qui périrait cette nuit (expiringToFridge), tant
+// qu'il y a de la place (les lots les plus anciens partent les premiers : ce sont eux). Renvoie
+// { ok, moved, items, reste } comme moveAllToFridge.
+export function moveExpiringToFridge(state) {
+  if (!state.frigo.construit) return fail('Construis d\'abord le Réfrigérateur.');
+  const urgent = expiringToFridge(state);
+  const total = Object.values(urgent).reduce((t, n) => t + n, 0);
+  if (total <= 0) return fail('Rien ne périt cette nuit.');
+  if (fridgeRoom(state) <= 0) return fail(`Le frigo est plein (${fridgeCapacity(state)} unités).`);
+  const items = {};
+  let moved = 0;
+  for (const [item, n] of Object.entries(urgent)) {
+    if (fridgeRoom(state) <= 0) break;
+    const r = moveToFridge(state, item, n);
+    if (r.ok) { items[item] = r.moved; moved += r.moved; }
+  }
+  return { ok: true, moved, items, reste: total - moved };
+}
+
 // Sort `qty` unités du frigo vers l'inventaire. Leur compteur reprend.
 export function moveFromFridge(state, item, qty) {
   if (!state.frigo.construit) return fail('Construis d\'abord le Réfrigérateur.');
