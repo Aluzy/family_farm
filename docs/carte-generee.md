@@ -1007,8 +1007,8 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          d'un mur cachent la case de derrière : un mur resté plus bas que ses voisins y est marqué
          en rouge, et la fenêtre du Moulin dit de quel côté sont ceux à rehausser. La station suit (`majMoulin`) ;
          une partie d'avant garde sa meule, mais doit rehausser ses murs (migration v41 → v42).
-         Sur la carte, les murs s'empilent de `etage.dy` px par bloc, un linteau ferme le dessus
-         des portes, le toit se pose en haut de la tour ; dehors, une voilure de quatre ailes
+         Sur la carte, les murs s'empilent de `etage.dy` px par bloc ; au-dessus des portes, le
+         joueur pose lui-même les blocs (rien ne s'y dessine tout seul), le toit se pose en haut de la tour ; dehors, une voilure de quatre ailes
          (`js/carte/ferme/moulin.js`) paraît sur la façade et tourne quand la meule moud.
      - ✅ **5b-8, les arbres fruitiers** : pas de Verger sur la ferme générée.
        - Le **jeune pommier** et le **jeune poirier** (40 pièces), le **jeune cerisier** (50), le
