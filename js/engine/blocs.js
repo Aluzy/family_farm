@@ -183,6 +183,58 @@ function setHauteur(state, tile, h) {
   if (!state.hauteurs || typeof state.hauteurs !== 'object') state.hauteurs = {};
   if (h > 1) state.hauteurs[tile] = h;
   else delete state.hauteurs[tile];
+  if (h <= 1 && state.rehausses) delete state.rehausses[tile];
+}
+
+// Au-dessus d'une fenêtre ou d'une porte, le mur continue (en mode Construire, niveaux 1 et 2) :
+// la matière de ses blocs du dessus, state.rehausses[tuile] (un mur plein), sa hauteur dans
+// state.hauteurs, comme un mur rehaussé.
+export function rehaussesPosees(state) {
+  return state.rehausses && typeof state.rehausses === 'object' ? state.rehausses : {};
+}
+// La hauteur de ce qui s'empile sur `tile` aux niveaux 1 et 2 : un mur (une fenêtre comprise),
+// une porte (1 sans rien au-dessus) ; 0 sinon.
+export function hauteurPile(state, tile) {
+  const s = sorteDe(blocAt(state, tile));
+  if (s && s.porte) {
+    const h = state.hauteurs && Number(state.hauteurs[tile]);
+    return h > 1 ? Math.min(h, DATA.ATELIER.HAUTEUR_MAX) : 1;
+  }
+  return hauteurMur(state, tile);
+}
+// La matière des blocs du dessus de `tile` : celle déjà posée au-dessus d'une fenêtre ou d'une
+// porte, celle du mur plein lui-même ; null : pas encore choisie (une fenêtre, une porte).
+export function matiereDessus(state, tile) {
+  const r = rehaussesPosees(state)[tile];
+  if (r) return r;
+  const b = blocAt(state, tile);
+  return murPlein(b) || b === 'paroi_vitree' ? b : null;
+}
+// Rehausser `tile` d'un bloc `sorte` (un mur plein) : sur un mur, le même mur ; sur une fenêtre ou
+// une porte, un mur plein, le même que ses blocs du dessus s'il y en a. { ok, raison }
+export function rehausseStatus(state, sorte, tile) {
+  const s = sorteDe(sorte), h = hauteurPile(state, tile);
+  if (!s || !s.mur) return { ok: false, raison: 'Un mur seulement se pose au-dessus d\'un autre.' };
+  if (!h) return { ok: false, raison: 'Touche un mur, une fenêtre ou une porte pour le rehausser.' };
+  if (h >= DATA.ATELIER.HAUTEUR_MAX) return { ok: false, raison: `Ce mur est déjà haut de ${DATA.ATELIER.HAUTEUR_MAX} blocs.` };
+  const m = matiereDessus(state, tile);
+  if (m ? m !== sorte : !murPlein(sorte)) {
+    return { ok: false, raison: m ? `Ce mur se rehausse en ${sorteDe(m).nom.toLowerCase()} : prends-en en main.` : 'Au-dessus d\'une fenêtre ou d\'une porte : un mur plein.' };
+  }
+  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+  return { ok: true };
+}
+export function rehausser(state, sorte, tile) {
+  const st = rehausseStatus(state, sorte, tile);
+  if (!st.ok) return fail(st.raison);
+  takeItem(state, sorteDe(sorte).objet, 1);
+  if (!murPlein(blocAt(state, tile)) && blocAt(state, tile) !== 'paroi_vitree') {
+    if (!state.rehausses || typeof state.rehausses !== 'object') state.rehausses = {};
+    state.rehausses[tile] = sorte;
+  }
+  setHauteur(state, tile, hauteurPile(state, tile) + 1);
+  majPoulailler(state);
+  return { ok: true, sorte, case: tile, hauteur: hauteurPile(state, tile) };
 }
 
 // (une porte aussi : elle se pose sur un mur, à sa place ; une fenêtre, dans le mur, qui reste
@@ -832,11 +884,13 @@ export function reprendreBloc(state, tile, opts) {
   const sorte = dessus || bloc || solAt(state, tile);
   if (!sorte) return fail('Il n\'y a pas de bloc ici.');
   // un mur rehaussé, une colonne du silo : le bloc du dessus d'abord
+  // (au-dessus d'une fenêtre ou d'une porte : un bloc de la matière posée au-dessus)
   if (!dessus && bloc && hauteurEmpilee(state, tile) > 1) {
+    const haut = rehaussesPosees(state)[tile] || bloc;
     setHauteur(state, tile, hauteurEmpilee(state, tile) - 1);
-    addItem(state, sorteDe(bloc).objet, 1);
+    addItem(state, sorteDe(haut).objet, 1);
     majPoulailler(state);
-    return { ok: true, sorte: bloc, case: tile, hauteur: hauteurEmpilee(state, tile) };
+    return { ok: true, sorte: haut, case: tile, hauteur: hauteurEmpilee(state, tile) };
   }
   // une fenêtre percée dans un mur : elle revient, le mur reste (la pièce reste close)
   if (!dessus && estFenetre(bloc) && fenetresPosees(state)[tile]) {
@@ -1116,7 +1170,7 @@ export function hauteurSilo(state, tile) {
 }
 
 // La hauteur d'un bloc qui s'empile (un mur, une colonne de silo), 0 sinon.
-const hauteurEmpilee = (state, tile) => hauteurMur(state, tile) || hauteurSilo(state, tile);
+const hauteurEmpilee = (state, tile) => hauteurPile(state, tile) || hauteurSilo(state, tile);
 
 // Un bloc de silo posé au sol en `tile` : pas d'autre silo ailleurs, la même rangée, à côté
 // d'une colonne déjà là (ou le premier). Renvoie la raison d'un refus, ou ''.

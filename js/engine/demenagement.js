@@ -192,6 +192,7 @@ export function convertirPartie(state, graine) {
   state.sols = {};
   state.blocsDessus = {};
   state.hauteurs = {};
+  state.rehausses = {};
   state.fenetres = {};
   const batis = [], rendus = {};
   const rendre = (p) => {
@@ -233,7 +234,7 @@ export function convertirPartie(state, graine) {
   };
   for (const p of batis) {
     if (!verifie[p.id] || verifie[p.id](p)) continue;
-    for (const t of p.cases) { delete state.blocs[t]; delete state.blocsDessus[t]; delete state.hauteurs[t]; }
+    for (const t of p.cases) { delete state.blocs[t]; delete state.blocsDessus[t]; delete state.hauteurs[t]; if (state.rehausses) delete state.rehausses[t]; }
     rendre(p);
     p.rendu = true;
   }

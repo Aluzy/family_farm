@@ -12,7 +12,7 @@ import {
 import { readFileSync } from 'node:fs';
 import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
-  isArable as arable,
+  isArable as arable, hauteurPile, matiereDessus, rehausser, rehausseStatus, rehaussesPosees,
   arbresPlantes, asleep, atelierConstruit, atelierStatus, blocAt, blocBloque, blocDessus,
   blocsDidacticiel, blocsEnMain, blocsPoses, botteleuses, buildAtelier, buildStation, bushCut,
   bushOf, buyDehors, buyFurniture, buyHoe, buyItem, buyPasture, buyRuche, caseDepart,
@@ -1179,6 +1179,35 @@ test('ferme générée (version 1.25) : le Moulin, une tour aux murs hauts de 3 
   const avant = countItem(s, 'mur_pierre');
   for (let k = 0; k < 3; k++) assert(reprendreBloc(s, m).ok);
   assertEqual([blocAt(s, m), hauteurMur(s, m), countItem(s, 'mur_pierre')], [null, 0, avant + 3]);
+});
+
+test('mode Construire, niveaux 1 et 2 : au-dessus d\'une fenêtre ou d\'une porte, un mur plein se pose', () => {
+  const s = chantier('linteau');
+  setInv(s, { mur_pierre: 20, mur_brique_rouge: 5, porte: 2, mur_fenetre: 2 });
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserPorte(s, p.porte);
+  const f = p.murs[1];
+  assert(poserBloc(s, 'mur_fenetre', f).ok);
+  // une fenêtre, une porte : hautes d'un bloc, rehaussables
+  assertEqual([hauteurPile(s, f), hauteurPile(s, p.porte), matiereDessus(s, f), matiereDessus(s, p.murs[0])], [1, 1, null, 'mur_pierre']);
+  assertEqual(rehausseStatus(s, 'mur_fenetre', f).ok, false, 'pas une fenêtre au-dessus');
+  assertEqual(rehausseStatus(s, 'mur_brique_rouge', p.murs[0]).ok, false, 'un mur plein : le même mur');
+  assertEqual(rehausser(s, 'mur_brique_rouge', f), { ok: true, sorte: 'mur_brique_rouge', case: f, hauteur: 2 });
+  assertEqual([blocAt(s, f), rehaussesPosees(s)[f], countItem(s, 'mur_brique_rouge')], ['mur_fenetre', 'mur_brique_rouge', 4], 'la fenêtre reste, la brique au-dessus');
+  assertEqual(rehausseStatus(s, 'mur_pierre', f).ok, false, 'au-dessus : la même matière');
+  assert(rehausser(s, 'mur_brique_rouge', f).ok);
+  assertEqual(rehausser(s, 'mur_brique_rouge', f).ok, false, `pas plus de ${DATA.ATELIER.HAUTEUR_MAX}`);
+  assert(rehausser(s, 'mur_pierre', p.porte).ok);
+  assertEqual(hauteurPile(s, p.porte), 2);
+  // un mur rehaussé au-dessus d'une fenêtre : elle ne se change pas
+  assertEqual(poserBloc(s, 'mur_pierre', f).ok, false);
+  // reprendre : la matière du dessus revient, puis la fenêtre
+  assertEqual(reprendreBloc(s, f).sorte, 'mur_brique_rouge');
+  assertEqual(reprendreBloc(s, f).sorte, 'mur_brique_rouge');
+  assertEqual([hauteurPile(s, f), rehaussesPosees(s)[f], countItem(s, 'mur_brique_rouge')], [1, undefined, 5]);
+  assertEqual(reprendreBloc(s, p.porte).sorte, 'mur_pierre');
+  assertEqual([blocAt(s, p.porte), hauteurPile(s, p.porte)], ['porte', 1]);
 });
 
 test('migration v41 → v42 : une meule seule ne fait plus le Moulin', () => {

@@ -961,9 +961,11 @@
         this.constructibleModele = m;
         if (this.constructible) { this.constructible.destroy(); this.constructible = null; }
         if ((c1 - c0 + 1) * (r1 - r0 + 1) > 6000) return;          // (trop dézoomé : rien)
-        const g = this.add.graphics().setDepth(dy ? 9e4 : 1.5);
-        g.fillStyle(0xffffff, 0.24);
-        g.lineStyle(1, 0xffffff, 0.6);
+        // (au niveau où l'on rehausse les murs : devant le voile de ce niveau et ses blocs)
+        const g = this.add.graphics().setDepth(dy && this.etageZ ? this.etageZ(9999.5) : 1.5);
+        // (sur le voile sombre d'un niveau : plus marquées)
+        g.fillStyle(0xffffff, dy ? 0.4 : 0.24);
+        g.lineStyle(1, 0xffffff, dy ? 0.85 : 0.6);
         const voulu = info && info.gomme ? 'fait' : 'ok';
         for (let r = r0; r <= r1; r++) {
           for (let c = c0; c <= c1; c++) {
