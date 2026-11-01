@@ -19,6 +19,12 @@
  *     traverser les murs de l'étage (blockCells), et un mur de l'étage devant lui s'efface.
  * En mode Construire, à l'étage, un appui pose ou reprend un bloc de l'étage.
  *
+ * Le niveau 2 (modèle.etage.etage2 : { emprise, escaliers, hauts }) : un escalier posé à l'étage
+ * dans une pièce dont les murs montent au niveau 2 y fait monter. Son plancher (ses sols,
+ * modèle.solsHauts) est remonté de 2 × ETAGE.dy, devant un second voile qui couvre l'étage
+ * (etage2Z) ; on y marche entre les murs du bas qui montent plus haut (etage2Bloque).
+ * escalierVers dit où mène l'escalier touché.
+ *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype.
  */
 (function (global) {
@@ -39,6 +45,17 @@
     etageVoileZ() {
       return (this.light ? this.light.depth : 1e6) - 1.95;
     },
+    // Au niveau 2 : de même, au-dessus d'un second voile, qui couvre l'étage.
+    etage2Z(d) {
+      return this.etage2VoileZ() + 0.01 + d * 1e-5;
+    },
+    etage2VoileZ() {
+      return this.etageVoileZ() + 0.5;
+    },
+    // La profondeur, au niveau `n` (1 ou 2), de ce qui a la profondeur `d` en bas.
+    niveauZ(n, d) {
+      return n >= 2 ? this.etage2Z(d) : this.etageZ(d);
+    },
 
     // L'étage du modèle, et le niveau où l'on est : dessiné (remonté de ETAGE.dy), ou ôté.
     syncEtage(etage, niveau, vueNiveau) {
@@ -46,11 +63,12 @@
       // (en mode Construire : la vue montre le niveau où l'on construit)
       const vn = on && vueNiveau != null ? vueNiveau : null;
       if (vn !== (this.vueNiveau === undefined ? null : this.vueNiveau)) { this.vueNiveau = vn; this.etageVue = null; }
-      const n = on && niveau ? 1 : 0;
+      const n = on ? Math.min(niveau || 0, etage.etage2 ? 2 : 1) : 0;
       const solsHaut = (this.ctx.lastModel && this.ctx.lastModel.solsEtage) || [];
-      const cle = on ? JSON.stringify(etage) + JSON.stringify(solsHaut) : '';
+      const sols2 = ((this.ctx.lastModel && this.ctx.lastModel.solsHauts) || []).filter((q) => q.niveau === 2);
+      const cle = on ? JSON.stringify(etage) + JSON.stringify(solsHaut) + JSON.stringify(sols2) : '';
       if (cle === this.etageCle && n === (this.niveau || 0)) return;
-      const change = n !== (this.niveau || 0);
+      const change = n !== (this.niveau || 0), avant = this.niveau || 0;
       this.niveau = n;
       if (cle !== this.etageCle) {
         this.etageCle = cle;
@@ -61,6 +79,12 @@
         this.etageBloque = new Set();
         this.etageLits = new Map();      // les couchages de l'étage : case → { img, x, y, dessin }
         this.etageEscaliers = on ? etage.escaliers.slice() : [];
+        // le niveau 2 (par l'escalier de l'étage) : ses objets, son emprise, ce qui y arrête
+        if (this.etage2Objs) this.etage2Objs.forEach((o) => o.destroy());
+        this.etage2Objs = [];
+        const e2 = on && etage.etage2;
+        this.etage2Emprise = e2 ? new Set(e2.emprise) : null;
+        this.etage2Bloque = new Set(e2 ? e2.hauts : []);
         if (on && this.has(BLOCS_CARTE.key)) {
           const cols = this.grid.cols, dy = E.dy, add = (o) => { this.etageObjs.push(o); return o; };
           const dans = (t) => this.etageEmprise.has(t);
@@ -79,6 +103,25 @@
             add(this.add.image(p.x, p.y - dy, BLOCS_CARTE.key, base + m).setOrigin(0.5, 1).setDepth(p.y + 0.5));
           }
           for (const t of hauts) this.etageBloque.add(t);
+          // le niveau 2 : son plancher (un sol posé au niveau 2 à sa place), au sommet des murs de
+          // l'étage, sauf sur un mur du bas qui monte plus haut ; le haut de l'escalier de l'étage
+          if (e2) {
+            const dans2 = (k) => this.etage2Emprise.has(k), hauts2 = this.etage2Bloque, sol2 = new Map(sols2.map((q) => [q.case, q.sorte]));
+            for (const t of e2.emprise) {
+              if (hauts2.has(t)) continue;
+              const c = t % cols, so = sol2.get(t);
+              const est = so ? (k) => sol2.get(k) === so : (k) => dans2(k) && !hauts2.has(k) && !sol2.has(k);
+              const m = (est(t - cols) ? 1 : 0) + (c < cols - 1 && est(t + 1) ? 2 : 0) + (est(t + cols) ? 4 : 0) + (c > 0 && est(t - 1) ? 8 : 0);
+              const base = so && BLOCS_CARTE.modelesSols[so] !== undefined ? BLOCS_CARTE.modelesSols[so] : BLOCS_CARTE.sols;
+              const p = pos(t);
+              this.etage2Objs.push(this.add.image(p.x, p.y - 2 * dy, BLOCS_CARTE.key, base + m).setOrigin(0.5, 1).setDepth(p.y + 0.5));
+            }
+            for (const t of e2.escaliers) {
+              const p = pos(t);
+              this.etage2Objs.push(this.add.image(p.x, p.y - 2 * dy, BLOCS_CARTE.key, E.haut).setOrigin(0.5, 1).setDepth(p.y + 0.6));
+            }
+            this.etage2Objs.push(this.etage2Voile = this.add.rectangle(0, 0, this.world.w, this.world.h, E.voile, E.alpha).setOrigin(0).setDepth(this.etage2VoileZ()).setVisible(false));
+          }
           for (const t of etage.escaliers) {
             if (!dans(t)) continue;
             const p = pos(t);
@@ -146,11 +189,13 @@
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();
         if (global.FermeSon && this.etageSonPret) global.FermeSon.joue('echelle', { gain: 0.8 });   // l'escalier (js/son.js)
         this.etageSonPret = true;
-        // on arrive en haut (ou en bas) de l'escalier le plus proche
+        // on arrive en haut (ou en bas) de l'escalier le plus proche (entre l'étage et le niveau 2 :
+        // celui de l'étage)
         if (this.fermier && this.fermier.arrive && etage) {
           const p = this.fermier.pos(), cols = this.grid.cols;
           const d = (t) => (p ? Math.hypot((t % cols) * T + T / 2 - p.x, (Math.floor(t / cols) + 1) * T - p.y) : 0);
-          const pres = etage.escaliers.slice().sort((a, b) => d(a) - d(b))[0];
+          const liste = Math.max(avant, n) >= 2 && etage.etage2 ? etage.etage2.escaliers : etage.escaliers;
+          const pres = liste.slice().sort((a, b) => d(a) - d(b))[0];
           if (pres !== undefined) this.fermier.arrive((pres % cols) * T + T / 2, (Math.floor(pres / cols) + 1) * T - 2);
         }
         this.etageVue = null;
@@ -167,11 +212,18 @@
       const dedans = p && this.etageEmprise.has(Math.floor((p.y - 1) / T) * cols + Math.floor(p.x / T));
       // (couché dans un lit de l'étage : on le voit là-haut)
       const litHaut = this.fermier && this.fermier.lit && this.fermier.lit();
-      const vue = this.vueNiveau != null ? (this.vueNiveau ? 'haut' : 'bas') : this.niveau || (litHaut && litHaut.via) ? 'haut' : dedans ? 'bas' : 'dehors';
+      const vue = this.vueNiveau != null ? (this.vueNiveau ? 'haut' : 'bas') : this.niveau >= 2 ? 'haut2' : this.niveau || (litHaut && litHaut.via) ? 'haut' : dedans ? 'bas' : 'dehors';
       if (vue !== this.etageVue || this.etageBlocsN !== this.blocsN) {
         this.etageVue = vue;
         this.etageBlocsN = this.blocsN;
-        const haut = vue === 'bas' ? (this.vueNiveau != null ? E.transparent : E.dedans) : 1, z = vue === 'haut';
+        const n2 = vue === 'haut2', z = vue === 'haut' || n2;
+        const haut = vue === 'bas' ? (this.vueNiveau != null ? E.transparent : E.dedans) : 1;
+        // (le niveau 2 : seulement quand on y est, devant son voile, qui couvre l'étage)
+        for (const o of this.etage2Objs || []) {
+          if (o === this.etage2Voile) { o.setVisible(n2); continue; }
+          if (o.etageZ === undefined) o.etageZ = o.depth;
+          o.setVisible(n2).setDepth(n2 ? this.etage2Z(o.etageZ) : o.etageZ);
+        }
         // (à l'étage, tout ce qui est de l'étage passe devant le voile)
         const pose = (o, a) => {
           if (o.etageZ === undefined) o.etageZ = o.depth;
@@ -179,39 +231,53 @@
           if (a !== undefined) o.setAlpha(a);
         };
         for (const o of this.etageObjs || []) { if (o === this.etageVoile) continue; pose(o, haut); o.etageA = haut; }
-        if (this.etageVoile) this.etageVoile.setVisible(vue === 'haut');
+        if (this.etageVoile) this.etageVoile.setVisible(z);
         // (à l'étage : les blocs du bas, sous l'emprise, en transparence, devant le voile)
         for (const e of (this.blocks || new Map()).values()) {
-          const sous = vue === 'haut' && this.etageEmprise.has(e.case);
+          const sous = z && this.etageEmprise.has(e.case);
           if (!sous && e.img.etageZ === undefined) continue;
           e.img.etageA = sous ? E.transparent : undefined;
           if (e.img.etageZ === undefined) e.img.etageZ = e.img.depth;
           e.img.setDepth(sous ? this.etageZ(e.img.etageZ) : e.img.etageZ).setAlpha(sous ? E.transparent : 1);
           if (!sous) e.img.etageZ = undefined;
         }
-        // (à l'étage : les blocs du dessus des murs rehaussés sont ses murs, devant le voile)
+        // (à l'étage : le premier bloc du dessus des murs rehaussés est un mur de l'étage, devant
+        // son voile ; celui d'au-dessus, un mur du niveau 2, reste derrière, sous son plancher ;
+        // au niveau 2, il passe devant le second voile)
         for (const e of (this.blocks || new Map()).values()) {
-          for (const i of e.hauts || []) {
-            if (!i.active) continue;
-            if (z) { if (i.etageZ === undefined) i.etageZ = i.depth; i.setDepth(this.etageZ(i.etageZ)).setAlpha(1); }
+          (e.hauts || []).forEach((i, k) => {
+            if (!i.active) return;
+            const niv = k + 1, devant = z && (niv === 1 || (n2 && niv === 2));
+            if (devant) { if (i.etageZ === undefined) i.etageZ = i.depth; i.setDepth(this.niveauZ(niv, i.etageZ)).setAlpha(1); }
             else if (i.etageZ !== undefined) { i.setDepth(i.etageZ); i.etageZ = undefined; }
+          });
+        }
+      }
+      // à l'étage (au niveau 2) : un mur de ce niveau devant lui (une ou deux cases plus bas)
+      // s'efface, un mur de l'étage ou le bloc du dessus d'un mur du bas qui y monte
+      if (!this.fondus) this.fondus = new Set();
+      const devant = new Set(), H = BLOCS_CARTE.hauts;
+      if ((vue === 'haut' || vue === 'haut2') && p) {
+        const niv = vue === 'haut2' ? 2 : 1;
+        const gx = Math.floor(p.x / T), gy = Math.floor((p.y - 1) / T);
+        for (let dy = 1; dy <= 2; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const k = (gy + dy) * cols + gx + dx;
+            const m = niv === 1 && this.etageMurs.get(k);
+            if (m && Math.abs(m.x - p.x) < T / 2 + 6) devant.add(m.img);
+            const e = this.blocks && this.blocks.get(k), i = e && e.hauts && e.hauts[niv - 1];
+            if (i && i.active && Math.abs(e.x - p.x) < T / 2 + 6) devant.add(i);
           }
         }
       }
-      // à l'étage : un mur de l'étage devant lui (une ou deux cases plus bas) s'efface
-      if (vue !== 'haut' || !p || !this.etageMurs.size) return;
-      const H = BLOCS_CARTE.hauts, devant = new Set();
-      const gx = Math.floor(p.x / T), gy = Math.floor((p.y - 1) / T);
-      for (let dy = 1; dy <= 2; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const m = this.etageMurs.get((gy + dy) * cols + gx + dx);
-          if (m && Math.abs(m.x - p.x) < T / 2 + 6) devant.add(m.img);
-        }
-      }
+      for (const i of devant) this.fondus.add(i);
+      for (const m of this.etageMurs.values()) this.fondus.add(m.img);
       const pas = H.vitesse * dt;
-      for (const m of this.etageMurs.values()) {
-        const i = m.img, but = devant.has(i) ? H.joueur : 1;
+      for (const i of this.fondus) {
+        if (!i.active) { this.fondus.delete(i); continue; }
+        const but = devant.has(i) ? H.joueur : 1;
         if (i.alpha !== but) i.setAlpha(i.alpha < but ? Math.min(but, i.alpha + pas) : Math.max(but, i.alpha - pas));
+        else if (but === 1 && !this.etageMurs.has(i)) this.fondus.delete(i);
       }
     },
 
@@ -220,6 +286,11 @@
     etageCells() {
       if (!this.niveau || !this.etageEmprise) return null;
       const out = [], n = this.grid.cols * Math.ceil(this.world.h / T);
+      // (au niveau 2 : son emprise, sans les murs du bas qui montent plus haut)
+      if (this.niveau >= 2 && this.etage2Emprise) {
+        for (let i = 0; i < n; i++) if (!this.etage2Emprise.has(i) || this.etage2Bloque.has(i)) out.push(i);
+        return out;
+      }
       for (let i = 0; i < n; i++) if (!this.etageEmprise.has(i) || this.etageBloque.has(i)) out.push(i);
       return out;
     },
@@ -253,12 +324,12 @@
 
     // À l'étage, le personnage est dessiné remonté (ETAGE.dy), un peu devant le plancher.
     etageLift() {
-      return this.niveau ? E.dy : 0;
+      return (this.niveau || 0) * E.dy;
     },
     // (à l'étage : devant le plancher et le haut de l'escalier de sa rangée, et une paillasse,
     // derrière les murs de l'étage de sa rangée et de celles d'en dessous)
     etageDepth(y) {
-      return this.niveau ? this.etageZ((Math.floor((y - 1) / T) + 1) * T + 0.8) : y;
+      return this.niveau ? this.niveauZ(this.niveau, (Math.floor((y - 1) / T) + 1) * T + 0.8) : y;
     },
 
     // Un point touché, ramené au sol du niveau montré (à l'étage : ETAGE.dy plus bas) ; en mode
@@ -266,16 +337,24 @@
     etagePoint(wx, wy) {
       // (au niveau où l'on rehausse les murs : à sa hauteur, js/carte/ferme/chantier.js syncRang)
       if (this.rang) return { x: wx, y: wy + this.rang * E.dy };
-      const n = this.vueNiveau != null ? this.vueNiveau : this.niveau;
-      return { x: wx, y: n ? wy + E.dy : wy };
+      const n = this.vueNiveau != null ? this.vueNiveau : this.niveau || 0;
+      return { x: wx, y: wy + n * E.dy };
     },
 
     // Un escalier sous ce point (son bas, ou son haut à l'étage) : sa case, ou -1.
     escalierAt(wx, wy) {
+      return this.escalierVers(wx, wy) >= 0 ? this.tileAtPoint(this.etagePoint(wx, wy).x, this.etagePoint(wx, wy).y) : -1;
+    },
+    // Où mène l'escalier sous ce point : le niveau où l'on arrive, ou -1. En bas, celui du bas
+    // monte à l'étage ; à l'étage, son haut redescend, celui de l'étage monte au niveau 2 ; au
+    // niveau 2, le haut de celui de l'étage redescend.
+    escalierVers(wx, wy) {
       const e = this.ctx.lastModel && this.ctx.lastModel.etage;
       if (!e) return -1;
-      const q = this.etagePoint(wx, wy), c = this.tileAtPoint(q.x, q.y);
-      return e.escaliers.includes(c) ? c : -1;
+      const q = this.etagePoint(wx, wy), c = this.tileAtPoint(q.x, q.y), n = this.niveau || 0, e2 = e.etage2;
+      if (n === 0) return e.escaliers.includes(c) ? 1 : -1;
+      if (n === 1) return e.escaliers.includes(c) ? 0 : e2 && e2.escaliers.includes(c) ? 2 : -1;
+      return e2 && e2.escaliers.includes(c) ? 1 : -1;
     },
   });
 })(window);

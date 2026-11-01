@@ -814,7 +814,8 @@
           return c >= 0 ? { bati: c } : null;
         }
         // un escalier (un essai, js/carte/ferme/etage.js) : monter, descendre ; à l'étage, rien d'autre
-        if (this.escalierAt && this.escalierAt(wx, wy) >= 0) return { etage: true };
+        const vers = this.escalierVers ? this.escalierVers(wx, wy) : -1;
+        if (vers >= 0) return { etage: true, vers };
         // un lit, une paillasse (là où on les voit : toit levé, ou à l'étage) : le choisir (fiche 17)
         if (!hoeing && this.litAt) {
           const lit = this.litAt(wx, wy);
@@ -1022,7 +1023,7 @@
         if (hit.hoe) { K.vibre('houe'); this.ctx.bridge.act('hoe', { zone: hit.hoe.zone, case: hit.hoe.case }); return; }
         if (hit.plante !== undefined) { this.ctx.bridge.act('arbre-case', { case: hit.plante }); return; }
         if (hit.bati !== undefined) { this.ctx.bridge.act('bloc', { case: hit.bati }); return; }
-        if (hit.etage) { this.ctx.bridge.act('etage-toggle', {}); return; }
+        if (hit.etage) { this.ctx.bridge.act('etage-toggle', { niveau: hit.vers }); return; }
         if (hit.gather) { this.gather(hit.gather); return; }
         if (hit.caillou) { this.pickRock(hit.caillou); return; }
         if (hit.chaine !== undefined) { this.jeterChaine(hit.chaine); return; }

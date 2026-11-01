@@ -1006,7 +1006,11 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          des sols (`state.solsEtage` au niveau 1, `state.solsHauts[2]` au niveau 2 ;
          `poserSolEtage(state, sorte, case, niveau)`) dans une pièce dont tout le pourtour y
          monte (`piecesNiveau`), et au niveau 1 au-dessus de la pièce de l'escalier ; ils
-         reviennent dans l'inventaire quand la pièce s'ouvre (`rangerEtage`). Au niveau 0, un appui
+         reviennent dans l'inventaire quand la pièce s'ouvre (`rangerEtage`). Un second
+         escalier, posé à l'étage dans une pièce du niveau 2, y fait monter (`etage2Emprise`,
+         `escaliersEtage` ; modèle.etage.etage2 ; le personnage au niveau `etageVue` 0, 1 ou 2) :
+         la carte dessine le plancher du niveau 2 (ses sols) devant un second voile, et les murs
+         de chaque niveau devant le personnage s'effacent comme en bas. Au niveau 0, un appui
          sur un mur le reprend comme tout bloc (le bloc du dessus d'abord). Aux niveaux 1 et 2, la carte
          montre le niveau seul (`syncRang`) : un voile sombre sur la ferme, devant lui le rang
          de mur du niveau (celui du dessous à peine visible, les autres presque invisibles), les

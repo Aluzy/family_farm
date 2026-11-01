@@ -115,9 +115,10 @@ export function setBuildLevel(value) {
   return buildLevel;
 }
 // L'étage (un essai, js/engine/etage.js) : le personnage est-il monté par l'escalier ?
-export let etageVue = false;
+// Le niveau où est le personnage : 0 (en bas), 1 (l'étage), 2 (par l'escalier de l'étage).
+export let etageVue = 0;
 export function setEtageVue(value) {
-  etageVue = !!value;
+  etageVue = value === true ? 1 : Math.max(0, Math.min(2, Number(value) || 0));
   return etageVue;
 }
 // Le coucher : le joueur a appuyé sur « Dormir », le personnage va à son lit (la carte le
