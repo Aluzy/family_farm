@@ -25,7 +25,7 @@ import {
   strawNeed, strawStock, upgradePoulailler, wheatTotal, woolReady,
 } from './animals.js';
 import { harvestTree, ripeTrees } from './orchard.js';
-import { buildStation, millPending, recipeUnlocked, startMilling, startRecipe } from './kitchen.js';
+import { millPending, recipeUnlocked, startMilling, startRecipe } from './kitchen.js';
 import { buyTech, hasTech, techPoints, techResources, techStatus } from './techtree.js';
 import {
   chapterCount, chapterProgress, chapterReached, cropUnlocked, isUnlocked, objectiveChapter, objectiveDef, plantableCropsFor,
@@ -34,6 +34,7 @@ import {
 import { isAutomated } from './automation.js';
 import { grassCut, hasTool, scytheGrass } from './outils.js';
 import { bottelerSansCarte } from './botteleuse.js';
+import { chainesSansCarte } from './chaines.js';
 import { sleep } from './night.js';
 import { casesDuTerrain, farmSeed, farmTerrain } from './terrain.js';
 import { createNewGame, houseRepaired, starterBlock } from './depart.js';
@@ -185,7 +186,7 @@ function botPickCrop(state, plot) {
     const field = zone.filter((p) => p.culture && botIsFieldCrop(p.culture)).length;
     if (field < botFieldTarget(state)) {
       const sun = zone.filter((p) => p.culture === 'tournesol').length;
-      const wanted = state.stations.presse.construit && sun < S.PARCELLES_TOURNESOL ? ['tournesol', 'ble'] : ['ble'];
+      const wanted = isUnlocked(state, 'chaines') && sun < S.PARCELLES_TOURNESOL ? ['tournesol', 'ble'] : ['ble'];
       const culture = wanted.find((c) => options.includes(c) && botHasSeed(state, c));
       if (culture) return culture;
     }
@@ -440,6 +441,8 @@ function botObjectives(state) {
 }
 
 function botCook(state) {
+  // (les chaînes de production, sans carte : son tournesol devient de l'huile, js/engine/chaines.js)
+  if (isUnlocked(state, 'chaines')) chainesSansCarte(state, ['huile']);
   if (!state.stations) return;
   for (const station of Object.keys(DATA.STATIONS)) {
     const st = state.stations[station];
@@ -509,7 +512,7 @@ export function botStepInfo(state, step, eveilS) {
       if (!isUnlocked(state, step.id)) return { locked: true };
       if (state.stations[step.id].construit) return { done: true };
       if (def.requiert && !state.stations[def.requiert].construit) return { locked: true };
-      return step.id === 'presse' ? { cost: def.prixConstruction, buy: () => buildStation(state, step.id) } : botBatir(state, step.id, def.prixConstruction);
+      return botBatir(state, step.id, def.prixConstruction);
     }
     case 'paturage':
       if (!isUnlocked(state, 'paturage')) return { locked: true };

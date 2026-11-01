@@ -229,7 +229,6 @@ test('migration v15 → v16 : les préparations des recettes retirées sont term
     s.stations.four.file = [{ recette: 'roti_boeuf', pris: [], eau: 0 }, { recette: 'poulet_roti_ail', pris: [], eau: 0 }];
     s.stations.moulin.tache = { recette: 'farine', resteMs: 3000, dureeMs: 5000 };
     s.stations.moulin.file = [{ recette: 'farine', pris: [{ item: 'ble', qte: 1 }], eau: 0 }, { recette: 'farine', pris: [{ item: 'ble', qte: 1 }], eau: 0 }];
-    s.stations.presse.tache = { recette: 'huile', resteMs: 1000, dureeMs: 10000 };
   });
   const m = migreAvant({ v: 15, t: 0, s: v15 });
   // Cuisine : les deux ragoûts sont servis, l'omelette qui attendait démarre.
@@ -240,13 +239,11 @@ test('migration v15 → v16 : les préparations des recettes retirées sont term
   // Moulin : le blé en cours garde son avance, les deux moutures en file deviennent du blé en attente.
   assertEqual([m.stations.moulin.tache, m.stations.moulin.file], [{ recette: 'farine', resteMs: 3000, dureeMs: 5000, enAttente: 2 }, []]);
   assertEqual(millPending(m), 3);
-  // Presse : rien ne change.
-  assertEqual(m.stations.presse.tache, { recette: 'huile', resteMs: 1000, dureeMs: 10000 });
   // tout se termine ensuite normalement (version 1.23 : le Moulin ne donne plus de paille)
   testFillBatteries(m);
   runFor(m, 60);
-  assertEqual([countItem(m, 'farine'), countItem(m, 'paille'), countItem(m, 'omelette'), countItem(m, 'pain'), countItem(m, 'huile')], [3, 0, 1, 1, 1]);
-  assertEqual(Object.keys(DATA.STATIONS).map((id) => m.stations[id].tache), [null, null, null, null]);
+  assertEqual([countItem(m, 'farine'), countItem(m, 'paille'), countItem(m, 'omelette'), countItem(m, 'pain')], [3, 0, 1, 1]);
+  assertEqual(Object.keys(DATA.STATIONS).map((id) => m.stations[id].tache), [null, null, null]);
   // un Moulin dont seule la file contenait du blé (cas limite) repart avec ce blé
   const file = migreAvant({ v: 15, t: 0, s: v15State((s) => { openStation(s, 'moulin'); s.stations.moulin.file = [{ recette: 'farine', pris: [], eau: 0 }, { recette: 'farine', pris: [], eau: 0 }]; }) });
   assertEqual(file.stations.moulin.tache, { recette: 'farine', resteMs: 5000, dureeMs: 5000, enAttente: 1 });

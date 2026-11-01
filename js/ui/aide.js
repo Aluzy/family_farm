@@ -104,7 +104,7 @@ const HELP = {
   batterie: () => ({
     nom: 'Batterie',
     role: 'Stocke l\'électricité du panneau, pour le soir et la nuit. Elle ne se décharge jamais d\'elle-même.',
-    conso: 'Aucune : elle alimente la pompe (dont l\'eau sert aussi aux asperseurs), le moulin, la presse, le réfrigérateur et la station de charge du robot.',
+    conso: 'Aucune : elle alimente la pompe (dont l\'eau sert aussi aux asperseurs), le moulin, les chaînes de production, le réfrigérateur et la station de charge du robot.',
     prod: `Capacité : ${listNum(DATA.RESEAU.batterie.wh, 'Wh')} selon le niveau (l'usure réduit la capacité utile). En ce moment : ${formatNumber(Math.floor(energyStats(state).charge / 1000))} / ${formatWh(energyStats(state).capacite)}.`,
     note: `Améliorer : ${levelCosts('batterie')}.`,
   }),
@@ -199,13 +199,17 @@ const HELP = {
     prod: `1 blé donne ${millOutputText()}, en ${formatQty(DATA.RECETTES.farine.temps)} s. La farine sert en cuisine (${recipesUsing([DATA.RECETTES.farine.sortie]).join(', ')}).`,
     note: 'Les blés sont moulus un par un. Sans énergie, le Moulin attend. La nuit, le blé en train d\'être moulu se termine ; ceux qui attendent reprennent au réveil. Tu peux reprendre le blé en attente.',
   }),
-  presse: () => ({
-    nom: 'Presse',
-    role: 'Presse les graines de tournesol en huile. Appareil électrique : interrupteur, usure, pannes.',
-    conso: `${formatNumber(DATA.STATIONS.presse.whParS)} Wh/s pendant qu'elle tourne.`,
-    prod: `${stationRecipesLine('presse')}.`,
-    note: 'Sans énergie, la préparation se met en pause.',
-  }),
+  chaines: () => {
+    const C = DATA.CHAINES, nom = (o) => DATA.ATELIER.BLOCS[o].nom.toLowerCase();
+    const liste = Object.entries(C.RECETTES).map(([id, suite]) => `${DATA.RECETTES[id].nom} : ${suite.map(nom).join(' → ')}`).join(' ; ');
+    return {
+      nom: C.NOM, icone: C.ICONE,
+      role: `Des blocs de l'Atelier posés côte à côte sur une rangée, de gauche à droite : un entonnoir, un réservoir (facultatif), des outils, puis au moins un convoyeur ; la case au bout reste libre, les produits y tombent en tas. La suite des outils fait la recette. Touche la chaîne : le personnage jette dans l'entonnoir les ingrédients qu'il a. Sans réservoir, de quoi faire une fois la recette ; avec, jusqu'à ${formatNumber(C.RESERVOIR)} ingrédients : elle travaille tant qu'il lui en reste.`,
+      conso: `Chaque outil tire du courant pendant qu'il tourne : ${Object.entries(C.OUTILS).map(([o, d]) => `${nom(o)} ${formatNumber(d.whParS)} Wh/s`).join(', ')}.`,
+      prod: `${liste}.`,
+      note: `Une production dure la somme des temps de ses outils. Sans courant, la chaîne attend. Un tas de ${formatNumber(C.TAS)} produits l'arrête : ramasse-le en marchant dessus. Ces produits ne se font plus en cuisine.`,
+    };
+  },
   // Les fiches du grand monde, des outils, de la grotte, de la pêche et de l'Arbre des technologies
   // (ouvertes depuis À propos).
   outils: () => {
@@ -351,7 +355,7 @@ const HELP = {
 };
 
 // Les fiches sans bâtiment, ouvertes depuis À propos.
-const FICHES = ['monde', 'outils', 'equipement', 'grotte', 'peche', 'techno'];
+const FICHES = ['monde', 'outils', 'equipement', 'grotte', 'peche', 'chaines', 'techno'];
 const fiches = () => FICHES;
 
 // Le nom des actions de DATA.PERSONNAGE.COUTS, pour la règle de l'énergie.
@@ -559,7 +563,7 @@ export function openAboutModal() {
     `La journée commence à ${DATA.TEMPS.HEURE_REVEIL} h ; une heure passe toutes les ${DATA.TEMPS.SECONDES_PAR_HEURE} s. À ${DATA.TEMPS.HEURE_NUIT} h, la famille va se coucher et reste à la maison ; la nuit défile à la même vitesse et ton personnage peut encore agir : seul son sommeil arrête les actions. À minuit, la nuit passe (ponte, lait…) et le jour change ; les plantes, elles, poussent ${DATA.TEMPS.POUSSE_HEURES} heures après leur arrosage, à toute heure ; à ${DATA.TEMPS.HEURE_REVEIL} h, c'est le réveil. Pendant la nuit, le bouton « Zzz » envoie ton personnage dans son lit (on ne dort que la nuit) : quand il dort, une heure passe toutes les ${DATA.TEMPS.SECONDES_PAR_HEURE_SOMMEIL} s et son énergie remonte peu à peu (${DATA.PERSONNAGE.SOMMEIL_HEURES} heures de sommeil pour celle du réveil ; éveillé, rien ne revient). L'horloge s'arrête quand le jeu est fermé.`,
     `La nuit : repas, puis une poule nourrie pond, les moutons font leur laine, les vaches donnent leur lait, et les aliments hors frigo vieillissent (ils périment en ${Math.min(...durees)} à ${Math.max(...durees)} nuits).`,
     `Ton énergie (⚡, 0 à ${DATA.PERSONNAGE.MAX}) : chaque action au clic en coûte (${Object.entries(DATA.PERSONNAGE.COUTS).map(([a, n]) => `${ACTIONS_NOMS[a] || a} ${formatNumber(n)}`).join(', ')}), un peu moins quand la famille est heureuse (jusqu'à −${DATA.PERSONNAGE.BONHEUR_REDUCTION} %) et ${DATA.PERSONNAGE.ENDURANCE} % de moins par niveau. Au réveil, elle remonte à ${DATA.PERSONNAGE.REVEIL_BASE}, et jusqu'à ${DATA.PERSONNAGE.REVEIL_BASE + DATA.PERSONNAGE.REVEIL_REPAS} si le reste de la famille se couche rassasié ; un aliment mangé dans la journée rend sa valeur (son énergie ÷ ${DATA.PERSONNAGE.MANGER_DIVISEUR}, + ${DATA.PERSONNAGE.MANGER_BONUS} %, arrondie au-dessus). Les automatisations ne coûtent rien.`,
-    `Électricité : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe (son eau sert aussi aux asperseurs de l'arrosage automatique), moulin, presse, réfrigérateur, station de charge du robot. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.USURE.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.USURE.TAUX_ENTRETIEN)} % de son prix, le réparer après une panne ${formatNumber(DATA.USURE.TAUX_REPARATION)} % (arrondis à l'entier supérieur).`,
+    `Électricité : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe (son eau sert aussi aux asperseurs de l'arrosage automatique), moulin, chaînes de production, réfrigérateur, station de charge du robot. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.USURE.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.USURE.TAUX_ENTRETIEN)} % de son prix, le réparer après une panne ${formatNumber(DATA.USURE.TAUX_REPARATION)} % (arrondis à l'entier supérieur).`,
     `La calèche : elle fait chaque jour le tour du monde par les chemins et passe à la ferme vers ${DATA.CALECHE.FERME} h ; on commerce avec elle quand elle est arrêtée à côté de soi (ou hélée sur un chemin). Prix de vente fixes. Elle vend les semences (prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur ; chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient, chaque unité vendue en retire ${formatNumber(M.PAS)}, plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %) et ce qu'elle achète aux hameaux (à ${DATA.CALECHE.VENTE} % du prix de vente). Les outils, les animaux et les meubles se fabriquent à l'Atelier.`,
     `Autonomie = part de ce que la famille a mangé dans la journée qui vient de la ferme. ${chapterCount()} chapitres mènent à une famille autonome.`,
     `Arbre des technologies : ${Object.keys(DATA.ARBRE.noeuds).length} technologies en ${DATA.ARBRE.branches.length} branches, payées en points de technologie (PT : chapitres terminés, jalons de maîtrise, mode libre), en pièces et en ressources (bois, pierre, puis lingots fondus au Four avec le minerai de la grotte). Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,

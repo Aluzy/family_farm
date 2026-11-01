@@ -25,7 +25,8 @@ const LIVRES = {}; // les livres, par id (le livre ouvert : livreOuvert)
 function bookRecipes() {
   const ids = bookStations();
   return Object.keys(DATA.RECETTES)
-    .filter((id) => !DATA.RECETTES[id].horsLivre)
+    // (ni la mouture, ni ce qui se fait sur une chaîne de production : js/engine/chaines.js)
+    .filter((id) => !DATA.RECETTES[id].horsLivre && DATA.RECETTES[id].station !== 'chaine')
     .sort((a, b) => ids.indexOf(DATA.RECETTES[a].station) - ids.indexOf(DATA.RECETTES[b].station));
 }
 

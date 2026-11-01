@@ -6,6 +6,7 @@ import { tick } from '../engine/energy.js';
 import { memberName } from '../engine/family.js';
 import { ecouterJournal } from '../engine/journal.js';
 import { mailbox } from '../engine/campaign.js';
+import { PRESSE_RENDU } from '../engine/state.js';
 import { mergeOfflineReports, simulateOffline } from '../engine/offline.js';
 import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
 import { escapeHtml, formatCoins, formatDay, formatNumber } from '../engine/format.js';
@@ -145,6 +146,12 @@ function watchRecit() {
   if (state.triporteurRendu) {
     notify('🔧 Le triporteur n\'existe plus : ses matériaux (fer, cuivre, planches, fibres) sont revenus dans ton inventaire.', { kind: 'info' });
     delete state.triporteurRendu;
+    persistState();
+  }
+  // une partie qui avait la Presse : les chaînes de production la remplacent (la migration 66 → 67)
+  if (state.presseRendue) {
+    notify(`🗜️ La Presse laisse la place aux chaînes de production : ${formatNumber(PRESSE_RENDU)} 💰 et un bloc de presse te sont rendus. Pose un entonnoir, la presse et un convoyeur à la suite : de l'huile.`, { kind: 'info' });
+    delete state.presseRendue;
     persistState();
   }
 }

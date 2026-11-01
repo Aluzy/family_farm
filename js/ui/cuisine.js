@@ -304,8 +304,9 @@ export function renderStationFenetre(id, fonte) {
 export function renderRecettes() {
   // Le Moulin et sa mouture n'y figurent pas : le blé se moud dans le Moulin (renderMoulin()).
   const ids = bookStations();
+  // (ni ce qui se fait sur une chaîne de production : js/engine/chaines.js)
   const recipes = Object.keys(DATA.RECETTES)
-    .filter((id) => !DATA.RECETTES[id].horsLivre)
+    .filter((id) => !DATA.RECETTES[id].horsLivre && DATA.RECETTES[id].station !== 'chaine')
     .sort((a, b) => ids.indexOf(DATA.RECETTES[a].station) - ids.indexOf(DATA.RECETTES[b].station));
   return `
     <div class="section-head">

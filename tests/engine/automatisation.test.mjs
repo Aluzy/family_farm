@@ -671,7 +671,7 @@ test('progression affichée dans l\'arbre : niveaux des bâtiments et appareils'
   assertEqual(techProgress(s, 'eau').map((e) => [e.cle, e.niveau]), [['pompe', 1], ['reservoir', 2]]);
   assertEqual(techProgress(s, 'famille'), []);
   const cuisine = techProgress(s, 'cuisine')[0];
-  assertEqual(cuisine.ateliers.map((a) => a.construit), [false, false, false, false]);
+  assertEqual(cuisine.ateliers.map((a) => a.construit), [false, false, false]);
   assertEqual(techProgress(createInitialState(1), 'elevage').map((e) => e.niveau), [0, 0], 'pas construits : niveau 0');
 });
 

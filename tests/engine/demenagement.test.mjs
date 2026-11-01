@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import {
   blocDessus, blocsPoses, convertirPartie, countItem, couchages, DATA, etatEtable, etatPoulailler,
   farmSeed, farmTerrain, graineDemenagement, houseRepaired, isOwned, migrate, nuitSansCouchage,
-  robotStation, serrePlaces, starterOf, STATE_VERSION,
+  PRESSE_RENDU, robotStation, serrePlaces, starterOf, STATE_VERSION,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, AVANT_DEMENAGEMENT, sleepOnce, test } from './aide.mjs';
 
@@ -44,7 +44,7 @@ test('Déménager : chaque bâtiment d\'une ancienne partie est rebâti en blocs
     // la Serre : une case par parcelle ; le Silo, les stations
     assert(serrePlaces(s).length >= 56, 'la Serre');
     assert(s.serre.construit && s.silo.construit, 'Serre et Silo');
-    for (const id of ['four', 'cuisine', 'moulin', 'presse']) assert(s.stations[id].construit, id);
+    for (const id of ['four', 'cuisine', 'moulin']) assert(s.stations[id].construit, id);
     const B = blocsPoses(s), sortes = Object.values(B);
     for (const sorte of ['four', 'cuisiniere', 'meule', 'nichoir', 'mangeoire', 'bac_semis', 'puits', 'panneau', 'citerne', 'batterie', 'station_robot']) {
       assertEqual(sortes.filter((x) => x === sorte).length, 1, `un bloc ${sorte}`);
@@ -108,7 +108,9 @@ test('Déménager au chargement : la migration v46 → v47, une fois, sur la gra
   assertEqual([v46.version, AVANT_DEMENAGEMENT, farmSeed(v46)], [46, 46, null]);
   const m = migrate({ v: 46, t: 0, s: structuredClone(v46) });
   assertEqual([m.version, farmSeed(m), m.demenagee], [STATE_VERSION, graineDemenagement(v46), true]);
-  assertEqual([m.pieces, m.poulailler.niveau, m.paturage.places, m.serre.parcelles.length], [v46.pieces, 5, 25, 56], 'rien ne se perd');
+  // (la Presse construite : son prix rendu par la migration 66 → 67, les chaînes de production la remplacent)
+  const presse = v46.stations.presse && v46.stations.presse.construit ? PRESSE_RENDU : 0;
+  assertEqual([m.pieces, m.poulailler.niveau, m.paturage.places, m.serre.parcelles.length], [v46.pieces + presse, 5, 25, 56], 'rien ne se perd');
   assert(houseRepaired(m) && m.poulailler.construit && m.paturage.construit && m.serre.construit && m.silo.construit, 'tout est rebâti');
   assertEqual(migrate({ v: STATE_VERSION, t: 0, s: structuredClone(m) }), m, 'recharger ne déménage plus');
   // une partie dont la famille n'est pas encore installée : sa graine seulement

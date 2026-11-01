@@ -583,7 +583,47 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v66 → v67 : la Presse (une station achetée) laisse la place aux chaînes de production
+  // (js/engine/chaines.js) ; l'huile, la compote, les fromages, la confiture, la bière et les
+  // bocaux ne se font plus en cuisine. Une Presse construite rend son prix (PRESSE_RENDU pièces)
+  // et un bloc de presse (« pressoir ») ; ce qui cuisait ou attendait sur une station et se fait
+  // désormais sur une chaîne est fini tout de suite (le produit dans l'inventaire). Annoncé par une
+  // notification (state.presseRendue, js/ui/loop.js).
+  66: (state) => {
+    const out = { ...state, version: 67 };
+    const stations = state.stations && typeof state.stations === 'object' ? { ...state.stations } : null;
+    if (!stations) return out;
+    const fini = (e) => {
+      const r = e && DATA.RECETTES[e.recette];
+      if (!r || r.station !== 'chaine') return false;
+      addItem(out, r.transformation ? r.sortie : e.recette, r.qteSortie || 1);
+      return true;
+    };
+    for (const [id, st] of Object.entries(stations)) {
+      if (!st || typeof st !== 'object') continue;
+      let tache = st.tache && fini(st.tache) ? null : st.tache;
+      const file = Array.isArray(st.file) ? st.file.filter((e) => !fini(e)) : st.file;
+      // (la préparation finie laisse sa place à la première de la file)
+      if (!tache && Array.isArray(file) && file.length && DATA.RECETTES[file[0].recette]) {
+        const premiere = file.shift(), ms = DATA.RECETTES[premiere.recette].temps * 1000;
+        tache = { recette: premiere.recette, resteMs: ms, dureeMs: ms };
+      }
+      stations[id] = { ...st, tache, ...(Array.isArray(st.file) ? { file } : {}) };
+    }
+    const presse = stations.presse;
+    delete stations.presse;
+    out.stations = stations;
+    if (presse && presse.construit) {
+      out.pieces = (Number(state.pieces) || 0) + PRESSE_RENDU;
+      addItem(out, 'pressoir', 1);
+      out.presseRendue = true;
+    }
+    return out;
+  },
 };
+
+// Ce que la Presse avait coûté, rendu par la migration 66 → 67.
+export const PRESSE_RENDU = 150;
 
 // Ce que coûtait le triporteur à l'Atelier, rendu par la migration 65 → 66.
 export const TRIPORTEUR_RENDU = { lingot_fer: 4, lingot_cuivre: 1, planche: 4, fibre: 2 };
@@ -615,7 +655,7 @@ export function decalerPartie(old, sens) {
   const decale = (id, px = 1) => idDuMonde(id, px, [ox, oy]);
   const cles = (o) => (o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [/^\d+$/.test(k) ? String(c(Number(k))) : k, v])) : o);
   const ids = (o, px) => (o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [decale(k, px), v])) : o);
-  for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'fenetres', 'etage', 'fenetresEtage', 'ruches', 'distributeurs', 'botteleuses']) {
+  for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'fenetres', 'etage', 'fenetresEtage', 'ruches', 'distributeurs', 'botteleuses', 'chaines']) {
     if (state[k]) state[k] = cles(state[k]);
   }
   const cases = (l) => (Array.isArray(l) ? l.map((p) => (p && typeof p === 'object' ? { ...p, case: c(p.case) } : p)) : l);

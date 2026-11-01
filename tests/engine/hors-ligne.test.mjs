@@ -96,16 +96,16 @@ test('Lot 11 : aucune nuit ne passe hors-ligne', () => {
 test('Lot 11 : préparations terminées pendant l\'absence', () => {
   const s = atelier();
   s.eauMl = ml(10);
-  setInv(s, { farine: 2, graine_tournesol: 3 });
+  setInv(s, { farine: 2 });
   storeWheat(s, 1);
-  for (const id of ['pain', 'huile']) assert(startRecipe(s, id).ok, `lancer ${id}`);
+  for (const id of ['pain']) assert(startRecipe(s, id).ok, `lancer ${id}`);
   assert(startMilling(s, 1).ok, 'lancer la mouture');
   const r = simulateOffline(s, 10 * 60);
   const tri = (o) => Object.keys(o).sort().map((k) => [k, o[k]]);
-  assertEqual(tri(r.terminees), [['farine', 1], ['huile', 1], ['pain', 1]], 'version 1.23 : le Moulin ne donne plus de paille');
+  assertEqual(tri(r.terminees), [['farine', 1], ['pain', 1]], 'version 1.23 : le Moulin ne donne plus de paille');
   assertEqual(r.enCours, []);
-  for (const id of ['four', 'moulin', 'presse']) assertEqual(s.stations[id].tache, null, `${id} libre`);
-  assertEqual([countItem(s, 'pain'), countItem(s, 'farine'), countItem(s, 'huile'), countItem(s, 'paille')], [1, 1, 1, 0]);
+  for (const id of ['four', 'moulin']) assertEqual(s.stations[id].tache, null, `${id} libre`);
+  assertEqual([countItem(s, 'pain'), countItem(s, 'farine'), countItem(s, 'paille')], [1, 1, 0]);
   assertEqual(s.campagne.compteurs.pains, 1, 'le pain compte pour le chapitre');
 });
 

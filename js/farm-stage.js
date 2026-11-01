@@ -563,6 +563,7 @@
         this.stepBeasts(time, delta / 1000);
         this.stepAbeilles(delta / 1000);
         this.stepBotteleuses(dt);
+        this.stepChaines(dt);                   // (les chaînes de production qui tournent : chaines.js)
         this.stepRobot(dt);
         this.stepFishing(delta);
         this.stepSun();
@@ -826,6 +827,9 @@
           const caillou = this.rockAt(wx, wy);
           if (caillou && caillou.cells.size === 1) return { caillou };
         }
+        // une chaîne de production (un de ses blocs) : il va jeter les ingrédients dans l'entonnoir
+        const chaine = !hoeing ? this.chaineAt(wx, wy) : -1;
+        if (chaine >= 0) return { chaine };
         // la botteleuse (une de ses pièces) : il va jeter ses fibres dans l'entonnoir
         const botte = !hoeing ? this.botteleuseAt(wx, wy) : -1;
         if (botte >= 0) return { botteleuse: botte };
@@ -958,6 +962,7 @@
         if (hit.etage) { this.ctx.bridge.act('etage-toggle', {}); return; }
         if (hit.gather) { this.gather(hit.gather); return; }
         if (hit.caillou) { this.pickRock(hit.caillou); return; }
+        if (hit.chaine !== undefined) { this.jeterChaine(hit.chaine); return; }
         if (hit.botteleuse !== undefined) { this.jeterFibres(hit.botteleuse); return; }
         if (hit.distributeur !== undefined) { this.jeterGrain(hit.distributeur); return; }
         if (hit.chop) { this.chop(hit.chop); return; }

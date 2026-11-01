@@ -2019,6 +2019,197 @@ PORTES_VERTICALES = len(DESSINS)                 # les portes dans un mur vertic
 DESSINS += [porte_verticale(MODELES_PORTES[k][1]) for k in MODELES_PORTES]
 
 
+# ---------- les chaînes de production (js/engine/chaines.js) : le réservoir et les outils ----------
+# La famille « atelier » : de la tôle peinte vert d'eau, des rivets, un bâti rouge pour la presse.
+# Chaque outil a son tuyau d'entrée à gauche et de sortie à droite, à la hauteur de celui de
+# l'entonnoir (BOTTE_ENTREE), et un voyant (allumé : il tourne, il tire du courant) ; deux images
+# (à l'arrêt, en marche). Le réservoir : CH_NIVEAUX images, sa jauge du vide au plein.
+
+CH_TOLE = [(36, 52, 50), (54, 86, 80), (78, 124, 112), (112, 164, 146), (168, 210, 190)]
+CH_ROUGE = [(70, 20, 18), (128, 36, 30), (180, 56, 44), (222, 96, 74), (246, 160, 130)]
+CH_GOMME = [(22, 22, 26)] + CAOUTCHOUC + [(96, 96, 104)]
+CH_LAIT = [(196, 194, 184), (232, 230, 220), (252, 252, 246)]
+CH_JUS = [(168, 74, 18), (226, 128, 36), (250, 186, 80)]
+CH_JAUGE = (236, 196, 92)
+CH_NIVEAUX = 5
+
+
+def ch_cylindre(t, x0, x1, y0, y1, r):
+    """Un cylindre debout (sa face) de x0 à x1, éclairé à gauche."""
+    for x in range(x0, x1 + 1):
+        u = (x - x0) / max(1, x1 - x0)
+        k = 4 if u < 0.15 else 3 if u < 0.45 else 2 if u < 0.8 else 1
+        for y in range(y0, y1 + 1):
+            t.put(x, y, r[k])
+
+
+def ch_ellipse(t, cx, cy, rx, ry, f):
+    """Une ellipse pleine ; f(x, y, d) : la couleur du pixel (d : 0 au centre, 1 au bord)."""
+    for y in range(int(cy - ry) - 1, int(cy + ry) + 2):
+        for x in range(int(cx - rx) - 1, int(cx + rx) + 2):
+            d = ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2
+            if d <= 1:
+                t.put(x, y, f(x, y, d))
+
+
+def ch_tuyaux(t):
+    """Le tuyau d'entrée (à gauche) et celui de sortie (à droite)."""
+    for x in (0, 1, 14, 15):
+        t.put(x, BOTTE_ENTREE, FER[3])
+        t.put(x, BOTTE_ENTREE + 1, FER[1])
+
+
+def ch_socle(t):
+    for x in range(1, 15):
+        t.put(x, BAS, FER[1] if 1 < x < 14 else FER[0])
+
+
+def ch_bocal(t, x, y, c):
+    """Un petit bocal de 3 × 3 (c : ses deux tons), son couvercle rouge."""
+    for dy in range(3):
+        for dx in range(3):
+            t.put(x + dx, y + dy, c[1] if dx < 2 else c[0])
+    for dx, k in ((0, 2), (1, 3), (2, 2)):
+        t.put(x + dx, y - 1, CH_ROUGE[k])
+
+
+def reservoir(niveau):
+    """Le réservoir : un silo de tôle et sa jauge, une fenêtre étroite où la matière monte
+    (`niveau` : de 0, vide, à 1, plein)."""
+    t = Toile()
+    ch_socle(t)
+    ch_cylindre(t, 3, 12, 3, BAS - 1, CH_TOLE)
+    for y in range(3, BAS, 4):
+        for x in range(3, 13):
+            t.put(x, y, CH_TOLE[3] if x == 3 else CH_TOLE[1])
+    ch_ellipse(t, 7.5, 3, 4.6, 1.8, lambda x, y, d: CH_TOLE[4] if d > 0.5 else CH_TOLE[3])
+    for y in range(6, 19):
+        t.put(10, y, CH_JAUGE if y >= 6 + (1 - niveau) * 13 else CAOUTCHOUC[0])
+    t.put(10, 5, FER[3])
+    t.put(10, 19, FER[3])
+    ch_tuyaux(t)
+    return t.fini()
+
+
+def pressoir(marche=False):
+    """La presse : un bâti de tôle rouge, le vérin qui descend le plateau sur la cuve."""
+    t = Toile()
+    ch_socle(t)
+    ch_cylindre(t, 2, 3, 3, BAS - 1, CH_ROUGE)
+    ch_cylindre(t, 12, 13, 3, BAS - 1, CH_ROUGE)
+    boite(t, 1, 14, 5, 3, 3, CH_ROUGE, CH_ROUGE)
+    d = 4 if marche else 1
+    for y in range(6, 8 + d):
+        t.put(7, y, FER[4])
+        t.put(8, y, FER[2])
+    boite(t, 4, 11, 9 + d, 2, 2, FER, FER)
+    boite(t, 4, 11, BAS - 2, 5, 4, CH_GOMME, CH_GOMME)
+    for x in range(5, 11):
+        t.put(x, BAS - 6, CH_JUS[1] if x % 2 else CH_JUS[2])
+    ch_tuyaux(t)
+    t.put(5, 3, VOYANT[1] if marche else VOYANT[0])
+    return t.fini()
+
+
+def centrifugeuse(marche=False):
+    """La centrifugeuse : un carter de tôle, son hublot rond où le lait tourne."""
+    t = Toile()
+    ch_socle(t)
+    yd, yf = boite(t, 1, 14, BAS - 1, 15, 6, CH_TOLE, CH_TOLE)
+    ph = 0.8 if marche else 0
+    ch_ellipse(t, 7.5, yf + 6, 4.5, 4.5, lambda x, y, d: FER[3] if d > 0.72 else (
+        CH_LAIT[2] if (math.atan2(y - yf - 6, x - 7) + ph) % 1.2 < 0.6 else CH_LAIT[1]))
+    for x in (3, 12):
+        t.put(x, yf + 1, FER[4])
+    ch_tuyaux(t)
+    t.put(12, yd + 2, VOYANT[1] if marche else VOYANT[0])
+    return t.fini()
+
+
+def mixeur(marche=False):
+    """Le mixeur : un socle-moteur de tôle, un grand bol de fer, l'hélice au-dessus."""
+    t = Toile()
+    ch_socle(t)
+    boite(t, 2, 13, BAS - 1, 5, 4, CH_TOLE, CH_TOLE)
+    ch_cylindre(t, 3, 12, 6, 15, FER)
+    ch_ellipse(t, 7.5, 6, 4.8, 1.6, lambda x, y, d: FER[4] if d > 0.55 else CH_JUS[1])
+    for y in range(1, 6):
+        t.put(7, y, FER[2])
+    for x in range(4 if marche else 5, (11 if marche else 10) + 1):
+        t.put(x, 2, FER[3])
+    ch_tuyaux(t)
+    t.put(4, BAS - 3, VOYANT[1] if marche else VOYANT[0])
+    return t.fini()
+
+
+def chaudron(marche=False):
+    """Le chaudron : de fonte, sur son trépied, la grande cuillère ; en marche, le feu dessous."""
+    t = Toile()
+    for x in (2, 12):
+        for y in range(16, BAS + 1):
+            t.put(x, y, FER[1])
+            t.put(x + 1, y, FER[0])
+    ch_ellipse(t, 7.5, 12, 6.5, 6, lambda x, y, d: CAOUTCHOUC[2] if x < 6 else CAOUTCHOUC[1])
+    ch_ellipse(t, 7.5, 7.5, 6, 2, lambda x, y, d: FER[2] if d > 0.6 else (CH_JUS[1] if (x + y) % 2 else CH_JUS[2]))
+    for k in range(6):
+        t.put(10 + k // 2, 1 + k, BOIS[3])
+    if marche:
+        for x in range(5, 11):
+            t.put(x, BAS - 1, FEU[2] if x % 2 else FEU[3])
+    ch_tuyaux(t)
+    t.put(3, 13, VOYANT[1] if marche else VOYANT[0])
+    return t.fini()
+
+
+def tonneau(marche=False):
+    """Le tonneau : debout, cerclé de fer, son barboteur de verre (des bulles quand il travaille)."""
+    t = Toile()
+    for x in range(1, 15):
+        t.put(x, BAS, BOIS[1] if 1 < x < 14 else BOIS[0])
+    for x in range(2, 14):
+        u = (x - 2) / 11
+        k = 4 if u < 0.15 else 3 if u < 0.45 else 2 if u < 0.8 else 1
+        for y in range(7, BAS):
+            t.put(x, y, BOIS[0] if (x - 2) % 3 == 2 else BOIS[min(4, k)])
+    for y in (9, 15, 21):
+        for x in range(2, 14):
+            t.put(x, y, FER[3] if x == 2 else FER[1] if x == 13 else FER[2])
+    ch_ellipse(t, 7.5, 7, 6, 2.2, lambda x, y, d: BOIS[4] if d > 0.6 else BOIS[3])
+    for y in range(1, 7):
+        t.put(9, y, VERRE[2])
+        t.put(10, y, VERRE[1])
+    if marche:
+        t.put(9, 2, VERRE[3])
+        t.put(10, 4, VERRE[3])
+    ch_tuyaux(t)
+    t.put(4, 12, VOYANT[1] if marche else VOYANT[0])
+    return t.fini()
+
+
+def ensacheuse(marche=False):
+    """L'ensacheuse : une capsuleuse de tôle, sa tête qui descend sur le bocal, un levier rouge."""
+    t = Toile()
+    ch_socle(t)
+    boite(t, 1, 14, BAS - 1, 6, 4, CH_TOLE, CH_TOLE)
+    for y in range(2, 15):
+        t.put(12, y, CH_TOLE[2])
+        t.put(13, y, CH_TOLE[1])
+    d = 2 if marche else 0
+    boite(t, 4, 11, 6 + d, 3, 2, CH_TOLE, CH_TOLE)
+    for k in range(4):
+        t.put(1 + k, 4 + k // 2, CH_ROUGE[3])
+    ch_bocal(t, 6, 10 + d, [CH_JUS[1], CH_JUS[2]])
+    ch_tuyaux(t)
+    t.put(3, BAS - 3, VOYANT[1] if marche else VOYANT[0])
+    return t.fini()
+
+
+RESERVOIR = len(DESSINS)                         # le réservoir, sa jauge du vide au plein (BLOCS_CARTE.frames.reservoir)
+DESSINS += [reservoir(k / (CH_NIVEAUX - 1)) for k in range(CH_NIVEAUX)]
+OUTILS_CHAINE = len(DESSINS)                     # les outils, à l'arrêt puis en marche (BLOCS_CARTE.frames)
+DESSINS += [f(m) for f in (pressoir, centrifugeuse, mixeur, chaudron, tonneau, ensacheuse) for m in (False, True)]
+
+
 def masque(g, x, y):
     """Comme js/carte/ferme/chantier.js (wallMask) : les murs voisins, et les portes à gauche
     et à droite."""

@@ -28,7 +28,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "installations",
      "terme": "Installations",
-     "description": "Onglet de la Maison qui regroupe ce qui se gère sans aller sur place : les ateliers (Four, Cuisine, Presse), la production et le stockage d'énergie, la pompe, le réservoir, le réfrigérateur et le silo.",
+     "description": "Onglet de la Maison qui regroupe ce qui se gère sans aller sur place : les ateliers (Four, Cuisine), la production et le stockage d'énergie, la pompe, le réservoir, le réfrigérateur et le silo.",
      "liens": [
       "maison",
       "four",
@@ -278,14 +278,29 @@ export const ENCYCLOPEDIE = {
     {
      "id": "presse",
      "terme": "Presse",
-     "description": "Transforme les graines de tournesol en huile. Fonctionne à l'électricité fournie par la batterie.",
+     "description": "Outil des chaînes de production, fabriqué à l'Atelier : posée seule après un entonnoir, elle presse les graines de tournesol en huile ; après un mixeur, les fruits en jus ; après une centrifugeuse, le lait en fromage. Elle tire du courant pendant qu'elle tourne.",
      "liens": [
+      "chaine_production",
       "tournesol",
       "huile",
       "batterie"
      ],
      "decouverte": [
       "objet:huile"
+     ]
+    },
+    {
+     "id": "chaine_production",
+     "terme": "Chaîne de production",
+     "description": "Des blocs de l'Atelier posés côte à côte sur une rangée, de gauche à droite : un entonnoir, un réservoir (facultatif), des outils (presse, centrifugeuse, mixeur, chaudron, tonneau, ensacheuse), puis au moins un convoyeur ; la case au bout reste libre. La suite des outils fait la recette : huile (presse), jus de fruits (mixeur, presse), fromage frais (centrifugeuse, presse), fromage d'alpage (centrifugeuse, presse, tonneau), compote (mixeur, chaudron), confiture (mixeur, chaudron, ensacheuse), bière (chaudron, tonneau), bocal de légumes (chaudron, ensacheuse). Un appui sur la chaîne : ton personnage jette dans l'entonnoir les ingrédients qu'il a ; avec un réservoir, jusqu'à 30. Elle travaille seule, avec le courant de la ferme, tant qu'il lui reste de quoi faire ; les produits tombent en tas au bout du convoyeur, à ramasser en marchant dessus. Ces produits ne se font plus en cuisine.",
+     "liens": [
+      "presse",
+      "electricite",
+      "atelier",
+      "botteleuse"
+     ],
+     "decouverte": [
+      "objet:entonnoir"
      ]
     },
     {
@@ -1227,7 +1242,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "electricite",
      "terme": "Électricité",
-     "description": "Ressource produite par le panneau solaire (de 7 h à 19 h), stockée dans la batterie, et consommée par la pompe, le moulin, la presse, le réfrigérateur et la station de charge du robot.",
+     "description": "Ressource produite par le panneau solaire (de 7 h à 19 h), stockée dans la batterie, et consommée par la pompe, le moulin, les chaînes de production, le réfrigérateur et la station de charge du robot.",
      "liens": [
       "panneau_solaire",
       "batterie",
@@ -1281,7 +1296,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "huile",
      "terme": "Huile",
-     "description": "Ingrédient obtenu en transformant les graines de tournesol à la presse, utilisé dans des recettes comme l'omelette ou la ratatouille.",
+     "description": "Ingrédient obtenu en pressant les graines de tournesol sur une chaîne de production (un entonnoir, la presse, un convoyeur), utilisé dans des recettes comme l'omelette ou la ratatouille.",
      "liens": [
       "tournesol",
       "presse",
@@ -3099,7 +3114,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "usure",
      "terme": "Usure",
-     "description": "Valeur de 0 à 100 % pour chaque appareil électrique (panneau, batterie, pompe, moulin, presse), qui augmente avec son temps de fonctionnement et réduit son rendement. À 100 %, l'appareil tombe en panne et doit être réparé.",
+     "description": "Valeur de 0 à 100 % pour chaque appareil électrique (panneau, batterie, pompe, moulin), qui augmente avec son temps de fonctionnement et réduit son rendement. À 100 %, l'appareil tombe en panne et doit être réparé.",
      "liens": [
       "panneau_solaire",
       "batterie",
@@ -3235,7 +3250,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "delestage",
      "terme": "Délestage",
-     "description": "Technologie Délestage intelligent : sous 10 % de charge de la batterie, le Moulin, la Presse et la Pompe sont suspendus pour garder l'électricité du réfrigérateur ; ils repartent seuls quand la charge remonte.",
+     "description": "Technologie Délestage intelligent : sous 10 % de charge de la batterie, le Moulin, les chaînes de production et la Pompe sont suspendus pour garder l'électricité du réfrigérateur ; ils repartent seuls quand la charge remonte.",
      "liens": [
       "arbre_technologique",
       "batterie",

@@ -125,7 +125,7 @@ test('migration v24 → v25 (version 1.7) : le niveau garde tout ce que les chap
   assertEqual(at(1, (s) => { s.serre.construit = true; }).progression.niveau, 7);
   assertEqual(at(2, (s) => { s.potager.parcelles[0].culture = 'epinard'; }).progression.niveau, 4, 'un épinard en terre');
   const m = at(4);
-  assertEqual([m.version, isUnlocked(m, 'presse'), isUnlocked(m, 'serre')], [AVANT_DEMENAGEMENT, true, false]);
+  assertEqual([m.version, isUnlocked(m, 'chaines'), isUnlocked(m, 'serre')], [AVANT_DEMENAGEMENT, true, false]);
 });
 
 test('migration v23 → v24 (version 1.6) : un seul panneau, une seule batterie, un réservoir à niveaux', () => {
@@ -206,7 +206,7 @@ test('rapport de réveil Lot 9 : autonomie, chapitre en cours et chapitres termi
 
 test('déblocages : chaque niveau atteint ouvre ses éléments', () => {
   const at = (n, id) => { const s = farm(); testSetLevel(s, n); return isUnlocked(s, id); };
-  const groups = { 2: ['cuisine'], 3: ['silo', 'poulailler'], 4: ['moulin'], 5: ['four', 'paturage', 'moutons'], 6: ['presse', 'verger'], 7: ['serre'], 8: ['frigo'] };
+  const groups = { 2: ['cuisine'], 3: ['silo', 'poulailler'], 4: ['moulin'], 5: ['four', 'paturage', 'moutons'], 6: ['chaines', 'verger'], 7: ['serre'], 8: ['frigo'] };
   for (const [niv, ids] of Object.entries(groups)) {
     for (const id of ids) {
       assertEqual([id, at(Number(niv) - 1, id)], [id, false], `${id} masqué au niveau ${niv - 1}`);
@@ -225,7 +225,7 @@ test('déblocages : le Potager, la pompe et le Marché sont là dès le départ'
   assertEqual(levelReached(s), 1);
   for (const id of ['potager', 'pompe', 'panneau', 'batterie', 'comptoir']) assertEqual([id, isUnlocked(s, id)], [id, true]);
   assertEqual(unlockLevel('potager'), 1);
-  assertEqual(['cuisine', 'silo', 'moulin', 'four', 'presse', 'serre', 'frigo'].map(unlockLevel), [2, 3, 4, 5, 6, 7, 8]);
+  assertEqual(['cuisine', 'silo', 'moulin', 'four', 'chaines', 'serre', 'frigo'].map(unlockLevel), [2, 3, 4, 5, 6, 7, 8]);
 });
 
 test('masquage : un niveau plus bas ne détruit rien de ce que la partie possède', () => {

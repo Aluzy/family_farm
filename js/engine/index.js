@@ -42,6 +42,7 @@ export * from './ramassage.js';
 export * from './ruches.js';
 export * from './cheval.js';
 export * from './botteleuse.js';
+export * from './chaines.js';
 export * from './distributeur.js';
 export * from './bonheur.js';
 export * from './offline.js';
