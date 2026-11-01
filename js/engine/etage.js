@@ -9,11 +9,17 @@
 //
 // state.etage = { [tuile]: sorte } : les blocs posés à l'étage. Une pièce qui perd son escalier
 // (ou qui s'ouvre) perd son étage : ses blocs reviennent dans l'inventaire (rangerEtage).
+//
+// Les murs du bas rehaussés (blocs.js hauteurPile ≥ 2) sont les murs de l'étage, là où ils
+// sont : rien d'autre ne s'y pose à l'étage, ils arrêtent le passage et ferment ses pièces.
+// Au niveau 1, des sols (le plancher, les dalles…) se posent dans une pièce dont tout le
+// pourtour monte au niveau 1 (piecesNiveau1), ou au-dessus de la pièce de l'escalier :
+// state.solsEtage = { [tuile]: sorte } (casesSolEtage, poserSolEtage, reprendreSolEtage).
 
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, takeItem } from './inventory.js';
-import { blocsEnMain, blocsPoses, changeMur, empriseMeuble, genreBloc, hauteurMur, piecesCloses, solsPoses } from './blocs.js';
+import { blocsEnMain, blocsPoses, changeMur, changeSol, empriseMeuble, genreBloc, hauteurMur, hauteurPile, piecesCloses, solsPoses } from './blocs.js';
 import { farmTerrain } from './terrain.js';
 
 // Les blocs qui se posent à l'étage : des murs, des portes, une paillasse, une lanterne, un
@@ -99,7 +105,7 @@ export function etageEmprise(state) {
 //    maison (une pièce de la maison : on y allume la nuit, js/carte/ferme/fenetres.js) }]
 export function toits(state) {
   const B = blocsPoses(state), E = etageBlocs(state), W = farmTerrain(state).LARGEUR;
-  const ferme = (t) => { const s = DATA.ATELIER.BLOCS[E[t]]; return !!(s && s.ferme); };
+  const ferme = (t) => { const s = DATA.ATELIER.BLOCS[E[t]]; return !!(s && s.ferme) || hauteurPile(state, t) >= 2; };
   const out = [], simples = [], S = solsPoses(state), tri = (a) => [...a].sort((x, y) => x - y);
   for (const p of piecesCloses(state)) {
     if (!p.cases.some((t) => genreBloc(B[t]) || S[t] || B[t] === 'escalier')) continue;   // (une cour)
@@ -173,6 +179,7 @@ export function poseEtageStatus(state, sorte, tile) {
   if (!s || !ETAGE_BLOCS.includes(sorte)) return { ok: false, raison: `${s ? s.nom : 'Ce bloc'} : ne se pose pas à l'étage.` };
   if (!etageEmprise(state).has(tile)) return { ok: false, raison: 'À l\'étage, on ne bâtit qu\'au-dessus d\'une pièce close qui a un escalier.' };
   if (blocsPoses(state)[tile] === 'escalier') return { ok: false, raison: 'Ici, c\'est le haut de l\'escalier.' };
+  if (hauteurPile(state, tile) >= 2) return { ok: false, raison: 'Le mur du bas monte jusqu\'ici : il est déjà le mur de l\'étage.' };
   if (etageBlocs(state)[tile] && !changeMur(etageBlocs(state)[tile], sorte)) return { ok: false, raison: 'Il y a déjà un bloc ici.' };
   const couvertes = etageCouvertes(state);
   if (couvertes.has(tile)) return { ok: false, raison: 'Un meuble occupe cette case.' };
@@ -239,7 +246,16 @@ export function rangerEtage(state) {
     setFenetreEtage(state, k, null);
     delete E[k];
   }
-  return hors.length;
+  // (les sols du niveau 1 hors d'une pièce du niveau 1 ou de l'étage : ils reviennent aussi)
+  const S = solsEtage(state), ok = casesSolEtage(state);
+  let sols = 0;
+  for (const k of Object.keys(S)) {
+    if (ok.has(Number(k))) continue;
+    addItem(state, DATA.ATELIER.BLOCS[S[k]].objet, 1);
+    delete S[k];
+    sols += 1;
+  }
+  return hors.length + sols;
 }
 
 // Les blocs de l'étage hors de son emprise (une case qui n'y est plus, ou celle de l'escalier) :
@@ -253,4 +269,62 @@ export function etageHorsEmprise(state) {
   const dedans = (k) => (DATA.ATELIER.BLOCS[E[k]].meuble ? empriseMeuble(state, E[k], Number(k)) || [Number(k)] : [Number(k)])
     .every((j) => emprise.has(j) && B[j] !== 'escalier');
   return tiles.filter((k) => !dedans(k));
+}
+
+/* ---------- les sols du niveau 1 ---------- */
+
+// Les sols posés au niveau 1 : { [tuile]: sorte }.
+export function solsEtage(state) {
+  return state.solsEtage && typeof state.solsEtage === 'object' ? state.solsEtage : {};
+}
+
+// Les pièces du niveau 1 : les pièces closes dont tout le pourtour (murs, fenêtres, portes) monte
+// au niveau 1 (hauteurPile ≥ 2). [{ cases, bord }]
+export function piecesNiveau1(state) {
+  const out = [];
+  for (const p of piecesCloses(state)) {
+    const dedans = new Set(p.cases), bord = [...avecMurs(state, p.cases)].filter((t) => !dedans.has(t));
+    if (bord.length && bord.every((t) => hauteurPile(state, t) >= 2)) out.push({ cases: p.cases, bord });
+  }
+  return out;
+}
+
+// Les cases où un sol se pose au niveau 1 : le dedans des pièces du niveau 1 et de celles qui ont
+// un escalier (pas la case de l'escalier, ni un mur du bas qui monte). Un Set de tuiles.
+export function casesSolEtage(state) {
+  const out = new Set(), B = blocsPoses(state);
+  for (const p of piecesNiveau1(state)) for (const t of p.cases) out.add(t);
+  for (const p of piecesCloses(state)) if (p.cases.some((t) => B[t] === 'escalier')) for (const t of p.cases) out.add(t);
+  for (const t of [...out]) if (B[t] === 'escalier' || hauteurPile(state, t) >= 1) out.delete(t);
+  return out;
+}
+
+// Peut-on poser le sol `sorte` au niveau 1, sur `tile` ? { ok, raison }
+export function poseSolEtageStatus(state, sorte, tile) {
+  const s = DATA.ATELIER.BLOCS[sorte];
+  if (!s || !s.sol || s.dehors || s.meuble) return { ok: false, raison: `${s ? s.nom : 'Ce bloc'} : ce n'est pas un sol de pièce.` };
+  if (!casesSolEtage(state).has(tile)) return { ok: false, raison: 'Au niveau 1, un sol se pose dans une pièce dont les murs montent tous au niveau 1 (ou au-dessus de la pièce de l\'escalier).' };
+  const ancien = solsEtage(state)[tile];
+  if (ancien && !changeSol(ancien, sorte)) return { ok: false, raison: 'Il y a déjà ce sol ici.' };
+  if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: `Plus de ${s.nom.toLowerCase()} : fabrique-en à l'Atelier.` };
+  return { ok: true };
+}
+
+export function poserSolEtage(state, sorte, tile) {
+  const st = poseSolEtageStatus(state, sorte, tile);
+  if (!st.ok) return fail(st.raison);
+  takeItem(state, DATA.ATELIER.BLOCS[sorte].objet, 1);
+  if (!state.solsEtage || typeof state.solsEtage !== 'object') state.solsEtage = {};
+  const ancien = state.solsEtage[tile];
+  if (ancien) addItem(state, DATA.ATELIER.BLOCS[ancien].objet, 1);
+  state.solsEtage[tile] = sorte;
+  return ancien ? { ok: true, sorte, case: tile, sol: true, remplace: ancien } : { ok: true, sorte, case: tile, sol: true };
+}
+
+export function reprendreSolEtage(state, tile) {
+  const sorte = solsEtage(state)[tile];
+  if (!sorte) return fail('Il n\'y a pas de sol ici.');
+  delete state.solsEtage[tile];
+  addItem(state, DATA.ATELIER.BLOCS[sorte].objet, 1);
+  return { ok: true, sorte, case: tile, sol: true };
 }

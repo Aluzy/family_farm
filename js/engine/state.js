@@ -655,7 +655,7 @@ export function decalerPartie(old, sens) {
   const decale = (id, px = 1) => idDuMonde(id, px, [ox, oy]);
   const cles = (o) => (o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [/^\d+$/.test(k) ? String(c(Number(k))) : k, v])) : o);
   const ids = (o, px) => (o && typeof o === 'object' ? Object.fromEntries(Object.entries(o).map(([k, v]) => [decale(k, px), v])) : o);
-  for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'rehausses', 'fenetres', 'etage', 'fenetresEtage', 'ruches', 'distributeurs', 'botteleuses', 'chaines']) {
+  for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'rehausses', 'fenetres', 'etage', 'fenetresEtage', 'solsEtage', 'ruches', 'distributeurs', 'botteleuses', 'chaines']) {
     if (state[k]) state[k] = cles(state[k]);
   }
   const cases = (l) => (Array.isArray(l) ? l.map((p) => (p && typeof p === 'object' ? { ...p, case: c(p.case) } : p)) : l);

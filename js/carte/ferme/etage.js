@@ -47,7 +47,8 @@
       const vn = on && vueNiveau != null ? vueNiveau : null;
       if (vn !== (this.vueNiveau === undefined ? null : this.vueNiveau)) { this.vueNiveau = vn; this.etageVue = null; }
       const n = on && niveau ? 1 : 0;
-      const cle = on ? JSON.stringify(etage) : '';
+      const solsHaut = (this.ctx.lastModel && this.ctx.lastModel.solsEtage) || [];
+      const cle = on ? JSON.stringify(etage) + JSON.stringify(solsHaut) : '';
       if (cle === this.etageCle && n === (this.niveau || 0)) return;
       const change = n !== (this.niveau || 0);
       this.niveau = n;
@@ -64,13 +65,20 @@
           const cols = this.grid.cols, dy = E.dy, add = (o) => { this.etageObjs.push(o); return o; };
           const dans = (t) => this.etageEmprise.has(t);
           const pos = (t) => ({ x: (t % cols) * T + T / 2, y: (Math.floor(t / cols) + 1) * T });
-          // le plancher, raccordé sur toute l'emprise, au sommet des murs du bas
+          // le plancher, raccordé sur toute l'emprise, au sommet des murs du bas ; pas sur un mur du
+          // bas qui monte à l'étage (il en est le mur : on le voit) ; un sol posé au niveau 1 à
+          // sa place, raccordé aux siens (comme en bas : syncFloors)
+          const hauts = new Set(etage.hauts || []), sol = new Map(solsHaut.map((q) => [q.case, q.sorte]));
           for (const t of etage.emprise) {
-            const c = t % cols;
-            const m = (dans(t - cols) ? 1 : 0) + (c < cols - 1 && dans(t + 1) ? 2 : 0) + (dans(t + cols) ? 4 : 0) + (c > 0 && dans(t - 1) ? 8 : 0);
+            if (hauts.has(t)) continue;
+            const c = t % cols, so = sol.get(t);
+            const est = so ? (k) => sol.get(k) === so : (k) => dans(k) && !hauts.has(k) && !sol.has(k);
+            const m = (est(t - cols) ? 1 : 0) + (c < cols - 1 && est(t + 1) ? 2 : 0) + (est(t + cols) ? 4 : 0) + (c > 0 && est(t - 1) ? 8 : 0);
+            const base = so && BLOCS_CARTE.modelesSols[so] !== undefined ? BLOCS_CARTE.modelesSols[so] : BLOCS_CARTE.sols;
             const p = pos(t);
-            add(this.add.image(p.x, p.y - dy, BLOCS_CARTE.key, BLOCS_CARTE.sols + m).setOrigin(0.5, 1).setDepth(p.y + 0.5));
+            add(this.add.image(p.x, p.y - dy, BLOCS_CARTE.key, base + m).setOrigin(0.5, 1).setDepth(p.y + 0.5));
           }
+          for (const t of hauts) this.etageBloque.add(t);
           for (const t of etage.escaliers) {
             if (!dans(t)) continue;
             const p = pos(t);
@@ -160,8 +168,9 @@
       // (couché dans un lit de l'étage : on le voit là-haut)
       const litHaut = this.fermier && this.fermier.lit && this.fermier.lit();
       const vue = this.vueNiveau != null ? (this.vueNiveau ? 'haut' : 'bas') : this.niveau || (litHaut && litHaut.via) ? 'haut' : dedans ? 'bas' : 'dehors';
-      if (vue !== this.etageVue) {
+      if (vue !== this.etageVue || this.etageBlocsN !== this.blocsN) {
         this.etageVue = vue;
+        this.etageBlocsN = this.blocsN;
         const haut = vue === 'bas' ? (this.vueNiveau != null ? E.transparent : E.dedans) : 1, z = vue === 'haut';
         // (à l'étage, tout ce qui est de l'étage passe devant le voile)
         const pose = (o, a) => {
@@ -179,6 +188,14 @@
           if (e.img.etageZ === undefined) e.img.etageZ = e.img.depth;
           e.img.setDepth(sous ? this.etageZ(e.img.etageZ) : e.img.etageZ).setAlpha(sous ? E.transparent : 1);
           if (!sous) e.img.etageZ = undefined;
+        }
+        // (à l'étage : les blocs du dessus des murs rehaussés sont ses murs, devant le voile)
+        for (const e of (this.blocks || new Map()).values()) {
+          for (const i of e.hauts || []) {
+            if (!i.active) continue;
+            if (z) { if (i.etageZ === undefined) i.etageZ = i.depth; i.setDepth(this.etageZ(i.etageZ)).setAlpha(1); }
+            else if (i.etageZ !== undefined) { i.setDepth(i.etageZ); i.etageZ = undefined; }
+          }
         }
       }
       // à l'étage : un mur de l'étage devant lui (une ou deux cases plus bas) s'efface

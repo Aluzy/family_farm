@@ -62,9 +62,9 @@ import { chevalMonte, chevalOu, vitesseCheval } from '../engine/cheval.js';
 import { countWithSilo } from '../engine/animals.js';
 import { countItem } from '../engine/inventory.js';
 import { ramassables } from '../engine/atelier.js';
-import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteursPosees, piecesCloses, rehaussesPosees, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
+import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, piecesCloses, rehaussesPosees, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable } from './chantier.js';
-import { escaliers, etageBlocs, etageEmprise, fenetresEtage, toits } from '../engine/etage.js';
+import { escaliers, etageBlocs, etageEmprise, fenetresEtage, solsEtage, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose } from '../engine/cruche.js';
@@ -530,6 +530,8 @@ export function stageModel() {
     tableaux: Object.entries(blocsDessusPoses(state)).filter(([, k]) => DATA.ATELIER.BLOCS[k] && DATA.ATELIER.BLOCS[k].meuble).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })),
     // les sols posés (le plancher, les dalles… : [{ case, sorte }] ; le chemin change les tuiles du sol, ci-dessous)
     sols: Object.entries(solsPoses(state)).filter(([, k]) => k !== 'chemin').map(([c, sorte]) => ({ case: Number(c), sorte })),
+    // (les sols posés au niveau 1 : sur l'étage, ou dans une pièce dont les murs y montent)
+    solsEtage: Object.entries(solsEtage(state)).map(([c, sorte]) => ({ case: Number(c), sorte })),
     // les chemins posés : les tuiles du sol qu'ils changent ([[case, tuile]]) et leurs cases
     chemins: cheminsDuSol(T),
     // le Poulailler et l'Étable de la ferme générée : leurs cases libres et les bêtes qui y ont leur place
@@ -627,7 +629,8 @@ function sprinklerSpots() {
   return list;
 }
 
-// L'étage pour la carte : { etage: { emprise, blocs, escaliers } ou null, niveau, vueNiveau }.
+// L'étage pour la carte : { etage: { emprise, blocs, escaliers, hauts } ou null, niveau, vueNiveau }.
+// hauts : les cases de l'emprise où un mur du bas monte à l'étage (il en est le mur).
 // vueNiveau : en mode Construire, le niveau où l'on construit (la vue le montre), sinon null.
 // Plus d'étage, ou le coucher : on redescend.
 function etageModel() {
@@ -635,7 +638,7 @@ function etageModel() {
   if ((!emprise.size || coucher || asleep(state) || stageInterior) && etageVue) setEtageVue(false);
   if (!emprise.size) return { etage: null, niveau: 0 };
   return {
-    etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte), ...(fenetresEtage(state)[c] ? { mur: fenetresEtage(state)[c] } : {}) })), escaliers: escaliers(state) },
+    etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte), ...(fenetresEtage(state)[c] ? { mur: fenetresEtage(state)[c] } : {}) })), escaliers: escaliers(state), hauts: [...emprise].filter((t) => hauteurPile(state, t) >= 2).sort((a, b) => a - b) },
     niveau: etageVue ? 1 : 0,
     vueNiveau: buildMode && !stageInterior ? niveauBati() : null,
   };

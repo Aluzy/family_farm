@@ -246,7 +246,8 @@
     syncRang(n, pieces, changed) {
       const R = BLOCS_CARTE.rang, dy = BLOCS_CARTE.etage.dy, cols = this.grid.cols;
       // (le bloc en main compte : les cases où il se pose ne sont pas en rouge)
-      const m = this.ctx.lastModel, cle = JSON.stringify(pieces) + (m && m.bati ? m.bati.sorte : '');
+      const m = this.ctx.lastModel, solsHaut = (m && m.solsEtage) || [];
+      const cle = JSON.stringify(pieces) + (m && m.bati ? m.bati.sorte : '') + JSON.stringify(solsHaut);
       if (n === (this.rang || 0) && !changed && (!n || this.rangCle === cle)) return;
       const avant = this.rangImgs || [];
       for (const i of avant) if (i.active) i.setDepth(i.rangZ).setAlpha(1);
@@ -255,6 +256,8 @@
       this.rangCle = n ? cle : '';
       if (this.rangGfx) this.rangGfx.clear();
       if (this.rangManque) this.rangManque.clear();
+      for (const i of this.rangSols || []) i.destroy();
+      this.rangSols = [];
       if (this.rangVoile) this.rangVoile.setVisible(!!n);
       if (!n) return;
       if (!this.rangVoile) this.rangVoile = this.add.rectangle(0, 0, this.world.w, this.world.h, BLOCS_CARTE.etage.voile, R.voile).setOrigin(0);
@@ -263,6 +266,17 @@
       const g = this.rangGfx.setDepth(this.etageZ(0));
       g.fillStyle(BLOCS_CARTE.voile, BLOCS_CARTE.voileAlpha * 0.6);
       for (const p of pieces || []) for (const c of p) g.fillRect((c % cols) * T, Math.floor(c / cols) * T - n * dy, T, T);
+      // au niveau 1 : les sols qui y sont posés (raccordés aux leurs, comme en bas : syncFloors)
+      if (n === 1 && this.has(BLOCS_CARTE.key)) {
+        const at = new Map(solsHaut.map((q) => [q.case, q.sorte]));
+        for (const [c, so] of at) {
+          const col = c % cols, est = (k) => at.get(k) === so;
+          const mq = (est(c - cols) ? 1 : 0) + (col < cols - 1 && est(c + 1) ? 2 : 0) + (est(c + cols) ? 4 : 0) + (col > 0 && est(c - 1) ? 8 : 0);
+          const f = (BLOCS_CARTE.modelesSols[so] !== undefined ? BLOCS_CARTE.modelesSols[so] : BLOCS_CARTE.sols) + mq;
+          const y = (Math.floor(c / cols) + 1) * T;
+          this.rangSols.push(this.add.image(col * T + T / 2, y - dy, BLOCS_CARTE.key, f).setOrigin(0.5, 1).setDepth(this.etageZ(y - T - 0.5)));
+        }
+      }
       g.fillStyle(R.place, R.placeAlpha);
       for (const e of (this.blocks || new Map()).values()) {
         if (e.cases) continue;
@@ -653,7 +667,10 @@
       };
       if (p) cache(p.x, p.y, H.joueur);
       if (this.family) for (const m of this.family.info()) if (m.visible) cache(m.x, m.y, H.alpha);
-      if (this.bati) for (const e of B.values()) if (e.img.texture.key === H.key) { vise(e.img, H.alpha); for (const i of e.hauts || []) vise(i, H.alpha); }
+      // (en mode Construire, à l'étage : le premier bloc du dessus d'un mur rehaussé est un mur de
+      // l'étage, il reste plein)
+      const etage = this.vueNiveau === 1;
+      if (this.bati) for (const e of B.values()) if (e.img.texture.key === H.key) { vise(e.img, H.alpha); (e.hauts || []).forEach((i, k) => { if (!etage || k) vise(i, H.alpha); }); }
       if (!this.mursEfface) this.mursEfface = new Set();
       for (const i of but.keys()) this.mursEfface.add(i);
       const pas = H.vitesse * dt;

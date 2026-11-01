@@ -999,7 +999,12 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          ajoute un, sur un mur haut de n + 1 blocs reprend celui du dessus. Au-dessus d'une
          fenêtre ou d'une porte, un mur plein se pose aussi (`rehausser`, `hauteurPile`) : sa
          matière est gardée dans `state.rehausses`, la carte le dessine raccordé à ses voisins
-         (modèle.blocs : `dessus`). Au niveau 0, un appui
+         (modèle.blocs : `dessus`). Les blocs du dessus des murs sont les murs de l'étage
+         (`js/engine/etage.js`) : avec un escalier, ils restent, arrêtent le passage et ferment
+         l'étage (un toit de niveau 1) ; rien d'autre ne s'y pose à l'étage. Au niveau 1, des
+         sols se posent (`state.solsEtage`, `poserSolEtage`) dans une pièce dont tout le
+         pourtour y monte (`piecesNiveau1`) et au-dessus de la pièce de l'escalier ; ils
+         reviennent dans l'inventaire quand la pièce s'ouvre (`rangerEtage`). Au niveau 0, un appui
          sur un mur le reprend comme tout bloc (le bloc du dessus d'abord). Aux niveaux 1 et 2, la carte
          montre le niveau seul (`syncRang`) : un voile sombre sur la ferme, devant lui le rang
          de mur du niveau (celui du dessous à peine visible, les autres presque invisibles), les

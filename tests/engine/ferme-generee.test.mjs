@@ -12,7 +12,7 @@ import {
 import { readFileSync } from 'node:fs';
 import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
-  isArable as arable, hauteurPile, matiereDessus, rehausser, rehausseStatus, rehaussesPosees,
+  isArable as arable, poseEtageStatus, casesSolEtage, piecesNiveau1, poseSolEtageStatus, poserSolEtage, solsEtage, hauteurPile, matiereDessus, rehausser, rehausseStatus, rehaussesPosees,
   arbresPlantes, asleep, atelierConstruit, atelierStatus, blocAt, blocBloque, blocDessus,
   blocsDidacticiel, blocsEnMain, blocsPoses, botteleuses, buildAtelier, buildStation, bushCut,
   bushOf, buyDehors, buyFurniture, buyHoe, buyItem, buyPasture, buyRuche, caseDepart,
@@ -1208,6 +1208,42 @@ test('mode Construire, niveaux 1 et 2 : au-dessus d\'une fenêtre ou d\'une port
   assertEqual([hauteurPile(s, f), rehaussesPosees(s)[f], countItem(s, 'mur_brique_rouge')], [1, undefined, 5]);
   assertEqual(reprendreBloc(s, p.porte).sorte, 'mur_pierre');
   assertEqual([blocAt(s, p.porte), hauteurPile(s, p.porte)], ['porte', 1]);
+});
+
+test('niveau 1 : des sols dans une pièce dont les murs y montent ; avec l\'escalier, les murs rehaussés sont ceux de l\'étage', () => {
+  const s = chantier('sol-etage');
+  setInv(s, { mur_pierre: 40, porte: 1, plancher: 6, sol_carrelage: 2, escalier: 1, paillasse: 1 });
+  const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5), W = z.W;
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserPorte(s, p.porte);
+  const dedans = p.dedans + W + 1;
+  // tant que le pourtour ne monte pas au niveau 1 : pas de sol
+  assertEqual(poseSolEtageStatus(s, 'plancher', dedans).ok, false);
+  for (const t of p.murs.slice(1)) assert(rehausser(s, 'mur_pierre', t).ok);
+  assertEqual(piecesNiveau1(s).length, 0, 'un mur pas encore rehaussé, la porte non plus');
+  assert(rehausser(s, 'mur_pierre', p.murs[0]).ok);
+  assert(rehausser(s, 'mur_pierre', p.porte).ok);
+  assertEqual(piecesNiveau1(s).length, 1);
+  assertEqual(casesSolEtage(s).size, 9);
+  assertEqual(poseSolEtageStatus(s, 'chemin', dedans).ok, false, 'pas le chemin');
+  assertEqual(poserSolEtage(s, 'plancher', dedans), { ok: true, sorte: 'plancher', case: dedans, sol: true });
+  assertEqual(poserSolEtage(s, 'sol_carrelage', dedans).remplace, 'plancher', 'un autre sol le change');
+  assertEqual([solsEtage(s)[dedans], countItem(s, 'plancher'), countItem(s, 'sol_carrelage')], ['sol_carrelage', 6, 1]);
+  assert(poserSolEtage(s, 'plancher', p.dedans).ok);
+  // l'escalier posé en bas : les murs rehaussés restent, ils ferment l'étage (un toit de niveau 1)
+  assert(poserBloc(s, 'escalier', p.dedans + 2).ok);
+  assertEqual([etageEmprise(s).size, hauteurPile(s, p.murs[3]), solsEtage(s)[dedans]], [25, 2, 'sol_carrelage']);
+  assert(toits(s).some((t) => t.niveau === 1 && t.cases.includes(dedans)), 'un toit au niveau 1');
+  assertEqual(poseEtageStatus(s, 'mur_pierre', p.murs[3]).ok, false, 'le mur rehaussé est déjà là');
+  assert(poserEtage(s, 'paillasse', dedans + 1).ok);
+  assertEqual(couchagesEtage(s), ['etage:' + (dedans + 1)], 'une paillasse dans la pièce de l\'étage');
+  // un mur redescendu : la pièce du niveau 1 s'ouvre, mais l'escalier garde son étage et ses sols
+  assert(reprendreBloc(s, p.murs[3]).ok);
+  assertEqual(solsEtage(s)[dedans], 'sol_carrelage');
+  // l'escalier repris : plus d'étage ni de pièce du niveau 1, les sols reviennent
+  assert(reprendreEtage(s, dedans + 1).ok);
+  assert(reprendreBloc(s, p.dedans + 2).ok);
+  assertEqual([Object.keys(solsEtage(s)).length, countItem(s, 'plancher'), countItem(s, 'sol_carrelage')], [0, 6, 2]);
 });
 
 test('migration v41 → v42 : une meule seule ne fait plus le Moulin', () => {
