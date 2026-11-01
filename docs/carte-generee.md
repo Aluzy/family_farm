@@ -999,7 +999,12 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          ajoute un, sur un mur haut de n + 1 blocs reprend celui du dessus. Au-dessus d'une
          fenêtre ou d'une porte, un mur plein se pose aussi (`rehausser`, `hauteurPile`) : sa
          matière est gardée dans `state.rehausses`, la carte le dessine raccordé à ses voisins
-         (modèle.blocs : `dessus`). Au niveau 0, un appui
+         (modèle.blocs : `dessus`). Les blocs du dessus des murs sont les murs de l'étage
+         (`js/engine/etage.js`) : avec un escalier, ils restent, arrêtent le passage et ferment
+         l'étage (un toit de niveau 1) ; rien d'autre ne s'y pose à l'étage. Au niveau 1, des
+         sols se posent (`state.solsEtage`, `poserSolEtage`) dans une pièce dont tout le
+         pourtour y monte (`piecesNiveau1`) et au-dessus de la pièce de l'escalier ; ils
+         reviennent dans l'inventaire quand la pièce s'ouvre (`rangerEtage`). Au niveau 0, un appui
          sur un mur le reprend comme tout bloc (le bloc du dessus d'abord). Aux niveaux 1 et 2, la carte
          montre le niveau seul (`syncRang`) : un voile sombre sur la ferme, devant lui le rang
          de mur du niveau (celui du dessous à peine visible, les autres presque invisibles), les
@@ -1007,8 +1012,8 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          d'un mur cachent la case de derrière : un mur resté plus bas que ses voisins y est marqué
          en rouge, et la fenêtre du Moulin dit de quel côté sont ceux à rehausser. La station suit (`majMoulin`) ;
          une partie d'avant garde sa meule, mais doit rehausser ses murs (migration v41 → v42).
-         Sur la carte, les murs s'empilent de `etage.dy` px par bloc, un linteau ferme le dessus
-         des portes, le toit se pose en haut de la tour ; dehors, une voilure de quatre ailes
+         Sur la carte, les murs s'empilent de `etage.dy` px par bloc ; au-dessus des portes, le
+         joueur pose lui-même les blocs (rien ne s'y dessine tout seul), le toit se pose en haut de la tour ; dehors, une voilure de quatre ailes
          (`js/carte/ferme/moulin.js`) paraît sur la façade et tourne quand la meule moud.
      - ✅ **5b-8, les arbres fruitiers** : pas de Verger sur la ferme générée.
        - Le **jeune pommier** et le **jeune poirier** (40 pièces), le **jeune cerisier** (50), le

@@ -217,6 +217,7 @@ export function rehausseStatus(state, sorte, tile) {
   if (!s || !s.mur) return { ok: false, raison: 'Un mur seulement se pose au-dessus d\'un autre.' };
   if (!h) return { ok: false, raison: 'Touche un mur, une fenêtre ou une porte pour le rehausser.' };
   if (h >= DATA.ATELIER.HAUTEUR_MAX) return { ok: false, raison: `Ce mur est déjà haut de ${DATA.ATELIER.HAUTEUR_MAX} blocs.` };
+  if (h === 1 && state.etage && state.etage[tile]) return { ok: false, raison: 'Un bloc de l\'étage est posé au-dessus : reprends-le d\'abord.' };
   const m = matiereDessus(state, tile);
   if (m ? m !== sorte : !murPlein(sorte)) {
     return { ok: false, raison: m ? `Ce mur se rehausse en ${sorteDe(m).nom.toLowerCase()} : prends-en en main.` : 'Au-dessus d\'une fenêtre ou d\'une porte : un mur plein.' };
@@ -890,6 +891,7 @@ export function reprendreBloc(state, tile, opts) {
     setHauteur(state, tile, hauteurEmpilee(state, tile) - 1);
     addItem(state, sorteDe(haut).objet, 1);
     majPoulailler(state);
+    rangerEtage(state);   // (la pièce du niveau 1 qui s'ouvre : ses sols reviennent)
     return { ok: true, sorte: haut, case: tile, hauteur: hauteurEmpilee(state, tile) };
   }
   // une fenêtre percée dans un mur : elle revient, le mur reste (la pièce reste close)

@@ -20,9 +20,8 @@
  *
  * Un mur rehaussé (version 1.25, modèle.blocs : b.hauteur) : son image répétée au-dessus de
  * lui, BLOCS_CARTE.etage.dy px plus haut par bloc (syncHauts) ; il s'efface avec lui. Au-dessus
- * d'une porte entre deux murs rehaussés, le mur continue (un linteau, aussi haut que le plus
- * bas des deux) ; au-dessus d'une fenêtre ou d'une porte, les blocs posés aux niveaux 1 et 2
- * (modèle.blocs : b.dessus, leur matière) prennent l'image de ce mur.
+ * d'une fenêtre ou d'une porte, rien ne se dessine tout seul : les blocs que le joueur y pose aux
+ * niveaux 1 et 2 (modèle.blocs : b.dessus, leur matière) prennent l'image de ce mur.
  *
  * Les meubles de la maison (modèle.blocs : b.meuble) ont leur propre dessin et couvrent
  * parfois plusieurs cases (syncMeuble) ; les tableaux s'accrochent à la face des murs
@@ -79,8 +78,6 @@
       const B = this.blocks, seen = new Set(), cols = this.grid.cols, H = BLOCS_CARTE.hauts;
       let changed = false;
       if (this.has(BLOCS_CARTE.key)) {
-        // (au-dessus d'une porte entre deux murs rehaussés : le mur continue, horizontal ou vertical)
-        const haut = new Map((list || []).filter((b) => b.hauteur > 1).map((b) => [b.case, b.hauteur]));
         const verre = new Set(serre || []);
         const at = new Map((list || []).map((b) => [b.case, verre.has(b.case) && H.variantes[b.sorte] !== undefined ? 'mur_serre' : b.sorte]));
         // la matière du mur où est percée la porte `b` : celle de ses voisins de gauche ou de
@@ -110,17 +107,7 @@
         const linteau = (b) => {
           // (au-dessus d'une fenêtre ou d'une porte, des blocs posés : leur mur, raccordé aux voisins)
           if (b.dessus) return { h: b.hauteur || 1, frame: this.blocImage({ case: b.case, sorte: b.dessus }, at, cols) };
-          if (!estPorte(b.sorte) || !haut.size) return null;
-          const h = (k) => haut.get(k) || 0;
-          const hz = Math.min(h(b.case - 1), h(b.case + 1)), vt = Math.min(h(b.case - cols), h(b.case + cols));
-          // (le mur continue au-dessus de la porte, dans sa matière ; une fenêtre ou une paroi
-          // vitrée : un mur en pierre plein)
-          const plein = (s, masque) => {
-            if (!s || !this.has(H.key) || H.variantes[s] === undefined || H.fenetres.modeles[s] !== undefined || s === 'paroi_vitree') return this.hautFrame(BLOCS_CARTE.murs + masque);
-            return [H.key, H.variantes[s] + masque];
-          };
-          if (hz > 1) return { h: hz, frame: plein(murDe(b, false), 2 + 8) };
-          if (vt > 1) return { h: vt, frame: plein(murDe(b, true), 1 + 4) };
+          // (rien de posé au-dessus : rien ; le joueur pose les blocs du dessus aux niveaux 1 et 2)
           return null;
         };
         // (sa hauteur ; un bloc dessiné ailleurs, une colonne du silo : silo.js la dessine)
@@ -259,7 +246,8 @@
     syncRang(n, pieces, changed) {
       const R = BLOCS_CARTE.rang, dy = BLOCS_CARTE.etage.dy, cols = this.grid.cols;
       // (le bloc en main compte : les cases où il se pose ne sont pas en rouge)
-      const m = this.ctx.lastModel, cle = JSON.stringify(pieces) + (m && m.bati ? m.bati.sorte : '');
+      const m = this.ctx.lastModel, solsHaut = (m && m.solsEtage) || [];
+      const cle = JSON.stringify(pieces) + (m && m.bati ? m.bati.sorte : '') + JSON.stringify(solsHaut);
       if (n === (this.rang || 0) && !changed && (!n || this.rangCle === cle)) return;
       const avant = this.rangImgs || [];
       for (const i of avant) if (i.active) i.setDepth(i.rangZ).setAlpha(1);
@@ -268,6 +256,8 @@
       this.rangCle = n ? cle : '';
       if (this.rangGfx) this.rangGfx.clear();
       if (this.rangManque) this.rangManque.clear();
+      for (const i of this.rangSols || []) i.destroy();
+      this.rangSols = [];
       if (this.rangVoile) this.rangVoile.setVisible(!!n);
       if (!n) return;
       if (!this.rangVoile) this.rangVoile = this.add.rectangle(0, 0, this.world.w, this.world.h, BLOCS_CARTE.etage.voile, R.voile).setOrigin(0);
@@ -276,6 +266,17 @@
       const g = this.rangGfx.setDepth(this.etageZ(0));
       g.fillStyle(BLOCS_CARTE.voile, BLOCS_CARTE.voileAlpha * 0.6);
       for (const p of pieces || []) for (const c of p) g.fillRect((c % cols) * T, Math.floor(c / cols) * T - n * dy, T, T);
+      // au niveau 1 : les sols qui y sont posés (raccordés aux leurs, comme en bas : syncFloors)
+      if (n === 1 && this.has(BLOCS_CARTE.key)) {
+        const at = new Map(solsHaut.map((q) => [q.case, q.sorte]));
+        for (const [c, so] of at) {
+          const col = c % cols, est = (k) => at.get(k) === so;
+          const mq = (est(c - cols) ? 1 : 0) + (col < cols - 1 && est(c + 1) ? 2 : 0) + (est(c + cols) ? 4 : 0) + (col > 0 && est(c - 1) ? 8 : 0);
+          const f = (BLOCS_CARTE.modelesSols[so] !== undefined ? BLOCS_CARTE.modelesSols[so] : BLOCS_CARTE.sols) + mq;
+          const y = (Math.floor(c / cols) + 1) * T;
+          this.rangSols.push(this.add.image(col * T + T / 2, y - dy, BLOCS_CARTE.key, f).setOrigin(0.5, 1).setDepth(this.etageZ(y - T - 0.5)));
+        }
+      }
       g.fillStyle(R.place, R.placeAlpha);
       for (const e of (this.blocks || new Map()).values()) {
         if (e.cases) continue;
@@ -314,7 +315,7 @@
 
     // Les blocs du dessus d'un mur rehaussé (`h` blocs de haut ; 0 : tous ôtés) : son image,
     // BLOCS_CARTE.etage.dy px plus haut par bloc, devant celle du dessous (`image` : [clé, image]
-    // à la place de la sienne : le linteau d'une porte). Renvoie vrai s'ils ont changé.
+    // à la place de la sienne : le mur posé au-dessus d'une fenêtre ou d'une porte). Renvoie vrai s'ils ont changé.
     syncHauts(e, h, image) {
       const L = e.hauts || [], dy = BLOCS_CARTE.etage.dy, want = Math.max(0, h - 1);
       const [key, f] = image || [e.img.texture.key, e.img.frame.name];
@@ -666,7 +667,10 @@
       };
       if (p) cache(p.x, p.y, H.joueur);
       if (this.family) for (const m of this.family.info()) if (m.visible) cache(m.x, m.y, H.alpha);
-      if (this.bati) for (const e of B.values()) if (e.img.texture.key === H.key) { vise(e.img, H.alpha); for (const i of e.hauts || []) vise(i, H.alpha); }
+      // (en mode Construire, à l'étage : le premier bloc du dessus d'un mur rehaussé est un mur de
+      // l'étage, il reste plein)
+      const etage = this.vueNiveau === 1;
+      if (this.bati) for (const e of B.values()) if (e.img.texture.key === H.key) { vise(e.img, H.alpha); (e.hauts || []).forEach((i, k) => { if (!etage || k) vise(i, H.alpha); }); }
       if (!this.mursEfface) this.mursEfface = new Set();
       for (const i of but.keys()) this.mursEfface.add(i);
       const pas = H.vitesse * dt;
