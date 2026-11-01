@@ -100,7 +100,8 @@ export function etageEmprise(state) {
 //   - une pièce sans escalier : sur ses murs (niveau 0 ; ses murs rehaussés, version 1.25 : un
 //     niveau de plus par bloc du plus bas d'entre eux, la tour du Moulin) ;
 //   - une pièce à escalier : sur les murs de l'étage, au-dessus de ce qu'ils ferment dans
-//     l'emprise (niveau 1) ; un étage sans murs tout autour reste à ciel ouvert (une terrasse).
+//     l'emprise (niveau 1 ; plus haut quand tous ses murs sont des murs du bas rehaussés plus
+//     haut : le plus bas d'entre eux) ; un étage sans murs tout autour reste à ciel ouvert (une terrasse).
 // [{ niveau, cases: [tuiles couvertes], dedans: [tuiles d'où l'on est dans le bâtiment], verre (la Serre),
 //    maison (une pièce de la maison : on y allume la nuit, js/carte/ferme/fenetres.js) }]
 export function toits(state) {
@@ -141,7 +142,10 @@ export function toits(state) {
         }
         for (const j of voisins(k)) if (libre(j) && !vus.has(j)) { vus.add(j); zone.push(j); }
       }
-      out.push({ niveau: 1, cases: tri(cases), dedans: tri(emprise), verre, maison });
+      // (posé sur le plus bas de ses murs : un mur de l'étage, au niveau 1 ; un mur du bas qui
+      // monte plus haut que l'étage, à son sommet)
+      const hauts = [...cases].filter((j) => ferme(j)).map((j) => (E[j] && DATA.ATELIER.BLOCS[E[j]] && DATA.ATELIER.BLOCS[E[j]].ferme ? 2 : hauteurPile(state, j)));
+      out.push({ niveau: Math.max(1, Math.min(...hauts) - 1), cases: tri(cases), dedans: tri(emprise), verre, maison });
     }
   }
   // les pièces sans escalier qui partagent un mur ou une porte forment un seul bâtiment, sous un
