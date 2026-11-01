@@ -58,7 +58,7 @@
       if ((!V || V.etat !== 'en_route') && (m.phase === 'vient' || m.phase === 'porte')) this.visiteRepart(m);
       const C = this.casesPerso ? this.casesPerso() : null;
       if (!C || !this.textures.exists(m.key)) return;
-      if (!m.s) m.s = this.add.sprite(0, 0, m.key, C('idle_bas_0')).setOrigin(0.5, 1).setVisible(false);
+      if (!m.s) { m.s = this.add.sprite(0, 0, m.key, C('idle_bas_0')).setOrigin(0.5, 1).setVisible(false); m.s.personnage = true; }
       const vue = this.cameras.main.worldView, now = performance.now(), calme = reducedMotion();
       const joueur = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       const loin = (q) => q.x < vue.x - LOIN || q.x > vue.right + LOIN || q.y < vue.y - LOIN || q.y > vue.bottom + LOIN;

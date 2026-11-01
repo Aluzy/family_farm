@@ -173,16 +173,20 @@ export function buildChipHtml() {
   const max = niveauMax(), lvl = niveau();
   const niveaux = Array.from({ length: max + 1 }, (_, i) => max - i).map((n) => `<button type="button" class="build-level-item${n === lvl ? ' active' : ''}" data-action="build-level" data-niveau="${n}" aria-pressed="${n === lvl}" aria-label="Niveau ${n}">${n}</button>`).join('');
   // l'outil pièce : un mur en main, au sol ; allumé, un glissement trace le pourtour d'une pièce
-  const murEnMain = !!(buildMode && DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].mur) && !niveau();
+  const murEnMain = !!(buildMode && DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].mur);
   // la gomme (un bloc qui se trace en main) et Annuler (au sol, s'il y a quelque chose à défaire)
   const gomme = traceInfo() || modeGomme ? `<button type="button" class="build-piece build-gomme${modeGomme ? ' on' : ''}" data-action="build-gomme" aria-pressed="${modeGomme}" aria-label="Gomme : glisser pour reprendre les blocs" title="Gomme : glisse pour reprendre les blocs de cette sorte"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M3 10.5 9.5 4l3.5 3.5L6.5 14H4z" fill="#fbd98c" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6.4 7.1l3.5 3.5" stroke="currentColor" stroke-width="1.6"/><path d="M8 14h5" stroke="currentColor" stroke-width="1.6"/></svg></button>` : '';
-  const annuler = !niveau() ? `<button type="button" class="build-piece build-annuler" data-action="build-annuler"${histoire.length ? '' : ' disabled'} aria-label="Annuler la dernière opération" title="Annuler la dernière opération"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M5 4 2 7l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M2.5 7H10a3.5 3.5 0 0 1 0 7H7" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>` : '';
+  const annuler = `<button type="button" class="build-piece build-annuler" data-action="build-annuler"${histoire.length ? '' : ' disabled'} aria-label="Annuler la dernière opération" title="Annuler la dernière opération"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M5 4 2 7l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M2.5 7H10a3.5 3.5 0 0 1 0 7H7" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>`;
   const outilPiece = murEnMain ? `<button type="button" class="build-piece${modePiece ? ' on' : ''}" data-action="build-piece" aria-pressed="${modePiece}" aria-label="Outil pièce : glisser d'un coin à l'autre pour poser tous les murs d'une pièce" title="Outil pièce : glisse d'un coin à l'autre pour poser les murs du pourtour"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><rect x="2" y="3" width="12" height="10" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="7" y="11.5" width="2.6" height="2.6" fill="#fbd98c"/></svg></button>` : '';
   const choixNiveau = `<div class="build-level"><button type="button" class="build-level-btn" data-action="build-level-menu" aria-haspopup="true" aria-expanded="${niveauListe}" aria-label="Niveau de construction : ${lvl}" title="Niveau de construction (appui long : glisser jusqu'au niveau)">${lvl}</button><div class="build-level-list" role="group" aria-label="Niveaux"${niveauListe ? '' : ' hidden'}>${niveaux}</div></div>`;
   // la pose d'un meuble : ✔️ le pose là où est son aperçu, ❌ sort de ce mode
   const m = meubleModele(), ap = m && m.apercu;
   const pose = m ? `<div class="pose-meuble" role="group" aria-label="Poser le meuble"><span class="pose-meuble-txt">${ap ? (ap.ok ? 'Le poser ici ?' : 'Il ne tient pas ici') : 'Touche une case pour placer le meuble'}</span><button type="button" class="pose-meuble-ok" data-action="meuble-ok"${ap && ap.ok ? '' : ' disabled'} aria-label="Poser le meuble ici" title="Poser le meuble ici">✔️</button><button type="button" class="pose-meuble-non" data-action="meuble-annule" aria-label="Sortir de la pose du meuble" title="Sortir de la pose du meuble">❌</button></div>` : '';
-  return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons">${annuler}${gomme}${outilPiece}${choixNiveau}<button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>`;
+  // les outils (annuler, la gomme, l'outil pièce, le niveau) : une petite fenêtre à part, qu'un
+  // appui long rend déplaçable (outilsPos : où on l'a laissée)
+  const pos = outilsPos ? ` style="left:${outilsPos.x}px;top:${outilsPos.y}px;right:auto"` : '';
+  const outils = `<div class="build-outils${outilsDeplace ? ' deplace' : ''}" role="toolbar" aria-label="Outils de construction (appui long : la déplacer)" title="Appui long : déplacer"${pos}><span class="build-outils-prise" aria-hidden="true">⠿</span>${annuler}${gomme}${outilPiece}${choixNiveau}</div>`;
+  return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons"><button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>${outils}`;
 }
 
 // L'appui long sur le carré du niveau : la liste s'ouvre ; en glissant, le niveau sous le doigt
@@ -226,6 +230,62 @@ if (typeof document !== 'undefined') {
   }, true);
 }
 
+// La fenêtre des outils : un appui long dessus (pas sur le niveau, qui a le sien) la rend
+// déplaçable, irisée ; elle suit alors le doigt, et reste où on la lâche (gardée sur l'appareil).
+const OUTILS_CLE = 'ferme-construire-outils';
+let outilsDeplace = false;   // (l'appui long l'a rendue déplaçable : irisée, elle suit le doigt)
+let outilsPos = (() => { try { const p = JSON.parse(localStorage.getItem(OUTILS_CLE)); return p && Number.isFinite(p.x) && Number.isFinite(p.y) ? p : null; } catch (e) { return null; } })();
+if (typeof document !== 'undefined') {
+  let tient = null, sansClic = false;
+  const borne = (v, max) => Math.max(4, Math.min(max, v));
+  document.addEventListener('pointerdown', (e) => {
+    const w = e.target.closest && e.target.closest('.build-outils');
+    if (!w || e.target.closest('.build-level')) return;
+    const r = w.getBoundingClientRect();
+    if (tient) clearTimeout(tient.timer);
+    tient = { id: e.pointerId, x0: e.clientX, y0: e.clientY, dx: e.clientX - r.left, dy: e.clientY - r.top, actif: false, w };
+    tient.timer = setTimeout(() => {
+      if (!tient) return;
+      tient.actif = true;
+      outilsDeplace = true;
+      const el = document.querySelector('.build-outils');
+      if (el) el.classList.add('deplace');
+      if (navigator.vibrate) navigator.vibrate(15);
+    }, APPUI_LONG_MS);
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (!tient || e.pointerId !== tient.id) return;
+    if (!tient.actif) {
+      if (Math.hypot(e.clientX - tient.x0, e.clientY - tient.y0) > 8) { clearTimeout(tient.timer); tient = null; }
+      return;
+    }
+    e.preventDefault();
+    const w = document.querySelector('.build-outils') || tient.w, r = w.getBoundingClientRect();
+    outilsPos = { x: Math.round(borne(e.clientX - tient.dx, window.innerWidth - r.width - 4)), y: Math.round(borne(e.clientY - tient.dy, window.innerHeight - r.height - 4)) };
+    w.style.left = `${outilsPos.x}px`;
+    w.style.top = `${outilsPos.y}px`;
+    w.style.right = 'auto';
+  }, { passive: false });
+  const lache = () => {
+    if (!tient) return;
+    clearTimeout(tient.timer);
+    if (tient.actif) {
+      outilsDeplace = false;
+      const w = document.querySelector('.build-outils');
+      if (w) w.classList.remove('deplace');
+      sansClic = true;
+      setTimeout(() => { sansClic = false; }, 400);
+      try { localStorage.setItem(OUTILS_CLE, JSON.stringify(outilsPos)); } catch (e) { /* (stockage plein ou refusé) */ }
+    }
+    tient = null;
+  };
+  document.addEventListener('pointerup', lache);
+  document.addEventListener('pointercancel', lache);
+  document.addEventListener('click', (e) => {
+    if (sansClic && e.target.closest && e.target.closest('.build-outils')) { sansClic = false; e.stopPropagation(); e.preventDefault(); }
+  }, true);
+}
+
 // La pose d'un meuble de la maison : un meuble en main (pas un tableau, qui s'accroche à un mur),
 // au sol ou à l'étage, la carte montre un quadrillage ; un appui sur une case y pose son aperçu,
 // calé sur la grille (vert : il tient là ; rouge : non), sans le poser ; ✔️ le pose, ❌ sort de
@@ -259,9 +319,12 @@ function quitteMeuble() {
 // La forme du tracé : « ligne » (murs, barrières), « libre » (sols), « piece » (l'outil pièce,
 // un mur en main : le pourtour d'un rectangle, du coin de départ au coin sous le doigt).
 export function traceInfo() {
-  if (!buildMode || niveau() || meubleEnMain()) return null;
+  if (!buildMode || meubleEnMain()) return null;
   const b = DATA.ATELIER.BLOCS[buildMode];
   if (!b || b.porte || b.silo || !(b.mur || (b.sol && !b.meuble) || buildMode === 'barriere')) return null;
+  // (aux niveaux 1 et 2 : les murs, qu'on rehausse ; sur l'étage d'une pièce : murs et sols)
+  if (niveau() && !niveauBati() && !b.mur) return null;
+  if (niveauBati() && !(b.mur || b.sol)) return null;
   return { forme: b.sol ? 'libre' : modePiece && b.mur ? 'piece' : 'ligne', stock: blocsEnMain(state, buildMode), gomme: modeGomme };
 }
 // La case `c` pour le tracé (le stock à part : la carte le borne) : 'ok', le bloc en main s'y
@@ -271,7 +334,24 @@ export function traceInfo() {
 // sol sur un sol, pour le changer ; un tracé, lui, les laisse tels quels)
 export function tracePosable(c) {
   if (!buildMode) return false;
-  const b = DATA.ATELIER.BLOCS[buildMode], x = blocAt(state, c), bx = x && DATA.ATELIER.BLOCS[x];
+  const b = DATA.ATELIER.BLOCS[buildMode];
+  // sur l'étage d'une pièce : ce qui y est déjà (un mur pour un mur, un sol pour un sol), sinon
+  // ce que le moteur y pose
+  if (niveauBati()) {
+    if (!etageEmprise(state).has(c)) return false;
+    const e = etageBlocs(state)[c], be = e && DATA.ATELIER.BLOCS[e];
+    if (be && (b.mur ? be.mur : b.sol && be.sol)) return 'fait';
+    return poseEtageStatus(state, buildMode, c).ok ? 'ok' : false;
+  }
+  // aux niveaux 1 et 2 : un mur haut de n blocs (le même mur en main) se rehausse ; plus haut, c'est fait
+  const n = niveau();
+  if (n) {
+    const h = hauteurMur(state, c);
+    if (!h || !b.mur) return false;
+    if (h > n) return 'fait';
+    return h === n && blocAt(state, c) === buildMode && poseStatus(state, buildMode, c).ok ? 'ok' : false;
+  }
+  const x = blocAt(state, c), bx = x && DATA.ATELIER.BLOCS[x];
   if (b.mur ? bx && bx.mur : buildMode === 'barriere' ? x === 'barriere' : b.sol && solAt(state, c)) return 'fait';
   return poseStatus(state, buildMode, c).ok ? 'ok' : false;
 }
@@ -327,6 +407,29 @@ function defaireChange(g) {
 }
 // Ce qui est sur la case `c` au sol : le bloc du dessus, le bloc, le sol (ce que reprend un appui).
 const surCase = (c) => blocDessus(state, c) || blocAt(state, c) || solAt(state, c) || null;
+
+// Poser `sorte` sur la case `c` au niveau où l'on construit (un tracé, l'annulation) : sur l'étage
+// d'une pièce, sur l'étage ; aux niveaux 1 et 2, rehausser le mur ; au sol, poser. Le geste à
+// noter pour l'annuler (etage : posé sur l'étage).
+function poserIci(sorte, c) {
+  if (niveauBati()) {
+    const r = poserEtage(state, sorte, c);
+    return { r, geste: { pose: c, sorte, etage: true } };
+  }
+  return { r: poserBloc(state, sorte, c), geste: { pose: c, sorte } };
+}
+// Reprendre (la gomme) ce qu'il y a sur la case `c` au niveau où l'on construit : sur l'étage, son
+// bloc ; aux niveaux 1 et 2, le bloc du dessus d'un mur haut de n + 1 blocs ; au sol, le bloc.
+function reprendreIci(c) {
+  if (niveauBati()) {
+    const avant = etageBlocs(state)[c], r = reprendreEtage(state, c);
+    return { r, geste: { reprise: c, sorte: r.sorte || avant, etage: true } };
+  }
+  const n = niveau();
+  if (n && hauteurMur(state, c) !== n + 1) return { r: { ok: false, error: `Niveau ${n} : la gomme reprend le bloc du dessus des murs hauts de ${n + 1} blocs.` } };
+  const avant = surCase(c), r = reprendreBloc(state, c);
+  return { r, geste: { reprise: c, sorte: r.sorte || avant } };
+}
 
 // Fabriquer sur place ce qui manque : un tracé en voulait plus qu'on n'en avait en main. La
 // recette de l'Atelier qui donne ce bloc (celle de son nom, sinon une dont la sortie le contient),
@@ -528,7 +631,9 @@ registerActions({
     if (!gestes) { notify('Rien à annuler.'); return; }
     let n = 0;
     for (const g of [...gestes].reverse()) {
-      const r = g.deplace !== undefined ? (surCase(g.deplace) === g.sorte ? deplacerBloc(state, g.deplace, g.de) : { ok: false })
+      // (sur l'étage d'une pièce : ses blocs ; ailleurs, le sol et les murs rehaussés)
+      const r = g.etage ? (g.pose !== undefined ? (etageBlocs(state)[g.pose] === g.sorte ? reprendreEtage(state, g.pose) : { ok: false }) : poserEtage(state, g.sorte, g.reprise))
+        : g.deplace !== undefined ? (surCase(g.deplace) === g.sorte ? deplacerBloc(state, g.deplace, g.de) : { ok: false })
         : g.pose !== undefined ? (surCase(g.pose) === g.sorte ? reprendreBloc(state, g.pose) : { ok: false })
         : g.reprise !== undefined ? poserBloc(state, g.sorte, g.reprise)
           : defaireChange(g);
@@ -594,8 +699,8 @@ registerActions({
       let raison = '';
       for (const c of cases) {
         if (tracePosable(c) !== 'fait') continue;
-        const avant = surCase(c), r = reprendreBloc(state, c);
-        if (r.ok) gestes.push({ reprise: c, sorte: r.sorte || avant });
+        const { r, geste } = reprendreIci(c);
+        if (r.ok) gestes.push(geste);
         else raison = raison || r.error;
       }
       noter(gestes);
@@ -609,8 +714,8 @@ registerActions({
     let n = 0, raison = '', i = 0;
     const gestes = [];
     for (; i < cases.length && blocsEnMain(state, sorte); i++) {
-      const r = poserBloc(state, sorte, cases[i]);
-      if (r.ok) { n += 1; gestes.push({ pose: cases[i], sorte }); }
+      const { r, geste } = poserIci(sorte, cases[i]);
+      if (r.ok) { n += 1; gestes.push(geste); }
       else raison = raison || r.error;
     }
     noter(gestes);
@@ -642,7 +747,8 @@ registerActions({
     const gestes = [];
     for (const c of a.cases) {
       if (!blocsEnMain(state, a.sorte)) break;
-      if (poserBloc(state, a.sorte, c).ok) { n += 1; gestes.push({ pose: c, sorte: a.sorte }); }
+      const { r, geste } = poserIci(a.sorte, c);
+      if (r.ok) { n += 1; gestes.push(geste); }
     }
     // (Annuler reprend ces blocs : ils reviennent dans l'inventaire, la fabrication reste faite)
     noter(gestes);

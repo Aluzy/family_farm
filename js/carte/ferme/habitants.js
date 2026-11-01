@@ -582,6 +582,7 @@
           if (!m.s) {
             if (!this.textures.exists(m.key)) continue;
             m.s = this.add.sprite(0, 0, m.key, C('idle_bas_0')).setOrigin(0.5, 1).setVisible(false);
+            m.s.personnage = true;
           }
           // au premier pas : il est déjà où l'heure le veut
           if (!m.place) { m.place = true; this.habPlacer(e, m); }

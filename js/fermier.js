@@ -218,6 +218,7 @@
     /* ---------- l'image ---------- */
 
     const s = scene.add.sprite(0, 0, o.sheet, 0).setOrigin(0.5, 1).setVisible(false);
+    s.personnage = true;   // (caché en mode Construire : farm-stage.js figer)
     let x = 0, y = 0, face = 'bas', flip = false, shown = false, alpha = 0, fade = 0;
     let tremble = 0;                // le coup fort qui se charge (0 à 1, voir charge)
     let lastPos = null;             // dernière position donnée par pos()

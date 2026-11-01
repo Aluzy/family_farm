@@ -173,6 +173,20 @@ Le Marché vend toujours les outils.
 
 ### Construction bloc par bloc
 
+**Le mode Construire fige le monde** (`body.construction`) : l'heure, les plantes et la famille
+s'arrêtent (`js/ui/loop.js` ne fait plus avancer la partie), les personnages s'effacent (leur image
+porte `personnage` : `figer`, `js/farm-stage.js`), la carte du joueur, l'horloge, la barre
+d'outils, le menu, la boussole et les bulles disparaissent. La vue ne suit plus le personnage : un
+doigt qui glisse depuis une case où le bloc en main ne se pose pas la déplace, deux doigts la
+déplacent partout (et règlent le zoom), le bouton droit de la souris aussi. Les cases où le bloc
+en main se pose, au niveau où l'on construit, sont en blanc (`syncConstructible`, la vue
+seulement, comme la grille de la houe). Les blocs de l'onglet tiennent sur deux lignes ;
+annuler, la gomme, l'outil pièce et le niveau sont dans une petite fenêtre à part, qu'un appui
+long rend déplaçable (elle s'irise et suit le doigt ; sa place est gardée sur l'appareil).
+**Aux niveaux 1 et 2**, les mêmes gestes qu'au sol : les murs rehaussables (le même mur en main)
+en blanc, le tracé au doigt, l'outil pièce (le pourtour d'une pièce rehaussé d'un glissement), la
+gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, ses murs et ses sols.
+
 - On pose chaque mur sur une case de la carte ; la porte aussi, directement sur une case libre,
   ou sur un mur, à sa place (comme une fenêtre : le mur revient dans l'inventaire).
 - **Construire en glissant** : avec un mur (fenêtres comprises), une barrière, un sol ou le chemin

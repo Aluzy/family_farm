@@ -67,19 +67,29 @@
           clearTimeout(d.holdTimer);
           if (d.fort) this.chargeCancel(d);
           if (d.labour) this.clearLabourMarks();
+          if (d.trace || d.deplace) this.clearTraceMarks();   // (mode Construire : le tracé commencé est oublié)
           this.drag = null;
         }
         if (this.manette) this.manette.stop();
         this.vx = this.vy = 0;
         this.pan = null;
         this.setHover(null);
-        this.pince = { d: ecart(e.touches) || 1, k: this.zoomK || 1 };
+        // (la vue libre, le mode Construire : les deux doigts la déplacent aussi, le point du monde
+        // pris entre eux reste entre eux)
+        const m = milieu(e.touches), z = this.cameras.main.zoom;
+        const monde = { x: this.cx + (m.x - this.scale.width / 2) / z, y: this.cy + (m.y - this.scale.height / 2) / z };
+        this.pince = { d: ecart(e.touches) || 1, k: this.zoomK || 1, monde };
       }, { passive: true });
       cv.addEventListener('touchmove', (e) => {
         const P = this.pince;
         if (!P || e.touches.length < 2) return;
         if (this.manette) this.manette.stop();
-        this.zoomer(P.k * (ecart(e.touches) / P.d), milieu(e.touches));
+        const m = milieu(e.touches);
+        this.zoomer(P.k * (ecart(e.touches) / P.d), m);
+        if (!this.suitPerso()) {
+          const z = this.cameras.main.zoom;
+          this.setCentre(P.monde.x - (m.x - this.scale.width / 2) / z, P.monde.y - (m.y - this.scale.height / 2) / z);
+        }
       }, { passive: true });
       const fin = (e) => { if (!e.touches.length) this.pince = null; };
       cv.addEventListener('touchend', fin, { passive: true });

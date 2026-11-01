@@ -184,6 +184,7 @@
 
         const I = this.input;
         I.on('pointerdown', this.onDown, this);
+        if (I.mouse) I.mouse.disableContextMenu();   // (le bouton droit fait glisser la vue en mode Construire)
         I.on('pointermove', this.onMove, this);
         I.on('pointerup', (p) => this.onUp(p, true));
         I.on('pointerupoutside', (p) => this.onUp(p, false));
@@ -314,6 +315,8 @@
         };
         const mc = this.meubleSous ? this.meubleSous(wp.x, wp.y) : null;
         if (mc !== null) { this.drag.meuble = { case: mc, c: Math.floor(wp.x / T), r: Math.floor(wp.y / T), dernier: mc }; return; }
+        // (en mode Construire, à la souris : le bouton droit ou du milieu fait seulement glisser la vue)
+        if (this.fige && pointer.button > 0) { this.drag.panSeul = true; return; }
         if (!this.drag.fort) this.drag.labour = this.labourStart(wp.x, wp.y);
         if (!this.drag.fort && !this.drag.labour) this.drag.trace = this.traceStart(wp.x, wp.y);
         // La pipette (mode Construire, au sol) : un appui maintenu sans bouger sur un bloc posé le
@@ -459,6 +462,7 @@
         }
         // Au doigt, rien ne « survole » : le nom reste un instant, puis s'efface.
         if (pointer.wasTouch && this.hoverId) this.hoverUntil = performance.now() + LABEL_HOLD_MS;
+        if (d.panSeul && !d.moved) return;          // (le bouton droit, sans glisser : rien)
         if (d.meuble && d.moved) return;           // l'aperçu du meuble a glissé : il reste où il est
         if (d.deplace && d.moved) {
           this.clearTraceMarks();
@@ -519,18 +523,24 @@
         // Filet de sécurité : le fond est vérifié toutes les quelques secondes.
         if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false, true); }
         if (this.ambient) this.ambient.update(delta);
+        // le mode Construire fige le monde : les personnages s'effacent et ne bougent plus
+        const fige = !!(this.ctx.lastModel && this.ctx.lastModel.bati);
+        this.figer(fige);
+        this.syncConstructible();               // (en mode Construire : les cases où le bloc se pose, en blanc)
         this.stepCharge();
-        if (this.fermier) {
+        if (this.fermier && !fige) {
           this.fermier.steer(this.manette.dir());
           this.fermier.update(delta);
           this.stepRegionPerso();            // (la région où il entre devient vue : js/carte/ferme/sol.js)
         }
         this.stepMine();
         this.stepLieuxMonde(time);              // (les entrées des grottes du monde, les coins de pêche : lieux-monde.js)
-        this.stepHameaux(dt / 1000);            // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
-        if (this.stepCaleche) this.stepCaleche(dt / 1000);   // (la calèche : caleche.js)
-        if (this.stepVisite) this.stepVisite(dt / 1000);     // (la visite de bienvenue : visite.js, fiche 18)
-        if (this.family) this.family.update(delta);
+        if (!fige) {
+          this.stepHameaux(dt / 1000);            // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
+          if (this.stepCaleche) this.stepCaleche(dt / 1000);   // (la calèche : caleche.js)
+          if (this.stepVisite) this.stepVisite(dt / 1000);     // (la visite de bienvenue : visite.js, fiche 18)
+          if (this.family) this.family.update(delta);
+        }
         // La vue suit le personnage, centrée sur lui (comme sur les autres cartes).
         if (this.suitPerso()) {
           const p = this.fermier.pos();
@@ -580,7 +590,8 @@
       // La vue suit-elle le personnage ? Dehors, dès qu'il est sur la carte (sans lui, la vue
       // glisse au doigt, comme avant).
       suitPerso() {
-        return !!this.fermier;
+        // (le mode Construire fige le monde : la vue est libre, le doigt la déplace)
+        return !!this.fermier && !this.fige;
       }
 
       /* ---------- appuis ---------- */
@@ -667,15 +678,18 @@
         if (!m || !m.bati || m.bati.meuble || !T0) return null;
         const info = T0.info();
         if (!info) return null;
-        const c = this.tileAtPoint(wx, wy);
+        // (à un niveau surélevé, les murs rehaussés et l'étage se voient plus haut : `dy` px, etage.js)
+        const q = this.etagePoint ? this.etagePoint(wx, wy) : { x: wx, y: wy }, dy = q.y - wy;
+        const c = this.tileAtPoint(q.x, q.y);
         // (la gomme part d'un bloc à reprendre ; sinon, d'une case où le bloc se pose, ou qui l'a déjà)
         const e = c < 0 ? false : T0.posable(c);
         if (!e || (info.gomme && e !== 'fait')) return null;
-        return { info, depart: c, cases: [c], etat: [], ok: [], seen: new Set([c]), last: { x: wx, y: wy } };
+        return { info, depart: c, cases: [c], etat: [], ok: [], seen: new Set([c]), last: { x: q.x, y: q.y }, dy };
       }
 
-      traceTo(d, wp) {
+      traceTo(d, p) {
         const L = d.trace, W = this.grid.cols, T0 = this.ctx.bridge.trace;
+        const wp = { x: p.x, y: p.y + (L.dy || 0) }, dy = L.dy || 0;
         const c0 = L.depart % W, r0 = Math.floor(L.depart / W);
         const c1 = Math.floor(wp.x / T), r1 = Math.floor(wp.y / T);
         if (L.info.forme === 'piece') {
@@ -721,13 +735,13 @@
         this.traceMarks = L.cases.map((c, i) => {
           const fait = L.etat[i] === 'fait';
           // (la gomme : orangé là où un bloc sera repris, cerné de blanc ailleurs)
-          if (L.info.gomme) return this.add.rectangle((c % W) * T + T / 2, Math.floor(c / W) * T + T / 2, T - 3, T - 3, 0xffb347, L.ok[i] ? 0.6 : 0).setStrokeStyle(1, 0xffffff, 0.95).setDepth(1e5);
-          return this.add.rectangle((c % W) * T + T / 2, Math.floor(c / W) * T + T / 2, T - 3, T - 3, L.ok[i] ? 0xb6f08c : 0xff8a70, fait ? 0 : 0.55)
+          if (L.info.gomme) return this.add.rectangle((c % W) * T + T / 2, Math.floor(c / W) * T + T / 2 - dy, T - 3, T - 3, 0xffb347, L.ok[i] ? 0.6 : 0).setStrokeStyle(1, 0xffffff, 0.95).setDepth(1e5);
+          return this.add.rectangle((c % W) * T + T / 2, Math.floor(c / W) * T + T / 2 - dy, T - 3, T - 3, L.ok[i] ? 0xb6f08c : 0xff8a70, fait ? 0 : 0.55)
             .setStrokeStyle(1, fait ? 0xffffff : L.ok[i] ? 0xeaffd8 : 0xffe0d8, 0.95).setDepth(1e5);
         });
         // (le compte : au-dessus de la case sous le doigt ; pour une pièce, du coin qu'il tient)
         const fin = L.info.forme === 'piece' ? Math.max(0, r1) * W + Math.max(0, Math.min(W - 1, c1)) : L.cases[L.cases.length - 1];
-        this.traceMarks.push(this.add.text((fin % W) * T + T / 2, Math.floor(fin / W) * T - 2, L.info.gomme ? `${n} à reprendre` : L.manque ? `${n} / ${besoin} · il en manque ${L.manque}` : `${n} / ${L.info.stock}`, {
+        this.traceMarks.push(this.add.text((fin % W) * T + T / 2, Math.floor(fin / W) * T - 2 - dy, L.info.gomme ? `${n} à reprendre` : L.manque ? `${n} / ${besoin} · il en manque ${L.manque}` : `${n} / ${L.info.stock}`, {
           fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '8px', color: '#4a2a10', backgroundColor: '#fff1d2', padding: { x: 2, y: 0 },
         }).setOrigin(0.5, 1).setDepth(1e5 + 1).setResolution(6));
       }
@@ -913,6 +927,53 @@
         // une bulle ; sa fenêtre, d'un appui long). En mode houe, une tuile qui ne se laboure
         // pas dit pourquoi (le moteur refuse).
         return best ? { window: best.window } : refus;
+      }
+
+      // Le mode Construire (`oui`) : les personnages (le fermier, la famille, les habitants, le
+      // visiteur : leur image porte `personnage`) s'effacent ; ils reviennent tels qu'ils étaient.
+      figer(oui) {
+        if (oui === !!this.fige) return;
+        this.fige = oui;
+        for (const o of this.children.list) {
+          if (!o.personnage) continue;
+          if (oui) { o.avantFige = o.visible; o.setVisible(false); } else if (o.avantFige !== undefined) { o.setVisible(o.avantFige); delete o.avantFige; }
+        }
+      }
+
+      // En mode Construire, les cases de la vue où le bloc en main se pose (au niveau où l'on
+      // construit), en blanc, comme la grille de la houe ; la gomme : celles où elle reprend.
+      // Recalculées quand la vue change de case, le bloc, le niveau ou la partie (un nouveau modèle).
+      syncConstructible() {
+        const m = this.ctx.lastModel, T0 = this.ctx.bridge && this.ctx.bridge.trace;
+        const efface = () => { if (this.constructible) { this.constructible.destroy(); this.constructible = null; } this.constructibleCle = null; };
+        if (!m || !m.bati || m.bati.meuble || !T0 || !this.grid) { efface(); return; }
+        const now = performance.now();
+        if (this.constructibleT && now - this.constructibleT < 120) return;
+        const v = this.cameras.main.worldView, W = this.grid.cols, H = Math.ceil(this.world.h / T);
+        const q = this.etagePoint ? this.etagePoint(0, 0) : { y: 0 }, dy = q.y;
+        const c0 = Math.max(0, Math.floor(v.x / T) - 1), c1 = Math.min(W - 1, Math.floor(v.right / T) + 1);
+        const r0 = Math.max(0, Math.floor((v.y + dy) / T) - 1), r1 = Math.min(H - 1, Math.floor((v.bottom + dy) / T) + 1);
+        const info = T0.info();
+        const cle = [c0, c1, r0, r1, m.bati.sorte, m.bati.rang, m.vueNiveau, info && info.gomme].join();
+        if (cle === this.constructibleCle && m === this.constructibleModele) return;
+        this.constructibleT = now;
+        this.constructibleCle = cle;
+        this.constructibleModele = m;
+        if (this.constructible) { this.constructible.destroy(); this.constructible = null; }
+        if ((c1 - c0 + 1) * (r1 - r0 + 1) > 6000) return;          // (trop dézoomé : rien)
+        const g = this.add.graphics().setDepth(dy ? 9e4 : 1.5);
+        g.fillStyle(0xffffff, 0.24);
+        g.lineStyle(1, 0xffffff, 0.6);
+        const voulu = info && info.gomme ? 'fait' : 'ok';
+        for (let r = r0; r <= r1; r++) {
+          for (let c = c0; c <= c1; c++) {
+            if (T0.posable(r * W + c) !== voulu) continue;
+            const x = c * T, y = r * T - dy;
+            g.fillRect(x + 1, y + 1, T - 2, T - 2);
+            g.strokeRect(x + 1.5, y + 1.5, T - 3, T - 3);
+          }
+        }
+        this.constructible = g;
       }
 
       tap(wx, wy) {
