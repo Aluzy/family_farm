@@ -10,7 +10,6 @@ import { farmTerrain } from './terrain.js';
 import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, storeWheat } from './animals.js';
 import { arbreProche, openVerger } from './orchard.js';
 import { foretProche } from './outils.js';
-import { openStation } from './kitchen.js';
 import { grantTechPoints, refreshUnlocks } from './techtree.js';
 import { chapterCount, completeChapter, newCampaignCounters } from './campaign.js';
 import { sleep } from './night.js';
@@ -172,15 +171,13 @@ export function testAddStraw(state, qty = 20) {
 
 // Lot 5 : construit toutes les stations gratuitement (Four, Cuisine, Moulin,
 // Presse) : l'onglet Livre de recette s'ouvre.
-// Toutes les stations : le four, la cuisinière et le Moulin bâtis d'un coup (testBatir), la
-// Presse sans payer.
+// Toutes les stations : le four, la cuisinière et le Moulin bâtis d'un coup (testBatir).
 export function testBuildStations(state) {
   for (const id of ['four', 'cuisine', 'moulin']) {
     if (state.stations[id].construit) continue;
     const r = testBatir(state, id);
     if (!r.ok) return r;
   }
-  openStation(state, 'presse');
   return { ok: true };
 }
 

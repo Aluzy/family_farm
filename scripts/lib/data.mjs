@@ -193,12 +193,34 @@ export function validateData(data) {
     if (!(st.action in xpActions)) err(`STATIONS.${id}`, `action « ${st.action} » inconnue (NIVEAUX.XP)`);
   }
 
+  /* les chaînes de production */
+  if (data.CHAINES) {
+    const C = data.CHAINES, blocsAt = (data.ATELIER && data.ATELIER.BLOCS) || {}, vues = new Map();
+    if (!(isInt(C.RESERVOIR) && C.RESERVOIR > 0)) err('CHAINES.RESERVOIR', 'un nombre entier d\'ingrédients');
+    if (!(isInt(C.TAS) && C.TAS > 0)) err('CHAINES.TAS', 'un nombre entier de produits');
+    for (const [o, d] of Object.entries(C.OUTILS || {})) {
+      if (!blocsAt[o] || blocsAt[o].chaine !== 'outil') err(`CHAINES.OUTILS.${o}`, 'il lui faut son bloc (ATELIER.BLOCS, chaine : « outil »)');
+      if (!(d.whParS > 0) || !(isInt(d.secondes) && d.secondes > 0)) err(`CHAINES.OUTILS.${o}`, 'whParS et secondes (entiers) positifs');
+    }
+    for (const [b, d] of Object.entries(blocsAt)) if (d.chaine === 'outil' && !(C.OUTILS || {})[b]) err(`ATELIER.BLOCS.${b}`, 'un outil de chaîne sans CHAINES.OUTILS');
+    for (const [rid, suite] of Object.entries(C.RECETTES || {})) {
+      const w = `CHAINES.RECETTES.${rid}`;
+      if (!recipes[rid] || recipes[rid].station !== 'chaine') err(w, 'une recette de DATA.RECETTES de station « chaine »');
+      if (!Array.isArray(suite) || !suite.length || suite.some((o) => !(C.OUTILS || {})[o])) err(w, 'une suite d\'outils de CHAINES.OUTILS');
+      const cle = (suite || []).join('>');
+      if (vues.has(cle)) err(w, `même suite d'outils que ${vues.get(cle)}`);
+      vues.set(cle, rid);
+    }
+  }
+
   /* recettes */
   for (const [id, r] of Object.entries(recipes)) {
     const where = `RECETTES.${id}`;
     if (typeof r.nom !== 'string' || !r.nom) err(where, 'nom manquant');
     if (typeof r.icone !== 'string' || !r.icone) err(where, 'icone manquante');
-    if (!data.STATIONS[r.station]) err(where, `station « ${r.station} » inconnue (${Object.keys(data.STATIONS).join(', ')})`);
+    // (station « chaine » : elle se fait sur une chaîne de production, DATA.CHAINES.RECETTES)
+    if (r.station === 'chaine') { if (!(data.CHAINES && data.CHAINES.RECETTES && id in data.CHAINES.RECETTES)) err(where, 'station « chaine » : il lui faut sa chaîne dans CHAINES.RECETTES'); }
+    else if (!data.STATIONS[r.station]) err(where, `station « ${r.station} » inconnue (chaine, ${Object.keys(data.STATIONS).join(', ')})`);
     if (!(isInt(r.temps) && r.temps > 0)) err(where, `temps doit être un entier de secondes ; reçu ${JSON.stringify(r.temps)}`);
     if (r.eau !== undefined && !(isInt(r.eau) && r.eau > 0)) err(where, 'eau doit être un nombre entier de litres');
     if (!Array.isArray(r.ingredients) || !r.ingredients.length) {

@@ -18,6 +18,7 @@ import { couchagesEtage, etageHorsEmprise, rangerEtage } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
 import { botteleuseReprise } from './botteleuse.js';
 import { distributeurReprise } from './distributeur.js';
+import { chainesReprise } from './chaines.js';
 import { noter } from './journal.js';
 import { viderBoite } from './repas.js';
 import { closeFridge, openFridge } from './fridge.js';
@@ -872,6 +873,8 @@ export function reprendreBloc(state, tile, opts) {
   if (s && s.botteleuse === 'machine') botteleuseReprise(state, tile);
   // (un distributeur de grain : son blé revient, js/engine/distributeur.js)
   if (s && s.distributeur === 'machine') distributeurReprise(state, tile);
+  // (un bloc d'une chaîne de production : une chaîne défaite rend ce qu'elle avait reçu, js/engine/chaines.js)
+  if (s && (s.chaine || s.botteleuse)) chainesReprise(state);
   // (la boîte à nourriture, le réfrigérateur : ce qu'ils contiennent revient dans l'inventaire)
   if (s && s.boite) viderBoite(state);
   if (s && s.frigo) closeFridge(state);

@@ -9,7 +9,7 @@ import {
   createInitialState, DATA, feedLivestock, finishPreparations, freeCowPlaces, freeSheepPlaces,
   grantTech, herbsOn, herbStock, inventoryCounts, isBuyable, isGraineComptoir, isPerishable,
   layEggs, makeDevice, maxCows, maxSheep, moveToFridge, newStableReport, NIGHT_STEPS, nightHarvest,
-  pastureCapacity, pastureCost, recipeNode, recipeStatus, roundPct, scaleEnergie, scytheGrass,
+  pastureCapacity, pastureCost, recipeNode, recipeUnlocked, roundPct, scaleEnergie, scytheGrass,
   sellItem, setCowHerbs, shear, sheepCount, sheepPlaces, sheepToShear, shelfLife, sleep,
   stableFree, stableOccupied, startFarm, startHousehold, startLot4, startLot5, startMilling,
   startRecipe, STATE_VERSION, strawMissing, strawNeed, strawStock, testAddHens, testAddSheep,
@@ -252,9 +252,9 @@ test('herbes de montagne : une trouvaille de la montagne, fraîche ; le lait d\'
   assert(!isBuyable('herbes_montagne') && !isBuyable('lait_alpage'), 'ni l\'un ni l\'autre ne s\'achète au Marché');
 });
 
-test('fromage d\'alpage : 3 laits d\'alpage en Cuisine (nœud Laiterie), plus cher que le fromage frais', () => {
+test('fromage d\'alpage : 3 laits d\'alpage sur une chaîne de production (nœud Laiterie), plus cher que le fromage frais', () => {
   const r = DATA.RECETTES.fromage_alpage;
-  assertEqual([r.station, r.transformation, r.sortie, r.ingredients], ['cuisine', true, 'fromage_alpage', [{ item: 'lait_alpage', qte: 3 }]]);
+  assertEqual([r.station, r.transformation, r.sortie, r.ingredients], ['chaine', true, 'fromage_alpage', [{ item: 'lait_alpage', qte: 3 }]]);
   assertEqual(recipeNode('fromage_alpage'), recipeNode('fromage_frais'));
   // le prix et l'énergie suivent la règle des plats : ingrédients × 1,3
   const coef = DATA.CUISINE.COEF_PLAT;
@@ -263,12 +263,11 @@ test('fromage d\'alpage : 3 laits d\'alpage en Cuisine (nœud Laiterie), plus ch
   assert(DATA.OBJETS.fromage_alpage.prix > DATA.OBJETS.fromage_frais.prix, 'plus cher que le fromage frais');
   const s = atelier();
   setInv(s, { lait_alpage: 3 });
-  assertEqual(recipeStatus(s, 'fromage_alpage').code, 'verrouillee');
+  assertEqual(recipeUnlocked(s, 'fromage_alpage'), false);
   grantTech(s, 'cui_laiterie', false);
-  assertEqual(startRecipe(s, 'fromage_alpage').ok, true);
-  assertEqual(countItem(s, 'lait_alpage'), 0);
-  runFor(s, DATA.RECETTES.fromage_alpage.temps + 1);
-  assertEqual(countItem(s, 'fromage_alpage'), 1);
+  assertEqual(recipeUnlocked(s, 'fromage_alpage'), true);
+  assertEqual(startRecipe(s, 'fromage_alpage').ok, false, 'pas en cuisine : sur une chaîne (tests/engine/chaines.test.mjs)');
+  assertEqual(countItem(s, 'lait_alpage'), 3);
 });
 
 test('paille insuffisante : on nourrit dans l\'ordre de la liste, les moutons puis les vaches', () => {

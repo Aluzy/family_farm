@@ -19,6 +19,7 @@ import { estEquipement } from '../engine/equipement.js';
 import { effetTexte } from './fiche-membre.js';
 import { sortirBotte, verserFibres } from '../engine/botteleuse.js';
 import { verserGrain } from '../engine/distributeur.js';
+import { verserChaine } from '../engine/chaines.js';
 import { asleep } from '../engine/night.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
@@ -46,6 +47,21 @@ export function verserFromStage(tile) {
   if (!r.ok) { notify(r.error); return null; }
   const B = DATA.BOTTELEUSE, f = DATA.OBJETS.fibre.icone;
   notify(r.pleine ? `${B.ICONE} ${B.NOM} : ${r.fibres} ${f} reçues, elle se met en marche !` : `${f} ${r.versees} fibre${r.versees > 1 ? 's' : ''} dans l'entonnoir : ${r.fibres} / ${B.FIBRES}.`);
+  persistState();
+  refresh();
+  return r;
+}
+
+// La carte : le personnage a jeté dans l'entonnoir de la chaîne de production dont `tile` est un
+// bloc les ingrédients de sa recette (js/engine/chaines.js). Renvoie { ok, versees, stock,
+// capacite, recette } ou null (un message).
+export function verserChaineFromStage(tile) {
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
+  const r = verserChaine(state, tile);
+  if (!r.ok) { notify(r.error); return null; }
+  const R = DATA.RECETTES[r.recette], n = Object.values(r.stock).reduce((a, b) => a + b, 0);
+  const versees = Object.entries(r.versees).map(([it, k]) => `${k} ${DATA.OBJETS[it].icone}`).join(' ');
+  notify(`${DATA.CHAINES.ICONE} ${versees} dans l'entonnoir : ${R.icone} ${R.nom}${r.capacite > n || n > 0 ? ` (${n} / ${r.capacite})` : ''}.`);
   persistState();
   refresh();
   return r;

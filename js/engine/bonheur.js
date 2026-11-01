@@ -43,9 +43,12 @@ export function dishHappiness(item) {
   if (def && def.bonheur != null) return def.bonheur;
   if (!def || !def.plat) return 0;
   const r = DATA.RECETTES[item];
-  if (!r || !(r.station in B.PLATS)) return B.PLATS.cuisine;
+  if (!r) return B.PLATS.cuisine;
+  // (un plat des chaînes de production compte comme un plat de la Cuisine, où il se faisait)
+  const station = r.station === 'chaine' ? 'cuisine' : r.station;
+  if (!(station in B.PLATS)) return B.PLATS.cuisine;
   const all = (ing, test) => ingredientOptions(ing).every(test);
   const huileFruit = r.ingredients.some((ing) => all(ing, (x) => x === 'huile' || (DATA.OBJETS[x] && DATA.OBJETS[x].categorie === 'fruit')));
   const speciale = r.ingredients.some((ing) => all(ing, (x) => B.SPECIALES.objets.includes(x)));
-  return B.PLATS[r.station] + (huileFruit ? B.HUILE_FRUIT : 0) + (speciale ? B.SPECIALES.bonus : 0);
+  return B.PLATS[station] + (huileFruit ? B.HUILE_FRUIT : 0) + (speciale ? B.SPECIALES.bonus : 0);
 }

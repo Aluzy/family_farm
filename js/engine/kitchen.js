@@ -71,7 +71,9 @@ export function recipeStatus(state, id) {
   const st = state.stations[r.station];
   const lines = recipeLines(state, id);
   let code = 'pret';
-  if (!recipeUnlocked(state, id)) code = 'verrouillee';
+  // (elle se fait sur une chaîne de production, js/engine/chaines.js : pas en cuisine)
+  if (r.station === 'chaine') code = 'chaine';
+  else if (!recipeUnlocked(state, id)) code = 'verrouillee';
   else if (!st.construit) code = 'absente';
   else if (st.tache && !queueRoom(state, r.station)) code = 'occupee';
   else if (lines.some((l) => !l.ok)) code = 'manque';
@@ -126,6 +128,7 @@ export function startRecipe(state, id) {
   if (!r) return fail('Recette inconnue.');
   // Version 1.1 : le blé se moud dans le Moulin lui-même (startMilling()).
   if (r.horsLivre) return fail('Le blé se moud directement au Moulin.');
+  if (r.station === 'chaine') return fail(`${r.nom} : elle se fait sur une chaîne de production (l'Atelier, ${DATA.CHAINES.RECETTES[id].length > 1 ? 'ses outils' : 'son outil'} à la suite d'un entonnoir).`);
   const def = DATA.STATIONS[r.station];
   const st = state.stations[r.station];
   if (!recipeUnlocked(state, id)) {

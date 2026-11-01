@@ -172,9 +172,9 @@ export function ranch({ silo = true, coop = true } = {}) {
 
 // État de test : riche, les quatre stations construites, inventaire vide, batteries
 // pleines, réservoir plein, panneau coupé (l'énergie ne bouge que par les consommateurs).
-export function atelier({ stations = ['four', 'cuisine', 'moulin', 'presse'] } = {}) {
+export function atelier({ stations = ['four', 'cuisine', 'moulin'] } = {}) {
   const s = ranch();
-  for (const id of stations) assert((id === 'presse' ? buildStation(reach(s, id), id) : testBatir(reach(s, id), id)).ok, `construire ${id}`);
+  for (const id of stations) assert(testBatir(reach(s, id), id).ok, `construire ${id}`);
   s.pieces = 1000;
   setInv(s, {});
   testFillBatteries(s);

@@ -433,6 +433,13 @@ export const RAW_DATA = {
     "distributeur": { "nom": "Distributeur de grain", "icone": "🌾‍⚙️", "prix": 18, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "mangeoire_grain": { "nom": "Mangeoire à grain", "icone": "🌾‍🛶", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "convoyeur": { "nom": "Convoyeur", "icone": "🛤️", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "reservoir": { "nom": "Réservoir", "icone": "🛢️", "prix": 18, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "pressoir": { "nom": "Presse", "icone": "🗜️", "prix": 18, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "centrifugeuse": { "nom": "Centrifugeuse", "icone": "🌀", "prix": 24, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "mixeur": { "nom": "Mixeur", "icone": "🥤", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "chaudron": { "nom": "Chaudron", "icone": "🍲", "prix": 22, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "tonneau": { "nom": "Tonneau", "icone": "🛢️‍🍺", "prix": 14, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "ensacheuse": { "nom": "Ensacheuse", "icone": "🫙‍⚙️", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "pomme_de_pin": { "nom": "Pomme de pin", "icone": "🌲‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "gland": { "nom": "Gland", "icone": "🌳‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "jeune_pommier": { "nom": "Jeune pommier", "icone": "🌱‍🍎", "prix": 40, "mangeable": false, "categorie": "graine", "arbre": "pommier" },
@@ -791,6 +798,13 @@ export const RAW_DATA = {
       "entonnoir": { "entrees": { "planche": 2, "pierre": 1 }, "sortie": { "entonnoir": 1 } },
       "botteleuse": { "entrees": { "planche": 4, "pierre": 6 }, "sortie": { "botteleuse": 1 } },
       "convoyeur": { "entrees": { "planche": 2, "fibre": 2 }, "sortie": { "convoyeur": 2 } },
+      "reservoir": { "entrees": { "planche": 3, "lingot_fer": 2 }, "sortie": { "reservoir": 1 }, "debloque": "chaines" },
+      "pressoir": { "entrees": { "planche": 2, "lingot_fer": 2 }, "sortie": { "pressoir": 1 }, "debloque": "chaines" },
+      "centrifugeuse": { "entrees": { "lingot_fer": 3, "lingot_cuivre": 1 }, "sortie": { "centrifugeuse": 1 }, "debloque": "chaines" },
+      "mixeur": { "entrees": { "lingot_fer": 2, "pierre": 2 }, "sortie": { "mixeur": 1 }, "debloque": "chaines" },
+      "chaudron": { "entrees": { "lingot_fer": 2, "lingot_cuivre": 1 }, "sortie": { "chaudron": 1 }, "debloque": "chaines" },
+      "tonneau": { "entrees": { "planche": 4, "lingot_fer": 1 }, "sortie": { "tonneau": 1 }, "debloque": "chaines" },
+      "ensacheuse": { "entrees": { "lingot_fer": 2, "planche": 2 }, "sortie": { "ensacheuse": 1 }, "debloque": "chaines" },
       "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler" },
       "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler" },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
@@ -931,6 +945,13 @@ export const RAW_DATA = {
       "entonnoir": { "nom": "Entonnoir", "objet": "entonnoir", "bloque": true, "botteleuse": "entonnoir" },
       "botteleuse": { "nom": "Botteleuse", "objet": "botteleuse", "bloque": true, "botteleuse": "machine" },
       "convoyeur": { "nom": "Convoyeur", "objet": "convoyeur", "bloque": true, "botteleuse": "convoyeur" },
+      "reservoir": { "nom": "Réservoir", "objet": "reservoir", "dehors": true, "bloque": true, "chaine": "reservoir" },
+      "pressoir": { "nom": "Presse", "objet": "pressoir", "dehors": true, "bloque": true, "chaine": "outil" },
+      "centrifugeuse": { "nom": "Centrifugeuse", "objet": "centrifugeuse", "dehors": true, "bloque": true, "chaine": "outil" },
+      "mixeur": { "nom": "Mixeur", "objet": "mixeur", "dehors": true, "bloque": true, "chaine": "outil" },
+      "chaudron": { "nom": "Chaudron", "objet": "chaudron", "dehors": true, "bloque": true, "chaine": "outil" },
+      "tonneau": { "nom": "Tonneau", "objet": "tonneau", "dehors": true, "bloque": true, "chaine": "outil" },
+      "ensacheuse": { "nom": "Ensacheuse", "objet": "ensacheuse", "dehors": true, "bloque": true, "chaine": "outil" },
       "distributeur": {
         "nom": "Distributeur de grain",
         "objet": "distributeur",
@@ -1122,7 +1143,23 @@ export const RAW_DATA = {
         "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "bac_fleurs", "bloc_silo", "meule"]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
-      "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur"] }
+      "machines": {
+        "nom": "Machines",
+        "icone": "⚙️",
+        "blocs": [
+          "atelier",
+          "entonnoir",
+          "botteleuse",
+          "convoyeur",
+          "reservoir",
+          "pressoir",
+          "centrifugeuse",
+          "mixeur",
+          "chaudron",
+          "tonneau",
+          "ensacheuse"
+        ]
+      }
     },
     "SILO": { "LARGEUR": 2, "HAUTEUR": 3, "HAUTEUR_MAX": 6, "BLES_PAR_BLOC": 10 },
     "ARBRE_ECART": 3,
@@ -1143,6 +1180,30 @@ export const RAW_DATA = {
     "RAMASSAGE_DEPART": { "RAYON": [2, 7], "petite_pierre": 6, "morceau_bois": 9 }
   },
   "DISTRIBUTEUR": { "NOM": "Distributeur de grain", "ICONE": "🌾‍⚙️", "CAPACITE": 40, "HEURE": 7 },
+  "CHAINES": {
+    "NOM": "Chaîne de production",
+    "ICONE": "🏭",
+    "RESERVOIR": 30,
+    "TAS": 12,
+    "OUTILS": {
+      "pressoir": { "whParS": 20, "secondes": 8 },
+      "centrifugeuse": { "whParS": 25, "secondes": 10 },
+      "mixeur": { "whParS": 15, "secondes": 6 },
+      "chaudron": { "whParS": 30, "secondes": 12 },
+      "tonneau": { "whParS": 5, "secondes": 40 },
+      "ensacheuse": { "whParS": 10, "secondes": 6 }
+    },
+    "RECETTES": {
+      "huile": ["pressoir"],
+      "jus_fruits": ["mixeur", "pressoir"],
+      "fromage_frais": ["centrifugeuse", "pressoir"],
+      "fromage_alpage": ["centrifugeuse", "pressoir", "tonneau"],
+      "compote": ["mixeur", "chaudron"],
+      "confiture_fraises": ["mixeur", "chaudron", "ensacheuse"],
+      "biere_artisanale": ["chaudron", "tonneau"],
+      "bocal_legumes": ["chaudron", "ensacheuse"]
+    }
+  },
   "BOTTELEUSE": { "NOM": "Botteleuse", "ICONE": "⚙️‍🌾", "FIBRES": 10, "VIBRE_S": 3, "PAILLE": 10, "CONVOYEUR": 2 },
   "STATIONS": {
     "four": {
@@ -1163,8 +1224,7 @@ export const RAW_DATA = {
       "debloque": ["recettes"],
       "action": "cuisiner"
     },
-    "moulin": { "nom": "Moulin", "article": "le", "icone": "⚙️", "prixConstruction": 120, "electrique": true, "whParS": 20, "action": "moudre" },
-    "presse": { "nom": "Presse", "article": "la", "icone": "🌻", "prixConstruction": 150, "electrique": true, "whParS": 30, "action": "presser" }
+    "moulin": { "nom": "Moulin", "article": "le", "icone": "⚙️", "prixConstruction": 120, "electrique": true, "whParS": 20, "action": "moudre" }
   },
   "CUISINE": { "COEF_PLAT": 130, "ENERGIE_EAU": 0, "PRIX_EAU": 1, "DIVISEUR_TEMPS": 2, "STATIONS_TEMPS_DIVISE": ["four", "cuisine"] },
   "RECETTES": {
@@ -1204,7 +1264,14 @@ export const RAW_DATA = {
       "ingredients": [{ "item": "patate", "qte": 3 }, { "item": "oeuf", "qte": 1 }],
       "energieForcee": 150
     },
-    "compote": { "nom": "Compote", "icone": "🍮", "station": "cuisine", "temps": 15, "ingredients": [{ "ou": ["pomme", "poire"], "qte": 3 }] },
+    "compote": { "nom": "Compote", "icone": "🍮", "station": "chaine", "temps": 15, "ingredients": [{ "ou": ["pomme", "poire"], "qte": 3 }] },
+    "jus_fruits": {
+      "nom": "Jus de fruits",
+      "icone": "🧃",
+      "station": "chaine",
+      "temps": 10,
+      "ingredients": [{ "ou": ["pomme", "poire", "fraise"], "qte": 3 }]
+    },
     "tarte_pommes": {
       "nom": "Tarte aux pommes",
       "icone": "🥧",
@@ -1234,11 +1301,11 @@ export const RAW_DATA = {
       "temps": 40,
       "ingredients": [{ "item": "farine", "qte": 2 }, { "item": "oeuf", "qte": 2 }, { "item": "lait", "qte": 1 }, { "item": "epinard", "qte": 1 }]
     },
-    "fromage_frais": { "nom": "Fromage frais", "icone": "🧀‍🥛", "station": "cuisine", "temps": 60, "ingredients": [{ "item": "lait", "qte": 3 }] },
+    "fromage_frais": { "nom": "Fromage frais", "icone": "🧀‍🥛", "station": "chaine", "temps": 60, "ingredients": [{ "item": "lait", "qte": 3 }] },
     "fromage_alpage": {
       "nom": "Fromage d'alpage",
       "icone": "🧀",
-      "station": "cuisine",
+      "station": "chaine",
       "temps": 60,
       "ingredients": [{ "item": "lait_alpage", "qte": 3 }],
       "transformation": true,
@@ -1269,7 +1336,7 @@ export const RAW_DATA = {
     "confiture_fraises": {
       "nom": "Confiture de fraises",
       "icone": "🫙‍🍓",
-      "station": "cuisine",
+      "station": "chaine",
       "temps": 30,
       "ingredients": [{ "item": "fraise", "qte": 4 }]
     },
@@ -1301,7 +1368,7 @@ export const RAW_DATA = {
     "biere_artisanale": {
       "nom": "Bière artisanale",
       "icone": "🍺",
-      "station": "cuisine",
+      "station": "chaine",
       "temps": 60,
       "ingredients": [{ "item": "houblon", "qte": 2 }],
       "eau": 1,
@@ -1310,7 +1377,7 @@ export const RAW_DATA = {
     "bocal_legumes": {
       "nom": "Bocal de légumes",
       "icone": "🫙",
-      "station": "cuisine",
+      "station": "chaine",
       "temps": 60,
       "ingredients": [{ "ou": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "poivron", "epinard"], "qte": 4 }],
       "eau": 1,
@@ -1328,9 +1395,9 @@ export const RAW_DATA = {
       "horsLivre": true
     },
     "huile": {
-      "nom": "Presser du tournesol",
+      "nom": "Huile de tournesol",
       "icone": "🌻",
-      "station": "presse",
+      "station": "chaine",
       "temps": 10,
       "ingredients": [{ "item": "graine_tournesol", "qte": 3 }],
       "transformation": true,
@@ -2279,6 +2346,7 @@ export const RAW_DATA = {
       "ratatouille",
       "gratin_patates",
       "compote",
+      "jus_fruits",
       "tarte_pommes",
       "soupe_legumes",
       "salade_tomates",
@@ -2625,7 +2693,7 @@ export const RAW_DATA = {
       { "debloque": ["poivron", "ail", "fraise", "ble", "silo", "poulailler", "marche"] },
       { "debloque": ["epinard", "tournesol", "riz", "moulin"] },
       { "debloque": ["houblon", "four", "paturage", "moutons"] },
-      { "debloque": ["presse", "verger", "ecurie"] },
+      { "debloque": ["chaines", "verger", "ecurie"] },
       { "debloque": ["cacao", "vanille", "cafe", "serre", "energie"] },
       { "debloque": ["frigo"] },
       { "debloque": [], "note": "un courrier du notaire : un héritage caché" },
@@ -2649,7 +2717,7 @@ export const RAW_DATA = {
       "four": { "nom": "Four", "icone": "🔥", "note": "pain, gratin, tartes" },
       "cuisine": { "nom": "Cuisine", "icone": "🍳", "note": "omelette, ratatouille, compote, soupe, et le Livre de recette" },
       "moulin": { "nom": "Moulin", "icone": "⚙️", "note": "la farine" },
-      "presse": { "nom": "Presse", "icone": "🌻", "note": "huile de tournesol" },
+      "chaines": { "nom": "Chaînes de production", "icone": "🏭", "note": "huile, jus, fromages, compote, confiture, bière, bocaux" },
       "paturage": { "nom": "Étable", "icone": "🐑", "note": "des places pour les moutons et les vaches" },
       "moutons": { "nom": "Moutons et vaches", "icone": "🧶", "note": "la laine des moutons, le lait des vaches ; ils mangent la paille fauchée" },
       "serre": { "nom": "Serre", "icone": "🏡", "note": "cacao, vanille et café, et des légumes à l'abri" },
@@ -2827,12 +2895,7 @@ export const RAW_DATA = {
       ],
       "2": [{ "type": "houe" }, { "type": "silo", "niveau": 2 }],
       "3": [{ "type": "poulailler", "niveau": 1 }, { "type": "silo", "niveau": 1 }, { "type": "poules", "n": 4 }],
-      "4": [
-        { "type": "station", "id": "four" },
-        { "type": "station", "id": "moulin" },
-        { "type": "station", "id": "presse" },
-        { "type": "station", "id": "cuisine" }
-      ],
+      "4": [{ "type": "station", "id": "four" }, { "type": "station", "id": "moulin" }, { "type": "station", "id": "cuisine" }],
       "5": [{ "type": "station", "id": "moulin" }, { "type": "paturage" }, { "type": "moutons", "n": 3 }],
       "6": [{ "type": "serre", "niveau": 1 }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }],
       "7": []
@@ -2848,7 +2911,6 @@ export const RAW_DATA = {
       { "type": "silo", "niveau": 2 },
       { "type": "station", "id": "four" },
       { "type": "station", "id": "moulin" },
-      { "type": "station", "id": "presse" },
       { "type": "station", "id": "cuisine" },
       { "type": "tech", "id": "cu_outils" },
       { "type": "pompe", "niveau": 2 },

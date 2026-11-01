@@ -217,14 +217,13 @@ test('Lot 10 : le joueur réserve une part de la Zone de culture au plein champ 
   const cultures = (st) => st.potager.parcelles.map((p) => p.culture);
   assertEqual(cultures(s).filter((c) => c === 'ble').length, 4);
   assertEqual(cultures(s).filter((c) => c === 'ble' || c === null).length, 4, 'toutes les autres parcelles sont plantées');
-  assertEqual(cultures(s).some((c) => ['riz', 'houblon', 'tournesol'].includes(c)), false, 'ni riz ni houblon, et pas de tournesol avant la Presse');
+  assertEqual(cultures(s).some((c) => ['riz', 'houblon', 'tournesol'].includes(c)), false, 'ni riz ni houblon, et pas de tournesol avant les chaînes');
   assertEqual(botWheatKept(s), 4, 'il garde de quoi ressemer son blé');
-  // chapitre 4 avec la Presse : une parcelle de tournesol prise sur la part de plein champ
+  // chapitre 4, les chaînes de production débloquées (l'huile) : une parcelle de tournesol prise sur la part de plein champ
   const t = atChapter(4);
   t.pieces = 5000;
   testBatir(reach(t, 'silo'), 'silo');
   growZone(t, 12);
-  t.stations.presse.construit = true;
   setInv(t, { ble: 20, patate: 20, graine_tournesol: 20 });
   botFarm(t);
   assertEqual([cultures(t).filter((c) => c === 'tournesol').length, cultures(t).filter((c) => c === 'ble').length], [S.PARCELLES_TOURNESOL, 4 - S.PARCELLES_TOURNESOL]);

@@ -79,6 +79,52 @@ Les dessins : `scripts/carte/blocs.py` (entonnoir, machine, convoyeur), `scripts
 (la fibre au sol, la botte). Le joueur automatique, sans carte, bottelle ses fibres directement
 (`bottelerSansCarte`).
 
+### Les chaînes de production : huile, jus, fromages, compote, confiture, bière, bocaux
+
+`js/engine/chaines.js` (le moteur), `js/carte/ferme/chaines.js` (la carte), `DATA.CHAINES`
+(`data/recipes.json`). Des blocs de l'Atelier (catégorie Machines, débloqués au niveau 6, à la
+place de l'ancienne Presse) posés côte à côte sur une rangée, de gauche à droite :
+
+> **entonnoir** → **réservoir** (facultatif) → **un ou plusieurs outils** → **au moins un convoyeur**
+
+La case au bout du dernier convoyeur reste libre : les produits y tombent, **en tas**
+(`TAS_PLACES` : douze places, chacune la sienne, du rang du bas au sommet ; un tas plein arrête
+la chaîne). La suite des outils fait la recette (`CHAINES.RECETTES`, l'ordre compte) :
+
+| Produit | Outils |
+|---|---|
+| Huile | presse |
+| Jus de fruits (nouveau) | mixeur, presse |
+| Fromage frais | centrifugeuse, presse |
+| Fromage d'alpage | centrifugeuse, presse, tonneau |
+| Compote | mixeur, chaudron |
+| Confiture de fraises | mixeur, chaudron, ensacheuse |
+| Bière artisanale | chaudron, tonneau |
+| Bocal de légumes | chaudron, ensacheuse |
+
+- **Ces recettes ne se font plus en cuisine** (`station: "chaine"` dans `DATA.RECETTES` : elles y
+  gardent leurs ingrédients, leur nom, leur énergie et leur prix ; la cuisine et le Livre de
+  recette les refusent). Les nœuds de l'Arbre qui les débloquaient (Laiterie, Conserverie…) les
+  débloquent toujours : avant, la chaîne le dit et ne tourne pas. **La farine reste au Moulin.**
+- **Verser** (`verserChaine`) : un appui sur un bloc de la chaîne, le personnage va devant
+  l'entonnoir (la file des gestes) et y jette les ingrédients de la recette qu'il a. Sans
+  réservoir, de quoi la faire une fois ; avec, jusqu'à `CHAINES.RESERVOIR` (30) ingrédients, à
+  parts égales. Un ingrédient au choix (« pommes ou poires ») se prend d'une seule sorte, comme
+  en cuisine.
+- **Tourner** (`runChaines`, un consommateur du courant de `js/engine/energy.js`) : tant qu'elle a
+  de quoi faire la recette et de la place sur son tas, elle prend ses ingrédients et tourne la
+  somme des `secondes` de ses outils en tirant la somme de leurs `whParS` ; sans courant, elle
+  attend (le délestage la suspend aussi). Hors ligne, elle tourne comme le reste ; la nuit, non.
+- **À la carte** : les outils en marche prennent leur seconde image et tremblent d'un pixel, la
+  bande des convoyeurs tourne, la jauge du réservoir suit son stock (5 images). Les dessins (la
+  famille « atelier » : tôle vert d'eau, bâti rouge) sont dans `scripts/carte/blocs.py`, les
+  produits au sol dans `scripts/carte/ramassables.py`.
+- **Reprendre** un bloc qui défait la chaîne (ou lui ôte son réservoir) rend à l'inventaire ce
+  qu'elle avait reçu (`chainesReprise`).
+- **Les anciennes parties** (migration 66 → 67) : une Presse construite rend son prix
+  (`PRESSE_RENDU`) et un bloc de presse ; ce qui cuisait et se fait désormais sur une chaîne est
+  fini tout de suite. Le joueur automatique fait son huile sans carte (`chainesSansCarte`).
+
 ### Le distributeur de grain : le blé des poules
 
 Trois blocs posés côte à côte sur une rangée, dans l'enclos du Poulailler (`js/engine/distributeur.js`),

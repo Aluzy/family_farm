@@ -446,7 +446,7 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
     fromage_alpage: 20, champignon: 20, myrtille: 20, baies: 20, chataigne: 20,
     // les mûres des ronciers du grand monde (fiche 6a)
     mures: 20,
-    pain: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, compote: 20, tarte_pommes: 20,
+    pain: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, compote: 20, jus_fruits: 20, tarte_pommes: 20,
     soupe_legumes: 20, salade_tomates: 20, quiche_epinards: 20, fromage_frais: 20, riz_au_lait: 20,
     pain_ail: 20, tarte_fraises: 20, confiture_fraises: 20,
     chocolat_chaud: 20, cafe_boisson: 20, creme_vanille: 20, biere_artisanale: 20,
@@ -477,7 +477,7 @@ test('mode test Lot 3 : 20 de chaque aliment, puis vieillissement d\'une nuit', 
   // confiture_fraises (imperissables) ne sont jamais perdues.
   const last = testAgeInventory(s);
   assertEqual(last.perdus, {
-    carotte: 20, oeuf: 20, oignon: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, compote: 20, tarte_pommes: 20,
+    carotte: 20, oeuf: 20, oignon: 20, omelette: 20, ratatouille: 20, gratin_patates: 20, compote: 20, jus_fruits: 20, tarte_pommes: 20,
     soupe_legumes: 20, salade_tomates: 20, quiche_epinards: 20, riz_au_lait: 20, pain_ail: 20,
     tarte_fraises: 20, chocolat_chaud: 20, cafe_boisson: 20, creme_vanille: 20,
     omelette_champignons: 20, poisson_grille: 20, raclette: 20, creme_marrons: 20, tarte_myrtilles: 20, pain_epices: 20, mayonnaise: 20, quenelle_poisson: 20,

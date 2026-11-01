@@ -29,9 +29,10 @@ import {
 
 test('DATA Lot 5 : stations, recettes, farine et huile', () => {
   const S = DATA.STATIONS;
-  assertEqual([S.four.prixConstruction, S.cuisine.prixConstruction, S.moulin.prixConstruction, S.presse.prixConstruction], [100, 150, 120, 150]);
-  assertEqual([S.four.electrique, S.cuisine.electrique, S.moulin.electrique, S.presse.electrique], [false, false, true, true]);
-  assertEqual([S.moulin.whParS, S.presse.whParS], [20, 30]);
+  assertEqual([S.four.prixConstruction, S.cuisine.prixConstruction, S.moulin.prixConstruction], [100, 150, 120]);
+  assertEqual([S.four.electrique, S.cuisine.electrique, S.moulin.electrique], [false, false, true]);
+  assertEqual(S.moulin.whParS, 20);
+  assertEqual(S.presse, undefined, 'la Presse a laissé la place aux chaînes de production');
   assertEqual(S.cuisine.requiert, undefined, 'version 1.7 : la Cuisine (niveau 2) arrive avant le Four (niveau 5)');
   assertEqual([S.four.debloque, S.cuisine.debloque], [['recettes'], ['recettes']]);
   const R = DATA.RECETTES;
@@ -40,14 +41,14 @@ test('DATA Lot 5 : stations, recettes, farine et huile', () => {
   assertEqual([R.omelette.station, R.omelette.temps], ['cuisine', 8]); // 15 / 2 = 7,5 → 8
   assertEqual([R.ratatouille.station, R.ratatouille.temps], ['cuisine', 15]);
   assertEqual([R.gratin_patates.station, R.gratin_patates.temps], ['four', 15]);
-  assertEqual([R.compote.station, R.compote.temps, R.compote.ingredients], ['cuisine', 8, [{ ou: ['pomme', 'poire'], qte: 3 }]]);
+  assertEqual([R.compote.station, R.compote.ingredients], ['chaine', [{ ou: ['pomme', 'poire'], qte: 3 }]], 'la compote se fait sur une chaîne');
   assertEqual([R.tarte_pommes.station, R.tarte_pommes.temps], ['four', 23]);
   assertEqual([R.farine.station, R.farine.temps, R.farine.sortie], ['moulin', 5, 'farine']);
   // Version 1.1 : la mouture se lance au Moulin ; version 1.23 : 1 blé ne rend plus que de la
   // farine (la paille se fauche).
   assertEqual([R.farine.ingredients, R.farine.qteSortie, R.farine.sousProduit, R.farine.horsLivre], [[{ item: 'ble', qte: 1 }], 1, undefined, true]);
-  assertEqual([R.huile.sousProduit, R.huile.horsLivre], [undefined, undefined], 'la Presse ne change pas');
-  assertEqual([R.huile.station, R.huile.temps, R.huile.ingredients], ['presse', 10, [{ item: 'graine_tournesol', qte: 3 }]]);
+  assertEqual([R.huile.sousProduit, R.huile.horsLivre], [undefined, undefined]);
+  assertEqual([R.huile.station, R.huile.ingredients], ['chaine', [{ item: 'graine_tournesol', qte: 3 }]], 'l\'huile : sur une chaîne, la presse');
   assertEqual([DATA.OBJETS.farine.energie, DATA.OBJETS.huile.energie], [scaleEnergie(10), scaleEnergie(10)]);
   // Lot 13 : farine 1 → 2 (doublée) ; huile inchangée.
   assertEqual([DATA.OBJETS.farine.prix, DATA.OBJETS.huile.prix], [2, 4]);
@@ -256,9 +257,12 @@ const TEMPS_PLATS_AVANT_LOT_14 = {
 };
 
 test('Lot 14 : temps de préparation des plats Four/Cuisine divisés par 2 (arrondi au supérieur), transformations intactes', () => {
-  const ids = Object.keys(DATA.RECETTES).filter((id) => !DATA.RECETTES[id].transformation);
-  assertEqual([...ids].sort(), Object.keys(TEMPS_PLATS_AVANT_LOT_14).sort(), 'aucun plat oublié ni en trop');
-  for (const [id, avant] of Object.entries(TEMPS_PLATS_AVANT_LOT_14)) {
+  // (les plats des chaînes de production, js/engine/chaines.js, ne se font plus au Four ni en Cuisine)
+  const chaine = (id) => DATA.RECETTES[id].station === 'chaine';
+  const ids = Object.keys(DATA.RECETTES).filter((id) => !DATA.RECETTES[id].transformation && !chaine(id));
+  const plats = Object.entries(TEMPS_PLATS_AVANT_LOT_14).filter(([id]) => !chaine(id));
+  assertEqual([...ids].sort(), plats.map(([id]) => id).sort(), 'aucun plat oublié ni en trop');
+  for (const [id, avant] of plats) {
     const r = DATA.RECETTES[id];
     assert(['four', 'cuisine'].includes(r.station), `${id} : plat du Four ou de la Cuisine`);
     assertEqual(r.temps, Math.ceil(avant / 2), `${id} : ${avant} s / 2 arrondi au supérieur`);
@@ -266,8 +270,8 @@ test('Lot 14 : temps de préparation des plats Four/Cuisine divisés par 2 (arro
   }
   // Cas à demi-seconde : arrondi vers le haut, jamais vers le bas.
   assertEqual([DATA.RECETTES.omelette.temps, DATA.RECETTES.tarte_pommes.temps, DATA.RECETTES.pain_ail.temps], [8, 23, 8]);
-  // Moulin et Presse : inchangés.
-  assertEqual([DATA.RECETTES.farine.temps, DATA.RECETTES.huile.temps], [5, 10]);
+  // Moulin : inchangé.
+  assertEqual(DATA.RECETTES.farine.temps, 5);
   // La durée d'une préparation lancée est bien le nouveau temps.
   const s = atelier();
   setInv(s, { oeuf: 3, huile: 1 });
@@ -318,7 +322,7 @@ test('nouvelles recettes : chacune existe, ses ingrédients et sa station existe
   for (const id of NOUVELLES_RECETTES) {
     const r = DATA.RECETTES[id];
     assert(!!r, `recette ${id} absente de DATA.RECETTES`);
-    assert(!!DATA.STATIONS[r.station], `${id} : station ${r.station} inconnue`);
+    assert(r.station === 'chaine' || !!DATA.STATIONS[r.station], `${id} : station ${r.station} inconnue`);
     assert(Array.isArray(r.ingredients) && r.ingredients.length > 0, `${id} : ingrédients manquants`);
     for (const ing of r.ingredients) {
       for (const item of ingredientOptions(ing)) {
@@ -415,6 +419,13 @@ test('nouvelles recettes : chacune se prépare quand ses conditions sont remplie
     biere_artisanale: { houblon: 2 },
   };
   for (const id of NOUVELLES_RECETTES) {
+    // (une recette des chaînes de production : la cuisine la refuse, même avec ses ingrédients)
+    if (DATA.RECETTES[id].station === 'chaine') {
+      setInv(s, stocks[id]);
+      assertEqual(recipeStatus(s, id).code, 'chaine', `${id} : sur une chaîne`);
+      assertEqual(startRecipe(s, id).ok, false, `${id} refusée en cuisine`);
+      continue;
+    }
     // Chaque recette, sans ses ingrédients : grisée (« manque »), refusée.
     setInv(s, {});
     s.stations[DATA.RECETTES[id].station].tache = null; // station libre entre deux essais
@@ -451,11 +462,11 @@ test('mayonnaise (3 œufs) et quenelle de poisson (farine + truite, brochet ou p
   assertEqual(recipeStatus(s, 'quenelle_poisson').code, 'manque', 'sans farine');
 });
 
-test('arbre v2 : 22 recettes libres (dont 6 de la ville, la mayonnaise, la quenelle de poisson et les 4 lingots), 12 débloquées par un nœud', () => {
+test('arbre v2 : 23 recettes libres (dont 6 de la ville, la mayonnaise, la quenelle de poisson, les 4 lingots et le jus de fruits), 12 débloquées par un nœud', () => {
   const s = atelier();
   const libres = Object.keys(DATA.RECETTES).filter((id) => recipeUnlocked(s, id));
   assertEqual(libres.sort(), [...DATA.ARBRE.RECETTES_LIBRES].sort());
-  assertEqual(libres.length, 22);
+  assertEqual(libres.length, 23);
   assertEqual(Object.keys(DATA.RECETTES).length - libres.length, 12, 'dont le fromage d\'alpage (Laiterie)');
   for (const id of Object.keys(DATA.RECETTES)) assert(recipeUnlocked(s, id) || recipeNode(id), `${id} : libre ou débloquée par un nœud`);
   setInv(s, { pain: 1, ail: 1, huile: 1 });
@@ -465,12 +476,11 @@ test('arbre v2 : 22 recettes libres (dont 6 de la ville, la mayonnaise, la quene
   grantTech(s, 'cui_boulangerie');
   assertEqual(startRecipe(s, 'pain_ail').ok, true);
   // bocal de légumes : 4 légumes d'une même sorte, ne périme pas
+  // (il se fait sur une chaîne de production, une fois la Conserverie débloquée : js/engine/chaines.js)
+  assertEqual(recipeUnlocked(s, 'bocal_legumes'), false);
   grantTech(s, 'cui_conserverie', false);
-  setInv(s, { carotte: 4 });
-  s.eauMl = ml(40);
-  assertEqual(startRecipe(s, 'bocal_legumes').ok, true);
-  runFor(s, 31);
-  assertEqual(countItem(s, 'bocal_legumes'), 1);
+  assertEqual(recipeUnlocked(s, 'bocal_legumes'), true);
+  assertEqual(startRecipe(s, 'bocal_legumes').ok, false, 'pas en cuisine');
   assertEqual([shelfLife('bocal_legumes'), DATA.OBJETS.bocal_legumes.energie], [null, 40]);
 });
 
@@ -739,9 +749,10 @@ test('la farine et l\'huile ne se mangent pas seules ; les plats se mangent', ()
   assertEqual([t.repasJour.mange.pain, t.repasJour.mange.omelette], [3, 1]);
 });
 
-test('état initial Lot 5 : quatre stations à construire, libres, sans appareil', () => {
+test('état initial Lot 5 : trois stations à construire, libres, sans appareil', () => {
   const s = createInitialState(1);
-  for (const id of ['four', 'cuisine', 'moulin', 'presse']) {
+  assertEqual(Object.keys(s.stations), ['four', 'cuisine', 'moulin']);
+  for (const id of ['four', 'cuisine', 'moulin']) {
     assertEqual(s.stations[id], { construit: false, tache: null, appareil: null }, id);
   }
   assertEqual(allDevices(s).length, 3, 'panneau, batterie, pompe seulement');
@@ -770,28 +781,25 @@ test('la Cuisinière se pose sans le Four, et ouvre le Livre de recette', () => 
   assertEqual(s.unlockedTabs.includes('recettes'), true, 'version 1.7 : la Cuisine ouvre le Livre de recette');
 });
 
-test('le Moulin (sa tour) et la Presse (150) se construisent sans le Four et rejoignent le parc', () => {
+test('le Moulin (sa tour) se construit sans le Four et rejoint le parc', () => {
   const s = ranch();
-  s.pieces = 150;
   assertEqual(testBatir(reach(s, 'moulin'), 'moulin').ok, true);
-  assertEqual(buildStation(reach(s, 'presse'), 'presse').ok, true);
-  assertEqual(s.pieces, 0);
   assertEqual(s.unlockedTabs.includes('recettes'), false, 'seul le Four ouvre l\'onglet');
-  assertEqual(allDevices(s).map((d) => d.id), ['panneau-1', 'batterie-1', 'pompe', 'moulin', 'presse']);
+  assertEqual(allDevices(s).map((d) => d.id), ['panneau-1', 'batterie-1', 'pompe', 'moulin']);
   const m = s.stations.moulin.appareil;
   assertEqual([m.type, m.prix, m.allume, m.usure], ['moulin', 120, true, 0]);
-  assertEqual(findDevice(s, 'presse').prix, 150);
+  assertEqual(findDevice(s, 'moulin').prix, 120);
   assertEqual(s.stations.four.appareil, null);
 });
 
-test('le Moulin et la Presse n\'ont pas de niveaux, mais s\'entretiennent et se réparent', () => {
+test('le Moulin n\'a pas de niveaux, mais s\'entretient et se répare', () => {
   const s = atelier();
   assertEqual(upgradeCost(s.stations.moulin.appareil), null);
   const r = upgradeDevice(s, 'moulin');
   assertEqual([r.ok, r.error], [false, 'Cet appareil n\'a pas de niveaux.']);
   s.stations.moulin.appareil.usure = 40;
   assertEqual(maintainCost(s.stations.moulin.appareil), 24, 'entretien : 20 % de 120');
-  assertEqual(repairCost(s.stations.presse.appareil), 75, 'réparation : 50 % de 150');
+  assertEqual(repairCost(s.stations.moulin.appareil), 60, 'réparation : 50 % de 120');
   const before = s.pieces;
   assertEqual(maintainDevice(s, 'moulin').ok, true);
   assertEqual([s.stations.moulin.appareil.usure, s.pieces], [0, before - 24]);
@@ -817,12 +825,12 @@ test('une seule préparation par station, sans file d\'attente', () => {
   assertEqual(countItem(s, 'farine'), 4);
 });
 
-test('les stations travaillent en parallèle : Four, Cuisine, Moulin et Presse', () => {
+test('les stations travaillent en parallèle : Four, Cuisine et Moulin', () => {
   const s = atelier();
-  setInv(s, { farine: 2, oeuf: 3, huile: 1, ble: 1, graine_tournesol: 3 });
-  for (const id of ['pain', 'omelette', 'huile']) assertEqual(startRecipe(s, id).ok, true, id);
+  setInv(s, { farine: 2, oeuf: 3, huile: 1, ble: 1 });
+  for (const id of ['pain', 'omelette']) assertEqual(startRecipe(s, id).ok, true, id);
   assertEqual(startMilling(s, 1).ok, true, 'le blé se moud au Moulin');
-  assertEqual(['four', 'cuisine', 'moulin', 'presse'].map((k) => s.stations[k].tache.recette), ['pain', 'omelette', 'farine', 'huile']);
+  assertEqual(['four', 'cuisine', 'moulin'].map((k) => s.stations[k].tache.recette), ['pain', 'omelette', 'farine']);
 });
 
 test('les ingrédients sont retirés au lancement (eau comprise)', () => {
@@ -873,19 +881,6 @@ test('le Four et la Cuisine ne consomment pas d\'électricité et ne s\'usent pa
   assertEqual([countItem(s, 'pain'), countItem(s, 'omelette')], [1, 1]);
   assertEqual(s.batteries[0].chargeMwh, before);
   assertEqual([s.stations.four.appareil, s.stations.cuisine.appareil], [null, null]);
-});
-
-test('compote : 3 pommes ou 3 poires, sans les mélanger', () => {
-  const s = atelier();
-  setInv(s, { pomme: 2, poire: 2 });
-  assertEqual(startRecipe(s, 'compote').ok, false, '2 pommes + 2 poires ne font pas une compote');
-  setInv(s, { poire: 3 });
-  assertEqual(startRecipe(s, 'compote').ok, true);
-  assertEqual(countItem(s, 'poire'), 0);
-  s.stations.cuisine.tache = null;
-  setInv(s, { pomme: 3, poire: 3 });
-  assertEqual(startRecipe(s, 'compote').ok, true);
-  assertEqual([countItem(s, 'pomme'), countItem(s, 'poire')], [0, 3], 'les pommes d\'abord');
 });
 
 test('les recettes à fruits restent impossibles sans leurs fruits', () => {
@@ -1074,31 +1069,6 @@ test('Moulin : panne à 100 % d\'usure, la préparation attend la réparation', 
   assertEqual(countItem(s, 'farine'), 1);
 });
 
-test('Presse : 3 graines de tournesol → 1 huile en 10 s, 0,03 kWh/s', () => {
-  const s = atelier();
-  setInv(s, { graine_tournesol: 4 });
-  assertEqual(startRecipe(s, 'huile').ok, true);
-  assertEqual(countItem(s, 'graine_tournesol'), 1);
-  runFor(s, 9.8);
-  assertEqual(countItem(s, 'huile'), 0);
-  assertEqual(s.stations.presse.appareil.conso, kwh(0.03));
-  runFor(s, 0.4);
-  assertEqual(countItem(s, 'huile'), 1);
-  assertEqual(s.batteries[0].chargeMwh, kwh(6 - 0.3), `10 s × 0,03 = 0,3 kWh : ${s.batteries[0].chargeMwh}`);
-  setInv(s, { graine_tournesol: 2 });
-  assertEqual(startRecipe(s, 'huile').ok, false, 'il en faut 3');
-});
-
-test('Moulin et Presse partagent les batteries : chacun tire sa part', () => {
-  const s = atelier();
-  setInv(s, { ble: 1, graine_tournesol: 3 });
-  startMilling(s, 1);
-  startRecipe(s, 'huile');
-  runFor(s, 10.4);
-  assertEqual([countItem(s, 'farine'), countItem(s, 'huile')], [1, 1]);
-  assertEqual(s.batteries[0].chargeMwh, kwh(6 - 0.1 - 0.3), `${s.batteries[0].chargeMwh}`);
-});
-
 /* ---------- version 1.1 : le Moulin moud par quantité (la paille : version 1.23, la faux) ---------- */
 
 test('Moulin : la mouture ne se lance plus depuis le Livre de recette', () => {
@@ -1198,13 +1168,6 @@ test('Moulin : la nuit termine seulement le blé en cours, le reste reprend au r
   assertEqual(s.batteries[0].chargeMwh, charge, 'pas d\'électricité prise pendant la nuit');
   runFor(s, 5.4);
   assertEqual([countItem(s, 'farine'), millPending(s)], [2, 8], 'il reprend au réveil');
-  // la Presse, elle, garde sa règle : la file se termine dans la nuit
-  const t = atelier();
-  t.technologies.push('cui_serie');
-  setInv(t, { graine_tournesol: 9, conserve: 200 });
-  for (let i = 0; i < 3; i++) assert(startRecipe(t, 'huile').ok);
-  t.awakeMs = 30000;
-  assertEqual(sleep(t).termine, { huile: 3 });
 });
 
 test('Moulin : un long pas de temps moud plusieurs blés à la suite (hors-ligne)', () => {
@@ -1273,12 +1236,13 @@ test('Dormir avec une station libre ou non construite ne change rien', () => {
 test('rapport de réveil : le Moulin en panne ou à entretenir est signalé comme les autres appareils', () => {
   const s = atelier();
   s.stations.moulin.appareil.usure = 75;
-  s.stations.presse.appareil.usure = 100;
-  s.stations.presse.appareil.allume = false;
+  const pompe = findDevice(s, 'pompe');
+  pompe.usure = 100;
+  pompe.allume = false;
   s.awakeMs = 30000;
   const r = sleep(s);
   assertEqual(r.aEntretenir.map((d) => d.id), ['moulin']);
-  assertEqual(r.enPanne.map((d) => d.id), ['presse']);
+  assertEqual(r.enPanne.map((d) => d.id), ['pompe']);
 });
 
 test('onglet Livre de recette : ouvert par le Four, jamais avant', () => {
@@ -1286,7 +1250,6 @@ test('onglet Livre de recette : ouvert par le Four, jamais avant', () => {
   assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir']);
   s.pieces = 500;
   testBatir(reach(s, 'moulin'), 'moulin');
-  buildStation(reach(s, 'presse'), 'presse');
   assertEqual(s.unlockedTabs.includes('recettes'), false);
   testBatir(reach(s, 'four'), 'four');
   assertEqual(s.unlockedTabs, ['ferme', 'famille', 'inventaire', 'comptoir', 'recettes']);
@@ -1311,11 +1274,11 @@ test('mode test Lot 5 : stations gratuites, +10 farines, +10 huiles, +20 œufs, 
   assertEqual(testWearMill(s).ok, false, 'pas de Moulin, pas d\'usure');
   assertEqual(testBuildStations(s).ok, true);
   assertEqual(s.pieces, 0, 'gratuit');
-  for (const id of ['four', 'cuisine', 'moulin', 'presse']) assertEqual(s.stations[id].construit, true, id);
+  for (const id of ['four', 'cuisine', 'moulin']) assertEqual(s.stations[id].construit, true, id);
   assertEqual(s.unlockedTabs.includes('recettes'), true);
   assertEqual(s.stations.moulin.appareil.type, 'moulin');
   testBuildStations(s);
-  assertEqual(allDevices(s).length, 5, 'rien n\'est construit deux fois');
+  assertEqual(allDevices(s).length, 4, 'rien n\'est construit deux fois');
   testAddFlour(s);
   testAddOil(s);
   testAddEggs(s);
@@ -1323,7 +1286,6 @@ test('mode test Lot 5 : stations gratuites, +10 farines, +10 huiles, +20 œufs, 
   assertEqual(testWearMill(s).ok, true);
   const m = s.stations.moulin.appareil;
   assertEqual([m.usure, m.allume, isBroken(m)], [100, false, true]);
-  assertEqual(s.stations.presse.appareil.usure, 0, 'la Presse n\'est pas touchée');
 });
 
 test('mode test : l\'usure d\'un appareil choisi marche aussi pour le Moulin', () => {
@@ -1357,7 +1319,7 @@ test('migration v5 (Lot 4) → v6 (puis v7) : les stations apparaissent, la part
   const m = migreAvant({ v: 5, t: 0, s: v5 });
   assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual([m.day, m.pieces], [20, 432]);
-  for (const id of ['four', 'cuisine', 'moulin', 'presse']) {
+  for (const id of ['four', 'cuisine', 'moulin']) {
     assertEqual(m.stations[id], { construit: false, tache: null, appareil: null }, id);
   }
   assertEqual(['bonusPlats' in m.nuit, m.nuit.termine], [false, {}], 'version 1.8 : plus de bonus de santé');

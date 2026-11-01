@@ -14,7 +14,7 @@
 import { readFileSync } from 'node:fs';
 import {
   caseDuMonde, caseVue, chevalOu, countItem, createInitialState, DATA, farmSeed, farmTerrain, FERME_DANS_MONDE,
-  genererFerme, migrate, reparerPartie, STATE_VERSION, tick,
+  genererFerme, migrate, PRESSE_RENDU, reparerPartie, STATE_VERSION, tick,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, sleepOnce, test } from './aide.mjs';
 
@@ -51,7 +51,11 @@ function gardee(nom, avant, m) {
   for (const k of ['sols', 'hauteurs', 'fenetres']) {
     if (avant[k]) assertEqual(Object.entries(m[k]).sort(), Object.entries(avant[k]).map(([t, v]) => [String(ici(t)), v]).sort(), `${nom} : ${k}`);
   }
-  for (const k of ['silo', 'poulailler', 'stations', 'atelier']) assertEqual(m[k], avant[k], `${nom} : ${k}`);
+  for (const k of ['silo', 'poulailler', 'atelier']) assertEqual(m[k], avant[k], `${nom} : ${k}`);
+  // (la Presse a laissé la place aux chaînes de production : la migration 66 → 67 l'ôte et rend son prix)
+  const { presse, ...stations } = avant.stations;
+  assertEqual(m.stations, stations, `${nom} : stations`);
+  if (presse && presse.construit) assert(countItem(m, 'pressoir') >= 1, `${nom} : le bloc de presse rendu`);
   // les bêtes, le cheval (à l'Écurie)
   assertEqual(m.paturage, avant.paturage, `${nom} : l'Étable`);
   assert(m.poulailler.poules >= 3, `${nom} : les poules`);
@@ -130,7 +134,9 @@ test('les témoins : les parties d\'avant la ferme générée (format 46) démé
   for (const nom of ['avancee', 'debut']) {
     const avant = ANCIENNES[nom], m = migre(avant);
     assertEqual(m.version, STATE_VERSION, nom);
-    assertEqual([m.pieces, m.famille.membres.length, m.campagne.chapitre], [avant.pieces, avant.famille.membres.length, avant.campagne.chapitre], nom);
+    // (une Presse construite : son prix rendu par la migration 66 → 67)
+    const presse = avant.stations && avant.stations.presse && avant.stations.presse.construit ? PRESSE_RENDU : 0;
+    assertEqual([m.pieces, m.famille.membres.length, m.campagne.chapitre], [avant.pieces + presse, avant.famille.membres.length, avant.campagne.chapitre], nom);
     for (const [o] of Object.entries(compte(avant))) assert(countItem(m, o) >= countItem(avant, o), `${nom} : ${o}`);
     assertEqual([farmTerrain(m).FERME.X, farmTerrain(m).FERME.Y], FERME_DANS_MONDE, `${nom} : la ferme dans le monde`);
     assertEqual(migrate({ v: m.version, t: 0, s: copie(m) }), m, `${nom} : une seule fois`);

@@ -11,6 +11,7 @@ import { nightActive } from './clock.js';
 import { growDue } from './crops.js';
 import { irrigate, robotStep, runRobotCharge } from './automation.js';
 import { distribuerGrain } from './distributeur.js';
+import { runChaines } from './chaines.js';
 import { advanceNight, nightSpeed } from './night.js';
 import { repasStep } from './repas.js';
 
@@ -36,7 +37,7 @@ export function storeEnergy(state, energy) {
 
 // Prélève jusqu'à `energy` mWh dans les batteries, en sens inverse de la liste :
 // la dernière remplie se vide la première. Renvoie l'énergie réellement fournie.
-// Tous les consommateurs (pompe, puis moulin, presse, réfrigérateur) passent ici.
+// Tous les consommateurs (pompe, puis moulin, chaînes, réfrigérateur) passent ici.
 export function drawEnergy(state, energy) {
   let rest = energy;
   // version 1.12 : d'abord la production du moment qui n'a pas trouvé de place en batterie
@@ -78,7 +79,8 @@ export const CONSUMERS = [
   { id: 'frigo', run: runFridge },
   { id: 'pompe', run: runPump },
   { id: 'moulin', run: (state, dtMs) => runElectricStation(state, 'moulin', dtMs) },
-  { id: 'presse', run: (state, dtMs) => runElectricStation(state, 'presse', dtMs) },
+  // les chaînes de production de la ferme générée (js/engine/chaines.js)
+  { id: 'chaines', run: (state, dtMs) => runChaines(state, dtMs) },
   // la station de charge du robot, à côté de la maison
   { id: 'robot', run: (state, dtMs) => runRobotCharge(state, dtMs) },
 ];

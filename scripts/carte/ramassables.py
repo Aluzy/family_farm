@@ -9,7 +9,8 @@
 #   python3 scripts/carte/ramassables.py --apercu   écrit aussi apercu_ramassables.png
 #
 # Même ordre que js/carte/ferme/config.js (RAMASSABLES.frames) : petite_pierre, morceau_bois,
-# fibre, baies, paille, pomme_de_pin, gland, pousse_pin, pousse_arbre, botte. La grappe : 4 × 4 pixels, un dégradé de rouges du clair (en haut à gauche) au
+# fibre, baies, paille, pomme_de_pin, gland, pousse_pin, pousse_arbre, botte, puis les produits des
+# chaînes de production (PRODUITS, dans leur ordre). La grappe : 4 × 4 pixels, un dégradé de rouges du clair (en haut à gauche) au
 # sombre, sans les quatre coins (pas de carré) et sans contour ; au bas milieu de l'image. Les gris sont ceux des rochers de la carte, les bruns ceux des troncs, les verts ceux de
 # l'herbe haute ; contour d'un pixel dans la teinte très sombre de la matière, lumière en haut à
 # gauche.
@@ -38,6 +39,13 @@ PALETTE = {
     'c': '#8a6a3a', 'C': '#6a4e26', 'o': '#d8a050', 'O': '#b07a30', 'w': '#f0c878',
     # jeunes pousses : les verts des pins et des feuilles
     'i': '#2e6a3a', 'I': '#4a9a4e', 'j': '#7ac05a',
+    # les produits des chaînes de production : le verre, le bouchon, ce qu'il y a dedans
+    'W': '#f4fbfc', 'Z': '#b8dce4', 'K': '#8a5a34',
+    'y': '#f6de70', 'Y': '#d6ac2e', 'z': '#96700f',           # l'huile
+    'f': '#fab650', 'F': '#e28024', 'E': '#a84a12',           # le jus
+    'M': '#fdfaf0', 'R': '#ece2c4', 'S': '#c8b48a',           # le fromage frais
+    'A': '#fae496', 'B': '#e6c054', 'D': '#b08428',           # le fromage d'alpage
+    'H': '#e8d8b8', 'J': '#c49a5e',                           # la compote (le pot de grès)
 }
 BAIES = [
     '.hr.',
@@ -106,6 +114,27 @@ DESSINS = [
         '................',
     ],
 ]
+
+
+# Les produits des chaînes de production (js/engine/chaines.js), tombés en tas au bout du convoyeur :
+# l'huile et le jus en bouteille, les fromages, la compote en pot, la confiture et les légumes en
+# bocal, la bière en bouteille brune. Petits (le tas en porte une douzaine sur une case).
+PRODUITS = {
+    'huile': ['......kk......', '......KK......', '.....ZWyZ.....', '....ZyyyYZ....', '....ZyyyYZ....', '....ZyYYzZ....', '....ZYYzzZ....', '.....ZZZZ.....'],
+    'jus_fruits': ['......mm......', '......nn......', '.....ZWfZ.....', '....ZffFFZ....', '....ZfFFEZ....', '....ZFFFEZ....', '....ZFEEEZ....', '.....ZZZZ.....'],
+    'fromage_frais': ['..............', '..............', '..............', '....MMMMMM....', '...MMMMMMRR...', '...RMMMMRRS...', '...RRRRRRSS...', '....SSSSSS....'],
+    'fromage_alpage': ['..............', '..............', '....AAAAAA....', '...AAAAAABB...', '...BAAAABBD...', '...BBBBBBDD...', '...DDDDDDDD...', '....DDDDDD....'],
+    'compote': ['..............', '..............', '....HHHHHH....', '...HfffffFH...', '...JHHHHHHJ...', '...JHHHHHJJ...', '...JJHHHJJJ...', '....JJJJJJ....'],
+    'confiture_fraises': ['..............', '.....mrrm.....', '....nmrrmn....', '....ZhrrrZ....', '....ZrmmmZ....', '....ZrmmnZ....', '....ZmnnnZ....', '.....ZZZZ.....'],
+    'biere_artisanale': ['......dd......', '......tt......', '.....tTet.....', '....sTTTts....', '....sTTtts....', '....sTttks....', '....sttkks....', '.....kkkk.....'],
+    'bocal_legumes': ['..............', '.....aaaa.....', '....bccccb....', '....ZlFlZZ....', '....ZFlFlZ....', '....ZlgFgZ....', '....ZgFggZ....', '.....ZZZZ.....'],
+}
+CONTOUR_PRODUIT = '#2a2420'
+
+
+def produit(rangs):
+    """Un produit, posé au bas de son image de 16 × 16 (centré)."""
+    return dessin(['................'] * (15 - len(rangs)) + ['.' + r + '.' for r in rangs] + ['................'], CONTOUR_PRODUIT)
 
 
 def dessin(rangs, ombre):
@@ -254,6 +283,7 @@ def main():
     images = [dessin(d, c) for d, c in zip(DESSINS, CONTOURS)] + [grappe(), dessin(PAILLE, '#4a3010')]
     images += [dessin(POMME_DE_PIN, '#2e1a0c'), dessin(GLAND, '#2e1a0c'), dessin(POUSSE_PIN, '#173418'), dessin(POUSSE_ARBRE, '#173418')]
     images += [dessin(BOTTE, '#4a3010')]
+    images += [produit(PRODUITS[k]) for k in PRODUITS]
     sheet = rangee(images, 16, 16)
     sheet.save(os.path.join(ASSETS, 'ramassables.png'))
     print(f'assets/ramassables.png : {len(images)} images de 16 × 16')

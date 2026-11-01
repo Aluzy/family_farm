@@ -75,7 +75,6 @@
       "4": [
         { "type": "station", "id": "four" },
         { "type": "station", "id": "moulin" },
-        { "type": "station", "id": "presse" },
         { "type": "station", "id": "cuisine" }
       ],
       "5": [{ "type": "station", "id": "moulin" }, { "type": "paturage" }, { "type": "moutons", "n": 3 }],
@@ -94,7 +93,6 @@
       { "type": "silo", "niveau": 2 },
       { "type": "station", "id": "four" },
       { "type": "station", "id": "moulin" },
-      { "type": "station", "id": "presse" },
       { "type": "station", "id": "cuisine" },
       {
         "//": "arbre v2 : premiers pas (palier 1), puis l'automatisation (palier 3)",

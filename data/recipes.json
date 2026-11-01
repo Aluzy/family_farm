@@ -131,6 +131,13 @@
       "entonnoir": { "entrees": { "planche": 2, "pierre": 1 }, "sortie": { "entonnoir": 1 } },
       "botteleuse": { "entrees": { "planche": 4, "pierre": 6 }, "sortie": { "botteleuse": 1 } },
       "convoyeur": { "entrees": { "planche": 2, "fibre": 2 }, "sortie": { "convoyeur": 2 } },
+      "reservoir": { "entrees": { "planche": 3, "lingot_fer": 2 }, "sortie": { "reservoir": 1 }, "debloque": "chaines" },
+      "pressoir": { "entrees": { "planche": 2, "lingot_fer": 2 }, "sortie": { "pressoir": 1 }, "debloque": "chaines" },
+      "centrifugeuse": { "entrees": { "lingot_fer": 3, "lingot_cuivre": 1 }, "sortie": { "centrifugeuse": 1 }, "debloque": "chaines" },
+      "mixeur": { "entrees": { "lingot_fer": 2, "pierre": 2 }, "sortie": { "mixeur": 1 }, "debloque": "chaines" },
+      "chaudron": { "entrees": { "lingot_fer": 2, "lingot_cuivre": 1 }, "sortie": { "chaudron": 1 }, "debloque": "chaines" },
+      "tonneau": { "entrees": { "planche": 4, "lingot_fer": 1 }, "sortie": { "tonneau": 1 }, "debloque": "chaines" },
+      "ensacheuse": { "entrees": { "lingot_fer": 2, "planche": 2 }, "sortie": { "ensacheuse": 1 }, "debloque": "chaines" },
       "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler" },
       "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler" },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
@@ -218,6 +225,13 @@
       "entonnoir": { "nom": "Entonnoir", "objet": "entonnoir", "bloque": true, "botteleuse": "entonnoir" },
       "botteleuse": { "nom": "Botteleuse", "objet": "botteleuse", "bloque": true, "botteleuse": "machine" },
       "convoyeur": { "nom": "Convoyeur", "objet": "convoyeur", "bloque": true, "botteleuse": "convoyeur" },
+      "reservoir": { "nom": "Réservoir", "objet": "reservoir", "dehors": true, "bloque": true, "chaine": "reservoir" },
+      "pressoir": { "nom": "Presse", "objet": "pressoir", "dehors": true, "bloque": true, "chaine": "outil" },
+      "centrifugeuse": { "nom": "Centrifugeuse", "objet": "centrifugeuse", "dehors": true, "bloque": true, "chaine": "outil" },
+      "mixeur": { "nom": "Mixeur", "objet": "mixeur", "dehors": true, "bloque": true, "chaine": "outil" },
+      "chaudron": { "nom": "Chaudron", "objet": "chaudron", "dehors": true, "bloque": true, "chaine": "outil" },
+      "tonneau": { "nom": "Tonneau", "objet": "tonneau", "dehors": true, "bloque": true, "chaine": "outil" },
+      "ensacheuse": { "nom": "Ensacheuse", "objet": "ensacheuse", "dehors": true, "bloque": true, "chaine": "outil" },
       "distributeur": { "nom": "Distributeur de grain", "objet": "distributeur", "dehors": true, "bloque": true, "distributeur": "machine", "dessin": "distributeur" },
       "mangeoire_grain": { "nom": "Mangeoire à grain", "objet": "mangeoire_grain", "dehors": true, "bloque": true, "distributeur": "mangeoire", "dessin": "mangeoire_grain", "largeur": 2 },
       "meuble_chaise": { "nom": "Chaise", "objet": "meuble_chaise", "meuble": "chaise", "dedans": true, "bloque": true },
@@ -283,7 +297,7 @@
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
       "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "bac_fleurs", "bloc_silo", "meule"] },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
-      "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur"] }
+      "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur", "reservoir", "pressoir", "centrifugeuse", "mixeur", "chaudron", "tonneau", "ensacheuse"] }
     },
     "//SILO": [
       "Le Silo de la ferme générée (js/engine/blocs.js, etatSilo) : des blocs de silo (fabriqués à l'Atelier",
@@ -326,12 +340,44 @@
     "qu'à la main, tant qu'il lui reste du blé."
   ],
   "DISTRIBUTEUR": { "NOM": "Distributeur de grain", "ICONE": "🌾‍⚙️", "CAPACITE": 40, "HEURE": 7 },
+  "//CHAINES": [
+    "Les chaînes de production de la ferme générée (js/engine/chaines.js) : des blocs posés côte à côte sur une",
+    "rangée, de gauche à droite : un entonnoir, un réservoir (facultatif), des outils (OUTILS), puis au moins un",
+    "convoyeur ; la case au bout du dernier convoyeur reste libre : les produits y tombent, en tas. La suite des",
+    "outils fait la recette (RECETTES : l'id d'une recette de DATA.RECETTES, de station « chaine », dont elle",
+    "prend les ingrédients et ce qu'elle donne). On jette les ingrédients dans l'entonnoir ; sans réservoir, la",
+    "chaîne en prend de quoi faire une fois la recette, avec un réservoir jusqu'à RESERVOIR ingrédients : elle",
+    "travaille tant qu'il lui en reste de quoi faire la recette. Une production dure la somme des `secondes`",
+    "de ses outils (temps d'éveil) et tire, pendant ce temps, la somme de leurs `whParS` (Wh/s) sur le",
+    "courant de la ferme (le panneau, les batteries) : sans courant, elle attend. TAS : le nombre de produits",
+    "au bout du convoyeur (au-delà, la chaîne s'arrête : il faut ramasser)."
+  ],
+  "CHAINES": {
+    "NOM": "Chaîne de production", "ICONE": "🏭", "RESERVOIR": 30, "TAS": 12,
+    "OUTILS": {
+      "pressoir": { "whParS": 20, "secondes": 8 },
+      "centrifugeuse": { "whParS": 25, "secondes": 10 },
+      "mixeur": { "whParS": 15, "secondes": 6 },
+      "chaudron": { "whParS": 30, "secondes": 12 },
+      "tonneau": { "whParS": 5, "secondes": 40 },
+      "ensacheuse": { "whParS": 10, "secondes": 6 }
+    },
+    "RECETTES": {
+      "huile": ["pressoir"],
+      "jus_fruits": ["mixeur", "pressoir"],
+      "fromage_frais": ["centrifugeuse", "pressoir"],
+      "fromage_alpage": ["centrifugeuse", "pressoir", "tonneau"],
+      "compote": ["mixeur", "chaudron"],
+      "confiture_fraises": ["mixeur", "chaudron", "ensacheuse"],
+      "biere_artisanale": ["chaudron", "tonneau"],
+      "bocal_legumes": ["chaudron", "ensacheuse"]
+    }
+  },
   "BOTTELEUSE": { "NOM": "Botteleuse", "ICONE": "⚙️‍🌾", "FIBRES": 10, "VIBRE_S": 3, "PAILLE": 10, "CONVOYEUR": 2 },
   "STATIONS": {
     "four": { "nom": "Four", "article": "le", "icone": "🔥", "prixConstruction": 100, "electrique": false, "debloque": ["recettes"], "action": "cuireFour" },
     "cuisine": { "nom": "Cuisine", "article": "la", "icone": "🍳", "prixConstruction": 150, "electrique": false, "debloque": ["recettes"], "action": "cuisiner" },
-    "moulin": { "nom": "Moulin", "article": "le", "icone": "⚙️", "prixConstruction": 120, "electrique": true, "whParS": 20, "action": "moudre" },
-    "presse": { "nom": "Presse", "article": "la", "icone": "🌻", "prixConstruction": 150, "electrique": true, "whParS": 30, "action": "presser" }
+    "moulin": { "nom": "Moulin", "article": "le", "icone": "⚙️", "prixConstruction": 120, "electrique": true, "whParS": 20, "action": "moudre" }
   },
   "//CUISINE": [
     "Plats (sections 1.3, 1.4 et 6.8) : énergie = somme des énergies des",
@@ -438,9 +484,17 @@
     "compote": {
       "nom": "Compote",
       "icone": "🍮",
-      "station": "cuisine",
+      "station": "chaine",
       "temps": 15,
       "ingredients": [{ "ou": ["pomme", "poire"], "qte": 3 }],
+      "libre": true
+    },
+    "jus_fruits": {
+      "nom": "Jus de fruits",
+      "icone": "🧃",
+      "station": "chaine",
+      "temps": 10,
+      "ingredients": [{ "ou": ["pomme", "poire", "fraise"], "qte": 3 }],
       "libre": true
     },
     "tarte_pommes": {
@@ -493,7 +547,7 @@
     "fromage_frais": {
       "nom": "Fromage frais",
       "icone": "🧀‍🥛",
-      "station": "cuisine",
+      "station": "chaine",
       "temps": 60,
       "ingredients": [{ "item": "lait", "qte": 3 }],
       "//conservation": [
@@ -514,7 +568,7 @@
     "fromage_alpage": {
       "nom": "Fromage d'alpage",
       "icone": "🧀",
-      "station": "cuisine",
+      "station": "chaine",
       "temps": 60,
       "ingredients": [{ "item": "lait_alpage", "qte": 3 }],
       "transformation": true,
@@ -561,7 +615,7 @@
     "confiture_fraises": {
       "nom": "Confiture de fraises",
       "icone": "🫙‍🍓",
-      "station": "cuisine",
+      "station": "chaine",
       "temps": 30,
       "ingredients": [{ "item": "fraise", "qte": 4 }],
       "conservation": null
@@ -614,7 +668,7 @@
     "biere_artisanale": {
       "nom": "Bière artisanale",
       "icone": "🍺",
-      "station": "cuisine",
+      "station": "chaine",
       "temps": 60,
       "ingredients": [{ "item": "houblon", "qte": 2 }],
       "eau": 1,
@@ -638,7 +692,7 @@
     "bocal_legumes": {
       "nom": "Bocal de légumes",
       "icone": "🫙",
-      "station": "cuisine",
+      "station": "chaine",
       "temps": 60,
       "ingredients": [{ "ou": ["carotte", "patate", "tomate", "courgette", "aubergine", "oignon", "poivron", "epinard"], "qte": 4 }],
       "eau": 1,
@@ -667,9 +721,9 @@
       "libre": true
     },
     "huile": {
-      "nom": "Presser du tournesol",
+      "nom": "Huile de tournesol",
       "icone": "🌻",
-      "station": "presse",
+      "station": "chaine",
       "temps": 10,
       "ingredients": [{ "item": "graine_tournesol", "qte": 3 }],
       "transformation": true,

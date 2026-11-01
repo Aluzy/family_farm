@@ -54,8 +54,9 @@ import { objectiveValueText } from './chapitres.js';
 import { registerActions } from './actions.js';
 import { axeChipHtml, chopFromStage, fishFromStage, caillouFromStage, gesteFromStage, mineFromStage, mondeFromStage, morceauFromStage, pickChipHtml, rodChipHtml, scytheAroundFromStage, scytheChipHtml, scytheFromStage } from './outils.js';
 import { casesOuvertesMonde, mondeCueillis, mondePris, noterIci } from '../engine/monde-recolte.js';
-import { botteFromStage, ramasserFromStage, verserFromStage, verserGrainFromStage } from './atelier.js';
+import { botteFromStage, ramasserFromStage, verserChaineFromStage, verserFromStage, verserGrainFromStage } from './atelier.js';
 import { botteleuses } from '../engine/botteleuse.js';
+import { chaines } from '../engine/chaines.js';
 import { distributeurDe, distributeurs, grainDans } from '../engine/distributeur.js';
 import { chevalMonte, chevalOu, vitesseCheval } from '../engine/cheval.js';
 import { countWithSilo } from '../engine/animals.js';
@@ -168,7 +169,7 @@ function lieuAppareil(id) {
   if (d.type === 'panneau') return { ecran: 'panneaux', ancre: `dev-${d.id}` };
   if (d.type === 'batterie') return { ecran: 'batteries', ancre: `dev-${d.id}` };
   if (d.type === 'moulin' && moulinSurPlace()) return { fenetre: 'moulin', ancre: 'moulin-appareil' };
-  if (d.type === 'moulin' || d.type === 'presse') return { fenetre: 'maison', onglet: 'recettes', ancre: `station-${d.type}` };
+  if (d.type === 'moulin') return { fenetre: 'maison', onglet: 'recettes', ancre: `station-${d.type}` };
   if (d.type === 'frigo') return { fenetre: 'installations', ancre: 'dev-frigo' };
   if (d.type === 'pompe') return { fenetre: 'eau', ancre: 'dev-pompe' };
   return eau;
@@ -496,6 +497,12 @@ export function stageModel() {
     // les botteleuses (js/engine/botteleuse.js : l'entonnoir, la machine, le convoyeur ; pleine,
     // elle vibre VIBRE_S s et sa botte sort) et les fibres de l'inventaire, à y jeter
     botteleuses: botteleuses(state),
+    // les chaînes de production (js/engine/chaines.js : l'entonnoir, le réservoir, les outils, les
+    // convoyeurs) : où en est chacune (son stock, si elle tourne) ; leurs images : chaines.js
+    chaines: chaines(state).map((c) => {
+      const st = (state.chaines || {})[c.case];
+      return { case: c.case, reservoir: c.reservoir, outils: c.outils, sortes: c.sortes, convoyeurs: c.convoyeurs, bout: c.bout, ok: c.ok, recette: c.recette, enStock: c.enStock, capacite: c.capacite, marche: !!(st && st.cycle && st.conso > 0) };
+    }),
     botteVibre: DATA.BOTTELEUSE.VIBRE_S,
     fibres: countItem(state, 'fibre'),
     // les distributeurs de grain du Poulailler (js/engine/distributeur.js : l'entonnoir, le
@@ -1045,7 +1052,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
     } catch (err) {
       stageBroken = true;
       if (window.Chargement) window.Chargement.fini();
