@@ -1212,7 +1212,7 @@ test('mode Construire, niveaux 1 et 2 : au-dessus d\'une fenêtre ou d\'une port
 
 test('niveau 1 : des sols dans une pièce dont les murs y montent ; avec l\'escalier, les murs rehaussés sont ceux de l\'étage', () => {
   const s = chantier('sol-etage');
-  setInv(s, { mur_pierre: 40, porte: 1, plancher: 6, sol_carrelage: 2, escalier: 1, paillasse: 1 });
+  setInv(s, { mur_pierre: 60, porte: 1, plancher: 6, sol_carrelage: 2, escalier: 1, paillasse: 1 });
   const z = terrainLibre(s, 5, 5), p = murs(z, 5, 5), W = z.W;
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
   poserPorte(s, p.porte);
@@ -1234,6 +1234,10 @@ test('niveau 1 : des sols dans une pièce dont les murs y montent ; avec l\'esca
   assert(poserBloc(s, 'escalier', p.dedans + 2).ok);
   assertEqual([etageEmprise(s).size, hauteurPile(s, p.murs[3]), solsEtage(s)[dedans]], [25, 2, 'sol_carrelage']);
   assert(toits(s).some((t) => t.niveau === 1 && t.cases.includes(dedans)), 'un toit au niveau 1');
+  // des murs plus hauts que l'étage : le toit se pose sur le plus bas d'entre eux
+  for (const t of [...p.murs, p.porte]) assert(rehausser(s, 'mur_pierre', t).ok);
+  assert(toits(s).some((t) => t.niveau === 2 && t.cases.includes(dedans)), 'un toit au niveau 2');
+  for (const t of [...p.murs, p.porte]) assert(reprendreBloc(s, t).ok);
   assertEqual(poseEtageStatus(s, 'mur_pierre', p.murs[3]).ok, false, 'le mur rehaussé est déjà là');
   assert(poserEtage(s, 'paillasse', dedans + 1).ok);
   assertEqual(couchagesEtage(s), ['etage:' + (dedans + 1)], 'une paillasse dans la pièce de l\'étage');
