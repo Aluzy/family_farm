@@ -39,7 +39,7 @@ import { renderAteliers, renderMoulin, renderRecettes, renderStationFenetre } fr
 import { renderTechno } from './techno.js';
 import { persoHtml, renderFamille } from './famille.js';
 import { renderNotifications } from './notifications.js';
-import { fridgeSlots, inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
+import { inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
 import { renderAtelier } from './atelier.js';
 import { encyclopedieNouveautes } from './encyclopedie.js';
 import { couchages } from '../engine/blocs.js';
@@ -47,6 +47,7 @@ import { farmTerrain } from '../engine/terrain.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './caleche.js';
 import { renderChapterBanner } from './chapitres.js';
 import { renderBoite } from './boite.js';
+import { renderFrigoFenetre } from './frigo.js';
 import { boitePosee } from '../engine/repas.js';
 import { tutoTarget } from './aide.js';
 import { registerActions } from './actions.js';
@@ -295,7 +296,8 @@ export const STAGE_WINDOWS = {
   },
   frigo: {
     nom: 'Réfrigérateur', icone: '🧊', ok: () => isUnlocked(state, 'frigo') || state.frigo.construit, bois: true,
-    corps: () => `<div class="cards">${renderFridgeCard()}</div>${state.frigo.construit ? fridgeSlots() : ''}`,
+    // (ranger depuis la fenêtre : l'urgent, la case « + » et son tiroir, js/ui/frigo.js)
+    corps: () => renderFrigoFenetre(renderFridgeCard()),
   },
   // Installations (menu latéral ; la maison aussi tant qu'elle est à réparer et la ferme à
   // équiper) : la maison, les appareils à acheter, les ateliers, le frigo, le Silo.

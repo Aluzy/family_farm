@@ -912,6 +912,19 @@ select {
 .inv-slot.soon { border-color: var(--danger); }
 .inv-slot-soon { position: absolute; top: 3px; left: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px var(--wood-cream); }
 .inv-fridge { margin: 0 0 8px; font-weight: 700; }
+/* la fenêtre du frigo (js/ui/frigo.js) : ce qui périt cette nuit, la case « + », le tiroir « Ranger au frais » */
+.frigo-urgent { margin-bottom: 10px; background: #fbe3d6; border-color: var(--danger); }
+.frigo-plus { border-style: dashed; background: rgba(255, 244, 220, 0.35); }
+.frigo-plus .inv-slot-icon { font-size: 1.8rem; font-weight: 700; color: var(--color-earth); }
+.frigo-plus.on { border-style: solid; border-color: var(--color-sun); }
+.inv-slot.choisi { border-color: var(--color-sun); box-shadow: 0 0 0 3px var(--color-sun), inset 2px 2px 0 rgba(58, 36, 20, 0.35); }
+.frigo-tiroir { margin: 10px 0; }
+.frigo-choisi { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.frigo-choisi .item-icon { font-size: 2rem; }
+.frigo-soon { color: var(--danger); }
+.frigo-qte { display: flex; align-items: center; gap: 8px; margin: 6px 0; flex-wrap: wrap; }
+.frigo-qte .num { font-size: 1.4rem; min-width: 2ch; text-align: center; }
+.frigo-curseur { flex: 1; min-width: 120px; accent-color: var(--color-sun); }
 .inv-fridge.warm { color: var(--danger); }
 .inv-all { width: 100%; margin-bottom: 8px; }
 

@@ -121,6 +121,8 @@ export const GAME_ACTIONS = {
   'boite-deposer': 'Remplir la boîte à nourriture',
   'boite-reprendre': 'Remplir la boîte à nourriture',
   'fridge-in-all': 'Utiliser le réfrigérateur',
+  'fridge-in-urgent': 'Utiliser le réfrigérateur',
+  'frigo-ranger': 'Utiliser le réfrigérateur',
   'fridge-out': 'Utiliser le réfrigérateur',
   'toggle': 'Allumer ou éteindre un appareil',
   'semis-set': 'Régler les semis automatiques',
@@ -144,6 +146,7 @@ export const INTERFACE_ACTIONS = new Set([
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',
   'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open',
   'cancel-queued', 'ack-chapter',
+  'frigo-tiroir', 'frigo-choisir', 'frigo-qte', // la fenêtre du frigo : le tiroir « Ranger au frais », l'aliment, la quantité
   'scene-suite', 'scene-fermer', 'carnet-open', // le récit : la réplique suivante d'une scène, la fermer ; ouvrir le carnet
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-espece', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier',

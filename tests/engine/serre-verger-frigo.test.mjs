@@ -9,7 +9,7 @@ import {
   fridgeCounts, fridgeCoversNight, fridgeLots, fridgeNight, fridgeNightNeed, fridgeRate,
   fridgeRoom, fridgeUnits, fridgeUpgradeCost, grantTech, harvest, harvestTree, harvestYield,
   isBroken, lotsOf, maintainCost, maxStage, migrate, migrateFridgeCapacity, migrateOrchard,
-  MIGRATIONS, moveAllToFridge, moveFromFridge, moveToFridge, newTree, nightPower, plant,
+  MIGRATIONS, expiringToFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, newTree, nightPower, plant,
   plantableCrops, poserBloc, readyCrops, repairCost, repairDevice, ripeTrees, scaleEnergie,
   serreCap, serreUpgradeCost, shelfLife, STATE_VERSION, testAddSeeds, testBatir, testBuildFridge,
   testBuildSerre, testBuildVerger, testEmptyBatteries, testFillBatteries, testSetLevel,
@@ -706,6 +706,23 @@ test('version 1.10 : « Tout ranger » range d\'abord ce qui périme le plus tô
   const r = moveAllToFridge(s, { patate: 6 });
   assertEqual([r.moved, r.reste], [25, 5]);
   assertEqual([fridgeCount(s, 'tomate'), fridgeCount(s, 'patate'), fridgeCount(s, 'carotte')], [10, 0, 15], 'tomates (1 nuit) puis carottes ; les patates de semence restent');
+});
+
+test('« Les mettre au frais » : seulement ce qui périt cette nuit, tant qu\'il y a de la place', () => {
+  const s = ranch();
+  s.pieces = 1000;
+  assertEqual(moveExpiringToFridge(s).error, 'Construis d\'abord le Réfrigérateur.');
+  construireFrigo(reach(s, 'frigo'));
+  setInv(s, { tomate: 4, carotte: 3, oeuf: 5 });
+  assertEqual(moveExpiringToFridge(s).error, 'Rien ne périt cette nuit.');
+  s.inventaire.tomate[0].nightsLeft = 1;
+  s.inventaire.carotte[0].nightsLeft = 1;
+  addItem(s, 'carotte', 2);            // (un lot plus frais : il reste dehors)
+  assertEqual(expiringToFridge(s), { tomate: 4, carotte: 3 });
+  const r = moveExpiringToFridge(s);
+  assertEqual([r.ok, r.moved, r.items, r.reste], [true, 7, { tomate: 4, carotte: 3 }, 0]);
+  assertEqual([countItem(s, 'tomate'), countItem(s, 'carotte'), countItem(s, 'oeuf')], [0, 2, 5], 'les lots frais et les œufs restent dans le sac');
+  assertEqual(expiringToFridge(s), {});
 });
 
 test('version 1.10 : améliorer le frigo (300 / 700 / 1 500 / 3 000) ; la consommation suit le contenu', () => {

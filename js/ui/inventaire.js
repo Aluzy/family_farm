@@ -90,12 +90,13 @@ export function inventoryTabsHtml() {
 }
 
 // Une case : le dessin, la quantité (police pixel, en bas à droite), et un point rouge si
-// une partie périt à la prochaine nuit. `lieu` : 'sac' (l'inventaire) ou 'frigo'.
-function slotHtml(item, n, lieu) {
+// une partie périt à la prochaine nuit. `lieu` : 'sac' (l'inventaire) ou 'frigo'. `o` (facultatif) :
+// { action (au lieu d'ouvrir sa fiche : inv-item), choisi (la case est entourée) }.
+export function slotHtml(item, n, lieu, o = {}) {
   const it = DATA.OBJETS[item];
   const soon = lieu === 'sac' && isPerishable(item) ? expiringTonight(item) : 0;
   const label = `${it.nom} : ${formatQty(n)}${lieu === 'frigo' ? ' au frais' : ''}${soon ? `, dont ${formatQty(soon)} ${accord(soon, 'périt', 'périssent')} cette nuit` : ''}`;
-  return `<button type="button" class="inv-slot${soon ? ' soon' : ''}" data-action="inv-item" data-item="${item}" data-lieu="${lieu}" title="${it.nom}" aria-label="${label}">` +
+  return `<button type="button" class="inv-slot${soon ? ' soon' : ''}${o.choisi ? ' choisi' : ''}" data-action="${o.action || 'inv-item'}" data-item="${item}" data-lieu="${lieu}" title="${it.nom}" aria-label="${label}"${o.action ? ` aria-pressed="${!!o.choisi}"` : ''}>` +
     `<span class="inv-slot-icon" aria-hidden="true">${it.icone}</span>` +
     `<span class="inv-slot-qty">${pxText(String(Math.round(n)), 'light')}</span>` +
     `${soon ? '<span class="inv-slot-soon" aria-hidden="true"></span>' : ''}</button>`;
@@ -111,7 +112,8 @@ function fridgeAllButton(items) {
   return `<button type="button" class="btn primary inv-all" data-action="fridge-in-all">🧊 Tout ranger au frigo (${formatQty(Math.min(n, room))}${n > room ? ` sur ${formatQty(n)}` : ''})</button>`;
 }
 
-export function fridgeSlots() {
+// `plus` (facultatif) : une case de plus au bout de la grille (la fenêtre du frigo : « + », frigo.js).
+export function fridgeSlots(plus = '') {
   const f = state.frigo;
   if (!f.construit) {
     return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans les Installations (🏗️, dans le menu)' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.PRIX_CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
@@ -121,7 +123,7 @@ export function fridgeSlots() {
   const ok = fridgeIcon() === '❄️';
   return `
     <p class="inv-fridge${ok ? '' : ' warm'}" title="${ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté : chaque lot peut perdre une nuit.'}"><span aria-hidden="true">${fridgeIcon()}</span> <span class="num">${fridgeUnits(state)} / ${fridgeCapacity(state)}</span>${ok ? '' : ' · ⚠️ pas alimenté'}${!fridgeCoversNight(state) ? ' · ⚠️ la batterie ne couvrira pas la nuit' : ''}</p>
-    ${items.length ? `<div class="inv-slots">${items.map((k) => slotHtml(k, counts[k], 'frigo')).join('')}</div>` : '<p class="hint">Le frigo est vide.</p>'}`;
+    ${items.length || plus ? `<div class="inv-slots">${items.map((k) => slotHtml(k, counts[k], 'frigo')).join('')}${plus}</div>` : ''}${items.length ? '' : '<p class="hint">Le frigo est vide.</p>'}`;
 }
 
 // `fenetre` : dans la fenêtre flottante de la carte, les onglets sont dans son en-tête.
