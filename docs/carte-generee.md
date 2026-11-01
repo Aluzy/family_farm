@@ -996,7 +996,10 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
          centre (la case du milieu, ou l'une des deux du milieu si le côté est pair). Un mur se
          rehausse (`state.hauteurs`, jusqu'à `HAUTEUR_MAX`) en mode Construire au niveau n ≥ 1
          (le sélecteur de niveau, sans escalier) : un appui sur un mur haut de n blocs lui en
-         ajoute un, sur un mur haut de n + 1 blocs reprend celui du dessus. Au niveau 0, un appui
+         ajoute un, sur un mur haut de n + 1 blocs reprend celui du dessus. Au-dessus d'une
+         fenêtre ou d'une porte, un mur plein se pose aussi (`rehausser`, `hauteurPile`) : sa
+         matière est gardée dans `state.rehausses`, la carte le dessine raccordé à ses voisins
+         (modèle.blocs : `dessus`). Au niveau 0, un appui
          sur un mur le reprend comme tout bloc (le bloc du dessus d'abord). Aux niveaux 1 et 2, la carte
          montre le niveau seul (`syncRang`) : un voile sombre sur la ferme, devant lui le rang
          de mur du niveau (celui du dessous à peine visible, les autres presque invisibles), les

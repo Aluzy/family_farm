@@ -21,7 +21,8 @@
  * Un mur rehaussé (version 1.25, modèle.blocs : b.hauteur) : son image répétée au-dessus de
  * lui, BLOCS_CARTE.etage.dy px plus haut par bloc (syncHauts) ; il s'efface avec lui. Au-dessus
  * d'une porte entre deux murs rehaussés, le mur continue (un linteau, aussi haut que le plus
- * bas des deux).
+ * bas des deux) ; au-dessus d'une fenêtre ou d'une porte, les blocs posés aux niveaux 1 et 2
+ * (modèle.blocs : b.dessus, leur matière) prennent l'image de ce mur.
  *
  * Les meubles de la maison (modèle.blocs : b.meuble) ont leur propre dessin et couvrent
  * parfois plusieurs cases (syncMeuble) ; les tableaux s'accrochent à la face des murs
@@ -107,6 +108,8 @@
           return repli;
         };
         const linteau = (b) => {
+          // (au-dessus d'une fenêtre ou d'une porte, des blocs posés : leur mur, raccordé aux voisins)
+          if (b.dessus) return { h: b.hauteur || 1, frame: this.blocImage({ case: b.case, sorte: b.dessus }, at, cols) };
           if (!estPorte(b.sorte) || !haut.size) return null;
           const h = (k) => haut.get(k) || 0;
           const hz = Math.min(h(b.case - 1), h(b.case + 1)), vt = Math.min(h(b.case - cols), h(b.case + cols));
@@ -255,12 +258,14 @@
     // du niveau. Un appui vise cette hauteur (etagePoint).
     syncRang(n, pieces, changed) {
       const R = BLOCS_CARTE.rang, dy = BLOCS_CARTE.etage.dy, cols = this.grid.cols;
-      if (n === (this.rang || 0) && !changed && (!n || this.rangCle === JSON.stringify(pieces))) return;
+      // (le bloc en main compte : les cases où il se pose ne sont pas en rouge)
+      const m = this.ctx.lastModel, cle = JSON.stringify(pieces) + (m && m.bati ? m.bati.sorte : '');
+      if (n === (this.rang || 0) && !changed && (!n || this.rangCle === cle)) return;
       const avant = this.rangImgs || [];
       for (const i of avant) if (i.active) i.setDepth(i.rangZ).setAlpha(1);
       this.rangImgs = [];
       this.rang = n;
-      this.rangCle = n ? JSON.stringify(pieces) : '';
+      this.rangCle = n ? cle : '';
       if (this.rangGfx) this.rangGfx.clear();
       if (this.rangManque) this.rangManque.clear();
       if (this.rangVoile) this.rangVoile.setVisible(!!n);
@@ -284,20 +289,23 @@
           else i.setAlpha(R.autres);
         });
         // (un mur haut de n blocs : la place du bloc suivant)
-        if (e.img.texture.key === BLOCS_CARTE.hauts.key && rangs.length === n && !estPorte(e.sorte)) g.fillRect(e.x - T / 2, e.y - T - n * dy, T, T);
+        if (e.img.texture.key === BLOCS_CARTE.hauts.key && rangs.length === n) g.fillRect(e.x - T / 2, e.y - T - n * dy, T, T);
       }
       // un mur pas plus haut que le niveau, à côté d'un mur plus haut que lui (un trou dans un
       // mur rehaussé : vu de 3/4, les blocs de ses voisins le cachent) : en rouge, à la place de
       // son bloc suivant
       const B = this.blocks || new Map();
-      const mur = (e) => e && !e.cases && !estPorte(e.sorte) && e.img.texture.key === BLOCS_CARTE.hauts.key;
+      const mur = (e) => e && !e.cases && e.img.texture.key === BLOCS_CARTE.hauts.key;
       const h = (e) => 1 + (e.hauts || []).length;
       // (devant les murs : les blocs des voisins ne le cachent pas)
       if (!this.rangManque) this.rangManque = this.add.graphics();
       const gm = this.rangManque.setDepth(this.etageZ(9999)).clear();
       gm.fillStyle(R.manque, R.manqueAlpha);
+      // (une case où le bloc en main se pose : en blanc, js/farm-stage.js syncConstructible)
+      const T0 = this.ctx.bridge && this.ctx.bridge.trace;
       for (const e of B.values()) {
         if (!mur(e) || h(e) > n) continue;
+        if (T0 && T0.posable(e.case) === 'ok') continue;
         let haut = false;
         for (let dr = -1; dr <= 1 && !haut; dr++) for (let dc = -1; dc <= 1; dc++) { const v = B.get(e.case + dr * cols + dc); if (v !== e && mur(v) && h(v) > h(e)) { haut = true; break; } }
         if (haut) gm.fillRect(e.x - T / 2, e.y - T - h(e) * dy, T, T);

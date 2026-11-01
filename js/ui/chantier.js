@@ -15,7 +15,7 @@ import { atelierConstruit, craft, craftStatus } from '../engine/atelier.js';
 import { countItem } from '../engine/inventory.js';
 import { blocsDidacticiel } from '../engine/didacticiel.js';
 import { setStageWindow, stageWindow } from './stage-windows.js';
-import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, deplacerBloc, deplacerStatus, hauteurMur, poserBloc, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
+import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, deplacerBloc, deplacerStatus, hauteurPile, matiereDessus, poserBloc, rehausser, rehausseStatus, poseStatus, reprendreBloc, solAt } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
 import { ETAGE_BLOCS, etageCouvertes, etageEmprise, poseEtageStatus, poserEtage, reprendreEtage, etageBlocs } from '../engine/etage.js';
@@ -171,14 +171,16 @@ export function buildChipHtml() {
   // le niveau de construction : un petit carré au bout de la barre, et la liste des niveaux (le
   // plus haut en haut), qui s'ouvre sous lui
   const max = niveauMax(), lvl = niveau();
-  const niveaux = Array.from({ length: max + 1 }, (_, i) => max - i).map((n) => `<button type="button" class="build-level-item${n === lvl ? ' active' : ''}" data-action="build-level" data-niveau="${n}" aria-pressed="${n === lvl}" aria-label="Niveau ${n}">${n}</button>`).join('');
+  // (chaque niveau : son chiffre et ce qu'on y fait)
+  const quoi = (n) => (!n ? 'Au sol' : n === 1 && etageEmprise(state).size ? 'Étage · murs' : `Rehausser · ${n + 1} blocs`);
+  const niveaux = Array.from({ length: max + 1 }, (_, i) => max - i).map((n) => `<button type="button" class="build-level-item${n === lvl ? ' active' : ''}" data-action="build-level" data-niveau="${n}" aria-pressed="${n === lvl}" aria-label="Niveau ${n} : ${quoi(n)}"><span class="build-level-n" aria-hidden="true">${n}</span><span class="build-level-quoi" aria-hidden="true">${quoi(n)}</span></button>`).join('');
   // l'outil pièce : un mur en main, au sol ; allumé, un glissement trace le pourtour d'une pièce
   const murEnMain = !!(buildMode && DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].mur);
   // la gomme (un bloc qui se trace en main) et Annuler (au sol, s'il y a quelque chose à défaire)
   const gomme = traceInfo() || modeGomme ? `<button type="button" class="build-piece build-gomme${modeGomme ? ' on' : ''}" data-action="build-gomme" aria-pressed="${modeGomme}" aria-label="Gomme : glisser pour reprendre les blocs" title="Gomme : glisse pour reprendre les blocs de cette sorte"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M3 10.5 9.5 4l3.5 3.5L6.5 14H4z" fill="#fbd98c" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6.4 7.1l3.5 3.5" stroke="currentColor" stroke-width="1.6"/><path d="M8 14h5" stroke="currentColor" stroke-width="1.6"/></svg></button>` : '';
   const annuler = `<button type="button" class="build-piece build-annuler" data-action="build-annuler"${histoire.length ? '' : ' disabled'} aria-label="Annuler la dernière opération" title="Annuler la dernière opération"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M5 4 2 7l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M2.5 7H10a3.5 3.5 0 0 1 0 7H7" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>`;
   const outilPiece = murEnMain ? `<button type="button" class="build-piece${modePiece ? ' on' : ''}" data-action="build-piece" aria-pressed="${modePiece}" aria-label="Outil pièce : glisser d'un coin à l'autre pour poser tous les murs d'une pièce" title="Outil pièce : glisse d'un coin à l'autre pour poser les murs du pourtour"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><rect x="2" y="3" width="12" height="10" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="7" y="11.5" width="2.6" height="2.6" fill="#fbd98c"/></svg></button>` : '';
-  const choixNiveau = `<div class="build-level"><button type="button" class="build-level-btn" data-action="build-level-menu" aria-haspopup="true" aria-expanded="${niveauListe}" aria-label="Niveau de construction : ${lvl}" title="Niveau de construction (appui long : glisser jusqu'au niveau)">${lvl}</button><div class="build-level-list" role="group" aria-label="Niveaux"${niveauListe ? '' : ' hidden'}>${niveaux}</div></div>`;
+  const choixNiveau = `<div class="build-level"><button type="button" class="build-level-btn" data-action="build-level-menu" aria-haspopup="true" aria-expanded="${niveauListe}" aria-label="Niveau de construction : ${lvl}" title="Niveau de construction (appui long : glisser jusqu'au niveau)">${lvl}</button><div class="build-level-list" role="group" aria-label="Niveaux"${niveauListe ? '' : ' hidden'}><span class="build-level-titre" aria-hidden="true">Niveau</span>${niveaux}</div></div>`;
   // la pose d'un meuble : ✔️ le pose là où est son aperçu, ❌ sort de ce mode
   const m = meubleModele(), ap = m && m.apercu;
   const pose = m ? `<div class="pose-meuble" role="group" aria-label="Poser le meuble"><span class="pose-meuble-txt">${ap ? (ap.ok ? 'Le poser ici ?' : 'Il ne tient pas ici') : 'Touche une case pour placer le meuble'}</span><button type="button" class="pose-meuble-ok" data-action="meuble-ok"${ap && ap.ok ? '' : ' disabled'} aria-label="Poser le meuble ici" title="Poser le meuble ici">✔️</button><button type="button" class="pose-meuble-non" data-action="meuble-annule" aria-label="Sortir de la pose du meuble" title="Sortir de la pose du meuble">❌</button></div>` : '';
@@ -343,13 +345,14 @@ export function tracePosable(c) {
     if (be && (b.mur ? be.mur : b.sol && be.sol)) return 'fait';
     return poseEtageStatus(state, buildMode, c).ok ? 'ok' : false;
   }
-  // aux niveaux 1 et 2 : un mur haut de n blocs (le même mur en main) se rehausse ; plus haut, c'est fait
+  // aux niveaux 1 et 2 : un mur haut de n blocs (le même mur en main ; au-dessus d'une fenêtre ou
+  // d'une porte, un mur plein) se rehausse ; plus haut, c'est fait
   const n = niveau();
   if (n) {
-    const h = hauteurMur(state, c);
+    const h = hauteurPile(state, c);
     if (!h || !b.mur) return false;
     if (h > n) return 'fait';
-    return h === n && blocAt(state, c) === buildMode && poseStatus(state, buildMode, c).ok ? 'ok' : false;
+    return h === n && rehausseStatus(state, buildMode, c).ok ? 'ok' : false;
   }
   const x = blocAt(state, c), bx = x && DATA.ATELIER.BLOCS[x];
   if (b.mur ? bx && bx.mur : buildMode === 'barriere' ? x === 'barriere' : b.sol && solAt(state, c)) return 'fait';
@@ -416,6 +419,7 @@ function poserIci(sorte, c) {
     const r = poserEtage(state, sorte, c);
     return { r, geste: { pose: c, sorte, etage: true } };
   }
+  if (niveau()) return { r: rehausser(state, sorte, c), geste: { pose: c, sorte, rang: true } };
   return { r: poserBloc(state, sorte, c), geste: { pose: c, sorte } };
 }
 // Reprendre (la gomme) ce qu'il y a sur la case `c` au niveau où l'on construit : sur l'étage, son
@@ -426,7 +430,11 @@ function reprendreIci(c) {
     return { r, geste: { reprise: c, sorte: r.sorte || avant, etage: true } };
   }
   const n = niveau();
-  if (n && hauteurMur(state, c) !== n + 1) return { r: { ok: false, error: `Niveau ${n} : la gomme reprend le bloc du dessus des murs hauts de ${n + 1} blocs.` } };
+  if (n) {
+    if (hauteurPile(state, c) !== n + 1) return { r: { ok: false, error: `Niveau ${n} : la gomme reprend le bloc du dessus des murs hauts de ${n + 1} blocs.` } };
+    const r = reprendreBloc(state, c);
+    return { r, geste: { reprise: c, sorte: r.sorte, rang: true } };
+  }
   const avant = surCase(c), r = reprendreBloc(state, c);
   return { r, geste: { reprise: c, sorte: r.sorte || avant } };
 }
@@ -588,14 +596,15 @@ registerActions({
     // plus haut que le sol : rehausser un mur, reprendre son bloc du dessus
     const n = niveau();
     if (n) {
-      const h = hauteurMur(state, c);
+      const h = hauteurPile(state, c);
       let r;
-      if (!h) r = { ok: false, error: `Niveau ${n} : touche un mur pour le rehausser (niveau 0 pour poser au sol).` };
+      if (!h) r = { ok: false, error: `Niveau ${n} : touche un mur, une fenêtre ou une porte pour le rehausser (niveau 0 pour poser au sol).` };
       else if (h === n + 1) r = reprendreBloc(state, c);
-      else if (h === n) r = poserBloc(state, blocAt(state, c), c);
+      else if (h === n) r = rehausser(state, matiereDessus(state, c) || buildMode, c);
       else if (h < n) r = { ok: false, error: `Ce mur n'a que ${h} bloc${h > 1 ? 's' : ''} : rehausse-le d'abord au niveau ${h}.` };
       else r = { ok: false, error: `Ce mur est plus haut : reprends son bloc du dessus au niveau ${h - 1}.` };
       if (!r.ok) { notify(r.error); return; }
+      noter([h === n ? { pose: c, sorte: r.sorte, rang: true } : { reprise: c, sorte: r.sorte, rang: true }]);
       persistState();
       refresh();
       return;
@@ -634,6 +643,7 @@ registerActions({
       // (sur l'étage d'une pièce : ses blocs ; ailleurs, le sol et les murs rehaussés)
       const r = g.etage ? (g.pose !== undefined ? (etageBlocs(state)[g.pose] === g.sorte ? reprendreEtage(state, g.pose) : { ok: false }) : poserEtage(state, g.sorte, g.reprise))
         : g.deplace !== undefined ? (surCase(g.deplace) === g.sorte ? deplacerBloc(state, g.deplace, g.de) : { ok: false })
+        : g.rang ? (g.pose !== undefined ? (hauteurPile(state, g.pose) > 1 && matiereDessus(state, g.pose) === g.sorte ? reprendreBloc(state, g.pose) : { ok: false }) : rehausser(state, g.sorte, g.reprise))
         : g.pose !== undefined ? (surCase(g.pose) === g.sorte ? reprendreBloc(state, g.pose) : { ok: false })
         : g.reprise !== undefined ? poserBloc(state, g.sorte, g.reprise)
           : defaireChange(g);
