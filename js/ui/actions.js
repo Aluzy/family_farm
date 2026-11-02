@@ -26,7 +26,7 @@ export const SOMMEIL_PERMISES = new Set([
   'fiche-case', 'fiche-equiper', 'fiche-tente', // (fiche 11 : habiller la famille ; le récit, lot 8 : la tente)
 ]);
 export const SOMMEIL_BLOQUEES = new Set([
-  'plant', 'boite-deposer', 'boite-reprendre', 'water', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
+  'plant', 'boite-deposer', 'boite-reprendre', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'feed-hen', 'feed-all', 'shear', 'start-recipe',
   'sell-item', 'buy-item', 'caleche-heler', 'promesse-confier', 'ile-commander', 'ile-meuble', 'cheval-toggle', 'plant-all', 'hoe-many',
   'toit-reparer', 'enveloppe-ouvrir', // (le récit, lot 9 : réparer un toit de hameau, ouvrir l'enveloppe de Maurice)
   'pierre-poser', // (le récit, lot 10 : poser la pierre de lune sur la ferme)

@@ -189,9 +189,9 @@
         I.on('pointerup', (p) => this.onUp(p, true));
         I.on('pointerupoutside', (p) => this.onUp(p, false));
         // Dehors, le doigt posé puis glissé : le personnage marche dans sa direction tant qu'il
-        // reste posé (CarteKit.manette) ; pas quand la houe laboure, ni la bulle de la citerne,
-        // ni pendant la pêche, ni au lit.
-        this.manette = K.manette(this, () => this.suitPerso() && !!this.drag && !this.drag.labour && !this.drag.trace && !this.drag.deplace && !this.drag.held && !this.drag.meuble
+        // reste posé (CarteKit.manette) ; pas quand la houe laboure ni qu'on arrose en glissant, ni
+        // la bulle de la citerne, ni pendant la pêche, ni au lit.
+        this.manette = K.manette(this, () => this.suitPerso() && !!this.drag && !this.drag.labour && !this.drag.arrose && !this.drag.trace && !this.drag.deplace && !this.drag.held && !this.drag.meuble
           && !this.fishing && !(this.ctx.lastModel && this.ctx.lastModel.coucher));
         I.on('gameout', () => { if (!this.drag) this.setHover(null); });
         this.makePincement();            // sur téléphone : deux doigts règlent le zoom (camera.js)
@@ -306,6 +306,8 @@
           fort: this.chargeStart(wp.x, wp.y),
           // FLU-12 : houe en main, un glissement parti d'une case verte laboure les cases traversées
           labour: null,
+          // sans outil en main, un glissement parti d'une culture à arroser arrose les cultures traversées
+          arrose: null,
           // la pose d'un meuble : un glissement parti de son aperçu le déplace, case par case
           meuble: null,
           // en mode Construire, un glissement parti d'une case où le bloc se pose : une ligne de blocs
@@ -318,7 +320,8 @@
         // (en mode Construire, à la souris : le bouton droit ou du milieu fait seulement glisser la vue)
         if (this.fige && pointer.button > 0) { this.drag.panSeul = true; return; }
         if (!this.drag.fort) this.drag.labour = this.labourStart(wp.x, wp.y);
-        if (!this.drag.fort && !this.drag.labour) this.drag.trace = this.traceStart(wp.x, wp.y);
+        if (!this.drag.fort && !this.drag.labour) this.drag.arrose = this.arroseStart(wp.x, wp.y);
+        if (!this.drag.fort && !this.drag.labour && !this.drag.arrose) this.drag.trace = this.traceStart(wp.x, wp.y);
         // La pipette (mode Construire, au sol) : un appui maintenu sans bouger sur un bloc posé le
         // prend en main (js/ui/chantier.js, bloc-pipette) ; le tracé qui en partait est oublié.
         const mb = this.ctx.lastModel && this.ctx.lastModel.bati;
@@ -414,6 +417,11 @@
           if (d.moved) this.labourTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
           return;
         }
+        if (d.arrose) {
+          if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) { d.moved = true; this.setHover(null); this.arroseTo(d, { x: d.wx, y: d.wy }); }
+          if (d.moved) this.arroseTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
+          return;
+        }
         if (d.deplace && !d.held) {
           if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) { d.moved = true; clearTimeout(d.holdTimer); this.setHover(null); }
           if (d.moved) this.deplaceTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
@@ -483,6 +491,11 @@
           if (d.labour.tiles.length) this.ctx.bridge.act('hoe-many', { cases: d.labour.tiles.join(',') });
           return;
         }
+        if (d.arrose && d.moved) {
+          this.clearArroseMarks();
+          if (d.arrose.tiles.length) this.ctx.bridge.act('water-many', { cases: d.arrose.tiles.join(',') });
+          return;
+        }
         if (!d.moved) {
           // Appui : la vue revient où elle était (elle a pu bouger de quelques pixels).
           if (!this.suitPerso()) this.setCentre(d.cx, d.cy);
@@ -541,8 +554,9 @@
           if (this.stepVisite) this.stepVisite(dt / 1000);     // (la visite de bienvenue : visite.js, fiche 18)
           if (this.family) this.family.update(delta);
         }
-        // La vue suit le personnage, centrée sur lui (comme sur les autres cartes).
-        if (this.suitPerso()) {
+        // La vue suit le personnage, centrée sur lui (comme sur les autres cartes) ; pas pendant un
+        // labour ou un arrosage en glissant : les cases restent sous le doigt.
+        if (this.suitPerso() && !(this.drag && (this.drag.labour || this.drag.arrose))) {
           const p = this.fermier.pos();
           if (p) {
             this.pan = null;
@@ -666,6 +680,40 @@
         }
         L.last = { x: wp.x, y: wp.y };
         this.labourMarks = L.marks;
+      }
+
+      // Arroser en glissant : sans outil en main, un glissement qui part d'une culture à arroser
+      // (modèle.arrosables) marque, dans l'ordre, les cultures à arroser qu'il traverse (un reflet
+      // d'eau sur chacune) ; au relâchement, elles partent toutes ensemble (water-many,
+      // js/ui/cruche.js : arrosées une à une, la cruche remplie au puits quand elle est vide).
+      arroseStart(wx, wy) {
+        const m = this.ctx.lastModel;
+        if (!m || !m.arrosables || !m.arrosables.length || m.coucher) return null;
+        const t = this.tileAtPoint(wx, wy), ok = new Set(m.arrosables);
+        if (!ok.has(t)) return null;
+        return { ok, tiles: [], seen: new Set(), last: { x: wx, y: wy }, marks: [] };
+      }
+
+      arroseTo(d, wp) {
+        const L = d.arrose, W = this.grid.cols;
+        const steps = Math.max(1, Math.ceil(Math.hypot(wp.x - L.last.x, wp.y - L.last.y) / 4));
+        for (let k = 0; k <= steps; k++) {
+          const x = L.last.x + ((wp.x - L.last.x) * k) / steps, y = L.last.y + ((wp.y - L.last.y) * k) / steps;
+          const t = Math.floor(y / T) * W + Math.floor(x / T);
+          if (L.seen.has(t)) continue;
+          L.seen.add(t);
+          if (!L.ok.has(t)) continue;
+          L.tiles.push(t);
+          K.vibre('houe');
+          L.marks.push(this.add.rectangle((t % W) * T + T / 2, Math.floor(t / W) * T + T / 2, T - 2, T - 2, 0x3f8fd8, 0.35).setStrokeStyle(1, 0xbfe4ff, 0.9).setDepth(1e5 - 2));
+        }
+        L.last = { x: wp.x, y: wp.y };
+        this.arroseMarks = L.marks;
+      }
+
+      clearArroseMarks() {
+        for (const r of this.arroseMarks || []) r.destroy();
+        this.arroseMarks = [];
       }
 
       // Construire en glissant (js/ui/chantier.js, traceInfo) : un glissement parti d'une case où
@@ -1242,9 +1290,9 @@
   // Fiche 17 : le personnage va remplir la cruche au puits (js/carte/ferme/puits.js) : { ok } ou
   // { ok: false, raison } ('sans' : pas de carte, de personnage ou de puits ; 'ferme' : aucun
   // chemin ; 'loin' : trop loin). Le jeu remplit la cruche quand il y puise (bridge.puiser).
-  function allerAuPuits() {
+  function allerAuPuits(apres) {
     const s = getScene();
-    return s && s.ready && s.allerAuPuits ? s.allerAuPuits() : { ok: false, raison: 'sans' };
+    return s && s.ready && s.allerAuPuits ? s.allerAuPuits(apres) : { ok: false, raison: 'sans' };
   }
   global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, arrive, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

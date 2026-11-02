@@ -58,6 +58,7 @@ export const GAME_ACTIONS = {
   'carte-monde-ferme': 'Ramener la boussole à la ferme',
   'plant-all': 'Planter partout',
   'hoe-many': 'Labourer en glissant',
+  'water-many': 'Arroser en glissant',
   'ile-commander': 'Commander à un atelier de hameau (la scierie, le tissage, la couture : le récit)',
   'ile-meuble': 'Acheter un meuble dans un hameau (l\'ébéniste, les tapis)',
   'toit-reparer': 'Réparer le toit abîmé d\'une maison de hameau (le récit)',
