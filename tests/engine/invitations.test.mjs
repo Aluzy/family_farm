@@ -8,7 +8,7 @@
    Lancer seul : node tests/run-tests.mjs invitations.
    ========================================================================== */
 
-import { addItem, countItem, DATA, hourOfDay } from '../../js/engine/index.js';
+import { addItem, countItem, DATA, hourOfDay, jaugeMembre, mangeurs } from '../../js/engine/index.js';
 import { ajouterAmitie, parlerAmitie, pointsAmitie, goutsDe } from '../../js/engine/amitie.js';
 import {
   INVITATION, annulerInvitation, invitationDuMoment, invitationsAVenir, invitationsNuit, invitesModele, inviter,
@@ -100,6 +100,7 @@ test('invitations : le jour dit, à l\'heure, servir le repas (les goûts, la te
   const adore = plats.find((it) => g[it] === 'adore') || plats[0];
   addItem(s, adore, 1);
   assert(platsServables(s).includes(adore));
+  for (const m of s.famille.membres) m.energie = 10;
   const avant = pointsAmitie(s, a.id), cibleAvant = cibleBonheur(s, {});
   assertEqual(servirRepas(s, inv.id, [adore, adore, adore, 'pain']).ok, false, 'il manque le pain');
   const r = servirRepas(s, inv.id, [adore], true);
@@ -110,6 +111,7 @@ test('invitations : le jour dit, à l\'heure, servir le repas (les goûts, la te
   assertEqual(r.invites[0].emotion, (g[adore] || 'neutre') === 'deteste' ? 'degout' : 'joie');
   assert(cibleBonheur(s, {}) >= cibleAvant + R.BONHEUR, 'la famille vise plus haut cette nuit');
   assertEqual(s.repasJour.mange[adore], 1, 'le plat compte dans les repas du jour');
+  assert(mangeurs(s).every((m) => jaugeMembre(m) === DATA.FAMILLE.FAIM.MAX), 'la famille, à table, a mangé à sa faim');
   assertEqual(servirRepas(s, inv.id, []).ok, false, 'une fois');
   assertEqual(invitesModele(s).etat, 'servie', 'ils mangent, puis repartent');
   // le souvenir : le lendemain, il en parle (une phrase avec le plat), puis plus tard une fois encore
