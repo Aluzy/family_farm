@@ -742,6 +742,18 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
+     "id": "terrasse",
+     "terme": "Terrasse",
+     "description": "La table de jardin (des planches et de la fibre pour sa nappe), la chaise de jardin et le banc de jardin se fabriquent à l'Atelier et se posent dehors (l'onglet « Jardin » du mode Construire). Une chaise ou un banc qui touche la table est une place : c'est là que s'assoient tes invités quand tu les invites à un repas depuis le calendrier.",
+     "liens": [
+      "invitation_repas",
+      "bac_a_fleurs"
+     ],
+     "decouverte": [
+      "objet:table_jardin"
+     ]
+    },
+    {
      "id": "graines_d_arbre",
      "terme": "Pomme de pin et gland",
      "description": "Sur la ferme, un arbre abattu ne repousse pas : il laisse sa graine, une pomme de pin pour un sapin, un gland pour un autre arbre. Plantée depuis sa fiche de l'Inventaire (« Planter », puis une case en surbrillance sur la carte) sur n'importe quelle case d'herbe libre, dehors, c'est d'abord une jeune pousse pendant 2 à 4 jours, puis un arbre qui se coupe comme les autres.",
@@ -2425,6 +2437,19 @@ export const ENCYCLOPEDIE = {
      "liens": [
       "habitants",
       "hameaux"
+     ],
+     "decouverte": [
+      "hameau"
+     ]
+    },
+    {
+     "id": "invitation_repas",
+     "terme": "Inviter à un repas",
+     "description": "Depuis le calendrier, touche un jour à venir (ou « ＋ Créer un évènement ») : choisis le jour, le déjeuner (12 h) ou le dîner (19 h), et jusqu'à 4 personnes parmi celles à qui tu as déjà parlé. Achille, le cocher, porte ton message pendant sa tournée : les réponses arrivent le lendemain matin (plus l'amitié est grande, plus on accepte volontiers). Le jour dit, tes invités viennent à pied une heure avant et s'assoient à ta table : une table de jardin et ses chaises ou ses bancs (la terrasse), sinon la table de la maison ; sans table, ils attendent devant la porte. Viens à table : tu sers jusqu'à 3 plats de ton inventaire. Chacun gagne +4 d'amitié, plus selon ses goûts (+4 pour un plat qu'il adore), +2 sur la terrasse ; la famille, attablée avec eux, vise +6 de bonheur cette nuit. Les jours suivants, tes invités parlent de ce bon moment. Un repas manqué ne fait rien perdre : ils repartent en souriant.",
+     "liens": [
+      "amitie",
+      "calendrier_lune",
+      "terrasse"
      ],
      "decouverte": [
       "hameau"

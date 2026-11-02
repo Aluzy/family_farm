@@ -152,6 +152,7 @@ export function peuplerHameau(state, plan, o = {}) {
   const eau = ['mer', 'lac', 'riviere'].includes(o.eau) ? o.eau : plan.style === 'cote' ? 'mer' : 'riviere';
   H[plan.id] = {
     nom: String(plan.nom || plan.id), metier, style: plan.style || 'prairie', eau, jour: state.day,
+    ...(Number.isInteger(plan.case) ? { case: plan.case } : {}),
     jardins, poulailler: (plan.travail || []).some((t) => t.genre === 'poulailler'), reserve: {}, foyers,
     ...(plan.garanti ? { garanti: plan.garanti } : {}),
   };

@@ -51,7 +51,9 @@
 #   90 à 201 : les modèles de sols (BLOCS_CARTE.modelesSols, MODELES_SOLS) : 16 images
 #            raccordées chacun, comme le plancher ;
 #   202 à 208 : les modèles de portes percées dans un mur vertical (BLOCS_CARTE.portesVerticales,
-#            MODELES_PORTES).
+#            MODELES_PORTES) ;
+#   209 à 225 : le réservoir et les outils des chaînes de production ;
+#   226 à 228 : la terrasse : la table, la chaise et le banc de jardin (BLOCS_CARTE.frames).
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -2208,6 +2210,74 @@ RESERVOIR = len(DESSINS)                         # le réservoir, sa jauge du vi
 DESSINS += [reservoir(k / (CH_NIVEAUX - 1)) for k in range(CH_NIVEAUX)]
 OUTILS_CHAINE = len(DESSINS)                     # les outils, à l'arrêt puis en marche (BLOCS_CARTE.frames)
 DESSINS += [f(m) for f in (pressoir, centrifugeuse, mixeur, chaudron, tonneau, ensacheuse) for m in (False, True)]
+
+
+# ---------- la terrasse : la table, la chaise et le banc de jardin (les invitations, js/engine/invitations.js) ----------
+# Un bois clair, peint en vert sauge ; la nappe de la table, à carreaux rouges. Une chaise ou un banc
+# qui touche la table (à gauche, à droite, au-dessus, au-dessous) est une place à table pour les invités.
+
+SAUGE = [(40, 62, 46), (70, 104, 76), (104, 142, 104), (146, 182, 136), (190, 218, 172)]
+NAPPE = [(150, 40, 40), (206, 66, 60), (244, 236, 222), (255, 250, 240)]
+
+
+def table_jardin():
+    """La table de jardin : un plateau carré sur quatre pieds, une nappe à carreaux rouges, une
+    cruche et deux assiettes."""
+    t = Toile()
+    pieds(t, (2, 12), 15, BAS - 1, SAUGE)
+    for x in range(4, 12):                       # la traverse, entre les pieds
+        t.put(x, BAS - 3, SAUGE[1])
+
+    def nappe(x, y):                             # le vichy : rouge sur rouge, rouge sur blanc, blanc
+        a, b = (x // 2) % 2, (y // 2) % 2
+        return NAPPE[1] if a and b else NAPPE[3] if not a and not b else (232, 150, 140)
+    yd, yf = boite(t, 1, 14, 15, 3, 13, nappe, lambda x, y: NAPPE[0] if (x // 2) % 2 else NAPPE[1])
+    for x in range(1, 15):                       # le pan de nappe qui tombe, plus sombre au bas
+        t.put(x, 16, NAPPE[0] if x % 3 == 0 else NAPPE[1])
+    # deux assiettes et une cruche
+    for cx, cy in ((4, yd + 4), (11, yd + 6)):
+        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (0, 0)):
+            t.put(cx + dx, cy + dy, (238, 238, 232) if (dx, dy) != (0, 0) else (210, 214, 210))
+    t.rect(7, yd + 2, 8, yd + 5, (196, 120, 70))
+    t.put(7, yd + 2, (230, 160, 100))
+    t.put(9, yd + 3, (150, 86, 50))
+    return t.fini()
+
+
+def chaise_jardin():
+    """La chaise de jardin : un siège à lattes, un dossier haut à barreaux, peints en vert sauge."""
+    t = Toile()
+    pieds(t, (3, 11), 16, BAS - 1, SAUGE)
+    boite(t, 2, 13, 16, 2, 8, planches(SAUGE, 'h', pas=2), SAUGE)
+    # le dossier, au fond du siège
+    for y in range(3, 12):
+        t.put(2, y, SAUGE[3])
+        t.put(13, y, SAUGE[1])
+    for x in range(2, 14):
+        t.put(x, 3, SAUGE[4])
+        t.put(x, 4, SAUGE[2])
+    for x in (5, 8, 11):
+        for y in range(5, 12):
+            t.put(x, y, SAUGE[2])
+    return t.fini()
+
+
+def banc_jardin():
+    """Le banc de jardin : une assise de trois lattes, un dossier de deux lattes, des pieds de fer."""
+    t = Toile()
+    pieds(t, (1, 13), 17, BAS - 1, FER)
+    boite(t, 0, 15, 17, 2, 7, planches(BOIS, 'h', pas=2), BOIS)
+    for y in (6, 7, 9, 10):                      # le dossier
+        for x in range(0, 16):
+            t.put(x, y, BOIS[3] if y in (6, 9) else BOIS[2])
+    for y in range(5, 12):
+        t.put(1, y, FER[2])
+        t.put(14, y, FER[1])
+    return t.fini()
+
+
+TERRASSE = len(DESSINS)                          # la table, la chaise et le banc de jardin (BLOCS_CARTE.frames)
+DESSINS += [table_jardin(), chaise_jardin(), banc_jardin()]
 
 
 def masque(g, x, y):

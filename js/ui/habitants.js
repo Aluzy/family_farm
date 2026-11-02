@@ -111,6 +111,8 @@ export function paroleDepuisCarte(o) {
     r.amitie = a.amitie; r.emotion = a.emotion;
     // (les retrouvailles : il le dit avant sa phrase du moment)
     if (a.retrouvailles) r.texte = `${RETROUVAILLES[(o.n || 0) % RETROUVAILLES.length]} ${r.texte}`;
+    // (le souvenir d'un repas partagé : il le dit d'abord)
+    if (a.souvenir) { r.texte = a.souvenir; persistState(); }
     if (a.amitie.gain) persistState();
   }
   return r;

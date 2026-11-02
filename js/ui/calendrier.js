@@ -2,8 +2,11 @@ import { DATA } from '../engine/catalog.js';
 import { dayOfMonth, monthIndex, monthName, moonPhase, yearNumber } from '../engine/lune.js';
 import { formatDay, weekdayName } from '../engine/format.js';
 import { state } from './store.js';
+import { evenementsParJour, jourInvitable, renderEvenements } from './invitations.js';
 
-/* ---------- le calendrier lunaire (carte en haut à droite › Calendrier) ---------- */
+/* ---------- le calendrier lunaire (carte en haut à droite › Calendrier) ----------
+   Ses évènements (js/ui/invitations.js) : un jour à venir se touche pour en créer un (inviter à un repas) ;
+   un jour qui en a un est marqué 🍽️ ; dessous, la liste des évènements prévus. */
 
 // Ce que fait une phase de la lune aux cultures, en mots (valeurs de data/crops.json, LUNE).
 export function moonEffect(phase) {
@@ -25,11 +28,17 @@ export function renderCalendrier() {
   const debut = today - dayOfMonth(today) + 1;
   const phase = moonPhase(today);
   const tetes = Array.from({ length: 7 }, (_, k) => `<span class="cal-head" aria-hidden="true">${weekdayName(debut + k, true).slice(0, 1)}</span>`).join('');
+  const evts = evenementsParJour();
   const cases = Array.from({ length: L.JOURS_MOIS }, (_, k) => {
     const d = debut + k;
     const p = moonPhase(d);
     const cls = d === today ? ' today' : d < today ? ' past' : '';
-    return `<span class="cal-day${cls}" title="${formatDay(d)} : ${p.nom}"${d === today ? ' aria-current="date"' : ''}><span class="num">${k + 1}</span><span aria-hidden="true">${p.icone}</span><span class="visually-hidden">${weekdayName(d)}, ${p.nom}</span></span>`;
+    const evt = evts[d] ? '<span class="cal-evt" aria-hidden="true">🍽️</span>' : '';
+    const dit = `${weekdayName(d)}, ${p.nom}${evts[d] ? ', un repas prévu' : ''}`;
+    const dedans = `<span class="num">${k + 1}</span><span aria-hidden="true">${p.icone}</span>${evt}<span class="visually-hidden">${dit}</span>`;
+    // (un jour à venir : il se touche, pour créer un évènement)
+    if (jourInvitable(d)) return `<button type="button" class="cal-day cal-libre" data-action="evt-open" data-jour="${d}" title="${formatDay(d)} : ${p.nom}. Créer un évènement">${dedans}</button>`;
+    return `<span class="cal-day${cls}" title="${formatDay(d)} : ${p.nom}"${d === today ? ' aria-current="date"' : ''}>${dedans}</span>`;
   }).join('');
   const phases = L.PHASES.map((p) => `<li class="cal-phase${p.id === phase.id ? ' current' : ''}"><span aria-hidden="true">${p.icone}</span><span><strong>${p.nom}</strong> (${p.jours} jours) : ${moonEffect(p)}.</span></li>`).join('');
   const reste = L.JOURS_MOIS - dayOfMonth(today) + 1;
@@ -39,6 +48,7 @@ export function renderCalendrier() {
       <span class="card-title"><span>${monthName(today)} · an ${yearNumber(today)}</span></span>
       <span>Aujourd'hui : <strong>${formatDay(today)}</strong>, ${phase.icone} ${phase.nom.toLowerCase()}.</span>
       <div class="cal-grid" role="group" aria-label="${monthName(today)}">${tetes}${cases}</div>
+      ${renderEvenements()}
       <ul class="cal-phases">${phases}</ul>
       <span class="muted">Un mois dure ${L.JOURS_MOIS} jours, une lunaison. ${suivant} commence ${reste > 1 ? `dans ${reste} jours` : 'demain'}.</span>
     </div>`;

@@ -2240,6 +2240,23 @@ main .ancre { scroll-margin-top: 150px; }
 }
 .cal-day.past { opacity: 0.55; }
 .cal-day.today { background: #fbd98c; box-shadow: inset 0 0 0 2px var(--color-earth); }
+.cal-day { position: relative; }
+button.cal-day { border: 0; font: inherit; color: inherit; cursor: pointer; }
+button.cal-day:hover, button.cal-day:focus-visible { background: #f6e2b6; box-shadow: inset 0 0 0 2px var(--color-earth); }
+.cal-evt { position: absolute; top: 1px; right: 2px; font-size: 0.7rem; line-height: 1; }
+/* Les évènements du calendrier (js/ui/invitations.js) */
+.evenements { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; padding: 6px 0; border-top: 2px solid var(--wood-light); border-bottom: 2px solid var(--wood-light); }
+.evenements > .btn { align-self: flex-start; }
+.evt-liste { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.evt { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-radius: 4px; background: #f3dfb4; box-shadow: inset 0 0 0 2px var(--wood-light); }
+.evt-annuler { align-self: flex-start; margin-top: 2px; }
+.evt-form { display: flex; flex-direction: column; gap: 8px; }
+.evt-groupe { display: flex; flex-direction: column; gap: 4px; border: 0; margin: 0; padding: 0; }
+.evt-groupe legend { font-weight: 700; padding: 0; margin-bottom: 2px; }
+.evt-choix { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 32px; }
+.evt-invite .muted, .repas-gouts { font-size: 0.85rem; }
+.evt-boutons { display: flex; flex-wrap: wrap; gap: 8px; }
+.repas-plats { display: flex; flex-direction: column; gap: 2px; max-height: 40vh; overflow-y: auto; }
 .cal-phases { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .cal-phase { display: flex; gap: 6px; align-items: flex-start; padding: 4px 6px; border-radius: 4px; }
 .cal-phase.current { background: #fbd98c; box-shadow: inset 0 0 0 2px var(--wood-light); }

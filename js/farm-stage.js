@@ -567,6 +567,7 @@
           if (this.stepCaleche) this.stepCaleche(dt / 1000);   // (la calèche : caleche.js)
           if (this.stepVisite) this.stepVisite(dt / 1000);     // (la visite de bienvenue : visite.js, fiche 18)
           if (this.stepPresents) this.stepPresents();          // (les présents des amis devant la porte : amis.js)
+          if (this.stepInvites) this.stepInvites(dt / 1000);   // (les invités d'un repas : invites.js)
           if (this.family) this.family.update(delta);
         }
         // La vue suit le personnage, centrée sur lui (comme sur les autres cartes) ; pas pendant un
@@ -873,6 +874,11 @@
         if (!hoeing && this.calecheAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.calecheAt(wx, wy)) return { caleche: true };
         // le visiteur de la visite de bienvenue (js/carte/ferme/visite.js) : il redit sa phrase
         if (!hoeing && this.visiteurAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.visiteurAt(wx, wy)) return { visiteur: true };
+        // un invité d'un repas (js/carte/ferme/invites.js) : un mot
+        if (!hoeing && this.inviteAt && !(this.ctx.lastModel && this.ctx.lastModel.bati)) {
+          const inv = this.inviteAt(wx, wy);
+          if (inv) return { invite: inv };
+        }
         if (!hoeing && this.habitantAt && !(this.ctx.lastModel && this.ctx.lastModel.bati)) {
           const hab = this.habitantAt(wx, wy);
           if (hab) return { habitant: hab };
@@ -1092,6 +1098,7 @@
         if (hit.caleche) { if (this.ctx.bridge.calecheTouchee) this.ctx.bridge.calecheTouchee(); return; }
         if (hit.habitant) { this.habitantParle(hit.habitant); return; }
         if (hit.visiteur) { if (this.visiteur) this.visiteParle(this.visiteur); return; }
+        if (hit.invite) { const G = this.invitesVus; if (G) this.inviteBulle(hit.invite, (G.paroles.table || [])[Math.floor(Math.random() * (G.paroles.table || []).length)], 4500); return; }
         if (hit.panneau) { if (this.ctx.bridge.hameauPanneau) this.ctx.bridge.hameauPanneau({ id: hit.panneau.id, nom: hit.panneau.nom, style: hit.panneau.style }); return; }
         if (hit.hameauRefus) { if (this.ctx.bridge.hameauRefus) this.ctx.bridge.hameauRefus(hit.hameauRefus.outil, hit.hameauRefus.nom); return; }
         if (hit.pile) { if (this.fermier && !(this.ctx.lastModel && this.ctx.lastModel.coucher)) this.fermier.fetch(hit.pile); return; }   // il va au lit ou il dort : rien

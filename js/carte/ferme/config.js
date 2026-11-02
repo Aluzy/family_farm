@@ -166,7 +166,9 @@
     frames: { mur_pierre: 0, porte: 1, atelier: 2, paillasse: 3, drap: 4, four: 5, cuisiniere: 6, panneau: 7, batterie: 8, nichoir: 9, mangeoire: 10, bac_semis: 11, bloc_silo: 12, meule: 13, lanterne: 66, escalier: 69, ruche: 71, ruche_pleine: 72, bac_fleurs: 73, entonnoir: 74, botteleuse: 75, botteleuse_marche: 76, convoyeur: 77, convoyeur_bout: 79, boite_nourriture: 89,
       // les chaînes de production (js/carte/ferme/chaines.js) : le réservoir, sa jauge du vide au plein
       // (CHAINE_NIVEAUX images), puis chaque outil à l'arrêt, puis en marche (l'image suivante)
-      reservoir: 209, pressoir: 214, centrifugeuse: 216, mixeur: 218, chaudron: 220, tonneau: 222, ensacheuse: 224 },
+      reservoir: 209, pressoir: 214, centrifugeuse: 216, mixeur: 218, chaudron: 220, tonneau: 222, ensacheuse: 224,
+      // la terrasse (les invitations, js/carte/ferme/invites.js) : la table, la chaise et le banc de jardin
+      table_jardin: 226, chaise_jardin: 227, banc_jardin: 228 },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
     // les modèles de sols (scripts/carte/blocs.py MODELES_SOLS) : leurs 16 images raccordées,
     // depuis celle-ci + masque, comme le plancher ; les modèles de portes percés dans un mur
@@ -279,7 +281,7 @@
     // la meule qui moud (le Moulin en marche) : sa pierre et sa manivelle tournent (`fps` images
     // par seconde, un tour en 8 images ; chantier.js stepFires)
     meule: { sorte: 'meule', frames: [81, 82, 83, 84, 85, 86, 87, 88], fps: 8 },
-    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'bloc_silo', 'meule', 'lanterne', 'candelabre', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur', 'reservoir', 'pressoir', 'centrifugeuse', 'mixeur', 'chaudron', 'tonneau', 'ensacheuse', 'boite_nourriture', 'ruche', 'bac_fleurs'],
+    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'bloc_silo', 'meule', 'lanterne', 'candelabre', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur', 'reservoir', 'pressoir', 'centrifugeuse', 'mixeur', 'chaudron', 'tonneau', 'ensacheuse', 'boite_nourriture', 'ruche', 'bac_fleurs', 'table_jardin', 'chaise_jardin', 'banc_jardin'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png ; la
     // station du robot : station_robot.png, machines.js ; les blocs de silo : silo.js)
     ailleurs: ['puits', 'citerne', 'station_robot', 'bloc_silo'],

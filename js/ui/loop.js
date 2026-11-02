@@ -30,6 +30,7 @@ import { retourCompagnon } from '../engine/compagnon.js';
 import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
 import { watchPresents } from './amitie.js';
+import { watchInvitations } from './invitations.js';
 import {
   ALERT_MUTE_AFTER_CATCH_UP_MS, notify, setAlertMuteUntil, setAlertState, watchAlerts,
 } from './toasts.js';
@@ -314,6 +315,7 @@ export function frame(now) {
   watchBienvenue(); // fiche 18 : la visite de bienvenue du deuxième jour se met en route
   watchRobot();
   watchPresents();
+  watchInvitations(); // les invitations à un repas : les réponses au matin, les invités en route
   watchPreparations();
   watchUnlocks();
   if (ticked) watchAlerts();
