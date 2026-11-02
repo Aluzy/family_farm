@@ -1319,5 +1319,17 @@
     const s = getScene();
     return s && s.ready && s.allerAuPuits ? s.allerAuPuits(apres) : { ok: false, raison: 'sans' };
   }
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, arrive, scene: getScene }; // scene() : pour le débogage et les tests
+  // Semer par la file des gestes (js/carte/ferme/semis.js) : le personnage va semer `culture` sur
+  // les terres `cases`, une à une ; le jeu sème à chaque geste (bridge.semer). Renvoie le nombre de
+  // terres prévues (0 : pas de carte ni de personnage, la page sème elle-même).
+  function semer(cases, culture, groupe) {
+    const s = getScene();
+    return s && s.ready && s.semerFile ? s.semerFile(cases, culture, groupe) : 0;
+  }
+  // Combien de graines de `culture` attendent d'être semées par le personnage.
+  function semisEnAttente(culture) {
+    const s = getScene();
+    return s && s.semisEnAttente ? s.semisEnAttente(culture) : 0;
+  }
+  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, semer, semisEnAttente, arrive, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);
