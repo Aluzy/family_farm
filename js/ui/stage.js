@@ -61,7 +61,7 @@ import { distributeurDe, distributeurs, grainDans } from '../engine/distributeur
 import { chevalMonte, chevalOu, vitesseCheval } from '../engine/cheval.js';
 import { countWithSilo } from '../engine/animals.js';
 import { countItem } from '../engine/inventory.js';
-import { ramassables } from '../engine/atelier.js';
+import { caseDepart, ramassables } from '../engine/atelier.js';
 import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, piecesCloses, rehaussesPosees, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable } from './chantier.js';
 import { escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, solsEtage, toits } from '../engine/etage.js';
@@ -830,7 +830,18 @@ function boussoleModele() {
     montree: boussoleMontree(state), but,
     ferme: { ...px(T.MONDE.cadre.SORTIE), nom: 'La ferme', icone: LIEUX_ICONES.ferme },
     surFerme: { x0: F.X * 16, y0: F.Y * 16, x1: (F.X + F.LARGEUR) * 16, y1: (F.Y + F.HAUTEUR) * 16 },
+    etabli: etabliBoussole(T, px),
   };
+}
+
+// En début de partie (pas encore de foyer : foyerPorte), sur la ferme, la boussole montre l'établi
+// quand le personnage s'en éloigne pour ramasser : l'Atelier posé, sinon la case où il est apparu
+// (caseDepart). Une fois le foyer bâti : null (elle se cache sur la ferme, comme avant).
+function etabliBoussole(T, px) {
+  if (foyerPorte() !== null) return null;
+  const at = Object.entries(blocsPoses(state)).find(([, s]) => s === 'atelier');
+  if (at) return { ...px(Number(at[0])), nom: DATA.ATELIER.NOM, icone: DATA.ATELIER.ICONE };
+  return T.ZONES && T.ZONES[1] ? { ...px(caseDepart(T)), nom: 'Le point de départ', icone: '🚩' } : null;
 }
 
 // Une bête du grand monde paraît pour la première fois dans la vue (js/carte/ferme/faune-monde.js) :
