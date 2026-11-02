@@ -37,9 +37,9 @@
           { k: k + cols, face: 'haut', flip: false },                 // dessous, de dos
           c > 0 ? { k: k - 1, face: 'cote', flip: false } : null,      // à gauche, tourné vers la droite
           c < cols - 1 ? { k: k + 1, face: 'cote', flip: true } : null, // à droite, vers la gauche
-          { k: k - cols, face: 'bas', flip: false },                  // dessus, de face
+          { k: k - cols, face: 'bas', flip: false, derriere: true },  // dessus, de face (derrière son toit)
         ];
-        for (const q of cotes) if (q && q.k >= 0) out.push({ ...pied(q.k), face: q.face, flip: q.flip, puits: k });
+        for (const q of cotes) if (q && q.k >= 0) out.push({ ...pied(q.k), face: q.face, flip: q.flip, puits: k, derriere: !!q.derriere });
       }
       return out;
     },
@@ -67,7 +67,8 @@
         let n = 0, x = de.x, y = de.y;
         for (const q of path) { n += Math.hypot(q.x - x, q.y - y); x = q.x; y = q.y; }
         if (n > PUITS_MAX * T) { loin = true; continue; }
-        if (!best || n < best.n) best = { p, n };
+        // (la place derrière le puits, où son toit cache le visage : seulement s'il n'y en a pas d'autre)
+        if (!best || (best.p.derriere && !p.derriere) || (best.p.derriere === p.derriere && n < best.n)) best = { p, n };
       }
       if (!best) return { ok: false, raison: loin ? 'loin' : 'ferme' };
       const p = best.p, bridge = this.ctx.bridge;
