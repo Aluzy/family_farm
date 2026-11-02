@@ -76,7 +76,7 @@ function botMaintenance(state) {
 // au-delà du maximum.
 export function botSnack(state) {
   for (let guard = 0; guard < 10; guard++) {
-    if (state.energie >= actionCost(state, 'recolter') || state.energie >= energyMax()) return;
+    if (state.energie >= actionCost(state, 'recolter') || state.energie >= energyMax(state)) return;
     const spare = Object.keys(DATA.OBJETS)
       .filter((k) => DATA.OBJETS[k].mangeable && countItem(state, k) - (state.famille.reserve[k] || 0) >= 1)
       .sort((a, b) => DATA.OBJETS[b].energie - DATA.OBJETS[a].energie);

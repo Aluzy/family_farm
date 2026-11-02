@@ -1,8 +1,9 @@
 import { DATA } from '../engine/catalog.js';
 import { formatNumber } from '../engine/format.js';
 import {
-  actionCost, actionsLeft, energyLevel, enduranceReduction, happinessCostPct, snackEnergy,
+  actionCost, actionsLeft, energyLevel, energyMax, enduranceBonus, happinessCostPct, snackEnergy,
 } from '../engine/stamina.js';
+import { cibleBonheur, meublesBonheur } from '../engine/bonheur.js';
 import { eatSnack } from '../engine/family.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
@@ -25,31 +26,35 @@ export function formatEnergyGain(milli) {
 // Puce d'énergie des écrans d'action : énergie restante, et ce que coûte l'action
 // principale de l'écran (`action`, une clé de DATA.PERSONNAGE.COUTS).
 export function energyChip(action) {
-  const e = energyLevel(state);
+  const e = energyLevel(state), max = energyMax(state) / 1000;
   const cost = action ? actionCost(state, action) : 0;
   const low = cost > 0 && actionsLeft(state, action) < 1;
   const title = cost > 0
-    ? `Énergie : ${e} / ${DATA.PERSONNAGE.MAX}. Cette action en coûte ${formatEnergy(cost)}.`
-    : `Énergie : ${e} / ${DATA.PERSONNAGE.MAX}.`;
+    ? `Énergie : ${e} / ${max}. Cette action en coûte ${formatEnergy(cost)}.`
+    : `Énergie : ${e} / ${max}.`;
   // FLU-23 : « ⚡ 100 · arroser : 1 », en mots
   return `<span class="chip${low ? ' warn' : ''}" title="${title}">⚡ ${e}${cost > 0 ? ` · ${ACTION_LABELS[action] || action} : ${formatEnergy(cost)}` : ''}</span>`;
 }
 
 export function energyDetailsHtml() {
-  const P = DATA.PERSONNAGE;
-  const endu = enduranceReduction(state);
+  const P = DATA.PERSONNAGE, C = DATA.BONHEUR.CIBLE;
+  const endu = enduranceBonus(state), enduMax = P.ENDURANCE * (DATA.NIVEAUX.SEUILS.length - 1);
   const reduc = 100 - happinessCostPct(state);
   const bonheur = reduc > 0 ? `tes actions coûtent ${reduc} % d'énergie en moins` : 'il ne change pas encore le coût de tes actions';
+  // la cible de cette nuit, avec ce que la famille a déjà mangé aujourd'hui
+  const cible = Math.round(cibleBonheur(state, (state.repasJour && state.repasJour.mange) || {}));
+  const meubles = meublesBonheur(state);
   const costs = Object.entries(P.COUTS).map(([a]) => `${ACTION_LABELS[a] || a} ${formatEnergy(actionCost(state, a))}`).join(' · ');
   return `
     <div class="card">
       <span class="card-title"><span>⚡ L'énergie en détail</span></span>
       <span class="muted">Chaque action au clic en dépense ; à 0, plus d'action jusqu'à un en-cas ou une nuit de sommeil (elle remonte peu à peu en dormant). Ce qui tourne seul (automatisations, ateliers, panneau) n'en coûte pas.</span>
       <span>😊 Bonheur de la famille : ${bonheur}.</span>
-      <span class="muted">Ce que coûte chaque action maintenant : ${costs}.</span>
-      <span class="level-line"><span>💪 Endurance : avec ton niveau, tes actions coûtent</span><span class="num">${endu} % de moins</span></span>
-      <span class="bar" role="progressbar" aria-label="Endurance" aria-valuemin="0" aria-valuemax="${P.ENDURANCE * (DATA.NIVEAUX.SEUILS.length - 1)}" aria-valuenow="${endu}"><span class="bar-fill" style="width:${Math.round((endu * 100) / (P.ENDURANCE * (DATA.NIVEAUX.SEUILS.length - 1)))}%"></span></span>
-      <span class="muted">Au réveil, l'énergie remonte à ${P.REVEIL_BASE} + ${P.REVEIL_REPAS} × la jauge de faim moyenne du reste de la famille au coucher (famille rassasiée : ${P.REVEIL_BASE + P.REVEIL_REPAS}). Un aliment mangé dans la journée, depuis l'Inventaire, rend son énergie ÷ ${P.MANGER_DIVISEUR}, + ${P.MANGER_BONUS} %, arrondie au-dessus.</span>
+      <span class="muted">Chaque nuit, il fait ${C.VITESSE} % du chemin vers sa cible : ${cible} cette nuit (${C.BASE}, plus les plats différents du jour, plus ${meubles} pour les meubles, au plus ${C.MEUBLES_MAX}). Qui a faim ou dort sans paillasse vise plus bas.</span>
+      <span class="muted">Ce que coûte chaque action maintenant : ${costs}. Bonheur, technologies et équipement se cumulent, jamais sous ${P.PLANCHER} % du coût de base.</span>
+      <span class="level-line"><span>💪 Endurance : avec ton niveau, ta jauge d'énergie monte à ${P.MAX + endu}</span><span class="num">+${endu}</span></span>
+      <span class="bar" role="progressbar" aria-label="Endurance" aria-valuemin="0" aria-valuemax="${enduMax}" aria-valuenow="${endu}"><span class="bar-fill" style="width:${enduMax > 0 ? Math.round((endu * 100) / enduMax) : 0}%"></span></span>
+      <span class="muted">Au réveil, l'énergie remonte à ${P.REVEIL_BASE} % de la jauge, + ${P.REVEIL_REPAS} % × la jauge de faim moyenne du reste de la famille au coucher (famille rassasiée : la jauge pleine). Un aliment mangé dans la journée, depuis l'Inventaire, rend son énergie ÷ ${P.MANGER_DIVISEUR}, + ${P.MANGER_BONUS} %, arrondie au-dessus.</span>
     </div>`;
 }
 

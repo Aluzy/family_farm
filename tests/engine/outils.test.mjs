@@ -6,7 +6,7 @@
 import {
   actionCost, actionsLeft, actionXp, borderMask, brokenRocks, buyHoe, buyTool, caillou, canBorder,
   castLine, chopsLeft, chopTree, countItem, createInitialState, cutGrass, DATA, eatSnack,
-  enduranceReduction, energyLevel, energyMax, farmTerrain, fellenTrees, findPlot,
+  enduranceBonus, energyLevel, energyMax, farmTerrain, fellenTrees, findPlot,
   fishLeft, grassCut, happinessCostPct, hasHoe, hasTool, hoe, hoeableTiles, hoeStatus, isArable,
   isBuyable, makePlot, makePlots, marcheOuvert, migrate, migrateEnergy, migrateHoe, mineRock, morceauxDe,
   OUTILS, ownedTools, plant, plantAll, plotAtTile, ramasserCaillou, ramasserMorceau, respawnRocks,
@@ -22,10 +22,10 @@ import {
 // run-tests.mjs importe ce fichier et lit `results`.
 /* ---------- version 1.8 (v2, lot 4) : l'énergie du personnage ---------- */
 
-test('version 1.8 : le coût d\'une action dépend du bonheur et de l\'endurance', () => {
+test('version 1.8 : le coût d\'une action dépend du bonheur ; l\'endurance agrandit la jauge', () => {
   const s = garden();
   testSetLevel(s, 1);
-  assertEqual([energyMax(), energyLevel(s), happinessCostPct(s), enduranceReduction(s)], [100000, 100, 70, 0], 'bonheur 60 : −30 %');
+  assertEqual([energyMax(s), energyLevel(s), happinessCostPct(s), enduranceBonus(s)], [100000, 100, 70, 0], 'bonheur 60 : −30 %');
   assertEqual(actionCost(s, 'planter'), 2100);
   assertEqual(actionCost(s, 'moudre', 4), 2800, 'moudre : par blé');
   assertEqual(actionCost(s, 'acheter'), 0, 'ce qui n\'est pas une action au clic ne coûte rien');
@@ -34,9 +34,13 @@ test('version 1.8 : le coût d\'une action dépend du bonheur et de l\'endurance
   for (const m of s.famille.membres) m.bonheur = 100;
   assertEqual(actionCost(s, 'planter'), 1500, 'bonheur 100 : moitié prix');
   testSetLevel(s, 10);
-  assertEqual(enduranceReduction(s), 27, '−3 % par niveau');
-  assertEqual(actionCost(s, 'planter'), Math.ceil((3000 * 50 * 73) / 10000));
-  assertEqual(actionsLeft(s, 'recolter'), Math.floor(100000 / actionCost(s, 'recolter')));
+  assertEqual([enduranceBonus(s), energyMax(s)], [45, 145000], '+5 d\'énergie par niveau');
+  assertEqual(actionCost(s, 'planter'), 1500, 'le niveau ne change plus le coût');
+  assertEqual(actionsLeft(s, 'recolter'), Math.floor(s.energie / actionCost(s, 'recolter')));
+  // le plancher : jamais moins de PLANCHER % du coût de base
+  const P = DATA.PERSONNAGE, plancher = P.PLANCHER;
+  P.PLANCHER = 60;
+  try { assertEqual(actionCost(s, 'planter'), 1800, 'bonheur 100 (−50 %), plancher à 60 %'); } finally { P.PLANCHER = plancher; }
 });
 
 test('version 1.8 : sans énergie, plus d\'action au clic ; les automatisations restent gratuites', () => {
@@ -52,7 +56,7 @@ test('version 1.8 : sans énergie, plus d\'action au clic ; les automatisations 
   assertEqual(s.energie, 0);
   assert(plant(s, 'potager-2', 'carotte', true).ok);
   testFillEnergy(s);
-  assertEqual(s.energie, energyMax());
+  assertEqual(s.energie, energyMax(s));
 });
 
 test('version 1.8 : manger un aliment dans la journée rend sa valeur (énergie ÷ 5, + 10 %, arrondie au-dessus)', () => {
@@ -66,20 +70,23 @@ test('version 1.8 : manger un aliment dans la journée rend sa valeur (énergie 
   assertEqual(eatSnack(s, 'graine_carotte').ok, false, 'ne se mange pas');
   setInv(s, {});
   assertEqual(eatSnack(s, 'carotte').ok, false, 'plus rien');
-  s.energie = energyMax() - 1;
+  s.energie = energyMax(s) - 1;
   setInv(s, { conserve: 1 });
   assert(eatSnack(s, 'conserve').ok);
-  assertEqual(s.energie, energyMax(), 'jamais au-delà du maximum');
+  assertEqual(s.energie, energyMax(s), 'jamais au-delà du maximum');
 });
 
 test('version 1.8 : le réveil remonte l\'énergie selon le repas du soir', () => {
   const s = garden();
+  testSetLevel(s, 1);
   assertEqual([wakeEnergy(s, 100), wakeEnergy(s, 50), wakeEnergy(s, 0)], [100000, 80000, 60000]);
   s.energie = 90000;
   assertEqual(restoreEnergy(s, 0), 90000, 'une énergie plus haute est gardée');
   s.technologies = [...(s.technologies || []), 'fa_sommeil'];
   assertEqual(wakeEnergy(s, 0), 70000, 'Bon sommeil : +10');
   assertEqual(wakeEnergy(s, 100), 100000, 'plafonné au maximum');
+  testSetLevel(s, 5);
+  assertEqual([energyMax(s), wakeEnergy(s, 100), wakeEnergy(s, 0)], [120000, 120000, 72000 + 10000], 'en % de la jauge, qui grandit avec le niveau');
 });
 
 test('version 1.8 : migration v25 → v26 : santé, soins et nœuds retirés', () => {

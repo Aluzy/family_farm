@@ -6,7 +6,7 @@
 import {
   addMember, addPet, adultCount, alertEvents, alertSnapshot, autoMaintain, autoTasks,
   averageHappiness, boiteCounts, buildMorningReport, childCount, cleanFirstName, collectLeftovers,
-  countItem, createInitialState, DATA, dishHappiness, energyMax, escapeHtml,
+  bonheurRepas, countItem, createInitialState, DATA, dishHappiness, energyMax, escapeHtml, meublesBonheur,
   feedFamily, feedLivestock, chevalNuit, fillSilo, findMember, findPet, findPlot, finishPreparations,
   fridgeNight, getNotifications, growOrchard, harvest, inventoryCounts, jaugeMembre, layEggs,
   mangeurs, mealHappinessDelta, memberName, memberPortrait, memberRemovalBlock, memberRoom,
@@ -169,16 +169,16 @@ test('Dormir : repas de la famille, énergie, pousse et rapport de réveil', () 
   assertEqual(findPlot(s, 'potager-2').stade, 1);
   assertEqual(r.mange.patate, 6);
   assertEqual([r.besoin, r.energieMangee, r.couverture, boiteCounts(s).conserve], [30 + 6 * r.mange.conserve, r.besoin, 100, 160 - r.mange.conserve]);
-  assertEqual(r.energieReveil, 100000, 'famille rassasiée : l\'énergie remonte à 100');
+  assertEqual(r.energieReveil, energyMax(s), 'famille rassasiée : la jauge pleine');
   assertEqual(r.pretes, [{ culture: 'carotte', nombre: 1 }]);
-  // une famille affamée sans rien à manger : l'énergie ne remonte qu'à 60 + 40 × 20 %
+  // une famille affamée sans rien à manger : l'énergie ne remonte qu'à 60 % + 40 % × 20 % de la jauge
   const t = garden();
   setInv(t, {});
   t.energie = 0;
   affamer(t);
   t.awakeMs = 30000;
   const r2 = sleep(t);
-  assertEqual([r2.energieMangee, r2.couverture, r2.energieReveil, t.energie], [0, 20, 68000, 68000]);
+  assertEqual([r2.energieMangee, r2.couverture, r2.energieReveil, t.energie], [0, 20, Math.floor((energyMax(t) * 68) / 100 / 1000) * 1000, Math.floor((energyMax(t) * 68) / 100 / 1000) * 1000]);
   // une énergie déjà plus haute que celle du réveil est gardée
   t.energie = 90000;
   t.awakeMs = 30000;
@@ -203,7 +203,7 @@ test('mode test Lot 2 : graines, maturité, énergie à 0 puis pleine', () => {
   assertEqual(s.energie, 0);
   assertEqual(plant(s, 'potager-4', 'carotte').error, 'Plus assez d\'énergie : mange quelque chose ou va dormir.');
   testFillEnergy(s);
-  assertEqual(s.energie, energyMax());
+  assertEqual(s.energie, energyMax(s));
 });
 
 test('migration v2 (Lot 1) → version courante : garde la partie, ajoute le potager, la famille et l\'inventaire', () => {
@@ -337,7 +337,7 @@ test('version 1.2 : un adulte seul vit sa nuit (personne d\'autre ne mange), une
   for (const id of ['adulte-2', 'enfant-1', 'enfant-2']) assert(removeMember(s, id).ok, id);
   setInv(s, { conserve: 200 });
   const r = sleepOnce(s);
-  assertEqual([r.besoin, r.couverture, r.energieReveil, countItem(s, 'conserve')], [0, 100, 100000, 200]);
+  assertEqual([r.besoin, r.couverture, r.energieReveil, countItem(s, 'conserve')], [0, 100, energyMax(s), 200]);
   const t = garden();
   addMember(t, false);
   addMember(t, false);
@@ -413,14 +413,30 @@ test('version 1.11 : les plats mangés dans la journée rendent du bonheur la nu
   affamer(s);
   sleepOnce(s);
   assertEqual(Object.keys(s.nuit.mange).sort(), ['carotte', 'gratin_patates', 'omelette', 'soupe_legumes']);
-  assertEqual(s.nuit.bonheur, -5 + 5 + 5 + 3);
-  assertEqual(averageHappiness(s), DATA.BONHEUR.DEPART + 8);
-  // qui a eu faim sans rien trouver perd FAIM de plus
+  // la cible : BASE + les 3 plats (5 + 5 + 3) ; le bonheur en fait VITESSE % du chemin
+  const C = DATA.BONHEUR.CIBLE, D = DATA.BONHEUR.DEPART;
+  const vers = (cible) => Math.round(D + ((cible - D) * C.VITESSE) / 100);
+  assertEqual(averageHappiness(s), vers(C.BASE + 13));
+  assertEqual(s.nuit.bonheur, vers(C.BASE + 13) - D);
+  // qui a eu faim sans rien trouver vise FAIM plus bas
   const t = garden();
   setInv(t, {});
   affamer(t);
   sleepOnce(t);
-  assertEqual([t.nuit.affames.length, findMember(t, 'enfant-1').bonheur, findMember(t, 'adulte-1').bonheur], [3, DATA.BONHEUR.DEPART - 5 - 2, DATA.BONHEUR.DEPART - 5]);
+  assertEqual([t.nuit.affames.length, findMember(t, 'enfant-1').bonheur, findMember(t, 'adulte-1').bonheur], [3, vers(C.BASE + C.FAIM), vers(C.BASE)]);
+  // les meubles élèvent la cible pour de bon (au plus MEUBLES_MAX) ; nuit après nuit, on s'en approche
+  const u = garden();
+  setInv(u, {});
+  u.meubles = { canape: 1, lit_adulte: 2, armoire_chene: 1 };
+  assertEqual(meublesBonheur(u), 4 + 8 + 4);
+  u.meubles.chaise = 40;
+  assertEqual(meublesBonheur(u), C.MEUBLES_MAX, 'plafonné');
+  for (const m of u.famille.membres) m.bonheur = 0;
+  for (let k = 0; k < 30; k++) bonheurRepas(u, {});
+  assert(Math.abs(averageHappiness(u) - (C.BASE + C.MEUBLES_MAX)) <= 2, `vers ${C.BASE + C.MEUBLES_MAX} (${averageHappiness(u)})`);
+  for (const m of u.famille.membres) m.bonheur = 100;
+  for (let k = 0; k < 30; k++) bonheurRepas(u, {});
+  assert(Math.abs(averageHappiness(u) - (C.BASE + C.MEUBLES_MAX)) <= 2, 'et d\'en haut aussi');
 });
 
 test('animaux de compagnie : chacun sa robe sur la carte, le n-ième chat (ou chien) prend la n-ième', () => {

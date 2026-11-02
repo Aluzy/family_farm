@@ -561,7 +561,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "foyer",
      "terme": "Foyer",
-     "description": "La pièce close où l'on dort, avec une paillasse ou un lit. Tant qu'il n'existe pas, rien d'autre ne s'installe (panneau, pompe…). Chaque nuit, il faut un couchage par membre de la famille, dans une pièce close : sans lui, un membre perd -8 de bonheur. Le personnage rentre au foyer le soir et en ressort le matin. Le premier couchage est le sien ; un appui sur un autre lit lui demande s'il le choisit : il y dormira, et le membre qui y dormait prend son ancien lit.",
+     "description": "La pièce close où l'on dort, avec une paillasse ou un lit. Tant qu'il n'existe pas, rien d'autre ne s'installe (panneau, pompe…). Chaque nuit, il faut un couchage par membre de la famille, dans une pièce close : sans lui, un membre perd -32 de bonheur. Le personnage rentre au foyer le soir et en ressort le matin. Le premier couchage est le sien ; un appui sur un autre lit lui demande s'il le choisit : il y dormira, et le membre qui y dormait prend son ancien lit.",
      "liens": [
       "maison",
       "piece_close",
@@ -657,7 +657,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "meubles",
      "terme": "Meubles",
-     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : ils se commandent au cocher, à la calèche : l'ébéniste de Bois-Joli et les tapis des Genêts, une fois ces hameaux connus ; puis ils se posent dans la maison. Une grille aide à les placer ; les tableaux s'accrochent à un mur.",
+     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : ils se commandent au cocher, à la calèche : l'ébéniste de Bois-Joli et les tapis des Genêts, une fois ces hameaux connus ; puis ils se posent dans la maison. Chacun élève pour de bon le bonheur que vise la famille (voir « Bonheur »). Une grille aide à les placer ; les tableaux s'accrochent à un mur.",
      "liens": [
       "maison",
       "comptoir"
@@ -3005,7 +3005,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "energie_personnage",
      "terme": "Énergie du personnage",
-     "description": "Jauge de 0 à 100 (⚡ dans le bandeau) que dépense chaque action faite au clic : couper 3, piocher 3, pêcher 4, labourer 5, planter 3, arroser 2, récolter 4, cueillir 4, tondre 8, cuisiner 3, cuire au four 3, moudre 1 par blé, presser 1. À 0, plus d'action au clic jusqu'à un en-cas ou une nuit de sommeil. Au réveil, elle remonte à 60 + 40 × la jauge de faim moyenne du reste de la famille au coucher : une famille rassasiée, un meilleur réveil. Le bonheur de la famille et l'endurance réduisent ses coûts ; les automatisations n'en dépensent pas.",
+     "description": "Jauge de 0 à 100, plus l'endurance (⚡ dans le bandeau), que dépense chaque action faite au clic : couper 3, piocher 3, pêcher 4, labourer 5, planter 3, arroser 2, récolter 4, cueillir 4, tondre 8, cuisiner 3, cuire au four 3, moudre 1 par blé, presser 1. À 0, plus d'action au clic jusqu'à un en-cas ou une nuit de sommeil. Au réveil, elle remonte à 60 % de la jauge, + 40 % × la jauge de faim moyenne du reste de la famille au coucher : une famille rassasiée, la jauge pleine. Le bonheur de la famille, les technologies et l'équipement réduisent ses coûts, jamais sous 40 % du coût de base ; les automatisations n'en dépensent pas.",
      "liens": [
       "repas",
       "en_cas",
@@ -3021,7 +3021,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "endurance",
      "terme": "Endurance",
-     "description": "Réduction des coûts d'énergie gagnée avec les niveaux : 3 % par niveau au-delà du premier (27 % au niveau 10).",
+     "description": "Énergie gagnée avec les niveaux : la jauge du personnage grandit de 5 par niveau au-delà du premier (100 au niveau 1, 145 au niveau 10).",
      "liens": [
       "energie_personnage",
       "niveaux"
@@ -3045,7 +3045,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "bonheur",
      "terme": "Bonheur",
-     "description": "Valeur de 0 à 100 pour chaque membre de la famille (60 au départ). Chaque nuit, il baisse de 5, et de 2 de plus pour qui a eu faim sans rien trouver dans la boîte à nourriture ; les plats mangés dans la journée le remontent : chacun des 3 meilleurs plats différents rend 3 (Cuisine) ou 5 (Four), +2 avec de l'huile ou un fruit, +4 avec du cacao, du café ou de la vanille ; les aliments crus ne donnent rien. Le bonheur moyen réduit les coûts d'énergie du personnage : jusqu'à moitié prix à 100 de bonheur.",
+     "description": "Valeur de 0 à 100 pour chaque membre de la famille (60 au départ). Chaque nuit, il fait 25 % du chemin vers sa cible : 40, plus les meubles de la maison (le bonheur de chacun, jusqu'à 30 en tout), plus les plats mangés dans la journée : chacun des 3 meilleurs plats différents ajoute 3 (Cuisine) ou 5 (Four), +2 avec de l'huile ou un fruit, +4 avec du cacao, du café ou de la vanille ; les aliments crus ne donnent rien. Qui a faim sans rien trouver dans la boîte à nourriture vise -20 plus bas, qui dort sans paillasse -32. Il ne tombe donc jamais en chute libre, et ne reste en haut qu'avec de bons repas et une maison meublée. Le bonheur moyen réduit les coûts d'énergie du personnage : jusqu'à moitié prix à 100 de bonheur.",
      "liens": [
       "repas",
       "energie_personnage",

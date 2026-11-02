@@ -150,7 +150,7 @@ function degagerCible() {
 // ({ cible: sélecteur, carte: surbrillance de la scène }).
 const ETAPES_UI = {
   sante: { texte: () => 'Bienvenue sur ta ferme ! Voici tes jauges. Le cœur, c\'est ta <b>santé</b> : ton énergie. Chaque action en coûte un peu ; elle remonte en dormant et en mangeant.', cible: () => '.player-gauge:nth-child(1)' },
-  endurance: { texte: () => 'L\'éclair, c\'est ton <b>endurance</b> : plus tu montes de niveau, moins tes actions te fatiguent.', cible: () => '.player-gauge:nth-child(2)' },
+  endurance: { texte: () => 'L\'éclair, c\'est ton <b>endurance</b> : plus tu montes de niveau, plus ta jauge d\'énergie est grande.', cible: () => '.player-gauge:nth-child(2)' },
   bonheur: { texte: () => 'Le sourire, c\'est le <b>bonheur</b> de ta famille : de bons repas, un lit pour chacun, et il grimpe.', cible: () => '.player-gauge:nth-child(3)' },
   xp: { texte: () => 'L\'étoile, c\'est ton <b>niveau</b> ; l\'anneau doré autour de ton portrait, ton <b>expérience</b> (XP) : chaque action t\'en rapporte. Anneau plein, tu passes au niveau suivant et de nouvelles choses se débloquent.', cible: () => '.player-level' },
   autonomie: { texte: () => 'La pousse, c\'est l\'<b>autonomie</b> de ta ferme : la part de ce que mange ta famille que tu as produit toi-même. Le but du jeu : 100 % !', cible: () => '.player-auto' },

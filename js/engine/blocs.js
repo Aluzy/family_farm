@@ -636,13 +636,14 @@ export function bivouacEnCours(state) {
 }
 
 // La nuit (runNight) : il faut une paillasse d'une pièce close par personne, le personnage
-// principal d'abord ; chaque membre sans couchage perd ATELIER.BONHEUR_SANS_COUCHAGE de bonheur.
+// principal d'abord ; chaque membre sans couchage voit sa cible de bonheur baisser de
+// ATELIER.BONHEUR_SANS_COUCHAGE (il en perd BONHEUR.CIBLE.VITESSE %, repas.js bonheurRepas).
 // Renvoie les membres sans couchage.
 export function nuitSansCouchage(state) {
   // (sous sa tente, le personnage principal ne prend pas de couchage de la maison)
   const d = bivouacEnCours(state) ? dormeurs(state).slice(1) : dormeurs(state);
   const sans = d.slice(couchages(state).length);
-  for (const m of sans) setHappiness(m, memberHappiness(m) + DATA.ATELIER.BONHEUR_SANS_COUCHAGE);
+  for (const m of sans) setHappiness(m, memberHappiness(m) + (DATA.ATELIER.BONHEUR_SANS_COUCHAGE * DATA.BONHEUR.CIBLE.VITESSE) / 100);
   return sans;
 }
 

@@ -1,6 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import { carnet } from '../engine/recit.js';
-import { energyLevel, enduranceReduction } from '../engine/stamina.js';
+import { energyLevel, energyMax, enduranceBonus } from '../engine/stamina.js';
 import { allDevices, isOwned, marcheFerme, starterOf } from '../engine/devices.js';
 import { houseRepaired, mainCharacter } from '../engine/depart.js';
 import { familyNameHtml } from './depart.js';
@@ -515,21 +515,20 @@ export function renderIndicators() {
   renderHud();
 }
 
-// À droite du médaillon : les jauges d'énergie, d'endurance (réduction du coût des actions,
-// qui grandit avec le niveau) et de bonheur de la famille, horizontales, l'une sous l'autre.
-// Elles ouvrent la Famille.
+// À droite du médaillon : les jauges d'énergie, d'endurance (l'énergie que le niveau ajoute à la
+// jauge) et de bonheur de la famille, horizontales, l'une sous l'autre. Elles ouvrent la Famille.
 function playerGaugesHtml() {
   const P = DATA.PERSONNAGE;
-  const e = energyLevel(state);
-  const ePct = Math.max(0, Math.min(100, Math.round((e / P.MAX) * 100)));
+  const e = energyLevel(state), max = energyMax(state) / 1000;
+  const ePct = Math.max(0, Math.min(100, Math.round((e / max) * 100)));
   // mêmes seuils que la jauge de bonheur (jaugeClasse) : vert, jaune, rouge
   const eCls = jaugeClasse(ePct);
-  const endu = enduranceReduction(state);
+  const endu = enduranceBonus(state);
   const enduMax = P.ENDURANCE * (DATA.NIVEAUX.SEUILS.length - 1);
   const dPct = enduMax > 0 ? Math.max(0, Math.min(100, Math.round((endu * 100) / enduMax))) : 0;
   const bonheur = Math.max(0, Math.min(100, averageHappiness(state)));
   const bCls = jaugeClasse(bonheur);
-  const titre = `Énergie : ${e} / ${P.MAX}. Endurance : tes actions coûtent ${endu} % de moins. Bonheur de la famille : ${bonheur} %. Ouvrir la Famille`;
+  const titre = `Énergie : ${e} / ${max}. Endurance : +${endu} d'énergie avec ton niveau. Bonheur de la famille : ${bonheur} %. Ouvrir la Famille`;
   const jauge = (icone, cls, pct) =>
     `<span class="player-gauge"><i class="hud-ico ${icone}"></i>` +
     `<span class="hud-tube h"><span class="hud-fill${cls ? ` ${cls}` : ''}" style="width:${pct}%"></span></span></span>`;

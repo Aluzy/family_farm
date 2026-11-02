@@ -236,7 +236,7 @@
         "requiert": [],
         "//effet": "Fluidité (FLU-10) : « Arroser tout », « Récolter tout » et « Planter partout » sont là dès le niveau 1 ; le nœud les rend moins fatigants.",
         "effet": { "groupeEconome": 25 },
-        "description": "« Planter partout », « Arroser tout » et « Récolter tout » coûtent 25 % d'énergie en moins."
+        "description": "« Planter partout », « Arroser tout » et « Récolter tout », et semer ou arroser en glissant sur 3 cases ou plus, coûtent 25 % d'énergie en moins."
       },
       "cu_semences": {
         "branche": "culture",

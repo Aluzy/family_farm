@@ -333,14 +333,14 @@ export function eatSnack(state, item, { duSac = false } = {}) {
   if (loin && !sacPorte(state)) return fail('Loin de la ferme, tu ne manges que ce qu\'il y a dans ton sac à provisions, et tu n\'en as pas.');
   if (loin && !portionsSac(state)) return fail(`Ton sac à provisions est vide${enExpedition(state) ? ' : rentre à la ferme pour manger' : ''}.`);
   if (!def || !def.mangeable) return fail('Cela ne se mange pas.');
-  if ((Number(state.energie) || 0) >= energyMax()) return fail('Ton énergie est déjà au maximum.');
+  if ((Number(state.energie) || 0) >= energyMax(state)) return fail('Ton énergie est déjà au maximum.');
   if (loin) {
     if (!prendreDuSac(state, item)) return fail(`Pas de ${def.nom.toLowerCase()} dans ton sac${enExpedition(state) ? ' : loin de la ferme, tu ne manges que ce qu\'il contient' : ''}.`);
   } else if (countItem(state, item) > 0) takeItem(state, item, 1);
   else if (fridgeCount(state, item) > 0) takeFromFridge(state, item, 1);
   else return fail(`Plus de ${def.nom.toLowerCase()}.`);
   const gain = snackEnergy(state, item);
-  state.energie = Math.min(energyMax(), (Number(state.energie) || 0) + gain);
+  state.energie = Math.min(energyMax(state), (Number(state.energie) || 0) + gain);
   return { ok: true, gain, energie: state.energie, item, ...(loin ? { sac: portionsSac(state) } : {}) };
 }
 

@@ -3,6 +3,7 @@ import { escapeHtml, formatNumber } from '../engine/format.js';
 import { choisirLit, couchages, dormeurDuLit, litDuPrincipal } from '../engine/blocs.js';
 import { aCruche, crucheARemplir, jaugeCruche, remplirCruche } from '../engine/cruche.js';
 import { water } from '../engine/crops.js';
+import { GROUPE_MIN, groupDiscount } from '../engine/automation.js';
 import { TIRED } from '../engine/stamina.js';
 import { accord, plural } from './common.js';
 import { memberName } from '../engine/family.js';
@@ -57,6 +58,7 @@ function parcelleDeCase(c) {
 function arroserCases(cases) {
   arrosageReste = [];
   let n = 0, raison = '', vide = false;
+  const avant = Number(state.energie) || 0;
   for (let i = 0; i < cases.length; i++) {
     const p = parcelleDeCase(cases[i]);
     if (!p || !p.culture || p.arrose) continue;
@@ -67,6 +69,8 @@ function arroserCases(cases) {
     raison = raison || r.error;
     if (r.error === TIRED) break;
   }
+  // (un tracé d'au moins GROUPE_MIN cases : une action groupée, comme « Arroser tout »)
+  if (cases.length >= GROUPE_MIN) groupDiscount(state, avant);
   if (n) persistState();
   refresh();
   if (n) notify(`💧 ${plural(n, 'culture')} ${accord(n, 'arrosée')}${vide ? ' · la cruche est vide : au puits !' : raison ? ` · ${raison}` : ''}`);

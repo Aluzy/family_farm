@@ -661,6 +661,7 @@ test('arbre v2 : effets sur les cultures et l\'élevage', () => {
 
 test('arbre v2 : effets sur la famille (Bon sommeil, Goûter, Cellier)', () => {
   const s = garden();
+  testSetLevel(s, 1);
   // Bon sommeil : +10 au réveil (repas manqué : 60 → 70 ; repas complet : 100, le maximum)
   assertEqual(wakeEnergy(s, 0), 60000);
   grantTech(s, 'fa_sommeil');

@@ -15,7 +15,7 @@ import {
 } from '../engine/animals.js';
 import { etatEtable, etatPoulailler, etatSilo } from '../engine/blocs.js';
 import { techAuto, techFlag } from '../engine/techtree.js';
-import { AUTO_TACHES, harvestAll, isAutomated, plantAll, setSemis, waterAll } from '../engine/automation.js';
+import { AUTO_TACHES, GROUPE_MIN, groupDiscount, harvestAll, isAutomated, plantAll, setSemis, waterAll } from '../engine/automation.js';
 import { plantableCropsFor } from '../engine/campaign.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
 import { state } from './store.js';
@@ -524,6 +524,7 @@ function semerCases(cases, culture) {
   const def = DATA.CULTURES[culture];
   if (!def) return;
   let n = 0, raison = '';
+  const avant = Number(state.energie) || 0;
   for (const p of parcellesDeCases(cases)) {
     if (!def.lieux.includes(p.lieu)) continue;   // (une parcelle de la Serre, une graine des champs)
     const r = plantPlot(state, p, culture);
@@ -531,6 +532,8 @@ function semerCases(cases, culture) {
     raison = r.error;
     break;   // (plus de graines, ou plus d'énergie)
   }
+  // (un tracé d'au moins GROUPE_MIN cases : une action groupée, comme « Planter partout »)
+  if (cases.length >= GROUPE_MIN) groupDiscount(state, avant);
   if (n) persistState();
   refresh();
   if (n) notify(`🌱 ${plural(n, 'parcelle')} de ${def.nom.toLowerCase()} ${accord(n, 'semée')}${raison ? ` · ${raison}` : ''}`);

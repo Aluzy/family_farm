@@ -178,11 +178,12 @@
   "//PERSONNAGE": [
     "Version 1.8 (v2, lot 4) : l'énergie du personnage (docs/conception-v2.md, section 5).",
     "Une jauge de 0 à MAX, stockée en millièmes (state.energie). Chaque action au clic",
-    "coûte COUTS[action] × (100 − bonheur moyen × BONHEUR_REDUCTION ÷ 100) % ×",
-    "(100 − ENDURANCE × (niveau − 1)) %, arrondi au millième supérieur. À 0, plus",
-    "d'action au clic. En dormant, l'énergie remonte peu à peu vers REVEIL_BASE +",
-    "REVEIL_REPAS × la jauge moyenne des autres membres au coucher (en %, FAMILLE.FAIM) : une famille",
-    "rassasiée, un meilleur réveil. SOMMEIL_HEURES heures de sommeil pour l'atteindre (moins si elle",
+    "coûte COUTS[action] × (100 − bonheur moyen × BONHEUR_REDUCTION ÷ 100) % × les économies de",
+    "l'Arbre des technologies et de l'équipement, jamais moins de PLANCHER % de COUTS[action], arrondi au",
+    "millième supérieur. À 0, plus d'action au clic. L'endurance agrandit la jauge : MAX + ENDURANCE ×",
+    "(niveau − 1). En dormant, l'énergie remonte peu à peu vers REVEIL_BASE + REVEIL_REPAS × la jauge",
+    "moyenne des autres membres au coucher (en % de la jauge, FAMILLE.FAIM) : une famille rassasiée,",
+    "un meilleur réveil. SOMMEIL_HEURES heures de sommeil pour l'atteindre (moins si elle",
     "était déjà haute) ; éveillé la nuit, rien ne revient. Une énergie plus haute est gardée. Manger un",
     "aliment rend sa valeur : énergie ÷ MANGER_DIVISEUR, + MANGER_BONUS %, arrondie au-dessus (la même",
     "pour la famille à la boîte à nourriture)."
@@ -191,7 +192,8 @@
     "MAX": 100,
     "COUTS": { "ramasser": 1, "fabriquer": 1, "couper": 3, "piocher": 3, "faucher": 3, "pecher": 4, "labourer": 5, "planter": 3, "arroser": 2, "recolter": 4, "cueillir": 4, "tondre": 8, "cuisiner": 3, "cuireFour": 3, "moudre": 1, "presser": 1 },
     "BONHEUR_REDUCTION": 50,
-    "ENDURANCE": 3,
+    "ENDURANCE": 5,
+    "PLANCHER": 40,
     "REVEIL_BASE": 60,
     "REVEIL_REPAS": 40,
     "MANGER_DIVISEUR": 5,
@@ -282,7 +284,13 @@
     "  Version 1.8 : le bonheur moyen réduit l'énergie que coûte chaque action (DATA.PERSONNAGE).",
     "  BULLE : sur la carte, pendant le repas, une bulle 😊 monte au-dessus de chaque convive si",
     "  la famille a bien mangé : besoin couvert, et les plats lui rapportent au moins BULLE points",
-    "  (sans compter la baisse DECLIN ; un plat du Four, ou deux de la Cuisine)."
+    "  (sans compter la baisse DECLIN ; un plat du Four, ou deux de la Cuisine).",
+    "  Équilibrage : le bonheur de la famille ne baisse plus d'un pas fixe. Chaque nuit, celui de chaque",
+    "  membre fait CIBLE.VITESSE % du chemin vers sa cible : CIBLE.BASE, + le bonheur des plats différents",
+    "  mangés dans la journée (au plus PLATS_MAX, les meilleurs), + celui des meubles fabriqués (DATA.MEUBLES,",
+    "  bonheur, au plus CIBLE.MEUBLES_MAX en tout), + CIBLE.FAIM pour qui a eu faim, + ATELIER.",
+    "  BONHEUR_SANS_COUCHAGE pour qui dort sans paillasse. DECLIN et FAIM restent la règle des habitants des",
+    "  hameaux (js/engine/habitants.js)."
   ],
-  "BONHEUR": { "DEPART": 60, "MAX": 100, "DECLIN": -5, "PLATS": { "cuisine": 3, "four": 5 }, "HUILE_FRUIT": 2, "SPECIALES": { "objets": ["cacao", "cafe", "vanille"], "bonus": 4 }, "PLATS_MAX": 3, "FAIM": -2, "BULLE": 5 }
+  "BONHEUR": { "DEPART": 60, "MAX": 100, "DECLIN": -5, "PLATS": { "cuisine": 3, "four": 5 }, "HUILE_FRUIT": 2, "SPECIALES": { "objets": ["cacao", "cafe", "vanille"], "bonus": 4 }, "PLATS_MAX": 3, "FAIM": -2, "BULLE": 5, "CIBLE": { "BASE": 40, "VITESSE": 25, "MEUBLES_MAX": 30, "FAIM": -20 } }
 }
