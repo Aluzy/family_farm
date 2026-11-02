@@ -2951,7 +2951,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "boussole",
      "terme": "La boussole",
-     "description": "Une petite boussole de laiton, en haut à droite de l'écran, sous l'horloge : son aiguille rouge montre la ferme, ou le lieu que tu as choisi sur la carte du monde, et dessous s'affichent son nom et sa distance en cases. Sur la ferme, quand aucun lieu n'est choisi, elle se cache. Arrivé au lieu choisi, elle montre de nouveau la ferme. Un appui sur elle ouvre la carte du monde ; les Options la retirent de l'écran.",
+     "description": "Une petite boussole de laiton, en haut à droite de l'écran, sous l'horloge : son aiguille rouge montre la ferme, ou le lieu que tu as choisi sur la carte du monde, et dessous s'affichent son nom et sa distance en cases. Sur la ferme, quand aucun lieu n'est choisi, elle se cache ; en début de partie, tant que le foyer n'est pas bâti, elle y montre l'Atelier (ou, avant lui, le point de départ) dès qu'on s'en éloigne pour ramasser. Arrivé au lieu choisi, elle montre de nouveau la ferme. Un appui sur elle ouvre la carte du monde ; les Options la retirent de l'écran.",
      "liens": [
       "carte_du_monde",
       "brouillard"

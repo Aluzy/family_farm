@@ -10,6 +10,8 @@
  *     l'aiguille montre le but, et dessous le nom du but et sa distance en cases ;
  *   - le but : le lieu choisi, sinon la ferme ; sans lieu choisi, elle se cache sur la ferme (elle y
  *     montrerait l'endroit où l'on est), et quand la page la retire (les Options : montree) ;
+ *   - en début de partie (pas encore de foyer), sur la ferme : l'établi (modèle.etabli : l'Atelier
+ *     posé, sinon le point de départ), dès que le personnage en est à plus de BO.pres cases ;
  *   - un appui sur elle ouvre la carte du monde (ctx.bridge.act('carte-monde-open')).
  *
  * Elle n'est redessinée que quand l'aiguille tourne d'un cran (BO.crans par tour) ou que le texte
@@ -24,10 +26,10 @@
   const { T } = F.C;
 
   // taille : le canevas (px, agrandi deux fois par la page : jeu.css) ; crans : les positions de
-  // l'aiguille sur un tour ; couleurs : le laiton, le cadran, l'aiguille (rouge vers le but, grise
+  // l'aiguille sur un tour ; pres : en deçà (en cases), l'établi ne se montre pas ; couleurs : le laiton, le cadran, l'aiguille (rouge vers le but, grise
   // derrière), le contour (ceux de la police et des cadres du HUD)
   const BO = {
-    taille: 30, crans: 48,
+    taille: 30, crans: 48, pres: 6,
     c: { contour: [58, 36, 20], laiton: [201, 154, 59], clair: [242, 210, 122], fonce: [150, 104, 36], cadran: [246, 236, 210], ombre: [222, 204, 168], repere: [138, 104, 64], rouge: [208, 64, 44], rougeS: [138, 32, 24], gris: [154, 164, 180], grisS: [90, 98, 114] },
   };
 
@@ -44,7 +46,9 @@
       if (m && m.montree && p && this.ctx.monde) {
         const R = m.surFerme;
         const surFerme = R && p.x >= R.x0 && p.x < R.x1 && p.y >= R.y0 && p.y < R.y1;
-        but = m.but || (surFerme ? null : m.ferme);
+        // (en début de partie, sur la ferme : l'établi, dès qu'on est à plus de BO.pres cases)
+        const E = m.etabli, loin = E && Math.hypot(E.x - p.x, E.y - p.y) > BO.pres * T;
+        but = m.but || (surFerme ? (loin ? E : null) : m.ferme);
       }
       let B = this.boussoleEl;
       if (!but) { if (B) B.el.hidden = true; return; }
