@@ -6,8 +6,10 @@
     "(state.recit.relations) ; pour un autre habitant, state.amitie.pnj[id].pts.",
     "CADEAU : les points d'un cadeau selon le goût de la personne pour l'objet (un par jour et par",
     "personne ; seuls les objets des catégories OFFRABLES s'offrent). PAROLE : la première conversation",
-    "du jour. VISITE : le premier passage du jour dans son hameau. OUBLI : sans échange (une parole, un",
-    "cadeau) depuis JOURS jours, la jauge perd PERTE point chaque nuit.",
+    "du jour. VISITE : le premier passage du jour dans son hameau. RETROUVAILLES : l'amitié ne baisse",
+    "jamais avec l'absence ; une personne qui te connaît (au moins HUMEUR.CONNU points), revue après JOURS",
+    "jours ou plus sans échange (une parole, un cadeau), est joyeuse de te retrouver : BONUS de plus à la",
+    "première conversation.",
     "GOUTS : combien d'objets chacun adore, aime et déteste, tirés (de son id) dans la liste de son métier",
     "(METIERS : bucheron, pecheur, mineur, berger, cueilleur ; jardinier pour un adulte sans métier ;",
     "enfant pour un enfant), complétée par COMMUN. ECRITS : les goûts fixés d'un personnage écrit.",
@@ -18,15 +20,16 @@
     "un présent devant la porte de la ferme : un objet de PRESENTS[son métier], en nombre [de, à].",
     "REMISE et DELAI (par palier) : ce que l'amitié avec la personne qui tient un atelier de hameau",
     "(ILE.ATELIERS, qui) retire du prix de ses commandes et de ses meubles (en %), et de leur délai (en jours).",
-    "HUMEUR : TRISTE, les jours sans échange qui rendent triste une personne qui te connaît (au moins",
-    "CONNU points) ; COLERE, la confiance du hameau sous laquelle ses habitants sont en colère ; JOIE, le",
-    "palier à partir duquel la personne est joyeuse de te voir."
+    "HUMEUR : CONNU, les points à partir desquels la personne te connaît (les retrouvailles) ; COLERE, la",
+    "confiance du hameau sous laquelle ses habitants sont en colère ; JOIE, le palier à partir duquel la",
+    "personne est joyeuse de te voir. La tristesse vient de son foyer : son bonheur sous HABITANTS.TRISTE",
+    "(data/monde.json), jamais de ton absence."
   ],
   "AMITIE": {
     "CADEAU": { "adore": 8, "aime": 4, "neutre": 1, "deteste": -4 },
     "PAROLE": 2,
     "VISITE": 1,
-    "OUBLI": { "JOURS": 7, "PERTE": 1 },
+    "RETROUVAILLES": { "JOURS": 7, "BONUS": 3 },
     "OFFRABLES": ["légume", "fruit", "plat", "produit", "ingrédient", "conserve"],
     "GOUTS": { "adore": 2, "aime": 3, "deteste": 2 },
     "METIERS": {
@@ -62,6 +65,6 @@
     },
     "REMISE": [0, 0, 5, 10, 20],
     "DELAI": [0, 0, 0, 1, 1],
-    "HUMEUR": { "TRISTE": 7, "CONNU": 10, "COLERE": 20, "JOIE": 3 }
+    "HUMEUR": { "CONNU": 10, "COLERE": 20, "JOIE": 3 }
   }
 }

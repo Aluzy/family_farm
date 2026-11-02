@@ -31,6 +31,15 @@ export function platsBonheur(mange) {
     .reduce((t, v) => t + v, 0);
 }
 
+// Le bonus d'une table variée (CIBLE.VARIETE) : le nombre de plats différents mangés dans la journée
+// (ceux qui rendent du bonheur ; les aliments crus ne comptent pas) → le bonus du plus haut seuil atteint.
+export function varieteBonheur(mange) {
+  const n = Object.keys(mange || {}).filter((item) => (mange[item] || 0) > 0 && dishHappiness(item) > 0).length;
+  let bonus = 0;
+  for (const [seuil, b] of Object.entries(DATA.BONHEUR.CIBLE.VARIETE || {})) if (n >= Number(seuil)) bonus = Math.max(bonus, b);
+  return bonus;
+}
+
 // Bonheur que les meubles fabriqués (state.meubles) ajoutent à la cible, au plus CIBLE.MEUBLES_MAX.
 export function meublesBonheur(state) {
   let t = 0;
@@ -41,11 +50,11 @@ export function meublesBonheur(state) {
   return Math.min(DATA.BONHEUR.CIBLE.MEUBLES_MAX, t);
 }
 
-// La cible commune de la nuit : CIBLE.BASE + les plats de la journée + les meubles, de 0 à MAX
+// La cible commune de la nuit : CIBLE.BASE + les plats de la journée (et leur variété) + les meubles, de 0 à MAX
 // (la faim et le couchage s'y ajoutent membre par membre).
 export function cibleBonheur(state, mange) {
   const B = DATA.BONHEUR;
-  return Math.max(0, Math.min(B.MAX, B.CIBLE.BASE + platsBonheur(mange) + meublesBonheur(state)));
+  return Math.max(0, Math.min(B.MAX, B.CIBLE.BASE + platsBonheur(mange) + varieteBonheur(mange) + meublesBonheur(state)));
 }
 
 // Une nuit : le bonheur `actuel` fait CIBLE.VITESSE % du chemin vers `cible` (au moins 1 point tant

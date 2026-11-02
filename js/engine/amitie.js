@@ -15,7 +15,9 @@ import { ajouterConfiance, ajouterRelation, confiance, relation, RECIT } from '.
      - à la première conversation du jour (PAROLE) ;
      - au premier passage du jour dans son hameau (VISITE) ;
      - avec un cadeau, un par jour (CADEAU, selon son goût pour l'objet : adoré, aimé, neutre, détesté).
-   Sans échange (parole ou cadeau) depuis OUBLI.JOURS jours, elle baisse d'OUBLI.PERTE chaque nuit.
+   Elle ne baisse jamais avec l'absence (un jeu sans pression) : une personne qui te connaît, revue après
+   RETROUVAILLES.JOURS jours sans échange (parole ou cadeau), est joyeuse de te retrouver (RETROUVAILLES.BONUS
+   de plus à la première conversation).
 
    Chacun a ses goûts (goutsDe) : quelques objets adorés, aimés, détestés, tirés de son id dans la liste de
    son métier, complétée par la liste commune (ou fixés, pour un personnage écrit). Ils se découvrent en
@@ -26,7 +28,7 @@ import { ajouterConfiance, ajouterRelation, confiance, relation, RECIT } from '.
    un atelier de hameau baisse le prix et le délai de ses commandes (remiseAmitie, delaiAmitie : ile.js).
 
    L'humeur (humeurPnj) colore le corps du personnage sur la carte : la joie (un ami proche), la tristesse
-   (oublié trop longtemps), la colère (un hameau qui n'a plus confiance). Les réactions d'un instant (un
+   (son foyer est malheureux, HABITANTS.TRISTE), la colère (un hameau qui n'a plus confiance). Les réactions d'un instant (un
    cadeau : joie ou dégoût ; la peur ; la colère d'un arbre abattu sous ses yeux) sont dites par la scène.
 
    state.amitie = {
@@ -162,19 +164,22 @@ export function amitieAvec(state, hameauId, membreId) {
 // Une gain qui fait passer un palier ? (`avant`, `apres` : des points)
 const rangDe = (pts) => { let r = 0; RECIT.PALIERS.forEach((s, i) => { if (pts >= s) r = i; }); return r; };
 
-// La première conversation du jour avec cet habitant : +PAROLE. → { gain, palier, nom, monte } ou null.
+// La première conversation du jour avec cet habitant : +PAROLE (+RETROUVAILLES.BONUS s'il te connaît et ne
+// t'avait pas vu depuis RETROUVAILLES.JOURS jours). → { gain, premiere, retrouvailles, pts, palier, nom, monte }
+// ou null.
 export function parlerAmitie(state, hameauId, membreId) {
   const t = trouverPnj(state, hameauId, membreId);
   if (!t) return null;
   const p = fiche(state, t.cle), jour = jourDe(state);
   const avant = pointsAmitie(state, t.cle);
-  // (oublié : il te connaît, et tu n'es pas venu le voir depuis HUMEUR.TRISTE jours)
-  const oublie = avant >= AMITIE.HUMEUR.CONNU && Number.isFinite(p.vu) && jour - p.vu >= AMITIE.HUMEUR.TRISTE;
+  // (les retrouvailles : il te connaît, et vous ne vous étiez pas vus depuis RETROUVAILLES.JOURS jours)
+  const R = AMITIE.RETROUVAILLES;
   const premiere = p.parle !== jour;
-  if (premiere) { ajouterAmitie(state, t.cle, AMITIE.PAROLE); p.parle = jour; }
+  const retrouvailles = premiere && avant >= AMITIE.HUMEUR.CONNU && Number.isFinite(p.vu) && jour - p.vu >= R.JOURS;
+  if (premiere) { ajouterAmitie(state, t.cle, AMITIE.PAROLE + (retrouvailles ? R.BONUS : 0)); p.parle = jour; }
   p.vu = jour;
   const apres = pointsAmitie(state, t.cle);
-  return { gain: apres - avant, premiere, oublie, pts: apres, palier: rangDe(apres), nom: RECIT.PALIER_NOMS[rangDe(apres)], monte: rangDe(apres) > rangDe(avant) };
+  return { gain: apres - avant, premiere, retrouvailles, pts: apres, palier: rangDe(apres), nom: RECIT.PALIER_NOMS[rangDe(apres)], monte: rangDe(apres) > rangDe(avant) };
 }
 
 // Le premier passage du jour dans le hameau : +VISITE pour chacun de ses habitants. → true si c'est le
@@ -210,12 +215,13 @@ export function offrir(state, hameauId, membreId, item) {
   return { ok: true, gout, points: apres - avant, emotion, pts: apres, palier: rangDe(apres), nom: RECIT.PALIER_NOMS[rangDe(apres)], monte: rangDe(apres) > rangDe(avant), prenom: t.m.prenom };
 }
 
-// L'humeur durable d'un habitant (sa teinte sur la carte) : 'colere', 'tristesse', 'joie' ou null.
-export function humeurPnj(state, hameauId, m) {
-  const H = AMITIE.HUMEUR, cle = cleDe(m), p = amitieDe(state).pnj[cle] || {};
+// L'humeur durable d'un habitant (sa teinte sur la carte) : 'colere', 'tristesse' (son foyer est malheureux),
+// 'joie' ou null. `foyer` : le sien (cherché s'il n'est pas donné).
+export function humeurPnj(state, hameauId, m, foyer = null) {
+  const H = AMITIE.HUMEUR, cle = cleDe(m);
   if (confiance(state, hameauId) < H.COLERE) return 'colere';
-  const pts = pointsAmitie(state, cle);
-  if (pts >= H.CONNU && Number.isFinite(p.vu) && jourDe(state) - p.vu >= H.TRISTE) return 'tristesse';
+  const f = foyer || ((habitantsDe(state)[hameauId] || {}).foyers || []).find((x) => (x.membres || []).includes(m));
+  if (f && Number.isFinite(f.bonheur) && f.bonheur < DATA.HABITANTS.TRISTE) return 'tristesse';
   if (palierAmitie(state, cle) >= H.JOIE) return 'joie';
   return null;
 }
@@ -225,7 +231,7 @@ export function humeursPourLaCarte(state) {
   const out = {};
   for (const [id, h] of Object.entries(habitantsDe(state))) {
     for (const f of (h && h.foyers) || []) for (const m of f.membres || []) {
-      const e = humeurPnj(state, id, m);
+      const e = humeurPnj(state, id, m, f);
       if (e) out[m.id] = e;
     }
   }
@@ -260,19 +266,17 @@ export function ramasserPresents(state) {
   return pris;
 }
 
-// La nuit (runNight, avant que le jour change) : l'oubli fait perdre des points ; les amis proches
-// laissent parfois un présent devant la porte ; la confiance de chaque hameau monte vers l'amitié moyenne de
-// ses habitants. → { oublis, presents: [{ de, objet, n }], confiance: { hameau: +n } }.
+// La nuit (runNight, avant que le jour change) : les amis proches laissent parfois un présent devant la
+// porte ; la confiance de chaque hameau monte vers l'amitié moyenne de ses habitants (l'absence ne fait rien
+// perdre). → { presents: [{ de, objet, n }], confiance: { hameau: +n } }.
 export function amitieNuit(state) {
-  const a = amitieDe(state), jour = jourDe(state), O = AMITIE.OUBLI, R = AMITIE.RETOUR;
-  const out = { oublis: 0, presents: [], confiance: {} };
+  const a = amitieDe(state), jour = jourDe(state), R = AMITIE.RETOUR;
+  const out = { presents: [], confiance: {} };
   for (const [hid, h] of Object.entries(habitantsDe(state))) {
     if (!h || !Array.isArray(h.foyers)) continue;
     let total = 0, n = 0;
     for (const f of h.foyers) for (const m of f.membres || []) {
-      const cle = cleDe(m), p = a.pnj[cle];
-      // l'oubli : seulement pour qui te connaît déjà (un échange a eu lieu)
-      if (p && Number.isFinite(p.vu) && jour - p.vu >= O.JOURS && pointsAmitie(state, cle) > 0) { ajouterAmitie(state, cle, -O.PERTE); out.oublis += 1; }
+      const cle = cleDe(m);
       // le présent d'un ami proche
       const rang = palierAmitie(state, cle);
       if (rang >= R.PALIER) {

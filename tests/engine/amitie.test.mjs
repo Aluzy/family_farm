@@ -1,7 +1,7 @@
 /* ==========================================================================
    Tests du moteur : l'amitié avec les habitants des hameaux (js/engine/amitie.js, data/amitie.json).
    - la jauge : la conversation du jour, le passage dans le hameau, les cadeaux (selon les goûts, un par
-     jour), l'oubli la nuit ; les paliers du récit ;
+     jour), les retrouvailles (jamais de perte avec l'absence) ; les paliers du récit ;
    - un personnage écrit garde sa relation du récit ;
    - les goûts : déterministes, sans doublon, découverts en offrant ;
    - l'humeur (la teinte sur la carte) ;
@@ -90,19 +90,32 @@ test('amitié : les paliers du récit ; un personnage écrit garde sa relation',
   assertEqual(goutsDe(adulte).tarte_pommes, 'adore', 'ses goûts écrits');
 });
 
-test('amitié : l\'oubli la nuit, la tristesse, la joie, la colère', () => {
+test('amitié : jamais de perte avec l\'absence, la joie des retrouvailles ; la tristesse d\'un foyer, la joie, la colère', () => {
   const { s, adulte, hameau } = partie();
   ajouterAmitie(s, adulte.id, 30);
   parlerAmitie(s, hameau, adulte.id);
   assertEqual(humeurPnj(s, hameau, adulte), null, 'cordial : rien de particulier');
-  s.day += AMITIE.OUBLI.JOURS;
+  s.day += AMITIE.RETROUVAILLES.JOURS + 5;
   const avant = pointsAmitie(s, adulte.id);
-  const n = amitieNuit(s);
-  assert(n.oublis >= 1);
-  assertEqual(pointsAmitie(s, adulte.id), avant - AMITIE.OUBLI.PERTE);
-  assertEqual(humeurPnj(s, hameau, adulte), 'tristesse', 'oublié');
+  for (let k = 0; k < 5; k++) amitieNuit(s);
+  assertEqual(pointsAmitie(s, adulte.id), avant, 'l\'absence ne fait rien perdre');
+  assertEqual(humeurPnj(s, hameau, adulte), null, 'ni triste de ton absence');
   const g = parlerAmitie(s, hameau, adulte.id);
-  assert(g.oublie, 'la conversation le sait');
+  assertEqual([g.retrouvailles, g.gain], [true, AMITIE.PAROLE + AMITIE.RETROUVAILLES.BONUS], 'les retrouvailles');
+  s.day += 1;
+  const h = parlerAmitie(s, hameau, adulte.id);
+  assertEqual([h.retrouvailles, h.gain], [false, AMITIE.PAROLE], 'le lendemain, une conversation ordinaire');
+  // un inconnu revu longtemps après : pas de retrouvailles
+  const { s: t, membres, hameau: h2 } = partie();
+  const autre = membres[membres.length - 1];
+  parlerAmitie(t, h2, autre.id);
+  t.day += AMITIE.RETROUVAILLES.JOURS;
+  assertEqual(parlerAmitie(t, h2, autre.id).retrouvailles, false, 'il ne te connaît pas encore');
+  // la tristesse : son foyer est malheureux
+  const foyer = habitantsDe(s)[hameau].foyers.find((f) => f.membres.includes(adulte));
+  foyer.bonheur = DATA.HABITANTS.TRISTE - 1;
+  assertEqual(humeurPnj(s, hameau, adulte), 'tristesse', 'un foyer malheureux');
+  foyer.bonheur = DATA.HABITANTS.TRISTE + 20;
   ajouterAmitie(s, adulte.id, 100);
   assertEqual(humeurPnj(s, hameau, adulte), 'joie');
   s.recit.confiance[hameau] = AMITIE.HUMEUR.COLERE - 1;

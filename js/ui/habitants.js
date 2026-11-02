@@ -107,9 +107,17 @@ export function paroleDepuisCarte(o) {
   if (r && r.recit) persistState();
   // l'amitié (js/ui/amitie.js) : la première conversation du jour, ce que la bulle en montre, sa réaction
   const a = r ? amitieParole(o.hameau, o.id, o.activite) : null;
-  if (a) { r.amitie = a.amitie; r.emotion = a.emotion; if (a.amitie.gain) persistState(); }
+  if (a) {
+    r.amitie = a.amitie; r.emotion = a.emotion;
+    // (les retrouvailles : il le dit avant sa phrase du moment)
+    if (a.retrouvailles) r.texte = `${RETROUVAILLES[(o.n || 0) % RETROUVAILLES.length]} ${r.texte}`;
+    if (a.amitie.gain) persistState();
+  }
   return r;
 }
+
+// Ce qu'un habitant qui te connaît dit en te revoyant après une longue absence (AMITIE.RETROUVAILLES).
+const RETROUVAILLES = ['Te revoilà ! Ça faisait longtemps.', 'Quelle bonne surprise de te revoir !', 'Ah, te voilà enfin ! Tu nous as manqué.'];
 
 /* ---------- la fiche du hameau ---------- */
 
