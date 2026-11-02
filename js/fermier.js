@@ -888,8 +888,9 @@
     // puise ; onHit(arrive) au moment où la cruche remonte pleine : `arrive` dit s'il est bien
     // au puits (un chemin fermé en route : il est resté en chemin). Le doigt qui le dirige
     // l'en détourne : la marche et le geste sont oubliés (comme un double appui). false : il ne
-    // peut pas se tenir là.
-    function puiser(spot, face, flip, onHit) {
+    // peut pas se tenir là. `apres` : après ce qu'il a déjà à faire (arroser en glissant, la cruche
+    // vide en chemin : il finit d'abord les arrosages faits), sinon tout de suite.
+    function puiser(spot, face, flip, onHit, apres) {
       if (!blocked) buildGrid();
       if (!freeAt(spot.x, spot.y)) return false;
       if (job && job.idle) job = null;
@@ -897,7 +898,8 @@
       w.joueur = true;
       const plonge = act('puiser', { face, flip, onHit: () => onHit(Math.hypot(x - spot.x, y - spot.y) <= T / 2) });
       plonge.joueur = true;
-      jobs = [w, plonge, wait(rand(0.4, 0.8))].concat(jobs.filter((j) => !j.idle));
+      const reste = jobs.filter((j) => !j.idle), va = [w, plonge, wait(rand(0.4, 0.8))];
+      jobs = apres ? reste.concat(va) : va.concat(reste);
       idleAge = 0;
       return true;
     }

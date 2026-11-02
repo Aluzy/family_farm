@@ -47,8 +47,9 @@
     // Fiche 17 : le personnage va remplir la cruche au puits le plus proche par le chemin.
     // { ok: true } : il y va (le jeu remplit la cruche quand il puise) ; sinon { ok: false,
     // raison } : 'sans' (pas de personnage sur la carte, ou pas de puits posé), 'ferme' (aucun
-    // chemin ne mène à un puits), 'loin' (trop loin).
-    allerAuPuits() {
+    // chemin ne mène à un puits), 'loin' (trop loin). `apres` : il y va après ce qu'il a déjà à
+    // faire (js/fermier.js puiser).
+    allerAuPuits(apres) {
       const f = this.fermier;
       if (!f || !f.puiser || this.niveau) return { ok: false, raison: 'sans' };
       const places = this.placesPuits().filter((p) => f.standable(p.x, p.y));
@@ -74,7 +75,7 @@
       const p = best.p, bridge = this.ctx.bridge;
       const ok = f.puiser(p, p.face, p.flip, (arrive) => {
         if (bridge && bridge.puiser) bridge.puiser(arrive ? p.puits : null);
-      });
+      }, apres);
       return ok ? { ok: true, puits: p.puits } : { ok: false, raison: 'ferme' };
     },
   });

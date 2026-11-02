@@ -556,7 +556,7 @@ export function stageModel() {
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
-    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), pied: piedIci, rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), pied: piedIci, rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? arrosables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -1026,6 +1026,17 @@ function stageCollect(lieu) {
 
 // Version 1.15 : tuiles que la houe peut labourer (la grille verte de la carte en mode houe),
 // recalculées seulement quand la terre change.
+// Les cases des cultures à arroser (une culture, pas arrosée, pas mûre), sur la ferme et dans la
+// Serre : un glissement parti de l'une d'elles les arrose à la suite (js/farm-stage.js arroseStart,
+// js/ui/cruche.js water-many).
+function arrosables() {
+  const out = [];
+  for (const p of state.potager.parcelles.concat(state.serre.construit ? state.serre.parcelles : [])) {
+    if (Number.isInteger(p.case) && p.culture && !p.arrose && !isMature(p)) out.push(p.case);
+  }
+  return out;
+}
+
 let labourablesCache = { key: null, tiles: null };
 function labourables() {
   const key = state.potager.parcelles.map((p) => p.case).join() + '|' + brokenRocks(state).join(';') + '|' + fellenTrees(state).join(';');

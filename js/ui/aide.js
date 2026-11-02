@@ -230,6 +230,7 @@ const HELP = {
         ['Canne à pêche', `Touche l'eau : ${formatNumber(C.pecher)} d'énergie le lancer (voir la fiche « Pêche »).`],
         // fiche 17 : la cruche, sa jauge, le puits
         ['Cruche', `Avant la pompe, on arrose avec elle (${formatNumber(DATA.CRUCHE.LITRES)} L). Sa case, dans la barre d'outils, montre l'eau qui reste (la jauge bleue). Touche-la, ou touche le puits : ton personnage y marche, puise, et elle est pleine. Trop loin, ou sans chemin jusqu'au puits : il te le dit.`],
+        ['Arroser en glissant', 'Sans outil en main, glisse le doigt d\'une culture à arroser à l\'autre : elles s\'allument en bleu, puis ton personnage les arrose dans l\'ordre. La cruche vide en chemin, il va la remplir au puits et reprend où il s\'était arrêté.'],
         ['Bois et pierre', 'Ils se vendent, et paient les technologies avec les lingots. La branche Outils de l\'Arbre des technologies rend les outils plus efficaces.'],
       ],
     };

@@ -1,7 +1,10 @@
 import { DATA } from '../engine/catalog.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
 import { choisirLit, couchages, dormeurDuLit, litDuPrincipal } from '../engine/blocs.js';
-import { crucheARemplir, jaugeCruche, remplirCruche } from '../engine/cruche.js';
+import { aCruche, crucheARemplir, jaugeCruche, remplirCruche } from '../engine/cruche.js';
+import { water } from '../engine/crops.js';
+import { TIRED } from '../engine/stamina.js';
+import { accord, plural } from './common.js';
 import { memberName } from '../engine/family.js';
 import { asleep } from '../engine/night.js';
 import { mainCharacter } from '../engine/depart.js';
@@ -39,13 +42,47 @@ export function crucheSlotHtml() {
     + `<span class="cruche-litres num" aria-hidden="true">${litres}</span></button>`;
 }
 
-// Envoie le personnage remplir la cruche au puits (un appui sur le puits ou sur la cruche).
-export function allerAuPuits() {
+// Arroser en glissant (js/farm-stage.js arroseStart) : les cultures tracées, arrosées une à une
+// dans l'ordre du tracé (le personnage y passe ensuite, js/fermier.js). La cruche vide en chemin :
+// il va la remplir au puits, et les cultures qui restent sont arrosées quand elle est pleine
+// (arrosageReste, repris par puiserFromStage). Plus d'énergie, ou une autre raison : on s'arrête.
+let arrosageReste = [];
+
+function parcelleDeCase(c) {
+  const listes = [state.potager.parcelles, state.serre && state.serre.construit ? state.serre.parcelles : []];
+  for (const l of listes) for (const p of l) if (p.case === c) return p;
+  return null;
+}
+
+function arroserCases(cases) {
+  arrosageReste = [];
+  let n = 0, raison = '', vide = false;
+  for (let i = 0; i < cases.length; i++) {
+    const p = parcelleDeCase(cases[i]);
+    if (!p || !p.culture || p.arrose) continue;
+    const r = water(state, p.id);
+    if (r.ok) { n += 1; continue; }
+    // (la cruche est vide : la suite attend qu'elle soit remplie)
+    if (aCruche(state) && /cruche est vide/.test(r.error)) { vide = true; arrosageReste = cases.slice(i); break; }
+    raison = raison || r.error;
+    if (r.error === TIRED) break;
+  }
+  if (n) persistState();
+  refresh();
+  if (n) notify(`💧 ${plural(n, 'culture')} ${accord(n, 'arrosée')}${vide ? ' · la cruche est vide : au puits !' : raison ? ` · ${raison}` : ''}`);
+  else if (vide) notify(`${DATA.OBJETS.cruche.icone} La cruche est vide : au puits d'abord, puis on arrose.`);
+  else if (raison) notify(raison, { son: 'erreur' });
+  if (vide) allerAuPuits(true);
+}
+
+// Envoie le personnage remplir la cruche au puits (un appui sur le puits ou sur la cruche ; `apres` :
+// arroser en glissant, après les arrosages déjà faits).
+export function allerAuPuits(apres = false) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
   const r = crucheARemplir(state);
   if (!r.ok) { notify(`${DATA.OBJETS.cruche.icone} ${r.error}`); return; }
   const S = window.FarmStage;
-  const go = S && S.allerAuPuits ? S.allerAuPuits() : { ok: false, raison: 'sans' };
+  const go = S && S.allerAuPuits ? S.allerAuPuits(apres) : { ok: false, raison: 'sans' };
   if (go.ok) return;
   if (go.raison === 'loin') notify(`${DATA.OBJETS.cruche.icone} Le puits est trop loin d'ici : rapproche-toi de la ferme pour remplir la cruche.`);
   else if (go.raison === 'ferme') notify(`${DATA.OBJETS.cruche.icone} Impossible d'aller au puits : aucun chemin n'y mène (une porte manque, ou le puits est enfermé).`);
@@ -57,14 +94,21 @@ export function allerAuPuits() {
 export function puiserFromStage(casePuits) {
   if (asleep(state)) return null;
   const r = remplirCruche(state, casePuits === null || casePuits === undefined ? null : Number(casePuits));
-  if (!r.ok) { notify(`${DATA.OBJETS.cruche.icone} ${r.error}`); return r; }
+  if (!r.ok) { arrosageReste = []; notify(`${DATA.OBJETS.cruche.icone} ${r.error}`); return r; }
   notify(`${DATA.OBJETS.cruche.icone} Cruche remplie : ${r.litres} L pour arroser.`);
   persistState();
   refresh();
+  // (un arrosage en glissant attendait la cruche pleine : il reprend où il s'était arrêté)
+  if (arrosageReste.length) arroserCases(arrosageReste);
   return r;
 }
 
 registerActions({
+  // Arroser en glissant (js/farm-stage.js) : `cases`, les cultures tracées, dans l'ordre.
+  'water-many': (target) => {
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    arroserCases(String(target.dataset.cases || '').split(',').map(Number).filter((t) => Number.isInteger(t)));
+  },
   // La case de la cruche, dans la barre d'outils : aller la remplir (pleine : elle le dit).
   'cruche-remplir': () => {
     allerAuPuits();

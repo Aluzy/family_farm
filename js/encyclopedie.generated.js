@@ -93,7 +93,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "cruche",
      "terme": "Cruche à eau",
-     "description": "Avant la pompe et la citerne, on arrose avec elle. Elle se fabrique à l'Atelier (3 bois) ; elle se remplit au puits posé sur la ferme (10 litres) : un appui sur le puits, ou sur la cruche de la barre d'outils, et le personnage y marche, puise, et la cruche est pleine. Une plante qu'on touche pour l'arroser y puise son eau quand la citerne n'en a pas assez ; la jauge bleue de la cruche, dans la barre d'outils, dit ce qui reste.",
+     "description": "Avant la pompe et la citerne, on arrose avec elle. Elle se fabrique à l'Atelier (3 bois) ; elle se remplit au puits posé sur la ferme (10 litres) : un appui sur le puits, ou sur la cruche de la barre d'outils, et le personnage y marche, puise, et la cruche est pleine. Une plante qu'on touche pour l'arroser y puise son eau quand la citerne n'en a pas assez ; la jauge bleue de la cruche, dans la barre d'outils, dit ce qui reste. Pour arroser plusieurs cultures à la suite, sans outil en main, on glisse le doigt de l'une à l'autre : elles s'allument en bleu, puis le personnage les arrose dans l'ordre ; la cruche vide en chemin, il va la remplir au puits et reprend où il s'était arrêté.",
      "liens": [
       "puit",
       "reservoir"
