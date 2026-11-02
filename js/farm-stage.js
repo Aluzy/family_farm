@@ -191,7 +191,7 @@
         // Dehors, le doigt posé puis glissé : le personnage marche dans sa direction tant qu'il
         // reste posé (CarteKit.manette) ; pas quand la houe laboure ni qu'on arrose en glissant, ni
         // la bulle de la citerne, ni pendant la pêche, ni au lit.
-        this.manette = K.manette(this, () => this.suitPerso() && !!this.drag && !this.drag.labour && !this.drag.arrose && !this.drag.trace && !this.drag.deplace && !this.drag.held && !this.drag.meuble
+        this.manette = K.manette(this, () => this.suitPerso() && !!this.drag && !this.drag.labour && !this.drag.arrose && !this.drag.seme && !this.drag.trace && !this.drag.deplace && !this.drag.held && !this.drag.meuble
           && !this.fishing && !(this.ctx.lastModel && this.ctx.lastModel.coucher));
         I.on('gameout', () => { if (!this.drag) this.setHover(null); });
         this.makePincement();            // sur téléphone : deux doigts règlent le zoom (camera.js)
@@ -308,6 +308,8 @@
           labour: null,
           // sans outil en main, un glissement parti d'une culture à arroser arrose les cultures traversées
           arrose: null,
+          // sans outil en main, un glissement parti d'une terre vide sème les terres vides traversées
+          seme: null,
           // la pose d'un meuble : un glissement parti de son aperçu le déplace, case par case
           meuble: null,
           // en mode Construire, un glissement parti d'une case où le bloc se pose : une ligne de blocs
@@ -321,7 +323,8 @@
         if (this.fige && pointer.button > 0) { this.drag.panSeul = true; return; }
         if (!this.drag.fort) this.drag.labour = this.labourStart(wp.x, wp.y);
         if (!this.drag.fort && !this.drag.labour) this.drag.arrose = this.arroseStart(wp.x, wp.y);
-        if (!this.drag.fort && !this.drag.labour && !this.drag.arrose) this.drag.trace = this.traceStart(wp.x, wp.y);
+        if (!this.drag.fort && !this.drag.labour && !this.drag.arrose) this.drag.seme = this.semeStart(wp.x, wp.y);
+        if (!this.drag.fort && !this.drag.labour && !this.drag.arrose && !this.drag.seme) this.drag.trace = this.traceStart(wp.x, wp.y);
         // La pipette (mode Construire, au sol) : un appui maintenu sans bouger sur un bloc posé le
         // prend en main (js/ui/chantier.js, bloc-pipette) ; le tracé qui en partait est oublié.
         const mb = this.ctx.lastModel && this.ctx.lastModel.bati;
@@ -422,6 +425,11 @@
           if (d.moved) this.arroseTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
           return;
         }
+        if (d.seme) {
+          if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) { d.moved = true; this.setHover(null); this.arroseTo(d, { x: d.wx, y: d.wy }, d.seme); }
+          if (d.moved) this.arroseTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y), d.seme);
+          return;
+        }
         if (d.deplace && !d.held) {
           if (!d.moved && Math.hypot(dx, dy) >= TAP_SLOP * pixelRatio()) { d.moved = true; clearTimeout(d.holdTimer); this.setHover(null); }
           if (d.moved) this.deplaceTo(d, this.cameras.main.getWorldPoint(pointer.x, pointer.y));
@@ -496,6 +504,11 @@
           if (d.arrose.tiles.length) this.ctx.bridge.act('water-many', { cases: d.arrose.tiles.join(',') });
           return;
         }
+        if (d.seme && d.moved) {
+          this.clearArroseMarks();
+          if (d.seme.tiles.length) this.ctx.bridge.act('plant-many-open', { cases: d.seme.tiles.join(',') });
+          return;
+        }
         if (!d.moved) {
           // Appui : la vue revient où elle était (elle a pu bouger de quelques pixels).
           if (!this.suitPerso()) this.setCentre(d.cx, d.cy);
@@ -556,7 +569,7 @@
         }
         // La vue suit le personnage, centrée sur lui (comme sur les autres cartes) ; pas pendant un
         // labour ou un arrosage en glissant : les cases restent sous le doigt.
-        if (this.suitPerso() && !(this.drag && (this.drag.labour || this.drag.arrose))) {
+        if (this.suitPerso() && !(this.drag && (this.drag.labour || this.drag.arrose || this.drag.seme))) {
           const p = this.fermier.pos();
           if (p) {
             this.pan = null;
@@ -694,8 +707,20 @@
         return { ok, tiles: [], seen: new Set(), last: { x: wx, y: wy }, marks: [] };
       }
 
-      arroseTo(d, wp) {
-        const L = d.arrose, W = this.grid.cols;
+      // Semer en glissant, sur le même modèle : un glissement parti d'une terre vide
+      // (modèle.semables) marque en vert les terres vides traversées ; au relâchement, le choix de
+      // la graine s'ouvre une fois (plant-many-open, js/ui/elevage.js) et elles sont semées dans l'ordre.
+      semeStart(wx, wy) {
+        const m = this.ctx.lastModel;
+        if (!m || !m.semables || !m.semables.length || m.coucher) return null;
+        const t = this.tileAtPoint(wx, wy), ok = new Set(m.semables);
+        if (!ok.has(t)) return null;
+        return { ok, tiles: [], seen: new Set(), last: { x: wx, y: wy }, marks: [], couleur: [0x5cae3a, 0xd8f5b0] };
+      }
+
+      // (L : le tracé, l'arrosage par défaut ; sa couleur, le bleu de l'eau ou le vert du semis)
+      arroseTo(d, wp, L = d.arrose) {
+        const W = this.grid.cols, [fond, bord] = L.couleur || [0x3f8fd8, 0xbfe4ff];
         const steps = Math.max(1, Math.ceil(Math.hypot(wp.x - L.last.x, wp.y - L.last.y) / 4));
         for (let k = 0; k <= steps; k++) {
           const x = L.last.x + ((wp.x - L.last.x) * k) / steps, y = L.last.y + ((wp.y - L.last.y) * k) / steps;
@@ -705,7 +730,7 @@
           if (!L.ok.has(t)) continue;
           L.tiles.push(t);
           K.vibre('houe');
-          L.marks.push(this.add.rectangle((t % W) * T + T / 2, Math.floor(t / W) * T + T / 2, T - 2, T - 2, 0x3f8fd8, 0.35).setStrokeStyle(1, 0xbfe4ff, 0.9).setDepth(1e5 - 2));
+          L.marks.push(this.add.rectangle((t % W) * T + T / 2, Math.floor(t / W) * T + T / 2, T - 2, T - 2, fond, 0.35).setStrokeStyle(1, bord, 0.9).setDepth(1e5 - 2));
         }
         L.last = { x: wp.x, y: wp.y };
         this.arroseMarks = L.marks;

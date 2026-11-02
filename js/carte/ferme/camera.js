@@ -67,7 +67,7 @@
           clearTimeout(d.holdTimer);
           if (d.fort) this.chargeCancel(d);
           if (d.labour) this.clearLabourMarks();
-          if (d.arrose) this.clearArroseMarks();
+          if (d.arrose || d.seme) this.clearArroseMarks();
           if (d.trace || d.deplace) this.clearTraceMarks();   // (mode Construire : le tracé commencé est oublié)
           this.drag = null;
         }
