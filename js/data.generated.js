@@ -111,7 +111,8 @@ export const RAW_DATA = {
       "presser": 1
     },
     "BONHEUR_REDUCTION": 50,
-    "ENDURANCE": 3,
+    "ENDURANCE": 5,
+    "PLANCHER": 40,
     "REVEIL_BASE": 60,
     "REVEIL_REPAS": 40,
     "MANGER_DIVISEUR": 5,
@@ -132,7 +133,8 @@ export const RAW_DATA = {
     "SPECIALES": { "objets": ["cacao", "cafe", "vanille"], "bonus": 4 },
     "PLATS_MAX": 3,
     "FAIM": -2,
-    "BULLE": 5
+    "BULLE": 5,
+    "CIBLE": { "BASE": 40, "VITESSE": 25, "MEUBLES_MAX": 30, "FAIM": -20 }
   },
   "NIVEAU_MAX": 5,
   "RESEAU": {
@@ -1163,7 +1165,7 @@ export const RAW_DATA = {
     },
     "SILO": { "LARGEUR": 2, "HAUTEUR": 3, "HAUTEUR_MAX": 6, "BLES_PAR_BLOC": 10 },
     "ARBRE_ECART": 3,
-    "BONHEUR_SANS_COUCHAGE": -8,
+    "BONHEUR_SANS_COUCHAGE": -32,
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
@@ -2012,7 +2014,7 @@ export const RAW_DATA = {
         "ressources": { "bois": 8, "pierre": 5 },
         "requiert": [],
         "effet": { "groupeEconome": 25 },
-        "description": "« Planter partout », « Arroser tout » et « Récolter tout » coûtent 25 % d'énergie en moins."
+        "description": "« Planter partout », « Arroser tout » et « Récolter tout », et semer ou arroser en glissant sur 3 cases ou plus, coûtent 25 % d'énergie en moins."
       },
       "cu_semences": {
         "branche": "culture",

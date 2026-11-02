@@ -3,7 +3,7 @@
    Lancer seul : node --test tests/engine/repas.test.mjs (ou node tests/run-tests.mjs repas).
    ========================================================================== */
 
-import {
+import { testSetLevel,
   aidant, aideBetes, awakeMsAtHour, blocsPoses, boiteCount, boiteCounts, boitePosee, buildAtelier,
   buildFridge, caseLibreFoyer, countItem, craft, DATA, depenserMembre, deposerBoite, farmTerrain, findMember, jaugeFamille,
   jaugeMembre, mainCharacter, mangeurs, marcherMembre, placeBoite, poserBloc, poseStatus,
@@ -99,8 +99,9 @@ test('pas d\'école : les enfants ne rentrent pas affamés en fin d\'après-midi
   assertEqual(mangeurs(s).map(jaugeMembre), [100, 100, 100]);
 });
 
-test('réveil : 60 + 40 × la jauge moyenne de la famille au coucher', () => {
+test('réveil : 60 % + 40 % × la jauge moyenne de la famille au coucher', () => {
   const s = garden();
+  testSetLevel(s, 1);
   setInv(s, {});
   for (const m of mangeurs(s)) depenserMembre(s, m.id, 50);
   assertEqual([jaugeFamille(s), sleepTarget(s), wakeEnergy(s, 50)], [50, 80000, 80000]);

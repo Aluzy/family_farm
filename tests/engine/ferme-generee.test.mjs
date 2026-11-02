@@ -593,7 +593,7 @@ test('nouvelle partie sur une ferme générée : la graine, sans terre au dépar
 
 test('ferme générée : chaque nuit, qui n\'a pas de paillasse dans une pièce close perd du bonheur', () => {
   const s = chantier('b3');
-  const B = DATA.ATELIER.BONHEUR_SANS_COUCHAGE;
+  const B = (DATA.ATELIER.BONHEUR_SANS_COUCHAGE * DATA.BONHEUR.CIBLE.VITESSE) / 100;   // (sa cible baisse ; il en fait VITESSE % du chemin)
   const membres = s.famille.membres;
   assert(membres.length >= 2, 'une famille de plusieurs');
   for (const m of membres) m.bonheur = 50;

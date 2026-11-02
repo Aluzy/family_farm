@@ -2,12 +2,12 @@ import { DATA } from './catalog.js';
 import { fail, NO_COINS, pay } from './devices.js';
 import { houseRepaired } from './depart.js';
 import { adultCount, childCount } from './family.js';
-import { memberHappiness, setHappiness } from './bonheur.js';
 import { addItem } from './inventory.js';
 
 /* ---------- Meubles de la maison (fiche 7c : fabriqués à l'Atelier ; avant, le Marché) ----------
    state.meubles = { id: nombre } (absent : aucun). Un meuble fabriqué prend sa place dans
-   l'intérieur de la maison et donne, une fois, un peu de bonheur à chaque membre. Sur la ferme
+   l'intérieur de la maison et élève, pour de bon, la cible du bonheur de la famille
+   (bonheur.js meublesBonheur, au plus BONHEUR.CIBLE.MEUBLES_MAX) : chaque nuit, il s'en rapproche. Sur la ferme
    générée, il arrive dans l'inventaire (l'objet meuble_<id>) et se pose dans la maison comme un
    bloc (DATA.ATELIER.BLOCS.meuble_<id>, js/engine/blocs.js). */
 
@@ -35,14 +35,13 @@ export function meubleRefus(state, id) {
   return null;
 }
 
-// Un meuble de plus (fiche 7c : fabriqué à l'Atelier, atelier.js) : compté, le bonheur de chacun, et
-// l'objet dans l'inventaire (à poser dans la maison).
+// Un meuble de plus (fiche 7c : fabriqué à l'Atelier, atelier.js) : compté (la cible du bonheur),
+// et l'objet dans l'inventaire (à poser dans la maison).
 export function ajouterMeuble(state, id) {
   const refus = meubleRefus(state, id);
   if (refus) return fail(refus);
   const def = DATA.MEUBLES[id];
   state.meubles = { ...(state.meubles || {}), [id]: furnitureCount(state, id) + 1 };
-  for (const m of state.famille.membres) setHappiness(m, memberHappiness(m) + (def.bonheur || 0));
   addItem(state, 'meuble_' + id, 1);
   return { ok: true, bonheur: def.bonheur || 0, nombre: state.meubles[id], aPoser: true };
 }

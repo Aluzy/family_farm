@@ -399,7 +399,11 @@ const inPlace = (lieu) => (p) => p.lieu === lieu;
 // Fluidité (FLU-10) : disponible dès le niveau 1, même eau, énergie et XP qu'à la main.
 // Arbre v2 (Outils de jardin) : ces actions groupées coûtent `groupeEconome` % d'énergie en
 // moins (rendus après coup).
-function groupDiscount(state, before) {
+// Un geste en glissant (arroser, semer) sur au moins GROUPE_MIN cases compte comme une action groupée.
+export const GROUPE_MIN = 3;
+
+// La technologie « groupe économe » : une part de l'énergie dépensée depuis `before` est rendue.
+export function groupDiscount(state, before) {
   const pct = techFlag(state, 'groupeEconome') || 0;
   const spent = before - (Number(state.energie) || 0);
   if (pct > 0 && spent > 0) state.energie += Math.floor((spent * pct) / 100);

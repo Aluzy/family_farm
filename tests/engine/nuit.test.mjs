@@ -184,11 +184,14 @@ test('branche Outils : coups en moins, ressources en plus, énergie, minerai, p�
   for (let i = 0; i < 60; i++) { testFillEnergy(s); bois += chopTree(s, 'a' + i).bois; }
   assert(bois > 60 && bois < 120, `de temps en temps un bois de plus (${bois} pour 60 coups)`);
   // Socs en fer, puis Outils en platine : l'énergie de la houe, de la hache…
+  // (sans descendre sous PERSONNAGE.PLANCHER % du coût de base)
+  for (const m of s.famille.membres) m.bonheur = 0;
   const base = actionCost(s, 'labourer'), hache = actionCost(s, 'couper');
+  const plancher = (geste) => (DATA.PERSONNAGE.PLANCHER * DATA.PERSONNAGE.COUTS[geste] * 1000) / 100;
   grantTech(s, 'out_socs');
   assertEqual(actionCost(s, 'labourer'), Math.ceil(base / 2));
   grantTech(s, 'out_platine');
-  assertEqual([actionCost(s, 'labourer'), actionCost(s, 'couper')], [Math.ceil(base / 4), Math.ceil(hache / 2)]);
+  assertEqual([actionCost(s, 'labourer'), actionCost(s, 'couper')], [Math.max(plancher('labourer'), Math.ceil(base / 4)), Math.ceil(hache / 2)]);
   // Moulinet en laiton : 2 prises de plus par jour
   grantTech(s, 'out_moulinet');
   assertEqual(fishLeft(s, 'lac'), DATA.CANNE.JOUR.lac + 2);
@@ -330,11 +333,11 @@ test('Énergie : elle remonte peu à peu en dormant (8 h pour le réveil), rien 
   assertEqual(s.report.energieReveil, s.energie, 'le résumé du réveil donne l\'énergie de 6 h');
   const t = garden();
   t.awakeMs = awakeMsAtHour(22);
-  t.energie = energyMax();
+  t.energie = energyMax(t);
   startNight(t);
   goToSleep(t);
   advanceNight(t, nightLengthMs());
-  assertEqual(t.energie, energyMax(), 'une énergie plus haute est gardée');
+  assertEqual(t.energie, energyMax(t), 'une énergie plus haute est gardée');
 });
 
 test('Dormir : on ne dort que la nuit ; couché, la nuit défile en accéléré (4 s par heure) jusqu\'au réveil', () => {

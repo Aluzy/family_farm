@@ -26,7 +26,8 @@
     "que dans une pièce close (la paillasse). PIECE_MAX : une pièce a au plus tant de cases. ENCLOS_MAX : l'enclos de barrières du Poulailler ou de l'Étable, au plus tant de cases.",
     "ARBRE_ECART : deux arbres fruitiers plantés sont à au moins tant de cases l'un de l'autre.",
     "BONHEUR_SANS_COUCHAGE (étape 5) : chaque nuit, chaque membre de la famille sans paillasse dans une",
-    "pièce close (une par personne, le personnage principal d'abord) perd autant de bonheur.",
+    "pièce close (une par personne, le personnage principal d'abord) voit sa cible de bonheur baisser d'autant",
+    "(general.json, BONHEUR.CIBLE) : il en perd BONHEUR.CIBLE.VITESSE % chaque nuit.",
     "sol : se pose à plat sur l'herbe (le plancher, le chemin), sous les autres blocs : il ne prend pas leur place",
     "(state.sols, un par case), ni mur, ni porte, ni Atelier dessus ; on le reprend une fois sa case libre. Le",
     "chemin se dessine avec les tuiles du chemin de la carte (ferme-generee.js, tuileChemin), dehors seulement.",
@@ -309,7 +310,7 @@
     ],
     "SILO": { "LARGEUR": 2, "HAUTEUR": 3, "HAUTEUR_MAX": 6, "BLES_PAR_BLOC": 10 },
     "ARBRE_ECART": 3,
-    "BONHEUR_SANS_COUCHAGE": -8,
+    "BONHEUR_SANS_COUCHAGE": -32,
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },

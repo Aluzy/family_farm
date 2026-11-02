@@ -18,7 +18,44 @@ export function averageHappiness(state) {
   return m.length ? Math.round(m.reduce((t, x) => t + memberHappiness(x), 0) / m.length) : 0;
 }
 
-// Variation de bonheur d'un repas (version 1.11) : DECLIN chaque nuit, plus le bonheur des
+/* -- équilibrage : le bonheur de la famille tend vers une cible (BONHEUR.CIBLE) -- */
+
+// Bonheur des plats différents mangés (`mange` : { objet: nombre }) : les PLATS_MAX meilleurs.
+export function platsBonheur(mange) {
+  return Object.keys(mange || {})
+    .filter((item) => (mange[item] || 0) > 0)
+    .map(dishHappiness)
+    .filter((v) => v > 0)
+    .sort((a, b) => b - a)
+    .slice(0, DATA.BONHEUR.PLATS_MAX)
+    .reduce((t, v) => t + v, 0);
+}
+
+// Bonheur que les meubles fabriqués (state.meubles) ajoutent à la cible, au plus CIBLE.MEUBLES_MAX.
+export function meublesBonheur(state) {
+  let t = 0;
+  for (const [id, n] of Object.entries((state && state.meubles) || {})) {
+    const def = DATA.MEUBLES && DATA.MEUBLES[id];
+    if (def && n > 0) t += n * (def.bonheur || 0);
+  }
+  return Math.min(DATA.BONHEUR.CIBLE.MEUBLES_MAX, t);
+}
+
+// La cible commune de la nuit : CIBLE.BASE + les plats de la journée + les meubles, de 0 à MAX
+// (la faim et le couchage s'y ajoutent membre par membre).
+export function cibleBonheur(state, mange) {
+  const B = DATA.BONHEUR;
+  return Math.max(0, Math.min(B.MAX, B.CIBLE.BASE + platsBonheur(mange) + meublesBonheur(state)));
+}
+
+// Une nuit : le bonheur `actuel` fait CIBLE.VITESSE % du chemin vers `cible` (au moins 1 point tant
+// qu'il ne l'a pas atteinte : l'arrondi ne le laisse pas s'arrêter à côté).
+export function versCible(actuel, cible) {
+  const ecart = cible - actuel, pas = (ecart * DATA.BONHEUR.CIBLE.VITESSE) / 100;
+  return actuel + (Math.abs(pas) < 1 ? Math.sign(ecart) * Math.min(1, Math.abs(ecart)) : pas);
+}
+
+// Variation de bonheur d'un repas, la règle des habitants des hameaux (version 1.11) : DECLIN chaque nuit, plus le bonheur des
 // plats différents mangés (au plus PLATS_MAX, les meilleurs), FAIM en plus si le besoin
 // n'est pas couvert. Les aliments crus ne donnent rien.
 export function mealHappinessDelta(plan) {

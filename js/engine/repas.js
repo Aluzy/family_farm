@@ -3,7 +3,7 @@ import { floorPercent } from './base.js';
 import { fail } from './devices.js';
 import { addItem, countItem, keepLots, lotList, lotRank, lotsOf, pullLots, pushLots } from './inventory.js';
 import { mainCharacter } from './depart.js';
-import { dishHappiness, memberHappiness, setHappiness } from './bonheur.js';
+import { cibleBonheur, dishHappiness, memberHappiness, setHappiness, versCible } from './bonheur.js';
 import { noter } from './journal.js';
 import { faimAidePct, faimMarchePct } from './equipement.js';
 import { clockHours, nightActive } from './clock.js';
@@ -260,20 +260,20 @@ export function affames(state) {
   return mangeurs(state).filter((m) => m.affame).map((m) => m.id);
 }
 
-// Le bonheur de la nuit : DECLIN pour tous, plus le bonheur des plats différents mangés dans
-// la journée (au plus PLATS_MAX, les meilleurs) ; FAIM en plus pour qui a eu faim. Renvoie la
-// variation commune (sans la faim).
+// Le bonheur de la nuit (BONHEUR.CIBLE) : celui de chaque membre fait CIBLE.VITESSE % du chemin vers
+// la cible commune (cibleBonheur : la base, les plats différents de la journée, les meubles),
+// CIBLE.FAIM en moins pour qui a eu faim. Renvoie la variation moyenne (arrondie).
 export function bonheurRepas(state, mange) {
-  const H = DATA.BONHEUR;
-  const plats = Object.keys(mange || {})
-    .filter((item) => (mange[item] || 0) > 0)
-    .map(dishHappiness)
-    .filter((v) => v > 0)
-    .sort((a, b) => b - a)
-    .slice(0, H.PLATS_MAX);
-  const delta = H.DECLIN + plats.reduce((t, v) => t + v, 0);
-  for (const m of state.famille.membres) setHappiness(m, memberHappiness(m) + delta + (m.affame ? H.FAIM : 0));
-  return delta;
+  const C = DATA.BONHEUR.CIBLE;
+  const cible = cibleBonheur(state, mange);
+  const membres = state.famille.membres;
+  let total = 0;
+  for (const m of membres) {
+    const avant = memberHappiness(m);
+    setHappiness(m, versCible(avant, cible + (m.affame ? C.FAIM : 0)));
+    total += memberHappiness(m) - avant;
+  }
+  return membres.length ? Math.round(total / membres.length) : 0;
 }
 
 // Autonomie du jour en cours (en %) : la part des points mangés qui vient de la ferme ;

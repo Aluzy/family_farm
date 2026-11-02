@@ -1,3 +1,4 @@
+import { energyMax } from './stamina.js';
 import { DATA } from './catalog.js';
 import { unlockTab } from './base.js';
 import { batteryCapacity, fail, findDevice, isBroken, tankCapacity } from './devices.js';
@@ -276,7 +277,7 @@ export function testSetEnergyZero(state) {
 
 // Version 1.8 : l'énergie du personnage au maximum.
 export function testFillEnergy(state) {
-  state.energie = DATA.PERSONNAGE.MAX * 1000;
+  state.energie = energyMax(state);
   return { ok: true };
 }
 

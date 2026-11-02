@@ -214,7 +214,7 @@ export function recoverInSleep(state, ms) {
   const e = Number(state.energie) || 0;
   if (e >= cible) return e;
   const parMs = cible / (DATA.PERSONNAGE.SOMMEIL_HEURES * DATA.TEMPS.SECONDES_PAR_HEURE * 1000);
-  state.energie = Math.min(cible, energyMax(), Math.round(e + parMs * ms));
+  state.energie = Math.min(cible, energyMax(state), Math.round(e + parMs * ms));
   return state.energie;
 }
 

@@ -6,7 +6,7 @@
 import {
   addItem, aidant, aideAFaire, aideBetes, buyFurniture, collectLeftovers, COMPTA_MAX,
   comptaRecente, countItem, createInitialState, DATA, earn, ecouterJournal, findPlot,
-  furnitureCount, furnitureMax, harvest, hensToFeed, layEggs, makePlots, makeSheep, memberPerso,
+  furnitureCount, furnitureMax, meublesBonheur, harvest, hensToFeed, layEggs, makePlots, makeSheep, memberPerso,
   noteCompta, pickUp, piles, posteCompta, removeMember, setMemberProfile, testBatir,
 } from '../../js/engine/index.js';
 import {
@@ -14,14 +14,14 @@ import {
   testBase,
 } from './aide.mjs';
 
-test('meubles : achat au Marché, limites selon la famille, bonheur une fois', () => {
+test('meubles : achat au Marché, limites selon la famille, la cible du bonheur', () => {
   const s = createInitialState();
   s.pieces = 10000;
   assertEqual(buyFurniture(s, 'table').error, 'Bâtis d\'abord ton foyer : une pièce close avec une paillasse.');
   assert(testBatir(s, 'foyer').ok);
   s.famille.membres.forEach((m) => { m.bonheur = 50; });
   const r = buyFurniture(s, 'canape');
-  assertEqual([r.ok, s.pieces, furnitureCount(s, 'canape'), s.famille.membres.every((m) => m.bonheur === 50 + DATA.MEUBLES.canape.bonheur)], [true, 10000 - DATA.MEUBLES.canape.prix, 1, true]);
+  assertEqual([r.ok, s.pieces, furnitureCount(s, 'canape'), s.famille.membres.every((m) => m.bonheur === 50), meublesBonheur(s)], [true, 10000 - DATA.MEUBLES.canape.prix, 1, true, DATA.MEUBLES.canape.bonheur], 'rien tout de suite : la cible du bonheur monte');
   assertEqual(buyFurniture(s, 'canape').ok, false, 'un seul canapé');
   // lits : un par adulte, un par enfant (famille de départ : 2 + 2)
   assertEqual([furnitureMax(s, 'lit_adulte'), furnitureMax(s, 'lit_enfant'), furnitureMax(s, 'chaise')], [2, 2, 4]);
