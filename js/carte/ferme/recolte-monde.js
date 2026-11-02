@@ -96,6 +96,7 @@
       const pris = !!E && E.pris.has(o.id), cueilli = !!E && E.cueillis.has(o.id);
       const n = o.pl.images[o.code][(cueilli && o.regle.apres != null ? o.regle.apres : o.v) * (o.herbe ? 5 : 1)];
       if (n != null && o.img.frame.name !== n) { o.img.setFrame(n); if (o.herbe) o.herbe.base = n; }
+      if (!pris && o.img.sansOmbre) { o.img.sansOmbre = false; this.sunDirty = true; }   // (revenue : son ombre aussi)
       if (pris === !o.img.visible) return;
       this.tweens.killTweensOf(o.img);
       o.img.setVisible(!pris).setAlpha(1).setAngle(0).setScale(1);
@@ -344,6 +345,9 @@
       o.brise = null;
       if (anim && global.FermeSon) global.FermeSon.joue('retrait', { x: o.fx, y: o.fy, vitesse: 0.75, gain: 1.3, delai: 0.05 });
       if (o.filet) { o.filet.remove(); o.filet = null; }
+      // (son ombre s'en va tout de suite, pas à la fin de l'effondrement : soleil.js)
+      if (o.img) o.img.sansOmbre = true;
+      this.sunDirty = true;
       this.revealPieces(b.fin);
       const fin = () => {
         this.mondeOccupe.delete(o.id);
@@ -441,6 +445,8 @@
         }
         const img = o ? o.img : this.mondeImagePetite(h);
         if (!o) this.mondeSync(h);
+        // (prise : son ombre s'en va tout de suite, pendant qu'elle s'efface : soleil.js)
+        if (o && o.img) { o.img.sansOmbre = true; this.sunDirty = true; }
         const fin = () => {
           this.mondeOccupe.delete(h.id);
           if (o) { o.anim = false; if (o.img.active) o.img.setPosition(o.fx, o.fy).setAlpha(1); this.mondeMontre(o, false); } else if (img) img.destroy();

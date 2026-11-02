@@ -105,6 +105,7 @@
           this.tweens.add({ targets: r.img, alpha: 1, duration: ROCKS.backMs });
         }
       }
+      if (changed) this.sunDirty = true;             // (leurs ombres : tout de suite, soleil.js)
       if (changed && this.fermier && this.fermier.regrid) this.fermier.regrid();
     },
 
@@ -188,6 +189,7 @@
         this.showGain(got.items);
         K.vibre('ramasse');
         r.gone = true;
+        this.sunDirty = true;                          // (son ombre s'en va tout de suite, soleil.js)
         if (this.fermier && this.fermier.regrid) this.fermier.regrid();
         if (!r.img) return;
         if (reducedMotion()) { r.img.setVisible(false); return; }
@@ -229,6 +231,7 @@
       r.finPieces = null;
       r.breaking = false;
       r.gone = true;
+      this.sunDirty = true;                            // (son ombre s'en va tout de suite, soleil.js)
       if (this.fermier && this.fermier.regrid) this.fermier.regrid();
       if (!r.img) return;
       if (!anim || reducedMotion()) { r.img.setVisible(false); return; }
