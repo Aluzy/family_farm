@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 434 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 435 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -51,6 +51,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/heavy_plus_sign.png" width="48" height="48" alt=""> | ➕ | [`heavy_plus_sign.png`](heavy_plus_sign.png) |
 | <img src="apercu/curly_loop.png" width="48" height="48" alt=""> | ➰ | [`curly_loop.png`](curly_loop.png) |
 | <img src="apercu/white_large_square.png" width="48" height="48" alt=""> | ⬜ | [`white_large_square.png`](white_large_square.png) |
+| <img src="apercu/white_medium_star.png" width="48" height="48" alt=""> | ⭐ | [`white_medium_star.png`](white_medium_star.png) |
 | <img src="apercu/white_medium_star+water_wave.png" width="48" height="48" alt=""> | ⭐‍🌊 | [`white_medium_star+water_wave.png`](white_medium_star+water_wave.png) |
 | <img src="apercu/sunrise.png" width="48" height="48" alt=""> | 🌅 | [`sunrise.png`](sunrise.png) |
 | <img src="apercu/new_moon_symbol.png" width="48" height="48" alt=""> | 🌑 | [`new_moon_symbol.png`](new_moon_symbol.png) |
