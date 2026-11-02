@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { EPS } from '../engine/base.js';
 import { countItem } from '../engine/inventory.js';
 import { energyChip, formatEnergy } from './energie.js';
-import { actionCost } from '../engine/stamina.js';
+import { actionCost, TIRED } from '../engine/stamina.js';
 import {
   allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, plantPlot, seedStock,
   growHoursLeft, water, waterCost, waterCostFor, seedLabel,
@@ -523,21 +523,64 @@ function openPlantManyModal(cases) {
 function semerCases(cases, culture) {
   const def = DATA.CULTURES[culture];
   if (!def) return;
+  const groupe = cases.length >= GROUPE_MIN;   // (un tracé : une action groupée, comme « Planter partout »)
+  const plots = parcellesDeCases(cases).filter((p) => def.lieux.includes(p.lieu));   // (pas de graine des champs dans la Serre)
+  // sur la carte, le personnage va semer (la file des gestes) ; le reste (la Serre) tout de suite
+  const restent = semerParLaCarte(plots, culture, groupe);
   let n = 0, raison = '';
   const avant = Number(state.energie) || 0;
-  for (const p of parcellesDeCases(cases)) {
-    if (!def.lieux.includes(p.lieu)) continue;   // (une parcelle de la Serre, une graine des champs)
+  for (const p of restent) {
     const r = plantPlot(state, p, culture);
     if (r.ok) { n += 1; continue; }
     raison = r.error;
     break;   // (plus de graines, ou plus d'énergie)
   }
-  // (un tracé d'au moins GROUPE_MIN cases : une action groupée, comme « Planter partout »)
-  if (cases.length >= GROUPE_MIN) groupDiscount(state, avant);
+  if (groupe) groupDiscount(state, avant);
   if (n) persistState();
   refresh();
   if (n) notify(`🌱 ${plural(n, 'parcelle')} de ${def.nom.toLowerCase()} ${accord(n, 'semée')}${raison ? ` · ${raison}` : ''}`);
   else if (raison) notify(raison, { son: 'erreur' });
+}
+
+// La file des gestes (js/carte/ferme/semis.js) : sur les terres de la ferme, une graine posée
+// scintille sur chacune et le personnage va les semer une à une ; le jeu sème au geste
+// (semerFromStage). Autant que les graines et l'énergie le permettent, en comptant celles qui
+// attendent déjà. Renvoie les parcelles que la carte ne prend pas (la Serre, pas de carte) : la
+// page les sème tout de suite.
+function semerParLaCarte(plots, culture, groupe) {
+  const S = window.FarmStage;
+  const dehors = plots.filter((p) => p.lieu === 'potager' && Number.isInteger(p.case));
+  const autres = plots.filter((p) => !dehors.includes(p));
+  if (!dehors.length || !S || !S.semer || asleep(state)) return plots;
+  const graines = Math.floor(seedStock(state, culture)) - S.semisEnAttente(culture);
+  const cout = actionCost(state, 'planter');
+  const forces = cout > 0 ? Math.floor((Number(state.energie) || 0) / cout) - S.semisEnAttente() : dehors.length;
+  const n = Math.min(dehors.length, graines, forces);
+  if (n <= 0) {
+    notify(graines <= 0 ? `Pas de graines : ${DATA.CULTURES[culture].nom}.` : TIRED, { son: 'erreur' });
+    return autres;
+  }
+  if (!S.semer(dehors.slice(0, n).map((p) => p.case), culture, groupe)) return plots;   // (la carte ne peut pas)
+  if (n < dehors.length) notify(`🌱 ${plural(n, 'terre')} à semer · ${graines < forces ? 'pas assez de graines' : 'pas assez d\'énergie'} pour les autres.`);
+  return autres;
+}
+
+// La carte (semis.js) : arrivé sur la terre `c`, le personnage y sème `culture` : la graine et
+// l'énergie partent maintenant (`groupe` : la réduction de groupe d'un tracé). false : refusé
+// (le message est donné), ou plus rien à faire là.
+export function semerFromStage(c, culture, groupe) {
+  if (asleep(state)) { notify(SOMMEIL_MESSAGE); return false; }
+  const p = allPlots(state).find((q) => q.case === c && q.lieu === 'potager');
+  if (!p || p.culture) return false;
+  const avant = Number(state.energie) || 0;
+  const r = plantPlot(state, p, culture);
+  if (!r.ok) { notify(r.error, { son: 'erreur' }); return false; }
+  if (groupe) groupDiscount(state, avant);
+  persistState();
+  refresh();
+  const def = DATA.CULTURES[culture];
+  notify(null, { cumul: { cle: 'semis-' + culture, quantites: { n: 1 }, texte: (t) => `🌱 ${plural(t.n, 'parcelle')} de ${def.nom.toLowerCase()} ${accord(t.n, 'semée')}` } });
+  return true;
 }
 
 function harvestToast(result) {
@@ -552,6 +595,9 @@ registerActions({
   },
   'plant': (target) => {
     closeModal();
+    // sur la carte, le personnage va la semer (la file des gestes) ; sinon, tout de suite
+    const plot = findPlot(state, target.dataset.id);
+    if (plot && !plot.culture && DATA.CULTURES[target.dataset.crop] && !semerParLaCarte([plot], target.dataset.crop, false).length) return;
     applyResult(plant(state, target.dataset.id, target.dataset.crop));
   },
   'water': (target) => {

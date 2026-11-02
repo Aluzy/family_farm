@@ -426,6 +426,9 @@
 
     const NONE = { none: true };
     const holds = new Map();        // case → { view: parcelle d'avant (ou NONE), t0 }
+    // les gestes que la file des gestes a déjà faits sur la carte (« planter:12 » : semer en
+    // arrivant, js/carte/ferme/semis.js) : le changement du modèle ne les fait pas rejouer
+    const faits = new Set();
     let prevRaw = null;
     const tileXY = (c) => ({ x: (c % o.cols()) * T, y: Math.floor(c / o.cols()) * T });
 
@@ -505,6 +508,7 @@
       const auto = new Set(next.parAuto || []);
       const add = (type, c, view) => {
         if (auto.has(`${type}:${c}`)) return;
+        if (faits.delete(`${type}:${c}`)) return;
         (found[type] = found[type] || []).push(c);
         if (!holds.has(c)) holds.set(c, { view: view || NONE, t0: performance.now() });
       };
@@ -824,6 +828,15 @@
     function gather(foot, onHit, opts) {
       return strike('cueille', foot, 9, onHit, opts);
     }
+    // Semer sur la terre `c` (la file des gestes, js/carte/ferme/semis.js) : il se place à côté, se
+    // penche et sème. Le geste fait ici, le modèle qui change ensuite ne le fait pas rejouer.
+    function semer(c, onHit, opts) {
+      const st = standFor(c);
+      // (refusé au dernier moment : plus de graine, plus d'énergie, onHit renvoie false)
+      const hit = () => { faits.add('planter:' + c); if (onHit && onHit() === false) faits.delete('planter:' + c); };
+      enchaine([walkTo(st.x, st.y, MARCHE_GESTE), coup(act('planter', { face: st.face, flip: st.flip, onHit: hit })), wait(rand(0.15, 0.4))], onHit, opts, st);
+      return true;
+    }
     // Un geste (un coup d'outil, des fibres jetées) : une marche jusqu'en `spot`, le geste, un
     // souffle. Les gestes se suivent dans l'ordre où le joueur les a demandés (le dernier après
     // les autres), avant le reste (les tas à prendre). Ils marchent toujours (jamais de saut : sans
@@ -1109,6 +1122,8 @@
       regard: () => ({ face, flip }),
       // À la main : prendre ce qui est au sol en `foot` (la ferme générée).
       gather,
+      // Semer sur la terre `c` (la file des gestes, semis.js).
+      semer,
       // La botteleuse : jeter ses fibres dans l'entonnoir, depuis `spot`.
       jeter,
       // Le puits : y aller et remplir la cruche, depuis `spot` (fiche 17).

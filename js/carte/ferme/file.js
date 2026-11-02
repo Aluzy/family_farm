@@ -55,7 +55,8 @@
     //               `opts`) ; false : il ne peut pas (le geste se fait alors sur place).
     //   lache()     plus aucun geste ne l'attend (le reflet s'en va) : ce que images() a créé
     //               pour lui s'en va aussi ;
-    //   immediat    le jeu joue l'action tout de suite, sans file (le coup fort).
+    //   immediat    le jeu joue l'action tout de suite, sans file (le coup fort) ;
+    //   semis       la culture d'une graine à semer (semis.js : les graines qui attendent).
     geste(e) {
       if (this.ctx.lastModel && this.ctx.lastModel.coucher) return;   // au lit (ou en y allant) : rien
       const B = this.ctx.bridge;
@@ -98,7 +99,7 @@
     // Le reflet sur la cible du geste `e` (une marque de la file).
     marquer(e) {
       if (!this.file) this.file = [];
-      const m = { cle: e.cle, action: e.action || null, coup: e.coup, images: e.images, lache: e.lache, vivant: true, t0: this.time.now };
+      const m = { cle: e.cle, action: e.action || null, coup: e.coup, images: e.images, lache: e.lache, semis: e.semis || null, vivant: true, t0: this.time.now };
       this.file.push(m);
       this.refletsCible(e.cle);
       return m;
