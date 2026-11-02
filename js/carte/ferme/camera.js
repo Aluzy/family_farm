@@ -184,6 +184,27 @@
       this.ctx.bridge.onView(v);
     },
 
+    // Le didacticiel (js/ui/didacticiel.js) : quand sa bulle passe sur le personnage (au bord de la
+    // carte, la vue ne le garde plus au milieu de l'écran), elle devient transparente
+    // (#didacticiel-root.transparente : jeu.css). Regardé une image sur six ; la page n'est touchée
+    // que quand cela change.
+    stepBulleDidacticiel() {
+      if ((this.bulleTour = ((this.bulleTour || 0) + 1) % 6)) return;
+      const root = document.getElementById('didacticiel-root');
+      if (!root) return;
+      const bulle = root.querySelector('.didac-bulle:not(.reduite)'), p = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
+      let dessous = false;
+      if (bulle && p) {
+        const cam = this.cameras.main, cv = this.game.canvas.getBoundingClientRect();
+        const kx = cv.width / this.scale.width, ky = cv.height / this.scale.height;
+        // le personnage : ses pieds et 28 px de carte au-dessus, 8 de chaque côté (en px de l'écran)
+        const x = cv.left + (p.x - cam.worldView.x) * cam.zoom * kx, y = cv.top + (p.y - cam.worldView.y) * cam.zoom * ky;
+        const lx = 8 * cam.zoom * kx, hy = 28 * cam.zoom * ky, b = bulle.getBoundingClientRect();
+        dessous = x + lx > b.left && x - lx < b.right && y > b.top && y - hy < b.bottom;
+      }
+      if (dessous !== root.classList.contains('transparente')) root.classList.toggle('transparente', dessous);
+    },
+
     // Centre d'un lieu de la carte (bâtiment affiché, Zone de culture ou Champ), en px de carte.
     place(id) {
       // version 1.15 : la Zone de culture couvre toute la carte ; son repère reste
