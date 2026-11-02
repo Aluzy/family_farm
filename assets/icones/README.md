@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 433 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 434 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -388,6 +388,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/canned_food.png" width="48" height="48" alt=""> | 🥫 | [`canned_food.png`](canned_food.png) |
 | <img src="apercu/leafy_green.png" width="48" height="48" alt=""> | 🥬 | [`leafy_green.png`](leafy_green.png) |
 | <img src="apercu/lab_coat+seedling.png" width="48" height="48" alt=""> | 🥼‍🌱 | [`lab_coat+seedling.png`](lab_coat+seedling.png) |
+| <img src="apercu/deer.png" width="48" height="48" alt=""> | 🦌 | [`deer.png`](deer.png) |
 | <img src="apercu/oyster.png" width="48" height="48" alt=""> | 🦪 | [`oyster.png`](oyster.png) |
 | <img src="apercu/cheese_wedge.png" width="48" height="48" alt=""> | 🧀 | [`cheese_wedge.png`](cheese_wedge.png) |
 | <img src="apercu/cheese_wedge+glass_of_milk.png" width="48" height="48" alt=""> | 🧀‍🥛 | [`cheese_wedge+glass_of_milk.png`](cheese_wedge+glass_of_milk.png) |
