@@ -4,7 +4,7 @@ import { countItem } from '../engine/inventory.js';
 import { energyChip, formatEnergy } from './energie.js';
 import { actionCost } from '../engine/stamina.js';
 import {
-  allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, seedStock,
+  allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, plantPlot, seedStock,
   growHoursLeft, water, waterCost, waterCostFor, seedLabel,
 } from '../engine/crops.js';
 import {
@@ -25,7 +25,10 @@ import { artIcon, artPx, coopArtRow } from './animations.js';
 import { pxGauge, pxText } from './pixel-art.js';
 import { helpBtn } from './aide.js';
 import { notify } from './toasts.js';
-import { registerActions } from './actions.js';
+import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
+import { asleep } from '../engine/night.js';
+import { persistState } from './storage.js';
+import { refresh } from './render.js';
 import { accord, canPay, costLabel, itemsText, plural } from './common.js';
 import { eauCruche } from '../engine/cruche.js';
 import { closeModal, openModal } from './modal.js';
@@ -481,6 +484,59 @@ function openPlantModal(plotId) {
     <button type="button" class="btn" data-action="close-modal">Annuler</button>`, { labelledBy: 'plant-title' });
 }
 
+// Semer en glissant (js/farm-stage.js) : les terres vides tracées (`cases`, dans l'ordre) ; une
+// fenêtre, une seule fois, pour choisir la graine, puis elles sont semées l'une après l'autre.
+const parcellesDeCases = (cases) => {
+  const plots = allPlots(state);
+  return cases.map((c) => plots.find((p) => p.case === c)).filter((p) => p && !p.culture);
+};
+const casesDe = (raw) => String(raw || '').split(',').map(Number).filter((t) => Number.isInteger(t));
+
+function openPlantManyModal(cases) {
+  const vides = parcellesDeCases(cases);
+  if (!vides.length) return;
+  const lieux = [...new Set(vides.map((p) => p.lieu))];
+  const cultures = [...new Set(lieux.flatMap((l) => plantableCropsFor(state, l)))];
+  if (!cultures.some((c) => seedStock(state, c) >= 1)) { notify('🌱 Aucune graine à semer : il en faut au Comptoir, ou d\'une récolte.', { son: 'erreur' }); return; }
+  tel('modal', 'plant');
+  const liste = vides.map((p) => p.case).join(',');
+  const rows = cultures
+    .map((c) => {
+      const def = DATA.CULTURES[c];
+      const n = seedStock(state, c);
+      const ici = vides.filter((p) => def.lieux.includes(p.lieu)).length;
+      const semees = Math.min(ici, Math.floor(n));
+      return `
+        <button type="button" class="btn plant-choice" data-action="plant-many" data-cases="${liste}" data-crop="${c}"${semees >= 1 ? '' : ' disabled'}>
+          <span>${def.icone} ${def.nom}</span>
+          <span class="muted">${seedLabel(c)} : ${formatQty(n)} pour ${plural(ici, 'parcelle')} · ${def.stades} jours · ⚡ ${formatEnergy(semees * actionCost(state, 'planter'))}</span>
+        </button>`;
+    })
+    .join('');
+  openModal(`
+    <h2 id="plant-title">🌱 Semer ${plural(vides.length, 'parcelle')}</h2>
+    <p class="muted">La même graine sur les terres tracées, dans l'ordre, autant que tes graines et ton énergie le permettent.</p>
+    <div class="stack">${rows}</div>
+    <button type="button" class="btn" data-action="close-modal">Annuler</button>`, { labelledBy: 'plant-title' });
+}
+
+function semerCases(cases, culture) {
+  const def = DATA.CULTURES[culture];
+  if (!def) return;
+  let n = 0, raison = '';
+  for (const p of parcellesDeCases(cases)) {
+    if (!def.lieux.includes(p.lieu)) continue;   // (une parcelle de la Serre, une graine des champs)
+    const r = plantPlot(state, p, culture);
+    if (r.ok) { n += 1; continue; }
+    raison = r.error;
+    break;   // (plus de graines, ou plus d'énergie)
+  }
+  if (n) persistState();
+  refresh();
+  if (n) notify(`🌱 ${plural(n, 'parcelle')} de ${def.nom.toLowerCase()} ${accord(n, 'semée')}${raison ? ` · ${raison}` : ''}`);
+  else if (raison) notify(raison, { son: 'erreur' });
+}
+
 function harvestToast(result) {
   return `Récolte : ${itemsText(result.items, 'gain')}`;
 }
@@ -533,6 +589,15 @@ registerActions({
   'shear': (target) => {
     const result = applyResult(shear(state, target.dataset.id));
     if (result.ok && !result.aRamasser) notify(`✂️ Tonte : +${result.laine} 🧶`, { son: 'tonte' });
+  },
+  'plant-many-open': (target) => {
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    openPlantManyModal(casesDe(target.dataset.cases));
+  },
+  'plant-many': (target) => {
+    closeModal();
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    semerCases(casesDe(target.dataset.cases), target.dataset.crop);
   },
   'plant-all-open': (target) => {
     openPlantAllModal(target.dataset.lieu);

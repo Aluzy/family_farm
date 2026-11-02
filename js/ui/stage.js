@@ -556,7 +556,7 @@ export function stageModel() {
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
-    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), pied: piedIci, rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? arrosables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), pied: piedIci, rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? semables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 
@@ -1033,6 +1033,16 @@ function arrosables() {
   const out = [];
   for (const p of state.potager.parcelles.concat(state.serre.construit ? state.serre.parcelles : [])) {
     if (Number.isInteger(p.case) && p.culture && !p.arrose && !isMature(p)) out.push(p.case);
+  }
+  return out;
+}
+
+// Semer en glissant (js/farm-stage.js) : les cases des parcelles vides (terre labourée, à la
+// ferme et dans la Serre) ; la graine se choisit au relâchement (js/ui/elevage.js, plant-many).
+function semables() {
+  const out = [];
+  for (const p of state.potager.parcelles.concat(state.serre.construit ? state.serre.parcelles : [])) {
+    if (Number.isInteger(p.case) && !p.culture) out.push(p.case);
   }
   return out;
 }
