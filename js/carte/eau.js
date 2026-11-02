@@ -27,6 +27,10 @@
  *   - la nuit, dans le voile de l'heure (avec les autres lumières de la scène : stepEauLumiere) :
  *     le reflet de la lune, une colonne de traits qui tremblent au milieu de l'eau, et celui des
  *     lumières posées au bord sur l'eau juste en dessous.
+ * Les lacs, les rivières et les étangs sont plus bas que l'herbe (E.berge, eauBerge) : sous la rive
+ * du haut, une paroi de terre (son rebord d'herbe, des racines, des cailloux), la tranche de la paroi
+ * sur les côtés ; et l'ombre de la berge tombe dans l'eau, du côté opposé au soleil (vers le haut de
+ * la carte, penchée selon l'heure, comme les ombres portées : CarteKit.soleil), rien la nuit.
  * Ce qui se tient au bord se reflète dans l'eau (stepReflets) : arbres, bâtiments, toits,
  * personnages, bêtes, chacun retourné sous son pied, teinté, à `EAU.miroir.alpha` ; dessinés
  * avec les ronds dans une texture par étendue, découpée à l'eau (ses pixels hors de l'eau
@@ -65,6 +69,14 @@
     // jusqu'à `pres + va`, et retour, à `vitesse` rad/s, à `alpha` ; une « terre » de `ilot` px
     // au plus dans l'eau (roseaux, cailloux) compte pour de l'eau ; la distance à la terre est
     // lissée sur `lisse` px (les angles de l'écume s'arrondissent)
+    // la berge (`berge`, eauRive) : l'eau est plus basse que l'herbe ; sous la rive du haut, une
+    // paroi de terre haute de `haut` px (au hasard, l'un ou l'autre), son rebord d'herbe assombri à
+    // `rebord`, la terre de `terre` (plus sombre de `fonce` par px vers l'eau), des racines et des
+    // cailloux (une chance sur `racine`, `caillou`) ; sur les côtés, la tranche de la paroi (`cote` :
+    // claire à gauche, sombre à droite). Une terre de `ilot` px au plus (roseaux, cailloux) n'en a
+    // pas. Son ombre dans l'eau suit le soleil (CarteKit.soleil : vers le haut de la carte, penchée
+    // selon l'heure), haute de `ombre.haut` px de berge, à `ombre.alpha` en plein jour.
+    berge: { haut: [3, 4], rebord: 0.72, terre: [124, 86, 54], fonce: 0.1, racine: 9, caillou: 13, clair: [158, 118, 76], sombre: [88, 58, 36], cote: [[104, 70, 44], [78, 52, 32]], ombre: { haut: 4, alpha: 0.8 } },
     shader: { trait: 0.032, glisse: 3, clair: 1, endroits: 0.4, bleu: [0.75, 0.88, 1], ciel: 0.1, ecume: { pres: 1.4, va: 1.8, vitesse: 0.9, alpha: 0.75 }, ilot: 64, lisse: 2 },
     // la mer (`mer`, EAU_MER) : sa houle porte à `portee` px de la plage ; ses crêtes (`houle`)
     // tous les `ecart` px, qui roulent vers la plage à `vitesse` crêtes par s, larges de
@@ -166,6 +178,8 @@ uniform vec3 uCiel;
 uniform float uCielK;
 uniform vec4 uVagues;
 uniform vec4 uEcume;
+uniform vec4 uOmbre;
+uniform float uDehors;
 uniform HP vec2 uOrigine;
 varying vec2 outTexCoord;
 float bruit(HP vec2 p) { return texture2D(uBruit, fract(p / 128.0)).r; }
@@ -202,6 +216,20 @@ void main() {
   float bord = uEcume.x + uEcume.y * va;
   float ecume = step(abs(d - bord), 0.5) * step(1.0, d) * step(0.38, bruit2(pw * 0.6 + vec2(t * 2.0, 0.0)));
   c = mix(c, vec3(0.93, 0.97, 1.0), ecume * uEcume.w);
+  // l'ombre de la berge (uOmbre : cisaillement et écrasement du soleil, force, hauteur de la
+  // berge) : un pixel d'eau est à l'ombre si la terre (uChamp, vert) est là d'où vient la lumière,
+  // sous lui (le soleil est au sud) et de côté selon l'heure ; plus pâle loin du bord
+  float ombre = 0.0;
+  for (int i = 1; i <= 6; i++) {
+    float v = float(i);
+    if (v > uOmbre.w || ombre > 0.0) break;
+    // (les rangées de l'image vont de bas en haut dans le shader : « sous lui », c'est -y)
+    vec2 q = floor(px + vec2(-uOmbre.x * v, -uOmbre.y * v)) + 0.5;
+    // (hors de l'image : la terre autour de l'étang, uDehors ; au grand monde, le bloc voisin)
+    bool hors = q.y < 0.0 || q.y > uTaille.y || q.x < 0.0 || q.x > uTaille.x;
+    if (hors ? uDehors > 0.5 : texture2D(uChamp, q / uTaille).g > 0.5) ombre = 1.0 - 0.45 * (v - 1.0) / max(1.0, uOmbre.w);
+  }
+  c = mix(c, c * vec3(0.46, 0.55, 0.64), ombre * uOmbre.z);
   gl_FragColor = vec4(c, 1.0);
 }`;
 
@@ -491,7 +519,7 @@ void main() {
       // l'eau elle-même : le shader (EAU_FRAG) à la place de l'image de l'étendue (cachée)
       const champ = this.textures.createCanvas(`eau_champ_${id}_${i}`, w, h);
       const rive = this.textures.createCanvas(`eau_rive_${id}_${i}`, w, h);
-      const uni = { temps: 0, ciel: [1, 1, 1], cielK: 0 };
+      const uni = { temps: 0, ciel: [1, 1, 1], cielK: 0, ombre: [0, 0, 0, 0] };
       const S = E.shader, M = E.mer;
       // (l'origine de l'étendue : ses bruits pris en px de la carte, pour qu'ils se suivent d'un
       // bloc d'eau du monde au suivant ; à la ferme, ceux de son image, comme toujours)
@@ -513,6 +541,7 @@ void main() {
           set('uCiel', uni.ciel); set('uCielK', uni.cielK); set('uOrigine', origine);
           set('uVagues', [S.trait, S.glisse, S.clair, S.endroits]);
           set('uEcume', [S.ecume.pres, S.ecume.va, S.ecume.vitesse, S.ecume.alpha]);
+          set('uOmbre', uni.ombre); set('uDehors', a.monde ? 0 : 1);
         },
       }, a.x, a.y, w, h, [a.tex.key, `eau_champ_${id}_${i}`, cle, 'eau_bruit']);
       shader.setOrigin(0).setDepth(a.sprite.depth);
@@ -579,9 +608,12 @@ void main() {
           eau[p] = bleu || blanc ? 1 : 0;
         }
       }
-      // la rive : les pixels de terre
+      // la berge (E.berge ; pas la mer, qui a sa plage) : peinte sur l'eau, elle devient de la terre
+      const berge = v.a.mer ? null : this.eauBerge(eau, d, w, h, v.a);
+      // la rive : les pixels de terre (et la berge)
       const rc = v.rive.getContext(), ri = rc.createImageData(w, h);
       for (let p = 0; p < w * h; p++) if (!eau[p] && d[p * 4 + 3]) for (let c = 0; c < 4; c++) ri.data[p * 4 + c] = d[p * 4 + c];
+      if (berge) for (const [p, col] of berge) { for (let c = 0; c < 3; c++) ri.data[p * 4 + c] = col[c]; ri.data[p * 4 + 3] = 255; }
       rc.putImageData(ri, 0, 0);
       v.rive.refresh();
       // ce qui n'est pas de l'eau (les reflets y sont effacés)
@@ -651,11 +683,80 @@ void main() {
         for (let p = 0; p < w * h; p++) {
           ci.data[p * 4] = Math.round((D[p] * 255) / cap);
           if (DL) ci.data[p * 4 + 1] = Math.round((Math.min(15, DL[p]) * 255) / 15);
+          // (un lac, une rivière : la terre dans le vert, pour l'ombre de la berge)
+          else if (!eau[p]) ci.data[p * 4 + 1] = 255;
           ci.data[p * 4 + 3] = 255;
         }
         cc.putImageData(ci, 0, 0);
         v.champ.refresh();
       }
+    },
+
+    // La berge d'une étendue (E.berge) : l'eau est plus basse que l'herbe. Sous chaque rive du
+    // haut (un pixel d'eau sous un pixel de terre), une paroi de terre qui descend dans l'eau, son
+    // rebord d'herbe assombri en haut, des racines et des cailloux par endroits ; sur les côtés, la
+    // tranche de la paroi, un pixel. Les pixels peints deviennent de la terre (`eau` mis à 0) :
+    // l'écume, les reflets et l'ombre partent de son pied. Une petite terre dans l'eau (roseaux,
+    // cailloux : E.shader.ilot px au plus) n'a pas de berge. Rend [[pixel, [r, g, b]]].
+    eauBerge(eau, d, w, h, a) {
+      const B = E.berge, n = w * h;
+      // (la grande terre : les composantes de terre de plus de E.shader.ilot px)
+      const grande = new Uint8Array(n), vu = new Uint8Array(n);
+      for (let p0 = 0; p0 < n; p0++) {
+        if (eau[p0] || vu[p0] || !d[p0 * 4 + 3]) continue;
+        const comp = [p0];
+        vu[p0] = 1;
+        for (let i = 0; i < comp.length; i++) {
+          const p = comp[i], x = p % w, y = (p / w) | 0;
+          for (const q of [x > 0 ? p - 1 : -1, x < w - 1 ? p + 1 : -1, y > 0 ? p - w : -1, y < h - 1 ? p + w : -1]) {
+            if (q >= 0 && !eau[q] && !vu[q] && d[q * 4 + 3]) { vu[q] = 1; comp.push(q); }
+          }
+        }
+        if (comp.length > E.shader.ilot) for (const p of comp) grande[p] = 1;
+      }
+      // (l'eau à l'œil : un pixel bleu ou blanc bleuté, même dans une case de terre : les tuiles de
+      // la rive du haut ont une bande d'eau dans leur case, qui ne bouge pas)
+      const vis = new Uint8Array(n);
+      for (let p = 0; p < n; p++) {
+        const o = p * 4, r = d[o], g = d[o + 1], b = d[o + 2];
+        vis[p] = d[o + 3] && ((b >= r + 40 && b >= g) || (Math.min(r, g, b) >= 190 && b >= r && b >= g - 8)) ? 1 : 0;
+      }
+      // (un hasard fixe, d'après la place du pixel sur la carte)
+      const ax = a.x | 0, ay = a.y | 0;
+      const hasard = (x, y, k) => { let t = Math.imul((x + ax) * 374761393 + (y + ay) * 668265263 + k * 2246822519, 1274126177); t ^= t >>> 13; return (Math.imul(t, 1103515245) >>> 0) / 4294967296; };
+      const out = new Map();
+      const sombre = (c, f) => [Math.round(c[0] * f), Math.round(c[1] * f), Math.round(c[2] * f)];
+      // sous la rive du haut : la paroi
+      for (let y = 1; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const p = y * w + x;
+          if (!vis[p] || vis[p - w] || !grande[p - w]) continue;
+          const haut = B.haut[hasard(x, 0, 1) < 0.5 ? 0 : 1];
+          for (let k = 0; k < haut && y + k < h; k++) {
+            const q = p + k * w;
+            if (!vis[q] || out.has(q)) break;
+            let col;
+            if (k === 0) col = sombre([d[(p - w) * 4], d[(p - w) * 4 + 1], d[(p - w) * 4 + 2]], B.rebord);
+            else {
+              const r = hasard(x, y + k, 2);
+              col = r < 1 / B.racine ? B.clair : r < 1 / B.racine + 1 / B.caillou ? B.sombre : sombre(B.terre, 1 - B.fonce * (k - 1));
+            }
+            out.set(q, col);
+          }
+        }
+      }
+      // sur les côtés : la tranche de la paroi (claire à gauche, où le soleil du matin la prend ;
+      // sombre à droite)
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const p = y * w + x;
+          if (!vis[p] || out.has(p)) continue;
+          if (x > 0 && !vis[p - 1] && grande[p - 1]) out.set(p, B.cote[0]);
+          else if (x < w - 1 && !vis[p + 1] && grande[p + 1]) out.set(p, B.cote[1]);
+        }
+      }
+      for (const p of out.keys()) eau[p] = 0;
+      return out;
     },
 
     // L'eau vivante ôtée (fin : la scène s'en va, rien à repeindre).
@@ -696,6 +797,8 @@ void main() {
         // (le shader : le temps, le ciel de l'heure)
         v.uni.temps = s;
         v.uni.ciel = ciel;
+        // (l'ombre de la berge : le soleil de l'heure, rien la nuit)
+        v.uni.ombre = sol ? [sol.sh, sol.k, (E.berge.ombre.alpha * sol.alpha) / K.SOLEIL.alpha, E.berge.ombre.haut] : [0, 0, 0, 0];
         v.uni.cielK = E.shader.ciel;
         this.stepScintille(v, sol, dt);
         this.stepRonds(v, dt);
