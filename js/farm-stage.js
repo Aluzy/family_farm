@@ -579,6 +579,7 @@
         this.stepSun();
         if (this.stepBrouillard) this.stepBrouillard(time, delta);   // (le brouillard du grand monde : brouillard.js)
         if (this.stepBoussole) this.stepBoussole();                  // (la boussole : boussole.js)
+        this.stepBulleDidacticiel();            // (la bulle du didacticiel sur le personnage : camera.js)
         this.placeLabels();
         this.placePiles();
         this.placeGain();

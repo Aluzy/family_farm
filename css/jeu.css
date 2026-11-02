@@ -1404,6 +1404,14 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   font-size: 14px;
   line-height: 1.35;
 }
+/* la barre d'outils rangée : la bulle descend à sa place */
+body:has(#tool-bar:not(.open)) .didac-bulle:not(.haut):not(.reduite) { bottom: calc(76px + env(safe-area-inset-bottom)); }
+/* sur le personnage (au bord de la carte : js/carte/ferme/camera.js stepBulleDidacticiel) : transparente,
+   et les appuis passent au travers, sauf sur ses boutons */
+.didac-bulle { transition: bottom 0.2s ease-out, opacity 0.2s; }
+#didacticiel-root.transparente .didac-bulle:not(.reduite) { opacity: 0.35; pointer-events: none; }
+#didacticiel-root.transparente .didac-bulle:not(.reduite) button { pointer-events: auto; }
+@media (prefers-reduced-motion: reduce) { .didac-bulle { transition: none; } }
 .didac-bulle.haut { bottom: auto; top: calc(var(--player-h, 120px) + 16px + env(safe-area-inset-top)); }
 .didac-bulle p { margin: 0 0 4px; }
 .didac-bulle b { font-weight: normal; color: var(--color-earth); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
