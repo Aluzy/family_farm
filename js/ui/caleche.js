@@ -26,7 +26,8 @@ import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { aFait, livrerPromesse, nomCocher, parler, promesses, RECIT } from '../engine/recit.js';
-import { acheterMeubleHameau, ateliersConnus, commander, commandesDe, lotsPossibles, meublesDuHameau, retirerToutes } from '../engine/ile.js';
+import { acheterMeubleHameau, ateliersConnus, commander, commandesDe, delaiCommande, lotsPossibles, meublesDuHameau, prixCommande, prixMeubleHameau, retirerToutes } from '../engine/ile.js';
+import { palierAmitieNom, remiseAmitie } from '../engine/amitie.js';
 import { habitantsDe } from '../engine/habitants.js';
 import { meubleRefus } from '../engine/meubles.js';
 import { itemsText } from './common.js';
@@ -214,18 +215,22 @@ function recetteHtml(p, a, rid, r) {
   const lots = [bouton(1, '×1')];
   if (max >= 5) lots.push(bouton(5, '×5'));
   if (max > 1 && max !== 5) lots.push(bouton(max, `Tout (×${max})`));
-  const prix = r.pieces > 0 ? ` + ${formatCoins(r.pieces)} 💰` : '';
+  const cout = prixCommande(state, a.id, rid);
+  const prix = cout > 0 ? ` + ${formatCoins(cout)} 💰` : '';
   return `<li class="ile-recette"><span>${escapeHtml(r.nom)} : ${objetsTexte(r.entrees)}${prix} → ${objetsTexte(r.sortie)}</span><span class="row">${lots.join('')}</span></li>`;
 }
 function atelierHtml(p, a) {
   const hameau = (habitantsDe(state)[a.hameau] || {}).nom || '';
-  const qui = a.qui && RECIT.PERSONNAGES[a.qui] ? `, chez ${escapeHtml(RECIT.PERSONNAGES[a.qui].nom)}` : '';
+  // (l'amitié avec qui tient l'atelier : une remise sur ses prix, un délai plus court, js/engine/amitie.js)
+  const remise = remiseAmitie(state, a.qui), gagne = a.jours - delaiCommande(state, a.id);
+  const ami = remise || gagne > 0 ? ` <span class="ile-ami">💛 ${escapeHtml(palierAmitieNom(state, a.qui))} : ${[remise ? `−${remise} %` : '', gagne > 0 ? `${gagne === 1 ? 'un jour' : `${gagne} jours`} plus tôt` : ''].filter(Boolean).join(', ')}</span>` : '';
+  const qui = a.qui && RECIT.PERSONNAGES[a.qui] ? `, chez ${escapeHtml(RECIT.PERSONNAGES[a.qui].nom)}${ami}` : '';
   const titre = `<h4 class="ile-atelier-titre"><span aria-hidden="true">${a.icone || ''}</span> ${escapeHtml(a.nom)} <span class="muted">— ${escapeHtml(hameau)}${qui}</span></h4>`;
   if (a.sorte === 'meubles') {
     const li = meublesDuHameau(state, a.hameau).map((id) => {
-      const m = DATA.MEUBLES[id], refus = meubleRefus(state, id) || ((Number(state.pieces) || 0) < m.prix ? 'Pas assez de pièces.' : null);
+      const m = DATA.MEUBLES[id], cout = prixMeubleHameau(state, a.hameau, id), refus = meubleRefus(state, id) || ((Number(state.pieces) || 0) < cout ? 'Pas assez de pièces.' : null);
       const off = !p.ici || refus;
-      return `<li class="ile-meuble"><span>${escapeHtml(m.nom)} <span class="muted num">${formatCoins(m.prix)} 💰</span></span><button type="button" class="btn small" data-action="ile-meuble" data-hameau="${a.hameau}" data-meuble="${id}"${off ? ` disabled title="${escapeHtml(refus || 'La calèche n\'est pas là.')}"` : ''}>Commander</button></li>`;
+      return `<li class="ile-meuble"><span>${escapeHtml(m.nom)} <span class="muted num">${formatCoins(cout)} 💰</span></span><button type="button" class="btn small" data-action="ile-meuble" data-hameau="${a.hameau}" data-meuble="${id}"${off ? ` disabled title="${escapeHtml(refus || 'La calèche n\'est pas là.')}"` : ''}>Commander</button></li>`;
     }).join('');
     return `${titre}<ul class="ile-liste">${li}</ul>`;
   }

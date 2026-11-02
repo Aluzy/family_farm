@@ -1,3 +1,4 @@
+import { delaiAmitie, prixAmitie } from './amitie.js';
 import { DATA } from './catalog.js';
 import { fail, NO_COINS, pay } from './devices.js';
 import { addItem, countItem, takeItem } from './inventory.js';
@@ -64,8 +65,20 @@ export function lotsPossibles(state, hameauId, atelierId, recetteId) {
   const enCours = commandesDe(state, hameauId).filter((c) => c.atelier === atelierId).reduce((n, c) => n + c.lots, 0);
   let n = A.max - enCours;
   for (const [item, q] of Object.entries(r.entrees)) n = Math.min(n, Math.floor(countItem(state, item) / q));
-  if (r.pieces > 0) n = Math.min(n, Math.floor((Number(state.pieces) || 0) / r.pieces));
+  const prix = prixCommande(state, atelierId, recetteId);
+  if (prix > 0) n = Math.min(n, Math.floor((Number(state.pieces) || 0) / prix));
   return Math.max(0, n);
+}
+
+// Le prix d'un lot (pièces), après la remise de l'amitié avec qui tient l'atelier (amitie.js).
+export function prixCommande(state, atelierId, recetteId) {
+  const A = ILE.ATELIERS[atelierId], r = A && A.recettes && A.recettes[recetteId];
+  return r ? prixAmitie(state, A.qui, r.pieces) : 0;
+}
+// Le délai (jours) d'une commande à l'atelier, moins ce que l'amitié avec qui le tient fait gagner.
+export function delaiCommande(state, atelierId) {
+  const A = ILE.ATELIERS[atelierId];
+  return A ? Math.max(0, A.jours - delaiAmitie(state, A.qui)) : 0;
 }
 
 // Le joueur commande `lots` lots de la recette `recetteId` à l'atelier `atelierId` du hameau `hameauId`.
@@ -76,14 +89,15 @@ export function commander(state, hameauId, atelierId, recetteId, lots = 1) {
   if (!h || !r || A.sorte !== 'commande' || !ateliersDuHameau(state, hameauId).some((a) => a.id === atelierId)) return fail('Cet atelier n\'est pas ici.');
   const n = Math.floor(Number(lots) || 0);
   if (n < 1) return fail('Rien à commander.');
-  if (n > lotsPossibles(state, hameauId, atelierId, recetteId)) return fail(r.pieces > 0 && (Number(state.pieces) || 0) < r.pieces * n ? NO_COINS : 'Tu n\'as pas de quoi faire autant.');
-  if (r.pieces > 0 && !pay(state, r.pieces * n, `${A.nom} : ${r.nom}`)) return fail(NO_COINS);
+  const prix = prixCommande(state, atelierId, recetteId), jours = delaiCommande(state, atelierId);
+  if (n > lotsPossibles(state, hameauId, atelierId, recetteId)) return fail(prix > 0 && (Number(state.pieces) || 0) < prix * n ? NO_COINS : 'Tu n\'as pas de quoi faire autant.');
+  if (prix > 0 && !pay(state, prix * n, `${A.nom} : ${r.nom}`)) return fail(NO_COINS);
   for (const [item, q] of Object.entries(r.entrees)) takeItem(state, item, q * n);
-  payerFoyers(h, r.pieces * n);
+  payerFoyers(h, prix * n);
   const jour = Math.max(1, Math.floor(Number(state.day) || 1));
-  commandesDe(state, hameauId).push({ atelier: atelierId, recette: recetteId, lots: n, pret: jour + A.jours });
+  commandesDe(state, hameauId).push({ atelier: atelierId, recette: recetteId, lots: n, pret: jour + jours });
   noterFait(state, `ile.${atelierId}`);
-  return { ok: true, pret: jour + A.jours, lots: n };
+  return { ok: true, pret: jour + jours, lots: n };
 }
 
 // Le joueur reprend, au hameau `hameauId`, les commandes prêtes. → { ok, items: { objet: n } } (vide :
@@ -112,17 +126,23 @@ export function meublesDuHameau(state, hameauId) {
   return Object.keys(DATA.MEUBLES).filter((id) => (DATA.MEUBLES[id].vendeur || 'bois_joli') === g);
 }
 
+// Le prix du meuble `id` au hameau `hameauId`, après la remise de l'amitié avec qui tient son atelier de meubles.
+export function prixMeubleHameau(state, hameauId, id) {
+  const def = DATA.MEUBLES[id], a = ateliersDuHameau(state, hameauId).find((x) => x.sorte === 'meubles');
+  return def ? prixAmitie(state, a && a.qui, def.prix) : 0;
+}
+
 // Le joueur achète le meuble `id` au hameau `hameauId` : il le paie (aux foyers du hameau), le meuble
 // arrive dans l'inventaire et donne son bonheur (ajouterMeuble). → { ok, cost } ou un refus.
 export function acheterMeubleHameau(state, hameauId, id) {
   if (!meublesDuHameau(state, hameauId).includes(id)) return fail('Ce meuble ne se vend pas ici.');
   const refus = meubleRefus(state, id);
   if (refus) return fail(refus);
-  const def = DATA.MEUBLES[id];
-  if (!pay(state, def.prix, `Meuble : ${def.nom}`)) return fail(NO_COINS);
-  payerFoyers(habitantsDe(state)[hameauId], def.prix);
+  const def = DATA.MEUBLES[id], prix = prixMeubleHameau(state, hameauId, id);
+  if (!pay(state, prix, `Meuble : ${def.nom}`)) return fail(NO_COINS);
+  payerFoyers(habitantsDe(state)[hameauId], prix);
   noterFait(state, 'ile.meuble');
-  return { ...ajouterMeuble(state, id), cost: def.prix };
+  return { ...ajouterMeuble(state, id), cost: prix };
 }
 
 // Les ateliers que le joueur connaît (ceux des hameaux garantis où il est allé) : [{ id, hameau (l'id du

@@ -133,6 +133,7 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     // le récit de Céron (recit.js, docs/recit/) : les faits, les relations, la confiance des hameaux, les
     // répliques dites, le carnet. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
     recit: nouveauRecit(),
+    amitie: { pnj: {}, visites: {}, porte: [] }, // l'amitié avec les habitants des hameaux (js/engine/amitie.js)
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),

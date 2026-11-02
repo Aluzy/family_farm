@@ -54,6 +54,8 @@ import { objectiveValueText } from './chapitres.js';
 import { registerActions } from './actions.js';
 import { axeChipHtml, chopFromStage, fishFromStage, caillouFromStage, gesteFromStage, mineFromStage, mondeFromStage, morceauFromStage, pickChipHtml, rodChipHtml, scytheAroundFromStage, scytheChipHtml, scytheFromStage } from './outils.js';
 import { semerFromStage } from './elevage.js';
+import { presentsDepuisCarte, presentsPourLaCarte, visiteDuHameau } from './amitie.js';
+import { humeursPourLaCarte } from '../engine/amitie.js';
 import { casesOuvertesMonde, mondeCueillis, mondePris, noterIci } from '../engine/monde-recolte.js';
 import { botteFromStage, ramasserFromStage, verserChaineFromStage, verserFromStage, verserGrainFromStage } from './atelier.js';
 import { botteleuses } from '../engine/botteleuse.js';
@@ -491,7 +493,9 @@ export function stageModel() {
     // les habitants des hameaux peuplés (js/engine/habitants.js : qui, quel personnage, quel métier,
     // quel lit) et leur horaire (js/carte/ferme/habitants.js) ; ceux d'un hameau déjà vu naissent
     // dès que les plans sont là (une partie d'avant la fiche 7b)
-    habitants: { horaire: HABITANTS.HORAIRE, hameaux: (peuplerLesVus(), habitantsPourLaCarte(state)) },
+    habitants: { horaire: HABITANTS.HORAIRE, hameaux: (peuplerLesVus(), habitantsPourLaCarte(state)), humeurs: humeursPourLaCarte(state) },
+    // l'amitié : les présents des amis devant la porte (js/carte/ferme/amis.js)
+    presents: presentsPourLaCarte(),
     // la visite de bienvenue (js/engine/bienvenue.js, fiche 18) : le visiteur en route, ou son plat qui
     // attend devant la porte (js/carte/ferme/visite.js) ; null le reste du temps
     visite: bienvenueModele(state),
@@ -882,7 +886,12 @@ function stageHameau(h) {
 // l'image de la carte : la fenêtre s'ouvre juste après)
 // Le hameau où est le personnage (le pont hameauIci de la scène), ou null.
 let hameauActuel = null;
-function stageHameauIci(id) { hameauActuel = typeof id === 'string' ? id : null; }
+function stageHameauIci(id) {
+  const avant = hameauActuel;
+  hameauActuel = typeof id === 'string' ? id : null;
+  // (l'amitié : le premier passage du jour dans un hameau, js/ui/amitie.js)
+  if (hameauActuel && hameauActuel !== avant) visiteDuHameau(hameauActuel);
+}
 
 // Le lieu du récit où est le personnage (js/engine/recit.js, la condition lieu) : { lieu, hameau } —
 // « gue » au Gué, l'id d'un autre hameau, « ferme » dans l'enceinte de la ferme, « monde » ailleurs ;
@@ -1096,7 +1105,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
+      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, presents: presentsDepuisCarte, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
     } catch (err) {
       stageBroken = true;
       if (window.Chargement) window.Chargement.fini();

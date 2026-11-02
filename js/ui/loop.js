@@ -29,6 +29,7 @@ import { enExpedition } from '../engine/equipement.js';
 import { retourCompagnon } from '../engine/compagnon.js';
 import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
+import { watchPresents } from './amitie.js';
 import {
   ALERT_MUTE_AFTER_CATCH_UP_MS, notify, setAlertMuteUntil, setAlertState, watchAlerts,
 } from './toasts.js';
@@ -312,6 +313,7 @@ export function frame(now) {
   watchCaleche(); // fiche 7c : la tournée posée, les arrêts aux hameaux, son arrivée à la ferme
   watchBienvenue(); // fiche 18 : la visite de bienvenue du deuxième jour se met en route
   watchRobot();
+  watchPresents();
   watchPreparations();
   watchUnlocks();
   if (ticked) watchAlerts();

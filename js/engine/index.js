@@ -67,5 +67,6 @@ export * from './repas.js';
 export * from './caleche.js';
 export * from './equipement.js';
 export * from './recit.js';
+export * from './amitie.js';
 export * from './usure.js';
 export * from './fil-lune.js';
