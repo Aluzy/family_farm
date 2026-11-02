@@ -7,6 +7,7 @@ import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridg
 import { feedFamily, newNightStats } from './family.js';
 import { jaugeFamille } from './repas.js';
 import { growDue, readyCrops } from './crops.js';
+import { amitieNuit } from './amitie.js';
 import { energyMax, restoreEnergy, wakeEnergy } from './stamina.js';
 import { feedLivestock, fillSilo, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
 import { chevalNuit } from './cheval.js';
@@ -272,6 +273,8 @@ export function runNight(state) {
   // les habitants des hameaux vivent leur journée, que le joueur soit là ou non (habitants.js,
   // fiche 7b ; ni la ferme ni sa famille n'en dépendent)
   habitantsNuit(state);
+  // l'amitié (amitie.js) : l'oubli, les présents des amis proches devant la porte, la confiance des hameaux
+  state.nuit.amitie = amitieNuit(state);
   // la visite de bienvenue (bienvenue.js, fiche 18) qui n'a pas eu lieu : son plat attend devant la porte
   bienvenueNuit(state);
   // le récit (recit.js, docs/recit/) : le niveau de l'empreinte de la ferme, la dérive de la confiance des hameaux

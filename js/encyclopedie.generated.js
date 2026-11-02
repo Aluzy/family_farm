@@ -2411,7 +2411,20 @@ export const ENCYCLOPEDIE = {
       "hameaux",
       "bonheur",
       "metiers",
-      "comptoir"
+      "comptoir",
+      "amitie"
+     ],
+     "decouverte": [
+      "hameau"
+     ]
+    },
+    {
+     "id": "amitie",
+     "terme": "L'amitié",
+     "description": "Chaque habitant d'un hameau a une jauge d'amitié, de 0 à 100, en cinq paliers : inconnu, poli, cordial, proche, intime (Odile, Basile ou Théo gardent celle que l'histoire fait bouger). Elle monte quand tu lui parles (+2, une fois par jour), quand tu passes dans son hameau (+1, une fois par jour) et avec un cadeau, un par jour : touche-le, puis « 🎁 Offrir » dans sa bulle. Chacun a ses goûts, qui se découvrent en offrant : ce qu'il adore vaut +8, ce qu'il aime +4, le reste +1, et ce qu'il déteste -4. Sans le voir pendant 7 jours, l'amitié baisse d'un point par nuit. Un ami proche ou intime laisse parfois un présent devant ta porte ; l'amitié avec Basile ou Garance baisse le prix de leurs commandes (jusqu'à −20 %) et les rend plus rapides ; la confiance du hameau monte avec l'amitié de ses habitants. Les émotions se lisent sur leur corps : jaune la joie, bleu la tristesse, rouge la colère (un arbre abattu sous leurs yeux, un hameau qui n'a plus confiance), violet la peur (un enfant qui voit frapper, un cheval qui passe trop près), vert le dégoût (un cadeau détesté) ; un petit emoji accompagne chaque réaction.",
+     "liens": [
+      "habitants",
+      "hameaux"
      ],
      "decouverte": [
       "hameau"

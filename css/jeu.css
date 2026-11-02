@@ -3063,6 +3063,46 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 }
 .habitant-bulle strong { font-size: 0.9rem; }
 .habitant-bulle-metier { font-size: 0.72rem; opacity: 0.75; }
+/* l'amitié (js/ui/amitie.js) : le palier, la jauge, le bouton « Offrir » de la bulle */
+.habitant-bulle-ami { display: flex; align-items: center; gap: 4px; margin-top: 3px; font-size: 0.72rem; }
+.ami-jauge { display: inline-block; width: 46px; height: 6px; background: #d9c39b; border: 1px solid #5a3a1e; border-radius: 3px; overflow: hidden; vertical-align: middle; }
+.ami-jauge > span { display: block; height: 100%; background: #e8a33a; }
+.ami-jauge.grande { width: 120px; height: 9px; }
+.ami-gain { color: #2f7a2a; font-weight: 700; }
+.habitant-bulle-offrir {
+  pointer-events: auto;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 0.75rem;
+  color: #3a2414;
+  background: #ffe9a8;
+  border: 2px solid #5a3a1e;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.habitant-bulle-offrir:hover, .habitant-bulle-offrir:focus-visible { background: #ffd970; }
+/* l'émotion d'une réaction (js/carte/ferme/amis.js) : un emoji au-dessus de la tête */
+.habitant-emo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 1rem;
+  line-height: 1;
+  pointer-events: none;
+  will-change: transform;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+body.construction .habitant-emo, body.construction .presents-porte { display: none !important; }
+.ami-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ami-palier { font-weight: 700; }
+.ami-gouts { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 2px; font-size: 0.9rem; }
+.ami-cadeaux { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin: 8px 0 12px; max-height: 45vh; overflow-y: auto; }
+.ami-cadeau { justify-content: flex-start; text-align: left; }
+.ami-marque { margin-left: 2px; }
+.ami-mini { font-size: 0.78rem; white-space: nowrap; }
+.ile-ami { font-size: 0.78rem; color: #8a5a10; white-space: nowrap; }
 .habitant-bulle-texte { margin-top: 2px; }
 /* La visite de bienvenue (fiche 18, js/carte/ferme/visite.js) : le plat posé devant la porte, qui
    attend le retour du personnage. */

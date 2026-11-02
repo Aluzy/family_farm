@@ -60,6 +60,7 @@ export const GAME_ACTIONS = {
   'hoe-many': 'Labourer en glissant',
   'water-many': 'Arroser en glissant',
   'plant-many': 'Semer en glissant',
+  'ami-offrir': 'Offrir un cadeau à un habitant (l\'amitié)',
   'ile-commander': 'Commander à un atelier de hameau (la scierie, le tissage, la couture : le récit)',
   'ile-meuble': 'Acheter un meuble dans un hameau (l\'ébéniste, les tapis)',
   'toit-reparer': 'Réparer le toit abîmé d\'une maison de hameau (le récit)',
@@ -156,7 +157,7 @@ export const INTERFACE_ACTIONS = new Set([
   'stage-open', 'stage-close', 'maison-tab', 'four-tab', 'atelier-tab', 'atelier-groupe', 'atelier-choisir', 'silo-agrandir', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,
   // réglages de quantité (Moulin, achats), fiche d'un membre de la famille
-  'stage-goto', 'stage-pan', 'stage-pan-down', 'market-locked', 'plant-all-open', 'plant-many-open', 'aller', 'comptoir-tab', 'inv-tab',
+  'stage-goto', 'stage-pan', 'stage-pan-down', 'market-locked', 'plant-all-open', 'plant-many-open', 'ami-offrir-open', 'aller', 'comptoir-tab', 'inv-tab',
   'member-edit', 'member-perso', 'fiche-onglet', 'fiche-sac', // fiche 11 : l'onglet d'un membre, ouvrir le sac
   'family-edit', 'family-help', 'pets-edit', 'menu-toggle', 'book-open', 'book-next', 'book-prev', 'book-goto', // essai : le Livre de recette en livre
   'encyclo-open', 'encyclo-page',

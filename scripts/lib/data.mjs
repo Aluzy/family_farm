@@ -704,6 +704,29 @@ export function validateData(data) {
     }
     if (!(typeof D.NUIT === 'number' && D.NUIT > 0 && D.NUIT <= 1)) err('DECOUVERTE.NUIT', 'un facteur, de 0 à 1');
   }
+  // L'amitié (data/amitie.json, js/engine/amitie.js) : les objets nommés existent, les nombres sont sensés.
+  if (data.AMITIE) {
+    const AM = data.AMITIE;
+    const sortes = ['adore', 'aime', 'deteste'];
+    const liste = (where, l) => {
+      if (!Array.isArray(l)) { err(where, 'une liste d\'objets'); return; }
+      for (const it of l) needItem(where, it);
+    };
+    for (const k of [...sortes, 'neutre']) if (typeof (AM.CADEAU || {})[k] !== 'number') err(`AMITIE.CADEAU.${k}`, 'un nombre');
+    for (const k of sortes) if (!(isInt((AM.GOUTS || {})[k]) && AM.GOUTS[k] >= 0)) err(`AMITIE.GOUTS.${k}`, 'un entier positif');
+    for (const [m, g] of Object.entries(AM.METIERS || {})) for (const k of sortes) liste(`AMITIE.METIERS.${m}.${k}`, g[k]);
+    for (const k of sortes) liste(`AMITIE.COMMUN.${k}`, (AM.COMMUN || {})[k]);
+    for (const [p, g] of Object.entries(AM.ECRITS || {})) {
+      if (!(data.RECIT && data.RECIT.PERSONNAGES && data.RECIT.PERSONNAGES[p])) err(`AMITIE.ECRITS.${p}`, 'pas un personnage du récit (RECIT.PERSONNAGES)');
+      for (const k of sortes) liste(`AMITIE.ECRITS.${p}.${k}`, g[k]);
+    }
+    for (const [m, t] of Object.entries((AM.RETOUR && AM.RETOUR.PRESENTS) || {})) for (const [it, v] of Object.entries(t)) {
+      needItem(`AMITIE.RETOUR.PRESENTS.${m}`, it);
+      if (!(Array.isArray(v) && v.length === 2 && v.every((n) => isInt(n) && n >= 1) && v[0] <= v[1])) err(`AMITIE.RETOUR.PRESENTS.${m}.${it}`, '[de, à] : deux entiers, 1 ou plus, dans l\'ordre');
+    }
+    const paliers = ((data.RECIT && data.RECIT.PALIERS) || []).length;
+    for (const k of ['REMISE', 'DELAI']) if (!(Array.isArray(AM[k]) && AM[k].length === paliers && AM[k].every((n) => isInt(n) && n >= 0))) err(`AMITIE.${k}`, `un entier positif par palier (${paliers})`);
+  }
   if (data.HABITANTS) {
     const HB = data.HABITANTS, paire = (v) => Array.isArray(v) && v.length === 2 && v.every((n) => isInt(n) && n >= 0) && v[0] <= v[1];
     for (const cle of ['ADULTES', 'ENFANTS']) if (!paire(HB[cle])) err(`HABITANTS.${cle}`, '[au moins, au plus] : deux entiers positifs dans l\'ordre');

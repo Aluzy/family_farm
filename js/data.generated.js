@@ -5103,6 +5103,84 @@ export const RAW_DATA = {
     "VEILLEE": { "HEURES": [19, 22], "CONFIANCE": 2 },
     "REMBOURSEMENT": { "PRIX_NIVEAUX": [0, 3000, 8000, 20000] }
   },
+  "AMITIE": {
+    "CADEAU": { "adore": 8, "aime": 4, "neutre": 1, "deteste": -4 },
+    "PAROLE": 2,
+    "VISITE": 1,
+    "OUBLI": { "JOURS": 7, "PERTE": 1 },
+    "OFFRABLES": ["légume", "fruit", "plat", "produit", "ingrédient", "conserve"],
+    "GOUTS": { "adore": 2, "aime": 3, "deteste": 2 },
+    "METIERS": {
+      "bucheron": {
+        "adore": ["gratin_patates", "omelette", "cafe_boisson"],
+        "aime": ["pain", "patate", "chataigne", "biere_artisanale"],
+        "deteste": ["algues", "anchois", "epinard"]
+      },
+      "pecheur": {
+        "adore": ["poisson_grille", "quenelle_poisson", "pain_ail"],
+        "aime": ["saumon", "pain", "oignon", "biere_artisanale"],
+        "deteste": ["chocolat_chaud", "lait", "myrtille"]
+      },
+      "mineur": {
+        "adore": ["raclette", "gratin_patates", "biere_artisanale"],
+        "aime": ["pain", "fromage_frais", "viande_boeuf", "amethyste"],
+        "deteste": ["salade_tomates", "fraise", "algues"]
+      },
+      "berger": {
+        "adore": ["fromage_alpage", "pain_epices", "riz_au_lait"],
+        "aime": ["lait_alpage", "pomme", "herbes_montagne", "miel"],
+        "deteste": ["viande_mouton", "poivron", "anchois"]
+      },
+      "cueilleur": {
+        "adore": ["tarte_myrtilles", "confiture_fraises", "creme_marrons"],
+        "aime": ["miel", "mures", "champignon", "chataigne"],
+        "deteste": ["burger", "frites", "sardine"]
+      },
+      "jardinier": {
+        "adore": ["ratatouille", "quiche_epinards", "soupe_legumes"],
+        "aime": ["tomate", "courgette", "oeuf", "compote"],
+        "deteste": ["pizza", "goujon", "ail"]
+      },
+      "enfant": {
+        "adore": ["chocolat_chaud", "tarte_fraises", "creme_vanille"],
+        "aime": ["fraise", "pomme", "croissant", "miel"],
+        "deteste": ["epinard", "oignon", "ail", "poisson"]
+      }
+    },
+    "COMMUN": {
+      "adore": ["tarte_pommes", "chocolat_chaud", "raclette", "omelette_champignons"],
+      "aime": ["pomme", "poire", "cerise", "pain", "oeuf", "compote", "jus_fruits"],
+      "deteste": ["algues", "corail", "conserve", "farine"]
+    },
+    "ECRITS": {
+      "odile": { "adore": ["tarte_pommes", "confiture_fraises"], "aime": ["pomme", "miel", "soupe_legumes"], "deteste": ["burger", "frites"] },
+      "basile": {
+        "adore": ["gratin_patates", "cafe_boisson"],
+        "aime": ["pain", "chataigne", "biere_artisanale"],
+        "deteste": ["algues", "salade_tomates"]
+      },
+      "theo": { "adore": ["chocolat_chaud", "tarte_fraises"], "aime": ["fraise", "croissant", "miel"], "deteste": ["epinard", "poisson"] },
+      "garance": { "adore": ["pain_epices", "tarte_myrtilles"], "aime": ["miel", "poire", "riz_au_lait"], "deteste": ["sardine", "oignon"] },
+      "achille": { "adore": ["cafe_boisson", "omelette"], "aime": ["pain", "pomme", "fromage_frais"], "deteste": ["lait", "creme_vanille"] }
+    },
+    "CONFIANCE": { "BASE": 40, "PART": 60 },
+    "RETOUR": {
+      "PALIER": 3,
+      "CHANCE": { "3": 15, "4": 25 },
+      "PRESENTS": {
+        "bucheron": { "bois": [3, 6], "planche": [1, 3], "pomme_de_pin": [1, 2] },
+        "pecheur": { "truite": [1, 2], "sardine": [2, 3], "saumon": [1, 1] },
+        "mineur": { "pierre": [3, 6], "minerai_fer": [1, 2], "quartz": [1, 1] },
+        "berger": { "laine": [1, 3], "lait": [1, 2], "fromage_alpage": [1, 1] },
+        "cueilleur": { "baies": [2, 4], "champignon": [1, 3], "myrtille": [2, 3] },
+        "jardinier": { "carotte": [2, 4], "tomate": [2, 3], "oeuf": [1, 3] },
+        "enfant": { "baies": [1, 3], "pomme": [1, 2], "fraise": [1, 2] }
+      }
+    },
+    "REMISE": [0, 0, 5, 10, 20],
+    "DELAI": [0, 0, 0, 1, 1],
+    "HUMEUR": { "TRISTE": 7, "CONNU": 10, "COLERE": 20, "JOIE": 3 }
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,

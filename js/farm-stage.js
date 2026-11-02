@@ -565,6 +565,7 @@
           this.stepHameaux(dt / 1000);            // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
           if (this.stepCaleche) this.stepCaleche(dt / 1000);   // (la calèche : caleche.js)
           if (this.stepVisite) this.stepVisite(dt / 1000);     // (la visite de bienvenue : visite.js, fiche 18)
+          if (this.stepPresents) this.stepPresents();          // (les présents des amis devant la porte : amis.js)
           if (this.family) this.family.update(delta);
         }
         // La vue suit le personnage, centrée sur lui (comme sur les autres cartes) ; pas pendant un
@@ -1331,5 +1332,10 @@
     const s = getScene();
     return s && s.semisEnAttente ? s.semisEnAttente(culture) : 0;
   }
-  global.FarmStage = { mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, semer, semisEnAttente, arrive, scene: getScene }; // scene() : pour le débogage et les tests
+  // L'amitié (js/carte/ferme/amis.js) : la réaction `emotion` de l'habitant `id` (un cadeau…).
+  function emotion(id, e) {
+    const s = getScene();
+    return !!(s && s.emotionHabitant && s.emotionHabitant(id, e));
+  }
+  global.FarmStage = { emotion, mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, semer, semisEnAttente, arrive, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

@@ -141,7 +141,9 @@
       if (m.drap) m.drap.destroy();
       if (m.gain) m.gain.detruit();
       if (m.bulle) m.bulle.el.remove();
-      m.s = m.drap = m.gain = m.bulle = null;
+      if (m.emoji) m.emoji.el.remove();
+      if (m.voile) m.voile.destroy();
+      m.s = m.drap = m.gain = m.bulle = m.emoji = m.voile = null;
     },
 
     defaireHabitants(e) {
@@ -650,6 +652,8 @@
           if (!dedans) {
             if (m.gain && m.gain.visible()) m.gain.place(null);
             if (m.bulle) { m.bulle.el.remove(); m.bulle = null; m.parle = null; }
+            if (m.emoji && this.emojiOff) this.emojiOff(m);
+            if (m.voile) m.voile.setVisible(false);
             continue;
           }
           this.habNombre++;
@@ -660,6 +664,8 @@
           else nom = `idle_${m.face}_${Math.floor((now + m.rang * 300) / 600) % 2}`;
           s.setFrame(C(nom)).setPosition(Math.round(m.x), Math.round(m.y)).setFlipX(m.flip).setAlpha(m.alpha);
           s.setDepth(m.couche ? m.couche.depth + 0.1 : m.y);
+          // son émotion : la couleur de son corps, l'emoji d'une réaction (amis.js)
+          if (this.teinteHabitant) this.teinteHabitant(m, now, f);
           // les bulles : « +x » et la parole
           if (f && m.gain && m.gain.visible()) m.gain.place((m.x - f.left) * f.k, (m.y - K.BULLE.dessus - f.top) * f.k);
           if (f && m.bulle) {
@@ -756,9 +762,16 @@
         m.bulle = { el, w: 0, h: 0 };
       }
       const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-      m.bulle.el.innerHTML = `<strong>${esc(r.prenom)}</strong><span class="habitant-bulle-metier">${esc(r.metier)}</span><span class="habitant-bulle-texte">${esc(r.texte)}</span>`;
+      // l'amitié (js/engine/amitie.js) : son palier, sa jauge, ce que la conversation du jour a donné, et de
+      // quoi lui offrir un cadeau (js/ui/amitie.js : la fenêtre « Offrir »)
+      const A = r.amitie;
+      const ami = A ? `<span class="habitant-bulle-ami"><span class="ami-coeur" aria-hidden="true">💛</span> ${esc(A.nom)}<span class="ami-jauge" role="img" aria-label="Amitié : ${A.pts} sur ${A.max}"><span style="width:${Math.round((A.pts * 100) / A.max)}%"></span></span>${A.gain > 0 ? `<span class="ami-gain">+${A.gain}</span>` : ''}</span>`
+        + `<button type="button" class="habitant-bulle-offrir" data-action="ami-offrir-open" data-hameau="${esc(e.plan.id)}" data-id="${esc(m.id)}">🎁 Offrir</button>` : '';
+      m.bulle.el.innerHTML = `<strong>${esc(r.prenom)}</strong><span class="habitant-bulle-metier">${esc(r.metier)}</span><span class="habitant-bulle-texte">${esc(r.texte)}</span>${ami}`;
       m.bulle.w = 0;
       m.parle = { until: performance.now() + PAROLE_MS };
+      // (sa réaction : la joie de te voir, la tristesse d'avoir été oublié, amis.js)
+      if (r.emotion && this.emouvoir) this.emouvoir(m, r.emotion, true);
     },
 
     // (les mesures, les essais : où est chacun)

@@ -17,6 +17,8 @@ import { state } from './store.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
+import { amitieParole } from './amitie.js';
+import { amitieAvec } from '../engine/amitie.js';
 
 /* ---------- les habitants des hameaux, côté page (fiche 7b) ----------
 
@@ -103,6 +105,9 @@ export function paroleDepuisCarte(o) {
   if (m && m.recit && o.activite !== 'dort' && proposerScene({ lieu: garantiDuHameau(state, o.hameau) || o.hameau, hameau: o.hameau, touche: m.recit })) return null;
   const r = paroleHameau(state, o.hameau, o.id, { heure: clockHours(state), activite: o.activite, n: o.n });
   if (r && r.recit) persistState();
+  // l'amitié (js/ui/amitie.js) : la première conversation du jour, ce que la bulle en montre, sa réaction
+  const a = r ? amitieParole(o.hameau, o.id, o.activite) : null;
+  if (a) { r.amitie = a.amitie; r.emotion = a.emotion; if (a.amitie.gain) persistState(); }
   return r;
 }
 
@@ -110,9 +115,11 @@ export function paroleDepuisCarte(o) {
 
 const humeur = (b) => (b >= DATA.HABITANTS.HEUREUX ? '😊' : b < DATA.HABITANTS.TRISTE ? '😟' : '🙂');
 
-function familleHtml(f) {
+function familleHtml(f, hameauId) {
   const portraits = f.membres.map((m) => persoHtml(m.perso, m.enfant)).join('');
-  const noms = f.membres.map((m) => `<strong>${escapeHtml(m.prenom)}</strong> <span class="muted">${escapeHtml(m.metier)}</span>`).join(', ');
+  // (l'amitié avec chacun, js/engine/amitie.js : son palier)
+  const ami = (m) => { const A = amitieAvec(state, hameauId, m.id); return A ? ` <span class="ami-mini" title="Amitié : ${A.pts}/${A.max}">💛 ${escapeHtml(A.nom)}</span>` : ''; };
+  const noms = f.membres.map((m) => `<strong>${escapeHtml(m.prenom)}</strong> <span class="muted">${escapeHtml(m.metier)}</span>${ami(m)}`).join(', ');
   const b = Math.round(f.bonheur);
   const repas = (f.couverture === null ? '' : ` · repas d'hier : <span class="num">${f.couverture} %</span>`) + ` · bourse : <span class="num">${formatNumber(Math.round(f.bourse || 0))}</span> 💰`;
   return `<li class="hameau-famille">
@@ -185,7 +192,7 @@ export function openFicheHameau(h) {
     ${ateliersHtml(h.id)}
     ${toitsHtml(h.id)}
     <h3 class="book-h3">Les familles</h3>
-    <ul class="hameau-familles">${fi.familles.map(familleHtml).join('')}</ul>
+    <ul class="hameau-familles">${fi.familles.map((f) => familleHtml(f, h.id)).join('')}</ul>
     <h3 class="book-h3">La réserve du hameau</h3>
     <p class="muted">Ce que les familles ont mis de côté, nuit après nuit (+ : la nuit dernière) ; la calèche l'achète à chacun de ses passages, et paie les familles.</p>
     ${reserveHtml(fi)}
