@@ -205,7 +205,9 @@
         this.sunDirty = true;
       }
       if (this.ctx.carte && !rect) return;
-      if (!this.well) { this.well = this.placeProp(WELL, rect); this.wellAt = at; this.sunDirty = true; }
+      // (sa profondeur : 3 px au-dessus de son pied ; qui puise à côté de lui, les pieds 2 px
+      // au-dessus du bas de sa case, passe devant son toit, pas derrière : placesPuits, puits.js)
+      if (!this.well) { this.well = this.placeProp(WELL, rect); this.well.setDepth(this.well.y - 3); this.wellAt = at; this.sunDirty = true; }
       const image = pompe ? F.tuyau : F.puits;
       if (this.well.frame.name !== image) { this.well.setFrame(image); this.sunDirty = true; }
       if (pompe && !this.pump) {
