@@ -124,6 +124,7 @@
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
         L.json('perso_cases', v('personnages/cases.json'));
+        L.json('perso_peau', v('personnages/peau.json'));   // (les teintes de peau : les émotions, amis.js)
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
         L.spritesheet(TALL_GRASS.key, v(TALL_GRASS.file), TALL_GRASS.frame);
         L.spritesheet(TALL_GRASS.fleurs.key, v(TALL_GRASS.fleurs.file), TALL_GRASS.frame);
