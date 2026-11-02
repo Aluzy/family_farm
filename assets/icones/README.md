@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 432 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 433 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -124,6 +124,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/fork_and_knife_with_plate.png" width="48" height="48" alt=""> | 🍽 | [`fork_and_knife_with_plate.png`](fork_and_knife_with_plate.png) |
 | <img src="apercu/party_popper.png" width="48" height="48" alt=""> | 🎉 | [`party_popper.png`](party_popper.png) |
 | <img src="apercu/pine_decoration.png" width="48" height="48" alt=""> | 🎍 | [`pine_decoration.png`](pine_decoration.png) |
+| <img src="apercu/school_satchel.png" width="48" height="48" alt=""> | 🎒 | [`school_satchel.png`](school_satchel.png) |
 | <img src="apercu/school_satchel+herb.png" width="48" height="48" alt=""> | 🎒‍🌿 | [`school_satchel+herb.png`](school_satchel+herb.png) |
 | <img src="apercu/school_satchel+ball_of_yarn.png" width="48" height="48" alt=""> | 🎒‍🧶 | [`school_satchel+ball_of_yarn.png`](school_satchel+ball_of_yarn.png) |
 | <img src="apercu/control_knobs.png" width="48" height="48" alt=""> | 🎛 | [`control_knobs.png`](control_knobs.png) |
