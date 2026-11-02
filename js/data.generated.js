@@ -134,7 +134,7 @@ export const RAW_DATA = {
     "PLATS_MAX": 3,
     "FAIM": -2,
     "BULLE": 5,
-    "CIBLE": { "BASE": 40, "VITESSE": 25, "MEUBLES_MAX": 30, "FAIM": -20 }
+    "CIBLE": { "BASE": 40, "VITESSE": 25, "MEUBLES_MAX": 30, "FAIM": -8, "VARIETE": { "4": 4, "6": 8 } }
   },
   "NIVEAU_MAX": 5,
   "RESEAU": {
@@ -5107,7 +5107,7 @@ export const RAW_DATA = {
     "CADEAU": { "adore": 8, "aime": 4, "neutre": 1, "deteste": -4 },
     "PAROLE": 2,
     "VISITE": 1,
-    "OUBLI": { "JOURS": 7, "PERTE": 1 },
+    "RETROUVAILLES": { "JOURS": 7, "BONUS": 3 },
     "OFFRABLES": ["légume", "fruit", "plat", "produit", "ingrédient", "conserve"],
     "GOUTS": { "adore": 2, "aime": 3, "deteste": 2 },
     "METIERS": {
@@ -5179,7 +5179,7 @@ export const RAW_DATA = {
     },
     "REMISE": [0, 0, 5, 10, 20],
     "DELAI": [0, 0, 0, 1, 1],
-    "HUMEUR": { "TRISTE": 7, "CONNU": 10, "COLERE": 20, "JOIE": 3 }
+    "HUMEUR": { "CONNU": 10, "COLERE": 20, "JOIE": 3 }
   },
   "CONSERVATION": {
     "carotte": 6,

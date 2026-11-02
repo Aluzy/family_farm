@@ -16,6 +16,7 @@ import {
   startFarm, STATE_VERSION, testAddSeeds, testFillEnergy, testRipenAll, testSetEnergyZero,
   validFirstName, water,
 } from '../../js/engine/index.js';
+import { cibleBonheur, platsBonheur, varieteBonheur } from '../../js/engine/bonheur.js';
 import {
   affamer, assert, assertEqual, AVANT_DEMENAGEMENT, boite, garden, migreAvant, ml, plantRipe,
   setInv, sleepOnce, test, versBoite,
@@ -437,6 +438,17 @@ test('version 1.11 : les plats mangés dans la journée rendent du bonheur la nu
   for (const m of u.famille.membres) m.bonheur = 100;
   for (let k = 0; k < 30; k++) bonheurRepas(u, {});
   assert(Math.abs(averageHappiness(u) - (C.BASE + C.MEUBLES_MAX)) <= 2, 'et d\'en haut aussi');
+});
+
+test('lot 1 (sans pression) : une table variée élève la cible, la faim la baisse doucement', () => {
+  const C = DATA.BONHEUR.CIBLE;
+  assertEqual(varieteBonheur({ omelette: 1, soupe_legumes: 1, gratin_patates: 1 }), 0, '3 plats : rien de plus');
+  assertEqual(varieteBonheur({ omelette: 1, soupe_legumes: 1, gratin_patates: 1, carotte: 9 }), 0, 'un aliment cru ne compte pas');
+  assertEqual(varieteBonheur({ omelette: 1, soupe_legumes: 1, gratin_patates: 1, pain: 1 }), C.VARIETE['4']);
+  const s = garden();
+  const quatre = { omelette: 1, soupe_legumes: 1, gratin_patates: 1, pain: 1 };
+  assertEqual(cibleBonheur(s, quatre), C.BASE + platsBonheur(quatre) + C.VARIETE['4'] + meublesBonheur(s));
+  assert(C.FAIM < 0 && C.FAIM > -10, 'la faim pèse peu (un jeu sans pression)');
 });
 
 test('animaux de compagnie : chacun sa robe sur la carte, le n-ième chat (ou chien) prend la n-ième', () => {

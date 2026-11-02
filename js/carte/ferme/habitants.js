@@ -770,7 +770,7 @@
       m.bulle.el.innerHTML = `<strong>${esc(r.prenom)}</strong><span class="habitant-bulle-metier">${esc(r.metier)}</span><span class="habitant-bulle-texte">${esc(r.texte)}</span>${ami}`;
       m.bulle.w = 0;
       m.parle = { until: performance.now() + PAROLE_MS };
-      // (sa réaction : la joie de te voir, la tristesse d'avoir été oublié, amis.js)
+      // (sa réaction : la joie de te voir, de te retrouver après une longue absence, amis.js)
       if (r.emotion && this.emouvoir) this.emouvoir(m, r.emotion, true);
     },
 

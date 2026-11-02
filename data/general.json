@@ -288,9 +288,11 @@
     "  Équilibrage : le bonheur de la famille ne baisse plus d'un pas fixe. Chaque nuit, celui de chaque",
     "  membre fait CIBLE.VITESSE % du chemin vers sa cible : CIBLE.BASE, + le bonheur des plats différents",
     "  mangés dans la journée (au plus PLATS_MAX, les meilleurs), + celui des meubles fabriqués (DATA.MEUBLES,",
-    "  bonheur, au plus CIBLE.MEUBLES_MAX en tout), + CIBLE.FAIM pour qui a eu faim, + ATELIER.",
+    "  bonheur, au plus CIBLE.MEUBLES_MAX en tout), + CIBLE.VARIETE (les plats différents du jour : à partir",
+    "  de n plats, + le bonus le plus haut atteint ; une table variée récompense), + CIBLE.FAIM pour qui a eu",
+    "  faim (doux : un jeu sans pression), + ATELIER.",
     "  BONHEUR_SANS_COUCHAGE pour qui dort sans paillasse. DECLIN et FAIM restent la règle des habitants des",
     "  hameaux (js/engine/habitants.js)."
   ],
-  "BONHEUR": { "DEPART": 60, "MAX": 100, "DECLIN": -5, "PLATS": { "cuisine": 3, "four": 5 }, "HUILE_FRUIT": 2, "SPECIALES": { "objets": ["cacao", "cafe", "vanille"], "bonus": 4 }, "PLATS_MAX": 3, "FAIM": -2, "BULLE": 5, "CIBLE": { "BASE": 40, "VITESSE": 25, "MEUBLES_MAX": 30, "FAIM": -20 } }
+  "BONHEUR": { "DEPART": 60, "MAX": 100, "DECLIN": -5, "PLATS": { "cuisine": 3, "four": 5 }, "HUILE_FRUIT": 2, "SPECIALES": { "objets": ["cacao", "cafe", "vanille"], "bonus": 4 }, "PLATS_MAX": 3, "FAIM": -2, "BULLE": 5, "CIBLE": { "BASE": 40, "VITESSE": 25, "MEUBLES_MAX": 30, "FAIM": -8, "VARIETE": { "4": 4, "6": 8 } } }
 }

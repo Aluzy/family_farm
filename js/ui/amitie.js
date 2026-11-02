@@ -17,7 +17,8 @@ import { notify } from './toasts.js';
 
 /* ---------- l'amitié avec les habitants, côté page (js/engine/amitie.js) ----------
 
-   - la conversation (paroleDepuisCarte, js/ui/habitants.js) : la première du jour fait monter l'amitié ;
+   - la conversation (paroleDepuisCarte, js/ui/habitants.js) : la première du jour fait monter l'amitié (plus
+     encore aux retrouvailles, après une longue absence : jamais de perte) ;
      la bulle de l'habitant montre son palier, sa jauge et un bouton « 🎁 Offrir » ;
    - la fenêtre « Offrir » : sa jauge, ses goûts déjà découverts, ce qu'on a à lui offrir (un cadeau par
      jour) ; la carte montre sa réaction (FarmStage.emotion : la joie, le dégoût) ;
@@ -36,7 +37,7 @@ const GOUT = {
 };
 
 // La conversation avec l'habitant (le pont de la carte) : ce que la bulle montre de l'amitié, et sa réaction
-// ({ amitie, emotion }), ou null.
+// ({ amitie, emotion, retrouvailles }), ou null.
 export function amitieParole(hameau, id, activite) {
   if (activite === 'dort') return null;
   const t = trouverPnj(state, hameau, id);
@@ -45,9 +46,9 @@ export function amitieParole(hameau, id, activite) {
   const A = amitieAvec(state, hameau, id);
   if (!g || !A) return null;
   if (g.monte) notify(`💛 ${escapeHtml(A.prenom)} et toi : ${A.nom} (amitié ${A.pts}/${A.max})`, { kind: 'info' });
-  // (sa réaction à ta venue, la première fois du jour : la tristesse d'avoir été oublié, la joie d'un ami)
-  const emotion = g.premiere ? (g.oublie ? 'tristesse' : palierAmitie(state, A.cle) >= AMITIE.HUMEUR.JOIE ? 'joie' : null) : null;
-  return { amitie: { ...A, gain: g.gain }, emotion };
+  // (sa réaction à ta venue, la première fois du jour : la joie des retrouvailles, ou d'un ami)
+  const emotion = g.premiere && (g.retrouvailles || palierAmitie(state, A.cle) >= AMITIE.HUMEUR.JOIE) ? 'joie' : null;
+  return { amitie: { ...A, gain: g.gain }, emotion, retrouvailles: !!g.retrouvailles };
 }
 
 // Le personnage arrive dans le hameau `id` : le premier passage du jour (+VISITE pour ses habitants).
