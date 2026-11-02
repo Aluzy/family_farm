@@ -297,6 +297,33 @@ export const RAW_DATA = {
       "rachetable": false,
       "invendable": true
     },
+    "table_jardin": {
+      "nom": "Table de jardin",
+      "icone": "🍽️",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "chaise_jardin": {
+      "nom": "Chaise de jardin",
+      "icone": "🪑",
+      "prix": 15,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "banc_jardin": {
+      "nom": "Banc de jardin",
+      "icone": "🛋️",
+      "prix": 25,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
     "ruche": { "nom": "Ruche", "icone": "🐝", "prix": 200, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "lanterne": { "nom": "Lanterne scintillante", "icone": "🏮", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "candelabre": { "nom": "Réverbère", "icone": "🏮‍🔩", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -846,7 +873,10 @@ export const RAW_DATA = {
         "debloque": "four"
       },
       "ruche": { "entrees": { "planche": 4, "fibre": 8, "pierre": 1 }, "sortie": { "ruche": 1 } },
-      "bac_fleurs": { "entrees": { "planche": 3, "pierre": 2, "fibre": 1 }, "sortie": { "bac_fleurs": 1 } }
+      "bac_fleurs": { "entrees": { "planche": 3, "pierre": 2, "fibre": 1 }, "sortie": { "bac_fleurs": 1 } },
+      "table_jardin": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "table_jardin": 1 } },
+      "chaise_jardin": { "entrees": { "planche": 2 }, "sortie": { "chaise_jardin": 1 } },
+      "banc_jardin": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "banc_jardin": 1 } }
     },
     "BLOCS": {
       "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true, "mur": true },
@@ -943,6 +973,9 @@ export const RAW_DATA = {
       "gland": { "nom": "Gland", "objet": "gland", "dehors": true, "semis": "arbre" },
       "ruche": { "nom": "Ruche", "objet": "ruche", "dehors": true, "bloque": true, "ruche": true, "marche": "Animaux" },
       "bac_fleurs": { "nom": "Bac à fleurs", "objet": "bac_fleurs", "bloque": true, "fleurs": true, "marche": "Meubles" },
+      "table_jardin": { "nom": "Table de jardin", "objet": "table_jardin", "bloque": true, "terrasse": "table" },
+      "chaise_jardin": { "nom": "Chaise de jardin", "objet": "chaise_jardin", "bloque": true, "terrasse": "siege" },
+      "banc_jardin": { "nom": "Banc de jardin", "objet": "banc_jardin", "bloque": true, "terrasse": "siege" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
       "entonnoir": { "nom": "Entonnoir", "objet": "entonnoir", "bloque": true, "botteleuse": "entonnoir" },
       "botteleuse": { "nom": "Botteleuse", "objet": "botteleuse", "bloque": true, "botteleuse": "machine" },
@@ -1142,8 +1175,9 @@ export const RAW_DATA = {
       "elevage": {
         "nom": "Élevage",
         "icone": "🐔",
-        "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "bac_fleurs", "bloc_silo", "meule"]
+        "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "bloc_silo", "meule"]
       },
+      "jardin": { "nom": "Jardin", "icone": "🌷", "blocs": ["table_jardin", "chaise_jardin", "banc_jardin", "bac_fleurs"] },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
       "machines": {
         "nom": "Machines",
@@ -5179,7 +5213,33 @@ export const RAW_DATA = {
     },
     "REMISE": [0, 0, 5, 10, 20],
     "DELAI": [0, 0, 0, 1, 1],
-    "HUMEUR": { "CONNU": 10, "COLERE": 20, "JOIE": 3 }
+    "HUMEUR": { "CONNU": 10, "COLERE": 20, "JOIE": 3 },
+    "INVITATION": {
+      "MOMENTS": { "midi": { "nom": "le déjeuner", "heure": 12, "icone": "☀️" }, "soir": { "nom": "le dîner", "heure": 19, "icone": "🌙" } },
+      "DELAI": [1, 28],
+      "INVITES_MAX": 4,
+      "ACCEPTE": [50, 70, 85, 95, 100],
+      "VIENNENT": 1,
+      "ATTENTE": 3,
+      "REPAS": { "BASE": 4, "PLATS_MAX": 3, "GOUT": { "adore": 4, "aime": 2, "neutre": 0, "deteste": -2 }, "TERRASSE": 2, "BONHEUR": 6 },
+      "SOUVENIR": { "RECENT": 7, "ANCIEN": 30, "MAX": 3 },
+      "PAROLES": {
+        "ARRIVE": ["Bonjour ! Merci pour l'invitation.", "Me voilà ! Ça sent bon, ici.", "Quelle bonne idée, ce repas !"],
+        "TABLE": [
+          "Tu as une belle ferme.",
+          "Le temps est doux, aujourd'hui.",
+          "Chez nous, on parle de ta famille.",
+          "Ça fait du bien de s'asseoir un peu.",
+          "Tu as vu la calèche, ce matin ?"
+        ],
+        "MERCI": ["Merci pour ce repas, c'était délicieux !", "Quel bon moment. À bientôt !", "Merci ! Je reviendrai avec plaisir."],
+        "SEUL": ["Personne à table… Je reviendrai une autre fois.", "Tu étais occupé, on dirait. Ce n'est rien !"],
+        "SOUVENIR_TERRASSE": "Le repas sur ta terrasse, quel bon moment ! Et ton « {plat} », je m'en souviens encore.",
+        "SOUVENIR_MAISON": "Le repas chez toi, quel bon moment ! Et ton « {plat} », je m'en souviens encore.",
+        "SOUVENIR_SIMPLE": "Ce repas chez toi, l'autre jour… quel bon moment !",
+        "SOUVENIR_ANCIEN": "Je repense parfois à ce repas chez toi. On recommence quand tu veux !"
+      }
+    }
   },
   "CONSERVATION": {
     "carotte": 6,

@@ -49,7 +49,8 @@
         const G = e.gens;
         if (G && G.membres.has(id)) return G.membres.get(id);
       }
-      return null;
+      // (un invité d'un repas, à la ferme : invites.js)
+      return this.inviteParId ? this.inviteParId(id) : null;
     },
 
     // Une réaction : `emotion` (joie, colere, peur, degout, tristesse) colore un instant l'habitant `m`.

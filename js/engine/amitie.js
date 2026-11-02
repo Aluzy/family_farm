@@ -66,10 +66,11 @@ export function trouverPnj(state, hameauId, membreId) {
 }
 
 // La clé d'un membre : le personnage écrit qu'il est, ou son id.
-const cleDe = (m) => (m.recit && RECIT.PERSONNAGES[m.recit] ? m.recit : m.id);
+export const cleDe = (m) => (m.recit && RECIT.PERSONNAGES[m.recit] ? m.recit : m.id);
 const ecrit = (cle) => !!RECIT.PERSONNAGES[cle];
 
-function fiche(state, cle) {
+// La fiche d'amitié d'une personne (créée au besoin) : { pts, parle, cadeau, vu, gouts, souvenirs… }.
+export function fiche(state, cle) {
   const a = amitieDe(state);
   if (!objet(a.pnj[cle])) a.pnj[cle] = {};
   const p = a.pnj[cle];

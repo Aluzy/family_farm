@@ -65,6 +65,41 @@
     },
     "REMISE": [0, 0, 5, 10, 20],
     "DELAI": [0, 0, 0, 1, 1],
-    "HUMEUR": { "CONNU": 10, "COLERE": 20, "JOIE": 3 }
+    "HUMEUR": { "CONNU": 10, "COLERE": 20, "JOIE": 3 },
+    "//INVITATION": [
+      "Les invitations à un repas (js/engine/invitations.js), créées depuis le calendrier : un jour à venir (de",
+      "DELAI[0] à DELAI[1] jours plus tard), un moment (MOMENTS : son nom, son heure), INVITES_MAX personnes au plus",
+      "parmi celles à qui l'on a déjà parlé. Achille, le cocher, porte le message pendant sa tournée : les réponses",
+      "arrivent le lendemain matin ; chacun accepte selon son palier d'amitié (ACCEPTE : une chance en %, par",
+      "palier ; un tirage fixe, de l'invitation et de la personne). Le jour dit, ceux qui viennent partent de",
+      "chez eux VIENNENT heures avant l'heure, s'assoient à la table (de jardin, sinon de la maison) et attendent",
+      "jusqu'à ATTENTE heures après : le joueur qui vient à table sert le repas (jusqu'à REPAS.PLATS_MAX plats de",
+      "l'inventaire). Chaque invité gagne REPAS.BASE d'amitié (la moitié sans plat), plus REPAS.GOUT pour chaque plat",
+      "selon son goût (jamais moins de 1 en tout) ; une table de jardin (la terrasse) ajoute REPAS.TERRASSE. La",
+      "famille vise REPAS.BONHEUR de bonheur de plus cette nuit, et les plats servis comptent dans ses repas du",
+      "jour. Un repas manqué ne fait rien perdre. Chaque invité en garde le souvenir (SOUVENIR.MAX au plus) :",
+      "il en parle à la première conversation du jour, les SOUVENIR.RECENT jours suivants ; puis une fois encore",
+      "jusqu'à SOUVENIR.ANCIEN jours. PAROLES : ce qu'ils disent (à l'arrivée, à table, en partant, le souvenir)."
+    ],
+    "INVITATION": {
+      "MOMENTS": { "midi": { "nom": "le déjeuner", "heure": 12, "icone": "☀️" }, "soir": { "nom": "le dîner", "heure": 19, "icone": "🌙" } },
+      "DELAI": [1, 28],
+      "INVITES_MAX": 4,
+      "ACCEPTE": [50, 70, 85, 95, 100],
+      "VIENNENT": 1,
+      "ATTENTE": 3,
+      "REPAS": { "BASE": 4, "PLATS_MAX": 3, "GOUT": { "adore": 4, "aime": 2, "neutre": 0, "deteste": -2 }, "TERRASSE": 2, "BONHEUR": 6 },
+      "SOUVENIR": { "RECENT": 7, "ANCIEN": 30, "MAX": 3 },
+      "PAROLES": {
+        "ARRIVE": ["Bonjour ! Merci pour l'invitation.", "Me voilà ! Ça sent bon, ici.", "Quelle bonne idée, ce repas !"],
+        "TABLE": ["Tu as une belle ferme.", "Le temps est doux, aujourd'hui.", "Chez nous, on parle de ta famille.", "Ça fait du bien de s'asseoir un peu.", "Tu as vu la calèche, ce matin ?"],
+        "MERCI": ["Merci pour ce repas, c'était délicieux !", "Quel bon moment. À bientôt !", "Merci ! Je reviendrai avec plaisir."],
+        "SEUL": ["Personne à table… Je reviendrai une autre fois.", "Tu étais occupé, on dirait. Ce n'est rien !"],
+        "SOUVENIR_TERRASSE": "Le repas sur ta terrasse, quel bon moment ! Et ton « {plat} », je m'en souviens encore.",
+        "SOUVENIR_MAISON": "Le repas chez toi, quel bon moment ! Et ton « {plat} », je m'en souviens encore.",
+        "SOUVENIR_SIMPLE": "Ce repas chez toi, l'autre jour… quel bon moment !",
+        "SOUVENIR_ANCIEN": "Je repense parfois à ce repas chez toi. On recommence quand tu veux !"
+      }
+    }
   }
 }

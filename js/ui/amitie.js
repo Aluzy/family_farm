@@ -7,6 +7,7 @@ import {
   trouverPnj, visiterHameau,
 } from '../engine/amitie.js';
 import { RECIT } from '../engine/recit.js';
+import { souvenirParole } from '../engine/invitations.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { itemsText } from './common.js';
@@ -37,7 +38,7 @@ const GOUT = {
 };
 
 // La conversation avec l'habitant (le pont de la carte) : ce que la bulle montre de l'amitié, et sa réaction
-// ({ amitie, emotion, retrouvailles }), ou null.
+// ({ amitie, emotion, retrouvailles, souvenir (sa phrase d'un repas partagé) }), ou null.
 export function amitieParole(hameau, id, activite) {
   if (activite === 'dort') return null;
   const t = trouverPnj(state, hameau, id);
@@ -47,8 +48,10 @@ export function amitieParole(hameau, id, activite) {
   if (!g || !A) return null;
   if (g.monte) notify(`💛 ${escapeHtml(A.prenom)} et toi : ${A.nom} (amitié ${A.pts}/${A.max})`, { kind: 'info' });
   // (sa réaction à ta venue, la première fois du jour : la joie des retrouvailles, ou d'un ami)
-  const emotion = g.premiere && (g.retrouvailles || palierAmitie(state, A.cle) >= AMITIE.HUMEUR.JOIE) ? 'joie' : null;
-  return { amitie: { ...A, gain: g.gain }, emotion, retrouvailles: !!g.retrouvailles };
+  // (un repas partagé : il en parle, à la première conversation du jour, js/engine/invitations.js)
+  const souvenir = g.premiere ? souvenirParole(state, A.cle) : null;
+  const emotion = g.premiere && (g.retrouvailles || souvenir || palierAmitie(state, A.cle) >= AMITIE.HUMEUR.JOIE) ? 'joie' : null;
+  return { amitie: { ...A, gain: g.gain }, emotion, retrouvailles: !!g.retrouvailles, souvenir };
 }
 
 // Le personnage arrive dans le hameau `id` : le premier passage du jour (+VISITE pour ses habitants).

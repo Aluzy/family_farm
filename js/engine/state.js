@@ -134,6 +134,7 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     // répliques dites, le carnet. Absent d'une sauvegarde d'avant : reparerPartie le remet (le format ne change pas)
     recit: nouveauRecit(),
     amitie: { pnj: {}, visites: {}, porte: [] }, // l'amitié avec les habitants des hameaux (js/engine/amitie.js)
+    invitations: { seq: 0, liste: [] }, // les invitations à un repas, depuis le calendrier (js/engine/invitations.js)
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),

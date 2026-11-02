@@ -50,11 +50,14 @@ export function meublesBonheur(state) {
   return Math.min(DATA.BONHEUR.CIBLE.MEUBLES_MAX, t);
 }
 
-// La cible commune de la nuit : CIBLE.BASE + les plats de la journée (et leur variété) + les meubles, de 0 à MAX
+// La cible commune de la nuit : CIBLE.BASE + les plats de la journée (et leur variété) + les meubles + un
+// repas avec des invités, de 0 à MAX
 // (la faim et le couchage s'y ajoutent membre par membre).
 export function cibleBonheur(state, mange) {
   const B = DATA.BONHEUR;
-  return Math.max(0, Math.min(B.MAX, B.CIBLE.BASE + platsBonheur(mange) + varieteBonheur(mange) + meublesBonheur(state)));
+  // (un repas partagé avec des invités, aujourd'hui : REPAS.BONHEUR de plus, js/engine/invitations.js)
+  const fete = Number(state && state.repasJour && state.repasJour.fete) || 0;
+  return Math.max(0, Math.min(B.MAX, B.CIBLE.BASE + platsBonheur(mange) + varieteBonheur(mange) + meublesBonheur(state) + fete));
 }
 
 // Une nuit : le bonheur `actuel` fait CIBLE.VITESSE % du chemin vers `cible` (au moins 1 point tant
