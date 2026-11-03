@@ -95,6 +95,31 @@ installés par ce même déploiement.
   règle de cycle de vie sur le bucket R2 (Settings › Object lifecycle rules).
 - Le jeton GitHub expire (voir l'étape 2).
 
+## Vérification avant la fusion
+
+Une pull request qui touche `worker/` ou `wrangler.toml` lance l'action **Worker Cloudflare**
+(`.github/workflows/worker.yml`) : les tests du rapport, puis `wrangler deploy --dry-run` et
+`wrangler versions upload --dry-run` (wrangler épinglé dans l'action). Le Worker y est construit et
+sa configuration lue comme chez Cloudflare, sans rien déployer : une erreur du code ou de
+`wrangler.toml` apparaît dans la pull request, avec son journal.
+
+## Si « Workers Builds: family-farm » échoue
+
+Ce contrôle est posté par Cloudflare (Workers Builds), pas par GitHub Actions : son journal n'est
+lisible que dans le tableau de bord (lien « Details » du contrôle, ou Workers › `family-farm` ›
+Deployments › Builds). Si l'action **Worker Cloudflare** ci-dessus est verte, le code et
+`wrangler.toml` se construisent : l'échec vient alors des réglages du build chez Cloudflare. À
+vérifier dans Workers › `family-farm` › Settings › Build :
+
+- **Root directory** : `/` (le dépôt) ;
+- **Build command** : vide (rien à construire avant le déploiement) ;
+- **Deploy command** : `npx wrangler deploy` ;
+- **Non-production branch deploy command** : `npx wrangler versions upload`, ou désactiver les
+  builds des branches autres que `main` (Branch control) si les aperçus ne servent pas ;
+- **API token** : le jeton du build doit encore exister et avoir les droits Workers Scripts (Edit)
+  et R2 (le bucket `ferme-familiale-sessions`) ; un jeton supprimé ou expiré fait échouer le build
+  dès son début.
+
 ## Tests
 
 `node tests/test-report.mjs` (depuis la racine du dépôt) : calculs, passage été/hiver, publication

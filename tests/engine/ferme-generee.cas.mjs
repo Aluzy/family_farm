@@ -38,7 +38,7 @@ import {
   reprendreEtage, respawnBushes, respawnRocks, respawnTrees, robotBattery, robotCapacity,
   robotStation, robotTrip, ruchePleine, ruchesARecolter, runRobotCharge, sellItem, serreMurs,
   nightActive, serrePlaces, setFarmSeed, siloCapacity, simulateOffline, skipNight, solAt, sortirBotte,
-  stableHoused, stablePlaces, starterOf, STATE_VERSION, suivantDidacticiel, migrate, ETAPES, terrainOfMap, passerEtapeDidacticiel,
+  stableHoused, stablePlaces, starterOf, STATE_VERSION, GENERATEUR_VERSION, suivantDidacticiel, migrate, ETAPES, terrainOfMap, passerEtapeDidacticiel,
   TEST_RESSOURCES, testAddBlocs, testAddItem, testAddMetaux, testAddRessources, testAllTools,
   testBuildAtelier, testFarmMap, testSetLevel, toits, tuilesChemins, unlockLevel,
   upgradePoulailler, verserFibres, water,
@@ -163,10 +163,10 @@ test('ferme générée : une partie change de ferme en mode test (une autre grai
   assert(robotTrip(s, s.robot, 0).route < 1, 'de sa base à une parcelle de départ : un court trajet');
   // la graine est sauvegardée
   const m = migreAvant({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(s)) });
-  assertEqual(m.carte, { graine: '42' });
+  assertEqual(m.carte, { graine: '42', generateur: GENERATEUR_VERSION });
   assertEqual([testFarmMap(s, null).ok, testFarmMap(s, ' ').ok, farmSeed(s)], [false, false, '42'], 'il faut une graine');
   assertEqual([blocsPoses(s), houseRepaired(s)], [{}, false], 'les blocs de l\'autre ferme n\'y sont plus');
-  assertEqual(createInitialState(1).carte, { graine: '1' }, 'une partie neuve : sa ferme générée');
+  assertEqual(createInitialState(1).carte, { graine: '1', generateur: GENERATEUR_VERSION }, 'une partie neuve : sa ferme générée');
 });
 
 /* ---------- étape 3 : ramasser à la main, l'Atelier ---------- */

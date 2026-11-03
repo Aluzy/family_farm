@@ -15,7 +15,7 @@ ville, le chemin de transition, la montagne, la plage, le train, l'école, l'inf
 été retirées pour faire place au grand monde ; le jeu d'avant est gardé tel quel sur la branche
 `archive/jeu-avant-grand-monde`.
 
-- **Version** : 1.22.0 (affichée dans ⚙️ Options › À propos ; format de sauvegarde 66)
+- **Version** : 1.22.0 (affichée dans ⚙️ Options › À propos ; format de sauvegarde 70)
 - **Conception** : [`docs/conception.md`](docs/conception.md), qui fait foi, et
   [`docs/carte-generee.md`](docs/carte-generee.md) pour la ferme générée et la construction
   (autres documents : voir « Documentation » plus bas)

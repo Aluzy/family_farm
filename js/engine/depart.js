@@ -1,5 +1,5 @@
 import { DATA } from './catalog.js';
-import { unlockTab } from './base.js';
+import { GENERATEUR_VERSION, unlockTab } from './base.js';
 import { fail, farmOpen, isOwned, starterOf } from './devices.js';
 import { lotsFromCounts } from './inventory.js';
 import { createInitialState } from './state.js';
@@ -52,7 +52,7 @@ export function createNewGame(seed = 1, famille = null) {
 // la partie repart des parcelles de départ (une partie neuve, sans terre, n'en reçoit pas), sans
 // rien de bâti, tous les arbres debout et tous les rochers entiers.
 export function setFarmSeed(state, graine) {
-  state.carte = { graine: String(graine) };
+  state.carte = { graine: String(graine), generateur: GENERATEUR_VERSION };
   state.potager.parcelles = state.potager.parcelles.length ? startPlots(farmTerrain(state)) : [];
   for (const k of ['blocs', 'sols', 'blocsDessus', 'hauteurs', 'rehausses', 'etage', 'solsEtage', 'solsHauts']) if (state[k]) state[k] = {};
   if (state.outils) { state.outils.arbres = {}; state.outils.rochers = {}; }

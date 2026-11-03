@@ -36,6 +36,15 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
   voit passer ; on peut la héler quand elle est près de soi. Elle ne vend que les produits des
   habitants et les graines ; ce que vend le Marché aujourd'hui (outils, animaux, meubles,
   aliments) se fabrique à l'Atelier (fait : fiche 7c).
+- **La version du générateur** (format de sauvegarde 70) : une partie note, à côté de sa graine, le
+  numéro du générateur qui a fait sa ferme et son monde (`state.carte.generateur`,
+  `GENERATEUR_VERSION` dans `js/engine/base.js` ; toutes les parties d'avant ont reçu le numéro 1).
+  Changer ce qui est tiré d'une graine (le code de `ferme-generee.js`, `monde-gen.js`, `monde-sol.js`,
+  `monde-hameaux.js`… ou leurs réglages de `data/monde.json` et `data/terrain.json`) augmente ce
+  numéro, et une migration décide du sort des parties faites avec l'ancien (garder l'ancien
+  générateur pour elles, ou les porter sur le nouveau). `tests/engine/generateur.test.mjs` relève
+  l'empreinte du monde d'une graine (la ferme, le plan, cinq régions de sol) pour chaque numéro : il
+  échoue si le monde change sans que le numéro change.
 
 ## Les étapes
 
