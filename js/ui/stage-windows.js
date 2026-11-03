@@ -10,7 +10,7 @@ import { enExpedition, tentePortee } from '../engine/equipement.js';
 import { memberPerso } from '../engine/family.js';
 import { affames, jaugeFamille } from '../engine/repas.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
-import { isUnlocked, lastAutonomy, plannedAutonomy } from '../engine/campaign.js';
+import { isUnlocked } from '../engine/campaign.js';
 import { levelProgress, unlockLevel } from '../engine/levels.js';
 import { notificationCount } from '../engine/alerts.js';
 import { formatCoins, formatDay, formatNumber, formatPercent, weekdayShort } from '../engine/format.js';
@@ -460,8 +460,7 @@ export function applyAnchor() {
 // (assets/hud, scripts/icones/hud.py ; css/jeu.css .player-card) : le personnage principal
 // dans un médaillon rond (comme le hublot de droite), cerclé de l'anneau doré de l'XP vers le
 // niveau suivant (FLU-30) ; en bas à gauche du médaillon, la grande étoile du niveau, son
-// numéro dedans (ouvre les niveaux) ; en bas à droite, l'anneau de l'autonomie de la dernière
-// nuit (ouvre la Famille). À droite, les jauges d'énergie (❤️), d'endurance (⚡) et de bonheur
+// numéro dedans (ouvre les niveaux). À droite, les jauges d'énergie (❤️), d'endurance (⚡) et de bonheur
 // de la famille (😊), horizontales, puis l'argent (ouvre les comptes). Les valeurs ne sont pas
 // écrites : elles sont dans les infobulles et les libellés.
 let playerHeight = 0;
@@ -474,11 +473,8 @@ export function renderIndicators() {
   const p = levelProgress(state);
   const xp = p.max ? `${formatNumber(p.xp)} XP, niveau maximal` : `${formatNumber(p.xp)} / ${formatNumber(p.fin)} XP`;
   const niveau = `Niveau ${p.niveau} : ${xp}. Voir les niveaux`;
-  const auto = formatPercent(lastAutonomy(state));
-  const autoTitre = `Autonomie de la dernière nuit : ${auto}. Ouvrir la Famille`;
   const famille = 'data-action="stage-goto" data-window="famille"';
   const el = document.getElementById('player-card');
-  const autoPct = Math.max(0, Math.min(100, Math.round(lastAutonomy(state))));
   const argent = `${formatCoins(state.pieces)} pièces. Voir les comptes`;
   const html =
     `<span class="player-medaillon">` +
@@ -489,8 +485,6 @@ export function renderIndicators() {
         `<span class="player-portrait">${persoHtml(m ? memberPerso(m) : 0)}</span></button>` +
       `<button type="button" class="player-level" data-action="open-levels" title="${niveau}" aria-label="${niveau}">` +
         `<span class="hud-niveau" aria-hidden="true">${pxText(String(p.niveau))}</span></button>` +
-      `<button type="button" class="player-auto" ${famille} title="${autoTitre}" aria-label="${autoTitre}">` +
-        `<span class="hud-anneau" style="--f:${Math.round(autoPct / 5)}" aria-hidden="true"></span><i class="hud-ico pousse" aria-hidden="true"></i></button>` +
     `</span>` +
     `<span class="player-cote">` +
       playerGaugesHtml() +
@@ -688,7 +682,7 @@ export function renderSleepBar() {
   // (la jauge de faim moyenne de la famille règle l'énergie du réveil : repas.js, night.js)
   const faim = affames(state).length;
   const jauge = jaugeFamille(state);
-  const meal = `Famille rassasiée à ${formatPercent(jauge)}${faim ? ` (${faim} ${faim > 1 ? 'ont' : 'a'} faim)` : ''} · réveil à ${formatNumber(energyLevel({ energie: sleepTarget(state) }))} d'énergie · autonomie ${formatPercent(plannedAutonomy(state))}`;
+  const meal = `Famille rassasiée à ${formatPercent(jauge)}${faim ? ` (${faim} ${faim > 1 ? 'ont' : 'a'} faim)` : ''} · réveil à ${formatNumber(energyLevel({ energie: sleepTarget(state) }))} d'énergie`;
   const label = state.nuitEnCours && state.nuitEnCours.minuit
     ? `Dormir : réveil à ${DATA.TEMPS.HEURE_REVEIL} h`
     : `Dormir : réveil à ${DATA.TEMPS.HEURE_REVEIL} h. ${meal}`;

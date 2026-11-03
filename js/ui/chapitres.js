@@ -1,33 +1,28 @@
 import { DATA } from '../engine/catalog.js';
-import { EPS } from '../engine/base.js';
-import {
-  acknowledgeChapter, autonomyHistory, chapterCount, chapterProgress, lastAutonomy, objectiveDef, plannedAutonomy, holdStatus,
-} from '../engine/campaign.js';
-import { formatNumber, formatPercent } from '../engine/format.js';
+import { acknowledgeChapter, chapterCount, chapterProgress } from '../engine/campaign.js';
+import { formatNumber } from '../engine/format.js';
 import { state } from './store.js';
 import { tel } from './consent.js';
 import { refresh } from './render.js';
 import { registerActions } from './actions.js';
 import { helpBtn } from './aide.js';
 import { closeModal, openModal } from './modal.js';
-import { accord, chartFrame, plural } from './common.js';
+import { accord } from './common.js';
 import { son } from './son.js';
 import { escapeHtml } from '../engine/format.js';
 import { PLANS } from '../engine/plans.js';
 import { projetsFaits } from '../engine/projets.js';
 import { styleDe, styleInfo, styleMaison } from '../engine/styles.js';
 
-/* ---------- Lot 9 : chapitres, autonomie, graphique ---------- */
+/* ---------- Lot 9 : chapitres ---------- */
 
 export function objectiveValueText(o) {
   const n = (x) => formatNumber(Math.floor(x));
   switch (o.type) {
     case 'litres': return `${n(o.valeur)} / ${formatNumber(o.cible)} L`;
     case 'wh': return `${n(o.valeur)} / ${formatNumber(o.cible)} Wh`;
-    case 'autonomie': return `${formatPercent(o.valeur)} / ${formatNumber(o.cible)} %`;
     case 'bonheur': return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
-    case 'pontes': case 'serie100': return `${n(o.valeur)} / ${formatNumber(o.cible)} nuits`;
-    case 'tenue': return o.ok ? '✅' : '';
+    case 'pontes': return `${n(o.valeur)} / ${formatNumber(o.cible)} nuits`;
     // version 1.12 : étapes faites ou pas (maison, achats, houe, Silo, premier semis ou récolte)
     case 'maison': case 'panneau': case 'pompe': case 'reservoir': case 'houe': case 'silo':
       return o.ok ? '✅' : '';
@@ -40,28 +35,12 @@ export function objectiveValueText(o) {
   }
 }
 
-// Ligne d'explication sous l'objectif de tenue (chapitre 6).
-function holdLine() {
-  const w = holdStatus(state);
-  const obj = objectiveDef('tenue');
-  const last = w.dernier && !w.dernier.reussi
-    ? ` Dernière série : moyenne ${formatPercent(w.dernier.moyenne)} : ratée.`
-    : '';
-  if (w.etat === 'reussi') return '✅ Série réussie.';
-  if (w.etat === 'suivi') {
-    return `📅 Série en cours : nuit ${w.nuits} / ${obj.nuits} · moyenne ${formatPercent(w.moyenne)} (objectif ${obj.moyenne} %)`;
-  }
-  return `⏳ Une série de ${obj.nuits} nuits commence à la prochaine nuit.${last}`;
-}
-
 // FLU-36 : une tâche oui/non (cible 1) n'a que sa case, sans barre de progression.
 function objectiveHtml(o) {
-  const line = o.type === 'tenue' ? `<span class="muted">${holdLine()}</span>` : '';
   return `
     <li class="objective${o.ok ? ' ok' : ''}">
       <span class="objective-line"><span class="objective-label">${o.ok ? '✅' : '⬜'} ${o.libelle}</span><span class="objective-value">${objectiveValueText(o)}</span></span>
       ${o.cible === 1 ? '' : `<span class="bar" role="progressbar" aria-label="${o.libelle}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(o.ratio * 100)}"><span class="bar-fill${o.ok ? '' : ' warn'}" style="width:${Math.round(o.ratio * 100)}%"></span></span>`}
-      ${line}
     </li>`;
 }
 
@@ -104,7 +83,7 @@ export function renderChapterBanner() {
     return `
     <div class="card chapter-card done">
       <span class="card-title"><span>🌈 Jeu libre</span><span class="chips"><span class="chip">${der.icone} ${der.titre}</span>${helpBtn('chapitres')}</span></span>
-      <span class="muted">La famille vit de sa ferme. Rien ne presse : la suite est à toi.</span>
+      <span class="muted">Rien ne presse : la suite est à toi.</span>
       ${jeuLibreHtml()}
     </div>`;
   }
@@ -117,48 +96,6 @@ export function renderChapterBanner() {
       ${def.etape ? `<span class="muted chapitre-etape">${escapeHtml(def.etape)}</span>` : ''}
       <ul class="objectives">${p.objectifs.map(objectiveHtml).join('')}</ul>
       ${rec.length ? `<span class="muted chapitre-recompense-titre">🎁 À la clé : ${rec.join(' · ')}</span>` : ''}
-    </div>`;
-}
-
-// Petit graphique SVG : une barre par nuit, les GRAPHIQUE_NUITS dernières nuits,
-// la plus récente à droite ; la ligne pointillée est l'objectif du chapitre.
-function autonomyChartHtml() {
-  const N = DATA.AUTONOMIE.GRAPHIQUE_NUITS;
-  const h = autonomyHistory(state);
-  const W = 320, H = 130, left = 30, right = 6, top = 8, bottom = 20;
-  const { plotW, plotH, y, grid } = chartFrame({ W, H, left, right, top, bottom });
-  const slot = plotW / N;
-  const bw = slot * 0.7;
-  const bars = h
-    .map((e, i) => {
-      const x = left + (N - h.length + i) * slot + (slot - bw) / 2;
-      const bh = Math.max(e.pct > 0 ? 1.5 : 0, plotH * (e.pct / 100));
-      return `<rect class="chart-bar${e.pct + EPS >= 100 ? ' full' : ''}" x="${x.toFixed(1)}" y="${(top + plotH - bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}"><title>Nuit ${e.nuit} : ${formatPercent(e.pct)}</title></rect>`;
-    })
-    .join('');
-  const ends = h.length
-    ? `<text class="chart-label" x="${(left + (N - h.length) * slot + slot / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${h[0].nuit}</text>` +
-      (h.length > 1 ? `<text class="chart-label" x="${(left + (N - 1) * slot + slot / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${h[h.length - 1].nuit}</text>` : '')
-    : `<text class="chart-empty" x="${(left + plotW / 2).toFixed(1)}" y="${(top + plotH / 2).toFixed(1)}" text-anchor="middle">Le graphique apparaît après ta première nuit.</text>`;
-  const goal = !state.campagne.fini ? chapterProgress(state).objectifs.find((o) => o.type === 'autonomie') : null;
-  const target = goal
-    ? `<line class="chart-target" x1="${left}" y1="${y(goal.cible).toFixed(1)}" x2="${W - right}" y2="${y(goal.cible).toFixed(1)}"><title>Objectif du chapitre : ${goal.cible} %</title></line>`
-    : '';
-  const label = h.length
-    ? `Autonomie des ${plural(h.length, 'dernière')} ${accord(h.length, 'nuit')} : ${h.map((e) => `nuit ${e.nuit}, ${formatPercent(e.pct)}`).join(' ; ')}`
-    : 'Autonomie par nuit : aucune nuit pour l\'instant';
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">${grid}${bars}${target}${ends}</svg>`;
-}
-
-export function renderAutonomyCard() {
-  const c = state.campagne;
-  const goal = !c.fini ? chapterProgress(state).objectifs.find((o) => o.type === 'autonomie') : null;
-  return `
-    <div class="card autonomy-card">
-      <span class="card-title"><span>🌿 Autonomie</span><span class="chip">${DATA.AUTONOMIE.GRAPHIQUE_NUITS} dernières nuits</span></span>
-      <span class="big">${formatPercent(lastAutonomy(state))}</span>
-      <span class="muted">Dernière nuit : la part de ce que la famille a mangé qui vient de la ferme. Les conserves et les achats à la calèche ne comptent pas. Aujourd'hui : <strong class="num">${formatPercent(plannedAutonomy(state))}</strong>.${goal ? ` Objectif du chapitre : ${goal.cible} % (ligne pointillée).` : ''}</span>
-      ${autonomyChartHtml()}
     </div>`;
 }
 
@@ -178,7 +115,7 @@ function openChapterModal() {
        <p class="muted">${next.intro}</p>
        <ul class="objectives">${next.objectifs.map((o) => `<li class="objective"><span class="objective-label">⬜ ${o.libelle}</span></li>`).join('')}</ul>`
     : `<h3>🌈 Le jeu libre commence</h3>
-       <p>La famille se nourrit de ce que produit la ferme. Ce n'est pas une fin : la ferme est à toi, à ton rythme. Chaque série de ${DATA.ARBRE.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % rapporte encore 1 point de technologie.</p>
+       <p>Ce n'est pas une fin : la ferme est à toi, à ton rythme. Toutes les ${DATA.ARBRE.POINTS.MODE_LIBRE_NUITS} nuits, 1 point de technologie de plus.</p>
        ${jeuLibreHtml()}`;
   openModal(`
     <h2 id="chapter-title">🎉 Chapitre ${a.chapitre} terminé</h2>

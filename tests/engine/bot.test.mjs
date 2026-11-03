@@ -12,7 +12,7 @@ import {
 } from '../../js/engine/index.js';
 import {
   assert, assertEqual, atChapter, fillCows, fillSheep, growZone, partie, pature, reach, setInv,
-  test,
+  test, vieFaite,
 } from './aide.mjs';
 
 /* --- Lot 10 : simulation d'un joueur automatique --- */
@@ -137,6 +137,7 @@ test('Lot 10 : au chapitre du troupeau, le joueur automatique nourrit ses mouton
   const s = partie(3);
   simulatePlay(s, 'applique', 22);
   testGoToChapter(s, 5);
+  vieFaite(s); // (la nouvelle vision : le repas partagé, hors du joueur automatique)
   // version 1.6 : les améliorations coûtent plus cher (100 à 2 200 pièces) ;
   // version 1.7 : le Champ attend que le Moulin soit construit. Le chapitre se
   // termine vers la 28ᵉ nuit (22ᵉ avant ces deux versions).

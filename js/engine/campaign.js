@@ -14,8 +14,11 @@ import { hameauxVus } from './monde-hameaux.js';
 import { partVue } from './monde-vu.js';
 import { ageFait, aFait, genreJoueur } from './recit.js';
 import { offrirPlan } from './plans.js';
+import { habitantsDe } from './habitants.js';
+import { cleDe, palierAmitie } from './amitie.js';
+import { styleMaison } from './styles.js';
 
-/* ---------- Lot 9 : autonomie et chapitres ---------- */
+/* ---------- Lot 9 : chapitres (et la part de la ferme dans les repas, pour les mesures) ---------- */
 
 // state.campagne = { chapitre, fini, annonces, historique, compteurs }.
 // chapitre : chapitre en cours (1 à 7) ; fini : la campagne est terminée (mode
@@ -23,8 +26,8 @@ import { offrirPlan } from './plans.js';
 // n'a pas encore été vu [{ chapitre, nuit }] ; historique : autonomie de chaque
 // nuit [{ nuit, pct, energie }] ; compteurs : eau pompée (mL), record d'énergie
 // stockée (mWh), carottes récoltées, nuits de ponte d'affilée, pains cuits, plats
-// différents préparés, laines tondues, nuits à 100 % d'affilée, suivi de la tenue
-// (chapitre 6).
+// différents préparés, laines tondues, repas servis à des invités. (L'historique ne se montre plus au
+// joueur depuis la nouvelle vision : il sert aux mesures.)
 export function newCampaign() {
   return {
     chapitre: 1,
@@ -45,11 +48,7 @@ export function newCampaignCounters() {
     pains: 0,
     plats: [],
     laines: 0,
-    serie100: 0,
-    nuits100: 0, // nuits à 100 % d'autonomie au total (jalon de maîtrise)
-    tenue: null, // série de nuits en cours de suivi : { debut, nuits, somme }
-    tenueDerniere: null, // dernière série terminée : { moyenne, sansSoin, reussi }
-    tenueReussie: false,
+    repasInvites: 0, // la nouvelle vision : repas servis à des invités (invitations.js, servirRepas)
     recoltes: 0, // version 1.12 : récoltes faites au total
     cultures: [], // cultures différentes récoltées
     semisBle: 0, // semis de blé
@@ -217,6 +216,13 @@ function partDuMonde(state) {
   return vuMemo.pct;
 }
 
+// Les habitants des hameaux au palier d'amitié `palier` ou plus.
+function amisAuPalier(state, palier) {
+  let n = 0;
+  for (const h of Object.values(habitantsDe(state))) for (const f of (h && h.foyers) || []) for (const m of f.membres || []) if (palierAmitie(state, cleDe(m)) >= palier) n++;
+  return n;
+}
+
 // Valeur actuelle d'un objectif.
 export function objectiveValue(state, obj) {
   const k = state.campagne.compteurs;
@@ -224,14 +230,18 @@ export function objectiveValue(state, obj) {
     case 'litres': return Math.floor((k.eauMl || 0) / 1000);
     case 'wh': return Math.floor((k.mwhMax || 0) / 1000);
     case 'carottes': return k.carottes;
-    case 'autonomie': return lastAutonomy(state);
     case 'pontes': return k.serieOeufs;
     case 'bonheur': return averageHappiness(state); // version 1.8 (à la place de la santé)
     case 'pains': return k.pains;
     case 'plats': return k.plats.length;
     case 'laines': return k.laines;
-    case 'tenue': return k.tenueReussie ? 1 : 0;
-    case 'serie100': return k.serie100;
+    // la nouvelle vision (après le lot 6, à la place de l'autonomie) : les amis, les repas partagés, les
+    // projets des hameaux, les styles, les plans
+    case 'amis': return amisAuPalier(state, obj.palier || 0);
+    case 'repas': return k.repasInvites || 0;
+    case 'projets': return Object.values(state.projets && typeof state.projets === 'object' ? state.projets : {}).reduce((n, p) => n + (p && Array.isArray(p.faits) ? p.faits.length : 0), 0);
+    case 'styles': { const m = styleMaison(state); return m.complet ? obj.cible : Math.min(obj.cible, m.varies.length); }
+    case 'plans': return Object.keys(state.plans && state.plans.connus && typeof state.plans.connus === 'object' ? state.plans.connus : {}).length;
     // version 1.12 (v2, lot 8) : chapitres 1 et 2
     case 'maison': return houseRepaired(state) ? 1 : 0;
     case 'panneau': case 'pompe': case 'reservoir': return isOwned(starterOf(state, obj.type)) ? 1 : 0;
@@ -427,70 +437,28 @@ export function acknowledgeChapter(state) {
 
 /* -- compteurs de nuit -- */
 
-// Suivi de la tenue du chapitre 6 (version 1.6, à la place de l'hiver) : une
-// série de `nuits` nuits commence à la première nuit où le chapitre est atteint.
-// Elle réussit si l'autonomie y vaut `moyenne` % en moyenne (version 1.8 : plus de
-// soins, donc plus de condition « sans soin »). Une série ratée laisse place à une
-// nouvelle dès la nuit suivante.
-function trackHold(state, pct) {
-  const k = state.campagne.compteurs;
-  const obj = objectiveDef('tenue');
-  if (!obj || k.tenueReussie || chapterReached(state) < objectiveChapter('tenue')) return;
-  if (!k.tenue) k.tenue = { debut: state.day, nuits: 0, somme: 0 };
-  const w = k.tenue;
-  w.nuits += 1;
-  w.somme += pct;
-  if (w.nuits < obj.nuits) return;
-  const moyenne = Math.floor(w.somme / w.nuits);
-  const reussi = moyenne + EPS >= obj.moyenne;
-  k.tenueDerniere = { moyenne, reussi };
-  if (reussi) k.tenueReussie = true;
-  k.tenue = null;
-}
-
-// Où en est l'objectif de tenue (pour l'interface) : 'reussi', 'suivi' (série en
-// cours) ou 'attente' (la série commencera à la prochaine nuit).
-export function holdStatus(state) {
-  const k = state.campagne.compteurs;
-  const dernier = k.tenueDerniere;
-  if (k.tenueReussie) return { etat: 'reussi', dernier };
-  if (k.tenue) {
-    return {
-      etat: 'suivi', dernier, nuits: k.tenue.nuits,
-      moyenne: k.tenue.nuits ? k.tenue.somme / k.tenue.nuits : 0,
-    };
-  }
-  return { etat: 'attente', dernier };
-}
-
-// Fin de la nuit (avant le passage au jour suivant) : autonomie de la nuit dans
-// l'historique, séries d'affilée (remises à zéro dès qu'une nuit les interrompt),
-// suivi de la tenue.
+// Fin de la nuit (avant le passage au jour suivant) : la part de ce que la famille a mangé qui vient de la
+// ferme, notée pour les mesures (state.nuit.autonomie, l'historique : la télémétrie, la simulation ; le
+// joueur ne la voit plus depuis la nouvelle vision), la série de pontes, et en jeu libre 1 PT toutes les
+// MODE_LIBRE_NUITS nuits.
 export function recordNight(state) {
   const c = state.campagne;
   if (!c) return null;
   const n = state.nuit;
   const energie = n.energieProduit || 0;
-  // (une journée où la famille n'a rien mangé garde l'autonomie de la nuit d'avant)
+  // (une journée où la famille n'a rien mangé garde la part de la nuit d'avant)
   const pct = n.besoin > 0 ? autonomyPercent(energie, n.besoin) : lastAutonomy(state);
   n.autonomie = pct;
   c.historique.push({ nuit: state.day, pct, energie });
   const max = DATA.AUTONOMIE.HISTORIQUE_MAX;
   if (c.historique.length > max) c.historique.splice(0, c.historique.length - max);
   const k = c.compteurs;
-  const reached = chapterReached(state);
-    if (reached >= objectiveChapter('pontes')) k.serieOeufs = (n.oeufs || 0) > 0 ? k.serieOeufs + 1 : 0;
-  if (reached >= objectiveChapter('serie100')) k.serie100 = pct >= 100 ? k.serie100 + 1 : 0;
-  // Arbre v2 : nuits à 100 % au total, et en mode libre 1 PT toutes les N nuits à 100 %.
-  if (pct >= 100) {
-    k.nuits100 = (k.nuits100 || 0) + 1;
-    if (c.fini) {
-      const pt = techPoints(state);
-      pt.libre += 1;
-      if (pt.libre % DATA.ARBRE.POINTS.MODE_LIBRE_NUITS_100 === 0) grantTechPoints(state, 1, 'Mode libre : nuits à 100 %');
-    }
+  if (chapterReached(state) >= objectiveChapter('pontes')) k.serieOeufs = (n.oeufs || 0) > 0 ? k.serieOeufs + 1 : 0;
+  if (c.fini) {
+    const pt = techPoints(state);
+    pt.libre += 1;
+    if (pt.libre % DATA.ARBRE.POINTS.MODE_LIBRE_NUITS === 0) grantTechPoints(state, 1, 'Jeu libre');
   }
-  trackHold(state, pct);
   return pct;
 }
 

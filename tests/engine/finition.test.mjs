@@ -28,7 +28,7 @@ import {
   acheterCaleche, CALECHE, etatCaleche, majCaleche, tourneeDuMonde, vendreCaleche,
 } from '../../js/engine/caleche.js';
 import { botMonde } from '../../js/engine/bot.js';
-import { assert, assertEqual, mondeFait, partie, test, tireless } from './aide.mjs';
+import { assert, assertEqual, ETAPES_AVANT_68, mondeFait, partie, test, tireless } from './aide.mjs';
 
 const RACINE = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 const copie = (x) => JSON.parse(JSON.stringify(x));
@@ -152,7 +152,7 @@ test('migration v58 → v59 : les compteurs du monde à zéro ; le didacticiel c
   assertEqual(a.version, STATE_VERSION);
   assertEqual([a.campagne.compteurs.calecheVentes, a.campagne.compteurs.achatsHameaux, a.campagne.compteurs.pecheMer], [0, 0, 0]);
   assertEqual(ETAPES[a.didacticiel.etape], 'carte', 'sur l\'ancienne bulle de fin : la suite, le grand monde');
-  const b = migrate(vieille({ etape: ETAPES.indexOf('semis'), fini: false }));
+  const b = migrate(vieille({ etape: ETAPES_AVANT_68.indexOf('semis'), fini: false }));
   assertEqual(ETAPES[b.didacticiel.etape], 'semis', 'plus tôt : la même étape');
   const c = migrate(vieille({ etape: finAvant, fini: true }));
   assertEqual([c.didacticiel.fini, etapeDidacticiel(c)], [true, null], 'fini : rien ne change');

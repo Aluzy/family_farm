@@ -440,7 +440,8 @@ export const MIGRATIONS = {
   // abattu ne repousse pas, il faut planter sa graine). Une partie plus loin avance d'un cran.
   48: (state) => {
     const d = state.didacticiel;
-    const plus = d && !d.fini && Number.isInteger(d.etape) && d.etape > ETAPES.indexOf('abri_ressources');
+    // (les étapes d'alors : celles d'avant la v68, l'« autonomie » encore cinquième)
+    const plus = d && !d.fini && Number.isInteger(d.etape) && d.etape > ETAPES.indexOf('abri_ressources') + 1;
     return { ...state, version: 49, ...(plus ? { didacticiel: { ...d, etape: d.etape + 1 } } : {}) };
   },
   // v49 → v50 : les parcelles de la Serre se labourent à la houe, chacune sur sa case. Celles
@@ -621,6 +622,27 @@ export const MIGRATIONS = {
       out.pieces = (Number(state.pieces) || 0) + PRESSE_RENDU;
       addItem(out, 'pressoir', 1);
       out.presseRendue = true;
+    }
+    return out;
+  },
+  // v67 → v68 : l'autonomie quitte le jeu (la nouvelle vision). L'étape « autonomie » du didacticiel
+  // disparaît (ETAPES, js/engine/didacticiel.js : la 5e) : une partie plus loin recule d'une étape ; les
+  // compteurs de la tenue et des séries à 100 % s'effacent.
+  67: (state) => {
+    const out = { ...state, version: 68 };
+    const d = state.didacticiel;
+    if (d && typeof d === 'object' && !d.fini && Number.isInteger(d.etape) && d.etape > 4) out.didacticiel = { ...d, etape: d.etape - 1 };
+    const c = state.campagne;
+    if (c && typeof c === 'object' && c.compteurs && typeof c.compteurs === 'object') {
+      const { serie100, nuits100, tenue, tenueDerniere, tenueReussie, ...k } = c.compteurs;
+      // (repasInvites à sa place : après les laines, comme dans newCampaignCounters)
+      const compteurs = {};
+      for (const [cle, v] of Object.entries(k)) {
+        if (cle !== 'repasInvites') compteurs[cle] = v;
+        if (cle === 'laines') compteurs.repasInvites = Number(k.repasInvites) || 0;
+      }
+      if (!('repasInvites' in compteurs)) compteurs.repasInvites = Number(k.repasInvites) || 0;
+      out.campagne = { ...c, compteurs };
     }
     return out;
   },

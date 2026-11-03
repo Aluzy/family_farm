@@ -14,7 +14,7 @@ import {
   zoneTile,
 } from '../../js/engine/index.js';
 import {
-  ancienne, assert, assertEqual, AVANT_DEMENAGEMENT, champ, chapter1StepsDone, migreAvant,
+  ancienne, assert, assertEqual, AVANT_DEMENAGEMENT, champ, chapter1StepsDone, migreAvant, sansCompteurs68,
   plotContent, runFor, sleepOnce, test, v14State,
 } from './aide.mjs';
 
@@ -52,7 +52,7 @@ test('migration v15 → v16 : une partie sans animaux ne perd ni ne gagne rien',
   const v15 = v15State((s) => { s.pieces = 432; s.day = 12; });
   const m = migreAvant({ v: 15, t: 0, s: v15 });
   assertEqual(m.version, AVANT_DEMENAGEMENT);
-  assertEqual([m.pieces, m.day, m.inventaire, m.campagne, m.potager, m.technologies, m.pointsTech], [432, 12, v15.inventaire, chapter1StepsDone(v15.campagne), { ...v15.potager, houe: true, houeVue: true, parcelles: v15.potager.parcelles.map((p, i) => ({ ...p, case: zoneTile(1, i) })) }, v15.technologies, v15.pointsTech]);
+  assertEqual([m.pieces, m.day, m.inventaire, sansCompteurs68(m.campagne), m.potager, m.technologies, m.pointsTech], [432, 12, v15.inventaire, chapter1StepsDone(v15.campagne), { ...v15.potager, houe: true, houeVue: true, parcelles: v15.potager.parcelles.map((p, i) => ({ ...p, case: zoneTile(1, i) })) }, v15.technologies, v15.pointsTech]);
   assertEqual(m.paturage, { construit: false, places: 0, compteur: 0, compteurVache: 0, moutons: [], vaches: [] });
   assertEqual(countItem(m, 'paille'), 0, 'pas d\'animaux : pas de paille offerte');
   assertEqual(m.nuit.etable, newStableReport());

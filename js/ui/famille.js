@@ -19,7 +19,6 @@ import { tel } from './consent.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
-import { renderAutonomyCard } from './chapitres.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
@@ -444,7 +443,6 @@ export function renderFamille() {
     ${renderPets()}
     <details class="more">
       <summary>En savoir plus</summary>
-      ${renderAutonomyCard()}
       <div class="cards">${energyDetailsHtml()}</div>
     </details>`;
 }

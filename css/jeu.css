@@ -1161,7 +1161,6 @@ summary.branch-head h3::before { content: '▸'; display: inline-block; margin-r
 .unlock-list li { padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--accent); background: var(--bg-muted); }
 .modal h3 { margin: 12px 0 4px; font-size: 1.05rem; }
 #chapter-close { margin-top: 16px; }
-.autonomy-card { margin-bottom: 12px; }
 .chart { display: block; width: 100%; max-width: 480px; height: auto; }
 .chart-grid { stroke: var(--border); stroke-width: 1; }
 .chart-label { fill: var(--text-muted); font-size: 9px; }
@@ -2427,7 +2426,6 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 }
 .hud-niveau .pxt { --p: var(--hp); --row: 0; } /* chiffres sombres dans l'étoile, même en mode sombre */
 /* l'anneau de l'autonomie, en bas à droite du médaillon, la pousse en haut à gauche de l'anneau */
-.player-card .player-auto { position: absolute; right: calc(-5 * var(--hp)); bottom: calc(-5 * var(--hp)); width: calc(18 * var(--hp)); height: calc(18 * var(--hp)); }
 .hud-anneau {
   position: absolute;
   right: 0;
@@ -2439,7 +2437,6 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
   background-position: calc(var(--f) * -15 * var(--hp)) 0;
   image-rendering: pixelated;
 }
-.player-auto .pousse { position: absolute; left: 0; top: 0; }
 /* À droite du médaillon : les jauges, puis l'argent. */
 .player-cote { display: flex; flex-direction: column; align-items: flex-start; gap: calc(3 * var(--hp)); padding-top: calc(2 * var(--hp)); }
 /* les jauges d'énergie, d'endurance et de bonheur, horizontales, l'une sous l'autre */
@@ -2452,7 +2449,6 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 .hud-ico.eclair { width: calc(8 * var(--hp)); height: calc(10 * var(--hp)); background-image: url('../assets/hud/eclair.png'); }
 .hud-ico.smiley { width: calc(9 * var(--hp)); height: calc(9 * var(--hp)); background-image: url('../assets/hud/smiley.png'); }
 .hud-ico.etoile { width: calc(11 * var(--hp)); height: calc(10 * var(--hp)); background-image: url('../assets/hud/etoile.png'); }
-.hud-ico.pousse { width: calc(7 * var(--hp)); height: calc(7 * var(--hp)); background-image: url('../assets/hud/pousse.png'); }
 .hud-ico.piece { width: calc(10 * var(--hp)); height: calc(10 * var(--hp)); background-image: url('../assets/hud/piece.png'); }
 /* Le tube d'une jauge (2 px de bord) et son remplissage, un pixel en retrait ; horizontal (.h) :
    il se remplit de gauche à droite, le reflet en haut. */

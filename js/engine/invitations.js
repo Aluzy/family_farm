@@ -200,6 +200,8 @@ export function servirRepas(state, id, plats = [], terrasse = false) {
   if (!objet(RJ.mange)) RJ.mange = {};
   for (const it of choisis) RJ.mange[it] = (RJ.mange[it] || 0) + 1;
   RJ.fete = (RJ.fete || 0) + R.BONHEUR;
+  // (un repas partagé : l'objectif « repas » des chapitres, le jalon de maîtrise)
+  if (state.campagne && state.campagne.compteurs) state.campagne.compteurs.repasInvites = (state.campagne.compteurs.repasInvites || 0) + 1;
   // (à table avec eux, la famille mange à sa faim)
   if (choisis.length) rassasierFamille(state);
   // (le plat dont on se souvient : le meilleur pour lui, le premier servi à égalité)
