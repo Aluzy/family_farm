@@ -452,7 +452,7 @@
   },
   "CONSERVATION_CATEGORIE": { "plat": 6 },
   "//ORIGINE": [
-    "Origine d'un lot (sert au % d'autonomie du Lot 9) : « produit » par défaut,",
+    "Origine d'un lot (elle servait au % d'autonomie du Lot 9, retiré : une simple étiquette) : « produit » par défaut,",
     "sauf pour les catégories listées ici (les conserves comptent comme achetées)."
   ],
   "ORIGINE": { "PRODUIT": "produit", "ACHETE": "acheté", "PAR_CATEGORIE": { "conserve": "acheté" } },

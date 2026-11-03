@@ -795,7 +795,7 @@ export function botDay(state, strat, options) {
 
 // Joue `nuits` nuits à partir de `state` (l'appelant passe une copie : elle est
 // modifiée). Renvoie une ligne par nuit : chapitre au début de la journée,
-// autonomie à la fin de la nuit, énergie du personnage et bonheur au réveil,
+// énergie du personnage et bonheur au réveil,
 // pièces et conserves au réveil.
 // options.depannage = { item } : chaque soir, le joueur achète aussi une unité de
 // cet aliment au Marché (vérification de la section 8.11).
@@ -811,7 +811,6 @@ export function simulatePlay(state, strategyId, nights = DATA.SIMULATION.NUITS, 
     rows.push({
       nuit,
       chapitre,
-      autonomie: state.nuit.autonomie,
       couverture: state.nuit.couverture,
       energie: energyLevel(state),
       bonheur: averageHappiness(state),
@@ -832,17 +831,6 @@ export function simulateGame(strategyId, nights = DATA.SIMULATION.NUITS, seed = 
   const state = createNewGame(seed, { nom: 'Simulation' });
   for (const [item, n] of Object.entries(DATA.DIDACTICIEL.GRAINES)) addItem(state, item, n);
   return simulatePlay(state, strategyId, nights, options);
-}
-
-// Première nuit où l'autonomie lissée (moyenne des LISSAGE dernières nuits) atteint `pct`, ou null.
-export function simulationReach(rows, pct) {
-  const k = DATA.SIMULATION.LISSAGE;
-  for (let i = k - 1; i < rows.length; i++) {
-    const window = rows.slice(i - k + 1, i + 1);
-    const mean = window.reduce((t, r) => t + r.autonomie, 0) / k;
-    if (mean + EPS >= pct) return rows[i].nuit;
-  }
-  return null;
 }
 
 // Joue `nights` nuits sur une COPIE de la partie (la partie en cours n'est pas

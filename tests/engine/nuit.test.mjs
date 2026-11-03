@@ -10,7 +10,7 @@ import {
   deposit, depositOreNotebook, energyMax, findPlot, fishLeft, formatDay, getNotifications,
   goToSleep, grantTech, growAll, harvest, harvestYield, hitsNeeded, hourOfDay, isBuyable, maxStage,
   midnightMs, MIGRATIONS, mineOre, mineRock, monthIndex, monthName, moonPhase, nightActive,
-  nightLengthMs, nightSpeed, piles, plannedAutonomy, plant, recipeTime, sellItem, sheepCount,
+  nightLengthMs, nightSpeed, piles, plant, recipeTime, sellItem, sheepCount,
   simulateOffline, skipNight, sleep, sleepTarget, startNight, startRecipe, STATE_VERSION,
   strawMissing, strawNeed, testAddHens, testAddSeeds, testAddSheep, testBatir, testFillEnergy,
   testSetEnergyZero, testWoolReady, tick, TIRED, water, waterCostFor, weekdayName,
@@ -68,7 +68,7 @@ test('la nuit recopie ce que la famille a mangé dans la journée, sans la faire
   assertEqual([s.repasJour, s.awakeMs], [null, 0], 'au réveil, une nouvelle journée');
 });
 
-test('version 1.21 : 22 h (480 s d\'éveil) rend la nuit due ; l\'aperçu d\'autonomie suit ce qui est mangé', () => {
+test('version 1.21 : 22 h (480 s d\'éveil) rend la nuit due', () => {
   const s = garden();
   setInv(s, { conserve: 200 });
   s.awakeMs = 479900;
@@ -76,9 +76,8 @@ test('version 1.21 : 22 h (480 s d\'éveil) rend la nuit due ; l\'aperçu d\'aut
   s.awakeMs = 480000;
   assertEqual([bedtimeDue(s), hourOfDay(s), canSleep(s)], [true, 22, true]);
   affamer(s);
-  assertEqual(plannedAutonomy(s), 0, 'des conserves : rien de la ferme');
   const rep = sleep(s);
-  assertEqual([s.day, s.awakeMs, bedtimeDue(s), rep.nuit, rep.autonomie], [2, 0, false, 2, 0]);
+  assertEqual([s.day, s.awakeMs, bedtimeDue(s), rep.nuit, 'autonomie' in rep], [2, 0, false, 2, false]);
 });
 
 test('version 1.1.1 : horloge arrêtée (résumé du réveil ouvert), les flux tournent mais l\'heure n\'avance pas', () => {

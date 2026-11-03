@@ -1,5 +1,4 @@
 import { energyLevel } from '../engine/stamina.js';
-import { lastAutonomy } from '../engine/campaign.js';
 import { ecouterJournal } from '../engine/journal.js';
 import { etapeDidacticiel } from '../engine/didacticiel.js';
 import { activeTab, ecranFerme, state, testMode } from './store.js';
@@ -40,7 +39,7 @@ export function telNight(awakeSeconds) {
   const membres = state.famille ? state.famille.membres : [];
   const p = state.progression || {};
   tel('night', {
-    day: state.day, chapter: chap, autonomy: lastAutonomy(state),
+    day: state.day, chapter: chap,
     pieces: state.pieces, energy: energyLevel(state), awake: awakeSeconds,
     level: p.niveau, xp: p.xp, adults: membres.filter((m) => !m.enfant).length, children: membres.filter((m) => m.enfant).length,
     wild: true, meal: state.nuit && Number.isFinite(state.nuit.couverture) ? state.nuit.couverture : null,

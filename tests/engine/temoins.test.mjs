@@ -80,7 +80,10 @@ function gardee(nom, avant, m) {
   const { recompenses, ...campagne } = m.campagne;
   const { repasInvites, ...compteurs } = campagne.compteurs;
   assertEqual(repasInvites, 0, `${nom} : les repas partagés`);
-  assertEqual({ ...campagne, compteurs }, sansCompteurs68({ ...avant.campagne, compteurs: { ...avant.campagne.compteurs, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 } }), `${nom} : la campagne`);
+  // (la v69 : l'historique de l'autonomie s'efface)
+  const { historique, ...avantCampagne } = avant.campagne;
+  assertEqual({ ...campagne, compteurs }, sansCompteurs68({ ...avantCampagne, compteurs: { ...avant.campagne.compteurs, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 } }), `${nom} : la campagne`);
+  assertEqual('historique' in m.campagne, false, `${nom} : plus d'historique d'autonomie`);
   assertEqual(recompenses, Array.from({ length: avant.campagne.fini ? 7 : avant.campagne.chapitre - 1 }, (_, i) => i + 1), `${nom} : les récompenses rattrapées`);
   assertEqual(m.progression, avant.progression, `${nom} : le niveau`);
   // les arbres, les rochers et les touffes touchés de la ferme : les mêmes, aux identifiants du monde

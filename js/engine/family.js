@@ -291,14 +291,13 @@ export function newFridgeNightStats() {
 }
 
 export function newNightStats() {
-  return { besoin: 0, energie: 0, couverture: 100, mange: {}, perdus: {}, oeufs: 0, lait: 0, etable: newStableReport(), termine: {}, auto: newAutoReport(), fruits: {}, frigo: newFridgeNightStats(), energieProduit: 0, autonomie: 0, pluie: 0, entretiens: [] };
+  return { besoin: 0, energie: 0, couverture: 100, mange: {}, perdus: {}, oeufs: 0, lait: 0, etable: newStableReport(), termine: {}, auto: newAutoReport(), fruits: {}, frigo: newFridgeNightStats(), pluie: 0, entretiens: [] };
 }
 
 // Première étape nocturne : les enfants mangent (seulement si leur repas de 20 h n'a pas eu lieu :
 // une journée finie avant, par sleep), puis ce
 // que la famille a mangé dans la journée à la boîte à nourriture ou au frigo (repas.js) est
-// recopié dans le compte rendu de la nuit : points mangés (besoin, énergie), dont ceux qui
-// viennent de la ferme (autonomie), jauge moyenne au coucher (couverture : elle règle le
+// recopié dans le compte rendu de la nuit : points mangés (besoin, énergie), jauge moyenne au coucher (couverture : elle règle le
 // réveil), bonheur des plats et faim de ceux qui n'ont rien trouvé.
 export function feedFamily(state) {
   repasCoucher(state);
@@ -312,7 +311,6 @@ export function feedFamily(state) {
     couverture: jaugeFamille(state),
     mange: { ...R.mange },
     bonheur,
-    energieProduit: R.produit,
     affames: faim,
   });
   state.repasJour = null;

@@ -234,15 +234,6 @@
     ],
     "TRANSFORMATIONS_DOUBLEES": ["farine"]
   },
-  "//AUTONOMIE": [
-    "Lot 9 : autonomie et chapitres",
-    "Autonomie d'une nuit (sections 4 et 8.10) = énergie mangée qui vient de lots",
-    "d'origine « produit » ÷ besoin de la famille (150), plafonnée à 100 %. Les",
-    "conserves et les achats du Marché (origine « acheté ») n'y comptent pas.",
-    "HISTORIQUE_MAX : nombre de nuits gardées dans l'historique ; GRAPHIQUE_NUITS :",
-    "nuits tracées dans le petit graphique."
-  ],
-  "AUTONOMIE": { "HISTORIQUE_MAX": 1000, "GRAPHIQUE_NUITS": 20 },
   "//HORS_LIGNE": [
     "Lot 11 : hors-ligne et première partie",
     "Progression hors-ligne (section 6.10). Le temps passé loin du jeu (page",
