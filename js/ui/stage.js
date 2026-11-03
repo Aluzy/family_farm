@@ -1215,7 +1215,7 @@ export function objectifAttrs(type) {
 function chapterChipHtml() {
   const c = state.campagne;
   if (c.fini) {
-    return '<button type="button" class="stage-chip done" data-action="stage-open" data-window="chapitres" aria-label="Campagne terminée, mode libre. Ouvrir les chapitres"><span class="stage-chip-pill"><span aria-hidden="true">🏆</span><span class="stage-chip-text">Mode libre</span><span class="stage-chip-go" aria-hidden="true">›</span></span></button>';
+    return '<button type="button" class="stage-chip done" data-action="stage-open" data-window="chapitres" aria-label="Campagne terminée : le jeu libre. Ouvrir les chapitres"><span class="stage-chip-pill"><span aria-hidden="true">🌈</span><span class="stage-chip-text">Jeu libre</span><span class="stage-chip-go" aria-hidden="true">›</span></span></button>';
   }
   const p = chapterProgress(state);
   const faits = p.objectifs.filter((o) => o.ok).length;

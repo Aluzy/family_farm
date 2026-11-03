@@ -1149,6 +1149,17 @@ export function validateData(data) {
     }
   });
   // (une culture qu'aucun niveau ne cite est disponible dès le niveau 1)
+  // le lot 6 : la récompense d'un chapitre (des plans de meubles de collection, des objets)
+  const plansCollections = new Set(Object.values((data.PLANS && data.PLANS.COLLECTIONS) || {}).flatMap((c) => c.plans || []));
+  data.CHAPITRES.liste.forEach((ch, i) => {
+    const r = ch.recompense, where = `CHAPITRES.liste[${i}].recompense`;
+    if (r === undefined) return;
+    for (const id of r.plans || []) if (!plansCollections.has(id)) err(where, `${id} : un meuble d'une collection de plans`);
+    for (const [id, n] of Object.entries(r.objets || {})) {
+      if (!items[id]) err(where, `${id} : un objet inconnu`);
+      if (!(isInt(n) && n > 0)) err(where, `${id} : un nombre entier positif`);
+    }
+  });
   if (!Array.isArray(N.CHAPITRES_XP) || N.CHAPITRES_XP.length !== data.CHAPITRES.liste.length) err('NIVEAUX.CHAPITRES_XP', 'un nombre par chapitre');
   if (!Array.isArray(N.CHAPITRE_NIVEAU) || N.CHAPITRE_NIVEAU.length !== data.CHAPITRES.liste.length + 1) err('NIVEAUX.CHAPITRE_NIVEAU', 'un niveau par chapitre, plus un pour la campagne finie');
 

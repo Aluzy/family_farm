@@ -53,6 +53,19 @@ function apprendre(state, id, de = null) {
   plansDe(state).connus[id] = { jour: jourDe(state), de, annonce: false };
 }
 
+// Le lot 6 : un plan offert (une récompense de chapitre, data/campaign.json recompense.plans). Déjà connu : le
+// suivant de sa collection ; la collection complète : null (le meuble lui-même, à la place, js/engine/campaign.js).
+// `annonce` : false pour qu'il soit annoncé au matin (watchPlans), true quand la page l'annonce elle-même.
+// → l'id du plan appris, ou null.
+export function offrirPlan(state, id, annonce = true) {
+  const c = collectionDe(id);
+  const vise = !planConnu(state, id) ? id : c ? prochain(state, c) : null;
+  if (!vise) return null;
+  apprendre(state, vise, null);
+  plansDe(state).connus[vise].annonce = annonce;
+  return vise;
+}
+
 // La collection : chacun de ses meubles, connu ou non. → [{ id, nom, connu, de }]
 export function collection(state, cid) {
   const c = PLANS.COLLECTIONS[cid], K = objet(state.plans) && objet(state.plans.connus) ? state.plans.connus : {};

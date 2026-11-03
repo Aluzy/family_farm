@@ -13,6 +13,7 @@ import { farmTerrain } from './terrain.js';
 import { hameauxVus } from './monde-hameaux.js';
 import { partVue } from './monde-vu.js';
 import { ageFait, aFait, genreJoueur } from './recit.js';
+import { offrirPlan } from './plans.js';
 
 /* ---------- Lot 9 : autonomie et chapitres ---------- */
 
@@ -29,6 +30,7 @@ export function newCampaign() {
     chapitre: 1,
     fini: false,
     annonces: [],
+    recompenses: [], // le lot 6 : les chapitres dont la récompense est donnée
     historique: [],
     compteurs: newCampaignCounters(),
   };
@@ -280,12 +282,46 @@ export function mailText(state, id) {
   return (def.texteSauvage || def.texte).map((l) => (l && typeof l === 'object' ? l[genreJoueur(state)] || l.m || '' : l));
 }
 
+// Le lot 6 : la récompense du chapitre `n` (data/campaign.json recompense), donnée une fois : ses plans
+// (offrirPlan : un plan déjà connu cède la place au suivant de sa collection ; la collection complète, au
+// meuble lui-même) et ses objets de décor. `annonce` : les plans sont annoncés par l'écran de fin (true) ou au
+// matin (false : une ancienne partie, rattrapée). → { plans: [id], objets: { id: n } }
+export function recompenseChapitre(state, n, annonce = true) {
+  const c = state.campagne, r = (DATA.CHAPITRES.liste[n - 1] || {}).recompense || {};
+  const out = { plans: [], objets: {} };
+  if (!c) return out;
+  if (!Array.isArray(c.recompenses)) c.recompenses = [];
+  if (c.recompenses.includes(n)) return out;
+  c.recompenses.push(n);
+  const donner = (id, k) => { addItem(state, id, k); out.objets[id] = (out.objets[id] || 0) + k; };
+  for (const id of r.plans || []) {
+    const p = offrirPlan(state, id, annonce);
+    if (p) out.plans.push(p);
+    else donner(id, 1);
+  }
+  for (const [id, k] of Object.entries(r.objets || {})) donner(id, k);
+  return out;
+}
+
+// Une partie d'avant le lot 6 : les chapitres déjà terminés donnent leurs plans (annoncés au matin), sans
+// leurs objets.
+function rattraperRecompenses(state) {
+  const c = state.campagne;
+  if (Array.isArray(c.recompenses)) return;
+  c.recompenses = [];
+  const faits = c.fini ? chapterCount() : Math.max(0, (c.chapitre || 1) - 1);
+  for (let n = 1; n <= faits; n++) {
+    c.recompenses.push(n);
+    for (const id of (DATA.CHAPITRES.liste[n - 1].recompense || {}).plans || []) offrirPlan(state, id, false);
+  }
+}
+
 // Terminer le chapitre en cours : on l'annonce, puis le suivant s'ouvre (ou la
-// campagne s'achève, mode libre).
+// campagne s'achève : le jeu libre).
 export function completeChapter(state) {
   const c = state.campagne;
   if (!c || c.fini) return fail('La campagne est terminée.');
-  c.annonces.push({ chapitre: c.chapitre, nuit: state.day });
+  c.annonces.push({ chapitre: c.chapitre, nuit: state.day, recompense: recompenseChapitre(state, c.chapitre) });
   // Arbre v2 : chaque chapitre terminé rapporte des points de technologie.
   grantTechPoints(state, DATA.ARBRE.POINTS.CHAPITRES[c.chapitre - 1] || 0, `Chapitre ${c.chapitre} terminé`);
   // Version 1.7 : et de l'expérience (le succès « chapitre n terminé »).
@@ -301,6 +337,7 @@ export function updateChapters(state) {
   const c = state.campagne;
   if (!c) return 0;
   noteItemRecords(state);
+  rattraperRecompenses(state);
   let done = 0;
   while (!c.fini && done < chapterCount() && chapterProgress(state).fait) {
     completeChapter(state);

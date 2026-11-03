@@ -29,7 +29,9 @@ function okList(s) {
 
 test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent plus rien)', () => {
   const L = DATA.CHAPITRES.liste;
-  assertEqual(L.map((c) => c.titre), ['L\'héritage', 'Le grenier', 'Le poulailler', 'Le four et le livre de recette', 'Le troupeau', 'Toute l\'année', 'Famille autonome']);
+  // le lot 6 : les titres d'un foyer qui prend vie ; l'ancien titre, l'étape de la ferme, en sous-titre
+  assertEqual(L.map((c) => c.titre), ['Notre nouveau chez-nous', 'Une maison à notre image', 'Les premiers animaux', 'Les plaisirs de la cuisine', 'Une ferme pleine de vie', 'Au rythme de la nature', 'Notre petit coin de paradis']);
+  assertEqual(L.map((c) => c.etape), ['L\'héritage', 'Le grenier', 'Le poulailler', 'Le four et le livre de recette', 'Le troupeau', 'Toute l\'année', 'Famille autonome']);
   assertEqual(L.map((c) => c.debloque), [undefined, undefined, undefined, undefined, undefined, undefined, undefined]);
   assertEqual(L.map((c) => c.objectifs.map((o) => [o.type, o.cible])), [
     [['maison', 1], ['panneau', 1], ['pompe', 1], ['reservoir', 1], ['houe', 1], ['labours', 6], ['semis', 6], ['arrosees', 6], ['recoltes', 1]],
@@ -55,7 +57,7 @@ test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent p
 test('état initial Lot 9 : chapitre 1, compteurs à zéro, historique vide', () => {
   const s = createInitialState(1);
   assertEqual(s.campagne, {
-    chapitre: 1, fini: false, annonces: [], historique: [],
+    chapitre: 1, fini: false, annonces: [], recompenses: [], historique: [],
     compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, nuits100: 0, tenue: null, tenueDerniere: null, tenueReussie: false, recoltes: 0, cultures: [], semisBle: 0, labours: 0, semis: 0, arroseesMax: 0, objets: {}, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 },
   });
   assertEqual(chapterReached(s), 1);

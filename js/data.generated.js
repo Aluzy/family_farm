@@ -2643,8 +2643,10 @@ export const RAW_DATA = {
   "CHAPITRES": {
     "liste": [
       {
-        "titre": "L'héritage",
+        "titre": "Notre nouveau chez-nous",
+        "etape": "L'héritage",
         "icone": "🏚️",
+        "recompense": { "objets": { "bac_fleurs": 2, "lanterne": 2 } },
         "intro": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; fabrique une houe à l'Atelier, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "introSauvage": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. Celle de ton grand-père est à ta famille, sans maison ni bâtiment. Ramasse des pierres et du bois, construis l'Atelier, fabriques-y une faux pour faucher l'herbe haute (ses fibres), puis bâtis ton foyer : une pièce close et une paillasse. Fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
@@ -2680,8 +2682,10 @@ export const RAW_DATA = {
         ]
       },
       {
-        "titre": "Le grenier",
+        "titre": "Une maison à notre image",
+        "etape": "Le grenier",
         "icone": "🌾",
+        "recompense": { "plans": ["pergola"], "objets": { "banc_jardin": 1 } },
         "intro": "« Un grenier, ça se remplit pas en un jour », dit le cocher. De nouvelles cultures, un Silo à construire et du blé à rentrer. Chaque jour vers 10 h, la calèche s'arrête devant l'entrée de la ferme : son cocher a quelque chose pour toi, et il te prendra ce que tu as en trop.",
         "objectifs": [
           { "type": "niveau", "cible": 2, "libelle": "Atteindre le niveau 2", "unite": "" },
@@ -2693,8 +2697,10 @@ export const RAW_DATA = {
         ]
       },
       {
-        "titre": "Le poulailler",
+        "titre": "Les premiers animaux",
+        "etape": "Le poulailler",
         "icone": "🐔",
+        "recompense": { "plans": ["banc_rondins"] },
         "intro": "« On ne laisse pas une poule sans grain, ni une famille sans œufs », dit Odile. Une ponte régulière demande du blé, et la ferme doit nourrir la moitié de la famille. L'Arbre des technologies demande maintenant du fer : une pioche en main, cherche la mine de la ferme, cachée dans les bois, et descends-y. Et il est temps de sortir de la ferme : suis le chemin de la calèche jusqu'au premier hameau.",
         "objectifs": [
           { "type": "pontes", "cible": 7, "libelle": "Pondre 7 nuits d'affilée", "unite": "nuits" },
@@ -2704,8 +2710,10 @@ export const RAW_DATA = {
         ]
       },
       {
-        "titre": "Le four et le livre de recette",
+        "titre": "Les plaisirs de la cuisine",
+        "etape": "Le four et le livre de recette",
         "icone": "🍞",
+        "recompense": { "plans": ["table_rondins"] },
         "intro": "« Ton pain se vend mieux que ton blé. Et le fer, ça se cuit aussi », dit Achille. Moudre, presser, cuire : le pain et les plats cuisinés valent plus que leurs ingrédients. Le Four fond aussi le minerai de la grotte, avec du bois : les lingots paient les technologies. Les grottes de la montagne, au nord et à l'ouest du monde, en ont bien plus que la mine.",
         "objectifs": [
           { "type": "pains", "cible": 5, "recette": "pain", "libelle": "Cuire 5 pains", "unite": "" },
@@ -2716,8 +2724,10 @@ export const RAW_DATA = {
         ]
       },
       {
-        "titre": "Le troupeau",
+        "titre": "Une ferme pleine de vie",
+        "etape": "Le troupeau",
         "icone": "🐑",
+        "recompense": { "plans": ["chaise_peinte"] },
         "intro": "« Papa disait qu'une ferme sans bêtes, c'est un jardin qui se donne des airs », t'écrit ta mère. Des moutons pour la laine, des vaches pour le lait. Ils vivent à l'Étable et mangent chaque nuit de la paille : fauche l'herbe haute de la carte avec la faux, puis jette ses fibres dans la botteleuse (Atelier) pour en faire des bottes. Les hameaux ont leurs bergers et leurs pêcheurs : va voir comment ils vivent, et tente ta chance à la canne au bord de la mer.",
         "objectifs": [
           { "type": "laines", "cible": 10, "libelle": "Tondre 10 laines", "unite": "" },
@@ -2727,8 +2737,10 @@ export const RAW_DATA = {
         ]
       },
       {
-        "titre": "Toute l'année",
+        "titre": "Au rythme de la nature",
+        "etape": "Toute l'année",
         "icone": "📅",
+        "recompense": { "plans": ["bac_lavande"] },
         "intro": "« On ne juge pas une ferme aux bons jours, mais aux mauvais », dit Odile. La Serre, le Verger et le Réfrigérateur pour tenir dans la durée : dix nuits d'affilée bien nourris. Ce qui manque à la ferme, les hameaux l'ont parfois : la calèche te vend ce qu'elle leur achète. Et le pays a ses bêtes, à regarder sans les chasser.",
         "objectifs": [
           {
@@ -2744,9 +2756,11 @@ export const RAW_DATA = {
         ]
       },
       {
-        "titre": "Famille autonome",
+        "titre": "Notre petit coin de paradis",
+        "etape": "Famille autonome",
         "icone": "🏡",
-        "intro": "« Maurice disait : le jour où ta table se remplit sans moi, je passe quand même. Pour causer », dit Achille. Le dernier défi : nourrir la famille avec ce que produit la ferme, et rien d'autre. Et connaître son pays : les hameaux du bout des chemins, la montagne, la côte.",
+        "recompense": { "plans": ["banc_pierre"], "objets": { "lanterne": 3 } },
+        "intro": "« Maurice disait : le jour où ta table se remplit sans moi, je passe quand même. Pour causer », dit Achille. Le dernier défi : nourrir la famille avec ce que produit la ferme, et rien d'autre. Et connaître son pays : les hameaux du bout des chemins, la montagne, la côte. Ce ne sera pas une fin : ensuite, la ferme est à toi, à ton rythme.",
         "objectifs": [
           { "type": "serie100", "cible": 7, "libelle": "Atteindre 100 % d'autonomie 7 nuits d'affilée", "unite": "nuits" },
           { "type": "hameaux", "cible": 5, "libelle": "Découvrir 5 hameaux", "unite": "" },

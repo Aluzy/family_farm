@@ -75,7 +75,10 @@ function gardee(nom, avant, m) {
   // (fiche 11, format 60 : personne n'est équipé, pas de sac à provisions)
   assertEqual(m.equipement, { membres: {}, sac: null }, `${nom} : l'équipement`);
   // (fiche 9b, format 59 : les compteurs du grand monde s'y ajoutent, à zéro)
-  assertEqual(m.campagne, { ...avant.campagne, compteurs: { ...avant.campagne.compteurs, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 } }, `${nom} : la campagne`);
+  // (le lot 6 : les récompenses des chapitres déjà terminés, rattrapées : leurs plans)
+  const { recompenses, ...campagne } = m.campagne;
+  assertEqual(campagne, { ...avant.campagne, compteurs: { ...avant.campagne.compteurs, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 } }, `${nom} : la campagne`);
+  assertEqual(recompenses, Array.from({ length: avant.campagne.fini ? 7 : avant.campagne.chapitre - 1 }, (_, i) => i + 1), `${nom} : les récompenses rattrapées`);
   assertEqual(m.progression, avant.progression, `${nom} : le niveau`);
   // les arbres, les rochers et les touffes touchés de la ferme : les mêmes, aux identifiants du monde
   const decale = (o, px = 1) => Object.keys(o || {}).map((id) => { if (avant.version >= 52) return id; const [c, r] = id.split(',').map(Number); return `${c + ox * px},${r + oy * px}`; }).sort();

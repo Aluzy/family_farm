@@ -3135,7 +3135,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "chapitres",
      "terme": "Chapitres",
-     "description": "7 étapes de l'histoire de la famille, avec leurs objectifs : l'héritage (bâtir le foyer, première récolte), le grenier (cultures, Silo, blé, et les premières ventes à la calèche), le poulailler (le premier minerai de fer de la mine, et un premier hameau du grand monde), le four (le premier lingot de fer, une grotte de la montagne, et une part du monde vue), le troupeau (et d'autres hameaux, un poisson de mer), toute l'année (acheter aux hameaux par la calèche, regarder les bêtes sauvages), puis l'autonomie (et connaître son pays). Ils ne débloquent plus rien depuis la version 1.7 : chaque chapitre terminé rapporte de l'expérience, des points de technologie, et ouvre un palier de l'Arbre des technologies.",
+     "description": "7 étapes de l'histoire d'un foyer qui prend vie, avec leurs objectifs : Notre nouveau chez-nous (l'héritage : bâtir le foyer, première récolte), Une maison à notre image (le grenier : cultures, Silo, blé, et les premières ventes à la calèche), Les premiers animaux (le poulailler, le premier minerai de fer de la mine, et un premier hameau du grand monde), Les plaisirs de la cuisine (le four, le premier lingot de fer, une grotte de la montagne, et une part du monde vue), Une ferme pleine de vie (le troupeau, d'autres hameaux, un poisson de mer), Au rythme de la nature (toute l'année : acheter aux hameaux par la calèche, regarder les bêtes sauvages), puis Notre petit coin de paradis (l'autonomie, et connaître son pays). Ils ne débloquent plus rien depuis la version 1.7 : chaque chapitre terminé rapporte de l'expérience, des points de technologie, ouvre un palier de l'Arbre des technologies et offre une récompense : un plan de meuble de collection ou des objets de décor, chacun de son style (un plan déjà trouvé cède la place au suivant de sa collection). Le dernier ne termine rien : il ouvre le jeu libre (aménager, inviter, aider les hameaux, compléter les collections).",
      "liens": [
       "autonomie",
       "points_technologie",
@@ -3145,7 +3145,8 @@ export const ENCYCLOPEDIE = {
       "hameaux",
       "grotte_montagne",
       "comptoir",
-      "grand_monde"
+      "grand_monde",
+      "plans_collection"
      ],
      "decouverte": [
       "depart"
