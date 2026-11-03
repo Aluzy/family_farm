@@ -107,4 +107,10 @@ d'essai, ralenti ×4 (main après l'étape 1) :
 |---|---|
 | main après l'étape 1 | 7,70 s |
 | 2a. La teinte de l'herbe haute attend que l'écran de chargement soit retiré (au plus 10 s) ; l'attente avant le fondu de l'écran passe de 350 à 100 ms | **7,29 s** (l'écran retiré 0,45 s après la vue dessinée, contre 1,1 s) |
-| *Pistes suivantes* : peindre le sol des régions par morceaux plus petits (la vue n'en couvre qu'une petite part), garder la ferme tirée de la graine sur l'appareil, charger au besoin les images des meubles et des bêtes | |
+| 2b. Le sol peint par morceaux de 256 px (`js/carte/ferme/sol.js`) : ceux sous la vue d'un coup, ceux de la marge deux par image ; chacun avec un anneau de 2 cases autour (ce qui en déborde) | **6,51 s** (main le même jour : 7,79 s, soit −1,3 s) ; la vue dessinée 1,6 s après la scène prête (2,5 s avant) |
+| *Pistes suivantes* : garder la ferme tirée de la graine sur l'appareil (0,6 s), charger au besoin les images des meubles et des bêtes (Phaser traite toutes les images avant la scène : 2,5 s) | |
+
+Le sol par morceaux est identique au pixel près au sol d'un seul canevas : vérifié dans la page sur
+les régions de la ferme et du grand monde (petites plantes comprises) et après une repeinture partielle
+(des cases labourées sur les bords des morceaux). La lecture du sol pour les touffes au pied des murs
+(`herbes.js`) passe par `lireSol`, qui recompose les morceaux.

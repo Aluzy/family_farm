@@ -16,6 +16,10 @@
   const { T, MAP, ZONE_TILES, ZONE_OBJECTS } = F.C;
   const REGION = K.REGION;
   const FOND = '#6a8157';            // le vert de l'herbe, sous les tuiles
+  // Le sol d'une région se peint par morceaux de MORCEAU px de côté (docs/perf.md, le chargement) : ceux
+  // sous la vue d'un coup, ceux de la marge MORCEAUX_PAR_IMAGE par image ; chacun avec un anneau de
+  // ANNEAU cases autour (ce qui en déborde sur lui).
+  const MORCEAU = 256, MORCEAUX_PAR_IMAGE = 2, ANNEAU = 2;
   const { reducedMotion } = F;
 
   F.partie({
@@ -182,20 +186,33 @@
         if (!r.tex && !loin(r, REGION.pres)) this.showRegion(r);
         else if (r.tex && loin(r, REGION.loin)) this.dropRegion(r);
       }
+      // Le sol d'une région se peint par morceaux (MORCEAU px de côté : une région en fait 1 056, la
+      // vue d'un téléphone n'en couvre qu'un coin ; docs/perf.md) : ceux sous la vue tout de suite, ceux
+      // de la marge (REGION.pres) MORCEAUX_PAR_IMAGE par image ; tant qu'il en reste, revu à l'image
+      // suivante.
+      let budget = MORCEAUX_PAR_IMAGE, reste = false;
+      for (const r of this.regions.values()) {
+        if (!r.tex) continue;
+        for (const m of r.morceaux) {
+          if (m.tex) continue;
+          if (!loin(m, 0)) this.showMorceau(r, m);
+          else if (!loin(m, REGION.pres)) { if (budget > 0) { budget -= 1; this.showMorceau(r, m); } else reste = true; }
+        }
+      }
+      if (reste) this.regionsKey = '';
     },
 
+    // Une région montrée : `r.tex` vaut true (les autres parties de la scène le lisent : la région est
+    // là) ; son sol, en morceaux (r.morceaux), se peint près de la vue (syncRegions, showMorceau).
     showRegion(r) {
-      // (une clé neuve à chaque fois, comme les toits des hameaux : une texture retirée puis refaite sous
-      // la même clé, d'un grand saut de la vue à l'autre, peut encore être lue par le rendu de l'image
-      // en cours — fiche 9a)
-      this.solN = (this.solN || 0) + 1;
-      const key = 'sol_' + r.rx + '_' + r.ry + '_' + this.solN;
-      r.tex = this.textures.createCanvas(key, r.w, r.h);
-      r.img = this.add.image(r.x, r.y, key).setOrigin(0).setDepth(0);
-      // (canevas rendu vide par le navigateur : on le redessine)
-      const c = r.tex.getSourceImage();
-      if (c && c.addEventListener) c.addEventListener('contextrestored', () => { if (r.tex) this.paintRegion(r); });
-      this.paintRegion(r);
+      r.tex = true;
+      r.morceaux = [];
+      for (let y = r.y; y < r.y + r.h; y += MORCEAU) {
+        for (let x = r.x; x < r.x + r.w; x += MORCEAU) {
+          const w = Math.min(MORCEAU, r.x + r.w - x), h = Math.min(MORCEAU, r.y + r.h - y);
+          r.morceaux.push({ x, y, w, h, c0: x / T, r0: y / T, c1: (x + w) / T, r1: (y + h) / T, cells: null, tex: null, img: null });
+        }
+      }
       this.showRegionObjs(r);              // ses arbres, ses barrières, ses rochers (decor.js)
       this.eauMondeRegion(r);              // ses blocs d'eau (eau-monde.js)
       this.vegetationRegion(r);            // ses arbres, ses buissons (vegetation.js)
@@ -207,9 +224,77 @@
       this.dropEauMonde(r);
       this.dropVegetation(r);
       this.dropRegionObjs(r);
-      if (r.img) r.img.destroy();
-      if (r.tex) this.textures.remove(r.tex.key);
+      for (const m of r.morceaux || []) this.dropMorceau(m);
+      r.morceaux = null;
       r.img = r.tex = null;
+    },
+
+    // Un morceau du sol d'une région : son canevas, son image, peints.
+    showMorceau(r, m) {
+      // (une clé neuve à chaque fois, comme les toits des hameaux : une texture retirée puis refaite sous
+      // la même clé, d'un grand saut de la vue à l'autre, peut encore être lue par le rendu de l'image
+      // en cours — fiche 9a)
+      this.solN = (this.solN || 0) + 1;
+      const key = 'sol_' + r.rx + '_' + r.ry + '_' + this.solN;
+      m.tex = this.textures.createCanvas(key, m.w, m.h);
+      m.img = this.add.image(m.x, m.y, key).setOrigin(0).setDepth(0);
+      // (canevas rendu vide par le navigateur : on le redessine)
+      const c = m.tex.getSourceImage();
+      if (c && c.addEventListener) c.addEventListener('contextrestored', () => { if (m.tex) this.paintMorceau(r, m); });
+      this.paintMorceau(r, m);
+    },
+
+    dropMorceau(m) {
+      if (m.img) m.img.destroy();
+      if (m.tex) this.textures.remove(m.tex.key);
+      m.img = m.tex = null;
+    },
+
+    // Les cases d'un morceau et l'anneau de ANNEAU cases autour (dans la région) : ce qui déborde d'une
+    // case voisine sur le morceau (une petite plante, le bord d'une terre labourée) y est peint aussi,
+    // comme sur un canevas de toute la région. Dans l'ordre de la carte ; faites une fois.
+    morceauCells(r, m) {
+      if (m.cells) return m.cells;
+      const W = this.grid.cols, out = [];
+      const ca = Math.max(r.c0, m.c0 - ANNEAU), cb = Math.min(r.c1, m.c1 + ANNEAU), ra = Math.max(r.r0, m.r0 - ANNEAU), rb = Math.min(r.r1, m.r1 + ANNEAU);
+      for (let y = ra; y < rb; y++) for (let x = ca; x < cb; x++) out.push(y * W + x);
+      m.cells = out;
+      return out;
+    },
+    // La case `i` touche-t-elle le morceau (lui ou son anneau) ?
+    dansMorceau(m, i) {
+      const W = this.grid.cols, c = i % W, y = (i / W) | 0;
+      return c >= m.c0 - ANNEAU && c < m.c1 + ANNEAU && y >= m.r0 - ANNEAU && y < m.r1 + ANNEAU;
+    },
+
+    // Peint un morceau en entier (son fond, puis ses cases et leur anneau).
+    paintMorceau(r, m) {
+      this.peindreSol(r, m.tex.getContext(), m.x, m.y, this.morceauCells(r, m), true);
+      m.tex.refresh();
+      this.solPeint = (this.solPeint || 0) + 1;       // (les touffes d'herbe en lisent les couleurs : herbes.js)
+    },
+
+    // Le sol peint sur ce rectangle (px de carte), lu dans les morceaux peints qui le couvrent (un
+    // ImageData), ou null s'il n'est pas entièrement peint.
+    lireSol(x, y, w, h) {
+      const morceaux = [];
+      let aire = 0;
+      for (const r of (this.regions || new Map()).values()) {
+        if (!r.tex) continue;
+        for (const m of r.morceaux) {
+          if (!m.tex || m.x >= x + w || m.x + m.w <= x || m.y >= y + h || m.y + m.h <= y) continue;
+          morceaux.push(m);
+          aire += (Math.min(x + w, m.x + m.w) - Math.max(x, m.x)) * (Math.min(y + h, m.y + m.h) - Math.max(y, m.y));
+        }
+      }
+      // (les bords des régions se recouvrent d'une tuile : la même peinture, l'aire comptée deux fois)
+      if (!morceaux.length || aire < w * h) return null;
+      if (morceaux.length === 1) return morceaux[0].tex.getContext().getImageData(x - morceaux[0].x, y - morceaux[0].y, w, h);
+      const cv = global.document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      const ctx = cv.getContext('2d', { willReadFrequently: true });
+      for (const m of morceaux) ctx.drawImage(m.tex.getSourceImage(), m.x - x, m.y - y);
+      return ctx.getImageData(0, 0, w, h);
     },
 
     // La part de la vue entièrement dessinée, de 0 à 1 (l'écran de chargement, jeu.html : il
@@ -225,7 +310,8 @@
       for (const r of this.regions.values()) {
         if (r.x > x1 || r.x + r.w < x0 || r.y > y1 || r.y + r.h < y0) continue;
         n += 1;
-        if (r.tex && (!M || !this.regionParts(r).monde.length || M.region(r.rx, r.ry))) prets += 1;
+        const peinte = r.tex && r.morceaux.every((m) => m.tex || m.x > x1 || m.x + m.w < x0 || m.y > y1 || m.y + m.h < y0);
+        if (peinte && (!M || !this.regionParts(r).monde.length || M.region(r.rx, r.ry))) prets += 1;
       }
       return n ? prets / n : 1;
     },
@@ -235,17 +321,34 @@
       return [...(this.regions || new Map()).values()].filter((r) => r.tex);
     },
 
-    // Dessine une région (toutes les couches de tuiles de ses cases, sur un fond uni) dans `ctx`
-    // (son canevas, sinon) : `only`, seulement ces cases-là (repeinture partielle).
+    // Dessine une région (toutes les couches de tuiles de ses cases, sur un fond uni) dans `ctx0` (un
+    // canevas de toute la région : la teinte de l'herbe haute, decor.js) ; sans `ctx0`, dans ses morceaux
+    // peints (ceux qui touchent les cases). `only`, seulement ces cases-là (repeinture partielle).
     paintRegion(r, ctx0, only) {
-      const ctx = ctx0 || r.tex.getContext();
+      if (ctx0) { this.peindreSol(r, ctx0, r.x, r.y, only, false); return; }
+      for (const m of r.morceaux || []) {
+        if (!m.tex) continue;
+        if (!only) { this.paintMorceau(r, m); continue; }
+        const cells = only.filter((i) => this.dansMorceau(m, i));
+        if (!cells.length) continue;
+        this.peindreSol(r, m.tex.getContext(), m.x, m.y, cells, false);
+        m.tex.refresh();
+        this.solPeint = (this.solPeint || 0) + 1;
+      }
+    },
+
+    // Le dessin du sol de la région `r` dans `ctx`, dont le coin haut-gauche est (ox, oy) en px de carte :
+    // ses cases `only` (toutes sans elles), sur le fond (tout le canevas avec `fondEntier`, sinon
+    // seulement sous les cases dessinées).
+    peindreSol(r, ctx, ox, oy, only, fondEntier) {
       const raw = this.mapRaw, P = this.planche();
       ctx.imageSmoothingEnabled = false;
       ctx.globalAlpha = 1;
       ctx.save();
-      ctx.translate(-r.x, -r.y);
+      ctx.translate(-ox, -oy);
       ctx.fillStyle = FOND;
-      if (!only) ctx.fillRect(r.x, r.y, r.w, r.h);
+      if (fondEntier) ctx.fillRect(ox, oy, ctx.canvas.width, ctx.canvas.height);
+      else if (!only) ctx.fillRect(r.x, r.y, r.w, r.h);
       else for (const i of only) ctx.fillRect((i % raw.width) * raw.tilewidth, Math.floor(i / raw.width) * raw.tileheight, raw.tilewidth, raw.tileheight);
       let cells = only || this.regionCells(r);
       // le grand monde : ses cases hors de la ferme ont leur sol (paintMonde), les couches de la
@@ -261,8 +364,6 @@
         }
       }
       ctx.restore();
-      if (!ctx0) r.tex.refresh();
-      this.solPeint = (this.solPeint || 0) + 1;       // (les touffes d'herbe en lisent les couleurs : herbes.js)
     },
 
     // Les cases d'une région, de la ferme d'un côté, du monde autour de l'autre (dans l'ordre de la
@@ -343,15 +444,16 @@
     // un point transparent veut dire que le navigateur a jeté son contenu (page restée en
     // arrière-plan sur un téléphone, mémoire graphique reprise).
     groundWiped() {
-      return this.shownRegions().some((r) => {
+      return this.shownRegions().some((r) => r.morceaux.some((m) => {
+        if (!m.tex) return false;
         try {
-          const ctx = r.tex.getContext();
+          const ctx = m.tex.getContext();
           if (ctx.isContextLost && ctx.isContextLost()) return false;   // pas encore rendu : on réessaiera
-          return [[0, 0], [r.w >> 1, r.h >> 1], [r.w - 1, r.h - 1]].some((p) => ctx.getImageData(p[0], p[1], 1, 1).data[3] === 0);
+          return [[0, 0], [m.w >> 1, m.h >> 1], [m.w - 1, m.h - 1]].some((p) => ctx.getImageData(p[0], p[1], 1, 1).data[3] === 0);
         } catch (e) {
           return false;
         }
-      });
+      }));
     },
 
     // Redessine le fond s'il a été vidé (ou d'office avec `force`). Sans cela, au retour
