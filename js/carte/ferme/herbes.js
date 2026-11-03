@@ -185,14 +185,14 @@
       return p;
     },
 
-    // Le sol peint sur ce rectangle (px de carte), lu dans la région dessinée qui le contient :
+    // Le sol peint sur ce rectangle (px de carte), lu dans les morceaux du sol peints (sol.js, lireSol) :
     // vert(x, y) (de l'herbe ?) et ses teintes [sombre, moyenne, claire] ; null sans région
     // dessinée, ou sans assez d'herbe (HERBES.herbeMin).
     fondHerbe(x, y, w, h) {
       x = Math.round(x); y = Math.round(y);
-      const r = [...(this.regions || new Map()).values()].find((q) => q.tex && x >= q.x && y >= q.y && x + w <= q.x + q.w && y + h <= q.y + q.h);
-      if (!r) return null;
-      const d = r.tex.getContext().getImageData(x - r.x, y - r.y, w, h).data, verts = [];
+      const lu = this.lireSol(x, y, w, h);
+      if (!lu) return null;
+      const d = lu.data, verts = [];
       for (let i = 0; i < d.length; i += 4) if (vert(d, i)) verts.push([d[i], d[i + 1], d[i + 2]]);
       if (verts.length < HERBES.herbeMin * w * h) return null;
       verts.sort((a, b) => lum(a) - lum(b));
