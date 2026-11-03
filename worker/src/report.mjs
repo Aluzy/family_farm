@@ -61,6 +61,7 @@ export const GAME_ACTIONS = {
   'water-many': 'Arroser en glissant',
   'plant-many': 'Semer en glissant',
   'ami-offrir': 'Offrir un cadeau à un habitant (l\'amitié)',
+  'projet-apporter': 'Apporter des matériaux au projet d\'un hameau',
   'evt-inviter': 'Inviter des amis à un repas (le calendrier)',
   'evt-annuler': 'Annuler une invitation à un repas',
   'repas-servir': 'Servir le repas aux invités',

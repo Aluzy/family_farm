@@ -135,7 +135,8 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     recit: nouveauRecit(),
     amitie: { pnj: {}, visites: {}, porte: [] }, // l'amitié avec les habitants des hameaux (js/engine/amitie.js)
     invitations: { seq: 0, liste: [] },
-    plans: { connus: {}, explores: {}, amis: {} }, // les plans des meubles de collection (js/engine/plans.js) // les invitations à un repas, depuis le calendrier (js/engine/invitations.js)
+    plans: { connus: {}, explores: {}, amis: {} },
+    projets: {}, // les projets collectifs des hameaux (js/engine/projets.js) // les plans des meubles de collection (js/engine/plans.js) // les invitations à un repas, depuis le calendrier (js/engine/invitations.js)
     ...startFarm(),
     ...startHousehold(),
     ...startLot4(),

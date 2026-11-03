@@ -16,6 +16,8 @@
  *     s'efface quand le personnage est dans la maison, à moitié quand il passe derrière (comme chez
  *     lui, toits.js) ; sa cheminée (au-dessus du foyer), d'où monte la fumée (pas avec « animations
  *     réduites ») ;
+ *   - le décor des projets faits du hameau (le lot 5 : model.projets ; majDecor) : des bancs, des fleurs, une
+ *     pergola… posés sur la place, autour de son centre ;
  *   - un toit abîmé (le récit, lot 9 : js/engine/usure.js ; model.toitsUses) : sa couverture trouée (abimer) ;
  *     refait quand il s'abîme ou qu'on le répare (majToits) ;
  *   - la nuit, les fenêtres de la façade s'éclairent et leur lumière tombe sur le sol devant elles
@@ -138,9 +140,9 @@
       for (const p of plans) {
         const r = this.regions.get(Math.floor((p.case % W) / N) + ',' + Math.floor(Math.floor(p.case / W) / N));
         const vu = !!(r && r.tex), e = this.hameauxVus.get(p.id);
-        if (vu && !e) this.hameauxVus.set(p.id, this.faireHameau(p));
+        if (vu && !e) { const n = this.faireHameau(p); this.hameauxVus.set(p.id, n); this.majDecor(n); }
         else if (!vu && e) { this.defaireHameau(e); this.hameauxVus.delete(p.id); }
-        else if (e) this.majToits(e);
+        else if (e) { this.majToits(e); this.majDecor(e); }
       }
     },
 
@@ -199,7 +201,40 @@
       }
     },
 
+    // Le décor des projets faits du hameau (le lot 5 : js/engine/projets.js ; model.projets[id] : des blocs de
+    // la planche) : posé sur sa place, autour de son centre (à 2 cases au moins, réparti tout autour ; ni le
+    // puits, ni le banc, ni le panneau) ; refait quand la liste change.
+    majDecor(e) {
+      const L = ((this.ctx.lastModel && this.ctx.lastModel.projets) || {})[e.plan.id] || [];
+      const cle = L.join(',');
+      if (e.decorCle === cle) return;
+      e.decorCle = cle;
+      for (const d of e.decor || []) d.destroy();
+      e.decor = [];
+      const P = e.plan.place;
+      if (!L.length || !P || !Number.isInteger(P.centre)) return;
+      const W = this.grid.cols, c0 = P.centre % W, r0 = Math.floor(P.centre / W);
+      const pris = new Set([P.centre, P.puits, P.banc, P.panneau].filter((x) => Number.isInteger(x)));
+      const loin = (k) => Math.max(Math.abs((k % W) - c0), Math.abs(Math.floor(k / W) - r0));
+      const angle = (k) => Math.atan2(Math.floor(k / W) - r0, (k % W) - c0);
+      let cases = (P.cases || []).filter((k) => !pris.has(k) && loin(k) >= 2);
+      const d = cases.length ? Math.min(...cases.map(loin)) : 0;
+      // (le plus proche anneau, s'il a assez de cases ; sinon toutes, des plus proches aux plus loin)
+      const anneau = cases.filter((k) => loin(k) === d);
+      cases = (anneau.length >= L.length ? anneau : cases).sort((a, b) => angle(a) - angle(b));
+      L.forEach((sorte, i) => {
+        const k = cases[Math.floor((i * cases.length) / L.length)];
+        const f = BLOCS_CARTE.frames[sorte];
+        if (k === undefined || f === undefined) return;
+        const x = (k % W) * T + T / 2, y = (Math.floor(k / W) + 1) * T;
+        e.decor.push(this.add.image(x, y, BLOCS_CARTE.key, f).setOrigin(0.5, 1).setDepth(y));
+      });
+    },
+
     defaireHameau(e) {
+      for (const d of e.decor || []) d.destroy();
+      e.decor = [];
+      e.decorCle = null;
       if (this.defaireHabitants) this.defaireHabitants(e);   // (ses habitants : habitants.js)
       for (const t of e.toits) {
         t.img.destroy();
