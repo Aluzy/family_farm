@@ -15,10 +15,10 @@ import { atelierConstruit, craft, craftStatus } from '../engine/atelier.js';
 import { countItem } from '../engine/inventory.js';
 import { blocsDidacticiel } from '../engine/didacticiel.js';
 import { setStageWindow, stageWindow } from './stage-windows.js';
-import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, deplacerBloc, deplacerStatus, hauteurPile, matiereDessus, mesuresMeuble, poserBloc, rehausser, rehausseStatus, poseStatus, reprendreBloc, sensBloc, solAt, tournerBloc, tourneBloc } from '../engine/blocs.js';
+import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, deplacerStatus, hauteurPile, matiereDessus, mesuresMeuble, rehausseStatus, poseStatus, solAt, tourneBloc } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
-import { ETAGE_BLOCS, etage2Emprise, etageCouvertes, etageEmprise, poseEtageStatus, poserEtage, reprendreEtage, etageBlocs, poseSolEtageStatus, poserSolEtage, reprendreSolEtage, solsEtage } from '../engine/etage.js';
+import { ETAGE_BLOCS, etage2Emprise, etageCouvertes, etageEmprise, poseEtageStatus, etageBlocs, poseSolEtageStatus, solsEtage } from '../engine/etage.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -26,6 +26,8 @@ import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { meubleSrc } from './caleche.js';
 import { closeModal, openModal } from './modal.js';
 import { styleDe, styleInfo } from '../engine/styles.js';
+import { defaire, surCase as surCaseMoteur } from '../engine/commandes.js';
+import { executer } from './commandes.js';
 import { itemsText } from './common.js';
 
 // Le niveau le plus haut où l'on construit (les rangs d'un mur rehaussé : 0 au sol, jusqu'à
@@ -410,16 +412,15 @@ const SENS_NOMS = ['de face', 'tourné vers la droite', 'de dos', 'tourné vers 
 // de dos, vers la droite).
 const quartDeTour = (s) => (s + 3) % 4;
 
-// Annuler (le bouton ↶ de la barre) : les dernières opérations au sol, la plus récente en haut
-// (HISTOIRE_MAX au plus ; oubliées quand on range le mode Construire). Une opération est une
-// liste de gestes, défaits ensemble : { deplace: case, de, sorte } (défait : le ramener sur `de`),
-// { pose: case, sorte } (défait : reprendre), { reprise:
-// case, sorte } (défait : reposer), { change: case, avant, apres } (défait : reposer `avant`).
+// Annuler (le bouton ↶ de la barre) : les dernières opérations, la plus récente en haut
+// (HISTOIRE_MAX au plus ; oubliées quand on range le mode Construire). Une opération est la liste
+// des commandes inverses de ce qu'elle a fait (js/engine/commandes.js : chaque commande jouée rend
+// les siennes), défaites ensemble, de la dernière à la première.
 const HISTOIRE_MAX = 30;
 let histoire = [];
-function noter(gestes) {
-  if (!gestes.length) return;
-  histoire.push(gestes);
+function noter(inverses) {
+  if (!inverses.length) return;
+  histoire.push(inverses);
   if (histoire.length > HISTOIRE_MAX) histoire.shift();
 }
 // La pipette : le bloc posé sur la case `c` au sol (celui que reprendrait un appui ; un meuble, sur
@@ -446,57 +447,27 @@ export function deplacePossible(de, vers) {
   const r = deplacerStatus(state, de, vers);
   return { ok: r.ok, cases: r.cases };
 }
-// Défaire un changement : le nouveau bloc repris (une fenêtre percée rend son mur), puis l'ancien
-// reposé s'il n'est pas revenu de lui-même (un mur, un sol, une porte remplacés).
-function defaireChange(g) {
-  if (surCase(g.change) !== g.apres) return { ok: false };
-  const r = reprendreBloc(state, g.change);
-  if (!r.ok || surCase(g.change) === g.avant) return r;
-  return poserBloc(state, g.avant, g.change);
-}
-// Défaire un quart de tour : le meuble retourné jusqu'à son sens d'avant (tournerBloc saute un sens où il
-// ne tient pas : au plus trois quarts de tour).
-function remettreSens(g) {
-  if (blocAt(state, g.tourne) !== g.sorte) return { ok: false };
-  for (let k = 0; k < 3 && sensBloc(state, g.tourne) !== g.sens; k++) if (!tournerBloc(state, g.tourne).ok) break;
-  return { ok: sensBloc(state, g.tourne) === g.sens };
-}
 // Ce qui est sur la case `c` au sol : le bloc du dessus, le bloc, le sol (ce que reprend un appui).
-const surCase = (c) => blocDessus(state, c) || blocAt(state, c) || solAt(state, c) || null;
+const surCase = (c) => surCaseMoteur(state, c);
 
-// Poser `sorte` sur la case `c` au niveau où l'on construit (un tracé, l'annulation) : sur l'étage
-// d'une pièce, sur l'étage ; aux niveaux 1 et 2, rehausser le mur ; au sol, poser. Le geste à
-// noter pour l'annuler (etage : posé sur l'étage).
+// Poser `sorte` sur la case `c` au niveau où l'on construit (un tracé) : sur l'étage d'une pièce, sur
+// l'étage ; aux niveaux 1 et 2, rehausser le mur ; au sol, poser. Le résultat de la commande (ses
+// inverses, pour l'annuler).
 function poserIci(sorte, c) {
   const g = niveau() ? genreCase(c) : null;
-  if (g === 'sol') return { r: poserSolEtage(state, sorte, c, niveau()), geste: { pose: c, sorte, solEtage: niveau() } };
-  if (g === 'etage') {
-    const r = poserEtage(state, sorte, c);
-    return { r, geste: { pose: c, sorte, etage: true } };
-  }
-  if (g) return { r: rehausser(state, sorte, c), geste: { pose: c, sorte, rang: true } };
-  return { r: poserBloc(state, sorte, c), geste: { pose: c, sorte } };
+  if (g === 'sol') return executer('solEtage.poser', { sorte, case: c, niveau: niveau() });
+  if (g === 'etage') return executer('etage.poser', { sorte, case: c });
+  if (g) return executer('mur.rehausser', { sorte, case: c });
+  return executer('bloc.poser', { sorte, case: c });
 }
 // Reprendre (la gomme) ce qu'il y a sur la case `c` au niveau où l'on construit : sur l'étage, son
 // bloc ; aux niveaux 1 et 2, le bloc du dessus d'un mur haut de n + 1 blocs ; au sol, le bloc.
 function reprendreIci(c) {
   const g = niveau() ? genreCase(c) : null;
-  if (g === 'sol') {
-    const r = reprendreSolEtage(state, c, niveau());
-    return { r, geste: { reprise: c, sorte: r.sorte, solEtage: niveau() } };
-  }
-  if (g === 'etage') {
-    const avant = etageBlocs(state)[c], r = reprendreEtage(state, c);
-    return { r, geste: { reprise: c, sorte: r.sorte || avant, etage: true } };
-  }
-  const n = niveau();
-  if (n) {
-    if (hauteurPile(state, c) !== n + 1) return { r: { ok: false, error: `Niveau ${n} : la gomme reprend le bloc du dessus des murs hauts de ${n + 1} blocs.` } };
-    const r = reprendreBloc(state, c);
-    return { r, geste: { reprise: c, sorte: r.sorte, rang: true } };
-  }
-  const avant = surCase(c), r = reprendreBloc(state, c);
-  return { r, geste: { reprise: c, sorte: r.sorte || avant } };
+  if (g === 'sol') return executer('solEtage.reprendre', { case: c, niveau: niveau() });
+  if (g === 'etage') return executer('etage.reprendre', { case: c });
+  if (niveau()) return executer('mur.abaisser', { case: c, niveau: niveau() });
+  return executer('bloc.reprendre', { case: c });
 }
 
 // Fabriquer sur place ce qui manque : un tracé en voulait plus qu'on n'en avait en main. La
@@ -649,9 +620,9 @@ registerActions({
     const genre = niveau() ? genreCase(c) : null;
     if (genre === 'sol') {
       const n = niveau(), avant = solsEtage(state, n)[c];
-      const r = avant === buildMode ? reprendreSolEtage(state, c, n) : poserSolEtage(state, buildMode, c, n);
+      const r = avant === buildMode ? executer('solEtage.reprendre', { case: c, niveau: n }) : executer('solEtage.poser', { sorte: buildMode, case: c, niveau: n });
       if (!r.ok) { notify(r.error); return; }
-      noter([avant === buildMode ? { reprise: c, sorte: avant, solEtage: n } : { pose: c, sorte: buildMode, solEtage: n }]);
+      noter(r.inverses);
       persistState();
       refresh();
       return;
@@ -663,7 +634,7 @@ registerActions({
       const reprend = (e && !changeMur(e, buildMode)) || etageCouvertes(state).has(c);
       // (un meuble en main, sur une case libre : son aperçu, pas encore posé)
       if (!reprend && meubleEnMain()) { poseMeuble = { sorte: buildMode, case: c }; refresh(); return; }
-      const r = reprend ? reprendreEtage(state, c) : poserEtage(state, buildMode, c);
+      const r = reprend ? executer('etage.reprendre', { case: c }) : executer('etage.poser', { sorte: buildMode, case: c });
       if (!r.ok) { notify(r.error); return; }
       persistState();
       refresh();
@@ -675,12 +646,12 @@ registerActions({
       const h = hauteurPile(state, c);
       let r;
       if (!h) r = { ok: false, error: `Niveau ${n} : touche un mur, une fenêtre ou une porte pour le rehausser (niveau 0 pour poser au sol).` };
-      else if (h === n + 1) r = reprendreBloc(state, c);
-      else if (h === n) r = rehausser(state, matiereDessus(state, c) || buildMode, c);
+      else if (h === n + 1) r = executer('mur.abaisser', { case: c });
+      else if (h === n) r = executer('mur.rehausser', { sorte: matiereDessus(state, c) || buildMode, case: c });
       else if (h < n) r = { ok: false, error: `Ce mur n'a que ${h} bloc${h > 1 ? 's' : ''} : rehausse-le d'abord au niveau ${h}.` };
       else r = { ok: false, error: `Ce mur est plus haut : reprends son bloc du dessus au niveau ${h - 1}.` };
       if (!r.ok) { notify(r.error); return; }
-      noter([h === n ? { pose: c, sorte: r.sorte, rang: true } : { reprise: c, sorte: r.sorte, rang: true }]);
+      noter(r.inverses);
       persistState();
       refresh();
       return;
@@ -699,24 +670,19 @@ registerActions({
     const reprend = b ? !surLibre && !changeMur(b, buildMode) && !empile : sol && solAt(state, c) && !changeSol(solAt(state, c), buildMode);
     // (l'outil ↻ allumé : un appui sur un meuble posé le tourne d'un quart de tour)
     if (modeTourner) {
-      const ancre = !blocAt(state, c) && casesCouvertes(state).has(c) ? casesCouvertes(state).get(c) : c;
-      const avantSens = sensBloc(state, ancre);
-      const t = tournerBloc(state, c);
+      const t = executer('bloc.tourner', { case: c });
       if (!t.ok) { notify(t.error); return; }
-      noter([{ tourne: t.case, sorte: t.sorte, sens: avantSens }]);
+      noter(t.inverses);
       persistState();
       refresh();
       return;
     }
     // (un meuble en main, sur une case libre : son aperçu, pas encore posé)
     if (!reprend && meubleEnMain()) { poseMeuble = { sorte: buildMode, case: c }; refresh(); return; }
-    const avant = surCase(c);
-    const sensAvant = reprend ? sensBloc(state, !blocAt(state, c) && casesCouvertes(state).has(c) ? casesCouvertes(state).get(c) : c) : 0;
-    const r = reprend ? reprendreBloc(state, c) : poserBloc(state, buildMode, c, sensDe(buildMode));
+    const r = reprend ? executer('bloc.reprendre', { case: c }) : executer('bloc.poser', { sorte: buildMode, case: c, sens: sensDe(buildMode) });
     if (!r.ok) { notify(r.error); return; }
     // (pour Annuler : la reprise, la pose, ou le changement d'un mur, d'un sol ; pas le silo)
-    if (reprend) noter([{ reprise: r.case !== undefined ? r.case : c, sorte: r.sorte || avant, sens: r.sens || sensAvant }]);
-    else if (!empile) noter([avant && avant !== buildMode && !surLibre ? { change: c, avant, apres: buildMode } : { pose: c, sorte: buildMode }]);
+    noter(r.inverses);
     persistState();
     refresh();
   },
@@ -726,19 +692,7 @@ registerActions({
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const gestes = histoire.pop();
     if (!gestes) { notify('Rien à annuler.'); return; }
-    let n = 0;
-    for (const g of [...gestes].reverse()) {
-      // (sur l'étage d'une pièce : ses blocs ; ailleurs, le sol et les murs rehaussés)
-      const r = g.etage ? (g.pose !== undefined ? (etageBlocs(state)[g.pose] === g.sorte ? reprendreEtage(state, g.pose) : { ok: false }) : poserEtage(state, g.sorte, g.reprise))
-        : g.deplace !== undefined ? (surCase(g.deplace) === g.sorte ? deplacerBloc(state, g.deplace, g.de) : { ok: false })
-        : g.solEtage ? (g.pose !== undefined ? (solsEtage(state, +g.solEtage)[g.pose] === g.sorte ? reprendreSolEtage(state, g.pose, +g.solEtage) : { ok: false }) : poserSolEtage(state, g.sorte, g.reprise, +g.solEtage))
-        : g.rang ? (g.pose !== undefined ? (hauteurPile(state, g.pose) > 1 && matiereDessus(state, g.pose) === g.sorte ? reprendreBloc(state, g.pose) : { ok: false }) : rehausser(state, g.sorte, g.reprise))
-        : g.pose !== undefined ? (surCase(g.pose) === g.sorte ? reprendreBloc(state, g.pose) : { ok: false })
-        : g.tourne !== undefined ? remettreSens(g)
-        : g.reprise !== undefined ? poserBloc(state, g.sorte, g.reprise, g.sens || 0)
-          : defaireChange(g);
-      if (r.ok) n += 1;
-    }
+    const n = defaire(state, gestes);
     if (n) persistState();
     refresh();
     notify(n ? `↶ Annulé${gestes.length > 1 ? ` : ${n} bloc${n > 1 ? 's' : ''}` : ''}${n < gestes.length ? ` (${gestes.length - n} n'ont pas pu l'être)` : ''}.` : 'Rien n\'a pu être annulé (ce qui a été posé a changé depuis).');
@@ -765,9 +719,9 @@ registerActions({
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const de = Number(target.dataset.de), vers = Number(target.dataset.vers);
     if (!Number.isInteger(de) || !Number.isInteger(vers) || de === vers) return;
-    const r = deplacerBloc(state, de, vers);
+    const r = executer('bloc.deplacer', { de, vers });
     if (!r.ok) { notify(r.error); refresh(); return; }
-    noter([{ deplace: vers, de: r.de, sorte: r.sorte }]);
+    noter(r.inverses);
     persistState();
     refresh();
     notify(`✋ Déplacé : ${DATA.ATELIER.BLOCS[r.sorte].nom.toLowerCase()}.`, { duree: CONSEIL_MS });
@@ -797,17 +751,17 @@ registerActions({
     // la gomme : les blocs de cette famille repris, case par case
     if (target.dataset.gomme === '1') {
       const gestes = [];
-      let raison = '';
+      let raison = '', repris = 0;
       for (const c of cases) {
         if (tracePosable(c) !== 'fait') continue;
-        const { r, geste } = reprendreIci(c);
-        if (r.ok) gestes.push(geste);
+        const r = reprendreIci(c);
+        if (r.ok) { repris += 1; gestes.push(...r.inverses); }
         else raison = raison || r.error;
       }
       noter(gestes);
-      if (gestes.length) persistState();
+      if (repris) persistState();
       refresh();
-      if (gestes.length) notify(`🧽 ${gestes.length} bloc${gestes.length > 1 ? 's' : ''} repris${raison ? ` · ${raison}` : ''}`);
+      if (repris) notify(`🧽 ${repris} bloc${repris > 1 ? 's' : ''} repris${raison ? ` · ${raison}` : ''}`);
       else if (raison) notify(raison);
       return;
     }
@@ -815,8 +769,8 @@ registerActions({
     let n = 0, raison = '', i = 0;
     const gestes = [];
     for (; i < cases.length && blocsEnMain(state, sorte); i++) {
-      const { r, geste } = poserIci(sorte, cases[i]);
-      if (r.ok) { n += 1; gestes.push(geste); }
+      const r = poserIci(sorte, cases[i]);
+      if (r.ok) { n += 1; gestes.push(...r.inverses); }
       else raison = raison || r.error;
     }
     noter(gestes);
@@ -848,8 +802,8 @@ registerActions({
     const gestes = [];
     for (const c of a.cases) {
       if (!blocsEnMain(state, a.sorte)) break;
-      const { r, geste } = poserIci(a.sorte, c);
-      if (r.ok) { n += 1; gestes.push(geste); }
+      const r = poserIci(a.sorte, c);
+      if (r.ok) { n += 1; gestes.push(...r.inverses); }
     }
     // (Annuler reprend ces blocs : ils reviennent dans l'inventaire, la fabrication reste faite)
     noter(gestes);
@@ -871,9 +825,9 @@ registerActions({
   'meuble-ok': () => {
     if (!poseMeuble || !meubleEnMain()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
-    const r = niveauBati() ? poserEtage(state, poseMeuble.sorte, poseMeuble.case) : poserBloc(state, poseMeuble.sorte, poseMeuble.case, sensDe(poseMeuble.sorte));
+    const r = niveauBati() ? executer('etage.poser', { sorte: poseMeuble.sorte, case: poseMeuble.case }) : executer('bloc.poser', { sorte: poseMeuble.sorte, case: poseMeuble.case, sens: sensDe(poseMeuble.sorte) });
     if (!r.ok) { notify(r.error); return; }
-    if (!niveauBati()) noter([{ pose: poseMeuble.case, sorte: poseMeuble.sorte }]);
+    if (!niveauBati()) noter(r.inverses);
     poseMeuble = null;
     if (!blocsEnMain(state, buildMode)) quitteMeuble();     // (plus de ce meuble : on en sort)
     persistState();
