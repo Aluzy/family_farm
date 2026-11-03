@@ -262,11 +262,11 @@ registerActions({
   },
   'test-complete-chapter': () => {
     const result = applyResult(testCompleteChapter(state));
-    if (result.ok) notify(result.fini ? '🏆 Campagne terminée' : `Chapitre ${result.chapitre} atteint`);
+    if (result.ok) notify(result.fini ? '🌈 Jeu libre' : `Chapitre ${result.chapitre} atteint`);
   },
   'test-goto-chapter': () => {
     const result = applyResult(testGoToChapter(state, document.getElementById('test-chapter').value));
-    if (result.ok) notify(result.fini ? '🏆 Mode libre' : `Chapitre ${result.chapitre}, compteurs remis à zéro`);
+    if (result.ok) notify(result.fini ? '🌈 Jeu libre' : `Chapitre ${result.chapitre}, compteurs remis à zéro`);
   },
   'test-simulate': () => {
     actionTestSimulate();

@@ -1181,6 +1181,10 @@ summary.branch-head h3::before { content: '▸'; display: inline-block; margin-r
 .chip.badge { border-color: var(--warn-text); color: var(--warn-text); }
 .chart-bar.full { fill: var(--warn-text); }
 .chapter-card.done, .station.busy { border-color: var(--warn-text); }
+/* le lot 6 : l'étape de la ferme sous le titre, la récompense du chapitre, le jeu libre */
+.chapitre-etape { font-style: italic; }
+.chapitre-recompense, .jeu-libre { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 4px; }
+.chapitre-recompense-titre { display: block; margin-top: 6px; }
 
 :where(button, a[href], input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 3px solid var(--focus);

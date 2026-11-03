@@ -83,7 +83,7 @@ sauvegardeAnnonce(); // une sauvegarde illisible : une nouvelle partie (l'ancien
 // Lot 9 : les chapitres proposés par le mode test viennent de DATA.
 document.getElementById('test-chapter').innerHTML =
   DATA.CHAPITRES.liste.map((ch, i) => `<option value="${i + 1}">${i + 1} · ${ch.titre}</option>`).join('') +
-  `<option value="${chapterCount() + 1}">Mode libre (fin)</option>`;
+  `<option value="${chapterCount() + 1}">Jeu libre (fin)</option>`;
 
 setInterval(persistState, AUTOSAVE_MS);
 window.addEventListener('beforeunload', persistState);

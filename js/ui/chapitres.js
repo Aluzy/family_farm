@@ -12,6 +12,10 @@ import { helpBtn } from './aide.js';
 import { closeModal, openModal } from './modal.js';
 import { accord, chartFrame, plural } from './common.js';
 import { son } from './son.js';
+import { escapeHtml } from '../engine/format.js';
+import { PLANS } from '../engine/plans.js';
+import { projetsFaits } from '../engine/projets.js';
+import { styleDe, styleInfo, styleMaison } from '../engine/styles.js';
 
 /* ---------- Lot 9 : chapitres, autonomie, graphique ---------- */
 
@@ -61,20 +65,58 @@ function objectiveHtml(o) {
     </li>`;
 }
 
+// Le lot 6 : ce qu'un chapitre offre en plus de l'XP (data/campaign.json recompense, ou ce qui a été donné
+// pour de bon, l'annonce) : ses plans et ses objets de décor, avec leur style. → [html d'une puce]
+function recompenseItems(r) {
+  const style = (id) => { const st = styleInfo(styleDe(id)); return st ? ` <span class="muted" title="style ${st.nom}">${st.icone} ${st.nom}</span>` : ''; };
+  const nom = (id) => { const o = DATA.OBJETS[id] || DATA.ATELIER.BLOCS[id]; return o ? `${o.icone || ''} ${escapeHtml(o.nom)}` : escapeHtml(id); };
+  return [
+    ...(r.plans || []).map((id) => `📜 le plan : ${nom(id)}${style(id)}`),
+    ...Object.entries(r.objets || {}).map(([id, n]) => `${n > 1 ? `${n} × ` : ''}${nom(id)}${style(id)}`),
+  ];
+}
+function recompenseHtml(r) {
+  const L = recompenseItems(r || {});
+  return L.length ? `<ul class="chapitre-recompense">${L.map((x) => `<li>${x}</li>`).join('')}</ul>` : '';
+}
+
+// Le jeu libre (la campagne finie) : ce qui reste à faire, à son rythme.
+function jeuLibreHtml() {
+  const H = state.projets && typeof state.projets === 'object' ? Object.keys(state.projets) : [];
+  const projets = H.reduce((n, hid) => n + projetsFaits(state, hid).length, 0);
+  const connus = state.plans && state.plans.connus ? Object.keys(state.plans.connus).length : 0;
+  const total = Object.values(PLANS.COLLECTIONS).reduce((n, c) => n + c.plans.length, 0);
+  const m = styleMaison(state);
+  const styles = m.complet ? `un style complet (${styleInfo(m.complet).nom})` : m.varies.length ? `${m.varies.length} ${accord(m.varies.length, 'style')} ${accord(m.varies.length, 'mis', 'mis')} en valeur` : 'mêle les styles qui te plaisent';
+  return `<ul class="jeu-libre">
+    <li>🪑 Aménage la ferme à ton idée : ${styles}.</li>
+    <li>📅 Invite tes amis à un repas, depuis le calendrier.</li>
+    <li>🏘️ Aide les hameaux dans leurs projets : ${formatNumber(projets)} ${accord(projets, 'projet')} ${accord(projets, 'achevé')}.</li>
+    <li>📜 Complète les collections de plans : ${formatNumber(connus)} / ${formatNumber(total)}.</li>
+  </ul>`;
+}
+
 // Bandeau de chapitre, en haut de la Ferme : titre, objectifs et progression.
 export function renderChapterBanner() {
   const c = state.campagne;
   if (c.fini) {
+    const der = DATA.CHAPITRES.liste[chapterCount() - 1];
     return `
     <div class="card chapter-card done">
-      <span class="card-title"><span>🏆 Campagne terminée</span><span class="chips"><span class="chip">Mode libre</span>${helpBtn('chapitres')}</span></span>
+      <span class="card-title"><span>🌈 Jeu libre</span><span class="chips"><span class="chip">${der.icone} ${der.titre}</span>${helpBtn('chapitres')}</span></span>
+      <span class="muted">La famille vit de sa ferme. Rien ne presse : la suite est à toi.</span>
+      ${jeuLibreHtml()}
     </div>`;
   }
   const p = chapterProgress(state);
+  const def = DATA.CHAPITRES.liste[p.chapitre - 1];
+  const rec = recompenseItems(def.recompense || {});
   return `
     <div class="card chapter-card">
       <span class="card-title"><span>${p.icone} ${p.titre}</span><span class="chips"><span class="chip">${p.chapitre} / ${chapterCount()}</span><span class="chip" title="Récompense du chapitre">⭐ ${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[p.chapitre - 1] || 0)} XP</span>${helpBtn('chapitres')}</span></span>
+      ${def.etape ? `<span class="muted chapitre-etape">${escapeHtml(def.etape)}</span>` : ''}
       <ul class="objectives">${p.objectifs.map(objectiveHtml).join('')}</ul>
+      ${rec.length ? `<span class="muted chapitre-recompense-titre">🎁 À la clé : ${rec.join(' · ')}</span>` : ''}
     </div>`;
 }
 
@@ -132,14 +174,17 @@ function openChapterModal() {
   const next = L[a.chapitre] || null;
   const body = next
     ? `<h3>Chapitre ${a.chapitre + 1} : ${next.icone} ${next.titre}</h3>
+       ${next.etape ? `<p class="muted chapitre-etape">${escapeHtml(next.etape)}</p>` : ''}
        <p class="muted">${next.intro}</p>
        <ul class="objectives">${next.objectifs.map((o) => `<li class="objective"><span class="objective-label">⬜ ${o.libelle}</span></li>`).join('')}</ul>`
-    : `<h3>🏆 Campagne terminée</h3>
-       <p>La famille se nourrit de ce que produit la ferme. Le mode libre commence : continue de monter en niveau, à ton rythme. Chaque série de ${DATA.ARBRE.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % rapporte encore 1 point de technologie.</p>`;
+    : `<h3>🌈 Le jeu libre commence</h3>
+       <p>La famille se nourrit de ce que produit la ferme. Ce n'est pas une fin : la ferme est à toi, à ton rythme. Chaque série de ${DATA.ARBRE.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % rapporte encore 1 point de technologie.</p>
+       ${jeuLibreHtml()}`;
   openModal(`
     <h2 id="chapter-title">🎉 Chapitre ${a.chapitre} terminé</h2>
     <p><strong>${done.icone} ${done.titre}</strong></p>
     <p>⭐ +${formatNumber(DATA.NIVEAUX.CHAPITRES_XP[a.chapitre - 1] || 0)} XP · 🔬 +${formatNumber(DATA.ARBRE.POINTS.CHAPITRES[a.chapitre - 1] || 0)} points de technologie, à dépenser dans l'Arbre des technologies.</p>
+    ${recompenseHtml(a.recompense)}
     ${body}
     <button type="button" class="btn primary" data-action="ack-chapter" id="chapter-close">Continuer</button>`, {
     labelledBy: 'chapter-title', id: 'chapter-modal', focus: '#chapter-close',

@@ -348,9 +348,9 @@ const HELP = {
   },
   chapitres: () => {
     const c = state.campagne;
-    const lignes = [['Chapitres', `La campagne compte ${chapterCount()} chapitres. Remplis tous les objectifs d'un chapitre pour passer au suivant et gagner son XP.`]];
+    const lignes = [['Chapitres', `La campagne compte ${chapterCount()} chapitres. Remplis tous les objectifs d'un chapitre pour passer au suivant et gagner son XP, ses points de technologie et sa récompense : des plans de meubles de collection et du décor, chacun de son style. Le dernier ouvre le jeu libre.`]];
     if (!c.fini) lignes.push(['Ce chapitre', chapterProgress(state).intro]);
-    else lignes.push(['Mode libre', 'La famille est autonome. Continue de monter en niveau, à ton rythme.']);
+    else lignes.push(['Jeu libre', 'La famille est autonome. Aménage, invite, aide les hameaux, complète tes collections de plans : à ton rythme.']);
     return { nom: 'Chapitres', icone: '📜', lignes };
   },
   frigo: () => ({
