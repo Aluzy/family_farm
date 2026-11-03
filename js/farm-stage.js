@@ -134,10 +134,7 @@
         L.spritesheet(SPRINKLER.key, v(SPRINKLER.file), SPRINKLER.frame);
         L.spritesheet(ROBOT.key, v(ROBOT.file), ROBOT.frame);
         L.spritesheet(ROBOT.station.key, v(ROBOT.station.file), ROBOT.station.frame);
-        for (const name of MEUBLES) L.image('meuble_' + name, v('meuble_' + name + '.png'));
-        // (les meubles tournés : de dos, de profil)
-        for (const name of MEUBLES_SENS) for (const vue of ['_dos', '_cote']) L.image('meuble_' + name + vue, v('meuble_' + name + vue + '.png'));
-        for (const name of LITS) L.image('meuble_' + name + '_drap', v('meuble_' + name + '_drap.png'));
+        // (les meubles et les bêtes du grand monde : chargés après que la carte a paru, chargerTard)
         L.image(MAP.tiles, v(MAP.image));
         L.spritesheet('verger', v('verger.png'), TREE_FRAME);
         L.spritesheet('arbre_clair_sp', v('arbre_clair_sp.png'), { frameWidth: 56, frameHeight: 64 });
@@ -162,8 +159,31 @@
           L.image('hameaux', v('hameaux.png'));
           L.json('hameaux_cases', v('hameaux.json'));
           L.json('faune_cases', v('faune.json'));
-          for (const e of this.ctx.monde.faune.especes) L.image('faune_' + e.cle, v('faune_' + e.cle + '.png'));
         }
+      }
+
+      // Les images chargées après que la carte a paru (docs/perf.md, le chargement : une centaine de
+      // petites images, chacune lue, décodée et envoyée à la carte graphique, retardaient la carte
+      // d'environ 1 s sur téléphone) : les meubles (leurs vues de dos et de profil, les draps des lits)
+      // et les bêtes du grand monde. Jusque-là, un meuble ou une bête sans image ne se montre pas
+      // (syncMeuble, fauneInit) ; à leur arrivée, la carte se resynchronise et ils paraissent.
+      chargerTard() {
+        if (this.tardLance) return;
+        this.tardLance = true;
+        const L = this.load;
+        for (const name of MEUBLES) L.image('meuble_' + name, v('meuble_' + name + '.png'));
+        // (les meubles tournés : de dos, de profil)
+        for (const name of MEUBLES_SENS) for (const vue of ['_dos', '_cote']) L.image('meuble_' + name + vue, v('meuble_' + name + vue + '.png'));
+        for (const name of LITS) L.image('meuble_' + name + '_drap', v('meuble_' + name + '_drap.png'));
+        if (this.ctx.monde) for (const e of this.ctx.monde.faune.especes) L.image('faune_' + e.cle, v('faune_' + e.cle + '.png'));
+        L.once('complete', () => {
+          if (!this.sys || !this.sys.isActive()) return;
+          this.imagesTard = true;
+          this.fauneEtat = undefined;
+          for (const r of this.shownRegions ? this.shownRegions() : []) if (this.fauneRegion) this.fauneRegion(r);
+          if (this.rawModel) this.sync(this.rawModel);
+        });
+        L.start();
       }
 
       create() {
@@ -286,6 +306,8 @@
         }
         this.ready = true;
         this.chargement = !!global.Chargement;   // l'écran de chargement attend la vue dessinée (update)
+        // (sans écran de chargement, ou s'il ne part pas : une carte cachée, une partie en configuration)
+        if (!this.chargement) this.chargerTard(); else this.time.delayedCall(10000, () => this.chargerTard());
         if (this.chargement) global.Chargement.avance(0.75);
         this.followSnap = true;          // la vue part centrée sur le personnage
         if (this.ctx.lastModel) this.sync(this.ctx.lastModel, true);
@@ -533,7 +555,7 @@
         if (this.chargement && this.ctx.visible && !document.body.classList.contains('configuration')) {
           const part = this.vueDessinee();
           global.Chargement.avance(0.75 + 0.25 * part);
-          if (part >= 1) { this.chargement = false; global.Chargement.fini(); }
+          if (part >= 1) { this.chargement = false; global.Chargement.fini(); this.chargerTard(); }
         }
         // Déplacement et fondu suivent l'horloge réelle : ils durent le même temps même
         // si les images sont lentes (Phaser plafonne `delta`).

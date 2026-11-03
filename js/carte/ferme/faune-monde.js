@@ -58,6 +58,8 @@
     // la taille de l'espèce) ; this.fauneEtat : { especes, betes (celles des régions dessinées),
     // vues (les espèces déjà signalées) } ; null sans le grand monde.
     fauneInit() {
+      // (les images des bêtes arrivent après que la carte a paru : farm-stage.js chargerTard)
+      if (!this.imagesTard) return null;
       if (this.fauneEtat !== undefined) return this.fauneEtat;
       this.fauneEtat = null;
       const M = this.ctx.monde, meta = this.cache.json.get('faune_cases');
