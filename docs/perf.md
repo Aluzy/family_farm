@@ -88,4 +88,23 @@ carte prête.
 | Avant (main du 2026-11-03) | 7,09 s |
 | 1a. Les toits gardés tant que les blocs, l'étage, les sols et les hauteurs ne changent pas (`toits`, `js/engine/etage.js` : ils étaient recalculés à chaque appel, 1,6 ms par appel sur ordinateur, 0,16 ms après) | 6,80 s |
 | 1b. La teinte de l'herbe haute lue juste après que la carte a paru, les touffes montrées une fois teintées (`js/carte/ferme/decor.js`) | **5,99 s** |
-| *Pistes suivantes* : la ferme tirée de la graine gardée sur l'appareil, l'eau et le sol hors de la vue peints après la première image, les images des meubles et des bêtes chargées au besoin | |
+| *Pistes suivantes* : voir l'étape 2 | |
+
+**Étape 2 : la bonne mesure.** « Carte prête » (la scène Phaser créée) arrivait avant que le joueur ne
+voie la carte : l'écran de chargement attend en plus que la vue soit entièrement dessinée. L'écran de
+mesure relève maintenant le moment où il est retiré (`Chargement.fini`, jeu.html) : **« Jeu affiché »**,
+le temps que voit le joueur (le budget de 5 s s'y applique). Les jalons d'un chargement de la ferme
+d'essai, ralenti ×4 (main après l'étape 1) :
+
+| Jalon | Moment | Ce qui s'y passe |
+|---|---|---|
+| Page lue (DOM) | 1,4 s | |
+| Scène prête | 4,1 s | les images chargées et traitées par Phaser (2,5 s), la scène créée |
+| Vue dessinée | 6,4 s | les deux régions sous la vue peintes (1 056 × 1 056 px chacune : 1,4 s, dont 0,5 s d'arbres, de barrières et de rochers posés), le temps hors ligne rattrapé, la ferme tirée de la graine (0,6 s), et la teinte de l'herbe haute (1 s), qui tombait là depuis l'étape 1 |
+| Écran retiré | 7,5 s | 0,35 s d'attente voulue avant le fondu, et le fil principal encore occupé |
+
+| Étape | Jeu affiché (médiane, ralenti ×4) |
+|---|---|
+| main après l'étape 1 | 7,70 s |
+| 2a. La teinte de l'herbe haute attend que l'écran de chargement soit retiré (au plus 10 s) ; l'attente avant le fondu de l'écran passe de 350 à 100 ms | **7,29 s** (l'écran retiré 0,45 s après la vue dessinée, contre 1,1 s) |
+| *Pistes suivantes* : peindre le sol des régions par morceaux plus petits (la vue n'en couvre qu'une petite part), garder la ferme tirée de la graine sur l'appareil, charger au besoin les images des meubles et des bêtes | |

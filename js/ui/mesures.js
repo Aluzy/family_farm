@@ -23,19 +23,22 @@ import { registerActions } from './actions.js';
 export const BUDGETS = {
   IMAGES_MIN: 30,        // images par seconde : au moins 30 (60 visées)…
   PART_LENTES_MAX: 5,    // … soit au plus 5 % d'images de plus de 1000/30 ms
-  PRETE_MS: 5000,        // la carte prête (jouable) en moins de 5 s après l'ouverture de la page
+  PRETE_MS: 5000,        // le jeu affiché (l'écran de chargement retiré) moins de 5 s après l'ouverture de la page
   SAUVEGARDE_MS: 16,     // une sauvegarde : moins de 16 ms (une image)
 };
 const DUREE_S = 30;
 
-// Le moment où la carte de la ferme est prête (jouable), mesuré depuis l'ouverture de la page : la
-// scène dit `ready` (js/farm-stage.js) ; relevé une fois.
+// Le moment où le jeu est jouable, mesuré depuis l'ouverture de la page : l'écran de chargement retiré
+// (jeu.html, Chargement.fini : la vue sous la caméra entièrement dessinée, js/farm-stage.js). Relevé
+// une fois, à son premier appel (ces modules sont lus avant que la carte ne le demande).
 let cartePrete = null;
-(function guetter() {
-  const S = typeof window !== 'undefined' && window.FarmStage;
-  if (S && S.ready && S.ready()) { cartePrete = Math.round(performance.now()); return; }
-  if (performance.now() < 120000) setTimeout(guetter, 50);
-})();
+if (typeof window !== 'undefined' && window.Chargement && typeof window.Chargement.fini === 'function') {
+  const fini = window.Chargement.fini;
+  window.Chargement.fini = function (...a) {
+    if (cartePrete === null) cartePrete = Math.round(performance.now());
+    return fini.apply(this, a);
+  };
+}
 
 // La mesure en cours : la date de chaque image.
 let mesure = null;
@@ -84,7 +87,7 @@ function faireRapport(images) {
     '',
     '— Budgets (docs/perf.md) —',
     `${coche(fps >= BUDGETS.IMAGES_MIN && partLentes <= BUDGETS.PART_LENTES_MAX)} Images : ${fps.toFixed(1)} par seconde en moyenne, ${partLentes.toFixed(1)} % de plus de ${Math.round(lent)} ms (budget : ≥ ${BUDGETS.IMAGES_MIN}/s, ≤ ${BUDGETS.PART_LENTES_MAX} % lentes)`,
-    `${cartePrete !== null ? coche(cartePrete < BUDGETS.PRETE_MS) : '❔'} Carte prête : ${cartePrete !== null ? cartePrete + ' ms après l\'ouverture de la page' : 'pas relevé'} (budget : < ${BUDGETS.PRETE_MS} ms)`,
+    `${cartePrete !== null ? coche(cartePrete < BUDGETS.PRETE_MS) : '❔'} Jeu affiché (écran de chargement retiré) : ${cartePrete !== null ? cartePrete + ' ms après l\'ouverture de la page' : 'pas relevé'} (budget : < ${BUDGETS.PRETE_MS} ms)`,
     `${s.n ? coche(s.max < BUDGETS.SAUVEGARDE_MS) : '❔'} Sauvegarde : ${s.n ? `${s.derniere.toFixed(1)} ms la dernière, ${s.max.toFixed(1)} ms au plus` : 'aucune encore'} (budget : < ${BUDGETS.SAUVEGARDE_MS} ms)`,
     '',
     '— Détail —',

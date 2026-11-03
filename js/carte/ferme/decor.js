@@ -245,16 +245,20 @@
         this.grassChunks.get(k).list.push(g);
       }
       // (la teinte se lit dans le sol de toutes les régions qui ont des touffes : un travail long sur
-      // téléphone, docs/perf.md. Il se fait juste après que la carte a paru ; les touffes attendent
-      // leur teinte pour se montrer, syncTallGrass)
+      // téléphone, docs/perf.md. Au chargement, il attend que l'écran de chargement soit retiré (la vue
+      // dessinée : this.chargement, farm-stage.js) ; les touffes attendent leur teinte pour se montrer,
+      // syncTallGrass)
       this.grassTeinte = false;
+      // (au plus 10 s d'attente : une carte cachée, une partie en configuration ne retirent pas l'écran)
+      let attente = 200;
       const teindre = () => {
         if (!this.grassAll || !this.sys || !this.sys.isActive()) return;
+        if (this.chargement && attente-- > 0) { this.time.delayedCall(50, teindre); return; }
         this.tintTallGrass();
         this.grassTeinte = true;
         this.grassKey = '';
       };
-      if (this.ready) teindre(); else this.time.delayedCall(30, teindre);
+      if (this.ready && !this.chargement) teindre(); else this.time.delayedCall(30, teindre);
     },
 
     // La teinte de chaque touffe : la couleur moyenne du fond autour de son pied, divisée par
