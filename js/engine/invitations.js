@@ -7,7 +7,8 @@ import { countItem, takeItem } from './inventory.js';
 import { habitantsDe, metierHabitant } from './habitants.js';
 import { rassasierFamille, repasJour } from './repas.js';
 import { RECIT } from './recit.js';
-import { ajouterAmitie, amitieDe, cleDe, fiche, goutPour, palierAmitie, trouverPnj } from './amitie.js';
+import { ajouterAmitie, amitieDe, cleDe, fiche, goutPour, palierAmitie, styleHabitant, trouverPnj } from './amitie.js';
+import { admireLeCoin, phraseAdmire, STYLES, tableDuRepas } from './styles.js';
 
 /* ---------- les invitations à un repas (data/amitie.json, AMITIE.INVITATION) ----------
 
@@ -166,7 +167,10 @@ export function invitesModele(state) {
     const t = trouverPnj(state, q.hameau, q.id);
     if (!t) continue;
     const h = H[q.hameau];
-    invites.push({ id: q.id, hameau: q.hameau, hameauNom: h.nom, prenom: t.m.prenom, perso: t.m.perso, enfant: !!t.m.enfant, metier: metierHabitant(h, t.m), depart: Number.isInteger(h.case) ? h.case : null });
+    // (le coin de la table est de son style : il l'admire en arrivant, js/engine/styles.js)
+    const style = styleHabitant(state, t);
+    const admire = admireLeCoin(state, style) ? phraseAdmire(style, invites.length) : null;
+    invites.push({ id: q.id, hameau: q.hameau, hameauNom: h.nom, prenom: t.m.prenom, perso: t.m.perso, enfant: !!t.m.enfant, metier: metierHabitant(h, t.m), depart: Number.isInteger(h.case) ? h.case : null, admire });
   }
   if (!invites.length) return null;
   return { id: inv.id, moment: inv.moment, nom: INVITATION.MOMENTS[inv.moment].nom, etat: inv.etat, invites, paroles: { arrive: P.ARRIVE, table: P.TABLE, merci: P.MERCI, seul: P.SEUL } };
@@ -214,17 +218,21 @@ export function servirRepas(state, id, plats = [], terrasse = false) {
       if (!meilleur || rang[g] > rang[gouts[meilleur]]) meilleur = it;
     }
     if (terrasse) pts += R.TERRASSE;
+    // (le coin de la table est de son style : il l'admire ; son style est connu désormais)
+    const style = styleHabitant(state, t), admire = admireLeCoin(state, style);
+    if (admire) pts += STYLES.BONUS_REPAS;
     pts = Math.max(1, pts);
     ajouterAmitie(state, t.cle, pts);
     const p = fiche(state, t.cle);
     p.vu = jourDe(state);
+    p.styleVu = true;
     for (const [it, g] of Object.entries(gouts)) p.gouts[it] = g;
     if (!Array.isArray(p.souvenirs)) p.souvenirs = [];
     p.souvenirs.push({ jour: jourDe(state), plat: meilleur, terrasse: !!terrasse });
     p.souvenirs = p.souvenirs.slice(-INVITATION.SOUVENIR.MAX);
     const vals = Object.values(gouts);
     const emotion = vals.includes('adore') || vals.includes('aime') || (!vals.includes('deteste') && pts > 0) ? 'joie' : 'degout';
-    out.push({ id: q.id, prenom: t.m.prenom, points: pts, emotion, gouts });
+    out.push({ id: q.id, prenom: t.m.prenom, points: pts, emotion: admire ? 'joie' : emotion, gouts, style, admire });
   }
   inv.etat = 'servie';
   inv.servi = { plats: choisis, terrasse: !!terrasse };

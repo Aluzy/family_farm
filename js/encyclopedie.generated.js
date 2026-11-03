@@ -2456,6 +2456,19 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
+     "id": "styles",
+     "terme": "Styles d'aménagement",
+     "description": "Chaque bloc, sol ou meuble décoratif a un style : champêtre 🌾 (la pierre, le bois brut, le chêne), forestier 🌲 (les planches, les bibliothèques, les fougères), côtier 🐚 (le bleu, le blanc, le carrelage, les palmiers) ou fleuri 🌷 (les fleurs, les briques rouges, le vitrail, les tapis et les plantes). Une petite icône le montre dans le mode Construire. Aucun n'est plus beau qu'un autre : ce sont des goûts. La famille est plus heureuse (+5 à sa cible de bonheur) quand la ferme réunit 3 styles d'au moins 2 sortes de blocs, ou 6 sortes d'un même style : on compte les sortes différentes, pas les blocs (vingt murs de pierre font une seule pièce). Chaque habitant a son style préféré, tiré du pays de son hameau (la côte aime le côtier, la forêt le forestier…) ; on le découvre en partageant un repas, ou en devenant cordiaux. Invité près d'un coin de son style (3 sortes au moins à 5 cases de la table), il l'admire en arrivant, et le repas lui rapporte +3 d'amitié de plus.",
+     "liens": [
+      "invitation_repas",
+      "meubles",
+      "mode_construire"
+     ],
+     "decouverte": [
+      "hameau"
+     ]
+    },
+    {
      "id": "metiers",
      "terme": "Les métiers des hameaux",
      "description": "Chaque hameau a son métier, que le pays lui donne : mineur près d'une grotte de la montagne, pêcheur au bord de l'eau, bûcheron à la lisière d'une forêt, berger sur la lande, cueilleur ailleurs. Le bûcheron fend au billot et abat des arbres alentour (du bois, parfois une pomme de pin) ; le pêcheur pêche depuis la rive le poisson de son eau (sardines, anchois, dorades et bars en mer, truites, ombles et brochets au lac, truites, goujons et saumons en rivière) ; le mineur pioche devant l'entrée d'une grotte ou à son tas de minerai (de la pierre, parfois du fer, du cuivre, du quartz) ; le berger soigne ses moutons (du lait, parfois de la laine) ; le cueilleur rapporte des baies, des champignons, des mûres, des myrtilles et des châtaignes. Le jardinier, lui, tient le potager du foyer. Ce que les familles ne mangent pas va à la réserve du hameau, que la calèche achète et revend : c'est par elle que la ferme a les produits qu'elle ne fait pas.",

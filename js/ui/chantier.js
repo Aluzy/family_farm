@@ -25,6 +25,7 @@ import { notify } from './toasts.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { meubleSrc } from './caleche.js';
 import { closeModal, openModal } from './modal.js';
+import { styleDe, styleInfo } from '../engine/styles.js';
 import { itemsText } from './common.js';
 
 // Le niveau le plus haut où l'on construit (les rangs d'un mur rehaussé : 0 au sol, jusqu'à
@@ -148,7 +149,8 @@ export function buildSlotHtml() {
 // Une case du menu : l'icône du bloc, ce qu'il en reste (pâlie quand il n'y en a plus).
 function caseBloc(s) {
   const n = blocsEnMain(state, s), on = s === buildMode, b = DATA.ATELIER.BLOCS[s];
-  return `<button type="button" class="tool-slot build-slot${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-pick" data-sorte="${s}" aria-pressed="${on}" aria-label="${b.nom} : ${n}" title="${b.nom} : ${n}"><span aria-hidden="true">${icone(s)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span></button>`;
+  const st = styleInfo(styleDe(s));   // (son style d'aménagement, js/engine/styles.js)
+  return `<button type="button" class="tool-slot build-slot${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-pick" data-sorte="${s}" aria-pressed="${on}" aria-label="${b.nom} : ${n}${st ? `, style ${st.nom}` : ''}" title="${b.nom} : ${n}${st ? ` · style ${st.nom} ${st.icone}` : ''}"><span aria-hidden="true">${icone(s)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span>${st ? `<span class="build-slot-style" aria-hidden="true">${st.icone}</span>` : ''}</button>`;
 }
 
 // Le menu de construction, en haut de l'écran : les onglets intercalaires, puis la barre (la

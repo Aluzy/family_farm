@@ -704,6 +704,20 @@ export function validateData(data) {
     }
     if (!(typeof D.NUIT === 'number' && D.NUIT > 0 && D.NUIT <= 1)) err('DECOUVERTE.NUIT', 'un facteur, de 0 à 1');
   }
+  // Les styles d'aménagement (data/styles.json, js/engine/styles.js) : des blocs de l'Atelier, un style chacun.
+  if (data.STYLES) {
+    const S = data.STYLES, B = (data.ATELIER && data.ATELIER.BLOCS) || {}, vu = new Map();
+    for (const [id, st] of Object.entries(S.LISTE || {})) {
+      if (!st.nom || !st.icone) err(`STYLES.LISTE.${id}`, 'il lui faut un nom et une icône');
+      for (const b of st.blocs || []) {
+        if (!B[b]) err(`STYLES.LISTE.${id}.blocs`, `« ${b} » n'est pas un bloc de l'Atelier (ATELIER.BLOCS)`);
+        if (vu.has(b)) err(`STYLES.LISTE.${id}.blocs`, `« ${b} » a déjà le style « ${vu.get(b)} »`);
+        vu.set(b, id);
+      }
+    }
+    for (const [biome, L] of Object.entries(S.BIOMES || {})) for (const st of L) if (!(S.LISTE || {})[st]) err(`STYLES.BIOMES.${biome}`, `« ${st} » n'est pas un style`);
+    for (const [p, st] of Object.entries(S.ECRITS || {})) if (!(S.LISTE || {})[st]) err(`STYLES.ECRITS.${p}`, `« ${st} » n'est pas un style`);
+  }
   // L'amitié (data/amitie.json, js/engine/amitie.js) : les objets nommés existent, les nombres sont sensés.
   if (data.AMITIE) {
     const AM = data.AMITIE;

@@ -9,6 +9,8 @@
  *     chacun regardant où regarde son siège (tourné de profil : on le voit de profil),
  *     sinon la table de la maison et ses chaises ; chaque place : où s'asseoir, tourné vers la table, et la
  *     case libre d'où l'on s'y assoit. Sans table, ils attendent debout devant la porte ;
+ *   - un invité qui trouve le coin de la table à son goût (modèle : invites[].admire, js/engine/styles.js) le
+ *     dit en arrivant, avec joie ;
  *   - chacun paraît au bord de la vue, du côté de son hameau (comme le visiteur de la bienvenue,
  *     visite.js visiteDepart), marche jusqu'à sa place, s'assoit (les cases assis_<vue> des planches) et dit
  *     un mot en arrivant ; à table, ils bavardent (une bulle de temps en temps) ;
@@ -147,7 +149,9 @@
           if (g.place) { g.x = g.place.x; g.y = g.place.y; g.face = g.place.face; g.flip = g.place.flip; }
           else if (G.table) ({ face: g.face, flip: g.flip } = K.regard(G.table.x - g.x, G.table.y - g.y));
           else { g.face = 'haut'; g.flip = false; }
-          this.inviteBulle(g, un(G.paroles.arrive), BULLE_MS);
+          // (le coin est de son style : il l'admire, avec joie ; js/engine/styles.js)
+          this.inviteBulle(g, g.admire || un(G.paroles.arrive), BULLE_MS);
+          if (g.admire && this.emouvoir) this.emouvoir(g, 'joie', true);
           if (!G.bavardeA) G.bavardeA = now + 1000 * (BAVARDE[0] + Math.random() * (BAVARDE[1] - BAVARDE[0]));
         } else if (g.phase === 'table' && G.servi && now - G.servi > REPAS_S * 1000) {
           g.phase = 'merci';
@@ -217,7 +221,7 @@
         const debout = place ? null : (this.fermier.librePres && this.fermier.librePres(autour.x + (k % 2 ? 1 : -1) * T * (1 + (k >> 1)), autour.y + T)) || { x: autour.x, y: autour.y + T };
         G.gens.set(q.id, {
           id: q.id, key, def: d, s: null, bulle: null, x: dep.x, y: dep.y, face: 'bas', flip: false, marche: 0, alpha: 0, fade: 1,
-          phase: 'debut', part: now + k * ECART_S * 1000, chemin: [], place, debout, depart: { x: dep.x, y: dep.y }, until: 0, prenom: q.prenom,
+          phase: 'debut', part: now + k * ECART_S * 1000, chemin: [], place, debout, depart: { x: dep.x, y: dep.y }, until: 0, prenom: q.prenom, admire: q.admire || null,
         });
       });
       this.invitesVus = G;
