@@ -75,5 +75,17 @@ du processeur) donne 8,8 s, sans un seul coupable :
 | Phaser lui-même | ≈ 0,5 s | — |
 | Les pièces, l'étage et les toits de la ferme construite (`blocs`, `etage`, `toit`) | ≈ 0,6 s | calculs en double à mettre en commun |
 
-La fluidité et la sauvegarde tiennent largement leurs budgets ; seul le chargement est à reprendre (lot
-« chargement » à ouvrir).
+La fluidité et la sauvegarde tiennent largement leurs budgets ; seul le chargement est à reprendre.
+
+### Le lot « chargement »
+
+Chaque étape est mesurée de la même façon : la ferme d'essai bâtie, puis 4 rechargements de la page dans
+Chromium avec le processeur ralenti 4 fois (au plus près du téléphone), la médiane du temps jusqu'à la
+carte prête.
+
+| Étape | Carte prête (médiane, ralenti ×4) |
+|---|---|
+| Avant (main du 2026-11-03) | 7,09 s |
+| 1a. Les toits gardés tant que les blocs, l'étage, les sols et les hauteurs ne changent pas (`toits`, `js/engine/etage.js` : ils étaient recalculés à chaque appel, 1,6 ms par appel sur ordinateur, 0,16 ms après) | 6,80 s |
+| 1b. La teinte de l'herbe haute lue juste après que la carte a paru, les touffes montrées une fois teintées (`js/carte/ferme/decor.js`) | **5,99 s** |
+| *Pistes suivantes* : la ferme tirée de la graine gardée sur l'appareil, l'eau et le sol hors de la vue peints après la première image, les images des meubles et des bêtes chargées au besoin | |
