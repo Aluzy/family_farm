@@ -56,6 +56,7 @@ import { axeChipHtml, chopFromStage, fishFromStage, caillouFromStage, gesteFromS
 import { semerFromStage } from './elevage.js';
 import { presentsDepuisCarte, presentsPourLaCarte, visiteDuHameau } from './amitie.js';
 import { invitesDepuisCarte, invitesPourLaCarte } from './invitations.js';
+import { planDuBiome } from './plans.js';
 import { casesOuvertesMonde, mondeCueillis, mondePris, noterIci } from '../engine/monde-recolte.js';
 import { botteFromStage, ramasserFromStage, verserChaineFromStage, verserFromStage, verserGrainFromStage } from './atelier.js';
 import { botteleuses } from '../engine/botteleuse.js';
@@ -773,7 +774,10 @@ function stageRegion(tile) {
 // boussole, une fois atteint, la rend à la ferme. L'un ou l'autre : la partie est sauvegardée.
 function stageIci(tile) {
   noterIci(state, tile);
-  let change = voirAutour(state, tile, { biome: biomeDeCase(tile), nuit: nightActive(state) }) > 0;
+  const biome = biomeDeCase(tile);
+  let change = voirAutour(state, tile, { biome, nuit: nightActive(state) }) > 0;
+  // (le lot 4 : le premier passage dans un pays, hors de la ferme, y fait trouver un plan, js/ui/plans.js)
+  if (planDuBiome(biome, horsDeLaFerme(state))) change = true;
   const T = farmTerrain(state), sol = solDuMonde(T);
   if (butBoussole(state) && sol) {
     const e = etatBoussole(state, tile % T.LARGEUR + 0.5, Math.floor(tile / T.LARGEUR) + 0.5, sol.lieux(), T.MONDE.cadre.SORTIE, T);

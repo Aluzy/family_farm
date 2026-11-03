@@ -86,7 +86,7 @@ l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
   `js/grotte.js`) ; la pierre dans l'inventaire (`js/ui/inventaire.js`, l'action `pierre-poser`) ; la pousse
   (`heuresPousse`, `js/engine/crops.js`).
 - `scripts/lib/data.mjs` : la validation du récit à la construction des données.
-- Tests : `tests/engine/recit.test.mjs`, `tests/engine/recit-monde.test.mjs`, `tests/engine/recit-acte2.test.mjs`,
+- Tests : `tests/engine/recit.test.mjs`, `tests/engine/recit-monde.cas.mjs`, `tests/engine/recit-acte2.test.mjs`,
   `tests/test-data.mjs`.
 
 **Attention, le test anti-restes** (`tests/engine/finition.test.mjs`) interdit dans tous les

@@ -55,7 +55,7 @@ test('les hameaux : des plans déterministes, les mêmes d\'un calcul à l\'autr
     elementsSol(ctx2);
     assertEqual(JSON.stringify(ctx2.hameaux.plans), JSON.stringify(m.H.plans), 'le même plan');
     assertEqual(ctx2.hameaux.pieces.map((p) => p.join()).join('|'), m.H.pieces.map((p) => p.join()).join('|'), 'les mêmes pièces');
-    // (puis les bâtisses du récit, la cabane et l'atelier : une maison chacune, docs/recit/, recit-monde.test.mjs)
+    // (puis les bâtisses du récit, la cabane et l'atelier : une maison chacune, docs/recit/, recit-monde.cas.mjs)
     const hameaux = m.H.plans.filter((p) => !p.batisse);
     assertEqual(hameaux.map((p) => p.id), m.ctx.elements.lieux.hameaux.map((h) => h.id), 'un plan par hameau du plan du monde');
     assertEqual(m.H.plans.filter((p) => p.batisse).map((p) => p.batisse), ['cabane', 'atelier'], 'puis les bâtisses du récit');
