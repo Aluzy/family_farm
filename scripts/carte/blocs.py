@@ -53,7 +53,8 @@
 #   202 à 208 : les modèles de portes percées dans un mur vertical (BLOCS_CARTE.portesVerticales,
 #            MODELES_PORTES) ;
 #   209 à 225 : le réservoir et les outils des chaînes de production ;
-#   226 à 228 : la terrasse : la table, la chaise et le banc de jardin (BLOCS_CARTE.frames).
+#   226 à 228 : la terrasse : la table, la chaise et le banc de jardin (BLOCS_CARTE.frames) ;
+#   229 à 232 : la chaise de jardin de dos, de profil, puis le banc de dos, de profil (BLOCS_CARTE.sens).
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -2278,6 +2279,62 @@ def banc_jardin():
 
 TERRASSE = len(DESSINS)                          # la table, la chaise et le banc de jardin (BLOCS_CARTE.frames)
 DESSINS += [table_jardin(), chaise_jardin(), banc_jardin()]
+
+
+def chaise_jardin_dos():
+    """La chaise de jardin de dos : le dossier à barreaux devant, l'assise derrière."""
+    t = Toile()
+    boite(t, 2, 13, 14, 2, 8, planches(SAUGE, 'h', pas=2), SAUGE)
+    pieds(t, (3, 11), 15, BAS - 1, SAUGE)
+    for x in range(2, 14):
+        t.put(x, 3, SAUGE[4]); t.put(x, 4, SAUGE[2]); t.put(x, 17, SAUGE[2])
+    for x in (2, 5, 8, 11, 13):
+        for y in range(5, 17):
+            t.put(x, y, SAUGE[3] if x < 13 else SAUGE[1])
+    return t.fini()
+
+
+def chaise_jardin_cote():
+    """La chaise de jardin de profil, tournée à droite : le dossier à gauche, de chant ; l'assise."""
+    t = Toile()
+    pieds(t, (3, 11), 16, BAS - 1, SAUGE)
+    yd, yf = boite(t, 2, 13, 16, 2, 12, planches(SAUGE, 'v', pas=2), SAUGE)
+    for y in range(3, yf):
+        t.put(2, y, SAUGE[4]); t.put(3, y, SAUGE[3]); t.put(4, y, SAUGE[1])
+    for x in range(2, 5):
+        t.put(x, 3, SAUGE[4])
+    return t.fini()
+
+
+def banc_jardin_dos():
+    """Le banc de jardin de dos : les deux lattes du dossier devant, l'assise derrière, les pieds de fer."""
+    t = Toile()
+    boite(t, 0, 15, 15, 2, 7, planches(BOIS, 'h', pas=2), BOIS)
+    pieds(t, (1, 13), 16, BAS - 1, FER)
+    for y in (7, 8, 11, 12):
+        for x in range(0, 16):
+            t.put(x, y, BOIS[3] if y in (7, 11) else BOIS[2])
+    for y in range(6, 16):
+        t.put(1, y, FER[2]); t.put(14, y, FER[1])
+    return t.fini()
+
+
+def banc_jardin_cote():
+    """Le banc de jardin de profil, tourné à droite : le dossier à gauche, de chant ; les lattes de
+    l'assise ; le pied de fer qu'on voit."""
+    t = Toile()
+    yd, yf = boite(t, 2, 13, 17, 2, 12, planches(BOIS, 'v', pas=2), BOIS)
+    for y in range(4, yf):
+        t.put(2, y, BOIS[3]); t.put(3, y, BOIS[2])
+    for y in range(17, BAS):
+        t.put(3, y, FER[2]); t.put(12, y, FER[2])
+    for x in range(3, 13):
+        t.put(x, 20, FER[1])
+    return t.fini()
+
+
+TERRASSE_SENS = len(DESSINS)                     # la chaise et le banc, de dos puis de profil (BLOCS_CARTE.sens)
+DESSINS += [chaise_jardin_dos(), chaise_jardin_cote(), banc_jardin_dos(), banc_jardin_cote()]
 
 
 def masque(g, x, y):

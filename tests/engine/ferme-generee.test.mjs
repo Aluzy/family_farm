@@ -12,6 +12,7 @@ import {
 import { readFileSync } from 'node:fs';
 import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
+  casesCouvertes, mesuresMeuble, sensBloc, tournerBloc, tourneBloc,
   isArable as arable, etage2Emprise, escaliersEtage, poseEtageStatus, casesSolEtage, piecesNiveau, piecesNiveau1, poseSolEtageStatus, poserSolEtage, solsEtage, hauteurPile, matiereDessus, rehausser, rehausseStatus, rehaussesPosees,
   arbresPlantes, asleep, atelierConstruit, atelierStatus, blocAt, blocBloque, blocDessus,
   blocsDidacticiel, blocsEnMain, blocsPoses, botteleuses, buildAtelier, buildStation, bushCut,
@@ -666,6 +667,47 @@ test('ferme générée : les meubles du Marché se posent dans la maison (plusie
   assertEqual(blocBloque(s, at(2, 5)), false);
   // un ancien meuble n'entre pas dans un bâtiment
   assertEqual(genrePiece(s, at(2, 5)), 'maison');
+});
+
+test('meubles tournés : le sens à la pose, l\'emprise tournée de profil, tourner, déplacer, reprendre', () => {
+  const s = chantier('sens');
+  s.pieces = 10000;
+  const z = terrainLibre(s, 8, 7), p = murs(z, 8, 7), W = z.W, at = (dc, dr) => (z.r + dr) * W + z.c + dc;
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserPorte(s, p.porte);
+  poserBloc(s, 'paillasse', p.dedans);
+  for (const id of ['table', 'chaise', 'chaise', 'plante_ficus', 'lit_adulte']) assert(buyFurniture(s, id).ok, id);
+  assertEqual([tourneBloc('meuble_table'), tourneBloc('meuble_plante_ficus'), tourneBloc('meuble_lit_adulte'), tourneBloc('mur_pierre')], [true, 'symetrique', false, false]);
+  assertEqual(mesuresMeuble('meuble_table', 1), { largeur: 1, hauteur: 3 }, 'de profil, la table est en long');
+  assertEqual(mesuresMeuble('meuble_plante_ficus', 1), { largeur: 1, hauteur: 1 });
+  // la table posée de profil (tournée vers la droite) : trois cases vers le haut
+  assertEqual(poserBloc(s, 'meuble_table', at(2, 2), 1).ok, false, 'de profil, elle dépasse sur le mur du haut');
+  assert(poserBloc(s, 'meuble_table', at(2, 4), 1).ok);
+  assertEqual([sensBloc(s, at(2, 4)), blocAt(s, at(2, 2)), casesCouvertes(s).get(at(2, 2)), casesCouvertes(s).has(at(3, 4))], [1, null, at(2, 4), false]);
+  // une chaise de chaque côté, tournées vers elle
+  assert(poserBloc(s, 'meuble_chaise', at(1, 3), 1).ok);
+  assert(poserBloc(s, 'meuble_chaise', at(3, 3), 3).ok);
+  assertEqual([sensBloc(s, at(1, 3)), sensBloc(s, at(3, 3))], [1, 3]);
+  // tourner : un quart de tour (de face → vers la gauche → de dos → vers la droite)
+  assertEqual(tournerBloc(s, at(1, 3)).sens, 0);
+  assertEqual(tournerBloc(s, at(1, 3)).sens, 3);
+  // la table : de profil vers la gauche ne change pas l'emprise ; de face, il faut la place en large
+  assertEqual(tournerBloc(s, at(2, 3)).sens, 0, 'une case qu\'elle couvre : elle, tournée de face');
+  assertEqual(casesCouvertes(s).get(at(4, 4)), at(2, 4), 'de face : trois cases vers la droite');
+  // (une chaise en travers : la table ne peut plus revenir de profil, elle passe au sens d'après)
+  assert(poserBloc(s, 'meuble_plante_ficus', at(2, 3)).ok);
+  assertEqual(tournerBloc(s, at(2, 4)).sens, 2, 'de profil, elle buterait sur la plante : de dos');
+  // la plante : ronde, elle tourne sur place
+  assertEqual(tournerBloc(s, at(2, 3)).sens, 3);
+  // déplacer garde le sens ; reprendre l'oublie
+  assert(deplacerBloc(s, at(2, 3), at(6, 5)).ok);
+  assertEqual([sensBloc(s, at(6, 5)), sensBloc(s, at(2, 3))], [3, 0]);
+  assertEqual(reprendreBloc(s, at(6, 5)).sens, 3);
+  assertEqual(sensBloc(s, at(6, 5)), 0);
+  // un lit ne se tourne pas ; un mur non plus
+  assert(poserBloc(s, 'meuble_lit_adulte', at(6, 2)).ok);
+  assertEqual(tournerBloc(s, at(6, 2)).ok, false);
+  assertEqual(poserBloc(s, 'meuble_chaise', at(5, 5), 2).ok, false, 'plus de chaise');
 });
 
 test('ferme générée : le four et la cuisinière se posent dans une pièce close et tiennent lieu des stations', () => {

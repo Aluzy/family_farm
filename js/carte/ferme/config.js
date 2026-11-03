@@ -169,6 +169,13 @@
       reservoir: 209, pressoir: 214, centrifugeuse: 216, mixeur: 218, chaudron: 220, tonneau: 222, ensacheuse: 224,
       // la terrasse (les invitations, js/carte/ferme/invites.js) : la table, la chaise et le banc de jardin
       table_jardin: 226, chaise_jardin: 227, banc_jardin: 228 },
+    // le mobilier de jardin tourné (js/engine/blocs.js, sensBloc ; scripts/carte/blocs.py) : son image dans
+    // chaque sens (de face, vers la droite, de dos, vers la gauche) et s'il est retourné en miroir
+    sens: {
+      table_jardin: { images: [226, 226, 226, 226], miroir: [false, false, true, true] },
+      chaise_jardin: { images: [227, 230, 229, 230], miroir: [false, false, false, true] },
+      banc_jardin: { images: [228, 232, 231, 232], miroir: [false, false, false, true] },
+    },
     murs: 14, porteVerticale: 30, sols: 31, solDepth: 0.05,
     // les modèles de sols (scripts/carte/blocs.py MODELES_SOLS) : leurs 16 images raccordées,
     // depuis celle-ci + masque, comme le plancher ; les modèles de portes percés dans un mur
@@ -423,6 +430,13 @@
     // le râtelier de l'Écurie (scripts/personnage/cheval.py)
     'ratelier',
   ];
+  // Les meubles qui tournent vraiment (data/recipes.json, ATELIER.BLOCS[].tourne : true) : leur vue de dos
+  // et de profil (assets/meuble_<dessin>_dos.png, _cote.png ; scripts/batiments/meubles_sens.py).
+  const MEUBLES_SENS = [
+    'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3', 'chevet', 'canape', 'table_basse', 'buffet', 'commode',
+    'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte', 'cuisine_tiroirs', 'cuisine_sauge',
+    'bibliotheque', 'bibliotheque_vitree', 'coffre_jouets',
+  ];
   // La couverture seule de chaque lit (meuble_<lit>_drap.png) : posée par-dessus le personnage
   // quand il y dort (js/fermier.js). La paillasse : son lit tant qu'aucun lit n'est acheté.
   // (le lit double : deux lits adulte côte à côte, sur la ferme générée, js/carte/ferme/chantier.js)
@@ -517,7 +531,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZOOM, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, MINE, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL, HERBES },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZOOM, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, MINE, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL, HERBES },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

@@ -657,7 +657,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "meubles",
      "terme": "Meubles",
-     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : ils se commandent au cocher, à la calèche : l'ébéniste de Bois-Joli et les tapis des Genêts, une fois ces hameaux connus ; puis ils se posent dans la maison. Chacun élève pour de bon le bonheur que vise la famille (voir « Bonheur »). Une grille aide à les placer ; les tableaux s'accrochent à un mur.",
+     "description": "Chaises, tables, tapis, lits (adulte, enfant ; deux lits côte à côte font un lit deux places), tables de chevet, canapés, tables basses, tableaux, mais aussi buffet, commode, armoires, bas de cuisine, poubelle, bibliothèques, lampadaire, coffre à jouets et dix plantes vertes : ils se commandent au cocher, à la calèche : l'ébéniste de Bois-Joli et les tapis des Genêts, une fois ces hameaux connus ; puis ils se posent dans la maison. Chacun élève pour de bon le bonheur que vise la famille (voir « Bonheur »). Une grille aide à les placer ; les tableaux s'accrochent à un mur. Presque tous se tournent (en mode Construire, le bouton ↻) : de face, de dos ou de profil ; de profil, un meuble long (la table, le canapé, l'armoire) prend sa longueur vers le haut. Les lits, les tableaux et le réfrigérateur restent de face.",
      "liens": [
       "maison",
       "comptoir"

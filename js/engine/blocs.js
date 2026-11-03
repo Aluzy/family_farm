@@ -101,11 +101,39 @@ export function blocBloque(state, tile) {
 
 // Poser `sorte` sur `ancien` change le mur sans l'enlever ? (un mur en pierre, une fenêtre,
 // une pierre d'angle : BLOCS[].mur ; l'ancien revient dans l'inventaire)
+/* ---------- le sens des meubles (le mode Construire : ↻ Tourner) ----------
+   Un meuble qui tourne (DATA.ATELIER.BLOCS[].tourne) a un sens : 0 de face (il regarde vers nous), 1 tourné
+   vers la droite, 2 de dos, 3 tourné vers la gauche. state.sens = { [case d'ancrage]: 1 | 2 | 3 } (de face :
+   rien). De profil (1, 3), un meuble qui tourne vraiment (tourne : true) a l'emprise tournée : sa largeur
+   devient sa hauteur ; un meuble rond (« symetrique ») garde la sienne. */
+
+// Le meuble `sorte` tourne-t-il ? → true, 'symetrique' ou false.
+export function tourneBloc(sorte) {
+  const s = sorteDe(sorte);
+  return (s && s.tourne) || false;
+}
+// Le sens du bloc posé sur `tile` (0 à 3).
+export function sensBloc(state, tile) {
+  const v = state.sens && typeof state.sens === 'object' ? Number(state.sens[tile]) : 0;
+  return v >= 1 && v <= 3 ? v : 0;
+}
+function setSens(state, tile, sens) {
+  if (!state.sens || typeof state.sens !== 'object') state.sens = {};
+  const v = ((Math.floor(Number(sens) || 0) % 4) + 4) % 4;
+  if (v) state.sens[tile] = v; else delete state.sens[tile];
+}
+// La largeur et la hauteur (en cases) du meuble `sorte` dans le sens `sens`.
+export function mesuresMeuble(sorte, sens = 0) {
+  const s = sorteDe(sorte), l = (s && s.largeur) || 1, h = (s && s.hauteur) || 1;
+  return s && s.tourne === true && sens % 2 === 1 ? { largeur: h, hauteur: l } : { largeur: l, hauteur: h };
+}
+
 // Les cases qu'un meuble posé en `tile` couvre (DATA.ATELIER.BLOCS : largeur vers la droite,
-// hauteur vers le haut ; sa case d'abord), ou null s'il sort de la ferme.
-export function empriseMeuble(state, sorte, tile) {
-  const s = sorteDe(sorte), T = farmTerrain(state), W = T.LARGEUR;
-  const l = (s && s.largeur) || 1, h = (s && s.hauteur) || 1, c = tile % W;
+// hauteur vers le haut ; sa case d'abord ; tourné de profil, l'une devient l'autre : mesuresMeuble),
+// ou null s'il sort de la ferme.
+export function empriseMeuble(state, sorte, tile, sens = 0) {
+  const T = farmTerrain(state), W = T.LARGEUR;
+  const { largeur: l, hauteur: h } = mesuresMeuble(sorte, sens), c = tile % W;
   if (c + l > W || Math.floor(tile / W) - h + 1 < 0) return null;
   const out = [];
   for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < l; dx++) out.push(tile - dy * W + dx);
@@ -158,7 +186,7 @@ export function casesCouvertes(state) {
   for (const [k, sorte] of Object.entries(blocsPoses(state))) {
     const s = sorteDe(sorte), t = Number(k);
     if (!s || ((s.largeur || 1) === 1 && (s.hauteur || 1) === 1)) continue;
-    for (const j of empriseMeuble(state, sorte, t) || []) if (j !== t) out.set(j, t);
+    for (const j of empriseMeuble(state, sorte, t, sensBloc(state, t)) || []) if (j !== t) out.set(j, t);
   }
   return out;
 }
@@ -669,7 +697,7 @@ function ouvrirBatiment(state, id) {
 /* ---------- poser, reprendre ---------- */
 
 // Peut-on poser `sorte` sur `tile` ? { ok, raison }
-export function poseStatus(state, sorte, tile) {
+export function poseStatus(state, sorte, tile, sens = 0) {
   const s = sorteDe(sorte);
   if (!s) return { ok: false, raison: 'Bloc inconnu.' };
   const T = farmTerrain(state);
@@ -734,7 +762,7 @@ export function poseStatus(state, sorte, tile) {
   // (une case sous un buisson coupé : de l'herbe, tant qu'il est coupé ; il ne repousse pas sous ce qui est bâti)
   if (ch !== '#' && ch !== '+' && !(ch === 'o' && freedRockTiles(state).has(tile)) && !(ch === '.' && casesBuissonsCoupes(state).has(tile))) return { ok: false, raison: 'On ne bâtit que sur l\'herbe : pas sur les chemins, l\'eau, les arbres, les rochers ni les bâtiments.' };
   // (l'herbe haute : à faucher d'abord)
-  if ((empriseMeuble(state, sorte, tile) || [tile]).some((j) => herbesSur(state, j).length)) return { ok: false, raison: 'De l\'herbe haute pousse ici : fauche-la d\'abord (la faux).' };
+  if ((empriseMeuble(state, sorte, tile, sens) || [tile]).some((j) => herbesSur(state, j).length)) return { ok: false, raison: 'De l\'herbe haute pousse ici : fauche-la d\'abord (la faux).' };
   if (allPlots(state).some((p) => p.case === tile)) return { ok: false, raison: 'Une terre labourée : rebouche-la d\'abord.' };
   if (s.dedans && !dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dans une pièce close (des murs tout autour, une porte, et au plus ${DATA.ATELIER.PIECE_MAX} cases dedans).` };
   if (s.dehors && dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dehors, pas dans une pièce close.` };
@@ -751,13 +779,14 @@ export function poseStatus(state, sorte, tile) {
   if (refus) return { ok: false, raison: refus };
   // un meuble (ou un bloc) de plusieurs cases : toutes libres, dans la même pièce (dehors : de
   // l'herbe, hors de toute pièce)
-  const cases = empriseMeuble(state, sorte, tile);
+  const cases = empriseMeuble(state, sorte, tile, sens);
+  const mes = mesuresMeuble(sorte, sens);
   if (!cases || cases.length > 1) {
     const couv = casesCouvertes(state), labour = new Set(allPlots(state).map((q) => q.case));
     const herbe = (j) => { const ch = T.LIGNES[Math.floor(j / T.LARGEUR)][j % T.LARGEUR]; return ch === '#' || ch === '+'; };
     const libre = (j) => !blocAt(state, j) && !couv.has(j) && !labour.has(j);
     const ok = cases && (s.dehors ? cases.every((j) => libre(j) && herbe(j) && !dansPiece(state, j) && !herbesSur(state, j).length) : p && cases.every((j) => p.cases.includes(j) && libre(j)));
-    if (!ok) return { ok: false, raison: `${s.nom} : il lui faut ${s.largeur || 1} × ${s.hauteur || 1} cases libres ${s.dehors ? 'sur l\'herbe' : 'dans la pièce'} (vers la droite${(s.hauteur || 1) > 1 ? ' et vers le haut' : ''}).` };
+    if (!ok) return { ok: false, raison: `${s.nom} : il lui faut ${mes.largeur} × ${mes.hauteur} cases libres ${s.dehors ? 'sur l\'herbe' : 'dans la pièce'} (${mes.largeur > 1 ? 'vers la droite' : ''}${mes.largeur > 1 && mes.hauteur > 1 ? ' et ' : ''}${mes.hauteur > 1 ? 'vers le haut' : ''}).` };
   }
   return { ok: true };
 }
@@ -769,11 +798,13 @@ export function poseStatus(state, sorte, tile) {
 export function deplacerBloc(state, de, vers) {
   const r = reprendreBloc(state, de);
   if (!r.ok) return r;
-  if (r.case === vers) { poserBloc(state, r.sorte, r.case); return { ok: true, sorte: r.sorte, de: r.case, vers }; }
-  const st = poseStatus(state, r.sorte, vers);
-  if (!st.ok) { poserBloc(state, r.sorte, r.case); return fail(st.raison); }
-  const p = poserBloc(state, r.sorte, vers);
-  if (!p.ok) { poserBloc(state, r.sorte, r.case); return p; }
+  // (il garde son sens)
+  const sens = r.sens || 0;
+  if (r.case === vers) { poserBloc(state, r.sorte, r.case, sens); return { ok: true, sorte: r.sorte, de: r.case, vers }; }
+  const st = poseStatus(state, r.sorte, vers, sens);
+  if (!st.ok) { poserBloc(state, r.sorte, r.case, sens); return fail(st.raison); }
+  const p = poserBloc(state, r.sorte, vers, sens);
+  if (!p.ok) { poserBloc(state, r.sorte, r.case, sens); return p; }
   return { ok: true, sorte: r.sorte, de: r.case, vers };
 }
 
@@ -783,21 +814,27 @@ export function deplacerStatus(state, de, vers) {
   const copie = structuredClone(state);
   const r = reprendreBloc(copie, de);
   if (!r.ok) return { ok: false, raison: r.error, cases: [vers] };
-  const cases = empriseMeuble(copie, r.sorte, vers) || [vers];
-  const st = poseStatus(copie, r.sorte, vers);
+  const cases = empriseMeuble(copie, r.sorte, vers, r.sens || 0) || [vers];
+  const st = poseStatus(copie, r.sorte, vers, r.sens || 0);
   return { ok: st.ok, raison: st.ok ? '' : st.raison, cases };
 }
 
-// Pose `sorte` sur `tile` ; l'herbe haute des cases voisines qui déborde sur ce qui est bâti
-// est foulée (fauchée, sans paille : foulerAutour).
-export function poserBloc(state, sorte, tile) {
-  const r = poser(state, sorte, tile);
-  if (r.ok) { foulerAutour(state, tile); noter('pose', { sorte }); }
+// Pose `sorte` sur `tile` (un meuble qui tourne : dans le sens `sens`) ; l'herbe haute des cases
+// voisines qui déborde sur ce qui est bâti est foulée (fauchée, sans paille : foulerAutour).
+export function poserBloc(state, sorte, tile, sens = 0) {
+  const tourne = tourneBloc(sorte);
+  const r = poser(state, sorte, tile, tourne ? sens : 0);
+  if (r.ok) {
+    // (le sens d'un meuble qui tourne ; un autre bloc n'en a pas)
+    if (tourne) setSens(state, tile, sens); else if (state.sens) delete state.sens[tile];
+    foulerAutour(state, tile);
+    noter('pose', { sorte });
+  }
   return r;
 }
 
-function poser(state, sorte, tile) {
-  const st = poseStatus(state, sorte, tile);
+function poser(state, sorte, tile, sens = 0) {
+  const st = poseStatus(state, sorte, tile, sens);
   if (!st.ok) return fail(st.raison);
   const s = sorteDe(sorte);
   const ancien = blocAt(state, tile);
@@ -919,8 +956,9 @@ export function reprendreBloc(state, tile, opts) {
     const { [tile]: _ote, ...reste } = blocsPoses(state);
     if (etageEnPeril(state, reste)) return fail(`${sorteDe(bloc).nom} : il porte l'étage. Reprends d'abord ce qui est posé à l'étage au-dessus.`);
   }
+  const sens = !dessus && bloc ? sensBloc(state, tile) : 0;
   if (dessus) delete state.blocsDessus[tile];
-  else if (bloc) { delete state.blocs[tile]; setHauteur(state, tile, 1); setFenetre(state, tile, null); }
+  else if (bloc) { delete state.blocs[tile]; setHauteur(state, tile, 1); setFenetre(state, tile, null); if (state.sens) delete state.sens[tile]; }
   else delete state.sols[tile];
   const s = sorteDe(sorte);
   if (s && s.appareil) removeStarter(state, s.appareil);
@@ -941,7 +979,40 @@ export function reprendreBloc(state, tile, opts) {
   if (s && s.station && s.station !== 'moulin' && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;
   majPoulailler(state);
   rangerEtage(state);   // (l'escalier repris, la pièce ouverte : l'étage s'en va)
-  return { ok: true, sorte, case: tile };
+  return { ok: true, sorte, case: tile, ...(sens ? { sens } : {}) };
+}
+
+// Tourner d'un quart de tour (dans le sens des aiguilles d'une montre : de face, vers la gauche, de dos,
+// vers la droite… ; `pas` : -1 pour l'autre sens) le meuble de la case `tile` (une de ses cases). Un
+// meuble qui ne tient pas dans le sens suivant (son emprise tournée bute sur un mur, un autre meuble) passe
+// au sens d'après ; aucun ne tient : il reste comme il est. → { ok, sorte, case, sens } ou un refus.
+export function tournerBloc(state, tile, pas = 1) {
+  if (!blocAt(state, tile) && casesCouvertes(state).has(tile)) tile = casesCouvertes(state).get(tile);
+  const sorte = blocAt(state, tile);
+  if (!sorte) return fail('Il n\'y a pas de meuble ici.');
+  const tourne = tourneBloc(sorte);
+  if (!tourne) return fail(`${sorteDe(sorte).nom} ne se tourne pas.`);
+  const avant = sensBloc(state, tile);
+  // (un meuble rond, ou d'une case : son emprise ne change pas, il tourne sur place)
+  const { largeur, hauteur } = mesuresMeuble(sorte, 0);
+  for (let k = 1; k <= 3; k++) {
+    const sens = (((avant + k * (pas < 0 ? 1 : 3)) % 4) + 4) % 4;
+    if (tourne === 'symetrique' || (largeur === 1 && hauteur === 1) || sens % 2 === avant % 2) {
+      setSens(state, tile, sens);
+      return { ok: true, sorte, case: tile, sens };
+    }
+    // (l'emprise change : reprise, puis reposée dans ce sens si elle tient)
+    const copie = structuredClone(state);
+    const r = reprendreBloc(copie, tile);
+    if (!r.ok) return r;
+    if (!poseStatus(copie, sorte, tile, sens).ok) continue;
+    reprendreBloc(state, tile);
+    const p = poserBloc(state, sorte, tile, sens);
+    if (p.ok) return { ok: true, sorte, case: tile, sens };
+    poserBloc(state, sorte, tile, avant);
+    return p;
+  }
+  return fail(`${sorteDe(sorte).nom} : pas la place de le tourner ici.`);
 }
 
 /* ---------- le Poulailler et l'Étable de la ferme générée : une enceinte, un bloc clé, un enclos ---------- */
