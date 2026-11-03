@@ -4,9 +4,10 @@ import { countItem } from '../engine/inventory.js';
 import { energyChip, formatEnergy } from './energie.js';
 import { actionCost, TIRED } from '../engine/stamina.js';
 import {
-  allPlots, cropProduct, findPlot, harvest, harvestYield, isMature, maxStage, plant, plantPlot, seedStock,
-  growHoursLeft, water, waterCost, waterCostFor, seedLabel,
+  allPlots, cropProduct, findPlot, harvestYield, isMature, maxStage, seedStock,
+  growHoursLeft, waterCost, waterCostFor, seedLabel,
 } from '../engine/crops.js';
+import { executer } from './commandes.js';
 import {
   buyPasture, canFeedHen, coopCapacity, coopUpgradeCost,
   cowCount, cowsOnHerbs, feedAllHens, feedHen, freeSheepPlaces, hensToFeed, herbStock, herbsOn, pastureCost,
@@ -530,7 +531,7 @@ function semerCases(cases, culture) {
   let n = 0, raison = '';
   const avant = Number(state.energie) || 0;
   for (const p of restent) {
-    const r = plantPlot(state, p, culture);
+    const r = executer('potager.planter', { parcelle: p.id, culture });
     if (r.ok) { n += 1; continue; }
     raison = r.error;
     break;   // (plus de graines, ou plus d'énergie)
@@ -573,7 +574,7 @@ export function semerFromStage(c, culture, groupe) {
   const p = allPlots(state).find((q) => q.case === c && q.lieu === 'potager');
   if (!p || p.culture) return false;
   const avant = Number(state.energie) || 0;
-  const r = plantPlot(state, p, culture);
+  const r = executer('potager.planter', { parcelle: p.id, culture });
   if (!r.ok) { notify(r.error, { son: 'erreur' }); return false; }
   if (groupe) groupDiscount(state, avant);
   persistState();
@@ -598,13 +599,13 @@ registerActions({
     // sur la carte, le personnage va la semer (la file des gestes) ; sinon, tout de suite
     const plot = findPlot(state, target.dataset.id);
     if (plot && !plot.culture && DATA.CULTURES[target.dataset.crop] && !semerParLaCarte([plot], target.dataset.crop, false).length) return;
-    applyResult(plant(state, target.dataset.id, target.dataset.crop));
+    applyResult(executer('potager.planter', { parcelle: target.dataset.id, culture: target.dataset.crop }));
   },
   'water': (target) => {
-    applyResult(water(state, target.dataset.id));
+    applyResult(executer('potager.arroser', { parcelle: target.dataset.id }));
   },
   'harvest': (target) => {
-    const result = applyResult(harvest(state, target.dataset.id));
+    const result = applyResult(executer('potager.recolter', { parcelle: target.dataset.id }));
     // version 1.18 : ce qui attend le personnage s'annonce par sa bulle, au ramassage
     // fiche 10 : récolter parcelle après parcelle cumule la récolte dans une seule notification
     if (result.ok && !result.aRamasser) notify(null, { cumul: { cle: 'recolte', quantites: result.items, texte: (t) => harvestToast({ items: t }) } });

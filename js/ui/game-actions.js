@@ -2,7 +2,8 @@ import { DATA } from '../engine/catalog.js';
 import { maintainDevice, repairDevice } from '../engine/devices.js';
 import { countItem } from '../engine/inventory.js';
 import { fridgeCount, moveFromFridge, moveToFridge } from '../engine/fridge.js';
-import { goToSleep, startNight } from '../engine/night.js';
+import { startNight } from '../engine/night.js';
+import { executer } from './commandes.js';
 import { memberName } from '../engine/family.js';
 import { newGameFrom } from '../engine/alerts.js';
 import { setActiveTab, setCoucher, setEcranFerme, setState, state } from './store.js';
@@ -40,7 +41,7 @@ export function applyResult(result) {
 // elle défile en accéléré (TIME.SECONDES_PAR_HEURE_SOMMEIL) jusqu'au réveil de 6 h. On ne dort
 // que la nuit.
 export function actionSleep() {
-  const r = goToSleep(state);
+  const r = executer('nuit.dormir', {});
   if (!r.ok) notify(r.error);
   else persistState();
   refresh();

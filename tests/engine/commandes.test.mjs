@@ -8,8 +8,8 @@
 
 import {
   blocAt, buildAtelier, buyFurniture, casesCouvertes, COMMANDES, commandeInvalide, countItem, defaire,
-  etageBlocs, executerCommande, farmTerrain, hauteurPile, poserBloc, rehausser, sensBloc, solsEtage, surCase,
-  testFarmMap,
+  etageBlocs, executerCommande, farmTerrain, findPlot, goToSleep, harvest, hauteurPile, maxStage, plant, poserBloc,
+  rehausser, sensBloc, solsEtage, surCase, testFarmMap, water,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, garden, setInv, test, tireless } from './aide.mjs';
 
@@ -189,4 +189,58 @@ test('commandes : un inverse dont la case a changé échoue sans rien toucher', 
   assertEqual(jouer(s, 'bloc.deplacer', { de: c, vers: c + 1, attendu: 'meuble_table' }).error, 'Ce qui était posé là a changé depuis.');
   assertEqual(jouer(s, 'bloc.orienter', { case: c, sorte: 'meuble_table', sens: 0 }).error, 'Ce qui était posé là a changé depuis.');
   assertEqual(copie(s), avant);
+});
+
+/* ---------- le potager et la nuit : la commande fait exactement ce que fait la fonction ---------- */
+
+// Joue la commande sur une copie et la fonction du moteur sur une autre : mêmes parties, même résultat.
+function commeLaFonction(s, type, args, fonction, quoi) {
+  const a = JSON.parse(JSON.stringify(s)), b = JSON.parse(JSON.stringify(s));
+  const { id, inverses, ...r } = jouer(a, type, args);
+  const attendu = fonction(b);
+  assertEqual(r, attendu, `${quoi} : le même résultat`);
+  assertEqual(inverses || [], [], `${quoi} : rien à défaire`);
+  assertEqual(copie(a), copie(b), `${quoi} : la même partie`);
+  return { s: a, r };
+}
+
+test('commandes : semer, arroser, récolter une parcelle, comme les fonctions du potager', () => {
+  let s = garden();
+  tireless(s);
+  const p = s.potager.parcelles[0].id;
+  setInv(s, { graine_carotte: 3 });
+  ({ s } = commeLaFonction(s, 'potager.planter', { parcelle: p, culture: 'carotte' }, (b) => plant(b, p, 'carotte'), 'semer'));
+  assertEqual(findPlot(s, p).culture, 'carotte');
+  commeLaFonction(s, 'potager.planter', { parcelle: p, culture: 'carotte' }, (b) => plant(b, p, 'carotte'), 'semer une parcelle déjà semée (refusé)');
+  ({ s } = commeLaFonction(s, 'potager.arroser', { parcelle: p }, (b) => water(b, p), 'arroser'));
+  assert(findPlot(s, p).arrose);
+  commeLaFonction(s, 'potager.recolter', { parcelle: p }, (b) => harvest(b, p), 'récolter trop tôt (refusé)');
+  findPlot(s, p).stade = maxStage(findPlot(s, p));
+  const { r } = commeLaFonction(s, 'potager.recolter', { parcelle: p }, (b) => harvest(b, p), 'récolter');
+  assert(r.ok, r.error);
+  commeLaFonction(s, 'potager.arroser', { parcelle: 'potager-999' }, (b) => water(b, 'potager-999'), 'une parcelle qui n\'existe pas');
+  // mal formées : une culture inconnue, pas de parcelle
+  assertEqual(jouer(s, 'potager.planter', { parcelle: p, culture: 'licorne' }).error, 'potager.planter : « culture » invalide.');
+  assertEqual(jouer(s, 'potager.recolter', {}).error, 'potager.recolter : il manque « parcelle ».');
+});
+
+test('commandes : dormir le jour est refusé, comme au bouton Dormir', () => {
+  const s = garden();
+  const { r } = commeLaFonction(s, 'nuit.dormir', {}, (b) => goToSleep(b), 'dormir le jour (refusé)');
+  assertEqual(r.ok, false);
+  assertEqual(jouer(s, 'nuit.dormir', { vite: true }).error, 'nuit.dormir : argument inconnu « vite ».');
+});
+
+test('commandes : dormir la nuit, dans une pièce close avec une paillasse', () => {
+  const s = chantier('cmd-dormir');
+  setInv(s, { mur_pierre: 40, porte: 2, paillasse: 1 });
+  const p = piece(s, 5, 5);
+  assert(poserBloc(s, 'paillasse', p.dedans).ok);
+  s.nuitEnCours = { ms: 0, minuit: false };
+  const { r } = commeLaFonction(s, 'nuit.dormir', {}, (b) => goToSleep(b), 'dormir');
+  assert(r.ok, r.error);
+  // (sans couchage : refusé, comme au bouton)
+  const t = chantier('cmd-dormir-2');
+  t.nuitEnCours = { ms: 0, minuit: false };
+  assertEqual(commeLaFonction(t, 'nuit.dormir', {}, (b) => goToSleep(b), 'dormir sans couchage').r.ok, false);
 });

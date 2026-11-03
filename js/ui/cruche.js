@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
 import { choisirLit, couchages, dormeurDuLit, litDuPrincipal } from '../engine/blocs.js';
 import { aCruche, crucheARemplir, jaugeCruche, remplirCruche } from '../engine/cruche.js';
-import { water } from '../engine/crops.js';
+import { executer } from './commandes.js';
 import { GROUPE_MIN, groupDiscount } from '../engine/automation.js';
 import { TIRED } from '../engine/stamina.js';
 import { accord, plural } from './common.js';
@@ -62,7 +62,7 @@ function arroserCases(cases) {
   for (let i = 0; i < cases.length; i++) {
     const p = parcelleDeCase(cases[i]);
     if (!p || !p.culture || p.arrose) continue;
-    const r = water(state, p.id);
+    const r = executer('potager.arroser', { parcelle: p.id });
     if (r.ok) { n += 1; continue; }
     // (la cruche est vide : la suite attend qu'elle soit remplie)
     if (aCruche(state) && /cruche est vide/.test(r.error)) { vide = true; arrosageReste = cases.slice(i); break; }

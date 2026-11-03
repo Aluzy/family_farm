@@ -167,8 +167,10 @@ ce que fait le joueur en mode Construire est une commande `{ id, type, args }` (
 `bloc.reprendre`, `bloc.deplacer`, `bloc.tourner`, `mur.rehausser`, `etage.poser`, `solEtage.poser`…),
 vérifiée puis jouée par `executerCommande(state, cmd)` avec les fonctions du moteur existantes. Elle
 rend les commandes inverses qui la défont : le bouton ↶ Annuler du chantier (`js/ui/chantier.js`)
-les joue. L'interface les émet par `executer(type, args)` (`js/ui/commandes.js`, qui leur donne un
-identifiant unique). Tests : `tests/engine/commandes.test.mjs` (chaque commande puis ses inverses
+les joue. Le potager et la nuit passent aussi par des commandes, sans inverse (`potager.planter`,
+`potager.arroser`, `potager.recolter`, `nuit.dormir` : les boutons, la carte, les tracés, la cruche,
+le bouton Dormir). L'interface les émet par `executer(type, args)` (`js/ui/commandes.js`, qui leur
+donne un identifiant unique). Tests : `tests/engine/commandes.test.mjs` (chaque commande puis ses inverses
 ramènent la partie à l'identique ; une commande mal formée ne touche à rien).
 
 Chaque module importe ce qu'il utilise et exporte ce qu'il offre : plus aucune fonction du
