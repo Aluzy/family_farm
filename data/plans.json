@@ -1,0 +1,94 @@
+{
+  "//PLANS": [
+    "Les plans des meubles de collection (le lot 4 : explorer pour s'inspirer ; js/engine/plans.js). Chaque pays a sa",
+    "collection (COLLECTIONS) : ses meubles (plans : des blocs de l'Atelier dont la recette a « plan »), les biomes où",
+    "l'on en trouve (biomes : la première fois qu'on y passe, hors de la ferme, on trouve le plan du premier meuble de",
+    "la collection pas encore connu) et les hameaux de ce pays (hameaux : le style de leur hameau, monde.json",
+    "HAMEAUX.STYLES ; un ami de palier AMI ou plus, d'un hameau de ce pays, offre la nuit le plan suivant). Un plan",
+    "trouvé fait connaître sa recette à l'Atelier (state.plans)."
+  ],
+  "PLANS": {
+    "AMI": 3,
+    "COLLECTIONS": {
+      "foret": {
+        "nom": "la forêt",
+        "icone": "🌲",
+        "biomes": [
+          "foret"
+        ],
+        "hameaux": [
+          "foret"
+        ],
+        "plans": [
+          "banc_rondins",
+          "table_rondins"
+        ]
+      },
+      "cote": {
+        "nom": "la côte",
+        "icone": "🐚",
+        "biomes": [
+          "plage",
+          "falaise"
+        ],
+        "hameaux": [
+          "cote"
+        ],
+        "plans": [
+          "chaise_peinte",
+          "jarre_coquillages"
+        ]
+      },
+      "marais": {
+        "nom": "le marais",
+        "icone": "🪷",
+        "biomes": [
+          "marais"
+        ],
+        "hameaux": [
+          "marais"
+        ],
+        "plans": [
+          "lanterne_papier",
+          "bassin_nenuphars"
+        ]
+      },
+      "montagne": {
+        "nom": "la montagne",
+        "icone": "⛰️",
+        "biomes": [
+          "montagne",
+          "sommet"
+        ],
+        "hameaux": [
+          "montagne"
+        ],
+        "plans": [
+          "banc_pierre",
+          "jardiniere_pierre"
+        ]
+      },
+      "prairie": {
+        "nom": "la prairie",
+        "icone": "🌼",
+        "biomes": [
+          "prairie",
+          "lande"
+        ],
+        "hameaux": [
+          "prairie",
+          "lande"
+        ],
+        "plans": [
+          "pergola",
+          "bac_lavande"
+        ]
+      }
+    },
+    "TROUVE": [
+      "En chemin, tu ramasses un vieux carnet abîmé : le plan {de} ({pays}).",
+      "Sous une pierre, une feuille pliée : le plan {de} ({pays}).",
+      "Accroché à une branche, un dessin oublié : le plan {de} ({pays})."
+    ]
+  }
+}

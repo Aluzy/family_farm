@@ -324,6 +324,96 @@ export const RAW_DATA = {
       "rachetable": false,
       "invendable": true
     },
+    "banc_rondins": {
+      "nom": "Banc en rondins",
+      "icone": "🪵",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "table_rondins": {
+      "nom": "Table en rondins",
+      "icone": "🪵",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "chaise_peinte": {
+      "nom": "Chaise peinte",
+      "icone": "🪑",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "jarre_coquillages": {
+      "nom": "Jarre aux coquillages",
+      "icone": "🏺",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "lanterne_papier": {
+      "nom": "Lanterne de papier",
+      "icone": "🏮",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "bassin_nenuphars": {
+      "nom": "Bassin aux nénuphars",
+      "icone": "🪷",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "banc_pierre": {
+      "nom": "Banc de pierre",
+      "icone": "🪨",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "jardiniere_pierre": {
+      "nom": "Jardinière de pierre",
+      "icone": "🪴",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "pergola": {
+      "nom": "Pergola fleurie",
+      "icone": "🌸",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "bac_lavande": {
+      "nom": "Bac de lavande",
+      "icone": "🪻",
+      "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
     "ruche": { "nom": "Ruche", "icone": "🐝", "prix": 200, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "lanterne": { "nom": "Lanterne scintillante", "icone": "🏮", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "candelabre": { "nom": "Réverbère", "icone": "🏮‍🔩", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -876,7 +966,17 @@ export const RAW_DATA = {
       "bac_fleurs": { "entrees": { "planche": 3, "pierre": 2, "fibre": 1 }, "sortie": { "bac_fleurs": 1 } },
       "table_jardin": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "table_jardin": 1 } },
       "chaise_jardin": { "entrees": { "planche": 2 }, "sortie": { "chaise_jardin": 1 } },
-      "banc_jardin": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "banc_jardin": 1 } }
+      "banc_jardin": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "banc_jardin": 1 } },
+      "banc_rondins": { "entrees": { "bois": 4 }, "sortie": { "banc_rondins": 1 }, "plan": true },
+      "table_rondins": { "entrees": { "bois": 5 }, "sortie": { "table_rondins": 1 }, "plan": true },
+      "chaise_peinte": { "entrees": { "planche": 2, "baies": 1 }, "sortie": { "chaise_peinte": 1 }, "plan": true },
+      "jarre_coquillages": { "entrees": { "pierre": 2, "coquille": 2, "etoile_mer": 1 }, "sortie": { "jarre_coquillages": 1 }, "plan": true },
+      "lanterne_papier": { "entrees": { "planche": 1, "fibre": 3, "baies": 1 }, "sortie": { "lanterne_papier": 1 }, "plan": true },
+      "bassin_nenuphars": { "entrees": { "pierre": 3, "algues": 2 }, "sortie": { "bassin_nenuphars": 1 }, "plan": true },
+      "banc_pierre": { "entrees": { "pierre": 5 }, "sortie": { "banc_pierre": 1 }, "plan": true },
+      "jardiniere_pierre": { "entrees": { "pierre": 3, "herbes_montagne": 2 }, "sortie": { "jardiniere_pierre": 1 }, "plan": true },
+      "pergola": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "pergola": 1 }, "plan": true },
+      "bac_lavande": { "entrees": { "planche": 2, "pierre": 1, "fibre": 1 }, "sortie": { "bac_lavande": 1 }, "plan": true }
     },
     "BLOCS": {
       "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true, "mur": true },
@@ -976,6 +1076,16 @@ export const RAW_DATA = {
       "table_jardin": { "nom": "Table de jardin", "objet": "table_jardin", "bloque": true, "terrasse": "table", "tourne": "symetrique" },
       "chaise_jardin": { "nom": "Chaise de jardin", "objet": "chaise_jardin", "bloque": true, "terrasse": "siege", "tourne": true },
       "banc_jardin": { "nom": "Banc de jardin", "objet": "banc_jardin", "bloque": true, "terrasse": "siege", "tourne": true },
+      "banc_rondins": { "nom": "Banc en rondins", "objet": "banc_rondins", "bloque": true, "terrasse": "siege", "tourne": true },
+      "table_rondins": { "nom": "Table en rondins", "objet": "table_rondins", "bloque": true, "terrasse": "table", "tourne": "symetrique" },
+      "chaise_peinte": { "nom": "Chaise peinte", "objet": "chaise_peinte", "bloque": true, "terrasse": "siege", "tourne": true },
+      "jarre_coquillages": { "nom": "Jarre aux coquillages", "objet": "jarre_coquillages", "bloque": true, "tourne": "symetrique" },
+      "lanterne_papier": { "nom": "Lanterne de papier", "objet": "lanterne_papier", "bloque": true, "tourne": "symetrique" },
+      "bassin_nenuphars": { "nom": "Bassin aux nénuphars", "objet": "bassin_nenuphars", "bloque": true, "tourne": "symetrique" },
+      "banc_pierre": { "nom": "Banc de pierre", "objet": "banc_pierre", "bloque": true, "terrasse": "siege", "tourne": true },
+      "jardiniere_pierre": { "nom": "Jardinière de pierre", "objet": "jardiniere_pierre", "bloque": true, "tourne": "symetrique" },
+      "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
+      "bac_lavande": { "nom": "Bac de lavande", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
       "entonnoir": { "nom": "Entonnoir", "objet": "entonnoir", "bloque": true, "botteleuse": "entonnoir" },
       "botteleuse": { "nom": "Botteleuse", "objet": "botteleuse", "bloque": true, "botteleuse": "machine" },
@@ -1286,7 +1396,26 @@ export const RAW_DATA = {
         "icone": "🐔",
         "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "bloc_silo", "meule"]
       },
-      "jardin": { "nom": "Jardin", "icone": "🌷", "blocs": ["table_jardin", "chaise_jardin", "banc_jardin", "bac_fleurs"] },
+      "jardin": {
+        "nom": "Jardin",
+        "icone": "🌷",
+        "blocs": [
+          "table_jardin",
+          "chaise_jardin",
+          "banc_jardin",
+          "bac_fleurs",
+          "banc_rondins",
+          "table_rondins",
+          "chaise_peinte",
+          "jarre_coquillages",
+          "lanterne_papier",
+          "bassin_nenuphars",
+          "banc_pierre",
+          "jardiniere_pierre",
+          "pergola",
+          "bac_lavande"
+        ]
+      },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
       "machines": {
         "nom": "Machines",
@@ -5378,7 +5507,9 @@ export const RAW_DATA = {
           "meuble_coffre_jouets",
           "table_jardin",
           "chaise_jardin",
-          "lanterne"
+          "lanterne",
+          "banc_pierre",
+          "jardiniere_pierre"
         ]
       },
       "forestier": {
@@ -5399,7 +5530,10 @@ export const RAW_DATA = {
           "meuble_plante_sansevieria",
           "meuble_lampadaire",
           "banc_jardin",
-          "candelabre"
+          "candelabre",
+          "banc_rondins",
+          "table_rondins",
+          "bassin_nenuphars"
         ]
       },
       "cotier": {
@@ -5422,7 +5556,9 @@ export const RAW_DATA = {
           "meuble_plante_palmier",
           "meuble_plante_aloe",
           "meuble_plante_cactus",
-          "meuble_tableau_3"
+          "meuble_tableau_3",
+          "chaise_peinte",
+          "jarre_coquillages"
         ]
       },
       "fleuri": {
@@ -5444,7 +5580,10 @@ export const RAW_DATA = {
           "meuble_plante_ficus",
           "meuble_plante_monstera",
           "meuble_tableau_1",
-          "meuble_tableau_2"
+          "meuble_tableau_2",
+          "lanterne_papier",
+          "pergola",
+          "bac_lavande"
         ]
       }
     },
@@ -5474,6 +5613,39 @@ export const RAW_DATA = {
       "Oh, quel joli coin {adj} ! J'adore.",
       "Ce coin {adj}, c'est tout à fait mon goût !",
       "Comme c'est {adj}, ici : on s'y sent bien."
+    ]
+  },
+  "PLANS": {
+    "AMI": 3,
+    "COLLECTIONS": {
+      "foret": { "nom": "la forêt", "icone": "🌲", "biomes": ["foret"], "hameaux": ["foret"], "plans": ["banc_rondins", "table_rondins"] },
+      "cote": {
+        "nom": "la côte",
+        "icone": "🐚",
+        "biomes": ["plage", "falaise"],
+        "hameaux": ["cote"],
+        "plans": ["chaise_peinte", "jarre_coquillages"]
+      },
+      "marais": { "nom": "le marais", "icone": "🪷", "biomes": ["marais"], "hameaux": ["marais"], "plans": ["lanterne_papier", "bassin_nenuphars"] },
+      "montagne": {
+        "nom": "la montagne",
+        "icone": "⛰️",
+        "biomes": ["montagne", "sommet"],
+        "hameaux": ["montagne"],
+        "plans": ["banc_pierre", "jardiniere_pierre"]
+      },
+      "prairie": {
+        "nom": "la prairie",
+        "icone": "🌼",
+        "biomes": ["prairie", "lande"],
+        "hameaux": ["prairie", "lande"],
+        "plans": ["pergola", "bac_lavande"]
+      }
+    },
+    "TROUVE": [
+      "En chemin, tu ramasses un vieux carnet abîmé : le plan {de} ({pays}).",
+      "Sous une pierre, une feuille pliée : le plan {de} ({pays}).",
+      "Accroché à une branche, un dessin oublié : le plan {de} ({pays})."
     ]
   },
   "CONSERVATION": {

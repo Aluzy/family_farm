@@ -97,8 +97,8 @@ export function phraseAdmire(style, n = 0) {
 }
 
 // Les tables et les sièges (js/carte/ferme/invites.js placesTable fait de même pour la carte).
-const TABLES = new Set(['table_jardin', 'meuble_table']);
-const SIEGES = new Set(['chaise_jardin', 'banc_jardin', 'meuble_chaise']);
+const TABLES = new Set(['table_jardin', 'table_rondins', 'meuble_table']);
+const SIEGES = new Set(['chaise_jardin', 'banc_jardin', 'meuble_chaise', 'banc_rondins', 'chaise_peinte', 'banc_pierre']);
 
 // La table d'un repas avec des invités : une table de jardin qui a au moins un siège qui la touche (la
 // terrasse) d'abord, sinon celle qui en a le plus. → { case (sa case d'ancrage), terrasse } ou null.
@@ -119,7 +119,7 @@ export function tableDuRepas(state) {
     const t = Number(k), cases = [...sur.entries()].filter(([, v]) => v.case === t).map(([j]) => j);
     const sieges = new Set();
     for (const c of cases) for (const j of [c - W, c + W, c - 1, c + 1]) { const v = sur.get(j); if (v && SIEGES.has(v.sorte)) sieges.add(v.case); }
-    const cand = { case: t, terrasse: sorte === 'table_jardin', sieges: sieges.size };
+    const cand = { case: t, terrasse: sorte !== 'meuble_table', sieges: sieges.size };
     const score = (x) => (x.terrasse && x.sieges ? 100 : 0) + x.sieges;
     if (!mieux || score(cand) > score(mieux)) mieux = cand;
   }

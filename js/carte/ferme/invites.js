@@ -48,8 +48,8 @@
 
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const un = (L) => (L && L.length ? L[Math.floor(Math.random() * L.length)] : '');
-  const TABLES = new Set(['table_jardin', 'meuble_table']);
-  const SIEGES = new Set(['chaise_jardin', 'banc_jardin', 'meuble_chaise']);
+  const TABLES = new Set(['table_jardin', 'table_rondins', 'meuble_table']);
+  const SIEGES = new Set(['chaise_jardin', 'banc_jardin', 'meuble_chaise', 'banc_rondins', 'chaise_peinte', 'banc_pierre']);
 
   F.partie({
 
@@ -83,7 +83,7 @@
           }
         }
         const xs = cases.map((k) => (k % cols) * T + T / 2), y = (Math.floor(cases[0] / cols) + 1) * T - T / 2;
-        const cand = { terrasse: t.sorte === 'table_jardin', x: xs.reduce((a, b) => a + b, 0) / xs.length, y, places };
+        const cand = { terrasse: t.sorte !== 'meuble_table', x: xs.reduce((a, b) => a + b, 0) / xs.length, y, places };
         const score = (c) => (c.terrasse && c.places.length ? 100 : 0) + c.places.length;
         if (!mieux || score(cand) > score(mieux)) mieux = cand;
       }

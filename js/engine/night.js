@@ -9,6 +9,7 @@ import { jaugeFamille } from './repas.js';
 import { growDue, readyCrops } from './crops.js';
 import { amitieNuit } from './amitie.js';
 import { invitationsNuit } from './invitations.js';
+import { plansNuit } from './plans.js';
 import { energyMax, restoreEnergy, wakeEnergy } from './stamina.js';
 import { feedLivestock, fillSilo, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
 import { chevalNuit } from './cheval.js';
@@ -278,6 +279,8 @@ export function runNight(state) {
   state.nuit.amitie = amitieNuit(state);
   // les invitations à un repas (invitations.js) : Achille a porté les messages du jour, les réponses viennent
   state.nuit.invitations = invitationsNuit(state);
+  // les plans de meubles qu'offre un ami d'un hameau (plans.js, le lot 4)
+  state.nuit.plans = plansNuit(state);
   // la visite de bienvenue (bienvenue.js, fiche 18) qui n'a pas eu lieu : son plat attend devant la porte
   bienvenueNuit(state);
   // le récit (recit.js, docs/recit/) : le niveau de l'empreinte de la ferme, la dérive de la confiance des hameaux

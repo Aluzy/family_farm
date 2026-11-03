@@ -704,6 +704,19 @@ export function validateData(data) {
     }
     if (!(typeof D.NUIT === 'number' && D.NUIT > 0 && D.NUIT <= 1)) err('DECOUVERTE.NUIT', 'un facteur, de 0 à 1');
   }
+  // Les plans des meubles de collection (data/plans.json, js/engine/plans.js) : des blocs dont la recette a « plan ».
+  if (data.PLANS) {
+    const R = (data.ATELIER && data.ATELIER.RECETTES) || {}, vus = new Set();
+    for (const [cid, c] of Object.entries(data.PLANS.COLLECTIONS || {})) {
+      if (!Array.isArray(c.plans) || !c.plans.length) err(`PLANS.COLLECTIONS.${cid}.plans`, 'une liste de meubles');
+      for (const id of c.plans || []) {
+        if (!R[id] || !R[id].plan) err(`PLANS.COLLECTIONS.${cid}.plans`, `« ${id} » : il lui faut une recette de l'Atelier avec « plan »`);
+        if (vus.has(id)) err(`PLANS.COLLECTIONS.${cid}.plans`, `« ${id} » est déjà dans une autre collection`);
+        vus.add(id);
+      }
+    }
+    for (const [id, r] of Object.entries(R)) if (r.plan && !vus.has(id)) err(`ATELIER.RECETTES.${id}.plan`, 'un plan qu\'aucune collection ne donne (PLANS.COLLECTIONS)');
+  }
   // Les styles d'aménagement (data/styles.json, js/engine/styles.js) : des blocs de l'Atelier, un style chacun.
   if (data.STYLES) {
     const S = data.STYLES, B = (data.ATELIER && data.ATELIER.BLOCS) || {}, vu = new Map();

@@ -54,7 +54,11 @@
 #            MODELES_PORTES) ;
 #   209 à 225 : le réservoir et les outils des chaînes de production ;
 #   226 à 228 : la terrasse : la table, la chaise et le banc de jardin (BLOCS_CARTE.frames) ;
-#   229 à 232 : la chaise de jardin de dos, de profil, puis le banc de dos, de profil (BLOCS_CARTE.sens).
+#   229 à 232 : la chaise de jardin de dos, de profil, puis le banc de dos, de profil (BLOCS_CARTE.sens) ;
+#   233 à 248 : les collections des biomes (le lot 4 : data/plans.json) : banc et table en rondins, chaise
+#            peinte, jarre aux coquillages, lanterne de papier, bassin aux nénuphars, banc et jardinière de
+#            pierre, pergola, bac de lavande ; puis le banc en rondins, la chaise peinte et le banc de pierre,
+#            de dos puis de profil.
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -2335,6 +2339,199 @@ def banc_jardin_cote():
 
 TERRASSE_SENS = len(DESSINS)                     # la chaise et le banc, de dos puis de profil (BLOCS_CARTE.sens)
 DESSINS += [chaise_jardin_dos(), chaise_jardin_cote(), banc_jardin_dos(), banc_jardin_cote()]
+
+
+# ---------- les collections des biomes (le lot 4 : des plans à trouver, data/plans.json) ----------
+# Forêt : le banc et la table en rondins ; côte : la chaise peinte et la jarre aux coquillages ; marais : la
+# lanterne de papier et le bassin aux nénuphars ; montagne : le banc et la jardinière de pierre ; prairie :
+# la pergola fleurie et le bac de lavande. Les sièges tournent (leurs vues de dos et de profil suivent).
+
+ECORCE = [(46, 30, 18), (78, 52, 30), (110, 76, 44), (148, 106, 64), (186, 142, 92)]
+COEUR = [(150, 112, 62), (196, 156, 96), (226, 196, 140)]          # le bois coupé, ses cernes
+BLEU_PEINT = [(30, 62, 104), (52, 96, 150), (88, 136, 190), (140, 180, 222), (196, 222, 244)]
+LAVANDE = [(86, 60, 140), (124, 92, 186), (168, 136, 222)]
+EAU = [(26, 58, 92), (40, 92, 130), (70, 132, 170), (130, 186, 214)]
+
+
+def rondin(t, x0, x1, y, epais=4):
+    """Un rondin couché de x0 à x1 (son dessus à la rangée y) : l'écorce, son bout coupé à droite."""
+    for x in range(x0, x1 + 1):
+        for k in range(epais):
+            t.put(x, y + k, ECORCE[3] if k == 0 else ECORCE[2] if k < epais - 1 else ECORCE[1])
+        if x % 5 == 2:
+            t.put(x, y + 1, ECORCE[1])
+    t.rect(x1 - 1, y, x1, y + epais - 1, COEUR[1]); t.put(x1, y + 1, COEUR[0])
+
+
+def banc_rondins(vue=0):
+    """Le banc en rondins : un demi-tronc posé sur deux billots ; un dossier de rondin (de face, de dos,
+    de profil : vue 0, 2, 1)."""
+    t = Toile()
+    if vue == 1:                                 # de profil : les rondins vus par le bout, à gauche le dossier
+        for y in range(4, 18):
+            t.put(2, y, ECORCE[3]); t.put(3, y, ECORCE[2]); t.put(4, y, ECORCE[1])
+        boite(t, 2, 13, 17, 3, 12, lambda x, y: ECORCE[3] if (x + y) % 6 else ECORCE[2], ECORCE)
+        t.rect(3, 18, 5, BAS, ECORCE[1]); t.rect(10, 18, 12, BAS, ECORCE[1])
+        return t.fini()
+    t.rect(2, 17, 5, BAS, ECORCE[2]); t.rect(10, 17, 13, BAS, ECORCE[2])          # les billots
+    t.rect(2, 17, 5, 17, COEUR[1]); t.rect(10, 17, 13, 17, COEUR[1])
+    if vue == 2:
+        rondin(t, 0, 15, 11, 4); rondin(t, 0, 15, 5, 4)                           # l'assise, le dossier devant
+    else:
+        rondin(t, 0, 15, 5, 4)                                                    # le dossier, au fond
+        rondin(t, 0, 15, 12, 5)
+    return t.fini()
+
+
+def table_rondins():
+    """La table en rondins : un plateau de planches brutes sur une souche."""
+    t = Toile()
+    t.rect(5, 15, 10, BAS, ECORCE[2]); t.rect(5, 15, 5, BAS, ECORCE[3]); t.rect(10, 15, 10, BAS, ECORCE[1])
+    for x in (4, 11):
+        t.put(x, BAS, ECORCE[1])
+    boite(t, 0, 15, 15, 3, 14, planches(COEUR + [COEUR[2], COEUR[2]], 'h', pas=3), ECORCE)
+    t.put(4, 7, COEUR[0]); t.put(11, 10, COEUR[0])
+    return t.fini()
+
+
+def chaise_peinte(vue=0):
+    """La chaise peinte en bleu, au dossier découpé d'un poisson (de face, de profil, de dos)."""
+    t = Toile()
+    pieds(t, (3, 11), 16, BAS - 1, BLEU_PEINT)
+    if vue == 1:
+        boite(t, 2, 13, 16, 2, 12, planches(BLEU_PEINT, 'v', pas=3), BLEU_PEINT)
+        for y in range(2, 15):
+            t.put(2, y, BLEU_PEINT[4]); t.put(3, y, BLEU_PEINT[3]); t.put(4, y, BLEU_PEINT[1])
+        return t.fini()
+    if vue == 2:
+        boite(t, 2, 13, 14, 2, 8, planches(BLEU_PEINT, 'h', pas=2), BLEU_PEINT)
+    for y in range(2, 13 if vue != 2 else 17):
+        for x in range(2, 14):
+            t.put(x, y, BLEU_PEINT[3] if x in (2, 13) or y == 2 else BLEU_PEINT[2])
+    # le poisson découpé dans le dossier
+    for x, y in ((5, 7), (6, 6), (6, 8), (7, 6), (7, 7), (7, 8), (8, 6), (8, 7), (8, 8), (9, 7), (10, 6), (10, 8)):
+        t.put(x, y, (240, 236, 220) if vue != 2 else BLEU_PEINT[1])
+    if vue != 2:
+        boite(t, 2, 13, 16, 2, 4, planches(BLEU_PEINT, 'h', pas=2), BLEU_PEINT)
+    return t.fini()
+
+
+def jarre_coquillages():
+    """La jarre de terre, ses coquillages et une étoile de mer posés au pied."""
+    t = Toile()
+    for y in range(5, BAS):
+        for x in range(2, 14):
+            dx = (x + .5 - 8) / (4.5 + 1.8 * (1 - abs((y - 13) / 9)))
+            if abs(dx) > 1:
+                continue
+            t.put(x, y, (176, 104, 66) if dx < -.4 else (152, 86, 52) if dx < .4 else (118, 64, 40))
+    t.rect(5, 4, 10, 5, (196, 128, 86)); t.rect(6, 4, 9, 4, (90, 50, 30))
+    t.rect(4, 13, 11, 14, (226, 220, 196))                                          # une bande peinte
+    for x in (5, 8, 11):
+        t.put(x, 13, BLEU_PEINT[2])
+    t.put(1, BAS - 1, (240, 200, 180)); t.put(2, BAS - 2, (240, 200, 180)); t.put(2, BAS - 1, (220, 160, 140))   # un coquillage
+    for dx, dy in ((0, -1), (-1, 0), (1, 0), (0, 0), (-1, 1), (1, 1)):                          # l'étoile de mer
+        t.put(13 + dx, BAS - 2 + dy, (232, 120, 70))
+    return t.fini()
+
+
+def lanterne_papier():
+    """La lanterne de papier, accrochée à un piquet de bambou, son papier rouge et sa lueur."""
+    t = Toile()
+    t.rect(7, 4, 8, BAS, (150, 170, 80)); t.put(7, 10, (110, 130, 50)); t.put(7, 17, (110, 130, 50))
+    t.rect(8, 2, 13, 2, (150, 170, 80))
+    for y in range(4, 13):
+        for x in range(9, 16):
+            dx = (x + .5 - 12.5) / 3.5
+            if abs(dx) > 1 - abs((y - 8) / 6) ** 2 * .4:
+                continue
+            t.put(x, y, (250, 210, 120) if abs(dx) < .3 and 6 <= y <= 10 else (220, 70, 56) if dx < .3 else (170, 44, 40))
+    t.rect(11, 3, 13, 3, (60, 40, 30)); t.rect(11, 13, 13, 13, (60, 40, 30))
+    return t.fini()
+
+
+def bassin_nenuphars():
+    """Le petit bassin cerclé de pierres : l'eau, deux nénuphars et leur fleur rose."""
+    t = Toile()
+    yd, yf = boite(t, 0, 15, BAS, 3, 16, PIERRE[1:], PIERRE[1:])
+    for y in range(yd + 2, yf - 1):
+        for x in range(2, 14):
+            t.put(x, y, EAU[2] if (x + y) % 7 else EAU[3])
+    for cx, cy in ((5, yd + 5), (10, yd + 8)):
+        for dx in range(-2, 3):
+            for dy in range(-1, 2):
+                if abs(dx) + abs(dy) < 3:
+                    t.put(cx + dx, cy + dy, VERT[2] if dy < 1 else VERT[1])
+        t.put(cx + 1, cy - 1, EAU[2])
+    t.put(10, yd + 7, (246, 170, 200)); t.put(11, yd + 7, (250, 210, 226)); t.put(10, yd + 6, (246, 170, 200))
+    return t.fini()
+
+
+def banc_pierre(vue=0):
+    """Le banc de pierre : une dalle sur deux blocs taillés ; son dossier de pierre (de face, profil, dos)."""
+    t = Toile()
+    P = PIERRE[1:]
+    if vue == 1:
+        t.rect(2, 3, 4, 16, P[2]); t.rect(2, 3, 4, 3, P[4]); t.rect(4, 4, 4, 16, P[1])
+        boite(t, 2, 13, 18, 3, 12, P, P)
+        t.rect(3, 19, 5, BAS, P[1]); t.rect(10, 19, 12, BAS, P[1])
+        return t.fini()
+    t.rect(1, 18, 4, BAS, P[1]); t.rect(11, 18, 14, BAS, P[1])
+    if vue == 2:
+        boite(t, 0, 15, 15, 3, 6, P, P)
+        t.rect(0, 5, 15, 13, P[2]); t.rect(0, 5, 15, 5, P[4]); t.rect(0, 13, 15, 13, P[1])
+    else:
+        t.rect(0, 4, 15, 9, P[2]); t.rect(0, 4, 15, 4, P[4])
+        boite(t, 0, 15, 17, 3, 8, P, P)
+    for x in (4, 9, 13):
+        t.put(x, 7, P[1])
+    return t.fini()
+
+
+def jardiniere_pierre():
+    """La jardinière de pierre taillée, ses herbes de montagne et une edelweiss."""
+    t = Toile()
+    yd, yf = boite(t, 1, 14, BAS, 8, 11, PIERRE[1:], PIERRE[1:])
+    for y in range(yd + 1, yf - 1):
+        for x in range(3, 13):
+            t.put(x, y, TERRE[2])
+    for x in range(3, 13, 2):
+        for y in range(yd - 3 + (x % 3), yd + 3):
+            t.put(x, y, VERT[2] if y % 2 else VERT[3])
+    for dx, dy in ((0, -1), (-1, 0), (1, 0), (0, 1)):
+        t.put(8 + dx, yd - 2 + dy, (244, 244, 236))
+    t.put(8, yd - 2, (236, 200, 60))
+    return t.fini()
+
+
+def pergola():
+    """La pergola fleurie : deux poteaux, une poutre, une glycine qui retombe."""
+    t = Toile()
+    for x in (1, 13):
+        t.rect(x, 4, x + 1, BAS, BOIS[2]); t.rect(x, 4, x, BAS, BOIS[3])
+    t.rect(0, 2, 15, 4, BOIS[3]); t.rect(0, 2, 15, 2, BOIS[4]); t.rect(0, 4, 15, 4, BOIS[1])
+    for x in range(0, 16):
+        for y in range(5, 5 + (3 + (x * 7) % 5)):
+            if (x + y) % 3:
+                t.put(x, y, LAVANDE[2] if (x * y) % 4 else LAVANDE[1])
+        t.put(x, 4 + (x % 2), VERT[2])
+    return t.fini()
+
+
+def bac_lavande():
+    """Le bac de lavande : une caisse de planches, des touffes violettes (les abeilles y butinent)."""
+    t = Toile()
+    yd, yf = boite(t, 1, 14, BAS - 1, 7, 9, BOIS, planches(BOIS, 'h', pas=3, y0=2))
+    for x in range(2, 14):
+        for y in range(yd - 4 + (x % 3), yd + 3):
+            t.put(x, y, LAVANDE[(x + y) % 3] if y < yd else VERT[1])
+    return t.fini()
+
+
+COLLECTION = len(DESSINS)                        # les collections des biomes (BLOCS_CARTE.frames, BLOCS_CARTE.sens)
+DESSINS += [banc_rondins(), table_rondins(), chaise_peinte(), jarre_coquillages(), lanterne_papier(), bassin_nenuphars(),
+            banc_pierre(), jardiniere_pierre(), pergola(), bac_lavande(),
+            banc_rondins(2), banc_rondins(1), chaise_peinte(2), chaise_peinte(1), banc_pierre(2), banc_pierre(1)]
 
 
 def masque(g, x, y):

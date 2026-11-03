@@ -9,6 +9,7 @@
 
 import { DATA } from '../engine/catalog.js';
 import { atelierConstruit, craft, craftStatus, ramasser, recetteDebloquee } from '../engine/atelier.js';
+import { carnetPlansHtml } from './plans.js';
 import { recettesDidacticiel } from '../engine/didacticiel.js';
 import { countItem } from '../engine/inventory.js';
 import { hasTool, toolDef } from '../engine/outils.js';
@@ -241,7 +242,7 @@ export function renderAtelier() {
   }
   const liste = onglets(), o = ongletOuvert(liste);
   const tete = `<div class="section-head"><h3>${A.ICONE} ${A.NOM} · niveau ${state.atelier.niveau}</h3></div>`;
-  if (!o) return `${tete}<p class="muted">Aucune recette pour l'instant.</p>`;
+  if (!o) return `${tete}<p class="muted">Aucune recette pour l'instant.</p>${carnetPlansHtml()}`;
   const tabs = liste.length > 1 ? `<div class="build-tabs" role="tablist" aria-label="Catégories">${liste.map((t) => {
     const on = t.id === o.id;
     return `<button type="button" class="build-tab${on ? ' on' : ''}" role="tab" data-action="atelier-tab" data-tab="${t.id}" aria-selected="${on}" aria-label="${t.nom}" title="${t.nom}"><span aria-hidden="true">${t.icone}</span>${on ? `<span class="build-tab-nom">${t.nom}</span>` : ''}</button>`;
@@ -263,7 +264,8 @@ export function renderAtelier() {
   const bulleHtml = lb.length > 1 ? `<div class="build-bulle" role="group" aria-label="${gb.nom}" style="--rang:${Math.max(0, rangs.indexOf(gb.id))}"><div class="build-bulle-titre">${gb.nom}</div><div class="build-bulle-grid">${lb.map((id) => caseRecette(id, choisie)).join('')}</div></div>` : '';
   return `${tete}
     <div class="atelier-menu">${tabs}<div class="build-bar" role="group" aria-label="Recettes : touche une case pour la choisir"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div></div></div>
-    ${detailHtml(choisie)}`;
+    ${detailHtml(choisie)}
+    ${carnetPlansHtml()}`;
 }
 
 registerActions({

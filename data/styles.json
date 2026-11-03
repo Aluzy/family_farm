@@ -39,7 +39,9 @@
           "meuble_coffre_jouets",
           "table_jardin",
           "chaise_jardin",
-          "lanterne"
+          "lanterne",
+          "banc_pierre",
+          "jardiniere_pierre"
         ]
       },
       "forestier": {
@@ -60,7 +62,10 @@
           "meuble_plante_sansevieria",
           "meuble_lampadaire",
           "banc_jardin",
-          "candelabre"
+          "candelabre",
+          "banc_rondins",
+          "table_rondins",
+          "bassin_nenuphars"
         ]
       },
       "cotier": {
@@ -83,7 +88,9 @@
           "meuble_plante_palmier",
           "meuble_plante_aloe",
           "meuble_plante_cactus",
-          "meuble_tableau_3"
+          "meuble_tableau_3",
+          "chaise_peinte",
+          "jarre_coquillages"
         ]
       },
       "fleuri": {
@@ -105,7 +112,10 @@
           "meuble_plante_ficus",
           "meuble_plante_monstera",
           "meuble_tableau_1",
-          "meuble_tableau_2"
+          "meuble_tableau_2",
+          "lanterne_papier",
+          "pergola",
+          "bac_lavande"
         ]
       }
     },

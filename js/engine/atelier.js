@@ -223,12 +223,19 @@ function aDejaOutil(state, outil) {
 // Une recette « debloque » (le bloc de silo) : à partir du niveau de cet élément (NIVEAUX).
 export function recetteDebloquee(state, id) {
   const r = DATA.ATELIER.RECETTES[id];
-  return !!r && (!r.debloque || isUnlocked(state, r.debloque));
+  return !!r && (!r.debloque || isUnlocked(state, r.debloque)) && (!r.plan || planTrouve(state, id));
+}
+// Un meuble de collection (le lot 4) : son plan est-il trouvé ? (state.plans.connus, js/engine/plans.js ; lu
+// ici sans l'importer, pour ne pas faire de boucle entre les modules)
+export function planTrouve(state, id) {
+  const P = state && state.plans;
+  return !!(P && P.connus && P.connus[id]);
 }
 
 export function craftStatus(state, id) {
   const r = DATA.ATELIER.RECETTES[id];
   if (!r) return { ok: false, raison: 'Recette inconnue.', manque: {} };
+  if (r.plan && !planTrouve(state, id)) return { ok: false, raison: 'Il te faut d\'abord son plan : explore le pays de sa collection, ou attends qu\'un ami de là-bas te l\'offre.', manque: {} };
   if (!atelierConstruit(state)) return { ok: false, raison: 'Il faut d\'abord construire l\'Atelier.', manque: {} };
   if (r.outil && aDejaOutil(state, r.outil)) return { ok: false, raison: 'Tu as déjà cet outil.', manque: {} };
   if (!recetteDebloquee(state, id)) return { ok: false, raison: `Se débloque au niveau ${unlockLevel(r.debloque)}.`, manque: {} };

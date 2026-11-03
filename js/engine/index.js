@@ -70,5 +70,6 @@ export * from './recit.js';
 export * from './amitie.js';
 export * from './invitations.js';
 export * from './styles.js';
+export * from './plans.js';
 export * from './usure.js';
 export * from './fil-lune.js';
