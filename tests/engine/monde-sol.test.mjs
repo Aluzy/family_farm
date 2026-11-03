@@ -250,5 +250,7 @@ test('le sol du monde : une région se fait en quelques ms (les éléments une f
   }
   ms.sort((a, b) => a - b);
   assert(premiere < 3000, `la première région (les éléments) : ${premiere} ms`);
-  assert(ms[ms.length >> 1] < 40, `une région : ${ms[ms.length >> 1]} ms (médiane)`);
+  // (le seuil : environ 18 ms sur un poste de développement, 40 à 48 ms sur une machine de CI de GitHub,
+  // deux à trois fois plus lente ; 80 ms laisse sa marge à la CI et voit encore un calcul qui doublerait)
+  assert(ms[ms.length >> 1] < 80, `une région : ${ms[ms.length >> 1]} ms de processeur (médiane)`);
 });
