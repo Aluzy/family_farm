@@ -482,7 +482,10 @@ réservoir ne compte pas). Pas dans `npm test`. Version 1.16 : 22 touches (52 en
 
 ⚙️ Options › **Activer le panneau de mode test** (désactivé par défaut) : ajouter
 des pièces, des appareils, des graines, construire les bâtiments, passer des
-nuits, aller à un chapitre, et voir l'état complet de la partie.
+nuits, aller à un chapitre, et voir l'état complet de la partie. En haut du panneau, 📏 **Mesures**
+(F0-6) : bâtir la ferme d'essai, mesurer 30 s (images par seconde, chargement, sauvegarde, mémoire) et
+copier le rapport ; le téléphone de référence, les budgets et la marche à suivre sont dans
+[`docs/perf.md`](docs/perf.md).
 
 ### Vérifier avant de publier
 

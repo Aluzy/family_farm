@@ -25,6 +25,7 @@ import './ui/consent.js';
 import './ui/storage.js';
 import './ui/game-actions.js';
 import './ui/testmode.js';
+import './ui/mesures.js';
 import './ui/loop.js';
 import './ui/render.js';
 import './ui/stage.js';

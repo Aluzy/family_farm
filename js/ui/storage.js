@@ -94,10 +94,23 @@ export function makeSeed() {
   return (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
 }
 
+// F0-6 (js/ui/mesures.js) : combien de sauvegardes depuis l'ouverture de la page, la durée de la dernière
+// et de la plus longue (sérialiser puis écrire, en ms), la taille de la dernière (en caractères).
+const sauvegardes = { n: 0, derniere: 0, max: 0, taille: 0 };
+export function statsSauvegarde() {
+  return { ...sauvegardes };
+}
+
 export function persistState() {
   try {
+    const t0 = performance.now();
     const payload = JSON.stringify({ v: state.version, t: simulatedAt, s: state });
     safeStorageSet(SAVE_KEY, payload);
+    const d = performance.now() - t0;
+    sauvegardes.n += 1;
+    sauvegardes.derniere = d;
+    sauvegardes.max = Math.max(sauvegardes.max, d);
+    sauvegardes.taille = payload.length;
   } catch (e) {
     // La sauvegarde ne doit jamais faire planter la page.
   }
