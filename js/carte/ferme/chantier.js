@@ -117,6 +117,9 @@
           // (un meuble de la maison : son propre dessin, assets/meuble_<dessin>.png)
           if (b.meuble) { if (this.syncMeuble(b)) changed = true; continue; }
           let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case), pleine: b.pleine, mur: b.mur }, at, cols);
+          // (le mobilier de jardin tourné : son image dans ce sens, BLOCS_CARTE.sens ; en miroir vers la gauche)
+          const S = BLOCS_CARTE.sens && BLOCS_CARTE.sens[b.sorte], miroir = !!(S && S.miroir[b.sens || 0]);
+          if (S) f = S.images[b.sens || 0];
           const modele = H.modelesPortes[b.sorte];
           if (verre.has(b.case) && key === H.key && (f === H.porte || f === modele)) f = H.porteSerre;
           // (la porte d'un mur horizontal : le haut de son image est celui du mur voisin)
@@ -129,6 +132,8 @@
             // (la botteleuse qui travaille, sa bande qui tourne : botteleuse.js)
             const anime = b.sorte === BLOCS_CARTE.feu.sorte || b.sorte === BLOCS_CARTE.meule.sorte || LUMIERES.includes(b.sorte) || (this.botteCycles && this.botteCycles.size && ['botteleuse', 'convoyeur'].includes(b.sorte));
             if ((e.img.frame.name !== f || e.img.texture.key !== key) && !anime) { e.img.setTexture(key, f); changed = true; }
+            if (e.img.flipX !== miroir) { e.img.setFlipX(miroir); changed = true; }
+            e.sens = b.sens || 0;
             const li = linteau(b);
             if (this.syncHauts(e, li ? li.h : haut1(b), li && li.frame)) changed = true;
             this.syncDalle(e);
@@ -139,7 +144,8 @@
           const plat = BLOCS_CARTE.plats.includes(b.sorte);
           // (le puits et la citerne : leurs propres images, posées par syncWell et syncTank)
           const img = this.add.image(x, y, key, f).setOrigin(0.5, 1).setDepth(plat ? y - T : y).setVisible(!BLOCS_CARTE.ailleurs.includes(b.sorte));
-          const ne = { case: b.case, sorte: b.sorte, x, y, img };
+          img.setFlipX(miroir);
+          const ne = { case: b.case, sorte: b.sorte, x, y, img, sens: b.sens || 0 };
           B.set(b.case, ne);
           (this.sonPoses || (this.sonPoses = [])).push(ne);
           const li = linteau(b);
@@ -222,9 +228,10 @@
       const cadre = this.add.graphics().setDepth(this.etageZ(9998));
       cadre.fillStyle(couleur, P.fond).fillRect(x0, y1 - h, w, h);
       cadre.lineStyle(1, couleur, 1).strokeRect(x0 + 0.5, y1 - h + 0.5, w - 1, h - 1);
-      const key = 'meuble_' + a.dessin;
+      // (tourné : sa vue de dos ou de profil, en miroir vers la gauche)
+      const vu = 'meuble_' + a.dessin + (a.vue || ''), key = this.textures.exists(vu) ? vu : 'meuble_' + a.dessin;
       const img = this.textures.exists(key)
-        ? this.add.image(Math.round((col + a.largeur / 2) * T), y1 - 1, key).setOrigin(0.5, 1).setAlpha(P.alpha).setTint(a.ok ? 0xffffff : P.non).setDepth(this.etageZ(9998.5))
+        ? this.add.image(Math.round((col + a.largeur / 2) * T), y1 - 1, key).setOrigin(0.5, 1).setAlpha(P.alpha).setTint(a.ok ? 0xffffff : P.non).setDepth(this.etageZ(9998.5)).setFlipX(!!a.miroir)
         : null;
       // (ce que le doigt attrape pour le faire glisser : ses cases et son dessin, meubleSous)
       const b = img ? img.getBounds() : null;
@@ -373,18 +380,21 @@
     // puis vers la droite et vers le haut) ; un tapis à plat sous le reste, un lit un peu plus bas
     // que ce qui est debout (le dormeur passe devant sa tête). Renvoie vrai s'il a changé.
     syncMeuble(b) {
-      const B = this.blocks, M = b.meuble, key = 'meuble_' + M.dessin, e = B.get(b.case);
-      if (e && e.sorte === b.sorte && e.dessin === M.dessin) return false;   // (l'image suit son contenu)
+      const B = this.blocks, M = b.meuble, e = B.get(b.case);
+      // (tourné : sa vue de dos ou de profil, en miroir vers la gauche ; js/ui/stage.js meubleDe)
+      const tourne = 'meuble_' + M.dessin + (M.vue || ''), key = this.textures.exists(tourne) ? tourne : 'meuble_' + M.dessin;
+      const sens = M.sens || 0;
+      if (e && e.sorte === b.sorte && e.dessin === M.dessin && (e.sens || 0) === sens) return false;   // (l'image suit son contenu)
       if (e) e.img.destroy();
       B.delete(b.case);
       if (!this.textures.exists(key)) return !!e;
       const cols = this.grid.cols, col = b.case % cols, row = Math.floor(b.case / cols);
       const x = Math.round((col + M.largeur / 2) * T), y = (row + 1) * T;
       const depth = M.plat ? y - T * M.hauteur - 0.5 : M.lit ? y - T / 2 : y;
-      const img = this.add.image(x, y - 1, key).setOrigin(0.5, 1).setDepth(depth);
+      const img = this.add.image(x, y - 1, key).setOrigin(0.5, 1).setDepth(depth).setFlipX(!!M.miroir);
       const cases = [];
       for (let dy = 0; dy < M.hauteur; dy++) for (let dx = 0; dx < M.largeur; dx++) cases.push(b.case - dy * cols + dx);
-      B.set(b.case, { case: b.case, sorte: b.sorte, x, y, img, cases, bloque: M.bloque, plat: M.plat, lit: M.lit, dessin: M.dessin });
+      B.set(b.case, { case: b.case, sorte: b.sorte, x, y, img, cases, bloque: M.bloque, plat: M.plat, lit: M.lit, dessin: M.dessin, sens });
       return true;
     },
 

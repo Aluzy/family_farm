@@ -213,6 +213,15 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
   fenêtre percée rend son mur), un tracé entier, les blocs fabriqués sur place (ils reviennent dans
   l'inventaire, la fabrication reste faite), un meuble posé. Ce qui a changé depuis (un bloc repris
   à la main entre-temps) est laissé tel quel, et le message le dit.
+- **Tourner** (↻) : un meuble qui tourne (`ATELIER.BLOCS[].tourne`, `js/engine/blocs.js` `sensBloc`,
+  `tournerBloc`) se pose de face, de dos ou de profil (`state.sens`, la case d'ancrage → 1 à 3) ; le
+  bouton ↻ de la pose d'un meuble tourne l'aperçu, la flèche à côté de l'outil (le mobilier de jardin en
+  main) le sens du prochain posé ; l'outil ↻ allumé, un appui sur un meuble posé le tourne d'un quart de
+  tour (Annuler le remet). De profil, un meuble long a l'emprise tournée (sa largeur devient sa hauteur ;
+  il saute au sens suivant s'il ne tient pas) ; un meuble rond tourne en miroir. Ses images :
+  `meuble_<id>_dos.png`, `_cote.png` (`scripts/batiments/meubles_sens.py`), en miroir vers la gauche ; le
+  mobilier de jardin, `BLOCS_CARTE.sens`. Assis, on regarde où regarde son siège. À l'étage, les meubles
+  ne tournent pas encore.
 - **La gomme** : le bouton à côté de l'outil pièce, un bloc qui se trace en main ; allumée, un
   glissement parti d'un bloc de la même famille (un mur pour un mur, une barrière, un sol) reprend
   ceux qu'il traverse (cases orangées, « 4 à reprendre ») : ils reviennent dans l'inventaire.

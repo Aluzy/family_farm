@@ -65,8 +65,8 @@ import { chevalMonte, chevalOu, vitesseCheval } from '../engine/cheval.js';
 import { countWithSilo } from '../engine/animals.js';
 import { countItem } from '../engine/inventory.js';
 import { caseDepart, ramassables } from '../engine/atelier.js';
-import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, piecesCloses, rehaussesPosees, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
-import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable } from './chantier.js';
+import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, mesuresMeuble, piecesCloses, rehaussesPosees, sensBloc, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
+import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable, vueMeuble } from './chantier.js';
 import { escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, solsEtage, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
@@ -571,11 +571,16 @@ export function stageModel() {
 // Un meuble posé sur la ferme générée (DATA.ATELIER.BLOCS.meuble_<id>), ou un bloc dessiné comme
 // lui (`dessin` : le distributeur de grain, sa mangeoire ; leur image suit ce qu'ils contiennent) :
 // ce que la carte en a besoin ; {} pour un autre bloc.
+// Un meuble qui tourne (js/engine/blocs.js, sensBloc ; `tile` : posé au sol, l'étage n'en a pas) : son
+// sens, ses mesures dans ce sens, l'image qui va avec (vue : _cote, _dos ; miroir) ; le mobilier de
+// jardin, un bloc de la planche : son sens seulement (js/carte/ferme/chantier.js, BLOCS_CARTE.sens).
 function meubleDe(sorte, tile) {
   const b = DATA.ATELIER.BLOCS[sorte];
   if (b && b.dessin) return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: false, lit: false } };
-  if (!b || !b.meuble) return {};
-  return { meuble: { dessin: b.meuble, largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: !!b.plat, lit: !!b.lit } };
+  const sens = b && b.tourne && Number.isInteger(tile) ? sensBloc(state, tile) : 0;
+  if (!b || !b.meuble) return sens ? { sens } : {};
+  const mes = mesuresMeuble(sorte, sens), v = vueMeuble(sorte, sens);
+  return { meuble: { dessin: b.meuble, largeur: mes.largeur, hauteur: mes.hauteur, bloque: !!b.bloque, plat: !!b.plat, lit: !!b.lit, ...(sens ? { sens, vue: v.vue, miroir: v.miroir } : {}) } };
 }
 
 // L'image d'un bloc dessiné comme un meuble : le distributeur selon son blé (assets/

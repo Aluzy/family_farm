@@ -6,6 +6,7 @@
  * paroles: { arrive, table, merci, seul } }, ou null). Ici :
  *
  *   - la table (placesTable) : une table de jardin et les chaises ou les bancs qui la touchent (la terrasse),
+ *     chacun regardant où regarde son siège (tourné de profil : on le voit de profil),
  *     sinon la table de la maison et ses chaises ; chaque place : où s'asseoir, tourné vers la table, et la
  *     case libre d'où l'on s'y assoit. Sans table, ils attendent debout devant la porte ;
  *   - chacun paraît au bord de la vue, du côté de son hameau (comme le visiteur de la bienvenue,
@@ -71,9 +72,12 @@
             const j = s.case;
             const cote = [j + cols, j - 1, j + 1, j - cols].find((q) => vide(q));
             if (cote === undefined) continue;
-            const vers = K.regard((c % cols) - (j % cols), Math.floor(c / cols) - Math.floor(j / cols));
-            const assis = BLOCS_CARTE.assisDy || 3;
-            places.push({ x: s.x, y: s.y - assis, face: vers.face, flip: vers.flip, depth: (s.img ? s.img.depth : s.y) + 0.1, pied: pied(cote) });
+            // (assis, il regarde où regarde son siège : de face, vers la droite, de dos, vers la gauche ;
+            // js/engine/blocs.js sensBloc ; toujours dessiné devant lui, même de dos : on le voit assis)
+            const sens = s.sens || 0, V = [[0, 1], [1, 0], [0, -1], [-1, 0]][sens];
+            const vers = K.regard(V[0], V[1]);
+            const assis = BLOCS_CARTE.assisDy || 3, prof = s.img ? s.img.depth : s.y;
+            places.push({ x: s.x, y: s.y - assis, face: vers.face, flip: vers.flip, depth: prof + 0.1, pied: pied(cote) });
           }
         }
         const xs = cases.map((k) => (k % cols) * T + T / 2), y = (Math.floor(cases[0] / cols) + 1) * T - T / 2;
