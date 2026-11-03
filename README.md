@@ -171,7 +171,10 @@ les joue. Le potager et la nuit passent aussi par des commandes, sans inverse (`
 `potager.arroser`, `potager.recolter`, `nuit.dormir` : les boutons, la carte, les tracés, la cruche,
 le bouton Dormir). L'interface les émet par `executer(type, args)` (`js/ui/commandes.js`, qui leur
 donne un identifiant unique). Tests : `tests/engine/commandes.test.mjs` (chaque commande puis ses inverses
-ramènent la partie à l'identique ; une commande mal formée ne touche à rien).
+ramènent la partie à l'identique ; une commande mal formée ne touche à rien). `empreintePartie(state)`
+résume une partie en 16 chiffres hexadécimaux (clés triées, objets vides comptés comme absents) ;
+`tests/engine/rejeu.test.mjs` tire 1 000 commandes au hasard (graine fixe), les rejoue sur la même partie
+de départ, y compris après un passage par du JSON, et vérifie la même empreinte : le moteur est déterministe.
 
 Chaque module importe ce qu'il utilise et exporte ce qu'il offre : plus aucune fonction du
 jeu n'est une variable globale. Conséquences :
