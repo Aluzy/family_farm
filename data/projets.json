@@ -1,0 +1,89 @@
+{
+  "//PROJETS": [
+    "Les projets collectifs des hameaux (le lot 5 ; js/engine/projets.js). Chaque hameau a ses projets (ORDRE[le style",
+    "de son hameau], l'un après l'autre) ; chacun (SORTES) demande des matériaux (besoin). Le joueur en apporte depuis la",
+    "fiche du hameau (le panneau de sa place) ; ses familles en ajoutent chaque nuit depuis leur réserve (NUIT : au",
+    "plus tant de chaque matériau qui manque). Chaque apport du joueur, une fois par jour : +DON d'amitié à chaque",
+    "habitant. Fini : la confiance du hameau gagne FIN.CONFIANCE, chaque habitant FIN.AMITIE ; la place reçoit son décor",
+    "(decor : des blocs de la planche, posés autour du centre de la place, js/carte/ferme/hameaux.js) ; les habitants",
+    "en parlent (MERCI, les SOUVENIR jours qui suivent, à la première conversation du jour)."
+  ],
+  "PROJETS": {
+    "SORTES": {
+      "place": {
+        "nom": "Aménager la place",
+        "icone": "🪑",
+        "texte": "Des bancs, des bacs de fleurs et une lanterne, pour se retrouver le soir sur la place.",
+        "besoin": {
+          "bois": 20,
+          "pierre": 15,
+          "fibre": 10
+        },
+        "decor": [
+          "banc_jardin",
+          "bac_fleurs",
+          "lanterne",
+          "bac_fleurs",
+          "banc_jardin",
+          "table_jardin"
+        ]
+      },
+      "jardin": {
+        "nom": "Un jardin partagé",
+        "icone": "🌷",
+        "texte": "Une pergola, des bacs de lavande et des jardinières, que tout le hameau soigne ensemble.",
+        "besoin": {
+          "bois": 15,
+          "pierre": 10,
+          "fibre": 15
+        },
+        "decor": [
+          "pergola",
+          "bac_lavande",
+          "jardiniere_pierre",
+          "bac_lavande",
+          "bac_fleurs",
+          "banc_rondins"
+        ]
+      }
+    },
+    "ORDRE": {
+      "prairie": [
+        "jardin",
+        "place"
+      ],
+      "lande": [
+        "jardin",
+        "place"
+      ],
+      "foret": [
+        "jardin",
+        "place"
+      ],
+      "montagne": [
+        "place",
+        "jardin"
+      ],
+      "cote": [
+        "place",
+        "jardin"
+      ],
+      "marais": [
+        "place",
+        "jardin"
+      ]
+    },
+    "NUIT": 1,
+    "DON": 1,
+    "FIN": {
+      "CONFIANCE": 10,
+      "AMITIE": 5
+    },
+    "SOUVENIR": 7,
+    "MERCI": [
+      "Grâce à toi, notre hameau est bien plus joli !",
+      "Tu as vu notre {projet} ? On s'y retrouve tous les soirs.",
+      "Merci pour ton aide : sans toi, on n'y serait jamais arrivés."
+    ]
+  }
+}

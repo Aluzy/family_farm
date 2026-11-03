@@ -1,6 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
 import { clockHours } from '../engine/clock.js';
+import { countItem } from '../engine/inventory.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { HAMEAUX, hameauxVus } from '../engine/monde-hameaux.js';
 import { ficheHameau, garantiDuHameau, habitantAgit, habitantsDe, installerEcrits, peuplerHameau } from '../engine/habitants.js';
@@ -19,6 +20,7 @@ import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { amitieParole } from './amitie.js';
 import { amitieAvec } from '../engine/amitie.js';
+import { apporterAuProjet, PROJETS, projetDuHameau, projetsFaits } from '../engine/projets.js';
 
 /* ---------- les habitants des hameaux, côté page (fiche 7b) ----------
 
@@ -113,6 +115,8 @@ export function paroleDepuisCarte(o) {
     if (a.retrouvailles) r.texte = `${RETROUVAILLES[(o.n || 0) % RETROUVAILLES.length]} ${r.texte}`;
     // (le souvenir d'un repas partagé : il le dit d'abord)
     if (a.souvenir) { r.texte = a.souvenir; persistState(); }
+    // (un projet du hameau fini depuis peu : il remercie)
+    else if (a.merci) r.texte = a.merci;
     if (a.amitie.gain) persistState();
   }
   return r;
@@ -180,6 +184,28 @@ function toitsHtml(hid) {
   return `<h3 class="book-h3">Les toits</h3><ul class="hameau-toits">${li}</ul>`;
 }
 
+/* -- le lot 5 : le projet collectif du hameau (js/engine/projets.js) : ce qu'il demande, ce qui est là ; on y
+   apporte d'ici, sur place. -- */
+
+function projetHtml(hid) {
+  const faits = projetsFaits(state, hid).map((f) => PROJETS.SORTES[f.sorte]).filter(Boolean);
+  const fait = faits.length ? `<p class="muted">✨ Déjà fait ensemble : ${faits.map((S) => `${S.icone} ${escapeHtml(S.nom.toLowerCase())}`).join(', ')}.</p>` : '';
+  const p = projetDuHameau(state, hid);
+  if (!p) return faits.length ? `<h3 class="book-h3">Les projets du hameau</h3>${fait}` : '';
+  const lignes = Object.entries(p.besoin).map(([it, n]) => {
+    const o = DATA.OBJETS[it] || { icone: '', nom: it }, r = Math.min(n, p.recu[it] || 0);
+    return `<li class="projet-ligne"><span aria-hidden="true">${o.icone}</span> ${escapeHtml(o.nom)} <span class="bar projet-bar" role="progressbar" aria-label="${escapeHtml(o.nom)} : ${r} sur ${n}" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${r}"><span class="bar-fill" style="width:${Math.round((r * 100) / n)}%"></span></span> <span class="num muted">${r}/${n}</span> <span class="muted num">(tu en as ${countItem(state, it)})</span></li>`;
+  }).join('');
+  const bouton = p.fait
+    ? '<p class="muted">Tout est là : le hameau s\'y met cette nuit.</p>'
+    : `<button type="button" class="btn primary" data-action="projet-apporter" data-hameau="${escapeHtml(hid)}">🤝 Apporter ce que j'ai</button>`;
+  return `<h3 class="book-h3">Le projet du hameau : ${p.icone} ${escapeHtml(p.nom)}</h3>
+    <p>${escapeHtml(p.texte)}</p>
+    <ul class="projet-besoin">${lignes}</ul>
+    <p class="muted">Chaque nuit, les familles y ajoutent un peu de leur réserve. Ton aide les rapproche de toi.</p>
+    ${bouton}${fait}`;
+}
+
 function ateliersHtml(hid) {
   const A = ateliersDuHameau(state, hid);
   if (!A.length) return '';
@@ -200,6 +226,7 @@ export function openFicheHameau(h) {
     <h2 id="hameau-title">🪧 ${escapeHtml(fi.nom)}</h2>
     <p class="muted">Un hameau ${S ? escapeHtml(S.nom) : ''}, un hameau de ${escapeHtml(metiers)} : ${fi.familles.length} familles, ${gens} habitants.</p>
     ${ateliersHtml(h.id)}
+    ${projetHtml(h.id)}
     ${toitsHtml(h.id)}
     <h3 class="book-h3">Les familles</h3>
     <ul class="hameau-familles">${fi.familles.map((f) => familleHtml(f, h.id)).join('')}</ul>
@@ -213,6 +240,17 @@ export function openFicheHameau(h) {
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */
 
 registerActions({
+  // le lot 5 : apporter au projet du hameau ce qu'on a (la fiche se refait)
+  'projet-apporter': (target) => {
+    const id = target.dataset.hameau;
+    const r = apporterAuProjet(state, id);
+    if (!r.ok) { notify(r.error); return; }
+    persistState();
+    const dons = Object.entries(r.donne).map(([it, n]) => `${n} ${(DATA.OBJETS[it] || { icone: '' }).icone}`).join(' ');
+    notify(`🤝 Tu apportes ${dons} au projet du hameau${r.amitie ? ` · 💛 +${r.amitie} avec chacun de ses habitants` : ''}${r.fait ? '. Tout est là : ils s\'y mettent cette nuit !' : '.'}`, { kind: 'info' });
+    const vu = state.monde && state.monde.hameaux && state.monde.hameaux[id];
+    openFicheHameau({ id, nom: (vu && vu.nom) || '', style: (vu && vu.style) || '' });
+  },
   // le récit, lot 9 : réparer un toit abîmé (la fiche du hameau, sur place) ; la fiche se refait
   'toit-reparer': (target) => {
     const id = target.dataset.hameau;

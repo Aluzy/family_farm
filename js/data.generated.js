@@ -5648,6 +5648,41 @@ export const RAW_DATA = {
       "Accroché à une branche, un dessin oublié : le plan {de} ({pays})."
     ]
   },
+  "PROJETS": {
+    "SORTES": {
+      "place": {
+        "nom": "Aménager la place",
+        "icone": "🪑",
+        "texte": "Des bancs, des bacs de fleurs et une lanterne, pour se retrouver le soir sur la place.",
+        "besoin": { "bois": 20, "pierre": 15, "fibre": 10 },
+        "decor": ["banc_jardin", "bac_fleurs", "lanterne", "bac_fleurs", "banc_jardin", "table_jardin"]
+      },
+      "jardin": {
+        "nom": "Un jardin partagé",
+        "icone": "🌷",
+        "texte": "Une pergola, des bacs de lavande et des jardinières, que tout le hameau soigne ensemble.",
+        "besoin": { "bois": 15, "pierre": 10, "fibre": 15 },
+        "decor": ["pergola", "bac_lavande", "jardiniere_pierre", "bac_lavande", "bac_fleurs", "banc_rondins"]
+      }
+    },
+    "ORDRE": {
+      "prairie": ["jardin", "place"],
+      "lande": ["jardin", "place"],
+      "foret": ["jardin", "place"],
+      "montagne": ["place", "jardin"],
+      "cote": ["place", "jardin"],
+      "marais": ["place", "jardin"]
+    },
+    "NUIT": 1,
+    "DON": 1,
+    "FIN": { "CONFIANCE": 10, "AMITIE": 5 },
+    "SOUVENIR": 7,
+    "MERCI": [
+      "Grâce à toi, notre hameau est bien plus joli !",
+      "Tu as vu notre {projet} ? On s'y retrouve tous les soirs.",
+      "Merci pour ton aide : sans toi, on n'y serait jamais arrivés."
+    ]
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,

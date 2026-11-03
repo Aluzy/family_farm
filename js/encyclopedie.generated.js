@@ -2482,6 +2482,19 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
+     "id": "projets_hameaux",
+     "terme": "Projets des hameaux",
+     "description": "Chaque hameau a ses projets collectifs, l'un après l'autre : aménager la place (des bancs, des bacs de fleurs, une lanterne, une table) ou créer un jardin partagé (une pergola, des bacs de lavande, des jardinières, un banc en rondins) ; les hameaux de la montagne, de la côte et du marais commencent par la place, ceux de la prairie, de la lande et de la forêt par le jardin. La fiche du hameau (touche le panneau de sa place) montre ce qu'il demande, en bois, en pierre et en fibre, et ce qui est déjà là. « 🤝 Apporter ce que j'ai » y donne tes matériaux ; une fois par jour, chacun de ses habitants t'en sait gré (+1 d'amitié). Chaque nuit, les familles y ajoutent un peu de leur réserve. Quand tout est là, le hameau s'y met la nuit même : sa place se garnit, la confiance du hameau gagne 10, chacun de ses habitants +5 d'amitié, et pendant 7 jours ils t'en remercient en te parlant.",
+     "liens": [
+      "hameaux",
+      "habitants",
+      "amitie"
+     ],
+     "decouverte": [
+      "hameau"
+     ]
+    },
+    {
      "id": "metiers",
      "terme": "Les métiers des hameaux",
      "description": "Chaque hameau a son métier, que le pays lui donne : mineur près d'une grotte de la montagne, pêcheur au bord de l'eau, bûcheron à la lisière d'une forêt, berger sur la lande, cueilleur ailleurs. Le bûcheron fend au billot et abat des arbres alentour (du bois, parfois une pomme de pin) ; le pêcheur pêche depuis la rive le poisson de son eau (sardines, anchois, dorades et bars en mer, truites, ombles et brochets au lac, truites, goujons et saumons en rivière) ; le mineur pioche devant l'entrée d'une grotte ou à son tas de minerai (de la pierre, parfois du fer, du cuivre, du quartz) ; le berger soigne ses moutons (du lait, parfois de la laine) ; le cueilleur rapporte des baies, des champignons, des mûres, des myrtilles et des châtaignes. Le jardinier, lui, tient le potager du foyer. Ce que les familles ne mangent pas va à la réserve du hameau, que la calèche achète et revend : c'est par elle que la ferme a les produits qu'elle ne fait pas.",

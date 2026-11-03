@@ -704,6 +704,15 @@ export function validateData(data) {
     }
     if (!(typeof D.NUIT === 'number' && D.NUIT > 0 && D.NUIT <= 1)) err('DECOUVERTE.NUIT', 'un facteur, de 0 à 1');
   }
+  // Les projets collectifs des hameaux (data/projets.json, js/engine/projets.js).
+  if (data.PROJETS) {
+    const PJ = data.PROJETS, B = (data.ATELIER && data.ATELIER.BLOCS) || {};
+    for (const [id, s] of Object.entries(PJ.SORTES || {})) {
+      for (const it of Object.keys(s.besoin || {})) needItem(`PROJETS.SORTES.${id}.besoin`, it);
+      for (const b of s.decor || []) if (!B[b]) err(`PROJETS.SORTES.${id}.decor`, `« ${b} » n'est pas un bloc de l'Atelier`);
+    }
+    for (const [st, L] of Object.entries(PJ.ORDRE || {})) for (const id of L) if (!(PJ.SORTES || {})[id]) err(`PROJETS.ORDRE.${st}`, `« ${id} » n'est pas un projet (SORTES)`);
+  }
   // Les plans des meubles de collection (data/plans.json, js/engine/plans.js) : des blocs dont la recette a « plan ».
   if (data.PLANS) {
     const R = (data.ATELIER && data.ATELIER.RECETTES) || {}, vus = new Set();

@@ -57,6 +57,7 @@ import { semerFromStage } from './elevage.js';
 import { presentsDepuisCarte, presentsPourLaCarte, visiteDuHameau } from './amitie.js';
 import { invitesDepuisCarte, invitesPourLaCarte } from './invitations.js';
 import { planDuBiome } from './plans.js';
+import { projetsPourLaCarte } from '../engine/projets.js';
 import { casesOuvertesMonde, mondeCueillis, mondePris, noterIci } from '../engine/monde-recolte.js';
 import { botteFromStage, ramasserFromStage, verserChaineFromStage, verserFromStage, verserGrainFromStage } from './atelier.js';
 import { botteleuses } from '../engine/botteleuse.js';
@@ -503,6 +504,9 @@ export function stageModel() {
     // les invitations à un repas (js/engine/invitations.js) : les invités du moment, qui viennent s'asseoir à la
     // table (js/carte/ferme/invites.js) ; null le reste du temps
     invites: invitesPourLaCarte(),
+    // les projets faits des hameaux (js/engine/projets.js, le lot 5) : le décor de leur place
+    // (js/carte/ferme/hameaux.js) : { [hameau]: [bloc…] }
+    projets: projetsPourLaCarte(state),
     // les botteleuses (js/engine/botteleuse.js : l'entonnoir, la machine, le convoyeur ; pleine,
     // elle vibre VIBRE_S s et sa botte sort) et les fibres de l'inventaire, à y jeter
     botteleuses: botteleuses(state),

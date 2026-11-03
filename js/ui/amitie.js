@@ -8,6 +8,7 @@ import {
 } from '../engine/amitie.js';
 import { RECIT } from '../engine/recit.js';
 import { souvenirParole } from '../engine/invitations.js';
+import { merciProjet } from '../engine/projets.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { itemsText } from './common.js';
@@ -50,8 +51,10 @@ export function amitieParole(hameau, id, activite) {
   // (sa réaction à ta venue, la première fois du jour : la joie des retrouvailles, ou d'un ami)
   // (un repas partagé : il en parle, à la première conversation du jour, js/engine/invitations.js)
   const souvenir = g.premiere ? souvenirParole(state, A.cle) : null;
-  const emotion = g.premiere && (g.retrouvailles || souvenir || palierAmitie(state, A.cle) >= AMITIE.HUMEUR.JOIE) ? 'joie' : null;
-  return { amitie: { ...A, gain: g.gain }, emotion, retrouvailles: !!g.retrouvailles, souvenir };
+  // (un projet du hameau fini depuis peu : il remercie, js/engine/projets.js)
+  const merci = g.premiere && !souvenir ? merciProjet(state, hameau, A.pts) : null;
+  const emotion = g.premiere && (g.retrouvailles || souvenir || merci || palierAmitie(state, A.cle) >= AMITIE.HUMEUR.JOIE) ? 'joie' : null;
+  return { amitie: { ...A, gain: g.gain }, emotion, retrouvailles: !!g.retrouvailles, souvenir, merci };
 }
 
 // Le personnage arrive dans le hameau `id` : le premier passage du jour (+VISITE pour ses habitants).

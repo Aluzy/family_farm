@@ -10,6 +10,7 @@ import { growDue, readyCrops } from './crops.js';
 import { amitieNuit } from './amitie.js';
 import { invitationsNuit } from './invitations.js';
 import { plansNuit } from './plans.js';
+import { projetsNuit } from './projets.js';
 import { energyMax, restoreEnergy, wakeEnergy } from './stamina.js';
 import { feedLivestock, fillSilo, layEggs, newStableReport, sheepToShear, strawNeed, strawStock } from './animals.js';
 import { chevalNuit } from './cheval.js';
@@ -281,6 +282,8 @@ export function runNight(state) {
   state.nuit.invitations = invitationsNuit(state);
   // les plans de meubles qu'offre un ami d'un hameau (plans.js, le lot 4)
   state.nuit.plans = plansNuit(state);
+  // les projets collectifs des hameaux (projets.js, le lot 5) : la réserve y apporte, un projet complet s'achève
+  state.nuit.projets = projetsNuit(state);
   // la visite de bienvenue (bienvenue.js, fiche 18) qui n'a pas eu lieu : son plat attend devant la porte
   bienvenueNuit(state);
   // le récit (recit.js, docs/recit/) : le niveau de l'empreinte de la ferme, la dérive de la confiance des hameaux
