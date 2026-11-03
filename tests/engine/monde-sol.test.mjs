@@ -239,9 +239,18 @@ test('le sol du monde : une région se fait en quelques ms (les éléments une f
   const m = genererMonde('sol-2'), sol = solDirect(m.terrain);
   const t0 = Date.now();
   sol.region(0, 0);
+  // (le temps de processeur de chaque région, pas le temps écoulé : les autres fichiers de tests tournent
+  // en même temps, et sur une machine de CI chargée le temps écoulé double sans que le calcul change)
   const premiere = Date.now() - t0, ms = [];
-  for (const [rx, ry] of regions().slice(1, 30)) ms.push(sol.region(rx, ry).ms);
+  for (const [rx, ry] of regions().slice(1, 30)) {
+    const c0 = process.cpuUsage();
+    sol.region(rx, ry);
+    const c = process.cpuUsage(c0);
+    ms.push(Math.round((c.user + c.system) / 1000));
+  }
   ms.sort((a, b) => a - b);
   assert(premiere < 3000, `la première région (les éléments) : ${premiere} ms`);
-  assert(ms[ms.length >> 1] < 40, `une région : ${ms[ms.length >> 1]} ms (médiane)`);
+  // (le seuil : environ 18 ms sur un poste de développement, 40 à 48 ms sur une machine de CI de GitHub,
+  // deux à trois fois plus lente ; 80 ms laisse sa marge à la CI et voit encore un calcul qui doublerait)
+  assert(ms[ms.length >> 1] < 80, `une région : ${ms[ms.length >> 1]} ms de processeur (médiane)`);
 });

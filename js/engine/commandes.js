@@ -281,3 +281,39 @@ export function defaire(state, inverses) {
   for (const c of [...inverses].reverse()) if (executerCommande(state, c).ok) n += 1;
   return n;
 }
+
+/* ---------- l'empreinte d'une partie (F0-4 : le rejeu, plus tard le contrôle client/serveur) ----------
+   Deux exécutions de la même suite de commandes sur la même partie de départ doivent donner la même
+   partie. L'empreinte le vérifie en peu de place : elle lit la partie sous sa forme JSON, les clés des
+   objets triées (l'ordre dans lequel un objet a reçu ses clés ne compte pas), un objet vide compté
+   comme absent (le moteur crée certains tableaux en passant, `hauteurs: {}`, et lit un tableau
+   absent comme vide), et en fait 16 chiffres
+   hexadécimaux (deux FNV-1a de 32 bits, de graines différentes). Deux parties égales ont la même
+   empreinte ; deux parties différentes, presque sûrement deux empreintes différentes. */
+
+// La valeur `v` (déjà passée par JSON) avec les clés de ses objets triées, à toute profondeur, sans
+// les objets vides.
+const objetVide = (v) => !!v && typeof v === 'object' && !Array.isArray(v) && !Object.keys(v).length;
+function triee(v) {
+  if (Array.isArray(v)) return v.map(triee);
+  if (v && typeof v === 'object') {
+    const o = {};
+    for (const k of Object.keys(v).sort()) {
+      const t = triee(v[k]);
+      if (!objetVide(t)) o[k] = t;
+    }
+    return o;
+  }
+  return v;
+}
+
+export function empreintePartie(state) {
+  const texte = JSON.stringify(triee(JSON.parse(JSON.stringify(state))));
+  let a = 0x811c9dc5, b = 0x01000193 ^ 0x9e3779b9;
+  for (let i = 0; i < texte.length; i++) {
+    const c = texte.charCodeAt(i);
+    a = Math.imul(a ^ c, 0x01000193);
+    b = Math.imul(b ^ c, 0x01000193) ^ (b >>> 15);
+  }
+  return (a >>> 0).toString(16).padStart(8, '0') + (b >>> 0).toString(16).padStart(8, '0');
+}
