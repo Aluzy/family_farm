@@ -21,7 +21,7 @@ import {
 
 const copie = (o) => JSON.parse(JSON.stringify(o));
 
-// Une ferme générée, l'Atelier bâti, des blocs en main (comme tests/engine/ferme-generee.test.mjs).
+// Une ferme générée, l'Atelier bâti, des blocs en main (comme tests/engine/ferme-generee.cas.mjs).
 function chantier(graine) {
   const s = garden();
   tireless(s);

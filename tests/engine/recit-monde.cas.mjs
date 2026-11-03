@@ -6,12 +6,20 @@
    - la maison de Maurice : la première maison du plan du Gué, marquée dans le plan ; personne n'y vit
      (peuplerHameau ne lui donne pas de foyer) ; les autres hameaux n'en ont pas.
    La vérification sur 100 mondes se fait hors des tests (0,5 s par monde) : ici, 8 graines.
-   Lancer seul : node --test tests/engine/recit-monde.test.mjs (ou node tests/run-tests.mjs recit-monde).
+   Lancer seul : node tests/run-tests.mjs recit-monde (ses trois parties, recit-monde-1 à 3.test.mjs).
    ========================================================================== */
 
 import { createNewGame, DATA, elementsSol, genererMonde, solDirect } from '../../js/engine/index.js';
 import { habitantsDe, installerEcrits, peuplerHameau, retirerEcrit } from '../../js/engine/habitants.js';
-import { assert, assertEqual, test } from './aide.mjs';
+import { assert, assertEqual } from './aide.mjs';
+import { test as testNode } from 'node:test';
+
+// Joué en trois parties, en parallèle (<nom>-<k>.test.mjs posent globalThis.PARTIE_TESTS = [k, n]) : seuls
+// les tests de rang k, k + n… sont joués. Le test est appelé d'ici même : node:test rattache un test au
+// fichier qui l'appelle (tests/run-tests.mjs les compte sous ce fichier).
+const PARTIE = globalThis.PARTIE_TESTS;
+let rangTest = 0;
+const test = (...args) => (PARTIE && rangTest++ % PARTIE[1] !== PARTIE[0] ? undefined : testNode(...args));
 
 const GUE = DATA.PLAN_MONDE.HAMEAUX.GUE;
 const GRAINES = ['1', '7', '42', '2026', 'ceron', 'maurice', '31337', 'terres'];

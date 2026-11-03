@@ -38,6 +38,10 @@ export function avecLune(fn) {
 // rattaché à son fichier). Tous les tests du moteur sont des fonctions synchrones sans
 // paramètre : node:test les lance dans l'ordre du fichier, une fois le fichier entièrement
 // chargé, comme l'ancienne file d'attente maison.
+//
+// Un fichier de tests trop long se joue en plusieurs parties, en parallèle : ses tests sont dans
+// <nom>.cas.mjs (qui appelle lui-même le test de node:test : un test est rattaché au fichier qui
+// l'appelle), et chaque partie <nom>-<k>.test.mjs pose globalThis.PARTIE_TESTS = [k, n] avant de l'importer.
 export { test };
 
 // Lots 1 à 7 : tests des règles de base. Ils neutralisaient les saisons, retirées en

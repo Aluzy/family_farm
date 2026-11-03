@@ -1,14 +1,20 @@
 /* ==========================================================================
    Tests du moteur : la ferme générée d'après une graine (docs/carte-generee.md, étape 2) et
    le terrain d'une carte (terrain-carte.js).
-   Lancer seul : node --test tests/engine/ferme-generee.test.mjs (ou node tests/run-tests.mjs ferme-generee).
+   Lancer seul : node tests/run-tests.mjs ferme-generee (ses trois parties, ferme-generee-1 à 3.test.mjs).
    ========================================================================== */
 
 import {
-  assert, assertEqual, AVANT_DEMENAGEMENT, garden, migreAvant, reach, setInv, sleepOnce, test,
-  tireless,
-  avantLeMonde, caseDeLaFerme,
-} from './aide.mjs';
+  assert, assertEqual, AVANT_DEMENAGEMENT, garden, migreAvant, reach, setInv, sleepOnce, tireless,
+  avantLeMonde, caseDeLaFerme } from './aide.mjs';
+import { test as testNode } from 'node:test';
+
+// Joué en trois parties, en parallèle (<nom>-<k>.test.mjs posent globalThis.PARTIE_TESTS = [k, n]) : seuls
+// les tests de rang k, k + n… sont joués. Le test est appelé d'ici même : node:test rattache un test au
+// fichier qui l'appelle (tests/run-tests.mjs les compte sous ce fichier).
+const PARTIE = globalThis.PARTIE_TESTS;
+let rangTest = 0;
+const test = (...args) => (PARTIE && rangTest++ % PARTIE[1] !== PARTIE[0] ? undefined : testNode(...args));
 import { readFileSync } from 'node:fs';
 import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
 import {

@@ -17,7 +17,7 @@
 // Code de sortie non nul en cas d'échec (ou si aucun test ne correspond).
 
 import { run } from 'node:test';
-import { readdirSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
 import { basename, dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -66,14 +66,20 @@ if (!choisis.length) {
 }
 
 const parFichier = new Map(choisis.flatMap((s) => s.fichiers.map((f) => [f, { passes: 0, echecs: [], lents: [], ms: 0 }])));
-const fichiers = [...parFichier.keys()];
+// Un fichier joué en plusieurs parties (tests/engine/aide.mjs, PARTIE_TESTS : <nom>-<k>.test.mjs importe
+// <nom>.cas.mjs) : ses tests arrivent au nom de <nom>.cas.mjs ; ils y sont comptés, et ses parties
+// s'affichent en une ligne (la durée : celle de la plus longue partie).
+const casDe = (f) => { const m = /^(.*)-\d+\.test\.mjs$/.exec(f); return m && existsSync(`${m[1]}.cas.mjs`) ? `${m[1]}.cas.mjs` : null; };
+for (const f of [...parFichier.keys()]) { const c = casDe(f); if (c && !parFichier.has(c)) parFichier.set(c, { passes: 0, echecs: [], lents: [], ms: 0, cas: true }); }
+const fichiers = [...parFichier.keys()].filter((f) => !parFichier.get(f).cas);
 const debut = performance.now();
 
 // Les événements d'un fichier : test:pass / test:fail par test (nesting 0, type « test ») ; un
 // échec sans test (fichier qui ne se charge pas, exception hors test) arrive au nom du fichier.
 const flux = run({
   files: fichiers,
-  concurrency: Math.max(1, availableParallelism() - 1),
+  // (tous les processeurs : les fichiers se jouent chacun dans son processus ; rien d'autre ne tourne)
+  concurrency: Math.max(1, availableParallelism()),
   testNamePatterns: motifs.length ? motifs.map((m) => new RegExp(m)) : undefined,
 });
 // Durée d'un fichier : celle que mesure son processus (ses tests, hors démarrage de Node).
@@ -121,13 +127,23 @@ for (const s of choisis) {
   console.log('-'.repeat(titre.length));
   let passes = 0;
   let echecs = 0;
+  const vus = new Set();
   for (const fichier of s.fichiers) {
-    const f = parFichier.get(fichier);
+    let f = parFichier.get(fichier), nomAffiche = relative(RACINE, fichier);
+    // (les parties d'un même fichier : une ligne, au nom du fichier de leurs tests)
+    const cas = casDe(fichier);
+    if (cas) {
+      if (vus.has(cas)) continue;
+      vus.add(cas);
+      const parties = s.fichiers.filter((x) => casDe(x) === cas).map((x) => parFichier.get(x)), c = parFichier.get(cas);
+      f = { ...c, echecs: [...c.echecs, ...parties.flatMap((x) => x.echecs)], ms: Math.max(...parties.map((x) => x.ms)), stderr: parties.map((x) => x.stderr || '').join('') };
+      nomAffiche = `${relative(RACINE, cas)} (×${parties.length})`;
+    }
     passes += f.passes;
     echecs += f.echecs.length;
     if (motifs.length && !f.passes && !f.echecs.length) continue; // --grep : rien de retenu dans ce fichier
     const marque = f.echecs.length ? '✗' : '✓';
-    const nom = relative(RACINE, fichier);
+    const nom = nomAffiche;
     console.log(`${marque} ${nom.padEnd(42)} ${String(f.passes + f.echecs.length).padStart(4)} test(s)  ${fmtMs(f.ms).padStart(7)}`);
     for (const e of f.echecs) {
       console.log(`    ✗ ${e.nom}`);
