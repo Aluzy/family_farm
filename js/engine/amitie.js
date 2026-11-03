@@ -27,9 +27,10 @@ import { ajouterConfiance, ajouterRelation, confiance, relation, RECIT } from '.
    proche laisse parfois un présent devant la porte de la ferme (la nuit, RETOUR) ; l'amitié avec qui tient
    un atelier de hameau baisse le prix et le délai de ses commandes (remiseAmitie, delaiAmitie : ile.js).
 
-   L'humeur (humeurPnj) colore le corps du personnage sur la carte : la joie (un ami proche), la tristesse
-   (son foyer est malheureux, HABITANTS.TRISTE), la colère (un hameau qui n'a plus confiance). Les réactions d'un instant (un
-   cadeau : joie ou dégoût ; la peur ; la colère d'un arbre abattu sous ses yeux) sont dites par la scène.
+   L'humeur (humeurPnj) : la joie (un ami proche), la tristesse (son foyer est malheureux, HABITANTS.TRISTE), la
+   colère (un hameau qui n'a plus confiance). Elle ne teinte plus le personnage sur la carte : seules les
+   réactions d'un instant (un cadeau : joie ou dégoût ; la peur ; la colère d'un arbre abattu sous ses yeux ;
+   la joie des retrouvailles, d'un repas) colorent tout son corps, dites par la scène.
 
    state.amitie = {
      pnj: { [clé : l'id du personnage écrit, ou celui du membre]: { pts (pas pour un écrit), parle (le jour

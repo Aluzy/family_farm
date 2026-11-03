@@ -56,7 +56,6 @@ import { axeChipHtml, chopFromStage, fishFromStage, caillouFromStage, gesteFromS
 import { semerFromStage } from './elevage.js';
 import { presentsDepuisCarte, presentsPourLaCarte, visiteDuHameau } from './amitie.js';
 import { invitesDepuisCarte, invitesPourLaCarte } from './invitations.js';
-import { humeursPourLaCarte } from '../engine/amitie.js';
 import { casesOuvertesMonde, mondeCueillis, mondePris, noterIci } from '../engine/monde-recolte.js';
 import { botteFromStage, ramasserFromStage, verserChaineFromStage, verserFromStage, verserGrainFromStage } from './atelier.js';
 import { botteleuses } from '../engine/botteleuse.js';
@@ -494,7 +493,7 @@ export function stageModel() {
     // les habitants des hameaux peuplés (js/engine/habitants.js : qui, quel personnage, quel métier,
     // quel lit) et leur horaire (js/carte/ferme/habitants.js) ; ceux d'un hameau déjà vu naissent
     // dès que les plans sont là (une partie d'avant la fiche 7b)
-    habitants: { horaire: HABITANTS.HORAIRE, hameaux: (peuplerLesVus(), habitantsPourLaCarte(state)), humeurs: humeursPourLaCarte(state) },
+    habitants: { horaire: HABITANTS.HORAIRE, hameaux: (peuplerLesVus(), habitantsPourLaCarte(state)) },
     // l'amitié : les présents des amis devant la porte (js/carte/ferme/amis.js)
     presents: presentsPourLaCarte(),
     // la visite de bienvenue (js/engine/bienvenue.js, fiche 18) : le visiteur en route, ou son plat qui

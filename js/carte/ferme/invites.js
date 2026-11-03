@@ -17,7 +17,8 @@
  *     ctx.bridge.invites('table', { terrasse })) ; servi, ils mangent (la fourchette à la bouche), le
  *     temps REPAS_S, remercient et repartent ;
  *   - le moment passé sans repas : ils le disent gentiment et repartent (rien n'est perdu) ;
- *   - leur émotion (une réaction, leur humeur) : comme les habitants (amis.js teinteHabitant).
+ *   - leur émotion (une réaction : la joie d'un bon repas, le dégoût d'un plat détesté) : comme les habitants
+ *     (amis.js teinteHabitant).
  * Avec « animations réduites », ils vont d'un point à l'autre sans marcher.
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype.
