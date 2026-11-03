@@ -122,8 +122,18 @@ export function etageEmprise(state) {
 //     haut : le plus bas d'entre eux) ; un étage sans murs tout autour reste à ciel ouvert (une terrasse).
 // [{ niveau, cases: [tuiles couvertes], dedans: [tuiles d'où l'on est dans le bâtiment], verre (la Serre),
 //    maison (une pièce de la maison : on y allume la nuit, js/carte/ferme/fenetres.js) }]
+// (gardés tant que la partie n'a pas changé ce dont ils dépendent : les blocs du bas, ceux de l'étage,
+// les sols, les hauteurs des murs ; comme piecesCloses, blocs.js. Les appelants ne font que les lire.)
+let toitsCle = null, toitsListe = [];
 export function toits(state) {
   const B = blocsPoses(state), E = etageBlocs(state), W = farmTerrain(state).LARGEUR;
+  const cle = W + ':' + JSON.stringify(B) + JSON.stringify(E) + JSON.stringify(solsPoses(state)) + JSON.stringify(state.hauteurs || null) + JSON.stringify(state.rehausses || null);
+  if (cle === toitsCle) return toitsListe;
+  toitsListe = calculerToits(state, B, E, W);
+  toitsCle = cle;
+  return toitsListe;
+}
+function calculerToits(state, B, E, W) {
   const ferme = (t) => { const s = DATA.ATELIER.BLOCS[E[t]]; return !!(s && s.ferme) || hauteurPile(state, t) >= 2; };
   const out = [], simples = [], S = solsPoses(state), tri = (a) => [...a].sort((x, y) => x - y);
   for (const p of piecesCloses(state)) {

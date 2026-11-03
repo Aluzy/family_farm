@@ -244,7 +244,17 @@
         if (!this.grassChunks.has(k)) this.grassChunks.set(k, { list: [], on: false });
         this.grassChunks.get(k).list.push(g);
       }
-      this.tintTallGrass();
+      // (la teinte se lit dans le sol de toutes les régions qui ont des touffes : un travail long sur
+      // téléphone, docs/perf.md. Il se fait juste après que la carte a paru ; les touffes attendent
+      // leur teinte pour se montrer, syncTallGrass)
+      this.grassTeinte = false;
+      const teindre = () => {
+        if (!this.grassAll || !this.sys || !this.sys.isActive()) return;
+        this.tintTallGrass();
+        this.grassTeinte = true;
+        this.grassKey = '';
+      };
+      if (this.ready) teindre(); else this.time.delayedCall(30, teindre);
     },
 
     // La teinte de chaque touffe : la couleur moyenne du fond autour de son pied, divisée par
@@ -302,7 +312,7 @@
 
     // Les morceaux d'herbe haute près de la vue : leurs images créées ; loin : détruites.
     syncTallGrass(v) {
-      if (!this.grassChunks || !this.grassChunks.size) return;
+      if (!this.grassChunks || !this.grassChunks.size || !this.grassTeinte) return;
       const C = HERBE_MORCEAU;
       const cle = Math.floor(v.x / C) + ',' + Math.floor(v.y / C) + ',' + Math.ceil(v.right / C) + ',' + Math.ceil(v.bottom / C);
       if (cle === this.grassKey) return;

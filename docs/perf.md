@@ -5,9 +5,8 @@ budgets à tenir sur lui, la façon de mesurer, et garde les résultats d'une ve
 
 ## Le téléphone de référence
 
-**Xiaomi Redmi Note 13** (choix du créateur, novembre 2026). Selon la version (4G ou 5G), ce téléphone
-a une puce Snapdragon 685 ou Dimensity 6080, et un écran de 1080 × 2400 jusqu'à 120 Hz : noter la
-version exacte et sa mémoire dans la première ligne de résultats. Le jeu choisit lui-même la qualité
+**Xiaomi Redmi Note 13 5G** (choix du créateur, novembre 2026) : puce MediaTek Dimensity 6080 (8 cœurs),
+8 Go de mémoire, écran de 1080 × 2400 jusqu'à 120 Hz (Chrome y voit 393 × 873, densité 2,53). Le jeu choisit lui-même la qualité
 « économie » sur un téléphone (⚙️ Options › Qualité de l'affichage, `CarteKit.qualite`) ; c'est dans ce
 réglage qu'on mesure, sauf mention contraire.
 
@@ -59,4 +58,34 @@ de l'appareil.
 | Date | Appareil (version, mémoire) | Version du jeu | Scénario | Images/s · lentes | Carte prête | Sauvegarde max | Mémoire |
 |---|---|---|---|---|---|---|---|
 | 2026-11-03 | Chromium sans carte graphique, émulation 393 × 873 (pas un téléphone) | 1.22.0 | ferme construite (275 blocs, 34 meubles) | 33,8 · 2,9 % | 2,0 s | 0,7 ms | 169 Mo |
-| *à mesurer* | Redmi Note 13 | | ferme construite | | | | |
+| 2026-11-03 | **Redmi Note 13 5G** (Dimensity 6080, 8 Go), Chrome 156 | 1.22.0 | ferme construite (382 blocs, 67 meubles) | **55,5** ✅ · 2,3 % ✅ (médiane 16,6 ms) | **8,1 s** ❌ (page chargée en 1,1 s) | **1,7 ms** ✅ | 117 Mo |
+
+### Le chargement : où passent les 8 s (analyse du 2026-11-03)
+
+Sur le téléphone, la page est chargée en 1,1 s ; il faut ensuite 7 s pour que la carte soit prête. Le même
+chargement reproduit en local (Chromium, processeur ralenti 4 fois pour approcher le téléphone, profil
+du processeur) donne 8,8 s, sans un seul coupable :
+
+| Poste | Temps (ralenti ×4) | Piste |
+|---|---|---|
+| Images préparées et envoyées à la carte graphique (`texImage2D`, `drawImage`, `getImageData`, `createObjectURL`) | ≈ 2,4 s | ne préparer d'abord que ce qui est à l'écran, le reste après la première image ; moins de textures, plus grandes (atlas) |
+| Lecture et compilation des scripts (1,1 Mo de jeu, plus Phaser) | ≈ 1,7 s | charger plus tard ce qui ne sert pas au premier écran (grottes, encyclopédie, récit, mode test) |
+| La ferme et son terrain tirés de la graine (`ferme-generee`, `terrain-carte`, `decouverte`, `readMap`) | ≈ 0,7 s | les garder sur l'appareil (IndexedDB), rangés par graine et numéro de générateur (F0-2) |
+| L'eau dessinée (rives, berges : `carte/eau.js`) | ≈ 0,5 s | seulement les régions visibles d'abord |
+| Phaser lui-même | ≈ 0,5 s | — |
+| Les pièces, l'étage et les toits de la ferme construite (`blocs`, `etage`, `toit`) | ≈ 0,6 s | calculs en double à mettre en commun |
+
+La fluidité et la sauvegarde tiennent largement leurs budgets ; seul le chargement est à reprendre.
+
+### Le lot « chargement »
+
+Chaque étape est mesurée de la même façon : la ferme d'essai bâtie, puis 4 rechargements de la page dans
+Chromium avec le processeur ralenti 4 fois (au plus près du téléphone), la médiane du temps jusqu'à la
+carte prête.
+
+| Étape | Carte prête (médiane, ralenti ×4) |
+|---|---|
+| Avant (main du 2026-11-03) | 7,09 s |
+| 1a. Les toits gardés tant que les blocs, l'étage, les sols et les hauteurs ne changent pas (`toits`, `js/engine/etage.js` : ils étaient recalculés à chaque appel, 1,6 ms par appel sur ordinateur, 0,16 ms après) | 6,80 s |
+| 1b. La teinte de l'herbe haute lue juste après que la carte a paru, les touffes montrées une fois teintées (`js/carte/ferme/decor.js`) | **5,99 s** |
+| *Pistes suivantes* : la ferme tirée de la graine gardée sur l'appareil, l'eau et le sol hors de la vue peints après la première image, les images des meubles et des bêtes chargées au besoin | |
