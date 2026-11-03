@@ -17,7 +17,15 @@ export function mulberry32(seed) {
   };
 }
 
-export const STATE_VERSION = 69;
+export const STATE_VERSION = 70;
+// Version du générateur de la ferme et du grand monde (ferme-generee.js, monde-gen.js, monde-sol.js,
+// monde-hameaux.js… et leurs réglages de data/monde.json, data/terrain.json), notée dans chaque partie
+// (state.carte.generateur, à côté de sa graine). Une même graine ne refait le même monde qu'avec le même
+// générateur : un changement qui déplace ce qui est tiré (le sol, les arbres, les rochers, les hameaux…)
+// augmente ce numéro, et une migration décide du sort des parties faites avec l'ancien. Le test
+// tests/engine/generateur.test.mjs relève l'empreinte du monde d'une graine pour chaque numéro : il
+// échoue si le générateur change sans que ce numéro change.
+export const GENERATEUR_VERSION = 1;
 // Version du jeu, affichée dans les Options (À propos) : la dernière version notée dans le
 // code et les données (« version 1.22 » : les objectifs « objet »).
 export const GAME_VERSION = '1.22.0';

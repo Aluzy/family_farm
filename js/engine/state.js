@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { nouvelleCaleche } from './caleche.js';
-import { STATE_VERSION } from './base.js';
+import { GENERATEUR_VERSION, STATE_VERSION } from './base.js';
 import { batteryCapacity, newDayStats, startFarm } from './devices.js';
 import { addItem, countItem, freshLot, lotRank, lotsFromCounts, pushLots } from './inventory.js';
 import {
@@ -147,7 +147,7 @@ export function createInitialState(seed = 1, { sansFerme = false } = {}) {
     ...startLot9(),
     ...startLot11(),
   };
-  s.carte = { graine: graineDemenagement(s) };
+  s.carte = { graine: graineDemenagement(s), generateur: GENERATEUR_VERSION };
   // les régions du monde vues (terrain.js, voirRegion) : celles de la ferme d'office, puis celles
   // où le personnage entre ; ce qu'il a pris dans le monde (monde-recolte.js, fiche 6a) ; les
   // hameaux où il est allé (monde-hameaux.js, fiche 7a) ; leurs habitants (habitants.js, fiche 7b) ;
@@ -659,6 +659,14 @@ export const MIGRATIONS = {
     if (r && typeof r === 'object' && 'produit' in r) { const { produit, ...reste } = r; out.repasJour = reste; }
     const rp = state.report;
     if (rp && typeof rp === 'object') { const { autonomie, energieProduit, ...reste } = rp; out.report = reste; }
+    return out;
+  },
+  // v69 → v70 : la partie note la version du générateur de sa ferme et de son monde (base.js,
+  // GENERATEUR_VERSION) à côté de sa graine. Toutes les parties d'avant ont été faites par le premier.
+  69: (state) => {
+    const out = { ...state, version: 70 };
+    const c = state.carte;
+    if (c && typeof c === 'object' && !Array.isArray(c)) out.carte = { ...c, generateur: 1 };
     return out;
   },
 };
@@ -1456,7 +1464,9 @@ export function reparerPartie(old) {
   // dépend, refait plus bas pour la ferme de la partie s'il a fallu le remettre ; ses valeurs sont
   // copiées, jamais prêtées)
   const depart = modeleDepart || (modeleDepart = createInitialState(seed, { sansFerme: true }));
-  if (!state.carte || typeof state.carte !== 'object' || Array.isArray(state.carte)) state.carte = { graine: graineDemenagement({ rngSeed: seed }) };
+  if (!state.carte || typeof state.carte !== 'object' || Array.isArray(state.carte)) state.carte = { graine: graineDemenagement({ rngSeed: seed }), generateur: GENERATEUR_VERSION };
+  // (le numéro du générateur perdu : le premier, celui de toutes les parties faites avant qu'il soit noté)
+  else if (!(Number.isInteger(state.carte.generateur) && state.carte.generateur >= 1)) state.carte = { ...state.carte, generateur: 1 };
   const remis = new Set();
   const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
   const juste = (v, d) => {
