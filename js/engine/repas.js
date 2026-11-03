@@ -40,6 +40,11 @@ function setJauge(m, v) {
   m.energie = Math.max(0, Math.min(F().MAX, Math.round(v * 100) / 100));
 }
 
+// Un repas partagé avec des invités (js/engine/invitations.js) : la famille, à table, a mangé à sa faim.
+export function rassasierFamille(state) {
+  for (const m of mangeurs(state)) setJauge(m, F().MAX);
+}
+
 // Les membres qui mangent à la boîte : tous sauf le personnage principal.
 export function mangeurs(state) {
   const p = mainCharacter(state);

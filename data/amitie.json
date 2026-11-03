@@ -76,7 +76,7 @@
       "jusqu'à ATTENTE heures après : le joueur qui vient à table sert le repas (jusqu'à REPAS.PLATS_MAX plats de",
       "l'inventaire). Chaque invité gagne REPAS.BASE d'amitié (la moitié sans plat), plus REPAS.GOUT pour chaque plat",
       "selon son goût (jamais moins de 1 en tout) ; une table de jardin (la terrasse) ajoute REPAS.TERRASSE. La",
-      "famille vise REPAS.BONHEUR de bonheur de plus cette nuit, et les plats servis comptent dans ses repas du",
+      "famille, attablée avec eux, mange à sa faim et vise REPAS.BONHEUR de bonheur de plus cette nuit ; les plats servis comptent dans ses repas du",
       "jour. Un repas manqué ne fait rien perdre. Chaque invité en garde le souvenir (SOUVENIR.MAX au plus) :",
       "il en parle à la première conversation du jour, les SOUVENIR.RECENT jours suivants ; puis une fois encore",
       "jusqu'à SOUVENIR.ANCIEN jours. PAROLES : ce qu'ils disent (à l'arrivée, à table, en partant, le souvenir)."

@@ -60,6 +60,10 @@
  *   famille.update(deltaMs)
  *   famille.info()               // pour les tests : où est chacun
  *   famille.aidePos()            // où est le second adulte (sa bulle « +x »), ou null
+ *   famille.attabler(places, mange) // un repas avec des invités (js/carte/ferme/invites.js) : ceux qui
+ *                                // sont dehors à cette heure vont s'asseoir aux places libres de la table
+ *                                // ([{ x, y, face, flip, depth, pied }]), mangent si `mange` ;
+ *                                // attabler(null) : ils se lèvent et reprennent leur journée
  *   famille.allerManger(id)      // il va à la boîte à nourriture et s'y baisse ; false s'il ne le peut pas
  *   famille.rejoindre(at)        // le second adulte vient à côté de at ({ x, y } : le personnage),
  *                                // s'y arrête et se tourne vers lui ; true quand il y est ;
@@ -134,6 +138,7 @@
     const reduced = o.reduced || (() => false);
     const membres = new Map();     // id → marcheur
     let model = null;
+    let table = null;              // un repas avec des invités : { places, mange } (attabler)
 
     // Devant la porte d'entrée du foyer (dehors).
     function door() {
@@ -554,6 +559,46 @@
       return true;
     }
 
+    // À table avec des invités (attabler) : une place libre pour lui s'il est dehors à cette heure, debout,
+    // pas au lit ; il y va (par les cases libres), s'y assoit, mange quand le repas est servi. La table levée,
+    // l'heure d'aller au lit : il se lève (sur la case libre à côté de sa chaise). → true : il est à table
+    // (ou y va), son image est faite.
+    function aTable(m, dt) {
+      const veut = !!table && m.visible && !m.couche && !(m.geste > 0) && ouVeut(m) === 'dehors';
+      if (!veut) {
+        if (m.place) quitterTable(m);
+        return false;
+      }
+      if (!m.place) {
+        if (m.tableEchec > 0) { m.tableEchec -= dt; return false; }
+        const prises = new Set([...membres.values()].map((x) => x.place).filter(Boolean));
+        const q = table.places.find((p) => !prises.has(p));
+        if (!q) return false;
+        if (m.jeu) finJeu(m);
+        m.jeu = null; m.vite = 1; m.haut = 0; m.tache = null; m.parle = null; m.rejoint = null;
+        m.place = q; m.assis = false;
+        if (!aller(m, q.pied.x, q.pied.y, () => { m.assis = true; }, 'table')) { m.place = null; m.tableEchec = 10; return false; }
+        m.pause = 0;
+      }
+      const q = m.place;
+      if (m.assis) {
+        m.x = q.x; m.y = q.y; m.face = q.face; m.flip = q.flip;
+        const n = table.mange ? Math.floor(performance.now() / 700 + m.rang) % 2 : 0;
+        dessiner(m, F[`assis_${q.face}_${n}`] !== undefined ? `assis_${q.face}_${n}` : `idle_${q.face}_0`);
+        m.s.setDepth(q.depth);
+        return true;
+      }
+      const marche = avancer(m, dt);
+      if (!marche) m.marche = 0;
+      dessiner(m, marche ? `marche_${m.face}_${K.imageMarche(m.marche, m.enfant ? 'enfant' : 'adulte')}` : `idle_${m.face}_${Math.floor(performance.now() / 600) % 2}`);
+      return true;
+    }
+    function quitterTable(m) {
+      if (m.assis && m.place) { m.x = m.place.pied.x; m.y = m.place.pied.y; }
+      m.place = null; m.assis = false; m.chemin = []; m.puis = null; m.but = null;
+      m.attente = rand(1, 4);
+    }
+
     // Au chargement de la page (ou sa planche arrivée) : il est déjà là où l'heure le veut
     // (dehors : près de son coin ; dans la maison : à une place ; au lit).
     function placer(m) {
@@ -613,6 +658,8 @@
           }
           // (le second adulte parle avec le personnage : il s'arrête et se tourne vers lui ; son
           // chemin l'attend)
+          // (à table avec des invités : il y va, s'assoit, mange ; rien d'autre ne le dérange)
+          if (aTable(m, dt)) continue;
           const parle = m.parle && !m.couche && m.visible;
           if (parle) ({ face: m.face, flip: m.flip } = K.regard(m.parle.x - m.x, m.parle.y - m.y));
           if (!parle && !m.rejoint) decider(m, dt);
@@ -645,7 +692,7 @@
           id: m.id, enfant: m.enfant,
           ou: m.couche ? 'lit' : H && H.dedans(m.x, m.y) ? 'dedans' : 'dehors',
           voulu: ouVeut(m), lit: !!m.couche, visible: m.visible, x: Math.round(m.x), y: Math.round(m.y), marche: m.chemin.length > 0, tache: m.tache,
-          jeu: m.jeu ? m.jeu.type : null, haut: m.haut || 0,
+          jeu: m.jeu ? m.jeu.type : null, haut: m.haut || 0, aTable: !!m.place, assis: !!m.assis,
         }));
       },
       rejoindre(at) {
@@ -681,6 +728,11 @@
         if (!m || !m.visible || m.couche || !o.boite || !o.boite()) return false;
         if (m.tache !== 'boite') m.faim = true;
         return true;
+      },
+      attabler(places, mange) {
+        table = places && places.length ? { places, mange: !!mange } : null;
+        // (d'autres places : celles qui n'y sont plus se libèrent)
+        if (table) for (const m of membres.values()) if (m.place && !places.includes(m.place)) quitterTable(m);
       },
       aidePos() {
         const A = model && model.aide, m = A && membres.get(A.id);

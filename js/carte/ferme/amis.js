@@ -4,8 +4,8 @@
  *   - la couleur d'une émotion : rouge la colère, violet la peur, vert le dégoût, bleu la tristesse, jaune
  *     la joie. Une réaction (un cadeau, un arbre abattu sous ses yeux, un cheval qui passe en trombe) colore
  *     toute sa peau quelques instants (planchePeau : sa planche refaite, ses teintes de peau remplacées), avec
- *     un petit emoji au-dessus de sa tête (pour qui distingue mal les couleurs) ; son humeur du moment (le
- *     modèle : habitants.humeurs) pose sur lui un voile léger et durable ;
+ *     un petit emoji au-dessus de sa tête (pour qui distingue mal les couleurs). Hors de ces émotions fortes,
+ *     il garde ses couleurs : pas de teinte durable ;
  *   - les présents qu'un ami proche a laissés la nuit devant la porte de la ferme (modèle.presents) : un
  *     paquet près de la porte, que le personnage prend en passant (bridge.presents).
  *
@@ -19,7 +19,7 @@
   const { reducedMotion } = F;
   const { T } = F.C;
 
-  // couleur : le voile de l'humeur ; peau : la peau d'une réaction (e le clair, f la teinte, j l'ombre, k les joues)
+  // couleur : le voile d'une réaction (une planche sans table de peau) ; peau : la peau d'une réaction (e le clair, f la teinte, j l'ombre, k les joues)
   const EMOTIONS = {
     joie: { couleur: 0xffd23c, emoji: '😊', nom: 'joie', peau: { e: [255, 232, 110], f: [250, 206, 56], j: [190, 140, 20], k: [255, 160, 60] } },
     colere: { couleur: 0xff4a3a, emoji: '😠', nom: 'colère', peau: { e: [250, 120, 104], f: [226, 66, 54], j: [150, 28, 26], k: [255, 40, 40] } },
@@ -34,7 +34,6 @@
   const EMO = {
     duree: 1800,       // ms : une réaction
     vague: 0.65,       // l'opacité du voile de couleur au plus fort de la réaction (0 : rien, 1 : la couleur pure)
-    humeur: 0.22,      // celle du voile d'humeur
     calme: 0.45,       // mouvements réduits : la réaction, sans vague
     voient: 6 * T,     // px : à cette distance, un habitant voit le coup de hache ou de pioche
     cheval: 1.6 * T,   // px : un cheval qui passe plus près lui fait peur
@@ -129,12 +128,12 @@
     },
 
     // À chaque image (stepHabitants, après son image) : la couleur de l'habitant `m` — une réaction colore
-    // toute sa peau (planchePeau), son humeur pose un voile léger ; l'emoji suit sa tête. `f` : le cadre de
+    // toute sa peau (planchePeau), le temps de la réaction ; ensuite, ses couleurs ; l'emoji suit sa tête. `f` : le cadre de
     // l'écran (screenFrame).
     teinteHabitant(m, now, f) {
       const s = m.s;
       if (!s) return;
-      const M = this.ctx.lastModel, H = M && M.habitants && M.habitants.humeurs;
+      const M = this.ctx.lastModel;
       // (un cheval qui passe tout près : la peur)
       const joueur = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       if (joueur && M && M.cheval && !m.couche && Math.hypot(joueur.x - m.x, joueur.y - m.y) < EMO.cheval) this.emouvoir(m, 'peur');
@@ -144,11 +143,7 @@
         // la peau prend la couleur de l'émotion (sans table pour sa planche : le voile, plus fort)
         planche = this.planchePeau(m.key, R.emotion) || m.key;
         if (planche === m.key) { couleur = EMOTIONS[R.emotion].couleur; k = reducedMotion() ? EMO.calme : EMO.vague * Math.sin((Math.PI * (now - R.t0)) / EMO.duree); }
-      } else {
-        if (R) { m.emo = null; this.emojiOff(m); }
-        const h = H && !m.couche ? H[m.id] : null;
-        if (h && EMOTIONS[h]) { couleur = EMOTIONS[h].couleur; k = EMO.humeur; }
-      }
+      } else if (R) { m.emo = null; this.emojiOff(m); }
       if (s.texture.key !== planche && this.textures.exists(planche)) s.setTexture(planche, s.frame.name);
       // le voile : une copie de son image, peinte de la couleur (la silhouette entière, quelle que soit sa
       // peau ou ses habits), posée juste au-dessus de lui

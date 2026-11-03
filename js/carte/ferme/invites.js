@@ -11,11 +11,14 @@
  *   - chacun paraît au bord de la vue, du côté de son hameau (comme le visiteur de la bienvenue,
  *     visite.js visiteDepart), marche jusqu'à sa place, s'assoit (les cases assis_<vue> des planches) et dit
  *     un mot en arrivant ; à table, ils bavardent (une bulle de temps en temps) ;
+ *   - la famille (ceux qui sont dehors à cette heure) s'assoit aux places qui restent dès que le premier
+ *     invité est assis (js/famille-ferme.js attabler), mange avec eux et se lève quand ils s'en vont ;
  *   - le personnage qui vient tout près de la table : la fenêtre « Servir le repas » (le pont :
  *     ctx.bridge.invites('table', { terrasse })) ; servi, ils mangent (la fourchette à la bouche), le
  *     temps REPAS_S, remercient et repartent ;
  *   - le moment passé sans repas : ils le disent gentiment et repartent (rien n'est perdu) ;
- *   - leur émotion (une réaction, leur humeur) : comme les habitants (amis.js teinteHabitant).
+ *   - leur émotion (une réaction : la joie d'un bon repas, le dégoût d'un plat détesté) : comme les habitants
+ *     (amis.js teinteHabitant).
  * Avec « animations réduites », ils vont d'un point à l'autre sans marcher.
  *
  * Méthodes de la scène de la ferme (js/farm-stage.js), posées sur son prototype.
@@ -32,7 +35,7 @@
   const LOIN = 320;                            // px hors de la vue : il saute au but
   const VU = 48;
   const ECART_S = 2.5;                         // s entre deux départs
-  const PROCHE = 30;                           // px : le personnage est à table
+  const PROCHE = 40;                           // px : le personnage est à table (des chaises tout autour : un pas de plus)
   const LOIN_TABLE = 80;                       // px : il s'en est éloigné (la fenêtre peut se rouvrir)
   const REPAS_S = 18;                          // s : ils mangent, puis remercient
   const MERCI_S = 4;
@@ -170,6 +173,13 @@
         if (L.length) this.inviteBulle(un(L), un(G.paroles.table), BULLE_MS);
         G.bavardeA = now + 1000 * (BAVARDE[0] + Math.random() * (BAVARDE[1] - BAVARDE[0]));
       }
+      // la famille se met à table avec eux (les places qui restent ; js/famille-ferme.js attabler) dès que le
+      // premier est assis, mange quand ils mangent, et se lève quand ils s'en vont
+      if (this.family && this.family.attabler) {
+        const L = [...G.gens.values()];
+        const la = !fini && G.table && L.some((g) => g.phase === 'table') && L.every((g) => g.phase !== 'merci' && g.phase !== 'repart');
+        this.family.attabler(la ? G.table.places.slice(L.filter((g) => g.place).length) : null, !!G.servi);
+      }
       // le personnage vient à table : la fenêtre « Servir le repas »
       if (!fini && V.etat === 'repondue' && joueur) {
         const assisLa = [...G.gens.values()].filter((g) => g.phase === 'table');
@@ -253,6 +263,7 @@
         if (this.voileOff) this.voileOff(g);
       }
       this.invitesVus = null;
+      if (this.family && this.family.attabler) this.family.attabler(null);
     },
 
     // L'invité sous le doigt en (wx, wy), ou null.

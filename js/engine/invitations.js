@@ -5,7 +5,7 @@ import { hourOfDay } from './clock.js';
 import { hache } from './ferme-generee.js';
 import { countItem, takeItem } from './inventory.js';
 import { habitantsDe, metierHabitant } from './habitants.js';
-import { repasJour } from './repas.js';
+import { rassasierFamille, repasJour } from './repas.js';
 import { RECIT } from './recit.js';
 import { ajouterAmitie, amitieDe, cleDe, fiche, goutPour, palierAmitie, trouverPnj } from './amitie.js';
 
@@ -196,6 +196,8 @@ export function servirRepas(state, id, plats = [], terrasse = false) {
   if (!objet(RJ.mange)) RJ.mange = {};
   for (const it of choisis) RJ.mange[it] = (RJ.mange[it] || 0) + 1;
   RJ.fete = (RJ.fete || 0) + R.BONHEUR;
+  // (à table avec eux, la famille mange à sa faim)
+  if (choisis.length) rassasierFamille(state);
   // (le plat dont on se souvient : le meilleur pour lui, le premier servi à égalité)
   const rang = { adore: 3, aime: 2, neutre: 1, deteste: 0 };
   const out = [];
