@@ -31,6 +31,13 @@
      solEtage.poser   { sorte, case, niveau }  un sol aux niveaux 1 et 2
      solEtage.reprendre { case, niveau, attendu? }
      solEtage.remettre { case, niveau, avant, apres } défaire un sol changé pour un autre
+
+   Les commandes du potager et de la nuit (sans inverse : une graine semée, une parcelle arrosée, une
+   récolte, une nuit dormie ne se défont pas ; l'énergie dépensée non plus) :
+     potager.planter  { parcelle, culture }    semer une parcelle (son identifiant), à la main
+     potager.arroser  { parcelle }
+     potager.recolter { parcelle }
+     nuit.dormir      { }                       se coucher, la nuit (elle défile jusqu'au réveil)
 */
 
 import { DATA } from './catalog.js';
@@ -40,6 +47,8 @@ import {
   reprendreBloc, sensBloc, solAt, tournerBloc,
 } from './blocs.js';
 import { etageBlocs, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, solsEtage } from './etage.js';
+import { harvest, plant, water } from './crops.js';
+import { goToSleep } from './night.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
 
@@ -65,6 +74,7 @@ const CONTROLES = {
   sens: (v) => Number.isInteger(v) && v >= 0 && v <= 3,
   niveau: (v) => v === 1 || v === 2,
   texte: (v) => typeof v === 'string' && v.length > 0,
+  culture: (v) => typeof v === 'string' && !!DATA.CULTURES[v],
 };
 
 export const COMMANDES = {
@@ -219,6 +229,22 @@ export const COMMANDES = {
       if (!r.ok) return r;
       return { ok: true, sorte: avant, case: c, sol: true, inverses: [cmd('solEtage.poser', { sorte: apres, case: c, niveau })] };
     },
+  },
+  'potager.planter': {
+    args: { parcelle: 'texte', culture: 'culture' },
+    executer: (state, { parcelle, culture }) => plant(state, parcelle, culture),
+  },
+  'potager.arroser': {
+    args: { parcelle: 'texte' },
+    executer: (state, { parcelle }) => water(state, parcelle),
+  },
+  'potager.recolter': {
+    args: { parcelle: 'texte' },
+    executer: (state, { parcelle }) => harvest(state, parcelle),
+  },
+  'nuit.dormir': {
+    args: {},
+    executer: (state) => goToSleep(state),
   },
 };
 
