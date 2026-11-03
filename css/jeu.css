@@ -1855,6 +1855,9 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
   font-size: 0.72rem; font-weight: 800; line-height: 1;
   color: var(--color-earth);
 }
+/* le style d'aménagement d'un bloc (js/engine/styles.js) : sa petite icône, en haut à gauche */
+.build-slot-style { position: absolute; left: 2px; top: 1px; font-size: 0.62rem; line-height: 1; pointer-events: none; }
+.ami-style { margin: 4px 0; }
 .build-slot.epuise { opacity: 0.55; }
 .build-slot-img { max-width: 30px; max-height: 30px; image-rendering: pixelated; pointer-events: none; }
 /* la case d'un groupe (les murs, les portes, les sols) : « ⋯ » en haut à gauche (elle ouvre sa bulle) */

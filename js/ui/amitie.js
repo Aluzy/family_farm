@@ -113,6 +113,7 @@ function openOffrir(hameau, id) {
     <h2 id="ami-titre">🎁 Offrir à ${escapeHtml(A.prenom)}</h2>
     ${jaugeHtml(A)}
     ${goutsHtml(A)}
+    ${A.style ? `<p class="ami-style"><span aria-hidden="true">${A.style.icone}</span> Son style : <strong>${escapeHtml(A.style.nom)}</strong>. Invite-le à un repas près d'un coin ${escapeHtml(A.style.adj)} : il l'admirera.</p>` : '<p class="muted ami-style">Son style d\'aménagement préféré se découvre en partageant un repas, ou en devenant cordiaux.</p>'}
     <p class="muted">${A.cadeauAujourdhui ? `Tu lui as déjà offert un cadeau aujourd'hui : reviens demain.` : `Un cadeau par jour : ${queDe(A.prenom)} adore compte beaucoup (+${AMITIE.CADEAU.adore}), ce qui lui déplaît fait reculer l'amitié (−${Math.abs(AMITIE.CADEAU.deteste)}).`}</p>
     <div class="ami-cadeaux">${boutons || '<p class="muted">Rien à offrir : un aliment, un plat, un produit de la ferme.</p>'}</div>
     <button type="button" class="btn" data-action="close-modal">Fermer</button>`, { labelledBy: 'ami-titre', className: 'modal bois ami-modal' });

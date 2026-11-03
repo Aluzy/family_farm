@@ -69,5 +69,6 @@ export * from './equipement.js';
 export * from './recit.js';
 export * from './amitie.js';
 export * from './invitations.js';
+export * from './styles.js';
 export * from './usure.js';
 export * from './fil-lune.js';

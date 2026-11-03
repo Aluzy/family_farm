@@ -5,6 +5,7 @@ import { hache } from './ferme-generee.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { habitantsDe } from './habitants.js';
 import { ajouterConfiance, ajouterRelation, confiance, relation, RECIT } from './recit.js';
+import { STYLES, styleInfo, stylePrefere } from './styles.js';
 
 /* ---------- l'amitié avec les habitants des hameaux (data/amitie.json) ----------
 
@@ -160,7 +161,18 @@ export function amitieAvec(state, hameauId, membreId) {
     cle: t.cle, prenom: t.m.prenom, pts: pointsAmitie(state, t.cle), palier: rang, nom: RECIT.PALIER_NOMS[rang], max: RECIT.RELATION_MAX,
     prochain: rang + 1 < RECIT.PALIERS.length ? RECIT.PALIERS[rang + 1] : null,
     gouts: objet(p.gouts) ? { ...p.gouts } : {}, cadeauAujourdhui: p.cadeau === jourDe(state),
+    // son style préféré (js/engine/styles.js) : connu après un repas partagé, ou dès le palier STYLES.REVELE
+    style: styleConnu(state, t, p) ? styleInfo(styleHabitant(state, t)) : null,
   };
+}
+
+// Le style préféré de l'habitant trouvé `t` (trouverPnj), d'après le style de son hameau.
+export function styleHabitant(state, t) {
+  return stylePrefere(t.cle, t.m.id, t.h && t.h.style);
+}
+// Le connaît-on ? (un repas partagé l'a montré : p.styleVu ; ou l'amitié, au palier STYLES.REVELE)
+function styleConnu(state, t, p) {
+  return !!(p && p.styleVu) || palierAmitie(state, t.cle) >= STYLES.REVELE;
 }
 
 // Une gain qui fait passer un palier ? (`avant`, `apres` : des points)

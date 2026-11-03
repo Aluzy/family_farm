@@ -8,6 +8,7 @@ import {
   INVITATION, annulerInvitation, invitation, invitationDuMoment, invitationsAVenir, invitesModele, inviter, platsServables,
   relationsInvitables, reponsesAAnnoncer, servirRepas,
 } from '../engine/invitations.js';
+import { styleInfo } from '../engine/styles.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { state } from './store.js';
@@ -212,6 +213,11 @@ registerActions({
     const servis = r.plats.map((it) => `${DATA.OBJETS[it].icone} ${escapeHtml(DATA.OBJETS[it].nom)}`);
     const qui = r.invites.map((x) => `${escapeHtml(x.prenom)} +${x.points}`).join(', ');
     notify(`🍽️ ${servis.length ? `Au menu : ${servis.join(', ')}.` : 'Un repas tout simple.'} 💛 ${qui}. La famille est heureuse de ce moment partagé.`, { kind: 'info' });
+    // (ceux qui ont admiré le coin de la table, de leur style : js/engine/styles.js)
+    for (const x of r.invites.filter((i) => i.admire)) {
+      const st = styleInfo(x.style);
+      if (st) notify(`${st.icone} ${escapeHtml(x.prenom)} adore ce coin ${escapeHtml(st.adj)} : c'est tout à fait son style !`, { kind: 'info' });
+    }
     for (const x of r.invites) if (x.emotion && window.FarmStage && window.FarmStage.emotion) window.FarmStage.emotion(x.id, x.emotion);
   },
 });

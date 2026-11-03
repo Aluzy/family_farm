@@ -5350,6 +5350,132 @@ export const RAW_DATA = {
       }
     }
   },
+  "STYLES": {
+    "LISTE": {
+      "champetre": {
+        "nom": "champêtre",
+        "icone": "🌾",
+        "adj": "champêtre",
+        "blocs": [
+          "mur_pierre",
+          "mur_brique_ocre",
+          "pierre_angle",
+          "fenetre_volets",
+          "porte",
+          "porte_grange",
+          "porte_ecurie",
+          "sol_tomettes",
+          "sol_dalles",
+          "chemin",
+          "meuble_table",
+          "meuble_chaise",
+          "meuble_buffet",
+          "meuble_commode",
+          "meuble_armoire_chene",
+          "meuble_cuisine_porte",
+          "meuble_cuisine_tiroirs",
+          "meuble_tapis_1",
+          "meuble_coffre_jouets",
+          "table_jardin",
+          "chaise_jardin",
+          "lanterne"
+        ]
+      },
+      "forestier": {
+        "nom": "forestier",
+        "icone": "🌲",
+        "adj": "forestier",
+        "blocs": [
+          "mur_bois",
+          "porte_chene",
+          "plancher",
+          "sol_chevrons",
+          "meuble_bibliotheque",
+          "meuble_bibliotheque_vitree",
+          "meuble_chevet",
+          "meuble_armoire_glace",
+          "meuble_plante_fougere",
+          "meuble_plante_bonsai",
+          "meuble_plante_sansevieria",
+          "meuble_lampadaire",
+          "banc_jardin",
+          "candelabre"
+        ]
+      },
+      "cotier": {
+        "nom": "côtier",
+        "icone": "🐚",
+        "adj": "côtier",
+        "blocs": [
+          "mur_brique_bleue",
+          "mur_pierre_taille",
+          "fenetre_ronde",
+          "porte_bleue",
+          "porte_blanche",
+          "porte_vitree",
+          "sol_carrelage",
+          "sol_mosaique",
+          "sol_paves",
+          "meuble_armoire_peinte",
+          "meuble_tapis_3",
+          "meuble_cuisine_sauge",
+          "meuble_plante_palmier",
+          "meuble_plante_aloe",
+          "meuble_plante_cactus",
+          "meuble_tableau_3"
+        ]
+      },
+      "fleuri": {
+        "nom": "fleuri",
+        "icone": "🌷",
+        "adj": "fleuri",
+        "blocs": [
+          "bac_fleurs",
+          "fenetre_vitrail",
+          "fenetre_cintree",
+          "mur_brique_rouge",
+          "mur_brique_orange",
+          "sol_marbre",
+          "meuble_tapis_2",
+          "meuble_canape",
+          "meuble_table_basse",
+          "meuble_plante_orchidee",
+          "meuble_plante_citronnier",
+          "meuble_plante_ficus",
+          "meuble_plante_monstera",
+          "meuble_tableau_1",
+          "meuble_tableau_2"
+        ]
+      }
+    },
+    "RAYON": 5,
+    "ADMIRE": 3,
+    "BONUS_REPAS": 3,
+    "REVELE": 2,
+    "MAISON": { "PIECES": 2, "VARIETE": 3, "COMPLET": 6, "BONUS": 5 },
+    "BIOMES": {
+      "prairie": ["fleuri", "champetre"],
+      "lande": ["champetre", "fleuri"],
+      "montagne": ["champetre", "forestier"],
+      "foret": ["forestier"],
+      "marais": ["forestier", "fleuri"],
+      "cote": ["cotier"]
+    },
+    "ECRITS": {
+      "odile": "champetre",
+      "basile": "forestier",
+      "theo": "cotier",
+      "garance": "fleuri",
+      "achille": "champetre",
+      "lise": "fleuri",
+      "fernand": "cotier"
+    },
+    "ADMIRE_PAROLES": [
+      "Oh, quel joli coin {adj} ! J'adore.",
+      "Ce coin {adj}, c'est tout à fait mon goût !",
+      "Comme c'est {adj}, ici : on s'y sent bien."
+    ]
+  },
   "CONSERVATION": {
     "carotte": 6,
     "patate": 7,

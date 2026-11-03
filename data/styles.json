@@ -1,0 +1,161 @@
+{
+  "//STYLES": [
+    "Les styles d'aménagement (js/engine/styles.js) : chaque bloc, sol ou meuble décoratif en a un (LISTE[style].blocs ; un",
+    "bloc n'en a qu'un, une machine aucun). Aucun n'est plus « beau » qu'un autre : ce sont des goûts.",
+    "  - les habitants : chacun a son style préféré (ECRITS pour les personnages écrits ; sinon tiré de son id parmi",
+    "    BIOMES[le style de son hameau]). Invité à un repas, il regarde le coin de la table (RAYON cases autour) : s'il y",
+    "    voit au moins ADMIRE sortes de blocs de son style, il l'admire (sa joie, une phrase à l'arrivée) et le repas lui rapporte",
+    "    BONUS_REPAS d'amitié de plus. On découvre son style en mangeant avec lui, ou dès le palier REVELE d'amitié.",
+    "  - la famille : la ferme aménagée (tous les blocs posés) élève la cible de bonheur de MAISON.BONUS, soit par la",
+    "    variété (MAISON.VARIETE styles différents, chacun d'au moins MAISON.PIECES sortes de blocs), soit par un",
+    "    style complet (MAISON.COMPLET sortes d'un même style) : les deux chemins se valent. On compte les sortes",
+    "    différentes, pas les blocs : vingt murs de pierre font une seule pièce."
+  ],
+  "STYLES": {
+    "LISTE": {
+      "champetre": {
+        "nom": "champêtre",
+        "icone": "🌾",
+        "adj": "champêtre",
+        "blocs": [
+          "mur_pierre",
+          "mur_brique_ocre",
+          "pierre_angle",
+          "fenetre_volets",
+          "porte",
+          "porte_grange",
+          "porte_ecurie",
+          "sol_tomettes",
+          "sol_dalles",
+          "chemin",
+          "meuble_table",
+          "meuble_chaise",
+          "meuble_buffet",
+          "meuble_commode",
+          "meuble_armoire_chene",
+          "meuble_cuisine_porte",
+          "meuble_cuisine_tiroirs",
+          "meuble_tapis_1",
+          "meuble_coffre_jouets",
+          "table_jardin",
+          "chaise_jardin",
+          "lanterne"
+        ]
+      },
+      "forestier": {
+        "nom": "forestier",
+        "icone": "🌲",
+        "adj": "forestier",
+        "blocs": [
+          "mur_bois",
+          "porte_chene",
+          "plancher",
+          "sol_chevrons",
+          "meuble_bibliotheque",
+          "meuble_bibliotheque_vitree",
+          "meuble_chevet",
+          "meuble_armoire_glace",
+          "meuble_plante_fougere",
+          "meuble_plante_bonsai",
+          "meuble_plante_sansevieria",
+          "meuble_lampadaire",
+          "banc_jardin",
+          "candelabre"
+        ]
+      },
+      "cotier": {
+        "nom": "côtier",
+        "icone": "🐚",
+        "adj": "côtier",
+        "blocs": [
+          "mur_brique_bleue",
+          "mur_pierre_taille",
+          "fenetre_ronde",
+          "porte_bleue",
+          "porte_blanche",
+          "porte_vitree",
+          "sol_carrelage",
+          "sol_mosaique",
+          "sol_paves",
+          "meuble_armoire_peinte",
+          "meuble_tapis_3",
+          "meuble_cuisine_sauge",
+          "meuble_plante_palmier",
+          "meuble_plante_aloe",
+          "meuble_plante_cactus",
+          "meuble_tableau_3"
+        ]
+      },
+      "fleuri": {
+        "nom": "fleuri",
+        "icone": "🌷",
+        "adj": "fleuri",
+        "blocs": [
+          "bac_fleurs",
+          "fenetre_vitrail",
+          "fenetre_cintree",
+          "mur_brique_rouge",
+          "mur_brique_orange",
+          "sol_marbre",
+          "meuble_tapis_2",
+          "meuble_canape",
+          "meuble_table_basse",
+          "meuble_plante_orchidee",
+          "meuble_plante_citronnier",
+          "meuble_plante_ficus",
+          "meuble_plante_monstera",
+          "meuble_tableau_1",
+          "meuble_tableau_2"
+        ]
+      }
+    },
+    "RAYON": 5,
+    "ADMIRE": 3,
+    "BONUS_REPAS": 3,
+    "REVELE": 2,
+    "MAISON": {
+      "PIECES": 2,
+      "VARIETE": 3,
+      "COMPLET": 6,
+      "BONUS": 5
+    },
+    "BIOMES": {
+      "prairie": [
+        "fleuri",
+        "champetre"
+      ],
+      "lande": [
+        "champetre",
+        "fleuri"
+      ],
+      "montagne": [
+        "champetre",
+        "forestier"
+      ],
+      "foret": [
+        "forestier"
+      ],
+      "marais": [
+        "forestier",
+        "fleuri"
+      ],
+      "cote": [
+        "cotier"
+      ]
+    },
+    "ECRITS": {
+      "odile": "champetre",
+      "basile": "forestier",
+      "theo": "cotier",
+      "garance": "fleuri",
+      "achille": "champetre",
+      "lise": "fleuri",
+      "fernand": "cotier"
+    },
+    "ADMIRE_PAROLES": [
+      "Oh, quel joli coin {adj} ! J'adore.",
+      "Ce coin {adj}, c'est tout à fait mon goût !",
+      "Comme c'est {adj}, ici : on s'y sent bien."
+    ]
+  }
+}
