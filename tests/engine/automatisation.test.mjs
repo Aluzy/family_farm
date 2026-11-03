@@ -17,7 +17,7 @@ import {
   upgradeRobotBattery, water, wheatTotal, zoneTile,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, atelier, auto5, AVANT_DEMENAGEMENT, chapter1StepsDone, farm, garden,
+  assert, assertEqual, atelier, auto5, AVANT_DEMENAGEMENT, chapter1StepsDone, farm, garden, sansCompteurs68,
   growZone, matin, migreAvant, ml, plantRipe, plotContent, ranch, reach, runFor, setInv, sleepOnce,
   test, testBase, v14State,
 } from './aide.mjs';
@@ -792,14 +792,14 @@ test('points de technologie : chapitres, jalons de maîtrise, mode libre', () =>
   const t = createInitialState(1);
   for (let i = 0; i < 7; i++) completeChapter(t);
   assertEqual([t.campagne.fini, techPoints(t).gagnes], [true, 26]);
-  // mode libre : +1 PT toutes les 5 nuits à 100 %
+  // jeu libre : +1 PT toutes les 5 nuits (la nouvelle vision : plus d'autonomie à tenir)
   t.nuit = newNightStats();
-  t.nuit.besoin = 150;
-  for (let i = 0; i < 5; i++) {
-    t.nuit.energieProduit = 150;
-    recordNight(t);
-  }
-  assertEqual([techPoints(t).libre, techPoints(t).gagnes, t.campagne.compteurs.nuits100], [5, 27, 5]);
+  for (let i = 0; i < 5; i++) recordNight(t);
+  assertEqual([techPoints(t).libre, techPoints(t).gagnes], [5, 27]);
+  // jalon : 5 repas partagés avec des invités
+  t.campagne.compteurs.repasInvites = 5;
+  checkMastery(t);
+  assert(techPoints(t).maitrise.includes('repas_5'));
 });
 
 test('migration v13 → v14 : PT des chapitres faits, automatisations et recettes offertes', () => {
@@ -840,7 +840,7 @@ test('migration v14 → v15 : Champ non construit, le Potager devient la Zone de
   assertEqual([m.potager.parcelles.length, 'niveau' in m.potager], [12, false]);
   assertEqual(m.potager.parcelles.map((p) => p.id), Array.from({ length: 12 }, (_, i) => `potager-${i + 1}`));
   assertEqual(m.potager.parcelles.map(plotContent), v14.potager.parcelles.map(plotContent), 'chaque parcelle garde tout ce qu\'elle portait');
-  assertEqual([m.pieces, m.inventaire, m.campagne], [432, v14.inventaire, chapter1StepsDone(v14.campagne)], 'rien d\'autre ne bouge (FLU-42 : étapes du chapitre 1 validées)');
+  assertEqual([m.pieces, m.inventaire, sansCompteurs68(m.campagne)], [432, v14.inventaire, chapter1StepsDone(v14.campagne)], 'rien d\'autre ne bouge (FLU-42 : étapes du chapitre 1 validées)');
   assertEqual(m.nuit.auto, newAutoReport(), 'le compte rendu n\'a plus de ligne Champ');
   // niveau de la zone = le plus petit dont la capacité (6 / 12 / 18 / 24 / 30) contient les parcelles possédées
   const zone = (potager) => migreAvant({ v: 14, t: 0, s: v14State({ potager }) }).potager.parcelles.length;

@@ -1,22 +1,23 @@
 /* ==========================================================================
-   Tests du moteur : Lot 9 : autonomie et chapitres.
+   Tests du moteur : Lot 9 : chapitres (et la part de la ferme dans les repas, une mesure).
    Lancer seul : node --test tests/engine/chapitres.test.mjs (ou node tests/run-tests.mjs chapitres).
    ========================================================================== */
 
 import {
   acheterCaleche, addItem, addLot, autonomyHistory, autonomyPercent, buyAnimal, buyItem, chapterProgress,
   chapterReached, completeChapter, countItem, createInitialState, createNewGame, DATA, farmTerrain,
-  feedAllHens, findPlot, formatPercent, harvest, hoe, holdStatus, lastAutonomy, lotsOf, mailText,
-  maxStage, moveToFridge, objectiveValue, plannedAutonomy, plant, plantableCrops,
+  feedAllHens, findPlot, formatPercent, harvest, hoe, lastAutonomy, lotsOf, mailText,
+  maxStage, migrate, moveToFridge, objectiveValue, plannedAutonomy, plant, plantableCrops,
   plantableCropsFor, shear, startMilling, startRecipe, storeWheat, takeItem, testAddHens,
   testAddWheat, testBatir, testEmptyBatteries, testFillBatteries, testGoToChapter,
   testSetBuildingLevel5, testSetLevel, testWoolReady, tick, unlockLevel, updateChapters, water,
   zoneTile,
 } from '../../js/engine/index.js';
+import { ETAPES } from '../../js/engine/didacticiel.js';
 import {
   affamer, assert, assertEqual, atChapter, atelier, boite, coldRoom, farm, fillSheep, garden,
-  holdNights, kwh, ml, mondeFait, nightWithProduced, OBJECTIFS_MONDE, pature, plantRipe, reach, runFor, setInv, sleepOnce,
-  test, testBase, tireless, versBoite,
+  kwh, ml, mondeFait, nightWithProduced, OBJECTIFS_MONDE, pature, plantRipe, reach, runFor, setInv, sleepOnce,
+  test, testBase, tireless, versBoite, vieFaite,
 } from './aide.mjs';
 import { vendreCaleche } from '../../js/engine/caleche.js';
 
@@ -31,16 +32,16 @@ test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent p
   const L = DATA.CHAPITRES.liste;
   // le lot 6 : les titres d'un foyer qui prend vie ; l'ancien titre, l'étape de la ferme, en sous-titre
   assertEqual(L.map((c) => c.titre), ['Notre nouveau chez-nous', 'Une maison à notre image', 'Les premiers animaux', 'Les plaisirs de la cuisine', 'Une ferme pleine de vie', 'Au rythme de la nature', 'Notre petit coin de paradis']);
-  assertEqual(L.map((c) => c.etape), ['L\'héritage', 'Le grenier', 'Le poulailler', 'Le four et le livre de recette', 'Le troupeau', 'Toute l\'année', 'Famille autonome']);
+  assertEqual(L.map((c) => c.etape), ['L\'héritage', 'Le grenier', 'Le poulailler', 'Le four et le livre de recette', 'Le troupeau', 'Toute l\'année', 'La ferme accomplie']);
   assertEqual(L.map((c) => c.debloque), [undefined, undefined, undefined, undefined, undefined, undefined, undefined]);
   assertEqual(L.map((c) => c.objectifs.map((o) => [o.type, o.cible])), [
     [['maison', 1], ['panneau', 1], ['pompe', 1], ['reservoir', 1], ['houe', 1], ['labours', 6], ['semis', 6], ['arrosees', 6], ['recoltes', 1]],
     [['niveau', 2], ['cultures', 4], ['silo', 1], ['semisBle', 1], ['siloBle', 50], ['caleche', 50]],
-    [['pontes', 7], ['autonomie', 50], ['objet', 4], ['hameaux', 1]],
+    [['pontes', 7], ['amis', 1], ['objet', 4], ['hameaux', 1]],
     [['pains', 5], ['plats', 3], ['objet', 1], ['grotteMonde', 1], ['monde', 10]],
-    [['laines', 10], ['autonomie', 60], ['hameaux', 3], ['pecheMer', 1]],
-    [['tenue', 1], ['achatsHameaux', 5], ['faune', 6]],
-    [['serie100', 7], ['hameaux', 5], ['monde', 15]],
+    [['laines', 10], ['repas', 1], ['hameaux', 3], ['pecheMer', 1]],
+    [['projets', 1], ['achatsHameaux', 5], ['faune', 6]],
+    [['styles', 3], ['plans', 7], ['hameaux', 5], ['monde', 15]],
   ]);
   // fiche 9b : chaque chapitre après le premier a ses objectifs du grand monde, aucun ne demande la
   // ville, le Marché ou le train
@@ -49,7 +50,6 @@ test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent p
   assertEqual([L[2].objectifs[2].item, L[3].objectifs[2].item], ['minerai_fer', 'lingot_fer']);
   assertEqual(DATA.ARBRE.PALIERS[2].chapitre, 3);
   assert(Object.values(DATA.ARBRE.noeuds).some((n) => n.palier === 2 && n.ressources && n.ressources.lingot_fer), 'un nœud du palier 2 demande un lingot de fer');
-  assertEqual([DATA.CHAPITRES.liste[5].objectifs[0].nuits, DATA.CHAPITRES.liste[5].objectifs[0].moyenne], [10, 80]);
   assertEqual(DATA.AUTONOMIE, { HISTORIQUE_MAX: 1000, GRAPHIQUE_NUITS: 20 });
   assertEqual(DATA.CHAPITRES.ELEMENTS, undefined, 'les libellés sont dans DATA.NIVEAUX.ELEMENTS');
 });
@@ -58,7 +58,7 @@ test('état initial Lot 9 : chapitre 1, compteurs à zéro, historique vide', ()
   const s = createInitialState(1);
   assertEqual(s.campagne, {
     chapitre: 1, fini: false, annonces: [], recompenses: [], historique: [],
-    compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, serie100: 0, nuits100: 0, tenue: null, tenueDerniere: null, tenueReussie: false, recoltes: 0, cultures: [], semisBle: 0, labours: 0, semis: 0, arroseesMax: 0, objets: {}, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 },
+    compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, repasInvites: 0, recoltes: 0, cultures: [], semisBle: 0, labours: 0, semis: 0, arroseesMax: 0, objets: {}, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 },
   });
   assertEqual(chapterReached(s), 1);
   assertEqual(lastAutonomy(s), 0);
@@ -307,7 +307,7 @@ testBase('version 1.12 : chapitre 2 : la même culture récoltée quatre fois ne
   assertEqual(okList(s)[1], false);
 });
 
-testBase('chapitre 3 : 7 nuits de ponte d\'affilée et 50 % d\'autonomie', () => {
+testBase('chapitre 3 : 7 nuits de ponte d\'affilée (et un ami, le minerai)', () => {
   const s = boite(mondeFait(atChapter(3)), { carotte: 200 }); // des légumes de la ferme : la famille est nourrie par la ferme
   setInv(s, {});
   s.pieces = 5000;
@@ -322,22 +322,23 @@ testBase('chapitre 3 : 7 nuits de ponte d\'affilée et 50 % d\'autonomie', () =>
     sleepOnce(s);
     assertEqual(s.campagne.compteurs.serieOeufs, night);
   }
-  assertEqual([s.campagne.chapitre, okList(s)], [3, [true, true, false]], 'version 1.22 : il manque le minerai de la grotte');
+  assertEqual([s.campagne.chapitre, okList(s)], [3, [true, false]], 'version 1.22 : il manque le minerai de la grotte');
   addItem(s, 'minerai_fer', 4);
   updateChapters(s);
   assertEqual(s.campagne.chapitre, 4);
   assertEqual(s.campagne.annonces.map((a) => a.chapitre), [3]);
 });
 
-test('chapitre 3 : sept nuits sans l\'autonomie requise ne suffisent pas', () => {
+// La nouvelle vision : l'autonomie a quitté le jeu ; le chapitre 3 demande un ami « cordial ».
+test('chapitre 3 : sans ami cordial, les pontes ne suffisent pas', () => {
   const s = mondeFait(atChapter(3));
+  s.monde.habitants = {};
   s.campagne.compteurs.serieOeufs = 7;
-  s.campagne.historique = [{ nuit: 1, pct: 49, energie: 73 }];
   addItem(s, 'minerai_fer', 4);
-  assertEqual(okList(s), [true, false, true]);
   updateChapters(s);
   assertEqual(s.campagne.chapitre, 3);
-  s.campagne.historique.push({ nuit: 2, pct: 50, energie: 75 });
+  assertEqual(chapterProgress(s).objectifs.find((o) => o.type === 'amis').ok, false);
+  vieFaite(s);
   updateChapters(s);
   assertEqual(s.campagne.chapitre, 4);
 });
@@ -368,9 +369,6 @@ test('séries d\'affilée : elles ne comptent qu\'à partir du chapitre qui les 
   feedAllHens(s);
   sleepOnce(s);
   assertEqual(s.campagne.compteurs.serieOeufs, 0, 'chapitre 1 : la ponte ne compte pas encore');
-  const t = atChapter(6);
-  nightWithProduced(t, 48);
-  assertEqual(t.campagne.compteurs.serie100, 0, 'chapitre 6 : les nuits à 100 % ne comptent pas encore');
 });
 
 testBase('chapitre 4 : 5 pains et 3 plats différents', () => {
@@ -442,94 +440,65 @@ test('version 1.22 : une partie déjà au-delà du chapitre 4 ne recule pas', ()
   assertEqual(chapterProgress(s).objectifs.some((o) => o.type === 'objet'), false);
 });
 
-testBase('chapitre 5 : 10 laines et 60 % d\'autonomie', () => {
+testBase('chapitre 5 : 10 laines et un repas partagé', () => {
   const s = pature();
   testGoToChapter(s, 5);
   mondeFait(s);
+  s.campagne.compteurs.repasInvites = 0;
   fillSheep(s, 3);
   for (let round = 0; round < 3; round++) {
     testWoolReady(s);
     for (const m of s.paturage.moutons) assert(shear(s, m.id).ok);
   }
   updateChapters(s);
-  assertEqual([s.campagne.compteurs.laines, okList(s)], [9, [false, false]]);
+  assertEqual([s.campagne.compteurs.laines, okList(s)], [9, [false]]);
   testWoolReady(s);
   assert(shear(s, s.paturage.moutons[0].id).ok);
   updateChapters(s);
-  assertEqual([s.campagne.compteurs.laines, okList(s)], [10, [true, false]]);
-  // patate de valeur 5 : 25 patates sur ~245 points mangés ≈ 51 % : pas assez
-  nightWithProduced(s, 25);
-  assertEqual(s.campagne.chapitre, 5);
-  nightWithProduced(s, 31); // ≈ 63 %
-  assertEqual(s.campagne.chapitre, 6);
+  assertEqual([s.campagne.compteurs.laines, okList(s), s.campagne.chapitre], [10, [true], 5], 'il manque le repas partagé');
+  s.campagne.compteurs.repasInvites = 1;
+  updateChapters(s);
+  assert(chapterReached(s) >= 6, 'le repas partagé : le chapitre 5 est terminé');
 });
 
-// Version 1.6 : l'hiver du chapitre 6 devient une série de 10 nuits d'affilée.
-test('chapitre 6 : 10 nuits d\'affilée à 80 % en moyenne, sans soin', () => {
+// La nouvelle vision : le chapitre 6 demande un projet de hameau achevé, le 7 des styles mêlés et des plans.
+test('chapitre 6 : un projet de hameau achevé', () => {
   const s = mondeFait(atChapter(6));
-  s.day = 31;
-  holdNights(s, 9, 50); // de quoi tout couvrir : 100 %
-  assertEqual([s.campagne.chapitre, s.campagne.compteurs.tenue.nuits], [6, 9]);
-  holdNights(s, 1, 50);
-  assertEqual(s.campagne.chapitre, 7);
-  assertEqual(s.campagne.compteurs.tenueReussie, true);
-  assertEqual(s.campagne.compteurs.tenueDerniere.reussi, true);
-  assertEqual(s.day, 41);
-});
-
-test('chapitre 6 : la série commence dès la première nuit du chapitre, quel que soit le jour', () => {
-  for (const day of [1, 7, 33]) {
-    const s = mondeFait(atChapter(6));
-    s.day = day;
-    holdNights(s, 10, 48);
-    assertEqual(s.campagne.chapitre, 7, `départ à la nuit ${day}`);
-  }
-});
-
-test('chapitre 6 : une moyenne de 76 % ne suffit pas, une nouvelle série suit aussitôt', () => {
-  const s = mondeFait(atChapter(6));
-  // 38 patates (190 points) sur 244 points mangés : 77 %, sous 80 %
-  holdNights(s, 10, 38);
+  s.projets = {};
+  updateChapters(s);
   assertEqual(s.campagne.chapitre, 6);
-  assertEqual(s.campagne.compteurs.tenueDerniere, { moyenne: 77, reussi: false });
-  assertEqual(s.campagne.compteurs.tenue, null);
-  holdNights(s, 1, 48);
-  assertEqual(s.campagne.compteurs.tenue.nuits, 1, 'la série suivante a commencé');
-  holdNights(s, 9, 48);
+  s.projets = { h_vie: { rang: 1, recu: {}, don: null, faits: [{ sorte: 'place', jour: 1 }] } };
+  updateChapters(s);
   assertEqual(s.campagne.chapitre, 7);
 });
 
-test('chapitre 6 : la moyenne compte toutes les nuits, pas seulement la dernière', () => {
-  const s = atChapter(6);
-  holdNights(s, 5, 50); // 100 %
-  holdNights(s, 5, 20); // 100 points sur 244 : 40 %
-  assertEqual(s.campagne.chapitre, 6);
-  assertEqual(s.campagne.compteurs.tenueDerniere.moyenne, 70);
-});
-
-test('chapitre 7 : 100 % pendant 7 nuits d\'affilée termine la campagne', () => {
+test('chapitre 7 : trois styles mêlés (ou un style complet) et sept plans terminent la campagne', () => {
   const s = mondeFait(atChapter(7));
-  for (let night = 1; night <= 6; night++) {
-    nightWithProduced(s, 48); // 240 points : 100 %
-    assertEqual([s.campagne.compteurs.serie100, s.campagne.fini], [night, false]);
-  }
-  nightWithProduced(s, 48);
-  assertEqual(s.campagne.fini, true);
-  assertEqual(s.campagne.chapitre, 7);
-  assertEqual(chapterReached(s), 8);
+  // (la maison de pierre : le style champêtre, deux pièces)
+  s.sols = {};
+  updateChapters(s);
+  const o = () => chapterProgress(s).objectifs.find((x) => x.type === 'styles');
+  assertEqual([s.campagne.fini, o().valeur], [false, 1]);
+  s.sols = { 3: 'plancher', 4: 'sol_chevrons' };
+  assertEqual(o().valeur, 2, 'deux styles mêlés');
+  s.sols[5] = 'sol_carrelage';
+  s.sols[6] = 'sol_mosaique';
+  assertEqual(o().valeur, 3);
+  const P = s.plans.connus;
+  s.plans.connus = Object.fromEntries(Object.entries(P).slice(0, 6));
+  updateChapters(s);
+  assertEqual(s.campagne.fini, false, 'six plans : pas encore');
+  s.plans.connus = P;
+  nightWithProduced(s, 10);
+  assertEqual([s.campagne.fini, s.campagne.chapitre, chapterReached(s)], [true, 7, 8]);
   assertEqual(s.campagne.annonces.map((a) => a.chapitre), [7]);
-});
-
-test('remise à zéro : une nuit sous 100 % casse la série d\'autonomie', () => {
-  const s = mondeFait(atChapter(7));
-  for (let i = 0; i < 4; i++) nightWithProduced(s, 48);
-  assertEqual(s.campagne.compteurs.serie100, 4);
-  nightWithProduced(s, 44); // 220 points sur 244 : 90 %
-  assertEqual(s.campagne.compteurs.serie100, 0);
-  for (let i = 0; i < 6; i++) nightWithProduced(s, 48);
-  assertEqual([s.campagne.compteurs.serie100, s.campagne.fini], [6, false]);
-  nightWithProduced(s, 48);
-  assertEqual(s.campagne.fini, true);
+  // un style complet compte pour l'objectif entier
+  const t = mondeFait(atChapter(7));
+  t.sols = {};
+  t.blocs = { ...t.blocs };
+  DATA.STYLES.LISTE.champetre.blocs.filter((b) => /^sol_|^chemin/.test(b)).forEach((b, i) => { t.sols[10 + i] = b; });
+  ['meuble_table', 'meuble_chaise', 'meuble_buffet'].forEach((b, i) => { t.blocs[20 + i] = b; });
+  assertEqual(chapterProgress(t).objectifs.find((x) => x.type === 'styles').ok, true);
 });
 
 test('chapitres : la campagne finie ne recule pas et ne recompte rien', () => {
@@ -561,18 +530,6 @@ test('affichage : pourcentage arrondi vers le bas, 100 % seulement à 100', () =
   assertEqual([formatPercent(0), formatPercent(37.5), formatPercent(99.99), formatPercent(100), formatPercent(undefined)], ['0\u00a0%', '37\u00a0%', '99\u00a0%', '100\u00a0%', '0\u00a0%']);
 });
 
-test('tenue : état du suivi pour l\'interface', () => {
-  const s = atChapter(6);
-  assertEqual(holdStatus(s).etat, 'attente');
-  nightWithProduced(s, 48);
-  const w = holdStatus(s);
-  assertEqual([w.etat, w.nuits, w.moyenne, 'soinPaye' in w], ['suivi', 1, 100, false]);
-  const u = atChapter(6);
-  holdNights(u, 10, 48);
-  assertEqual(holdStatus(u).etat, 'reussi');
-  assertEqual(holdStatus(atChapter(5)).etat, 'attente', 'avant le chapitre 6 : rien n\'est suivi');
-});
-
 // Le récit (docs/recit/) : la terre sauvage est celle du grand-père, Maurice. Les textes en parlent ; ils ne
 // parlent plus de la ferme d'avant (sa maison, son moulin, ses dépendances).
 test('terre sauvage : le chapitre 1 et les lettres du notaire parlent de la terre du grand-père, pas de sa ferme', () => {
@@ -585,4 +542,19 @@ test('terre sauvage : le chapitre 1 et les lettres du notaire parlent de la terr
   assertEqual(p.objectifs.filter((o) => ['panneau', 'pompe', 'reservoir'].includes(o.type)).length, 0);
   for (const id of ['notaire_heritage', 'notaire_legs']) assertEqual(mailText(s, id).some((l) => /moulin|dépendances/.test(l)), false, id);
   assertEqual(mailText(s, 'notaire_heritage').some((l) => /grand-père, Maurice/.test(l)), true, 'le notaire nomme Maurice');
+});
+
+// La nouvelle vision : l'autonomie quitte le jeu (v67 → v68).
+test('migration v67 → v68 : l\'étape « autonomie » du didacticiel disparaît, les compteurs de la tenue aussi', () => {
+  const s = createInitialState(1);
+  const vieille = (didacticiel) => {
+    const { repasInvites, ...k } = s.campagne.compteurs;
+    return { v: 67, t: 0, s: { ...JSON.parse(JSON.stringify(s)), version: 67, didacticiel,
+      campagne: { ...s.campagne, compteurs: { ...k, serie100: 3, nuits100: 12, tenue: null, tenueDerniere: null, tenueReussie: true } } } };
+  };
+  const m = migrate(vieille({ etape: 6, fini: false }));   // (« deplacement », la 7e d'alors)
+  assertEqual(ETAPES[m.didacticiel.etape], 'deplacement');
+  assertEqual(ETAPES[migrate(vieille({ etape: 3, fini: false })).didacticiel.etape], 'xp', 'avant : la même');
+  assertEqual(migrate(vieille({ etape: 30, fini: true })).didacticiel, { etape: 30, fini: true }, 'fini : rien ne change');
+  assertEqual(m.campagne.compteurs, s.campagne.compteurs, 'les compteurs d\'aujourd\'hui, le repas partagé à zéro');
 });

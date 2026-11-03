@@ -338,7 +338,7 @@ const HELP = {
       nom: 'Arbre des technologies',
       icone: '🔬',
       lignes: [
-        ['PT', `Les points de technologie (PT) : chaque chapitre terminé en rapporte (${T.POINTS.CHAPITRES.join(' · ')}), chaque jalon de maîtrise 1, et en mode libre 1 toutes les ${T.POINTS.MODE_LIBRE_NUITS_100} nuits à 100 % d'autonomie.`],
+        ['PT', `Les points de technologie (PT) : chaque chapitre terminé en rapporte (${T.POINTS.CHAPITRES.join(' · ')}), chaque jalon de maîtrise 1, et en jeu libre 1 toutes les ${T.POINTS.MODE_LIBRE_NUITS} nuits.`],
         ['Coût', 'Une technologie se paie en PT, en pièces et en ressources : du bois et de la pierre (hache, pioche), puis des lingots fondus au Four avec le minerai de la grotte.'],
         ['Paliers', `Les paliers s'ouvrent avec les chapitres : ${Object.entries(T.PALIERS).map(([n, p]) => `${n}. ${p.nom} (chapitre ${p.chapitre})`).join(' · ')}.`],
         ['Branches', `${noeuds.length} technologies en ${T.branches.length} branches : ${T.branches.map((b) => `${b.icone} ${b.nom} (${noeuds.filter((x) => x.branche === b.id).length})`).join(' · ')}.`],
@@ -350,7 +350,7 @@ const HELP = {
     const c = state.campagne;
     const lignes = [['Chapitres', `La campagne compte ${chapterCount()} chapitres. Remplis tous les objectifs d'un chapitre pour passer au suivant et gagner son XP, ses points de technologie et sa récompense : des plans de meubles de collection et du décor, chacun de son style. Le dernier ouvre le jeu libre.`]];
     if (!c.fini) lignes.push(['Ce chapitre', chapterProgress(state).intro]);
-    else lignes.push(['Jeu libre', 'La famille est autonome. Aménage, invite, aide les hameaux, complète tes collections de plans : à ton rythme.']);
+    else lignes.push(['Jeu libre', 'Aménage, invite, aide les hameaux, complète tes collections de plans : à ton rythme.']);
     return { nom: 'Chapitres', icone: '📜', lignes };
   },
   frigo: () => ({
@@ -573,7 +573,7 @@ export function openAboutModal() {
     `Ton énergie (⚡, 0 à ${DATA.PERSONNAGE.MAX}, + ${DATA.PERSONNAGE.ENDURANCE} par niveau : l'endurance) : chaque action au clic en coûte (${Object.entries(DATA.PERSONNAGE.COUTS).map(([a, n]) => `${ACTIONS_NOMS[a] || a} ${formatNumber(n)}`).join(', ')}), un peu moins quand la famille est heureuse (jusqu'à −${DATA.PERSONNAGE.BONHEUR_REDUCTION} %), avec les technologies et l'équipement, mais jamais moins de ${DATA.PERSONNAGE.PLANCHER} % de ce coût. Au réveil, elle remonte à ${DATA.PERSONNAGE.REVEIL_BASE} % de la jauge, et jusqu'à la jauge pleine si le reste de la famille se couche rassasié ; un aliment mangé dans la journée rend sa valeur (son énergie ÷ ${DATA.PERSONNAGE.MANGER_DIVISEUR}, + ${DATA.PERSONNAGE.MANGER_BONUS} %, arrondie au-dessus). Les automatisations ne coûtent rien.`,
     `Électricité : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe (son eau sert aussi aux asperseurs de l'arrosage automatique), moulin, chaînes de production, réfrigérateur, station de charge du robot. Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.USURE.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.USURE.TAUX_ENTRETIEN)} % de son prix, le réparer après une panne ${formatNumber(DATA.USURE.TAUX_REPARATION)} % (arrondis à l'entier supérieur).`,
     `La calèche : elle fait chaque jour le tour du monde par les chemins et passe à la ferme vers ${DATA.CALECHE.FERME} h ; on commerce avec elle quand elle est arrêtée à côté de soi (ou hélée sur un chemin). Prix de vente fixes. Elle vend les semences (prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur ; chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient, chaque unité vendue en retire ${formatNumber(M.PAS)}, plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %) et ce qu'elle achète aux hameaux (à ${DATA.CALECHE.VENTE} % du prix de vente). Les outils, les animaux et les meubles se fabriquent à l'Atelier.`,
-    `Autonomie = part de ce que la famille a mangé dans la journée qui vient de la ferme. ${chapterCount()} chapitres mènent à une famille autonome.`,
+    `${chapterCount()} chapitres racontent un foyer qui prend vie : des amis, des repas partagés, les projets des hameaux, une ferme à votre image ; le dernier ouvre le jeu libre.`,
     `Arbre des technologies : ${Object.keys(DATA.ARBRE.noeuds).length} technologies en ${DATA.ARBRE.branches.length} branches, payées en points de technologie (PT : chapitres terminés, jalons de maîtrise, mode libre), en pièces et en ressources (bois, pierre, puis lingots fondus au Four avec le minerai de la grotte). Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
     `Absence : jusqu'à ${formatDuration(H.MAX_S)} sont rattrapées au retour (énergie, eau, préparations, réfrigérateur), sans nuit${H.USURE ? '' : ' et sans usure'}. Ce temps compte comme temps d'éveil.`,
   ];

@@ -14,7 +14,7 @@ import {
   unlockLevel, updateChapters, water,
 } from '../../js/engine/index.js';
 import {
-  affamer, assert, assertEqual, atChapter, atelier, auto5, AVANT_DEMENAGEMENT, boite, farm,
+  affamer, assert, assertEqual, atChapter, atelier, auto5, AVANT_DEMENAGEMENT, boite, farm, sansCompteurs68,
   fillCows, fillSheep, garden, holdNights, kwh, matin, migreAvant, ml, pature, plantRipe, ranch,
   reach, runFor, setInv, setStraw, sleepOnce, test,
 } from './aide.mjs';
@@ -261,7 +261,7 @@ test('migration v9 → v10 : une partie neuve arrive au chapitre 1', () => {
   assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual([m.campagne.chapitre, m.campagne.fini, m.campagne.annonces, m.campagne.historique], [1, false, [], []]);
   // FLU-42 : la partie a déjà ses parcelles (anciennes versions) : « Labourer 6 tuiles » est fait
-  assertEqual(m.campagne.compteurs, { ...newCampaignCounters(), labours: 6 });
+  assertEqual(sansCompteurs68(m.campagne).compteurs, { ...newCampaignCounters(), labours: 6 });
   assertEqual([m.nuit.energieProduit, m.nuit.autonomie, 'soins' in m.jour], [0, 0, false], 'version 1.8 : plus de soins');
 });
 

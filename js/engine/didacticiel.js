@@ -38,7 +38,7 @@ import { offrirSac } from './equipement.js';
    reprend à la première d'entre elles. */
 
 export const ETAPES = [
-  'sante', 'endurance', 'bonheur', 'xp', 'autonomie', 'argent', 'deplacement',
+  'sante', 'endurance', 'bonheur', 'xp', 'argent', 'deplacement',
   'pierres', 'bois', 'atelier', 'atelier_ouvrir', 'faux', 'fibres', 'outils',
   'abri_ressources', 'arbres', 'abri_fabriquer', 'abri_construire', 'paillasses',
   'houe', 'graines', 'labour', 'semis', 'puits', 'arroser',
@@ -53,7 +53,7 @@ export const ETAPES_MONDE = ['carte', 'sortie', 'recolte_monde', 'caleche', 'ham
 // Les étapes qui se lisent : on passe à la suivante avec « Suivant » (suivantDidacticiel).
 // (atelier_ouvrir : l'interface la valide quand la fenêtre de l'Atelier s'ouvre)
 // (carte : l'interface la valide quand la carte du monde s'ouvre)
-const A_LIRE = new Set(['sante', 'endurance', 'bonheur', 'xp', 'autonomie', 'argent', 'deplacement', 'atelier_ouvrir', 'arbres', 'graines', 'carte', 'fin']);
+const A_LIRE = new Set(['sante', 'endurance', 'bonheur', 'xp', 'argent', 'deplacement', 'atelier_ouvrir', 'arbres', 'graines', 'carte', 'fin']);
 
 // Ce que chaque étape débloque, dès qu'on l'atteint : les recettes de l'Atelier, les blocs du
 // menu Construire. (Après le didacticiel : tout.)

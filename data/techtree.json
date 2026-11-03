@@ -19,7 +19,7 @@
       "2": { "chapitre": 3, "nom": "Organisation" },
       "3": { "chapitre": 4, "nom": "Automatisation" },
       "4": { "chapitre": 5, "nom": "Maîtrise" },
-      "5": { "chapitre": 7, "nom": "Autonomie" }
+      "5": { "chapitre": 7, "nom": "Petit paradis" }
     },
     "//POINTS": "Points de technologie (PT).",
     "POINTS": {
@@ -32,10 +32,10 @@
         { "id": "pains_50", "compteur": "pains", "cible": 50, "libelle": "Cuire 50 pains" },
         { "id": "laines_40", "compteur": "laines", "cible": 40, "libelle": "Tondre 40 laines" },
         { "id": "annee_1", "compteur": "nuits", "cible": 40, "libelle": "Traverser une année complète (40 nuits)" },
-        { "id": "pleine_20", "compteur": "nuits100", "cible": 20, "libelle": "Cumuler 20 nuits à 100 % d'autonomie" }
+        { "id": "repas_5", "compteur": "repasInvites", "cible": 5, "libelle": "Partager 5 repas avec des invités" }
       ],
-      "//MODE_LIBRE_NUITS_100": "Mode libre (campagne terminée) : +1 PT toutes les N nuits à 100 %.",
-      "MODE_LIBRE_NUITS_100": 5
+      "//MODE_LIBRE_NUITS": "Jeu libre (campagne terminée) : +1 PT toutes les N nuits.",
+      "MODE_LIBRE_NUITS": 5
     },
     "batiments": {
       "potager": { "nom": "Zone de culture", "icone": "🌱" },

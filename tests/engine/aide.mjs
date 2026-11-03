@@ -17,6 +17,9 @@ import {
   zoneTile,
 } from '../../js/engine/index.js';
 import { noterEncyclopedie, toutVoir } from '../../js/engine/index.js';
+import { ETAPES } from '../../js/engine/didacticiel.js';
+import { habitantsDe, peuplerHameau } from '../../js/engine/habitants.js';
+import { ajouterAmitie } from '../../js/engine/amitie.js';
 
 // Le calendrier lunaire change la pousse, l'eau et les récoltes selon le jour. Les tests écrits
 // avant lui tournent lune neutre (un stade par nuit, rendements et eau de base) ; ceux de la
@@ -325,8 +328,26 @@ export function coldRoom({ charge = true, lest = 50 } = {}) {
 // Fiche 9b : les objectifs de la campagne qui se font dans le grand monde (la calèche, les hameaux, le
 // monde vu, une grotte de la montagne, la mer, les bêtes), tous remplis d'un coup : les tests d'un
 // chapitre de la ferme n'ont pas à sortir. (Après testGoToChapter, qui remet les compteurs à zéro.)
-export const OBJECTIFS_MONDE = ['caleche', 'hameaux', 'monde', 'grotteMonde', 'pecheMer', 'achatsHameaux', 'faune'];
+// La nouvelle vision : les objectifs d'un foyer qui prend vie (un ami, un repas partagé, un projet de hameau,
+// des styles, des plans) se font hors des gestes de la ferme : remplis eux aussi (vieFaite).
+export const OBJECTIFS_MONDE = ['caleche', 'hameaux', 'monde', 'grotteMonde', 'pecheMer', 'achatsHameaux', 'faune', 'amis', 'repas', 'projets', 'styles', 'plans'];
+export function vieFaite(s) {
+  const k = s.campagne.compteurs;
+  k.repasInvites = Math.max(k.repasInvites || 0, 5);
+  // un ami intime, dans un hameau peuplé pour l'occasion
+  const plan = { id: 'h_vie', nom: 'Les Amis', metier: 'berger', style: 'prairie', case: 3,
+    maisons: [{ id: 'h_vie_m1', lits: [{ case: 0, sorte: 'lit_adulte' }] }], jardins: [], travail: [], place: { cases: [] } };
+  if (!habitantsDe(s).h_vie) peuplerHameau(s, plan);
+  for (const f of habitantsDe(s).h_vie.foyers) for (const m of f.membres) ajouterAmitie(s, m.id, 1000);
+  // un projet achevé, tous les plans, trois styles mêlés (des sols loin de tout)
+  s.projets = { ...(s.projets || {}), h_vie: { rang: 1, recu: {}, don: null, faits: [{ sorte: 'place', jour: 1 }] } };
+  s.plans = { connus: Object.fromEntries(Object.values(DATA.PLANS.COLLECTIONS).flatMap((c) => c.plans).map((id) => [id, { jour: 1, de: null, annonce: true }])), explores: {}, amis: {} };
+  s.sols = { ...(s.sols || {}) };
+  ['sol_tomettes', 'sol_dalles', 'plancher', 'sol_chevrons', 'sol_carrelage', 'sol_mosaique'].forEach((sorte, i) => { s.sols[1 + i] = sorte; });
+  return s;
+}
 export function mondeFait(s) {
+  vieFaite(s);
   const k = s.campagne.compteurs;
   Object.assign(k, { calecheVentes: 1000, achatsHameaux: 100, pecheMer: 10 });
   s.monde.hameaux = {};
@@ -385,4 +406,17 @@ export const T1 = farmTerrain({ carte: { graine: '1' } });
 // chapitre 1) a les trois nouvelles étapes du chapitre 1 validées.
 export function chapter1StepsDone(c) {
   return { ...c, compteurs: { ...c.compteurs, labours: 6, semis: 6, arroseesMax: 6 } };
+}
+
+// La campagne d'une partie migrée avant la v68 (où l'autonomie quitte le jeu), sans les compteurs qu'elle
+// garde jusque-là (ceux des nuits à 100 % et de la tenue) : les tests des anciennes migrations, qui
+// s'arrêtent avant, la comparent à une campagne d'aujourd'hui.
+// Les étapes du didacticiel d'avant la v68 : l'« autonomie » y était la cinquième (une ancienne partie
+// les compte ainsi).
+export const ETAPES_AVANT_68 = [...ETAPES.slice(0, 4), 'autonomie', ...ETAPES.slice(4)];
+
+export function sansCompteurs68(c) {
+  if (!c || !c.compteurs) return c;
+  const { serie100, nuits100, tenue, tenueDerniere, tenueReussie, ...k } = c.compteurs;
+  return { ...c, compteurs: k };
 }

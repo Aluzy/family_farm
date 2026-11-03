@@ -1335,7 +1335,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "conserve",
      "terme": "Boîte de conserve",
-     "description": "Aliment non périssable présent dès le début de la partie (40 boîtes), qui laisse le temps de lancer les premières cultures avant que la boîte à nourriture ne soit vide. Ne peut pas être racheté une fois épuisé, et ne compte pas pour l'autonomie. À ne pas confondre avec le bocal de légumes.",
+     "description": "Aliment non périssable présent dès le début de la partie (40 boîtes), qui laisse le temps de lancer les premières cultures avant que la boîte à nourriture ne soit vide. Ne peut pas être racheté une fois épuisé. À ne pas confondre avec le bocal de légumes.",
      "liens": [
       "apport_journalier",
       "potager",
@@ -1598,7 +1598,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "bocal_de_legumes",
      "terme": "Bocal de légumes",
-     "description": "Plat préparé à la cuisine à partir de 4 légumes d'une même sorte et de 1 L d'eau ; ne périme pas. Débloqué par la technologie Mise en bocaux. Contrairement à la boîte de conserve de départ, il compte comme produit de la ferme pour l'autonomie.",
+     "description": "Plat préparé à la cuisine à partir de 4 légumes d'une même sorte et de 1 L d'eau ; ne périme pas. Débloqué par la technologie Mise en bocaux.",
      "liens": [
       "cuisine",
       "conserve",
@@ -3135,9 +3135,8 @@ export const ENCYCLOPEDIE = {
     {
      "id": "chapitres",
      "terme": "Chapitres",
-     "description": "7 étapes de l'histoire d'un foyer qui prend vie, avec leurs objectifs : Notre nouveau chez-nous (l'héritage : bâtir le foyer, première récolte), Une maison à notre image (le grenier : cultures, Silo, blé, et les premières ventes à la calèche), Les premiers animaux (le poulailler, le premier minerai de fer de la mine, et un premier hameau du grand monde), Les plaisirs de la cuisine (le four, le premier lingot de fer, une grotte de la montagne, et une part du monde vue), Une ferme pleine de vie (le troupeau, d'autres hameaux, un poisson de mer), Au rythme de la nature (toute l'année : acheter aux hameaux par la calèche, regarder les bêtes sauvages), puis Notre petit coin de paradis (l'autonomie, et connaître son pays). Ils ne débloquent plus rien depuis la version 1.7 : chaque chapitre terminé rapporte de l'expérience, des points de technologie, ouvre un palier de l'Arbre des technologies et offre une récompense : un plan de meuble de collection ou des objets de décor, chacun de son style (un plan déjà trouvé cède la place au suivant de sa collection). Le dernier ne termine rien : il ouvre le jeu libre (aménager, inviter, aider les hameaux, compléter les collections).",
+     "description": "7 étapes de l'histoire d'un foyer qui prend vie, avec leurs objectifs : Notre nouveau chez-nous (l'héritage : bâtir le foyer, première récolte), Une maison à notre image (le grenier : cultures, Silo, blé, et les premières ventes à la calèche), Les premiers animaux (le poulailler, le premier minerai de fer de la mine, un premier hameau du grand monde et un premier ami), Les plaisirs de la cuisine (le four, le premier lingot de fer, une grotte de la montagne, et une part du monde vue), Une ferme pleine de vie (le troupeau, un repas partagé avec des invités, d'autres hameaux, un poisson de mer), Au rythme de la nature (toute l'année : un projet de hameau achevé, acheter aux hameaux par la calèche, regarder les bêtes sauvages), puis Notre petit coin de paradis (mêler les styles, trouver des plans, connaître son pays). Ils ne débloquent plus rien depuis la version 1.7 : chaque chapitre terminé rapporte de l'expérience, des points de technologie, ouvre un palier de l'Arbre des technologies et offre une récompense : un plan de meuble de collection ou des objets de décor, chacun de son style (un plan déjà trouvé cède la place au suivant de sa collection). Le dernier ne termine rien : il ouvre le jeu libre (aménager, inviter, aider les hameaux, compléter les collections).",
      "liens": [
-      "autonomie",
       "points_technologie",
       "niveaux",
       "grotte",
@@ -3171,19 +3170,6 @@ export const ENCYCLOPEDIE = {
      "description": "Points gagnés en jouant, qui font monter de niveau : 500 XP pour le niveau 2, 1 200 pour le 3, puis 3 000, 7 500, 20 000, 40 000, 80 000, 180 000 et 400 000.",
      "liens": [
       "niveaux"
-     ],
-     "decouverte": [
-      "depart"
-     ]
-    },
-    {
-     "id": "autonomie",
-     "terme": "Autonomie",
-     "description": "Pourcentage de ce que la famille a mangé dans la journée (à la boîte à nourriture ou au réfrigérateur) qui vient de la ferme elle-même. La nourriture achetée à la calèche et les conserves de départ ne comptent pas. Un jour où personne n'a mangé garde l'autonomie de la veille.",
-     "liens": [
-      "apport_journalier",
-      "comptoir",
-      "conserve"
      ],
      "decouverte": [
       "depart"
@@ -3280,7 +3266,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "points_technologie",
      "terme": "Points de technologie",
-     "description": "Monnaie de l'Arbre des technologies (PT), en plus des pièces et des ressources. On en gagne à chaque chapitre terminé (2, 3, 3, 4, 4, 5 puis 5), à six jalons de maîtrise (2 000 L pompés, 10 plats différents, 50 pains, 40 laines, 40 nuits jouées, 20 nuits à 100 %) et, une fois la campagne finie, 1 point toutes les 5 nuits à 100 %.",
+     "description": "Monnaie de l'Arbre des technologies (PT), en plus des pièces et des ressources. On en gagne à chaque chapitre terminé (2, 3, 3, 4, 4, 5 puis 5), à six jalons de maîtrise (2 000 L pompés, 10 plats différents, 50 pains, 40 laines, 40 nuits jouées, 5 repas partagés avec des invités) et, en jeu libre, 1 point toutes les 5 nuits.",
      "liens": [
       "arbre_technologique",
       "chapitres"
@@ -3437,7 +3423,6 @@ export const ENCYCLOPEDIE = {
       "animal_de_compagnie",
       "apport_journalier",
       "bonheur",
-      "autonomie",
       "maison"
      ],
      "decouverte": [

@@ -139,7 +139,7 @@ export function renderTechno() {
       </details>`;
   });
   const libre = state.campagne && state.campagne.fini
-    ? ` En mode libre, +1 PT toutes les ${P.MODE_LIBRE_NUITS_100} nuits à 100 % d'autonomie.`
+    ? ` En jeu libre, +1 PT toutes les ${P.MODE_LIBRE_NUITS} nuits.`
     : '';
   return `
     <div class="section-head">

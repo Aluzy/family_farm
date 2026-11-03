@@ -2076,7 +2076,7 @@ export const RAW_DATA = {
       "2": { "chapitre": 3, "nom": "Organisation" },
       "3": { "chapitre": 4, "nom": "Automatisation" },
       "4": { "chapitre": 5, "nom": "Maîtrise" },
-      "5": { "chapitre": 7, "nom": "Autonomie" }
+      "5": { "chapitre": 7, "nom": "Petit paradis" }
     },
     "POINTS": {
       "CHAPITRES": [2, 3, 3, 4, 4, 5, 5],
@@ -2086,9 +2086,9 @@ export const RAW_DATA = {
         { "id": "pains_50", "compteur": "pains", "cible": 50, "libelle": "Cuire 50 pains" },
         { "id": "laines_40", "compteur": "laines", "cible": 40, "libelle": "Tondre 40 laines" },
         { "id": "annee_1", "compteur": "nuits", "cible": 40, "libelle": "Traverser une année complète (40 nuits)" },
-        { "id": "pleine_20", "compteur": "nuits100", "cible": 20, "libelle": "Cumuler 20 nuits à 100 % d'autonomie" }
+        { "id": "repas_5", "compteur": "repasInvites", "cible": 5, "libelle": "Partager 5 repas avec des invités" }
       ],
-      "MODE_LIBRE_NUITS_100": 5
+      "MODE_LIBRE_NUITS": 5
     },
     "batiments": {
       "potager": { "nom": "Zone de culture", "icone": "🌱" },
@@ -2701,10 +2701,10 @@ export const RAW_DATA = {
         "etape": "Le poulailler",
         "icone": "🐔",
         "recompense": { "plans": ["banc_rondins"] },
-        "intro": "« On ne laisse pas une poule sans grain, ni une famille sans œufs », dit Odile. Une ponte régulière demande du blé, et la ferme doit nourrir la moitié de la famille. L'Arbre des technologies demande maintenant du fer : une pioche en main, cherche la mine de la ferme, cachée dans les bois, et descends-y. Et il est temps de sortir de la ferme : suis le chemin de la calèche jusqu'au premier hameau.",
+        "intro": "« On ne laisse pas une poule sans grain, ni une famille sans œufs », dit Odile. Une ponte régulière demande du blé. Et un voisin, ça se gagne : parle aux habitants, offre-leur ce qu'ils aiment. L'Arbre des technologies demande maintenant du fer : une pioche en main, cherche la mine de la ferme, cachée dans les bois, et descends-y. Et il est temps de sortir de la ferme : suis le chemin de la calèche jusqu'au premier hameau.",
         "objectifs": [
           { "type": "pontes", "cible": 7, "libelle": "Pondre 7 nuits d'affilée", "unite": "nuits" },
-          { "type": "autonomie", "cible": 50, "libelle": "Atteindre 50 % d'autonomie", "unite": "%" },
+          { "type": "amis", "palier": 2, "cible": 1, "libelle": "Devenir « cordial » avec un habitant d'un hameau", "unite": "" },
           { "type": "objet", "item": "minerai_fer", "cible": 4, "libelle": "Rapporter 4 minerais de fer de la mine", "unite": "" },
           { "type": "hameaux", "cible": 1, "libelle": "Découvrir un hameau du grand monde", "unite": "" }
         ]
@@ -2728,10 +2728,10 @@ export const RAW_DATA = {
         "etape": "Le troupeau",
         "icone": "🐑",
         "recompense": { "plans": ["chaise_peinte"] },
-        "intro": "« Papa disait qu'une ferme sans bêtes, c'est un jardin qui se donne des airs », t'écrit ta mère. Des moutons pour la laine, des vaches pour le lait. Ils vivent à l'Étable et mangent chaque nuit de la paille : fauche l'herbe haute de la carte avec la faux, puis jette ses fibres dans la botteleuse (Atelier) pour en faire des bottes. Les hameaux ont leurs bergers et leurs pêcheurs : va voir comment ils vivent, et tente ta chance à la canne au bord de la mer.",
+        "intro": "« Papa disait qu'une ferme sans bêtes, c'est un jardin qui se donne des airs », t'écrit ta mère. Des moutons pour la laine, des vaches pour le lait. Et une ferme vit aussi de ceux qu'on y reçoit : invite tes amis à un repas, depuis le calendrier. Ils vivent à l'Étable et mangent chaque nuit de la paille : fauche l'herbe haute de la carte avec la faux, puis jette ses fibres dans la botteleuse (Atelier) pour en faire des bottes. Les hameaux ont leurs bergers et leurs pêcheurs : va voir comment ils vivent, et tente ta chance à la canne au bord de la mer.",
         "objectifs": [
           { "type": "laines", "cible": 10, "libelle": "Tondre 10 laines", "unite": "" },
-          { "type": "autonomie", "cible": 60, "libelle": "Atteindre 60 % d'autonomie", "unite": "%" },
+          { "type": "repas", "cible": 1, "libelle": "Partager un repas avec des invités (le calendrier)", "unite": "" },
           { "type": "hameaux", "cible": 3, "libelle": "Découvrir 3 hameaux", "unite": "" },
           { "type": "pecheMer", "cible": 1, "libelle": "Pêcher un poisson dans la mer", "unite": "" }
         ]
@@ -2741,28 +2741,22 @@ export const RAW_DATA = {
         "etape": "Toute l'année",
         "icone": "📅",
         "recompense": { "plans": ["bac_lavande"] },
-        "intro": "« On ne juge pas une ferme aux bons jours, mais aux mauvais », dit Odile. La Serre, le Verger et le Réfrigérateur pour tenir dans la durée : dix nuits d'affilée bien nourris. Ce qui manque à la ferme, les hameaux l'ont parfois : la calèche te vend ce qu'elle leur achète. Et le pays a ses bêtes, à regarder sans les chasser.",
+        "intro": "« On ne juge pas une ferme aux bons jours, mais aux mauvais », dit Odile. La Serre, le Verger et le Réfrigérateur pour tenir dans la durée. Les hameaux, eux, ont leurs projets : apporte-leur de quoi les achever. Ce qui manque à la ferme, les hameaux l'ont parfois : la calèche te vend ce qu'elle leur achète. Et le pays a ses bêtes, à regarder sans les chasser.",
         "objectifs": [
-          {
-            "type": "tenue",
-            "cible": 1,
-            "nuits": 10,
-            "moyenne": 80,
-            "libelle": "Tenir 10 nuits d'affilée à 80 % d'autonomie en moyenne",
-            "unite": ""
-          },
+          { "type": "projets", "cible": 1, "libelle": "Aider un hameau à achever un projet", "unite": "" },
           { "type": "achatsHameaux", "cible": 5, "libelle": "Acheter 5 produits des hameaux à la calèche", "unite": "" },
           { "type": "faune", "cible": 6, "libelle": "Voir 6 bêtes sauvages différentes", "unite": "" }
         ]
       },
       {
         "titre": "Notre petit coin de paradis",
-        "etape": "Famille autonome",
+        "etape": "La ferme accomplie",
         "icone": "🏡",
         "recompense": { "plans": ["banc_pierre"], "objets": { "lanterne": 3 } },
-        "intro": "« Maurice disait : le jour où ta table se remplit sans moi, je passe quand même. Pour causer », dit Achille. Le dernier défi : nourrir la famille avec ce que produit la ferme, et rien d'autre. Et connaître son pays : les hameaux du bout des chemins, la montagne, la côte. Ce ne sera pas une fin : ensuite, la ferme est à toi, à ton rythme.",
+        "intro": "« Maurice disait : le jour où ta table se remplit sans moi, je passe quand même. Pour causer », dit Achille. Fais de la ferme un lieu à votre image : mêle les styles qui vous plaisent, cherche les plans des meubles du pays. Et connais ton pays : les hameaux du bout des chemins, la montagne, la côte. Ce ne sera pas une fin : ensuite, la ferme est à toi, à ton rythme.",
         "objectifs": [
-          { "type": "serie100", "cible": 7, "libelle": "Atteindre 100 % d'autonomie 7 nuits d'affilée", "unite": "nuits" },
+          { "type": "styles", "cible": 3, "libelle": "Mêler 3 styles à la ferme (ou un style complet)", "unite": "" },
+          { "type": "plans", "cible": 7, "libelle": "Trouver 7 plans de meubles de collection", "unite": "" },
           { "type": "hameaux", "cible": 5, "libelle": "Découvrir 5 hameaux", "unite": "" },
           { "type": "monde", "cible": 15, "libelle": "Voir 15 % du grand monde", "unite": "%" }
         ]

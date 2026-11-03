@@ -16,7 +16,7 @@ import {
   caseDuMonde, caseVue, chevalOu, countItem, createInitialState, DATA, farmSeed, farmTerrain, FERME_DANS_MONDE,
   genererFerme, migrate, PRESSE_RENDU, reparerPartie, STATE_VERSION, tick,
 } from '../../js/engine/index.js';
-import { assert, assertEqual, sleepOnce, test } from './aide.mjs';
+import { assert, assertEqual, sansCompteurs68, sleepOnce, test } from './aide.mjs';
 
 const lire = (f) => JSON.parse(readFileSync(new URL(f, import.meta.url), 'utf8'));
 const TEMOINS = lire('./temoins.json');
@@ -76,8 +76,11 @@ function gardee(nom, avant, m) {
   assertEqual(m.equipement, { membres: {}, sac: null }, `${nom} : l'équipement`);
   // (fiche 9b, format 59 : les compteurs du grand monde s'y ajoutent, à zéro)
   // (le lot 6 : les récompenses des chapitres déjà terminés, rattrapées : leurs plans)
+  // (la v68 : les compteurs de l'autonomie s'effacent, celui des repas partagés s'ajoute, à zéro)
   const { recompenses, ...campagne } = m.campagne;
-  assertEqual(campagne, { ...avant.campagne, compteurs: { ...avant.campagne.compteurs, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 } }, `${nom} : la campagne`);
+  const { repasInvites, ...compteurs } = campagne.compteurs;
+  assertEqual(repasInvites, 0, `${nom} : les repas partagés`);
+  assertEqual({ ...campagne, compteurs }, sansCompteurs68({ ...avant.campagne, compteurs: { ...avant.campagne.compteurs, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 } }), `${nom} : la campagne`);
   assertEqual(recompenses, Array.from({ length: avant.campagne.fini ? 7 : avant.campagne.chapitre - 1 }, (_, i) => i + 1), `${nom} : les récompenses rattrapées`);
   assertEqual(m.progression, avant.progression, `${nom} : le niveau`);
   // les arbres, les rochers et les touffes touchés de la ferme : les mêmes, aux identifiants du monde

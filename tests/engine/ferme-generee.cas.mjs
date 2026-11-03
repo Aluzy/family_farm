@@ -6,7 +6,7 @@
 
 import {
   assert, assertEqual, AVANT_DEMENAGEMENT, garden, migreAvant, reach, setInv, sleepOnce, tireless,
-  avantLeMonde, caseDeLaFerme } from './aide.mjs';
+  avantLeMonde, caseDeLaFerme, ETAPES_AVANT_68 } from './aide.mjs';
 import { test as testNode } from 'node:test';
 
 // Joué en trois parties, en parallèle (<nom>-<k>.test.mjs posent globalThis.PARTIE_TESTS = [k, n]) : seuls
@@ -1819,7 +1819,7 @@ test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il
   const R = DATA.ATELIER.RECETTES;
   assertEqual([etapeDidacticiel(s), [...recettesDidacticiel(s)], [...blocsDidacticiel(s)]], ['sante', [], []]);
   assertEqual(suivantDidacticiel(s, 'pierres').ok, false, 'pas l\'étape en cours');
-  for (let k = 0; k < 7; k++) assert(suivantDidacticiel(s).ok);
+  for (let k = 0; k < 6; k++) assert(suivantDidacticiel(s).ok);
   assertEqual([etapeDidacticiel(s), objectifDidacticiel(s).compteurs], ['pierres', [{ objet: 'pierre', n: 0, besoin: DATA.ATELIER.CONSTRUCTION.pierre }]]);
   assertEqual(suivantDidacticiel(s).ok, false, 'une étape à objectif ne se passe pas');
   setInv(s, { pierre: 3 });
@@ -1909,9 +1909,10 @@ test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il
 
 test('migration v48 → v49 : l\'étape « arbres » s\'ajoute au didacticiel, une partie plus loin avance d\'un cran', () => {
   const vieille = (etape) => ({ ...createInitialState(3), version: 48, didacticiel: { etape, fini: false } });
-  const i = ETAPES.indexOf('arbres');
-  assertEqual(ETAPES.slice(i - 1, i + 2), ['abri_ressources', 'arbres', 'abri_fabriquer']);
-  assertEqual(migrate({ v: 48, t: 0, s: vieille(i - 1) }).didacticiel.etape, i - 1, 'avant : la même étape');
+  // (les étapes d'alors : celles d'avant la v68, où l'« autonomie » quitte le didacticiel)
+  const i = ETAPES_AVANT_68.indexOf('arbres');
+  assertEqual(ETAPES_AVANT_68.slice(i - 1, i + 2), ['abri_ressources', 'arbres', 'abri_fabriquer']);
+  assertEqual(ETAPES[migrate({ v: 48, t: 0, s: vieille(i - 1) }).didacticiel.etape], 'abri_ressources', 'avant : la même étape');
   assertEqual(ETAPES[migrate({ v: 48, t: 0, s: vieille(i) }).didacticiel.etape], 'abri_fabriquer', 'l\'ancienne étape d\'après garde son nom');
   assertEqual(migrate({ v: 48, t: 0, s: { ...vieille(20), didacticiel: { etape: 20, fini: true } } }).didacticiel.etape, 20, 'fini : rien ne change');
 });
