@@ -187,7 +187,7 @@ test('migration v15 → v16 : la viande et les anciens plats de l\'inventaire et
   repasStep(m);
   assertEqual(m.repasJour.mange, { poivrons_farcis: 1, roti_boeuf: 2 }, 'de 20 : 18 + 2 × 32');
   const rep = sleepOnce(m);
-  assertEqual(rep.autonomie > 0, true);
+  assertEqual(rep.energieMangee > 0, true);
   // et ils se vendent, au prix d'avant
   m.pieces = 0;
   assertEqual(sellItem(m, 'viande_boeuf', 4).gain, 40);

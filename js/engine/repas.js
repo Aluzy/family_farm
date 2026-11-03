@@ -1,5 +1,4 @@
 import { DATA } from './catalog.js';
-import { floorPercent } from './base.js';
 import { fail } from './devices.js';
 import { addItem, countItem, keepLots, lotList, lotRank, lotsOf, pullLots, pushLots } from './inventory.js';
 import { mainCharacter } from './depart.js';
@@ -15,7 +14,7 @@ import { clockHours, nightActive } from './clock.js';
 // ou qu'il aide (depenserMembre) ; arrivée à FAIM.SEUIL, il mange jusqu'à MAX (repasStep) :
 // au réfrigérateur s'il est construit, sinon dans la boîte à nourriture posée dans le foyer.
 // Ce que la famille mange dans la journée s'additionne dans state.repasJour, que la nuit
-// recopie dans son compte rendu (feedFamily) : autonomie, bonheur des plats, réveil.
+// recopie dans son compte rendu (feedFamily) : bonheur des plats, réveil.
 
 const F = () => DATA.FAMILLE.FAIM;
 const B = () => DATA.ATELIER.BOITE;
@@ -197,10 +196,10 @@ function prochainAliment(store) {
   return best && best.item;
 }
 
-// Ce que la famille a mangé aujourd'hui : { mange: { item: n }, energie, produit } (points
-// rendus, dont ceux d'aliments produits à la ferme), et les étapes du jour faites.
+// Ce que la famille a mangé aujourd'hui : { mange: { item: n }, energie } (points rendus), et les étapes
+// du jour faites.
 export function repasJour(state) {
-  if (!state.repasJour || typeof state.repasJour !== 'object') state.repasJour = { mange: {}, energie: 0, produit: 0 };
+  if (!state.repasJour || typeof state.repasJour !== 'object') state.repasJour = { mange: {}, energie: 0 };
   return state.repasJour;
 }
 
@@ -215,7 +214,7 @@ export function mangerMembre(state, m, cible = F().MAX) {
     const item = prochainAliment(store);
     if (!item) break;
     const lots = lotList(store, item);
-    const [p] = pullLots(lots, 1);
+    pullLots(lots, 1);
     keepLots(store, item, lots);
     const v = valeurAliment(item);
     e = Math.min(F().MAX, e + v);
@@ -223,7 +222,6 @@ export function mangerMembre(state, m, cible = F().MAX) {
     const R = repasJour(state);
     R.mange[item] = (R.mange[item] || 0) + 1;
     R.energie += v;
-    if (p && p.origin === DATA.ORIGINE.PRODUIT) R.produit += v;
   }
   setJauge(m, e);
   const ok = Object.keys(mange).length > 0;
@@ -279,11 +277,4 @@ export function bonheurRepas(state, mange) {
     total += memberHappiness(m) - avant;
   }
   return membres.length ? Math.round(total / membres.length) : 0;
-}
-
-// Autonomie du jour en cours (en %) : la part des points mangés qui vient de la ferme ;
-// `defaut` si la famille n'a encore rien mangé.
-export function autonomieJour(state, defaut = 0) {
-  const R = repasJour(state);
-  return R.energie > 0 ? floorPercent(R.produit, R.energie) : defaut;
 }

@@ -1,9 +1,8 @@
 import { DATA } from './catalog.js';
-import { EPS, floorPercent } from './base.js';
+import { EPS } from './base.js';
 import { fail, isOwned, starterOf, storedEnergy } from './devices.js';
 import { earn } from './compta.js';
 import { addItem, countItem } from './inventory.js';
-import { autonomieJour } from './repas.js';
 import { averageHappiness } from './bonheur.js';
 import { plantableCrops } from './crops.js';
 import { checkMastery, grantTechPoints, isBuilt, techPoints } from './techtree.js';
@@ -18,23 +17,20 @@ import { habitantsDe } from './habitants.js';
 import { cleDe, palierAmitie } from './amitie.js';
 import { styleMaison } from './styles.js';
 
-/* ---------- Lot 9 : chapitres (et la part de la ferme dans les repas, pour les mesures) ---------- */
+/* ---------- Lot 9 : chapitres ---------- */
 
-// state.campagne = { chapitre, fini, annonces, historique, compteurs }.
+// state.campagne = { chapitre, fini, annonces, recompenses, compteurs }.
 // chapitre : chapitre en cours (1 à 7) ; fini : la campagne est terminée (mode
 // libre, tout est débloqué) ; annonces : chapitres terminés dont l'écran de fin
-// n'a pas encore été vu [{ chapitre, nuit }] ; historique : autonomie de chaque
-// nuit [{ nuit, pct, energie }] ; compteurs : eau pompée (mL), record d'énergie
+// n'a pas encore été vu [{ chapitre, nuit }] ; compteurs : eau pompée (mL), record d'énergie
 // stockée (mWh), carottes récoltées, nuits de ponte d'affilée, pains cuits, plats
-// différents préparés, laines tondues, repas servis à des invités. (L'historique ne se montre plus au
-// joueur depuis la nouvelle vision : il sert aux mesures.)
+// différents préparés, laines tondues, repas servis à des invités.
 export function newCampaign() {
   return {
     chapitre: 1,
     fini: false,
     annonces: [],
     recompenses: [], // le lot 6 : les chapitres dont la récompense est donnée
-    historique: [],
     compteurs: newCampaignCounters(),
   };
 }
@@ -61,30 +57,6 @@ export function newCampaignCounters() {
     achatsHameaux: 0, // produits des hameaux achetés à la calèche, son coffre (acheterCaleche)
     pecheMer: 0, // poissons pêchés dans la mer (outils.js, castLine)
   };
-}
-
-/* -- autonomie -- */
-
-// Autonomie d'une nuit en % : points mangés venus de la ferme ÷ points mangés, plafonnée à 100.
-export function autonomyPercent(energieProduit, besoin) {
-  return floorPercent(energieProduit, besoin);
-}
-
-// Autonomie prévue pour la nuit qui vient : celle de ce que la famille a mangé aujourd'hui
-// (repas.js), ou celle de la dernière nuit si elle n'a encore rien mangé.
-export function plannedAutonomy(state) {
-  return autonomieJour(state, lastAutonomy(state));
-}
-
-export function autonomyHistory(state, count = DATA.AUTONOMIE.GRAPHIQUE_NUITS) {
-  const h = state.campagne && Array.isArray(state.campagne.historique) ? state.campagne.historique : [];
-  return h.slice(-count);
-}
-
-// Autonomie de la dernière nuit (0 avant la première nuit).
-export function lastAutonomy(state) {
-  const h = autonomyHistory(state, 1);
-  return h.length ? h[0].pct : 0;
 }
 
 /* -- chapitres et déblocages -- */
@@ -437,29 +409,18 @@ export function acknowledgeChapter(state) {
 
 /* -- compteurs de nuit -- */
 
-// Fin de la nuit (avant le passage au jour suivant) : la part de ce que la famille a mangé qui vient de la
-// ferme, notée pour les mesures (state.nuit.autonomie, l'historique : la télémétrie, la simulation ; le
-// joueur ne la voit plus depuis la nouvelle vision), la série de pontes, et en jeu libre 1 PT toutes les
-// MODE_LIBRE_NUITS nuits.
+// Fin de la nuit (avant le passage au jour suivant) : la série de pontes (remise à zéro dès qu'une nuit
+// l'interrompt) et, en jeu libre, 1 PT toutes les MODE_LIBRE_NUITS nuits.
 export function recordNight(state) {
   const c = state.campagne;
-  if (!c) return null;
-  const n = state.nuit;
-  const energie = n.energieProduit || 0;
-  // (une journée où la famille n'a rien mangé garde la part de la nuit d'avant)
-  const pct = n.besoin > 0 ? autonomyPercent(energie, n.besoin) : lastAutonomy(state);
-  n.autonomie = pct;
-  c.historique.push({ nuit: state.day, pct, energie });
-  const max = DATA.AUTONOMIE.HISTORIQUE_MAX;
-  if (c.historique.length > max) c.historique.splice(0, c.historique.length - max);
+  if (!c) return;
   const k = c.compteurs;
-  if (chapterReached(state) >= objectiveChapter('pontes')) k.serieOeufs = (n.oeufs || 0) > 0 ? k.serieOeufs + 1 : 0;
+  if (chapterReached(state) >= objectiveChapter('pontes')) k.serieOeufs = (state.nuit.oeufs || 0) > 0 ? k.serieOeufs + 1 : 0;
   if (c.fini) {
     const pt = techPoints(state);
     pt.libre += 1;
     if (pt.libre % DATA.ARBRE.POINTS.MODE_LIBRE_NUITS === 0) grantTechPoints(state, 1, 'Jeu libre');
   }
-  return pct;
 }
 
 /* -- ce que possède une partie (migration) -- */

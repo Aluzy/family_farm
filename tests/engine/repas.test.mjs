@@ -135,9 +135,9 @@ test('la boîte : 6 aliments différents au plus, 10 de chacun, les lots gardent
   assertEqual(reprendreBoite(s, 'pain', 5), { ok: true, moved: 5 });
   assert(deposerBoite(s, 'pomme', 2).ok, 'une place s\'est libérée');
   assertEqual(boiteCounts(s), { carotte: 10, patate: 5, tomate: 5, courgette: 5, oeuf: 5, pomme: 2 });
-  // la famille y mange (ce qui périme le plus tôt d'abord) ; ce sont des aliments de la ferme
+  // la famille y mange (ce qui périme le plus tôt d'abord)
   affamer(s);
-  assert(s.repasJour.energie > 0 && s.repasJour.produit === s.repasJour.energie, 'tout vient de la ferme');
+  assert(s.repasJour.energie > 0, 'elle a mangé');
   assertEqual(countItem(s, 'carotte'), 20, 'l\'inventaire n\'est pas touché');
   // reprise, la boîte rend son contenu
   setInv(s, {});

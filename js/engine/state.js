@@ -646,6 +646,21 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v68 → v69 : la part de la ferme dans les repas (l'ancienne autonomie) n'est plus calculée, même en
+  // coulisse : l'historique de la campagne, l'autonomie de la nuit et les points « produits » du jour
+  // s'effacent.
+  68: (state) => {
+    const out = { ...state, version: 69 };
+    const c = state.campagne;
+    if (c && typeof c === 'object' && 'historique' in c) { const { historique, ...reste } = c; out.campagne = reste; }
+    const n = state.nuit;
+    if (n && typeof n === 'object') { const { autonomie, energieProduit, ...reste } = n; out.nuit = reste; }
+    const r = state.repasJour;
+    if (r && typeof r === 'object' && 'produit' in r) { const { produit, ...reste } = r; out.repasJour = reste; }
+    const rp = state.report;
+    if (rp && typeof rp === 'object') { const { autonomie, energieProduit, ...reste } = rp; out.report = reste; }
+    return out;
+  },
 };
 
 // Ce que la Presse avait coûté, rendu par la migration 66 → 67.

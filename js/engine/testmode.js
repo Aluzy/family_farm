@@ -212,8 +212,7 @@ export function testCompleteChapter(state) {
 
 // Lot 9 : va au chapitre `n` (1 à 7) ; n = 8 termine la campagne (mode libre, tout
 // débloqué). Les compteurs du chapitre repartent à zéro (sinon un objectif déjà
-// rempli le validerait aussitôt) et les écrans de fin en attente sont oubliés ;
-// l'historique d'autonomie est conservé.
+// rempli le validerait aussitôt) et les écrans de fin en attente sont oubliés.
 export function testGoToChapter(state, n) {
   const c = state.campagne;
   const target = Math.floor(Number(n));

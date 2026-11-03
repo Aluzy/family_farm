@@ -250,7 +250,7 @@ const Telemetry = (() => {
     if (!active || !snapshot) return;
     accrue();
     push('night', {
-      day: num(snapshot.day), chapter: num(snapshot.chapter), autonomy: num(snapshot.autonomy),
+      day: num(snapshot.day), chapter: num(snapshot.chapter),
       pieces: num(snapshot.pieces), energy: num(snapshot.energy), awake: num(snapshot.awake),
       level: num(snapshot.level), xp: num(snapshot.xp), adults: num(snapshot.adults), children: num(snapshot.children),
       wild: snapshot.wild === undefined ? null : !!snapshot.wild, meal: num(snapshot.meal),

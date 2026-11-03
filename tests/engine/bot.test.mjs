@@ -7,7 +7,7 @@ import {
   actionCost, botBuy, botDay, botFarm, botFieldTarget, botHoe, botIsFieldCrop, botMill,
   botRaiseFunds, botRecipeValue, botScythe, botSell, botSheep, botSnack, botStepInfo, botWheatKept,
   chapterReached, countItem, cutGrass, DATA, hasHoe, hasTool, millPending, NIGHT_STEPS,
-  openStation, sheepCount, simulateFromCopy, simulateGame, simulatePlay, simulationReach,
+  openStation, sheepCount, simulateFromCopy, simulateGame, simulatePlay,
   soilCount, testBatir, testFillBatteries, testGoToChapter, testSetLevel, testWoolReady,
 } from '../../js/engine/index.js';
 import {
@@ -23,13 +23,12 @@ function simRows(strategy, nights, seed = 1) {
   return simulateGame(strategy, nights, seed);
 }
 
-test('Lot 10 : DATA.SIMULATION est cohérent (stratégies, jalons, plan)', () => {
+test('Lot 10 : DATA.SIMULATION est cohérent (stratégies, plan)', () => {
   const S = DATA.SIMULATION;
   assertEqual(Object.keys(S.STRATEGIES).sort(), ['applique', 'minimal']);
   assertEqual([S.STRATEGIES.applique.eveilS, S.STRATEGIES.minimal.eveilS], [60, 30]);
   assert(S.STRATEGIES.minimal.eveilS >= DATA.TEMPS.EVEIL_MIN_S, 'le joueur minimal reste éveillé au moins l\'éveil minimal');
-  assertEqual(S.JALONS.map((j) => [j.nuit, j.pct]), [[8, 35], [15, 50], [25, 75], [40, 90], [60, 100]]);
-  assertEqual(S.TOLERANCE_NUITS, 10);
+  assertEqual([S.JALONS, S.TOLERANCE_NUITS], [undefined, undefined], 'plus de jalons d\'autonomie');
   assertEqual(S.NUITS, 80);
   // chaque étape du plan et des priorités se lit sans erreur sur une partie neuve
   const s = partie(1);
@@ -47,7 +46,7 @@ test('Lot 10 : une partie simulée est reproductible (même graine, même courbe
   assertEqual(a.length, 12);
   assertEqual(a.map((r) => r.nuit), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   for (const r of a) {
-    assert(r.autonomie >= 0 && r.autonomie <= 100, 'autonomie entre 0 et 100');
+    assert(r.bonheur >= 0 && r.bonheur <= 100 && !('autonomie' in r), 'bonheur entre 0 et 100, plus d\'autonomie');
     assert(r.energie >= 0 && r.energie <= DATA.PERSONNAGE.MAX, 'énergie du personnage entre 0 et le maximum');
     assert(r.bonheur >= 0 && r.bonheur <= DATA.BONHEUR.MAX);
     assert(r.pieces >= 0 && r.conserves >= 0 && r.niveau >= 1);
@@ -148,16 +147,6 @@ test('Lot 10 : au chapitre du troupeau, le joueur automatique nourrit ses mouton
   assert(s.campagne.compteurs.laines >= 10, `laines tondues : ${s.campagne.compteurs.laines}`);
   assert(chapterReached(s) >= 6, `le chapitre du troupeau est terminé : chapitre ${chapterReached(s)}`);
   assertEqual(rows.filter((r) => r.couverture <= 0).length, 0, 'la famille mange tous les soirs');
-});
-
-test('Lot 10 : simulationReach date un jalon sur la moyenne mobile', () => {
-  const mk = (list) => list.map((a, i) => ({ nuit: i + 1, autonomie: a }));
-  const k = DATA.SIMULATION.LISSAGE;
-  const rows = mk(Array.from({ length: 30 }, (_, i) => (i < 10 ? 0 : 80)));
-  const n = simulationReach(rows, 40);
-  assert(n > 10 && n <= 10 + k, `jalon daté à la nuit ${n}`);
-  assertEqual(simulationReach(rows, 90), null, 'jamais atteint');
-  assertEqual(simulationReach(mk([100, 0, 100]), 100), null, 'une nuit isolée à 100 % ne compte pas');
 });
 
 test('Lot 10 : le joueur vend ce qui périt demain, jamais la réserve', () => {

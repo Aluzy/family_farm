@@ -114,9 +114,7 @@ export function buildMorningReport(state) {
     // Arbre v2 : eau de pluie reçue et appareils entretenus automatiquement.
     pluie: state.nuit.pluie || 0,
     entretiens: [...(state.nuit.entretiens || [])],
-    // Lot 9 : autonomie de la nuit, chapitre en cours et chapitres terminés au réveil.
-    autonomie: state.nuit.autonomie || 0,
-    energieProduit: state.nuit.energieProduit || 0,
+    // Lot 9 : chapitre en cours et chapitres terminés au réveil.
     chapitre: state.campagne ? state.campagne.chapitre : 0,
     chapitresTermines: state.campagne ? state.campagne.annonces.map((a) => a.chapitre) : [],
   };
@@ -288,7 +286,7 @@ export function runNight(state) {
   bienvenueNuit(state);
   // le récit (recit.js, docs/recit/) : le niveau de l'empreinte de la ferme, la dérive de la confiance des hameaux
   recitNuit(state);
-  recordNight(state); // Lot 9 : autonomie de la nuit, séries et tenue (nuit encore = state.day)
+  recordNight(state); // Lot 9 : la série de pontes, le jeu libre (nuit encore = state.day)
   state.day += 1;
   state.awakeMs = 0;
   // (sur la ferme et dans les régions vues seulement : state.monde.vues, outils.js)

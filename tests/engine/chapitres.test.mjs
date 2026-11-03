@@ -4,10 +4,10 @@
    ========================================================================== */
 
 import {
-  acheterCaleche, addItem, addLot, autonomyHistory, autonomyPercent, buyAnimal, buyItem, chapterProgress,
+  acheterCaleche, addItem, addLot, buyAnimal, buyItem, chapterProgress,
   chapterReached, completeChapter, countItem, createInitialState, createNewGame, DATA, farmTerrain,
-  feedAllHens, findPlot, formatPercent, harvest, hoe, lastAutonomy, lotsOf, mailText,
-  maxStage, migrate, moveToFridge, objectiveValue, plannedAutonomy, plant, plantableCrops,
+  feedAllHens, findPlot, formatPercent, harvest, hoe, lotsOf, mailText,
+  maxStage, migrate, moveToFridge, objectiveValue, plant, plantableCrops,
   plantableCropsFor, shear, startMilling, startRecipe, storeWheat, takeItem, testAddHens,
   testAddWheat, testBatir, testEmptyBatteries, testFillBatteries, testGoToChapter,
   testSetBuildingLevel5, testSetLevel, testWoolReady, tick, unlockLevel, updateChapters, water,
@@ -21,7 +21,7 @@ import {
 } from './aide.mjs';
 import { vendreCaleche } from '../../js/engine/caleche.js';
 
-/* ---------- Lot 9 : autonomie et chapitres ---------- */
+/* ---------- Lot 9 : chapitres ---------- */
 
 // Les objectifs de la ferme (fiche 9b : ceux du grand monde, à part : OBJECTIFS_MONDE, mondeFait).
 function okList(s) {
@@ -50,113 +50,17 @@ test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent p
   assertEqual([L[2].objectifs[2].item, L[3].objectifs[2].item], ['minerai_fer', 'lingot_fer']);
   assertEqual(DATA.ARBRE.PALIERS[2].chapitre, 3);
   assert(Object.values(DATA.ARBRE.noeuds).some((n) => n.palier === 2 && n.ressources && n.ressources.lingot_fer), 'un nœud du palier 2 demande un lingot de fer');
-  assertEqual(DATA.AUTONOMIE, { HISTORIQUE_MAX: 1000, GRAPHIQUE_NUITS: 20 });
+  assertEqual(DATA.AUTONOMIE, undefined, "l'autonomie a quitté le jeu");
   assertEqual(DATA.CHAPITRES.ELEMENTS, undefined, 'les libellés sont dans DATA.NIVEAUX.ELEMENTS');
 });
 
 test('état initial Lot 9 : chapitre 1, compteurs à zéro, historique vide', () => {
   const s = createInitialState(1);
   assertEqual(s.campagne, {
-    chapitre: 1, fini: false, annonces: [], recompenses: [], historique: [],
+    chapitre: 1, fini: false, annonces: [], recompenses: [],
     compteurs: { eauMl: 0, mwhMax: 0, carottes: 0, serieOeufs: 0, pains: 0, plats: [], laines: 0, repasInvites: 0, recoltes: 0, cultures: [], semisBle: 0, labours: 0, semis: 0, arroseesMax: 0, objets: {}, calecheVentes: 0, achatsHameaux: 0, pecheMer: 0 },
   });
   assertEqual(chapterReached(s), 1);
-  assertEqual(lastAutonomy(s), 0);
-});
-
-/* --- autonomie --- */
-
-test('autonomie : points « produit » mangés ÷ points mangés, plafonnée à 100 %', () => {
-  assertEqual(autonomyPercent(75, 150), 50);
-  assertEqual(autonomyPercent(30, 150), 20);
-  assertEqual(autonomyPercent(165, 150), 100);
-  assertEqual(autonomyPercent(0, 150), 0);
-  assertEqual(autonomyPercent(50, 0), 0);
-  // 3 membres au seuil (20) mangent jusqu'à 100 : 6 patates (valeur 5 : 30 points) d'abord, puis
-  // les conserves (valeur 6), qui ne périment pas
-  const s = boite(farm(), { patate: 6, conserve: 100 });
-  affamer(s);
-  const r = sleepOnce(s);
-  assertEqual([r.energieProduit, r.energieMangee, r.autonomie], [30, 252, 11]);
-  assertEqual(s.campagne.historique, [{ nuit: 1, pct: 11, energie: 30 }]);
-  assertEqual(lastAutonomy(s), 11);
-});
-
-test('autonomie : les conserves n\'y comptent pas ; un jour sans repas garde celle de la veille', () => {
-  const s = boite(farm(), { conserve: 60 });
-  affamer(s);
-  const r = sleepOnce(s);
-  assertEqual(r.couverture, 100, 'la famille est rassasiée');
-  assertEqual([r.energieMangee, r.energieProduit, r.autonomie], [252, 0, 0]);
-  // le lendemain, avec des patates, puis un jour où personne n'a faim : l'autonomie reste
-  boite(s, { patate: 60 });
-  affamer(s);
-  assertEqual(sleepOnce(s).autonomie, 100);
-  const r3 = sleepOnce(s);
-  assertEqual([r3.energieMangee, r3.autonomie, lastAutonomy(s)], [0, 100, 100]);
-});
-
-test('autonomie : un achat à la calèche n\'y compte pas, une récolte oui', () => {
-  const s = farm();
-  setInv(s, { conserve: 60 });
-  s.pieces = 500;
-  // (fiche 7c : des carottes d'un hameau, dans le coffre de la calèche)
-  s.caleche = { coffre: { carotte: 4 }, haltes: [], fait: null, jour: null };
-  assert(acheterCaleche(s, 'carotte', 4, null, { sansPresence: true }).ok, 'acheter 4 carottes');
-  addItem(s, 'carotte', 15); // récoltées
-  assertEqual(lotsOf(s, 'carotte').map((l) => [l.qty, l.origin]).sort(), [[4, 'acheté'], [15, 'produit']].sort());
-  versBoite(s);
-  // les 19 carottes (valeur 2) passent avant les conserves : 38 points, dont 30 récoltés
-  affamer(s);
-  const r = sleepOnce(s);
-  assertEqual(r.energieProduit, 30, 'seules les 15 carottes récoltées comptent');
-  assertEqual(r.autonomie, Math.floor((30 * 100) / r.energieMangee));
-});
-
-test('autonomie : au frigo, les œufs gardent leur origine', () => {
-  const s = coldRoom({ lest: 0 });
-  s.famille.reserve = {};
-  setInv(s, { conserve: 4 });
-  addItem(s, 'oeuf', 10);
-  addLot(s, 'oeuf', 10, 'acheté');
-  assert(moveToFridge(s, 'oeuf', 20).ok, 'ranger les œufs au frigo');
-  // le frigo construit, la famille mange au frigo (pas dans l'inventaire) : les 10 œufs
-  // « produit » d'abord (valeur 3), puis les 10 achetés ; il en manque, deux ont faim
-  affamer(s);
-  const r = sleepOnce(s);
-  assertEqual([r.energieMangee, r.energieProduit, r.autonomie, countItem(s, 'conserve')], [60, 30, 50, 4]);
-  assert(s.nuit.affames.length > 0, 'il n\'y avait pas assez à manger');
-});
-
-test('autonomie : la prévision de la nuit est celle qui est vraiment mesurée', () => {
-  const s = farm();
-  setInv(s, { patate: 5, carotte: 10, conserve: 60 });
-  addLot(s, 'carotte', 7, 'acheté');
-  versBoite(s);
-  assertEqual(plannedAutonomy(s), 0, 'personne n\'a encore mangé : celle de la veille');
-  affamer(s);
-  const prevue = plannedAutonomy(s);
-  assert(prevue > 0 && prevue < 100);
-  assertEqual(sleepOnce(s).autonomie, prevue);
-});
-
-test('autonomie : l\'historique garde une entrée par nuit, dans la limite fixée', () => {
-  const s = farm();
-  for (let i = 0; i < 3; i++) sleepOnce(s);
-  assertEqual(s.campagne.historique.map((h) => h.nuit), [1, 2, 3]);
-  assertEqual(autonomyHistory(s, 2).map((h) => h.nuit), [2, 3]);
-  const saved = DATA.AUTONOMIE.HISTORIQUE_MAX;
-  DATA.AUTONOMIE.HISTORIQUE_MAX = 5;
-  try {
-    const t = farm();
-    for (let i = 0; i < 8; i++) {
-      setInv(t, { conserve: 50 });
-      sleepOnce(t);
-    }
-    assertEqual(t.campagne.historique.map((h) => h.nuit), [4, 5, 6, 7, 8]);
-  } finally {
-    DATA.AUTONOMIE.HISTORIQUE_MAX = saved;
-  }
 });
 
 /* --- compteurs --- */
@@ -557,4 +461,17 @@ test('migration v67 → v68 : l\'étape « autonomie » du didacticiel disparaî
   assertEqual(ETAPES[migrate(vieille({ etape: 3, fini: false })).didacticiel.etape], 'xp', 'avant : la même');
   assertEqual(migrate(vieille({ etape: 30, fini: true })).didacticiel, { etape: 30, fini: true }, 'fini : rien ne change');
   assertEqual(m.campagne.compteurs, s.campagne.compteurs, 'les compteurs d\'aujourd\'hui, le repas partagé à zéro');
+});
+
+// Plus aucun calcul d'autonomie, même en coulisse (v68 → v69).
+test('migration v68 → v69 : l\'historique d\'autonomie, l\'autonomie de la nuit et les points « produits » s\'effacent', () => {
+  const s = createInitialState(1);
+  const v68 = JSON.parse(JSON.stringify(s));
+  Object.assign(v68, { version: 68, repasJour: { mange: { patate: 2 }, energie: 10, produit: 10 } });
+  v68.campagne.historique = [{ nuit: 1, pct: 40, energie: 60 }];
+  Object.assign(v68.nuit, { autonomie: 40, energieProduit: 60 });
+  const m = migrate({ v: 68, t: 0, s: v68 });
+  assertEqual(['historique' in m.campagne, 'autonomie' in m.nuit, 'energieProduit' in m.nuit], [false, false, false]);
+  assertEqual(m.repasJour, { mange: { patate: 2 }, energie: 10 });
+  assertEqual(m.campagne, s.campagne);
 });

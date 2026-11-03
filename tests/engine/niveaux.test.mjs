@@ -190,7 +190,7 @@ test('annonces : un écran de fin par chapitre terminé, vidé un à un', () => 
   assertEqual(acknowledgeChapter(s).ok, false);
 });
 
-test('rapport de réveil Lot 9 : autonomie, chapitre en cours et chapitres terminés', () => {
+test('rapport de réveil Lot 9 : chapitre en cours et chapitres terminés', () => {
   // la famille a faim : 6 patates (30 points) puis des conserves
   const s = boite(atChapter(2), { patate: 6, conserve: 60 });
   // version 1.12 : tout le chapitre 2 est rempli juste avant la nuit
@@ -199,7 +199,7 @@ test('rapport de réveil Lot 9 : autonomie, chapitre en cours et chapitres termi
   Object.assign(s.silo, { construit: true, ble: 50 });
   affamer(s);
   const r = sleepOnce(s);
-  assertEqual([r.autonomie, r.energieProduit, r.chapitre, r.chapitresTermines], [11, 30, 3, [2]]);
+  assertEqual([r.chapitre, r.chapitresTermines, 'autonomie' in r, 'energieProduit' in r], [3, [2], false, false]);
 });
 
 /* --- masquage --- */
@@ -259,7 +259,7 @@ function v9State(mutate) {
 test('migration v9 → v10 : une partie neuve arrive au chapitre 1', () => {
   const m = migreAvant({ v: 9, t: 0, s: v9State() });
   assertEqual(m.version, AVANT_DEMENAGEMENT);
-  assertEqual([m.campagne.chapitre, m.campagne.fini, m.campagne.annonces, m.campagne.historique], [1, false, [], []]);
+  assertEqual([m.campagne.chapitre, m.campagne.fini, m.campagne.annonces], [1, false, []]);
   // FLU-42 : la partie a déjà ses parcelles (anciennes versions) : « Labourer 6 tuiles » est fait
   assertEqual(sansCompteurs68(m.campagne).compteurs, { ...newCampaignCounters(), labours: 6 });
   assertEqual([m.nuit.energieProduit, m.nuit.autonomie, 'soins' in m.jour], [0, 0, false], 'version 1.8 : plus de soins');
@@ -289,7 +289,6 @@ test('migration v9 → v10 : la partie migrée continue, tout ce qu\'elle possè
   for (const id of ['serre', 'verger', 'frigo', 'champ', 'four', 'moutons']) assertEqual([id, isUnlocked(m, id)], [id, true]);
   tick(m, 0.2);
   assert(sleepOnce(m) !== null, 'la partie migrée passe la nuit');
-  assertEqual(m.campagne.historique.length, 1);
   assertEqual(JSON.parse(JSON.stringify(m)), m);
   const again = migreAvant({ v: STATE_VERSION, t: 0, s: JSON.parse(JSON.stringify(m)) });
   assertEqual(again.campagne, m.campagne, 'une partie déjà à jour n\'est pas replacée');
@@ -328,11 +327,9 @@ test('mode test Lot 9 : aller à un chapitre donné (et au niveau qui va avec)',
   assertEqual(testGoToChapter(s, 9).ok, false);
   assertEqual(testGoToChapter(s, 'abc').ok, false);
   s.campagne.compteurs.carottes = 20;
-  s.campagne.historique.push({ nuit: 1, pct: 40, energie: 128 });
   testGoToChapter(s, 2);
   updateChapters(s);
   assertEqual(s.campagne.chapitre, 2, 'aller à un chapitre ne le valide pas tout de suite');
-  assertEqual(s.campagne.historique.length, 1, 'l\'historique d\'autonomie est conservé');
 });
 
 test('sérialisation JSON Lot 9 : la campagne fait l\'aller-retour', () => {

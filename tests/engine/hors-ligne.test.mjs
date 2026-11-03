@@ -81,7 +81,7 @@ test('Lot 11 : aucune nuit ne passe hors-ligne', () => {
     sante: s.famille.membres.map((m) => m.sante),
     inventaire: JSON.stringify(s.inventaire),
     moutons: JSON.stringify(s.paturage.moutons),
-    historique: s.campagne.historique.length,
+    serieOeufs: s.campagne.compteurs.serieOeufs,
   };
   const r = simulateOffline(s, 8 * 3600);
   assertEqual(r.nuit, avant.day);
@@ -90,7 +90,7 @@ test('Lot 11 : aucune nuit ne passe hors-ligne', () => {
   assertEqual(s.famille.membres.map((m) => m.sante), avant.sante, 'personne ne mange');
   assertEqual(JSON.stringify(s.inventaire), avant.inventaire, 'rien ne périme, rien n\'est pondu');
   assertEqual(JSON.stringify(s.paturage.moutons), avant.moutons, 'les moutons ne grossissent pas');
-  assertEqual(s.campagne.historique.length, avant.historique, 'aucune nuit enregistrée');
+  assertEqual(s.campagne.compteurs.serieOeufs, avant.serieOeufs, 'aucune nuit enregistrée');
 });
 
 test('Lot 11 : préparations terminées pendant l\'absence', () => {

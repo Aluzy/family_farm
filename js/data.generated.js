@@ -120,7 +120,6 @@ export const RAW_DATA = {
     "SOMMEIL_HEURES": 8
   },
   "MARCHE": { "PLANCHER": { "defaut": 120, "graine": 200 }, "PAS": 10, "MULTIPLICATEUR_PRODUCTION": 2, "TRANSFORMATIONS_DOUBLEES": ["farine"] },
-  "AUTONOMIE": { "HISTORIQUE_MAX": 1000, "GRAPHIQUE_NUITS": 20 },
   "HORS_LIGNE": { "MAX_S": 28800, "PAS_S": 5, "USURE": false, "ECRAN_S": 60 },
   "AIDE": { "ETAPES": ["eau", "potager", "dormir"] },
   "DIDACTICIEL": { "GRAINES": { "graine_carotte": 6 }, "LABOURS": 3, "SAC": { "objet": "sac_petit", "provisions": { "baies": 4 } } },
@@ -3226,8 +3225,6 @@ export const RAW_DATA = {
       { "type": "moutons", "n": 10 },
       { "type": "arbres", "n": 12 }
     ],
-    "JALONS": [{ "nuit": 8, "pct": 35 }, { "nuit": 15, "pct": 50 }, { "nuit": 25, "pct": 75 }, { "nuit": 40, "pct": 90 }, { "nuit": 60, "pct": 100 }],
-    "TOLERANCE_NUITS": 10,
     "DEPANNAGE": { "item": "carotte", "nuit": 30 }
   },
   "TERRAIN": {
