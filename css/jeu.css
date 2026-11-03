@@ -1172,6 +1172,8 @@ summary.branch-head h3::before { content: '▸'; display: inline-block; margin-r
 .chart-death { fill: var(--danger); opacity: 0.18; }
 .sim-result { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); }
 .sim-result p { margin: 0; font-size: 0.85rem; }
+.perf-rapport { margin: 0; padding: 10px; max-height: 50vh; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 0.75rem; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); user-select: text; }
+.perf-rapport[hidden] { display: none; }
 
 /* ---------- Lot 11 : accessibilité (contrastes, focus, cibles de 44 px) ---------- */
 

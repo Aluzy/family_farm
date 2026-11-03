@@ -6,6 +6,7 @@ import { noteCompta } from './compta.js';
 import { awakeMsAtHour } from './clock.js';
 import { addItem, countItem, spoil, takeItem } from './inventory.js';
 import { blocAt, blocsPoses, casesBaties, caseLibreFoyer, couchages, herbesSur, majPoulailler, poserBloc, serrePlaces } from './blocs.js';
+import { poserEtage, poserSolEtage } from './etage.js';
 import { allPlots, makePlot, maxStage, seedItem, serreCap, zoneTile } from './crops.js';
 import { farmTerrain } from './terrain.js';
 import { coopCapacity, freeCowPlaces, freeSheepPlaces, makeCow, makeSheep, storeWheat } from './animals.js';
@@ -495,4 +496,47 @@ export function testLabourerSerre(state) {
   }
   g.parcelles.sort((a, b) => a.case - b.case);
   return n;
+}
+
+/* -- F0-6 : la ferme construite (le scénario de mesure de docs/perf.md) -- */
+
+// Bâtit d'un coup une ferme « construite », pour mesurer le jeu sur téléphone dans le cas qui compte
+// pour la nouvelle vision : les bâtiments du jeu (foyer et ses stations, poulailler, étable, serre,
+// moulin, silo, puits, panneau, batterie), deux maisons de 16 × 12 cases au sol planchéié,
+// chacune avec un exemplaire de chaque meuble posé à l'intérieur et un étage (escalier, murs, paillasses,
+// sols), et un jardin d'agrément devant (lanternes, bacs à fleurs, bancs, pergola…). Le niveau maximal
+// est atteint d'abord (tout se débloque). Renvoie { ok, poses } : combien de blocs ont été posés.
+export function testFermeConstruite(state) {
+  testSetLevel(state, levelCount());
+  const avant = Object.keys(blocsPoses(state)).length;
+  for (const id of ['foyer', 'four', 'cuisine', 'boite', 'poulailler', 'etable', 'serre', 'moulin', 'silo', 'puits', 'panneau', 'batterie']) testBatir(state, id);
+  const B = DATA.ATELIER.BLOCS;
+  const meubles = Object.keys(B).filter((k) => B[k].meuble);
+  const jardin = ['lanterne', 'bac_fleurs', 'banc_jardin', 'table_jardin', 'chaise_jardin', 'banc_rondins', 'table_rondins', 'chaise_peinte', 'lanterne_papier', 'banc_pierre', 'jardiniere_pierre', 'bac_lavande', 'pergola'].filter((k) => B[k]);
+  for (let maison = 0; maison < 2; maison++) {
+    const w = 16, h = 12, z = coinLibre(state, w, h + 6);
+    if (!z) break;
+    const at = piece(state, z, w, h, 2);
+    // (le plancher partout dedans)
+    if (!state.sols || typeof state.sols !== 'object') state.sols = {};
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) state.sols[at(x, y)] = 'plancher';
+    // un exemplaire de chaque meuble, à la première place où il tient (de gauche à droite, de haut en bas)
+    for (const sorte of meubles) {
+      let pose = false;
+      for (let y = 1; y < h - 1 && !pose; y++) for (let x = 1; x < w - 1 && !pose; x++) pose = poserDonne(state, sorte, at(x, y)).ok;
+    }
+    // l'étage : l'escalier, puis des murs au-dessus du pourtour, des paillasses et des sols
+    let escalier = false;
+    for (let y = h - 2; y > 0 && !escalier; y--) for (let x = w - 2; x > 0 && !escalier; x--) escalier = poserDonne(state, 'escalier', at(x, y)).ok;
+    if (escalier) {
+      const donne = (sorte, t) => { addItem(state, B[sorte].objet, 1); const r = poserEtage(state, sorte, t); if (!r.ok) takeItem(state, B[sorte].objet, 1); return r; };
+      for (let x = 1; x < w - 1; x += 3) donne('paillasse', at(x, 1));
+      for (let y = 2; y < h - 2; y++) for (let x = 2; x < w - 2; x += 2) { addItem(state, B.plancher.objet, 1); if (!poserSolEtage(state, 'plancher', at(x, y), 1).ok) takeItem(state, B.plancher.objet, 1); }
+    }
+    // le jardin, devant la maison (les 5 rangées sous elle)
+    let i = 0;
+    for (let y = h + 1; y < h + 6; y += 2) for (let x = 1; x < w - 1; x += 2) poserDonne(state, jardin[i++ % jardin.length], at(x, y));
+  }
+  majPoulailler(state);
+  return { ok: true, poses: Object.keys(blocsPoses(state)).length - avant };
 }
