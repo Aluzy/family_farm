@@ -4,6 +4,7 @@ import { createNewGame } from '../engine/depart.js';
 import { SAVE_KEY, setState, state } from './store.js';
 import { setPendingAbsence, setSimulatedAt, simulatedAt, syncJobs } from './loop.js';
 import { notify } from './toasts.js';
+import { mesurer } from './chrono.js';
 
 /* ---------- stockage : localStorage, toujours entouré de try/catch ---------- */
 
@@ -103,6 +104,9 @@ export function statsSauvegarde() {
 }
 
 export function persistState() {
+  mesurer('sauvegarde', persister);
+}
+function persister() {
   try {
     const t0 = performance.now();
     const payload = JSON.stringify({ v: state.version, t: simulatedAt, s: state });

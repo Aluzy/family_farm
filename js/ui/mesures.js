@@ -6,6 +6,11 @@
        le rapport : images par seconde, images lentes, la plus longue, la mémoire, le chargement, la
        sauvegarde (taille, durée : js/ui/storage.js, statsSauvegarde), l'appareil et la partie ; chaque
        budget de docs/perf.md marqué ✅ ou ❌ ;
+     - « Mesurer Construire » : le jeu fait seul les gestes du mode Construire (l'ouvrir, attendre,
+       poser un bloc près du centre de l'écran, prendre la gomme, l'effacer, fermer) ; pour chacun, le
+       délai jusqu'à l'image affichée après lui, les images des secondes qui suivent, les tâches longues,
+       et où le temps est passé (js/ui/chrono.js : l'interface, le moteur, chaque méthode de la carte,
+       le dessin de Phaser) ;
      - « Copier le rapport » : le texte, à coller dans un message ou dans docs/perf.md.
    Rien ne part de l'appareil : le rapport reste à l'écran jusqu'à ce qu'on le copie. */
 
@@ -14,11 +19,13 @@ import { blocsPoses } from '../engine/blocs.js';
 import { etageBlocs } from '../engine/etage.js';
 import { testFermeConstruite } from '../engine/testmode.js';
 import { GAME_VERSION } from '../engine/base.js';
-import { state } from './store.js';
+import { buildMode, state } from './store.js';
 import { persistState, statsSauvegarde } from './storage.js';
 import { notify } from './toasts.js';
 import { fermeVenue } from './ferme-gardee.js';
 import { registerActions } from './actions.js';
+import { runAction } from './events.js';
+import { demarrer, noter, postes } from './chrono.js';
 
 // Les budgets (docs/perf.md, « cosy standard ») sur le téléphone de référence (Redmi Note 13).
 export const BUDGETS = {
@@ -151,7 +158,117 @@ async function copier() {
   }
 }
 
+/* ---------- « Mesurer Construire » ---------- */
+
+const attendre = (ms) => new Promise((ok) => setTimeout(ok, ms));
+const deuxImages = () => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+
+// Le temps de chaque méthode de la scène de la carte (son prototype, jusqu'à Phaser.Scene) et du dessin
+// de Phaser, notés dans le chronomètre. → une fonction qui remet tout comme avant.
+function espionnerCarte() {
+  const sc = window.FarmStage && FarmStage.scene && FarmStage.scene();
+  if (!sc) return () => {};
+  const remis = [], base = window.Phaser && Phaser.Scene && Phaser.Scene.prototype;
+  for (let P = Object.getPrototypeOf(sc); P && P !== base && P !== Object.prototype; P = Object.getPrototypeOf(P)) {
+    for (const nom of Object.getOwnPropertyNames(P)) {
+      const d = Object.getOwnPropertyDescriptor(P, nom);
+      if (nom === 'constructor' || !d || typeof d.value !== 'function') continue;
+      const f = d.value;
+      P[nom] = function (...a) { const t = performance.now(); try { return f.apply(this, a); } finally { noter('carte : ' + nom, performance.now() - t); } };
+      remis.push(() => { P[nom] = f; });
+    }
+  }
+  let t0 = 0;
+  const avant = () => { t0 = performance.now(); }, apres = () => { if (t0) noter('Phaser : dessin de l\'image (JS)', performance.now() - t0); };
+  sc.game.events.on('prerender', avant);
+  sc.game.events.on('postrender', apres);
+  remis.push(() => { sc.game.events.off('prerender', avant); sc.game.events.off('postrender', apres); });
+  return () => remis.forEach((f) => f());
+}
+
+// Une case près du centre de l'écran où le bloc en main se pose, ou null.
+function caseLibre() {
+  const sc = FarmStage.scene(), T0 = sc.ctx.bridge.trace, W = sc.grid.cols, v = sc.cameras.main.worldView;
+  const cx = Math.floor((v.x + v.width / 2) / 16), cy = Math.floor((v.y + v.height / 2) / 16);
+  for (let d = 0; d < 10; d++) for (let dy = -d; dy <= d; dy++) for (let dx = -d; dx <= d; dx++) {
+    const t = (cy + dy) * W + cx + dx;
+    if (T0.posable(t) === 'ok') return t;
+  }
+  return null;
+}
+
+let enCours = false;
+async function mesurerConstruire() {
+  if (enCours) return;
+  if (!window.FarmStage || !FarmStage.scene || !FarmStage.scene()) { notify('📏 La carte n\'est pas là : ouvre la Ferme d\'abord.'); return; }
+  enCours = true;
+  const bouton = document.querySelector('[data-action="test-perf-construire"]');
+  const etat = (t) => { if (bouton) bouton.textContent = t; };
+  document.getElementById('test-panel').hidden = true;   // (le panneau caché : la carte comme en jouant)
+  const longues = [];
+  let obs = null;
+  try { obs = new PerformanceObserver((l) => { for (const e of l.getEntries()) longues.push(e.duration); }); obs.observe({ entryTypes: ['longtask'] }); } catch (e) { obs = null; }
+  const remettre = espionnerCarte();
+  const lignes = [`📏 Family Farm — Construire mesuré sur l'appareil (${new Date().toLocaleString('fr-FR')})`, ''];
+  let tuile = null;
+  const geste = async (nom, faire, apres = 3000) => {
+    etat(`Mesure : ${nom}…`);
+    await attendre(800);
+    demarrer(true);
+    longues.length = 0;
+    const images = [];
+    let fin = false;
+    const image = (t) => { images.push(t); if (!fin) requestAnimationFrame(image); };
+    requestAnimationFrame(image);
+    const t0 = performance.now();
+    let erreur = null;
+    try { faire(); } catch (e) { erreur = e.message; }
+    await deuxImages();
+    const reponse = performance.now() - t0;
+    await attendre(apres);
+    fin = true;
+    const P = postes();
+    demarrer(false);
+    const d = []; for (let i = 1; i < images.length; i++) d.push(images[i] - images[i - 1]);
+    const tri = d.slice().sort((a, b) => a - b);
+    lignes.push(`— ${nom} —${erreur ? ` (erreur : ${erreur})` : ''}`);
+    lignes.push(`Image affichée après le geste : ${Math.round(reponse)} ms · puis ${d.length} images en ${(apres / 1000).toFixed(0)} s (médiane ${Math.round(quantile(tri, 0.5))} ms, la plus longue ${Math.round(tri[tri.length - 1] || 0)} ms)`);
+    lignes.push(obs ? `Tâches longues : ${longues.length}, ${Math.round(longues.reduce((a, x) => a + x, 0))} ms en tout, la plus longue ${Math.round(Math.max(0, ...longues))} ms` : 'Tâches longues : non mesurables dans ce navigateur');
+    lignes.push('Temps passé (inclus ; les plus lourds) :');
+    for (const p of P.slice(0, 14)) lignes.push(`  ${String(Math.round(p.ms)).padStart(6)} ms  ${p.nom} (${p.n} fois, ${Math.round(p.max)} ms au plus)`);
+    lignes.push('');
+  };
+  try {
+    const construire = () => document.querySelector('[data-action="build-toggle"]');
+    if (buildMode) construire().click();   // (déjà ouvert : refermé d'abord)
+    await attendre(1500);
+    await geste('Ouvrir Construire', () => construire().click());
+    await geste('Au repos dans Construire', () => {});
+    tuile = caseLibre();
+    if (tuile === null) lignes.push('(pas de case où poser le bloc en main près du centre de l\'écran : pose et gomme pas mesurées)', '');
+    else {
+      await geste('Poser un bloc', () => runAction('bloc', { dataset: { case: String(tuile) } }));
+      await geste('Prendre la gomme', () => document.querySelector('[data-action="build-gomme"]').click());
+      await geste('Effacer le bloc', () => runAction('bloc', { dataset: { case: String(tuile) } }));
+      await geste('Reposer la gomme', () => document.querySelector('[data-action="build-gomme"]').click(), 1500);
+    }
+    await geste('Fermer Construire', () => construire().click());
+  } finally {
+    remettre();
+    if (obs) obs.disconnect();
+    demarrer(false);
+    enCours = false;
+    etat('Mesurer Construire');
+    document.getElementById('test-panel').hidden = false;
+  }
+  lignes.push('— Appareil —', ...appareil(), '', '— Partie —', ...partie());
+  rapport = lignes.join('\n');
+  afficher();
+  notify('📏 Construire mesuré : le rapport est dans le mode test (📏 Mesures).');
+}
+
 registerActions({
+  'test-perf-construire': () => { mesurerConstruire(); },
   'test-ferme-construite': () => {
     const r = testFermeConstruite(state);
     persistState();

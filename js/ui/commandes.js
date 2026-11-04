@@ -15,6 +15,7 @@ import { executerCommande } from '../engine/commandes.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
 import { telCommande } from './consent.js';
+import { mesurer } from './chrono.js';
 
 let compteur = 0;
 // (combien de commandes ont été jouées : un cache de l'interface sait ainsi que la partie a pu changer)
@@ -36,7 +37,7 @@ function sauvegarderApres() {
 // Réussie, la partie est sauvegardée juste après le geste.
 export function executer(type, args) {
   compteur += 1;
-  const r = executerCommande(state, { id: `c-${session}-${compteur}`, type, args });
+  const r = mesurer('moteur : commande', () => executerCommande(state, { id: `c-${session}-${compteur}`, type, args }));
   if (r.ok) { sauvegarderApres(); telCommande(type, args, r); }
   return r;
 }

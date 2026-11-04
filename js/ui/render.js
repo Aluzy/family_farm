@@ -16,6 +16,7 @@ import { pixelize, watch } from './pixel-emoji.js';
 import { renderRecipeBook } from './livre.js';
 import { renderEncyclopedie } from './encyclopedie.js';
 import { renderPlantation } from './plantation.js';
+import { mesurer } from './chrono.js';
 
 export let renderScheduled = false;
 export function setRenderScheduled(value) {
@@ -31,6 +32,9 @@ export function setLastRenderAt(value) {
 /* ---------- rendu ---------- */
 
 export function render() {
+  mesurer('interface : rendu', rendre);
+}
+function rendre() {
   // Un onglet non débloqué (sauvegarde importée, par exemple) retombe sur la Ferme.
   if (!tabAvailable(activeTab)) setActiveTab('ferme');
   // Avec la carte, Famille, Livre de recette et Arbre des technologies n'existent que comme
