@@ -1,12 +1,12 @@
 import { DATA, roundPct } from './catalog.js';
-import { EPS, nextRandom, randomInt } from './base.js';
+import { EPS, randomInt } from './base.js';
 import { fail, marcheFerme, marcheOuvert, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
 import { countWithSilo, takeWithSilo } from './animals.js';
 import { deposit } from './ramassage.js';
 import { techPct, techSum } from './techtree.js';
 import { bumpCounter, noteCropHarvested, noteWatered } from './campaign.js';
 import { gainActionXp, levelReached } from './levels.js';
-import { isMoonPhase, moonHarvestPct, moonWaterPct } from './lune.js';
+import { moonHarvestPct, moonPhase, moonWaterPct } from './lune.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { absoluteHours, dayHour } from './clock.js';
 import { aCruche, eauCruche, puiserCruche } from './cruche.js';
@@ -557,18 +557,59 @@ export function harvestPlot(state, plot, auto = false) {
 // Version des cycles : la pousse n'a plus lieu à minuit (growAll ne sert plus qu'aux essais) ;
 // chaque plante gagne son stade POUSSE_HEURES heures d'horloge après son arrosage (growDue).
 export function growAll(state) {
+  const now = absoluteHours(state);
   for (const p of allPlots(state)) {
-    if (p.culture && p.arrose && p.stade < maxStage(p)) gainStage(state, p);
+    if (p.culture && p.arrose && p.stade < maxStage(p)) p.stade = stadeGagne(state, p, now);
     p.arrose = false;
   }
 }
 
-// Le stade gagné par une plante arrosée qui n'est pas mûre, selon la lune (voir growAll).
-function gainStage(state, p) {
-  const stades = isMoonPhase(state, 'nouvelle') ? DATA.LUNE.POUSSE_NOUVELLE : 1;
-  if (stades <= 0) return;
-  p.stade = Math.min(maxStage(p), p.stade + stades);
-  if (isMoonPhase(state, 'croissante') && DATA.LUNE.POUSSE_CHANCE > 0 && p.stade < maxStage(p) && nextRandom(state) * 100 < DATA.LUNE.POUSSE_CHANCE) p.stade += 1;
+/* ---------- B-2 : la pousse, calculable depuis l'heure ---------- */
+// Le stade d'une plante ne dépend que de ce qu'elle garde (son stade, son heure d'arrosage) et de l'heure :
+// avancer de N heures d'un coup ou heure par heure donne la même partie (un monde partagé vide ne
+// tourne pas : au retour, on calcule). La lune est celle du jour où le cycle s'achève, et le stade de plus
+// de la lune croissante un tirage fixé par la ferme, la parcelle et l'heure (pas le hasard de la partie,
+// dont l'ordre dépendrait des appels).
+
+// Le jour (state.day) d'une heure absolue (clock.js, absoluteHours : minuit du jour 1 = 0).
+const jourDe = (h) => Math.floor(h / 24) + 1;
+
+// Un nombre dans [0, 1) fixé par la ferme, la parcelle et l'heure de fin de son cycle.
+function tirageCycle(state, p, fin) {
+  const graine = String((state && state.carte && state.carte.graine) || '');
+  let h = 2166136261;
+  for (const ch of `${graine}|${p.id}|${Math.round(fin * 1000)}`) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+  h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15;
+  return (h >>> 0) / 4294967296;
+}
+
+// Le stade d'une plante arrosée qui n'est pas mûre, une fois son cycle achevé à l'heure `fin`, selon la
+// lune de ce jour-là. À la nouvelle lune, LUNE.POUSSE_NOUVELLE stade (0 : rien ne pousse) ; à la lune
+// croissante, LUNE.POUSSE_CHANCE % de chances d'un stade de plus. Pure.
+export function stadeGagne(state, p, fin) {
+  const phase = moonPhase(jourDe(fin)).id;
+  const stades = phase === 'nouvelle' ? DATA.LUNE.POUSSE_NOUVELLE : 1;
+  if (stades <= 0) return p.stade;
+  let stade = Math.min(maxStage(p), p.stade + stades);
+  if (phase === 'croissante' && DATA.LUNE.POUSSE_CHANCE > 0 && stade < maxStage(p) && tirageCycle(state, p, fin) * 100 < DATA.LUNE.POUSSE_CHANCE) stade += 1;
+  return stade;
+}
+
+// L'heure absolue où le cycle de la plante arrosée s'achève (null : pas arrosée). Une plante arrosée
+// sans heure connue (ancienne sauvegarde) compte depuis 6 h du jour.
+export function finDuCycle(state, p) {
+  if (!p || !p.arrose) return null;
+  const debut = Number.isFinite(p.arroseH) ? p.arroseH : dayHour(state, DATA.TEMPS.HEURE_REVEIL);
+  return debut + heuresPousse(state);
+}
+
+// B-2 : la plante `p` à l'heure absolue `t`, sans rien changer : { stade, arrose, mure }. Arrosée, elle
+// gagne son stade à la fin de son cycle (finDuCycle), puis attend d'être arrosée de nouveau. Pure.
+export function stadeA(state, p, t) {
+  const fin = finDuCycle(state, p);
+  if (fin === null || t + EPS < fin) return { stade: p.stade, arrose: !!p.arrose, mure: !!p.culture && p.stade >= maxStage(p) };
+  const stade = p.culture && p.stade < maxStage(p) ? stadeGagne(state, p, fin) : p.stade;
+  return { stade, arrose: false, mure: !!p.culture && stade >= maxStage(p) };
 }
 
 // La pousse suit l'horloge (le récit, lot 10 : heuresPousse, plus vite avec la pierre de lune) : une plante arrosée gagne son stade TIME.POUSSE_HEURES heures
@@ -584,8 +625,9 @@ export function growDue(state) {
   for (const p of allPlots(state)) {
     if (!p.arrose) continue;
     if (!Number.isFinite(p.arroseH)) p.arroseH = Math.min(debutJour, now);
-    if (now + EPS < p.arroseH + heuresPousse(state)) continue;
-    if (p.culture && p.stade < maxStage(p)) gainStage(state, p);
+    const e = stadeA(state, p, now);
+    if (e.arrose) continue;
+    p.stade = e.stade;
     p.arrose = false;
     delete p.arroseH;
     n += 1;
@@ -595,9 +637,8 @@ export function growDue(state) {
 
 // Heures d'horloge avant que la plante arrosée gagne son stade (null : pas arrosée).
 export function growHoursLeft(state, plot) {
-  if (!plot || !plot.arrose) return null;
-  const debut = Number.isFinite(plot.arroseH) ? plot.arroseH : dayHour(state, DATA.TEMPS.HEURE_REVEIL);
-  return Math.max(0, debut + heuresPousse(state) - absoluteHours(state));
+  const fin = finDuCycle(state, plot);
+  return fin === null ? null : Math.max(0, fin - absoluteHours(state));
 }
 
 // Les heures d'un cycle de pousse : TEMPS.POUSSE_HEURES ; la pierre de lune posée sur la ferme (le récit, lot 10 :
