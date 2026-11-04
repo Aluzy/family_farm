@@ -169,7 +169,7 @@ export const INTERFACE_ACTIONS = new Set([
   'scene-suite', 'scene-fermer', 'carnet-open', // le récit : la réplique suivante d'une scène, la fermer ; ouvrir le carnet
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-espece', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier',
-  'do-export', 'do-import', 'tuto-skip', 'do-new-game',
+  'do-export', 'do-import', 'download-export', 'import-file', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', 'four-tab', 'atelier-tab', 'atelier-groupe', 'atelier-choisir', 'silo-agrandir', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,
   // réglages de quantité (Moulin, achats), fiche d'un membre de la famille
@@ -192,6 +192,7 @@ const SIGNALS = [
   ['tuto-skip', 'Tutoriel ignoré'],
   ['do-new-game', 'Parties recommencées à zéro'],
   ['do-export', 'Sauvegardes exportées'],
+  ['download-export', 'Sauvegardes téléchargées (.json)'],
   ['do-import', 'Sauvegardes importées'],
   ['help', 'Boutons d\'aide ouverts'],
 ];
