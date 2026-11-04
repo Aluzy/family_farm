@@ -86,7 +86,9 @@ function journal(s) {
     else if (t < 0.55) res = jouer('bloc.reprendre', { case: un(cases) });
     else if (t < 0.59) res = jouer('bloc.deplacer', { de: meubles.length && r() < 0.8 ? un(meubles) : un(cases), vers: un(cases) });
     // (tourner, déplacer : le plus souvent un meuble posé plus tôt)
-    else if (t < 0.63) res = jouer('bloc.tourner', { case: meubles.length && r() < 0.8 ? un(meubles) : un(cases) });
+    else if (t < 0.62) res = jouer('bloc.tourner', { case: meubles.length && r() < 0.8 ? un(meubles) : un(cases) });
+    // (A-3 : repeindre un meuble posé, dans une couleur de la table ou de la chaise, ou une qui n'existe pas)
+    else if (t < 0.63) res = jouer('bloc.peindre', { case: meubles.length && r() < 0.8 ? un(meubles) : un(cases), variante: un(['miel', 'noyer', 'bleu', 'blanchi', 'rouge']) });
     else if (t < 0.68) res = jouer('mur.rehausser', { sorte: 'mur_pierre', case: un([...piece, ...autour]) });
     else if (t < 0.70) res = jouer('mur.abaisser', { case: un([...piece, ...autour]) });
     else if (t < 0.73) res = jouer('etage.poser', { sorte: un(['mur_pierre', 'paillasse', 'mur_fenetre', 'meuble_chaise', 'meuble_lit_enfant']), case: un([...piece, ...dedans]), sens: Math.floor(r() * 4) });
@@ -126,7 +128,7 @@ test('rejeu : 1000 commandes tirées au hasard, rejouées sur la même partie, d
   const reussies = entrees.filter((e) => e.res.ok);
   const sortes = new Set(reussies.map((e) => e.cmd.type));
   assert(reussies.length > entrees.length * 0.2, `${reussies.length} commandes réussies sur ${entrees.length}`);
-  for (const type of ['bloc.poser', 'bloc.reprendre', 'bloc.remettre', 'bloc.deplacer', 'bloc.tourner', 'bloc.orienter', 'mur.rehausser', 'mur.abaisser', 'etage.poser', 'etage.tourner', 'solEtage.poser', 'potager.planter', 'potager.arroser']) {
+  for (const type of ['bloc.poser', 'bloc.reprendre', 'bloc.remettre', 'bloc.deplacer', 'bloc.tourner', 'bloc.orienter', 'bloc.peindre', 'mur.rehausser', 'mur.abaisser', 'etage.poser', 'etage.tourner', 'solEtage.poser', 'potager.planter', 'potager.arroser']) {
     assert(sortes.has(type), `au moins un « ${type} » réussi`);
   }
   assert(empreintePartie(a) !== depart0, 'la partie a changé');

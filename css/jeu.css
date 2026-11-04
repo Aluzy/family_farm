@@ -2968,7 +2968,7 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
   pointer-events: auto;
 }
 .pose-meuble-txt { flex: 1; min-width: 0; }
-.pose-meuble-ok, .pose-meuble-non, .pose-meuble-tourne {
+.pose-meuble-ok, .pose-meuble-non, .pose-meuble-tourne, .pose-meuble-peint {
   flex: none;
   width: 48px; height: 48px; padding: 0;
   border: 0; border-radius: 6px;
@@ -2978,6 +2978,8 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .pose-meuble-ok { background: #6fcf6a; box-shadow: inset 0 0 0 3px #2f8a3a; }
 .pose-meuble-ok:disabled { background: #c9d8c2; box-shadow: inset 0 0 0 3px #9aa894; opacity: 0.6; cursor: default; }
 .pose-meuble-non { background: #ead0a0; box-shadow: inset 0 0 0 2px var(--wood-light); }
+/* 🎨 : la couleur du meuble qu'on pose (A-3) */
+.pose-meuble-peint { background: #fbd98c; box-shadow: inset 0 0 0 3px var(--color-earth); }
 /* ↻ : tourner l'aperçu du meuble (js/ui/chantier.js) ; la flèche dit où il regarde */
 .pose-meuble-tourne { position: relative; background: #fbd98c; box-shadow: inset 0 0 0 3px var(--color-earth); color: var(--color-earth); font-weight: 700; }
 .pose-meuble-sens { position: absolute; right: 2px; bottom: 1px; font-size: 0.85rem; }

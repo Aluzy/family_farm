@@ -446,6 +446,29 @@ export function validateData(data) {
     // chaque meuble a son vendeur (un hameau qui a un atelier « meubles »)
     const vendeurs = Object.values(IL.ATELIERS || {}).filter((at) => at.sorte === 'meubles').map((at) => at.hameau);
     for (const [mid, m] of Object.entries(data.MEUBLES || {})) if (!vendeurs.includes(m.vendeur || 'bois_joli')) err(`MEUBLES.${mid}.vendeur`, `un hameau qui vend des meubles (${vendeurs.join(', ')})`);
+    // A-3 : les palettes (des rampes de couleurs #rrggbb) et les variantes des meubles (la première, celle du
+    // dessin, sans `remplace` ; les autres remplacent des rampes par des rampes de même longueur)
+    const PAL = data.PALETTES || {};
+    for (const [pid, r] of Object.entries(PAL)) if (!(Array.isArray(r) && r.length >= 2 && r.every((c) => /^#[0-9a-f]{6}$/.test(c)))) err(`PALETTES.${pid}`, 'une liste d\'au moins 2 couleurs « #rrggbb » (minuscules)');
+    for (const [mid, m] of Object.entries(data.MEUBLES || {})) {
+      if (m.variantes === undefined) continue;
+      const w = `MEUBLES.${mid}.variantes`;
+      if (!(Array.isArray(m.variantes) && m.variantes.length >= 2)) { err(w, 'au moins deux variantes (la première : celle du dessin)'); continue; }
+      const ids = new Set();
+      m.variantes.forEach((v, i) => {
+        const wv = `${w}[${i}]`;
+        if (!v || !/^[a-z_]+$/.test(String(v.id || '')) || ids.has(v.id)) err(`${wv}.id`, 'un identifiant (a-z, _) unique');
+        ids.add(v && v.id);
+        if (!v || typeof v.nom !== 'string' || !v.nom) err(`${wv}.nom`, 'un nom');
+        if (!i) { if (v && v.remplace) err(`${wv}.remplace`, 'la première variante est celle du dessin : rien à remplacer'); return; }
+        const R = v && v.remplace;
+        if (!R || typeof R !== 'object' || !Object.keys(R).length) { err(`${wv}.remplace`, '{ rampe du dessin : rampe de la variante }'); return; }
+        for (const [de, vers] of Object.entries(R)) {
+          if (!PAL[de] || !PAL[vers]) err(`${wv}.remplace.${de}`, `des rampes de PALETTES (${de} → ${vers})`);
+          else if (PAL[de].length !== PAL[vers].length) err(`${wv}.remplace.${de}`, `${de} et ${vers} n'ont pas la même longueur`);
+        }
+      });
+    }
     const V = IL.VEILLEE || {};
     if (!(Array.isArray(V.HEURES) && V.HEURES.length === 2 && V.HEURES.every((h) => isInt(h) && h >= 0 && h <= 24) && V.HEURES[0] < V.HEURES[1])) err('ILE.VEILLEE.HEURES', '[de, à[ heures entières, de < à');
     if (!(isInt(V.CONFIANCE) && V.CONFIANCE >= 0)) err('ILE.VEILLEE.CONFIANCE', 'un entier, 0 ou plus');

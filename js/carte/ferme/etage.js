@@ -133,11 +133,13 @@
           // (chantier.js syncLitsDoubles) ; celui de gauche le dessine, l'autre ne se dessine pas
           // (deux lits de face seulement : un lit tourné garde son dessin, A-1)
           const LD = BLOCS_CARTE.litDouble, seul = (c) => { const b = etage.blocs.find((q) => q.case === c); return !!(b && b.meuble && b.meuble.dessin === LD.seul && !b.meuble.sens); };
+          // (A-3 : deux lits de la même couleur)
+          const teinteDe = (c) => { const b = etage.blocs.find((q) => q.case === c); return (b && b.meuble && b.meuble.variante) || null; };
           const paire = new Map();
           if (this.textures.exists('meuble_' + LD.double)) {
             for (const b of etage.blocs.slice().sort((p1, p2) => p1.case - p2.case)) {
               const c = b.case;
-              if (!seul(c) || paire.has(c) || c % cols === cols - 1 || !seul(c + 1) || paire.has(c + 1)) continue;
+              if (!seul(c) || paire.has(c) || c % cols === cols - 1 || !seul(c + 1) || paire.has(c + 1) || teinteDe(c) !== teinteDe(c + 1)) continue;
               paire.set(c, { gauche: true, autre: c + 1 });
               paire.set(c + 1, { gauche: false, autre: c });
             }
@@ -149,7 +151,8 @@
               const M = b.meuble, pr = paire.get(b.case), p = pos(b.case);
               // (tourné, A-1 : sa vue de dos ou de profil, en miroir vers la gauche ; js/ui/stage.js meubleDe)
               const vu = 'meuble_' + M.dessin + (M.vue || '');
-              const k = pr ? 'meuble_' + LD.double : this.textures.exists(vu) ? vu : 'meuble_' + M.dessin;
+              // (A-3 : dans sa couleur, js/carte/ferme/chantier.js imageTeinte)
+              const k = this.imageTeinte(pr ? 'meuble_' + LD.double : this.textures.exists(vu) ? vu : 'meuble_' + M.dessin, M.variante, M.couleurs);
               if (!this.textures.exists(k)) continue;
               const x0 = Math.round(((b.case % cols) + M.largeur / 2) * T), x = pr ? x0 + T / 2 : x0;
               // (la moitié droite d'un lit deux places : rien à dessiner, sa place seulement)
@@ -164,7 +167,7 @@
               if (M.bloque || M.hauteur < 2) {
                 const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setDepth(p.y + (M.bloque ? 0.9 : M.lit ? 0.75 : 0.6)).setFlipX(!!M.miroir));
                 // (un lit de profil, sur une rangée : on y dort aussi)
-                if (M.lit) this.etageLits.set(b.case, { img, x, y: p.y - dy - 1, haut: this.textures.get(k).getSourceImage().height, dessin: M.dessin, sens: M.sens || 0 });
+                if (M.lit) this.etageLits.set(b.case, { img, x, y: p.y - dy - 1, haut: this.textures.get(k).getSourceImage().height, dessin: M.dessin, sens: M.sens || 0, variante: M.variante || null, couleurs: M.couleurs || null });
               } else {
                 const H = this.textures.get(k).getSourceImage().height;
                 let bas = null;
@@ -173,7 +176,7 @@
                   const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setCrop(0, y0, 9999, y1 - y0).setDepth(p.y - j * T + (M.lit ? 0.75 : 0.6)).setFlipX(!!M.miroir));
                   if (!j) bas = img;
                 }
-                if (M.lit) this.etageLits.set(b.case, pr ? { img: bas, x: x0, xd: x, y: p.y - dy - 1, haut: H, dessin: LD.double, double: true } : { img: bas, x, y: p.y - dy - 1, haut: H, dessin: M.dessin, sens: M.sens || 0 });
+                if (M.lit) this.etageLits.set(b.case, pr ? { img: bas, x: x0, xd: x, y: p.y - dy - 1, haut: H, dessin: LD.double, double: true, variante: M.variante || null, couleurs: M.couleurs || null } : { img: bas, x, y: p.y - dy - 1, haut: H, dessin: M.dessin, sens: M.sens || 0, variante: M.variante || null, couleurs: M.couleurs || null });
               }
               if (M.bloque) for (let j = 0; j < M.hauteur; j++) for (let i = 0; i < M.largeur; i++) this.etageBloque.add(b.case - j * cols + i);
               continue;
@@ -324,12 +327,12 @@
       }
       // (un lit tourné, A-1 : le dormeur pivote avec lui ; js/carte/ferme/chantier.js litDormeur)
       if (e.sens) {
-        const L = this.litDormeur(e.sens, img, e.dessin, 0, { z, via, etage: cell });
+        const L = this.litDormeur(e.sens, img, e.dessin, 0, { z, via, etage: cell }, e);
         if (L) Object.defineProperty(L, 'depth', { get: () => img.depth });
         return L;
       }
-      const drap = 'meuble_' + e.dessin + '_drap';
-      if (!this.has(drap)) return null;
+      if (!this.has('meuble_' + e.dessin + '_drap')) return null;
+      const drap = this.imageTeinte('meuble_' + e.dessin + '_drap', g.variante, g.couleurs);
       return { x: e.x, y: Math.min(e.y - e.haut + BLOCS_CARTE.litPieds, e.y - 1), get depth() { return img.depth; }, z, drap: { key: drap, frame: undefined, x: g.xd || g.x, y: g.y }, via, etage: cell };
     },
 

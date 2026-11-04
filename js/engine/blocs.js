@@ -112,6 +112,65 @@ export function tourneBloc(sorte) {
   const s = sorteDe(sorte);
   return (s && s.tourne) || false;
 }
+/* ---------- A-3 : les variantes de couleur des meubles ----------
+   Un meuble peut avoir des variantes (data/meubles.json, MEUBLES.<id>.variantes : la première est celle de
+   son dessin ; les autres remplacent des rampes de couleurs, PALETTES). state.teintes = { [case d'ancrage]:
+   id de la variante } (celle du dessin : rien). Elle se choisit à la pose et se repeint (peindreBloc). */
+
+// Les variantes du bloc `sorte` : [{ id, nom, remplace? }], ou [] (une seule couleur).
+export function variantesBloc(sorte) {
+  const s = sorteDe(sorte), m = s && s.meuble && DATA.MEUBLES && DATA.MEUBLES[s.meuble];
+  return (m && Array.isArray(m.variantes) && m.variantes) || [];
+}
+// La variante du bloc posé sur `tile` (son id), ou null : celle du dessin.
+export function varianteBloc(state, tile) {
+  const v = state.teintes && typeof state.teintes === 'object' ? state.teintes[tile] : null;
+  return typeof v === 'string' ? v : null;
+}
+// (`v` : une variante de `sorte` ; celle du dessin, une inconnue ou null : rien n'est gardé)
+function setVariante(state, tile, sorte, v) {
+  if (v && variantesBloc(sorte).some((x, i) => i > 0 && x.id === v)) {
+    if (!state.teintes || typeof state.teintes !== 'object') state.teintes = {};
+    state.teintes[tile] = v;
+  } else if (state.teintes) delete state.teintes[tile];
+}
+// Les couleurs de la variante `v` du bloc `sorte` : [[couleur du dessin, couleur de la variante]…]
+// (#rrggbb), ou null (celle du dessin, ou une inconnue). Pour la carte, qui recolore ses images.
+export function couleursVariante(sorte, v) {
+  const x = v && variantesBloc(sorte).find((y, i) => i > 0 && y.id === v), P = DATA.PALETTES || {};
+  if (!x || !x.remplace) return null;
+  const out = [];
+  for (const [de, vers] of Object.entries(x.remplace)) (P[de] || []).forEach((c, i) => { if (P[vers] && P[vers][i]) out.push([c, P[vers][i]]); });
+  return out.length ? out : null;
+}
+// La variante suivante de `sorte` après `v` (null : celle du dessin), en revenant à la première : son id.
+export function varianteSuivante(sorte, v) {
+  const l = variantesBloc(sorte);
+  if (!l.length) return null;
+  const k = l.findIndex((x) => x.id === (v || l[0].id));
+  return l[(k + 1) % l.length].id;
+}
+// Le nom de la variante `v` de `sorte` (celle du dessin si null), ou ''.
+export function nomVariante(sorte, v) {
+  const l = variantesBloc(sorte), x = l.find((y) => y.id === v) || l[0];
+  return x ? x.nom : '';
+}
+
+// Repeindre le meuble de la case `tile` (une de ses cases) dans sa variante `v` (son id ; celle du dessin :
+// son id ou null). Gratuit. → { ok, sorte, case, variante (id), avant (id) } ou un refus.
+export function peindreBloc(state, tile, v) {
+  if (!blocAt(state, tile) && casesCouvertes(state).has(tile)) tile = casesCouvertes(state).get(tile);
+  const sorte = blocAt(state, tile);
+  if (!sorte) return fail('Il n\'y a pas de meuble ici.');
+  const l = variantesBloc(sorte);
+  if (!l.length) return fail(`${sorteDe(sorte).nom} : une seule couleur pour l'instant.`);
+  const id = v || l[0].id;
+  if (!l.some((x) => x.id === id)) return fail(`${sorteDe(sorte).nom} : pas de couleur « ${id} ».`);
+  const avant = varianteBloc(state, tile) || l[0].id;
+  setVariante(state, tile, sorte, id);
+  return { ok: true, sorte, case: tile, variante: id, avant };
+}
+
 // Le sens du bloc posé sur `tile` (0 à 3).
 export function sensBloc(state, tile) {
   const v = state.sens && typeof state.sens === 'object' ? Number(state.sens[tile]) : 0;
@@ -798,13 +857,13 @@ export function poseStatus(state, sorte, tile, sens = 0) {
 export function deplacerBloc(state, de, vers) {
   const r = reprendreBloc(state, de);
   if (!r.ok) return r;
-  // (il garde son sens)
-  const sens = r.sens || 0;
-  if (r.case === vers) { poserBloc(state, r.sorte, r.case, sens); return { ok: true, sorte: r.sorte, de: r.case, vers }; }
+  // (il garde son sens et sa couleur)
+  const sens = r.sens || 0, v = r.variante || null;
+  if (r.case === vers) { poserBloc(state, r.sorte, r.case, sens, v); return { ok: true, sorte: r.sorte, de: r.case, vers }; }
   const st = poseStatus(state, r.sorte, vers, sens);
-  if (!st.ok) { poserBloc(state, r.sorte, r.case, sens); return fail(st.raison); }
-  const p = poserBloc(state, r.sorte, vers, sens);
-  if (!p.ok) { poserBloc(state, r.sorte, r.case, sens); return p; }
+  if (!st.ok) { poserBloc(state, r.sorte, r.case, sens, v); return fail(st.raison); }
+  const p = poserBloc(state, r.sorte, vers, sens, v);
+  if (!p.ok) { poserBloc(state, r.sorte, r.case, sens, v); return p; }
   return { ok: true, sorte: r.sorte, de: r.case, vers };
 }
 
@@ -821,12 +880,15 @@ export function deplacerStatus(state, de, vers) {
 
 // Pose `sorte` sur `tile` (un meuble qui tourne : dans le sens `sens`) ; l'herbe haute des cases
 // voisines qui déborde sur ce qui est bâti est foulée (fauchée, sans paille : foulerAutour).
-export function poserBloc(state, sorte, tile, sens = 0) {
+export function poserBloc(state, sorte, tile, sens = 0, variante = null) {
   const tourne = tourneBloc(sorte);
   const r = poser(state, sorte, tile, tourne ? sens : 0);
   if (r.ok) {
     // (le sens d'un meuble qui tourne ; un autre bloc n'en a pas)
     if (tourne) setSens(state, tile, sens); else if (state.sens) delete state.sens[tile];
+    // (A-3 : sa couleur, s'il en a plusieurs)
+    setVariante(state, tile, sorte, variante);
+    if (varianteBloc(state, tile)) r.variante = varianteBloc(state, tile);
     foulerAutour(state, tile);
     noter('pose', { sorte });
   }
@@ -957,8 +1019,9 @@ export function reprendreBloc(state, tile, opts) {
     if (etageEnPeril(state, reste)) return fail(`${sorteDe(bloc).nom} : il porte l'étage. Reprends d'abord ce qui est posé à l'étage au-dessus.`);
   }
   const sens = !dessus && bloc ? sensBloc(state, tile) : 0;
+  const variante = !dessus && bloc ? varianteBloc(state, tile) : null;
   if (dessus) delete state.blocsDessus[tile];
-  else if (bloc) { delete state.blocs[tile]; setHauteur(state, tile, 1); setFenetre(state, tile, null); if (state.sens) delete state.sens[tile]; }
+  else if (bloc) { delete state.blocs[tile]; setHauteur(state, tile, 1); setFenetre(state, tile, null); if (state.sens) delete state.sens[tile]; if (state.teintes) delete state.teintes[tile]; }
   else delete state.sols[tile];
   const s = sorteDe(sorte);
   if (s && s.appareil) removeStarter(state, s.appareil);
@@ -979,7 +1042,7 @@ export function reprendreBloc(state, tile, opts) {
   if (s && s.station && s.station !== 'moulin' && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;
   majPoulailler(state);
   rangerEtage(state);   // (l'escalier repris, la pièce ouverte : l'étage s'en va)
-  return { ok: true, sorte, case: tile, ...(sens ? { sens } : {}) };
+  return { ok: true, sorte, case: tile, ...(sens ? { sens } : {}), ...(variante ? { variante } : {}) };
 }
 
 // Pourquoi le bloc `sorte` (posé en `tile`) ne tourne pas : un tableau suit le mur où il est accroché ;
@@ -1016,10 +1079,11 @@ export function tournerBloc(state, tile, pas = 1) {
     const r = reprendreBloc(copie, tile);
     if (!r.ok) return r;
     if (!poseStatus(copie, sorte, tile, sens).ok) continue;
+    const v = varianteBloc(state, tile);
     reprendreBloc(state, tile);
-    const p = poserBloc(state, sorte, tile, sens);
+    const p = poserBloc(state, sorte, tile, sens, v);
     if (p.ok) return { ok: true, sorte, case: tile, sens };
-    poserBloc(state, sorte, tile, avant);
+    poserBloc(state, sorte, tile, avant, v);
     return p;
   }
   return fail(`${sorteDe(sorte).nom} : pas la place de le tourner ici.`);

@@ -23,6 +23,7 @@
      bloc.deplacer    { de, vers, attendu? }   emporter un bloc seul ou un meuble de sa case d'ancrage `de` à `vers`
      bloc.tourner     { case }                 un quart de tour
      bloc.orienter    { case, sorte, sens }    remettre un meuble dans le sens `sens`
+     bloc.peindre     { case, variante }       repeindre un meuble (A-3 : l'id de sa variante de couleur)
      mur.rehausser    { sorte, case }          un bloc de plus sur un mur (niveaux 1 et 2)
      mur.abaisser     { case, niveau?, attendu? } reprendre le bloc du dessus d'un mur
      etage.poser      { sorte, case, sens? }   sur l'étage d'une pièce (un meuble : son sens)
@@ -30,6 +31,8 @@
      etage.remettre   { case, avant, apres }   défaire un changement sur l'étage
      etage.tourner    { case }                 un quart de tour, à l'étage (A-1)
      etage.orienter   { case, sorte, sens }    remettre un meuble de l'étage dans le sens `sens`
+     etage.peindre    { case, variante }       repeindre un meuble de l'étage (A-3)
+   (bloc.poser et etage.poser prennent aussi `variante?` : la couleur d'un meuble qui en a plusieurs)
      solEtage.poser   { sorte, case, niveau }  un sol aux niveaux 1 et 2
      solEtage.reprendre { case, niveau, attendu? }
      solEtage.remettre { case, niveau, avant, apres } défaire un sol changé pour un autre
@@ -46,9 +49,9 @@ import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import {
   blocAt, blocDessus, casesCouvertes, deplacerBloc, hauteurPile, matiereDessus, poserBloc, rehausser,
-  reprendreBloc, sensBloc, solAt, tournerBloc,
+  peindreBloc, reprendreBloc, sensBloc, solAt, tournerBloc,
 } from './blocs.js';
-import { etageBlocs, etageCouvertes, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
+import { etageBlocs, etageCouvertes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
 import { harvest, plant, water } from './crops.js';
 import { goToSleep } from './night.js';
 
@@ -74,6 +77,7 @@ const CONTROLES = {
   case: (v) => Number.isInteger(v) && v >= 0,
   sorte: (v) => typeof v === 'string' && !!DATA.ATELIER.BLOCS[v],
   sens: (v) => Number.isInteger(v) && v >= 0 && v <= 3,
+  variante: (v) => typeof v === 'string' && /^[a-z_]{1,30}$/.test(v),
   niveau: (v) => v === 1 || v === 2,
   texte: (v) => typeof v === 'string' && v.length > 0,
   culture: (v) => typeof v === 'string' && !!DATA.CULTURES[v],
@@ -81,15 +85,15 @@ const CONTROLES = {
 
 export const COMMANDES = {
   'bloc.poser': {
-    args: { sorte: 'sorte', case: 'case', sens: 'sens?' },
-    executer(state, { sorte, case: c, sens = 0 }) {
+    args: { sorte: 'sorte', case: 'case', sens: 'sens?', variante: 'variante?' },
+    executer(state, { sorte, case: c, sens = 0, variante = null }) {
       const b = DATA.ATELIER.BLOCS[sorte];
       const avant = surCase(state, c), sous = blocAt(state, c);
       // (la pompe sur un puits libre : posée dessus, le puits reste ; un bloc de silo sur le silo : la
       // colonne monte, rien à défaire)
       const surLibre = !!b.sur && sous === b.sur && !blocDessus(state, c);
       const empile = !!sous && sous === sorte && !!b.silo;
-      const r = poserBloc(state, sorte, c, sens);
+      const r = poserBloc(state, sorte, c, sens, variante);
       if (!r.ok) return r;
       const inverses = empile ? []
         : avant && avant !== sorte && !surLibre ? [cmd('bloc.remettre', { case: c, avant, apres: sorte })]
@@ -106,7 +110,7 @@ export const COMMANDES = {
       const r = reprendreBloc(state, c);
       if (!r.ok) return r;
       const sorte = r.sorte || avant;
-      return { ...r, inverses: [cmd('bloc.poser', { sorte, case: r.case !== undefined ? r.case : c, sens: r.sens || sensAvant || 0 })] };
+      return { ...r, inverses: [cmd('bloc.poser', { sorte, case: r.case !== undefined ? r.case : c, sens: r.sens || sensAvant || 0, ...(r.variante ? { variante: r.variante } : {}) })] };
     },
   },
   'bloc.remettre': {
@@ -153,6 +157,14 @@ export const COMMANDES = {
       return { ok: true, sorte, case: c, sens, inverses: [cmd('bloc.orienter', { case: c, sorte, sens: avant })] };
     },
   },
+  'bloc.peindre': {
+    args: { case: 'case', variante: 'variante' },
+    executer(state, { case: c, variante }) {
+      const r = peindreBloc(state, c, variante);
+      if (!r.ok) return r;
+      return { ...r, inverses: [cmd('bloc.peindre', { case: r.case, variante: r.avant })] };
+    },
+  },
   'mur.rehausser': {
     args: { sorte: 'sorte', case: 'case' },
     executer(state, { sorte, case: c }) {
@@ -172,10 +184,10 @@ export const COMMANDES = {
     },
   },
   'etage.poser': {
-    args: { sorte: 'sorte', case: 'case', sens: 'sens?' },
-    executer(state, { sorte, case: c, sens }) {
+    args: { sorte: 'sorte', case: 'case', sens: 'sens?', variante: 'variante?' },
+    executer(state, { sorte, case: c, sens, variante }) {
       const avant = etageBlocs(state)[c];
-      const r = poserEtage(state, sorte, c, sens || 0);
+      const r = poserEtage(state, sorte, c, sens || 0, variante || null);
       if (!r.ok) return r;
       return { ...r, inverses: [avant && avant !== sorte ? cmd('etage.remettre', { case: c, avant, apres: sorte }) : cmd('etage.reprendre', { case: c, attendu: sorte })] };
     },
@@ -188,7 +200,7 @@ export const COMMANDES = {
       const r = reprendreEtage(state, c);
       if (!r.ok) return r;
       // (un meuble repris sur l'une de ses cases : reposé sur sa case d'ancrage, dans son sens)
-      return { ...r, inverses: [cmd('etage.poser', { sorte: r.sorte || avant, case: r.case !== undefined ? r.case : c, ...(r.sens ? { sens: r.sens } : {}) })] };
+      return { ...r, inverses: [cmd('etage.poser', { sorte: r.sorte || avant, case: r.case !== undefined ? r.case : c, ...(r.sens ? { sens: r.sens } : {}), ...(r.variante ? { variante: r.variante } : {}) })] };
     },
   },
   'etage.remettre': {
@@ -223,6 +235,14 @@ export const COMMANDES = {
       for (let k = 0; k < 3 && sensEtage(state, c) !== sens; k++) if (!tournerEtage(state, c).ok) break;
       if (sensEtage(state, c) !== sens) return fail(`${DATA.ATELIER.BLOCS[sorte].nom} : pas la place de le tourner ici.`);
       return { ok: true, sorte, case: c, sens, etage: true, inverses: [cmd('etage.orienter', { case: c, sorte, sens: avant })] };
+    },
+  },
+  'etage.peindre': {
+    args: { case: 'case', variante: 'variante' },
+    executer(state, { case: c, variante }) {
+      const r = peindreEtage(state, c, variante);
+      if (!r.ok) return r;
+      return { ...r, inverses: [cmd('etage.peindre', { case: r.case, variante: r.avant })] };
     },
   },
   'solEtage.poser': {

@@ -17,10 +17,10 @@ import { atelierConstruit, craft, craftStatus } from '../engine/atelier.js';
 import { countItem } from '../engine/inventory.js';
 import { blocsDidacticiel } from '../engine/didacticiel.js';
 import { setStageWindow, stageWindow } from './stage-windows.js';
-import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, deplacerStatus, hauteurPile, matiereDessus, mesuresMeuble, rehausseStatus, poseStatus, solAt, tourneBloc } from '../engine/blocs.js';
+import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, couleursVariante, deplacerStatus, hauteurPile, matiereDessus, mesuresMeuble, nomVariante, rehausseStatus, poseStatus, solAt, tourneBloc, varianteBloc, variantesBloc, varianteSuivante } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
-import { ETAGE_BLOCS, etage2Emprise, etageCouvertes, etageEmprise, poseEtageStatus, etageBlocs, poseSolEtageStatus, solsEtage } from '../engine/etage.js';
+import { ETAGE_BLOCS, etage2Emprise, etageCouvertes, etageEmprise, poseEtageStatus, etageBlocs, poseSolEtageStatus, solsEtage, varianteEtage } from '../engine/etage.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -224,15 +224,17 @@ export function buildChipHtml() {
   const sensEnMain = auSol && buildMode && tourneBloc(buildMode) && !meubleEnMain();
   const outilTourner = auSol ? `<button type="button" class="build-piece build-tourner${modeTourner ? ' on' : ''}" data-action="build-tourner" aria-pressed="${modeTourner}" aria-label="Tourner : touche un meuble posé pour le tourner d'un quart de tour" title="Tourner : touche un meuble posé pour le tourner d'un quart de tour"><span aria-hidden="true">↻</span></button>`
     + (sensEnMain ? `<button type="button" class="build-piece build-sens" data-action="build-sens" aria-label="Le prochain se posera ${SENS_NOMS[sensPose]} : le tourner" title="Le prochain se posera ${SENS_NOMS[sensPose]} (touche pour le tourner)"><span aria-hidden="true">${FLECHES[sensPose]}</span></button>` : '') : '';
+  // l'outil 🎨 (A-3) : allumé, un appui sur un meuble posé qui a plusieurs couleurs le repeint de la suivante
+  const outilPeindre = auSol ? `<button type="button" class="build-piece build-peindre${modePeindre ? ' on' : ''}" data-action="build-peindre" aria-pressed="${modePeindre}" aria-label="Repeindre : touche un meuble posé pour changer sa couleur" title="Repeindre : touche un meuble posé pour changer sa couleur"><span aria-hidden="true">🎨</span></button>` : '';
   const outilPiece = murEnMain ? `<button type="button" class="build-piece${modePiece ? ' on' : ''}" data-action="build-piece" aria-pressed="${modePiece}" aria-label="Outil pièce : glisser d'un coin à l'autre pour poser tous les murs d'une pièce" title="Outil pièce : glisse d'un coin à l'autre pour poser les murs du pourtour"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><rect x="2" y="3" width="12" height="10" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="7" y="11.5" width="2.6" height="2.6" fill="#fbd98c"/></svg></button>` : '';
   const choixNiveau = `<div class="build-level"><button type="button" class="build-level-btn" data-action="build-level-menu" aria-haspopup="true" aria-expanded="${niveauListe}" aria-label="Niveau de construction : ${lvl}" title="Niveau de construction (appui long : glisser jusqu'au niveau)">${lvl}</button><div class="build-level-list" role="group" aria-label="Niveaux"${niveauListe ? '' : ' hidden'}><span class="build-level-titre" aria-hidden="true">Niveau</span>${niveaux}</div></div>`;
   // la pose d'un meuble : ✔️ le pose là où est son aperçu, ❌ sort de ce mode
   const m = meubleModele(), ap = m && m.apercu;
-  const pose = m ? `<div class="pose-meuble" role="group" aria-label="Poser le meuble"><span class="pose-meuble-txt">${ap ? (ap.ok ? 'Le poser ici ?' : 'Il ne tient pas ici') : 'Touche une case pour placer le meuble'}</span>${tourneBloc(buildMode) ? `<button type="button" class="pose-meuble-tourne" data-action="meuble-tourner" aria-label="Tourner le meuble : il est ${SENS_NOMS[sensPose]}" title="Tourner le meuble d'un quart de tour (${SENS_NOMS[sensPose]})">↻<span class="pose-meuble-sens" aria-hidden="true">${FLECHES[sensPose]}</span></button>` : ''}<button type="button" class="pose-meuble-ok" data-action="meuble-ok"${ap && ap.ok ? '' : ' disabled'} aria-label="Poser le meuble ici" title="Poser le meuble ici">✔️</button><button type="button" class="pose-meuble-non" data-action="meuble-annule" aria-label="Sortir de la pose du meuble" title="Sortir de la pose du meuble">❌</button></div>` : '';
+  const pose = m ? `<div class="pose-meuble" role="group" aria-label="Poser le meuble"><span class="pose-meuble-txt">${ap ? (ap.ok ? 'Le poser ici ?' : 'Il ne tient pas ici') : 'Touche une case pour placer le meuble'}</span>${tourneBloc(buildMode) ? `<button type="button" class="pose-meuble-tourne" data-action="meuble-tourner" aria-label="Tourner le meuble : il est ${SENS_NOMS[sensPose]}" title="Tourner le meuble d'un quart de tour (${SENS_NOMS[sensPose]})">↻<span class="pose-meuble-sens" aria-hidden="true">${FLECHES[sensPose]}</span></button>` : ''}${variantesBloc(buildMode).length ? `<button type="button" class="pose-meuble-peint" data-action="meuble-peindre" aria-label="Couleur : ${nomVariante(buildMode, varianteDe(buildMode))}. En changer" title="Couleur : ${nomVariante(buildMode, varianteDe(buildMode))} (touche pour en changer)">🎨</button>` : ''}<button type="button" class="pose-meuble-ok" data-action="meuble-ok"${ap && ap.ok ? '' : ' disabled'} aria-label="Poser le meuble ici" title="Poser le meuble ici">✔️</button><button type="button" class="pose-meuble-non" data-action="meuble-annule" aria-label="Sortir de la pose du meuble" title="Sortir de la pose du meuble">❌</button></div>` : '';
   // les outils (annuler, la gomme, l'outil pièce, le niveau) : une petite fenêtre à part, qu'un
   // appui long rend déplaçable (outilsPos : où on l'a laissée)
   const pos = outilsPos ? ` style="left:${outilsPos.x}px;top:${outilsPos.y}px;right:auto"` : '';
-  const outils = `<div class="build-outils${outilsDeplace ? ' deplace' : ''}" role="toolbar" aria-label="Outils de construction (appui long : la déplacer)" title="Appui long : déplacer"${pos}><span class="build-outils-prise" aria-hidden="true">⠿</span>${annuler}${gomme}${outilTourner}${outilPiece}${choixNiveau}</div>`;
+  const outils = `<div class="build-outils${outilsDeplace ? ' deplace' : ''}" role="toolbar" aria-label="Outils de construction (appui long : la déplacer)" title="Appui long : déplacer"${pos}><span class="build-outils-prise" aria-hidden="true">⠿</span>${annuler}${gomme}${outilTourner}${outilPeindre}${outilPiece}${choixNiveau}</div>`;
   return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases">${filtresHtml(o)}<div class="build-bar-grid">${cases || '<span class="build-vide">Rien avec ces filtres.</span>'}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons"><button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>${outils}`;
 }
 
@@ -275,6 +277,22 @@ if (typeof document !== 'undefined') {
   document.addEventListener('click', (e) => {
     if (sansClic && e.target.closest && e.target.closest('.build-level-btn')) { sansClic = false; e.stopPropagation(); e.preventDefault(); }
   }, true);
+}
+
+// A-3 : repeindre le meuble de la case `c` (une de ses cases ; `etage` : à l'étage) de sa couleur suivante.
+function repeindre(c, etage) {
+  const ancre = etage ? (!etageBlocs(state)[c] && etageCouvertes(state).has(c) ? etageCouvertes(state).get(c) : c)
+    : (!blocAt(state, c) && casesCouvertes(state).has(c) ? casesCouvertes(state).get(c) : c);
+  const sorte = etage ? etageBlocs(state)[ancre] : blocAt(state, ancre);
+  if (!sorte) { notify('Touche un meuble posé pour changer sa couleur.'); return; }
+  const actuelle = etage ? varianteEtage(state, ancre) : varianteBloc(state, ancre);
+  const v = varianteSuivante(sorte, actuelle);
+  const r = v ? executer(etage ? 'etage.peindre' : 'bloc.peindre', { case: ancre, variante: v }) : { ok: false, error: `${DATA.ATELIER.BLOCS[sorte].nom} : une seule couleur pour l'instant.` };
+  if (!r.ok) { notify(r.error); return; }
+  if (!etage) noter(r.inverses);
+  notify(`🎨 ${DATA.ATELIER.BLOCS[sorte].nom} : ${nomVariante(sorte, r.variante)}`, { duree: CONSEIL_MS });
+  persistState();
+  refresh();
 }
 
 // A-2 : un appui long sur une case du menu (un clic droit, à la souris) met son bloc en favori, ou l'en
@@ -398,7 +416,8 @@ export function meubleModele() {
   const p = poseMeuble && poseMeuble.sorte === buildMode ? poseMeuble : null, b = DATA.ATELIER.BLOCS[buildMode];
   // (à l'étage, les meubles ne tournent pas encore)
   const sens = sensDe(buildMode), mes = mesuresMeuble(buildMode, sens), v = vueMeuble(buildMode, sens);
-  return { grille: true, etage: niveauBati(), apercu: p ? { case: p.case, dessin: b.meuble, vue: v.vue, miroir: v.miroir, largeur: mes.largeur, hauteur: mes.hauteur, plat: !!b.plat, ok: meubleTient(p.case) } : null };
+  const teinte = varianteDe(buildMode), couleurs = teinte ? couleursVariante(buildMode, teinte) : null;
+  return { grille: true, etage: niveauBati(), apercu: p ? { case: p.case, dessin: b.meuble, vue: v.vue, miroir: v.miroir, largeur: mes.largeur, hauteur: mes.hauteur, plat: !!b.plat, ok: meubleTient(p.case), ...(couleurs ? { variante: teinte, couleurs } : {}) } : null };
 }
 // L'image d'un meuble dans le sens `sens` : le suffixe de son dessin (_cote, _dos : scripts/batiments/
 // meubles_sens.py) et s'il est retourné en miroir (vers la gauche ; un meuble rond, de dos).
@@ -474,6 +493,11 @@ let modeGomme = false;
 // de la barre d'outils, un meuble qui tourne en main) ; `modeTourner` (l'outil ↻ allumé) : un appui sur un
 // meuble posé le tourne d'un quart de tour.
 let sensPose = 0, modeTourner = false;
+// A-3 : la couleur du prochain meuble posé, par sorte (son id ; rien : celle du dessin), et l'outil 🎨 allumé
+// (modePeindre) : un appui sur un meuble posé le repeint de sa couleur suivante.
+const variantePose = {};
+let modePeindre = false;
+const varianteDe = (sorte) => (variantesBloc(sorte).some((v) => v.id === variantePose[sorte]) ? variantePose[sorte] : null);
 // Le sens du prochain meuble, s'il tourne (sinon 0).
 const sensDe = (sorte) => (tourneBloc(sorte) ? sensPose : 0);
 // Où il regarde : ⬇ de face, ➡ vers la droite, ⬆ de dos, ⬅ vers la gauche.
@@ -587,7 +611,7 @@ function blocDuNiveau() {
 registerActions({
   'build-toggle': () => {
     onglet = null; bulle = null;
-    if (buildMode) { poseMeuble = null; histoire = []; modeGomme = false; modeTourner = false; setBuildMode(null); refresh(); return; }
+    if (buildMode) { poseMeuble = null; histoire = []; modeGomme = false; modeTourner = false; modePeindre = false; setBuildMode(null); refresh(); return; }
     if (!chantierOuvert()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     if (stageWindow) setStageWindow(null);    // (depuis le menu latéral : on revient sur la carte)
@@ -715,6 +739,8 @@ registerActions({
     }
     // à l'étage : poser, reprendre un bloc de l'étage
     if (genre === 'etage') {
+      // (l'outil 🎨 allumé : un appui sur un meuble de l'étage le repeint de sa couleur suivante, A-3)
+      if (modePeindre) { repeindre(c, true); return; }
       // (l'outil ↻ allumé : un appui sur un meuble de l'étage le tourne d'un quart de tour, A-1)
       if (modeTourner) {
         const t = executer('etage.tourner', { case: c });
@@ -762,6 +788,8 @@ registerActions({
     // (un bloc de silo en main, sur une colonne du silo : il la rehausse)
     const empile = !!b && b === buildMode && !!DATA.ATELIER.BLOCS[b].silo;
     const reprend = b ? !surLibre && !changeMur(b, buildMode) && !empile : sol && solAt(state, c) && !changeSol(solAt(state, c), buildMode);
+    // (l'outil 🎨 allumé : un appui sur un meuble posé le repeint de sa couleur suivante, A-3)
+    if (modePeindre) { repeindre(c, false); return; }
     // (l'outil ↻ allumé : un appui sur un meuble posé le tourne d'un quart de tour)
     if (modeTourner) {
       const t = executer('bloc.tourner', { case: c });
@@ -824,7 +852,7 @@ registerActions({
   'build-gomme': () => {
     if (!buildMode) return;
     modeGomme = !modeGomme;
-    if (modeGomme) modeTourner = false;
+    if (modeGomme) { modeTourner = false; modePeindre = false; }
     if (modeGomme) notify('🧽 Gomme : glisse sur des blocs de cette sorte pour les reprendre (ils reviennent dans l\'inventaire).', { duree: CONSEIL_MS * 2 });
     refresh();
   },
@@ -919,7 +947,8 @@ registerActions({
   'meuble-ok': () => {
     if (!poseMeuble || !meubleEnMain()) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
-    const r = niveauBati() ? executer('etage.poser', { sorte: poseMeuble.sorte, case: poseMeuble.case, sens: sensDe(poseMeuble.sorte) }) : executer('bloc.poser', { sorte: poseMeuble.sorte, case: poseMeuble.case, sens: sensDe(poseMeuble.sorte) });
+    const v = varianteDe(poseMeuble.sorte), teinte = v ? { variante: v } : {};
+    const r = niveauBati() ? executer('etage.poser', { sorte: poseMeuble.sorte, case: poseMeuble.case, sens: sensDe(poseMeuble.sorte), ...teinte }) : executer('bloc.poser', { sorte: poseMeuble.sorte, case: poseMeuble.case, sens: sensDe(poseMeuble.sorte), ...teinte });
     if (!r.ok) { notify(r.error); return; }
     if (!niveauBati()) noter(r.inverses);
     poseMeuble = null;
@@ -937,7 +966,21 @@ registerActions({
   'build-tourner': () => {
     if (!buildMode) return;
     modeTourner = !modeTourner;
-    if (modeTourner) { modeGomme = false; notify('↻ Touche un meuble posé pour le tourner d\'un quart de tour, en bas comme à l\'étage. Les tableaux, accrochés au mur, le suivent.', { duree: CONSEIL_MS * 2 }); }
+    if (modeTourner) { modeGomme = false; modePeindre = false; notify('↻ Touche un meuble posé pour le tourner d\'un quart de tour, en bas comme à l\'étage. Les tableaux, accrochés au mur, le suivent.', { duree: CONSEIL_MS * 2 }); }
+    refresh();
+  },
+  // L'outil 🎨 de la barre (A-3) : allumé, un appui sur un meuble posé le repeint.
+  'build-peindre': () => {
+    if (!buildMode) return;
+    modePeindre = !modePeindre;
+    if (modePeindre) { modeGomme = false; modeTourner = false; notify('🎨 Touche un meuble posé pour changer sa couleur (chaise, table, canapé, lit, commode). C\'est gratuit.', { duree: CONSEIL_MS * 2 }); }
+    refresh();
+  },
+  // 🎨 dans la pose d'un meuble : sa couleur suivante (l'aperçu la montre ; il se posera ainsi).
+  'meuble-peindre': () => {
+    if (!meubleEnMain() || !variantesBloc(buildMode).length) return;
+    variantePose[buildMode] = varianteSuivante(buildMode, varianteDe(buildMode));
+    notify(`🎨 ${DATA.ATELIER.BLOCS[buildMode].nom} : ${nomVariante(buildMode, varianteDe(buildMode))}`, { duree: CONSEIL_MS });
     refresh();
   },
   // La flèche à côté (un meuble qui tourne en main, posé d'un appui : le mobilier de jardin) : le sens du

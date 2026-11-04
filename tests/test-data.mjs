@@ -217,3 +217,10 @@ refuse('monde : une bâtisse au style inconnu', (d) => { d.HAMEAUX.BATISSES.caba
 refuse('récit : un texte pour un lieu inconnu', (d) => { d.RECIT.LIEUX.moulin = [{ texte: 'Un moulin.' }]; }, 'une sorte de lieu du récit');
 refuse('récit : un lieu dont la dernière entrée a des conditions', (d) => { d.RECIT.LIEUX.epave = [{ quand: { lune: 'pleine' }, texte: 'La coque luit.' }]; }, 'la dernière entrée est sans condition');
 refuse('récit : un salut trop long', (d) => { d.RECIT.SALUTS.reservee = ['x'.repeat(200)]; }, 'caractères');
+
+// A-3 : les palettes et les variantes de couleur des meubles
+refuse('variante : une rampe inconnue', (d) => { d.MEUBLES.chaise.variantes[1].remplace = { bois_miel: 'bois_inconnu' }; }, 'des rampes de PALETTES');
+refuse('variante : deux rampes de longueurs différentes', (d) => { d.MEUBLES.chaise.variantes[1].remplace = { bois_miel: 'tissu_rouge' }; }, 'pas la même longueur');
+refuse('variante : la première remplace quelque chose', (d) => { d.MEUBLES.canape.variantes[0].remplace = { tissu_vert: 'tissu_rouge' }; }, 'la première variante est celle du dessin');
+refuse('variante : deux fois le même identifiant', (d) => { d.MEUBLES.table.variantes[2].id = 'noyer'; }, 'unique');
+refuse('palette : une couleur mal écrite', (d) => { d.PALETTES.tissu_bleu[0] = 'bleu'; }, 'PALETTES.tissu_bleu');

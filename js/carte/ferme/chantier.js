@@ -186,19 +186,21 @@
       if (!B || !this.textures.exists('meuble_' + D.double)) return;
       // (deux lits de face seulement : un lit tourné garde son dessin, A-1)
       const est = (e) => e && e.lit && e.dessin === D.seul && !e.sens && e.img && e.img.active;
+      // (A-3 : deux lits de la même couleur ; le lit deux places, recoloré comme eux)
       const lits = [...B.values()].filter(est).sort((a, b) => a.case - b.case);
       const pris = new Set();
       for (const e of lits) e.paire = null;
       for (const e of lits) {
         const v = B.get(e.case + 1);
-        if (pris.has(e.case) || e.case % cols === cols - 1 || !est(v) || pris.has(v.case)) continue;
+        if (pris.has(e.case) || e.case % cols === cols - 1 || !est(v) || pris.has(v.case) || (v.variante || null) !== (e.variante || null)) continue;
         pris.add(e.case); pris.add(v.case);
         e.paire = { gauche: true, autre: v };
         v.paire = { gauche: false, autre: e };
       }
       let change = false;
       for (const e of lits) {
-        const [key, x, vu] = !e.paire ? ['meuble_' + D.seul, e.x, true] : e.paire.gauche ? ['meuble_' + D.double, e.x + T / 2, true] : ['meuble_' + D.seul, e.x, false];
+        const teinte = (k) => this.imageTeinte(k, e.variante, e.couleurs);
+        const [key, x, vu] = !e.paire ? [teinte('meuble_' + D.seul), e.x, true] : e.paire.gauche ? [teinte('meuble_' + D.double), e.x + T / 2, true] : [teinte('meuble_' + D.seul), e.x, false];
         if (e.img.texture.key !== key || e.img.x !== x || e.img.visible !== vu) { e.img.setTexture(key).setX(x).setVisible(vu); change = true; }
       }
       if (change) this.sunDirty = true;
@@ -230,7 +232,7 @@
       cadre.fillStyle(couleur, P.fond).fillRect(x0, y1 - h, w, h);
       cadre.lineStyle(1, couleur, 1).strokeRect(x0 + 0.5, y1 - h + 0.5, w - 1, h - 1);
       // (tourné : sa vue de dos ou de profil, en miroir vers la gauche)
-      const vu = 'meuble_' + a.dessin + (a.vue || ''), key = this.textures.exists(vu) ? vu : 'meuble_' + a.dessin;
+      const vu = 'meuble_' + a.dessin + (a.vue || ''), key = this.imageTeinte(this.textures.exists(vu) ? vu : 'meuble_' + a.dessin, a.variante, a.couleurs);
       const img = this.textures.exists(key)
         ? this.add.image(Math.round((col + a.largeur / 2) * T), y1 - 1, key).setOrigin(0.5, 1).setAlpha(P.alpha).setTint(a.ok ? 0xffffff : P.non).setDepth(this.etageZ(9998.5)).setFlipX(!!a.miroir)
         : null;
@@ -383,9 +385,10 @@
     syncMeuble(b) {
       const B = this.blocks, M = b.meuble, e = B.get(b.case);
       // (tourné : sa vue de dos ou de profil, en miroir vers la gauche ; js/ui/stage.js meubleDe)
-      const tourne = 'meuble_' + M.dessin + (M.vue || ''), key = this.textures.exists(tourne) ? tourne : 'meuble_' + M.dessin;
-      const sens = M.sens || 0;
-      if (e && e.sorte === b.sorte && e.dessin === M.dessin && (e.sens || 0) === sens) return false;   // (l'image suit son contenu)
+      // (A-3 : dans sa couleur, l'image recolorée au premier besoin : imageTeinte)
+      const tourne = 'meuble_' + M.dessin + (M.vue || ''), key = this.imageTeinte(this.textures.exists(tourne) ? tourne : 'meuble_' + M.dessin, M.variante, M.couleurs);
+      const sens = M.sens || 0, variante = M.variante || null;
+      if (e && e.sorte === b.sorte && e.dessin === M.dessin && (e.sens || 0) === sens && (e.variante || null) === variante) return false;   // (l'image suit son contenu)
       if (e) e.img.destroy();
       B.delete(b.case);
       if (!this.textures.exists(key)) return !!e;
@@ -395,7 +398,7 @@
       const img = this.add.image(x, y - 1, key).setOrigin(0.5, 1).setDepth(depth).setFlipX(!!M.miroir);
       const cases = [];
       for (let dy = 0; dy < M.hauteur; dy++) for (let dx = 0; dx < M.largeur; dx++) cases.push(b.case - dy * cols + dx);
-      B.set(b.case, { case: b.case, sorte: b.sorte, x, y, img, cases, bloque: M.bloque, plat: M.plat, lit: M.lit, dessin: M.dessin, sens });
+      B.set(b.case, { case: b.case, sorte: b.sorte, x, y, img, cases, bloque: M.bloque, plat: M.plat, lit: M.lit, dessin: M.dessin, sens, variante, couleurs: M.couleurs || null });
       return true;
     },
 
@@ -956,14 +959,41 @@
     // Un lit tourné (A-1 ; `img` : son image, origine en bas au milieu ; `sens` : 1 à 3) : où se couche le
     // dormeur, pivoté avec lui (`angle`, en degrés : de dos, la tête en bas ; de profil, en travers, la tête
     // vers la tête de lit), sa couverture de cette vue (en miroir vers la gauche) ; null sans elle.
-    litDormeur(sens, img, dessin, depth, extra = {}) {
-      const vue = sens === 2 ? '_dos' : '_cote', drap = 'meuble_' + dessin + vue + '_drap';
-      if (!this.has(drap)) return null;
+    // (`teinte` : { variante, couleurs } du lit, A-3 : sa couverture dans sa couleur)
+    litDormeur(sens, img, dessin, depth, extra = {}, teinte = null) {
+      const vue = sens === 2 ? '_dos' : '_cote', brut = 'meuble_' + dessin + vue + '_drap';
+      if (!this.has(brut)) return null;
+      const drap = teinte ? this.imageTeinte(brut, teinte.variante, teinte.couleurs) : brut;
       const S = BLOCS_CARTE.litSens, top = img.y - img.height, gauche = img.x - img.width / 2;
       const base = { depth, drap: { key: drap, frame: undefined, x: img.x, y: img.y, flip: sens === 3 }, ...extra };
       if (sens === 2) return { ...base, x: img.x, y: top + S.dos, angle: 180 };
       const y = top + S.coteHaut + (img.height - S.coteHaut - S.coteBas) / 2;
       return sens === 1 ? { ...base, x: gauche + S.cote, y, angle: -90 } : { ...base, x: gauche + img.width - S.cote, y, angle: 90 };
+    },
+
+    // A-3 : l'image `key` dans la variante de couleur `variante` (`couleurs` : [[#rrggbb du dessin, #rrggbb de la
+    // variante]…], js/engine/blocs.js couleursVariante) : faite une fois, au premier besoin, en recolorant
+    // ses pixels (rien n'est dessiné en plus : data/meubles.json, PALETTES) ; sa clé (« key~variante »). Sans
+    // variante, ou l'image pas encore chargée : `key`.
+    imageTeinte(key, variante, couleurs) {
+      if (!variante || !couleurs || !couleurs.length || !this.textures.exists(key)) return key;
+      const k = key + '~' + variante;
+      if (this.textures.exists(k)) return k;
+      const src = this.textures.get(key).getSourceImage(), w = src.width, h = src.height;
+      const cv = this.textures.createCanvas(k, w, h), g = cv.context;
+      g.imageSmoothingEnabled = false;
+      g.drawImage(src, 0, 0);
+      const px = g.getImageData(0, 0, w, h), d = px.data;
+      const hex = (c) => parseInt(c.slice(1), 16), table = new Map(couleurs.map(([de, vers]) => [hex(de), hex(vers)]));
+      for (let i = 0; i < d.length; i += 4) {
+        if (!d[i + 3]) continue;
+        const v = table.get((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
+        if (v === undefined) continue;
+        d[i] = v >> 16; d[i + 1] = (v >> 8) & 255; d[i + 2] = v & 255;
+      }
+      g.putImageData(px, 0, 0);
+      cv.refresh();
+      return k;
     },
 
     bedSpotOf(c) {
@@ -973,13 +1003,13 @@
         const e = this.blocks && this.blocks.get(c);
         if (e && e.sorte === 'paillasse') return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, depth: e.img.depth, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y } };
         // un lit tourné (A-1) : le dormeur pivote avec lui, sous la couverture de cette vue
-        if (e && e.lit && e.sens) return this.litDormeur(e.sens, e.img, e.dessin, e.img.depth);
+        if (e && e.lit && e.sens) return this.litDormeur(e.sens, e.img, e.dessin, e.img.depth, {}, e);
         // un lit de la maison : les pieds sous la couverture, la tête sur l'oreiller
         if (e && e.lit && this.has('meuble_' + e.dessin + '_drap')) {
           const top = e.img.y - e.img.height;
-          // (un lit double, syncLitsDoubles : sa moitié, sous la couverture des deux places)
+          // (un lit double, syncLitsDoubles : sa moitié, sous la couverture des deux places ; dans sa couleur, A-3)
           const g = e.paire ? (e.paire.gauche ? e : e.paire.autre) : null, dd = 'meuble_' + BLOCS_CARTE.litDouble.double + '_drap';
-          const drap = g && this.has(dd) ? { key: dd, frame: undefined, x: g.img.x, y: g.img.y } : { key: 'meuble_' + e.dessin + '_drap', frame: undefined, x: e.x, y: e.img.y };
+          const drap = g && this.has(dd) ? { key: this.imageTeinte(dd, e.variante, e.couleurs), frame: undefined, x: g.img.x, y: g.img.y } : { key: this.imageTeinte('meuble_' + e.dessin + '_drap', e.variante, e.couleurs), frame: undefined, x: e.x, y: e.img.y };
           return { x: e.x, y: Math.min(top + BLOCS_CARTE.litPieds, e.img.y - 1), depth: e.img.depth, drap };
         }
       }

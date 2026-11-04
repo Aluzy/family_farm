@@ -115,6 +115,8 @@ export const GAME_ACTIONS = {
   'build-piece': 'Construire : allumer ou éteindre l\'outil pièce (ferme générée)',
   'build-gomme': 'Construire : allumer ou éteindre la gomme (ferme générée)',
   'build-tourner': 'Construire : allumer ou éteindre l\'outil Tourner (les meubles)',
+  'build-peindre': 'Construire : allumer ou éteindre l\'outil Repeindre (la couleur des meubles)',
+  'meuble-peindre': 'Construire : choisir la couleur du meuble qu\'on pose',
   'build-sens': 'Construire : le sens du prochain meuble de jardin posé',
   'meuble-tourner': 'Construire : tourner l\'aperçu du meuble à poser',
   'build-annuler': 'Construire : annuler la dernière opération (ferme générée)',
