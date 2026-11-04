@@ -1,5 +1,5 @@
 import { DATA } from '../engine/catalog.js';
-import { countItem, inventoryCounts } from '../engine/inventory.js';
+import { countItem, inventoryCounts, penalite } from '../engine/inventory.js';
 import { boiteCounts, deposerBoite, jaugeMembre, mangeurs, placeBoite, reprendreBoite, valeurAliment } from '../engine/repas.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
@@ -42,7 +42,7 @@ export function renderBoite() {
     <div class="cards">
       <div class="card">
         <span class="card-title"><span>🧺 Dans la boîte · <span class="num">${plats.length} / ${B.PLATS}</span> aliments</span></span>
-        <span class="muted">Au plus ${B.PLATS} aliments différents, ${B.QUANTITE} de chacun. Quand un membre a faim (jauge à ${DATA.FAMILLE.FAIM.SEUIL}), il vient y manger, d'abord ce qui périme le plus tôt.</span>
+        <span class="muted">Au plus ${B.PLATS} aliments différents, ${B.QUANTITE} de chacun. Quand un membre a faim (jauge à ${DATA.FAMILLE.FAIM.SEUIL}), il vient y manger${penalite('PEREMPTION') ? ', d\'abord ce qui périme le plus tôt' : ''}.</span>
         ${contenu}
         ${faim ? `<span class="muted">Faim : ${faim}</span>` : ''}
       </div>

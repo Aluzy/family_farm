@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, growthPrice, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
-import { addItem, countItem, takeItem } from './inventory.js';
+import { addItem, countItem, penalite, takeItem } from './inventory.js';
 import { deposit } from './ramassage.js';
 import { newNightStats } from './family.js';
 import { techFlag } from './techtree.js';
@@ -296,7 +296,7 @@ export function layEggs(state) {
   gainActionXp(state, 'oeuf', eggs); // version 1.7
   state.nuit.oeufs = eggs;
   p.nourries = 0;
-  p.restes = 0; // une ration entamée ne se garde pas
+  if (penalite('RATION_PERDUE')) p.restes = 0; // une ration entamée ne se garde pas (B-1 : si PENALITES.RATION_PERDUE)
   return eggs;
 }
 

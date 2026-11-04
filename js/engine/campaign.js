@@ -2,7 +2,7 @@ import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, isOwned, starterOf, storedEnergy } from './devices.js';
 import { earn } from './compta.js';
-import { addItem, countItem } from './inventory.js';
+import { addItem, countItem, penalite } from './inventory.js';
 import { averageHappiness } from './bonheur.js';
 import { plantableCrops } from './crops.js';
 import { checkMastery, grantTechPoints, isBuilt, techPoints } from './techtree.js';
@@ -415,7 +415,8 @@ export function recordNight(state) {
   const c = state.campagne;
   if (!c) return;
   const k = c.compteurs;
-  if (chapterReached(state) >= objectiveChapter('pontes')) k.serieOeufs = (state.nuit.oeufs || 0) > 0 ? k.serieOeufs + 1 : 0;
+  // (B-1 : PENALITES.SERIE_REMISE coupée, une nuit sans œuf ne remet pas la série à zéro : les nuits se cumulent)
+  if (chapterReached(state) >= objectiveChapter('pontes')) k.serieOeufs = (state.nuit.oeufs || 0) > 0 ? k.serieOeufs + 1 : penalite('SERIE_REMISE') ? 0 : k.serieOeufs;
   if (c.fini) {
     const pt = techPoints(state);
     pt.libre += 1;

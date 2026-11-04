@@ -1,6 +1,6 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
-import { addItem, countItem, keepLots, lotList, lotRank, lotsOf, pullLots, pushLots } from './inventory.js';
+import { addItem, countItem, keepLots, lotList, lotRank, lotsOf, penalite, pullLots, pushLots } from './inventory.js';
 import { mainCharacter } from './depart.js';
 import { cibleBonheur, dishHappiness, memberHappiness, setHappiness, versCible } from './bonheur.js';
 import { noter } from './journal.js';
@@ -273,7 +273,9 @@ export function bonheurRepas(state, mange) {
   let total = 0;
   for (const m of membres) {
     const avant = memberHappiness(m);
-    setHappiness(m, versCible(avant, cible + (m.affame ? C.FAIM : 0)));
+    const apres = versCible(avant, cible + (m.affame ? C.FAIM : 0));
+    // (B-1 : PENALITES.BONHEUR_BAISSE coupée, la nuit ne fait que monter le bonheur)
+    setHappiness(m, penalite('BONHEUR_BAISSE') ? apres : Math.max(avant, apres));
     total += memberHappiness(m) - avant;
   }
   return membres.length ? Math.round(total / membres.length) : 0;

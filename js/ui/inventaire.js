@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { estEquipement, sacDef } from '../engine/equipement.js';
 import { effetTexte } from './fiche-membre.js';
 import { dishHappiness } from '../engine/bonheur.js';
-import { countItem, isFridgeable, isPerishable, lotsOf } from '../engine/inventory.js';
+import { countItem, isFridgeable, isPerishable, lotsOf, penalite } from '../engine/inventory.js';
 import { fridgeCapacity, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeRoom, fridgeUnits, moveAllToFridge } from '../engine/fridge.js';
 import { isUnlocked } from '../engine/campaign.js';
 import { sorteAPlanter } from '../engine/plantation.js';
@@ -43,6 +43,7 @@ export function daysLabel(n) {
 
 // Quantité d'un item qui périt à la prochaine nuit (lots à qui il reste 1 nuit).
 function expiringTonight(item) {
+  if (!penalite('PEREMPTION')) return 0;   // (B-1 : rien ne périme)
   return lotsOf(state, item)
     .filter((l) => l.nightsLeft === 1)
     .reduce((t, l) => t + l.qty, 0);
@@ -116,13 +117,13 @@ function fridgeAllButton(items) {
 export function fridgeSlots(plus = '') {
   const f = state.frigo;
   if (!f.construit) {
-    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans les Installations (🏗️, dans le menu)' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.PRIX_CONSTRUCTION)}). Les aliments qui y sont rangés ne vieillissent plus.</p>`;
+    return `<p class="hint">🧊 Pas encore de Réfrigérateur : construis-le ${stageUsable() ? 'dans les Installations (🏗️, dans le menu)' : 'dans l\'onglet Ferme'} (${costLabel(DATA.FRIGO.PRIX_CONSTRUCTION)}). ${penalite('PEREMPTION') ? 'Les aliments qui y sont rangés ne vieillissent plus.' : 'La famille y prend à manger.'}</p>`;
   }
   const counts = fridgeCounts(state);
   const items = Object.keys(DATA.OBJETS).filter((k) => counts[k] > 0);
   const ok = fridgeIcon() === '❄️';
   return `
-    <p class="inv-fridge${ok ? '' : ' warm'}" title="${ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté : chaque lot peut perdre une nuit.'}"><span aria-hidden="true">${fridgeIcon()}</span> <span class="num">${fridgeUnits(state)} / ${fridgeCapacity(state)}</span>${ok ? '' : ' · ⚠️ pas alimenté'}${!fridgeCoversNight(state) ? ' · ⚠️ la batterie ne couvrira pas la nuit' : ''}</p>
+    ${!penalite('PEREMPTION') ? `<p class="inv-fridge"><span aria-hidden="true">${fridgeIcon()}</span> <span class="num">${fridgeUnits(state)} / ${fridgeCapacity(state)}</span></p>` : `<p class="inv-fridge${ok ? '' : ' warm'}" title="${ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté : chaque lot peut perdre une nuit.'}"><span aria-hidden="true">${fridgeIcon()}</span> <span class="num">${fridgeUnits(state)} / ${fridgeCapacity(state)}</span>${ok ? '' : ' · ⚠️ pas alimenté'}${!fridgeCoversNight(state) ? ' · ⚠️ la batterie ne couvrira pas la nuit' : ''}</p>`}
     ${items.length || plus ? `<div class="inv-slots">${items.map((k) => slotHtml(k, counts[k], 'frigo')).join('')}${plus}</div>` : ''}${items.length ? '' : '<p class="hint">Le frigo est vide.</p>'}`;
 }
 
@@ -153,13 +154,13 @@ function itemBodyHtml(o) {
   const lines = [];
   if (it.energie) lines.push(`🍽️ ${it.energie} cal${it.mangeable ? '' : ' (ingrédient)'}`);
   if (dishHappiness(o.item)) lines.push(`😊 +${dishHappiness(o.item)} bonheur`);
-  if (o.lieu === 'sac' && isPerishable(o.item)) {
+  if (o.lieu === 'sac' && isPerishable(o.item) && penalite('PEREMPTION')) {
     const soon = expiringTonight(o.item);
     const lots = lotsOf(state, o.item).map((l) => `${formatQty(l.qty)} : encore ${nightsLabel(l.nightsLeft)}`).join(' · ');
     if (lots) lines.push(`⏳ ${lots}`);
     if (soon) lines.push(`⚠️ ${formatQty(soon)} ${accord(soon, 'périt', 'périssent')} cette nuit`);
   }
-  if (o.lieu === 'frigo') lines.push('🧊 Au frais : il ne vieillit pas tant que le frigo est alimenté.');
+  if (o.lieu === 'frigo' && penalite('PEREMPTION')) lines.push('🧊 Au frais : il ne vieillit pas tant que le frigo est alimenté.');
   if (o.item === DATA.SILO.ITEM && state.silo.construit) lines.push(`🛖 Silo : ${formatQty(state.silo.ble)}`);
   const aPlanter = o.lieu === 'sac' && stageUsable() && sorteAPlanter(o.item);
   if (it.categorie === 'graine' && !sorteAPlanter(o.item)) lines.push('🌱 Se sème dans la Zone de culture.');

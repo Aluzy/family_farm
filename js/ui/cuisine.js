@@ -2,7 +2,7 @@ import { DATA, recipeOutput, recipeOutputQty } from '../engine/catalog.js';
 import { EPS } from '../engine/base.js';
 import { isBroken, maintainCost, repairCost } from '../engine/devices.js';
 import { deviceStatus } from '../engine/energy.js';
-import { countItem, shelfLife } from '../engine/inventory.js';
+import { countItem, penalite, shelfLife } from '../engine/inventory.js';
 import { energyChip } from './energie.js';
 import { wheatTotal } from '../engine/animals.js';
 import { etatMoulin } from '../engine/blocs.js';
@@ -54,7 +54,7 @@ function stationBlurb(id) {
   const def = DATA.STATIONS[id];
   const names = stationRecipes(id).map((r) => DATA.RECETTES[r].nom.toLowerCase()).join(', ');
   const power = def.electrique
-    ? ' Appareil électrique : il consomme du courant en marche, avec interrupteur, usure et pannes.'
+    ? ` Appareil électrique : il consomme du courant en marche, avec interrupteur${penalite('USURE') ? ', usure et pannes' : ''}.`
     : ' Pas d\'électricité.';
   if (id === 'moulin') return `Moud le blé : 1 blé donne ${millOutputText()}. Le blé se moud ici même, dans le Moulin.${power}`;
   return `${names.charAt(0).toUpperCase()}${names.slice(1)}.${power}${id === 'four' ? ' Le construire ouvre l\'onglet Livre de recette.' : ''}`;

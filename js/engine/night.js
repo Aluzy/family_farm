@@ -2,7 +2,7 @@ import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { allDevices, fail, isBroken, needsService, newDayStats, storageCapacity, storedEnergy, tankCapacity } from './devices.js';
 import { awakeRequired, bedtimeDue, midnightMs, nightActive, nightLengthMs } from './clock.js';
-import { expiringSoon, spoil } from './inventory.js';
+import { expiringSoon, penalite, spoil } from './inventory.js';
 import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridge.js';
 import { feedFamily, newNightStats } from './family.js';
 import { jaugeFamille } from './repas.js';
@@ -177,7 +177,9 @@ export function advanceNight(state, dtMs) {
   const n = state.nuitEnCours;
   const avant = n.ms;
   n.ms = Math.min(nightLengthMs(), n.ms + Math.max(0, Number(dtMs) || 0));
-  if (n.dort) recoverInSleep(state, n.ms - avant); // il dort : l'énergie remonte peu à peu
+  // il dort : l'énergie remonte peu à peu ; une nuit venue seule aussi (B-1 : PENALITES.NUIT_SANS_DORMIR
+  // coupée), le personnage se couche quand le joueur n'a pas touché « Dormir »
+  if (n.dort || !penalite('NUIT_SANS_DORMIR')) recoverInSleep(state, n.ms - avant);
   let event = null;
   // les plantes dont le cycle de pousse s'achève (avant minuit : avant la récolte
   // automatique de la nuit)

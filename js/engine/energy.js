@@ -14,6 +14,7 @@ import { distribuerGrain } from './distributeur.js';
 import { runChaines } from './chaines.js';
 import { advanceNight, nightSpeed } from './night.js';
 import { repasStep } from './repas.js';
+import { penalite } from './inventory.js';
 
 /* ---------- énergie : stockage et prélèvement ---------- */
 
@@ -146,7 +147,8 @@ export function tick(state, dt, horlogeArretee = false) {
 // Enfin le record d'énergie stockée (Lot 9). Ni nuit, ni repas : chaque appelant s'en charge.
 export function farmStep(state, dtMs, { usure = true, horloge = true, eveilMax = Infinity } = {}) {
   flowStep(state, dtMs);
-  if (usure) wearStep(state, dtMs);
+  // (B-1 : PENALITES.USURE coupée, les appareils ne s'usent plus)
+  if (usure && penalite('USURE')) wearStep(state, dtMs);
 
   // e. temps d'éveil (l'heure s'en déduit) ; les plantes suivent l'horloge
   if (horloge) {

@@ -102,14 +102,19 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   des grottes, une marche plus rapide dans le marais et la montagne ; le
   second adulte, le **compagnon**, aide aux tâches de la ferme (bêtes, ruches, arrosage).
 - **Le temps** : la journée commence à 6 h, une heure dure 30 s ; la famille mange à 19 h et
-  se couche à 22 h ; à minuit, la nuit passe (ponte, laine, lait, aliments qui vieillissent).
+  se couche à 22 h ; à minuit, la nuit passe (ponte, laine, lait).
   La nuit, « Zzz » envoie le personnage au lit : endormi, une heure passe en 3 s et son
-  énergie remonte. Il ne dort que quand on l'envoie se coucher. Les plantes poussent 24 h
-  après leur arrosage.
+  énergie remonte (une nuit venue seule la rend aussi, s'il a un lit). Les plantes poussent
+  24 h après leur arrosage.
+- **Sans pénalité** (B-1) : rien ne se perd par absence ou par oubli. Les aliments ne se gâtent
+  pas, les appareils ne s'usent pas, le bonheur de la famille ne baisse pas la nuit (ni la faim,
+  ni une nuit sans paillasse ne le font baisser), les bêtes pas nourries ne produisent rien mais
+  restent, les plantes attendent. Chaque pénalité se rallume d'un réglage (`PENALITES`,
+  `data/general.json`).
 - **Les repas** : la famille a besoin de 150 énergie par jour (50 par adulte, 25 par enfant) ;
-  elle mange au repas du soir, d'abord ce qui périme le plus tôt.
+  elle mange au repas du soir.
 - **Électricité et eau** circulent en temps réel : panneau (de 7 h à 19 h) → batterie →
-  pompe, moulin, presse, réfrigérateur, station du robot. Les appareils s'usent.
+  pompe, moulin, presse, réfrigérateur, station du robot.
 - **Dix niveaux d'expérience** (⭐) débloquent cultures, bâtiments et ateliers ; un **arbre
   des technologies** (37 technologies, 7 branches) les automatisations (arrosage, robot de
   récolte et de semis, nourrissage…), payées en points, en pièces et en ressources.

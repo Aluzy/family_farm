@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { nouvelleCaleche } from './caleche.js';
 import { GENERATEUR_VERSION, STATE_VERSION } from './base.js';
-import { batteryCapacity, newDayStats, startFarm } from './devices.js';
+import { allDevices, batteryCapacity, newDayStats, startFarm } from './devices.js';
 import { addItem, countItem, freshLot, lotRank, lotsFromCounts, pushLots } from './inventory.js';
 import {
   cleanFirstName, defaultMemberProfile, familyNumbers, makeMember, newNightStats, validFirstName,
@@ -667,6 +667,20 @@ export const MIGRATIONS = {
     const out = { ...state, version: 70 };
     const c = state.carte;
     if (c && typeof c === 'object' && !Array.isArray(c)) out.carte = { ...c, generateur: 1 };
+    return out;
+  },
+  // v70 → v71 (B-1, la décision F.5) : les appareils ne s'usent plus (DATA.PENALITES.USURE) ; ceux qui
+  // étaient usés sont remis à neuf, et ceux qu'une panne avait éteints se rallument.
+  70: (state) => {
+    const out = JSON.parse(JSON.stringify({ ...state, version: 71 }));
+    let liste = [];
+    try { liste = allDevices(out); } catch (e) { liste = []; }
+    for (const d of liste) {
+      if (!d || typeof d !== 'object' || !Number.isFinite(d.usure)) continue;
+      if (d.usure >= DATA.USURE.PANNE) d.allume = true;
+      d.usure = 0;
+      d.usureMs = 0;
+    }
     return out;
   },
 };

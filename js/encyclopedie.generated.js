@@ -333,7 +333,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "refrigerateur",
      "terme": "Réfrigérateur",
-     "description": "Acheté, il arrive dans l'Inventaire : il se pose dans la maison avec 🔨 Construire. Posé, la famille y mange et va s'y servir (la boîte à nourriture revient dans l'Inventaire) ; il empêche les aliments et plats qui y sont rangés de périmer. Il contient 25 unités au niveau 1, puis 40, 60, 90 et 120 en l'agrandissant (300, 700, 1 500 et 3 000 pièces) ; plein, on ne peut plus rien y ranger. Il consomme 100 mWh/s par unité stockée (rien s'il est vide), jour et nuit, prélevés sur la batterie ; si celle-ci se vide, le froid manque et le contenu peut recommencer à périmer.",
+     "description": "Acheté, il arrive dans l'Inventaire : il se pose dans la maison avec 🔨 Construire. Posé, la famille y mange et va s'y servir (la boîte à nourriture revient dans l'Inventaire). Il contient 25 unités au niveau 1, puis 40, 60, 90 et 120 en l'agrandissant (300, 700, 1 500 et 3 000 pièces) ; plein, on ne peut plus rien y ranger. Il consomme 100 mWh/s par unité stockée (rien s'il est vide), jour et nuit, prélevés sur la batterie. Rien ne s'y gâte, même sans courant.",
      "liens": [
       "batterie",
       "peremption"
@@ -459,7 +459,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "cheval",
      "terme": "Cheval et Écurie",
-     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Sa case de la barre d'outils te met en selle : tu vas 1,8 fois plus vite, sur la ferme comme dans tout le grand monde (pas dans la mine ni dans les grottes). Quand tu en descends, il rentre à l'Écurie. Chaque nuit il mange 2 paille ; sans elle, il ne va que 1,3 fois plus vite le lendemain. Le poteau d'attache et la corde de fibre (Atelier) ne servent pas encore : le cheval rentre toujours à l'Écurie.",
+     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Sa case de la barre d'outils te met en selle : tu vas 1,8 fois plus vite, sur la ferme comme dans tout le grand monde (pas dans la mine ni dans les grottes). Quand tu en descends, il rentre à l'Écurie. Chaque nuit il mange 2 paille s'il y en a. Le poteau d'attache et la corde de fibre (Atelier) ne servent pas encore : le cheval rentre toujours à l'Écurie.",
      "liens": [
       "atelier",
       "murs",
@@ -561,7 +561,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "foyer",
      "terme": "Foyer",
-     "description": "La pièce close où l'on dort, avec une paillasse ou un lit. Tant qu'il n'existe pas, rien d'autre ne s'installe (panneau, pompe…). Chaque nuit, il faut un couchage par membre de la famille, dans une pièce close : sans lui, un membre perd -32 de bonheur. Le personnage rentre au foyer le soir et en ressort le matin. Le premier couchage est le sien ; un appui sur un autre lit lui demande s'il le choisit : il y dormira, et le membre qui y dormait prend son ancien lit.",
+     "description": "La pièce close où l'on dort, avec une paillasse ou un lit. Tant qu'il n'existe pas, rien d'autre ne s'installe (panneau, pompe…). Il faut un couchage par membre de la famille, dans une pièce close : c'est là que chacun dort et que ton personnage reprend son énergie la nuit. Le personnage rentre au foyer le soir et en ressort le matin. Le premier couchage est le sien ; un appui sur un autre lit lui demande s'il le choisit : il y dormira, et le membre qui y dormait prend son ancien lit.",
      "liens": [
       "maison",
       "piece_close",
@@ -1348,7 +1348,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "inventaire",
      "terme": "Inventaire",
-     "description": "Stock illimité de tous les objets possédés par la ferme, organisé en lots datés selon leur date de récolte, pour suivre leur péremption.",
+     "description": "Stock illimité de tous les objets possédés par la ferme, rangés par lots selon leur récolte.",
      "liens": [
       "peremption"
      ],
@@ -1375,7 +1375,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "peremption",
      "terme": "Péremption",
-     "description": "Durée pendant laquelle un aliment ou un plat reste consommable hors du réfrigérateur : de 2 nuits (le poisson frais) à 12 nuits selon l'aliment, 6 nuits pour la plupart des plats. Le réfrigérateur permet de conserver sans limite de temps.",
+     "description": "Les aliments et les plats ne se gâtent pas : ce que tu récoltes, cuisines ou ranges se garde, que tu reviennes le lendemain ou dans un mois. Chaque aliment a pourtant une durée de conservation (de 2 nuits pour le poisson frais à 12 nuits, 6 pour la plupart des plats), gardée pour une variante de jeu plus exigeante.",
      "liens": [
       "refrigerateur"
      ],
@@ -3082,7 +3082,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "energie_personnage",
      "terme": "Énergie du personnage",
-     "description": "Jauge de 0 à 100, plus l'endurance (⚡ dans le bandeau), que dépense chaque action faite au clic : couper 3, piocher 3, pêcher 4, labourer 5, planter 3, arroser 2, récolter 4, cueillir 4, tondre 8, cuisiner 3, cuire au four 3, moudre 1 par blé, presser 1. À 0, plus d'action au clic jusqu'à un en-cas ou une nuit de sommeil. Au réveil, elle remonte à 60 % de la jauge, + 40 % × la jauge de faim moyenne du reste de la famille au coucher : une famille rassasiée, la jauge pleine. Le bonheur de la famille, les technologies et l'équipement réduisent ses coûts, jamais sous 40 % du coût de base ; les automatisations n'en dépensent pas.",
+     "description": "Jauge de 0 à 100, plus l'endurance (⚡ dans le bandeau), que dépense chaque action faite au clic : couper 3, piocher 3, pêcher 4, labourer 5, planter 3, arroser 2, récolter 4, cueillir 4, tondre 8, cuisiner 3, cuire au four 3, moudre 1 par blé, presser 1. À 0, plus d'action au clic jusqu'à un en-cas ou une nuit de sommeil. Au réveil, elle remonte à 100 % de la jauge, s'il a un lit dans une pièce close, même si la nuit est venue sans qu'il soit allé se coucher. Le bonheur de la famille, les technologies et l'équipement réduisent ses coûts, jamais sous 40 % du coût de base ; les automatisations n'en dépensent pas.",
      "liens": [
       "repas",
       "en_cas",
@@ -3122,7 +3122,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "bonheur",
      "terme": "Bonheur",
-     "description": "Valeur de 0 à 100 pour chaque membre de la famille (60 au départ). Chaque nuit, il fait 25 % du chemin vers sa cible : 40, plus les meubles de la maison (le bonheur de chacun, jusqu'à 30 en tout), plus les plats mangés dans la journée : chacun des 3 meilleurs plats différents ajoute 3 (Cuisine) ou 5 (Four), +2 avec de l'huile ou un fruit, +4 avec du cacao, du café ou de la vanille ; les aliments crus ne donnent rien. Une table variée ajoute encore +4 à partir de 4 plats différents dans la journée, +8 à partir de 6. Qui a faim sans rien trouver dans la boîte à nourriture vise -8 plus bas, qui dort sans paillasse -32. Il ne tombe donc jamais en chute libre, et ne reste en haut qu'avec de bons repas et une maison meublée. Le bonheur moyen réduit les coûts d'énergie du personnage : jusqu'à moitié prix à 100 de bonheur.",
+     "description": "Valeur de 0 à 100 pour chaque membre de la famille (60 au départ). Chaque nuit, il fait 25 % du chemin vers sa cible : 40, plus les meubles de la maison (le bonheur de chacun, jusqu'à 30 en tout), plus les plats mangés dans la journée : chacun des 3 meilleurs plats différents ajoute 3 (Cuisine) ou 5 (Four), +2 avec de l'huile ou un fruit, +4 avec du cacao, du café ou de la vanille ; les aliments crus ne donnent rien. Une table variée ajoute encore +4 à partir de 4 plats différents dans la journée, +8 à partir de 6. La nuit, il ne fait que monter : ni la faim, ni une nuit sans paillasse, ni ton absence ne le font baisser. De bons repas et une maison meublée le portent plus haut. Le bonheur moyen réduit les coûts d'énergie du personnage : jusqu'à moitié prix à 100 de bonheur.",
      "liens": [
       "repas",
       "energie_personnage",
@@ -3178,7 +3178,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "usure",
      "terme": "Usure",
-     "description": "Valeur de 0 à 100 % pour chaque appareil électrique (panneau, batterie, pompe, moulin), qui augmente avec son temps de fonctionnement et réduit son rendement. À 100 %, l'appareil tombe en panne et doit être réparé.",
+     "description": "Les appareils électriques (panneau, batterie, pompe, moulin, réfrigérateur) ne s'usent pas et ne tombent pas en panne : ils tournent tant qu'ils ont du courant. L'usure, avec son entretien et ses réparations, est gardée pour une variante de jeu plus exigeante.",
      "liens": [
       "panneau_solaire",
       "batterie",
@@ -3195,7 +3195,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "interrupteur",
      "terme": "Interrupteur",
-     "description": "Bouton marche/arrêt présent sur chaque appareil électrique, qui permet de le couper pour éviter qu'il ne s'use ou ne consomme de l'énergie inutilement.",
+     "description": "Bouton marche/arrêt présent sur chaque appareil électrique, qui permet de le couper pour qu'il ne consomme pas d'énergie inutilement.",
      "liens": [],
      "decouverte": [
       "objet:pompe",
@@ -3327,7 +3327,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "entretien_automatique",
      "terme": "Entretien automatique",
-     "description": "Technologie de l'Arbre des technologies : chaque nuit, tout appareil dont l'usure atteint 70 % ou plus est entretenu au prix normal si les pièces suffisent. Le résumé apparaît dans le rapport du réveil.",
+     "description": "Technologie de l'Arbre des technologies : chaque nuit, tout appareil usé à 70 % ou plus est entretenu au prix normal si les pièces suffisent. Les appareils ne s'usant plus, elle ne sert que dans une variante de jeu plus exigeante.",
      "liens": [
       "arbre_technologique",
       "usure"
@@ -3339,7 +3339,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "absence",
      "terme": "Absence",
-     "description": "Quand le jeu est fermé, la ferme continue de tourner pendant 8 heures au plus : le panneau charge la batterie (si l'horloge s'est arrêtée entre 7 h et 19 h), la pompe remplit le réservoir, les ateliers finissent leurs préparations. Aucune nuit ne passe (une nuit déjà commencée se termine) et l'horloge s'arrête. Au retour, la fenêtre « Ravi de te revoir ! » donne la date, l'argent et les biens produits pendant l'absence.",
+     "description": "Quand le jeu est fermé, la ferme continue de tourner pendant 8 heures au plus : le panneau charge la batterie (si l'horloge s'est arrêtée entre 7 h et 19 h), la pompe remplit le réservoir, les ateliers finissent leurs préparations. Aucune nuit ne passe (une nuit déjà commencée se termine) et l'horloge s'arrête. Rien ne se perd pendant ton absence : les aliments ne se gâtent pas, les plantes attendent d'être arrosées ou récoltées, les bêtes pas nourries ne produisent rien mais restent, le bonheur de la famille ne baisse pas. Au retour, la fenêtre « Ravi de te revoir ! » donne la date, l'argent et les biens produits pendant l'absence.",
      "liens": [
       "horloge",
       "bouton_dormir",

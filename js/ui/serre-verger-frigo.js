@@ -1,6 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import { isBroken } from '../engine/devices.js';
-import { countItem } from '../engine/inventory.js';
+import { countItem, penalite } from '../engine/inventory.js';
 import { deviceStatus } from '../engine/energy.js';
 import {
   availableEnergy, buildFridge, FRIGO_OBJET, fridgeCoversNight, fridgeNightNeed,
@@ -118,7 +118,7 @@ export function renderFridgeCard() {
   const ok = fridgeIcon() === '❄️';
   const need = fridgeNightNeed(state);
   const avail = availableEnergy(state);
-  const alert = !fridgeCoversNight(state)
+  const alert = !fridgeCoversNight(state) && penalite('PEREMPTION')
     ? `<span class="alert">⚠️ La batterie ne couvrira pas la nuit : il faut <span class="num">${formatWh(need + 999)}</span>, il y en a <span class="num">${formatWh(avail)}</span>. Les aliments perdront une nuit de conservation.</span>`
     : '';
   const badge = st.badge ? `<span class="chip warn">⚠️ ${st.badge}</span>` : '';
@@ -126,7 +126,7 @@ export function renderFridgeCard() {
     <div class="card fridge ancre ${ok ? 'cold' : 'warm'}" id="dev-frigo">
       <span class="card-title"><span>${artIcon('frigo')}${fridgeIcon()} Réfrigérateur</span><span class="chips"><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span>${helpBtn('frigo')}</span></span>
       ${badge}
-      <span class="muted">${ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté.'}</span>
+      <span class="muted">${!penalite('PEREMPTION') ? 'La famille y prend à manger ; rien ne s\'y gâte, comme ailleurs.' : ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté.'}</span>
       ${fridgeFillHtml()}
       ${alert}
       ${fridgeUpgradeHtml()}

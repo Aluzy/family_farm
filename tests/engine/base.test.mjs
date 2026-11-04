@@ -14,7 +14,7 @@ import {
   upgradeDevice, upgradeTank,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, AVANT_DEMENAGEMENT, avecLune, migreAvant, ml, runFor, test,
+  assert, assertEqual, AVANT_DEMENAGEMENT, avecLune, migreAvant, ml, runFor, sansPenalite, test,
 } from './aide.mjs';
 
 test('état initial : forme et valeurs attendues', () => {
@@ -132,7 +132,7 @@ test('données : buildCatalog() calcule sur une copie, RAW_DATA garde les valeur
   assertEqual([RAW_DATA.OBJETS.pain, DATA.OBJETS.pain.plat], [undefined, true]);
   // deux catalogues tirés des mêmes fichiers sont égaux et indépendants
   const autre = buildCatalog(RAW_DATA);
-  avecLune(() => assertEqual(autre, DATA)); // ces tests tournent lune neutre (voir avecLune)
+  avecLune(() => sansPenalite(() => assertEqual(autre, DATA))); // ces tests tournent lune neutre, pénalités d'avant (voir avecLune, sansPenalite)
   autre.OBJETS.carotte.prix = 99;
   assertEqual([DATA.OBJETS.carotte.prix, RAW_DATA.OBJETS.carotte.prix], [2, 1]);
 });
