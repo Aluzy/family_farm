@@ -13,7 +13,8 @@ import { farmTerrain } from './terrain.js';
      - la famille : la ferme aménagée élève sa cible de bonheur (styleBonheur, js/engine/bonheur.js), par la
        variété (VARIETE styles d'au moins PIECES sortes de blocs) ou par un style complet (COMPLET sortes d'un
        style). On compte les sortes différentes, pas les blocs : vingt murs de pierre font une seule pièce.
-   Ce module ne lit que la partie (state.blocs, state.sols, state.blocsDessus) : il ne dépend d'aucun autre
+   Ce module ne lit que la partie (state.blocs, state.sols, state.blocsDessus ; pour le style de la ferme,
+   l'étage aussi : state.etage, state.dessusEtage, state.solsEtage, state.solsHauts) : il ne dépend d'aucun autre
    module de la ferme (bonheur.js l'importe). */
 
 export const STYLES = DATA.STYLES;
@@ -39,10 +40,16 @@ export function styleInfo(id) {
 }
 
 const objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
-// Ce qui est posé : [[case, sorte]] (les blocs, ce qui est posé dessus : les tableaux ; les sols).
-function poses(state) {
+// Ce qui est posé : [[case, sorte]] (les blocs, ce qui est posé dessus : les tableaux ; les sols) ; `etage` :
+// et ce qui est posé à l'étage (ses blocs, ses tableaux, ses sols), qui compte dans le style de la ferme.
+function poses(state, etage = false) {
   const out = [];
-  for (const o of [state.blocs, state.blocsDessus, state.sols]) if (objet(o)) for (const [k, s] of Object.entries(o)) out.push([Number(k), s]);
+  const sources = [state.blocs, state.blocsDessus, state.sols];
+  if (etage) {
+    sources.push(state.etage, state.dessusEtage, state.solsEtage);
+    if (objet(state.solsHauts)) for (const o of Object.values(state.solsHauts)) sources.push(o);
+  }
+  for (const o of sources) if (objet(o)) for (const [k, s] of Object.entries(o)) out.push([Number(k), s]);
   return out;
 }
 
@@ -65,7 +72,7 @@ export function decorAutour(state, tile, rayon = STYLES.RAYON) {
 
 // Les styles de toute la ferme : { style: nombre de sortes }.
 export function decorFerme(state) {
-  return sortesParStyle(poses(state).map(([, s]) => s));
+  return sortesParStyle(poses(state, true).map(([, s]) => s));
 }
 
 // Ce que l'aménagement de la ferme ajoute à la cible de bonheur de la famille : MAISON.BONUS par la variété

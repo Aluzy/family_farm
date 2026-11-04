@@ -698,6 +698,10 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
     boîte à nourriture, la meule (le message le dit), et ce qui sert dehors. Un tableau s'accroche sur un mur
     plein de l'étage, posé à l'étage ou rehaussé depuis le bas (`murEtage`, `state.dessusEtage`) : un appui
     le reprend avant le mur ; son mur ôté, il revient dans l'inventaire (`rangerEtage`) ;
+  - la vie à l'étage : ses lanternes et ses réverbères s'allument la nuit comme en bas (`etageLumieres`,
+    `stepLanterns`), ses fenêtres s'éclairent (`fenetres.js`) ; ce qui y est posé compte dans le style de
+    la ferme (`styles.js` `decorFerme`), pas dans le coin d'une table du bas (`decorAutour`). Le repas avec
+    des invités se tient encore à une table du rez-de-chaussée (les invités ne montent pas l'escalier) ;
   - l'escalier repris, l'étage s'en va : ses blocs reviennent dans l'inventaire
     (`rangerEtage`) ; au coucher, on redescend ;
   - un mur ou une porte du bas qui porte l'étage (retiré, la pièce de l'escalier s'ouvrirait et

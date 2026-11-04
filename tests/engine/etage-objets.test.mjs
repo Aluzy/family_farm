@@ -9,7 +9,7 @@
 import {
   addItem, countItem, DATA, DECOR_ETAGE, defaire, dessusEtage, empreintePartie, ETAGE_BLOCS, etageBlocs, etageEmprise,
   executerCommande, hauteurPile, murEtage, poseEtageStatus, poserEtage, rangerEtage, reprendreBloc, reprendreEtage,
-  testFarmMap, testFermeConstruite, tournerEtage,
+  testFarmMap, testFermeConstruite, tournerEtage, decorAutour, decorFerme,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, garden, test } from './aide.mjs';
 
@@ -87,4 +87,18 @@ test('étage : les commandes d\'un tableau (poser, reprendre) se défont et retr
   assertEqual(empreintePartie(s), e1);
   assertEqual(defaire(s, p.inverses), 1);
   assertEqual(empreintePartie(s), e0);
+});
+
+test('étage : ce qui y est posé compte dans le style de la ferme (pas dans le coin du repas, au sol)', () => {
+  const { s, hauts, sols } = etage();
+  const avant = decorFerme(s), autour = decorAutour(s, sols[2]);
+  // la jarre aux coquillages et le bac de lavande : du style côtier et fleuri
+  const style = (sorte) => Object.entries(DATA.STYLES.LISTE).find(([, st]) => st.blocs.includes(sorte));
+  const [cotier] = style('jarre_coquillages') || [];
+  assert(cotier, 'la jarre a un style');
+  for (const sorte of ['jarre_coquillages']) { addItem(s, B[sorte].objet, 1); assert(poserEtage(s, sorte, sols[2]).ok); }
+  const apres = decorFerme(s);
+  const avaitDeja = Object.values(s.blocs).includes('jarre_coquillages');
+  assertEqual(apres[cotier] || 0, (avant[cotier] || 0) + (avaitDeja ? 0 : 1), 'une sorte de plus dans son style');
+  assertEqual(decorAutour(s, sols[2]), autour, 'le coin d\'une table du bas ne compte pas l\'étage');
 });

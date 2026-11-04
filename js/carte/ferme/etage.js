@@ -78,6 +78,7 @@
         this.etageEmprise = on ? new Set(etage.emprise) : null;
         this.etageBloque = new Set();
         this.etageLits = new Map();      // les couchages de l'étage : case → { img, x, y, dessin }
+        this.etageLumieres = [];         // les lanternes et les réverbères de l'étage (chantier.js stepLanterns)
         this.etageEscaliers = on ? etage.escaliers.slice() : [];
         // le niveau 2 (par l'escalier de l'étage) : ses objets, son emprise, ce qui y arrête
         if (this.etage2Objs) this.etage2Objs.forEach((o) => o.destroy());
@@ -189,6 +190,8 @@
             const plat = BLOCS_CARTE.plats.includes(b.sorte);
             const img = add(this.add.image(p.x, p.y - dy, key, f).setOrigin(0.5, 1).setDepth(p.y + (plat ? 0.7 : 1)).setFlipX(miroir));
             if (b.sorte === 'paillasse') this.etageLits.set(b.case, { img, x: p.x, y: p.y - dy, paillasse: true });
+            // (une lanterne, un réverbère : ils s'allument la nuit comme en bas, à la hauteur de l'étage)
+            if (b.sorte === 'lanterne' || b.sorte === 'candelabre') this.etageLumieres.push({ case: b.case, sorte: b.sorte, img, x: p.x, y: p.y - dy });
             if (BLOCS_CARTE.bloquent.includes(b.sorte)) this.etageBloque.add(b.case);
             if (key === BLOCS_CARTE.hauts.key) this.etageMurs.set(b.case, { img, x: p.x, sorte: b.sorte });
           }
