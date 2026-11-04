@@ -3,7 +3,7 @@ import { estEquipement, sacDef } from '../engine/equipement.js';
 import { effetTexte } from './fiche-membre.js';
 import { dishHappiness } from '../engine/bonheur.js';
 import { countItem, isFridgeable, isPerishable, lotsOf, penalite } from '../engine/inventory.js';
-import { fridgeCapacity, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeRoom, fridgeUnits, moveAllToFridge } from '../engine/fridge.js';
+import { fridgeCapacity, fridgeCount, fridgeCounts, fridgeCoversNight, fridgeRoom, fridgeUnits } from '../engine/fridge.js';
 import { isUnlocked } from '../engine/campaign.js';
 import { sorteAPlanter } from '../engine/plantation.js';
 import { formatNumber, formatQty } from '../engine/format.js';
@@ -13,6 +13,7 @@ import { persistState } from './storage.js';
 import { invTab, state } from './store.js';
 import { eatButton } from './energie.js';
 import { applyResult } from './game-actions.js';
+import { executer } from './commandes.js';
 import { fridgeIcon } from './serre-verger-frigo.js';
 import { pxText } from './pixel-art.js';
 import { tel } from './consent.js';
@@ -241,7 +242,7 @@ registerActions({
     notify('🪨 La pierre est posée. La terre, dessous, est tiède.', { kind: 'info' });
   },
   'fridge-in-all': () => {
-    const result = applyResult(moveAllToFridge(state));
+    const result = applyResult(executer('frigo.toutRanger', {}));
     if (result.ok) notify(`🧊 Rangé au frigo : ${itemsText(result.items)}${result.reste ? ` · frigo plein, ${formatQty(result.reste)} restent dehors` : ''}`);
   },
 });

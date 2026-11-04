@@ -7,8 +7,7 @@ import { energyChip } from './energie.js';
 import { wheatTotal } from '../engine/animals.js';
 import { etatMoulin } from '../engine/blocs.js';
 import {
-  buildStation, cancelMilling, cancelQueued, millPending, millTimeLeft, queueCapacity, recipeStatus,
-  startMilling, startRecipe, taskTimeLeft,
+  buildStation, millPending, millTimeLeft, queueCapacity, recipeStatus, taskTimeLeft,
 } from '../engine/kitchen.js';
 import { recipeTime } from '../engine/techtree.js';
 import { isUnlocked } from '../engine/campaign.js';
@@ -18,6 +17,7 @@ import {
 } from '../engine/format.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
+import { executer } from './commandes.js';
 import { syncJobs } from './loop.js';
 import { refresh } from './render.js';
 import { switchHtml, wearHtml } from './ferme.js';
@@ -327,7 +327,7 @@ registerActions({
   // ----- version 1.1 : Moulin (mouture par quantité) -----
   // « Moudre » par lot : ×1, ×5, ×10 blés (data-q)
   'mill-start': (target) => {
-    const result = applyResult(startMilling(state, Math.max(1, Number(target.dataset.q) || 1)));
+    const result = applyResult(executer('moulin.moudre', { quantite: Math.max(1, Number(target.dataset.q) || 1) }));
     if (result.ok) {
       syncJobs();
       // fiche 10 : les lots versés à la suite au Moulin se cumulent
@@ -336,11 +336,11 @@ registerActions({
     }
   },
   'mill-cancel': () => {
-    const result = applyResult(cancelMilling(state));
+    const result = applyResult(executer('moulin.annuler', {}));
     if (result.ok) notify(`🌾 ${plural(result.rendu, 'blé', formatNumber(result.rendu))} repris`);
   },
   'cancel-queued': (target) => {
-    applyResult(cancelQueued(state, target.dataset.station, Number(target.dataset.index)));
+    applyResult(executer('cuisine.annuler', { station: String(target.dataset.station || ''), rang: Number(target.dataset.index) }));
   },
   'build-station': (target) => {
     const id = target.dataset.station;
@@ -352,7 +352,7 @@ registerActions({
   },
   'start-recipe': (target) => {
     const id = target.dataset.recipe;
-    const result = applyResult(startRecipe(state, id));
+    const result = applyResult(executer('cuisine.lancer', { recette: id }));
     if (result.ok) {
       syncJobs();
       notify(`${DATA.RECETTES[id].icone} ${DATA.RECETTES[id].nom} : préparation lancée`);

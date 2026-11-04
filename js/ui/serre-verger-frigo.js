@@ -3,8 +3,7 @@ import { isBroken } from '../engine/devices.js';
 import { countItem, penalite } from '../engine/inventory.js';
 import { deviceStatus } from '../engine/energy.js';
 import {
-  availableEnergy, buildFridge, FRIGO_OBJET, fridgeCoversNight, fridgeNightNeed,
-  fridgeCapacity, fridgeUnits, fridgeUpgradeCost, upgradeFridge,
+  availableEnergy, FRIGO_OBJET, fridgeCoversNight, fridgeNightNeed, fridgeCapacity, fridgeUnits, fridgeUpgradeCost,
 } from '../engine/fridge.js';
 import { serreCap, serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
 import {
@@ -15,6 +14,7 @@ import { techAuto } from '../engine/techtree.js';
 import { formatCoins, formatNumber, formatWh } from '../engine/format.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
+import { executer } from './commandes.js';
 import { wearHtml } from './ferme.js';
 import { autoChip, groupButtons, plotCard } from './elevage.js';
 import { stationControls } from './cuisine.js';
@@ -169,11 +169,11 @@ registerActions({
   },
 
   'upgrade-fridge': () => {
-    const result = applyResult(upgradeFridge(state));
+    const result = applyResult(executer('frigo.agrandir', {}));
     if (result.ok) notify(`🧊 Réfrigérateur niveau ${result.niveau} : ${result.capacite} unités (−${formatCoins(result.cost)} 💰)`);
   },
   'build-fridge': () => {
-    const result = applyResult(buildFridge(state));
+    const result = applyResult(executer('frigo.acheter', {}));
     if (result.ok) notify(`🧊 Réfrigérateur acheté (−${formatCoins(result.cost)} 💰) : pose-le dans la maison avec 🔨 Construire.`);
   },
 });

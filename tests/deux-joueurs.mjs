@@ -11,10 +11,11 @@
 //   4. la partie confirmée de chacun est celle du monde (la même empreinte) ;
 //   4b. E-5 : B récolte une carotte mûre : elle va au coffre commun, A voit la parcelle vide ;
 //   4b'. E-6 : B nourrit les poules : A les voit nourries ;
+//   4b''. E-7 : B mange une carotte sur le pouce : elle quitte le coffre commun, chez A aussi ;
 //   4c. E-5 : A se couche, la nuit attend B ; B se couche : la nuit passe chez les deux (le jour suivant),
 //       et les parties confirmées sont encore celle du monde ;
 //   5. la partie solo de A, sur l'appareil, n'est jamais touchée en ligne ;
-//   6. une action pas encore en ligne (lancer une recette) est refusée (un message, rien ne change) ;
+//   6. une action pas encore en ligne (vendre au Marché) est refusée (un message, rien ne change) ;
 //   7. E-3 : A retire B : la connexion de B est coupée, B revient à sa ferme solo.
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
 
@@ -178,6 +179,11 @@ try {
   await action(pb, 'feed-all');
   const msPoules = await attendre(pa, () => FF.state.poulailler.nourries === 2, null, 5000);
   verifie(msPoules !== null, `4b'. B a nourri les poules : A les voit nourries en ${msPoules} ms`);
+  // 4b''. E-7 : la cuisine (manger sur le pouce)
+  const avantRepas = await carottes(pa);
+  await action(pb, 'eat', { item: 'carotte' });
+  const msRepas = await attendre(pa, async (n) => { const E = await import('/js/engine/index.js'); return E.countItem(FF.state, 'carotte') === n - 1; }, avantRepas, 5000);
+  verifie(msRepas !== null, `4b''. B a mangé une carotte : elle quitte le coffre commun chez A en ${msRepas} ms`);
   // 4c. E-5 : la nuit partagée
   const jour = await pa.evaluate(() => FF.state.day);
   await action(pa, 'monde-coucher');
@@ -192,7 +198,7 @@ try {
   await pa.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   verifie((await pa.evaluate(() => localStorage.getItem('ferme-save'))) === soloA, '5. la partie solo de A n\'est pas touchée en ligne');
   const avant = reg.rev;
-  await action(pa, 'start-recipe', { id: 'pain' });
+  await action(pa, 'sell-item', { item: 'carotte' });
   await pa.waitForTimeout(300);
   verifie(reg.rev === avant && /viendra bientôt/.test(await pa.evaluate(() => document.body.innerText)), '6. un geste pas encore en ligne est refusé');
   // 7. E-3 : A retire B

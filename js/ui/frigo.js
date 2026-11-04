@@ -1,10 +1,11 @@
 import { DATA } from '../engine/catalog.js';
 import { countItem, isFridgeable } from '../engine/inventory.js';
-import { expiringTonight, expiringToFridge, fridgeRoom, moveExpiringToFridge, moveToFridge } from '../engine/fridge.js';
+import { expiringTonight, expiringToFridge, fridgeRoom } from '../engine/fridge.js';
 import { formatQty } from '../engine/format.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
+import { executer } from './commandes.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
@@ -126,7 +127,7 @@ registerActions({
   },
   'frigo-ranger': (target) => {
     const item = target.dataset.item;
-    const result = applyResult(moveToFridge(state, item, tiroir.qte));
+    const result = applyResult(executer('frigo.ranger', { objet: item, quantite: tiroir.qte }));
     if (!result.ok) return;
     persistState();
     notify(`🧊 Rangé au frigo : ${formatQty(result.moved)} ${DATA.OBJETS[item].icone}${result.reste ? ` · frigo plein, ${formatQty(result.reste)} restent dehors` : ''}`);
@@ -135,7 +136,7 @@ registerActions({
     refresh();
   },
   'fridge-in-urgent': () => {
-    const result = applyResult(moveExpiringToFridge(state));
+    const result = applyResult(executer('frigo.urgent', {}));
     if (!result.ok) return;
     persistState();
     notify(`🧊 Mis au frais : ${itemsText(result.items)}${result.reste ? ` · frigo plein, ${formatQty(result.reste)} restent dehors` : ''}`);

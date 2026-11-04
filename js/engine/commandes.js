@@ -57,6 +57,21 @@
      etable.place     { }                      acheter une place de plus à l'Étable
      ramassage.prendre { tas }                 prendre un tas qui attend (ramassage.js : un id de tas,
                                                 une ruche pleine « ruche:<case> » comprise)
+   La cuisine (E-7, sans inverse : une préparation lancée, un plat mangé ne se défont pas comme un mur ;
+   « Annuler » une préparation en attente est une commande à part entière) :
+     cuisine.lancer   { recette }               lancer une recette à son atelier
+     cuisine.annuler  { station, rang }         retirer la préparation en attente n° `rang` de la file
+     moulin.moudre    { quantite }              verser du blé au Moulin
+     moulin.annuler   { }                       reprendre le blé du Moulin
+     frigo.ranger     { objet, quantite }       mettre au réfrigérateur ; frigo.sortir : l'en sortir
+     frigo.sortir     { objet, quantite }
+     frigo.toutRanger { }                       « Tout ranger » ; frigo.urgent : ce qui périme bientôt
+     frigo.urgent     { }
+     frigo.acheter    { }                       le réfrigérateur ; frigo.agrandir : le niveau suivant
+     frigo.agrandir   { }
+     boite.deposer    { objet, quantite }       la boîte à nourriture du foyer ; boite.reprendre
+     boite.reprendre  { objet, quantite }
+     manger           { objet?, sac? }          manger sur le pouce (sac : ce qui est dans le sac)
      nuit.dormir      { }                       se coucher, la nuit (elle défile jusqu'au réveil)
      nuit.partagee    { }                       E-5 : toute la nuit d'un coup, à n'importe quelle heure
                                                 (le monde en ligne la joue, quand tous sont couchés)
@@ -74,6 +89,10 @@ import { harvestAll, plantAll, waterAll } from './automation.js';
 import { remplirCruche } from './cruche.js';
 import { buyPasture, feedAllHens, feedHen, setCowHerbs, shear, upgradePoulailler } from './animals.js';
 import { pickUp } from './ramassage.js';
+import { cancelMilling, cancelQueued, startMilling, startRecipe } from './kitchen.js';
+import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
+import { deposerBoite, reprendreBoite } from './repas.js';
+import { eatSnack } from './family.js';
 import { goToSleep, nuitPartagee } from './night.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
@@ -104,6 +123,9 @@ const CONTROLES = {
   culture: (v) => typeof v === 'string' && !!DATA.CULTURES[v],
   lieu: (v) => v === 'potager' || v === 'serre',
   drapeau: (v) => v === true || v === false,
+  objet: (v) => typeof v === 'string' && !!DATA.OBJETS[v],
+  recette: (v) => typeof v === 'string' && !!DATA.RECETTES[v],
+  quantite: (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1e6,   // (0 : le moteur dit pourquoi)
 };
 
 export const COMMANDES = {
@@ -358,6 +380,25 @@ export const COMMANDES = {
   'ramassage.prendre': {
     args: { tas: 'texte' },
     executer: (state, { tas }) => pickUp(state, tas),
+  },
+  'cuisine.lancer': { args: { recette: 'recette' }, executer: (state, { recette }) => startRecipe(state, recette) },
+  'cuisine.annuler': {
+    args: { station: 'texte', rang: 'case' },
+    executer: (state, { station, rang }) => (DATA.STATIONS[station] ? cancelQueued(state, station, rang) : fail('Atelier inconnu.')),
+  },
+  'moulin.moudre': { args: { quantite: 'quantite' }, executer: (state, { quantite }) => startMilling(state, Math.max(1, Math.floor(quantite))) },
+  'moulin.annuler': { args: {}, executer: (state) => cancelMilling(state) },
+  'frigo.ranger': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => moveToFridge(state, objet, quantite) },
+  'frigo.sortir': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => moveFromFridge(state, objet, quantite) },
+  'frigo.toutRanger': { args: {}, executer: (state) => moveAllToFridge(state) },
+  'frigo.urgent': { args: {}, executer: (state) => moveExpiringToFridge(state) },
+  'frigo.acheter': { args: {}, executer: (state) => buildFridge(state) },
+  'frigo.agrandir': { args: {}, executer: (state) => upgradeFridge(state) },
+  'boite.deposer': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => deposerBoite(state, objet, quantite) },
+  'boite.reprendre': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => reprendreBoite(state, objet, quantite) },
+  'manger': {
+    args: { objet: 'objet?', sac: 'drapeau?' },
+    executer: (state, { objet = null, sac = false }) => eatSnack(state, objet, { duSac: sac }),
   },
   'nuit.dormir': {
     args: {},
