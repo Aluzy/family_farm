@@ -95,7 +95,7 @@ test('axe E 3 et 7 : propriétaire absent, l\'ami joue ; au retour, le propriét
   for (const e of a.evts) assert(executerCommande(chezA, e.cmd).ok, 'rejouée chez lui');
   eq(empreintePartie(chezA), empreintePartie(r.charger()), 'la même partie que le monde');
   // trop en retard (le journal ne remonte pas jusque-là) : la partie entière
-  eq(Object.keys(r.accueil(A, { version: GAME_VERSION, depuis: 99 })), ['ok', 'rev', 'role', 'membres', 'partie'], 'une révision inconnue : l\'instantané');
+  assert('partie' in r.accueil(A, { version: GAME_VERSION, depuis: 99 }) && !('evts' in r.accueil(A, { version: GAME_VERSION, depuis: 99 })), 'une révision inconnue : l\'instantané');
 });
 
 test('axe E 4 : un membre révoqué en cours de session : ses commandes refusées, son accueil aussi, sa connexion fermée', () => {
@@ -193,4 +193,72 @@ test('monde : les routes du Worker : mettre sa ferme en ligne, la retrouver dans
   eq((await W.fetch(req('/mondes/pas-un-id/fiche'), env)).status, 404);
   eq((await W.fetch(req('/mondes'), {})).status, 503, 'sans Durable Objects : pas encore ouvert');
   eq((await W.fetch(req(`/mondes/${cree.monde}/ws`), env)).status, 426, 'la connexion : une WebSocket attendue');
+});
+
+/* ---------- E-3 : inviter, rejoindre, retirer ---------- */
+
+test('E-3 : le propriétaire invite ; le lien ne sert qu\'une fois, à un seul compte ; un lien expiré est refusé', async () => {
+  const sql = baseSql(), horloge = { t: Date.UTC(2026, 10, 5) };
+  const r = new MondeRegistre(sql, () => horloge.t);
+  const s = partieLocale();
+  r.creer({ proprietaire: A, partie: s });
+  eq((await r.inviter(B)).statut, 403, 'un autre que le propriétaire n\'invite pas');
+  const inv = await r.inviter(A);
+  assert(inv.ok && /^[A-Za-z0-9_-]{32}$/.test(inv.secret));
+  const j = await r.rejoindre(B, 'Sam', inv.secret);
+  eq([j.ok, j.role, r.membre(B).role], [true, 'batisseur', 'batisseur']);
+  eq((await r.rejoindre(B, 'Sam', inv.secret)).ok, true, 'le même compte, de nouveau : toujours membre');
+  eq((await r.rejoindre('c-troisieme', 'Lou', inv.secret)).statut, 410, 'déjà servi');
+  const vieux = await r.inviter(A);
+  horloge.t += (MONDE.INVITATION_JOURS + 1) * 24 * 3600 * 1000;
+  eq((await r.rejoindre('c-troisieme', 'Lou', vieux.secret)).statut, 410, 'expiré');
+  eq((await r.rejoindre('c-troisieme', 'Lou', 'pas-un-secret')).statut, 400);
+  assert(!sql.db.prepare('SELECT * FROM invitations').all().some((x) => JSON.stringify(x).includes(inv.secret)), 'seulement l\'empreinte du secret');
+});
+
+test('E-3 : retirer un membre ferme sa connexion ouverte tout de suite ; il ne revient pas par un ancien lien', async () => {
+  const sql = baseSql();
+  const fermees = [];
+  const sockets = [{ c: A, close: () => fermees.push(A), send() {} }, { c: B, close: (code) => fermees.push([B, code]), send() {} }];
+  const ctx = { storage: { sql }, getWebSockets: (tag) => sockets.filter((w) => !tag || w.c === tag), getTags: (w) => [w.c] };
+  const d = new Monde(ctx, {});
+  d.registre.creer({ proprietaire: A, partie: partieLocale() });
+  const inv = await d.registre.inviter(A);
+  const appel = async (chemin, compte, corps) => (await d.fetch(new Request(`https://monde/monde/${chemin}`, { method: 'POST', headers: { 'X-Compte': compte, 'X-Nom': 'x', 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }))).json();
+  eq((await appel('rejoindre', B, { secret: inv.secret })).ok, true);
+  eq((await appel('retirer', B, { compte: A })).ok, false, 'un bâtisseur ne retire personne');
+  eq((await appel('retirer', A, { compte: B })).ok, true);
+  eq(fermees, [[B, 4003]], 'la connexion de B fermée, pas celle de A');
+  eq(d.registre.membre(B), null);
+  const inv2 = await d.registre.inviter(A);
+  eq((await appel('rejoindre', B, { secret: inv2.secret })).ok, false, 'retiré : un nouveau lien ne le fait pas revenir');
+});
+
+test('E-3 : les routes du Worker : créer un lien, le suivre (le monde dans la liste de l\'ami), retirer l\'ami (plus dans sa liste)', async () => {
+  const W = (await import('../worker/src/index.js')).default;
+  const { Comptes } = await import('../worker/src/comptes.mjs');
+  const comptes = new Comptes({ storage: { sql: baseSql() } }, {});
+  const mondes = new Map();
+  const env = {
+    COMPTES: { idFromName: (x) => x, get: () => ({ fetch: (q) => comptes.fetch(q) }) },
+    MONDES: { idFromName: (x) => x, get: (x) => { if (!mondes.has(x)) mondes.set(x, new Monde({ storage: { sql: baseSql() }, getWebSockets: () => [], getTags: () => [] }, {})); return { fetch: (q) => mondes.get(x).fetch(q) }; } },
+  };
+  const connecte = async (email) => { const l = await comptes.registre.demanderLien(email); return comptes.registre.connecter(l.jeton); };
+  const a = await connecte('alex@exemple.fr'), b = await connecte('sam@exemple.fr');
+  const req = (chemin, sess, corps) => new Request('https://w.example' + chemin, { method: corps === undefined ? 'GET' : 'POST', headers: { Origin: 'https://aluzy.github.io', 'Content-Type': 'application/json', Authorization: `Bearer ${sess}` }, body: corps === undefined ? undefined : JSON.stringify(corps) });
+  const j = async (q) => (await W.fetch(q, env)).json();
+  const s = partieLocale();
+  const m = await j(req('/mondes', a.session, { partie: s, titre: 'Chez Alex' }));
+  eq((await j(req(`/mondes/${m.monde}/invitations`, b.session, {}))).ok, false, 'pas membre : pas de lien');
+  const inv = await j(req(`/mondes/${m.monde}/invitations`, a.session, {}));
+  assert(inv.ok && inv.lien.includes(`#invitation=${m.monde}.`), JSON.stringify(inv));
+  const rj = await j(req('/rejoindre', b.session, { code: inv.code }));
+  eq([rj.ok, rj.monde, rj.titre], [true, m.monde, 'Chez Alex']);
+  eq((await j(req('/mondes', b.session))).mondes.map((x) => [x.monde, x.role]), [[m.monde, 'batisseur']], 'dans la liste de l\'ami');
+  eq((await j(req(`/mondes/${m.monde}/fiche`, b.session))).membres.length, 2);
+  eq((await j(req('/rejoindre', b.session, { code: 'n-importe-quoi' }))).ok, false);
+  const ret = await j(req(`/mondes/${m.monde}/retirer`, a.session, { compte: b.compte.id }));
+  eq(ret.ok, true);
+  eq((await j(req('/mondes', b.session))).mondes, [], 'plus dans sa liste');
+  eq((await W.fetch(req(`/mondes/${m.monde}/fiche`, b.session), env)).status, 403, 'plus membre');
 });

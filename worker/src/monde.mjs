@@ -33,6 +33,8 @@ export const MONDE = {
   JOURNAL_GARDE: 500,       // révisions gardées dans le journal avant le dernier instantané (le rattrapage)
   COMMANDES_PAR_MINUTE: 120,// commandes acceptées au plus par membre et par minute
   NOM_MAX: 40,
+  INVITATION_JOURS: 7,      // E-3 : un lien d'invitation vaut tant de jours, et ne sert qu'une fois
+  INVITATIONS_MAX: 20,      // liens en attente au plus par monde
 };
 
 // Les commandes que le monde partagé accepte (la nuit partagée viendra plus tard : F.2).
@@ -48,7 +50,20 @@ export function creerTablesMonde(sql) {
   sql.exec('CREATE TABLE IF NOT EXISTS instantane (rev INTEGER PRIMARY KEY, json TEXT NOT NULL)');
   sql.exec('CREATE TABLE IF NOT EXISTS journal (rev INTEGER PRIMARY KEY, id TEXT UNIQUE NOT NULL, acteur TEXT NOT NULL, cmd TEXT NOT NULL, ts INTEGER NOT NULL)');
   sql.exec('CREATE TABLE IF NOT EXISTS membres (compte TEXT PRIMARY KEY, nom TEXT NOT NULL, role TEXT NOT NULL, revoque INTEGER NOT NULL DEFAULT 0)');
+  // (E-3 : les invitations : l'empreinte du secret, sa date, sa fin, qui l'a utilisée)
+  sql.exec('CREATE TABLE IF NOT EXISTS invitations (hash TEXT PRIMARY KEY, cree INTEGER NOT NULL, expire INTEGER NOT NULL, par TEXT)');
 }
+
+// E-3 : un secret d'invitation au hasard (24 octets : 192 bits, en base64url) et son empreinte.
+export function secretAuHasard() {
+  const b = crypto.getRandomValues(new Uint8Array(24));
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+export async function empreinteSecret(s) {
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(s)));
+  return [...new Uint8Array(h)].map((x) => x.toString(16).padStart(2, '0')).join('');
+}
+const SECRET_RE = /^[A-Za-z0-9_-]{32}$/;
 
 export class MondeRegistre {
   constructor(sql, maintenant = () => Date.now()) {
@@ -133,7 +148,7 @@ export class MondeRegistre {
     const v = this.meta('version');
     if (version !== v) return { ok: false, raison: 'version', erreur: `Ce monde joue la version ${v} du jeu ; la tienne est ${version || 'inconnue'} : recharge la page pour mettre le jeu à jour.` };
     const s = this.charger();
-    const base = { ok: true, rev: this.rev, role: m.role, membres: this.membres() };
+    const base = { ok: true, rev: this.rev, role: m.role, titre: this.meta('titre'), proprietaire: this.meta('proprietaire'), membres: this.membres() };
     const d = Number(depuis);
     if (Number.isInteger(d) && d >= 0 && d <= this.rev) {
       const plusVieux = this.un('SELECT MIN(rev) AS r FROM journal');
@@ -179,6 +194,43 @@ export class MondeRegistre {
     this.faire('DELETE FROM journal WHERE rev <= ?', this.rev - MONDE.JOURNAL_GARDE);
   }
 
+  /* -- E-3 : inviter, rejoindre -- */
+
+  // Un lien d'invitation, créé par le propriétaire : { ok, secret, expire }.
+  async inviter(compte) {
+    if (compte !== this.meta('proprietaire')) return { ok: false, statut: 403, erreur: 'Seul le propriétaire du monde invite.' };
+    const t = this.maintenant();
+    this.faire('DELETE FROM invitations WHERE expire < ? OR par IS NOT NULL', t);
+    if (this.un('SELECT COUNT(*) AS n FROM invitations').n >= MONDE.INVITATIONS_MAX) return { ok: false, statut: 429, erreur: 'Trop de liens d\'invitation en attente : attends qu\'ils servent ou expirent.' };
+    const secret = secretAuHasard(), expire = t + MONDE.INVITATION_JOURS * 24 * 3600 * 1000;
+    this.faire('INSERT INTO invitations (hash, cree, expire, par) VALUES (?, ?, ?, NULL)', await empreinteSecret(secret), t, expire);
+    return { ok: true, secret, expire };
+  }
+
+  // Le lien suivi par `compte` (`nom` : son nom affiché) : il devient bâtisseur. Un lien expiré, ou déjà
+  // utilisé par un autre, est refusé ; un membre qui le suit de nouveau reste membre.
+  async rejoindre(compte, nom, secret) {
+    if (!SECRET_RE.test(String(secret || ''))) return { ok: false, statut: 400, erreur: 'Ce lien d\'invitation n\'est pas valide.' };
+    const deja = this.membre(compte);
+    if (deja) return { ok: true, role: deja.role, titre: this.meta('titre'), deja: true };
+    const h = await empreinteSecret(secret), inv = this.un('SELECT expire, par FROM invitations WHERE hash = ?', h);
+    if (!inv) return { ok: false, statut: 410, erreur: 'Ce lien d\'invitation n\'existe pas (ou plus).' };
+    if (inv.par && inv.par !== compte) return { ok: false, statut: 410, erreur: 'Ce lien d\'invitation a déjà servi : demande-en un autre.' };
+    if (inv.expire < this.maintenant()) return { ok: false, statut: 410, erreur: 'Ce lien d\'invitation a expiré : demande-en un autre.' };
+    const ancien = this.un('SELECT revoque FROM membres WHERE compte = ?', compte);
+    if (ancien && ancien.revoque) return { ok: false, statut: 403, erreur: 'Le propriétaire t\'a retiré de ce monde.' };
+    this.faire('UPDATE invitations SET par = ? WHERE hash = ?', compte, h);
+    this.ajouterMembre(compte, nom, ROLES.batisseur);
+    return { ok: true, role: ROLES.batisseur, titre: this.meta('titre') };
+  }
+
+  // Le propriétaire retire un membre (`compte`) ; les liens en attente sont annulés aussi.
+  retirer(par, compte) {
+    if (par !== this.meta('proprietaire')) return { ok: false, statut: 403, erreur: 'Seul le propriétaire du monde retire un membre.' };
+    const r = this.revoquer(compte);
+    return r.ok ? { ok: true } : { ...r, statut: 400 };
+  }
+
   // Ce que le monde montre de lui (la liste des mondes d'un compte, la fiche) : sans la partie.
   fiche() {
     return { titre: this.meta('titre'), proprietaire: this.meta('proprietaire'), version: this.meta('version'), rev: this.charger() ? this.rev : 0, membres: this.membres() };
@@ -210,6 +262,28 @@ export class Monde {
       try { b = await request.json(); } catch (e) { b = {}; }
       const r = this.registre.creer({ proprietaire: compte, nom, partie: b.partie, titre: b.titre });
       return json(r, r.ok ? 200 : 400);
+    }
+    if (url.pathname.endsWith('/inviter') && request.method === 'POST') {
+      if (!this.registre.existe()) return json({ ok: false, erreur: 'Monde inconnu.' }, 404);
+      const r = await this.registre.inviter(compte);
+      return json(r, r.ok ? 200 : r.statut);
+    }
+    if (url.pathname.endsWith('/rejoindre') && request.method === 'POST') {
+      if (!this.registre.existe()) return json({ ok: false, erreur: 'Ce monde n\'existe pas (ou plus).' }, 404);
+      let b = {};
+      try { b = await request.json(); } catch (e) { b = {}; }
+      const r = await this.registre.rejoindre(compte, nom, b.secret);
+      if (r.ok && !r.deja) this.diffuser({ t: 'membres', membres: this.registre.membres() });
+      return json(r, r.ok ? 200 : r.statut);
+    }
+    if (url.pathname.endsWith('/retirer') && request.method === 'POST') {
+      let b = {};
+      try { b = await request.json(); } catch (e) { b = {}; }
+      const r = this.registre.retirer(compte, String(b.compte || ''));
+      // (la nouvelle liste des membres diffusée ; la connexion ouverte du retiré, fermée tout de suite par
+      // la diffusion : elle ferme celle de qui n'est plus membre)
+      if (r.ok) this.diffuser({ t: 'membres', membres: this.registre.membres() });
+      return json(r, r.ok ? 200 : r.statut);
     }
     if (url.pathname.endsWith('/fiche')) {
       if (!this.registre.existe()) return json({ ok: false, erreur: 'Monde inconnu.' }, 404);
@@ -258,7 +332,7 @@ export function traiterMessage(registre, compte, message, repondre, diffuser) {
   if (m.t === 'hello') {
     const a = registre.accueil(compte, { version: m.version, depuis: m.depuis });
     if (!a.ok) { repondre({ t: 'refus', raison: a.raison, erreur: a.erreur }); return; }
-    repondre({ t: 'bienvenue', rev: a.rev, role: a.role, membres: a.membres });
+    repondre({ t: 'bienvenue', rev: a.rev, role: a.role, titre: a.titre, proprietaire: a.proprietaire, moi: compte, membres: a.membres });
     if (a.partie) repondre({ t: 'instantane', rev: a.rev, partie: a.partie });
     else repondre({ t: 'rattrape', evts: a.evts });
     return;

@@ -129,6 +129,9 @@ export class Registre {
     this.faire('INSERT INTO mondes (compte, monde, titre, role, cree) VALUES (?, ?, ?, ?, ?) ON CONFLICT(compte, monde) DO UPDATE SET titre = excluded.titre, role = excluded.role',
       compte, monde, String(titre || 'Ma ferme').slice(0, 40), role, this.maintenant());
   }
+  retirerMonde(compte, monde) {
+    this.faire('DELETE FROM mondes WHERE compte = ? AND monde = ?', compte, monde);
+  }
   mondesDe(compte) {
     return this.tous('SELECT monde, titre, role, cree FROM mondes WHERE compte = ? ORDER BY cree', compte);
   }
@@ -227,6 +230,11 @@ export async function routeInterne(request, registre) {
   if (url.pathname === '/interne/monde' && request.method === 'POST') {
     const b = await corps();
     registre.ajouterMonde(String(b.compte), String(b.monde), b.titre, String(b.role || 'batisseur'));
+    return { statut: 200, corps: { ok: true } };
+  }
+  if (url.pathname === '/interne/monde-retirer' && request.method === 'POST') {
+    const b = await corps();
+    registre.retirerMonde(String(b.compte), String(b.monde));
     return { statut: 200, corps: { ok: true } };
   }
   if (url.pathname === '/interne/mondes') return { statut: 200, corps: { ok: true, mondes: registre.mondesDe(url.searchParams.get('compte') || '') } };

@@ -19,7 +19,7 @@ import { stageWindow } from './ui/stage-windows.js';
 import { wantConsentBanner } from './ui/calme.js';
 import { garderPlusTard, relireFerme } from './ui/ferme-gardee.js';
 import { connexionDuLien } from './ui/compte.js';
-import { bandeau, mondeDemande, rejoindre } from './ui/en-ligne.js';
+import { bandeau, invitationDuLien, mondeDemande, rejoindre } from './ui/en-ligne.js';
 
 // Chaque écran s'inscrit en se chargeant (ses actions, ses écouteurs) : ils sont tous
 // chargés ici, qu'un autre module les importe ou non.
@@ -118,6 +118,7 @@ async function demarrer() {
   } catch (e) { /* le suivi ne doit jamais empêcher de jouer */ }
   garderPlusTard();
   if (partieDuMonde) entrerDansLeMonde();
+  invitationDuLien(); // E-3 : le jeu ouvert par un lien d'invitation (jeu.html#invitation=…)
   connexionDuLien(); // E-0 : le jeu ouvert par le lien de connexion reçu par e-mail (jeu.html#connexion=…)
 }
 // E-2 : dans le monde, le bandeau, et le mode Construire ouvert (on y construit ensemble), une fois la

@@ -3,12 +3,14 @@
 // Durable Objects (Comptes, Monde) sur des bases node:sqlite, derrière les routes du navigateur (HTTP et
 // WebSocket vers http://127.0.0.1:8787, l'adresse locale du jeu en ligne : js/ui/compte.js).
 // Ce qu'il vérifie :
-//   1. le joueur A met sa ferme en ligne (⚙️ Options › Jeu en ligne) ; B est ajouté au monde ;
-//   2. les deux entrent (jeu.html?monde=…) : bandeau « à jour », mode Construire ouvert ;
+//   1. le joueur A met sa ferme en ligne (⚙️ Options › Jeu en ligne) et y entre ;
+//   2. E-3 : A crée un lien d'invitation (👥 › Inviter un ami) ; B l'ouvre et entre dans le monde :
+//      les deux y sont, bandeau « à jour », mode Construire ouvert ;
 //   3. un mur posé chez l'un est vu chez l'autre en moins d'une seconde, dans les deux sens ;
 //   4. la partie confirmée de chacun est celle du monde (la même empreinte) ;
 //   5. la partie solo de A, sur l'appareil, n'est jamais touchée en ligne ;
-//   6. une action hors de Construire est refusée en ligne (un message, rien ne change).
+//   6. une action hors de Construire est refusée en ligne (un message, rien ne change) ;
+//   7. E-3 : A retire B : la connexion de B est coupée, B revient à sa ferme solo.
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
 
 import { createServer } from 'node:http';
@@ -47,12 +49,22 @@ const BASE = `http://127.0.0.1:${serveur.address().port}`;
 // --- le Worker et ses Durable Objects ---
 const baseSql = () => { const db = new DatabaseSync(':memory:'); return { exec(q, ...v) { const r = db.prepare(q).all(...v); return { toArray: () => r }; } }; };
 const comptes = new Comptes({ storage: { sql: baseSql() } }, {});
-const mondes = new Map();
+const mondes = new Map(), sockets = new Map();
 const env = {
+  JEU_URL: '',   // (posée plus bas : l'adresse du serveur du jeu, où mène le lien d'invitation)
   COMPTES: { idFromName: (x) => x, get: () => ({ fetch: (r) => comptes.fetch(r) }) },
-  MONDES: { idFromName: (x) => x, get: (x) => { if (!mondes.has(x)) mondes.set(x, new Monde({ storage: { sql: baseSql() } }, {})); return { fetch: (r) => mondes.get(x).fetch(r) }; } },
+  // (les WebSockets du monde : celles que le navigateur ouvre, routées plus bas ; comme celles d'un
+  // Durable Object : getWebSockets(étiquette), getTags)
+  MONDES: { idFromName: (x) => x, get: (x) => {
+    if (!mondes.has(x)) {
+      const ctx = { storage: { sql: baseSql() }, getWebSockets: (tag) => [...(sockets.get(x) || [])].filter((w) => !tag || w.compte === tag), getTags: (w) => [w.compte] };
+      mondes.set(x, new Monde(ctx, {}));
+    }
+    return { fetch: (r) => mondes.get(x).fetch(r) };
+  } },
 };
 const compte = async (email) => { const l = await comptes.registre.demanderLien(email); const c = await comptes.registre.connecter(l.jeton); return { session: c.session, email, id: c.compte.id }; };
+env.JEU_URL = `${BASE}/jeu.html`;
 const A = await compte('alex@exemple.fr'), B = await compte('sam@exemple.fr');
 
 // la partie solo de chacun : la ferme d'essai (F0-6)
@@ -65,7 +77,6 @@ const SAUVEGARDE = JSON.stringify({ v: s0.version, t: Date.now(), s: s0 });
 let navigateur;
 try { navigateur = await playwright.chromium.launch(); } catch (e) { serveur.close(); saute(`Chromium ne démarre pas (${String(e.message).split('\n')[0]}).`); }
 const erreurs = [];
-const sockets = new Map();
 async function onglet(qui) {
   const ctx = await navigateur.newContext({ viewport: { width: 412, height: 860 } });
   await ctx.addInitScript(([v, c]) => { if (!sessionStorage.getItem('x')) { localStorage.setItem('ferme-save', v); localStorage.setItem('ferme-compte', JSON.stringify(c)); sessionStorage.setItem('x', 1); } }, [SAUVEGARDE, { session: qui.session, email: qui.email }]);
@@ -82,16 +93,19 @@ async function onglet(qui) {
     const reg = mondes.get(id).registre;
     if (!sockets.has(id)) sockets.set(id, new Set());
     const S = sockets.get(id);
-    S.add(ws);
-    ws.onMessage((m) => traiterMessage(reg, moi.id, m, (x) => ws.send(JSON.stringify(x)), (x) => { for (const w of S) w.send(JSON.stringify(x)); }));
-    ws.onClose(() => S.delete(ws));
+    const entree = { compte: moi.id, send: (m) => ws.send(m), close: (code, raison) => ws.close({ code, reason: raison }) };
+    S.add(entree);
+    const d = mondes.get(id);
+    ws.onMessage((m) => traiterMessage(reg, moi.id, m, (x) => ws.send(JSON.stringify(x)), (x) => d.diffuser(x)));
+    ws.onClose(() => S.delete(entree));
   });
   const p = await ctx.newPage();
   p.on('pageerror', (e) => erreurs.push(`${qui.email} : ${e.message}`));
   return p;
 }
 const action = (p, nom, data = {}) => p.evaluate(([nom, data]) => { const x = document.createElement('button'); x.dataset.action = nom; Object.assign(x.dataset, data); document.body.appendChild(x); x.click(); x.remove(); }, [nom, data]);
-const attendre = async (p, f, arg, ms = 20000) => { const t0 = Date.now(); for (;;) { if (await p.evaluate(f, arg)) return Date.now() - t0; if (Date.now() - t0 > ms) return null; await p.waitForTimeout(25); } };
+// (une navigation pendant la vérification, le lien d'invitation par exemple : on réessaie)
+const attendre = async (p, f, arg, ms = 20000) => { const t0 = Date.now(); for (;;) { let ok = false; try { ok = await p.evaluate(f, arg); } catch (e) { ok = false; } if (ok) return Date.now() - t0; if (Date.now() - t0 > ms) return null; await p.waitForTimeout(25); } };
 const echecs = [];
 const verifie = (ok, texte) => { console.log(`${ok ? '✓' : '✗'} ${texte}`); if (!ok) echecs.push(texte); };
 
@@ -105,11 +119,22 @@ try {
   await attendre(pa, () => /Entrer/.test((document.getElementById('compte-zone') || {}).innerText || ''));
   const idMonde = [...mondes.keys()][0];
   verifie(!!idMonde && /Entrer/.test(await pa.evaluate(() => document.getElementById('compte-zone').innerText)), '1. A a mis sa ferme en ligne, elle est dans ses mondes');
-  mondes.get(idMonde).registre.ajouterMembre(B.id, 'sam', 'batisseur');
-  const pb = await onglet(B);
-  await Promise.all([pa.goto(`${BASE}/jeu.html?monde=${idMonde}`), pb.goto(`${BASE}/jeu.html?monde=${idMonde}`)]);
+  await pa.goto(`${BASE}/jeu.html?monde=${idMonde}`);
   const pret = () => /à jour/.test((document.getElementById('en-ligne-bandeau') || {}).innerText || '') && document.body.classList.contains('construction');
-  verifie((await attendre(pa, pret)) !== null && (await attendre(pb, pret)) !== null, '2. les deux sont dans le monde, à jour, le mode Construire ouvert');
+  await attendre(pa, pret);
+  // E-3 : le lien d'invitation, créé dans 👥
+  await action(pa, 'monde-membres');
+  await attendre(pa, () => !!document.querySelector('[data-action="monde-inviter"]'));
+  await action(pa, 'monde-inviter');
+  await attendre(pa, () => !!document.getElementById('invitation-lien'));
+  const lienInvitation = await pa.evaluate(() => document.getElementById('invitation-lien').value);
+  await action(pa, 'close-modal');
+  const pb = await onglet(B);
+  await pb.goto(`${BASE}/jeu.html`);
+  await attendre(pb, () => window.FarmStage && FarmStage.ready && FarmStage.ready());
+  await pb.goto(lienInvitation);   // (le lien, dans l'onglet de B, son jeu déjà ouvert)
+  await attendre(pb, () => /[?&]monde=/.test(location.search), null, 20000);
+  verifie(/#invitation=/.test(lienInvitation) && (await attendre(pa, pret)) !== null && (await attendre(pb, pret)) !== null && /2/.test(await pa.evaluate(() => document.getElementById('en-ligne-bandeau').innerText)), '2. B a suivi le lien d\'invitation de A : les deux sont dans le monde, à jour, le mode Construire ouvert');
   const soloA = await pa.evaluate(() => localStorage.getItem('ferme-save'));
   const caseLibre = (p) => p.evaluate(() => { const sc = FarmStage.scene(), T0 = sc.ctx.bridge.trace, W = sc.grid.cols, v = sc.cameras.main.worldView; const cx = Math.floor((v.x + v.width / 2) / 16), cy = Math.floor((v.y + v.height / 2) / 16); for (let d = 0; d < 14; d++) for (let dy = -d; dy <= d; dy++) for (let dx = -d; dx <= d; dx++) { const t = (cy + dy) * W + cx + dx; if (T0.posable(t) === 'ok') return t; } return null; });
   const voit = (t) => !!(FarmStage.scene().blocks && FarmStage.scene().blocks.has(t));
@@ -131,6 +156,13 @@ try {
   await action(pa, 'harvest-all');
   await pa.waitForTimeout(300);
   verifie(reg.rev === avant && /construit ensemble/.test(await pa.evaluate(() => document.body.innerText)), '6. hors de Construire, un geste est refusé en ligne');
+  // 7. E-3 : A retire B
+  await action(pa, 'monde-membres');
+  await attendre(pa, () => !!document.querySelector('[data-action="monde-retirer"]'));
+  await action(pa, 'monde-retirer', { compte: B.id });
+  await action(pa, 'monde-retirer-oui', { compte: B.id });
+  const revenu = await attendre(pb, () => location.pathname.endsWith('jeu.html') && !/monde=/.test(location.search) && !document.getElementById('en-ligne-bandeau'), null, 15000);
+  verifie(revenu !== null && !mondes.get(idMonde).registre.membre(B.id), '7. A a retiré B : sa connexion coupée, B est revenu à sa ferme solo');
 } finally {
   await navigateur.close();
   serveur.close();
