@@ -13,7 +13,8 @@ import {
 import { assert, assertEqual, garden, setInv, test, tireless } from './aide.mjs';
 
 const N = 1000;              // commandes par journal
-const GRAINE = 20261103;     // le hasard du tirage (pas celui de la partie)
+const GRAINE = 20261107;     // le hasard du tirage (pas celui de la partie) ; choisi pour que le journal
+                             // fasse réussir chaque sorte de geste (vérifié ci-dessous)
 
 // La partie de départ : une ferme générée, l'Atelier bâti, une pièce close de 8 × 7 cases (murs et porte)
 // dans le coin de 14 × 10 cases où se joue le journal (ZONE), de quoi construire et semer.
@@ -93,7 +94,13 @@ function journal(s) {
     else if (t < 0.70) res = jouer('mur.abaisser', { case: un([...piece, ...autour]) });
     else if (t < 0.73) res = jouer('etage.poser', { sorte: un(['mur_pierre', 'paillasse', 'mur_fenetre', 'meuble_chaise', 'meuble_lit_enfant']), case: un([...piece, ...dedans]), sens: Math.floor(r() * 4) });
     else if (t < 0.74) res = jouer('solEtage.poser', { sorte: un(['plancher', 'sol_carrelage']), case: un(dedans), niveau: 1 });
-    else if (t < 0.75) res = jouer('etage.tourner', { case: meublesEtage.length && r() < 0.8 ? un(meublesEtage) : un(dedans) });
+    else if (t < 0.745) res = jouer('etage.tourner', { case: meublesEtage.length && r() < 0.8 ? un(meublesEtage) : un(dedans) });
+    else if (t < 0.75) {
+      // (déplacer un meuble de l'étage : sa nouvelle place devient la sienne pour la suite)
+      const k = meublesEtage.length && r() < 0.8 ? Math.floor(r() * meublesEtage.length) : -1, vers = un(dedans);
+      res = jouer('etage.deplacer', { de: k >= 0 ? meublesEtage[k] : un(dedans), vers });
+      if (res.ok && k >= 0) meublesEtage[k] = vers;
+    }
     else if (t < 0.80) res = jouer('potager.planter', { parcelle: un(parcelles), culture: un(['carotte', 'tomate']) });
     else if (t < 0.84) res = jouer('potager.arroser', { parcelle: un(parcelles) });
     else if (t < 0.87) res = jouer('potager.recolter', { parcelle: un(parcelles) });
@@ -128,7 +135,7 @@ test('rejeu : 1000 commandes tirées au hasard, rejouées sur la même partie, d
   const reussies = entrees.filter((e) => e.res.ok);
   const sortes = new Set(reussies.map((e) => e.cmd.type));
   assert(reussies.length > entrees.length * 0.2, `${reussies.length} commandes réussies sur ${entrees.length}`);
-  for (const type of ['bloc.poser', 'bloc.reprendre', 'bloc.remettre', 'bloc.deplacer', 'bloc.tourner', 'bloc.orienter', 'bloc.peindre', 'mur.rehausser', 'mur.abaisser', 'etage.poser', 'etage.tourner', 'solEtage.poser', 'potager.planter', 'potager.arroser']) {
+  for (const type of ['bloc.poser', 'bloc.reprendre', 'bloc.remettre', 'bloc.deplacer', 'bloc.tourner', 'bloc.orienter', 'bloc.peindre', 'mur.rehausser', 'mur.abaisser', 'etage.poser', 'etage.tourner', 'etage.deplacer', 'solEtage.poser', 'potager.planter', 'potager.arroser']) {
     assert(sortes.has(type), `au moins un « ${type} » réussi`);
   }
   assert(empreintePartie(a) !== depart0, 'la partie a changé');

@@ -20,7 +20,7 @@ import { setStageWindow, stageWindow } from './stage-windows.js';
 import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, couleursVariante, deplacerStatus, hauteurPile, matiereDessus, mesuresMeuble, nomVariante, rehausseStatus, poseStatus, solAt, tourneBloc, varianteBloc, variantesBloc, varianteSuivante } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
-import { ETAGE_BLOCS, etage2Emprise, etageCouvertes, etageEmprise, poseEtageStatus, etageBlocs, poseSolEtageStatus, solsEtage, varianteEtage } from '../engine/etage.js';
+import { deplacerEtageStatus, ETAGE_BLOCS, etage2Emprise, etageCouvertes, etageEmprise, poseEtageStatus, etageBlocs, poseSolEtageStatus, solsEtage, varianteEtage } from '../engine/etage.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -215,7 +215,7 @@ export function buildChipHtml() {
   const niveaux = Array.from({ length: max + 1 }, (_, i) => max - i).map((n) => `<button type="button" class="build-level-item${n === lvl ? ' active' : ''}" data-action="build-level" data-niveau="${n}" aria-pressed="${n === lvl}" aria-label="Niveau ${n} : ${quoi(n)}"><span class="build-level-n" aria-hidden="true">${n}</span><span class="build-level-quoi" aria-hidden="true">${quoi(n)}</span></button>`).join('');
   // l'outil pièce : un mur en main, au sol ; allumé, un glissement trace le pourtour d'une pièce
   const murEnMain = !!(buildMode && DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].mur);
-  // la gomme (un bloc qui se trace en main) et Annuler (au sol, s'il y a quelque chose à défaire)
+  // la gomme (un bloc qui se trace en main) et Annuler (au sol comme à l'étage, s'il y a quelque chose à défaire)
   const gomme = traceInfo() || modeGomme ? `<button type="button" class="build-piece build-gomme${modeGomme ? ' on' : ''}" data-action="build-gomme" aria-pressed="${modeGomme}" aria-label="Gomme : glisser pour reprendre les blocs" title="Gomme : glisse pour reprendre les blocs de cette sorte"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M3 10.5 9.5 4l3.5 3.5L6.5 14H4z" fill="#fbd98c" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6.4 7.1l3.5 3.5" stroke="currentColor" stroke-width="1.6"/><path d="M8 14h5" stroke="currentColor" stroke-width="1.6"/></svg></button>` : '';
   const annuler = `<button type="button" class="build-piece build-annuler" data-action="build-annuler"${histoire.length ? '' : ' disabled'} aria-label="Annuler la dernière opération" title="Annuler la dernière opération"><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M5 4 2 7l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M2.5 7H10a3.5 3.5 0 0 1 0 7H7" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>`;
   // l'outil ↻ (au sol et à l'étage, A-1) : allumé, un appui sur un meuble posé le tourne ; un meuble qui
@@ -289,7 +289,7 @@ function repeindre(c, etage) {
   const v = varianteSuivante(sorte, actuelle);
   const r = v ? executer(etage ? 'etage.peindre' : 'bloc.peindre', { case: ancre, variante: v }) : { ok: false, error: `${DATA.ATELIER.BLOCS[sorte].nom} : une seule couleur pour l'instant.` };
   if (!r.ok) { notify(r.error); return; }
-  if (!etage) noter(r.inverses);
+  noter(r.inverses);
   notify(`🎨 ${DATA.ATELIER.BLOCS[sorte].nom} : ${nomVariante(sorte, r.variante)}`, { duree: CONSEIL_MS });
   persistState();
   refresh();
@@ -518,20 +518,32 @@ function noter(inverses) {
   histoire.push(inverses);
   if (histoire.length > HISTOIRE_MAX) histoire.shift();
 }
-// La pipette : le bloc posé sur la case `c` au sol (celui que reprendrait un appui ; un meuble, sur
-// n'importe laquelle de ses cases), s'il se pose à ce niveau, sinon null.
+// La pipette : le bloc posé sur la case `c` au sol ou sur l'étage (celui que reprendrait un appui ; un
+// meuble, sur n'importe laquelle de ses cases), s'il se pose à ce niveau, sinon null.
 export function pipetteSorte(c) {
-  if (!buildMode || niveau()) return null;
+  if (!buildMode) return null;
+  if (niveauBati()) {
+    const e = etageBlocs(state), couvert = etageCouvertes(state).get(c), s = e[c] || (couvert !== undefined ? e[couvert] : null);
+    return s && SORTES().includes(s) ? s : null;
+  }
+  if (niveau()) return null;
   const couvert = casesCouvertes(state).get(c);
   const s = surCase(c) || (couvert !== undefined ? surCase(couvert) : null);
   return s && SORTES().includes(s) ? s : null;
 }
 // Déplacer un bloc posé (js/farm-stage.js) : un glissement parti d'un meuble ou d'un bloc seul (la
 // lanterne, le four, la ruche… : pas un mur, une porte, un sol, une barrière, le silo, qui se
-// tracent et se gomment) l'emporte jusqu'où on le lâche. Au sol seulement. Pour la carte :
+// tracent et se gomment) l'emporte jusqu'où on le lâche. Au sol et sur l'étage. Pour la carte :
 // { sorte, ancre (sa case d'ancrage) } ou null.
 export function deplacable(c) {
-  if (!buildMode || niveau() || meubleEnMain()) return null;
+  if (!buildMode || meubleEnMain()) return null;
+  if (niveauBati()) {
+    const e = etageBlocs(state), couvert = etageCouvertes(state).get(c), ancre = couvert !== undefined && !e[c] ? couvert : c;
+    const sorte = e[ancre], b = sorte && DATA.ATELIER.BLOCS[sorte];
+    if (!b || b.mur || b.sol || b.porte || b.fenetre || sorte === 'barriere' || sorte === 'escalier') return null;
+    return { sorte, ancre };
+  }
+  if (niveau()) return null;
   const couvert = casesCouvertes(state).get(c), ancre = couvert !== undefined && !surCase(c) ? couvert : c;
   const sorte = surCase(ancre), b = sorte && DATA.ATELIER.BLOCS[sorte];
   if (!b || b.mur || b.sol || b.porte || b.silo || b.semis || b.arbre || sorte === 'barriere') return null;
@@ -539,7 +551,7 @@ export function deplacable(c) {
 }
 // L'aperçu du déplacement : tiendrait-il, ancré sur `vers` ? { ok, cases }.
 export function deplacePossible(de, vers) {
-  const r = deplacerStatus(state, de, vers);
+  const r = niveauBati() ? deplacerEtageStatus(state, de, vers) : deplacerStatus(state, de, vers);
   return { ok: r.ok, cases: r.cases };
 }
 // Ce qui est sur la case `c` au sol : le bloc du dessus, le bloc, le sol (ce que reprend un appui).
@@ -745,6 +757,7 @@ registerActions({
       if (modeTourner) {
         const t = executer('etage.tourner', { case: c });
         if (!t.ok) { notify(t.error); return; }
+        noter(t.inverses);
         persistState();
         refresh();
         return;
@@ -756,6 +769,7 @@ registerActions({
       if (!reprend && meubleEnMain()) { poseMeuble = { sorte: buildMode, case: c }; refresh(); return; }
       const r = reprend ? executer('etage.reprendre', { case: c }) : executer('etage.poser', { sorte: buildMode, case: c });
       if (!r.ok) { notify(r.error); return; }
+      noter(r.inverses);
       persistState();
       refresh();
       return;
@@ -841,7 +855,7 @@ registerActions({
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const de = Number(target.dataset.de), vers = Number(target.dataset.vers);
     if (!Number.isInteger(de) || !Number.isInteger(vers) || de === vers) return;
-    const r = executer('bloc.deplacer', { de, vers });
+    const r = executer(niveauBati() ? 'etage.deplacer' : 'bloc.deplacer', { de, vers });
     if (!r.ok) { notify(r.error); refresh(); return; }
     noter(r.inverses);
     persistState();
@@ -950,7 +964,7 @@ registerActions({
     const v = varianteDe(poseMeuble.sorte), teinte = v ? { variante: v } : {};
     const r = niveauBati() ? executer('etage.poser', { sorte: poseMeuble.sorte, case: poseMeuble.case, sens: sensDe(poseMeuble.sorte), ...teinte }) : executer('bloc.poser', { sorte: poseMeuble.sorte, case: poseMeuble.case, sens: sensDe(poseMeuble.sorte), ...teinte });
     if (!r.ok) { notify(r.error); return; }
-    if (!niveauBati()) noter(r.inverses);
+    noter(r.inverses);
     poseMeuble = null;
     if (!blocsEnMain(state, buildMode)) quitteMeuble();     // (plus de ce meuble : on en sort)
     persistState();

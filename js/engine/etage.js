@@ -316,6 +316,34 @@ export function reprendreEtage(state, tile) {
   return { ok: true, sorte, case: tile, etage: true, ...(mur && estFen(sorte) ? { reste: mur } : {}), ...(sens ? { sens } : {}), ...(variante ? { variante } : {}) };
 }
 
+// Déplacer un bloc de l'étage (le mode Construire : un glissement, comme en bas : blocs.js deplacerBloc) :
+// celui de la case `de` (un meuble : une de ses cases) repris, puis reposé avec sa case d'ancrage sur
+// `vers`, dans son sens et sa couleur. S'il ne tient pas là, il est reposé où il était : { ok: false,
+// error }. Sinon { ok: true, sorte, de (son ancienne case d'ancrage), vers, etage }.
+export function deplacerEtage(state, de, vers) {
+  const r = reprendreEtage(state, de);
+  if (!r.ok) return r;
+  const sens = r.sens || 0, v = r.variante || null;
+  const remet = () => poserEtage(state, r.sorte, r.case, sens, v);
+  if (r.case === vers) { remet(); return { ok: true, sorte: r.sorte, de: r.case, vers, etage: true }; }
+  const st = poseEtageStatus(state, r.sorte, vers, sens);
+  if (!st.ok) { remet(); return fail(st.raison); }
+  const p = poserEtage(state, r.sorte, vers, sens, v);
+  if (!p.ok) { remet(); return p; }
+  return { ok: true, sorte: r.sorte, de: r.case, vers, etage: true };
+}
+
+// Le bloc de l'étage de la case `de` tiendrait-il, ancré sur `vers` ? Sur une copie de la partie : rien ne
+// change. { ok, raison, cases } (cases : celles qu'il couvrirait, pour l'aperçu).
+export function deplacerEtageStatus(state, de, vers) {
+  const copie = structuredClone(state);
+  const r = reprendreEtage(copie, de);
+  if (!r.ok) return { ok: false, raison: r.error, cases: [vers] };
+  const cases = empriseMeuble(copie, r.sorte, vers, r.sens || 0) || [vers];
+  const st = poseEtageStatus(copie, r.sorte, vers, r.sens || 0);
+  return { ok: st.ok, raison: st.ok ? '' : st.raison, cases };
+}
+
 // Tourner d'un quart de tour le meuble de l'étage de la case `tile` (une de ses cases), comme en bas
 // (blocs.js tournerBloc) : un meuble qui ne tient pas dans le sens suivant passe au sens d'après ;
 // aucun ne tient : il reste comme il est. → { ok, sorte, case, sens, etage } ou un refus.

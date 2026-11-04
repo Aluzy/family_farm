@@ -29,6 +29,7 @@
      etage.poser      { sorte, case, sens? }   sur l'étage d'une pièce (un meuble : son sens)
      etage.reprendre  { case, attendu? }       (un meuble : sur l'une de ses cases)
      etage.remettre   { case, avant, apres }   défaire un changement sur l'étage
+     etage.deplacer   { de, vers, attendu? }   emporter un bloc seul ou un meuble de l'étage de `de` à `vers`
      etage.tourner    { case }                 un quart de tour, à l'étage (A-1)
      etage.orienter   { case, sorte, sens }    remettre un meuble de l'étage dans le sens `sens`
      etage.peindre    { case, variante }       repeindre un meuble de l'étage (A-3)
@@ -51,7 +52,7 @@ import {
   blocAt, blocDessus, casesCouvertes, deplacerBloc, hauteurPile, matiereDessus, poserBloc, rehausser,
   peindreBloc, reprendreBloc, sensBloc, solAt, tournerBloc,
 } from './blocs.js';
-import { etageBlocs, etageCouvertes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
+import { deplacerEtage, etageBlocs, etageCouvertes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
 import { harvest, plant, water } from './crops.js';
 import { goToSleep } from './night.js';
 
@@ -214,6 +215,17 @@ export const COMMANDES = {
         if (!p.ok) { poserEtage(state, apres, c); return p; }
       }
       return { ok: true, sorte: avant, case: c, etage: true, inverses: [cmd('etage.poser', { sorte: apres, case: c })] };
+    },
+  },
+  'etage.deplacer': {
+    args: { de: 'case', vers: 'case', attendu: 'sorte?' },
+    executer(state, { de, vers, attendu }) {
+      const ancre = !etageBlocs(state)[de] && etageCouvertes(state).has(de) ? etageCouvertes(state).get(de) : de;
+      if (attendu && etageBlocs(state)[ancre] !== attendu) return fail(CHANGE);
+      if (ancre === vers) return fail('Il est déjà là.');
+      const r = deplacerEtage(state, de, vers);
+      if (!r.ok) return r;
+      return { ...r, inverses: [cmd('etage.deplacer', { de: vers, vers: r.de, attendu: r.sorte })] };
     },
   },
   'etage.tourner': {
