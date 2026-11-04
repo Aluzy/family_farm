@@ -128,6 +128,8 @@ Routes, toutes avec la session du compte (`Authorization: Bearer`, ou `?session=
     `depuis`) ou `instantane { partie }` ; `refus` si le jeu n'a pas la version du monde ou si
     l'on n'est pas membre ;
   - `cmd { id, type, args }` → `ack { id, ok, rev | erreur }` ; à tous, `evt { rev, acteur, cmd }`.
+  - `pos { x, y }` (le centre de sa vue) : relayé aux autres membres, `pos { acteur, nom, x, y }`,
+    5 fois par seconde au plus, jamais écrit ; `parti { acteur }` quand son dernier onglet se ferme.
 
 Stockage SQLite du Durable Object :
 - `meta` ;

@@ -7,6 +7,7 @@
 //   2. E-3 : A crée un lien d'invitation (👥 › Inviter un ami) ; B l'ouvre et entre dans le monde :
 //      les deux y sont, bandeau « à jour », mode Construire ouvert ;
 //   3. un mur posé chez l'un est vu chez l'autre en moins d'une seconde, dans les deux sens ;
+//   3b. l'avatar de l'autre joueur est dessiné là où il regarde (E-4) ;
 //   4. la partie confirmée de chacun est celle du monde (la même empreinte) ;
 //   5. la partie solo de A, sur l'appareil, n'est jamais touchée en ligne ;
 //   6. une action hors de Construire est refusée en ligne (un message, rien ne change) ;
@@ -145,6 +146,12 @@ try {
     const ms = await attendre(vers, voit, t, 5000);
     verifie(ms !== null && ms < 1000, `3. un mur posé (${nom}) est vu en ${ms} ms`);
   }
+  // 3b. E-4 : B déplace sa vue, A voit l'avatar de B arriver au centre de cette vue
+  await pb.evaluate(() => { const c = FarmStage.scene().cameras.main; c.setScroll(c.scrollX + 64, c.scrollY + 32); });
+  await pb.waitForTimeout(100);
+  const centreB = await pb.evaluate(() => { const m = FarmStage.scene().cameras.main.midPoint; return { x: m.x, y: m.y }; });
+  const msAvatar = await attendre(pa, (c) => { const e = (FarmStage.scene().presences || new Map()).get(c.id); return !!e && Math.hypot(e.img.x - c.x, e.img.y - c.y) < 24; }, { id: B.id, ...centreB }, 3000);
+  verifie(msAvatar !== null && msAvatar < 1500, `3b. A voit l'avatar de B au centre de sa vue en ${msAvatar} ms`);
   await attendre(pa, () => !/en attente/.test(document.getElementById('en-ligne-bandeau').innerText), null, 5000);
   const reg = mondes.get(idMonde).registre;
   const confirmee = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); const L = await import('/js/ui/en-ligne.js'); return E.empreintePartie(L._lien().synchro.confirmee); });
