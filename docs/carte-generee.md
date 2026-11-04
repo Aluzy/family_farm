@@ -213,6 +213,14 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
   fenêtre percée rend son mur), un tracé entier, les blocs fabriqués sur place (ils reviennent dans
   l'inventaire, la fabrication reste faite), un meuble posé. Ce qui a changé depuis (un bloc repris
   à la main entre-temps) est laissé tel quel, et le message le dit.
+- **Le catalogue** (A-2, `js/ui/catalogue.js`) : l'onglet ⭐ en tête des onglets (les favoris, mis ou retirés
+  d'un appui long sur une case du menu, ou d'un clic droit ; puis les 6 derniers objets choisis : un objet
+  favori ou récent se prend en deux touches), gardés sur l'appareil (`localStorage` :
+  `ferme-construire-favoris`, `ferme-construire-recents`) ; sous un onglet de 6 blocs ou plus, des filtres
+  (`build-filtre`) : 🎒 ce que j'ai (les épuisés cachés), la pièce des meubles (`data/meubles.json`
+  `piece`), le style d'aménagement (`data/styles.json`). Hors de l'onglet ⭐, un objet se prend en deux
+  touches (l'onglet, sa case), sauf une variante de mur, de porte, de sol ou de fenêtre jamais choisie (la
+  case du groupe ouvre sa bulle : trois touches ; ensuite, elle est dans les récents).
 - **Tourner** (↻) : un meuble qui tourne (`ATELIER.BLOCS[].tourne`, `js/engine/blocs.js` `sensBloc`,
   `tournerBloc`) se pose de face, de dos ou de profil (`state.sens`, la case d'ancrage → 1 à 3) ; le
   bouton ↻ de la pose d'un meuble tourne l'aperçu, la flèche à côté de l'outil (le mobilier de jardin en
