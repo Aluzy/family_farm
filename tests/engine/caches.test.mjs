@@ -3,13 +3,15 @@
    - L'emprise de l'étage, celle du niveau 2, les pièces d'un niveau (js/engine/etage.js) : gardées
      tant que les pièces closes, les blocs de l'étage, les hauteurs des murs n'ont pas changé ; elles
      suivent la partie dès qu'ils changent.
+   - Un lot (js/engine/blocs.js, enLot) : les cases couvertes et les pièces closes calculées une fois
+     pour une partie qui ne change pas ; les réponses sont les mêmes que hors du lot.
    - Les découvertes de l'Encyclopédie (js/engine/decouverte.js) : les objets posés relevés une fois
      par mise à jour ; le résultat est le même que sans.
    Lancer seul : node --test tests/engine/caches.test.mjs (ou node tests/run-tests.mjs caches).
    ========================================================================== */
 
 import {
-  addItem, blocsPoses, CATEGORIES, conditionRemplie, DATA, etage2Emprise, etageBlocs, etageEmprise, hauteurPile,
+  addItem, blocsPoses, casesCouvertes, CATEGORIES, enLot, poseStatus, conditionRemplie, DATA, etage2Emprise, etageBlocs, etageEmprise, hauteurPile,
   levelCount, piecesCloses, piecesNiveau, poserBloc, rehausser, reprendreBloc, reprendreEtage, testBatir,
   testFarmMap, testFermeConstruite, testSetLevel,
 } from '../../js/engine/index.js';
@@ -80,4 +82,23 @@ test('caches : les découvertes de l\'Encyclopédie, avec ou sans le relevé des
     }
   }
   assert(n > 50 && memo.poses && memo.poses.size > 10, `${n} conditions`);
+});
+
+test('caches : dans un lot, poseStatus répond comme hors du lot (2 000 cases, un mur, un meuble, un sol)', () => {
+  const s = garden();
+  testFarmMap(s, '42');
+  testFermeConstruite(s);
+  const B = DATA.ATELIER.BLOCS;
+  for (const k of ['mur_pierre', 'meuble_chaise', 'plancher']) addItem(s, B[k].objet, 3);
+  const coin = Math.min(...Object.keys(etageBlocs(s)).map(Number)), cases = [];
+  for (let dy = -20; dy < 20; dy++) for (let dx = -25; dx < 25; dx++) cases.push(coin + dy * 644 + dx);
+  for (const sorte of ['mur_pierre', 'meuble_chaise', 'plancher']) {
+    const hors = cases.map((t) => JSON.stringify(poseStatus(s, sorte, t)));
+    const dans = enLot(s, () => cases.map((t) => JSON.stringify(poseStatus(s, sorte, t))));
+    assertEqual(dans, hors, sorte);
+  }
+  // le lot fini, plus rien de gardé : la partie change, la réponse suit
+  const c0 = enLot(s, () => casesCouvertes(s));
+  assert(enLot(s, () => casesCouvertes(s) === casesCouvertes(s)), 'gardées dans le lot');
+  assert(casesCouvertes(s) !== c0, 'hors du lot : calculées');
 });

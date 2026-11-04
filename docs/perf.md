@@ -155,3 +155,18 @@ calcul, sur 6 s de jeu) :
 La première image de Construire passe de ≈ 560 ms à ≈ 280 ms. Reste, à l'ouverture : les conseils des
 pièces (`conseilsPieces`, ≈ 270 ms une fois par état des blocs), et, partout, le tri et le dessin des
 ≈ 4 700 images de la scène (lot 2).
+
+## Construire : les cases blanches, sur l'écran seulement, gardées par case
+
+Les cases blanches ne sont testées que sur l'écran (la vue de la caméra, une case autour), plus
+`CONSTRUCTIBLE.marge` cases de marge (js/carte/ferme/config.js). Chaque réponse est gardée par case tant que la
+partie (son modèle), le bloc en main et le niveau ne changent pas : glisser la vue ne teste que les cases
+qui entrent à l'écran ; après une pose, les anciennes réponses restent dessinées le temps que les cases
+soient testées de nouveau. Les tests se font `CONSTRUCTIBLE.budgetMs` au plus par image, dans un lot
+(`enLot`, js/engine/blocs.js) : la partie ne change pas pendant ces tests, les cases couvertes par les meubles
+et les pièces closes ne sont calculées qu'une fois (≈ 0,15 → 0,007 ms la case sur ordinateur).
+
+Mesuré avec la partie du jour 54, en simulant un téléphone (Pixel 7, zoom ≈ 3,3 : ≈ 320 cases à l'écran) à
+4 × de ralentissement, sur 3 s : en glissant la vue, 1 155 → 59 ms passées sur les cases blanches (la pire
+image : 286 → 119 ms) ; à l'ouverture de Construire, 279 → 74 ms (la pire image : 810 → 525 ms, le reste
+est le calcul des conseils des pièces, une fois).
