@@ -29,6 +29,7 @@ import { styleDe, styleInfo } from '../engine/styles.js';
 import { defaire, surCase as surCaseMoteur } from '../engine/commandes.js';
 import { executer } from './commandes.js';
 import { itemsText } from './common.js';
+import { tel } from './consent.js';
 
 // Le niveau le plus haut où l'on construit (les rangs d'un mur rehaussé : 0 au sol, jusqu'à
 // HAUTEUR_MAX - 1 ; 1 est aussi l'étage d'une pièce à escalier), et celui où l'on construit
@@ -526,6 +527,7 @@ registerActions({
     setBuildMode(choisi.murs && SORTES().includes(choisi.murs) && blocsEnMain(state, choisi.murs) > 0 ? choisi.murs : SORTES().find((s) => blocsEnMain(state, s) > 0) || SORTES()[0]);
     // (un rappel bref, à chaque ouverture : il ne cache pas longtemps la puce des blocs)
     notify(`${DATA.ATELIER.ICONE} Touche une case pour poser, un bloc pour le reprendre ; glisse pour poser toute une ligne.`, { duree: CONSEIL_MS });
+    tel('creation', 'catalogue');   // (F0-7 : le catalogue ouvert)
     refresh();
   },
   // Un appui long sur le silo (js/carte/ferme/silo.js) : le mode Construire, un bloc de silo

@@ -1,3 +1,5 @@
+import { DATA } from '../engine/catalog.js';
+import { categorieBloc } from '../engine/blocs.js';
 import { energyLevel } from '../engine/stamina.js';
 import { ecouterJournal } from '../engine/journal.js';
 import { etapeDidacticiel } from '../engine/didacticiel.js';
@@ -27,6 +29,26 @@ export function telDay() { tel('day', state.day); }
 
 // Les gestes du personnage, notés par le moteur (js/engine/journal.js) : par jour de jeu.
 ecouterJournal((type, donnees) => tel('game', type, donnees));
+
+// F0-7 : les gestes de la création (Telemetry.creation), d'après les commandes réussies (js/ui/commandes.js).
+// Un objet : un bloc posé (en bas ou à l'étage) qui n'est ni un mur, ni une porte, ni un sol (l'onglet
+// Bâtir) ; une décoration : un meuble, un bloc du Jardin, une lanterne ou un candélabre ; un meuble tourné :
+// l'outil ↻ sur un meuble.
+const LUMIERES = new Set(['lanterne', 'candelabre']);
+export function telCommande(type, args, r) {
+  if (!r || !r.ok) return;
+  const A = DATA.ATELIER.BLOCS;
+  if (type === 'bloc.poser' || type === 'etage.poser') {
+    const sorte = args && args.sorte, b = A[sorte];
+    const cat = categorieBloc(sorte);
+    if (!b || b.mur || cat === 'batir') return;
+    tel('creation', 'objet');
+    if (b.meuble || cat === 'jardin' || LUMIERES.has(sorte)) tel('creation', 'decoration');
+  } else if (type === 'bloc.tourner') {
+    const b = A[r.sorte];
+    if (b && b.meuble) tel('creation', 'meuble_tourne');
+  }
+}
 
 let telChapter = null; // dernier chapitre vu, pour repérer les passages de chapitre
 export function setTelChapter(value) {

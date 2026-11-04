@@ -152,7 +152,7 @@
         <div class="ruban">Confidentialité</div>
         <h1>Cookies et traceurs</h1>
         <p class="lead">Ce que Ferme Familiale enregistre dans votre navigateur, pourquoi, et comment garder la main.</p>
-        <p class="meta">Version 1.3 · dernière mise à jour : 23 octobre 2026</p>
+        <p class="meta">Version 1.4 · dernière mise à jour : 4 novembre 2026</p>
       </div>
     </div>
   </header>
@@ -162,7 +162,7 @@
       <strong>En résumé</strong>
       <ul>
         <li>Votre partie est sauvegardée sur votre appareil, sans que rien ne soit envoyé nulle part.</li>
-        <li>Avec votre accord seulement, le jeu note anonymement les boutons utilisés, les écrans consultés et votre progression, pour l'améliorer. Si vous le souhaitez, vous pouvez aussi lui écrire un commentaire.</li>
+        <li>Avec votre accord seulement, le jeu note anonymement les boutons utilisés, les écrans consultés, votre progression et vos premiers pas dans la construction (première décoration, premier meuble tourné…), pour l'améliorer. Si vous le souhaitez, vous pouvez aussi lui écrire un commentaire.</li>
         <li>Refuser n'enlève rien au jeu. Vous pouvez changer d'avis à tout moment dans ⚙️ Options, rubrique « Confidentialité ».</li>
         <li>Aucune publicité, aucun réseau social, aucun outil de suivi tiers.</li>
       </ul>
@@ -183,10 +183,11 @@
         </thead>
         <tbody>
           <tr><td><code>ferme-save</code></td><td>Enregistrer votre partie (ferme, progression) sur votre appareil.</td><td><code>localStorage</code></td><td>Jusqu'à ce que vous l'effaciez ou recommenciez à zéro</td><td>Non requis : nécessaire au jeu que vous utilisez</td></tr>
+          <tr><td><code>family-farm</code></td><td>Garder le terrain de votre ferme, tiré de sa graine, pour que le jeu s'ouvre plus vite la fois suivante (une seule ferme gardée, rien d'autre).</td><td>IndexedDB</td><td>Jusqu'à ce que vous effaciez le stockage du site ; remplacé quand vous changez de ferme</td><td>Non requis : nécessaire au jeu que vous utilisez</td></tr>
           <tr><td><code>ferme-consent</code></td><td>Mémoriser votre choix sur le suivi (accepté ou refusé, date, version de cette page).</td><td><code>localStorage</code></td><td>6 mois, puis nous vous redemandons</td><td>Non requis : nécessaire pour respecter votre choix</td></tr>
           <tr><td><code>ff_sid</code></td><td>Numéro aléatoire de votre visite, pour regrouper les actions d'une même session de jeu.</td><td><code>sessionStorage</code></td><td>Jusqu'à la fermeture de l'onglet</td><td>Oui : créé seulement si vous acceptez</td></tr>
           <tr><td><code>ff_t0</code></td><td>Heure de début de votre visite.</td><td><code>sessionStorage</code></td><td>Jusqu'à la fermeture de l'onglet</td><td>Oui : créé seulement si vous acceptez</td></tr>
-          <tr><td><code>ff_player</code></td><td>Numéro aléatoire de joueur, le même d'une visite à l'autre, et le temps de jeu cumulé : pour suivre la progression d'une partie dans la durée (au bout de combien de temps un niveau est atteint).</td><td><code>localStorage</code></td><td>Jusqu'au retrait de votre accord (il est alors effacé) ou à l'effacement du stockage du site</td><td>Oui : créé seulement si vous acceptez</td></tr>
+          <tr><td><code>ff_player</code></td><td>Numéro aléatoire de joueur, le même d'une visite à l'autre, le temps de jeu cumulé et vos premières fois dans la construction (avec le temps de jeu qu'il a fallu), et le nombre d'objets posés : pour suivre la progression d'une partie dans la durée (au bout de combien de temps un niveau est atteint, une première décoration posée).</td><td><code>localStorage</code></td><td>Jusqu'au retrait de votre accord (il est alors effacé) ou à l'effacement du stockage du site</td><td>Oui : créé seulement si vous acceptez</td></tr>
           <tr><td><code>ff_data</code></td><td>Compteurs de la visite en cours, pour ne pas les perdre si vous rechargez la page.</td><td><code>sessionStorage</code></td><td>Jusqu'à la fermeture de l'onglet</td><td>Oui : créé seulement si vous acceptez</td></tr>
         </tbody>
       </table>
@@ -205,6 +206,7 @@
       <li>à chaque nuit : le jour, le chapitre, le niveau et l'expérience, l'autonomie de la famille et la part du repas du soir couverte, les pièces, l'énergie du personnage, le temps d'éveil, le nombre d'adultes et d'enfants de la famille (jamais leurs prénoms), le type de ferme et l'étape du didacticiel ;</li>
       <li>pour chaque jour de jeu : le temps réel passé, le nombre de gestes du personnage par type (couper, piocher, arroser…), l'énergie dépensée par type de geste, les ressources ramassées, les objets fabriqués, les blocs posés et les pièces gagnées ou dépensées par poste (ventes, achats, technologies…) ;</li>
       <li>chaque niveau atteint, avec le jour de jeu et le temps de jeu cumulé ;</li>
+      <li>la construction et l'accueil : combien de fois le menu 🔨 Construire est ouvert, combien d'objets et de décorations sont posés et de meubles tournés, combien d'invitations à un repas sont envoyées et d'invités les acceptent (jamais leurs prénoms), et si la partie se joue à plusieurs ; et, une seule fois, le moment de chaque première fois (ouvrir le menu, poser une décoration, poser 5 objets, tourner un meuble, envoyer une invitation, en voir une acceptée, jouer à plusieurs) : le temps de jeu cumulé et le jour de jeu ;</li>
       <li>le commentaire que vous choisissez d'écrire et d'envoyer, dans ⚙️ Options › « Aide-nous à améliorer le jeu ! » (1 000 signes au plus, 3 par visite) ;</li>
       <li>les alertes affichées (batteries vides, panne…) ;</li>
       <li>les erreurs techniques (message tronqué, nom du fichier et ligne, sans pile complète) ;</li>

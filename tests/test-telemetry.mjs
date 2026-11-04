@@ -71,7 +71,7 @@ function makeBrowser(env = {}) {
   return { T, ctx, local, session, beacons, fetches, handlers };
 }
 
-const consent = (choice, over = {}) => JSON.stringify({ choice, at: new Date().toISOString(), policy: '1.3', ...over });
+const consent = (choice, over = {}) => JSON.stringify({ choice, at: new Date().toISOString(), policy: '1.4', ...over });
 
 test('sans choix : statut « unknown », aucun stockage, aucun envoi', () => {
   const b = makeBrowser();
@@ -122,7 +122,7 @@ test('acceptation : session créée, premier envoi, format et destination', () =
   assert(/^text\/plain/.test(type), 'text/plain : pas de requête préliminaire CORS');
   eq(body.sid, sid);
   eq(body.game, '0.14.0');
-  eq(body.v, 2);
+  eq(body.v, 3);
   assert(/^[A-Za-z0-9-]{8,64}$/.test(body.player.id) && body.player.id !== sid, 'numéro de joueur distinct de la session');
   eq(body.jours, {});
   eq(body.ended, false);
@@ -380,4 +380,84 @@ test('jours de jeu : pièces gagnées et dépensées par poste', () => {
   b.T._flush(false);
   const j = b.beacons.at(-1).body.jours['2'];
   eq([j.gagne, j.depense], [{ vente: 20 }, { achat: 30 }]);
+});
+
+test('version 3 : la politique 1.3 n\'est plus valable, l\'accord est redemandé', () => {
+  const b = makeBrowser({ local: makeStore({ 'ferme-consent': consent('granted', { policy: '1.3' }) }) });
+  eq(b.T.init({ version: '1' }), 'unknown');
+  eq(b.beacons.length, 0);
+  eq(b.T.policyVersion, '1.4');
+});
+
+test('créer : gestes comptés pendant la visite, premières fois notées une seule fois avec le temps de jeu', () => {
+  const b = makeBrowser();
+  b.T.init({ version: '1' });
+  b.T.setConsent('granted');
+  b.T.day(3);
+  b.T.creation('catalogue');
+  b.T.creation('catalogue');
+  for (let i = 0; i < 4; i++) b.T.creation('objet');
+  b.T.creation('decoration');
+  b.T.creation('meuble_tourne');
+  b.T.creation('invitation');
+  b.T.creation('invitation_acceptee', 2);
+  b.T.creation('inconnu');                 // hors liste : ignoré
+  b.T.jalon('inconnu');
+  b.T._flush(false);
+  let body = b.beacons.at(-1).body;
+  eq(body.counters.creation, { catalogue: 2, objet: 4, decoration: 1, meuble_tourne: 1, invitation: 1, invitation_acceptee: 2 });
+  const noms = (bd) => bd.events.filter((e) => e.type === 'jalon').map((e) => e.nom);
+  eq(noms(body), ['catalogue', 'decoration', 'meuble_tourne', 'invitation', 'invitation_acceptee'], 'une seule fois chacune ; pas encore 5 objets');
+  const j = body.events.find((e) => e.type === 'jalon');
+  eq([j.day, j.complet, Number.isFinite(j.playMs)], [3, true, true]);
+  eq(body.player.suivi, 3);
+  eq(Object.keys(body.player.jalons), ['catalogue', 'decoration', 'meuble_tourne', 'invitation', 'invitation_acceptee']);
+  eq(body.coop, false);
+  // le 5e objet, puis une partie à plusieurs
+  b.T.creation('objet');
+  b.T.coop();
+  b.T.coop();
+  b.T._flush(false);
+  body = b.beacons.at(-1).body;
+  eq(noms(body).slice(-2), ['objets_5', 'coop']);
+  eq([body.coop, body.events.filter((e) => e.type === 'coop').length], [true, 1]);
+  // une nouvelle visite : les objets et les premières fois sont gardés (ff_player), rien n'est renoté
+  const b2 = makeBrowser({ local: b.local });
+  b2.T.init({ version: '1' });
+  b2.T.creation('decoration');
+  b2.T.creation('objet');
+  b2.T._flush(false);
+  const body2 = b2.beacons.at(-1).body;
+  eq(noms(body2), []);
+  eq(body2.counters.creation, { decoration: 1, objet: 1 });
+  eq(JSON.parse(b2.local.getItem('ff_player')).objets, 6);
+  // retrait : tout est effacé, plus rien n'est compté
+  b2.T.setConsent('denied');
+  eq(b2.local.getItem('ff_player'), null);
+  const envois = b2.beacons.length;
+  b2.T.creation('catalogue');
+  b2.T._flush(false);
+  eq(b2.beacons.length, envois, 'plus aucun envoi');
+});
+
+test('créer : un joueur d\'avant la version 3 garde son numéro, ses premières fois ne sont pas « complètes »', () => {
+  const ancien = JSON.stringify({ id: 'joueur-ancien-0001', ms: 3600000, since: '2026-10-01T10:00:00.000Z' });
+  const b = makeBrowser({ local: makeStore({ 'ferme-consent': consent('granted'), ff_player: ancien }) });
+  b.T.init({ version: '1' });
+  eq(b.T.playerId(), 'joueur-ancien-0001');
+  b.T.creation('decoration');
+  b.T._flush(false);
+  const body = b.beacons.at(-1).body;
+  const j = body.events.find((e) => e.type === 'jalon');
+  eq([j.nom, j.complet, j.playMs >= 3600000], ['decoration', false, true]);
+  eq(body.player.suivi, 2);
+});
+
+test('créer : rien sans consentement', () => {
+  const b = makeBrowser();
+  b.T.init({ version: '1' });
+  b.T.creation('catalogue');
+  b.T.jalon('decoration');
+  b.T.coop();
+  eq([b.local.map.size, b.session.map.size, b.beacons.length], [0, 0, 0]);
 });
