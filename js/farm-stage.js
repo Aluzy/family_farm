@@ -575,7 +575,7 @@
         this.syncTankTip();
         this.syncCaseTip();                     // (fiche 21 : la bulle d'une case de culture)
         // Filet de sécurité : le fond est vérifié toutes les quelques secondes.
-        if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; this.repairGround(false, true); }
+        if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; const tout = !!this.groundTout; this.groundTout = false; this.repairGround(false, !tout); }
         if (this.ambient) this.ambient.update(delta);
         // le mode Construire fige le monde : les personnages s'effacent et ne bougent plus
         const fige = !!(this.ctx.lastModel && this.ctx.lastModel.bati);
