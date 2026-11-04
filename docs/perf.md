@@ -129,3 +129,12 @@ Le sol par morceaux est identique au pixel près au sol d'un seul canevas : vér
 les régions de la ferme et du grand monde (petites plantes comprises) et après une repeinture partielle
 (des cases labourées sur les bords des morceaux). La lecture du sol pour les touffes au pied des murs
 (`herbes.js`) passe par `lireSol`, qui recompose les morceaux.
+
+## Le mode Construire, un mur en main (version 1.22.0, une partie au jour 54)
+
+Ouvrir Construire, un mur en main, figeait le jeu : 2,4 s par image. Pour montrer en blanc les cases où le
+bloc se pose (`syncConstructible`, js/farm-stage.js), chaque case visible passe par `poseStatus` ; pour un
+mur, il vérifiait qu'il ne couperait pas la pièce de l'escalier (`etageEnPeril`), en recalculant toutes
+les pièces closes de la ferme, deux fois, à chaque case (≈ 26 ms la case avec 665 blocs posés). Seul un
+bloc posé dans la pièce de l'escalier peut la couper : la vérification n'a lieu que là. Une case coûte
+maintenant ≈ 0,3 ms, et une image de Construire ≈ 60 à 80 ms à 4 × de ralentissement (tests/engine/perf-ferme.test.mjs).
