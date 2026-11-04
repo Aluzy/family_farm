@@ -1,0 +1,217 @@
+// Les comptes des joueurs (E-0, décision F.3 : un compte pour le jeu en ligne, connexion par un lien
+// envoyé par e-mail ; le jeu solo reste sans compte, sur l'appareil).
+//
+// - demanderLien(email) : un lien de connexion à usage unique, valable LIEN_MIN minutes, envoyé à
+//   l'adresse. La réponse est la même que l'adresse ait un compte ou non (on ne devine pas qui joue).
+// - connecter(jeton) : le lien suivi, le compte est ouvert (créé à la première connexion) et une session
+//   rendue, valable SESSION_JOURS jours (le jeu la garde sur l'appareil).
+// - moi(session), deconnecter(session), supprimer(session) : le compte d'une session, la fin de la
+//   session, la suppression du compte et de toutes ses sessions (RGPD : droit à l'effacement).
+//
+// Seules des empreintes (SHA-256) des liens et des sessions sont gardées : la base ne permet pas de se
+// connecter à la place de quelqu'un. Les données : l'adresse e-mail, la date de création, la dernière
+// visite. Le stockage est une base SQLite (`sql.exec(requête, ...valeurs)`, comme celle d'un Durable
+// Object de Cloudflare ; tests/test-comptes.mjs en fait une avec node:sqlite).
+
+export const COMPTES = {
+  LIEN_MIN: 15,             // minutes de validité d'un lien
+  SESSION_JOURS: 90,        // jours de validité d'une session
+  LIENS_PAR_EMAIL: 3,       // liens demandés au plus pour une adresse…
+  FENETRE_EMAIL_MIN: 15,    // … en tant de minutes
+  LIENS_PAR_IP: 20,         // liens demandés au plus depuis une adresse IP en une heure
+  EMAIL_MAX: 254,
+};
+
+const MIN = 60 * 1000, JOUR = 24 * 60 * MIN;
+const EMAIL_RE = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]{2,}$/;
+const JETON_RE = /^[A-Za-z0-9_-]{40,64}$/;
+
+// Une adresse e-mail rangée (sans espaces, en minuscules), ou null si elle n'en est pas une.
+export function normaliserEmail(valeur) {
+  const e = String(valeur || '').trim().toLowerCase();
+  return e.length <= COMPTES.EMAIL_MAX && EMAIL_RE.test(e) ? e : null;
+}
+
+const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+export async function empreinte(texte) {
+  return hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(texte))));
+}
+// Un jeton au hasard (32 octets, en base64url : 43 signes).
+export function jetonAuHasard() {
+  const b = crypto.getRandomValues(new Uint8Array(32));
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+export function creerTables(sql) {
+  sql.exec(`CREATE TABLE IF NOT EXISTS comptes (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, cree INTEGER NOT NULL, vu INTEGER NOT NULL)`);
+  sql.exec(`CREATE TABLE IF NOT EXISTS liens (hash TEXT PRIMARY KEY, email TEXT NOT NULL, ip TEXT, cree INTEGER NOT NULL, expire INTEGER NOT NULL)`);
+  sql.exec(`CREATE TABLE IF NOT EXISTS sessions (hash TEXT PRIMARY KEY, compte TEXT NOT NULL, cree INTEGER NOT NULL, expire INTEGER NOT NULL)`);
+  sql.exec(`CREATE INDEX IF NOT EXISTS liens_email ON liens (email, cree)`);
+  sql.exec(`CREATE INDEX IF NOT EXISTS sessions_compte ON sessions (compte)`);
+}
+
+const lignes = (r) => (r && typeof r.toArray === 'function' ? r.toArray() : Array.isArray(r) ? r : []);
+const refus = (statut, erreur) => ({ ok: false, statut, erreur });
+
+export class Registre {
+  // `sql` : la base ; `maintenant` : l'heure en ms (les tests la fixent).
+  constructor(sql, maintenant = () => Date.now()) {
+    this.sql = sql;
+    this.maintenant = maintenant;
+    creerTables(sql);
+  }
+
+  un(requete, ...valeurs) { return lignes(this.sql.exec(requete, ...valeurs))[0] || null; }
+  tous(requete, ...valeurs) { return lignes(this.sql.exec(requete, ...valeurs)); }
+  faire(requete, ...valeurs) { lignes(this.sql.exec(requete, ...valeurs)); }
+
+  // Les liens et les sessions expirés : retirés.
+  nettoyer() {
+    const t = this.maintenant();
+    this.faire('DELETE FROM liens WHERE expire < ?', t - JOUR);
+    this.faire('DELETE FROM sessions WHERE expire < ?', t);
+  }
+
+  // Un lien de connexion pour `email` (demandé depuis `ip`) : { ok, jeton, email } à envoyer, ou un refus.
+  async demanderLien(email, ip = '') {
+    const e = normaliserEmail(email);
+    if (!e) return refus(400, 'Cette adresse e-mail ne semble pas valide.');
+    const t = this.maintenant();
+    this.nettoyer();
+    const parEmail = this.un('SELECT COUNT(*) AS n FROM liens WHERE email = ? AND cree > ?', e, t - COMPTES.FENETRE_EMAIL_MIN * MIN).n;
+    if (parEmail >= COMPTES.LIENS_PAR_EMAIL) return refus(429, `Un lien a déjà été envoyé à cette adresse : regarde ta boîte de réception (et les indésirables), ou réessaie dans ${COMPTES.FENETRE_EMAIL_MIN} minutes.`);
+    if (ip) {
+      const parIp = this.un('SELECT COUNT(*) AS n FROM liens WHERE ip = ? AND cree > ?', ip, t - 60 * MIN).n;
+      if (parIp >= COMPTES.LIENS_PAR_IP) return refus(429, 'Trop de demandes depuis cette connexion : réessaie dans une heure.');
+    }
+    const jeton = jetonAuHasard();
+    this.faire('INSERT INTO liens (hash, email, ip, cree, expire) VALUES (?, ?, ?, ?, ?)', await empreinte(jeton), e, ip || null, t, t + COMPTES.LIEN_MIN * MIN);
+    return { ok: true, jeton, email: e };
+  }
+
+  // Le lien suivi : { ok, session, compte: { id, email, cree } } (le compte créé s'il n'existait pas), ou
+  // un refus (lien inconnu, déjà servi, expiré). Un lien ne sert qu'une fois.
+  async connecter(jeton) {
+    if (!JETON_RE.test(String(jeton || ''))) return refus(400, 'Ce lien de connexion n\'est pas valide.');
+    const t = this.maintenant(), h = await empreinte(jeton);
+    const lien = this.un('SELECT email, expire FROM liens WHERE hash = ?', h);
+    if (!lien) return refus(410, 'Ce lien a déjà servi, ou n\'existe pas : demande-en un nouveau.');
+    this.faire('DELETE FROM liens WHERE hash = ?', h);
+    if (lien.expire < t) return refus(410, `Ce lien a expiré (il vaut ${COMPTES.LIEN_MIN} minutes) : demande-en un nouveau.`);
+    let compte = this.un('SELECT id, email, cree FROM comptes WHERE email = ?', lien.email);
+    if (!compte) {
+      compte = { id: 'c-' + jetonAuHasard().slice(0, 22), email: lien.email, cree: t };
+      this.faire('INSERT INTO comptes (id, email, cree, vu) VALUES (?, ?, ?, ?)', compte.id, compte.email, t, t);
+    } else this.faire('UPDATE comptes SET vu = ? WHERE id = ?', t, compte.id);
+    const session = jetonAuHasard();
+    this.faire('INSERT INTO sessions (hash, compte, cree, expire) VALUES (?, ?, ?, ?)', await empreinte(session), compte.id, t, t + COMPTES.SESSION_JOURS * JOUR);
+    return { ok: true, session, compte: { id: compte.id, email: compte.email, cree: compte.cree } };
+  }
+
+  // Le compte d'une session valide, ou null.
+  async moi(session) {
+    if (!JETON_RE.test(String(session || ''))) return null;
+    const s = this.un('SELECT compte, expire FROM sessions WHERE hash = ?', await empreinte(session));
+    if (!s || s.expire < this.maintenant()) return null;
+    return this.un('SELECT id, email, cree FROM comptes WHERE id = ?', s.compte);
+  }
+
+  async deconnecter(session) {
+    if (!JETON_RE.test(String(session || ''))) return { ok: true };
+    this.faire('DELETE FROM sessions WHERE hash = ?', await empreinte(session));
+    return { ok: true };
+  }
+
+  // Le compte de la session supprimé, avec toutes ses sessions et les liens en attente de son adresse.
+  async supprimer(session) {
+    const c = await this.moi(session);
+    if (!c) return refus(401, 'Connecte-toi d\'abord.');
+    this.faire('DELETE FROM sessions WHERE compte = ?', c.id);
+    this.faire('DELETE FROM liens WHERE email = ?', c.email);
+    this.faire('DELETE FROM comptes WHERE id = ?', c.id);
+    return { ok: true };
+  }
+}
+
+/* ---------- l'e-mail du lien ---------- */
+
+// Le texte de l'e-mail (sujet, texte, HTML) pour le lien `lien`.
+export function emailDuLien(lien) {
+  const sujet = 'Ton lien de connexion à Ferme Familiale';
+  const texte = `Bonjour,\n\nPour te connecter à Ferme Familiale (le jeu en ligne), ouvre ce lien sur l'appareil où tu joues :\n${lien}\n\nIl vaut ${COMPTES.LIEN_MIN} minutes et ne sert qu'une fois. Si tu n'as rien demandé, ignore ce message : sans ce lien, personne ne peut se connecter.\n\nFerme Familiale`;
+  const html = `<p>Bonjour,</p><p>Pour te connecter à <b>Ferme Familiale</b> (le jeu en ligne), ouvre ce lien sur l'appareil où tu joues :</p><p><a href="${lien}">Me connecter</a></p><p>Il vaut ${COMPTES.LIEN_MIN} minutes et ne sert qu'une fois. Si tu n'as rien demandé, ignore ce message : sans ce lien, personne ne peut se connecter.</p><p>Ferme Familiale</p>`;
+  return { sujet, texte, html };
+}
+
+// Envoie le lien par le service d'e-mails (Resend, son API HTTP : secrets RESEND_API_KEY et
+// COMPTE_EXPEDITEUR, l'adresse d'envoi d'un domaine vérifié chez lui). → { ok } ou un refus.
+// `envoyer` : la fonction fetch (les tests la remplacent).
+export async function envoyerLien(env, email, lien, envoyer = fetch) {
+  if (!env || !env.RESEND_API_KEY || !env.COMPTE_EXPEDITEUR) return refus(503, 'Le jeu en ligne n\'est pas encore ouvert : l\'envoi des e-mails n\'est pas configuré.');
+  const m = emailDuLien(lien);
+  const r = await envoyer('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: env.COMPTE_EXPEDITEUR, to: [email], subject: m.sujet, text: m.texte, html: m.html }),
+  });
+  if (!r.ok) {
+    console.error(`envoi du lien en échec : ${r.status}`);
+    return refus(502, 'L\'e-mail n\'a pas pu partir : réessaie dans un moment.');
+  }
+  return { ok: true };
+}
+
+// L'adresse du jeu où mène le lien : le jeton dans le fragment (#), qui ne part jamais vers le serveur
+// des pages (ni dans ses journaux).
+export function adresseDuLien(env, jeton) {
+  const base = (env && env.JEU_URL) || 'https://aluzy.github.io/family_farm/jeu.html';
+  return `${base}#connexion=${jeton}`;
+}
+
+/* ---------- les routes (le Durable Object Comptes) ---------- */
+
+// Une requête /compte/… → { statut, corps }. `registre` : le Registre ; `env` : les secrets.
+export async function routeCompte(request, registre, env, envoyer = fetch) {
+  const url = new URL(request.url);
+  const chemin = url.pathname.replace(/^\/compte\//, '');
+  const auth = request.headers.get('Authorization') || '';
+  const session = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  const corpsJson = async () => { try { return await request.json(); } catch (e) { return {}; } };
+  if (request.method === 'POST' && chemin === 'lien') {
+    const b = await corpsJson();
+    const r = await registre.demanderLien(b.email, request.headers.get('CF-Connecting-IP') || '');
+    if (!r.ok) return { statut: r.statut, corps: { ok: false, erreur: r.erreur } };
+    const envoi = await envoyerLien(env, r.email, adresseDuLien(env, r.jeton), envoyer);
+    if (!envoi.ok) return { statut: envoi.statut, corps: { ok: false, erreur: envoi.erreur } };
+    return { statut: 200, corps: { ok: true } };
+  }
+  if (request.method === 'POST' && chemin === 'connexion') {
+    const b = await corpsJson();
+    const r = await registre.connecter(b.jeton);
+    return r.ok ? { statut: 200, corps: { ok: true, session: r.session, compte: r.compte } } : { statut: r.statut, corps: { ok: false, erreur: r.erreur } };
+  }
+  if (request.method === 'GET' && chemin === 'moi') {
+    const c = await registre.moi(session);
+    return c ? { statut: 200, corps: { ok: true, compte: c } } : { statut: 401, corps: { ok: false, erreur: 'Pas connecté.' } };
+  }
+  if (request.method === 'POST' && chemin === 'deconnexion') return { statut: 200, corps: await registre.deconnecter(session) };
+  if (request.method === 'POST' && chemin === 'supprimer') {
+    const r = await registre.supprimer(session);
+    return r.ok ? { statut: 200, corps: { ok: true } } : { statut: r.statut, corps: { ok: false, erreur: r.erreur } };
+  }
+  return { statut: 404, corps: { ok: false, erreur: 'not found' } };
+}
+
+// Le Durable Object des comptes : une seule instance (« comptes »), sa base SQLite (wrangler.toml :
+// new_sqlite_classes). Sans dépendre de cloudflare:workers (les tests le chargent dans Node).
+export class Comptes {
+  constructor(ctx, env) {
+    this.env = env;
+    this.registre = new Registre(ctx.storage.sql);
+  }
+
+  async fetch(request) {
+    const r = await routeCompte(request, this.registre, this.env);
+    return new Response(JSON.stringify(r.corps), { status: r.statut, headers: { 'Content-Type': 'application/json' } });
+  }
+}

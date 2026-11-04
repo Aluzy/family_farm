@@ -152,7 +152,7 @@
         <div class="ruban">Confidentialité</div>
         <h1>Cookies et traceurs</h1>
         <p class="lead">Ce que Ferme Familiale enregistre dans votre navigateur, pourquoi, et comment garder la main.</p>
-        <p class="meta">Version 1.4 · dernière mise à jour : 4 novembre 2026</p>
+        <p class="meta">Version 1.5 · dernière mise à jour : 4 novembre 2026</p>
       </div>
     </div>
   </header>
@@ -164,6 +164,7 @@
         <li>Votre partie est sauvegardée sur votre appareil, sans que rien ne soit envoyé nulle part.</li>
         <li>Avec votre accord seulement, le jeu note anonymement les boutons utilisés, les écrans consultés, votre progression et vos premiers pas dans la construction (première décoration, premier meuble tourné…), pour l'améliorer. Si vous le souhaitez, vous pouvez aussi lui écrire un commentaire.</li>
         <li>Refuser n'enlève rien au jeu. Vous pouvez changer d'avis à tout moment dans ⚙️ Options, rubrique « Confidentialité ».</li>
+        <li>Pour jouer en ligne seulement, vous pouvez créer un compte avec votre adresse e-mail (un lien de connexion, sans mot de passe). Le jeu solo n'en a pas besoin. Vous pouvez supprimer ce compte à tout moment.</li>
         <li>Aucune publicité, aucun réseau social, aucun outil de suivi tiers.</li>
       </ul>
     </div>
@@ -188,6 +189,7 @@
           <tr><td><code>ff_sid</code></td><td>Numéro aléatoire de votre visite, pour regrouper les actions d'une même session de jeu.</td><td><code>sessionStorage</code></td><td>Jusqu'à la fermeture de l'onglet</td><td>Oui : créé seulement si vous acceptez</td></tr>
           <tr><td><code>ff_t0</code></td><td>Heure de début de votre visite.</td><td><code>sessionStorage</code></td><td>Jusqu'à la fermeture de l'onglet</td><td>Oui : créé seulement si vous acceptez</td></tr>
           <tr><td><code>ff_player</code></td><td>Numéro aléatoire de joueur, le même d'une visite à l'autre, le temps de jeu cumulé et vos premières fois dans la construction (avec le temps de jeu qu'il a fallu), et le nombre d'objets posés : pour suivre la progression d'une partie dans la durée (au bout de combien de temps un niveau est atteint, une première décoration posée).</td><td><code>localStorage</code></td><td>Jusqu'au retrait de votre accord (il est alors effacé) ou à l'effacement du stockage du site</td><td>Oui : créé seulement si vous acceptez</td></tr>
+          <tr><td><code>ferme-compte</code></td><td>Garder votre connexion au jeu en ligne (un jeton de session et votre adresse e-mail), si vous vous êtes connecté.</td><td><code>localStorage</code></td><td>Jusqu'à ce que vous vous déconnectiez ou supprimiez votre compte ; la session expire au bout de 90 jours</td><td>Non requis : nécessaire au jeu en ligne que vous avez demandé</td></tr>
           <tr><td><code>ff_data</code></td><td>Compteurs de la visite en cours, pour ne pas les perdre si vous rechargez la page.</td><td><code>sessionStorage</code></td><td>Jusqu'à la fermeture de l'onglet</td><td>Oui : créé seulement si vous acceptez</td></tr>
         </tbody>
       </table>
@@ -216,14 +218,19 @@
     </ul>
     <p><strong>Jamais enregistré :</strong> votre nom, votre e-mail, votre position, ce que vous écrivez dans un champ de texte (à l'exception du commentaire que vous décidez vous-même d'envoyer : n'y indiquez aucune donnée personnelle), le contenu de votre sauvegarde exportée ou importée. Le jeu ne lit ni ne conserve votre adresse IP. Aucun enregistrement d'écran ni de vidéo de votre partie n'est réalisé.</p>
 
+    <h2>5 bis. Le compte du jeu en ligne</h2>
+    <p>Le jeu solo fonctionne sans compte. Pour jouer en ligne avec des amis, vous pouvez créer un compte dans ⚙️ Options › « Jeu en ligne » : vous donnez votre adresse e-mail et recevez un lien de connexion, valable 15 minutes et utilisable une seule fois. Nous gardons votre adresse e-mail, la date de création du compte et celle de votre dernière connexion. Les liens et les sessions ne sont gardés que sous une forme chiffrée (une empreinte) qui ne permet pas de se connecter à votre place. L'adresse ne sert qu'à vous envoyer les liens de connexion : ni lettre d'information, ni publicité, ni partage.</p>
+
     <h2>6. Base légale</h2>
-    <p>Votre consentement, pour tout ce qui concerne le suivi (article 6.1.a du RGPD et article 82 de la loi Informatique et Libertés). Les traceurs strictement nécessaires (<code>ferme-save</code> et <code>ferme-consent</code>) reposent sur notre intérêt légitime à faire fonctionner le jeu que vous avez demandé.</p>
+    <p>Votre consentement, pour tout ce qui concerne le suivi (article 6.1.a du RGPD et article 82 de la loi Informatique et Libertés). Les traceurs strictement nécessaires (<code>ferme-save</code> et <code>ferme-consent</code>) reposent sur notre intérêt légitime à faire fonctionner le jeu que vous avez demandé. Le compte du jeu en ligne repose sur l'exécution du service que vous demandez en le créant (article 6.1.b du RGPD).</p>
 
     <h2>7. Qui reçoit les données ?</h2>
     <p>Seul l'éditeur y accède. Les données de suivi sont reçues et stockées par Cloudflare (Workers et stockage R2), notre sous-traitant, dans un espace configuré en juridiction de l'Union européenne, dans le cadre de son accord de traitement des données. Elles ne sont ni vendues ni partagées avec d'autres tiers. Le récapitulatif quotidien (statistiques agrégées et commentaires) est publié dans un dépôt GitHub privé de l'éditeur ; GitHub agit comme sous-traitant et prévient l'éditeur par e-mail. Le site étant hébergé par GitHub Pages, GitHub peut enregistrer techniquement votre adresse IP lors de la visite, indépendamment du jeu et selon sa propre politique de confidentialité. Cloudflare, en tant que réseau, voit aussi votre adresse IP lors de l'envoi des données, mais notre programme de collecte ne la lit pas et ne l'enregistre pas.</p>
 
+    <p>Pour le compte du jeu en ligne : votre adresse est gardée par Cloudflare (Durable Objects, dans le cadre du même accord de traitement), et les e-mails de connexion sont envoyés par Resend, notre sous-traitant pour l'envoi des e-mails, qui reçoit votre adresse et le lien le temps de l'envoi.</p>
+
     <h2>8. Combien de temps ?</h2>
-    <p>Les données de suivi sont conservées 12 mois au maximum, puis supprimées. Votre choix est valable 6 mois : nous vous le redemandons ensuite, ou dès que cette page change.</p>
+    <p>Les données de suivi sont conservées 12 mois au maximum, puis supprimées. Votre choix est valable 6 mois : nous vous le redemandons ensuite, ou dès que cette page change. Le compte du jeu en ligne est gardé tant que vous ne le supprimez pas ; un lien de connexion non utilisé est effacé au plus tard un jour après sa création, une session 90 jours après la connexion.</p>
 
     <h2>9. Vos choix et vos droits</h2>
     <ul>
@@ -231,6 +238,7 @@
       <li><strong>Changer d'avis.</strong> Dans le jeu, ouvrez ⚙️ Options puis « Confidentialité » : le suivi s'arrête immédiatement et les traceurs <code>ff_sid</code>, <code>ff_t0</code>, <code>ff_data</code> et <code>ff_player</code> sont effacés.</li>
       <li><strong>Signal du navigateur.</strong> Si votre navigateur envoie Global Privacy Control ou Do Not Track, aucun suivi n'est activé.</li>
       <li><strong>Vos droits.</strong> Accès, rectification, effacement, limitation, opposition et retrait du consentement : écrivez à <a href="mailto:contact.voidr@gmail.com">contact.voidr@gmail.com</a>. Comme les données sont rattachées à un numéro aléatoire sans identité, indiquez-nous votre numéro de session ou de joueur, affichés dans ⚙️ Options › Confidentialité tant que le suivi est actif, pour que nous puissions retrouver vos données.</li>
+      <li><strong>Supprimer votre compte.</strong> Dans le jeu, ⚙️ Options › « Jeu en ligne » › « Supprimer mon compte » : votre adresse, votre compte et toutes vos sessions sont effacés du serveur immédiatement. Votre partie solo, sur votre appareil, n'est pas touchée.</li>
       <li><strong>Réclamation.</strong> Vous pouvez saisir la CNIL (<a href="https://www.cnil.fr" rel="noopener">www.cnil.fr</a>).</li>
       <li><strong>Effacer vous-même.</strong> Vous pouvez vider le stockage du site dans les réglages de votre navigateur. Attention : cela supprime aussi votre partie ; exportez-la d'abord via ⚙️ Options › Exporter.</li>
     </ul>

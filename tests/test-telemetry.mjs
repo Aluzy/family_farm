@@ -71,7 +71,7 @@ function makeBrowser(env = {}) {
   return { T, ctx, local, session, beacons, fetches, handlers };
 }
 
-const consent = (choice, over = {}) => JSON.stringify({ choice, at: new Date().toISOString(), policy: '1.4', ...over });
+const consent = (choice, over = {}) => JSON.stringify({ choice, at: new Date().toISOString(), policy: '1.5', ...over });
 
 test('sans choix : statut « unknown », aucun stockage, aucun envoi', () => {
   const b = makeBrowser();
@@ -386,7 +386,7 @@ test('version 3 : la politique 1.3 n\'est plus valable, l\'accord est redemandé
   const b = makeBrowser({ local: makeStore({ 'ferme-consent': consent('granted', { policy: '1.3' }) }) });
   eq(b.T.init({ version: '1' }), 'unknown');
   eq(b.beacons.length, 0);
-  eq(b.T.policyVersion, '1.4');
+  eq(b.T.policyVersion, '1.5');
 });
 
 test('créer : gestes comptés pendant la visite, premières fois notées une seule fois avec le temps de jeu', () => {

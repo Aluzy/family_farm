@@ -8,10 +8,16 @@
 //   et le publie comme issue d'un dépôt GitHub PRIVÉ (l'e-mail vient des notifications
 //   GitHub). Le Worker refuse de publier si ce dépôt n'est pas privé : le rapport
 //   contient les commentaires des joueurs.
+// - /compte/… (E-0) : les comptes du jeu en ligne (comptes.mjs) : POST /compte/lien (un lien de
+//   connexion par e-mail), POST /compte/connexion, GET /compte/moi, POST /compte/deconnexion, POST
+//   /compte/supprimer. Le Durable Object Comptes (une instance, sa base SQLite) les sert.
 // - GET /report (facultatif) : aperçu du rapport en Markdown, ou publication de test
 //   avec &publish=1. Protégé par REPORT_TOKEN : sans ce secret, la route n'existe pas.
 
 import { buildReport, mergePlayer, playerMeta, renderMarkdown, reportSubject, parisHour } from './report.mjs';
+
+// Les comptes des joueurs (E-0) : le Durable Object Comptes (comptes.mjs), routes /compte/….
+export { Comptes } from './comptes.mjs';
 
 const ALLOWED_ORIGIN = 'https://aluzy.github.io';
 const MAX_BYTES = 64 * 1024;
@@ -29,8 +35,8 @@ const READ_BATCH = 25;
 function corsHeaders(origin) {
   return {
     'Access-Control-Allow-Origin': origin === ALLOWED_ORIGIN ? origin : 'null',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
   };
@@ -194,6 +200,17 @@ async function handleReport(request, env, url) {
   return new Response(md, { headers });
 }
 
+// Les routes /compte/… : depuis le jeu seulement, servies par le Durable Object Comptes.
+async function routeComptes(request, env, origin) {
+  if (origin !== ALLOWED_ORIGIN) return json({ ok: false, erreur: 'origine refusée' }, 403, origin);
+  if (!env.COMPTES) return json({ ok: false, erreur: 'Le jeu en ligne n\'est pas encore ouvert.' }, 503, origin);
+  const declared = Number(request.headers.get('Content-Length') || 0);
+  if (declared > 4096) return json({ ok: false, erreur: 'trop volumineux' }, 413, origin);
+  const stub = env.COMPTES.get(env.COMPTES.idFromName('comptes'));
+  const r = await stub.fetch(request);
+  return new Response(await r.text(), { status: r.status, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } });
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
@@ -202,6 +219,7 @@ export default {
     if (request.method === 'GET' && url.pathname === '/report') return handleReport(request, env, url);
 
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
+    if (url.pathname.startsWith('/compte/')) return routeComptes(request, env, origin);
     if (request.method !== 'POST' || url.pathname !== '/session') return json({ error: 'not found' }, 404, origin);
     if (origin !== ALLOWED_ORIGIN) return json({ error: 'origine refusée' }, 403, origin);
 

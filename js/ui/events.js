@@ -84,6 +84,9 @@ if (typeof history !== 'undefined' && history.pushState) {
   if (!(history.state && history.state.fermeGarde)) history.pushState(GARDE, '', ici);
   window.addEventListener('popstate', (e) => {
     if (e.state && e.state.fermeGarde) { ici = location.href; return; }   // (Avancer : de nouveau sur la garde)
+    // (le lien de connexion du jeu en ligne ouvert dans cet onglet : seul le fragment change ; il est
+    // laissé à js/ui/compte.js, qui le lit puis le retire)
+    if (/(?:^#|&)connexion=/.test(location.hash)) { ici = location.href; return; }
     history.pushState(GARDE, '', ici);
     if (fermerDessus(true)) { quitter = 0; scheduleRender(); return; }
     const now = Date.now();

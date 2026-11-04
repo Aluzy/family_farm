@@ -10,6 +10,7 @@ import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { sonHtml } from './son.js';
+import { compteHtml } from './compte.js';
 
 /* ---------- options (modale) ---------- */
 
@@ -142,6 +143,7 @@ export function openOptionsModal() {
         </div>
         <div id="feedback-zone"></div>
       </div>
+      ${compteHtml()}
       ${privacySectionHtml()}
       <div class="stack">
         <strong>Mode test</strong>

@@ -128,6 +128,13 @@ Le détail (valeurs, formules, tableau d'équilibrage) est dans la conception ; 
 règles principales sont aussi rappelées dans le jeu (⚙️ Options › À propos), et
 chaque bâtiment a son bouton **?** (rôle, consommation, production).
 
+### Jeu en ligne : le compte
+
+Le jeu solo fonctionne sans compte, sur l'appareil. Pour le jeu en ligne (à venir : inviter un ami,
+rejoindre sa ferme), ⚙️ Options › « 🌐 Jeu en ligne » : on donne son adresse e-mail et on reçoit un
+lien de connexion, sans mot de passe. Le compte se supprime au même endroit. Côté serveur et mise en
+service : `worker/README.md`.
+
 ### Absence et onglet en arrière-plan
 
 Quand vous revenez (page rouverte, ou onglet qui repasse au premier plan), le

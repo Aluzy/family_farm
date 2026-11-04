@@ -28,7 +28,7 @@ const Telemetry = (() => {
   const T0_KEY = 'ff_t0';              // sessionStorage : début de session
   const DATA_KEY = 'ff_data';          // sessionStorage : compteurs de la visite
   const PLAYER_KEY = 'ff_player';      // localStorage : numéro de joueur, temps de jeu cumulé
-  const POLICY_VERSION = '1.4';
+  const POLICY_VERSION = '1.5';
   const CONSENT_TTL_MS = 183 * 24 * 3600 * 1000; // environ 6 mois
   const FLUSH_MS = 60000;
   const MAX_EVENTS = 400;

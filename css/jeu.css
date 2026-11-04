@@ -382,7 +382,7 @@ main {
 
 .stack { display: flex; flex-direction: column; gap: 12px; }
 
-textarea, input[type="text"] {
+textarea, input[type="text"], input[type="email"] {
   width: 100%;
   min-height: 44px;
   padding: 10px;

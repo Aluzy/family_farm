@@ -61,6 +61,52 @@ Ce dossier n'est pas servi par GitHub Pages au jeu : il est déployé par Cloudf
 `npx wrangler deploy`). Les déclencheurs sont déclarés dans `wrangler.toml` et
 installés par ce même déploiement.
 
+## Les comptes du jeu en ligne (E-0)
+
+Décision F.3 : le jeu en ligne demande un compte, le jeu solo reste sans compte. On se connecte par
+un **lien reçu par e-mail**, sans mot de passe (`worker/src/comptes.mjs`, la rubrique
+⚙️ Options › « 🌐 Jeu en ligne » du jeu : `js/ui/compte.js`).
+
+- `POST /compte/lien` `{ email }` : un lien de connexion, valable 15 minutes et utilisable une seule
+  fois, envoyé à l'adresse. La réponse est la même que l'adresse ait déjà un compte ou non. Les
+  demandes sont limitées : 3 par adresse en 15 minutes, 20 par connexion en une heure.
+- Le lien ouvre `jeu.html#connexion=<jeton>`. Le jeton est dans le fragment, qui n'est jamais envoyé
+  au serveur des pages. Le jeu l'échange par `POST /compte/connexion` `{ jeton }` contre une
+  **session** (90 jours), qu'il garde sur l'appareil (`localStorage` `ferme-compte`). Le compte est
+  créé à la première connexion.
+- `GET /compte/moi` (en-tête `Authorization: Bearer <session>`) : le compte ;
+  `POST /compte/deconnexion` : la session oubliée ; `POST /compte/supprimer` : le compte, ses
+  sessions et ses liens effacés (droit à l'effacement).
+- **Le stockage** : un Durable Object `Comptes`, une seule instance avec sa base SQLite
+  (`wrangler.toml` : la liaison `COMPTES` et la migration `new_sqlite_classes`). Cloudflare le crée
+  au premier déploiement, rien à créer à la main. La base garde l'adresse, la date de création et
+  la dernière connexion ; liens et sessions n'y sont que sous forme d'empreintes SHA-256.
+- **L'envoi des e-mails** : Resend, par son API HTTP. C'est le seul service tiers ; le rapport
+  quotidien, lui, n'envoie toujours aucun e-mail (il passe par les notifications GitHub). Tant que
+  ses secrets manquent, `POST /compte/lien` répond « le jeu en ligne n'est pas encore ouvert »
+  (503) et rien n'est envoyé.
+
+### Mise en route (une seule fois)
+
+1. **Créer un compte chez Resend** (resend.com ; son offre gratuite suffit pour commencer :
+   vérifier ses limites d'envoi du moment).
+2. **Vérifier un domaine** à toi (Resend › Domains › Add domain) : Resend donne des
+   enregistrements DNS (SPF, DKIM) à ajouter chez l'hébergeur du domaine. Sans domaine vérifié,
+   Resend n'envoie qu'à ta propre adresse (pratique pour un premier essai).
+3. **Créer une clé d'API** : Resend › API Keys › Create API key, avec la permission « Sending
+   access » seulement.
+4. Dans Cloudflare : Workers › `family-farm` › Settings › Variables and Secrets, ajouter en
+   **secrets** :
+   - `RESEND_API_KEY` : la clé de l'étape 3 ;
+   - `COMPTE_EXPEDITEUR` : l'expéditeur, sur le domaine vérifié, par exemple
+     `Ferme Familiale <connexion@ton-domaine.fr>` ;
+   - `JEU_URL` (facultatif) : l'adresse du jeu où mène le lien. Par défaut :
+     `https://aluzy.github.io/family_farm/jeu.html`.
+5. Déployer (fusionner la pull request : Workers Builds redéploie et crée le Durable Object).
+6. Tester : dans le jeu publié, ⚙️ Options › « 🌐 Jeu en ligne », donner ton adresse, ouvrir le lien
+   reçu sur le téléphone. La rubrique affiche « Connecté ». En cas d'échec : Workers ›
+   `family-farm` › Observability (« envoi du lien en échec : <code> »).
+
 ## Mise en route du rapport (une seule fois)
 
 1. **Créer un dépôt privé** pour les rapports, par exemple `family_farm_rapports`
@@ -133,3 +179,8 @@ vérifier dans Workers › `family-farm` › Settings › Build :
 
 `node tests/test-report.mjs` (depuis la racine du dépôt) : calculs, passage été/hiver, publication
 GitHub simulée (dépôt public refusé, jeton jamais journalisé), protections de la collecte.
+
+`node tests/test-comptes.mjs` : les comptes. La base SQLite du Durable Object est simulée par
+`node:sqlite`, l'envoi par une fonction qui garde l'e-mail. Les tests couvrent les liens à usage
+unique, leur expiration et celle des sessions, les limites de demandes, la suppression, les
+empreintes seules en base, les routes et le Worker (CORS, origine, sans Durable Object).
