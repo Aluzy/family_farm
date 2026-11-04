@@ -121,6 +121,16 @@ function recevoir(ws, data) {
     lien.role = m.role;
     lien.moi = m.moi;
     lien.essais = 0;
+    derniere = null;
+    return;
+  }
+  // E-4 : où regardent les autres (relayé par le monde, jamais écrit) ; leur départ
+  if (m.t === 'pos') {
+    autres.set(m.acteur, { nom: m.nom, x: m.x, y: m.y, t: Date.now() });
+    return;
+  }
+  if (m.t === 'parti') {
+    autres.delete(m.acteur);
     return;
   }
   if (m.t === 'membres') {
@@ -184,6 +194,26 @@ export function jouerEnLigne(cmd) {
 }
 
 brancherEnLigne(jouerEnLigne);
+
+/* ---------- E-4 : la présence ---------- */
+
+// Les autres joueurs du monde : acteur → { nom, x, y, t } (le centre de leur vue, en px de la carte ; t : la
+// dernière fois qu'on l'a reçu). La carte les dessine (js/carte/ferme/presence.js lit window.FermeEnLigne).
+const autres = new Map();
+if (typeof window !== 'undefined') window.FermeEnLigne = { autres };
+// Le centre de sa propre vue, envoyé quand il a bougé, POS_MS au plus souvent (le monde en relaie au plus 5
+// par seconde) ; jamais quand rien ne change.
+const POS_MS = 200;
+let derniere = null;
+function envoyerPosition() {
+  if (!lien || lien.etat !== 'ok' || !window.FarmStage || !FarmStage.scene) return;
+  const sc = FarmStage.scene();
+  if (!sc || !sc.cameras || !sc.cameras.main) return;
+  const p = sc.cameras.main.midPoint, x = Math.round(p.x), y = Math.round(p.y);
+  if (derniere && Math.abs(derniere.x - x) < 2 && Math.abs(derniere.y - y) < 2) return;
+  if (envoyer({ t: 'pos', x, y })) derniere = { x, y };
+}
+if (typeof window !== 'undefined') setInterval(envoyerPosition, POS_MS);
 
 /* ---------- ce qu'on fait en ligne ---------- */
 

@@ -262,3 +262,35 @@ test('E-3 : les routes du Worker : créer un lien, le suivre (le monde dans la l
   eq((await j(req('/mondes', b.session))).mondes, [], 'plus dans sa liste');
   eq((await W.fetch(req(`/mondes/${m.monde}/fiche`, b.session), env)).status, 403, 'plus membre');
 });
+
+/* ---------- E-4 : la présence ---------- */
+
+test('E-4 : une position est relayée aux autres membres (pas à soi), 5 par seconde au plus, jamais écrite ; le départ est dit', () => {
+  const sql = baseSql(), horloge = { t: 1000 };
+  const r = new MondeRegistre(sql, () => horloge.t);
+  r.creer({ proprietaire: A, partie: partieLocale() });
+  r.ajouterMembre(B, 'Sam');
+  const tables = () => JSON.stringify(['meta', 'instantane', 'journal', 'membres', 'invitations'].map((t) => sql.db.prepare(`SELECT * FROM ${t}`).all()));
+  const avant = tables(), soi = [], autres = [];
+  const pos = (compte, x, y) => traiterMessage(r, compte, JSON.stringify({ t: 'pos', x, y }), (m) => soi.push(m), () => {}, (m) => autres.push(m));
+  pos(B, 100.4, 200.6);
+  eq(autres, [{ t: 'pos', acteur: B, nom: 'Sam', x: 100, y: 201 }]);
+  pos(B, 110, 210);
+  eq(autres.length, 1, 'trop tôt : ignorée');
+  horloge.t += MONDE.POS_MS;
+  pos(B, 120, 220);
+  eq(autres.length, 2);
+  horloge.t += 1000;
+  pos(B, 'abc', 3); pos(B, 1e9, 3); pos('c-inconnu', 5, 5);
+  eq([autres.length, soi.length], [2, 0], 'invalide ou pas membre : ignorée ; rien à soi');
+  eq(tables(), avant, 'rien d\'écrit');
+  // le départ : son dernier onglet fermé
+  const fermes = [], msgs = [];
+  const ws = (c) => ({ c, send: (m) => msgs.push([c, JSON.parse(m)]), close: () => fermes.push(c) });
+  const sockets = [ws(A), ws(B)];
+  const d = Object.create(Monde.prototype);
+  Object.assign(d, { registre: r, ctx: { getWebSockets: (tag) => sockets.filter((w) => !tag || w.c === tag), getTags: (w) => [w.c] } });
+  sockets.splice(1, 1);   // (la connexion de B s'est fermée)
+  d.webSocketClose(ws(B), 1000);
+  eq(msgs, [[A, { t: 'parti', acteur: B }]], 'A apprend que B est parti');
+});

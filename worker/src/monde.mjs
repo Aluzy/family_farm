@@ -25,6 +25,9 @@
 //                                                   ← { t: 'refus', raison } (version, membre)
 //   → { t: 'cmd', id, type, args }                ← { t: 'ack', id, ok, rev?, erreur? }
 //                                                   ← à tous : { t: 'evt', rev, acteur, cmd: { id, type, args } }
+//   → { t: 'pos', x, y }                          ← aux autres : { t: 'pos', acteur, nom, x, y } (E-4 : où regarde
+//                                                   chaque joueur ; relayé, jamais écrit ; POS_MS au plus souvent)
+//                                                   ← aux autres, à son départ : { t: 'parti', acteur }
 
 import { COMMANDES, executerCommande, GAME_VERSION, migrate } from '../../js/engine/index.js';
 
@@ -33,6 +36,8 @@ export const MONDE = {
   JOURNAL_GARDE: 500,       // révisions gardées dans le journal avant le dernier instantané (le rattrapage)
   COMMANDES_PAR_MINUTE: 120,// commandes acceptées au plus par membre et par minute
   NOM_MAX: 40,
+  POS_MS: 150,              // E-4 : une position relayée au plus toutes les POS_MS ms par joueur (≈ 5 par seconde)
+  POS_MAX: 1e6,             // px : une position au-delà est ignorée
   INVITATION_JOURS: 7,      // E-3 : un lien d'invitation vaut tant de jours, et ne sert qu'une fois
   INVITATIONS_MAX: 20,      // liens en attente au plus par monde
 };
@@ -72,6 +77,7 @@ export class MondeRegistre {
     this.partie = null;      // la partie en mémoire (refaite à la demande : charger)
     this.rev = 0;
     this.debits = new Map(); // compte → [heures des dernières commandes]
+    this.positions = new Map(); // E-4 : compte → l'heure de sa dernière position relayée (rien n'est écrit)
     creerTablesMonde(sql);
   }
 
@@ -303,16 +309,21 @@ export class Monde {
 
   async webSocketMessage(ws, message) {
     const compte = (this.ctx.getTags(ws) || [])[0] || '';
-    traiterMessage(this.registre, compte, message, (m) => envoyer(ws, m), (m) => this.diffuser(m));
+    traiterMessage(this.registre, compte, message, (m) => envoyer(ws, m), (m) => this.diffuser(m), (m) => this.diffuser(m, compte));
   }
 
   async webSocketClose(ws, code) {
+    const compte = (this.ctx.getTags(ws) || [])[0] || '';
     try { ws.close(code === 1005 ? 1000 : code, 'au revoir'); } catch (e) { /* (déjà fermée) */ }
+    // (E-4 : son dernier onglet fermé, son avatar s'en va chez les autres)
+    if (!this.ctx.getWebSockets(compte).some((w) => w !== ws)) this.diffuser({ t: 'parti', acteur: compte }, compte);
   }
 
-  diffuser(m) {
+  // Un message à tous les membres connectés (`sauf` : pas à ce compte-là).
+  diffuser(m, sauf = null) {
     for (const ws of this.ctx.getWebSockets()) {
       const compte = (this.ctx.getTags(ws) || [])[0];
+      if (sauf && compte === sauf) continue;
       // (un membre révoqué entre-temps : sa connexion est fermée)
       if (!this.registre.membre(compte)) { try { ws.close(4003, 'plus membre'); } catch (e) { /* (rien) */ } continue; }
       envoyer(ws, m);
@@ -325,7 +336,7 @@ function envoyer(ws, m) {
 }
 
 // Un message d'un joueur (le protocole, en tête). `repondre(m)` : à lui seul ; `diffuser(m)` : à tous.
-export function traiterMessage(registre, compte, message, repondre, diffuser) {
+export function traiterMessage(registre, compte, message, repondre, diffuser, diffuserAutres = diffuser) {
   let m;
   try { m = JSON.parse(typeof message === 'string' ? message : new TextDecoder().decode(message)); } catch (e) { repondre({ t: 'erreur', erreur: 'Message illisible.' }); return; }
   if (!m || typeof m !== 'object') return;
@@ -341,6 +352,17 @@ export function traiterMessage(registre, compte, message, repondre, diffuser) {
     const r = registre.commande(compte, m);
     repondre(r.ok ? { t: 'ack', id: m.id, ok: true, rev: r.rev, ...(r.doublon ? { doublon: true } : {}) } : { t: 'ack', id: m.id, ok: false, erreur: r.erreur });
     if (r.ok && r.evt) diffuser(r.evt);
+    return;
+  }
+  if (m.t === 'pos') {
+    // E-4 : la position d'un membre, relayée aux autres, jamais écrite ; trop tôt, ou hors du monde : ignorée
+    const membre = registre.membre(compte);
+    const x = Number(m.x), y = Number(m.y);
+    if (!membre || !Number.isFinite(x) || !Number.isFinite(y) || Math.abs(x) > MONDE.POS_MAX || Math.abs(y) > MONDE.POS_MAX) return;
+    const t = registre.maintenant(), avant = registre.positions.get(compte) || 0;
+    if (t - avant < MONDE.POS_MS) return;
+    registre.positions.set(compte, t);
+    diffuserAutres({ t: 'pos', acteur: compte, nom: membre.nom, x: Math.round(x), y: Math.round(y) });
     return;
   }
   repondre({ t: 'erreur', erreur: `Message inconnu : ${String(m.t)}.` });

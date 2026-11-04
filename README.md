@@ -140,6 +140,7 @@ intacte. On y entre ensuite par « Entrer » (`jeu.html?monde=…`). Dans un mon
 - pour l'instant, on y **construit ensemble** : le mode Construire est ouvert ;
 - chaque geste est joué tout de suite, puis envoyé au monde, et ceux des autres arrivent en moins
   d'une seconde ;
+- les autres joueurs sont dessinés là où ils regardent : leur personnage et leur prénom ;
 - le bandeau « 🌐 » dit si l'on est à jour et ramène à sa ferme solo.
 
 Le propriétaire **invite un ami** par le bouton 👥 du bandeau. Il crée un lien, valable 7 jours et
