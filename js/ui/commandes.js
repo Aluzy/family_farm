@@ -17,6 +17,8 @@ import { persistState } from './storage.js';
 import { telCommande } from './consent.js';
 
 let compteur = 0;
+// (combien de commandes ont été jouées : un cache de l'interface sait ainsi que la partie a pu changer)
+export const commandesJouees = () => compteur;
 const session = Date.now().toString(36);
 
 // Une sauvegarde est-elle prévue juste après le geste en cours ?

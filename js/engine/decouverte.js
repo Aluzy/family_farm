@@ -42,13 +42,19 @@ const OUTILS = ['houe', 'hache', 'faux', 'pioche', 'canne'];
 const ANIMAUX = ['poule', 'mouton', 'vache'];
 const BATIMENTS = ['silo', 'poulailler', 'paturage', 'serre', 'verger', 'frigo'];
 
-// L'objet `id` est-il posé sur la carte (un bloc, un sol, ce qui est posé sur un bloc) ?
-function pose(state, id) {
-  const B = DATA.ATELIER.BLOCS;
-  for (const poses of [blocsPoses(state), solsPoses(state), blocsDessusPoses(state)]) {
-    for (const sorte of Object.values(poses)) if (sorte === id || (B[sorte] && B[sorte].objet === id)) return true;
+// L'objet `id` est-il posé sur la carte (un bloc, un sol, ce qui est posé sur un bloc) ? `memo`
+// (facultatif, le temps d'une mise à jour des découvertes) : ce qui est posé, relevé une seule fois
+// au lieu d'une fois par page (une grosse partie : des centaines de blocs).
+function poses(state) {
+  const B = DATA.ATELIER.BLOCS, out = new Set();
+  for (const p of [blocsPoses(state), solsPoses(state), blocsDessusPoses(state)]) {
+    for (const sorte of Object.values(p)) { out.add(sorte); if (B[sorte] && B[sorte].objet) out.add(B[sorte].objet); }
   }
-  return false;
+  return out;
+}
+function pose(state, id, memo) {
+  if (memo) return (memo.poses || (memo.poses = poses(state))).has(id);
+  return poses(state).has(id);
 }
 
 // (fiche 11 : une pièce portée par un membre, le sac porté, comptent aussi)
@@ -57,8 +63,8 @@ function porteParQuelquun(state, id) {
   return (q.sac && q.sac.objet === id) || Object.values(q.membres).some((c) => Array.isArray(c) && c.includes(id));
 }
 
-function objet(state, id) {
-  return countItem(state, id) > 0 || porteParQuelquun(state, id) || !!(state.frigo && state.frigo.items && state.frigo.items[id] && state.frigo.items[id].length) || pose(state, id);
+function objet(state, id, memo) {
+  return countItem(state, id) > 0 || porteParQuelquun(state, id) || !!(state.frigo && state.frigo.items && state.frigo.items[id] && state.frigo.items[id].length) || pose(state, id, memo);
 }
 
 function animal(state, id) {
@@ -75,14 +81,15 @@ function etapeAtteinte(state, etape) {
 }
 
 // La condition `cond` (« sorte:valeur ») est-elle remplie ? `evenements` : ce qui a été noté
-// (les cartes visitées).
-export function conditionRemplie(state, cond, evenements = {}) {
+// (les cartes visitées). `memo` (facultatif, un objet vide le temps de plusieurs conditions) : ce qui
+// se relève une fois pour toutes (les objets posés).
+export function conditionRemplie(state, cond, evenements = {}, memo = null) {
   const [sorte, v] = String(cond).split(':');
   switch (sorte) {
     case 'depart': return true;
-    case 'objet': return objet(state, v);
+    case 'objet': return objet(state, v, memo);
     case 'outil': return hasTool(state, v);
-    case 'culture': return objet(state, v) || objet(state, `graine_${v}`) || allPlots(state).some((p) => p.culture === v);
+    case 'culture': return objet(state, v, memo) || objet(state, `graine_${v}`, memo) || allPlots(state).some((p) => p.culture === v);
     case 'recette': {
       const r = DATA.RECETTES[v];
       return !!(r && recipeUnlocked(state, v) && state.stations && state.stations[r.station] && state.stations[r.station].construit);

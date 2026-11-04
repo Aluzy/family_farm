@@ -68,10 +68,10 @@ export function majEncyclopedie(state) {
   const premiere = !e.vues;
   e.vues = e.vues || {};
   e.lues = e.lues || {};
-  const nouvelles = [];
+  const nouvelles = [], memo = {};
   for (const [id, entree] of PAR_ID) {
     if (e.vues[id] !== undefined) continue;
-    if (!entree.decouverte.some((c) => conditionRemplie(state, c, e.evenements || {}))) continue;
+    if (!entree.decouverte.some((c) => conditionRemplie(state, c, e.evenements || {}, memo))) continue;
     e.vues[id] = state.day;
     if (premiere) e.lues[id] = true;
     else nouvelles.push(id);

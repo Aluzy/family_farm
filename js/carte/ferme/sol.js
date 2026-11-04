@@ -272,6 +272,7 @@
       this.peindreSol(r, m.tex.getContext(), m.x, m.y, this.morceauCells(r, m), true);
       m.tex.refresh();
       this.solPeint = (this.solPeint || 0) + 1;       // (les touffes d'herbe en lisent les couleurs : herbes.js)
+      (this.solSale || (this.solSale = [])).push(m);  // (ce morceau-ci : seules les touffes qui le lisent sont refaites)
     },
 
     // Le sol peint sur ce rectangle (px de carte), lu dans les morceaux peints qui le couvrent (un
@@ -334,6 +335,7 @@
         this.peindreSol(r, m.tex.getContext(), m.x, m.y, cells, false);
         m.tex.refresh();
         this.solPeint = (this.solPeint || 0) + 1;
+        (this.solSale || (this.solSale = [])).push(m);
       }
     },
 

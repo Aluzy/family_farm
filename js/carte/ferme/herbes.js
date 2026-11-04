@@ -29,6 +29,8 @@
   // un pixel d'herbe : opaque, nettement plus vert que rouge et que bleu
   const vert = (d, i) => d[i + 3] > 0 && d[i + 1] > d[i] + 6 && d[i + 1] > d[i + 2] + 10;
   const lum = (c) => c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11;
+  // (le sol seul a changé : les touffes refaites au plus une fois par HERBES_MS)
+  const HERBES_MS = 500;
 
   // Des nombres au hasard, toujours les mêmes pour une même graine (les touffes ne bougent pas
   // d'un dessin à l'autre).
@@ -39,37 +41,56 @@
 
   F.partie({
 
-    // Refait les touffes si un bloc, un sol ou le sol peint a changé.
+    // Refait les touffes si un bloc, un sol ou le sol peint a changé. Chaque source de touffes (le pied
+    // d'un mur ou d'un poteau, d'un mur de hameau, un sol posé dehors) garde les siennes : elles ne sont
+    // refaites que si la source est nouvelle, ou si un morceau du sol peint depuis (sol.js, solSale)
+    // touche le rectangle d'herbe qu'elle lit. Une rangée (une couche, son canevas) n'est refaite que si
+    // ses sources ont changé. Le sol seul a changé (on marche, des morceaux se peignent) : au plus une
+    // fois par HERBES_MS.
     syncHerbes() {
       if (!this.blocks && !this.floors) return;
-      const cle = (this.blocsN || 0) + ',' + (this.floorsN || 0) + ',' + (this.solPeint || 0);
+      const formes = (this.blocsN || 0) + ',' + (this.floorsN || 0);
+      const cle = formes + ',' + (this.solPeint || 0);
       if (cle === this.herbesCle) return;
+      const now = performance.now();
+      if (formes === this.herbesFormes && now - (this.herbesT || 0) < HERBES_MS) return;
       this.herbesCle = cle;
-      for (const o of this.herbes || []) { o.img.destroy(); this.textures.remove(o.key); }
-      this.herbes = [];
+      this.herbesFormes = formes;
+      this.herbesT = now;
+      const sales = this.solSale || [];
+      this.solSale = [];
+      const touche = (q) => q && sales.some((m) => m.x < q.x + q.w && m.x + m.w > q.x && m.y < q.y + q.h && m.y + m.h > q.y);
+      const avant = this.herbesSources || new Map(), sources = new Map();
+      // La source `id` (ses touffes faites par `faire`, qui renvoie { k, profondeur, pixels, rect }) :
+      // gardée, ou refaite.
+      const source = (id, faire) => {
+        let r = avant.get(id);
+        if (!r || touche(r.rect)) { this.herbesV = (this.herbesV || 0) + 1; r = faire(); r.v = this.herbesV; }
+        sources.set(id, r);
+      };
       const cols = this.grid.cols, B = this.blocks || new Map();
       const S = new Set([...(this.floors || new Map()).keys(), ...this.dallesHameaux()]);
       const pris = (c) => B.has(c) || S.has(c);
-      const couches = new Map();         // rangée et sorte -> { profondeur, pixels: [[x, y, couleur]] }
-      const couche = (k, profondeur) => couches.get(k) || couches.set(k, { profondeur, pixels: [] }).get(k);
 
       // Le pied d'une image debout : son image (clé, numéro), son coin haut gauche (x0, y0), le bas
       // de sa case (pied), sa case ; un poteau (une petite touffe par poteau) ou un mur.
       const debout = (key, frame, x0, y0, pied, c, poteau) => {
+        const out = { k: 'd' + Math.floor(c / cols), profondeur: pied + HERBES.dessus, pixels: [], rect: null };
         const p = this.profilHerbe(key, frame);
-        if (!p) return;
+        if (!p) return out;
         const y = y0 + p.bas + 1;
+        out.rect = { x: Math.round(x0 - HERBES.fenetre), y: Math.round(y), w: p.w + 2 * HERBES.fenetre, h: HERBES.fenetre + 2 };
         const fond = this.fondHerbe(x0 - HERBES.fenetre, y, p.w + 2 * HERBES.fenetre, HERBES.fenetre + 2);
-        if (!fond) return;
+        if (!fond) return out;
         const pieds = p.colonnes.map((k) => x0 + k).filter((x) => fond.vert(x, y));
-        const C = couche('d' + Math.floor(c / cols), pied + HERBES.dessus);
         const rng = hasard(c * 7919 + 13);
         if (poteau) {
           // (une petite touffe au milieu de chaque poteau : ses colonnes qui se suivent)
-          for (const g of groupes(pieds)) touffe(C.pixels, g[g.length >> 1], y, fond.teintes, HERBES.petite, rng);
+          for (const g of groupes(pieds)) touffe(out.pixels, g[g.length >> 1], y, fond.teintes, HERBES.petite, rng);
         } else {
-          for (let i = Math.floor(rng() * HERBES.pas[0]); i < pieds.length; i += pas(rng)) touffe(C.pixels, pieds[i], y, fond.teintes, HERBES.touffe, rng);
+          for (let i = Math.floor(rng() * HERBES.pas[0]); i < pieds.length; i += pas(rng)) touffe(out.pixels, pieds[i], y, fond.teintes, HERBES.touffe, rng);
         }
+        return out;
       };
 
       // le bas des murs de la ferme (pas des portes) et le pied des poteaux
@@ -77,41 +98,58 @@
         const poteau = e.sorte === 'barriere';
         if (!e.img || !e.img.active || (!poteau && (e.img.texture.key !== H.key || estPorte(e.sorte)))) continue;
         if (pris(e.case + cols)) continue;
-        const f = e.img.frame;
-        debout(e.img.texture.key, f.name, e.x - f.cutWidth / 2, e.y - f.cutHeight, e.y, e.case, poteau);
+        const f = e.img.frame, x0 = e.x - f.cutWidth / 2, y0 = e.y - f.cutHeight;
+        source(`b${e.case}/${e.img.texture.key}/${f.name}/${x0},${y0}/${poteau ? 1 : 0}`, () => debout(e.img.texture.key, f.name, x0, y0, e.y, e.case, poteau));
       }
 
       // le bas des murs des maisons des hameaux (HERBES.mursHameaux ; pas les portes)
-      for (const m of this.mursHameaux()) debout('hameaux', m.n, m.x - m.c.px, m.y - m.c.py, m.y, m.case, false);
+      for (const m of this.mursHameaux()) source(`h${m.case}/${m.n}/${m.x},${m.y}`, () => debout('hameaux', m.n, m.x - m.c.px, m.y - m.c.py, m.y, m.case, false));
 
       // les sols posés dehors : leur bas, leurs côtés
       for (const c of S) {
         const col = c % cols, r = Math.floor(c / cols), x0 = col * T, y0 = r * T;
-        const C = couche('s' + r, HERBES.plat);
-        const rng = hasard(c * 104729 + 7);
-        if (!pris(c + cols)) {
-          const y = y0 + T, fond = this.fondHerbe(x0 - HERBES.fenetre, y, T + 2 * HERBES.fenetre, HERBES.fenetre + 2);
-          if (fond) {
-            const pieds = [];
-            for (let x = x0; x < x0 + T; x++) if (fond.vert(x, y)) pieds.push(x);
-            for (let i = Math.floor(rng() * HERBES.pas[0]); i < pieds.length; i += pas(rng)) touffe(C.pixels, pieds[i], y, fond.teintes, HERBES.touffe, rng);
+        const bas = !pris(c + cols), gauche = col > 0 && !pris(c - 1), droite = col < cols - 1 && !pris(c + 1);
+        source(`s${c}/${bas ? 1 : 0}${gauche ? 1 : 0}${droite ? 1 : 0}`, () => {
+          const out = { k: 's' + r, profondeur: HERBES.plat, pixels: [], rect: { x: x0 - HERBES.fenetre, y: y0, w: T + 2 * HERBES.fenetre, h: T + HERBES.fenetre + 2 } };
+          const rng = hasard(c * 104729 + 7);
+          if (bas) {
+            const y = y0 + T, fond = this.fondHerbe(x0 - HERBES.fenetre, y, T + 2 * HERBES.fenetre, HERBES.fenetre + 2);
+            if (fond) {
+              const pieds = [];
+              for (let x = x0; x < x0 + T; x++) if (fond.vert(x, y)) pieds.push(x);
+              for (let i = Math.floor(rng() * HERBES.pas[0]); i < pieds.length; i += pas(rng)) touffe(out.pixels, pieds[i], y, fond.teintes, HERBES.touffe, rng);
+            }
           }
-        }
-        for (const [voisin, x, sens] of [[col > 0 && c - 1, x0 - 1, 1], [col < cols - 1 && c + 1, x0 + T, -1]]) {
-          if (voisin === false || pris(voisin)) continue;
-          const fond = this.fondHerbe(sens > 0 ? x - HERBES.fenetre + 1 : x, y0, HERBES.fenetre, T);
-          if (!fond) continue;
-          for (let y = y0; y < y0 + T - 1; y++) {
-            if (rng() >= HERBES.cotes || !fond.vert(x, y)) continue;
-            brin(C.pixels, x, y + 1, rng() < 0.5 ? 2 : 3, fond.teintes, 0, sens);
-            y += 2;                                    // (pas deux brins collés : pas de trait)
+          for (const [ici, x, sens] of [[gauche, x0 - 1, 1], [droite, x0 + T, -1]]) {
+            if (!ici) continue;
+            const fond = this.fondHerbe(sens > 0 ? x - HERBES.fenetre + 1 : x, y0, HERBES.fenetre, T);
+            if (!fond) continue;
+            for (let y = y0; y < y0 + T - 1; y++) {
+              if (rng() >= HERBES.cotes || !fond.vert(x, y)) continue;
+              brin(out.pixels, x, y + 1, rng() < 0.5 ? 2 : 3, fond.teintes, 0, sens);
+              y += 2;                                    // (pas deux brins collés : pas de trait)
+            }
           }
-        }
+          return out;
+        });
       }
+      this.herbesSources = sources;
 
-      // un canevas par couche, juste à la taille de ses touffes
+      // les couches (une par rangée et par genre) : leurs sources, dans l'ordre ; la première donne
+      // la profondeur
+      const couches = new Map();
+      for (const [id, r] of sources) {
+        const C = couches.get(r.k) || couches.set(r.k, { profondeur: r.profondeur, sig: '', pixels: [] }).get(r.k);
+        if (!r.pixels.length) continue;
+        C.sig += id + '#' + r.v + ';';
+        for (const px of r.pixels) C.pixels.push(px);
+      }
+      // un canevas par couche, juste à la taille de ses touffes ; refait si ses sources ont changé
+      const faites = this.herbesCouches || new Map(), gardees = new Map();
       for (const [k, C] of couches) {
         if (!C.pixels.length) continue;
+        const f = faites.get(k);
+        if (f && f.sig === C.sig) { gardees.set(k, f); continue; }
         let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
         for (const [x, y] of C.pixels) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
         this.herbesN = (this.herbesN || 0) + 1;
@@ -119,8 +157,11 @@
         const cv = this.textures.createCanvas(key, x1 - x0 + 1, y1 - y0 + 1), g = cv.context;
         for (const [x, y, c] of C.pixels) { g.fillStyle = c; g.fillRect(x - x0, y - y0, 1, 1); }
         cv.refresh();
-        this.herbes.push({ key, img: this.add.image(x0, y0, key).setOrigin(0).setDepth(C.profondeur) });
+        gardees.set(k, { sig: C.sig, key, img: this.add.image(x0, y0, key).setOrigin(0).setDepth(C.profondeur) });
       }
+      for (const [k, f] of faites) if (gardees.get(k) !== f) { f.img.destroy(); this.textures.remove(f.key); }
+      this.herbesCouches = gardees;
+      this.herbes = [...gardees.values()];
     },
 
     // Les murs des maisons des hameaux, dans les régions dessinées : les images de leur plan

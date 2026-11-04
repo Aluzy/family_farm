@@ -31,13 +31,15 @@ export function rucheNuits(state, tile) {
   return r ? Math.min(DATA.RUCHE.NUITS, r.nuits | 0) : 0;
 }
 
+// (une ruche posée sur `tile` : son bloc, sans parcourir tous les blocs posés)
 export function ruchePleine(state, tile) {
-  return ruchesPosees(state).includes(tile) && rucheNuits(state, tile) >= DATA.RUCHE.NUITS;
+  const B = state.blocs && typeof state.blocs === 'object' ? state.blocs : {};
+  return B[tile] === DATA.RUCHE.OBJET && rucheNuits(state, tile) >= DATA.RUCHE.NUITS;
 }
 
 // Les ruches pleines, en tas à ramasser : [{ id: 'ruche:<case>', lieu: 'ruche', ref, items }].
 export function ruchesARecolter(state) {
-  return ruchesPosees(state).filter((t) => ruchePleine(state, t))
+  return ruchesPosees(state).filter((t) => rucheNuits(state, t) >= DATA.RUCHE.NUITS)
     .map((t) => ({ id: PREFIXE + t, lieu: 'ruche', ref: t, items: { [DATA.RUCHE.PRODUIT]: DATA.RUCHE.MIEL } }));
 }
 
