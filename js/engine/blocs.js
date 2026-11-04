@@ -240,7 +240,27 @@ function rocherOuArbre(T, tile) {
   return [T.ROCHERS, T.ARBRES].some((L) => Object.values(L || {}).some((cs) => cs.includes(tile)));
 }
 
+// Un « lot » de questions sur une même partie qui ne change pas entre-temps (le mode Construire
+// teste chaque case affichée : js/farm-stage.js syncConstructible) : enLot(state, f) appelle f ;
+// pendant ce temps, ce qui parcourt tous les blocs posés (les cases couvertes, les pièces closes) n'est
+// calculé qu'une fois pour cette partie-là (une autre partie, une partie d'essai `{ ...state }` : comme
+// d'habitude). f ne doit pas changer la partie.
+let lotEtat = null, lotMemo = null;
+export function enLot(state, f) {
+  const avant = [lotEtat, lotMemo];
+  lotEtat = state; lotMemo = new Map();
+  try { return f(); } finally { [lotEtat, lotMemo] = avant; }
+}
+function memoLot(state, cle, calcul) {
+  if (state !== lotEtat || !lotMemo) return calcul();
+  if (!lotMemo.has(cle)) lotMemo.set(cle, calcul());
+  return lotMemo.get(cle);
+}
+
 export function casesCouvertes(state) {
+  return memoLot(state, 'couvertes', () => calculerCouvertes(state));
+}
+function calculerCouvertes(state) {
   const out = new Map();
   for (const [k, sorte] of Object.entries(blocsPoses(state))) {
     const s = sorteDe(sorte), t = Number(k);
@@ -382,6 +402,9 @@ let piecesCle = null, piecesListe = [];
 
 // Les pièces closes : [{ cases: [tuiles], portes: [tuiles], paillasses: [tuiles] }].
 export function piecesCloses(state) {
+  return memoLot(state, 'pieces', () => calculerPieces(state));
+}
+function calculerPieces(state) {
   const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR;
   const cle = W + ':' + JSON.stringify(B);
   if (cle === piecesCle) return piecesListe;

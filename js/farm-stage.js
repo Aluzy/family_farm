@@ -48,7 +48,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, MAP, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, LITS_SENS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
+  const { T, MAP, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, LITS_SENS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, CONSTRUCTIBLE, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
   const { clamp, pixelRatio, reducedMotion, v } = F;
 
   let game = null;          // le jeu Phaser de toutes les cartes (js/carte/jeu.js)
@@ -1053,39 +1053,74 @@
       // En mode Construire, les cases de la vue où le bloc en main se pose (au niveau où l'on
       // construit), en blanc, comme la grille de la houe ; la gomme : celles où elle reprend.
       // Recalculées quand la vue change de case, le bloc, le niveau ou la partie (un nouveau modèle).
+      // Les cases où le bloc en main se pose, en blanc (le mode Construire). Seules celles de l'écran
+      // (la vue de la caméra, et CONSTRUCTIBLE.marge cases autour) sont testées, et chaque réponse est
+      // gardée par case tant que la partie, le bloc en main et le niveau n'ont pas changé : glisser la
+      // vue ne teste que les cases qui entrent à l'écran. Les tests se font CONSTRUCTIBLE.budgetMs au
+      // plus par image (une grosse partie, sur un téléphone : ≈ 1 ms la case) ; les cases pas encore
+      // testées sont dessinées aux images suivantes.
       syncConstructible() {
         const m = this.ctx.lastModel, T0 = this.ctx.bridge && this.ctx.bridge.trace;
-        const efface = () => { if (this.constructible) { this.constructible.destroy(); this.constructible = null; } this.constructibleCle = null; };
+        const efface = () => { if (this.constructible) { this.constructible.destroy(); this.constructible = null; } this.constructibleCle = null; this.constructibleCache = null; };
         if (!m || !m.bati || m.bati.meuble || !T0 || !this.grid) { efface(); return; }
-        const now = performance.now();
-        if (this.constructibleT && now - this.constructibleT < 120) return;
-        const v = this.cameras.main.worldView, W = this.grid.cols, H = Math.ceil(this.world.h / T);
+        const K = CONSTRUCTIBLE, v = this.cameras.main.worldView, W = this.grid.cols, H = Math.ceil(this.world.h / T);
         const q = this.etagePoint ? this.etagePoint(0, 0) : { y: 0 }, dy = q.y;
         const c0 = Math.max(0, Math.floor(v.x / T) - 1), c1 = Math.min(W - 1, Math.floor(v.right / T) + 1);
         const r0 = Math.max(0, Math.floor((v.y + dy) / T) - 1), r1 = Math.min(H - 1, Math.floor((v.bottom + dy) / T) + 1);
+        if ((c1 - c0 + 1) * (r1 - r0 + 1) > 6000) { efface(); return; }          // (trop dézoomé : rien)
         const info = T0.info();
-        const cle = [c0, c1, r0, r1, m.bati.sorte, m.bati.rang, m.vueNiveau, info && info.gomme].join();
-        if (cle === this.constructibleCle && m === this.constructibleModele) return;
-        this.constructibleT = now;
+        // (les réponses gardées : valables pour ce modèle de la partie, ce bloc en main, ce niveau)
+        const valide = [m.bati.sorte, m.bati.rang, m.vueNiveau, info && info.gomme].join();
+        // (la partie a changé, le même bloc en main : les anciennes réponses restent dessinées le temps
+        // que les cases soient testées de nouveau, sans clignoter)
+        const avant = this.constructibleCache;
+        if (!avant || avant.valide !== valide || avant.modele !== m) {
+          this.constructibleCache = { valide, modele: m, cases: new Map(), ancien: avant && avant.valide === valide ? avant.cases : null };
+          this.constructibleCle = null;
+        }
+        const C = this.constructibleCache.cases, A = this.constructibleCache.ancien;
+        // (les cases de l'écran d'abord, puis la marge : glisser la vue les trouve prêtes)
+        const t0 = performance.now();
+        let reste = false, neuves = 0;
+        // (→ le nombre de cases testées à cette image)
+        const tester = (ca, cb, ra, rb) => {
+          let n = 0;
+          for (let r = ra; r <= rb && !reste; r++) {
+            for (let c = ca; c <= cb; c++) {
+              const t = r * W + c;
+              if (C.has(t)) continue;
+              if (performance.now() - t0 > K.budgetMs) { reste = true; break; }
+              C.set(t, T0.posable(t));
+              n += 1;
+            }
+          }
+          return n;
+        };
+        // (un lot : la partie ne change pas pendant ces tests, ce qui parcourt tous ses blocs n'est fait qu'une fois)
+        const lot = T0.lot || ((f) => f());
+        lot(() => {
+          neuves = tester(c0, c1, r0, r1);
+          if (!reste) tester(Math.max(0, c0 - K.marge), Math.min(W - 1, c1 + K.marge), Math.max(0, r0 - K.marge), Math.min(H - 1, r1 + K.marge));
+        });
+        // le dessin : refait quand la vue change de case, ou que des cases de l'écran viennent d'être testées
+        const cle = [c0, c1, r0, r1].join();
+        if (cle === this.constructibleCle && !neuves) return;
         this.constructibleCle = cle;
-        this.constructibleModele = m;
-        if (this.constructible) { this.constructible.destroy(); this.constructible = null; }
-        if ((c1 - c0 + 1) * (r1 - r0 + 1) > 6000) return;          // (trop dézoomé : rien)
-        // (au niveau où l'on rehausse les murs : devant le voile de ce niveau et ses blocs)
-        const g = this.add.graphics().setDepth(dy && this.etageZ ? this.etageZ(9999.5) : 1.5);
+        const voulu = info && info.gomme ? 'fait' : 'ok';
+        const g = this.constructible || (this.constructible = this.add.graphics());
+        g.clear().setDepth(dy && this.etageZ ? this.etageZ(9999.5) : 1.5);
         // (sur le voile sombre d'un niveau : plus marquées)
         g.fillStyle(0xffffff, dy ? 0.4 : 0.24);
         g.lineStyle(1, 0xffffff, dy ? 0.85 : 0.6);
-        const voulu = info && info.gomme ? 'fait' : 'ok';
         for (let r = r0; r <= r1; r++) {
           for (let c = c0; c <= c1; c++) {
-            if (T0.posable(r * W + c) !== voulu) continue;
+            const t = r * W + c;
+            if ((C.has(t) ? C.get(t) : A && A.get(t)) !== voulu) continue;
             const x = c * T, y = r * T - dy;
             g.fillRect(x + 1, y + 1, T - 2, T - 2);
             g.strokeRect(x + 1.5, y + 1.5, T - 3, T - 3);
           }
         }
-        this.constructible = g;
       }
 
       tap(wx, wy) {
