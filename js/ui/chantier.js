@@ -9,6 +9,8 @@
 // icône, ce qui en reste ; son nom au survol) ; de même les portes et les sols (GROUPES). On choisit un bloc, un appui sur une case de la carte l'y
 // pose, un appui sur un bloc le reprend. Les pièces closes sont teintées de vert sur la carte. Le moteur :
 // js/engine/blocs.js ; la carte : js/carte/ferme/chantier.js.
+// A-2 (js/ui/catalogue.js) : l'onglet ⭐ en tête (les favoris, mis d'un appui long sur une case, puis les
+// récents) ; sous les onglets, des filtres (ce que j'ai, la pièce des meubles, le style).
 
 import { DATA } from '../engine/catalog.js';
 import { atelierConstruit, craft, craftStatus } from '../engine/atelier.js';
@@ -30,6 +32,7 @@ import { defaire, surCase as surCaseMoteur } from '../engine/commandes.js';
 import { executer } from './commandes.js';
 import { itemsText } from './common.js';
 import { tel } from './consent.js';
+import { basculerFavori, estFavori, filtrer, filtres, filtresPossibles, noterRecent, sortesEtoile } from './catalogue.js';
 
 // Le niveau le plus haut où l'on construit (les rangs d'un mur rehaussé : 0 au sol, jusqu'à
 // HAUTEUR_MAX - 1 ; 1 est aussi l'étage d'une pièce à escalier), et celui où l'on construit
@@ -85,8 +88,12 @@ const duGroupe = (o, g) => (o ? o.sortes.filter((s) => groupeDe(s) === g) : []);
 // groupe (choisi : { murs, portes, sols }), que montre la case du groupe.
 let onglet = null, bulle = null;
 const choisi = {};
+const ETOILE = 'favoris';
 function onglets() {
-  const dispo = new Set(SORTES()), out = [];
+  const tout = SORTES(), dispo = new Set(tout), out = [];
+  // (A-2 : l'onglet ⭐, les favoris puis les récents, s'il y en a)
+  const etoile = sortesEtoile(tout);
+  if (etoile.length) out.push({ id: ETOILE, nom: 'Favoris', icone: '⭐', sortes: etoile });
   for (const [id, c] of Object.entries(DATA.ATELIER.CATEGORIES)) {
     const sortes = Object.keys(DATA.ATELIER.BLOCS).filter((s) => dispo.has(s) && categorieBloc(s) === id);
     const rang = (s) => (DATA.ATELIER.BLOCS[s].mur ? -1 : (c.blocs || []).indexOf(s));
@@ -96,7 +103,8 @@ function onglets() {
   return out;
 }
 function ongletOuvert(liste = onglets()) {
-  return liste.find((o) => o.id === onglet) || liste.find((o) => o.sortes.includes(buildMode)) || liste[0] || null;
+  // (sans onglet choisi : celui de la catégorie du bloc en main, pas l'onglet ⭐)
+  return liste.find((o) => o.id === onglet) || liste.find((o) => o.id !== ETOILE && o.sortes.includes(buildMode)) || liste.find((o) => o.id !== ETOILE) || liste[0] || null;
 }
 // Le bloc que montre la case du groupe `g` dans l'onglet `o` : celui en main, sinon le dernier
 // choisi, sinon le premier qu'on a encore, sinon le premier.
@@ -150,10 +158,20 @@ export function buildSlotHtml() {
 }
 
 // Une case du menu : l'icône du bloc, ce qu'il en reste (pâlie quand il n'y en a plus).
-function caseBloc(s) {
-  const n = blocsEnMain(state, s), on = s === buildMode, b = DATA.ATELIER.BLOCS[s];
+// (depuis : l'onglet ⭐, qui reste ouvert quand on y choisit un bloc ; fav : le bloc est en favori, A-2)
+function caseBloc(s, depuis = null) {
+  const n = blocsEnMain(state, s), on = s === buildMode, b = DATA.ATELIER.BLOCS[s], fav = estFavori(s);
   const st = styleInfo(styleDe(s));   // (son style d'aménagement, js/engine/styles.js)
-  return `<button type="button" class="tool-slot build-slot${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-pick" data-sorte="${s}" aria-pressed="${on}" aria-label="${b.nom} : ${n}${st ? `, style ${st.nom}` : ''}" title="${b.nom} : ${n}${st ? ` · style ${st.nom} ${st.icone}` : ''}"><span aria-hidden="true">${icone(s)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span>${st ? `<span class="build-slot-style" aria-hidden="true">${st.icone}</span>` : ''}</button>`;
+  return `<button type="button" class="tool-slot build-slot${on ? ' active' : ''}${n ? '' : ' epuise'}${fav ? ' favori' : ''}" data-action="build-pick" data-sorte="${s}"${depuis ? ` data-depuis="${depuis}"` : ''} aria-pressed="${on}" aria-label="${b.nom} : ${n}${st ? `, style ${st.nom}` : ''}${fav ? ', favori' : ''}" title="${b.nom} : ${n}${st ? ` · style ${st.nom} ${st.icone}` : ''} · appui long : ${fav ? 'retirer des' : 'mettre en'} favoris"><span aria-hidden="true">${icone(s)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span>${st ? `<span class="build-slot-style" aria-hidden="true">${st.icone}</span>` : ''}${fav ? '<span class="build-slot-fav" aria-hidden="true">⭐</span>' : ''}</button>`;
+}
+
+// Les filtres sous les onglets (A-2, js/ui/catalogue.js), pour l'onglet `o` (pas l'onglet ⭐) : « ce que
+// j'ai », la pièce (des meubles), le style ; ceux qui ont un sens pour ses blocs. '' s'il a peu de blocs.
+function filtresHtml(o) {
+  if (!o || o.id === ETOILE || o.sortes.length < 6) return '';
+  const p = filtresPossibles(o.sortes);
+  const puce = (attrs, on, icone, nom) => `<button type="button" class="build-filtre${on ? ' on' : ''}" ${attrs} aria-pressed="${on}" aria-label="${nom}" title="${nom}"><span aria-hidden="true">${icone}</span>${on ? `<span class="build-filtre-nom">${nom}</span>` : ''}</button>`;
+  return `<div class="build-filtres" role="group" aria-label="Filtres">${puce('data-action="build-filtre" data-filtre="possede"', filtres.possede, '🎒', 'Ce que j\'ai')}${p.pieces.map((x) => puce(`data-action="build-filtre" data-filtre="piece" data-valeur="${x.id}"`, filtres.piece === x.id, x.icone, x.nom)).join('')}${p.styles.length > 1 ? p.styles.map((x) => puce(`data-action="build-filtre" data-filtre="style" data-valeur="${x.id}"`, filtres.style === x.id, x.icone, `Style ${x.nom}`)).join('') : ''}</div>`;
 }
 
 // Le menu de construction, en haut de l'écran : les onglets intercalaires, puis la barre (la
@@ -167,18 +185,22 @@ export function buildChipHtml() {
     return `<button type="button" class="build-tab${on ? ' on' : ''}" role="tab" data-action="build-tab" data-cat="${t.id}" aria-selected="${on}" aria-label="${t.nom}" title="${t.nom}"><span aria-hidden="true">${t.icone}</span>${on ? `<span class="build-tab-nom">${t.nom}</span>` : ''}</button>`;
   }).join('')}</div>` : '';
   // un groupe (les murs, les portes, les sols) : une case (le bloc choisi), à la place du
-  // premier, qui ouvre sa bulle ; un seul bloc du groupe : sa case
-  const sortes = o ? o.sortes : [], vus = new Set(), rangs = [];
+  // premier, qui ouvre sa bulle ; un seul bloc du groupe : sa case. L'onglet ⭐ : chaque bloc sa case ;
+  // un autre, ses blocs passés par les filtres (A-2).
+  const etoile = !!o && o.id === ETOILE;
+  const sortes = !o ? [] : etoile ? o.sortes : filtrer(o.sortes, filtres, (x) => blocsEnMain(state, x)), vus = new Set(), rangs = [];
+  const vuesFiltres = o && !etoile ? { ...o, sortes } : o;
   const cases = sortes.map((s) => {
-    const g = groupeDe(s), l = g ? duGroupe(o, g) : [];
+    if (etoile) { rangs.push(null); return caseBloc(s, ETOILE); }
+    const g = groupeDe(s), l = g ? duGroupe(vuesFiltres, g) : [];
     if (l.length < 2) { rangs.push(null); return caseBloc(s); }
     if (vus.has(g.id)) return '';
     vus.add(g.id);
     rangs.push(g.id);
-    const v = vuDuGroupe(o, g), n = blocsEnMain(state, v), on = l.includes(buildMode);
+    const v = vuDuGroupe(vuesFiltres, g), n = blocsEnMain(state, v), on = l.includes(buildMode);
     return `<button type="button" class="tool-slot build-slot build-groupe${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-groupe" data-groupe="${g.id}" aria-expanded="${bulle === g.id}" aria-label="${g.nom} : ${DATA.ATELIER.BLOCS[v].nom}, ${n}. En choisir un autre" title="${g.nom} : en choisir un autre"><span class="build-groupe-plus" aria-hidden="true">⋯</span><span aria-hidden="true">${icone(v)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span></button>`;
   }).join('');
-  const gb = GROUPES.find((g) => g.id === bulle), lb = gb ? duGroupe(o, gb) : [];
+  const gb = GROUPES.find((g) => g.id === bulle), lb = gb && !etoile ? duGroupe(vuesFiltres, gb) : [];
   // (sa flèche vers la case du groupe : son rang dans la barre)
   const bulleHtml = lb.length > 1 ? `<div class="build-bulle" role="group" aria-label="${gb.nom}" style="--rang:${Math.max(0, rangs.indexOf(gb.id))}"><div class="build-bulle-titre">${gb.nom}</div><div class="build-bulle-grid">${lb.map((s) => caseBloc(s)).join('')}</div></div>` : '';
   const dodo = couchages(state).length;
@@ -211,7 +233,7 @@ export function buildChipHtml() {
   // appui long rend déplaçable (outilsPos : où on l'a laissée)
   const pos = outilsPos ? ` style="left:${outilsPos.x}px;top:${outilsPos.y}px;right:auto"` : '';
   const outils = `<div class="build-outils${outilsDeplace ? ' deplace' : ''}" role="toolbar" aria-label="Outils de construction (appui long : la déplacer)" title="Appui long : déplacer"${pos}><span class="build-outils-prise" aria-hidden="true">⠿</span>${annuler}${gomme}${outilTourner}${outilPiece}${choixNiveau}</div>`;
-  return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons"><button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>${outils}`;
+  return `${pose}<div class="build-dock">${tabs}<div class="build-bar" role="group" aria-label="Construire : touche une case pour y poser le bloc choisi, un bloc pour le reprendre"><div class="build-bar-cases">${filtresHtml(o)}<div class="build-bar-grid">${cases || '<span class="build-vide">Rien avec ces filtres.</span>'}</div>${bulleHtml}</div><div class="build-bar-bout"><div class="build-bar-boutons"><button type="button" class="build-bar-close" data-action="build-toggle" aria-label="Ranger : fin de la construction" title="Ranger">✕</button></div><span class="build-bar-head">${tete}</span></div></div></div>${outils}`;
 }
 
 // L'appui long sur le carré du niveau : la liste s'ouvre ; en glissant, le niveau sous le doigt
@@ -253,6 +275,53 @@ if (typeof document !== 'undefined') {
   document.addEventListener('click', (e) => {
     if (sansClic && e.target.closest && e.target.closest('.build-level-btn')) { sansClic = false; e.stopPropagation(); e.preventDefault(); }
   }, true);
+}
+
+// A-2 : un appui long sur une case du menu (un clic droit, à la souris) met son bloc en favori, ou l'en
+// retire (js/ui/catalogue.js) ; le clic qui suit le lâcher ne le prend pas en main (sansChoix).
+const APPUI_FAVORI_MS = 500;
+let sansChoix = false;
+if (typeof document !== 'undefined') {
+  let tient = null;
+  const caseDe = (e) => (e.target.closest ? e.target.closest('.build-slot[data-sorte]') : null);
+  const bascule = (sorte) => {
+    const b = DATA.ATELIER.BLOCS[sorte];
+    if (!b) return;
+    const on = basculerFavori(sorte);
+    notify(on ? `⭐ ${b.nom} : dans tes favoris (l'onglet ⭐).` : `${b.nom} : retiré de tes favoris.`, { duree: CONSEIL_MS });
+    if (navigator.vibrate) navigator.vibrate(15);
+    refresh();
+  };
+  document.addEventListener('pointerdown', (e) => {
+    const c = caseDe(e);
+    if (!c || !buildMode) return;
+    if (tient) clearTimeout(tient.timer);
+    tient = { id: e.pointerId, x0: e.clientX, y0: e.clientY, sorte: c.dataset.sorte };
+    tient.timer = setTimeout(() => {
+      if (!tient) return;
+      sansChoix = true;
+      setTimeout(() => { sansChoix = false; }, 800);
+      bascule(tient.sorte);
+      tient = null;
+    }, APPUI_FAVORI_MS);
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (tient && e.pointerId === tient.id && Math.hypot(e.clientX - tient.x0, e.clientY - tient.y0) > 8) { clearTimeout(tient.timer); tient = null; }
+  });
+  const lache = () => { if (tient) { clearTimeout(tient.timer); tient = null; } };
+  document.addEventListener('pointerup', lache);
+  document.addEventListener('pointercancel', lache);
+  document.addEventListener('contextmenu', (e) => {
+    const c = caseDe(e);
+    if (!c || !buildMode) return;
+    e.preventDefault();
+    // (sur un téléphone, l'appui long donne aussi ce menu : déjà basculé par le minuteur, ou pas encore)
+    if (sansChoix) return;
+    lache();
+    sansChoix = true;
+    setTimeout(() => { sansChoix = false; }, 800);
+    bascule(c.dataset.sorte);
+  });
 }
 
 // La fenêtre des outils : un appui long dessus (pas sur le niveau, qui a le sien) la rend
@@ -584,12 +653,26 @@ registerActions({
   'build-pick': (target) => {
     if (!buildMode) return;
     const s = target.dataset.sorte;
+    // (juste après un appui long, qui l'a mis en favori : pas de choix, A-2)
+    if (sansChoix) { sansChoix = false; return; }
     poseMeuble = null;
     bulle = null;
     const g = groupeDe(s);
     if (g) choisi[g.id] = s;
-    onglet = categorieBloc(s) || onglet;
+    // (choisi dans l'onglet ⭐ : il reste ouvert)
+    onglet = target.dataset.depuis === ETOILE ? ETOILE : categorieBloc(s) || onglet;
+    noterRecent(s);
     setBuildMode(s);
+    refresh();
+  },
+  // Un filtre sous les onglets (A-2) : « ce que j'ai » s'allume ou s'éteint ; une pièce, un style : choisi,
+  // ou retiré s'il l'était.
+  'build-filtre': (target) => {
+    if (!buildMode) return;
+    const f = target.dataset.filtre, v = target.dataset.valeur || null;
+    if (f === 'possede') filtres.possede = !filtres.possede;
+    else if (f === 'piece' || f === 'style') filtres[f] = filtres[f] === v ? null : v;
+    bulle = null;
     refresh();
   },
   // Un onglet : ses blocs ; le premier qu'on a encore en main (la bulle se ferme).
