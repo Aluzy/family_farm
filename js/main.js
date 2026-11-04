@@ -17,6 +17,7 @@ import * as engine from './engine/index.js';
 import { stageModel } from './ui/stage.js';
 import { stageWindow } from './ui/stage-windows.js';
 import { wantConsentBanner } from './ui/calme.js';
+import { garderPlusTard, relireFerme } from './ui/ferme-gardee.js';
 
 // Chaque écran s'inscrit en se chargeant (ses actions, ses écouteurs) : ils sont tous
 // chargés ici, qu'un autre module les importe ou non.
@@ -72,37 +73,47 @@ for (const it of Object.values(DATA.OBJETS)) {
 }
 setEmojiNames(Object.fromEntries(Object.entries(emojiNames).filter(([, nom]) => nom)));
 watchEmojis(); // emojis → icônes en pixel art partout dans la page (pixel-emoji.js)
-setState(loadOrCreateState());
-setTelChapter(state.campagne ? state.campagne.chapitre : null);
-syncJobs();
-setMailSeen(new Set(mailbox(state).map((l) => l.id))); // les lettres déjà là ne sont pas réannoncées
-setAlertState(alertSnapshot(state));
-catchUp(); // Lot 11 : le temps passé page fermée depuis la dernière sauvegarde
-demenagementAnnonce(); // une ancienne partie vient de quitter la ferme du grand-père
-sauvegardeAnnonce(); // une sauvegarde illisible : une nouvelle partie (l'ancienne gardée)
 
 // Lot 9 : les chapitres proposés par le mode test viennent de DATA.
 document.getElementById('test-chapter').innerHTML =
   DATA.CHAPITRES.liste.map((ch, i) => `<option value="${i + 1}">${i + 1} · ${ch.titre}</option>`).join('') +
   `<option value="${chapterCount() + 1}">Jeu libre (fin)</option>`;
 
-setInterval(persistState, AUTOSAVE_MS);
-window.addEventListener('beforeunload', persistState);
-window.addEventListener('pagehide', persistState);
-document.addEventListener('visibilitychange', onHide);
+// Le chargement (docs/perf.md) : la ferme générée de la partie, gardée sur l'appareil lors d'une visite
+// précédente, est relue avant la partie (js/ui/ferme-gardee.js : au plus 0,8 s d'attente) ; sinon elle
+// est tirée comme avant, puis gardée une fois le jeu affiché.
+async function demarrer() {
+  await relireFerme();
+  setState(loadOrCreateState());
+  setTelChapter(state.campagne ? state.campagne.chapitre : null);
+  syncJobs();
+  setMailSeen(new Set(mailbox(state).map((l) => l.id))); // les lettres déjà là ne sont pas réannoncées
+  setAlertState(alertSnapshot(state));
+  catchUp(); // Lot 11 : le temps passé page fermée depuis la dernière sauvegarde
+  demenagementAnnonce(); // une ancienne partie vient de quitter la ferme du grand-père
+  sauvegardeAnnonce(); // une sauvegarde illisible : une nouvelle partie (l'ancienne gardée)
 
-requestAnimationFrame(frame);
-requestAnimationFrame(renderLoop);
-render();
-resumeExcursion(); // jeu.html?carte=grotte&… : un niveau de la mine
+  setInterval(persistState, AUTOSAVE_MS);
+  window.addEventListener('beforeunload', persistState);
+  window.addEventListener('pagehide', persistState);
+  document.addEventListener('visibilitychange', onHide);
 
-// Suivi de session : démarre seulement si le joueur a déjà accepté ; sinon on le lui demande.
-try {
-  // FLU-17 : le bandeau attend que l'écran soit calme (histoire refermée, carte seule)
-  if (Telemetry.init({ version: GAME_VERSION }) === 'unknown') wantConsentBanner();
-  telView();
-  telDay();
-} catch (e) { /* le suivi ne doit jamais empêcher de jouer */ }
+  requestAnimationFrame(frame);
+  requestAnimationFrame(renderLoop);
+  render();
+  resumeExcursion(); // jeu.html?carte=grotte&… : un niveau de la mine
+
+  // Suivi de session : démarre seulement si le joueur a déjà accepté ; sinon on le lui demande.
+  try {
+    // FLU-17 : le bandeau attend que l'écran soit calme (histoire refermée, carte seule)
+    if (Telemetry.init({ version: GAME_VERSION }) === 'unknown') wantConsentBanner();
+    telView();
+    telDay();
+  } catch (e) { /* le suivi ne doit jamais empêcher de jouer */ }
+  garderPlusTard();
+}
+// (une erreur au démarrage reste une erreur de la page, comme avant)
+demarrer().catch((e) => setTimeout(() => { throw e; }));
 
 // Pour la console du navigateur : l'état de la partie, le moteur et le rendu ne sont
 // plus des variables globales. FF.state, FF.engine.countItem(FF.state, 'carotte'), FF.render(),
