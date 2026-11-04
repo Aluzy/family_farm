@@ -69,7 +69,7 @@ import { countItem } from '../engine/inventory.js';
 import { caseDepart, ramassables } from '../engine/atelier.js';
 import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, mesuresMeuble, piecesCloses, rehaussesPosees, sensBloc, serreMurs, serrePlaces, solsPoses, couleursVariante, varianteBloc } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable, vueMeuble } from './chantier.js';
-import { escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, sensEtage, solsEtage, toits, varianteEtage } from '../engine/etage.js';
+import { dessusEtage, escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, sensEtage, solsEtage, toits, varianteEtage } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose } from '../engine/cruche.js';
@@ -668,7 +668,9 @@ function etageModel() {
   const tri = (l) => [...l].sort((a, b) => a - b);
   const etage2 = e2.size ? { emprise: tri(e2), escaliers: escaliersEtage(state).filter((t) => e2.has(t)), hauts: tri([...e2].filter((t) => hauteurPile(state, t) >= 3)) } : null;
   return {
-    etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c), true), ...(fenetresEtage(state)[c] ? { mur: fenetresEtage(state)[c] } : {}) })), escaliers: escaliers(state), hauts: [...emprise].filter((t) => hauteurPile(state, t) >= 2).sort((a, b) => a - b), etage2 },
+    etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c), true), ...(fenetresEtage(state)[c] ? { mur: fenetresEtage(state)[c] } : {}) })), escaliers: escaliers(state), hauts: [...emprise].filter((t) => hauteurPile(state, t) >= 2).sort((a, b) => a - b), etage2,
+      // (les tableaux accrochés aux murs de l'étage)
+      tableaux: Object.entries(dessusEtage(state)).map(([c, sorte]) => ({ case: Number(c), dessin: DATA.ATELIER.BLOCS[sorte].meuble })) },
     niveau: etageVue,
     vueNiveau: buildMode && !stageInterior ? niveauBati() : null,
   };

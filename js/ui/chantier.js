@@ -20,7 +20,7 @@ import { setStageWindow, stageWindow } from './stage-windows.js';
 import { blocAt, blocDebloque, blocDessus, blocsEnMain, casesCouvertes, categorieBloc, changeMur, changeSol, couchages, couleursVariante, deplacerStatus, hauteurPile, matiereDessus, mesuresMeuble, nomVariante, rehausseStatus, poseStatus, solAt, tourneBloc, varianteBloc, variantesBloc, varianteSuivante } from '../engine/blocs.js';
 import { asleep } from '../engine/night.js';
 import { buildLevel, buildMode, etageVue, setBuildLevel, setBuildMode, setEtageVue, state } from './store.js';
-import { deplacerEtageStatus, ETAGE_BLOCS, etage2Emprise, etageCouvertes, etageEmprise, poseEtageStatus, etageBlocs, poseSolEtageStatus, solsEtage, varianteEtage } from '../engine/etage.js';
+import { deplacerEtageStatus, dessusEtage, murEtage, ETAGE_BLOCS, etage2Emprise, etageCouvertes, etageEmprise, poseEtageStatus, etageBlocs, poseSolEtageStatus, solsEtage, varianteEtage } from '../engine/etage.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -52,9 +52,12 @@ const SOLS = () => Object.keys(DATA.ATELIER.BLOCS).filter(estSolPiece);
 const solEnMain = () => niveau() >= 1 && estSolPiece(buildMode);
 // Au niveau n ≥ 1, ce que fait la case `c` : 'sol' (un sol en main : le sol du niveau 1),
 // 'rang' (un mur, une fenêtre, une porte du bas : le rehausser ; ses blocs du dessus sont les murs
-// de l'étage), 'etage' (au-dessus de la pièce de l'escalier : un bloc de l'étage).
+// de l'étage), 'etage' (au-dessus de la pièce de l'escalier : un bloc de l'étage ; un tableau sur un mur
+// rehaussé de l'étage aussi).
 function genreCase(c) {
   if (solEnMain()) return 'sol';
+  // (sur l'étage, un mur rehaussé où l'on accroche un tableau, ou d'où on le reprend : un bloc de l'étage)
+  if (niveauBati() && etageEmprise(state).has(c) && (dessusEtage(state)[c] || (DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sur === 'mur'))) return 'etage';
   if (hauteurPile(state, c) >= 1) return 'rang';
   return niveauBati() && etageEmprise(state).has(c) ? 'etage' : 'rang';
 }
@@ -523,7 +526,7 @@ function noter(inverses) {
 export function pipetteSorte(c) {
   if (!buildMode) return null;
   if (niveauBati()) {
-    const e = etageBlocs(state), couvert = etageCouvertes(state).get(c), s = e[c] || (couvert !== undefined ? e[couvert] : null);
+    const e = etageBlocs(state), couvert = etageCouvertes(state).get(c), s = dessusEtage(state)[c] || e[c] || (couvert !== undefined ? e[couvert] : null);
     return s && SORTES().includes(s) ? s : null;
   }
   if (niveau()) return null;
@@ -762,9 +765,11 @@ registerActions({
         refresh();
         return;
       }
-      // (un appui sur un meuble de l'étage, sur n'importe laquelle de ses cases, le reprend)
-      const e = etageBlocs(state)[c];
-      const reprend = (e && !changeMur(e, buildMode)) || etageCouvertes(state).has(c);
+      // (un appui sur un meuble de l'étage, sur n'importe laquelle de ses cases, le reprend ; sur un mur où
+      // pend un tableau, le tableau ; un tableau en main, sur un mur nu de l'étage : il s'y accroche)
+      const e = etageBlocs(state)[c], bm = DATA.ATELIER.BLOCS[buildMode];
+      const accroche = !!(bm && bm.sur === 'mur') && murEtage(state, c) && !dessusEtage(state)[c];
+      const reprend = !accroche && (!!dessusEtage(state)[c] || (e && !changeMur(e, buildMode)) || etageCouvertes(state).has(c));
       // (un meuble en main, sur une case libre : son aperçu, pas encore posé)
       if (!reprend && meubleEnMain()) { poseMeuble = { sorte: buildMode, case: c }; refresh(); return; }
       const r = reprend ? executer('etage.reprendre', { case: c }) : executer('etage.poser', { sorte: buildMode, case: c });

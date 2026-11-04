@@ -691,9 +691,13 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
     niveaux, le plus haut en haut ; on glisse jusqu'à l'un et on lâche pour le choisir (un
     appui simple ouvre ou ferme la liste ; `build-level-menu`, `build-level`). La vue de la
     carte suit le niveau choisi, où que soit le personnage ;
-  - en mode Construire, à l'étage (niveau 1), le menu ne propose que les blocs de l'étage (murs, portes,
-    paillasse, lanterne, barrière : `ETAGE_BLOCS`) ; ils n'ont pas d'autre effet que d'être là
-    et d'arrêter le passage (`state.etage`) ;
+  - en mode Construire, à l'étage (niveau 1), le menu ne propose que les blocs de l'étage (`ETAGE_BLOCS` :
+    murs, fenêtres, portes, paillasse, lanterne, réverbère, barrière, escalier, les meubles, les tableaux et la
+    décoration du jardin, `DECOR_ETAGE`) ; ils n'ont pas d'autre effet que d'être là et d'arrêter le passage
+    (`state.etage`). Ce qui fait quelque chose reste au sol : le four, la cuisinière, le réfrigérateur, la
+    boîte à nourriture, la meule (le message le dit), et ce qui sert dehors. Un tableau s'accroche sur un mur
+    plein de l'étage, posé à l'étage ou rehaussé depuis le bas (`murEtage`, `state.dessusEtage`) : un appui
+    le reprend avant le mur ; son mur ôté, il revient dans l'inventaire (`rangerEtage`) ;
   - l'escalier repris, l'étage s'en va : ses blocs reviennent dans l'inventaire
     (`rangerEtage`) ; au coucher, on redescend ;
   - un mur ou une porte du bas qui porte l'étage (retiré, la pièce de l'escalier s'ouvrirait et

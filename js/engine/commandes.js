@@ -52,7 +52,7 @@ import {
   blocAt, blocDessus, casesCouvertes, deplacerBloc, hauteurPile, matiereDessus, poserBloc, rehausser,
   peindreBloc, reprendreBloc, sensBloc, solAt, tournerBloc,
 } from './blocs.js';
-import { deplacerEtage, etageBlocs, etageCouvertes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
+import { deplacerEtage, dessusEtage, etageBlocs, etageCouvertes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
 import { harvest, plant, water } from './crops.js';
 import { goToSleep } from './night.js';
 
@@ -190,13 +190,16 @@ export const COMMANDES = {
       const avant = etageBlocs(state)[c];
       const r = poserEtage(state, sorte, c, sens || 0, variante || null);
       if (!r.ok) return r;
+      // (un tableau accroché sur un mur : seulement lui à reprendre)
+      if (r.dessus) return { ...r, inverses: [cmd('etage.reprendre', { case: c, attendu: sorte })] };
       return { ...r, inverses: [avant && avant !== sorte ? cmd('etage.remettre', { case: c, avant, apres: sorte }) : cmd('etage.reprendre', { case: c, attendu: sorte })] };
     },
   },
   'etage.reprendre': {
     args: { case: 'case', attendu: 'sorte?' },
     executer(state, { case: c, attendu }) {
-      const avant = etageBlocs(state)[c];
+      // (ce que reprend un appui : le tableau accroché, sinon le bloc)
+      const avant = dessusEtage(state)[c] || etageBlocs(state)[c];
       if (attendu && avant !== attendu) return fail(CHANGE);
       const r = reprendreEtage(state, c);
       if (!r.ok) return r;
