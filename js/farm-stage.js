@@ -581,6 +581,7 @@
         const fige = !!(this.ctx.lastModel && this.ctx.lastModel.bati);
         this.figer(fige);
         this.syncConstructible();               // (en mode Construire : les cases où le bloc se pose, en blanc)
+        if (this.conseilsAFaire) this.syncConseilsTextes();   // (et les étiquettes des pièces qui arrivent à l'écran)
         this.stepCharge();
         if (this.fermier && !fige) {
           this.fermier.steer(this.manette.dir());

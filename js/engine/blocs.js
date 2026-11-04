@@ -400,6 +400,14 @@ export function blocsEnMain(state, sorte) {
 
 let piecesCle = null, piecesListe = [];
 
+// Les cases des blocs posés qui ferment une pièce (murs, portes, fenêtres…) : un Set, lu à chaque case
+// des étendues (plus rapide que la sorte du bloc, cherchée à chaque fois).
+function casesQuiFerment(B) {
+  const out = new Set();
+  for (const k of Object.keys(B)) { const s = sorteDe(B[k]); if (s && s.ferme) out.add(Number(k)); }
+  return out;
+}
+
 // Les pièces closes : [{ cases: [tuiles], portes: [tuiles], paillasses: [tuiles] }].
 export function piecesCloses(state) {
   return memoLot(state, 'pieces', () => calculerPieces(state));
@@ -408,7 +416,7 @@ function calculerPieces(state) {
   const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR;
   const cle = W + ':' + JSON.stringify(B);
   if (cle === piecesCle) return piecesListe;
-  const ferme = (t) => { const s = sorteDe(B[t]); return !!(s && s.ferme); };
+  const F = casesQuiFerment(B), ferme = (t) => F.has(t);
   const faites = new Set(), out = [], max = DATA.ATELIER.PIECE_MAX;
   // une pièce touche forcément un bloc qui ferme : on part des cases voisines des blocs. Chaque
   // étendue a ses propres cases vues : celles qu'une étendue ouverte (trop grande) a vues sans
@@ -424,6 +432,10 @@ function calculerPieces(state) {
       let ouverte = false;
       while (pile.length) {
         const i = pile.pop(), c = i % W, r = Math.floor(i / W);
+        // (une case déjà parcourue, venue d'ailleurs : celle d'une étendue ouverte — une pièce close ne
+        // touche aucune autre étendue —, celle-ci l'est donc aussi ; sans refaire tout l'extérieur
+        // depuis chaque mur)
+        if (faites.has(i)) { ouverte = true; break; }
         cases.push(i);
         faites.add(i);
         if (c === 0 || r === 0 || c === W - 1 || r === H - 1 || cases.length > max) { ouverte = true; break; }
@@ -433,7 +445,7 @@ function calculerPieces(state) {
           if (!vus.has(j)) { vus.add(j); pile.push(j); }
         }
       }
-      if (ouverte) continue;
+      if (ouverte) { for (const t of vus) faites.add(t); continue; }
       const portes = [...bord].filter((t) => sorteDe(B[t]).porte);
       if (!portes.length) continue;
       out.push({ cases: cases.sort((a, b2) => a - b2), portes: portes.sort((a, b2) => a - b2), paillasses: cases.filter((t) => B[t] === 'paillasse' || (sorteDe(B[t]) && sorteDe(B[t]).lit)).sort((a, b2) => a - b2) });
@@ -521,15 +533,18 @@ export function conseilsPieces(state) {
   const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR, max = DATA.ATELIER.PIECE_MAX;
   const cle = W + ':' + JSON.stringify(B);
   if (cle === conseilsCle) return conseilsListe;
-  const ferme = (t, plus) => t === plus || !!(sorteDe(B[t]) && sorteDe(B[t]).ferme);
+  const F = casesQuiFerment(B), ferme = (t, plus) => t === plus || F.has(t);
   const voisins = (i) => { const c = i % W, r = Math.floor(i / W); return [c > 0 ? i - 1 : -1, c < W - 1 ? i + 1 : -1, r > 0 ? i - W : -1, r < H - 1 ? i + W : -1]; };
   // l'étendue de la case `d` (un mur de plus en `plus`) : ses cases, ses bords, ou null si elle est ouverte
-  const etendue = (d, plus) => {
+  // (`ouvertes` : sans mur de plus, les cases vues d'une étendue ouverte le sont toutes, rangées là ; on
+  // n'en repart pas, et une étendue qui en touche une est ouverte elle aussi)
+  const etendue = (d, plus, ouvertes = null) => {
     const cases = [], bord = new Set(), pile = [d], vus = new Set([d]);
+    const ouverte = () => { if (ouvertes) for (const t of vus) ouvertes.add(t); return null; };
     while (pile.length) {
       const i = pile.pop(), c = i % W, r = Math.floor(i / W);
       cases.push(i);
-      if (c === 0 || r === 0 || c === W - 1 || r === H - 1 || cases.length > max) return null;
+      if (c === 0 || r === 0 || c === W - 1 || r === H - 1 || cases.length > max || (ouvertes && ouvertes.has(i))) return ouverte();
       for (const j of voisins(i)) {
         if (j < 0) continue;
         if (ferme(j, plus)) { bord.add(j); continue; }
@@ -539,13 +554,13 @@ export function conseilsPieces(state) {
     return { cases, bord };
   };
   // les enceintes d'aujourd'hui (fermées, avec ou sans porte)
-  const dedans = new Set(), enceintes = [];
+  const dedans = new Set(), ouvertes = new Set(), enceintes = [];
   for (const k of Object.keys(B)) {
     const b = Number(k);
     if (!ferme(b)) continue;
     for (const d of voisins(b)) {
-      if (d < 0 || ferme(d) || dedans.has(d)) continue;
-      const e = etendue(d, -1);
+      if (d < 0 || ferme(d) || dedans.has(d) || ouvertes.has(d)) continue;
+      const e = etendue(d, -1, ouvertes);
       if (!e) continue;
       for (const t of e.cases) dedans.add(t);
       enceintes.push(e);

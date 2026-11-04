@@ -170,3 +170,18 @@ Mesuré avec la partie du jour 54, en simulant un téléphone (Pixel 7, zoom ≈
 4 × de ralentissement, sur 3 s : en glissant la vue, 1 155 → 59 ms passées sur les cases blanches (la pire
 image : 286 → 119 ms) ; à l'ouverture de Construire, 279 → 74 ms (la pire image : 810 → 525 ms, le reste
 est le calcul des conseils des pièces, une fois).
+
+## Les conseils des pièces et les pièces closes : l'extérieur parcouru une fois
+
+Les pièces closes (`piecesCloses`) et les conseils du mode Construire (`conseilsPieces`, js/engine/blocs.js)
+partent des cases voisines de chaque mur et s'étendent jusqu'à trouver une pièce fermée, ou l'extérieur
+(un bord du monde, plus de PIECE_MAX cases). L'extérieur était parcouru de nouveau, jusqu'à PIECE_MAX
+cases, depuis chaque mur qui le touche. Désormais, une étendue qui arrive sur une case d'une étendue
+ouverte déjà vue est ouverte elle aussi (une pièce close ne touche aucune autre étendue), sans tout
+reparcourir ; les cases des blocs qui ferment sont relevées une fois (un Set). Les résultats sont les
+mêmes (vérifié sur la partie du jour 54). Sur ordinateur (médianes) : pièces closes 21 → 13 ms, conseils
+39 → 14 ms ; à 4 × de ralentissement, à l'ouverture de Construire, conseils 272 → 50 ms.
+
+Leurs étiquettes sur la carte (« Maison · 2 couchages ») sont des textes nets, chers à dessiner : seules
+celles près de l'écran sont faites, les autres quand la vue s'en approche (`syncConseilsTextes`,
+js/carte/ferme/chantier.js) : 119 → 31 ms à l'ouverture, à 4 × de ralentissement.
