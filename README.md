@@ -130,10 +130,20 @@ chaque bâtiment a son bouton **?** (rôle, consommation, production).
 
 ### Jeu en ligne : le compte
 
-Le jeu solo fonctionne sans compte, sur l'appareil. Pour le jeu en ligne (à venir : inviter un ami,
-rejoindre sa ferme), ⚙️ Options › « 🌐 Jeu en ligne » : on donne son adresse e-mail et on reçoit un
-lien de connexion, sans mot de passe. Le compte se supprime au même endroit. Côté serveur et mise en
-service : `worker/README.md`.
+Le jeu solo fonctionne sans compte, sur l'appareil. Pour le jeu en ligne, ⚙️ Options › « 🌐 Jeu en
+ligne » : on donne son adresse e-mail et on reçoit un lien de connexion, sans mot de passe. Le compte
+se supprime au même endroit. Côté serveur et mise en service : `worker/README.md`.
+
+Connecté, on peut **mettre sa ferme en ligne**. C'est une copie : la partie solo reste sur l'appareil,
+intacte. On y entre ensuite par « Entrer » (`jeu.html?monde=…`). Dans un monde en ligne :
+- le monde est figé (son horloge ne tourne pas) ;
+- pour l'instant, on y **construit ensemble** : le mode Construire est ouvert ;
+- chaque geste est joué tout de suite, puis envoyé au monde, et ceux des autres arrivent en moins
+  d'une seconde ;
+- le bandeau « 🌐 » dit si l'on est à jour et ramène à sa ferme solo.
+
+Les autres gestes de la ferme et l'invitation d'un ami viendront ensuite. Code : `js/ui/en-ligne.js`
+et `js/ui/synchro.js` ; tests : `tests/test-synchro.mjs` et `tests/deux-joueurs.mjs` (deux onglets).
 
 ### Absence et onglet en arrière-plan
 

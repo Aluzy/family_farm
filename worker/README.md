@@ -145,7 +145,22 @@ par requête dépendent de l'offre Cloudflare. Si la première commande échoue 
 « exceeded CPU »), il faudra garder la carte tirée avec le monde, ou passer à l'offre payante des
 Workers.
 
-La suite : E-2 (le jeu qui se connecte à un monde), E-3 (inviter un ami : un bâtisseur).
+**Le jeu** (E-2 : `js/ui/en-ligne.js`, `js/ui/synchro.js`) entre dans un monde par `jeu.html?monde=<id>`.
+Il garde deux parties :
+- la partie **confirmée**, celle du monde : l'instantané, puis les événements ;
+- la partie **locale**, celle qu'on voit : la confirmée, plus ses commandes pas encore revenues,
+  rejouées par-dessus.
+
+Un geste est joué tout de suite, puis envoyé. Le geste d'un autre joueur, ou un refus, refait la
+partie locale. Coupé, le jeu se reconnecte, demande ce qu'il a manqué depuis sa révision et renvoie ses
+commandes en attente. Rien n'est sauvegardé sur l'appareil en ligne. Pour l'instant, on y construit
+ensemble (le mode Construire).
+
+`node tests/deux-joueurs.mjs` : deux onglets, deux comptes, le vrai Worker et ses Durable Objects (sur
+`node:sqlite`) derrière les routes du navigateur. Chaque mur posé est vu chez l'autre en moins d'une
+seconde, les parties confirmées sont celle du monde, et la partie solo n'est pas touchée.
+
+La suite : E-3 (inviter un ami : un bâtisseur), puis les autres gestes de la ferme en ligne.
 
 ## Mise en route du rapport (une seule fois)
 
