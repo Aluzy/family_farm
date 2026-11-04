@@ -138,3 +138,20 @@ mur, il vérifiait qu'il ne couperait pas la pièce de l'escalier (`etageEnPeril
 les pièces closes de la ferme, deux fois, à chaque case (≈ 26 ms la case avec 665 blocs posés). Seul un
 bloc posé dans la pièce de l'escalier peut la couper : la vérification n'a lieu que là. Une case coûte
 maintenant ≈ 0,3 ms, et une image de Construire ≈ 60 à 80 ms à 4 × de ralentissement (tests/engine/perf-ferme.test.mjs).
+
+## Une grosse partie, près des ruches et dans Construire (lot 1)
+
+Mesuré avec la même partie (jour 54), sur ordinateur à 4 × de ralentissement (le temps passé dans chaque
+calcul, sur 6 s de jeu) :
+
+| Calcul | Avant | Après | Le correctif |
+| --- | --- | --- | --- |
+| Les découvertes de l'Encyclopédie (toutes les ½ s) | 296 ms | 21 ms | les objets posés relevés une fois par mise à jour, pas une fois par page (`decouverte.js`, `memo`) |
+| Les ruches pleines (modèle de la carte, Les choses à faire) | 125 ms | 23 ms | `ruchePleine` lit le bloc de sa case, sans parcourir tous les blocs pour chaque ruche (`ruches.js`) |
+| L'étage pour la carte | 116 ms | 53 ms | l'emprise de l'étage, celle du niveau 2, les pièces d'un niveau gardées tant que les pièces closes, l'étage et les hauteurs n'ont pas changé (`etage.js` ; tests/engine/caches.test.mjs) |
+| Les touffes d'herbe, en marchant | 512 ms | 44 ms | chaque source de touffes (un mur, un poteau, un sol) garde les siennes ; refaites seulement si un morceau du sol peint depuis touche l'herbe qu'elle lit ; une rangée n'est redessinée que si ses sources ont changé ; au plus deux fois par seconde quand seul le sol a changé (`herbes.js`, `sol.js` : `solSale`) |
+| Les cases blanches de Construire | 640 ms | 324 ms | le niveau et l'emprise de l'étage lus une fois par passage sur les cases (`chantier.js`, `leLotTrace`) |
+
+La première image de Construire passe de ≈ 560 ms à ≈ 280 ms. Reste, à l'ouverture : les conseils des
+pièces (`conseilsPieces`, ≈ 270 ms une fois par état des blocs), et, partout, le tri et le dessin des
+≈ 4 700 images de la scène (lot 2).

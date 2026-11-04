@@ -133,8 +133,13 @@ export function escaliersEtage(state) {
 // L'emprise du niveau 2 : les pièces du niveau 2 (piecesNiveau) où un escalier de l'étage est
 // posé, et les murs qui les bordent. On y monte par cet escalier ; on y marche sur ses sols
 // (state.solsHauts[2]), entre les murs du bas qui montent au niveau 3. Un Set de tuiles.
+let e2Pieces = null, e2Cle = null, e2Set = null;
 export function etage2Emprise(state) {
+  // (gardée tant que les pièces closes, les blocs de l'étage et les hauteurs des murs n'ont pas changé)
+  const pieces = piecesCloses(state), cle = JSON.stringify(etageBlocs(state)) + JSON.stringify(state.hauteurs || null);
+  if (pieces === e2Pieces && cle === e2Cle) return e2Set;
   const out = new Set(), E = etageBlocs(state), un = etageEmprise(state);
+  e2Pieces = pieces; e2Cle = cle; e2Set = out;
   if (!un.size) return out;
   for (const p of piecesNiveau(state, 2)) {
     if (!p.cases.some((t) => E[t] === 'escalier' && un.has(t))) continue;
@@ -162,10 +167,17 @@ function avecMurs(state, cases) {
 
 // L'emprise de l'étage : les cases des pièces closes où un escalier est posé, et les murs et
 // les portes qui les bordent (les huit voisines). Un Set de tuiles.
+// (gardée tant que les pièces closes n'ont pas changé : la même liste, venue du cache de piecesCloses,
+// veut dire les mêmes blocs posés, escaliers compris. Le mode Construire la lit pour chaque case
+// affichée. Les appelants ne font que la lire.)
+let empPieces = null, empSet = null;
 export function etageEmprise(state) {
+  const pieces = piecesCloses(state);
+  if (pieces === empPieces) return empSet;
   const out = new Set();
   const B = blocsPoses(state);
-  for (const p of piecesCloses(state)) {
+  empPieces = pieces; empSet = out;
+  for (const p of pieces) {
     if (!p.cases.some((t) => B[t] === 'escalier')) continue;
     for (const t of avecMurs(state, p.cases)) out.add(t);
   }
@@ -493,9 +505,15 @@ export const niveauxSols = () => Array.from({ length: Math.max(0, DATA.ATELIER.H
 
 // Les pièces du niveau `n` : les pièces closes dont tout le pourtour (murs, fenêtres, portes)
 // monte au niveau n (hauteurPile ≥ n + 1). [{ cases, bord }]
+// (gardées tant que les pièces closes et les hauteurs des murs n'ont pas changé ; par niveau)
+let nivPieces = null, nivCle = null, nivListes = new Map();
 export function piecesNiveau(state, n = 1) {
+  const pieces = piecesCloses(state), cle = JSON.stringify(state.hauteurs || null);
+  if (pieces !== nivPieces || cle !== nivCle) { nivPieces = pieces; nivCle = cle; nivListes = new Map(); }
+  if (nivListes.has(n)) return nivListes.get(n);
   const out = [];
-  for (const p of piecesCloses(state)) {
+  nivListes.set(n, out);
+  for (const p of pieces) {
     const dedans = new Set(p.cases), bord = [...avecMurs(state, p.cases)].filter((t) => !dedans.has(t));
     if (bord.length && bord.every((t) => hauteurPile(state, t) >= n + 1)) out.push({ cases: p.cases, bord });
   }
