@@ -80,6 +80,7 @@ import { alerteFaim, alerteSortie, vitessePied } from '../engine/equipement.js';
 import { plantationModele } from './plantation.js';
 import { runAction } from './events.js';
 import { calecheDepuisCarte, calecheToucheeDepuisCarte, helerCaleche } from './caleche.js';
+import { mesurer } from './chrono.js';
 
 
 // Le Poulailler et l'Étable, bâtis (js/engine/blocs.js, etatEnclos) : les cases libres de
@@ -1145,7 +1146,8 @@ export function renderStage() {
     return;
   }
   FarmStage.show();
-  FarmStage.update(stageModel());
+  const modele = mesurer('interface : modèle de la carte', stageModel);
+  mesurer('carte : mise à jour (le modèle reçu)', () => FarmStage.update(modele));
   // Déplacement demandé par une notification ou un indicateur : sans animation si la carte
   // vient d'apparaître. Tant que la scène n'est pas prête, la demande attend.
   if (stagePan && FarmStage.ready()) {

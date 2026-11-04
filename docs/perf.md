@@ -185,3 +185,24 @@ mêmes (vérifié sur la partie du jour 54). Sur ordinateur (médianes) : pièce
 Leurs étiquettes sur la carte (« Maison · 2 couchages ») sont des textes nets, chers à dessiner : seules
 celles près de l'écran sont faites, les autres quand la vue s'en approche (`syncConseilsTextes`,
 js/carte/ferme/chantier.js) : 119 → 31 ms à l'ouverture, à 4 × de ralentissement.
+
+## Construire très lent sur le téléphone : la mesure sur l'appareil, la scène allégée
+
+Sur le téléphone du joueur, avec la partie du jour 54 : 12 s pour ouvrir Construire, 21 s pour poser un
+bloc. La simulation (ordinateur à 4 × de ralentissement) en donne trente fois moins : elle dessine sans
+processeur graphique et son processeur est plus rapide. D'où :
+
+- **La mesure sur l'appareil** (mode test › 📏 Mesures › « Mesurer Construire », js/ui/mesures.js) : le jeu
+  fait seul les gestes de Construire (l'ouvrir, attendre, poser un bloc près du centre de l'écran, prendre la
+  gomme, l'effacer, reposer la gomme, fermer). Pour chacun : le délai jusqu'à l'image affichée après lui,
+  les images des secondes suivantes, les tâches longues, et le temps passé par poste (js/ui/chrono.js :
+  le rendu de l'interface, le modèle de la carte, sa mise à jour, la commande du moteur, la sauvegarde,
+  chaque méthode de la scène de la carte, le dessin de Phaser). « Copier le rapport » le copie.
+- **La scène allégée** (`cullScene`, js/carte/ferme/decor.js) : le masquage hors de la vue ne couvrait que le
+  décor (arbres, rochers, touffes, blocs) ; il couvre maintenant toutes les images de la scène (les sols
+  posés, les dessus des murs, les cultures, la terre, les bêtes, les abeilles…), revu quand la vue bouge et
+  toutes les 300 ms. Avec la partie du jour 54 : 2 040 → 622 objets dessinés par image, 560 → 175 appels de
+  dessin (Pixel 7 simulé).
+- **Par geste** : les étiquettes des pièces gardées d'un dessin à l'autre (seules celles qui changent sont
+  refaites) ; reprendre un mur ne recalcule les pièces (« mélange » de deux pièces, étage en péril) que s'il
+  touche une pièce close, ou borde la pièce de l'escalier.

@@ -788,7 +788,10 @@
       if (!this.conseilsGfx) this.conseilsGfx = this.add.graphics().setDepth(1e5 - 2);
       const g = this.conseilsGfx, cols = this.grid.cols;
       g.clear();
-      for (const t of this.conseilsTextes || []) t.destroy();
+      // (les étiquettes déjà faites sont gardées, rangées par place et texte : une pose ne refait que
+      // celles qui changent ; fermer Construire les cache sans les défaire)
+      const avant = this.conseilsFaits || new Map();
+      for (const t of avant.values()) t.setVisible(false);
       this.conseilsTextes = [];
       this.conseilsAFaire = null;
       if (!k) return;
@@ -817,6 +820,11 @@
       for (const p of k.pieces) etiquette(p.cases, p.texte);
       // (le mur qui manque : un petit « mur ? » au-dessus de chaque trou)
       for (const c of k.trous) { const [x, y] = carre(c); this.conseilsAFaire.push({ x: x + T / 2, y: y - 1, texte: 'mur ?', origine: [0.5, 1], style: { fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '6px', color: '#ffffff', backgroundColor: 'rgba(193,68,46,0.9)', padding: { x: 2, y: 0 } } }); }
+      // (celles qui ne sont plus : défaites)
+      const cleDe = (e) => e.x + ',' + e.y + ',' + (e.style.wordWrap ? e.style.wordWrap.width : '') + ',' + e.texte;
+      const voulues = new Set(this.conseilsAFaire.map(cleDe));
+      for (const [cle, t] of avant) if (!voulues.has(cle)) { t.destroy(); avant.delete(cle); }
+      this.conseilsFaits = avant;
       this.syncConseilsTextes();
     },
 
@@ -829,7 +837,11 @@
         const e = L[i];
         if (e.x < v.x - mx || e.x > v.right + mx || e.y < v.y - my || e.y > v.bottom + my) continue;
         L.splice(i, 1);
-        this.conseilsTextes.push(this.add.text(e.x, e.y, e.texte, e.style).setOrigin(e.origine[0], e.origine[1]).setDepth(1e5 - 1).setResolution(8));
+        const cle = e.x + ',' + e.y + ',' + (e.style.wordWrap ? e.style.wordWrap.width : '') + ',' + e.texte, F = this.conseilsFaits || (this.conseilsFaits = new Map());
+        let t = F.get(cle);
+        if (t) t.setVisible(true);
+        else { t = this.add.text(e.x, e.y, e.texte, e.style).setOrigin(e.origine[0], e.origine[1]).setDepth(1e5 - 1).setResolution(8); F.set(cle, t); }
+        this.conseilsTextes.push(t);
       }
     },
 

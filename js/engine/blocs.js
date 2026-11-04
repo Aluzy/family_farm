@@ -1051,12 +1051,17 @@ export function reprendreBloc(state, tile, opts) {
   }
   // un mur ou une porte entre une maison et un bâtiment (ou deux bâtiments) : il reste
   if (!dessus && bloc && sorteDe(bloc).ferme && !(opts && opts.force)) {
-    const melange = melangeSansMur(state, tile);
+    // (seul un mur qui touche une pièce close peut, retiré, en réunir deux ; seul un mur qui borde la
+    // pièce de l'escalier peut l'ouvrir : ailleurs, les pièces ne sont pas recalculées pour le savoir)
+    const W = farmTerrain(state).LARGEUR, dansUne = new Set();
+    for (const p of piecesCloses(state)) for (const t of p.cases) dansUne.add(t);
+    const touche = [tile - 1, tile + 1, tile - W, tile + W].some((j) => dansUne.has(j));
+    const melange = touche ? melangeSansMur(state, tile) : null;
     if (melange) return fail(melange);
     // un mur (une porte) qui porte l'étage : retiré, la pièce de l'escalier s'ouvrirait et ce qui
     // est posé à l'étage tomberait ; il reste
     const { [tile]: _ote, ...reste } = blocsPoses(state);
-    if (etageEnPeril(state, reste)) return fail(`${sorteDe(bloc).nom} : il porte l'étage. Reprends d'abord ce qui est posé à l'étage au-dessus.`);
+    if (etageEmprise(state).has(tile) && etageEnPeril(state, reste)) return fail(`${sorteDe(bloc).nom} : il porte l'étage. Reprends d'abord ce qui est posé à l'étage au-dessus.`);
   }
   const sens = !dessus && bloc ? sensBloc(state, tile) : 0;
   const variante = !dessus && bloc ? varianteBloc(state, tile) : null;
