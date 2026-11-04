@@ -207,7 +207,8 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
   en chemin) ; le compte, au-dessus du coin tenu, dit ce qu'il en manque (« 6 / 10 · il en manque
   4 »), comme le message de la pose. Les murs déjà posés comptent comme faits : on agrandit ou on
   ferme une pièce commencée. La porte se pose ensuite sur un mur, d'un appui, comme avant.
-- **Annuler** : le bouton ↶ au bout de la barre défait la dernière opération au sol, et ainsi de
+- **Annuler** : le bouton ↶ au bout de la barre défait la dernière opération, au sol comme sur l'étage (chaque geste : poser,
+  reprendre, tourner, repeindre, déplacer, un tracé), et ainsi de
   suite jusqu'aux 30 dernières (oubliées quand on range le mode Construire) : un bloc posé ou
   repris d'un appui, un mur, un sol ou une porte changés (le nouveau repris, l'ancien reposé ; une
   fenêtre percée rend son mur), un tracé entier, les blocs fabriqués sur place (ils reviennent dans
@@ -247,12 +248,13 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
   Annuler les remet. Un tracé, avec ou sans gomme, laisse tels quels les murs et les sols déjà
   posés : le moteur accepterait d'y poser le même bloc (pour rehausser un mur, changer un sol),
   le tracé, lui, ne le fait pas (`tracePosable` les dit « fait » avant de demander au moteur).
-- **La pipette** : au sol, un appui maintenu sans bouger (`LONG_PRESS_MS`) sur un bloc posé le prend
+- **La pipette** : au sol et sur l'étage, un appui maintenu sans bouger (`LONG_PRESS_MS`) sur un bloc posé le prend
   en main, son onglet ouvert (« 🎯 Mur en bois en main · 4 ») ; un meuble, sur n'importe laquelle
   de ses cases, s'il en reste un en main. Le bloc n'est pas repris : l'appui simple, lui, le
   reprend toujours. Pratique pour continuer un mur avec la même matière. La carte : le minuteur de
   `onDown` (js/farm-stage.js) ; la page : `pipetteSorte` et l'action `bloc-pipette`.
-- **Déplacer un bloc posé** : au sol, un glissement parti d'un meuble (sur n'importe laquelle de
+- **Déplacer un bloc posé** : au sol et sur l'étage (`deplacerEtage`, `deplacerEtageStatus`,
+  la commande `etage.deplacer` ; le doigt suit l'étage, vu plus haut), un glissement parti d'un meuble (sur n'importe laquelle de
   ses cases) ou d'un bloc seul (la lanterne, le réverbère, le four, la ruche, la paillasse… : pas
   un mur, une porte, un sol, une barrière, le silo, qui se tracent et se gomment) l'emporte case
   par case, quel que soit le bloc en main ; son emprise est marquée en vert s'il tient là, en rouge
@@ -689,9 +691,17 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
     niveaux, le plus haut en haut ; on glisse jusqu'à l'un et on lâche pour le choisir (un
     appui simple ouvre ou ferme la liste ; `build-level-menu`, `build-level`). La vue de la
     carte suit le niveau choisi, où que soit le personnage ;
-  - en mode Construire, à l'étage (niveau 1), le menu ne propose que les blocs de l'étage (murs, portes,
-    paillasse, lanterne, barrière : `ETAGE_BLOCS`) ; ils n'ont pas d'autre effet que d'être là
-    et d'arrêter le passage (`state.etage`) ;
+  - en mode Construire, à l'étage (niveau 1), le menu ne propose que les blocs de l'étage (`ETAGE_BLOCS` :
+    murs, fenêtres, portes, paillasse, lanterne, réverbère, barrière, escalier, les meubles, les tableaux et la
+    décoration du jardin, `DECOR_ETAGE`) ; ils n'ont pas d'autre effet que d'être là et d'arrêter le passage
+    (`state.etage`). Ce qui fait quelque chose reste au sol : le four, la cuisinière, le réfrigérateur, la
+    boîte à nourriture, la meule (le message le dit), et ce qui sert dehors. Un tableau s'accroche sur un mur
+    plein de l'étage, posé à l'étage ou rehaussé depuis le bas (`murEtage`, `state.dessusEtage`) : un appui
+    le reprend avant le mur ; son mur ôté, il revient dans l'inventaire (`rangerEtage`) ;
+  - la vie à l'étage : ses lanternes et ses réverbères s'allument la nuit comme en bas (`etageLumieres`,
+    `stepLanterns`), ses fenêtres s'éclairent (`fenetres.js`) ; ce qui y est posé compte dans le style de
+    la ferme (`styles.js` `decorFerme`), pas dans le coin d'une table du bas (`decorAutour`). Le repas avec
+    des invités se tient encore à une table du rez-de-chaussée (les invités ne montent pas l'escalier) ;
   - l'escalier repris, l'étage s'en va : ses blocs reviennent dans l'inventaire
     (`rangerEtage`) ; au coucher, on redescend ;
   - un mur ou une porte du bas qui porte l'étage (retiré, la pièce de l'escalier s'ouvrirait et

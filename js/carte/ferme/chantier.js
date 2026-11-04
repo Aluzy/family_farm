@@ -448,6 +448,8 @@
       const V = this.lumiere;
       const list = [];
       for (const e of (this.blocks || new Map()).values()) if (LUMIERES.includes(e.sorte)) list.push(e);
+      // (et celles de l'étage, js/carte/ferme/etage.js)
+      for (const e of this.etageLumieres || []) if (e.img && e.img.active) list.push(e);
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
       const luit = this.ctx.lastModel && this.ctx.lastModel.fermeLuit;
       if (!list.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !this.calecheSprite && !luit) return;

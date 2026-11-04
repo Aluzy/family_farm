@@ -1599,7 +1599,7 @@ test('ferme générée : les meubles du Marché se posent à l\'étage, sur tout
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
   poserPorte(s, p.porte);
   assert(poserBloc(s, 'escalier', p.dedans).ok);
-  assert(!ETAGE_BLOCS.includes('meuble_tableau_1') && ETAGE_BLOCS.includes('meuble_table'), 'les meubles du sol, pas les tableaux');
+  assert(ETAGE_BLOCS.includes('meuble_tableau_1') && ETAGE_BLOCS.includes('meuble_table') && !ETAGE_BLOCS.includes('refrigerateur'), 'les meubles, les tableaux (sur les murs de l\'étage), pas le réfrigérateur');
   const t = (z.r + 3) * W + z.c + 1;                       // (la table : 3 cases vers la droite)
   const r = poserEtage(s, 'meuble_table', t);
   assert(r.ok, r.error);

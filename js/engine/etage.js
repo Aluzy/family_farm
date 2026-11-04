@@ -27,10 +27,29 @@ import { blocsEnMain, blocsPoses, changeMur, changeSol, empriseMeuble, genreBloc
 import { farmTerrain } from './terrain.js';
 
 // Les blocs qui se posent à l'étage : un escalier (vers le niveau 2), des murs, des portes, une paillasse, une lanterne, un
-// réverbère, une barrière, et les meubles qui se posent au sol (pas les tableaux, accrochés à un mur ;
-// pas le réfrigérateur, qui reste en bas, où la famille mange).
+// réverbère, une barrière, les meubles qui se posent au sol, les tableaux (sur un mur de l'étage :
+// state.dessusEtage) et la décoration du jardin (des bancs, des tables, des bacs, des jarres… : DECOR_ETAGE).
+// Ce qui fait quelque chose reste au sol (le créateur, « tout ce qui est possible au sol l'est aussi à
+// l'étage », novembre 2026) : le réfrigérateur, la boîte à nourriture, le four, la cuisinière, la meule, et
+// tout ce qui sert dehors (l'élevage, les machines, l'énergie, les arbres, la ruche, le puits, le silo).
+export const DECOR_ETAGE = ['bac_fleurs', 'table_jardin', 'chaise_jardin', 'banc_jardin', 'banc_rondins', 'table_rondins', 'chaise_peinte', 'jarre_coquillages', 'lanterne_papier', 'bassin_nenuphars', 'banc_pierre', 'jardiniere_pierre', 'pergola', 'bac_lavande'];
 export const ETAGE_BLOCS = ['escalier', 'mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'porte', 'porte_chene', 'porte_vitree', 'porte_grange', 'porte_bleue', 'porte_fer', 'porte_ecurie', 'porte_blanche', 'paillasse', 'lanterne', 'candelabre', 'barriere']
-  .concat(Object.keys(DATA.ATELIER.BLOCS).filter((k) => DATA.ATELIER.BLOCS[k].meuble && !DATA.ATELIER.BLOCS[k].sur && !DATA.ATELIER.BLOCS[k].frigo));
+  .concat(Object.keys(DATA.ATELIER.BLOCS).filter((k) => DATA.ATELIER.BLOCS[k].meuble && !DATA.ATELIER.BLOCS[k].frigo))
+  .concat(DECOR_ETAGE.filter((k) => DATA.ATELIER.BLOCS[k]));
+
+// Ce qui est accroché sur les murs de l'étage (les tableaux) : { [tuile]: sorte } (state.dessusEtage), comme
+// state.blocsDessus en bas.
+export function dessusEtage(state) {
+  return state.dessusEtage && typeof state.dessusEtage === 'object' ? state.dessusEtage : {};
+}
+const surMur = (sorte) => !!(DATA.ATELIER.BLOCS[sorte] && DATA.ATELIER.BLOCS[sorte].sur === 'mur');
+// La case `tile` est-elle un mur plein de l'étage (où s'accroche un tableau) ? Un mur posé à l'étage (pas
+// une fenêtre, une porte, la paroi vitrée), ou un mur du bas rehaussé jusqu'à l'étage.
+export function murEtage(state, tile) {
+  const e = etageBlocs(state)[tile];
+  if (e) return murPlein(e) && !(DATA.ATELIER.BLOCS[e] && DATA.ATELIER.BLOCS[e].porte);
+  return etageEmprise(state).has(tile) && hauteurPile(state, tile) >= 2;
+}
 
 // Les blocs posés à l'étage : { [tuile]: sorte }.
 export function etageBlocs(state) {
@@ -251,8 +270,16 @@ export function couchagesEtage(state) {
 // Peut-on poser `sorte` à l'étage, sur `tile` (dans le sens `sens` : un meuble qui tourne) ? { ok, raison }
 export function poseEtageStatus(state, sorte, tile, sens = 0) {
   const s = DATA.ATELIER.BLOCS[sorte];
-  if (!s || !ETAGE_BLOCS.includes(sorte)) return { ok: false, raison: `${s ? s.nom : 'Ce bloc'} : ne se pose pas à l'étage.` };
+  if (!s || !ETAGE_BLOCS.includes(sorte)) return { ok: false, raison: `${s ? s.nom : 'Ce bloc'} : ne se pose pas à l'étage${s && (s.station || s.frigo || s.boite) ? ' (il sert en bas, où la famille cuisine et mange)' : ''}.` };
   if (!etageEmprise(state).has(tile)) return { ok: false, raison: 'À l\'étage, on ne bâtit qu\'au-dessus d\'une pièce close qui a un escalier.' };
+  // (un tableau : sur un mur de l'étage, un seul par mur)
+  if (s.sur === 'mur') {
+    if (!murEtage(state, tile)) return { ok: false, raison: `${s.nom} : à accrocher sur un mur de l'étage.` };
+    if (dessusEtage(state)[tile]) return { ok: false, raison: 'Un tableau est déjà accroché ici.' };
+    if (blocsEnMain(state, sorte) < 1) return { ok: false, raison: `Plus de ${s.nom.toLowerCase()} : achète-en un.` };
+    return { ok: true };
+  }
+  if (dessusEtage(state)[tile]) return { ok: false, raison: 'Un tableau est accroché ici : reprends-le d\'abord.' };
   if (blocsPoses(state)[tile] === 'escalier') return { ok: false, raison: 'Ici, c\'est le haut de l\'escalier.' };
   if (hauteurPile(state, tile) >= 2) return { ok: false, raison: 'Le mur du bas monte jusqu\'ici : il est déjà le mur de l\'étage.' };
   // (le second escalier : dans une pièce dont les murs montent tous au niveau 2)
@@ -277,6 +304,11 @@ export function poserEtage(state, sorte, tile, sens = 0, variante = null) {
   const st = poseEtageStatus(state, sorte, tile, sens);
   if (!st.ok) return fail(st.raison);
   takeItem(state, DATA.ATELIER.BLOCS[sorte].objet, 1);
+  if (surMur(sorte)) {
+    if (!state.dessusEtage || typeof state.dessusEtage !== 'object') state.dessusEtage = {};
+    state.dessusEtage[tile] = sorte;
+    return { ok: true, sorte, case: tile, etage: true, dessus: true };
+  }
   const ancien = etageBlocs(state)[tile], dans = fenetresEtage(state)[tile];
   if (!state.etage || typeof state.etage !== 'object') state.etage = {};
   // une fenêtre dans un mur plein : il reste autour d'elle
@@ -302,6 +334,13 @@ export function poserEtage(state, sorte, tile, sens = 0, variante = null) {
 // Reprend le bloc de l'étage posé sur `tile` (ou le meuble qui couvre `tile`) : son objet revient
 // dans l'inventaire.
 export function reprendreEtage(state, tile) {
+  // (un tableau accroché : repris d'abord, le mur reste)
+  const haut = dessusEtage(state)[tile];
+  if (haut) {
+    delete state.dessusEtage[tile];
+    addItem(state, DATA.ATELIER.BLOCS[haut].objet, 1);
+    return { ok: true, sorte: haut, case: tile, etage: true, dessus: true };
+  }
   if (!etageBlocs(state)[tile] && etageCouvertes(state).has(tile)) tile = etageCouvertes(state).get(tile);
   const sorte = etageBlocs(state)[tile];
   if (!sorte) return fail('Il n\'y a pas de bloc ici.');
@@ -316,10 +355,41 @@ export function reprendreEtage(state, tile) {
   return { ok: true, sorte, case: tile, etage: true, ...(mur && estFen(sorte) ? { reste: mur } : {}), ...(sens ? { sens } : {}), ...(variante ? { variante } : {}) };
 }
 
+// Déplacer un bloc de l'étage (le mode Construire : un glissement, comme en bas : blocs.js deplacerBloc) :
+// celui de la case `de` (un meuble : une de ses cases) repris, puis reposé avec sa case d'ancrage sur
+// `vers`, dans son sens et sa couleur. S'il ne tient pas là, il est reposé où il était : { ok: false,
+// error }. Sinon { ok: true, sorte, de (son ancienne case d'ancrage), vers, etage }.
+export function deplacerEtage(state, de, vers) {
+  const r = reprendreEtage(state, de);
+  if (!r.ok) return r;
+  const sens = r.sens || 0, v = r.variante || null;
+  const remet = () => poserEtage(state, r.sorte, r.case, sens, v);
+  if (r.case === vers) { remet(); return { ok: true, sorte: r.sorte, de: r.case, vers, etage: true }; }
+  const st = poseEtageStatus(state, r.sorte, vers, sens);
+  if (!st.ok) { remet(); return fail(st.raison); }
+  const p = poserEtage(state, r.sorte, vers, sens, v);
+  if (!p.ok) { remet(); return p; }
+  return { ok: true, sorte: r.sorte, de: r.case, vers, etage: true };
+}
+
+// Le bloc de l'étage de la case `de` tiendrait-il, ancré sur `vers` ? Sur une copie de la partie : rien ne
+// change. { ok, raison, cases } (cases : celles qu'il couvrirait, pour l'aperçu).
+export function deplacerEtageStatus(state, de, vers) {
+  const copie = structuredClone(state);
+  const r = reprendreEtage(copie, de);
+  if (!r.ok) return { ok: false, raison: r.error, cases: [vers] };
+  const cases = empriseMeuble(copie, r.sorte, vers, r.sens || 0) || [vers];
+  const st = poseEtageStatus(copie, r.sorte, vers, r.sens || 0);
+  return { ok: st.ok, raison: st.ok ? '' : st.raison, cases };
+}
+
 // Tourner d'un quart de tour le meuble de l'étage de la case `tile` (une de ses cases), comme en bas
 // (blocs.js tournerBloc) : un meuble qui ne tient pas dans le sens suivant passe au sens d'après ;
 // aucun ne tient : il reste comme il est. → { ok, sorte, case, sens, etage } ou un refus.
 export function tournerEtage(state, tile, pas = 1) {
+  // (un tableau accroché à un mur de l'étage : il suit le mur, comme en bas)
+  const haut = dessusEtage(state)[tile];
+  if (haut) return fail(raisonFixe(state, tile, haut));
   if (!etageBlocs(state)[tile] && etageCouvertes(state).has(tile)) tile = etageCouvertes(state).get(tile);
   const sorte = etageBlocs(state)[tile];
   if (!sorte) return fail('Il n\'y a pas de meuble ici.');
@@ -363,6 +433,14 @@ export function rangerEtage(state) {
     if (state.sensEtage) delete state.sensEtage[k];
     if (state.teintesEtage) delete state.teintesEtage[k];
   }
+  // (un tableau dont le mur n'est plus là, ou hors de l'étage : il revient aussi)
+  let tableaux = 0;
+  for (const k of Object.keys(dessusEtage(state))) {
+    if (murEtage(state, Number(k))) continue;
+    addItem(state, DATA.ATELIER.BLOCS[state.dessusEtage[k]].objet, 1);
+    delete state.dessusEtage[k];
+    tableaux += 1;
+  }
   // (les sols d'un niveau hors d'une pièce de ce niveau, ou de l'étage : ils reviennent aussi)
   let sols = 0;
   for (const n of niveauxSols()) {
@@ -376,7 +454,7 @@ export function rangerEtage(state) {
       sols += 1;
     }
   }
-  return hors.length + sols;
+  return hors.length + sols + tableaux;
 }
 
 // Les blocs de l'étage hors de son emprise (une case qui n'y est plus, ou celle de l'escalier) :

@@ -351,14 +351,16 @@
         if (!this.drag.fort && !this.drag.labour) this.drag.arrose = this.arroseStart(wp.x, wp.y);
         if (!this.drag.fort && !this.drag.labour && !this.drag.arrose) this.drag.seme = this.semeStart(wp.x, wp.y);
         if (!this.drag.fort && !this.drag.labour && !this.drag.arrose && !this.drag.seme) this.drag.trace = this.traceStart(wp.x, wp.y);
-        // La pipette (mode Construire, au sol) : un appui maintenu sans bouger sur un bloc posé le
+        // La pipette (mode Construire, au sol et sur l'étage) : un appui maintenu sans bouger sur un bloc posé le
         // prend en main (js/ui/chantier.js, bloc-pipette) ; le tracé qui en partait est oublié.
         const mb = this.ctx.lastModel && this.ctx.lastModel.bati;
         if (mb && !mb.rang && !mb.meuble && !this.drag.fort && !this.drag.labour) {
           const hb = this.hitAt(wp.x, wp.y);
           // déplacer : un glissement parti d'un meuble ou d'un bloc seul (js/ui/chantier.js, deplacable)
           const dp = !this.drag.trace && hb && hb.bati !== undefined && this.ctx.bridge.trace ? this.ctx.bridge.trace.deplacable(hb.bati) : null;
-          if (dp) this.drag.deplace = { ...dp, prise: hb.bati, vers: dp.ancre, ok: true };
+          // (sur l'étage, il se voit plus haut : `dy` px, comme un tracé)
+          const qd = this.etagePoint ? this.etagePoint(wp.x, wp.y) : wp;
+          if (dp) this.drag.deplace = { ...dp, prise: hb.bati, vers: dp.ancre, ok: true, dy: qd.y - wp.y };
           if (hb && hb.bati !== undefined && this.ctx.bridge.trace && this.ctx.bridge.trace.pipette(hb.bati)) {
             const d = this.drag;
             d.holdTimer = setTimeout(() => {
@@ -852,8 +854,8 @@
       // son emprise marquée en vert s'il tient là, en rouge sinon (js/ui/chantier.js, deplacePossible,
       // calculé sur une copie de la partie, seulement quand la case visée change).
       deplaceTo(d, wp) {
-        const D = d.deplace, W = this.grid.cols;
-        const dc = Math.floor(wp.x / T) - (D.prise % W), dr = Math.floor(wp.y / T) - Math.floor(D.prise / W);
+        const D = d.deplace, W = this.grid.cols, dy = D.dy || 0;
+        const dc = Math.floor(wp.x / T) - (D.prise % W), dr = Math.floor((wp.y + dy) / T) - Math.floor(D.prise / W);
         const col = (D.ancre % W) + dc, row = Math.floor(D.ancre / W) + dr;
         if (col < 0 || col >= W || row < 0) return;
         const vers = row * W + col;
@@ -862,7 +864,7 @@
         const p = vers === D.ancre ? { ok: true, cases: [] } : this.ctx.bridge.trace.deplacePossible(D.ancre, vers);
         D.ok = p.ok;
         this.clearTraceMarks();
-        this.traceMarks = (p.cases || []).map((c) => this.add.rectangle((c % W) * T + T / 2, Math.floor(c / W) * T + T / 2, T - 3, T - 3, p.ok ? 0xb6f08c : 0xff8a70, 0.55)
+        this.traceMarks = (p.cases || []).map((c) => this.add.rectangle((c % W) * T + T / 2, Math.floor(c / W) * T + T / 2 - dy, T - 3, T - 3, p.ok ? 0xb6f08c : 0xff8a70, 0.55)
           .setStrokeStyle(1, p.ok ? 0xeaffd8 : 0xffe0d8, 0.95).setDepth(1e5));
       }
 
