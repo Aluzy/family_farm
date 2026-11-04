@@ -32,7 +32,7 @@ export function runAction(action, target, e) {
   }
   // E-2 : dans un monde en ligne, pour l'instant, on construit ensemble (js/ui/en-ligne.js)
   if (enLigne) {
-    const refus = actionPermise(action, SOMMEIL_BLOQUEES, !!buildMode);
+    const refus = actionPermise(action, SOMMEIL_BLOQUEES);
     if (refus) { notify(`🌐 ${refus}`); return; }
   }
   const run = ACTIONS[action];

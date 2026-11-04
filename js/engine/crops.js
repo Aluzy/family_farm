@@ -512,14 +512,15 @@ export function noteWateredPlots(state) {
 
 // Récolte : la parcelle est libérée. `auto` = true pour une automatisation
 // (gratuite) ; le clic du joueur coûte de l'énergie (version 1.8).
-export function harvest(state, plotId, auto = false) {
+// `direct` (E-5, en ligne) : la récolte va droit à l'inventaire commun, sans attendre le personnage.
+export function harvest(state, plotId, auto = false, direct = false) {
   const plot = findPlot(state, plotId);
   if (!plot) return fail('Parcelle introuvable.');
-  return harvestPlot(state, plot, auto);
+  return harvestPlot(state, plot, auto, direct);
 }
 
 // harvest() sur la parcelle elle-même.
-export function harvestPlot(state, plot, auto = false) {
+export function harvestPlot(state, plot, auto = false, direct = false) {
   if (!plot.culture) return fail('Rien à récolter ici.');
   if (!isMature(plot)) return fail('Pas encore mûre.');
   if (!auto && !canAfford(state, 'recolter')) return fail(TIRED); // version 1.8
@@ -538,7 +539,7 @@ export function harvestPlot(state, plot, auto = false) {
   // Version 1.18 : au clic, sur la carte, la récolte reste sur sa case jusqu'à ce que le
   // personnage la ramasse ; sinon (automatisation, Serre, sans carte) elle va à l'inventaire
   // (le blé d'abord au Silo).
-  const aRamasser = deposit(state, 'parcelle', plot.case, items, !auto && plot.lieu === 'potager' && Number.isInteger(plot.case));
+  const aRamasser = deposit(state, 'parcelle', plot.case, items, !auto && !direct && plot.lieu === 'potager' && Number.isInteger(plot.case));
   plot.culture = null;
   plot.stade = 0;
   plot.arrose = false;

@@ -4,8 +4,8 @@
 // rejouent chez eux (le moteur est déterministe : F0-4). Décisions du créateur :
 //   F.1 : un coffre commun (l'inventaire de la partie du monde est à tous ses membres) ;
 //   F.2 : le temps du monde est figé quand personne n'y joue (rien ne tourne sans joueur) ; les
-//         commandes ne font pas avancer l'horloge ; la nuit partagée viendra plus tard (nuit.dormir
-//         n'est pas encore acceptée) ;
+//         commandes ne font pas avancer l'horloge ; E-5 : la nuit est partagée : quand tous les joueurs
+//         connectés sont couchés, le monde joue lui-même la nuit (nuit.partagee, acteur « monde ») ;
 //   F.3 : un compte pour jouer en ligne (comptes.mjs) : un membre est un compte ;
 //   F.4 : un monde est créé par copie volontaire d'une partie locale, qui reste intacte.
 //
@@ -28,6 +28,9 @@
 //   → { t: 'pos', x, y }                          ← aux autres : { t: 'pos', acteur, nom, x, y } (E-4 : où regarde
 //                                                   chaque joueur ; relayé, jamais écrit ; POS_MS au plus souvent)
 //                                                   ← aux autres, à son départ : { t: 'parti', acteur }
+//   → { t: 'coucher', oui }                       ← à tous : { t: 'couches', comptes, connectes } (E-5 : qui est
+//                                                   couché ; gardé sur sa connexion, jamais écrit) ; tous
+//                                                   couchés : à tous, { t: 'evt', acteur: 'monde', cmd: nuit.partagee }
 
 import { COMMANDES, executerCommande, GAME_VERSION, migrate } from '../../js/engine/index.js';
 
@@ -42,8 +45,18 @@ export const MONDE = {
   INVITATIONS_MAX: 20,      // liens en attente au plus par monde
 };
 
-// Les commandes que le monde partagé accepte (la nuit partagée viendra plus tard : F.2).
-export const COMMANDES_MONDE = new Set(Object.keys(COMMANDES).filter((t) => t !== 'nuit.dormir'));
+// Les commandes que le monde partagé accepte d'un joueur. La nuit ne se demande pas : le monde la joue
+// quand tous sont couchés (E-5 : nuit.partagee) ; nuit.dormir (la nuit qui défile, en solo) n'a pas cours.
+export const COMMANDES_MONDE = new Set(Object.keys(COMMANDES).filter((t) => t !== 'nuit.dormir' && t !== 'nuit.partagee'));
+export const ACTEUR_MONDE = 'monde';
+
+// E-5 : les lits. `sockets` : [{ compte, couche }] (les connexions des membres) → qui est là, qui est
+// couché (un compte l'est si l'une de ses connexions l'est) et si la nuit vient (tous couchés).
+export function etatDesLits(sockets) {
+  const connectes = new Set(), couches = new Set();
+  for (const s of sockets) { connectes.add(s.compte); if (s.couche) couches.add(s.compte); }
+  return { connectes: connectes.size, couches: [...couches], nuit: connectes.size > 0 && couches.size === connectes.size };
+}
 // Les rôles : le propriétaire et les bâtisseurs jouent toutes les commandes du monde.
 export const ROLES = { proprietaire: 'proprietaire', batisseur: 'batisseur' };
 
@@ -181,14 +194,24 @@ export class MondeRegistre {
     if (L.length >= MONDE.COMMANDES_PAR_MINUTE) return { ok: false, erreur: 'Trop d\'actions d\'un coup : attends un instant.' };
     L.push(t);
     this.debits.set(compte, L);
+    return this.jouer(compte, { id: c.id, type: c.type, args: c.args }, t);
+  }
+
+  // E-5 : la nuit partagée (tous les joueurs connectés sont couchés), jouée par le monde lui-même.
+  nuit() {
+    const t = this.maintenant();
+    return this.jouer(ACTEUR_MONDE, { id: `nuit-${this.rev + 1}-${t.toString(36)}`, type: 'nuit.partagee', args: {} }, t);
+  }
+
+  // Joue la commande `cmd` au nom d'`acteur` ; acceptée, elle prend la révision suivante et va au journal.
+  jouer(acteur, cmd, t) {
     const s = this.charger();
-    const cmd = { id: c.id, type: c.type, args: c.args };
     const r = executerCommande(s, cmd);
     if (!r.ok) return { ok: false, erreur: r.error || 'Refusé.' };
     this.rev += 1;
-    this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts) VALUES (?, ?, ?, ?, ?)', this.rev, c.id, compte, JSON.stringify(cmd), t);
+    this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts) VALUES (?, ?, ?, ?, ?)', this.rev, cmd.id, acteur, JSON.stringify(cmd), t);
     if (this.rev % MONDE.INSTANTANE_TOUS === 0) this.instantane();
-    return { ok: true, rev: this.rev, evt: { t: 'evt', rev: this.rev, acteur: compte, cmd } };
+    return { ok: true, rev: this.rev, evt: { t: 'evt', rev: this.rev, acteur, cmd } };
   }
 
   // Un instantané de la partie à la révision courante ; le journal plus ancien que JOURNAL_GARDE
@@ -309,7 +332,10 @@ export class Monde {
 
   async webSocketMessage(ws, message) {
     const compte = (this.ctx.getTags(ws) || [])[0] || '';
-    traiterMessage(this.registre, compte, message, (m) => envoyer(ws, m), (m) => this.diffuser(m), (m) => this.diffuser(m, compte));
+    traiterMessage(this.registre, compte, message, (m) => envoyer(ws, m), (m) => this.diffuser(m), (m) => this.diffuser(m, compte), {
+      coucher: (oui) => { attacher(ws, { couche: !!oui }); this.lits(); },
+      accueilli: () => this.lits(),
+    });
   }
 
   async webSocketClose(ws, code) {
@@ -317,6 +343,24 @@ export class Monde {
     try { ws.close(code === 1005 ? 1000 : code, 'au revoir'); } catch (e) { /* (déjà fermée) */ }
     // (E-4 : son dernier onglet fermé, son avatar s'en va chez les autres)
     if (!this.ctx.getWebSockets(compte).some((w) => w !== ws)) this.diffuser({ t: 'parti', acteur: compte }, compte);
+    // (E-5 : celui qui part ne retient plus la nuit)
+    this.lits(ws);
+  }
+
+  // E-5 : qui est couché, dit à tous ; tous couchés, la nuit passe (et chacun se relève). `sauf` : une
+  // connexion qui se ferme.
+  lits(sauf = null) {
+    const ws = this.ctx.getWebSockets().filter((w) => w !== sauf && this.registre.membre((this.ctx.getTags(w) || [])[0]));
+    const e = etatDesLits(ws.map((w) => ({ compte: (this.ctx.getTags(w) || [])[0], couche: !!(lireAttache(w) || {}).couche })));
+    if (e.nuit) {
+      for (const w of ws) attacher(w, { couche: false });
+      const r = this.registre.nuit();
+      if (r.ok) this.diffuser(r.evt);
+      else this.diffuser({ t: 'erreur', erreur: `La nuit n'a pas pu passer : ${r.erreur}` });
+      this.diffuser({ t: 'couches', comptes: [], connectes: e.connectes });
+      return;
+    }
+    this.diffuser({ t: 'couches', comptes: e.couches, connectes: e.connectes });
   }
 
   // Un message à tous les membres connectés (`sauf` : pas à ce compte-là).
@@ -334,9 +378,17 @@ export class Monde {
 function envoyer(ws, m) {
   try { ws.send(JSON.stringify(m)); } catch (e) { /* (connexion perdue) */ }
 }
+// (E-5 : ce qu'une connexion garde d'elle, qui survit à l'hibernation du Durable Object)
+function lireAttache(ws) {
+  try { return ws.deserializeAttachment ? ws.deserializeAttachment() : null; } catch (e) { return null; }
+}
+function attacher(ws, a) {
+  try { if (ws.serializeAttachment) ws.serializeAttachment({ ...(lireAttache(ws) || {}), ...a }); } catch (e) { /* (rien) */ }
+}
 
-// Un message d'un joueur (le protocole, en tête). `repondre(m)` : à lui seul ; `diffuser(m)` : à tous.
-export function traiterMessage(registre, compte, message, repondre, diffuser, diffuserAutres = diffuser) {
+// Un message d'un joueur (le protocole, en tête). `repondre(m)` : à lui seul ; `diffuser(m)` : à tous ;
+// `lits` (E-5) : { coucher(oui), accueilli() }, ce que le Durable Object fait des lits.
+export function traiterMessage(registre, compte, message, repondre, diffuser, diffuserAutres = diffuser, lits = null) {
   let m;
   try { m = JSON.parse(typeof message === 'string' ? message : new TextDecoder().decode(message)); } catch (e) { repondre({ t: 'erreur', erreur: 'Message illisible.' }); return; }
   if (!m || typeof m !== 'object') return;
@@ -346,6 +398,12 @@ export function traiterMessage(registre, compte, message, repondre, diffuser, di
     repondre({ t: 'bienvenue', rev: a.rev, role: a.role, titre: a.titre, proprietaire: a.proprietaire, moi: compte, membres: a.membres });
     if (a.partie) repondre({ t: 'instantane', rev: a.rev, partie: a.partie });
     else repondre({ t: 'rattrape', evts: a.evts });
+    if (lits) lits.accueilli();
+    return;
+  }
+  if (m.t === 'coucher') {
+    // E-5 : se coucher (ou se relever) ; le Durable Object compte les lits
+    if (registre.membre(compte) && lits) lits.coucher(m.oui === true);
     return;
   }
   if (m.t === 'cmd') {

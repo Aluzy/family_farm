@@ -137,7 +137,12 @@ se supprime au même endroit. Côté serveur et mise en service : `worker/README
 Connecté, on peut **mettre sa ferme en ligne**. C'est une copie : la partie solo reste sur l'appareil,
 intacte. On y entre ensuite par « Entrer » (`jeu.html?monde=…`). Dans un monde en ligne :
 - le monde est figé (son horloge ne tourne pas) ;
-- pour l'instant, on y **construit ensemble** : le mode Construire est ouvert ;
+- on y **construit ensemble** (le mode Construire) et l'on y **cultive le potager** : labourer, semer,
+  arroser (aussi en glissant, et « tout »), récolter, remplir la cruche. La récolte va droit au coffre
+  commun. Les autres gestes (les animaux, la cuisine, le Marché…) viendront ensuite ;
+- **la nuit est partagée** : « 🛏 Se coucher » dans le bandeau. Quand tous les joueurs connectés sont
+  couchés, toute la nuit passe d'un coup : les plantes arrosées poussent, et chacun se réveille au jour
+  suivant. Le bandeau dit combien sont couchés (« 1/2 ») ;
 - chaque geste est joué tout de suite, puis envoyé au monde, et ceux des autres arrivent en moins
   d'une seconde ;
 - les autres joueurs sont dessinés là où ils regardent : leur personnage et leur prénom ;
@@ -146,7 +151,7 @@ intacte. On y entre ensuite par « Entrer » (`jeu.html?monde=…`). Dans un mon
 Le propriétaire **invite un ami** par le bouton 👥 du bandeau. Il crée un lien, valable 7 jours et
 utilisable une fois, à envoyer. En l'ouvrant, l'ami entre dans le monde pour y construire ; s'il
 n'est pas connecté, l'invitation attend sa connexion. Le propriétaire peut aussi retirer un membre :
-sa connexion est coupée et il retrouve sa ferme solo. Les autres gestes de la ferme viendront ensuite. Code : `js/ui/en-ligne.js`
+sa connexion est coupée et il retrouve sa ferme solo. Code : `js/ui/en-ligne.js`
 et `js/ui/synchro.js` ; tests : `tests/test-synchro.mjs` et `tests/deux-joueurs.mjs` (deux onglets).
 
 ### Absence et onglet en arrière-plan
@@ -194,8 +199,9 @@ ce que fait le joueur en mode Construire est une commande `{ id, type, args }` (
 vérifiée puis jouée par `executerCommande(state, cmd)` avec les fonctions du moteur existantes. Elle
 rend les commandes inverses qui la défont : le bouton ↶ Annuler du chantier (`js/ui/chantier.js`)
 les joue. Le potager et la nuit passent aussi par des commandes, sans inverse (`potager.planter`,
-`potager.arroser`, `potager.recolter`, `nuit.dormir` : les boutons, la carte, les tracés, la cruche,
-le bouton Dormir). L'interface les émet par `executer(type, args)` (`js/ui/commandes.js`, qui leur
+`potager.arroser`, `potager.recolter`, `potager.labourer`, `potager.toutPlanter`, `potager.toutArroser`,
+`potager.toutRecolter`, `cruche.remplir`, `nuit.dormir` : les boutons, la carte, les tracés, la cruche,
+le bouton Dormir ; `nuit.partagee`, la nuit d'un monde en ligne, que seul le monde joue). L'interface les émet par `executer(type, args)` (`js/ui/commandes.js`, qui leur
 donne un identifiant unique et **sauvegarde la partie juste après chaque commande réussie** : une seule
 sauvegarde par geste, même pour un tracé de plusieurs blocs ; la sauvegarde de toutes les 10 s reste
 pour le reste, le temps qui passe). Une partie lourde (le monde vu en entier, 5 000 blocs : 204 Ko) se

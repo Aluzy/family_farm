@@ -42,8 +42,15 @@
    récolte, une nuit dormie ne se défont pas ; l'énergie dépensée non plus) :
      potager.planter  { parcelle, culture }    semer une parcelle (son identifiant), à la main
      potager.arroser  { parcelle }
-     potager.recolter { parcelle }
+     potager.recolter { parcelle, direct? }     (direct : à l'inventaire, sans attendre le personnage)
+     potager.labourer { case }                 labourer une case d'herbe (ou reboucher une parcelle vide)
+     potager.toutPlanter  { lieu, culture }    « Planter partout », « Arroser tout », « Récolter tout »
+     potager.toutArroser  { lieu }
+     potager.toutRecolter { lieu, direct? }
+     cruche.remplir   { case }                 remplir la cruche au puits de cette case
      nuit.dormir      { }                       se coucher, la nuit (elle défile jusqu'au réveil)
+     nuit.partagee    { }                       E-5 : toute la nuit d'un coup, à n'importe quelle heure
+                                                (le monde en ligne la joue, quand tous sont couchés)
 */
 
 import { DATA } from './catalog.js';
@@ -53,8 +60,10 @@ import {
   peindreBloc, reprendreBloc, sensBloc, solAt, tournerBloc,
 } from './blocs.js';
 import { deplacerEtage, dessusEtage, etageBlocs, etageCouvertes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
-import { harvest, plant, water } from './crops.js';
-import { goToSleep } from './night.js';
+import { harvest, hoe, plant, water } from './crops.js';
+import { harvestAll, plantAll, waterAll } from './automation.js';
+import { remplirCruche } from './cruche.js';
+import { goToSleep, nuitPartagee } from './night.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
 
@@ -82,6 +91,8 @@ const CONTROLES = {
   niveau: (v) => v === 1 || v === 2,
   texte: (v) => typeof v === 'string' && v.length > 0,
   culture: (v) => typeof v === 'string' && !!DATA.CULTURES[v],
+  lieu: (v) => v === 'potager' || v === 'serre',
+  drapeau: (v) => v === true || v === false,
 };
 
 export const COMMANDES = {
@@ -298,12 +309,36 @@ export const COMMANDES = {
     executer: (state, { parcelle }) => water(state, parcelle),
   },
   'potager.recolter': {
-    args: { parcelle: 'texte' },
-    executer: (state, { parcelle }) => harvest(state, parcelle),
+    args: { parcelle: 'texte', direct: 'drapeau?' },
+    executer: (state, { parcelle, direct = false }) => harvest(state, parcelle, false, direct),
+  },
+  'potager.labourer': {
+    args: { case: 'case' },
+    executer: (state, { case: c }) => hoe(state, c),
+  },
+  'potager.toutPlanter': {
+    args: { lieu: 'lieu', culture: 'culture' },
+    executer: (state, { lieu, culture }) => plantAll(state, lieu, culture),
+  },
+  'potager.toutArroser': {
+    args: { lieu: 'lieu' },
+    executer: (state, { lieu }) => waterAll(state, lieu),
+  },
+  'potager.toutRecolter': {
+    args: { lieu: 'lieu', direct: 'drapeau?' },
+    executer: (state, { lieu, direct = false }) => harvestAll(state, lieu, direct),
+  },
+  'cruche.remplir': {
+    args: { case: 'case' },
+    executer: (state, { case: c }) => remplirCruche(state, c),
   },
   'nuit.dormir': {
     args: {},
     executer: (state) => goToSleep(state),
+  },
+  'nuit.partagee': {
+    args: {},
+    executer: (state) => nuitPartagee(state),
   },
 };
 

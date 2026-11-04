@@ -90,6 +90,7 @@ export const GAME_ACTIONS = {
   'pet-remove': 'Retirer un animal de compagnie',
   'buy-tech': 'Acquérir une technologie',
   'sleep': 'Dormir',
+  'monde-coucher': 'Dormir', // (E-5 : se coucher dans un monde en ligne)
   'build-fridge': 'Construire un bâtiment',
   'build-station': 'Construire un bâtiment',
   'upgrade': 'Améliorer ou agrandir',

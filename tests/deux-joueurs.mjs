@@ -5,12 +5,15 @@
 // Ce qu'il vérifie :
 //   1. le joueur A met sa ferme en ligne (⚙️ Options › Jeu en ligne) et y entre ;
 //   2. E-3 : A crée un lien d'invitation (👥 › Inviter un ami) ; B l'ouvre et entre dans le monde :
-//      les deux y sont, bandeau « à jour », mode Construire ouvert ;
+//      les deux y sont, bandeau « à jour » ; ils ouvrent le mode Construire ;
 //   3. un mur posé chez l'un est vu chez l'autre en moins d'une seconde, dans les deux sens ;
 //   3b. l'avatar de l'autre joueur est dessiné là où il regarde (E-4) ;
 //   4. la partie confirmée de chacun est celle du monde (la même empreinte) ;
+//   4b. E-5 : B récolte une carotte mûre : elle va au coffre commun, A voit la parcelle vide ;
+//   4c. E-5 : A se couche, la nuit attend B ; B se couche : la nuit passe chez les deux (le jour suivant),
+//       et les parties confirmées sont encore celle du monde ;
 //   5. la partie solo de A, sur l'appareil, n'est jamais touchée en ligne ;
-//   6. une action hors de Construire est refusée en ligne (un message, rien ne change) ;
+//   6. une action pas encore en ligne (nourrir les poules) est refusée (un message, rien ne change) ;
 //   7. E-3 : A retire B : la connexion de B est coupée, B revient à sa ferme solo.
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
 
@@ -21,10 +24,10 @@ import { dirname, extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { addItem, DATA, empreintePartie, testFarmMap, testFermeConstruite } from '../js/engine/index.js';
-import { garden } from './engine/aide.mjs';
+import { garden, plantRipe, reglagesDuJeu } from './engine/aide.mjs';
 import W from '../worker/src/index.js';
 import { Comptes } from '../worker/src/comptes.mjs';
-import { Monde, traiterMessage } from '../worker/src/monde.mjs';
+import { Monde } from '../worker/src/monde.mjs';
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const saute = (r) => { console.log(`Test à deux sauté : ${r}`); process.exit(0); };
@@ -70,9 +73,11 @@ const A = await compte('alex@exemple.fr'), B = await compte('sam@exemple.fr');
 
 // la partie solo de chacun : la ferme d'essai (F0-6)
 const s0 = garden();
+reglagesDuJeu();   // (le monde joue avec les réglages du jeu, comme le navigateur : B-1)
 testFarmMap(s0, '42');
 testFermeConstruite(s0);
 addItem(s0, DATA.ATELIER.BLOCS.mur_pierre.objet, 20);
+plantRipe(s0, 'potager-1', 'carotte');   // (E-5 : une carotte à récolter en ligne)
 const SAUVEGARDE = JSON.stringify({ v: s0.version, t: Date.now(), s: s0 });
 
 let navigateur;
@@ -91,14 +96,15 @@ async function onglet(qui) {
   await ctx.routeWebSocket(/127\.0\.0\.1:8787\/mondes\/.*\/ws/, async (ws) => {
     const u = new URL(ws.url()), id = u.pathname.split('/')[2];
     const moi = await comptes.registre.moi(u.searchParams.get('session'));
-    const reg = mondes.get(id).registre;
     if (!sockets.has(id)) sockets.set(id, new Set());
     const S = sockets.get(id);
-    const entree = { compte: moi.id, send: (m) => ws.send(m), close: (code, raison) => ws.close({ code, reason: raison }) };
+    // (comme une WebSocket de Durable Object : ce qu'elle garde d'elle, E-5 : couchée ou non)
+    let attache = null;
+    const entree = { compte: moi.id, send: (m) => ws.send(m), close: (code, raison) => { try { ws.close({ code, reason: raison }); } catch (e) { /* (déjà fermée) */ } }, serializeAttachment: (a) => { attache = a; }, deserializeAttachment: () => attache };
     S.add(entree);
     const d = mondes.get(id);
-    ws.onMessage((m) => traiterMessage(reg, moi.id, m, (x) => ws.send(JSON.stringify(x)), (x) => d.diffuser(x)));
-    ws.onClose(() => S.delete(entree));
+    ws.onMessage((m) => d.webSocketMessage(entree, m));
+    ws.onClose(() => { S.delete(entree); d.webSocketClose(entree, 1000); });
   });
   const p = await ctx.newPage();
   p.on('pageerror', (e) => erreurs.push(`${qui.email} : ${e.message}`));
@@ -121,7 +127,7 @@ try {
   const idMonde = [...mondes.keys()][0];
   verifie(!!idMonde && /Entrer/.test(await pa.evaluate(() => document.getElementById('compte-zone').innerText)), '1. A a mis sa ferme en ligne, elle est dans ses mondes');
   await pa.goto(`${BASE}/jeu.html?monde=${idMonde}`);
-  const pret = () => /à jour/.test((document.getElementById('en-ligne-bandeau') || {}).innerText || '') && document.body.classList.contains('construction');
+  const pret = () => /à jour/.test((document.getElementById('en-ligne-bandeau') || {}).innerText || '') && !!(window.FarmStage && FarmStage.ready && FarmStage.ready());
   await attendre(pa, pret);
   // E-3 : le lien d'invitation, créé dans 👥
   await action(pa, 'monde-membres');
@@ -135,7 +141,8 @@ try {
   await attendre(pb, () => window.FarmStage && FarmStage.ready && FarmStage.ready());
   await pb.goto(lienInvitation);   // (le lien, dans l'onglet de B, son jeu déjà ouvert)
   await attendre(pb, () => /[?&]monde=/.test(location.search), null, 20000);
-  verifie(/#invitation=/.test(lienInvitation) && (await attendre(pa, pret)) !== null && (await attendre(pb, pret)) !== null && /2/.test(await pa.evaluate(() => document.getElementById('en-ligne-bandeau').innerText)), '2. B a suivi le lien d\'invitation de A : les deux sont dans le monde, à jour, le mode Construire ouvert');
+  verifie(/#invitation=/.test(lienInvitation) && (await attendre(pa, pret)) !== null && (await attendre(pb, pret)) !== null && /2/.test(await pa.evaluate(() => document.getElementById('en-ligne-bandeau').innerText)), '2. B a suivi le lien d\'invitation de A : les deux sont dans le monde, à jour');
+  for (const p of [pa, pb]) { await action(p, 'build-toggle'); await attendre(p, () => document.body.classList.contains('construction'), null, 5000); }
   const soloA = await pa.evaluate(() => localStorage.getItem('ferme-save'));
   const caseLibre = (p) => p.evaluate(() => { const sc = FarmStage.scene(), T0 = sc.ctx.bridge.trace, W = sc.grid.cols, v = sc.cameras.main.worldView; const cx = Math.floor((v.x + v.width / 2) / 16), cy = Math.floor((v.y + v.height / 2) / 16); for (let d = 0; d < 14; d++) for (let dy = -d; dy <= d; dy++) for (let dx = -d; dx <= d; dx++) { const t = (cy + dy) * W + cx + dx; if (T0.posable(t) === 'ok') return t; } return null; });
   const voit = (t) => !!(FarmStage.scene().blocks && FarmStage.scene().blocks.has(t));
@@ -157,12 +164,30 @@ try {
   const confirmee = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); const L = await import('/js/ui/en-ligne.js'); return E.empreintePartie(L._lien().synchro.confirmee); });
   const em = empreintePartie(reg.charger());
   verifie((await confirmee(pa)) === em && (await confirmee(pb)) === em && reg.rev === 2, `4. les deux parties confirmées sont celle du monde (révision ${reg.rev})`);
+  // 4b. E-5 : le potager, hors de Construire
+  for (const p of [pa, pb]) { await action(p, 'build-toggle'); await attendre(p, () => !document.body.classList.contains('construction'), null, 5000); }
+  const carottes = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); return E.countItem(FF.state, 'carotte'); });
+  const avantCarottes = await carottes(pa);
+  await action(pb, 'harvest', { id: 'potager-1' });
+  const msRecolte = await attendre(pa, async () => { const E = await import('/js/engine/index.js'); return !E.findPlot(FF.state, 'potager-1').culture; }, null, 5000);
+  verifie(msRecolte !== null && (await carottes(pa)) > avantCarottes, `4b. B a récolté une carotte : A voit la parcelle vide et la récolte au coffre commun en ${msRecolte} ms`);
+  // 4c. E-5 : la nuit partagée
+  const jour = await pa.evaluate(() => FF.state.day);
+  await action(pa, 'monde-coucher');
+  await attendre(pb, () => /1\/2/.test(document.getElementById('en-ligne-bandeau').innerText), null, 5000);
+  await pa.waitForTimeout(300);
+  const attend = (await pa.evaluate(() => FF.state.day)) === jour && /1\/2/.test(await pb.evaluate(() => document.getElementById('en-ligne-bandeau').innerText));
+  await action(pb, 'monde-coucher');
+  const msNuit = await attendre(pa, (j) => FF.state.day === j + 1, jour, 5000);
+  const jourB = await pb.evaluate(() => FF.state.day);
+  const em2 = empreintePartie(reg.charger());
+  verifie(attend && msNuit !== null && jourB === jour + 1 && (await confirmee(pa)) === em2 && (await confirmee(pb)) === em2, `4c. A couché, la nuit attend B (1/2) ; B couché : le jour ${jour + 1} chez les deux en ${msNuit} ms, les parties confirmées sont celle du monde`);
   await pa.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   verifie((await pa.evaluate(() => localStorage.getItem('ferme-save'))) === soloA, '5. la partie solo de A n\'est pas touchée en ligne');
   const avant = reg.rev;
-  await action(pa, 'harvest-all');
+  await action(pa, 'feed-all');
   await pa.waitForTimeout(300);
-  verifie(reg.rev === avant && /construit ensemble/.test(await pa.evaluate(() => document.body.innerText)), '6. hors de Construire, un geste est refusé en ligne');
+  verifie(reg.rev === avant && /viendra bientôt/.test(await pa.evaluate(() => document.body.innerText)), '6. un geste pas encore en ligne est refusé');
   // 7. E-3 : A retire B
   await action(pa, 'monde-membres');
   await attendre(pa, () => !!document.querySelector('[data-action="monde-retirer"]'));

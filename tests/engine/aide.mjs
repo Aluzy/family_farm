@@ -74,6 +74,10 @@ export function sansPenalite(fn) {
   }
 }
 export { PENALITES_DU_JEU };
+// (pour un test qui joue avec le vrai jeu, le test à deux par exemple : les réglages du jeu, pour de bon)
+export function reglagesDuJeu() {
+  poserPenalites(PENALITES_DU_JEU);
+}
 
 // Un test : test(nom, () => { … }), celui de node:test tel quel (pour que chaque test soit
 // rattaché à son fichier). Tous les tests du moteur sont des fonctions synchrones sans

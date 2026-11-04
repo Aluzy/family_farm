@@ -40,7 +40,7 @@ import { bienvenueModele } from '../engine/bienvenue.js';
 import { visiteDepuisCarte } from './bienvenue.js';
 import { habitantDepuisCarte, openFicheHameau, paroleDepuisCarte, peuplerDepuisCarte, peuplerLesVus } from './habitants.js';
 import {
-  activeTab, axeMode, buildMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
+  activeTab, axeMode, buildMode, coucher, ecranFerme, enLigne, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
 } from './store.js';
 import { telView } from './consent.js';
 import { persistState, safeStorageGet, safeStorageSet } from './storage.js';
@@ -743,6 +743,7 @@ function syncRamassage() {
 // Le personnage prend un tas (appelé par la carte, jamais par un bouton) : renvoie ce qu'il
 // contenait ({ item: qté }), ou null s'il n'y avait plus rien.
 function stagePickup(id) {
+  if (enLigne) return null;   // (E-5 : en ligne, ce geste ne passe pas encore par le monde)
   const r = pickUp(state, id);
   if (!r.ok) return null;
   persistState();
@@ -1050,6 +1051,7 @@ function aideSansCarte() {
 }
 
 function stageCollect(lieu) {
+  if (enLigne) return null;   // (E-5 : pas encore en ligne)
   const r = collectAt(state, lieu);
   if (r.ok && r.fatigue) notify(TIRED);
   else if (!r.ok && r.error === TIRED) notify(TIRED);
