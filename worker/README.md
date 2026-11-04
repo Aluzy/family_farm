@@ -107,6 +107,46 @@ un **lien reçu par e-mail**, sans mot de passe (`worker/src/comptes.mjs`, la ru
    reçu sur le téléphone. La rubrique affiche « Connecté ». En cas d'échec : Workers ›
    `family-farm` › Observability (« envoi du lien en échec : <code> »).
 
+## Le monde partagé (E-1)
+
+Un **Durable Object `Monde` par monde** (`worker/src/monde.mjs`) fait autorité. Il garde la partie du
+monde, joue les commandes des joueurs avec **le même moteur que le jeu** (`js/engine/`, regroupé au
+déploiement), les numérote (la révision), les écrit dans un journal et les diffuse. Les joueurs les
+rejouent chez eux : le moteur est déterministe (F0-4). Décisions du créateur :
+- **F.1 : un coffre commun.** L'inventaire du monde est à tous ses membres.
+- **F.2 : le monde est figé quand personne n'y joue.** Les commandes ne font pas avancer l'horloge ; la
+  nuit partagée viendra plus tard (`nuit.dormir` est refusé en ligne).
+- **F.3 : un membre est un compte** (les comptes ci-dessus).
+- **F.4 : un monde naît de la copie volontaire d'une partie locale**, qui reste intacte.
+
+Routes, toutes avec la session du compte (`Authorization: Bearer`, ou `?session=` pour la WebSocket) :
+- `POST /mondes` `{ partie, titre }` : mettre sa ferme en ligne (2 Mo au plus) → `{ monde }` ;
+- `GET /mondes` : ses mondes ;
+- `GET /mondes/<id>/fiche` : titre, révision, membres (membres seulement) ;
+- `GET /mondes/<id>/ws` : la connexion d'un joueur (une WebSocket en hibernation). Messages :
+  - `hello { version, depuis? }` → `bienvenue`, puis `rattrape { evts }` (ce qui manque depuis
+    `depuis`) ou `instantane { partie }` ; `refus` si le jeu n'a pas la version du monde ou si
+    l'on n'est pas membre ;
+  - `cmd { id, type, args }` → `ack { id, ok, rev | erreur }` ; à tous, `evt { rev, acteur, cmd }`.
+
+Stockage SQLite du Durable Object :
+- `meta` ;
+- `instantane` : la partie entière, toutes les 20 révisions ;
+- `journal` : chaque commande acceptée, son `id` unique ;
+- `membres` : rôles `proprietaire` et `batisseur`, `revoque`.
+
+Au réveil, la partie se refait : le dernier instantané, puis le journal. Un doublon (le même `id`)
+rend le même accusé sans être rejoué. Un membre révoqué est refusé et sa connexion fermée. Les
+commandes sont limitées à 120 par minute et par membre.
+
+**À mesurer au premier déploiement.** La première commande d'un monde réveillé tire la carte de sa
+graine (≈ 0,3 s de calcul sur un ordinateur, plus sur le serveur). Les limites de temps de calcul
+par requête dépendent de l'offre Cloudflare. Si la première commande échoue (Observability :
+« exceeded CPU »), il faudra garder la carte tirée avec le monde, ou passer à l'offre payante des
+Workers.
+
+La suite : E-2 (le jeu qui se connecte à un monde), E-3 (inviter un ami : un bâtisseur).
+
 ## Mise en route du rapport (une seule fois)
 
 1. **Créer un dépôt privé** pour les rapports, par exemple `family_farm_rapports`

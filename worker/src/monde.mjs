@@ -1,0 +1,273 @@
+// Le monde partagé (E-1) : un Durable Object par monde, qui fait autorité. Il garde la partie du monde,
+// joue les commandes des joueurs avec le même moteur que le jeu (js/engine/, F0-3 : executerCommande),
+// les numérote (la révision), les écrit dans un journal et les diffuse aux joueurs connectés, qui les
+// rejouent chez eux (le moteur est déterministe : F0-4). Décisions du créateur :
+//   F.1 : un coffre commun (l'inventaire de la partie du monde est à tous ses membres) ;
+//   F.2 : le temps du monde est figé quand personne n'y joue (rien ne tourne sans joueur) ; les
+//         commandes ne font pas avancer l'horloge ; la nuit partagée viendra plus tard (nuit.dormir
+//         n'est pas encore acceptée) ;
+//   F.3 : un compte pour jouer en ligne (comptes.mjs) : un membre est un compte ;
+//   F.4 : un monde est créé par copie volontaire d'une partie locale, qui reste intacte.
+//
+// Le stockage (une base SQLite, celle du Durable Object : `sql.exec(requête, ...valeurs)`) :
+//   meta(cle, valeur)                 : version du jeu, propriétaire, nom, révision de l'instantané ;
+//   instantane(rev, json)             : la partie complète à la révision `rev` (refait toutes les
+//                                       INSTANTANE_TOUS révisions) ;
+//   journal(rev, id, acteur, cmd, ts) : chaque commande acceptée, dans l'ordre (id unique : un doublon
+//                                       n'est jamais rejoué) ;
+//   membres(compte, nom, role, revoque).
+// La partie en mémoire se refait au réveil du Durable Object : le dernier instantané, puis le journal.
+//
+// Le protocole (des messages JSON, par une WebSocket) :
+//   → { t: 'hello', version, depuis? }            ← { t: 'bienvenue', rev, role, membres } puis
+//                                                      { t: 'rattrape', evts } (depuis `depuis`) ou
+//                                                      { t: 'instantane', rev, partie }
+//                                                   ← { t: 'refus', raison } (version, membre)
+//   → { t: 'cmd', id, type, args }                ← { t: 'ack', id, ok, rev?, erreur? }
+//                                                   ← à tous : { t: 'evt', rev, acteur, cmd: { id, type, args } }
+
+import { COMMANDES, executerCommande, GAME_VERSION, migrate } from '../../js/engine/index.js';
+
+export const MONDE = {
+  INSTANTANE_TOUS: 20,      // révisions entre deux instantanés
+  JOURNAL_GARDE: 500,       // révisions gardées dans le journal avant le dernier instantané (le rattrapage)
+  COMMANDES_PAR_MINUTE: 120,// commandes acceptées au plus par membre et par minute
+  NOM_MAX: 40,
+};
+
+// Les commandes que le monde partagé accepte (la nuit partagée viendra plus tard : F.2).
+export const COMMANDES_MONDE = new Set(Object.keys(COMMANDES).filter((t) => t !== 'nuit.dormir'));
+// Les rôles : le propriétaire et les bâtisseurs jouent toutes les commandes du monde.
+export const ROLES = { proprietaire: 'proprietaire', batisseur: 'batisseur' };
+
+const lignes = (r) => (r && typeof r.toArray === 'function' ? r.toArray() : Array.isArray(r) ? r : []);
+const ID_RE = /^[A-Za-z0-9_-]{6,64}$/;
+
+export function creerTablesMonde(sql) {
+  sql.exec('CREATE TABLE IF NOT EXISTS meta (cle TEXT PRIMARY KEY, valeur TEXT NOT NULL)');
+  sql.exec('CREATE TABLE IF NOT EXISTS instantane (rev INTEGER PRIMARY KEY, json TEXT NOT NULL)');
+  sql.exec('CREATE TABLE IF NOT EXISTS journal (rev INTEGER PRIMARY KEY, id TEXT UNIQUE NOT NULL, acteur TEXT NOT NULL, cmd TEXT NOT NULL, ts INTEGER NOT NULL)');
+  sql.exec('CREATE TABLE IF NOT EXISTS membres (compte TEXT PRIMARY KEY, nom TEXT NOT NULL, role TEXT NOT NULL, revoque INTEGER NOT NULL DEFAULT 0)');
+}
+
+export class MondeRegistre {
+  constructor(sql, maintenant = () => Date.now()) {
+    this.sql = sql;
+    this.maintenant = maintenant;
+    this.partie = null;      // la partie en mémoire (refaite à la demande : charger)
+    this.rev = 0;
+    this.debits = new Map(); // compte → [heures des dernières commandes]
+    creerTablesMonde(sql);
+  }
+
+  un(q, ...v) { return lignes(this.sql.exec(q, ...v))[0] || null; }
+  tous(q, ...v) { return lignes(this.sql.exec(q, ...v)); }
+  faire(q, ...v) { lignes(this.sql.exec(q, ...v)); }
+  meta(cle) { const r = this.un('SELECT valeur FROM meta WHERE cle = ?', cle); return r ? r.valeur : null; }
+  poserMeta(cle, valeur) { this.faire('INSERT INTO meta (cle, valeur) VALUES (?, ?) ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur', cle, String(valeur)); }
+
+  existe() { return this.meta('version') !== null; }
+
+  // F.4 : le monde naît de la copie d'une partie locale (`sauvegarde` : { v, t, s } comme le jeu l'exporte,
+  // ou la partie seule), au nom de son propriétaire.
+  creer({ proprietaire, nom = 'Propriétaire', partie, version = GAME_VERSION, titre = 'Ma ferme' }) {
+    if (this.existe()) return { ok: false, erreur: 'Ce monde existe déjà.' };
+    if (!proprietaire) return { ok: false, erreur: 'Un monde a un propriétaire.' };
+    let s;
+    try { s = migrate(partie && partie.s ? partie : { v: partie && partie.version, t: 0, s: partie }); } catch (e) { s = null; }
+    if (!s || typeof s !== 'object' || !s.carte) return { ok: false, erreur: 'Cette partie ne peut pas être mise en ligne (illisible).' };
+    // (le monde ne connaît pas de nuit en cours : il naît de jour, son horloge figée là où elle était)
+    s.nuitEnCours = null;
+    this.faire('INSERT INTO instantane (rev, json) VALUES (?, ?)', 0, JSON.stringify(s));
+    this.poserMeta('version', version);
+    this.poserMeta('proprietaire', proprietaire);
+    this.poserMeta('titre', String(titre).slice(0, MONDE.NOM_MAX));
+    this.poserMeta('cree', this.maintenant());
+    this.ajouterMembre(proprietaire, nom, ROLES.proprietaire);
+    this.partie = s;
+    this.rev = 0;
+    return { ok: true, rev: 0 };
+  }
+
+  // La partie en mémoire : le dernier instantané, puis les commandes du journal jouées depuis.
+  charger() {
+    if (this.partie) return this.partie;
+    const inst = this.un('SELECT rev, json FROM instantane ORDER BY rev DESC LIMIT 1');
+    if (!inst) return null;
+    const s = JSON.parse(inst.json);
+    let rev = inst.rev;
+    for (const e of this.tous('SELECT rev, cmd FROM journal WHERE rev > ? ORDER BY rev', inst.rev)) {
+      const r = executerCommande(s, JSON.parse(e.cmd));
+      if (!r.ok) throw new Error(`le journal ne se rejoue pas à la révision ${e.rev} : ${r.error}`);
+      rev = e.rev;
+    }
+    this.partie = s;
+    this.rev = rev;
+    return s;
+  }
+
+  ajouterMembre(compte, nom, role = ROLES.batisseur) {
+    if (!ROLES[role]) return { ok: false, erreur: 'Rôle inconnu.' };
+    this.faire('INSERT INTO membres (compte, nom, role, revoque) VALUES (?, ?, ?, 0) ON CONFLICT(compte) DO UPDATE SET nom = excluded.nom, role = excluded.role, revoque = 0',
+      compte, String(nom || 'Joueur').slice(0, MONDE.NOM_MAX), role);
+    return { ok: true };
+  }
+  revoquer(compte) {
+    if (compte === this.meta('proprietaire')) return { ok: false, erreur: 'Le propriétaire ne se révoque pas.' };
+    this.faire('UPDATE membres SET revoque = 1 WHERE compte = ?', compte);
+    return { ok: true };
+  }
+  // Le membre `compte` (actif), ou null.
+  membre(compte) {
+    const m = this.un('SELECT compte, nom, role, revoque FROM membres WHERE compte = ?', String(compte || ''));
+    return m && !m.revoque ? m : null;
+  }
+  membres() { return this.tous('SELECT compte, nom, role FROM membres WHERE revoque = 0 ORDER BY role DESC, nom'); }
+
+  // L'accueil d'un joueur : refusé si ce n'est pas un membre, ou si son jeu n'a pas la version du monde ;
+  // sinon ce qui lui manque depuis la révision `depuis` (les commandes du journal), ou tout (l'instantané
+  // de la partie à la révision courante).
+  accueil(compte, { version, depuis } = {}) {
+    const m = this.membre(compte);
+    if (!m) return { ok: false, raison: 'membre', erreur: 'Tu n\'es pas (ou plus) membre de ce monde.' };
+    const v = this.meta('version');
+    if (version !== v) return { ok: false, raison: 'version', erreur: `Ce monde joue la version ${v} du jeu ; la tienne est ${version || 'inconnue'} : recharge la page pour mettre le jeu à jour.` };
+    const s = this.charger();
+    const base = { ok: true, rev: this.rev, role: m.role, membres: this.membres() };
+    const d = Number(depuis);
+    if (Number.isInteger(d) && d >= 0 && d <= this.rev) {
+      const plusVieux = this.un('SELECT MIN(rev) AS r FROM journal');
+      if (d === this.rev) return { ...base, evts: [] };
+      if (plusVieux && plusVieux.r !== null && plusVieux.r <= d + 1) {
+        const evts = this.tous('SELECT rev, acteur, cmd FROM journal WHERE rev > ? ORDER BY rev', d).map((e) => ({ rev: e.rev, acteur: e.acteur, cmd: JSON.parse(e.cmd) }));
+        return { ...base, evts };
+      }
+    }
+    return { ...base, partie: JSON.parse(JSON.stringify(s)) };
+  }
+
+  // Une commande d'un membre : { ok, rev, evt } (à diffuser), ou { ok: false, erreur }. Un doublon (le même
+  // id, déjà joué) rend le même accusé sans rien rejouer : { ok, rev, doublon: true }.
+  commande(compte, c) {
+    const m = this.membre(compte);
+    if (!m) return { ok: false, erreur: 'Tu n\'es pas (ou plus) membre de ce monde.' };
+    if (!c || typeof c !== 'object' || !ID_RE.test(String(c.id || ''))) return { ok: false, erreur: 'Commande sans identifiant.' };
+    const deja = this.un('SELECT rev, acteur FROM journal WHERE id = ?', c.id);
+    if (deja) return deja.acteur === compte ? { ok: true, rev: deja.rev, doublon: true } : { ok: false, erreur: 'Cet identifiant de commande est déjà pris.' };
+    if (!COMMANDES_MONDE.has(c.type)) return { ok: false, erreur: `Cette action ne se joue pas encore en ligne (${String(c.type)}).` };
+    // (le débit : COMMANDES_PAR_MINUTE au plus par membre)
+    const t = this.maintenant(), L = (this.debits.get(compte) || []).filter((x) => x > t - 60000);
+    if (L.length >= MONDE.COMMANDES_PAR_MINUTE) return { ok: false, erreur: 'Trop d\'actions d\'un coup : attends un instant.' };
+    L.push(t);
+    this.debits.set(compte, L);
+    const s = this.charger();
+    const cmd = { id: c.id, type: c.type, args: c.args };
+    const r = executerCommande(s, cmd);
+    if (!r.ok) return { ok: false, erreur: r.error || 'Refusé.' };
+    this.rev += 1;
+    this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts) VALUES (?, ?, ?, ?, ?)', this.rev, c.id, compte, JSON.stringify(cmd), t);
+    if (this.rev % MONDE.INSTANTANE_TOUS === 0) this.instantane();
+    return { ok: true, rev: this.rev, evt: { t: 'evt', rev: this.rev, acteur: compte, cmd } };
+  }
+
+  // Un instantané de la partie à la révision courante ; le journal plus ancien que JOURNAL_GARDE
+  // révisions avant lui, et les instantanés d'avant, retirés.
+  instantane() {
+    const s = this.charger();
+    this.faire('INSERT OR REPLACE INTO instantane (rev, json) VALUES (?, ?)', this.rev, JSON.stringify(s));
+    this.faire('DELETE FROM instantane WHERE rev < ?', this.rev);
+    this.faire('DELETE FROM journal WHERE rev <= ?', this.rev - MONDE.JOURNAL_GARDE);
+  }
+
+  // Ce que le monde montre de lui (la liste des mondes d'un compte, la fiche) : sans la partie.
+  fiche() {
+    return { titre: this.meta('titre'), proprietaire: this.meta('proprietaire'), version: this.meta('version'), rev: this.charger() ? this.rev : 0, membres: this.membres() };
+  }
+}
+
+/* ---------- le Durable Object Monde ---------- */
+
+// Les requêtes qu'il reçoit (du Worker, qui a vérifié la session : l'en-tête X-Compte et X-Nom) :
+//   POST /monde/creer { partie, titre }         : créer ce monde (F.4 : la copie d'une partie)
+//   GET  /monde/fiche                           : sa fiche (membre seulement)
+//   GET  /monde/ws (Upgrade: websocket)         : la connexion d'un joueur (le protocole, en tête)
+// Les WebSockets sont acceptées en hibernation : le Durable Object peut dormir entre deux messages,
+// et sa partie en mémoire se refait au réveil (MondeRegistre.charger).
+export class Monde {
+  constructor(ctx, env) {
+    this.ctx = ctx;
+    this.env = env;
+    this.registre = new MondeRegistre(ctx.storage.sql);
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    const compte = request.headers.get('X-Compte') || '';
+    const nom = request.headers.get('X-Nom') || 'Joueur';
+    const json = (corps, statut = 200) => new Response(JSON.stringify(corps), { status: statut, headers: { 'Content-Type': 'application/json' } });
+    if (url.pathname.endsWith('/creer') && request.method === 'POST') {
+      let b = {};
+      try { b = await request.json(); } catch (e) { b = {}; }
+      const r = this.registre.creer({ proprietaire: compte, nom, partie: b.partie, titre: b.titre });
+      return json(r, r.ok ? 200 : 400);
+    }
+    if (url.pathname.endsWith('/fiche')) {
+      if (!this.registre.existe()) return json({ ok: false, erreur: 'Monde inconnu.' }, 404);
+      if (!this.registre.membre(compte)) return json({ ok: false, erreur: 'Tu n\'es pas membre de ce monde.' }, 403);
+      return json({ ok: true, ...this.registre.fiche() });
+    }
+    if (url.pathname.endsWith('/ws')) {
+      if (request.headers.get('Upgrade') !== 'websocket') return json({ ok: false, erreur: 'WebSocket attendue.' }, 426);
+      if (!this.registre.existe()) return json({ ok: false, erreur: 'Monde inconnu.' }, 404);
+      if (!this.registre.membre(compte)) return json({ ok: false, erreur: 'Tu n\'es pas membre de ce monde.' }, 403);
+      const paire = new WebSocketPair();
+      this.ctx.acceptWebSocket(paire[1], [compte]);
+      return new Response(null, { status: 101, webSocket: paire[0] });
+    }
+    return json({ ok: false, erreur: 'not found' }, 404);
+  }
+
+  async webSocketMessage(ws, message) {
+    const compte = (this.ctx.getTags(ws) || [])[0] || '';
+    traiterMessage(this.registre, compte, message, (m) => envoyer(ws, m), (m) => this.diffuser(m));
+  }
+
+  async webSocketClose(ws, code) {
+    try { ws.close(code === 1005 ? 1000 : code, 'au revoir'); } catch (e) { /* (déjà fermée) */ }
+  }
+
+  diffuser(m) {
+    for (const ws of this.ctx.getWebSockets()) {
+      const compte = (this.ctx.getTags(ws) || [])[0];
+      // (un membre révoqué entre-temps : sa connexion est fermée)
+      if (!this.registre.membre(compte)) { try { ws.close(4003, 'plus membre'); } catch (e) { /* (rien) */ } continue; }
+      envoyer(ws, m);
+    }
+  }
+}
+
+function envoyer(ws, m) {
+  try { ws.send(JSON.stringify(m)); } catch (e) { /* (connexion perdue) */ }
+}
+
+// Un message d'un joueur (le protocole, en tête). `repondre(m)` : à lui seul ; `diffuser(m)` : à tous.
+export function traiterMessage(registre, compte, message, repondre, diffuser) {
+  let m;
+  try { m = JSON.parse(typeof message === 'string' ? message : new TextDecoder().decode(message)); } catch (e) { repondre({ t: 'erreur', erreur: 'Message illisible.' }); return; }
+  if (!m || typeof m !== 'object') return;
+  if (m.t === 'hello') {
+    const a = registre.accueil(compte, { version: m.version, depuis: m.depuis });
+    if (!a.ok) { repondre({ t: 'refus', raison: a.raison, erreur: a.erreur }); return; }
+    repondre({ t: 'bienvenue', rev: a.rev, role: a.role, membres: a.membres });
+    if (a.partie) repondre({ t: 'instantane', rev: a.rev, partie: a.partie });
+    else repondre({ t: 'rattrape', evts: a.evts });
+    return;
+  }
+  if (m.t === 'cmd') {
+    const r = registre.commande(compte, m);
+    repondre(r.ok ? { t: 'ack', id: m.id, ok: true, rev: r.rev, ...(r.doublon ? { doublon: true } : {}) } : { t: 'ack', id: m.id, ok: false, erreur: r.erreur });
+    if (r.ok && r.evt) diffuser(r.evt);
+    return;
+  }
+  repondre({ t: 'erreur', erreur: `Message inconnu : ${String(m.t)}.` });
+}

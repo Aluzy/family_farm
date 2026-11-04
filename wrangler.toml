@@ -17,6 +17,17 @@ class_name = "Comptes"
 tag = "v1-comptes"
 new_sqlite_classes = ["Comptes"]
 
+# Le monde partagé (E-1, worker/src/monde.mjs) : un Durable Object par monde, sa base SQLite (la partie,
+# le journal des commandes, les membres). Il embarque le moteur du jeu (js/engine/), regroupé au
+# déploiement.
+[[durable_objects.bindings]]
+name = "MONDES"
+class_name = "Monde"
+
+[[migrations]]
+tag = "v2-mondes"
+new_sqlite_classes = ["Monde"]
+
 # Rapport quotidien : 13 h à Paris. Cloudflare compte en UTC ; 11 h UTC = 13 h en été
 # (CEST), 12 h UTC = 13 h en hiver (CET). Le Worker ignore celui qui ne tombe pas à 13 h.
 [triggers]
