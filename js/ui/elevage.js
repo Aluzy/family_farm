@@ -9,10 +9,10 @@ import {
 } from '../engine/crops.js';
 import { executer } from './commandes.js';
 import {
-  buyPasture, canFeedHen, coopCapacity, coopUpgradeCost,
-  cowCount, cowsOnHerbs, feedAllHens, feedHen, freeSheepPlaces, hensToFeed, herbStock, herbsOn, pastureCost,
-  setCowHerbs, shear, sheepCount, sheepToShear, siloCapacity, stableOccupied, strawMissing,
-  strawNeed, strawStock, upgradePoulailler, wheatTotal, woolReady, coopUpgradeRefus, pastureRefus, stablePlaces,
+  canFeedHen, coopCapacity, coopUpgradeCost,
+  cowCount, cowsOnHerbs, freeSheepPlaces, hensToFeed, herbStock, herbsOn, pastureCost,
+  sheepCount, sheepToShear, siloCapacity, stableOccupied, strawMissing,
+  strawNeed, strawStock, wheatTotal, woolReady, coopUpgradeRefus, pastureRefus, stablePlaces,
 } from '../engine/animals.js';
 import { etatEtable, etatPoulailler, etatSilo } from '../engine/blocs.js';
 import { techAuto, techFlag } from '../engine/techtree.js';
@@ -615,30 +615,30 @@ registerActions({
 
 
   'upgrade-poulailler': () => {
-    applyResult(upgradePoulailler(state));
+    applyResult(executer('poulailler.agrandir', {}));
   },
   'feed-hen': () => {
-    const result = applyResult(feedHen(state));
+    const result = applyResult(executer('poules.nourrir', {}));
     // fiche 10 : « Nourrir une poule » répété compte les poules nourries
     if (result.ok) notify(null, { cumul: { cle: 'nourrir-poule', quantites: { n: 1 }, texte: (t) => `🌾 ${t.n > 1 ? `${plural(t.n, 'poule')} nourries` : 'Une poule nourrie'} (1 blé pour 2 poules)` }, son: 'grain' });
   },
   'feed-all': () => {
-    const result = applyResult(feedAllHens(state));
+    const result = applyResult(executer('poules.toutNourrir', {}));
     if (result.ok) {
       notify(`${plural(result.nourries, 'poule')} ${accord(result.nourries, 'nourrie')}.`, { son: 'grain' });
     }
   },
 
   'buy-pasture': () => {
-    const result = applyResult(buyPasture(state));
+    const result = applyResult(executer('etable.place', {}));
     if (result.ok) notify(`Place achetée : ${formatPlaces(result.places)} au total (−${formatCoins(result.cost)} 💰)`);
   },
   'cow-herbs': (target) => {
-    const result = applyResult(setCowHerbs(state, target.dataset.on === '1'));
+    const result = applyResult(executer('etable.herbes', { oui: target.dataset.on === '1' }));
     if (result.ok) notify(result.herbes ? `${DATA.OBJETS[DATA.PATURAGE.HERBES].icone} Les vaches mangeront les herbes de montagne : lait d'alpage cette nuit.` : '🌾 Les vaches reviennent à la paille.');
   },
   'shear': (target) => {
-    const result = applyResult(shear(state, target.dataset.id));
+    const result = applyResult(executer('etable.tondre', { mouton: String(target.dataset.id || '') }));
     if (result.ok && !result.aRamasser) notify(`✂️ Tonte : +${result.laine} 🧶`, { son: 'tonte' });
   },
   'plant-many-open': (target) => {

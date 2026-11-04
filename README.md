@@ -138,8 +138,11 @@ Connecté, on peut **mettre sa ferme en ligne**. C'est une copie : la partie sol
 intacte. On y entre ensuite par « Entrer » (`jeu.html?monde=…`). Dans un monde en ligne :
 - le monde est figé (son horloge ne tourne pas) ;
 - on y **construit ensemble** (le mode Construire) et l'on y **cultive le potager** : labourer, semer,
-  arroser (aussi en glissant, et « tout »), récolter, remplir la cruche. La récolte va droit au coffre
-  commun. Les autres gestes (les animaux, la cuisine, le Marché…) viendront ensuite ;
+  arroser (aussi en glissant, et « tout »), récolter, remplir la cruche ; l'on s'y **occupe des bêtes** :
+  nourrir les poules, tondre, les herbes des vaches, une place à l'Étable, agrandir le Poulailler, la
+  ruche pleine. Le monde ne ramasse pas : la récolte, les œufs, le lait et la laine vont droit au coffre
+  commun. La famille n'y fait pas les corvées seule. Les autres gestes (la cuisine, le Marché, les
+  outils…) viendront ensuite ;
 - **la nuit est partagée** : « 🛏 Se coucher » dans le bandeau. Quand tous les joueurs connectés sont
   couchés, toute la nuit passe d'un coup : les plantes arrosées poussent, et chacun se réveille au jour
   suivant. Le bandeau dit combien sont couchés (« 1/2 ») ;
@@ -200,7 +203,7 @@ vérifiée puis jouée par `executerCommande(state, cmd)` avec les fonctions du 
 rend les commandes inverses qui la défont : le bouton ↶ Annuler du chantier (`js/ui/chantier.js`)
 les joue. Le potager et la nuit passent aussi par des commandes, sans inverse (`potager.planter`,
 `potager.arroser`, `potager.recolter`, `potager.labourer`, `potager.toutPlanter`, `potager.toutArroser`,
-`potager.toutRecolter`, `cruche.remplir`, `nuit.dormir` : les boutons, la carte, les tracés, la cruche,
+`potager.toutRecolter`, `cruche.remplir`, `poules.nourrir`, `etable.tondre`, `ramassage.prendre`…, `nuit.dormir` : les boutons, la carte, les tracés, la cruche,
 le bouton Dormir ; `nuit.partagee`, la nuit d'un monde en ligne, que seul le monde joue). L'interface les émet par `executer(type, args)` (`js/ui/commandes.js`, qui leur
 donne un identifiant unique et **sauvegarde la partie juste après chaque commande réussie** : une seule
 sauvegarde par geste, même pour un tracé de plusieurs blocs ; la sauvegarde de toutes les 10 s reste

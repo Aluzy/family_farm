@@ -5,8 +5,9 @@
 //   place de la partie solo, qui n'est jamais touchée : rien n'est sauvegardé sur l'appareil en ligne
 //   (storage.js), et le rattrapage d'absence ne joue pas.
 // - F.2 : le monde est figé (loop.js : l'horloge ne tourne pas en ligne). En ligne, on construit ensemble
-//   (le mode Construire) et l'on cultive le potager (E-5 : labourer, semer, arroser, récolter, la cruche) ;
-//   les autres gestes de la ferme viendront ensuite (actionPermise).
+//   (le mode Construire), l'on cultive le potager (E-5 : labourer, semer, arroser, récolter, la cruche) et
+//   l'on s'occupe des bêtes (E-6 : les poules, l'Étable, les tas à prendre) ; tout va droit au coffre
+//   commun. Les autres gestes de la ferme viendront ensuite (actionPermise).
 // - E-5 : la nuit partagée. « 🛏 Se coucher » (le bandeau) le dit au monde ; quand tous les joueurs
 //   connectés sont couchés, le monde joue la nuit (nuit.partagee : toute la nuit d'un coup, les plantes
 //   poussent) et chacun se réveille au jour suivant.
@@ -255,12 +256,13 @@ if (typeof window !== 'undefined') setInterval(envoyerPosition, POS_MS);
 // et ce qui ne change pas la partie (ouvrir une fenêtre, lire l'aide, les réglages). `bloquees` : les
 // actions qui changent la partie (actions.js, SOMMEIL_BLOQUEES), sauf celles-là. Dormir : par le bandeau.
 const CONSTRUIRE = new Set(['bloc', 'bloc-many', 'build-toggle', 'build-pick', 'build-tab', 'build-groupe', 'build-filtre', 'meuble-ok', 'build-level-menu', 'build-level', 'build-piece', 'build-gomme', 'build-tourner', 'build-peindre', 'meuble-peindre', 'build-sens', 'meuble-tourner', 'build-annuler', 'bloc-pipette', 'bloc-deplacer', 'etage-toggle']);
-const POTAGER = new Set(['plant', 'plant-many', 'plant-all', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'hoe', 'hoe-many', 'hoe-toggle', 'hoe-take', 'cruche-remplir']);
+// (E-5 : le potager ; E-6 : les bêtes)
+const FERME = new Set(['feed-hen', 'feed-all', 'shear', 'cow-herbs', 'buy-pasture', 'upgrade-poulailler', 'plant', 'plant-many', 'plant-all', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'hoe', 'hoe-many', 'hoe-toggle', 'hoe-take', 'cruche-remplir']);
 const JAMAIS = /^(test-|do-import|do-new-game|ask-new-game|demarrer|accueil-)/;
 export function actionPermise(action, bloquees) {
   if (JAMAIS.test(action)) return 'Pas dans un monde en ligne : reviens à ta ferme solo (🌐 › Ma ferme solo).';
   if (action === 'sleep') return 'En ligne, on se couche par le bandeau (🛏 Se coucher) : la nuit passe quand tout le monde dort.';
-  if (bloquees.has(action) && !CONSTRUIRE.has(action) && !POTAGER.has(action)) return 'En ligne, on construit et l\'on cultive le potager pour l\'instant : ce geste viendra bientôt.';
+  if (bloquees.has(action) && !CONSTRUIRE.has(action) && !FERME.has(action)) return 'En ligne, on construit, on cultive le potager et l\'on s\'occupe des bêtes pour l\'instant : ce geste viendra bientôt.';
   return null;
 }
 

@@ -9,9 +9,9 @@
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import {
-  addItem, countItem, DATA, empreintePartie, executerCommande, findPlot, GAME_VERSION, poseStatus,
+  addItem, countItem, DATA, empreintePartie, executerCommande, findPlot, GAME_VERSION, poseStatus, testBatir,
 } from '../js/engine/index.js';
-import { partie, plantRipe } from './engine/aide.mjs';
+import { fillSheep, partie, pature, plantRipe, reach, setStraw } from './engine/aide.mjs';
 import { ACTEUR_MONDE, COMMANDES_MONDE, etatDesLits, Monde, MONDE, MondeRegistre, traiterMessage } from '../worker/src/monde.mjs';
 
 const test = (name, fn) => nodeTest(name, () => fn());
@@ -351,4 +351,33 @@ test('E-5 : le Durable Object : « se coucher » est dit à tous ; le dernier co
   sockets.splice(0, 1);
   d.webSocketClose(wa, 1000);
   eq(r.charger().day, jour + 2, 'A parti, la nuit de B passe');
+});
+
+/* ---------- E-6 : les bêtes ---------- */
+
+test('E-6 : les bêtes en ligne : le monde ne ramasse pas (les tas entrent au coffre à sa création) ; nourrir, tondre, la nuit : tout va droit au coffre ; le journal se rejoue', () => {
+  const s = pature();
+  assert(testBatir(reach(s, 'poulailler'), 'poulailler').ok, 'le Poulailler');
+  s.poulailler.poules = 2;
+  addItem(s, 'ble', 10);
+  fillSheep(s, 1);
+  setStraw(s, 10);
+  s.paturage.moutons[0].laine = DATA.ANIMAUX.mouton.joursLaine;
+  s.ramassage = true;
+  s.aRamasser = { poulailler: { lieu: 'poulailler', ref: null, items: { oeuf: 3 } } };
+  const sql = baseSql(), r = new MondeRegistre(sql);
+  assert(r.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
+  r.ajouterMembre(B, 'Sam');
+  const w = r.charger();
+  eq([w.ramassage, Object.keys(w.aRamasser || {}).length, countItem(w, 'oeuf')], [false, 0, countItem(s, 'oeuf') + 3], 'le tas d\'œufs au coffre');
+  for (const c of [{ type: 'poules.toutNourrir', args: {} }, { type: 'etable.tondre', args: { mouton: w.paturage.moutons[0].id } }, { type: 'etable.herbes', args: { oui: false } }]) {
+    const x = r.commande(B, { id: id(), ...c });
+    assert(x.ok, `${c.type} : ${x.erreur}`);
+  }
+  eq([w.poulailler.nourries, countItem(w, 'laine')], [2, 1], 'les poules nourries, la laine au coffre');
+  eq(r.commande(B, { id: id(), type: 'etable.tondre', args: { mouton: w.paturage.moutons[0].id } }).ok, false, 'pas deux tontes');
+  const oeufs = countItem(w, 'oeuf');
+  assert(r.nuit().ok);
+  assert(countItem(r.charger(), 'oeuf') > oeufs && !Object.keys(r.charger().aRamasser || {}).length, 'les œufs de la nuit au coffre, pas en tas');
+  eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()), 'le journal se rejoue');
 });

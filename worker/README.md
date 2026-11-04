@@ -182,8 +182,11 @@ et y retire un membre. Un lien d'invitation ouvert sans être connecté attend l
 
 E-5 : en ligne, on cultive aussi le potager (labourer, semer, arroser, récolter, la cruche). La
 récolte va droit au coffre commun (`direct`), sans attendre le personnage. Une nuit coûte environ
-2 ms de calcul sur la ferme d'essai : **à mesurer au premier déploiement** sur une vraie ferme. La
-suite : les autres gestes de la ferme (les animaux, la cuisine, le Marché).
+2 ms de calcul sur la ferme d'essai : **à mesurer au premier déploiement** sur une vraie ferme. 
+E-6 : les bêtes aussi (`poules.nourrir`, `poules.toutNourrir`, `poulailler.agrandir`, `etable.tondre`,
+`etable.herbes`, `etable.place`, `ramassage.prendre`). Le monde ne ramasse pas : à sa création, ce qui
+attendait en tas entre au coffre commun (`ramassage` coupé), et tout y va droit ensuite. La suite : la
+cuisine, le Marché, les outils.
 
 ## Mise en route du rapport (une seule fois)
 

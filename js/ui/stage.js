@@ -20,6 +20,7 @@ import { arroseesCompagnon, estTacheCompagnon, faireCompagnon, journeeCompagnon,
 import { marcherMembre } from '../engine/repas.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
 import { TIRED } from '../engine/stamina.js';
+import { executer } from './commandes.js';
 import { brokenRocks, cutBushes, cutGrass, fellenTrees, morceauxDe, poussesArbres, arbresPlantes } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
@@ -735,6 +736,8 @@ function sprinklers() {
 // carte, ou une carte prête mais sans personnage), tout va directement à l'inventaire, et
 // ce qui attendait encore y entre.
 function syncRamassage() {
+  // (E-6 : en ligne, le monde ne ramasse pas : tout va droit au coffre commun ; rien n'est touché ici)
+  if (enLigne) return;
   const on = stageUsable() && (!FarmStage.ready() || FarmStage.hasFermier());
   state.ramassage = on;
   if (!on && piles(state).length) pickUpAll(state);
@@ -743,8 +746,8 @@ function syncRamassage() {
 // Le personnage prend un tas (appelé par la carte, jamais par un bouton) : renvoie ce qu'il
 // contenait ({ item: qté }), ou null s'il n'y avait plus rien.
 function stagePickup(id) {
-  if (enLigne) return null;   // (E-5 : en ligne, ce geste ne passe pas encore par le monde)
-  const r = pickUp(state, id);
+  // (E-6 : en ligne, par le monde ; une ruche pleine aussi)
+  const r = enLigne ? executer('ramassage.prendre', { tas: String(id) }) : pickUp(state, id);
   if (!r.ok) return null;
   persistState();
   refresh();
@@ -758,6 +761,7 @@ function stagePickup(id) {
 // Fiche 19 : ou il a fini une de ses initiatives (arroser une plante, remplir sa cruche au puits,
 // cuisiner, ramasser) : ce qu'elle a donné (une plante arrosée : { arrose: 1 }, la bulle « +1 💧 »).
 function stageAide(lieu) {
+  if (enLigne) return null;   // (E-6 : en ligne, la famille ne fait pas les corvées seule : chaque joueur la verrait les faire)
   const betes = !estTacheCompagnon(lieu);
   const r = betes ? aideBetes(state, lieu) : faireCompagnon(state, lieu);
   if (!r.ok) return null;
@@ -1044,6 +1048,7 @@ function mondeDeLaCarte() {
 // quand même son travail aux heures où il travaille (comme js/famille-ferme.js : levé avec le
 // personnage, jusqu'à FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES ; ensuite il flâne).
 function aideSansCarte() {
+  if (enLigne) return;   // (E-6 : de même)
   if (nightActive(state) || clockHours(state) >= DATA.FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES) return;
   for (const lieu of aideAFaire(state)) if (aideBetes(state, lieu).ok) noterGarde(state, 'betes');
   // (fiche 19 : ses initiatives aussi, d'un coup, sans dessin)
@@ -1051,12 +1056,33 @@ function aideSansCarte() {
 }
 
 function stageCollect(lieu) {
-  if (enLigne) return null;   // (E-5 : pas encore en ligne)
+  if (enLigne) return collecterEnLigne(lieu);
   const r = collectAt(state, lieu);
   if (r.ok && r.fatigue) notify(TIRED);
   else if (!r.ok && r.error === TIRED) notify(TIRED);
   if (r.ok || r.error === TIRED) { persistState(); refresh(); }
   return r.ok ? r.items : null;
+}
+
+// E-6 : en ligne, au Poulailler ou à l'Étable : les moutons prêts tondus, puis un tas qui attendrait encore
+// (une partie mise en ligne avec des tas), chacun par une commande du monde.
+function collecterEnLigne(lieu) {
+  const items = {};
+  let fatigue = false;
+  if (lieu === 'etable' && state.paturage) {
+    for (const m of state.paturage.moutons.filter(woolReady)) {
+      const r = executer('etable.tondre', { mouton: m.id });
+      if (!r.ok) { fatigue = r.error === TIRED; break; }
+      items[DATA.ANIMAUX.mouton.laine] = (items[DATA.ANIMAUX.mouton.laine] || 0) + r.laine;
+    }
+  }
+  if (state.aRamasser && state.aRamasser[lieu]) {
+    const r = executer('ramassage.prendre', { tas: lieu });
+    if (r.ok) for (const [k, q] of Object.entries(r.items)) items[k] = (items[k] || 0) + q;
+  }
+  if (fatigue) notify(TIRED);
+  refresh();
+  return Object.keys(items).length ? items : null;
 }
 
 // Version 1.15 : tuiles que la houe peut labourer (la grille verte de la carte en mode houe),
