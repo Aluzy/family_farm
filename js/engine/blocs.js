@@ -14,7 +14,7 @@ import { isUnlocked } from './campaign.js';
 import { unlockLevel } from './levels.js';
 import { installStarter, removeStarter, starterBlock } from './depart.js';
 import { robotOn } from './automation.js';
-import { couchagesEtage, etageHorsEmprise, rangerEtage } from './etage.js';
+import { couchagesEtage, etageEmprise, etageHorsEmprise, rangerEtage } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
 import { botteleuseReprise } from './botteleuse.js';
 import { distributeurReprise } from './distributeur.js';
@@ -825,8 +825,10 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   if (allPlots(state).some((p) => p.case === tile)) return { ok: false, raison: 'Une terre labourée : rebouche-la d\'abord.' };
   if (s.dedans && !dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dans une pièce close (des murs tout autour, une porte, et au plus ${DATA.ATELIER.PIECE_MAX} cases dedans).` };
   if (s.dehors && dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dehors, pas dans une pièce close.` };
-  // (un mur qui couperait la pièce de l'escalier : l'étage perdrait ce qui est posé au-dessus)
-  if (s.ferme && etageEnPeril(state, { ...blocsPoses(state), [tile]: sorte })) return { ok: false, raison: `${s.nom} : couperait la pièce de l'escalier, et l'étage perdrait ce qui y est posé. Reprends d'abord ces blocs de l'étage.` };
+  // (un mur qui couperait la pièce de l'escalier : l'étage perdrait ce qui est posé au-dessus. Seul un
+  // bloc posé dans cette pièce peut la couper : ailleurs, la question ne se pose pas, et les pièces ne
+  // sont pas recalculées pour chaque case que le mode Construire teste)
+  if (s.ferme && etageEmprise(state).has(tile) && etageEnPeril(state, { ...blocsPoses(state), [tile]: sorte })) return { ok: false, raison: `${s.nom} : couperait la pièce de l'escalier, et l'étage perdrait ce qui y est posé. Reprends d'abord ces blocs de l'étage.` };
   // un bloc de silo au sol : à côté des colonnes déjà posées (un seul silo)
   if (s.silo) {
     const refus = refusSilo(state, tile);
