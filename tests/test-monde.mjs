@@ -11,7 +11,7 @@ import { DatabaseSync } from 'node:sqlite';
 import {
   addItem, countItem, DATA, empreintePartie, executerCommande, findPlot, GAME_VERSION, poseStatus, testBatir,
 } from '../js/engine/index.js';
-import { fillSheep, partie, pature, plantRipe, reach, setStraw } from './engine/aide.mjs';
+import { atelier, construireFrigo, fillSheep, partie, pature, plantRipe, reach, setStraw } from './engine/aide.mjs';
 import { ACTEUR_MONDE, COMMANDES_MONDE, etatDesLits, Monde, MONDE, MondeRegistre, traiterMessage } from '../worker/src/monde.mjs';
 
 const test = (name, fn) => nodeTest(name, () => fn());
@@ -380,4 +380,47 @@ test('E-6 : les bêtes en ligne : le monde ne ramasse pas (les tas entrent au co
   assert(r.nuit().ok);
   assert(countItem(r.charger(), 'oeuf') > oeufs && !Object.keys(r.charger().aRamasser || {}).length, 'les œufs de la nuit au coffre, pas en tas');
   eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()), 'le journal se rejoue');
+});
+
+/* ---------- E-7 : la cuisine ---------- */
+
+test('E-7 : la cuisine en ligne : une recette lancée finit pendant la nuit partagée ; le frigo, manger ; les arguments vérifiés', () => {
+  const s = atelier();
+  s.eauMl = 200000;
+  addItem(s, 'oeuf', 6);
+  addItem(s, 'huile', 2);
+  addItem(s, 'carotte', 5);
+  s.pieces = 5000;
+  assert(construireFrigo(reach(s, 'frigo')).ok, 'le frigo');
+  const sql = baseSql(), r = new MondeRegistre(sql);
+  assert(r.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
+  r.ajouterMembre(B, 'Sam');
+  const jouer = (type, args) => { const x = r.commande(B, { id: id(), type, args }); assert(x.ok, `${type} : ${x.erreur}`); return x; };
+  jouer('cuisine.lancer', { recette: 'omelette' });
+  const w = r.charger();
+  eq([countItem(w, 'oeuf'), countItem(w, 'omelette')], [3, 0], 'les œufs pris, l\'omelette pas encore là (l\'horloge est figée)');
+  jouer('frigo.ranger', { objet: 'carotte', quantite: 2 });
+  jouer('frigo.sortir', { objet: 'carotte', quantite: 1 });
+  eq(countItem(w, 'carotte'), 4, 'une carotte reste au frigo');
+  jouer('manger', { objet: 'carotte' });
+  eq(countItem(w, 'carotte'), 3, 'une carotte mangée sur le pouce');
+  eq(r.commande(B, { id: id(), type: 'manger', args: { objet: 'licorne' } }).ok, false, 'un objet inconnu est refusé');
+  eq(r.commande(B, { id: id(), type: 'cuisine.lancer', args: { recette: 'omelette', en_plus: 1 } }).ok, false, 'un argument inconnu est refusé');
+  assert(r.nuit().ok);
+  assert(countItem(r.charger(), 'omelette') >= 1, 'l\'omelette est prête au matin');
+});
+
+test('E-7 : le journal de la cuisine se rejoue à l\'identique (la nuit comprise)', () => {
+  const s = atelier();
+  s.eauMl = 200000;
+  addItem(s, 'oeuf', 6);
+  addItem(s, 'huile', 2);
+  addItem(s, 'carotte', 5);
+  s.pieces = 5000;
+  assert(construireFrigo(reach(s, 'frigo')).ok, 'le frigo');
+  const sql = baseSql(), r = new MondeRegistre(sql);
+  assert(r.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
+  for (const [type, args] of [['cuisine.lancer', { recette: 'omelette' }], ['frigo.ranger', { objet: 'carotte', quantite: 2 }], ['frigo.toutRanger', {}], ['manger', { objet: 'carotte' }]]) r.commande(A, { id: id(), type, args });
+  assert(r.nuit().ok);
+  eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()));
 });

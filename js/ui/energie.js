@@ -5,9 +5,9 @@ import {
 } from '../engine/stamina.js';
 import { cibleBonheur, meublesBonheur } from '../engine/bonheur.js';
 import { STYLES, styleInfo, styleMaison } from '../engine/styles.js';
-import { eatSnack } from '../engine/family.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
+import { executer } from './commandes.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 
@@ -90,7 +90,7 @@ export function eatButton(item, texte = '') {
 
 registerActions({
   'eat': (target) => {
-    const r = applyResult(eatSnack(state, target.dataset.item));
+    const r = applyResult(executer('manger', { objet: target.dataset.item || null }));
     // fiche 10 : manger plusieurs fois de suite additionne l'énergie dans une seule notification
     if (r && r.ok) notify(null, { cumul: { cle: 'manger', quantites: { gain: r.gain }, texte: (t) => `⚡ +${formatEnergyGain(t.gain)} énergie` } });
   },

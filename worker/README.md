@@ -185,8 +185,11 @@ récolte va droit au coffre commun (`direct`), sans attendre le personnage. Une 
 2 ms de calcul sur la ferme d'essai : **à mesurer au premier déploiement** sur une vraie ferme. 
 E-6 : les bêtes aussi (`poules.nourrir`, `poules.toutNourrir`, `poulailler.agrandir`, `etable.tondre`,
 `etable.herbes`, `etable.place`, `ramassage.prendre`). Le monde ne ramasse pas : à sa création, ce qui
-attendait en tas entre au coffre commun (`ramassage` coupé), et tout y va droit ensuite. La suite : la
-cuisine, le Marché, les outils.
+attendait en tas entre au coffre commun (`ramassage` coupé), et tout y va droit ensuite. 
+E-7 : la cuisine aussi (`cuisine.lancer`, `cuisine.annuler`, `moulin.moudre`, `moulin.annuler`,
+`frigo.ranger`, `frigo.sortir`, `frigo.toutRanger`, `frigo.urgent`, `frigo.acheter`, `frigo.agrandir`,
+`boite.deposer`, `boite.reprendre`, `manger`). L'horloge est figée : une préparation finit pendant la
+nuit partagée. La suite : le Marché, les outils, les hameaux.
 
 ## Mise en route du rapport (une seule fois)
 
