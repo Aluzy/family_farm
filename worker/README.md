@@ -109,6 +109,9 @@ un **lien reçu par e-mail**, sans mot de passe (`worker/src/comptes.mjs`, la ru
 
 ## Le monde partagé (E-1)
 
+Sa vision : `docs/monde-partage.md` (un monde partagé, c'est la zone de la ferme ; le grand monde
+reste à la partie solo).
+
 Un **Durable Object `Monde` par monde** (`worker/src/monde.mjs`) fait autorité. Il garde la partie du
 monde, joue les commandes des joueurs avec **le même moteur que le jeu** (`js/engine/`, regroupé au
 déploiement), les numérote (la révision), les écrit dans un journal et les diffuse. Les joueurs les
