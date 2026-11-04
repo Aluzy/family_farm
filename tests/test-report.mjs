@@ -592,3 +592,53 @@ test('Worker : la fiche du joueur porte son résumé en métadonnées, lu par le
   const body = calls.find((c) => c.method === 'POST').body.body;
   assert(body.includes('## Rétention') && body.includes(`| ${m.first} | 1 |`), body);
 }));
+
+/* ---------- version 3 : créer (F0-7) ---------- */
+
+test('fiche joueur v3 : premières fois gardées (la plus tôt), suivi 3, métadonnées d30 et jalons', () => {
+  const s1 = sessionV2(PID_A, { v: 3, sid: 'sess-aaaa-0001', player: { id: PID_A, playMs: 40 * MIN, suivi: 3, jalons: { catalogue: 2 * MIN, decoration: 5 * MIN } }, events: [
+    { t: 1, type: 'jalon', nom: 'catalogue', playMs: 2 * MIN, day: 1, complet: true },
+    { t: 2, type: 'jalon', nom: 'decoration', playMs: 5 * MIN, day: 1, complet: true },
+    { t: 3, type: 'jalon', nom: '<b>faux</b>', playMs: 1, day: 1 },
+  ] });
+  const f = mergePlayer(null, s1, NOW.toISOString());
+  eq(f.suivi, 3);
+  eq(f.jalons, { catalogue: { playMs: 2 * MIN, day: 1 }, decoration: { playMs: 5 * MIN, day: 1 } });
+  eq(mergePlayer(f, s1, NOW.toISOString()).jalons, f.jalons, 'idempotent');
+  // une autre visite qui dirait plus tard : la première est gardée ; une nouvelle s'ajoute
+  const f2 = mergePlayer(f, sessionV2(PID_A, { v: 3, sid: 'sess-aaaa-0002', player: { id: PID_A, playMs: 90 * MIN, suivi: 3, jalons: { catalogue: 50 * MIN, objets_5: 60 * MIN } } }), NOW.toISOString());
+  eq([f2.jalons.catalogue.playMs, f2.jalons.objets_5.playMs], [2 * MIN, 60 * MIN]);
+  const m = playerMeta(f2);
+  eq([m.suivi, m.jalons, m.d30], ['3', 'catalogue:120,decoration:300,objets_5:3600', '0']);
+  // un joueur d'avant la version 3 : pas « suivi 3 »
+  eq(playerMeta(mergePlayer(null, sessionV2(PID_B), NOW.toISOString())).suivi, '');
+});
+
+test('rétention : J+30, sur les joueurs arrivés il y a 30 à 59 jours', () => {
+  const annuaire = [meta(40, 5, { d30: '1', jours: '6' }), meta(35, 35), meta(31, 31), meta(70, 0, { d30: '1' }), meta(10, 0)];
+  const r = buildReport([], NOW, {}, [], annuaire);
+  eq([r.retention.j30.n, Math.round(r.retention.j30.pct)], [3, 33]);
+  assert(renderMarkdown(r).includes('**Revenus après un mois (J+30 ou plus)** : 33,3 % des 3 joueur(s)'));
+  const vide = renderMarkdown(buildReport([], NOW, {}, [], [meta(2, 1)]));
+  assert(vide.includes('pas encore de joueur arrivé il y a 30 jours ou plus'), vide);
+});
+
+test('créer : gestes de la période, sessions à plusieurs, premières fois des joueurs nés en version 3', () => {
+  const a = sessionV2(PID_A, { v: 3, counters: { clicks: {}, creation: { catalogue: 3, objet: 12, decoration: 5, meuble_tourne: 2, invitation: 1, invitation_acceptee: 2 } } });
+  const b = sessionV2(PID_B, { v: 3, coop: true, counters: { clicks: {}, creation: { objet: 3 } } });
+  const c = sessionV2(PID_B, { v: 2 });
+  const annuaire = [
+    meta(5, 1, { suivi: '3', jalons: 'catalogue:60,decoration:600,objets_5:1200' }),
+    meta(3, 1, { suivi: '3', jalons: 'catalogue:120' }),
+    meta(4, 1, { suivi: '', jalons: 'catalogue:5' }),   // d'avant : pas compté
+  ];
+  const r = buildReport([a, b, c], NOW, {}, [], annuaire);
+  eq([r.creer.sessionsV3, r.creer.sessionsCatalogue, r.creer.sessionsCoop, r.creer.joueurs], [2, 1, 1, 2]);
+  eq(r.creer.gestes, { catalogue: 3, objet: 15, decoration: 5, meuble_tourne: 2, invitation: 1, invitation_acceptee: 2 });
+  const J = Object.fromEntries(r.creer.jalons.map((j) => [j.nom, [j.n, Math.round(j.pct), j.medianMs]]));
+  eq([J.catalogue, J.decoration, J.coop], [[2, 100, 90000], [1, 50, 600000], [0, 0, 0]]);
+  const md = renderMarkdown(r);
+  for (const bout of ['## Créer', '**Catalogue ouvert** : 3 fois, dans 1 session(s) sur 2', '**Sessions à plusieurs** : 1', '| Ouvrir le catalogue (🔨 Construire) | 2 | 100 % | 1 min 30 s |', '| Jouer à plusieurs (monde partagé) | 0 | 0 % | — |']) assert(md.includes(bout), `${bout}\n${md}`);
+  // sans rien de la version 3 : une phrase, pas de tableau
+  assert(renderMarkdown(buildReport([c], NOW, {}, [], [])).includes('le suivi de la création arrive avec la version 3 du suivi'));
+});

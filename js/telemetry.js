@@ -10,7 +10,10 @@
    - Aucune donnée personnelle : un numéro de session aléatoire, un numéro de
      joueur aléatoire (le même d'une visite à l'autre, pour suivre la progression),
      des compteurs (boutons, écrans, défilement, gestes du personnage par jour de
-     jeu) et des instantanés de progression.
+     jeu), des instantanés de progression et, depuis la version 3 (F0-7), les
+     premières fois de la création (première décoration, premier meuble tourné,
+     5 objets posés, catalogue ouvert, invitation envoyée puis acceptée, partie
+     à plusieurs), avec le temps de jeu qu'il a fallu pour y arriver.
    - Le contenu de la sauvegarde et l'adresse IP ne sont jamais lus. Le seul
      texte saisi qui part est le commentaire que le joueur choisit lui-même
      d'envoyer (Options › « Aidez-nous à améliorer le jeu ! »).
@@ -25,7 +28,7 @@ const Telemetry = (() => {
   const T0_KEY = 'ff_t0';              // sessionStorage : début de session
   const DATA_KEY = 'ff_data';          // sessionStorage : compteurs de la visite
   const PLAYER_KEY = 'ff_player';      // localStorage : numéro de joueur, temps de jeu cumulé
-  const POLICY_VERSION = '1.3';
+  const POLICY_VERSION = '1.4';
   const CONSENT_TTL_MS = 183 * 24 * 3600 * 1000; // environ 6 mois
   const FLUSH_MS = 60000;
   const MAX_EVENTS = 400;
@@ -38,6 +41,13 @@ const Telemetry = (() => {
   const MAX_IDLE_STEP_MS = 10 * 60 * 1000; // un écart plus long = appareil en veille
   const MAX_DAYS = 40;     // jours de jeu détaillés par visite
   const MAX_DAY_KEYS = 60; // actions, objets… par jour
+  // Version 3 (F0-7, mesurer le plaisir de créer) : les gestes de la création comptés pendant la
+  // visite (creation), et les premières fois du joueur (jalons : notées une fois, avec le temps de
+  // jeu cumulé, gardées dans ff_player). « objet » : un objet posé (ni mur, ni porte, ni sol) ; au
+  // OBJETS_JALON-ième, le jalon « objets_5 ».
+  const CREATION = ['catalogue', 'objet', 'decoration', 'meuble_tourne', 'invitation', 'invitation_acceptee'];
+  const JALONS = ['catalogue', 'decoration', 'meuble_tourne', 'objets_5', 'invitation', 'invitation_acceptee', 'coop'];
+  const OBJETS_JALON = 5;
 
   const ENDPOINT_PROD = 'https://family-farm.contact-voidr.workers.dev/session';
   const ENDPOINT_LOCAL = 'http://127.0.0.1:8787/session'; // collect-server.mjs (essais)
@@ -126,7 +136,7 @@ const Telemetry = (() => {
   }
 
   function emptyData() {
-    return { clicks: {}, dead: 0, scrolls: 0, tabs: {}, scroll: {}, modals: {}, errors: 0, visibleMs: 0, dropped: 0, feedback: [], events: [], jours: {} };
+    return { clicks: {}, dead: 0, scrolls: 0, tabs: {}, scroll: {}, modals: {}, errors: 0, visibleMs: 0, dropped: 0, feedback: [], events: [], jours: {}, creation: {}, coop: false };
   }
 
   /* ---------- le joueur : un numéro aléatoire, gardé d'une visite à l'autre ---------- */
@@ -135,10 +145,16 @@ const Telemetry = (() => {
     try {
       const p = JSON.parse(lsGet(PLAYER_KEY) || 'null');
       if (p && /^[A-Za-z0-9-]{8,64}$/.test(String(p.id || ''))) {
-        return { id: p.id, ms: Number.isFinite(p.ms) && p.ms > 0 ? p.ms : 0, since: clean(p.since, 30) };
+        const jalons = {};
+        for (const k of JALONS) if (p.jalons && Number.isFinite(p.jalons[k]) && p.jalons[k] >= 0) jalons[k] = p.jalons[k];
+        return {
+          id: p.id, ms: Number.isFinite(p.ms) && p.ms > 0 ? p.ms : 0, since: clean(p.since, 30),
+          // (suivi : 3 si le numéro est né avec la version 3 : ses premières fois sont vraiment les premières)
+          suivi: p.suivi === 3 ? 3 : 2, jalons, objets: Number.isFinite(p.objets) && p.objets > 0 ? Math.floor(p.objets) : 0,
+        };
       }
     } catch (e) { /* un nouveau numéro */ }
-    const fresh = { id: newSid(), ms: 0, since: new Date().toISOString() };
+    const fresh = { id: newSid(), ms: 0, since: new Date().toISOString(), suivi: 3, jalons: {}, objets: 0 };
     lsSet(PLAYER_KEY, JSON.stringify(fresh));
     return fresh;
   }
@@ -186,7 +202,7 @@ const Telemetry = (() => {
   function push(type, fields) {
     if (!active) return;
     if (data.events.length >= MAX_EVENTS) {
-      // On garde d'abord les repères de progression : on sacrifie le plus vieux clic.
+      // On garde d'abord les repères de progression (nuits, niveaux, jalons) : on sacrifie le plus vieux clic.
       const i = data.events.findIndex((e) => e.type === 'click');
       if (i < 0) { data.dropped++; return; }
       data.events.splice(i, 1);
@@ -299,6 +315,37 @@ const Telemetry = (() => {
     return 'ok';
   }
 
+  // Une première fois du joueur (JALONS) : notée une seule fois, avec le temps de jeu cumulé et le jour
+  // de jeu ; `complet` : le numéro de joueur est né avec la version 3 (sinon, il a pu le faire avant).
+  function jalon(nom) {
+    if (!active || !player || !JALONS.includes(nom) || nom in player.jalons) return;
+    accrue();
+    const playMs = Math.round(player.ms);
+    player.jalons[nom] = playMs;
+    push('jalon', { nom, playMs, day: curDay, complet: player.suivi === 3 });
+    savePlayer();
+  }
+
+  // Un geste de la création (CREATION), `n` fois : compté pendant la visite ; la première fois est un
+  // jalon ; au OBJETS_JALON-ième objet posé, le jalon « objets_5 ».
+  function creation(nom, n) {
+    if (!active || !CREATION.includes(nom)) return;
+    const k = Number.isFinite(n) && n > 0 ? Math.floor(n) : 1;
+    bump(data.creation, nom, k);
+    dirty = true;
+    if (nom === 'objet') {
+      if (player) { player.objets += k; savePlayer(); }
+      if (player && player.objets >= OBJETS_JALON) jalon('objets_5');
+    } else jalon(nom);
+  }
+
+  // Une partie à plusieurs (le monde partagé, plus tard) : la visite est notée coopérative.
+  function coop() {
+    if (!active) return;
+    if (!data.coop) { data.coop = true; dirty = true; push('coop', {}); }
+    jalon('coop');
+  }
+
   function chapter(n, day) { push('chapter', { chapter: num(n), day: num(day) }); }
   function alertSeen(kind) { push('alert', { kind: cleanKey(kind) }); }
 
@@ -354,12 +401,13 @@ const Telemetry = (() => {
     const d = data;
     let events = d.events;
     const make = () => JSON.stringify({
-      v: 2, sid, game: gameVersion, policy: POLICY_VERSION,
-      player: player ? { id: player.id, playMs: Math.round(player.ms), since: player.since } : null,
+      v: 3, sid, game: gameVersion, policy: POLICY_VERSION,
+      player: player ? { id: player.id, playMs: Math.round(player.ms), since: player.since, suivi: player.suivi, jalons: player.jalons } : null,
       startedAt: new Date(t0).toISOString(), updatedAt: new Date().toISOString(),
       ended: !!ended, durationMs: rel(), visibleMs: Math.round(d.visibleMs),
       device: deviceInfo(),
-      counters: { clicks: d.clicks, deadClicks: d.dead, scrolls: d.scrolls, tabs: d.tabs, scrollDepth: d.scroll, modals: d.modals, errors: d.errors, droppedEvents: d.dropped },
+      counters: { clicks: d.clicks, deadClicks: d.dead, scrolls: d.scrolls, tabs: d.tabs, scrollDepth: d.scroll, modals: d.modals, errors: d.errors, droppedEvents: d.dropped, creation: d.creation || {} },
+      coop: !!d.coop,
       feedback: d.feedback || [],
       jours: d.jours || {},
       events,
@@ -484,7 +532,7 @@ const Telemetry = (() => {
 
   return {
     init, status, setConsent, track: push,
-    click, deadClick, tab, modal, night, chapter, alert: alertSeen, feedback, day, game,
+    click, deadClick, tab, modal, night, chapter, alert: alertSeen, feedback, day, game, creation, jalon, coop,
     sessionId: () => (active ? sid : null),
     playerId: () => (active && player ? player.id : null),
     isActive: () => active,

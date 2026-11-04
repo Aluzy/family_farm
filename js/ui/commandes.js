@@ -6,11 +6,15 @@
    F0-5 : une commande réussie est sauvegardée tout de suite, sans attendre la sauvegarde de toutes les
    AUTOSAVE_MS (10 s) : un meuble posé puis l'onglet fermé, le meuble est là au retour. Les commandes
    d'un même geste (un tracé de murs, un « Fabriquer et poser » : plusieurs commandes de suite, sans
-   rendre la main) ne font qu'une sauvegarde, juste après lui (une micro-tâche). */
+   rendre la main) ne font qu'une sauvegarde, juste après lui (une micro-tâche).
+
+   F0-7 : une commande réussie est aussi vue par le suivi de session (avec le consentement du joueur :
+   js/ui/consent.js, telCommande) : les objets posés, les décorations, les meubles tournés. */
 
 import { executerCommande } from '../engine/commandes.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
+import { telCommande } from './consent.js';
 
 let compteur = 0;
 const session = Date.now().toString(36);
@@ -31,6 +35,6 @@ function sauvegarderApres() {
 export function executer(type, args) {
   compteur += 1;
   const r = executerCommande(state, { id: `c-${session}-${compteur}`, type, args });
-  if (r.ok) sauvegarderApres();
+  if (r.ok) { sauvegarderApres(); telCommande(type, args, r); }
   return r;
 }

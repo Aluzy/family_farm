@@ -10,6 +10,12 @@
 // automatisations), l'énergie dépensée par type de geste, les ressources ramassées, les
 // objets fabriqués et les blocs posés ; et, à chaque nuit, le niveau, l'XP, la famille, le
 // repas et l'étape du didacticiel ; à chaque niveau gagné, le temps de jeu cumulé.
+//
+// Version 3 (F0-7, mesurer le plaisir de créer) : les gestes de la création comptés pendant la
+// visite (counters.creation : catalogue ouvert, objets posés, décorations, meubles tournés,
+// invitations envoyées, invités qui acceptent), la visite à plusieurs (coop), et les premières fois
+// du joueur (jalons : événements « jalon » et player.jalons), avec le temps de jeu qu'il a fallu.
+// Un joueur « suivi 3 » est né avec cette version : ses premières fois sont vraiment les premières.
 
 const TZ = 'Europe/Paris';
 const DAY_MS = 24 * 3600 * 1000;
@@ -213,6 +219,20 @@ const RETENTION_JOURS = 14;     // cohortes affichées (un jour de première vis
 const ABANDON_JOURS = 3;        // sans visite depuis tant de jours : le joueur a arrêté
 const ABANDON_FENETRE = 60;     // joueurs arrivés depuis tant de jours au plus
 const PIECES_JOURS = 20;        // jours de jeu du tableau des pièces
+const J30_FENETRE = 60;         // la rétention à J+30 : les joueurs arrivés il y a 30 à 59 jours
+
+// Les premières fois (version 3) : leur libellé, dans l'ordre du rapport.
+export const JALONS = {
+  catalogue: 'Ouvrir le catalogue (🔨 Construire)',
+  decoration: 'Poser une première décoration (meuble, jardin, lumière)',
+  objets_5: 'Avoir posé 5 objets',
+  meuble_tourne: 'Tourner un meuble',
+  invitation: 'Envoyer une invitation à un repas',
+  invitation_acceptee: 'Voir une invitation acceptée',
+  coop: 'Jouer à plusieurs (monde partagé)',
+};
+// Les gestes de la création comptés pendant les visites (counters.creation).
+const CREATION = ['catalogue', 'objet', 'decoration', 'meuble_tourne', 'invitation', 'invitation_acceptee'];
 
 // La date (AAAA-MM-JJ) à Paris d'un instant, ou null.
 export function parisDate(t) {
@@ -335,6 +355,18 @@ export function mergePlayer(prev, s, receivedAt) {
   for (const t of [s.startedAt, at]) { const d = parisDate(t); if (d) dates.add(d); }
   fiche.dates = [...dates].sort().slice(-400);
   fiche.playMs = Math.max(numOr0(fiche.playMs), numOr0(p.playMs));
+  // version 3 : né avec le suivi des premières fois ; ses premières fois (pour chacune, la plus tôt
+  // dans le temps de jeu ; renvoyer la même session ne change rien)
+  if (p.suivi === 3) fiche.suivi = 3;
+  const jalons = { ...(fiche.jalons && typeof fiche.jalons === 'object' ? fiche.jalons : {}) };
+  const jalon = (nom, ms, day) => {
+    if (!(nom in JALONS) || num(ms) === null || ms < 0) return;
+    const old = jalons[nom];
+    if (!old || !(old.playMs <= ms)) jalons[nom] = { playMs: Math.round(ms), day: num(day) };
+  };
+  for (const e of Array.isArray(s.events) ? s.events : []) if (e && e.type === 'jalon') jalon(e.nom, e.playMs, e.day);
+  if (p.jalons && typeof p.jalons === 'object') for (const [k, ms] of Object.entries(p.jalons)) jalon(k, ms, null);
+  if (Object.keys(jalons).length) fiche.jalons = jalons;
   if (PID_RE.test(String(s.sid || ''))) fiche.sessions[s.sid] = { startedAt: String(s.startedAt || '').slice(0, 30), visibleMs: numOr0(s.visibleMs) };
   const sids = Object.keys(fiche.sessions);
   if (sids.length > MAX_PLAYER_SESSIONS) {
@@ -366,7 +398,9 @@ export function mergePlayer(prev, s, receivedAt) {
 // Le résumé d'une fiche, gardé dans les métadonnées de son fichier R2 : le rapport lit ainsi
 // la rétention et les abandons de tous les joueurs sans relire chaque fiche (des chaînes,
 // 2 Ko au plus). first, last : premier et dernier jour joué (AAAA-MM-JJ) ; d1 : revenu le
-// lendemain ; d7 : revenu 7 jours après ou plus ; jours : jours distincts joués.
+// lendemain ; d7 : revenu 7 jours après ou plus ; d30 : 30 jours après ou plus ; jours : jours
+// distincts joués ; suivi : « 3 » s'il est né avec la version 3 ; jalons : ses premières fois,
+// « nom:temps de jeu en s » séparés par des virgules.
 export function playerMeta(f) {
   const dates = Array.isArray(f.dates) && f.dates.length ? f.dates : [parisDate(f.first) || ''];
   const first = dates[0], last = dates[dates.length - 1];
@@ -375,6 +409,10 @@ export function playerMeta(f) {
     first, last, jours: String(dates.length),
     d1: dates.includes(first && parisDate(Date.parse(`${first}T12:00:00Z`) + DAY_MS)) ? '1' : '0',
     d7: dates.some((d) => first && dateDiff(first, d) >= 7) ? '1' : '0',
+    d30: dates.some((d) => first && dateDiff(first, d) >= 30) ? '1' : '0',
+    suivi: f.suivi === 3 ? '3' : '',
+    jalons: Object.entries(f.jalons && typeof f.jalons === 'object' ? f.jalons : {})
+      .filter(([k, v]) => k in JALONS && v && num(v.playMs) !== null).map(([k, v]) => `${k}:${Math.round(v.playMs / 1000)}`).join(','),
     niveau: String(p.niveau), chapitre: p.chapitre === null ? '' : String(p.chapitre),
     jeu: p.jour === null ? '' : String(p.jour), tuto: p.tuto || '', playMs: String(Math.round(p.playMs)),
     sessions: String(p.sessions),
@@ -616,9 +654,38 @@ export function buildReport(sessions, now, meta = {}, players = [], annuaire = [
     return { n, pct: n ? (100 * ok.reduce((t, c) => t + c[key], 0)) / n : 0 };
   };
   const cRows = [...cohortes.values()].sort((a, b) => b.date.localeCompare(a.date));
+  // J+30 : les joueurs arrivés il y a 30 à J30_FENETRE - 1 jours (assez tôt pour le savoir, assez récents)
+  const anciens = annu.filter((m) => { const age = dateDiff(m.first, today); return age >= 30 && age < J30_FENETRE; });
   const retention = {
     cohortes: cRows.filter((c) => c.age < RETENTION_JOURS),
     j1: taux(cRows, 'd1', 1), j7: taux(cRows, 'd7', 7), revenus: taux(cRows, 'revenus', 1),
+    j30: { n: anciens.length, pct: anciens.length ? (100 * anciens.filter((m) => m.d30 === '1').length) / anciens.length : 0 },
+  };
+
+  /* -- créer (version 3) : les gestes de la création pendant la période, les premières fois des joueurs -- */
+  const gestesCreation = Object.fromEntries(CREATION.map((k) => [k, 0]));
+  let sessionsV3 = 0, sessionsCatalogue = 0, sessionsCoop = 0;
+  for (const s of inWindow) {
+    if (s.v === 3) sessionsV3 += 1;
+    if (s.coop === true) sessionsCoop += 1;
+    const c = s.counters && s.counters.creation;
+    if (!c || typeof c !== 'object') continue;
+    for (const k of CREATION) gestesCreation[k] += numOr0(c[k]);
+    if (numOr0(c.catalogue) > 0) sessionsCatalogue += 1;
+  }
+  // les premières fois : parmi les joueurs nés avec la version 3 (annuaire : tous, pas seulement la période)
+  const nes3 = annu.filter((m) => m.suivi === '3');
+  const temps = {};
+  for (const m of nes3) {
+    for (const part of String(m.jalons || '').split(',')) {
+      const [k, sec] = part.split(':');
+      if (k in JALONS && Number.isFinite(Number(sec))) (temps[k] ||= []).push(Number(sec) * 1000);
+    }
+  }
+  const creer = {
+    sessionsV3, sessionsCatalogue, sessionsCoop, gestes: gestesCreation,
+    joueurs: nes3.length,
+    jalons: Object.keys(JALONS).map((k) => ({ nom: k, label: JALONS[k], n: (temps[k] || []).length, pct: nes3.length ? (100 * (temps[k] || []).length) / nes3.length : 0, medianMs: median(temps[k] || []) })),
   };
 
   /* -- l'abandon : les joueurs arrivés récemment qui ne sont plus revenus -- */
@@ -663,6 +730,7 @@ export function buildReport(sessions, now, meta = {}, players = [], annuaire = [
     start: new Date(start),
     end: new Date(end),
     retention,
+    creer,
     abandon,
     economie,
     joueurs: { actifs: pids.size, fiches: resumes.slice(0, MAX_PLAYERS_SHOWN), fichesTotal: resumes.length, nouveaux, familles: [...familles.entries()].sort((a, b) => a[0] - b[0]) },
@@ -746,6 +814,7 @@ function renderRetention(L, r) {
   if (R.cohortes.length || R.j1.n) {
     L.push(`- **Revenus le lendemain (J+1)** : ${pct(R.j1.pct)} des ${R.j1.n} joueur(s) arrivés depuis au moins un jour`);
     L.push(`- **Revenus après une semaine (J+7 ou plus)** : ${R.j7.n ? `${pct(R.j7.pct)} des ${R.j7.n} joueur(s) arrivés depuis au moins 7 jours` : 'pas encore de joueur arrivé il y a 7 jours ou plus'}`);
+    L.push(`- **Revenus après un mois (J+30 ou plus)** : ${R.j30.n ? `${pct(R.j30.pct)} des ${R.j30.n} joueur(s) arrivés il y a 30 à ${J30_FENETRE - 1} jours` : 'pas encore de joueur arrivé il y a 30 jours ou plus'}`);
     L.push(`- **Revenus au moins une fois** : ${pct(R.revenus.pct)}`);
     L.push('');
     L.push('| Première visite | Nouveaux joueurs | Revenus à J+1 | Revenus à J+7 ou plus |');
@@ -800,6 +869,33 @@ function renderRetention(L, r) {
   }
 }
 
+// Créer (version 3) : les gestes de la création et les premières fois des joueurs.
+function renderCreer(L, r) {
+  const C = r.creer, G = C.gestes;
+  L.push('## Créer');
+  L.push('');
+  if (!C.sessionsV3 && !C.joueurs) {
+    L.push('Aucune donnée encore (le suivi de la création arrive avec la version 3 du suivi).');
+    L.push('');
+    return;
+  }
+  L.push(`- **Catalogue ouvert** : ${fmtNum(G.catalogue)} fois, dans ${C.sessionsCatalogue} session(s) sur ${C.sessionsV3} (version 3 du suivi)`);
+  L.push(`- **Objets posés** : ${fmtNum(G.objet)}, dont ${fmtNum(G.decoration)} décoration(s) ; **meubles tournés** : ${fmtNum(G.meuble_tourne)}`);
+  L.push(`- **Invitations envoyées** : ${fmtNum(G.invitation)} ; **invités qui ont accepté** : ${fmtNum(G.invitation_acceptee)}`);
+  L.push(`- **Sessions à plusieurs** : ${C.sessionsCoop}${C.sessionsCoop ? '' : ' (le monde partagé n\'existe pas encore)'}`);
+  L.push('');
+  if (C.joueurs) {
+    L.push('| Première fois | Joueurs | Part | Temps de jeu pour y arriver (médiane) |');
+    L.push('| --- | ---: | ---: | ---: |');
+    for (const j of C.jalons) L.push(`| ${j.label} | ${j.n} | ${pct(j.pct)} | ${j.n ? fmtDuration(j.medianMs) : '—'} |`);
+    L.push('');
+    L.push(`<sub>Parmi les ${C.joueurs} joueur(s) arrivés avec la version 3 du suivi (depuis le début, pas seulement la période) : leurs premières fois sont vraiment les premières.</sub>`);
+  } else {
+    L.push('Aucun joueur arrivé avec la version 3 du suivi pour l\'instant : les premières fois viendront avec eux.');
+  }
+  L.push('');
+}
+
 // Les sections de la version 2 : joueurs, jours de jeu, gestes, ressources, niveaux, progression.
 function renderGame(L, r) {
   const J = r.joueurs, D = r.jours;
@@ -810,6 +906,7 @@ function renderGame(L, r) {
   if (r.repas.nuits) L.push(`- **Repas du soir** : ${fmtNum(r.repas.moyenne)} % couvert en moyenne ; ${r.repas.faim} nuit(s) sur ${r.repas.nuits} où la famille n'a pas mangé à sa faim`);
   if (r.tutos.length) L.push(`- **Didacticiel** (étape à la dernière nuit) : ${r.tutos.map(([t, n]) => `${mdSafe(t)} : ${n}`).join(' · ')}`);
   L.push('');
+  renderCreer(L, r);
   L.push('## Jours de jeu');
   L.push('');
   if (D.count) {

@@ -9,15 +9,23 @@
   joueur aléatoire (le même d'une visite à l'autre) : sa fiche `players/<id>.json`, la
   progression du joueur (une ligne par nuit et par niveau atteint, avec le temps de jeu
   cumulé, les jours où il a joué), est mise à jour à chaque envoi. Son résumé (premier et
-  dernier jour joué, retour à J+1 et J+7, niveau, étape du didacticiel, temps de jeu) est
-  gardé dans les métadonnées du fichier : la rétention et l'abandon se calculent sur tous
-  les joueurs sans relire chaque fiche.
+  dernier jour joué, retour à J+1, J+7 et J+30, niveau, étape du didacticiel, temps de jeu,
+  premières fois) est gardé dans les métadonnées du fichier : la rétention, l'abandon et les
+  premières fois se calculent sur tous les joueurs sans relire chaque fiche. Depuis la
+  version 3 (F0-7), une session porte aussi les gestes de la création (catalogue ouvert,
+  objets et décorations posés, meubles tournés, invitations envoyées et acceptées), si elle
+  s'est jouée à plusieurs (`coop`), et les premières fois du joueur (`jalon`), que sa fiche
+  garde (`jalons`).
 - **Rapport quotidien à 13 h (heure de Paris)** : lit les sessions démarrées dans les
   dernières 24 h et publie le rapport comme **issue d'un dépôt GitHub privé**
   avec :
   - les **sessions** (temps moyen et médian, sessions très courtes) ;
   - les **joueurs** : actifs et nouveaux, taille de la famille, part du repas du soir
     couverte, étape du didacticiel ;
+  - **créer** (version 3) : catalogue ouvert, objets et décorations posés, meubles tournés,
+    invitations envoyées et acceptées, sessions à plusieurs ; et, pour les joueurs arrivés avec
+    la version 3, la part qui a fait chaque première fois et le temps de jeu médian pour y
+    arriver (première décoration, 5 objets posés, premier meuble tourné…) ;
   - les **jours de jeu** : temps réel moyen par jour de jeu, gestes et énergie par jour ;
   - les **gestes du personnage** par type (couper, piocher, arroser…) : nombre, par jour de
     jeu, énergie dépensée et énergie par geste ; les automatisations à part ;
@@ -28,7 +36,8 @@
   - la **progression par joueur** : un tableau (temps de jeu, jour, niveau, chapitre,
     famille) et un graphique du niveau selon le temps de jeu (Mermaid, affiché par GitHub) ;
   - la **rétention** : par jour de première visite, les joueurs revenus le lendemain (J+1)
-    et 7 jours après ou plus (J+7) ;
+    et 7 jours après ou plus (J+7), et le retour après un mois (J+30, sur les joueurs arrivés il
+    y a 30 à 59 jours) ;
   - l'**abandon** : les joueurs arrivés depuis 60 jours au plus et sans visite depuis 3 jours,
     leur temps de jeu, leur niveau, leur chapitre et leur étape du didacticiel ;
   - l'**économie** : pièces gagnées et dépensées par poste et par jour de jeu, et pièces

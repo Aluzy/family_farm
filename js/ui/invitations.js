@@ -15,6 +15,7 @@ import { state } from './store.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
+import { tel } from './consent.js';
 
 /* ---------- les invitations à un repas, côté page (js/engine/invitations.js) ----------
 
@@ -106,6 +107,7 @@ export function watchInvitations() {
   if (!state || setupPending(state) || asleep(state)) return;
   const R = reponsesAAnnoncer(state);
   for (const r of R) {
+    if (r.oui.length) tel('creation', 'invitation_acceptee', r.oui.length);   // (F0-7 : les invités qui viennent)
     const M = MOMENTS[r.moment];
     const oui = r.oui.map(escapeHtml), non = r.non.map(escapeHtml);
     const quand = `${M.nom} ${leJour(r.jour)}`;
@@ -186,6 +188,7 @@ registerActions({
     const qui = [...f.querySelectorAll('[name="evt-qui"]:checked')].map((x) => { const [hameau, id] = x.value.split('|'); return { hameau, id }; });
     const r = inviter(state, jour, moment, qui);
     if (!r.ok) { notify(r.error, { son: 'erreur' }); return; }
+    tel('creation', 'invitation');   // (F0-7)
     closeModal();
     persistState();
     refresh();
