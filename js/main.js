@@ -18,6 +18,7 @@ import { stageModel } from './ui/stage.js';
 import { stageWindow } from './ui/stage-windows.js';
 import { wantConsentBanner } from './ui/calme.js';
 import { garderPlusTard, relireFerme } from './ui/ferme-gardee.js';
+import { connexionDuLien } from './ui/compte.js';
 
 // Chaque écran s'inscrit en se chargeant (ses actions, ses écouteurs) : ils sont tous
 // chargés ici, qu'un autre module les importe ou non.
@@ -111,6 +112,7 @@ async function demarrer() {
     telDay();
   } catch (e) { /* le suivi ne doit jamais empêcher de jouer */ }
   garderPlusTard();
+  connexionDuLien(); // E-0 : le jeu ouvert par le lien de connexion reçu par e-mail (jeu.html#connexion=…)
 }
 // (une erreur au démarrage reste une erreur de la page, comme avant)
 demarrer().catch((e) => setTimeout(() => { throw e; }));

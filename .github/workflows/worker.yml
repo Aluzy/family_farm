@@ -34,6 +34,8 @@ jobs:
           node-version: 22
       - name: Tests du rapport quotidien et de la collecte
         run: node tests/test-report.mjs
+      - name: Tests des comptes du jeu en ligne
+        run: node tests/test-comptes.mjs
       - name: Construire le Worker comme au déploiement (wrangler deploy --dry-run)
         run: npx --yes "$WRANGLER" deploy --dry-run --outdir "$RUNNER_TEMP/worker"
       - name: Construire une version de branche (wrangler versions upload --dry-run)

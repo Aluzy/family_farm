@@ -209,6 +209,7 @@ test('durées : format lisible', () => {
 async function loadWorker() {
   const dir = mkdtempSync(join(tmpdir(), 'ff-worker-'));
   writeFileSync(join(dir, 'report.mjs'), readFileSync(join(here, 'worker/src/report.mjs')));
+  writeFileSync(join(dir, 'comptes.mjs'), readFileSync(join(here, 'worker/src/comptes.mjs')));
   writeFileSync(join(dir, 'index.mjs'), readFileSync(join(here, 'worker/src/index.js')));
   return (await import(pathToFileURL(join(dir, 'index.mjs')).href)).default;
 }

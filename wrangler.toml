@@ -7,6 +7,16 @@ binding = "SESSIONS"
 bucket_name = "ferme-familiale-sessions"
 jurisdiction = "eu"
 
+# Les comptes des joueurs (E-0, worker/src/comptes.mjs) : un Durable Object, sa base SQLite. Cloudflare
+# le crée au premier déploiement (rien à créer à la main).
+[[durable_objects.bindings]]
+name = "COMPTES"
+class_name = "Comptes"
+
+[[migrations]]
+tag = "v1-comptes"
+new_sqlite_classes = ["Comptes"]
+
 # Rapport quotidien : 13 h à Paris. Cloudflare compte en UTC ; 11 h UTC = 13 h en été
 # (CEST), 12 h UTC = 13 h en hiver (CET). Le Worker ignore celui qui ne tombe pas à 13 h.
 [triggers]
@@ -23,3 +33,6 @@ enabled = true
 #   REPORT_GITHUB_REPO   dépôt PRIVÉ qui reçoit les rapports, au format compte/depot
 #   REPORT_TOKEN         (facultatif) longue chaîne aléatoire qui active GET /report
 #                        pour prévisualiser ou tester la publication
+#   RESEND_API_KEY       (jeu en ligne) clé de l'API de Resend, qui envoie les liens de connexion
+#   COMPTE_EXPEDITEUR    (jeu en ligne) l'expéditeur des liens, d'un domaine vérifié chez Resend,
+#                        par exemple « Ferme Familiale <connexion@mon-domaine.fr> »
