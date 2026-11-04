@@ -113,14 +113,22 @@ export const RAW_DATA = {
     "BONHEUR_REDUCTION": 50,
     "ENDURANCE": 5,
     "PLANCHER": 40,
-    "REVEIL_BASE": 60,
-    "REVEIL_REPAS": 40,
+    "REVEIL_BASE": 100,
+    "REVEIL_REPAS": 0,
     "MANGER_DIVISEUR": 5,
     "MANGER_BONUS": 10,
     "SOMMEIL_HEURES": 8
   },
   "MARCHE": { "PLANCHER": { "defaut": 120, "graine": 200 }, "PAS": 10, "MULTIPLICATEUR_PRODUCTION": 2, "TRANSFORMATIONS_DOUBLEES": ["farine"] },
   "HORS_LIGNE": { "MAX_S": 28800, "PAS_S": 5, "USURE": false, "ECRAN_S": 60 },
+  "PENALITES": {
+    "PEREMPTION": false,
+    "USURE": false,
+    "BONHEUR_BAISSE": false,
+    "NUIT_SANS_DORMIR": false,
+    "SERIE_REMISE": false,
+    "RATION_PERDUE": false
+  },
   "AIDE": { "ETAPES": ["eau", "potager", "dormir"] },
   "DIDACTICIEL": { "GRAINES": { "graine_carotte": 6 }, "LABOURS": 3, "SAC": { "objet": "sac_petit", "provisions": { "baies": 4 } } },
   "BONHEUR": {
@@ -133,7 +141,7 @@ export const RAW_DATA = {
     "PLATS_MAX": 3,
     "FAIM": -2,
     "BULLE": 5,
-    "CIBLE": { "BASE": 40, "VITESSE": 25, "MEUBLES_MAX": 30, "FAIM": -8, "VARIETE": { "4": 4, "6": 8 } }
+    "CIBLE": { "BASE": 40, "VITESSE": 25, "MEUBLES_MAX": 30, "FAIM": 0, "VARIETE": { "4": 4, "6": 8 } }
   },
   "NIVEAU_MAX": 5,
   "RESEAU": {
@@ -1453,7 +1461,7 @@ export const RAW_DATA = {
     },
     "SILO": { "LARGEUR": 2, "HAUTEUR": 3, "HAUTEUR_MAX": 6, "BLES_PAR_BLOC": 10 },
     "ARBRE_ECART": 3,
-    "BONHEUR_SANS_COUCHAGE": -32,
+    "BONHEUR_SANS_COUCHAGE": 0,
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },
@@ -2055,7 +2063,7 @@ export const RAW_DATA = {
     "PRIX": 600,
     "PLACES": 2,
     "VITESSE": 1.8,
-    "VITESSE_FAIM": 1.3,
+    "VITESSE_FAIM": 1.8,
     "RATION": 2,
     "ATTACHE": ["poteau_attache", "corde"],
     "PROCHE": 40
@@ -4472,7 +4480,7 @@ export const RAW_DATA = {
       "MACHINES": { "station_robot": 40, "botteleuse": 15, "distributeur": 15, "convoyeur": 5, "entonnoir": 5, "panneau": 5, "batterie": 5 },
       "NIVEAUX": { "basse": 0, "moyenne": 120, "haute": 220 }
     },
-    "DERIVE": { "NUITS": 3, "POINTS": { "basse": 0, "moyenne": 0, "haute": -1 }, "PLANCHER": 20 },
+    "DERIVE": { "NUITS": 3, "POINTS": { "basse": 0, "moyenne": 0, "haute": 0 }, "PLANCHER": 20 },
     "FINS": {
       "GRANDE": "haute",
       "ENTRETIEN": 4,

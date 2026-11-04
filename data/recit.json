@@ -113,7 +113,8 @@
       "MACHINES": { "station_robot": 40, "botteleuse": 15, "distributeur": 15, "convoyeur": 5, "entonnoir": 5, "panneau": 5, "batterie": 5 },
       "NIVEAUX": { "basse": 0, "moyenne": 120, "haute": 220 }
     },
-    "DERIVE": { "NUITS": 3, "POINTS": { "basse": 0, "moyenne": 0, "haute": -1 }, "PLANCHER": 20 },
+    "//DERIVE": "B-1 : une ferme à l'empreinte haute ne fait plus perdre de confiance aux hameaux (avant : haute -1).",
+    "DERIVE": { "NUITS": 3, "POINTS": { "basse": 0, "moyenne": 0, "haute": 0 }, "PLANCHER": 20 },
     "FINS": {
       "GRANDE": "haute", "ENTRETIEN": 4, "NATURE": 10,
       "POIDS": { "promesse": 1, "toit": 1, "enveloppe": 3 },

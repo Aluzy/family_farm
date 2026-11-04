@@ -344,7 +344,8 @@
     ],
     "SILO": { "LARGEUR": 2, "HAUTEUR": 3, "HAUTEUR_MAX": 6, "BLES_PAR_BLOC": 10 },
     "ARBRE_ECART": 3,
-    "BONHEUR_SANS_COUCHAGE": -32,
+    "//BONHEUR_SANS_COUCHAGE": "B-1 : une nuit sans couchage ne coûte plus de bonheur (avant : -32).",
+    "BONHEUR_SANS_COUCHAGE": 0,
     "RAMASSAGE": {
       "petite_pierre": { "nom": "Petite pierre", "objet": "pierre", "nombre": 14 },
       "morceau_bois": { "nom": "Morceau de bois", "objet": "bois", "nombre": 14 },

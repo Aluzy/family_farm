@@ -3,6 +3,7 @@ import {
   batteryCapacity, efficiency, isBroken, isOwned, maintainCost, needsService, panelOutput, pumpFlow, repairCost,
   starterOf, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
 } from '../engine/devices.js';
+import { penalite } from '../engine/inventory.js';
 import { hourOfDay, nightActive } from '../engine/clock.js';
 import { deviceStatus, energyStats } from '../engine/energy.js';
 import { energyChip } from './energie.js';
@@ -233,6 +234,7 @@ export function renderRobotCard() {
 }
 
 export function wearHtml(d) {
+  if (!penalite('USURE') && !(d.usure > 0)) return '';   // (B-1 : les appareils ne s'usent plus)
   const pct = d.usure;
   const cls = isBroken(d) ? ' bad' : needsService(d) ? ' warn' : '';
   return `
