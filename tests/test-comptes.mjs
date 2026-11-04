@@ -5,8 +5,7 @@
 
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
-import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
@@ -125,10 +124,7 @@ test('comptes : les routes ; sans service d\'e-mails configuré, le lien n\'est 
 
 // Le Worker lui-même (index.js), avec un Durable Object Comptes sur node:sqlite.
 async function chargerWorker() {
-  const dir = mkdtempSync(join(tmpdir(), 'ff-comptes-'));
-  for (const f of ['report.mjs', 'comptes.mjs']) writeFileSync(join(dir, f), readFileSync(join(here, 'worker/src', f)));
-  writeFileSync(join(dir, 'index.mjs'), readFileSync(join(here, 'worker/src/index.js')));
-  return import(pathToFileURL(join(dir, 'index.mjs')).href);
+  return import(pathToFileURL(join(here, 'worker/src/index.js')).href);
 }
 
 test('comptes : le Worker passe /compte/… au Durable Object, depuis le jeu seulement (CORS avec Authorization)', async () => {

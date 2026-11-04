@@ -48,6 +48,8 @@ export function creerTables(sql) {
   sql.exec(`CREATE TABLE IF NOT EXISTS sessions (hash TEXT PRIMARY KEY, compte TEXT NOT NULL, cree INTEGER NOT NULL, expire INTEGER NOT NULL)`);
   sql.exec(`CREATE INDEX IF NOT EXISTS liens_email ON liens (email, cree)`);
   sql.exec(`CREATE INDEX IF NOT EXISTS sessions_compte ON sessions (compte)`);
+  // (E-1 : les mondes en ligne d'un compte, pour les lui lister ; chaque monde garde ses membres lui-même)
+  sql.exec(`CREATE TABLE IF NOT EXISTS mondes (compte TEXT NOT NULL, monde TEXT NOT NULL, titre TEXT NOT NULL, role TEXT NOT NULL, cree INTEGER NOT NULL, PRIMARY KEY (compte, monde))`);
 }
 
 const lignes = (r) => (r && typeof r.toArray === 'function' ? r.toArray() : Array.isArray(r) ? r : []);
@@ -122,12 +124,22 @@ export class Registre {
     return { ok: true };
   }
 
+  // E-1 : les mondes d'un compte (le Worker les note à la création d'un monde, plus tard aux invitations).
+  ajouterMonde(compte, monde, titre, role) {
+    this.faire('INSERT INTO mondes (compte, monde, titre, role, cree) VALUES (?, ?, ?, ?, ?) ON CONFLICT(compte, monde) DO UPDATE SET titre = excluded.titre, role = excluded.role',
+      compte, monde, String(titre || 'Ma ferme').slice(0, 40), role, this.maintenant());
+  }
+  mondesDe(compte) {
+    return this.tous('SELECT monde, titre, role, cree FROM mondes WHERE compte = ? ORDER BY cree', compte);
+  }
+
   // Le compte de la session supprimé, avec toutes ses sessions et les liens en attente de son adresse.
   async supprimer(session) {
     const c = await this.moi(session);
     if (!c) return refus(401, 'Connecte-toi d\'abord.');
     this.faire('DELETE FROM sessions WHERE compte = ?', c.id);
     this.faire('DELETE FROM liens WHERE email = ?', c.email);
+    this.faire('DELETE FROM mondes WHERE compte = ?', c.id);
     this.faire('DELETE FROM comptes WHERE id = ?', c.id);
     return { ok: true };
   }
@@ -202,6 +214,25 @@ export async function routeCompte(request, registre, env, envoyer = fetch) {
   return { statut: 404, corps: { ok: false, erreur: 'not found' } };
 }
 
+// Les demandes internes du Worker (E-1) : /interne/session (le compte d'une session : en-tête
+// Authorization), /interne/monde (noter le monde d'un compte), /interne/mondes (les mondes d'un compte).
+export async function routeInterne(request, registre) {
+  const url = new URL(request.url);
+  const corps = async () => { try { return await request.json(); } catch (e) { return {}; } };
+  if (url.pathname === '/interne/session') {
+    const auth = request.headers.get('Authorization') || '';
+    const c = await registre.moi(auth.startsWith('Bearer ') ? auth.slice(7).trim() : '');
+    return c ? { statut: 200, corps: { ok: true, compte: c } } : { statut: 401, corps: { ok: false, erreur: 'Connecte-toi d\'abord (⚙️ Options › Jeu en ligne).' } };
+  }
+  if (url.pathname === '/interne/monde' && request.method === 'POST') {
+    const b = await corps();
+    registre.ajouterMonde(String(b.compte), String(b.monde), b.titre, String(b.role || 'batisseur'));
+    return { statut: 200, corps: { ok: true } };
+  }
+  if (url.pathname === '/interne/mondes') return { statut: 200, corps: { ok: true, mondes: registre.mondesDe(url.searchParams.get('compte') || '') } };
+  return { statut: 404, corps: { ok: false, erreur: 'not found' } };
+}
+
 // Le Durable Object des comptes : une seule instance (« comptes »), sa base SQLite (wrangler.toml :
 // new_sqlite_classes). Sans dépendre de cloudflare:workers (les tests le chargent dans Node).
 export class Comptes {
@@ -211,6 +242,12 @@ export class Comptes {
   }
 
   async fetch(request) {
+    // (les demandes du Worker lui-même, jamais celles du jeu : le Worker ne passe ici que /compte/…)
+    const url = new URL(request.url);
+    if (url.pathname.startsWith('/interne/')) {
+      const r = await routeInterne(request, this.registre);
+      return new Response(JSON.stringify(r.corps), { status: r.statut, headers: { 'Content-Type': 'application/json' } });
+    }
     const r = await routeCompte(request, this.registre, this.env);
     return new Response(JSON.stringify(r.corps), { status: r.statut, headers: { 'Content-Type': 'application/json' } });
   }
