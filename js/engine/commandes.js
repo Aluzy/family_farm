@@ -48,6 +48,15 @@
      potager.toutArroser  { lieu }
      potager.toutRecolter { lieu, direct? }
      cruche.remplir   { case }                 remplir la cruche au puits de cette case
+   Les bêtes (E-6, sans inverse non plus) :
+     poules.nourrir   { }                      une poule (« Nourrir une poule »)
+     poules.toutNourrir { }                    « Nourrir tout »
+     poulailler.agrandir { }                   le niveau suivant du Poulailler
+     etable.tondre    { mouton }               tondre ce mouton (son identifiant)
+     etable.herbes    { oui }                  les vaches aux herbes de montagne (ou à la paille)
+     etable.place     { }                      acheter une place de plus à l'Étable
+     ramassage.prendre { tas }                 prendre un tas qui attend (ramassage.js : un id de tas,
+                                                une ruche pleine « ruche:<case> » comprise)
      nuit.dormir      { }                       se coucher, la nuit (elle défile jusqu'au réveil)
      nuit.partagee    { }                       E-5 : toute la nuit d'un coup, à n'importe quelle heure
                                                 (le monde en ligne la joue, quand tous sont couchés)
@@ -63,6 +72,8 @@ import { deplacerEtage, dessusEtage, etageBlocs, etageCouvertes, peindreEtage, p
 import { harvest, hoe, plant, water } from './crops.js';
 import { harvestAll, plantAll, waterAll } from './automation.js';
 import { remplirCruche } from './cruche.js';
+import { buyPasture, feedAllHens, feedHen, setCowHerbs, shear, upgradePoulailler } from './animals.js';
+import { pickUp } from './ramassage.js';
 import { goToSleep, nuitPartagee } from './night.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
@@ -331,6 +342,22 @@ export const COMMANDES = {
   'cruche.remplir': {
     args: { case: 'case' },
     executer: (state, { case: c }) => remplirCruche(state, c),
+  },
+  'poules.nourrir': { args: {}, executer: (state) => feedHen(state) },
+  'poules.toutNourrir': { args: {}, executer: (state) => feedAllHens(state) },
+  'poulailler.agrandir': { args: {}, executer: (state) => upgradePoulailler(state) },
+  'etable.tondre': {
+    args: { mouton: 'texte' },
+    executer: (state, { mouton }) => shear(state, mouton),
+  },
+  'etable.herbes': {
+    args: { oui: 'drapeau' },
+    executer: (state, { oui }) => setCowHerbs(state, oui),
+  },
+  'etable.place': { args: {}, executer: (state) => buyPasture(state) },
+  'ramassage.prendre': {
+    args: { tas: 'texte' },
+    executer: (state, { tas }) => pickUp(state, tas),
   },
   'nuit.dormir': {
     args: {},

@@ -10,10 +10,11 @@
 //   3b. l'avatar de l'autre joueur est dessiné là où il regarde (E-4) ;
 //   4. la partie confirmée de chacun est celle du monde (la même empreinte) ;
 //   4b. E-5 : B récolte une carotte mûre : elle va au coffre commun, A voit la parcelle vide ;
+//   4b'. E-6 : B nourrit les poules : A les voit nourries ;
 //   4c. E-5 : A se couche, la nuit attend B ; B se couche : la nuit passe chez les deux (le jour suivant),
 //       et les parties confirmées sont encore celle du monde ;
 //   5. la partie solo de A, sur l'appareil, n'est jamais touchée en ligne ;
-//   6. une action pas encore en ligne (nourrir les poules) est refusée (un message, rien ne change) ;
+//   6. une action pas encore en ligne (lancer une recette) est refusée (un message, rien ne change) ;
 //   7. E-3 : A retire B : la connexion de B est coupée, B revient à sa ferme solo.
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
 
@@ -78,6 +79,8 @@ testFarmMap(s0, '42');
 testFermeConstruite(s0);
 addItem(s0, DATA.ATELIER.BLOCS.mur_pierre.objet, 20);
 plantRipe(s0, 'potager-1', 'carotte');   // (E-5 : une carotte à récolter en ligne)
+s0.poulailler.poules = 2;   // (E-6 : deux poules à nourrir, du blé)
+addItem(s0, 'ble', 6);
 const SAUVEGARDE = JSON.stringify({ v: s0.version, t: Date.now(), s: s0 });
 
 let navigateur;
@@ -171,6 +174,10 @@ try {
   await action(pb, 'harvest', { id: 'potager-1' });
   const msRecolte = await attendre(pa, async () => { const E = await import('/js/engine/index.js'); return !E.findPlot(FF.state, 'potager-1').culture; }, null, 5000);
   verifie(msRecolte !== null && (await carottes(pa)) > avantCarottes, `4b. B a récolté une carotte : A voit la parcelle vide et la récolte au coffre commun en ${msRecolte} ms`);
+  // 4b'. E-6 : les bêtes
+  await action(pb, 'feed-all');
+  const msPoules = await attendre(pa, () => FF.state.poulailler.nourries === 2, null, 5000);
+  verifie(msPoules !== null, `4b'. B a nourri les poules : A les voit nourries en ${msPoules} ms`);
   // 4c. E-5 : la nuit partagée
   const jour = await pa.evaluate(() => FF.state.day);
   await action(pa, 'monde-coucher');
@@ -185,7 +192,7 @@ try {
   await pa.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   verifie((await pa.evaluate(() => localStorage.getItem('ferme-save'))) === soloA, '5. la partie solo de A n\'est pas touchée en ligne');
   const avant = reg.rev;
-  await action(pa, 'feed-all');
+  await action(pa, 'start-recipe', { id: 'pain' });
   await pa.waitForTimeout(300);
   verifie(reg.rev === avant && /viendra bientôt/.test(await pa.evaluate(() => document.body.innerText)), '6. un geste pas encore en ligne est refusé');
   // 7. E-3 : A retire B

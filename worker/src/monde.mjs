@@ -32,7 +32,7 @@
 //                                                   couché ; gardé sur sa connexion, jamais écrit) ; tous
 //                                                   couchés : à tous, { t: 'evt', acteur: 'monde', cmd: nuit.partagee }
 
-import { COMMANDES, executerCommande, GAME_VERSION, migrate } from '../../js/engine/index.js';
+import { COMMANDES, executerCommande, GAME_VERSION, migrate, pickUpAll } from '../../js/engine/index.js';
 
 export const MONDE = {
   INSTANTANE_TOUS: 20,      // révisions entre deux instantanés
@@ -112,6 +112,10 @@ export class MondeRegistre {
     if (!s || typeof s !== 'object' || !s.carte) return { ok: false, erreur: 'Cette partie ne peut pas être mise en ligne (illisible).' };
     // (le monde ne connaît pas de nuit en cours : il naît de jour, son horloge figée là où elle était)
     s.nuitEnCours = null;
+    // (E-6 : le monde ne ramasse pas, il n'a pas de personnage à lui : ce qui attendait entre au coffre
+    // commun, et désormais tout y va droit : les œufs, le lait, la laine, la récolte)
+    pickUpAll(s);
+    s.ramassage = false;
     this.faire('INSERT INTO instantane (rev, json) VALUES (?, ?)', 0, JSON.stringify(s));
     this.poserMeta('version', version);
     this.poserMeta('proprietaire', proprietaire);
