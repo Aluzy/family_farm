@@ -15,7 +15,7 @@ réglage qu'on mesure, sauf mention contraire.
 | Mesure | Budget | Pourquoi |
 |---|---|---|
 | Images par seconde sur la carte | au moins **30** en moyenne, au plus **5 %** d'images de plus de 34 ms (60 visées) | un jeu calme : la fluidité compte plus que la vitesse |
-| Carte prête (jouable) après l'ouverture de la page | moins de **5 s** | une courte session doit commencer vite |
+| Jeu affiché (l'écran de chargement retiré) après l'ouverture de la page | moins de **5 s** | une courte session doit commencer vite |
 | Une sauvegarde (sérialiser puis écrire) | moins de **16 ms** | elle a lieu après chaque geste (F0-5) : elle ne doit pas coûter une image |
 
 Les budgets sont écrits dans `js/ui/mesures.js` (`BUDGETS`) ; le rapport les marque ✅ ou ❌.
@@ -47,7 +47,7 @@ Sur une ferme neuve, cela fait environ 280 à 380 blocs, dont 35 à 70 meubles, 
 5. Rouvrir 🧪 Test : le rapport est affiché. Toucher **Copier le rapport** et le coller dans un message
    (ou ci-dessous).
 6. Pour la durée de chargement, recharger la page une fois la ferme bâtie, puis refaire une mesure : la
-   ligne « Carte prête » vaut pour ce chargement-là.
+   ligne « Jeu affiché » vaut pour ce chargement-là.
 
 Le rapport donne aussi la médiane et les 95 / 99 % des durées d'image, la plus longue, la mémoire du jeu
 (Chrome seulement), le temps de chargement de la page, l'appareil et la taille de la partie. Rien ne part
@@ -55,10 +55,11 @@ de l'appareil.
 
 ## Résultats
 
-| Date | Appareil (version, mémoire) | Version du jeu | Scénario | Images/s · lentes | Carte prête | Sauvegarde max | Mémoire |
+| Date | Appareil (version, mémoire) | Version du jeu | Scénario | Images/s · lentes | Carte prête, puis jeu affiché | Sauvegarde max | Mémoire |
 |---|---|---|---|---|---|---|---|
 | 2026-11-03 | Chromium sans carte graphique, émulation 393 × 873 (pas un téléphone) | 1.22.0 | ferme construite (275 blocs, 34 meubles) | 33,8 · 2,9 % | 2,0 s | 0,7 ms | 169 Mo |
 | 2026-11-03 | **Redmi Note 13 5G** (Dimensity 6080, 8 Go), Chrome 156 | 1.22.0 | ferme construite (382 blocs, 67 meubles) | **55,5** ✅ · 2,3 % ✅ (médiane 16,6 ms) | **8,1 s** ❌ (page chargée en 1,1 s) | **1,7 ms** ✅ | 117 Mo |
+| 2026-11-04 | **Redmi Note 13 5G**, Chrome 156 | 1.22.0, après les étapes 1 à 2c du lot « chargement » | ferme construite (382 blocs, 67 meubles) | **53,9** ✅ · 0,8 % ✅ (médiane 16,6 ms, la plus longue 482 ms) | **6,8 s** ❌ « jeu affiché » (page chargée en 1,0 s) | **3,5 ms** ✅ | 82 Mo |
 
 ### Le chargement : où passent les 8 s (analyse du 2026-11-03)
 
@@ -109,7 +110,20 @@ d'essai, ralenti ×4 (main après l'étape 1) :
 | 2a. La teinte de l'herbe haute attend que l'écran de chargement soit retiré (au plus 10 s) ; l'attente avant le fondu de l'écran passe de 350 à 100 ms | **7,29 s** (l'écran retiré 0,45 s après la vue dessinée, contre 1,1 s) |
 | 2b. Le sol peint par morceaux de 256 px (`js/carte/ferme/sol.js`) : ceux sous la vue d'un coup, ceux de la marge deux par image ; chacun avec un anneau de 2 cases autour (ce qui en déborde) | **6,51 s** (main le même jour : 7,79 s, soit −1,3 s) ; la vue dessinée 1,6 s après la scène prête (2,5 s avant) |
 | 2c. Les images des meubles (leurs vues de dos et de profil, les draps des lits : 96 fichiers) et des bêtes du grand monde (14) chargées juste après que l'écran de chargement est retiré (`chargerTard`, `js/farm-stage.js` ; au plus tard 10 s après la scène) ; meubles et bêtes paraissent à leur arrivée (sur la ferme d'essai, les 67 meubles en moins de 4 s) | **5,39 s** (main le même jour : 6,16 s, soit −0,8 s) |
-| *Piste suivante* : garder la ferme tirée de la graine sur l'appareil (0,6 s) | |
+| 3a. La ferme tirée de la graine gardée sur l'appareil (IndexedDB, `js/ui/ferme-gardee.js`) : relue avant la partie (au plus 0,8 s d'attente) au lieu d'être tirée à nouveau (0,85 s ralenti ×4) | **−0,3 s** en moyenne (4 comparaisons avec main le même jour, 4 puis 8 chargements chacune : −0,54, −0,09, −0,38, −0,15 s ; main entre 6,5 et 7,2 s ce jour-là, la machine variait). Le profil du chargement : `genererFerme` 0,85 s → 0 (la relecture : 3 ms) ; le gain affiché est moindre, car une partie de ce calcul se faisait pendant que les images arrivaient |
+| *Pistes suivantes* : l'eau dessinée seulement à l'écran d'abord (≈ 0,4 s : `syncEau`) ; l'encyclopédie relue au chargement (0,33 s : `majEncyclopedie`, `decouverte.js`) ; la teinte de l'herbe haute (1,2 s d'un bloc juste après l'affichage : à étaler) | |
+
+La première mesure du téléphone (8,1 s) s'arrêtait avant la vue dessinée :
+la mesure du 2026-11-04 (6,8 s) compte jusqu'à l'écran retiré, elle n'y est pas comparable. Sur le
+téléphone, le jeu va environ 1,25 fois moins vite que Chromium ralenti 4 fois (6,8 s contre 5,4 s).
+
+**Étape 3 : la ferme gardée.** La ferme d'une graine ne change pas tant que le générateur ne change pas
+(F0-2) : une fois tirée, elle est rangée dans la base IndexedDB de l'appareil sous « version du
+générateur : graine », quelques secondes après que le jeu est affiché (une seule ferme gardée). À
+l'ouverture suivante, `js/main.js` la relit avant de charger la partie et la donne au moteur
+(`fermeRecue`, `js/engine/ferme-generee.js`, qui vérifie sa forme). Base absente, lente, vide ou
+refusée : la ferme est tirée comme avant, la partie est la même. Relue dans la page, la ferme a la même
+empreinte que tirée ; le rapport de mesure dit d'où elle vient (« Ferme générée : relue de l'appareil »).
 
 Le sol par morceaux est identique au pixel près au sol d'un seul canevas : vérifié dans la page sur
 les régions de la ferme et du grand monde (petites plantes comprises) et après une repeinture partielle

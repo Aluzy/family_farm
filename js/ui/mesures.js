@@ -17,6 +17,7 @@ import { GAME_VERSION } from '../engine/base.js';
 import { state } from './store.js';
 import { persistState, statsSauvegarde } from './storage.js';
 import { notify } from './toasts.js';
+import { fermeVenue } from './ferme-gardee.js';
 import { registerActions } from './actions.js';
 
 // Les budgets (docs/perf.md, « cosy standard ») sur le téléphone de référence (Redmi Note 13).
@@ -66,6 +67,7 @@ function partie() {
     `Jeu ${GAME_VERSION}, sauvegarde v${state.version} · graine ${state.carte && state.carte.graine}`,
     `Blocs posés : ${sortes.length} (dont ${meubles} meubles) · sols : ${Object.keys(state.sols || {}).length} · étage : ${Object.keys(etageBlocs(state)).length}`,
     `Sauvegarde : ${s.taille ? Math.round(s.taille / 1024) + ' Ko' : '?'} · ${s.n} écritures depuis l'ouverture`,
+    `Ferme générée : ${fermeVenue() === 'appareil' ? 'relue de l\'appareil' : 'tirée de la graine'} à l'ouverture`,
   ];
 }
 

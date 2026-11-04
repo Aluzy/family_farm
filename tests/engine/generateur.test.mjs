@@ -7,7 +7,7 @@
    ========================================================================== */
 
 import {
-  contexteSol, createInitialState, GENERATEUR_VERSION, genererFerme, genererMonde, migrate, MONDE,
+  contexteSol, createInitialState, fermeFaite, fermeRecue, GENERATEUR_VERSION, genererFerme, genererMonde, migrate, MONDE,
   planDuMonde, reparerPartie, setFarmSeed, solDeRegion, STATE_VERSION,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, test } from './aide.mjs';
@@ -96,4 +96,31 @@ test('le générateur : une partie réparée retrouve un numéro valide', () => 
   }
   const ok = createInitialState(7);
   assertEqual(reparerPartie(ok).carte.generateur, GENERATEUR_VERSION, 'un numéro valide est gardé');
+});
+
+test('le chargement : une ferme gardée sur l\'appareil (copie structurée, comme IndexedDB) est reprise telle quelle', () => {
+  // la ferme d'une graine, tirée puis copiée comme la base de l'appareil la rend (js/ui/ferme-gardee.js)
+  const tiree = genererFerme('gardee-1');
+  const copie = structuredClone(tiree);
+  assertEqual(empreinte(copie), empreinte(tiree), 'la copie a la même empreinte');
+  assert(copie.terrain.SOMMETS instanceof Uint8Array && copie.terrain.TEINTES instanceof Uint8Array, 'les tableaux typés le restent');
+  assertEqual(fermeRecue('gardee-1', copie), false, 'une graine déjà tirée garde sa ferme');
+  assertEqual(fermeFaite('gardee-1'), tiree);
+  // une autre graine : sa ferme gardée est prise, et le monde se fait autour d'elle
+  assertEqual(fermeFaite('gardee-2'), null, 'pas encore faite : rien n\'est calculé');
+  const autre = structuredClone(tiree);
+  autre.carte.graine = 'gardee-2';
+  assertEqual(fermeRecue('gardee-2', autre), true);
+  assertEqual(genererFerme('gardee-2'), fermeFaite('gardee-2'));
+  assertEqual(genererFerme('gardee-2').carte, autre.carte, 'le moteur ne la tire pas à nouveau');
+  assertEqual(genererMonde('gardee-2').terrain.LIGNES[MONDE.HAUTEUR >> 1].length, MONDE.LARGEUR);
+  // ce qui n'a pas la forme d'une ferme est refusé (la graine sera tirée comme avant)
+  const abimee = structuredClone(tiree);
+  abimee.carte.graine = 'gardee-3';
+  abimee.terrain.LIGNES.pop();
+  for (const [nom, f] of [['rien', null], ['un texte', 'x'], ['la ferme d\'une autre graine', structuredClone(tiree)], ['des lignes en moins', abimee],
+    ['sans tableaux typés', { ...JSON.parse(JSON.stringify(tiree)), carte: { ...tiree.carte, graine: 'gardee-3' } }]]) {
+    assertEqual(fermeRecue('gardee-3', f), false, nom);
+  }
+  assertEqual(fermeFaite('gardee-3'), null);
 });

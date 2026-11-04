@@ -112,6 +112,32 @@ export function genererFerme(graine) {
   return cartes.get(cle);
 }
 
+// La ferme de la graine si elle est déjà faite (tirée ou reçue : fermeRecue), sinon null : rien n'est
+// calculé.
+export function fermeFaite(graine) {
+  return cartes.get(String(graine)) || null;
+}
+
+// Le chargement (docs/perf.md) : la ferme d'une graine, tirée lors d'une visite précédente et gardée
+// sur l'appareil (js/ui/ferme-gardee.js), est reprise telle quelle au lieu d'être tirée à nouveau (près
+// d'une seconde sur un téléphone). Elle doit venir de la même version du générateur
+// (GENERATEUR_VERSION : l'appelant la range sous ce numéro). Renvoie true si elle est prise : la
+// graine n'avait pas encore de ferme et `ferme` en a la forme ({ carte, terrain } de genererFerme).
+export function fermeRecue(graine, ferme) {
+  const cle = String(graine), G = FERME_GENEREE;
+  if (cartes.has(cle) || !ferme || typeof ferme !== 'object') return false;
+  const { carte, terrain: t } = ferme;
+  const forme = carte && Array.isArray(carte.layers) && carte.width === G.LARGEUR && carte.height === G.HAUTEUR
+    && String(carte.graine) === cle && t && t.LARGEUR === G.LARGEUR && t.HAUTEUR === G.HAUTEUR
+    && Array.isArray(t.LIGNES) && t.LIGNES.length === G.HAUTEUR
+    && t.SOMMETS instanceof Uint8Array && t.SOMMETS.length === (G.LARGEUR + 1) * (G.HAUTEUR + 1)
+    && t.TEINTES instanceof Uint8Array && t.TEINTES.length === t.SOMMETS.length
+    && carte.layers.every((l) => l && (l.type !== 'tilelayer' || (Array.isArray(l.data) && l.data.length === G.LARGEUR * G.HAUTEUR)));
+  if (!forme) return false;
+  cartes.set(cle, { carte, terrain: t });
+  return true;
+}
+
 function fabriquer(graine) {
   const G = FERME_GENEREE, W = G.LARGEUR, H = G.HAUTEUR, T = G.T, N = W * H;
   // un tirage par usage : changer l'un ne déplace pas les autres
