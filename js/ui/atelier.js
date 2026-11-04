@@ -22,7 +22,7 @@ import { sortirBotte, verserFibres } from '../engine/botteleuse.js';
 import { verserGrain } from '../engine/distributeur.js';
 import { verserChaine } from '../engine/chaines.js';
 import { asleep } from '../engine/night.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -32,6 +32,7 @@ import { itemsText } from './common.js';
 // La carte : le personnage a pris ce qui était au sol (`id`). Renvoie { ok, items } ou null
 // (un message).
 export function ramasserFromStage(id) {
+  if (enLigne) return null;   // (E-5 : pas encore en ligne)
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
   const r = ramasser(state, id);
   if (!r.ok) { notify(r.error); return null; }

@@ -4,9 +4,12 @@
 //   démarrage (rejoindre), le jeu se connecte au monde par une WebSocket, reçoit sa partie et la joue à la
 //   place de la partie solo, qui n'est jamais touchée : rien n'est sauvegardé sur l'appareil en ligne
 //   (storage.js), et le rattrapage d'absence ne joue pas.
-// - F.2 : le monde est figé (loop.js : l'horloge ne tourne pas en ligne). Pour l'instant, en ligne, on
-//   construit ensemble : le mode Construire est ouvert d'office et reste ouvert (actionPermise) ; les
-//   autres gestes de la ferme viendront ensuite.
+// - F.2 : le monde est figé (loop.js : l'horloge ne tourne pas en ligne). En ligne, on construit ensemble
+//   (le mode Construire) et l'on cultive le potager (E-5 : labourer, semer, arroser, récolter, la cruche) ;
+//   les autres gestes de la ferme viendront ensuite (actionPermise).
+// - E-5 : la nuit partagée. « 🛏 Se coucher » (le bandeau) le dit au monde ; quand tous les joueurs
+//   connectés sont couchés, le monde joue la nuit (nuit.partagee : toute la nuit d'un coup, les plantes
+//   poussent) et chacun se réveille au jour suivant.
 // - Chaque commande du joueur (commandes.js, executer) est jouée tout de suite sur sa partie et envoyée
 //   (js/ui/synchro.js) ; celles des autres arrivent et sont jouées à leur tour. Coupé, le jeu se
 //   reconnecte, demande ce qu'il a manqué depuis sa révision et renvoie ses commandes en attente (le
@@ -19,6 +22,7 @@ import { closeModal, openModal } from './modal.js';
 import { Synchro } from './synchro.js';
 import { setEnLigne, setState } from './store.js';
 import { notify } from './toasts.js';
+import { sonMatin } from './son.js';
 import { refresh } from './render.js';
 import { registerActions } from './actions.js';
 import { brancherEnLigne } from './commandes.js';
@@ -121,7 +125,17 @@ function recevoir(ws, data) {
     lien.role = m.role;
     lien.moi = m.moi;
     lien.essais = 0;
+    lien.couche = false;   // (une nouvelle connexion : levé)
+    lien.couches = [];
     derniere = null;
+    return;
+  }
+  // E-5 : qui est couché (et combien sont là)
+  if (m.t === 'couches') {
+    lien.couches = Array.isArray(m.comptes) ? m.comptes : [];
+    lien.connectes = Number(m.connectes) || 0;
+    lien.couche = lien.couches.includes(lien.moi);
+    bandeau();
     return;
   }
   // E-4 : où regardent les autres (relayé par le monde, jamais écrit) ; leur départ
@@ -164,6 +178,7 @@ function recevoir(ws, data) {
   }
   if (m.t === 'evt') {
     if (!lien.synchro.evenement(m)) toutRedemander();
+    if (m.cmd && m.cmd.type === 'nuit.partagee') matin();
     bandeau();
     return;
   }
@@ -171,6 +186,25 @@ function recevoir(ws, data) {
     lien.synchro.refusee(m.id);
     notify(`🌐 ${m.erreur || 'Refusé par le monde.'}`);
   }
+}
+
+// E-5 : la nuit du monde est passée (tous étaient couchés) : le réveil, au jour suivant.
+function matin() {
+  lien.couche = false;
+  lien.couches = [];
+  try { sonMatin(); } catch (e) { /* (le son ne doit rien empêcher) */ }
+  const s = lien.synchro && lien.synchro.locale;
+  notify(`🌅 Tout le monde a dormi : c'est le jour ${s ? s.day : ''}. Les plantes arrosées ont poussé.`, { duree: 6000 });
+}
+
+// « 🛏 Se coucher » : le dire au monde (ou se relever).
+function coucher() {
+  if (!lien || lien.etat !== 'ok') { notify('🌐 Pas connecté au monde pour l\'instant.'); return; }
+  const oui = !lien.couche;
+  if (!envoyer({ t: 'coucher', oui })) return;
+  lien.couche = oui;
+  if (oui && lien.connectes > 1) notify('🛏 Tu es couché. La nuit passera quand tous les joueurs connectés le seront.');
+  bandeau();
 }
 
 // Un trou dans les événements : la partie entière redemandée (un hello sans révision).
@@ -217,15 +251,16 @@ if (typeof window !== 'undefined') setInterval(envoyerPosition, POS_MS);
 
 /* ---------- ce qu'on fait en ligne ---------- */
 
-// En ligne, pour l'instant : construire ensemble (les gestes du mode Construire) et ce qui ne change pas la
-// partie (ouvrir une fenêtre, lire l'aide, les réglages). `bloquees` : les actions qui changent la
-// partie (actions.js, SOMMEIL_BLOQUEES), sauf celles de Construire.
+// En ligne, pour l'instant : construire ensemble (les gestes du mode Construire), cultiver le potager (E-5)
+// et ce qui ne change pas la partie (ouvrir une fenêtre, lire l'aide, les réglages). `bloquees` : les
+// actions qui changent la partie (actions.js, SOMMEIL_BLOQUEES), sauf celles-là. Dormir : par le bandeau.
 const CONSTRUIRE = new Set(['bloc', 'bloc-many', 'build-toggle', 'build-pick', 'build-tab', 'build-groupe', 'build-filtre', 'meuble-ok', 'build-level-menu', 'build-level', 'build-piece', 'build-gomme', 'build-tourner', 'build-peindre', 'meuble-peindre', 'build-sens', 'meuble-tourner', 'build-annuler', 'bloc-pipette', 'bloc-deplacer', 'etage-toggle']);
+const POTAGER = new Set(['plant', 'plant-many', 'plant-all', 'water', 'water-many', 'water-all', 'harvest', 'harvest-all', 'hoe', 'hoe-many', 'hoe-toggle', 'hoe-take', 'cruche-remplir']);
 const JAMAIS = /^(test-|do-import|do-new-game|ask-new-game|demarrer|accueil-)/;
-export function actionPermise(action, bloquees, constructionOuverte) {
+export function actionPermise(action, bloquees) {
   if (JAMAIS.test(action)) return 'Pas dans un monde en ligne : reviens à ta ferme solo (🌐 › Ma ferme solo).';
-  if (action === 'build-toggle' && constructionOuverte) return 'En ligne, on construit ensemble : pour revenir à ta ferme solo, touche 🌐 › Ma ferme solo.';
-  if (bloquees.has(action) && !CONSTRUIRE.has(action)) return 'En ligne, on construit ensemble pour l\'instant : ce geste viendra bientôt.';
+  if (action === 'sleep') return 'En ligne, on se couche par le bandeau (🛏 Se coucher) : la nuit passe quand tout le monde dort.';
+  if (bloquees.has(action) && !CONSTRUIRE.has(action) && !POTAGER.has(action)) return 'En ligne, on construit et l\'on cultive le potager pour l\'instant : ce geste viendra bientôt.';
   return null;
 }
 
@@ -245,7 +280,10 @@ export function bandeau() {
   const etat = { connexion: '⏳ connexion…', reconnexion: '⏳ reconnexion…', ok: '✓ à jour', refuse: '⛔ refusé' }[lien.etat] || '';
   const attente = lien.synchro && lien.synchro.enAttente.length ? ` · ${lien.synchro.enAttente.length} en attente` : '';
   const n = lien.membres.length;
-  el.innerHTML = `<span>🌐 En ligne · ${etat}${attente}</span><button class="btn" type="button" data-action="monde-membres" aria-label="Les membres du monde">👥 ${n}</button><button class="btn" type="button" data-action="monde-quitter">Ma ferme solo</button>`;
+  // (E-5 : se coucher ; combien le sont, quand d'autres sont là)
+  const nc = (lien.couches || []).length, total = lien.connectes || 0;
+  const lit = `<button class="btn${lien.couche ? ' primary' : ''}" type="button" data-action="monde-coucher" aria-pressed="${!!lien.couche}">🛏 ${lien.couche ? 'Couché' : 'Se coucher'}${total > 1 && nc ? ` ${nc}/${total}` : ''}</button>`;
+  el.innerHTML = `<span>🌐 En ligne · ${etat}${attente}</span>${lit}<button class="btn" type="button" data-action="monde-membres" aria-label="Les membres du monde">👥 ${n}</button><button class="btn" type="button" data-action="monde-quitter">Ma ferme solo</button>`;
 }
 
 /* ---------- E-3 : les membres, inviter, retirer ---------- */
@@ -312,6 +350,7 @@ if (typeof window !== 'undefined') window.addEventListener('hashchange', () => {
 registerActions({
   // (la partie solo, intacte sur l'appareil, rouverte)
   'monde-quitter': () => { fermer(); location.href = 'jeu.html'; },
+  'monde-coucher': () => { coucher(); },
   'monde-membres': () => { invitation = null; aRetirer = null; ouvrirMembres(); },
   'monde-inviter': () => { inviter(); },
   'monde-copier': () => {

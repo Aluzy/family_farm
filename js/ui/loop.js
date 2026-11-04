@@ -234,6 +234,7 @@ function watchTechPoints() {
 // refermée, et ne commence pas tant qu'une bulle d'aide de la première partie est affichée
 // (le joueur lit), sauf celle qui explique la nuit.
 function watchDay() {
+  if (enLigne) return;   // (E-5 : en ligne, la nuit est celle du monde : quand tous sont couchés)
   if (state.reveil && !modalRoot().childElementCount) wakeUp();
   if (nightActive(state)) {
     // minuit vient de passer : les préparations finies dans la nuit, sans toast

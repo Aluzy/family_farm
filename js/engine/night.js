@@ -144,6 +144,20 @@ export function nightHarvest(report) {
 // aux essais.
 export function sleep(state) {
   if (!canSleep(state)) return null;
+  return nuitEntiere(state);
+}
+
+// E-5 : la nuit partagée d'un monde en ligne. Son horloge est figée (F.2) : la journée s'achève quand
+// tous les joueurs connectés sont couchés (le monde, worker/src/monde.mjs, joue alors cette commande),
+// quelle que soit l'heure ; toute la nuit passe d'un coup et l'on se réveille à 6 h, le jour suivant.
+export function nuitPartagee(state) {
+  state.nuitEnCours = null;
+  const report = nuitEntiere(state);
+  return { ok: true, jour: state.day, pretes: report.pretes };
+}
+
+// Toute la nuit d'un coup (sleep, nuitPartagee) : son rapport de réveil.
+function nuitEntiere(state) {
   // jusqu'à minuit, les cycles de pousse qui s'achèvent ; puis la nuit (comme advanceNight)
   state.nuitEnCours = { ms: midnightMs(), minuit: false };
   growDue(state);

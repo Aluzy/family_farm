@@ -16,10 +16,10 @@ import {
 } from '../engine/animals.js';
 import { etatEtable, etatPoulailler, etatSilo } from '../engine/blocs.js';
 import { techAuto, techFlag } from '../engine/techtree.js';
-import { AUTO_TACHES, GROUPE_MIN, groupDiscount, harvestAll, isAutomated, plantAll, setSemis, waterAll } from '../engine/automation.js';
+import { AUTO_TACHES, GROUPE_MIN, groupDiscount, isAutomated, setSemis } from '../engine/automation.js';
 import { plantableCropsFor } from '../engine/campaign.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
 import { tel } from './consent.js';
 import { applyResult } from './game-actions.js';
 import { artIcon, artPx, coopArtRow } from './animations.js';
@@ -536,7 +536,7 @@ function semerCases(cases, culture) {
     raison = r.error;
     break;   // (plus de graines, ou plus d'énergie)
   }
-  if (groupe) groupDiscount(state, avant);
+  if (groupe && !enLigne) groupDiscount(state, avant);   // (en ligne, pas de remise : elle ne passe pas par le monde)
   if (n) persistState();
   refresh();
   if (n) notify(`🌱 ${plural(n, 'parcelle')} de ${def.nom.toLowerCase()} ${accord(n, 'semée')}${raison ? ` · ${raison}` : ''}`);
@@ -576,7 +576,7 @@ export function semerFromStage(c, culture, groupe) {
   const avant = Number(state.energie) || 0;
   const r = executer('potager.planter', { parcelle: p.id, culture });
   if (!r.ok) { notify(r.error, { son: 'erreur' }); return false; }
-  if (groupe) groupDiscount(state, avant);
+  if (groupe && !enLigne) groupDiscount(state, avant);   // (en ligne, pas de remise : elle ne passe pas par le monde)
   persistState();
   refresh();
   const def = DATA.CULTURES[culture];
@@ -605,7 +605,8 @@ registerActions({
     applyResult(executer('potager.arroser', { parcelle: target.dataset.id }));
   },
   'harvest': (target) => {
-    const result = applyResult(executer('potager.recolter', { parcelle: target.dataset.id }));
+    // (E-5 : en ligne, la récolte va droit au coffre commun, sans attendre le personnage)
+    const result = applyResult(executer('potager.recolter', { parcelle: target.dataset.id, ...(enLigne ? { direct: true } : {}) }));
     // version 1.18 : ce qui attend le personnage s'annonce par sa bulle, au ramassage
     // fiche 10 : récolter parcelle après parcelle cumule la récolte dans une seule notification
     if (result.ok && !result.aRamasser) notify(null, { cumul: { cle: 'recolte', quantites: result.items, texte: (t) => harvestToast({ items: t }) } });
@@ -654,7 +655,7 @@ registerActions({
   },
   'plant-all': (target) => {
     closeModal();
-    const result = applyResult(plantAll(state, target.dataset.lieu, target.dataset.crop));
+    const result = applyResult(executer('potager.toutPlanter', { lieu: target.dataset.lieu, culture: target.dataset.crop }));
     if (result.ok) {
       const def = DATA.CULTURES[target.dataset.crop];
       const reste = result.vides - result.plantees;
@@ -662,11 +663,11 @@ registerActions({
     }
   },
   'water-all': (target) => {
-    const result = applyResult(waterAll(state, target.dataset.lieu));
+    const result = applyResult(executer('potager.toutArroser', { lieu: target.dataset.lieu }));
     if (result.ok) notify(`💧 ${plural(result.arrosees, 'parcelle')} ${accord(result.arrosees, 'arrosée')}${result.sansEau ? ` · ${result.sansEau} sans eau` : ''}`);
   },
   'harvest-all': (target) => {
-    const result = applyResult(harvestAll(state, target.dataset.lieu));
+    const result = applyResult(executer('potager.toutRecolter', { lieu: target.dataset.lieu, ...(enLigne ? { direct: true } : {}) }));
     if (result.ok && !result.aRamasser) notify(`🧺 ${itemsText(result.items)}`);
   },
   'semis-open': (target) => {

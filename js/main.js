@@ -121,15 +121,10 @@ async function demarrer() {
   invitationDuLien(); // E-3 : le jeu ouvert par un lien d'invitation (jeu.html#invitation=…)
   connexionDuLien(); // E-0 : le jeu ouvert par le lien de connexion reçu par e-mail (jeu.html#connexion=…)
 }
-// E-2 : dans le monde, le bandeau, et le mode Construire ouvert (on y construit ensemble), une fois la
-// carte prête.
+// E-2 : dans le monde, le bandeau (E-5 : on y construit et l'on y cultive : le mode Construire n'est plus
+// ouvert d'office).
 function entrerDansLeMonde() {
   bandeau();
-  const ouvrir = () => {
-    if (window.FarmStage && FarmStage.ready && FarmStage.ready()) { const b = document.querySelector('[data-action="build-toggle"]'); if (b && !document.body.classList.contains('construction')) b.click(); return; }
-    setTimeout(ouvrir, 300);
-  };
-  setTimeout(ouvrir, 500);
 }
 
 // (une erreur au démarrage reste une erreur de la page, comme avant)

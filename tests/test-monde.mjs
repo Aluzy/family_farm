@@ -12,7 +12,7 @@ import {
   addItem, countItem, DATA, empreintePartie, executerCommande, findPlot, GAME_VERSION, poseStatus,
 } from '../js/engine/index.js';
 import { partie, plantRipe } from './engine/aide.mjs';
-import { COMMANDES_MONDE, Monde, MONDE, MondeRegistre, traiterMessage } from '../worker/src/monde.mjs';
+import { ACTEUR_MONDE, COMMANDES_MONDE, etatDesLits, Monde, MONDE, MondeRegistre, traiterMessage } from '../worker/src/monde.mjs';
 
 const test = (name, fn) => nodeTest(name, () => fn());
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion fausse'); }
@@ -33,6 +33,7 @@ function partieLocale() {
   addItem(s, DATA.ATELIER.BLOCS.mur_pierre.objet, 60);
   addItem(s, DATA.ATELIER.BLOCS.plancher.objet, 5);
   plantRipe(s, 'potager-1', 'carotte');
+  s.eauMl = 200000;   // (E-5 : de l'eau pour arroser)
   return s;
 }
 // Des cases où un mur se pose.
@@ -292,5 +293,62 @@ test('E-4 : une position est relayée aux autres membres (pas à soi), 5 par sec
   Object.assign(d, { registre: r, ctx: { getWebSockets: (tag) => sockets.filter((w) => !tag || w.c === tag), getTags: (w) => [w.c] } });
   sockets.splice(1, 1);   // (la connexion de B s'est fermée)
   d.webSocketClose(ws(B), 1000);
-  eq(msgs, [[A, { t: 'parti', acteur: B }]], 'A apprend que B est parti');
+  eq(msgs[0], [A, { t: 'parti', acteur: B }], 'A apprend que B est parti');
+});
+
+/* ---------- E-5 : le potager et la nuit partagée ---------- */
+
+test('E-5 : les lits : la nuit vient quand tous les comptes connectés sont couchés (un compte, plusieurs onglets)', () => {
+  eq(etatDesLits([]), { connectes: 0, couches: [], nuit: false });
+  eq(etatDesLits([{ compte: A, couche: true }, { compte: B, couche: false }]), { connectes: 2, couches: [A], nuit: false });
+  eq(etatDesLits([{ compte: A, couche: true }, { compte: B, couche: true }, { compte: B, couche: false }]).nuit, true, 'B couché dans un de ses onglets');
+});
+
+test('E-5 : le potager se joue en ligne ; la nuit ne se demande pas, le monde la joue : les plantes poussent, le jour change, le journal se rejoue', () => {
+  const { r, sql } = monde();
+  const s0 = r.charger();
+  assert(COMMANDES_MONDE.has('potager.labourer') && COMMANDES_MONDE.has('potager.toutRecolter') && !COMMANDES_MONDE.has('nuit.partagee'));
+  const avantCarottes = countItem(s0, 'carotte');
+  const rec = r.commande(B, { id: id(), type: 'potager.recolter', args: { parcelle: 'potager-1', direct: true } });
+  assert(rec.ok, rec.erreur);
+  assert(countItem(r.charger(), 'carotte') > avantCarottes, 'la récolte va droit au coffre commun');
+  // semer et arroser la parcelle vide, au nom de l'ami
+  const graine = Object.keys(DATA.CULTURES).find((c) => r.charger() && executerCommande(JSON.parse(JSON.stringify(r.charger())), { type: 'potager.planter', args: { parcelle: 'potager-1', culture: c } }).ok);
+  assert(graine, 'une graine à semer');
+  for (const c of [{ type: 'potager.planter', args: { parcelle: 'potager-1', culture: graine } }, { type: 'potager.arroser', args: { parcelle: 'potager-1' } }]) {
+    const x = r.commande(B, { id: id(), ...c });
+    assert(x.ok, `${c.type} : ${x.erreur}`);
+  }
+  eq(r.commande(A, { id: id(), type: 'nuit.partagee', args: {} }).ok, false, 'un joueur ne demande pas la nuit');
+  const jour = r.charger().day, stade = findPlot(r.charger(), 'potager-1').stade;
+  const n = r.nuit();
+  assert(n.ok, n.erreur);
+  eq([n.evt.acteur, n.evt.cmd.type, r.charger().day], [ACTEUR_MONDE, 'nuit.partagee', jour + 1]);
+  assert(findPlot(r.charger(), 'potager-1').stade > stade, 'la plante arrosée a poussé');
+  // (le Durable Object réveillé rejoue le journal, la nuit comprise : la même partie)
+  const r2 = new MondeRegistre(sql);
+  eq(empreintePartie(r2.charger()), empreintePartie(r.charger()));
+});
+
+test('E-5 : le Durable Object : « se coucher » est dit à tous ; le dernier couché fait passer la nuit, chacun se relève ; un départ aussi', () => {
+  const { r } = monde();
+  const msgs = [];
+  const ws = (c) => { let att = null; return { c, send: (m) => msgs.push([c, JSON.parse(m)]), close() {}, serializeAttachment: (a) => { att = a; }, deserializeAttachment: () => att }; };
+  const wa = ws(A), wb = ws(B), sockets = [wa, wb];
+  const d = Object.create(Monde.prototype);
+  Object.assign(d, { registre: r, ctx: { getWebSockets: (tag) => sockets.filter((w) => !tag || w.c === tag), getTags: (w) => [w.c] } });
+  const dire = (w, m) => d.webSocketMessage(w, JSON.stringify(m));
+  const jour = r.charger().day;
+  dire(wa, { t: 'coucher', oui: true });
+  eq(msgs.map(([c, m]) => [c, m.t, m.comptes, m.connectes]), [[A, 'couches', [A], 2], [B, 'couches', [A], 2]]);
+  eq(r.charger().day, jour, 'B est debout : pas de nuit');
+  msgs.length = 0;
+  dire(wb, { t: 'coucher', oui: true });
+  eq(msgs.filter(([, m]) => m.t === 'evt').map(([c, m]) => [c, m.acteur, m.cmd.type]), [[A, ACTEUR_MONDE, 'nuit.partagee'], [B, ACTEUR_MONDE, 'nuit.partagee']]);
+  eq([r.charger().day, wa.deserializeAttachment().couche, wb.deserializeAttachment().couche], [jour + 1, false, false], 'le jour suivant ; tous levés');
+  // B couché, A part : B est seul, couché : la nuit passe
+  dire(wb, { t: 'coucher', oui: true });
+  sockets.splice(0, 1);
+  d.webSocketClose(wa, 1000);
+  eq(r.charger().day, jour + 2, 'A parti, la nuit de B passe');
 });

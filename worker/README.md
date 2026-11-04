@@ -114,8 +114,10 @@ monde, joue les commandes des joueurs avec **le même moteur que le jeu** (`js/e
 déploiement), les numérote (la révision), les écrit dans un journal et les diffuse. Les joueurs les
 rejouent chez eux : le moteur est déterministe (F0-4). Décisions du créateur :
 - **F.1 : un coffre commun.** L'inventaire du monde est à tous ses membres.
-- **F.2 : le monde est figé quand personne n'y joue.** Les commandes ne font pas avancer l'horloge ; la
-  nuit partagée viendra plus tard (`nuit.dormir` est refusé en ligne).
+- **F.2 : le monde est figé quand personne n'y joue.** Les commandes ne font pas avancer l'horloge.
+  **E-5 : la nuit est partagée.** Quand tous les joueurs connectés sont couchés, le monde joue lui-même
+  `nuit.partagee` (acteur `monde`) : toute la nuit d'un coup, le jour suivant. Un joueur ne peut pas
+  l'envoyer, et `nuit.dormir` (la nuit qui défile, en solo) est refusé en ligne.
 - **F.3 : un membre est un compte** (les comptes ci-dessus).
 - **F.4 : un monde naît de la copie volontaire d'une partie locale**, qui reste intacte.
 
@@ -129,7 +131,11 @@ Routes, toutes avec la session du compte (`Authorization: Bearer`, ou `?session=
     l'on n'est pas membre ;
   - `cmd { id, type, args }` → `ack { id, ok, rev | erreur }` ; à tous, `evt { rev, acteur, cmd }`.
   - `pos { x, y }` (le centre de sa vue) : relayé aux autres membres, `pos { acteur, nom, x, y }`,
-    5 fois par seconde au plus, jamais écrit ; `parti { acteur }` quand son dernier onglet se ferme.
+    5 fois par seconde au plus, jamais écrit ; `parti { acteur }` quand son dernier onglet se ferme ;
+  - `coucher { oui }` : se coucher, ou se relever. À tous : `couches { comptes, connectes }`. C'est
+    gardé sur la connexion (`serializeAttachment`, qui survit à l'hibernation), jamais écrit. Tous
+    couchés, le monde joue la nuit et la diffuse comme un `evt`. Un joueur qui part ne retient plus
+    la nuit.
 
 Stockage SQLite du Durable Object :
 - `meta` ;
@@ -174,7 +180,10 @@ seconde, les parties confirmées sont celle du monde, et la partie solo n'est pa
 Dans le jeu, le bouton 👥 du bandeau montre les membres. Le propriétaire y invite (Copier, Partager)
 et y retire un membre. Un lien d'invitation ouvert sans être connecté attend la connexion.
 
-La suite : les autres gestes de la ferme en ligne, puis la nuit partagée (F.2).
+E-5 : en ligne, on cultive aussi le potager (labourer, semer, arroser, récolter, la cruche). La
+récolte va droit au coffre commun (`direct`), sans attendre le personnage. Une nuit coûte environ
+2 ms de calcul sur la ferme d'essai : **à mesurer au premier déploiement** sur une vraie ferme. La
+suite : les autres gestes de la ferme (les animaux, la cuisine, le Marché).
 
 ## Mise en route du rapport (une seule fois)
 
