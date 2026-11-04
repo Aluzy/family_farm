@@ -3087,23 +3087,89 @@ export const RAW_DATA = {
       "FILONS": { "cuivre": 2, "or": 2, "platine": 2, "quartz": 2.5, "amethyste": 2.5 }
     }
   },
+  "PALETTES": {
+    "bois_miel": ["#3c1e16", "#603620", "#86522e", "#aa7040", "#cc965c"],
+    "bois_noyer": ["#2c1810", "#4a2a1a", "#66402a", "#845a3c", "#a27654"],
+    "bois_blanchi": ["#6e5c4a", "#9a8670", "#bcaa90", "#d6c8b0", "#ece2d0"],
+    "bois_bleu": ["#283a54", "#3e5878", "#5a7a9c", "#80a0bc", "#a8c4da"],
+    "chene": ["#382f1d", "#5a4c32", "#706041", "#96825c", "#bca37a"],
+    "chene_noyer": ["#2a1c12", "#46301e", "#5e4028", "#7e5a3a", "#a27c58"],
+    "chene_sauge": ["#465846", "#60765c", "#7e9474", "#a0b494", "#c6d4b8"],
+    "tissu_vert": ["#285238", "#427c50", "#70a86e"],
+    "tissu_rouge": ["#5c1e24", "#8e3236", "#c0564e"],
+    "tissu_bleu": ["#1e3460", "#34568e", "#6a8ec4"],
+    "tissu_moutarde": ["#7a5418", "#b08428", "#dcb850"]
+  },
   "DEHORS": { "bac_fleurs": { "nom": "Bac à fleurs", "prix": 60 } },
   "MEUBLES": {
-    "chaise": { "nom": "Chaise", "piece": "cuisine", "prix": 30, "bonheur": 1, "max": "membres" },
-    "table": { "nom": "Table", "piece": "cuisine", "prix": 90, "bonheur": 3 },
+    "chaise": {
+      "nom": "Chaise",
+      "piece": "cuisine",
+      "prix": 30,
+      "bonheur": 1,
+      "max": "membres",
+      "variantes": [
+        { "id": "miel", "nom": "miel" },
+        { "id": "noyer", "nom": "noyer", "remplace": { "bois_miel": "bois_noyer" } },
+        { "id": "bleu", "nom": "peinte en bleu", "remplace": { "bois_miel": "bois_bleu" } }
+      ]
+    },
+    "table": {
+      "nom": "Table",
+      "piece": "cuisine",
+      "prix": 90,
+      "bonheur": 3,
+      "variantes": [
+        { "id": "miel", "nom": "miel" },
+        { "id": "noyer", "nom": "noyer", "remplace": { "bois_miel": "bois_noyer" } },
+        { "id": "blanchi", "nom": "bois blanchi", "remplace": { "bois_miel": "bois_blanchi" } }
+      ]
+    },
     "tapis_1": { "vendeur": "genets", "nom": "Tapis tressé", "piece": "salon", "prix": 40, "bonheur": 2 },
     "tapis_2": { "vendeur": "genets", "nom": "Tapis rouge", "piece": "chambre", "prix": 50, "bonheur": 2 },
     "tapis_3": { "vendeur": "genets", "nom": "Tapis bleu", "piece": "cuisine", "prix": 60, "bonheur": 2 },
-    "lit_adulte": { "nom": "Lit adulte", "piece": "chambre", "prix": 120, "bonheur": 4, "max": "adultes" },
+    "lit_adulte": {
+      "nom": "Lit adulte",
+      "piece": "chambre",
+      "prix": 120,
+      "bonheur": 4,
+      "max": "adultes",
+      "variantes": [
+        { "id": "vert", "nom": "vert" },
+        { "id": "rouge", "nom": "rouge", "remplace": { "tissu_vert": "tissu_rouge" } },
+        { "id": "bleu", "nom": "bleu", "remplace": { "tissu_vert": "tissu_bleu" } }
+      ]
+    },
     "lit_enfant": { "nom": "Lit enfant", "piece": "chambre", "prix": 90, "bonheur": 4, "max": "enfants" },
     "chevet": { "nom": "Table de chevet", "piece": "chambre", "prix": 35, "bonheur": 1 },
-    "canape": { "nom": "Canapé", "piece": "salon", "prix": 150, "bonheur": 4 },
+    "canape": {
+      "nom": "Canapé",
+      "piece": "salon",
+      "prix": 150,
+      "bonheur": 4,
+      "variantes": [
+        { "id": "vert", "nom": "vert" },
+        { "id": "rouge", "nom": "rouge", "remplace": { "tissu_vert": "tissu_rouge" } },
+        { "id": "bleu", "nom": "bleu", "remplace": { "tissu_vert": "tissu_bleu" } },
+        { "id": "moutarde", "nom": "moutarde", "remplace": { "tissu_vert": "tissu_moutarde" } }
+      ]
+    },
     "table_basse": { "nom": "Table basse", "piece": "salon", "prix": 60, "bonheur": 2 },
     "tableau_1": { "nom": "Tableau : la ferme", "piece": "salon", "prix": 45, "bonheur": 2 },
     "tableau_2": { "nom": "Tableau : le bouquet", "piece": "salon", "prix": 55, "bonheur": 2 },
     "tableau_3": { "nom": "Tableau : la mer", "piece": "chambre", "prix": 70, "bonheur": 3 },
     "buffet": { "nom": "Buffet vaisselier", "piece": "cuisine", "prix": 140, "bonheur": 4 },
-    "commode": { "nom": "Commode", "piece": "chambre", "prix": 110, "bonheur": 3 },
+    "commode": {
+      "nom": "Commode",
+      "piece": "chambre",
+      "prix": 110,
+      "bonheur": 3,
+      "variantes": [
+        { "id": "chene", "nom": "chêne" },
+        { "id": "noyer", "nom": "noyer", "remplace": { "chene": "chene_noyer" } },
+        { "id": "sauge", "nom": "peinte en sauge", "remplace": { "chene": "chene_sauge" } }
+      ]
+    },
     "armoire_chene": { "nom": "Armoire de chêne", "piece": "chambre", "prix": 160, "bonheur": 4 },
     "armoire_peinte": { "nom": "Armoire peinte", "piece": "chambre", "prix": 180, "bonheur": 4 },
     "armoire_glace": { "nom": "Armoire à glace", "piece": "chambre", "prix": 130, "bonheur": 3 },

@@ -8,7 +8,9 @@
 // l'emprise est libre : celle de l'escalier (on y redescend).
 //
 // state.etage = { [tuile]: sorte } : les blocs posés à l'étage. state.sensEtage = { [tuile]: 1 | 2 | 3 } : le
-// sens d'un meuble de l'étage qui tourne (A-1, comme state.sens en bas : blocs.js sensBloc ; de face : rien). Une pièce qui perd son escalier
+// sens d'un meuble de l'étage qui tourne (A-1, comme state.sens en bas : blocs.js sensBloc ; de face : rien).
+// state.teintesEtage = { [tuile]: id } : la variante de couleur d'un meuble de l'étage (A-3, comme state.teintes
+// en bas : blocs.js varianteBloc ; celle du dessin : rien). Une pièce qui perd son escalier
 // (ou qui s'ouvre) perd son étage : ses blocs reviennent dans l'inventaire (rangerEtage).
 //
 // Les murs du bas rehaussés (blocs.js hauteurPile ≥ 2) sont les murs de l'étage, là où ils
@@ -21,7 +23,7 @@
 import { DATA } from './catalog.js';
 import { fail } from './devices.js';
 import { addItem, takeItem } from './inventory.js';
-import { blocsEnMain, blocsPoses, changeMur, changeSol, empriseMeuble, genreBloc, hauteurMur, hauteurPile, mesuresMeuble, piecesCloses, raisonFixe, solsPoses, tourneBloc } from './blocs.js';
+import { blocsEnMain, blocsPoses, changeMur, changeSol, empriseMeuble, genreBloc, hauteurMur, hauteurPile, mesuresMeuble, piecesCloses, raisonFixe, solsPoses, tourneBloc, variantesBloc } from './blocs.js';
 import { farmTerrain } from './terrain.js';
 
 // Les blocs qui se posent à l'étage : un escalier (vers le niveau 2), des murs, des portes, une paillasse, une lanterne, un
@@ -59,6 +61,33 @@ function setSensEtage(state, tile, sens) {
     if (!state.sensEtage || typeof state.sensEtage !== 'object') state.sensEtage = {};
     state.sensEtage[tile] = v;
   } else if (state.sensEtage) delete state.sensEtage[tile];
+}
+
+// La variante de couleur du meuble de l'étage posé sur `tile` (son id), ou null : celle du dessin (A-3).
+export function varianteEtage(state, tile) {
+  const v = state.teintesEtage && typeof state.teintesEtage === 'object' ? state.teintesEtage[tile] : null;
+  return typeof v === 'string' ? v : null;
+}
+function setVarianteEtage(state, tile, v) {
+  const sorte = etageBlocs(state)[tile];
+  if (sorte && v && variantesBloc(sorte).some((x, i) => i > 0 && x.id === v)) {
+    if (!state.teintesEtage || typeof state.teintesEtage !== 'object') state.teintesEtage = {};
+    state.teintesEtage[tile] = v;
+  } else if (state.teintesEtage) delete state.teintesEtage[tile];
+}
+
+// Repeindre le meuble de l'étage de la case `tile` (une de ses cases), comme en bas (blocs.js peindreBloc).
+export function peindreEtage(state, tile, v) {
+  if (!etageBlocs(state)[tile] && etageCouvertes(state).has(tile)) tile = etageCouvertes(state).get(tile);
+  const sorte = etageBlocs(state)[tile];
+  if (!sorte) return fail('Il n\'y a pas de meuble ici.');
+  const l = variantesBloc(sorte);
+  if (!l.length) return fail(`${DATA.ATELIER.BLOCS[sorte].nom} : une seule couleur pour l'instant.`);
+  const id = v || l[0].id;
+  if (!l.some((x) => x.id === id)) return fail(`${DATA.ATELIER.BLOCS[sorte].nom} : pas de couleur « ${id} ».`);
+  const avant = varianteEtage(state, tile) || l[0].id;
+  setVarianteEtage(state, tile, id);
+  return { ok: true, sorte, case: tile, variante: id, avant, etage: true };
 }
 
 // Les cases de l'étage couvertes par un meuble de plusieurs cases, hors la sienne (dans son sens) :
@@ -244,7 +273,7 @@ export function poseEtageStatus(state, sorte, tile, sens = 0) {
   return { ok: true };
 }
 
-export function poserEtage(state, sorte, tile, sens = 0) {
+export function poserEtage(state, sorte, tile, sens = 0, variante = null) {
   const st = poseEtageStatus(state, sorte, tile, sens);
   if (!st.ok) return fail(st.raison);
   takeItem(state, DATA.ATELIER.BLOCS[sorte].objet, 1);
@@ -265,8 +294,9 @@ export function poserEtage(state, sorte, tile, sens = 0) {
   }
   state.etage[tile] = sorte;
   setSensEtage(state, tile, tourneBloc(sorte) ? sens : 0);
-  const v = sensEtage(state, tile);
-  return { ok: true, sorte, case: tile, etage: true, ...(ancien ? { remplace: ancien } : {}), ...(v ? { sens: v } : {}) };
+  setVarianteEtage(state, tile, variante);
+  const v = sensEtage(state, tile), t = varianteEtage(state, tile);
+  return { ok: true, sorte, case: tile, etage: true, ...(ancien ? { remplace: ancien } : {}), ...(v ? { sens: v } : {}), ...(t ? { variante: t } : {}) };
 }
 
 // Reprend le bloc de l'étage posé sur `tile` (ou le meuble qui couvre `tile`) : son objet revient
@@ -276,13 +306,14 @@ export function reprendreEtage(state, tile) {
   const sorte = etageBlocs(state)[tile];
   if (!sorte) return fail('Il n\'y a pas de bloc ici.');
   // une fenêtre percée dans un mur : elle revient, le mur reste
-  const mur = fenetresEtage(state)[tile], sens = sensEtage(state, tile);
+  const mur = fenetresEtage(state)[tile], sens = sensEtage(state, tile), variante = varianteEtage(state, tile);
   if (estFen(sorte) && mur) state.etage[tile] = mur;
   else delete state.etage[tile];
   setFenetreEtage(state, tile, null);
   if (state.sensEtage) delete state.sensEtage[tile];
+  if (state.teintesEtage) delete state.teintesEtage[tile];
   addItem(state, DATA.ATELIER.BLOCS[sorte].objet, 1);
-  return { ok: true, sorte, case: tile, etage: true, ...(mur && estFen(sorte) ? { reste: mur } : {}), ...(sens ? { sens } : {}) };
+  return { ok: true, sorte, case: tile, etage: true, ...(mur && estFen(sorte) ? { reste: mur } : {}), ...(sens ? { sens } : {}), ...(variante ? { variante } : {}) };
 }
 
 // Tourner d'un quart de tour le meuble de l'étage de la case `tile` (une de ses cases), comme en bas
@@ -330,6 +361,7 @@ export function rangerEtage(state) {
     setFenetreEtage(state, k, null);
     delete E[k];
     if (state.sensEtage) delete state.sensEtage[k];
+    if (state.teintesEtage) delete state.teintesEtage[k];
   }
   // (les sols d'un niveau hors d'une pièce de ce niveau, ou de l'étage : ils reviennent aussi)
   let sols = 0;

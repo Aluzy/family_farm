@@ -213,6 +213,14 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
   fenêtre percée rend son mur), un tracé entier, les blocs fabriqués sur place (ils reviennent dans
   l'inventaire, la fabrication reste faite), un meuble posé. Ce qui a changé depuis (un bloc repris
   à la main entre-temps) est laissé tel quel, et le message le dit.
+- **Les couleurs** (A-3) : un meuble peut avoir des variantes de couleur (`data/meubles.json`,
+  `MEUBLES.<id>.variantes` ; la première est celle du dessin, les autres remplacent des rampes de
+  `PALETTES`). `state.teintes` (en bas) et `state.teintesEtage` (à l'étage) : case d'ancrage → id de la
+  variante (`js/engine/blocs.js` `varianteBloc`, `peindreBloc` ; `etage.js` `varianteEtage`, `peindreEtage` ;
+  commandes `bloc.peindre`, `etage.peindre`, et `variante` de `bloc.poser`, `etage.poser`). Elle suit le
+  meuble repris, déplacé, tourné. Choisie à la pose (🎨 à côté de ✔️), repeinte gratuitement avec l'outil 🎨.
+  La carte recolore les images au premier besoin (`imageTeinte`, `js/carte/ferme/chantier.js` : de face,
+  de dos, de profil, la couverture d'un lit, le lit double) : aucune image en plus dans `assets/`.
 - **Le catalogue** (A-2, `js/ui/catalogue.js`) : l'onglet ⭐ en tête des onglets (les favoris, mis ou retirés
   d'un appui long sur une case du menu, ou d'un clic droit ; puis les 6 derniers objets choisis : un objet
   favori ou récent se prend en deux touches), gardés sur l'appareil (`localStorage` :
