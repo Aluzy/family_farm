@@ -311,6 +311,11 @@
     // membre de la famille assis sur une chaise (js/famille-ferme.js) : ses pieds à `assisDy` px
     // au-dessus du bas de la case de la chaise
     litPieds: 27, tableau: { dy: 10 }, assisDy: 3,
+    // un lit tourné (A-1 ; scripts/batiments/meubles_sens.py, lit_dos, lit_cote) : le dormeur pivote avec
+    // lui (sa tête sur l'oreiller) ; de dos, la tête en bas, ses pieds à `dos` px sous le haut du lit ; de
+    // profil, couché en travers, ses pieds à `cote` px du bord de la tête de lit, au milieu du matelas (dont
+    // le dessus commence `coteHaut` px sous le haut de l'image, au-dessus de `coteBas` px de cadre)
+    litSens: { dos: 3, cote: 28, coteHaut: 8, coteBas: 4 },
   };
   // Les bêtes du Poulailler et de l'Étable de la ferme générée (chantier.js, syncBeasts) : leurs
   // planches (HERD_SHEETS : profil droit ; la poule aussi de face et de dos, scripts/carte/betes.py),
@@ -442,11 +447,16 @@
     'chaise', 'table', 'tapis_1', 'tapis_2', 'tapis_3', 'chevet', 'canape', 'table_basse', 'buffet', 'commode',
     'armoire_chene', 'armoire_peinte', 'armoire_glace', 'cuisine_porte', 'cuisine_tiroirs', 'cuisine_sauge',
     'bibliotheque', 'bibliotheque_vitree', 'coffre_jouets',
+    // (A-1)
+    'lit_adulte', 'lit_enfant', 'refrigerateur',
   ];
   // La couverture seule de chaque lit (meuble_<lit>_drap.png) : posée par-dessus le personnage
   // quand il y dort (js/fermier.js). La paillasse : son lit tant qu'aucun lit n'est acheté.
   // (le lit double : deux lits adulte côte à côte, sur la ferme générée, js/carte/ferme/chantier.js)
   const LITS = ['lit_adulte', 'lit_enfant', 'paillasse', 'lit_double'];
+  // (A-1) les lits qui tournent : la couverture de leurs vues de dos et de profil (meuble_<lit>_dos_drap.png,
+  // _cote_drap.png)
+  const LITS_SENS = ['lit_adulte', 'lit_enfant'];
 
   // l'appui et le double appui (sur l'herbe ou un chemin : le personnage y va), comme sur les
   // autres cartes (CarteKit.APPUI)
@@ -537,7 +547,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZOOM, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, MINE, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL, HERBES },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZOOM, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, MINE, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, LITS_SENS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL, HERBES },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

@@ -982,6 +982,16 @@ export function reprendreBloc(state, tile, opts) {
   return { ok: true, sorte, case: tile, ...(sens ? { sens } : {}) };
 }
 
+// Pourquoi le bloc `sorte` (posé en `tile`) ne tourne pas : un tableau suit le mur où il est accroché ;
+// le reste (un mur, une porte, un bloc de la ferme) n'est pas un meuble. (A-1 : tout meuble tourne.)
+export function raisonFixe(state, tile, sorte) {
+  const dessus = sorteDe(blocsDessusPoses(state)[tile]);
+  if (dessus && dessus.sur === 'mur') return `${dessus.nom} : accroché au mur, il suit le mur.`;
+  const s = sorteDe(sorte);
+  if (s && s.sur === 'mur') return `${s.nom} : accroché au mur, il suit le mur.`;
+  return `${s ? s.nom : 'Ce bloc'} : seuls les meubles se tournent.`;
+}
+
 // Tourner d'un quart de tour (dans le sens des aiguilles d'une montre : de face, vers la gauche, de dos,
 // vers la droite… ; `pas` : -1 pour l'autre sens) le meuble de la case `tile` (une de ses cases). Un
 // meuble qui ne tient pas dans le sens suivant (son emprise tournée bute sur un mur, un autre meuble) passe
@@ -991,7 +1001,7 @@ export function tournerBloc(state, tile, pas = 1) {
   const sorte = blocAt(state, tile);
   if (!sorte) return fail('Il n\'y a pas de meuble ici.');
   const tourne = tourneBloc(sorte);
-  if (!tourne) return fail(`${sorteDe(sorte).nom} ne se tourne pas.`);
+  if (!tourne) return fail(raisonFixe(state, tile, sorte));
   const avant = sensBloc(state, tile);
   // (un meuble rond, ou d'une case : son emprise ne change pas, il tourne sur place)
   const { largeur, hauteur } = mesuresMeuble(sorte, 0);

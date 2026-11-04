@@ -131,7 +131,8 @@
           const at = new Map(etage.blocs.map((b) => [b.case, b.sorte]));
           // deux lits adulte côte à côte (la même rangée) : un lit deux places, comme en bas
           // (chantier.js syncLitsDoubles) ; celui de gauche le dessine, l'autre ne se dessine pas
-          const LD = BLOCS_CARTE.litDouble, seul = (c) => { const b = etage.blocs.find((q) => q.case === c); return !!(b && b.meuble && b.meuble.dessin === LD.seul); };
+          // (deux lits de face seulement : un lit tourné garde son dessin, A-1)
+          const LD = BLOCS_CARTE.litDouble, seul = (c) => { const b = etage.blocs.find((q) => q.case === c); return !!(b && b.meuble && b.meuble.dessin === LD.seul && !b.meuble.sens); };
           const paire = new Map();
           if (this.textures.exists('meuble_' + LD.double)) {
             for (const b of etage.blocs.slice().sort((p1, p2) => p1.case - p2.case)) {
@@ -146,7 +147,9 @@
             // cases qu'il couvre, qui arrêtent le passage s'il bloque
             if (b.meuble) {
               const M = b.meuble, pr = paire.get(b.case), p = pos(b.case);
-              const k = 'meuble_' + (pr ? LD.double : M.dessin);
+              // (tourné, A-1 : sa vue de dos ou de profil, en miroir vers la gauche ; js/ui/stage.js meubleDe)
+              const vu = 'meuble_' + M.dessin + (M.vue || '');
+              const k = pr ? 'meuble_' + LD.double : this.textures.exists(vu) ? vu : 'meuble_' + M.dessin;
               if (!this.textures.exists(k)) continue;
               const x0 = Math.round(((b.case % cols) + M.largeur / 2) * T), x = pr ? x0 + T / 2 : x0;
               // (la moitié droite d'un lit deux places : rien à dessiner, sa place seulement)
@@ -159,16 +162,18 @@
               // tapis, un lit, où l'on marche : une tranche par rangée, sur le plancher de sa rangée,
               // sous le personnage qui y est, etageDepth)
               if (M.bloque || M.hauteur < 2) {
-                add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setDepth(p.y + (M.bloque ? 0.9 : M.lit ? 0.75 : 0.6)));
+                const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setDepth(p.y + (M.bloque ? 0.9 : M.lit ? 0.75 : 0.6)).setFlipX(!!M.miroir));
+                // (un lit de profil, sur une rangée : on y dort aussi)
+                if (M.lit) this.etageLits.set(b.case, { img, x, y: p.y - dy - 1, haut: this.textures.get(k).getSourceImage().height, dessin: M.dessin, sens: M.sens || 0 });
               } else {
                 const H = this.textures.get(k).getSourceImage().height;
                 let bas = null;
                 for (let j = 0; j < M.hauteur; j++) {
                   const y1 = H - j * T, y0 = j === M.hauteur - 1 ? 0 : y1 - T;
-                  const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setCrop(0, y0, 9999, y1 - y0).setDepth(p.y - j * T + (M.lit ? 0.75 : 0.6)));
+                  const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setCrop(0, y0, 9999, y1 - y0).setDepth(p.y - j * T + (M.lit ? 0.75 : 0.6)).setFlipX(!!M.miroir));
                   if (!j) bas = img;
                 }
-                if (M.lit) this.etageLits.set(b.case, pr ? { img: bas, x: x0, xd: x, y: p.y - dy - 1, haut: H, dessin: LD.double, double: true } : { img: bas, x, y: p.y - dy - 1, haut: H, dessin: M.dessin });
+                if (M.lit) this.etageLits.set(b.case, pr ? { img: bas, x: x0, xd: x, y: p.y - dy - 1, haut: H, dessin: LD.double, double: true } : { img: bas, x, y: p.y - dy - 1, haut: H, dessin: M.dessin, sens: M.sens || 0 });
               }
               if (M.bloque) for (let j = 0; j < M.hauteur; j++) for (let i = 0; i < M.largeur; i++) this.etageBloque.add(b.case - j * cols + i);
               continue;
@@ -316,6 +321,12 @@
       const z = (k) => (img.etageZ !== undefined && img.depth !== img.etageZ ? this.etageZ(base() + k) : base() + k);
       if (e.paillasse) {
         return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, get depth() { return img.depth; }, z, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y }, via, etage: cell };
+      }
+      // (un lit tourné, A-1 : le dormeur pivote avec lui ; js/carte/ferme/chantier.js litDormeur)
+      if (e.sens) {
+        const L = this.litDormeur(e.sens, img, e.dessin, 0, { z, via, etage: cell });
+        if (L) Object.defineProperty(L, 'depth', { get: () => img.depth });
+        return L;
       }
       const drap = 'meuble_' + e.dessin + '_drap';
       if (!this.has(drap)) return null;

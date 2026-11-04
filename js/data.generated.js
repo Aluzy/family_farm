@@ -1010,7 +1010,8 @@ export const RAW_DATA = {
         "bloque": true,
         "unique": true,
         "frigo": true,
-        "debloque": "frigo"
+        "debloque": "frigo",
+        "tourne": true
       },
       "plancher": { "nom": "Plancher", "objet": "plancher", "sol": true },
       "sol_dalles": { "nom": "Dalles de pierre", "objet": "sol_dalles", "sol": true },
@@ -1143,8 +1144,24 @@ export const RAW_DATA = {
         "largeur": 3,
         "tourne": true
       },
-      "meuble_lit_adulte": { "nom": "Lit adulte", "objet": "meuble_lit_adulte", "meuble": "lit_adulte", "dedans": true, "lit": true, "hauteur": 2 },
-      "meuble_lit_enfant": { "nom": "Lit enfant", "objet": "meuble_lit_enfant", "meuble": "lit_enfant", "dedans": true, "lit": true, "hauteur": 2 },
+      "meuble_lit_adulte": {
+        "nom": "Lit adulte",
+        "objet": "meuble_lit_adulte",
+        "meuble": "lit_adulte",
+        "dedans": true,
+        "lit": true,
+        "hauteur": 2,
+        "tourne": true
+      },
+      "meuble_lit_enfant": {
+        "nom": "Lit enfant",
+        "objet": "meuble_lit_enfant",
+        "meuble": "lit_enfant",
+        "dedans": true,
+        "lit": true,
+        "hauteur": 2,
+        "tourne": true
+      },
       "meuble_chevet": { "nom": "Table de chevet", "objet": "meuble_chevet", "meuble": "chevet", "dedans": true, "bloque": true, "tourne": true },
       "meuble_canape": { "nom": "Canapé", "objet": "meuble_canape", "meuble": "canape", "dedans": true, "bloque": true, "largeur": 3, "tourne": true },
       "meuble_table_basse": {

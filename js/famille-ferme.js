@@ -186,16 +186,20 @@
     // Il se couche dans son lit `L` (o.lit) : debout entre le lit et sa couverture.
     function coucher(m, L) {
       m.couche = L; m.faim = false; m.reprise = null; m.jeu = null; m.vite = 1; m.haut = 0; m.chemin = []; m.puis = null; m.but = null; m.tache = null;
-      // (un enfant est plus petit, ENFANT_RANGEES de scripts/personnage/chibi.py : remonté, la tête sur l'oreiller)
-      m.x = L.x; m.y = L.y - (m.enfant ? ENFANT_DY : 0); m.face = 'bas'; m.flip = false;
+      // (un enfant est plus petit, ENFANT_RANGEES de scripts/personnage/chibi.py : remonté, la tête sur l'oreiller ;
+      // dans un lit tourné, A-1, vers la tête de lit : L.angle)
+      const rad = ((L.angle || 0) * Math.PI) / 180, d = m.enfant ? ENFANT_DY : 0;
+      m.x = L.x + d * Math.sin(rad); m.y = L.y - d * Math.cos(rad); m.face = 'bas'; m.flip = false;
       montrer(m);
+      m.s.setAngle(L.angle || 0);
       if (!m.drap) m.drap = scene.add.image(0, 0, L.drap.key, L.drap.frame).setOrigin(0.5, 1);
-      m.drap.setTexture(L.drap.key, L.drap.frame).setPosition(L.drap.x, L.drap.y).setDepth(L.depth + 0.2).setVisible(true);
+      m.drap.setTexture(L.drap.key, L.drap.frame).setPosition(L.drap.x, L.drap.y).setFlipX(!!L.drap.flip).setDepth(L.depth + 0.2).setVisible(true);
     }
     // Il se lève : à côté du lit, sans couverture ; il repart de là.
     function lever(m) {
       const L = m.couche;
       m.couche = null;
+      m.s.setAngle(0);
       if (m.drap) m.drap.setVisible(false);
       // (un lit de l'étage : il se lève en bas de l'escalier)
       if (L && L.via) { m.x = L.via.x; m.y = L.via.y; } else if (libre(m.x, m.y + 4)) m.y += 4;

@@ -683,7 +683,7 @@ test('meubles tournés : le sens à la pose, l\'emprise tournée de profil, tour
   poserPorte(s, p.porte);
   poserBloc(s, 'paillasse', p.dedans);
   for (const id of ['table', 'chaise', 'chaise', 'plante_ficus', 'lit_adulte']) assert(buyFurniture(s, id).ok, id);
-  assertEqual([tourneBloc('meuble_table'), tourneBloc('meuble_plante_ficus'), tourneBloc('meuble_lit_adulte'), tourneBloc('mur_pierre')], [true, 'symetrique', false, false]);
+  assertEqual([tourneBloc('meuble_table'), tourneBloc('meuble_plante_ficus'), tourneBloc('meuble_lit_adulte'), tourneBloc('mur_pierre')], [true, 'symetrique', true, false]);
   assertEqual(mesuresMeuble('meuble_table', 1), { largeur: 1, hauteur: 3 }, 'de profil, la table est en long');
   assertEqual(mesuresMeuble('meuble_plante_ficus', 1), { largeur: 1, hauteur: 1 });
   // la table posée de profil (tournée vers la droite) : trois cases vers le haut
@@ -710,9 +710,12 @@ test('meubles tournés : le sens à la pose, l\'emprise tournée de profil, tour
   assertEqual([sensBloc(s, at(6, 5)), sensBloc(s, at(2, 3))], [3, 0]);
   assertEqual(reprendreBloc(s, at(6, 5)).sens, 3);
   assertEqual(sensBloc(s, at(6, 5)), 0);
-  // un lit ne se tourne pas ; un mur non plus
+  // un lit tourne aussi (A-1) : de profil, il buterait sur le mur de droite, il passe de dos ; un mur ne
+  // tourne pas (ce n'est pas un meuble)
   assert(poserBloc(s, 'meuble_lit_adulte', at(6, 2)).ok);
-  assertEqual(tournerBloc(s, at(6, 2)).ok, false);
+  assertEqual(tournerBloc(s, at(6, 2)).sens, 2);
+  const mur = tournerBloc(s, p.murs[0]);
+  assertEqual([mur.ok, /seuls les meubles se tournent/.test(mur.error)], [false, true]);
   assertEqual(poserBloc(s, 'meuble_chaise', at(5, 5), 2).ok, false, 'plus de chaise');
 });
 
