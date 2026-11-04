@@ -28,8 +28,8 @@ import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { meubleSrc } from './caleche.js';
 import { closeModal, openModal } from './modal.js';
 import { styleDe, styleInfo } from '../engine/styles.js';
-import { defaire, surCase as surCaseMoteur } from '../engine/commandes.js';
-import { commandesJouees, executer } from './commandes.js';
+import { surCase as surCaseMoteur } from '../engine/commandes.js';
+import { commandesJouees, defaireCommandes, executer } from './commandes.js';
 import { itemsText } from './common.js';
 import { tel } from './consent.js';
 import { basculerFavori, estFavori, filtrer, filtres, filtresPossibles, noterRecent, sortesEtoile } from './catalogue.js';
@@ -851,7 +851,7 @@ registerActions({
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const gestes = histoire.pop();
     if (!gestes) { notify('Rien à annuler.'); return; }
-    const n = defaire(state, gestes);
+    const n = defaireCommandes(gestes);
     if (n) persistState();
     refresh();
     notify(n ? `↶ Annulé${gestes.length > 1 ? ` : ${n} bloc${n > 1 ? 's' : ''}` : ''}${n < gestes.length ? ` (${gestes.length - n} n'ont pas pu l'être)` : ''}.` : 'Rien n\'a pu être annulé (ce qui a été posé a changé depuis).');

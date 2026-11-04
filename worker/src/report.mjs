@@ -168,7 +168,7 @@ export const INTERFACE_ACTIONS = new Set([
   'frigo-tiroir', 'frigo-choisir', 'frigo-qte', // la fenêtre du frigo : le tiroir « Ranger au frais », l'aliment, la quantité
   'scene-suite', 'scene-fermer', 'carnet-open', // le récit : la réplique suivante d'une scène, la fermer ; ouvrir le carnet
   'ask-new-game', 'cancel-new-game', 'copy-export',
-  'compte-lien', 'compte-autre', 'compte-deconnexion', 'compte-supprimer', 'compte-supprimer-non', 'compte-supprimer-oui', // E-0 : le compte du jeu en ligne
+  'compte-lien', 'compte-autre', 'compte-deconnexion', 'compte-supprimer', 'compte-supprimer-non', 'compte-supprimer-oui', 'monde-creer', 'monde-quitter', // E-0, E-2 : le compte du jeu en ligne, les mondes
   'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-espece', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier',
   'do-export', 'do-import', 'download-export', 'import-file', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', 'four-tab', 'atelier-tab', 'atelier-groupe', 'atelier-choisir', 'silo-agrandir', // carte de la ferme : fenêtres et onglets de la maison

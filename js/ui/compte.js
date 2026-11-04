@@ -9,6 +9,7 @@
 import { registerActions } from './actions.js';
 import { morph } from './render.js';
 import { notify } from './toasts.js';
+import { exportSaveJson } from './storage.js';
 
 const CLE = 'ferme-compte';
 
@@ -35,12 +36,15 @@ function garder(v) {
 }
 
 // Un appel au Worker : { ok, statut, ...corps } (jamais d'exception : hors ligne, { ok: false }).
-async function appel(chemin, { methode = 'POST', corps } = {}) {
+async function appel(chemin, opts = {}) {
+  return appelServeur('/compte/' + chemin, opts);
+}
+async function appelServeur(chemin, { methode = 'POST', corps } = {}) {
   const base = adresseServeur();
   if (!base) return { ok: false, erreur: 'Le jeu en ligne n\'est pas disponible ici.' };
   const c = compteGarde();
   try {
-    const r = await fetch(base + '/compte/' + chemin, {
+    const r = await fetch(base + chemin, {
       method: methode,
       headers: { 'Content-Type': 'application/json', ...(c ? { Authorization: `Bearer ${c.session}` } : {}) },
       body: corps === undefined ? undefined : JSON.stringify(corps),
@@ -59,6 +63,7 @@ export function compteHtml() {
   const c = compteGarde();
   const corps = c ? `
       <p class="muted">Connecté : <strong>${echapper(c.email)}</strong>. Ton compte servira au jeu en ligne (inviter un ami, rejoindre sa ferme) ; ta partie solo reste sur cet appareil.</p>
+      ${mondesHtml()}
       <div class="row">
         <button class="btn" type="button" data-action="compte-deconnexion">Me déconnecter</button>
         ${confirmer
@@ -76,6 +81,37 @@ export function compteHtml() {
       </div>`;
   return `<div class="stack" id="compte-zone"><strong>🌐 Jeu en ligne</strong>${corps}</div>`;
 }
+// E-2 : ses mondes en ligne (GET /mondes, lus à l'ouverture des Options), et mettre sa ferme en ligne (F.4 :
+// une copie de la partie solo, qui reste sur l'appareil).
+let mondes = null, mondesLus = false, miseEnLigne = false;
+function mondesHtml() {
+  if (!mondesLus) { mondesLus = true; lireMondes(); }
+  const liste = (mondes || []).map((m) => `<div class="row"><span>🏡 ${echapper(m.titre)}${m.role === 'proprietaire' ? '' : ' (invité)'}</span><a class="btn" href="jeu.html?monde=${encodeURIComponent(m.monde)}">Entrer</a></div>`).join('');
+  const enLigneIci = typeof location !== 'undefined' && /[?&]monde=/.test(location.search);
+  return `<div class="stack">
+        ${mondes === null ? '<p class="muted">Tes mondes en ligne…</p>' : liste || '<p class="muted">Pas encore de monde en ligne.</p>'}
+        ${enLigneIci ? '' : `<div class="row"><button class="btn primary" type="button" data-action="monde-creer"${miseEnLigne ? ' disabled' : ''}>${miseEnLigne ? 'Mise en ligne…' : '🌐 Mettre ma ferme en ligne'}</button></div>
+        <p class="muted">Une copie de ta ferme part en ligne, pour y construire à plusieurs ; ta partie solo reste sur cet appareil, telle quelle.</p>`}
+      </div>`;
+}
+async function lireMondes() {
+  const r = await appelServeur('/mondes', { methode: 'GET' });
+  mondes = r.ok ? r.mondes || [] : [];
+  redessiner();
+}
+async function creerMonde() {
+  if (miseEnLigne) return;
+  miseEnLigne = true;
+  redessiner();
+  const r = await appelServeur('/mondes', { corps: { partie: JSON.parse(exportSaveJson()), titre: 'Ma ferme' } });
+  miseEnLigne = false;
+  if (!r.ok) { notify(`🌐 ${r.erreur || 'La mise en ligne a échoué.'}`); redessiner(); return; }
+  notify('🌐 Ta ferme est en ligne. Entre dedans : tu y construis, ta partie solo t\'attend ici.');
+  mondes = null;
+  mondesLus = false;
+  redessiner();
+}
+
 const echapper = (t) => String(t).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 function redessiner() {
   const z = document.getElementById('compte-zone');
@@ -131,6 +167,7 @@ async function supprimer() {
 if (typeof window !== 'undefined') window.addEventListener('hashchange', () => { connexionDuLien(); });
 
 registerActions({
+  'monde-creer': () => { creerMonde(); },
   'compte-lien': () => { demanderLien(); },
   'compte-autre': () => { envoye = null; redessiner(); },
   'compte-deconnexion': () => { deconnecter(); },

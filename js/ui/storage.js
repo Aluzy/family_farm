@@ -1,7 +1,7 @@
 import { GAME_VERSION } from '../engine/base.js';
 import { migrate } from '../engine/state.js';
 import { createNewGame } from '../engine/depart.js';
-import { SAVE_KEY, setState, state } from './store.js';
+import { enLigne, SAVE_KEY, setState, state } from './store.js';
 import { setPendingAbsence, setSimulatedAt, simulatedAt, syncJobs } from './loop.js';
 import { notify } from './toasts.js';
 import { mesurer } from './chrono.js';
@@ -104,6 +104,8 @@ export function statsSauvegarde() {
 }
 
 export function persistState() {
+  // (E-2 : en ligne, la partie est celle du monde : la partie solo de l'appareil n'est jamais écrasée)
+  if (enLigne) return;
   mesurer('sauvegarde', persister);
 }
 function persister() {
