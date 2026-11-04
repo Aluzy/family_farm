@@ -69,7 +69,7 @@ import { countItem } from '../engine/inventory.js';
 import { caseDepart, ramassables } from '../engine/atelier.js';
 import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, mesuresMeuble, piecesCloses, rehaussesPosees, sensBloc, serreMurs, serrePlaces, solsPoses } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable, vueMeuble } from './chantier.js';
-import { escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, solsEtage, toits } from '../engine/etage.js';
+import { escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, sensEtage, solsEtage, toits } from '../engine/etage.js';
 import { closeModal } from './modal.js';
 import { itemsText } from './common.js';
 import { aCruche, crucheCapacite, eauCruche, puitsPose } from '../engine/cruche.js';
@@ -576,13 +576,14 @@ export function stageModel() {
 // Un meuble posé sur la ferme générée (DATA.ATELIER.BLOCS.meuble_<id>), ou un bloc dessiné comme
 // lui (`dessin` : le distributeur de grain, sa mangeoire ; leur image suit ce qu'ils contiennent) :
 // ce que la carte en a besoin ; {} pour un autre bloc.
-// Un meuble qui tourne (js/engine/blocs.js, sensBloc ; `tile` : posé au sol, l'étage n'en a pas) : son
+// Un meuble qui tourne (js/engine/blocs.js, sensBloc ; `tile` : sa case ; `etage` : posé à l'étage,
+// js/engine/etage.js sensEtage, A-1) : son
 // sens, ses mesures dans ce sens, l'image qui va avec (vue : _cote, _dos ; miroir) ; le mobilier de
 // jardin, un bloc de la planche : son sens seulement (js/carte/ferme/chantier.js, BLOCS_CARTE.sens).
-function meubleDe(sorte, tile) {
+function meubleDe(sorte, tile, etage = false) {
   const b = DATA.ATELIER.BLOCS[sorte];
   if (b && b.dessin) return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: false, lit: false } };
-  const sens = b && b.tourne && Number.isInteger(tile) ? sensBloc(state, tile) : 0;
+  const sens = b && b.tourne && Number.isInteger(tile) ? (etage ? sensEtage(state, tile) : sensBloc(state, tile)) : 0;
   if (!b || !b.meuble) return sens ? { sens } : {};
   const mes = mesuresMeuble(sorte, sens), v = vueMeuble(sorte, sens);
   return { meuble: { dessin: b.meuble, largeur: mes.largeur, hauteur: mes.hauteur, bloque: !!b.bloque, plat: !!b.plat, lit: !!b.lit, ...(sens ? { sens, vue: v.vue, miroir: v.miroir } : {}) } };
@@ -664,7 +665,7 @@ function etageModel() {
   const tri = (l) => [...l].sort((a, b) => a - b);
   const etage2 = e2.size ? { emprise: tri(e2), escaliers: escaliersEtage(state).filter((t) => e2.has(t)), hauts: tri([...e2].filter((t) => hauteurPile(state, t) >= 3)) } : null;
   return {
-    etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte), ...(fenetresEtage(state)[c] ? { mur: fenetresEtage(state)[c] } : {}) })), escaliers: escaliers(state), hauts: [...emprise].filter((t) => hauteurPile(state, t) >= 2).sort((a, b) => a - b), etage2 },
+    etage: { emprise: [...emprise].sort((a, b) => a - b), blocs: Object.entries(etageBlocs(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c), true), ...(fenetresEtage(state)[c] ? { mur: fenetresEtage(state)[c] } : {}) })), escaliers: escaliers(state), hauts: [...emprise].filter((t) => hauteurPile(state, t) >= 2).sort((a, b) => a - b), etage2 },
     niveau: etageVue,
     vueNiveau: buildMode && !stageInterior ? niveauBati() : null,
   };

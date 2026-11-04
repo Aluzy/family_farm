@@ -220,8 +220,11 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
   tour (Annuler le remet). De profil, un meuble long a l'emprise tournée (sa largeur devient sa hauteur ;
   il saute au sens suivant s'il ne tient pas) ; un meuble rond tourne en miroir. Ses images :
   `meuble_<id>_dos.png`, `_cote.png` (`scripts/batiments/meubles_sens.py`), en miroir vers la gauche ; le
-  mobilier de jardin, `BLOCS_CARTE.sens`. Assis, on regarde où regarde son siège. À l'étage, les meubles
-  ne tournent pas encore.
+  mobilier de jardin, `BLOCS_CARTE.sens`. Assis, on regarde où regarde son siège. A-1 : les lits et le
+  réfrigérateur tournent aussi (un lit tourné : le dormeur pivote avec lui, `BLOCS_CARTE.litSens`, sous la
+  couverture de cette vue, `meuble_<lit>_dos_drap.png`, `_cote_drap.png` ; deux lits adulte ne font un lit
+  double que de face) ; à l'étage aussi (`state.sensEtage`, `tournerEtage`, les commandes `etage.tourner`
+  et `etage.orienter`). Les tableaux ne tournent pas : accrochés au mur, ils le suivent.
 - **La gomme** : le bouton à côté de l'outil pièce, un bloc qui se trace en main ; allumée, un
   glissement parti d'un bloc de la même famille (un mur pour un mur, une barrière, un sol) reprend
   ceux qu'il traverse (cases orangées, « 4 à reprendre ») : ils reviennent dans l'inventaire.

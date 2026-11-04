@@ -1011,11 +1011,14 @@
       if (k !== undefined) s.setFrame(k);
       // (L.z : un couchage de l'étage, dont la profondeur a sa propre échelle)
       const z = (k) => (L.z ? L.z(k) : L.depth + k);
-      s.setVisible(true).setAlpha(alpha).setFlipX(false).setPosition(L.x, L.y).setDepth(z(0.1));
+      // (un lit tourné, A-1 : il pivote avec lui, L.angle ; sa couverture de cette vue, en miroir vers la gauche)
+      const a = L.angle || 0, rad = (a * Math.PI) / 180;
+      s.setVisible(true).setAlpha(alpha).setFlipX(false).setPosition(L.x, L.y).setAngle(a).setDepth(z(0.1));
       if (!drapDehors) drapDehors = scene.add.image(0, 0, L.drap.key, L.drap.frame).setOrigin(0.5, 1);
       if (drapDehors.texture.key !== L.drap.key) drapDehors.setTexture(L.drap.key, L.drap.frame);
-      drapDehors.setPosition(L.drap.x, L.drap.y).setDepth(z(0.2)).setVisible(true);
-      stepZ(L.x, L.y - 32 + 5, couche.t);
+      drapDehors.setPosition(L.drap.x, L.drap.y).setFlipX(!!L.drap.flip).setDepth(z(0.2)).setVisible(true);
+      // (les « Z » au-dessus de sa tête, où qu'elle soit)
+      stepZ(L.x + 27 * Math.sin(rad), L.y - 27 * Math.cos(rad), couche.t);
       if (!couche.slept && couche.t >= (reduced() ? 0.8 : ASLEEP_S)) {
         couche.slept = true;
         if (global.FermeSon) global.FermeSon.joue('dodo');
@@ -1028,6 +1031,7 @@
       const L = couche && couche.lit;
       if (L && L.via) { const v = litVers(L); x = v.x; y = v.y - 4; }
       couche = null;
+      s.setAngle(0);
       if (drapDehors) drapDehors.setVisible(false);
       stepZ(0, 0, -1);
       y += 4;

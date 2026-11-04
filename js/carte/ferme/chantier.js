@@ -184,7 +184,8 @@
     syncLitsDoubles() {
       const B = this.blocks, D = BLOCS_CARTE.litDouble, cols = this.grid.cols;
       if (!B || !this.textures.exists('meuble_' + D.double)) return;
-      const est = (e) => e && e.lit && e.dessin === D.seul && e.img && e.img.active;
+      // (deux lits de face seulement : un lit tourné garde son dessin, A-1)
+      const est = (e) => e && e.lit && e.dessin === D.seul && !e.sens && e.img && e.img.active;
       const lits = [...B.values()].filter(est).sort((a, b) => a.case - b.case);
       const pris = new Set();
       for (const e of lits) e.paire = null;
@@ -952,12 +953,27 @@
       return null;
     },
 
+    // Un lit tourné (A-1 ; `img` : son image, origine en bas au milieu ; `sens` : 1 à 3) : où se couche le
+    // dormeur, pivoté avec lui (`angle`, en degrés : de dos, la tête en bas ; de profil, en travers, la tête
+    // vers la tête de lit), sa couverture de cette vue (en miroir vers la gauche) ; null sans elle.
+    litDormeur(sens, img, dessin, depth, extra = {}) {
+      const vue = sens === 2 ? '_dos' : '_cote', drap = 'meuble_' + dessin + vue + '_drap';
+      if (!this.has(drap)) return null;
+      const S = BLOCS_CARTE.litSens, top = img.y - img.height, gauche = img.x - img.width / 2;
+      const base = { depth, drap: { key: drap, frame: undefined, x: img.x, y: img.y, flip: sens === 3 }, ...extra };
+      if (sens === 2) return { ...base, x: img.x, y: top + S.dos, angle: 180 };
+      const y = top + S.coteHaut + (img.height - S.coteHaut - S.coteBas) / 2;
+      return sens === 1 ? { ...base, x: gauche + S.cote, y, angle: -90 } : { ...base, x: gauche + img.width - S.cote, y, angle: 90 };
+    },
+
     bedSpotOf(c) {
       // un couchage de l'étage (« etage:<tuile> ») : js/carte/ferme/etage.js
       if (typeof c === 'string') return c.startsWith('etage:') && this.etageBedSpot ? this.etageBedSpot(Number(c.slice(6))) : null;
       {
         const e = this.blocks && this.blocks.get(c);
         if (e && e.sorte === 'paillasse') return { x: e.x, y: e.y - BLOCS_CARTE.coucheY, depth: e.img.depth, drap: { key: BLOCS_CARTE.key, frame: BLOCS_CARTE.frames.drap, x: e.x, y: e.y } };
+        // un lit tourné (A-1) : le dormeur pivote avec lui, sous la couverture de cette vue
+        if (e && e.lit && e.sens) return this.litDormeur(e.sens, e.img, e.dessin, e.img.depth);
         // un lit de la maison : les pieds sous la couverture, la tête sur l'oreiller
         if (e && e.lit && this.has('meuble_' + e.dessin + '_drap')) {
           const top = e.img.y - e.img.height;

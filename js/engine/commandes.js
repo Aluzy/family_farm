@@ -25,9 +25,11 @@
      bloc.orienter    { case, sorte, sens }    remettre un meuble dans le sens `sens`
      mur.rehausser    { sorte, case }          un bloc de plus sur un mur (niveaux 1 et 2)
      mur.abaisser     { case, niveau?, attendu? } reprendre le bloc du dessus d'un mur
-     etage.poser      { sorte, case }          sur l'étage d'une pièce
-     etage.reprendre  { case, attendu? }
+     etage.poser      { sorte, case, sens? }   sur l'étage d'une pièce (un meuble : son sens)
+     etage.reprendre  { case, attendu? }       (un meuble : sur l'une de ses cases)
      etage.remettre   { case, avant, apres }   défaire un changement sur l'étage
+     etage.tourner    { case }                 un quart de tour, à l'étage (A-1)
+     etage.orienter   { case, sorte, sens }    remettre un meuble de l'étage dans le sens `sens`
      solEtage.poser   { sorte, case, niveau }  un sol aux niveaux 1 et 2
      solEtage.reprendre { case, niveau, attendu? }
      solEtage.remettre { case, niveau, avant, apres } défaire un sol changé pour un autre
@@ -46,7 +48,7 @@ import {
   blocAt, blocDessus, casesCouvertes, deplacerBloc, hauteurPile, matiereDessus, poserBloc, rehausser,
   reprendreBloc, sensBloc, solAt, tournerBloc,
 } from './blocs.js';
-import { etageBlocs, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, solsEtage } from './etage.js';
+import { etageBlocs, etageCouvertes, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
 import { harvest, plant, water } from './crops.js';
 import { goToSleep } from './night.js';
 
@@ -170,10 +172,10 @@ export const COMMANDES = {
     },
   },
   'etage.poser': {
-    args: { sorte: 'sorte', case: 'case' },
-    executer(state, { sorte, case: c }) {
+    args: { sorte: 'sorte', case: 'case', sens: 'sens?' },
+    executer(state, { sorte, case: c, sens }) {
       const avant = etageBlocs(state)[c];
-      const r = poserEtage(state, sorte, c);
+      const r = poserEtage(state, sorte, c, sens || 0);
       if (!r.ok) return r;
       return { ...r, inverses: [avant && avant !== sorte ? cmd('etage.remettre', { case: c, avant, apres: sorte }) : cmd('etage.reprendre', { case: c, attendu: sorte })] };
     },
@@ -185,7 +187,8 @@ export const COMMANDES = {
       if (attendu && avant !== attendu) return fail(CHANGE);
       const r = reprendreEtage(state, c);
       if (!r.ok) return r;
-      return { ...r, inverses: [cmd('etage.poser', { sorte: r.sorte || avant, case: c })] };
+      // (un meuble repris sur l'une de ses cases : reposé sur sa case d'ancrage, dans son sens)
+      return { ...r, inverses: [cmd('etage.poser', { sorte: r.sorte || avant, case: r.case !== undefined ? r.case : c, ...(r.sens ? { sens: r.sens } : {}) })] };
     },
   },
   'etage.remettre': {
@@ -199,6 +202,27 @@ export const COMMANDES = {
         if (!p.ok) { poserEtage(state, apres, c); return p; }
       }
       return { ok: true, sorte: avant, case: c, etage: true, inverses: [cmd('etage.poser', { sorte: apres, case: c })] };
+    },
+  },
+  'etage.tourner': {
+    args: { case: 'case' },
+    executer(state, { case: c }) {
+      const ancre = !etageBlocs(state)[c] && etageCouvertes(state).has(c) ? etageCouvertes(state).get(c) : c;
+      const sensAvant = sensEtage(state, ancre);
+      const r = tournerEtage(state, c);
+      if (!r.ok) return r;
+      return { ...r, inverses: [cmd('etage.orienter', { case: r.case, sorte: r.sorte, sens: sensAvant })] };
+    },
+  },
+  // (tournerEtage saute un sens où le meuble ne tient pas : au plus trois quarts de tour)
+  'etage.orienter': {
+    args: { case: 'case', sorte: 'sorte', sens: 'sens' },
+    executer(state, { case: c, sorte, sens }) {
+      if (etageBlocs(state)[c] !== sorte) return fail(CHANGE);
+      const avant = sensEtage(state, c);
+      for (let k = 0; k < 3 && sensEtage(state, c) !== sens; k++) if (!tournerEtage(state, c).ok) break;
+      if (sensEtage(state, c) !== sens) return fail(`${DATA.ATELIER.BLOCS[sorte].nom} : pas la place de le tourner ici.`);
+      return { ok: true, sorte, case: c, sens, etage: true, inverses: [cmd('etage.orienter', { case: c, sorte, sens: avant })] };
     },
   },
   'solEtage.poser': {

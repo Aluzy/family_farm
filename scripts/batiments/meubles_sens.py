@@ -10,7 +10,9 @@
 # comme une rangée de murs, scripts/carte/blocs.py) ; ce qu'on voit devant, c'est son flanc.
 #
 # Les plantes, la poubelle et le lampadaire sont ronds : ils tournent en miroir (ATELIER.BLOCS[].tourne :
-# « symetrique »), sans image en plus. Les lits, les tableaux et le réfrigérateur ne tournent pas.
+# « symetrique »), sans image en plus. Les lits et le réfrigérateur tournent aussi (A-1) : leurs vues sont
+# dessinées ici, et pour les lits, la couverture seule de chaque vue (meuble_<lit>_dos_drap.png,
+# _cote_drap.png), posée sur le dormeur comme celle de face. Les tableaux, accrochés au mur, ne tournent pas.
 #
 #   python3 scripts/batiments/meubles_sens.py            écrit les images
 #   python3 scripts/batiments/meubles_sens.py --apercu   écrit aussi apercu_meubles_sens.png (face, profil,
@@ -462,6 +464,133 @@ def coffre_cote():
     return t.fini()
 
 
+# ---------------------------------------------------------------- les lits et le réfrigérateur (A-1)
+
+def _lit_tons(enfant):
+    return (('J1', 'J2', 'J0') if enfant else ('V1', 'V2', 'V0')), ((16, 28) if enfant else (20, 34))
+
+
+def lit_dos(enfant):
+    """Le lit de dos (sa tête vers nous) : le pied de lit en haut, de chant ; la couverture, rabattue près
+    de l'oreiller, en bas ; la tête de lit devant, sa face pleine (plus haute que le pied de lit de face).
+    Le dormeur y est couché la tête en bas, sur l'oreiller (js/carte/ferme/config.js, BLOCS_CARTE.litSens)."""
+    cover, (W, H) = _lit_tons(enfant)
+    im = M.canvas(W, H)
+    put, _ = M.painter(im)
+    M.rect(put, 0, 0, W - 1, 1, 'w2'); M.rect(put, 0, 0, W - 1, 0, 'w3')        # le pied de lit, de chant
+    M.rect(put, 1, 2, W - 2, H - 7, 'c2')                                         # le matelas
+    M.rect(put, 1, 2, W - 2, H - 15, cover[0])                                    # la couverture
+    M.rect(put, 1, H - 17, W - 2, H - 15, cover[1])                               # son haut rabattu
+    M.rect(put, 1, 2, 2, H - 18, cover[2])                                        # le pli, à gauche (de dos)
+    for y in range(5, H - 18, 4):
+        for x in range(4, W - 3, 4):
+            put(x, y, cover[1] if enfant else cover[2])
+    M.rect(put, 3, H - 13, W - 4, H - 9, 'b3')                                    # l'oreiller
+    M.rect(put, 3, H - 9, W - 4, H - 9, 'b1')
+    M.box(put, 0, H - 7, W, 1, 6, 'w3', 'w2')                                     # la tête de lit : dessus, face
+    M.rect(put, 0, H - 6, W - 1, H - 6, 'w1')
+    for x in range(3, W - 2, 4):
+        M.rect(put, x, H - 5, x, H - 2, 'w1')                                     # ses planches
+    M.outline(im)
+    return im
+
+
+def lit_cote(enfant):
+    """Le lit de profil (2 cases de long ; tourné vers la droite : la tête de lit à gauche, le pied à
+    droite) : le dessus du matelas, l'oreiller à gauche, la couverture rabattue ; la tête de lit de chant,
+    haute ; le flanc du cadre devant ; le pied de lit, bas. Vers la gauche : en miroir."""
+    cover, (Wf, Hf) = _lit_tons(enfant)
+    W = Hf + 2                                     # (sa longueur, de face, devient sa largeur)
+    ht = round(min(Wf, 16) * FOND) + max(0, Wf - 16)   # (la largeur du lit, vue de haut : le dessus)
+    hc = 3                                         # le flanc du cadre
+    hb = 8                                         # la tête de lit dépasse d'autant au-dessus du matelas
+    H = hb + ht + hc + 1
+    im = M.canvas(W, H)
+    put, _ = M.painter(im)
+    y0, y1 = hb, hb + ht - 1                       # le dessus du matelas
+    M.rect(put, 4, y0, W - 2, y1, 'c2')
+    M.rect(put, 5, y0 + 1, 9, y1 - 1, 'b3'); M.rect(put, 9, y0 + 1, 9, y1 - 1, 'b1')   # l'oreiller
+    M.rect(put, 12, y0, W - 2, y1, cover[0])                                      # la couverture
+    M.rect(put, 12, y0, 14, y1, cover[1])                                         # son haut rabattu
+    M.rect(put, 15, y1 - 1, W - 2, y1, cover[2])                                  # le pli, devant
+    for y in range(y0 + 2, y1 - 2, 4):
+        for x in range(17, W - 3, 4):
+            put(x, y, cover[1] if enfant else cover[2])
+    M.rect(put, 4, y1 + 1, W - 2, y1 + hc, 'w1'); M.rect(put, 4, y1 + 1, W - 2, y1 + 1, 'w2')   # le flanc
+    M.rect(put, 15, y1 + 1, W - 2, y1 + 1, cover[2])                              # la couverture qui retombe
+    M.rect(put, 0, 0, 3, H - 1, 'w2'); M.rect(put, 0, 0, 3, 0, 'w3'); M.rect(put, 3, 1, 3, H - 1, 'w1')   # la tête de lit
+    M.rect(put, W - 2, y0 - 2, W - 1, H - 1, 'w2'); M.rect(put, W - 2, y0 - 2, W - 1, y0 - 2, 'w3')     # le pied de lit
+    M.outline(im)
+    return im
+
+
+def drap_dos(im):
+    """La couverture seule du lit de dos : tout ce qui est au-dessus de son haut rabattu (le dormeur, la
+    tête en bas, passe dessous jusqu'aux épaules)."""
+    H = im.height
+    return _garde(im, lambda x, y: y <= H - 15)
+
+
+def drap_cote(im):
+    """La couverture seule du lit de profil : de son haut rabattu jusqu'au pied de lit."""
+    return _garde(im, lambda x, y: x >= 12)
+
+
+def _garde(im, dedans):
+    out = im.copy()
+    px = out.load()
+    for y in range(out.height):
+        for x in range(out.width):
+            if not dedans(x, y):
+                px[x, y] = (0, 0, 0, 0)
+    return out
+
+
+def _frigo(devant):
+    """Le réfrigérateur (scripts/batiments/meubles.py refrigerateur) vu d'un autre côté : le même pavé,
+    `devant`(x, z) → couleur de la face qu'on voit (None : le blanc du flanc)."""
+    x0, x1, d0, d1, hz = -6.6, 6.6, -6, 6, 25
+    t = M.Toile(16, 34, 8, 33)
+
+    def couleur(face, u, v, s):
+        if face == 'dessus':
+            return M.ton(M.FRIGO_BLANC, 0.95)
+        if face in ('gauche', 'droite'):
+            return M.ton(M.FRIGO_BLANC, s * 0.75)
+        c = devant(u, v)
+        return c if c is not None else M.ton(M.FRIGO_BLANC, 0.55 if u > 5.3 else 0.95 if u < -5.6 else 0.8)
+    M.boite(t, x0, x1, d0, d1, 0, hz, couleur, 'frigo')
+    return t.image(traits=False)
+
+
+def frigo_dos():
+    """De dos : le panneau arrière, la grille du condenseur (ses tubes sombres), le socle."""
+    def devant(x, z):
+        if z < 1.2:
+            return M.FRIGO_JOINT
+        if -4.6 < x < 4.6 and 3 < z < 21 and (round(z * 2) % 3 == 0 or abs(x) > 4.1):
+            return M.ton(M.FRIGO_POIGNEE, 0.35)
+        return None
+    return _frigo(devant)
+
+
+def frigo_cote():
+    """De profil (tourné vers la droite) : son flanc blanc ; à droite, le chant des deux portes, leur
+    jointure, les poignées qui dépassent."""
+    porte = 17
+    def devant(x, z):
+        if z < 1.2:
+            return M.FRIGO_JOINT
+        if x > 4.8 and abs(z - porte) < 0.45:
+            return M.FRIGO_JOINT
+        if x > 5.6 and (porte + 1.5 < z < 25 - 1.5 or 7 < z < porte - 2):
+            return M.ton(M.FRIGO_POIGNEE, 0.5)
+        if 4.8 < x <= 5.6:
+            return M.ton(M.FRIGO_BLANC, 0.6)
+        return M.ton(M.FRIGO_BLANC, 0.75)
+    return _frigo(devant)
+
+
 # ---------------------------------------------------------------- la liste
 DESSINS = {
     'chaise': (chaise_dos, chaise_cote),
@@ -483,7 +612,12 @@ DESSINS = {
     'bibliotheque': (lambda: bibli_dos(16), lambda: bibli_cote(14)),
     'bibliotheque_vitree': (lambda: bibli_dos(32, True), lambda: bibli_cote(30, vitree=True)),
     'coffre_jouets': (coffre_dos, coffre_cote),
+    'lit_adulte': (lambda: lit_dos(False), lambda: lit_cote(False)),
+    'lit_enfant': (lambda: lit_dos(True), lambda: lit_cote(True)),
+    'refrigerateur': (frigo_dos, frigo_cote),
 }
+# les couvertures seules des lits tournés (posées sur le dormeur)
+DRAPS = {'lit_adulte': (drap_dos, drap_cote), 'lit_enfant': (drap_dos, drap_cote)}
 
 
 def main():
@@ -492,6 +626,9 @@ def main():
         out[k] = (dos(), cote())
         out[k][0].save(os.path.join(ASSETS, f'meuble_{k}_dos.png'), optimize=True)
         out[k][1].save(os.path.join(ASSETS, f'meuble_{k}_cote.png'), optimize=True)
+        if k in DRAPS:
+            DRAPS[k][0](out[k][0]).save(os.path.join(ASSETS, f'meuble_{k}_dos_drap.png'), optimize=True)
+            DRAPS[k][1](out[k][1]).save(os.path.join(ASSETS, f'meuble_{k}_cote_drap.png'), optimize=True)
     if '--apercu' in sys.argv:
         k, gap = 3, 10
         lignes = []

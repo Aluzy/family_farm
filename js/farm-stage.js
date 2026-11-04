@@ -48,7 +48,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, MAP, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
+  const { T, MAP, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, LITS_SENS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
   const { clamp, pixelRatio, reducedMotion, v } = F;
 
   let game = null;          // le jeu Phaser de toutes les cartes (js/carte/jeu.js)
@@ -175,6 +175,7 @@
         // (les meubles tournés : de dos, de profil)
         for (const name of MEUBLES_SENS) for (const vue of ['_dos', '_cote']) L.image('meuble_' + name + vue, v('meuble_' + name + vue + '.png'));
         for (const name of LITS) L.image('meuble_' + name + '_drap', v('meuble_' + name + '_drap.png'));
+        for (const name of LITS_SENS) for (const vue of ['_dos', '_cote']) L.image('meuble_' + name + vue + '_drap', v('meuble_' + name + vue + '_drap.png'));
         if (this.ctx.monde) for (const e of this.ctx.monde.faune.especes) L.image('faune_' + e.cle, v('faune_' + e.cle + '.png'));
         L.once('complete', () => {
           if (!this.sys || !this.sys.isActive()) return;
