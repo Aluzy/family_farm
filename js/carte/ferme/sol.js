@@ -20,6 +20,7 @@
   // sous la vue d'un coup, ceux de la marge MORCEAUX_PAR_IMAGE par image ; chacun avec un anneau de
   // ANNEAU cases autour (ce qui en déborde sur lui).
   const MORCEAU = 256, MORCEAUX_PAR_IMAGE = 2, ANNEAU = 2;
+  const MORCEAUX_VERIFIES = 2;       // morceaux du sol vérifiés à chaque filet de sécurité (groundWiped)
   const { reducedMotion } = F;
 
   F.partie({
@@ -445,9 +446,20 @@
     // Le fond a-t-il été vidé ? Chaque région est entièrement opaque quand elle est dessinée :
     // un point transparent veut dire que le navigateur a jeté son contenu (page restée en
     // arrière-plan sur un téléphone, mémoire graphique reprise).
-    groundWiped() {
-      return this.shownRegions().some((r) => r.morceaux.some((m) => {
-        if (!m.tex) return false;
+    // Lire un point d'un canevas coûte cher sur un téléphone (le navigateur le rapatrie de la mémoire
+    // graphique : ≈ 250 ms pour les trois points de chacun des ≈ 30 morceaux d'une grande vue) : avec
+    // `few` (le filet de sécurité, toutes les GROUND_CHECK_MS), seuls MORCEAUX_VERIFIES morceaux, à tour
+    // de rôle ; au retour de la page au premier plan (watchGround), tous.
+    groundWiped(few) {
+      const tous = [];
+      for (const r of this.shownRegions()) for (const m of r.morceaux) if (m.tex) tous.push(m);
+      let liste = tous;
+      if (few && tous.length > MORCEAUX_VERIFIES) {
+        const k = (this.groundTour || 0) % tous.length;
+        this.groundTour = k + MORCEAUX_VERIFIES;
+        liste = tous.slice(k, k + MORCEAUX_VERIFIES).concat(tous.slice(0, Math.max(0, k + MORCEAUX_VERIFIES - tous.length)));
+      }
+      return liste.some((m) => {
         try {
           const ctx = m.tex.getContext();
           if (ctx.isContextLost && ctx.isContextLost()) return false;   // pas encore rendu : on réessaiera
@@ -455,7 +467,7 @@
         } catch (e) {
           return false;
         }
-      }));
+      });
     },
 
     // Redessine le fond s'il a été vidé (ou d'office avec `force`). Sans cela, au retour
@@ -464,7 +476,7 @@
     // ombres. Et les images de la vie d'ambiance (bêtes, nuages, feuilles).
     repairGround(force, few) {
       if (!this.regions) return false;
-      if (!force && !this.groundWiped() && !this.spritesWiped(few)) return false;
+      if (!force && !this.groundWiped(few) && !this.spritesWiped(few)) return false;
       this.paintGround();
       this.paintSprites();
       if (this.ambient && this.ambient.repaint) this.ambient.repaint();
@@ -478,6 +490,11 @@
       const E = global.Phaser.Renderer && global.Phaser.Renderer.Events;
       if (R && R.on) R.on((E && E.RESTORE_WEBGL) || 'restorewebgl', () => this.repairGround(true));
       this.groundCheckAt = 0;
+      // (la page revient au premier plan : c'est là que le navigateur a pu vider les images ; tout est
+      // vérifié à l'image suivante)
+      if (global.document && global.document.addEventListener) {
+        global.document.addEventListener('visibilitychange', () => { if (!global.document.hidden) { this.groundTout = true; this.groundCheckAt = 0; } });
+      }
     },
 
     // Animations de tuiles d'un jeu de tuiles (Tiled les range dans `tiles`) : numéro de

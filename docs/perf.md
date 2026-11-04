@@ -206,3 +206,15 @@ processeur graphique et son processeur est plus rapide. D'où :
 - **Par geste** : les étiquettes des pièces gardées d'un dessin à l'autre (seules celles qui changent sont
   refaites) ; reprendre un mur ne recalcule les pièces (« mélange » de deux pièces, étage en péril) que s'il
   touche une pièce close, ou borde la pièce de l'escalier.
+
+## Le filet de sécurité du sol : ≈ 250 ms toutes les 3 s sur le téléphone
+
+Premier rapport « Mesurer Construire » du téléphone du joueur (Android 10, 8 cœurs, 8 Go ; la partie du
+jour 54), après l'allègement de la scène : 60 images par seconde (médiane 17 ms) ; ouvrir Construire 26 ms,
+poser un bloc 155 ms, la gomme 158 ms, effacer 165 ms. Il restait, dans chaque geste, une image de
+≈ 250 ms : `repairGround` › `groundWiped`, le filet de sécurité qui vérifie toutes les GROUND_CHECK_MS
+(3 s) que le navigateur n'a pas vidé les canevas du sol. Il lisait trois points de chacun des ≈ 30
+morceaux : sur un téléphone, chaque lecture rapatrie le canevas de la mémoire graphique. Désormais, le filet
+ne lit que MORCEAUX_VERIFIES morceaux (2), à tour de rôle (le navigateur les vide tous à la fois : deux
+suffisent à le voir) ; au retour de la page au premier plan (`visibilitychange`), là où le vidage arrive,
+tous sont vérifiés à l'image suivante.
