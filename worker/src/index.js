@@ -14,6 +14,8 @@
 // - /mondes… (E-1) : le jeu en ligne (monde.mjs) : POST /mondes (mettre sa ferme en ligne : la copie de
 //   sa partie), GET /mondes (ses mondes), GET /mondes/<id>/fiche, GET /mondes/<id>/ws (la connexion
 //   d'un joueur, une WebSocket ; la session dans ?session=, une WebSocket ne portant pas d'en-tête).
+//   E-3 : POST /mondes/<id>/invitations (un lien d'invitation, le propriétaire), POST /rejoindre { code }
+//   (le lien suivi : bâtisseur), POST /mondes/<id>/retirer { compte } (le propriétaire).
 //   Le Worker vérifie la session auprès des comptes, puis passe au Durable Object Monde du monde.
 // - GET /report (facultatif) : aperçu du rapport en Markdown, ou publication de test
 //   avec &publish=1. Protégé par REPORT_TOKEN : sans ce secret, la route n'existe pas.
@@ -247,6 +249,18 @@ async function routeMondes(request, env, origin, url) {
     h.set('X-Nom', nom);
     return env.MONDES.get(env.MONDES.idFromName(id)).fetch(new Request('https://monde/monde/' + chemin, { ...init, headers: h }));
   };
+  const corpsJson = async () => { try { return await request.json(); } catch (e) { return {}; } };
+  const relais = async (r) => new Response(await r.text(), { status: r.status, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } });
+  // E-3 : suivre un lien d'invitation (son code : « <monde>.<secret> ») : bâtisseur du monde
+  if (url.pathname === '/rejoindre' && request.method === 'POST') {
+    const b = await corpsJson();
+    const [id, secret] = String(b.code || '').split('.');
+    if (!MONDE_ID_RE.test(id || '') || !secret) return json({ ok: false, erreur: 'Ce lien d\'invitation n\'est pas valide.' }, 400, origin);
+    const r = await (await vers(id, 'rejoindre', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret }) })).json();
+    if (!r.ok) return json({ ok: false, erreur: r.erreur }, 410, origin);
+    await interne(env, '/interne/monde', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ compte, monde: id, titre: r.titre, role: r.role }) });
+    return json({ ok: true, monde: id, titre: r.titre }, 200, origin);
+  }
   const parties = url.pathname.split('/').filter(Boolean);   // ['mondes', id?, action?]
   if (parties.length === 1 && request.method === 'GET') {
     const r = await interne(env, '/interne/mondes?compte=' + encodeURIComponent(compte));
@@ -271,6 +285,19 @@ async function routeMondes(request, env, origin, url) {
     const r = await vers(id, 'fiche');
     return new Response(await r.text(), { status: r.status, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } });
   }
+  // E-3 : un lien d'invitation (le propriétaire) ; retirer un membre (le propriétaire)
+  if (parties[2] === 'invitations' && request.method === 'POST') {
+    const r = await (await vers(id, 'inviter', { method: 'POST' })).json();
+    if (!r.ok) return json(r, 403, origin);
+    const code = `${id}.${r.secret}`;
+    return json({ ok: true, code, lien: `${env.JEU_URL || 'https://aluzy.github.io/family_farm/jeu.html'}#invitation=${code}`, expire: r.expire }, 200, origin);
+  }
+  if (parties[2] === 'retirer' && request.method === 'POST') {
+    const b = await corpsJson();
+    const r = await vers(id, 'retirer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ compte: b.compte }) });
+    if (r.ok) await interne(env, '/interne/monde-retirer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ compte: String(b.compte || ''), monde: id }) });
+    return relais(r);
+  }
   if (parties[2] === 'ws' && request.method === 'GET') {
     // (la demande d'ouverture de la WebSocket, ses en-têtes compris ; la réponse 101 et sa WebSocket
     // passent telles quelles)
@@ -288,7 +315,7 @@ export default {
 
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
     if (url.pathname.startsWith('/compte/')) return routeComptes(request, env, origin);
-    if (url.pathname === '/mondes' || url.pathname.startsWith('/mondes/')) return routeMondes(request, env, origin, url);
+    if (url.pathname === '/mondes' || url.pathname.startsWith('/mondes/') || url.pathname === '/rejoindre') return routeMondes(request, env, origin, url);
     if (request.method !== 'POST' || url.pathname !== '/session') return json({ error: 'not found' }, 404, origin);
     if (origin !== ALLOWED_ORIGIN) return json({ error: 'origine refusée' }, 403, origin);
 

@@ -142,7 +142,10 @@ intacte. On y entre ensuite par « Entrer » (`jeu.html?monde=…`). Dans un mon
   d'une seconde ;
 - le bandeau « 🌐 » dit si l'on est à jour et ramène à sa ferme solo.
 
-Les autres gestes de la ferme et l'invitation d'un ami viendront ensuite. Code : `js/ui/en-ligne.js`
+Le propriétaire **invite un ami** par le bouton 👥 du bandeau. Il crée un lien, valable 7 jours et
+utilisable une fois, à envoyer. En l'ouvrant, l'ami entre dans le monde pour y construire ; s'il
+n'est pas connecté, l'invitation attend sa connexion. Le propriétaire peut aussi retirer un membre :
+sa connexion est coupée et il retrouve sa ferme solo. Les autres gestes de la ferme viendront ensuite. Code : `js/ui/en-ligne.js`
 et `js/ui/synchro.js` ; tests : `tests/test-synchro.mjs` et `tests/deux-joueurs.mjs` (deux onglets).
 
 ### Absence et onglet en arrière-plan

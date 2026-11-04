@@ -39,7 +39,7 @@ function garder(v) {
 async function appel(chemin, opts = {}) {
   return appelServeur('/compte/' + chemin, opts);
 }
-async function appelServeur(chemin, { methode = 'POST', corps } = {}) {
+export async function appelServeur(chemin, { methode = 'POST', corps } = {}) {
   const base = adresseServeur();
   if (!base) return { ok: false, erreur: 'Le jeu en ligne n\'est pas disponible ici.' };
   const c = compteGarde();
@@ -118,6 +118,12 @@ function redessiner() {
   if (z) morph(z, compteHtml());
 }
 
+// (E-3 : posée par en-ligne.js : reprendre une invitation en attente, une fois connecté)
+let apresConnexion = null;
+export function quandConnecte(f) {
+  apresConnexion = f;
+}
+
 // Au démarrage : le jeu ouvert par le lien de l'e-mail (jeu.html#connexion=…) : la session. Le fragment
 // est retiré de l'adresse tout de suite (il ne sert qu'une fois).
 export async function connexionDuLien() {
@@ -129,6 +135,8 @@ export async function connexionDuLien() {
     garder({ session: r.session, email: r.compte.email });
     envoye = null;
     notify(`🌐 Connecté : ${r.compte.email}.`);
+    // (E-3 : une invitation suivie avant d'être connecté : elle reprend)
+    if (apresConnexion) apresConnexion();
   } else notify(`🌐 ${r.erreur || 'La connexion a échoué.'}`);
   redessiner();
 }

@@ -160,7 +160,19 @@ ensemble (le mode Construire).
 `node:sqlite`) derrière les routes du navigateur. Chaque mur posé est vu chez l'autre en moins d'une
 seconde, les parties confirmées sont celle du monde, et la partie solo n'est pas touchée.
 
-La suite : E-3 (inviter un ami : un bâtisseur), puis les autres gestes de la ferme en ligne.
+**Inviter un ami** (E-3) :
+- `POST /mondes/<id>/invitations` : le propriétaire crée un lien `jeu.html#invitation=<monde>.<secret>`.
+  Le secret fait 192 bits ; seule son empreinte est gardée. Le lien vaut 7 jours et ne sert qu'à un
+  seul compte. Au plus 20 liens sont en attente par monde.
+- `POST /rejoindre { code }` : le lien suivi. Le compte devient bâtisseur et le monde s'ajoute à sa
+  liste. Un lien expiré ou déjà servi est refusé ; un membre retiré ne revient pas par un nouveau lien.
+- `POST /mondes/<id>/retirer { compte }` : le propriétaire retire un membre. Sa connexion ouverte est
+  fermée tout de suite (code 4003) et le monde quitte sa liste.
+
+Dans le jeu, le bouton 👥 du bandeau montre les membres. Le propriétaire y invite (Copier, Partager)
+et y retire un membre. Un lien d'invitation ouvert sans être connecté attend la connexion.
+
+La suite : les autres gestes de la ferme en ligne, puis la nuit partagée (F.2).
 
 ## Mise en route du rapport (une seule fois)
 

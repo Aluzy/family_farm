@@ -14,7 +14,8 @@
 // - Le bandeau « 🌐 » dit où l'on est, si l'on est à jour, et permet de revenir à sa ferme solo.
 
 import { executerCommande, GAME_VERSION } from '../engine/index.js';
-import { adresseServeur, compteGarde } from './compte.js';
+import { adresseServeur, appelServeur, compteGarde, quandConnecte } from './compte.js';
+import { closeModal, openModal } from './modal.js';
 import { Synchro } from './synchro.js';
 import { setEnLigne, setState } from './store.js';
 import { notify } from './toasts.js';
@@ -66,10 +67,19 @@ function connecter() {
     ws.send(JSON.stringify({ t: 'hello', version: GAME_VERSION, ...(lien.synchro ? { depuis: lien.synchro.rev } : {}) }));
   });
   ws.addEventListener('message', (e) => recevoir(ws, e.data));
-  ws.addEventListener('close', () => {
+  ws.addEventListener('close', (e) => {
     if (!lien || lien.ws !== ws) return;
     lien.ws = null;
     if (lien.refuse) return;
+    // (E-3 : le propriétaire l'a retiré du monde : retour à la ferme solo)
+    if (e && e.code === 4003) {
+      lien.refuse = true;
+      lien.etat = 'refuse';
+      bandeau();
+      notify('🌐 Le propriétaire t\'a retiré de ce monde : ta ferme solo s\'ouvre.', { duree: 6000 });
+      setTimeout(() => { location.href = 'jeu.html'; }, 3000);
+      return;
+    }
     if (!lien.synchro) { lien.premiere && lien.premiere(null); notify('🌐 Connexion au monde impossible : ta ferme solo s\'ouvre.'); lien = null; return; }
     lien.etat = 'reconnexion';
     bandeau();
@@ -108,7 +118,15 @@ function recevoir(ws, data) {
   if (m.t === 'bienvenue') {
     lien.titre = m.titre || lien.titre;
     lien.membres = m.membres || [];
+    lien.role = m.role;
+    lien.moi = m.moi;
     lien.essais = 0;
+    return;
+  }
+  if (m.t === 'membres') {
+    lien.membres = m.membres || [];
+    bandeau();
+    if (document.getElementById('membres-titre')) ouvrirMembres();
     return;
   }
   if (m.t === 'instantane') {
@@ -197,12 +215,85 @@ export function bandeau() {
   const etat = { connexion: '⏳ connexion…', reconnexion: '⏳ reconnexion…', ok: '✓ à jour', refuse: '⛔ refusé' }[lien.etat] || '';
   const attente = lien.synchro && lien.synchro.enAttente.length ? ` · ${lien.synchro.enAttente.length} en attente` : '';
   const n = lien.membres.length;
-  el.innerHTML = `<span>🌐 En ligne${n ? ` · ${n} membre${n > 1 ? 's' : ''}` : ''} · ${etat}${attente}</span><button class="btn" type="button" data-action="monde-quitter">Ma ferme solo</button>`;
+  el.innerHTML = `<span>🌐 En ligne · ${etat}${attente}</span><button class="btn" type="button" data-action="monde-membres" aria-label="Les membres du monde">👥 ${n}</button><button class="btn" type="button" data-action="monde-quitter">Ma ferme solo</button>`;
 }
+
+/* ---------- E-3 : les membres, inviter, retirer ---------- */
+
+const echapper = (t) => String(t).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+let invitation = null, aRetirer = null;
+function ouvrirMembres() {
+  if (!lien) return;
+  const proprio = lien.role === 'proprietaire';
+  const lignes = lien.membres.map((m) => `<div class="row"><span>${m.role === 'proprietaire' ? '🏡' : '🔨'} ${echapper(m.nom)}${m.compte === lien.moi ? ' (toi)' : ''}</span>${proprio && m.role !== 'proprietaire'
+    ? (aRetirer === m.compte ? `<button class="btn danger" type="button" data-action="monde-retirer-oui" data-compte="${echapper(m.compte)}">Oui, le retirer</button><button class="btn" type="button" data-action="monde-retirer-non">Non</button>` : `<button class="btn" type="button" data-action="monde-retirer" data-compte="${echapper(m.compte)}">Retirer</button>`)
+    : ''}</div>`).join('');
+  const inv = !proprio ? '<p class="muted">Seul le propriétaire du monde invite et retire des membres.</p>'
+    : invitation ? `<p class="muted">Envoie ce lien à un ami (il vaut 7 jours et ne sert qu'une fois) : en l'ouvrant, il entre dans ton monde pour y construire avec toi.</p>
+      <textarea id="invitation-lien" rows="3" readonly>${echapper(invitation)}</textarea>
+      <div class="row"><button class="btn" type="button" data-action="monde-copier">Copier</button>${typeof navigator !== 'undefined' && navigator.share ? '<button class="btn" type="button" data-action="monde-partager">Partager</button>' : ''}</div>`
+      : '<div class="row"><button class="btn primary" type="button" data-action="monde-inviter">Inviter un ami</button></div><p class="muted">Un lien à envoyer à un ami : il entre dans ton monde comme bâtisseur (il construit avec toi).</p>';
+  openModal(`
+    <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
+    <h2 id="membres-titre">👥 Les membres</h2>
+    <div class="stack">${lignes}</div>
+    <div class="stack">${inv}</div>`, { labelledBy: 'membres-titre' });
+}
+
+async function inviter() {
+  if (!lien) return;
+  const r = await appelServeur(`/mondes/${lien.monde}/invitations`, { corps: {} });
+  if (!r.ok) { notify(`🌐 ${r.erreur || 'Le lien n\'a pas pu être créé.'}`); return; }
+  invitation = r.lien;
+  ouvrirMembres();
+}
+
+async function retirer(compte) {
+  if (!lien) return;
+  const r = await appelServeur(`/mondes/${lien.monde}/retirer`, { corps: { compte } });
+  aRetirer = null;
+  notify(r.ok ? '🌐 Retiré du monde.' : `🌐 ${r.erreur || 'Le retrait a échoué.'}`);
+  if (!r.ok) ouvrirMembres();
+}
+
+// Un lien d'invitation ouvert (jeu.html#invitation=<monde>.<secret>) : connecté, on entre dans le monde ;
+// sinon, il attend la connexion (⚙️ Options › Jeu en ligne). Le fragment est retiré de l'adresse.
+const CLE_INVITATION = 'ferme-invitation';
+export async function invitationDuLien() {
+  const m = /(?:^#|&)invitation=(m-[A-Za-z0-9_-]{16,40}\.[A-Za-z0-9_-]{32})/.exec(typeof location !== 'undefined' ? location.hash : '');
+  let code = m ? m[1] : null;
+  if (m) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* (rien) */ } }
+  if (!code) { try { code = localStorage.getItem(CLE_INVITATION); } catch (e) { code = null; } }
+  if (!code) return;
+  if (!compteGarde()) {
+    try { localStorage.setItem(CLE_INVITATION, code); } catch (e) { /* (rien) */ }
+    notify('🌐 Une invitation t\'attend : connecte-toi (⚙️ Options › Jeu en ligne), et tu entreras dans le monde de ton ami.', { duree: 8000 });
+    return;
+  }
+  try { localStorage.removeItem(CLE_INVITATION); } catch (e) { /* (rien) */ }
+  const r = await appelServeur('/rejoindre', { corps: { code } });
+  if (!r.ok) { notify(`🌐 ${r.erreur || 'Cette invitation n\'a pas pu servir.'}`); return; }
+  notify(`🌐 Bienvenue dans « ${r.titre || 'le monde de ton ami'} » !`);
+  setTimeout(() => { location.href = `jeu.html?monde=${encodeURIComponent(r.monde)}`; }, 800);
+}
+quandConnecte(() => { invitationDuLien(); });
+if (typeof window !== 'undefined') window.addEventListener('hashchange', () => { if (/invitation=/.test(location.hash)) invitationDuLien(); });
 
 registerActions({
   // (la partie solo, intacte sur l'appareil, rouverte)
   'monde-quitter': () => { fermer(); location.href = 'jeu.html'; },
+  'monde-membres': () => { invitation = null; aRetirer = null; ouvrirMembres(); },
+  'monde-inviter': () => { inviter(); },
+  'monde-copier': () => {
+    const z = document.getElementById('invitation-lien');
+    if (!z) return;
+    z.select();
+    try { navigator.clipboard.writeText(z.value).then(() => notify('📋 Lien copié.'), () => notify('Le lien est sélectionné : copie-le.')); } catch (e) { notify('Le lien est sélectionné : copie-le.'); }
+  },
+  'monde-partager': () => { try { navigator.share({ title: 'Ferme Familiale', text: 'Viens construire dans ma ferme !', url: invitation }); } catch (e) { /* (rien) */ } },
+  'monde-retirer': (target) => { aRetirer = target.dataset.compte; ouvrirMembres(); },
+  'monde-retirer-non': () => { aRetirer = null; ouvrirMembres(); },
+  'monde-retirer-oui': (target) => { retirer(target.dataset.compte); },
 });
 
 // (pour les tests) la connexion en cours
