@@ -7,7 +7,7 @@ import { energyChip } from './energie.js';
 import { wheatTotal } from '../engine/animals.js';
 import { etatMoulin } from '../engine/blocs.js';
 import {
-  buildStation, millPending, millTimeLeft, queueCapacity, recipeStatus, taskTimeLeft,
+  millPending, millTimeLeft, queueCapacity, recipeStatus, taskTimeLeft,
 } from '../engine/kitchen.js';
 import { recipeTime } from '../engine/techtree.js';
 import { isUnlocked } from '../engine/campaign.js';
@@ -344,7 +344,7 @@ registerActions({
   },
   'build-station': (target) => {
     const id = target.dataset.station;
-    const result = applyResult(buildStation(state, id));
+    const result = applyResult(executer('atelier.construire', { station: id }));
     if (result.ok) {
       const def = DATA.STATIONS[id];
       notify(`${def.icone} ${def.nom} construit${def.article === 'la' ? 'e' : ''} (−${formatCoins(result.cost)} 💰)${def.debloque ? ' · onglet Livre de recette débloqué !' : ''}`);

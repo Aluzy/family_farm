@@ -5,7 +5,7 @@ import { deviceStatus } from '../engine/energy.js';
 import {
   availableEnergy, FRIGO_OBJET, fridgeCoversNight, fridgeNightNeed, fridgeCapacity, fridgeUnits, fridgeUpgradeCost,
 } from '../engine/fridge.js';
-import { serreCap, serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
+import { serreCap, serreUpgradeCost } from '../engine/crops.js';
 import {
   isTreeAdult, treeAge, treeNextHarvest, treeStageName,
 } from '../engine/orchard.js';
@@ -156,7 +156,7 @@ function fridgeUpgradeHtml() {
 registerActions({
 
   'upgrade-serre': () => {
-    applyResult(upgradeSerre(state));
+    applyResult(executer('serre.agrandir', {}));
   },
 
 

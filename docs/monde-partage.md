@@ -57,7 +57,8 @@ carte. `horsDeLaFerme(state)` (`js/engine/didacticiel.js`) et `enExpedition(stat
 | Le temps | `day`, la nuit (`nuit.partagee` : tous couchés) | ✅ (E-5) |
 | Le coffre commun (F.1) | `inventaire`, `eauMl`, l'énergie du personnage | ✅ |
 | Le verger, les arbres, rochers et herbes **dans** le rectangle, la pêche à l'étang et à la mare | `verger`, `outils`, `foret`, `morceaux` | ✅ (E-9) |
-| L'énergie de la ferme | `panneaux`, `batteries`, `pompe`, `reservoir`, `robot` | ⏳ (avec E-9) |
+| L'énergie de la ferme | `panneaux`, `batteries`, `pompe`, `reservoir`, `robot` | ✅ (E-10 : allumer, améliorer, entretenir, réparer) |
+| La progression | `technologies`, `pointsTech`, `atelier`, l'XP des gestes | ✅ commune (E-10) |
 | La famille du propriétaire | `famille` : elle vit sur la ferme, mange et dort la nuit | ✅ présente, sans corvées seule (E-6) |
 
 ### Pas partagé : le grand monde (reste à la partie solo du propriétaire)
@@ -166,3 +167,16 @@ Ce qu'il ne faut **pas** faire maintenant : partager le grand monde, les hameaux
 - **L'outil en main** est celui de chaque joueur : il n'est pas écrit dans la partie du monde.
 - **La frontière** : le monde refuse un arbre ou un rocher (« col,rang ») et une touffe (« x,y » en px) hors de la ferme, ainsi que la pêche dans les eaux du grand monde (lac, rivière, mer).
 - **Pas encore en ligne** : les machines de l'Atelier (la botteleuse, les chaînes, les entonnoirs) et les objets posés au sol de l'Atelier.
+
+## 9. E-10 : la progression commune (M.5)
+
+- **Nouvelles commandes** :
+  - `tech.acheter` (un nœud de l'arbre des technologies) ;
+  - `atelier.fabriquer` (une recette de l'Atelier : bloc, outil, meuble, animal attiré) et `atelier.construire` (la Presse) ;
+  - `appareil.basculer`, `appareil.ameliorer`, `appareil.entretenir`, `appareil.reparer` ;
+  - `reservoir.agrandir`, `robot.batterie`, `serre.agrandir` ;
+  - `arbre.planter` (soumis à la frontière, par sa case) et `potager.semis`.
+- **Une progression commune.** Les points de technologie, les nœuds acquis, les outils et les meubles fabriqués sont ceux du monde. Un ami qui achète une technologie la donne à toute la ferme, et dépense les points et les pièces du coffre commun. Le niveau et l'XP montent avec les gestes de chacun.
+- **Encore fermé en ligne, comme le veut la vision :**
+  - tout ce qui relève du grand monde : le Marché (acheter, vendre), la calèche, le cheval, les hameaux (projets, toits, amitiés, commandes aux îles), le récit (l'enveloppe, la pierre de lune, la promesse), les invitations à un repas, le sac des expéditions ;
+  - « choisir son lit », qui est un choix de chaque joueur.

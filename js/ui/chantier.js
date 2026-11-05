@@ -13,7 +13,7 @@
 // récents) ; sous les onglets, des filtres (ce que j'ai, la pièce des meubles, le style).
 
 import { DATA } from '../engine/catalog.js';
-import { atelierConstruit, craft, craftStatus } from '../engine/atelier.js';
+import { atelierConstruit, craftStatus } from '../engine/atelier.js';
 import { countItem } from '../engine/inventory.js';
 import { blocsDidacticiel } from '../engine/didacticiel.js';
 import { setStageWindow, stageWindow } from './stage-windows.js';
@@ -952,7 +952,7 @@ registerActions({
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     let faits = 0, raison = '';
     for (let k = 0; k < a.fois; k++) {
-      const r = craft(state, a.id);
+      const r = executer('atelier.fabriquer', { recette: a.id });
       if (!r.ok) { raison = r.error; break; }
       faits += 1;
     }

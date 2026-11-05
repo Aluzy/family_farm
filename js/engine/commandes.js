@@ -81,29 +81,45 @@
      outil.faucherAutour { touffes }            le coup fort de la faux : les touffes autour (au plus 60)
      outil.pecher     { eau, coin? }            un lancer (etang, mare ; lac, riviere, mer : le grand monde)
      verger.cueillir  { arbre }                 cueillir les fruits d'un arbre du verger (son id)
+   La progression de la ferme (E-10, M.5 : commune à tous ses joueurs ; sans inverse) :
+     tech.acheter     { noeud }                 un nœud de l'arbre des technologies
+     atelier.fabriquer { recette }              une recette de l'Atelier (un bloc, un outil, un meuble…)
+     atelier.construire { station }             construire un atelier qui s'achète (la Presse)
+     appareil.basculer  { appareil }            allumer ou éteindre un appareil
+     appareil.ameliorer { appareil }            son niveau suivant ; appareil.entretenir, appareil.reparer
+     appareil.entretenir { appareil }
+     appareil.reparer { appareil }
+     reservoir.agrandir { }                     le réservoir d'eau ; robot.batterie : l'autonomie du robot
+     robot.batterie   { }
+     serre.agrandir   { }                       la Serre
+     arbre.planter    { sorte, case }           planter un arbre (un plant, une graine) sur une case
+     potager.semis    { parcelle, mode, culture? } le semis automatique d'une parcelle
      nuit.dormir      { }                       se coucher, la nuit (elle défile jusqu'au réveil)
      nuit.partagee    { }                       E-5 : toute la nuit d'un coup, à n'importe quelle heure
                                                 (le monde en ligne la joue, quand tous sont couchés)
 */
 
 import { DATA } from './catalog.js';
-import { fail } from './devices.js';
+import { fail, maintainDevice, repairDevice, toggleDevice, upgradeDevice, upgradeTank } from './devices.js';
 import {
   blocAt, blocDessus, casesCouvertes, deplacerBloc, hauteurPile, matiereDessus, poserBloc, rehausser,
   peindreBloc, reprendreBloc, sensBloc, solAt, tournerBloc,
 } from './blocs.js';
 import { deplacerEtage, dessusEtage, etageBlocs, etageCouvertes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
-import { harvest, hoe, plant, water } from './crops.js';
-import { harvestAll, plantAll, waterAll } from './automation.js';
+import { harvest, hoe, plant, upgradeSerre, water } from './crops.js';
+import { harvestAll, plantAll, setSemis, upgradeRobotBattery, waterAll } from './automation.js';
 import { remplirCruche } from './cruche.js';
 import { buyPasture, feedAllHens, feedHen, setCowHerbs, shear, upgradePoulailler } from './animals.js';
 import { pickUp } from './ramassage.js';
-import { cancelMilling, cancelQueued, startMilling, startRecipe } from './kitchen.js';
+import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe } from './kitchen.js';
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
 import { deposerBoite, reprendreBoite } from './repas.js';
 import { eatSnack } from './family.js';
 import { castLine, chopTree, mineRock, ramasserCaillou, scytheAround, scytheGrass } from './outils.js';
 import { harvestTree } from './orchard.js';
+import { buyTech } from './techtree.js';
+import { craft } from './atelier.js';
+import { planterIci } from './plantation.js';
 import { goToSleep, nuitPartagee } from './night.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
@@ -139,6 +155,11 @@ const CONTROLES = {
   coord: (v) => typeof v === 'string' && /^\d{1,6},\d{1,6}$/.test(v),
   coords: (v) => Array.isArray(v) && v.length > 0 && v.length <= 60 && v.every((x) => typeof x === 'string' && /^\d{1,6},\d{1,6}$/.test(x)),
   eau: (v) => typeof v === 'string' && /^[a-z]{1,20}$/.test(v),
+  noeud: (v) => typeof v === 'string' && !!DATA.ARBRE.noeuds[v],
+  recetteAtelier: (v) => typeof v === 'string' && !!DATA.ATELIER.RECETTES[v],
+  station: (v) => typeof v === 'string' && !!DATA.STATIONS[v],
+  appareil: (v) => typeof v === 'string' && /^[A-Za-z0-9_:-]{1,40}$/.test(v),
+  mode: (v) => typeof v === 'string' && /^[a-z_]{1,20}$/.test(v),
   quantite: (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1e6,   // (0 : le moteur dit pourquoi)
 };
 
@@ -421,6 +442,21 @@ export const COMMANDES = {
   'outil.faucherAutour': { args: { touffes: 'coords' }, executer: (state, { touffes }) => scytheAround(state, touffes, null) },
   'outil.pecher': { args: { eau: 'eau', coin: 'texte?' }, executer: (state, { eau, coin = null }) => castLine(state, eau, coin) },
   'verger.cueillir': { args: { arbre: 'texte' }, executer: (state, { arbre }) => harvestTree(state, arbre) },
+  'tech.acheter': { args: { noeud: 'noeud' }, executer: (state, { noeud }) => buyTech(state, noeud) },
+  'atelier.fabriquer': { args: { recette: 'recetteAtelier' }, executer: (state, { recette }) => craft(state, recette) },
+  'atelier.construire': { args: { station: 'station' }, executer: (state, { station }) => buildStation(state, station) },
+  'appareil.basculer': { args: { appareil: 'appareil' }, executer: (state, { appareil }) => toggleDevice(state, appareil) },
+  'appareil.ameliorer': { args: { appareil: 'appareil' }, executer: (state, { appareil }) => upgradeDevice(state, appareil) },
+  'appareil.entretenir': { args: { appareil: 'appareil' }, executer: (state, { appareil }) => maintainDevice(state, appareil) },
+  'appareil.reparer': { args: { appareil: 'appareil' }, executer: (state, { appareil }) => repairDevice(state, appareil) },
+  'reservoir.agrandir': { args: {}, executer: (state) => upgradeTank(state) },
+  'robot.batterie': { args: {}, executer: (state) => upgradeRobotBattery(state) },
+  'serre.agrandir': { args: {}, executer: (state) => upgradeSerre(state) },
+  'arbre.planter': { args: { sorte: 'sorte', case: 'case' }, executer: (state, { sorte, case: c }) => planterIci(state, sorte, c) },
+  'potager.semis': {
+    args: { parcelle: 'texte', mode: 'mode', culture: 'culture?' },
+    executer: (state, { parcelle, mode, culture = null }) => setSemis(state, parcelle, mode, culture),
+  },
   'nuit.dormir': {
     args: {},
     executer: (state) => goToSleep(state),

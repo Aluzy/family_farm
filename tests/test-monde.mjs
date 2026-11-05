@@ -9,9 +9,9 @@
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import {
-  addItem, countItem, DATA, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, poseStatus, runNight, testBatir,
+  addItem, allDevices, countItem, DATA, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, poseStatus, runNight, techPoints, testBatir, testFarmMap, testFermeConstruite,
 } from '../js/engine/index.js';
-import { atelier, construireFrigo, fillSheep, partie, pature, plantRipe, reach, setStraw } from './engine/aide.mjs';
+import { atelier, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setStraw } from './engine/aide.mjs';
 import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, etatDesLits, Monde, MONDE, MondeRegistre, traiterMessage } from '../worker/src/monde.mjs';
 
 const test = (name, fn) => nodeTest(name, () => fn());
@@ -490,5 +490,38 @@ test('E-9 : les outils en ligne : hache, pioche, faux, canne ; ce qui tombe va a
   assert(/Hors de la ferme/.test(jouer('outil.pecher', { eau: 'lac' }).erreur), 'le lac est du grand monde');
   eq(jouer('outil.couper', { arbre: 'abc' }).ok, false, 'un id mal formé');
   eq(jouer('outil.faucherAutour', { touffes: [] }).ok, false, 'une liste vide');
+  eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()), 'le journal se rejoue');
+});
+
+/* ---------- E-10 : la progression commune ---------- */
+
+test('E-10 : la progression est commune : l\'ami achète une technologie et fabrique à l\'Atelier ; un appareil se bascule ; les arguments vérifiés ; le journal se rejoue', () => {
+  const s = garden();
+  testFarmMap(s, '42');
+  testFermeConstruite(s);
+  s.atelier = { construit: true, niveau: 1 };
+  s.pieces = 50000;
+  for (const it of ['bois', 'pierre', 'fibre', 'planche', 'fer', 'ble', 'laine', 'cuir']) if (DATA.OBJETS[it]) addItem(s, it, 200);
+  techPoints(s).solde = 1000;
+  // (une technologie que la partie peut acheter, et une recette qu'elle peut fabriquer : cherchées sur une copie)
+  const essai = (type, args) => executerCommande(JSON.parse(JSON.stringify(s)), { type, args }).ok;
+  const noeud = Object.keys(DATA.ARBRE.noeuds).find((n) => essai('tech.acheter', { noeud: n }));
+  const recette = Object.keys(DATA.ATELIER.RECETTES).find((r) => essai('atelier.fabriquer', { recette: r }));
+  const appareil = allDevices(s).map((d) => d.id).find((d) => essai('appareil.basculer', { appareil: d }));
+  assert(noeud && recette && appareil, `de quoi essayer : ${noeud}, ${recette}, ${appareil}`);
+  const sql = baseSql(), r = new MondeRegistre(sql);
+  assert(r.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
+  r.ajouterMembre(B, 'Sam');
+  const jouer = (type, args) => r.commande(B, { id: id(), type, args });
+  const solde = techPoints(r.charger()).solde;
+  for (const [type, args] of [['tech.acheter', { noeud }], ['atelier.fabriquer', { recette }], ['appareil.basculer', { appareil }]]) {
+    const x = jouer(type, args);
+    assert(x.ok, `${type} : ${x.erreur}`);
+  }
+  eq([hasTech(r.charger(), noeud), techPoints(r.charger()).solde < solde], [true, true], 'la technologie est au monde, ses points dépensés');
+  eq(jouer('tech.acheter', { noeud }).ok, false, 'déjà acquise');
+  for (const [type, args] of [['tech.acheter', { noeud: 'inexistant' }], ['atelier.fabriquer', { recette: 'licorne' }], ['atelier.construire', { station: 'fusee' }], ['appareil.basculer', { appareil: 'a b' }], ['arbre.planter', { sorte: 'mur_pierre', case: -1 }]]) {
+    eq(jouer(type, args).ok, false, `${type} ${JSON.stringify(args)} refusé`);
+  }
   eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()), 'le journal se rejoue');
 });

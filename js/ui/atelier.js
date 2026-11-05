@@ -8,7 +8,8 @@
 // qui manque, quand on ne peut pas). Le moteur : js/engine/atelier.js.
 
 import { DATA } from '../engine/catalog.js';
-import { atelierConstruit, craft, craftStatus, ramasser, recetteDebloquee } from '../engine/atelier.js';
+import { executer } from './commandes.js';
+import { atelierConstruit, craftStatus, ramasser, recetteDebloquee } from '../engine/atelier.js';
 import { carnetPlansHtml } from './plans.js';
 import { recettesDidacticiel } from '../engine/didacticiel.js';
 import { countItem } from '../engine/inventory.js';
@@ -289,7 +290,7 @@ registerActions({
     refresh();
   },
   'atelier-fabriquer': (target) => {
-    const r = craft(state, target.dataset.recette);
+    const r = executer('atelier.fabriquer', { recette: String(target.dataset.recette || '') });
     if (!r.ok) { notify(r.error); return; }
     const R = DATA.ATELIER.RECETTES[target.dataset.recette];
     if (r.animal === 'cheval') notify(`${DATA.CHEVAL.ICONE} Un cheval s'approche, attiré par les friandises : le voilà à l'Écurie. Monte en selle avec sa case de la barre d'outils.`);
