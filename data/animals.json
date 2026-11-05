@@ -27,9 +27,10 @@
     "l'Atelier) : le poteau est planté là, le cheval y reste attaché ; on le reprend en le",
     "touchant (le poteau et la corde reviennent). Revenu à la ferme, il rentre à l'Écurie.",
     "Chaque nuit, il mange RATION (de la paille, PATURAGE.NOURRITURE), après les bêtes de l'Étable.",
-    "B-1 : VITESSE_FAIM vaut VITESSE (un cheval pas nourri n'est plus ralenti ; avant : 1,3)."
+    "B-1 : VITESSE_FAIM vaut VITESSE (un cheval pas nourri n'est plus ralenti ; avant : 1,3).",
+    "La marche du cheval (proposition B) : VITESSE 1,4 (avant : 1,8), la marche plus posée avec js/carte/cheval.js CHEVAL.foulee (12 px par temps du pas, avant 7)."
   ],
-  "CHEVAL": { "NOM": "Cheval", "ICONE": "🐴", "PRIX": 600, "PLACES": 2, "VITESSE": 1.8, "VITESSE_FAIM": 1.8, "RATION": 2, "ATTACHE": ["poteau_attache", "corde"], "PROCHE": 40 },
+  "CHEVAL": { "NOM": "Cheval", "ICONE": "🐴", "PRIX": 600, "PLACES": 2, "VITESSE": 1.4, "VITESSE_FAIM": 1.4, "RATION": 2, "ATTACHE": ["poteau_attache", "corde"], "PROCHE": 40 },
   "//POULAILLER": "Poulailler (sections 1.3 et 8.5).",
   "POULAILLER": { "PRIX_CONSTRUCTION": 40, "CAPACITE": [4, 8, 12, 16, 24], "PRIX_NIVEAUX": [0, 100, 220, 450, 900] },
   "//ANIMAUX": [
