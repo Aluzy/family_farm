@@ -1129,10 +1129,11 @@ function terrainNow(rochers) {
 // E-8 : dans un monde en ligne, le monde partagé est la ferme (docs/monde-partage.md, M.1). La carte reçoit
 // le rectangle de la ferme (`borne` : le personnage n'en sort pas, la vue reste sur elle) ; ce que la
 // carte demande hors de la ferme (le grand monde, les hameaux, la calèche, le récit) ou ce qui ne passe
-// pas encore par le monde (les outils de la ferme : lot E-9) ne fait rien, avec un mot quand c'est un
+// pas encore par le monde (les machines de l'Atelier) ne fait rien, avec un mot quand c'est un
 // geste du joueur.
 const MUETS_EN_LIGNE = ['region', 'ici', 'fauneVue', 'hameau', 'hameauIci', 'visite', 'presents'];
-const REFUSES_EN_LIGNE = ['faune', 'maison', 'lieuRecit', 'calecheTouchee', 'calecheHeler', 'habitantAgit', 'habitantParle', 'recolte', 'chop', 'mine', 'caillou', 'scythe', 'scytheAround', 'fish', 'morceau', 'verser', 'verserGrain', 'verserChaine', 'botte', 'ramasser'];
+// (E-9 : la hache, la pioche, la faux, la canne passent par le monde : js/ui/outils.js)
+const REFUSES_EN_LIGNE = ['faune', 'maison', 'lieuRecit', 'calecheTouchee', 'calecheHeler', 'habitantAgit', 'habitantParle', 'recolte', 'morceau', 'verser', 'verserGrain', 'verserChaine', 'botte', 'ramasser'];
 let dernierMot = 0;
 function pasEnLigne() {
   const t = Date.now();

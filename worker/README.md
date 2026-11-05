@@ -194,7 +194,11 @@ attendait en tas entre au coffre commun (`ramassage` coupé), et tout y va droit
 E-7 : la cuisine aussi (`cuisine.lancer`, `cuisine.annuler`, `moulin.moudre`, `moulin.annuler`,
 `frigo.ranger`, `frigo.sortir`, `frigo.toutRanger`, `frigo.urgent`, `frigo.acheter`, `frigo.agrandir`,
 `boite.deposer`, `boite.reprendre`, `manger`). L'horloge est figée : une préparation finit pendant la
-nuit partagée. La suite : le Marché, les outils, les hameaux.
+nuit partagée.
+
+E-9 : les outils de la ferme (`outil.couper`, `outil.casser`, `outil.caillou`, `outil.faucher`,
+`outil.faucherAutour`, `outil.pecher`, `verger.cueillir`), sans morceaux au sol : tout va au coffre.
+Le monde refuse un arbre, un rocher ou une touffe hors de la ferme, et les eaux du grand monde.
 
 ## Mise en route du rapport (une seule fois)
 

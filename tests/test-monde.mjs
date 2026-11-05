@@ -463,3 +463,32 @@ test('E-8 : la nuit d\'un monde partagé ne fait que la ferme ; 30 nuits sur une
   eq(r.charger().day, partieLocale().day + 30);
   eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()));
 });
+
+/* ---------- E-9 : les outils de la ferme ---------- */
+
+test('E-9 : les outils en ligne : hache, pioche, faux, canne ; ce qui tombe va au coffre (pas de morceaux) ; hors de la ferme, refusé ; le journal se rejoue', () => {
+  const s = partieLocale();
+  s.outils = { hache: true, pioche: true, faux: true, canne: true, choisi: 'hache' };
+  s.morceaux = [{ n: 1, item: 'bois', carte: 'ferme', x: 10, y: 10 }];
+  s.morceauxN = 1;
+  const bois0 = countItem(s, 'bois');
+  const sql = baseSql(), r = new MondeRegistre(sql);
+  assert(r.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
+  const w = r.charger(), T = farmTerrain(w);
+  eq([w.morceaux.length, countItem(w, 'bois')], [0, bois0 + 1], 'le morceau au sol est entré au coffre à la mise en ligne');
+  const jouer = (type, args) => r.commande(A, { id: id(), type, args });
+  const arbre = Object.keys(T.ARBRES).find((k) => dansLaFerme(w, Number(k.split(',')[1]) * T.LARGEUR + Number(k.split(',')[0])));
+  const c = jouer('outil.couper', { arbre });
+  assert(c.ok, c.erreur);
+  eq([countItem(r.charger(), 'bois') > bois0 + 1, r.charger().morceaux.length], [true, 0], 'le bois au coffre, rien au sol');
+  const rocher = Object.keys(T.ROCHERS)[0];
+  const p0 = countItem(r.charger(), 'pierre');
+  const pio = jouer('outil.casser', { rocher });
+  if (pio.ok) assert(countItem(r.charger(), 'pierre') > p0, 'la pierre au coffre');
+  else assert(/caillou|main/i.test(pio.erreur), pio.erreur);
+  eq(jouer('outil.couper', { arbre: '3,3' }).erreur, 'Hors de la ferme : en ligne, le monde partagé, c\'est la ferme.', 'un arbre du grand monde');
+  assert(/Hors de la ferme/.test(jouer('outil.pecher', { eau: 'lac' }).erreur), 'le lac est du grand monde');
+  eq(jouer('outil.couper', { arbre: 'abc' }).ok, false, 'un id mal formé');
+  eq(jouer('outil.faucherAutour', { touffes: [] }).ok, false, 'une liste vide');
+  eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()), 'le journal se rejoue');
+});

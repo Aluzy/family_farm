@@ -56,7 +56,7 @@ carte. `horsDeLaFerme(state)` (`js/engine/didacticiel.js`) et `enExpedition(stat
 | La cuisine | `stations`, `frigo`, `boite`, le Moulin | ✅ (E-7) |
 | Le temps | `day`, la nuit (`nuit.partagee` : tous couchés) | ✅ (E-5) |
 | Le coffre commun (F.1) | `inventaire`, `eauMl`, l'énergie du personnage | ✅ |
-| Le verger, les arbres, rochers et herbes **dans** le rectangle | `verger`, `outils`, `foret`, `morceaux` | ⏳ lot E-9 |
+| Le verger, les arbres, rochers et herbes **dans** le rectangle, la pêche à l'étang et à la mare | `verger`, `outils`, `foret`, `morceaux` | ✅ (E-9) |
 | L'énergie de la ferme | `panneaux`, `batteries`, `pompe`, `reservoir`, `robot` | ⏳ (avec E-9) |
 | La famille du propriétaire | `famille` : elle vit sur la ferme, mange et dort la nuit | ✅ présente, sans corvées seule (E-6) |
 
@@ -153,3 +153,16 @@ Ce qu'il ne faut **pas** faire maintenant : partager le grand monde, les hameaux
   - 30 nuits partagées de suite : 71 ms pour la première, puis **9,5 ms** en moyenne ;
   - le journal se rejoue en 63 ms, avec la même empreinte.
   - Le premier calcul du terrain (≈ 0,5 s) est celui que la pose d'un bloc faisait déjà ; il est gardé en mémoire ensuite.
+
+## 8. E-9 : les outils de la ferme
+
+- **Nouvelles commandes** :
+  - `outil.couper` (un arbre ou un buisson) ;
+  - `outil.casser` (un rocher) et `outil.caillou` (un caillou à la main) ;
+  - `outil.faucher` et `outil.faucherAutour` (le coup fort, 60 touffes au plus) ;
+  - `outil.pecher` ;
+  - `verger.cueillir`.
+- **Rien ne tombe au sol en ligne.** Les commandes ne prennent pas de positions de chute : ce qu'un coup lâche va droit au coffre commun, dans la logique d'un monde qui ne ramasse pas (E-6). Le jeu le dit dans une seule notification qui monte coup après coup. À la mise en ligne, les morceaux qui traînaient au sol entrent au coffre.
+- **L'outil en main** est celui de chaque joueur : il n'est pas écrit dans la partie du monde.
+- **La frontière** : le monde refuse un arbre ou un rocher (« col,rang ») et une touffe (« x,y » en px) hors de la ferme, ainsi que la pêche dans les eaux du grand monde (lac, rivière, mer).
+- **Pas encore en ligne** : les machines de l'Atelier (la botteleuse, les chaînes, les entonnoirs) et les objets posés au sol de l'Atelier.

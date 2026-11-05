@@ -7,7 +7,7 @@ import {
 } from '../engine/fridge.js';
 import { serreCap, serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
 import {
-  harvestTree, isTreeAdult, treeAge, treeNextHarvest, treeStageName,
+  isTreeAdult, treeAge, treeNextHarvest, treeStageName,
 } from '../engine/orchard.js';
 import { canAfford } from '../engine/stamina.js';
 import { techAuto } from '../engine/techtree.js';
@@ -163,7 +163,7 @@ registerActions({
 
 
   'harvest-tree': (target) => {
-    const result = applyResult(harvestTree(state, target.dataset.id));
+    const result = applyResult(executer('verger.cueillir', { arbre: String(target.dataset.id || '') }));
     // fiche 10 : cueillir arbre après arbre fait monter une seule notification par fruit
     if (result.ok && !result.aRamasser) notify(null, { cumul: { cle: `verger:${result.item}`, quantites: { [result.item]: result.qty }, texte: (t) => itemsText(t, 'gain') } });
   },

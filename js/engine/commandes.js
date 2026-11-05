@@ -72,6 +72,15 @@
      boite.deposer    { objet, quantite }       la boîte à nourriture du foyer ; boite.reprendre
      boite.reprendre  { objet, quantite }
      manger           { objet?, sac? }          manger sur le pouce (sac : ce qui est dans le sac)
+   Les outils de la ferme (E-9, sans inverse ; sans positions de chute : ce qui tombe va droit à
+   l'inventaire, comme dans un monde en ligne, qui ne ramasse pas) :
+     outil.couper     { arbre, fort? }          un coup de hache (un arbre, un buisson : « col,rang » de son pied)
+     outil.casser     { rocher, fort? }         un coup de pioche (« col,rang »)
+     outil.caillou    { rocher }                ramasser un caillou à la main
+     outil.faucher    { touffe }                un coup de faux (« x,y » en px, le pied de la touffe)
+     outil.faucherAutour { touffes }            le coup fort de la faux : les touffes autour (au plus 60)
+     outil.pecher     { eau, coin? }            un lancer (etang, mare ; lac, riviere, mer : le grand monde)
+     verger.cueillir  { arbre }                 cueillir les fruits d'un arbre du verger (son id)
      nuit.dormir      { }                       se coucher, la nuit (elle défile jusqu'au réveil)
      nuit.partagee    { }                       E-5 : toute la nuit d'un coup, à n'importe quelle heure
                                                 (le monde en ligne la joue, quand tous sont couchés)
@@ -93,6 +102,8 @@ import { cancelMilling, cancelQueued, startMilling, startRecipe } from './kitche
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
 import { deposerBoite, reprendreBoite } from './repas.js';
 import { eatSnack } from './family.js';
+import { castLine, chopTree, mineRock, ramasserCaillou, scytheAround, scytheGrass } from './outils.js';
+import { harvestTree } from './orchard.js';
 import { goToSleep, nuitPartagee } from './night.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
@@ -125,6 +136,9 @@ const CONTROLES = {
   drapeau: (v) => v === true || v === false,
   objet: (v) => typeof v === 'string' && !!DATA.OBJETS[v],
   recette: (v) => typeof v === 'string' && !!DATA.RECETTES[v],
+  coord: (v) => typeof v === 'string' && /^\d{1,6},\d{1,6}$/.test(v),
+  coords: (v) => Array.isArray(v) && v.length > 0 && v.length <= 60 && v.every((x) => typeof x === 'string' && /^\d{1,6},\d{1,6}$/.test(x)),
+  eau: (v) => typeof v === 'string' && /^[a-z]{1,20}$/.test(v),
   quantite: (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1e6,   // (0 : le moteur dit pourquoi)
 };
 
@@ -400,6 +414,13 @@ export const COMMANDES = {
     args: { objet: 'objet?', sac: 'drapeau?' },
     executer: (state, { objet = null, sac = false }) => eatSnack(state, objet, { duSac: sac }),
   },
+  'outil.couper': { args: { arbre: 'coord', fort: 'drapeau?' }, executer: (state, { arbre, fort = false }) => chopTree(state, arbre, null, fort) },
+  'outil.casser': { args: { rocher: 'coord', fort: 'drapeau?' }, executer: (state, { rocher, fort = false }) => mineRock(state, rocher, null, fort) },
+  'outil.caillou': { args: { rocher: 'coord' }, executer: (state, { rocher }) => ramasserCaillou(state, rocher) },
+  'outil.faucher': { args: { touffe: 'coord' }, executer: (state, { touffe }) => scytheGrass(state, touffe, null) },
+  'outil.faucherAutour': { args: { touffes: 'coords' }, executer: (state, { touffes }) => scytheAround(state, touffes, null) },
+  'outil.pecher': { args: { eau: 'eau', coin: 'texte?' }, executer: (state, { eau, coin = null }) => castLine(state, eau, coin) },
+  'verger.cueillir': { args: { arbre: 'texte' }, executer: (state, { arbre }) => harvestTree(state, arbre) },
   'nuit.dormir': {
     args: {},
     executer: (state) => goToSleep(state),
