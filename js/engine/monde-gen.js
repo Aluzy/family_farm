@@ -250,7 +250,8 @@ function chercheur(N, W, diag = false) {
 // chacune se jette : la case après sa dernière), lacs: [[cases…]…], eaux (Uint8Array, une valeur
 // par tuile : BIOME.lac, BIOME.riviere ou AUCUNE_EAU), chemins: [[cases…]…] (en cases voisines),
 // lieux: { hameaux: [{ id, case, nom[, gue, garanti] }], grottes: [{ id, case }], peche: [{ id, case, eau }],
-// recit: [{ id, sorte (cabane, atelier, epave, cale), case[, sens : la cale] }] } }.
+// recit: [{ id, sorte (cabane, atelier, epave, cale), case[, sens : la cale] }], secrets: [{ id, sorte (ruine, cairn,
+// arbre_ancien, belvedere, pierre_levee), case }] (D-2) } }.
 // `lire` : le relevé des champs (releve), à partager avec qui le complétera ; sans lui, il s'en
 // fait un.
 export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(graine, cadre), cadre)) {
@@ -896,7 +897,34 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
     if (best) recit.push({ id: 'cale_bac', sorte: 'cale', case: best.i, sens: best.sens });
   }
 
-  return { rivieres, finRivieres, lacs, eaux, chemins, lieux: { hameaux, grottes, peche, recit } };
+  /* -- D-2 : les secrets du monde (la ruine, le cairn, l'arbre ancien, le belvédère, la pierre levée) -- */
+  // (leur propre hasard, après tout le reste : les autres lieux ne bougent pas ; data/monde.json SECRETS)
+  const PS = P.SECRETS, secrets = [];
+  if (PS) {
+    const rS = hasard('secrets'), autres = [...hameaux, ...grottes, ...peche, ...recit].map((l) => l.case);
+    const terre = [prairie, lande, foret, marais, montagne];
+    const ouvert = (j) => terre.includes(bio(j)) && !surChemin[j] && !dansFerme(j);
+    const sortes = Object.entries(PS.SORTES).map(([sorte, S]) => ({ sorte, S, biomes: S.BIOMES.map((b) => BIOME[b]), cands: [] }));
+    // (un seul passage sur le monde : chaque case candidate va aux sortes de son biome)
+    for (let y = 8; y < H - 8; y += PS.PAS) for (let x = 8; x < W - 8; x += PS.PAS) {
+      const i = y * W + x, b = bio(i), pour = sortes.filter((o) => o.biomes.includes(b));
+      if (!pour.length || distFerme(i) < PS.FERME || distHameaux(i) < PS.HAMEAU || !entoure(i, PS.AUTOUR, ouvert)) continue;
+      for (const o of pour) o.cands.push(i);
+    }
+    for (const { sorte, S, cands } of sortes) {
+      melange(rS, cands);
+      if (S.HAUT) cands.sort((a, b) => relief(b) - relief(a));
+      let n = 0;
+      for (const i of cands) {
+        if (n >= S.N) break;
+        if (!loin(autres, i, PS.LIEU) || !loin(secrets.map((x) => x.case), i, PS.ECART)) continue;
+        secrets.push({ id: `${sorte}_${n}`, sorte, case: i });
+        n += 1;
+      }
+    }
+  }
+
+  return { rivieres, finRivieres, lacs, eaux, chemins, lieux: { hameaux, grottes, peche, recit, secrets } };
 }
 
 // La cale du bac (le récit) : depuis la case de terre `i`, une jetée de L cases peut-elle avancer droit dans

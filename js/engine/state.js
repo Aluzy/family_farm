@@ -683,6 +683,15 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v71 → v72 (D-2) : le générateur 2 ajoute au monde ses secrets (monde-gen.js, lieux.secrets) et dégage la
+  // végétation autour d'eux ; la ferme, le sol, les hameaux et les autres lieux ne bougent pas. Une partie du
+  // générateur 1 passe au 2 sans rien perdre (un arbre du monde près d'un secret a pu disparaître, rien d'autre).
+  71: (state) => {
+    const out = { ...state, version: 72 };
+    const c = state.carte;
+    if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 1) out.carte = { ...c, generateur: 2 };
+    return out;
+  },
 };
 
 // Ce que la Presse avait coûté, rendu par la migration 66 → 67.

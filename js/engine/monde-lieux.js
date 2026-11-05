@@ -23,6 +23,8 @@ import { BIOME } from './monde-gen.js';
 
      - Les lieux du récit (lieux.recit : la cabane de Johnny, l'atelier de Frida, l'épave ; docs/recit/) :
        leur dessin posé sur leur case, leurs cases `bloque` fermées (data/monde.json, LIEUX.SORTES).
+     - Les secrets du monde (D-2, lieux.secrets : la ruine, le cairn, l'arbre ancien, le belvédère, la pierre levée) :
+       posés comme les lieux du récit (la ruine de la forêt : sa variante moussue) ; les toucher : secrets.js.
      - La cale du bac aux Mouettes (lieux.recit, sorte « cale », son sens : monde-gen.js calePossible) :
        posée comme un ponton, le pied au bord de la case de la rive ; ses LIEUX.CALE cases s'ouvrent à la
        marche (on va au bout, voir le bac).
@@ -82,7 +84,7 @@ export function lieuxDeRegion(ctx, g) {
   const dans = (X, Y) => X >= cx0 && Y >= cy0 && X < cx0 + cl && Y < cy0 + ch;
   const pose = (X, Y, v) => { if (dans(X, Y)) marche[(Y - cy0) * cl + X - cx0] = v; };
   const images = [];
-  const lieux = (el && el.lieux) || { grottes: [], peche: [], recit: [] };
+  const lieux = (el && el.lieux) || { grottes: [], peche: [], recit: [], secrets: [] };
   for (const gr of lieux.grottes || []) {
     const X = gr.case % W, Y = Math.floor(gr.case / W);
     if (X < cx0 - 2 || Y < cy0 - 3 || X > cx0 + cl + 1 || Y > cy0 + ch + 1) continue;
@@ -106,7 +108,8 @@ export function lieuxDeRegion(ctx, g) {
   }
   // les lieux du récit (la cabane de Johnny, l'atelier de Frida, l'épave) : leur dessin sur leur case,
   // leurs cases fermées (bloque, data/monde.json)
-  for (const l of lieux.recit || []) {
+  // (D-2 : les secrets du monde, posés de même : js/engine/secrets.js)
+  for (const l of [...(lieux.recit || []), ...(lieux.secrets || [])]) {
     const S = SORTES_LIEUX[SORTE_LIEU[l.sorte]];
     if (!S) continue;
     const X = l.case % W, Y = Math.floor(l.case / W);
@@ -123,7 +126,9 @@ export function lieuxDeRegion(ctx, g) {
     }
     if (X < cx0 - 3 || Y < cy0 - 3 || X > cx0 + cl + 3 || Y > cy0 + ch + 3) continue;
     for (const [dx, dy] of S.bloque || []) pose(X + dx, Y + dy, 0);
-    if (dans(X, Y)) images.push(SORTE_LIEU[l.sorte], X * T + T / 2, Y * T + T - 2, 0);
+    // (une ruine en forêt : la variante moussue)
+    const v = S.variantes > 1 && g.biomeDe && g.biomeDe(l.case) === BIOME.foret ? 1 : 0;
+    if (dans(X, Y)) images.push(SORTE_LIEU[l.sorte], X * T + T / 2, Y * T + T - 2, v);
   }
   return { images: Int32Array.from(images), basses: new Int32Array(0) };
 }

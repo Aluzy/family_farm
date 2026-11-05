@@ -103,6 +103,7 @@ export function elaguer(s) {
   for (const k of GRAND_MONDE) delete m[k];
   delete s.voisins;   // (V-3 : les liens entre les habitants des hameaux, eux aussi au grand monde)
   delete s.fetes;     // (V-4 : les fêtes des hameaux)
+  delete s.secrets;   // (D-2 : les secrets du monde, hors de la ferme)
   m.but = null;
   const t = migrate({ v: s.version, t: 0, s });
   t.mondePartage = true;

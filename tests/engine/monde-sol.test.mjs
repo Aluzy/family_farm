@@ -177,7 +177,8 @@ test('marcher dans le monde : ni la mer, ni les lacs, ni les rivières (sauf à 
   for (const g of p.lieux.grottes) for (const [dx, dy] of LIEUX.BLOQUE) pieds.add(g.case + dy * W + dx);
   // (les lieux du récit dessinés ferment leurs cases bloque : l'épave ; la cabane et l'atelier sont bâtis,
   // leurs murs dans sol.ctx.hameaux.bloque, docs/recit/)
-  for (const l of p.lieux.recit || []) for (const [dx, dy] of (LIEUX.SORTES.find((x) => x.nom === l.sorte) || {}).bloque || []) pieds.add(l.case + dy * W + dx);
+  // (les secrets du monde aussi, D-2)
+  for (const l of [...(p.lieux.recit || []), ...(p.lieux.secrets || [])]) for (const [dx, dy] of (LIEUX.SORTES.find((x) => x.nom === l.sorte) || {}).bloque || []) pieds.add(l.case + dy * W + dx);
   // (la cale du bac ouvre sa jetée, sur la mer, comme un ponton : le récit)
   for (const l of (p.lieux.recit || []).filter((x) => x.sorte === 'cale')) {
     const [dx, dy] = [[0, -1], [0, 1], [-1, 0], [1, 0]][l.sens];
