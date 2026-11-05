@@ -204,6 +204,11 @@ E-10 : la progression commune (`tech.acheter`, `atelier.fabriquer`, `atelier.con
 `reservoir.agrandir`, `robot.batterie`, `serre.agrandir`, `arbre.planter`, `potager.semis`). Restent hors
 ligne, comme le veut la vision : le Marché, la calèche, les hameaux, le récit, les invitations.
 
+E-11 : les rôles (`js/engine/roles.js` : visiteur, jardinier, bâtisseur, propriétaire), vérifiés à chaque
+commande ; `POST /mondes/<id>/invitations { role }`, `POST /mondes/<id>/role { compte, role }` (le
+propriétaire ; la liste des membres est diffusée), `GET /mondes/<id>/journal?avant=` (le propriétaire :
+les 50 dernières commandes, avec les noms).
+
 ## Mise en route du rapport (une seule fois)
 
 1. **Créer un dépôt privé** pour les rapports, par exemple `family_farm_rapports`

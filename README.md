@@ -160,6 +160,11 @@ bâtit, cultive, élève et cuisine. Le grand monde (les routes, les hameaux, la
 la partie solo de son propriétaire. En ligne, le personnage ne sort pas de la ferme et la vue reste sur
 elle ; la copie mise en ligne n'emporte pas le grand monde, et sa nuit ne fait que la ferme (E-8).
 
+Chacun a un **rôle** (E-11) : 👀 visiteur, 🌱 ami jardinier (le potager, les bêtes, la cuisine, les
+outils), 🔨 bâtisseur (en plus, Construire et la progression), 🏡 propriétaire (seul à retirer un
+atelier, un bâtiment ou un appareil). Le propriétaire le choisit en invitant, le change dans 👥 et y lit
+le 📜 journal du monde (qui a fait quoi).
+
 Le propriétaire **invite un ami** par le bouton 👥 du bandeau. Il crée un lien, valable 7 jours et
 utilisable une fois, à envoyer. En l'ouvrant, l'ami entre dans le monde pour y construire ; s'il
 n'est pas connecté, l'invitation attend sa connexion. Le propriétaire peut aussi retirer un membre :

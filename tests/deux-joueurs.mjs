@@ -20,6 +20,8 @@
 //       et les parties confirmées sont encore celle du monde ;
 //   5. la partie solo de A, sur l'appareil, n'est jamais touchée en ligne ;
 //   6. une action pas encore en ligne (vendre au Marché) est refusée (un message, rien ne change) ;
+//   6b. E-11 : A fait de B un visiteur (👥) : B le voit au bandeau, son mur est refusé tout de suite ; A lit le
+//       journal du monde (qui a fait quoi) ;
 //   7. E-3 : A retire B : la connexion de B est coupée, B revient à sa ferme solo.
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
 
@@ -231,6 +233,24 @@ try {
   await action(pa, 'sell-item', { item: 'carotte' });
   await pa.waitForTimeout(300);
   verifie(reg.rev === avant && /viendra bientôt/.test(await pa.evaluate(() => document.body.innerText)), '6. un geste pas encore en ligne est refusé');
+  // 6b. E-11 : les rôles et le journal
+  await action(pa, 'monde-membres');
+  await attendre(pa, () => !!document.querySelector('[data-action="monde-role"][data-role="visiteur"]'));
+  await action(pa, 'monde-role', { compte: B.id, role: 'visiteur' });
+  const msRole = await attendre(pb, () => /👀/.test(document.getElementById('en-ligne-bandeau').innerText), null, 5000);
+  const revRole = reg.rev;
+  await action(pb, 'build-toggle');
+  await action(pb, 'build-pick', { sorte: 'mur_pierre' });
+  const t6 = await caseLibre(pb);
+  await action(pb, 'bloc', { case: String(t6) });
+  await pb.waitForTimeout(400);
+  const refuseB = reg.rev === revRole && /Visiteur/.test(await pb.evaluate(() => document.body.innerText));
+  await action(pa, 'close-modal');
+  await action(pa, 'monde-journal');
+  await attendre(pa, () => !!document.getElementById('journal-titre'), null, 5000);
+  const journal = await pa.evaluate(() => document.querySelector('.journal-monde').innerText);
+  verifie(msRole !== null && refuseB && /sam/i.test(journal) && /a posé un bloc/.test(journal) && /tout le monde a dormi/.test(journal), `6b. B devenu visiteur (en ${msRole} ms) : son mur refusé ; le journal de A dit qui a fait quoi`);
+  await action(pa, 'close-modal');
   // 7. E-3 : A retire B
   await action(pa, 'monde-membres');
   await attendre(pa, () => !!document.querySelector('[data-action="monde-retirer"]'));

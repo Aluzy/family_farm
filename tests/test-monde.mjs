@@ -9,7 +9,7 @@
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import {
-  addItem, allDevices, countItem, DATA, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, poseStatus, runNight, techPoints, testBatir, testFarmMap, testFermeConstruite,
+  addItem, allDevices, countItem, DATA, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, poseStatus, refusDuRole, roleDemande, runNight, sensible, techPoints, testBatir, testFarmMap, testFermeConstruite,
 } from '../js/engine/index.js';
 import { atelier, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setStraw } from './engine/aide.mjs';
 import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, etatDesLits, Monde, MONDE, MondeRegistre, traiterMessage } from '../worker/src/monde.mjs';
@@ -524,4 +524,55 @@ test('E-10 : la progression est commune : l\'ami achète une technologie et fabr
     eq(jouer(type, args).ok, false, `${type} ${JSON.stringify(args)} refusé`);
   }
   eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()), 'le journal se rejoue');
+});
+
+/* ---------- E-11 : les rôles ---------- */
+
+test('E-11 : la table des rôles : le potager pour l\'ami jardinier, Construire pour le bâtisseur, une structure sensible pour le propriétaire seul', () => {
+  const s = garden();
+  testFarmMap(s, '42');
+  testFermeConstruite(s);
+  eq(['potager.arroser', 'etable.tondre', 'frigo.ranger', 'outil.couper', 'bloc.poser', 'tech.acheter', 'frigo.acheter', 'etable.place'].map((type) => roleDemande(s, { type, args: {} })),
+    ['jardinier', 'jardinier', 'jardinier', 'jardinier', 'batisseur', 'batisseur', 'batisseur', 'batisseur']);
+  const c = Number(Object.keys(s.blocs).find((k) => sensible(s.blocs[k])));
+  assert(Number.isInteger(c), 'une structure sensible sur la ferme d\'essai');
+  eq(roleDemande(s, { type: 'bloc.reprendre', args: { case: c } }), 'proprietaire');
+  const mur = Number(Object.keys(s.blocs).find((k) => !sensible(s.blocs[k])));
+  eq(roleDemande(s, { type: 'bloc.reprendre', args: { case: mur } }), 'batisseur', 'un bloc ordinaire');
+  eq([refusDuRole('visiteur', s, { type: 'potager.arroser', args: {} }) !== null, refusDuRole('jardinier', s, { type: 'potager.arroser', args: {} }), refusDuRole('inconnu', s, { type: 'manger', args: {} }) !== null], [true, null, true]);
+});
+
+test('E-11 : l\'invitation donne un rôle ; le monde refuse ce que le rôle ne permet pas ; le propriétaire change les rôles, lui seul ; le journal', async () => {
+  const { r } = monde();
+  const w = r.charger(), [t1, t2] = casesLibres(w, 2);
+  const inv = await r.inviter(A, 'jardinier');
+  eq((await r.inviter(A, 'roi')).ok, false, 'un rôle inconnu');
+  const C = 'c-jardinier';
+  const j = await r.rejoindre(C, 'Lou', inv.secret);
+  eq([j.ok, j.role, r.membre(C).role], [true, 'jardinier', 'jardinier']);
+  const p = r.commande(C, poser(t1));
+  eq(p.ok, false);
+  assert(/Ami jardinier/.test(p.erreur), p.erreur);
+  const ar = r.commande(C, { id: id(), type: 'potager.arroser', args: { parcelle: 'potager-1' } });
+  assert(ar.ok || !/rôle/.test(ar.erreur), 'arroser n\'est pas refusé pour le rôle');
+  eq([r.changerRole(C, C, 'batisseur').ok, r.changerRole(B, C, 'batisseur').ok, r.changerRole(A, A, 'visiteur').ok], [false, false, false], 'ni lui, ni un autre membre, ni le propriétaire pour lui-même');
+  eq(r.changerRole(A, C, 'batisseur').ok, true);
+  assert(r.commande(C, poser(t2)).ok, 'bâtisseur, il construit');
+  eq(r.changerRole(A, C, 'visiteur').ok, true);
+  assert(/Visiteur/.test(r.commande(C, { id: id(), type: 'manger', args: { objet: 'carotte' } }).erreur || ''), 'visiteur, il ne mange pas le coffre');
+  // le journal : au propriétaire seul, du plus récent au plus ancien, avec les noms
+  eq(r.journal(C).ok, false);
+  const jr = r.journal(A);
+  eq([jr.ok, jr.evts[0].nom, jr.evts[0].type, jr.evts.map((e) => e.rev)], [true, 'Lou', 'bloc.poser', [...jr.evts.map((e) => e.rev)].sort((a, b) => b - a)]);
+  eq(r.journal(A, jr.evts[0].rev).evts.every((e) => e.rev < jr.evts[0].rev), true, 'la page d\'avant');
+});
+
+test('E-11 : une base d\'avant (invitations sans rôle) se reprend : la colonne s\'ajoute, une fois', async () => {
+  const sql = baseSql();
+  sql.exec('CREATE TABLE invitations (hash TEXT PRIMARY KEY, cree INTEGER NOT NULL, expire INTEGER NOT NULL, par TEXT)');
+  const r = new MondeRegistre(sql);
+  new MondeRegistre(sql);   // (un deuxième réveil : rien ne casse)
+  assert(r.creer({ proprietaire: A, partie: partieLocale() }).ok);
+  const inv = await r.inviter(A, 'visiteur');
+  eq((await r.rejoindre(B, 'Sam', inv.secret)).role, 'visiteur');
 });
