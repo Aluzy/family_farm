@@ -1,6 +1,7 @@
 # La calèche du grand monde (fiche 7c : js/engine/caleche.js ; la scène : js/carte/ferme/caleche.js),
 # dessinée ici en entier, dans le style du cheval (scripts/personnage/cheval.py, dont elle reprend le
-# cheval bai : de profil, de face, de dos, ses quatre temps du pas) et des blocs (le bois, la toile,
+# cheval bai, celui que le joueur a redessiné (cheval.case_redessinee, harnache_redessine) : de profil, de face, de
+# dos, ses quatre temps du pas) et des blocs (le bois, la toile,
 # le fer de scripts/carte/blocs.py) :
 #   - assets/caleche.png (cases de 96 × 64, les roues et les sabots sur la rangée 60, le milieu de
 #     l'attelage au milieu de la case) : une voiture couverte (une caisse de planches sur deux essieux,
@@ -198,7 +199,8 @@ def de_profil(k, nuit):
         t.put(50 + i, 44 - i * 6 // 34, BOIS[2]); t.put(50 + i, 45 - i * 6 // 34, BOIS[1])
     pose = 'marche' if marche else 'idle'
     u = 1 if marche and k % 2 == 1 else 0                     # (le cheval monte d'un px entre deux pas)
-    t.colle(cheval.profil(pose, k % 4, harnais=True).image(), 50, SOL - 38)
+    # (le cheval redessiné par le joueur, harnaché ; sans sa planche, le dessin d'avant)
+    t.colle(cheval.harnache_redessine(k if marche else 4) or cheval.profil(pose, k % 4, harnais=True).image(), 50, SOL - 38)
     t.fini()
     (mx, my), = MAINS['cote']
     renes(t, (ox + mx, oy + my), (50 + 41, SOL - 38 + 11 - u), mou=2)   # des mains au mors
@@ -221,7 +223,7 @@ def de_face(k, nuit):
     for y in range(40, 52):                                   # les brancards
         t.put(33, y, BOIS[2]); t.put(63, y, BOIS[2])
     up = cheval.TEMPS[k if marche else 4][2]
-    t.colle(cheval.face(k if marche else 4, 'tout', selle=False).image(), 24, SOL - 38)
+    t.colle(cheval.case_redessinee('bas', k) or cheval.face(k if marche else 4, 'tout', selle=False).image(), 24, SOL - 38)
     t.fini()
     for (mx, my), bx in zip(MAINS['bas'], (20, 27)):           # les rênes, des mains au mors
         renes(t, (ox + mx, oy + my), (24 + bx, SOL - 38 + 16 - up), mou=0)
@@ -232,7 +234,7 @@ def de_dos(k, nuit):
     """De dos : elle s'en va, la voiture devant (en bas), le cheval au-delà (en haut)."""
     t = Toile()
     marche = k < 4
-    hi = cheval.dos(k if marche else 4, 'tout', selle=False).image()
+    hi = cheval.case_redessinee('haut', k) or cheval.dos(k if marche else 4, 'tout', selle=False).image()
     t.colle(hi, 24, -1)                                       # au-delà du cocher : sa nuque, ses oreilles
     t.colle(cocher('haut'), *PLACE_COCHER['haut'])           # de dos, sur le banc : sa tête dépasse de la bâche
     bache(t, 26, 70, 17, 44, ouverte=True)

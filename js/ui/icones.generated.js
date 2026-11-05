@@ -1,7 +1,7 @@
 // Fichier produit par scripts/icones/build.py : ne pas modifier à la main.
 // emoji (sans U+FE0F) → rang dans assets/icones.png (COLS cases par rangée).
 // VERSION : empreinte de la planche, ajoutée à son adresse (pas de vieille planche en cache).
-export const VERSION = 'e7213f20b9';
+export const VERSION = '52b9ee16b6';
 export const COLS = 16;
 export const ROWS = 28;
 export const ICONES = {
