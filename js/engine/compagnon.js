@@ -3,7 +3,7 @@ import { EPS } from './base.js';
 import { fail } from './devices.js';
 import { absoluteHours, clockHours, nightActive } from './clock.js';
 import { addItem } from './inventory.js';
-import { countWithSilo, takeWithSilo } from './animals.js';
+import { canFeedHen, countWithSilo, hensToFeed, takeWithSilo } from './animals.js';
 import { harvestPlot, isMature, noteWateredPlots, serrePlots, waterCost } from './crops.js';
 import { harvestTree, ripeTrees } from './orchard.js';
 import { aCruche, crucheCapacite } from './cruche.js';
@@ -12,7 +12,7 @@ import { moveToFridge } from './fridge.js';
 import { ramassables, caseDepart } from './atelier.js';
 import { recipeUnlocked } from './kitchen.js';
 import { farmTerrain } from './terrain.js';
-import { aidant } from './ramassage.js';
+import { aidant, aideBetes } from './ramassage.js';
 import { noter } from './journal.js';
 import { ETAPES } from './didacticiel.js';
 import { enExpedition } from './equipement.js';
@@ -48,7 +48,9 @@ import { enExpedition } from './equipement.js';
    Ce que le joueur lui demande (un appui sur lui, sur la carte : demanderCompagnon) : ramasser les légumes
    mûrs (« recolter:<case> » : les terres labourées de la ferme et les bacs de la Serre), arroser ce qui a soif,
    récolter les fruits des arbres plantés (« cueillir:<case> »), ou cuisiner un plat à la cuisinière (« cuisiner » :
-   la première recette de CUISINER.RECETTES dont il a les ingrédients, même si la famille n'a pas faim) ; il le fait jusqu'au bout (un plat pour cuisiner) (state.compagnon.demande, jusqu'à ce qu'il n'y ait plus
+   la première recette de CUISINER.RECETTES dont il a les ingrédients, même si la famille n'a pas faim), ou nourrir
+   les animaux (les poules, au Poulailler, avec le blé : « poulailler », comme ses bêtes ; les moutons et les vaches
+   mangent la paille d'eux-mêmes la nuit) ; il le fait jusqu'au bout (un plat pour cuisiner) (state.compagnon.demande, jusqu'à ce qu'il n'y ait plus
    rien à faire ou à la fin de sa journée), avant ses initiatives et ses bêtes, sans leurs limites du jour
    (PAR_JOUR, ECART_H) ; il lui en coûte sa faim (DEMANDE.FAIM, ARROSER.FAIM pour arroser), il n'y gagne ni
    énergie ni chapitre pour le joueur (comme une automatisation : harvestPlot et harvestTree en `auto`).
@@ -287,6 +289,13 @@ export function faireCompagnon(state, lieu) {
   const c = etatCompagnon(state);
   const k = s.indexOf(':'), sorte = k < 0 ? s : s.slice(0, k), ref = k < 0 ? '' : s.slice(k + 1);
   if (sorte === 'recolter' || sorte === 'cueillir') return cueillirDemande(state, sorte, Number(ref));
+  // (nourrir les poules, ce que le joueur lui a demandé : au Poulailler, comme ses bêtes, js/engine/ramassage.js)
+  if (s === 'poulailler' && demande) {
+    const r = aideBetes(state, 'poulailler');
+    if (!r.ok) return r;
+    noterGarde(state, 'betes');
+    return { ok: true, action: 'nourrir', items: r.items, nourries: r.nourries };
+  }
   if (sorte === 'puits') {
     const t = Number(ref);
     if (!Number.isInteger(t) || (state.blocs || {})[t] !== 'puits') return fail('Il n\'y a pas de puits ici.');
@@ -352,7 +361,7 @@ export function faireCompagnon(state, lieu) {
 
 /* ---------- ce que le joueur lui demande (un appui sur lui, sur la carte) ---------- */
 
-export const DEMANDES_COMPAGNON = ['legumes', 'arroser', 'recolter', 'cuisiner'];
+export const DEMANDES_COMPAGNON = ['legumes', 'arroser', 'recolter', 'cuisiner', 'nourrir'];
 
 // Les légumes mûrs (les terres labourées de la ferme, puis les bacs de la Serre), le plus proche de la dernière
 // case travaillée d'abord.
@@ -381,7 +390,14 @@ function tacheDemandee(state, quoi) {
   if (quoi === 'legumes') { const p = legumesMurs(state)[0]; return p ? `recolter:${p.case}` : null; }
   if (quoi === 'recolter') { const t = arbresEnFruits(state)[0]; return t ? `cueillir:${t.case}` : null; }
   if (quoi === 'cuisiner') return cuisiniere(state) && recetteCompagnon(state) ? 'cuisiner' : null;
+  if (quoi === 'nourrir') return poulesAffamees(state) && canFeedHen(state) ? 'poulailler' : null;
   return null;
+}
+
+// Des poules à nourrir aujourd'hui ? (Les moutons et les vaches mangent la paille de l'Étable d'eux-mêmes, la nuit.)
+function poulesAffamees(state) {
+  const P = state.poulailler;
+  return !!(P && P.poules > 0 && hensToFeed(state) > 0);
 }
 
 // Peut-il faire ce qu'on lui demande maintenant ? null (oui), ou la raison : 'seul', 'tard' (la nuit, ou sa
@@ -419,6 +435,8 @@ export function demanderCompagnon(state, quoi) {
     if (quoi === 'arroser' && plantesASoif(state).length) return fail(D.SANS_EAU);
     // (cuisiner : pas de cuisinière, ou pas de quoi faire une recette)
     if (quoi === 'cuisiner' && !cuisiniere(state)) return fail(D.SANS_CUISINIERE);
+    // (nourrir : des poules, mais déjà nourries, ou pas de blé)
+    if (quoi === 'nourrir' && state.poulailler && state.poulailler.poules > 0) return fail(poulesAffamees(state) ? D.SANS_BLE : D.DEJA_NOURRIES);
     return fail(D.RIEN[quoi]);
   }
   c.demande = { quoi, jour: state.day };
