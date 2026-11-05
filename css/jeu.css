@@ -2069,6 +2069,15 @@ main .ancre { scroll-margin-top: 150px; }
 .accueil-persos .perso-btn { padding: 0; overflow: hidden; }
 .accueil-persos .perso-btn .perso-px { --s: 64px; }
 .accueil-portrait .perso-px { --s: 64px; }
+/* L'écran « Personnaliser » (chantier « couches ») : le portrait reste en vue, les choix défilent sous lui. */
+.accueil-apparence { width: 100%; max-height: calc(100dvh - 330px); overflow-y: auto; overscroll-behavior: contain; }
+.accueil-apparence .apparence-groupe:first-child { margin-top: 0; }
+.accueil-apparence .apparence-champ { grid-template-columns: minmax(0, 1fr); }
+.accueil-apparence .apparence-nom { padding-top: 0; }
+/* La fenêtre « Modifier » d'un membre : l'aperçu reste en haut quand on descend dans « Personnaliser » (et le bouton
+   « 🎨 Apparence » de la fiche y amène, sous l'aperçu). */
+.member-modal .member-preview { position: sticky; top: -20px; z-index: 1; }
+.member-modal #apparence-details { scroll-margin-top: 120px; }
 /* La famille choisie, à la dernière question (fiche 18) : chacun son portrait et son prénom. */
 .accueil-famille { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; }
 .accueil-membre { display: flex; flex-direction: column; align-items: center; max-width: 72px; font-size: 0.85em; text-align: center; overflow-wrap: anywhere; }
@@ -2847,6 +2856,7 @@ span.encyclo-item.encyclo-inconnue { color: #a08463; }
   margin: 0; padding: 3px 10px; max-width: 150px; text-align: center; overflow-wrap: anywhere;
   background: var(--wood-paper); border: 2px solid var(--wood-dark); border-radius: 999px; font-size: 0.9rem;
 }
+.fiche-apparence { min-height: 36px; padding: 3px 12px; font-size: 0.85rem; background: var(--wood-paper); border-color: var(--wood-dark); }
 .fiche-jauges { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding-top: 4px; }
 .fiche-jauge { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 6px; align-items: center; }
 .fiche-jauge-nom { grid-column: 1 / -1; font-size: 0.85rem; font-weight: 700; color: var(--wood-ink); }

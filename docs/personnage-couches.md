@@ -456,6 +456,15 @@ pastille de sa couleur ; l'aperçu suit. Le premier choix part du personnage du 
 la grille retire l'apparence. Pour un enfant, les coupes proposées sont celles qui se dessinent différemment
 (`COUPE_PROPOSEE` : « mèche », « hérissés », « bouclés » se dessinent comme « courts »).
 
+**Les deux entrées vers cet écran** (ajoutées après E7, l'écran étant trop caché) :
+- le bouton **« 🎨 Apparence »** sous le portrait de la fiche du membre (`js/ui/fiche-membre.js`) ouvre la fenêtre
+  « Modifier » avec « Personnaliser » déplié et montré ; l'aperçu reste en haut de la fenêtre quand on descend ;
+- **l'accueil d'une nouvelle partie** (`js/ui/depart.js`) : après le choix du personnage du joueur, de son compagnon
+  et de chaque enfant, un écran « Tu peux personnaliser son apparence… » (les mêmes choix, `apparenceChoixHtml` ;
+  « ↺ Comme le personnage choisi » retire l'apparence ; la flèche passe à la suite). `composeFamily`
+  (`js/engine/depart.js`) reçoit `apparence` pour chacun, vérifiée par `validApparence` avant de rien changer
+  (`tests/engine/famille-apparence.test.mjs`) ; le test de fumée passe par cet écran.
+
 **Où elle se voit** :
 - les portraits (`js/ui/apparence.js` : la planche assemblée en image, gardée) : la fiche du membre, la liste des
   membres, le médaillon du joueur ; vivants (§ 9), le clignement pris dans sa case du sommeil ;

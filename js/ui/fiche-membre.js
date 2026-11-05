@@ -181,6 +181,7 @@ export function renderFicheMembre() {
         <div class="fiche-centre">
           <div class="fiche-cadre">${persoEquipeHtml(m)}</div>
           <p class="fiche-nom"><strong class="member-name">${nomHtml(m)}</strong> <span class="muted">· ${roleTexte(m)}</span></p>
+          <button type="button" class="btn fiche-apparence" data-action="member-edit" data-id="${m.id}" data-personnaliser="1">🎨 Apparence</button>
         </div>
         <div class="fiche-jauges">${jaugesHtml(m)}<span class="fiche-aide">${helpBtn('equipement')}</span></div>
       </div>

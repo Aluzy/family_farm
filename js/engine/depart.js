@@ -3,7 +3,7 @@ import { GENERATEUR_VERSION, unlockTab } from './base.js';
 import { fail, farmOpen, isOwned, starterOf } from './devices.js';
 import { lotsFromCounts } from './inventory.js';
 import { createInitialState } from './state.js';
-import { cleanFirstName, familyNumbers, findMember, makeMember, persoMax, validFirstName } from './family.js';
+import { cleanFirstName, familyNumbers, findMember, makeMember, persoMax, validApparence, validFirstName } from './family.js';
 import { updateChapters } from './campaign.js';
 import { startPlots } from './crops.js';
 import { farmTerrain } from './terrain.js';
@@ -104,9 +104,11 @@ export function setupFamily(state, { nom, principal } = {}) {
 
 // L'accueil d'une nouvelle partie (js/ui/depart.js) : la famille telle que le joueur l'a
 // décrite, d'un coup, à la place de celle de DATA.FAMILLE.MEMBRES. `choix` :
-//   { perso, prenom, nom,                      le personnage principal (un adulte) et le nom de famille
-//     compagnon: { perso, prenom } | null,     un second adulte
-//     enfants: [{ prenom, perso? }],           perso : un personnage d'enfant (sinon le défaut)
+//   { perso, prenom, nom, apparence?,          le personnage principal (un adulte) et le nom de famille
+//     compagnon: { perso, prenom, apparence? } | null,  un second adulte
+//     enfants: [{ prenom, perso?, apparence? }],         perso : un personnage d'enfant (sinon le défaut)
+// apparence (chantier « couches », docs/personnage-couches.md) : l'apparence à lui choisie à l'accueil, attribut
+// par attribut (validApparence), ou absente : son personnage du catalogue.
 //     animaux: [{ espece, nom }] }             des chiens ou des chats
 // Tout est vérifié avant de rien changer. Les identifiants : adulte-1 (le principal),
 // adulte-2, enfant-1…, compagnon-1…
@@ -117,7 +119,9 @@ export function composeFamily(state, choix = {}) {
   const compagnon = choix.compagnon || null;
   const enfants = Array.isArray(choix.enfants) ? choix.enfants : [];
   const animaux = Array.isArray(choix.animaux) ? choix.animaux : [];
+  const apparenceOk = (def, enfant) => !def || def.apparence == null || !!validApparence(def.apparence, enfant);
   if (!persoOk(choix.perso, false)) return fail('Choisis un personnage.');
+  if (!apparenceOk(choix, false) || !apparenceOk(compagnon, false) || !enfants.every((e) => apparenceOk(e, true))) return fail('Apparence inconnue.');
   let err = prenomOk(choix.prenom, 'Ton personnage');
   if (err) return fail(err);
   const nom = String(choix.nom || '').trim().replace(/\s+/g, ' ');
@@ -140,6 +144,7 @@ export function composeFamily(state, choix = {}) {
     const m = makeMember({ id, nom: `${enfant ? 'Enfant' : 'Adulte'} ${n}`, enfant });
     m.prenom = cleanFirstName(def.prenom);
     if (def.perso !== undefined) m.perso = def.perso;
+    if (def.apparence != null) m.apparence = validApparence(def.apparence, enfant);
     return m;
   };
   const f = state.famille;

@@ -10,7 +10,8 @@ import { escapeHtml } from '../engine/format.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
-import { persoHtml } from './famille.js';
+import { apparenceChoixHtml, appliquerChoixApparence, persoHtml } from './famille.js';
+import { apparencesPretes, chargerApparences, plancheApparence } from './apparence.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { tel } from './consent.js';
@@ -84,8 +85,9 @@ export function renderStarterCards() {
 // passent par escapeHtml()) : jamais dans un attribut data-* ni dans tel().
 const accueil = {
   etape: 'bienvenue', perso: 0, prenom: '', nom: '',
-  compagnon: null,                 // { perso, prenom } dès qu'il y en a un
-  nbEnfants: 1, enfants: [],       // [{ perso, prenom }], dans l'ordre (perso 0 : pas encore choisi)
+  apparence: null,                 // l'apparence à lui (chantier « couches »), ou null : son personnage
+  compagnon: null,                 // { perso, prenom, apparence } dès qu'il y en a un
+  nbEnfants: 1, enfants: [],       // [{ perso, prenom, apparence }], dans l'ordre (perso 0 : pas encore choisi)
   animaux: [],                     // [{ espece, nom }]
   animal: { espece: 'chien', nom: '' },
   k: 0,                            // l'enfant dont on demande le personnage, puis le prénom
@@ -103,18 +105,33 @@ const ouiNon = () => `<div class="accueil-choix"><button type="button" class="bt
 const champ = (valeur, max, label, attrs = '') => `<input type="text" id="accueil-champ" class="member-input accueil-champ" maxlength="${max}" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="${label}" value="${escapeHtml(valeur)}"${attrs}>`;
 const grille = (choisi, enfant = false) => `<div class="perso-grid accueil-persos${enfant ? ' accueil-persos-enfant' : ''}">${Array.from({ length: enfant ? DATA.FAMILLE.PROFIL.PERSOS_ENFANT : DATA.FAMILLE.PROFIL.PERSOS }, (_, i) => i + 1)
   .map((n) => `<button type="button" class="btn perso-btn${n === choisi ? ' active' : ''}" data-action="accueil-perso" data-perso="${n}" aria-pressed="${n === choisi}" aria-label="${enfant ? 'Enfant' : 'Personnage'} ${n}">${persoHtml(n, enfant)}</button>`).join('')}</div>`;
-const portrait = (n, enfant = false) => (n ? `<div class="accueil-portrait">${persoHtml(n, enfant)}</div>` : '');
-// L'enfant `k` ({ perso, prenom } ; perso 0 tant qu'il n'est pas choisi).
-const enfantK = (k = accueil.k) => (accueil.enfants[k] || (accueil.enfants[k] = { perso: 0, prenom: '' }));
+// Le portrait de `qui` ({ perso, apparence }) : son apparence à lui s'il en a une (js/ui/apparence.js), sinon son personnage.
+const visage = (qui, enfant = false) => persoHtml(qui.perso, enfant, '', '', qui.apparence ? plancheApparence(qui.apparence, enfant) : null);
+const portrait = (qui, enfant = false) => (qui && qui.perso ? `<div class="accueil-portrait">${visage(qui, enfant)}</div>` : '');
+// L'enfant `k` ({ perso, prenom, apparence } ; perso 0 tant qu'il n'est pas choisi).
+const enfantK = (k = accueil.k) => (accueil.enfants[k] || (accueil.enfants[k] = { perso: 0, prenom: '', apparence: null }));
+// Celui dont on choisit le personnage ou l'apparence à l'écran en cours : le joueur, son compagnon, ou l'enfant `k`.
+const quiEtape = () => (accueil.etape.startsWith('compagnon-') ? [accueil.compagnon, false] : accueil.etape.startsWith('enfant-') ? [enfantK(), true] : [accueil, false]);
+// L'écran « Personnaliser » (chantier « couches », docs/personnage-couches.md) : juste après le choix du personnage,
+// chaque attribut (la peau, les yeux, la coiffure, la tenue…) se change ; la flèche garde le choix (ou aucun).
+function apparenceEcran() {
+  const [qui, enfant] = quiEtape();
+  if (!apparencesPretes()) {
+    chargerApparences(() => { if (accueil.etape.endsWith('apparence')) openSetupModal(); });
+    return `${portrait(qui, enfant)}<p class="muted">Un instant…</p>${fleche()}`;
+  }
+  const retour = qui.apparence ? '<button type="button" class="btn" data-action="accueil-apparence-retour">↺ Comme le personnage choisi</button>' : '';
+  return `${portrait(qui, enfant)}<div class="accueil-apparence">${apparenceChoixHtml({ perso: qui.perso, enfant, apparence: qui.apparence }, 'accueil-apparence')}</div>${retour}${fleche()}`;
+}
 const deLEnfant = () => (accueil.nbEnfants === 1 ? 'de l\'enfant' : `du ${ORDINAUX[accueil.k]} enfant`);
 // La famille choisie, à la dernière question : chacun son portrait et son prénom (les prénoms
 // tapés passent par escapeHtml()).
 function familleChoisie() {
   const A = accueil;
-  const un = (n, prenom, enfant) => `<li class="accueil-membre">${persoHtml(n, enfant)}<span>${escapeHtml(prenom)}</span></li>`;
-  const gens = [un(A.perso, A.prenom, false)];
-  if (A.compagnon) gens.push(un(A.compagnon.perso, A.compagnon.prenom, false));
-  for (const e of A.enfants) gens.push(un(e.perso, e.prenom, true));
+  const un = (qui, enfant) => `<li class="accueil-membre">${visage(qui, enfant)}<span>${escapeHtml(qui.prenom)}</span></li>`;
+  const gens = [un(A, false)];
+  if (A.compagnon) gens.push(un(A.compagnon, false));
+  for (const e of A.enfants) gens.push(un(e, true));
   const E = DATA.FAMILLE.COMPAGNIE.ESPECES;
   const betes = A.animaux.map((a) => `<li class="accueil-membre accueil-animal"><span class="accueil-animal-icone" aria-hidden="true">${(E[a.espece] || {}).icone || ''}</span><span>${escapeHtml(a.nom)}</span></li>`);
   return `<ul class="accueil-famille" aria-label="Ta famille">${gens.concat(betes).join('')}</ul>`;
@@ -128,16 +145,20 @@ function ecranAccueil() {
       return ['Bienvenue dans Family Farm ! Ici tu peux construire ta ferme, élever des animaux, produire des ressources et fabriquer des objets, cuisiner des recettes et plein d\'autres super activités !', fleche()];
     case 'perso':
       return ['Pour commencer, choisis un personnage :', grille(A.perso) + fleche(A.perso > 0)];
+    case 'apparence':
+    case 'compagnon-apparence':
+    case 'enfant-apparence':
+      return ['Tu peux personnaliser son apparence (la peau, les yeux, la coiffure, la tenue…), ou passer à la suite :', apparenceEcran()];
     case 'prenom':
-      return ['Comment s\'appelle-t-il ?', portrait(A.perso) + champ(A.prenom, P.PRENOM_MAX, 'Prénom') + fleche()];
+      return ['Comment s\'appelle-t-il ?', portrait(A) + champ(A.prenom, P.PRENOM_MAX, 'Prénom') + fleche()];
     case 'nom':
-      return ['Et son nom ?', portrait(A.perso) + champ(A.nom, D.NOM_MAX, 'Nom') + fleche()];
+      return ['Et son nom ?', portrait(A) + champ(A.nom, D.NOM_MAX, 'Nom') + fleche()];
     case 'confirme':
-      return [`OK, donc c'est ${escapeHtml(A.prenom)} ${escapeHtml(A.nom)}, c'est bien ça ?`, `${portrait(A.perso)}<div class="accueil-choix"><button type="button" class="pose-meuble-ok" data-action="accueil-oui" aria-label="Oui, c'est bien ça" title="Oui">✔️</button><button type="button" class="pose-meuble-non" data-action="accueil-non" aria-label="Non, changer" title="Changer">❌</button></div>`];
+      return [`OK, donc c'est ${escapeHtml(A.prenom)} ${escapeHtml(A.nom)}, c'est bien ça ?`, `${portrait(A)}<div class="accueil-choix"><button type="button" class="pose-meuble-ok" data-action="accueil-oui" aria-label="Oui, c'est bien ça" title="Oui">✔️</button><button type="button" class="pose-meuble-non" data-action="accueil-non" aria-label="Non, changer" title="Changer">❌</button></div>`];
     case 'compagnon-perso':
       return ['Qui partage sa vie ? Choisis le personnage du compagnon (il gardera la ferme quand tu partiras explorer) :', grille(A.compagnon.perso) + fleche(A.compagnon.perso > 0)];
     case 'compagnon-prenom':
-      return ['Quel est son prénom ?', portrait(A.compagnon.perso) + champ(A.compagnon.prenom, P.PRENOM_MAX, 'Prénom du compagnon') + fleche()];
+      return ['Quel est son prénom ?', portrait(A.compagnon) + champ(A.compagnon.prenom, P.PRENOM_MAX, 'Prénom du compagnon') + fleche()];
     case 'enfants':
       return [A.compagnon ? 'Est-ce qu\'ils ont des enfants ?' : 'Est-ce qu\'il a des enfants ?', ouiNon()];
     case 'enfants-nombre':
@@ -145,7 +166,7 @@ function ecranAccueil() {
     case 'enfant-perso':
       return [`Choisis le personnage ${deLEnfant()} :`, grille(enfantK().perso, true) + fleche(enfantK().perso > 0)];
     case 'enfant-prenom':
-      return [A.nbEnfants === 1 ? 'Quel est son prénom ?' : `Quel est le prénom du ${ORDINAUX[A.k]} enfant ?`, portrait(enfantK().perso, true) + champ(enfantK().prenom, P.PRENOM_MAX, `Prénom de l'enfant ${A.k + 1}`) + fleche()];
+      return [A.nbEnfants === 1 ? 'Quel est son prénom ?' : `Quel est le prénom du ${ORDINAUX[A.k]} enfant ?`, portrait(enfantK(), true) + champ(enfantK().prenom, P.PRENOM_MAX, `Prénom de l'enfant ${A.k + 1}`) + fleche()];
     case 'animal':
       return ['Un (ou des) animal de compagnie ?', ouiNon()];
     case 'animal-nom': {
@@ -194,7 +215,10 @@ function suiteAccueil() {
   const prenom = (t) => (validFirstName(t) ? '' : `Un prénom de 1 à ${P.PRENOM_MAX} signes.`);
   switch (A.etape) {
     case 'bienvenue': return allerA('perso');
-    case 'perso': return A.perso ? allerA('prenom') : refus('Choisis un personnage.');
+    case 'perso': return A.perso ? allerA('apparence') : refus('Choisis un personnage.');
+    case 'apparence': return allerA('prenom');
+    case 'compagnon-apparence': return allerA('compagnon-prenom');
+    case 'enfant-apparence': return allerA('enfant-prenom');
     case 'prenom': {
       A.prenom = cleanFirstName(valeurChamp());
       const e = prenom(A.prenom);
@@ -205,7 +229,7 @@ function suiteAccueil() {
       if (A.nom.length < D.NOM_MIN || A.nom.length > D.NOM_MAX) return refus(`Un nom de ${D.NOM_MIN} à ${D.NOM_MAX} signes.`);
       return allerA('confirme');
     }
-    case 'compagnon-perso': return A.compagnon.perso ? allerA('compagnon-prenom') : refus('Choisis un personnage.');
+    case 'compagnon-perso': return A.compagnon.perso ? allerA('compagnon-apparence') : refus('Choisis un personnage.');
     case 'compagnon-prenom': {
       A.compagnon.prenom = cleanFirstName(valeurChamp());
       const e = prenom(A.compagnon.prenom);
@@ -219,7 +243,7 @@ function suiteAccueil() {
       A.k = 0;
       return allerA('enfant-perso');
     }
-    case 'enfant-perso': return enfantK().perso ? allerA('enfant-prenom') : refus('Choisis un personnage.');
+    case 'enfant-perso': return enfantK().perso ? allerA('enfant-apparence') : refus('Choisis un personnage.');
     case 'enfant-prenom': {
       const t = cleanFirstName(valeurChamp());
       const e = prenom(t);
@@ -247,7 +271,7 @@ function reponseAccueil(oui) {
     // quand le joueur explore ; plus de question, on le choisit tout de suite)
     case 'confirme':
       if (!oui) return allerA('perso');
-      if (!A.compagnon) A.compagnon = { perso: 0, prenom: '' };
+      if (!A.compagnon) A.compagnon = { perso: 0, prenom: '', apparence: null };
       return allerA('compagnon-perso');
     case 'enfants':
       if (!oui) { A.enfants = []; return allerA('animal'); }
@@ -284,10 +308,22 @@ registerActions({
   'accueil-non': () => reponseAccueil(false),
   'accueil-perso': (target) => {
     const n = Number(target.dataset.perso);
-    if (accueil.etape === 'compagnon-perso') accueil.compagnon.perso = n;
-    else if (accueil.etape === 'enfant-perso') enfantK().perso = n;
-    else accueil.perso = n;
+    const [qui] = quiEtape();
+    // (un autre personnage : l'apparence choisie pour l'ancien ne le suit pas)
+    if (qui.perso !== n) qui.apparence = null;
+    qui.perso = n;
     accueil.erreur = '';
+    openSetupModal();
+  },
+  'accueil-apparence': (target) => {
+    const [qui, enfant] = quiEtape();
+    const d = { perso: qui.perso, enfant, apparence: qui.apparence };
+    appliquerChoixApparence(d, target.dataset.champ, target.dataset.valeur);
+    qui.apparence = d.apparence;
+    openSetupModal();
+  },
+  'accueil-apparence-retour': () => {
+    quiEtape()[0].apparence = null;
     openSetupModal();
   },
   'accueil-espece': (target) => {
@@ -300,8 +336,8 @@ registerActions({
     // les enfants : le personnage et le prénom choisis pour chacun (fiche 18 ; ils se changent
     // encore dans la Famille)
     const r = composeFamily(state, {
-      perso: A.perso, prenom: A.prenom, nom: A.nom, compagnon: A.compagnon,
-      enfants: A.enfants.map((e) => ({ prenom: e.prenom, perso: e.perso })),
+      perso: A.perso, prenom: A.prenom, nom: A.nom, apparence: A.apparence, compagnon: A.compagnon,
+      enfants: A.enfants.map((e) => ({ prenom: e.prenom, perso: e.perso, apparence: e.apparence })),
       animaux: A.animaux,
     });
     const f = r.ok ? finishSetup(state) : r;

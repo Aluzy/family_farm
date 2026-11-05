@@ -144,7 +144,8 @@ function portraitCard(m) {
 // prénom, lui, reste dans le champ de saisie jusqu'à l'enregistrement.
 let memberDraft = null; // { id, enfant, perso, apparence, depart } (apparence : la sienne, ou null ; depart : le joueur a demandé le départ, on attend sa confirmation)
 
-function openMemberModal(id) {
+// `personnaliser` : la section « Personnaliser » ouverte et montrée (le bouton « 🎨 Apparence » de la fiche).
+function openMemberModal(id, personnaliser = false) {
   const m = findMember(state, id);
   if (!m) return;
   tel('modal', 'member'); // le nom de la fenêtre seulement : jamais le prénom
@@ -183,7 +184,7 @@ function openMemberModal(id) {
         <strong>Personnage</strong>
         <div class="perso-grid">${persos}</div>
       </div>
-      <details class="member-field apparence-choix"${memberDraft.apparence ? ' open' : ''}>
+      <details class="member-field apparence-choix" id="apparence-details"${memberDraft.apparence || personnaliser ? ' open' : ''}>
         <summary><strong>Personnaliser</strong> <span class="muted">(la peau, les yeux, la coiffure, la tenue…)</span></summary>
         <div id="apparence-choix"></div>
       </details>
@@ -194,11 +195,14 @@ function openMemberModal(id) {
       <button type="button" class="btn primary" data-action="member-save">Enregistrer</button>
       <button type="button" class="btn" data-action="close-modal">Annuler</button>
     </div>
-    <div class="stack member-leave">${depart}</div>`, { labelledBy: 'member-title', className: 'modal member-modal', focus: '#member-prenom' });
+    <div class="stack member-leave">${depart}</div>`, { labelledBy: 'member-title', className: 'modal member-modal', focus: personnaliser ? '#apparence-details summary' : '#member-prenom' });
   const input = document.getElementById('member-prenom');
   input.addEventListener('input', syncMemberModal);
   syncMemberModal();
-  input.select();
+  if (personnaliser) {
+    const details = document.getElementById('apparence-details');
+    if (details) details.scrollIntoView({ block: 'start' });
+  } else input.select();
 }
 
 // Met à jour l'aperçu et la grille des personnages d'après le choix en cours, sans toucher au
@@ -251,7 +255,9 @@ function ecrireChamp(a, champ, v) {
   o[k[k.length - 1]] = v;
 }
 
-function apparenceChoixHtml(d) {
+// Les boutons de chaque attribut pour `d` ({ perso, enfant, apparence }) ; `action` : celle de ses boutons (la fenêtre
+// « Modifier » d'un membre, ou l'accueil d'une nouvelle partie, js/ui/depart.js).
+export function apparenceChoixHtml(d, action = 'member-apparence') {
   if (!apparencesPretes()) return '<p class="muted">Un instant…</p>';
   const A = DATA.FAMILLE.PROFIL.APPARENCE, K = donneesApparence().K;
   const actuelle = d.apparence || apparenceDuCatalogue(d.perso, d.enfant);
@@ -262,20 +268,25 @@ function apparenceChoixHtml(d) {
     const boutons = Object.entries(choix).map(([v, libelle]) => {
       const on = plusieurs ? (valeur || []).includes(v) : (valeur ?? '') === v;
       const pastille = couleur && v ? `<span class="pastille" style="background: ${couleur(K, v)}" aria-hidden="true"></span>` : '';
-      return `<button type="button" class="btn choix-apparence${on ? ' active' : ''}" data-action="member-apparence" data-champ="${champ}" data-valeur="${v}" aria-pressed="${on}">${pastille}${escapeHtml(libelle)}</button>`;
+      return `<button type="button" class="btn choix-apparence${on ? ' active' : ''}" data-action="${action}" data-champ="${champ}" data-valeur="${v}" aria-pressed="${on}">${pastille}${escapeHtml(libelle)}</button>`;
     }).join('');
     return `<div class="apparence-champ" role="group" aria-label="${nom}"><span class="apparence-nom">${nom}</span><div class="apparence-options">${boutons}</div></div>`;
   }).join('')}</fieldset>`).join('');
 }
 
-function choisirApparence(champ, valeur) {
-  const d = memberDraft;
+// Un choix (un bouton de apparenceChoixHtml) appliqué à `d` ({ perso, enfant, apparence }) : le premier part du
+// personnage du catalogue ; un attribut à plusieurs choix (les signes, les accessoires) s'ajoute ou s'enlève.
+export function appliquerChoixApparence(d, champ, valeur) {
   if (!d || !apparencesPretes()) return;
   if (!d.apparence) d.apparence = apparenceDuCatalogue(d.perso, d.enfant);
   if (!d.apparence) return;
   const actuel = lireChamp(d.apparence, champ);
   if (Array.isArray(actuel)) ecrireChamp(d.apparence, champ, actuel.includes(valeur) ? actuel.filter((x) => x !== valeur) : [...actuel, valeur]);
   else ecrireChamp(d.apparence, champ, valeur === '' ? null : valeur);
+}
+
+function choisirApparence(champ, valeur) {
+  appliquerChoixApparence(memberDraft, champ, valeur);
   syncMemberModal();
 }
 
@@ -577,7 +588,7 @@ registerActions({
   },
   // ----- version 1.1 : prénom et apparence d'un membre de la famille -----
   'member-edit': (target) => {
-    openMemberModal(target.dataset.id);
+    openMemberModal(target.dataset.id, target.dataset.personnaliser === '1');
   },
   'member-perso': (target) => {
     if (memberDraft) { memberDraft.perso = Number(target.dataset.perso); memberDraft.apparence = null; }

@@ -103,11 +103,17 @@ try {
   await clic('[data-action="accueil-suite"]');
   await clic('[data-action="accueil-perso"]');
   await clic('[data-action="accueil-suite"]');
+  // (l'écran « Personnaliser », chantier « couches » : une autre peau, puis la suite)
+  await clic('[data-action="accueil-apparence"][data-champ="identite.peau"]:not(.active)');
+  await clic('[data-action="accueil-apparence-retour"]');
+  await clic('[data-action="accueil-apparence"][data-champ="tenue.haut.tissu"]:not(.active)');
+  await clic('[data-action="accueil-suite"]');
   await saisir('Fumée');
   await saisir('Test');
   await clic('[data-action="accueil-oui"]');
   // (le récit, lot 8 : le compagnon est obligatoire : son personnage, son prénom)
   await clic('[data-action="accueil-perso"]');
+  await clic('[data-action="accueil-suite"]');
   await clic('[data-action="accueil-suite"]');
   await saisir('Hugo');
   for (let k = 0; k < 2; k++) await clic('[data-action="accueil-non"]');
