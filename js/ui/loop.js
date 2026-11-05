@@ -31,6 +31,7 @@ import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
 import { watchPresents } from './amitie.js';
 import { watchDemandes } from './demandes.js';
+import { watchFetes } from './fetes.js';
 import { pleut } from '../engine/meteo.js';
 import { watchInvitations } from './invitations.js';
 import { watchPlans } from './plans.js';
@@ -332,6 +333,7 @@ export function frame(now) {
   watchPresents();
   watchDemandes(); // V-2 : les petites demandes des habitants, annoncées au matin
   watchMeteo(); // G-1 : l'averse qui commence
+  watchFetes(); // V-4 : la fête du hameau (annoncée au matin ; y être pendant la fête)
   watchInvitations(); // les invitations à un repas : les réponses au matin, les invités en route
   watchPlans(); // les plans de meubles offerts par un ami (le lot 4)
   watchPreparations();

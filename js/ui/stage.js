@@ -5,6 +5,7 @@ import { fermeLuit, visiteJohnny } from '../engine/fil-lune.js';
 import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { brume as brumeDuMoment, pleut } from '../engine/meteo.js';
+import { fetesDuJour } from '../engine/fetes.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
@@ -501,6 +502,9 @@ export function stageModel() {
     // quel lit) et leur horaire (js/carte/ferme/habitants.js) ; ceux d'un hameau déjà vu naissent
     // dès que les plans sont là (une partie d'avant la fiche 7b)
     habitants: { horaire: HABITANTS.HORAIRE, hameaux: (peuplerLesVus(), habitantsPourLaCarte(state)) },
+    // V-4 : les fêtes du jour (js/engine/fetes.js) : le hameau, de quelle heure à quelle heure ; ses habitants
+    // se retrouvent sur la place (js/carte/ferme/habitants.js). Pas dans un monde partagé (la ferme seule).
+    fetes: state.mondePartage ? [] : fetesDuJour(state).map((f) => ({ hameau: f.hameau, debut: f.debut, fin: f.fin })),
     // l'amitié : les présents des amis devant la porte (js/carte/ferme/amis.js)
     presents: presentsPourLaCarte(),
     // la visite de bienvenue (js/engine/bienvenue.js, fiche 18) : le visiteur en route, ou son plat qui

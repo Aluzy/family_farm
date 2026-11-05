@@ -690,7 +690,8 @@
         "joue": ["On joue à chat !", "Tu veux jouer avec nous ?", "Je cours plus vite que toi !", "On a vu un lapin près du puits !"],
         "repas": ["C'est l'heure de manger.", "Ça sent bon à la maison.", "À table !"],
         "rentre": ["Je rentre à la maison.", "La soupe nous attend.", "Encore une bonne journée."],
-        "soir": ["On se repose un peu avant la nuit.", "Quelle journée !", "Bientôt l'heure d'aller au lit."]
+        "soir": ["On se repose un peu avant la nuit.", "Quelle journée !", "Bientôt l'heure d'aller au lit."],
+        "fete": ["C'est la fête ce soir ! Viens danser avec nous !", "Tu as goûté le plat de fête ? Il en reste !", "Toute la place est là, ça fait plaisir.", "Une fête sans toi, ça n'aurait pas été pareil.", "Écoute, on chante ! Tu connais l'air ?"]
       },
       "travail": {
         "bucheron": ["Le bois ne se coupe pas tout seul !", "Les arbres repousseront, ne t'en fais pas.", "Une bonne flambée pour les nuits fraîches."],
@@ -711,7 +712,7 @@
       "_": ["V-1 (docs/phase-4.md) : ce que disent les habitants de ce qu'ils voient. Chaque sujet a sa condition (js/engine/propos.js) ; {mots} entre accolades : remplacés par la partie. PART : la part des conversations où un sujet est dit (sinon les PHRASES) ; MEMOIRE : les derniers sujets d'un habitant, qu'il ne redit pas ; ENFANTS : les seuls sujets d'un enfant (un adulte dit tous les autres, sauf « …_enfant »)."],
       "PART": 0.6,
       "MEMOIRE": 4,
-      "ENFANTS": ["meteo_pluie", "meteo_brume", "lune_pleine", "lune_nouvelle", "lune_croissante", "lune_decroissante", "famille_enfant", "ferme_poules_enfant", "jours_enfant", "fete_place", "voisin_enfant"],
+      "ENFANTS": ["meteo_pluie", "meteo_brume", "lune_pleine", "lune_nouvelle", "lune_croissante", "lune_decroissante", "famille_enfant", "ferme_poules_enfant", "jours_enfant", "fete_place", "voisin_enfant", "fete_bientot", "fete_aujourdhui", "fete_souvenir"],
       "ferme_cultures": ["On voit ton coin de {culture} depuis le chemin : il a fière allure !", "Paraît que tu fais pousser de la {culture}. Tu me garderas un conseil ?", "Ton potager, on en parle jusqu'ici. Surtout ta {culture} !", "De la {culture} à la ferme ? Ça me donne des idées pour mon jardin.", "Tu arroses ta {culture} le matin ou le soir ? Chez nous, on hésite toujours.", "J'ai goûté une {culture} comme la tienne, une fois. Quel souvenir !", "Avec toute cette {culture}, tu ne dois pas manquer de soupe.", "Le jour où tu as trop de {culture}, pense à nous !", "{n} parcelles cultivées ? Tu as la main verte.", "La {culture}, ça aime la patience. Et toi, tu en as, de la patience !"],
       "ferme_vide": ["Ton potager se repose ? La terre aime bien ça, de temps en temps.", "Alors, qu'est-ce que tu vas planter ?", "Un potager vide, c'est un potager qui attend une idée.", "Si tu cherches quoi semer, la carotte ne déçoit jamais.", "Une houe, quelques graines, un peu d'eau : c'est tout ce qu'il faut pour commencer."],
       "ferme_poules": ["Tes {n} poules, elles pondent bien ?", "On entend tes poules d'ici, le matin. Enfin… presque.", "Des poules à la ferme, c'est des œufs au petit-déjeuner !", "Une ferme avec des poules, c'est une ferme qui vit.", "Un peu de blé chaque jour, et tes poules te le rendront en œufs."],
@@ -736,9 +737,9 @@
       "meteo_pluie": ["Il va pleuvoir aujourd'hui, je le sens dans mes genoux.", "Une averse, aujourd'hui ! Mes plantes vont être contentes.", "Avec la pluie, pas besoin d'arroser. Profites-en !", "On dirait que le ciel va se vider sur nous, tout à l'heure."],
       "meteo_brume": ["Quelle brume ce matin ! On n'y voyait pas à trois pas.", "La brume du matin, ça annonce une belle journée.", "Avec cette brume, j'ai cru voir un fantôme… c'était un mouton !"],
       "lien_ami": ["{ami} et moi, on se connaît depuis toujours.", "Si tu cherches {ami}, on est souvent ensemble le soir.", "Avec {ami}, on se raconte tout. Enfin, presque !", "{ami} m'a prêté ses outils la semaine dernière. Un vrai ami."],
-      "lien_cousin": ["{cousin_mot} {cousin} vit à {hameau}. Si tu passes par là, salue-{le} de ma part !", "Tu connais {hameau} ? {cousin_mot} {cousin} y habite.", "On ne se voit pas assez souvent, avec {cousin_mot_min} {cousin}, de {hameau}."],
-      "visite_recue": ["{qui} est venu{e_qui} de {hameau} me voir. Ça m'a fait chaud au cœur !", "Tu as croisé {qui} ? {il_qui} est venu{e_qui} de {hameau} juste pour nous.", "On a eu de la visite : {qui}, de {hameau}. On a parlé jusqu'à la nuit !"],
-      "visite_faite": ["Je suis allé{e} voir {chez} à {hameau}. Quelle route !", "J'ai rendu visite à {chez}, à {hameau}. On a bien ri.", "À {hameau}, {chez} m'a reçu{e} à bras ouverts."],
+      "lien_cousin": ["{cousin_mot} {cousin} vit {a_hameau}. Si tu passes par là, salue-{le} de ma part !", "Tu connais {hameau} ? {cousin_mot} {cousin} y habite.", "On ne se voit pas assez souvent, avec {cousin_mot_min} {cousin}, {de_hameau}."],
+      "visite_recue": ["{qui} est venu{e_qui} {de_hameau} me voir. Ça m'a fait chaud au cœur !", "Tu as croisé {qui} ? {il_qui} est venu{e_qui} {de_hameau} juste pour nous.", "On a eu de la visite : {qui}, {de_hameau}. On a parlé jusqu'à la nuit !"],
+      "visite_faite": ["Je suis allé{e} voir {chez} {a_hameau}. Quelle route !", "J'ai rendu visite à {chez}, {a_hameau}. On a bien ri.", "{chez} m'a reçu{e} à bras ouverts, {a_hameau}."],
       "entraide_recue": ["On manquait de tout l'autre jour… {qui} nous a apporté à manger. On n'oublie pas ça.", "Sans {qui}, on aurait eu le ventre vide. Quelle chance d'avoir des voisins pareils !"],
       "entraide_donnee": ["Chez {aide}, on manquait de tout : je leur ai porté un peu de mon garde-manger. C'est normal, entre voisins.", "Quand quelqu'un manque de quelque chose, on partage. Hier, c'était pour {aide}."],
       "mois": ["Déjà le mois de {mois} ! Le temps passe vite.", "{mois} commence… J'aime bien ce mois-là.", "On est en {mois}. Il faut fêter ça !"],
@@ -748,6 +749,9 @@
       "ami_proche": ["Toi, au moins, tu passes nous voir. Ça compte.", "Quand je te vois arriver, ma journée s'éclaire.", "Tu fais partie du hameau, maintenant. Tu le sais ?", "Il y a toujours une place pour toi à notre table.", "Je raconte tes histoires de ferme à tout le monde !", "Si tu as besoin de quoi que ce soit, tu sais où me trouver."],
       "jours": ["Ça fait déjà {jours} jours que tu as repris la ferme. Le temps file !", "{jours} jours à la ferme… et tu as déjà changé tant de choses.", "Tu te souviens de ton premier jour ? C'était il y a {jours} jours !"],
       "jours_enfant": ["Tu es là depuis {jours} jours, c'est ça ? J'ai compté !", "Moi, je sais compter jusqu'à {jours}. C'est le nombre de jours depuis que tu es là !"],
+      "fete_bientot": ["{Fete}, c'est {quand} ! Tu viendras ?", "On prépare {fete} : {quand}, sur la place, à partir de {debut} h.", "Tu sais quoi ? {Fete}, c'est {quand}. Il y aura à manger pour tout le monde !", "Plus que quelques jours avant {fete} ! Viens donc, {quand}, vers {debut} h."],
+      "fete_aujourdhui": ["Ce soir, c'est {fete} ! Rendez-vous sur la place à {debut} h.", "Tu restes pour {fete} ? Ça commence à {debut} h.", "On a tout préparé pour ce soir. {Fete}, à {debut} h, ne la manque pas !"],
+      "fete_souvenir": ["Merci pour ta venue à {fete} ! On en parle encore.", "Quelle belle fête c'était, avec toi sur la place !", "{Fete}, tu t'en souviens ? On a dansé jusqu'au soir !"],
       "fete_place": ["La place est belle, maintenant ! On y joue tous les jours.", "Tu as vu la nouvelle place ? C'est grâce à toi aussi !", "On a fait une fête sur la place. Tu aurais dû venir !"]
     }
   },

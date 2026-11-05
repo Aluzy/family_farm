@@ -1,4 +1,5 @@
 import { DATA } from '../engine/catalog.js';
+import { deHameau } from '../engine/bienvenue.js';
 import { evenementsDuHameau } from '../engine/voisins.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
 import { clockHours } from '../engine/clock.js';
@@ -226,7 +227,7 @@ function voisinsHtml(hid) {
   const li = E.map((e) => {
     const t = e.sorte === 'entraide'
       ? T.entraide.replace('{de}', e.de).replace('{deHameau}', nom(e.deHameau)).replace('{a}', e.a)
-      : T.visite.replace('{qui}', e.quiPrenom).replace('{deHameau}', nom(e.deHameau)).replace('{e}', e.quiGenre === 'f' ? 'e' : '').replace('{chez}', e.chezPrenom);
+      : T.visite.replace('{qui}', e.quiPrenom).replace('{deHameau}', deHameau(nom(e.deHameau))).replace('{e}', e.quiGenre === 'f' ? 'e' : '').replace('{chez}', e.chezPrenom);
     return `<li>${e.sorte === 'entraide' ? '🤝' : '👋'} ${escapeHtml(t)} <span class="muted">(jour ${e.jour})</span></li>`;
   }).join('');
   return `<h3 class="book-h3">Entre voisins</h3><ul class="hameau-voisins">${li}</ul>`;
