@@ -64,6 +64,7 @@
       jambes: lire(C.jambes),
       elements: lire(C.elements),
       ignore: new Set(C.contourIgnore),
+      derivees: [...new Set((JSON.stringify(C.communes) + JSON.stringify(C.jambes) + JSON.stringify(C.elements)).match(/[A-Za-z_]+×[0-9.]+/g) || [])],
     };
     PREPARES.set(C, P);
     return P;
@@ -179,6 +180,164 @@
     return assembler(C, def, C.palettes[nom]);
   }
 
+  /* ---------- une apparence libre (étape E6) : ses éléments, sa palette, ses tuiles de visage ---------- */
+  // Le portage exact de scripts/personnage/modeles.py (palette, palette_de, elements) et expressions.py
+  // (couleurs, exprimer) : vérifié contre Python (tests/engine/personnages-apparence.test.mjs, les 97 personnages
+  // tirés du catalogue et des apparences au hasard).
+
+  // round() de Python : la moitié au pair
+  function rond(x) {
+    const f = Math.floor(x), d = x - f;
+    return d > 0.5 ? f + 1 : d < 0.5 ? f : (f % 2 === 0 ? f : f + 1);
+  }
+  const mix = (a, b, t) => a.map((x, i) => rond(x * (1 - t) + b[i] * t));
+  const mul = (c, k) => c.map((v) => Math.max(0, Math.min(255, rond(v * k))));
+  const fonce = (c, k = 0.72) => c.map((v) => Math.trunc(v * k));
+  const lumYeux = (c) => 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+  const moyenne = (c) => (c[0] + c[1] + c[2]) / 3;
+  const hexRgb = (h) => couleur(h).slice();
+  const rgbHex = (c) => '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
+  const PEAU_FONCEE = 110, ECART_PUPILLE = 40, CHEVEUX_PALES = 150;
+  const CONTOUR = [43, 29, 20];
+
+  // La description d'une apparence (catalogue.description, modeles.enfants) : identité et tenue → ce que dessine la carte.
+  function description(C, age, ident, tenue) {
+    const enfant = age === 'enfant';
+    const coupe = enfant ? (C.enfantCoupes[ident.coupe] || 'courts') : ident.coupe;
+    const cc = tenue.couvre_chef || null;
+    const chapeau = cc ? (enfant ? C.enfantChapeaux[cc] || null : cc) : null;
+    const details = [...(ident.pilosite ? [ident.pilosite] : []), ...(ident.signes || []), ...(tenue.accessoires || [])]
+      .filter((x) => C.ordreDetails.includes(x))
+      .sort((a, b) => C.ordreDetails.indexOf(a) - C.ordreDetails.indexOf(b));
+    return { coupe, chapeau, details, motif: tenue.haut.motif || null };
+  }
+
+  function elementsDe(C, d) {
+    const liste = ['corps:standard', `haut:${d.motif || 'uni'}`, 'bas:standard', 'chaussures:standard', `coiffure:${d.coupe}`];
+    if (d.chapeau) liste.push(`couvre_chef:${d.chapeau}`);
+    for (const det of d.details) liste.push(det === 'barbe' || det === 'moustache' ? `pilosite:${det}` : `${det}:${det}`);
+    const ordre = (e) => C.ordreModele.indexOf(e.slice(0, e.indexOf(':')));
+    return liste.map((e, i) => [e, i]).sort((a, b) => ordre(a[0]) - ordre(b[0]) || a[1] - b[1]).map(([e]) => e);
+  }
+
+  // modeles.palette : les couleurs de base des lettres.
+  function paletteBase(K, ident, tenue, motif) {
+    const P = K.palettes, rgb = (h) => hexRgb(h);
+    const pe = P.peau[ident.peau], hr = P.cheveux[ident.cheveux], hab = P.tissus[tenue.haut.tissu], bas = P.bas[tenue.bas.tissu];
+    const f = rgb(pe.teinte), j = rgb(pe.ombre), e = rgb(pe.clair), joues = rgb(pe.joues);
+    const hb = rgb(hr.teinte), hc = rgb(hr.ombre), hd = rgb(hr.sombre);
+    const hl = rgb(hab.sombre), hm = rgb(hab.teinte), hn = rgb(hab.clair);
+    const s = rgb(bas.teinte), r = rgb(bas.ombre), a = rgb(P.accessoires[tenue.accessoire]);
+    const blanc = tenue.haut.tissu === 'blanc', motifC = blanc ? [200, 60, 60] : [244, 240, 228];
+    let oeil = [rgb(P.yeux[ident.yeux].pupille), rgb(P.yeux[ident.yeux].reflet)];
+    if (lumYeux(f) < PEAU_FONCEE) oeil = [mul(oeil[0], 0.4), mul(oeil[1], Math.max(1, (lumYeux(f) + ECART_PUPILLE) / Math.max(1, lumYeux(oeil[1]))))];
+    const pales = Math.min(...hb) > CHEVEUX_PALES;
+    const sombre = moyenne(oeil[0]) <= moyenne(oeil[1]) ? oeil[0] : oeil[1];
+    return {
+      k: f, d: mix(f, j, 0.25), m: mix(f, j, 0.45), t: mix(f, j, 0.3), l: j, e, P: joues,
+      g: [239, 239, 239], i: [255, 255, 255], h: oeil[0], j: oeil[1],
+      B: hb, C: hc, E: mix(hb, hc, 0.5), D: hd,
+      p: hn, q: mix(hn, hm, 0.55), o: motif ? motifC : mix(hn, [255, 255, 255], 0.4),
+      s, r, u: mul(s, 0.82), v: mul(s, 0.37), A: mul(s, 0.91), Z: mul(s, 0.55),
+      w: [90, 58, 34], x: [68, 44, 26], y: [46, 30, 18],
+      R: a, Q: fonce(a), H: mix(a, [255, 255, 255], 0.3), V: fonce(a, 0.56),
+      S: [232, 194, 90], T: [250, 222, 136], U: [184, 138, 46],
+      G: [40, 40, 48], X: mix(f, [180, 90, 50], 0.45), Y: [236, 200, 60], W: [244, 226, 196],
+      f: mix(f, j, 0.25), z: e, N: a, b: hb, c: hc, J: j, F: [236, 200, 60],
+      B_: pales ? hd : hb, E_: pales ? hd : mix(hb, hc, 0.5),
+      L: moyenne(sombre) < 90 ? mul(sombre, 0.85) : [54, 36, 24],
+    };
+  }
+
+  // Les éléments empilés, une vue (modeles.aplatir) : Map « x,y » → lettre.
+  function aplatir(C, P, elements, chapeau, vue) {
+    const g = new Map(), M = C.modele;
+    for (const e of elements) {
+      if (e.startsWith('couvre_chef:') && M.couvreTete.includes(chapeau)) {
+        for (const [k, L] of [...g]) if (+k.split(',')[1] < M.masqueTete && M.masque.includes(P.famille(L))) g.delete(k);
+      }
+      for (const [x, y, L] of ((P.elements[e] || {})[vue] || [])) g.set(`${x},${y}`, L);
+    }
+    return g;
+  }
+
+  // La plus fréquente des couleurs aux places `pts` (Counter.most_common : à égalité, la première vue).
+  function commune(face, pts, filtre = () => true) {
+    const n = new Map();
+    for (const [x, y] of pts) {
+      const c = face.get(`${x},${y}`);
+      if (c && filtre(c)) { const k = c.join(); n.set(k, (n.get(k) || 0) + 1); }
+    }
+    let best = null, nb = 0;
+    for (const [k, v] of n) if (v > nb) { best = k; nb = v; }
+    return best ? best.split(',').map(Number) : null;
+  }
+  const croise = (xs, ys) => xs.flatMap((x) => ys.map((y) => [x, y]));
+
+  // L'apparence d'un membre : { age, identite, tenue } → { def (pour assembler), palette ({ lettre: '#rrggbb' }), d }.
+  // C : couches.json ; K : catalogue.json.
+  function apparence(C, K, age, ident, tenue) {
+    const P = preparer(C);
+    const d = description(C, age, ident, tenue);
+    const elements = elementsDe(C, d);
+    const base = paletteBase(K, ident, tenue, d.motif);
+    base.a = CONTOUR;
+    base.v_ = mul(base.q, 0.85);
+    const face = new Map([...aplatir(C, P, elements, d.chapeau, 'bas')].map(([k, L]) => [k, base[L]]));
+    base.Mp = commune(face, croise([0, 1, 2], [12, 13, 14]));
+    base.Mk = commune(face, croise([1, 2, 9, 10], [15, 16]));
+    base.Ms = commune(face, croise([3, 4], [18, 19, 20, 21]));
+    base.Mr = commune(face, croise([7, 8], [18, 19, 20, 21]));
+    base.Mw = commune(face, croise([3, 4], [22, 23]));
+    base.Mv = commune(face, [[5, 6], [6, 6], [5, 7], [6, 7]], (c) => Math.min(...c) < 230) || base.k;
+    const palette = {};
+    for (const [L, c] of Object.entries(base)) if (c) palette[L] = rgbHex(c);
+    for (const L of P.derivees) {
+      const [b, k] = L.split('×');
+      if (base[b]) palette[L] = rgbHex(mul(base[b], +k));
+    }
+    return { def: { age, elements, chapeau: d.chapeau, jambes: 'standard' }, palette, d, base, face };
+  }
+
+  // Les 18 tuiles du visage d'une apparence (expressions.py : chaque expression de face puis de profil), d'après sa
+  // planche assemblée (assembler) : { largeur: 144, hauteur: 5, data } (une rangée de visages.png).
+  function visages(C, A, planche) {
+    const X = C.expressions, [zx, zy, w, h] = X.zone, [x0, y0] = X.coin[A.def.age];
+    const c = { ...A.base };
+    for (const [L, [x, y]] of Object.entries(X.releves)) { const v = A.face.get(`${x},${y}`); if (v) c[L] = v; }
+    const k = commune(A.face, X.peauEntreYeux, (v) => Math.min(...v) < 230);
+    if (k) c.k = k;
+    const pupille = moyenne(c.h) <= moyenne(c.j) ? c.h : c.j;
+    c.L = moyenne(pupille) < 90 ? mul(pupille, 0.85) : [54, 36, 24];
+    c.M = mul(c.l, 0.78); c.O = [92, 30, 34]; c.N = [140, 200, 245];
+    const prot = new Set([...X.protege].filter((L) => A.base[L]).map((L) => A.base[L].join()).concat(CONTOUR.join()));
+    const data = new Uint8ClampedArray(X.liste.length * X.vues.length * w * h * 4);
+    let col = 0;
+    for (const e of X.liste) {
+      for (const v of X.vues) {
+        const n = C.cases.indexOf(`idle_${v}_0`), cx = (n % 8) * 16 + x0, cy = Math.floor(n / 8) * 32 + y0;
+        const pts = new Map();
+        for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+          const q = ((cy + j) * planche.largeur + cx + i) * 4;
+          if (planche.data[q + 3]) pts.set(`${zx + i},${zy + j}`, [planche.data[q], planche.data[q + 1], planche.data[q + 2]]);
+        }
+        (X.grilles[e][v] || []).forEach((rang, r) => {
+          for (let x = 0; x < rang.length; x++) {
+            const ch = rang[x], key = `${x},${X.y0 + r}`;
+            if (ch === '.' || !pts.has(key) || prot.has(pts.get(key).join())) continue;
+            pts.set(key, c[ch]);
+          }
+        });
+        for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+          const v2 = pts.get(`${zx + i},${zy + j}`), q = (j * X.liste.length * X.vues.length * w + col * w + i) * 4;
+          if (v2) { data[q] = v2[0]; data[q + 1] = v2[1]; data[q + 2] = v2[2]; data[q + 3] = 255; }
+        }
+        col++;
+      }
+    }
+    return { largeur: X.liste.length * X.vues.length * w, hauteur: h, data };
+  }
+
   /* ---------- dans le jeu ---------- */
 
   function actif() {
@@ -216,5 +375,5 @@
     return false;
   }
 
-  global.CartePlanches = { assembler, planche, actif, charger, nomPlanche, pixels };
+  global.CartePlanches = { assembler, planche, actif, charger, nomPlanche, pixels, apparence, visages, rond };
 })(typeof window !== 'undefined' ? window : globalThis);

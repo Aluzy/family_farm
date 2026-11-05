@@ -20,11 +20,14 @@
 #   python3 scripts/personnage/couches.py --combinaisons   et 60 personnages tirés au hasard, hors du catalogue
 #   python3 scripts/personnage/couches.py --exporter       écrit assets/personnages/couches.json (pour le jeu)
 #   python3 scripts/personnage/couches.py --fixture        écrit tests/engine/combinaison.png et .json (son test)
+#   python3 scripts/personnage/couches.py --apparences     écrit tests/engine/apparences.png et .json (le test d'E6)
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import chibi  # noqa: E402
+import expressions  # noqa: E402
+import fermier  # noqa: E402
 import fermier as F  # noqa: E402
 import modeles  # noqa: E402
 
@@ -260,6 +263,18 @@ def exporter(chemin=os.path.join(RACINE, 'assets', 'personnages', 'couches.json'
         'communes': {age: {n: {e: _px(px) for e, px in par.items()} for n, par in C['cases'].items()} for age, C in communs.items()},
         'jambes': {age: {k: {n: _px(px) for n, px in J.items()} for k, J in C['jambes'].items()} for age, C in communs.items()},
         'outils': {k: '#%02x%02x%02x' % F.BASE[k] for k in sorted(OUTILS)},
+        # (pour une apparence libre, étape E6 : les coupes et couvre-chefs des enfants ramenés à ceux que la carte
+        # dessine, l'ordre des détails, et les expressions du visage, scripts/personnage/expressions.py)
+        'enfantCoupes': fermier.COUPES_ENFANT,
+        'enfantChapeaux': {k: v for k, v in fermier.CHAPEAUX_ENFANT.items() if k},
+        'ordreDetails': list(modeles.ORDRE_DETAILS_CARTE),
+        'expressions': {
+            'liste': list(expressions.EXPRESSIONS), 'vues': list(expressions.VUES), 'y0': expressions.Y0,
+            'zone': list(expressions.ZONE), 'coin': {'adulte': list(expressions.coin(False)), 'enfant': list(expressions.coin(True))},
+            'grilles': expressions.EXPRESSIONS, 'releves': {k: list(v) for k, v in expressions.RELEVES.items()},
+            'peauEntreYeux': [list(p) for p in expressions.PEAU_ENTRE_YEUX], 'protege': expressions.PROTEGE,
+            'contour': '#%02x%02x%02x' % modeles.CONTOUR,
+        },
         'elements': elements,
         'personnages': personnages,
         'palettes': palettes,
@@ -304,7 +319,79 @@ def fixture(identite='perso_12', tenue='perso_40'):
     return doc
 
 
+def apparences(n=12, graine=11):
+    """tests/engine/apparences.json et .png : n apparences tirées au hasard parmi les choix du catalogue (des
+    identités et des tenues, comme les choisira le joueur ; adultes et enfants) : leurs éléments, leur palette et
+    leurs 18 tuiles de visage (une rangée chacune dans le .png, comme visages.png) ; le jeu doit les retrouver
+    (js/carte/planches.js : CartePlanches.apparence, CartePlanches.visages)."""
+    import json
+    import random
+    import catalogue
+    from PIL import Image
+    r = random.Random(graine)
+    Pal = catalogue.DOC['palettes']
+    coupes = {'adulte': modeles.COUPES, 'enfant': list(fermier.COUPES_ENFANT)}
+    chapeaux = {'adulte': [None] + list(modeles.CHAPEAUX), 'enfant': [None] + [k for k in fermier.CHAPEAUX_ENFANT if k]}
+    out, rangs = [], []
+    for k in range(n):
+        age = ('adulte', 'enfant')[k % 2]
+        ident = {'peau': r.choice(list(Pal['peau'])), 'yeux': r.choice(list(Pal['yeux'])), 'cheveux': r.choice(list(Pal['cheveux'])),
+                 'coupe': r.choice(coupes[age]), 'pilosite': r.choice([None, None, 'barbe', 'moustache']) if age == 'adulte' else None,
+                 'signes': [x for x in ('rousseur', 'joues') if r.random() < 0.35 or (x == 'joues' and age == 'enfant')]}
+        tenue = {'haut': {'tissu': r.choice(list(Pal['tissus'])), 'motif': r.choice([None, 'rayures', 'carreaux', 'pois'])},
+                 'bas': {'tissu': r.choice(list(Pal['bas']))}, 'couvre_chef': r.choice(chapeaux[age]),
+                 'accessoire': r.choice(list(Pal['accessoires'])), 'accessoires': [x for x in ('lunettes', 'boucles', 'pansement') if r.random() < 0.25]}
+        d = catalogue.description({'age': age, 'identite': ident, 'tenue': tenue})
+        if age == 'enfant':
+            d = dict(d, coupe=fermier.COUPES_ENFANT.get(d['coupe'], 'courts'), chapeau=fermier.CHAPEAUX_ENFANT.get(d['chapeau']))
+        nom = ('perso_' if age == 'adulte' else 'enfant_') + f'a{k}'
+        cases = dessiner(nom, d)
+        elts = modeles.elements(nom, d)
+        lettres = {chibi.ROLES.get(L, L) for cv in cases.values() for rr in cv.px for L in rr if L is not None}
+        for _, _, grilles in elts:
+            lettres |= {L for g in grilles.values() for L in g.values()}
+        lettres |= set(chibi.Modele.YEUX_FERMES.values())
+        palette = {L: '#%02x%02x%02x' % chibi.couleur(L) for L in sorted(lettres) if L not in OUTILS}
+        # la planche, puis ses tuiles de visage (expressions.py)
+        planche = Image.new('RGBA', (F.COLS * F.W, ((len(cases) + F.COLS - 1) // F.COLS) * F.H), (0, 0, 0, 0))
+        for j, (cn, cv) in enumerate(cases.items()):
+            im = chibi.render(cv)
+            planche.paste(chibi.raccourci(im, chibi.rangees_enfant(cn)) if age == 'enfant' else im, ((j % F.COLS) * F.W, (j // F.COLS) * F.H))
+        px = planche.load()
+        modele_px = chibi.MODELE['m']
+        face = {p: modele_px.couleur(L) for p, L in modele_px.vues['bas'].items()}
+        c, prot = expressions.couleurs(face, d, 0), expressions.protegees(d, 0)
+        x0, y0 = expressions.coin(age == 'enfant')
+        noms_cases = list(cases)
+        rang = []
+        for e in expressions.EXPRESSIONS:
+            for v in expressions.VUES:
+                neutre = expressions.tuile(px, noms_cases.index(f'idle_{v}_0'), x0, y0)
+                rang.append(expressions.exprimer(neutre, e, v, c, prot))
+        rangs.append(rang)
+        out.append({'age': age, 'identite': ident, 'tenue': tenue,
+                    'def': {'age': age, 'elements': [f'{cc}:{kk}' for cc, kk, _ in elts], 'chapeau': d['chapeau'], 'jambes': 'standard'},
+                    'palette': palette})
+    w, h = expressions.ZONE[2], expressions.ZONE[3]
+    im = Image.new('RGBA', (18 * w, n * h), (0, 0, 0, 0))
+    for rr, rang in enumerate(rangs):
+        for k, t in enumerate(rang):
+            tt = Image.new('RGBA', (w, h))
+            tt.putdata(list(t))
+            im.paste(tt, (k * w, rr * h))
+    dossier = os.path.join(RACINE, 'tests', 'engine')
+    im.save(os.path.join(dossier, 'apparences.png'))
+    with open(os.path.join(dossier, 'apparences.json'), 'w', encoding='utf-8') as f:
+        json.dump({'_': 'Des apparences tirées au hasard (scripts/personnage/couches.py --apparences) : voir tests/engine/personnages-apparence.test.mjs.',
+                   'apparences': out}, f, ensure_ascii=False, separators=(',', ':'))
+        f.write('\n')
+    return out
+
+
 def main():
+    if '--apparences' in sys.argv:
+        print(len(apparences()), 'apparences écrites dans tests/engine/apparences.json et .png')
+        return 0
     if '--fixture' in sys.argv:
         print(fixture()['def'])
         return 0
