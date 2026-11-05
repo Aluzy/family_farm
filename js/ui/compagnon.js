@@ -10,7 +10,7 @@ import { registerActions } from './actions.js';
 /* ---------- demander de l'aide au compagnon (un appui sur lui, sur la carte) ----------
    Un appui sur le compagnon (le second adulte du foyer) : il vient à côté du personnage et demande
    « Est-ce que tu veux de l'aide ? » (Oui / Non). Oui : « Dis-moi ce que je peux faire pour toi ? », et le
-   choix : ramasser les légumes mûrs (la Serre comprise), arroser, récolter les fruits des arbres
+   choix : ramasser les légumes mûrs (la Serre comprise), arroser, récolter les fruits des arbres, cuisiner
    (DATA.COMPAGNON.DEMANDE). Il
    répond (il s'y met, ou pourquoi il ne peut pas : js/engine/compagnon.js demanderCompagnon), puis il le
    fait sur la carte, jusqu'au bout. Les bulles sont celles de la carte (FarmStage.compagnonDit,

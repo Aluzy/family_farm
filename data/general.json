@@ -191,9 +191,10 @@
       "QUESTION": "Est-ce que tu veux de l'aide ?",
       "QUOI": "Dis-moi ce que je peux faire pour toi ?",
       "NON": "D'accord, je suis là si tu as besoin !",
-      "CHOIX": { "legumes": "🥕 Ramasser les légumes", "arroser": "💧 Arroser", "recolter": "🍎 Récolter" },
-      "OUI": { "legumes": "Je m'occupe de ramasser les légumes mûrs !", "arroser": "Je m'occupe d'arroser ce qui a soif !", "recolter": "Je vais cueillir les fruits des arbres !" },
-      "RIEN": { "legumes": "Aucun légume n'est mûr pour l'instant.", "arroser": "Rien n'a soif pour l'instant.", "recolter": "Aucun arbre n'a de fruits pour l'instant." },
+      "CHOIX": { "legumes": "🥕 Ramasser les légumes", "arroser": "💧 Arroser", "recolter": "🍎 Récolter", "cuisiner": "🍳 Cuisiner" },
+      "OUI": { "legumes": "Je m'occupe de ramasser les légumes mûrs !", "arroser": "Je m'occupe d'arroser ce qui a soif !", "recolter": "Je vais cueillir les fruits des arbres !", "cuisiner": "Je vais préparer un bon plat à la cuisinière !" },
+      "RIEN": { "legumes": "Aucun légume n'est mûr pour l'instant.", "arroser": "Rien n'a soif pour l'instant.", "recolter": "Aucun arbre n'a de fruits pour l'instant.", "cuisiner": "Il n'y a pas de quoi cuisiner : il manque des ingrédients." },
+      "SANS_CUISINIERE": "Il n'y a pas de cuisinière : il faudrait en installer une.",
       "SANS_EAU": "Je n'ai pas d'eau pour arroser : il faudrait la citerne, ou une cruche et un puits.",
       "TARD": "Ma journée de travail est finie. Demain, si tu veux !",
       "FAIM_TEXTE": "J'ai trop faim pour travailler, il faut que je mange d'abord."
