@@ -16,7 +16,7 @@
  * C'est l'assembleur de scripts/personnage/couches.py, en JS : la planche assemblée est identique, au pixel près, à
  * la planche PNG (tests/engine/personnages-planches.test.mjs, pour les 100 personnages).
  *
- * API : CartePlanches.assembler(C, def, palette)  → { largeur, hauteur, data: Uint8ClampedArray (RGBA) } ;
+ * API : CartePlanches.assembler(C, def, palette, noms?)  → (noms : seulement ces cases) { largeur, hauteur, data: Uint8ClampedArray (RGBA) } ;
  *         C : couches.json ; def : { age, elements: ['couche:clé'…], chapeau, jambes } (un personnage de
  *         C.personnages, ou une combinaison nouvelle) ; palette : { lettre: '#rrggbb' } ;
  *       CartePlanches.planche(C, nom)          la planche d'un personnage du catalogue ;
@@ -153,11 +153,12 @@
     return c;
   }
 
-  function assembler(C, def, palette) {
-    const P = preparer(C), COLS = 8, n = C.cases.length;
+  // `noms` (facultatif) : seulement ces cases, dans cet ordre (une vignette : une case, js/ui/apparence.js).
+  function assembler(C, def, palette, noms = C.cases) {
+    const P = preparer(C), n = noms.length, COLS = Math.min(8, n);
     const largeur = COLS * P.W, hauteur = Math.ceil(n / COLS) * P.H;
     const data = new Uint8ClampedArray(largeur * hauteur * 4);
-    C.cases.forEach((nom, k) => {
+    noms.forEach((nom, k) => {
       let g = caseLettres(C, P, def, nom);
       if (def.age === 'enfant') g = raccourci(C, P, g, nom);
       const x0 = (k % COLS) * P.W, y0 = Math.floor(k / COLS) * P.H;

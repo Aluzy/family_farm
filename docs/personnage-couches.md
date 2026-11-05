@@ -456,6 +456,26 @@ pastille de sa couleur ; l'aperçu suit. Le premier choix part du personnage du 
 la grille retire l'apparence. Pour un enfant, les coupes proposées sont celles qui se dessinent différemment
 (`COUPE_PROPOSEE` : « mèche », « hérissés », « bouclés » se dessinent comme « courts »).
 
+**Les deux entrées vers cet écran** (ajoutées après E7, l'écran étant trop caché) :
+- le bouton **« 🎨 Apparence »** sous le portrait de la fiche du membre (`js/ui/fiche-membre.js`) ouvre la fenêtre
+  « Modifier » avec « Personnaliser » déplié et montré ; l'aperçu reste en haut de la fenêtre quand on descend ;
+- **l'accueil d'une nouvelle partie** (`js/ui/depart.js`) : après le choix du personnage du joueur, de son compagnon
+  et de chaque enfant, un écran « Tu peux personnaliser son apparence… » (les mêmes choix, `apparenceChoixHtml` ;
+  « ↺ Comme le personnage choisi » retire l'apparence ; la flèche passe à la suite). `composeFamily`
+  (`js/engine/depart.js`) reçoit `apparence` pour chacun, vérifiée par `validApparence` avant de rien changer
+  (`tests/engine/famille-apparence.test.mjs`) ; le test de fumée passe par cet écran.
+
+**La présentation des choix** (la proposition 1, couleurs « bois », retenue parmi quatre maquettes) :
+- les couleurs (peau, yeux, cheveux, haut, bas, couleur du couvre-chef) en **pastilles** rondes sans texte : le nom
+  choisi est à côté du titre (« Cheveux · Roux »), chaque pastille porte le sien pour les lecteurs d'écran ;
+- les formes (coupe, barbe, couvre-chef) en **vignettes** : la tête du personnage avec ce choix
+  (`vignetteApparence`, js/ui/apparence.js : la seule case `idle_bas_0` assemblée, `CartePlanches.assembler` avec
+  `noms` ; la coupe sans couvre-chef, pour la voir) ;
+- le reste (motif, signes, accessoires) en puces ;
+- **« 🎲 Au hasard »** : une apparence tirée comme celles des habitants (`tirerApparence`, ses probabilités).
+- **L'aperçu** (la fenêtre « Modifier », les écrans de l'accueil) : en grand (128 px, quatre fois le dessin) et
+  vivant (il respire et cligne des yeux, les portraits vivants du § 9), redessiné à chaque choix.
+
 **Où elle se voit** :
 - les portraits (`js/ui/apparence.js` : la planche assemblée en image, gardée) : la fiche du membre, la liste des
   membres, le médaillon du joueur ; vivants (§ 9), le clignement pris dans sa case du sommeil ;

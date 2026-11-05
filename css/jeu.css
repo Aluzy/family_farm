@@ -2068,7 +2068,14 @@ main .ancre { scroll-margin-top: 150px; }
 }
 .accueil-persos .perso-btn { padding: 0; overflow: hidden; }
 .accueil-persos .perso-btn .perso-px { --s: 64px; }
-.accueil-portrait .perso-px { --s: 64px; }
+.accueil-portrait .perso-px { --s: 128px; } /* en grand, vivant (js/ui/depart.js) */
+/* L'écran « Personnaliser » (chantier « couches ») : le portrait reste en vue, les choix défilent sous lui. */
+.accueil-personnaliser { width: 100%; max-height: calc(100dvh - 400px); min-height: 160px; overflow-y: auto; overscroll-behavior: contain; }
+.accueil-personnaliser .apparence-groupe:first-child { margin-top: 0; }
+/* La fenêtre « Modifier » d'un membre : l'aperçu reste en haut quand on descend dans « Personnaliser » (et le bouton
+   « 🎨 Apparence » de la fiche y amène, sous l'aperçu). */
+.member-modal .member-preview { position: sticky; top: -20px; z-index: 1; }
+.member-modal #apparence-details { scroll-margin-top: 170px; }
 /* La famille choisie, à la dernière question (fiche 18) : chacun son portrait et son prénom. */
 .accueil-famille { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; }
 .accueil-membre { display: flex; flex-direction: column; align-items: center; max-width: 72px; font-size: 0.85em; text-align: center; overflow-wrap: anywhere; }
@@ -2791,7 +2798,7 @@ span.encyclo-item.encyclo-inconnue { color: #a08463; }
 @keyframes portrait-respire-visage { 0% { top: calc(var(--visage-y0) * var(--u)); } 50% { top: calc(var(--visage-y1) * var(--u)); } }
 @keyframes portrait-cligne { 0% { opacity: 0; } 97% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .perso-px.vivant, .perso-cligne, .fiche-calque.haut { animation: none; } }
-.member-preview .perso-px { --s: var(--portrait-64, 64px); }
+.member-preview .perso-px { --s: 128px; } /* l'aperçu de la fenêtre « Modifier » : en grand, vivant */
 .perso-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; max-height: 240px; overflow-y: auto; padding: 2px; }
 .perso-btn { padding: 2px; min-height: 0; display: flex; align-items: center; justify-content: center; }
 .perso-btn .perso-px { --s: 32px; }
@@ -2847,6 +2854,7 @@ span.encyclo-item.encyclo-inconnue { color: #a08463; }
   margin: 0; padding: 3px 10px; max-width: 150px; text-align: center; overflow-wrap: anywhere;
   background: var(--wood-paper); border: 2px solid var(--wood-dark); border-radius: 999px; font-size: 0.9rem;
 }
+.fiche-apparence { min-height: 36px; padding: 3px 12px; font-size: 0.85rem; background: var(--wood-paper); border-color: var(--wood-dark); }
 .fiche-jauges { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding-top: 4px; }
 .fiche-jauge { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 6px; align-items: center; }
 .fiche-jauge-nom { grid-column: 1 / -1; font-size: 0.85rem; font-weight: 700; color: var(--wood-ink); }
@@ -3497,15 +3505,46 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 
 /* ---------- Étape E6 du chantier « couches » : l'apparence d'un membre, attribut par attribut (js/ui/famille.js) ---------- */
 .apparence-choix summary { cursor: pointer; padding: 4px 0; }
-.apparence-groupe { border: 1px solid var(--wood-dark, #6b4a2b); border-radius: 8px; margin: 6px 0; padding: 4px 8px 8px; min-width: 0; }
-.apparence-groupe legend { font-weight: 700; padding: 0 4px; }
-.apparence-champ { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 4px 8px; align-items: start; margin-top: 6px; }
-.apparence-nom { font-size: 0.85rem; padding-top: 6px; }
-.apparence-options { display: flex; flex-wrap: wrap; gap: 4px; }
-.choix-apparence { min-height: 32px; padding: 3px 8px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 5px; }
-.choix-apparence.active { outline: 3px solid var(--color-sun); outline-offset: 0; }
-.choix-apparence .pastille { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.45); flex: none; }
-@media (max-width: 420px) { .apparence-champ { grid-template-columns: minmax(0, 1fr); } .apparence-nom { padding-top: 0; } }
+/* Les couleurs du bois (celles de la fenêtre Famille et de l'accueil), dans la fenêtre « Modifier » aussi. */
+#apparence-choix {
+  margin-top: 6px; padding: 8px 10px 10px; border-radius: 10px; color: var(--wood-ink);
+  background: var(--wood-cream); border: 3px solid var(--wood-dark); box-shadow: inset 0 0 0 2px var(--wood-light);
+}
+.btn.primary.apparence-hasard {
+  display: block; margin: 0 auto 4px; min-height: 40px; padding: 4px 16px; border-radius: 999px;
+  background: var(--color-sun); border: 2px solid var(--wood-dark); color: #2b1a08; font-weight: 700;
+}
+.apparence-groupe { border: 0; border-top: 2px dashed var(--wood-light); margin: 10px 0 0; padding: 4px 0 0; min-width: 0; }
+.apparence-groupe legend { padding: 0 6px 0 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--wood-ink); opacity: 0.65; }
+.apparence-champ { margin-top: 8px; }
+.apparence-titre { margin: 0 0 4px; font-size: 0.95rem; color: var(--wood-ink); }
+.apparence-valeur { font-size: 0.85rem; opacity: 0.7; }
+.apparence-options { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 4px 6px; } /* (de quoi voir l'anneau de la pastille choisie) */
+/* les couleurs : des pastilles rondes, la choisie cerclée de jaune et cochée */
+.pastille-apparence {
+  position: relative; width: 36px; height: 36px; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--wood-dark);
+}
+.pastille-apparence.active { box-shadow: 0 0 0 3px var(--wood-cream), 0 0 0 6px var(--color-sun); }
+.pastille-apparence.active::after {
+  content: '✓'; position: absolute; inset: 0; display: grid; place-items: center;
+  color: #fff; font-size: 16px; text-shadow: 0 0 2px #000, 0 0 2px #000;
+}
+/* les formes : la tête du personnage avec ce choix */
+.vignette-apparence {
+  min-width: 62px; padding: 3px 3px 2px; border: 2px solid var(--wood-dark); border-radius: 8px; cursor: pointer;
+  background: var(--wood-paper); color: var(--wood-ink); font: inherit; font-size: 0.65rem; line-height: 1.1; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.vignette-apparence img { width: 32px; height: 32px; image-rendering: pixelated; }
+.apparence-options .vignette-apparence span { font-size: 10px; letter-spacing: -0.03em; line-height: 1.15; overflow-wrap: normal; white-space: normal; }
+.vignette-apparence.active { outline: 3px solid var(--color-sun); outline-offset: 1px; background: #f6e3bd; }
+/* le reste (le motif, les signes, les accessoires) : des puces */
+.choix-apparence {
+  min-height: 34px; padding: 3px 12px; font: inherit; font-size: 0.85rem; border-radius: 999px; cursor: pointer;
+  background: var(--wood-paper); border: 2px solid var(--wood-dark); color: var(--wood-ink);
+}
+.choix-apparence.active { background: var(--color-sun); color: #2b1a08; font-weight: 700; }
 
 /* E-2 : le bandeau du monde en ligne (js/ui/en-ligne.js), en haut, au milieu */
 .en-ligne-bandeau {

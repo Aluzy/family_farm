@@ -23,7 +23,8 @@ import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { renderFicheMembre } from './fiche-membre.js';
-import { apparenceDuCatalogue, apparencesPretes, chargerApparences, donneesApparence, plancheApparence, portraitMembre } from './apparence.js';
+import { apparenceDuCatalogue, apparencesPretes, chargerApparences, donneesApparence, plancheApparence, portraitMembre, vignetteApparence } from './apparence.js';
+import { tirerApparence } from '../engine/apparence.js';
 
 /* ---------- Famille ---------- */
 
@@ -144,7 +145,8 @@ function portraitCard(m) {
 // prénom, lui, reste dans le champ de saisie jusqu'à l'enregistrement.
 let memberDraft = null; // { id, enfant, perso, apparence, depart } (apparence : la sienne, ou null ; depart : le joueur a demandé le départ, on attend sa confirmation)
 
-function openMemberModal(id) {
+// `personnaliser` : la section « Personnaliser » ouverte et montrée (le bouton « 🎨 Apparence » de la fiche).
+function openMemberModal(id, personnaliser = false) {
   const m = findMember(state, id);
   if (!m) return;
   tel('modal', 'member'); // le nom de la fenêtre seulement : jamais le prénom
@@ -171,7 +173,7 @@ function openMemberModal(id) {
   openModal(`
     <h2 id="member-title">✏️ Modifier : ${escapeHtml(m.nom)}</h2>
     <div class="member-preview" aria-live="polite">
-      ${persoHtml(0, false, 'member-preview-perso')}
+      <span id="member-preview-portrait"></span>
       <strong class="member-name" id="member-preview-name"></strong>
     </div>
     <div class="stack">
@@ -183,7 +185,7 @@ function openMemberModal(id) {
         <strong>Personnage</strong>
         <div class="perso-grid">${persos}</div>
       </div>
-      <details class="member-field apparence-choix"${memberDraft.apparence ? ' open' : ''}>
+      <details class="member-field apparence-choix" id="apparence-details"${memberDraft.apparence || personnaliser ? ' open' : ''}>
         <summary><strong>Personnaliser</strong> <span class="muted">(la peau, les yeux, la coiffure, la tenue…)</span></summary>
         <div id="apparence-choix"></div>
       </details>
@@ -194,11 +196,14 @@ function openMemberModal(id) {
       <button type="button" class="btn primary" data-action="member-save">Enregistrer</button>
       <button type="button" class="btn" data-action="close-modal">Annuler</button>
     </div>
-    <div class="stack member-leave">${depart}</div>`, { labelledBy: 'member-title', className: 'modal member-modal', focus: '#member-prenom' });
+    <div class="stack member-leave">${depart}</div>`, { labelledBy: 'member-title', className: 'modal member-modal', focus: personnaliser ? '#apparence-details summary' : '#member-prenom' });
   const input = document.getElementById('member-prenom');
   input.addEventListener('input', syncMemberModal);
   syncMemberModal();
-  input.select();
+  if (personnaliser) {
+    const details = document.getElementById('apparence-details');
+    if (details) details.scrollIntoView({ block: 'start' });
+  } else input.select();
 }
 
 // Met à jour l'aperçu et la grille des personnages d'après le choix en cours, sans toucher au
@@ -210,7 +215,8 @@ function syncMemberModal() {
   if (!d || !input) return;
   const typed = cleanFirstName(input.value);
   const propre = d.apparence ? plancheApparence(d.apparence, d.enfant) : null;
-  document.getElementById('member-preview-perso').style.backgroundImage = `url('${propre ? propre.url : persoSrc(d.perso, d.enfant)}')`;
+  // l'aperçu : grand et vivant (il respire, il cligne des yeux), redessiné à chaque choix
+  document.getElementById('member-preview-portrait').innerHTML = persoHtml(d.perso, d.enfant, 'member-preview-perso', d.id, propre);
   for (const b of root.querySelectorAll('[data-action="member-perso"]')) {
     const n = Number(b.dataset.perso);
     b.setAttribute('aria-pressed', String(!d.apparence && n === d.perso));
@@ -251,31 +257,70 @@ function ecrireChamp(a, champ, v) {
   o[k[k.length - 1]] = v;
 }
 
-function apparenceChoixHtml(d) {
+// Les formes (la coupe, la barbe, le couvre-chef) : une vignette de la tête avec ce choix (js/ui/apparence.js,
+// vignetteApparence) ; `prepare` y retouche l'apparence (la coupe : sans couvre-chef, sinon on ne la verrait pas).
+const FORMES = { 'identite.coupe': (a) => { a.tenue.couvre_chef = null; }, 'identite.pilosite': null, 'tenue.couvre_chef': null };
+
+// L'écran « Personnaliser » pour `d` ({ perso, enfant, apparence }), en trois sortes de choix : les couleurs en
+// pastilles (le nom choisi à côté du titre de l'attribut, chaque pastille son nom pour les lecteurs d'écran), les
+// formes en vignettes, le reste en puces ; en haut, « 🎲 Au hasard ». `action` : celle de ses boutons (la fenêtre
+// « Modifier » d'un membre, ou l'accueil d'une nouvelle partie, js/ui/depart.js) ; le hasard : `${action}-hasard`.
+export function apparenceChoixHtml(d, action = 'member-apparence') {
   if (!apparencesPretes()) return '<p class="muted">Un instant…</p>';
   const A = DATA.FAMILLE.PROFIL.APPARENCE, K = donneesApparence().K;
   const actuelle = d.apparence || apparenceDuCatalogue(d.perso, d.enfant);
-  return CHAMPS_APPARENCE.map(([titre, champs]) => `<fieldset class="apparence-groupe"><legend>${titre}</legend>${champs.map(([champ, nom, options, couleur, plusieurs]) => {
+  const hasard = `<button type="button" class="btn primary apparence-hasard" data-action="${action}-hasard">🎲 Au hasard</button>`;
+  return hasard + CHAMPS_APPARENCE.map(([titre, champs]) => `<fieldset class="apparence-groupe"><legend>${titre}</legend>${champs.map(([champ, nom, options, couleur, plusieurs]) => {
     const choix = options(A, d.enfant);
     if (!choix) return '';
     const valeur = actuelle ? lireChamp(actuelle, champ) : undefined;
-    const boutons = Object.entries(choix).map(([v, libelle]) => {
-      const on = plusieurs ? (valeur || []).includes(v) : (valeur ?? '') === v;
-      const pastille = couleur && v ? `<span class="pastille" style="background: ${couleur(K, v)}" aria-hidden="true"></span>` : '';
-      return `<button type="button" class="btn choix-apparence${on ? ' active' : ''}" data-action="member-apparence" data-champ="${champ}" data-valeur="${v}" aria-pressed="${on}">${pastille}${escapeHtml(libelle)}</button>`;
-    }).join('');
-    return `<div class="apparence-champ" role="group" aria-label="${nom}"><span class="apparence-nom">${nom}</span><div class="apparence-options">${boutons}</div></div>`;
+    const libelleActuel = plusieurs ? ((valeur || []).map((v) => choix[v]).filter(Boolean).join(', ') || 'aucun') : choix[valeur ?? ''] || '';
+    const attrs = (v, on) => `data-action="${action}" data-champ="${champ}" data-valeur="${v}" aria-pressed="${on}"`;
+    const estOn = (v) => (plusieurs ? (valeur || []).includes(v) : (valeur ?? '') === v);
+    let boutons, sorte;
+    if (couleur) {
+      sorte = 'pastilles';
+      boutons = Object.entries(choix).map(([v, libelle]) => `<button type="button" class="pastille-apparence${estOn(v) ? ' active' : ''}" ${attrs(v, estOn(v))} aria-label="${escapeHtml(libelle)}" title="${escapeHtml(libelle)}" style="background: ${couleur(K, v)}"></button>`).join('');
+    } else if (champ in FORMES) {
+      sorte = 'vignettes';
+      boutons = Object.entries(choix).map(([v, libelle]) => {
+        let img = null;
+        if (actuelle) {
+          const a = JSON.parse(JSON.stringify(actuelle));
+          ecrireChamp(a, champ, v === '' ? null : v);
+          if (FORMES[champ]) FORMES[champ](a);
+          img = vignetteApparence(a, d.enfant);
+        }
+        return `<button type="button" class="vignette-apparence${estOn(v) ? ' active' : ''}" ${attrs(v, estOn(v))}>${img ? `<img src="${img}" alt="" width="16" height="16">` : ''}<span>${escapeHtml(libelle)}</span></button>`;
+      }).join('');
+    } else {
+      sorte = 'puces';
+      boutons = Object.entries(choix).map(([v, libelle]) => `<button type="button" class="choix-apparence${estOn(v) ? ' active' : ''}" ${attrs(v, estOn(v))}>${escapeHtml(libelle)}</button>`).join('');
+    }
+    return `<div class="apparence-champ" role="group" aria-label="${nom}"><p class="apparence-titre"><strong>${nom}</strong> <span class="apparence-valeur">· ${escapeHtml(libelleActuel)}</span></p><div class="apparence-options ${sorte}">${boutons}</div></div>`;
   }).join('')}</fieldset>`).join('');
 }
 
-function choisirApparence(champ, valeur) {
-  const d = memberDraft;
+// « 🎲 Au hasard » : une apparence tirée comme celles des habitants (js/engine/apparence.js, ses probabilités ;
+// une barbe parfois pour un adulte).
+export function apparenceAuHasard(d) {
+  if (!d) return;
+  d.apparence = tirerApparence(Math.random, { enfant: !!d.enfant, genre: Math.random() < 0.5 ? 'm' : 'f' });
+}
+
+// Un choix (un bouton de apparenceChoixHtml) appliqué à `d` ({ perso, enfant, apparence }) : le premier part du
+// personnage du catalogue ; un attribut à plusieurs choix (les signes, les accessoires) s'ajoute ou s'enlève.
+export function appliquerChoixApparence(d, champ, valeur) {
   if (!d || !apparencesPretes()) return;
   if (!d.apparence) d.apparence = apparenceDuCatalogue(d.perso, d.enfant);
   if (!d.apparence) return;
   const actuel = lireChamp(d.apparence, champ);
   if (Array.isArray(actuel)) ecrireChamp(d.apparence, champ, actuel.includes(valeur) ? actuel.filter((x) => x !== valeur) : [...actuel, valeur]);
   else ecrireChamp(d.apparence, champ, valeur === '' ? null : valeur);
+}
+
+function choisirApparence(champ, valeur) {
+  appliquerChoixApparence(memberDraft, champ, valeur);
   syncMemberModal();
 }
 
@@ -577,7 +622,7 @@ registerActions({
   },
   // ----- version 1.1 : prénom et apparence d'un membre de la famille -----
   'member-edit': (target) => {
-    openMemberModal(target.dataset.id);
+    openMemberModal(target.dataset.id, target.dataset.personnaliser === '1');
   },
   'member-perso': (target) => {
     if (memberDraft) { memberDraft.perso = Number(target.dataset.perso); memberDraft.apparence = null; }
@@ -586,6 +631,10 @@ registerActions({
   // ----- étape E6 du chantier « couches » : l'apparence attribut par attribut -----
   'member-apparence': (target) => {
     choisirApparence(target.dataset.champ, target.dataset.valeur);
+  },
+  'member-apparence-hasard': () => {
+    apparenceAuHasard(memberDraft);
+    syncMemberModal();
   },
   'member-save': () => {
     saveMemberModal();

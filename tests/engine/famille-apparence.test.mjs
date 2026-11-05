@@ -7,7 +7,9 @@
 
 import { readFileSync } from 'node:fs';
 import { assert, assertEqual, test } from './aide.mjs';
-import { createInitialState, DATA, findMember, memberApparence, memberPerso, migrate, setMemberProfile, validApparence } from '../../js/engine/index.js';
+import {
+  composeFamily, createInitialState, createNewGame, DATA, findMember, memberApparence, memberPerso, migrate, setMemberProfile, validApparence,
+} from '../../js/engine/index.js';
 
 const CAT = JSON.parse(readFileSync(new URL('../../assets/personnages/catalogue.json', import.meta.url), 'utf8'));
 const RETOUCHES = ['perso_01', 'perso_02', 'perso_03'];
@@ -52,4 +54,17 @@ test('apparence : posée, refusée, retirée, gardée par la sauvegarde', () => 
   // une apparence abîmée (une ancienne version, une main) : ignorée, le personnage du catalogue reprend
   findMember(s, adulte.id).apparence = { identite: { peau: 'claire' } };
   assertEqual(memberApparence(findMember(s, adulte.id)), null);
+});
+
+test('apparence : choisie à l\'accueil d\'une nouvelle partie (composeFamily)', () => {
+  const s = createNewGame(4);
+  const choix = { perso: 3, prenom: 'Léa', nom: 'Martin', apparence: app('perso_12'), compagnon: { perso: 7, prenom: 'Hugo' }, enfants: [{ prenom: 'Zoé', perso: 2, apparence: app('enfant_05') }] };
+  // refusées, et rien ne change : une apparence d'adulte pour un enfant, une apparence abîmée
+  assertEqual(composeFamily(s, { ...choix, enfants: [{ prenom: 'Zoé', apparence: app('perso_12') }] }).error, 'Apparence inconnue.');
+  assertEqual(composeFamily(s, { ...choix, compagnon: { perso: 7, prenom: 'Hugo', apparence: { identite: {} } } }).error, 'Apparence inconnue.');
+  assertEqual(s.famille.membres.length, 4, 'rien n\'a changé après un refus');
+  assert(composeFamily(s, choix).ok);
+  const [lea, hugo, zoe] = s.famille.membres;
+  assertEqual([memberApparence(lea), memberApparence(hugo), memberApparence(zoe)], [app('perso_12'), null, app('enfant_05')]);
+  assertEqual([memberPerso(lea), memberPerso(zoe)], [3, 2], 'son personnage du catalogue reste (le repli)');
 });
