@@ -270,6 +270,45 @@ function calculerCouvertes(state) {
   return out;
 }
 
+/* ---------- le four redessiné, sur deux cases (v74 → v75) ---------- */
+
+// Le four (data/recipes.json, ATELIER.BLOCS.four) couvre désormais deux cases, la sienne et celle de droite. Un four
+// posé avant, sur une case, dont la case de droite n'est pas libre (un mur, un autre bloc, un meuble qui la couvre) :
+// décalé d'une case vers la gauche si elle l'est (il couvre alors sa case d'avant) ; sinon déplacé à la place de deux
+// cases libres côte à côte la plus proche, dans sa pièce ; sinon (la pièce pleine) rangé dans l'inventaire (son objet,
+// four_pierre ; sans autre four posé, la station four n'est plus construite, comme reprendreBloc).
+// → { deplaces: [[avant, après]], ranges: [avant] }.
+export function elargirFours(state) {
+  const poses = state.blocs && typeof state.blocs === 'object' ? state.blocs : {};
+  const W = farmTerrain(state).LARGEUR, dessus = state.blocsDessus || {};
+  const deplaces = [], ranges = [];
+  const bouge = (k, t) => {
+    poses[t] = 'four';
+    for (const champ of ['sens', 'teintes']) if (state[champ] && state[champ][k] !== undefined) { state[champ][t] = state[champ][k]; delete state[champ][k]; }
+  };
+  for (const k of Object.keys(poses).filter((t) => poses[t] === 'four').map(Number)) {
+    const couvertes = calculerCouvertes(state);
+    const libre = (t) => t >= 0 && !poses[t] && !dessus[t] && (!couvertes.has(t) || couvertes.get(t) === k);
+    const paire = (t) => Math.floor(t / W) === Math.floor((t + 1) / W) && (t === k || libre(t)) && (t + 1 === k || libre(t + 1));
+    if (paire(k)) continue;
+    // (sa case et celle de gauche, sinon deux cases libres de sa pièce, les plus proches)
+    let but = paire(k - 1) ? k - 1 : null;
+    if (but === null) {
+      const piece = piecesCloses(state).find((p) => p.cases.includes(k));
+      const dans = piece ? new Set(piece.cases) : new Set();
+      const d = (t) => Math.abs((t % W) - (k % W)) + Math.abs(Math.floor(t / W) - Math.floor(k / W));
+      for (const t of [...dans].filter((t) => dans.has(t + 1) && paire(t)).sort((a, b) => d(a) - d(b) || a - b)) { but = t; break; }
+    }
+    delete poses[k];
+    if (but !== null) { bouge(k, but); deplaces.push([k, but]); continue; }
+    for (const champ of ['sens', 'teintes']) if (state[champ]) delete state[champ][k];
+    addItem(state, 'four_pierre', 1);
+    ranges.push(k);
+  }
+  if (ranges.length && state.stations && state.stations.four && !Object.values(poses).includes('four')) state.stations.four.construit = false;
+  return { deplaces, ranges };
+}
+
 /* ---------- les murs rehaussés (version 1.25) ---------- */
 
 // La hauteur d'un mur (1 à ATELIER.HAUTEUR_MAX) : state.hauteurs[tuile] quand il est rehaussé.
@@ -710,11 +749,13 @@ export function choisirLit(state, id) {
 // Une case libre du foyer (la première pièce close qui a une paillasse), pas juste derrière une
 // de ses portes ; undefined sans foyer ou sans place. Le mode test y pose la boîte, le four… ;
 // une ancienne partie, son réfrigérateur (state.js, v47 → v48).
-export function caseLibreFoyer(state) {
+// `largeur` : autant de cases libres côte à côte, vers la droite (le four : 2).
+export function caseLibreFoyer(state, largeur = 1) {
   const foyer = piecesCloses(state).find((p) => p.paillasses.length);
   if (!foyer) return undefined;
-  const W = farmTerrain(state).LARGEUR, couvertes = casesCouvertes(state);
-  return foyer.cases.find((t) => !blocAt(state, t) && !couvertes.has(t) && !foyer.portes.some((d) => [d - 1, d + 1, d - W, d + W].includes(t)));
+  const W = farmTerrain(state).LARGEUR, couvertes = casesCouvertes(state), dans = new Set(foyer.cases);
+  const libre = (t) => dans.has(t) && !blocAt(state, t) && !couvertes.has(t) && !foyer.portes.some((d) => [d - 1, d + 1, d - W, d + W].includes(t));
+  return foyer.cases.find((t) => Array.from({ length: largeur }, (_, i) => t + i).every((j) => Math.floor(j / W) === Math.floor(t / W) && libre(j)));
 }
 
 // La Serre de la ferme générée sur la carte : les cases de la pièce close où est le bac à

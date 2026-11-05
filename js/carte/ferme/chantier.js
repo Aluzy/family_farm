@@ -426,14 +426,21 @@
     },
 
     // Le four qui cuit (modèle.fourAllume) : ses flammes bougent, une image de
-    // BLOCS_CARTE.feu après l'autre ; éteint, il reprend son image. De même la meule quand le
+    // BLOCS_CARTE.feu après l'autre (le four redessiné, sur deux cases : BLOCS_CARTE.feu.images) ; éteint, il
+    // reprend son image (le four redessiné : BLOCS_CARTE.feu.eteint, le fond du foyer sombre). De même la meule quand le
     // Moulin moud (modèle.meuleTourne, BLOCS_CARTE.meule) : elle tourne, ou s'arrête.
     stepFires(time) {
       if (!this.blocks) return;
       const Fe = BLOCS_CARTE.feu, M = BLOCS_CARTE.meule;
       const image = (A, on) => (on ? A.frames[Math.floor(time * A.fps / 1000) % A.frames.length] : BLOCS_CARTE.frames[A.sorte]);
       const feu = image(Fe, this.fireOn), meule = image(M, this.meuleOn && !F.reducedMotion());
+      // (le four redessiné, dessiné comme un meuble : son image éteinte, ou celle de son feu)
+      const four = this.fireOn ? Fe.images[Math.floor(time * Fe.fps / 1000) % Fe.images.length] : Fe.eteint;
       for (const e of this.blocks.values()) {
+        if (e.sorte === Fe.sorte && e.dessin) {
+          if (e.img.texture.key !== four && this.textures.exists(four)) e.img.setTexture(four);
+          continue;
+        }
         const f = e.sorte === Fe.sorte ? feu : e.sorte === M.sorte ? meule : null;
         if (f !== null && e.img.frame.name !== f) e.img.setFrame(f);
       }
