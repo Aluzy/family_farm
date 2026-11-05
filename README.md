@@ -141,7 +141,8 @@ intacte. On y entre ensuite par « Entrer » (`jeu.html?monde=…`). Dans un mon
   arroser (aussi en glissant, et « tout »), récolter, remplir la cruche ; l'on s'y **occupe des bêtes** :
   nourrir les poules, tondre, les herbes des vaches, une place à l'Étable, agrandir le Poulailler, la
   ruche pleine. Le monde ne ramasse pas : la récolte, les œufs, le lait et la laine vont droit au coffre
-  commun. La famille n'y fait pas les corvées seule. L'on y **cuisine** aussi : lancer une recette, le
+  commun. La famille n'y fait pas les corvées seule. Les **outils** aussi : la hache, la pioche, la faux,
+  la canne (l'étang, la mare) et le verger ; ce qu'un coup lâche va droit au coffre. L'on y **cuisine** : lancer une recette, le
   Moulin, le frigo (ranger, sortir, acheter, agrandir), la boîte à nourriture, manger sur le pouce. Une
   préparation finit pendant la nuit partagée (l'horloge est figée). Les autres gestes (le Marché, les
   outils, les hameaux…) viendront ensuite ;

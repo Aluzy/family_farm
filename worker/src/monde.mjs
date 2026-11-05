@@ -32,7 +32,7 @@
 //                                                   couché ; gardé sur sa connexion, jamais écrit) ; tous
 //                                                   couchés : à tous, { t: 'evt', acteur: 'monde', cmd: nuit.partagee }
 
-import { COMMANDES, executerCommande, farmTerrain, GAME_VERSION, migrate, pickUpAll } from '../../js/engine/index.js';
+import { COMMANDES, executerCommande, farmTerrain, GAME_VERSION, migrate, pickUpAll, ramasserMorceau } from '../../js/engine/index.js';
 
 export const MONDE = {
   INSTANTANE_TOUS: 20,      // révisions entre deux instantanés
@@ -105,10 +105,22 @@ export function dansLaFerme(s, c) {
   const x = c % T.LARGEUR, y = Math.floor(c / T.LARGEUR);
   return x >= F.X && y >= F.Y && x < F.X + F.LARGEUR && y < F.Y + F.HAUTEUR;
 }
-// Une commande qui vise une case hors de la ferme (ses arguments case, de, vers) : M.1, le contrôle du monde.
+// Une commande qui vise une case hors de la ferme : M.1, le contrôle du monde. Ses arguments case, de,
+// vers (une case) ; E-9 : arbre, rocher (« col,rang ») ; touffe, touffes (« x,y » en px) ; eau (celles du
+// grand monde : lac, rivière, mer).
 const CASES = ['case', 'de', 'vers'];
+const EAUX_DU_MONDE = new Set(['lac', 'riviere', 'mer']);
+const PX = 16;
 export function horsDeLaFerme(s, args) {
-  return !!args && CASES.some((k) => Number.isInteger(args[k]) && !dansLaFerme(s, args[k]));
+  if (!args) return false;
+  if (CASES.some((k) => Number.isInteger(args[k]) && !dansLaFerme(s, args[k]))) return true;
+  const W = farmTerrain(s).LARGEUR;
+  const tuile = (v) => { const [c, r] = String(v).split(',').map(Number); return r * W + c; };
+  const pixel = (v) => { const [x, y] = String(v).split(',').map(Number); return Math.floor((y - 1) / PX) * W + Math.floor(x / PX); };
+  for (const k of ['arbre', 'rocher']) if (typeof args[k] === 'string' && /^\d+,\d+$/.test(args[k]) && !dansLaFerme(s, tuile(args[k]))) return true;
+  const touffes = [].concat(args.touffe || [], args.touffes || []);
+  if (touffes.some((t) => /^\d+,\d+$/.test(String(t)) && !dansLaFerme(s, pixel(t)))) return true;
+  return EAUX_DU_MONDE.has(args.eau);
 }
 
 export class MondeRegistre {
@@ -143,6 +155,7 @@ export class MondeRegistre {
     // (E-6 : le monde ne ramasse pas, il n'a pas de personnage à lui : ce qui attendait entre au coffre
     // commun, et désormais tout y va droit : les œufs, le lait, la laine, la récolte)
     pickUpAll(s);
+    for (const m of [...(s.morceaux || [])]) ramasserMorceau(s, m.n);   // (E-9 : les morceaux au sol aussi)
     s.ramassage = false;
     s = elaguer(s);
     this.faire('INSERT INTO instantane (rev, json) VALUES (?, ?)', 0, JSON.stringify(s));

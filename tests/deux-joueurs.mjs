@@ -14,6 +14,7 @@
 //   4a. E-8 : le monde partagé est la ferme : la copie n'a plus le grand monde ; B envoie son personnage
 //       hors de la ferme : il s'arrête au bord, le jeu le dit, et sa vue reste sur la ferme ;
 //   4b''. E-7 : B mange une carotte sur le pouce : elle quitte le coffre commun, chez A aussi ;
+//   4b'''. E-9 : B donne un coup de hache à un arbre de la ferme : le bois arrive au coffre commun chez A ;
 //   4c. E-5 : A se couche, la nuit attend B ; B se couche : la nuit passe chez les deux (le jour suivant),
 //       et les parties confirmées sont encore celle du monde ;
 //   5. la partie solo de A, sur l'appareil, n'est jamais touchée en ligne ;
@@ -84,6 +85,7 @@ addItem(s0, DATA.ATELIER.BLOCS.mur_pierre.objet, 20);
 plantRipe(s0, 'potager-1', 'carotte');   // (E-5 : une carotte à récolter en ligne)
 s0.poulailler.poules = 2;   // (E-6 : deux poules à nourrir, du blé)
 addItem(s0, 'ble', 6);
+s0.outils = { hache: true, pioche: true, faux: true, canne: true };   // (E-9 : les outils de la ferme)
 const SAUVEGARDE = JSON.stringify({ v: s0.version, t: Date.now(), s: s0 });
 
 let navigateur;
@@ -192,6 +194,18 @@ try {
   await action(pb, 'eat', { item: 'carotte' });
   const msRepas = await attendre(pa, async (n) => { const E = await import('/js/engine/index.js'); return E.countItem(FF.state, 'carotte') === n - 1; }, avantRepas, 5000);
   verifie(msRepas !== null, `4b''. B a mangé une carotte : elle quitte le coffre commun chez A en ${msRepas} ms`);
+  // 4b'''. E-9 : la hache
+  const bois = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); return E.countItem(FF.state, 'bois'); });
+  const bois0 = await bois(pa);
+  const coup = await pb.evaluate(async () => {
+    const E = await import('/js/engine/index.js'), O = await import('/js/ui/outils.js');
+    const T = E.farmTerrain(FF.state), F = T.FERME;
+    const id = Object.keys(T.ARBRES).find((k) => { const [c, r] = k.split(',').map(Number); return c >= F.X && r >= F.Y && c < F.X + F.LARGEUR && r < F.Y + F.HAUTEUR; });
+    const r = O.chopFromStage(id, { carte: 'ferme', coup: [{ x: 0, y: 0 }] }, false);
+    return { id, ok: !!r, morceaux: r && r.morceaux, sol: (FF.state.morceaux || []).length };
+  });
+  const msBois = await attendre(pa, async (n) => { const E = await import('/js/engine/index.js'); return E.countItem(FF.state, 'bois') > n; }, bois0, 5000);
+  verifie(coup.ok && !coup.morceaux && coup.sol === 0 && msBois !== null, `4b'''. B a coupé l'arbre ${coup.id} : rien au sol, le bois au coffre commun chez A en ${msBois} ms`);
   // 4c. E-5 : la nuit partagée
   const jour = await pa.evaluate(() => FF.state.day);
   await action(pa, 'monde-coucher');
