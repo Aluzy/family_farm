@@ -128,6 +128,8 @@ export function horsDeLaFerme(s, args) {
   const tuile = (v) => { const [c, r] = String(v).split(',').map(Number); return r * W + c; };
   const pixel = (v) => { const [x, y] = String(v).split(',').map(Number); return Math.floor((y - 1) / PX) * W + Math.floor(x / PX); };
   for (const k of ['arbre', 'rocher']) if (typeof args[k] === 'string' && /^\d+,\d+$/.test(args[k]) && !dansLaFerme(s, tuile(args[k]))) return true;
+  // (E-13 : une cueillette, « sorte:case »)
+  if (typeof args.cueillette === 'string' && /:\d+$/.test(args.cueillette) && !dansLaFerme(s, Number(args.cueillette.split(':').pop()))) return true;
   const touffes = [].concat(args.touffe || [], args.touffes || []);
   if (touffes.some((t) => /^\d+,\d+$/.test(String(t)) && !dansLaFerme(s, pixel(t)))) return true;
   return EAUX_DU_MONDE.has(args.eau);

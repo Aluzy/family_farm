@@ -9,9 +9,9 @@
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import {
-  addItem, allDevices, countItem, DATA, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, poseStatus, refusDuRole, roleDemande, runNight, sensible, techPoints, testBatir, testFarmMap, testFermeConstruite,
+  addItem, allDevices, countItem, DATA, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, buildAtelier, morceauxDe, poserBloc, ramassables, testFillBatteries, testSetLevel, poseStatus, refusDuRole, roleDemande, runNight, sensible, techPoints, testBatir, testFarmMap, testFermeConstruite,
 } from '../js/engine/index.js';
-import { atelier, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setStraw } from './engine/aide.mjs';
+import { atelier, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setInv, setStraw, tireless } from './engine/aide.mjs';
 import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, etatDesLits, Monde, MONDE, MondeRegistre, SAUVEGARDES, SauvegardesMonde, traiterMessage } from '../worker/src/monde.mjs';
 
 const test = (name, fn) => nodeTest(name, () => fn());
@@ -632,4 +632,69 @@ test('E-12 : le propriétaire sauvegarde et restaure (par les routes du Durable 
   await d.webSocketMessage(sockets[1], JSON.stringify({ t: 'coucher', oui: true }));
   await new Promise((ok) => setTimeout(ok, 20));
   eq((await req('sauvegardes', A)).sauvegardes[0].raison, 'nuit');
+});
+
+/* ---------- E-13 : les machines de l'Atelier ---------- */
+
+// Une ferme générée, l'Atelier construit, le niveau 10 (les chaînes, la botteleuse), et les blocs `sortes`
+// posés à la suite sur une rangée d'herbe libre : la case du premier (comme tests/engine/chaines.test.mjs).
+function usineAvec(graine, sortes) {
+  const s = garden();
+  tireless(s);
+  testFarmMap(s, graine);
+  setInv(s, { bois: 3, pierre: 3 });
+  assert(buildAtelier(s).ok);
+  testSetLevel(s, 10);
+  testFillBatteries(s);
+  const T = farmTerrain(s), W = T.LARGEUR, w = sortes.length + 2;
+  let t = null;
+  for (let r = 5; r < T.HAUTEUR - 5 && t === null; r++) {
+    for (let c = 4; c < W - w - 4 && t === null; c++) {
+      let ok = true;
+      for (let dr = -1; dr <= 1 && ok; dr++) for (let dc = 0; dc < w && ok; dc++) ok = T.LIGNES[r + dr][c + dc] === '#' && !s.potager.parcelles.some((p) => p.case === (r + dr) * W + c + dc) && !(T.HERBES && T.HERBES[(r + dr) * W + c + dc]);
+      if (ok) t = r * W + c;
+    }
+  }
+  sortes.forEach((sorte, k) => { addItem(s, sorte, 1); const x = poserBloc(s, sorte, t + k); assert(x.ok, `poser ${sorte} : ${x.error}`); });
+  return { s, t };
+}
+function enLigneDe(s) {
+  const sql = baseSql(), r = new MondeRegistre(sql);
+  assert(r.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
+  r.ajouterMembre(B, 'Sam', 'jardinier');
+  return { r, sql, jouer: (type, args) => r.commande(B, { id: id(), type, args }) };
+}
+
+test('E-13 : une chaîne en ligne : l\'ami jardinier y verse ses graines ; l\'horloge figée, la chaîne fait sa journée à la nuit partagée ; son produit se ramasse ; le journal se rejoue', () => {
+  const { s, t } = usineAvec('huile', ['entonnoir', 'pressoir', 'convoyeur']);
+  setInv(s, { graine_tournesol: 7 });
+  const { r, sql, jouer } = enLigneDe(s);
+  const v = jouer('chaine.verser', { case: t });
+  assert(v.ok, v.erreur);
+  eq(jouer('chaine.verser', { case: t }).ok, false, 'elle a déjà de quoi faire');
+  eq(morceauxDe(r.charger(), 'ferme').length, 0, 'le jour, rien ne sort (l\'horloge est figée)');
+  assert(r.nuit().ok);
+  const m = morceauxDe(r.charger(), 'ferme');
+  eq([m.length, m[0].item], [1, 'huile'], 'à la nuit, l\'huile est sur son tas');
+  const p = jouer('morceau.ramasser', { n: m[0].n });
+  assert(p.ok, p.erreur);
+  eq([countItem(r.charger(), 'huile'), jouer('morceau.ramasser', { n: m[0].n }).ok], [1, false], 'au coffre, une seule fois');
+  eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()), 'le journal se rejoue');
+});
+
+test('E-13 : une botteleuse en ligne : les fibres versées, la botte sort tout de suite, sa paille au coffre ; la cueillette à la main, pas hors de la ferme', () => {
+  const B2 = DATA.BOTTELEUSE;
+  const { s, t } = usineAvec('botte', ['entonnoir', 'botteleuse', 'convoyeur', 'convoyeur']);
+  setInv(s, { fibre: B2.FIBRES + 5 });
+  const { r, jouer } = enLigneDe(s);
+  const v = jouer('botteleuse.verser', { case: t });
+  assert(v.ok, v.erreur);
+  const paille0 = countItem(r.charger(), 'paille');
+  const b = jouer('botteleuse.sortir', { case: t + 1 });
+  assert(b.ok, b.erreur);
+  eq([countItem(r.charger(), 'paille') - paille0, morceauxDe(r.charger(), 'ferme').length], [B2.PAILLE, 0], 'la paille au coffre, rien au sol');
+  eq(jouer('botteleuse.sortir', { case: t + 1 }).ok, false, 'une seule botte');
+  const q = ramassables(r.charger())[0];
+  if (q) assert(jouer('cueillette.ramasser', { cueillette: q.id }).ok, 'la cueillette');
+  assert(/Hors de la ferme/.test(jouer('cueillette.ramasser', { cueillette: 'branche:5' }).erreur), 'hors de la ferme');
 });

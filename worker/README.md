@@ -204,6 +204,10 @@ E-10 : la progression commune (`tech.acheter`, `atelier.fabriquer`, `atelier.con
 `reservoir.agrandir`, `robot.batterie`, `serre.agrandir`, `arbre.planter`, `potager.semis`). Restent hors
 ligne, comme le veut la vision : le Marché, la calèche, les hameaux, le récit, les invitations.
 
+E-13 : les machines de l'Atelier (`botteleuse.verser`, `botteleuse.sortir`, `chaine.verser`,
+`distributeur.verser`, `morceau.ramasser`, `cueillette.ramasser`) ; l'horloge figée, les chaînes et le
+distributeur font leur journée à la nuit partagée. Pas de commerce en ligne (M.4, décidé).
+
 E-11 : les rôles (`js/engine/roles.js` : visiteur, jardinier, bâtisseur, propriétaire), vérifiés à chaque
 commande ; `POST /mondes/<id>/invitations { role }`, `POST /mondes/<id>/role { compte, role }` (le
 propriétaire ; la liste des membres est diffusée), `GET /mondes/<id>/journal?avant=` (le propriétaire :
