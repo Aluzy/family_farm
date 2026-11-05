@@ -14,7 +14,7 @@ import { ateliersDuHameau } from '../engine/ile.js';
 import { solDuMonde } from './monde-sol.js';
 import { persoHtml } from './famille.js';
 import { openModal } from './modal.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -66,6 +66,7 @@ export function peuplerDepuisCarte(id) {
 // Les hameaux déjà vus (une partie d'avant la fiche 7b) qui n'ont pas encore leurs habitants : ils
 // naissent dès que les plans sont là. Appelé à chaque modèle de la carte : ne coûte presque rien.
 export function peuplerLesVus() {
+  if (enLigne) return false;   // (E-8 : le monde partagé est la ferme, sans hameaux)
   const H = habitantsDe(state), vus = Object.keys(hameauxVus(state));
   // (le récit, lot 9 : les personnages écrits d'un hameau peuplé avant qu'ils y habitent, Basile et Théo à
   // Bois-Joli, s'y installent : installerEcrits ne fait rien quand ils y sont déjà)

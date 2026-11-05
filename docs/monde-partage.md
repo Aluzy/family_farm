@@ -4,9 +4,9 @@ Ce document affine l'axe E de la stratégie (« Multijoueur coopératif et monde
 lots E-0 à E-7. Il fixe **ce qu'est un monde partagé** : la zone de la ferme. Le reste du grand monde
 reste à la partie solo de son propriétaire.
 
-État au 4 novembre 2026. Sont déjà en ligne : le compte, la mise en ligne de sa ferme, les invitations et
+État au 5 novembre 2026. Sont déjà en ligne : le compte, la mise en ligne de sa ferme, les invitations et
 le retrait d'un membre, l'avatar des autres joueurs, Construire, le potager, les bêtes, la cuisine et la
-nuit partagée. Le code est dans `worker/src/monde.mjs`, `js/ui/en-ligne.js` et `js/engine/commandes.js`.
+nuit partagée. **E-8 a posé la frontière** : M.1, M.2 et M.3 ci-dessous sont faits (§ 7). Le code est dans `worker/src/monde.mjs`, `js/ui/en-ligne.js` et `js/engine/commandes.js`.
 
 ## 1. Le principe
 
@@ -139,3 +139,17 @@ Chaque décision a une valeur par défaut, comme le demande la stratégie (§ 9 
 
 Ce qu'il ne faut **pas** faire maintenant : partager le grand monde, les hameaux ou le récit ; un monde
 à plus de 4 joueurs ; faire revenir les changements du monde en ligne dans la partie solo.
+
+## 7. E-8 : ce qui est fait
+
+- **M.1, la frontière.**
+  - Côté jeu : en ligne, la scène reçoit le rectangle de la ferme (`borne`). Le personnage n'en sort pas : `dansLaBorne` passe par `marchable`, la même règle pour les trajets et pour la manette. Un appui dehors le mène au bord, avec le mot « Le reste du monde t'attend dans ta ferme solo ». La vue reste sur la ferme et 6 cases autour (`camera.js`, `BORNE_MARGE`).
+  - Les rappels de la carte qui touchent le grand monde, ou que le monde ne connaît pas encore (les outils de la ferme : E-9), ne font rien en ligne (`js/ui/stage.js`, `enLigneSurLaFerme`).
+  - Côté serveur : une commande dont `case`, `de` ou `vers` sort de la ferme est refusée (`horsDeLaFerme`).
+- **M.2, l'élagage.** `elaguer` retire de la copie `monde.habitants`, `monde.hameaux`, `monde.vues`, `monde.vu`, `monde.pris` et le but de la boussole. La migration redonne des valeurs neuves, et `mondePartage = true` est posé. Les petites données du grand monde (le récit, les amitiés, la calèche, le courrier) restent dans la copie, figées : les remettre à zéro relancerait des événements de début de partie.
+- **M.3, la nuit de la ferme.** Avec `state.mondePartage`, `runNight` saute les habitants, l'amitié, les invitations, les plans, les projets, la visite de bienvenue, le récit et les repousses du grand monde.
+- **Mesures** sur la partie du jour 54 :
+  - la copie mise en ligne passe de 212 Ko à **106 Ko** ;
+  - 30 nuits partagées de suite : 71 ms pour la première, puis **9,5 ms** en moyenne ;
+  - le journal se rejoue en 63 ms, avec la même empreinte.
+  - Le premier calcul du terrain (≈ 0,5 s) est celui que la pose d'un bloc faisait déjà ; il est gardé en mémoire ensuite.

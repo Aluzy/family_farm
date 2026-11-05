@@ -11,6 +11,8 @@
 //   4. la partie confirmée de chacun est celle du monde (la même empreinte) ;
 //   4b. E-5 : B récolte une carotte mûre : elle va au coffre commun, A voit la parcelle vide ;
 //   4b'. E-6 : B nourrit les poules : A les voit nourries ;
+//   4a. E-8 : le monde partagé est la ferme : la copie n'a plus le grand monde ; B envoie son personnage
+//       hors de la ferme : il s'arrête au bord, le jeu le dit, et sa vue reste sur la ferme ;
 //   4b''. E-7 : B mange une carotte sur le pouce : elle quitte le coffre commun, chez A aussi ;
 //   4c. E-5 : A se couche, la nuit attend B ; B se couche : la nuit passe chez les deux (le jour suivant),
 //       et les parties confirmées sont encore celle du monde ;
@@ -170,6 +172,12 @@ try {
   verifie((await confirmee(pa)) === em && (await confirmee(pb)) === em && reg.rev === 2, `4. les deux parties confirmées sont celle du monde (révision ${reg.rev})`);
   // 4b. E-5 : le potager, hors de Construire
   for (const p of [pa, pb]) { await action(p, 'build-toggle'); await attendre(p, () => !document.body.classList.contains('construction'), null, 5000); }
+  // 4a. E-8 : la frontière
+  const F = await pb.evaluate(async () => { const E = await import('/js/engine/index.js'); return { ...E.farmTerrain(FF.state).FERME, cols: FarmStage.scene().grid.cols, W: E.farmTerrain(FF.state).LARGEUR }; });
+  await pb.evaluate((f) => FarmStage.scene().goHere((f.X - 30) * 16, (f.Y + f.HAUTEUR / 2) * 16), F);
+  await pb.waitForTimeout(2500);
+  const bord = await pb.evaluate((f) => { const sc = FarmStage.scene(), i = sc.fermier.info(), v = sc.cameras.main.worldView; return { c: Math.floor(i.x / 16), dit: /reste du monde/.test(document.body.innerText), vueX: v.x }; }, F);
+  verifie(F.cols === F.W && reg.charger().mondePartage === true && JSON.stringify(reg.charger().monde.habitants) === '{}' && bord.c >= F.X && bord.dit && bord.vueX >= (F.X - 6) * 16 - 1, `4a. le monde est la ferme : B, envoyé dehors, s'arrête au bord (colonne ${bord.c}, la ferme commence à ${F.X}), le jeu le dit, la vue reste sur la ferme`);
   const carottes = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); return E.countItem(FF.state, 'carotte'); });
   const avantCarottes = await carottes(pa);
   await action(pb, 'harvest', { id: 'potager-1' });

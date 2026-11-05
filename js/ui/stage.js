@@ -1126,6 +1126,31 @@ function terrainNow(rochers) {
 
 // Pont carte → jeu : l'action du registre, comme un clic sur un bouton qui porterait
 // data-action et ces data-* (en texte, comme dans le DOM) ; suivi et sommeil compris.
+// E-8 : dans un monde en ligne, le monde partagé est la ferme (docs/monde-partage.md, M.1). La carte reçoit
+// le rectangle de la ferme (`borne` : le personnage n'en sort pas, la vue reste sur elle) ; ce que la
+// carte demande hors de la ferme (le grand monde, les hameaux, la calèche, le récit) ou ce qui ne passe
+// pas encore par le monde (les outils de la ferme : lot E-9) ne fait rien, avec un mot quand c'est un
+// geste du joueur.
+const MUETS_EN_LIGNE = ['region', 'ici', 'fauneVue', 'hameau', 'hameauIci', 'visite', 'presents'];
+const REFUSES_EN_LIGNE = ['faune', 'maison', 'lieuRecit', 'calecheTouchee', 'calecheHeler', 'habitantAgit', 'habitantParle', 'recolte', 'chop', 'mine', 'caillou', 'scythe', 'scytheAround', 'fish', 'morceau', 'verser', 'verserGrain', 'verserChaine', 'botte', 'ramasser'];
+let dernierMot = 0;
+function pasEnLigne() {
+  const t = Date.now();
+  if (t - dernierMot > 3000) { dernierMot = t; notify('🌐 En ligne, ce geste ne se fait pas encore : il viendra bientôt.'); }
+  return null;
+}
+function horsFermeDit() {
+  const t = Date.now();
+  if (t - dernierMot > 3000) { dernierMot = t; notify('🌐 Le reste du monde t\'attend dans ta ferme solo : en ligne, on reste sur la ferme.'); }
+}
+function enLigneSurLaFerme(options) {
+  if (!enLigne) return options;
+  const o = { ...options, borne: farmTerrain(state).FERME || null, horsFerme: horsFermeDit };
+  for (const k of MUETS_EN_LIGNE) if (o[k]) o[k] = () => null;
+  for (const k of REFUSES_EN_LIGNE) if (o[k]) o[k] = pasEnLigne;
+  return o;
+}
+
 function stageAct(action, data) {
   const target = { dataset: Object.fromEntries(Object.entries(data || {}).map(([k, v]) => [k, String(v)])) };
   runAction(action, target, { target });
@@ -1156,7 +1181,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, lot: (f) => enLot(state, f), pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, invites: invitesDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, presents: presentsDepuisCarte, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
+      if (!FarmStage.mount(el, enLigneSurLaFerme({ act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, lot: (f) => enLot(state, f), pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, invites: invitesDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, presents: presentsDepuisCarte, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() }))) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
     } catch (err) {
       stageBroken = true;
       if (window.Chargement) window.Chargement.fini();

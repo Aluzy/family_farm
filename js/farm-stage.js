@@ -61,7 +61,7 @@
   // Ce que la scène reçoit au montage (scene.ctx) : le pont vers la page, le dossier des
   // images, la table des découpes de crops.png, le calque DOM des étiquettes, le dernier
   // modèle reçu (appliqué dès que la scène est prête) et si la carte est affichée.
-  const ctx = { bridge: null, base: 'assets/', crops: {}, carte: null, monde: null, labelLayer: null, lastModel: null, visible: false };
+  const ctx = { bridge: null, base: 'assets/', crops: {}, carte: null, monde: null, borne: null, labelLayer: null, lastModel: null, visible: false };
 
   // La scène de la ferme : la classe est faite une fois (il faut Phaser), puis reçoit les
   // méthodes des fichiers de js/carte/ferme/ (FermeCarte.partie) ; ici, sa création, sa
@@ -262,7 +262,8 @@
               blocks: () => this.blockCells(),
               // le grand monde : ni la mer, ni les lacs, les rivières (sauf à gué), les falaises, les
               // sommets (js/engine/monde-sol.js, caseMarchable ; une région pas encore faite non plus)
-              marchable: this.ctx.monde ? (i) => this.ctx.monde.marchable(i) : null,
+              // (E-8 : en ligne, pas hors du rectangle de la ferme : dansLaBorne)
+              marchable: this.ctx.monde || this.ctx.borne ? (i) => this.dansLaBorne(i) && (!this.ctx.monde || this.ctx.monde.marchable(i)) : null,
               // à l'étage, il passe devant son voile
               depth: (y) => (this.etageDepth ? this.etageDepth(y) : y),
               lift: () => (this.etageLift ? this.etageLift() : 0),
@@ -1215,7 +1216,25 @@
         if (!this.fermier || (this.ctx.lastModel && this.ctx.lastModel.coucher)) return;
         // (à l'étage : le point touché est sur le plancher, remonté)
         const q = this.etagePoint && !this.rang ? this.etagePoint(wx, wy) : { x: wx, y: wy };
+        // (E-8 : en ligne, un point hors de la ferme : il va jusqu'au bord, et le jeu le dit)
+        const b = this.ctx.borne;
+        if (b) {
+          const x0 = b.X * T + 2, y0 = b.Y * T + 2, x1 = (b.X + b.LARGEUR) * T - 2, y1 = (b.Y + b.HAUTEUR) * T - 2;
+          if (q.x < x0 || q.x > x1 || q.y < y0 || q.y > y1) {
+            if (this.ctx.bridge.horsFerme) this.ctx.bridge.horsFerme();
+            q.x = Math.min(x1, Math.max(x0, q.x));
+            q.y = Math.min(y1, Math.max(y0, q.y));
+          }
+        }
         this.fermier.goTo(q.x, q.y);
+      }
+
+      // E-8 : la case `i` est-elle dans la ferme (un monde en ligne) ? Toujours vrai hors ligne.
+      dansLaBorne(i) {
+        const b = this.ctx.borne;
+        if (!b) return true;
+        const cols = this.grid.cols, c = i % cols, r = Math.floor(i / cols);
+        return c >= b.X && r >= b.Y && c < b.X + b.LARGEUR && r < b.Y + b.HAUTEUR;
       }
     };
     for (const p of F.parties) {
@@ -1242,6 +1261,9 @@
     // le sol du grand monde autour de la ferme (js/ui/monde-sol.js : ses régions, faites dans un
     // Web Worker ; où l'on marche), ou null : rien autour de la carte
     ctx.monde = (options && options.monde) || null;
+    // E-8 : un monde en ligne : le rectangle de la ferme, en cases ({ X, Y, LARGEUR, HAUTEUR }) ; le
+    // personnage n'en sort pas, la vue reste sur elle (et ses abords) ; null : toute la carte
+    ctx.borne = (options && options.borne) || null;
     ctx.labelLayer = document.createElement('div');
     ctx.labelLayer.className = 'stage-labels';
     element.appendChild(ctx.labelLayer);
