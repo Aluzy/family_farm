@@ -47,7 +47,8 @@ import { enExpedition } from './equipement.js';
 
    Ce que le joueur lui demande (un appui sur lui, sur la carte : demanderCompagnon) : ramasser les légumes
    mûrs (« recolter:<case> » : les terres labourées de la ferme et les bacs de la Serre), arroser ce qui a soif,
-   ou récolter les fruits des arbres plantés (« cueillir:<case> ») ; il le fait jusqu'au bout (state.compagnon.demande, jusqu'à ce qu'il n'y ait plus
+   récolter les fruits des arbres plantés (« cueillir:<case> »), ou cuisiner un plat à la cuisinière (« cuisiner » :
+   la première recette de CUISINER.RECETTES dont il a les ingrédients, même si la famille n'a pas faim) ; il le fait jusqu'au bout (un plat pour cuisiner) (state.compagnon.demande, jusqu'à ce qu'il n'y ait plus
    rien à faire ou à la fin de sa journée), avant ses initiatives et ses bêtes, sans leurs limites du jour
    (PAR_JOUR, ECART_H) ; il lui en coûte sa faim (DEMANDE.FAIM, ARROSER.FAIM pour arroser), il n'y gagne ni
    énergie ni chapitre pour le joueur (comme une automatisation : harvestPlot et harvestTree en `auto`).
@@ -316,7 +317,8 @@ export function faireCompagnon(state, lieu) {
     return { ok: true, action: 'arroser', items: { arrose: 1 }, culture: p.culture };
   }
   if (sorte === 'cuisiner') {
-    if (!permise(state, 'cuisiner') || !cuisiniere(state)) return fail('Il ne cuisine pas maintenant.');
+    const pourJoueur = demande && demandeCompagnon(state).quoi === 'cuisiner';
+    if ((!pourJoueur && !permise(state, 'cuisiner')) || !cuisiniere(state)) return fail('Il ne cuisine pas maintenant.');
     const id = recetteCompagnon(state);
     if (!id) return fail('Il n\'y a pas de quoi cuisiner.');
     for (const l of ingredients(state, id)) {
@@ -329,6 +331,7 @@ export function faireCompagnon(state, lieu) {
     let ou = 'inventaire';
     if (state.frigo && state.frigo.construit) { if (moveToFridge(state, item, qty).ok) ou = 'frigo'; } else if (boitePosee(state) && deposerBoite(state, item, qty).ok) ou = 'boite';
     compter(state, 'cuisiner');
+    if (pourJoueur) c.demande = null;   // (ce qu'on lui a demandé : un plat ; c'est fait)
     dire(state, 'cuisiner', { [item]: qty }, { recette: id, ou });
     return { ok: true, action: 'cuisiner', items: { [item]: qty }, recette: id, ou };
   }
@@ -349,7 +352,7 @@ export function faireCompagnon(state, lieu) {
 
 /* ---------- ce que le joueur lui demande (un appui sur lui, sur la carte) ---------- */
 
-export const DEMANDES_COMPAGNON = ['legumes', 'arroser', 'recolter'];
+export const DEMANDES_COMPAGNON = ['legumes', 'arroser', 'recolter', 'cuisiner'];
 
 // Les légumes mûrs (les terres labourées de la ferme, puis les bacs de la Serre), le plus proche de la dernière
 // case travaillée d'abord.
@@ -377,6 +380,7 @@ function tacheDemandee(state, quoi) {
   }
   if (quoi === 'legumes') { const p = legumesMurs(state)[0]; return p ? `recolter:${p.case}` : null; }
   if (quoi === 'recolter') { const t = arbresEnFruits(state)[0]; return t ? `cueillir:${t.case}` : null; }
+  if (quoi === 'cuisiner') return cuisiniere(state) && recetteCompagnon(state) ? 'cuisiner' : null;
   return null;
 }
 
@@ -413,6 +417,8 @@ export function demanderCompagnon(state, quoi) {
   if (!tacheDemandee(state, quoi)) {
     // (arroser : des plantes ont soif, mais pas d'eau)
     if (quoi === 'arroser' && plantesASoif(state).length) return fail(D.SANS_EAU);
+    // (cuisiner : pas de cuisinière, ou pas de quoi faire une recette)
+    if (quoi === 'cuisiner' && !cuisiniere(state)) return fail(D.SANS_CUISINIERE);
     return fail(D.RIEN[quoi]);
   }
   c.demande = { quoi, jour: state.day };

@@ -412,3 +412,27 @@ test('demander : ramasser les légumes mûrs des bacs de la Serre aussi', () => 
   assertEqual(bac.culture, null, 'cueilli');
   assert(countItem(s, 'carotte') > avant, 'dans l\'inventaire');
 });
+
+test('demander : cuisiner un plat, même si la famille n\'a pas faim et qu\'il a déjà cuisiné aujourd\'hui ; sinon il dit pourquoi', () => {
+  const D = C.DEMANDE;
+  // pas de cuisinière
+  assertEqual(demanderCompagnon(potager(0), 'cuisiner').error, D.SANS_CUISINIERE);
+  const s = heure(atelier({ stations: ['cuisine'] }), 10);
+  s.eauMl = 10000;
+  boite(s, {});
+  // pas d'ingrédients
+  setInv(s, {});
+  assertEqual(demanderCompagnon(s, 'cuisiner').error, D.RIEN.cuisiner);
+  setInv(s, { carotte: 4, oignon: 4, patate: 4 });
+  assertEqual(sortes(s, 'cuisiner'), [], 'la famille n\'a pas faim : pas d\'initiative');
+  assertEqual(demanderCompagnon(s, 'cuisiner'), { ok: true, quoi: 'cuisiner', texte: D.OUI.cuisiner });
+  assertEqual(tachesCompagnon(s), ['cuisiner'], 'ce qu\'on lui a demandé');
+  const plat = recipeOutput(C.CUISINER.RECETTES[0]);
+  const r = faireCompagnon(s, 'cuisiner');
+  assertEqual([r.ok, r.ou, r.items], [true, 'boite', { [plat]: 1 }]);
+  assertEqual(demandeCompagnon(s), null, 'un plat : c\'est fait');
+  // une deuxième fois le même jour (sa limite PAR_JOUR atteinte) : on peut le lui redemander
+  assert(demanderCompagnon(s, 'cuisiner').ok);
+  assertEqual(faireCompagnon(s, 'cuisiner').ok, true);
+  assertEqual(boiteCount(s, plat), 2);
+});
