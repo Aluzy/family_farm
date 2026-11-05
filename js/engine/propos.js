@@ -17,6 +17,8 @@ import { cleDe, fiche, palierAmitie } from './amitie.js';
 import { projetDuHameau, projetsFaits } from './projets.js';
 import { dayOfMonth, monthName, moonPhase } from './lune.js';
 import { meteoDuJour } from './meteo.js';
+import { evenementsDe, liensDe, trouverHabitant } from './voisins.js';
+import { habitantsDe } from './habitants.js';
 
 const PROPOS = () => DATA.HABITANTS.PROPOS;
 const nomObjet = (it) => (DATA.OBJETS[it] ? DATA.OBJETS[it].nom : it);
@@ -70,6 +72,35 @@ const SUJETS = [
   ['lune_nouvelle', ({ state }) => (moonPhase(state.day).id === 'nouvelle' ? {} : null)],
   ['lune_croissante', ({ state }) => (moonPhase(state.day).id === 'croissante' ? {} : null)],
   ['lune_decroissante', ({ state }) => (moonPhase(state.day).id === 'decroissante' ? {} : null)],
+  // V-3 (voisins.js) : ses liens, et ce qui s'est passé entre voisins ces derniers jours
+  ['lien_ami', ({ state, m }) => {
+    const l = !m.enfant && liensDe(state, m.id).ami, a = l && trouverHabitant(state, l.id);
+    return a ? { ami: a.m.prenom } : null;
+  }],
+  ['lien_cousin', ({ state, m }) => {
+    const l = !m.enfant && liensDe(state, m.id).cousin, c = l && trouverHabitant(state, l.id);
+    if (!c) return null;
+    const f = c.m.genre === 'f';
+    return { cousin: c.m.prenom, cousin_mot: f ? 'Ma cousine' : 'Mon cousin', cousin_mot_min: f ? 'ma cousine' : 'mon cousin', le: f ? 'la' : 'le', hameau: c.h.nom };
+  }],
+  ['visite_recue', ({ state, m, f }) => {
+    const e = evenementsDe(state, m.id, f.maison).filter((x) => x.sorte === 'visite' && x.chez === m.id).pop();
+    const H = e && habitantsDe(state)[e.deHameau];
+    return H ? { qui: e.quiPrenom, hameau: H.nom, il_qui: e.quiGenre === 'f' ? 'Elle' : 'Il', e_qui: e.quiGenre === 'f' ? 'e' : '' } : null;
+  }],
+  ['visite_faite', ({ state, m, f }) => {
+    const e = evenementsDe(state, m.id, f.maison).filter((x) => x.sorte === 'visite' && x.qui === m.id).pop();
+    const H = e && habitantsDe(state)[e.hameau];
+    return H ? { chez: e.chezPrenom, hameau: H.nom, e: m.genre === 'f' ? 'e' : '' } : null;
+  }],
+  ['entraide_recue', ({ state, m, f }) => {
+    const e = evenementsDe(state, m.id, f.maison).filter((x) => x.sorte === 'entraide' && x.aFoyer === f.maison).pop();
+    return e ? { qui: e.de } : null;
+  }],
+  ['entraide_donnee', ({ state, m, f }) => {
+    const e = evenementsDe(state, m.id, f.maison).filter((x) => x.sorte === 'entraide' && x.deFoyer === f.maison).pop();
+    return e ? { aide: e.a } : null;
+  }],
   ['meteo_pluie', ({ state }) => (meteoDuJour(state).sorte === 'pluie' ? {} : null)],
   ['meteo_brume', ({ state }) => (meteoDuJour(state).sorte === 'brume' ? {} : null)],
   ['mois', ({ state }) => (dayOfMonth(state.day) <= 3 && state.day > 3 ? { mois: monthName(state.day) } : null)],

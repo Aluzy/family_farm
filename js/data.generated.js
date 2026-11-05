@@ -4558,6 +4558,35 @@ export const RAW_DATA = {
         "La brume du matin, ça annonce une belle journée.",
         "Avec cette brume, j'ai cru voir un fantôme… c'était un mouton !"
       ],
+      "lien_ami": [
+        "{ami} et moi, on se connaît depuis toujours.",
+        "Si tu cherches {ami}, on est souvent ensemble le soir.",
+        "Avec {ami}, on se raconte tout. Enfin, presque !",
+        "{ami} m'a prêté ses outils la semaine dernière. Un vrai ami."
+      ],
+      "lien_cousin": [
+        "{cousin_mot} {cousin} vit à {hameau}. Si tu passes par là, salue-{le} de ma part !",
+        "Tu connais {hameau} ? {cousin_mot} {cousin} y habite.",
+        "On ne se voit pas assez souvent, avec {cousin_mot_min} {cousin}, de {hameau}."
+      ],
+      "visite_recue": [
+        "{qui} est venu{e_qui} de {hameau} me voir. Ça m'a fait chaud au cœur !",
+        "Tu as croisé {qui} ? {il_qui} est venu{e_qui} de {hameau} juste pour nous.",
+        "On a eu de la visite : {qui}, de {hameau}. On a parlé jusqu'à la nuit !"
+      ],
+      "visite_faite": [
+        "Je suis allé{e} voir {chez} à {hameau}. Quelle route !",
+        "J'ai rendu visite à {chez}, à {hameau}. On a bien ri.",
+        "À {hameau}, {chez} m'a reçu{e} à bras ouverts."
+      ],
+      "entraide_recue": [
+        "On manquait de tout l'autre jour… {qui} nous a apporté à manger. On n'oublie pas ça.",
+        "Sans {qui}, on aurait eu le ventre vide. Quelle chance d'avoir des voisins pareils !"
+      ],
+      "entraide_donnee": [
+        "Chez {aide}, on manquait de tout : je leur ai porté un peu de mon garde-manger. C'est normal, entre voisins.",
+        "Quand quelqu'un manque de quelque chose, on partage. Hier, c'était pour {aide}."
+      ],
       "mois": ["Déjà le mois de {mois} ! Le temps passe vite.", "{mois} commence… J'aime bien ce mois-là.", "On est en {mois}. Il faut fêter ça !"],
       "reserve_hier": [
         "Hier soir, la réserve s'est remplie. {objet} surtout ! Le hameau est content.",
@@ -5829,6 +5858,16 @@ export const RAW_DATA = {
       ],
       "annonce": "📜 {prenom}, de {hameau}, a une demande pour toi : {n} × {objet}."
     }
+  },
+  "VOISINS": {
+    "_": [
+      "V-3 (docs/phase-4.md, js/engine/voisins.js) : entre voisins. Chaque adulte d'un hameau a un ami dans son hameau et un cousin dans un autre (tirés une fois, gardés). La nuit, un foyer qui a eu faim reçoit jusqu'à AIDE aliments du garde-manger d'un ami ou d'un cousin ; parfois (VISITE), un cousin rend visite à l'autre. EVENEMENTS : ce qu'on garde de ces nuits (pour les paroles, la fiche du hameau) ; RECENT : les jours où l'on en parle encore."
+    ],
+    "AIDE": 3,
+    "VISITE": 0.35,
+    "EVENEMENTS": 40,
+    "RECENT": 3,
+    "TEXTES": { "entraide": "{de} ({deHameau}) a apporté à manger à {a}, qui en manquait", "visite": "{qui}, de {deHameau}, est venu{e} voir {chez}" }
   },
   "STYLES": {
     "LISTE": {

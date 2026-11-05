@@ -64,6 +64,7 @@ export * from './propos.js';
 export * from './demandes.js';
 export * from './naturaliste.js';
 export * from './meteo.js';
+export * from './voisins.js';
 export * from './demenagement.js';
 export * from './decouverte.js';
 export * from './encyclopedie.js';

@@ -31,6 +31,7 @@ import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 import { distribuerGrain } from './distributeur.js';
 import { chainesDeLaJournee } from './chaines.js';
 import { demandesNuit } from './demandes.js';
+import { voisinsNuit } from './voisins.js';
 import { enExpedition, tentePortee } from './equipement.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -301,6 +302,8 @@ export function runNight(state) {
     // les habitants des hameaux vivent leur journée, que le joueur soit là ou non (habitants.js,
     // fiche 7b ; ni la ferme ni sa famille n'en dépendent)
     habitantsNuit(state);
+    // V-3 : entre voisins (voisins.js) : l'entraide des foyers qui ont eu faim, une visite parfois
+    voisinsNuit(state);
     // l'amitié (amitie.js) : les présents des amis proches devant la porte, la confiance des hameaux
     state.nuit.amitie = amitieNuit(state);
     // les invitations à un repas (invitations.js) : Achille a porté les messages du jour, les réponses viennent
