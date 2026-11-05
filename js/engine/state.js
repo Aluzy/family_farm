@@ -720,6 +720,14 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v73 → v74 (D-3 : Frida habite le Gué, on peut la rencontrer avant qu'elle passe à la ferme) : une partie qui a
+  // déjà vu sa scène de la ferme (« frida.rencontre ») la note aussi comme jouée (« frida.ferme »).
+  73: (state) => {
+    const out = JSON.parse(JSON.stringify({ ...state, version: 74 }));
+    const f = out.recit && out.recit.faits;
+    if (f && typeof f === 'object' && f['frida.rencontre'] && !f['frida.ferme']) f['frida.ferme'] = f['frida.rencontre'];
+    return out;
+  },
 };
 
 // Les noms que le récit cosy a changés (la migration 72 → 73) : les faits, les pages du carnet, les scènes et les

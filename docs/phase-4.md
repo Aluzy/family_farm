@@ -244,3 +244,22 @@ la nouvelle bible (`docs/recit/bible.md`, `docs/recit/personnages.md`).
   lettres (`RECIT_RENOMMAGES`, `js/engine/state.js`) ; Théo revient à Bois-Joli s'il était parti.
 - **Les tests** : `tests/engine/recit-cosy.test.mjs` (aucun texte ne parle de Johnny, du notaire, d'un deuil, de
   l'hiver ni de partir ; Odile ne vouvoie pas ; la migration), et ceux du récit mis à jour.
+
+## 13. D-3 : fait
+
+- **Les personnages qui manquaient habitent l'île** (`data/recit.json` › `PERSONNAGES[].habite`, placés par
+  `installerEcrits`, comme Odile, Basile et Théo) :
+  - Fernand aux Mouettes (pêcheur), apparence 12 ;
+  - Garance aux Genêts (bergère), apparence 30, et Lise dans son foyer (une enfant), apparence 32 ;
+  - Frida au Gué, dans son propre foyer, apparence 34. Son atelier au bord de l'étang reste son lieu de travail : une
+    bâtisse n'a pas d'habitant, et en faire un hameau l'aurait mêlée aux fêtes, aux voisins et aux demandes.
+- **Les rencontres** : les toucher la première fois joue leur scène (`garance_rencontre`, `lise_rencontre`,
+  `frida_gue`). Frida rencontrée au Gué a quand même sa scène des machines à la ferme, sans se présenter deux fois
+  (`frida_ferme_amie`).
+- **Leurs voix** : 24 répliques de plus (Fernand 6, Garance 6, Lise 5, Frida 7), dans les voix du récit cosy.
+- **Le secret de Lise** (`lise_lucioles`), une fois amie : le souvenir des lucioles au-dessus des bois de la ferme
+  (la page `souvenir_lise` du carnet, facultative pour le fil de la lune).
+- **L'encyclopédie** : une fiche pour Lise ; celles de Frida et de Garance disent où elles vivent.
+- **Les limites** : un hameau sans maison de deux lits n'a pas Lise (comme Théo à Bois-Joli) ; c'est rare.
+- **La migration 73 → 74** : une partie qui a déjà vu Frida à la ferme note sa scène comme jouée.
+- **Les tests** : `tests/engine/recit-d3.test.mjs`.
