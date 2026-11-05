@@ -88,7 +88,11 @@
     if (!E.rangs) E.rangs = new Map(J.personnages.map((n, i) => [n, i]));
     const n = nom(s.texture.key), rang = n ? E.rangs.get(n) : undefined;
     const cas = C.frames[+s.frame.name];
-    const z = rang !== undefined && cas ? J.cases[n.startsWith('enfant_') ? 'enfant' : 'adulte'][cas] : null;
+    // (une apparence à elle, étape E6 : ses tuiles dans sa propre texture, js/carte/planches.js texturesApparence)
+    const propre = rang === undefined ? (scene.textures.get(String(s.texture.key).split('~')[0]).customData || {}) : {};
+    if (propre.visages && scene.textures.exists(propre.visages) && !(o && o.atlas)) o = { ...(o || {}), atlas: { key: propre.visages, base: 0 } };
+    const age = propre.visages ? propre.age : n && n.startsWith('enfant_') ? 'enfant' : 'adulte';
+    const z = (rang !== undefined || propre.visages) && cas ? J.cases[age][cas] : null;
     let f = s.visage;
     const now = performance.now();
     const M = scene.ctx && scene.ctx.lastModel;
@@ -103,6 +107,7 @@
     }
     const col = J.expressions.indexOf(e) * J.vues.length + J.vues.indexOf(z.vue);
     const A = o && o.atlas && scene.textures.exists(o.atlas.key) ? o.atlas : null;
+    if (!A && rang === undefined) { f.setVisible(false); return; }
     const key = A ? A.key : 'visages', frame = A ? A.base + col : rang * J.expressions.length * J.vues.length + col;
     if (f.texture.key !== key || f.frame.name !== frame) f.setTexture(key, frame);
     // la tuile dans la case (retournée avec elle), par rapport à l'origine de l'image ; tournée avec elle (un lit)

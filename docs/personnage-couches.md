@@ -1,7 +1,7 @@
 # Les personnages en couches : identité, tenue, expressions (chantier)
 
 Statut : **E0 validée** (les 9 expressions, de face et de profil) ; **E1 faite** (§ 6) ; **E2 faite** (§ 7) ;
-**E3 faite** (§ 8 : la carte ; § 9 : les portraits vivants du menu Famille) ; **E4 faite** (§ 10, § 11) ; **E5 faite** (§ 12).
+**E3 faite** (§ 8 : la carte ; § 9 : les portraits vivants du menu Famille) ; **E4 faite** (§ 10, § 11) ; **E5 faite** (§ 12) ; **E6 faite** (§ 13).
 
 Le but : séparer un personnage de ses vêtements et de ses attributs (peau, yeux, coiffure, expression),
 et donner des expressions aux visages, **en gardant la base actuelle** : les 100 personnages
@@ -432,3 +432,42 @@ image, et garder les planches faites (elles ne changent qu'avec l'apparence).
 **Suite (E6)** : l'apparence dans la sauvegarde (`member.apparence = { identite, tenue }`), l'écran de création attribut
 par attribut ; il faudra alors la palette d'une combinaison libre (aujourd'hui, `couches.json` donne celle des 100) :
 porter `modeles.palette_de` en JS, ou exporter une palette par élément et par couleur.
+
+## 13. Étape E6 : choisir son apparence
+
+**Dans le moteur** (`js/engine/family.js`) : un membre peut avoir une apparence à lui, `member.apparence =
+{ identite, tenue }`, facultative ; sans elle, son personnage du catalogue (`member.perso`) reste, et une ancienne
+partie ne change pas (aucune migration : la sauvegarde garde le champ tel quel). `validApparence` n'accepte que les
+choix de `DATA.FAMILLE.PROFIL.APPARENCE` (`data/general.json` : chaque attribut, son libellé ; les mêmes noms que les
+palettes de `catalogue.json`, comparés par un test) et en garde une copie propre ; `memberApparence` la lit (abîmée :
+null, le personnage reprend) ; `setMemberProfile({ apparence })` la pose, `apparence: null` la retire.
+
+**Dans le jeu, l'apparence calculée** (`js/carte/planches.js`) : `CartePlanches.apparence(C, K, age, identite, tenue)` en
+tire les éléments et la palette, portage exact de `modeles.palette_de` et `elements` (l'arrondi de Python : au pair) ;
+`CartePlanches.visages` ses 18 tuiles de visage, portage d'`expressions.py`. **Vérifié**
+(`tests/engine/personnages-apparence.test.mjs`) : les 97 personnages tirés du catalogue retrouvent leurs éléments,
+leur palette et leurs tuiles de `visages.png` ; 12 apparences au hasard, dessinées par Python
+(`couches.py --apparences` : `tests/engine/apparences.json` et `.png`), aussi.
+
+**L'écran** (la fenêtre « Modifier » d'un membre, `js/ui/famille.js`) : sous la grille des personnages, **Personnaliser** :
+l'identité (peau, yeux, cheveux, coupe, barbe ou moustache pour un adulte, taches de rousseur, joues roses) et la
+tenue (haut, motif, bas, couvre-chef, sa couleur, lunettes, boucles d'oreilles, pansement), chaque choix avec la
+pastille de sa couleur ; l'aperçu suit. Le premier choix part du personnage du catalogue en cours ; un personnage de
+la grille retire l'apparence. Pour un enfant, les coupes proposées sont celles qui se dessinent différemment
+(`COUPE_PROPOSEE` : « mèche », « hérissés », « bouclés » se dessinent comme « courts »).
+
+**Où elle se voit** :
+- les portraits (`js/ui/apparence.js` : la planche assemblée en image, gardée) : la fiche du membre, la liste des
+  membres, le médaillon du joueur ; vivants (§ 9), le clignement pris dans sa case du sommeil ;
+- la carte de la ferme : le personnage principal (`modele.js`, `syncPerso`), la famille (`famille-ferme.js`) ; leur
+  planche et leur atlas de visages sont des textures faites à la demande (`CartePlanches.texturesApparence`, après
+  `couches.json` et `catalogue.json`, chargés seulement si quelqu'un a une apparence à lui) ; leurs expressions
+  (`js/carte/visages.js`) aussi ;
+- la mine : le personnage principal y garde son apparence (la texture faite par la ferme).
+
+**Vérifié dans Chromium** : personnaliser le personnage principal et son compagnon (aperçu, enregistrement), leurs
+portraits (fiche, liste, médaillon) sont leurs planches assemblées ; après un rechargement de la page aussi ; sur la
+carte, leurs textures et leurs atlas de visages, un clignement ; dans la mine, sa planche ; aucune erreur.
+
+**Pas encore** : les habitants des hameaux restent des personnages du catalogue (leur tirage par graine, avec des
+identités et des tenues mêlées : étape E7) ; les émotions colorées d'`amis.js` ne concernent que les habitants.

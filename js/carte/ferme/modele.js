@@ -40,7 +40,7 @@
         const o = v && typeof v === 'object' ? v : { visible: !!v };
         return o.visible ? o : null;
       };
-      this.syncPerso(model.perso | 0);
+      this.syncPerso(model.perso | 0, model.apparence || null);
       this.syncFloors(model.sols);
       this.syncPaths(model.chemins);
       this.syncBeasts(model.enclos, model.heure);
@@ -125,14 +125,21 @@
 
     // Version 1.17 : le personnage du joueur, un des 50 du catalogue (assets/personnages). Sa
     // planche est chargée la première fois qu'il est choisi ; d'ici là, la fermière.
-    syncPerso(n) {
-      if (!this.fermier || !n || n === this.persoN) return;
-      this.persoN = n;
-      const key = 'perso_' + n;
-      const apply = () => { if (this.persoN === n && this.has(key)) this.fermier.setSheet(key); };
-      if (this.textures.exists(key)) { apply(); return; }
-      // (la planche assemblée depuis ses couches, js/carte/planches.js, si le réglage le demande ; sinon le PNG)
+    // Étape E6 : son apparence à lui (apparence) remplace son personnage du catalogue (js/carte/planches.js).
+    syncPerso(n, apparence) {
       const P = global.CartePlanches;
+      const key = apparence && P ? P.cleApparence('adulte', apparence) : n ? 'perso_' + n : null;
+      if (!this.fermier || !key || key === this.persoCle) return;
+      this.persoCle = key;
+      this.persoN = n;
+      const apply = () => { if (this.persoCle === key && this.has(key)) this.fermier.setSheet(key); };
+      if (this.textures.exists(key)) { apply(); return; }
+      if (apparence && P) {
+        const faire = () => { P.texturesApparence(this, 'adulte', apparence); apply(); };
+        if (P.chargerDonnees(this, { couches: v('personnages/couches.json'), catalogue: v('personnages/catalogue.json') }, faire)) faire();
+        return;
+      }
+      // (la planche assemblée depuis ses couches, js/carte/planches.js, si le réglage le demande ; sinon le PNG)
       if (P && P.charger(this, key, null, v(K.planche(n)))) { apply(); return; }
       if (!P) this.load.spritesheet(key, v(K.planche(n)), FERMIER_FRAME);
       this.load.once('complete', apply);

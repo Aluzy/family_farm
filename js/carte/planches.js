@@ -375,5 +375,45 @@
     return false;
   }
 
-  global.CartePlanches = { assembler, planche, actif, charger, nomPlanche, pixels, apparence, visages, rond };
+  // Étape E6 : un membre à l'apparence à lui. Sa planche et ses tuiles de visage, des textures de la scène :
+  // cleApparence(age, app) leur nom (le même pour la même apparence) ; chargerDonnees(scène, urls, fait) demande
+  // couches.json et catalogue.json au chargeur (s'ils manquent : fait() une fois là ; → true s'ils y sont déjà) ;
+  // texturesApparence(scène, age, app) fait la planche et l'atlas « visages:<clé> » (js/carte/visages.js les
+  // trouve par texture.customData) ; → la clé, ou null sans les données.
+  function cleApparence(age, a) {
+    let h = 2166136261;
+    for (const c of age + JSON.stringify(a)) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+    return `app_${age === 'enfant' ? 'e' : 'a'}_${h.toString(36)}`;
+  }
+
+  function chargerDonnees(scene, urls, fait) {
+    const J = scene.cache.json;
+    if (J.get('couches') && J.get('catalogue')) return true;
+    if (!J.exists('couches')) scene.load.json('couches', urls.couches);
+    if (!J.exists('catalogue')) scene.load.json('catalogue', urls.catalogue);
+    scene.load.once('complete', fait);
+    if (!scene.load.isLoading()) scene.load.start();
+    return false;
+  }
+
+  function texturesApparence(scene, age, a) {
+    const cle = cleApparence(age, a);
+    if (scene.textures.exists(cle)) return cle;
+    const C = scene.cache.json.get('couches'), K = scene.cache.json.get('catalogue');
+    if (!C || !K || !global.document) return null;
+    const A = apparence(C, K, age, a.identite, a.tenue), p = assembler(C, A.def, A.palette);
+    const toile = (q) => {
+      const cv = global.document.createElement('canvas');
+      cv.width = q.largeur; cv.height = q.hauteur;
+      cv.getContext('2d').putImageData(new ImageData(q.data, q.largeur, q.hauteur), 0, 0);
+      return cv;
+    };
+    const t = visages(C, A, p), X = C.expressions;
+    scene.textures.addSpriteSheet('visages:' + cle, toile(t), { frameWidth: X.zone[2], frameHeight: X.zone[3] });
+    scene.textures.addSpriteSheet(cle, toile(p), { frameWidth: C.case.w, frameHeight: C.case.h });
+    scene.textures.get(cle).customData = { age, visages: 'visages:' + cle };
+    return cle;
+  }
+
+  global.CartePlanches = { assembler, planche, actif, charger, nomPlanche, pixels, apparence, visages, rond, cleApparence, chargerDonnees, texturesApparence };
 })(typeof window !== 'undefined' ? window : globalThis);

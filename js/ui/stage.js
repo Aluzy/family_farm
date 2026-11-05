@@ -8,7 +8,7 @@ import { mainCharacter, setupPending } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
 import { fridgeUnits } from '../engine/fridge.js';
-import { memberPerso, petSheets } from '../engine/family.js';
+import { memberApparence, memberPerso, petSheets } from '../engine/family.js';
 import { allPlots, findPlot, growHoursLeft, hoeableTiles, terrainLines, isMature, maxStage, seedStock, soilCap, soilCount } from '../engine/crops.js';
 import { ripeTrees, treeInBloom, treeStage } from '../engine/orchard.js';
 import { coopCapacity, sheepToShear, stableHoused, woolReady } from '../engine/animals.js';
@@ -472,8 +472,9 @@ export function stageModel() {
     ramasser,
     // version 1.17 : le personnage du joueur sur la carte (son numéro dans le catalogue)
     perso: memberPerso(mainCharacter(state)),
+    apparence: memberApparence(mainCharacter(state)),   // (étape E6 : son apparence à lui, ou null)
     // les autres membres de la famille, qui font leur journée sur la carte (js/famille-ferme.js)
-    famille: state.famille.membres.filter((m) => m !== mainCharacter(state)).map((m) => ({ id: m.id, perso: memberPerso(m), enfant: !!m.enfant })),
+    famille: state.famille.membres.filter((m) => m !== mainCharacter(state)).map((m) => ({ id: m.id, perso: memberPerso(m), enfant: !!m.enfant, apparence: memberApparence(m) })),
     // le second adulte du foyer et où il a à faire (le Poulailler, l'Étable : aideAFaire ; fiche 19 :
     // puis ses initiatives, arroser, cuisiner, ramasser, js/engine/compagnon.js tachesCompagnon)
     aide: aidant(state) ? { id: aidant(state).id, lieux: [...aideAFaire(state), ...tachesCompagnon(state)] } : null,

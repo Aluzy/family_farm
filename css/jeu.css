@@ -3488,3 +3488,15 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .build-gomme.on { background: #ffd9a8; }
 .build-tourner span, .build-sens span { font-size: 1.1rem; font-weight: 700; line-height: 1; }
 .build-tourner.on { background: #cfe8ff; }
+
+/* ---------- Étape E6 du chantier « couches » : l'apparence d'un membre, attribut par attribut (js/ui/famille.js) ---------- */
+.apparence-choix summary { cursor: pointer; padding: 4px 0; }
+.apparence-groupe { border: 1px solid var(--wood-dark, #6b4a2b); border-radius: 8px; margin: 6px 0; padding: 4px 8px 8px; min-width: 0; }
+.apparence-groupe legend { font-weight: 700; padding: 0 4px; }
+.apparence-champ { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 4px 8px; align-items: start; margin-top: 6px; }
+.apparence-nom { font-size: 0.85rem; padding-top: 6px; }
+.apparence-options { display: flex; flex-wrap: wrap; gap: 4px; }
+.choix-apparence { min-height: 32px; padding: 3px 8px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 5px; }
+.choix-apparence.active { outline: 3px solid var(--color-sun); outline-offset: 0; }
+.choix-apparence .pastille { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.45); flex: none; }
+@media (max-width: 420px) { .apparence-champ { grid-template-columns: minmax(0, 1fr); } .apparence-nom { padding-top: 0; } }

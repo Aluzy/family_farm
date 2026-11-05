@@ -162,10 +162,13 @@
   const planche = (n, enfant) => 'personnages/' + (enfant ? 'enfant_' : 'perso_') + String(n).padStart(2, '0') + '.png';
   // Le personnage principal de la partie (FermeHote.perso, js/ui/excursion.js) sur une autre
   // carte que la ferme : sa planche et ses cases nommées ; sans partie, la fermière.
+  // (étape E6 : son apparence à lui ; `cle`, la texture de sa planche, faite par la ferme : js/carte/planches.js)
   function planchePerso() {
     const H = global.FermeHote;
     const n = H && H.perso ? H.perso() : null;
-    return n ? { file: 'assets/' + planche(n), names: 'assets/personnages/cases.json' } : { file: 'assets/fermiere.png', names: 'assets/fermiere.json' };
+    const a = H && H.apparence ? H.apparence() : null;
+    const cle = a && global.CartePlanches ? global.CartePlanches.cleApparence('adulte', a) : null;
+    return n ? { file: 'assets/' + planche(n), names: 'assets/personnages/cases.json', cle } : { file: 'assets/fermiere.png', names: 'assets/fermiere.json', cle: null };
   }
 
   // Le joueur écrit dans un champ de la page (un nom, une quantité, un menu), ou une fenêtre du

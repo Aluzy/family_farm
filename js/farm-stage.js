@@ -305,6 +305,7 @@
               // l'intérieur de la maison du foyer : ses places (chantier.js, homeInside)
               maison: () => (this.homeInside ? this.homeInside() : null),
               file: (perso, enfant) => v(K.planche(perso, enfant)),
+              donnees: { couches: v('personnages/couches.json'), catalogue: v('personnages/catalogue.json') },   // (une apparence à lui : js/carte/planches.js)
             });
           } catch (e) { console.warn('[FarmStage] famille indisponible', e); }
         }

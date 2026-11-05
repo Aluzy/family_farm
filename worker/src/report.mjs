@@ -174,7 +174,7 @@ export const INTERFACE_ACTIONS = new Set([
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,
   // réglages de quantité (Moulin, achats), fiche d'un membre de la famille
   'stage-goto', 'stage-pan', 'stage-pan-down', 'market-locked', 'plant-all-open', 'plant-many-open', 'ami-offrir-open', 'evt-open', 'aller', 'comptoir-tab', 'inv-tab',
-  'member-edit', 'member-perso', 'fiche-onglet', 'fiche-sac', // fiche 11 : l'onglet d'un membre, ouvrir le sac
+  'member-edit', 'member-perso', 'member-apparence', 'fiche-onglet', 'fiche-sac', // fiche 11 : l'onglet d'un membre, ouvrir le sac
   'family-edit', 'family-help', 'pets-edit', 'menu-toggle', 'book-open', 'book-next', 'book-prev', 'book-goto', // essai : le Livre de recette en livre
   'encyclo-open', 'encyclo-page',
   'carte-monde-open', 'carte-monde-zoom', 'carte-monde-centre', 'carte-monde-lieu', // fiche 8 : la carte du monde (l'ouvrir, la régler, choisir un lieu)

@@ -11,7 +11,7 @@
 // l'inventaire ou le réfrigérateur), y manger, le retirer. Le moteur : js/engine/equipement.js.
 
 import { DATA } from '../engine/catalog.js';
-import { eatSnack, findMember, memberName, memberPerso } from '../engine/family.js';
+import { eatSnack, findMember, memberName } from '../engine/family.js';
 import { mainCharacter } from '../engine/depart.js';
 import { memberHappiness } from '../engine/bonheur.js';
 import { jaugeMembre } from '../engine/repas.js';
@@ -33,7 +33,7 @@ import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { applyResult } from './game-actions.js';
-import { persoHtml } from './famille.js';
+import { membrePortraitHtml } from './famille.js';
 import { formatEnergyGain } from './energie.js';
 import { helpBtn } from './aide.js';
 
@@ -76,7 +76,7 @@ function persoEquipeHtml(m) {
   // portrait est vivant, persoHtml, css/jeu.css .fiche-calque.haut)
   const calque = (item, part) => `<span class="perso-px fiche-calque ${part}" style="background-image: url('${calquesSrc()}'); background-position: ${enfant ? 'calc(var(--s) / -2)' : '0'} calc(var(--s) * -${rangs.indexOf(item)})"></span>`;
   const calques = pieces.map((item) => calque(item, 'bas') + calque(item, 'haut')).join('');
-  return `<span class="fiche-perso${enfant ? ' enfant' : ''}" aria-hidden="true">${persoHtml(memberPerso(m), enfant, '', m.id)}${calques}</span>`;
+  return `<span class="fiche-perso${enfant ? ' enfant' : ''}" aria-hidden="true">${membrePortraitHtml(m, true)}${calques}</span>`;
 }
 
 /* -- les jauges -- */
