@@ -1,0 +1,17 @@
+{
+  "//NATURALISTE": [
+    "D-1 (docs/phase-4.md, js/engine/naturaliste.js) : le carnet du naturaliste. Les collections de l'Encyclopédie :",
+    "quand toutes leurs pages sont découvertes (les trouvailles ramassées, les poissons pêchés, les paysages",
+    "parcourus), la collection est complète et donne une fois sa récompense, un meuble à poser (ATELIER.BLOCS, son",
+    "objet dans l'inventaire). Pas dans un monde en ligne (l'Encyclopédie est celle de chaque joueur)."
+  ],
+  "NATURALISTE": {
+    "COLLECTIONS": {
+      "fossiles": { "nom": "Fossiles et cristaux", "icone": "🪨", "pages": ["ammonite", "trilobite", "quartz", "amethyste"], "recompense": "meuble_bibliotheque_vitree", "texte": "une bibliothèque vitrée, pour les exposer" },
+      "plage": { "nom": "Trésors de la plage", "icone": "🐚", "pages": ["coquille", "bulot", "corail", "perle"], "recompense": "meuble_tapis_3", "texte": "un tapis bleu comme la mer" },
+      "sous_bois": { "nom": "Cueillette des sous-bois", "icone": "🍄", "pages": ["champignon", "myrtille", "chataigne", "herbes_montagne"], "recompense": "meuble_plante_fougere", "texte": "une fougère en pot" },
+      "poissons": { "nom": "Poissons d'ici", "icone": "🎣", "pages": ["truite", "brochet", "omble", "goujon", "dorade", "sardine", "anchois"], "recompense": "meuble_tableau_3", "texte": "un tableau de la mer" },
+      "paysages": { "nom": "Les paysages du grand monde", "icone": "🧭", "pages": ["b_mer", "b_plage", "b_falaise", "b_prairie", "b_foret", "b_marais", "b_lande", "b_montagne", "b_sommet", "b_lac", "b_riviere"], "recompense": "meuble_plante_bonsai", "texte": "un bonsaï, le monde en miniature" }
+    }
+  }
+}

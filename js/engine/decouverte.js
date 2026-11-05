@@ -27,6 +27,8 @@ import { equipementDe } from './equipement.js';
                          ou une grotte de la montagne, grotte_monde : une grotte de la montagne)
      faune:<espèce>      une bête du grand monde a été vue (noterEncyclopedie, la première fois :
                          DATA.FAUNE.ESPECES, data/monde.json)
+     biome:<biome>       D-1 : le personnage est entré dans ce biome du grand monde (noterEncyclopedie,
+                         la première fois : DATA.BIOMES, data/monde.json)
      hameau              un hameau du grand monde a été vu (state.monde.hameaux, monde-hameaux.js)
      onglet:<onglet>     l'onglet est ouvert (state.unlockedTabs)
      techno:<nœud>       la technologie est acquise ; technologies : un point de technologie gagné
@@ -103,6 +105,7 @@ export function conditionRemplie(state, cond, evenements = {}, memo = null) {
     case 'didacticiel': return etapeAtteinte(state, v);
     case 'carte': return !!evenements[`carte:${v}`];
     case 'faune': return !!evenements[`faune:${v}`];
+    case 'biome': return !!evenements[`biome:${v}`];
     case 'hameau': return Object.keys(hameauxVus(state)).length > 0;
     case 'onglet': return Array.isArray(state.unlockedTabs) && state.unlockedTabs.includes(v);
     case 'techno': return Array.isArray(state.technologies) && state.technologies.includes(v);
@@ -134,6 +137,7 @@ export function erreurCondition(cond) {
     didacticiel: () => ETAPES.includes(v),
     carte: () => CARTES_ENCYCLOPEDIE.includes(v),
     faune: () => !!(DATA.FAUNE && DATA.FAUNE.ESPECES && DATA.FAUNE.ESPECES[v]),
+    biome: () => Array.isArray(DATA.BIOMES) && DATA.BIOMES.includes(v),
     onglet: () => typeof v === 'string' && v.length > 0,
     techno: () => !!DATA.ARBRE.noeuds[v],
     jour: () => Number(v) >= 1,

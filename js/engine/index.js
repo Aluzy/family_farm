@@ -62,6 +62,7 @@ export * from './commandes.js';
 export * from './roles.js';
 export * from './propos.js';
 export * from './demandes.js';
+export * from './naturaliste.js';
 export * from './demenagement.js';
 export * from './decouverte.js';
 export * from './encyclopedie.js';
