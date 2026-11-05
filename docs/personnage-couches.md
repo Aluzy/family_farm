@@ -1,6 +1,6 @@
 # Les personnages en couches : identité, tenue, expressions (chantier)
 
-Statut : **E0 validée** (les 9 expressions, de face et de profil) ; **E1 faite** (§ 6).
+Statut : **E0 validée** (les 9 expressions, de face et de profil) ; **E1 faite** (§ 6) ; **E2 faite** (§ 7).
 
 Le but : séparer un personnage de ses vêtements et de ses attributs (peau, yeux, coiffure, expression),
 et donner des expressions aux visages, **en gardant la base actuelle** : les 100 personnages
@@ -96,7 +96,7 @@ ou de contour : une mèche ou une barbe reste devant. Le blanc, la pupille, la p
 sur le modèle lui-même ; quatre lettres s'ajoutent à la palette : `L` trait sombre, `M` bouche marquée,
 `O` bouche ouverte, `N` larme.
 
-**Maquettes** : `python3 scripts/personnage/expressions.py` écrit à la racine du dépôt (fichiers jamais
+**Maquettes** : `python3 scripts/personnage/expressions.py --apercu` écrit à la racine du dépôt (fichiers jamais
 commités) `apercu_expressions.png` (9 personnages témoins × 9 expressions, de face et de profil, × 8) et
 `apercu_expressions_jeu.png` (en pied, dans la case, × 3, l'échelle d'un téléphone).
 
@@ -171,3 +171,45 @@ quelles dans le composeur JS (E5) :
 seulement autour des yeux : 5 800 pixels, dans les rangées 10 à 21 et les colonnes 4 à 10 des cases.
 Au passage, `peau.json` perd une teinte, `#523518` : c'était l'ancienne pupille de 8 personnages à la
 peau foncée, prise à tort pour de la peau ; une émotion recolorait leurs pupilles avec la peau.
+
+## 7. Étape E2 : l'atlas des visages
+
+`python3 scripts/personnage/expressions.py` (à relancer après `chibi.py`) écrit :
+
+- **`assets/personnages/visages.png`** (144 × 500 px) : pour chacun des 100 personnages (une rangée, dans
+  l'ordre du catalogue), chaque expression de face puis de profil (18 colonnes) : la **zone du visage**,
+  8 × 5 px (colonnes 2 à 9, rangées 5 à 9 du modèle), telle qu'elle apparaît sur sa planche, ce qui la
+  couvre compris (cheveux, lunettes, barbe, contour). Posée sur la case, la tuile remplace exactement la
+  zone : le jeu n'a qu'à la dessiner par-dessus le personnage.
+- **`assets/personnages/visages.json`** : les expressions, les vues, l'ordre des personnages et, pour
+  chaque âge et chaque case, où est la zone : `{ vue, x, y, expr }` (de profil, la carte retourne la case :
+  la zone va en `16 - x - w`, soit le même x, 4), ou `null` quand le visage n'est pas dégagé. `expr` est
+  ce que la case montre déjà : `fermes` pour le sommeil.
+
+**Mesuré, pas calculé.** La zone de la pose debout est cherchée, rangée par rangée, dans chaque case de
+chaque planche ; on la trouve (telle quelle, ou avec une expression) là où le visage est dégagé. Une même
+table vaut pour tous les personnages d'un même âge (vérifié : sinon l'atlas n'est pas écrit).
+
+| | Adultes | Enfants |
+|---|---|---|
+| Cases au visage dégagé | 51 sur 111 | 49 sur 111 |
+
+- **Dégagées** : debout et la marche (face et profil), le panier, planter, arroser, ramasser, des temps
+  de la houe, de la hache, de la pioche, de la pêche et du jet, assis (les mains sur la table), le sommeil
+  (yeux fermés).
+- **Pas de visage** : tout ce qui est de dos (`_haut_`), la cuisine et le frigo (de dos), la faux, et
+  les temps où un bras ou un outil passe devant le visage (outil levé, fourchette à la bouche :
+  `assis_*_1`).
+- **Limite** : un enfant assis (`assis_bas_0`, `assis_cote_0`) n'a pas de calque : le raccourci des
+  enfants (`chibi.ENFANT_RANGEES`, les rangées 20 et 21 de la case) tombe, la tête baissée de 4 pour
+  s'asseoir, dans son menton, qui est rogné. Défaut de dessin antérieur, à reprendre avec les couches (E4).
+- Les yeux fermés de l'expression `fermes` sont exactement ceux du sommeil de `chibi.py` (la peau relevée
+  comme dans `Modele.yeux_fermes`) : les cases `dort_bas_*` sont reconnues comme `fermes`.
+
+**Test** : `tests/engine/personnages-visages.test.mjs` (dans `npm test`) :
+- sur les 5 000 cases au visage dégagé des 100 planches, la tuile posée à sa place redonne exactement la planche ;
+- une expression garde la silhouette (mêmes pixels transparents) et change bien le visage de chacun des
+  100 personnages, de face et de profil ;
+- une planche régénérée sans l'atlas fait échouer le test (vérifié en modifiant un pixel).
+
+La lecture des PNG des tests est mise en commun : `tests/engine/png.mjs` (reprise de `marche.test.mjs`).
