@@ -1,10 +1,9 @@
 import { DATA } from '../engine/catalog.js';
 import { executer } from './commandes.js';
-import { awakeRequired } from '../engine/clock.js';
 import {
-  hasTech, hasTechResources, masteryValue, prepTimeMult, techFlag, techPoints, techPrereqs, techProgress, techResources, techStatus,
+  hasTech, hasTechResources, masteryValue, techFlag, techPoints, techPrereqs, techProgress, techResources, techStatus,
 } from '../engine/techtree.js';
-import { formatCoins, formatNumber, formatPercent, formatQty } from '../engine/format.js';
+import { formatCoins, formatNumber } from '../engine/format.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
 import { notify } from './toasts.js';
@@ -95,13 +94,6 @@ function techNodeCard(id) {
     </article>`;
 }
 
-// Effet en cours d'une branche, affiché dans son en-tête.
-function branchEffectChip(id) {
-  if (id === 'cuisine') return `<span class="chip">Temps de préparation ${formatPercent(prepTimeMult(state))}</span>`;
-  if (id === 'famille') return `<span class="chip">Éveil minimal : ${formatQty(awakeRequired(state))} s</span>`;
-  return '';
-}
-
 // Jalons de maîtrise : chacun rapporte 1 PT, une seule fois.
 function masteryHtml() {
   const pt = techPoints(state);
@@ -131,7 +123,7 @@ export function renderTechno() {
       <details class="branch"${open ? ' open' : ''} aria-label="Branche ${b.nom}">
         <summary class="branch-head">
           <h3>${b.icone} ${b.nom}</h3>
-          <span class="chips">${achetable ? '<span class="chip">✨ À acquérir</span>' : ''}${branchEffectChip(b.id)}<span class="chip">${owned} / ${nodes.length} acquis</span></span>
+          <span class="chips">${achetable ? '<span class="chip">✨ À acquérir</span>' : ''}<span class="chip">${owned} / ${nodes.length} acquis</span></span>
         </summary>
         <div class="branch-nodes">
           ${progress}
