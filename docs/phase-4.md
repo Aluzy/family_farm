@@ -188,3 +188,19 @@ G-1, plus courts, qui embellissent ce qui existe déjà.
 - **En ligne** : la copie mise en ligne perd `state.voisins` (le grand monde, E-8).
 - **Coût** : environ 2 ms par nuit sur la partie du jour 54 (63 liens noués).
 - **Les tests** : `tests/engine/voisins.test.mjs`, et un essai dans le jeu (la fiche du hameau).
+
+## 10. V-4 : fait
+
+- **Le calendrier des fêtes** (`js/engine/fetes.js`, `data/amitie.json` › `FETES`) :
+  - chaque mois (une lunaison de 14 jours), 2 hameaux peuplés font leur fête, chacun un jour différent, à partir du 3ᵉ jour du mois ;
+  - le tirage vient de la graine de la ferme et du mois : rien n'est gardé, tout se recalcule ;
+  - la fête dure de 17 h à 21 h. Son nom vient du métier du hameau : la fête du bois, de la pêche, de la roche, des laines, des récoltes (sinon « la fête du hameau »).
+- **Sur la carte** (`js/carte/ferme/habitants.js`) : pendant la fête, tout le hameau, adultes et enfants, se retrouve sur la place. Toucher un habitant donne une phrase de fête.
+- **Y aller** (`allerALaFete`, appelé par `js/ui/fetes.js` quand le personnage est dans le hameau) : une fois par fête, +4 d'amitié avec chaque adulte du hameau et un plat de fête (celui de la bienvenue, selon le métier).
+- **On l'annonce** :
+  - le matin, une annonce pour chaque fête des 3 jours qui viennent ;
+  - le calendrier marque les jours de fête 🎉 et les liste sous la grille ;
+  - les habitants en parlent (V-1, 3 sujets de plus) : la fête qui vient (« c'est dans 2 jours ! »), celle de ce soir, et le souvenir de celle où tu étais.
+- **Pas de marché ni de musique** pour l'instant : le commerce reste celui du jeu solo (M.4), et les musiques sont prévues avec G-2.
+- **En ligne** : rien. Les hameaux restent au grand monde (E-8), et la copie mise en ligne perd `state.fetes`.
+- **Les tests** : `tests/engine/fetes.test.mjs`, et un essai dans le jeu avec la partie du jour 54 (la place pleine, l'annonce, le calendrier).

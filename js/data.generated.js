@@ -4385,7 +4385,14 @@ export const RAW_DATA = {
         "joue": ["On joue à chat !", "Tu veux jouer avec nous ?", "Je cours plus vite que toi !", "On a vu un lapin près du puits !"],
         "repas": ["C'est l'heure de manger.", "Ça sent bon à la maison.", "À table !"],
         "rentre": ["Je rentre à la maison.", "La soupe nous attend.", "Encore une bonne journée."],
-        "soir": ["On se repose un peu avant la nuit.", "Quelle journée !", "Bientôt l'heure d'aller au lit."]
+        "soir": ["On se repose un peu avant la nuit.", "Quelle journée !", "Bientôt l'heure d'aller au lit."],
+        "fete": [
+          "C'est la fête ce soir ! Viens danser avec nous !",
+          "Tu as goûté le plat de fête ? Il en reste !",
+          "Toute la place est là, ça fait plaisir.",
+          "Une fête sans toi, ça n'aurait pas été pareil.",
+          "Écoute, on chante ! Tu connais l'air ?"
+        ]
       },
       "travail": {
         "bucheron": [
@@ -4423,7 +4430,10 @@ export const RAW_DATA = {
         "ferme_poules_enfant",
         "jours_enfant",
         "fete_place",
-        "voisin_enfant"
+        "voisin_enfant",
+        "fete_bientot",
+        "fete_aujourdhui",
+        "fete_souvenir"
       ],
       "ferme_cultures": [
         "On voit ton coin de {culture} depuis le chemin : il a fière allure !",
@@ -4565,19 +4575,19 @@ export const RAW_DATA = {
         "{ami} m'a prêté ses outils la semaine dernière. Un vrai ami."
       ],
       "lien_cousin": [
-        "{cousin_mot} {cousin} vit à {hameau}. Si tu passes par là, salue-{le} de ma part !",
+        "{cousin_mot} {cousin} vit {a_hameau}. Si tu passes par là, salue-{le} de ma part !",
         "Tu connais {hameau} ? {cousin_mot} {cousin} y habite.",
-        "On ne se voit pas assez souvent, avec {cousin_mot_min} {cousin}, de {hameau}."
+        "On ne se voit pas assez souvent, avec {cousin_mot_min} {cousin}, {de_hameau}."
       ],
       "visite_recue": [
-        "{qui} est venu{e_qui} de {hameau} me voir. Ça m'a fait chaud au cœur !",
-        "Tu as croisé {qui} ? {il_qui} est venu{e_qui} de {hameau} juste pour nous.",
-        "On a eu de la visite : {qui}, de {hameau}. On a parlé jusqu'à la nuit !"
+        "{qui} est venu{e_qui} {de_hameau} me voir. Ça m'a fait chaud au cœur !",
+        "Tu as croisé {qui} ? {il_qui} est venu{e_qui} {de_hameau} juste pour nous.",
+        "On a eu de la visite : {qui}, {de_hameau}. On a parlé jusqu'à la nuit !"
       ],
       "visite_faite": [
-        "Je suis allé{e} voir {chez} à {hameau}. Quelle route !",
-        "J'ai rendu visite à {chez}, à {hameau}. On a bien ri.",
-        "À {hameau}, {chez} m'a reçu{e} à bras ouverts."
+        "Je suis allé{e} voir {chez} {a_hameau}. Quelle route !",
+        "J'ai rendu visite à {chez}, {a_hameau}. On a bien ri.",
+        "{chez} m'a reçu{e} à bras ouverts, {a_hameau}."
       ],
       "entraide_recue": [
         "On manquait de tout l'autre jour… {qui} nous a apporté à manger. On n'oublie pas ça.",
@@ -4622,6 +4632,22 @@ export const RAW_DATA = {
       "jours_enfant": [
         "Tu es là depuis {jours} jours, c'est ça ? J'ai compté !",
         "Moi, je sais compter jusqu'à {jours}. C'est le nombre de jours depuis que tu es là !"
+      ],
+      "fete_bientot": [
+        "{Fete}, c'est {quand} ! Tu viendras ?",
+        "On prépare {fete} : {quand}, sur la place, à partir de {debut} h.",
+        "Tu sais quoi ? {Fete}, c'est {quand}. Il y aura à manger pour tout le monde !",
+        "Plus que quelques jours avant {fete} ! Viens donc, {quand}, vers {debut} h."
+      ],
+      "fete_aujourdhui": [
+        "Ce soir, c'est {fete} ! Rendez-vous sur la place à {debut} h.",
+        "Tu restes pour {fete} ? Ça commence à {debut} h.",
+        "On a tout préparé pour ce soir. {Fete}, à {debut} h, ne la manque pas !"
+      ],
+      "fete_souvenir": [
+        "Merci pour ta venue à {fete} ! On en parle encore.",
+        "Quelle belle fête c'était, avec toi sur la place !",
+        "{Fete}, tu t'en souviens ? On a dansé jusqu'au soir !"
       ],
       "fete_place": [
         "La place est belle, maintenant ! On y joue tous les jours.",
@@ -5867,7 +5893,26 @@ export const RAW_DATA = {
     "VISITE": 0.35,
     "EVENEMENTS": 40,
     "RECENT": 3,
-    "TEXTES": { "entraide": "{de} ({deHameau}) a apporté à manger à {a}, qui en manquait", "visite": "{qui}, de {deHameau}, est venu{e} voir {chez}" }
+    "TEXTES": { "entraide": "{de} ({deHameau}) a apporté à manger à {a}, qui en manquait", "visite": "{qui}, {deHameau}, est venu{e} voir {chez}" }
+  },
+  "FETES": {
+    "_": [
+      "V-4 (docs/phase-4.md, js/engine/fetes.js) : la fête du hameau. Chaque mois (une lunaison), PAR_MOIS hameaux peuplés font leur fête, chacun un jour tiré de la graine (de JOUR_MIN au dernier jour du mois), de DEBUT à FIN h : les habitants se retrouvent sur la place. Y être pendant la fête rapporte une fois AMITIE points avec chaque adulte du hameau et un plat de fête (BIENVENUE.PLATS, selon le métier du hameau). NOMS : le nom de la fête selon le métier du hameau."
+    ],
+    "PAR_MOIS": 2,
+    "JOUR_MIN": 3,
+    "DEBUT": 17,
+    "FIN": 21,
+    "AMITIE": 4,
+    "ANNONCE": 3,
+    "NOMS": {
+      "bucheron": ["🪵", "la fête du bois"],
+      "pecheur": ["🐟", "la fête de la pêche"],
+      "mineur": ["⛏️", "la fête de la roche"],
+      "berger": ["🐑", "la fête des laines"],
+      "cueilleur": ["🧺", "la fête des récoltes"],
+      "*": ["🎉", "la fête du hameau"]
+    }
   },
   "STYLES": {
     "LISTE": {

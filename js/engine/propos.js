@@ -19,12 +19,17 @@ import { dayOfMonth, monthName, moonPhase } from './lune.js';
 import { meteoDuJour } from './meteo.js';
 import { evenementsDe, liensDe, trouverHabitant } from './voisins.js';
 import { habitantsDe } from './habitants.js';
+import { aHameau, fetesAVenir, fetesDuJour, nomFete, venuALaFete } from './fetes.js';
+import { deHameau } from './bienvenue.js';
+import { clockHours } from './clock.js';
 
 const PROPOS = () => DATA.HABITANTS.PROPOS;
 const nomObjet = (it) => (DATA.OBJETS[it] ? DATA.OBJETS[it].nom : it);
 const minuscule = (t) => (t ? t.charAt(0).toLowerCase() + t.slice(1) : t);
 const blocsPoses = (state) => Object.values(state.blocs || {});
 const PALIER_PROCHE = 3;
+const FETE_BIENTOT = 5; // (une fête qui vient : on en parle ces jours d'avant)
+const majuscule = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
 
 // Les sujets possibles : [id, (contexte) → les mots à mettre dans la phrase, ou null (pas vrai maintenant)].
 const SUJETS = [
@@ -81,17 +86,17 @@ const SUJETS = [
     const l = !m.enfant && liensDe(state, m.id).cousin, c = l && trouverHabitant(state, l.id);
     if (!c) return null;
     const f = c.m.genre === 'f';
-    return { cousin: c.m.prenom, cousin_mot: f ? 'Ma cousine' : 'Mon cousin', cousin_mot_min: f ? 'ma cousine' : 'mon cousin', le: f ? 'la' : 'le', hameau: c.h.nom };
+    return { cousin: c.m.prenom, cousin_mot: f ? 'Ma cousine' : 'Mon cousin', cousin_mot_min: f ? 'ma cousine' : 'mon cousin', le: f ? 'la' : 'le', hameau: c.h.nom, a_hameau: aHameau(c.h.nom), de_hameau: deHameau(c.h.nom) };
   }],
   ['visite_recue', ({ state, m, f }) => {
     const e = evenementsDe(state, m.id, f.maison).filter((x) => x.sorte === 'visite' && x.chez === m.id).pop();
     const H = e && habitantsDe(state)[e.deHameau];
-    return H ? { qui: e.quiPrenom, hameau: H.nom, il_qui: e.quiGenre === 'f' ? 'Elle' : 'Il', e_qui: e.quiGenre === 'f' ? 'e' : '' } : null;
+    return H ? { qui: e.quiPrenom, hameau: H.nom, de_hameau: deHameau(H.nom), il_qui: e.quiGenre === 'f' ? 'Elle' : 'Il', e_qui: e.quiGenre === 'f' ? 'e' : '' } : null;
   }],
   ['visite_faite', ({ state, m, f }) => {
     const e = evenementsDe(state, m.id, f.maison).filter((x) => x.sorte === 'visite' && x.qui === m.id).pop();
     const H = e && habitantsDe(state)[e.hameau];
-    return H ? { chez: e.chezPrenom, hameau: H.nom, e: m.genre === 'f' ? 'e' : '' } : null;
+    return H ? { chez: e.chezPrenom, hameau: H.nom, a_hameau: aHameau(H.nom), e: m.genre === 'f' ? 'e' : '' } : null;
   }],
   ['entraide_recue', ({ state, m, f }) => {
     const e = evenementsDe(state, m.id, f.maison).filter((x) => x.sorte === 'entraide' && x.aFoyer === f.maison).pop();
@@ -121,6 +126,22 @@ const SUJETS = [
     const p = projetDuHameau(state, hid);
     const it = p && !p.fait && Object.keys(p.manque).sort()[0];
     return it ? { projet: minuscule(p.nom), n: p.manque[it], objet: minuscule(nomObjet(it)) } : null;
+  }],
+  // V-4 (fetes.js) : la fête du hameau, qui vient, qui est ce soir, ou où tu es venu
+  ['fete_bientot', ({ state, hid }) => {
+    const f = fetesAVenir(state, FETE_BIENTOT + 1).find((x) => x.hameau === hid && x.jour > state.day);
+    if (!f) return null;
+    const j = f.jour - state.day;
+    return { fete: f.nom, Fete: majuscule(f.nom), quand: j === 1 ? 'demain' : `dans ${j} jours`, debut: f.debut };
+  }],
+  ['fete_aujourdhui', ({ state, hid }) => {
+    const f = fetesDuJour(state).find((x) => x.hameau === hid);
+    return f && clockHours(state) < f.debut ? { fete: f.nom, Fete: majuscule(f.nom), debut: f.debut } : null;
+  }],
+  ['fete_souvenir', ({ state, hid }) => {
+    if (!venuALaFete(state, hid) || fetesDuJour(state).some((x) => x.hameau === hid)) return null;
+    const { nom } = nomFete(habitantsDe(state)[hid]);
+    return { fete: nom, Fete: majuscule(nom) };
   }],
   ['fete_place', ({ state, hid }) => (projetsFaits(state, hid).length ? {} : null)],
   ['ami_proche', ({ state, cle }) => (palierAmitie(state, cle) >= PALIER_PROCHE ? {} : null)],

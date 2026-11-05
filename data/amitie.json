@@ -131,7 +131,24 @@
     "RECENT": 3,
     "TEXTES": {
       "entraide": "{de} ({deHameau}) a apporté à manger à {a}, qui en manquait",
-      "visite": "{qui}, de {deHameau}, est venu{e} voir {chez}"
+      "visite": "{qui}, {deHameau}, est venu{e} voir {chez}"
+    }
+  },
+  "FETES": {
+    "_": ["V-4 (docs/phase-4.md, js/engine/fetes.js) : la fête du hameau. Chaque mois (une lunaison), PAR_MOIS hameaux peuplés font leur fête, chacun un jour tiré de la graine (de JOUR_MIN au dernier jour du mois), de DEBUT à FIN h : les habitants se retrouvent sur la place. Y être pendant la fête rapporte une fois AMITIE points avec chaque adulte du hameau et un plat de fête (BIENVENUE.PLATS, selon le métier du hameau). NOMS : le nom de la fête selon le métier du hameau."],
+    "PAR_MOIS": 2,
+    "JOUR_MIN": 3,
+    "DEBUT": 17,
+    "FIN": 21,
+    "AMITIE": 4,
+    "ANNONCE": 3,
+    "NOMS": {
+      "bucheron": ["🪵", "la fête du bois"],
+      "pecheur": ["🐟", "la fête de la pêche"],
+      "mineur": ["⛏️", "la fête de la roche"],
+      "berger": ["🐑", "la fête des laines"],
+      "cueilleur": ["🧺", "la fête des récoltes"],
+      "*": ["🎉", "la fête du hameau"]
     }
   }
 }
