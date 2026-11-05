@@ -1,5 +1,8 @@
 # Le personnage de la carte (version provisoire)
 
+> Chantier en cours : séparer les personnages de leur tenue et de leurs attributs, et leur donner des
+> expressions. Voir [`personnage-couches.md`](personnage-couches.md).
+
 Tout est dans `js/fermier.js`, chargé avant `js/farm-stage.js`. Le fichier et son image sont
 facultatifs : sans eux, la carte s'affiche comme avant.
 
