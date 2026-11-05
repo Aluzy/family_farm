@@ -19,9 +19,9 @@
 #     bois pleine de foin au-dessus d'une auge, à 45° comme les blocs.
 # Lumière en haut à gauche, contour sombre.
 #
-# Les retouches du joueur (fiche 12, docs/fiches/12-cheval-retouche.png) : il a redessiné à la main
-# les cases 0 (au repos) et 5 (il broute). Ce script les redonne au pixel près (main() le vérifie
-# quand la planche retouchée est là) : leurs têtes sont des motifs recopiés lettre pour lettre
+# Le dessin d'avant (planche_dessinee : le calque de la selle du cheval sellé, l'attelage de la calèche) suivait
+# les retouches du joueur (fiche 12, docs/fiches/12-cheval-retouche.png) : il avait redessiné à la main
+# les cases 0 (au repos) et 5 (il broute), que ce dessin redonne au pixel près : leurs têtes sont des motifs recopiés lettre pour lettre
 # (TETE_HAUTE, ENCOLURE_BASSE, TETE_BASSE), le reste suit les règles qu'on en a tirées, appliquées
 # aussi aux cases qu'il n'a pas touchées (les quatre temps du pas, de face, de dos), au cheval sellé
 # et à l'attelage de la calèche (scripts/carte/caleche.py) :
@@ -47,6 +47,17 @@
 # De face et de dos (pas de retouche à reprendre telle quelle) : les mêmes règles, à leur échelle —
 # les oreilles pointues (leur pointe 's'), le bout du nez carré, plus large que le chanfrein, les
 # naseaux dedans, la liste arrêtée au-dessus ; la crinière arrêtée au garrot, ses reflets 'M'.
+#
+# Le cheval redessiné par le joueur (docs/fiches/cheval-redessine.png, les 14 cases de assets/cheval.png) : c'est
+# désormais lui, le cheval du jeu. Deux cases servent de modèle pour la tête : la case 0 (de profil, au repos : la
+# liste blanche au-dessus de l'œil, l'œil noir et son reflet, le toupet, le contour noir du chanfrein et du nez) et
+# la case 6 (de face : les deux yeux noirs et leurs reflets sur les côtés, la liste, le toupet). Ce script reporte
+# la tête de la case 0 sur les cases 1 à 4 (les quatre temps du pas : elle y est à la même place) et la tête de la
+# case 6 sur les cases 7 à 9 (de face, de même) ; la case 5 (il broute, la tête baissée) reçoit les mêmes traits,
+# à sa place (TETE_BROUTE) ; de dos (10 à 13), pas de visage : rien à reporter. Le cheval sellé
+# (assets/cheval_monte.png) est fait de ces cases : la selle, la bride et les rênes du dessin d'avant (profil, face,
+# dos, plus bas) y sont reportées, et de face (dos) la tête (la croupe) passe devant le cavalier comme avant.
+# L'attelage de la calèche (scripts/carte/caleche.py) garde le dessin d'avant.
 #
 #   python3 scripts/personnage/cheval.py            écrit les images
 #   python3 scripts/personnage/cheval.py --apercu   écrit aussi apercu_cheval.png (agrandi)
@@ -348,10 +359,57 @@ def dos(k=0, couche='tout', selle=False):
 
 # ---------- les planches ----------
 
-def planche_seul():
+def planche_dessinee():
+    """Le cheval dessiné par ce script (avant le redessin du joueur) : il sert encore de calque pour la selle, la
+    bride et les rênes du cheval sellé (selle_reportee), et de dessin à l'attelage de la calèche."""
     poses = [profil('idle')] + [profil('marche', k) for k in range(4)] + [profil('broute')] \
         + [face(k) for k in range(4)] + [dos(k) for k in range(4)]
     return rangee([p.image() for p in poses])
+
+
+REDESSIN = os.path.join(os.path.dirname(ASSETS), 'docs', 'fiches', 'cheval-redessine.png')
+NOIR, BLANC, CLAIR = (24, 16, 14), (236, 228, 214), (205, 144, 86)
+
+
+def tete_profil(x, y):
+    """La tête de profil (cases 0 à 4) : ce qui est à droite du bord de la crinière (elle et l'encolure restent)."""
+    bord = {0: 31, 1: 31, 2: 31, 3: 31, 4: 34, 5: 34, 6: 33, 7: 33, 8: 32, 9: 32, 10: 31, 11: 31, 12: 31, 13: 39}
+    return y in bord and x >= bord[y]
+
+
+def tete_face(x, y):
+    """La tête de face (cases 6 à 9) : les oreilles, les yeux, la liste, le bout du nez."""
+    return (y <= 11 and 15 <= x <= 33) or (12 <= y <= 13 and 20 <= x <= 28) or (14 <= y <= 15 and 21 <= x <= 27)
+
+
+# La case 5 (il broute) : les traits de la tête de la case 0 sur la tête baissée (px de la case) : la pupille noire et
+# son reflet du côté de l'oreille, la liste blanche au-dessus de l'œil jusqu'au chanfrein ; puis le devant de la tête
+# (le pixel le plus à droite de chaque rangée, à partir de la rangée 28) passe au contour noir.
+TETE_BROUTE = {(39, 30): NOIR, (38, 30): BLANC, (40, 31): BLANC, (41, 31): BLANC, (40, 32): BLANC, (41, 32): CLAIR,
+               (41, 33): BLANC}
+
+
+def planche_seul():
+    """Le cheval seul : la planche du joueur, les têtes reportées (voir plus haut). Sans elle, celle d'avant."""
+    if not os.path.exists(REDESSIN):
+        return planche_dessinee()
+    src = Image.open(REDESSIN).convert('RGBA')
+    out = src.copy()
+    ps, po = src.load(), out.load()
+    for modele, cases, zone in ((0, (1, 2, 3, 4), tete_profil), (6, (7, 8, 9), tete_face)):
+        for c in cases:
+            for y in range(H):
+                for x in range(W):
+                    if zone(x, y):
+                        po[c * W + x, y] = ps[modele * W + x, y]
+    b = 5 * W
+    for (x, y), coul in TETE_BROUTE.items():
+        po[b + x, y] = coul + (255,)
+    for y in range(28, H):
+        xs = [x for x in range(30, W) if po[b + x, y][3]]
+        if xs:
+            po[b + max(xs), y] = NOIR + (255,)
+    return out
 
 
 VUES = ['bas', 'haut', 'cote']
@@ -368,7 +426,61 @@ def monte(vue, k):
 
 
 def planche_monte():
-    return rangee([im for v in VUES for k in range(5) for im in monte(v, k)])
+    """Le cheval sellé : avec le cheval redessiné, ses cases et la selle reportée (selle_reportee) ; sinon le
+    dessin d'avant."""
+    if not os.path.exists(REDESSIN):
+        return rangee([im for v in VUES for k in range(5) for im in monte(v, k)])
+    seul = planche_seul()
+    return rangee([im for v in VUES for k in range(5) for im in selle_reportee(seul, v, k)])
+
+
+def _case(planche, k):
+    return planche.crop((k * W, 0, k * W + W, H))
+
+
+def _ajouts(selle, nu):
+    """Ce que le cheval sellé d'avant a de plus que le cheval seul d'avant : la selle, son tapis, la bride, les rênes."""
+    a, b = selle.load(), nu.load()
+    return {(x, y): a[x, y] for y in range(H) for x in range(W) if a[x, y][3] and a[x, y] != b[x, y]}
+
+
+def _avec(base, ajouts, garde=None):
+    out = base.copy()
+    p = out.load()
+    for (x, y), c in ajouts.items():
+        if garde is None or garde(x, y):
+            p[x, y] = c
+    return out
+
+
+def selle_reportee(seul, vue, k):
+    """[dessous, dessus] du cheval sellé redessiné, vue `vue`, temps k du pas (4 : à l'arrêt) : la case du cheval
+    seul (de profil : le repos ou le temps du pas ; de face, de dos : le temps du pas, la première case à l'arrêt) et,
+    par-dessus, la selle, la bride et les rênes du dessin d'avant (à la même place : le dos et la tête y sont aux
+    mêmes rangées). De profil, tout est derrière le cavalier ; de face, la tête (les rangées de l'ancienne couche
+    « tete ») passe devant lui ; de dos, la croupe (les rangées de l'ancienne couche « croupe »)."""
+    vide = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    if vue == 'cote':
+        nu = (profil('idle') if k == 4 else profil('marche', k)).image()
+        selle = monte('cote', k)[0]
+        return [_avec(_case(seul, 0 if k == 4 else 1 + k), _ajouts(selle, nu)), vide]
+    dessous, dessus = monte(vue, k)
+    tout = dessous.copy()
+    tout.alpha_composite(dessus)
+    t = k if k < 4 else 0
+    nu = (face(k) if vue == 'bas' else dos(k)).image()   # (le dessin d'avant au même temps, l'arrêt compris)
+    ajouts = _ajouts(tout, nu)
+    n = _case(seul, (6 if vue == 'bas' else 10) + t)
+    lignes = [y for y in range(H) for x in range(W) if dessus.getpixel((x, y))[3]]
+    devant = (lambda x, y: y <= max(lignes)) if vue == 'bas' else (lambda x, y: y >= min(lignes))
+    pn = n.load()
+    avant = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    pa = avant.load()
+    for y in range(H):
+        for x in range(W):
+            if pn[x, y][3] and devant(x, y):
+                pa[x, y] = pn[x, y]
+    return [_avec(n, ajouts), _avec(avant, ajouts, lambda x, y: devant(x, y) and dessus.getpixel((x, y))[3] > 0)]
 
 
 def rangee(ims):
@@ -433,22 +545,18 @@ def ratelier():
     return t.fini()
 
 
-RETOUCHE = os.path.join(os.path.dirname(ASSETS), 'docs', 'fiches', '12-cheval-retouche.png')
-RETOUCHEES = (0, 5)             # les cases retouchées par le joueur
-
-
 def verifie(planche):
-    """Les cases retouchées sont-elles, au pixel près, celles de la planche du joueur ?"""
-    if not os.path.exists(RETOUCHE):
+    """Les cases modèles du redessin (0 et 6) sont-elles, au pixel près, celles de la planche du joueur ?"""
+    if not os.path.exists(REDESSIN):
         return
-    ref = Image.open(RETOUCHE).convert('RGBA')
-    for c in RETOUCHEES:
+    ref = Image.open(REDESSIN).convert('RGBA')
+    for c in (0, 6):
         boite = (c * W, 0, c * W + W, H)
         a, b = planche.crop(boite).load(), ref.crop(boite).load()
         ecarts = [(x, y) for y in range(H) for x in range(W)
                   if (a[x, y] if a[x, y][3] else 0) != (b[x, y] if b[x, y][3] else 0)]
         if ecarts:
-            sys.exit(f'cheval.png, case {c} : {len(ecarts)} pixels diffèrent de la retouche ({ecarts[:5]}…)')
+            sys.exit(f'cheval.png, case {c} : {len(ecarts)} pixels diffèrent du redessin ({ecarts[:5]}…)')
 
 
 def main():
