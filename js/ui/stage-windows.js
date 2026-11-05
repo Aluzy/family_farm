@@ -684,7 +684,8 @@ export function renderTabContent() {
 }
 
 // Bouton « Dormir » (lune en pixel art), en bas à droite sur tous les onglets. La faim de la famille est
-// dans son libellé (title / aria-label) ; une pastille ne s'affiche que si un membre a faim sans rien à manger.
+// dans son libellé (title / aria-label). (Plus de pastille « 🍽️ % ⚠️ » à côté quand un membre a faim : elle
+// inquiétait le joueur sans cesse ; la faim se voit dans la Famille, la jauge et les portraits.)
 export function renderSleepBar() {
   // Version 1.19 : le bouton « Zzz » n'est là que la nuit (de 22 h à 6 h), tant que le personnage ne
   // dort pas ; il l'envoie dans son lit (actionGoToBed), puis la nuit défile en accéléré.
@@ -706,8 +707,7 @@ export function renderSleepBar() {
   document.body.classList.toggle('has-toolbar', !!outils);
   morph(
     document.getElementById('sleep-fab'),
-    (faim ? `<span class="chip warn meal-chip" title="${meal}"><span aria-hidden="true">🍽️ ${formatPercent(jauge)} ⚠️</span><span class="visually-hidden">${meal}</span></span>` : '') +
-      (nuit ? `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}">${artHtml('sleep-on', 'sleep-art')}</button>` : '')
+    nuit ? `<button type="button" class="sleep-btn${tutoTarget('dormir')}" data-action="sleep" title="${label}" aria-label="${label}">${artHtml('sleep-on', 'sleep-art')}</button>` : ''
   );
 }
 
