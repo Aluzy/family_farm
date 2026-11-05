@@ -16,7 +16,7 @@ import {
 } from '../engine/animals.js';
 import { etatEtable, etatPoulailler, etatSilo } from '../engine/blocs.js';
 import { techAuto, techFlag } from '../engine/techtree.js';
-import { AUTO_TACHES, GROUPE_MIN, groupDiscount, isAutomated, setSemis } from '../engine/automation.js';
+import { AUTO_TACHES, GROUPE_MIN, groupDiscount, isAutomated } from '../engine/automation.js';
 import { plantableCropsFor } from '../engine/campaign.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
 import { enLigne, state } from './store.js';
@@ -675,6 +675,6 @@ registerActions({
   },
   'semis-set': (target) => {
     closeModal();
-    applyResult(setSemis(state, target.dataset.id, target.dataset.mode, target.dataset.crop));
+    applyResult(executer('potager.semis', { parcelle: String(target.dataset.id || ''), mode: String(target.dataset.mode || ''), ...(target.dataset.crop ? { culture: target.dataset.crop } : {}) }));
   },
 });

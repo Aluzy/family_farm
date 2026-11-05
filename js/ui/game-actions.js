@@ -1,5 +1,4 @@
 import { DATA } from '../engine/catalog.js';
-import { maintainDevice, repairDevice } from '../engine/devices.js';
 import { countItem } from '../engine/inventory.js';
 import { fridgeCount } from '../engine/fridge.js';
 import { startNight } from '../engine/night.js';
@@ -78,10 +77,10 @@ export function wakeUp() {
 
 registerActions({
   'maintain': (target) => {
-    applyResult(maintainDevice(state, target.dataset.id));
+    applyResult(executer('appareil.entretenir', { appareil: String(target.dataset.id || '') }));
   },
   'repair': (target) => {
-    applyResult(repairDevice(state, target.dataset.id));
+    applyResult(executer('appareil.reparer', { appareil: String(target.dataset.id || '') }));
   },
   ...sameHandler(['fridge-in', 'fridge-out'], (target, e, action) => {
     const item = target.dataset.item;

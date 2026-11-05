@@ -1,7 +1,8 @@
 import { DATA } from '../engine/catalog.js';
+import { executer } from './commandes.js';
 import { awakeRequired } from '../engine/clock.js';
 import {
-  buyTech, hasTech, hasTechResources, masteryValue, prepTimeMult, techFlag, techPoints, techPrereqs, techProgress, techResources, techStatus,
+  hasTech, hasTechResources, masteryValue, prepTimeMult, techFlag, techPoints, techPrereqs, techProgress, techResources, techStatus,
 } from '../engine/techtree.js';
 import { formatCoins, formatNumber, formatPercent, formatQty } from '../engine/format.js';
 import { state } from './store.js';
@@ -159,7 +160,7 @@ export function renderTechno() {
 registerActions({
   'buy-tech': (target) => {
     const id = target.dataset.id;
-    const result = applyResult(buyTech(state, id));
+    const result = applyResult(executer('tech.acheter', { noeud: id }));
     const res = Object.entries(result.ressources || {}).map(([item, q]) => `, −${formatNumber(q)} ${DATA.OBJETS[item].icone}`).join('');
     if (result.ok) notify(`${DATA.ARBRE.noeuds[id].icone} ${DATA.ARBRE.noeuds[id].nom} acquis (−${formatNumber(result.pt)} PT, −${formatCoins(result.cost)} 💰${res})`, { son: 'techno' });
   },

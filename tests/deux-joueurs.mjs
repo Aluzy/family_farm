@@ -15,6 +15,7 @@
 //       hors de la ferme : il s'arrête au bord, le jeu le dit, et sa vue reste sur la ferme ;
 //   4b''. E-7 : B mange une carotte sur le pouce : elle quitte le coffre commun, chez A aussi ;
 //   4b'''. E-9 : B donne un coup de hache à un arbre de la ferme : le bois arrive au coffre commun chez A ;
+//   4b''''. E-10 : B éteint (ou allume) un appareil de la ferme : chez A aussi ;
 //   4c. E-5 : A se couche, la nuit attend B ; B se couche : la nuit passe chez les deux (le jour suivant),
 //       et les parties confirmées sont encore celle du monde ;
 //   5. la partie solo de A, sur l'appareil, n'est jamais touchée en ligne ;
@@ -206,6 +207,13 @@ try {
   });
   const msBois = await attendre(pa, async (n) => { const E = await import('/js/engine/index.js'); return E.countItem(FF.state, 'bois') > n; }, bois0, 5000);
   verifie(coup.ok && !coup.morceaux && coup.sol === 0 && msBois !== null, `4b'''. B a coupé l'arbre ${coup.id} : rien au sol, le bois au coffre commun chez A en ${msBois} ms`);
+  // 4b''''. E-10 : un appareil
+  const etatApp = (p, id) => p.evaluate(async (i) => { const E = await import('/js/engine/index.js'); const d = E.allDevices(FF.state).find((x) => x.id === i); return d ? !!d.allume : null; }, id);
+  const app = await pa.evaluate(async () => { const E = await import('/js/engine/index.js'); return E.allDevices(FF.state)[0].id; });
+  const avantApp = await etatApp(pa, app);
+  await action(pb, 'toggle', { id: app });
+  const msApp = await attendre(pa, async (o) => { const E = await import('/js/engine/index.js'); const d = E.allDevices(FF.state).find((x) => x.id === o.id); return !!d && !!d.allume !== o.avant; }, { id: app, avant: avantApp }, 5000);
+  verifie(avantApp !== null && msApp !== null, `4b''''. B a basculé l'appareil ${app} : chez A aussi en ${msApp} ms`);
   // 4c. E-5 : la nuit partagée
   const jour = await pa.evaluate(() => FF.state.day);
   await action(pa, 'monde-coucher');
