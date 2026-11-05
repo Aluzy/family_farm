@@ -287,7 +287,7 @@ function direCompagnon(d) {
   } else if (d.action === 'ramasser') {
     notify(null, { cumul: { cle: 'compagnon-ramasser', quantites: d.items, texte: (t) => `🧺 ${nom} a ramassé ${itemsText(t)} autour de la ferme.` }, cible, son: false });
   } else if (d.action === 'recolter' || d.action === 'cueillir') {
-    // (ce que le joueur lui a demandé : les légumes mûrs, les fruits du Verger)
+    // (ce que le joueur lui a demandé : les légumes mûrs, les fruits des arbres)
     notify(null, { cumul: { cle: `compagnon-${d.action}`, quantites: d.items, texte: (t) => `${d.action === 'recolter' ? '🥕' : '🍎'} ${nom} a ${d.action === 'recolter' ? 'ramassé' : 'récolté'} ${itemsText(t)}.` }, cible, son: false });
   } else if (d.action === 'cuisiner') {
     const [item] = Object.keys(d.items || {}), o = DATA.OBJETS[item];

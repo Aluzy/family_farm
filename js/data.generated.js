@@ -198,7 +198,7 @@ export const RAW_DATA = {
       "OUI": {
         "legumes": "Je m'occupe de ramasser les légumes mûrs !",
         "arroser": "Je m'occupe d'arroser ce qui a soif !",
-        "recolter": "Je vais récolter les fruits du verger !"
+        "recolter": "Je vais cueillir les fruits des arbres !"
       },
       "RIEN": {
         "legumes": "Aucun légume n'est mûr pour l'instant.",

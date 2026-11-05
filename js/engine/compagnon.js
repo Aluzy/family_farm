@@ -4,7 +4,7 @@ import { fail } from './devices.js';
 import { absoluteHours, clockHours, nightActive } from './clock.js';
 import { addItem } from './inventory.js';
 import { countWithSilo, takeWithSilo } from './animals.js';
-import { harvestPlot, isMature, noteWateredPlots, waterCost } from './crops.js';
+import { harvestPlot, isMature, noteWateredPlots, serrePlots, waterCost } from './crops.js';
 import { harvestTree, ripeTrees } from './orchard.js';
 import { aCruche, crucheCapacite } from './cruche.js';
 import { aiderMembre, boitePosee, deposerBoite, jaugeFamille, jaugeMembre } from './repas.js';
@@ -46,8 +46,8 @@ import { enExpedition } from './equipement.js';
    dépendent pas.
 
    Ce que le joueur lui demande (un appui sur lui, sur la carte : demanderCompagnon) : ramasser les légumes
-   mûrs de la Zone de culture (« recolter:<case> »), arroser ce qui a soif, ou récolter les fruits des arbres
-   (« cueillir:<case> ») ; il le fait jusqu'au bout (state.compagnon.demande, jusqu'à ce qu'il n'y ait plus
+   mûrs (« recolter:<case> » : les terres labourées de la ferme et les bacs de la Serre), arroser ce qui a soif,
+   ou récolter les fruits des arbres plantés (« cueillir:<case> ») ; il le fait jusqu'au bout (state.compagnon.demande, jusqu'à ce qu'il n'y ait plus
    rien à faire ou à la fin de sa journée), avant ses initiatives et ses bêtes, sans leurs limites du jour
    (PAR_JOUR, ECART_H) ; il lui en coûte sa faim (DEMANDE.FAIM, ARROSER.FAIM pour arroser), il n'y gagne ni
    énergie ni chapitre pour le joueur (comme une automatisation : harvestPlot et harvestTree en `auto`).
@@ -351,16 +351,17 @@ export function faireCompagnon(state, lieu) {
 
 export const DEMANDES_COMPAGNON = ['legumes', 'arroser', 'recolter'];
 
-// Les légumes mûrs de la Zone de culture, le plus proche de la dernière case travaillée d'abord.
+// Les légumes mûrs (les terres labourées de la ferme, puis les bacs de la Serre), le plus proche de la dernière
+// case travaillée d'abord.
 export function legumesMurs(state) {
   const c = etatCompagnon(state);
   const ref = Number.isInteger(c.derniere) ? c.derniere : caseDepart(farmTerrain(state));
-  return state.potager.parcelles
+  return state.potager.parcelles.concat(serrePlots(state))
     .filter((p) => p.culture && isMature(p) && Number.isInteger(p.case))
     .sort((a, b) => distCases(state, a.case, ref) - distCases(state, b.case, ref) || a.case - b.case);
 }
 
-// Les arbres du Verger qui ont des fruits (plantés sur la carte), le plus proche d'abord.
+// Les arbres plantés sur la ferme qui ont des fruits, le plus proche d'abord.
 export function arbresEnFruits(state) {
   const c = etatCompagnon(state);
   const ref = Number.isInteger(c.derniere) ? c.derniere : caseDepart(farmTerrain(state));
@@ -426,7 +427,7 @@ function cueillirDemande(state, sorte, k) {
   if (!Number.isInteger(k)) return fail('Lieu inconnu.');
   let items;
   if (sorte === 'recolter') {
-    const p = state.potager.parcelles.find((q) => q.case === k);
+    const p = state.potager.parcelles.concat(serrePlots(state)).find((q) => q.case === k);
     if (!p || !p.culture || !isMature(p)) return fail('Ce légume n\'est pas mûr.');
     const r = harvestPlot(state, p, true, true);
     if (!r.ok) return r;

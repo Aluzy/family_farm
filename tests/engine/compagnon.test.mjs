@@ -19,7 +19,7 @@ import {
   addItem, aidant, aRamasserCompagnon, arroseesCompagnon, awakeMsAtHour, boiteCount, compagnonEmpeche, countItem, createInitialState, DATA,
   ecouterJournal, eauCompagnon, finAide, faireCompagnon, faitsCompagnon, fridgeCount, jaugeMembre, journeeCompagnon, laisserAider,
   migrate, plant, plantesASoif, ramassables, recipeOutput, removeMember, reparerPartie, seedItem, simulateOffline,
-  startNight, tachesCompagnon, demanderCompagnon, demandeCompagnon, recolteesCompagnon, estTacheCompagnon, maxStage, planterArbre,
+  startNight, tachesCompagnon, demanderCompagnon, demandeCompagnon, recolteesCompagnon, estTacheCompagnon, maxStage, planterArbre, makePlot,
 } from '../../js/engine/index.js';
 
 const C = DATA.COMPAGNON;
@@ -397,4 +397,18 @@ test('demander : le soir, la nuit, le ventre vide, il refuse ; l\'option « lais
   aidant(s).energie = C.FAIM_MIN - 1;
   assertEqual(demanderCompagnon(s, 'legumes').error, D.FAIM_TEXTE);
   assertEqual(demanderCompagnon(s, 'nager').ok, false);
+});
+
+test('demander : ramasser les légumes mûrs des bacs de la Serre aussi', () => {
+  const s = potager(0);
+  s.serre.construit = true;
+  const bac = { ...makePlot(1, DATA.SERRE.LIEU), case: 12345, culture: 'carotte' };
+  bac.stade = maxStage(bac);
+  s.serre.parcelles.push(bac);
+  const avant = countItem(s, 'carotte');
+  assert(demanderCompagnon(s, 'legumes').ok, 'un légume mûr dans la Serre');
+  assertEqual(tachesCompagnon(s), ['recolter:12345']);
+  assertEqual(faireCompagnon(s, 'recolter:12345').ok, true);
+  assertEqual(bac.culture, null, 'cueilli');
+  assert(countItem(s, 'carotte') > avant, 'dans l\'inventaire');
 });
