@@ -352,19 +352,19 @@ function atLevel10() {
   return s;
 }
 
-// Le récit, lot 9 : la seconde lettre du notaire apporte l'enveloppe de Maurice (un objet) au lieu des 15 000
+// Le récit, lot 9 : la carte postale de Maurice (maurice_enveloppe) apporte l'enveloppe de Maurice (un objet) au lieu des 15 000
 // pièces (version 1.14) ; l'ouvrir les garde, une fois, sans XP (js/engine/recit.js ouvrirEnveloppe).
-test('version 1.14, le récit lot 9 : au niveau 9, le notaire envoie l\'enveloppe ; l\'ouvrir donne 15 000 pièces, une fois, sans XP', () => {
+test('version 1.14, le récit lot 9 : au niveau 9, Maurice envoie l\'enveloppe ; l\'ouvrir donne 15 000 pièces, une fois, sans XP', () => {
   const s = farm();
   testSetLevel(s, 8);
   deliverMail(s);
-  assert(!mailReceived(s, 'notaire_legs'), 'pas avant le niveau 9');
+  assert(!mailReceived(s, 'maurice_enveloppe'), 'pas avant le niveau 9');
   testSetLevel(s, 9);
   deliverMail(s);
-  assert(mailReceived(s, 'notaire_legs'));
+  assert(mailReceived(s, 'maurice_enveloppe'));
   assertEqual(countItem(s, 'enveloppe_maurice'), 1, 'l\'enveloppe est dans l\'inventaire');
   const p = s.pieces, xp = s.progression.xp;
-  assertEqual(readMail(s, 'notaire_legs').pieces, 0, 'la lettre ne verse rien');
+  assertEqual(readMail(s, 'maurice_enveloppe').pieces, 0, 'la lettre ne verse rien');
   assertEqual(ouvrirEnveloppe(s).pieces, 15000);
   assertEqual([s.pieces - p, s.progression.xp - xp, countItem(s, 'enveloppe_maurice'), aFait(s, 'enveloppe.ouverte')], [15000, 0, 0, true]);
   assertEqual(ouvrirEnveloppe(s).ok, false, 'une fois');

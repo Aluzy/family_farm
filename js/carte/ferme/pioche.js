@@ -164,7 +164,7 @@
         K.secousse(this, fort ? 'fort' : 'coup');
         K.vibre(fort ? 'fort' : 'pioche');
         if (global.FermeSon) global.FermeSon.joue('pioche', { x: foot.x, y: foot.y, depuis: 0.14, gain: fort ? 1.25 : 1, vitesse: fort ? 0.9 : 1, ecart: 0 });
-        if (this.habitantsVoient) this.habitantsVoient(foot.x, foot.y);   // (amis.js)
+        if (this.habitantsVoient) this.habitantsVoient(foot.x, foot.y, 'pioche');   // (amis.js)
         if (r.breaking && !r.queued) { this.breakRock(r, true); return; }
         this.shakeRock(r);
         const p = this.fermier && this.fermier.pos();

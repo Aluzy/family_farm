@@ -82,7 +82,7 @@ existante.
 | **V-4 · La fête du hameau** | Des événements locaux générés : une fête par saison dans un hameau, un petit marché, les habitants rassemblés sur la place, une musique de fête. | « Activités collectives », un rendez-vous. |
 | **D-1 · Le carnet du naturaliste** ✅ | Des pages pour les trouvailles, les végétaux, les biomes et des espèces de poissons, et une condition « biome vu ». Des collections complètes qui donnent un objet à poser (une vitrine, un herbier). | « Encyclopédie : plantes, animaux, minéraux, fossiles », et une progression par curiosité. |
 | **D-2 · Les secrets du monde** | Des lieux remarquables générés par biome : ruines, points de vue, arbres anciens, cairns. Chacun garde un petit trésor ou une page de carnet. | « Lieux remarquables, secrets » : que le monde ne soit pas grand mais vide. |
-| **D-3 · Les personnages qui manquent** | Placer Garance, Lise, Fernand, Frida et Johnny dans le monde, et écrire leurs répliques (la bible et le plan du récit en visent environ 40 chacun). | Le récit déjà commencé. Il demande ta validation des textes. |
+| **D-3 · Les personnages qui manquent** | Placer Garance, Lise, Fernand et Frida dans le monde (Johnny n'existe plus : § 12), et écrire leurs répliques (la bible et le plan du récit en visent environ 40 chacun). | Le récit déjà commencé. Il demande ta validation des textes. |
 | **G-1 · Le temps qu'il fait** ✅ | Une météo tirée de la graine, jour après jour : pluie, brume du matin, ciel clair. On la voit et on l'entend, et la pluie arrose le potager. | « Ambiance chaleureuse », un monde qui vit. |
 | **G-2 · Les voix et les musiques des lieux** | Un petit babil pour chaque habitant (des syllabes de synthé, pas des mots), et un thème musical par biome et par hameau. | « Audio adaptatif ». |
 
@@ -222,3 +222,25 @@ G-1, plus courts, qui embellissent ce qui existe déjà.
 - **Le générateur passe à la version 2** (`GENERATEUR_VERSION`) : le plan a ses secrets, et la végétation est dégagée autour d'eux. La ferme, le sol, les hameaux et les autres lieux ne bougent pas. La migration 71 → 72 garde les parties du générateur 1 et les note au 2.
 - **En ligne** : rien. Les secrets sont hors de la ferme, et la copie mise en ligne perd `state.secrets`.
 - **Les tests** : `tests/engine/secrets.test.mjs`, et un essai dans le jeu avec la partie du jour 54 (les 14 secrets de son monde, les dessins, l'ouverture).
+
+## 12. Le récit cosy : fait
+
+L'histoire a été réécrite pour une île chaleureuse, comme dans *Animal Crossing* : la proposition, relue et validée, est
+la nouvelle bible (`docs/recit/bible.md`, `docs/recit/personnages.md`).
+- **Plus de deuil** : Maurice et Philomène, les grands-parents, sont vivants et partis faire le tour des îles en voilier.
+  Ils écrivent eux-mêmes : `maurice_terre` au départ, à la place de la lettre du notaire, et `maurice_enveloppe` au
+  niveau 9, une carte postale avec l'enveloppe.
+- **Johnny supprimé** : sa cabane devient l'observatoire de Maurice (`visiteObservatoire` : de nuit, la longue-vue et
+  le carnet du ciel, une page par phase de lune après deux nuits), l'épave la barque des premiers arrivants (le
+  journal de bord). La pierre de lune est un fragment de l'étoile tombée il y a cinq siècles.
+- **Personne de négatif** : 28 scènes, 44 répliques, les lettres, les pages du carnet, les lieux, les phrases des
+  habitants et 25 fiches de l'encyclopédie réécrites. Odile tutoie dès la rencontre ; Achille parle à son cheval,
+  Biscotte ; Fernand promet les dauphins ; Théo reste sur l'île (chez Frida, à l'atelier ou sur la calèche) ; les
+  quatre fins sont heureuses (« riche » devient « genereuse »).
+- **Les mécaniques adoucies** : les toits ne s'abîment plus (une fois par hameau, de 1 à 2 toits à rafraîchir) ;
+  personne n'est en colère, même un hameau qui ne te connaît pas ; un coup de hache ou de pioche près d'un habitant
+  le surprend gentiment (😮, « Oh ! Tu en replanteras un ? ») ; un cheval tout près aussi.
+- **Les parties existantes** : la migration 72 → 73 renomme les faits, les pages du carnet, les scènes dites et les
+  lettres (`RECIT_RENOMMAGES`, `js/engine/state.js`) ; Théo revient à Bois-Joli s'il était parti.
+- **Les tests** : `tests/engine/recit-cosy.test.mjs` (aucun texte ne parle de Johnny, du notaire, d'un deuil, de
+  l'hiver ni de partir ; Odile ne vouvoie pas ; la migration), et ceux du récit mis à jour.

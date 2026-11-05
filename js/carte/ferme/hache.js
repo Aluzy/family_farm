@@ -136,7 +136,7 @@
         if (fort) K.secousse(this, 'fort');
         // le coup (le fichier commence par l'élan : on part à l'impact)
         if (global.FermeSon) global.FermeSon.joue(t.buisson ? 'recolte' : 'hache', { x: t.foot.x, y: t.foot.y, depuis: t.buisson ? 0 : 0.16, gain: fort ? 1.25 : 1, vitesse: fort ? 0.9 : 1, ecart: 0 });
-        // (les habitants qui le voient : la colère, un enfant a peur, amis.js)
+        // (les habitants qui le voient : la surprise, amis.js)
         if (this.habitantsVoient) this.habitantsVoient(t.foot.x, t.foot.y);
         if (t.falling && !t.queued) { this.fellTree(t, true); return; }
         this.shakeTree(t);

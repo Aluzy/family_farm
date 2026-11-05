@@ -777,6 +777,25 @@
       if (r.emotion && this.emouvoir) this.emouvoir(m, r.emotion, true);
     },
 
+    // Il dit une petite phrase (une réaction, amis.js) : sa bulle, sans son prénom ni l'amitié, PAROLE_MS / 2.
+    habitantDit(m, texte) {
+      if (!this.ctx.labelLayer || !texte) return;
+      if (!m.bulle) {
+        const el = document.createElement('div');
+        el.className = 'habitant-bulle';
+        el.setAttribute('role', 'status');
+        this.ctx.labelLayer.appendChild(el);
+        m.bulle = { el, w: 0, h: 0 };
+      }
+      m.bulle.el.innerHTML = '';
+      const t = document.createElement('span');
+      t.className = 'habitant-bulle-texte';
+      t.textContent = texte;
+      m.bulle.el.appendChild(t);
+      m.bulle.w = 0;
+      m.parle = { until: performance.now() + PAROLE_MS / 2 };
+    },
+
     // (les mesures, les essais : où est chacun)
     habitantsInfo() {
       const out = [];

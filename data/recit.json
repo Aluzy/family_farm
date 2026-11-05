@@ -118,19 +118,19 @@
     "FINS": {
       "GRANDE": "haute", "ENTRETIEN": 4, "NATURE": 10,
       "POIDS": { "promesse": 1, "toit": 1, "enveloppe": 3 },
-      "LISTE": ["nouveau_maurice", "voisin_tranquille", "autrement", "riche"]
+      "LISTE": ["nouveau_maurice", "voisin_tranquille", "autrement", "genereuse"]
     },
     "ENVELOPPE": { "OBJET": "enveloppe_maurice", "PIECES": 15000, "CONFIANCE": 5 },
     "USURE": { "ACTE": 3, "NUITS": 4, "MAX": 2, "REPARER": { "planche": 6, "pierre": 4 }, "CONFIANCE": 5, "ENVELOPPE_CONFIANCE": 3 },
     "TOURNEE": ["genets", "bois_joli"],
     "FIL": {
       "FRAGMENTS": [
-        "note_j",
-        "page_bord",
+        "note_etoile",
+        "journal_bord",
         "releves_frida",
-        "johnny_pleine",
-        "johnny_noire",
-        "johnny_croissante"
+        "ciel_pleine",
+        "ciel_noire",
+        "ciel_croissante"
       ],
       "GALERIE": {
         "NIVEAU": 4,
@@ -158,35 +158,25 @@
         20,
         6
       ],
-      "JOHNNY": {
-        "REPAS": 3,
+      "OBSERVATOIRE": {
+        "NUITS": 2,
         "NUIT": [
           20,
           6
         ],
-        "DEHORS": [
-          23,
-          5
-        ],
-        "BRIBES": {
-          "pleine": "johnny_pleine",
-          "nouvelle": "johnny_noire",
-          "croissante": "johnny_croissante"
+        "PAGES": {
+          "pleine": "ciel_pleine",
+          "nouvelle": "ciel_noire",
+          "croissante": "ciel_croissante"
         },
+        "JOUR": "L'observatoire de Maurice : une longue-vue tournée vers le ciel, un plaid. Un carnet attend sur la table.",
         "ACCUEIL": [
-          "Tu es nouveau ? Tu es déjà venu ? Ça ne fait rien. Assieds-toi.",
-          "Les crabes marchent de côté par politesse. Je crois.",
-          "Regarde la mousse sur ce rondin. Elle n'était pas là hier. Ou si.",
-          "Ah, quelqu'un. Il y a de la place. Il y a toujours de la place."
+          "La longue-vue de Maurice attend, tournée vers la lune.",
+          "Une tasse, un plaid, un carnet : tout est prêt pour regarder le ciel.",
+          "Un mot de Philomène, sur la table : « N'oublie pas ton écharpe, il fait frais là-haut. »",
+          "Le ciel est immense, ce soir."
         ],
-        "REPAS_TEXTES": [
-          "Oh, à manger. Quelqu'un m'en apportait, avant. De la soupe, souvent. Il parlait peu.",
-          "Tu reviens avec à manger. C'est gentil. Je l'ai déjà dit, peut-être.",
-          "Ça sent bon. Assieds-toi, on va regarder par la fenêtre en mangeant."
-        ],
-        "DEJA": "J'ai encore ce que tu m'as apporté tout à l'heure. Garde le tien.",
-        "PIERRE": "Ah. Elle est rentrée.",
-        "VIDE": "La cabane est vide, le lit froid. Dans les bois, quelqu'un marche sous la lune."
+        "PIERRE": "Une page qu'on n'avait pas vue : « Si tu lis ceci, tu l'as trouvée. Laisse-la briller chez toi. M. »"
       }
     },
     "ACTES": [
@@ -206,50 +196,49 @@
     },
     "PERSONNAGES": {
       "adele": { "nom": "Adèle", "role": "la mère du personnage principal", "lieu": "Cadolon" },
-      "maurice": { "nom": "Maurice", "role": "le grand-père, l'ancien cocher (mort il y a un an)", "lieu": "Le Gué" },
+      "maurice": { "nom": "Maurice", "role": "le grand-père, l'ancien cocher, parti en voyage avec Philomène", "lieu": "en voyage" },
       "achille": { "nom": "Achille", "role": "le cocher", "lieu": "Le Gué", "perso": 8 },
-      "odile": { "nom": "Odile", "role": "l'ancienne restée", "lieu": "Le Gué", "perso": 16, "habite": { "hameau": "gue", "genre": "f" } },
-      "fernand": { "nom": "Fernand", "role": "l'ancien revenu de Cadolon", "lieu": "Les Mouettes" },
+      "odile": { "nom": "Odile", "role": "la grand-mère du Gué", "lieu": "Le Gué", "perso": 16, "habite": { "hameau": "gue", "genre": "f" } },
+      "fernand": { "nom": "Fernand", "role": "le pêcheur conteur", "lieu": "Les Mouettes" },
       "garance": { "nom": "Garance", "role": "la tisserande", "lieu": "Les Genêts" },
       "lise": { "nom": "Lise", "role": "la fille de Garance", "lieu": "Les Genêts" },
       "basile": { "nom": "Basile", "role": "le scieur et ébéniste", "lieu": "Bois-Joli", "perso": 18, "habite": { "hameau": "bois_joli", "genre": "m", "metier": "bucheron" } },
       "theo": { "nom": "Théo", "role": "le fils de Basile", "lieu": "Bois-Joli", "perso": 18, "habite": { "hameau": "bois_joli", "genre": "m", "enfant": true, "avec": "basile" } },
       "frida": { "nom": "Frida", "role": "la scientifique", "lieu": "son atelier de l'étang" },
-      "johnny": { "nom": "Johnny", "role": "l'ermite", "lieu": "sa cabane de la forêt" },
       "compagnon": { "nom": "le compagnon", "role": "le second adulte de la famille", "lieu": "la ferme" }
     },
     "FRAGMENTS": {
       "carnet_promesses": {
         "titre": "Un carnet de tournée de Maurice",
-        "texte": "Genêts : toit de Garance, avant les pluies. Bois-Joli : lames de la scie. Mouettes : la pompe, encore. J. : soupe, pain."
+        "texte": "Genêts : le toit de l'atelier de Garance, plus de lumière pour ses couleurs. Bois-Joli : les lames de la scie. Mouettes : la pompe, avec Fernand. É. : passer dire bonsoir."
       },
-      "note_j": {
-        "titre": "La note « J. »",
-        "texte": "J. : soupe, pain. Il a encore parlé de la lune. Il dit qu'il l'a « rentrée sous la terre du milieu »."
+      "note_etoile": {
+        "titre": "La note « É. »",
+        "texte": "É. : bonsoir. Toujours là, au chaud sous la terre du milieu. Elle brille plus fort à la pleine lune."
       },
-      "page_bord": {
-        "titre": "Une page de bord délavée",
-        "texte": "Le croquis d'une pierre, le mot « fragment », une date qu'on ne lit plus."
+      "journal_bord": {
+        "titre": "Le journal de bord des premiers arrivants",
+        "texte": "« Nous avons suivi l'étoile tombée jusqu'au milieu de l'île. C'est là que nous resterons. »"
       },
       "releves_frida": {
         "titre": "Les relevés de Frida",
         "texte": "Une carte de l'île : les récoltes de pleine lune gagnent le plus au centre, là où est la ferme."
       },
-      "johnny_pleine": {
-        "titre": "Johnny, une nuit de pleine lune",
-        "texte": "« Regarde comme la lune brille aujourd'hui, c'est fascinant. On dirait qu'elle cherche quelque chose. »"
+      "ciel_pleine": {
+        "titre": "Le carnet du ciel, pleine lune",
+        "texte": "« Pleine lune. Les lucioles sont revenues au-dessus des bois du milieu. Elles savent. »"
       },
-      "johnny_noire": {
-        "titre": "Johnny, une nuit noire",
-        "texte": "« Quand il fait tout noir, je l'entends sous les arbres. »"
+      "ciel_noire": {
+        "titre": "Le carnet du ciel, nuit noire",
+        "texte": "« Nuit noire. Sans la lune, on voit mieux la petite lueur, en bas, dans les bois. »"
       },
-      "johnny_croissante": {
-        "titre": "Johnny, sous la lune croissante",
-        "texte": "« J'avais un caillou qui brillait. Je l'ai mis au chaud, dans le noir, pour qu'il dorme. »"
+      "ciel_croissante": {
+        "titre": "Le carnet du ciel, lune montante",
+        "texte": "« Lune montante. Philomène dit que tout pousse plus vite chez nous. Elle a raison, comme toujours. »"
       },
       "souvenir_lise": {
         "titre": "Ce que Lise a vu",
-        "texte": "« Une nuit de pleine lune, j'ai vu le vieux de la forêt marcher vers les bois de chez toi. »"
+        "texte": "« Une nuit de pleine lune, j'ai vu des lucioles danser au-dessus des bois de chez toi. Des centaines ! Mais je dis pas. »"
       }
     },
     "SCENES": [
@@ -258,8 +247,8 @@
         "quand": { "installee": true, "jour_max": 1, "sans_fait": "arrivee" },
         "priorite": 100,
         "lignes": [
-          { "qui": "fernand", "texte": "Les héritiers de Maurice. Ça se voit, vous avez l'air perdus." },
-          { "qui": "fernand", "texte": "La terre, c'est par là. Suivez le chemin. La calèche passe demain." }
+          { "qui": "fernand", "texte": "Bienvenue à Céron ! Vous êtes la famille de Maurice et Philomène, ça se voit au sourire." },
+          { "qui": "fernand", "texte": "Votre terre, c'est par là, au bout du chemin. La calèche passe demain, Achille vous dira tout." }
         ],
         "effet": { "fait": "arrivee", "relation": { "fernand": 10 } }
       },
@@ -268,7 +257,7 @@
         "quand": { "installee": true, "jour_max": 1, "fait": "arrivee", "sans_fait": "arrivee_enfants", "enfants": true },
         "priorite": 90,
         "lignes": [
-          { "qui": "fernand", "texte": "Et ces petits-là, ils tiendront pas une semaine sans écran. On parie ?" }
+          { "qui": "fernand", "texte": "Et vous, les petits ! Un matin, je vous montrerai où les dauphins viennent jouer." }
         ],
         "effet": { "fait": "arrivee_enfants" }
       },
@@ -277,12 +266,12 @@
         "quand": { "chapitre_min": 2, "lieu": "caleche_ferme", "sans_fait": "achille.cle" },
         "priorite": 100,
         "lignes": [
-          { "qui": "achille", "nom": "Le cocher", "texte": "Ho." },
-          { "qui": "achille", "nom": "Le cocher", "texte": "Toi, t'as les yeux de ta mère." },
-          { "qui": "achille", "texte": "Achille. Je mène la calèche depuis que ton grand-père a arrêté." },
-          { "qui": "achille", "texte": "Tiens, la clé de chez Maurice, au Gué. On ferme pas, ici. C'est pour dire que c'est à toi." },
-          { "qui": "achille", "texte": "Il a laissé des carnets partout. Moi, j'en ai deux. Je les garde." },
-          { "qui": "achille", "texte": "Je passe tous les jours vers dix heures. T'as du surplus, je prends." }
+          { "qui": "achille", "nom": "Le cocher", "texte": "Ho, Biscotte. Regarde qui c'est." },
+          { "qui": "achille", "nom": "Le cocher", "texte": "Toi, t'as le sourire de ta mère." },
+          { "qui": "achille", "texte": "Achille. Je mène la calèche. C'est ton grand-père qui m'a tout appris." },
+          { "qui": "achille", "texte": "Tiens, la clé de leur maison, au Gué. On ferme pas, ici. Mais Maurice voulait que ce soit toi qui l'aies." },
+          { "qui": "achille", "texte": "Il a laissé des carnets un peu partout. J'en ai deux. Je te les prêterai." },
+          { "qui": "achille", "texte": "Je passe tous les jours vers dix heures. T'as du surplus, je prends. Biscotte aussi, si c'est des carottes." }
         ],
         "effet": { "fait": "achille.cle", "relation": { "achille": 10 }, "montrer": "gue" }
       },
@@ -291,24 +280,24 @@
         "quand": { "fait": "achille.cle", "lieu": "maison_maurice", "sans_fait": "odile.rencontre" },
         "priorite": 100,
         "lignes": [
-          { "qui": "odile", "texte": { "m": "Vous êtes le petit d'Adèle.", "f": "Vous êtes la petite d'Adèle." } },
-          { "qui": "odile", "texte": "Elle vous a dit de passer me voir, j'imagine. Elle dit toujours ça." },
-          { "qui": "odile", "texte": "Il n'y a rien à prendre là-dedans. Il donnait tout." },
-          { "qui": "odile", "texte": "On se tutoiera quand vous aurez passé une pleine lune ici." }
+          { "qui": "odile", "texte": { "m": "Te voilà ! Le petit d'Adèle.", "f": "Te voilà ! La petite d'Adèle." } },
+          { "qui": "odile", "texte": "Elle t'a dit de passer me voir, j'imagine. Elle a bien fait." },
+          { "qui": "odile", "texte": "J'arrose leurs géraniums en attendant qu'ils reviennent. Maintenant, on sera deux." },
+          { "qui": "odile", "texte": "Tiens, un de ses carnets. Il les oubliait partout." }
         ],
-        "effet": { "fait": "odile.rencontre", "relation": { "odile": 10 }, "fragment": "carnet_promesses" }
+        "effet": { "fait": ["odile.rencontre", "odile.tutoie"], "relation": { "odile": 10 }, "fragment": "carnet_promesses" }
       },
       {
         "id": "veillee_1",
         "quand": { "acte_min": 2, "lieu": "gue", "lune": "pleine", "heure": [19, 22], "fait": "odile.rencontre", "sans_fait": "veillee.1" },
         "priorite": 100,
         "lignes": [
-          { "qui": "odile", "texte": "Asseyez-vous. Les soirs de pleine lune, on la regarde ensemble." },
-          { "qui": "garance", "quand": { "fait": "promesse.toit_garance.commencee" }, "texte": "Il paraît que t'as commencé mon toit. On verra s'il tient." },
-          { "qui": "garance", "quand": { "sans_fait": "promesse.toit_garance.commencee", "machines": true }, "texte": "Il paraît que t'as une machine qui travaille pour toi. Ici, on travaille pour nous." },
-          { "qui": "fernand", "quand": { "sans_fait": ["promesse.toit_garance.commencee", "promesse.scie_bois_joli.commencee", "promesse.pompe_mouettes.commencee"], "machines": false }, "texte": "Personne a encore d'avis sur toi. Profites-en, ça dure pas." },
-          { "qui": "odile", "texte": "Bon. Tu as vu une pleine lune ici. On peut se tutoyer." },
-          { "qui": "achille", "texte": "Maurice venait jamais aux veillées. Toujours sur la route. Toi, t'es là. C'est déjà ça." }
+          { "qui": "odile", "texte": "Assieds-toi près de moi. Les soirs de pleine lune, on la regarde ensemble." },
+          { "qui": "garance", "quand": { "fait": "promesse.toit_garance.commencee" }, "texte": "C'est toi, pour mon toit ? Ça me touche, tu sais." },
+          { "qui": "garance", "quand": { "sans_fait": "promesse.toit_garance.commencee", "machines": true }, "texte": "Il paraît que t'as un robot ! Tu crois qu'il saurait carder la laine ?" },
+          { "qui": "fernand", "quand": { "sans_fait": ["promesse.toit_garance.commencee", "promesse.scie_bois_joli.commencee", "promesse.pompe_mouettes.commencee"], "machines": false }, "texte": "Ta première veillée ! Profites-en, les tartes d'Odile partent vite." },
+          { "qui": "odile", "texte": "Voilà, tu as vu ta première pleine lune ici. Tu es de la maison." },
+          { "qui": "achille", "texte": "Maurice arrivait toujours au dessert, la cloche à la main. Toi, t'es là dès l'entrée. Ça fait plaisir." }
         ],
         "effet": { "fait": ["veillee.1", "odile.tutoie"], "relation": { "odile": 10, "achille": 15 }, "confiance_partout": 5 }
       },
@@ -317,27 +306,26 @@
         "quand": { "acte_min": 2, "chapitre_min": 4, "lieu": "ferme", "sans_fait": "frida.rencontre" },
         "priorite": 90,
         "lignes": [
-          { "qui": "frida", "nom": "Une inconnue", "texte": { "m": "Alors c'est toi. La dernière fois que je t'ai vu, tu tenais dans un panier.", "f": "Alors c'est toi. La dernière fois que je t'ai vue, tu tenais dans un panier." } },
-          { "qui": "frida", "texte": "Frida. Je fabrique des machines. Ici, on dit que ce n'est pas bien." },
-          { "qui": "frida", "texte": "Moi je dis que ça dépend de ce qu'on en fait." },
-          { "qui": "frida", "texte": "Un robot qui récolte, une station pour le recharger. Trois heures gagnées par jour. Pour l'île, ou pour toi." },
-          { "qui": "frida", "quand": { "empreinte": "basse" }, "texte": "Ta ferme est petite. Tant mieux : une machine y ferait moins de bruit." },
-          { "qui": "frida", "quand": { "empreinte": ["moyenne", "haute"] }, "texte": "Ta ferme grandit vite. Tu vas avoir besoin de moi, ou de beaucoup de bras." },
-          { "qui": "frida", "texte": "Réfléchis. Mon atelier est au bord de l'étang." }
+          { "qui": "frida", "nom": "Une inconnue", "texte": { "m": "Alors c'est toi ! La dernière fois que je t'ai vu, tu tenais dans un panier.", "f": "Alors c'est toi. La dernière fois que je t'ai vue, tu tenais dans un panier." } },
+          { "qui": "frida", "texte": "Frida. J'invente des machines et j'observe les bêtes. Ta grand-mère est ma meilleure amie." },
+          { "qui": "frida", "texte": "Un robot qui récolte, une station pour le recharger : trois heures gagnées par jour." },
+          { "qui": "frida", "texte": "Trois heures pour faire ce que tu aimes. Ou pour venir boire le thé chez moi !" },
+          { "qui": "frida", "quand": { "empreinte": "basse" }, "texte": "Ta ferme est petite et jolie. Une machine s'y plairait." },
+          { "qui": "frida", "quand": { "empreinte": ["moyenne", "haute"] }, "texte": "Ta ferme grandit vite ! Mes machines adoreraient t'aider." },
+          { "qui": "frida", "texte": "Passe me voir, mon atelier est au bord de l'étang. Il y a toujours du thé." }
         ],
         "effet": { "fait": "frida.rencontre", "relation": { "frida": 10 } }
       },
       {
-        "id": "maurice_fortune",
+        "id": "maurice_tournee",
         "quand": { "acte_min": 2, "lieu": "caleche_ferme", "jour_min": 21, "palier_min": 2, "fait": "veillee.1", "sans_fait": "maurice.fortune" },
         "priorite": 80,
         "lignes": [
-          { "qui": "achille", "texte": "Tu crois qu'il t'a laissé quoi, Maurice ?" },
-          { "qui": "achille", "texte": "Il gagnait bien. Il gardait rien." },
-          { "qui": "achille", "texte": "Le toit des Genêts, la scie de Bois-Joli, la pompe des Mouettes : c'est lui." },
-          { "qui": "achille", "texte": "Quand il a arrêté, plus personne a payé. Ça se voit, maintenant." },
-          { "qui": "achille", "texte": "Ton héritage, c'est cette terre. Et ce que les gens pensent de toi à cause de lui." },
-          { "qui": "achille", "texte": "Ça aussi, ça se dépense." }
+          { "qui": "achille", "texte": "Tu sais ce que faisait Maurice, pendant la tournée ?" },
+          { "qui": "achille", "texte": "Il réparait un peu partout. Un toit ici, une scie là, la pompe des Mouettes." },
+          { "qui": "achille", "texte": "Il disait que l'île, c'est comme un jardin : un peu de soin chaque jour." },
+          { "qui": "achille", "texte": "Avant de partir, il a pas eu le temps de tout finir. C'est noté dans son carnet." },
+          { "qui": "achille", "texte": "Si un jour ça te dit… Rien ne presse, hein." }
         ],
         "effet": { "fait": "maurice.fortune", "relation": { "achille": 5 } }
       },
@@ -346,33 +334,33 @@
         "quand": { "debloque": "veillee", "lieu": "ferme", "lune": "pleine", "heure": [19, 22], "sans_fait": "veillee.ferme" },
         "priorite": 95,
         "lignes": [
-          { "qui": "odile", "texte": "On a vu ta lumière depuis le chemin. Alors on est venus." },
-          { "qui": "fernand", "texte": "Chez toi, la lune se voit mieux. C'est la terre du milieu, ça." },
-          { "qui": "achille", "texte": "Ton grand-père aurait aimé voir ça. Du monde, chez lui." },
+          { "qui": "odile", "texte": "On a vu ta lumière depuis le chemin. Alors on est venus !" },
+          { "qui": "fernand", "texte": "Chez toi, la lune se voit encore mieux. C'est la terre du milieu, ça." },
+          { "qui": "achille", "texte": "Maurice et Philomène seraient contents de voir autant de monde chez eux." },
           { "qui": "odile", "texte": "On reviendra. Les soirs de pleine lune, laisse la porte ouverte." }
         ],
         "effet": { "fait": "veillee.ferme", "relation": { "odile": 5 }, "confiance_partout": 5 }
       },
       {
-        "id": "note_j",
-        "quand": { "lieu": "caleche_ferme", "palier_min": 3, "fait": "maurice.fortune", "sans_fragment": "note_j" },
+        "id": "note_etoile",
+        "quand": { "lieu": "caleche_ferme", "palier_min": 3, "fait": "maurice.fortune", "sans_fragment": "note_etoile" },
         "priorite": 75,
         "lignes": [
-          { "qui": "achille", "texte": "Tiens. Un des deux carnets de Maurice. Je l'ai assez lu." },
-          { "qui": "achille", "texte": "Des « J. » partout. Un vieux fou qu'il aimait bien. Il lui portait la soupe." },
-          { "qui": "achille", "texte": "Fais-en ce que tu veux. Moi, je garde l'autre." }
+          { "qui": "achille", "texte": "Tiens. Un des carnets de Maurice. Comme promis." },
+          { "qui": "achille", "texte": "Il y a des « É. » partout dedans. J'ai jamais su ce que ça voulait dire." },
+          { "qui": "achille", "texte": "Garde-le. Moi, je garde l'autre : il y a ses recettes de soupe." }
         ],
-        "effet": { "fragment": "note_j", "relation": { "achille": 5 } }
+        "effet": { "fragment": "note_etoile", "relation": { "achille": 5 } }
       },
       {
         "id": "frida_releves",
         "quand": { "lieu": "atelier", "fait": ["frida.rencontre", "lieu.atelier"], "sans_fragment": "releves_frida" },
         "priorite": 90,
         "lignes": [
-          { "qui": "frida", "texte": "Ah, toi. Pousse les boulons, assieds-toi." },
-          { "qui": "frida", "texte": "Tu veux un chiffre ? 14 % de mieux aux récoltes de pleine lune. Pas partout : au centre de l'île." },
-          { "qui": "frida", "texte": "Là où est ta ferme. Les anciens disent que c'est la lune. Moi, je dis que c'est intéressant." },
-          { "qui": "frida", "texte": "Tiens, garde la carte. J'en ai fait trois. Je ne sais pas ce qu'elle cherche, cette lune." }
+          { "qui": "frida", "texte": "Ah, te voilà ! Pousse les boulons, assieds-toi. Un thé ?" },
+          { "qui": "frida", "texte": "Un chiffre ? 14 % de mieux aux récoltes de pleine lune. Et c'est au centre de l'île que ça pousse le mieux." },
+          { "qui": "frida", "texte": "Là où est ta ferme. Odile dit que c'est la lune. Moi, je dis que c'est passionnant." },
+          { "qui": "frida", "texte": "Tiens, garde la carte. J'en ai fait trois." }
         ],
         "effet": { "fragment": "releves_frida", "relation": { "frida": 10 } }
       },
@@ -381,8 +369,8 @@
         "quand": { "lieu": "atelier", "fait": ["frida.rencontre", "pierre.posee"], "sans_fait": "frida.pierre" },
         "priorite": 95,
         "lignes": [
-          { "qui": "frida", "texte": "Ta ferme pousse plus vite. 25 % plus vite. J'ai mesuré, ne fais pas cette tête." },
-          { "qui": "frida", "texte": "C'est peut-être le sol. Peut-être pas." }
+          { "qui": "frida", "texte": "Ta ferme pousse plus vite. 25 % plus vite ! J'ai mesuré deux fois." },
+          { "qui": "frida", "texte": "C'est peut-être le sol. Peut-être autre chose. J'adore ne pas savoir." }
         ],
         "effet": { "fait": "frida.pierre", "relation": { "frida": 5 } }
       },
@@ -391,11 +379,11 @@
         "quand": { "touche": "odile", "objet": "enveloppe_maurice", "fait": "odile.rencontre" },
         "priorite": 100,
         "lignes": [
-          { "qui": "odile", "texte": "Tiens. Cette écriture-là, je la connais." },
-          { "qui": "odile", "quand": { "fait": "odile.tutoie" }, "texte": "Il t'a fait le même coup qu'à moi : il laisse choisir, et il sait déjà." },
-          { "qui": "odile", "quand": { "sans_fait": "odile.tutoie" }, "texte": "Il vous a fait le même coup qu'à moi : il laisse choisir, et il sait déjà." },
-          { "qui": "odile", "texte": "Les toits, on s'en occupe. Une maison par nuit, comme lui faisait." },
-          { "qui": "odile", "texte": "On ne remercie pas, ici. On s'en souvient." }
+          { "qui": "odile", "texte": "Tiens, cette écriture, je la connais !" },
+          { "qui": "odile", "quand": { "fait": "odile.tutoie" }, "texte": "Il fait toujours pareil : il laisse choisir, et il sait déjà." },
+          { "qui": "odile", "quand": { "sans_fait": "odile.tutoie" }, "texte": "Il fait toujours pareil : il laisse choisir, et il sait déjà." },
+          { "qui": "odile", "texte": "Les toits, on s'en occupera ensemble. Une maison par nuit, comme lui faisait." },
+          { "qui": "odile", "texte": "Ici, on dit pas merci. On fait une tarte. Je t'en garde une part." }
         ],
         "effet": { "fait": "enveloppe.donnee", "prendre": { "enveloppe_maurice": 1 }, "relation": { "odile": 15, "achille": 5 }, "confiance_partout": 5 }
       },
@@ -404,16 +392,16 @@
         "quand": { "acte_min": 3, "lieu": "gue", "lune": "pleine", "heure": [19, 22], "fait": "veillee.1", "sans_fait": "veillee.2" },
         "priorite": 100,
         "lignes": [
-          { "qui": "odile", "texte": "Ta deuxième veillée. Ce soir, on parle de ta ferme. Ne fais pas cette tête." },
-          { "qui": "fernand", "quand": { "empreinte": "haute" }, "texte": "On voit ta fumée depuis la cale. Là-bas, on appelait ça une usine." },
-          { "qui": "fernand", "quand": { "empreinte": ["basse", "moyenne"] }, "texte": "Ta ferme fait pas de bruit. Ici, c'est un compliment." },
-          { "qui": "garance", "quand": { "fait": "promesse.toit_garance" }, "texte": "Mon toit a tenu sous la pluie. Bon." },
-          { "qui": "garance", "quand": { "sans_fait": "promesse.toit_garance", "machines": true }, "texte": "Tes machines travaillent la nuit, il paraît. Ma laine, elle, attend le jour." },
+          { "qui": "odile", "texte": "Ta deuxième veillée ! Ce soir, on parle de ta ferme. Tout le monde en dit du bien." },
+          { "qui": "fernand", "quand": { "empreinte": "haute" }, "texte": "On voit ta ferme depuis la cale. Elle a l'air heureuse." },
+          { "qui": "fernand", "quand": { "empreinte": ["basse", "moyenne"] }, "texte": "Ta ferme est tranquille comme un matin de pêche. Ici, c'est un compliment." },
+          { "qui": "garance", "quand": { "fait": "promesse.toit_garance" }, "texte": "Mon toit a tenu sous l'averse ! Viens voir les couleurs à la lumière." },
+          { "qui": "garance", "quand": { "sans_fait": "promesse.toit_garance", "machines": true }, "texte": "Tes machines travaillent la nuit, il paraît. Tu me prêtes le robot pour carder ?" },
           { "qui": "basile", "quand": { "fait": "promesse.scie_bois_joli" }, "texte": "Les lames neuves chantent juste. Le bois te dit merci. Moi aussi." },
-          { "qui": "odile", "quand": { "fait": "enveloppe.donnee" }, "texte": "Les toits sont refaits. Tout le monde sait d'où vient l'argent. Personne ne le dira." },
-          { "qui": "odile", "quand": { "fait": "enveloppe.ouverte" }, "texte": "L'enveloppe, tu l'as gardée. Elle était à toi. On n'en parle plus." },
-          { "qui": "odile", "quand": { "fait": "toit.repare", "sans_fait": "enveloppe.donnee" }, "texte": "Il paraît que tu montes sur les toits des autres. Lui aussi." },
-          { "qui": "achille", "texte": "Maurice parlait de toi au bout de la tournée. Maintenant, c'est l'île qui parle de toi." }
+          { "qui": "odile", "quand": { "fait": "enveloppe.donnee" }, "texte": "Les toits sont tout beaux. Tout le monde sait qui a aidé." },
+          { "qui": "odile", "quand": { "fait": "enveloppe.ouverte" }, "texte": "L'enveloppe ? Maurice voulait que tu choisisses. Tu as bien choisi." },
+          { "qui": "odile", "quand": { "fait": "toit.repare", "sans_fait": "enveloppe.donnee" }, "texte": "Il paraît que tu montes sur les toits des autres. Lui aussi, tu sais." },
+          { "qui": "achille", "texte": "Maurice parlait de toi au bout de la tournée. Maintenant, toute l'île parle de toi." }
         ],
         "effet": { "fait": "veillee.2", "relation": { "odile": 5, "achille": 5 }, "confiance_partout": 3 }
       },
@@ -423,8 +411,8 @@
         "priorite": 90,
         "lignes": [
           { "qui": "theo", "texte": "C'est toi, celui de la ferme du milieu ? T'as vraiment vécu à Cadolon ?" },
-          { "qui": "theo", "texte": "Moi c'est Théo. Je répare tout. Les roues, les pompes, les trucs de Frida." },
-          { "qui": "theo", "texte": "Chut. Papa sait pas que je vais chez elle. Il veut que je fasse des chaises." }
+          { "qui": "theo", "texte": "Moi c'est Théo. Je répare tout ! Les roues, les pompes, les inventions de Frida." },
+          { "qui": "theo", "texte": "Papa dit que j'ai des doigts en or. Enfin, en chêne. Pour lui, c'est pareil." }
         ],
         "effet": { "fait": "theo.rencontre", "relation": { "theo": 10 } }
       },
@@ -433,9 +421,9 @@
         "quand": { "touche": "theo", "acte_min": 3, "fait": "theo.rencontre", "palier_min": 1, "sans_fait": "theo.confie" },
         "priorite": 90,
         "lignes": [
-          { "qui": "theo", "texte": "Je vais partir. À Cadolon. Frida dit que j'ai des mains pour les machines." },
-          { "qui": "theo", "texte": "Ici, c'est des chaises, des chaises, des chaises. Les chaises, elles ont pas besoin de moi." },
-          { "qui": "theo", "texte": "Papa, je lui ai rien dit. Toi, tu lui parles bien. Moi, je crie." }
+          { "qui": "theo", "texte": "Tu sais ce que je veux faire, plus tard ? Des machines pour toute l'île !" },
+          { "qui": "theo", "texte": "Partir ? Pourquoi faire ? Ici, il y a la mer, Frida, et tout à inventer." },
+          { "qui": "theo", "texte": "Mais je sais pas par où commencer. La calèche, l'atelier de papa, ou chez Frida…" }
         ],
         "effet": { "fait": "theo.confie", "relation": { "theo": 5 } }
       },
@@ -444,10 +432,10 @@
         "quand": { "touche": "basile", "fait": ["theo.confie", "achille.tournee"], "sans_fait": "theo.choix" },
         "priorite": 95,
         "lignes": [
-          { "qui": "basile", "texte": "Le petit veut partir. Je sais. Les murs sont minces." },
-          { "qui": "basile", "texte": "Achille est passé. Il dit que t'as fait sa tournée. Il cherche quelqu'un pour la suite." },
-          { "qui": "basile", "texte": "Le petit sur la calèche… Maurice a commencé comme ça. Pas loin, et partout." },
-          { "qui": "basile", "texte": "Bon. Je lui dirai. Le chêne pousse où il veut, tant qu'il garde ses racines." }
+          { "qui": "basile", "texte": "Le petit hésite. Je l'entends réfléchir, les murs sont minces !" },
+          { "qui": "basile", "texte": "Achille est passé. Il dit que t'as fait sa tournée. Il cherche quelqu'un pour la partager." },
+          { "qui": "basile", "texte": "Le petit sur la calèche… Maurice a commencé comme ça." },
+          { "qui": "basile", "texte": "Je lui dirai. Le chêne pousse où il veut, tant qu'il garde ses racines." }
         ],
         "effet": { "fait": ["theo.choix", "theo.apprenti"], "relation": { "basile": 10, "theo": 10, "achille": 5 } }
       },
@@ -456,33 +444,33 @@
         "quand": { "touche": "basile", "fait": "theo.confie", "machines": true, "sans_fait": "theo.choix" },
         "priorite": 90,
         "lignes": [
-          { "qui": "basile", "texte": "Le petit veut partir. Je sais. Les murs sont minces." },
-          { "qui": "basile", "texte": "Chez toi, il paraît, des machines travaillent. Et ta terre tient toujours debout." },
-          { "qui": "basile", "texte": "S'il veut mettre un moteur à ma scie… Le bois s'en fichera. Moi, je m'y ferai." },
-          { "qui": "basile", "texte": "Bon. Je lui dirai de rester. Et de commencer par la courroie." }
+          { "qui": "basile", "texte": "Le petit hésite. Je l'entends réfléchir, les murs sont minces !" },
+          { "qui": "basile", "texte": "Chez toi, il paraît, des machines travaillent. Et ta terre est plus belle que jamais." },
+          { "qui": "basile", "texte": "S'il veut mettre un moteur à ma scie… on l'essaiera ensemble." },
+          { "qui": "basile", "texte": "Je lui dirai de commencer par la courroie. Et de m'apprendre." }
         ],
         "effet": { "fait": ["theo.choix", "theo.atelier"], "relation": { "basile": 10, "theo": 10, "frida": 5 } }
       },
       {
-        "id": "basile_theo_part",
+        "id": "basile_theo_frida",
         "quand": { "touche": "basile", "fait": "theo.confie", "sans_fait": "theo.choix" },
         "priorite": 80,
         "lignes": [
-          { "qui": "basile", "texte": "Le petit veut partir. Je sais. Les murs sont minces." },
-          { "qui": "basile", "texte": "J'ai rien à lui offrir, ici. Des chaises. Il l'a dit lui-même." },
-          { "qui": "basile", "texte": "Le chêne, faut le laisser pousser où il veut. Même loin." },
-          { "qui": "basile", "texte": "Il prend le bac demain. Il t'aimait bien, tu sais." }
+          { "qui": "basile", "texte": "Le petit hésite. Je l'entends réfléchir, les murs sont minces !" },
+          { "qui": "basile", "texte": "Il passe ses journées chez Frida. Il revient avec des étoiles plein les yeux." },
+          { "qui": "basile", "texte": "Le chêne, faut le laisser pousser vers la lumière." },
+          { "qui": "basile", "texte": "Je lui dirai d'aller chez elle tous les matins. Le soir, il me racontera." }
         ],
-        "effet": { "fait": ["theo.choix", "theo.part"], "relation": { "basile": 5 } }
+        "effet": { "fait": ["theo.choix", "theo.frida"], "relation": { "basile": 5 } }
       },
       {
         "id": "achille_cheval",
         "quand": { "acte_min": 3, "lieu": "caleche_ferme", "palier_min": 2, "jour_min": 30, "fait": "achille.cle", "sans_fait": "achille.tournee.demandee" },
         "priorite": 85,
         "lignes": [
-          { "qui": "achille", "texte": "Ho. Mon cheval boite. Celui-là, c'est celui d'Odile : il ira pas plus loin que chez toi." },
-          { "qui": "achille", "texte": "Les Genêts et Bois-Joli attendent la calèche. Ils vont s'inquiéter." },
-          { "qui": "achille", "texte": "Tu passes leur dire ? Maurice le faisait, quand le cheval boitait. À pied." }
+          { "qui": "achille", "texte": "Ho. Biscotte boite un peu. Rien de grave, mais il doit se reposer quelques jours." },
+          { "qui": "achille", "texte": "Les Genêts et Bois-Joli attendent des nouvelles. Ils vont se demander." },
+          { "qui": "achille", "texte": "Tu passes leur dire bonjour ? Maurice le faisait à pied, quand le cheval se reposait." }
         ],
         "effet": { "fait": "achille.tournee.demandee", "relation": { "achille": 5 }, "montrer": ["genets", "bois_joli"] }
       },
@@ -492,8 +480,8 @@
         "priorite": 90,
         "lignes": [
           { "qui": "achille", "texte": "Ho. Ils m'ont dit que t'étais passé. Les deux." },
-          { "qui": "achille", "texte": "Garance t'a trouvé maigre. Basile t'a trouvé bien. Moi, je dis rien." },
-          { "qui": "achille", "texte": "Faudra bien que quelqu'un reprenne, un jour. Moi, je ferai pas trente-cinq ans comme lui." }
+          { "qui": "achille", "texte": { "m": "Garance t'a trouvé radieux. Basile t'a gardé une chaise.", "f": "Garance t'a trouvée radieuse. Basile t'a gardé une chaise." } },
+          { "qui": "achille", "texte": "Biscotte va mieux. Faudrait que je trouve quelqu'un pour partager la tournée. À deux, c'est plus gai." }
         ],
         "effet": { "fait": "achille.tournee", "relation": { "achille": 15 } }
       },
@@ -502,9 +490,9 @@
         "quand": { "acte_min": 4, "lieu": "caleche_ferme", "fait": ["achille.tournee", "theo.apprenti"], "sans_fait": "achille.releve" },
         "priorite": 70,
         "lignes": [
-          { "qui": "achille", "texte": "Le petit de Basile monte avec moi, le jeudi. Il parle trop. Le cheval l'aime bien." },
-          { "qui": "achille", "texte": "Dans quelques années, la calèche, ce sera lui. Moi, je garderai l'écurie." },
-          { "qui": "achille", "texte": "C'est toi qui m'as envoyé chez Basile. Je sais. Ça se dit pas, mais je sais." }
+          { "qui": "achille", "texte": "Le petit de Basile monte avec moi le jeudi. Il parle tout le temps. Biscotte adore." },
+          { "qui": "achille", "texte": "Un jour, c'est lui qui mènera la calèche. Moi, je ferai les petites tournées." },
+          { "qui": "achille", "texte": "C'est toi qui l'as envoyé. Je sais. Merci." }
         ],
         "effet": { "fait": ["achille.releve", "achille.releve.theo"], "relation": { "achille": 10 } }
       },
@@ -513,9 +501,9 @@
         "quand": { "acte_min": 4, "lieu": "caleche_ferme", "fait": "achille.tournee", "hameaux_min": 6, "sans_fait": "achille.releve" },
         "priorite": 65,
         "lignes": [
-          { "qui": "achille", "texte": "Un gamin d'un hameau du nord m'a arrêté sur la route. Il veut apprendre la calèche." },
-          { "qui": "achille", "texte": "Il dit qu'il t'a vu passer à pied chez tout le monde. Ça lui a donné l'idée." },
-          { "qui": "achille", "texte": "Bon. Je l'essaie. S'il tient la tournée d'un mois, je le garde." }
+          { "qui": "achille", "texte": "Une petite d'un hameau du nord m'a arrêté sur la route. Elle veut apprendre la calèche." },
+          { "qui": "achille", "texte": "Elle dit qu'elle t'a vu passer à pied chez tout le monde. Ça lui a donné l'idée." },
+          { "qui": "achille", "texte": "Je l'emmène dès demain. Biscotte l'aime déjà." }
         ],
         "effet": { "fait": ["achille.releve", "achille.releve.jeune"], "relation": { "achille": 5 } }
       },
@@ -524,8 +512,8 @@
         "quand": { "acte_min": 4, "lieu": "caleche_ferme", "fait": "achille.tournee", "sans_fait": "achille.releve" },
         "priorite": 60,
         "lignes": [
-          { "qui": "achille", "texte": "Personne pour la calèche. Bon. Je tiendrai encore un peu. Le cheval aussi." },
-          { "qui": "achille", "texte": "Maurice, lui, m'avait trouvé. Moi, je cherche encore." }
+          { "qui": "achille", "texte": "Personne encore pour partager la calèche. C'est pas grave, j'aime ma tournée." },
+          { "qui": "achille", "texte": "Et puis, je t'ai, toi, les jours où Biscotte se repose." }
         ],
         "effet": { "fait": ["achille.releve", "achille.releve.personne"] }
       },
@@ -534,9 +522,9 @@
         "quand": { "acte_min": 4, "lieu": "caleche_ferme", "fait": "achille.cle", "sans_fait": "fete.annonce" },
         "priorite": 95,
         "lignes": [
-          { "qui": "achille", "texte": "Ho. La fête des premiers arrivants, c'est à la pleine lune. À Brumeval, le soir." },
-          { "qui": "achille", "texte": "Une fois l'an, on fête ceux qui sont arrivés les premiers. Et ceux qui viennent d'arriver." },
-          { "qui": "achille", "texte": "Tout le monde y monte. Même moi. Même le cheval." }
+          { "qui": "achille", "texte": "Ho ! La fête des premiers arrivants, c'est à la pleine lune. À Brumeval, le soir." },
+          { "qui": "achille", "texte": "Une fois l'an, on fête ceux qui sont arrivés les premiers. Et ceux qui viennent d'arriver : toi !" },
+          { "qui": "achille", "texte": "Tout le monde y monte. Même Biscotte, avec un ruban." }
         ],
         "effet": { "fait": "fete.annonce", "relation": { "achille": 5 }, "montrer": "brumeval" }
       },
@@ -545,10 +533,10 @@
         "quand": { "acte_min": 4, "lieu": "brumeval", "lune": "pleine", "heure": [19, 23], "fait": "fete.annonce", "sans_fait": "fete", "fin": "nouveau_maurice" },
         "priorite": 100,
         "lignes": [
-          { "qui": "odile", "texte": "Te voilà. Assieds-toi près du feu : c'est la place des nouveaux." },
-          { "qui": "odile", "texte": "Les anciens ont parlé. L'entretien de l'île, on te le confie. Les toits, les routes, les promesses." },
-          { "qui": "odile", "texte": "Tiens. La cloche de sa calèche. Elle sonne mieux quand on passe chez les autres." },
-          { "qui": "achille", "texte": "{prenom}. Ça sonne bien, finalement." }
+          { "qui": "odile", "texte": "Te voilà ! Assieds-toi près du feu : c'est la place d'honneur des nouveaux." },
+          { "qui": "odile", "texte": "Toute l'île le dit : tu prends soin de chacun, comme Maurice." },
+          { "qui": "odile", "texte": "Tiens. La cloche de sa calèche. Il me l'a confiée pour toi, avant de partir." },
+          { "qui": "achille", "texte": "{prenom}. Ça sonne bien, avec la cloche." }
         ],
         "effet": { "fait": ["fete", "fin.nouveau_maurice"], "donner": { "cloche_maurice": 1 }, "relation": { "odile": 10, "achille": 10 }, "confiance_partout": 5 }
       },
@@ -557,10 +545,10 @@
         "quand": { "acte_min": 4, "lieu": "brumeval", "lune": "pleine", "heure": [19, 23], "fait": "fete.annonce", "sans_fait": "fete", "fin": "voisin_tranquille" },
         "priorite": 100,
         "lignes": [
-          { "qui": "odile", "texte": "Te voilà. Assieds-toi près du feu : c'est la place des nouveaux." },
-          { "qui": "fernand", "texte": "T'as pas fait de bruit. T'as pas fait de vagues. Ici, ça s'appelle être d'ici." },
-          { "qui": "odile", "texte": "On ne fête pas tout le monde aussi tranquillement. C'est bon signe." },
-          { "qui": "fernand", "texte": "Demain, cinq heures, à la cale. Si t'es en retard, je pars sans toi." }
+          { "qui": "odile", "texte": "Te voilà ! Assieds-toi près du feu : c'est la place d'honneur des nouveaux." },
+          { "qui": "fernand", "texte": "Ta ferme est douce comme un matin calme. Ici, on appelle ça être d'ici." },
+          { "qui": "odile", "texte": "On n'a jamais vu quelqu'un s'installer aussi joliment." },
+          { "qui": "fernand", "texte": "Demain, cinq heures, à la cale ? Je t'emmène voir les dauphins." }
         ],
         "effet": { "fait": ["fete", "fin.voisin_tranquille"], "relation": { "fernand": 10, "odile": 5 }, "confiance_partout": 3 }
       },
@@ -569,25 +557,25 @@
         "quand": { "acte_min": 4, "lieu": "brumeval", "lune": "pleine", "heure": [19, 23], "fait": "fete.annonce", "sans_fait": "fete", "fin": "autrement" },
         "priorite": 100,
         "lignes": [
-          { "qui": "odile", "texte": "Te voilà. Assieds-toi près du feu : c'est la place des nouveaux." },
-          { "qui": "odile", "texte": "On ne pensait pas qu'une grande ferme pouvait rendre autant. On s'est trompés. Ça arrive." },
-          { "qui": "frida", "texte": "Tu leur as montré que ça pouvait servir. Moi, en cinquante ans, j'y suis pas arrivée." },
-          { "qui": "frida", "texte": "Mes plans, je te les confie. 212 pages, dont 30 sur les haies. Tu verras." },
-          { "qui": "theo", "quand": { "fait": "theo.choix", "sans_fait": "theo.part" }, "texte": "Je reste ! Papa dit que l'île aura besoin de mécaniciens. Il a dit ça, lui !" }
+          { "qui": "odile", "texte": "Te voilà ! Assieds-toi près du feu : c'est la place d'honneur des nouveaux." },
+          { "qui": "odile", "texte": "Tes machines ont aidé tout le monde. Même ma confiture a gagné une heure !" },
+          { "qui": "frida", "texte": "Tu as montré à l'île tout ce qu'une machine peut faire de beau. Je suis si fière." },
+          { "qui": "frida", "texte": "Mes plans, je te les confie. 212 pages, dont 30 sur les haies. Tu verras, c'est passionnant." },
+          { "qui": "theo", "quand": { "fait": "theo.choix" }, "texte": "Et moi, je t'aiderai ! On va faire les plus belles machines du monde, ici !" }
         ],
         "effet": { "fait": ["fete", "fin.autrement"], "relation": { "frida": 10, "odile": 5 }, "confiance_partout": 5 }
       },
       {
-        "id": "fete_riche",
-        "quand": { "acte_min": 4, "lieu": "brumeval", "lune": "pleine", "heure": [19, 23], "fait": "fete.annonce", "sans_fait": "fete", "fin": "riche" },
+        "id": "fete_genereuse",
+        "quand": { "acte_min": 4, "lieu": "brumeval", "lune": "pleine", "heure": [19, 23], "fait": "fete.annonce", "sans_fait": "fete", "fin": "genereuse" },
         "priorite": 100,
         "lignes": [
-          { "qui": "odile", "texte": "Te voilà. Assieds-toi près du feu : c'est la place des nouveaux." },
-          { "qui": "fernand", "texte": "Belle ferme. On la voit de partout." },
-          { "qui": "odile", "texte": "Bonne fête." },
-          { "qui": "achille", "texte": "Ho. Bon. À demain, dix heures." }
+          { "qui": "odile", "texte": "Te voilà ! Assieds-toi près du feu : c'est la place d'honneur des nouveaux." },
+          { "qui": "fernand", "texte": "Ta ferme nourrit toute l'île, maintenant. On la voit depuis la mer, toute dorée." },
+          { "qui": "odile", "texte": "Les paniers de la calèche n'ont jamais été aussi pleins. Merci pour tout." },
+          { "qui": "achille", "texte": "Ho. Biscotte a pris deux kilos. C'est ta faute. À demain, dix heures." }
         ],
-        "effet": { "fait": ["fete", "fin.riche"] }
+        "effet": { "fait": ["fete", "fin.genereuse"] }
       }
     ],
     "COMPAGNON": {
@@ -600,16 +588,15 @@
     },
     "LIEUX": {
       "cabane": [
-        { "quand": { "lune": "pleine", "heure": [20, 5] }, "texte": "La cabane est vide, le lit froid. Dans les bois, quelqu'un marche sous la lune." },
-        { "texte": "Une cabane de rondins, sans lampe. Une tasse sèche sur la table. Personne." }
+        { "texte": "L'observatoire de Maurice : une longue-vue tournée vers le ciel, un plaid. Un carnet attend sur la table." }
       ],
       "atelier": [
-        { "quand": { "fait": "frida.rencontre" }, "texte": "L'atelier de Frida. Ça sent l'huile et le métal chaud. Elle n'est pas là." },
-        { "texte": "Un atelier plein d'outils et de pièces de métal. Ça sent l'huile. Personne." }
+        { "quand": { "fait": "frida.rencontre" }, "texte": "L'atelier de Frida, qui sent le thé à la menthe. Un mot sur la porte : « Partie compter les hérons. »" },
+        { "texte": "Un atelier plein d'outils, de ressorts et de pièces de métal. Ça sent l'huile. Frida n'est pas loin." }
       ],
       "epave": [
-        { "quand": { "heure": [20, 6], "equipe": "lanterne_tempete", "sans_fragment": "page_bord" }, "texte": "À la lanterne, sous une membrure, une page de bord délavée. On ne lit presque plus rien.", "effet": { "fragment": "page_bord" } },
-        { "texte": "Une vieille coque couchée sur le sable, le mât cassé. Ici, personne n'y touche." }
+        { "quand": { "heure": [20, 6], "equipe": "lanterne_tempete", "sans_fragment": "journal_bord" }, "texte": "À la lanterne, sous un banc de la barque, bien à l'abri : une page de leur journal de bord.", "effet": { "fragment": "journal_bord" } },
+        { "texte": "La barque des premiers arrivants, couchée là depuis cinq siècles. Les enfants y jouent aux explorateurs." }
       ],
       "cale": [
         { "quand": { "jour_max": 3 }, "texte": "Le bac qui vous a amenés repart demain matin. Fernand dit qu'il revient toujours, lui." },
@@ -619,7 +606,7 @@
     },
     "PROMESSES": {
       "toit_garance": {
-        "titre": "Le toit de Garance, aux Genêts",
+        "titre": "Le toit de l'atelier de Garance, aux Genêts",
         "qui": "garance",
         "besoin": { "planche": 20, "pierre": 10, "laine": 5 },
         "effet": { "relation": { "garance": 15, "achille": 5 }, "confiance_partout": 3 }
@@ -638,49 +625,50 @@
       }
     },
     "REPLIQUES": [
-      { "id": "achille.veillee", "qui": "achille", "quand": { "acte_min": 2, "fait": "odile.rencontre", "sans_fait": "veillee.1", "lune": ["croissante", "pleine"] }, "texte": "La pleine lune arrive. On veille au Gué, le soir, de sept à dix. Viens donc.", "priorite": 30, "repos_jours": 2 },
-      { "id": "achille.promesses", "qui": "achille", "quand": { "fait": "odile.rencontre", "palier_max": 2 }, "texte": "Les promesses de Maurice ? Donne-moi ce qu'il faut, je les porte. C'est sur ma route.", "priorite": 25, "repos_jours": 4 },
-      { "id": "achille.fortune", "qui": "achille", "quand": { "fait": "maurice.fortune" }, "texte": "Maurice payait les toits. Toi, fais comme tu peux. Personne t'en demande autant.", "priorite": 12, "une_fois": true },
-      { "id": "achille.poli.surplus", "qui": "achille", "quand": { "fait": "achille.cle", "palier_max": 1 }, "texte": "Ho. Tu vends ou pas ?", "priorite": 10, "repos_jours": 2 },
-      { "id": "achille.poli.cheval", "qui": "achille", "quand": { "fait": "achille.cle", "palier_max": 1 }, "texte": "Touche pas le cheval. Il mord les gens qu'il connaît pas.", "priorite": 10, "repos_jours": 3 },
-      { "id": "achille.cordial.oeufs", "qui": "achille", "quand": { "palier_min": 2 }, "texte": "Ho. Garde-moi tes œufs, les Genêts en réclament.", "priorite": 10, "repos_jours": 4 },
-      { "id": "achille.cordial.gue", "qui": "achille", "quand": { "palier_min": 2 }, "texte": "Odile demande après toi. Elle demande après tout le monde, remarque.", "priorite": 10, "repos_jours": 5 },
-      { "id": "achille.soir", "qui": "achille", "quand": { "heure": [18, 22] }, "texte": "Il dort debout, lui. Pas moi.", "priorite": 15, "repos_jours": 4 },
+      { "id": "achille.veillee", "qui": "achille", "quand": { "acte_min": 2, "fait": "odile.rencontre", "sans_fait": "veillee.1", "lune": ["croissante", "pleine"] }, "texte": "La pleine lune arrive. On veille au Gué, le soir, de sept à dix. Odile fait des tartes.", "priorite": 30, "repos_jours": 2 },
+      { "id": "achille.promesses", "qui": "achille", "quand": { "fait": "odile.rencontre", "palier_max": 2 }, "texte": "Les petits travaux de Maurice ? Donne-moi ce qu'il faut, je les porte. C'est sur ma route.", "priorite": 25, "repos_jours": 4 },
+      { "id": "achille.fortune", "qui": "achille", "quand": { "fait": "maurice.fortune" }, "texte": "Maurice réparait avec ce qu'il avait. Toi aussi, fais à ton rythme. Personne n'est pressé, ici.", "priorite": 12, "une_fois": true },
+      { "id": "achille.poli.surplus", "qui": "achille", "quand": { "fait": "achille.cle", "palier_max": 1 }, "texte": "Ho. T'as quelque chose pour la calèche, aujourd'hui ?", "priorite": 10, "repos_jours": 2 },
+      { "id": "achille.poli.cheval", "qui": "achille", "quand": { "fait": "achille.cle", "palier_max": 1 }, "texte": "Tu peux le caresser. Il s'appelle Biscotte. Il adore les carottes.", "priorite": 10, "repos_jours": 3 },
+      { "id": "achille.cordial.oeufs", "qui": "achille", "quand": { "palier_min": 2 }, "texte": "Ho. Garde-moi tes œufs, les Genêts en raffolent.", "priorite": 10, "repos_jours": 4 },
+      { "id": "achille.cordial.gue", "qui": "achille", "quand": { "palier_min": 2 }, "texte": "Odile demande de tes nouvelles. Elle demande des nouvelles de tout le monde, remarque.", "priorite": 10, "repos_jours": 5 },
+      { "id": "achille.soir", "qui": "achille", "quand": { "heure": [18, 22] }, "texte": "Biscotte dort debout. Moi, je préfère mon lit. Bonne soirée.", "priorite": 15, "repos_jours": 4 },
       { "id": "achille.pleine", "qui": "achille", "quand": { "lune": "pleine" }, "texte": "Pleine lune. Ce soir, tout le monde est dehors. Même moi.", "priorite": 20, "repos_jours": 10 },
-      { "id": "achille.vente_recente", "qui": "achille", "quand": { "fait_recent": "vente.caleche" }, "texte": "Ce que tu m'as vendu est parti en une matinée. Continue.", "priorite": 40, "repos_jours": 7 },
-      { "id": "odile.veillee", "qui": "odile", "quand": { "acte_min": 2, "sans_fait": ["veillee.1", "odile.tutoie"], "fait": "odile.rencontre" }, "texte": "Les soirs de pleine lune, on veille sur la place, de sept à dix. Vous viendrez ?", "priorite": 30, "repos_jours": 3 },
-      { "id": "odile.vous", "qui": "odile", "quand": { "fait": "odile.rencontre", "sans_fait": "odile.tutoie" }, "texte": "Bonjour. Vous tenez le coup, là-haut ?", "priorite": 10, "repos_jours": 2 },
-      { "id": "odile.nuits_noires", "qui": "odile", "quand": { "lune": "nouvelle", "fait": ["odile.rencontre", "odile.tutoie"] }, "texte": "On ne sème pas aux nuits noires. Ta mère non plus ne m'écoutait pas.", "priorite": 60, "repos_jours": 14 },
+      { "id": "achille.vente_recente", "qui": "achille", "quand": { "fait_recent": "vente.caleche" }, "texte": "Ce que tu m'as vendu est parti en une matinée. Les gens en redemandent !", "priorite": 40, "repos_jours": 7 },
+      { "id": "odile.veillee", "qui": "odile", "quand": { "acte_min": 2, "sans_fait": "veillee.1", "fait": "odile.rencontre" }, "texte": "Les soirs de pleine lune, on veille sur la place, de sept à dix. Tu viendras ?", "priorite": 30, "repos_jours": 3 },
+      { "id": "odile.bonjour", "qui": "odile", "quand": { "fait": "odile.rencontre", "palier_max": 1 }, "texte": "Bonjour, toi ! Tu t'installes bien, là-haut ?", "priorite": 10, "repos_jours": 2 },
+      { "id": "odile.nuits_noires", "qui": "odile", "quand": { "lune": "nouvelle", "fait": ["odile.rencontre", "odile.tutoie"] }, "texte": "Aux nuits noires, on ne sème pas : la terre fait la sieste. Ta mère, elle, semait quand même.", "priorite": 60, "repos_jours": 14 },
       { "id": "odile.croissante", "qui": "odile", "quand": { "lune": "croissante", "fait": "odile.tutoie" }, "texte": "On sème quand elle monte. Ce qui monte avec la lune pousse avec elle.", "priorite": 20, "repos_jours": 14 },
-      { "id": "odile.maigre", "qui": "odile", "quand": { "fait": ["odile.rencontre", "odile.tutoie"], "palier_min": 1 }, "texte": "Tu manges, au moins ? Adèle avait dit que je te trouverais maigre.", "priorite": 10, "repos_jours": 6 },
-      { "id": "odile.enfants", "qui": "odile", "quand": { "fait": ["odile.rencontre", "odile.tutoie"], "enfants": true }, "texte": "Et tes petits, ils savent ce que c'est, une nuit noire ?", "priorite": 15, "une_fois": true },
-      { "id": "odile.maison", "qui": "odile", "quand": { "fait": ["odile.rencontre", "odile.tutoie"], "palier_min": 2 }, "texte": "La maison de Maurice respire mieux quand quelqu'un y passe.", "priorite": 10, "repos_jours": 7 },
-      { "id": "fernand.peche", "qui": "fernand", "quand": { "fait": "arrivee" }, "texte": "Là-bas, on aurait fait une réunion pour ça. Ici, on pêche.", "priorite": 10, "repos_jours": 5 },
-      { "id": "fernand.calme", "qui": "fernand", "quand": { "fait": "arrivee", "heure": [5, 9] }, "texte": "Tu fais du bruit. Les poissons aussi ont des oreilles.", "priorite": 15, "repos_jours": 6 },
-      { "id": "fernand.cadolon", "qui": "fernand", "quand": { "palier_min": 2 }, "texte": "Tu regrettes Cadolon ? Moi, quarante ans. Puis plus du tout.", "priorite": 10, "une_fois": true },
-      { "id": "achille.toits", "qui": "achille", "quand": { "fait": "toits.uses", "sans_fait": "enveloppe.donnee" }, "texte": "Encore un toit qui prend l'eau. Maurice montait avec ses planches. Moi, j'ai le cheval.", "priorite": 30, "repos_jours": 12 },
-      { "id": "achille.enveloppe", "qui": "achille", "quand": { "fait": "enveloppe.donnee" }, "texte": "Les toits, c'est bien. Il aurait fait pareil.", "priorite": 50, "une_fois": true },
-      { "id": "achille.acte3", "qui": "achille", "quand": { "acte_min": 3, "empreinte": "haute" }, "texte": "On parle de ta ferme jusqu'à Brumeval. Pas toujours en bien.", "priorite": 25, "repos_jours": 10 },
-      { "id": "achille.tournee", "qui": "achille", "quand": { "fait": "achille.tournee.demandee", "sans_fait": "achille.tournee" }, "texte": "Les Genêts et Bois-Joli. T'oublies pas, hein. Le cheval compte sur toi.", "priorite": 45, "repos_jours": 2 },
-      { "id": "achille.cloche", "qui": "achille", "quand": { "fait": "fin.nouveau_maurice" }, "texte": "Ho. T'as la cloche. Deux coups devant chaque maison : un pour bonjour, un pour au revoir.", "priorite": 50, "une_fois": true },
-      { "id": "achille.fete", "qui": "achille", "quand": { "fait": "fete.annonce", "sans_fait": "fete", "lune": ["croissante", "pleine"] }, "texte": "La fête, c'est à Brumeval, à la pleine lune. Tu montes, hein.", "priorite": 40, "repos_jours": 2 },
-      { "id": "odile.toit", "qui": "odile", "quand": { "fait": ["toit.repare", "odile.tutoie"] }, "texte": "On ne monte pas sur le toit des autres sans les aimer un peu.", "priorite": 40, "une_fois": true },
-      { "id": "odile.enveloppe", "qui": "odile", "quand": { "fait": ["enveloppe.ouverte", "odile.tutoie"] }, "texte": "L'enveloppe ? Elle était à toi. On n'en parle plus.", "priorite": 45, "une_fois": true },
-      { "id": "odile.acte3", "qui": "odile", "quand": { "acte_min": 3, "empreinte": "haute", "fait": "odile.tutoie" }, "texte": { "m": "On ne défriche pas tout, petit. La terre aussi a besoin de dormir.", "f": "On ne défriche pas tout, petite. La terre aussi a besoin de dormir." }, "priorite": 25, "repos_jours": 10 },
-      { "id": "fernand.cale", "qui": "fernand", "quand": { "fait": "fin.voisin_tranquille" }, "texte": "Cinq heures. Pas cinq heures cinq.", "priorite": 30, "repos_jours": 7 },
-      { "id": "basile.bois", "qui": "basile", "quand": {}, "texte": "Le chêne, faut lui laisser le temps. Comme aux gamins.", "priorite": 10, "repos_jours": 6 },
+      { "id": "odile.maigre", "qui": "odile", "quand": { "fait": ["odile.rencontre", "odile.tutoie"], "palier_min": 1 }, "texte": "Tu manges bien, au moins ? Adèle m'a fait promettre de te nourrir.", "priorite": 10, "repos_jours": 6 },
+      { "id": "odile.enfants", "qui": "odile", "quand": { "fait": ["odile.rencontre", "odile.tutoie"], "enfants": true }, "texte": "Et tes petits, ils savent ce que c'est, une nuit noire ? Je leur raconterai.", "priorite": 15, "une_fois": true },
+      { "id": "odile.maison", "qui": "odile", "quand": { "fait": ["odile.rencontre", "odile.tutoie"], "palier_min": 2 }, "texte": "La maison de Maurice sourit quand quelqu'un y passe.", "priorite": 10, "repos_jours": 7 },
+      { "id": "fernand.peche", "qui": "fernand", "quand": { "fait": "arrivee" }, "texte": "Là-bas, on courait toute la journée. Ici, on pêche. C'est mieux.", "priorite": 10, "repos_jours": 5 },
+      { "id": "fernand.calme", "qui": "fernand", "quand": { "fait": "arrivee", "heure": [5, 9] }, "texte": "Doucement, les poissons dorment encore. Tu veux un café ?", "priorite": 15, "repos_jours": 6 },
+      { "id": "fernand.cadolon", "qui": "fernand", "quand": { "palier_min": 2 }, "texte": "Cadolon ? J'y ai passé quarante ans. Mais c'est ici que j'ai mon cœur.", "priorite": 10, "une_fois": true },
+      { "id": "achille.toits", "qui": "achille", "quand": { "fait": "toits.uses", "sans_fait": "enveloppe.donnee" }, "texte": "Encore un toit qui aurait besoin d'un coup de main. Maurice montait avec ses planches. Moi, j'ai Biscotte.", "priorite": 30, "repos_jours": 12 },
+      { "id": "achille.enveloppe", "qui": "achille", "quand": { "fait": "enveloppe.donnee" }, "texte": "Les toits sont tout beaux. Maurice serait content.", "priorite": 50, "une_fois": true },
+      { "id": "achille.acte3", "qui": "achille", "quand": { "acte_min": 3, "empreinte": "haute" }, "texte": "On parle de ta ferme jusqu'à Brumeval. Tout le monde veut goûter tes légumes !", "priorite": 25, "repos_jours": 10 },
+      { "id": "achille.tournee", "qui": "achille", "quand": { "fait": "achille.tournee.demandee", "sans_fait": "achille.tournee" }, "texte": "Les Genêts et Bois-Joli. Biscotte compte sur toi. Moi aussi.", "priorite": 45, "repos_jours": 2 },
+      { "id": "achille.cloche", "qui": "achille", "quand": { "fait": "fin.nouveau_maurice" }, "texte": "Ho. T'as la cloche ! Deux coups devant chaque maison : un pour bonjour, un pour à bientôt.", "priorite": 50, "une_fois": true },
+      { "id": "achille.fete", "qui": "achille", "quand": { "fait": "fete.annonce", "sans_fait": "fete", "lune": ["croissante", "pleine"] }, "texte": "La fête, c'est à Brumeval, à la pleine lune. Tu viens, hein ?", "priorite": 40, "repos_jours": 2 },
+      { "id": "odile.toit", "qui": "odile", "quand": { "fait": ["toit.repare", "odile.tutoie"] }, "texte": "On ne monte pas sur le toit des autres sans les aimer un peu. Merci, va.", "priorite": 40, "une_fois": true },
+      { "id": "odile.enveloppe", "qui": "odile", "quand": { "fait": ["enveloppe.ouverte", "odile.tutoie"] }, "texte": "L'enveloppe ? Maurice voulait que tu choisisses. Tu as bien fait.", "priorite": 45, "une_fois": true },
+      { "id": "odile.acte3", "qui": "odile", "quand": { "acte_min": 3, "empreinte": "haute", "fait": "odile.tutoie" }, "texte": { "m": "Laisse un coin sauvage, petit. Les abeilles et les hérissons te diront merci.", "f": "Laisse un coin sauvage, petite. Les abeilles et les hérissons te diront merci." }, "priorite": 25, "repos_jours": 10 },
+      { "id": "fernand.cale", "qui": "fernand", "quand": { "fait": "fin.voisin_tranquille" }, "texte": "Demain, cinq heures, à la cale ? Les dauphins nous attendent.", "priorite": 30, "repos_jours": 7 },
+      { "id": "basile.bois", "qui": "basile", "quand": {}, "texte": "Le chêne, faut lui laisser le temps. Comme aux enfants.", "priorite": 10, "repos_jours": 6 },
       { "id": "basile.replante", "qui": "basile", "quand": {}, "texte": "On coupe un arbre, on en plante deux. Le bois, ça se rend.", "priorite": 10, "repos_jours": 6 },
-      { "id": "basile.fils", "qui": "basile", "quand": { "sans_fait": "theo.choix" }, "texte": "Mon fils démonte tout ce qu'il touche. Les outils, la porte, moi.", "priorite": 15, "repos_jours": 7 },
+      { "id": "basile.fils", "qui": "basile", "quand": { "sans_fait": "theo.choix" }, "texte": "Mon fils démonte tout ce qu'il touche. Et il remonte tout mieux qu'avant !", "priorite": 15, "repos_jours": 7 },
       { "id": "basile.scie", "qui": "basile", "quand": { "fait": "promesse.scie_bois_joli" }, "texte": "Les lames neuves coupent comme au premier jour. C'est toi qui les as rendues.", "priorite": 40, "une_fois": true },
       { "id": "basile.toit", "qui": "basile", "quand": { "fait": "toit.repare" }, "texte": "Des planches sur un toit d'ici, du bon bois, bien posé. C'est les tiennes, j'imagine.", "priorite": 35, "une_fois": true },
-      { "id": "basile.atelier", "qui": "basile", "quand": { "fait": "theo.atelier" }, "texte": "La scie va deux fois plus vite. Le bois s'en fiche. Moi, je m'y fais.", "priorite": 20, "repos_jours": 6 },
-      { "id": "basile.theo_parti", "qui": "basile", "quand": { "fait": "theo.parti" }, "texte": "Il écrit pas souvent. Le bois non plus, il écrit pas. Il pousse.", "priorite": 30, "repos_jours": 7 },
+      { "id": "basile.atelier", "qui": "basile", "quand": { "fait": "theo.atelier" }, "texte": "La scie va deux fois plus vite. Le bois s'en fiche. Moi, ça me fait des siestes en plus.", "priorite": 20, "repos_jours": 6 },
+      { "id": "basile.theo_frida", "qui": "basile", "quand": { "fait": "theo.frida" }, "texte": "Le petit revient de chez Frida avec des étoiles plein les yeux. Et des boulons plein les poches.", "priorite": 30, "repos_jours": 7 },
       { "id": "theo.robot", "qui": "theo", "quand": { "fait": "theo.rencontre" }, "texte": "T'as vu le robot de Frida ? Il fait le travail de trois personnes !", "priorite": 15, "repos_jours": 4 },
-      { "id": "theo.cadolon", "qui": "theo", "quand": { "fait": "theo.rencontre" }, "texte": "À Cadolon, y a des machines partout, c'est vrai ? Même pour laver ?", "priorite": 10, "repos_jours": 5 },
-      { "id": "theo.caleche", "qui": "theo", "quand": { "fait": "theo.rencontre" }, "texte": "La roue arrière gauche de la calèche, elle grince. Je la refais en une heure, moi.", "priorite": 10, "repos_jours": 6 },
-      { "id": "theo.pere", "qui": "theo", "quand": { "fait": "theo.confie", "sans_fait": "theo.choix" }, "texte": "Papa sait toujours pas. Tu lui dis pas, hein ? Enfin… tu fais comme tu veux.", "priorite": 40, "repos_jours": 3 },
-      { "id": "theo.apprenti", "qui": "theo", "quand": { "fait": "theo.apprenti" }, "texte": "Le jeudi, je monte avec Achille ! Le cheval m'a pas mordu. Pas encore.", "priorite": 30, "repos_jours": 5 },
-      { "id": "theo.atelier", "qui": "theo", "quand": { "fait": "theo.atelier" }, "texte": "J'ai mis un moteur sur la scie ! Papa a crié. Puis il a regardé. Longtemps.", "priorite": 50, "une_fois": true }
+      { "id": "theo.cadolon", "qui": "theo", "quand": { "fait": "theo.rencontre" }, "texte": "À Cadolon, il paraît qu'il y a des machines pour tout ! Moi, je préfère inventer les nôtres.", "priorite": 10, "repos_jours": 5 },
+      { "id": "theo.caleche", "qui": "theo", "quand": { "fait": "theo.rencontre" }, "texte": "La roue de la calèche chante faux. Je la règle en une heure, moi !", "priorite": 10, "repos_jours": 6 },
+      { "id": "theo.pere", "qui": "theo", "quand": { "fait": "theo.confie", "sans_fait": "theo.choix" }, "texte": "Je sais pas encore ce que je ferai. La calèche, l'atelier, ou les machines de Frida ? Tout me plaît !", "priorite": 40, "repos_jours": 3 },
+      { "id": "theo.apprenti", "qui": "theo", "quand": { "fait": "theo.apprenti" }, "texte": "Le jeudi, je monte avec Achille ! Biscotte me laisse tenir les rênes.", "priorite": 30, "repos_jours": 5 },
+      { "id": "theo.atelier", "qui": "theo", "quand": { "fait": "theo.atelier" }, "texte": "J'ai mis un moteur sur la scie ! Papa a ri. Puis il a voulu essayer.", "priorite": 50, "une_fois": true },
+      { "id": "theo.frida", "qui": "theo", "quand": { "fait": "theo.frida" }, "texte": "Frida m'apprend à faire des robots ! Le premier, je l'appelle Biscuit.", "priorite": 30, "repos_jours": 5 }
     ]
   }
 }

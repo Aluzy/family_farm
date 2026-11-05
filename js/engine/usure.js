@@ -10,10 +10,11 @@ import { acteEnCours, aFait, ajouterConfiance, noterFait } from './recit.js';
 /* ---------- l'usure des maisons des hameaux (le récit, lot 9 ; docs/recit/aventure.md, « la narration
    émergente ») ----------
 
-   Depuis que Maurice ne paie plus les toits, les maisons s'usent. Les réglages : RECIT.USURE.
-     - À partir de l'acte USURE.ACTE, toutes les USURE.NUITS nuits, un toit s'abîme : dans un hameau
-       découvert et peuplé (tiré avec la graine du monde et le jour), une maison qui ne l'est pas encore,
-       tant que le hameau en a moins de USURE.MAX ; le fait « toits.uses » est noté (les répliques).
+   Depuis que Maurice est parti en voyage, quelques toits ont besoin d'un coup de main (rien ne s'abîme : le
+   récit cosy). Les réglages : RECIT.USURE.
+     - À partir de l'acte USURE.ACTE, la nuit, chaque hameau découvert et peuplé reçoit une fois (h.toitsVus)
+       de 1 à USURE.MAX toits à rafraîchir, tirés avec la graine du monde et le hameau ; jamais plus ensuite.
+       Le fait « toits.uses » est noté (les répliques).
      - Le joueur le répare depuis la fiche du hameau, sur place (reparerToit) : USURE.REPARER (pris dans
        son inventaire) ; la confiance du hameau gagne USURE.CONFIANCE points ; « toit.repare » est noté
        (une fois de plus à chaque toit : il compte dans ce que le joueur a rendu à l'île, finAventure).
@@ -27,7 +28,6 @@ import { acteEnCours, aFait, ajouterConfiance, noterFait } from './recit.js';
 
 export const USURE = DATA.RECIT.USURE;
 
-const jourDe = (state) => Math.max(1, Math.floor(Number(state && state.day) || 1));
 
 // Les maisons au toit abîmé du hameau `id` (réparé au besoin : seulement des maisons de ses foyers, une
 // fois chacune). → [id de maison] (la liste gardée dans la partie, [] sans habitants).
@@ -87,17 +87,21 @@ export function usureNuit(state) {
     }
     return out;
   }
-  if (acteEnCours(state) < USURE.ACTE || jourDe(state) % USURE.NUITS !== 0) return out;
-  const rnd = mulberry32(hache(`${farmSeed(state) || 'monde'}:usure:${jourDe(state)}`));
-  const possibles = ids.filter((id) => toitsUses(state, id).length < USURE.MAX);
-  if (!possibles.length) return out;
-  const id = possibles[Math.floor(rnd() * possibles.length)];
-  const uses = new Set(toitsUses(state, id));
-  const maisons = H[id].foyers.map((f) => f.maison).filter((m) => !uses.has(m));
-  if (!maisons.length) return out;
-  const maison = maisons[Math.floor(rnd() * maisons.length)];
-  H[id].usees = [...uses, maison];
-  noterFait(state, 'toits.uses');
-  out.use = { hameau: id, maison };
+  // (une seule fois par hameau, à partir de l'acte USURE.ACTE : de 1 à USURE.MAX toits ont besoin d'un coup de main,
+  // tirés avec la graine du monde et le hameau ; rien ne s'abîme ensuite. Un hameau qui en avait déjà : rien de plus.)
+  if (acteEnCours(state) < USURE.ACTE) return out;
+  for (const id of ids) {
+    if (H[id].toitsVus) continue;
+    H[id].toitsVus = true;
+    if (toitsUses(state, id).length) continue;
+    const rnd = mulberry32(hache(`${farmSeed(state) || 'monde'}:toits:${id}`));
+    const maisons = H[id].foyers.map((f) => f.maison);
+    const n = Math.min(maisons.length, 1 + Math.floor(rnd() * USURE.MAX));
+    const choix = [];
+    while (choix.length < n) { const m = maisons[Math.floor(rnd() * maisons.length)]; if (!choix.includes(m)) choix.push(m); }
+    H[id].usees = choix;
+    noterFait(state, 'toits.uses');
+    if (!out.use) out.use = { hameau: id, maison: choix[0] };
+  }
   return out;
 }

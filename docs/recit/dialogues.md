@@ -1,5 +1,13 @@
 # Les dialogues et la mémoire
 
+> **Le récit cosy (novembre 2026).** L'histoire a été réécrite pour une île chaleureuse : `bible.md` et
+> `personnages.md` font foi. Maurice et Philomène sont vivants, partis en voyage (plus de notaire : ils écrivent
+> eux-mêmes, `maurice_terre`, `maurice_enveloppe`) ; Johnny n'existe plus (sa cabane est l'observatoire de Maurice,
+> `visiteObservatoire` ; l'épave, la barque des premiers arrivants) ; Odile tutoie dès la rencontre ; Théo reste sur
+> l'île (`basile_theo_frida`, « theo.frida ») ; la fin « riche » s'appelle « genereuse » ; les toits ne s'abîment
+> plus (quelques-uns à rafraîchir, une fois par hameau) ; personne n'est en colère. Ce qui suit garde l'histoire de
+> la conception : où il diffère, la bible l'emporte (les noms changés : `RECIT_RENOMMAGES`, js/engine/state.js).
+
 Comment les personnages de Céron parlent, se souviennent et réagissent, avec le moins d'écriture
 manuelle possible. Le moteur : `js/engine/recit.js` ; les textes : `data/recit.json`.
 

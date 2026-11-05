@@ -1,5 +1,13 @@
 # Le plan d'implémentation du récit
 
+> **Le récit cosy (novembre 2026).** L'histoire a été réécrite pour une île chaleureuse : `bible.md` et
+> `personnages.md` font foi. Maurice et Philomène sont vivants, partis en voyage (plus de notaire : ils écrivent
+> eux-mêmes, `maurice_terre`, `maurice_enveloppe`) ; Johnny n'existe plus (sa cabane est l'observatoire de Maurice,
+> `visiteObservatoire` ; l'épave, la barque des premiers arrivants) ; Odile tutoie dès la rencontre ; Théo reste sur
+> l'île (`basile_theo_frida`, « theo.frida ») ; la fin « riche » s'appelle « genereuse » ; les toits ne s'abîment
+> plus (quelques-uns à rafraîchir, une fois par hameau) ; personne n'est en colère. Ce qui suit garde l'histoire de
+> la conception : où il diffère, la bible l'emporte (les noms changés : `RECIT_RENOMMAGES`, js/engine/state.js).
+
 Douze lots en trois priorités : P1 construit la fondation et la première séquence jouable (l'acte
 I), P2 l'acte II et l'économie de l'île, P3 la fin de l'aventure et le fil de la lune. Chaque lot
 se termine par une validation avant le suivant.
@@ -204,7 +212,7 @@ Rien ne le signale (`js/engine/fil-lune.js`, `RECIT.FIL`) ; seules les pages du 
   1 champignon lumineux : provisoire) ; dessinée sur le portrait. Une entrée de `RECIT.LIEUX` peut maintenant
   avoir son effet (la page), et les conditions `equipe`, `fragment`, `sans_fragment`, `plat` existent.
 - **Les relevés de Frida** : la deuxième fois qu'on entre dans son atelier, Frida rencontrée (`frida_releves`).
-- **Johnny** (`visiteJohnny`) : on entre dans sa cabane ; il accueille sans se souvenir ; un plat cuisiné
+- **(Ancien, remplacé par l'observatoire de Maurice, `visiteObservatoire`) Johnny** : on entre dans sa cabane ; il accueille sans se souvenir ; un plat cuisiné
   apporté, un par jour, est un repas ; après trois repas, la nuit (20 h – 6 h), une bribe par phase (croissante,
   pleine, nouvelle) va au carnet ; tard les nuits de pleine lune (23 h – 5 h), la cabane est vide. Johnny ne se
   montre pas sur la carte : sa voix seulement.
