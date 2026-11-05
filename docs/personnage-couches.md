@@ -1,6 +1,6 @@
 # Les personnages en couches : identité, tenue, expressions (chantier)
 
-Statut : **étape E0 (contrat et maquettes), à valider.** Rien n'a changé dans le jeu.
+Statut : **E0 validée** (les 9 expressions, de face et de profil) ; **E1 faite** (§ 6).
 
 Le but : séparer un personnage de ses vêtements et de ses attributs (peau, yeux, coiffure, expression),
 et donner des expressions aux visages, **en gardant la base actuelle** : les 100 personnages
@@ -126,3 +126,48 @@ actuelle reste la référence (comparaison pixel par pixel).
 | **E5** | Le composeur JS (couches, masquages, palettes, contour), sans DOM, testé sous Node ; le jeu l'emploie derrière un réglage, repli sur les PNG | Tests de non-régression ; temps mesurés pour 1, 20 et 50 personnages |
 | **E6** | L'apparence dans la sauvegarde (`member.apparence = { identite, tenue }`, migration depuis `perso`) ; l'écran de création attribut par attribut, les modèles prêts en raccourci | Une ancienne sauvegarde se charge à l'identique |
 | **E7** | Les habitants tirés par graine (identité et tenue indépendantes) ; l'équipement visible sur la carte (fiche 11) | Même graine, mêmes habitants ; l'équipement suit toutes les cases |
+
+## 6. Étape E1 : ce qui a été fait
+
+**Le catalogue en JSON.** `assets/personnages/catalogue.json` est la seule source des 100 personnages :
+
+```json
+{ "version": 1,
+  "palettes": { "peau": {…}, "yeux": {…}, "cheveux": {…}, "tissus": {…}, "bas": {…}, "accessoires": {…} },
+  "personnages": {
+    "perso_12": { "age": "adulte",
+      "identite": { "peau": "foncee", "yeux": "noisette", "cheveux": "gris", "coupe": "courts", "pilosite": "barbe", "signes": [] },
+      "tenue": { "haut": { "tissu": "jean", "motif": null }, "bas": { "tissu": "brun" }, "couvre_chef": "paille",
+                 "accessoire": "bleu", "accessoires": [] } } } }
+```
+
+- `scripts/personnage/catalogue.py` le lit et le présente aux générateurs comme avant ;
+  `python3 scripts/personnage/catalogue.py` le réécrit dans sa mise en forme (un personnage par ligne).
+  `portraits_enfants.py` ne fait plus que le relayer.
+- Les règles qui étaient cachées dans le code sont résolues une fois pour toutes dans les données : la
+  couleur des yeux selon les cheveux, les joues roses des enfants, le bas en alternance, l'accessoire
+  rouge par défaut, les habits qui imposent leur motif.
+- Les détails du visage se posent dans un ordre fixe (`catalogue.ORDRE_DETAILS` : barbe, moustache,
+  rousseur, lunettes, boucles, pansement, joues), le dernier l'emportant.
+- Le bas est une salopette pour tous (le corps la dessine) : le détail `salopette` de 4 enfants, qui
+  n'était pas dessiné, n'est pas repris.
+- **Preuve** : régénérés depuis le JSON, les 97 modèles, les 100 planches, `fermiere.png`,
+  `fermier.png` et `peau.json` étaient identiques au bit près (premier commit d'E1).
+- **Test** : `tests/engine/personnages-catalogue.test.mjs` (dans `npm test`) vérifie la forme du
+  catalogue, que chaque identité et chaque tenue renvoient à des palettes et des formes connues, et qu'il
+  y a un modèle prêt et une planche par personnage proposé par le jeu.
+
+**La lisibilité des yeux** (`modeles.py`, second commit d'E1) ; deux règles de dessin, à reprendre telles
+quelles dans le composeur JS (E5) :
+
+- **Peau foncée** (teinte moins lumineuse que `PEAU_FONCEE` = 110) : le haut de la pupille est assombri
+  (× 0,4), le bas éclairci dans sa propre teinte jusqu'à 40 de luminosité au-dessus de la peau
+  (`ECART_PUPILLE`) : les yeux violets restent violets, les bruns deviennent d'un brun chaud.
+- **Cheveux pâles** (blancs, gris, platine : le plus petit canal de leur teinte au-dessus de 150) : les
+  cheveux qui touchent le blanc d'un œil prennent leur ton sombre (la lettre `D`, `palettes.cheveux.*.sombre`) ;
+  au-dessus de l'œil, cela fait comme un sourcil.
+
+33 personnages changent (les 13 aux cheveux pâles et les 23 à la peau foncée, 3 étant les deux), et
+seulement autour des yeux : 5 800 pixels, dans les rangées 10 à 21 et les colonnes 4 à 10 des cases.
+Au passage, `peau.json` perd une teinte, `#523518` : c'était l'ancienne pupille de 8 personnages à la
+peau foncée, prise à tort pour de la peau ; une émotion recolorait leurs pupilles avec la peau.

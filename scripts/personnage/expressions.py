@@ -119,7 +119,7 @@ EXPRESSIONS = {
 }
 
 # Ce qui couvre le visage et que l'expression ne remplace jamais (lettres de modeles.palette)
-PROTEGE = 'BCERQHVSTUGXYW'
+PROTEGE = 'BCDERQHVSTUGXYW'
 
 # Où relever les teintes de chaque modèle, de face : (x, y)
 RELEVES = {'g': (3, 5), 'i': (3, 6), 'h': (4, 5), 'j': (4, 6), 'k': (5, 7), 'l': (6, 8)}

@@ -295,6 +295,25 @@ DETAILS = {
 YEUX = catalogue.YEUX      # (pupille, reflet) : assets/personnages/catalogue.json
 
 
+# La lisibilité des yeux (étape E1 de docs/personnage-couches.md) :
+#   - sur une peau foncée (sa teinte moins lumineuse que PEAU_FONCEE), la pupille se confondait avec la
+#     peau : le haut de la pupille (h) est assombri, le bas (j) éclairci dans sa propre teinte jusqu'à
+#     ECART_PUPILLE de luminosité au-dessus de la peau ;
+#   - des cheveux pâles (blancs, gris, platine : CHEVEUX_PALES) avaient presque la couleur du blanc des
+#     yeux : les cheveux qui touchent le blanc d'un œil prennent leur ton sombre (la lettre D).
+PEAU_FONCEE = 110
+ECART_PUPILLE = 40
+CHEVEUX_PALES = 150      # le plus petit canal de la teinte des cheveux au-dessus de ça : des cheveux pâles
+
+
+def lum(c):
+    return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+
+
+def pales(d):
+    return min(catalogue.CHEVEUX[d['cheveux']]['b']) > CHEVEUX_PALES
+
+
 def yeux(d, i=None):
     """La couleur des yeux (catalogue.json, identite.yeux)."""
     return d['yeux']
@@ -308,10 +327,12 @@ def palette(d, i):
     blanc = d['habit'] == 'blanc'
     motif = (200, 60, 60) if blanc else (244, 240, 228)
     oeil = YEUX[yeux(d, i)]
+    if lum(f) < PEAU_FONCEE:
+        oeil = (mul(oeil[0], 0.4), mul(oeil[1], max(1, (lum(f) + ECART_PUPILLE) / max(1, lum(oeil[1])))))
     return {
         'k': f, 'd': mix(f, j, 0.25), 'm': mix(f, j, 0.45), 't': mix(f, j, 0.3), 'l': j, 'e': peau['e'], 'P': peau['k'],
         'g': (239, 239, 239), 'i': (255, 255, 255), 'h': oeil[0], 'j': oeil[1],
-        'B': hr['b'], 'C': hr['c'], 'E': mix(hr['b'], hr['c'], 0.5),
+        'B': hr['b'], 'C': hr['c'], 'E': mix(hr['b'], hr['c'], 0.5), 'D': hr['d'],
         'p': hab['n'], 'q': mix(hab['n'], hab['m'], 0.55), 'o': motif if d['motif'] else mix(hab['n'], (255, 255, 255), 0.4),
         's': s, 'r': r, 'u': mul(s, 0.82), 'v': mul(s, 0.37), 'A': mul(s, 0.91), 'Z': mul(s, 0.55),
         'w': (90, 58, 34), 'x': (68, 44, 26), 'y': (46, 30, 18),
@@ -356,6 +377,11 @@ def vue(d, v):
             # sous le couvre-chef, le haut des cheveux ne dépasse pas
             for (x, y) in [p for p in g if p[1] < 4 and g[p] in 'BCEe']:
                 del g[(x, y)]
+    if pales(d):
+        # (des cheveux pâles : ceux qui touchent le blanc d'un œil prennent leur ton sombre)
+        for (x, y), ch in list(g.items()):
+            if ch in 'BE' and any(g.get((x + dx, y + dy)) in ('g', 'i') for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                g[(x, y)] = 'D'
     for det in d['details']:
         for (x, y, ch) in DETAILS.get(det, {}).get(v, []):
             if det == 'barbe' and ch in 'BC' and (x, y) in g and g[(x, y)] in 'gihj':

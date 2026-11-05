@@ -14,7 +14,9 @@ px, 8 par rangée), `assets/<nom>.json` (le nom de chaque case, dans l'ordre). T
 planches ont les mêmes cases, seules les couleurs et le style changent.
 
 **Le catalogue** : 50 personnages de plus, `perso_01` à `perso_50`, décrits dans
-`scripts/personnage/catalogue.py` (peau, cheveux, coupe, couvre-chef, détails, habit, motif).
+`assets/personnages/catalogue.json` (lu par `scripts/personnage/catalogue.py` ; pour chacun, son
+identité — peau, yeux, cheveux, coupe, pilosité, signes — et sa tenue — haut et motif, bas,
+couvre-chef, accessoires —, et les palettes de couleurs : voir [`personnage-couches.md`](personnage-couches.md)).
 `scripts/personnage/fermier.py` leur planche de 70 cases (`assets/personnages/perso_XX.png`, les
 noms des cases, les mêmes pour tous, dans `assets/personnages/cases.json`). Coupes : longs, mi,
 carré, courts, frange, carré à frange, couettes, chignon, crâne dégarni ; sur la tête : chapeau de
@@ -49,8 +51,7 @@ personnage de la carte, debout, de face : la première case de sa planche (`pers
 est masqué à l'écran de départ, `CHOIX_PRINCIPAL` dans `js/ui/depart.js`) :
 `modèle.perso`, sa planche est chargée à la demande (`syncPerso`).
 
-**Les enfants** ont de même un des 50 personnages d'enfants (décrits dans
-`scripts/personnage/portraits_enfants.py` ; leur planche `assets/personnages/enfant_XX.png` sert
+**Les enfants** ont de même un des 50 personnages d'enfants (décrits dans le même catalogue ; leur planche `assets/personnages/enfant_XX.png` sert
 aussi de portrait ; 9 coupes, chapeaux, nœud, serre-tête, fleur, lunettes, taches de rousseur,
 joues roses, pansement, salopette). Leur
 fiche a la même grille ; sans choix, `PERSO_DEFAUT_ENFANT` (1 pour un garçon, 2 pour une fille).
