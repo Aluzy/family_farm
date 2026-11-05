@@ -227,7 +227,7 @@ function scene(F) {
   for (let r = Y0; r < Y0 + H; r++) for (let c = X0; c < X0 + L; c++) emprise.add(at(c, r));
   s.toits = [{ key: 'toit_essai', maison: true, dedans: emprise, img: image() }];
   const fermees = [...F.blocs].filter(([, x]) => x !== 'porte').map(([k]) => k);
-  s.fermier = Fermier.attach(s, { sheet: 'fermier', frames: [], world: s.world, objects: {}, reduced: () => false, blocks: () => fermees, foyer: () => s.homeDoor() });
+  s.fermier = Fermier.attach(s, { sheet: 'fermier', frames: [], world: s.world, objects: {}, reduced: () => false, blocks: () => fermees, foyer: () => s.homeDoor(), cols: () => COLS });
   s.fermees = new Set(fermees);
   return s;
 }
@@ -320,4 +320,64 @@ test('les blocs qui bloquent (DATA, bloque) ferment leur case sur la carte : ruc
   const manquent = Object.entries(DATA.ATELIER.BLOCS).filter(([id, b]) => b.bloque && !b.meuble && !b.dessin && !B.bloquent.includes(id)).map(([id]) => id);
   assertEqual(manquent, []);
   assert(B.bloquent.includes('ruche') && B.bloquent.includes('bac_fleurs'));
+});
+
+test('arroser loin du puits : il y marche (jamais de saut), et la plante n\'est arrosée sur la carte qu\'à son geste', () => {
+  // Le bug : la cruche remplie au puits, les plantes qui restaient (arrosées par le jeu à ce moment-là) se
+  // montraient arrosées pendant qu'il était encore au puits (la retenue durait 9 s au plus), et une plante à plus
+  // de 24 cases de chemin le faisait apparaître d'un coup à côté d'elle.
+  const F = ferme(), s = scene(F);
+  const puits = pieds(X0 + 4, Y0 + H + 7);              // à côté du puits, dessous
+  s.fermier.arrive(puits.x, puits.y);
+  vivre(s, 0.5);
+  const P = at(X0 + 4 + 40, Y0 + H + 7);                // une plante à 40 cases du puits
+  const avant = { jour: 1, heure: 9, plots: [{ case: P, culture: 'carotte', arrosee: false }] };
+  const apres = { jour: 1, heure: 9, plots: [{ case: P, culture: 'carotte', arrosee: true }] };
+  s.fermier.filter(avant);
+  // le jeu l'arrose (la cruche remplie, l'arrosage reprend) : la carte la garde sèche jusqu'au geste
+  const vue = () => s.fermier.filter(apres).plots.find((p) => p.case === P).arrosee;
+  assertEqual(vue(), false, 'pas encore : il est au puits');
+  const pas = [], vu = [];
+  for (let t = 0; t < 40 * 20; t++) {
+    s.fermier.update(50);
+    const i = s.fermier.info();
+    pas.push({ x: i.x, y: i.y });
+    vu.push(vue());
+  }
+  // il a marché : aucune image ne le déplace de plus d'un pas (pas de saut)
+  for (let k = 1; k < pas.length; k++) {
+    const d = Math.hypot(pas[k].x - pas[k - 1].x, pas[k].y - pas[k - 1].y);
+    assert(d < T, `un pas, pas un saut (image ${k} : ${d.toFixed(1)} px)`);
+  }
+  // la plante reste sèche tant qu'il n'y est pas (bien plus de 9 s de marche), arrosée après son geste
+  const premier = vu.indexOf(true);
+  assert(premier > 9 * 20, `arrosée seulement à son arrivée (au bout de ${(premier / 20).toFixed(1)} s)`);
+  const ici = pas[premier], plante = { x: (P % COLS) * T + T / 2, y: Math.floor(P / COLS) * T + T / 2 };
+  assert(Math.hypot(ici.x - plante.x, ici.y - plante.y) < 2 * T, `à côté de la plante quand elle est arrosée (${Math.round(ici.x)}, ${Math.round(ici.y)})`);
+  assertEqual(vu[vu.length - 1], true, 'arrosée ensuite');
+});
+
+test('arroser plusieurs plantes : chacune est arrosée à son geste, pas en cascade', () => {
+  const F = ferme(), s = scene(F);
+  const depart = pieds(30, 30);
+  s.fermier.arrive(depart.x, depart.y);
+  vivre(s, 0.5);
+  // huit plantes en ligne (plus que les quatre visites d'une cascade)
+  const cases = Array.from({ length: 8 }, (_, k) => at(34 + 2 * k, 30));
+  const modele = (arrosee) => ({ jour: 1, heure: 9, plots: cases.map((c) => ({ case: c, culture: 'carotte', arrosee })) });
+  s.fermier.filter(modele(false));
+  s.fermier.filter(modele(true));
+  const quand = new Map();
+  for (let t = 0; t < 60 * 20; t++) {
+    s.fermier.update(50);
+    const i = s.fermier.info();
+    for (const p of s.fermier.filter(modele(true)).plots) {
+      if (p.arrosee && !quand.has(p.case)) quand.set(p.case, { t, x: i.x });
+    }
+  }
+  assertEqual(quand.size, cases.length, 'toutes arrosées à la fin');
+  for (const c of cases) {
+    const q = quand.get(c), x = (c % COLS) * T + T / 2;
+    assert(Math.abs(q.x - x) < 2 * T, `la plante ${c} arrosée quand il est à côté (il est en ${Math.round(q.x)}, elle en ${x})`);
+  }
 });
