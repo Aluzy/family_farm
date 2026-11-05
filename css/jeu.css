@@ -1691,7 +1691,6 @@ body.construction #side-menu,
 body.construction #tool-bar,
 body.construction .boussole,
 body.construction .stage-bubble,
-body.construction .stage-parole,
 body.construction .habitant-bulle,
 body.construction .stage-nav,
 body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-outils) { display: none !important; }
@@ -2363,8 +2362,6 @@ body:not(.has-stage) main { padding-top: calc(var(--player-h, 110px) + 16px + en
 .stage-bubble:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 .stage-gain.fade { opacity: 0; transition: opacity 1.4s ease-in; }
 /* Les bulles du dialogue du matin (stepMatin) : la phrase va à la ligne, la bulle s'estompe vite. */
-.stage-parole { max-width: 210px; white-space: normal; font-weight: 600; }
-.stage-gain.stage-parole.fade { transition-duration: 0.6s; }
 .stage-bubble[hidden],
 .stage-gain[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .stage-gain.fade { transition-duration: 0.4s; } }
@@ -3160,6 +3157,23 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .ami-jauge > span { display: block; height: 100%; background: #e8a33a; }
 .ami-jauge.grande { width: 120px; height: 9px; }
 .ami-gain { color: #2f7a2a; font-weight: 700; }
+/* la bulle du compagnon (js/carte/ferme/etiquettes.js compagnonDit) : sa question et les réponses (js/ui/compagnon.js) */
+.aide-bulle { max-width: 240px; }
+.aide-bulle .habitant-bulle-texte { font-weight: 600; }
+.aide-choix { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.aide-bouton {
+  pointer-events: auto;
+  min-height: 34px;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  color: #3a2414;
+  background: #ffe9a8;
+  border: 2px solid #5a3a1e;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.aide-bouton:hover, .aide-bouton:focus-visible { background: #ffd66b; }
 .habitant-bulle-offrir {
   pointer-events: auto;
   align-self: flex-start;

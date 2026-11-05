@@ -19,7 +19,7 @@ import {
   addItem, aidant, aRamasserCompagnon, arroseesCompagnon, awakeMsAtHour, boiteCount, compagnonEmpeche, countItem, createInitialState, DATA,
   ecouterJournal, eauCompagnon, finAide, faireCompagnon, faitsCompagnon, fridgeCount, jaugeMembre, journeeCompagnon, laisserAider,
   migrate, plant, plantesASoif, ramassables, recipeOutput, removeMember, reparerPartie, seedItem, simulateOffline,
-  startNight, tachesCompagnon,
+  startNight, tachesCompagnon, demanderCompagnon, demandeCompagnon, recolteesCompagnon, estTacheCompagnon, maxStage, planterArbre,
 } from '../../js/engine/index.js';
 
 const C = DATA.COMPAGNON;
@@ -322,4 +322,79 @@ test('la carte : il va à chacune de ses tâches par un chemin (la cuisinière d
   assertEqual(faits.map((f) => f.lieu), attendus, 'chaque tâche, dans l\'ordre');
   assertEqual(gains.length, attendus.length, 'la bulle après chaque tâche');
   assertEqual(Object.keys(FamilleFerme.GESTES).sort(), ['arroser', 'betes', 'cuisiner', 'puiser', 'ramasser']);
+});
+
+/* ---------- ce que le joueur lui demande (un appui sur lui, sur la carte) ---------- */
+
+test('demander : ramasser les légumes mûrs, jusqu\'au bout, avant ses initiatives ; tout va à l\'inventaire', () => {
+  const s = potager(4);
+  const D = C.DEMANDE, m = aidant(s), energie = s.energie, faim = jaugeMembre(m);
+  // rien de mûr : il le dit
+  assertEqual(demanderCompagnon(s, 'legumes'), { ok: false, error: D.RIEN.legumes });
+  assertEqual(demandeCompagnon(s), null);
+  // trois carottes mûres
+  const mures = s.potager.parcelles.filter((p) => p.culture).slice(0, 3);
+  for (const p of mures) { p.stade = maxStage(p); p.arrose = true; }
+  const avant = countItem(s, 'carotte');
+  assertEqual(demanderCompagnon(s, 'legumes'), { ok: true, quoi: 'legumes', texte: D.OUI.legumes });
+  // une seule tâche à la fois, la sienne avant tout (pas d'arrosage ni de ramassage en même temps)
+  const t = tachesCompagnon(s);
+  assertEqual(t.length, 1);
+  assert(/^recolter:\d+$/.test(t[0]) && estTacheCompagnon(t[0]), t[0]);
+  const r = journeeCompagnon(s);
+  assertEqual(r.slice(0, 3).map((x) => x.action), ['recolter', 'recolter', 'recolter'], 'les trois carottes d\'abord');
+  assert(mures.every((p) => !p.culture), 'cueillies');
+  assert(countItem(s, 'carotte') > avant, 'dans l\'inventaire');
+  assertEqual(recolteesCompagnon(s).sort(), mures.map((p) => p.case).sort(), 'la carte sait que c\'est lui');
+  assertEqual(demandeCompagnon(s), null, 'fini : il reprend sa journée');
+  assertEqual(s.energie, energie, 'pas l\'énergie du personnage');
+  assert(jaugeMembre(m) <= faim - 3 * D.FAIM, 'mais sa faim à lui');
+});
+
+test('demander : arroser tout ce qui a soif (sans la limite du jour), sinon il dit pourquoi', () => {
+  const s = potager(8);
+  assert(demanderCompagnon(s, 'arroser').ok);
+  journeeCompagnon(s);
+  assertEqual(s.potager.parcelles.filter((p) => p.culture && !p.arrose).length, 0, 'les huit, plus que PAR_JOUR');
+  assertEqual(demanderCompagnon(s, 'arroser').error, C.DEMANDE.RIEN.arroser, 'plus rien n\'a soif');
+  // des plantes ont soif, mais pas d'eau du tout
+  const t = potager(2);
+  t.eauMl = 0;
+  assertEqual(demanderCompagnon(t, 'arroser').error, C.DEMANDE.SANS_EAU);
+});
+
+test('demander : récolter les fruits des arbres du Verger', () => {
+  const s = potager(0);
+  assertEqual(demanderCompagnon(s, 'recolter').error, C.DEMANDE.RIEN.recolter);
+  const libre = s.potager.parcelles.find((p) => !p.culture);
+  const arbre = planterArbre(s, 'pommier', libre.case + 3);
+  arbre.fruits = true;
+  const fruit = DATA.VERGER.ARBRES.pommier.fruit, avant = countItem(s, fruit);
+  assert(demanderCompagnon(s, 'recolter').ok);
+  assertEqual(tachesCompagnon(s), [`cueillir:${arbre.case}`]);
+  const r = faireCompagnon(s, `cueillir:${arbre.case}`);
+  assertEqual([r.ok, r.action], [true, 'cueillir']);
+  assertEqual(countItem(s, fruit), avant + DATA.VERGER.FRUITS);
+  assertEqual(arbre.fruits, false);
+  assertEqual(arbre.prochaine, s.day + DATA.VERGER.PERIODE - 1, 'comme cueilli par le joueur dans la journée');
+  assertEqual(demandeCompagnon(s) && tachesCompagnon(s).length, 0);
+});
+
+test('demander : le soir, la nuit, le ventre vide, il refuse ; l\'option « laisser aider » ôtée, il aide quand même ; la demande s\'oublie le lendemain', () => {
+  const s = potager(3);
+  for (const p of s.potager.parcelles.filter((q) => q.culture)) p.stade = maxStage(p);
+  const D = C.DEMANDE;
+  heure(s, DATA.FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES + 0.5);
+  assertEqual(demanderCompagnon(s, 'legumes').error, D.TARD);
+  heure(s, 9);
+  laisserAider(s, false);
+  assert(demanderCompagnon(s, 'legumes').ok, 'c\'est le joueur qui demande');
+  assertEqual(tachesCompagnon(s).length, 1);
+  s.day += 1;
+  assertEqual(demandeCompagnon(s), null, 'oubliée le lendemain');
+  assertEqual(tachesCompagnon(s), [], 'l\'option ôtée : plus d\'initiative');
+  laisserAider(s, true);
+  aidant(s).energie = C.FAIM_MIN - 1;
+  assertEqual(demanderCompagnon(s, 'legumes').error, D.FAIM_TEXTE);
+  assertEqual(demanderCompagnon(s, 'nager').ok, false);
 });

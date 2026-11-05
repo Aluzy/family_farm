@@ -487,15 +487,10 @@
     butine: [1.5, 4], dedans: [1, 4], heures: [7, 19.5], battements: 14, dessus: 24,
     dessin: [['.ww.', 'ybyk'], ['....', 'ybyk']],
     couleurs: { y: '#f6c02c', b: '#2a1c10', k: '#2a1c10', w: 'rgba(232,246,255,0.85)' } };
-  // Le dialogue du matin (js/carte/ferme/etiquettes.js stepMatin) : une fois par jour, entre
-  // `de` et `a` heures, dès que le personnage du joueur et le second adulte du foyer (model.aide)
-  // sont dehors sur la ferme et tous deux dans la vue, le second adulte vient à côté du
-  // personnage (`approche` ms au plus) et s'y arrête ; puis une bulle au-dessus de chacun, l'une
-  // après l'autre : le joueur parle (`joueur`), l'autre lui répond (`compagnon`). Chaque bulle
-  // reste `garde` ms, puis s'estompe en `fondu` ms.
-  const MATIN = { de: 6, a: 11, approche: 10000, garde: 5000, fondu: 600,
-    joueur: 'Encore une belle journée qui commence à la ferme n\'est-ce pas ?',
-    compagnon: 'C\'est tellement apaisant de vivre ici, pour rien au monde je ne repartirais !' };
+  // La bulle du compagnon (js/carte/ferme/etiquettes.js compagnonDit) : l'appui sur lui (`boite` : autour de
+  // ses pieds, en px de carte), la bulle `dessus` px au-dessus de ses pieds ; une bulle à boutons attend
+  // `attente` ms au plus la réponse, une bulle sans bouton reste `dit` ms (sauf autre durée).
+  const AIDE = { boite: { l: 8, h: 30, bas: 3 }, dessus: 30, attente: 15000, dit: 3500 };
   // La botteleuse (js/carte/ferme/botteleuse.js, js/engine/botteleuse.js) : un appui sur une de
   // ses pièces, le personnage va à gauche de l'entonnoir (sinon devant lui, `devant` px sous le
   // bas de sa case, sinon derrière) et y jette ses fibres (geste « jeter ») ; des brins (RAMASSABLES : fibre) volent de ses
@@ -550,7 +545,7 @@
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZOOM, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, MINE, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, LITS_SENS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, CONSTRUCTIBLE, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL, HERBES },
+    C: { T, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZOOM, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, MINE, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, LITS_SENS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, CONSTRUCTIBLE, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, AIDE, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL, HERBES },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

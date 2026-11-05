@@ -20,7 +20,8 @@ import { techAuto } from '../engine/techtree.js';
 import { chapterProgress, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
-import { arroseesCompagnon, estTacheCompagnon, faireCompagnon, journeeCompagnon, noterGarde, tachesCompagnon } from '../engine/compagnon.js';
+import { arroseesCompagnon, demandeCompagnon, estTacheCompagnon, faireCompagnon, journeeCompagnon, noterGarde, recolteesCompagnon, tachesCompagnon } from '../engine/compagnon.js';
+import { compagnonTouche } from './compagnon.js';
 import { marcherMembre } from '../engine/repas.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
 import { TIRED } from '../engine/stamina.js';
@@ -484,7 +485,8 @@ export function stageModel() {
     famille: state.famille.membres.filter((m) => m !== mainCharacter(state)).map((m) => ({ id: m.id, perso: memberPerso(m), enfant: !!m.enfant, apparence: memberApparence(m), coiffe: coiffeCarte(state, m.id) })),
     // le second adulte du foyer et où il a à faire (le Poulailler, l'Étable : aideAFaire ; fiche 19 :
     // puis ses initiatives, arroser, cuisiner, ramasser, js/engine/compagnon.js tachesCompagnon)
-    aide: aidant(state) ? { id: aidant(state).id, lieux: [...aideAFaire(state), ...tachesCompagnon(state)] } : null,
+    // (ce que le joueur lui a demandé passe avant les bêtes : js/ui/compagnon.js)
+    aide: aidant(state) ? { id: aidant(state).id, lieux: lieuxAide() } : null,
     // les fleurs où butinent les abeilles des ruches (des cases ; la carte y ajoute l'herbe haute fleurie)
     fleurs: fleursPourAbeilles(state),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
@@ -734,7 +736,14 @@ function autoDone() {
   if (I && I.jour === state.day) for (const c of I.faites || I.cases || []) out.push(`arroser:${c}`);
   // (le compagnon arrose de lui-même, fiche 19 : il fait son geste, pas le personnage)
   for (const c of arroseesCompagnon(state)) out.push(`arroser:${c}`);
+  for (const c of recolteesCompagnon(state)) out.push(`recolter:${c}`);   // (les légumes qu'on lui a demandé de ramasser)
   return out;
+}
+
+// Où le second adulte a à faire : ses bêtes, puis ses initiatives ; ce que le joueur lui a demandé, avant tout.
+function lieuxAide() {
+  const taches = tachesCompagnon(state);
+  return demandeCompagnon(state) ? [...taches, ...aideAFaire(state)] : [...aideAFaire(state), ...taches];
 }
 
 function sprinklers() {
@@ -1163,7 +1172,7 @@ function terrainNow(rochers) {
 const MUETS_EN_LIGNE = ['region', 'ici', 'fauneVue', 'hameau', 'hameauIci', 'visite', 'presents'];
 // (E-9 : la hache, la pioche, la faux, la canne passent par le monde : js/ui/outils.js)
 // (E-13 : les machines de l'Atelier, les morceaux au sol et la cueillette aussi : js/ui/atelier.js, outils.js)
-const REFUSES_EN_LIGNE = ['faune', 'maison', 'lieuRecit', 'secret', 'calecheTouchee', 'calecheHeler', 'habitantAgit', 'habitantParle', 'recolte'];
+const REFUSES_EN_LIGNE = ['faune', 'maison', 'lieuRecit', 'secret', 'calecheTouchee', 'calecheHeler', 'habitantAgit', 'habitantParle', 'recolte', 'compagnonTouche'];
 let dernierMot = 0;
 function pasEnLigne() {
   const t = Date.now();
@@ -1212,7 +1221,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, enLigneSurLaFerme({ act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, secret: stageSecret, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, lot: (f) => enLot(state, f), pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, invites: invitesDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, presents: presentsDepuisCarte, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() }))) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
+      if (!FarmStage.mount(el, enLigneSurLaFerme({ act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, secret: stageSecret, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, lot: (f) => enLot(state, f), pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, compagnonTouche, visite: visiteDepuisCarte, invites: invitesDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, presents: presentsDepuisCarte, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() }))) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
     } catch (err) {
       stageBroken = true;
       if (window.Chargement) window.Chargement.fini();

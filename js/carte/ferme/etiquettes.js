@@ -1,7 +1,7 @@
 /* carte/ferme/etiquettes.js — la scène de la ferme : ce qui est en DOM par-dessus la carte.
  *
  * Les étiquettes des lieux (nom et pastille « à faire »), les bulles des tas à ramasser, la bulle
- * « +x » au-dessus du personnage, la bulle de la citerne, les bulles du dialogue du matin : des
+ * « +x » au-dessus du personnage, la bulle de la citerne, la bulle du compagnon (son aide) : des
  * éléments DOM du calque des
  * étiquettes (ctx.labelLayer), replacés à chaque image.
  *
@@ -13,7 +13,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, TREE_OBJECT, MIN_TAP, LABEL_GAP, BUBBLE_TIP_X, BUBBLE_TIP_Y, MATIN } = F.C;
+  const { T, TREE_OBJECT, MIN_TAP, LABEL_GAP, BUBBLE_TIP_X, BUBBLE_TIP_Y, AIDE } = F.C;
   const { pixelRatio } = F;
   const CASE_TIP_MS = 2600;   // fiche 21 : la bulle d'une case de culture reste ce temps après l'appui
 
@@ -239,61 +239,78 @@
       G.place((at.x - f.left) * f.k, (at.y - K.BULLE.dessus - f.top) * f.k);
     },
 
-    // Le dialogue du matin (MATIN) : le joueur parle, le second adulte lui répond, chacun dans
-    // une bulle au-dessus de lui. Une fois par jour (model.jour) ; il attend que tous deux soient
-    // dehors, réveillés et dans la vue. C'est un temps d'échange : le second adulte vient d'abord
-    // à côté du personnage (famille.rejoindre ; `approche` ms au plus), s'y arrête tourné vers
-    // lui, puis les bulles viennent ; à la fin, il reprend sa journée. Le personnage rentré
-    // avant : le dialogue attend la prochaine occasion. Une bulle dont le personnage sort de la
-    // carte se cache.
-    stepMatin() {
-      const M = this.ctx.lastModel;
-      const S = this.matin || (this.matin = { jour: null, etape: null, ta: 0, t0: 0, bulles: null });
-      const now = global.performance.now();
-      const fam = this.family && this.family.rejoindre ? this.family : null;
-      const ou = { joueur: () => (this.fermier ? this.fermier.pos() : null), compagnon: () => (this.family ? this.family.aidePos() : null) };
-      if (!S.etape && fam && M && M.aide && !M.nuit && S.jour !== M.jour && M.heure >= MATIN.de && M.heure < MATIN.a && this.dansLaVue(ou.joueur()) && this.dansLaVue(ou.compagnon())) {
-        S.jour = M.jour;
-        S.etape = 'approche';
-        S.ta = now;
+    // Un appui sur le compagnon (le second adulte du foyer, js/famille-ferme.js) : il propose son aide. La page
+    // (js/ui/compagnon.js) dit quoi : compagnonDit({ texte, boutons: [{ texte, action, data }], ms }) ; la carte
+    // l'affiche dans une bulle au-dessus de lui (les boutons portent leur data-action : la page les reçoit). Tant
+    // qu'il pose une question (des boutons, AIDE.attente ms au plus), il vient à côté du personnage et s'y arrête
+    // tourné vers lui (famille.rejoindre) ; sa réponse (sans bouton, `ms` ms) le suit pendant qu'il repart.
+    compagnonAt(wx, wy) {
+      const M = this.ctx.lastModel, at = this.family && M && M.aide && !M.bati ? this.family.aidePos() : null;
+      if (!at) return false;
+      return Math.abs(wx - at.x) <= AIDE.boite.l && wy <= at.y + AIDE.boite.bas && wy >= at.y - AIDE.boite.h;
+    },
+
+    compagnonDit(c) {
+      const layer = this.ctx.labelLayer;
+      if (!layer || !this.family || !this.family.aidePos()) return false;
+      const S = this.aideBulle || (this.aideBulle = { el: null, w: 0, h: 0, fin: 0 });
+      if (!c) { this.finAideBulle(); return true; }
+      if (!S.el) {
+        S.el = document.createElement('div');
+        S.el.className = 'habitant-bulle aide-bulle';
+        S.el.setAttribute('role', 'dialog');
+        layer.appendChild(S.el);
       }
-      if (!S.etape) return;
-      if (S.etape === 'approche') {
-        const at = ou.joueur();
-        if (!at || !ou.compagnon()) { fam.rejoindre(null); S.etape = null; S.jour = null; return; }
-        if (!fam.rejoindre(at) && now - S.ta < MATIN.approche) return;
-        S.etape = 'parle';
-        S.t0 = now;
-      }
-      if (!S.bulles) {
-        S.bulles = {};
-        for (const qui of ['joueur', 'compagnon']) {
-          const el = document.createElement('div');
-          el.className = 'stage-gain stage-parole';
-          el.setAttribute('role', 'status');
-          el.hidden = true;
-          this.ctx.labelLayer.appendChild(el);
-          S.bulles[qui] = { el, w: 0, h: 0 };
+      S.el.innerHTML = '';
+      const t = document.createElement('span');
+      t.className = 'habitant-bulle-texte';
+      t.textContent = c.texte || '';
+      S.el.appendChild(t);
+      const boutons = c.boutons || [];
+      if (boutons.length) {
+        const row = document.createElement('span');
+        row.className = 'aide-choix';
+        for (const b of boutons) {
+          const el = document.createElement('button');
+          el.type = 'button';
+          el.className = 'aide-bouton';
+          el.textContent = b.texte;
+          el.dataset.action = b.action;
+          for (const [k, v] of Object.entries(b.data || {})) el.dataset[k] = v;
+          row.appendChild(el);
         }
+        S.el.appendChild(row);
       }
-      const pas = MATIN.garde + MATIN.fondu;
+      S.w = 0;
+      S.fin = global.performance.now() + (boutons.length ? AIDE.attente : c.ms || AIDE.dit);
+      // (une question : il reste à côté du personnage ; sa réponse : il repart aussitôt, la bulle le suit)
+      S.retient = boutons.length > 0;
+      if (!S.retient && this.family.rejoindre) this.family.rejoindre(null);
+      // (il parle : sa voix, un petit babil, js/son.js)
+      const V = global.FermeSon;
+      if (V && V.babil && c.texte) V.babil(c.texte, V.voixDe({ id: this.ctx.lastModel && this.ctx.lastModel.aide ? this.ctx.lastModel.aide.id : 'compagnon' }));
+      return true;
+    },
+
+    finAideBulle() {
+      const S = this.aideBulle;
+      if (S && S.el) { S.el.remove(); S.el = null; }
+      if (this.family && this.family.rejoindre) this.family.rejoindre(null);
+    },
+
+    // À chaque image : la bulle suit le compagnon ; il reste à côté du personnage tant qu'elle est là.
+    stepAide() {
+      const S = this.aideBulle;
+      if (!S || !S.el) return;
+      const at = this.family ? this.family.aidePos() : null;
+      if (!at || global.performance.now() >= S.fin) { this.finAideBulle(); return; }
+      const p = S.retient && this.fermier ? this.fermier.pos() : null;
+      if (p) this.family.rejoindre(p);
       const f = this.screenFrame();
-      ['joueur', 'compagnon'].forEach((qui, k) => {
-        const B = S.bulles[qui], t = now - S.t0 - k * pas, at = ou[qui]();
-        if (t < 0 || t >= pas || !at) { B.el.hidden = true; return; }
-        if (B.el.hidden) {
-          B.el.textContent = MATIN[qui];
-          B.el.hidden = false;
-          B.w = 0;
-        }
-        B.el.classList.toggle('fade', t >= MATIN.garde);
-        if (!B.w) { B.w = B.el.offsetWidth; B.h = B.el.offsetHeight; }
-        // (la pointe sur sa tête ; la bulle reste dans l'écran, quitte à glisser sur le côté)
-        const x = (at.x - f.left) * f.k, y = (at.y - K.BULLE.dessus - f.top) * f.k;
-        const maxX = this.scale.width / pixelRatio() - B.w - 4;
-        B.el.style.transform = 'translate(' + Math.round(Math.max(4, Math.min(x - BUBBLE_TIP_X, maxX))) + 'px,' + Math.round(Math.max(4, y - B.h + BUBBLE_TIP_Y)) + 'px)';
-      });
-      if (now - S.t0 >= 2 * pas) { fam.rejoindre(null); S.etape = null; }
+      if (!S.w) { S.w = S.el.offsetWidth; S.h = S.el.offsetHeight; }
+      const x = (at.x - f.left) * f.k, y = (at.y - AIDE.dessus - f.top) * f.k;
+      const maxX = this.scale.width / pixelRatio() - S.w - 4;
+      S.el.style.transform = 'translate(' + Math.round(Math.max(4, Math.min(x - S.w / 2, maxX))) + 'px,' + Math.round(Math.max(4, y - S.h)) + 'px)';
     },
 
     // Le point de la carte (wx, wy) est-il dans la vue ?

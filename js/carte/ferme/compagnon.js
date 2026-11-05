@@ -3,7 +3,8 @@
  * Le compagnon (le second adulte du foyer, js/famille-ferme.js) a, en plus des bêtes, des tâches à
  * lui (js/engine/compagnon.js tachesCompagnon) : « arroser:<case> » (un légume qui a soif),
  * « puits:<case> » (remplir sa cruche), « cuisiner » (à la cuisinière posée), « ramasser:<id> » (un
- * morceau de bois ou une petite pierre posés ce matin, js/carte/ferme/cueillette.js). Pour chacune,
+ * morceau de bois ou une petite pierre posés ce matin, js/carte/ferme/cueillette.js) ; et ce que le joueur
+ * lui demande : « recolter:<case> » (un légume mûr), « cueillir:<case> » (un arbre en fruits). Pour chacune,
  * lieuCompagnon donne où il se tient et le geste qu'il y fait :
  *
  *   { x, y (ses pieds), face, flip (tourné vers ce qu'il travaille), geste }
@@ -67,6 +68,22 @@
           if (p) return { ...p, geste: 'cuisiner' };
         }
         return null;
+      }
+      if (sorte === 'recolter') {
+        // (un légume mûr, js/engine/compagnon.js demanderCompagnon : à côté, tourné vers lui, comme pour arroser)
+        const k = Number(ref);
+        if (!Number.isInteger(k)) return null;
+        const x0 = (k % cols) * T, y = Math.floor(k / cols) * T + 14;
+        const g = { x: x0 - 2, y, face: 'cote', flip: false, geste: 'ramasser' };
+        const d = { x: x0 + T + 2, y, face: 'cote', flip: true, geste: 'ramasser' };
+        return libre(g.x, g.y) ? g : libre(d.x, d.y) ? d : null;
+      }
+      if (sorte === 'cueillir') {
+        // (un arbre du Verger en fruits : sous lui, sinon à côté)
+        const k = Number(ref);
+        if (!Number.isInteger(k)) return null;
+        const p = this.placesAutour(k)[0];
+        return p ? { ...p, geste: 'ramasser' } : null;
       }
       if (sorte === 'ramasser') {
         // (l'identifiant : « <sorte>:<case> », js/engine/atelier.js ramassables)

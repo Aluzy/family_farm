@@ -649,7 +649,7 @@
         this.placePiles();
         this.placeGain();
         this.placeGainAide();
-        this.stepMatin();
+        this.stepAide();
         this.reportView();
       }
 
@@ -914,6 +914,8 @@
           const inv = this.inviteAt(wx, wy);
           if (inv) return { invite: inv };
         }
+        // le compagnon (js/carte/ferme/etiquettes.js) : il propose son aide
+        if (!hoeing && this.compagnonAt && this.compagnonAt(wx, wy)) return { compagnon: true };
         if (!hoeing && this.habitantAt && !(this.ctx.lastModel && this.ctx.lastModel.bati)) {
           const hab = this.habitantAt(wx, wy);
           if (hab) return { habitant: hab };
@@ -1167,6 +1169,7 @@
         if (!hit) return;
         if (hit.caleche) { if (this.ctx.bridge.calecheTouchee) this.ctx.bridge.calecheTouchee(); return; }
         if (hit.habitant) { this.habitantParle(hit.habitant); return; }
+        if (hit.compagnon) { if (this.ctx.bridge.compagnonTouche) this.ctx.bridge.compagnonTouche(); return; }
         if (hit.visiteur) { if (this.visiteur) this.visiteParle(this.visiteur); return; }
         if (hit.invite) { const G = this.invitesVus; if (G) this.inviteBulle(hit.invite, (G.paroles.table || [])[Math.floor(Math.random() * (G.paroles.table || []).length)], 4500); return; }
         if (hit.panneau) { if (this.ctx.bridge.hameauPanneau) this.ctx.bridge.hameauPanneau({ id: hit.panneau.id, nom: hit.panneau.nom, style: hit.panneau.style }); return; }
@@ -1431,10 +1434,16 @@
     const s = getScene();
     return s && s.semisEnAttente ? s.semisEnAttente(culture) : 0;
   }
+  // La bulle du compagnon (js/carte/ferme/etiquettes.js) : { texte, boutons, ms } ; null la ferme. false : il
+  // n'est pas sur la carte.
+  function compagnonDit(c) {
+    const s = getScene();
+    return !!(s && s.ready && s.compagnonDit && s.compagnonDit(c));
+  }
   // L'amitié (js/carte/ferme/amis.js) : la réaction `emotion` de l'habitant `id` (un cadeau…).
   function emotion(id, e) {
     const s = getScene();
     return !!(s && s.emotionHabitant && s.emotionHabitant(id, e));
   }
-  global.FarmStage = { emotion, mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, semer, semisEnAttente, arrive, scene: getScene }; // scene() : pour le débogage et les tests
+  global.FarmStage = { emotion, compagnonDit, mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, semer, semisEnAttente, arrive, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);
