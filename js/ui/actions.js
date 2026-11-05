@@ -38,6 +38,7 @@ export const SOMMEIL_BLOQUEES = new Set([
   'fridge-in-all', 'fridge-in-urgent', 'frigo-ranger', 'fridge-out', 'toggle', 'semis-set', 'cow-herbs',
   'sac-poser', 'sac-retirer', 'sac-remplir', 'sac-reprendre', 'sac-manger', // (fiche 11 : le sac, comme la boîte et « Manger »)
   'cruche-remplir', 'lit-oui', // (fiche 17 : aller au puits, choisir son lit)
+  'demande-rendre', // (V-2 : rendre une demande d'un habitant)
 ]);
 
 // Plusieurs actions, une même fonction (elle reçoit le nom de l'action en 3e argument).

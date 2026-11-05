@@ -30,6 +30,7 @@ import { remplirRuches } from './ruches.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 import { distribuerGrain } from './distributeur.js';
 import { chainesDeLaJournee } from './chaines.js';
+import { demandesNuit } from './demandes.js';
 import { enExpedition, tentePortee } from './equipement.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -323,6 +324,7 @@ export function runNight(state) {
   regrowGrass(state); // l'herbe haute fauchée dont le jour est venu repousse
   if (!state.mondePartage) repousseMonde(state); // ce qui a été pris dans le grand monde aussi (monde-recolte.js ; E-8 : pas dans un monde partagé)
   remplirRuches(state); // les abeilles remplissent les ruches
+  if (!state.mondePartage) state.nuit.demande = demandesNuit(state); // V-2 : les petites demandes des habitants (demandes.js)
   refreshUnlocks(state);
   updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil
   noteTutorialSleep(state); // Lot 11 : la bulle « Dormir » se ferme à la première nuit

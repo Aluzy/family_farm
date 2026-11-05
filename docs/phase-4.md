@@ -77,7 +77,7 @@ existante.
 | Lot | Contenu | Pourquoi |
 |---|---|---|
 | **V-1 · Ils parlent de ce qu'ils voient** ✅ | Des paroles contextuelles, choisies par conditions et sans répétition proche. Les habitants parlent de ta ferme (ses cultures, ses bêtes, ce que tu as construit), de leurs cadeaux reçus, des autres habitants, de la saison, de la lune, de la nuit passée et de leur dernier souvenir de repas. Environ 150 phrases. | L'objectif « dialogues sensibles à l'état du monde » ; c'est le plus gros manque ressenti. |
-| **V-2 · Les petites demandes** | Des demandes facultatives des habitants (apporter, fabriquer, aider), tirées sans hasard caché selon leur métier et les besoins de leur hameau. Au plus 3 en cours, aucune pénalité si on ne les fait pas. Elles rapportent de l'amitié, un plan, une recette ou un souvenir. Un carnet des demandes. | « Entraide, demandes facultatives » ; une raison de revenir voir quelqu'un. |
+| **V-2 · Les petites demandes** ✅ | Des demandes facultatives des habitants (apporter, fabriquer, aider), tirées sans hasard caché selon leur métier et les besoins de leur hameau. Au plus 3 en cours, aucune pénalité si on ne les fait pas. Elles rapportent de l'amitié, un plan, une recette ou un souvenir. Un carnet des demandes. | « Entraide, demandes facultatives » ; une raison de revenir voir quelqu'un. |
 | **V-3 · Entre voisins** | Des liens entre habitants (amis, voisins, cousins d'un hameau à l'autre). Ils se rendent visite, s'entraident quand un garde-manger est vide, et parlent les uns des autres. | « Relations » et « histoires émergentes ». |
 | **V-4 · La fête du hameau** | Des événements locaux générés : une fête par saison dans un hameau, un petit marché, les habitants rassemblés sur la place, une musique de fête. | « Activités collectives », un rendez-vous. |
 | **D-1 · Le carnet du naturaliste** | Des pages pour les trouvailles, les végétaux, les biomes et des espèces de poissons, et une condition « biome vu ». Des collections complètes qui donnent un objet à poser (une vitrine, un herbier). | « Encyclopédie : plantes, animaux, minéraux, fossiles », et une progression par curiosité. |
@@ -109,3 +109,22 @@ G-1, plus courts, qui embellissent ce qui existe déjà.
 - **Le branchement** : `paroleHabitant` (`js/engine/habitants.js`) dit un sujet environ 6 fois sur 10 (`PART`), sinon les phrases d'avant. Les répliques écrites du récit, les souvenirs de repas et les remerciements des projets passent toujours en premier.
 - **Sur la partie du jour 54** : 268 paroles sur 456 abordent un sujet, avec 19 sujets différents.
 - **Les tests** : `tests/engine/propos.test.mjs`.
+
+## 6. V-2 : fait
+
+- **Les données** : `data/amitie.json` › `DEMANDES`.
+  - Au plus 3 demandes ouvertes, chacune pour 7 jours. Chaque nuit, 60 % de chances qu'une nouvelle arrive, à partir du jour 3.
+  - Par métier, 4 besoins (un objet, une quantité, un motif : « pour réparer mes filets »).
+  - Les phrases : la demande, le merci, l'annonce du matin.
+- **Le moteur** : `js/engine/demandes.js`.
+  - `demandesNuit` vient dans `runNight`, après le changement de jour, mais pas dans un monde partagé. Une demande ne vient que d'un habitant adulte d'un **hameau déjà visité**.
+  - Une demande qu'on ne fait pas **s'oublie sans rien coûter**.
+  - `rendreDemande` donne 6 points d'amitié et un présent de son métier (`RETOUR.PRESENTS`).
+  - Le tirage suit la graine de la ferme et le jour.
+- **La parole** : un habitant qui a une demande la dit d'abord (`paroleHabitant`).
+- **L'interface** (`js/ui/demandes.js`) :
+  - l'annonce au matin ;
+  - le carnet « 📜 Demandes » dans le menu, tant qu'une demande est ouverte (qui, quoi, ce que tu en as, le temps qui reste) ;
+  - dans la fenêtre « 🎁 Offrir » de l'habitant, sa demande et le bouton « Donner ». Il faut donc aller le voir : c'est voulu.
+- **En ligne** : les demandes appartiennent au grand monde, donc à la partie solo. Le geste est refusé dans un monde partagé.
+- **Les tests** : `tests/engine/demandes.test.mjs`, et un essai dans le jeu avec la partie du jour 54 (l'annonce, le carnet, « Donner »).

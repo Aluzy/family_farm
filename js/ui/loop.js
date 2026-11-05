@@ -30,6 +30,7 @@ import { retourCompagnon } from '../engine/compagnon.js';
 import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
 import { watchPresents } from './amitie.js';
+import { watchDemandes } from './demandes.js';
 import { watchInvitations } from './invitations.js';
 import { watchPlans } from './plans.js';
 import {
@@ -319,6 +320,7 @@ export function frame(now) {
   watchBienvenue(); // fiche 18 : la visite de bienvenue du deuxième jour se met en route
   watchRobot();
   watchPresents();
+  watchDemandes(); // V-2 : les petites demandes des habitants, annoncées au matin
   watchInvitations(); // les invitations à un repas : les réponses au matin, les invités en route
   watchPlans(); // les plans de meubles offerts par un ami (le lot 4)
   watchPreparations();
