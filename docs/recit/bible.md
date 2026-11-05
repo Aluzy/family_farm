@@ -46,7 +46,7 @@ Les dates sont comptées depuis l'arrivée du joueur (année 0). Le joueur a env
 
 | Lieu garanti | Milieu | Ce qu'on y fait | Qui y vit |
 |---|---|---|---|
-| **Le Gué** | Prairie, au croisement des chemins | Les jardins, l'écurie de la calèche, les veillées | Odile, Achille, des anciens. La maison de Maurice et Philomène, qu'Odile garde. |
+| **Le Gué** | Prairie, au croisement des chemins | Les jardins, l'écurie de la calèche, les veillées | Odile, Achille, Frida (qui vit à son atelier, au bord de l'étang), des anciens. La maison de Maurice et Philomène, qu'Odile garde. |
 | **Bois-Joli** | Forêt | La scierie et l'atelier d'ébéniste | Basile, Théo |
 | **Les Genêts** | Lande | La bergerie, le métier à tisser, la couture, les teintures | Garance, Lise, des bergers |
 | **Les Mouettes** | Côte | La pêche, la cale du bac | Fernand, des pêcheurs |

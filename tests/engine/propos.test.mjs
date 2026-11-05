@@ -11,7 +11,7 @@
 
 import { DATA, elementsSol, genererMonde, plant, solDirect } from '../../js/engine/index.js';
 import { habitantsDe, paroleHabitant, peuplerHameau } from '../../js/engine/habitants.js';
-import { fiche } from '../../js/engine/amitie.js';
+import { cleDe, fiche } from '../../js/engine/amitie.js';
 import { proposDuMoment, sujetsPossibles, SUJETS_PROPOS } from '../../js/engine/propos.js';
 import { assert, assertEqual, garden, test } from './aide.mjs';
 
@@ -67,7 +67,7 @@ test('V-1 : un sujet n\'est dit que s\'il est vrai dans la partie ; un enfant, l
     assert(E.includes('famille_enfant') && E.includes('ferme_poules_enfant'), 'sa famille, les poules');
   }
   // un cadeau d'hier, un goût découvert
-  const f = fiche(s, adulte.id);
+  const f = fiche(s, cleDe(adulte));   // (un personnage écrit, Garance par exemple, a la clé de son récit)
   f.cadeau = s.day - 1;
   f.gouts = { myrtille: 'adore' };
   const C = sujetsPossibles(s, p.id, h, foyer, adulte);

@@ -3191,7 +3191,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "frida",
      "terme": "Frida",
-     "description": "L'inventrice de l'île, venue il y a cinquante ans observer les bêtes et les plantes, et restée. La meilleure amie de Philomène ; elle gardait ta mère toute petite. Elle fabrique le robot, sa station et les automatisations, dont toute l'île est fière. Elle a toujours un chiffre à donner, et du thé sur le poêle.",
+     "description": "L'inventrice de l'île, venue il y a cinquante ans observer les bêtes et les plantes, et restée. La meilleure amie de Philomène ; elle gardait ta mère toute petite. Elle dort au Gué et vit à son atelier, au bord de l'étang : le robot, sa station, les automatisations, dont toute l'île est fière. Elle a toujours un chiffre à donner, et du thé sur le poêle.",
      "liens": [
       "atelier_frida",
       "robot",
@@ -3230,15 +3230,29 @@ export const ENCYCLOPEDIE = {
     {
      "id": "garance",
      "terme": "Garance",
-     "description": "La tisserande et bergère des Genêts. Passionnée de couleurs, elle teint sa laine avec les plantes de la lande et nomme chaque nuance. Maurice lui avait promis un toit plus lumineux pour son atelier ; son métier à tisser fait le tissu de l'île.",
+     "description": "La tisserande et bergère des Genêts, et la maman de Lise. Passionnée de couleurs, elle teint sa laine avec les plantes de la lande et nomme chaque nuance : bleu pervenche, jaune genêt, vert mousse. Maurice lui avait promis un toit plus lumineux pour son atelier ; son métier à tisser fait le tissu de l'île.",
      "liens": [
       "les_genets",
       "promesses",
-      "commerce"
+      "commerce",
+      "lise"
      ],
      "decouverte": [
       "fait:visite.genets",
-      "fait:promesse.toit_garance.commencee"
+      "fait:promesse.toit_garance.commencee",
+      "fait:garance.rencontre"
+     ]
+    },
+    {
+     "id": "lise",
+     "terme": "Lise",
+     "description": "La fille de Garance, dix ans. Espiègle et curieuse, elle connaît chaque terrier de la lande, donne un nom à chaque lapin et ne ment jamais. Elle a des secrets, qu'elle garde (« Mais je dis pas. ») : à une amie, elle finit par les confier.",
+     "liens": [
+      "garance",
+      "les_genets"
+     ],
+     "decouverte": [
+      "fait:lise.rencontre"
      ]
     },
     {

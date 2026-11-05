@@ -32,6 +32,7 @@ aucun n'est négatif ni rustre : chacun a une passion et un petit travers attach
 77 ans. Venue il y a cinquante ans observer les bêtes et les plantes, elle est restée. Elle a gardé Adèle petite. Elle fabrique le robot, sa station et les automatisations.
 - Brillante, enjouée, adorée de tous. Toute l'île est fière de ses machines (Odile a la sienne, pour la confiture).
 - Elle a toujours un chiffre à donner, et du thé sur le poêle.
+- Elle dort au Gué (son foyer, sur la carte) et vit à son atelier, au bord de l'étang. On la rencontre en la touchant au Gué (`frida_gue`) ou quand elle passe à la ferme (`frida_ferme`) ; à la ferme, sa scène des machines vient même si on l'a déjà rencontrée (`frida_ferme_amie`).
 - Ce qu'elle aime : comprendre. Elle a des mesures sur la lune et les récoltes qu'elle ne s'explique pas, et elle adore ne pas savoir.
 
 ## Achille, le cocher

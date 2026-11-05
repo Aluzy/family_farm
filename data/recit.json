@@ -199,12 +199,12 @@
       "maurice": { "nom": "Maurice", "role": "le grand-père, l'ancien cocher, parti en voyage avec Philomène", "lieu": "en voyage" },
       "achille": { "nom": "Achille", "role": "le cocher", "lieu": "Le Gué", "perso": 8 },
       "odile": { "nom": "Odile", "role": "la grand-mère du Gué", "lieu": "Le Gué", "perso": 16, "habite": { "hameau": "gue", "genre": "f" } },
-      "fernand": { "nom": "Fernand", "role": "le pêcheur conteur", "lieu": "Les Mouettes" },
-      "garance": { "nom": "Garance", "role": "la tisserande", "lieu": "Les Genêts" },
-      "lise": { "nom": "Lise", "role": "la fille de Garance", "lieu": "Les Genêts" },
+      "fernand": { "nom": "Fernand", "role": "le pêcheur conteur", "lieu": "Les Mouettes", "perso": 12, "habite": { "hameau": "mouettes", "genre": "m", "metier": "pecheur" } },
+      "garance": { "nom": "Garance", "role": "la tisserande", "lieu": "Les Genêts", "perso": 30, "habite": { "hameau": "genets", "genre": "f", "metier": "berger" } },
+      "lise": { "nom": "Lise", "role": "la fille de Garance", "lieu": "Les Genêts", "perso": 32, "habite": { "hameau": "genets", "genre": "f", "enfant": true, "avec": "garance" } },
       "basile": { "nom": "Basile", "role": "le scieur et ébéniste", "lieu": "Bois-Joli", "perso": 18, "habite": { "hameau": "bois_joli", "genre": "m", "metier": "bucheron" } },
       "theo": { "nom": "Théo", "role": "le fils de Basile", "lieu": "Bois-Joli", "perso": 18, "habite": { "hameau": "bois_joli", "genre": "m", "enfant": true, "avec": "basile" } },
-      "frida": { "nom": "Frida", "role": "la scientifique", "lieu": "son atelier de l'étang" },
+      "frida": { "nom": "Frida", "role": "l'inventrice", "lieu": "Le Gué (son atelier : au bord de l'étang)", "perso": 34, "habite": { "hameau": "gue", "genre": "f" } },
       "compagnon": { "nom": "le compagnon", "role": "le second adulte de la famille", "lieu": "la ferme" }
     },
     "FRAGMENTS": {
@@ -306,7 +306,7 @@
         "quand": { "acte_min": 2, "chapitre_min": 4, "lieu": "ferme", "sans_fait": "frida.rencontre" },
         "priorite": 90,
         "lignes": [
-          { "qui": "frida", "nom": "Une inconnue", "texte": { "m": "Alors c'est toi ! La dernière fois que je t'ai vu, tu tenais dans un panier.", "f": "Alors c'est toi. La dernière fois que je t'ai vue, tu tenais dans un panier." } },
+          { "qui": "frida", "nom": "Une inconnue", "texte": { "m": "Alors c'est toi ! La dernière fois que je t'ai vu, tu tenais dans un panier.", "f": "Alors c'est toi ! La dernière fois que je t'ai vue, tu tenais dans un panier." } },
           { "qui": "frida", "texte": "Frida. J'invente des machines et j'observe les bêtes. Ta grand-mère est ma meilleure amie." },
           { "qui": "frida", "texte": "Un robot qui récolte, une station pour le recharger : trois heures gagnées par jour." },
           { "qui": "frida", "texte": "Trois heures pour faire ce que tu aimes. Ou pour venir boire le thé chez moi !" },
@@ -314,7 +314,21 @@
           { "qui": "frida", "quand": { "empreinte": ["moyenne", "haute"] }, "texte": "Ta ferme grandit vite ! Mes machines adoreraient t'aider." },
           { "qui": "frida", "texte": "Passe me voir, mon atelier est au bord de l'étang. Il y a toujours du thé." }
         ],
-        "effet": { "fait": "frida.rencontre", "relation": { "frida": 10 } }
+        "effet": { "fait": ["frida.rencontre", "frida.ferme"], "relation": { "frida": 10 } }
+      },
+      {
+        "id": "frida_ferme_amie",
+        "quand": { "acte_min": 2, "chapitre_min": 4, "lieu": "ferme", "fait": "frida.rencontre", "sans_fait": "frida.ferme" },
+        "priorite": 90,
+        "lignes": [
+          { "qui": "frida", "texte": "Me voilà chez toi ! Je voulais voir ta ferme de mes propres yeux." },
+          { "qui": "frida", "texte": "Un robot qui récolte, une station pour le recharger : trois heures gagnées par jour." },
+          { "qui": "frida", "texte": "Trois heures pour faire ce que tu aimes. Ou pour venir boire le thé chez moi !" },
+          { "qui": "frida", "quand": { "empreinte": "basse" }, "texte": "Ta ferme est petite et jolie. Une machine s'y plairait." },
+          { "qui": "frida", "quand": { "empreinte": ["moyenne", "haute"] }, "texte": "Ta ferme grandit vite ! Mes machines adoreraient t'aider." },
+          { "qui": "frida", "texte": "Passe me voir, mon atelier est au bord de l'étang. Il y a toujours du thé." }
+        ],
+        "effet": { "fait": ["frida.rencontre", "frida.ferme"], "relation": { "frida": 10 } }
       },
       {
         "id": "maurice_tournee",
@@ -576,6 +590,49 @@
           { "qui": "achille", "texte": "Ho. Biscotte a pris deux kilos. C'est ta faute. À demain, dix heures." }
         ],
         "effet": { "fait": ["fete", "fin.genereuse"] }
+      },
+      {
+        "id": "frida_gue",
+        "quand": {"touche": "frida", "sans_fait": "frida.rencontre"},
+        "priorite": 100,
+        "lignes": [
+          {"qui": "frida", "texte": {"m": "Alors c'est toi ! La dernière fois que je t'ai vu, tu tenais dans un panier.", "f": "Alors c'est toi ! La dernière fois que je t'ai vue, tu tenais dans un panier."}},
+          {"qui": "frida", "texte": "Frida. J'invente des machines et j'observe les bêtes. Ta grand-mère est ma meilleure amie."},
+          {"qui": "frida", "texte": "Je dors au Gué, mais je vis à mon atelier, au bord de l'étang. Il y a toujours du thé."}
+        ],
+        "effet": {"fait": "frida.rencontre", "relation": {"frida": 10}}
+      },
+      {
+        "id": "garance_rencontre",
+        "quand": {"touche": "garance", "sans_fait": "garance.rencontre"},
+        "priorite": 100,
+        "lignes": [
+          {"qui": "garance", "texte": "Bonjour ! Garance, des Genêts. C'est moi qui tisse la laine de l'île."},
+          {"qui": "garance", "texte": "Tu viens de la ferme de Maurice ? Il m'avait promis un toit plus lumineux pour mon atelier."},
+          {"qui": "garance", "texte": "Rien ne presse ! Viens voir mes couleurs, un jour. J'ai un jaune genêt qui fait sourire."}
+        ],
+        "effet": {"fait": "garance.rencontre", "relation": {"garance": 10}}
+      },
+      {
+        "id": "lise_rencontre",
+        "quand": {"touche": "lise", "sans_fait": "lise.rencontre"},
+        "priorite": 100,
+        "lignes": [
+          {"qui": "lise", "texte": {"m": "Toi, t'es celui de la ferme du milieu ! Moi c'est Lise.", "f": "Toi, t'es celle de la ferme du milieu ! Moi c'est Lise."}},
+          {"qui": "lise", "texte": "Je connais tous les terriers des Genêts. Mais je dis pas."}
+        ],
+        "effet": {"fait": "lise.rencontre", "relation": {"lise": 10}}
+      },
+      {
+        "id": "lise_lucioles",
+        "quand": {"touche": "lise", "fait": "lise.rencontre", "palier_min": 2, "sans_fragment": "souvenir_lise"},
+        "priorite": 100,
+        "lignes": [
+          {"qui": "lise", "texte": "Je peux te dire un secret ? Un vrai ?"},
+          {"qui": "lise", "texte": "Une nuit de pleine lune, des lucioles ont dansé au-dessus des bois de chez toi. Des centaines !"},
+          {"qui": "lise", "texte": "Elles tournaient au même endroit, comme autour d'un feu. Mais je dis pas où."}
+        ],
+        "effet": {"fragment": "souvenir_lise", "relation": {"lise": 10}}
       }
     ],
     "COMPAGNON": {
@@ -668,7 +725,31 @@
       { "id": "theo.pere", "qui": "theo", "quand": { "fait": "theo.confie", "sans_fait": "theo.choix" }, "texte": "Je sais pas encore ce que je ferai. La calèche, l'atelier, ou les machines de Frida ? Tout me plaît !", "priorite": 40, "repos_jours": 3 },
       { "id": "theo.apprenti", "qui": "theo", "quand": { "fait": "theo.apprenti" }, "texte": "Le jeudi, je monte avec Achille ! Biscotte me laisse tenir les rênes.", "priorite": 30, "repos_jours": 5 },
       { "id": "theo.atelier", "qui": "theo", "quand": { "fait": "theo.atelier" }, "texte": "J'ai mis un moteur sur la scie ! Papa a ri. Puis il a voulu essayer.", "priorite": 50, "une_fois": true },
-      { "id": "theo.frida", "qui": "theo", "quand": { "fait": "theo.frida" }, "texte": "Frida m'apprend à faire des robots ! Le premier, je l'appelle Biscuit.", "priorite": 30, "repos_jours": 5 }
+      { "id": "theo.frida", "qui": "theo", "quand": { "fait": "theo.frida" }, "texte": "Frida m'apprend à faire des robots ! Le premier, je l'appelle Biscuit.", "priorite": 30, "repos_jours": 5 },
+      { "id": "fernand.dauphins", "qui": "fernand", "quand": {"fait": "arrivee", "enfants": true}, "texte": "Tes petits ont vu les dauphins ? Ils passent au large le matin, quand la mer est lisse.", "priorite": 15, "repos_jours": 8 },
+      { "id": "fernand.histoire", "qui": "fernand", "quand": {"palier_min": 1}, "texte": "Là-bas, on m'appelait « le Phoque », parce que je nageais bien. Enfin, c'est ma version.", "priorite": 10, "repos_jours": 9 },
+      { "id": "fernand.soir", "qui": "fernand", "quand": {"heure": [18, 22]}, "texte": "Le soir, la mer devient rose. À Cadolon, je n'avais jamais le temps de la regarder.", "priorite": 15, "repos_jours": 6 },
+      { "id": "fernand.pleine", "qui": "fernand", "quand": {"lune": "pleine"}, "texte": "Pleine lune : les poissons montent voir. Moi aussi, je monte voir.", "priorite": 20, "repos_jours": 10 },
+      { "id": "fernand.barque", "qui": "fernand", "quand": {"fait": "lieu.epave"}, "texte": "Tu as vu la barque des premiers arrivants ? Cinq siècles, et pas une planche qui bouge.", "priorite": 30, "une_fois": true },
+      { "id": "fernand.pompe", "qui": "fernand", "quand": {"fait": "promesse.pompe_mouettes"}, "texte": "La pompe ronronne comme un chat. Je l'ai à peine aidée. Enfin… un peu.", "priorite": 40, "une_fois": true },
+      { "id": "garance.laine", "qui": "garance", "quand": {"fait": "garance.rencontre"}, "texte": "Ta laine est belle ! Je la vois déjà en vert mousse.", "priorite": 10, "repos_jours": 6 },
+      { "id": "garance.couleurs", "qui": "garance", "quand": {"fait": "garance.rencontre"}, "texte": "Ce matin, j'ai trouvé un nouveau bleu : bleu pervenche. Il fallait des fleurs et de la patience.", "priorite": 10, "repos_jours": 7 },
+      { "id": "garance.lise", "qui": "garance", "quand": {"fait": "garance.rencontre"}, "texte": "Tu as croisé Lise ? Elle connaît chaque terrier. Mais elle ne te dira pas où.", "priorite": 10, "repos_jours": 8 },
+      { "id": "garance.lune", "qui": "garance", "quand": {"lune": "croissante", "fait": "garance.rencontre"}, "texte": "Lune montante : on tond, la laine repousse plus vite. Odile le dit, et Odile a raison.", "priorite": 20, "repos_jours": 14 },
+      { "id": "garance.robot", "qui": "garance", "quand": {"machines": true, "fait": "garance.rencontre"}, "texte": "Ton robot sait carder ? Non ? Dommage, il a pourtant l'air doué.", "priorite": 15, "repos_jours": 9 },
+      { "id": "garance.toit", "qui": "garance", "quand": {"fait": "promesse.toit_garance"}, "texte": "Avec le nouveau toit, la lumière tombe pile sur le métier. Les couleurs chantent !", "priorite": 40, "une_fois": true },
+      { "id": "lise.renard", "qui": "lise", "quand": {"fait": "lise.rencontre"}, "texte": "Tu sais où dort le renard ? Moi oui. Mais je dis pas.", "priorite": 10, "repos_jours": 6 },
+      { "id": "lise.lapin", "qui": "lise", "quand": {"fait": "lise.rencontre"}, "texte": "Il y a un lapin qui a une oreille tordue. Je l'appelle Monsieur Plume.", "priorite": 10, "repos_jours": 7 },
+      { "id": "lise.robe", "qui": "lise", "quand": {"fait": "lise.rencontre"}, "texte": "Maman a teint ma robe en jaune genêt. C'est ma couleur préférée. Après le vert.", "priorite": 10, "repos_jours": 8 },
+      { "id": "lise.enfants", "qui": "lise", "quand": {"fait": "lise.rencontre", "enfants": true}, "texte": "Tes enfants, ils savent garder un secret ? Je cherche des gens pour ma cabane.", "priorite": 15, "repos_jours": 9 },
+      { "id": "lise.lucioles", "qui": "lise", "quand": {"lune": "pleine", "fait": "lise.rencontre"}, "texte": "Les soirs de pleine lune, il y a des lucioles partout. Tu les as vues ?", "priorite": 20, "repos_jours": 10 },
+      { "id": "frida.herons", "qui": "frida", "quand": {"fait": "frida.rencontre"}, "texte": "Ce matin, 37 hérons sur l'étang. Hier, 36. Je crois que le 37e est venu pour moi.", "priorite": 10, "repos_jours": 6 },
+      { "id": "frida.the", "qui": "frida", "quand": {"fait": "frida.rencontre", "heure": [15, 19]}, "texte": "C'est l'heure du thé ! À la menthe, quatre minutes d'infusion, pas une de plus.", "priorite": 15, "repos_jours": 5 },
+      { "id": "frida.robot", "qui": "frida", "quand": {"fait": "frida.rencontre", "machines": true}, "texte": "Ton robot marche bien ? Parle-lui gentiment : ça ne coûte rien et ça marche à 100 %.", "priorite": 15, "repos_jours": 8 },
+      { "id": "frida.philomene", "qui": "frida", "quand": {"fait": "frida.rencontre", "palier_min": 1}, "texte": "Philomène m'a écrit : elle a vu une baleine. Une baleine ! Je suis verte de jalousie.", "priorite": 15, "repos_jours": 12 },
+      { "id": "frida.lune", "qui": "frida", "quand": {"fait": "frida.rencontre", "lune": "pleine"}, "texte": "Pleine lune : 14 % de mieux aux récoltes. Je mesure encore. J'adore ne pas savoir.", "priorite": 20, "repos_jours": 10 },
+      { "id": "frida.theo", "qui": "frida", "quand": {"fait": "theo.frida"}, "texte": "Théo a déjà amélioré mon robot de 12 %. Ne le lui dis pas, il serait insupportable.", "priorite": 30, "repos_jours": 7 },
+      { "id": "frida.adele", "qui": "frida", "quand": {"fait": "frida.rencontre", "palier_min": 2}, "texte": "Ta mère dessinait des robots sur mes nappes. Tu as ses yeux quand tu réfléchis.", "priorite": 15, "une_fois": true }
     ]
   }
 }
