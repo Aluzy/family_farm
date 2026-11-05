@@ -1,144 +1,105 @@
-# Les 50 personnages du catalogue (perso_01 à perso_50). Données seulement :
-# scripts/personnage/modeles.py en tire les modèles, scripts/personnage/fermier.py les planches de
-# la carte (assets/personnages/perso_XX.png), dont la première case sert aussi de portrait.
+# Le catalogue des personnages : assets/personnages/catalogue.json (la seule source, lue aussi par le jeu à
+# l'étape E5 du chantier « couches », docs/personnage-couches.md). Ce module le lit et le présente aux
+# générateurs comme avant : les palettes (PEAU, CHEVEUX, HABITS, ACCESSOIRES, BAS, YEUX) et, pour chaque
+# personnage, sa description à plat (personnages(), enfants() : celle qu'attendent modeles.py,
+# peau_emotions.py…).
 #
-# Une entrée : (peau, cheveux, coupe, couvre-chef, couleur de l'accessoire, détails, habit, motif
-# [, couleur des yeux : brun, noisette, vert, bleu, violet, turquoise ; sans elle, modeles.yeux()])
-#   coupe      : longs, mi, carre, courts, frange, frange_carre, couettes, chignon, chauve
-#   couvre-chef: None, paille, casquette, bonnet, beret, bandeau, fleur
-#   détails    : barbe, moustache, lunettes, rousseur, boucles (séparés par des virgules)
-#   motif      : None, rayures, carreaux, pois (un habit de SPECIAL impose le sien)
+# Le fichier :
+#   palettes     : peau (clair, teinte, ombre, joues), yeux (pupille, reflet), cheveux (teinte, ombre,
+#                  sombre), tissus (sombre, teinte, clair), bas (teinte, ombre), accessoires (une couleur)
+#   personnages  : { nom: { age, identite, tenue } }, les 100 modèles prêts (perso_01 à perso_50,
+#                  enfant_01 à enfant_50)
+#     identite   : peau, yeux, cheveux (des noms de palettes), coupe, pilosite (null, barbe, moustache),
+#                  signes (rousseur, joues)
+#     tenue      : haut { tissu, motif (null, rayures, carreaux, pois) }, bas { tissu }, couvre_chef (null,
+#                  paille, casquette, bonnet, beret, bandeau, fleur ; enfants : noeud, serre_tete),
+#                  accessoire (la couleur du couvre-chef, des rubans et de la fleur), accessoires (lunettes,
+#                  boucles, pansement)
+#   Coupes : adultes longs, mi, carre, courts, frange, frange_carre, couettes, chignon, chauve ; enfants
+#   court, frange, meche, herisse, boucles, long, queue, couettes, chignon (la carte les ramène aux coupes
+#   qu'elle sait dessiner : fermier.COUPES_ENFANT).
+#
+#   python3 scripts/personnage/catalogue.py    réécrit catalogue.json dans sa mise en forme (après une
+#                                              retouche à la main, ou pour vérifier qu'il se relit)
+import json
+import os
 
-PEAU = {
-    'tres_claire': {'e': (252, 226, 208), 'f': (246, 208, 182), 'j': (206, 162, 134), 'k': (236, 150, 130)},
-    'claire': {'e': (246, 214, 190), 'f': (240, 196, 160), 'j': (196, 150, 118), 'k': (232, 150, 120)},
-    'rosee': {'e': (250, 210, 196), 'f': (236, 180, 160), 'j': (196, 132, 116), 'k': (224, 120, 110)},
-    'mate': {'e': (218, 166, 120), 'f': (198, 142, 96), 'j': (150, 100, 64), 'k': (200, 110, 80)},
-    'olive': {'e': (214, 178, 130), 'f': (190, 152, 104), 'j': (140, 108, 70), 'k': (196, 112, 84)},
-    'foncee': {'e': (150, 100, 66), 'f': (124, 80, 50), 'j': (88, 54, 32), 'k': (170, 84, 66)},
-    'tres_foncee': {'e': (110, 72, 50), 'f': (88, 56, 38), 'j': (60, 36, 24), 'k': (140, 70, 56)},
-}
-CHEVEUX = {
-    'gris': {'b': (200, 200, 194), 'c': (150, 150, 146), 'd': (112, 112, 108)},
-    'noirs': {'b': (60, 52, 48), 'c': (36, 30, 28), 'd': (24, 20, 18)},
-    'roux': {'b': (206, 104, 44), 'c': (160, 70, 28), 'd': (120, 50, 20)},
-    'blonds': {'b': (236, 200, 104), 'c': (196, 154, 64), 'd': (150, 112, 40)},
-    'bruns': {'b': (110, 70, 36), 'c': (74, 46, 22), 'd': (54, 34, 16)},
-    'chatains': {'b': (135, 96, 44), 'c': (79, 58, 30), 'd': (67, 48, 21)},
-    'platine': {'b': (246, 236, 200), 'c': (210, 196, 150), 'd': (170, 154, 110)},
-    'blancs': {'b': (240, 240, 236), 'c': (200, 200, 196), 'd': (160, 160, 156)},
-    'auburn': {'b': (150, 64, 40), 'c': (110, 40, 26), 'd': (80, 28, 18)},
-    'roses': {'b': (236, 140, 176), 'c': (196, 96, 136), 'd': (150, 64, 100)},
-    'bleus': {'b': (96, 140, 220), 'c': (60, 96, 176), 'd': (40, 64, 130)},
-    'verts': {'b': (110, 176, 110), 'c': (70, 130, 76), 'd': (46, 96, 52)},
-    'chocolat': {'b': (90, 56, 36), 'c': (62, 38, 24), 'd': (44, 26, 16)},
-    'violets': {'b': (81, 63, 157), 'c': (42, 31, 88), 'd': (18, 13, 37)},
-}
-HABITS = {
-    'rouge': {'l': (70, 18, 14), 'm': (150, 42, 34), 'n': (206, 74, 58)},
-    'jean': {'l': (18, 30, 56), 'm': (58, 88, 140), 'n': (98, 134, 190)},
-    'jaune': {'l': (80, 60, 10), 'm': (206, 160, 40), 'n': (246, 214, 96)},
-    'lilas': {'l': (56, 30, 66), 'm': (150, 110, 172), 'n': (204, 174, 224)},
-    'orange': {'l': (84, 36, 10), 'm': (196, 102, 40), 'n': (238, 148, 74)},
-    'vert': {'l': (36, 52, 22), 'm': (136, 169, 108), 'n': (185, 231, 146)},
-    'marine': {'l': (14, 20, 44), 'm': (36, 52, 104), 'n': (64, 86, 150)},
-    'rose': {'l': (80, 24, 50), 'm': (200, 100, 140), 'n': (240, 160, 190)},
-    'blanc': {'l': (70, 70, 70), 'm': (200, 200, 196), 'n': (244, 244, 238)},
-    'noir': {'l': (10, 10, 12), 'm': (40, 40, 46), 'n': (70, 70, 80)},
-    'turquoise': {'l': (14, 60, 60), 'm': (40, 150, 150), 'n': (100, 210, 200)},
-    'marron': {'l': (50, 30, 16), 'm': (120, 80, 48), 'n': (166, 118, 74)},
-    'kaki': {'l': (44, 46, 20), 'm': (110, 116, 60), 'n': (156, 160, 96)},
-    'bordeaux': {'l': (50, 10, 20), 'm': (120, 30, 50), 'n': (170, 56, 76)},
-    'ciel': {'l': (30, 60, 90), 'm': (110, 160, 210), 'n': (170, 210, 240)},
-    'beige': {'l': (94, 80, 65), 'm': (150, 128, 103), 'n': (178, 158, 136)},
-}
-# habits qui imposent leur motif
-SPECIAL = {
-    'rayures_bm': ('marine', 'rayures'), 'carreaux_vert': ('vert', 'carreaux'),
-    'bleu_ouvrier': ('jean', None), 'carreaux_bleu': ('jean', 'carreaux'),
-}
-ACCESSOIRES = {
-    'rouge': (196, 52, 44), 'bleu': (54, 96, 180), 'vert': (60, 130, 70), 'jaune': (236, 196, 60),
-    'rose': (232, 120, 170), 'noir': (40, 40, 46), 'gris': (130, 130, 138), 'blanc': (240, 240, 232),
-    'orange': (232, 128, 50), 'violet': (130, 80, 170), 'brun': (110, 72, 40), 'marine': (36, 50, 122),
-}
-# le bas (salopette ou pantalon), en alternance d'un personnage à l'autre
-BAS = [
-    ((63, 111, 168), (44, 79, 124)),     # salopette bleue
-    ((120, 84, 52), (88, 60, 36)),       # brun
-    ((90, 90, 104), (64, 64, 76)),       # gris
-    ((52, 56, 70), (36, 38, 50)),        # sombre
-    ((84, 120, 60), (60, 90, 42)),       # vert
-]
+RACINE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+FICHIER = os.path.join(RACINE, 'assets', 'personnages', 'catalogue.json')
 
-ENTREES = [
-    ('claire', 'chatains', 'frange', None, None, '', 'vert', None, 'vert'),
-    ('tres_claire', 'blonds', 'couettes', None, 'rose', 'rousseur', 'rose', 'pois'),
-    ('mate', 'noirs', 'courts', 'casquette', 'rouge', '', 'blanc', None),
-    ('claire', 'blonds', 'longs', None, None, '', 'lilas', None, 'vert'),
-    ('claire', 'chatains', 'frange', None, None, 'lunettes', 'vert', None, 'vert'),
-    ('claire', 'blonds', 'longs', 'bandeau', 'rouge', '', 'rouge', None, 'turquoise'),
-    ('claire', 'chocolat', 'courts', None, None, 'moustache', 'marine', None, 'bleu'),
-    ('claire', 'chocolat', 'courts', 'casquette', 'marine', 'moustache', 'marine', None, 'vert'),
-    ('tres_foncee', 'violets', 'courts', None, None, '', 'jaune', None, 'violet'),
-    ('claire', 'chocolat', 'courts', None, None, 'moustache', 'orange', None, 'brun'),
-    ('mate', 'chatains', 'longs', None, None, '', 'beige', None, 'brun'),
-    ('foncee', 'gris', 'courts', 'paille', 'bleu', 'barbe', 'jean', None),
-    ('rosee', 'roses', 'couettes', None, 'blanc', '', 'ciel', 'pois'),
-    ('claire', 'bruns', 'courts', 'beret', 'noir', 'moustache', 'rayures_bm', None),
-    ('olive', 'noirs', 'longs', None, None, '', 'turquoise', None),
-    ('mate', 'blancs', 'chignon', None, None, 'lunettes', 'lilas', 'pois'),
-    ('tres_foncee', 'chocolat', 'frange', None, None, 'lunettes', 'vert', None),
-    ('claire', 'roux', 'courts', None, None, 'barbe', 'carreaux_vert', None),
-    ('tres_claire', 'blonds', 'mi', 'fleur', 'rose', 'rousseur', 'blanc', None),
-    ('foncee', 'bleus', 'frange_carre', None, None, 'boucles', 'noir', None),
-    ('rosee', 'chatains', 'mi', 'bonnet', 'vert', 'rousseur', 'jaune', None),
-    ('claire', 'noirs', 'frange', 'fleur', 'rouge', '', 'rouge', None),
-    ('mate', 'gris', 'chauve', None, None, 'barbe', 'bleu_ouvrier', None),
-    ('olive', 'auburn', 'couettes', None, 'vert', '', 'kaki', 'rayures'),
-    ('tres_claire', 'blancs', 'courts', 'beret', 'rouge', 'lunettes', 'marine', None),
-    ('foncee', 'noirs', 'couettes', None, 'jaune', '', 'rose', None),
-    ('claire', 'chocolat', 'carre', 'bandeau', 'rouge', '', 'jean', 'pois'),
-    ('mate', 'roux', 'longs', None, None, 'lunettes', 'vert', 'rayures'),
-    ('tres_foncee', 'blancs', 'courts', None, None, 'moustache', 'marron', None),
-    ('rosee', 'platine', 'chignon', 'fleur', 'rose', '', 'ciel', None),
-    ('claire', 'bruns', 'longs', 'casquette', 'bleu', '', 'orange', None),
-    ('olive', 'gris', 'carre', None, None, 'lunettes', 'bordeaux', 'pois'),
-    ('foncee', 'chocolat', 'courts', 'bonnet', 'gris', 'barbe', 'kaki', None),
-    ('tres_claire', 'roux', 'frange', None, None, 'rousseur', 'vert', 'carreaux'),
-    ('mate', 'verts', 'mi', None, None, 'boucles', 'noir', None),
-    ('claire', 'blonds', 'courts', 'paille', 'rouge', 'rousseur', 'jean', None),
-    ('tres_foncee', 'noirs', 'chignon', 'bandeau', 'orange', '', 'turquoise', None),
-    ('rosee', 'gris', 'mi', None, None, 'lunettes', 'rose', 'pois'),
-    ('claire', 'noirs', 'courts', None, None, 'barbe', 'noir', None),
-    ('olive', 'blonds', 'couettes', 'paille', 'vert', '', 'rouge', 'carreaux'),
-    ('mate', 'auburn', 'frange_carre', 'beret', 'violet', '', 'lilas', None),
-    ('foncee', 'roux', 'longs', None, None, 'rousseur', 'ciel', None),
-    ('tres_claire', 'chatains', 'courts', 'casquette', 'vert', 'lunettes', 'kaki', None),
-    ('claire', 'blancs', 'chauve', 'paille', 'brun', 'barbe', 'carreaux_bleu', None),
-    ('mate', 'roses', 'courts', None, None, 'boucles', 'turquoise', 'rayures'),
-    ('tres_foncee', 'gris', 'carre', 'fleur', 'blanc', 'lunettes', 'jaune', None),
-    ('rosee', 'bruns', 'chignon', None, None, '', 'vert', 'pois'),
-    ('olive', 'noirs', 'courts', 'bonnet', 'bleu', 'moustache', 'jean', None),
-    ('claire', 'auburn', 'longs', 'paille', 'violet', '', 'lilas', None),
-    ('foncee', 'blonds', 'courts', 'bonnet', 'rouge', 'boucles', 'blanc', 'rayures'),
-]
+# L'ordre dans lequel les détails du visage sont posés (le dernier l'emporte là où ils se touchent)
+ORDRE_DETAILS = ('barbe', 'moustache', 'rousseur', 'lunettes', 'boucles', 'pansement', 'joues')
+
+
+def rgb(h):
+    return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def lire():
+    with open(FICHIER, encoding='utf-8') as f:
+        return json.load(f)
+
+
+DOC = lire()
+_P = DOC['palettes']
+PEAU = {n: {'e': rgb(p['clair']), 'f': rgb(p['teinte']), 'j': rgb(p['ombre']), 'k': rgb(p['joues'])} for n, p in _P['peau'].items()}
+YEUX = {n: (rgb(p['pupille']), rgb(p['reflet'])) for n, p in _P['yeux'].items()}
+CHEVEUX = {n: {'b': rgb(p['teinte']), 'c': rgb(p['ombre']), 'd': rgb(p['sombre'])} for n, p in _P['cheveux'].items()}
+HABITS = {n: {'l': rgb(p['sombre']), 'm': rgb(p['teinte']), 'n': rgb(p['clair'])} for n, p in _P['tissus'].items()}
+BAS_NOMS = list(_P['bas'])
+BAS = [(rgb(p['teinte']), rgb(p['ombre'])) for p in _P['bas'].values()]
+ACCESSOIRES = {n: rgb(c) for n, c in _P['accessoires'].items()}
 
 
 def fonce(c, k=0.72):
     return tuple(int(v * k) for v in c)
 
 
+def description(p):
+    """La description à plat d'un personnage du catalogue (identité + tenue), comme l'attendent les
+    générateurs : peau, cheveux, coupe, chapeau, accessoire (rgb), details, habit, motif, bas (rgb, rgb), yeux."""
+    ident, tenue = p['identite'], p['tenue']
+    details = ([ident['pilosite']] if ident['pilosite'] else []) + ident['signes'] + tenue['accessoires']
+    return {
+        'peau': ident['peau'], 'cheveux': ident['cheveux'], 'coupe': ident['coupe'], 'yeux': ident['yeux'],
+        'chapeau': tenue['couvre_chef'], 'accessoire': ACCESSOIRES[tenue['accessoire']],
+        'details': sorted(details, key=ORDRE_DETAILS.index),
+        'habit': tenue['haut']['tissu'], 'motif': tenue['haut']['motif'], 'bas': BAS[BAS_NOMS.index(tenue['bas']['tissu'])],
+    }
+
+
+def _age(age):
+    return [(nom, description(p)) for nom, p in DOC['personnages'].items() if p['age'] == age]
+
+
 def personnages():
-    """Les 50 personnages : [(nom, description)], description = dict lisible."""
-    out = []
-    for i, (peau, cheveux, coupe, chap, acc, details, habit, motif, *yeux) in enumerate(ENTREES):
-        if habit in SPECIAL:
-            habit, impose = SPECIAL[habit]
-            motif = motif or impose
-        out.append((f'perso_{i + 1:02d}', {
-            'peau': peau, 'cheveux': cheveux, 'coupe': coupe, 'chapeau': chap,
-            'accessoire': ACCESSOIRES[acc or 'rouge'], 'details': [d for d in details.split(',') if d],
-            'habit': habit, 'motif': motif, 'bas': BAS[i % len(BAS)], 'yeux': yeux[0] if yeux else None,
-        }))
-    return out
+    """Les 50 adultes : [(nom, description)]."""
+    return _age('adulte')
+
+
+def enfants():
+    """Les 50 enfants : [(nom, description)] (leurs coupes et couvre-chefs d'enfants)."""
+    return _age('enfant')
+
+
+def ecrire(doc, chemin=FICHIER):
+    """Le catalogue mis en forme : les palettes une couleur par ligne, un personnage par ligne."""
+    d = lambda x: json.dumps(x, ensure_ascii=False)
+    L = ['{', f'"version": {doc["version"]},', '"palettes": {']
+    pals = list(doc['palettes'].items())
+    for k, (nom, pal) in enumerate(pals):
+        L.append(f'  {d(nom)}: {{')
+        items = list(pal.items())
+        L += [f'    {d(n)}: {d(v)}' + (',' if j < len(items) - 1 else '') for j, (n, v) in enumerate(items)]
+        L.append('  }' + (',' if k < len(pals) - 1 else ''))
+    L += ['},', '"personnages": {']
+    ps = list(doc['personnages'].items())
+    L += [f'  {d(n)}: {d(p)}' + (',' if j < len(ps) - 1 else '') for j, (n, p) in enumerate(ps)]
+    L += ['}', '}']
+    with open(chemin, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(L) + '\n')
+
+
+if __name__ == '__main__':
+    ecrire(lire())
+    print(f'{FICHIER} : {len(DOC["personnages"])} personnages')

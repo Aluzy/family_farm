@@ -1,6 +1,6 @@
 # Les modèles des personnages (scripts/personnage/modeles/<nom>.png, 12 × 79 px : de face, de
-# dos, de profil ; voir chibi.py), tirés du catalogue (scripts/personnage/catalogue.py pour les
-# adultes, portraits_enfants.py pour les enfants). Ils suivent les motifs des modèles dessinés à
+# dos, de profil ; voir chibi.py), tirés du catalogue (assets/personnages/catalogue.json, lu par
+# scripts/personnage/catalogue.py). Ils suivent les motifs des modèles dessinés à
 # la main (perso_01, perso_02) :
 #   - la tête : 10 px de large sous le contour, arrondie en haut (6, 8 puis 10 px) ;
 #   - les yeux : 2 × 2 px, le blanc dehors, la pupille vers le nez, le haut un ton plus sombre ;
@@ -292,19 +292,12 @@ DETAILS = {
     },
 }
 
-YEUX = {
-    'brun': ((54, 36, 24), (84, 58, 40)), 'noisette': ((96, 62, 28), (128, 88, 44)),
-    'vert': ((20, 102, 16), (26, 128, 20)), 'bleu': ((30, 66, 150), (46, 96, 190)),
-    'violet': ((70, 36, 120), (100, 60, 160)), 'turquoise': ((10, 110, 124), (20, 150, 166)),
-}
+YEUX = catalogue.YEUX      # (pupille, reflet) : assets/personnages/catalogue.json
 
 
-def yeux(d, i):
-    if d.get('yeux'):
-        return d['yeux']
-    if d['cheveux'] in ('blonds', 'platine', 'roux', 'auburn', 'roses', 'bleus', 'verts'):
-        return ('bleu', 'vert')[i % 2]
-    return ('brun', 'noisette')[i % 2]
+def yeux(d, i=None):
+    """La couleur des yeux (catalogue.json, identite.yeux)."""
+    return d['yeux']
 
 
 def palette(d, i):
@@ -400,7 +393,7 @@ def enfants():
     out = []
     for nom, d in portraits_enfants.enfants():
         d = dict(d, coupe=fermier.COUPES_ENFANT.get(d['coupe'], 'courts'), chapeau=fermier.CHAPEAUX_ENFANT.get(d['chapeau']))
-        d['details'] = [x for x in d['details'] if x in DETAILS] + ['joues']
+        d['details'] = [x for x in d['details'] if x in DETAILS]       # (les joues roses : dans le catalogue)
         out.append((nom, d))
     return out
 
