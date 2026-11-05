@@ -1,6 +1,7 @@
 # Les personnages en couches : identité, tenue, expressions (chantier)
 
-Statut : **E0 validée** (les 9 expressions, de face et de profil) ; **E1 faite** (§ 6) ; **E2 faite** (§ 7).
+Statut : **E0 validée** (les 9 expressions, de face et de profil) ; **E1 faite** (§ 6) ; **E2 faite** (§ 7) ;
+**E3 faite pour la carte** (§ 8 ; les portraits de l'interface restent à faire).
 
 Le but : séparer un personnage de ses vêtements et de ses attributs (peau, yeux, coiffure, expression),
 et donner des expressions aux visages, **en gardant la base actuelle** : les 100 personnages
@@ -213,3 +214,51 @@ table vaut pour tous les personnages d'un même âge (vérifié : sinon l'atlas 
 - une planche régénérée sans l'atlas fait échouer le test (vérifié en modifiant un pixel).
 
 La lecture des PNG des tests est mise en commun : `tests/engine/png.mjs` (reprise de `marche.test.mjs`).
+
+## 8. Étape E3 : les expressions sur la carte
+
+**`js/carte/visages.js`** (`window.CarteVisages`, script classique chargé après `kit.js`) : le visage d'un
+personnage est un petit calque, une tuile de `visages.png` posée sur son image. `CarteVisages.suivre(scène,
+image, options)` est appelé juste après que l'image a été placée (sa case, sa place, son sens, sa
+profondeur) ; le calque prend la case, la place, le retournement, la rotation (un lit tourné), l'échelle,
+l'opacité, et la profondeur de l'image + 0,005 (sous le voile d'une émotion, + 0,01). Il est détruit avec
+l'image ; un calque dont l'image n'a pas été suivie pendant une image du jeu (hors de la vue, rentrée) est
+caché ; il porte `personnage` (caché en mode Construire).
+
+**L'expression**, à chaque image :
+
+| Situation | Expression |
+|---|---|
+| La case montre déjà la sienne (le sommeil) | rien n'est posé (les yeux fermés sont sur la planche) |
+| Une réaction (`amis.js`) : joie, colère, peur, tristesse | la même ; une joie forte (un cadeau, un invité qui admire le coin) : **rire** |
+| Une réaction de dégoût (un plat détesté) | **concentré** (yeux plissés, bouche de côté) : il n'y a pas d'expression de dégoût |
+| Un geste de travail : houe, hache, pioche, pêche, planter, arroser, jeter | **concentré** |
+| Le soir et la nuit, de 19 h à 6 h (l'heure du modèle de la carte) | **fatigue** |
+| Le reste du temps | neutre : rien n'est posé |
+| De temps en temps (toutes les 2,2 à 6,5 s, 130 ms) | **yeux fermés** : il cligne ; jamais avec « réduire les animations » |
+
+**Qui** : le personnage principal (`js/fermier.js`), la famille (`js/famille-ferme.js`), les habitants des
+hameaux et les invités d'un repas (par `teinteHabitant`, `amis.js`, avec leurs réactions), le visiteur
+(`visite.js`). Pas encore la mine (`js/grotte.js`) ni les portraits de l'interface.
+
+**Les émotions** (`amis.js`) gardent leur teinte de peau et leur emoji. Pendant une réaction, les tuiles du
+visage sont recolorées comme la planche (`visagePeau`, mêmes teintes de `peau.json` que `planchePeau`).
+Au passage, un défaut corrigé : les planches des habitants ont des clés à un chiffre (`perso_7`), `peau.json`
+des noms à deux (`perso_07`) : les personnages 1 à 9 n'avaient jamais la peau colorée d'une émotion (ils
+avaient le voile) ; `tablePeau` cherche les deux.
+
+**Vérifié** (Chromium, Playwright) :
+- au pixel, caméra au zoom 8, boucle du jeu figée : de face (`idle_bas_0`) et de profil retourné
+  (`marche_cote_1`, vers la gauche), le soir : l'éclairage de l'aube corrigé (une teinte uniforme, apprise sur
+  le corps), le corps redonne l'image attendue à 1 près et la zone du visage est exactement « fatigue » (le
+  neutre en diffère jusqu'à 120) ;
+- la houe : « concentré » sur les cases au visage dégagé, rien sur celles où l'outil passe devant ; le
+  clignement du personnage et de son compagnon ;
+- les réactions, pour un adulte (`perso_3`) et un enfant (`enfant_4`) et les 5 émotions : la planche
+  recolorée existe (la clé corrigée) et, sur chaque case au visage dégagé, la tuile recolorée est identique à
+  la zone de la planche recolorée ;
+- `npm run smoke` : une partie, la mine et une grotte, sans erreur.
+
+**Tests** (`tests/engine/personnages-visages.test.mjs`) : le nom d'un personnage d'après la clé de sa planche,
+et le choix de l'expression (la case, les réactions, le travail, le soir, le clignement, « réduire les
+animations »).

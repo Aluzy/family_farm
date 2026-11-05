@@ -1040,7 +1040,12 @@
 
     /* ---------- par image ---------- */
 
+    // (son visage, js/carte/visages.js : après chaque image, quelle que soit la branche de pas())
     function update(delta) {
+      pas(delta);
+      if (global.CarteVisages) global.CarteVisages.suivre(scene, s);
+    }
+    function pas(delta) {
       const dt = Math.min(delta, 50) / 1000;
       // (rentré, caché, descendu : plus de cheval sous lui ; draw le repose s'il avance)
       if (!enSelle() || !s.visible || !ROULE.test(drawn)) cacheSelles();

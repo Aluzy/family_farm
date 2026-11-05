@@ -689,6 +689,8 @@
           }
           dessiner(m, marche ? `marche_${m.face}_${K.imageMarche(m.marche, m.enfant ? 'enfant' : 'adulte')}` : `idle_${m.face}_${Math.floor(performance.now() / 600) % 2}`);
         }
+        // leur visage (js/carte/visages.js)
+        if (global.CarteVisages) for (const m of membres.values()) global.CarteVisages.suivre(scene, m.s);
       },
       info() {
         const H = maison();
