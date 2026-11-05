@@ -10,7 +10,9 @@
                                   d'une personnalisation) ;
    plancheApparence(app, enf.)    sa planche, en image (data: URL, gardée), et la case des yeux fermés
                                   (le clignement des portraits) : { url, dort }, ou null tant que rien n'est prêt ;
-   portraitMembre(m)              de quoi dessiner le portrait d'un membre (persoHtml) : { n, enfant, propre }. */
+   portraitMembre(m)              de quoi dessiner le portrait d'un membre (persoHtml) : { n, enfant, propre } ;
+   vignetteApparence(app, enf.)   la tête de face (16 × 16 px, data: URL, gardée), ou null : une vignette de l'écran
+                                  « Personnaliser » (js/ui/famille.js). */
 
 import { memberApparence, memberPerso } from '../engine/family.js';
 
@@ -81,6 +83,35 @@ export function plancheApparence(apparence, enfant) {
   planches.set(cle, r);
   if (planches.size > PLANCHES_MAX) planches.delete(planches.keys().next().value);
   return r;
+}
+
+// La tête de face d'une apparence (la case idle_bas_0, sa seule case assemblée : CartePlanches.assembler avec `noms`),
+// pour les vignettes de la coupe, de la barbe, du couvre-chef. Le haut de la tête : VIGNETTE_Y selon l'âge (un enfant est
+// plus petit : sa tête est plus bas dans la case).
+const vignettes = new Map();
+const VIGNETTES_MAX = 400, VIGNETTE_Y = { adulte: 4, enfant: 8 };
+
+export function vignetteApparence(apparence, enfant) {
+  const CP = window.CartePlanches;
+  if (!donnees || !CP || !apparence) return null;
+  const cle = (enfant ? 'e' : 'a') + JSON.stringify(apparence);
+  let url = vignettes.get(cle);
+  if (url) return url;
+  try {
+    const A = CP.apparence(donnees.C, donnees.K, enfant ? 'enfant' : 'adulte', apparence.identite, apparence.tenue);
+    const p = CP.assembler(donnees.C, A.def, A.palette, ['idle_bas_0']);
+    const y0 = VIGNETTE_Y[enfant ? 'enfant' : 'adulte'], cv = document.createElement('canvas');
+    cv.width = 16;
+    cv.height = 16;
+    cv.getContext('2d').putImageData(new ImageData(p.data.slice(y0 * 16 * 4, (y0 + 16) * 16 * 4), 16, 16), 0, 0);
+    url = cv.toDataURL('image/png');
+  } catch (e) {
+    console.warn('[apparence] vignette impossible', e);
+    return null;
+  }
+  vignettes.set(cle, url);
+  if (vignettes.size > VIGNETTES_MAX) vignettes.delete(vignettes.keys().next().value);
+  return url;
 }
 
 // La planche d'une apparence (plancheApparence) ; tant que les données manquent : null, et la page est redessinée

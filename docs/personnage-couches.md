@@ -465,6 +465,15 @@ la grille retire l'apparence. Pour un enfant, les coupes proposées sont celles 
   (`js/engine/depart.js`) reçoit `apparence` pour chacun, vérifiée par `validApparence` avant de rien changer
   (`tests/engine/famille-apparence.test.mjs`) ; le test de fumée passe par cet écran.
 
+**La présentation des choix** (la proposition 1, couleurs « bois », retenue parmi quatre maquettes) :
+- les couleurs (peau, yeux, cheveux, haut, bas, couleur du couvre-chef) en **pastilles** rondes sans texte : le nom
+  choisi est à côté du titre (« Cheveux · Roux »), chaque pastille porte le sien pour les lecteurs d'écran ;
+- les formes (coupe, barbe, couvre-chef) en **vignettes** : la tête du personnage avec ce choix
+  (`vignetteApparence`, js/ui/apparence.js : la seule case `idle_bas_0` assemblée, `CartePlanches.assembler` avec
+  `noms` ; la coupe sans couvre-chef, pour la voir) ;
+- le reste (motif, signes, accessoires) en puces ;
+- **« 🎲 Au hasard »** : une apparence tirée comme celles des habitants (`tirerApparence`, ses probabilités).
+
 **Où elle se voit** :
 - les portraits (`js/ui/apparence.js` : la planche assemblée en image, gardée) : la fiche du membre, la liste des
   membres, le médaillon du joueur ; vivants (§ 9), le clignement pris dans sa case du sommeil ;

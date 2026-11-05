@@ -64,3 +64,16 @@ test('planches assemblées : coiffé de son équipement (le casque-lampe, le cha
     compare(p, tranche, `${nom} + ${coiffe}`);
   });
 });
+
+test('planches assemblées : quelques cases seulement (les vignettes de l\'écran « Personnaliser »)', () => {
+  for (const nom of ['perso_05', 'enfant_12']) {
+    const def = C.personnages[nom], pal = C.palettes[nom], P = CP.assembler(C, def, pal);
+    const noms = ['idle_bas_0', 'dort_bas_0'], p = CP.assembler(C, def, pal, noms);
+    assertEqual([p.largeur, p.hauteur], [32, 32], `${nom} : deux cases côte à côte`);
+    noms.forEach((cas, j) => {
+      const k = C.cases.indexOf(cas), x0 = (k % 8) * 16, y0 = Math.floor(k / 8) * 32;
+      const tranche = { w: 16, h: 32, px: (x, y) => { const i = (y * p.largeur + j * 16 + x) * 4; return [p.data[i], p.data[i + 1], p.data[i + 2], p.data[i + 3]]; } };
+      compare({ largeur: 16, hauteur: 32, data: P.data.filter((_, i) => { const q = i >> 2, x = q % P.largeur, y = Math.floor(q / P.largeur); return x >= x0 && x < x0 + 16 && y >= y0 && y < y0 + 32; }) }, tranche, `${nom} ${cas}`);
+    });
+  }
+});

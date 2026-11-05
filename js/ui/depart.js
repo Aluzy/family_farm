@@ -10,7 +10,7 @@ import { escapeHtml } from '../engine/format.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
-import { apparenceChoixHtml, appliquerChoixApparence, persoHtml } from './famille.js';
+import { apparenceAuHasard, apparenceChoixHtml, appliquerChoixApparence, persoHtml } from './famille.js';
 import { apparencesPretes, chargerApparences, plancheApparence } from './apparence.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
@@ -121,7 +121,7 @@ function apparenceEcran() {
     return `${portrait(qui, enfant)}<p class="muted">Un instant…</p>${fleche()}`;
   }
   const retour = qui.apparence ? '<button type="button" class="btn" data-action="accueil-apparence-retour">↺ Comme le personnage choisi</button>' : '';
-  return `${portrait(qui, enfant)}<div class="accueil-apparence">${apparenceChoixHtml({ perso: qui.perso, enfant, apparence: qui.apparence }, 'accueil-apparence')}</div>${retour}${fleche()}`;
+  return `${portrait(qui, enfant)}<div class="accueil-personnaliser">${apparenceChoixHtml({ perso: qui.perso, enfant, apparence: qui.apparence }, 'accueil-apparence')}</div>${retour}${fleche()}`;
 }
 const deLEnfant = () => (accueil.nbEnfants === 1 ? 'de l\'enfant' : `du ${ORDINAUX[accueil.k]} enfant`);
 // La famille choisie, à la dernière question : chacun son portrait et son prénom (les prénoms
@@ -319,6 +319,13 @@ registerActions({
     const [qui, enfant] = quiEtape();
     const d = { perso: qui.perso, enfant, apparence: qui.apparence };
     appliquerChoixApparence(d, target.dataset.champ, target.dataset.valeur);
+    qui.apparence = d.apparence;
+    openSetupModal();
+  },
+  'accueil-apparence-hasard': () => {
+    const [qui, enfant] = quiEtape();
+    const d = { perso: qui.perso, enfant, apparence: qui.apparence };
+    apparenceAuHasard(d);
     qui.apparence = d.apparence;
     openSetupModal();
   },

@@ -23,7 +23,8 @@ import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { renderFicheMembre } from './fiche-membre.js';
-import { apparenceDuCatalogue, apparencesPretes, chargerApparences, donneesApparence, plancheApparence, portraitMembre } from './apparence.js';
+import { apparenceDuCatalogue, apparencesPretes, chargerApparences, donneesApparence, plancheApparence, portraitMembre, vignetteApparence } from './apparence.js';
+import { tirerApparence } from '../engine/apparence.js';
 
 /* ---------- Famille ---------- */
 
@@ -255,23 +256,55 @@ function ecrireChamp(a, champ, v) {
   o[k[k.length - 1]] = v;
 }
 
-// Les boutons de chaque attribut pour `d` ({ perso, enfant, apparence }) ; `action` : celle de ses boutons (la fenêtre
-// « Modifier » d'un membre, ou l'accueil d'une nouvelle partie, js/ui/depart.js).
+// Les formes (la coupe, la barbe, le couvre-chef) : une vignette de la tête avec ce choix (js/ui/apparence.js,
+// vignetteApparence) ; `prepare` y retouche l'apparence (la coupe : sans couvre-chef, sinon on ne la verrait pas).
+const FORMES = { 'identite.coupe': (a) => { a.tenue.couvre_chef = null; }, 'identite.pilosite': null, 'tenue.couvre_chef': null };
+
+// L'écran « Personnaliser » pour `d` ({ perso, enfant, apparence }), en trois sortes de choix : les couleurs en
+// pastilles (le nom choisi à côté du titre de l'attribut, chaque pastille son nom pour les lecteurs d'écran), les
+// formes en vignettes, le reste en puces ; en haut, « 🎲 Au hasard ». `action` : celle de ses boutons (la fenêtre
+// « Modifier » d'un membre, ou l'accueil d'une nouvelle partie, js/ui/depart.js) ; le hasard : `${action}-hasard`.
 export function apparenceChoixHtml(d, action = 'member-apparence') {
   if (!apparencesPretes()) return '<p class="muted">Un instant…</p>';
   const A = DATA.FAMILLE.PROFIL.APPARENCE, K = donneesApparence().K;
   const actuelle = d.apparence || apparenceDuCatalogue(d.perso, d.enfant);
-  return CHAMPS_APPARENCE.map(([titre, champs]) => `<fieldset class="apparence-groupe"><legend>${titre}</legend>${champs.map(([champ, nom, options, couleur, plusieurs]) => {
+  const hasard = `<button type="button" class="btn primary apparence-hasard" data-action="${action}-hasard">🎲 Au hasard</button>`;
+  return hasard + CHAMPS_APPARENCE.map(([titre, champs]) => `<fieldset class="apparence-groupe"><legend>${titre}</legend>${champs.map(([champ, nom, options, couleur, plusieurs]) => {
     const choix = options(A, d.enfant);
     if (!choix) return '';
     const valeur = actuelle ? lireChamp(actuelle, champ) : undefined;
-    const boutons = Object.entries(choix).map(([v, libelle]) => {
-      const on = plusieurs ? (valeur || []).includes(v) : (valeur ?? '') === v;
-      const pastille = couleur && v ? `<span class="pastille" style="background: ${couleur(K, v)}" aria-hidden="true"></span>` : '';
-      return `<button type="button" class="btn choix-apparence${on ? ' active' : ''}" data-action="${action}" data-champ="${champ}" data-valeur="${v}" aria-pressed="${on}">${pastille}${escapeHtml(libelle)}</button>`;
-    }).join('');
-    return `<div class="apparence-champ" role="group" aria-label="${nom}"><span class="apparence-nom">${nom}</span><div class="apparence-options">${boutons}</div></div>`;
+    const libelleActuel = plusieurs ? ((valeur || []).map((v) => choix[v]).filter(Boolean).join(', ') || 'aucun') : choix[valeur ?? ''] || '';
+    const attrs = (v, on) => `data-action="${action}" data-champ="${champ}" data-valeur="${v}" aria-pressed="${on}"`;
+    const estOn = (v) => (plusieurs ? (valeur || []).includes(v) : (valeur ?? '') === v);
+    let boutons, sorte;
+    if (couleur) {
+      sorte = 'pastilles';
+      boutons = Object.entries(choix).map(([v, libelle]) => `<button type="button" class="pastille-apparence${estOn(v) ? ' active' : ''}" ${attrs(v, estOn(v))} aria-label="${escapeHtml(libelle)}" title="${escapeHtml(libelle)}" style="background: ${couleur(K, v)}"></button>`).join('');
+    } else if (champ in FORMES) {
+      sorte = 'vignettes';
+      boutons = Object.entries(choix).map(([v, libelle]) => {
+        let img = null;
+        if (actuelle) {
+          const a = JSON.parse(JSON.stringify(actuelle));
+          ecrireChamp(a, champ, v === '' ? null : v);
+          if (FORMES[champ]) FORMES[champ](a);
+          img = vignetteApparence(a, d.enfant);
+        }
+        return `<button type="button" class="vignette-apparence${estOn(v) ? ' active' : ''}" ${attrs(v, estOn(v))}>${img ? `<img src="${img}" alt="" width="16" height="16">` : ''}<span>${escapeHtml(libelle)}</span></button>`;
+      }).join('');
+    } else {
+      sorte = 'puces';
+      boutons = Object.entries(choix).map(([v, libelle]) => `<button type="button" class="choix-apparence${estOn(v) ? ' active' : ''}" ${attrs(v, estOn(v))}>${escapeHtml(libelle)}</button>`).join('');
+    }
+    return `<div class="apparence-champ" role="group" aria-label="${nom}"><p class="apparence-titre"><strong>${nom}</strong> <span class="apparence-valeur">· ${escapeHtml(libelleActuel)}</span></p><div class="apparence-options ${sorte}">${boutons}</div></div>`;
   }).join('')}</fieldset>`).join('');
+}
+
+// « 🎲 Au hasard » : une apparence tirée comme celles des habitants (js/engine/apparence.js, ses probabilités ;
+// une barbe parfois pour un adulte).
+export function apparenceAuHasard(d) {
+  if (!d) return;
+  d.apparence = tirerApparence(Math.random, { enfant: !!d.enfant, genre: Math.random() < 0.5 ? 'm' : 'f' });
 }
 
 // Un choix (un bouton de apparenceChoixHtml) appliqué à `d` ({ perso, enfant, apparence }) : le premier part du
@@ -597,6 +630,10 @@ registerActions({
   // ----- étape E6 du chantier « couches » : l'apparence attribut par attribut -----
   'member-apparence': (target) => {
     choisirApparence(target.dataset.champ, target.dataset.valeur);
+  },
+  'member-apparence-hasard': () => {
+    apparenceAuHasard(memberDraft);
+    syncMemberModal();
   },
   'member-save': () => {
     saveMemberModal();
