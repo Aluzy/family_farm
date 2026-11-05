@@ -101,6 +101,7 @@ export const GRAND_MONDE = ['habitants', 'hameaux', 'vues', 'vu', 'pris'];
 export function elaguer(s) {
   const m = s.monde && typeof s.monde === 'object' ? s.monde : {};
   for (const k of GRAND_MONDE) delete m[k];
+  delete s.voisins;   // (V-3 : les liens entre les habitants des hameaux, eux aussi au grand monde)
   m.but = null;
   const t = migrate({ v: s.version, t: 0, s });
   t.mondePartage = true;

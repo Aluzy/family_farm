@@ -78,7 +78,7 @@ existante.
 |---|---|---|
 | **V-1 · Ils parlent de ce qu'ils voient** ✅ | Des paroles contextuelles, choisies par conditions et sans répétition proche. Les habitants parlent de ta ferme (ses cultures, ses bêtes, ce que tu as construit), de leurs cadeaux reçus, des autres habitants, de la saison, de la lune, de la nuit passée et de leur dernier souvenir de repas. Environ 150 phrases. | L'objectif « dialogues sensibles à l'état du monde » ; c'est le plus gros manque ressenti. |
 | **V-2 · Les petites demandes** ✅ | Des demandes facultatives des habitants (apporter, fabriquer, aider), tirées sans hasard caché selon leur métier et les besoins de leur hameau. Au plus 3 en cours, aucune pénalité si on ne les fait pas. Elles rapportent de l'amitié, un plan, une recette ou un souvenir. Un carnet des demandes. | « Entraide, demandes facultatives » ; une raison de revenir voir quelqu'un. |
-| **V-3 · Entre voisins** | Des liens entre habitants (amis, voisins, cousins d'un hameau à l'autre). Ils se rendent visite, s'entraident quand un garde-manger est vide, et parlent les uns des autres. | « Relations » et « histoires émergentes ». |
+| **V-3 · Entre voisins** ✅ | Des liens entre habitants (amis, voisins, cousins d'un hameau à l'autre). Ils se rendent visite, s'entraident quand un garde-manger est vide, et parlent les uns des autres. | « Relations » et « histoires émergentes ». |
 | **V-4 · La fête du hameau** | Des événements locaux générés : une fête par saison dans un hameau, un petit marché, les habitants rassemblés sur la place, une musique de fête. | « Activités collectives », un rendez-vous. |
 | **D-1 · Le carnet du naturaliste** ✅ | Des pages pour les trouvailles, les végétaux, les biomes et des espèces de poissons, et une condition « biome vu ». Des collections complètes qui donnent un objet à poser (une vitrine, un herbier). | « Encyclopédie : plantes, animaux, minéraux, fossiles », et une progression par curiosité. |
 | **D-2 · Les secrets du monde** | Des lieux remarquables générés par biome : ruines, points de vue, arbres anciens, cairns. Chacun garde un petit trésor ou une page de carnet. | « Lieux remarquables, secrets » : que le monde ne soit pas grand mais vide. |
@@ -172,3 +172,19 @@ G-1, plus courts, qui embellissent ce qui existe déjà.
   - deux sujets de conversation pour les habitants (V-1) : la pluie du jour, la brume du matin.
 - **En ligne** : l'horloge du monde est figée. Le temps reste donc celui du jour, sans arrosage et sans annonce.
 - **Les tests** : `tests/engine/meteo.test.mjs`, et un essai dans le jeu avec la partie du jour 54 (l'averse, la brume, le cadran).
+
+## 9. V-3 : fait
+
+- **Les liens** (`js/engine/voisins.js`) : chaque adulte d'un hameau a un ami dans son hameau (d'un autre foyer) et un cousin dans un autre hameau peuplé.
+  - Ils sont tirés une fois, de la graine et de l'habitant, puis gardés (`state.voisins.liens`).
+  - Ils vont dans les deux sens, tant que l'autre n'a pas déjà le sien.
+- **La nuit** (`voisinsNuit`, après la journée des foyers ; pas dans un monde partagé) :
+  - **l'entraide** : un foyer qui a eu faim reçoit jusqu'à 3 aliments du garde-manger d'un foyer ami ou cousin ;
+  - **une visite** : environ une nuit sur trois, un cousin va voir l'autre.
+
+  Les 40 derniers événements sont gardés (`data/amitie.json` › `VOISINS`).
+- **Ils en parlent** (V-1, 6 sujets de plus) : leur ami, leur cousin ou leur cousine (au bon genre), la visite reçue ou faite, l'entraide reçue ou donnée.
+- **La fiche du hameau** a une section « Entre voisins » : les derniers événements, par exemple « 👋 Maud, de Hautepierre, est venue voir Suzanne ».
+- **En ligne** : la copie mise en ligne perd `state.voisins` (le grand monde, E-8).
+- **Coût** : environ 2 ms par nuit sur la partie du jour 54 (63 liens noués).
+- **Les tests** : `tests/engine/voisins.test.mjs`, et un essai dans le jeu (la fiche du hameau).
