@@ -99,6 +99,7 @@ export function ouvrirScene(id, ctx = {}) {
       refresh();
     },
   });
+  babilLigne();
   return true;
 }
 
@@ -123,6 +124,13 @@ function suite() {
   const d = modalDialog();
   if (d) d.innerHTML = ligneHtml();
   focusModal('#scene-bouton');
+  babilLigne();
+}
+
+// G-2 : la ligne affichée, dite en babil, à la voix de qui parle (js/son.js).
+function babilLigne() {
+  const S = window.FermeSon, l = scene && scene.lignes[scene.i];
+  if (S && S.babil && l) S.babil(l.texte, S.voixDe({ recit: l.qui, id: l.qui }));
 }
 
 /* ---------- actions de cet écran (voir ui/actions.js) ---------- */

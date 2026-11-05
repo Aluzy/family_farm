@@ -786,6 +786,8 @@
       m.bulle.el.innerHTML = `<strong>${esc(r.prenom)}</strong><span class="habitant-bulle-metier">${esc(r.metier)}</span><span class="habitant-bulle-texte">${esc(r.texte)}</span>${ami}`;
       m.bulle.w = 0;
       m.parle = { until: performance.now() + PAROLE_MS };
+      // (G-2 : sa voix, un petit babil, js/son.js)
+      this.habitantBabil(m, r.texte);
       // (sa réaction : la joie de te voir, de te retrouver après une longue absence, amis.js)
       if (r.emotion && this.emouvoir) this.emouvoir(m, r.emotion, true);
     },
@@ -807,6 +809,15 @@
       m.bulle.el.appendChild(t);
       m.bulle.w = 0;
       m.parle = { until: performance.now() + PAROLE_MS / 2 };
+      this.habitantBabil(m, texte);
+    },
+
+    // G-2 : ce qu'il dit, en babil (js/son.js FermeSon.babil) : sa voix selon qui il est (un personnage écrit, ou
+    // son genre et son âge).
+    habitantBabil(m, texte) {
+      const S = global.FermeSon;
+      if (!S || !S.babil || !m || !m.def) return;
+      S.babil(texte, S.voixDe({ id: m.id, genre: m.def.genre, enfant: m.def.enfant, recit: m.def.recit }));
     },
 
     // (les mesures, les essais : où est chacun)

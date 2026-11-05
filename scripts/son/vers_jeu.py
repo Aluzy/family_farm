@@ -21,6 +21,12 @@ T = {
  'musique_soir': ('musique', g(f'{M1}/music/evening_theme.wav')),
  'musique_nuit': ('musique', g(f'{M1}/music/night_theme.wav')),
  'musique_mine': ('musique', g(f'{MM}/music/mine_theme.wav')),
+ # G-2 : les musiques des lieux (musique.py)
+ 'musique_hameau': ('musique', g(f'{MM}/music/village_theme.wav')),
+ 'musique_cote': ('musique', g(f'{MM}/music/coast_theme.wav')),
+ 'musique_montagne': ('musique', g(f'{MM}/music/mountain_theme.wav')),
+ 'musique_foret': ('musique', g(f'{MM}/music/forest_theme.wav')),
+ 'musique_fete': ('musique', g(f'{MM}/music/fete_theme.wav')),
  # ambiances (boucles)
  'oiseaux_matin': ('ambiance', g(f'{M1}/ambient/birds_morning_01.wav')),
  'oiseaux_jour': ('ambiance', g(f'{M1}/ambient/birds_day_01.wav')),

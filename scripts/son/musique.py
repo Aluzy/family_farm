@@ -19,6 +19,7 @@ CHORDS = {
     'G': ['G2', 'G3', 'B3', 'D4'], 'Em': ['E2', 'E3', 'G3', 'B3'], 'Dm': ['D3', 'D3', 'F3', 'A3'],
     'Bb': ['Bb2', 'Bb3', 'D4', 'F4'], 'Gm': ['G2', 'G3', 'Bb3', 'D4'], 'Fmaj7': ['F2', 'A3', 'C4', 'E4'],
     'Gsus': ['G2', 'G3', 'C4', 'D4'], 'A': ['A2', 'A3', 'C#4', 'E4'], 'Asus': ['A2', 'A3', 'D4', 'E4'], 'Csus2': ['C3', 'C4', 'D4', 'G4'],
+    'D': ['D3', 'D4', 'F#4', 'A4'],
 }
 
 
@@ -136,6 +137,75 @@ THEMES['mine_theme'] = dict(
     lead=lambda f, d: bell(f, max(d, 3.0), ratio=1.41, idx=0.9), lead_gain=0.4, bell_gain=0.3,
     melody='D5 0 3 | - | Bb4 0 1, D5 1 1, F5 2 2 | E5 0 4 | A4 0 2, D5 2 2 | F5 0 3 | G5 0 1, F5 1 1, D5 2 2 | C#5 0 4',
     bells='D3 0 1 | - | - | - | A2 0 1',
+)
+
+# G-2 (docs/phase-4.md) : les musiques des lieux — le hameau, la côte, la montagne, la forêt, la fête du hameau.
+THEMES['village_theme'] = dict(
+    bpm=100, pad_bright=1700, rev=2.0, rev_damp=6500, rms_db=-19,
+    wet={'melody': 0.25, 'harmony': 0.3, 'texture': 0.35},
+    chords=['G', 'C', 'D', 'G', 'Em', 'C', 'D', 'G', 'C', 'G', 'Am', 'D', 'G', 'C', 'D', 'G'],
+    bass_pat=[(0, 1.5, 1), (2, 1.5, 5)],
+    arp=(0.5, [0, 1, 2, 1, 0, 1, 2, 1], 0.18, kalimba),
+    lead=lambda f, d: pluck(f, d, bright=3200, pulse=0.35), lead_gain=0.5, bell_gain=0.2,
+    melody='D5 0 1, G5 1 1, B5 2 1, A5 3 1 | G5 0 1.5, E5 1.5 0.5, C5 2 2 | D5 0 1, F#5 1 1, A5 2 1.5, F#5 3.5 0.5 | G5 0 3 |'
+           'E5 0 1, G5 1 1, B5 2 2 | A5 0 1, G5 1 1, E5 2 2 | F#5 0 1, A5 1 1, D6 2 1, C6 3 1 | B5 0 4 |'
+           'C6 0 1, B5 1 1, A5 2 1, G5 3 1 | B5 0 2, G5 2 2 | A5 0 1, C6 1 1, B5 2 1, A5 3 1 | F#5 0 3 |'
+           'G5 0 1, B5 1 1, D6 2 2 | E6 0 1, D6 1 1, C6 2 2 | B5 0 1, A5 1 1, F#5 2 2 | G5 0 4',
+    bells='G6 0 1 | - | - | - | - | - | - | - | C6 0 1 | - | - | - | G5 0 1',
+)
+THEMES['coast_theme'] = dict(
+    bpm=76, pad_bright=1500, rev=3.2, rev_damp=5500, rms_db=-20,
+    wet={'melody': 0.35, 'harmony': 0.4, 'texture': 0.45},
+    chords=['Fmaj7', 'C', 'Dm', 'Bb', 'Fmaj7', 'C', 'Bb', 'C', 'Dm', 'Bb', 'F', 'C', 'Bb', 'C', 'Fmaj7', 'Fmaj7'],
+    bass_pat=[(0, 3, 1), (3, 1, 5)],
+    arp=(1.0, [0, 1, 2, 1], 0.2, lambda f, d: pluck(f, d, bright=2200)),
+    lead=flute_lead, lead_gain=0.32, bell_gain=0.22,
+    melody='A5 0 2, C6 2 2 | G5 0 3 | F5 0 1, A5 1 1, D6 2 2 | D6 0 1, C6 1 1, Bb5 2 2 |'
+           'A5 0 1, C6 1 1, F6 2 2 | E6 0 2, C6 2 2 | D6 0 2, Bb5 2 2 | C6 0 4 |'
+           'A5 0 1.5, F5 1.5 0.5, D5 2 2 | F5 0 2, D6 2 2 | C6 0 1, A5 1 1, F5 2 2 | G5 0 4 |'
+           'F5 0 1, G5 1 1, A5 2 2 | C6 0 1, Bb5 1 1, G5 2 2 | A5 0 4 | -',
+    bells='F6 0 1 | - | - | - | C6 0 1 | - | - | - | - | - | - | - | A5 0 1',
+)
+THEMES['mountain_theme'] = dict(
+    bpm=64, pad_bright=1000, rev=4.0, rev_damp=4000, rms_db=-21,
+    wet={'melody': 0.45, 'harmony': 0.45, 'texture': 0.5},
+    chords=['Dm', 'C', 'Gsus', 'Dm', 'Bb', 'F', 'C', 'Asus', 'Dm', 'C', 'Bb', 'F', 'Gm', 'Asus', 'Dm', 'Dm'],
+    bass_pat=[(0, 4, 1)],
+    arp=(2.0, [0, 2], 0.16, kalimba),
+    lead=lambda f, d: bell(f, max(d, 2.5), ratio=2.0, idx=1.0), lead_gain=0.42, bell_gain=0.35,
+    melody='D5 0 2, A5 2 2 | G5 0 4 | D5 0 2, G5 2 2 | F5 0 4 |'
+           'D5 0 1, F5 1 1, Bb5 2 2 | A5 0 2, F5 2 2 | G5 0 2, E5 2 2 | E5 0 4 |'
+           'A5 0 2, D6 2 2 | C6 0 2, G5 2 2 | F5 0 1, G5 1 1, D5 2 2 | C5 0 4 |'
+           'D5 0 2, G5 2 2 | A5 0 2, E5 2 2 | D5 0 4 | -',
+    bells='D3 0 1 | - | - | - | A2 0 1 | - | - | - | D3 0 1',
+)
+THEMES['forest_theme'] = dict(
+    bpm=70, pad_bright=1100, rev=3.4, rev_damp=4500, rms_db=-21,
+    wet={'melody': 0.4, 'harmony': 0.42, 'texture': 0.48},
+    chords=['Em', 'C', 'G', 'D', 'Em', 'C', 'D', 'Em', 'C', 'G', 'Am', 'Em', 'C', 'D', 'Em', 'Em'],
+    bass_pat=[(0, 2.5, 1), (2.5, 1.5, 5)],
+    arp=(1.0, [0, 2, 1, 2], 0.22, kalimba),
+    lead=kalimba, lead_gain=0.5, bell_gain=0.25,
+    melody='B4 0 1, E5 1 1, G5 2 2 | E5 0 3 | D5 0 1, G5 1 1, B5 2 2 | A5 0 4 |'
+           'B5 0 1, A5 1 1, G5 2 2 | E5 0 3 | F#5 0 2, A5 2 2 | G5 0 4 |'
+           'E5 0 1, G5 1 1, C6 2 2 | B5 0 2, G5 2 2 | A5 0 1, G5 1 1, E5 2 2 | B4 0 4 |'
+           'C5 0 1, E5 1 1, G5 2 2 | F#5 0 2, D5 2 2 | E5 0 4 | -',
+    bells='E6 0 1 | - | - | - | - | - | - | - | G5 0 1',
+)
+THEMES['fete_theme'] = dict(
+    bpm=120, pad_bright=1900, rev=1.8, rev_damp=7000, rms_db=-18,
+    wet={'melody': 0.22, 'harmony': 0.28, 'texture': 0.3},
+    chords=['C', 'F', 'G', 'C', 'C', 'F', 'G', 'C', 'Am', 'F', 'G', 'C', 'F', 'G', 'C', 'C'],
+    bass_pat=[(0, 1, 1), (1, 1, 5), (2, 1, 1), (3, 1, 5)],
+    arp=(0.5, [0, 1, 2, 3, 2, 1, 2, 1], 0.2, lambda f, d: pluck(f, d, bright=3400)),
+    lead=lambda f, d: pluck(f, d, bright=3600, pulse=0.3), lead_gain=0.55, bell_gain=0.28,
+    melody='G5 0 0.5, E5 0.5 0.5, G5 1 0.5, C6 1.5 0.5, G5 2 1, E5 3 1 | F5 0 0.5, A5 0.5 0.5, C6 1 1, A5 2 1, F5 3 1 |'
+           'G5 0 0.5, B5 0.5 0.5, D6 1 1, B5 2 0.5, G5 2.5 0.5, D5 3 1 | C6 0 2, G5 2 2 |'
+           'E5 0 0.5, G5 0.5 0.5, C6 1 1, E6 2 1, C6 3 1 | A5 0 0.5, C6 0.5 0.5, F6 1 1, C6 2 1, A5 3 1 |'
+           'B5 0 1, D6 1 1, G6 2 1, D6 3 1 | C6 0 3 |'
+           'A5 0 1, C6 1 1, E6 2 1, C6 3 1 | F5 0 1, A5 1 1, C6 2 1, A5 3 1 | G5 0 1, B5 1 1, D6 2 1, B5 3 1 | C6 0 2, E6 2 2 |'
+           'F5 0 0.5, A5 0.5 0.5, C6 1 1, A5 2 1, F5 3 1 | G5 0 0.5, B5 0.5 0.5, D6 1 1, B5 2 1, G5 3 1 | C6 0 1, G5 1 1, E5 2 1, G5 3 1 | C6 0 4',
+    bells='C7 0 1 | - | - | - | C6 0 1, G6 2 1 | - | - | - | - | - | - | - | - | - | - | C6 0 1',
 )
 
 if __name__ == '__main__':

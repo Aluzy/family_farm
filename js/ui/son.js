@@ -2,7 +2,7 @@
    Le moteur du son est js/son.js (window.FermeSon, script classique) ; ce module y relie
    l'interface : un bruit pour ce que note le journal de la partie (les pièces, ce qui est
    fabriqué), son(clé) pour les écrans, et la partie « Son » des Options (volumes de
-   l'appareil, la musique continue, par moments ou coupée). Sans FermeSon, rien ne se passe. */
+   l'appareil, la musique continue, par moments ou coupée, la voix des habitants : G-2). Sans FermeSon, rien ne se passe. */
 
 import { ecouterJournal } from '../engine/journal.js';
 
@@ -41,13 +41,14 @@ export function sonHtml() {
   return `<div class="stack son-reglages">
     <strong>Son</strong>
     <label class="row check-row"><input type="checkbox" id="son-muet" ${r.muet ? 'checked' : ''}> 🔇 Couper tout le son</label>
+    <label class="row check-row"><input type="checkbox" id="son-voix" ${r.voix !== false ? 'checked' : ''}> 🗣️ La voix des habitants (un petit babil quand ils parlent)</label>
     ${CURSEURS.map(([id, nom]) => `<label class="son-curseur" for="son-${id}"><span>${nom}</span>
       <input type="range" id="son-${id}" name="son-volume" data-son="${id}" min="0" max="100" step="5" value="${Math.round(r[id] * 100)}"></label>`).join('')}
     <div class="stack" role="radiogroup" aria-labelledby="son-mode-titre">
       <span id="son-mode-titre">🎼 Musique</span>
       <div class="row">${MODES.map(([id, nom]) => `<label class="row check-row"><input type="radio" name="son-mode" value="${id}" ${r.mode === id ? 'checked' : ''}> ${nom}</label>`).join('')}</div>
     </div>
-    <p class="muted">« Par moments » : la musique revient de temps en temps, et la ferme s'entend seule entre deux. Réglage de cet appareil ; la partie n'en dépend pas.</p>
+    <p class="muted">« Par moments » : la musique revient de temps en temps, et la ferme s'entend seule entre deux. Chaque lieu a la sienne (la ferme, un hameau, la forêt, la montagne, la côte, une fête), et chaque moment (le soir, la nuit). Réglage de cet appareil ; la partie n'en dépend pas.</p>
   </div>`;
 }
 
@@ -60,6 +61,7 @@ document.addEventListener('change', (e) => {
   const S = window.FermeSon, t = e.target;
   if (!S || !t) return;
   if (t.id === 'son-muet') S.regle({ muet: t.checked });
+  else if (t.id === 'son-voix') { S.regle({ voix: t.checked }); if (t.checked && S.babil) S.babil('Bonjour, tout le monde !', S.voixDe({ recit: 'odile' })); }
   else if (t.name === 'son-mode') S.regle({ mode: t.value });
   else if (t.name === 'son-volume') son(t.dataset.son === 'musique' ? 'reussite' : t.dataset.son === 'ambiance' ? 'oiseau' : t.dataset.son === 'effets' ? 'hache' : 'info');
 });

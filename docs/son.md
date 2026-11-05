@@ -1,6 +1,6 @@
 # Le son
 
-Le jeu a une bande-son complète : quatre thèmes de musique, les ambiances de la ferme et des
+Le jeu a une bande-son complète : neuf thèmes de musique (selon le moment et le lieu), la voix des habitants, les ambiances de la ferme et des
 biomes du grand monde, les bêtes, les machines, chaque geste du personnage et les fenêtres de
 l'interface. Tout est synthétisé pour le jeu par `scripts/son/`, sauf les bêtes de la ferme,
 le chat et le chien de la famille, l'arrosoir, la hulotte et la grenouille : de vrais enregistrements
@@ -61,9 +61,20 @@ n'entrent pas dans la sauvegarde.
   hameaux (leurs bruits de travail, le jour) ;
 - **les cris des bêtes de la ferme** (voir plus bas), le chat et le chien de la famille,
   la faune du grand monde près de la vue ;
-- **la musique** : le thème du matin (5 h 30-17 h), du soir (17 h-21 h), de la nuit, celui de la
-  mine sous terre. « Par moments » (le réglage par défaut) : deux à trois minutes de musique,
-  puis une à deux minutes et demie de monde seul.
+- **la musique** (G-2, `musiqueDuLieu`) : le jour (5 h 30-17 h), celle du lieu — un hameau
+  (`musique_hameau`), la montagne, le sommet ou la falaise (`musique_montagne`), la côte et la mer
+  (`musique_cote`), la forêt (`musique_foret`), sinon la ferme, la prairie, la lande et le marais
+  (`musique_matin`) ; le soir (17 h-21 h) et la nuit, les thèmes du soir et de la nuit ; dans un hameau
+  pendant sa fête (V-4), `musique_fete`, sans pause ; sous terre, celui de la mine. Un lieu tenu 4 s
+  seulement (pas de va-et-vient à une lisière) ; un nouveau lieu fait revenir sa musique tout de suite.
+  « Par moments » (le réglage par défaut) : deux à trois minutes de musique, puis une à deux minutes et
+  demie de monde seul.
+- **la voix des habitants** (G-2, `FermeSon.babil`) : ce que dit un habitant (sa bulle sur la carte, une
+  ligne d'une scène du récit) devient un petit babil — une note par syllabe, à la hauteur de sa voix,
+  un peu plus haut ou plus bas selon la voyelle, qui monte à la fin d'une question. Rien n'est chargé
+  (des oscillateurs). Chaque personnage écrit a sa voix (`VOIX` : Odile douce, Achille grave et lent,
+  Lise aiguë et rapide, Frida pétillante…) ; un habitant généré, la sienne, tirée de son id selon son
+  genre et son âge. Un réglage la coupe (⚙️ Options › Son, « La voix des habitants »).
 
 Dans la mine : la grotte (le grondement, les gouttes) et son thème, rien de la ferme.
 
