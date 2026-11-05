@@ -4405,6 +4405,187 @@ export const RAW_DATA = {
         "triste": ["On n'a pas le moral, ces temps-ci…", "La fatigue se fait sentir.", "La vie est dure, au hameau."],
         "faim": ["On n'a pas eu assez à manger hier.", "Le garde-manger est presque vide…"]
       }
+    },
+    "PROPOS": {
+      "_": [
+        "V-1 (docs/phase-4.md) : ce que disent les habitants de ce qu'ils voient. Chaque sujet a sa condition (js/engine/propos.js) ; {mots} entre accolades : remplacés par la partie. PART : la part des conversations où un sujet est dit (sinon les PHRASES) ; MEMOIRE : les derniers sujets d'un habitant, qu'il ne redit pas ; ENFANTS : les seuls sujets d'un enfant (un adulte dit tous les autres, sauf « …_enfant »)."
+      ],
+      "PART": 0.6,
+      "MEMOIRE": 4,
+      "ENFANTS": [
+        "lune_pleine",
+        "lune_nouvelle",
+        "lune_croissante",
+        "lune_decroissante",
+        "famille_enfant",
+        "ferme_poules_enfant",
+        "jours_enfant",
+        "fete_place",
+        "voisin_enfant"
+      ],
+      "ferme_cultures": [
+        "On voit ton coin de {culture} depuis le chemin : il a fière allure !",
+        "Paraît que tu fais pousser de la {culture}. Tu me garderas un conseil ?",
+        "Ton potager, on en parle jusqu'ici. Surtout ta {culture} !",
+        "De la {culture} à la ferme ? Ça me donne des idées pour mon jardin.",
+        "Tu arroses ta {culture} le matin ou le soir ? Chez nous, on hésite toujours.",
+        "J'ai goûté une {culture} comme la tienne, une fois. Quel souvenir !",
+        "Avec toute cette {culture}, tu ne dois pas manquer de soupe.",
+        "Le jour où tu as trop de {culture}, pense à nous !",
+        "{n} parcelles cultivées ? Tu as la main verte.",
+        "La {culture}, ça aime la patience. Et toi, tu en as, de la patience !"
+      ],
+      "ferme_vide": [
+        "Ton potager se repose ? La terre aime bien ça, de temps en temps.",
+        "Alors, qu'est-ce que tu vas planter ?",
+        "Un potager vide, c'est un potager qui attend une idée.",
+        "Si tu cherches quoi semer, la carotte ne déçoit jamais.",
+        "Une houe, quelques graines, un peu d'eau : c'est tout ce qu'il faut pour commencer."
+      ],
+      "ferme_poules": [
+        "Tes {n} poules, elles pondent bien ?",
+        "On entend tes poules d'ici, le matin. Enfin… presque.",
+        "Des poules à la ferme, c'est des œufs au petit-déjeuner !",
+        "Une ferme avec des poules, c'est une ferme qui vit.",
+        "Un peu de blé chaque jour, et tes poules te le rendront en œufs."
+      ],
+      "ferme_poules_enfant": [
+        "C'est vrai que tu as des poules ? Je peux venir les voir ?",
+        "Tes poules, elles ont des prénoms ?",
+        "J'aimerais bien ramasser les œufs avec toi !",
+        "Est-ce que tes poules courent aussi vite que moi ?"
+      ],
+      "ferme_moutons": [
+        "Tes moutons, tu les tonds toi-même ? Ce n'est pas facile !",
+        "Une laine de ta ferme, ça ferait de beaux pulls pour l'hiver.",
+        "Combien de moutons, maintenant ? {n} ? Bravo !",
+        "Les moutons aiment la paille bien sèche. Les tiens doivent être gâtés."
+      ],
+      "ferme_vaches": [
+        "Du lait frais tous les matins, quelle chance tu as !",
+        "Tes vaches ont l'air bien soignées, ça se voit à leur lait.",
+        "Une vache, c'est une amie qui donne du lait. Prends-en soin !",
+        "On dit que les herbes de montagne donnent un lait d'alpage. Tu as essayé ?"
+      ],
+      "ferme_ruches": [
+        "Des ruches à la ferme ? Le miel doit être doux, avec toutes ces fleurs.",
+        "Les abeilles aiment les fleurs. Plantes-en autour de tes ruches !",
+        "Ton miel, il paraît qu'il a un goût de prairie.",
+        "Le bourdonnement des abeilles, c'est la plus belle musique de l'été."
+      ],
+      "ferme_verger": [
+        "Un verger, c'est un cadeau pour dans dix ans. Et pour tout de suite aussi !",
+        "Tes arbres fruitiers ont bien pris ?",
+        "Rien ne vaut un fruit cueilli sur son propre arbre.",
+        "{n} arbres au verger ? Il en faudra, des paniers !"
+      ],
+      "ferme_maison": [
+        "On dit que ta maison a bien changé depuis ton arrivée.",
+        "Ta ferme commence à te ressembler, à ce qu'on raconte.",
+        "Il paraît que tu as encore construit quelque chose. Tu ne t'arrêtes jamais !",
+        "Une maison qui grandit, c'est une famille heureuse.",
+        "Le jour où tu nous invites, on viendra voir ta maison !"
+      ],
+      "ferme_moulin": [
+        "Un moulin à la ferme ! Ta farine doit être fine.",
+        "Avec ton moulin, tu fais ton pain toi-même ? Chapeau.",
+        "Le moulin qui tourne, ça s'entend de loin, les jours de vent."
+      ],
+      "cadeau_merci": [
+        "Merci encore pour ton cadeau. On en parle encore à la maison !",
+        "Ton cadeau de l'autre jour m'a fait tellement plaisir.",
+        "Tu sais, je repense encore à ton cadeau. C'était gentil.",
+        "Ton cadeau a trouvé sa place chez nous. Merci !"
+      ],
+      "gout_connu": [
+        "Tu te souviens de ce que j'aime ? {objet}, toujours !",
+        "{objet}… rien que d'y penser, j'ai faim !",
+        "{objet} : si un jour tu en as en trop, tu sais à qui penser !",
+        "Tu as bonne mémoire : {objet}, c'est mon péché mignon."
+      ],
+      "voisin": [
+        "Tu connais {voisin} ? Passe lui dire bonjour de ma part.",
+        "{voisin} m'a parlé de toi hier. Que du bien !",
+        "Avec {voisin}, on s'entraide quand il le faut. C'est ça, un hameau.",
+        "{voisin} travaille dur ces temps-ci. On devrait tous lui dire merci.",
+        "Si tu vois {voisin}, dis-lui que je lui garde une part de tarte.",
+        "{voisin} a ri toute la soirée hier. Ça fait du bien à tout le monde."
+      ],
+      "voisin_metier": [
+        "Sans {voisin} et son métier de {metier}, le hameau serait bien triste.",
+        "{voisin} a promis de m'apprendre son métier de {metier}. On verra !",
+        "Le métier de {metier}, c'est {voisin} qui le connaît le mieux, ici."
+      ],
+      "voisin_enfant": [
+        "Je joue souvent avec {voisin} ! On fait la course jusqu'au puits.",
+        "{voisin} sait grimper aux arbres. Moi aussi, presque !",
+        "Avec {voisin}, on a trouvé une cachette secrète. Chut !"
+      ],
+      "famille_enfant": [
+        "{parent} dit que je dois être sage aujourd'hui.",
+        "Chez nous, c'est {parent} qui fait la meilleure soupe.",
+        "{parent} rentre bientôt, je l'attends !",
+        "{parent} m'a appris à reconnaître les oiseaux."
+      ],
+      "famille_parent": [
+        "{enfant} ne tient pas en place, ces jours-ci !",
+        "{enfant} a encore couru partout ce matin.",
+        "Si tu vois {enfant} près du puits, dis-lui de rentrer !",
+        "{enfant} grandit si vite…",
+        "{enfant} veut faire le même métier que moi, plus tard."
+      ],
+      "lune_pleine": [
+        "La lune est pleine, cette nuit. On dit qu'elle porte bonheur aux semis.",
+        "Pleine lune ce soir : on verra le chemin jusqu'au puits !",
+        "Une nuit de pleine lune, c'est une nuit de veillée."
+      ],
+      "lune_nouvelle": [
+        "Nouvelle lune… cette nuit, les étoiles seront à nous.",
+        "Il fera bien noir ce soir, c'est la nouvelle lune. Ne te perds pas !"
+      ],
+      "lune_croissante": ["La lune grandit, chaque soir un peu plus.", "Bientôt la pleine lune ! On prépare déjà la veillée."],
+      "lune_decroissante": ["La lune décroît. Bientôt les nuits sans lune.", "La lune s'en va doucement. Elle reviendra."],
+      "mois": ["Déjà le mois de {mois} ! Le temps passe vite.", "{mois} commence… J'aime bien ce mois-là.", "On est en {mois}. Il faut fêter ça !"],
+      "reserve_hier": [
+        "Hier soir, la réserve s'est remplie. {objet} surtout ! Le hameau est content.",
+        "La réserve sent bon, ce matin : {objet}, tout frais d'hier !",
+        "On a bien travaillé hier. {objet} plein la réserve !",
+        "Tu sais ce qu'on a rapporté hier ? {objet}, en quantité !"
+      ],
+      "caleche": [
+        "La calèche est passée il y a {jours} jours. Elle nous a laissé {pieces} pièces !",
+        "Quand la calèche passe, tout le hameau sort pour la voir.",
+        "Le cocher de la calèche a toujours une histoire à raconter sur les autres hameaux.",
+        "Grâce à la calèche, nos paniers voyagent plus loin que nous."
+      ],
+      "projet": [
+        "Pour le projet du hameau ({projet}), il nous manque encore {n} × {objet}. Si tu en as, on te dira merci !",
+        "Notre projet avance : {projet} ! Il ne manque plus que {n} × {objet}.",
+        "Encore {n} × {objet}, et notre projet sera fait : {projet} !",
+        "Chaque soir, on regarde où en est le projet du hameau. Bientôt !"
+      ],
+      "ami_proche": [
+        "Toi, au moins, tu passes nous voir. Ça compte.",
+        "Quand je te vois arriver, ma journée s'éclaire.",
+        "Tu fais partie du hameau, maintenant. Tu le sais ?",
+        "Il y a toujours une place pour toi à notre table.",
+        "Je raconte tes histoires de ferme à tout le monde !",
+        "Si tu as besoin de quoi que ce soit, tu sais où me trouver."
+      ],
+      "jours": [
+        "Ça fait déjà {jours} jours que tu as repris la ferme. Le temps file !",
+        "{jours} jours à la ferme… et tu as déjà changé tant de choses.",
+        "Tu te souviens de ton premier jour ? C'était il y a {jours} jours !"
+      ],
+      "jours_enfant": [
+        "Tu es là depuis {jours} jours, c'est ça ? J'ai compté !",
+        "Moi, je sais compter jusqu'à {jours}. C'est le nombre de jours depuis que tu es là !"
+      ],
+      "fete_place": [
+        "La place est belle, maintenant ! On y joue tous les jours.",
+        "Tu as vu la nouvelle place ? C'est grâce à toi aussi !",
+        "On a fait une fête sur la place. Tu aurais dû venir !"
+      ]
     }
   },
   "CALECHE": {

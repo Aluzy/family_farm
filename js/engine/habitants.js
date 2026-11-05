@@ -5,6 +5,7 @@ import { hache } from './ferme-generee.js';
 import { mealHappinessDelta } from './bonheur.js';
 import { farmSeed } from './terrain.js';
 import { lireIdMonde, objetPris, prendreParHabitant } from './monde-recolte.js';
+import { proposDuMoment } from './propos.js';
 
 /* ---------- les habitants des hameaux du grand monde (docs/grand-monde.md : fiche 7b) ----------
 
@@ -462,10 +463,14 @@ export function paroleHabitant(state, hameauId, membreId, o = {}) {
   const salut = typeof o.salut === 'string' && o.salut ? o.salut : salutHeure;
   const dernier = f.journal && f.journal[f.journal.length - 1];
   const humeur = dernier && dernier.couverture < 100 ? 'faim' : f.bonheur >= HABITANTS.HEUREUX ? 'heureux' : f.bonheur < HABITANTS.TRISTE ? 'triste' : 'content';
+  out.humeur = humeur;
+  // V-1 (propos.js) : souvent, un sujet du moment (ta ferme, ses voisins, la lune…) au lieu des phrases toutes
+  // faites ; pas quand il a faim (il le dit d'abord)
+  const propos = humeur === 'faim' ? null : proposDuMoment(state, hameauId, h, f, m, rnd);
+  if (propos) { out.texte = [salut, propos.texte].filter(Boolean).join(' '); out.propos = propos.id; return out; }
   const fait = o.activite === 'travail' ? un(P.travail[m.metier] || P.travail.jardinier)
     : o.activite === 'repas' && humeur === 'faim' ? '' : un(P.activite[o.activite] || P.activite.maison);
   out.texte = [salut, fait, un(P.humeur[humeur])].filter(Boolean).join(' ');
-  out.humeur = humeur;
   return out;
 }
 
