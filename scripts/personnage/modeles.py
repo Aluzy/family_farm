@@ -478,11 +478,13 @@ def elements(nom, d):
     famille (sa clé : son nom)."""
     if nom in RETOUCHES_LETTRES:
         par = {}
-        for v, g in lettres(nom, d).items():
+        bras = {f'{v}:bras': g for v, g in lettres_bras(nom, d).items()}
+        for v, g in list(lettres(nom, d).items()) + list(bras.items()):
             for p, L in g.items():
                 if L != 'a':
                     par.setdefault(famille(nom, L), {}).setdefault(v, {})[p] = L
-        return [(c, nom, {v: par[c].get(v, {}) for v in VUES}) for c in ORDRE_COUCHES if c in par]
+        # (une grille « <vue>:bras » pour chaque élément, même vide : elle remplace celle de la vue)
+        return [(c, nom, {v: par[c].get(v, {}) for v in list(VUES) + list(bras)}) for c in ORDRE_COUCHES if c in par]
     out = {}
     for v in VUES:
         corps = {}
@@ -573,6 +575,28 @@ def base(nom, lettre):
     """La lettre de la palette dont `lettre` est une nuance (elle-même, hors des nuances des retouches)."""
     n = RETOUCHES_LETTRES.get(nom, {}).get('nuances', {}).get(lettre)
     return n['base'] if n else lettre
+
+
+# Les modèles retouchés dont un bras n'est pas là où le corps standard a les siens (modeles.CORPS : les zones des
+# bras de chibi.ZONES) : quand les bras sont redessinés (la marche, les gestes), leur bras dessiné à la main serait
+# resté sur le torse. Leurs grilles « <vue>:bras » (elements(), lettres_bras()) le recouvrent : chaque case de
+# la manche ou de la main prend la lettre donnée. perso_01, de profil : la manche (p) et la main (k) au milieu
+# du torse, recouvertes par la salopette (s).
+RETOUCHES_BRAS = {
+    'perso_01': {'cote': {'lettres': 'pk', 'par': 's', 'cases': [(x, y) for y in range(12, 17) for x in range(5, 8)]}},
+}
+
+
+def lettres_bras(nom, d):
+    """Les vues de `nom` qui changent quand les bras sont redessinés (RETOUCHES_BRAS) : {vue: {(x, y): lettre}}."""
+    out = {}
+    for v, r in RETOUCHES_BRAS.get(nom, {}).items():
+        g = dict(lettres(nom, d)[v])
+        for p in r['cases']:
+            if g.get(p) in tuple(r['lettres']):
+                g[p] = r['par']
+        out[v] = g
+    return out
 
 
 def lettres(nom, d):
