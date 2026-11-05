@@ -22,7 +22,10 @@
  * qui se suivent (filter). Une parcelle qui change le même jour (une case labourée, une graine,
  * un arrosage, une récolte) est un geste du joueur. Le jeu, lui, a déjà changé : la carte garde
  * l'ancien dessin de la case (« retenue ») jusqu'au coup de houe ou au geste de la main, puis
- * montre le nouveau. Une retenue ne dure jamais plus de HOLD_MS.
+ * montre le nouveau. Une retenue ne dure jamais plus de HOLD_MS, sauf celle d'une case où il va faire le geste :
+ * elle dure tant que ce geste est dans sa file (arroser : la plante n'est arrosée sur la carte qu'au geste,
+ * même s'il passe d'abord au puits remplir la cruche), et pas plus de HOLD_PREVU_MS ; le geste oublié (le
+ * doigt qui le dirige ailleurs, une file trop longue), la case se montre tout de suite.
  *
  * Son cheval (modèle.cheval : il est en selle ; modèle.chevalVitesse : js/carte/cheval.js) :
  * dehors, quand il marche ou attend, il y est assis et va plus vite ; pendant un geste ou dans un
@@ -44,7 +47,8 @@
   const SPEED = K.VITESSES.fermier;   // px de carte par seconde
   // (l'image du pas : CarteKit.imageMarche, d'après les px parcourus ; les pieds suivent la distance)
   const BREATH_S = 0.8;          // debout : secondes par souffle
-  const HOLD_MS = 9000;          // une case n'est jamais retenue plus longtemps
+  const HOLD_MS = 9000;          // une case n'est jamais retenue plus longtemps…
+  const HOLD_PREVU_MS = 90000;   // …sauf s'il y va faire le geste (la cruche à remplir au puits d'abord)
   const MAX_VISITS = 4;          // cases d'un même geste où il va lui-même ; les autres suivent en cascade
   const CASCADE_MS = 90;         // entre deux cases de la cascade
   // le bruit de chaque geste du potager, au coup (js/son.js)
@@ -478,12 +482,21 @@
         order.push(c);
         const p = tileXY(c); px = p.x; py = p.y;
       }
-      const visits = order.slice(0, MAX_VISITS), rest = order.slice(MAX_VISITS);
+      // (arroser : il va à chaque plante, la cruche à la main : pas de cascade, chacune est arrosée à son geste)
+      const arrose = type === 'arroser';
+      const visits = arrose ? order : order.slice(0, MAX_VISITS), rest = arrose ? [] : order.slice(MAX_VISITS);
       if (type === 'recolter') order.forEach((c) => claimed.add(`parcelle:${c}`));
       visits.forEach((c, n) => {
         const st = standFor(c);
-        jobs.push(walkTo(st.x, st.y));
-        jobs.push(act(type, {
+        // (la case attend son geste : retenue tant qu'il est dans la file, voir pas())
+        const h = holds.get(c);
+        if (h) h.prevu = true;
+        // (toujours à pied, jamais en sautant : MARCHE_GESTE ; même loin, après le puits)
+        const w = walkTo(st.x, st.y, MARCHE_GESTE);
+        w.cases = [c];
+        w.arrosage = arrose;
+        jobs.push(w);
+        const geste = act(type, {
           face: st.face, flip: st.flip,
           onHit: () => {
             release(c);
@@ -494,7 +507,10 @@
               rest.forEach((r, k) => setTimeout(() => { release(r); if (type === 'recolter') take(`parcelle:${r}`); }, (k + 1) * CASCADE_MS));
             }
           },
-        }));
+        });
+        geste.cases = [c];
+        geste.arrosage = arrose;
+        jobs.push(geste);
       });
       jobs.push(wait(rand(0.4, 1)));
     }
@@ -538,7 +554,14 @@
         if (reduced()) holds.clear();
         else {
           // Trop de retard : ce qui attend encore se montre tout de suite.
-          if (jobs.length > 3 * MAX_VISITS * 2) { jobs = []; claimed.clear(); holds.forEach((h, c) => { if (!Object.values(found).some((l) => l.includes(c))) holds.delete(c); }); }
+          // (sauf les arrosages et ce que le joueur lui a demandé, le puits : ils restent dans la file)
+          const garde = (j) => j.joueur || j.arrosage;
+          if (jobs.filter((j) => !garde(j)).length > 3 * MAX_VISITS * 2) {
+            jobs = jobs.filter(garde);
+            claimed.clear();
+            const gardees = new Set(jobs.flatMap((j) => j.cases || []));
+            holds.forEach((h, c) => { if (!gardees.has(c) && !Object.values(found).some((l) => l.includes(c))) holds.delete(c); });
+          }
           for (const type of ['labourer', 'planter', 'arroser', 'recolter']) if (found[type]) queueGeste(type, found[type]);
         }
         if (reduced()) for (const type of Object.keys(found)) { const st = standFor(found[type][0]); x = st.x; y = st.y; face = st.face; flip = st.flip; appear(); }
@@ -1053,7 +1076,13 @@
       if (holds.size) {
         const now = performance.now();
         let changed = false;
-        for (const [c, h] of holds) if (now - h.t0 > HOLD_MS) { holds.delete(c); changed = true; }
+        // (une case où il va faire le geste reste retenue tant que ce geste est dans sa file ; oublié, elle se montre)
+        const prevues = new Set();
+        for (const j of job ? [job, ...jobs] : jobs) for (const c of j.cases || []) prevues.add(c);
+        for (const [c, h] of holds) {
+          const age = now - h.t0;
+          if (h.prevu ? !prevues.has(c) || age > HOLD_PREVU_MS : age > HOLD_MS) { holds.delete(c); changed = true; }
+        }
         if (changed && o.resync) o.resync();
       }
       if (shown && !s.visible) s.setVisible(true);
