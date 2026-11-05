@@ -106,8 +106,9 @@ const champ = (valeur, max, label, attrs = '') => `<input type="text" id="accuei
 const grille = (choisi, enfant = false) => `<div class="perso-grid accueil-persos${enfant ? ' accueil-persos-enfant' : ''}">${Array.from({ length: enfant ? DATA.FAMILLE.PROFIL.PERSOS_ENFANT : DATA.FAMILLE.PROFIL.PERSOS }, (_, i) => i + 1)
   .map((n) => `<button type="button" class="btn perso-btn${n === choisi ? ' active' : ''}" data-action="accueil-perso" data-perso="${n}" aria-pressed="${n === choisi}" aria-label="${enfant ? 'Enfant' : 'Personnage'} ${n}">${persoHtml(n, enfant)}</button>`).join('')}</div>`;
 // Le portrait de `qui` ({ perso, apparence }) : son apparence à lui s'il en a une (js/ui/apparence.js), sinon son personnage.
-const visage = (qui, enfant = false) => persoHtml(qui.perso, enfant, '', '', qui.apparence ? plancheApparence(qui.apparence, enfant) : null);
-const portrait = (qui, enfant = false) => (qui && qui.perso ? `<div class="accueil-portrait">${visage(qui, enfant)}</div>` : '');
+// `vivant` : il respire et cligne des yeux (le portrait en grand des écrans de l'accueil, css/jeu.css .accueil-portrait).
+const visage = (qui, enfant = false, vivant = '') => persoHtml(qui.perso, enfant, '', vivant, qui.apparence ? plancheApparence(qui.apparence, enfant) : null);
+const portrait = (qui, enfant = false) => (qui && qui.perso ? `<div class="accueil-portrait">${visage(qui, enfant, `accueil-${qui === accueil ? 'joueur' : qui === accueil.compagnon ? 'compagnon' : 'enfant'}`)}</div>` : '');
 // L'enfant `k` ({ perso, prenom, apparence } ; perso 0 tant qu'il n'est pas choisi).
 const enfantK = (k = accueil.k) => (accueil.enfants[k] || (accueil.enfants[k] = { perso: 0, prenom: '', apparence: null }));
 // Celui dont on choisit le personnage ou l'apparence à l'écran en cours : le joueur, son compagnon, ou l'enfant `k`.

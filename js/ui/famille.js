@@ -173,7 +173,7 @@ function openMemberModal(id, personnaliser = false) {
   openModal(`
     <h2 id="member-title">✏️ Modifier : ${escapeHtml(m.nom)}</h2>
     <div class="member-preview" aria-live="polite">
-      ${persoHtml(0, false, 'member-preview-perso')}
+      <span id="member-preview-portrait"></span>
       <strong class="member-name" id="member-preview-name"></strong>
     </div>
     <div class="stack">
@@ -215,7 +215,8 @@ function syncMemberModal() {
   if (!d || !input) return;
   const typed = cleanFirstName(input.value);
   const propre = d.apparence ? plancheApparence(d.apparence, d.enfant) : null;
-  document.getElementById('member-preview-perso').style.backgroundImage = `url('${propre ? propre.url : persoSrc(d.perso, d.enfant)}')`;
+  // l'aperçu : grand et vivant (il respire, il cligne des yeux), redessiné à chaque choix
+  document.getElementById('member-preview-portrait').innerHTML = persoHtml(d.perso, d.enfant, 'member-preview-perso', d.id, propre);
   for (const b of root.querySelectorAll('[data-action="member-perso"]')) {
     const n = Number(b.dataset.perso);
     b.setAttribute('aria-pressed', String(!d.apparence && n === d.perso));

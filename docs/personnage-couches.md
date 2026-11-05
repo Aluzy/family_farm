@@ -473,6 +473,8 @@ la grille retire l'apparence. Pour un enfant, les coupes proposées sont celles 
   `noms` ; la coupe sans couvre-chef, pour la voir) ;
 - le reste (motif, signes, accessoires) en puces ;
 - **« 🎲 Au hasard »** : une apparence tirée comme celles des habitants (`tirerApparence`, ses probabilités).
+- **L'aperçu** (la fenêtre « Modifier », les écrans de l'accueil) : en grand (128 px, quatre fois le dessin) et
+  vivant (il respire et cligne des yeux, les portraits vivants du § 9), redessiné à chaque choix.
 
 **Où elle se voit** :
 - les portraits (`js/ui/apparence.js` : la planche assemblée en image, gardée) : la fiche du membre, la liste des
