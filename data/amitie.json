@@ -101,5 +101,26 @@
         "SOUVENIR_ANCIEN": "Je repense parfois à ce repas chez toi. On recommence quand tu veux !"
       }
     }
+  },
+  "DEMANDES": {
+    "_": ["V-2 (docs/phase-4.md, js/engine/demandes.js) : les petites demandes des habitants. Chaque nuit, un habitant d'un hameau déjà visité peut en faire une (CHANCE), s'il y en a moins de MAX ouvertes ; elle attend DUREE jours, puis s'oublie sans rien coûter. BESOINS : par métier, [objet, au moins, au plus, motif]. La rendre : AMITIE points, et un présent de son métier (RETOUR.PRESENTS)."],
+    "MAX": 3,
+    "DUREE": 7,
+    "CHANCE": 0.6,
+    "DEPUIS": 3,
+    "AMITIE": 6,
+    "BESOINS": {
+      "bucheron": [["pierre", 3, 6, "pour caler le bûcher"], ["fibre", 3, 5, "pour tresser une corde"], ["pain", 1, 2, "pour la pause de midi"], ["carotte", 3, 5, "pour la soupe du soir"]],
+      "pecheur": [["fibre", 4, 6, "pour réparer mes filets"], ["bois", 3, 5, "pour retaper ma barque"], ["pain", 1, 2, "pour la pêche de l'aube"], ["oignon", 2, 3, "pour accompagner la friture"]],
+      "mineur": [["bois", 4, 6, "pour étayer la galerie"], ["pain", 1, 2, "pour descendre à la mine"], ["patate", 3, 5, "pour le gratin du soir"], ["fibre", 2, 4, "pour les mèches des lampes"]],
+      "berger": [["ble", 4, 8, "pour l'hiver des bêtes"], ["paille", 3, 6, "pour la litière"], ["carotte", 3, 5, "pour gâter mes bêtes"], ["bois", 2, 4, "pour réparer l'enclos"]],
+      "cueilleur": [["fibre", 3, 5, "pour tresser des paniers"], ["pain", 1, 2, "pour la cueillette"], ["oeuf", 2, 4, "pour une omelette aux champignons"], ["bois", 2, 4, "pour le séchoir"]],
+      "jardinier": [["oeuf", 2, 4, "pour la tarte du dimanche"], ["fibre", 2, 4, "pour attacher les tomates"], ["pierre", 2, 4, "pour une bordure de potager"], ["ble", 3, 5, "pour faire mon pain"]]
+    },
+    "PHRASES": {
+      "demande": ["J'aurais besoin de {n} × {objet}, {motif}. Tu pourrais m'en apporter ?", "Dis, tu n'aurais pas {n} × {objet} ? C'est {motif}.", "Si tu repasses avec {n} × {objet}, ça m'aiderait beaucoup : c'est {motif}."],
+      "merci": ["Merci mille fois ! Tiens, pour toi : {cadeau}.", "Tu es formidable ! Prends ça : {cadeau}.", "Je savais que je pouvais compter sur toi. Voilà {cadeau}, de bon cœur."],
+      "annonce": "📜 {prenom}, de {hameau}, a une demande pour toi : {n} × {objet}."
+    }
   }
 }
