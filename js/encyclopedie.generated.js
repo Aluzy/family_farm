@@ -459,7 +459,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "cheval",
      "terme": "Cheval et Écurie",
-     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Sa case de la barre d'outils te met en selle : tu vas 1,8 fois plus vite, sur la ferme comme dans tout le grand monde (pas dans la mine ni dans les grottes). Quand tu en descends, il rentre à l'Écurie. Chaque nuit il mange 2 paille s'il y en a. Le poteau d'attache et la corde de fibre (Atelier) ne servent pas encore : le cheval rentre toujours à l'Écurie.",
+     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Sa case de la barre d'outils te met en selle : tu vas 1,4 fois plus vite, sur la ferme comme dans tout le grand monde (pas dans la mine ni dans les grottes). Quand tu en descends, il rentre à l'Écurie. Chaque nuit il mange 2 paille s'il y en a. Le poteau d'attache et la corde de fibre (Atelier) ne servent pas encore : le cheval rentre toujours à l'Écurie.",
      "liens": [
       "atelier",
       "murs",

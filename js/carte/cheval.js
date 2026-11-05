@@ -33,7 +33,7 @@
   // `broute` du temps, par périodes de `periode` s ; proche : à moins de `proche` px de lui, on le monte.
   const CHEVAL = {
     key: 'cheval_monte', file: 'cheval_monte.png', w: 48, h: 40,
-    monte: { bas: 31, haut: 22, cote: 22 }, recul: 2, foulee: 7, arret: 3,
+    monte: { bas: 31, haut: 22, cote: 22 }, recul: 2, foulee: 12, arret: 3,   // (foulee 12 : 6,8 images et 1,7 foulée par s à 81 px/s ; avant 7, frénétique)
     seul: { key: 'cheval', file: 'cheval.png', idle: 0, broute: 5 },
     poteau: { key: 'poteau_attache', file: 'poteau_attache.png', w: 16, h: 32, anneau: [11, 17] },
     ecart: 30, licol: [36, 10], licolBas: [41, 32], corde: { couleur: 0xb89448, ombre: 0x5a4020, mou: 5 },

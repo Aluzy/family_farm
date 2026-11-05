@@ -2203,8 +2203,8 @@ export const RAW_DATA = {
     "ICONE": "🐴",
     "PRIX": 600,
     "PLACES": 2,
-    "VITESSE": 1.8,
-    "VITESSE_FAIM": 1.8,
+    "VITESSE": 1.4,
+    "VITESSE_FAIM": 1.4,
     "RATION": 2,
     "ATTACHE": ["poteau_attache", "corde"],
     "PROCHE": 40
