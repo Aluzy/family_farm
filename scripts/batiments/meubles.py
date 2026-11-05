@@ -1,7 +1,6 @@
 # Meubles de l'intérieur de la maison (assets/maison_interieur.json), un fichier
 # assets/meuble_<nom>.png chacun :
-#   - les appareils, qui ouvrent leur fenêtre : four (four à pain voûté, feu dans la gueule),
-#     cuisine (fourneau sur son meuble, marmite fumante), frigo (réfrigérateur à deux portes) ;
+#   - les appareils, qui ouvrent leur fenêtre : cuisine (fourneau sur son meuble, marmite fumante), frigo (réfrigérateur à deux portes) ;
 #   - le décor de la cuisine : evier, plan (plan de travail), fenetre, plante ;
 #   - cuisine et evier sont les modèles dessinés à la main, repris tels quels :
 #     scripts/batiments/originaux/meuble_cuisine.png (32 × 32) et meuble_evier.png (32 × 26) ;
@@ -502,7 +501,8 @@ def modele(nom):
 
 def main():
     images = {
-        'four': four(), 'cuisine': modele('cuisine'), 'frigo': frigo(),
+        # (le four : son dessin redessiné par le joueur, scripts/batiments/four.py, écrit assets/meuble_four*.png)
+        'cuisine': modele('cuisine'), 'frigo': frigo(),
         'evier': modele('evier'), 'plan': plan(), 'fenetre': fenetre(), 'plante': plante(),
         'chaise': chaise(), 'table': table(), 'tapis_1': tapis(1), 'tapis_2': tapis(2), 'tapis_3': tapis(3),
         'lit_adulte': lit(False), 'lit_enfant': lit(True), 'chevet': chevet(), 'canape': canape(),

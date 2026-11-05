@@ -1174,7 +1174,7 @@ export const RAW_DATA = {
       "barriere": { "nom": "Barrière", "objet": "barriere", "bloque": true },
       "lanterne": { "nom": "Lanterne scintillante", "objet": "lanterne", "bloque": true, "lumiere": true },
       "candelabre": { "nom": "Réverbère", "objet": "candelabre", "bloque": true, "lumiere": true },
-      "four": { "nom": "Four", "objet": "four_pierre", "dedans": true, "bloque": true, "station": "four" },
+      "four": { "nom": "Four", "objet": "four_pierre", "dedans": true, "bloque": true, "station": "four", "dessin": "four", "largeur": 2 },
       "cuisiniere": { "nom": "Cuisinière", "objet": "cuisiniere", "dedans": true, "bloque": true, "station": "cuisine" },
       "meule": { "nom": "Meule", "objet": "meule", "dedans": true, "bloque": true, "unique": true, "station": "moulin", "debloque": "moulin" },
       "pommier": { "nom": "Pommier", "objet": "jeune_pommier", "dehors": true, "arbre": "pommier", "debloque": "verger" },

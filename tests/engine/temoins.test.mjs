@@ -47,7 +47,9 @@ function gardee(nom, avant, m) {
   const blocs = Object.entries(avant.blocs || {});
   assert(blocs.length > 100, `${nom} : un témoin bâti (${blocs.length} blocs)`);
   assertEqual(Object.keys(m.blocs).length, blocs.length, `${nom} : autant de blocs`);
-  for (const [t, sorte] of blocs) assertEqual(m.blocs[ici(t)], sorte, `${nom} : le bloc ${sorte} en ${t}`);
+  // (le four, sur deux cases depuis le format 75 : déplacé dans sa pièce s'il n'y tenait plus, blocs.js elargirFours)
+  for (const [t, sorte] of blocs) if (sorte !== 'four') assertEqual(m.blocs[ici(t)], sorte, `${nom} : le bloc ${sorte} en ${t}`);
+  assertEqual(Object.values(m.blocs).filter((x) => x === 'four').length, blocs.filter(([, x]) => x === 'four').length, `${nom} : les fours`);
   for (const k of ['sols', 'hauteurs', 'fenetres']) {
     if (avant[k]) assertEqual(Object.entries(m[k]).sort(), Object.entries(avant[k]).map(([t, v]) => [String(ici(t)), v]).sort(), `${nom} : ${k}`);
   }

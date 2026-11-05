@@ -15,7 +15,7 @@ import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsE
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
-import { caseLibreFoyer, majMoulin, majPoulailler, poserBloc, rangerPieces, serrePlaces } from './blocs.js';
+import { caseLibreFoyer, elargirFours, majMoulin, majPoulailler, poserBloc, rangerPieces, serrePlaces } from './blocs.js';
 import { closeFridge, FRIGO_OBJET } from './fridge.js';
 import { ETAPES } from './didacticiel.js';
 import { caseDepart } from './atelier.js';
@@ -726,6 +726,13 @@ export const MIGRATIONS = {
     const out = JSON.parse(JSON.stringify({ ...state, version: 74 }));
     const f = out.recit && out.recit.faits;
     if (f && typeof f === 'object' && f['frida.rencontre'] && !f['frida.ferme']) f['frida.ferme'] = f['frida.rencontre'];
+    return out;
+  },
+  // v74 → v75 (le four redessiné par le joueur, sur deux cases : data/recipes.json) : un four déjà posé dont la case
+  // de droite n'est pas libre est décalé d'une case vers la gauche, sinon rangé dans l'inventaire (blocs.js elargirFours).
+  74: (state) => {
+    const out = JSON.parse(JSON.stringify({ ...state, version: 75 }));
+    if (out.carte && out.blocs && typeof out.blocs === 'object' && Object.values(out.blocs).includes('four')) elargirFours(out);
     return out;
   },
 };

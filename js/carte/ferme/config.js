@@ -289,8 +289,9 @@
       murFond: { haut: 32, alpha: 0.7 },
       rayons: { mur: 8, vitre: 10, large: 28, cases: 2, alpha: 0.8 },
     },
-    // le four qui cuit : ses flammes, une image après l'autre (`fps` images par seconde)
-    feu: { sorte: 'four', frames: [47, 48, 49], fps: 7 },
+    // le four qui cuit : ses flammes, une image après l'autre (`fps` images par seconde) ; le four redessiné (deux
+    // cases, son dessin à lui : meuble_four.png éteint, `images` allumé, scripts/batiments/four.py)
+    feu: { sorte: 'four', frames: [47, 48, 49], fps: 8, eteint: 'meuble_four', images: ['meuble_four_feu_0', 'meuble_four_feu_1', 'meuble_four_feu_2', 'meuble_four_feu_3', 'meuble_four_feu_4', 'meuble_four_feu_5', 'meuble_four_feu_6', 'meuble_four_feu_7'] },
     // la meule qui moud (le Moulin en marche) : sa pierre et sa manivelle tournent (`fps` images
     // par seconde, un tour en 8 images ; chantier.js stepFires)
     meule: { sorte: 'meule', frames: [81, 82, 83, 84, 85, 86, 87, 88], fps: 8 },
@@ -440,6 +441,8 @@
     'mangeoire_grain_vide', 'mangeoire_grain_pleine',
     // le râtelier de l'Écurie (scripts/personnage/cheval.py)
     'ratelier',
+    // le four, redessiné par le joueur (scripts/batiments/four.py) : éteint, puis les images de son feu (FOUR)
+    'four', 'four_feu_0', 'four_feu_1', 'four_feu_2', 'four_feu_3', 'four_feu_4', 'four_feu_5', 'four_feu_6', 'four_feu_7',
   ];
   // Les meubles qui tournent vraiment (data/recipes.json, ATELIER.BLOCS[].tourne : true) : leur vue de dos
   // et de profil (assets/meuble_<dessin>_dos.png, _cote.png ; scripts/batiments/meubles_sens.py).

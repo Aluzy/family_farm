@@ -447,9 +447,9 @@ export function testBatir(state, id) {
       const r = testBatir(state, 'foyer');
       if (!r.ok) return r;
     }
-    const libre = caseLibreFoyer(state);
-    if (libre === undefined) return fail('Plus de place dans le foyer.');
     const sorte = dansFoyer[id];
+    const libre = caseLibreFoyer(state, (DATA.ATELIER.BLOCS[sorte] && DATA.ATELIER.BLOCS[sorte].largeur) || 1);
+    if (libre === undefined) return fail('Plus de place dans le foyer.');
     return sorte === 'refrigerateur' && countItem(state, sorte) > 0 ? poserBloc(state, sorte, libre) : poserDonne(state, sorte, libre);
   }
   if (!tailles[id]) return fail('Bâtiment inconnu.');

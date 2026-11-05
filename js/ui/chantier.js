@@ -167,6 +167,8 @@ export function chantierOuvert() {
 function icone(sorte) {
   const b = DATA.ATELIER.BLOCS[sorte];
   if (b.meuble) return `<img class="build-slot-img" src="${meubleSrc(b.meuble)}" alt="" draggable="false">`;
+  // (le four redessiné : son dessin, éteint)
+  if (b.dessin === 'four') return `<img class="build-slot-img" src="${meubleSrc('four')}" alt="" draggable="false">`;
   return b.objet ? DATA.OBJETS[b.objet].icone : DATA.ATELIER.ICONE;
 }
 

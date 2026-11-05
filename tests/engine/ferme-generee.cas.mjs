@@ -18,7 +18,7 @@ const test = (...args) => (PARTIE && rangTest++ % PARTIE[1] !== PARTIE[0] ? unde
 import { readFileSync } from 'node:fs';
 import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
-  casesCouvertes, mesuresMeuble, sensBloc, tournerBloc, tourneBloc,
+  casesCouvertes, elargirFours, mesuresMeuble, sensBloc, tournerBloc, tourneBloc,
   isArable as arable, etage2Emprise, escaliersEtage, poseEtageStatus, casesSolEtage, piecesNiveau, piecesNiveau1, poseSolEtageStatus, poserSolEtage, solsEtage, hauteurPile, matiereDessus, rehausser, rehausseStatus, rehaussesPosees,
   arbresPlantes, asleep, atelierConstruit, atelierStatus, blocAt, blocBloque, blocDessus,
   blocsDidacticiel, blocsEnMain, blocsPoses, botteleuses, buildAtelier, buildStation, bushCut,
@@ -729,11 +729,47 @@ test('ferme générée : le four et la cuisinière se posent dans une pièce clo
   for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
   poserPorte(s, p.porte);
   assert(poserBloc(s, 'four', p.dedans).ok);
-  assert(poserBloc(s, 'cuisiniere', p.dedans + 1).ok);
+  // (le four redessiné couvre deux cases : la sienne et celle de droite)
+  assertEqual(poserBloc(s, 'cuisiniere', p.dedans + 1).ok, false, 'la case de droite est au four');
+  assert(poserBloc(s, 'cuisiniere', p.dedans + 2).ok);
   assertEqual([s.stations.four.construit, s.stations.cuisine.construit, blocBloque(s, p.dedans)], [true, true, true]);
   assert(s.unlockedTabs.includes('recettes'), 'le Livre de recette s\'ouvre');
   reprendreBloc(s, p.dedans);
   assertEqual([s.stations.four.construit, countItem(s, 'four_pierre')], [false, 1], 'repris : plus de four');
+});
+
+test('le four redessiné, sur deux cases : un four posé avant, à l\'étroit, est décalé, déplacé dans sa pièce ou rangé (v75)', () => {
+  const s = chantier('four2');
+  setInv(s, { mur_pierre: 40, porte: 2, paillasse: 1, cuisiniere: 1 });
+  const z = terrainLibre(s, 6, 5), p = murs(z, 6, 5);
+  for (const t of p.murs) poserBloc(s, 'mur_pierre', t);
+  poserPorte(s, p.porte);
+  s.stations.four.construit = true;
+  // (une partie d'avant : le four sur une case, la cuisinière juste à droite)
+  const k = p.dedans + 1;
+  assert(poserBloc(s, 'cuisiniere', k + 1).ok);
+  s.blocs[k] = 'four';
+  // la case de gauche est libre : il y glisse d'une case
+  assertEqual(elargirFours(s), { deplaces: [[k, k - 1]], ranges: [] });
+  assertEqual([blocAt(s, k - 1), casesCouvertes(s).get(k)], ['four', k - 1], 'il couvre sa case d\'avant');
+  // coincé des deux côtés (une paillasse à gauche) : à la place de deux cases libres la plus proche, dans sa pièce
+  delete s.blocs[k - 1];
+  s.blocs[k] = 'four';
+  assert(poserBloc(s, 'paillasse', k - 1).ok);
+  const r = elargirFours(s);
+  assertEqual([r.ranges, r.deplaces.length, r.deplaces[0][0]], [[], 1, k]);
+  const t = r.deplaces[0][1];
+  assertEqual([blocAt(s, t), blocAt(s, t + 1), casesCouvertes(s).get(t + 1)], ['four', null, t], 'deux cases libres à lui');
+  assertEqual(elargirFours(s), { deplaces: [], ranges: [] }, 'à sa place : rien ne bouge plus');
+  // la pièce pleine : rangé dans l'inventaire, la station n'est plus construite
+  delete s.blocs[t];
+  s.blocs[k] = 'four';
+  const W = z.W, cases = [];
+  for (let dr = 1; dr < 4; dr++) for (let dc = 1; dc < 5; dc++) cases.push((z.r + dr) * W + z.c + dc);
+  for (const c of cases) if (!s.blocs[c]) s.blocs[c] = 'mur_pierre';
+  const avant = countItem(s, 'four_pierre');
+  assertEqual(elargirFours(s), { deplaces: [], ranges: [k] });
+  assertEqual([blocAt(s, k), countItem(s, 'four_pierre'), s.stations.four.construit], [null, avant + 1, false]);
 });
 
 /* ---------- étape 5b-2 : l'énergie et l'eau en blocs ---------- */
