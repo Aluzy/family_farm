@@ -436,3 +436,27 @@ test('demander : cuisiner un plat, même si la famille n\'a pas faim et qu\'il a
   assertEqual(faireCompagnon(s, 'cuisiner').ok, true);
   assertEqual(boiteCount(s, plat), 2);
 });
+
+test('demander : nourrir les animaux (les poules, avec le blé), sinon il dit pourquoi', () => {
+  const D = C.DEMANDE;
+  const s = potager(0);
+  s.poulailler.poules = 0;
+  assertEqual(demanderCompagnon(s, 'nourrir').error, D.RIEN.nourrir, 'pas de poules');
+  s.poulailler.poules = 4;
+  s.poulailler.nourries = 0;
+  s.poulailler.restes = 0;
+  setInv(s, {});
+  s.silo = { ...(s.silo || {}), ble: 0 };
+  assertEqual(demanderCompagnon(s, 'nourrir').error, D.SANS_BLE, 'pas de blé');
+  setInv(s, { ble: 10 });
+  assertEqual(demanderCompagnon(s, 'nourrir'), { ok: true, quoi: 'nourrir', texte: D.OUI.nourrir });
+  assertEqual(tachesCompagnon(s), ['poulailler'], 'au Poulailler, avant tout');
+  const energie = s.energie;
+  const r = journeeCompagnon(s)[0];
+  assertEqual([r.ok, r.action, r.nourries], [true, 'nourrir', 4]);
+  assertEqual(s.poulailler.nourries, 4);
+  assert(countItem(s, 'ble') < 10, 'le blé pris');
+  assertEqual(s.energie, energie, 'pas l\'énergie du personnage');
+  assertEqual(demandeCompagnon(s), null, 'fini');
+  assertEqual(demanderCompagnon(s, 'nourrir').error, D.DEJA_NOURRIES);
+});
