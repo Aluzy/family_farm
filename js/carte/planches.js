@@ -87,7 +87,8 @@
     for (const e of def.elements) {
       const couche = e.slice(0, e.indexOf(':'));
       if (couche === 'couvre_chef' && M.couvreTete.includes(def.chapeau)) {
-        for (const [k, L] of [...haut]) if (Math.floor(k / W) < M.masqueTete && M.masque.includes(P.famille(L))) haut.delete(k);
+        // (une nuance d'un modèle retouché : la famille de sa base, couches.json « nuances »)
+        for (const [k, L] of [...haut]) if (Math.floor(k / W) < M.masqueTete && M.masque.includes(P.famille((def.nuances && def.nuances[L]) || L))) haut.delete(k);
       }
       const grille = (P.elements[e] || {})[v] || [];
       const ote = retire && M.retire.includes(couche);
@@ -164,7 +165,7 @@
         for (let x = 0; x < P.W; x++) {
           const L = g[y * P.W + x];
           if (L === null) continue;
-          const hex = palette[L] || C.outils[L];
+          const hex = palette[L] || (C.couleursFixes && C.couleursFixes[L]) || C.outils[L];
           if (!hex) throw new Error(`CartePlanches : pas de couleur pour « ${L} » (${nom})`);
           const [r, gg, b] = couleur(hex), i = ((y0 + y) * largeur + x0 + x) * 4;
           data[i] = r; data[i + 1] = gg; data[i + 2] = b; data[i + 3] = 255;
@@ -290,7 +291,7 @@
     base.Mr = commune(face, croise([7, 8], [18, 19, 20, 21]));
     base.Mw = commune(face, croise([3, 4], [22, 23]));
     base.Mv = commune(face, [[5, 6], [6, 6], [5, 7], [6, 7]], (c) => Math.min(...c) < 230) || base.k;
-    const palette = {};
+    const palette = { ...(C.couleursFixes || {}) };      // (le casque-lampe : des couleurs à lui, les mêmes pour tous)
     for (const [L, c] of Object.entries(base)) if (c) palette[L] = rgbHex(c);
     for (const L of P.derivees) {
       const [b, k] = L.split('×');
@@ -415,5 +416,63 @@
     return cle;
   }
 
-  global.CartePlanches = { assembler, planche, actif, charger, nomPlanche, pixels, apparence, visages, rond, cleApparence, chargerDonnees, texturesApparence };
+  // Étape E7 : un membre (de la famille) tel que la carte le montre : son personnage du catalogue ou son apparence, et la
+  // pièce d'équipement qu'il porte sur la tête (coiffe : un couvre-chef de couches.json, data/equipement.json « carte »),
+  // qui remplace son couvre-chef. d : { perso, enfant, apparence, coiffe }. cleMembre(d) : le nom de sa planche ;
+  // texturesMembre(scène, d) : la fait (et son atlas de visages ; un personnage du catalogue garde sa rangée de
+  // visages.png : customData.nom), couches.json et catalogue.json chargés ; → la clé, ou null (rien à assembler :
+  // un personnage du catalogue sans coiffe garde son PNG).
+  function cleMembre(d) {
+    const age = d.enfant ? 'enfant' : 'adulte';
+    const base = d.apparence ? cleApparence(age, d.apparence) : `${d.enfant ? 'enfant' : 'perso'}_${d.perso}`;
+    return d.coiffe ? `${base}+${d.coiffe}` : base;
+  }
+
+  // La définition d'un membre (son personnage ou son apparence, coiffé de sa pièce) : { def, palette, A, nom }, ou null.
+  function defMembre(C, K, d) {
+    const age = d.enfant ? 'enfant' : 'adulte';
+    let def, palette, A = null, nom = null;
+    if (d.apparence) {
+      A = apparence(C, K, age, d.apparence.identite, d.apparence.tenue);
+      def = { ...A.def };
+      palette = A.palette;
+    } else {
+      nom = nomPlanche(`${d.enfant ? 'enfant' : 'perso'}_${d.perso}`);
+      if (!nom || !C.personnages[nom]) return null;
+      def = { ...C.personnages[nom], nuances: (C.nuances || {})[nom] };
+      palette = C.palettes[nom];
+    }
+    if (!C.elements[`couvre_chef:${d.coiffe}`]) return null;
+    const ordre = (e) => C.ordreModele.indexOf(e.slice(0, e.indexOf(':')));
+    def.elements = def.elements.filter((e) => !e.startsWith('couvre_chef:')).concat(`couvre_chef:${d.coiffe}`)
+      .map((e, i) => [e, i]).sort((a, b) => ordre(a[0]) - ordre(b[0]) || a[1] - b[1]).map(([e]) => e);
+    def.chapeau = d.coiffe;
+    return { def, palette, A, nom };
+  }
+
+  function texturesMembre(scene, d) {
+    if (!d.coiffe) return d.apparence ? texturesApparence(scene, d.enfant ? 'enfant' : 'adulte', d.apparence) : null;
+    const cle = cleMembre(d), age = d.enfant ? 'enfant' : 'adulte';
+    if (scene.textures.exists(cle)) return cle;
+    const C = scene.cache.json.get('couches'), K = scene.cache.json.get('catalogue');
+    if (!C || !K || !global.document) return null;
+    const D = defMembre(C, K, d);
+    if (!D) return null;
+    const { A, nom } = D, p = assembler(C, D.def, D.palette);
+    const toile = (q) => {
+      const cv = global.document.createElement('canvas');
+      cv.width = q.largeur; cv.height = q.hauteur;
+      cv.getContext('2d').putImageData(new ImageData(q.data, q.largeur, q.hauteur), 0, 0);
+      return cv;
+    };
+    scene.textures.addSpriteSheet(cle, toile(p), { frameWidth: C.case.w, frameHeight: C.case.h });
+    if (A) {
+      const X = C.expressions;
+      scene.textures.addSpriteSheet('visages:' + cle, toile(visages(C, A, p)), { frameWidth: X.zone[2], frameHeight: X.zone[3] });
+      scene.textures.get(cle).customData = { age, visages: 'visages:' + cle };
+    } else scene.textures.get(cle).customData = { age, nom };
+    return cle;
+  }
+
+  global.CartePlanches = { assembler, planche, actif, charger, nomPlanche, pixels, apparence, visages, rond, cleApparence, chargerDonnees, texturesApparence, cleMembre, texturesMembre, defMembre };
 })(typeof window !== 'undefined' ? window : globalThis);

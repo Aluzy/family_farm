@@ -13,6 +13,7 @@ import { applyResult } from './game-actions.js';
 import { ateliersDuHameau } from '../engine/ile.js';
 import { solDuMonde } from './monde-sol.js';
 import { persoHtml } from './famille.js';
+import { plancheAvecChargement } from './apparence.js';
 import { openModal } from './modal.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
@@ -130,7 +131,8 @@ const RETROUVAILLES = ['Te revoilà ! Ça faisait longtemps.', 'Quelle bonne sur
 const humeur = (b) => (b >= DATA.HABITANTS.HEUREUX ? '😊' : b < DATA.HABITANTS.TRISTE ? '😟' : '🙂');
 
 function familleHtml(f, hameauId) {
-  const portraits = f.membres.map((m) => persoHtml(m.perso, m.enfant)).join('');
+  // (étape E7 : l'apparence à lui d'un habitant, js/ui/apparence.js ; sinon son personnage du catalogue)
+  const portraits = f.membres.map((m) => persoHtml(m.perso, m.enfant, '', '', m.apparence ? plancheAvecChargement(m.apparence, m.enfant) : null)).join('');
   // (l'amitié avec chacun, js/engine/amitie.js : son palier)
   const ami = (m) => { const A = amitieAvec(state, hameauId, m.id); return A ? ` <span class="ami-mini" title="Amitié : ${A.pts}/${A.max}">💛 ${escapeHtml(A.nom)}</span>` : ''; };
   const noms = f.membres.map((m) => `<strong>${escapeHtml(m.prenom)}</strong> <span class="muted">${escapeHtml(m.metier)}</span>${ami(m)}`).join(', ');

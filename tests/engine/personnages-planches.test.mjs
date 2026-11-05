@@ -50,3 +50,17 @@ test('planches assemblées : une combinaison hors du catalogue (une identité, l
 test('planches assemblées : le nom d\'un personnage d\'après la clé de sa planche', () => {
   assertEqual(['perso_7', 'enfant_12', 'perso_07', 'fermier', 'mouton'].map(CP.nomPlanche), ['perso_07', 'enfant_12', 'perso_07', null, null]);
 });
+
+test('planches assemblées : coiffé de son équipement (le casque-lampe, le chapeau de paille ; un retouché aussi)', () => {
+  // tests/engine/coiffes.png : les planches de scripts/personnage/couches.py --coiffes, l'une sous l'autre (14 rangées de cases)
+  const F = JSON.parse(readFileSync(new URL('./coiffes.json', import.meta.url), 'utf8'));
+  const K = JSON.parse(readFileSync(new URL('../../assets/personnages/catalogue.json', import.meta.url), 'utf8'));
+  const png = lirePng('tests/engine/coiffes.png');
+  F.cas.forEach(({ nom, coiffe }, r) => {
+    const m = /^(perso|enfant)_(\d+)$/.exec(nom);
+    const D = CP.defMembre(C, K, { perso: +m[2], enfant: m[1] === 'enfant', apparence: null, coiffe });
+    const p = CP.assembler(C, D.def, D.palette);
+    const tranche = { w: png.w, h: 448, px: (x, y) => png.px(x, r * 448 + y) };
+    compare(p, tranche, `${nom} + ${coiffe}`);
+  });
+});

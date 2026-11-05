@@ -5,7 +5,7 @@ import { mainCharacter, setupPending } from '../engine/depart.js';
 import { memberApparence, memberPerso } from '../engine/family.js';
 import { depositOreNotebook, hitsNeeded, mineOre } from '../engine/outils.js';
 import { techFlag } from '../engine/techtree.js';
-import { lumiereGrotte } from '../engine/equipement.js';
+import { coiffeCarte, lumiereGrotte } from '../engine/equipement.js';
 import { addItem } from '../engine/inventory.js';
 import { axeMode, godMode, hoeMode, pickMode, rodMode, state } from './store.js';
 import { persistState } from './storage.js';
@@ -129,6 +129,8 @@ window.FermeHote = {
   perso: () => memberPerso(mainCharacter(state)),
   // (étape E6 : son apparence à lui, ou null ; sa planche est faite par la ferme, js/carte/planches.js)
   apparence: () => memberApparence(mainCharacter(state)),
+  // (étape E7 : la pièce qu'il porte sur la tête, son casque-lampe : sa planche, faite par la ferme)
+  coiffe: () => (mainCharacter(state) ? coiffeCarte(state, mainCharacter(state).id) : null),
   go,
   // l'outil en main (barre d'outils) : 'hache', 'pioche', 'houe', 'canne' ou null
   enMain: () => (axeMode ? 'hache' : pickMode ? 'pioche' : hoeMode ? 'houe' : rodMode ? 'canne' : null),

@@ -159,8 +159,9 @@
 
     // la planche d'un membre : celle de son personnage d'adulte ou d'enfant
     // (étape E6 : son apparence à lui, js/carte/planches.js)
-    const cle = (def) => (def.apparence && global.CartePlanches
-      ? global.CartePlanches.cleApparence(def.enfant ? 'enfant' : 'adulte', def.apparence) : (def.enfant ? 'enfant_' : 'perso_') + def.perso);
+    // (et, étape E7, la pièce d'équipement qu'il porte sur la tête : def.coiffe)
+    const propre = (def) => !!((def.apparence || def.coiffe) && global.CartePlanches);
+    const cle = (def) => (propre(def) ? global.CartePlanches.cleMembre(def) : (def.enfant ? 'enfant_' : 'perso_') + def.perso);
 
     let rang = 0;                  // chacun son décalage : ils ne marchent pas l'un sur l'autre
     function creer(def) {
@@ -647,12 +648,12 @@
           // sinon le PNG, au chargeur)
           const P = global.CartePlanches;
           // (une apparence à lui : couches.json et catalogue.json d'abord, puis sa planche, tout de suite)
-          const propres = manque.filter((def) => def.apparence && P);
+          const propres = manque.filter(propre);
           if (propres.length) {
             if (!P.chargerDonnees(scene, o.donnees, () => this.sync(model))) return;
-            for (const def of propres) P.texturesApparence(scene, def.enfant ? 'enfant' : 'adulte', def.apparence);
+            for (const def of propres) P.texturesMembre(scene, def);
           }
-          const attendues = manque.filter((def) => !(def.apparence && P) && !(P ? P.charger(scene, cle(def), null, o.file(def.perso, def.enfant))
+          const attendues = manque.filter((def) => !propre(def) && !(P ? P.charger(scene, cle(def), null, o.file(def.perso, def.enfant))
             : (scene.textures.exists(cle(def)) || (scene.load.spritesheet(cle(def), o.file(def.perso, def.enfant), { frameWidth: 16, frameHeight: 32 }), false))));
           if (!attendues.length) { this.sync(model); return; }
           scene.load.once('complete', () => this.sync(model));

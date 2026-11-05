@@ -86,10 +86,12 @@
     if (!J || !C) return;
     const E = pour(scene);
     if (!E.rangs) E.rangs = new Map(J.personnages.map((n, i) => [n, i]));
-    const n = nom(s.texture.key), rang = n ? E.rangs.get(n) : undefined;
+    // (une planche faite dans le jeu, js/carte/planches.js : customData.nom, un personnage du catalogue coiffé de son
+    // équipement, étape E7 ; customData.visages, une apparence à elle et ses tuiles, étape E6)
+    const cd = scene.textures.get(String(s.texture.key).split('~')[0]).customData || {};
+    const n = nom(s.texture.key) || cd.nom || null, rang = n ? E.rangs.get(n) : undefined;
     const cas = C.frames[+s.frame.name];
-    // (une apparence à elle, étape E6 : ses tuiles dans sa propre texture, js/carte/planches.js texturesApparence)
-    const propre = rang === undefined ? (scene.textures.get(String(s.texture.key).split('~')[0]).customData || {}) : {};
+    const propre = rang === undefined ? cd : {};
     if (propre.visages && scene.textures.exists(propre.visages) && !(o && o.atlas)) o = { ...(o || {}), atlas: { key: propre.visages, base: 0 } };
     const age = propre.visages ? propre.age : n && n.startsWith('enfant_') ? 'enfant' : 'adulte';
     const z = (rang !== undefined || propre.visages) && cas ? J.cases[age][cas] : null;

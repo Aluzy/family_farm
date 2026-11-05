@@ -242,7 +242,19 @@ def exporter(chemin=os.path.join(RACINE, 'assets', 'personnages', 'couches.json'
         textes += [_px(px) for par in communs[age]['cases'].values() for px in par.values()]
         textes.append(_px(chibi.Modele.YEUX_FERMES))
         lettres = {t.split(',', 2)[2] for texte in textes if texte for t in texte.split(';')}
+        # (et toute sa palette : une pièce d'équipement, un autre couvre-chef emploient des lettres qu'il n'a pas,
+        # étape E7)
+        lettres |= {L for L in modeles.palette_de(nom, d, [n for n, _ in modeles.tous()].index(nom)) if L != 'a'}
         palettes[nom] = {L: '#%02x%02x%02x' % chibi.couleur(L) for L in sorted(lettres) if L not in OUTILS}
+    # (tous les éléments, pas seulement ceux des 100 : chaque coupe, chaque couvre-chef, le casque compris, chaque
+    # motif, chaque détail ; leurs grilles ne dépendent pas du reste)
+    base = dict(modeles.tous())['perso_07']
+    variantes = [dict(base, coupe=c) for c in modeles.COUPES] + [dict(base, chapeau=c) for c in modeles.CHAPEAUX]
+    variantes += [dict(base, motif=m) for m in (None, 'rayures', 'carreaux', 'pois')]
+    variantes += [dict(base, details=[x]) for x in modeles.ORDRE_DETAILS_CARTE]
+    for d in variantes:
+        for c, k, grilles in modeles.elements('perso_x', d):
+            elements.setdefault(f'{c}:{k}', {v: _px(g) for v, g in grilles.items()})
     zones = {v: {'bras': ';'.join(f'{x},{y}' for x, y in sorted(b, key=lambda t: (t[1], t[0]))),
                  'mains': ';'.join(f'{x},{y}' for x, y in sorted(mn, key=lambda t: (t[1], t[0])))} for v, (b, mn) in chibi.ZONES.items()}
     doc = {
@@ -265,6 +277,9 @@ def exporter(chemin=os.path.join(RACINE, 'assets', 'personnages', 'couches.json'
         'outils': {k: '#%02x%02x%02x' % F.BASE[k] for k in sorted(OUTILS)},
         # (pour une apparence libre, étape E6 : les coupes et couvre-chefs des enfants ramenés à ceux que la carte
         # dessine, l'ordre des détails, et les expressions du visage, scripts/personnage/expressions.py)
+        # (les couleurs qui ne dépendent de personne : le casque-lampe ; les nuances des modèles retouchés, leur base)
+        'couleursFixes': {k: '#%02x%02x%02x' % v for k, v in modeles.CASQUE_COULEURS.items()},
+        'nuances': {nom: {code: n['base'] for code, n in r['nuances'].items()} for nom, r in modeles.RETOUCHES_LETTRES.items()},
         'enfantCoupes': fermier.COUPES_ENFANT,
         'enfantChapeaux': {k: v for k, v in fermier.CHAPEAUX_ENFANT.items() if k},
         'ordreDetails': list(modeles.ORDRE_DETAILS_CARTE),
@@ -388,7 +403,43 @@ def apparences(n=12, graine=11):
     return out
 
 
+def coiffes(cas=(('perso_07', 'casque'), ('enfant_05', 'paille'), ('perso_01', 'casque'))):
+    """tests/engine/coiffes.json et .png : des personnages du catalogue coiffés d'une pièce d'équipement (étape E7 : le
+    casque-lampe, le chapeau de paille), leurs planches l'une sous l'autre ; un retouché aussi (perso_01 : assemblé par
+    assembler(), chibi.py ne sait pas lui changer de couvre-chef). Le test : tests/engine/personnages-planches.test.mjs."""
+    import json
+    from PIL import Image
+    communs = {age: communes(age, REFERENCES) for age in REFERENCES}
+    tous = dict(modeles.tous())
+    sortie = Image.new('RGBA', (F.COLS * F.W, 14 * F.H * len(cas)), (0, 0, 0, 0))
+    for r, (nom, coiffe) in enumerate(cas):
+        d, age = tous[nom], 'enfant' if nom.startswith('enfant_') else 'adulte'
+        elts = [(c, k, g) for c, k, g in modeles.elements(nom, d) if c != 'couvre_chef']
+        dd = dict(d, chapeau=coiffe)
+        elts = sorted(elts + [e for e in modeles.elements('perso_x', dd) if e[0] == 'couvre_chef'], key=lambda e: modeles.ORDRE_COUCHES.index(e[0]))
+        cases = dessiner(nom)
+        jambes = {n: par.get('jambes', {}) for n, par in couches_de(cases).items()}
+        g = assembler(elts, coiffe, age, communs[age], jambes, chibi.ZONES)
+        i = [n for n, _ in modeles.tous()].index(nom)
+        for k, (n, grille) in enumerate(g.items()):
+            for y in range(F.H):
+                for x in range(F.W):
+                    L = grille[y][x]
+                    if L is not None:
+                        c = chibi.couleur(chibi.ROLES.get(L, L))
+                        sortie.putpixel(((k % F.COLS) * F.W + x, r * 14 * F.H + (k // F.COLS) * F.H + y), c + (255,))
+    dossier = os.path.join(RACINE, 'tests', 'engine')
+    sortie.save(os.path.join(dossier, 'coiffes.png'))
+    with open(os.path.join(dossier, 'coiffes.json'), 'w', encoding='utf-8') as f:
+        json.dump({'_': 'Des personnages coiffés de leur équipement (scripts/personnage/couches.py --coiffes).', 'cas': [{'nom': n, 'coiffe': c} for n, c in cas]}, f, ensure_ascii=False)
+        f.write('\n')
+
+
 def main():
+    if '--coiffes' in sys.argv:
+        coiffes()
+        print('tests/engine/coiffes.json et .png écrits')
+        return 0
     if '--apparences' in sys.argv:
         print(len(apparences()), 'apparences écrites dans tests/engine/apparences.json et .png')
         return 0

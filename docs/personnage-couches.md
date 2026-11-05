@@ -1,7 +1,7 @@
 # Les personnages en couches : identité, tenue, expressions (chantier)
 
 Statut : **E0 validée** (les 9 expressions, de face et de profil) ; **E1 faite** (§ 6) ; **E2 faite** (§ 7) ;
-**E3 faite** (§ 8 : la carte ; § 9 : les portraits vivants du menu Famille) ; **E4 faite** (§ 10, § 11) ; **E5 faite** (§ 12) ; **E6 faite** (§ 13).
+**E3 faite** (§ 8 : la carte ; § 9 : les portraits vivants du menu Famille) ; **E4 faite** (§ 10, § 11) ; **E5 faite** (§ 12) ; **E6 faite** (§ 13) ; **E7 faite** (§ 14 : les habitants ; l'équipement de tête sur la carte).
 
 Le but : séparer un personnage de ses vêtements et de ses attributs (peau, yeux, coiffure, expression),
 et donner des expressions aux visages, **en gardant la base actuelle** : les 100 personnages
@@ -471,3 +471,54 @@ carte, leurs textures et leurs atlas de visages, un clignement ; dans la mine, s
 
 **Pas encore** : les habitants des hameaux restent des personnages du catalogue (leur tirage par graine, avec des
 identités et des tenues mêlées : étape E7) ; les émotions colorées d'`amis.js` ne concernent que les habitants.
+
+## 14. Étape E7 : les habitants tirés par graine, l'équipement sur la carte
+
+### Les habitants
+
+Chaque habitant d'un hameau a son apparence (`member.apparence`, comme un membre de la famille), tirée **de la
+graine du monde** (`js/engine/apparence.js`, `tirerApparence`) au moment où le hameau est peuplé
+(`js/engine/habitants.js`) : identité et tenue tirées chacune de son côté, parmi les choix de
+`DATA.FAMILLE.PROFIL.APPARENCE`, avec les probabilités de `DATA.HABITANTS.APPARENCE` (`data/monde.json` : barbe ou
+moustache pour un homme adulte, rousseur, joues roses, motif, couvre-chef, lunettes, boucles, pansement d'un enfant, la
+part des cheveux de fantaisie). Deux habitants d'un hameau n'ont pas la même peau, les mêmes cheveux, la même coupe et
+le même haut (`cleDiversite`). L'apparence ne dit rien de ce que fait l'habitant.
+
+- Un **tirage à part** (son propre flux, de la graine, du hameau, de la maison, de la place) : les prénoms, les métiers,
+  la composition des foyers et le numéro de personnage (gardé, le repli) ne changent pas.
+- Les hameaux **déjà peuplés** d'une partie en cours gardent leurs habitants (rangés dans la sauvegarde) ; ceux qu'on
+  découvre ensuite ont une apparence. Les **personnages écrits** du récit gardent la leur (leur personnage du catalogue).
+- Elle va partout où va l'habitant : la carte (sa planche et son atlas de visages, `CartePlanches.texturesApparence`,
+  ses expressions), la fiche du hameau (les portraits), les invités d'un repas, le visiteur de bienvenue.
+
+**Vérifié** : `tests/engine/habitants-apparence.test.mjs` (sur trois graines : valide, la même pour la même graine,
+jamais deux pareils dans un hameau, pas de barbe pour un enfant ni une femme ; sur 2000 tirages, toutes les peaux,
+couleurs de cheveux et tissus, et les probabilités tenues ; la carte et la fiche la reçoivent) ; dans Chromium, quatre
+habitants d'un hameau (dont un enfant) : leurs planches et atlas faits, leur expression du soir posée ; la fiche du
+hameau montre leurs portraits.
+
+### L'équipement sur la carte
+
+Une pièce portée sur la tête se voit sur la carte, dans la mine et au portrait : `data/equipement.json`, `carte` (le
+couvre-chef qu'elle met : `couvre_chef:<carte>` de `couches.json`) ; `coiffeCarte(state, id)` (`js/engine/equipement.js`).
+
+- **Le casque-lampe** : un nouveau couvre-chef, `casque` (`modeles.CHAPEAUX`, trois vues ; son dôme jaune et sa lampe,
+  des couleurs à lui, `CASQUE_COULEURS`, `couches.json` « couleursFixes » ; rien sous la rangée 4 : le visage et ses
+  expressions restent), qui masque le haut de la tête comme une casquette.
+- **Le chapeau de paille** : le couvre-chef `paille` des personnages.
+- Il remplace le couvre-chef du membre : `CartePlanches.cleMembre`, `defMembre`, `texturesMembre` (un personnage du
+  catalogue garde sa rangée de visages, `customData.nom` ; un retouché aussi, ses nuances rattachées à leur base pour le
+  masque, `couches.json` « nuances »). Le personnage principal (et la mine), la famille.
+- `couches.json` porte maintenant **tous** les éléments (chaque coupe, couvre-chef, motif, détail) et la palette
+  **complète** de chaque personnage (une pièce ou un autre couvre-chef emploient des lettres qu'il n'avait pas) :
+  371 Ko, 28 Ko compressé.
+
+**Vérifié** : `couches.py --combinaisons` (le casque compris dans les tirages) ; `tests/engine/personnages-planches.test.mjs`
+(`perso_07` et le casque, `enfant_05` et le chapeau de paille, `perso_01` retouché et le casque : au pixel près, contre
+`couches.py --coiffes`) ; dans Chromium : le personnage principal casqué et son compagnon au chapeau de paille sur la
+carte (un clignement sous le chapeau), le casque dans la mine.
+
+**Pas encore** : les autres pièces (bottes, gants, tablier, salopette, manteau, lanterne) ne se voient que sur le
+portrait de la fiche. Elles touchent aux jambes et aux bras, que la pose redessine : il faut les dessiner dans les trois
+vues et dans les couches des jambes et des bras (les bottes : un jeu de jambes à elles ; les gants, le manteau : la
+couleur des mains et des manches redessinées ; la lanterne : un outil tenu). C'est un travail de dessin à décider.

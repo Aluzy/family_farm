@@ -166,8 +166,8 @@
   function planchePerso() {
     const H = global.FermeHote;
     const n = H && H.perso ? H.perso() : null;
-    const a = H && H.apparence ? H.apparence() : null;
-    const cle = a && global.CartePlanches ? global.CartePlanches.cleApparence('adulte', a) : null;
+    const a = H && H.apparence ? H.apparence() : null, coiffe = H && H.coiffe ? H.coiffe() : null;
+    const cle = (a || coiffe) && global.CartePlanches ? global.CartePlanches.cleMembre({ perso: n, enfant: false, apparence: a, coiffe }) : null;
     return n ? { file: 'assets/' + planche(n), names: 'assets/personnages/cases.json', cle } : { file: 'assets/fermiere.png', names: 'assets/fermiere.json', cle: null };
   }
 

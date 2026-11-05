@@ -212,7 +212,7 @@
       const places = table ? table.places.slice() : [];
       const autour = table || porte;
       V.invites.forEach((q, k) => {
-        const d = { perso: q.perso, enfant: !!q.enfant };
+        const d = { perso: q.perso, enfant: !!q.enfant, apparence: q.apparence || null };
         const key = this.clePerso ? this.clePerso(d) : (d.enfant ? 'enfant_' : 'perso_') + d.perso;
         if (this.chargePerso) this.chargePerso(key, d);
         const dep = this.visiteDepart ? this.visiteDepart({ depart: q.depart }, porte || { x: autour.x, y: autour.y }) : { x: autour.x, y: autour.y };

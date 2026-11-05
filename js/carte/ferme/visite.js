@@ -149,7 +149,8 @@
     nouveauVisiteur(V) {
       const porte = this.homeDoor ? this.homeDoor() : null;
       if (!porte || !this.fermier) return null;
-      const key = 'perso_' + V.perso, d = { perso: V.perso, enfant: false };
+      const d = { perso: V.perso, enfant: false, apparence: V.apparence || null };
+      const key = this.clePerso ? this.clePerso(d) : 'perso_' + V.perso;
       if (this.chargePerso) this.chargePerso(key, d);
       const dep = this.visiteDepart(V, porte);
       return {

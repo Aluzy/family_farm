@@ -108,6 +108,16 @@ export function casesMembre(state, id) {
   return Array.from({ length: n }, (_, k) => (pieceDef(c[k]) ? c[k] : null));
 }
 
+// Le couvre-chef que met sur sa tête, sur la carte, la pièce que porte le membre `id` (PIECES[…].carte : un élément
+// couvre_chef de assets/personnages/couches.json ; chantier « couches », étape E7), ou null.
+export function coiffeCarte(state, id) {
+  for (const item of casesMembre(state, id)) {
+    const p = item && pieceDef(item);
+    if (p && p.place === 'tete' && p.carte) return p.carte;
+  }
+  return null;
+}
+
 // Les pièces que porte le membre `id`.
 export function piecesPortees(state, id) {
   return casesMembre(state, id).filter(Boolean);

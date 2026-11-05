@@ -252,6 +252,13 @@ CHAPEAUX = {
         'haut': ['............', '............', '............', '..RRRRRRRR..', '.........RR.', '..........R.'],
         'cote': ['............', '............', '............', '.RRRRRRRR...', 'RR..........', 'R...........'],
     },
+    # (le casque-lampe de l'équipement, data/equipement.json « carte » : son dôme jaune, 1 l'ombre, 2 la teinte,
+    # 3 le reflet, 4 la lampe ; CASQUE_LETTRES ; dessiné comme la casquette, rien sous la rangée 4 : le visage reste)
+    'casque': {
+        'bas': ['............', '....3221....', '...322221...', '..32244221..', '.1111111111.'],
+        'haut': ['............', '....2221....', '...322221...', '..32222221..', '.1111111111.'],
+        'cote': ['............', '...3221.....', '..322224....', '.3222224....', '.111111111..'],
+    },
     'fleur': {
         'bas': ['............', '............', '.........R..', '........RFR.', '.........R..'],
         'haut': ['............', '............', '..R.........', '.RFR........', '..R.........'],
@@ -352,6 +359,7 @@ def palette(d, i):
         # (les cheveux qui touchent le blanc d'un œil : leur ton sombre quand ils sont pâles, sinon leur couleur)
         'B_': hr['d'] if pales(d) else hr['b'], 'E_': hr['d'] if pales(d) else mix(hr['b'], hr['c'], 0.5),
         'L': cils(oeil),
+        **CASQUE_COULEURS,
     }
 
 
@@ -395,8 +403,8 @@ def vue(d, v):
     poser(g, [r.translate(COIFFURE_LETTRES) for r in coiffure(d['coupe'], v)], 0)
     chap = d['chapeau']
     if chap:
-        poser(g, CHAPEAUX[chap][v], 0)
-        if chap in ('casquette', 'bonnet', 'paille'):
+        g.update(chapeau(chap, v))
+        if chap in COUVRE_TETE:
             # sous le couvre-chef, le haut de la tête (rangées 0 à 3 : les cheveux, et la peau d'un crâne
             # chauve) ne dépasse pas (MASQUE_TETE)
             for (x, y) in [p for p in g if p[1] < MASQUE_TETE and famille(None, g[p]) in ('corps', 'coiffure')]:
@@ -418,7 +426,16 @@ COIFFURE_LETTRES = str.maketrans({'d': 'f', 'e': 'z', 'R': 'N'})
 MASQUE_TETE = 4                    # rangées : sous une casquette, un bonnet, un chapeau de paille
 COUPES = ['longs', 'mi', 'carre', 'courts', 'frange', 'frange_carre', 'couettes', 'chignon', 'chauve']
 ORDRE_DETAILS_CARTE = ['barbe', 'moustache', 'rousseur', 'lunettes', 'boucles', 'pansement', 'joues']
-COUVRE_TETE = ('casquette', 'bonnet', 'paille')
+COUVRE_TETE = ('casquette', 'bonnet', 'paille', 'casque')
+CASQUE_LETTRES = {'1': 'casque_ombre', '2': 'casque', '3': 'casque_reflet', '4': 'lampe'}
+CASQUE_COULEURS = {'casque_ombre': (199, 134, 42), 'casque': (242, 192, 64), 'casque_reflet': (251, 227, 138), 'lampe': (255, 250, 214)}
+
+
+def chapeau(nom, v):
+    """La grille d'un couvre-chef : {(x, y): lettre} (les chiffres du casque en lettres : CASQUE_LETTRES)."""
+    g = {}
+    poser(g, CHAPEAUX[nom][v], 0)
+    return {p: CASQUE_LETTRES.get(L, L) for p, L in g.items()}
 
 
 def bord_oeil(g, x, y):
@@ -434,7 +451,7 @@ FAMILLES = {
     'pilosite': ['b', 'c', 'J'],                                       # la barbe, la moustache
     'haut': ['p', 'q', 'o', 'v_', 'Mp'],
     'bas': ['s', 'r', 'A', 'Z', 'u', 'v', 'Ms', 'Mr'], 'chaussures': ['w', 'x', 'y', 'Mw'],
-    'couvre_chef': ['R', 'Q', 'H', 'V', 'S', 'T', 'U', 'F'],
+    'couvre_chef': ['R', 'Q', 'H', 'V', 'S', 'T', 'U', 'F', 'casque_ombre', 'casque', 'casque_reflet', 'lampe'],
     'lunettes': ['G'], 'boucles': ['Y'], 'pansement': ['W'],
 }
 _FAMILLE = {L: f for f, Ls in FAMILLES.items() for L in Ls}
@@ -487,9 +504,7 @@ def elements(nom, d):
             ('coiffure', d['coupe']): coupe,
         }
         if d['chapeau']:
-            g = {}
-            poser(g, CHAPEAUX[d['chapeau']][v], 0)
-            grilles[('couvre_chef', d['chapeau'])] = g
+            grilles[('couvre_chef', d['chapeau'])] = chapeau(d['chapeau'], v)
         for det in d['details']:
             g = {(x, y): ch.translate(PILOSITE_LETTRES) if det in ('barbe', 'moustache') else ch
                  for (x, y, ch) in DETAILS.get(det, {}).get(v, [])}

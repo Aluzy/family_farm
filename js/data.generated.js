@@ -3304,10 +3304,11 @@ export const RAW_DATA = {
     "CASES": 3,
     "PLACES": { "tete": "Tête", "corps": "Corps", "mains": "Mains", "pieds": "Pieds" },
     "PIECES": {
-      "casque_lampe": { "place": "tete", "enfant": false, "grotte": 140, "vueNuit": 150 },
+      "casque_lampe": { "place": "tete", "enfant": false, "grotte": 140, "vueNuit": 150, "carte": "casque" },
       "chapeau_paille": {
         "place": "tete",
         "enfant": true,
+        "carte": "paille",
         "economie": { "labourer": 10, "planter": 10, "arroser": 10, "recolter": 10, "cueillir": 10, "faucher": 10 },
         "soleil": [11, 17]
       },
@@ -4403,6 +4404,20 @@ export const RAW_DATA = {
         "Victor",
         "Yves"
       ]
+    },
+    "APPARENCE": {
+      "PILOSITE": 35,
+      "ROUSSEUR": 15,
+      "JOUES": 10,
+      "JOUES_ENFANT": 60,
+      "MOTIF": 40,
+      "COUVRE_CHEF": 30,
+      "LUNETTES": 12,
+      "BOUCLES": 10,
+      "PANSEMENT_ENFANT": 8,
+      "CHEVEUX_RARES": ["roses", "bleus", "verts", "violets"],
+      "RARES": 6,
+      "ESSAIS": 6
     },
     "PERSOS": {
       "adulte": {

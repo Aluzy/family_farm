@@ -83,9 +83,15 @@ export function plancheApparence(apparence, enfant) {
   return r;
 }
 
+// La planche d'une apparence (plancheApparence) ; tant que les données manquent : null, et la page est redessinée
+// une fois qu'elles sont là (le portrait du personnage du catalogue d'ici là).
+export function plancheAvecChargement(apparence, enfant) {
+  if (!donnees) chargerApparences(() => import('./render.js').then((R) => R.refresh()));
+  return plancheApparence(apparence, enfant);
+}
+
 export function portraitMembre(m) {
   const enfant = !!(m && m.enfant), n = memberPerso(m), app = memberApparence(m);
   if (!app) return { n, enfant, propre: null };
-  if (!donnees) chargerApparences(() => import('./render.js').then((R) => R.refresh()));
-  return { n, enfant, propre: plancheApparence(app, enfant) };
+  return { n, enfant, propre: plancheAvecChargement(app, enfant) };
 }

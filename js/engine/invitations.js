@@ -3,6 +3,7 @@ import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { hourOfDay } from './clock.js';
 import { hache } from './ferme-generee.js';
+import { validApparence } from './family.js';
 import { countItem, takeItem } from './inventory.js';
 import { habitantsDe, metierHabitant } from './habitants.js';
 import { rassasierFamille, repasJour } from './repas.js';
@@ -170,7 +171,7 @@ export function invitesModele(state) {
     // (le coin de la table est de son style : il l'admire en arrivant, js/engine/styles.js)
     const style = styleHabitant(state, t);
     const admire = admireLeCoin(state, style) ? phraseAdmire(style, invites.length) : null;
-    invites.push({ id: q.id, hameau: q.hameau, hameauNom: h.nom, prenom: t.m.prenom, perso: t.m.perso, enfant: !!t.m.enfant, metier: metierHabitant(h, t.m), depart: Number.isInteger(h.case) ? h.case : null, admire });
+    invites.push({ id: q.id, hameau: q.hameau, hameauNom: h.nom, prenom: t.m.prenom, perso: t.m.perso, apparence: validApparence(t.m.apparence, !!t.m.enfant), enfant: !!t.m.enfant, metier: metierHabitant(h, t.m), depart: Number.isInteger(h.case) ? h.case : null, admire });
   }
   if (!invites.length) return null;
   return { id: inv.id, moment: inv.moment, nom: INVITATION.MOMENTS[inv.moment].nom, etat: inv.etat, invites, paroles: { arrive: P.ARRIVE, table: P.TABLE, merci: P.MERCI, seul: P.SEUL } };

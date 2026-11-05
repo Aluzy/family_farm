@@ -111,7 +111,11 @@
       if (H.metier === 'berger' && !G.moutons.length) this.faireMoutons(e);
     },
 
-    clePerso(d) { return (d.enfant ? 'enfant_' : 'perso_') + d.perso; },
+    // (étape E7 : son apparence à lui, js/carte/planches.js ; sinon son personnage du catalogue)
+    clePerso(d) {
+      const P = global.CartePlanches;
+      return d.apparence && P ? P.cleApparence(d.enfant ? 'enfant' : 'adulte', d.apparence) : (d.enfant ? 'enfant_' : 'perso_') + d.perso;
+    },
 
     // Un habitant : son image attend sa planche (chargée à la demande, une fois).
     nouvelHabitant(e, d, mz, rang) {
@@ -132,8 +136,14 @@
       if (!this.habCharges) this.habCharges = new Set();
       if (this.habCharges.has(key)) return;
       this.habCharges.add(key);
-      // (la planche assemblée depuis ses couches, js/carte/planches.js, si le réglage le demande ; sinon le PNG)
       const P = global.CartePlanches;
+      // (une apparence à lui, étape E7 : couches.json et catalogue.json d'abord, puis sa planche et son atlas de visages)
+      if (d.apparence && P) {
+        const faire = () => P.texturesApparence(this, d.enfant ? 'enfant' : 'adulte', d.apparence);
+        if (P.chargerDonnees(this, { couches: v('personnages/couches.json'), catalogue: v('personnages/catalogue.json') }, faire)) faire();
+        return;
+      }
+      // (la planche assemblée depuis ses couches, js/carte/planches.js, si le réglage le demande ; sinon le PNG)
       if (P && P.charger(this, key, null, v(K.planche(d.perso, d.enfant)))) return;
       if (!P) this.load.spritesheet(key, v(K.planche(d.perso, d.enfant)), { frameWidth: 16, frameHeight: 32 });
       if (!this.load.isLoading()) this.load.start();
