@@ -6,6 +6,8 @@ import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { brume as brumeDuMoment, pleut } from '../engine/meteo.js';
 import { fetesDuJour } from '../engine/fetes.js';
+import { ouvrirSecret } from '../engine/secrets.js';
+import { entreeEncyclopedie } from '../engine/encyclopedie.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
@@ -505,6 +507,8 @@ export function stageModel() {
     // V-4 : les fêtes du jour (js/engine/fetes.js) : le hameau, de quelle heure à quelle heure ; ses habitants
     // se retrouvent sur la place (js/carte/ferme/habitants.js). Pas dans un monde partagé (la ferme seule).
     fetes: state.mondePartage ? [] : fetesDuJour(state).map((f) => ({ hameau: f.hameau, debut: f.debut, fin: f.fin })),
+    // D-2 : les secrets du monde déjà ouverts (js/engine/secrets.js) : les autres scintillent (js/carte/ferme/lieux-monde.js)
+    secretsOuverts: Object.keys((state.secrets && state.secrets.ouverts) || {}),
     // l'amitié : les présents des amis devant la porte (js/carte/ferme/amis.js)
     presents: presentsPourLaCarte(),
     // la visite de bienvenue (js/engine/bienvenue.js, fiche 18) : le visiteur en route, ou son plat qui
@@ -960,6 +964,21 @@ function stageLieuRecit(l) {
   setTimeout(() => { notify(r.texte, { kind: 'info' }); annoncerPage(r.fragment); }, 0);
 }
 
+// D-2 : un secret du monde touché (js/engine/secrets.js) : ce qu'on y lit, ce qu'on y trouve.
+function stageSecret(l) {
+  const r = ouvrirSecret(state, l);
+  if (!r) return;
+  persistState();
+  setTimeout(() => {
+    const L = [`${r.icone} ${r.texte}`];
+    if (r.tresor && r.tresor.pieces) L.push(`+${r.tresor.pieces} pièces.`);
+    else if (r.tresor) L.push(`+${r.tresor.n} ${DATA.OBJETS[r.tresor.item].icone} ${DATA.OBJETS[r.tresor.item].nom}.`);
+    notify(L.join(' '), { kind: 'info', son: r.deja ? undefined : 'ramasse' });
+    if (r.page) { const e = entreeEncyclopedie(r.page); notify(`📓 Une page du carnet du voyageur : « ${e ? e.terme : r.page} » (dans l'Encyclopédie, « Les secrets du monde »).`, { kind: 'info' }); }
+    if (r.vue) notify(`🔭 Le pays se découvre tout autour : la carte s'agrandit.`, { kind: 'info' });
+  }, 0);
+}
+
 // Une page de plus au carnet (le fil de la lune : rien d'autre n'est dit).
 function annoncerPage(id) {
   const page = id && RECIT.FRAGMENTS[id];
@@ -1142,7 +1161,7 @@ function terrainNow(rochers) {
 const MUETS_EN_LIGNE = ['region', 'ici', 'fauneVue', 'hameau', 'hameauIci', 'visite', 'presents'];
 // (E-9 : la hache, la pioche, la faux, la canne passent par le monde : js/ui/outils.js)
 // (E-13 : les machines de l'Atelier, les morceaux au sol et la cueillette aussi : js/ui/atelier.js, outils.js)
-const REFUSES_EN_LIGNE = ['faune', 'maison', 'lieuRecit', 'calecheTouchee', 'calecheHeler', 'habitantAgit', 'habitantParle', 'recolte'];
+const REFUSES_EN_LIGNE = ['faune', 'maison', 'lieuRecit', 'secret', 'calecheTouchee', 'calecheHeler', 'habitantAgit', 'habitantParle', 'recolte'];
 let dernierMot = 0;
 function pasEnLigne() {
   const t = Date.now();
@@ -1191,7 +1210,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, enLigneSurLaFerme({ act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, lot: (f) => enLot(state, f), pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, invites: invitesDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, presents: presentsDepuisCarte, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() }))) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
+      if (!FarmStage.mount(el, enLigneSurLaFerme({ act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, secret: stageSecret, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, lot: (f) => enLot(state, f), pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, invites: invitesDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, presents: presentsDepuisCarte, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() }))) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
     } catch (err) {
       stageBroken = true;
       if (window.Chargement) window.Chargement.fini();

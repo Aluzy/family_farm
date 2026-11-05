@@ -3614,6 +3614,21 @@ export const RAW_DATA = {
       "ATELIER": { "HAMEAU": 40 },
       "EPAVE": { "HAMEAU": 30 },
       "CALE": { "RAYON": 40, "HAMEAU": 8, "PECHE": 8 }
+    },
+    "SECRETS": {
+      "SORTES": {
+        "ruine": { "N": 3, "BIOMES": ["prairie", "lande", "foret"] },
+        "cairn": { "N": 3, "BIOMES": ["montagne", "lande"] },
+        "arbre_ancien": { "N": 3, "BIOMES": ["foret", "prairie"] },
+        "belvedere": { "N": 2, "BIOMES": ["montagne"], "HAUT": true },
+        "pierre_levee": { "N": 3, "BIOMES": ["lande", "prairie", "marais"] }
+      },
+      "PAS": 6,
+      "AUTOUR": 2,
+      "ECART": 40,
+      "FERME": 30,
+      "HAMEAU": 18,
+      "LIEU": 12
     }
   },
   "VEGETATION": {
@@ -3698,7 +3713,7 @@ export const RAW_DATA = {
     "CLAIRIERES": { "PAS": 18, "SEUIL": 0.7, "FONDU": 0.06 },
     "TOUFFES": { "PAS": 5, "MIN": 0.2, "MAX": 1.8 },
     "FERME": 5,
-    "LIEUX": { "hameaux": 6, "grottes": 3, "peche": 2, "recit": 4 },
+    "LIEUX": { "hameaux": 6, "grottes": 3, "peche": 2, "recit": 4, "secrets": 3 },
     "BORNES": {
       "foret": { "images": [0.05, 0.16], "basses": [0.03, 0.2] },
       "lande": { "images": [0.01, 0.05], "basses": [0.05, 0.3] },
@@ -3839,7 +3854,18 @@ export const RAW_DATA = {
         "bloque": [[-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, -1], [0, -1], [1, -1]],
         "boite": [34, 36]
       },
-      { "nom": "cale", "genre": "ponton", "variantes": 4, "recit": true, "boite": [14, 28] }
+      { "nom": "cale", "genre": "ponton", "variantes": 4, "recit": true, "boite": [14, 28] },
+      {
+        "nom": "ruine",
+        "genre": "secret",
+        "variantes": 2,
+        "bloque": [[-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-2, -1], [2, -1]],
+        "boite": [36, 34]
+      },
+      { "nom": "cairn", "genre": "secret", "variantes": 1, "bloque": [[0, 0]], "boite": [12, 30] },
+      { "nom": "arbre_ancien", "genre": "secret", "variantes": 1, "bloque": [[-1, 0], [0, 0], [1, 0]], "boite": [30, 70] },
+      { "nom": "belvedere", "genre": "secret", "variantes": 1, "bloque": [[-1, 0], [1, 0]], "boite": [26, 30] },
+      { "nom": "pierre_levee", "genre": "secret", "variantes": 1, "bloque": [[0, 0]], "boite": [12, 40] }
     ],
     "NEIGE": 0.86,
     "BLOQUE": [[-1, 0], [0, 0], [1, 0], [-1, -1], [0, -1], [1, -1], [-1, -2], [0, -2], [1, -2]],
@@ -6165,6 +6191,79 @@ export const RAW_DATA = {
     "PLUIE_DUREE": [2, 5],
     "BRUME_FIN": 10,
     "NOMS": { "clair": "☀️ Beau temps", "pluie": "🌧️ Averse", "brume": "🌫️ Brume du matin" }
+  },
+  "SECRETS": {
+    "PART_PAGE": 0.5,
+    "VUE": 40,
+    "NOMS": {
+      "ruine": ["🏚️", "une vieille ruine"],
+      "cairn": ["🗿", "un cairn"],
+      "arbre_ancien": ["🌳", "un arbre ancien"],
+      "belvedere": ["🔭", "un belvédère"],
+      "pierre_levee": ["🪨", "une pierre levée"]
+    },
+    "TEXTES": {
+      "ruine": {
+        "trouve": [
+          "De vieux murs de pierre, mangés par la mousse. Entre deux pierres descellées, quelque chose brille.",
+          "Une maison d'autrefois, dont il ne reste que les murs. Dans l'âtre écroulé, tu trouves un petit trésor."
+        ],
+        "deja": [
+          "Les vieux murs sont toujours là, tranquilles. Tu as déjà fouillé chaque pierre.",
+          "La ruine dort au soleil. Elle t'a déjà donné son secret."
+        ]
+      },
+      "cairn": {
+        "trouve": [
+          "Un tas de pierres posées une à une, par des mains patientes. Sous la dernière, une cachette.",
+          "Les bergers montaient ces pierres pour marquer le chemin. Celui-ci gardait quelque chose."
+        ],
+        "deja": [
+          "Tu poses une pierre de plus sur le cairn, comme le veut la coutume.",
+          "Le cairn montre toujours le chemin. Sa cachette est vide, maintenant."
+        ]
+      },
+      "arbre_ancien": {
+        "trouve": [
+          "Un arbre immense, plus vieux que tous les hameaux. Dans le creux de ses racines, une cachette.",
+          "Il faudrait cinq personnes pour faire le tour de son tronc. Entre ses racines, tu trouves quelque chose."
+        ],
+        "deja": [
+          "Le vieil arbre bruisse doucement. Il t'a déjà confié son secret.",
+          "Tu t'assieds un instant contre le vieil arbre. Il fait bon à son ombre."
+        ]
+      },
+      "belvedere": {
+        "trouve": [
+          "Un rocher plat, tout en haut, et le pays entier à tes pieds : les rivières, les forêts, les toits des hameaux.",
+          "D'ici, on voit jusqu'à la mer. Tu reconnais des chemins, des lacs, des coins que tu n'as jamais vus."
+        ],
+        "deja": ["Le pays s'étend toujours à tes pieds. Quelle vue !", "Le vent souffle fort, ici. Tout est calme, en bas."]
+      },
+      "pierre_levee": {
+        "trouve": [
+          "Une grande pierre dressée vers le ciel, couverte de lichen. À son pied, quelqu'un a laissé quelque chose.",
+          "Personne ne sait qui l'a levée, ni quand. À son pied, dans l'herbe, une offrande oubliée."
+        ],
+        "deja": ["La pierre levée regarde le ciel, comme toujours.", "Tu poses la main sur la pierre. Elle est tiède de soleil."]
+      }
+    },
+    "TRESORS": {
+      "ruine": [["pieces", 60, 140], ["amethyste", 1, 1], ["graine_tournesol", 2, 4], ["miel", 1, 2]],
+      "cairn": [["quartz", 1, 2], ["ammonite", 1, 1], ["trilobite", 1, 1], ["herbes_montagne", 2, 4]],
+      "arbre_ancien": [["chataigne", 3, 6], ["champignon", 2, 4], ["miel", 1, 2], ["gland", 2, 4]],
+      "pierre_levee": [["amethyste", 1, 1], ["perle", 1, 1], ["pieces", 50, 120], ["quartz", 1, 2]]
+    },
+    "PAGES": [
+      "carnet_voyageur_1",
+      "carnet_voyageur_2",
+      "carnet_voyageur_3",
+      "carnet_voyageur_4",
+      "carnet_voyageur_5",
+      "carnet_voyageur_6",
+      "carnet_voyageur_7",
+      "carnet_voyageur_8"
+    ]
   },
   "CONSERVATION": {
     "carotte": 6,

@@ -82,7 +82,13 @@
     "  un lieu manque (rare : un monde sans forêt profonde, sans plage).",
     "  La cale du bac aux Mouettes (CALE) : une case de terre au bord de la mer, à RAYON tuiles au plus du hameau et",
     "  HAMEAU au moins, à PECHE tuiles au moins d'un coin de pêche, d'où la jetée de LIEUX.CALE cases avance dans la",
-    "  mer avec la place du bac le long de son bout (monde-gen.js calePossible) : la plus près du hameau ; { sens }."
+    "  mer avec la place du bac le long de son bout (monde-gen.js calePossible) : la plus près du hameau ; { sens }.",
+    "SECRETS (D-2, docs/phase-4.md ; js/engine/secrets.js) : les lieux remarquables du monde, dans lieux.secrets",
+    "  ({ id, sorte, case }), tirés à part (leur propre hasard : les autres lieux ne bougent pas). Pour chaque sorte,",
+    "  N au plus, sur une case de l'un de ses BIOMES, entourée sur AUTOUR cases de terre qui se marche (ni eau, ni",
+    "  falaise, ni sommet, ni plage, ni chemin), à FERME tuiles au moins de la ferme, HAMEAU d'un hameau, LIEU d'un",
+    "  autre lieu, ECART d'un autre secret ; les candidats tous les PAS tuiles. HAUT : les plus hauts d'abord (le",
+    "  belvédère, d'où l'on voit loin) ; sinon dans l'ordre d'un tirage."
   ],
   "PLAN_MONDE": {
     "LENT": 4, "GRILLE": 6, "SAUT": 3, "DECALAGE": 0.3, "ONDULE": { "PAS": 12, "AMPLITUDE": 0.35 },
@@ -126,6 +132,16 @@
       "ATELIER": { "HAMEAU": 40 },
       "EPAVE": { "HAMEAU": 30 },
       "CALE": { "RAYON": 40, "HAMEAU": 8, "PECHE": 8 }
+    },
+    "SECRETS": {
+      "SORTES": {
+        "ruine": { "N": 3, "BIOMES": ["prairie", "lande", "foret"] },
+        "cairn": { "N": 3, "BIOMES": ["montagne", "lande"] },
+        "arbre_ancien": { "N": 3, "BIOMES": ["foret", "prairie"] },
+        "belvedere": { "N": 2, "BIOMES": ["montagne"], "HAUT": true },
+        "pierre_levee": { "N": 3, "BIOMES": ["lande", "prairie", "marais"] }
+      },
+      "PAS": 6, "AUTOUR": 2, "ECART": 40, "FERME": 30, "HAMEAU": 18, "LIEU": 12
     }
   },
   "//VEGETATION": [
@@ -219,7 +235,7 @@
     "CLAIRIERES": { "PAS": 18, "SEUIL": 0.7, "FONDU": 0.06 },
     "TOUFFES": { "PAS": 5, "MIN": 0.2, "MAX": 1.8 },
     "FERME": 5,
-    "LIEUX": { "hameaux": 6, "grottes": 3, "peche": 2, "recit": 4 },
+    "LIEUX": { "hameaux": 6, "grottes": 3, "peche": 2, "recit": 4, "secrets": 3 },
     "BORNES": {
       "foret": { "images": [0.05, 0.16], "basses": [0.03, 0.2] },
       "lande": { "images": [0.01, 0.05], "basses": [0.05, 0.3] },
@@ -406,7 +422,9 @@
     "toucher : RECIT.LIEUX, data/recit.json).",
     "La cale du bac (le récit : lieux.recit, sorte « cale », aux Mouettes) : posée comme un ponton (genre « ponton » :",
     "sur l'eau, sous ce qui marche dessus), une jetée de CALE cases dans le sens du plan, le bac amarré le long de son",
-    "bout ; ses cases s'ouvrent à la marche ; recit : un lieu du récit qu'on touche (le bac, boite autour de lui)."
+    "bout ; ses cases s'ouvrent à la marche ; recit : un lieu du récit qu'on touche (le bac, boite autour de lui).",
+    "Les secrets du monde (D-2 : lieux.secrets, genre « secret » : la ruine, le cairn, l'arbre ancien, le belvédère, la",
+    "pierre levée) : posés comme les lieux du récit (bloque, boite) ; les toucher : js/engine/secrets.js."
   ],
   "LIEUX": {
     "SORTES": [
@@ -414,7 +432,12 @@
       { "nom": "ponton", "genre": "ponton", "variantes": 4 },
       { "nom": "piquets", "genre": "coin", "variantes": 2 },
       { "nom": "epave", "genre": "recit", "variantes": 1, "bloque": [[-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, -1], [0, -1], [1, -1]], "boite": [34, 36] },
-      { "nom": "cale", "genre": "ponton", "variantes": 4, "recit": true, "boite": [14, 28] }
+      { "nom": "cale", "genre": "ponton", "variantes": 4, "recit": true, "boite": [14, 28] },
+      { "nom": "ruine", "genre": "secret", "variantes": 2, "bloque": [[-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-2, -1], [2, -1]], "boite": [36, 34] },
+      { "nom": "cairn", "genre": "secret", "variantes": 1, "bloque": [[0, 0]], "boite": [12, 30] },
+      { "nom": "arbre_ancien", "genre": "secret", "variantes": 1, "bloque": [[-1, 0], [0, 0], [1, 0]], "boite": [30, 70] },
+      { "nom": "belvedere", "genre": "secret", "variantes": 1, "bloque": [[-1, 0], [1, 0]], "boite": [26, 30] },
+      { "nom": "pierre_levee", "genre": "secret", "variantes": 1, "bloque": [[0, 0]], "boite": [12, 40] }
     ],
     "NEIGE": 0.86,
     "BLOQUE": [[-1, 0], [0, 0], [1, 0], [-1, -1], [0, -1], [1, -1], [-1, -2], [0, -2], [1, -2]],

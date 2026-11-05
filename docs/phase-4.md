@@ -204,3 +204,21 @@ G-1, plus courts, qui embellissent ce qui existe déjà.
 - **Pas de marché ni de musique** pour l'instant : le commerce reste celui du jeu solo (M.4), et les musiques sont prévues avec G-2.
 - **En ligne** : rien. Les hameaux restent au grand monde (E-8), et la copie mise en ligne perd `state.fetes`.
 - **Les tests** : `tests/engine/fetes.test.mjs`, et un essai dans le jeu avec la partie du jour 54 (la place pleine, l'annonce, le calendrier).
+
+## 11. D-2 : fait
+
+- **Le plan** (`js/engine/monde-gen.js`, `data/monde.json` › `PLAN_MONDE.SECRETS`) : 14 secrets par monde, tirés de la graine avec leur propre hasard (les autres lieux ne bougent pas) :
+  - 3 ruines (prairie, lande, forêt), 3 cairns (montagne, lande), 3 arbres anciens (forêt, prairie), 2 belvédères (les plus hauts de la montagne), 3 pierres levées (lande, prairie, marais) ;
+  - chacun entouré de terre qui se marche, hors des chemins, loin de la ferme (30 cases), des hameaux (18), des autres lieux (12) et des autres secrets (40) ;
+  - environ 15 ms de plus au calcul du plan.
+- **Sur la carte** (`scripts/carte/lieux.py`, `js/engine/monde-lieux.js`, `js/carte/ferme/lieux-monde.js`) : un dessin pour chacun (la ruine de la forêt est plus moussue), ses cases fermées à la marche. Tant qu'il n'est pas ouvert, une petite étoile y scintille de temps en temps.
+- **L'ouvrir** (`js/engine/secrets.js`, `data/secrets.json`) : le toucher la première fois donne :
+  - une page du carnet du voyageur (8 pages, dans l'ordre, une fois sur deux tant qu'il en reste),
+  - ou un petit trésor selon la sorte (des pièces, une améthyste, du quartz, un fossile, du miel, des châtaignes…) ;
+  - le belvédère, lui, montre le pays tout autour : le brouillard de la carte se lève sur 40 cases.
+
+  Ensuite, une phrase : il a déjà donné son secret.
+- **L'encyclopédie** : une catégorie « Les secrets du monde » (🗝️), avec une page par sorte et les 8 pages du carnet (`secret:<sorte>`, `secret:<page>`).
+- **Le générateur passe à la version 2** (`GENERATEUR_VERSION`) : le plan a ses secrets, et la végétation est dégagée autour d'eux. La ferme, le sol, les hameaux et les autres lieux ne bougent pas. La migration 71 → 72 garde les parties du générateur 1 et les note au 2.
+- **En ligne** : rien. Les secrets sont hors de la ferme, et la copie mise en ligne perd `state.secrets`.
+- **Les tests** : `tests/engine/secrets.test.mjs`, et un essai dans le jeu avec la partie du jour 54 (les 14 secrets de son monde, les dessins, l'ouverture).

@@ -270,6 +270,26 @@
       ]
     },
     {
+      "id": "secrets",
+      "icone": "🗝️",
+      "nom": "Les secrets du monde",
+      "entrees": [
+        {"id": "s_ruine", "terme": "Les vieilles ruines", "description": "Des murs de pierre écroulés, mangés par la mousse : des maisons d'autrefois, bien avant les hameaux d'aujourd'hui. On en trouve dans la prairie, sur la lande et en forêt. Touche une ruine la première fois : entre ses pierres se cache un petit trésor, ou une page du carnet du voyageur.", "liens": ["s_cairn", "s_pierre_levee", "carnet_voyageur_1"], "decouverte": ["secret:ruine"]},
+        {"id": "s_cairn", "terme": "Les cairns", "description": "Des tas de pierres posées une à une, sur la lande et dans la montagne. Les bergers les montaient pour marquer les chemins par temps de brouillard. Sous la dernière pierre, il y a souvent une cachette.", "liens": ["s_belvedere", "s_ruine"], "decouverte": ["secret:cairn"]},
+        {"id": "s_arbre_ancien", "terme": "Les arbres anciens", "description": "Des arbres immenses, plus vieux que tous les hameaux, dans la forêt et parfois au milieu d'un pré. Leurs racines gardent des cachettes. On ne les abat pas.", "liens": ["s_ruine", "b_foret"], "decouverte": ["secret:arbre_ancien"]},
+        {"id": "s_belvedere", "terme": "Les belvédères", "description": "Un rocher plat, tout en haut de la montagne, d'où l'on voit le pays entier. Y monter, c'est découvrir d'un coup tout ce qui l'entoure : le brouillard de la carte se lève loin à la ronde.", "liens": ["s_cairn", "b_montagne"], "decouverte": ["secret:belvedere"]},
+        {"id": "s_pierre_levee", "terme": "Les pierres levées", "description": "De grandes pierres dressées vers le ciel, sur la lande, dans la prairie ou au bord du marais. Personne ne sait qui les a levées. À leur pied, on trouve parfois une offrande oubliée.", "liens": ["s_ruine", "carnet_voyageur_4"], "decouverte": ["secret:pierre_levee"]},
+        {"id": "carnet_voyageur_1", "terme": "Carnet du voyageur, page 1", "description": "« Je suis arrivé par le bac, un matin de brume. Personne ici ne sait d'où viennent les vieux murs qu'on croise dans les prés. On dit qu'il y avait des villages avant les hameaux, et des gens qui partaient un jour sans se retourner. »", "liens": ["carnet_voyageur_2", "s_ruine"], "decouverte": ["secret:carnet_voyageur_1"]},
+        {"id": "carnet_voyageur_2", "terme": "Carnet du voyageur, page 2", "description": "« Les bergers m'ont appris à lire les cairns : une pierre posée en haut veut dire que le chemin continue ; deux pierres côte à côte, qu'il faut tourner. Par temps de brouillard, ils vous sauvent la vie. »", "liens": ["carnet_voyageur_3", "s_cairn"], "decouverte": ["secret:carnet_voyageur_2"]},
+        {"id": "carnet_voyageur_3", "terme": "Carnet du voyageur, page 3", "description": "« J'ai compté les cernes d'une souche, près d'un très vieil arbre. J'ai abandonné à trois cents. Celui qui est encore debout à côté doit avoir vu passer mille hivers. »", "liens": ["carnet_voyageur_4", "s_arbre_ancien"], "decouverte": ["secret:carnet_voyageur_3"]},
+        {"id": "carnet_voyageur_4", "terme": "Carnet du voyageur, page 4", "description": "« Les pierres levées regardent toutes du même côté : vers l'endroit où se lève la pleine lune, au début de l'été. Ceux qui les ont dressées connaissaient le ciel mieux que nous. »", "liens": ["carnet_voyageur_5", "s_pierre_levee"], "decouverte": ["secret:carnet_voyageur_4"]},
+        {"id": "carnet_voyageur_5", "terme": "Carnet du voyageur, page 5", "description": "« Du haut du belvédère, j'ai vu trois rivières descendre vers la mer, et la fumée de six hameaux. J'ai dessiné la carte que voici ; elle n'est pas juste, mais elle est belle. »", "liens": ["carnet_voyageur_6", "s_belvedere"], "decouverte": ["secret:carnet_voyageur_5"]},
+        {"id": "carnet_voyageur_6", "terme": "Carnet du voyageur, page 6", "description": "« Dans les hameaux, on laisse toujours une assiette de plus à table, au cas où quelqu'un passerait. On m'a nourri partout où je suis allé. Je n'ai jamais su comment rendre tout ça. »", "liens": ["carnet_voyageur_7"], "decouverte": ["secret:carnet_voyageur_6"]},
+        {"id": "carnet_voyageur_7", "terme": "Carnet du voyageur, page 7", "description": "« Les vieux disent qu'il ne faut rien prendre dans une ruine sans y laisser quelque chose en échange : une graine, une pierre, une chanson. Je n'avais qu'une chanson. Je l'ai laissée. »", "liens": ["carnet_voyageur_8"], "decouverte": ["secret:carnet_voyageur_7"]},
+        {"id": "carnet_voyageur_8", "terme": "Carnet du voyageur, page 8", "description": "« Je repars demain. J'ai caché les pages de ce carnet un peu partout, dans les endroits que j'ai aimés. Si tu les as toutes trouvées, c'est que tu as aimé les mêmes. Prends soin de ce pays. »", "liens": ["carnet_voyageur_1"], "decouverte": ["secret:carnet_voyageur_8"]}
+      ]
+    },
+    {
       "id": "hameaux",
       "icone": "🏘️",
       "nom": "Les hameaux du grand monde",

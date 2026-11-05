@@ -10,7 +10,7 @@
 
 import {
   addItem, advanceNight, allDevices, awakeMsAtHour, countItem, DATA, migrate, nightLengthMs, objectiveChapter, runNight, startNight,
-  testFarmMap, testFermeConstruite, tick,
+  STATE_VERSION, testFarmMap, testFermeConstruite, tick,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, garden, PENALITES_DU_JEU, sansPenalite, test } from './aide.mjs';
 
@@ -100,7 +100,7 @@ test('B-1 : une partie d\'avant (v70) retrouve ses appareils à neuf, rallumés 
   L[0].usure = DATA.USURE.PANNE; L[0].allume = false;
   if (L[1]) { L[1].usure = 42; L[1].usureMs = 999; }
   const m = migrate({ v: 70, t: 0, s: { ...JSON.parse(JSON.stringify(s)), version: 70 } });
-  assertEqual(m.version, 71);
+  assertEqual(m.version, STATE_VERSION);
   const M = allDevices(m);
   assert(M.every((d) => d.usure === 0 && d.usureMs === 0), 'à neuf');
   assertEqual(M[0].allume, true, 'la panne l\'avait éteint : rallumé');
