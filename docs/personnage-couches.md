@@ -1,7 +1,7 @@
 # Les personnages en couches : identité, tenue, expressions (chantier)
 
 Statut : **E0 validée** (les 9 expressions, de face et de profil) ; **E1 faite** (§ 6) ; **E2 faite** (§ 7) ;
-**E3 faite** (§ 8 : la carte ; § 9 : les portraits vivants du menu Famille).
+**E3 faite** (§ 8 : la carte ; § 9 : les portraits vivants du menu Famille) ; **E4 en cours** (§ 10).
 
 Le but : séparer un personnage de ses vêtements et de ses attributs (peau, yeux, coiffure, expression),
 et donner des expressions aux visages, **en gardant la base actuelle** : les 100 personnages
@@ -201,9 +201,8 @@ table vaut pour tous les personnages d'un même âge (vérifié : sinon l'atlas 
 - **Pas de visage** : tout ce qui est de dos (`_haut_`), la cuisine et le frigo (de dos), la faux, et
   les temps où un bras ou un outil passe devant le visage (outil levé, fourchette à la bouche :
   `assis_*_1`).
-- **Limite** : un enfant assis (`assis_bas_0`, `assis_cote_0`) n'a pas de calque : le raccourci des
-  enfants (`chibi.ENFANT_RANGEES`, les rangées 20 et 21 de la case) tombe, la tête baissée de 4 pour
-  s'asseoir, dans son menton, qui est rogné. Défaut de dessin antérieur, à reprendre avec les couches (E4).
+- ~~Limite~~ (corrigée à l'étape E4, § 10) : un enfant assis avait le menton rogné par le raccourci des enfants,
+  et donc pas de calque ; il en a un maintenant (51 cases au visage dégagé, comme un adulte).
 - Les yeux fermés de l'expression `fermes` sont exactement ceux du sommeil de `chibi.py` (la peau relevée
   comme dans `Modele.yeux_fermes`) : les cases `dort_bas_*` sont reconnues comme `fermes`.
 
@@ -293,3 +292,50 @@ fermés, le portrait de la fiche est identique au pixel près à la case de la p
 fermés) ; en marche, il passe par 3 images différentes ; avec « réduire les animations », aucune animation ;
 le casque-lampe descend avec la tête, les bottes restent ; les portraits de la liste des membres sont vivants.
 Test : `tests/engine/personnages-visages.test.mjs` (les constantes du portrait d'accord avec l'atlas).
+
+## 10. Étape E4 : les planches en couches (première partie)
+
+**Les modèles retouchés à la main en lettres.** `perso_01` à `perso_03` sont maintenant des grilles de lettres,
+dans `scripts/personnage/retouches.json`, avec leurs 36 couleurs propres. Chacune est une **nuance** d'une
+lettre de la palette (sa « base » : sa famille, donc sa couche), rattachée à la main d'après sa place et ses
+voisines : la place tranche là où la couleur la plus proche se trompe (le blanc d'une chemise n'est pas le
+blanc d'un œil). `modeles.py` écrit les 100 modèles depuis des lettres (`lettres()`, `palette_de()`, `base()`) :
+les trois retouchés sont **identiques au pixel près**.
+
+**Des lettres qui disent l'élément.** Quelques lettres servaient à deux éléments ; elles ont maintenant des
+sœurs **de mêmes couleurs** (aucune image ne change) :
+
+| Élément | Avant | Maintenant |
+|---|---|---|
+| La barbe, la moustache | B, C (les cheveux), l (la bouche dans la barbe) | b, c, J |
+| La peau que la coupe laisse dans l'ombre (le front), le crâne d'un chauve | d, e | f, z |
+| Les rubans des couettes | R (l'accessoire du couvre-chef) | N |
+| Le cœur de la fleur | Y (l'or des boucles d'oreilles) | F |
+
+**Les planches lues en lettres** (`scripts/personnage/couches.py`). `chibi.py` est relancé sur un modèle
+« marqué » (une couleur unique par lettre, tout près de la vraie, pour que ses tests sur les couleurs donnent
+la même réponse) : chaque pixel des 112 cases se relit en lettre, en couleur calculée (`L×0.8` la manche
+lointaine, `L×0.7` la chaussure assise, `L×0.85` les cils), en outil (un nom de `fermier.C`), en contour
+intérieur (`K`) ou en contour de la silhouette (`Ko`, recalculable). **Preuve** : recolorées, les 100 planches
+en lettres redonnent exactement les planches du jeu (`python3 scripts/personnage/couches.py`, une minute).
+Chaque lettre a sa couche (`couches.FAMILLES`) : corps, joues, rousseur, coiffure, pilosité, haut, bas,
+chaussures, couvre-chef, lunettes, boucles, pansement, outils, contour.
+
+**L'enfant assis.** Le raccourci des enfants retirait les rangées 20, 21, 26 et 27 de chaque case ; assis, la
+tête descendue de 4, elles tombaient dans le menton et le cou. Pour les cases `assis_*`, il retire maintenant
+les rangées 24, 27, 28 et 29 (le ventre, sous les mains, les cuisses : `chibi.ENFANT_RANGEES_ASSIS`) : la tête et
+les pieds restent où ils étaient, la chemise et les mains restent visibles. Seules ces 6 cases des 50 planches
+d'enfants changent.
+
+**Ce que la mesure a appris** (la forme de chaque élément, case par case, chez tous ceux qui le portent) :
+- **Même forme pour tous** : les chaussures, les couvre-chefs, la barbe, la moustache, les joues, le pansement.
+- **Des écarts qui viennent de ce qui recouvre l'élément** (les cheveux sur le corps, le chapeau sur les
+  cheveux, les cheveux longs sur le dos) : un assemblage par couches dans le bon ordre les refait.
+- **Des écarts qui viennent de règles de chibi.py qui dépendent du contenu** :
+  - quand les bras sont redessinés, il efface du torse les pixels **dont la couleur** est celle des bras,
+    relevée sur le modèle : un motif (carreaux, pois, rayures : 33 personnages) change ce qui est effacé ;
+  - sous une casquette, un bonnet ou un chapeau de paille, le haut des cheveux est effacé du modèle à plat :
+    la peau dessous a déjà disparu, il reste un trou (bordé de contour) ;
+  - le contour d'un bras devant la tête suit la forme de la tête, donc la coupe et le couvre-chef.
+
+Ces règles décident de la suite (§ 5, E4 et E5) : voir la décision à prendre.

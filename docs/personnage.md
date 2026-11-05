@@ -31,9 +31,9 @@ du bas compris).
 - `scripts/personnage/modeles.py` tire les modèles du catalogue (adultes et enfants), en
   suivant les motifs des modèles dessinés (les yeux de 2 × 2, l'ombre des cheveux à droite, la
   salopette à bretelles, la couture entre les jambes…) : une couche de lettres par élément (le
-  corps, le visage, la coiffure, le couvre-chef, les détails). Il n'écrase pas les modèles de
-  `RETOUCHES` (dessinés ou retouchés à la main : `perso_01` à `perso_03`) ; un modèle retouché
-  s'y ajoute.
+  corps, le visage, la coiffure, le couvre-chef, les détails). Les modèles de `RETOUCHES`
+  (dessinés ou retouchés à la main : `perso_01` à `perso_03`) sont en lettres eux aussi, avec leurs
+  couleurs propres : `scripts/personnage/retouches.json` (voir `docs/personnage-couches.md`, § 10).
 - `scripts/personnage/chibi.py` en tire les planches (`assets/personnages/perso_XX.png`,
   `enfant_XX.png`, et les planches par défaut `assets/fermiere.png` et `fermier.png`), avec les
   cases, la taille et les positions de mains et d'outils de `frames()` (`fermier.py`) : debout,

@@ -56,8 +56,9 @@ def mul(c, k):
 
 
 class Modele:
-    def __init__(self, nom):
-        im = Image.open(os.path.join(MODELES, nom + '.png')).convert('RGBA')
+    def __init__(self, nom, im=None):
+        # (im : le modèle lui-même, une image de 12 × 79 ; sans elle, scripts/personnage/modeles/<nom>.png)
+        im = (im or Image.open(os.path.join(MODELES, nom + '.png'))).convert('RGBA')
         px = im.load()
         self.vues = {}
         for vue, y0 in VUES.items():
@@ -374,13 +375,22 @@ def render(cv):
 # Un enfant : dessiné comme un adulte, puis raccourci (ces rangées de la case retirées, le
 # haut tassé vers le bas : le ventre et les cuisses ; la tête garde sa taille).
 ENFANT_RANGEES = (20, 21, 26, 27)
+# Assis (la tête descendue de 4), ces rangées-là tomberaient dans le menton et le cou : on retire une rangée
+# du ventre au-dessus des mains posées sur la table, celle sous les mains et deux des cuisses (autant : la tête et
+# les pieds restent où ils étaient ; la chemise et les mains restent visibles).
+ENFANT_RANGEES_ASSIS = (24, 27, 28, 29)
 
 
-def raccourci(im):
+def rangees_enfant(case):
+    """Les rangées retirées de la case `case` d'un enfant."""
+    return ENFANT_RANGEES_ASSIS if case.startswith('assis_') else ENFANT_RANGEES
+
+
+def raccourci(im, rangees=ENFANT_RANGEES):
     out = Image.new('RGBA', im.size, (0, 0, 0, 0))
     y = F.H - 1
     for r in range(F.H - 1, -1, -1):
-        if r in ENFANT_RANGEES:
+        if r in rangees:
             continue
         out.paste(im.crop((0, r, F.W, r + 1)), (0, y))
         y -= 1
@@ -397,7 +407,7 @@ def ecrire(nom, enfant=False):
     sheet = Image.new('RGBA', (F.COLS * F.W, rangs * F.H), (0, 0, 0, 0))
     for i, n in enumerate(noms):
         im = render(cases[n])
-        sheet.paste(raccourci(im) if enfant else im, ((i % F.COLS) * F.W, (i // F.COLS) * F.H))
+        sheet.paste(raccourci(im, rangees_enfant(n)) if enfant else im, ((i % F.COLS) * F.W, (i // F.COLS) * F.H))
     sheet.save(os.path.join(F.ASSETS, 'personnages', f'{nom}.png'))
     return sheet
 

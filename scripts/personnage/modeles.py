@@ -15,9 +15,14 @@
 # Chaque élément est une couche de lettres (une lettre, une couleur) posée dans l'ordre : le
 # corps, le visage, la coiffure, le couvre-chef, les détails ; le contour est ajouté à la fin.
 #
-#   python3 scripts/personnage/modeles.py      écrit les modèles (sauf ceux de RETOUCHES)
+#   python3 scripts/personnage/modeles.py      écrit les modèles
 #
-# RETOUCHES : les modèles dessinés ou retouchés à la main, que ce script n'écrase pas.
+# RETOUCHES : les modèles dessinés ou retouchés à la main (perso_01 à perso_03), en lettres eux aussi :
+# scripts/personnage/retouches.json, leurs grilles (le contour « a » compris, tel qu'il a été dessiné) et
+# leurs nuances, des couleurs propres codées 0 à 9, +, *, %, & ; chacune est une nuance d'une lettre de la
+# palette (« base » : sa famille, donc sa couche) et garde sa couleur. lettres() donne les lettres de
+# n'importe quel modèle, palette_de() ses couleurs (chantier « couches », docs/personnage-couches.md).
+import json
 import os
 import sys
 
@@ -27,7 +32,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import catalogue  # noqa: E402
 
 DOSSIER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'modeles')
-RETOUCHES = ('perso_01', 'perso_02', 'perso_03')
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'retouches.json'), encoding='utf-8') as _f:
+    RETOUCHES_LETTRES = {k: v for k, v in json.load(_f).items() if not k.startswith('_')}
+RETOUCHES = tuple(RETOUCHES_LETTRES)
 CONTOUR = (43, 29, 20)
 VUES = ('bas', 'haut', 'cote')
 DEBUT = {'bas': 0, 'haut': 27, 'cote': 54}
@@ -245,9 +252,9 @@ CHAPEAUX = {
         'cote': ['............', '............', '............', '.RRRRRRRR...', 'RR..........', 'R...........'],
     },
     'fleur': {
-        'bas': ['............', '............', '.........R..', '........RYR.', '.........R..'],
-        'haut': ['............', '............', '..R.........', '.RYR........', '..R.........'],
-        'cote': ['............', '............', '...R........', '..RYR.......', '...R........'],
+        'bas': ['............', '............', '.........R..', '........RFR.', '.........R..'],
+        'haut': ['............', '............', '..R.........', '.RFR........', '..R.........'],
+        'cote': ['............', '............', '...R........', '..RFR.......', '...R........'],
     },
 }
 
@@ -339,6 +346,8 @@ def palette(d, i):
         'R': a, 'Q': catalogue.fonce(a), 'H': mix(a, (255, 255, 255), 0.3), 'V': catalogue.fonce(a, 0.56),
         'S': (232, 194, 90), 'T': (250, 222, 136), 'U': (184, 138, 46),
         'G': (40, 40, 48), 'X': mix(f, (180, 90, 50), 0.45), 'Y': (236, 200, 60), 'W': (244, 226, 196),
+        # (des lettres de mêmes couleurs, qui disent l'élément : la peau et les rubans de la coupe, la barbe, la fleur)
+        'f': mix(f, j, 0.25), 'z': peau['e'], 'N': a, 'b': hr['b'], 'c': hr['c'], 'J': j, 'F': (236, 200, 60),
     }
 
 
@@ -369,13 +378,15 @@ def vue(d, v):
     poser(g, CORPS[v], 11)
     motif(g, d['motif'])
     poser(g, TETE[v], 0)
-    poser(g, coiffure(d['coupe'], v), 0)
+    # (ce que la coupe dessine en peau, le front dans l'ombre, le crâne, et ses rubans : des lettres à elle, f, z,
+    # N, de mêmes couleurs que d, e, R, pour que chaque pixel dise de quel élément il vient : couches.py)
+    poser(g, [r.translate(COIFFURE_LETTRES) for r in coiffure(d['coupe'], v)], 0)
     chap = d['chapeau']
     if chap:
         poser(g, CHAPEAUX[chap][v], 0)
         if chap in ('casquette', 'bonnet', 'paille'):
             # sous le couvre-chef, le haut des cheveux ne dépasse pas
-            for (x, y) in [p for p in g if p[1] < 4 and g[p] in 'BCEe']:
+            for (x, y) in [p for p in g if p[1] < 4 and g[p] in 'BCEz']:
                 del g[(x, y)]
     if pales(d):
         # (des cheveux pâles : ceux qui touchent le blanc d'un œil prennent leur ton sombre)
@@ -386,8 +397,13 @@ def vue(d, v):
         for (x, y, ch) in DETAILS.get(det, {}).get(v, []):
             if det == 'barbe' and ch in 'BC' and (x, y) in g and g[(x, y)] in 'gihj':
                 continue
-            g[(x, y)] = ch
+            # (la barbe et la moustache : leurs lettres à elles, b, c, J, de mêmes couleurs que B, C, l)
+            g[(x, y)] = ch.translate(PILOSITE_LETTRES) if det in ('barbe', 'moustache') else ch
     return g
+
+
+COIFFURE_LETTRES = str.maketrans({'d': 'f', 'e': 'z', 'R': 'N'})
+PILOSITE_LETTRES = str.maketrans({'B': 'b', 'C': 'c', 'l': 'J'})
 
 
 def contour(g):
@@ -400,16 +416,38 @@ def contour(g):
     return out
 
 
-def modele(d, i):
+def palette_de(nom, d, i):
+    """Toutes les couleurs des lettres du modèle `nom` : sa palette, le contour, l'ombre des rayures, et
+    les nuances d'un modèle retouché."""
     pal = palette(d, i)
     pal['a'] = CONTOUR
     pal['v_'] = mul(pal['q'], 0.85)
+    for code, n in RETOUCHES_LETTRES.get(nom, {}).get('nuances', {}).items():
+        pal[code] = tuple(int(n['couleur'][k:k + 2], 16) for k in (1, 3, 5))
+    return pal
+
+
+def base(nom, lettre):
+    """La lettre de la palette dont `lettre` est une nuance (elle-même, hors des nuances des retouches)."""
+    n = RETOUCHES_LETTRES.get(nom, {}).get('nuances', {}).get(lettre)
+    return n['base'] if n else lettre
+
+
+def lettres(nom, d):
+    """Les lettres du modèle `nom` : {vue: {(x, y): lettre}} (rangées 0..24 de chaque vue, le contour « a »
+    compris) ; un modèle retouché : ses grilles de retouches.json."""
+    if nom in RETOUCHES_LETTRES:
+        return {v: {(x, y): ch for y, rang in enumerate(rangs) for x, ch in enumerate(rang) if ch != '.'}
+                for v, rangs in RETOUCHES_LETTRES[nom]['vues'].items()}
+    return {v: {p: ch for p, ch in contour(vue(d, v)).items() if 0 <= p[0] < 12 and 0 <= p[1] < 25} for v in VUES}
+
+
+def modele(nom, d, i):
+    pal = palette_de(nom, d, i)
     im = Image.new('RGBA', (12, 79), (0, 0, 0, 0))
-    for v in VUES:
-        g = contour(vue(d, v))
+    for v, g in lettres(nom, d).items():
         for (x, y), ch in g.items():
-            if 0 <= x < 12 and 0 <= y < 25:
-                im.putpixel((x, DEBUT[v] + y), pal[ch] + (255,))
+            im.putpixel((x, DEBUT[v] + y), pal[ch] + (255,))
     return im
 
 
@@ -432,11 +470,9 @@ def main():
     os.makedirs(DOSSIER, exist_ok=True)
     n = 0
     for i, (nom, d) in enumerate(tous()):
-        if nom in RETOUCHES:
-            continue
-        modele(d, i).save(os.path.join(DOSSIER, nom + '.png'))
+        modele(nom, d, i).save(os.path.join(DOSSIER, nom + '.png'))
         n += 1
-    print(f'{n} modèles écrits dans scripts/personnage/modeles/ ({len(RETOUCHES)} retouchés à la main gardés)')
+    print(f'{n} modèles écrits dans scripts/personnage/modeles/ (dont {len(RETOUCHES)} retouchés à la main, en lettres : retouches.json)')
 
 
 if __name__ == '__main__':
