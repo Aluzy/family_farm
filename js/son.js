@@ -32,6 +32,7 @@
     grillons_soir: ["ambiance/grillons_soir"],
     grillons_nuit: ["ambiance/grillons_nuit"],
     vent: ["ambiance/vent"],
+    pluie: ["ambiance/pluie"],
     grenouilles: ["ambiance/grenouilles"],
     foret: ["ambiance/foret"],
     montagne: ["ambiance/montagne"],
@@ -416,7 +417,7 @@
   }
   // pas de fond d'eau : ni la mer, ni les lacs, ni les rivières, ni les mares n'ont de boucle (le
   // bruit montait dès qu'on approchait d'une rive) ; restent les pas dans l'eau et les grenouilles
-  const NATURE = ['oiseaux_matin', 'oiseaux_jour', 'grillons_soir', 'grillons_nuit', 'vent', 'grenouilles', 'foret', 'montagne', 'grotte'];
+  const NATURE = ['oiseaux_matin', 'oiseaux_jour', 'grillons_soir', 'grillons_nuit', 'vent', 'pluie', 'grenouilles', 'foret', 'montagne', 'grotte'];
   const SOURCES = ['moulin', 'meule', 'feu', 'pompe', 'asperseur', 'robot', 'abeilles', 'hameau'];
   // les bêtes de la ferme : le cri de chaque sorte, et ce qu'on entend en plus de temps en temps
   // (les poussins, la clochette d'une vache, le cheval qui s'ébroue). Pas de fond d'ambiance
@@ -462,6 +463,8 @@
     niv.grillons_nuit = clamp(cloche(h, 1.5, 5.5) * 1.3, 0, 1);
     niv.vent = 0.45 + 0.2 * cloche(h, 1, 6);
     const nuit = niv.grillons_nuit > 0.3 || h < 5.5 || h >= 21;
+    // G-1 : l'averse (js/engine/meteo.js) : la pluie, et les oiseaux se taisent
+    if (m && m.meteo && m.meteo.pluie) { niv.pluie = 1; niv.oiseaux_jour *= 0.2; niv.oiseaux_matin *= 0.2; niv.vent += 0.15; }
 
     // le biome sous lui
     const b = FS && p ? biome(FS, p.x, p.y) : 'ferme';

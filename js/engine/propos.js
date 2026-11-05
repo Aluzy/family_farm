@@ -16,6 +16,7 @@ import { cowCount } from './animals.js';
 import { cleDe, fiche, palierAmitie } from './amitie.js';
 import { projetDuHameau, projetsFaits } from './projets.js';
 import { dayOfMonth, monthName, moonPhase } from './lune.js';
+import { meteoDuJour } from './meteo.js';
 
 const PROPOS = () => DATA.HABITANTS.PROPOS;
 const nomObjet = (it) => (DATA.OBJETS[it] ? DATA.OBJETS[it].nom : it);
@@ -69,6 +70,8 @@ const SUJETS = [
   ['lune_nouvelle', ({ state }) => (moonPhase(state.day).id === 'nouvelle' ? {} : null)],
   ['lune_croissante', ({ state }) => (moonPhase(state.day).id === 'croissante' ? {} : null)],
   ['lune_decroissante', ({ state }) => (moonPhase(state.day).id === 'decroissante' ? {} : null)],
+  ['meteo_pluie', ({ state }) => (meteoDuJour(state).sorte === 'pluie' ? {} : null)],
+  ['meteo_brume', ({ state }) => (meteoDuJour(state).sorte === 'brume' ? {} : null)],
   ['mois', ({ state }) => (dayOfMonth(state.day) <= 3 && state.day > 3 ? { mois: monthName(state.day) } : null)],
   ['reserve_hier', ({ h }) => {
     let jour = -Infinity;

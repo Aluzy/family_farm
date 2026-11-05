@@ -4413,6 +4413,8 @@ export const RAW_DATA = {
       "PART": 0.6,
       "MEMOIRE": 4,
       "ENFANTS": [
+        "meteo_pluie",
+        "meteo_brume",
         "lune_pleine",
         "lune_nouvelle",
         "lune_croissante",
@@ -4545,6 +4547,17 @@ export const RAW_DATA = {
       ],
       "lune_croissante": ["La lune grandit, chaque soir un peu plus.", "Bientôt la pleine lune ! On prépare déjà la veillée."],
       "lune_decroissante": ["La lune décroît. Bientôt les nuits sans lune.", "La lune s'en va doucement. Elle reviendra."],
+      "meteo_pluie": [
+        "Il va pleuvoir aujourd'hui, je le sens dans mes genoux.",
+        "Une averse, aujourd'hui ! Mes plantes vont être contentes.",
+        "Avec la pluie, pas besoin d'arroser. Profites-en !",
+        "On dirait que le ciel va se vider sur nous, tout à l'heure."
+      ],
+      "meteo_brume": [
+        "Quelle brume ce matin ! On n'y voyait pas à trois pas.",
+        "La brume du matin, ça annonce une belle journée.",
+        "Avec cette brume, j'ai cru voir un fantôme… c'était un mouton !"
+      ],
       "mois": ["Déjà le mois de {mois} ! Le temps passe vite.", "{mois} commence… J'aime bien ce mois-là.", "On est en {mois}. Il faut fêter ça !"],
       "reserve_hier": [
         "Hier soir, la réserve s'est remplie. {objet} surtout ! Le hameau est content.",
@@ -6059,6 +6072,15 @@ export const RAW_DATA = {
         "texte": "un bonsaï, le monde en miniature"
       }
     }
+  },
+  "METEO": {
+    "DEPUIS": 3,
+    "CHANCES": { "pluie": 0.2, "brume": 0.15 },
+    "PAR_MOIS": { "Pluvia": 0.45, "Zephyria": 0.3, "Florea": 0.28, "Silentia": 0.25, "Messidia": 0.1, "Aurea": 0.08 },
+    "PLUIE_HEURES": [8, 18],
+    "PLUIE_DUREE": [2, 5],
+    "BRUME_FIN": 10,
+    "NOMS": { "clair": "☀️ Beau temps", "pluie": "🌧️ Averse", "brume": "🌫️ Brume du matin" }
   },
   "CONSERVATION": {
     "carotte": 6,

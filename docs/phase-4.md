@@ -83,7 +83,7 @@ existante.
 | **D-1 · Le carnet du naturaliste** ✅ | Des pages pour les trouvailles, les végétaux, les biomes et des espèces de poissons, et une condition « biome vu ». Des collections complètes qui donnent un objet à poser (une vitrine, un herbier). | « Encyclopédie : plantes, animaux, minéraux, fossiles », et une progression par curiosité. |
 | **D-2 · Les secrets du monde** | Des lieux remarquables générés par biome : ruines, points de vue, arbres anciens, cairns. Chacun garde un petit trésor ou une page de carnet. | « Lieux remarquables, secrets » : que le monde ne soit pas grand mais vide. |
 | **D-3 · Les personnages qui manquent** | Placer Garance, Lise, Fernand, Frida et Johnny dans le monde, et écrire leurs répliques (la bible et le plan du récit en visent environ 40 chacun). | Le récit déjà commencé. Il demande ta validation des textes. |
-| **G-1 · Le temps qu'il fait** | Une météo tirée de la graine, jour après jour : pluie, brume du matin, ciel clair. On la voit et on l'entend, et la pluie arrose le potager. | « Ambiance chaleureuse », un monde qui vit. |
+| **G-1 · Le temps qu'il fait** ✅ | Une météo tirée de la graine, jour après jour : pluie, brume du matin, ciel clair. On la voit et on l'entend, et la pluie arrose le potager. | « Ambiance chaleureuse », un monde qui vit. |
 | **G-2 · Les voix et les musiques des lieux** | Un petit babil pour chaque habitant (des syllabes de synthé, pas des mots), et un thème musical par biome et par hameau. | « Audio adaptatif ». |
 
 **Recommandation** : V-1, puis V-2. Ce sont eux qui font revenir pour les personnages. Ensuite D-1 et
@@ -151,3 +151,24 @@ G-1, plus courts, qui embellissent ce qui existe déjà.
   - une trouvaille se découvre quand on l'a sur soi, au frigo ou posée : une trouvaille vendue ou mangée avant cette version ne compte pas ;
   - un paysage se découvre en y entrant : ceux parcourus avant cette version se découvriront au prochain passage.
 - **Les tests** : `tests/engine/naturaliste.test.mjs`, et un essai dans le jeu avec la partie du jour 54 (199 pages découvertes sur 263).
+
+## 8. G-1 : fait
+
+- **Le temps du jour** (`data/meteo.json`, `js/engine/meteo.js`) : il est tiré de la graine de la ferme et du jour, donc la même partie a le même ciel.
+  - Sur une année : environ 61 % de beau temps, 22 % d'averses et 17 % de matins de brume.
+  - Le mois compte : Pluvia est le plus pluvieux, Aurea le plus sec.
+  - Une averse dure 2 à 5 heures et commence entre 8 h et 18 h. La brume se lève entre 6 h et 10 h.
+  - Rien avant le jour 3.
+- **La pluie arrose** (`pluieSurLaFerme`, à chaque pas de l'horloge : `js/engine/energy.js`) : pendant l'averse, les cultures de la ferme qui ne le sont pas encore sont arrosées, celles semées sous la pluie comprises. Cela ne coûte ni eau ni énergie. La Serre, couverte, n'est pas arrosée.
+- **On le voit** (`js/carte/ferme/meteo.js`) :
+  - la pluie : des traits fins qui tombent en biais et un voile gris-bleu, en fondu ;
+  - la brume : un voile blanc qui se lève ;
+  - à l'abri, dans une pièce dont le toit s'efface, la pluie se voit à peine ;
+  - avec des animations réduites, la pluie ne tombe pas : seul son voile reste ;
+  - l'icône 🌧️ ou 🌫️ au cadran de l'heure.
+- **On l'entend** : une boucle de pluie (`assets/son/ambiance/pluie`, faite par `scripts/son/sons1.py`, `rain_loop`), et les oiseaux se taisent pendant l'averse.
+- **On en parle** :
+  - une annonce quand l'averse commence ;
+  - deux sujets de conversation pour les habitants (V-1) : la pluie du jour, la brume du matin.
+- **En ligne** : l'horloge du monde est figée. Le temps reste donc celui du jour, sans arrosage et sans annonce.
+- **Les tests** : `tests/engine/meteo.test.mjs`, et un essai dans le jeu avec la partie du jour 54 (l'averse, la brume, le cadran).
