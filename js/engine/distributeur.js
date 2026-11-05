@@ -84,12 +84,13 @@ export function verserGrain(state, tile) {
 
 // Chaque jour, de DISTRIBUTEUR.HEURE h jusqu'au soir : les poules pas encore nourries le sont
 // avec le blé des distributeurs raccordés (le Poulailler bâti). Appelée à chaque pas d'horloge
-// (energy.js, farmStep). Renvoie le nombre de poules nourries (0 : rien à faire).
-export function distribuerGrain(state) {
+// (energy.js, farmStep). Renvoie le nombre de poules nourries (0 : rien à faire). `aLHeure` faux (E-13 :
+// la nuit partagée d'un monde en ligne, dont l'horloge est figée) : sans attendre l'heure.
+export function distribuerGrain(state, aLHeure = true) {
   if (!state.poulailler || !state.poulailler.construit || hensToFeed(state) <= 0) return 0;
-  if (!state.distributeurs || nightActive(state)) return 0;
+  if (!state.distributeurs || (aLHeure && nightActive(state))) return 0;
   const h = hourOfDay(state);
-  if (h < D().HEURE || h >= DATA.TEMPS.HEURE_NUIT) return 0;
+  if (aLHeure && (h < D().HEURE || h >= DATA.TEMPS.HEURE_NUIT)) return 0;
   let n = 0;
   for (const e of distributeurs(state)) {
     if (!e.ok || (e.grain < 1 && !(state.poulailler.restes > 0))) continue;

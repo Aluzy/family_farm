@@ -33,9 +33,9 @@ import { itemsText } from './common.js';
 // La carte : le personnage a pris ce qui était au sol (`id`). Renvoie { ok, items } ou null
 // (un message).
 export function ramasserFromStage(id) {
-  if (enLigne) return null;   // (E-5 : pas encore en ligne)
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = ramasser(state, id);
+  // (E-13 : en ligne, par le monde)
+  const r = enLigne ? executer('cueillette.ramasser', { cueillette: String(id) }) : ramasser(state, id);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
@@ -46,9 +46,15 @@ export function ramasserFromStage(id) {
 // une pièce (js/engine/botteleuse.js). Renvoie { ok, versees, fibres, pleine } ou null (un message).
 export function verserFromStage(tile) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = verserFibres(state, tile);
+  const r = enLigne ? executer('botteleuse.verser', { case: Number(tile) }) : verserFibres(state, tile);
   if (!r.ok) { notify(r.error); return null; }
   const B = DATA.BOTTELEUSE, f = DATA.OBJETS.fibre.icone;
+  // (E-13 : en ligne, l'horloge du monde est figée : pleine, la botteleuse sort sa botte tout de suite, et sa
+  // paille va au coffre commun)
+  if (enLigne && r.pleine) {
+    const b = executer('botteleuse.sortir', { case: r.case });
+    if (b.ok) { notify(`${B.ICONE} ${B.NOM} : une botte, ${b.paille} ${DATA.OBJETS[DATA.PATURAGE.NOURRITURE].icone} au coffre commun.`); refresh(); return { ...r, pleine: false }; }
+  }
   notify(r.pleine ? `${B.ICONE} ${B.NOM} : ${r.fibres} ${f} reçues, elle se met en marche !` : `${f} ${r.versees} fibre${r.versees > 1 ? 's' : ''} dans l'entonnoir : ${r.fibres} / ${B.FIBRES}.`);
   persistState();
   refresh();
@@ -60,7 +66,7 @@ export function verserFromStage(tile) {
 // capacite, recette } ou null (un message).
 export function verserChaineFromStage(tile) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = verserChaine(state, tile);
+  const r = enLigne ? executer('chaine.verser', { case: Number(tile) }) : verserChaine(state, tile);
   if (!r.ok) { notify(r.error); return null; }
   const R = DATA.RECETTES[r.recette], n = Object.values(r.stock).reduce((a, b) => a + b, 0);
   const versees = Object.entries(r.versees).map(([it, k]) => `${k} ${DATA.OBJETS[it].icone}`).join(' ');
@@ -74,7 +80,7 @@ export function verserChaineFromStage(tile) {
 // est une pièce (js/engine/distributeur.js). Renvoie { ok, versees, grain, plein } ou null.
 export function verserGrainFromStage(tile) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = verserGrain(state, tile);
+  const r = enLigne ? executer('distributeur.verser', { case: Number(tile) }) : verserGrain(state, tile);
   if (!r.ok) { notify(r.error); return null; }
   const D = DATA.DISTRIBUTEUR, b = DATA.OBJETS[DATA.SILO.ITEM].icone;
   notify(`${b} ${r.versees} blé dans le distributeur : ${r.grain} / ${D.CAPACITE}${r.plein ? ', il est plein' : ''}. Il nourrit les poules chaque jour à ${D.HEURE} h.`);
@@ -86,6 +92,7 @@ export function verserGrainFromStage(tile) {
 // La carte : la machine de `tile` a vibré, sa botte tombe au bout du convoyeur (`ou` : { carte,
 // point }). Renvoie { ok, morceau } ou null.
 export function botteFromStage(tile, ou) {
+  if (enLigne) return null;   // (E-13 : en ligne, la botte est sortie au versement : verserFromStage)
   const r = sortirBotte(state, tile, ou);
   if (!r.ok) return null;
   persistState();

@@ -260,7 +260,7 @@ export function mondeFromStage(id, o) {
 // Renvoie { ok, item, n } ou null (il dort, ou le morceau n'est plus là).
 export function morceauFromStage(n) {
   if (asleep(state)) return null;
-  const r = ramasserMorceau(state, n);
+  const r = enLigne ? executer('morceau.ramasser', { n: Number(n) }) : ramasserMorceau(state, n);   // (E-13 : en ligne, par le monde)
   if (!r.ok) return null;
   persistState();
   refresh();

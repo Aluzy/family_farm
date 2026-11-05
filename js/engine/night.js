@@ -28,6 +28,8 @@ import { bienvenueNuit } from './bienvenue.js';
 import { recitNuit } from './recit.js';
 import { remplirRuches } from './ruches.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
+import { distribuerGrain } from './distributeur.js';
+import { chainesDeLaJournee } from './chaines.js';
 import { enExpedition, tentePortee } from './equipement.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -152,6 +154,10 @@ export function sleep(state) {
 // quelle que soit l'heure ; toute la nuit passe d'un coup et l'on se réveille à 6 h, le jour suivant.
 export function nuitPartagee(state) {
   state.nuitEnCours = null;
+  // (E-13 : l'horloge figée, le jour n'a pas fait tourner les machines : le distributeur de grain nourrit
+  // les poules, les chaînes de production font leur journée, avant la nuit)
+  distribuerGrain(state, false);
+  chainesDeLaJournee(state);
   const report = nuitEntiere(state);
   return { ok: true, jour: state.day, pretes: report.pretes };
 }

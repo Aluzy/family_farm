@@ -98,6 +98,8 @@ Chaque décision a une valeur par défaut, comme le demande la stratégie (§ 9 
   achats de la ferme (une place à l'Étable, agrandir le Poulailler, le frigo). *Plus tard*, si l'on
   veut vendre ensemble : un « comptoir de la ferme » (un bloc à poser), où l'on vend et achète sans
   quitter la ferme. C'est une décision de jeu : à toi de dire si tu le veux.
+  **Décidé (5 novembre 2026) : pas de commerce en ligne pour l'instant.** On vend et on achète seulement
+  dans sa partie solo ; le comptoir de la ferme reste une idée.
 - **M.5 : la progression.** *Recommandé* : le niveau de la ferme, l'XP des gestes et les technologies
   sont **ceux du monde** et se gagnent à plusieurs. L'arbre des technologies se joue donc en ligne,
   dans un lot à venir. Les chapitres du récit et le didacticiel restent à la partie solo, figés en
@@ -208,3 +210,20 @@ Les rôles de la stratégie (§ 4.4), dans `js/engine/roles.js`. Le monde les v�
   - un instantané est écrit, et le journal porte une marque `monde.restaurer`, jamais rejouée, qui garde l'histoire d'avant ;
   - chaque joueur connecté reçoit la partie entière et un mot ; un joueur en retard d'une restauration la reçoit entière à son retour.
 - **Routes** : `GET` et `POST /mondes/<id>/sauvegardes`, `POST /mondes/<id>/restaurer { cle }`, réservées au propriétaire. Une clé d'un autre monde est refusée.
+
+## 12. E-13 : les machines de l'Atelier
+
+- **Nouvelles commandes** :
+  - `botteleuse.verser` et `botteleuse.sortir` ;
+  - `chaine.verser`, `distributeur.verser` ;
+  - `morceau.ramasser` (un morceau au sol : un produit de chaîne, du bois, de la pierre) ;
+  - `cueillette.ramasser` (à la main : une branche, une baie… ; « sorte:case », soumise à la frontière).
+
+  Elles demandent le rôle d'ami jardinier.
+- **L'horloge figée** (F.2) ne fait pas tourner les machines le jour. Chacune a donc sa règle :
+  - **la botteleuse** : le dernier versement de fibres sort la botte tout de suite, et sa paille va au coffre ;
+  - **le distributeur de grain** nourrit les poules au début de la nuit partagée (`distribuerGrain(state, false)`) ;
+  - **les chaînes** font leur journée au début de la nuit partagée (`chainesDeLaJournee`) : leur production en cours, puis ce que leur stock et une journée (de 6 h à 22 h) permettent, jusqu'à ce que leur tas soit plein. Le courant n'est pas compté.
+
+  Les produits restent sur le tas, et chacun les ramasse par `morceau.ramasser`.
+- **Fermés en ligne, comme le veut la vision :** le grand monde (sa cueillette, ses hameaux, la calèche, le récit) et le commerce (M.4).

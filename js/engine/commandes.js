@@ -94,6 +94,13 @@
      serre.agrandir   { }                       la Serre
      arbre.planter    { sorte, case }           planter un arbre (un plant, une graine) sur une case
      potager.semis    { parcelle, mode, culture? } le semis automatique d'une parcelle
+   Les machines de l'Atelier et ce qui traîne au sol (E-13, sans inverse) :
+     botteleuse.verser { case }                 jeter ses fibres dans l'entonnoir d'une botteleuse
+     botteleuse.sortir { case }                 la botte d'une botteleuse pleine : sa paille à l'inventaire
+     chaine.verser    { case }                  jeter les ingrédients dans l'entonnoir d'une chaîne
+     distributeur.verser { case }               jeter son blé dans un distributeur de grain
+     morceau.ramasser { n }                     prendre un morceau tombé au sol (bois, pierre, un produit)
+     cueillette.ramasser { cueillette }         ramasser à la main (« sorte:case » : une branche, une baie…)
      nuit.dormir      { }                       se coucher, la nuit (elle défile jusqu'au réveil)
      nuit.partagee    { }                       E-5 : toute la nuit d'un coup, à n'importe quelle heure
                                                 (le monde en ligne la joue, quand tous sont couchés)
@@ -115,10 +122,13 @@ import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe } 
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
 import { deposerBoite, reprendreBoite } from './repas.js';
 import { eatSnack } from './family.js';
-import { castLine, chopTree, mineRock, ramasserCaillou, scytheAround, scytheGrass } from './outils.js';
+import { castLine, chopTree, mineRock, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass } from './outils.js';
+import { sortirBotte, verserFibres } from './botteleuse.js';
+import { verserChaine } from './chaines.js';
+import { verserGrain } from './distributeur.js';
+import { craft, ramasser } from './atelier.js';
 import { harvestTree } from './orchard.js';
 import { buyTech } from './techtree.js';
-import { craft } from './atelier.js';
 import { planterIci } from './plantation.js';
 import { goToSleep, nuitPartagee } from './night.js';
 
@@ -457,6 +467,12 @@ export const COMMANDES = {
     args: { parcelle: 'texte', mode: 'mode', culture: 'culture?' },
     executer: (state, { parcelle, mode, culture = null }) => setSemis(state, parcelle, mode, culture),
   },
+  'botteleuse.verser': { args: { case: 'case' }, executer: (state, { case: c }) => verserFibres(state, c) },
+  'botteleuse.sortir': { args: { case: 'case' }, executer: (state, { case: c }) => sortirBotte(state, c, null) },
+  'chaine.verser': { args: { case: 'case' }, executer: (state, { case: c }) => verserChaine(state, c) },
+  'distributeur.verser': { args: { case: 'case' }, executer: (state, { case: c }) => verserGrain(state, c) },
+  'morceau.ramasser': { args: { n: 'case' }, executer: (state, { n }) => ramasserMorceau(state, n) },
+  'cueillette.ramasser': { args: { cueillette: 'texte' }, executer: (state, { cueillette }) => ramasser(state, cueillette) },
   'nuit.dormir': {
     args: {},
     executer: (state) => goToSleep(state),
