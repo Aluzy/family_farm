@@ -57,7 +57,8 @@
 # à sa place (TETE_BROUTE) ; de dos (10 à 13), pas de visage : rien à reporter. Le cheval sellé
 # (assets/cheval_monte.png) est fait de ces cases : la selle, la bride et les rênes du dessin d'avant (profil, face,
 # dos, plus bas) y sont reportées, et de face (dos) la tête (la croupe) passe devant le cavalier comme avant.
-# L'attelage de la calèche (scripts/carte/caleche.py) garde le dessin d'avant.
+# L'attelage de la calèche (scripts/carte/caleche.py : case_redessinee, harnache_redessine, le harnais du dessin
+# d'avant reporté) et l'icône 🐴 (icone : assets/icones/horse_face.png) sont aussi ce cheval.
 #
 #   python3 scripts/personnage/cheval.py            écrit les images
 #   python3 scripts/personnage/cheval.py --apercu   écrit aussi apercu_cheval.png (agrandi)
@@ -453,6 +454,27 @@ def _avec(base, ajouts, garde=None):
     return out
 
 
+def case_redessinee(vue, k):
+    """La case du cheval redessiné (le cheval seul) : vue 'cote' (temps k du pas, 4 : au repos), 'bas' (de face) ou
+    'haut' (de dos) (temps k, 4 : à l'arrêt, la première case) ; None sans la planche du joueur."""
+    if not os.path.exists(REDESSIN):
+        return None
+    if vue == 'cote':
+        return _case(planche_seul(), 0 if k >= 4 else 1 + k)
+    return _case(planche_seul(), (6 if vue == 'bas' else 10) + (k if k < 4 else 0))
+
+
+def harnache_redessine(k):
+    """Le cheval redessiné harnaché pour l'attelage de la calèche (scripts/carte/caleche.py), de profil, temps k du
+    pas (4 : au repos) : sa case et, par-dessus, le harnais du dessin d'avant (la bride, le collier, la sellette, le
+    trait), à la même place. None sans la planche du joueur."""
+    n = case_redessinee('cote', k)
+    if n is None:
+        return None
+    pose, t = ('idle', 0) if k >= 4 else ('marche', k)
+    return _avec(n, _ajouts(profil(pose, t, harnais=True).image(), profil(pose, t).image()))
+
+
 def selle_reportee(seul, vue, k):
     """[dessous, dessus] du cheval sellé redessiné, vue `vue`, temps k du pas (4 : à l'arrêt) : la case du cheval
     seul (de profil : le repos ou le temps du pas ; de face, de dos : le temps du pas, la première case à l'arrêt) et,
@@ -545,6 +567,12 @@ def ratelier():
     return t.fini()
 
 
+def icone():
+    """L'icône du cheval (🐴, assets/icones/horse_face.png, 16 × 16 ; l'atlas : scripts/icones/build.py) : la tête
+    de profil du cheval redessiné (case 0), au pixel près, et le haut de sa crinière."""
+    return planche_seul().crop((30, 0, 46, 16))
+
+
 def verifie(planche):
     """Les cases modèles du redessin (0 et 6) sont-elles, au pixel près, celles de la planche du joueur ?"""
     if not os.path.exists(REDESSIN):
@@ -561,7 +589,7 @@ def verifie(planche):
 
 def main():
     verifie(planche_seul())
-    images = {'cheval.png': planche_seul(), 'cheval_monte.png': planche_monte(),
+    images = {'cheval.png': planche_seul(), 'cheval_monte.png': planche_monte(), 'icones/horse_face.png': icone(),
               'poteau_attache.png': poteau(), 'meuble_ratelier.png': ratelier()}
     for nom, im in images.items():
         im.save(os.path.join(ASSETS, nom))
