@@ -22,6 +22,8 @@
 //   6. une action pas encore en ligne (vendre au Marché) est refusée (un message, rien ne change) ;
 //   6b. E-11 : A fait de B un visiteur (👥) : B le voit au bandeau, son mur est refusé tout de suite ; A lit le
 //       journal du monde (qui a fait quoi) ;
+//   6c. E-12 : A sauvegarde (💾), mange une carotte, puis restaure : la carotte revient chez les deux, et B
+//       est prévenu ;
 //   7. E-3 : A retire B : la connexion de B est coupée, B revient à sa ferme solo.
 // Lancer : node tests/deux-joueurs.mjs (Playwright et Chromium requis ; sinon, le test est sauté).
 
@@ -62,6 +64,14 @@ const BASE = `http://127.0.0.1:${serveur.address().port}`;
 const baseSql = () => { const db = new DatabaseSync(':memory:'); return { exec(q, ...v) { const r = db.prepare(q).all(...v); return { toArray: () => r }; } }; };
 const comptes = new Comptes({ storage: { sql: baseSql() } }, {});
 const mondes = new Map(), sockets = new Map();
+// (un bucket R2 en mémoire : put, get, list, delete)
+const r2m = new Map();
+const r2 = {
+  async put(k, v, o = {}) { r2m.set(k, { v, o }); },
+  async get(k) { const x = r2m.get(k); return x ? { text: async () => x.v } : null; },
+  async delete(k) { r2m.delete(k); },
+  async list({ prefix }) { return { objects: [...r2m.keys()].filter((k) => k.startsWith(prefix)).map((k) => ({ key: k, size: r2m.get(k).v.length, customMetadata: r2m.get(k).o.customMetadata })), truncated: false }; },
+};
 const env = {
   JEU_URL: '',   // (posée plus bas : l'adresse du serveur du jeu, où mène le lien d'invitation)
   COMPTES: { idFromName: (x) => x, get: () => ({ fetch: (r) => comptes.fetch(r) }) },
@@ -69,8 +79,8 @@ const env = {
   // Durable Object : getWebSockets(étiquette), getTags)
   MONDES: { idFromName: (x) => x, get: (x) => {
     if (!mondes.has(x)) {
-      const ctx = { storage: { sql: baseSql() }, getWebSockets: (tag) => [...(sockets.get(x) || [])].filter((w) => !tag || w.compte === tag), getTags: (w) => [w.compte] };
-      mondes.set(x, new Monde(ctx, {}));
+      const ctx = { storage: { sql: baseSql() }, id: { toString: () => x }, getWebSockets: (tag) => [...(sockets.get(x) || [])].filter((w) => !tag || w.compte === tag), getTags: (w) => [w.compte], waitUntil: (p) => p };
+      mondes.set(x, new Monde(ctx, { SESSIONS: r2 }));   // (E-12 : les sauvegardes, dans un bucket en mémoire)
     }
     return { fetch: (r) => mondes.get(x).fetch(r) };
   } },
@@ -251,6 +261,23 @@ try {
   const journal = await pa.evaluate(() => document.querySelector('.journal-monde').innerText);
   verifie(msRole !== null && refuseB && /sam/i.test(journal) && /a posé un bloc/.test(journal) && /tout le monde a dormi/.test(journal), `6b. B devenu visiteur (en ${msRole} ms) : son mur refusé ; le journal de A dit qui a fait quoi`);
   await action(pa, 'close-modal');
+  // 6c. E-12 : les sauvegardes
+  await action(pa, 'monde-sauvegardes');
+  await attendre(pa, () => !!document.getElementById('sauvegardes-titre'), null, 5000);
+  const nSv = await pa.evaluate(() => document.querySelectorAll('[data-action="monde-restaurer"]').length);
+  await action(pa, 'monde-sauvegarder');
+  await attendre(pa, (n) => document.querySelectorAll('[data-action="monde-restaurer"]').length === n + 1, nSv, 5000);
+  await action(pa, 'close-modal');
+  const c0 = await carottes(pa);
+  await action(pa, 'eat', { item: 'carotte' });
+  await attendre(pb, async (n) => { const E = await import('/js/engine/index.js'); return E.countItem(FF.state, 'carotte') === n - 1; }, c0, 5000);
+  await action(pa, 'monde-sauvegardes');
+  await attendre(pa, () => !!document.querySelector('[data-action="monde-restaurer"]'), null, 5000);
+  const cle = await pa.evaluate(() => document.querySelector('[data-action="monde-restaurer"]').dataset.cle);
+  await action(pa, 'monde-restaurer', { cle });
+  await action(pa, 'monde-restaurer-oui', { cle });
+  const msRest = await attendre(pb, async (n) => { const E = await import('/js/engine/index.js'); return E.countItem(FF.state, 'carotte') === n && /restauré une sauvegarde/.test(document.body.innerText); }, c0, 5000);
+  verifie(msRest !== null && (await carottes(pa)) === c0 && (await confirmee(pa)) === empreintePartie(reg.charger()) && (await confirmee(pb)) === empreintePartie(reg.charger()), `6c. A a restauré sa sauvegarde : la carotte mangée revient chez les deux (B prévenu en ${msRest} ms), les parties confirmées sont celle du monde`);
   // 7. E-3 : A retire B
   await action(pa, 'monde-membres');
   await attendre(pa, () => !!document.querySelector('[data-action="monde-retirer"]'));

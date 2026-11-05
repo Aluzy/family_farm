@@ -17,7 +17,8 @@
 //   E-3 : POST /mondes/<id>/invitations (un lien d'invitation, le propriétaire), POST /rejoindre { code }
 //   (le lien suivi : le rôle de l'invitation), POST /mondes/<id>/retirer { compte } (le propriétaire).
 //   E-11 : POST /mondes/<id>/invitations { role }, POST /mondes/<id>/role { compte, role } et
-//   GET /mondes/<id>/journal?avant= (le propriétaire).
+//   GET /mondes/<id>/journal?avant= (le propriétaire). E-12 : GET et POST /mondes/<id>/sauvegardes, POST
+//   /mondes/<id>/restaurer { cle } (le propriétaire ; les sauvegardes dans R2, sous mondes/).
 //   Le Worker vérifie la session auprès des comptes, puis passe au Durable Object Monde du monde.
 // - GET /report (facultatif) : aperçu du rapport en Markdown, ou publication de test
 //   avec &publish=1. Protégé par REPORT_TOKEN : sans ce secret, la route n'existe pas.
@@ -311,6 +312,14 @@ async function routeMondes(request, env, origin, url) {
   if (parties[2] === 'journal' && request.method === 'GET') {
     const avant = url.searchParams.get('avant');
     return relais(await vers(id, 'journal' + (avant ? `?avant=${encodeURIComponent(avant)}` : '')));
+  }
+  // E-12 : les sauvegardes du monde (le propriétaire) : GET (la liste), POST (en faire une) ; restaurer
+  if (parties[2] === 'sauvegardes' && (request.method === 'GET' || request.method === 'POST')) {
+    return relais(await vers(id, 'sauvegardes', { method: request.method }));
+  }
+  if (parties[2] === 'restaurer' && request.method === 'POST') {
+    const b = await corpsJson();
+    return relais(await vers(id, 'restaurer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cle: b.cle }) }));
   }
   if (parties[2] === 'ws' && request.method === 'GET') {
     // (la demande d'ouverture de la WebSocket, ses en-têtes compris ; la réponse 101 et sa WebSocket

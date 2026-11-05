@@ -209,6 +209,12 @@ commande ; `POST /mondes/<id>/invitations { role }`, `POST /mondes/<id>/role { c
 propriétaire ; la liste des membres est diffusée), `GET /mondes/<id>/journal?avant=` (le propriétaire :
 les 50 dernières commandes, avec les noms).
 
+E-12 : les sauvegardes du monde, dans le bucket `SESSIONS` (déjà lié), sous `mondes/<id du Durable
+Object>/` : une après chaque nuit partagée, une à la demande, une avant chaque restauration ; les 14
+dernières gardées (≈ 100 Ko chacune). `GET` et `POST /mondes/<id>/sauvegardes`, `POST
+/mondes/<id>/restaurer { cle }` (le propriétaire). Une restauration écrit un instantané et une marque
+`monde.restaurer` au journal ; la partie entière est diffusée.
+
 ## Mise en route du rapport (une seule fois)
 
 1. **Créer un dépôt privé** pour les rapports, par exemple `family_farm_rapports`

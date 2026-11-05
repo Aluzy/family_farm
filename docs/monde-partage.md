@@ -197,3 +197,14 @@ Les rôles de la stratégie (§ 4.4), dans `js/engine/roles.js`. Le monde les v�
 - **Le journal du monde** (📜, propriétaire seulement) : les 50 dernières commandes, puis « Plus ancien ». Il dit qui, quoi en mots et quand. Il garde ce que garde le journal du monde (500 révisions avant le dernier instantané).
 - **Routes** : `POST /mondes/<id>/invitations { role }`, `POST /mondes/<id>/role { compte, role }` et `GET /mondes/<id>/journal?avant=`.
 - **Une base d'avant** prend la colonne `role` des invitations à son réveil.
+
+## 11. E-12 : les sauvegardes du monde
+
+- **Où.** Dans le bucket R2 que le Worker a déjà (`SESSIONS`), sous `mondes/<id du Durable Object>/`. Rien de plus à configurer. Le rapport quotidien ne lit que `sessions/` et `players/`.
+- **Quand.** Une sauvegarde après chaque nuit partagée, une autre quand le propriétaire le demande, et une juste avant chaque restauration : une restauration se défait donc. Les 14 dernières sont gardées.
+- **Combien.** Environ 100 Ko par sauvegarde pour une vraie ferme (§ 2), soit environ 1,5 Mo par monde. Le quota gratuit de R2 est de 10 Go.
+- **Restaurer** (le propriétaire, dans 👥 › 💾, avec confirmation) :
+  - la partie de la sauvegarde devient celle du monde, à une révision de plus ;
+  - un instantané est écrit, et le journal porte une marque `monde.restaurer`, jamais rejouée, qui garde l'histoire d'avant ;
+  - chaque joueur connecté reçoit la partie entière et un mot ; un joueur en retard d'une restauration la reçoit entière à son retour.
+- **Routes** : `GET` et `POST /mondes/<id>/sauvegardes`, `POST /mondes/<id>/restaurer { cle }`, réservées au propriétaire. Une clé d'un autre monde est refusée.
