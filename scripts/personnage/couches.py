@@ -92,15 +92,25 @@ def assembler(elts, chapeau, age, communs, jambes, zones):
         retire = set()
         if t['masque']:
             retire = zones[v][0] | (zones[v][1] if t['masque'] == 'marche' else set())
-        haut = {}
+        haut, otes = {}, set()
         for c, _, grilles in elts:
             if c == 'couvre_chef' and chapeau in modeles.COUVRE_TETE:
                 for p in [p for p in haut if p[1] < modeles.MASQUE_TETE and modeles.famille(None, haut[p][0]) in ('corps', 'coiffure')]:
                     del haut[p]
-            for (x, y), L in grilles.get(v, {}).items():
-                if y >= chibi.TORSE or (c in ('corps', 'haut') and (x, y) in retire):
+            # (un modèle retouché dont un bras est ailleurs : sa grille « <vue>:bras », modeles.RETOUCHES_BRAS)
+            grille = grilles[f'{v}:bras'] if t['masque'] and f'{v}:bras' in grilles else grilles.get(v, {})
+            for (x, y), L in grille.items():
+                if y >= chibi.TORSE:
+                    continue
+                if c in ('corps', 'haut') and (x, y) in retire:
+                    otes.add((x, y))
                     continue
                 haut[(x, y)] = (L, c)
+        if t['masque']:
+            # (le torse bouché là où la manche du modèle bordait la poitrine, chibi.REMPLIR)
+            for x, y, dx in chibi.REMPLIR.get(v, ()):
+                if (x, y) in otes and (x, y) not in haut and (x + dx, y) in haut:
+                    haut[(x, y)] = haut[(x + dx, y)]
         if t['fermes']:
             for p, L in chibi.Modele.YEUX_FERMES.items():
                 if p in haut:
@@ -270,6 +280,7 @@ def exporter(chemin=os.path.join(RACINE, 'assets', 'personnages', 'couches.json'
         'enfant': {'rangees': list(chibi.ENFANT_RANGEES), 'rangeesAssis': list(chibi.ENFANT_RANGEES_ASSIS), 'assis': 'assis_'},
         'yeuxFermes': _px(chibi.Modele.YEUX_FERMES),
         'zones': zones,
+        'remplir': {v: [list(r) for r in rs] for v, rs in chibi.REMPLIR.items()},
         'cases': list(communs['adulte']['trace']),
         'poses': {age: C['trace'] for age, C in communs.items()},
         'communes': {age: {n: {e: _px(px) for e, px in par.items()} for n, par in C['cases'].items()} for age, C in communs.items()},

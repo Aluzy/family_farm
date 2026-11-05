@@ -86,6 +86,8 @@ class Modele:
         self.nom = nom
         self.pal = modeles.palette_de(nom, d, i)
         self.vues = {v: {p: L for p, L in g.items() if L != 'a'} for v, g in modeles.lettres(nom, d).items()}
+        # (un modèle retouché dont un bras est ailleurs : ses vues quand les bras sont redessinés, modeles.RETOUCHES_BRAS)
+        self.vues_bras = {v: {p: L for p, L in g.items() if L != 'a'} for v, g in modeles.lettres_bras(nom, d).items()}
 
         self.manche, self.manche2, self.peau = 'Mp', 'Mp×0.8', 'Mk'
         F.C.update(ROLES)
@@ -104,15 +106,32 @@ class Modele:
         """La tête et le torse (rangées 0..17), avec ou sans les bras (et les mains : la marche) : ce que le
         corps et le haut ont dans les zones des bras (ZONES ; une mèche de cheveux y reste)."""
         import modeles
-        out = {p: c for p, c in self.vues[vue].items() if p[1] < TORSE}
+        vues = self.vues_bras if sans_bras and vue in self.vues_bras else self.vues
+        out = {p: c for p, c in vues[vue].items() if p[1] < TORSE}
         retire = (ZONES[vue][0] if sans_bras else set()) | (ZONES[vue][1] if sans_mains else set())
+        otes = set()
         for p in retire:
             if p in out and modeles.famille(self.nom, out[p]) in ('corps', 'haut'):
                 del out[p]
+                otes.add(p)
+        if sans_bras:
+            remplir(out, otes, vue)
         return out
 
     def jambes(self, vue):
         return {p: c for p, c in self.vues[vue].items() if TORSE <= p[1] < JAMBES}
+
+
+# De profil, le bras redessiné part du dos (la marche, MAINS) : là où la manche du modèle bordait la poitrine, le
+# torse retiré reprend la lettre de sa voisine (x, y, dx : la case, et où prendre sa lettre ; dans l'ordre).
+REMPLIR = {'cote': [(7, 12, -1), (7, 13, -1), (7, 14, -1)]}
+
+
+def remplir(haut, otes, vue):
+    """Bouche dans `haut` ({(x, y): lettre}) les cases de REMPLIR que les bras redessinés ont ôtées (`otes`)."""
+    for x, y, dx in REMPLIR.get(vue, ()):
+        if (x, y) in otes and (x, y) not in haut and (x + dx, y) in haut:
+            haut[(x, y)] = haut[(x + dx, y)]
 
 
 # Les manches et les mains du corps (modeles.CORPS) dans les zones des bras : ce que retire un bras redessiné,
@@ -163,10 +182,15 @@ def jambes(cv, m, vue, walk):
     poser(cv, droite, 0, -ld)
 
 
-def bras(cv, sx, sy, hx, hy, manche, peau, tete_cases):
-    """Un bras par-dessus le reste ; sur la tête, un contour le détache des cheveux."""
+def bras(cv, sx, sy, hx, hy, manche, peau, tete_cases, coude=None):
+    """Un bras par-dessus le reste ; sur la tête, un contour le détache des cheveux. `coude` : le bras plié (le
+    coude, dans la case), de l'épaule au coude puis du coude à la main."""
     couche = Canvas()
-    arm(couche, sx, sy, hx, hy, manche)
+    if coude:
+        couche.line(sx, sy, coude[0], coude[1], manche, 2)
+        couche.line(coude[0], coude[1], hx, hy, manche, 2)
+    else:
+        arm(couche, sx, sy, hx, hy, manche)
     couche.rect(hx, hy, hx + 1, hy + 1, peau)
     pts = [(x, y) for y in range(F.H) for x in range(F.W) if couche.px[y][x] is not None]
     for (x, y) in pts:
@@ -198,24 +222,24 @@ LEVE = {'adulte': 2, 'enfant': 1}       # px : de face et de dos, le pied qui pa
 # ses 2 × 2 px, dans la case, avant le rebond) selon que le bras est devant, le long du corps ou
 # derrière ; un enfant (raccourci : les rangées 20, 21 et 26, 27 de la case retirées) les balance
 # un peu moins.
-#   de profil, le bras proche (épaule en 8, 19), dessiné sur le corps : devant, la main au-delà du
-#   ventre ; derrière, la main derrière le dos ; le bras lointain (épaule en 7, 19), plus sombre,
-#   dessiné sous le corps, à l'opposé (devant : sa main dépasse du ventre ; derrière : du dos) ;
+#   de profil (choisi avec le joueur), le corps est de trois quarts : on voit son bras droit, l'épaule
+#   au dos (EPAULE_COTE), dessiné sur le corps (un contour l'en détache) ; il balance, une image par case du pas
+#   (MAINS_COTE : la main, et le coude du bras plié) : derrière et pas trop haut au contact du pied proche devant
+#   (image 0), en retard d'un pixel sur le corps aux passages (il revient, il repart : images 1 et 3), plié devant
+#   au contact de l'autre pied (image 2). Le bras gauche est caché : seule sa main dépasse devant le ventre quand
+#   le bras droit est derrière (MAIN_CACHEE : 2 pixels de peau, sous le corps) ;
 #   de face et de dos (épaules en 4, 19 et 11, 19) : le bras qui va vers nous descend et s'écarte du
 #   corps ; celui qui s'éloigne remonte et passe derrière la hanche (dessiné sous le corps).
 MAINS = {
-    'adulte': {'proche': {1: (12, 22), 0: (10, 22), -1: (4, 23)},
-               'loin': {1: (11, 22), 0: (4, 22), -1: (3, 23)},
-               'gauche': {1: (2, 24), 0: (3, 23), -1: (4, 21)},
+    'adulte': {'gauche': {1: (2, 24), 0: (3, 23), -1: (4, 21)},
                'droite': {1: (12, 24), 0: (11, 23), -1: (10, 21)}},
-    'enfant': {'proche': {1: (12, 22), 0: (10, 22), -1: (5, 23)},
-               'loin': {1: (11, 22), 0: (4, 22), -1: (4, 23)},
-               'gauche': {1: (2, 24), 0: (3, 23), -1: (4, 20)},
+    'enfant': {'gauche': {1: (2, 24), 0: (3, 23), -1: (4, 20)},
                'droite': {1: (12, 24), 0: (11, 23), -1: (10, 20)}},
 }
-# de profil, le bras proche : derrière au contact du pied proche devant (image 0), devant au contact
-# de l'autre (image 2), le long du corps au passage
-SENS_BRAS = {0: -1, 1: 0, 2: 1, 3: 0}
+EPAULE_COTE = (3, 19)
+# {image du pas: (main, coude ou None)}, les mêmes pour un enfant (raccourci ensuite)
+MAINS_COTE = {0: ((1, 23), None), 1: ((2, 24), None), 2: ((7, 21), (4, 22)), 3: ((4, 24), None)}
+MAIN_CACHEE = {0: (11, 22)}
 
 
 # De profil, au passage (images 1 et 3), les deux jambes restent droites, comme debout : la jambe
@@ -311,15 +335,16 @@ def jambes_marche(cv, m, vue, walk, dy, age):
 
 
 def bras_marche(vue, walk, age):
-    """Les bras de la marche : [(épaule, main, sous le corps ?, proche ?)], dans la case, avant le
+    """Les bras de la marche : [(épaule, main, sous le corps ?, proche ?[, coude])], dans la case, avant le
     rebond. De face, le bras du côté de la jambe qui avance recule (image 0 : la gauche avance, le
     bras gauche recule et le droit vient vers nous) ; de dos, on voit l'inverse : le bras qui recule
     vient vers nous."""
     M = MAINS[age]
     if vue == 'cote':
-        s = SENS_BRAS[walk]
-        # (proche : le bras proche qui passe sur le corps, derrière ; un contour l'en détache)
-        return [((7, 19), M['loin'][-s], True, False), ((8, 19), M['proche'][s], False, s < 0)]
+        # (la main cachée : sans épaule ; le bras droit, sur le corps, avec son coude)
+        main, coude = MAINS_COTE[walk]
+        out = [(None, MAIN_CACHEE[walk], True, False)] if walk in MAIN_CACHEE else []
+        return out + [(EPAULE_COTE, main, False, True, coude)]
     # (+1 : la main vers nous, en bas, écartée ; -1 : remontée, derrière la hanche)
     g = {0: -1, 1: 0, 2: 1, 3: 0}[walk]
     if vue == 'haut':
@@ -369,17 +394,23 @@ def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, si
         haut = m.haut(vue, sans_bras=True, sans_mains=True)
         tous = bras_marche(vue, walk, MODELE.get('age', 'adulte'))
         etape('bras_sous')
-        for (sx, sy), (hx, hy), sous, proche in tous:
-            if sous:
-                bras(cv, sx, sy + dy, hx, hy + dy, m.manche2 if vue == 'cote' else m.manche, m.peau, set())
+        for epaule, (hx, hy), sous, proche, *coude in tous:
+            if sous and epaule is None:
+                # (une main cachée : 2 pixels de peau qui dépassent du corps)
+                cv.put(hx, hy + dy, m.peau)
+                cv.put(hx, hy + 1 + dy, m.peau)
+            elif sous:
+                bras(cv, epaule[0], epaule[1] + dy, hx, hy + dy, m.manche, m.peau, set())
         etape('modele')
         torse = poser(cv, haut, 0, dy)
         tete = {(TX + x, TY + y + dy) for (x, y) in haut if y < TETE}
-        for (sx, sy), (hx, hy), sous, proche in tous:
+        for epaule, (hx, hy), sous, proche, *coude in tous:
             if not sous:
-                # (de profil, le bras proche sur le corps : un contour l'en détache)
+                # (de profil, le bras sur le corps : un contour l'en détache)
+                c = coude[0] if coude and coude[0] else None
                 dessus('torse' if proche else 'tete')
-                bras(cv, sx, sy + dy, hx, hy + dy, m.manche, m.peau, torse if proche else tete)
+                bras(cv, epaule[0], epaule[1] + dy, hx, hy + dy, m.manche, m.peau, torse if proche else tete,
+                     (c[0], c[1] + dy) if c else None)
     else:
         etape('modele')
         poser(cv, haut, 0, dy)

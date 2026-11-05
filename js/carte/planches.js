@@ -84,17 +84,28 @@
     // ils sont redessinés, le masque d'un couvre-chef, les yeux fermés
     const retire = !t.masque ? null : t.masque === 'marche' ? new Set([...P.zones[v].bras, ...P.zones[v].mains]) : P.zones[v].bras;
     const haut = new Map();          // cle(x, y) du modèle → lettre
+    const otes = new Set();
     for (const e of def.elements) {
       const couche = e.slice(0, e.indexOf(':'));
       if (couche === 'couvre_chef' && M.couvreTete.includes(def.chapeau)) {
         // (une nuance d'un modèle retouché : la famille de sa base, couches.json « nuances »)
         for (const [k, L] of [...haut]) if (Math.floor(k / W) < M.masqueTete && M.masque.includes(P.famille((def.nuances && def.nuances[L]) || L))) haut.delete(k);
       }
-      const grille = (P.elements[e] || {})[v] || [];
+      // (un modèle retouché dont un bras est ailleurs : sa grille « <vue>:bras », modeles.RETOUCHES_BRAS)
+      const grilles = P.elements[e] || {};
+      const grille = (t.masque && grilles[`${v}:bras`]) || grilles[v] || [];
       const ote = retire && M.retire.includes(couche);
       for (const [x, y, L] of grille) {
-        if (y >= M.torse || (ote && retire.has(cle(x, y)))) continue;
+        if (y >= M.torse) continue;
+        if (ote && retire.has(cle(x, y))) { otes.add(cle(x, y)); continue; }
         haut.set(cle(x, y), L);
+      }
+    }
+    // le torse bouché là où la manche du modèle bordait la poitrine (chibi.REMPLIR)
+    if (t.masque) {
+      for (const [x, y, dx] of (C.remplir || {})[v] || []) {
+        const k = cle(x, y), s = cle(x + dx, y);
+        if (otes.has(k) && !haut.has(k) && haut.has(s)) haut.set(k, haut.get(s));
       }
     }
     if (t.fermes) for (const [x, y, L] of P.yeuxFermes) if (haut.has(cle(x, y))) haut.set(cle(x, y), L);

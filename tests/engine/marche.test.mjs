@@ -84,13 +84,20 @@ function bras(planche, nom) {
   const k = CASES.frames.indexOf(nom), x0 = (k % 8) * 16, y0 = Math.floor(k / 8) * 32;
   const plein = (x, y) => { const p = planche.px(x0 + x, y0 + y); return p[3] > 0 && p.slice(0, 3).join() !== CONTOUR; };
   const bas = (cols) => { let b = -1; for (let y = 14; y < 28; y++) for (const x of cols) if (plein(x, y)) b = y; return b; };
-  // de profil : le plus à droite (devant) des bras, sous les épaules et au-dessus des jambes
-  let devant = -1;
-  for (let y = 19; y < 25; y++) for (let x = 0; x < 16; x++) if (plein(x, y) && x > devant) devant = x;
-  return { gauche: bas([0, 1, 2, 3, 4]), droite: bas([11, 12, 13, 14, 15]), devant };
+  // de profil : le plus à droite (devant) et le plus à gauche (derrière) de la silhouette, sous les épaules et
+  // au-dessus des jambes
+  let devant = -1, derriere = 16;
+  for (let y = 19; y < 27; y++) {
+    for (let x = 0; x < 16; x++) {
+      if (!plein(x, y)) continue;
+      devant = Math.max(devant, x);
+      derriere = Math.min(derriere, x);
+    }
+  }
+  return { gauche: bas([0, 1, 2, 3, 4]), droite: bas([11, 12, 13, 14, 15]), devant, derriere };
 }
 
-test('les bras se balancent : de face et de dos, en opposition ; de profil, devant puis derrière', () => {
+test('les bras se balancent : de face et de dos, en opposition ; de profil, derrière puis devant', () => {
   for (let i = 1; i <= 50; i++) {
     for (const nom of ['perso_' + String(i).padStart(2, '0'), 'enfant_' + String(i).padStart(2, '0')]) {
       const planche = lirePng(`assets/personnages/${nom}.png`);
@@ -103,7 +110,10 @@ test('les bras se balancent : de face et de dos, en opposition ; de profil, deva
         assert(b1.gauche > Math.min(b0.gauche, b2.gauche) && b1.gauche < Math.max(b0.gauche, b2.gauche), `${nom}, ${vue} : au passage, le bras gauche le long du corps (${b0.gauche}, ${b1.gauche}, ${b2.gauche})`);
       }
       const [c0, c1, c2] = [0, 1, 2].map((k) => bras(planche, `marche_cote_${k}`));
-      assert(c0.devant > c1.devant && c2.devant > c1.devant, `${nom} : de profil, une main devant au contact (${c0.devant}, ${c1.devant}, ${c2.devant})`);
+      // de profil (le bras droit, l'épaule au dos) : derrière le dos au premier contact, en retard au passage, plié
+      // devant au second contact (des cheveux longs peuvent dépasser autant que lui) ; la main du bras caché dépasse devant le ventre au premier contact
+      assert(c0.derriere < c1.derriere && c1.derriere <= c2.derriere, `${nom} : de profil, le bras derrière puis devant (${c0.derriere}, ${c1.derriere}, ${c2.derriere})`);
+      assert(c0.devant > c1.devant, `${nom} : de profil, la main cachée dépasse au contact (${c0.devant}, ${c1.devant})`);
     }
   }
 });
