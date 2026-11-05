@@ -129,3 +129,92 @@ Le sol par morceaux est identique au pixel près au sol d'un seul canevas : vér
 les régions de la ferme et du grand monde (petites plantes comprises) et après une repeinture partielle
 (des cases labourées sur les bords des morceaux). La lecture du sol pour les touffes au pied des murs
 (`herbes.js`) passe par `lireSol`, qui recompose les morceaux.
+
+## Le mode Construire, un mur en main (version 1.22.0, une partie au jour 54)
+
+Ouvrir Construire, un mur en main, figeait le jeu : 2,4 s par image. Pour montrer en blanc les cases où le
+bloc se pose (`syncConstructible`, js/farm-stage.js), chaque case visible passe par `poseStatus` ; pour un
+mur, il vérifiait qu'il ne couperait pas la pièce de l'escalier (`etageEnPeril`), en recalculant toutes
+les pièces closes de la ferme, deux fois, à chaque case (≈ 26 ms la case avec 665 blocs posés). Seul un
+bloc posé dans la pièce de l'escalier peut la couper : la vérification n'a lieu que là. Une case coûte
+maintenant ≈ 0,3 ms, et une image de Construire ≈ 60 à 80 ms à 4 × de ralentissement (tests/engine/perf-ferme.test.mjs).
+
+## Une grosse partie, près des ruches et dans Construire (lot 1)
+
+Mesuré avec la même partie (jour 54), sur ordinateur à 4 × de ralentissement (le temps passé dans chaque
+calcul, sur 6 s de jeu) :
+
+| Calcul | Avant | Après | Le correctif |
+| --- | --- | --- | --- |
+| Les découvertes de l'Encyclopédie (toutes les ½ s) | 296 ms | 21 ms | les objets posés relevés une fois par mise à jour, pas une fois par page (`decouverte.js`, `memo`) |
+| Les ruches pleines (modèle de la carte, Les choses à faire) | 125 ms | 23 ms | `ruchePleine` lit le bloc de sa case, sans parcourir tous les blocs pour chaque ruche (`ruches.js`) |
+| L'étage pour la carte | 116 ms | 53 ms | l'emprise de l'étage, celle du niveau 2, les pièces d'un niveau gardées tant que les pièces closes, l'étage et les hauteurs n'ont pas changé (`etage.js` ; tests/engine/caches.test.mjs) |
+| Les touffes d'herbe, en marchant | 512 ms | 44 ms | chaque source de touffes (un mur, un poteau, un sol) garde les siennes ; refaites seulement si un morceau du sol peint depuis touche l'herbe qu'elle lit ; une rangée n'est redessinée que si ses sources ont changé ; au plus deux fois par seconde quand seul le sol a changé (`herbes.js`, `sol.js` : `solSale`) |
+| Les cases blanches de Construire | 640 ms | 324 ms | le niveau et l'emprise de l'étage lus une fois par passage sur les cases (`chantier.js`, `leLotTrace`) |
+
+La première image de Construire passe de ≈ 560 ms à ≈ 280 ms. Reste, à l'ouverture : les conseils des
+pièces (`conseilsPieces`, ≈ 270 ms une fois par état des blocs), et, partout, le tri et le dessin des
+≈ 4 700 images de la scène (lot 2).
+
+## Construire : les cases blanches, sur l'écran seulement, gardées par case
+
+Les cases blanches ne sont testées que sur l'écran (la vue de la caméra, une case autour), plus
+`CONSTRUCTIBLE.marge` cases de marge (js/carte/ferme/config.js). Chaque réponse est gardée par case tant que la
+partie (son modèle), le bloc en main et le niveau ne changent pas : glisser la vue ne teste que les cases
+qui entrent à l'écran ; après une pose, les anciennes réponses restent dessinées le temps que les cases
+soient testées de nouveau. Les tests se font `CONSTRUCTIBLE.budgetMs` au plus par image, dans un lot
+(`enLot`, js/engine/blocs.js) : la partie ne change pas pendant ces tests, les cases couvertes par les meubles
+et les pièces closes ne sont calculées qu'une fois (≈ 0,15 → 0,007 ms la case sur ordinateur).
+
+Mesuré avec la partie du jour 54, en simulant un téléphone (Pixel 7, zoom ≈ 3,3 : ≈ 320 cases à l'écran) à
+4 × de ralentissement, sur 3 s : en glissant la vue, 1 155 → 59 ms passées sur les cases blanches (la pire
+image : 286 → 119 ms) ; à l'ouverture de Construire, 279 → 74 ms (la pire image : 810 → 525 ms, le reste
+est le calcul des conseils des pièces, une fois).
+
+## Les conseils des pièces et les pièces closes : l'extérieur parcouru une fois
+
+Les pièces closes (`piecesCloses`) et les conseils du mode Construire (`conseilsPieces`, js/engine/blocs.js)
+partent des cases voisines de chaque mur et s'étendent jusqu'à trouver une pièce fermée, ou l'extérieur
+(un bord du monde, plus de PIECE_MAX cases). L'extérieur était parcouru de nouveau, jusqu'à PIECE_MAX
+cases, depuis chaque mur qui le touche. Désormais, une étendue qui arrive sur une case d'une étendue
+ouverte déjà vue est ouverte elle aussi (une pièce close ne touche aucune autre étendue), sans tout
+reparcourir ; les cases des blocs qui ferment sont relevées une fois (un Set). Les résultats sont les
+mêmes (vérifié sur la partie du jour 54). Sur ordinateur (médianes) : pièces closes 21 → 13 ms, conseils
+39 → 14 ms ; à 4 × de ralentissement, à l'ouverture de Construire, conseils 272 → 50 ms.
+
+Leurs étiquettes sur la carte (« Maison · 2 couchages ») sont des textes nets, chers à dessiner : seules
+celles près de l'écran sont faites, les autres quand la vue s'en approche (`syncConseilsTextes`,
+js/carte/ferme/chantier.js) : 119 → 31 ms à l'ouverture, à 4 × de ralentissement.
+
+## Construire très lent sur le téléphone : la mesure sur l'appareil, la scène allégée
+
+Sur le téléphone du joueur, avec la partie du jour 54 : 12 s pour ouvrir Construire, 21 s pour poser un
+bloc. La simulation (ordinateur à 4 × de ralentissement) en donne trente fois moins : elle dessine sans
+processeur graphique et son processeur est plus rapide. D'où :
+
+- **La mesure sur l'appareil** (mode test › 📏 Mesures › « Mesurer Construire », js/ui/mesures.js) : le jeu
+  fait seul les gestes de Construire (l'ouvrir, attendre, poser un bloc près du centre de l'écran, prendre la
+  gomme, l'effacer, reposer la gomme, fermer). Pour chacun : le délai jusqu'à l'image affichée après lui,
+  les images des secondes suivantes, les tâches longues, et le temps passé par poste (js/ui/chrono.js :
+  le rendu de l'interface, le modèle de la carte, sa mise à jour, la commande du moteur, la sauvegarde,
+  chaque méthode de la scène de la carte, le dessin de Phaser). « Copier le rapport » le copie.
+- **La scène allégée** (`cullScene`, js/carte/ferme/decor.js) : le masquage hors de la vue ne couvrait que le
+  décor (arbres, rochers, touffes, blocs) ; il couvre maintenant toutes les images de la scène (les sols
+  posés, les dessus des murs, les cultures, la terre, les bêtes, les abeilles…), revu quand la vue bouge et
+  toutes les 300 ms. Avec la partie du jour 54 : 2 040 → 622 objets dessinés par image, 560 → 175 appels de
+  dessin (Pixel 7 simulé).
+- **Par geste** : les étiquettes des pièces gardées d'un dessin à l'autre (seules celles qui changent sont
+  refaites) ; reprendre un mur ne recalcule les pièces (« mélange » de deux pièces, étage en péril) que s'il
+  touche une pièce close, ou borde la pièce de l'escalier.
+
+## Le filet de sécurité du sol : ≈ 250 ms toutes les 3 s sur le téléphone
+
+Premier rapport « Mesurer Construire » du téléphone du joueur (Android 10, 8 cœurs, 8 Go ; la partie du
+jour 54), après l'allègement de la scène : 60 images par seconde (médiane 17 ms) ; ouvrir Construire 26 ms,
+poser un bloc 155 ms, la gomme 158 ms, effacer 165 ms. Il restait, dans chaque geste, une image de
+≈ 250 ms : `repairGround` › `groundWiped`, le filet de sécurité qui vérifie toutes les GROUND_CHECK_MS
+(3 s) que le navigateur n'a pas vidé les canevas du sol. Il lisait trois points de chacun des ≈ 30
+morceaux : sur un téléphone, chaque lecture rapatrie le canevas de la mémoire graphique. Désormais, le filet
+ne lit que MORCEAUX_VERIFIES morceaux (2), à tour de rôle (le navigateur les vide tous à la fois : deux
+suffisent à le voir) ; au retour de la page au premier plan (`visibilitychange`), là où le vidage arrive,
+tous sont vérifiés à l'image suivante.

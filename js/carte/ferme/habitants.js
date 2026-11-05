@@ -296,6 +296,9 @@
     habitantVoulu(m) {
       const md = this.ctx.lastModel || {}, H = (md.habitants && md.habitants.horaire) || {};
       const h = (Number(md.heure) || 12) - m.decale;
+      // (V-4 : la fête du hameau, sur la place : tout le monde y est, adultes et enfants)
+      const fete = !md.nuit && (md.fetes || []).find((x) => m.e && m.e.plan && x.hameau === m.e.plan.id);
+      if (fete && md.heure >= fete.debut && md.heure < fete.fin) return 'fete';
       if (md.nuit || h < H.LEVER || h >= H.COUCHER) return 'dort';
       if (h < H.TRAVAIL) return 'maison';
       if (h >= H.MIDI && h < H.REPRISE) return 'repas';
@@ -304,7 +307,7 @@
     },
 
     // Ce qu'il fait, pour sa phrase (le moteur : paroleHabitant) : dort, maison, chemin, travail,
-    // joue, repas, rentre, soir.
+    // joue, repas, rentre, soir, fete (V-4 : la fête du hameau, sur la place).
     habitantFait(m) {
       if (m.couche) return 'dort';
       if (m.chemin.length || m.demande) return m.act === 'travail' ? 'chemin' : m.act === 'repas' || m.act === 'dort' ? 'rentre' : m.act || 'maison';
@@ -435,7 +438,7 @@
         this.habAller(m, p.x, p.y, () => { m.ici = 'porte'; m.face = 'bas'; m.attente = rand(6, 14); });
         return;
       }
-      if (voulu === 'joue') { this.habJouer(e, m); return; }
+      if (voulu === 'joue' || voulu === 'fete') { this.habJouer(e, m); return; }
       this.habTravailler(e, m);
     },
 
@@ -628,7 +631,7 @@
               m.attente -= dt;
               if (m.attente <= 0) {
                 m.attente = rand(3, 8);
-                if (m.act === 'joue') this.habJouer(e, m);
+                if (m.act === 'joue' || m.act === 'fete') this.habJouer(e, m);
                 else if (m.act === 'travail') this.habTravailler(e, m);
                 else if (m.act === 'maison' || m.act === 'repas' || m.act === 'soir') { if (m.ici === 'dedans' && Math.random() < 0.4) this.habCommencer(e, m, m.act); }
               }
@@ -700,7 +703,7 @@
         m.act = 'dort';
         if (L) { this.habCoucher(m, L); return; }
       }
-      const q = voulu === 'joue' ? this.auHasard(e.plan.place.cases) : voulu === 'travail' ? null : this.auHasard(m.maison.dedans);
+      const q = voulu === 'joue' || voulu === 'fete' ? this.auHasard(e.plan.place.cases) : voulu === 'travail' ? null : this.auHasard(m.maison.dedans);
       const p = q || this.pied(m.maison.devant);
       m.x = p.x; m.y = p.y;
       if (voulu !== 'dort') this.habCommencer(e, m, voulu);
@@ -785,6 +788,25 @@
       m.parle = { until: performance.now() + PAROLE_MS };
       // (sa réaction : la joie de te voir, de te retrouver après une longue absence, amis.js)
       if (r.emotion && this.emouvoir) this.emouvoir(m, r.emotion, true);
+    },
+
+    // Il dit une petite phrase (une réaction, amis.js) : sa bulle, sans son prénom ni l'amitié, PAROLE_MS / 2.
+    habitantDit(m, texte) {
+      if (!this.ctx.labelLayer || !texte) return;
+      if (!m.bulle) {
+        const el = document.createElement('div');
+        el.className = 'habitant-bulle';
+        el.setAttribute('role', 'status');
+        this.ctx.labelLayer.appendChild(el);
+        m.bulle = { el, w: 0, h: 0 };
+      }
+      m.bulle.el.innerHTML = '';
+      const t = document.createElement('span');
+      t.className = 'habitant-bulle-texte';
+      t.textContent = texte;
+      m.bulle.el.appendChild(t);
+      m.bulle.w = 0;
+      m.parle = { until: performance.now() + PAROLE_MS / 2 };
     },
 
     // (les mesures, les essais : où est chacun)

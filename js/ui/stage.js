@@ -1,9 +1,13 @@
 import { DATA } from '../engine/catalog.js';
 import { proposerScene } from './scene.js';
 import { aFait, noterVisite, RECIT, toucherLieu } from '../engine/recit.js';
-import { fermeLuit, visiteJohnny } from '../engine/fil-lune.js';
+import { fermeLuit, visiteObservatoire } from '../engine/fil-lune.js';
 import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
+import { brume as brumeDuMoment, pleut } from '../engine/meteo.js';
+import { fetesDuJour } from '../engine/fetes.js';
+import { ouvrirSecret } from '../engine/secrets.js';
+import { entreeEncyclopedie } from '../engine/encyclopedie.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
@@ -20,6 +24,7 @@ import { arroseesCompagnon, estTacheCompagnon, faireCompagnon, journeeCompagnon,
 import { marcherMembre } from '../engine/repas.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
 import { TIRED } from '../engine/stamina.js';
+import { executer } from './commandes.js';
 import { brokenRocks, cutBushes, cutGrass, fellenTrees, morceauxDe, poussesArbres, arbresPlantes } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
@@ -32,7 +37,7 @@ import { tuilesChemins } from '../engine/ferme-generee.js';
 import { solDuMonde } from './monde-sol.js';
 import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
-import { encyclopedieFaune, encyclopedieHameau, openEncyclopedie } from './encyclopedie.js';
+import { encyclopedieBiome, encyclopedieFaune, encyclopedieHameau, openEncyclopedie } from './encyclopedie.js';
 import { HAMEAUX, voirHameau } from '../engine/monde-hameaux.js';
 import { garantiDuHameau, HABITANTS, habitantsPourLaCarte } from '../engine/habitants.js';
 import { tousLesToitsUses } from '../engine/usure.js';
@@ -40,7 +45,7 @@ import { bienvenueModele } from '../engine/bienvenue.js';
 import { visiteDepuisCarte } from './bienvenue.js';
 import { habitantDepuisCarte, openFicheHameau, paroleDepuisCarte, peuplerDepuisCarte, peuplerLesVus } from './habitants.js';
 import {
-  activeTab, axeMode, buildMode, coucher, ecranFerme, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
+  activeTab, axeMode, buildMode, coucher, ecranFerme, enLigne, hoeMode, pickMode, rodMode, scytheMode, setActiveTab, setComptoirTab, setEcranFerme, setInvTab, state, tabAvailable, TABS, etageVue, setEtageVue,
 } from './store.js';
 import { telView } from './consent.js';
 import { persistState, safeStorageGet, safeStorageSet } from './storage.js';
@@ -67,7 +72,7 @@ import { chevalMonte, chevalOu, vitesseCheval } from '../engine/cheval.js';
 import { countWithSilo } from '../engine/animals.js';
 import { countItem } from '../engine/inventory.js';
 import { caseDepart, ramassables } from '../engine/atelier.js';
-import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, mesuresMeuble, piecesCloses, rehaussesPosees, sensBloc, serreMurs, serrePlaces, solsPoses, couleursVariante, varianteBloc } from '../engine/blocs.js';
+import { blocsPoses, blocsDessusPoses, conseilsPieces, couchages, enLot, etatEcurie, etatEtable, etatMoulin, etatPoulailler, fenetresPosees, genrePiece, hauteurPile, hauteursPosees, mesuresMeuble, piecesCloses, rehaussesPosees, sensBloc, serreMurs, serrePlaces, solsPoses, couleursVariante, varianteBloc } from '../engine/blocs.js';
 import { buildChipHtml, meubleModele, niveauBati, niveauRang, deplacable, deplacePossible, pipetteSorte, traceInfo, tracePosable, vueMeuble } from './chantier.js';
 import { dessusEtage, escaliers, escaliersEtage, etage2Emprise, etageBlocs, etageEmprise, fenetresEtage, niveauxSols, sensEtage, solsEtage, toits, varianteEtage } from '../engine/etage.js';
 import { closeModal } from './modal.js';
@@ -80,6 +85,7 @@ import { alerteFaim, alerteSortie, coiffeCarte, vitessePied } from '../engine/eq
 import { plantationModele } from './plantation.js';
 import { runAction } from './events.js';
 import { calecheDepuisCarte, calecheToucheeDepuisCarte, helerCaleche } from './caleche.js';
+import { mesurer } from './chrono.js';
 
 
 // Le Poulailler et l'Étable, bâtis (js/engine/blocs.js, etatEnclos) : les cases libres de
@@ -483,6 +489,8 @@ export function stageModel() {
     fleurs: fleursPourAbeilles(state),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
     heure, cols: T.LARGEUR, cases: tileCount(T), terrain: terrainNow(rochers.concat(abattus)), plots,
+    // G-1 : le temps qu'il fait (js/engine/meteo.js ; la carte : js/carte/ferme/meteo.js ; le son : js/son.js)
+    meteo: { pluie: !nightActive(state) && pleut(state, heure), brume: nightActive(state) ? 0 : brumeDuMoment(state, heure) },
     // la ferme générée : ce qui est à ramasser à la main (js/engine/atelier.js)
     ramassables: ramassables(state).map((r) => ({ id: r.id, sorte: r.sorte, case: r.case, buisson: !!r.buisson })),
     // le bois et la pierre lâchés par la hache et la pioche, à ramasser en marchant dessus
@@ -498,6 +506,11 @@ export function stageModel() {
     // quel lit) et leur horaire (js/carte/ferme/habitants.js) ; ceux d'un hameau déjà vu naissent
     // dès que les plans sont là (une partie d'avant la fiche 7b)
     habitants: { horaire: HABITANTS.HORAIRE, hameaux: (peuplerLesVus(), habitantsPourLaCarte(state)) },
+    // V-4 : les fêtes du jour (js/engine/fetes.js) : le hameau, de quelle heure à quelle heure ; ses habitants
+    // se retrouvent sur la place (js/carte/ferme/habitants.js). Pas dans un monde partagé (la ferme seule).
+    fetes: state.mondePartage ? [] : fetesDuJour(state).map((f) => ({ hameau: f.hameau, debut: f.debut, fin: f.fin })),
+    // D-2 : les secrets du monde déjà ouverts (js/engine/secrets.js) : les autres scintillent (js/carte/ferme/lieux-monde.js)
+    secretsOuverts: Object.keys((state.secrets && state.secrets.ouverts) || {}),
     // l'amitié : les présents des amis devant la porte (js/carte/ferme/amis.js)
     presents: presentsPourLaCarte(),
     // la visite de bienvenue (js/engine/bienvenue.js, fiche 18) : le visiteur en route, ou son plat qui
@@ -736,6 +749,8 @@ function sprinklers() {
 // carte, ou une carte prête mais sans personnage), tout va directement à l'inventaire, et
 // ce qui attendait encore y entre.
 function syncRamassage() {
+  // (E-6 : en ligne, le monde ne ramasse pas : tout va droit au coffre commun ; rien n'est touché ici)
+  if (enLigne) return;
   const on = stageUsable() && (!FarmStage.ready() || FarmStage.hasFermier());
   state.ramassage = on;
   if (!on && piles(state).length) pickUpAll(state);
@@ -744,7 +759,8 @@ function syncRamassage() {
 // Le personnage prend un tas (appelé par la carte, jamais par un bouton) : renvoie ce qu'il
 // contenait ({ item: qté }), ou null s'il n'y avait plus rien.
 function stagePickup(id) {
-  const r = pickUp(state, id);
+  // (E-6 : en ligne, par le monde ; une ruche pleine aussi)
+  const r = enLigne ? executer('ramassage.prendre', { tas: String(id) }) : pickUp(state, id);
   if (!r.ok) return null;
   persistState();
   refresh();
@@ -758,6 +774,7 @@ function stagePickup(id) {
 // Fiche 19 : ou il a fini une de ses initiatives (arroser une plante, remplir sa cruche au puits,
 // cuisiner, ramasser) : ce qu'elle a donné (une plante arrosée : { arrose: 1 }, la bulle « +1 💧 »).
 function stageAide(lieu) {
+  if (enLigne) return null;   // (E-6 : en ligne, la famille ne fait pas les corvées seule : chaque joueur la verrait les faire)
   const betes = !estTacheCompagnon(lieu);
   const r = betes ? aideBetes(state, lieu) : faireCompagnon(state, lieu);
   if (!r.ok) return null;
@@ -787,6 +804,7 @@ function stageRegion(tile) {
 function stageIci(tile) {
   noterIci(state, tile);
   const biome = biomeDeCase(tile);
+  encyclopedieBiome(biome);   // (D-1 : la page de ce paysage, la première fois)
   let change = voirAutour(state, tile, { biome, nuit: nightActive(state) }) > 0;
   // (le lot 4 : le premier passage dans un pays, hors de la ferme, y fait trouver un plan, js/ui/plans.js)
   if (planDuBiome(biome, horsDeLaFerme(state))) change = true;
@@ -938,7 +956,7 @@ export function lieuDuPerso() {
 }
 
 // Le récit (lot 3b) : un lieu du récit touché (l'épave : js/carte/ferme/lieux-monde.js) ou une bâtisse où
-// l'on entre (la cabane de Johnny, l'atelier de Frida : stageMaison) : ce qu'on y lit (RECIT.LIEUX,
+// l'on entre (l'observatoire de Maurice (la « cabane »), l'atelier de Frida : stageMaison) : ce qu'on y lit (RECIT.LIEUX,
 // toucherLieu), en notification.
 // Le récit, lot 10 : une page du carnet gagnée là (la page de bord, à l'épave) est annoncée ensuite.
 function stageLieuRecit(l) {
@@ -948,25 +966,40 @@ function stageLieuRecit(l) {
   setTimeout(() => { notify(r.texte, { kind: 'info' }); annoncerPage(r.fragment); }, 0);
 }
 
+// D-2 : un secret du monde touché (js/engine/secrets.js) : ce qu'on y lit, ce qu'on y trouve.
+function stageSecret(l) {
+  const r = ouvrirSecret(state, l);
+  if (!r) return;
+  persistState();
+  setTimeout(() => {
+    const L = [`${r.icone} ${r.texte}`];
+    if (r.tresor && r.tresor.pieces) L.push(`+${r.tresor.pieces} pièces.`);
+    else if (r.tresor) L.push(`+${r.tresor.n} ${DATA.OBJETS[r.tresor.item].icone} ${DATA.OBJETS[r.tresor.item].nom}.`);
+    notify(L.join(' '), { kind: 'info', son: r.deja ? undefined : 'ramasse' });
+    if (r.page) { const e = entreeEncyclopedie(r.page); notify(`📓 Une page du carnet du voyageur : « ${e ? e.terme : r.page} » (dans l'Encyclopédie, « Les secrets du monde »).`, { kind: 'info' }); }
+    if (r.vue) notify(`🔭 Le pays se découvre tout autour : la carte s'agrandit.`, { kind: 'info' });
+  }, 0);
+}
+
 // Une page de plus au carnet (le fil de la lune : rien d'autre n'est dit).
 function annoncerPage(id) {
   const page = id && RECIT.FRAGMENTS[id];
   if (page) notify(`📓 Une page de plus dans ton carnet : « ${page.titre} ».`, { kind: 'info' });
 }
 
-// Le récit, lot 10 : chez Johnny, la visite (js/engine/fil-lune.js visiteJohnny : son accueil, un repas
-// apporté, une bribe la nuit) ; chez Frida, une scène peut se jouer (ses relevés), sinon ce qu'on y voit.
+// Le récit, lot 10 : l'observatoire de Maurice (js/engine/fil-lune.js visiteObservatoire : ce qu'on y voit ; la
+// nuit, la longue-vue, et une page de son carnet du ciel).
 function stageCabane() {
-  const r = visiteJohnny(state);
+  const r = visiteObservatoire(state);
   persistState();
   setTimeout(() => {
-    notify(r.absent ? r.texte : `🧓 Johnny : « ${escapeHtml(r.texte)} »`, { kind: 'info' });
+    notify(`🔭 ${r.texte}`, { kind: 'info' });
     annoncerPage(r.fragment);
   }, 0);
 }
 
 function stageMaison(m) {
-  // (une bâtisse du récit, la cabane de Johnny, l'atelier de Frida : y entrer, c'est la découvrir)
+  // (une bâtisse du récit, l'observatoire de Maurice (la « cabane »), l'atelier de Frida : y entrer, c'est la découvrir)
   if (m && m.batisse === 'cabane') { stageCabane(); return; }
   if (m && m.batisse === 'atelier' && aFait(state, 'lieu.atelier')) {
     setTimeout(() => { if (!proposerScene({ lieu: 'atelier' })) stageLieuRecit({ sorte: 'atelier' }); }, 0);
@@ -1044,6 +1077,7 @@ function mondeDeLaCarte() {
 // quand même son travail aux heures où il travaille (comme js/famille-ferme.js : levé avec le
 // personnage, jusqu'à FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES ; ensuite il flâne).
 function aideSansCarte() {
+  if (enLigne) return;   // (E-6 : de même)
   if (nightActive(state) || clockHours(state) >= DATA.FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES) return;
   for (const lieu of aideAFaire(state)) if (aideBetes(state, lieu).ok) noterGarde(state, 'betes');
   // (fiche 19 : ses initiatives aussi, d'un coup, sans dessin)
@@ -1051,11 +1085,33 @@ function aideSansCarte() {
 }
 
 function stageCollect(lieu) {
+  if (enLigne) return collecterEnLigne(lieu);
   const r = collectAt(state, lieu);
   if (r.ok && r.fatigue) notify(TIRED);
   else if (!r.ok && r.error === TIRED) notify(TIRED);
   if (r.ok || r.error === TIRED) { persistState(); refresh(); }
   return r.ok ? r.items : null;
+}
+
+// E-6 : en ligne, au Poulailler ou à l'Étable : les moutons prêts tondus, puis un tas qui attendrait encore
+// (une partie mise en ligne avec des tas), chacun par une commande du monde.
+function collecterEnLigne(lieu) {
+  const items = {};
+  let fatigue = false;
+  if (lieu === 'etable' && state.paturage) {
+    for (const m of state.paturage.moutons.filter(woolReady)) {
+      const r = executer('etable.tondre', { mouton: m.id });
+      if (!r.ok) { fatigue = r.error === TIRED; break; }
+      items[DATA.ANIMAUX.mouton.laine] = (items[DATA.ANIMAUX.mouton.laine] || 0) + r.laine;
+    }
+  }
+  if (state.aRamasser && state.aRamasser[lieu]) {
+    const r = executer('ramassage.prendre', { tas: lieu });
+    if (r.ok) for (const [k, q] of Object.entries(r.items)) items[k] = (items[k] || 0) + q;
+  }
+  if (fatigue) notify(TIRED);
+  refresh();
+  return Object.keys(items).length ? items : null;
 }
 
 // Version 1.15 : tuiles que la houe peut labourer (la grille verte de la carte en mode houe),
@@ -1099,6 +1155,33 @@ function terrainNow(rochers) {
 
 // Pont carte → jeu : l'action du registre, comme un clic sur un bouton qui porterait
 // data-action et ces data-* (en texte, comme dans le DOM) ; suivi et sommeil compris.
+// E-8 : dans un monde en ligne, le monde partagé est la ferme (docs/monde-partage.md, M.1). La carte reçoit
+// le rectangle de la ferme (`borne` : le personnage n'en sort pas, la vue reste sur elle) ; ce que la
+// carte demande hors de la ferme (le grand monde, les hameaux, la calèche, le récit) ou ce qui ne passe
+// pas par le monde (la cueillette du grand monde) ne fait rien, avec un mot quand c'est un
+// geste du joueur.
+const MUETS_EN_LIGNE = ['region', 'ici', 'fauneVue', 'hameau', 'hameauIci', 'visite', 'presents'];
+// (E-9 : la hache, la pioche, la faux, la canne passent par le monde : js/ui/outils.js)
+// (E-13 : les machines de l'Atelier, les morceaux au sol et la cueillette aussi : js/ui/atelier.js, outils.js)
+const REFUSES_EN_LIGNE = ['faune', 'maison', 'lieuRecit', 'secret', 'calecheTouchee', 'calecheHeler', 'habitantAgit', 'habitantParle', 'recolte'];
+let dernierMot = 0;
+function pasEnLigne() {
+  const t = Date.now();
+  if (t - dernierMot > 3000) { dernierMot = t; notify('🌐 En ligne, ce geste ne se fait pas encore : il viendra bientôt.'); }
+  return null;
+}
+function horsFermeDit() {
+  const t = Date.now();
+  if (t - dernierMot > 3000) { dernierMot = t; notify('🌐 Le reste du monde t\'attend dans ta ferme solo : en ligne, on reste sur la ferme.'); }
+}
+function enLigneSurLaFerme(options) {
+  if (!enLigne) return options;
+  const o = { ...options, borne: farmTerrain(state).FERME || null, horsFerme: horsFermeDit };
+  for (const k of MUETS_EN_LIGNE) if (o[k]) o[k] = () => null;
+  for (const k of REFUSES_EN_LIGNE) if (o[k]) o[k] = pasEnLigne;
+  return o;
+}
+
 function stageAct(action, data) {
   const target = { dataset: Object.fromEntries(Object.entries(data || {}).map(([k, v]) => [k, String(v)])) };
   runAction(action, target, { target });
@@ -1129,7 +1212,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, { act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, invites: invitesDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, presents: presentsDepuisCarte, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() })) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
+      if (!FarmStage.mount(el, enLigneSurLaFerme({ act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, secret: stageSecret, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, lot: (f) => enLot(state, f), pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, visite: visiteDepuisCarte, invites: invitesDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, presents: presentsDepuisCarte, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() }))) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
     } catch (err) {
       stageBroken = true;
       if (window.Chargement) window.Chargement.fini();
@@ -1147,7 +1230,8 @@ export function renderStage() {
     return;
   }
   FarmStage.show();
-  FarmStage.update(stageModel());
+  const modele = mesurer('interface : modèle de la carte', stageModel);
+  mesurer('carte : mise à jour (le modèle reçu)', () => FarmStage.update(modele));
   // Déplacement demandé par une notification ou un indicateur : sans animation si la carte
   // vient d'apparaître. Tant que la scène n'est pas prête, la demande attend.
   if (stagePan && FarmStage.ready()) {

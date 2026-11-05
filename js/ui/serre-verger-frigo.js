@@ -1,20 +1,20 @@
 import { DATA } from '../engine/catalog.js';
 import { isBroken } from '../engine/devices.js';
-import { countItem } from '../engine/inventory.js';
+import { countItem, penalite } from '../engine/inventory.js';
 import { deviceStatus } from '../engine/energy.js';
 import {
-  availableEnergy, buildFridge, FRIGO_OBJET, fridgeCoversNight, fridgeNightNeed,
-  fridgeCapacity, fridgeUnits, fridgeUpgradeCost, upgradeFridge,
+  availableEnergy, FRIGO_OBJET, fridgeCoversNight, fridgeNightNeed, fridgeCapacity, fridgeUnits, fridgeUpgradeCost,
 } from '../engine/fridge.js';
-import { serreCap, serreUpgradeCost, upgradeSerre } from '../engine/crops.js';
+import { serreCap, serreUpgradeCost } from '../engine/crops.js';
 import {
-  harvestTree, isTreeAdult, treeAge, treeNextHarvest, treeStageName,
+  isTreeAdult, treeAge, treeNextHarvest, treeStageName,
 } from '../engine/orchard.js';
 import { canAfford } from '../engine/stamina.js';
 import { techAuto } from '../engine/techtree.js';
 import { formatCoins, formatNumber, formatWh } from '../engine/format.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
+import { executer } from './commandes.js';
 import { wearHtml } from './ferme.js';
 import { autoChip, groupButtons, plotCard } from './elevage.js';
 import { stationControls } from './cuisine.js';
@@ -118,7 +118,7 @@ export function renderFridgeCard() {
   const ok = fridgeIcon() === '❄️';
   const need = fridgeNightNeed(state);
   const avail = availableEnergy(state);
-  const alert = !fridgeCoversNight(state)
+  const alert = !fridgeCoversNight(state) && penalite('PEREMPTION')
     ? `<span class="alert">⚠️ La batterie ne couvrira pas la nuit : il faut <span class="num">${formatWh(need + 999)}</span>, il y en a <span class="num">${formatWh(avail)}</span>. Les aliments perdront une nuit de conservation.</span>`
     : '';
   const badge = st.badge ? `<span class="chip warn">⚠️ ${st.badge}</span>` : '';
@@ -126,7 +126,7 @@ export function renderFridgeCard() {
     <div class="card fridge ancre ${ok ? 'cold' : 'warm'}" id="dev-frigo">
       <span class="card-title"><span>${artIcon('frigo')}${fridgeIcon()} Réfrigérateur</span><span class="chips"><span class="chip${st.code === 'panne' ? ' panne' : ''}">${st.label}</span>${helpBtn('frigo')}</span></span>
       ${badge}
-      <span class="muted">${ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté.'}</span>
+      <span class="muted">${!penalite('PEREMPTION') ? 'La famille y prend à manger ; rien ne s\'y gâte, comme ailleurs.' : ok ? 'Alimenté : la conservation est figée.' : 'Pas alimenté.'}</span>
       ${fridgeFillHtml()}
       ${alert}
       ${fridgeUpgradeHtml()}
@@ -156,24 +156,24 @@ function fridgeUpgradeHtml() {
 registerActions({
 
   'upgrade-serre': () => {
-    applyResult(upgradeSerre(state));
+    applyResult(executer('serre.agrandir', {}));
   },
 
 
 
 
   'harvest-tree': (target) => {
-    const result = applyResult(harvestTree(state, target.dataset.id));
+    const result = applyResult(executer('verger.cueillir', { arbre: String(target.dataset.id || '') }));
     // fiche 10 : cueillir arbre après arbre fait monter une seule notification par fruit
     if (result.ok && !result.aRamasser) notify(null, { cumul: { cle: `verger:${result.item}`, quantites: { [result.item]: result.qty }, texte: (t) => itemsText(t, 'gain') } });
   },
 
   'upgrade-fridge': () => {
-    const result = applyResult(upgradeFridge(state));
+    const result = applyResult(executer('frigo.agrandir', {}));
     if (result.ok) notify(`🧊 Réfrigérateur niveau ${result.niveau} : ${result.capacite} unités (−${formatCoins(result.cost)} 💰)`);
   },
   'build-fridge': () => {
-    const result = applyResult(buildFridge(state));
+    const result = applyResult(executer('frigo.acheter', {}));
     if (result.ok) notify(`🧊 Réfrigérateur acheté (−${formatCoins(result.cost)} 💰) : pose-le dans la maison avec 🔨 Construire.`);
   },
 });

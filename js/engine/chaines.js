@@ -229,6 +229,37 @@ export function runChaines(state, dtMs) {
   }
 }
 
+// E-13 : la journée des chaînes d'un monde en ligne, jouée à sa nuit partagée (son horloge est figée le
+// jour) : chacune fait d'un coup ce que son stock et une journée (de HEURE_REVEIL à HEURE_NUIT) lui
+// permettent, sa production en cours d'abord, jusqu'à ce que son tas soit plein ; sans compter le courant.
+// Renvoie le nombre de produits faits.
+export function chainesDeLaJournee(state) {
+  if (!state.chaines) return 0;
+  const T = DATA.TEMPS, jourMs = (T.HEURE_NUIT - T.HEURE_REVEIL) * T.SECONDES_PAR_HEURE * 1000;
+  let n = 0;
+  for (const k of Object.keys(state.chaines)) {
+    const st = state.chaines[k], c = etatChaine(state, Number(k));
+    if (!c || !c.ok) continue;
+    let reste = jourMs;
+    while (reste > 0 && c.tas < C().TAS) {
+      if (!st.cycle) {
+        const pris = prelevement(st.stock, c.recette);
+        if (!pris) break;
+        for (const [it, q] of Object.entries(pris)) { st.stock[it] -= q; if (st.stock[it] <= 0) delete st.stock[it]; }
+        st.cycle = { recette: c.recette, resteMs: c.secondes * 1000, pris };
+      }
+      if (st.cycle.resteMs > reste) { st.cycle.resteMs -= reste; break; }
+      reste -= st.cycle.resteMs;
+      sortirProduit(state, c, st.cycle.recette);
+      st.cycle = null;
+      c.tas += 1;
+      n += 1;
+    }
+    st.conso = 0;
+  }
+  return n;
+}
+
 // Le produit de la recette `id` tombe sur le tas de la chaîne `c` (la première place libre ; un
 // tas plein : sur la dernière).
 function sortirProduit(state, c, id) {

@@ -5,8 +5,7 @@
 // Usage : node tests/test-report.mjs (ou node tests/run-tests.mjs report)
 
 import { test as nodeTest } from 'node:test';
-import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
@@ -207,10 +206,8 @@ test('durées : format lisible', () => {
 /* ---------- Worker (R2 simulé) ---------- */
 
 async function loadWorker() {
-  const dir = mkdtempSync(join(tmpdir(), 'ff-worker-'));
-  writeFileSync(join(dir, 'report.mjs'), readFileSync(join(here, 'worker/src/report.mjs')));
-  writeFileSync(join(dir, 'index.mjs'), readFileSync(join(here, 'worker/src/index.js')));
-  return (await import(pathToFileURL(join(dir, 'index.mjs')).href)).default;
+  // (le Worker importe ses voisins, dont le moteur du jeu pour le monde partagé : il se charge en place)
+  return (await import(pathToFileURL(join(here, 'worker/src/index.js')).href)).default;
 }
 
 function fakeBucket(files) {

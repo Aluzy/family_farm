@@ -13,7 +13,7 @@
 // récents) ; sous les onglets, des filtres (ce que j'ai, la pièce des meubles, le style).
 
 import { DATA } from '../engine/catalog.js';
-import { atelierConstruit, craft, craftStatus } from '../engine/atelier.js';
+import { atelierConstruit, craftStatus } from '../engine/atelier.js';
 import { countItem } from '../engine/inventory.js';
 import { blocsDidacticiel } from '../engine/didacticiel.js';
 import { setStageWindow, stageWindow } from './stage-windows.js';
@@ -28,8 +28,8 @@ import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { meubleSrc } from './caleche.js';
 import { closeModal, openModal } from './modal.js';
 import { styleDe, styleInfo } from '../engine/styles.js';
-import { defaire, surCase as surCaseMoteur } from '../engine/commandes.js';
-import { executer } from './commandes.js';
+import { surCase as surCaseMoteur } from '../engine/commandes.js';
+import { commandesJouees, defaireCommandes, executer } from './commandes.js';
 import { itemsText } from './common.js';
 import { tel } from './consent.js';
 import { basculerFavori, estFavori, filtrer, filtres, filtresPossibles, noterRecent, sortesEtoile } from './catalogue.js';
@@ -54,12 +54,30 @@ const solEnMain = () => niveau() >= 1 && estSolPiece(buildMode);
 // 'rang' (un mur, une fenêtre, une porte du bas : le rehausser ; ses blocs du dessus sont les murs
 // de l'étage), 'etage' (au-dessus de la pièce de l'escalier : un bloc de l'étage ; un tableau sur un mur
 // rehaussé de l'étage aussi).
-function genreCase(c) {
-  if (solEnMain()) return 'sol';
+// `lot` (facultatif, tracePosable) : le niveau et l'emprise de l'étage, lus une fois pour toutes les cases.
+function genreCase(c, lot = null) {
+  const L = lot || { sol: solEnMain(), bati: niveauBati(), emprise: null };
+  if (L.sol) return 'sol';
+  const dansEtage = () => L.bati && (L.emprise || etageEmprise(state)).has(c);
   // (sur l'étage, un mur rehaussé où l'on accroche un tableau, ou d'où on le reprend : un bloc de l'étage)
-  if (niveauBati() && etageEmprise(state).has(c) && (dessusEtage(state)[c] || (DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sur === 'mur'))) return 'etage';
+  if (dansEtage() && (dessusEtage(state)[c] || (DATA.ATELIER.BLOCS[buildMode] && DATA.ATELIER.BLOCS[buildMode].sur === 'mur'))) return 'etage';
   if (hauteurPile(state, c) >= 1) return 'rang';
-  return niveauBati() && etageEmprise(state).has(c) ? 'etage' : 'rang';
+  return dansEtage() ? 'etage' : 'rang';
+}
+// Le mode Construire teste chaque case affichée d'affilée (js/farm-stage.js, syncConstructible) : le
+// niveau, le bloc en main et l'emprise de l'étage ne changent pas pendant ce passage. Lus à la première
+// case, oubliés juste après (une micro-tâche) ; relus si une commande a été jouée entre deux cases (un
+// tracé pose au fil du doigt), ou si le bloc en main ou le niveau ont changé.
+let lotTrace = null;
+function leLotTrace() {
+  const cle = commandesJouees() + '|' + buildMode + '|' + buildLevel;
+  if (!lotTrace || lotTrace.cle !== cle) {
+    const neuf = !lotTrace;
+    lotTrace = { cle, n: niveau(), sol: solEnMain(), bati: niveauBati(), emprise: etageEmprise(state) };
+    if (!neuf) return lotTrace;
+    Promise.resolve().then(() => { lotTrace = null; });
+  }
+  return lotTrace;
 }
 // (à l'étage : seulement ceux qui s'y posent ; plus haut que le sol : les murs)
 // (les meubles de la maison : seulement ceux qu'on a en main, ou celui qu'on pose)
@@ -463,7 +481,7 @@ export function tracePosable(c) {
   const b = DATA.ATELIER.BLOCS[buildMode];
   // sur l'étage d'une pièce : ce qui y est déjà (un mur pour un mur, un sol pour un sol), sinon
   // ce que le moteur y pose
-  const n = niveau(), g = n ? genreCase(c) : null;
+  const L = leLotTrace(), n = L.n, g = n ? genreCase(c, L) : null;
   // au niveau 1, un sol : dans une pièce dont les murs montent au niveau 1, ou sur l'étage
   if (g === 'sol') {
     if (solsEtage(state, n)[c]) return 'fait';
@@ -833,7 +851,7 @@ registerActions({
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     const gestes = histoire.pop();
     if (!gestes) { notify('Rien à annuler.'); return; }
-    const n = defaire(state, gestes);
+    const n = defaireCommandes(gestes);
     if (n) persistState();
     refresh();
     notify(n ? `↶ Annulé${gestes.length > 1 ? ` : ${n} bloc${n > 1 ? 's' : ''}` : ''}${n < gestes.length ? ` (${gestes.length - n} n'ont pas pu l'être)` : ''}.` : 'Rien n\'a pu être annulé (ce qui a été posé a changé depuis).');
@@ -934,7 +952,7 @@ registerActions({
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
     let faits = 0, raison = '';
     for (let k = 0; k < a.fois; k++) {
-      const r = craft(state, a.id);
+      const r = executer('atelier.fabriquer', { recette: a.id });
       if (!r.ok) { raison = r.error; break; }
       faits += 1;
     }

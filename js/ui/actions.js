@@ -20,7 +20,7 @@ export function registerActions(handlers) {
 // dans l'une des deux listes.
 export const SOMMEIL_MESSAGE = '💤 Tu dors : attends le réveil.';
 export const SOMMEIL_PERMISES = new Set([
-  'sleep', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
+  'sleep', 'monde-coucher', 'member-save', 'member-add', 'member-remove', 'main-character', 'setup-start',
   'pet-add', 'pet-save', 'pet-remove', 'tool-use', 'meuble-annule', 'meuble-place',
   'carte-monde-but', 'carte-monde-ferme', // (fiche 8 : choisir le but de la boussole, rien ne bouge)
   'fiche-case', 'fiche-equiper', 'fiche-tente', // (fiche 11 : habiller la famille ; le récit, lot 8 : la tente)
@@ -38,6 +38,7 @@ export const SOMMEIL_BLOQUEES = new Set([
   'fridge-in-all', 'fridge-in-urgent', 'frigo-ranger', 'fridge-out', 'toggle', 'semis-set', 'cow-herbs',
   'sac-poser', 'sac-retirer', 'sac-remplir', 'sac-reprendre', 'sac-manger', // (fiche 11 : le sac, comme la boîte et « Manger »)
   'cruche-remplir', 'lit-oui', // (fiche 17 : aller au puits, choisir son lit)
+  'demande-rendre', // (V-2 : rendre une demande d'un habitant)
 ]);
 
 // Plusieurs actions, une même fonction (elle reçoit le nom de l'action en 3e argument).

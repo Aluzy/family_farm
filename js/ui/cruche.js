@@ -9,7 +9,7 @@ import { accord, plural } from './common.js';
 import { memberName } from '../engine/family.js';
 import { asleep } from '../engine/night.js';
 import { mainCharacter } from '../engine/depart.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -70,7 +70,7 @@ function arroserCases(cases) {
     if (r.error === TIRED) break;
   }
   // (un tracé d'au moins GROUPE_MIN cases : une action groupée, comme « Arroser tout »)
-  if (cases.length >= GROUPE_MIN) groupDiscount(state, avant);
+  if (cases.length >= GROUPE_MIN && !enLigne) groupDiscount(state, avant);   // (en ligne, pas de remise)
   if (n) persistState();
   refresh();
   if (n) notify(`💧 ${plural(n, 'culture')} ${accord(n, 'arrosée')}${vide ? ' · la cruche est vide : au puits !' : raison ? ` · ${raison}` : ''}`);
@@ -97,7 +97,8 @@ export function allerAuPuits(apres = false) {
 // (null : il n'y est pas arrivé). Le jeu remplit la cruche.
 export function puiserFromStage(casePuits) {
   if (asleep(state)) return null;
-  const r = remplirCruche(state, casePuits === null || casePuits === undefined ? null : Number(casePuits));
+  const c = casePuits === null || casePuits === undefined ? null : Number(casePuits);
+  const r = Number.isInteger(c) && c >= 0 ? executer('cruche.remplir', { case: c }) : remplirCruche(state, c);
   if (!r.ok) { arrosageReste = []; notify(`${DATA.OBJETS.cruche.icone} ${r.error}`); return r; }
   notify(`${DATA.OBJETS.cruche.icone} Cruche remplie : ${r.litres} L pour arroser.`);
   persistState();

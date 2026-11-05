@@ -24,6 +24,7 @@
     joie: { couleur: 0xffd23c, emoji: '😊', nom: 'joie', peau: { e: [255, 232, 110], f: [250, 206, 56], j: [190, 140, 20], k: [255, 160, 60] } },
     colere: { couleur: 0xff4a3a, emoji: '😠', nom: 'colère', peau: { e: [250, 120, 104], f: [226, 66, 54], j: [150, 28, 26], k: [255, 40, 40] } },
     peur: { couleur: 0xa45cff, emoji: '😨', nom: 'peur', peau: { e: [206, 168, 250], f: [166, 116, 226], j: [98, 58, 160], k: [214, 120, 230] } },
+    surprise: { couleur: 0xffb05a, emoji: '😮', nom: 'surprise', peau: { e: [255, 214, 160], f: [250, 176, 96], j: [196, 120, 48], k: [255, 150, 110] } },
     degout: { couleur: 0x5fd35a, emoji: '🤢', nom: 'dégoût', peau: { e: [170, 232, 130], f: [112, 196, 84], j: [52, 128, 46], k: [150, 210, 80] } },
     tristesse: { couleur: 0x4a8dff, emoji: '😢', nom: 'tristesse', peau: { e: [150, 196, 252], f: [92, 148, 232], j: [44, 86, 170], k: [120, 150, 240] } },
   };
@@ -43,6 +44,9 @@
     }
     g.putImageData(img, 0, 0);
   }
+
+  // ce que dit un habitant surpris par un coup de hache ou de pioche près de lui
+  const REACTIONS = { hache: 'Oh ! Tu en replanteras un ?', pioche: 'Oh ! Ça résonne jusqu\'ici !' };
   const EMO = {
     duree: 1800,       // ms : une réaction
     vague: 0.65,       // l'opacité du voile de couleur au plus fort de la réaction (0 : rien, 1 : la couleur pure)
@@ -79,14 +83,14 @@
       return this.emouvoir(this.habitantParId(id), emotion, true);
     },
 
-    // Un coup de hache ou de pioche en (x, y) : les adultes qui le voient se fâchent (on abîme leur coin),
-    // les enfants ont peur.
-    habitantsVoient(x, y) {
+    // Un coup de hache ou de pioche en (x, y) : ceux qui le voient sont surpris, gentiment (le récit cosy : ni colère
+    // ni peur) ; un adulte le dit, la première fois (REACTIONS : « Oh ! Tu en replanteras un ? »).
+    habitantsVoient(x, y, geste = 'hache') {
       for (const e of (this.hameauxVus || new Map()).values()) {
         if (!e.gens) continue;
         for (const m of e.gens.membres.values()) {
           if (!m.s || !m.s.visible || m.couche || Math.hypot(m.x - x, m.y - y) > EMO.voient) continue;
-          this.emouvoir(m, m.def.enfant ? 'peur' : 'colere');
+          if (this.emouvoir(m, 'surprise') && !m.def.enfant && this.habitantDit) this.habitantDit(m, REACTIONS[geste] || REACTIONS.hache);
         }
       }
     },
@@ -166,9 +170,9 @@
       const s = m.s;
       if (!s) return;
       const M = this.ctx.lastModel;
-      // (un cheval qui passe tout près : la peur)
+      // (un cheval qui passe tout près : la surprise)
       const joueur = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
-      if (joueur && M && M.cheval && !m.couche && Math.hypot(joueur.x - m.x, joueur.y - m.y) < EMO.cheval) this.emouvoir(m, 'peur');
+      if (joueur && M && M.cheval && !m.couche && Math.hypot(joueur.x - m.x, joueur.y - m.y) < EMO.cheval) this.emouvoir(m, 'surprise');
       let couleur = null, k = 0, planche = m.key;
       const R = m.emo;
       if (R && now - R.t0 < EMO.duree) {

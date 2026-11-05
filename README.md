@@ -102,14 +102,19 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   des grottes, une marche plus rapide dans le marais et la montagne ; le
   second adulte, le **compagnon**, aide aux tâches de la ferme (bêtes, ruches, arrosage).
 - **Le temps** : la journée commence à 6 h, une heure dure 30 s ; la famille mange à 19 h et
-  se couche à 22 h ; à minuit, la nuit passe (ponte, laine, lait, aliments qui vieillissent).
+  se couche à 22 h ; à minuit, la nuit passe (ponte, laine, lait).
   La nuit, « Zzz » envoie le personnage au lit : endormi, une heure passe en 3 s et son
-  énergie remonte. Il ne dort que quand on l'envoie se coucher. Les plantes poussent 24 h
-  après leur arrosage.
+  énergie remonte (une nuit venue seule la rend aussi, s'il a un lit). Les plantes poussent
+  24 h après leur arrosage.
+- **Sans pénalité** (B-1) : rien ne se perd par absence ou par oubli. Les aliments ne se gâtent
+  pas, les appareils ne s'usent pas, le bonheur de la famille ne baisse pas la nuit (ni la faim,
+  ni une nuit sans paillasse ne le font baisser), les bêtes pas nourries ne produisent rien mais
+  restent, les plantes attendent. Chaque pénalité se rallume d'un réglage (`PENALITES`,
+  `data/general.json`).
 - **Les repas** : la famille a besoin de 150 énergie par jour (50 par adulte, 25 par enfant) ;
-  elle mange au repas du soir, d'abord ce qui périme le plus tôt.
+  elle mange au repas du soir.
 - **Électricité et eau** circulent en temps réel : panneau (de 7 h à 19 h) → batterie →
-  pompe, moulin, presse, réfrigérateur, station du robot. Les appareils s'usent.
+  pompe, moulin, presse, réfrigérateur, station du robot.
 - **Dix niveaux d'expérience** (⭐) débloquent cultures, bâtiments et ateliers ; un **arbre
   des technologies** (37 technologies, 7 branches) les automatisations (arrosage, robot de
   récolte et de semis, nourrissage…), payées en points, en pièces et en ressources.
@@ -122,6 +127,52 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
 Le détail (valeurs, formules, tableau d'équilibrage) est dans la conception ; les
 règles principales sont aussi rappelées dans le jeu (⚙️ Options › À propos), et
 chaque bâtiment a son bouton **?** (rôle, consommation, production).
+
+### Jeu en ligne : le compte
+
+Le jeu solo fonctionne sans compte, sur l'appareil. Pour le jeu en ligne, ⚙️ Options › « 🌐 Jeu en
+ligne » : on donne son adresse e-mail et on reçoit un lien de connexion, sans mot de passe. Le compte
+se supprime au même endroit. Côté serveur et mise en service : `worker/README.md`.
+
+Connecté, on peut **mettre sa ferme en ligne**. C'est une copie : la partie solo reste sur l'appareil,
+intacte. On y entre ensuite par « Entrer » (`jeu.html?monde=…`). Dans un monde en ligne :
+- le monde est figé (son horloge ne tourne pas) ;
+- on y **construit ensemble** (le mode Construire) et l'on y **cultive le potager** : labourer, semer,
+  arroser (aussi en glissant, et « tout »), récolter, remplir la cruche ; l'on s'y **occupe des bêtes** :
+  nourrir les poules, tondre, les herbes des vaches, une place à l'Étable, agrandir le Poulailler, la
+  ruche pleine. Le monde ne ramasse pas : la récolte, les œufs, le lait et la laine vont droit au coffre
+  commun. La famille n'y fait pas les corvées seule. Les **outils** aussi : la hache, la pioche, la faux,
+  la canne (l'étang, la mare) et le verger ; ce qu'un coup lâche va droit au coffre. Les **machines de
+  l'Atelier** aussi : la botteleuse sort sa botte dès qu'elle est pleine ; les chaînes et le distributeur de
+  grain font leur journée pendant la nuit partagée. La **progression**
+  est commune : l'arbre des technologies, l'Atelier, les appareils de la ferme. L'on y **cuisine** : lancer une recette, le
+  Moulin, le frigo (ranger, sortir, acheter, agrandir), la boîte à nourriture, manger sur le pouce. Une
+  préparation finit pendant la nuit partagée (l'horloge est figée). Les autres gestes (le Marché, les
+  outils, les hameaux…) viendront ensuite ;
+- **la nuit est partagée** : « 🛏 Se coucher » dans le bandeau. Quand tous les joueurs connectés sont
+  couchés, toute la nuit passe d'un coup : les plantes arrosées poussent, et chacun se réveille au jour
+  suivant. Le bandeau dit combien sont couchés (« 1/2 ») ;
+- chaque geste est joué tout de suite, puis envoyé au monde, et ceux des autres arrivent en moins
+  d'une seconde ;
+- les autres joueurs sont dessinés là où ils regardent : leur personnage et leur prénom ;
+- le bandeau « 🌐 » dit si l'on est à jour et ramène à sa ferme solo.
+
+**Le monde partagé, c'est la ferme** (`docs/monde-partage.md`) : le rectangle de la ferme, ce qu'on y
+bâtit, cultive, élève et cuisine. Le grand monde (les routes, les hameaux, la mine, le récit) reste à
+la partie solo de son propriétaire. En ligne, le personnage ne sort pas de la ferme et la vue reste sur
+elle ; la copie mise en ligne n'emporte pas le grand monde, et sa nuit ne fait que la ferme (E-8).
+
+Chacun a un **rôle** (E-11) : 👀 visiteur, 🌱 ami jardinier (le potager, les bêtes, la cuisine, les
+outils), 🔨 bâtisseur (en plus, Construire et la progression), 🏡 propriétaire (seul à retirer un
+atelier, un bâtiment ou un appareil). Le propriétaire le choisit en invitant, le change dans 👥 et y lit
+le 📜 journal du monde (qui a fait quoi). Il y trouve aussi les 💾 sauvegardes du monde : une après chaque
+nuit, d'autres à la demande ; il peut en restaurer une (la ferme d'avant est sauvée d'abord).
+
+Le propriétaire **invite un ami** par le bouton 👥 du bandeau. Il crée un lien, valable 7 jours et
+utilisable une fois, à envoyer. En l'ouvrant, l'ami entre dans le monde pour y construire ; s'il
+n'est pas connecté, l'invitation attend sa connexion. Le propriétaire peut aussi retirer un membre :
+sa connexion est coupée et il retrouve sa ferme solo. Code : `js/ui/en-ligne.js`
+et `js/ui/synchro.js` ; tests : `tests/test-synchro.mjs` et `tests/deux-joueurs.mjs` (deux onglets).
 
 ### Absence et onglet en arrière-plan
 
@@ -168,8 +219,9 @@ ce que fait le joueur en mode Construire est une commande `{ id, type, args }` (
 vérifiée puis jouée par `executerCommande(state, cmd)` avec les fonctions du moteur existantes. Elle
 rend les commandes inverses qui la défont : le bouton ↶ Annuler du chantier (`js/ui/chantier.js`)
 les joue. Le potager et la nuit passent aussi par des commandes, sans inverse (`potager.planter`,
-`potager.arroser`, `potager.recolter`, `nuit.dormir` : les boutons, la carte, les tracés, la cruche,
-le bouton Dormir). L'interface les émet par `executer(type, args)` (`js/ui/commandes.js`, qui leur
+`potager.arroser`, `potager.recolter`, `potager.labourer`, `potager.toutPlanter`, `potager.toutArroser`,
+`potager.toutRecolter`, `cruche.remplir`, `poules.nourrir`, `etable.tondre`, `ramassage.prendre`, `cuisine.lancer`, `frigo.ranger`, `manger`…, `nuit.dormir` : les boutons, la carte, les tracés, la cruche,
+le bouton Dormir ; `nuit.partagee`, la nuit d'un monde en ligne, que seul le monde joue). L'interface les émet par `executer(type, args)` (`js/ui/commandes.js`, qui leur
 donne un identifiant unique et **sauvegarde la partie juste après chaque commande réussie** : une seule
 sauvegarde par geste, même pour un tracé de plusieurs blocs ; la sauvegarde de toutes les 10 s reste
 pour le reste, le temps qui passe). Une partie lourde (le monde vu en entier, 5 000 blocs : 204 Ko) se

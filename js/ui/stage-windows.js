@@ -1,4 +1,6 @@
 import { DATA } from '../engine/catalog.js';
+import { brume as brumeMeteo, pleut } from '../engine/meteo.js';
+import { demandesBouton } from './demandes.js';
 import { carnet } from '../engine/recit.js';
 import { energyLevel, energyMax, enduranceBonus } from '../engine/stamina.js';
 import { allDevices, isOwned, marcheFerme, starterOf } from '../engine/devices.js';
@@ -570,8 +572,16 @@ function renderHud() {
       `<span class="hud-hublot" aria-hidden="true" style="${fond}"><span class="hud-ciel"></span><span class="hud-etoiles"></span><span class="hud-lune" style="--lf:${jour - 1}"></span>` +
         `<span class="hud-heure">${heure}h${String(minutes).padStart(2, '0')}</span></span>` +
       `<span class="hud-ruban" aria-hidden="true"><span class="hud-day">${weekdayShort(state.day)} <span class="num">${jour}</span></span><span>·</span>` +
-      `<span class="hud-month">${monthName(state.day)}</span></span></button>`
+      `<span class="hud-month">${monthName(state.day)}</span>${meteoIcone(heure + minutes / 60)}</span></button>`
   );
+}
+
+// G-1 : le temps du moment au cadran (js/engine/meteo.js) : une averse, la brume du matin ; rien quand il fait beau.
+function meteoIcone(h) {
+  if (nightActive(state)) return '';
+  if (pleut(state, h)) return '<span class="hud-meteo" title="Averse" aria-label="Il pleut">🌧️</span>';
+  if (brumeMeteo(state, h) > 0.05) return '<span class="hud-meteo" title="Brume du matin" aria-label="Brume du matin">🌫️</span>';
+  return '';
 }
 
 // Menu latéral rabattable, à gauche de l'écran (il remplace le menu du bas) : les icônes
@@ -647,6 +657,7 @@ export function renderTabbar() {
       // L'Encyclopédie, un livre qui se remplit au fil de la partie (js/ui/encyclopedie.js)
       encyclopedieBouton() +
       carnetBouton() +
+      demandesBouton() +
       carteMondeBouton() +
       // Le mode test (activé dans les Options) : son panneau, par-dessus la carte.
       (testMode ? `<button type="button" class="nav-btn${testOpen ? ' active' : ''}" data-action="test-open" title="Mode test" aria-label="Mode test" aria-pressed="${testOpen}"><span class="nav-icon" aria-hidden="true">🧪</span><span class="nav-label">Test</span></button>` : '') +

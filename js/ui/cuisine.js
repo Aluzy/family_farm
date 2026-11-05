@@ -2,13 +2,12 @@ import { DATA, recipeOutput, recipeOutputQty } from '../engine/catalog.js';
 import { EPS } from '../engine/base.js';
 import { isBroken, maintainCost, repairCost } from '../engine/devices.js';
 import { deviceStatus } from '../engine/energy.js';
-import { countItem, shelfLife } from '../engine/inventory.js';
+import { countItem, penalite, shelfLife } from '../engine/inventory.js';
 import { energyChip } from './energie.js';
 import { wheatTotal } from '../engine/animals.js';
 import { etatMoulin } from '../engine/blocs.js';
 import {
-  buildStation, cancelMilling, cancelQueued, millPending, millTimeLeft, queueCapacity, recipeStatus,
-  startMilling, startRecipe, taskTimeLeft,
+  millPending, millTimeLeft, queueCapacity, recipeStatus, taskTimeLeft,
 } from '../engine/kitchen.js';
 import { recipeTime } from '../engine/techtree.js';
 import { isUnlocked } from '../engine/campaign.js';
@@ -18,6 +17,7 @@ import {
 } from '../engine/format.js';
 import { state } from './store.js';
 import { applyResult } from './game-actions.js';
+import { executer } from './commandes.js';
 import { syncJobs } from './loop.js';
 import { refresh } from './render.js';
 import { switchHtml, wearHtml } from './ferme.js';
@@ -54,7 +54,7 @@ function stationBlurb(id) {
   const def = DATA.STATIONS[id];
   const names = stationRecipes(id).map((r) => DATA.RECETTES[r].nom.toLowerCase()).join(', ');
   const power = def.electrique
-    ? ' Appareil électrique : il consomme du courant en marche, avec interrupteur, usure et pannes.'
+    ? ` Appareil électrique : il consomme du courant en marche, avec interrupteur${penalite('USURE') ? ', usure et pannes' : ''}.`
     : ' Pas d\'électricité.';
   if (id === 'moulin') return `Moud le blé : 1 blé donne ${millOutputText()}. Le blé se moud ici même, dans le Moulin.${power}`;
   return `${names.charAt(0).toUpperCase()}${names.slice(1)}.${power}${id === 'four' ? ' Le construire ouvre l\'onglet Livre de recette.' : ''}`;
@@ -327,7 +327,7 @@ registerActions({
   // ----- version 1.1 : Moulin (mouture par quantité) -----
   // « Moudre » par lot : ×1, ×5, ×10 blés (data-q)
   'mill-start': (target) => {
-    const result = applyResult(startMilling(state, Math.max(1, Number(target.dataset.q) || 1)));
+    const result = applyResult(executer('moulin.moudre', { quantite: Math.max(1, Number(target.dataset.q) || 1) }));
     if (result.ok) {
       syncJobs();
       // fiche 10 : les lots versés à la suite au Moulin se cumulent
@@ -336,15 +336,15 @@ registerActions({
     }
   },
   'mill-cancel': () => {
-    const result = applyResult(cancelMilling(state));
+    const result = applyResult(executer('moulin.annuler', {}));
     if (result.ok) notify(`🌾 ${plural(result.rendu, 'blé', formatNumber(result.rendu))} repris`);
   },
   'cancel-queued': (target) => {
-    applyResult(cancelQueued(state, target.dataset.station, Number(target.dataset.index)));
+    applyResult(executer('cuisine.annuler', { station: String(target.dataset.station || ''), rang: Number(target.dataset.index) }));
   },
   'build-station': (target) => {
     const id = target.dataset.station;
-    const result = applyResult(buildStation(state, id));
+    const result = applyResult(executer('atelier.construire', { station: id }));
     if (result.ok) {
       const def = DATA.STATIONS[id];
       notify(`${def.icone} ${def.nom} construit${def.article === 'la' ? 'e' : ''} (−${formatCoins(result.cost)} 💰)${def.debloque ? ' · onglet Livre de recette débloqué !' : ''}`);
@@ -352,7 +352,7 @@ registerActions({
   },
   'start-recipe': (target) => {
     const id = target.dataset.recipe;
-    const result = applyResult(startRecipe(state, id));
+    const result = applyResult(executer('cuisine.lancer', { recette: id }));
     if (result.ok) {
       syncJobs();
       notify(`${DATA.RECETTES[id].icone} ${DATA.RECETTES[id].nom} : préparation lancée`);

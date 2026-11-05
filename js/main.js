@@ -18,6 +18,8 @@ import { stageModel } from './ui/stage.js';
 import { stageWindow } from './ui/stage-windows.js';
 import { wantConsentBanner } from './ui/calme.js';
 import { garderPlusTard, relireFerme } from './ui/ferme-gardee.js';
+import { connexionDuLien } from './ui/compte.js';
+import { bandeau, invitationDuLien, mondeDemande, rejoindre } from './ui/en-ligne.js';
 
 // Chaque écran s'inscrit en se chargeant (ses actions, ses écouteurs) : ils sont tous
 // chargés ici, qu'un autre module les importe ou non.
@@ -84,7 +86,11 @@ document.getElementById('test-chapter').innerHTML =
 // est tirée comme avant, puis gardée une fois le jeu affiché.
 async function demarrer() {
   await relireFerme();
-  setState(loadOrCreateState());
+  // E-2 : jeu.html?monde=… : la partie du monde en ligne (la partie solo reste intacte sur l'appareil)
+  const monde = mondeDemande();
+  const partieDuMonde = monde ? await rejoindre(monde) : null;
+  if (monde && !partieDuMonde) { try { history.replaceState(null, '', 'jeu.html'); } catch (e) { /* (rien) */ } }
+  setState(partieDuMonde || loadOrCreateState());
   setTelChapter(state.campagne ? state.campagne.chapitre : null);
   syncJobs();
   setMailSeen(new Set(mailbox(state).map((l) => l.id))); // les lettres déjà là ne sont pas réannoncées
@@ -111,7 +117,16 @@ async function demarrer() {
     telDay();
   } catch (e) { /* le suivi ne doit jamais empêcher de jouer */ }
   garderPlusTard();
+  if (partieDuMonde) entrerDansLeMonde();
+  invitationDuLien(); // E-3 : le jeu ouvert par un lien d'invitation (jeu.html#invitation=…)
+  connexionDuLien(); // E-0 : le jeu ouvert par le lien de connexion reçu par e-mail (jeu.html#connexion=…)
 }
+// E-2 : dans le monde, le bandeau (E-5 : on y construit et l'on y cultive : le mode Construire n'est plus
+// ouvert d'office).
+function entrerDansLeMonde() {
+  bandeau();
+}
+
 // (une erreur au démarrage reste une erreur de la page, comme avant)
 demarrer().catch((e) => setTimeout(() => { throw e; }));
 

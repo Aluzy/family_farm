@@ -24,6 +24,9 @@
     "amitie.json",
     "styles.json",
     "plans.json",
-    "projets.json"
+    "projets.json",
+    "naturaliste.json",
+    "meteo.json",
+    "secrets.json"
   ]
 }

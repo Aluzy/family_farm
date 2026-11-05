@@ -333,7 +333,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "refrigerateur",
      "terme": "Réfrigérateur",
-     "description": "Acheté, il arrive dans l'Inventaire : il se pose dans la maison avec 🔨 Construire. Posé, la famille y mange et va s'y servir (la boîte à nourriture revient dans l'Inventaire) ; il empêche les aliments et plats qui y sont rangés de périmer. Il contient 25 unités au niveau 1, puis 40, 60, 90 et 120 en l'agrandissant (300, 700, 1 500 et 3 000 pièces) ; plein, on ne peut plus rien y ranger. Il consomme 100 mWh/s par unité stockée (rien s'il est vide), jour et nuit, prélevés sur la batterie ; si celle-ci se vide, le froid manque et le contenu peut recommencer à périmer.",
+     "description": "Acheté, il arrive dans l'Inventaire : il se pose dans la maison avec 🔨 Construire. Posé, la famille y mange et va s'y servir (la boîte à nourriture revient dans l'Inventaire). Il contient 25 unités au niveau 1, puis 40, 60, 90 et 120 en l'agrandissant (300, 700, 1 500 et 3 000 pièces) ; plein, on ne peut plus rien y ranger. Il consomme 100 mWh/s par unité stockée (rien s'il est vide), jour et nuit, prélevés sur la batterie. Rien ne s'y gâte, même sans courant.",
      "liens": [
       "batterie",
       "peremption"
@@ -459,7 +459,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "cheval",
      "terme": "Cheval et Écurie",
-     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Sa case de la barre d'outils te met en selle : tu vas 1,8 fois plus vite, sur la ferme comme dans tout le grand monde (pas dans la mine ni dans les grottes). Quand tu en descends, il rentre à l'Écurie. Chaque nuit il mange 2 paille ; sans elle, il ne va que 1,3 fois plus vite le lendemain. Le poteau d'attache et la corde de fibre (Atelier) ne servent pas encore : le cheval rentre toujours à l'Écurie.",
+     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Sa case de la barre d'outils te met en selle : tu vas 1,8 fois plus vite, sur la ferme comme dans tout le grand monde (pas dans la mine ni dans les grottes). Quand tu en descends, il rentre à l'Écurie. Chaque nuit il mange 2 paille s'il y en a. Le poteau d'attache et la corde de fibre (Atelier) ne servent pas encore : le cheval rentre toujours à l'Écurie.",
      "liens": [
       "atelier",
       "murs",
@@ -561,7 +561,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "foyer",
      "terme": "Foyer",
-     "description": "La pièce close où l'on dort, avec une paillasse ou un lit. Tant qu'il n'existe pas, rien d'autre ne s'installe (panneau, pompe…). Chaque nuit, il faut un couchage par membre de la famille, dans une pièce close : sans lui, un membre perd -32 de bonheur. Le personnage rentre au foyer le soir et en ressort le matin. Le premier couchage est le sien ; un appui sur un autre lit lui demande s'il le choisit : il y dormira, et le membre qui y dormait prend son ancien lit.",
+     "description": "La pièce close où l'on dort, avec une paillasse ou un lit. Tant qu'il n'existe pas, rien d'autre ne s'installe (panneau, pompe…). Il faut un couchage par membre de la famille, dans une pièce close : c'est là que chacun dort et que ton personnage reprend son énergie la nuit. Le personnage rentre au foyer le soir et en ressort le matin. Le premier couchage est le sien ; un appui sur un autre lit lui demande s'il le choisit : il y dormira, et le membre qui y dormait prend son ancien lit.",
      "liens": [
       "maison",
       "piece_close",
@@ -1348,7 +1348,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "inventaire",
      "terme": "Inventaire",
-     "description": "Stock illimité de tous les objets possédés par la ferme, organisé en lots datés selon leur date de récolte, pour suivre leur péremption.",
+     "description": "Stock illimité de tous les objets possédés par la ferme, rangés par lots selon leur récolte.",
      "liens": [
       "peremption"
      ],
@@ -1375,7 +1375,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "peremption",
      "terme": "Péremption",
-     "description": "Durée pendant laquelle un aliment ou un plat reste consommable hors du réfrigérateur : de 2 nuits (le poisson frais) à 12 nuits selon l'aliment, 6 nuits pour la plupart des plats. Le réfrigérateur permet de conserver sans limite de temps.",
+     "description": "Les aliments et les plats ne se gâtent pas : ce que tu récoltes, cuisines ou ranges se garde, que tu reviennes le lendemain ou dans un mois. Chaque aliment a pourtant une durée de conservation (de 2 nuits pour le poisson frais à 12 nuits, 6 pour la plupart des plats), gardée pour une variante de jeu plus exigeante.",
      "liens": [
       "refrigerateur"
      ],
@@ -2397,6 +2397,558 @@ export const ENCYCLOPEDIE = {
    ]
   },
   {
+   "id": "trouvailles",
+   "icone": "🔍",
+   "nom": "Les trouvailles du naturaliste",
+   "entrees": [
+    {
+     "id": "ammonite",
+     "terme": "Ammonite fossile",
+     "description": "Une coquille en spirale changée en pierre, il y a très, très longtemps : la montagne était alors le fond d'une mer. On la trouve en ramassant les cailloux des pentes et des éboulis de la montagne. Elle fait partie de la collection « Fossiles et cristaux ».",
+     "liens": [
+      "trilobite",
+      "quartz",
+      "b_montagne"
+     ],
+     "decouverte": [
+      "objet:ammonite"
+     ]
+    },
+    {
+     "id": "trilobite",
+     "terme": "Trilobite fossile",
+     "description": "Une petite bête de la mer d'autrefois, couchée dans la roche avec ses trois bandes bien nettes. Les pentes de la montagne en cachent quelques-unes. Elle fait partie de la collection « Fossiles et cristaux ».",
+     "liens": [
+      "ammonite",
+      "b_montagne"
+     ],
+     "decouverte": [
+      "objet:trilobite"
+     ]
+    },
+    {
+     "id": "quartz",
+     "terme": "Cristal de quartz",
+     "description": "Un cristal clair comme de l'eau gelée, qui pousse dans les fentes de la roche. On le ramasse dans la montagne, souvent près des éboulis. Il fait partie de la collection « Fossiles et cristaux ».",
+     "liens": [
+      "amethyste",
+      "b_montagne"
+     ],
+     "decouverte": [
+      "objet:quartz"
+     ]
+    },
+    {
+     "id": "amethyste",
+     "terme": "Améthyste",
+     "description": "Le cousin violet du quartz, plus rare. Les vieux de la montagne disent qu'elle garde des mauvais rêves. Il fait partie de la collection « Fossiles et cristaux ».",
+     "liens": [
+      "quartz",
+      "b_montagne"
+     ],
+     "decouverte": [
+      "objet:amethyste"
+     ]
+    },
+    {
+     "id": "coquille",
+     "terme": "Coquille Saint-Jacques",
+     "description": "Une grande coquille en éventail, que la marée laisse sur le sable. On la ramasse en marchant sur la plage. Elle fait partie de la collection « Trésors de la plage ».",
+     "liens": [
+      "bulot",
+      "perle",
+      "b_plage"
+     ],
+     "decouverte": [
+      "objet:coquille"
+     ]
+    },
+    {
+     "id": "bulot",
+     "terme": "Bulot",
+     "description": "Un coquillage en spirale, que la mer roule jusqu'au rivage. Sur la plage, il suffit de regarder ses pieds. Il fait partie de la collection « Trésors de la plage ».",
+     "liens": [
+      "coquille",
+      "b_plage"
+     ],
+     "decouverte": [
+      "objet:bulot"
+     ]
+    },
+    {
+     "id": "corail",
+     "terme": "Branche de corail",
+     "description": "Une petite branche rose, venue de loin sur les vagues. Rare sur la plage : le jour où on en trouve une, on s'en souvient. Elle fait partie de la collection « Trésors de la plage ».",
+     "liens": [
+      "perle",
+      "b_plage"
+     ],
+     "decouverte": [
+      "objet:corail"
+     ]
+    },
+    {
+     "id": "perle",
+     "terme": "Perle",
+     "description": "La plus rare des trouvailles de la plage : une perle ronde et douce, cachée dans le sable mouillé. Elle fait partie de la collection « Trésors de la plage ».",
+     "liens": [
+      "coquille",
+      "corail",
+      "b_plage"
+     ],
+     "decouverte": [
+      "objet:perle"
+     ]
+    },
+    {
+     "id": "champignon",
+     "terme": "Champignon",
+     "description": "Le chapeau brun des sous-bois, après la pluie. On le cueille dans la forêt. Il se mange, et fait partie de la collection « Cueillette des sous-bois ».",
+     "liens": [
+      "myrtille",
+      "chataigne",
+      "b_foret"
+     ],
+     "decouverte": [
+      "objet:champignon"
+     ]
+    },
+    {
+     "id": "myrtille",
+     "terme": "Myrtille",
+     "description": "De petites baies bleues, sucrées, qui tachent les doigts. Les buissons de la forêt en sont couverts. Elle fait partie de la collection « Cueillette des sous-bois ».",
+     "liens": [
+      "champignon",
+      "b_foret"
+     ],
+     "decouverte": [
+      "objet:myrtille"
+     ]
+    },
+    {
+     "id": "chataigne",
+     "terme": "Châtaigne",
+     "description": "Bien à l'abri dans sa bogue piquante, la châtaigne tombe des grands arbres de la forêt. Grillée, c'est un régal. Elle fait partie de la collection « Cueillette des sous-bois ».",
+     "liens": [
+      "champignon",
+      "b_foret"
+     ],
+     "decouverte": [
+      "objet:chataigne"
+     ]
+    },
+    {
+     "id": "herbes_montagne",
+     "terme": "Herbes de montagne",
+     "description": "Des herbes parfumées qui poussent entre les pierres de la montagne. Les vaches qui en mangent donnent un lait d'alpage. Elles font partie de la collection « Cueillette des sous-bois ».",
+     "liens": [
+      "b_montagne"
+     ],
+     "decouverte": [
+      "objet:herbes_montagne"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "poissons",
+   "icone": "🐟",
+   "nom": "Les poissons",
+   "entrees": [
+    {
+     "id": "truite",
+     "terme": "Truite",
+     "description": "Le poisson le plus commun des eaux douces : l'étang et la mare de la ferme, les rivières et les lacs. Tachetée, vive, elle mord volontiers. Elle fait partie de la collection « Poissons d'ici ».",
+     "liens": [
+      "peche",
+      "brochet",
+      "omble"
+     ],
+     "decouverte": [
+      "objet:truite"
+     ]
+    },
+    {
+     "id": "brochet",
+     "terme": "Brochet",
+     "description": "Le grand chasseur de l'étang, au long museau. Il est rare dans la mare, plus courant dans l'étang de la ferme. Il fait partie de la collection « Poissons d'ici ».",
+     "liens": [
+      "peche",
+      "truite"
+     ],
+     "decouverte": [
+      "objet:brochet"
+     ]
+    },
+    {
+     "id": "omble",
+     "terme": "Omble chevalier",
+     "description": "Un poisson des lacs froids, au ventre rouge. Pour le pêcher, il faut aller jusqu'aux lacs du grand monde. Il fait partie de la collection « Poissons d'ici ».",
+     "liens": [
+      "peche",
+      "b_lac"
+     ],
+     "decouverte": [
+      "objet:omble"
+     ]
+    },
+    {
+     "id": "goujon",
+     "terme": "Goujon",
+     "description": "Un petit poisson de rivière, qui file au ras des cailloux. On en pêche dans les rivières du grand monde. Il fait partie de la collection « Poissons d'ici ».",
+     "liens": [
+      "peche",
+      "b_riviere"
+     ],
+     "decouverte": [
+      "objet:goujon"
+     ]
+    },
+    {
+     "id": "dorade",
+     "terme": "Dorade",
+     "description": "Un poisson de mer au reflet doré sur la tête. On le pêche depuis la côte, en lançant vers le large. Il fait partie de la collection « Poissons d'ici ».",
+     "liens": [
+      "peche",
+      "b_mer"
+     ],
+     "decouverte": [
+      "objet:dorade"
+     ]
+    },
+    {
+     "id": "sardine",
+     "terme": "Sardine",
+     "description": "Elle nage en bancs serrés le long de la côte : quand la mer en est pleine, ça mord sans arrêt. Elle fait partie de la collection « Poissons d'ici ».",
+     "liens": [
+      "peche",
+      "anchois",
+      "b_mer"
+     ],
+     "decouverte": [
+      "objet:sardine"
+     ]
+    },
+    {
+     "id": "anchois",
+     "terme": "Anchois",
+     "description": "Un tout petit poisson de mer, cousin de la sardine. Salé, il relève les plats. Il fait partie de la collection « Poissons d'ici ».",
+     "liens": [
+      "peche",
+      "sardine",
+      "b_mer"
+     ],
+     "decouverte": [
+      "objet:anchois"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "biomes",
+   "icone": "🗺️",
+   "nom": "Les paysages du grand monde",
+   "entrees": [
+    {
+     "id": "b_mer",
+     "terme": "La mer",
+     "description": "Au bord du monde, la mer : on ne la traverse pas, mais on pêche depuis la côte la dorade, la sardine et l'anchois. Les mouettes tournent au-dessus, et les dauphins passent parfois au large.",
+     "liens": [
+      "b_plage",
+      "dorade"
+     ],
+     "decouverte": [
+      "biome:mer"
+     ]
+    },
+    {
+     "id": "b_plage",
+     "terme": "La plage",
+     "description": "Une bande de sable entre la prairie et la mer. La marée y laisse des trésors : coquilles, bulots, corail et, rarement, une perle. Les crabes y courent de travers.",
+     "liens": [
+      "coquille",
+      "perle",
+      "b_mer"
+     ],
+     "decouverte": [
+      "biome:plage"
+     ]
+    },
+    {
+     "id": "b_falaise",
+     "terme": "La falaise",
+     "description": "Là où la terre tombe à pic dans la mer. On n'y descend pas, mais la vue y est la plus belle du monde.",
+     "liens": [
+      "b_mer",
+      "b_montagne"
+     ],
+     "decouverte": [
+      "biome:falaise"
+     ]
+    },
+    {
+     "id": "b_prairie",
+     "terme": "La prairie",
+     "description": "Le pays de la ferme : de l'herbe à perte de vue, des fleurs, des chemins. Les hameaux s'y installent volontiers.",
+     "liens": [
+      "b_foret",
+      "b_lande"
+     ],
+     "decouverte": [
+      "biome:prairie"
+     ]
+    },
+    {
+     "id": "b_foret",
+     "terme": "La forêt",
+     "description": "De grands arbres, des sous-bois frais, des buissons couverts de baies. On y cueille champignons, myrtilles et châtaignes ; chevreuils, renards et écureuils y vivent.",
+     "liens": [
+      "champignon",
+      "myrtille",
+      "chataigne"
+     ],
+     "decouverte": [
+      "biome:foret"
+     ]
+    },
+    {
+     "id": "b_marais",
+     "terme": "Le marais",
+     "description": "Une terre mouillée, pleine de roseaux et de chants de grenouilles. Les canards et les cygnes l'aiment beaucoup.",
+     "liens": [
+      "b_lac",
+      "b_riviere"
+     ],
+     "decouverte": [
+      "biome:marais"
+     ]
+    },
+    {
+     "id": "b_lande",
+     "terme": "La lande",
+     "description": "Une terre rase, balayée par le vent, couverte de bruyère. Les lièvres et les perdrix y vivent cachés.",
+     "liens": [
+      "b_prairie",
+      "b_montagne"
+     ],
+     "decouverte": [
+      "biome:lande"
+     ]
+    },
+    {
+     "id": "b_montagne",
+     "terme": "La montagne",
+     "description": "Des pentes, des rochers, des éboulis : c'est là qu'on trouve les fossiles, les cristaux et les herbes de montagne. Marmottes, bouquetins et aigles y vivent.",
+     "liens": [
+      "ammonite",
+      "quartz",
+      "herbes_montagne",
+      "b_sommet"
+     ],
+     "decouverte": [
+      "biome:montagne"
+     ]
+    },
+    {
+     "id": "b_sommet",
+     "terme": "Le sommet",
+     "description": "Le plus haut du monde, au-dessus de la montagne. On n'y monte pas, mais on le voit de partout.",
+     "liens": [
+      "b_montagne"
+     ],
+     "decouverte": [
+      "biome:sommet"
+     ]
+    },
+    {
+     "id": "b_lac",
+     "terme": "Le lac",
+     "description": "Une grande eau calme, au milieu des terres. L'omble chevalier y vit, et la truite aussi.",
+     "liens": [
+      "omble",
+      "b_riviere"
+     ],
+     "decouverte": [
+      "biome:lac"
+     ]
+    },
+    {
+     "id": "b_riviere",
+     "terme": "La rivière",
+     "description": "L'eau qui court de la montagne à la mer. On la passe aux gués ; on y pêche la truite et le goujon.",
+     "liens": [
+      "goujon",
+      "truite",
+      "b_lac"
+     ],
+     "decouverte": [
+      "biome:riviere"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "secrets",
+   "icone": "🗝️",
+   "nom": "Les secrets du monde",
+   "entrees": [
+    {
+     "id": "s_ruine",
+     "terme": "Les vieilles ruines",
+     "description": "Des murs de pierre écroulés, mangés par la mousse : des maisons d'autrefois, bien avant les hameaux d'aujourd'hui. On en trouve dans la prairie, sur la lande et en forêt. Touche une ruine la première fois : entre ses pierres se cache un petit trésor, ou une page du carnet du voyageur.",
+     "liens": [
+      "s_cairn",
+      "s_pierre_levee",
+      "carnet_voyageur_1"
+     ],
+     "decouverte": [
+      "secret:ruine"
+     ]
+    },
+    {
+     "id": "s_cairn",
+     "terme": "Les cairns",
+     "description": "Des tas de pierres posées une à une, sur la lande et dans la montagne. Les bergers les montaient pour marquer les chemins par temps de brouillard. Sous la dernière pierre, il y a souvent une cachette.",
+     "liens": [
+      "s_belvedere",
+      "s_ruine"
+     ],
+     "decouverte": [
+      "secret:cairn"
+     ]
+    },
+    {
+     "id": "s_arbre_ancien",
+     "terme": "Les arbres anciens",
+     "description": "Des arbres immenses, plus vieux que tous les hameaux, dans la forêt et parfois au milieu d'un pré. Leurs racines gardent des cachettes. On ne les abat pas.",
+     "liens": [
+      "s_ruine",
+      "b_foret"
+     ],
+     "decouverte": [
+      "secret:arbre_ancien"
+     ]
+    },
+    {
+     "id": "s_belvedere",
+     "terme": "Les belvédères",
+     "description": "Un rocher plat, tout en haut de la montagne, d'où l'on voit le pays entier. Y monter, c'est découvrir d'un coup tout ce qui l'entoure : le brouillard de la carte se lève loin à la ronde.",
+     "liens": [
+      "s_cairn",
+      "b_montagne"
+     ],
+     "decouverte": [
+      "secret:belvedere"
+     ]
+    },
+    {
+     "id": "s_pierre_levee",
+     "terme": "Les pierres levées",
+     "description": "De grandes pierres dressées vers le ciel, sur la lande, dans la prairie ou au bord du marais. Personne ne sait qui les a levées. À leur pied, on trouve parfois une offrande oubliée.",
+     "liens": [
+      "s_ruine",
+      "carnet_voyageur_4"
+     ],
+     "decouverte": [
+      "secret:pierre_levee"
+     ]
+    },
+    {
+     "id": "carnet_voyageur_1",
+     "terme": "Carnet du voyageur, page 1",
+     "description": "« Je suis arrivé par le bac, un matin de brume. Personne ici ne sait d'où viennent les vieux murs qu'on croise dans les prés. On dit qu'il y avait des villages avant les hameaux, et des gens qui partaient un jour sans se retourner. »",
+     "liens": [
+      "carnet_voyageur_2",
+      "s_ruine"
+     ],
+     "decouverte": [
+      "secret:carnet_voyageur_1"
+     ]
+    },
+    {
+     "id": "carnet_voyageur_2",
+     "terme": "Carnet du voyageur, page 2",
+     "description": "« Les bergers m'ont appris à lire les cairns : une pierre posée en haut veut dire que le chemin continue ; deux pierres côte à côte, qu'il faut tourner. Par temps de brouillard, ils vous sauvent la vie. »",
+     "liens": [
+      "carnet_voyageur_3",
+      "s_cairn"
+     ],
+     "decouverte": [
+      "secret:carnet_voyageur_2"
+     ]
+    },
+    {
+     "id": "carnet_voyageur_3",
+     "terme": "Carnet du voyageur, page 3",
+     "description": "« J'ai compté les cernes d'une souche, près d'un très vieil arbre. J'ai abandonné à trois cents. Celui qui est encore debout à côté doit avoir vu passer mille hivers. »",
+     "liens": [
+      "carnet_voyageur_4",
+      "s_arbre_ancien"
+     ],
+     "decouverte": [
+      "secret:carnet_voyageur_3"
+     ]
+    },
+    {
+     "id": "carnet_voyageur_4",
+     "terme": "Carnet du voyageur, page 4",
+     "description": "« Les pierres levées regardent toutes du même côté : vers l'endroit où se lève la pleine lune, au début de l'été. Ceux qui les ont dressées connaissaient le ciel mieux que nous. »",
+     "liens": [
+      "carnet_voyageur_5",
+      "s_pierre_levee"
+     ],
+     "decouverte": [
+      "secret:carnet_voyageur_4"
+     ]
+    },
+    {
+     "id": "carnet_voyageur_5",
+     "terme": "Carnet du voyageur, page 5",
+     "description": "« Du haut du belvédère, j'ai vu trois rivières descendre vers la mer, et la fumée de six hameaux. J'ai dessiné la carte que voici ; elle n'est pas juste, mais elle est belle. »",
+     "liens": [
+      "carnet_voyageur_6",
+      "s_belvedere"
+     ],
+     "decouverte": [
+      "secret:carnet_voyageur_5"
+     ]
+    },
+    {
+     "id": "carnet_voyageur_6",
+     "terme": "Carnet du voyageur, page 6",
+     "description": "« Dans les hameaux, on laisse toujours une assiette de plus à table, au cas où quelqu'un passerait. On m'a nourri partout où je suis allé. Je n'ai jamais su comment rendre tout ça. »",
+     "liens": [
+      "carnet_voyageur_7"
+     ],
+     "decouverte": [
+      "secret:carnet_voyageur_6"
+     ]
+    },
+    {
+     "id": "carnet_voyageur_7",
+     "terme": "Carnet du voyageur, page 7",
+     "description": "« Les vieux disent qu'il ne faut rien prendre dans une ruine sans y laisser quelque chose en échange : une graine, une pierre, une chanson. Je n'avais qu'une chanson. Je l'ai laissée. »",
+     "liens": [
+      "carnet_voyageur_8"
+     ],
+     "decouverte": [
+      "secret:carnet_voyageur_7"
+     ]
+    },
+    {
+     "id": "carnet_voyageur_8",
+     "terme": "Carnet du voyageur, page 8",
+     "description": "« Je repars demain. J'ai caché les pages de ce carnet un peu partout, dans les endroits que j'ai aimés. Si tu les as toutes trouvées, c'est que tu as aimé les mêmes. Prends soin de ce pays. »",
+     "liens": [
+      "carnet_voyageur_1"
+     ],
+     "decouverte": [
+      "secret:carnet_voyageur_8"
+     ]
+    }
+   ]
+  },
+  {
    "id": "hameaux",
    "icone": "🏘️",
    "nom": "Les hameaux du grand monde",
@@ -2558,7 +3110,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "maurice",
      "terme": "Maurice",
-     "description": "Ton grand-père, mort il y a un an. Né à Céron, parti enfant, revenu veuf avec ta mère, il a mené la calèche de l'île pendant trente-cinq ans. Il gagnait bien et ne gardait rien : les toits, les scies, les pompes des hameaux, c'est lui qui les payait. On parle encore de lui partout, et de toi comme de son petit. Il a laissé des carnets de tournée un peu partout.",
+     "description": "Ton grand-père. Il a mené la calèche de l'île pendant trente-cinq ans en rendant mille services : un toit ici, une scie là. Il y a un an, il est parti faire le tour des îles en voilier avec Philomène, et vous a confié sa terre. Il écrit des cartes postales, et a laissé des carnets un peu partout.",
      "liens": [
       "achille",
       "maison_maurice",
@@ -2570,9 +3122,22 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
+     "id": "philomene",
+     "terme": "Philomène",
+     "description": "Ta grand-mère, jardinière. Elle sème des graines au bord des chemins « pour ceux d'après ». C'est la meilleure amie de Frida. Elle voyage avec Maurice sur leur petit voilier, la Luciole, et ajoute toujours un petit mot à la fin de ses cartes.",
+     "liens": [
+      "maurice",
+      "frida",
+      "adele"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
      "id": "adele",
      "terme": "Adèle",
-     "description": "Ta mère. Élevée à Céron par Maurice, partie à Cadolon adolescente, elle y vit toujours. Elle ne viendra pas sur l'île : elle écrit. Ses lettres arrivent par le bac, aux moments qui comptent, et parlent des petites choses de l'île ; ses « au fait » ramènent toujours un souvenir.",
+     "description": "Ta mère. Elle a grandi au Gué, entre ses parents, Odile et Frida, et vit à Cadolon. Ses lettres arrivent par le bac aux moments qui comptent, et ses « au fait » ramènent toujours un souvenir.",
      "liens": [
       "courrier",
       "maurice",
@@ -2585,7 +3150,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "achille",
      "terme": "Achille",
-     "description": "Le cocher de l'île depuis que Maurice a arrêté. Né aux Mouettes, il vit au Gué, à l'écurie de la calèche. Bourru, ponctuel, il parle à son cheval plus qu'aux gens et sait tout ce qui se dit d'un hameau à l'autre. Il passe à la ferme chaque jour vers dix heures, achète ce que tu as en trop, porte ce que tu confies. Il garde deux carnets de Maurice.",
+     "description": "Le cocher de l'île, formé par Maurice. Né aux Mouettes, il vit au Gué, à l'écurie de la calèche. Timide et attentionné, il parle à son cheval, Biscotte, plus qu'aux gens, et sait toutes les nouvelles. Il passe à la ferme chaque jour vers dix heures, achète ce que tu as en trop, porte ce que tu confies.",
      "liens": [
       "comptoir",
       "le_gue",
@@ -2599,7 +3164,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "odile",
      "terme": "Odile",
-     "description": "L'ancienne du Gué, voisine de Maurice depuis toujours ; elle a vu grandir ta mère. Elle tient aux coutumes et à la lune, commence volontiers ses phrases par « On ne… », et vouvoie les nouveaux jusqu'à leur première veillée de pleine lune. Elle voudrait voir la maison de Maurice revivre.",
+     "description": "La grand-mère du Gué, voisine de Maurice et Philomène depuis toujours ; elle a vu grandir ta mère. Elle a des dictons de lune pour tout, fait les meilleures tartes de l'île et arrose les géraniums de tes grands-parents en attendant leur retour.",
      "liens": [
       "le_gue",
       "maison_maurice",
@@ -2613,7 +3178,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "fernand",
      "terme": "Fernand",
-     "description": "L'ancien des Mouettes, revenu sur l'île après quarante ans de mécanique au port de Cadolon. Il veut pêcher en paix et compare tout à « là-bas ». Il a accueilli ta famille sur la cale, le jour du bac.",
+     "description": "Le pêcheur conteur des Mouettes, revenu sur l'île après quarante ans au port de Cadolon, « parce que c'est ici que j'ai mon cœur ». Il compare tout à « là-bas » pour dire combien on est bien ici, et connaît les dauphins par leur prénom. C'est lui qui a accueilli ta famille sur la cale.",
      "liens": [
       "les_mouettes",
       "cale_bac",
@@ -2626,7 +3191,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "frida",
      "terme": "Frida",
-     "description": "La scientifique de l'île, venue il y a cinquante ans observer les bêtes et les plantes, et restée. Elle s'est occupée de ta mère toute petite. Elle fabrique le robot, sa station et les automatisations, dans son atelier au bord de l'eau ; les anciens l'ont adoptée, ses machines beaucoup moins. Elle a toujours un chiffre à donner.",
+     "description": "L'inventrice de l'île, venue il y a cinquante ans observer les bêtes et les plantes, et restée. La meilleure amie de Philomène ; elle gardait ta mère toute petite. Elle fabrique le robot, sa station et les automatisations, dont toute l'île est fière. Elle a toujours un chiffre à donner, et du thé sur le poêle.",
      "liens": [
       "atelier_frida",
       "robot",
@@ -2639,7 +3204,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "basile",
      "terme": "Basile",
-     "description": "Le scieur et ébéniste de Bois-Joli : la scierie, les meubles de l'île. Il parle du bois comme d'une personne et tient au bois juste : on replante ce qu'on coupe. Il voudrait que son fils Théo reprenne l'atelier.",
+     "description": "L'ébéniste de Bois-Joli : la scierie, les meubles de l'île. Il parle du bois comme d'une personne et plante deux arbres pour un coupé. Son fils Théo démonte tout, et remonte tout mieux qu'avant : il en est très fier.",
      "liens": [
       "bois_joli",
       "theo",
@@ -2652,7 +3217,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "theo",
      "terme": "Théo",
-     "description": "Le fils de Basile, quinze ans, le meilleur de l'île pour réparer une roue ou une pompe. Il rêve de Cadolon et de machines, et passe ses journées chez Frida en cachette. Ce qu'il deviendra dépend un peu de ce que l'île lui offre.",
+     "description": "Le fils de Basile, quinze ans, le meilleur de l'île pour réparer une roue ou une pompe. Il veut inventer des machines pour toute l'île, et hésite encore sur la façon de commencer : la calèche, l'atelier de son père ou les inventions de Frida.",
      "liens": [
       "basile",
       "bois_joli",
@@ -2665,7 +3230,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "garance",
      "terme": "Garance",
-     "description": "La tisserande et bergère des Genêts. Franche, juste, attachée au fait main, elle juge d'un mot. Maurice lui avait promis un toit avant les pluies ; son métier à tisser fait le tissu de l'île.",
+     "description": "La tisserande et bergère des Genêts. Passionnée de couleurs, elle teint sa laine avec les plantes de la lande et nomme chaque nuance. Maurice lui avait promis un toit plus lumineux pour son atelier ; son métier à tisser fait le tissu de l'île.",
      "liens": [
       "les_genets",
       "promesses",
@@ -2677,20 +3242,9 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
-     "id": "johnny",
-     "terme": "Johnny",
-     "description": "Un vieil homme qui vit seul dans une cabane, au fond de la forêt, sans lampe. Il accueille tout le monde comme la première fois, et parle de la lune, de la roche, des marées. Quelqu'un lui apportait à manger, avant.",
-     "liens": [
-      "cabane_johnny"
-     ],
-     "decouverte": [
-      "fait:johnny.visite"
-     ]
-    },
-    {
      "id": "le_gue",
      "terme": "Le Gué",
-     "description": "Le hameau le plus proche de la ferme, au croisement des chemins : celui de Maurice, d'Odile et d'Achille, qui y a l'écurie de la calèche. On y veille les soirs de pleine lune. Au Gué, on ne ferme pas sa porte.",
+     "description": "Le hameau le plus proche de la ferme, au croisement des chemins : celui de Maurice et Philomène, d'Odile et d'Achille, qui y a l'écurie de la calèche. On y veille les soirs de pleine lune. Au Gué, on ne ferme pas sa porte.",
      "liens": [
       "odile",
       "achille",
@@ -2705,7 +3259,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "maison_maurice",
      "terme": "La maison de Maurice",
-     "description": "Sa maison d'enfance, au Gué : la première du hameau, vide depuis sa mort, jamais fermée. Il n'y a rien à prendre : il donnait tout. Odile y passe quand elle peut.",
+     "description": "La maison de tes grands-parents, au Gué : la première du hameau, jamais fermée. Odile y passe chaque jour arroser les géraniums, en attendant leur retour de voyage.",
      "liens": [
       "maurice",
       "le_gue",
@@ -2746,7 +3300,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "bois_joli",
      "terme": "Bois-Joli",
-     "description": "Le hameau de la forêt : des bûcherons, la scierie et l'atelier d'ébéniste de Basile, qui vend les meubles de l'île. On y parle beaucoup de rester ou de partir.",
+     "description": "Le hameau de la forêt : des bûcherons, la scierie et l'atelier d'ébéniste de Basile, qui fait les meubles de l'île. Ça sent la sciure et le pain chaud.",
      "liens": [
       "basile",
       "theo",
@@ -2759,7 +3313,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "les_genets",
      "terme": "Les Genêts",
-     "description": "Le hameau de la lande : des bergers, la bergerie, le métier à tisser et la couture de Garance. Le plus attaché aux façons anciennes.",
+     "description": "Le hameau de la lande : des bergers, la bergerie, le métier à tisser, les teintures et la couture de Garance. Les plus belles couleurs de l'île.",
      "liens": [
       "garance",
       "commerce"
@@ -2783,8 +3337,8 @@ export const ENCYCLOPEDIE = {
     },
     {
      "id": "epave",
-     "terme": "L'épave",
-     "description": "Une vieille coque couchée sur une plage, le mât cassé, loin des hameaux. Personne n'y touche. Fernand dit qu'elle ne sort d'aucun chantier qu'il connaisse.",
+     "terme": "La barque des premiers arrivants",
+     "description": "La barque qui a amené les premiers habitants de Céron, il y a cinq siècles, couchée sur une plage loin des hameaux. Fernand dit qu'aucune planche n'a bougé. Les enfants de l'île y jouent aux explorateurs.",
      "liens": [
       "les_mouettes"
      ],
@@ -2794,11 +3348,9 @@ export const ENCYCLOPEDIE = {
     },
     {
      "id": "cabane_johnny",
-     "terme": "La cabane de la forêt",
-     "description": "Une cabane de rondins au fond de la forêt, loin des chemins, sans électricité : celle de Johnny.",
-     "liens": [
-      "johnny"
-     ],
+     "terme": "L'observatoire de Maurice",
+     "description": "Une cabane de rondins au fond de la forêt, loin des chemins, avec une longue-vue tournée vers le ciel : Maurice y regardait les étoiles. Son carnet du ciel y attend ; on y vient de préférence la nuit.",
+     "liens": [],
      "decouverte": [
       "fait:lieu.cabane"
      ]
@@ -2818,7 +3370,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "carnet",
      "terme": "Le carnet",
-     "description": "Ton carnet, dans le menu : les pages que tu as trouvées, dans l'ordre où elles sont venues. Des carnets de tournée de Maurice, des notes, des bribes ; rien n'y dit ce qu'il faut en faire.",
+     "description": "Ton carnet, dans le menu : les pages que tu as trouvées, dans l'ordre où elles sont venues. Des carnets de tournée de Maurice, son carnet du ciel, des notes ; rien n'y dit ce qu'il faut en faire.",
      "liens": [
       "maurice",
       "promesses"
@@ -2829,8 +3381,8 @@ export const ENCYCLOPEDIE = {
     },
     {
      "id": "promesses",
-     "terme": "Les promesses de Maurice",
-     "description": "Son carnet de tournée en garde trois qu'il n'a pas pu tenir : le toit de Garance, les lames de la scie de Bois-Joli, la pompe des Mouettes. Personne ne te les demande. Si tu veux les tenir, confie à Achille, à la calèche, ce qu'il faut, en une ou plusieurs fois : il les porte, comme Maurice faisait. Une promesse tenue, l'île s'en souvient.",
+     "terme": "Les petits travaux de Maurice",
+     "description": "Son carnet de tournée en garde trois qu'il n'a pas eu le temps de finir avant de partir : le toit de l'atelier de Garance, les lames de la scie de Bois-Joli, la pompe des Mouettes. Personne ne te les demande. Si tu en as envie, confie à Achille, à la calèche, ce qu'il faut, en une ou plusieurs fois : il les porte, comme Maurice faisait.",
      "liens": [
       "achille",
       "comptoir",
@@ -2858,7 +3410,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "fete_premiers",
      "terme": "La fête des premiers arrivants",
-     "description": "Une fois l'an, à la pleine lune, à Brumeval : un repas cuit dans la terre chaude, et l'île fête ceux qui sont arrivés les premiers, et ceux qui viennent d'arriver. Achille l'annonce à la calèche. Ce qu'on y dit de toi dépend de ce que tu as fait de ta ferme.",
+     "description": "Une fois l'an, à la pleine lune, à Brumeval : un repas cuit dans la terre chaude, et l'île fête ceux qui sont arrivés les premiers, et ceux qui viennent d'arriver. Achille l'annonce à la calèche. Ce qu'on y dit de toi dépend de la façon dont tu as trouvé ta place : toutes les fêtes finissent bien.",
      "liens": [
       "brumeval",
       "achille"
@@ -2870,7 +3422,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "toits",
      "terme": "Les toits des hameaux",
-     "description": "Depuis que Maurice ne les paie plus, les maisons s'usent : un toit troué se voit de loin. Sur place, la fiche du hameau dit lesquels prennent l'eau ; avec des planches et des pierres, tu peux les réparer, et le hameau s'en souvient.",
+     "description": "Quelques toits des hameaux ont besoin d'un coup de main depuis que Maurice est parti en voyage ; rien ne s'abîme davantage. Sur place, la fiche du hameau dit lesquels ; avec des planches et des pierres, tu peux les rafraîchir, et le hameau s'en souvient.",
      "liens": [
       "hameaux",
       "maurice"
@@ -2882,7 +3434,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "enveloppe_maurice",
      "terme": "L'enveloppe de Maurice",
-     "description": "Une enveloppe cachetée, retrouvée par le notaire, à ton nom. Maurice a écrit dessus : « Pour les toits de Céron : Odile saura. Ou pour toi, si tu en as plus besoin qu'eux. Tu sauras. » L'ouvrir (sa fiche, dans l'inventaire), c'est la garder ; on peut aussi la porter à Odile.",
+     "description": "Une enveloppe arrivée avec une carte postale de Maurice, à ton nom. Il a écrit dessus : « Pour un beau cadeau à l'île : Odile saura. Ou pour toi, si tu en as besoin. Tu sauras. » L'ouvrir (sa fiche, dans l'inventaire), c'est la garder ; on peut aussi la porter à Odile. Les deux sont de bons choix.",
      "liens": [
       "maurice",
       "odile",
@@ -2897,7 +3449,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "cloche_maurice",
      "terme": "La cloche de Maurice",
-     "description": "La cloche de sa calèche. Il la sonnait deux fois devant chaque maison : une pour dire bonjour, une pour dire qu'il repartait.",
+     "description": "La cloche de sa calèche. Il la sonnait deux fois devant chaque maison : une pour dire bonjour, une pour dire à bientôt.",
      "liens": [
       "maurice",
       "fete_premiers"
@@ -2933,11 +3485,10 @@ export const ENCYCLOPEDIE = {
     {
      "id": "pierre_lune",
      "terme": "La pierre",
-     "description": "Un galet clair, tiède, qui luit faiblement dans le noir. Posé sur la ferme, il y reste. Depuis, tout y pousse plus vite ; les nuits de pleine lune, la ferme luit un peu. Frida dit que c'est peut-être le sol.",
+     "description": "Un galet clair et tiède, qui luit faiblement dans le noir. Posé sur la ferme, il y reste. Depuis, tout y pousse plus vite ; les nuits de pleine lune, la ferme luit un peu, et les lucioles viennent danser. Frida dit que c'est peut-être le sol.",
      "liens": [
       "calendrier_lune",
-      "frida",
-      "johnny"
+      "frida"
      ],
      "decouverte": [
       "objet:pierre_lune",
@@ -3082,7 +3633,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "energie_personnage",
      "terme": "Énergie du personnage",
-     "description": "Jauge de 0 à 100, plus l'endurance (⚡ dans le bandeau), que dépense chaque action faite au clic : couper 3, piocher 3, pêcher 4, labourer 5, planter 3, arroser 2, récolter 4, cueillir 4, tondre 8, cuisiner 3, cuire au four 3, moudre 1 par blé, presser 1. À 0, plus d'action au clic jusqu'à un en-cas ou une nuit de sommeil. Au réveil, elle remonte à 60 % de la jauge, + 40 % × la jauge de faim moyenne du reste de la famille au coucher : une famille rassasiée, la jauge pleine. Le bonheur de la famille, les technologies et l'équipement réduisent ses coûts, jamais sous 40 % du coût de base ; les automatisations n'en dépensent pas.",
+     "description": "Jauge de 0 à 100, plus l'endurance (⚡ dans le bandeau), que dépense chaque action faite au clic : couper 3, piocher 3, pêcher 4, labourer 5, planter 3, arroser 2, récolter 4, cueillir 4, tondre 8, cuisiner 3, cuire au four 3, moudre 1 par blé, presser 1. À 0, plus d'action au clic jusqu'à un en-cas ou une nuit de sommeil. Au réveil, elle remonte à 100 % de la jauge, s'il a un lit dans une pièce close, même si la nuit est venue sans qu'il soit allé se coucher. Le bonheur de la famille, les technologies et l'équipement réduisent ses coûts, jamais sous 40 % du coût de base ; les automatisations n'en dépensent pas.",
      "liens": [
       "repas",
       "en_cas",
@@ -3122,7 +3673,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "bonheur",
      "terme": "Bonheur",
-     "description": "Valeur de 0 à 100 pour chaque membre de la famille (60 au départ). Chaque nuit, il fait 25 % du chemin vers sa cible : 40, plus les meubles de la maison (le bonheur de chacun, jusqu'à 30 en tout), plus les plats mangés dans la journée : chacun des 3 meilleurs plats différents ajoute 3 (Cuisine) ou 5 (Four), +2 avec de l'huile ou un fruit, +4 avec du cacao, du café ou de la vanille ; les aliments crus ne donnent rien. Une table variée ajoute encore +4 à partir de 4 plats différents dans la journée, +8 à partir de 6. Qui a faim sans rien trouver dans la boîte à nourriture vise -8 plus bas, qui dort sans paillasse -32. Il ne tombe donc jamais en chute libre, et ne reste en haut qu'avec de bons repas et une maison meublée. Le bonheur moyen réduit les coûts d'énergie du personnage : jusqu'à moitié prix à 100 de bonheur.",
+     "description": "Valeur de 0 à 100 pour chaque membre de la famille (60 au départ). Chaque nuit, il fait 25 % du chemin vers sa cible : 40, plus les meubles de la maison (le bonheur de chacun, jusqu'à 30 en tout), plus les plats mangés dans la journée : chacun des 3 meilleurs plats différents ajoute 3 (Cuisine) ou 5 (Four), +2 avec de l'huile ou un fruit, +4 avec du cacao, du café ou de la vanille ; les aliments crus ne donnent rien. Une table variée ajoute encore +4 à partir de 4 plats différents dans la journée, +8 à partir de 6. La nuit, il ne fait que monter : ni la faim, ni une nuit sans paillasse, ni ton absence ne le font baisser. De bons repas et une maison meublée le portent plus haut. Le bonheur moyen réduit les coûts d'énergie du personnage : jusqu'à moitié prix à 100 de bonheur.",
      "liens": [
       "repas",
       "energie_personnage",
@@ -3178,7 +3729,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "usure",
      "terme": "Usure",
-     "description": "Valeur de 0 à 100 % pour chaque appareil électrique (panneau, batterie, pompe, moulin), qui augmente avec son temps de fonctionnement et réduit son rendement. À 100 %, l'appareil tombe en panne et doit être réparé.",
+     "description": "Les appareils électriques (panneau, batterie, pompe, moulin, réfrigérateur) ne s'usent pas et ne tombent pas en panne : ils tournent tant qu'ils ont du courant. L'usure, avec son entretien et ses réparations, est gardée pour une variante de jeu plus exigeante.",
      "liens": [
       "panneau_solaire",
       "batterie",
@@ -3195,7 +3746,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "interrupteur",
      "terme": "Interrupteur",
-     "description": "Bouton marche/arrêt présent sur chaque appareil électrique, qui permet de le couper pour éviter qu'il ne s'use ou ne consomme de l'énergie inutilement.",
+     "description": "Bouton marche/arrêt présent sur chaque appareil électrique, qui permet de le couper pour qu'il ne consomme pas d'énergie inutilement.",
      "liens": [],
      "decouverte": [
       "objet:pompe",
@@ -3327,7 +3878,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "entretien_automatique",
      "terme": "Entretien automatique",
-     "description": "Technologie de l'Arbre des technologies : chaque nuit, tout appareil dont l'usure atteint 70 % ou plus est entretenu au prix normal si les pièces suffisent. Le résumé apparaît dans le rapport du réveil.",
+     "description": "Technologie de l'Arbre des technologies : chaque nuit, tout appareil usé à 70 % ou plus est entretenu au prix normal si les pièces suffisent. Les appareils ne s'usant plus, elle ne sert que dans une variante de jeu plus exigeante.",
      "liens": [
       "arbre_technologique",
       "usure"
@@ -3339,7 +3890,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "absence",
      "terme": "Absence",
-     "description": "Quand le jeu est fermé, la ferme continue de tourner pendant 8 heures au plus : le panneau charge la batterie (si l'horloge s'est arrêtée entre 7 h et 19 h), la pompe remplit le réservoir, les ateliers finissent leurs préparations. Aucune nuit ne passe (une nuit déjà commencée se termine) et l'horloge s'arrête. Au retour, la fenêtre « Ravi de te revoir ! » donne la date, l'argent et les biens produits pendant l'absence.",
+     "description": "Quand le jeu est fermé, la ferme continue de tourner pendant 8 heures au plus : le panneau charge la batterie (si l'horloge s'est arrêtée entre 7 h et 19 h), la pompe remplit le réservoir, les ateliers finissent leurs préparations. Aucune nuit ne passe (une nuit déjà commencée se termine) et l'horloge s'arrête. Rien ne se perd pendant ton absence : les aliments ne se gâtent pas, les plantes attendent d'être arrosées ou récoltées, les bêtes pas nourries ne produisent rien mais restent, le bonheur de la famille ne baisse pas. Au retour, la fenêtre « Ravi de te revoir ! » donne la date, l'argent et les biens produits pendant l'absence.",
      "liens": [
       "horloge",
       "bouton_dormir",
@@ -3368,7 +3919,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "courrier",
      "terme": "Courrier",
-     "description": "Lettres que la famille reçoit au fil de la partie, à lire dans l'onglet Notifications ; une lettre lue y reste, pour être relue. Le notaire écrit au début, et au niveau 9 (l'enveloppe de Maurice) ; ta mère, Adèle, écrit à l'arrivée, puis aux moments qui comptent : la première récolte, la première veillée, le robot, la fête. Quand la Serre se débloque, elle rapporte de voyage une fève de cacao, une gousse de vanille et un grain de café, à planter dans la Serre.",
+     "description": "Lettres que la famille reçoit au fil de la partie, à lire dans l'onglet Notifications ; une lettre lue y reste, pour être relue. Maurice et Philomène écrivent au début, puis de leurs voyages (au niveau 9, une carte postale et l'enveloppe de Maurice) ; ta mère, Adèle, écrit à l'arrivée, puis aux moments qui comptent : la première récolte, la première veillée, le robot, la fête. Quand la Serre se débloque, elle rapporte de voyage une fève de cacao, une gousse de vanille et un grain de café, à planter dans la Serre.",
      "liens": [
       "notifications",
       "adele",

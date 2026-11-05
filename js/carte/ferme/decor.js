@@ -18,7 +18,8 @@
   const MASQUE = 4;
   const CORPS = { l: 5, h: 26, pied: 2 };
   const { pixelRatio, reducedMotion } = F;
-  const DECOR_MARGE = 64;           // px autour de la vue : dessiné quand même (voir cullDecor)
+  const DECOR_MARGE = 64;
+  const CULL_MS = 300;              // ms : les images revues même sans que la vue bouge (ce qui se déplace)           // px autour de la vue : dessiné quand même (voir cullDecor)
   const HERBE_MORCEAU = 256;        // px : le côté d'un morceau d'herbe haute (voir makeTallGrass)
 
   F.partie({
@@ -462,11 +463,18 @@
     // vue (à plus de DECOR_MARGE px) n'est pas dessinée. Sa visibilité ne change pas (un arbre
     // abattu, une touffe sur la terre restent cachés) : elle porte `horsVue`, que sa méthode
     // willRender consulte. Revu quand la vue a bougé de 8 px.
+    // Puis toutes les autres images de la scène (les blocs posés et leurs dessus, les sols, les cultures,
+    // la terre, les bêtes, les abeilles…) : une grosse partie en a des milliers, dont une sur trois
+    // seulement près de l'écran ; revu aussi toutes les CULL_MS (ce qui bouge : les bêtes, les abeilles).
     cullDecor() {
-      const v = this.cameras.main.worldView;
+      const v = this.cameras.main.worldView, now = performance.now();
       const cle = Math.round(v.x / 8) + ',' + Math.round(v.y / 8) + ',' + Math.round(v.width) + ',' + Math.round(v.height);
-      if (cle === this.cullKey) return;
+      if (cle === this.cullKey) {
+        if (now - (this.cullT || 0) >= CULL_MS) { this.cullT = now; this.cullScene(v); }
+        return;
+      }
       this.cullKey = cle;
+      this.cullT = now;
       this.syncTallGrass(v);
       const M = DECOR_MARGE, x0 = v.x - M, y0 = v.y - M, x1 = v.right + M, y1 = v.bottom + M;
       const marque = (img) => {
@@ -491,6 +499,23 @@
         if (o.ecume) { marque(o.ecume.img); o.ecume.img.horsVue = o.img.horsVue; }
       }
       for (const g of this.vegHerbes || []) marque(g.img);
+      this.cullScene(v);
+    },
+
+    // Les images de la scène (pas dans un conteneur, qui suivent la vue) hors de la vue et de sa marge :
+    // pas dessinées (horsVue, comme ci-dessus). Les images qui portent `toujours` sont laissées.
+    cullScene(v) {
+      const M = DECOR_MARGE, x0 = v.x - M, y0 = v.y - M, x1 = v.right + M, y1 = v.bottom + M;
+      for (const img of this.children.list) {
+        if (img.type !== 'Image' || img.toujours || img.parentContainer || img.scrollFactorX !== 1 || img.scrollFactorY !== 1) continue;
+        if (!img.horsVuePose) {
+          const rend = img.willRender;
+          img.willRender = function (camera) { return !this.horsVue && rend.call(this, camera); };
+          img.horsVuePose = true;
+        }
+        const w = img.displayWidth, h = img.displayHeight, x = img.x - img.originX * w, y = img.y - img.originY * h;
+        img.horsVue = x > x1 || x + w < x0 || y > y1 || y + h < y0;
+      }
     },
 
     // L'image de l'arbre `t` (mapTrees) : celle qui contient sa première case.

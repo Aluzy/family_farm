@@ -1,7 +1,6 @@
 import { DATA } from '../engine/catalog.js';
-import { maintainDevice, repairDevice } from '../engine/devices.js';
 import { countItem } from '../engine/inventory.js';
-import { fridgeCount, moveFromFridge, moveToFridge } from '../engine/fridge.js';
+import { fridgeCount } from '../engine/fridge.js';
 import { startNight } from '../engine/night.js';
 import { executer } from './commandes.js';
 import { memberName } from '../engine/family.js';
@@ -78,16 +77,16 @@ export function wakeUp() {
 
 registerActions({
   'maintain': (target) => {
-    applyResult(maintainDevice(state, target.dataset.id));
+    applyResult(executer('appareil.entretenir', { appareil: String(target.dataset.id || '') }));
   },
   'repair': (target) => {
-    applyResult(repairDevice(state, target.dataset.id));
+    applyResult(executer('appareil.reparer', { appareil: String(target.dataset.id || '') }));
   },
   ...sameHandler(['fridge-in', 'fridge-out'], (target, e, action) => {
     const item = target.dataset.item;
     const all = target.dataset.qty === 'all';
     const qty = all ? (action === 'fridge-in' ? countItem(state, item) : fridgeCount(state, item)) : Number(target.dataset.qty);
-    const result = applyResult(action === 'fridge-in' ? moveToFridge(state, item, qty) : moveFromFridge(state, item, qty));
+    const result = applyResult(executer(action === 'fridge-in' ? 'frigo.ranger' : 'frigo.sortir', { objet: item, quantite: qty }));
     // fiche 10 : ranger (ou sortir) le même objet plusieurs fois de suite se cumule
     if (result.ok) notify(null, { cumul: { cle: `${action}:${item}`, quantites: { n: result.moved }, texte: (t) => `${action === 'fridge-in' ? '🧊 Rangé' : 'Sorti'} : ${t.n} ${DATA.OBJETS[item].icone}${result.reste ? ` (frigo plein : ${result.reste} restent dehors)` : ''}` } });
   }),

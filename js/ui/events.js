@@ -1,4 +1,5 @@
-import { buildMode, setComptoirTab, setComptoirTabChoisi, setGodMode, setInvTab, setTestMode, state, testMode } from './store.js';
+import { buildMode, enLigne, setComptoirTab, setComptoirTabChoisi, setGodMode, setInvTab, setTestMode, state, testMode } from './store.js';
+import { actionPermise } from './en-ligne.js';
 import { persistState } from './storage.js';
 import { syncGodBar } from './excursion.js';
 import { asleep } from '../engine/night.js';
@@ -28,6 +29,11 @@ export function runAction(action, target, e) {
   if (asleep(state) && SOMMEIL_BLOQUEES.has(action)) {
     notify(SOMMEIL_MESSAGE);
     return;
+  }
+  // E-2 : dans un monde en ligne, pour l'instant, on construit ensemble (js/ui/en-ligne.js)
+  if (enLigne) {
+    const refus = actionPermise(action, SOMMEIL_BLOQUEES);
+    if (refus) { notify(`🌐 ${refus}`); return; }
   }
   const run = ACTIONS[action];
   if (run) run(target, e, action);
@@ -84,6 +90,9 @@ if (typeof history !== 'undefined' && history.pushState) {
   if (!(history.state && history.state.fermeGarde)) history.pushState(GARDE, '', ici);
   window.addEventListener('popstate', (e) => {
     if (e.state && e.state.fermeGarde) { ici = location.href; return; }   // (Avancer : de nouveau sur la garde)
+    // (le lien de connexion du jeu en ligne, ou d'invitation, ouvert dans cet onglet : seul le fragment
+    // change ; il est laissé à js/ui/compte.js et js/ui/en-ligne.js, qui le lisent puis le retirent)
+    if (/(?:^#|&)(?:connexion|invitation)=/.test(location.hash)) { ici = location.href; return; }
     history.pushState(GARDE, '', ici);
     if (fermerDessus(true)) { quitter = 0; scheduleRender(); return; }
     const now = Date.now();

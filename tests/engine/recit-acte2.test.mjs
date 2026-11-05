@@ -62,12 +62,12 @@ test('la veillée : Garance parle de son toit commencé, ou de la machine', () =
   addItem(s, 'planche', 3);
   assert(livrerPromesse(s, 'toit_garance').ok);
   const r = textes(jouerScene(s, 'veillee_1', AU_GUE));
-  assert(r.some((t) => t.startsWith('garance: Il paraît que t\'as commencé mon toit')), r.join(' | '));
+  assert(r.some((t) => t.startsWith('garance: C\'est toi, pour mon toit')), r.join(' | '));
   assert(!r.some((t) => t.startsWith('fernand:')), 'Fernand se tait');
   const m = acte2();
   m.blocs = { 1234: 'station_robot' };
   const r2 = textes(jouerScene(m, 'veillee_1', AU_GUE));
-  assert(r2.some((t) => t.includes('une machine qui travaille pour toi')), r2.join(' | '));
+  assert(r2.some((t) => t.includes('carder la laine')), r2.join(' | '));
   assert(!r2.some((t) => t.startsWith('fernand:')));
 });
 
@@ -86,18 +86,18 @@ test('Frida : à la ferme, au chapitre 4, ses mots selon l\'empreinte', () => {
   assertEqual(relation(s, 'frida'), 10);
 });
 
-test('la fortune de Maurice : à la calèche, Achille cordial, après la veillée et 20 nuits', () => {
+test('la tournée de Maurice : à la calèche, Achille cordial, après la veillée et 20 nuits', () => {
   const s = acte2(10);
   s.day = 22;
   const ici = { lieu: 'caleche_ferme' };
-  assertEqual(scenesPossibles(s, ici).includes('maurice_fortune'), false, 'pas avant la veillée');
+  assertEqual(scenesPossibles(s, ici).includes('maurice_tournee'), false, 'pas avant la veillée');
   noterFait(s, 'veillee.1');
   ajouterRelation(s, 'achille', 10);
-  assertEqual(scenesPossibles(s, ici).includes('maurice_fortune'), false, 'Achille seulement poli');
+  assertEqual(scenesPossibles(s, ici).includes('maurice_tournee'), false, 'Achille seulement poli');
   ajouterRelation(s, 'achille', 20);
-  assertEqual(scenesPossibles(s, ici).includes('maurice_fortune'), true);
+  assertEqual(scenesPossibles(s, ici).includes('maurice_tournee'), true);
   s.day = 15;
-  assertEqual(scenesPossibles(s, ici).includes('maurice_fortune'), false, 'pas avant la nuit 20');
+  assertEqual(scenesPossibles(s, ici).includes('maurice_tournee'), false, 'pas avant la nuit 20');
 });
 
 test('les promesses : ouvertes par le carnet, confiées en plusieurs fois, tenues une fois', () => {

@@ -37,6 +37,48 @@ export function avecLune(fn) {
   }
 }
 
+// B-1 (la décision F.5) : le jeu ne pénalise plus l'absence ni l'oubli (DATA.PENALITES, et quelques
+// réglages : le réveil, la faim, la nuit sans couchage, la dérive de confiance, le cheval). Les tests
+// écrits avant tournent avec les pénalités d'avant, qu'ils vérifient (elles se rallument d'un
+// réglage) ; ceux de B-1 posent les réglages du jeu le temps du test (sansPenalite).
+const reglagesPenalites = () => ({
+  PENALITES: { ...DATA.PENALITES },
+  REVEIL_BASE: DATA.PERSONNAGE.REVEIL_BASE,
+  REVEIL_REPAS: DATA.PERSONNAGE.REVEIL_REPAS,
+  FAIM: DATA.BONHEUR.CIBLE.FAIM,
+  SANS_COUCHAGE: DATA.ATELIER.BONHEUR_SANS_COUCHAGE,
+  DERIVE: DATA.RECIT.DERIVE.POINTS.haute,
+  CHEVAL: DATA.CHEVAL.VITESSE_FAIM,
+});
+function poserPenalites(r) {
+  Object.assign(DATA.PENALITES, r.PENALITES);
+  DATA.PERSONNAGE.REVEIL_BASE = r.REVEIL_BASE;
+  DATA.PERSONNAGE.REVEIL_REPAS = r.REVEIL_REPAS;
+  DATA.BONHEUR.CIBLE.FAIM = r.FAIM;
+  DATA.ATELIER.BONHEUR_SANS_COUCHAGE = r.SANS_COUCHAGE;
+  DATA.RECIT.DERIVE.POINTS.haute = r.DERIVE;
+  DATA.CHEVAL.VITESSE_FAIM = r.CHEVAL;
+}
+const PENALITES_DU_JEU = reglagesPenalites();
+const PENALITES_D_AVANT = {
+  PENALITES: Object.fromEntries(Object.keys(DATA.PENALITES).map((k) => [k, true])),
+  REVEIL_BASE: 60, REVEIL_REPAS: 40, FAIM: -8, SANS_COUCHAGE: -32, DERIVE: -1, CHEVAL: 1.3,
+};
+poserPenalites(PENALITES_D_AVANT);
+export function sansPenalite(fn) {
+  poserPenalites(PENALITES_DU_JEU);
+  try {
+    fn();
+  } finally {
+    poserPenalites(PENALITES_D_AVANT);
+  }
+}
+export { PENALITES_DU_JEU };
+// (pour un test qui joue avec le vrai jeu, le test à deux par exemple : les réglages du jeu, pour de bon)
+export function reglagesDuJeu() {
+  poserPenalites(PENALITES_DU_JEU);
+}
+
 // Un test : test(nom, () => { … }), celui de node:test tel quel (pour que chaque test soit
 // rattaché à son fichier). Tous les tests du moteur sont des fonctions synchrones sans
 // paramètre : node:test les lance dans l'ordre du fichier, une fois le fichier entièrement

@@ -1,7 +1,7 @@
 name: Worker Cloudflare
 
 # À chaque pull request (et push sur main) qui touche le Worker de collecte et de rapport
-# (worker/, wrangler.toml) : le Worker est construit comme le ferait Cloudflare, sans rien
+# (worker/, wrangler.toml ; et le moteur du jeu, js/engine/, que le monde partagé embarque) : le Worker est construit comme le ferait Cloudflare, sans rien
 # déployer (wrangler deploy --dry-run : le code est regroupé, wrangler.toml lu, les liaisons
 # listées). Une erreur de code ou de configuration du Worker apparaît ainsi dans la pull
 # request, avec son journal, avant la fusion. Le déploiement lui-même reste fait par
@@ -13,9 +13,9 @@ name: Worker Cloudflare
 on:
   push:
     branches: [main]
-    paths: ['worker/**', 'wrangler.toml', '.github/workflows/worker.yml']
+    paths: ['worker/**', 'wrangler.toml', '.github/workflows/worker.yml', 'js/engine/**', 'js/data.generated.js']
   pull_request:
-    paths: ['worker/**', 'wrangler.toml', '.github/workflows/worker.yml']
+    paths: ['worker/**', 'wrangler.toml', '.github/workflows/worker.yml', 'js/engine/**', 'js/data.generated.js']
 
 permissions:
   contents: read
@@ -34,6 +34,10 @@ jobs:
           node-version: 22
       - name: Tests du rapport quotidien et de la collecte
         run: node tests/test-report.mjs
+      - name: Tests des comptes du jeu en ligne
+        run: node tests/test-comptes.mjs
+      - name: Tests du monde partagé
+        run: node tests/test-monde.mjs
       - name: Construire le Worker comme au déploiement (wrangler deploy --dry-run)
         run: npx --yes "$WRANGLER" deploy --dry-run --outdir "$RUNNER_TEMP/worker"
       - name: Construire une version de branche (wrangler versions upload --dry-run)

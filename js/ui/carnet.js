@@ -6,7 +6,7 @@ import { openModal } from './modal.js';
 
 /* ---------- le carnet du joueur (docs/recit/aventure.md, « le carnet ») ----------
 
-   Les pages que le joueur a trouvées en chemin : les carnets de Maurice, les notes, ce que disent Johnny ou
+   Les pages que le joueur a trouvées en chemin : les carnets de Maurice, les notes, ce que disent
    Lise (RECIT.FRAGMENTS, data/recit.json ; le moteur les range : ajouterFragment, js/engine/recit.js). Le
    carnet s'ouvre du menu (📓, js/ui/stage-windows.js), dès la première page ; il se lit, rien de plus : il
    ne décide de rien, il garde ce qu'on a appris. Les pages viennent dans l'ordre où on les a trouvées. */

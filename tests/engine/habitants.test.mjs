@@ -264,7 +264,8 @@ test('les habitants : la ferme et la famille du joueur ne changent pas', () => {
   const a = partieSur(GRAINES[0]), b = partieSur(GRAINES[0]);
   for (const p of plans(GRAINES[0])) peuplerHameau(b, p);
   for (let k = 0; k < 3; k++) { runNight(a); runNight(b); }
-  const sans = (s) => { const c = copie(s); delete c.monde.habitants; return c; };
+  // (V-3 : les liens entre voisins et ce qui se passe entre eux, state.voisins, sont la vie des hameaux aussi)
+  const sans = (s) => { const c = copie(s); delete c.monde.habitants; delete c.voisins; return c; };
   assertEqual(sans(b), sans(a), 'tout le reste est pareil');
   assert(Object.values(habitantsDe(b)).every((h) => h.foyers.every((f) => f.journal.length === 3)), 'les habitants ont vécu trois jours');
 });

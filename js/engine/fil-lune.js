@@ -7,18 +7,20 @@ import { aFait, ageFait, ajouterFragment, foisFait, noterFait, recitDe } from '.
 
 /* ---------- le fil de la lune (le récit, lot 10 ; docs/recit/aventure.md, « le fil de la lune ») ----------
 
-   Un fil que rien ne signale : Johnny, l'épave, ce que cachait Maurice, la pierre. Les réglages et les
-   textes : data/recit.json (RECIT.FIL).
-     - Les fragments, au carnet du joueur, sans objectif ni marqueur (FIL.FRAGMENTS) : la note « J. »
-       (Achille, la scène note_j), la page de bord (l'épave, la nuit, la lanterne-tempête à la main :
-       RECIT.LIEUX.epave), les relevés de Frida (son atelier, la scène frida_releves), et les trois bribes
-       de Johnny (chez lui, la nuit, après FIL.JOHNNY.REPAS repas, à trois phases de lune : visiteJohnny).
-     - Johnny (visiteJohnny) : on entre dans sa cabane ; il accueille, sans se souvenir ; un plat apporté
-       (un par jour) est un repas (« johnny.repas ») ; les nuits de pleine lune, tard, il n'est pas là.
+   Un fil que rien ne signale : l'étoile tombée au milieu de l'île, ce que Maurice regardait la nuit, la pierre.
+   Les réglages et les textes : data/recit.json (RECIT.FIL).
+     - Les fragments, au carnet du joueur, sans objectif ni marqueur (FIL.FRAGMENTS) : la note « É. » (Achille,
+       la scène note_etoile), le journal de bord des premiers arrivants (leur barque, la nuit, la lanterne-tempête
+       à la main : RECIT.LIEUX.epave), les relevés de Frida (son atelier, la scène frida_releves), et les trois
+       pages du carnet du ciel de Maurice (son observatoire, la nuit, après FIL.OBSERVATOIRE.NUITS nuits passées
+       à regarder le ciel, à trois phases de lune : visiteObservatoire).
+     - L'observatoire de Maurice (visiteObservatoire) : on entre dans sa cabane ; le jour, on la découvre ; la
+       nuit, on regarde le ciel par sa longue-vue (« observatoire.nuit », une fois par jour).
      - La galerie secrète (galerieOuverte) : les fragments au carnet, une nuit de pleine lune, de
        GALERIE.HEURES[0] à [1] h : au niveau GALERIE.NIVEAU de la mine de la ferme, une fissure éclairée
        d'une lumière froide (fissureDuNiveau) ; derrière, une petite chambre fixe, hors de la génération
-       des niveaux (niveauGalerie) : une couverture, une tasse, des phases de lune gravées, et la pierre.
+       des niveaux (niveauGalerie) : la cachette de Maurice enfant (une couverture, une tasse, des phases de lune
+       gravées), et la pierre.
      - La pierre (prendrePierre, poserPierre) : prise, elle va dans l'inventaire (PIERRE.OBJET) ; posée sur
        la ferme (« pierre.posee »), tout y pousse plus vite, tout le temps : un stade toutes les
        TEMPS.POUSSE_HEURES × PIERRE.POUSSE heures (js/engine/crops.js heuresPousse) ; la ferme luit faiblement
@@ -36,46 +38,31 @@ export function filComplet(state) {
   return FIL.FRAGMENTS.every((id) => c.includes(id));
 }
 
-/* ---------- Johnny ---------- */
+/* ---------- l'observatoire de Maurice ---------- */
 
-// Le premier plat cuisiné de l'inventaire (dans l'ordre des objets), ou null.
-function platApporte(state) {
-  return Object.keys(DATA.OBJETS).find((id) => DATA.OBJETS[id].plat && !DATA.OBJETS[id].retire && countItem(state, id) >= 1) || null;
-}
-
-// Le joueur entre dans la cabane de Johnny. → { absent (les nuits de pleine lune, tard : la cabane est
-// vide), texte (ce qu'il dit, ou ce qu'on voit), repas (le plat donné, ou null), fragment (la page du
-// carnet gagnée, ou null) }. Le fait « lieu.cabane » est noté (la découverte, comme toucherLieu), et
-// « johnny.visite » s'il est là.
-export function visiteJohnny(state) {
-  const J = FIL.JOHNNY, h = hourOfDay(state), phase = moonPhase(state.day).id;
+// Le joueur entre dans l'observatoire de Maurice (la bâtisse « cabane » du plan). → { texte (ce qu'on voit, ce
+// qu'on lit), fragment (la page du carnet gagnée, ou null) }. Le fait « lieu.cabane » est noté (la découverte,
+// comme toucherLieu) ; la nuit, « observatoire.nuit » (une fois par jour).
+export function visiteObservatoire(state) {
+  const O = FIL.OBSERVATOIRE, h = hourOfDay(state), phase = moonPhase(state.day).id;
   noterFait(state, 'lieu.cabane');
-  if (phase === 'pleine' && dans(h, J.DEHORS)) return { absent: true, texte: J.VIDE, repas: null, fragment: null };
-  noterFait(state, 'johnny.visite');
   const lignes = [];
-  // (la pierre posée sur la ferme : il le sait, sans qu'on lui ait rien dit ; une fois)
-  if (aFait(state, 'pierre.posee') && !aFait(state, 'johnny.pierre')) { noterFait(state, 'johnny.pierre'); lignes.push(J.PIERRE); }
-  // (un plat : un repas par jour ; le reste du jour, il garde ce qu'on lui a apporté)
-  let repas = null;
-  const plat = platApporte(state);
-  if (plat && ageFait(state, 'johnny.repas') !== 0) {
-    takeItem(state, plat, 1);
-    noterFait(state, 'johnny.repas');
-    repas = plat;
-    lignes.push(J.REPAS_TEXTES[Math.min(foisFait(state, 'johnny.repas'), J.REPAS_TEXTES.length) - 1]);
-  } else if (plat) {
-    lignes.push(J.DEJA);
-  } else if (!lignes.length) {
-    lignes.push(J.ACCUEIL[(jourDe(state) + foisFait(state, 'johnny.visite')) % J.ACCUEIL.length]);
+  // (la pierre posée sur la ferme : une page qu'on n'avait pas vue ; une fois)
+  if (aFait(state, 'pierre.posee') && !aFait(state, 'observatoire.pierre')) { noterFait(state, 'observatoire.pierre'); lignes.push(O.PIERRE); }
+  if (!dans(h, O.NUIT)) {
+    if (!lignes.length) lignes.push(O.JOUR);
+    return { texte: lignes.join(' '), fragment: null };
   }
-  // (la nuit, après assez de repas, à la bonne phase : une bribe, une fois chacune ; elle va au carnet)
+  if (ageFait(state, 'observatoire.nuit') !== 0) noterFait(state, 'observatoire.nuit');
+  if (!lignes.length) lignes.push(O.ACCUEIL[(jourDe(state) + foisFait(state, 'observatoire.nuit')) % O.ACCUEIL.length]);
+  // (après assez de nuits, à la bonne phase : une page du carnet du ciel, une fois chacune)
   let fragment = null;
-  const bribe = J.BRIBES[phase];
-  if (bribe && dans(h, J.NUIT) && foisFait(state, 'johnny.repas') >= J.REPAS && ajouterFragment(state, bribe)) {
-    fragment = bribe;
-    lignes.push(DATA.RECIT.FRAGMENTS[bribe].texte);
+  const page = O.PAGES[phase];
+  if (page && foisFait(state, 'observatoire.nuit') >= O.NUITS && ajouterFragment(state, page)) {
+    fragment = page;
+    lignes.push(DATA.RECIT.FRAGMENTS[page].texte);
   }
-  return { absent: false, texte: lignes.join(' '), repas, fragment };
+  return { texte: lignes.join(' '), fragment };
 }
 
 /* ---------- la galerie secrète et la pierre ---------- */

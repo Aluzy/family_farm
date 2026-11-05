@@ -36,8 +36,9 @@
   const SOIR = 19, MATIN = 6;                 // h : fatigué de SOIR à MATIN
   const CLIGNE_MS = 130;                      // un clignement
   const CLIGNE_ENTRE = [2200, 6500];          // ms entre deux clignements (au hasard)
-  // la réaction (amis.js) → l'expression ; le dégoût n'a pas la sienne : les yeux plissés, la bouche de côté
-  const REACTIONS = { joie: 'joie', colere: 'colere', peur: 'peur', tristesse: 'tristesse', degout: 'concentre' };
+  // la réaction (amis.js) → l'expression ; le dégoût n'a pas la sienne : les yeux plissés, la bouche de côté ;
+  // la surprise non plus : les yeux grands ouverts de la peur
+  const REACTIONS = { joie: 'joie', colere: 'colere', peur: 'peur', tristesse: 'tristesse', degout: 'concentre', surprise: 'peur' };
   const W = 8, H = 5;
 
   const reduit = () => !!(K && K.reduit && K.reduit());

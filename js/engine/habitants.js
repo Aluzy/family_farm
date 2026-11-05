@@ -7,6 +7,8 @@ import { farmSeed } from './terrain.js';
 import { lireIdMonde, objetPris, prendreParHabitant } from './monde-recolte.js';
 import { tirerApparence } from './apparence.js';
 import { validApparence } from './family.js';
+import { proposDuMoment } from './propos.js';
+import { demandeDe, texteDemande } from './demandes.js';
 
 /* ---------- les habitants des hameaux du grand monde (docs/grand-monde.md : fiche 7b) ----------
 
@@ -451,7 +453,7 @@ export function metierHabitant(h, m) {
 }
 
 // Toucher un habitant : { prenom, metier, texte } (son salut selon l'heure, ce qu'il fait,
-// son humeur) ; `o` : { heure, activite (dort, maison, chemin, travail, joue, repas, rentre, soir),
+// son humeur) ; `o` : { heure, activite (dort, maison, chemin, travail, joue, repas, rentre, soir, fete : V-4),
 // n (le rang de l'appui : une autre phrase à chaque fois), salut (un salut qui remplace celui de
 // l'heure : la confiance du hameau, paroleHameau dans recit.js) }. null : personne de ce nom.
 // Un foyer qui a eu faim ne parle pas de passer à table : la phrase du repas saute.
@@ -468,10 +470,17 @@ export function paroleHabitant(state, hameauId, membreId, o = {}) {
   const salut = typeof o.salut === 'string' && o.salut ? o.salut : salutHeure;
   const dernier = f.journal && f.journal[f.journal.length - 1];
   const humeur = dernier && dernier.couverture < 100 ? 'faim' : f.bonheur >= HABITANTS.HEUREUX ? 'heureux' : f.bonheur < HABITANTS.TRISTE ? 'triste' : 'content';
+  out.humeur = humeur;
+  // V-2 (demandes.js) : sa demande ouverte, il la dit d'abord
+  const dem = demandeDe(state, membreId);
+  if (dem) { out.texte = [salut, texteDemande(dem)].filter(Boolean).join(' '); out.demande = dem.id; return out; }
+  // V-1 (propos.js) : souvent, un sujet du moment (ta ferme, ses voisins, la lune…) au lieu des phrases toutes
+  // faites ; pas quand il a faim (il le dit d'abord)
+  const propos = humeur === 'faim' || o.activite === 'fete' ? null : proposDuMoment(state, hameauId, h, f, m, rnd);
+  if (propos) { out.texte = [salut, propos.texte].filter(Boolean).join(' '); out.propos = propos.id; return out; }
   const fait = o.activite === 'travail' ? un(P.travail[m.metier] || P.travail.jardinier)
     : o.activite === 'repas' && humeur === 'faim' ? '' : un(P.activite[o.activite] || P.activite.maison);
   out.texte = [salut, fait, un(P.humeur[humeur])].filter(Boolean).join(' ');
-  out.humeur = humeur;
   return out;
 }
 

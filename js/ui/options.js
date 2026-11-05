@@ -3,13 +3,14 @@ import { godMode, setEcranFerme, state, testMode } from './store.js';
 import { boussoleMontree, montrerBoussole } from '../engine/monde-vu.js';
 import { persistState } from './storage.js';
 import { privacySectionHtml, tel } from './consent.js';
-import { copyFromTextarea, exportSaveText, importSaveText } from './storage.js';
+import { copyFromTextarea, exportSaveText, importSaveText, telechargerSauvegarde } from './storage.js';
 import { morph, refresh } from './render.js';
 import { openAboutModal } from './aide.js';
 import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { sonHtml } from './son.js';
+import { compteHtml } from './compte.js';
 
 /* ---------- options (modale) ---------- */
 
@@ -121,13 +122,17 @@ export function openOptionsModal() {
           <div class="row">
             <button class="btn" type="button" data-action="do-export">Générer</button>
             <button class="btn" type="button" data-action="copy-export">Copier</button>
+            <button class="btn" type="button" data-action="download-export">⬇️ Télécharger (.json)</button>
           </div>
+          <p class="muted">Le fichier .json se joint tel quel à un message, et se réimporte ci-dessous.</p>
         </div>
         <div class="stack">
           <strong>Importer une sauvegarde</strong>
           <textarea id="import-area" rows="4" placeholder="Coller le texte exporté ici"></textarea>
           <div class="row">
             <button class="btn" type="button" data-action="do-import">Importer</button>
+            <button class="btn" type="button" data-action="import-file">📂 Depuis un fichier</button>
+            <input type="file" id="import-file" accept=".json,application/json,text/plain" hidden>
           </div>
         </div>
       </details>
@@ -138,6 +143,7 @@ export function openOptionsModal() {
         </div>
         <div id="feedback-zone"></div>
       </div>
+      ${compteHtml()}
       ${privacySectionHtml()}
       <div class="stack">
         <strong>Mode test</strong>
@@ -157,6 +163,21 @@ export function openOptionsModal() {
     </div>`, { labelledBy: 'options-title' });
   // FLU-38 : sauvegarde repliée, « Recommencer à zéro » en bas, en contour rouge
   document.getElementById('export-area').addEventListener('click', (e) => e.target.select());
+  document.getElementById('import-file').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    f.text().then((texte) => importee(importSaveText(texte), 'Fichier invalide, import annulé.'), () => notify('Fichier illisible, import annulé.'));
+  });
+}
+
+// Après un import (texte collé ou fichier)
+function importee(ok, refus) {
+  notify(ok ? 'Sauvegarde importée.' : refus);
+  if (ok) {
+    setEcranFerme(null);
+    closeModal();
+    refresh();
+  }
 }
 
 document.addEventListener('change', (e) => {
@@ -197,13 +218,13 @@ registerActions({
   },
   'do-import': () => {
     const area = document.getElementById('import-area');
-    const ok = importSaveText(area.value);
-    notify(ok ? 'Sauvegarde importée.' : 'Texte invalide, import annulé.');
-    if (ok) {
-      setEcranFerme(null);
-      closeModal();
-      refresh();
-    }
+    importee(importSaveText(area.value), 'Texte invalide, import annulé.');
+  },
+  'download-export': () => {
+    notify(telechargerSauvegarde() ? 'Sauvegarde téléchargée.' : 'Le téléchargement a échoué : utilise « Copier ».');
+  },
+  'import-file': () => {
+    document.getElementById('import-file').click();
   },
   'ask-new-game': () => {
     morph(document.getElementById('new-game-zone'), newGameZoneHtml(true));

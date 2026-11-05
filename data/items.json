@@ -184,7 +184,7 @@
     "lanterne_tempete": { "nom": "Lanterne-tempête", "icone": "🪔", "prix": 14, "mangeable": false, "categorie": "équipement", "rachetable": false },
     "//souvenirs": [
       "Le récit, lot 9 (data/recit.json, docs/recit/aventure.md) : des souvenirs de Maurice, ni vendus ni rachetés.",
-      "L'enveloppe arrive avec la seconde lettre du notaire, au niveau 9 : l'ouvrir la garde (RECIT.ENVELOPPE.PIECES",
+      "L'enveloppe arrive avec une carte postale de Maurice, au niveau 9 : l'ouvrir la garde (RECIT.ENVELOPPE.PIECES",
       "pièces), la porter à Odile la donne. La cloche de sa calèche : Odile la donne à la fête, à celui qui a",
       "entretenu l'île comme lui (la fin « nouveau_maurice »)."
     ],

@@ -788,8 +788,12 @@
       if (!this.conseilsGfx) this.conseilsGfx = this.add.graphics().setDepth(1e5 - 2);
       const g = this.conseilsGfx, cols = this.grid.cols;
       g.clear();
-      for (const t of this.conseilsTextes || []) t.destroy();
+      // (les étiquettes déjà faites sont gardées, rangées par place et texte : une pose ne refait que
+      // celles qui changent ; fermer Construire les cache sans les défaire)
+      const avant = this.conseilsFaits || new Map();
+      for (const t of avant.values()) t.setVisible(false);
       this.conseilsTextes = [];
+      this.conseilsAFaire = null;
       if (!k) return;
       const carre = (c) => [(c % cols) * T, Math.floor(c / cols) * T];
       g.fillStyle(0xffb347, 0.28);
@@ -799,21 +803,45 @@
         g.fillStyle(0xff5a3c, 0.4).fillRect(x + 1, y + 1, T - 2, T - 2);
         g.lineStyle(1, 0xffe0d8, 0.95).strokeRect(x + 1.5, y + 1.5, T - 3, T - 3);
       }
-      // une étiquette au milieu des cases (leur rectangle), du papier du jeu
+      // une étiquette au milieu des cases (leur rectangle), du papier du jeu. Un texte net coûte cher à
+      // dessiner (sa résolution) : seules les étiquettes près de l'écran sont faites, les autres quand la
+      // vue s'en approche (syncConseilsTextes, à chaque image).
       const etiquette = (cases, texte) => {
         let c0 = Infinity, c1 = -Infinity, r0 = Infinity, r1 = -Infinity;
         for (const c of cases) { const x = c % cols, y = Math.floor(c / cols); c0 = Math.min(c0, x); c1 = Math.max(c1, x); r0 = Math.min(r0, y); r1 = Math.max(r1, y); }
         const l = Math.max(3, c1 - c0 + 1) * T - 4;
-        this.conseilsTextes.push(this.add.text((c0 + c1 + 1) / 2 * T, (r0 + r1 + 1) / 2 * T, texte, {
+        this.conseilsAFaire.push({ x: (c0 + c1 + 1) / 2 * T, y: (r0 + r1 + 1) / 2 * T, texte, origine: [0.5, 0.5], style: {
           fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '6px', color: '#4a2a10', backgroundColor: 'rgba(255,241,210,0.88)',
           padding: { x: 2, y: 1 }, align: 'center', wordWrap: { width: Math.max(texte.length > 40 ? 120 : 70, l) },
-        }).setOrigin(0.5).setDepth(1e5 - 1).setResolution(8));
+        } });
       };
+      this.conseilsAFaire = [];
       for (const e of k.sansPorte) etiquette(e, 'Pas de porte : pose-la sur un mur');
       for (const p of k.pieces) etiquette(p.cases, p.texte);
-      if (k.trous.length) {
-        // (le mur qui manque : un petit « mur ? » au-dessus de chaque trou)
-        for (const c of k.trous) { const [x, y] = carre(c); this.conseilsTextes.push(this.add.text(x + T / 2, y - 1, 'mur ?', { fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '6px', color: '#ffffff', backgroundColor: 'rgba(193,68,46,0.9)', padding: { x: 2, y: 0 } }).setOrigin(0.5, 1).setDepth(1e5 - 1).setResolution(8)); }
+      // (le mur qui manque : un petit « mur ? » au-dessus de chaque trou)
+      for (const c of k.trous) { const [x, y] = carre(c); this.conseilsAFaire.push({ x: x + T / 2, y: y - 1, texte: 'mur ?', origine: [0.5, 1], style: { fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '6px', color: '#ffffff', backgroundColor: 'rgba(193,68,46,0.9)', padding: { x: 2, y: 0 } } }); }
+      // (celles qui ne sont plus : défaites)
+      const cleDe = (e) => e.x + ',' + e.y + ',' + (e.style.wordWrap ? e.style.wordWrap.width : '') + ',' + e.texte;
+      const voulues = new Set(this.conseilsAFaire.map(cleDe));
+      for (const [cle, t] of avant) if (!voulues.has(cle)) { t.destroy(); avant.delete(cle); }
+      this.conseilsFaits = avant;
+      this.syncConseilsTextes();
+    },
+
+    // Les étiquettes des conseils près de l'écran (la vue et une demi-vue autour) : faites une fois.
+    syncConseilsTextes() {
+      const L = this.conseilsAFaire;
+      if (!L || !L.length) return;
+      const v = this.cameras.main.worldView, mx = v.width / 2 + 60, my = v.height / 2 + 30;
+      for (let i = L.length - 1; i >= 0; i--) {
+        const e = L[i];
+        if (e.x < v.x - mx || e.x > v.right + mx || e.y < v.y - my || e.y > v.bottom + my) continue;
+        L.splice(i, 1);
+        const cle = e.x + ',' + e.y + ',' + (e.style.wordWrap ? e.style.wordWrap.width : '') + ',' + e.texte, F = this.conseilsFaits || (this.conseilsFaits = new Map());
+        let t = F.get(cle);
+        if (t) t.setVisible(true);
+        else { t = this.add.text(e.x, e.y, e.texte, e.style).setOrigin(e.origine[0], e.origine[1]).setDepth(1e5 - 1).setResolution(8); F.set(cle, t); }
+        this.conseilsTextes.push(t);
       }
     },
 

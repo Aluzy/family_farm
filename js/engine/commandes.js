@@ -42,19 +42,95 @@
    récolte, une nuit dormie ne se défont pas ; l'énergie dépensée non plus) :
      potager.planter  { parcelle, culture }    semer une parcelle (son identifiant), à la main
      potager.arroser  { parcelle }
-     potager.recolter { parcelle }
+     potager.recolter { parcelle, direct? }     (direct : à l'inventaire, sans attendre le personnage)
+     potager.labourer { case }                 labourer une case d'herbe (ou reboucher une parcelle vide)
+     potager.toutPlanter  { lieu, culture }    « Planter partout », « Arroser tout », « Récolter tout »
+     potager.toutArroser  { lieu }
+     potager.toutRecolter { lieu, direct? }
+     cruche.remplir   { case }                 remplir la cruche au puits de cette case
+   Les bêtes (E-6, sans inverse non plus) :
+     poules.nourrir   { }                      une poule (« Nourrir une poule »)
+     poules.toutNourrir { }                    « Nourrir tout »
+     poulailler.agrandir { }                   le niveau suivant du Poulailler
+     etable.tondre    { mouton }               tondre ce mouton (son identifiant)
+     etable.herbes    { oui }                  les vaches aux herbes de montagne (ou à la paille)
+     etable.place     { }                      acheter une place de plus à l'Étable
+     ramassage.prendre { tas }                 prendre un tas qui attend (ramassage.js : un id de tas,
+                                                une ruche pleine « ruche:<case> » comprise)
+   La cuisine (E-7, sans inverse : une préparation lancée, un plat mangé ne se défont pas comme un mur ;
+   « Annuler » une préparation en attente est une commande à part entière) :
+     cuisine.lancer   { recette }               lancer une recette à son atelier
+     cuisine.annuler  { station, rang }         retirer la préparation en attente n° `rang` de la file
+     moulin.moudre    { quantite }              verser du blé au Moulin
+     moulin.annuler   { }                       reprendre le blé du Moulin
+     frigo.ranger     { objet, quantite }       mettre au réfrigérateur ; frigo.sortir : l'en sortir
+     frigo.sortir     { objet, quantite }
+     frigo.toutRanger { }                       « Tout ranger » ; frigo.urgent : ce qui périme bientôt
+     frigo.urgent     { }
+     frigo.acheter    { }                       le réfrigérateur ; frigo.agrandir : le niveau suivant
+     frigo.agrandir   { }
+     boite.deposer    { objet, quantite }       la boîte à nourriture du foyer ; boite.reprendre
+     boite.reprendre  { objet, quantite }
+     manger           { objet?, sac? }          manger sur le pouce (sac : ce qui est dans le sac)
+   Les outils de la ferme (E-9, sans inverse ; sans positions de chute : ce qui tombe va droit à
+   l'inventaire, comme dans un monde en ligne, qui ne ramasse pas) :
+     outil.couper     { arbre, fort? }          un coup de hache (un arbre, un buisson : « col,rang » de son pied)
+     outil.casser     { rocher, fort? }         un coup de pioche (« col,rang »)
+     outil.caillou    { rocher }                ramasser un caillou à la main
+     outil.faucher    { touffe }                un coup de faux (« x,y » en px, le pied de la touffe)
+     outil.faucherAutour { touffes }            le coup fort de la faux : les touffes autour (au plus 60)
+     outil.pecher     { eau, coin? }            un lancer (etang, mare ; lac, riviere, mer : le grand monde)
+     verger.cueillir  { arbre }                 cueillir les fruits d'un arbre du verger (son id)
+   La progression de la ferme (E-10, M.5 : commune à tous ses joueurs ; sans inverse) :
+     tech.acheter     { noeud }                 un nœud de l'arbre des technologies
+     atelier.fabriquer { recette }              une recette de l'Atelier (un bloc, un outil, un meuble…)
+     atelier.construire { station }             construire un atelier qui s'achète (la Presse)
+     appareil.basculer  { appareil }            allumer ou éteindre un appareil
+     appareil.ameliorer { appareil }            son niveau suivant ; appareil.entretenir, appareil.reparer
+     appareil.entretenir { appareil }
+     appareil.reparer { appareil }
+     reservoir.agrandir { }                     le réservoir d'eau ; robot.batterie : l'autonomie du robot
+     robot.batterie   { }
+     serre.agrandir   { }                       la Serre
+     arbre.planter    { sorte, case }           planter un arbre (un plant, une graine) sur une case
+     potager.semis    { parcelle, mode, culture? } le semis automatique d'une parcelle
+   Les machines de l'Atelier et ce qui traîne au sol (E-13, sans inverse) :
+     botteleuse.verser { case }                 jeter ses fibres dans l'entonnoir d'une botteleuse
+     botteleuse.sortir { case }                 la botte d'une botteleuse pleine : sa paille à l'inventaire
+     chaine.verser    { case }                  jeter les ingrédients dans l'entonnoir d'une chaîne
+     distributeur.verser { case }               jeter son blé dans un distributeur de grain
+     morceau.ramasser { n }                     prendre un morceau tombé au sol (bois, pierre, un produit)
+     cueillette.ramasser { cueillette }         ramasser à la main (« sorte:case » : une branche, une baie…)
      nuit.dormir      { }                       se coucher, la nuit (elle défile jusqu'au réveil)
+     nuit.partagee    { }                       E-5 : toute la nuit d'un coup, à n'importe quelle heure
+                                                (le monde en ligne la joue, quand tous sont couchés)
 */
 
 import { DATA } from './catalog.js';
-import { fail } from './devices.js';
+import { fail, maintainDevice, repairDevice, toggleDevice, upgradeDevice, upgradeTank } from './devices.js';
 import {
   blocAt, blocDessus, casesCouvertes, deplacerBloc, hauteurPile, matiereDessus, poserBloc, rehausser,
   peindreBloc, reprendreBloc, sensBloc, solAt, tournerBloc,
 } from './blocs.js';
 import { deplacerEtage, dessusEtage, etageBlocs, etageCouvertes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
-import { harvest, plant, water } from './crops.js';
-import { goToSleep } from './night.js';
+import { harvest, hoe, plant, upgradeSerre, water } from './crops.js';
+import { harvestAll, plantAll, setSemis, upgradeRobotBattery, waterAll } from './automation.js';
+import { remplirCruche } from './cruche.js';
+import { buyPasture, feedAllHens, feedHen, setCowHerbs, shear, upgradePoulailler } from './animals.js';
+import { pickUp } from './ramassage.js';
+import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe } from './kitchen.js';
+import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
+import { deposerBoite, reprendreBoite } from './repas.js';
+import { eatSnack } from './family.js';
+import { castLine, chopTree, mineRock, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass } from './outils.js';
+import { sortirBotte, verserFibres } from './botteleuse.js';
+import { verserChaine } from './chaines.js';
+import { verserGrain } from './distributeur.js';
+import { craft, ramasser } from './atelier.js';
+import { harvestTree } from './orchard.js';
+import { buyTech } from './techtree.js';
+import { planterIci } from './plantation.js';
+import { goToSleep, nuitPartagee } from './night.js';
 
 const CHANGE = 'Ce qui était posé là a changé depuis.';
 
@@ -82,6 +158,19 @@ const CONTROLES = {
   niveau: (v) => v === 1 || v === 2,
   texte: (v) => typeof v === 'string' && v.length > 0,
   culture: (v) => typeof v === 'string' && !!DATA.CULTURES[v],
+  lieu: (v) => v === 'potager' || v === 'serre',
+  drapeau: (v) => v === true || v === false,
+  objet: (v) => typeof v === 'string' && !!DATA.OBJETS[v],
+  recette: (v) => typeof v === 'string' && !!DATA.RECETTES[v],
+  coord: (v) => typeof v === 'string' && /^\d{1,6},\d{1,6}$/.test(v),
+  coords: (v) => Array.isArray(v) && v.length > 0 && v.length <= 60 && v.every((x) => typeof x === 'string' && /^\d{1,6},\d{1,6}$/.test(x)),
+  eau: (v) => typeof v === 'string' && /^[a-z]{1,20}$/.test(v),
+  noeud: (v) => typeof v === 'string' && !!DATA.ARBRE.noeuds[v],
+  recetteAtelier: (v) => typeof v === 'string' && !!DATA.ATELIER.RECETTES[v],
+  station: (v) => typeof v === 'string' && !!DATA.STATIONS[v],
+  appareil: (v) => typeof v === 'string' && /^[A-Za-z0-9_:-]{1,40}$/.test(v),
+  mode: (v) => typeof v === 'string' && /^[a-z_]{1,20}$/.test(v),
+  quantite: (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1e6,   // (0 : le moteur dit pourquoi)
 };
 
 export const COMMANDES = {
@@ -298,12 +387,99 @@ export const COMMANDES = {
     executer: (state, { parcelle }) => water(state, parcelle),
   },
   'potager.recolter': {
-    args: { parcelle: 'texte' },
-    executer: (state, { parcelle }) => harvest(state, parcelle),
+    args: { parcelle: 'texte', direct: 'drapeau?' },
+    executer: (state, { parcelle, direct = false }) => harvest(state, parcelle, false, direct),
   },
+  'potager.labourer': {
+    args: { case: 'case' },
+    executer: (state, { case: c }) => hoe(state, c),
+  },
+  'potager.toutPlanter': {
+    args: { lieu: 'lieu', culture: 'culture' },
+    executer: (state, { lieu, culture }) => plantAll(state, lieu, culture),
+  },
+  'potager.toutArroser': {
+    args: { lieu: 'lieu' },
+    executer: (state, { lieu }) => waterAll(state, lieu),
+  },
+  'potager.toutRecolter': {
+    args: { lieu: 'lieu', direct: 'drapeau?' },
+    executer: (state, { lieu, direct = false }) => harvestAll(state, lieu, direct),
+  },
+  'cruche.remplir': {
+    args: { case: 'case' },
+    executer: (state, { case: c }) => remplirCruche(state, c),
+  },
+  'poules.nourrir': { args: {}, executer: (state) => feedHen(state) },
+  'poules.toutNourrir': { args: {}, executer: (state) => feedAllHens(state) },
+  'poulailler.agrandir': { args: {}, executer: (state) => upgradePoulailler(state) },
+  'etable.tondre': {
+    args: { mouton: 'texte' },
+    executer: (state, { mouton }) => shear(state, mouton),
+  },
+  'etable.herbes': {
+    args: { oui: 'drapeau' },
+    executer: (state, { oui }) => setCowHerbs(state, oui),
+  },
+  'etable.place': { args: {}, executer: (state) => buyPasture(state) },
+  'ramassage.prendre': {
+    args: { tas: 'texte' },
+    executer: (state, { tas }) => pickUp(state, tas),
+  },
+  'cuisine.lancer': { args: { recette: 'recette' }, executer: (state, { recette }) => startRecipe(state, recette) },
+  'cuisine.annuler': {
+    args: { station: 'texte', rang: 'case' },
+    executer: (state, { station, rang }) => (DATA.STATIONS[station] ? cancelQueued(state, station, rang) : fail('Atelier inconnu.')),
+  },
+  'moulin.moudre': { args: { quantite: 'quantite' }, executer: (state, { quantite }) => startMilling(state, Math.max(1, Math.floor(quantite))) },
+  'moulin.annuler': { args: {}, executer: (state) => cancelMilling(state) },
+  'frigo.ranger': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => moveToFridge(state, objet, quantite) },
+  'frigo.sortir': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => moveFromFridge(state, objet, quantite) },
+  'frigo.toutRanger': { args: {}, executer: (state) => moveAllToFridge(state) },
+  'frigo.urgent': { args: {}, executer: (state) => moveExpiringToFridge(state) },
+  'frigo.acheter': { args: {}, executer: (state) => buildFridge(state) },
+  'frigo.agrandir': { args: {}, executer: (state) => upgradeFridge(state) },
+  'boite.deposer': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => deposerBoite(state, objet, quantite) },
+  'boite.reprendre': { args: { objet: 'objet', quantite: 'quantite' }, executer: (state, { objet, quantite }) => reprendreBoite(state, objet, quantite) },
+  'manger': {
+    args: { objet: 'objet?', sac: 'drapeau?' },
+    executer: (state, { objet = null, sac = false }) => eatSnack(state, objet, { duSac: sac }),
+  },
+  'outil.couper': { args: { arbre: 'coord', fort: 'drapeau?' }, executer: (state, { arbre, fort = false }) => chopTree(state, arbre, null, fort) },
+  'outil.casser': { args: { rocher: 'coord', fort: 'drapeau?' }, executer: (state, { rocher, fort = false }) => mineRock(state, rocher, null, fort) },
+  'outil.caillou': { args: { rocher: 'coord' }, executer: (state, { rocher }) => ramasserCaillou(state, rocher) },
+  'outil.faucher': { args: { touffe: 'coord' }, executer: (state, { touffe }) => scytheGrass(state, touffe, null) },
+  'outil.faucherAutour': { args: { touffes: 'coords' }, executer: (state, { touffes }) => scytheAround(state, touffes, null) },
+  'outil.pecher': { args: { eau: 'eau', coin: 'texte?' }, executer: (state, { eau, coin = null }) => castLine(state, eau, coin) },
+  'verger.cueillir': { args: { arbre: 'texte' }, executer: (state, { arbre }) => harvestTree(state, arbre) },
+  'tech.acheter': { args: { noeud: 'noeud' }, executer: (state, { noeud }) => buyTech(state, noeud) },
+  'atelier.fabriquer': { args: { recette: 'recetteAtelier' }, executer: (state, { recette }) => craft(state, recette) },
+  'atelier.construire': { args: { station: 'station' }, executer: (state, { station }) => buildStation(state, station) },
+  'appareil.basculer': { args: { appareil: 'appareil' }, executer: (state, { appareil }) => toggleDevice(state, appareil) },
+  'appareil.ameliorer': { args: { appareil: 'appareil' }, executer: (state, { appareil }) => upgradeDevice(state, appareil) },
+  'appareil.entretenir': { args: { appareil: 'appareil' }, executer: (state, { appareil }) => maintainDevice(state, appareil) },
+  'appareil.reparer': { args: { appareil: 'appareil' }, executer: (state, { appareil }) => repairDevice(state, appareil) },
+  'reservoir.agrandir': { args: {}, executer: (state) => upgradeTank(state) },
+  'robot.batterie': { args: {}, executer: (state) => upgradeRobotBattery(state) },
+  'serre.agrandir': { args: {}, executer: (state) => upgradeSerre(state) },
+  'arbre.planter': { args: { sorte: 'sorte', case: 'case' }, executer: (state, { sorte, case: c }) => planterIci(state, sorte, c) },
+  'potager.semis': {
+    args: { parcelle: 'texte', mode: 'mode', culture: 'culture?' },
+    executer: (state, { parcelle, mode, culture = null }) => setSemis(state, parcelle, mode, culture),
+  },
+  'botteleuse.verser': { args: { case: 'case' }, executer: (state, { case: c }) => verserFibres(state, c) },
+  'botteleuse.sortir': { args: { case: 'case' }, executer: (state, { case: c }) => sortirBotte(state, c, null) },
+  'chaine.verser': { args: { case: 'case' }, executer: (state, { case: c }) => verserChaine(state, c) },
+  'distributeur.verser': { args: { case: 'case' }, executer: (state, { case: c }) => verserGrain(state, c) },
+  'morceau.ramasser': { args: { n: 'case' }, executer: (state, { n }) => ramasserMorceau(state, n) },
+  'cueillette.ramasser': { args: { cueillette: 'texte' }, executer: (state, { cueillette }) => ramasser(state, cueillette) },
   'nuit.dormir': {
     args: {},
     executer: (state) => goToSleep(state),
+  },
+  'nuit.partagee': {
+    args: {},
+    executer: (state) => nuitPartagee(state),
   },
 };
 

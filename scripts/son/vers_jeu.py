@@ -27,6 +27,7 @@ T = {
  'grillons_soir': ('ambiance', g(f'{M1}/ambient/crickets_dusk_01.wav')),
  'grillons_nuit': ('ambiance', g(f'{M1}/ambient/crickets_night_01.wav')),
  'vent': ('ambiance', g(f'{M1}/ambient/wind_light.wav')),
+ 'pluie': ('ambiance', g(f'{M1}/ambient/rain_loop.wav')),        # G-1 : la pluie (sons1.py, rain_loop)
  'grenouilles': ('ambiance', g(f'{REC}/grenouilles.flac')),     # une vraie grenouille, la nuit (libres.py)
  'foret': ('ambiance', g(f'{M2}/ambient/forest_loop.wav')),
  'montagne': ('ambiance', g(f'{M2}/ambient/mountain_wind_loop.wav')),

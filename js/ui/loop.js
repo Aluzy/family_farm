@@ -10,7 +10,7 @@ import { PRESSE_RENDU } from '../engine/state.js';
 import { mergeOfflineReports, simulateOffline } from '../engine/offline.js';
 import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
 import { escapeHtml, formatCoins, formatDay, formatNumber } from '../engine/format.js';
-import { MAX_FRAME_MS, RENDER_THROTTLE_MS, state, tabAvailable, TICK_MS } from './store.js';
+import { enLigne, MAX_FRAME_MS, RENDER_THROTTLE_MS, state, tabAvailable, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
 import { showConsentBanner } from './consent.js';
 import { consentBannerDue, consentBannerPending, consentBannerShown, modalRoot, storyOpen, uiCalm } from './calme.js';
@@ -30,6 +30,9 @@ import { retourCompagnon } from '../engine/compagnon.js';
 import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
 import { watchPresents } from './amitie.js';
+import { watchDemandes } from './demandes.js';
+import { watchFetes } from './fetes.js';
+import { pleut } from '../engine/meteo.js';
 import { watchInvitations } from './invitations.js';
 import { watchPlans } from './plans.js';
 import {
@@ -234,6 +237,7 @@ function watchTechPoints() {
 // refermée, et ne commence pas tant qu'une bulle d'aide de la première partie est affichée
 // (le joueur lit), sauf celle qui explique la nuit.
 function watchDay() {
+  if (enLigne) return;   // (E-5 : en ligne, la nuit est celle du monde : quand tous sont couchés)
   if (state.reveil && !modalRoot().childElementCount) wakeUp();
   if (nightActive(state)) {
     // minuit vient de passer : les préparations finies dans la nuit, sans toast
@@ -248,6 +252,15 @@ function watchDay() {
   actionNightStart();
 }
 let midnightSeen = false;
+
+// G-1 : une averse commence (js/engine/meteo.js) : une annonce, une fois par jour (pas dans un monde en ligne, où
+// l'horloge est figée et la pluie n'arrose pas).
+let averseAnnoncee = null;
+function watchMeteo() {
+  if (enLigne || averseAnnoncee === state.day || nightActive(state) || !pleut(state)) return;
+  averseAnnoncee = state.day;
+  notify('🌧️ Une averse ! La pluie arrose les cultures de la ferme (pas la Serre, qui est couverte).', { kind: 'info' });
+}
 
 // La faim de la famille (js/engine/repas.js) : un membre qui a faim et ne trouve rien à manger
 // le fait savoir (un appui mène à la Famille) ; sur la carte, celui qui mange va au
@@ -283,7 +296,7 @@ function direCompagnon(d) {
 
 export function frame(now) {
   const wall = Date.now();
-  if (wall - simulatedAt >= CATCH_UP_MIN_MS) {
+  if (wall - simulatedAt >= CATCH_UP_MIN_MS && !enLigne) {
     // La boucle était en pause (onglet caché, veille) : même règle que hors-ligne.
     catchUp(wall);
     lastFrameTime = now;
@@ -299,6 +312,8 @@ export function frame(now) {
   const horlogeArretee = setupPending(state) || storyOpen();
   // le mode Construire fige le monde : ni l'heure, ni les plantes, ni la famille ne bougent
   if (document.body.classList.contains('construction')) accumulatorMs = 0;
+  // E-2 (F.2) : un monde en ligne est figé : son horloge ne tourne pas chez le joueur
+  if (enLigne) accumulatorMs = 0;
   while (accumulatorMs >= TICK_MS) {
     tick(state, TICK_MS / 1000, horlogeArretee);
     accumulatorMs -= TICK_MS;
@@ -316,6 +331,9 @@ export function frame(now) {
   watchBienvenue(); // fiche 18 : la visite de bienvenue du deuxième jour se met en route
   watchRobot();
   watchPresents();
+  watchDemandes(); // V-2 : les petites demandes des habitants, annoncées au matin
+  watchMeteo(); // G-1 : l'averse qui commence
+  watchFetes(); // V-4 : la fête du hameau (annoncée au matin ; y être pendant la fête)
   watchInvitations(); // les invitations à un repas : les réponses au matin, les invités en route
   watchPlans(); // les plans de meubles offerts par un ami (le lot 4)
   watchPreparations();
@@ -333,6 +351,7 @@ export function frame(now) {
 // bilan pour l'écran d'absence s'il dépasse HORS_LIGNE.ECRAN_S, puis sauvegarde.
 // Une horloge qui recule (réglage de l'appareil) ne rattrape rien.
 export function catchUp(wall = Date.now()) {
+  if (enLigne) { simulatedAt = wall; return null; }   // (E-2 : en ligne, pas de rattrapage : le monde est figé)
   const seconds = (wall - simulatedAt) / 1000;
   simulatedAt = wall;
   if (!(seconds > 0)) return null;

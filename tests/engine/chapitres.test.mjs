@@ -436,7 +436,7 @@ test('affichage : pourcentage arrondi vers le bas, 100 % seulement à 100', () =
 
 // Le récit (docs/recit/) : la terre sauvage est celle du grand-père, Maurice. Les textes en parlent ; ils ne
 // parlent plus de la ferme d'avant (sa maison, son moulin, ses dépendances).
-test('terre sauvage : le chapitre 1 et les lettres du notaire parlent de la terre du grand-père, pas de sa ferme', () => {
+test('terre sauvage : le chapitre 1 et les lettres de Maurice parlent de la terre du grand-père, pas de sa ferme', () => {
   const s = createNewGame(1);
   const p = chapterProgress(s);
   assertEqual(/grand-père/.test(p.intro), true, p.intro);
@@ -444,8 +444,8 @@ test('terre sauvage : le chapitre 1 et les lettres du notaire parlent de la terr
   // (le panneau, la pompe et la citerne n'arrivent qu'avec l'automatisation : pas d'objectif)
   assertEqual(p.objectifs.slice(0, 3).map((o) => o.libelle), ['Bâtir le foyer (une pièce close, une paillasse)', 'Fabriquer une houe à l\'Atelier', 'Labourer 6 tuiles']);
   assertEqual(p.objectifs.filter((o) => ['panneau', 'pompe', 'reservoir'].includes(o.type)).length, 0);
-  for (const id of ['notaire_heritage', 'notaire_legs']) assertEqual(mailText(s, id).some((l) => /moulin|dépendances/.test(l)), false, id);
-  assertEqual(mailText(s, 'notaire_heritage').some((l) => /grand-père, Maurice/.test(l)), true, 'le notaire nomme Maurice');
+  for (const id of ['maurice_terre', 'maurice_enveloppe']) assertEqual(mailText(s, id).some((l) => /moulin|dépendances|la maison a besoin/i.test(l)), false, id);
+  assertEqual(mailText(s, 'maurice_terre').some((l) => /restée sauvage/.test(l)), true, 'Maurice parle de sa terre sauvage');
 });
 
 // La nouvelle vision : l'autonomie quitte le jeu (v67 → v68).

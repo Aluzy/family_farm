@@ -33,6 +33,15 @@
 #                   ses bittes d'amarrage, et le bac amarré le long de son bout (un bateau ponté, sa cabine,
 #                   ses bouées) ; 0 vers le nord, 1 vers le sud, 2 vers l'ouest, 3 vers l'est. Le pied :
 #                   comme le ponton, le milieu du bout de la jetée du côté de la rive.
+#
+# Les secrets du monde (D-2, docs/phase-4.md ; lieux.secrets du plan, monde-gen.js) :
+#   ruine           de vieux murs de pierre écroulés, la mousse sur leur faîte, un bloc tombé devant ;
+#                   0 : la pierre grise (prairie, lande), 1 : plus moussue (forêt).
+#   cairn           un tas de pierres posées une à une, en cône, une pierre plate au sommet.
+#   arbre_ancien    un arbre immense, son houppier large et sombre, un tronc épais aux racines à nu.
+#   belvedere       une dalle de roche plate, une table d'orientation de pierre sur son pilier.
+#   pierre_levee    un menhir dressé, gris, piqué de lichen, une touffe d'herbe à son pied.
+# Le pied : le milieu du bas (la case du secret).
 import json
 import math
 import os
@@ -384,6 +393,162 @@ def cale(sens):
     return t.transpose(Image.FLIP_LEFT_RIGHT), h - py, px
 
 
+# ---------- les secrets du monde (D-2) ----------
+
+import vegetation as V  # noqa: E402
+
+LICHEN = [(150, 156, 96), (184, 186, 120)]
+
+
+def _mur(q, w, h, x0, y_bas, l, haut, ep, pal, graine, mousse):
+    """Un pan de mur de pierres sèches vu de haut à 45° : la face (rangées de 4 px, pierres de 5 à 9 px, joints
+    sombres), le dessus (ep px, plus clair), un faîte écroulé (la hauteur varie par tronçons)."""
+    x = x0
+    hauts = []
+    while x < x0 + l:
+        n = 4 + int(hasard(graine, x) * 5)
+        hh = max(4, haut - int(hasard(graine + 1, x) * haut * 0.6))
+        hauts += [hh] * n
+        x += n
+    hauts = hauts[:l]
+    for k, hh in enumerate(hauts):
+        x = x0 + k
+        for d in range(hh):
+            y = y_bas - d
+            rang = d // 4
+            dec = (rang * 3 + int(hasard(graine + 2, rang) * 5)) % 7
+            joint = d % 4 == 3 or (k + dec) % 7 == 0
+            lum = 4 if k < 2 else 3
+            c = pal[1] if joint else pal[lum - (1 if hasard(graine + 3, x // 3, rang) < 0.3 else 0)]
+            _pose(q, w, h, x, y, c)
+        for e in range(ep):
+            y = y_bas - hh - e
+            c = pal[6] if e == ep - 1 else pal[5]
+            if mousse and hasard(graine + 4, x // 2, e) < mousse:
+                c = MOUSSE[2] if e == ep - 1 else MOUSSE[1]
+            _pose(q, w, h, x, y, c)
+
+
+def ruine(variante):
+    """Une ruine : 76 × 44 px. Deux pans de mur en équerre, un troisième abattu, un bloc tombé devant."""
+    w, h = 76, 44
+    im, q = _toile(w, h)
+    pal = R.GRANIT[1:] + [R.GRANIT[-1]]
+    mousse = 0.25 if variante == 0 else 0.6
+    g = 40 + variante * 9
+    _mur(q, w, h, 4, 30, 20, 18, 5, pal, g, mousse)          # le pan du fond, à gauche
+    _mur(q, w, h, 40, 28, 30, 12, 5, pal, g + 5, mousse)     # le pan du fond, à droite (plus bas)
+    _mur(q, w, h, 2, 41, 10, 14, 4, pal, g + 9, mousse)      # le retour, devant à gauche
+    _mur(q, w, h, 60, 41, 12, 7, 4, pal, g + 13, mousse)     # un reste, devant à droite
+    out = R.avec_contour(im, CONTOUR)
+    # un bloc tombé et quelques pierres dans l'herbe
+    bloc = R.pierre(14, 10, [(7, 5, 6, 4, 4)], R.GRIS, g + 20, mousse=mousse, pans=3)
+    out.alpha_composite(bloc, (30, 32))
+    for k, (x, y) in enumerate([(24, 38), (50, 36), (16, 33)]):
+        out.alpha_composite(R.pierre(7, 6, [(3.5, 3, 3, 2.4, 2)], R.GRIS, g + 30 + k, mousse=mousse, pans=2), (x, y))
+    return out, 38, h - 2
+
+
+def cairn():
+    """Un cairn : 24 × 32 px. Des pierres empilées en cône, de plus en plus petites, une pierre plate au sommet."""
+    w, h = 24, 32
+    cail = [(6, 27, 5, 3.5, 4), (12, 28, 5.5, 3.6, 4), (18, 27, 4.5, 3.4, 4),
+            (8, 22, 4.5, 3.2, 3.5), (15, 22, 4.5, 3.2, 3.5),
+            (12, 17, 4.5, 3, 3.2), (11, 12.5, 3.8, 2.6, 3), (12, 8.5, 3.2, 2.2, 2.6), (12, 5, 4, 1.6, 1.5)]
+    out = R.tas(w, h, sorted(cail, key=lambda c: -c[1]), R.GRIS, 71)
+    return out, 12, h - 2
+
+
+def pierre_levee():
+    """Une pierre levée : 22 × 44 px. Un menhir gris, un peu penché, plus large à mi-hauteur, piqué de lichen ;
+    éclairé à gauche ; une touffe d'herbe à son pied."""
+    w, h = 22, 44
+    im, q = _toile(w, h)
+    pal = R.GRANIT
+    for y in range(2, h - 2):
+        f = (y - 2) / (h - 4)
+        larg = 5 + 9 * math.sin(min(1.0, f * 1.25) * math.pi * 0.55) + (2 if f > 0.9 else 0)
+        cx = 11 + (1 - f) * 1.5
+        xa, xb = int(round(cx - larg / 2)), int(round(cx + larg / 2))
+        for x in range(xa, xb):
+            u = (x - xa + 0.5) / max(1, xb - xa)
+            k = 6 - int(u * 4.5) - (1 if hasard(81, x, y // 2) < 0.2 else 0)
+            if y < 6:
+                k = min(7, k + 1)
+            c = pal[max(1, min(7, k))]
+            if hasard(82, x // 2, y // 2) < 0.12:
+                c = LICHEN[0] if u > 0.5 else LICHEN[1]
+            _pose(q, w, h, x, y, c)
+    out = R.avec_contour(im, CONTOUR)
+    t = V.Toile(w, h)
+    V.herbe_pied(t, 11, h - 2, 83, largeur=16, rampe=V.RAMPE_PRE)
+    out.alpha_composite(t.image())
+    return out, 11, h - 2
+
+
+def belvedere():
+    """Un belvédère : 52 × 36 px. Une dalle de roche plate, et dessus une table d'orientation : un disque de pierre
+    gravé sur son pilier."""
+    w, h = 52, 36
+    dalle = R.pierre(w, 22, [(26, 12, 24, 9, 3), (14, 13, 11, 7, 3.5), (38, 12, 12, 7, 3.2)], R.GRANIT, 91, mousse=0.1, pans=4, mouchete=0.2)
+    out = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    out.alpha_composite(dalle, (0, h - 22))
+    im, q = _toile(w, h)
+    pal = R.GRANIT
+    # le pilier
+    for y in range(12, 25):
+        for x in range(23, 30):
+            u = (x - 23) / 6
+            _pose(q, w, h, x, y, pal[6 if u < 0.3 else 5 if u < 0.6 else 3])
+    # le disque, vu de biais (une ellipse), sa rose gravée
+    for y in range(5, 15):
+        for x in range(14, 39):
+            d = ((x + 0.5 - 26.5) / 12.5) ** 2 + ((y + 0.5 - 10) / 5) ** 2
+            if d > 1:
+                continue
+            c = pal[7] if y < 9 else pal[6]
+            if d > 0.75:
+                c = pal[4]
+            if (x == 26 or y == 10) and d < 0.6:
+                c = pal[3]
+            _pose(q, w, h, x, y, c)
+    for y in range(15, 17):
+        for x in range(15, 38):
+            if abs(x - 26.5) < 12 - (y - 15) * 2:
+                _pose(q, w, h, x, y, pal[3])
+    out.alpha_composite(R.avec_contour(im, CONTOUR))
+    return out, 26, h - 3
+
+
+def arbre_ancien():
+    """Un arbre ancien : 96 × 98 px. Un houppier immense et sombre, en larges bosses ; un tronc très épais, ses
+    racines à nu qui s'étalent au pied."""
+    w, h = 96, 98
+    r = random.Random(1201)
+    bosses = [(48, 34, 30), (24, 40, 18), (72, 40, 18), (36, 18, 17), (60, 18, 17), (14, 52, 11), (82, 52, 11), (48, 50, 20), (30, 56, 13), (66, 56, 13)]
+    bosses = [(cx + r.uniform(-1.5, 1.5), cy + r.uniform(-1.5, 1.5), rr * r.uniform(0.95, 1.05)) for cx, cy, rr in bosses]
+    t = V.Toile(w, h)
+    V.tronc(t, 48, 54, h - 2, 16, 22, V.ECORCE, 1203, racines=7)
+    # les racines à nu, qui rampent de part et d'autre
+    for sens in (-1, 1):
+        for k in range(2):
+            x0, y0 = 48 + sens * (8 + k * 4), h - 6 + k * 2
+            for d in range(10 + k * 6):
+                x, y = x0 + sens * d, y0 + int(d * 0.25)
+                for e in range(3 - (d > 8)):
+                    t.pose(x, y - e, V.sur(V.ECORCE, 3.2 - e * 0.8))
+    V.herbe_pied(t, 48, h - 2, 1204, largeur=50)
+    hb = V.champ_bosses(bosses, 1205)
+    bas = max(cy + rr for cx, cy, rr in bosses)
+    cime = V.Toile(w, h)
+    V.feuillage(cime, hb, V.RAMPE_FORET, 1206, pied=(bas - 18, bas))
+    V.contour(cime, V.RAMPE_FORET[0])
+    for k, c in cime.px.items():
+        t.px[k] = c
+    V.contour(t, V.assombrir(V.RAMPE_FORET[0], 0.8))
+    return t.image(), 48, h - 2
+
+
 # ---------- la planche ----------
 
 def charge_sortes():
@@ -399,6 +564,11 @@ def dessins():
         'piquets': [piquets(0), piquets(1)],
         'epave': [epave_recit()],
         'cale': [cale(s) for s in range(4)],
+        'ruine': [ruine(0), ruine(1)],
+        'cairn': [cairn()],
+        'arbre_ancien': [arbre_ancien()],
+        'belvedere': [belvedere()],
+        'pierre_levee': [pierre_levee()],
     }
 
 

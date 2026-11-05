@@ -6,6 +6,7 @@ import { levelReached } from '../engine/levels.js';
 import { actionCost, TIRED } from '../engine/stamina.js';
 import { hoeMode, setHoeMode, state } from './store.js';
 import { applyResult } from './game-actions.js';
+import { executer } from './commandes.js';
 import { refresh } from './render.js';
 import { formatEnergy } from './energie.js';
 import { notify } from './toasts.js';
@@ -77,7 +78,8 @@ registerActions({
     else refresh();
   },
   'hoe': (target) => {
-    applyResult(hoe(state, Number(target.dataset.case)));
+    const c = Number(target.dataset.case);
+    applyResult(Number.isInteger(c) && c >= 0 ? executer('potager.labourer', { case: c }) : hoe(state, c));
   },
   // FLU-12 : les cases traversées d'un glissement, labourées dans l'ordre ; on s'arrête au
   // plafond ou à court d'énergie. Un seul rendu à la fin.
@@ -86,7 +88,7 @@ registerActions({
     let n = 0;
     let raison = '';
     for (const t of tiles) {
-      const r = hoe(state, t);
+      const r = t >= 0 ? executer('potager.labourer', { case: t }) : hoe(state, t);
       if (r.ok) { n += 1; continue; }
       raison = raison || r.error;
       if (r.error === TIRED || /Plafond/.test(r.error)) break;

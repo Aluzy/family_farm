@@ -1,8 +1,9 @@
 import { DATA } from '../engine/catalog.js';
+import { executer } from './commandes.js';
 import {
-  batteryCapacity, efficiency, isBroken, isOwned, maintainCost, needsService, panelOutput, pumpFlow, repairCost,
-  starterOf, tankCapacity, toggleDevice, upgradeCost, upgradeDevice, upgradeTank,
+  batteryCapacity, efficiency, isBroken, isOwned, maintainCost, needsService, panelOutput, pumpFlow, repairCost, starterOf, tankCapacity, upgradeCost,
 } from '../engine/devices.js';
+import { penalite } from '../engine/inventory.js';
 import { hourOfDay, nightActive } from '../engine/clock.js';
 import { deviceStatus, energyStats } from '../engine/energy.js';
 import { energyChip } from './energie.js';
@@ -26,7 +27,7 @@ import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frig
 import { renderAteliers, renderMoulin } from './cuisine.js';
 import { renderChapterBanner } from './chapitres.js';
 import {
-  robotAutonomy, robotBattery, robotBusy, robotChargePct, robotOn, robotStation, robotTaskCapacity, robotTasksLeft, upgradeRobotBattery,
+  robotAutonomy, robotBattery, robotBusy, robotChargePct, robotOn, robotStation, robotTaskCapacity, robotTasksLeft,
 } from '../engine/automation.js';
 import { artIcon } from './animations.js';
 import { helpBtn, tutoTarget } from './aide.js';
@@ -233,6 +234,7 @@ export function renderRobotCard() {
 }
 
 export function wearHtml(d) {
+  if (!penalite('USURE') && !(d.usure > 0)) return '';   // (B-1 : les appareils ne s'usent plus)
   const pct = d.usure;
   const cls = isBroken(d) ? ' bad' : needsService(d) ? ' warn' : '';
   return `
@@ -386,15 +388,15 @@ registerActions({
     refresh();
   },
   'toggle': (target) => {
-    applyResult(toggleDevice(state, target.dataset.id));
+    applyResult(executer('appareil.basculer', { appareil: String(target.dataset.id || '') }));
   },
   'upgrade': (target) => {
-    applyResult(upgradeDevice(state, target.dataset.id));
+    applyResult(executer('appareil.ameliorer', { appareil: String(target.dataset.id || '') }));
   },
   'upgrade-tank': () => {
-    applyResult(upgradeTank(state));
+    applyResult(executer('reservoir.agrandir', {}));
   },
   'robot-autonomie': () => {
-    applyResult(upgradeRobotBattery(state));
+    applyResult(executer('robot.batterie', {}));
   },
 });

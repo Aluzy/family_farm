@@ -4,7 +4,9 @@ import { SOMMEIL_MESSAGE } from './actions.js';
 import { castLine, chopTree, hasTool, mineRock, OUTILS, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass, selectTool, toolDef } from '../engine/outils.js';
 import { recolterMonde } from '../engine/monde-recolte.js';
 import { canAfford, TIRED } from '../engine/stamina.js';
-import { axeMode, hoeMode, pickMode, rodMode, scytheMode, setAxeMode, setHoeMode, setPickMode, setRodMode, setScytheMode, state } from './store.js';
+import { axeMode, enLigne, hoeMode, pickMode, rodMode, scytheMode, setAxeMode, setHoeMode, setPickMode, setRodMode, setScytheMode, state } from './store.js';
+import { executer } from './commandes.js';
+import { itemsText } from './common.js';
 import { applyResult } from './game-actions.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -97,7 +99,8 @@ function useTool(id) {
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
   }
   setBuildMode(null);
-  applyResult(selectTool(state, id));
+  // (E-9 : en ligne, l'outil en main est celui de ce joueur seulement : rien n'est écrit dans la partie du monde)
+  if (!enLigne) applyResult(selectTool(state, id));
   if (id !== 'houe' && hoeMode) setHoeMode(false);
   if (id !== 'hache' && axeMode) setAxeMode(false);
   if (id !== 'pioche' && pickMode) setPickMode(false);
@@ -170,6 +173,16 @@ export function gesteFromStage(action, n = 1) {
   return true;
 }
 
+// E-9 : en ligne, le monde ne ramasse pas : ce qu'un coup lâche va droit au coffre commun (pas de morceaux
+// au sol), et le jeu le dit, coup après coup, dans une seule notification. `gains` : { objet: (résultat) => n }.
+function enLigneGain(r, gains) {
+  if (!r || !r.ok) return r;
+  const q = {};
+  for (const [item, f] of Object.entries(gains)) { const n = Number(f(r)) || 0; if (n > 0) q[item] = n; }
+  if (Object.keys(q).length) notify(null, { cumul: { cle: 'outil-en-ligne', quantites: q, texte: (t) => `🌐 Au coffre commun : ${itemsText(t, 'gain')}` } });
+  return r;
+}
+
 // La carte (farm-stage.js, ou une autre : FermeHote.couper) : la hache en main, le joueur a
 // touché l'arbre `id`. Le coup compte tout de suite ; son bois tombe au sol, aux points que la
 // carte donne (`ou` : { carte, coup, fin }, voir chopTree) ; la carte montre ensuite le
@@ -178,7 +191,7 @@ export function gesteFromStage(action, n = 1) {
 // (appui maintenu sur le personnage, COUP_FORT).
 export function chopFromStage(id, ou, fort) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = chopTree(state, id, ou, !!fort);
+  const r = enLigne ? enLigneGain(executer('outil.couper', { arbre: String(id), fort: !!fort }), { bois: (x) => x.bois + (x.tombe ? DATA.HACHE.CHUTE : 0) }) : chopTree(state, id, ou, !!fort);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
@@ -189,7 +202,7 @@ export function chopFromStage(id, ou, fort) {
 // pierre tombe au sol. Renvoie { casse, morceaux } (casse : ce coup brise le rocher), ou null.
 export function mineFromStage(id, ou, fort) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = mineRock(state, id, ou, !!fort);
+  const r = enLigne ? enLigneGain(executer('outil.casser', { rocher: String(id), fort: !!fort }), { pierre: (x) => x.pierre + (x.bris || 0) }) : mineRock(state, id, ou, !!fort);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
@@ -200,7 +213,7 @@ export function mineFromStage(id, ou, fort) {
 // main, sa pierre va dans l'inventaire. Renvoie { items }, ou null (un message).
 export function caillouFromStage(id) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = ramasserCaillou(state, id);
+  const r = enLigne ? executer('outil.caillou', { rocher: String(id) }) : ramasserCaillou(state, id);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
@@ -211,7 +224,7 @@ export function caillouFromStage(id) {
 // chopFromStage : la fibre tombe au sol. Renvoie { morceaux }, ou null.
 export function scytheFromStage(id, ou) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = scytheGrass(state, id, ou);
+  const r = enLigne ? enLigneGain(executer('outil.faucher', { touffe: String(id) }), { fibre: (x) => x.fibre }) : scytheGrass(state, id, ou);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
@@ -222,7 +235,7 @@ export function scytheFromStage(id, ou) {
 // (`ou` : { carte, points: { id: [points] } }). Renvoie { fauchees, morceaux }, ou null.
 export function scytheAroundFromStage(ids, ou) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = scytheAround(state, ids, ou);
+  const r = enLigne ? enLigneGain(executer('outil.faucherAutour', { touffes: (ids || []).map(String) }), { fibre: (x) => x.fibre }) : scytheAround(state, ids, ou);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
@@ -247,7 +260,7 @@ export function mondeFromStage(id, o) {
 // Renvoie { ok, item, n } ou null (il dort, ou le morceau n'est plus là).
 export function morceauFromStage(n) {
   if (asleep(state)) return null;
-  const r = ramasserMorceau(state, n);
+  const r = enLigne ? executer('morceau.ramasser', { n: Number(n) }) : ramasserMorceau(state, n);   // (E-13 : en ligne, par le monde)
   if (!r.ok) return null;
   persistState();
   refresh();
@@ -262,7 +275,7 @@ export function morceauFromStage(n) {
 // dort, sans énergie, le poisson se fait rare).
 export function fishFromStage(eau, coin = null) {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return null; }
-  const r = castLine(state, eau, coin);
+  const r = enLigne ? executer('outil.pecher', { eau: String(eau), ...(coin ? { coin: String(coin) } : {}) }) : castLine(state, eau, coin);
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();

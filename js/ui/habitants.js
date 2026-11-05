@@ -1,4 +1,6 @@
 import { DATA } from '../engine/catalog.js';
+import { deHameau } from '../engine/bienvenue.js';
+import { evenementsDuHameau } from '../engine/voisins.js';
 import { escapeHtml, formatNumber } from '../engine/format.js';
 import { clockHours } from '../engine/clock.js';
 import { countItem } from '../engine/inventory.js';
@@ -15,7 +17,7 @@ import { solDuMonde } from './monde-sol.js';
 import { persoHtml } from './famille.js';
 import { plancheAvecChargement } from './apparence.js';
 import { openModal } from './modal.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
 import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
@@ -67,6 +69,7 @@ export function peuplerDepuisCarte(id) {
 // Les hameaux déjà vus (une partie d'avant la fiche 7b) qui n'ont pas encore leurs habitants : ils
 // naissent dès que les plans sont là. Appelé à chaque modèle de la carte : ne coûte presque rien.
 export function peuplerLesVus() {
+  if (enLigne) return false;   // (E-8 : le monde partagé est la ferme, sans hameaux)
   const H = habitantsDe(state), vus = Object.keys(hameauxVus(state));
   // (le récit, lot 9 : les personnages écrits d'un hameau peuplé avant qu'ils y habitent, Basile et Théo à
   // Bois-Joli, s'y installent : installerEcrits ne fait rien quand ils y sont déjà)
@@ -217,6 +220,21 @@ function ateliersHtml(hid) {
 
 // La fiche du hameau `h` ({ id, nom, style } : le panneau de sa place) ; sans habitants encore, son
 // nom seulement. Le récit, lot 7 : ses ateliers (un hameau garanti), nommés.
+// V-3 : ce qui s'est passé entre voisins, ces dernières nuits (js/engine/voisins.js).
+function voisinsHtml(hid) {
+  const H = habitantsDe(state), E = evenementsDuHameau(state, hid);
+  if (!E.length) return '';
+  const nom = (id) => (H[id] ? H[id].nom : 'un hameau');
+  const T = DATA.VOISINS.TEXTES;
+  const li = E.map((e) => {
+    const t = e.sorte === 'entraide'
+      ? T.entraide.replace('{de}', e.de).replace('{deHameau}', nom(e.deHameau)).replace('{a}', e.a)
+      : T.visite.replace('{qui}', e.quiPrenom).replace('{deHameau}', deHameau(nom(e.deHameau))).replace('{e}', e.quiGenre === 'f' ? 'e' : '').replace('{chez}', e.chezPrenom);
+    return `<li>${e.sorte === 'entraide' ? '🤝' : '👋'} ${escapeHtml(t)} <span class="muted">(jour ${e.jour})</span></li>`;
+  }).join('');
+  return `<h3 class="book-h3">Entre voisins</h3><ul class="hameau-voisins">${li}</ul>`;
+}
+
 export function openFicheHameau(h) {
   const S = HAMEAUX.STYLES[h.style];
   peuplerDepuisCarte(h.id);
@@ -236,6 +254,7 @@ export function openFicheHameau(h) {
     <p class="muted">Ce que les familles ont mis de côté, nuit après nuit (+ : la nuit dernière) ; la calèche l'achète à chacun de ses passages, et paie les familles.</p>
     ${reserveHtml(fi)}
     ${calecheHtml(fi)}
+    ${voisinsHtml(h.id)}
     <button type="button" class="btn primary" data-action="close-modal" id="hameau-close">Fermer</button>`, { labelledBy: 'hameau-title', className: 'modal bois hameau-modal', focus: '#hameau-close', preventScroll: true });
 }
 

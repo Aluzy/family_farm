@@ -194,6 +194,7 @@ export function nextExpiry(state, item) {
 // Quantités qui périmeront à la prochaine nuit (il leur reste 1 nuit).
 export function expiringSoon(state) {
   const out = {};
+  if (!penalite('PEREMPTION')) return out;   // (B-1 : rien ne périme)
   for (const item of Object.keys(state.inventaire)) {
     const n = lotsOf(state, item)
       .filter((l) => l.nightsLeft === 1)
@@ -206,7 +207,16 @@ export function expiringSoon(state) {
 // Étape nocturne de péremption, toujours la dernière : retire une nuit à chaque
 // lot qui périme, supprime ceux qui arrivent à 0 et note les pertes dans le
 // rapport de la nuit. Renvoie les pertes : { item: quantité }.
+// Une pénalité d'absence ou d'oubli est-elle en jeu (DATA.PENALITES, B-1) ? Faute de réglage : oui.
+export function penalite(nom) {
+  const P = DATA.PENALITES;
+  return !P || P[nom] !== false;
+}
+
 export function spoil(state) {
+  if (!state.nuit.perdus) state.nuit.perdus = {};
+  // (B-1 : PENALITES.PEREMPTION coupée, rien ne se gâte)
+  if (!penalite('PEREMPTION')) return {};
   const perdus = ageLots(state.inventaire, 1, {});
   // (la boîte à nourriture ne garde pas au frais : ce qu'elle contient périme aussi)
   if (state.boite && state.boite.items) ageLots(state.boite.items, 1, perdus);

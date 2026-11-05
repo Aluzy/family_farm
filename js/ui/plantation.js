@@ -1,9 +1,10 @@
 import { DATA } from '../engine/catalog.js';
+import { executer } from './commandes.js';
 import { poseStatus } from '../engine/blocs.js';
 import { countItem } from '../engine/inventory.js';
 import { asleep } from '../engine/night.js';
 import { farmTerrain } from '../engine/terrain.js';
-import { casesAPlanter, planterIci, sorteAPlanter } from '../engine/plantation.js';
+import { casesAPlanter, sorteAPlanter } from '../engine/plantation.js';
 import { axeMode, buildMode, hoeMode, pickMode, rodMode, scytheMode, setAxeMode, setBuildMode, setHoeMode, setPickMode, setRodMode, setScytheMode, state } from './store.js';
 import { setStageWindow } from './stage-windows.js';
 import { persistState } from './storage.js';
@@ -113,7 +114,7 @@ registerActions({
 // Plante l'arbre en cours sur la case `c` ; il en reste : on continue, sinon c'est fini.
 function planter(c) {
   const b = DATA.ATELIER.BLOCS[plante.sorte];
-  const r = planterIci(state, plante.sorte, c);
+  const r = executer('arbre.planter', { sorte: plante.sorte, case: c });
   if (!r.ok) { notify(r.error); refresh(); return; }
   // il en reste : on continue (les cases se recalculent) ; sinon, c'est fini
   plante.plantes += 1;

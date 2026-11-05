@@ -1,8 +1,10 @@
+import { GAME_VERSION } from '../engine/base.js';
 import { migrate } from '../engine/state.js';
 import { createNewGame } from '../engine/depart.js';
-import { SAVE_KEY, setState, state } from './store.js';
+import { enLigne, SAVE_KEY, setState, state } from './store.js';
 import { setPendingAbsence, setSimulatedAt, simulatedAt, syncJobs } from './loop.js';
 import { notify } from './toasts.js';
+import { mesurer } from './chrono.js';
 
 /* ---------- stockage : localStorage, toujours entouré de try/catch ---------- */
 
@@ -102,6 +104,11 @@ export function statsSauvegarde() {
 }
 
 export function persistState() {
+  // (E-2 : en ligne, la partie est celle du monde : la partie solo de l'appareil n'est jamais écrasée)
+  if (enLigne) return;
+  mesurer('sauvegarde', persister);
+}
+function persister() {
   try {
     const t0 = performance.now();
     const payload = JSON.stringify({ v: state.version, t: simulatedAt, s: state });
@@ -131,10 +138,46 @@ export function exportSaveText() {
   return encodeBase64(payload);
 }
 
+// Le fichier JSON de la sauvegarde (Options › Sauvegarde › Télécharger) : lisible, à joindre tel quel
+// à un message pour l'analyser ; il se réimporte comme le texte exporté.
+export function exportSaveJson() {
+  return JSON.stringify({ jeu: GAME_VERSION, exporteLe: new Date().toISOString(), v: state.version, t: simulatedAt, s: state });
+}
+
+export function nomFichierSauvegarde(date = new Date()) {
+  const j = (n) => String(n).padStart(2, '0');
+  const jour = state && Number.isFinite(state.day) ? `-jour-${state.day}` : '';
+  return `ferme-familiale${jour}-${date.getFullYear()}-${j(date.getMonth() + 1)}-${j(date.getDate())}-${j(date.getHours())}${j(date.getMinutes())}.json`;
+}
+
+// Télécharge la sauvegarde en fichier .json. → true si le téléchargement a été lancé.
+export function telechargerSauvegarde() {
+  try {
+    const blob = new Blob([exportSaveJson()], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nomFichierSauvegarde();
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Le texte exporté (base64) ou le contenu du fichier .json : l'objet de la sauvegarde.
+function lireSauvegarde(text) {
+  const t = String(text).trim();
+  return JSON.parse(t.startsWith('{') ? t : decodeBase64(t));
+}
+
 export function importSaveText(text) {
   try {
-    const json = decodeBase64(String(text).trim());
-    const parsed = JSON.parse(json);
+    const parsed = lireSauvegarde(text);
     if (!parsed || typeof parsed !== 'object' || !parsed.s) {
       throw new Error('format de sauvegarde invalide');
     }

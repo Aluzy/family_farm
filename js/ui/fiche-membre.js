@@ -11,7 +11,7 @@
 // l'inventaire ou le réfrigérateur), y manger, le retirer. Le moteur : js/engine/equipement.js.
 
 import { DATA } from '../engine/catalog.js';
-import { eatSnack, findMember, memberName } from '../engine/family.js';
+import { findMember, memberName } from '../engine/family.js';
 import { mainCharacter } from '../engine/depart.js';
 import { memberHappiness } from '../engine/bonheur.js';
 import { jaugeMembre } from '../engine/repas.js';
@@ -33,6 +33,7 @@ import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { applyResult } from './game-actions.js';
+import { executer } from './commandes.js';
 import { membrePortraitHtml } from './famille.js';
 import { formatEnergyGain } from './energie.js';
 import { helpBtn } from './aide.js';
@@ -329,7 +330,7 @@ registerActions({
     apres(applyResult(reprendreSac(state, target.dataset.item, Number(target.dataset.n) || 1)));
   },
   'sac-manger': (target) => {
-    const r = apres(applyResult(eatSnack(state, target.dataset.item || null, { duSac: true })));
+    const r = apres(applyResult(executer('manger', { objet: target.dataset.item || null, sac: true })));
     if (r && r.ok) notify(null, { cumul: { cle: 'manger-sac', quantites: { gain: r.gain }, texte: (t) => `⚡ +${formatEnergyGain(t.gain)} énergie · 🎒 ${portionsSac(state)} / ${capaciteSac(state)} dans le sac` } });
   },
 });

@@ -9,6 +9,7 @@ import {
 import { RECIT } from '../engine/recit.js';
 import { souvenirParole } from '../engine/invitations.js';
 import { merciProjet } from '../engine/projets.js';
+import { demandeHtml } from './demandes.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { itemsText } from './common.js';
@@ -115,6 +116,7 @@ function openOffrir(hameau, id) {
   openModal(`
     <h2 id="ami-titre">🎁 Offrir à ${escapeHtml(A.prenom)}</h2>
     ${jaugeHtml(A)}
+    ${demandeHtml(id)}
     ${goutsHtml(A)}
     ${A.style ? `<p class="ami-style"><span aria-hidden="true">${A.style.icone}</span> Son style : <strong>${escapeHtml(A.style.nom)}</strong>. Invite-le à un repas près d'un coin ${escapeHtml(A.style.adj)} : il l'admirera.</p>` : '<p class="muted ami-style">Son style d\'aménagement préféré se découvre en partageant un repas, ou en devenant cordiaux.</p>'}
     <p class="muted">${A.cadeauAujourdhui ? `Tu lui as déjà offert un cadeau aujourd'hui : reviens demain.` : `Un cadeau par jour : ${queDe(A.prenom)} adore compte beaucoup (+${AMITIE.CADEAU.adore}), ce qui lui déplaît fait reculer l'amitié (−${Math.abs(AMITIE.CADEAU.deteste)}).`}</p>

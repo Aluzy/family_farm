@@ -20,9 +20,9 @@
     "un présent devant la porte de la ferme : un objet de PRESENTS[son métier], en nombre [de, à].",
     "REMISE et DELAI (par palier) : ce que l'amitié avec la personne qui tient un atelier de hameau",
     "(ILE.ATELIERS, qui) retire du prix de ses commandes et de ses meubles (en %), et de leur délai (en jours).",
-    "HUMEUR : CONNU, les points à partir desquels la personne te connaît (les retrouvailles) ; COLERE, la",
-    "confiance du hameau sous laquelle ses habitants sont en colère ; JOIE, le palier à partir duquel la",
-    "personne est joyeuse de te voir. La tristesse vient de son foyer : son bonheur sous HABITANTS.TRISTE",
+    "HUMEUR : CONNU, les points à partir desquels la personne te connaît (les retrouvailles) ; JOIE, le",
+    "palier à partir duquel la personne est joyeuse de te voir ; jamais de colère (le récit cosy). La",
+    "tristesse vient de son foyer : son bonheur sous HABITANTS.TRISTE",
     "(data/monde.json), jamais de ton absence."
   ],
   "AMITIE": {
@@ -65,7 +65,7 @@
     },
     "REMISE": [0, 0, 5, 10, 20],
     "DELAI": [0, 0, 0, 1, 1],
-    "HUMEUR": { "CONNU": 10, "COLERE": 20, "JOIE": 3 },
+    "HUMEUR": { "CONNU": 10, "JOIE": 3 },
     "//INVITATION": [
       "Les invitations à un repas (js/engine/invitations.js), créées depuis le calendrier : un jour à venir (de",
       "DELAI[0] à DELAI[1] jours plus tard), un moment (MOMENTS : son nom, son heure), INVITES_MAX personnes au plus",
@@ -100,6 +100,55 @@
         "SOUVENIR_SIMPLE": "Ce repas chez toi, l'autre jour… quel bon moment !",
         "SOUVENIR_ANCIEN": "Je repense parfois à ce repas chez toi. On recommence quand tu veux !"
       }
+    }
+  },
+  "DEMANDES": {
+    "_": ["V-2 (docs/phase-4.md, js/engine/demandes.js) : les petites demandes des habitants. Chaque nuit, un habitant d'un hameau déjà visité peut en faire une (CHANCE), s'il y en a moins de MAX ouvertes ; elle attend DUREE jours, puis s'oublie sans rien coûter. BESOINS : par métier, [objet, au moins, au plus, motif]. La rendre : AMITIE points, et un présent de son métier (RETOUR.PRESENTS)."],
+    "MAX": 3,
+    "DUREE": 7,
+    "CHANCE": 0.6,
+    "DEPUIS": 3,
+    "AMITIE": 6,
+    "BESOINS": {
+      "bucheron": [["pierre", 3, 6, "pour caler le bûcher"], ["fibre", 3, 5, "pour tresser une corde"], ["pain", 1, 2, "pour la pause de midi"], ["carotte", 3, 5, "pour la soupe du soir"]],
+      "pecheur": [["fibre", 4, 6, "pour réparer mes filets"], ["bois", 3, 5, "pour retaper ma barque"], ["pain", 1, 2, "pour la pêche de l'aube"], ["oignon", 2, 3, "pour accompagner la friture"]],
+      "mineur": [["bois", 4, 6, "pour étayer la galerie"], ["pain", 1, 2, "pour descendre à la mine"], ["patate", 3, 5, "pour le gratin du soir"], ["fibre", 2, 4, "pour les mèches des lampes"]],
+      "berger": [["ble", 4, 8, "pour la réserve des bêtes"], ["paille", 3, 6, "pour la litière"], ["carotte", 3, 5, "pour gâter mes bêtes"], ["bois", 2, 4, "pour réparer l'enclos"]],
+      "cueilleur": [["fibre", 3, 5, "pour tresser des paniers"], ["pain", 1, 2, "pour la cueillette"], ["oeuf", 2, 4, "pour une omelette aux champignons"], ["bois", 2, 4, "pour le séchoir"]],
+      "jardinier": [["oeuf", 2, 4, "pour la tarte du dimanche"], ["fibre", 2, 4, "pour attacher les tomates"], ["pierre", 2, 4, "pour une bordure de potager"], ["ble", 3, 5, "pour faire mon pain"]]
+    },
+    "PHRASES": {
+      "demande": ["J'aurais besoin de {n} × {objet}, {motif}. Tu pourrais m'en apporter ?", "Dis, tu n'aurais pas {n} × {objet} ? C'est {motif}.", "Si tu repasses avec {n} × {objet}, ça m'aiderait beaucoup : c'est {motif}."],
+      "merci": ["Merci mille fois ! Tiens, pour toi : {cadeau}.", "Tu es formidable ! Prends ça : {cadeau}.", "Je savais que je pouvais compter sur toi. Voilà {cadeau}, de bon cœur."],
+      "annonce": "📜 {prenom}, de {hameau}, a une demande pour toi : {n} × {objet}."
+    }
+  },
+  "VOISINS": {
+    "_": ["V-3 (docs/phase-4.md, js/engine/voisins.js) : entre voisins. Chaque adulte d'un hameau a un ami dans son hameau et un cousin dans un autre (tirés une fois, gardés). La nuit, un foyer qui a eu faim reçoit jusqu'à AIDE aliments du garde-manger d'un ami ou d'un cousin ; parfois (VISITE), un cousin rend visite à l'autre. EVENEMENTS : ce qu'on garde de ces nuits (pour les paroles, la fiche du hameau) ; RECENT : les jours où l'on en parle encore."],
+    "AIDE": 3,
+    "VISITE": 0.35,
+    "EVENEMENTS": 40,
+    "RECENT": 3,
+    "TEXTES": {
+      "entraide": "{de} ({deHameau}) a apporté à manger à {a}, qui en manquait",
+      "visite": "{qui}, {deHameau}, est venu{e} voir {chez}"
+    }
+  },
+  "FETES": {
+    "_": ["V-4 (docs/phase-4.md, js/engine/fetes.js) : la fête du hameau. Chaque mois (une lunaison), PAR_MOIS hameaux peuplés font leur fête, chacun un jour tiré de la graine (de JOUR_MIN au dernier jour du mois), de DEBUT à FIN h : les habitants se retrouvent sur la place. Y être pendant la fête rapporte une fois AMITIE points avec chaque adulte du hameau et un plat de fête (BIENVENUE.PLATS, selon le métier du hameau). NOMS : le nom de la fête selon le métier du hameau."],
+    "PAR_MOIS": 2,
+    "JOUR_MIN": 3,
+    "DEBUT": 17,
+    "FIN": 21,
+    "AMITIE": 4,
+    "ANNONCE": 3,
+    "NOMS": {
+      "bucheron": ["🪵", "la fête du bois"],
+      "pecheur": ["🐟", "la fête de la pêche"],
+      "mineur": ["⛏️", "la fête de la roche"],
+      "berger": ["🐑", "la fête des laines"],
+      "cueilleur": ["🧺", "la fête des récoltes"],
+      "*": ["🎉", "la fête du hameau"]
     }
   }
 }

@@ -222,8 +222,9 @@
     "BONHEUR_REDUCTION": 50,
     "ENDURANCE": 5,
     "PLANCHER": 40,
-    "REVEIL_BASE": 60,
-    "REVEIL_REPAS": 40,
+    "//REVEIL": "B-1 : le réveil ne dépend plus du repas de la famille (REVEIL_BASE 100, REVEIL_REPAS 0) ; avant : 60 et 40.",
+    "REVEIL_BASE": 100,
+    "REVEIL_REPAS": 0,
     "MANGER_DIVISEUR": 5,
     "MANGER_BONUS": 10,
     "SOMMEIL_HEURES": 8
@@ -280,6 +281,17 @@
     "USURE": false,
     "ECRAN_S": 60
   },
+  "//PENALITES": [
+    "B-1 (décision F.5 : garder les systèmes « survie », sans pénalité) : chaque pénalité d'absence ou",
+    "d'oubli, coupée (false) ou rétablie (true). PEREMPTION : les aliments (inventaire, boîte, sac, frigo",
+    "sans courant) perdent une nuit de conservation chaque nuit et disparaissent à 0. USURE : les appareils",
+    "s'usent en marchant (rendement, entretien, panne). BONHEUR_BAISSE : la nuit, le bonheur de la famille",
+    "peut baisser vers sa cible (sinon il ne fait que monter). NUIT_SANS_DORMIR : une nuit venue seule (le",
+    "joueur n'a pas touché « Dormir ») ne rend pas l'énergie (sinon elle la rend, s'il y a un couchage). SERIE_REMISE : la",
+    "série de pontes du chapitre repart de zéro après une nuit sans œuf (sinon les nuits se cumulent).",
+    "RATION_PERDUE : la ration entamée des poules se perd la nuit."
+  ],
+  "PENALITES": { "PEREMPTION": false, "USURE": false, "BONHEUR_BAISSE": false, "NUIT_SANS_DORMIR": false, "SERIE_REMISE": false, "RATION_PERDUE": false },
   "//AIDE": ["Première partie : bulles d'aide, dans cet ordre. La dernière (« dormir »)", "se ferme aussi d'elle-même à la première nuit."],
   "AIDE": { "ETAPES": ["eau", "potager", "dormir"] },
   "//DIDACTICIEL": [
@@ -313,5 +325,5 @@
     "  BONHEUR_SANS_COUCHAGE pour qui dort sans paillasse. DECLIN et FAIM restent la règle des habitants des",
     "  hameaux (js/engine/habitants.js)."
   ],
-  "BONHEUR": { "DEPART": 60, "MAX": 100, "DECLIN": -5, "PLATS": { "cuisine": 3, "four": 5 }, "HUILE_FRUIT": 2, "SPECIALES": { "objets": ["cacao", "cafe", "vanille"], "bonus": 4 }, "PLATS_MAX": 3, "FAIM": -2, "BULLE": 5, "CIBLE": { "BASE": 40, "VITESSE": 25, "MEUBLES_MAX": 30, "FAIM": -8, "VARIETE": { "4": 4, "6": 8 } } }
+  "BONHEUR": { "DEPART": 60, "MAX": 100, "DECLIN": -5, "PLATS": { "cuisine": 3, "four": 5 }, "HUILE_FRUIT": 2, "SPECIALES": { "objets": ["cacao", "cafe", "vanille"], "bonus": 4 }, "PLATS_MAX": 3, "FAIM": -2, "BULLE": 5, "CIBLE": { "BASE": 40, "VITESSE": 25, "MEUBLES_MAX": 30, "FAIM": 0, "VARIETE": { "4": 4, "6": 8 } } }
 }

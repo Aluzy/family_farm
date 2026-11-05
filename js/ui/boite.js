@@ -1,9 +1,10 @@
 import { DATA } from '../engine/catalog.js';
-import { countItem, inventoryCounts } from '../engine/inventory.js';
-import { boiteCounts, deposerBoite, jaugeMembre, mangeurs, placeBoite, reprendreBoite, valeurAliment } from '../engine/repas.js';
+import { countItem, inventoryCounts, penalite } from '../engine/inventory.js';
+import { boiteCounts, jaugeMembre, mangeurs, placeBoite, valeurAliment } from '../engine/repas.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
+import { executer } from './commandes.js';
 import { memberNameHtml } from './famille.js';
 import { registerActions } from './actions.js';
 
@@ -42,7 +43,7 @@ export function renderBoite() {
     <div class="cards">
       <div class="card">
         <span class="card-title"><span>🧺 Dans la boîte · <span class="num">${plats.length} / ${B.PLATS}</span> aliments</span></span>
-        <span class="muted">Au plus ${B.PLATS} aliments différents, ${B.QUANTITE} de chacun. Quand un membre a faim (jauge à ${DATA.FAMILLE.FAIM.SEUIL}), il vient y manger, d'abord ce qui périme le plus tôt.</span>
+        <span class="muted">Au plus ${B.PLATS} aliments différents, ${B.QUANTITE} de chacun. Quand un membre a faim (jauge à ${DATA.FAMILLE.FAIM.SEUIL}), il vient y manger${penalite('PEREMPTION') ? ', d\'abord ce qui périme le plus tôt' : ''}.</span>
         ${contenu}
         ${faim ? `<span class="muted">Faim : ${faim}</span>` : ''}
       </div>
@@ -55,11 +56,11 @@ export function renderBoite() {
 
 registerActions({
   'boite-deposer': (target) => {
-    const r = applyResult(deposerBoite(state, target.dataset.item, Number(target.dataset.n) || 1));
+    const r = applyResult(executer('boite.deposer', { objet: target.dataset.item, quantite: Number(target.dataset.n) || 1 }));
     if (r.ok) persistState();
   },
   'boite-reprendre': (target) => {
-    const r = applyResult(reprendreBoite(state, target.dataset.item, Number(target.dataset.n) || 1));
+    const r = applyResult(executer('boite.reprendre', { objet: target.dataset.item, quantite: Number(target.dataset.n) || 1 }));
     if (r.ok) persistState();
   },
 });

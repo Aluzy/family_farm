@@ -14,7 +14,7 @@ import { isUnlocked } from './campaign.js';
 import { unlockLevel } from './levels.js';
 import { installStarter, removeStarter, starterBlock } from './depart.js';
 import { robotOn } from './automation.js';
-import { couchagesEtage, etageHorsEmprise, rangerEtage } from './etage.js';
+import { couchagesEtage, etageEmprise, etageHorsEmprise, rangerEtage } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
 import { botteleuseReprise } from './botteleuse.js';
 import { distributeurReprise } from './distributeur.js';
@@ -240,7 +240,27 @@ function rocherOuArbre(T, tile) {
   return [T.ROCHERS, T.ARBRES].some((L) => Object.values(L || {}).some((cs) => cs.includes(tile)));
 }
 
+// Un « lot » de questions sur une même partie qui ne change pas entre-temps (le mode Construire
+// teste chaque case affichée : js/farm-stage.js syncConstructible) : enLot(state, f) appelle f ;
+// pendant ce temps, ce qui parcourt tous les blocs posés (les cases couvertes, les pièces closes) n'est
+// calculé qu'une fois pour cette partie-là (une autre partie, une partie d'essai `{ ...state }` : comme
+// d'habitude). f ne doit pas changer la partie.
+let lotEtat = null, lotMemo = null;
+export function enLot(state, f) {
+  const avant = [lotEtat, lotMemo];
+  lotEtat = state; lotMemo = new Map();
+  try { return f(); } finally { [lotEtat, lotMemo] = avant; }
+}
+function memoLot(state, cle, calcul) {
+  if (state !== lotEtat || !lotMemo) return calcul();
+  if (!lotMemo.has(cle)) lotMemo.set(cle, calcul());
+  return lotMemo.get(cle);
+}
+
 export function casesCouvertes(state) {
+  return memoLot(state, 'couvertes', () => calculerCouvertes(state));
+}
+function calculerCouvertes(state) {
   const out = new Map();
   for (const [k, sorte] of Object.entries(blocsPoses(state))) {
     const s = sorteDe(sorte), t = Number(k);
@@ -380,12 +400,23 @@ export function blocsEnMain(state, sorte) {
 
 let piecesCle = null, piecesListe = [];
 
+// Les cases des blocs posés qui ferment une pièce (murs, portes, fenêtres…) : un Set, lu à chaque case
+// des étendues (plus rapide que la sorte du bloc, cherchée à chaque fois).
+function casesQuiFerment(B) {
+  const out = new Set();
+  for (const k of Object.keys(B)) { const s = sorteDe(B[k]); if (s && s.ferme) out.add(Number(k)); }
+  return out;
+}
+
 // Les pièces closes : [{ cases: [tuiles], portes: [tuiles], paillasses: [tuiles] }].
 export function piecesCloses(state) {
+  return memoLot(state, 'pieces', () => calculerPieces(state));
+}
+function calculerPieces(state) {
   const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR;
   const cle = W + ':' + JSON.stringify(B);
   if (cle === piecesCle) return piecesListe;
-  const ferme = (t) => { const s = sorteDe(B[t]); return !!(s && s.ferme); };
+  const F = casesQuiFerment(B), ferme = (t) => F.has(t);
   const faites = new Set(), out = [], max = DATA.ATELIER.PIECE_MAX;
   // une pièce touche forcément un bloc qui ferme : on part des cases voisines des blocs. Chaque
   // étendue a ses propres cases vues : celles qu'une étendue ouverte (trop grande) a vues sans
@@ -401,6 +432,10 @@ export function piecesCloses(state) {
       let ouverte = false;
       while (pile.length) {
         const i = pile.pop(), c = i % W, r = Math.floor(i / W);
+        // (une case déjà parcourue, venue d'ailleurs : celle d'une étendue ouverte — une pièce close ne
+        // touche aucune autre étendue —, celle-ci l'est donc aussi ; sans refaire tout l'extérieur
+        // depuis chaque mur)
+        if (faites.has(i)) { ouverte = true; break; }
         cases.push(i);
         faites.add(i);
         if (c === 0 || r === 0 || c === W - 1 || r === H - 1 || cases.length > max) { ouverte = true; break; }
@@ -410,7 +445,7 @@ export function piecesCloses(state) {
           if (!vus.has(j)) { vus.add(j); pile.push(j); }
         }
       }
-      if (ouverte) continue;
+      if (ouverte) { for (const t of vus) faites.add(t); continue; }
       const portes = [...bord].filter((t) => sorteDe(B[t]).porte);
       if (!portes.length) continue;
       out.push({ cases: cases.sort((a, b2) => a - b2), portes: portes.sort((a, b2) => a - b2), paillasses: cases.filter((t) => B[t] === 'paillasse' || (sorteDe(B[t]) && sorteDe(B[t]).lit)).sort((a, b2) => a - b2) });
@@ -498,15 +533,18 @@ export function conseilsPieces(state) {
   const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR, max = DATA.ATELIER.PIECE_MAX;
   const cle = W + ':' + JSON.stringify(B);
   if (cle === conseilsCle) return conseilsListe;
-  const ferme = (t, plus) => t === plus || !!(sorteDe(B[t]) && sorteDe(B[t]).ferme);
+  const F = casesQuiFerment(B), ferme = (t, plus) => t === plus || F.has(t);
   const voisins = (i) => { const c = i % W, r = Math.floor(i / W); return [c > 0 ? i - 1 : -1, c < W - 1 ? i + 1 : -1, r > 0 ? i - W : -1, r < H - 1 ? i + W : -1]; };
   // l'étendue de la case `d` (un mur de plus en `plus`) : ses cases, ses bords, ou null si elle est ouverte
-  const etendue = (d, plus) => {
+  // (`ouvertes` : sans mur de plus, les cases vues d'une étendue ouverte le sont toutes, rangées là ; on
+  // n'en repart pas, et une étendue qui en touche une est ouverte elle aussi)
+  const etendue = (d, plus, ouvertes = null) => {
     const cases = [], bord = new Set(), pile = [d], vus = new Set([d]);
+    const ouverte = () => { if (ouvertes) for (const t of vus) ouvertes.add(t); return null; };
     while (pile.length) {
       const i = pile.pop(), c = i % W, r = Math.floor(i / W);
       cases.push(i);
-      if (c === 0 || r === 0 || c === W - 1 || r === H - 1 || cases.length > max) return null;
+      if (c === 0 || r === 0 || c === W - 1 || r === H - 1 || cases.length > max || (ouvertes && ouvertes.has(i))) return ouverte();
       for (const j of voisins(i)) {
         if (j < 0) continue;
         if (ferme(j, plus)) { bord.add(j); continue; }
@@ -516,13 +554,13 @@ export function conseilsPieces(state) {
     return { cases, bord };
   };
   // les enceintes d'aujourd'hui (fermées, avec ou sans porte)
-  const dedans = new Set(), enceintes = [];
+  const dedans = new Set(), ouvertes = new Set(), enceintes = [];
   for (const k of Object.keys(B)) {
     const b = Number(k);
     if (!ferme(b)) continue;
     for (const d of voisins(b)) {
-      if (d < 0 || ferme(d) || dedans.has(d)) continue;
-      const e = etendue(d, -1);
+      if (d < 0 || ferme(d) || dedans.has(d) || ouvertes.has(d)) continue;
+      const e = etendue(d, -1, ouvertes);
       if (!e) continue;
       for (const t of e.cases) dedans.add(t);
       enceintes.push(e);
@@ -825,8 +863,10 @@ export function poseStatus(state, sorte, tile, sens = 0) {
   if (allPlots(state).some((p) => p.case === tile)) return { ok: false, raison: 'Une terre labourée : rebouche-la d\'abord.' };
   if (s.dedans && !dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dans une pièce close (des murs tout autour, une porte, et au plus ${DATA.ATELIER.PIECE_MAX} cases dedans).` };
   if (s.dehors && dansPiece(state, tile)) return { ok: false, raison: `${s.nom} : à poser dehors, pas dans une pièce close.` };
-  // (un mur qui couperait la pièce de l'escalier : l'étage perdrait ce qui est posé au-dessus)
-  if (s.ferme && etageEnPeril(state, { ...blocsPoses(state), [tile]: sorte })) return { ok: false, raison: `${s.nom} : couperait la pièce de l'escalier, et l'étage perdrait ce qui y est posé. Reprends d'abord ces blocs de l'étage.` };
+  // (un mur qui couperait la pièce de l'escalier : l'étage perdrait ce qui est posé au-dessus. Seul un
+  // bloc posé dans cette pièce peut la couper : ailleurs, la question ne se pose pas, et les pièces ne
+  // sont pas recalculées pour chaque case que le mode Construire teste)
+  if (s.ferme && etageEmprise(state).has(tile) && etageEnPeril(state, { ...blocsPoses(state), [tile]: sorte })) return { ok: false, raison: `${s.nom} : couperait la pièce de l'escalier, et l'étage perdrait ce qui y est posé. Reprends d'abord ces blocs de l'étage.` };
   // un bloc de silo au sol : à côté des colonnes déjà posées (un seul silo)
   if (s.silo) {
     const refus = refusSilo(state, tile);
@@ -1011,12 +1051,17 @@ export function reprendreBloc(state, tile, opts) {
   }
   // un mur ou une porte entre une maison et un bâtiment (ou deux bâtiments) : il reste
   if (!dessus && bloc && sorteDe(bloc).ferme && !(opts && opts.force)) {
-    const melange = melangeSansMur(state, tile);
+    // (seul un mur qui touche une pièce close peut, retiré, en réunir deux ; seul un mur qui borde la
+    // pièce de l'escalier peut l'ouvrir : ailleurs, les pièces ne sont pas recalculées pour le savoir)
+    const W = farmTerrain(state).LARGEUR, dansUne = new Set();
+    for (const p of piecesCloses(state)) for (const t of p.cases) dansUne.add(t);
+    const touche = [tile - 1, tile + 1, tile - W, tile + W].some((j) => dansUne.has(j));
+    const melange = touche ? melangeSansMur(state, tile) : null;
     if (melange) return fail(melange);
     // un mur (une porte) qui porte l'étage : retiré, la pièce de l'escalier s'ouvrirait et ce qui
     // est posé à l'étage tomberait ; il reste
     const { [tile]: _ote, ...reste } = blocsPoses(state);
-    if (etageEnPeril(state, reste)) return fail(`${sorteDe(bloc).nom} : il porte l'étage. Reprends d'abord ce qui est posé à l'étage au-dessus.`);
+    if (etageEmprise(state).has(tile) && etageEnPeril(state, reste)) return fail(`${sorteDe(bloc).nom} : il porte l'étage. Reprends d'abord ce qui est posé à l'étage au-dessus.`);
   }
   const sens = !dessus && bloc ? sensBloc(state, tile) : 0;
   const variante = !dessus && bloc ? varianteBloc(state, tile) : null;

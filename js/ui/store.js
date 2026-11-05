@@ -50,6 +50,12 @@ export function techTreeShown() {
   return !!((pt && pt.gagnes > 0) || (Array.isArray(state.technologies) && state.technologies.length));
 }
 
+// E-2 : en ligne, la synchro du monde (js/ui/synchro.js, js/ui/en-ligne.js), sinon null (le jeu solo).
+export let enLigne = null;
+export function setEnLigne(value) {
+  enLigne = value;
+}
+
 export let state = null;
 export function setState(value) {
   state = value;

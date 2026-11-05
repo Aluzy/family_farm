@@ -449,14 +449,14 @@ export function plantAll(state, lieu, culture) {
 
 // Arbre v2 (Outils de jardin) : « Récolter tout » d'un lieu (au clic, avec la
 // productivité). Renvoie { ok, recoltees, items }.
-export function harvestAll(state, lieu) {
+export function harvestAll(state, lieu, direct = false) {
   const before = Number(state.energie) || 0;
   const items = {};
   let recoltees = 0;
   let raison = '';
   let aRamasser = false; // version 1.18 : au moins une récolte attend le personnage
   for (const p of allPlots(state).filter(inPlace(lieu)).filter((x) => x.culture && isMature(x))) {
-    const r = harvestPlot(state, p);
+    const r = harvestPlot(state, p, false, direct);
     if (!r.ok) { raison = raison || r.error; continue; }
     recoltees += 1;
     if (r.aRamasser) aRamasser = true;

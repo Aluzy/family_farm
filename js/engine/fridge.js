@@ -3,7 +3,7 @@ import { EPS } from './base.js';
 import { buildWith, fail, isBroken, makeDevice, nextLevelCost, perSecond, perTick, upgradeWith } from './devices.js';
 import { drawEnergy, drawNightEnergy } from './energy.js';
 import {
-  addItem, ageLots, countItem, isFridgeable, isPerishable, keepLots, lotList, lotRank, lotsOf, pullLots, pushLots, takeItem,
+  addItem, ageLots, countItem, penalite, isFridgeable, isPerishable, keepLots, lotList, lotRank, lotsOf, pullLots, pushLots, takeItem,
 } from './inventory.js';
 import { newFridgeNightStats, newNightStats } from './family.js';
 import { rangerBoite } from './repas.js';
@@ -172,6 +172,7 @@ export function moveAllToFridge(state, garder = {}) {
 // Les unités de `item` de l'inventaire qui périssent à la prochaine nuit (les lots à qui il
 // reste une nuit).
 export function expiringTonight(state, item) {
+  if (!penalite('PEREMPTION')) return 0;   // (B-1 : rien ne périme)
   return lotsOf(state, item).filter((l) => l.nightsLeft === 1).reduce((t, l) => t + l.qty, 0);
 }
 
@@ -284,7 +285,7 @@ export function fridgeNight(state) {
   const stats = nightFridgeStats(state);
   // Sans temps d'éveil observé (test, Dormir immédiat), rien n'a manqué de froid.
   const warm = f.panneNuit || (f.eveilMs > 0 && f.alimenteMs * 100 < f.eveilMs * F.SEUIL_ALIMENTE);
-  if (warm) {
+  if (warm && penalite('PEREMPTION')) {
     stats.vieillis = true;
     if (!state.nuit.perdus) state.nuit.perdus = {};
     ageLots(f.items, F.PERTE_NUITS, state.nuit.perdus);

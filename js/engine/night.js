@@ -2,7 +2,7 @@ import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { allDevices, fail, isBroken, needsService, newDayStats, storageCapacity, storedEnergy, tankCapacity } from './devices.js';
 import { awakeRequired, bedtimeDue, midnightMs, nightActive, nightLengthMs } from './clock.js';
-import { expiringSoon, spoil } from './inventory.js';
+import { expiringSoon, penalite, spoil } from './inventory.js';
 import { fridgeCoversNight, fridgeNight, fridgeUnits, nightPower } from './fridge.js';
 import { feedFamily, newNightStats } from './family.js';
 import { jaugeFamille } from './repas.js';
@@ -28,6 +28,10 @@ import { bienvenueNuit } from './bienvenue.js';
 import { recitNuit } from './recit.js';
 import { remplirRuches } from './ruches.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
+import { distribuerGrain } from './distributeur.js';
+import { chainesDeLaJournee } from './chaines.js';
+import { demandesNuit } from './demandes.js';
+import { voisinsNuit } from './voisins.js';
 import { enExpedition, tentePortee } from './equipement.js';
 
 // Liste des étapes exécutées au clic sur "Dormir", dans l'ordre. Lot 2 :
@@ -144,6 +148,24 @@ export function nightHarvest(report) {
 // aux essais.
 export function sleep(state) {
   if (!canSleep(state)) return null;
+  return nuitEntiere(state);
+}
+
+// E-5 : la nuit partagée d'un monde en ligne. Son horloge est figée (F.2) : la journée s'achève quand
+// tous les joueurs connectés sont couchés (le monde, worker/src/monde.mjs, joue alors cette commande),
+// quelle que soit l'heure ; toute la nuit passe d'un coup et l'on se réveille à 6 h, le jour suivant.
+export function nuitPartagee(state) {
+  state.nuitEnCours = null;
+  // (E-13 : l'horloge figée, le jour n'a pas fait tourner les machines : le distributeur de grain nourrit
+  // les poules, les chaînes de production font leur journée, avant la nuit)
+  distribuerGrain(state, false);
+  chainesDeLaJournee(state);
+  const report = nuitEntiere(state);
+  return { ok: true, jour: state.day, pretes: report.pretes };
+}
+
+// Toute la nuit d'un coup (sleep, nuitPartagee) : son rapport de réveil.
+function nuitEntiere(state) {
   // jusqu'à minuit, les cycles de pousse qui s'achèvent ; puis la nuit (comme advanceNight)
   state.nuitEnCours = { ms: midnightMs(), minuit: false };
   growDue(state);
@@ -177,7 +199,9 @@ export function advanceNight(state, dtMs) {
   const n = state.nuitEnCours;
   const avant = n.ms;
   n.ms = Math.min(nightLengthMs(), n.ms + Math.max(0, Number(dtMs) || 0));
-  if (n.dort) recoverInSleep(state, n.ms - avant); // il dort : l'énergie remonte peu à peu
+  // il dort : l'énergie remonte peu à peu ; une nuit venue seule aussi (B-1 : PENALITES.NUIT_SANS_DORMIR
+  // coupée), le personnage se couche quand le joueur n'a pas touché « Dormir »
+  if (n.dort || !penalite('NUIT_SANS_DORMIR')) recoverInSleep(state, n.ms - avant);
   let event = null;
   // les plantes dont le cycle de pousse s'achève (avant minuit : avant la récolte
   // automatique de la nuit)
@@ -271,21 +295,28 @@ export function runNight(state) {
   for (const step of NIGHT_STEPS) step(state);
   // la ferme générée : qui n'a pas de paillasse dans une pièce close perd du bonheur
   const sansCouchage = nuitSansCouchage(state).map((m) => m.id);
-  // les habitants des hameaux vivent leur journée, que le joueur soit là ou non (habitants.js,
-  // fiche 7b ; ni la ferme ni sa famille n'en dépendent)
-  habitantsNuit(state);
-  // l'amitié (amitie.js) : les présents des amis proches devant la porte, la confiance des hameaux
-  state.nuit.amitie = amitieNuit(state);
-  // les invitations à un repas (invitations.js) : Achille a porté les messages du jour, les réponses viennent
-  state.nuit.invitations = invitationsNuit(state);
-  // les plans de meubles qu'offre un ami d'un hameau (plans.js, le lot 4)
-  state.nuit.plans = plansNuit(state);
-  // les projets collectifs des hameaux (projets.js, le lot 5) : la réserve y apporte, un projet complet s'achève
-  state.nuit.projets = projetsNuit(state);
-  // la visite de bienvenue (bienvenue.js, fiche 18) qui n'a pas eu lieu : son plat attend devant la porte
-  bienvenueNuit(state);
-  // le récit (recit.js, docs/recit/) : le niveau de l'empreinte de la ferme, la dérive de la confiance des hameaux
-  recitNuit(state);
+  // E-8 : un monde partagé (state.mondePartage, posé à la mise en ligne : docs/monde-partage.md, M.3) n'est
+  // que la ferme : sa nuit ne fait pas vivre le grand monde (les hameaux, l'amitié, les invitations, les
+  // plans, les projets, la visite de bienvenue, le récit), qui reste à la partie solo du propriétaire
+  if (!state.mondePartage) {
+    // les habitants des hameaux vivent leur journée, que le joueur soit là ou non (habitants.js,
+    // fiche 7b ; ni la ferme ni sa famille n'en dépendent)
+    habitantsNuit(state);
+    // V-3 : entre voisins (voisins.js) : l'entraide des foyers qui ont eu faim, une visite parfois
+    voisinsNuit(state);
+    // l'amitié (amitie.js) : les présents des amis proches devant la porte, la confiance des hameaux
+    state.nuit.amitie = amitieNuit(state);
+    // les invitations à un repas (invitations.js) : Achille a porté les messages du jour, les réponses viennent
+    state.nuit.invitations = invitationsNuit(state);
+    // les plans de meubles qu'offre un ami d'un hameau (plans.js, le lot 4)
+    state.nuit.plans = plansNuit(state);
+    // les projets collectifs des hameaux (projets.js, le lot 5) : la réserve y apporte, un projet complet s'achève
+    state.nuit.projets = projetsNuit(state);
+    // la visite de bienvenue (bienvenue.js, fiche 18) qui n'a pas eu lieu : son plat attend devant la porte
+    bienvenueNuit(state);
+    // le récit (recit.js, docs/recit/) : le niveau de l'empreinte de la ferme, la dérive de la confiance des hameaux
+    recitNuit(state);
+  }
   recordNight(state); // Lot 9 : la série de pontes, le jeu libre (nuit encore = state.day)
   state.day += 1;
   state.awakeMs = 0;
@@ -294,8 +325,9 @@ export function runNight(state) {
   respawnTrees(state); // les arbres abattus dont le jour est venu repoussent
   respawnBushes(state); // les buissons coupés aussi
   regrowGrass(state); // l'herbe haute fauchée dont le jour est venu repousse
-  repousseMonde(state); // ce qui a été pris dans le grand monde aussi (monde-recolte.js)
+  if (!state.mondePartage) repousseMonde(state); // ce qui a été pris dans le grand monde aussi (monde-recolte.js ; E-8 : pas dans un monde partagé)
   remplirRuches(state); // les abeilles remplissent les ruches
+  if (!state.mondePartage) state.nuit.demande = demandesNuit(state); // V-2 : les petites demandes des habitants (demandes.js)
   refreshUnlocks(state);
   updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil
   noteTutorialSleep(state); // Lot 11 : la bulle « Dormir » se ferme à la première nuit

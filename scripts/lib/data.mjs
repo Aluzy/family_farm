@@ -1053,7 +1053,7 @@ export function validateData(data) {
     if (!(FI.GRANDE in niv)) err('RECIT.FINS.GRANDE', 'un niveau de RECIT.EMPREINTE.NIVEAUX');
     for (const k of ['ENTRETIEN', 'NATURE']) if (!(isInt(FI[k]) && FI[k] >= 0)) err(`RECIT.FINS.${k}`, 'un entier positif ou nul');
     for (const k of ['promesse', 'toit', 'enveloppe']) if (!(FI.POIDS && isInt(FI.POIDS[k]) && FI.POIDS[k] >= 0)) err(`RECIT.FINS.POIDS.${k}`, 'un entier positif ou nul');
-    if (JSON.stringify(finsR) !== JSON.stringify(['nouveau_maurice', 'voisin_tranquille', 'autrement', 'riche'])) err('RECIT.FINS.LISTE', 'les quatre fins : nouveau_maurice, voisin_tranquille, autrement, riche');
+    if (JSON.stringify(finsR) !== JSON.stringify(['nouveau_maurice', 'voisin_tranquille', 'autrement', 'genereuse'])) err('RECIT.FINS.LISTE', 'les quatre fins : nouveau_maurice, voisin_tranquille, autrement, genereuse');
     const EV = R.ENVELOPPE || {};
     needItem('RECIT.ENVELOPPE.OBJET', EV.OBJET);
     if (!(isInt(EV.PIECES) && EV.PIECES > 0) || !isInt(EV.CONFIANCE)) err('RECIT.ENVELOPPE', 'PIECES (un entier positif) et CONFIANCE (un entier)');
@@ -1077,12 +1077,12 @@ export function validateData(data) {
     needItem('RECIT.FIL.PIERRE.OBJET', (FL.PIERRE || {}).OBJET);
     if (!(typeof (FL.PIERRE || {}).POUSSE === 'number' && FL.PIERRE.POUSSE > 0 && FL.PIERRE.POUSSE <= 1)) err('RECIT.FIL.PIERRE.POUSSE', 'un nombre de 0 (exclu) à 1');
     heures('RECIT.FIL.LUEUR', FL.LUEUR);
-    const JO = FL.JOHNNY || {};
-    if (!(isInt(JO.REPAS) && JO.REPAS >= 1)) err('RECIT.FIL.JOHNNY.REPAS', 'un entier au moins égal à 1');
-    heures('RECIT.FIL.JOHNNY.NUIT', JO.NUIT); heures('RECIT.FIL.JOHNNY.DEHORS', JO.DEHORS);
-    for (const [ph, f] of Object.entries(JO.BRIBES || {})) { if (!phases.includes(ph)) err(`RECIT.FIL.JOHNNY.BRIBES.${ph}`, 'une phase de lune'); if (!frags.includes(f)) err(`RECIT.FIL.JOHNNY.BRIBES.${ph}`, 'une page de RECIT.FRAGMENTS'); }
-    for (const k of ['ACCUEIL', 'REPAS_TEXTES']) { if (!Array.isArray(JO[k]) || !JO[k].length) err(`RECIT.FIL.JOHNNY.${k}`, 'une liste de textes'); else JO[k].forEach((t, j) => texte(`RECIT.FIL.JOHNNY.${k}[${j}]`, t)); }
-    for (const k of ['DEJA', 'PIERRE', 'VIDE']) texte(`RECIT.FIL.JOHNNY.${k}`, JO[k]);
+    const OB = FL.OBSERVATOIRE || {};
+    if (!(isInt(OB.NUITS) && OB.NUITS >= 1)) err('RECIT.FIL.OBSERVATOIRE.NUITS', 'un entier au moins égal à 1');
+    heures('RECIT.FIL.OBSERVATOIRE.NUIT', OB.NUIT);
+    for (const [ph, f] of Object.entries(OB.PAGES || {})) { if (!phases.includes(ph)) err(`RECIT.FIL.OBSERVATOIRE.PAGES.${ph}`, 'une phase de lune'); if (!frags.includes(f)) err(`RECIT.FIL.OBSERVATOIRE.PAGES.${ph}`, 'une page de RECIT.FRAGMENTS'); }
+    if (!Array.isArray(OB.ACCUEIL) || !OB.ACCUEIL.length) err('RECIT.FIL.OBSERVATOIRE.ACCUEIL', 'une liste de textes'); else OB.ACCUEIL.forEach((t, j) => texte(`RECIT.FIL.OBSERVATOIRE.ACCUEIL[${j}]`, t));
+    for (const k of ['JOUR', 'PIERRE']) texte(`RECIT.FIL.OBSERVATOIRE.${k}`, OB[k]);
     const ids = new Set();
     const unique = (where, id) => { if (typeof id !== 'string' || !id) err(where, 'un id'); else if (ids.has(id)) err(where, `id « ${id} » en double`); else ids.add(id); };
     const prio = (where, p) => { if (p !== undefined && !(isInt(p) && p >= 0 && p <= 100)) err(`${where}.priorite`, 'un entier de 0 à 100'); };

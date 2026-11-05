@@ -14,7 +14,7 @@ import {
   upgradeDevice, upgradeTank,
 } from '../../js/engine/index.js';
 import {
-  assert, assertEqual, AVANT_DEMENAGEMENT, avecLune, migreAvant, ml, runFor, test,
+  assert, assertEqual, AVANT_DEMENAGEMENT, avecLune, migreAvant, ml, runFor, sansPenalite, test,
 } from './aide.mjs';
 
 test('état initial : forme et valeurs attendues', () => {
@@ -132,7 +132,7 @@ test('données : buildCatalog() calcule sur une copie, RAW_DATA garde les valeur
   assertEqual([RAW_DATA.OBJETS.pain, DATA.OBJETS.pain.plat], [undefined, true]);
   // deux catalogues tirés des mêmes fichiers sont égaux et indépendants
   const autre = buildCatalog(RAW_DATA);
-  avecLune(() => assertEqual(autre, DATA)); // ces tests tournent lune neutre (voir avecLune)
+  avecLune(() => sansPenalite(() => assertEqual(autre, DATA))); // ces tests tournent lune neutre, pénalités d'avant (voir avecLune, sansPenalite)
   autre.OBJETS.carotte.prix = 99;
   assertEqual([DATA.OBJETS.carotte.prix, RAW_DATA.OBJETS.carotte.prix], [2, 1]);
 });
@@ -226,14 +226,14 @@ test('version 1.12 : configurer la famille : nom, personnage principal, membres'
   assert(setMainCharacter(s, 'adulte-2').ok);
   assertEqual(memberRemovalBlock(s, 'adulte-2'), 'C\'est le personnage principal : choisis d\'abord un autre adulte.');
   assert(removeMember(s, 'adulte-1').ok, 'l\'autre adulte peut partir');
-  assertEqual(mailReceived(s, 'notaire_heritage'), false);
+  assertEqual(mailReceived(s, 'maurice_terre'), false);
   assert(finishSetup(s).ok);
   assertEqual([setupPending(s), familyName(s), mainCharacter(s).id], [false, 'Dupont Moreau', 'adulte-2']);
-  assertEqual(mailReceived(s, 'notaire_heritage'), true, 'la lettre du notaire arrive');
+  assertEqual(mailReceived(s, 'maurice_terre'), true, 'la lettre de Maurice arrive');
   assertEqual(finishSetup(s).ok, false);
   const t = createNewGame(1, { nom: 'Leroy', principal: 'adulte-2' });
   assertEqual([setupPending(t), familyName(t), mainCharacter(t).id], [false, 'Leroy', 'adulte-2']);
-  assertEqual(mailReceived(createInitialState(1), 'notaire_heritage'), false, 'pas de lettre dans une partie de test');
+  assertEqual(mailReceived(createInitialState(1), 'maurice_terre'), false, 'pas de lettre dans une partie de test');
 });
 
 test('accueil : la famille décrite par le joueur remplace celle de départ', () => {
@@ -268,7 +268,7 @@ test('version 1.12 : migration v28 → v29 : une partie en cours est déjà inst
   const m = migrateDepart(old);
   assertEqual([m.version, m.famille.nom, m.famille.principal, m.famille.configuree], [29, '', 'adulte-1', true]);
   assertEqual([m.campagne.compteurs.recoltes, m.campagne.compteurs.cultures, m.campagne.compteurs.semisBle], [0, [], 0]);
-  assertEqual([farmOpen(m), mailReceived(m, 'notaire_heritage')], [true, false]);
+  assertEqual([farmOpen(m), mailReceived(m, 'maurice_terre')], [true, false]);
   const full = migreAvant({ v: 28, t: 0, s: old });
   assertEqual([full.version, setupPending(full)], [AVANT_DEMENAGEMENT, false]);
 });

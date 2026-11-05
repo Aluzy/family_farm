@@ -61,6 +61,164 @@ Ce dossier n'est pas servi par GitHub Pages au jeu : il est déployé par Cloudf
 `npx wrangler deploy`). Les déclencheurs sont déclarés dans `wrangler.toml` et
 installés par ce même déploiement.
 
+## Les comptes du jeu en ligne (E-0)
+
+Décision F.3 : le jeu en ligne demande un compte, le jeu solo reste sans compte. On se connecte par
+un **lien reçu par e-mail**, sans mot de passe (`worker/src/comptes.mjs`, la rubrique
+⚙️ Options › « 🌐 Jeu en ligne » du jeu : `js/ui/compte.js`).
+
+- `POST /compte/lien` `{ email }` : un lien de connexion, valable 15 minutes et utilisable une seule
+  fois, envoyé à l'adresse. La réponse est la même que l'adresse ait déjà un compte ou non. Les
+  demandes sont limitées : 3 par adresse en 15 minutes, 20 par connexion en une heure.
+- Le lien ouvre `jeu.html#connexion=<jeton>`. Le jeton est dans le fragment, qui n'est jamais envoyé
+  au serveur des pages. Le jeu l'échange par `POST /compte/connexion` `{ jeton }` contre une
+  **session** (90 jours), qu'il garde sur l'appareil (`localStorage` `ferme-compte`). Le compte est
+  créé à la première connexion.
+- `GET /compte/moi` (en-tête `Authorization: Bearer <session>`) : le compte ;
+  `POST /compte/deconnexion` : la session oubliée ; `POST /compte/supprimer` : le compte, ses
+  sessions et ses liens effacés (droit à l'effacement).
+- **Le stockage** : un Durable Object `Comptes`, une seule instance avec sa base SQLite
+  (`wrangler.toml` : la liaison `COMPTES` et la migration `new_sqlite_classes`). Cloudflare le crée
+  au premier déploiement, rien à créer à la main. La base garde l'adresse, la date de création et
+  la dernière connexion ; liens et sessions n'y sont que sous forme d'empreintes SHA-256.
+- **L'envoi des e-mails** : Resend, par son API HTTP. C'est le seul service tiers ; le rapport
+  quotidien, lui, n'envoie toujours aucun e-mail (il passe par les notifications GitHub). Tant que
+  ses secrets manquent, `POST /compte/lien` répond « le jeu en ligne n'est pas encore ouvert »
+  (503) et rien n'est envoyé.
+
+### Mise en route (une seule fois)
+
+1. **Créer un compte chez Resend** (resend.com ; son offre gratuite suffit pour commencer :
+   vérifier ses limites d'envoi du moment).
+2. **Vérifier un domaine** à toi (Resend › Domains › Add domain) : Resend donne des
+   enregistrements DNS (SPF, DKIM) à ajouter chez l'hébergeur du domaine. Sans domaine vérifié,
+   Resend n'envoie qu'à ta propre adresse (pratique pour un premier essai).
+3. **Créer une clé d'API** : Resend › API Keys › Create API key, avec la permission « Sending
+   access » seulement.
+4. Dans Cloudflare : Workers › `family-farm` › Settings › Variables and Secrets, ajouter en
+   **secrets** :
+   - `RESEND_API_KEY` : la clé de l'étape 3 ;
+   - `COMPTE_EXPEDITEUR` : l'expéditeur, sur le domaine vérifié, par exemple
+     `Ferme Familiale <connexion@ton-domaine.fr>` ;
+   - `JEU_URL` (facultatif) : l'adresse du jeu où mène le lien. Par défaut :
+     `https://aluzy.github.io/family_farm/jeu.html`.
+5. Déployer (fusionner la pull request : Workers Builds redéploie et crée le Durable Object).
+6. Tester : dans le jeu publié, ⚙️ Options › « 🌐 Jeu en ligne », donner ton adresse, ouvrir le lien
+   reçu sur le téléphone. La rubrique affiche « Connecté ». En cas d'échec : Workers ›
+   `family-farm` › Observability (« envoi du lien en échec : <code> »).
+
+## Le monde partagé (E-1)
+
+Sa vision : `docs/monde-partage.md` (un monde partagé, c'est la zone de la ferme ; le grand monde
+reste à la partie solo). E-8 : à la création, la copie est élaguée (`elaguer` : sans les habitants,
+les hameaux ni les régions vues ; `mondePartage = true`, une nuit de la ferme seule) ; une commande qui
+vise une case hors de la ferme est refusée (`horsDeLaFerme`).
+
+Un **Durable Object `Monde` par monde** (`worker/src/monde.mjs`) fait autorité. Il garde la partie du
+monde, joue les commandes des joueurs avec **le même moteur que le jeu** (`js/engine/`, regroupé au
+déploiement), les numérote (la révision), les écrit dans un journal et les diffuse. Les joueurs les
+rejouent chez eux : le moteur est déterministe (F0-4). Décisions du créateur :
+- **F.1 : un coffre commun.** L'inventaire du monde est à tous ses membres.
+- **F.2 : le monde est figé quand personne n'y joue.** Les commandes ne font pas avancer l'horloge.
+  **E-5 : la nuit est partagée.** Quand tous les joueurs connectés sont couchés, le monde joue lui-même
+  `nuit.partagee` (acteur `monde`) : toute la nuit d'un coup, le jour suivant. Un joueur ne peut pas
+  l'envoyer, et `nuit.dormir` (la nuit qui défile, en solo) est refusé en ligne.
+- **F.3 : un membre est un compte** (les comptes ci-dessus).
+- **F.4 : un monde naît de la copie volontaire d'une partie locale**, qui reste intacte.
+
+Routes, toutes avec la session du compte (`Authorization: Bearer`, ou `?session=` pour la WebSocket) :
+- `POST /mondes` `{ partie, titre }` : mettre sa ferme en ligne (2 Mo au plus) → `{ monde }` ;
+- `GET /mondes` : ses mondes ;
+- `GET /mondes/<id>/fiche` : titre, révision, membres (membres seulement) ;
+- `GET /mondes/<id>/ws` : la connexion d'un joueur (une WebSocket en hibernation). Messages :
+  - `hello { version, depuis? }` → `bienvenue`, puis `rattrape { evts }` (ce qui manque depuis
+    `depuis`) ou `instantane { partie }` ; `refus` si le jeu n'a pas la version du monde ou si
+    l'on n'est pas membre ;
+  - `cmd { id, type, args }` → `ack { id, ok, rev | erreur }` ; à tous, `evt { rev, acteur, cmd }`.
+  - `pos { x, y }` (le centre de sa vue) : relayé aux autres membres, `pos { acteur, nom, x, y }`,
+    5 fois par seconde au plus, jamais écrit ; `parti { acteur }` quand son dernier onglet se ferme ;
+  - `coucher { oui }` : se coucher, ou se relever. À tous : `couches { comptes, connectes }`. C'est
+    gardé sur la connexion (`serializeAttachment`, qui survit à l'hibernation), jamais écrit. Tous
+    couchés, le monde joue la nuit et la diffuse comme un `evt`. Un joueur qui part ne retient plus
+    la nuit.
+
+Stockage SQLite du Durable Object :
+- `meta` ;
+- `instantane` : la partie entière, toutes les 20 révisions ;
+- `journal` : chaque commande acceptée, son `id` unique ;
+- `membres` : rôles `proprietaire` et `batisseur`, `revoque`.
+
+Au réveil, la partie se refait : le dernier instantané, puis le journal. Un doublon (le même `id`)
+rend le même accusé sans être rejoué. Un membre révoqué est refusé et sa connexion fermée. Les
+commandes sont limitées à 120 par minute et par membre.
+
+**À mesurer au premier déploiement.** La première commande d'un monde réveillé tire la carte de sa
+graine (≈ 0,3 s de calcul sur un ordinateur, plus sur le serveur). Les limites de temps de calcul
+par requête dépendent de l'offre Cloudflare. Si la première commande échoue (Observability :
+« exceeded CPU »), il faudra garder la carte tirée avec le monde, ou passer à l'offre payante des
+Workers.
+
+**Le jeu** (E-2 : `js/ui/en-ligne.js`, `js/ui/synchro.js`) entre dans un monde par `jeu.html?monde=<id>`.
+Il garde deux parties :
+- la partie **confirmée**, celle du monde : l'instantané, puis les événements ;
+- la partie **locale**, celle qu'on voit : la confirmée, plus ses commandes pas encore revenues,
+  rejouées par-dessus.
+
+Un geste est joué tout de suite, puis envoyé. Le geste d'un autre joueur, ou un refus, refait la
+partie locale. Coupé, le jeu se reconnecte, demande ce qu'il a manqué depuis sa révision et renvoie ses
+commandes en attente. Rien n'est sauvegardé sur l'appareil en ligne. Pour l'instant, on y construit
+ensemble (le mode Construire).
+
+`node tests/deux-joueurs.mjs` : deux onglets, deux comptes, le vrai Worker et ses Durable Objects (sur
+`node:sqlite`) derrière les routes du navigateur. Chaque mur posé est vu chez l'autre en moins d'une
+seconde, les parties confirmées sont celle du monde, et la partie solo n'est pas touchée.
+
+**Inviter un ami** (E-3) :
+- `POST /mondes/<id>/invitations` : le propriétaire crée un lien `jeu.html#invitation=<monde>.<secret>`.
+  Le secret fait 192 bits ; seule son empreinte est gardée. Le lien vaut 7 jours et ne sert qu'à un
+  seul compte. Au plus 20 liens sont en attente par monde.
+- `POST /rejoindre { code }` : le lien suivi. Le compte devient bâtisseur et le monde s'ajoute à sa
+  liste. Un lien expiré ou déjà servi est refusé ; un membre retiré ne revient pas par un nouveau lien.
+- `POST /mondes/<id>/retirer { compte }` : le propriétaire retire un membre. Sa connexion ouverte est
+  fermée tout de suite (code 4003) et le monde quitte sa liste.
+
+Dans le jeu, le bouton 👥 du bandeau montre les membres. Le propriétaire y invite (Copier, Partager)
+et y retire un membre. Un lien d'invitation ouvert sans être connecté attend la connexion.
+
+E-5 : en ligne, on cultive aussi le potager (labourer, semer, arroser, récolter, la cruche). La
+récolte va droit au coffre commun (`direct`), sans attendre le personnage. Une nuit coûte environ
+2 ms de calcul sur la ferme d'essai : **à mesurer au premier déploiement** sur une vraie ferme. 
+E-6 : les bêtes aussi (`poules.nourrir`, `poules.toutNourrir`, `poulailler.agrandir`, `etable.tondre`,
+`etable.herbes`, `etable.place`, `ramassage.prendre`). Le monde ne ramasse pas : à sa création, ce qui
+attendait en tas entre au coffre commun (`ramassage` coupé), et tout y va droit ensuite. 
+E-7 : la cuisine aussi (`cuisine.lancer`, `cuisine.annuler`, `moulin.moudre`, `moulin.annuler`,
+`frigo.ranger`, `frigo.sortir`, `frigo.toutRanger`, `frigo.urgent`, `frigo.acheter`, `frigo.agrandir`,
+`boite.deposer`, `boite.reprendre`, `manger`). L'horloge est figée : une préparation finit pendant la
+nuit partagée.
+
+E-9 : les outils de la ferme (`outil.couper`, `outil.casser`, `outil.caillou`, `outil.faucher`,
+`outil.faucherAutour`, `outil.pecher`, `verger.cueillir`), sans morceaux au sol : tout va au coffre.
+Le monde refuse un arbre, un rocher ou une touffe hors de la ferme, et les eaux du grand monde.
+
+E-10 : la progression commune (`tech.acheter`, `atelier.fabriquer`, `atelier.construire`, `appareil.*`,
+`reservoir.agrandir`, `robot.batterie`, `serre.agrandir`, `arbre.planter`, `potager.semis`). Restent hors
+ligne, comme le veut la vision : le Marché, la calèche, les hameaux, le récit, les invitations.
+
+E-13 : les machines de l'Atelier (`botteleuse.verser`, `botteleuse.sortir`, `chaine.verser`,
+`distributeur.verser`, `morceau.ramasser`, `cueillette.ramasser`) ; l'horloge figée, les chaînes et le
+distributeur font leur journée à la nuit partagée. Pas de commerce en ligne (M.4, décidé).
+
+E-11 : les rôles (`js/engine/roles.js` : visiteur, jardinier, bâtisseur, propriétaire), vérifiés à chaque
+commande ; `POST /mondes/<id>/invitations { role }`, `POST /mondes/<id>/role { compte, role }` (le
+propriétaire ; la liste des membres est diffusée), `GET /mondes/<id>/journal?avant=` (le propriétaire :
+les 50 dernières commandes, avec les noms).
+
+E-12 : les sauvegardes du monde, dans le bucket `SESSIONS` (déjà lié), sous `mondes/<id du Durable
+Object>/` : une après chaque nuit partagée, une à la demande, une avant chaque restauration ; les 14
+dernières gardées (≈ 100 Ko chacune). `GET` et `POST /mondes/<id>/sauvegardes`, `POST
+/mondes/<id>/restaurer { cle }` (le propriétaire). Une restauration écrit un instantané et une marque
+`monde.restaurer` au journal ; la partie entière est diffusée.
+
 ## Mise en route du rapport (une seule fois)
 
 1. **Créer un dépôt privé** pour les rapports, par exemple `family_farm_rapports`
@@ -133,3 +291,8 @@ vérifier dans Workers › `family-farm` › Settings › Build :
 
 `node tests/test-report.mjs` (depuis la racine du dépôt) : calculs, passage été/hiver, publication
 GitHub simulée (dépôt public refusé, jeton jamais journalisé), protections de la collecte.
+
+`node tests/test-comptes.mjs` : les comptes. La base SQLite du Durable Object est simulée par
+`node:sqlite`, l'envoi par une fonction qui garde l'e-mail. Les tests couvrent les liens à usage
+unique, leur expiration et celle des sessions, les limites de demandes, la suppression, les
+empreintes seules en base, les routes et le Worker (CORS, origine, sans Durable Object).

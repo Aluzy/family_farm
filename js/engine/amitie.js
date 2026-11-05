@@ -28,9 +28,9 @@ import { STYLES, styleInfo, stylePrefere } from './styles.js';
    proche laisse parfois un présent devant la porte de la ferme (la nuit, RETOUR) ; l'amitié avec qui tient
    un atelier de hameau baisse le prix et le délai de ses commandes (remiseAmitie, delaiAmitie : ile.js).
 
-   L'humeur (humeurPnj) : la joie (un ami proche), la tristesse (son foyer est malheureux, HABITANTS.TRISTE), la
-   colère (un hameau qui n'a plus confiance). Elle ne teinte plus le personnage sur la carte : seules les
-   réactions d'un instant (un cadeau : joie ou dégoût ; la peur ; la colère d'un arbre abattu sous ses yeux ;
+   L'humeur (humeurPnj) : la joie (un ami proche), la tristesse (son foyer est malheureux, HABITANTS.TRISTE) ;
+   jamais de colère (le récit cosy). Elle ne teinte plus le personnage sur la carte : seules les
+   réactions d'un instant (un cadeau : joie ou dégoût ; la surprise d'un arbre abattu ou d'un cheval tout près ;
    la joie des retrouvailles, d'un repas) colorent tout son corps, dites par la scène.
 
    state.amitie = {
@@ -229,11 +229,10 @@ export function offrir(state, hameauId, membreId, item) {
   return { ok: true, gout, points: apres - avant, emotion, pts: apres, palier: rangDe(apres), nom: RECIT.PALIER_NOMS[rangDe(apres)], monte: rangDe(apres) > rangDe(avant), prenom: t.m.prenom };
 }
 
-// L'humeur durable d'un habitant (sa teinte sur la carte) : 'colere', 'tristesse' (son foyer est malheureux),
+// L'humeur durable d'un habitant (sa teinte sur la carte) : 'tristesse' (son foyer est malheureux),
 // 'joie' ou null. `foyer` : le sien (cherché s'il n'est pas donné).
 export function humeurPnj(state, hameauId, m, foyer = null) {
   const H = AMITIE.HUMEUR, cle = cleDe(m);
-  if (confiance(state, hameauId) < H.COLERE) return 'colere';
   const f = foyer || ((habitantsDe(state)[hameauId] || {}).foyers || []).find((x) => (x.membres || []).includes(m));
   if (f && Number.isFinite(f.bonheur) && f.bonheur < DATA.HABITANTS.TRISTE) return 'tristesse';
   if (palierAmitie(state, cle) >= H.JOIE) return 'joie';

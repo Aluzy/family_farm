@@ -22,6 +22,8 @@ import { assert, assertEqual, test } from './aide.mjs';
 const EMPREINTE_GRAINE = 'empreinte-1';
 const EMPREINTES = {
   1: { ferme: '4e86e112', plan: '311f63df', regions: { '3,3': '0971c50b', '0,0': '313201a6', '8,6': 'd2232693', '5,1': '0424fc2d', '1,1': 'b8b121e2' } },
+  // (2, D-2 : les secrets du monde dans le plan ; la ferme et les régions relevées sont celles du 1)
+  2: { ferme: '4e86e112', plan: '72a8a80f', regions: { '3,3': '0971c50b', '0,0': '313201a6', '8,6': 'd2232693', '5,1': '0424fc2d', '1,1': 'b8b121e2' } },
 };
 
 // Une empreinte FNV-1a (32 bits) d'une valeur : nombres, textes, listes, tableaux typés, objets (clés
@@ -74,12 +76,13 @@ test('le générateur : une partie neuve et une partie qui change de ferme noten
   assertEqual(s.carte, { graine: 'autre', generateur: GENERATEUR_VERSION });
 });
 
-test('le générateur : une partie d\'avant (v69) reçoit le premier numéro, rien d\'autre ne change', () => {
+test('le générateur : une partie d\'avant (v69) reçoit le premier numéro (puis le 2, D-2), rien d\'autre ne change', () => {
   const neuve = createInitialState(7);
   const { generateur, ...carte69 } = neuve.carte;
   const v69 = { ...JSON.parse(JSON.stringify(neuve)), version: 69, carte: carte69 };
   const m = migrate(v69);
-  assertEqual([m.version, m.carte], [STATE_VERSION, { graine: carte69.graine, generateur: 1 }]);
+  // (le premier numéro, puis la migration 71 → 72 la passe au générateur 2 : les secrets du monde, D-2)
+  assertEqual([m.version, m.carte], [STATE_VERSION, { graine: carte69.graine, generateur: 2 }]);
   const { carte: a, version: va, ...resteA } = m, { carte: b, version: vb, ...resteB } = JSON.parse(JSON.stringify(neuve));
   assertEqual(resteA, resteB, 'le reste de la partie est intact');
   // (sans carte : la migration n'en invente pas ; la réparation lui en donne une, du générateur actuel)

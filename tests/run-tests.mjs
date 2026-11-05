@@ -3,7 +3,7 @@
 //
 // Les tests du moteur sont rangés par thème dans tests/engine/*.test.mjs (aide commune :
 // tests/engine/aide.mjs). Les autres suites : tests/test-data.mjs (données),
-// tests/test-telemetry.mjs (suivi de session), tests/test-report.mjs (rapport quotidien).
+// tests/test-telemetry.mjs (suivi de session), tests/test-report.mjs (rapport quotidien), tests/test-comptes.mjs (comptes du jeu en ligne), tests/test-monde.mjs (monde partagé), tests/test-synchro.mjs (synchro en ligne).
 // Chaque fichier tourne dans son propre processus : un fichier qui plante (erreur au
 // chargement, exception hors test) est compté en échec sans arrêter les autres.
 //
@@ -31,6 +31,9 @@ const SUITES = [
   { nom: 'données', titre: 'tests des données', fichiers: [join(ICI, 'test-data.mjs')] },
   { nom: 'suivi', titre: 'tests du suivi de session', fichiers: [join(ICI, 'test-telemetry.mjs')] },
   { nom: 'rapport', titre: 'tests du rapport quotidien', fichiers: [join(ICI, 'test-report.mjs')] },
+  { nom: 'comptes', titre: 'tests des comptes du jeu en ligne', fichiers: [join(ICI, 'test-comptes.mjs')] },
+  { nom: 'monde', titre: 'tests du monde partagé', fichiers: [join(ICI, 'test-monde.mjs')] },
+  { nom: 'synchro', titre: 'tests de la synchro en ligne', fichiers: [join(ICI, 'test-synchro.mjs')] },
 ];
 
 const args = process.argv.slice(2);

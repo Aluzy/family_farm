@@ -1,7 +1,7 @@
 import { DATA } from './catalog.js';
 import { nouvelleCaleche } from './caleche.js';
 import { GENERATEUR_VERSION, STATE_VERSION } from './base.js';
-import { batteryCapacity, newDayStats, startFarm } from './devices.js';
+import { allDevices, batteryCapacity, newDayStats, startFarm } from './devices.js';
 import { addItem, countItem, freshLot, lotRank, lotsFromCounts, pushLots } from './inventory.js';
 import {
   cleanFirstName, defaultMemberProfile, familyNumbers, makeMember, newNightStats, validFirstName,
@@ -669,6 +669,67 @@ export const MIGRATIONS = {
     if (c && typeof c === 'object' && !Array.isArray(c)) out.carte = { ...c, generateur: 1 };
     return out;
   },
+  // v70 → v71 (B-1, la décision F.5) : les appareils ne s'usent plus (DATA.PENALITES.USURE) ; ceux qui
+  // étaient usés sont remis à neuf, et ceux qu'une panne avait éteints se rallument.
+  70: (state) => {
+    const out = JSON.parse(JSON.stringify({ ...state, version: 71 }));
+    let liste = [];
+    try { liste = allDevices(out); } catch (e) { liste = []; }
+    for (const d of liste) {
+      if (!d || typeof d !== 'object' || !Number.isFinite(d.usure)) continue;
+      if (d.usure >= DATA.USURE.PANNE) d.allume = true;
+      d.usure = 0;
+      d.usureMs = 0;
+    }
+    return out;
+  },
+  // v71 → v72 (D-2) : le générateur 2 ajoute au monde ses secrets (monde-gen.js, lieux.secrets) et dégage la
+  // végétation autour d'eux ; la ferme, le sol, les hameaux et les autres lieux ne bougent pas. Une partie du
+  // générateur 1 passe au 2 sans rien perdre (un arbre du monde près d'un secret a pu disparaître, rien d'autre).
+  71: (state) => {
+    const out = { ...state, version: 72 };
+    const c = state.carte;
+    if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 1) out.carte = { ...c, generateur: 2 };
+    return out;
+  },
+  // v72 → v73 (le récit cosy, docs/recit/bible.md) : Maurice et Philomène sont partis en voyage (plus de notaire),
+  // Johnny n'existe plus (son carnet devient celui du ciel de Maurice, à son observatoire), Théo reste sur l'île
+  // (chez Frida, s'il voulait partir : il revient à Bois-Joli), Odile tutoie dès la rencontre, la fin « riche »
+  // s'appelle « genereuse ». Les noms changent dans la partie (RECIT_RENOMMAGES) ; rien ne se perd.
+  72: (state) => {
+    const out = JSON.parse(JSON.stringify({ ...state, version: 73 }));
+    const R = RECIT_RENOMMAGES, objet = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+    const r = out.recit;
+    if (objet(r)) {
+      if (objet(r.faits)) {
+        for (const [a, b] of Object.entries(R.faits)) {
+          if (!(a in r.faits)) continue;
+          if (b && !(b in r.faits)) r.faits[b] = r.faits[a];
+          delete r.faits[a];
+        }
+        if (r.faits['odile.rencontre'] && !r.faits['odile.tutoie']) r.faits['odile.tutoie'] = r.faits['odile.rencontre'];
+      }
+      if (Array.isArray(r.carnet)) r.carnet = r.carnet.map((id) => R.pages[id] || id).filter((id, k, L) => L.indexOf(id) === k);
+      if (objet(r.dites)) {
+        for (const [a, b] of Object.entries(R.dites)) if (a in r.dites) { if (!(b in r.dites)) r.dites[b] = r.dites[a]; delete r.dites[a]; }
+      }
+    }
+    if (Array.isArray(out.courrier)) {
+      out.courrier = out.courrier.filter((l) => !(l && R.lettresRetirees.includes(l.id)))
+        .map((l) => (l && R.lettres[l.id] ? { ...l, id: R.lettres[l.id] } : l));
+    }
+    return out;
+  },
+};
+
+// Les noms que le récit cosy a changés (la migration 72 → 73) : les faits, les pages du carnet, les scènes et les
+// répliques déjà dites, les lettres reçues.
+export const RECIT_RENOMMAGES = {
+  faits: { 'theo.part': 'theo.frida', 'fin.riche': 'fin.genereuse', 'johnny.repas': 'observatoire.nuit', 'johnny.pierre': 'observatoire.pierre', 'theo.parti': null, 'johnny.visite': null },
+  pages: { note_j: 'note_etoile', page_bord: 'journal_bord', johnny_pleine: 'ciel_pleine', johnny_noire: 'ciel_noire', johnny_croissante: 'ciel_croissante' },
+  dites: { maurice_fortune: 'maurice_tournee', note_j: 'note_etoile', basile_theo_part: 'basile_theo_frida', fete_riche: 'fete_genereuse', 'odile.vous': 'odile.bonjour', 'basile.theo_parti': 'basile.theo_frida' },
+  lettres: { notaire_heritage: 'maurice_terre', notaire_legs: 'maurice_enveloppe', adele_fete_riche: 'adele_fete_genereuse' },
+  lettresRetirees: ['theo_cadolon'],
 };
 
 // Ce que la Presse avait coûté, rendu par la migration 66 → 67.

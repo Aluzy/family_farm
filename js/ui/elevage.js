@@ -9,17 +9,17 @@ import {
 } from '../engine/crops.js';
 import { executer } from './commandes.js';
 import {
-  buyPasture, canFeedHen, coopCapacity, coopUpgradeCost,
-  cowCount, cowsOnHerbs, feedAllHens, feedHen, freeSheepPlaces, hensToFeed, herbStock, herbsOn, pastureCost,
-  setCowHerbs, shear, sheepCount, sheepToShear, siloCapacity, stableOccupied, strawMissing,
-  strawNeed, strawStock, upgradePoulailler, wheatTotal, woolReady, coopUpgradeRefus, pastureRefus, stablePlaces,
+  canFeedHen, coopCapacity, coopUpgradeCost,
+  cowCount, cowsOnHerbs, freeSheepPlaces, hensToFeed, herbStock, herbsOn, pastureCost,
+  sheepCount, sheepToShear, siloCapacity, stableOccupied, strawMissing,
+  strawNeed, strawStock, wheatTotal, woolReady, coopUpgradeRefus, pastureRefus, stablePlaces,
 } from '../engine/animals.js';
 import { etatEtable, etatPoulailler, etatSilo } from '../engine/blocs.js';
 import { techAuto, techFlag } from '../engine/techtree.js';
-import { AUTO_TACHES, GROUPE_MIN, groupDiscount, harvestAll, isAutomated, plantAll, setSemis, waterAll } from '../engine/automation.js';
+import { AUTO_TACHES, GROUPE_MIN, groupDiscount, isAutomated } from '../engine/automation.js';
 import { plantableCropsFor } from '../engine/campaign.js';
 import { formatCoins, formatNumber, formatQty } from '../engine/format.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
 import { tel } from './consent.js';
 import { applyResult } from './game-actions.js';
 import { artIcon, artPx, coopArtRow } from './animations.js';
@@ -536,7 +536,7 @@ function semerCases(cases, culture) {
     raison = r.error;
     break;   // (plus de graines, ou plus d'énergie)
   }
-  if (groupe) groupDiscount(state, avant);
+  if (groupe && !enLigne) groupDiscount(state, avant);   // (en ligne, pas de remise : elle ne passe pas par le monde)
   if (n) persistState();
   refresh();
   if (n) notify(`🌱 ${plural(n, 'parcelle')} de ${def.nom.toLowerCase()} ${accord(n, 'semée')}${raison ? ` · ${raison}` : ''}`);
@@ -576,7 +576,7 @@ export function semerFromStage(c, culture, groupe) {
   const avant = Number(state.energie) || 0;
   const r = executer('potager.planter', { parcelle: p.id, culture });
   if (!r.ok) { notify(r.error, { son: 'erreur' }); return false; }
-  if (groupe) groupDiscount(state, avant);
+  if (groupe && !enLigne) groupDiscount(state, avant);   // (en ligne, pas de remise : elle ne passe pas par le monde)
   persistState();
   refresh();
   const def = DATA.CULTURES[culture];
@@ -605,7 +605,8 @@ registerActions({
     applyResult(executer('potager.arroser', { parcelle: target.dataset.id }));
   },
   'harvest': (target) => {
-    const result = applyResult(executer('potager.recolter', { parcelle: target.dataset.id }));
+    // (E-5 : en ligne, la récolte va droit au coffre commun, sans attendre le personnage)
+    const result = applyResult(executer('potager.recolter', { parcelle: target.dataset.id, ...(enLigne ? { direct: true } : {}) }));
     // version 1.18 : ce qui attend le personnage s'annonce par sa bulle, au ramassage
     // fiche 10 : récolter parcelle après parcelle cumule la récolte dans une seule notification
     if (result.ok && !result.aRamasser) notify(null, { cumul: { cle: 'recolte', quantites: result.items, texte: (t) => harvestToast({ items: t }) } });
@@ -614,30 +615,30 @@ registerActions({
 
 
   'upgrade-poulailler': () => {
-    applyResult(upgradePoulailler(state));
+    applyResult(executer('poulailler.agrandir', {}));
   },
   'feed-hen': () => {
-    const result = applyResult(feedHen(state));
+    const result = applyResult(executer('poules.nourrir', {}));
     // fiche 10 : « Nourrir une poule » répété compte les poules nourries
     if (result.ok) notify(null, { cumul: { cle: 'nourrir-poule', quantites: { n: 1 }, texte: (t) => `🌾 ${t.n > 1 ? `${plural(t.n, 'poule')} nourries` : 'Une poule nourrie'} (1 blé pour 2 poules)` }, son: 'grain' });
   },
   'feed-all': () => {
-    const result = applyResult(feedAllHens(state));
+    const result = applyResult(executer('poules.toutNourrir', {}));
     if (result.ok) {
       notify(`${plural(result.nourries, 'poule')} ${accord(result.nourries, 'nourrie')}.`, { son: 'grain' });
     }
   },
 
   'buy-pasture': () => {
-    const result = applyResult(buyPasture(state));
+    const result = applyResult(executer('etable.place', {}));
     if (result.ok) notify(`Place achetée : ${formatPlaces(result.places)} au total (−${formatCoins(result.cost)} 💰)`);
   },
   'cow-herbs': (target) => {
-    const result = applyResult(setCowHerbs(state, target.dataset.on === '1'));
+    const result = applyResult(executer('etable.herbes', { oui: target.dataset.on === '1' }));
     if (result.ok) notify(result.herbes ? `${DATA.OBJETS[DATA.PATURAGE.HERBES].icone} Les vaches mangeront les herbes de montagne : lait d'alpage cette nuit.` : '🌾 Les vaches reviennent à la paille.');
   },
   'shear': (target) => {
-    const result = applyResult(shear(state, target.dataset.id));
+    const result = applyResult(executer('etable.tondre', { mouton: String(target.dataset.id || '') }));
     if (result.ok && !result.aRamasser) notify(`✂️ Tonte : +${result.laine} 🧶`, { son: 'tonte' });
   },
   'plant-many-open': (target) => {
@@ -654,7 +655,7 @@ registerActions({
   },
   'plant-all': (target) => {
     closeModal();
-    const result = applyResult(plantAll(state, target.dataset.lieu, target.dataset.crop));
+    const result = applyResult(executer('potager.toutPlanter', { lieu: target.dataset.lieu, culture: target.dataset.crop }));
     if (result.ok) {
       const def = DATA.CULTURES[target.dataset.crop];
       const reste = result.vides - result.plantees;
@@ -662,11 +663,11 @@ registerActions({
     }
   },
   'water-all': (target) => {
-    const result = applyResult(waterAll(state, target.dataset.lieu));
+    const result = applyResult(executer('potager.toutArroser', { lieu: target.dataset.lieu }));
     if (result.ok) notify(`💧 ${plural(result.arrosees, 'parcelle')} ${accord(result.arrosees, 'arrosée')}${result.sansEau ? ` · ${result.sansEau} sans eau` : ''}`);
   },
   'harvest-all': (target) => {
-    const result = applyResult(harvestAll(state, target.dataset.lieu));
+    const result = applyResult(executer('potager.toutRecolter', { lieu: target.dataset.lieu, ...(enLigne ? { direct: true } : {}) }));
     if (result.ok && !result.aRamasser) notify(`🧺 ${itemsText(result.items)}`);
   },
   'semis-open': (target) => {
@@ -674,6 +675,6 @@ registerActions({
   },
   'semis-set': (target) => {
     closeModal();
-    applyResult(setSemis(state, target.dataset.id, target.dataset.mode, target.dataset.crop));
+    applyResult(executer('potager.semis', { parcelle: String(target.dataset.id || ''), mode: String(target.dataset.mode || ''), ...(target.dataset.crop ? { culture: target.dataset.crop } : {}) }));
   },
 });
