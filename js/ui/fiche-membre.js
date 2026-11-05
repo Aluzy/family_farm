@@ -33,7 +33,7 @@ import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { applyResult } from './game-actions.js';
-import { persoSrc } from './famille.js';
+import { persoHtml } from './famille.js';
 import { formatEnergyGain } from './energie.js';
 import { helpBtn } from './aide.js';
 
@@ -72,8 +72,11 @@ function persoEquipeHtml(m) {
   const enfant = !!m.enfant, pieces = casesMembre(state, m.id).filter(Boolean);
   pieces.sort((a, b) => ORDRE_PLACES.indexOf(pieceDef(a).place) - ORDRE_PLACES.indexOf(pieceDef(b).place));
   const rangs = piecesEquipement();
-  const calques = pieces.map((item) => `<span class="perso-px fiche-calque" style="background-image: url('${calquesSrc()}'); background-position: ${enfant ? 'calc(var(--s) / -2)' : '0'} calc(var(--s) * -${rangs.indexOf(item)})"></span>`).join('');
-  return `<span class="fiche-perso" aria-hidden="true"><span class="perso-px" style="background-image: url('${persoSrc(memberPerso(m), enfant)}')"></span>${calques}</span>`;
+  // (chaque calque en deux : le haut du corps, qui descend d'un pixel quand il respire, et le bas : le
+  // portrait est vivant, persoHtml, css/jeu.css .fiche-calque.haut)
+  const calque = (item, part) => `<span class="perso-px fiche-calque ${part}" style="background-image: url('${calquesSrc()}'); background-position: ${enfant ? 'calc(var(--s) / -2)' : '0'} calc(var(--s) * -${rangs.indexOf(item)})"></span>`;
+  const calques = pieces.map((item) => calque(item, 'bas') + calque(item, 'haut')).join('');
+  return `<span class="fiche-perso${enfant ? ' enfant' : ''}" aria-hidden="true">${persoHtml(memberPerso(m), enfant, '', m.id)}${calques}</span>`;
 }
 
 /* -- les jauges -- */

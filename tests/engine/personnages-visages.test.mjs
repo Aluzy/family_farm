@@ -117,3 +117,23 @@ test('visages sur la carte : l\'expression (réaction, travail, soir, clignement
   assertEqual(CV.expression('idle_bas_0', 'neutre', 12, null, { prochain: 1 }, 5000), 'neutre', 'animations réduites');
   fenetre.reduit = false;
 });
+
+test('visages des portraits (menu Famille) : d\'accord avec l\'atlas', () => {
+  const js = readFileSync(new URL('../../js/ui/famille.js', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../../css/jeu.css', import.meta.url), 'utf8');
+  const P = JSON.parse(/PORTRAIT_VISAGE = (\{.*\});/.exec(js)[1].replace(/(\w+):/g, '"$1":'));
+  // la rangée d'un personnage : les adultes puis les enfants, dans l'ordre
+  assertEqual(V.personnages.indexOf('enfant_01'), P.adultes);
+  assertEqual(V.personnages.indexOf('perso_07'), 6);
+  assertEqual(V.personnages.indexOf('enfant_12'), P.adultes + 11);
+  // la zone du visage, debout puis en respirant
+  for (const age of ['adulte', 'enfant']) {
+    assertEqual([V.cases[age].idle_bas_0.y, V.cases[age].idle_bas_1.y], P.y[age], age);
+    assertEqual([V.cases[age].idle_bas_0.x, V.cases[age].idle_bas_1.x], [4, 4], age);
+  }
+  // la tuile des yeux fermés de face : colonne 2 (8 px chacune) ; 144 px de large, 5 de haut
+  assertEqual(V.expressions.indexOf('fermes') * V.vues.length + V.vues.indexOf('bas'), 2);
+  assert(css.includes('background-position: calc(-8 * 2 * var(--u)) calc(var(--visage-rang) * -5 * var(--u));'), 'css : la tuile des yeux fermés');
+  assert(css.includes('background-size: calc(144 * var(--u)) auto;'), 'css : la largeur de l\'atlas');
+  assert(css.includes('left: calc(var(--s) / 4 + 4 * var(--u))'), 'css : x = 4');
+});

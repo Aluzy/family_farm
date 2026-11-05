@@ -1,7 +1,7 @@
 # Les personnages en couches : identité, tenue, expressions (chantier)
 
 Statut : **E0 validée** (les 9 expressions, de face et de profil) ; **E1 faite** (§ 6) ; **E2 faite** (§ 7) ;
-**E3 faite pour la carte** (§ 8 ; les portraits de l'interface restent à faire).
+**E3 faite** (§ 8 : la carte ; § 9 : les portraits vivants du menu Famille).
 
 Le but : séparer un personnage de ses vêtements et de ses attributs (peau, yeux, coiffure, expression),
 et donner des expressions aux visages, **en gardant la base actuelle** : les 100 personnages
@@ -85,12 +85,12 @@ dans les rangées 5 à 9, sur 6 colonnes de face.
 | neutre | ceux du modèle | celle du modèle | par défaut |
 | yeux fermés | trait de cils en bas (les mêmes pixels que le sommeil, `Modele.yeux_fermes`) | | clignement, sommeil |
 | joie | ouverts | sourire, coins relevés | cadeau, repas, amitié |
-| rire | arcs, trait en haut | ouverte, joues roses | réaction forte |
+| rire | fermés : un trait sous une rangée de peau (en haut, il se perdait dans la frange ou la visière) | ouverte, joues roses | réaction forte |
 | colère | paupière sombre côté nez | trait serré | arbre abattu sous ses yeux |
 | tristesse | paupière tombante côté extérieur | à l'envers, une larme | refus, départ |
 | peur | pupilles réduites, blanc agrandi | en O | cheval lancé, surprise |
 | fatigue | paupières mi-closes | cernes | énergie basse, le soir |
-| concentré | plissés | de côté | houe, hache, pêche |
+| concentré | plissés : la paupière couleur de peau, la pupille dessous | de côté | houe, hache, pêche |
 
 Une expression ne remplace jamais un pixel de cheveux, de barbe, de lunettes, de couvre-chef, de rousseur
 ou de contour : une mèche ou une barbe reste devant. Le blanc, la pupille, la peau et les lèvres sont relevés
@@ -239,7 +239,7 @@ caché ; il porte `personnage` (caché en mode Construire).
 
 **Qui** : le personnage principal (`js/fermier.js`), la famille (`js/famille-ferme.js`), les habitants des
 hameaux et les invités d'un repas (par `teinteHabitant`, `amis.js`, avec leurs réactions), le visiteur
-(`visite.js`). Pas encore la mine (`js/grotte.js`) ni les portraits de l'interface.
+(`visite.js`). Pas la mine (`js/grotte.js`) : décidé, on la garde ainsi pour l'instant.
 
 **Les émotions** (`amis.js`) gardent leur teinte de peau et leur emoji. Pendant une réaction, les tuiles du
 visage sont recolorées comme la planche (`visagePeau`, mêmes teintes de `peau.json` que `planchePeau`).
@@ -262,3 +262,34 @@ avaient le voile) ; `tablePeau` cherche les deux.
 **Tests** (`tests/engine/personnages-visages.test.mjs`) : le nom d'un personnage d'après la clé de sa planche,
 et le choix de l'expression (la case, les réactions, le travail, le soir, le clignement, « réduire les
 animations »).
+
+**Retouche après essai** : dans le rire (puis dans « concentré »), les yeux étaient un trait sombre en rangée 5,
+collé à la rangée 4 toujours sombre (frange, visière, bord du chapeau) : sous une casquette, on ne voyait plus
+d'yeux. Le rire a maintenant les yeux fermés un rang plus bas, sous une rangée de peau ; « concentré », la
+paupière couleur de peau au-dessus de la pupille.
+
+## 9. Les portraits vivants du menu Famille
+
+Dans le menu Famille, le portrait de la fiche du membre (avec son équipement) et ceux de la liste des membres
+(en mode modification) **respirent et clignent des yeux** (`persoHtml(n, enfant, id, vivant)`,
+`js/ui/famille.js` ; les autres portraits du jeu ne bougent pas).
+
+- **Tout en CSS** (`css/jeu.css`, `.perso-px.vivant`) : rien ne tourne quand la fenêtre est fermée ; la
+  fenêtre redessinée (`morph`) garde les éléments, l'animation ne repart pas ; « réduire les animations »
+  (`prefers-reduced-motion`) les arrête toutes.
+- **La respiration** : les cases `idle_bas_0` et `idle_bas_1` de la planche, en alternance (1,2 s), comme sur la
+  carte.
+- **Le clignement** : un calque (`.perso-cligne`), la tuile des yeux fermés de face de `visages.png`, posé sur
+  la zone du visage (x 4, y 12 puis 13 en respirant ; 16 puis 17 pour un enfant), visible 3 % du temps d'une
+  période de 3,4 à 6,2 s, avec un décalage : les deux tirés de l'id du membre (toujours les mêmes ; deux
+  membres ne clignent pas ensemble).
+- **L'équipement** de la fiche suit la respiration : chaque calque en deux, le haut du corps (rangées 0 à 24
+  de la case d'un adulte, 0 à 26 d'un enfant) qui descend d'un pixel avec lui, et le bas.
+  Chez l'adulte, la respiration est exactement ce décalage (vérifié sur les 50 planches) ; chez l'enfant, le
+  raccourci la rend moins simple : le partage à la rangée 27 est une approximation pour l'équipement.
+
+**Vérifié** (Chromium, les animations figées à un instant choisi) : debout et en respirant, yeux ouverts et
+fermés, le portrait de la fiche est identique au pixel près à la case de la planche (avec la tuile des yeux
+fermés) ; en marche, il passe par 3 images différentes ; avec « réduire les animations », aucune animation ;
+le casque-lampe descend avec la tête, les bottes restent ; les portraits de la liste des membres sont vivants.
+Test : `tests/engine/personnages-visages.test.mjs` (les constantes du portrait d'accord avec l'atlas).

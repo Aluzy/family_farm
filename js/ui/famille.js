@@ -73,12 +73,38 @@ export function persoSrc(n, enfant = false) {
   const versions = window.FERME_ASSET_VERSIONS;
   return `assets/${file}${versions && versions[file] ? `?v=${versions[file]}` : ''}`;
 }
-export function persoHtml(n, enfant = false, id = '') {
-  return `<span class="perso-px"${id ? ` id="${id}"` : ''} style="background-image: url('${persoSrc(n, enfant)}')" aria-hidden="true"></span>`;
+export function persoHtml(n, enfant = false, id = '', vivant = '') {
+  const idHtml = id ? ` id="${id}"` : '';
+  if (!vivant) return `<span class="perso-px"${idHtml} style="background-image: url('${persoSrc(n, enfant)}')" aria-hidden="true"></span>`;
+  return `<span class="perso-px vivant"${idHtml} style="background-image: url('${persoSrc(n, enfant)}'); ${visageVars(n, enfant, vivant)}" aria-hidden="true">`
+    + `<span class="perso-cligne" style="background-image: url('${visagesSrc()}')"></span></span>`;
 }
-export function memberAvatarHtml(id) {
+export function memberAvatarHtml(id, vivant = false) {
   const m = findMember(state, id);
-  return persoHtml(memberPerso(m), !!(m && m.enfant));
+  return persoHtml(memberPerso(m), !!(m && m.enfant), '', vivant && m ? m.id : '');
+}
+
+// Les portraits vivants du menu Famille (chantier « couches », docs/personnage-couches.md) : ils
+// respirent comme sur la carte (les cases idle_bas_0 et idle_bas_1 de la planche, en alternance) et
+// clignent des yeux (un calque, la tuile des yeux fermés de face de assets/personnages/visages.png,
+// posé sur la zone du visage, qui descend avec la tête quand il respire). Tout est en CSS (.perso-px.vivant,
+// css/jeu.css) : rien ne tourne quand la fenêtre est fermée, et « réduire les animations » les arrête.
+// La rangée d'un personnage dans l'atlas : les 50 adultes puis les 50 enfants (l'ordre du catalogue) ; la
+// rangée de la zone du visage dans la case, debout puis en respirant (visages.json : vérifié par
+// tests/engine/personnages-visages.test.mjs).
+// (la tuile des yeux fermés, de face : la colonne 2 de l'atlas, dans css/jeu.css .perso-cligne)
+export const PORTRAIT_VISAGE = { adultes: 50, y: { adulte: [12, 13], enfant: [16, 17] } };
+function visagesSrc() {
+  const file = 'personnages/visages.png', versions = window.FERME_ASSET_VERSIONS;
+  return `assets/${file}${versions && versions[file] ? `?v=${versions[file]}` : ''}`;
+}
+// Le clignement de chacun : sa période (3,4 à 6,2 s) et son décalage tirés de `graine` (l'id du membre :
+// toujours les mêmes, la fenêtre redessinée ne relance pas l'animation ; deux membres ne clignent pas ensemble).
+function visageVars(n, enfant, graine) {
+  let h = 0;
+  for (const c of String(graine)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const P = PORTRAIT_VISAGE, rang = (enfant ? P.adultes : 0) + Math.max(1, n || 1) - 1, [y0, y1] = P.y[enfant ? 'enfant' : 'adulte'];
+  return `--visage-rang: ${rang}; --visage-y0: ${y0}; --visage-y1: ${y1}; --cligne: ${(3.4 + (h % 29) / 10).toFixed(1)}s; --cligne-decale: -${((h >>> 5) % 30) / 10}s`;
 }
 
 // FLU-24 : une carte par membre (portrait, nom, boutons), deux par ligne : toute la famille
@@ -87,7 +113,7 @@ function portraitCard(m) {
   const main = mainCharacter(state) && mainCharacter(state).id === m.id;
   return `
     <li class="card member-row">
-      ${memberAvatarHtml(m.id)}
+      ${memberAvatarHtml(m.id, true)}
       <span class="member-row-text">
         <strong class="member-name">${memberNameHtml(m.id)}</strong>${main ? ' <span class="chip auto">⭐ Principal</span>' : ''}
         ${main ? '' : faimHtml(m)}

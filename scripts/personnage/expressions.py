@@ -76,13 +76,15 @@ EXPRESSIONS = {
                  '.......M....'],
     },
     'rire': {
-        'bas': ['...LL..LL...',
-                '...kk..kk...',
+        # (les yeux fermés, un trait sous une rangée de peau : en rangée 5, collé à la frange ou à la visière
+        # toujours sombres de la rangée 4, il ne se voyait pas)
+        'bas': ['...kk..kk...',
+                '...LL..LL...',
                 '..P......P..',
                 '....lOOOl...',
                 '.....ll.....'],
-        'cote': ['......LL....',
-                 '......kk....',
+        'cote': ['......kk....',
+                 '......LL....',
                  '.....P......',
                  '.......OO...'],
     },
@@ -127,11 +129,12 @@ EXPRESSIONS = {
                  '......d.....'],
     },
     'concentre': {
-        'bas': ['...LL..LL...',
+        # (les yeux plissés : la paupière couleur de peau, la pupille dessous ; pas de trait sombre en rangée 5)
+        'bas': ['...kk..kk...',
                 '............',
                 '............',
                 '.....kMMM...'],
-        'cote': ['......LL....',
+        'cote': ['......kk....',
                  '............',
                  '............',
                  '.......kM...'],
