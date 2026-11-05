@@ -12,7 +12,7 @@ import {
   addItem, allDevices, countItem, DATA, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, hasTech, poseStatus, refusDuRole, roleDemande, runNight, sensible, techPoints, testBatir, testFarmMap, testFermeConstruite,
 } from '../js/engine/index.js';
 import { atelier, construireFrigo, fillSheep, garden, partie, pature, plantRipe, reach, setStraw } from './engine/aide.mjs';
-import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, etatDesLits, Monde, MONDE, MondeRegistre, traiterMessage } from '../worker/src/monde.mjs';
+import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, etatDesLits, Monde, MONDE, MondeRegistre, SAUVEGARDES, SauvegardesMonde, traiterMessage } from '../worker/src/monde.mjs';
 
 const test = (name, fn) => nodeTest(name, () => fn());
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion fausse'); }
@@ -575,4 +575,61 @@ test('E-11 : une base d\'avant (invitations sans rôle) se reprend : la colonne 
   assert(r.creer({ proprietaire: A, partie: partieLocale() }).ok);
   const inv = await r.inviter(A, 'visiteur');
   eq((await r.rejoindre(B, 'Sam', inv.secret)).role, 'visiteur');
+});
+
+/* ---------- E-12 : les sauvegardes du monde ---------- */
+
+// Un bucket R2 en mémoire (put, get, list, delete).
+function fauxBucket() {
+  const m = new Map();
+  return {
+    m,
+    async put(k, v, o = {}) { m.set(k, { v, o }); },
+    async get(k) { const x = m.get(k); return x ? { text: async () => x.v } : null; },
+    async delete(k) { m.delete(k); },
+    async list({ prefix }) { return { objects: [...m.keys()].filter((k) => k.startsWith(prefix)).map((k) => ({ key: k, size: m.get(k).v.length, customMetadata: m.get(k).o.customMetadata })), truncated: false }; },
+  };
+}
+
+test('E-12 : les sauvegardes : de la plus récente à la plus ancienne, les GARDER dernières gardées, rien d\'un autre monde', async () => {
+  const b = fauxBucket(), S = new SauvegardesMonde(b, 'mondes/abc/'), autre = new SauvegardesMonde(b, 'mondes/xyz/');
+  for (let i = 1; i <= SAUVEGARDES.GARDER + 2; i++) await S.sauver({ day: i }, { rev: i, jour: i, raison: 'nuit', t: 1000 * i });
+  await autre.sauver({ day: 99 }, { rev: 1, jour: 99, raison: 'main', t: 5 });
+  const L = await S.liste();
+  eq([L.length, L[0].rev, L[L.length - 1].rev], [SAUVEGARDES.GARDER, SAUVEGARDES.GARDER + 2, 3]);
+  eq((await S.lire(L[0].cle)).s, { day: SAUVEGARDES.GARDER + 2 });
+  eq([await S.lire((await autre.liste())[0].cle), await S.lire('mondes/abc/../xyz/x.json')], [null, null], 'pas la sauvegarde d\'un autre monde');
+});
+
+test('E-12 : le propriétaire sauvegarde et restaure (par les routes du Durable Object) : la partie revient, pour tous, le journal le dit ; une nuit sauvegarde seule', async () => {
+  const sql = baseSql(), bucket = fauxBucket(), msgs = [], sockets = [];
+  const ctx = { storage: { sql }, id: { toString: () => 'abc' }, getWebSockets: (tag) => sockets.filter((w) => !tag || w.c === tag), getTags: (w) => [w.c], waitUntil: (p) => p };
+  const d = new Monde(ctx, { SESSIONS: bucket });
+  const req = (chemin, compte, corps, methode = corps ? 'POST' : 'GET') => d.fetch(new Request('https://monde/monde/' + chemin, { method: methode, headers: { 'X-Compte': compte, 'X-Nom': 'X', 'Content-Type': 'application/json' }, body: corps ? JSON.stringify(corps) : undefined })).then(async (r) => ({ statut: r.status, ...(await r.json()) }));
+  assert((await req('creer', A, { partie: { v: partieLocale().version, t: 0, s: partieLocale() }, titre: 'La ferme' })).ok);
+  d.registre.ajouterMembre(B, 'Sam');
+  const r = d.registre, [t1] = casesLibres(r.charger(), 1);
+  const avant = empreintePartie(r.charger());
+  const sv = await req('sauvegardes', A, {});
+  eq([sv.ok, sv.sauvegarde.rev], [true, 0]);
+  eq((await req('sauvegardes', B)).statut, 403, 'un membre ne les voit pas');
+  assert(r.commande(B, poser(t1)).ok);
+  const ws = (c) => ({ c, send: (m) => msgs.push([c, JSON.parse(m)]), close() {} });
+  sockets.push(ws(A), ws(B));
+  const res = await req('restaurer', A, { cle: sv.sauvegarde.cle });
+  eq([res.ok, res.rev, empreintePartie(r.charger())], [true, 2, avant], 'la partie d\'avant le mur');
+  eq(msgs.filter(([, m]) => m.t === 'instantane' || m.t === 'restaure').map(([c, m]) => [c, m.t]), [[A, 'instantane'], [B, 'instantane'], [A, 'restaure'], [B, 'restaure']]);
+  eq((await req('sauvegardes', A)).sauvegardes.map((x) => x.raison), ['avant-restauration', 'main'], 'la partie d\'avant la restauration est sauvée aussi');
+  eq((await req('restaurer', A, { cle: 'mondes/xyz/000000000000001-1.json' })).statut, 404);
+  eq(r.journal(A).evts[0].type, 'monde.restaurer');
+  // (réveillé, le monde refait la partie restaurée ; un joueur en retard la reçoit entière)
+  eq(empreintePartie(new MondeRegistre(sql).charger()), avant);
+  assert(!!r.accueil(B, { version: GAME_VERSION, depuis: 1 }).partie, 'en retard d\'une restauration : la partie entière');
+  // une nuit : sauvée seule
+  r.positions.clear();
+  for (const w of sockets) { w.serializeAttachment = (a) => { w.att = a; }; w.deserializeAttachment = () => w.att; }
+  await d.webSocketMessage(sockets[0], JSON.stringify({ t: 'coucher', oui: true }));
+  await d.webSocketMessage(sockets[1], JSON.stringify({ t: 'coucher', oui: true }));
+  await new Promise((ok) => setTimeout(ok, 20));
+  eq((await req('sauvegardes', A)).sauvegardes[0].raison, 'nuit');
 });

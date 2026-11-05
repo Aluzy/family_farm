@@ -61,6 +61,10 @@ export function etatDesLits(sockets) {
 // invite ou dont il change le rôle : bâtisseur, ami jardinier, visiteur.
 export const ROLES = { proprietaire: 'proprietaire', batisseur: 'batisseur', jardinier: 'jardinier', visiteur: 'visiteur' };
 export const ROLES_INVITES = ['batisseur', 'jardinier', 'visiteur'];
+// E-12 : les sauvegardes du monde dans R2 (le bucket du Worker, sous mondes/<id du Durable Object>/) :
+// une après chaque nuit partagée, et à la demande du propriétaire ; les GARDER dernières sont gardées.
+export const SAUVEGARDES = { GARDER: 14 };
+const RESTAURER = 'monde.restaurer';   // (la marque d'une restauration dans le journal : jamais rejouée)
 export const JOURNAL_PAGE = 50;
 
 const lignes = (r) => (r && typeof r.toArray === 'function' ? r.toArray() : Array.isArray(r) ? r : []);
@@ -129,6 +133,48 @@ export function horsDeLaFerme(s, args) {
   return EAUX_DU_MONDE.has(args.eau);
 }
 
+// E-12 : les sauvegardes d'un monde, dans un bucket R2 (`bucket` : put, get, list, delete), sous `prefixe`.
+// Une clé : <prefixe><ms, sur 15 chiffres>-<rev>.json (l'ordre des clés est celui du temps).
+export class SauvegardesMonde {
+  constructor(bucket, prefixe) {
+    this.bucket = bucket;
+    this.prefixe = prefixe;
+  }
+
+  // La partie `partie` (révision `rev`, jour `jour`), sauvée ; les plus anciennes au-delà de GARDER, retirées.
+  async sauver(partie, { rev, jour, raison, t }) {
+    const cle = `${this.prefixe}${String(Math.floor(t)).padStart(15, '0')}-${rev}.json`;
+    const meta = { rev: String(rev), jour: String(jour), raison: String(raison), t: String(Math.floor(t)) };
+    await this.bucket.put(cle, JSON.stringify({ v: GAME_VERSION, rev, jour, raison, t, s: partie }), { httpMetadata: { contentType: 'application/json' }, customMetadata: meta });
+    const toutes = await this.liste();
+    for (const x of toutes.slice(SAUVEGARDES.GARDER)) await this.bucket.delete(x.cle);
+    return { cle, rev, jour, raison, t };
+  }
+
+  // Les sauvegardes, de la plus récente à la plus ancienne : [{ cle, rev, jour, raison, t, taille }].
+  async liste() {
+    const out = [];
+    let cursor;
+    do {
+      const page = await this.bucket.list({ prefix: this.prefixe, cursor, include: ['customMetadata'] });
+      for (const o of page.objects || []) {
+        const m = o.customMetadata || {};
+        out.push({ cle: o.key, rev: Number(m.rev) || 0, jour: Number(m.jour) || 0, raison: m.raison || '', t: Number(m.t) || 0, taille: o.size || 0 });
+      }
+      cursor = page.truncated ? page.cursor : undefined;
+    } while (cursor);
+    return out.sort((a, b) => (a.cle < b.cle ? 1 : a.cle > b.cle ? -1 : 0));
+  }
+
+  // La sauvegarde `cle` (de ce monde seulement), ou null.
+  async lire(cle) {
+    if (typeof cle !== 'string' || !cle.startsWith(this.prefixe) || !/^[0-9]{15}-[0-9]+\.json$/.test(cle.slice(this.prefixe.length))) return null;
+    const o = await this.bucket.get(cle);
+    if (!o) return null;
+    try { return JSON.parse(await o.text()); } catch (e) { return null; }
+  }
+}
+
 export class MondeRegistre {
   constructor(sql, maintenant = () => Date.now()) {
     this.sql = sql;
@@ -183,7 +229,9 @@ export class MondeRegistre {
     const s = JSON.parse(inst.json);
     let rev = inst.rev;
     for (const e of this.tous('SELECT rev, cmd FROM journal WHERE rev > ? ORDER BY rev', inst.rev)) {
-      const r = executerCommande(s, JSON.parse(e.cmd));
+      const c = JSON.parse(e.cmd);
+      if (c.type === RESTAURER) { rev = e.rev; continue; }   // (E-12 : une marque, pas une commande)
+      const r = executerCommande(s, c);
       if (!r.ok) throw new Error(`le journal ne se rejoue pas à la révision ${e.rev} : ${r.error}`);
       rev = e.rev;
     }
@@ -224,7 +272,9 @@ export class MondeRegistre {
     if (Number.isInteger(d) && d >= 0 && d <= this.rev) {
       const plusVieux = this.un('SELECT MIN(rev) AS r FROM journal');
       if (d === this.rev) return { ...base, evts: [] };
-      if (plusVieux && plusVieux.r !== null && plusVieux.r <= d + 1) {
+      // (E-12 : une restauration depuis : la partie entière)
+      const restauree = this.un('SELECT rev FROM journal WHERE rev > ? AND cmd LIKE ?', d, `%"${RESTAURER}"%`);
+      if (plusVieux && plusVieux.r !== null && plusVieux.r <= d + 1 && !restauree) {
         const evts = this.tous('SELECT rev, acteur, cmd FROM journal WHERE rev > ? ORDER BY rev', d).map((e) => ({ rev: e.rev, acteur: e.acteur, cmd: JSON.parse(e.cmd) }));
         return { ...base, evts };
       }
@@ -312,6 +362,26 @@ export class MondeRegistre {
     return { ok: true, role, titre: this.meta('titre') };
   }
 
+  // E-12 : la partie de la sauvegarde `save` ({ v, rev, jour, s }) remplace celle du monde, par le propriétaire
+  // `par` : une révision de plus, marquée au journal (qui garde l'histoire d'avant), et un instantané.
+  restaurer(par, save) {
+    if (par !== this.meta('proprietaire')) return { ok: false, statut: 403, erreur: 'Seul le propriétaire du monde restaure une sauvegarde.' };
+    let s;
+    try { s = migrate({ v: save && save.v, t: 0, s: JSON.parse(JSON.stringify(save.s)) }); } catch (e) { s = null; }
+    if (!s || typeof s !== 'object' || !s.carte) return { ok: false, statut: 400, erreur: 'Cette sauvegarde est illisible.' };
+    s.mondePartage = true;
+    s.ramassage = false;
+    s.nuitEnCours = null;
+    this.charger();
+    this.partie = s;
+    this.rev += 1;
+    const t = this.maintenant();
+    const marque = { id: `restaure-${this.rev}-${t.toString(36)}`, type: RESTAURER, args: { rev: save.rev, jour: save.jour } };
+    this.faire('INSERT INTO journal (rev, id, acteur, cmd, ts) VALUES (?, ?, ?, ?, ?)', this.rev, marque.id, par, JSON.stringify(marque), t);
+    this.instantane();
+    return { ok: true, rev: this.rev, jour: s.day };
+  }
+
   // E-11 : le propriétaire change le rôle d'un membre (pas le sien).
   changerRole(par, compte, role) {
     if (par !== this.meta('proprietaire')) return { ok: false, statut: 403, erreur: 'Seul le propriétaire du monde change les rôles.' };
@@ -365,6 +435,19 @@ export class Monde {
     this.registre = new MondeRegistre(ctx.storage.sql);
   }
 
+  // E-12 : les sauvegardes de ce monde (null : pas de bucket R2 lié).
+  sauvegardes() {
+    if (!this.env || !this.env.SESSIONS) return null;
+    const id = this.ctx.id && this.ctx.id.toString ? this.ctx.id.toString() : 'local';
+    return new SauvegardesMonde(this.env.SESSIONS, `mondes/${id}/`);
+  }
+  async sauvegarder(raison) {
+    const S = this.sauvegardes();
+    if (!S || !this.registre.existe()) return null;
+    const s = this.registre.charger();
+    return S.sauver(s, { rev: this.registre.rev, jour: s.day, raison, t: this.registre.maintenant() });
+  }
+
   async fetch(request) {
     const url = new URL(request.url);
     const compte = request.headers.get('X-Compte') || '';
@@ -412,6 +495,28 @@ export class Monde {
       const r = this.registre.journal(compte, url.searchParams.get('avant'));
       return json(r, r.ok ? 200 : r.statut);
     }
+    // E-12 : les sauvegardes (le propriétaire) : les lister, en faire une, en restaurer une
+    if (url.pathname.endsWith('/sauvegardes') || url.pathname.endsWith('/restaurer')) {
+      if (compte !== this.registre.meta('proprietaire')) return json({ ok: false, erreur: 'Seul le propriétaire du monde gère ses sauvegardes.' }, 403);
+      const S = this.sauvegardes();
+      if (!S) return json({ ok: false, erreur: 'Les sauvegardes ne sont pas disponibles ici.' }, 503);
+      if (url.pathname.endsWith('/sauvegardes') && request.method === 'GET') return json({ ok: true, sauvegardes: await S.liste() });
+      if (url.pathname.endsWith('/sauvegardes') && request.method === 'POST') return json({ ok: true, sauvegarde: await this.sauvegarder('main') });
+      if (url.pathname.endsWith('/restaurer') && request.method === 'POST') {
+        let b = {};
+        try { b = await request.json(); } catch (e) { b = {}; }
+        const save = await S.lire(String(b.cle || ''));
+        if (!save) return json({ ok: false, erreur: 'Cette sauvegarde n\'existe pas (ou plus).' }, 404);
+        // (la partie d'avant, sauvée elle aussi : une restauration se défait)
+        await this.sauvegarder('avant-restauration');
+        const r = this.registre.restaurer(compte, save);
+        if (!r.ok) return json(r, r.statut);
+        // (chacun reçoit la partie restaurée, et le mot qui le dit)
+        this.diffuser({ t: 'instantane', rev: r.rev, partie: this.registre.charger() });
+        this.diffuser({ t: 'restaure', rev: r.rev, jour: r.jour });
+        return json({ ok: true, rev: r.rev, jour: r.jour });
+      }
+    }
     if (url.pathname.endsWith('/fiche')) {
       if (!this.registre.existe()) return json({ ok: false, erreur: 'Monde inconnu.' }, 404);
       if (!this.registre.membre(compte)) return json({ ok: false, erreur: 'Tu n\'es pas membre de ce monde.' }, 403);
@@ -453,7 +558,12 @@ export class Monde {
     if (e.nuit) {
       for (const w of ws) attacher(w, { couche: false });
       const r = this.registre.nuit();
-      if (r.ok) this.diffuser(r.evt);
+      if (r.ok) {
+        this.diffuser(r.evt);
+        // (E-12 : une sauvegarde après chaque nuit ; elle ne retient pas la nuit)
+        const p = this.sauvegarder('nuit').catch(() => null);
+        if (this.ctx.waitUntil) this.ctx.waitUntil(p);
+      }
       else this.diffuser({ t: 'erreur', erreur: `La nuit n'a pas pu passer : ${r.erreur}` });
       this.diffuser({ t: 'couches', comptes: [], connectes: e.connectes });
       return;

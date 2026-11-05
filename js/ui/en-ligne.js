@@ -161,6 +161,11 @@ function recevoir(ws, data) {
     if (document.getElementById('membres-titre')) ouvrirMembres();
     return;
   }
+  // E-12 : le propriétaire a restauré une sauvegarde (la partie est arrivée juste avant : instantane)
+  if (m.t === 'restaure') {
+    notify(`🌐 Le propriétaire a restauré une sauvegarde du monde : jour ${m.jour}.`, { duree: 7000 });
+    return;
+  }
   if (m.t === 'instantane') {
     if (!lien.synchro) {
       lien.synchro = new Synchro({ partie: m.partie, rev: m.rev, executerCommande, quandRefaite: partieRefaite });
@@ -332,7 +337,7 @@ function ouvrirMembres() {
     <h2 id="membres-titre">👥 Les membres</h2>
     <div class="stack">${lignes}</div>
     <div class="stack">${inv}</div>
-    ${proprio ? '<div class="row"><button class="btn" type="button" data-action="monde-journal">📜 Le journal du monde</button></div>' : ''}`, { labelledBy: 'membres-titre' });
+    ${proprio ? '<div class="row"><button class="btn" type="button" data-action="monde-journal">📜 Le journal du monde</button><button class="btn" type="button" data-action="monde-sauvegardes">💾 Les sauvegardes</button></div>' : ''}`, { labelledBy: 'membres-titre' });
 }
 
 // E-11 : ce qu'un geste du journal a fait, en mots.
@@ -351,6 +356,7 @@ const GESTES = {
   'appareil.basculer': 'a allumé ou éteint un appareil', 'appareil.ameliorer': 'a amélioré un appareil', 'appareil.entretenir': 'a entretenu un appareil', 'appareil.reparer': 'a réparé un appareil',
   'reservoir.agrandir': 'a agrandi le réservoir', 'robot.batterie': 'a agrandi la batterie du robot', 'serre.agrandir': 'a agrandi la Serre', 'arbre.planter': 'a planté un arbre',
   'nuit.partagee': 'tout le monde a dormi : la nuit est passée',
+  'monde.restaurer': 'a restauré une sauvegarde',
 };
 const FAMILLES_GESTES = { mur: 'a bâti un mur', etage: 'a bâti à l\'étage', solEtage: 'a posé un sol à l\'étage' };
 export function gesteEnMots(type) {
@@ -379,6 +385,42 @@ async function ouvrirJournal(suite = false) {
     <ul class="journal-monde">${lignes}</ul>
     ${(r.evts || []).length >= 50 ? '<div class="row"><button class="btn" type="button" data-action="monde-journal-suite">Plus ancien</button></div>' : ''}
     <div class="row"><button class="btn" type="button" data-action="monde-membres">👥 Les membres</button></div>`, { labelledBy: 'journal-titre' });
+}
+
+// E-12 : les sauvegardes du monde (le propriétaire) : une après chaque nuit, d'autres à la demande ; en
+// restaurer une remplace la partie du monde pour tous (la partie d'avant est sauvée d'abord).
+const RAISONS = { nuit: '🌙 après la nuit', main: '💾 à la main', 'avant-restauration': '↩️ avant une restauration' };
+let sauvegardesVues = [], aRestaurer = null;
+async function ouvrirSauvegardes(relire = true) {
+  if (!lien) return;
+  if (relire) {
+    const r = await appelServeur(`/mondes/${lien.monde}/sauvegardes`, { methode: 'GET' });
+    if (!r.ok) { notify(`🌐 ${r.erreur || 'Les sauvegardes n\'ont pas pu être lues.'}`); return; }
+    sauvegardesVues = r.sauvegardes || [];
+  }
+  const date = (t) => { try { return new Date(t).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }); } catch (e) { return ''; } };
+  const lignes = sauvegardesVues.length ? sauvegardesVues.map((x) => `<li class="row"><span><strong>Jour ${x.jour}</strong> <span class="muted">· ${date(x.t)} · ${RAISONS[x.raison] || x.raison} · n° ${x.rev}</span></span>${aRestaurer === x.cle
+    ? `<button class="btn danger" type="button" data-action="monde-restaurer-oui" data-cle="${echapper(x.cle)}">Oui, restaurer</button><button class="btn" type="button" data-action="monde-restaurer-non">Non</button>`
+    : `<button class="btn" type="button" data-action="monde-restaurer" data-cle="${echapper(x.cle)}">Restaurer</button>`}</li>`).join('') : '<li class="muted">Aucune encore : la première se fait après la prochaine nuit, ou maintenant.</li>';
+  openModal(`
+    <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
+    <h2 id="sauvegardes-titre">💾 Les sauvegardes du monde</h2>
+    <p class="muted">Une après chaque nuit, et quand tu veux. Restaurer remet la ferme de tout le monde dans cet état ; la ferme d'avant est sauvée d'abord, tu peux donc revenir en arrière.</p>
+    <ul class="journal-monde">${lignes}</ul>
+    <div class="row"><button class="btn primary" type="button" data-action="monde-sauvegarder">Sauvegarder maintenant</button><button class="btn" type="button" data-action="monde-membres">👥 Les membres</button></div>`, { labelledBy: 'sauvegardes-titre' });
+}
+async function sauvegarderMaintenant() {
+  if (!lien) return;
+  const r = await appelServeur(`/mondes/${lien.monde}/sauvegardes`, {});
+  notify(r.ok ? '💾 Le monde est sauvegardé.' : `🌐 ${r.erreur || 'La sauvegarde a échoué.'}`);
+  if (r.ok) ouvrirSauvegardes();
+}
+async function restaurer(cle) {
+  if (!lien) return;
+  aRestaurer = null;
+  const r = await appelServeur(`/mondes/${lien.monde}/restaurer`, { corps: { cle } });
+  if (!r.ok) { notify(`🌐 ${r.erreur || 'La restauration a échoué.'}`); ouvrirSauvegardes(false); return; }
+  closeModal();
 }
 
 async function changerRole(compte, role) {
@@ -434,6 +476,11 @@ registerActions({
   'monde-inviter': (target) => { inviter(target && target.dataset && target.dataset.role); },
   'monde-role': (target) => { changerRole(target.dataset.compte, target.dataset.role); },
   'monde-journal': () => { ouvrirJournal(); },
+  'monde-sauvegardes': () => { aRestaurer = null; ouvrirSauvegardes(); },
+  'monde-sauvegarder': () => { sauvegarderMaintenant(); },
+  'monde-restaurer': (target) => { aRestaurer = target.dataset.cle; ouvrirSauvegardes(false); },
+  'monde-restaurer-non': () => { aRestaurer = null; ouvrirSauvegardes(false); },
+  'monde-restaurer-oui': (target) => { restaurer(target.dataset.cle); },
   'monde-journal-suite': () => { ouvrirJournal(true); },
   'monde-copier': () => {
     const z = document.getElementById('invitation-lien');
