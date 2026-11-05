@@ -1,5 +1,13 @@
 # Le récit de Céron
 
+> **Le récit cosy (novembre 2026).** L'histoire a été réécrite pour une île chaleureuse : `bible.md` et
+> `personnages.md` font foi. Maurice et Philomène sont vivants, partis en voyage (plus de notaire : ils écrivent
+> eux-mêmes, `maurice_terre`, `maurice_enveloppe`) ; Johnny n'existe plus (sa cabane est l'observatoire de Maurice,
+> `visiteObservatoire` ; l'épave, la barque des premiers arrivants) ; Odile tutoie dès la rencontre ; Théo reste sur
+> l'île (`basile_theo_frida`, « theo.frida ») ; la fin « riche » s'appelle « genereuse » ; les toits ne s'abîment
+> plus (quelques-uns à rafraîchir, une fois par hameau) ; personne n'est en colère. Ce qui suit garde l'histoire de
+> la conception : où il diffère, la bible l'emporte (les noms changés : `RECIT_RENOMMAGES`, js/engine/state.js).
+
 Ferme Familiale raconte l'installation d'une famille sur la terre sauvage dont elle hérite, sur
 Céron, petite île volcanique de l'archipel des Terres Lointaines. Ce dossier est la référence de
 l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
@@ -55,7 +63,7 @@ l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
   `js/carte/ferme/hameaux.js`, `stageMaison` dans `js/ui/stage.js` : Odile). L'effet `montrer` montre
   le Gué sur la carte du monde et y mène la boussole ; l'effet `fragment` s'annonce à la fermeture.
 - Le carnet du joueur : `js/ui/carnet.js`, une entrée 📓 du menu dès la première page.
-- Les lettres : la lettre d'Adèle (`adele_arrivee`) et celle du notaire arrivent au départ
+- Les lettres : la lettre d'Adèle (`adele_arrivee`) et celle de Maurice et Philomène (`maurice_terre`) arrivent au départ
   (`data/campaign.json`, `COURRIER`) ; une ligne `{ m, f }` suit le genre du joueur (`mailText`).
 - Les bulles : le salut des adultes des hameaux suit la confiance (`RECIT.SALUTS`, `paroleHameau`) ;
   la faim chasse la phrase du repas (`paroleHabitant`). Le cocher dit une réplique à chaque fenêtre de
@@ -80,7 +88,7 @@ l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
   `js/engine/habitants.js`) ; les scènes au toucher (`paroleDepuisCarte`, `js/ui/habitants.js`) ; les lettres
   (`mailDue`, `js/engine/campaign.js`) ; l'enveloppe dans l'inventaire (`js/ui/inventaire.js`, l'action
   `enveloppe-ouvrir`) ; les annonces de veillée et de fête (`inviterVeillee`, `js/ui/loop.js`).
-- Le fil de la lune (lot 10) : `js/engine/fil-lune.js` (`visiteJohnny`, `galerieOuverte`, `fissureDuNiveau`,
+- Le fil de la lune (lot 10) : `js/engine/fil-lune.js` (`visiteObservatoire`, `galerieOuverte`, `fissureDuNiveau`,
   `niveauGalerie`, `prendrePierre`, `poserPierre`, `fermeLuit`) ; la cabane et l'atelier (`stageMaison`,
   `js/ui/stage.js`) ; la galerie dans la mine (`FermeHote.niveau`, `FermeHote.pierre`, `js/ui/excursion.js` ;
   `js/grotte.js`) ; la pierre dans l'inventaire (`js/ui/inventaire.js`, l'action `pierre-poser`) ; la pousse

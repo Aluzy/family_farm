@@ -18,7 +18,7 @@
       { "debloque": ["chaines", "verger", "ecurie"] },
       { "debloque": ["cacao", "vanille", "cafe", "serre", "energie"] },
       { "debloque": ["frigo"] },
-      { "debloque": [], "note": "un courrier du notaire : un héritage caché" },
+      { "debloque": [], "note": "une carte postale de Maurice : une enveloppe pour l'île" },
       { "debloque": ["veillee"] }
     ],
     "//ELEMENTS": "Libellé des éléments débloqués (écran du niveau, Ferme).",

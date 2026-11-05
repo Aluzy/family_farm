@@ -57,7 +57,7 @@
     "  sur une terre ouverte, plus LOIN_BONUS au plus selon sa distance à la ferme (jusqu'à LOIN",
     "  tuiles) ; NOMS : les noms qu'on leur donne (tirés sans répétition) ; GUE : le nom du hameau le plus proche de la",
     "  ferme, toujours (le Gué du récit, docs/recit/bible.md : le hameau natal de Maurice ; sa première maison est celle",
-    "  de Maurice, vide, sans foyer). GARANTIS : les autres hameaux du récit, dans l'ordre où ils choisissent : chacun prend",
+    "  de Maurice et Philomène, partis en voyage, sans foyer). GARANTIS : les autres hameaux du récit, dans l'ordre où ils choisissent : chacun prend",
     "  le hameau qui reste dont le pays (cote, montagne, foret, lande) pèse le plus autour de lui ; metier : celui de",
     "  ses habitants, si un peu de ce pays l'entoure (sinon celui que le lieu suggère, monde-hameaux.js).",
     "CHEMINS : COUTS, le prix d'un pas sur chaque biome (absent : on n'y passe pas ; « riviere » :",
@@ -75,7 +75,7 @@
     "PECHE : MER, le nombre de coins de pêche sur le rivage, à ECART tuiles l'un de l'autre ; un",
     "  coin par lac et par rivière.",
     "RECIT : les lieux garantis du récit (docs/recit/bible.md), une case chacun, dans lieux.recit ({ id, sorte, case }) :",
-    "  la cabane de Johnny (dans la forêt, à CHEMIN tuiles au moins de tout chemin, HAMEAU de tout hameau, FERME de la",
+    "  l'observatoire de Maurice, la « cabane » (dans la forêt, à CHEMIN tuiles au moins de tout chemin, HAMEAU de tout hameau, FERME de la",
     "  ferme : la plus loin des chemins), l'atelier de Frida (sur la rive d'un lac, ou d'une rivière s'il n'y a pas de",
     "  lac : la rive la plus près de deux hameaux à la fois, à HAMEAU tuiles au moins de chacun), l'épave (sur la plage,",
     "  au bord de la mer, à HAMEAU tuiles au moins de tout hameau : la plus loin des chemins). Sans place qui convienne,",
@@ -524,7 +524,7 @@
     "une part EAU du pays, ou un coin de pêche à PECHE cases ; bûcheron : la forêt pour une part FORET ;",
     "berger : la lande pour une part LANDE ; sinon cueilleur. TRAVAIL : les pièces du lieu de travail",
     "de chaque métier (l'enclos du berger : ENCLOS cases, clôturé, son auge dedans).",
-    "BATISSES : la cabane de Johnny et l'atelier de Frida (le récit, lieux.recit), bâties avec les mêmes pièces",
+    "BATISSES : l'observatoire de Maurice (la « cabane ») et l'atelier de Frida (le récit, lieux.recit), bâties avec les mêmes pièces",
     "qu'une maison de hameau (planBatisse) : style (HAMEAUX.STYLES : murs, toit, sol), l × h cases (murs compris), la",
     "porte (sa colonne, dans le mur du bas), les fenêtres de la façade (leurs colonnes), les meubles [nom, colonne,",
     "rangée] depuis le coin haut gauche (un meuble haut : sa case du bas), les objets du dehors [nom, dx, dy] depuis",
@@ -709,7 +709,7 @@
       "activite": {
         "dort": ["(ça dort à poings fermés)", "(un ronflement tranquille)"],
         "maison": ["On se prépare pour la journée.", "Je range un peu la maison."],
-        "chemin": ["Je file au travail.", "Pardon, je passe !", "Je suis en retard, à tout à l'heure !"],
+        "chemin": ["Je file au travail.", "Pardon, je passe !", "Bonne journée, à tout à l'heure !"],
         "joue": ["On joue à chat !", "Tu veux jouer avec nous ?", "Je cours plus vite que toi !", "On a vu un lapin près du puits !"],
         "repas": ["C'est l'heure de manger.", "Ça sent bon à la maison.", "À table !"],
         "rentre": ["Je rentre à la maison.", "La soupe nous attend.", "Encore une bonne journée."],
@@ -718,17 +718,17 @@
       },
       "travail": {
         "bucheron": ["Le bois ne se coupe pas tout seul !", "Les arbres repousseront, ne t'en fais pas.", "Une bonne flambée pour les nuits fraîches."],
-        "pecheur": ["Ça mord, aujourd'hui.", "Chut, tu vas faire fuir les poissons.", "La patience, c'est tout le métier."],
-        "mineur": ["La roche est dure par ici.", "Il y a du fer dans cette montagne.", "Un coup de pioche après l'autre."],
+        "pecheur": ["Ça mord, aujourd'hui.", "Chut… je crois que ça mord !", "La patience, c'est tout le métier."],
+        "mineur": ["Il y a de jolis cristaux, par ici.", "Il y a du fer dans cette montagne.", "Un coup de pioche après l'autre."],
         "berger": ["Mes bêtes ont bon appétit.", "Le lait sera bon ce soir.", "La laine pousse avec le beau temps."],
         "cueilleur": ["Les buissons sont pleins de baies.", "Je connais les bons coins à champignons.", "Rien ne vaut les mûres du matin."],
         "jardinier": ["Le potager demande du soin.", "Les légumes poussent bien cette année.", "Encore un rang à désherber."]
       },
       "humeur": {
         "heureux": ["On vit bien, au hameau.", "La vie est douce, ici.", "On mange bien et on dort bien."],
-        "content": ["Ça va, ça va.", "On ne se plaint pas.", "Les jours se suivent."],
-        "triste": ["On n'a pas le moral, ces temps-ci…", "La fatigue se fait sentir.", "La vie est dure, au hameau."],
-        "faim": ["On n'a pas eu assez à manger hier.", "Le garde-manger est presque vide…"]
+        "content": ["Ça va, ça va.", "Tout va bien, merci !", "Encore une belle journée."],
+        "triste": ["On a eu une petite semaine. Ça ira mieux demain !", "Une bonne sieste, et il n'y paraîtra plus.", "Un peu de soleil nous ferait du bien."],
+        "faim": ["Le garde-manger est un peu léger, ces jours-ci.", "On mangerait bien une bonne soupe."]
       }
     },
     "PROPOS": {
@@ -740,7 +740,7 @@
       "ferme_vide": ["Ton potager se repose ? La terre aime bien ça, de temps en temps.", "Alors, qu'est-ce que tu vas planter ?", "Un potager vide, c'est un potager qui attend une idée.", "Si tu cherches quoi semer, la carotte ne déçoit jamais.", "Une houe, quelques graines, un peu d'eau : c'est tout ce qu'il faut pour commencer."],
       "ferme_poules": ["Tes {n} poules, elles pondent bien ?", "On entend tes poules d'ici, le matin. Enfin… presque.", "Des poules à la ferme, c'est des œufs au petit-déjeuner !", "Une ferme avec des poules, c'est une ferme qui vit.", "Un peu de blé chaque jour, et tes poules te le rendront en œufs."],
       "ferme_poules_enfant": ["C'est vrai que tu as des poules ? Je peux venir les voir ?", "Tes poules, elles ont des prénoms ?", "J'aimerais bien ramasser les œufs avec toi !", "Est-ce que tes poules courent aussi vite que moi ?"],
-      "ferme_moutons": ["Tes moutons, tu les tonds toi-même ? Ce n'est pas facile !", "Une laine de ta ferme, ça ferait de beaux pulls pour l'hiver.", "Combien de moutons, maintenant ? {n} ? Bravo !", "Les moutons aiment la paille bien sèche. Les tiens doivent être gâtés."],
+      "ferme_moutons": ["Tes moutons, tu les tonds toi-même ? Ce n'est pas facile !", "Une laine de ta ferme, ça ferait de beaux pulls pour les soirées fraîches.", "Combien de moutons, maintenant ? {n} ? Bravo !", "Les moutons aiment la paille bien sèche. Les tiens doivent être gâtés."],
       "ferme_vaches": ["Du lait frais tous les matins, quelle chance tu as !", "Tes vaches ont l'air bien soignées, ça se voit à leur lait.", "Une vache, c'est une amie qui donne du lait. Prends-en soin !", "On dit que les herbes de montagne donnent un lait d'alpage. Tu as essayé ?"],
       "ferme_ruches": ["Des ruches à la ferme ? Le miel doit être doux, avec toutes ces fleurs.", "Les abeilles aiment les fleurs. Plantes-en autour de tes ruches !", "Ton miel, il paraît qu'il a un goût de prairie.", "Le bourdonnement des abeilles, c'est la plus belle musique de l'été."],
       "ferme_verger": ["Un verger, c'est un cadeau pour dans dix ans. Et pour tout de suite aussi !", "Tes arbres fruitiers ont bien pris ?", "Rien ne vaut un fruit cueilli sur son propre arbre.", "{n} arbres au verger ? Il en faudra, des paniers !"],

@@ -104,24 +104,24 @@ test('l\'enveloppe : la porter à Odile (la toucher) la donne ; ses toits sont r
 
 /* ---------- l'usure des toits ---------- */
 
-test('l\'usure : à partir de l\'acte III, un toit toutes les USURE.NUITS nuits, au plus USURE.MAX par hameau', () => {
+test('les toits : à partir de l\'acte III, une fois par hameau, de 1 à USURE.MAX toits à rafraîchir ; rien ne s\'abîme ensuite', () => {
   const t = partie(2);
-  for (let k = 0; k < 3 * USURE.NUITS; k++) { t.day += 1; assertEqual(usureNuit(t).use, null, 'pas à l\'acte II'); }
+  for (let k = 0; k < 6; k++) { t.day += 1; assertEqual(usureNuit(t).use, null, 'pas à l\'acte II'); }
   const s = partie(3);
-  let uses = 0;
-  for (let k = 0; k < 40 * USURE.NUITS; k++) {
-    s.day += 1;
-    const r = usureNuit(s);
-    if (r.use) { uses++; assertEqual(s.day % USURE.NUITS, 0, 'une nuit sur USURE.NUITS'); }
+  assert(usureNuit(s).use, 'la première nuit de l\'acte III');
+  const avant = {};
+  for (const id of Object.keys(habitantsDe(s))) {
+    const n = toitsUses(s, id).length;
+    assert(n >= 1 && n <= USURE.MAX, `${id} : ${n} toits`);
+    avant[id] = n;
   }
-  const n = Object.keys(habitantsDe(s)).length;
-  assertEqual(uses, n * USURE.MAX, 'tous les hameaux au plus haut, puis plus rien');
-  for (const id of Object.keys(habitantsDe(s))) assertEqual(toitsUses(s, id).length, USURE.MAX);
+  for (let k = 0; k < 40; k++) { s.day += 1; assertEqual(usureNuit(s).use, null, 'plus rien ne s\'abîme'); }
+  for (const id of Object.keys(habitantsDe(s))) assertEqual(toitsUses(s, id).length, avant[id]);
   assert(aFait(s, 'toits.uses'));
   // une sauvegarde abîmée : une maison inconnue, un doublon
   const id = idDe(s, 'genets');
   habitantsDe(s)[id].usees.push('inconnue', habitantsDe(s)[id].usees[0]);
-  assertEqual(toitsUses(s, id).length, USURE.MAX);
+  assertEqual(toitsUses(s, id).length, avant[id]);
 });
 
 test('l\'usure : réparer coûte USURE.REPARER et rend de la confiance au hameau ; compté pour la fin', () => {
@@ -150,13 +150,13 @@ test('la seconde veillée : au Gué, l\'acte III ouvert ; ses lignes selon ce qu
   assert(r.ok, r.error);
   assertEqual(qui(r), ['odile', 'fernand', 'garance', 'odile', 'achille']);
   assert(r.lignes[2].texte.includes('toit'), 'Garance : son toit');
-  assert(r.lignes[3].texte.includes('toits sont refaits'), 'Odile : les toits de l\'enveloppe');
+  assert(r.lignes[3].texte.includes('toits sont tout beaux'), 'Odile : les toits de l\'enveloppe');
   assert(aFait(s, 'veillee.2'));
   const u = partie(3);
   noterFait(u, ['enveloppe.ouverte', 'promesse.scie_bois_joli']);
   const r2 = jouerScene(u, 'veillee_2', ici(u, 'gue'));
   assertEqual(qui(r2), ['odile', 'fernand', 'basile', 'odile', 'achille']);
-  assert(r2.lignes[3].texte.includes('gardée'));
+  assert(r2.lignes[3].texte.includes('Tu as bien choisi'));
 });
 
 /* ---------- la voie, la fin, la fête ---------- */
@@ -173,14 +173,14 @@ test('la fin : petite ou grande ferme, et ce que le joueur a rendu', () => {
   s.blocs = s.blocs || {};
   let k = 900000;
   while (empreinteFerme(s).niveau !== 'haute') s.blocs[k++] = 'station_robot';
-  assertEqual([finAventure(s).voie, finAventure(s).fin], ['grande', 'riche'], 'sans arbres plantés');
+  assertEqual([finAventure(s).voie, finAventure(s).fin], ['grande', 'genereuse'], 'sans arbres plantés');
   s.foret = s.foret || {};
   s.foret.arbres = Array.from({ length: R.FINS.NATURE }, (_, i) => ({ id: `f${i}` }));
   while (empreinteFerme(s).niveau !== 'haute') s.blocs[k++] = 'station_robot';
   assertEqual(finAventure(s).fin, 'autrement');
   // figée à la fête
-  noterFait(s, 'fin.riche');
-  assertEqual(finAventure(s).fin, 'riche');
+  noterFait(s, 'fin.genereuse');
+  assertEqual(finAventure(s).fin, 'genereuse');
 });
 
 test('la fête : annoncée à la calèche (acte IV), à Brumeval une nuit de pleine lune, selon la fin ; la cloche', () => {
@@ -200,12 +200,12 @@ test('la fête : annoncée à la calèche (acte IV), à Brumeval une nuit de ple
   assertEqual(scenesPossibles(s, ici(s, 'brumeval')).some((id) => id.startsWith('fete_')), false, 'une seule fois');
   // la lettre d'Adèle de cette fin
   deliverMail(s);
-  assert(mailReceived(s, 'adele_fete_maurice') && !mailReceived(s, 'adele_fete_riche'));
+  assert(mailReceived(s, 'adele_fete_maurice') && !mailReceived(s, 'adele_fete_genereuse'));
 });
 
 /* ---------- les lettres ---------- */
 
-test('les lettres : le chapitre, un fait, des jours après ; Adèle et Théo', () => {
+test('les lettres : le chapitre, un fait ; Adèle (Théo ne part plus : pas de lettre de lui)', () => {
   const s = partie(3);
   deliverMail(s);
   assert(mailReceived(s, 'adele_recolte') && mailReceived(s, 'adele_veillee'), 'la récolte (chapitre 2), la veillée');
@@ -213,12 +213,10 @@ test('les lettres : le chapitre, un fait, des jours après ; Adèle et Théo', (
   noterFait(s, 'machine.station_robot');
   deliverMail(s);
   assert(mailReceived(s, 'adele_robot'));
-  noterFait(s, 'theo.part');
+  noterFait(s, 'theo.frida');
+  s.day += 10;
   deliverMail(s);
-  assert(!mailReceived(s, 'theo_cadolon'), 'pas tout de suite');
-  s.day += 5;
-  deliverMail(s);
-  assert(mailReceived(s, 'theo_cadolon'), 'cinq jours après');
+  assertEqual(DATA.COURRIER.theo_cadolon, undefined, 'Théo reste sur l\'île');
 });
 
 test('la nuit note les machines posées (la lettre du robot)', () => {
@@ -231,7 +229,7 @@ test('la nuit note les machines posées (la lettre du robot)', () => {
 
 /* ---------- Théo ---------- */
 
-test('Théo : le rencontrer, qu\'il se confie (acte III), puis parler à Basile : il part, l\'atelier, ou apprenti', () => {
+test('Théo : le rencontrer, qu\'il se confie (acte III), puis parler à Basile : chez Frida, l\'atelier, ou apprenti ; il reste', () => {
   const base = partie(3);
   const bois = ici(base, 'bois_joli');
   assertEqual(scenesPossibles(base, bois).includes('theo_rencontre'), false, 'il faut le toucher');
@@ -246,12 +244,15 @@ test('Théo : le rencontrer, qu\'il se confie (acte III), puis parler à Basile 
     assert(jouerScene(s, id, { ...bois, touche: 'basile' }).ok);
     return { id, s };
   };
-  const part = choix(() => {});
-  assertEqual(part.id, 'basile_theo_part');
-  // il quitte Bois-Joli la nuit d'après
-  recitNuit(part.s);
-  assert(aFait(part.s, 'theo.parti'));
-  assert(!habitantsDe(part.s)[bois.hameau].foyers.some((f) => f.membres.some((m) => m.recit === 'theo')), 'Théo est parti');
+  const frida = choix(() => {});
+  assertEqual(frida.id, 'basile_theo_frida');
+  assert(aFait(frida.s, 'theo.frida'));
+  // il reste à Bois-Joli : la nuit ne l'en retire pas
+  const la = (x) => habitantsDe(x)[bois.hameau].foyers.some((f) => f.membres.some((m) => m.recit === 'theo'));
+  const avant = la(frida.s);
+  recitNuit(frida.s);
+  assertEqual(la(frida.s), avant, 'Théo ne part pas');
+  assert(!aFait(frida.s, 'theo.parti'));
   assertEqual(choix((s) => { s.blocs = { ...(s.blocs || {}), 900002: 'convoyeur' }; }).id, 'basile_theo_atelier');
   assertEqual(choix((s) => { s.blocs = { ...(s.blocs || {}), 900002: 'convoyeur' }; noterFait(s, 'achille.tournee'); }).id, 'basile_theo_apprenti');
 });
@@ -285,7 +286,7 @@ test('la tournée d\'Achille : le cheval boite ; passer aux Genêts et à Bois-J
 
 /* ---------- la migration 63 → 64 ---------- */
 
-test('migration 63 → 64 : les pièces du notaire reçues, l\'enveloppe est ouverte ; la lettre non lue, l\'enveloppe arrive', () => {
+test('migration 63 → 64 : les pièces de l\'ancienne lettre du notaire reçues, l\'enveloppe est ouverte ; la lettre non lue, l\'enveloppe arrive', () => {
   const s = partie(3);
   const avant = (verse) => {
     const v = JSON.parse(JSON.stringify(s));
@@ -300,7 +301,7 @@ test('migration 63 → 64 : les pièces du notaire reçues, l\'enveloppe est ouv
   assertEqual([aFait(pasLue, 'enveloppe.ouverte'), countItem(pasLue, R.ENVELOPPE.OBJET), pasLue.courrier[0].verse], [false, 1, true]);
   // les lettres d'Adèle dont le moment est passé : déjà lues (chapitre 5, la veillée faite)
   const ids = (m) => m.courrier.map((x) => [x.id, x.lu]);
-  assertEqual(ids(lue), [['notaire_legs', true], ['adele_recolte', true]], 'pas de veillée notée (recit ôté)');
+  assertEqual(ids(lue), [['maurice_enveloppe', true], ['adele_recolte', true]], 'pas de veillée notée (recit ôté) ; la lettre renommée (72 → 73)');
   // sans la lettre : rien
   const v = JSON.parse(JSON.stringify(s));
   v.version = 63; v.courrier = [];

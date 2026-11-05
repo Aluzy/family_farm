@@ -3110,7 +3110,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "maurice",
      "terme": "Maurice",
-     "description": "Ton grand-père, mort il y a un an. Né à Céron, parti enfant, revenu veuf avec ta mère, il a mené la calèche de l'île pendant trente-cinq ans. Il gagnait bien et ne gardait rien : les toits, les scies, les pompes des hameaux, c'est lui qui les payait. On parle encore de lui partout, et de toi comme de son petit. Il a laissé des carnets de tournée un peu partout.",
+     "description": "Ton grand-père. Il a mené la calèche de l'île pendant trente-cinq ans en rendant mille services : un toit ici, une scie là. Il y a un an, il est parti faire le tour des îles en voilier avec Philomène, et vous a confié sa terre. Il écrit des cartes postales, et a laissé des carnets un peu partout.",
      "liens": [
       "achille",
       "maison_maurice",
@@ -3122,9 +3122,22 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
+     "id": "philomene",
+     "terme": "Philomène",
+     "description": "Ta grand-mère, jardinière. Elle sème des graines au bord des chemins « pour ceux d'après ». C'est la meilleure amie de Frida. Elle voyage avec Maurice sur leur petit voilier, la Luciole, et ajoute toujours un petit mot à la fin de ses cartes.",
+     "liens": [
+      "maurice",
+      "frida",
+      "adele"
+     ],
+     "decouverte": [
+      "depart"
+     ]
+    },
+    {
      "id": "adele",
      "terme": "Adèle",
-     "description": "Ta mère. Élevée à Céron par Maurice, partie à Cadolon adolescente, elle y vit toujours. Elle ne viendra pas sur l'île : elle écrit. Ses lettres arrivent par le bac, aux moments qui comptent, et parlent des petites choses de l'île ; ses « au fait » ramènent toujours un souvenir.",
+     "description": "Ta mère. Elle a grandi au Gué, entre ses parents, Odile et Frida, et vit à Cadolon. Ses lettres arrivent par le bac aux moments qui comptent, et ses « au fait » ramènent toujours un souvenir.",
      "liens": [
       "courrier",
       "maurice",
@@ -3137,7 +3150,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "achille",
      "terme": "Achille",
-     "description": "Le cocher de l'île depuis que Maurice a arrêté. Né aux Mouettes, il vit au Gué, à l'écurie de la calèche. Bourru, ponctuel, il parle à son cheval plus qu'aux gens et sait tout ce qui se dit d'un hameau à l'autre. Il passe à la ferme chaque jour vers dix heures, achète ce que tu as en trop, porte ce que tu confies. Il garde deux carnets de Maurice.",
+     "description": "Le cocher de l'île, formé par Maurice. Né aux Mouettes, il vit au Gué, à l'écurie de la calèche. Timide et attentionné, il parle à son cheval, Biscotte, plus qu'aux gens, et sait toutes les nouvelles. Il passe à la ferme chaque jour vers dix heures, achète ce que tu as en trop, porte ce que tu confies.",
      "liens": [
       "comptoir",
       "le_gue",
@@ -3151,7 +3164,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "odile",
      "terme": "Odile",
-     "description": "L'ancienne du Gué, voisine de Maurice depuis toujours ; elle a vu grandir ta mère. Elle tient aux coutumes et à la lune, commence volontiers ses phrases par « On ne… », et vouvoie les nouveaux jusqu'à leur première veillée de pleine lune. Elle voudrait voir la maison de Maurice revivre.",
+     "description": "La grand-mère du Gué, voisine de Maurice et Philomène depuis toujours ; elle a vu grandir ta mère. Elle a des dictons de lune pour tout, fait les meilleures tartes de l'île et arrose les géraniums de tes grands-parents en attendant leur retour.",
      "liens": [
       "le_gue",
       "maison_maurice",
@@ -3165,7 +3178,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "fernand",
      "terme": "Fernand",
-     "description": "L'ancien des Mouettes, revenu sur l'île après quarante ans de mécanique au port de Cadolon. Il veut pêcher en paix et compare tout à « là-bas ». Il a accueilli ta famille sur la cale, le jour du bac.",
+     "description": "Le pêcheur conteur des Mouettes, revenu sur l'île après quarante ans au port de Cadolon, « parce que c'est ici que j'ai mon cœur ». Il compare tout à « là-bas » pour dire combien on est bien ici, et connaît les dauphins par leur prénom. C'est lui qui a accueilli ta famille sur la cale.",
      "liens": [
       "les_mouettes",
       "cale_bac",
@@ -3178,7 +3191,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "frida",
      "terme": "Frida",
-     "description": "La scientifique de l'île, venue il y a cinquante ans observer les bêtes et les plantes, et restée. Elle s'est occupée de ta mère toute petite. Elle fabrique le robot, sa station et les automatisations, dans son atelier au bord de l'eau ; les anciens l'ont adoptée, ses machines beaucoup moins. Elle a toujours un chiffre à donner.",
+     "description": "L'inventrice de l'île, venue il y a cinquante ans observer les bêtes et les plantes, et restée. La meilleure amie de Philomène ; elle gardait ta mère toute petite. Elle fabrique le robot, sa station et les automatisations, dont toute l'île est fière. Elle a toujours un chiffre à donner, et du thé sur le poêle.",
      "liens": [
       "atelier_frida",
       "robot",
@@ -3191,7 +3204,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "basile",
      "terme": "Basile",
-     "description": "Le scieur et ébéniste de Bois-Joli : la scierie, les meubles de l'île. Il parle du bois comme d'une personne et tient au bois juste : on replante ce qu'on coupe. Il voudrait que son fils Théo reprenne l'atelier.",
+     "description": "L'ébéniste de Bois-Joli : la scierie, les meubles de l'île. Il parle du bois comme d'une personne et plante deux arbres pour un coupé. Son fils Théo démonte tout, et remonte tout mieux qu'avant : il en est très fier.",
      "liens": [
       "bois_joli",
       "theo",
@@ -3204,7 +3217,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "theo",
      "terme": "Théo",
-     "description": "Le fils de Basile, quinze ans, le meilleur de l'île pour réparer une roue ou une pompe. Il rêve de Cadolon et de machines, et passe ses journées chez Frida en cachette. Ce qu'il deviendra dépend un peu de ce que l'île lui offre.",
+     "description": "Le fils de Basile, quinze ans, le meilleur de l'île pour réparer une roue ou une pompe. Il veut inventer des machines pour toute l'île, et hésite encore sur la façon de commencer : la calèche, l'atelier de son père ou les inventions de Frida.",
      "liens": [
       "basile",
       "bois_joli",
@@ -3217,7 +3230,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "garance",
      "terme": "Garance",
-     "description": "La tisserande et bergère des Genêts. Franche, juste, attachée au fait main, elle juge d'un mot. Maurice lui avait promis un toit avant les pluies ; son métier à tisser fait le tissu de l'île.",
+     "description": "La tisserande et bergère des Genêts. Passionnée de couleurs, elle teint sa laine avec les plantes de la lande et nomme chaque nuance. Maurice lui avait promis un toit plus lumineux pour son atelier ; son métier à tisser fait le tissu de l'île.",
      "liens": [
       "les_genets",
       "promesses",
@@ -3229,20 +3242,9 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
-     "id": "johnny",
-     "terme": "Johnny",
-     "description": "Un vieil homme qui vit seul dans une cabane, au fond de la forêt, sans lampe. Il accueille tout le monde comme la première fois, et parle de la lune, de la roche, des marées. Quelqu'un lui apportait à manger, avant.",
-     "liens": [
-      "cabane_johnny"
-     ],
-     "decouverte": [
-      "fait:johnny.visite"
-     ]
-    },
-    {
      "id": "le_gue",
      "terme": "Le Gué",
-     "description": "Le hameau le plus proche de la ferme, au croisement des chemins : celui de Maurice, d'Odile et d'Achille, qui y a l'écurie de la calèche. On y veille les soirs de pleine lune. Au Gué, on ne ferme pas sa porte.",
+     "description": "Le hameau le plus proche de la ferme, au croisement des chemins : celui de Maurice et Philomène, d'Odile et d'Achille, qui y a l'écurie de la calèche. On y veille les soirs de pleine lune. Au Gué, on ne ferme pas sa porte.",
      "liens": [
       "odile",
       "achille",
@@ -3257,7 +3259,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "maison_maurice",
      "terme": "La maison de Maurice",
-     "description": "Sa maison d'enfance, au Gué : la première du hameau, vide depuis sa mort, jamais fermée. Il n'y a rien à prendre : il donnait tout. Odile y passe quand elle peut.",
+     "description": "La maison de tes grands-parents, au Gué : la première du hameau, jamais fermée. Odile y passe chaque jour arroser les géraniums, en attendant leur retour de voyage.",
      "liens": [
       "maurice",
       "le_gue",
@@ -3298,7 +3300,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "bois_joli",
      "terme": "Bois-Joli",
-     "description": "Le hameau de la forêt : des bûcherons, la scierie et l'atelier d'ébéniste de Basile, qui vend les meubles de l'île. On y parle beaucoup de rester ou de partir.",
+     "description": "Le hameau de la forêt : des bûcherons, la scierie et l'atelier d'ébéniste de Basile, qui fait les meubles de l'île. Ça sent la sciure et le pain chaud.",
      "liens": [
       "basile",
       "theo",
@@ -3311,7 +3313,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "les_genets",
      "terme": "Les Genêts",
-     "description": "Le hameau de la lande : des bergers, la bergerie, le métier à tisser et la couture de Garance. Le plus attaché aux façons anciennes.",
+     "description": "Le hameau de la lande : des bergers, la bergerie, le métier à tisser, les teintures et la couture de Garance. Les plus belles couleurs de l'île.",
      "liens": [
       "garance",
       "commerce"
@@ -3335,8 +3337,8 @@ export const ENCYCLOPEDIE = {
     },
     {
      "id": "epave",
-     "terme": "L'épave",
-     "description": "Une vieille coque couchée sur une plage, le mât cassé, loin des hameaux. Personne n'y touche. Fernand dit qu'elle ne sort d'aucun chantier qu'il connaisse.",
+     "terme": "La barque des premiers arrivants",
+     "description": "La barque qui a amené les premiers habitants de Céron, il y a cinq siècles, couchée sur une plage loin des hameaux. Fernand dit qu'aucune planche n'a bougé. Les enfants de l'île y jouent aux explorateurs.",
      "liens": [
       "les_mouettes"
      ],
@@ -3346,11 +3348,9 @@ export const ENCYCLOPEDIE = {
     },
     {
      "id": "cabane_johnny",
-     "terme": "La cabane de la forêt",
-     "description": "Une cabane de rondins au fond de la forêt, loin des chemins, sans électricité : celle de Johnny.",
-     "liens": [
-      "johnny"
-     ],
+     "terme": "L'observatoire de Maurice",
+     "description": "Une cabane de rondins au fond de la forêt, loin des chemins, avec une longue-vue tournée vers le ciel : Maurice y regardait les étoiles. Son carnet du ciel y attend ; on y vient de préférence la nuit.",
+     "liens": [],
      "decouverte": [
       "fait:lieu.cabane"
      ]
@@ -3370,7 +3370,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "carnet",
      "terme": "Le carnet",
-     "description": "Ton carnet, dans le menu : les pages que tu as trouvées, dans l'ordre où elles sont venues. Des carnets de tournée de Maurice, des notes, des bribes ; rien n'y dit ce qu'il faut en faire.",
+     "description": "Ton carnet, dans le menu : les pages que tu as trouvées, dans l'ordre où elles sont venues. Des carnets de tournée de Maurice, son carnet du ciel, des notes ; rien n'y dit ce qu'il faut en faire.",
      "liens": [
       "maurice",
       "promesses"
@@ -3381,8 +3381,8 @@ export const ENCYCLOPEDIE = {
     },
     {
      "id": "promesses",
-     "terme": "Les promesses de Maurice",
-     "description": "Son carnet de tournée en garde trois qu'il n'a pas pu tenir : le toit de Garance, les lames de la scie de Bois-Joli, la pompe des Mouettes. Personne ne te les demande. Si tu veux les tenir, confie à Achille, à la calèche, ce qu'il faut, en une ou plusieurs fois : il les porte, comme Maurice faisait. Une promesse tenue, l'île s'en souvient.",
+     "terme": "Les petits travaux de Maurice",
+     "description": "Son carnet de tournée en garde trois qu'il n'a pas eu le temps de finir avant de partir : le toit de l'atelier de Garance, les lames de la scie de Bois-Joli, la pompe des Mouettes. Personne ne te les demande. Si tu en as envie, confie à Achille, à la calèche, ce qu'il faut, en une ou plusieurs fois : il les porte, comme Maurice faisait.",
      "liens": [
       "achille",
       "comptoir",
@@ -3410,7 +3410,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "fete_premiers",
      "terme": "La fête des premiers arrivants",
-     "description": "Une fois l'an, à la pleine lune, à Brumeval : un repas cuit dans la terre chaude, et l'île fête ceux qui sont arrivés les premiers, et ceux qui viennent d'arriver. Achille l'annonce à la calèche. Ce qu'on y dit de toi dépend de ce que tu as fait de ta ferme.",
+     "description": "Une fois l'an, à la pleine lune, à Brumeval : un repas cuit dans la terre chaude, et l'île fête ceux qui sont arrivés les premiers, et ceux qui viennent d'arriver. Achille l'annonce à la calèche. Ce qu'on y dit de toi dépend de la façon dont tu as trouvé ta place : toutes les fêtes finissent bien.",
      "liens": [
       "brumeval",
       "achille"
@@ -3422,7 +3422,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "toits",
      "terme": "Les toits des hameaux",
-     "description": "Depuis que Maurice ne les paie plus, les maisons s'usent : un toit troué se voit de loin. Sur place, la fiche du hameau dit lesquels prennent l'eau ; avec des planches et des pierres, tu peux les réparer, et le hameau s'en souvient.",
+     "description": "Quelques toits des hameaux ont besoin d'un coup de main depuis que Maurice est parti en voyage ; rien ne s'abîme davantage. Sur place, la fiche du hameau dit lesquels ; avec des planches et des pierres, tu peux les rafraîchir, et le hameau s'en souvient.",
      "liens": [
       "hameaux",
       "maurice"
@@ -3434,7 +3434,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "enveloppe_maurice",
      "terme": "L'enveloppe de Maurice",
-     "description": "Une enveloppe cachetée, retrouvée par le notaire, à ton nom. Maurice a écrit dessus : « Pour les toits de Céron : Odile saura. Ou pour toi, si tu en as plus besoin qu'eux. Tu sauras. » L'ouvrir (sa fiche, dans l'inventaire), c'est la garder ; on peut aussi la porter à Odile.",
+     "description": "Une enveloppe arrivée avec une carte postale de Maurice, à ton nom. Il a écrit dessus : « Pour un beau cadeau à l'île : Odile saura. Ou pour toi, si tu en as besoin. Tu sauras. » L'ouvrir (sa fiche, dans l'inventaire), c'est la garder ; on peut aussi la porter à Odile. Les deux sont de bons choix.",
      "liens": [
       "maurice",
       "odile",
@@ -3449,7 +3449,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "cloche_maurice",
      "terme": "La cloche de Maurice",
-     "description": "La cloche de sa calèche. Il la sonnait deux fois devant chaque maison : une pour dire bonjour, une pour dire qu'il repartait.",
+     "description": "La cloche de sa calèche. Il la sonnait deux fois devant chaque maison : une pour dire bonjour, une pour dire à bientôt.",
      "liens": [
       "maurice",
       "fete_premiers"
@@ -3485,11 +3485,10 @@ export const ENCYCLOPEDIE = {
     {
      "id": "pierre_lune",
      "terme": "La pierre",
-     "description": "Un galet clair, tiède, qui luit faiblement dans le noir. Posé sur la ferme, il y reste. Depuis, tout y pousse plus vite ; les nuits de pleine lune, la ferme luit un peu. Frida dit que c'est peut-être le sol.",
+     "description": "Un galet clair et tiède, qui luit faiblement dans le noir. Posé sur la ferme, il y reste. Depuis, tout y pousse plus vite ; les nuits de pleine lune, la ferme luit un peu, et les lucioles viennent danser. Frida dit que c'est peut-être le sol.",
      "liens": [
       "calendrier_lune",
-      "frida",
-      "johnny"
+      "frida"
      ],
      "decouverte": [
       "objet:pierre_lune",
@@ -3920,7 +3919,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "courrier",
      "terme": "Courrier",
-     "description": "Lettres que la famille reçoit au fil de la partie, à lire dans l'onglet Notifications ; une lettre lue y reste, pour être relue. Le notaire écrit au début, et au niveau 9 (l'enveloppe de Maurice) ; ta mère, Adèle, écrit à l'arrivée, puis aux moments qui comptent : la première récolte, la première veillée, le robot, la fête. Quand la Serre se débloque, elle rapporte de voyage une fève de cacao, une gousse de vanille et un grain de café, à planter dans la Serre.",
+     "description": "Lettres que la famille reçoit au fil de la partie, à lire dans l'onglet Notifications ; une lettre lue y reste, pour être relue. Maurice et Philomène écrivent au début, puis de leurs voyages (au niveau 9, une carte postale et l'enveloppe de Maurice) ; ta mère, Adèle, écrit à l'arrivée, puis aux moments qui comptent : la première récolte, la première veillée, le robot, la fête. Quand la Serre se débloque, elle rapporte de voyage une fève de cacao, une gousse de vanille et un grain de café, à planter dans la Serre.",
      "liens": [
       "notifications",
       "adele",

@@ -1,11 +1,11 @@
 /* ==========================================================================
    Tests du moteur : le fil de la lune (le récit, lot 10 ; js/engine/fil-lune.js, docs/recit/aventure.md).
-   - les fragments : la note « J. » (Achille, proche), la page de bord (l'épave, la nuit, la lanterne-tempête
-     à la main), les relevés de Frida (son atelier, la deuxième fois), les bribes de Johnny (la nuit, après
-     trois repas, une par phase) ;
-   - Johnny : il accueille ; un plat par jour est un repas ; tard les nuits de pleine lune, il n'est pas là ;
+   - les fragments : la note « É. » (Achille, proche), le journal de bord des premiers arrivants (leur barque, la
+     nuit, la lanterne-tempête à la main), les relevés de Frida (son atelier, la deuxième fois), les pages du
+     carnet du ciel de Maurice (son observatoire, la nuit, après deux nuits à regarder le ciel, une par phase) ;
+   - l'observatoire : le jour, on le découvre ; la nuit, la longue-vue (une nuit comptée par jour) ;
    - la galerie : les fragments au carnet, une nuit de pleine lune, de 22 h à 4 h ; la fissure d'un niveau ;
-     la petite chambre ; la pierre, une fois ; posée, tout pousse plus vite ; Frida doute, Johnny sait.
+     la petite chambre ; la pierre, une fois ; posée, tout pousse plus vite ; Frida doute, le carnet du ciel sait.
    Lancer seul : node tests/run-tests.mjs fil-lune.
    ========================================================================== */
 
@@ -19,7 +19,7 @@ import {
   aFait, ajouterFragment, ajouterRelation, foisFait, jouerScene, noterFait, recitDe, scenesPossibles, toucherLieu,
 } from '../../js/engine/recit.js';
 import {
-  FIL, fermeLuit, filComplet, fissureDuNiveau, galerieOuverte, niveauGalerie, poserPierre, prendrePierre, visiteJohnny,
+  FIL, fermeLuit, filComplet, fissureDuNiveau, galerieOuverte, niveauGalerie, poserPierre, prendrePierre, visiteObservatoire,
 } from '../../js/engine/fil-lune.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
@@ -40,18 +40,17 @@ function a(s, jour, h) {
   else s.nuitEnCours = { ms: ((h - DATA.TEMPS.HEURE_NUIT + 24) % 24) * DATA.TEMPS.SECONDES_PAR_HEURE * 1000, minuit: h < DATA.TEMPS.HEURE_NUIT, dort: false };
   return s;
 }
-const plat = Object.keys(DATA.OBJETS).find((id) => DATA.OBJETS[id].plat && !DATA.OBJETS[id].retire);
 
-test('la note « J. » : Achille la donne à la calèche, une fois proche', () => {
+test('la note « É. » : Achille la donne à la calèche, une fois proche', () => {
   const s = partie();
-  assertEqual(scenesPossibles(s, { lieu: 'caleche_ferme' }).includes('note_j'), false, 'pas encore proche');
+  assertEqual(scenesPossibles(s, { lieu: 'caleche_ferme' }).includes('note_etoile'), false, 'pas encore proche');
   ajouterRelation(s, 'achille', DATA.RECIT.PALIERS[3]);
-  assert(scenesPossibles(s, { lieu: 'caleche_ferme' }).includes('note_j'));
-  assert(jouerScene(s, 'note_j', { lieu: 'caleche_ferme' }).ok);
-  assert(recitDe(s).carnet.includes('note_j'));
+  assert(scenesPossibles(s, { lieu: 'caleche_ferme' }).includes('note_etoile'));
+  assert(jouerScene(s, 'note_etoile', { lieu: 'caleche_ferme' }).ok);
+  assert(recitDe(s).carnet.includes('note_etoile'));
 });
 
-test('la page de bord : à l\'épave, la nuit, la lanterne-tempête à la main ; une fois', () => {
+test('le journal de bord : à la barque des premiers arrivants, la nuit, la lanterne-tempête à la main ; une fois', () => {
   const s = partie();
   a(s, 10, 23);
   assertEqual(toucherLieu(s, 'epave').fragment, null, 'sans lanterne');
@@ -61,7 +60,7 @@ test('la page de bord : à l\'épave, la nuit, la lanterne-tempête à la main ;
   assertEqual(toucherLieu(s, 'epave').fragment, null, 'pas le jour');
   a(s, 10, 23);
   const r = toucherLieu(s, 'epave');
-  assertEqual(r.fragment, 'page_bord');
+  assertEqual(r.fragment, 'journal_bord');
   assert(/lanterne/.test(r.texte), r.texte);
   assertEqual(toucherLieu(s, 'epave').fragment, null, 'une fois');
   assert(DATA.ATELIER.RECETTES.lanterne_tempete, 'elle se fabrique à l\'Atelier');
@@ -76,36 +75,29 @@ test('les relevés de Frida : dans son atelier, la deuxième fois, Frida rencont
   assert(recitDe(s).carnet.includes('releves_frida'));
 });
 
-test('Johnny : il accueille ; un repas par jour ; ses bribes la nuit après trois repas, une par phase', () => {
-  const s = partie();
+test('l\'observatoire : le jour, on le découvre ; la nuit, la longue-vue ; une page du ciel après deux nuits, une par phase', () => {
+  const s = partie(), O = FIL.OBSERVATOIRE;
   a(s, PHASE.croissante, 14);
-  const r0 = visiteJohnny(s);
-  assertEqual([r0.absent, r0.repas, r0.fragment], [false, null, null]);
-  assert(FIL.JOHNNY.ACCUEIL.includes(r0.texte), 'son accueil');
-  addItem(s, plat, 4);
-  for (let k = 0; k < 2; k++) {
-    a(s, PHASE.croissante + k, 21);
-    const r = visiteJohnny(s);
-    assertEqual([r.repas, r.fragment], [plat, null], `repas ${k + 1}`);
-    assertEqual(visiteJohnny(s).repas, null, 'un seul par jour');
-  }
-  assertEqual(foisFait(s, 'johnny.repas'), 2);
-  // le troisième repas, la nuit, à la lune croissante : la bribe vient
-  a(s, PHASE.croissante + 2, 21);
-  const r3 = visiteJohnny(s);
-  assertEqual([r3.repas, r3.fragment], [plat, 'johnny_croissante']);
-  assert(r3.texte.includes(DATA.RECIT.FRAGMENTS.johnny_croissante.texte));
-  assertEqual(countItem(s, plat), 1);
-  // le jour, pas de bribe ; à la pleine lune, tard, il est dehors
+  const r0 = visiteObservatoire(s);
+  assertEqual([r0.texte, r0.fragment], [O.JOUR, null], 'le jour');
+  assert(aFait(s, 'lieu.cabane'), 'découvert');
+  a(s, PHASE.croissante, 21);
+  const r1 = visiteObservatoire(s);
+  assert(O.ACCUEIL.includes(r1.texte) && r1.fragment === null, 'la première nuit');
+  visiteObservatoire(s);
+  assertEqual(foisFait(s, 'observatoire.nuit'), 1, 'une nuit par jour');
+  // la deuxième nuit, à la lune croissante : la page vient
+  a(s, PHASE.croissante + 1, 21);
+  const r2 = visiteObservatoire(s);
+  assertEqual(r2.fragment, 'ciel_croissante');
+  assert(r2.texte.includes(DATA.RECIT.FRAGMENTS.ciel_croissante.texte));
+  assertEqual(visiteObservatoire(s).fragment, null, 'une fois');
   a(s, PHASE.pleine, 14);
-  assertEqual(visiteJohnny(s).fragment, null, 'pas le jour');
+  assertEqual(visiteObservatoire(s).fragment, null, 'pas le jour');
   a(s, PHASE.pleine, 23);
-  assert(visiteJohnny(s).absent, 'dehors');
-  a(s, PHASE.pleine, 21);
-  assertEqual(visiteJohnny(s).fragment, 'johnny_pleine');
+  assertEqual(visiteObservatoire(s).fragment, 'ciel_pleine');
   a(s, PHASE.nouvelle, 2);
-  assertEqual(visiteJohnny(s).fragment, 'johnny_noire');
-  assert(aFait(s, 'lieu.cabane'));
+  assertEqual(visiteObservatoire(s).fragment, 'ciel_noire');
 });
 
 test('la galerie : les fragments, une nuit de pleine lune, de 22 h à 4 h', () => {
@@ -140,7 +132,7 @@ test('la fissure : un mur de face, du sol dessous, loin de l\'échelle ; la mêm
   assertEqual(g.retour, FIL.GALERIE.NIVEAU);
 });
 
-test('la pierre : prise une fois ; posée sur la ferme, tout pousse plus vite ; Frida doute, Johnny sait', () => {
+test('la pierre : prise une fois ; posée sur la ferme, tout pousse plus vite ; Frida doute, le carnet du ciel sait', () => {
   const s = partie();
   assertEqual(prendrePierre(s).ok, false, 'sans les fragments');
   for (const f of FIL.FRAGMENTS) ajouterFragment(s, f);
@@ -154,9 +146,9 @@ test('la pierre : prise une fois ; posée sur la ferme, tout pousse plus vite ; 
   assert(fermeLuit(s));
   a(s, PHASE.pleine, 14);
   assertEqual(fermeLuit(s), false, 'pas le jour');
-  // Frida, dans son atelier ; Johnny, à la visite suivante
+  // Frida, dans son atelier ; une page cachée du carnet du ciel, à l'observatoire
   assert(scenesPossibles(s, { lieu: 'atelier' }).includes('frida_pierre'));
   a(s, PHASE.croissante, 14);
-  assert(visiteJohnny(s).texte.startsWith(FIL.JOHNNY.PIERRE));
-  assertEqual(visiteJohnny(s).texte.startsWith(FIL.JOHNNY.PIERRE), false, 'une fois');
+  assert(visiteObservatoire(s).texte.startsWith(FIL.OBSERVATOIRE.PIERRE));
+  assertEqual(visiteObservatoire(s).texte.startsWith(FIL.OBSERVATOIRE.PIERRE), false, 'une fois');
 });

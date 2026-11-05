@@ -631,7 +631,7 @@ export function planHameau(m, h, rayon = HAMEAUX.RAYON, serre = false) {
   };
 }
 
-/* ---------- les bâtisses du récit : la cabane de Johnny, l'atelier de Frida (lot 3b) ----------
+/* ---------- les bâtisses du récit : l'observatoire de Maurice (la « cabane »), l'atelier de Frida (lot 3b) ----------
 
    Bâties comme les maisons des hameaux, avec les mêmes pièces (murs, fenêtres, porte, planchers,
    meubles ; le toit de leur style, qui s'efface quand on entre : js/carte/ferme/hameaux.js) : un plan
@@ -693,7 +693,7 @@ export function planBatisse(m, l) {
   };
   return {
     plan: {
-      id: l.id, nom: l.sorte === 'cabane' ? 'Une cabane' : 'Un atelier', case: l.case, style: B.style, metier: null, batisse: l.sorte,
+      id: l.id, nom: l.sorte === 'cabane' ? 'L\'observatoire' : 'Un atelier', case: l.case, style: B.style, metier: null, batisse: l.sorte,
       cadre: { x0: x0 - 3, y0: y0 - 1, x1: x0 + B.l + 2, y1: Y + 1 },
       place: { centre: l.case, cases: [], puits: null, banc: null, panneau: null },
       maisons: [maison], jardins: [], travail: [], ruelles: [],

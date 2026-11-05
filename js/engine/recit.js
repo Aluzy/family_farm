@@ -9,7 +9,7 @@ import { hache } from './ferme-generee.js';
 import { farmSeed } from './terrain.js';
 import { soilCount } from './crops.js';
 import { fellenTrees } from './outils.js';
-import { garantiDuHameau, habitantsDe, paroleHabitant, retirerEcrit } from './habitants.js';
+import { garantiDuHameau, habitantsDe, paroleHabitant } from './habitants.js';
 import { usureNuit } from './usure.js';
 import { addItem, countItem, takeItem } from './inventory.js';
 import { earn } from './compta.js';
@@ -463,7 +463,8 @@ export function empreinteFerme(state) {
    (les promesses de Maurice tenues, les toits réparés, l'enveloppe portée à Odile : FINS.POIDS) et la
    nature (les arbres plantés). La fin en découle, jamais choisie dans un menu :
      - petite, l'entretien à FINS.ENTRETIEN ou plus : « nouveau_maurice » ; sinon « voisin_tranquille » ;
-     - grande, l'entretien à FINS.ENTRETIEN et la nature à FINS.NATURE ou plus : « autrement » ; sinon « riche ».
+     - grande, l'entretien à FINS.ENTRETIEN et la nature à FINS.NATURE ou plus : « autrement » ; sinon « genereuse »
+       (la ferme qui nourrit l'île). Toutes les fins sont heureuses : elles disent comment le joueur a trouvé sa place.
    La fête la fige (le fait « fin.<id> » : les lettres d'Adèle d'après la lisent) ; avant, elle suit la ferme.
    → { voie, entretien, nature, fin }. */
 export function finAventure(state) {
@@ -476,13 +477,13 @@ export function finAventure(state) {
   const figee = (F.LISTE || []).find((id) => aFait(state, `fin.${id}`));
   const fin = figee || (voie === 'petite'
     ? (entretien >= F.ENTRETIEN ? 'nouveau_maurice' : 'voisin_tranquille')
-    : (entretien >= F.ENTRETIEN && nature >= F.NATURE ? 'autrement' : 'riche'));
+    : (entretien >= F.ENTRETIEN && nature >= F.NATURE ? 'autrement' : 'genereuse'));
   return { voie, entretien, nature, fin };
 }
 
 /* ---------- l'enveloppe de Maurice (le récit, lot 9) ----------
 
-   Au niveau 9, la lettre du notaire apporte l'enveloppe (un objet, ENVELOPPE.OBJET) au lieu des pièces : le
+   Au niveau 9, une carte postale de Maurice apporte l'enveloppe (un objet, ENVELOPPE.OBJET) au lieu des pièces : le
    joueur l'ouvre (il garde ENVELOPPE.PIECES pièces : « enveloppe.ouverte ») ou la porte à Odile, au Gué (la
    scène enveloppe_odile : « enveloppe.donnee », les toits usés réparés les nuits suivantes, js/engine/usure.js). */
 export function ouvrirEnveloppe(state) {
@@ -539,10 +540,8 @@ export function recitNuit(state) {
       }
     }
   }
-  // (le récit, lot 9) les toits des hameaux (js/engine/usure.js) ; Théo, s'il part, quitte Bois-Joli la nuit
-  // qui suit la scène (« theo.parti » : il ne revient pas ; sa lettre vient plus tard, data/campaign.json)
+  // (le récit, lot 9) les toits des hameaux qui ont besoin d'un coup de main (js/engine/usure.js)
   const usure = usureNuit(state);
-  if (aFait(state, 'theo.part') && !aFait(state, 'theo.parti')) { retirerEcrit(state, 'theo'); noterFait(state, 'theo.parti'); }
   return { niveau: e.niveau, points: e.points, derive, usure };
 }
 

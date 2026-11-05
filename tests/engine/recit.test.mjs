@@ -96,9 +96,9 @@ test('récit : la confiance des hameaux part de DEPART et se range en trois nive
 
 test('récit : le carnet garde chaque page une fois, dans l\'ordre', () => {
   const s = nouvelle();
-  assertEqual([ajouterFragment(s, 'note_j'), ajouterFragment(s, 'note_j'), ajouterFragment(s, 'inconnue'), ajouterFragment(s, 'page_bord')], [true, false, false, true]);
-  assertEqual(carnet(s).map((p) => p.id), ['note_j', 'page_bord']);
-  assertEqual(carnet(s)[0].titre, RECIT.FRAGMENTS.note_j.titre);
+  assertEqual([ajouterFragment(s, 'note_etoile'), ajouterFragment(s, 'note_etoile'), ajouterFragment(s, 'inconnue'), ajouterFragment(s, 'journal_bord')], [true, false, false, true]);
+  assertEqual(carnet(s).map((p) => p.id), ['note_etoile', 'journal_bord']);
+  assertEqual(carnet(s)[0].titre, RECIT.FRAGMENTS.note_etoile.titre);
 });
 
 test('récit : un acte s\'ouvre avec son chapitre ET ses nuits', () => {
@@ -198,7 +198,7 @@ test('récit : parler note la réplique ; « une fois » ne revient pas, le repo
   // rien à dire : null, rien de noté
   const vide = nouvelle();
   const avant = JSON.stringify(vide.recit);
-  assertEqual(parler(vide, 'johnny'), null);
+  assertEqual(parler(vide, 'frida'), null);
   assertEqual(JSON.stringify(vide.recit), avant);
 });
 
@@ -226,7 +226,7 @@ test('récit : les scènes de l\'acte I se jouent une fois, dans l\'ordre de leu
   m.genre = 'f';
   const odile = jouerScene(s, 'odile_maison', { lieu: 'maison_maurice' });
   assert(odile.ok, odile.error);
-  assertEqual(odile.lignes[0].texte, 'Vous êtes la petite d\'Adèle.');
+  assertEqual(odile.lignes[0].texte, 'Te voilà ! La petite d\'Adèle.');
   assertEqual(carnet(s).map((p) => p.id), ['carnet_promesses']);
   assertEqual(scenesPossibles(s, { lieu: 'maison_maurice' }), []);
   assert(!jouerScene(s, 'inconnue').ok, 'une scène inconnue est refusée');
@@ -293,7 +293,7 @@ test('récit : l\'arrivée ne se joue ni avant le départ, ni dans une partie av
   assertEqual(scenesPossibles(m, { lieu: 'caleche_ferme' }), ['achille_cle'], 'une ancienne partie : la clé, pas l\'arrivée');
 });
 
-test('récit : Odile vouvoie jusqu\'à ce qu\'elle tutoie', () => {
+test('récit : Odile tutoie dès la rencontre (le récit cosy), et dit bonjour les premiers jours', () => {
   const s = a(nouvelle(), 3, 10);
   jouerScene(s, 'arrivee');
   s.campagne.chapitre = 2;
@@ -301,9 +301,9 @@ test('récit : Odile vouvoie jusqu\'à ce qu\'elle tutoie', () => {
   jouerScene(s, 'odile_maison', { lieu: 'maison_maurice' });
   const vues = new Set();
   for (let n = 0; n < 30; n++) { const r = choisirReplique(s, 'odile', { n }); if (r) vues.add(r.id); }
-  assertEqual([...vues], ['odile.vous'], 'avant la première veillée, seulement le vouvoiement');
-  noterFait(s, 'odile.tutoie');
-  assert(!repliquesPossibles(s, 'odile').some((e) => e.id === 'odile.vous'), 'ensuite, plus jamais');
+  assert(aFait(s, 'odile.tutoie'), 'elle tutoie dès la rencontre');
+  assert(repliquesPossibles(s, 'odile').some((e) => e.id === 'odile.bonjour'), 'elle peut dire bonjour');
+  assert(![...vues].some((id) => /vous/.test(id)), 'jamais de vouvoiement');
 });
 
 /* ---------- lot 2 : l'empreinte de la ferme et la dérive de la confiance ---------- */

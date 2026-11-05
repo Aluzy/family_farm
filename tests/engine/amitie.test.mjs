@@ -118,8 +118,9 @@ test('amitié : jamais de perte avec l\'absence, la joie des retrouvailles ; la 
   foyer.bonheur = DATA.HABITANTS.TRISTE + 20;
   ajouterAmitie(s, adulte.id, 100);
   assertEqual(humeurPnj(s, hameau, adulte), 'joie');
-  s.recit.confiance[hameau] = AMITIE.HUMEUR.COLERE - 1;
-  assertEqual(humeurPnj(s, hameau, adulte), 'colere');
+  // (jamais de colère, même un hameau qui ne te connaît pas encore : le récit cosy)
+  s.recit.confiance[hameau] = 0;
+  assertEqual(humeurPnj(s, hameau, adulte), 'joie');
 });
 
 test('amitié : les présents des amis devant la porte, la confiance du hameau qui monte', () => {

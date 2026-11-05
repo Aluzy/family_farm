@@ -21,7 +21,7 @@ import { BIOME } from './monde-gen.js';
        rivière, une eau trop étroite) : des piquets, une nasse et un filet sur la rive, à côté de la
        case (ils ne ferment rien).
 
-     - Les lieux du récit (lieux.recit : la cabane de Johnny, l'atelier de Frida, l'épave ; docs/recit/) :
+     - Les lieux du récit (lieux.recit : l'observatoire de Maurice (la « cabane »), l'atelier de Frida, l'épave ; docs/recit/) :
        leur dessin posé sur leur case, leurs cases `bloque` fermées (data/monde.json, LIEUX.SORTES).
      - Les secrets du monde (D-2, lieux.secrets : la ruine, le cairn, l'arbre ancien, le belvédère, la pierre levée) :
        posés comme les lieux du récit (la ruine de la forêt : sa variante moussue) ; les toucher : secrets.js.
@@ -106,7 +106,7 @@ export function lieuxDeRegion(ctx, g) {
       images.push(SORTE_LIEU.piquets, (j % W) * T + T / 2, Math.floor(j / W) * T + 9, (X + Y) % 2);
     }
   }
-  // les lieux du récit (la cabane de Johnny, l'atelier de Frida, l'épave) : leur dessin sur leur case,
+  // les lieux du récit (l'observatoire de Maurice (la « cabane »), l'atelier de Frida, l'épave) : leur dessin sur leur case,
   // leurs cases fermées (bloque, data/monde.json)
   // (D-2 : les secrets du monde, posés de même : js/engine/secrets.js)
   for (const l of [...(lieux.recit || []), ...(lieux.secrets || [])]) {

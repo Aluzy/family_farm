@@ -784,7 +784,7 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
   }
   for (const i of surMer) ajoute(i, 'mer');
 
-  /* -- les lieux du récit (docs/recit/bible.md) : la cabane de Johnny, l'atelier de Frida, l'épave -- */
+  /* -- les lieux du récit (docs/recit/bible.md) : l'observatoire de Maurice (la « cabane »), l'atelier de Frida, l'épave -- */
   // (une case chacun, dans lieux.recit : { id, sorte, case } ; leur dessin : monde-lieux.js. La
   // distance aux chemins se lit sur la grille grossière : un parcours en largeur depuis ses cases de
   // chemin, en cases grossières, fois GRILLE.)
@@ -831,7 +831,7 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
     for (const i of melange(rRecit, liste)) { const n = note(i); if (n > bn) { bn = n; best = i; } }
     return best;
   };
-  // la cabane de Johnny : au fond de la forêt, la plus loin des chemins
+  // l'observatoire de Maurice (la « cabane », id historique cabane_johnny) : au fond de la forêt, la plus loin des chemins
   if (PR.CABANE) {
     const C = PR.CABANE, cands = [];
     for (let y = 10; y < H - 10; y += 3) for (let x = 10; x < W - 10; x += 3) {

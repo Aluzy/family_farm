@@ -135,8 +135,8 @@ test('toucher Odile : la phrase des habitants avant de la connaître, puis ses r
   assertEqual([avant.prenom, avant.recit], ['Odile', undefined], 'elle ne dit encore rien du récit');
   noter(s, 'odile.rencontre');
   const apres = paroleHameau(s, plan.id, odile.id, { heure: 10, activite: 'maison', n: 1 });
-  assertEqual([apres.prenom, apres.recit, apres.texte], ['Odile', 'odile.vous', 'Bonjour. Vous tenez le coup, là-haut ?']);
-  assert(typeof s.recit.dites['odile.vous'] === 'number', 'la réplique est notée');
+  assertEqual([apres.prenom, apres.recit, apres.texte], ['Odile', 'odile.bonjour', 'Bonjour, toi ! Tu t\'installes bien, là-haut ?']);
+  assert(typeof s.recit.dites['odile.bonjour'] === 'number', 'la réplique est notée');
   // endormie : jamais de réplique du récit
   assertEqual(paroleHameau(s, plan.id, odile.id, { heure: 23, activite: 'dort', n: 2 }).recit, undefined);
   // un habitant ordinaire garde sa phrase
@@ -158,13 +158,14 @@ import { paroleHabitant } from '../../js/engine/habitants.js';
 import { deliverMail, mailText } from '../../js/engine/campaign.js';
 import { composeFamily, finishSetup } from '../../js/engine/depart.js';
 
-test('les lettres du départ : le notaire nomme Maurice, puis la lettre d\'Adèle, au genre du joueur', () => {
+test('les lettres du départ : celle de Maurice et Philomène, puis celle d\'Adèle, au genre du joueur', () => {
   const s = createNewGame(5);
   assert(composeFamily(s, { perso: 3, prenom: 'Léa', nom: 'Martin' }).ok && finishSetup(s).ok, 'la famille installée');
   deliverMail(s);
   const ids = s.courrier.map((l) => l.id);
-  assert(ids.includes('notaire_heritage') && ids.includes('adele_arrivee'), ids.join(', '));
-  assert(ids.indexOf('notaire_heritage') < ids.indexOf('adele_arrivee'), 'le notaire d\'abord');
+  assert(ids.includes('maurice_terre') && ids.includes('adele_arrivee'), ids.join(', '));
+  assert(ids.indexOf('maurice_terre') < ids.indexOf('adele_arrivee'), 'les grands-parents d\'abord');
+  assertEqual(mailText(s, 'maurice_terre')[0], genreJoueur(s) === 'f' ? 'Ma grande,' : 'Mon grand,');
   const t = mailText(s, 'adele_arrivee');
   assert(t.every((l) => typeof l === 'string' && l), 'des lignes de texte, la variante choisie');
   assertEqual(t[0], genreJoueur(s) === 'f' ? 'Ma grande,' : 'Mon grand,');
@@ -270,11 +271,11 @@ test('les lieux du récit : la cabane en forêt, l\'atelier au bord de l\'eau, l
 test('toucher un lieu du récit : son texte, le fait noté', () => {
   const s = createNewGame(5);
   const r = toucherLieu(s, 'epave');
-  assert(r && /coque/.test(r.texte), r && r.texte);
+  assert(r && /premiers arrivants/.test(r.texte), r && r.texte);
   assert(aFait3b(s, 'lieu.epave'));
-  assert(/Personne/.test(toucherLieu(s, 'atelier').texte), 'avant de connaître Frida');
+  assert(/ressorts/.test(toucherLieu(s, 'atelier').texte), 'avant de connaître Frida');
   noter(s, 'frida.rencontre');
-  assert(/Frida/.test(toucherLieu(s, 'atelier').texte), 'après');
+  assert(/hérons/.test(toucherLieu(s, 'atelier').texte), 'après');
   assertEqual(toucherLieu(s, 'moulin'), null);
   // le bac de la cale : les premiers jours, il repart ; la nuit, il dort ; sinon, la porte vers Cadolon
   s.day = 2;
