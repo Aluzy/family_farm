@@ -4,7 +4,8 @@ import { fail } from './devices.js';
 import { absoluteHours, clockHours, nightActive } from './clock.js';
 import { addItem } from './inventory.js';
 import { countWithSilo, takeWithSilo } from './animals.js';
-import { isMature, noteWateredPlots, waterCost } from './crops.js';
+import { harvestPlot, isMature, noteWateredPlots, serrePlots, waterCost } from './crops.js';
+import { harvestTree, ripeTrees } from './orchard.js';
 import { aCruche, crucheCapacite } from './cruche.js';
 import { aiderMembre, boitePosee, deposerBoite, jaugeFamille, jaugeMembre } from './repas.js';
 import { moveToFridge } from './fridge.js';
@@ -44,8 +45,15 @@ import { enExpedition } from './equipement.js';
    (state.compagnon.aide, laisserAider) le laisse faire ou non ; les bêtes (aideAFaire) n'en
    dépendent pas.
 
+   Ce que le joueur lui demande (un appui sur lui, sur la carte : demanderCompagnon) : ramasser les légumes
+   mûrs (« recolter:<case> » : les terres labourées de la ferme et les bacs de la Serre), arroser ce qui a soif,
+   ou récolter les fruits des arbres plantés (« cueillir:<case> ») ; il le fait jusqu'au bout (state.compagnon.demande, jusqu'à ce qu'il n'y ait plus
+   rien à faire ou à la fin de sa journée), avant ses initiatives et ses bêtes, sans leurs limites du jour
+   (PAR_JOUR, ECART_H) ; il lui en coûte sa faim (DEMANDE.FAIM, ARROSER.FAIM pour arroser), il n'y gagne ni
+   énergie ni chapitre pour le joueur (comme une automatisation : harvestPlot et harvestTree en `auto`).
+
    Les tâches sont des lieux, comme celles des bêtes : « arroser:<case> », « puits:<case> »,
-   « cuisiner », « ramasser:<id> » (tachesCompagnon) ; sur la carte, il y va et fait son geste
+   « cuisiner », « ramasser:<id> », « recolter:<case> », « cueillir:<case> » (tachesCompagnon) ; sur la carte, il y va et fait son geste
    (js/famille-ferme.js), puis le jeu fait le travail (faireCompagnon). Sans la carte (une autre
    carte, pas de carte) ou pendant une absence (offline.js), le moteur les fait d'un coup
    (journeeCompagnon), sans dessin. Ce qu'il a fait est noté au journal (« compagnon » :
@@ -54,7 +62,8 @@ import { enExpedition } from './equipement.js';
    state.compagnon = { aide, jour, arroser, cuisiner, ramasser (faits ce jour-là), serie
    (plantes arrosées dans la sortie en cours), prochain: { action: heure absolue }, ml (sa cruche),
    derniere (la case de la dernière plante arrosée : il continue par la plus proche), arrosees (les cases
-   qu'il a arrosées ce jour-là : la carte ne les prend pas pour des gestes du joueur), garde (le récit, lot 8 :
+   qu'il a arrosées ce jour-là : la carte ne les prend pas pour des gestes du joueur ; recoltees, de même pour
+   les légumes qu'il a cueillis), demande ({ quoi, jour } : ce que le joueur lui a demandé), garde (le récit, lot 8 :
    ce qu'il a fait pendant que le joueur explorait, noterGarde) }. Le champ
    n'existe pas dans une sauvegarde d'avant : reparerPartie (state.js) le remet tel qu'une partie
    neuve l'a, sans changer le format. */
@@ -76,6 +85,8 @@ export function etatCompagnon(state) {
     for (const a of ACTIONS_COMPAGNON) c[a] = 0;
     c.serie = 0;
     c.arrosees = [];
+    c.recoltees = [];
+    c.demande = null;
   }
   return c;
 }
@@ -84,6 +95,11 @@ export function etatCompagnon(state) {
 export function arroseesCompagnon(state) {
   const c = state.compagnon;
   return c && c.jour === state.day && Array.isArray(c.arrosees) ? c.arrosees : [];
+}
+// Les cases des légumes qu'il a cueillis aujourd'hui (de même).
+export function recolteesCompagnon(state) {
+  const c = state.compagnon;
+  return c && c.jour === state.day && Array.isArray(c.recoltees) ? c.recoltees : [];
 }
 
 // L'option : le laisser prendre ses initiatives (vrai par défaut).
@@ -219,6 +235,13 @@ export function aRamasserCompagnon(state) {
 // arroser (ou d'abord remplir sa cruche au puits), ramasser. Une seule de chaque sorte (la
 // carte y va, puis redemande). [] s'il ne peut pas (compagnonEmpeche).
 export function tachesCompagnon(state) {
+  // (ce que le joueur lui a demandé passe avant tout : une tâche à la fois, jusqu'au bout)
+  const d = demandeCompagnon(state);
+  if (d) {
+    const t = tacheDemandee(state, d.quoi);
+    if (t) return [t];
+    etatCompagnon(state).demande = null;   // (plus rien à faire : il reprend sa journée)
+  }
   if (compagnonEmpeche(state)) return [];
   const out = [];
   if (permise(state, 'cuisiner') && cuisiniere(state) && familleAFaim(state) && recetteCompagnon(state)) out.push('cuisiner');
@@ -236,7 +259,7 @@ export function tachesCompagnon(state) {
 // Une tâche du compagnon (« arroser:… », « puits:… », « cuisiner », « ramasser:… ») ?
 export function estTacheCompagnon(lieu) {
   const s = String(lieu);
-  return s === 'cuisiner' || /^(arroser|puits|ramasser):/.test(s);
+  return s === 'cuisiner' || /^(arroser|puits|ramasser|recolter|cueillir):/.test(s);
 }
 
 // Une sortie de l'action `a` est faite : son compte, sa faim, l'écart jusqu'à la prochaine.
@@ -257,10 +280,12 @@ function dire(state, action, items, extra = {}) {
 // { ok: false, error }.
 export function faireCompagnon(state, lieu) {
   const s = String(lieu);
-  const empeche = compagnonEmpeche(state);
+  const demande = !!demandeCompagnon(state);
+  const empeche = demande ? empecheDemande(state) : compagnonEmpeche(state);
   if (empeche) return fail(empeche === 'seul' ? 'Il faut un second adulte dans le foyer.' : 'Il ne peut pas aider maintenant.');
   const c = etatCompagnon(state);
   const k = s.indexOf(':'), sorte = k < 0 ? s : s.slice(0, k), ref = k < 0 ? '' : s.slice(k + 1);
+  if (sorte === 'recolter' || sorte === 'cueillir') return cueillirDemande(state, sorte, Number(ref));
   if (sorte === 'puits') {
     const t = Number(ref);
     if (!Number.isInteger(t) || (state.blocs || {})[t] !== 'puits') return fail('Il n\'y a pas de puits ici.');
@@ -269,7 +294,7 @@ export function faireCompagnon(state, lieu) {
     return { ok: true, action: 'puiser', items: {} };
   }
   if (sorte === 'arroser') {
-    if (!permise(state, 'arroser')) return fail('Il a assez arrosé pour l\'instant.');
+    if (!demande && !permise(state, 'arroser')) return fail('Il a assez arrosé pour l\'instant.');
     const p = state.potager.parcelles.find((q) => q.case === Number(ref));
     if (!p || !p.culture || p.arrose || isMature(p)) return fail('Cette plante n\'a pas soif.');
     const src = sourceEau(state, p), ml = waterCost(state, p) * 1000;
@@ -284,7 +309,7 @@ export function faireCompagnon(state, lieu) {
     c.arrosees.push(p.case);
     c.serie += 1;
     // (la sortie finit après PAR_FOIS plantes, ou quand plus rien n'a soif)
-    const fin = c.serie >= C().ARROSER.PAR_FOIS || c.arroser + 1 >= C().ARROSER.PAR_JOUR || !plantesASoif(state).length;
+    const fin = demande || c.serie >= C().ARROSER.PAR_FOIS || c.arroser + 1 >= C().ARROSER.PAR_JOUR || !plantesASoif(state).length;
     if (fin) c.serie = 0;
     compter(state, 'arroser', fin);
     dire(state, 'arroser', {}, { culture: p.culture, n: 1 });
@@ -320,6 +345,108 @@ export function faireCompagnon(state, lieu) {
     return { ok: true, action: 'ramasser', items: { [p.objet]: n } };
   }
   return fail('Lieu inconnu.');
+}
+
+/* ---------- ce que le joueur lui demande (un appui sur lui, sur la carte) ---------- */
+
+export const DEMANDES_COMPAGNON = ['legumes', 'arroser', 'recolter'];
+
+// Les légumes mûrs (les terres labourées de la ferme, puis les bacs de la Serre), le plus proche de la dernière
+// case travaillée d'abord.
+export function legumesMurs(state) {
+  const c = etatCompagnon(state);
+  const ref = Number.isInteger(c.derniere) ? c.derniere : caseDepart(farmTerrain(state));
+  return state.potager.parcelles.concat(serrePlots(state))
+    .filter((p) => p.culture && isMature(p) && Number.isInteger(p.case))
+    .sort((a, b) => distCases(state, a.case, ref) - distCases(state, b.case, ref) || a.case - b.case);
+}
+
+// Les arbres plantés sur la ferme qui ont des fruits, le plus proche d'abord.
+export function arbresEnFruits(state) {
+  const c = etatCompagnon(state);
+  const ref = Number.isInteger(c.derniere) ? c.derniere : caseDepart(farmTerrain(state));
+  return ripeTrees(state).filter((t) => Number.isInteger(t.case))
+    .sort((a, b) => distCases(state, a.case, ref) - distCases(state, b.case, ref) || a.case - b.case);
+}
+
+// La prochaine tâche de la demande `quoi`, ou null (plus rien à faire).
+function tacheDemandee(state, quoi) {
+  if (quoi === 'arroser') {
+    const p = plantesASoif(state).find((q) => sourceEau(state, q));
+    return p ? (sourceEau(state, p) === 'puits' ? `puits:${puitsDuCompagnon(state)}` : `arroser:${p.case}`) : null;
+  }
+  if (quoi === 'legumes') { const p = legumesMurs(state)[0]; return p ? `recolter:${p.case}` : null; }
+  if (quoi === 'recolter') { const t = arbresEnFruits(state)[0]; return t ? `cueillir:${t.case}` : null; }
+  return null;
+}
+
+// Peut-il faire ce qu'on lui demande maintenant ? null (oui), ou la raison : 'seul', 'tard' (la nuit, ou sa
+// journée de travail finie : FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES), 'faim'. (Son option « laisser aider »,
+// le didacticiel et les HEURES de ses initiatives ne comptent pas : c'est le joueur qui le lui demande.)
+export function empecheDemande(state) {
+  const m = aidant(state);
+  if (!m) return 'seul';
+  const h = clockHours(state), H = DATA.FAMILLE.HORAIRE;
+  if (nightActive(state) || h < DATA.TEMPS.HEURE_REVEIL || (H && Number.isFinite(H.FIN_TRAVAIL_ADULTES) && h >= H.FIN_TRAVAIL_ADULTES)) return 'tard';
+  if (jaugeMembre(m) < C().FAIM_MIN) return 'faim';
+  return null;
+}
+
+// Ce que le joueur lui a demandé aujourd'hui ({ quoi, jour }), s'il peut encore le faire ; sinon null (et oublié).
+export function demandeCompagnon(state) {
+  const c = state.compagnon;
+  if (!c || !c.demande) return null;
+  if (c.demande.jour !== state.day || !DEMANDES_COMPAGNON.includes(c.demande.quoi) || empecheDemande(state)) { c.demande = null; return null; }
+  return c.demande;
+}
+
+// Le joueur lui demande `quoi` (DEMANDES_COMPAGNON). → { ok, texte } (sa réponse : il s'y met) ou
+// { ok: false, error } (sa réponse : pourquoi il ne peut pas, rien à faire).
+export function demanderCompagnon(state, quoi) {
+  const D = C().DEMANDE;
+  if (!DEMANDES_COMPAGNON.includes(quoi)) return fail('Je ne sais pas faire ça.');
+  const empeche = empecheDemande(state);
+  if (empeche === 'seul') return fail('Il faut un second adulte dans le foyer.');
+  if (empeche === 'tard') return fail(D.TARD);
+  if (empeche === 'faim') return fail(D.FAIM_TEXTE);
+  const c = etatCompagnon(state);
+  if (!tacheDemandee(state, quoi)) {
+    // (arroser : des plantes ont soif, mais pas d'eau)
+    if (quoi === 'arroser' && plantesASoif(state).length) return fail(D.SANS_EAU);
+    return fail(D.RIEN[quoi]);
+  }
+  c.demande = { quoi, jour: state.day };
+  return { ok: true, quoi, texte: D.OUI[quoi] };
+}
+
+// Il cueille le légume mûr de la case `k` (« recolter ») ou les fruits de l'arbre de la case `k` (« cueillir »),
+// ce que le joueur lui a demandé : tout va à l'inventaire (comme une automatisation).
+function cueillirDemande(state, sorte, k) {
+  const c = etatCompagnon(state), m = aidant(state);
+  if (!demandeCompagnon(state)) return fail('Personne ne le lui a demandé.');
+  if (!Number.isInteger(k)) return fail('Lieu inconnu.');
+  let items;
+  if (sorte === 'recolter') {
+    const p = state.potager.parcelles.concat(serrePlots(state)).find((q) => q.case === k);
+    if (!p || !p.culture || !isMature(p)) return fail('Ce légume n\'est pas mûr.');
+    const r = harvestPlot(state, p, true, true);
+    if (!r.ok) return r;
+    items = r.items;
+    if (!Array.isArray(c.recoltees)) c.recoltees = [];
+    c.recoltees.push(k);
+  } else {
+    const t = ripeTrees(state).find((a) => a.case === k);
+    if (!t) return fail('Cet arbre n\'a pas de fruits.');
+    const r = harvestTree(state, t.id, true);
+    if (!r.ok) return r;
+    t.prochaine -= 1;   // (cueilli dans la journée, comme par le joueur : harvestTree compte comme la nuit)
+    items = { [r.item]: r.qty };
+  }
+  c.derniere = k;
+  aiderMembre(state, m.id, C().DEMANDE.FAIM);
+  noterGarde(state, sorte);
+  dire(state, sorte, items);
+  return { ok: true, action: sorte, items };
 }
 
 /* ---------- le récit, lot 8 : il garde la ferme quand le joueur explore ----------

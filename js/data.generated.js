@@ -188,7 +188,27 @@ export const RAW_DATA = {
         "compote"
       ]
     },
-    "RAMASSER": { "PAR_JOUR": 3, "ECART_H": 2, "FAIM": 2, "RAYON": 24, "SORTES": ["morceau_bois", "petite_pierre"] }
+    "RAMASSER": { "PAR_JOUR": 3, "ECART_H": 2, "FAIM": 2, "RAYON": 24, "SORTES": ["morceau_bois", "petite_pierre"] },
+    "DEMANDE": {
+      "FAIM": 2,
+      "QUESTION": "Est-ce que tu veux de l'aide ?",
+      "QUOI": "Dis-moi ce que je peux faire pour toi ?",
+      "NON": "D'accord, je suis là si tu as besoin !",
+      "CHOIX": { "legumes": "🥕 Ramasser les légumes", "arroser": "💧 Arroser", "recolter": "🍎 Récolter" },
+      "OUI": {
+        "legumes": "Je m'occupe de ramasser les légumes mûrs !",
+        "arroser": "Je m'occupe d'arroser ce qui a soif !",
+        "recolter": "Je vais cueillir les fruits des arbres !"
+      },
+      "RIEN": {
+        "legumes": "Aucun légume n'est mûr pour l'instant.",
+        "arroser": "Rien n'a soif pour l'instant.",
+        "recolter": "Aucun arbre n'a de fruits pour l'instant."
+      },
+      "SANS_EAU": "Je n'ai pas d'eau pour arroser : il faudrait la citerne, ou une cruche et un puits.",
+      "TARD": "Ma journée de travail est finie. Demain, si tu veux !",
+      "FAIM_TEXTE": "J'ai trop faim pour travailler, il faut que je mange d'abord."
+    }
   },
   "ROBOT": {
     "HEURE": 6,
