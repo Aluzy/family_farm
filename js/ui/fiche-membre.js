@@ -11,7 +11,7 @@
 // l'inventaire ou le réfrigérateur), y manger, le retirer. Le moteur : js/engine/equipement.js.
 
 import { DATA } from '../engine/catalog.js';
-import { findMember, memberName, memberPerso } from '../engine/family.js';
+import { findMember, memberName } from '../engine/family.js';
 import { mainCharacter } from '../engine/depart.js';
 import { memberHappiness } from '../engine/bonheur.js';
 import { jaugeMembre } from '../engine/repas.js';
@@ -34,7 +34,7 @@ import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { applyResult } from './game-actions.js';
 import { executer } from './commandes.js';
-import { persoSrc } from './famille.js';
+import { membrePortraitHtml } from './famille.js';
 import { formatEnergyGain } from './energie.js';
 import { helpBtn } from './aide.js';
 
@@ -73,8 +73,11 @@ function persoEquipeHtml(m) {
   const enfant = !!m.enfant, pieces = casesMembre(state, m.id).filter(Boolean);
   pieces.sort((a, b) => ORDRE_PLACES.indexOf(pieceDef(a).place) - ORDRE_PLACES.indexOf(pieceDef(b).place));
   const rangs = piecesEquipement();
-  const calques = pieces.map((item) => `<span class="perso-px fiche-calque" style="background-image: url('${calquesSrc()}'); background-position: ${enfant ? 'calc(var(--s) / -2)' : '0'} calc(var(--s) * -${rangs.indexOf(item)})"></span>`).join('');
-  return `<span class="fiche-perso" aria-hidden="true"><span class="perso-px" style="background-image: url('${persoSrc(memberPerso(m), enfant)}')"></span>${calques}</span>`;
+  // (chaque calque en deux : le haut du corps, qui descend d'un pixel quand il respire, et le bas : le
+  // portrait est vivant, persoHtml, css/jeu.css .fiche-calque.haut)
+  const calque = (item, part) => `<span class="perso-px fiche-calque ${part}" style="background-image: url('${calquesSrc()}'); background-position: ${enfant ? 'calc(var(--s) / -2)' : '0'} calc(var(--s) * -${rangs.indexOf(item)})"></span>`;
+  const calques = pieces.map((item) => calque(item, 'bas') + calque(item, 'haut')).join('');
+  return `<span class="fiche-perso${enfant ? ' enfant' : ''}" aria-hidden="true">${membrePortraitHtml(m, true)}${calques}</span>`;
 }
 
 /* -- les jauges -- */

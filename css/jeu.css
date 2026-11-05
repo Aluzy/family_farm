@@ -2772,6 +2772,25 @@ span.encyclo-item.encyclo-inconnue { color: #a08463; }
   image-rendering: pixelated;
 }
 .member-row .perso-px { --s: var(--portrait-40, 40px); }
+/* Les portraits vivants du menu Famille (js/ui/famille.js, persoHtml) : ils respirent (les cases idle_bas_0
+   et idle_bas_1 de la planche, en alternance, comme sur la carte) et clignent des yeux (.perso-cligne : la
+   tuile des yeux fermés de assets/personnages/visages.png, posée sur la zone du visage, qui descend avec la
+   tête). --u : un pixel du dessin. Avant les règles de .fiche-perso (qui le posent en absolu). */
+.perso-px.vivant { position: relative; animation: portrait-respire 1.2s step-end infinite; }
+@keyframes portrait-respire { 0% { background-position-x: 0; } 50% { background-position-x: calc(var(--s) / -2); } }
+.perso-cligne {
+  --u: calc(var(--s) / 32);
+  position: absolute; pointer-events: none; opacity: 0;
+  left: calc(var(--s) / 4 + 4 * var(--u)); top: calc(var(--visage-y0) * var(--u));
+  width: calc(8 * var(--u)); height: calc(5 * var(--u));
+  background-repeat: no-repeat; background-size: calc(144 * var(--u)) auto;
+  background-position: calc(-8 * 2 * var(--u)) calc(var(--visage-rang) * -5 * var(--u));
+  image-rendering: pixelated;
+  animation: portrait-respire-visage 1.2s step-end infinite, portrait-cligne var(--cligne, 4.6s) step-end var(--cligne-decale, 0s) infinite;
+}
+@keyframes portrait-respire-visage { 0% { top: calc(var(--visage-y0) * var(--u)); } 50% { top: calc(var(--visage-y1) * var(--u)); } }
+@keyframes portrait-cligne { 0% { opacity: 0; } 97% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .perso-px.vivant, .perso-cligne, .fiche-calque.haut { animation: none; } }
 .member-preview .perso-px { --s: var(--portrait-64, 64px); }
 .perso-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; max-height: 240px; overflow-y: auto; padding: 2px; }
 .perso-btn { padding: 2px; min-height: 0; display: flex; align-items: center; justify-content: center; }
@@ -2817,6 +2836,13 @@ span.encyclo-item.encyclo-inconnue { color: #a08463; }
 .fiche-perso { position: relative; display: block; --s: calc(var(--fiche-px, 4px) * 32); width: calc(var(--s) / 2); height: var(--s); }
 .fiche-perso .perso-px { --s: calc(var(--fiche-px, 4px) * 32); position: absolute; left: calc(var(--s) / -4); top: 0; }
 .fiche-perso .fiche-calque { background-size: var(--s) auto; }
+/* (l'équipement suit la respiration : le haut du corps, rangées 0 à 24 de la case d'un adulte, 0 à 26 d'un
+   enfant, descend d'un pixel avec lui, en même temps ; le bas ne bouge pas) */
+.fiche-perso { --coupe: 25; }
+.fiche-perso.enfant { --coupe: 27; }
+.fiche-perso .fiche-calque.haut { clip-path: inset(0 0 calc(var(--s) * (32 - var(--coupe)) / 32) 0); animation: portrait-calque 1.2s step-end infinite; }
+.fiche-perso .fiche-calque.bas { clip-path: inset(calc(var(--s) * var(--coupe) / 32) 0 0 0); }
+@keyframes portrait-calque { 0% { transform: none; } 50% { transform: translateY(calc(var(--s) / 32)); } }
 .fiche-nom {
   margin: 0; padding: 3px 10px; max-width: 150px; text-align: center; overflow-wrap: anywhere;
   background: var(--wood-paper); border: 2px solid var(--wood-dark); border-radius: 999px; font-size: 0.9rem;
@@ -3468,6 +3494,18 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .build-gomme.on { background: #ffd9a8; }
 .build-tourner span, .build-sens span { font-size: 1.1rem; font-weight: 700; line-height: 1; }
 .build-tourner.on { background: #cfe8ff; }
+
+/* ---------- Étape E6 du chantier « couches » : l'apparence d'un membre, attribut par attribut (js/ui/famille.js) ---------- */
+.apparence-choix summary { cursor: pointer; padding: 4px 0; }
+.apparence-groupe { border: 1px solid var(--wood-dark, #6b4a2b); border-radius: 8px; margin: 6px 0; padding: 4px 8px 8px; min-width: 0; }
+.apparence-groupe legend { font-weight: 700; padding: 0 4px; }
+.apparence-champ { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 4px 8px; align-items: start; margin-top: 6px; }
+.apparence-nom { font-size: 0.85rem; padding-top: 6px; }
+.apparence-options { display: flex; flex-wrap: wrap; gap: 4px; }
+.choix-apparence { min-height: 32px; padding: 3px 8px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 5px; }
+.choix-apparence.active { outline: 3px solid var(--color-sun); outline-offset: 0; }
+.choix-apparence .pastille { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.45); flex: none; }
+@media (max-width: 420px) { .apparence-champ { grid-template-columns: minmax(0, 1fr); } .apparence-nom { padding-top: 0; } }
 
 /* E-2 : le bandeau du monde en ligne (js/ui/en-ligne.js), en haut, au milieu */
 .en-ligne-bandeau {

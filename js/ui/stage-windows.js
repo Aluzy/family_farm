@@ -9,7 +9,6 @@ import { familyNameHtml } from './depart.js';
 import { nightActive } from '../engine/clock.js';
 import { asleep, dormirSousTente, sleepTarget } from '../engine/night.js';
 import { enExpedition, tentePortee } from '../engine/equipement.js';
-import { memberPerso } from '../engine/family.js';
 import { affames, jaugeFamille } from '../engine/repas.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { isUnlocked } from '../engine/campaign.js';
@@ -39,7 +38,7 @@ import { renderPaturage, renderPoulailler, renderSilo } from './elevage.js';
 import { renderFridgeCard, renderSerre, renderVerger } from './serre-verger-frigo.js';
 import { renderAteliers, renderMoulin, renderRecettes, renderStationFenetre } from './cuisine.js';
 import { renderTechno } from './techno.js';
-import { persoHtml, renderFamille } from './famille.js';
+import { membrePortraitHtml, persoHtml, renderFamille } from './famille.js';
 import { renderNotifications } from './notifications.js';
 import { inventoryTabsHtml, renderInventaire, subtabsHtml } from './inventaire.js';
 import { renderAtelier } from './atelier.js';
@@ -484,7 +483,7 @@ export function renderIndicators() {
         // le personnage du joueur (version 1.17 : celui choisi dans sa fiche ; le personnage
         // principal est toujours un adulte), dans le disque du médaillon ; l'anneau : l'XP
         `<span class="hud-portrait" style="--f:${Math.round(Math.max(0, Math.min(100, p.pct)) / 5)}" aria-hidden="true"></span>` +
-        `<span class="player-portrait">${persoHtml(m ? memberPerso(m) : 0)}</span></button>` +
+        `<span class="player-portrait">${m ? membrePortraitHtml(m) : persoHtml(0)}</span></button>` +
       `<button type="button" class="player-level" data-action="open-levels" title="${niveau}" aria-label="${niveau}">` +
         `<span class="hud-niveau" aria-hidden="true">${pxText(String(p.niveau))}</span></button>` +
     `</span>` +

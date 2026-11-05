@@ -125,6 +125,9 @@
         L.json('fermier_cases', v(PERSONNAGE + '.json'));
         L.json('perso_cases', v('personnages/cases.json'));
         L.json('perso_peau', v('personnages/peau.json'));   // (les teintes de peau : les émotions, amis.js)
+        if (global.CarteVisages) global.CarteVisages.charger(L, v);   // (les expressions du visage : js/carte/visages.js)
+        // (les planches de personnages assemblées depuis leurs couches, un essai : js/carte/planches.js)
+        if (global.CartePlanches && global.CartePlanches.actif()) L.json('couches', v('personnages/couches.json'));
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
         L.spritesheet(TALL_GRASS.key, v(TALL_GRASS.file), TALL_GRASS.frame);
         L.spritesheet(TALL_GRASS.fleurs.key, v(TALL_GRASS.fleurs.file), TALL_GRASS.frame);
@@ -303,6 +306,7 @@
               // l'intérieur de la maison du foyer : ses places (chantier.js, homeInside)
               maison: () => (this.homeInside ? this.homeInside() : null),
               file: (perso, enfant) => v(K.planche(perso, enfant)),
+              donnees: { couches: v('personnages/couches.json'), catalogue: v('personnages/catalogue.json') },   // (une apparence à lui : js/carte/planches.js)
             });
           } catch (e) { console.warn('[FarmStage] famille indisponible', e); }
         }

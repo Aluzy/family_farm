@@ -49,7 +49,115 @@ export const RAW_DATA = {
       "PERSOS": 50,
       "PERSO_DEFAUT": { "f": 1, "m": 7 },
       "PERSOS_ENFANT": 50,
-      "PERSO_DEFAUT_ENFANT": { "f": 2, "m": 1 }
+      "PERSO_DEFAUT_ENFANT": { "f": 2, "m": 1 },
+      "APPARENCE": {
+        "PEAU": {
+          "tres_claire": "Très claire",
+          "claire": "Claire",
+          "rosee": "Rosée",
+          "mate": "Mate",
+          "olive": "Olive",
+          "foncee": "Foncée",
+          "tres_foncee": "Très foncée"
+        },
+        "YEUX": { "brun": "Bruns", "noisette": "Noisette", "vert": "Verts", "bleu": "Bleus", "violet": "Violets", "turquoise": "Turquoise" },
+        "CHEVEUX": {
+          "noirs": "Noirs",
+          "chocolat": "Chocolat",
+          "bruns": "Bruns",
+          "chatains": "Châtains",
+          "auburn": "Auburn",
+          "roux": "Roux",
+          "blonds": "Blonds",
+          "platine": "Platine",
+          "gris": "Gris",
+          "blancs": "Blancs",
+          "roses": "Roses",
+          "violets": "Violets",
+          "bleus": "Bleus",
+          "verts": "Verts"
+        },
+        "COUPE": {
+          "adulte": {
+            "courts": "Courts",
+            "frange": "Frange",
+            "mi": "Mi-longs",
+            "longs": "Longs",
+            "carre": "Carré",
+            "frange_carre": "Carré à frange",
+            "couettes": "Couettes",
+            "chignon": "Chignon",
+            "chauve": "Dégarni"
+          },
+          "enfant": {
+            "court": "Courts",
+            "frange": "Frange",
+            "long": "Longs",
+            "queue": "Queue de cheval",
+            "couettes": "Couettes",
+            "chignon": "Chignon",
+            "meche": "Mèche",
+            "herisse": "Hérissés",
+            "boucles": "Bouclés"
+          }
+        },
+        "COUPE_PROPOSEE": { "enfant": ["court", "frange", "long", "queue", "couettes", "chignon"] },
+        "PILOSITE": { "barbe": "Barbe", "moustache": "Moustache" },
+        "SIGNES": { "rousseur": "Taches de rousseur", "joues": "Joues roses" },
+        "TISSU": {
+          "rouge": "Rouge",
+          "orange": "Orange",
+          "jaune": "Jaune",
+          "vert": "Vert",
+          "kaki": "Kaki",
+          "turquoise": "Turquoise",
+          "ciel": "Ciel",
+          "jean": "Jean",
+          "marine": "Marine",
+          "lilas": "Lilas",
+          "rose": "Rose",
+          "bordeaux": "Bordeaux",
+          "marron": "Marron",
+          "beige": "Beige",
+          "blanc": "Blanc",
+          "noir": "Noir"
+        },
+        "MOTIF": { "rayures": "Rayures", "carreaux": "Carreaux", "pois": "Pois" },
+        "BAS": { "bleu": "Bleu", "brun": "Brun", "gris": "Gris", "sombre": "Sombre", "vert": "Vert" },
+        "COUVRE_CHEF": {
+          "adulte": {
+            "paille": "Chapeau de paille",
+            "casquette": "Casquette",
+            "bonnet": "Bonnet",
+            "beret": "Béret",
+            "bandeau": "Bandeau",
+            "fleur": "Fleur"
+          },
+          "enfant": {
+            "casquette": "Casquette",
+            "bonnet": "Bonnet",
+            "paille": "Chapeau de paille",
+            "noeud": "Nœud",
+            "serre_tete": "Serre-tête",
+            "fleur": "Fleur"
+          }
+        },
+        "ACCESSOIRE": {
+          "rouge": "Rouge",
+          "orange": "Orange",
+          "jaune": "Jaune",
+          "vert": "Vert",
+          "bleu": "Bleu",
+          "marine": "Marine",
+          "violet": "Violet",
+          "rose": "Rose",
+          "brun": "Brun",
+          "gris": "Gris",
+          "noir": "Noir",
+          "blanc": "Blanc"
+        },
+        "ACCESSOIRES": { "lunettes": "Lunettes", "boucles": "Boucles d'oreilles", "pansement": "Pansement" }
+      }
     },
     "AJ": { "adulte": 50, "enfant": 25 },
     "COMPOSITION": { "MEMBRES_MIN": 1, "MEMBRES_MAX": 6, "ADULTES_MIN": 1 },
@@ -3184,10 +3292,11 @@ export const RAW_DATA = {
     "CASES": 3,
     "PLACES": { "tete": "Tête", "corps": "Corps", "mains": "Mains", "pieds": "Pieds" },
     "PIECES": {
-      "casque_lampe": { "place": "tete", "enfant": false, "grotte": 140, "vueNuit": 150 },
+      "casque_lampe": { "place": "tete", "enfant": false, "grotte": 140, "vueNuit": 150, "carte": "casque" },
       "chapeau_paille": {
         "place": "tete",
         "enfant": true,
+        "carte": "paille",
         "economie": { "labourer": 10, "planter": 10, "arroser": 10, "recolter": 10, "cueillir": 10, "faucher": 10 },
         "soleil": [11, 17]
       },
@@ -4309,6 +4418,20 @@ export const RAW_DATA = {
         "Victor",
         "Yves"
       ]
+    },
+    "APPARENCE": {
+      "PILOSITE": 35,
+      "ROUSSEUR": 15,
+      "JOUES": 10,
+      "JOUES_ENFANT": 60,
+      "MOTIF": 40,
+      "COUVRE_CHEF": 30,
+      "LUNETTES": 12,
+      "BOUCLES": 10,
+      "PANSEMENT_ENFANT": 8,
+      "CHEVEUX_RARES": ["roses", "bleus", "verts", "violets"],
+      "RARES": 6,
+      "ESSAIS": 6
     },
     "PERSOS": {
       "adulte": {

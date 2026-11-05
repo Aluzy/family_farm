@@ -72,6 +72,36 @@ export function memberPerso(m) {
   return def[m.genre] || def[P.GENRES[0]];
 }
 
+// Étape E6 du chantier « couches » (docs/personnage-couches.md) : l'apparence à lui d'un membre,
+// { identite, tenue } (les choix de DATA.FAMILLE.PROFIL.APPARENCE), qui remplace son personnage du
+// catalogue sur la carte et dans ses portraits ; null s'il n'en a pas (ou si elle n'est plus valide :
+// son personnage du catalogue reprend). Une copie propre : rien d'autre que les champs connus.
+export function validApparence(a, enfant) {
+  const A = DATA.FAMILLE.PROFIL.APPARENCE, age = enfant ? 'enfant' : 'adulte';
+  if (!a || typeof a !== 'object' || !a.identite || !a.tenue || typeof a.identite !== 'object' || typeof a.tenue !== 'object') return null;
+  const i = a.identite, t = a.tenue;
+  const dans = (table, v) => typeof v === 'string' && Object.prototype.hasOwnProperty.call(table, v);
+  const liste = (table, v) => Array.isArray(v) && v.every((x) => dans(table, x)) && new Set(v).size === v.length;
+  if (!dans(A.PEAU, i.peau) || !dans(A.YEUX, i.yeux) || !dans(A.CHEVEUX, i.cheveux) || !dans(A.COUPE[age], i.coupe)) return null;
+  const pilosite = i.pilosite ?? null;
+  if (pilosite !== null && (enfant || !dans(A.PILOSITE, pilosite))) return null;
+  if (!liste(A.SIGNES, i.signes || [])) return null;
+  if (!t.haut || !t.bas || !dans(A.TISSU, t.haut.tissu) || !dans(A.BAS, t.bas.tissu)) return null;
+  const motif = t.haut.motif ?? null, couvre = t.couvre_chef ?? null;
+  if (motif !== null && !dans(A.MOTIF, motif)) return null;
+  if (couvre !== null && !dans(A.COUVRE_CHEF[age], couvre)) return null;
+  if (!dans(A.ACCESSOIRE, t.accessoire) || !liste(A.ACCESSOIRES, t.accessoires || [])) return null;
+  return {
+    identite: { peau: i.peau, yeux: i.yeux, cheveux: i.cheveux, coupe: i.coupe, pilosite, signes: [...(i.signes || [])] },
+    tenue: { haut: { tissu: t.haut.tissu, motif }, bas: { tissu: t.bas.tissu }, couvre_chef: couvre, accessoire: t.accessoire, accessoires: [...(t.accessoires || [])] },
+  };
+}
+
+// L'apparence à lui d'un membre (validApparence), ou null : son personnage du catalogue (memberPerso).
+export function memberApparence(m) {
+  return m ? validApparence(m.apparence, !!m.enfant) : null;
+}
+
 // Nombre de personnages au choix pour ce membre (selon son âge).
 export function persoMax(m) {
   return m && m.enfant ? DATA.FAMILLE.PROFIL.PERSOS_ENFANT : DATA.FAMILLE.PROFIL.PERSOS;
@@ -92,8 +122,9 @@ export function memberPortrait(state, id) {
   return portraitEmoji(m.enfant, m.genre, m.teint, memberStyle(m));
 }
 
-// Change le profil d'un membre : { prenom, genre, teint, style, perso }. Un champ absent
-// garde sa valeur. Tout est vérifié avant de rien modifier : prénom de 1 à
+// Change le profil d'un membre : { prenom, genre, teint, style, perso, apparence }. Un champ absent
+// garde sa valeur ; apparence : null la retire (son personnage du catalogue reprend), un objet doit être
+// valide (validApparence). Tout est vérifié avant de rien modifier : prénom de 1 à
 // PRENOM_MAX caractères (nettoyé), genre 'f' ou 'm', teinte entière de 0 à 5.
 export function setMemberProfile(state, id, profil) {
   const P = DATA.FAMILLE.PROFIL;
@@ -122,12 +153,18 @@ export function setMemberProfile(state, id, profil) {
     if (!Number.isInteger(profil.perso) || profil.perso < 1 || profil.perso > persoMax(m)) return fail('Personnage inconnu.');
     next.perso = profil.perso;
   }
+  if (profil.apparence !== undefined && profil.apparence !== null) {
+    next.apparence = validApparence(profil.apparence, !!m.enfant);
+    if (!next.apparence) return fail('Apparence inconnue.');
+  }
   m.prenom = next.prenom;
   m.genre = next.genre;
   m.teint = next.teint;
   if (next.style) m.style = next.style;
   else delete m.style;
   if (next.perso) m.perso = next.perso;
+  if (profil.apparence === null) delete m.apparence;
+  else if (next.apparence) m.apparence = next.apparence;
   return { ok: true, id: m.id };
 }
 

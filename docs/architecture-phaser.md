@@ -22,7 +22,7 @@ restent sur la branche `archive/jeu-avant-grand-monde`.
 jeu.html                  la page : structure seule, charge les fichiers ci-dessous dans cet ordre
  ├─ js/telemetry.js       suivi de session (script classique)
  ├─ vendor/phaser.min.js  Phaser 4.2.1 (≈ 1,4 Mo)
- ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, chemins.js, nature.js, gestes.js, lumiere.js, eau.js, ressort.js, cheval.js, toit.js ;
+ ├─ js/carte/             le kit commun des cartes (CarteKit, voir § 1 bis) : kit.js, visages.js (les expressions du visage des personnages), planches.js (les planches de personnages assemblées depuis leurs couches, un essai ; docs/personnage-couches.md), chemins.js, nature.js, gestes.js, lumiere.js, eau.js, ressort.js, cheval.js, toit.js ;
  │                        jeu.js, le jeu Phaser de toutes les cartes (CarteJeu, voir § 1 quater)
  ├─ js/ambient-life.js    la vie d'ambiance, facultative : vent, bêtes de passage, le chat, les bêtes de l'Étable et du Poulailler (voir docs/vie-ambiance.md)
  ├─ js/fermier.js         le personnage, facultatif : il refait sur la carte les gestes du joueur (voir docs/personnage.md)

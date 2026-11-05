@@ -188,12 +188,20 @@ def raccourci(im):
 
 
 class Canvas:
+    # (chantier « couches » : l'étape de la pose qui dessine en ce moment, chibi.py ; chaque case la retient)
+    phase = None
+
     def __init__(self):
         self.px = [[None] * W for _ in range(H)]
+        self.ph = [[None] * W for _ in range(H)]
+        self.calques = {}              # étape → {(x, y): ce qu'elle a posé là, même recouvert ensuite}
 
     def put(self, x, y, c):
         if 0 <= x < W and 0 <= y < H:
             self.px[y][x] = c
+            self.ph[y][x] = Canvas.phase
+            if Canvas.phase:
+                self.calques.setdefault(Canvas.phase, {})[(x, y)] = c
 
     def rect(self, x0, y0, x1, y1, c):
         for y in range(y0, y1 + 1):

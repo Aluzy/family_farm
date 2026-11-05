@@ -5,6 +5,8 @@ import { hache } from './ferme-generee.js';
 import { mealHappinessDelta } from './bonheur.js';
 import { farmSeed } from './terrain.js';
 import { lireIdMonde, objetPris, prendreParHabitant } from './monde-recolte.js';
+import { tirerApparence } from './apparence.js';
+import { validApparence } from './family.js';
 import { proposDuMoment } from './propos.js';
 import { demandeDe, texteDemande } from './demandes.js';
 
@@ -112,6 +114,10 @@ export function peuplerHameau(state, plan, o = {}) {
   const tire = (listes, genre) => (listes[genre].length ? listes[genre].shift() : listes[autre(genre)].shift());
   const metier = METIERS[plan.metier] ? plan.metier : 'cueilleur';
   const S = HABITANTS.SECOND;
+  // (étape E7 du chantier « couches » : l'apparence de chacun, tirée à part, de la graine, du hameau et de sa place :
+  // le reste du tirage ne change pas ; deux habitants du hameau ne se ressemblent pas : `deja`)
+  const deja = new Set();
+  const apparence = (mz, k, enfant, genre) => tirerApparence(rngDe(`${g}:apparence:${plan.id}:${mz.id}:${k}`), { enfant, genre }, deja);
   // (la maison de Maurice, au Gué, reste fermée : personne n'y vit ; docs/recit/bible.md)
   const foyers = plan.maisons.filter((mz) => mz.id !== plan.maisonMaurice).map((mz) => {
     // (la composition : la graine du monde, le hameau, la maison)
@@ -139,11 +145,11 @@ export function peuplerHameau(state, plan, o = {}) {
         const autres = S.METIERS.filter((x) => x !== metier && METIERS[x]);
         mt = r < S.MEME ? metier : r < S.MEME + S.AUTRE && autres.length ? autres[Math.floor(rm() * autres.length)] : null;
       }
-      membres.push({ id: `${mz.id}:${membres.length}`, prenom: tire(prenoms, genre) || 'Jean', genre, enfant: false, perso: tire(persos.adulte, genre) || 1, metier: mt, lit: prend('lit_adulte') });
+      membres.push({ id: `${mz.id}:${membres.length}`, prenom: tire(prenoms, genre) || 'Jean', genre, enfant: false, perso: tire(persos.adulte, genre) || 1, metier: mt, lit: prend('lit_adulte'), apparence: apparence(mz, membres.length, false, genre) });
     }
     for (let k = 0; k < enfants; k++) {
       const genre = rm() < 0.5 ? 'f' : 'm';
-      membres.push({ id: `${mz.id}:${membres.length}`, prenom: tire(prenoms, genre) || 'Jean', genre, enfant: true, perso: tire(persos.enfant, genre) || 1, metier: null, lit: prend('lit_enfant') });
+      membres.push({ id: `${mz.id}:${membres.length}`, prenom: tire(prenoms, genre) || 'Jean', genre, enfant: true, perso: tire(persos.enfant, genre) || 1, metier: null, lit: prend('lit_enfant'), apparence: apparence(mz, membres.length, true, genre) });
     }
     return { maison: mz.id, membres, bourse: HABITANTS.ARGENT, garde: {}, bonheur: DATA.BONHEUR.DEPART, jour: state.day - 1, vus: null, journal: [] };
   });
@@ -495,7 +501,7 @@ export function ficheHameau(state, id) {
       const J = f.journal && f.journal[f.journal.length - 1];
       return {
         maison: f.maison, bonheur: f.bonheur, couverture: J ? J.couverture : null, bourse: f.bourse,
-        membres: f.membres.map((m) => ({ id: m.id, prenom: m.prenom, metier: metierHabitant(h, m), enfant: !!m.enfant, perso: m.perso })),
+        membres: f.membres.map((m) => ({ id: m.id, prenom: m.prenom, metier: metierHabitant(h, m), enfant: !!m.enfant, perso: m.perso, apparence: validApparence(m.apparence, !!m.enfant) })),
       };
     }),
     reserve: Object.entries(h.reserve).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)),
@@ -511,7 +517,7 @@ export function habitantsPourLaCarte(state) {
   const out = {};
   for (const [id, h] of Object.entries(habitantsDe(state))) {
     if (!h || !Array.isArray(h.foyers)) continue;
-    out[id] = { metier: h.metier, foyers: h.foyers.map((f) => ({ maison: f.maison, membres: f.membres.map((m) => ({ id: m.id, perso: m.perso, enfant: !!m.enfant, metier: m.metier || null, lit: m.lit })) })) };
+    out[id] = { metier: h.metier, foyers: h.foyers.map((f) => ({ maison: f.maison, membres: f.membres.map((m) => ({ id: m.id, perso: m.perso, enfant: !!m.enfant, metier: m.metier || null, lit: m.lit, apparence: validApparence(m.apparence, !!m.enfant) })) })) };
   }
   return out;
 }

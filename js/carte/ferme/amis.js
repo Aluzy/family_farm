@@ -32,6 +32,19 @@
   // -1 le clair, 0 la teinte, 1 l'ombre, « k » les joues).
   const mele = (a, b, t) => [0, 1, 2].map((i) => Math.max(0, Math.min(255, Math.round(a[i] + (b[i] - a[i]) * t))));
   const peauEmotion = (t, P) => (t === 'k' ? P.k : t < 0 ? mele(P.f, P.e, -t) : mele(P.f, P.j, t));
+  // Les teintes de peau de `table` (peau.json) remplacées par celles de `emotion`, sur le canvas de `g`.
+  function recolorePeau(g, w, h, table, emotion) {
+    const img = g.getImageData(0, 0, w, h), d = img.data, P = EMOTIONS[emotion].peau;
+    const vers = new Map();
+    for (const [hex, t] of Object.entries(table)) vers.set(parseInt(hex, 16), peauEmotion(t, P));
+    for (let i = 0; i < d.length; i += 4) {
+      if (!d[i + 3]) continue;
+      const c = vers.get((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
+      if (c) { d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; }
+    }
+    g.putImageData(img, 0, 0);
+  }
+
   // ce que dit un habitant surpris par un coup de hache ou de pioche près de lui
   const REACTIONS = { hache: 'Oh ! Tu en replanteras un ?', pioche: 'Oh ! Ça résonne jusqu\'ici !' };
   const EMO = {
@@ -62,7 +75,7 @@
       const now = performance.now();
       if (!force && m.emoVu && m.emoVu[emotion] && now - m.emoVu[emotion] < EMO.repos) return false;
       (m.emoVu = m.emoVu || {})[emotion] = now;
-      m.emo = { emotion, t0: now };
+      m.emo = { emotion, t0: now, fort: !!force };   // (fort : un cadeau, son visage rit, js/carte/visages.js)
       this.emojiHabitant(m, EMOTIONS[emotion].emoji);
       return true;
     },
@@ -109,7 +122,7 @@
     planchePeau(key, emotion) {
       const cle = key + '~' + emotion;
       if (this.textures.exists(cle)) return cle;
-      const tables = this.cache.json.get('perso_peau'), table = tables && tables[key];
+      const table = this.tablePeau(key);
       if (!table || !this.textures.exists(key) || !EMOTIONS[emotion]) return null;
       const src = this.textures.get(key).getSourceImage();
       if (!src || !src.width) return null;
@@ -117,17 +130,37 @@
       cv.width = src.width; cv.height = src.height;
       const g = cv.getContext('2d');
       g.drawImage(src, 0, 0);
-      const img = g.getImageData(0, 0, cv.width, cv.height), d = img.data, P = EMOTIONS[emotion].peau;
-      const vers = new Map();
-      for (const [hex, t] of Object.entries(table)) vers.set(parseInt(hex, 16), peauEmotion(t, P));
-      for (let i = 0; i < d.length; i += 4) {
-        if (!d[i + 3]) continue;
-        const c = vers.get((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
-        if (c) { d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; }
-      }
-      g.putImageData(img, 0, 0);
+      recolorePeau(g, cv.width, cv.height, table, emotion);
       this.textures.addSpriteSheet(cle, cv, { frameWidth: 16, frameHeight: 32 });
       return cle;
+    },
+
+    // La table des teintes de peau de la planche `key` (assets/personnages/peau.json, dont les noms ont deux
+    // chiffres : perso_07 ; les planches des habitants n'en ont qu'un, perso_7 : CarteVisages.nom), ou null.
+    tablePeau(key) {
+      const tables = this.cache.json.get('perso_peau');
+      if (!tables) return null;
+      const V = global.CarteVisages;
+      return tables[key] || (V && tables[V.nom(key)]) || null;
+    },
+
+    // Les tuiles du visage (js/carte/visages.js) du personnage de la planche `key`, recolorées comme sa planche
+    // pour `emotion` (planchePeau) : { key, base } pour CarteVisages.suivre, ou null (sans table, l'atlas pas là).
+    visagePeau(key, emotion) {
+      const V = global.CarteVisages, J = this.cache.json.get('visages'), nom = V && V.nom(key);
+      const rang = J && nom ? J.personnages.indexOf(nom) : -1;
+      if (rang < 0 || !EMOTIONS[emotion] || !this.textures.exists('visages')) return null;
+      const cle = 'visages:' + nom + '~' + emotion;
+      if (this.textures.exists(cle)) return { key: cle, base: 0 };
+      const table = this.tablePeau(key), src = this.textures.get('visages').getSourceImage();
+      if (!table || !src || !src.width) return null;
+      const w = J.tuile.w, h = J.tuile.h, cv = document.createElement('canvas');
+      cv.width = src.width; cv.height = h;
+      const g = cv.getContext('2d');
+      g.drawImage(src, 0, rang * h, src.width, h, 0, 0, src.width, h);
+      recolorePeau(g, cv.width, cv.height, table, emotion);
+      this.textures.addSpriteSheet(cle, cv, { frameWidth: w, frameHeight: h });
+      return { key: cle, base: 0 };
     },
 
     // À chaque image (stepHabitants, après son image) : la couleur de l'habitant `m` — une réaction colore
@@ -161,6 +194,11 @@
         const v = m.voile;
         if (v.texture.key !== m.key || v.frame.name !== s.frame.name) v.setTexture(m.key, s.frame.name);
         v.setPosition(s.x, s.y).setFlipX(s.flipX).setDepth(s.depth + 0.01).setVisible(true).setAlpha(Math.min(1, k) * s.alpha).setTint(couleur);
+      }
+      // son visage (js/carte/visages.js) : l'expression de la réaction, recolorée comme sa peau
+      if (global.CarteVisages) {
+        const enCours = R && now - R.t0 < EMO.duree;
+        global.CarteVisages.suivre(this, s, enCours ? { reaction: R.emotion, fort: R.fort, atlas: planche !== m.key ? this.visagePeau(m.key, R.emotion) : null } : null);
       }
       if (m.emoji && f) {
         const b = m.emoji;

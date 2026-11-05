@@ -6,6 +6,7 @@ import { addItem } from './inventory.js';
 import { hache } from './ferme-generee.js';
 import { farmSeed, farmTerrain } from './terrain.js';
 import { HABITANTS, habitantsDe, metierHabitant, peuplerHameau } from './habitants.js';
+import { validApparence } from './family.js';
 
 /* ---------- la visite de bienvenue (fiche 18) ----------
 
@@ -82,7 +83,7 @@ export function choisirVisiteur(state, plans) {
   if (adultes.length) {
     const m = adultes[Math.floor(rnd() * adultes.length)];
     return {
-      prenom: m.prenom, genre: m.genre === 'm' ? 'm' : 'f', perso: m.perso, hameau: h.nom, hameauId: plan.id, membre: m.id,
+      prenom: m.prenom, genre: m.genre === 'm' ? 'm' : 'f', perso: m.perso, apparence: validApparence(m.apparence, false), hameau: h.nom, hameauId: plan.id, membre: m.id,
       metier: h.metier || null, metierNom: metierHabitant(h, m), depart: plan.case,
     };
   }
@@ -184,7 +185,7 @@ export function bienvenueModele(state) {
   if (!b || !b.qui || (b.etat !== 'en_route' && b.etat !== 'posee')) return null;
   const q = b.qui, d = DATA.OBJETS[b.plat] || { nom: '', icone: '' };
   return {
-    etat: b.etat, prenom: q.prenom, perso: q.perso, metier: q.metierNom || '', hameau: q.hameau || '', depart: Number.isInteger(q.depart) ? q.depart : null,
+    etat: b.etat, prenom: q.prenom, perso: q.perso, apparence: q.apparence || null, metier: q.metierNom || '', hameau: q.hameau || '', depart: Number.isInteger(q.depart) ? q.depart : null,
     plat: { id: b.plat, nom: d.nom, icone: d.icone }, phrase: phraseBienvenue(state), toc: BIENVENUE.TOC, absent: BIENVENUE.ABSENT,
     attente: BIENVENUE.ATTENTE, proche: BIENVENUE.PROCHE,
   };

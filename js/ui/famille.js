@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import {
   addMember, addPet, cleanFirstName, findMember, findPet,
-  memberName, memberPerso, memberRemovalBlock, memberRoom, persoMax, petIcon, petName, petRoom, pets,
+  memberApparence, memberName, memberPerso, memberRemovalBlock, memberRoom, persoMax, petIcon, petName, petRoom, pets,
   removeMember, removePet, setMemberProfile, setPetProfile,
 } from '../engine/family.js';
 import { escapeHtml, formatNumber, formatPercent } from '../engine/format.js';
@@ -23,6 +23,7 @@ import { notify } from './toasts.js';
 import { registerActions } from './actions.js';
 import { closeModal, openModal } from './modal.js';
 import { renderFicheMembre } from './fiche-membre.js';
+import { apparenceDuCatalogue, apparencesPretes, chargerApparences, donneesApparence, plancheApparence, portraitMembre } from './apparence.js';
 
 /* ---------- Famille ---------- */
 
@@ -73,12 +74,50 @@ export function persoSrc(n, enfant = false) {
   const versions = window.FERME_ASSET_VERSIONS;
   return `assets/${file}${versions && versions[file] ? `?v=${versions[file]}` : ''}`;
 }
-export function persoHtml(n, enfant = false, id = '') {
-  return `<span class="perso-px"${id ? ` id="${id}"` : ''} style="background-image: url('${persoSrc(n, enfant)}')" aria-hidden="true"></span>`;
+// `propre` (étape E6) : la planche d'une apparence à lui (js/ui/apparence.js, plancheApparence : { url, dort }) ; son
+// clignement prend alors les yeux fermés de sa case du sommeil (dort_bas_0), là où sont ceux de l'atlas.
+export function persoHtml(n, enfant = false, id = '', vivant = '', propre = null) {
+  const idHtml = id ? ` id="${id}"` : '';
+  const src = propre ? propre.url : persoSrc(n, enfant);
+  if (!vivant) return `<span class="perso-px"${idHtml} style="background-image: url('${src}')" aria-hidden="true"></span>`;
+  let cligne = `background-image: url('${visagesSrc()}')`;
+  if (propre) {
+    const y0 = PORTRAIT_VISAGE.y[enfant ? 'enfant' : 'adulte'][0], x = (propre.dort % 8) * 16 + 4, y = Math.floor(propre.dort / 8) * 32 + y0;
+    cligne = `background-image: url('${propre.url}'); background-size: calc(128 * var(--u)) auto; background-position: calc(${-x} * var(--u)) calc(${-y} * var(--u))`;
+  }
+  return `<span class="perso-px vivant"${idHtml} style="background-image: url('${src}'); ${visageVars(n, enfant, vivant)}" aria-hidden="true">`
+    + `<span class="perso-cligne" style="${cligne}"></span></span>`;
 }
-export function memberAvatarHtml(id) {
-  const m = findMember(state, id);
-  return persoHtml(memberPerso(m), !!(m && m.enfant));
+// Le portrait d'un membre : son personnage du catalogue, ou son apparence à lui (étape E6, js/ui/apparence.js).
+export function membrePortraitHtml(m, vivant = false, id = '') {
+  const P = portraitMembre(m);
+  return persoHtml(P.n, P.enfant, id, vivant && m ? m.id : '', P.propre);
+}
+export function memberAvatarHtml(id, vivant = false) {
+  return membrePortraitHtml(findMember(state, id), vivant);
+}
+
+// Les portraits vivants du menu Famille (chantier « couches », docs/personnage-couches.md) : ils
+// respirent comme sur la carte (les cases idle_bas_0 et idle_bas_1 de la planche, en alternance) et
+// clignent des yeux (un calque, la tuile des yeux fermés de face de assets/personnages/visages.png,
+// posé sur la zone du visage, qui descend avec la tête quand il respire). Tout est en CSS (.perso-px.vivant,
+// css/jeu.css) : rien ne tourne quand la fenêtre est fermée, et « réduire les animations » les arrête.
+// La rangée d'un personnage dans l'atlas : les 50 adultes puis les 50 enfants (l'ordre du catalogue) ; la
+// rangée de la zone du visage dans la case, debout puis en respirant (visages.json : vérifié par
+// tests/engine/personnages-visages.test.mjs).
+// (la tuile des yeux fermés, de face : la colonne 2 de l'atlas, dans css/jeu.css .perso-cligne)
+export const PORTRAIT_VISAGE = { adultes: 50, y: { adulte: [12, 13], enfant: [16, 17] } };
+function visagesSrc() {
+  const file = 'personnages/visages.png', versions = window.FERME_ASSET_VERSIONS;
+  return `assets/${file}${versions && versions[file] ? `?v=${versions[file]}` : ''}`;
+}
+// Le clignement de chacun : sa période (3,4 à 6,2 s) et son décalage tirés de `graine` (l'id du membre :
+// toujours les mêmes, la fenêtre redessinée ne relance pas l'animation ; deux membres ne clignent pas ensemble).
+function visageVars(n, enfant, graine) {
+  let h = 0;
+  for (const c of String(graine)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const P = PORTRAIT_VISAGE, rang = (enfant ? P.adultes : 0) + Math.max(1, n || 1) - 1, [y0, y1] = P.y[enfant ? 'enfant' : 'adulte'];
+  return `--visage-rang: ${rang}; --visage-y0: ${y0}; --visage-y1: ${y1}; --cligne: ${(3.4 + (h % 29) / 10).toFixed(1)}s; --cligne-decale: -${((h >>> 5) % 30) / 10}s`;
 }
 
 // FLU-24 : une carte par membre (portrait, nom, boutons), deux par ligne : toute la famille
@@ -87,7 +126,7 @@ function portraitCard(m) {
   const main = mainCharacter(state) && mainCharacter(state).id === m.id;
   return `
     <li class="card member-row">
-      ${memberAvatarHtml(m.id)}
+      ${memberAvatarHtml(m.id, true)}
       <span class="member-row-text">
         <strong class="member-name">${memberNameHtml(m.id)}</strong>${main ? ' <span class="chip auto">⭐ Principal</span>' : ''}
         ${main ? '' : faimHtml(m)}
@@ -103,7 +142,7 @@ function portraitCard(m) {
 
 // Choix en cours dans la fenêtre (rien n'est changé avant « Enregistrer »). Le
 // prénom, lui, reste dans le champ de saisie jusqu'à l'enregistrement.
-let memberDraft = null; // { id, enfant, perso, depart } (depart : le joueur a demandé le départ, on attend sa confirmation)
+let memberDraft = null; // { id, enfant, perso, apparence, depart } (apparence : la sienne, ou null ; depart : le joueur a demandé le départ, on attend sa confirmation)
 
 function openMemberModal(id) {
   const m = findMember(state, id);
@@ -114,8 +153,10 @@ function openMemberModal(id) {
     id: m.id,
     enfant: !!m.enfant,
     perso: memberPerso(m), // version 1.17 : son personnage, parmi ceux de son âge
+    apparence: memberApparence(m), // étape E6 : son apparence à lui (null : son personnage)
     depart: false,
   };
+  if (!apparencesPretes()) chargerApparences(syncMemberModal);
   // Version 1.2 : le membre peut quitter la famille, sauf s'il est le dernier, le
   // dernier adulte (le moteur dit pourquoi).
   const blocage = memberRemovalBlock(state, m.id);
@@ -142,6 +183,10 @@ function openMemberModal(id) {
         <strong>Personnage</strong>
         <div class="perso-grid">${persos}</div>
       </div>
+      <details class="member-field apparence-choix"${memberDraft.apparence ? ' open' : ''}>
+        <summary><strong>Personnaliser</strong> <span class="muted">(la peau, les yeux, la coiffure, la tenue…)</span></summary>
+        <div id="apparence-choix"></div>
+      </details>
       <p class="muted">Le prénom reste sur cet appareil, dans ta sauvegarde : il n'est jamais envoyé.</p>
       <p class="alert" id="member-error" role="alert" hidden></p>
     </div>
@@ -164,16 +209,74 @@ function syncMemberModal() {
   const input = document.getElementById('member-prenom');
   if (!d || !input) return;
   const typed = cleanFirstName(input.value);
-  document.getElementById('member-preview-perso').style.backgroundImage = `url('${persoSrc(d.perso, d.enfant)}')`;
+  const propre = d.apparence ? plancheApparence(d.apparence, d.enfant) : null;
+  document.getElementById('member-preview-perso').style.backgroundImage = `url('${propre ? propre.url : persoSrc(d.perso, d.enfant)}')`;
   for (const b of root.querySelectorAll('[data-action="member-perso"]')) {
     const n = Number(b.dataset.perso);
-    b.setAttribute('aria-pressed', String(n === d.perso));
-    b.classList.toggle('active', n === d.perso);
+    b.setAttribute('aria-pressed', String(!d.apparence && n === d.perso));
+    b.classList.toggle('active', !d.apparence && n === d.perso);
   }
+  const choix = document.getElementById('apparence-choix');
+  if (choix) choix.innerHTML = apparenceChoixHtml(d);
   // textContent : le prénom tapé s'affiche comme du texte, jamais comme du HTML
   document.getElementById('member-preview-name').textContent = typed || '…';
   const error = document.getElementById('member-error');
   if (error) error.hidden = true;
+}
+
+// Étape E6 : le choix de chaque attribut (DATA.FAMILLE.PROFIL.APPARENCE). Le premier choix part du personnage
+// du catalogue en cours ; un personnage de la grille retire l'apparence. Chaque bouton porte la couleur de son choix
+// (les palettes de assets/personnages/catalogue.json, une fois chargées).
+const CHAMPS_APPARENCE = [
+  ['Identité', [
+    ['identite.peau', 'Peau', (A) => A.PEAU, (K, v) => K.palettes.peau[v].teinte],
+    ['identite.yeux', 'Yeux', (A) => A.YEUX, (K, v) => K.palettes.yeux[v].reflet],
+    ['identite.cheveux', 'Cheveux', (A) => A.CHEVEUX, (K, v) => K.palettes.cheveux[v].teinte],
+    ['identite.coupe', 'Coupe', (A, enfant) => (enfant ? Object.fromEntries(A.COUPE_PROPOSEE.enfant.map((c) => [c, A.COUPE.enfant[c]])) : A.COUPE.adulte)],
+    ['identite.pilosite', 'Barbe', (A, enfant) => (enfant ? null : { '': 'Aucune', ...A.PILOSITE })],
+    ['identite.signes', 'Signes', (A) => A.SIGNES, null, true],
+  ]],
+  ['Tenue', [
+    ['tenue.haut.tissu', 'Haut', (A) => A.TISSU, (K, v) => K.palettes.tissus[v].clair],
+    ['tenue.haut.motif', 'Motif', (A) => ({ '': 'Uni', ...A.MOTIF })],
+    ['tenue.bas.tissu', 'Bas', (A) => A.BAS, (K, v) => K.palettes.bas[v].teinte],
+    ['tenue.couvre_chef', 'Sur la tête', (A, enfant) => ({ '': 'Rien', ...A.COUVRE_CHEF[enfant ? 'enfant' : 'adulte'] })],
+    ['tenue.accessoire', 'Couleur du couvre-chef', (A) => A.ACCESSOIRE, (K, v) => K.palettes.accessoires[v]],
+    ['tenue.accessoires', 'Accessoires', (A) => A.ACCESSOIRES, null, true],
+  ]],
+];
+const lireChamp = (a, champ) => champ.split('.').reduce((o, k) => (o ? o[k] : undefined), a);
+function ecrireChamp(a, champ, v) {
+  const k = champ.split('.'), o = k.slice(0, -1).reduce((x, c) => x[c], a);
+  o[k[k.length - 1]] = v;
+}
+
+function apparenceChoixHtml(d) {
+  if (!apparencesPretes()) return '<p class="muted">Un instant…</p>';
+  const A = DATA.FAMILLE.PROFIL.APPARENCE, K = donneesApparence().K;
+  const actuelle = d.apparence || apparenceDuCatalogue(d.perso, d.enfant);
+  return CHAMPS_APPARENCE.map(([titre, champs]) => `<fieldset class="apparence-groupe"><legend>${titre}</legend>${champs.map(([champ, nom, options, couleur, plusieurs]) => {
+    const choix = options(A, d.enfant);
+    if (!choix) return '';
+    const valeur = actuelle ? lireChamp(actuelle, champ) : undefined;
+    const boutons = Object.entries(choix).map(([v, libelle]) => {
+      const on = plusieurs ? (valeur || []).includes(v) : (valeur ?? '') === v;
+      const pastille = couleur && v ? `<span class="pastille" style="background: ${couleur(K, v)}" aria-hidden="true"></span>` : '';
+      return `<button type="button" class="btn choix-apparence${on ? ' active' : ''}" data-action="member-apparence" data-champ="${champ}" data-valeur="${v}" aria-pressed="${on}">${pastille}${escapeHtml(libelle)}</button>`;
+    }).join('');
+    return `<div class="apparence-champ" role="group" aria-label="${nom}"><span class="apparence-nom">${nom}</span><div class="apparence-options">${boutons}</div></div>`;
+  }).join('')}</fieldset>`).join('');
+}
+
+function choisirApparence(champ, valeur) {
+  const d = memberDraft;
+  if (!d || !apparencesPretes()) return;
+  if (!d.apparence) d.apparence = apparenceDuCatalogue(d.perso, d.enfant);
+  if (!d.apparence) return;
+  const actuel = lireChamp(d.apparence, champ);
+  if (Array.isArray(actuel)) ecrireChamp(d.apparence, champ, actuel.includes(valeur) ? actuel.filter((x) => x !== valeur) : [...actuel, valeur]);
+  else ecrireChamp(d.apparence, champ, valeur === '' ? null : valeur);
+  syncMemberModal();
 }
 
 // « Enregistrer » : le moteur vérifie tout ; en cas de refus la fenêtre reste
@@ -182,7 +285,7 @@ function saveMemberModal() {
   const d = memberDraft;
   const input = document.getElementById('member-prenom');
   if (!d || !input) return;
-  const result = setMemberProfile(state, d.id, { prenom: input.value, perso: d.perso });
+  const result = setMemberProfile(state, d.id, { prenom: input.value, perso: d.perso, apparence: d.apparence || null });
   if (!result.ok) {
     const error = document.getElementById('member-error');
     if (error) {
@@ -477,8 +580,12 @@ registerActions({
     openMemberModal(target.dataset.id);
   },
   'member-perso': (target) => {
-    if (memberDraft) memberDraft.perso = Number(target.dataset.perso);
+    if (memberDraft) { memberDraft.perso = Number(target.dataset.perso); memberDraft.apparence = null; }
     syncMemberModal();
+  },
+  // ----- étape E6 du chantier « couches » : l'apparence attribut par attribut -----
+  'member-apparence': (target) => {
+    choisirApparence(target.dataset.champ, target.dataset.valeur);
   },
   'member-save': () => {
     saveMemberModal();

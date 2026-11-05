@@ -40,7 +40,7 @@
         const o = v && typeof v === 'object' ? v : { visible: !!v };
         return o.visible ? o : null;
       };
-      this.syncPerso(model.perso | 0);
+      this.syncPerso(model.perso | 0, model.apparence || null, model.coiffe || null);
       this.syncFloors(model.sols);
       this.syncPaths(model.chemins);
       this.syncBeasts(model.enclos, model.heure);
@@ -125,13 +125,25 @@
 
     // Version 1.17 : le personnage du joueur, un des 50 du catalogue (assets/personnages). Sa
     // planche est chargée la première fois qu'il est choisi ; d'ici là, la fermière.
-    syncPerso(n) {
-      if (!this.fermier || !n || n === this.persoN) return;
+    // Étape E6 : son apparence à lui (apparence) remplace son personnage du catalogue (js/carte/planches.js).
+    // Étape E7 : coiffe, la pièce d'équipement qu'il porte sur la tête (son casque, son chapeau de paille).
+    syncPerso(n, apparence, coiffe) {
+      const P = global.CartePlanches;
+      const propre = !!(P && (apparence || coiffe));
+      const key = propre ? P.cleMembre({ perso: n, enfant: false, apparence, coiffe }) : n ? 'perso_' + n : null;
+      if (!this.fermier || !key || key === this.persoCle) return;
+      this.persoCle = key;
       this.persoN = n;
-      const key = 'perso_' + n;
-      const apply = () => { if (this.persoN === n && this.has(key)) this.fermier.setSheet(key); };
+      const apply = () => { if (this.persoCle === key && this.has(key)) this.fermier.setSheet(key); };
       if (this.textures.exists(key)) { apply(); return; }
-      this.load.spritesheet(key, v(K.planche(n)), FERMIER_FRAME);
+      if (propre) {
+        const faire = () => { P.texturesMembre(this, { perso: n, enfant: false, apparence, coiffe }); apply(); };
+        if (P.chargerDonnees(this, { couches: v('personnages/couches.json'), catalogue: v('personnages/catalogue.json') }, faire)) faire();
+        return;
+      }
+      // (la planche assemblée depuis ses couches, js/carte/planches.js, si le réglage le demande ; sinon le PNG)
+      if (P && P.charger(this, key, null, v(K.planche(n)))) { apply(); return; }
+      if (!P) this.load.spritesheet(key, v(K.planche(n)), FERMIER_FRAME);
       this.load.once('complete', apply);
       this.load.start();
     },

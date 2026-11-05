@@ -158,7 +158,10 @@
     const ouVeut = (m) => voulu(heure(), nuit(), !!litDe(m), m.enfant, model && model.horaire);
 
     // la planche d'un membre : celle de son personnage d'adulte ou d'enfant
-    const cle = (def) => (def.enfant ? 'enfant_' : 'perso_') + def.perso;
+    // (étape E6 : son apparence à lui, js/carte/planches.js)
+    // (et, étape E7, la pièce d'équipement qu'il porte sur la tête : def.coiffe)
+    const propre = (def) => !!((def.apparence || def.coiffe) && global.CartePlanches);
+    const cle = (def) => (propre(def) ? global.CartePlanches.cleMembre(def) : (def.enfant ? 'enfant_' : 'perso_') + def.perso);
 
     let rang = 0;                  // chacun son décalage : ils ne marchent pas l'un sur l'autre
     function creer(def) {
@@ -641,7 +644,18 @@
           membres.set(def.id, n);
         }
         if (manque.length) {
-          for (const def of manque) if (!scene.textures.exists(cle(def))) scene.load.spritesheet(cle(def), o.file(def.perso, def.enfant), { frameWidth: 16, frameHeight: 32 });
+          // (la planche assemblée depuis ses couches, js/carte/planches.js, si le réglage le demande : tout de suite ;
+          // sinon le PNG, au chargeur)
+          const P = global.CartePlanches;
+          // (une apparence à lui : couches.json et catalogue.json d'abord, puis sa planche, tout de suite)
+          const propres = manque.filter(propre);
+          if (propres.length) {
+            if (!P.chargerDonnees(scene, o.donnees, () => this.sync(model))) return;
+            for (const def of propres) P.texturesMembre(scene, def);
+          }
+          const attendues = manque.filter((def) => !propre(def) && !(P ? P.charger(scene, cle(def), null, o.file(def.perso, def.enfant))
+            : (scene.textures.exists(cle(def)) || (scene.load.spritesheet(cle(def), o.file(def.perso, def.enfant), { frameWidth: 16, frameHeight: 32 }), false))));
+          if (!attendues.length) { this.sync(model); return; }
           scene.load.once('complete', () => this.sync(model));
           if (!scene.load.isLoading()) scene.load.start();
         }
@@ -689,6 +703,8 @@
           }
           dessiner(m, marche ? `marche_${m.face}_${K.imageMarche(m.marche, m.enfant ? 'enfant' : 'adulte')}` : `idle_${m.face}_${Math.floor(performance.now() / 600) % 2}`);
         }
+        // leur visage (js/carte/visages.js)
+        if (global.CarteVisages) for (const m of membres.values()) global.CarteVisages.suivre(scene, m.s);
       },
       info() {
         const H = maison();

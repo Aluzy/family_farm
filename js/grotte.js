@@ -110,8 +110,9 @@
       // (la planche du personnage par son fichier : les textures restent d'une visite à l'autre,
       // et le personnage de la partie peut changer)
       const sheet = K.planchePerso();
-      this.heroKey = HERO.key + ':' + sheet.file;
-      this.load.spritesheet(this.heroKey, v(sheet.file), { frameWidth: HERO.w, frameHeight: HERO.h });
+      // (une apparence à lui, étape E6 : sa planche, déjà faite par la ferme ; sinon celle de son personnage)
+      this.heroKey = sheet.cle && this.textures.exists(sheet.cle) ? sheet.cle : HERO.key + ':' + sheet.file;
+      if (!this.textures.exists(this.heroKey)) this.load.spritesheet(this.heroKey, v(sheet.file), { frameWidth: HERO.w, frameHeight: HERO.h });
       this.load.json(this.heroKey + '_noms', v(sheet.names));
     }
 

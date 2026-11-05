@@ -130,6 +130,7 @@
       if (!dedans) { if (m.bulle) this.visiteBulleOff(m); return; }
       const nom = marche ? `marche_${m.face}_${K.imageMarche(m.marche)}` : `idle_${m.face}_${Math.floor(now / 600) % 2}`;
       s.setFrame(C(nom)).setPosition(Math.round(m.x), Math.round(m.y)).setFlipX(m.flip).setAlpha(m.alpha).setDepth(m.y);
+      if (global.CarteVisages) global.CarteVisages.suivre(this, s);   // (son visage)
       // sa bulle
       if (m.bulle) {
         if (now >= m.bulle.until) { this.visiteBulleOff(m); return; }
@@ -148,7 +149,8 @@
     nouveauVisiteur(V) {
       const porte = this.homeDoor ? this.homeDoor() : null;
       if (!porte || !this.fermier) return null;
-      const key = 'perso_' + V.perso, d = { perso: V.perso, enfant: false };
+      const d = { perso: V.perso, enfant: false, apparence: V.apparence || null };
+      const key = this.clePerso ? this.clePerso(d) : 'perso_' + V.perso;
       if (this.chargePerso) this.chargePerso(key, d);
       const dep = this.visiteDepart(V, porte);
       return {
