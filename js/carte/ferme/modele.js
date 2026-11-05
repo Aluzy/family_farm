@@ -131,7 +131,10 @@
       const key = 'perso_' + n;
       const apply = () => { if (this.persoN === n && this.has(key)) this.fermier.setSheet(key); };
       if (this.textures.exists(key)) { apply(); return; }
-      this.load.spritesheet(key, v(K.planche(n)), FERMIER_FRAME);
+      // (la planche assemblée depuis ses couches, js/carte/planches.js, si le réglage le demande ; sinon le PNG)
+      const P = global.CartePlanches;
+      if (P && P.charger(this, key, null, v(K.planche(n)))) { apply(); return; }
+      if (!P) this.load.spritesheet(key, v(K.planche(n)), FERMIER_FRAME);
       this.load.once('complete', apply);
       this.load.start();
     },

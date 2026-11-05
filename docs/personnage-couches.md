@@ -1,7 +1,7 @@
 # Les personnages en couches : identité, tenue, expressions (chantier)
 
 Statut : **E0 validée** (les 9 expressions, de face et de profil) ; **E1 faite** (§ 6) ; **E2 faite** (§ 7) ;
-**E3 faite** (§ 8 : la carte ; § 9 : les portraits vivants du menu Famille) ; **E4 faite** (§ 10, § 11).
+**E3 faite** (§ 8 : la carte ; § 9 : les portraits vivants du menu Famille) ; **E4 faite** (§ 10, § 11) ; **E5 faite** (§ 12).
 
 Le but : séparer un personnage de ses vêtements et de ses attributs (peau, yeux, coiffure, expression),
 et donner des expressions aux visages, **en gardant la base actuelle** : les 100 personnages
@@ -396,3 +396,39 @@ chaque lettre).
 
 **Suite (E5)** : l'assembleur en JS, qui lit `couches.json`, vérifié contre les planches PNG (au pixel, pour les 100) ;
 le jeu l'emploie derrière un réglage, avec repli sur les PNG ; puis les palettes d'une combinaison libre (E6).
+
+## 12. Étape E5 : l'assembleur dans le jeu
+
+**`js/carte/planches.js`** (`window.CartePlanches`, script classique sans dépendance, chargé après `kit.js`) : l'assembleur
+de `couches.py` en JS. `CartePlanches.assembler(C, def, palette)` fabrique une planche (128 × 448, RGBA) à partir de
+`couches.json` (`C`), d'une définition (`{ age, elements, chapeau, jambes }` : un personnage du catalogue ou une
+combinaison nouvelle) et d'une palette ; `CartePlanches.planche(C, nom)` celle d'un personnage du catalogue.
+
+**Dans le jeu, un essai derrière un réglage** (le jeu garde ses PNG, identiques) : `jeu.html?planches=couches`, ou
+`localStorage` « ferme-planches » = « couches ». La carte de la ferme charge alors `couches.json` avec ses images, et
+`CartePlanches.charger(scène, clé, nom, url)` assemble la planche d'un personnage au lieu de demander son PNG : le
+personnage principal (`modele.js`, `syncPerso`), la famille (`famille-ferme.js`), les habitants, les invités et le
+visiteur (`habitants.js`, `chargePerso`). Sans le réglage, rien ne change (le PNG, au chargeur). La mine
+(`grotte.js`) garde ses PNG ; les portraits de l'interface aussi.
+
+Au passage, un défaut de l'export d'E4 corrigé : les jambes assises sont dessinées avec des noms de `fermier.C`
+(`ov`, `ov2`, `bt`, `bt2`) qui sont, depuis E4, des rôles de la palette (`chibi.ROLES` : `Ms`, `Mr`, `Mw`) ; l'export
+leur donnait la couleur par défaut de `fermier.C`. Ils sont maintenant écrits en rôles.
+
+**Vérifié** :
+- `tests/engine/personnages-planches.test.mjs` (dans `npm test`) : les 100 planches assemblées sont **identiques au
+  pixel près** aux PNG (et `fermiere.png`) ; une **combinaison hors du catalogue** (l'identité de `perso_12`, la tenue
+  de `perso_40` : sa planche dessinée par `chibi.py` et sa palette, `tests/engine/combinaison.png` et `.json`,
+  `couches.py --fixture`) aussi ;
+- dans Chromium, avec le réglage : les planches du personnage, de deux habitants et de deux enfants sont des canvas
+  assemblés, identiques au pixel près aux PNG ; elles sont là tout de suite (le PNG attend que le chargeur ait fini
+  les images de la carte : quelques secondes au démarrage) ; `npm run smoke` passe avec et sans le réglage.
+
+**Mesuré** (Chromium) : une planche s'assemble en **10 ms** sur ce poste, **52 ms** le processeur ralenti 4 fois
+(comme un téléphone moyen ; pas mesuré sur un vrai téléphone). Un hameau d'une vingtaine d'habitants qui paraît
+d'un coup : un à-coup possible. Si le réglage devient la règle : assembler dans un Web Worker, ou une planche par
+image, et garder les planches faites (elles ne changent qu'avec l'apparence).
+
+**Suite (E6)** : l'apparence dans la sauvegarde (`member.apparence = { identite, tenue }`), l'écran de création attribut
+par attribut ; il faudra alors la palette d'une combinaison libre (aujourd'hui, `couches.json` donne celle des 100) :
+porter `modeles.palette_de` en JS, ou exporter une palette par élément et par couleur.

@@ -19,6 +19,7 @@
 #   python3 scripts/personnage/couches.py                  assemble et vérifie les 100 planches
 #   python3 scripts/personnage/couches.py --combinaisons   et 60 personnages tirés au hasard, hors du catalogue
 #   python3 scripts/personnage/couches.py --exporter       écrit assets/personnages/couches.json (pour le jeu)
+#   python3 scripts/personnage/couches.py --fixture        écrit tests/engine/combinaison.png et .json (son test)
 import os
 import sys
 
@@ -206,10 +207,13 @@ def combinaisons(n=60, graine=7):
 
 
 def _px(d):
-    """Des pixels {(x, y): lettre} en texte compact : « x,y,lettre;… », triés."""
-    return ';'.join(f'{x},{y},{L}' for (x, y), L in sorted(d.items(), key=lambda t: (t[0][1], t[0][0])))
+    """Des pixels {(x, y): lettre} en texte compact : « x,y,lettre;… », triés ; les noms de fermier.C qui sont des
+    rôles de la palette (chibi.ROLES : les jambes assises) écrits en rôles."""
+    return ';'.join(f'{x},{y},{chibi.ROLES.get(L, L)}' for (x, y), L in sorted(d.items(), key=lambda t: (t[0][1], t[0][0])))
 
 
+# Les noms de fermier.C employés tels quels (les outils, le contour K), hors des rôles de la palette.
+OUTILS = {k for k in F.BASE if k not in chibi.ROLES}
 RACINE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 
 
@@ -228,12 +232,14 @@ def exporter(chemin=os.path.join(RACINE, 'assets', 'personnages', 'couches.json'
             elements.setdefault(f'{c}:{k}', {v: _px(g) for v, g in grilles.items()})
         personnages[nom] = {'age': age, 'elements': [f'{c}:{k}' for c, k, _ in elts],
                             'chapeau': None if nom in modeles.RETOUCHES else d['chapeau'], 'jambes': cle}
-        # la palette : chaque lettre que ses cases emploient, couleur résolue (les couleurs calculées comprises)
-        lettres = {L for cv in cases.values() for r in cv.px for L in r if L is not None and L not in F.BASE}
-        for _, _, grilles in elts:
-            lettres |= {L for g in grilles.values() for L in g.values()}
-        lettres |= set(chibi.Modele.YEUX_FERMES.values())
-        palettes[nom] = {L: '#%02x%02x%02x' % chibi.couleur(L) for L in sorted(lettres)}
+        # la palette : chaque lettre de ses éléments, de ses jambes et des couches communes de son âge (pas les noms
+        # des outils), couleur résolue (les couleurs calculées comprises)
+        textes = [_px(g) for _, _, grilles in elts for g in grilles.values()]
+        textes += [_px(px) for px in communs[age]['jambes'][cle].values()]
+        textes += [_px(px) for par in communs[age]['cases'].values() for px in par.values()]
+        textes.append(_px(chibi.Modele.YEUX_FERMES))
+        lettres = {t.split(',', 2)[2] for texte in textes if texte for t in texte.split(';')}
+        palettes[nom] = {L: '#%02x%02x%02x' % chibi.couleur(L) for L in sorted(lettres) if L not in OUTILS}
     zones = {v: {'bras': ';'.join(f'{x},{y}' for x, y in sorted(b, key=lambda t: (t[1], t[0]))),
                  'mains': ';'.join(f'{x},{y}' for x, y in sorted(mn, key=lambda t: (t[1], t[0])))} for v, (b, mn) in chibi.ZONES.items()}
     doc = {
@@ -253,7 +259,7 @@ def exporter(chemin=os.path.join(RACINE, 'assets', 'personnages', 'couches.json'
         'poses': {age: C['trace'] for age, C in communs.items()},
         'communes': {age: {n: {e: _px(px) for e, px in par.items()} for n, par in C['cases'].items()} for age, C in communs.items()},
         'jambes': {age: {k: {n: _px(px) for n, px in J.items()} for k, J in C['jambes'].items()} for age, C in communs.items()},
-        'outils': {k: '#%02x%02x%02x' % v for k, v in F.BASE.items()},
+        'outils': {k: '#%02x%02x%02x' % F.BASE[k] for k in sorted(OUTILS)},
         'elements': elements,
         'personnages': personnages,
         'palettes': palettes,
@@ -264,7 +270,44 @@ def exporter(chemin=os.path.join(RACINE, 'assets', 'personnages', 'couches.json'
     return chemin
 
 
+def fixture(identite='perso_12', tenue='perso_40'):
+    """tests/engine/combinaison.png et .json : un personnage hors du catalogue (l'identité de l'un, la tenue de
+    l'autre), sa planche dessinée par chibi.py, ses éléments et sa palette ; le test de l'assembleur du jeu
+    (tests/engine/personnages-planches.test.mjs) doit la redonner au pixel près."""
+    import json
+    import catalogue
+    P = catalogue.DOC['personnages']
+    p = {'age': 'adulte', 'identite': P[identite]['identite'], 'tenue': P[tenue]['tenue']}
+    d = catalogue.description(p)
+    nom = 'perso_x'
+    cases = dessiner(nom, d)
+    elts = modeles.elements(nom, d)
+    planche = None
+    from PIL import Image
+    planche = Image.new('RGBA', (F.COLS * F.W, ((len(cases) + F.COLS - 1) // F.COLS) * F.H), (0, 0, 0, 0))
+    lettres = set()
+    for k, (n, cv) in enumerate(cases.items()):
+        planche.paste(chibi.render(cv), ((k % F.COLS) * F.W, (k // F.COLS) * F.H))
+        lettres |= {chibi.ROLES.get(L, L) for r in cv.px for L in r if L is not None}
+    for _, _, grilles in elts:
+        lettres |= {L for g in grilles.values() for L in g.values()}
+    lettres |= set(chibi.Modele.YEUX_FERMES.values())
+    palette = {L: '#%02x%02x%02x' % chibi.couleur(L) for L in sorted(lettres) if L not in OUTILS}
+    dossier = os.path.join(RACINE, 'tests', 'engine')
+    planche.save(os.path.join(dossier, 'combinaison.png'))
+    doc = {'_': f"L'identité de {identite}, la tenue de {tenue} (scripts/personnage/couches.py --fixture).",
+           'def': {'age': 'adulte', 'elements': [f'{c}:{k}' for c, k, _ in elts], 'chapeau': d['chapeau'], 'jambes': 'standard'},
+           'palette': palette}
+    with open(os.path.join(dossier, 'combinaison.json'), 'w', encoding='utf-8') as f:
+        json.dump(doc, f, ensure_ascii=False, indent=1)
+        f.write('\n')
+    return doc
+
+
 def main():
+    if '--fixture' in sys.argv:
+        print(fixture()['def'])
+        return 0
     if '--exporter' in sys.argv:
         print(f'{exporter()} écrit')
         return 0

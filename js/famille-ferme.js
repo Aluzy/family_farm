@@ -641,7 +641,12 @@
           membres.set(def.id, n);
         }
         if (manque.length) {
-          for (const def of manque) if (!scene.textures.exists(cle(def))) scene.load.spritesheet(cle(def), o.file(def.perso, def.enfant), { frameWidth: 16, frameHeight: 32 });
+          // (la planche assemblée depuis ses couches, js/carte/planches.js, si le réglage le demande : tout de suite ;
+          // sinon le PNG, au chargeur)
+          const P = global.CartePlanches;
+          const attendues = manque.filter((def) => !(P ? P.charger(scene, cle(def), null, o.file(def.perso, def.enfant))
+            : (scene.textures.exists(cle(def)) || (scene.load.spritesheet(cle(def), o.file(def.perso, def.enfant), { frameWidth: 16, frameHeight: 32 }), false))));
+          if (!attendues.length) { this.sync(model); return; }
           scene.load.once('complete', () => this.sync(model));
           if (!scene.load.isLoading()) scene.load.start();
         }

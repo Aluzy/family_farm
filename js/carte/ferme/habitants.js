@@ -132,7 +132,10 @@
       if (!this.habCharges) this.habCharges = new Set();
       if (this.habCharges.has(key)) return;
       this.habCharges.add(key);
-      this.load.spritesheet(key, v(K.planche(d.perso, d.enfant)), { frameWidth: 16, frameHeight: 32 });
+      // (la planche assemblée depuis ses couches, js/carte/planches.js, si le réglage le demande ; sinon le PNG)
+      const P = global.CartePlanches;
+      if (P && P.charger(this, key, null, v(K.planche(d.perso, d.enfant)))) return;
+      if (!P) this.load.spritesheet(key, v(K.planche(d.perso, d.enfant)), { frameWidth: 16, frameHeight: 32 });
       if (!this.load.isLoading()) this.load.start();
     },
 

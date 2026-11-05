@@ -126,6 +126,8 @@
         L.json('perso_cases', v('personnages/cases.json'));
         L.json('perso_peau', v('personnages/peau.json'));   // (les teintes de peau : les émotions, amis.js)
         if (global.CarteVisages) global.CarteVisages.charger(L, v);   // (les expressions du visage : js/carte/visages.js)
+        // (les planches de personnages assemblées depuis leurs couches, un essai : js/carte/planches.js)
+        if (global.CartePlanches && global.CartePlanches.actif()) L.json('couches', v('personnages/couches.json'));
         for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
         L.spritesheet(TALL_GRASS.key, v(TALL_GRASS.file), TALL_GRASS.frame);
         L.spritesheet(TALL_GRASS.fleurs.key, v(TALL_GRASS.fleurs.file), TALL_GRASS.frame);

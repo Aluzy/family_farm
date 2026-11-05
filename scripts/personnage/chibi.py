@@ -88,7 +88,7 @@ class Modele:
         self.vues = {v: {p: L for p, L in g.items() if L != 'a'} for v, g in modeles.lettres(nom, d).items()}
 
         self.manche, self.manche2, self.peau = 'Mp', 'Mp×0.8', 'Mk'
-        F.C['ov'], F.C['ov2'], F.C['bt'], F.C['bt2'] = 'Ms', 'Mr', 'Mw', 'Mw×0.7'
+        F.C.update(ROLES)
         self.yeux = dict(Modele.YEUX_FERMES)
 
     # les yeux fermés du sommeil, de face : la peau (Mv) en haut, les cils (L) en bas
@@ -118,6 +118,8 @@ class Modele:
 # Les manches et les mains du corps (modeles.CORPS) dans les zones des bras : ce que retire un bras redessiné,
 # et, en marchant les mains libres, les mains et leur ombre. ZONES : {vue: (cases des bras, cases des mains)},
 # les mêmes pour tous les modèles.
+# Les noms de fermier.C que les jambes assises emploient (fermier.legs_assis) : des rôles de la palette du modèle.
+ROLES = {'ov': 'Ms', 'ov2': 'Mr', 'bt': 'Mw', 'bt2': 'Mw×0.7'}
 BRAS_LETTRES = 'pqkt'
 MAINS_LETTRES = 'kmt'
 
