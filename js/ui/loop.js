@@ -31,6 +31,7 @@ import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
 import { watchPresents } from './amitie.js';
 import { watchDemandes } from './demandes.js';
+import { pleut } from '../engine/meteo.js';
 import { watchInvitations } from './invitations.js';
 import { watchPlans } from './plans.js';
 import {
@@ -251,6 +252,15 @@ function watchDay() {
 }
 let midnightSeen = false;
 
+// G-1 : une averse commence (js/engine/meteo.js) : une annonce, une fois par jour (pas dans un monde en ligne, où
+// l'horloge est figée et la pluie n'arrose pas).
+let averseAnnoncee = null;
+function watchMeteo() {
+  if (enLigne || averseAnnoncee === state.day || nightActive(state) || !pleut(state)) return;
+  averseAnnoncee = state.day;
+  notify('🌧️ Une averse ! La pluie arrose les cultures de la ferme (pas la Serre, qui est couverte).', { kind: 'info' });
+}
+
 // La faim de la famille (js/engine/repas.js) : un membre qui a faim et ne trouve rien à manger
 // le fait savoir (un appui mène à la Famille) ; sur la carte, celui qui mange va au
 // réfrigérateur ou à la boîte à nourriture (js/famille-ferme.js : fiche 16b, à n'importe quelle
@@ -321,6 +331,7 @@ export function frame(now) {
   watchRobot();
   watchPresents();
   watchDemandes(); // V-2 : les petites demandes des habitants, annoncées au matin
+  watchMeteo(); // G-1 : l'averse qui commence
   watchInvitations(); // les invitations à un repas : les réponses au matin, les invités en route
   watchPlans(); // les plans de meubles offerts par un ami (le lot 4)
   watchPreparations();

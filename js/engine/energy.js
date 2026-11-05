@@ -11,6 +11,7 @@ import { nightActive } from './clock.js';
 import { growDue } from './crops.js';
 import { irrigate, robotStep, runRobotCharge } from './automation.js';
 import { distribuerGrain } from './distributeur.js';
+import { pluieSurLaFerme } from './meteo.js';
 import { runChaines } from './chaines.js';
 import { advanceNight, nightSpeed } from './night.js';
 import { repasStep } from './repas.js';
@@ -157,6 +158,7 @@ export function farmStep(state, dtMs, { usure = true, horloge = true, eveilMax =
     robotStep(state);
     irrigate(state);
     distribuerGrain(state); // le distributeur de grain nourrit les poules (distributeur.js)
+    pluieSurLaFerme(state); // G-1 : l'averse arrose les cultures de la ferme (meteo.js)
     repasStep(state); // la famille mange à la boîte quand elle a faim (repas.js)
   }
   noteEnergyRecord(state); // Lot 9 : record d'énergie stockée

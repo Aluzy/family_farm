@@ -4,6 +4,7 @@ import { aFait, noterVisite, RECIT, toucherLieu } from '../engine/recit.js';
 import { fermeLuit, visiteJohnny } from '../engine/fil-lune.js';
 import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
+import { brume as brumeDuMoment, pleut } from '../engine/meteo.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
 import { findDevice, isOwned, starterOf, tankCapacity } from '../engine/devices.js';
 import { furnitureCount } from '../engine/meubles.js';
@@ -483,6 +484,8 @@ export function stageModel() {
     fleurs: fleursPourAbeilles(state),
     jour: state.day, cuisson, frigo: state.frigo && state.frigo.construit ? fridgeUnits(state) : 0,
     heure, cols: T.LARGEUR, cases: tileCount(T), terrain: terrainNow(rochers.concat(abattus)), plots,
+    // G-1 : le temps qu'il fait (js/engine/meteo.js ; la carte : js/carte/ferme/meteo.js ; le son : js/son.js)
+    meteo: { pluie: !nightActive(state) && pleut(state, heure), brume: nightActive(state) ? 0 : brumeDuMoment(state, heure) },
     // la ferme générée : ce qui est à ramasser à la main (js/engine/atelier.js)
     ramassables: ramassables(state).map((r) => ({ id: r.id, sorte: r.sorte, case: r.case, buisson: !!r.buisson })),
     // le bois et la pierre lâchés par la hache et la pioche, à ramasser en marchant dessus

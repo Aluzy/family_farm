@@ -582,6 +582,7 @@
         const fige = !!(this.ctx.lastModel && this.ctx.lastModel.bati);
         this.figer(fige);
         this.syncPresence(delta);                // (E-4 : les autres joueurs d'un monde en ligne : presence.js)
+        this.syncMeteo(delta);                   // (G-1 : la pluie, la brume : meteo.js)
         this.syncConstructible();               // (en mode Construire : les cases où le bloc se pose, en blanc)
         if (this.conseilsAFaire) this.syncConseilsTextes();   // (et les étiquettes des pièces qui arrivent à l'écran)
         this.stepCharge();

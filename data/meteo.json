@@ -1,0 +1,18 @@
+{
+  "//METEO": [
+    "G-1 (docs/phase-4.md, js/engine/meteo.js) : le temps qu'il fait, tiré de la graine de la ferme et du jour (la même",
+    "partie, le même ciel). Chaque jour : clair, pluie (une averse de PLUIE_DUREE heures qui commence entre",
+    "PLUIE_HEURES), ou brume (le matin seulement, jusqu'à BRUME_FIN h). CHANCES : la part de chaque temps ; PAR_MOIS :",
+    "celle de la pluie, mois par mois (data LUNE.MOIS), quand elle change. Pas de temps avant le jour DEPUIS.",
+    "La pluie arrose les cultures de la ferme qui ne le sont pas encore (pas la Serre), une fois, sans eau ni énergie."
+  ],
+  "METEO": {
+    "DEPUIS": 3,
+    "CHANCES": { "pluie": 0.2, "brume": 0.15 },
+    "PAR_MOIS": { "Pluvia": 0.45, "Zephyria": 0.3, "Florea": 0.28, "Silentia": 0.25, "Messidia": 0.1, "Aurea": 0.08 },
+    "PLUIE_HEURES": [8, 18],
+    "PLUIE_DUREE": [2, 5],
+    "BRUME_FIN": 10,
+    "NOMS": { "clair": "☀️ Beau temps", "pluie": "🌧️ Averse", "brume": "🌫️ Brume du matin" }
+  }
+}
