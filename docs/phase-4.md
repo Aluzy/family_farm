@@ -80,7 +80,7 @@ existante.
 | **V-2 · Les petites demandes** ✅ | Des demandes facultatives des habitants (apporter, fabriquer, aider), tirées sans hasard caché selon leur métier et les besoins de leur hameau. Au plus 3 en cours, aucune pénalité si on ne les fait pas. Elles rapportent de l'amitié, un plan, une recette ou un souvenir. Un carnet des demandes. | « Entraide, demandes facultatives » ; une raison de revenir voir quelqu'un. |
 | **V-3 · Entre voisins** | Des liens entre habitants (amis, voisins, cousins d'un hameau à l'autre). Ils se rendent visite, s'entraident quand un garde-manger est vide, et parlent les uns des autres. | « Relations » et « histoires émergentes ». |
 | **V-4 · La fête du hameau** | Des événements locaux générés : une fête par saison dans un hameau, un petit marché, les habitants rassemblés sur la place, une musique de fête. | « Activités collectives », un rendez-vous. |
-| **D-1 · Le carnet du naturaliste** | Des pages pour les trouvailles, les végétaux, les biomes et des espèces de poissons, et une condition « biome vu ». Des collections complètes qui donnent un objet à poser (une vitrine, un herbier). | « Encyclopédie : plantes, animaux, minéraux, fossiles », et une progression par curiosité. |
+| **D-1 · Le carnet du naturaliste** ✅ | Des pages pour les trouvailles, les végétaux, les biomes et des espèces de poissons, et une condition « biome vu ». Des collections complètes qui donnent un objet à poser (une vitrine, un herbier). | « Encyclopédie : plantes, animaux, minéraux, fossiles », et une progression par curiosité. |
 | **D-2 · Les secrets du monde** | Des lieux remarquables générés par biome : ruines, points de vue, arbres anciens, cairns. Chacun garde un petit trésor ou une page de carnet. | « Lieux remarquables, secrets » : que le monde ne soit pas grand mais vide. |
 | **D-3 · Les personnages qui manquent** | Placer Garance, Lise, Fernand, Frida et Johnny dans le monde, et écrire leurs répliques (la bible et le plan du récit en visent environ 40 chacun). | Le récit déjà commencé. Il demande ta validation des textes. |
 | **G-1 · Le temps qu'il fait** | Une météo tirée de la graine, jour après jour : pluie, brume du matin, ciel clair. On la voit et on l'entend, et la pluie arrose le potager. | « Ambiance chaleureuse », un monde qui vit. |
@@ -128,3 +128,26 @@ G-1, plus courts, qui embellissent ce qui existe déjà.
   - dans la fenêtre « 🎁 Offrir » de l'habitant, sa demande et le bouton « Donner ». Il faut donc aller le voir : c'est voulu.
 - **En ligne** : les demandes appartiennent au grand monde, donc à la partie solo. Le geste est refusé dans un monde partagé.
 - **Les tests** : `tests/engine/demandes.test.mjs`, et un essai dans le jeu avec la partie du jour 54 (l'annonce, le carnet, « Donner »).
+
+## 7. D-1 : fait
+
+- **30 pages de plus dans l'Encyclopédie** (`encyclopedie_ferme_familiale.json`, 263 pages en tout) :
+  - « Les trouvailles du naturaliste » : les 12 trouvailles des biomes (fossiles, cristaux, coquillages, cueillette) ;
+  - « Les poissons » : les 7 espèces ;
+  - « Les paysages du grand monde » : les 11 biomes.
+- **Une nouvelle condition de découverte**, `biome:<biome>` (`js/engine/decouverte.js`) : le personnage est entré dans ce biome. Elle est notée la première fois par `encyclopedieBiome`, appelée depuis `stageIci` (`js/ui/stage.js`).
+- **Les collections** (`data/naturaliste.json`, `js/engine/naturaliste.js`). Une collection complète donne une fois un meuble à poser :
+
+  | Collection | Récompense |
+  |---|---|
+  | Fossiles et cristaux (4) | une bibliothèque vitrée |
+  | Trésors de la plage (4) | un tapis bleu |
+  | Cueillette des sous-bois (4) | une fougère |
+  | Poissons d'ici (7) | un tableau de la mer |
+  | Les paysages du grand monde (11) | un bonsaï |
+
+  Leur avancement s'affiche au sommaire de l'Encyclopédie (« 🏆 Collections du naturaliste »). Pas de récompense dans un monde en ligne : l'Encyclopédie est celle de chaque joueur.
+- **Limites** :
+  - une trouvaille se découvre quand on l'a sur soi, au frigo ou posée : une trouvaille vendue ou mangée avant cette version ne compte pas ;
+  - un paysage se découvre en y entrant : ceux parcourus avant cette version se découvriront au prochain passage.
+- **Les tests** : `tests/engine/naturaliste.test.mjs`, et un essai dans le jeu avec la partie du jour 54 (199 pages découvertes sur 263).

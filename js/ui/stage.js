@@ -33,7 +33,7 @@ import { tuilesChemins } from '../engine/ferme-generee.js';
 import { solDuMonde } from './monde-sol.js';
 import { robotBattery, robotChargePct, robotOn, robotStation, robotTrip } from '../engine/automation.js';
 import { notify } from './toasts.js';
-import { encyclopedieFaune, encyclopedieHameau, openEncyclopedie } from './encyclopedie.js';
+import { encyclopedieBiome, encyclopedieFaune, encyclopedieHameau, openEncyclopedie } from './encyclopedie.js';
 import { HAMEAUX, voirHameau } from '../engine/monde-hameaux.js';
 import { garantiDuHameau, HABITANTS, habitantsPourLaCarte } from '../engine/habitants.js';
 import { tousLesToitsUses } from '../engine/usure.js';
@@ -791,6 +791,7 @@ function stageRegion(tile) {
 function stageIci(tile) {
   noterIci(state, tile);
   const biome = biomeDeCase(tile);
+  encyclopedieBiome(biome);   // (D-1 : la page de ce paysage, la première fois)
   let change = voirAutour(state, tile, { biome, nuit: nightActive(state) }) > 0;
   // (le lot 4 : le premier passage dans un pays, hors de la ferme, y fait trouver un plan, js/ui/plans.js)
   if (planDuBiome(biome, horsDeLaFerme(state))) change = true;

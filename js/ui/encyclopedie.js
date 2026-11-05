@@ -5,7 +5,8 @@ import {
   CATEGORIES, entreeEncyclopedie, lirePage, majEncyclopedie, nombreEntrees, noterEncyclopedie,
   nouveautesEncyclopedie, pageConnue, pageNouvelle, pagesConnues,
 } from '../engine/encyclopedie.js';
-import { state } from './store.js';
+import { enLigne, state } from './store.js';
+import { collectionsNaturaliste, recompensesNaturaliste } from '../engine/naturaliste.js';
 import { tel } from './consent.js';
 import { persistState } from './storage.js';
 import { showToast } from './toasts.js';
@@ -61,8 +62,20 @@ function sommaireHtml() {
     <p class="encyclo-total num">${connues} / ${total} pages découvertes</p>
     <h3 class="book-h3">Sommaire</h3>
     <ul class="book-toc">${cats}</ul>
+    ${collectionsHtml()}
     ${nouvelles.length ? `<h3 class="book-h3">✨ Nouvelles pages</h3><div class="encyclo-liens">${nouvelles.map((id) => lien(id)).join('')}</div>` : ''}
     <p class="encyclo-astuce">Les pages se découvrent en jouant : un objet obtenu, un outil, un bâtiment, une carte visitée…</p>`;
+}
+
+// D-1 : les collections du naturaliste (js/engine/naturaliste.js) : où elles en sont, ce qu'elles donnent.
+function collectionsHtml() {
+  const L = collectionsNaturaliste(state);
+  const li = L.map((c) => {
+    const nom = DATA.OBJETS[c.objet] ? DATA.OBJETS[c.objet].nom : c.objet;
+    const fin = c.faite ? `✓ complète : ${escapeHtml(c.texte)}` : `donne ${escapeHtml(c.texte)}`;
+    return `<li class="encyclo-collection${c.faite ? ' faite' : ''}"><span>${c.icone} <strong>${escapeHtml(c.nom)}</strong></span> <span class="num">${c.connues} / ${c.pages.length}</span> <span class="muted" title="${escapeHtml(nom)}">· ${fin}</span></li>`;
+  }).join('');
+  return `<h3 class="book-h3">🏆 Collections du naturaliste</h3><ul class="encyclo-collections">${li}</ul>`;
 }
 
 function categorieHtml(id) {
@@ -166,6 +179,14 @@ function majDecouvertes(force = false) {
   if (!force && t - derniereMaj < MAJ_MS) return;
   derniereMaj = t;
   const neuves = majEncyclopedie(state);
+  // (D-1 : une collection complète donne sa récompense, une fois ; pas dans un monde en ligne, où
+  // l'Encyclopédie est celle de chaque joueur et l'inventaire celui du monde)
+  const faites = enLigne ? [] : recompensesNaturaliste(state);
+  for (const c of faites) {
+    const nom = DATA.OBJETS[c.objet] ? DATA.OBJETS[c.objet].nom : c.objet;
+    showToast(`🏆 Collection complète : ${c.nom} ! Tu reçois ${c.texte} (${nom}, dans l'inventaire : pose-le avec 🔨 Construire).`, { son: 'decouverte' });
+  }
+  if (faites.length) persistState();
   if (!neuves.length) return;
   persistState();
   const noms = neuves.map((id) => entreeEncyclopedie(id).terme);
@@ -195,6 +216,16 @@ export function encyclopedieFaune(espece) {
   noterEncyclopedie(state, `faune:${espece}`);
   majDecouvertes(true);
   return true;
+}
+
+// D-1 : le personnage entre dans un biome du grand monde (js/ui/stage.js, à chaque case : rien la plupart du
+// temps) : la page de ce paysage se découvre (« biome:<biome> »), la première fois.
+export function encyclopedieBiome(biome) {
+  if (!state || !biome) return;
+  const e = state.encyclopedie && state.encyclopedie.evenements;
+  if (e && e[`biome:${biome}`]) return;
+  noterEncyclopedie(state, `biome:${biome}`);
+  majDecouvertes(true);
 }
 
 // Un hameau du grand monde vu pour la première fois (js/ui/stage.js) : la page « Les hameaux » se

@@ -2670,6 +2670,10 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 .encyclo-inconnue { border: 2px dashed rgba(var(--color-earth-rgb), 0.45); background: none; color: #a08463; letter-spacing: 0.1em; }
 .encyclo-neuf { margin-left: 4px; padding: 0 5px; border-radius: 4px; background: #c0392b; color: #fff; font-size: 0.72rem; vertical-align: 1px; }
 .encyclo-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+/* D-1 : les collections du naturaliste, au sommaire */
+.encyclo-collections { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.encyclo-collection { line-height: 1.35; }
+.encyclo-collection.faite strong { color: var(--vert-fonce, #2f6b2f); }
 .encyclo-item { display: block; width: 100%; min-height: 32px; padding: 4px 2px; border: 0; border-bottom: 1px dotted rgba(var(--color-earth-rgb), 0.45); background: none; color: var(--wood-ink); font: inherit; text-align: left; }
 button.encyclo-item { cursor: pointer; }
 button.encyclo-item:hover { text-decoration: underline; }

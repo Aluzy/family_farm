@@ -219,6 +219,57 @@
       ]
     },
     {
+      "id": "trouvailles",
+      "icone": "🔍",
+      "nom": "Les trouvailles du naturaliste",
+      "entrees": [
+        { "id": "ammonite", "terme": "Ammonite fossile", "description": "Une coquille en spirale changée en pierre, il y a très, très longtemps : la montagne était alors le fond d'une mer. On la trouve en ramassant les cailloux des pentes et des éboulis de la montagne. Elle fait partie de la collection « Fossiles et cristaux ».", "liens": ["trilobite", "quartz", "b_montagne"], "decouverte": ["objet:ammonite"] },
+        { "id": "trilobite", "terme": "Trilobite fossile", "description": "Une petite bête de la mer d'autrefois, couchée dans la roche avec ses trois bandes bien nettes. Les pentes de la montagne en cachent quelques-unes. Elle fait partie de la collection « Fossiles et cristaux ».", "liens": ["ammonite", "b_montagne"], "decouverte": ["objet:trilobite"] },
+        { "id": "quartz", "terme": "Cristal de quartz", "description": "Un cristal clair comme de l'eau gelée, qui pousse dans les fentes de la roche. On le ramasse dans la montagne, souvent près des éboulis. Il fait partie de la collection « Fossiles et cristaux ».", "liens": ["amethyste", "b_montagne"], "decouverte": ["objet:quartz"] },
+        { "id": "amethyste", "terme": "Améthyste", "description": "Le cousin violet du quartz, plus rare. Les vieux de la montagne disent qu'elle garde des mauvais rêves. Il fait partie de la collection « Fossiles et cristaux ».", "liens": ["quartz", "b_montagne"], "decouverte": ["objet:amethyste"] },
+        { "id": "coquille", "terme": "Coquille Saint-Jacques", "description": "Une grande coquille en éventail, que la marée laisse sur le sable. On la ramasse en marchant sur la plage. Elle fait partie de la collection « Trésors de la plage ».", "liens": ["bulot", "perle", "b_plage"], "decouverte": ["objet:coquille"] },
+        { "id": "bulot", "terme": "Bulot", "description": "Un coquillage en spirale, que la mer roule jusqu'au rivage. Sur la plage, il suffit de regarder ses pieds. Il fait partie de la collection « Trésors de la plage ».", "liens": ["coquille", "b_plage"], "decouverte": ["objet:bulot"] },
+        { "id": "corail", "terme": "Branche de corail", "description": "Une petite branche rose, venue de loin sur les vagues. Rare sur la plage : le jour où on en trouve une, on s'en souvient. Elle fait partie de la collection « Trésors de la plage ».", "liens": ["perle", "b_plage"], "decouverte": ["objet:corail"] },
+        { "id": "perle", "terme": "Perle", "description": "La plus rare des trouvailles de la plage : une perle ronde et douce, cachée dans le sable mouillé. Elle fait partie de la collection « Trésors de la plage ».", "liens": ["coquille", "corail", "b_plage"], "decouverte": ["objet:perle"] },
+        { "id": "champignon", "terme": "Champignon", "description": "Le chapeau brun des sous-bois, après la pluie. On le cueille dans la forêt. Il se mange, et fait partie de la collection « Cueillette des sous-bois ».", "liens": ["myrtille", "chataigne", "b_foret"], "decouverte": ["objet:champignon"] },
+        { "id": "myrtille", "terme": "Myrtille", "description": "De petites baies bleues, sucrées, qui tachent les doigts. Les buissons de la forêt en sont couverts. Elle fait partie de la collection « Cueillette des sous-bois ».", "liens": ["champignon", "b_foret"], "decouverte": ["objet:myrtille"] },
+        { "id": "chataigne", "terme": "Châtaigne", "description": "Bien à l'abri dans sa bogue piquante, la châtaigne tombe des grands arbres de la forêt. Grillée, c'est un régal. Elle fait partie de la collection « Cueillette des sous-bois ».", "liens": ["champignon", "b_foret"], "decouverte": ["objet:chataigne"] },
+        { "id": "herbes_montagne", "terme": "Herbes de montagne", "description": "Des herbes parfumées qui poussent entre les pierres de la montagne. Les vaches qui en mangent donnent un lait d'alpage. Elles font partie de la collection « Cueillette des sous-bois ».", "liens": ["b_montagne"], "decouverte": ["objet:herbes_montagne"] }
+      ]
+    },
+    {
+      "id": "poissons",
+      "icone": "🐟",
+      "nom": "Les poissons",
+      "entrees": [
+        { "id": "truite", "terme": "Truite", "description": "Le poisson le plus commun des eaux douces : l'étang et la mare de la ferme, les rivières et les lacs. Tachetée, vive, elle mord volontiers. Elle fait partie de la collection « Poissons d'ici ».", "liens": ["peche", "brochet", "omble"], "decouverte": ["objet:truite"] },
+        { "id": "brochet", "terme": "Brochet", "description": "Le grand chasseur de l'étang, au long museau. Il est rare dans la mare, plus courant dans l'étang de la ferme. Il fait partie de la collection « Poissons d'ici ».", "liens": ["peche", "truite"], "decouverte": ["objet:brochet"] },
+        { "id": "omble", "terme": "Omble chevalier", "description": "Un poisson des lacs froids, au ventre rouge. Pour le pêcher, il faut aller jusqu'aux lacs du grand monde. Il fait partie de la collection « Poissons d'ici ».", "liens": ["peche", "b_lac"], "decouverte": ["objet:omble"] },
+        { "id": "goujon", "terme": "Goujon", "description": "Un petit poisson de rivière, qui file au ras des cailloux. On en pêche dans les rivières du grand monde. Il fait partie de la collection « Poissons d'ici ».", "liens": ["peche", "b_riviere"], "decouverte": ["objet:goujon"] },
+        { "id": "dorade", "terme": "Dorade", "description": "Un poisson de mer au reflet doré sur la tête. On le pêche depuis la côte, en lançant vers le large. Il fait partie de la collection « Poissons d'ici ».", "liens": ["peche", "b_mer"], "decouverte": ["objet:dorade"] },
+        { "id": "sardine", "terme": "Sardine", "description": "Elle nage en bancs serrés le long de la côte : quand la mer en est pleine, ça mord sans arrêt. Elle fait partie de la collection « Poissons d'ici ».", "liens": ["peche", "anchois", "b_mer"], "decouverte": ["objet:sardine"] },
+        { "id": "anchois", "terme": "Anchois", "description": "Un tout petit poisson de mer, cousin de la sardine. Salé, il relève les plats. Il fait partie de la collection « Poissons d'ici ».", "liens": ["peche", "sardine", "b_mer"], "decouverte": ["objet:anchois"] }
+      ]
+    },
+    {
+      "id": "biomes",
+      "icone": "🗺️",
+      "nom": "Les paysages du grand monde",
+      "entrees": [
+        { "id": "b_mer", "terme": "La mer", "description": "Au bord du monde, la mer : on ne la traverse pas, mais on pêche depuis la côte la dorade, la sardine et l'anchois. Les mouettes tournent au-dessus, et les dauphins passent parfois au large.", "liens": ["b_plage", "dorade"], "decouverte": ["biome:mer"] },
+        { "id": "b_plage", "terme": "La plage", "description": "Une bande de sable entre la prairie et la mer. La marée y laisse des trésors : coquilles, bulots, corail et, rarement, une perle. Les crabes y courent de travers.", "liens": ["coquille", "perle", "b_mer"], "decouverte": ["biome:plage"] },
+        { "id": "b_falaise", "terme": "La falaise", "description": "Là où la terre tombe à pic dans la mer. On n'y descend pas, mais la vue y est la plus belle du monde.", "liens": ["b_mer", "b_montagne"], "decouverte": ["biome:falaise"] },
+        { "id": "b_prairie", "terme": "La prairie", "description": "Le pays de la ferme : de l'herbe à perte de vue, des fleurs, des chemins. Les hameaux s'y installent volontiers.", "liens": ["b_foret", "b_lande"], "decouverte": ["biome:prairie"] },
+        { "id": "b_foret", "terme": "La forêt", "description": "De grands arbres, des sous-bois frais, des buissons couverts de baies. On y cueille champignons, myrtilles et châtaignes ; chevreuils, renards et écureuils y vivent.", "liens": ["champignon", "myrtille", "chataigne"], "decouverte": ["biome:foret"] },
+        { "id": "b_marais", "terme": "Le marais", "description": "Une terre mouillée, pleine de roseaux et de chants de grenouilles. Les canards et les cygnes l'aiment beaucoup.", "liens": ["b_lac", "b_riviere"], "decouverte": ["biome:marais"] },
+        { "id": "b_lande", "terme": "La lande", "description": "Une terre rase, balayée par le vent, couverte de bruyère. Les lièvres et les perdrix y vivent cachés.", "liens": ["b_prairie", "b_montagne"], "decouverte": ["biome:lande"] },
+        { "id": "b_montagne", "terme": "La montagne", "description": "Des pentes, des rochers, des éboulis : c'est là qu'on trouve les fossiles, les cristaux et les herbes de montagne. Marmottes, bouquetins et aigles y vivent.", "liens": ["ammonite", "quartz", "herbes_montagne", "b_sommet"], "decouverte": ["biome:montagne"] },
+        { "id": "b_sommet", "terme": "Le sommet", "description": "Le plus haut du monde, au-dessus de la montagne. On n'y monte pas, mais on le voit de partout.", "liens": ["b_montagne"], "decouverte": ["biome:sommet"] },
+        { "id": "b_lac", "terme": "Le lac", "description": "Une grande eau calme, au milieu des terres. L'omble chevalier y vit, et la truite aussi.", "liens": ["omble", "b_riviere"], "decouverte": ["biome:lac"] },
+        { "id": "b_riviere", "terme": "La rivière", "description": "L'eau qui court de la montagne à la mer. On la passe aux gués ; on y pêche la truite et le goujon.", "liens": ["goujon", "truite", "b_lac"], "decouverte": ["biome:riviere"] }
+      ]
+    },
+    {
       "id": "hameaux",
       "icone": "🏘️",
       "nom": "Les hameaux du grand monde",
