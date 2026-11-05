@@ -529,9 +529,7 @@ function guideElement() {
   if (sansGraines) return null;
   const modal = document.getElementById('modal-root');
   if (modal && modal.childElementCount) return null;
-  const chip = document.querySelector('.stage-chip:not(.hoe):not(.done)');
-  if (shown(chip) && !covered(chip)) return chip;
-  // la puce est sous une fenêtre de la carte : d'abord la fermer
+  // (la puce d'objectif n'est plus sur la carte) une fenêtre de la carte ouverte : d'abord la fermer
   const close = document.getElementById('stage-window-close');
   if (shown(close)) return close;
   // ailleurs (la calèche, Inventaire…) : le retour à la Ferme
