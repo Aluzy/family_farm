@@ -32,7 +32,7 @@
 //                                                   couché ; gardé sur sa connexion, jamais écrit) ; tous
 //                                                   couchés : à tous, { t: 'evt', acteur: 'monde', cmd: nuit.partagee }
 
-import { COMMANDES, executerCommande, GAME_VERSION, migrate, pickUpAll } from '../../js/engine/index.js';
+import { COMMANDES, executerCommande, farmTerrain, GAME_VERSION, migrate, pickUpAll } from '../../js/engine/index.js';
 
 export const MONDE = {
   INSTANTANE_TOUS: 20,      // révisions entre deux instantanés
@@ -83,6 +83,34 @@ export async function empreinteSecret(s) {
 }
 const SECRET_RE = /^[A-Za-z0-9_-]{32}$/;
 
+// E-8 : le monde partagé est la ferme (docs/monde-partage.md, M.2) : la copie perd le grand monde (les
+// habitants et les hameaux, les régions vues et ce qu'on y a pris ; la partie solo les garde), la
+// migration lui redonne des valeurs neuves, et `mondePartage` dit au moteur que sa nuit ne fait que la
+// ferme (M.3). Le personnage, s'il était dehors, revient sur la ferme.
+export const GRAND_MONDE = ['habitants', 'hameaux', 'vues', 'vu', 'pris'];
+export function elaguer(s) {
+  const m = s.monde && typeof s.monde === 'object' ? s.monde : {};
+  for (const k of GRAND_MONDE) delete m[k];
+  m.but = null;
+  const t = migrate({ v: s.version, t: 0, s });
+  t.mondePartage = true;
+  if (t.monde && Number.isInteger(t.monde.ici) && !dansLaFerme(t, t.monde.ici)) t.monde.ici = null;
+  return t;
+}
+
+// La case `c` est-elle dans le rectangle de la ferme ?
+export function dansLaFerme(s, c) {
+  const T = farmTerrain(s), F = T && T.FERME;
+  if (!F) return true;
+  const x = c % T.LARGEUR, y = Math.floor(c / T.LARGEUR);
+  return x >= F.X && y >= F.Y && x < F.X + F.LARGEUR && y < F.Y + F.HAUTEUR;
+}
+// Une commande qui vise une case hors de la ferme (ses arguments case, de, vers) : M.1, le contrôle du monde.
+const CASES = ['case', 'de', 'vers'];
+export function horsDeLaFerme(s, args) {
+  return !!args && CASES.some((k) => Number.isInteger(args[k]) && !dansLaFerme(s, args[k]));
+}
+
 export class MondeRegistre {
   constructor(sql, maintenant = () => Date.now()) {
     this.sql = sql;
@@ -116,6 +144,7 @@ export class MondeRegistre {
     // commun, et désormais tout y va droit : les œufs, le lait, la laine, la récolte)
     pickUpAll(s);
     s.ramassage = false;
+    s = elaguer(s);
     this.faire('INSERT INTO instantane (rev, json) VALUES (?, ?)', 0, JSON.stringify(s));
     this.poserMeta('version', version);
     this.poserMeta('proprietaire', proprietaire);
@@ -198,6 +227,8 @@ export class MondeRegistre {
     if (L.length >= MONDE.COMMANDES_PAR_MINUTE) return { ok: false, erreur: 'Trop d\'actions d\'un coup : attends un instant.' };
     L.push(t);
     this.debits.set(compte, L);
+    // (E-8 : le monde est la ferme : rien hors d'elle)
+    if (horsDeLaFerme(this.charger(), c.args)) return { ok: false, erreur: 'Hors de la ferme : en ligne, le monde partagé, c\'est la ferme.' };
     return this.jouer(compte, { id: c.id, type: c.type, args: c.args }, t);
   }
 

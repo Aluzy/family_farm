@@ -110,7 +110,9 @@ un **lien reçu par e-mail**, sans mot de passe (`worker/src/comptes.mjs`, la ru
 ## Le monde partagé (E-1)
 
 Sa vision : `docs/monde-partage.md` (un monde partagé, c'est la zone de la ferme ; le grand monde
-reste à la partie solo).
+reste à la partie solo). E-8 : à la création, la copie est élaguée (`elaguer` : sans les habitants,
+les hameaux ni les régions vues ; `mondePartage = true`, une nuit de la ferme seule) ; une commande qui
+vise une case hors de la ferme est refusée (`horsDeLaFerme`).
 
 Un **Durable Object `Monde` par monde** (`worker/src/monde.mjs`) fait autorité. Il garde la partie du
 monde, joue les commandes des joueurs avec **le même moteur que le jeu** (`js/engine/`, regroupé au

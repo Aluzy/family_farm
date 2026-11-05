@@ -155,7 +155,8 @@ intacte. On y entre ensuite par « Entrer » (`jeu.html?monde=…`). Dans un mon
 
 **Le monde partagé, c'est la ferme** (`docs/monde-partage.md`) : le rectangle de la ferme, ce qu'on y
 bâtit, cultive, élève et cuisine. Le grand monde (les routes, les hameaux, la mine, le récit) reste à
-la partie solo de son propriétaire. La frontière et l'élagage de la copie viennent au lot E-8.
+la partie solo de son propriétaire. En ligne, le personnage ne sort pas de la ferme et la vue reste sur
+elle ; la copie mise en ligne n'emporte pas le grand monde, et sa nuit ne fait que la ferme (E-8).
 
 Le propriétaire **invite un ami** par le bouton 👥 du bandeau. Il crée un lien, valable 7 jours et
 utilisable une fois, à envoyer. En l'ouvrant, l'ami entre dans le monde pour y construire ; s'il

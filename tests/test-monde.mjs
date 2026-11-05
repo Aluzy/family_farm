@@ -9,10 +9,10 @@
 import { test as nodeTest } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 import {
-  addItem, countItem, DATA, empreintePartie, executerCommande, findPlot, GAME_VERSION, poseStatus, testBatir,
+  addItem, countItem, DATA, empreintePartie, executerCommande, farmTerrain, findPlot, GAME_VERSION, poseStatus, runNight, testBatir,
 } from '../js/engine/index.js';
 import { atelier, construireFrigo, fillSheep, partie, pature, plantRipe, reach, setStraw } from './engine/aide.mjs';
-import { ACTEUR_MONDE, COMMANDES_MONDE, etatDesLits, Monde, MONDE, MondeRegistre, traiterMessage } from '../worker/src/monde.mjs';
+import { ACTEUR_MONDE, COMMANDES_MONDE, dansLaFerme, etatDesLits, Monde, MONDE, MondeRegistre, traiterMessage } from '../worker/src/monde.mjs';
 
 const test = (name, fn) => nodeTest(name, () => fn());
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion fausse'); }
@@ -422,5 +422,44 @@ test('E-7 : le journal de la cuisine se rejoue à l\'identique (la nuit comprise
   assert(r.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
   for (const [type, args] of [['cuisine.lancer', { recette: 'omelette' }], ['frigo.ranger', { objet: 'carotte', quantite: 2 }], ['frigo.toutRanger', {}], ['manger', { objet: 'carotte' }]]) r.commande(A, { id: id(), type, args });
   assert(r.nuit().ok);
+  eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()));
+});
+
+/* ---------- E-8 : la ferme, frontière du monde ---------- */
+
+test('E-8 : la copie mise en ligne perd le grand monde (la partie locale le garde) ; mondePartage est posé', () => {
+  const s = partieLocale();
+  s.monde.habitants = { hameau_1: { foyers: [{ membres: [{ id: 'h1' }] }] } };
+  s.monde.pris = { x: 1 };
+  s.monde.but = { sorte: 'hameau', id: 'hameau_1' };
+  const avant = JSON.stringify(s);
+  const r = new MondeRegistre(baseSql());
+  assert(r.creer({ proprietaire: A, partie: { v: s.version, t: 0, s: JSON.parse(JSON.stringify(s)) } }).ok);
+  const w = r.charger();
+  eq([w.mondePartage, JSON.stringify(w.monde.habitants), JSON.stringify(w.monde.pris), w.monde.but], [true, '{}', '{}', null]);
+  eq(JSON.stringify(s), avant, 'la partie locale est intacte');
+});
+
+test('E-8 : une commande qui vise une case hors de la ferme est refusée par le monde ; dans la ferme, elle passe', () => {
+  const { r } = monde();
+  const w = r.charger(), T = farmTerrain(w), F = T.FERME;
+  const dehors = (F.Y + 2) * T.LARGEUR + F.X - 3, dedans = casesLibres(w, 1)[0];
+  eq([dansLaFerme(w, dehors), dansLaFerme(w, dedans)], [false, true]);
+  const a = r.commande(A, poser(dehors));
+  eq(a.ok, false);
+  assert(/Hors de la ferme/.test(a.erreur), a.erreur);
+  eq(r.commande(A, { id: id(), type: 'bloc.deplacer', args: { de: dedans, vers: dehors } }).ok, false, 'pas vers dehors non plus');
+  assert(r.commande(A, poser(dedans)).ok, 'dans la ferme');
+});
+
+test('E-8 : la nuit d\'un monde partagé ne fait que la ferme ; 30 nuits sur une copie élaguée, le journal se rejoue', () => {
+  // (la même nuit, en solo et dans un monde partagé : seul le solo fait vivre le grand monde)
+  const solo = partieLocale(), part = JSON.parse(JSON.stringify(solo));
+  part.mondePartage = true;
+  runNight(solo); runNight(part);
+  eq([solo.nuit.amitie !== undefined, part.nuit.amitie === undefined, part.nuit.projets === undefined], [true, true, true]);
+  const { r, sql } = monde();
+  for (let i = 0; i < 30; i++) { const n = r.nuit(); assert(n.ok, `nuit ${i + 1} : ${n.erreur}`); }
+  eq(r.charger().day, partieLocale().day + 30);
   eq(empreintePartie(new MondeRegistre(sql).charger()), empreintePartie(r.charger()));
 });

@@ -14,6 +14,7 @@
   const K = global.CarteKit;
   const { T, VIEW_ROWS, ZOOM, INERTIA_MS, PAN_MS } = F.C;
   const { clamp, reducedMotion } = F;
+  const BORNE_MARGE = 6;   // E-8 : en ligne, les cases vues autour de la ferme
 
   F.partie({
 
@@ -39,8 +40,12 @@
     setCentre(cx, cy) {
       const cam = this.cameras.main;
       const vw = this.scale.width / cam.zoom, vh = this.scale.height / cam.zoom;
-      this.cx = clamp(cx, vw / 2, this.world.w - vw / 2);
-      this.cy = clamp(cy, vh / 2, this.world.h - vh / 2);
+      // (E-8 : un monde en ligne : la vue reste sur la ferme et ses abords, BORNE_MARGE cases)
+      const b = this.ctx.borne, m = BORNE_MARGE * T;
+      const x0 = b ? Math.max(0, b.X * T - m) : 0, y0 = b ? Math.max(0, b.Y * T - m) : 0;
+      const x1 = b ? Math.min(this.world.w, (b.X + b.LARGEUR) * T + m) : this.world.w, y1 = b ? Math.min(this.world.h, (b.Y + b.HAUTEUR) * T + m) : this.world.h;
+      this.cx = x1 - x0 > vw ? clamp(cx, x0 + vw / 2, x1 - vw / 2) : (x0 + x1) / 2;
+      this.cy = y1 - y0 > vh ? clamp(cy, y0 + vh / 2, y1 - vh / 2) : (y0 + y1) / 2;
       cam.centerOn(this.cx, this.cy);
       return Math.abs(this.cx - cx) < 0.01 && Math.abs(this.cy - cy) < 0.01;
     },
