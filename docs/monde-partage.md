@@ -180,3 +180,20 @@ Ce qu'il ne faut **pas** faire maintenant : partager le grand monde, les hameaux
 - **Encore fermé en ligne, comme le veut la vision :**
   - tout ce qui relève du grand monde : le Marché (acheter, vendre), la calèche, le cheval, les hameaux (projets, toits, amitiés, commandes aux îles), le récit (l'enveloppe, la pierre de lune, la promesse), les invitations à un repas, le sac des expéditions ;
   - « choisir son lit », qui est un choix de chaque joueur.
+
+## 10. E-11 : les rôles et le journal
+
+Les rôles de la stratégie (§ 4.4), dans `js/engine/roles.js`. Le monde les vérifie à chaque commande ; le jeu aussi, avant de jouer, pour le dire tout de suite.
+
+| Rôle | Ce qu'il fait |
+|---|---|
+| 👀 Visiteur | Il regarde, se promène et dort avec les autres. Il ne change rien à la ferme. |
+| 🌱 Ami jardinier | Le potager, les bêtes, la cuisine, le frigo, les outils, le verger. Il ne construit pas. |
+| 🔨 Bâtisseur | En plus : Construire, l'Atelier, la progression, les appareils, les agrandissements. |
+| 🏡 Propriétaire | Tout. Lui seul retire une structure sensible : un atelier, un bâtiment, un appareil, un bloc unique, le silo, l'écurie, le frigo. Lui seul invite, change les rôles et retire un membre. |
+
+- **L'invitation porte un rôle**, choisi par le propriétaire dans 👥 (bâtisseur par défaut).
+- **Il change un rôle** dans 👥 : 👀 🌱 🔨 à côté de chaque membre. Le changement prend effet tout de suite sur les connexions ouvertes : la liste des membres est diffusée à tous, et le bandeau montre son rôle à chacun.
+- **Le journal du monde** (📜, propriétaire seulement) : les 50 dernières commandes, puis « Plus ancien ». Il dit qui, quoi en mots et quand. Il garde ce que garde le journal du monde (500 révisions avant le dernier instantané).
+- **Routes** : `POST /mondes/<id>/invitations { role }`, `POST /mondes/<id>/role { compte, role }` et `GET /mondes/<id>/journal?avant=`.
+- **Une base d'avant** prend la colonne `role` des invitations à son réveil.

@@ -18,7 +18,7 @@
 //   monde ne joue pas deux fois la même : leur id).
 // - Le bandeau « 🌐 » dit où l'on est, si l'on est à jour, et permet de revenir à sa ferme solo.
 
-import { executerCommande, GAME_VERSION } from '../engine/index.js';
+import { executerCommande, GAME_VERSION, ICONES_ROLES, NOMS_ROLES, refusDuRole } from '../engine/index.js';
 import { adresseServeur, appelServeur, compteGarde, quandConnecte } from './compte.js';
 import { closeModal, openModal } from './modal.js';
 import { Synchro } from './synchro.js';
@@ -151,6 +151,12 @@ function recevoir(ws, data) {
   }
   if (m.t === 'membres') {
     lien.membres = m.membres || [];
+    // (E-11 : son rôle a pu changer)
+    const moi = lien.membres.find((x) => x.compte === lien.moi);
+    if (moi && moi.role !== lien.role) {
+      if (lien.role) notify(`🌐 Ton rôle dans ce monde : ${ICONES_ROLES[moi.role] || ''} ${NOMS_ROLES[moi.role] || moi.role}.`, { duree: 6000 });
+      lien.role = moi.role;
+    }
     bandeau();
     if (document.getElementById('membres-titre')) ouvrirMembres();
     return;
@@ -223,6 +229,9 @@ function partieRefaite(locale) {
 // executer (commandes.js), en ligne : la commande jouée sur la partie locale, puis envoyée (si la
 // connexion est coupée, elle attend : renvoyée à la reconnexion).
 export function jouerEnLigne(cmd) {
+  // (E-11 : son rôle dans le monde ne le permet pas : refusé ici, sans attendre le monde, qui le vérifie aussi)
+  const refus = lien.role ? refusDuRole(lien.role, lien.synchro.locale, cmd) : null;
+  if (refus) return { ok: false, error: `🌐 ${refus}` };
   const r = lien.synchro.jouer(cmd);
   if (r.ok) envoyer({ t: 'cmd', id: cmd.id, type: cmd.type, args: cmd.args });
   bandeau();
@@ -286,36 +295,103 @@ export function bandeau() {
   // (E-5 : se coucher ; combien le sont, quand d'autres sont là)
   const nc = (lien.couches || []).length, total = lien.connectes || 0;
   const lit = `<button class="btn${lien.couche ? ' primary' : ''}" type="button" data-action="monde-coucher" aria-pressed="${!!lien.couche}">🛏 ${lien.couche ? 'Couché' : 'Se coucher'}${total > 1 && nc ? ` ${nc}/${total}` : ''}</button>`;
-  el.innerHTML = `<span>🌐 En ligne · ${etat}${attente}</span>${lit}<button class="btn" type="button" data-action="monde-membres" aria-label="Les membres du monde">👥 ${n}</button><button class="btn" type="button" data-action="monde-quitter">Ma ferme solo</button>`;
+  const role = lien.role ? `<span title="Ton rôle : ${NOMS_ROLES[lien.role] || lien.role}" aria-label="Ton rôle : ${NOMS_ROLES[lien.role] || lien.role}">${ICONES_ROLES[lien.role] || ''}</span> ` : '';
+  el.innerHTML = `<span>🌐 ${role}En ligne · ${etat}${attente}</span>${lit}<button class="btn" type="button" data-action="monde-membres" aria-label="Les membres du monde">👥 ${n}</button><button class="btn" type="button" data-action="monde-quitter">Ma ferme solo</button>`;
 }
 
 /* ---------- E-3 : les membres, inviter, retirer ---------- */
 
 const echapper = (t) => String(t).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 let invitation = null, aRetirer = null;
+const ROLES_CHOIX = ['batisseur', 'jardinier', 'visiteur'];
+// (E-11 : ce que chaque rôle peut faire, en une ligne)
+const ROLES_TEXTE = {
+  batisseur: 'construit, cultive, s\'occupe des bêtes, cuisine, fait progresser la ferme',
+  jardinier: 'cultive, s\'occupe des bêtes, cuisine, se sert des outils ; ne construit pas',
+  visiteur: 'regarde, se promène, dort avec vous ; ne change rien',
+};
+const roleTexte = (r) => `${ICONES_ROLES[r] || ''} ${NOMS_ROLES[r] || r}`;
 function ouvrirMembres() {
   if (!lien) return;
   const proprio = lien.role === 'proprietaire';
-  const lignes = lien.membres.map((m) => `<div class="row"><span>${m.role === 'proprietaire' ? '🏡' : '🔨'} ${echapper(m.nom)}${m.compte === lien.moi ? ' (toi)' : ''}</span>${proprio && m.role !== 'proprietaire'
-    ? (aRetirer === m.compte ? `<button class="btn danger" type="button" data-action="monde-retirer-oui" data-compte="${echapper(m.compte)}">Oui, le retirer</button><button class="btn" type="button" data-action="monde-retirer-non">Non</button>` : `<button class="btn" type="button" data-action="monde-retirer" data-compte="${echapper(m.compte)}">Retirer</button>`)
-    : ''}</div>`).join('');
-  const inv = !proprio ? '<p class="muted">Seul le propriétaire du monde invite et retire des membres.</p>'
-    : invitation ? `<p class="muted">Envoie ce lien à un ami (il vaut 7 jours et ne sert qu'une fois) : en l'ouvrant, il entre dans ton monde pour y construire avec toi.</p>
-      <textarea id="invitation-lien" rows="3" readonly>${echapper(invitation)}</textarea>
+  const lignes = lien.membres.map((m) => {
+    const nom = `${echapper(m.nom)}${m.compte === lien.moi ? ' (toi)' : ''}`;
+    if (!proprio || m.role === 'proprietaire') return `<div class="row"><span>${roleTexte(m.role)} · ${nom}</span></div>`;
+    const choix = ROLES_CHOIX.map((r) => `<button class="btn${m.role === r ? ' primary' : ''}" type="button" data-action="monde-role" data-compte="${echapper(m.compte)}" data-role="${r}" aria-pressed="${m.role === r}" title="${NOMS_ROLES[r]} : ${ROLES_TEXTE[r]}">${ICONES_ROLES[r]}</button>`).join('');
+    const retrait = aRetirer === m.compte ? `<button class="btn danger" type="button" data-action="monde-retirer-oui" data-compte="${echapper(m.compte)}">Oui, le retirer</button><button class="btn" type="button" data-action="monde-retirer-non">Non</button>` : `<button class="btn" type="button" data-action="monde-retirer" data-compte="${echapper(m.compte)}">Retirer</button>`;
+    return `<div class="row"><span>${roleTexte(m.role)} · ${nom}</span>${choix}${retrait}</div>`;
+  }).join('');
+  const inv = !proprio ? '<p class="muted">Seul le propriétaire du monde invite, change les rôles et retire des membres.</p>'
+    : invitation ? `<p class="muted">Envoie ce lien à un ami (il vaut 7 jours et ne sert qu'une fois) : en l'ouvrant, il entre dans ton monde comme ${roleTexte(invitation.role).trim().toLowerCase()}.</p>
+      <textarea id="invitation-lien" rows="3" readonly>${echapper(invitation.lien)}</textarea>
       <div class="row"><button class="btn" type="button" data-action="monde-copier">Copier</button>${typeof navigator !== 'undefined' && navigator.share ? '<button class="btn" type="button" data-action="monde-partager">Partager</button>' : ''}</div>`
-      : '<div class="row"><button class="btn primary" type="button" data-action="monde-inviter">Inviter un ami</button></div><p class="muted">Un lien à envoyer à un ami : il entre dans ton monde comme bâtisseur (il construit avec toi).</p>';
+      : `<p class="muted">Inviter un ami : un lien à lui envoyer. Choisis son rôle (tu pourras le changer ensuite).</p>
+      <div class="stack">${ROLES_CHOIX.map((r) => `<button class="btn${r === 'batisseur' ? ' primary' : ''}" type="button" data-action="monde-inviter" data-role="${r}">${roleTexte(r)} <span class="muted">· ${ROLES_TEXTE[r]}</span></button>`).join('')}</div>`;
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
     <h2 id="membres-titre">👥 Les membres</h2>
     <div class="stack">${lignes}</div>
-    <div class="stack">${inv}</div>`, { labelledBy: 'membres-titre' });
+    <div class="stack">${inv}</div>
+    ${proprio ? '<div class="row"><button class="btn" type="button" data-action="monde-journal">📜 Le journal du monde</button></div>' : ''}`, { labelledBy: 'membres-titre' });
 }
 
-async function inviter() {
+// E-11 : ce qu'un geste du journal a fait, en mots.
+const GESTES = {
+  'bloc.poser': 'a posé un bloc', 'bloc.reprendre': 'a repris un bloc', 'bloc.remettre': 'a remis un bloc', 'bloc.deplacer': 'a déplacé un bloc',
+  'bloc.tourner': 'a tourné un meuble', 'bloc.orienter': 'a tourné un meuble', 'bloc.peindre': 'a repeint un meuble',
+  'potager.planter': 'a semé', 'potager.arroser': 'a arrosé', 'potager.recolter': 'a récolté', 'potager.labourer': 'a labouré',
+  'potager.toutPlanter': 'a tout planté', 'potager.toutArroser': 'a tout arrosé', 'potager.toutRecolter': 'a tout récolté', 'potager.semis': 'a réglé un semis',
+  'cruche.remplir': 'a rempli la cruche', 'poules.nourrir': 'a nourri une poule', 'poules.toutNourrir': 'a nourri les poules',
+  'poulailler.agrandir': 'a agrandi le Poulailler', 'etable.tondre': 'a tondu un mouton', 'etable.herbes': 'a changé le foin des vaches', 'etable.place': 'a acheté une place à l\'Étable',
+  'ramassage.prendre': 'a ramassé', 'cuisine.lancer': 'a lancé une recette', 'cuisine.annuler': 'a retiré une préparation', 'moulin.moudre': 'a moulu du blé', 'moulin.annuler': 'a repris du blé',
+  'frigo.ranger': 'a rangé au frigo', 'frigo.sortir': 'a sorti du frigo', 'frigo.toutRanger': 'a tout rangé au frigo', 'frigo.urgent': 'a mis au frais', 'frigo.acheter': 'a acheté le frigo', 'frigo.agrandir': 'a agrandi le frigo',
+  'boite.deposer': 'a garni la boîte', 'boite.reprendre': 'a repris dans la boîte', 'manger': 'a mangé',
+  'outil.couper': 'a coupé du bois', 'outil.casser': 'a cassé un rocher', 'outil.caillou': 'a ramassé un caillou', 'outil.faucher': 'a fauché', 'outil.faucherAutour': 'a fauché', 'outil.pecher': 'a pêché', 'verger.cueillir': 'a cueilli des fruits',
+  'tech.acheter': 'a acquis une technologie', 'atelier.fabriquer': 'a fabriqué à l\'Atelier', 'atelier.construire': 'a construit un atelier',
+  'appareil.basculer': 'a allumé ou éteint un appareil', 'appareil.ameliorer': 'a amélioré un appareil', 'appareil.entretenir': 'a entretenu un appareil', 'appareil.reparer': 'a réparé un appareil',
+  'reservoir.agrandir': 'a agrandi le réservoir', 'robot.batterie': 'a agrandi la batterie du robot', 'serre.agrandir': 'a agrandi la Serre', 'arbre.planter': 'a planté un arbre',
+  'nuit.partagee': 'tout le monde a dormi : la nuit est passée',
+};
+const FAMILLES_GESTES = { mur: 'a bâti un mur', etage: 'a bâti à l\'étage', solEtage: 'a posé un sol à l\'étage' };
+export function gesteEnMots(type) {
+  return GESTES[type] || FAMILLES_GESTES[String(type).split('.')[0]] || 'a fait un geste';
+}
+function ilYa(ts) {
+  const m = Math.max(0, Math.round((Date.now() - Number(ts)) / 60000));
+  if (m < 1) return 'à l\'instant';
+  if (m < 60) return `il y a ${m} min`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `il y a ${h} h`;
+  return `il y a ${Math.round(h / 24)} j`;
+}
+let journalVu = [];
+async function ouvrirJournal(suite = false) {
   if (!lien) return;
-  const r = await appelServeur(`/mondes/${lien.monde}/invitations`, { corps: {} });
+  const avant = suite && journalVu.length ? journalVu[journalVu.length - 1].rev : null;
+  const r = await appelServeur(`/mondes/${lien.monde}/journal${avant ? `?avant=${avant}` : ''}`, { methode: 'GET' });
+  if (!r.ok) { notify(`🌐 ${r.erreur || 'Le journal n\'a pas pu être lu.'}`); return; }
+  journalVu = suite ? journalVu.concat(r.evts || []) : (r.evts || []);
+  const lignes = journalVu.length ? journalVu.map((e) => `<li><strong>${echapper(e.nom)}</strong> ${gesteEnMots(e.type)} <span class="muted">· ${ilYa(e.ts)} · n° ${e.rev}</span></li>`).join('') : '<li class="muted">Rien encore.</li>';
+  openModal(`
+    <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
+    <h2 id="journal-titre">📜 Le journal du monde</h2>
+    <p class="muted">Qui a fait quoi dans ta ferme, du plus récent au plus ancien.</p>
+    <ul class="journal-monde">${lignes}</ul>
+    ${(r.evts || []).length >= 50 ? '<div class="row"><button class="btn" type="button" data-action="monde-journal-suite">Plus ancien</button></div>' : ''}
+    <div class="row"><button class="btn" type="button" data-action="monde-membres">👥 Les membres</button></div>`, { labelledBy: 'journal-titre' });
+}
+
+async function changerRole(compte, role) {
+  if (!lien) return;
+  const r = await appelServeur(`/mondes/${lien.monde}/role`, { corps: { compte, role } });
+  notify(r.ok ? `🌐 Rôle changé : ${roleTexte(role).trim()}.` : `🌐 ${r.erreur || 'Le rôle n\'a pas pu changer.'}`);
+}
+
+async function inviter(role = 'batisseur') {
+  if (!lien) return;
+  const r = await appelServeur(`/mondes/${lien.monde}/invitations`, { corps: { role } });
   if (!r.ok) { notify(`🌐 ${r.erreur || 'Le lien n\'a pas pu être créé.'}`); return; }
-  invitation = r.lien;
+  invitation = { lien: r.lien, role };
   ouvrirMembres();
 }
 
@@ -355,14 +431,17 @@ registerActions({
   'monde-quitter': () => { fermer(); location.href = 'jeu.html'; },
   'monde-coucher': () => { coucher(); },
   'monde-membres': () => { invitation = null; aRetirer = null; ouvrirMembres(); },
-  'monde-inviter': () => { inviter(); },
+  'monde-inviter': (target) => { inviter(target && target.dataset && target.dataset.role); },
+  'monde-role': (target) => { changerRole(target.dataset.compte, target.dataset.role); },
+  'monde-journal': () => { ouvrirJournal(); },
+  'monde-journal-suite': () => { ouvrirJournal(true); },
   'monde-copier': () => {
     const z = document.getElementById('invitation-lien');
     if (!z) return;
     z.select();
     try { navigator.clipboard.writeText(z.value).then(() => notify('📋 Lien copié.'), () => notify('Le lien est sélectionné : copie-le.')); } catch (e) { notify('Le lien est sélectionné : copie-le.'); }
   },
-  'monde-partager': () => { try { navigator.share({ title: 'Ferme Familiale', text: 'Viens construire dans ma ferme !', url: invitation }); } catch (e) { /* (rien) */ } },
+  'monde-partager': () => { try { navigator.share({ title: 'Ferme Familiale', text: 'Viens dans ma ferme !', url: invitation && invitation.lien }); } catch (e) { /* (rien) */ } },
   'monde-retirer': (target) => { aRetirer = target.dataset.compte; ouvrirMembres(); },
   'monde-retirer-non': () => { aRetirer = null; ouvrirMembres(); },
   'monde-retirer-oui': (target) => { retirer(target.dataset.compte); },

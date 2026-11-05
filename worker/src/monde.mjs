@@ -32,7 +32,7 @@
 //                                                   couché ; gardé sur sa connexion, jamais écrit) ; tous
 //                                                   couchés : à tous, { t: 'evt', acteur: 'monde', cmd: nuit.partagee }
 
-import { COMMANDES, executerCommande, farmTerrain, GAME_VERSION, migrate, pickUpAll, ramasserMorceau } from '../../js/engine/index.js';
+import { COMMANDES, executerCommande, farmTerrain, GAME_VERSION, migrate, pickUpAll, ramasserMorceau, refusDuRole } from '../../js/engine/index.js';
 
 export const MONDE = {
   INSTANTANE_TOUS: 20,      // révisions entre deux instantanés
@@ -57,8 +57,11 @@ export function etatDesLits(sockets) {
   for (const s of sockets) { connectes.add(s.compte); if (s.couche) couches.add(s.compte); }
   return { connectes: connectes.size, couches: [...couches], nuit: connectes.size > 0 && couches.size === connectes.size };
 }
-// Les rôles : le propriétaire et les bâtisseurs jouent toutes les commandes du monde.
-export const ROLES = { proprietaire: 'proprietaire', batisseur: 'batisseur' };
+// Les rôles (E-11 : js/engine/roles.js dit ce que chacun peut faire) : le propriétaire, et ceux qu'il
+// invite ou dont il change le rôle : bâtisseur, ami jardinier, visiteur.
+export const ROLES = { proprietaire: 'proprietaire', batisseur: 'batisseur', jardinier: 'jardinier', visiteur: 'visiteur' };
+export const ROLES_INVITES = ['batisseur', 'jardinier', 'visiteur'];
+export const JOURNAL_PAGE = 50;
 
 const lignes = (r) => (r && typeof r.toArray === 'function' ? r.toArray() : Array.isArray(r) ? r : []);
 const ID_RE = /^[A-Za-z0-9_-]{6,64}$/;
@@ -70,6 +73,9 @@ export function creerTablesMonde(sql) {
   sql.exec('CREATE TABLE IF NOT EXISTS membres (compte TEXT PRIMARY KEY, nom TEXT NOT NULL, role TEXT NOT NULL, revoque INTEGER NOT NULL DEFAULT 0)');
   // (E-3 : les invitations : l'empreinte du secret, sa date, sa fin, qui l'a utilisée)
   sql.exec('CREATE TABLE IF NOT EXISTS invitations (hash TEXT PRIMARY KEY, cree INTEGER NOT NULL, expire INTEGER NOT NULL, par TEXT)');
+  // (E-11 : le rôle que donne une invitation ; une base d'avant l'a sans cette colonne)
+  // (ajoutée une fois : sur une base qui l'a déjà, SQLite refuse, et c'est bien)
+  try { lignes(sql.exec('ALTER TABLE invitations ADD COLUMN role TEXT')); } catch (e) { /* (déjà là) */ }
 }
 
 // E-3 : un secret d'invitation au hasard (24 octets : 192 bits, en base64url) et son empreinte.
@@ -235,6 +241,9 @@ export class MondeRegistre {
     const deja = this.un('SELECT rev, acteur FROM journal WHERE id = ?', c.id);
     if (deja) return deja.acteur === compte ? { ok: true, rev: deja.rev, doublon: true } : { ok: false, erreur: 'Cet identifiant de commande est déjà pris.' };
     if (!COMMANDES_MONDE.has(c.type)) return { ok: false, erreur: `Cette action ne se joue pas encore en ligne (${String(c.type)}).` };
+    // (E-11 : le rôle du membre le permet-il ?)
+    const refus = refusDuRole(m.role, this.charger(), c);
+    if (refus) return { ok: false, erreur: refus };
     // (le débit : COMMANDES_PAR_MINUTE au plus par membre)
     const t = this.maintenant(), L = (this.debits.get(compte) || []).filter((x) => x > t - 60000);
     if (L.length >= MONDE.COMMANDES_PAR_MINUTE) return { ok: false, erreur: 'Trop d\'actions d\'un coup : attends un instant.' };
@@ -273,14 +282,15 @@ export class MondeRegistre {
 
   /* -- E-3 : inviter, rejoindre -- */
 
-  // Un lien d'invitation, créé par le propriétaire : { ok, secret, expire }.
-  async inviter(compte) {
+  // Un lien d'invitation, créé par le propriétaire (`role` : celui qu'il donnera, E-11) : { ok, secret, expire }.
+  async inviter(compte, role = ROLES.batisseur) {
     if (compte !== this.meta('proprietaire')) return { ok: false, statut: 403, erreur: 'Seul le propriétaire du monde invite.' };
+    if (!ROLES_INVITES.includes(role)) return { ok: false, statut: 400, erreur: 'Rôle inconnu.' };
     const t = this.maintenant();
     this.faire('DELETE FROM invitations WHERE expire < ? OR par IS NOT NULL', t);
     if (this.un('SELECT COUNT(*) AS n FROM invitations').n >= MONDE.INVITATIONS_MAX) return { ok: false, statut: 429, erreur: 'Trop de liens d\'invitation en attente : attends qu\'ils servent ou expirent.' };
     const secret = secretAuHasard(), expire = t + MONDE.INVITATION_JOURS * 24 * 3600 * 1000;
-    this.faire('INSERT INTO invitations (hash, cree, expire, par) VALUES (?, ?, ?, NULL)', await empreinteSecret(secret), t, expire);
+    this.faire('INSERT INTO invitations (hash, cree, expire, par, role) VALUES (?, ?, ?, NULL, ?)', await empreinteSecret(secret), t, expire, role);
     return { ok: true, secret, expire };
   }
 
@@ -290,15 +300,41 @@ export class MondeRegistre {
     if (!SECRET_RE.test(String(secret || ''))) return { ok: false, statut: 400, erreur: 'Ce lien d\'invitation n\'est pas valide.' };
     const deja = this.membre(compte);
     if (deja) return { ok: true, role: deja.role, titre: this.meta('titre'), deja: true };
-    const h = await empreinteSecret(secret), inv = this.un('SELECT expire, par FROM invitations WHERE hash = ?', h);
+    const h = await empreinteSecret(secret), inv = this.un('SELECT expire, par, role FROM invitations WHERE hash = ?', h);
     if (!inv) return { ok: false, statut: 410, erreur: 'Ce lien d\'invitation n\'existe pas (ou plus).' };
     if (inv.par && inv.par !== compte) return { ok: false, statut: 410, erreur: 'Ce lien d\'invitation a déjà servi : demande-en un autre.' };
     if (inv.expire < this.maintenant()) return { ok: false, statut: 410, erreur: 'Ce lien d\'invitation a expiré : demande-en un autre.' };
     const ancien = this.un('SELECT revoque FROM membres WHERE compte = ?', compte);
     if (ancien && ancien.revoque) return { ok: false, statut: 403, erreur: 'Le propriétaire t\'a retiré de ce monde.' };
     this.faire('UPDATE invitations SET par = ? WHERE hash = ?', compte, h);
-    this.ajouterMembre(compte, nom, ROLES.batisseur);
-    return { ok: true, role: ROLES.batisseur, titre: this.meta('titre') };
+    const role = ROLES_INVITES.includes(inv.role) ? inv.role : ROLES.batisseur;
+    this.ajouterMembre(compte, nom, role);
+    return { ok: true, role, titre: this.meta('titre') };
+  }
+
+  // E-11 : le propriétaire change le rôle d'un membre (pas le sien).
+  changerRole(par, compte, role) {
+    if (par !== this.meta('proprietaire')) return { ok: false, statut: 403, erreur: 'Seul le propriétaire du monde change les rôles.' };
+    if (!ROLES_INVITES.includes(role)) return { ok: false, statut: 400, erreur: 'Rôle inconnu.' };
+    const m = this.membre(compte);
+    if (!m) return { ok: false, statut: 404, erreur: 'Ce joueur n\'est pas membre du monde.' };
+    if (m.role === ROLES.proprietaire) return { ok: false, statut: 400, erreur: 'Le propriétaire garde son rôle.' };
+    this.faire('UPDATE membres SET role = ? WHERE compte = ?', role, compte);
+    return { ok: true, role, titre: this.meta('titre') };
+  }
+
+  // E-11 : le journal, pour le propriétaire : les JOURNAL_PAGE dernières commandes avant la révision `avant`
+  // (toutes : sans elle), du plus récent au plus ancien : { rev, acteur, nom, type, ts }.
+  journal(par, avant = null) {
+    if (par !== this.meta('proprietaire')) return { ok: false, statut: 403, erreur: 'Seul le propriétaire du monde lit son journal.' };
+    const a = Number(avant), borne = Number.isInteger(a) && a > 0 ? a : Number.MAX_SAFE_INTEGER;
+    const noms = Object.fromEntries(this.tous('SELECT compte, nom FROM membres').map((m) => [m.compte, m.nom]));
+    const evts = this.tous('SELECT rev, acteur, cmd, ts FROM journal WHERE rev < ? ORDER BY rev DESC LIMIT ?', borne, JOURNAL_PAGE).map((e) => {
+      let type = '';
+      try { type = JSON.parse(e.cmd).type || ''; } catch (x) { type = ''; }
+      return { rev: e.rev, acteur: e.acteur, nom: e.acteur === ACTEUR_MONDE ? 'Le monde' : noms[e.acteur] || 'Un ancien membre', type, ts: e.ts };
+    });
+    return { ok: true, evts };
   }
 
   // Le propriétaire retire un membre (`compte`) ; les liens en attente sont annulés aussi.
@@ -342,7 +378,9 @@ export class Monde {
     }
     if (url.pathname.endsWith('/inviter') && request.method === 'POST') {
       if (!this.registre.existe()) return json({ ok: false, erreur: 'Monde inconnu.' }, 404);
-      const r = await this.registre.inviter(compte);
+      let b = {};
+      try { b = await request.json(); } catch (e) { b = {}; }
+      const r = await this.registre.inviter(compte, b.role || ROLES.batisseur);
       return json(r, r.ok ? 200 : r.statut);
     }
     if (url.pathname.endsWith('/rejoindre') && request.method === 'POST') {
@@ -360,6 +398,18 @@ export class Monde {
       // (la nouvelle liste des membres diffusée ; la connexion ouverte du retiré, fermée tout de suite par
       // la diffusion : elle ferme celle de qui n'est plus membre)
       if (r.ok) this.diffuser({ t: 'membres', membres: this.registre.membres() });
+      return json(r, r.ok ? 200 : r.statut);
+    }
+    if (url.pathname.endsWith('/role') && request.method === 'POST') {
+      let b = {};
+      try { b = await request.json(); } catch (e) { b = {}; }
+      const r = this.registre.changerRole(compte, String(b.compte || ''), String(b.role || ''));
+      // (la nouvelle liste des membres, rôles compris, à tous : le jeu de chacun s'y règle)
+      if (r.ok) this.diffuser({ t: 'membres', membres: this.registre.membres() });
+      return json(r, r.ok ? 200 : r.statut);
+    }
+    if (url.pathname.endsWith('/journal')) {
+      const r = this.registre.journal(compte, url.searchParams.get('avant'));
       return json(r, r.ok ? 200 : r.statut);
     }
     if (url.pathname.endsWith('/fiche')) {
