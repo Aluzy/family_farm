@@ -1,7 +1,7 @@
 # Les personnages en couches : identité, tenue, expressions (chantier)
 
 Statut : **E0 validée** (les 9 expressions, de face et de profil) ; **E1 faite** (§ 6) ; **E2 faite** (§ 7) ;
-**E3 faite** (§ 8 : la carte ; § 9 : les portraits vivants du menu Famille) ; **E4 en cours** (§ 10).
+**E3 faite** (§ 8 : la carte ; § 9 : les portraits vivants du menu Famille) ; **E4 faite** (§ 10, § 11).
 
 Le but : séparer un personnage de ses vêtements et de ses attributs (peau, yeux, coiffure, expression),
 et donner des expressions aux visages, **en gardant la base actuelle** : les 100 personnages
@@ -338,4 +338,61 @@ d'enfants changent.
     la peau dessous a déjà disparu, il reste un trou (bordé de contour) ;
   - le contour d'un bras devant la tête suit la forme de la tête, donc la coupe et le couvre-chef.
 
-Ces règles décident de la suite (§ 5, E4 et E5) : voir la décision à prendre.
+Décision prise : la voie A, rendre la pose indépendante du contenu (§ 11).
+
+## 11. Étape E4 : la pose indépendante du contenu, les couches, l'assembleur
+
+**Décision** (voie A) : `chibi.py` pose un personnage sans dépendre de ses couleurs ni de ses habits ; chaque
+élément a la même forme chez tous ceux qui le portent ; le jeu (E5) n'aura qu'à empiler des couches.
+
+**`chibi.py` dessine en lettres** (`chibi.Modele`, lu dans `modeles.lettres` ; `render()` donne les couleurs).
+Les règles qui dépendaient du contenu sont fixes :
+
+| Règle | Avant | Maintenant |
+|---|---|---|
+| Les bras retirés du torse quand ils sont redessinés | les pixels de la couleur des bras, relevée sur le modèle (un motif la changeait) | les cases des zones des bras où le corps (`modeles.CORPS`) a une manche ou une main, `chibi.ZONES` ; seulement le corps et le haut (une mèche reste) |
+| Sous une casquette, un bonnet, un chapeau de paille | les cheveux des rangées 0 à 3 effacés (la peau d'un crâne chauve restait) | le corps et la coupe des rangées 0 à 3 effacés (`modeles.MASQUE_TETE`) |
+| Les cheveux pâles près des yeux | une lettre D posée d'après la couleur des cheveux | des lettres `B_`, `E_` toujours posées ; la palette les fait sombres pour des cheveux pâles |
+
+Les couleurs que `chibi.py` relevait sur le modèle (la manche, la main, les jambes et les chaussures assises,
+la peau des yeux fermés) sont des **rôles de la palette** : `Mp`, `Mk`, `Ms`, `Mr`, `Mw`, `Mv` ; les cils, `L`
+(`modeles.palette_de`). Chaque personnage garde ses couleurs (les retouchés aussi) ; seules les formes sont fixes.
+
+**Ce qui change** : 22 planches (et `fermiere.png`, la copie de `perso_01`), seulement quelques pixels par case :
+
+| Personnages | Pixels | Pourquoi |
+|---|---|---|
+| Les 8 hauts à carreaux (`perso_18`, `34`, `40` ; `enfant_14`, `18`, `34`, `40` ; et `perso_44`) | 69 à 138 par planche | le bord d'un bras ou d'une manche, quand les bras sont redessinés |
+| 12 hauts à pois (`perso_13`, `16`, `27`, `32`, `38`, `47` ; `enfant_02`, `08`, `13`, `27`, `38`, `47`) | 1, dans `marche_bas_0` | le col, qui n'est plus effacé |
+| `perso_44` (chauve, chapeau de paille) | 778 | les deux pointes de crâne qui dépassaient du chapeau, dans toutes les cases (et les carreaux) |
+| `perso_01`, `perso_02` (retouchés à la main) | 110, 155 | le bord d'un bras redessiné (leurs bras dessinés à la main n'étaient pas tout à fait dans les zones) |
+
+**Les éléments** (`modeles.elements`) : chaque modèle est l'empilement de ses éléments, chacun sa grille sans ce
+qui le recouvre, dans l'ordre `modeles.ORDRE_COUCHES` (corps, haut, bas, chaussures, coiffure, couvre-chef,
+pilosité, rousseur, lunettes, boucles, pansement, joues) ; empilés (`aplatir`, avec le masque du couvre-chef), ils
+redonnent les 100 modèles. Un modèle retouché : ses lettres rangées par famille, des éléments à son nom.
+
+**Les couches communes** : `chibi.py` retient, pour chaque pixel, l'étape qui l'a posé (`Canvas.calques` : derrière,
+le bras lointain, les jambes, les bras sous le corps, le modèle, les bras posés dessus un par un, devant) et la pose
+de chaque case (`cv.trace` : la vue, le décalage du haut du corps, les bras retirés, les yeux fermés, le contour de
+chaque bras). Les outils, les bras et les poses sont **les mêmes pour tous** les personnages d'un âge (vérifié) ; les
+jambes aussi, sauf celles des trois retouchés.
+
+**L'assembleur** (`scripts/personnage/couches.py`, la référence pour le jeu) : les couches communes et les jambes,
+puis chaque élément posé (décalé de `dy`, moins les zones des bras pour le corps et le haut, le masque d'un
+couvre-chef, les yeux fermés), puis les bras posés dessus (un contour les détache de la tête, ou du torse, comme
+`chibi.bras`), devant, le contour de la silhouette, le raccourci d'un enfant. **Vérifié** :
+- les 100 personnages assemblés depuis leurs couches sont identiques, lettre pour lettre, aux cases de `chibi.py` ;
+- **60 personnages tirés au hasard, hors du catalogue** (toutes les coupes, couvre-chefs, détails, motifs ; adultes
+  et enfants) aussi (`python3 scripts/personnage/couches.py --combinaisons`) : la libre combinaison fonctionne.
+
+**Pour le jeu : `assets/personnages/couches.json`** (`couches.py --exporter` ; 326 Ko, 25 Ko compressé) : les
+grilles des éléments, les couches communes et les jambes de chaque case, les poses, les zones des bras, les yeux
+fermés, les règles (l'ordre, le masque, le raccourci, le contour), les couleurs des outils, et la palette résolue
+des 100 personnages (chaque lettre qu'il emploie, les couleurs calculées comprises : Python arrondit les moitiés au
+pair, `Math.round` vers le haut ; rien n'est donc à recalculer dans le jeu). Pixels en texte compact : `x,y,lettre;…`.
+Test : `tests/engine/personnages-couches.test.mjs` (chaque personnage, ses éléments, ses jambes, une couleur pour
+chaque lettre).
+
+**Suite (E5)** : l'assembleur en JS, qui lit `couches.json`, vérifié contre les planches PNG (au pixel, pour les 100) ;
+le jeu l'emploie derrière un réglage, avec repli sur les PNG ; puis les palettes d'une combinaison libre (E6).

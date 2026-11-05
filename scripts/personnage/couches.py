@@ -1,119 +1,132 @@
-# Les planches de personnages en lettres (chantier « couches », étape E4 : docs/personnage-couches.md).
+# Les personnages en couches (chantier « couches », étape E4 : docs/personnage-couches.md).
 #
-# chibi.py fabrique les 112 cases d'une planche à partir des couleurs d'un modèle : il les déplace (la
-# respiration, la marche, l'accroupi), en retire (les bras quand les mains tiennent un outil), en dessine
-# de nouvelles (les bras, les jambes de profil, avec la manche et la peau du modèle ; les outils) et en
-# calcule trois (la manche lointaine, × 0,8 ; la chaussure assise, × 0,7 ; les cils du sommeil, × 0,85).
-# Pour savoir d'où vient chaque pixel d'une planche, on le refait tourner sur un modèle « marqué » : chaque
-# lettre du modèle (modeles.lettres) y a une couleur à elle, unique, tout près de sa vraie couleur (les
-# tests de chibi.py sur les couleurs, plus ou moins claires que tant, donnent donc la même réponse). Chaque
-# pixel de la planche obtenue se relit en lettre :
-#   une lettre du modèle (k, B, p, s…, ou une nuance d'un modèle retouché) ;
-#   « L×0.8 », « L×0.7 », « L×0.85 » : une couleur calculée par chibi.py d'après la lettre L ;
-#   un nom de fermier.C (les outils : wd, mt, wc, dr, bk, eg, sd… ; K, un contour intérieur : un bras devant
-#   la tête, une jambe devant l'autre) ;
-#   « Ko » : le contour de la silhouette, refait par Canvas.outline (marqué à part : il se recalcule après
-#   l'assemblage des couches).
-# Recolorée (couleur()), la planche en lettres doit redonner exactement la planche du jeu
-# (assets/personnages/<nom>.png) : c'est la preuve que la lecture est juste (verifier()).
+# Une planche (112 cases de 16 × 32) s'assemble à partir de ses éléments et de couches communes :
+#   - les éléments du haut du corps (le corps, le haut, le bas, la coupe, le couvre-chef, la barbe, les lunettes…) :
+#     chacun sa grille de 12 × 25 par vue, sans ce qui le recouvre (modeles.elements) ; dans une case, la grille
+#     est seulement posée plus ou moins haut (son décalage, dy) ; quand les bras sont redessinés, le corps et le
+#     haut perdent les zones des bras (chibi.ZONES) ; endormi, le corps ferme les yeux ;
+#   - les couches posées une fois pour toutes, les mêmes pour tous les personnages d'un âge : les outils derrière
+#     et devant, les bras (le lointain, ceux qui passent sous le corps, ceux posés dessus), les jambes (celles d'un
+#     modèle retouché lui sont propres) ;
+#   - les règles : l'ordre des couches (ORDRE), le masque d'un couvre-chef (modeles.MASQUE_TETE), le contour d'un
+#     bras posé sur la tête ou le torse, le contour de la silhouette (Canvas.outline), le raccourci d'un enfant.
+# Tout est en lettres ; la palette du personnage leur donne leurs couleurs (modeles.palette_de).
 #
-#   python3 scripts/personnage/couches.py     vérifie les 100 planches
+# chibi.py dessine chaque case en entier, et retient pour chaque pixel l'étape qui l'a posé (Canvas.ph) et la pose
+# de la case (cv.trace). On en tire les couches communes (communes()), et on vérifie que l'assemblage (assembler())
+# redonne exactement, lettre pour lettre, les cases de chibi.py pour les 100 personnages (verifier()).
+#
+#   python3 scripts/personnage/couches.py                  assemble et vérifie les 100 planches
+#   python3 scripts/personnage/couches.py --combinaisons   et 60 personnages tirés au hasard, hors du catalogue
+#   python3 scripts/personnage/couches.py --exporter       écrit assets/personnages/couches.json (pour le jeu)
 import os
 import sys
-
-from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import chibi  # noqa: E402
 import fermier as F  # noqa: E402
 import modeles  # noqa: E402
 
-RACINE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-PERSONNAGES = os.path.join(RACINE, 'assets', 'personnages')
-FACTEURS = (0.8, 0.7, 0.85)          # les couleurs que chibi.py calcule (chibi.mul)
-ECARTS = [(dr, dg, db) for s in range(1, 4) for dr in range(-s, s + 1) for dg in range(-s, s + 1) for db in range(-s, s + 1)
-          if max(abs(dr), abs(dg), abs(db)) == s]
+# Les étapes de la pose, dans l'ordre où chibi.figure les dessine ; « modele » : les éléments du haut du corps.
+ORDRE = ['derriere', 'bras_loin', 'jambes', 'bras_sous', 'modele', 'bras_dessus', 'devant']
+COMMUNES = ['derriere', 'bras_loin', 'bras_sous', 'devant']      # (les jambes : par jeu de jambes ; bras_dessus : par bras)
 
 
-def lum(c):
-    return sum(c) / 3
+def dessiner(nom, d=None):
+    """Les cases de chibi.py pour `nom` (ou la description `d`, une combinaison hors du catalogue) : {case: Canvas}
+    (px : les lettres, ph : les étapes, trace : la pose), avant le raccourci d'un enfant."""
+    F.dessiner({'couleurs': {}})
+    chibi.MODELE['m'] = chibi.Modele(nom, d)
+    chibi.MODELE['age'] = 'enfant' if nom.startswith('enfant_') else 'adulte'
+    return F.frames(chibi.figure)
 
 
-def marquer(pal):
-    """Une couleur unique par lettre, tout près de la vraie : {lettre: couleur marquée}. Elle reste du même
-    côté des seuils de chibi.py (le plus petit canal sous 230 : de la peau, pas du blanc ; la moyenne sous
-    90 : une pupille sombre), loin du contour, et ses couleurs calculées (FACTEURS) ne retombent sur aucune
-    autre."""
-    pris, out = {chibi.K}, {}
-    for L, c in pal.items():
-        if L == 'a':
-            continue
-        for d in [(0, 0, 0)] + ECARTS:
-            s = tuple(min(255, max(0, v + e)) for v, e in zip(c, d))
-            if (min(s) < 230) != (min(c) < 230) or (lum(s) < 90) != (lum(c) < 90):
-                continue
-            derives = {chibi.mul(s, k) for k in FACTEURS}
-            if s in pris or derives & pris or s in derives:
-                continue
-            out[L] = s
-            pris |= {s} | derives
-            break
-        else:
-            raise RuntimeError(f'pas de couleur marquée pour {L} {c}')
+def jeu_de_jambes(nom):
+    """La clé des jambes de `nom` : celles d'un modèle retouché lui sont propres."""
+    return nom if nom in modeles.RETOUCHES else 'standard'
+
+
+def couches_de(cases):
+    """Les couches posées d'une planche de chibi.py, chacune en entier (même ce que la suite recouvre) :
+    {case: {étape: {(x, y): lettre}}} ; les bras posés sur le corps, un par un (bras_dessus:0, :1…), sans leur
+    contour (assembler() le refait)."""
+    out = {}
+    for n, cv in cases.items():
+        out[n] = {e: {p: L for p, L in px.items() if not (e.startswith('bras_dessus') and L == 'K')}
+                  for e, px in cv.calques.items() if e != 'modele'}
     return out
 
 
-def modele_marque(nom, d, marques):
-    im = Image.new('RGBA', (12, 79), (0, 0, 0, 0))
-    for v, g in modeles.lettres(nom, d).items():
-        for (x, y), ch in g.items():
-            im.putpixel((x, modeles.DEBUT[v] + y), (chibi.K if ch == 'a' else marques[ch]) + (255,))
-    return im
+def communes(age, references):
+    """Les couches communes d'un âge, tirées d'un personnage de référence et des jambes de chacun :
+    {'cases': {case: {étape: pixels}}, 'trace': {case: pose}, 'jambes': {clé: {case: pixels}}}."""
+    nom = references[age]
+    cases = dessiner(nom)
+    C = couches_de(cases)
+    return {
+        'cases': {n: {e: px for e, px in par.items() if e != 'jambes'} for n, par in C.items()},
+        'trace': {n: cv.trace for n, cv in cases.items()},
+        'jambes': {jeu_de_jambes(nom): {n: par.get('jambes', {}) for n, par in C.items()}},
+    }
 
 
-def planche_lettres(nom, d, i):
-    """Les 112 cases de la planche de `nom`, en lettres : {case: [[lettre ou None] * 16] * 32}."""
-    enfant = nom.startswith('enfant_')
-    pal = modeles.palette_de(nom, d, i)
-    marques = marquer({L: c for L, c in pal.items() if L in {ch for g in modeles.lettres(nom, d).values() for ch in g.values()}})
-    lire = {s: L for L, s in marques.items()}
-    for L, s in marques.items():
-        for k in FACTEURS:
-            lire.setdefault(chibi.mul(s, k), f'{L}×{k}')
-    F.dessiner({'couleurs': {}})
-    chibi.MODELE['m'] = chibi.Modele(nom, modele_marque(nom, d, marques))
-    chibi.MODELE['age'] = 'enfant' if enfant else 'adulte'
-    # (le contour de la silhouette, à part : « Ko »)
-    trace = F.Canvas.outline
-
-    def outline(cv):
-        avant = [r[:] for r in cv.px]
-        trace(cv)
-        for y in range(F.H):
-            for x in range(F.W):
-                if avant[y][x] is None and cv.px[y][x] == 'K':
-                    cv.px[y][x] = 'Ko'
-    F.Canvas.outline = outline
-    try:
-        cases = F.frames(chibi.figure)
-    finally:
-        F.Canvas.outline = trace
+def assembler(elts, chapeau, age, communs, jambes, zones):
+    """Les 112 cases d'un personnage, en lettres : {case: [[lettre ou None] * 16] * 32}, après le raccourci d'un
+    enfant. elts : ses éléments (modeles.elements) ; chapeau : son couvre-chef ; communs : communes(age) ;
+    jambes : son jeu de jambes ; zones : {vue: (cases des bras, cases des mains)} (chibi.ZONES, les mêmes pour tous)."""
     out = {}
-    for n, cv in cases.items():
-        g = []
-        for y in range(F.H):
-            r = []
-            for x in range(F.W):
-                c = cv.px[y][x]
-                if isinstance(c, str) and c not in ('K', 'Ko') and isinstance(F.C.get(c), tuple) and F.C[c] in lire:
-                    c = lire[F.C[c]]          # (ov, ov2, bt, bt2 : des couleurs du modèle, rangées dans fermier.C)
-                elif isinstance(c, tuple):
-                    if c not in lire:
-                        raise RuntimeError(f'{nom} {n} ({x}, {y}) : couleur {c} illisible')
-                    c = lire[c]
-                r.append(c)
-            g.append(r)
-        out[n] = raccourci(g, chibi.rangees_enfant(n)) if enfant else g
+    for n, couches in communs['cases'].items():
+        t = communs['trace'][n]
+        v, dy = t['vue'], t['dy']
+        px = {}
+        for e in ('derriere', 'bras_loin'):
+            px.update(couches.get(e, {}))
+        px.update(jambes[n])
+        px.update(couches.get('bras_sous', {}))
+        # le haut du corps : chaque élément posé (dy), moins les bras quand ils sont redessinés, le masque d'un
+        # couvre-chef, les yeux fermés
+        retire = set()
+        if t['masque']:
+            retire = zones[v][0] | (zones[v][1] if t['masque'] == 'marche' else set())
+        haut = {}
+        for c, _, grilles in elts:
+            if c == 'couvre_chef' and chapeau in modeles.COUVRE_TETE:
+                for p in [p for p in haut if p[1] < modeles.MASQUE_TETE and modeles.famille(None, haut[p][0]) in ('corps', 'coiffure')]:
+                    del haut[p]
+            for (x, y), L in grilles.get(v, {}).items():
+                if y >= chibi.TORSE or (c in ('corps', 'haut') and (x, y) in retire):
+                    continue
+                haut[(x, y)] = (L, c)
+        if t['fermes']:
+            for p, L in chibi.Modele.YEUX_FERMES.items():
+                if p in haut:
+                    haut[p] = (L, 'corps')
+        poses = {}
+        for (x, y), (L, _) in haut.items():
+            poses[(chibi.TX + x, chibi.TY + y + dy)] = L
+        px.update(poses)
+        torse = set(poses)
+        tete = {(chibi.TX + x, chibi.TY + y + dy) for (x, y) in haut if y < chibi.TETE}
+        # les bras posés dessus, un par un : un contour les détache de la tête (ou du torse)
+        for k, ref in enumerate(t['bras']):
+            bras = couches.get(f'bras_dessus:{k}', {})
+            contre = tete if ref == 'tete' else torse
+            for (x, y) in bras:
+                for ddx, ddy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    q = (x + ddx, y + ddy)
+                    if q in contre and q not in bras and 0 <= q[0] < F.W and 0 <= q[1] < F.H:
+                        px[q] = 'K'
+            px.update(bras)
+        px.update(couches.get('devant', {}))
+        # le contour de la silhouette
+        g = [[px.get((x, y)) for x in range(F.W)] for y in range(F.H)]
+        cv = F.Canvas()
+        cv.px = g
+        cv.outline()
+        g = cv.px
+        if age == 'enfant':
+            g = raccourci(g, chibi.rangees_enfant(n))
+        out[n] = g
     return out
 
 
@@ -123,78 +136,151 @@ def raccourci(g, rangees):
     return [[None] * F.W for _ in range(F.H - len(rangs))] + rangs
 
 
-def couleur(nom, d, i, lettre):
-    """La couleur d'une lettre de la planche de `nom`."""
-    if lettre in ('K', 'Ko'):
-        return F.BASE['K']
-    if '×' in lettre:
-        L, k = lettre.split('×')
-        return chibi.mul(couleur(nom, d, i, L), float(k))
-    pal = modeles.palette_de(nom, d, i)
-    return pal[lettre] if lettre in pal else F.BASE[lettre]
+REFERENCES = {'adulte': 'perso_07', 'enfant': 'enfant_01'}
 
 
-def verifier(nom, d, i):
-    """La planche en lettres, recolorée, contre la planche du jeu : la liste des écarts [(case, x, y)]."""
-    lettres = planche_lettres(nom, d, i)
-    planche = Image.open(os.path.join(PERSONNAGES, nom + '.png')).convert('RGBA').load()
+def verifier():
+    """Assemble les 100 personnages et compare, lettre pour lettre, aux cases de chibi.py. → les écarts."""
+    communs = {age: communes(age, REFERENCES) for age in REFERENCES}
     ecarts = []
-    for k, (n, g) in enumerate(lettres.items()):
-        x0, y0 = (k % F.COLS) * F.W, (k // F.COLS) * F.H
-        for y in range(F.H):
-            for x in range(F.W):
-                L, p = g[y][x], planche[x0 + x, y0 + y]
-                attendu = None if not p[3] else p[:3]
-                if (None if L is None else couleur(nom, d, i, L)) != attendu:
-                    ecarts.append((n, x, y))
+    for nom, d in modeles.tous():
+        age = 'enfant' if nom.startswith('enfant_') else 'adulte'
+        cases = dessiner(nom)
+        # (les couches communes de ce personnage : les mêmes que celles de la référence de son âge ?)
+        C = couches_de(cases)
+        for n, par in C.items():
+            for e in set(par) | set(communs[age]['cases'][n]):
+                if e == 'jambes':
+                    continue
+                if par.get(e, {}) != communs[age]['cases'][n].get(e, {}):
+                    ecarts.append((nom, n, f'couche commune {e}'))
+            if cases[n].trace != communs[age]['trace'][n]:
+                ecarts.append((nom, n, 'pose'))
+        jambes = {n: par.get('jambes', {}) for n, par in C.items()}
+        cle = jeu_de_jambes(nom)
+        connues = communs[age]['jambes'].setdefault(cle, jambes)
+        if connues != jambes:
+            ecarts.append((nom, '*', f'jambes {cle}'))
+        zones = chibi.ZONES
+        chapeau = None if nom in modeles.RETOUCHES else d['chapeau']
+        g = assembler(modeles.elements(nom, d), chapeau, age, communs[age], jambes, zones)
+        for n, cv in cases.items():
+            attendu = raccourci(cv.px, chibi.rangees_enfant(n)) if age == 'enfant' else cv.px
+            if g[n] != attendu:
+                k = [(x, y) for y in range(F.H) for x in range(F.W) if g[n][y][x] != attendu[y][x]]
+                ecarts.append((nom, n, f'{len(k)} pixels, {k[:3]}'))
     return ecarts
 
 
+def combinaisons(n=60, graine=7):
+    """Des personnages qui ne sont pas au catalogue : n tirages au hasard (une graine fixe) de chaque élément
+    (peau, yeux, cheveux, coupe, couvre-chef, détails, haut, motif, bas), dessinés par chibi.py et assemblés depuis
+    leurs couches : les écarts."""
+    import random
+    import catalogue
+    r = random.Random(graine)
+    communs = {age: communes(age, REFERENCES) for age in REFERENCES}
+    ecarts = []
+    for k in range(n):
+        age = ('adulte', 'enfant')[k % 2]
+        nom = ('perso_' if age == 'adulte' else 'enfant_') + f'x{k}'
+        details = [x for x in modeles.ORDRE_DETAILS_CARTE if r.random() < 0.2]
+        if 'barbe' in details and 'moustache' in details:
+            details.remove('moustache')
+        d = {'peau': r.choice(list(catalogue.PEAU)), 'cheveux': r.choice(list(catalogue.CHEVEUX)),
+             'coupe': r.choice(modeles.COUPES), 'chapeau': r.choice([None] + list(modeles.CHAPEAUX)),
+             'accessoire': r.choice(list(catalogue.ACCESSOIRES.values())), 'details': details,
+             'habit': r.choice(list(catalogue.HABITS)), 'motif': r.choice([None, 'rayures', 'carreaux', 'pois']),
+             'bas': r.choice(catalogue.BAS), 'yeux': r.choice(list(catalogue.YEUX))}
+        cases = dessiner(nom, d)
+        zones = chibi.ZONES
+        jambes = {n2: par.get('jambes', {}) for n2, par in couches_de(cases).items()}
+        if jambes != communs[age]['jambes']['standard']:
+            ecarts.append((nom, '*', 'jambes'))
+        g = assembler(modeles.elements(nom, d), d['chapeau'], age, communs[age], jambes, zones)
+        for n2, cv in cases.items():
+            attendu = raccourci(cv.px, chibi.rangees_enfant(n2)) if age == 'enfant' else cv.px
+            if g[n2] != attendu:
+                ecarts.append((nom, n2, d['coupe'], d['chapeau'], d['details'], d['motif']))
+    return ecarts
+
+
+def _px(d):
+    """Des pixels {(x, y): lettre} en texte compact : « x,y,lettre;… », triés."""
+    return ';'.join(f'{x},{y},{L}' for (x, y), L in sorted(d.items(), key=lambda t: (t[0][1], t[0][0])))
+
+
+RACINE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+
+
+def exporter(chemin=os.path.join(RACINE, 'assets', 'personnages', 'couches.json')):
+    """assets/personnages/couches.json : de quoi assembler les planches dans le jeu (étape E5)."""
+    import json
+    communs = {age: communes(age, REFERENCES) for age in REFERENCES}
+    elements, personnages, palettes = {}, {}, {}
+    for nom, d in modeles.tous():
+        age = 'enfant' if nom.startswith('enfant_') else 'adulte'
+        cases = dessiner(nom)
+        cle = jeu_de_jambes(nom)
+        communs[age]['jambes'].setdefault(cle, {n: par.get('jambes', {}) for n, par in couches_de(cases).items()})
+        elts = modeles.elements(nom, d)
+        for c, k, grilles in elts:
+            elements.setdefault(f'{c}:{k}', {v: _px(g) for v, g in grilles.items()})
+        personnages[nom] = {'age': age, 'elements': [f'{c}:{k}' for c, k, _ in elts],
+                            'chapeau': None if nom in modeles.RETOUCHES else d['chapeau'], 'jambes': cle}
+        # la palette : chaque lettre que ses cases emploient, couleur résolue (les couleurs calculées comprises)
+        lettres = {L for cv in cases.values() for r in cv.px for L in r if L is not None and L not in F.BASE}
+        for _, _, grilles in elts:
+            lettres |= {L for g in grilles.values() for L in g.values()}
+        lettres |= set(chibi.Modele.YEUX_FERMES.values())
+        palettes[nom] = {L: '#%02x%02x%02x' % chibi.couleur(L) for L in sorted(lettres)}
+    zones = {v: {'bras': ';'.join(f'{x},{y}' for x, y in sorted(b, key=lambda t: (t[1], t[0]))),
+                 'mains': ';'.join(f'{x},{y}' for x, y in sorted(mn, key=lambda t: (t[1], t[0])))} for v, (b, mn) in chibi.ZONES.items()}
+    doc = {
+        'version': 1,
+        '_': 'Les personnages en couches : voir docs/personnage-couches.md (étape E4) et scripts/personnage/couches.py.',
+        'case': {'w': F.W, 'h': F.H},
+        'modele': {'x': chibi.TX, 'y': chibi.TY, 'torse': chibi.TORSE, 'tete': chibi.TETE,
+                   'masqueTete': modeles.MASQUE_TETE, 'couvreTete': list(modeles.COUVRE_TETE),
+                   'masque': ['corps', 'coiffure'], 'retire': ['corps', 'haut']},
+        'ordre': ORDRE, 'ordreModele': modeles.ORDRE_COUCHES,
+        'familles': modeles.FAMILLES,
+        'contourIgnore': ['K', 'dr', 'sd'],
+        'enfant': {'rangees': list(chibi.ENFANT_RANGEES), 'rangeesAssis': list(chibi.ENFANT_RANGEES_ASSIS), 'assis': 'assis_'},
+        'yeuxFermes': _px(chibi.Modele.YEUX_FERMES),
+        'zones': zones,
+        'cases': list(communs['adulte']['trace']),
+        'poses': {age: C['trace'] for age, C in communs.items()},
+        'communes': {age: {n: {e: _px(px) for e, px in par.items()} for n, par in C['cases'].items()} for age, C in communs.items()},
+        'jambes': {age: {k: {n: _px(px) for n, px in J.items()} for k, J in C['jambes'].items()} for age, C in communs.items()},
+        'outils': {k: '#%02x%02x%02x' % v for k, v in F.BASE.items()},
+        'elements': elements,
+        'personnages': personnages,
+        'palettes': palettes,
+    }
+    with open(chemin, 'w', encoding='utf-8') as f:
+        json.dump(doc, f, ensure_ascii=False, separators=(',', ':'))
+        f.write('\n')
+    return chemin
+
+
 def main():
-    total = 0
-    for i, (nom, d) in enumerate(modeles.tous()):
-        e = verifier(nom, d, i)
-        total += len(e)
-        if e:
-            print(f'{nom} : {len(e)} écarts, {e[:4]}')
-    print(f'{len(modeles.tous())} planches relues en lettres : ' + ('toutes identiques une fois recolorées' if not total else f'{total} pixels différents'))
-    return total
+    if '--exporter' in sys.argv:
+        print(f'{exporter()} écrit')
+        return 0
+    if '--combinaisons' in sys.argv:
+        e = combinaisons()
+        for x in e[:20]:
+            print('  ', x)
+        print(f'60 personnages hors du catalogue : ' + ('assemblés exactement comme chibi.py les dessine' if not e else f'{len(e)} écarts'))
+        return len(e)
+    ecarts = verifier()
+    for e in ecarts[:30]:
+        print('  ', e)
+    print(f'{len(modeles.tous())} personnages assemblés depuis leurs couches : '
+          + ('identiques, lettre pour lettre, aux planches de chibi.py' if not ecarts else f'{len(ecarts)} écarts'))
+    return len(ecarts)
 
 
 if __name__ == '__main__':
     sys.exit(1 if main() else 0)
-
-
-# ---------- les couches : à quel élément appartient chaque lettre ----------
-FAMILLES = {
-    'corps': 'kdtmleghij',          # la peau, les yeux, la bouche (et les mains, le cou)
-    'joues': 'P', 'rousseur': 'X',
-    'coiffure': 'BCEDfzN',          # les cheveux, la peau qu'elle laisse dans l'ombre, ses rubans
-    'pilosite': 'bcJ',              # la barbe, la moustache
-    'haut': ['p', 'q', 'o', 'v_'],
-    'bas': 'srAZuv', 'chaussures': 'wxy',
-    'couvre_chef': 'RQHVSTUF',
-    'lunettes': 'G', 'boucles': 'Y', 'pansement': 'W',
-}
-_PAR_LETTRE = {L: f for f, Ls in FAMILLES.items() for L in Ls}
-
-
-def couche(nom, lettre):
-    """La couche d'une lettre de la planche de `nom` : une des FAMILLES, « outils » (un nom de fermier.C),
-    « contour » (K, un contour intérieur) ou « silhouette » (Ko)."""
-    if lettre == 'K':
-        return 'contour'
-    if lettre == 'Ko':
-        return 'silhouette'
-    L = lettre.split('×')[0]
-    L = modeles.base(nom, L)
-    return _PAR_LETTRE.get(L, 'outils')
-
-
-def element(d, famille):
-    """L'élément que porte le personnage `d` pour la couche `famille` (None : rien), son âge compris pour le corps."""
-    age = 'enfant' if d.get('_enfant') else 'adulte'
-    return {
-        'corps': age, 'coiffure': d['coupe'], 'couvre_chef': d['chapeau'],
-        'pilosite': next((x for x in d['details'] if x in ('barbe', 'moustache')), None),
-    }.get(famille, famille if famille in ('haut', 'bas', 'chaussures', 'outils', 'contour') or famille in d['details'] else None)

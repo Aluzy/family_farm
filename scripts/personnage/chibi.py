@@ -28,7 +28,6 @@
 import json
 import os
 import sys
-from collections import Counter
 
 from PIL import Image
 
@@ -55,64 +54,83 @@ def mul(c, k):
     return tuple(max(0, min(255, round(v * k))) for v in c)
 
 
+_PERSONNAGES = {}
+
+
+def personnage(nom):
+    """La description du catalogue de `nom` et son rang (modeles.tous)."""
+    if not _PERSONNAGES:
+        import modeles
+        _PERSONNAGES.update({n: (d, i) for i, (n, d) in enumerate(modeles.tous())})
+    return _PERSONNAGES[nom]
+
+
 class Modele:
-    def __init__(self, nom, im=None):
-        # (im : le modèle lui-même, une image de 12 × 79 ; sans elle, scripts/personnage/modeles/<nom>.png)
-        im = (im or Image.open(os.path.join(MODELES, nom + '.png'))).convert('RGBA')
-        px = im.load()
-        self.vues = {}
-        for vue, y0 in VUES.items():
-            self.vues[vue] = {(x, y): px[x, y0 + y][:3] for y in range(25) for x in range(12)
-                              if px[x, y0 + y][3] and px[x, y0 + y][:3] != K}
-        face = self.vues['bas']
+    """Le modèle d'un personnage, en lettres (modeles.lettres : chaque lettre, une couleur de sa palette,
+    modeles.palette_de). Les cases sont dessinées en lettres ; render() leur donne leurs couleurs.
 
-        def commune(pts):
-            n = Counter(face[p] for p in pts if p in face)
-            return n.most_common(1)[0][0]
-        # les couleurs des bras : celles des colonnes du bord, de face
-        self.couleurs_bras = {face[(x, y)] for x in (0, 1, 10, 11) for y in range(12, 17) if (x, y) in face}
-        self.manche = commune([(x, y) for x in (0, 1, 2) for y in (12, 13, 14)])
-        self.manche2 = mul(self.manche, 0.8)
-        self.peau = commune([(x, y) for x in (1, 2, 9, 10) for y in (15, 16)])
-        # les couleurs des mains (de face, leurs ombres comprises : la marche les retire toutes)
-        self.mains = {face[(x, y)] for x in (1, 2, 9, 10) for y in (15, 16) if (x, y) in face}
-        # les jambes et les chaussures (pour assis)
-        F.C['ov'] = commune([(x, y) for x in (3, 4) for y in range(18, 22)])
-        F.C['ov2'] = commune([(x, y) for x in (7, 8) for y in range(18, 22)])
-        F.C['bt'] = commune([(x, y) for x in (3, 4) for y in (22, 23)])
-        F.C['bt2'] = mul(F.C['bt'], 0.7)
-        self.yeux = self.yeux_fermes(face)
+    Chantier « couches » (docs/personnage-couches.md, E4) : rien de ce qui pose le personnage ne dépend de
+    ses couleurs ni de ses habits, pour que chaque élément (une coupe, un haut, un couvre-chef) ait la même
+    forme chez tous ceux qui le portent :
+      - les bras retirés quand les mains tiennent un outil, ou quand ils se balancent en marchant : les cases
+        des zones des bras (ZONES : là où le corps de modeles.CORPS a une manche ou une main, BRAS_LETTRES,
+        MAINS_LETTRES), si le modèle y a de la peau ou le haut (pas une mèche de cheveux) ;
+      - les bras redessinés, les jambes assises, les yeux fermés du sommeil : des rôles de la palette (Mp la
+        manche, le bras lointain Mp × 0,8 ; Mk la main ; Ms, Mr les jambes, Mw les chaussures, Mw × 0,7 ; Mv la
+        peau, L les cils : modeles.palette_de), dont chaque personnage garde ses couleurs."""
 
-    @staticmethod
-    def yeux_fermes(face):
-        """Les yeux fermés, de face. Tous les modèles ont les yeux aux mêmes cases (YEUX : le
-        blanc et la pupille, sur deux rangées) : la rangée du haut prend la couleur de la peau
-        (la plus fréquente juste entre et sous les yeux), celle du bas devient un trait de cils
-        (la pupille si elle est sombre, sinon un brun sombre). Renvoie { case: couleur }."""
-        lum = lambda c: sum(c) / 3
-        peaux = Counter(face[p] for p in ((5, 6), (6, 6), (5, 7), (6, 7)) if p in face and min(face[p]) < 230)
-        if not peaux:
-            return {}
-        peau = peaux.most_common(1)[0][0]
-        pupilles = [face[p] for p in YEUX if p in face and min(face[p]) < 230]
-        sombre = min(pupilles, key=lum) if pupilles else None
-        cil = mul(sombre, 0.85) if sombre and lum(sombre) < 90 else (54, 36, 24)
-        haut = min(y for _, y in YEUX)
-        return {(x, y): peau if y == haut else cil for (x, y) in YEUX}
+    def __init__(self, nom, d=None):
+        # (d : la description d'un personnage hors du catalogue, une combinaison nouvelle ; couches.py)
+        import modeles
+        d, i = (d, 0) if d is not None else personnage(nom)
+        self.nom = nom
+        self.pal = modeles.palette_de(nom, d, i)
+        self.vues = {v: {p: L for p, L in g.items() if L != 'a'} for v, g in modeles.lettres(nom, d).items()}
 
-    def haut(self, vue, sans_bras):
-        """La tête et le torse (rangées 0..17), avec ou sans les bras."""
+        self.manche, self.manche2, self.peau = 'Mp', 'Mp×0.8', 'Mk'
+        F.C['ov'], F.C['ov2'], F.C['bt'], F.C['bt2'] = 'Ms', 'Mr', 'Mw', 'Mw×0.7'
+        self.yeux = dict(Modele.YEUX_FERMES)
+
+    # les yeux fermés du sommeil, de face : la peau (Mv) en haut, les cils (L) en bas
+    YEUX_FERMES = {(x, y): 'Mv' if y == min(y for _, y in YEUX) else 'L' for (x, y) in YEUX}
+
+    def couleur(self, lettre):
+        if '×' in lettre:
+            L, k = lettre.split('×')
+            return mul(self.couleur(L), float(k))
+        return self.pal[lettre]
+
+    def haut(self, vue, sans_bras, sans_mains=False):
+        """La tête et le torse (rangées 0..17), avec ou sans les bras (et les mains : la marche) : ce que le
+        corps et le haut ont dans les zones des bras (ZONES ; une mèche de cheveux y reste)."""
+        import modeles
         out = {p: c for p, c in self.vues[vue].items() if p[1] < TORSE}
-        if sans_bras:
-            for cols, rangs in BRAS[vue]:
-                for x in cols:
-                    for y in rangs:
-                        if out.get((x, y)) in self.couleurs_bras:
-                            del out[(x, y)]
+        retire = (ZONES[vue][0] if sans_bras else set()) | (ZONES[vue][1] if sans_mains else set())
+        for p in retire:
+            if p in out and modeles.famille(self.nom, out[p]) in ('corps', 'haut'):
+                del out[p]
         return out
 
     def jambes(self, vue):
         return {p: c for p, c in self.vues[vue].items() if TORSE <= p[1] < JAMBES}
+
+
+# Les manches et les mains du corps (modeles.CORPS) dans les zones des bras : ce que retire un bras redessiné,
+# et, en marchant les mains libres, les mains et leur ombre. ZONES : {vue: (cases des bras, cases des mains)},
+# les mêmes pour tous les modèles.
+BRAS_LETTRES = 'pqkt'
+MAINS_LETTRES = 'kmt'
+
+
+def _zones():
+    import modeles
+
+    def zone(vue, lettres_corps):
+        return {(x, y) for cols, rangs in BRAS[vue] for x in cols for y in rangs if modeles.CORPS[vue][y - 11][x] in lettres_corps}
+    return {v: (zone(v, BRAS_LETTRES), zone(v, MAINS_LETTRES)) for v in VUES}
+
+
+ZONES = _zones()
 
 
 def poser(cv, pts, dx=0, dy=0):
@@ -314,14 +332,26 @@ MODELE = {}           # le modèle du personnage en cours de dessin (m), et son 
 
 
 def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, sit=False, fermes=False):
-    """Comme fermier.figure (mêmes paramètres, mêmes mains), d'après le modèle."""
+    """Comme fermier.figure (mêmes paramètres, mêmes mains), d'après le modèle.
+
+    (Chantier « couches » : chaque pixel retient l'étape qui l'a dessiné, Canvas.ph : derriere, bras_loin,
+    jambes, bras_sous, modele, bras_dessus:<n>, devant ; et la case, sa pose, cv.trace : la vue, le décalage
+    du haut du corps, les bras retirés, les yeux fermés, le contour de chaque bras posé dessus.)"""
     m = MODELE['m']
+    etape = lambda nom: setattr(Canvas, 'phase', nom)
     cv = Canvas()
+    dy = b + squat
+    marche = walk is not None and not hands
+    cv.trace = {'vue': vue, 'dy': dy, 'masque': 'marche' if marche else 'bras' if hands else None,
+                'fermes': bool(fermes and vue == 'bas'), 'bras': []}
+    dessus = lambda ref: (etape(f'bras_dessus:{len(cv.trace["bras"])}'), cv.trace['bras'].append(ref))
+    etape('derriere')
     if before:
         before(cv)
-    dy = b + squat
+    etape('bras_loin')
     if hands and vue == 'cote':
         bras(cv, 7, 19 + dy, hands[1][0], hands[1][1], m.manche2, m.peau, set())
+    etape('jambes')
     if sit:
         legs_assis(cv, vue)
     elif walk is not None:
@@ -331,35 +361,52 @@ def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, si
     haut = m.haut(vue, sans_bras=bool(hands))
     if fermes and vue == 'bas':                       # il dort : les yeux fermés
         haut = {**haut, **{p: c for p, c in m.yeux.items() if p in haut}}
-    if walk is not None and not hands:
+    if marche:
         # la marche, les mains libres : les bras se balancent (refaits, sous ou sur le corps)
-        haut = m.haut(vue, sans_bras=True)
         # (et ce qui restait des mains du modèle, leurs ombres)
-        zones = {(x, y) for cols, rangs in BRAS[vue] for x in cols for y in rangs}
-        haut = {p: c for p, c in haut.items() if not (p in zones and c in m.mains)}
+        haut = m.haut(vue, sans_bras=True, sans_mains=True)
         tous = bras_marche(vue, walk, MODELE.get('age', 'adulte'))
+        etape('bras_sous')
         for (sx, sy), (hx, hy), sous, proche in tous:
             if sous:
                 bras(cv, sx, sy + dy, hx, hy + dy, m.manche2 if vue == 'cote' else m.manche, m.peau, set())
+        etape('modele')
         torse = poser(cv, haut, 0, dy)
         tete = {(TX + x, TY + y + dy) for (x, y) in haut if y < TETE}
         for (sx, sy), (hx, hy), sous, proche in tous:
             if not sous:
                 # (de profil, le bras proche sur le corps : un contour l'en détache)
+                dessus('torse' if proche else 'tete')
                 bras(cv, sx, sy + dy, hx, hy + dy, m.manche, m.peau, torse if proche else tete)
     else:
+        etape('modele')
         poser(cv, haut, 0, dy)
     tete = {(TX + x, TY + y + dy) for (x, y) in haut if y < TETE}
     if hands:
         if vue == 'cote':
+            dessus('tete')
             bras(cv, 8, 19 + dy, hands[0][0], hands[0][1], m.manche, m.peau, tete)
         else:
+            dessus('tete')
             bras(cv, 4, 19 + dy, hands[0][0], hands[0][1], m.manche, m.peau, tete)
+            dessus('tete')
             bras(cv, 11, 19 + dy, hands[1][0], hands[1][1], m.manche, m.peau, tete)
+    etape('devant')
     if after:
         after(cv)
+    etape(None)
     cv.outline()
     return cv
+
+
+def couleur(c):
+    """La couleur d'un pixel d'une case : un nom de fermier.C (les outils, le contour K ; ov, bt… : des lettres
+    du modèle), ou une lettre du modèle en cours."""
+    if isinstance(c, tuple):
+        return c
+    if c in F.C:
+        return couleur(F.C[c])
+    return MODELE['m'].couleur(c)
 
 
 def render(cv):
@@ -368,7 +415,7 @@ def render(cv):
         for x in range(F.W):
             c = cv.px[y][x]
             if c is not None:
-                im.putpixel((x, y), (F.C[c] if isinstance(c, str) else c) + (255,))
+                im.putpixel((x, y), couleur(c) + (255,))
     return im
 
 
