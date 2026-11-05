@@ -263,3 +263,21 @@ la nouvelle bible (`docs/recit/bible.md`, `docs/recit/personnages.md`).
 - **Les limites** : un hameau sans maison de deux lits n'a pas Lise (comme Théo à Bois-Joli) ; c'est rare.
 - **La migration 73 → 74** : une partie qui a déjà vu Frida à la ferme note sa scène comme jouée.
 - **Les tests** : `tests/engine/recit-d3.test.mjs`.
+
+## 14. G-2 : fait
+
+- **Les musiques des lieux** (`scripts/son/musique.py`, encodées par `vers_jeu.py`) : cinq thèmes de plus,
+  synthétisés comme les autres, en boucle :
+  - le hameau (`musique_hameau`, sol majeur, gai, une guitare pincée et un kalimba) ;
+  - la côte (`musique_cote`, une flûte et une brise de fa majeur) ;
+  - la montagne (`musique_montagne`, lent et ample, des cloches) ;
+  - la forêt (`musique_foret`, un kalimba doux en mi mineur) ;
+  - la fête du hameau (`musique_fete`, vive et dansante, sans pause pendant la fête).
+- **Le directeur du son choisit** (`js/son.js`, `musiqueDuLieu`) : la fête du hameau où l'on est ; le soir et la
+  nuit, leurs thèmes ; le jour, celui du lieu (un hameau, la montagne, la côte, la forêt, sinon le thème du matin).
+  Un lieu tenu 4 s seulement, pour ne pas changer de musique à chaque pas sur une lisière.
+- **La voix des habitants** (`FermeSon.babil`, `FermeSon.voixDe`) : un petit babil synthétisé, une note par
+  syllabe, quand un habitant parle (sa bulle, sa réaction) et pour chaque ligne d'une scène du récit. Une voix par
+  personnage écrit, et une par habitant généré (selon son genre, son âge et son id). Un réglage la coupe.
+- **Les tests** : un essai dans le jeu avec la partie du jour 54 (la ferme le matin, le Gué à 10 h, la fête du bois à
+  17 h 30, le soir hors du hameau ; le babil, et rien quand la voix est coupée).

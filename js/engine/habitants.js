@@ -512,12 +512,12 @@ export function ficheHameau(state, id) {
 }
 
 // Pour la scène (le modèle de la carte, js/ui/stage.js) : les hameaux peuplés, { [id]: { foyers:
-// [{ maison, membres: [{ id, perso, enfant, metier, lit }] }] } }.
+// [{ maison, membres: [{ id, perso, enfant, genre, recit, metier, lit, apparence }] }] } } (genre et recit : sa voix, G-2).
 export function habitantsPourLaCarte(state) {
   const out = {};
   for (const [id, h] of Object.entries(habitantsDe(state))) {
     if (!h || !Array.isArray(h.foyers)) continue;
-    out[id] = { metier: h.metier, foyers: h.foyers.map((f) => ({ maison: f.maison, membres: f.membres.map((m) => ({ id: m.id, perso: m.perso, enfant: !!m.enfant, metier: m.metier || null, lit: m.lit, apparence: validApparence(m.apparence, !!m.enfant) })) })) };
+    out[id] = { metier: h.metier, foyers: h.foyers.map((f) => ({ maison: f.maison, membres: f.membres.map((m) => ({ id: m.id, perso: m.perso, enfant: !!m.enfant, genre: m.genre || null, recit: m.recit || null, metier: m.metier || null, lit: m.lit, apparence: validApparence(m.apparence, !!m.enfant) })) })) };
   }
   return out;
 }

@@ -27,6 +27,11 @@
     musique_soir: ["musique/musique_soir"],
     musique_nuit: ["musique/musique_nuit"],
     musique_mine: ["musique/musique_mine"],
+    musique_hameau: ["musique/musique_hameau"],
+    musique_cote: ["musique/musique_cote"],
+    musique_montagne: ["musique/musique_montagne"],
+    musique_foret: ["musique/musique_foret"],
+    musique_fete: ["musique/musique_fete"],
     oiseaux_matin: ["ambiance/oiseaux_matin"],
     oiseaux_jour: ["ambiance/oiseaux_jour"],
     grillons_soir: ["ambiance/grillons_soir"],
@@ -143,7 +148,7 @@
   const DUCK = new Set(['niveau', 'chapitre', 'techno', 'arbre_tombe']);   // la musique s'efface un instant
 
   // le réglage de l'appareil
-  const DEFAUT = { general: 0.8, musique: 0.55, ambiance: 0.8, effets: 0.9, interface: 0.7, mode: 'intermittente', muet: false };
+  const DEFAUT = { general: 0.8, musique: 0.55, ambiance: 0.8, effets: 0.9, interface: 0.7, mode: 'intermittente', muet: false, voix: true };
   function lireReglages() {
     try { return Object.assign({}, DEFAUT, JSON.parse(global.localStorage.getItem(CLE_REGLAGES) || '{}')); } catch (e) { return Object.assign({}, DEFAUT); }
   }
@@ -341,12 +346,15 @@
 
   /* ---------- la musique : par moments, puis le monde seul ---------- */
 
-  const MUS = { cle: null, depuis: 0, reposJusqua: 0 };
+  const MUS = { cle: null, depuis: 0, reposJusqua: 0, voulue: null };
   function musique(voulue) {
     if (!ctx) return;
     const now = ctx.currentTime;
+    // (un nouveau lieu, un nouveau moment : sa musique vient tout de suite, même au milieu d'un silence)
+    if (voulue !== MUS.voulue) { MUS.voulue = voulue; MUS.reposJusqua = 0; }
     let cle = R.mode === 'coupee' ? null : voulue;
-    if (cle && R.mode === 'intermittente') {
+    // (la fête du hameau ne fait pas de pause)
+    if (cle && R.mode === 'intermittente' && cle !== 'musique_fete') {
       if (now < MUS.reposJusqua) cle = null;
       else if (MUS.cle && now - MUS.depuis > MUS.duree) { MUS.reposJusqua = now + hasard(70, 160); cle = null; }
     }
@@ -354,6 +362,88 @@
     if (MUS.cle) boucle('musique:' + MUS.cle, MUS.cle, 0, 6);
     MUS.cle = cle;
     if (cle) { MUS.depuis = now; MUS.duree = hasard(110, 190); boucle('musique:' + cle, cle, 1, 5); }
+  }
+
+  // G-2 : la musique du lieu et du moment. La fête du hameau où il est (le modèle : fetes) ; la nuit, le soir ;
+  // le jour, celle de son lieu : un hameau, la montagne, la côte, la forêt, sinon celle du matin (la ferme, la
+  // prairie, la lande, le marais). Un lieu tenu LIEU_S secondes seulement (pas de va-et-vient à une lisière).
+  const LIEU_S = 4;
+  const LIEU = { cle: null, voulu: null, depuis: 0 };
+  function musiqueDuLieu(h, b, FS, m) {
+    const hid = FS && FS.hameauIci ? FS.hameauIci : null;
+    const fete = hid && m && Array.isArray(m.fetes) && m.fetes.some((f) => f.hameau === hid && h >= f.debut && h < f.fin);
+    const c = fete ? 'musique_fete'
+      : h < 5.5 || h >= 21 ? 'musique_nuit'
+        : h >= 17 ? 'musique_soir'
+          : hid ? 'musique_hameau'
+            : b === 'montagne' || b === 'sommet' || b === 'falaise' ? 'musique_montagne'
+              : b === 'mer' || b === 'plage' ? 'musique_cote'
+                : b === 'foret' ? 'musique_foret' : 'musique_matin';
+    const now = ctx.currentTime;
+    if (c !== LIEU.voulu) { LIEU.voulu = c; LIEU.depuis = now; }
+    if (!LIEU.cle || c === 'musique_fete' || now - LIEU.depuis >= LIEU_S) LIEU.cle = c;
+    return LIEU.cle;
+  }
+
+  /* ---------- G-2 : la voix des habitants (un babil, pas des mots) ----------
+     Chaque syllabe du texte d'une bulle devient une petite note (un oscillateur, une enveloppe courte), à la
+     hauteur de la voix de celui qui parle, un peu plus haut ou plus bas selon la voyelle ; une question monte à
+     la fin. Rien n'est chargé. La voix : { hauteur (Hz), timbre (une forme d'onde), tempo (s par syllabe),
+     ecart (l'amplitude de la mélodie), clair (le filtre) } — voixDe : celle d'un personnage écrit (VOIX), ou
+     tirée de l'id d'un habitant, selon son genre et son âge. Le réglage « voix » (R.voix) la coupe. */
+  const VOIX = {
+    odile: { hauteur: 250, timbre: 'sine', tempo: 0.095, ecart: 0.8 },
+    achille: { hauteur: 125, timbre: 'triangle', tempo: 0.1, ecart: 0.6 },
+    fernand: { hauteur: 150, timbre: 'triangle', tempo: 0.08, ecart: 1.2 },
+    garance: { hauteur: 290, timbre: 'triangle', tempo: 0.07, ecart: 1.1 },
+    lise: { hauteur: 470, timbre: 'sine', tempo: 0.06, ecart: 1.3 },
+    frida: { hauteur: 310, timbre: 'square', tempo: 0.065, ecart: 1, clair: 1500 },
+    basile: { hauteur: 120, timbre: 'sine', tempo: 0.11, ecart: 0.7 },
+    theo: { hauteur: 230, timbre: 'triangle', tempo: 0.062, ecart: 1.3 },
+  };
+  const hacheTexte = (t) => { let x = 2166136261; for (let i = 0; i < t.length; i++) { x ^= t.charCodeAt(i); x = Math.imul(x, 16777619); } return x >>> 0; };
+  function voixDe(o = {}) {
+    if (o.recit && VOIX[o.recit]) return VOIX[o.recit];
+    const k = hacheTexte(String(o.id || 'quelqu\'un')), u = (k % 1000) / 1000, v = ((k >>> 10) % 1000) / 1000;
+    const base = o.enfant ? 400 : o.genre === 'f' ? 260 : 150;
+    return { hauteur: base * (0.88 + 0.24 * u), timbre: ['triangle', 'sine', 'triangle'][k % 3], tempo: 0.065 + 0.03 * v, ecart: 0.8 + 0.5 * u };
+  }
+  let babilEnCours = null;
+  function babil(texte, voix) {
+    if (!ctx || ctx.state !== 'running' || R.voix === false || !texte) return 0;
+    const V = Object.assign({ hauteur: 200, timbre: 'triangle', tempo: 0.075, ecart: 1, clair: 2600 }, voix || {});
+    const t = String(texte).toLowerCase();
+    const syll = t.match(/[^aeiouyàâäéèêëîïôöùûü\s.,;:!?…«»"'()\-]*[aeiouyàâäéèêëîïôöùûü]+|[.,;:!?…]/g) || [];
+    // (un ancien babil s'efface : on n'entend qu'une voix à la fois)
+    if (babilEnCours) { try { rampe(babilEnCours.gain, 0, 0.05); } catch (e) { /* déjà fini */ } }
+    const out = ctx.createGain(); out.gain.value = 0.16;
+    const filtre = ctx.createBiquadFilter(); filtre.type = 'lowpass'; filtre.frequency.value = V.clair;
+    filtre.connect(out); out.connect(bus.effets);
+    babilEnCours = out;
+    const question = /\?\s*$/.test(t);
+    let t0 = ctx.currentTime + 0.03, n = 0;
+    const notes = syll.filter((x) => /[a-zàâäéèêëîïôöùûü]/.test(x)).length;
+    for (const sy of syll) {
+      if (n >= 18) break;
+      if (/^[.,;:!?…]$/.test(sy)) { t0 += V.tempo * 1.6; continue; }
+      const voy = sy.charCodeAt(sy.length - 1);
+      const demi = (((voy * 7) % 9) - 4) * V.ecart;
+      let f = V.hauteur * Math.pow(2, demi / 12);
+      if (question && n >= notes - 2) f *= 1.25;
+      const d = V.tempo * (0.75 + 0.5 * ((voy % 3) / 2));
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.type = V.timbre;
+      osc.frequency.setValueAtTime(f, t0);
+      osc.frequency.linearRampToValueAtTime(f * 1.05, t0 + d);
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(1, t0 + 0.012);
+      g.gain.linearRampToValueAtTime(0, t0 + d);
+      osc.connect(g).connect(filtre);
+      osc.start(t0); osc.stop(t0 + d + 0.02);
+      t0 += d + V.tempo * 0.25;
+      n++;
+    }
+    return n;
   }
 
   /* ---------- ce qu'il y a sous le personnage ---------- */
@@ -592,8 +682,8 @@
       }
     }
 
-    // la musique : le matin et le jour, le soir, la nuit ; rien pendant le sommeil
-    musique(dort ? null : h >= 5.5 && h < 17 ? 'musique_matin' : h >= 17 && h < 21 ? 'musique_soir' : 'musique_nuit');
+    // la musique : celle du lieu et du moment (G-2, musiqueDuLieu) ; rien pendant le sommeil
+    musique(dort ? null : musiqueDuLieu(h, b, FS, m));
   }
 
   /* ---------- aides pour les scènes ---------- */
@@ -647,7 +737,7 @@
   }
 
   global.FermeSon = {
-    joue, pas, prise, cri, matin, boucle, debloque,
+    joue, pas, prise, cri, matin, boucle, debloque, babil, voixDe,
     reglages: () => Object.assign({}, R), regle,
     pret: () => !!(ctx && ctx.state === 'running'),
     // ce qui tourne en ce moment (les boucles audibles et leur niveau), pour les tests et le débogage
