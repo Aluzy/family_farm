@@ -17,7 +17,7 @@ import { allPlots, findPlot, growHoursLeft, hoeableTiles, terrainLines, isMature
 import { ripeTrees, treeInBloom, treeStage } from '../engine/orchard.js';
 import { coopCapacity, sheepToShear, stableHoused, woolReady } from '../engine/animals.js';
 import { techAuto } from '../engine/techtree.js';
-import { chapterProgress, isUnlocked, plantableCropsFor } from '../engine/campaign.js';
+import { isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
 import { arroseesCompagnon, demandeCompagnon, estTacheCompagnon, faireCompagnon, journeeCompagnon, noterGarde, recolteesCompagnon, tachesCompagnon } from '../engine/compagnon.js';
@@ -56,7 +56,6 @@ import {
   setStageInterior, setStageReturn, setStageWindow, stageInterior, STAGE_WINDOWS, windowLocked,
 } from './stage-windows.js';
 import { renderMoulin } from './cuisine.js';
-import { objectiveValueText } from './chapitres.js';
 import { registerActions } from './actions.js';
 import { axeChipHtml, chopFromStage, fishFromStage, caillouFromStage, gesteFromStage, mineFromStage, mondeFromStage, morceauFromStage, pickChipHtml, rodChipHtml, scytheAroundFromStage, scytheChipHtml, scytheFromStage } from './outils.js';
 import { semerFromStage } from './elevage.js';
@@ -1274,60 +1273,8 @@ function stageOnView(v) {
   if (el && !el.hidden) renderStageNav(el);
 }
 
-// Fluidité (FLU-01) : la puce d'objectif mène là où l'objectif se fait. Type d'objectif →
-// cible (voir cibleAttrs) ; 'niveaux' : la fenêtre Niveaux ; un type absent : la liste des
-// chapitres.
-// Fiche 21 : un appui sur une parcelle n'ouvre plus la fenêtre de la zone (un geste, ou une
-// bulle) ; ces raccourcis vers { fenetre: 'zone' }, comme les notifications d'arrosage et de
-// récolte (cibleAlerte) et celle du robot, restent avec l'appui long sur une parcelle les chemins
-// vers elle et ses boutons de groupe (Planter partout, Arroser tout, Récolter tout).
-const OBJECTIF_CIBLES = {
-  maison: { fenetre: 'installations' },
-  panneau: { fenetre: 'installations' },
-  pompe: { fenetre: 'installations' },
-  reservoir: { fenetre: 'installations' },
-  houe: { fenetre: 'atelier' },   // (fiche 7c : la houe se fabrique à l'Atelier)
-  recoltes: { fenetre: 'zone' },
-  cultures: { fenetre: 'zone' },
-  semisBle: { fenetre: 'zone' },
-  // FLU-42 : labourer → la houe en main ; planter et arroser → la fiche des parcelles
-  labours: 'houe',
-  semis: { fenetre: 'zone' },
-  arrosees: { fenetre: 'zone' },
-  silo: { fenetre: 'silo' },
-  siloBle: { fenetre: 'silo' },
-  pains: { fenetre: 'installations' },
-  plats: { fenetre: 'installations' },
-  niveau: 'niveaux',
-};
-
-// Attributs du bouton qui mène à l'objectif `type`.
-export function objectifAttrs(type) {
-  const c = OBJECTIF_CIBLES[type];
-  if (c === 'niveaux') return 'data-action="open-levels"';
-  if (c === 'houe') return 'data-action="hoe-take"';
-  if (c) return cibleAttrs(c);
-  return 'data-action="stage-open" data-window="chapitres"';
-}
-
-// Objectif en cours, en une ligne : le premier objectif pas encore atteint du chapitre.
-// Houe en main (FLU-41), la puce se réduit à son icône et à sa valeur, pour laisser la
-// place à la puce de la houe.
-function chapterChipHtml() {
-  const c = state.campagne;
-  if (c.fini) {
-    return '<button type="button" class="stage-chip done" data-action="stage-open" data-window="chapitres" aria-label="Campagne terminée : le jeu libre. Ouvrir les chapitres"><span class="stage-chip-pill"><span aria-hidden="true">🌈</span><span class="stage-chip-text">Jeu libre</span><span class="stage-chip-go" aria-hidden="true">›</span></span></button>';
-  }
-  const p = chapterProgress(state);
-  const faits = p.objectifs.filter((o) => o.ok).length;
-  const o = p.objectifs.find((x) => !x.ok) || p.objectifs[p.objectifs.length - 1];
-  const valeur = objectiveValueText(o);
-  const pct = Math.round(o.ratio * 100);
-  const suite = p.objectifs.length > 1 ? `, objectif ${Math.min(faits + 1, p.objectifs.length)} sur ${p.objectifs.length}` : '';
-  const compacte = ((hoeMode && state.potager.houe) || axeMode || pickMode || scytheMode || rodMode || buildMode) && !stageInterior;
-  const vers = OBJECTIF_CIBLES[o.type] ? 'Y aller' : 'Ouvrir les chapitres';
-  return `<button type="button" class="stage-chip${compacte ? ' compact' : ''}" ${objectifAttrs(o.type)} aria-label="Chapitre ${p.chapitre}${suite} : ${o.libelle}${valeur ? `, ${valeur}` : ''}. ${vers}" title="Chapitre ${p.chapitre} : ${p.titre} — ${o.libelle}"><span class="stage-chip-pill"><span aria-hidden="true">${p.icone}</span>${compacte ? '' : `<span class="stage-chip-text">${o.libelle}</span>`}<span class="stage-chip-val num">${valeur}</span><span class="stage-chip-go" aria-hidden="true">›</span><span class="stage-chip-bar" aria-hidden="true"><span style="width:${pct}%"></span></span></span></button>`;
-}
+// La puce d'objectif (le chapitre en cours, puis « Jeu libre ») n'est plus sur la carte, à la demande du joueur :
+// les chapitres s'ouvrent depuis les fenêtres (le 📜 de leur en-tête, js/ui/stage-windows.js), la Famille comprise.
 
 // Version 1.9 : en mode houe, un bouton sur la carte rappelle les tuiles et range la houe.
 // FLU-06 : la première fois que la houe est en main, une bulle dit quoi faire (quelques secondes).
@@ -1354,7 +1301,7 @@ function renderStageHud(el) {
   }
   // le mode Construire : son menu prend le haut de l'écran, le HUD du haut s'efface (jeu.css)
   document.body.classList.toggle('construction', !!buildMode && !stageInterior);
-  morph(hud, chapterChipHtml() + hoeChipHtml() + axeChipHtml() + pickChipHtml() + scytheChipHtml() + rodChipHtml() + buildChipHtml());
+  morph(hud, hoeChipHtml() + axeChipHtml() + pickChipHtml() + scytheChipHtml() + rodChipHtml() + buildChipHtml());
   if (!stageView) stageView = FarmStage.view();
   renderStageNav(el);
 }
