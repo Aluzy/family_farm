@@ -1061,6 +1061,40 @@
       idleAge = 0;
     }
 
+    /* ---------- assis sur une chaise, un banc (un appui sur le siège : js/carte/ferme/sieges.js) ---------- */
+
+    // assis = { x, y (ses pieds, assis), face, flip, depth, pied: { x, y } (la case libre d'où il s'assoit) } :
+    // il y reste (sans flâner) jusqu'à ce qu'on le dirige, qu'on l'envoie ailleurs, ou qu'il aille dormir ;
+    // `mange` : à table, le repas servi (la fourchette à la bouche).
+    let assis = null, mange = false;
+    function asseoir(place) {
+      if (passe || !place || !place.pied) return false;
+      if (assis) leverSiege();
+      if (job && (job.idle || job.walk || job.joueur)) job = null;
+      const w = walkTo(place.pied.x, place.pied.y, { far: true });
+      w.joueur = true;
+      jobs = [w, once(() => { assis = place; idleAge = 0; })].concat(jobs.filter((j) => !j.idle && !j.joueur));
+      idleAge = 0;
+      return true;
+    }
+    // Il se lève : debout sur la case d'où il s'était assis.
+    function leverSiege() {
+      if (!assis) return;
+      x = assis.pied.x; y = assis.pied.y;
+      assis = null; mange = false; idleAge = 0;
+    }
+    function resteAssis() {
+      const autre = (job && !job.idle) || jobs.some((j) => !j.idle);
+      if (steer || autre || ctx.coucher || ctx.dort || home || !shown) { leverSiege(); return false; }
+      if (job && job.idle) job = null;
+      jobs = [];
+      x = assis.x; y = assis.y; face = assis.face; flip = assis.flip;
+      const n = mange ? Math.floor(performance.now() / 700) % 2 : 0;
+      draw(F[`assis_${face}_${n}`] !== undefined ? `assis_${face}_${n}` : `idle_${face}_0`);
+      s.setDepth(assis.depth);
+      return true;
+    }
+
     /* ---------- par image ---------- */
 
     // (son visage, js/carte/visages.js : après chaque image, quelle que soit la branche de pas())
@@ -1095,6 +1129,7 @@
         if (ctx.coucher || ctx.dort) { sleepOutside(dt); return; }
         getUpOutside();
       }
+      if (assis && resteAssis()) return;
       if (steer && (ctx.coucher || ctx.dort)) steerTo(null);
       if (steer && (!job || job.idle || job.walk)) {
         // une marche vers un tas reprendra au relâchement ; double appui : oublié
@@ -1158,6 +1193,12 @@
       spin,
       // Sa vue et son sens (pour tenir l'outil prêt pendant la charge).
       regard: () => ({ face, flip }),
+      // Assis sur un siège (asseoir(place) : il y va et s'y assoit ; lever() ; assis() : sa place, ou null ;
+      // aTable(oui) : il mange, le repas servi).
+      asseoir,
+      lever: leverSiege,
+      assis: () => assis,
+      aTable: (oui) => { mange = !!oui; },
       // Se tourner (arrêté) : vers le bas, le haut ou de côté (flip : vers la gauche) ; une rencontre sur la
       // carte (js/carte/ferme/rencontre.js : il regarde qui lui parle).
       tourne: (f, fl) => {

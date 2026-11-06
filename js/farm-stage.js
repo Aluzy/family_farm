@@ -946,6 +946,13 @@
           if (lit !== null) return { lit };
         }
         if (this.niveau) return null;
+        // pendant un repas avec des invités : la table, pour servir ; une chaise, un banc : s'y asseoir
+        // (js/carte/ferme/sieges.js ; pas en mode Construire)
+        if (!hoeing && !(this.ctx.lastModel && this.ctx.lastModel.bati)) {
+          if (this.tableRepasAt && this.tableRepasAt(wx, wy)) return { tableRepas: true };
+          const siege = this.siegeAt ? this.siegeAt(wx, wy) : null;
+          if (siege) return { siege };
+        }
         const pile = !hoeing ? this.pileAt(wx, wy) : null;
         if (pile) return { pile: pile.id };
         // le grand monde : l'entrée d'une grotte de la montagne (sa bouche, sa flèche), une bête
@@ -1146,6 +1153,15 @@
         if (this.rencontreTap && this.rencontreTap()) return;
         if (this.ambient) this.ambient.scare(wx, wy);   // un appui tout près fait s'envoler les oiseaux
         const hit = this.hitAt(wx, wy);
+        // assis (js/carte/ferme/sieges.js) : un appui ailleurs le relève (pas sur un siège, la table du repas,
+        // un invité : il reste à table)
+        if (this.fermier && this.fermier.assis && this.fermier.assis() && !(hit && (hit.siege || hit.tableRepas || hit.invite))) this.fermier.lever();
+        if (hit && hit.siege) { this.asseoirSur(hit.siege); return; }
+        if (hit && hit.tableRepas) {
+          const G = this.invitesVus;
+          if (this.ctx.bridge.invites) this.ctx.bridge.invites('table', { terrasse: !!(G && G.table && G.table.terrasse) });
+          return;
+        }
         // Version 1.19 : dehors, un double appui sur l'herbe ou un chemin y envoie le personnage ;
         // sur le Poulailler ou l'Étable, il va y ramasser (œufs ; lait et laine). L'appui simple
         // sur ces bâtiments (leur fenêtre) attend donc DOUBLE_TAP_MS de voir s'il n'est pas

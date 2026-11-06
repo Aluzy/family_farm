@@ -91,7 +91,7 @@ function openEvenement(jour) {
       <fieldset class="evt-groupe"><legend>Qui inviter ? (${INVITATION.INVITES_MAX} au plus)</legend>
         ${gens || '<p class="muted">Tu ne connais encore personne : va parler aux habitants des hameaux.</p>'}
       </fieldset>
-      <p class="muted">Achille, le cocher, portera ton message pendant sa tournée : les réponses arriveront demain matin. Le jour dit, tes invités viendront s'asseoir à ta table (une table de jardin et ses chaises, ou celle de la maison) : viens les rejoindre pour servir le repas.</p>
+      <p class="muted">Achille, le cocher, portera ton message pendant sa tournée : les réponses arriveront demain matin. Le jour dit, tes invités viendront s'asseoir à ta table (une table de jardin et ses chaises, ou celle de la maison) : touche la table pour servir le repas, et une chaise pour t'asseoir avec eux.</p>
       <div class="evt-boutons">
         <button type="button" class="btn primary" data-action="evt-inviter"${R.length ? '' : ' disabled'}>✉️ Confier à Achille</button>
         <button type="button" class="btn" data-action="close-modal">Fermer</button>
@@ -122,7 +122,7 @@ export function watchInvitations() {
     inv.prevenu = true;
     sauve = true;
     const oui = inv.invites.filter((q) => q.reponse === 'oui').map((q) => escapeHtml(q.prenom));
-    notify(`🍽️ ${liste(oui)} ${oui.length > 1 ? 'arrivent' : 'arrive'} pour ${MOMENTS[inv.moment].nom} (${MOMENTS[inv.moment].heure} h) : viens ${oui.length > 1 ? 'les' : 'le'} rejoindre à table !`, { kind: 'info' });
+    notify(`🍽️ ${liste(oui)} ${oui.length > 1 ? 'arrivent' : 'arrive'} pour ${MOMENTS[inv.moment].nom} (${MOMENTS[inv.moment].heure} h)  : touche la table pour servir le repas !`, { kind: 'info' });
   }
   if (sauve) { persistState(); refresh(); }
 }
