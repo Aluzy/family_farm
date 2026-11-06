@@ -835,6 +835,7 @@ function ouvrirBatiment(state, id) {
     const places = new Set(serrePlaces(state));
     delete b.niveau;
     b.parcelles = (b.parcelles || []).filter((p) => p.culture || places.has(p.case));
+    majSerre(state);
     return;
   }
   if (!b.niveau && id !== 'paturage') b.niveau = 1;
@@ -1330,6 +1331,30 @@ export function majPoulailler(state) {
   }
   majMoulin(state);
   majSilo(state);
+  majSerre(state);
+}
+
+// Une parcelle du potager sur une case de la Serre bâtie (labourée avant que sa pièce soit la Serre) y devient
+// une parcelle de la Serre, avec ce qui y pousse : sur la carte, un bac en planches comme ses voisines (et non de
+// la terre nue, que les cadres des bacs voisins entouraient). Une case qui a déjà sa parcelle de la Serre garde
+// celle-ci (la parcelle du potager, vide, s'en va ; plantée, elle cède sa culture à une parcelle de la Serre vide).
+export function majSerre(state) {
+  const g = state.serre, P = state.potager;
+  if (!g || !g.construit || !P || !Array.isArray(P.parcelles) || !state.carte) return;
+  const places = new Set(serrePlaces(state));
+  if (!P.parcelles.some((p) => places.has(p.case))) return;
+  if (!Array.isArray(g.parcelles)) g.parcelles = [];
+  const lieu = DATA.SERRE.LIEU, re = new RegExp(`^${lieu}-(\\d+)$`);
+  let n = g.parcelles.reduce((m, p) => { const k = re.exec(p.id); return k ? Math.max(m, Number(k[1])) : m; }, 0);
+  P.parcelles = P.parcelles.filter((p) => {
+    if (!places.has(p.case)) return true;
+    const deja = g.parcelles.find((q) => q.case === p.case);
+    if (!deja) { n += 1; g.parcelles.push({ ...p, id: `${lieu}-${n}`, lieu }); return false; }
+    if (!p.culture) return false;
+    if (!deja.culture) { Object.assign(deja, { ...p, id: deja.id, lieu }); return false; }
+    return true;   // (les deux plantées : celle du potager reste jusqu'à sa récolte)
+  });
+  g.parcelles.sort((a, b) => a.case - b.case);
 }
 
 /* ---------- le Moulin de la ferme générée : une tour et sa meule (version 1.25) ---------- */
