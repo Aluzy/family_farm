@@ -2,6 +2,8 @@
 
 La nouvelle vision du jeu est « mobile d'abord ». Ce document fixe le téléphone de référence, les
 budgets à tenir sur lui, la façon de mesurer, et garde les résultats d'une version à l'autre.
+Les pistes d'allègement qui restent à faire (révision des blocs, mémoire du son, chargement à la
+demande, atlas, cadences, modèle de la carte) sont dans [`docs/chantier-allegement.md`](chantier-allegement.md).
 
 ## Le téléphone de référence
 

@@ -555,6 +555,8 @@ copier le rapport ; le téléphone de référence, les budgets et la marche à s
 | [`docs/conception-v2.md`](docs/conception-v2.md) | refonte v2 (niveaux d'XP, énergie du personnage, houe…) : saisons retirées et un seul panneau et une seule batterie (version 1.6), niveaux d'expérience (version 1.7) ; le reste n'est pas encore codé |
 | [`docs/carte-generee.md`](docs/carte-generee.md) | la ferme générée : ramassage, Atelier, construction bloc par bloc, étage, bâtiments, mine, anciennes parties |
 | [`docs/architecture-phaser.md`](docs/architecture-phaser.md) | les cartes Phaser : découpage, cartes Tiled, pièges à éviter |
+| [`docs/perf.md`](docs/perf.md) | performances : téléphone de référence, budgets, mesures et résultats |
+| [`docs/chantier-allegement.md`](docs/chantier-allegement.md) | chantier à venir : six pistes mesurées pour alléger le jeu (processeur, mémoire, chargement) sans rien changer pour le joueur |
 | [`docs/personnage.md`](docs/personnage.md) | le personnage et ses gestes sur la carte |
 | [`docs/grand-monde.md`](docs/grand-monde.md) | le grand monde : une seule carte de biomes, ses neuf étapes (terminées) et ce qui a suivi |
 | [`docs/fiches/`](docs/fiches/README.md) | les fiches de tâches du grand monde et d'après (une fiche, une PR) |
