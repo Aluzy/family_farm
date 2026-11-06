@@ -16,9 +16,10 @@
  *     un mot en arrivant ; à table, ils bavardent (une bulle de temps en temps) ;
  *   - la famille (ceux qui sont dehors à cette heure) s'assoit aux places qui restent dès que le premier
  *     invité est assis (js/famille-ferme.js attabler), mange avec eux et se lève quand ils s'en vont ;
- *   - le personnage qui vient tout près de la table : la fenêtre « Servir le repas » (le pont :
+ *   - un appui sur la table (sieges.js tableRepasAt) : la fenêtre « Servir le repas » (le pont :
  *     ctx.bridge.invites('table', { terrasse })) ; servi, ils mangent (la fourchette à la bouche), le
- *     temps REPAS_S, remercient et repartent ;
+ *     temps REPAS_S, remercient et repartent ; le personnage assis à l'une des places (un appui sur la
+ *     chaise, sieges.js) mange avec eux ;
  *   - le moment passé sans repas : ils le disent gentiment et repartent (rien n'est perdu) ;
  *   - leur émotion (une réaction : la joie d'un bon repas, le dégoût d'un plat détesté) : comme les habitants
  *     (amis.js teinteHabitant).
@@ -31,15 +32,13 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, BLOCS_CARTE } = F.C;
+  const { T } = F.C;
   const { reducedMotion } = F;
   const VITESSE = K.VITESSES.famille.adulte;   // px/s
   const FADE_S = 0.5;
   const LOIN = 320;                            // px hors de la vue : il saute au but
   const VU = 48;
   const ECART_S = 2.5;                         // s entre deux départs
-  const PROCHE = 40;                           // px : le personnage est à table (des chaises tout autour : un pas de plus)
-  const LOIN_TABLE = 80;                       // px : il s'en est éloigné (la fenêtre peut se rouvrir)
   const REPAS_S = 18;                          // s : ils mangent, puis remercient
   const MERCI_S = 4;
   const BAVARDE = [7, 13];                     // s entre deux mots à table
@@ -48,7 +47,7 @@
 
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const un = (L) => (L && L.length ? L[Math.floor(Math.random() * L.length)] : '');
-  const TABLES = new Set(['table_jardin', 'table_rondins', 'meuble_table']);
+  const TABLES = new Set(['table_jardin', 'table_rondins', 'meuble_table']);   // (les mêmes que sieges.js)
   const SIEGES = new Set(['chaise_jardin', 'banc_jardin', 'meuble_chaise', 'banc_rondins', 'chaise_peinte', 'banc_pierre']);
 
   F.partie({
@@ -59,9 +58,6 @@
     placesTable() {
       const B = this.blocks || new Map(), cols = this.grid.cols, pris = new Map();
       for (const e of B.values()) for (const k of e.cases || [e.case]) pris.set(k, e);
-      const libre = (x, y) => !this.fermier || !this.fermier.standable || this.fermier.standable(x, y);
-      const pied = (k) => ({ x: (k % cols) * T + T / 2, y: (Math.floor(k / cols) + 1) * T - 3 });
-      const vide = (k) => !pris.has(k) && libre(pied(k).x, pied(k).y);
       let mieux = null;
       for (const t of B.values()) {
         if (!TABLES.has(t.sorte)) continue;
@@ -71,19 +67,13 @@
             const s = pris.get(k);
             if (!s || !SIEGES.has(s.sorte) || vus.has(s.case) || cases.includes(k)) continue;
             vus.add(s.case);
-            const j = s.case;
-            const cote = [j + cols, j - 1, j + 1, j - cols].find((q) => vide(q));
-            if (cote === undefined) continue;
-            // (assis, il regarde où regarde son siège : de face, vers la droite, de dos, vers la gauche ;
-            // js/engine/blocs.js sensBloc ; toujours dessiné devant lui, même de dos : on le voit assis)
-            const sens = s.sens || 0, V = [[0, 1], [1, 0], [0, -1], [-1, 0]][sens];
-            const vers = K.regard(V[0], V[1]);
-            const assis = BLOCS_CARTE.assisDy || 3, prof = s.img ? s.img.depth : s.y;
-            places.push({ x: s.x, y: s.y - assis, face: vers.face, flip: vers.flip, depth: prof + 0.1, pied: pied(cote) });
+            // (où l'on s'assoit : sieges.js placeSiege)
+            const q = this.placeSiege(s);
+            if (q) places.push(q);
           }
         }
         const xs = cases.map((k) => (k % cols) * T + T / 2), y = (Math.floor(cases[0] / cols) + 1) * T - T / 2;
-        const cand = { terrasse: t.sorte !== 'meuble_table', x: xs.reduce((a, b) => a + b, 0) / xs.length, y, places };
+        const cand = { terrasse: t.sorte !== 'meuble_table', x: xs.reduce((a, b) => a + b, 0) / xs.length, y, places, cases };
         const score = (c) => (c.terrasse && c.places.length ? 100 : 0) + c.places.length;
         if (!mieux || score(cand) > score(mieux)) mieux = cand;
       }
@@ -103,7 +93,6 @@
       if (!C) return;
       const now = performance.now(), calme = reducedMotion();
       const vue = this.cameras.main.worldView;
-      const joueur = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       const loin = (q) => q.x < vue.x - LOIN || q.x > vue.right + LOIN || q.y < vue.y - LOIN || q.y > vue.bottom + LOIN;
       const f = this.screenFrame ? this.screenFrame() : null;
       // (le moment passé, la nuit, une autre invitation : ils s'en vont ; servi : ils mangent)
@@ -186,18 +175,16 @@
       if (this.family && this.family.attabler) {
         const L = [...G.gens.values()];
         const la = !fini && G.table && L.some((g) => g.phase === 'table') && L.every((g) => g.phase !== 'merci' && g.phase !== 'repart');
-        this.family.attabler(la ? G.table.places.slice(L.filter((g) => g.place).length) : null, !!G.servi);
+        // (pas la place où le personnage est assis)
+        const moi = this.fermier && this.fermier.assis ? this.fermier.assis() : null;
+        const libres = la ? G.table.places.filter((q) => !L.some((g) => g.place === q) && !(moi && q.siege === moi.siege)) : null;
+        this.family.attabler(libres, !!G.servi);
       }
-      // le personnage vient à table : la fenêtre « Servir le repas »
-      if (!fini && V.etat === 'repondue' && joueur) {
-        const assisLa = [...G.gens.values()].filter((g) => g.phase === 'table');
-        const centre = G.table || (assisLa[0] ? assisLa[0] : null);
-        const d = centre ? Math.min(Math.hypot(joueur.x - centre.x, joueur.y - centre.y), ...assisLa.map((g) => Math.hypot(joueur.x - g.x, joueur.y - g.y))) : Infinity;
-        if (assisLa.length && d <= PROCHE && !G.demande) {
-          G.demande = true;
-          const B = this.ctx.bridge;
-          if (B && B.invites) setTimeout(() => B.invites('table', { terrasse: !!(G.table && G.table.terrasse) }), 0);
-        } else if (d > LOIN_TABLE) G.demande = false;
+      // le personnage assis à l'une des places de la table : il mange avec eux, le repas servi (la fenêtre
+      // « Servir le repas » : un appui sur la table, sieges.js tableRepasAt)
+      if (this.fermier && this.fermier.aTable) {
+        const moi = this.fermier.assis && this.fermier.assis();
+        this.fermier.aTable(!fini && !!G.servi && !!moi && !!G.table && G.table.places.some((q) => q.siege === moi.siege));
       }
       if (!restent) this.invitesFin();
     },
@@ -207,9 +194,11 @@
       const porte = this.homeDoor ? this.homeDoor() : null;
       const table = this.placesTable();
       if ((!porte && !table) || !this.fermier) return null;
-      const G = { id: V.id, table, paroles: V.paroles || {}, gens: new Map(), servi: 0, demande: false, bavardeA: 0 };
+      const G = { id: V.id, table, paroles: V.paroles || {}, gens: new Map(), servi: 0, bavardeA: 0 };
       const now = performance.now();
-      const places = table ? table.places.slice() : [];
+      // (pas la chaise où le personnage est déjà assis)
+      const moi = this.fermier.assis ? this.fermier.assis() : null;
+      const places = table ? table.places.filter((q) => !(moi && q.siege === moi.siege)) : [];
       const autour = table || porte;
       V.invites.forEach((q, k) => {
         const d = { perso: q.perso, enfant: !!q.enfant, apparence: q.apparence || null };
