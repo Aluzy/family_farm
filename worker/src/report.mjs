@@ -95,7 +95,6 @@ export const GAME_ACTIONS = {
   'build-fridge': 'Construire un bâtiment',
   'build-station': 'Construire un bâtiment',
   'upgrade': 'Améliorer ou agrandir',
-  'upgrade-serre': 'Améliorer ou agrandir',
   'upgrade-poulailler': 'Améliorer ou agrandir',
   'hoe': 'Labourer ou reboucher à la houe',
   'hoe-toggle': 'Prendre ou ranger la houe',

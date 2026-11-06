@@ -78,7 +78,7 @@
         { "type": "station", "id": "cuisine" }
       ],
       "5": [{ "type": "station", "id": "moulin" }, { "type": "paturage" }, { "type": "moutons", "n": 3 }],
-      "6": [{ "type": "serre", "niveau": 1 }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }],
+      "6": [{ "type": "serre" }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }],
       "7": [],
       "//5": "le Moulin d'abord (la farine), puis l'Étable : ses bêtes mangent la paille fauchée (botScythe)"
     },
@@ -113,7 +113,7 @@
       { "type": "poules", "n": 12 },
       { "type": "verger" },
       { "type": "arbres", "n": 2 },
-      { "type": "serre", "niveau": 1 },
+      { "type": "serre" },
       { "type": "frigo" },
       { "type": "frigo", "niveau": 2 },
       { "type": "tech", "id": "semis_auto" },
@@ -122,8 +122,6 @@
       { "type": "arbres", "n": 4 },
       { "type": "moutons", "n": 6 },
       { "type": "poules", "n": 16 },
-      { "type": "serre", "niveau": 2 },
-      { "type": "serre", "niveau": 3 },
       { "//": "version 1.14 : la fin de partie (vaches, verger plein ; le récit, lot 7 : plus de commerce)", "type": "vaches", "n": 4 },
       { "type": "arbres", "n": 8 },
       { "type": "vaches", "n": 8 },

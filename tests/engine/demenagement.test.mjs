@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import {
   blocDessus, blocsPoses, convertirPartie, countItem, couchages, DATA, etatEtable, etatPoulailler,
   farmSeed, farmTerrain, graineDemenagement, houseRepaired, isOwned, migrate, nuitSansCouchage,
-  PRESSE_RENDU, robotStation, serrePlaces, starterOf, STATE_VERSION,
+  PRESSE_RENDU, robotStation, SERRE_V1, serrePlaces, starterOf, STATE_VERSION,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, AVANT_DEMENAGEMENT, sleepOnce, test } from './aide.mjs';
 
@@ -110,7 +110,10 @@ test('Déménager au chargement : la migration v46 → v47, une fois, sur la gra
   assertEqual([m.version, farmSeed(m), m.demenagee], [STATE_VERSION, graineDemenagement(v46), true]);
   // (la Presse construite : son prix rendu par la migration 66 → 67, les chaînes de production la remplacent)
   const presse = v46.stations.presse && v46.stations.presse.construit ? PRESSE_RENDU : 0;
-  assertEqual([m.pieces, m.poulailler.niveau, m.paturage.places, m.serre.parcelles.length], [v46.pieces + presse, 5, 25, 56], 'rien ne se perd');
+  // (la Serre agrandie : ses niveaux rendus par la migration 75 → 76, elle n'a plus de niveaux)
+  const serre = (v) => (v.serre && v.serre.construit ? SERRE_V1.PRIX_NIVEAUX.slice(1, Math.max(1, Math.min(5, v.serre.niveau | 0 || 1))).reduce((a, b) => a + b, 0) : 0);
+  assertEqual([m.pieces, m.poulailler.niveau, m.paturage.places, m.serre.parcelles.length, m.serre.niveau, m.serreRendue], [v46.pieces + presse + serre(v46), 5, 25, 56, undefined, serre(v46)], 'rien ne se perd');
+  assertEqual(serre(v46), 900 + 1800 + 3000 + 5400, 'une Serre au niveau 5');
   assert(houseRepaired(m) && m.poulailler.construit && m.paturage.construit && m.serre.construit && m.silo.construit, 'tout est rebâti');
   assertEqual(migrate({ v: STATE_VERSION, t: 0, s: structuredClone(m) }), m, 'recharger ne déménage plus');
   // une partie dont la famille n'est pas encore installée : sa graine seulement

@@ -5,7 +5,7 @@ import { deviceStatus } from '../engine/energy.js';
 import {
   availableEnergy, FRIGO_OBJET, fridgeCoversNight, fridgeNightNeed, fridgeCapacity, fridgeUnits, fridgeUpgradeCost,
 } from '../engine/fridge.js';
-import { serreCap, serreUpgradeCost } from '../engine/crops.js';
+import { serreCap } from '../engine/crops.js';
 import {
   isTreeAdult, treeAge, treeNextHarvest, treeStageName,
 } from '../engine/orchard.js';
@@ -36,19 +36,14 @@ export function renderSerre() {
         <span class="muted">Bâtis une pièce close et poses-y le bac à semis (fabriqué à l'Atelier, menu ${DATA.ATELIER.ICONE} Construire) : c'est la Serre.</span>
       </div>`;
   }
-  const up = serreUpgradeCost(state);
-  const upBtn =
-    up === null
-      ? '<button type="button" class="btn" disabled>Serre au niveau maximum</button>'
-      : `<button type="button" class="btn" data-action="upgrade-serre"${canPay(up) ? '' : ' disabled'}>Agrandir : niveau ${g.niveau + 1}, jusqu'à ${DATA.SERRE.PARCELLES[g.niveau]} parcelles (${costLabel(up)})</button>`;
   return `
     <div class="section-head">
-      <h3>${artIcon('serre')}Serre · niveau ${g.niveau}</h3>
+      <h3>${artIcon('serre')}Serre</h3>
       <span class="chips">${autoChip('serre', 'Travaille tout seul, à 100 %, pendant la nuit')}${helpBtn('serre')}</span>
     </div>
-    <p class="muted">${g.parcelles.length} / ${serreCap(state)} parcelles labourées. Prends la houe et laboure les cases de la Serre pour y semer.</p>
+    <p class="muted">${g.parcelles.length} / ${serreCap(state)} cases labourées. Prends la houe et laboure les cases de la Serre pour y semer : toutes les cases libres de sa pièce vitrée se cultivent. Pour une plus grande Serre, agrandis sa pièce.</p>
     <div class="plots">${g.parcelles.map((p, i) => plotCard(p, i + 1)).join('')}</div>
-    <div class="row plot-foot">${groupButtons('serre')}${upBtn}</div>
+    <div class="row plot-foot">${groupButtons('serre')}</div>
   `;
 }
 
@@ -155,9 +150,6 @@ function fridgeUpgradeHtml() {
 
 registerActions({
 
-  'upgrade-serre': () => {
-    applyResult(executer('serre.agrandir', {}));
-  },
 
 
 

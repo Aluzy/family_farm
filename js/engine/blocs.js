@@ -830,10 +830,10 @@ function ouvrirBatiment(state, id) {
   if (!b) return;
   b.construit = true;
   // (la Serre : ses parcelles se labourent à la houe, sur les cases de sa pièce ; reposée, elle
-  // garde son niveau, et ses parcelles encore dans sa pièce ou qui ont une culture)
+  // garde ses parcelles encore dans sa pièce ou qui ont une culture ; plus de niveau, v76)
   if (id === 'serre') {
     const places = new Set(serrePlaces(state));
-    b.niveau = b.niveau || 1;
+    delete b.niveau;
     b.parcelles = (b.parcelles || []).filter((p) => p.culture || places.has(p.case));
     return;
   }

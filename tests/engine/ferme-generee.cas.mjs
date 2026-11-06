@@ -1073,7 +1073,7 @@ test('ferme générée : un bac à semis posé dans une pièce close construit l
   reach(s, 'serre');
   assert(poserBloc(s, 'bac_semis', p.dedans).ok);
   // rien de labouré d'office : ses cases se labourent à la houe
-  assertEqual([s.serre.construit, s.serre.niveau, s.serre.parcelles.length], [true, 1, 0]);
+  assertEqual([s.serre.construit, s.serre.niveau, s.serre.parcelles.length], [true, undefined, 0]);
   s.potager.houe = true;
   const W0 = z.W, a = p.dedans + 1, b = p.dedans + W0;
   assert(hoeableTiles(s).includes(a) && hoeableTiles(s).includes(b), 'les cases de la Serre se labourent');
@@ -1089,13 +1089,11 @@ test('ferme générée : un bac à semis posé dans une pièce close construit l
   assertEqual(poserBloc(s, 'mur_pierre', a).ok, false, 'pas de bloc sur une terre labourée');
   assertEqual(hoe(s, b).action, 'reboucher', 'une terre vide se rebouche');
   assertEqual(s.serre.parcelles.length, 1);
-  // au plus DATA.SERRE.PARCELLES[niveau - 1] parcelles
-  s.serre.niveau = 1;
-  const cap = DATA.SERRE.PARCELLES[0];
-  for (let i = s.serre.parcelles.length; i < cap; i++) s.serre.parcelles.push({ id: `x-${i}`, lieu: 'serre', case: -i, culture: null });
-  const plein = hoe(s, b);
-  assertEqual([plein.ok, plein.error.includes(`${cap} parcelles`)], [false, true]);
-  s.serre.parcelles = s.serre.parcelles.filter((q) => q.case >= 0);
+  // plus de plafond (v76) : toutes les cases libres de sa pièce se labourent
+  const libres = serrePlaces(s).filter((t) => !s.serre.parcelles.some((q) => q.case === t));
+  for (const t of libres) assert(hoe(s, t).ok, `la case ${t}`);
+  assertEqual(s.serre.parcelles.length, serrePlaces(s).length);
+  for (const t of libres) hoe(s, t);   // (rebouchées)
   s.serre.parcelles[0].culture = 'tomate';   // ce qui pousse reste là si on la reprend puis la repose
   reprendreBloc(s, p.dedans);
   assertEqual(s.serre.construit, false, 'reprise : plus de Serre');

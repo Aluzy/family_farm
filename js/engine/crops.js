@@ -1,6 +1,6 @@
 import { DATA, roundPct } from './catalog.js';
 import { EPS, randomInt } from './base.js';
-import { fail, marcheFerme, marcheOuvert, nextLevelCost, NO_COINS, pay, upgradeWith } from './devices.js';
+import { fail, marcheFerme, marcheOuvert, NO_COINS, pay } from './devices.js';
 import { countWithSilo, takeWithSilo } from './animals.js';
 import { deposit } from './ramassage.js';
 import { techPct, techSum } from './techtree.js';
@@ -221,15 +221,15 @@ export function plotAtTile(state, tile) {
 }
 
 // La Serre : ses parcelles (labourées à la houe sur les cases de sa pièce, chacune sa case),
-// combien elle en prend à son niveau (DATA.SERRE.PARCELLES ; 0 tant qu'elle n'est pas bâtie),
-// et celle d'une tuile.
+// combien elle en prend (toutes les cases libres de sa pièce, serrePlaces : plus de niveaux ni de plafond depuis
+// la v76 ; 0 tant qu'elle n'est pas bâtie), et celle d'une tuile.
 export function serrePlots(state) {
   return (state.serre && state.serre.construit && state.serre.parcelles) || [];
 }
 
 export function serreCap(state) {
   const g = state.serre;
-  return g && g.construit ? DATA.SERRE.PARCELLES[Math.max(1, Math.min(DATA.SERRE.PARCELLES.length, g.niveau || 1)) - 1] : 0;
+  return g && g.construit ? serrePlaces(state).length : 0;
 }
 
 export function serrePlotAt(state, tile) {
@@ -307,8 +307,7 @@ function serreHoeStatus(state, tile) {
   if (state.sols && state.sols[tile]) return { action: null, ok: false, raison: 'Un plancher : on ne laboure pas ici.' };
   const cap = serreCap(state);
   if (serrePlots(state).length >= cap) {
-    const plus = DATA.SERRE.PARCELLES[state.serre.niveau];
-    return { action: 'labourer', ok: false, raison: `La Serre a déjà ses ${cap} parcelles au niveau ${state.serre.niveau}.${plus ? ` Agrandis-la : ${plus} parcelles au niveau suivant.` : ''}` };
+    return { action: 'labourer', ok: false, raison: `Toutes les cases de la Serre sont labourées (${cap}) : agrandis sa pièce pour en avoir plus.` };
   }
   if (!canAfford(state, 'labourer')) return { action: 'labourer', ok: false, raison: TIRED };
   return { action: 'labourer', ok: true, raison: '', serre: true };
@@ -652,27 +651,13 @@ export function heuresPousse(state) {
 
 /* ---------- Lot 8 : Serre ---------- */
 
-// state.serre = { construit, niveau, parcelles }. Mêmes règles que le Potager
-// (arrosage, pousse, récolte).
+// state.serre = { construit, parcelles }. Mêmes règles que le Potager (arrosage, pousse, récolte).
 
-export function serreUpgradeCost(state) {
-  return nextLevelCost(DATA.SERRE.PRIX_NIVEAUX, state.serre.niveau);
-}
-
-// Pose la Serre au niveau 1 (sans payer) et crée ses parcelles.
+// Pose la Serre (sans payer) ; ses parcelles se labourent à la houe, sur les cases de sa pièce.
 export function openSerre(state) {
   const g = state.serre;
   g.construit = true;
-  g.niveau = 1;
-  // (vide : ses parcelles se labourent à la houe, sur les cases de sa pièce)
+  delete g.niveau;
   g.parcelles = [];
 }
 
-export function upgradeSerre(state) {
-  const g = state.serre;
-  if (!g.construit) return fail('Construis d\'abord la Serre.');
-  return upgradeWith(state, serreUpgradeCost(state), 'Serre agrandie', () => {
-    // (de la place pour plus de parcelles, à labourer)
-    g.niveau += 1;
-  });
-}

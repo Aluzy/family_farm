@@ -334,7 +334,7 @@ export const STAGE_WINDOWS = {
   },
   serre: {
     nom: 'Serre', icone: '🪴', ok: () => isUnlocked(state, 'serre'), sansTitre: true,
-    detail: () => (state.serre.construit ? `niveau ${state.serre.niveau}` : ''),
+    detail: () => (state.serre.construit ? `${state.serre.parcelles.length} parcelles` : ''),
     corps: () => renderSerre(),
   },
   // Le Moulin : on y fait la farine (renderMoulin). Les autres ateliers sont dans la Maison.

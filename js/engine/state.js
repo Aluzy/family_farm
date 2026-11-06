@@ -87,7 +87,7 @@ function startLot7() {
 // Lot 8 : Serre, Verger et Réfrigérateur, tous à construire.
 function startLot8() {
   return {
-    serre: { construit: false, niveau: 1, parcelles: [] },
+    serre: { construit: false, parcelles: [] },
     verger: { construit: false, places: DATA.VERGER.EMPLACEMENTS_DEPART, achetes: 0, compteur: 0, arbres: [] },
     frigo: { construit: false, niveau: 1, appareil: null, items: {}, alimenteMs: 0, eveilMs: 0, panneNuit: false, alimente: true },
   };
@@ -735,7 +735,28 @@ export const MIGRATIONS = {
     if (out.carte && out.blocs && typeof out.blocs === 'object' && Object.values(out.blocs).includes('four')) elargirFours(out);
     return out;
   },
+  // v75 → v76 (la Serre sans niveaux : toutes les cases de sa pièce vitrée se labourent, data/crops.json SERRE) :
+  // les niveaux payés sont rendus (SERRE_V1.PRIX_NIVEAUX, du niveau 2 à son niveau), annoncés au réveil
+  // (state.serreRendue, js/ui/loop.js) ; le niveau s'en va.
+  75: (state) => {
+    const out = JSON.parse(JSON.stringify({ ...state, version: 76 }));
+    const g = out.serre;
+    if (g && typeof g === 'object') {
+      const n = Math.max(1, Math.min(SERRE_V1.PRIX_NIVEAUX.length, Math.floor(Number(g.niveau) || 1)));
+      const rendu = SERRE_V1.PRIX_NIVEAUX.slice(1, n).reduce((a, b) => a + b, 0);
+      if (g.construit && rendu > 0) {
+        out.pieces = (Number(out.pieces) || 0) + rendu;
+        out.serreRendue = rendu;
+      }
+      delete g.niveau;
+    }
+    return out;
+  },
 };
+
+// La Serre d'avant la v76 : ses parcelles par niveau, le prix de chaque niveau (les anciennes migrations ;
+// rendus par la migration 75 → 76).
+export const SERRE_V1 = { PARCELLES: [16, 26, 36, 46, 56], PRIX_NIVEAUX: [0, 900, 1800, 3000, 5400] };
 
 // Les noms que le récit cosy a changés (la migration 72 → 73) : les faits, les pages du carnet, les scènes et les
 // répliques déjà dites, les lettres reçues.
@@ -882,8 +903,8 @@ function migrateNightClock(old) {
 function migrateSerreBeds(old) {
   const g = old.serre;
   if (!g || typeof g !== 'object' || !g.construit || !Array.isArray(g.parcelles)) return { ...old, version: 37 };
-  const niveau = Math.max(1, Math.min(DATA.SERRE.PARCELLES.length, g.niveau | 0 || 1));
-  const cap = DATA.SERRE.PARCELLES[niveau - 1];
+  const niveau = Math.max(1, Math.min(SERRE_V1.PARCELLES.length, g.niveau | 0 || 1));
+  const cap = SERRE_V1.PARCELLES[niveau - 1];
   const parcelles = g.parcelles.filter((p, i) => i < cap || (p && p.culture));
   for (let n = parcelles.length + 1; n <= cap; n++) parcelles.push(makePlot(n, DATA.SERRE.LIEU));
   return { ...old, serre: { ...g, parcelles }, version: 37 };
@@ -892,9 +913,9 @@ function migrateSerreBeds(old) {
 function migrateSerreSoil(old) {
   const g = old.serre;
   if (!g || typeof g !== 'object' || !g.construit || !Array.isArray(g.parcelles)) return { ...old, version: 35 };
-  const niveau = Math.max(1, Math.min(DATA.SERRE.PARCELLES.length, g.niveau | 0 || 1));
+  const niveau = Math.max(1, Math.min(SERRE_V1.PARCELLES.length, g.niveau | 0 || 1));
   const parcelles = [...g.parcelles];
-  for (let n = parcelles.length + 1; n <= DATA.SERRE.PARCELLES[niveau - 1]; n++) parcelles.push(makePlot(n, DATA.SERRE.LIEU));
+  for (let n = parcelles.length + 1; n <= SERRE_V1.PARCELLES[niveau - 1]; n++) parcelles.push(makePlot(n, DATA.SERRE.LIEU));
   return { ...old, serre: { ...g, parcelles }, version: 35 };
 }
 
