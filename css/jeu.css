@@ -2072,6 +2072,13 @@ main .ancre { scroll-margin-top: 150px; }
 .accueil-choix { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 .accueil-choix .btn { min-width: 96px; }
 .accueil-champ { width: 100%; }
+/* un champ et sa flèche sur une ligne (js/ui/depart.js, ligne) : le clavier d'un téléphone ne la cache pas */
+.accueil-ligne { display: flex; align-items: center; gap: 8px; width: 100%; }
+.accueil-ligne .accueil-champ { flex: 1; min-width: 0; }
+.accueil-ligne .accueil-champ.accueil-nombre { flex: 0 0 6em; margin-left: auto; }
+.accueil-ligne .accueil-nombre + .accueil-suite { margin-right: auto; }
+.accueil-ligne .accueil-suite { position: static; flex: none; }
+.accueil-modal:has(.accueil-ligne) { padding-bottom: 16px; }
 .accueil-champ.accueil-nombre { width: 6em; text-align: center; }
 .accueil-persos { width: 100%; }
 /* Le choix du personnage : tous visibles d'un coup, dessinés deux fois plus gros (64 px) ; la case
