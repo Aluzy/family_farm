@@ -639,6 +639,7 @@
         this.stepFile(delta);                   // (la file des gestes du joueur, leurs reflets : file.js)
         this.stepBeasts(time, delta / 1000);
         this.stepAbeilles(delta / 1000);
+        this.stepRougegorges(delta / 1000);    // (les rouges-gorges des barrières : rougegorges.js)
         this.stepBotteleuses(dt);
         this.stepChaines(dt);                   // (les chaînes de production qui tournent : chaines.js)
         this.stepRobot(dt);

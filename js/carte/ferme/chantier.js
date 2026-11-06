@@ -87,6 +87,10 @@
   // clouée, 2 un nœud, 2 un poteau fendu, 4 une planche tombée, 2 une cassée, 2 une rapiécée, 6 une touffe
   // d'herbe, 3 des fleurs, 2 du lierre, 1 un oiseau.
   const DETAILS = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 10, 10, 11];
+  // (le détail « oiseau » : la barrière est dessinée sans lui ; un rouge-gorge vivant est posé sur son poteau,
+  // js/carte/ferme/rougegorges.js, qui s'envole à l'approche)
+  const OISEAU = 11;
+  F.estPerchoir = (e) => !!e && estCloture(e.sorte) && detailCloture(e.case) === OISEAU;
   function detailCloture(c) {
     let h = Math.imul(c ^ 0x5bd1e995, 0x9e3779b1) >>> 0;
     h = Math.imul(h ^ (h >>> 15), 0x85ebca6b) >>> 0;
@@ -658,7 +662,7 @@
       // (une barrière, de toute couleur : sa couleur, son détail, son raccord, dans assets/clotures.png ; sans
       // elle, la barrière de bois de blocs.png)
       const CL = BLOCS_CARTE.clotures;
-      if (estCloture(b.sorte) && this.has(CL.key)) return [CL.key, (CL.couleurs[b.sorte] * CL.details + detailCloture(b.case)) * 16 + masqueCloture(b, at, cols)];
+      if (estCloture(b.sorte) && this.has(CL.key)) { const d = detailCloture(b.case); return [CL.key, (CL.couleurs[b.sorte] * CL.details + (d === OISEAU ? 0 : d)) * 16 + masqueCloture(b, at, cols)]; }
       // (le portail : dans une barrière verticale, des voisines au-dessus ou au-dessous et aucune à côté)
       const PO = BLOCS_CARTE.portails;
       if (estPortail(b.sorte) && this.has(PO.key)) {
