@@ -630,6 +630,7 @@
         this.stepShards(delta);
         this.stepSprinklers();
         this.stepFires(time);
+        if (this.stepVapeur) this.stepVapeur(delta / 1000);   // (la vapeur de la cuisinière qui cuit : vapeur.js)
         this.stepSurbrillance(time);
         this.stepPlantation(time);
         this.stepSilo();

@@ -45,6 +45,7 @@
       this.syncPaths(model.chemins);
       this.syncBeasts(model.enclos, model.heure);
       this.fireOn = !!model.fourAllume;
+      this.cuisineOn = !!model.cuisineAllumee;
       this.meuleOn = !!model.meuleTourne;
       this.syncBlocks(model.blocs, model.bati, model.pieces, model.serreMurs);   // (avant le puits et la citerne : posés sur leurs blocs)
       this.syncSilo(model.blocs);         // (les blocs de silo : leurs caisses, ou le silo qu'ils forment, silo.js)
