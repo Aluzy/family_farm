@@ -44,7 +44,7 @@
       let img = null;
       const graine = () => {
         if (img) return img;
-        if (this.has('crops') && this.ctx.crops && this.ctx.crops[culture]) img = this.add.image(x, y + T / 2, 'crops', culture + ':0').setOrigin(0.5, 1);
+        if (this.has('crops') && this.ctx.crops && this.ctx.crops[culture]) img = this.add.image(x, y + T / 2 - this.cultureMonte(culture), 'crops', culture + ':0').setOrigin(0.5, 1);
         else img = this.add.text(x, y + 6, this.ctx.bridge.icone ? this.ctx.bridge.icone(culture) || '🌱' : '🌱', { fontSize: '12px' }).setOrigin(0.5, 1).setScale(0.45);
         img.setDepth(y + 1);
         return img;

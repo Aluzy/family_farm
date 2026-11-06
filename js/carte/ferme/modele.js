@@ -268,6 +268,13 @@
       return this.add.image(x, y, def.key, 0).setOrigin(0, 1).setDepth(y);
     },
 
+    // De combien de px la plante `culture` est remontée au-dessus du bas de sa case (config.js CULTURE_MONTE ;
+    // data/crops.json sprite.monte, s'il y en a un).
+    cultureMonte(culture) {
+      const sp = this.ctx.crops && this.ctx.crops[culture];
+      return sp && Number.isFinite(sp.monte) ? sp.monte : F.C.CULTURE_MONTE;
+    },
+
     syncCrop(e, p, x, y) {
       const key = p.culture ? p.culture + ':' + p.phase : '';
       if (key !== e.key) {
@@ -276,7 +283,7 @@
         if (p.culture) {
           const framed = this.has('crops') && this.ctx.crops[p.culture];
           if (framed) {
-            e.crop = this.add.image(x, y + T / 2, 'crops', key).setOrigin(0.5, 1);
+            e.crop = this.add.image(x, y + T / 2 - this.cultureMonte(p.culture), 'crops', key).setOrigin(0.5, 1);
           } else {
             // Sans image : l'emoji de la culture, grossit avec les phases.
             e.crop = this.add.text(x, y + 6, p.icone, { fontSize: '12px' }).setOrigin(0.5, 1).setScale(0.45 + 0.18 * Math.max(0, p.phase));
@@ -287,7 +294,7 @@
           this.tweens.add({ targets: e.crop, alpha: 1, duration: 250 });
         }
       }
-      if (e.crop) e.crop.setPosition(x, e.crop.type === 'Text' ? y + 6 : y + T / 2);
+      if (e.crop) e.crop.setPosition(x, e.crop.type === 'Text' ? y + 6 : y + T / 2 - this.cultureMonte(p.culture));
       // Mûre : la plante se balance doucement pour attirer l'appui.
       if (e.crop && p.mature && !e.tween && !reducedMotion()) {
         e.tween = this.tweens.add({ targets: e.crop, angle: { from: -4, to: 4 }, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
