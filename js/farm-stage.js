@@ -962,6 +962,9 @@
           const caillou = this.rockAt(wx, wy);
           if (caillou && caillou.cells.size === 1) return { caillou };
         }
+        // un portail : un appui l'ouvre ou le ferme (js/carte/ferme/chantier.js portailAt)
+        const portail = !hoeing ? this.portailAt(wx, wy) : -1;
+        if (portail >= 0) return { portail };
         // une chaîne de production (un de ses blocs) : il va jeter les ingrédients dans l'entonnoir
         const chaine = !hoeing ? this.chaineAt(wx, wy) : -1;
         if (chaine >= 0) return { chaine };
@@ -1183,6 +1186,7 @@
         if (hit.etage) { this.ctx.bridge.act('etage-toggle', { niveau: hit.vers }); return; }
         if (hit.gather) { this.gather(hit.gather); return; }
         if (hit.caillou) { this.pickRock(hit.caillou); return; }
+        if (hit.portail !== undefined) { this.ctx.bridge.act('portail', { case: hit.portail }); return; }
         if (hit.chaine !== undefined) { this.jeterChaine(hit.chaine); return; }
         if (hit.botteleuse !== undefined) { this.jeterFibres(hit.botteleuse); return; }
         if (hit.distributeur !== undefined) { this.jeterGrain(hit.distributeur); return; }

@@ -71,11 +71,13 @@
 
   // Les barrières (toutes les couleurs, BLOCS_CARTE.clotures.couleurs).
   const estCloture = (sorte) => BLOCS_CARTE.clotures.couleurs[sorte] !== undefined;
+  // Le portail, ouvert ou fermé (BLOCS_CARTE.clotures.portail) : il se raccorde aux barrières comme elles.
+  const estPortail = (sorte) => BLOCS_CARTE.clotures.portail.sortes.includes(sorte);
   // Le raccord d'une barrière (1 une voisine au-dessus, 2 à droite, 4 au-dessous, 8 à gauche) : une barrière
   // de toute couleur, ou un mur (ses lisses vont jusqu'à lui : l'enclos s'appuie sur l'enceinte).
   function masqueCloture(b, at, cols) {
     const V = BLOCS_CARTE.hauts.variantes;
-    const c = b.case % cols, is = (k) => estCloture(at.get(k)) || V[at.get(k)] !== undefined;
+    const c = b.case % cols, is = (k) => estCloture(at.get(k)) || estPortail(at.get(k)) || V[at.get(k)] !== undefined;
     return (is(b.case - cols) ? 1 : 0) + (c < cols - 1 && is(b.case + 1) ? 2 : 0) + (is(b.case + cols) ? 4 : 0) + (c > 0 && is(b.case - 1) ? 8 : 0);
   }
   // Le détail d'une barrière (scripts/carte/blocs.py BARRIERE_VARIANTES), tiré de sa case : toujours le même à
@@ -652,6 +654,11 @@
       // elle, la barrière de bois de blocs.png)
       const CL = BLOCS_CARTE.clotures;
       if (estCloture(b.sorte) && this.has(CL.key)) return [CL.key, (CL.couleurs[b.sorte] * CL.details + detailCloture(b.case)) * 16 + masqueCloture(b, at, cols)];
+      // (le portail : dans une barrière verticale, des voisines au-dessus ou au-dessous et aucune à côté)
+      if (estPortail(b.sorte) && this.has(CL.key)) {
+        const m = masqueCloture(b, at, cols), vertical = (m & 5) && !(m & 10), ouvert = b.sorte === 'portail_ouvert', P = CL.portail;
+        return [CL.key, vertical ? (ouvert ? P.verticalOuvert : P.vertical) : (ouvert ? P.ouvert : P.ferme)];
+      }
       // (le réverbère, deux blocs de haut : son image dans la planche des murs hauts, éteint ;
       // sans elle, la lanterne éteinte)
       if (b.sorte === 'candelabre') return this.has(H.key) ? [H.key, H.candelabre] : [BLOCS_CARTE.key, BLOCS_CARTE.frames.lanterne];
@@ -740,7 +747,7 @@
     // une porte compte à gauche et à droite seulement). Une porte entre deux murs, l'un
     // au-dessus, l'autre au-dessous, et sans voisin à côté : celle d'un mur vertical.
     wallFrame(b, at, cols) {
-      if (estCloture(b.sorte)) return BLOCS_CARTE.barrieres + masqueCloture(b, at, cols);
+      if (estCloture(b.sorte) || estPortail(b.sorte)) return BLOCS_CARTE.barrieres + masqueCloture(b, at, cols);
       // (la fenêtre et les pierres d'angle se raccordent comme le mur en pierre)
       const V = BLOCS_CARTE.hauts.variantes;
       const mur = V[b.sorte] !== undefined;
@@ -755,6 +762,17 @@
       const e = c < cols - 1 && is(b.case + 1, true), w = c > 0 && is(b.case - 1, true);
       if (!mur) return (n || s) && !(e || w) ? BLOCS_CARTE.portesVerticales[b.sorte] || BLOCS_CARTE.porteVerticale : BLOCS_CARTE.frames.porte;
       return BLOCS_CARTE.murs + (n ? 1 : 0) + (e ? 2 : 0) + (s ? 4 : 0) + (w ? 8 : 0);
+    },
+
+    // Le portail sous le doigt (sa case ; son image dépasse d'une demi-case au-dessus de la sienne), ou -1.
+    portailAt(wx, wy) {
+      if (!this.blocks || !this.grid) return -1;
+      const cols = this.grid.cols, c = Math.floor(wx / T), r = Math.floor(wy / T);
+      for (const k of [r * cols + c, (r + 1) * cols + c]) {
+        const e = this.blocks.get(k);
+        if (e && estPortail(e.sorte) && (k === r * cols + c || wy % T >= T / 2)) return k;
+      }
+      return -1;
     },
 
     // Le rectangle (px) de la case du premier bloc `sorte` posé, ou null : le puits et la

@@ -343,7 +343,7 @@ function ouvrirMembres() {
 // E-11 : ce qu'un geste du journal a fait, en mots.
 const GESTES = {
   'bloc.poser': 'a posé un bloc', 'bloc.reprendre': 'a repris un bloc', 'bloc.remettre': 'a remis un bloc', 'bloc.deplacer': 'a déplacé un bloc',
-  'bloc.tourner': 'a tourné un meuble', 'bloc.orienter': 'a tourné un meuble', 'bloc.peindre': 'a repeint un meuble',
+  'bloc.tourner': 'a tourné un meuble', 'bloc.orienter': 'a tourné un meuble', 'bloc.peindre': 'a repeint un meuble', 'portail.basculer': 'a ouvert ou fermé un portail',
   'potager.planter': 'a semé', 'potager.arroser': 'a arrosé', 'potager.recolter': 'a récolté', 'potager.labourer': 'a labouré',
   'potager.toutPlanter': 'a tout planté', 'potager.toutArroser': 'a tout arrosé', 'potager.toutRecolter': 'a tout récolté', 'potager.semis': 'a réglé un semis',
   'cruche.remplir': 'a rempli la cruche', 'poules.nourrir': 'a nourri une poule', 'poules.toutNourrir': 'a nourri les poules',

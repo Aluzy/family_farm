@@ -430,6 +430,7 @@ export const RAW_DATA = {
     },
     "barriere_verte": { "nom": "Barrière verte", "icone": "🚧‍🟩", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "barriere_lavande": { "nom": "Barrière lavande", "icone": "🚧‍🟪", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "portail": { "nom": "Portail", "icone": "🚧‍🚪", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "chemin": { "nom": "Chemin", "icone": "🟫‍🪨", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "champignon_lumineux": {
       "nom": "Champignon lumineux",
@@ -1055,6 +1056,7 @@ export const RAW_DATA = {
       "barriere_chene": { "entrees": { "planche": 1 }, "sortie": { "barriere_chene": 2 } },
       "barriere_verte": { "entrees": { "planche": 1 }, "sortie": { "barriere_verte": 2 } },
       "barriere_lavande": { "entrees": { "planche": 1 }, "sortie": { "barriere_lavande": 2 } },
+      "portail": { "entrees": { "planche": 2 }, "sortie": { "portail": 1 } },
       "chemin": { "entrees": { "pierre": 1 }, "sortie": { "chemin": 2 } },
       "lanterne": { "entrees": { "champignon_lumineux": 1, "bois": 2 }, "sortie": { "lanterne": 1 } },
       "candelabre": { "entrees": { "lingot_fer": 2, "pierre": 1, "huile": 1, "fibre": 1 }, "sortie": { "candelabre": 1 } },
@@ -1197,6 +1199,8 @@ export const RAW_DATA = {
       "barriere_chene": { "nom": "Barrière en chêne sombre", "objet": "barriere_chene", "bloque": true, "cloture": true },
       "barriere_verte": { "nom": "Barrière verte", "objet": "barriere_verte", "bloque": true, "cloture": true },
       "barriere_lavande": { "nom": "Barrière lavande", "objet": "barriere_lavande", "bloque": true, "cloture": true },
+      "portail": { "nom": "Portail", "objet": "portail", "bloque": true, "cloture": true, "portail": true },
+      "portail_ouvert": { "nom": "Portail ouvert", "objet": "portail", "cloture": true, "portail": true, "ouvert": true },
       "lanterne": { "nom": "Lanterne scintillante", "objet": "lanterne", "bloque": true, "lumiere": true },
       "candelabre": { "nom": "Réverbère", "objet": "candelabre", "bloque": true, "lumiere": true },
       "four": { "nom": "Four", "objet": "four_pierre", "dedans": true, "bloque": true, "station": "four", "dessin": "four", "largeur": 2 },
@@ -1578,6 +1582,7 @@ export const RAW_DATA = {
           "barriere_chene",
           "barriere_verte",
           "barriere_lavande",
+          "portail",
           "escalier"
         ]
       },

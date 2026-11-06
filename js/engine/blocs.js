@@ -99,6 +99,16 @@ export function blocBloque(state, tile) {
   return !!(s && s.bloque);
 }
 
+// Le portail de la case `tile` : ouvert (on passe), il se ferme ; fermé (il bloque), il s'ouvre. Ses deux états sont
+// deux sortes (« portail », « portail_ouvert », data/recipes.json) : la ferme les garde comme ses autres blocs. Ouvert
+// ou fermé, il compte comme une barrière (« cloture ») : un enclos reste un enclos.
+export function basculerPortail(state, tile) {
+  const b = blocAt(state, tile);
+  if (b !== 'portail' && b !== 'portail_ouvert') return fail('Il n\'y a pas de portail ici.');
+  state.blocs[tile] = b === 'portail' ? 'portail_ouvert' : 'portail';
+  return { ok: true, case: tile, ouvert: state.blocs[tile] === 'portail_ouvert' };
+}
+
 // Poser `sorte` sur `ancien` change le mur sans l'enlever ? (un mur en pierre, une fenêtre,
 // une pierre d'angle : BLOCS[].mur ; l'ancien revient dans l'inventaire)
 /* ---------- le sens des meubles (le mode Construire : ↻ Tourner) ----------

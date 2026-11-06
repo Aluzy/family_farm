@@ -465,7 +465,7 @@ function quitteMeuble() {
 export function traceInfo() {
   if (!buildMode || meubleEnMain()) return null;
   const b = DATA.ATELIER.BLOCS[buildMode];
-  if (!b || b.porte || b.silo || !(b.mur || (b.sol && !b.meuble) || b.cloture)) return null;
+  if (!b || b.porte || b.silo || !(b.mur || (b.sol && !b.meuble) || (b.cloture && !b.portail))) return null;
   // (aux niveaux 1 et 2 : les murs, qu'on rehausse ; sur l'étage d'une pièce : murs et sols)
   if (niveau() && !niveauBati() && !b.mur && !solEnMain()) return null;
   if (niveauBati() && !(b.mur || b.sol)) return null;
@@ -755,6 +755,14 @@ registerActions({
     refresh();
   },
   // La carte : un appui sur la case `case` en mode Construire.
+  // un portail touché sur la carte (hors du mode Construire) : il s'ouvre ou se ferme
+  'portail': (target) => {
+    if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
+    const r = executer('portail.basculer', { case: Number(target.dataset.case) });
+    if (!r.ok) { notify(r.error); return; }
+    persistState();
+    refresh();
+  },
   'bloc': (target) => {
     if (!buildMode) return;
     if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }

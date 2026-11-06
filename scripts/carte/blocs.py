@@ -1220,14 +1220,75 @@ def icones_barrieres():
     for (sorte, P) in BARRIERE_COULEURS.items():
         barriere(10, P).crop((0, H - 16, W, H)).save(os.path.join(dossier, f'{sorte}.png'))
         table['🚧\u200d' + ICONES_BARRIERES[sorte]] = f'{sorte}.png'
+    portail().crop((0, H - 16, W, H)).save(os.path.join(dossier, 'portail.png'))
+    table['🚧\u200d🚪'] = 'portail.png'
     with open(chemin, 'w', encoding='utf8') as f:
         f.write(json.dumps(table, ensure_ascii=False, indent=1))
 
 
+def portail(ouvert=False, vertical=False):
+    """Le portail de bois, dans une barrière : fermé, un vantail cadré (deux traverses, deux montants, une écharpe
+    en biais, un loquet de fer) d'une barrière voisine à l'autre ; ouvert, le vantail tourné vers nous sur ses gonds
+    (à gauche), vu par la tranche, et le passage libre. Dans une barrière verticale (vertical) : fermé, le vantail vu
+    par la tranche le long de la barrière ; ouvert, tourné vers la droite, vu de face."""
+    P = BOIS
+    t = Toile()
+    def vantail(x0, x1, y0, y1):
+        # le cadre : traverses en haut et en bas, montants aux bouts, l'écharpe du bas du gond au haut du loquet
+        for x in range(x0, x1 + 1):
+            for y, c in ((y0, P[4]), (y0 + 1, P[2]), (y1 - 1, P[4]), (y1, P[2])):
+                t.put(x, y, c)
+        for y in range(y0, y1 + 1):
+            for x, c in ((x0, P[3]), (x0 + 1, P[2]), (x1 - 1, P[3]), (x1, P[1])):
+                t.put(x, y, c)
+        n = (x1 - 1) - (x0 + 2)
+        for k in range(n + 1):
+            y = round((y1 - 2) - k * ((y1 - 2) - (y0 + 2)) / n)
+            t.put(x0 + 2 + k, y, P[3])
+            t.put(x0 + 2 + k, y + 1, P[1])
+    def pilier(x):
+        # un poteau de portail, plus haut que ceux de la barrière, coiffé d'un chapeau
+        for y in range(6, BAS + 1):
+            t.put(x, y, P[3] if y > 7 else P[4])
+            t.put(x + 1, y, P[1] if y > 7 else P[3])
+        t.put(x, 5, P[2]); t.put(x + 1, 5, P[2])
+    if not vertical:
+        if not ouvert:
+            vantail(2, 13, 10, 20)
+            t.put(11, 15, FER[3]); t.put(12, 15, FER[3]); t.put(12, 16, FER[1])     # le loquet
+        else:
+            # le vantail tourné vers nous sur ses gonds (le pilier de gauche), vu de biais : il descend vers nous
+            for k, y in enumerate(range(10, BAS + 1)):
+                x = 2 + min(2, k // 5)
+                t.put(x, y, P[4]); t.put(x + 1, y, P[2]); t.put(x + 2, y, P[1])
+                if y in (10, 11, 19, 20):
+                    t.put(x + 3, y, P[1])
+            t.put(2, 11, FER[2]); t.put(2, 19, FER[2])                           # les gonds
+        pilier(0)
+        pilier(14)
+    else:
+        if not ouvert:
+            # le vantail vu par la tranche, le long de la barrière : comme ses lisses, plus épais, un loquet
+            t.rect(6, 0, 9, BAS, P[3])
+            for y in range(0, BAS + 1):
+                t.put(6, y, P[4]); t.put(9, y, P[1])
+            for y in (4, 18):
+                t.rect(6, y, 9, y + 1, P[2])
+            t.put(8, 11, FER[3])
+        else:
+            # tourné vers la droite sur ses gonds (en haut), vu de face : un petit vantail
+            for y in range(0, 6):
+                t.put(7, y, P[4]); t.put(8, y, P[2])
+            vantail(7, 15, 6, 14)
+    return t.fini()
+
+
 def barrieres():
     """assets/clotures.png : pour chaque couleur (BARRIERE_COULEURS), chaque détail (BARRIERE_VARIANTES), une
-    rangée des 16 barrières raccordées : l'image ((couleur × détails + détail) × 16 + masque)."""
-    return [barriere(m, P, k) for P in BARRIERE_COULEURS.values() for k in range(len(BARRIERE_VARIANTES)) for m in range(16)]
+    rangée des 16 barrières raccordées : l'image ((couleur × détails + détail) × 16 + masque) ; puis le portail
+    (BLOCS_CARTE.clotures.portail) : fermé, ouvert, puis dans une barrière verticale fermé, ouvert."""
+    return [barriere(m, P, k) for P in BARRIERE_COULEURS.values() for k in range(len(BARRIERE_VARIANTES)) for m in range(16)] + \
+        [portail(o, v) for v in (False, True) for o in (False, True)]
 
 
 # ---------- les objets ----------

@@ -142,6 +142,7 @@
     "barriere_chene": { "nom": "Barrière en chêne sombre", "icone": "🚧‍🟤", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "barriere_verte": { "nom": "Barrière verte", "icone": "🚧‍🟩", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "barriere_lavande": { "nom": "Barrière lavande", "icone": "🚧‍🟪", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "portail": { "nom": "Portail", "icone": "🚧‍🚪", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "chemin": { "nom": "Chemin", "icone": "🟫‍🪨", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "//champignon_lumineux": [
       "La lanterne scintillante (ATELIER : un champignon lumineux et deux bois) : « cueillette » dit où",
