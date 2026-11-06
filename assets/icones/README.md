@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 436 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 441 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -27,6 +27,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/stopwatch.png" width="48" height="48" alt=""> | ⏱ | [`stopwatch.png`](stopwatch.png) |
 | <img src="apercu/hourglass_with_flowing_sand.png" width="48" height="48" alt=""> | ⏳ | [`hourglass_with_flowing_sand.png`](hourglass_with_flowing_sand.png) |
 | <img src="apercu/black_sun_with_rays.png" width="48" height="48" alt=""> | ☀ | [`black_sun_with_rays.png`](black_sun_with_rays.png) |
+| <img src="apercu/sun+blue_square.png" width="48" height="48" alt=""> | ☀‍🟦 | [`sun+blue_square.png`](sun+blue_square.png) |
 | <img src="apercu/hot_beverage.png" width="48" height="48" alt=""> | ☕ | [`hot_beverage.png`](hot_beverage.png) |
 | <img src="apercu/hot_beverage+chocolate_bar.png" width="48" height="48" alt=""> | ☕‍🍫 | [`hot_beverage+chocolate_bar.png`](hot_beverage+chocolate_bar.png) |
 | <img src="apercu/hot_beverage+fire.png" width="48" height="48" alt=""> | ☕‍🔥 | [`hot_beverage+fire.png`](hot_beverage+fire.png) |
@@ -39,6 +40,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/helmet_with_white_cross+electric_light_bulb.png" width="48" height="48" alt=""> | ⛑‍💡 | [`helmet_with_white_cross+electric_light_bulb.png`](helmet_with_white_cross+electric_light_bulb.png) |
 | <img src="apercu/no_entry.png" width="48" height="48" alt=""> | ⛔ | [`no_entry.png`](no_entry.png) |
 | <img src="apercu/fountain.png" width="48" height="48" alt=""> | ⛲ | [`fountain.png`](fountain.png) |
+| <img src="apercu/fountain+wrench.png" width="48" height="48" alt=""> | ⛲‍🔧 | [`fountain+wrench.png`](fountain+wrench.png) |
 | <img src="apercu/tent.png" width="48" height="48" alt=""> | ⛺ | [`tent.png`](tent.png) |
 | <img src="apercu/black_scissors.png" width="48" height="48" alt=""> | ✂ | [`black_scissors.png`](black_scissors.png) |
 | <img src="apercu/white_heavy_check_mark.png" width="48" height="48" alt=""> | ✅ | [`white_heavy_check_mark.png`](white_heavy_check_mark.png) |
@@ -295,6 +297,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/gem_stone.png" width="48" height="48" alt=""> | 💎 | [`gem_stone.png`](gem_stone.png) |
 | <img src="apercu/gem_stone+large_purple_circle.png" width="48" height="48" alt=""> | 💎‍🟣 | [`gem_stone+large_purple_circle.png`](gem_stone+large_purple_circle.png) |
 | <img src="apercu/droplet.png" width="48" height="48" alt=""> | 💧 | [`droplet.png`](droplet.png) |
+| <img src="apercu/droplet+oil_drum.png" width="48" height="48" alt=""> | 💧‍🛢 | [`droplet+oil_drum.png`](droplet+oil_drum.png) |
 | <img src="apercu/speech_balloon.png" width="48" height="48" alt=""> | 💬 | [`speech_balloon.png`](speech_balloon.png) |
 | <img src="apercu/money_bag.png" width="48" height="48" alt=""> | 💰 | [`money_bag.png`](money_bag.png) |
 | <img src="apercu/personal_computer.png" width="48" height="48" alt=""> | 💻 | [`personal_computer.png`](personal_computer.png) |
@@ -310,6 +313,8 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/open_mailbox_with_lowered_flag.png" width="48" height="48" alt=""> | 📭 | [`open_mailbox_with_lowered_flag.png`](open_mailbox_with_lowered_flag.png) |
 | <img src="apercu/clockwise_rightwards_and_leftwards_open_circle_arrows.png" width="48" height="48" alt=""> | 🔁 | [`clockwise_rightwards_and_leftwards_open_circle_arrows.png`](clockwise_rightwards_and_leftwards_open_circle_arrows.png) |
 | <img src="apercu/battery.png" width="48" height="48" alt=""> | 🔋 | [`battery.png`](battery.png) |
+| <img src="apercu/battery+nut_and_bolt.png" width="48" height="48" alt=""> | 🔋‍🔩 | [`battery+nut_and_bolt.png`](battery+nut_and_bolt.png) |
+| <img src="apercu/electric_plug+robot.png" width="48" height="48" alt=""> | 🔌‍🤖 | [`electric_plug+robot.png`](electric_plug+robot.png) |
 | <img src="apercu/right_pointing_magnifying_glass.png" width="48" height="48" alt=""> | 🔎 | [`right_pointing_magnifying_glass.png`](right_pointing_magnifying_glass.png) |
 | <img src="apercu/lock.png" width="48" height="48" alt=""> | 🔒 | [`lock.png`](lock.png) |
 | <img src="apercu/bell.png" width="48" height="48" alt=""> | 🔔 | [`bell.png`](bell.png) |
