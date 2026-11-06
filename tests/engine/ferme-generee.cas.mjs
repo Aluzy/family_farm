@@ -20,7 +20,7 @@ import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
   casesCouvertes, elargirFours, mesuresMeuble, sensBloc, tournerBloc, tourneBloc,
   isArable as arable, etage2Emprise, escaliersEtage, poseEtageStatus, casesSolEtage, piecesNiveau, piecesNiveau1, poseSolEtageStatus, poserSolEtage, solsEtage, hauteurPile, matiereDessus, rehausser, rehausseStatus, rehaussesPosees,
-  arbresPlantes, asleep, atelierConstruit, atelierStatus, blocAt, blocBloque, blocDessus,
+  arbresPlantes, asleep, atelierConstruit, basculerPortail, atelierStatus, blocAt, blocBloque, blocDessus,
   blocsDidacticiel, blocsEnMain, blocsPoses, botteleuses, buildAtelier, buildStation, bushCut,
   bushOf, buyDehors, buyFurniture, buyHoe, buyItem, buyPasture, buyRuche, caseDepart,
   casesAbriAPoser, casesBuissonsCoupes, chopTree, commencerDidacticiel, coopCapacity, couchages,
@@ -452,7 +452,8 @@ test('ferme générée : un sapin abattu laisse une pomme de pin, un arbre un gl
 
 test('menu Construire : chaque bloc dans une catégorie ; seuls les blocs débloqués se montrent', () => {
   const B = DATA.ATELIER.BLOCS;
-  assertEqual(Object.keys(B).filter((k) => !B[k].semis && !B[k].arbre && !categorieBloc(k)), [], 'chaque bloc posable a son onglet');
+  // (le portail ouvert : un état du portail, pas un bloc qu'on pose)
+  assertEqual(Object.keys(B).filter((k) => !B[k].semis && !B[k].arbre && !B[k].ouvert && !categorieBloc(k)), [], 'chaque bloc posable a son onglet');
   assertEqual([categorieBloc('mur_brique_bleue'), categorieBloc('porte'), categorieBloc('refrigerateur'), categorieBloc('meuble_canape'), categorieBloc('meuble_tableau_1'), categorieBloc('nichoir'), categorieBloc('citerne'), categorieBloc('atelier')],
     ['batir', 'batir', 'maison', 'meubles', 'meubles', 'elevage', 'energie', 'machines']);
   const s = chantier('menu');
@@ -851,6 +852,41 @@ test('ferme générée : le Poulailler, une enceinte avec une porte dehors, un n
   // le nichoir repris : plus de Poulailler
   reprendreBloc(s, p.dedans);
   assertEqual([s.poulailler.construit, coopCapacity(s)], [false, 0], 'repris : plus de Poulailler');
+});
+
+test('ferme générée : un enclos de barrières de toutes les couleurs, mêlées, ferme le Poulailler', () => {
+  const s = reach(chantier('p1'), 'poulailler');
+  s.pieces = 100000;
+  s.poulailler.construit = false;
+  const couleurs = ['barriere', 'barriere_blanche', 'barriere_rouge', 'barriere_grise', 'barriere_chene', 'barriere_verte', 'barriere_lavande'];
+  setInv(s, { mur_pierre: 30, porte: 3, nichoir: 2, ...Object.fromEntries(couleurs.map((c) => [c, 5])) });
+  const z = terrainLibre(s, 9, 6), p = enceinteEtEnclos(s, z);
+  assert(poserBloc(s, 'nichoir', p.dedans).ok);
+  p.barrieres.forEach((t, k) => assert(poserBloc(s, couleurs[k % couleurs.length], t).ok));
+  assertEqual([etatPoulailler(s).ok, s.poulailler.construit], [true, true]);
+  // une barrière rouge reprise : l'enclos s'ouvre
+  reprendreBloc(s, p.barrieres[2]);
+  assertEqual(s.poulailler.construit, false);
+});
+
+test('ferme générée : le portail s\'ouvre et se ferme ; ouvert, on passe ; ouvert ou fermé, l\'enclos reste un enclos', () => {
+  const s = reach(chantier('p1'), 'poulailler');
+  s.pieces = 100000;
+  s.poulailler.construit = false;
+  setInv(s, { mur_pierre: 30, porte: 3, nichoir: 2, barriere: 20, portail: 1 });
+  const z = terrainLibre(s, 9, 6), p = enceinteEtEnclos(s, z);
+  assert(poserBloc(s, 'nichoir', p.dedans).ok);
+  const g = p.barrieres[1];                              // (un portail dans la barrière, à la place d'une barrière)
+  for (const t of p.barrieres) assert(poserBloc(s, t === g ? 'portail' : 'barriere', t).ok);
+  assertEqual([blocAt(s, g), blocBloque(s, g), s.poulailler.construit], ['portail', true, true], 'fermé : il bloque');
+  assertEqual(basculerPortail(s, g).ouvert, true);
+  assertEqual([blocAt(s, g), blocBloque(s, g), s.poulailler.construit, etatPoulailler(s).ok], ['portail_ouvert', false, true, true], 'ouvert : on passe');
+  assertEqual([basculerPortail(s, g).ouvert, blocBloque(s, g)], [false, true]);
+  assertEqual(basculerPortail(s, p.barrieres[0]).ok, false, 'pas un portail');
+  // repris ouvert : un portail dans l'inventaire
+  basculerPortail(s, g);
+  reprendreBloc(s, g);
+  assertEqual([blocAt(s, g), countItem(s, 'portail')], [null, 1]);
 });
 
 test('ferme générée : l\'enclos du Poulailler ou de l\'Étable peut être grand ; sinon, la fenêtre dit pourquoi', () => {

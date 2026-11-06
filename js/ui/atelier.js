@@ -122,6 +122,7 @@ const GROUPES = [
   { id: 'murs', nom: 'Murs', de: (b) => !!b.mur && !b.fenetre },
   { id: 'portes', nom: 'Portes', de: (b) => !!b.porte },
   { id: 'sols', nom: 'Sols', de: (b) => !!b.sol && !b.dehors },
+  { id: 'barrieres', nom: 'Barrières', de: (b) => !!b.cloture },
 ];
 const ONGLETS = () => [
   { id: 'outils', nom: 'Outils', icone: '⛏️' },

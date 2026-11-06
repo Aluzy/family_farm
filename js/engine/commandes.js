@@ -110,7 +110,7 @@ import { DATA } from './catalog.js';
 import { fail, maintainDevice, repairDevice, toggleDevice, upgradeDevice, upgradeTank } from './devices.js';
 import {
   blocAt, blocDessus, casesCouvertes, deplacerBloc, hauteurPile, matiereDessus, poserBloc, rehausser,
-  peindreBloc, reprendreBloc, sensBloc, solAt, tournerBloc,
+  peindreBloc, reprendreBloc, sensBloc, solAt, basculerPortail, tournerBloc,
 } from './blocs.js';
 import { deplacerEtage, dessusEtage, etageBlocs, etageCouvertes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
 import { harvest, hoe, plant, upgradeSerre, water } from './crops.js';
@@ -225,6 +225,15 @@ export const COMMANDES = {
       const r = deplacerBloc(state, de, vers);
       if (!r.ok) return r;
       return { ...r, inverses: [cmd('bloc.deplacer', { de: vers, vers: r.de, attendu: r.sorte })] };
+    },
+  },
+  // (le portail : un appui l'ouvre ou le ferme ; l'inverse le rebascule)
+  'portail.basculer': {
+    args: { case: 'case' },
+    executer(state, { case: c }) {
+      const r = basculerPortail(state, c);
+      if (!r.ok) return r;
+      return { ...r, inverses: [cmd('portail.basculer', { case: c })] };
     },
   },
   'bloc.tourner': {

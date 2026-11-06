@@ -69,6 +69,35 @@
     return 'bois';
   }
 
+  // Les barrières (toutes les couleurs, BLOCS_CARTE.clotures.couleurs).
+  const estCloture = (sorte) => BLOCS_CARTE.clotures.couleurs[sorte] !== undefined;
+  // Le portail, ouvert ou fermé (BLOCS_CARTE.portails).
+  const estPortail = (sorte) => BLOCS_CARTE.portails.sortes.includes(sorte);
+  // Le raccord d'une barrière (1 une voisine au-dessus, 2 à droite, 4 au-dessous, 8 à gauche) : une barrière
+  // de toute couleur, ou un mur (ses lisses vont jusqu'à lui : l'enclos s'appuie sur l'enceinte). Pas vers un
+  // portail : la barrière s'arrête à son poteau, le portail est calé entre les poteaux de ses deux voisines.
+  // (`portail` : le raccord du portail lui-même, aux barrières et aux murs : son sens, horizontal ou vertical)
+  function masqueCloture(b, at, cols, portail = false) {
+    const V = BLOCS_CARTE.hauts.variantes;
+    const c = b.case % cols, is = (k) => estCloture(at.get(k)) || (portail && estPortail(at.get(k))) || V[at.get(k)] !== undefined;
+    return (is(b.case - cols) ? 1 : 0) + (c < cols - 1 && is(b.case + 1) ? 2 : 0) + (is(b.case + cols) ? 4 : 0) + (c > 0 && is(b.case - 1) ? 8 : 0);
+  }
+  // Le détail d'une barrière (scripts/carte/blocs.py BARRIERE_VARIANTES), tiré de sa case : toujours le même à
+  // la même place, et des voisines différentes. La moitié n'en a pas ; sur 64 : 4 une planche sombre, 4 une neuve
+  // clouée, 2 un nœud, 2 un poteau fendu, 4 une planche tombée, 2 une cassée, 2 une rapiécée, 6 une touffe
+  // d'herbe, 3 des fleurs, 2 du lierre, 1 un oiseau.
+  const DETAILS = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 10, 10, 11];
+  // (le détail « oiseau » : la barrière est dessinée sans lui ; un rouge-gorge vivant est posé sur son poteau,
+  // js/carte/ferme/rougegorges.js, qui s'envole à l'approche)
+  const OISEAU = 11;
+  F.estPerchoir = (e) => !!e && estCloture(e.sorte) && detailCloture(e.case) === OISEAU;
+  function detailCloture(c) {
+    let h = Math.imul(c ^ 0x5bd1e995, 0x9e3779b1) >>> 0;
+    h = Math.imul(h ^ (h >>> 15), 0x85ebca6b) >>> 0;
+    const r = (h >>> 8) % 64;
+    return r < 32 ? 0 : DETAILS[r - 32];
+  }
+
   F.partie({
 
     // Les images des blocs : celles du modèle, créées, changées ou ôtées. Les murs et la porte
@@ -144,6 +173,9 @@
           const plat = BLOCS_CARTE.plats.includes(b.sorte);
           // (le puits et la citerne : leurs propres images, posées par syncWell et syncTank)
           const img = this.add.image(x, y, key, f).setOrigin(0.5, 1).setDepth(plat ? y - T : y).setVisible(!BLOCS_CARTE.ailleurs.includes(b.sorte));
+          // (le portail : son image dépasse de sa case, posée par le milieu du bas de la case ; devant les barrières
+          // de sa rangée, sur lesquelles il se rabat ouvert)
+          if (key === BLOCS_CARTE.portails.key) img.setOrigin(...BLOCS_CARTE.portails.origine).setDepth(y + 0.5);
           img.setFlipX(miroir);
           const ne = { case: b.case, sorte: b.sorte, x, y, img, sens: b.sens || 0 };
           B.set(b.case, ne);
@@ -627,6 +659,16 @@
     // celle du mur de blocs.png.
     blocImage(b, at, cols) {
       const H = BLOCS_CARTE.hauts;
+      // (une barrière, de toute couleur : sa couleur, son détail, son raccord, dans assets/clotures.png ; sans
+      // elle, la barrière de bois de blocs.png)
+      const CL = BLOCS_CARTE.clotures;
+      if (estCloture(b.sorte) && this.has(CL.key)) { const d = detailCloture(b.case); return [CL.key, (CL.couleurs[b.sorte] * CL.details + (d === OISEAU ? 0 : d)) * 16 + masqueCloture(b, at, cols)]; }
+      // (le portail : dans une barrière verticale, des voisines au-dessus ou au-dessous et aucune à côté)
+      const PO = BLOCS_CARTE.portails;
+      if (estPortail(b.sorte) && this.has(PO.key)) {
+        const m = masqueCloture(b, at, cols, true), vertical = (m & 5) && !(m & 10), ouvert = b.sorte === 'portail_ouvert';
+        return [PO.key, vertical ? (ouvert ? PO.verticalOuvert : PO.vertical) : (ouvert ? PO.ouvert : PO.ferme)];
+      }
       // (le réverbère, deux blocs de haut : son image dans la planche des murs hauts, éteint ;
       // sans elle, la lanterne éteinte)
       if (b.sorte === 'candelabre') return this.has(H.key) ? [H.key, H.candelabre] : [BLOCS_CARTE.key, BLOCS_CARTE.frames.lanterne];
@@ -715,13 +757,7 @@
     // une porte compte à gauche et à droite seulement). Une porte entre deux murs, l'un
     // au-dessus, l'autre au-dessous, et sans voisin à côté : celle d'un mur vertical.
     wallFrame(b, at, cols) {
-      if (b.sorte === 'barriere') {
-        // (une barrière : celles de ses voisines, BLOCS_CARTE.barrieres + masque ; un mur voisin
-        // compte aussi, ses lisses vont jusqu'à lui : l'enclos s'appuie sur l'enceinte)
-        const V = BLOCS_CARTE.hauts.variantes;
-        const c = b.case % cols, is = (k) => at.get(k) === 'barriere' || V[at.get(k)] !== undefined;
-        return BLOCS_CARTE.barrieres + (is(b.case - cols) ? 1 : 0) + (c < cols - 1 && is(b.case + 1) ? 2 : 0) + (is(b.case + cols) ? 4 : 0) + (c > 0 && is(b.case - 1) ? 8 : 0);
-      }
+      if (estCloture(b.sorte) || estPortail(b.sorte)) return BLOCS_CARTE.barrieres + masqueCloture(b, at, cols);
       // (la fenêtre et les pierres d'angle se raccordent comme le mur en pierre)
       const V = BLOCS_CARTE.hauts.variantes;
       const mur = V[b.sorte] !== undefined;
@@ -736,6 +772,17 @@
       const e = c < cols - 1 && is(b.case + 1, true), w = c > 0 && is(b.case - 1, true);
       if (!mur) return (n || s) && !(e || w) ? BLOCS_CARTE.portesVerticales[b.sorte] || BLOCS_CARTE.porteVerticale : BLOCS_CARTE.frames.porte;
       return BLOCS_CARTE.murs + (n ? 1 : 0) + (e ? 2 : 0) + (s ? 4 : 0) + (w ? 8 : 0);
+    },
+
+    // Le portail sous le doigt (sa case ; son image dépasse d'une demi-case au-dessus de la sienne), ou -1.
+    portailAt(wx, wy) {
+      if (!this.blocks || !this.grid) return -1;
+      const cols = this.grid.cols, c = Math.floor(wx / T), r = Math.floor(wy / T);
+      for (const k of [r * cols + c, (r + 1) * cols + c]) {
+        const e = this.blocks.get(k);
+        if (e && estPortail(e.sorte) && (k === r * cols + c || wy % T >= T / 2)) return k;
+      }
+      return -1;
     },
 
     // Le rectangle (px) de la case du premier bloc `sorte` posé, ou null : le puits et la
