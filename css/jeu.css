@@ -1922,6 +1922,9 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
 .build-bulle-grid { display: grid; grid-template-columns: repeat(5, 46px); grid-auto-rows: 46px; gap: 4px; }
 .build-bulle .build-slot { height: 46px; }
 .build-bulle .build-slot .px { --pxs: 30px; }
+/* (son style et son étoile gardent leur petite taille : la règle du dessus les grossissait) */
+.build-bulle .build-slot .build-slot-style .px, .build-bulle .build-slot .build-slot-fav .px { --pxs: 12px; }
+.build-slot .build-slot-style .px, .build-slot .build-slot-fav .px { margin: 0; }
 
 /* L'Atelier (js/ui/atelier.js) : dans sa fenêtre, le même menu que Construire (onglets
    intercalaires, barre de cases qui défile, bulles des murs, des portes et des sols) ; sous la
