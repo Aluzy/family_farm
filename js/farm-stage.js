@@ -593,7 +593,8 @@
         if (this.conseilsAFaire) this.syncConseilsTextes();   // (et les étiquettes des pièces qui arrivent à l'écran)
         this.stepCharge();
         if (this.fermier && !fige) {
-          this.fermier.steer(this.manette.dir());
+          // (une scène du récit sur la carte : il reste là pendant qu'on vient lui parler, js/carte/ferme/rencontre.js)
+          this.fermier.steer(this.rencontreRetient && this.rencontreRetient() ? null : this.manette.dir());
           this.fermier.update(delta);
           this.stepRegionPerso();            // (la région où il entre devient vue : js/carte/ferme/sol.js)
         }
@@ -603,6 +604,7 @@
           this.stepHameaux(dt / 1000);            // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
           if (this.stepCaleche) this.stepCaleche(dt / 1000);   // (la calèche : caleche.js)
           if (this.stepVisite) this.stepVisite(dt / 1000);     // (la visite de bienvenue : visite.js, fiche 18)
+          if (this.stepRencontre) this.stepRencontre(dt / 1000);   // (une scène du récit sur la carte : rencontre.js)
           if (this.stepPresents) this.stepPresents();          // (les présents des amis devant la porte : amis.js)
           if (this.stepInvites) this.stepInvites(dt / 1000);   // (les invités d'un repas : invites.js)
           if (this.family) this.family.update(delta);
@@ -1140,6 +1142,8 @@
       }
 
       tap(wx, wy) {
+        // une scène du récit sur la carte (rencontre.js) : l'appui fait passer à la réplique suivante
+        if (this.rencontreTap && this.rencontreTap()) return;
         if (this.ambient) this.ambient.scare(wx, wy);   // un appui tout près fait s'envoler les oiseaux
         const hit = this.hitAt(wx, wy);
         // Version 1.19 : dehors, un double appui sur l'herbe ou un chemin y envoie le personnage ;

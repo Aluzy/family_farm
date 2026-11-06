@@ -1117,12 +1117,15 @@ export function validateData(data) {
       unique(where, s.id);
       if (!Array.isArray(s.lignes) || !s.lignes.length) err(`${where}.lignes`, 'au moins une ligne');
       (s.lignes || []).forEach((l, j) => {
-        if (!persos.includes(l.qui)) err(`${where}.lignes[${j}].qui`, 'un personnage de RECIT.PERSONNAGES');
+        // (une scène sur la carte : le personnage du joueur peut répondre, « joueur », mais pas en premier)
+        const joueur = l.qui === 'joueur' && s.carte === true && j > 0;
+        if (!persos.includes(l.qui) && !joueur) err(`${where}.lignes[${j}].qui`, s.carte === true ? 'un personnage de RECIT.PERSONNAGES, ou « joueur » (pas en premier)' : 'un personnage de RECIT.PERSONNAGES');
         if (l.nom !== undefined && !(typeof l.nom === 'string' && l.nom)) err(`${where}.lignes[${j}].nom`, 'un nom');
         texte(`${where}.lignes[${j}].texte`, l.texte);
         // (une ligne conditionnelle ; la première, elle, est toujours dite : elle porte les conditions de la scène)
         if (l.quand !== undefined) { if (j === 0) err(`${where}.lignes[0].quand`, 'la première ligne est toujours dite'); else quand(`${where}.lignes[${j}]`, l.quand); }
       });
+      if (s.carte !== undefined && s.carte !== true) err(`${where}.carte`, 'true (ou absent)');
       quand(where, s.quand); prio(where, s.priorite); effet(where, s.effet, s.lignes && s.lignes[0] && s.lignes[0].qui, true);
     });
     // Les lieux du récit : une sorte de lieux.recit (LIEUX.SORTES de genre « recit »), une liste d'entrées

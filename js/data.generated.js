@@ -5064,18 +5064,20 @@ export const RAW_DATA = {
         "id": "arrivee",
         "quand": { "installee": true, "jour_max": 1, "sans_fait": "arrivee" },
         "priorite": 100,
+        "carte": true,
         "lignes": [
-          { "qui": "fernand", "texte": "Bienvenue à Céron ! Vous êtes la famille de Maurice et Philomène, ça se voit au sourire." },
-          { "qui": "fernand", "texte": "Votre terre, c'est par là, au bout du chemin. La calèche passe demain, Achille vous dira tout." }
+          { "qui": "fernand", "texte": "Vous voilà ! Bienvenue à Céron. Vous êtes la famille de Maurice et Philomène, ça se voit au sourire." },
+          { "qui": "joueur", "texte": "Bonjour ! On est bien arrivés, alors ?" },
+          { "qui": "fernand", "texte": "Pile au bon endroit. Voici votre terre : c'est ici que tout commence pour vous." },
+          { "qui": "joueur", "texte": "Elle est… plus sauvage que dans mes souvenirs." },
+          {
+            "qui": "fernand",
+            "quand": { "enfants": true },
+            "texte": "Et vous, les petits ! Un matin, je vous montrerai où les dauphins viennent jouer."
+          },
+          { "qui": "fernand", "texte": "Elle vous attendait, voilà tout. La calèche passe demain, Achille vous dira tout. Bonne première journée !" }
         ],
-        "effet": { "fait": "arrivee", "relation": { "fernand": 10 } }
-      },
-      {
-        "id": "arrivee_enfants",
-        "quand": { "installee": true, "jour_max": 1, "fait": "arrivee", "sans_fait": "arrivee_enfants", "enfants": true },
-        "priorite": 90,
-        "lignes": [{ "qui": "fernand", "texte": "Et vous, les petits ! Un matin, je vous montrerai où les dauphins viennent jouer." }],
-        "effet": { "fait": "arrivee_enfants" }
+        "effet": { "fait": ["arrivee", "arrivee_enfants"], "relation": { "fernand": 10 } }
       },
       {
         "id": "achille_cle",

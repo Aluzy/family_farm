@@ -32,7 +32,9 @@
     "genre du personnage principal), priorite (0 à 100), une_fois (dite une seule fois), repos_jours (pas avant",
     "ce nombre de jours après l'avoir dite), effet }. Une scène : { id, quand, lignes : [{ qui, texte, nom (facultatif : le nom affiché, si le joueur ne le connaît pas encore),",
     "quand (facultatif : la ligne n'est dite que si ses conditions sont vraies, une veillée selon ce que le joueur a fait) }],",
-    "priorite, effet } ; elle se joue une seule fois.",
+    "priorite, effet, carte (facultatif : true, elle se joue sur la carte de la ferme, en bulles : le premier personnage y vient",
+    "à pied, parle au personnage du joueur, puis repart ; js/ui/scene.js, js/carte/ferme/rencontre.js) } ; elle se joue une",
+    "seule fois. Dans une scène sur la carte, qui peut être « joueur » : le personnage du joueur lui répond (son prénom).",
     "Conditions (quand) : heure [de, à[ (à < de : à cheval sur minuit), lune (une phase ou une liste : croissante,",
     "pleine, decroissante, nouvelle), lieu (un lieu ou une liste : celui que la page donne ; caleche_ferme : la",
     "calèche garée à la ferme, le joueur à côté ; maison_maurice : dans la maison de Maurice ; gue : au Gué ; sinon",
@@ -246,20 +248,16 @@
         "id": "arrivee",
         "quand": { "installee": true, "jour_max": 1, "sans_fait": "arrivee" },
         "priorite": 100,
+        "carte": true,
         "lignes": [
-          { "qui": "fernand", "texte": "Bienvenue à Céron ! Vous êtes la famille de Maurice et Philomène, ça se voit au sourire." },
-          { "qui": "fernand", "texte": "Votre terre, c'est par là, au bout du chemin. La calèche passe demain, Achille vous dira tout." }
+          { "qui": "fernand", "texte": "Vous voilà ! Bienvenue à Céron. Vous êtes la famille de Maurice et Philomène, ça se voit au sourire." },
+          { "qui": "joueur", "texte": "Bonjour ! On est bien arrivés, alors ?" },
+          { "qui": "fernand", "texte": "Pile au bon endroit. Voici votre terre : c'est ici que tout commence pour vous." },
+          { "qui": "joueur", "texte": "Elle est… plus sauvage que dans mes souvenirs." },
+          { "qui": "fernand", "quand": { "enfants": true }, "texte": "Et vous, les petits ! Un matin, je vous montrerai où les dauphins viennent jouer." },
+          { "qui": "fernand", "texte": "Elle vous attendait, voilà tout. La calèche passe demain, Achille vous dira tout. Bonne première journée !" }
         ],
-        "effet": { "fait": "arrivee", "relation": { "fernand": 10 } }
-      },
-      {
-        "id": "arrivee_enfants",
-        "quand": { "installee": true, "jour_max": 1, "fait": "arrivee", "sans_fait": "arrivee_enfants", "enfants": true },
-        "priorite": 90,
-        "lignes": [
-          { "qui": "fernand", "texte": "Et vous, les petits ! Un matin, je vous montrerai où les dauphins viennent jouer." }
-        ],
-        "effet": { "fait": "arrivee_enfants" }
+        "effet": { "fait": ["arrivee", "arrivee_enfants"], "relation": { "fernand": 10 } }
       },
       {
         "id": "achille_cle",

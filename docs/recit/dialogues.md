@@ -122,13 +122,26 @@ s'il est public (une veillée, la calèche). Achille apprend tout en un jour ; J
 Variantes de genre entre crochets [masculin / féminin]. Les scènes de l'acte I sont déjà dans
 `data/recit.json` (`SCENES`).
 
-### L'arrivée aux Mouettes (S, scène `arrivee`)
+### L'arrivée sur la terre (S, scène `arrivee`, jouée sur la carte)
 
-Début de partie, la famille composée. Fernand : « Les héritiers de Maurice. Ça se voit, vous avez
-l'air perdus. » « La terre, c'est par là. Suivez le chemin. La calèche passe demain. » Avec des
-enfants (`arrivee_enfants`) : « Et ces petits-là, ils tiendront pas une semaine sans écran. On parie ? »
-Les deux scènes exigent une famille composée et le jour 1 : une partie plus avancée ne les joue pas.
-Effets : fait `arrivee`, Fernand « poli ». Les Mouettes n'est pas compté comme découvert.
+Début de partie, la famille composée, le jour 1. C'est le premier personnage que le joueur rencontre :
+la scène se joue **sur la carte de la ferme**, en bulles (`"carte": true`, `js/carte/ferme/rencontre.js`).
+Fernand arrive à pied du bout du chemin jusqu'au personnage du joueur ; ils se regardent et se
+répondent (les lignes « joueur » sont dites par le personnage du joueur, sous son prénom), une
+réplique à chaque appui ; puis Fernand repart par où il est venu. L'heure attend pendant l'échange.
+
+- Fernand : « Vous voilà ! Bienvenue à Céron. Vous êtes la famille de Maurice et Philomène, ça se
+  voit au sourire. »
+- Le joueur : « Bonjour ! On est bien arrivés, alors ? »
+- Fernand : « Pile au bon endroit. Voici votre terre : c'est ici que tout commence pour vous. »
+- Le joueur : « Elle est… plus sauvage que dans mes souvenirs. »
+- Avec des enfants, Fernand : « Et vous, les petits ! Un matin, je vous montrerai où les dauphins
+  viennent jouer. »
+- Fernand : « Elle vous attendait, voilà tout. La calèche passe demain, Achille vous dira tout.
+  Bonne première journée ! »
+
+Effets : faits `arrivee` et `arrivee_enfants`, Fernand « poli ». Les Mouettes n'est pas compté comme
+découvert. Sans la carte (Phaser absent), la scène se joue dans la fenêtre des scènes.
 
 ### La première lettre d'Adèle (S, lettre)
 
