@@ -59,6 +59,8 @@
 #            peinte, jarre aux coquillages, lanterne de papier, bassin aux nénuphars, banc et jardinière de
 #            pierre, pergola, bac de lavande ; puis le banc en rondins, la chaise peinte et le banc de pierre,
 #            de dos puis de profil.
+#   249 à 252 : la cuisinière qui cuit (BLOCS_CARTE.cuisine) : le feu du foyer et les flammes sous la
+#            marmite bougent, une image après l'autre (la 6 : éteinte, le foyer sombre).
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -1421,23 +1423,43 @@ def four(flamme=0):
     return t.fini()
 
 
-def cuisiniere():
+# Les flammes de la cuisinière qui cuit (BLOCS_CARTE.cuisine) : sous la marmite, des langues de feu qui
+# dépassent de part et d'autre de son fond ; dans le foyer, derrière la grille, le feu qui vacille. Une
+# image par rangée : (x, dy depuis le dessus du fourneau, nuance de FEU).
+SOUS_MARMITE = [
+    ((1, 2, 2), (1, 1, 3), (7, 2, 2), (2, 3, 3), (3, 3, 4), (4, 3, 3), (5, 3, 4), (6, 3, 2)),
+    ((1, 2, 3), (7, 2, 2), (7, 1, 3), (2, 3, 4), (3, 3, 3), (4, 3, 4), (5, 3, 3), (6, 3, 3)),
+    ((1, 2, 2), (7, 2, 3), (2, 3, 3), (3, 3, 3), (4, 3, 4), (5, 3, 4), (6, 3, 3), (1, 1, 2)),
+    ((1, 2, 3), (1, 1, 2), (7, 2, 2), (7, 1, 2), (2, 3, 4), (3, 3, 4), (4, 3, 3), (5, 3, 3), (6, 3, 4)),
+]
+FOYER = [
+    ((5, 5, 2), (6, 5, 1), (7, 5, 3), (8, 5, 3), (9, 5, 2), (10, 5, 1), (6, 4, 1), (7, 4, 3), (8, 4, 4), (9, 4, 1), (8, 3, 4)),
+    ((5, 5, 1), (6, 5, 2), (7, 5, 3), (8, 5, 2), (9, 5, 3), (10, 5, 2), (6, 4, 2), (7, 4, 4), (8, 4, 3), (7, 3, 4), (6, 3, 2)),
+    ((5, 5, 2), (6, 5, 3), (7, 5, 2), (8, 5, 3), (9, 5, 2), (10, 5, 1), (7, 4, 3), (8, 4, 4), (9, 4, 2), (8, 3, 3), (9, 3, 4)),
+    ((5, 5, 1), (6, 5, 2), (7, 5, 3), (8, 5, 3), (9, 5, 3), (10, 5, 2), (6, 4, 3), (7, 4, 4), (8, 4, 3), (7, 3, 3), (8, 2, 4)),
+]
+
+
+def cuisiniere(flamme=None):
     """La cuisinière : un fourneau de fonte vu de haut, deux plaques et la marmite, la porte
-    du foyer sur la face, le feu derrière la grille."""
+    du foyer sur la face, derrière la grille. flamme None : éteinte (le foyer sombre, deux braises) ;
+    0 à 3 : elle cuit (BLOCS_CARTE.cuisine), une image du feu (FOYER) et des flammes qui dépassent
+    sous la marmite (SOUS_MARMITE), qui bougent d'une image à l'autre."""
     t = Toile()
     yd, yf = boite(t, 1, 14, BAS - 1, 11, 13, lambda x, y: FER[2] if x == 1 else FER[1],
                    lambda x, y: FER[2] if x == 1 else FER[0] if x == 14 else FER[1])
     for x in range(1, 15):
         t.put(x, yf - 1, FER[3])                 # l'arête du dessus
         t.put(x, BAS - 1, FER[0])
-    # les plaques
+    allume = flamme is not None
+    # les plaques (celle de droite rougeoie quand le feu est pris)
     for cx in (4, 11):
         for x in range(cx - 2, cx + 2):
             t.put(x, yd + 2, FER[2])
             t.put(x, yd + 4, FER[0])
         t.put(cx - 2, yd + 3, FER[2])
         t.put(cx - 1, yd + 3, FER[0])
-        t.put(cx, yd + 3, FEU[1])
+        t.put(cx, yd + 3, FEU[1] if allume else FER[0])
         t.put(cx + 1, yd + 3, FER[0])
     # la marmite, sur la plaque de gauche
     for y in range(yd - 3, yd + 3):
@@ -1446,12 +1468,18 @@ def cuisiniere():
     for x in range(2, 7):
         t.put(x, yd - 3, LAINE[3])
     t.put(4, yd - 4, NOIR)
-    # la porte du foyer : la grille, le feu
+    # les flammes sous la marmite
+    if allume:
+        for x, dy, c in SOUS_MARMITE[flamme % len(SOUS_MARMITE)]:
+            t.put(x, yd + dy, FEU[c])
+    # la porte du foyer : la grille, le feu (ou deux braises)
     t.rect(4, yf + 1, 11, yf + 6, FER[0])
-    for x in range(5, 11):
-        t.put(x, yf + 5, FEU[2] if x % 2 else FEU[1])
-        t.put(x, yf + 4, FEU[3] if x in (7, 8) else FEU[1])
-    t.put(7, yf + 3, FEU[4])
+    if allume:
+        for x, dy, c in FOYER[flamme % len(FOYER)]:
+            t.put(x, yf + dy, FEU[c])
+    else:
+        t.put(7, yf + 5, FEU[0])
+        t.put(9, yf + 5, FEU[1])
     for x in range(4, 12, 2):
         t.put(x, yf + 2, FER[2])
     t.put(12, yf + 3, FER[4])                    # la poignée
@@ -2711,6 +2739,8 @@ COLLECTION = len(DESSINS)                        # les collections des biomes (B
 DESSINS += [banc_rondins(), table_rondins(), chaise_peinte(), jarre_coquillages(), lanterne_papier(), bassin_nenuphars(),
             banc_pierre(), jardiniere_pierre(), pergola(), bac_lavande(),
             banc_rondins(2), banc_rondins(1), chaise_peinte(2), chaise_peinte(1), banc_pierre(2), banc_pierre(1)]
+CUISINE_FEU = len(DESSINS)                       # la cuisinière qui cuit (BLOCS_CARTE.cuisine : 4 images)
+DESSINS += [cuisiniere(k) for k in range(len(FOYER))]
 
 
 def masque(g, x, y):

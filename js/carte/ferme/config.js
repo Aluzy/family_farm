@@ -305,6 +305,10 @@
     // le four qui cuit : ses flammes, une image après l'autre (`fps` images par seconde) ; le four redessiné (deux
     // cases, son dessin à lui : meuble_four.png éteint, `images` allumé, scripts/batiments/four.py)
     feu: { sorte: 'four', frames: [47, 48, 49], fps: 8, eteint: 'meuble_four', images: ['meuble_four_feu_0', 'meuble_four_feu_1', 'meuble_four_feu_2', 'meuble_four_feu_3', 'meuble_four_feu_4', 'meuble_four_feu_5', 'meuble_four_feu_6', 'meuble_four_feu_7'] },
+    // la cuisinière qui cuit : le feu du foyer et les flammes sous la marmite bougent (`fps` images par seconde ;
+    // éteinte : frames.cuisiniere, le foyer sombre ; scripts/carte/blocs.py cuisiniere) ; la vapeur qui monte de la
+    // marmite (js/carte/ferme/vapeur.js) part de `marmite` (px dans son image de 16 × 24 : le couvercle)
+    cuisine: { sorte: 'cuisiniere', frames: [249, 250, 251, 252], fps: 7, marmite: [4.5, 1] },
     // la meule qui moud (le Moulin en marche) : sa pierre et sa manivelle tournent (`fps` images
     // par seconde, un tour en 8 images ; chantier.js stepFires)
     meule: { sorte: 'meule', frames: [81, 82, 83, 84, 85, 86, 87, 88], fps: 8 },
