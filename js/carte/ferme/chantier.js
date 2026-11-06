@@ -71,13 +71,15 @@
 
   // Les barrières (toutes les couleurs, BLOCS_CARTE.clotures.couleurs).
   const estCloture = (sorte) => BLOCS_CARTE.clotures.couleurs[sorte] !== undefined;
-  // Le portail, ouvert ou fermé (BLOCS_CARTE.clotures.portail) : il se raccorde aux barrières comme elles.
-  const estPortail = (sorte) => BLOCS_CARTE.clotures.portail.sortes.includes(sorte);
+  // Le portail, ouvert ou fermé (BLOCS_CARTE.portails).
+  const estPortail = (sorte) => BLOCS_CARTE.portails.sortes.includes(sorte);
   // Le raccord d'une barrière (1 une voisine au-dessus, 2 à droite, 4 au-dessous, 8 à gauche) : une barrière
-  // de toute couleur, ou un mur (ses lisses vont jusqu'à lui : l'enclos s'appuie sur l'enceinte).
-  function masqueCloture(b, at, cols) {
+  // de toute couleur, ou un mur (ses lisses vont jusqu'à lui : l'enclos s'appuie sur l'enceinte). Pas vers un
+  // portail : la barrière s'arrête à son poteau, le portail est calé entre les poteaux de ses deux voisines.
+  // (`portail` : le raccord du portail lui-même, aux barrières et aux murs : son sens, horizontal ou vertical)
+  function masqueCloture(b, at, cols, portail = false) {
     const V = BLOCS_CARTE.hauts.variantes;
-    const c = b.case % cols, is = (k) => estCloture(at.get(k)) || estPortail(at.get(k)) || V[at.get(k)] !== undefined;
+    const c = b.case % cols, is = (k) => estCloture(at.get(k)) || (portail && estPortail(at.get(k))) || V[at.get(k)] !== undefined;
     return (is(b.case - cols) ? 1 : 0) + (c < cols - 1 && is(b.case + 1) ? 2 : 0) + (is(b.case + cols) ? 4 : 0) + (c > 0 && is(b.case - 1) ? 8 : 0);
   }
   // Le détail d'une barrière (scripts/carte/blocs.py BARRIERE_VARIANTES), tiré de sa case : toujours le même à
@@ -167,6 +169,9 @@
           const plat = BLOCS_CARTE.plats.includes(b.sorte);
           // (le puits et la citerne : leurs propres images, posées par syncWell et syncTank)
           const img = this.add.image(x, y, key, f).setOrigin(0.5, 1).setDepth(plat ? y - T : y).setVisible(!BLOCS_CARTE.ailleurs.includes(b.sorte));
+          // (le portail : son image dépasse de sa case, posée par le milieu du bas de la case ; devant les barrières
+          // de sa rangée, sur lesquelles il se rabat ouvert)
+          if (key === BLOCS_CARTE.portails.key) img.setOrigin(...BLOCS_CARTE.portails.origine).setDepth(y + 0.5);
           img.setFlipX(miroir);
           const ne = { case: b.case, sorte: b.sorte, x, y, img, sens: b.sens || 0 };
           B.set(b.case, ne);
@@ -655,9 +660,10 @@
       const CL = BLOCS_CARTE.clotures;
       if (estCloture(b.sorte) && this.has(CL.key)) return [CL.key, (CL.couleurs[b.sorte] * CL.details + detailCloture(b.case)) * 16 + masqueCloture(b, at, cols)];
       // (le portail : dans une barrière verticale, des voisines au-dessus ou au-dessous et aucune à côté)
-      if (estPortail(b.sorte) && this.has(CL.key)) {
-        const m = masqueCloture(b, at, cols), vertical = (m & 5) && !(m & 10), ouvert = b.sorte === 'portail_ouvert', P = CL.portail;
-        return [CL.key, vertical ? (ouvert ? P.verticalOuvert : P.vertical) : (ouvert ? P.ouvert : P.ferme)];
+      const PO = BLOCS_CARTE.portails;
+      if (estPortail(b.sorte) && this.has(PO.key)) {
+        const m = masqueCloture(b, at, cols, true), vertical = (m & 5) && !(m & 10), ouvert = b.sorte === 'portail_ouvert';
+        return [PO.key, vertical ? (ouvert ? PO.verticalOuvert : PO.vertical) : (ouvert ? PO.ouvert : PO.ferme)];
       }
       // (le réverbère, deux blocs de haut : son image dans la planche des murs hauts, éteint ;
       // sans elle, la lanterne éteinte)

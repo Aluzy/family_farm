@@ -256,9 +256,13 @@
     // un pour chaque case, d'après sa place), les 16 barrières raccordées : ((couleur × details + détail) × 16 + masque)
     clotures: { key: 'clotures', file: 'clotures.png', frame: { frameWidth: 16, frameHeight: 24 }, details: 12,
       couleurs: { barriere: 0, barriere_blanche: 1, barriere_rouge: 2, barriere_grise: 3, barriere_chene: 4, barriere_verte: 5, barriere_lavande: 6 },
-      // le portail (après les barrières) : fermé, ouvert ; dans une barrière verticale, fermé, ouvert. Un appui
-      // l'ouvre ou le ferme (chantier.js portailAt) ; fermé, il bloque (bloquent)
-      portail: { ferme: 1344, ouvert: 1345, vertical: 1346, verticalOuvert: 1347, sortes: ['portail', 'portail_ouvert'] } },
+    },
+    // le portail (assets/portails.png, scripts/carte/blocs.py portails) : calé entre les poteaux de ses deux
+    // voisines, son image dépasse de sa case (posée par `origine` : le milieu du bas de la case) ; fermé, ouvert
+    // (rabattu contre la barrière de gauche) ; dans une barrière verticale, fermé, ouvert. Un appui l'ouvre ou le
+    // ferme (chantier.js portailAt) ; fermé, il bloque (bloquent)
+    portails: { key: 'portails', file: 'portails.png', frame: { frameWidth: 96, frameHeight: 48 }, origine: [46 / 96, 40 / 48],
+      ferme: 0, ouvert: 1, vertical: 2, verticalOuvert: 3, sortes: ['portail', 'portail_ouvert'] },
     // la lanterne scintillante (un bloc `lumiere`, chantier.js stepLanterns) : éteinte le jour
     // (frames.lanterne) ; allumée quand la nuit tombe (le voile de l'heure plus sombre que
     // `allume`), ses deux images `allumee` alternent au hasard (elle scintille, `fps` au plus).

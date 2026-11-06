@@ -1220,75 +1220,91 @@ def icones_barrieres():
     for (sorte, P) in BARRIERE_COULEURS.items():
         barriere(10, P).crop((0, H - 16, W, H)).save(os.path.join(dossier, f'{sorte}.png'))
         table['🚧\u200d' + ICONES_BARRIERES[sorte]] = f'{sorte}.png'
-    portail().crop((0, H - 16, W, H)).save(os.path.join(dossier, 'portail.png'))
+    cx, cy = PORTAIL_CASE
+    portails()[0].crop((cx - 8, cy - 9, cx + 24, cy + 23)).save(os.path.join(dossier, 'portail.png'))   # (32 × 32, le vantail fermé)
     table['🚧\u200d🚪'] = 'portail.png'
     with open(chemin, 'w', encoding='utf8') as f:
         f.write(json.dumps(table, ensure_ascii=False, indent=1))
 
 
-def portail(ouvert=False, vertical=False):
-    """Le portail de bois, dans une barrière : fermé, un vantail cadré (deux traverses, deux montants, une écharpe
-    en biais, un loquet de fer) d'une barrière voisine à l'autre ; ouvert, le vantail tourné vers nous sur ses gonds
-    (à gauche), vu par la tranche, et le passage libre. Dans une barrière verticale (vertical) : fermé, le vantail vu
-    par la tranche le long de la barrière ; ouvert, tourné vers la droite, vu de face."""
-    P = BOIS
-    t = Toile()
-    def vantail(x0, x1, y0, y1):
-        # le cadre : traverses en haut et en bas, montants aux bouts, l'écharpe du bas du gond au haut du loquet
-        for x in range(x0, x1 + 1):
-            for y, c in ((y0, P[4]), (y0 + 1, P[2]), (y1 - 1, P[4]), (y1, P[2])):
-                t.put(x, y, c)
-        for y in range(y0, y1 + 1):
-            for x, c in ((x0, P[3]), (x0 + 1, P[2]), (x1 - 1, P[3]), (x1, P[1])):
-                t.put(x, y, c)
-        n = (x1 - 1) - (x0 + 2)
+# Le portail (proposition A) : une barrière de ferme calée entre les poteaux de ses deux voisines (elles n'ont pas de
+# lisse vers lui, js/carte/ferme/chantier.js masqueCloture). Son image dépasse de sa case : une planche à part,
+# assets/portails.png, des images de PORTAIL_L × PORTAIL_H ; la case du portail y est en PORTAIL_CASE (son coin haut
+# gauche, en px), l'image posée par le milieu du bas de la case (BLOCS_CARTE.portails.origine).
+PORTAIL_L, PORTAIL_H = 96, 48
+PORTAIL_CASE = (38, 24)
+
+
+def portails():
+    """Les 4 images du portail : dans une barrière horizontale, fermé (le vantail d'un poteau voisin à l'autre :
+    un cadre, trois traverses, une écharpe, le loquet, les gonds sur le poteau de gauche) puis ouvert (rabattu à plat
+    contre la barrière de gauche) ; dans une barrière verticale, fermé (vu par la tranche, entre le poteau du dessus et
+    celui du dessous) puis ouvert (tourné vers la droite sur ses gonds, vu de face)."""
+    cx, cy = PORTAIL_CASE
+    y0 = cy - 8                                   # le haut d'une image de 16 × 24 de la case (comme les barrières)
+
+    def toile():
+        t = Toile()
+        t.im = Image.new('RGBA', (PORTAIL_L, PORTAIL_H), (0, 0, 0, 0))
+        t.px = t.im.load()
+        return t
+
+    def put(t, x, y, c):
+        if 0 <= x < PORTAIL_L and 0 <= y < PORTAIL_H:
+            t.px[x, y] = c + (255,)
+
+    def vantail(t, x0):
+        """Le vantail de face, de x0 à x0 + 27 : trois traverses, deux montants, une écharpe du bas du gond au haut
+        du loquet."""
+        x1 = x0 + 27
+        for yy in (11, 15, 19):
+            y = y0 + yy
+            for x in range(x0 + 1, x1):
+                put(t, x, y, BOIS[4]); put(t, x, y + 1, BOIS[2] if x % 7 else BOIS[1]); put(t, x, y + 2, BOIS[1])
+        for x in (x0, x1 - 1):
+            for y in range(y0 + 10, y0 + 23):
+                put(t, x, y, BOIS[3]); put(t, x + 1, y, BOIS[1])
+        n = (x1 - 3) - (x0 + 2)
         for k in range(n + 1):
-            y = round((y1 - 2) - k * ((y1 - 2) - (y0 + 2)) / n)
-            t.put(x0 + 2 + k, y, P[3])
-            t.put(x0 + 2 + k, y + 1, P[1])
-    def pilier(x):
-        # un poteau de portail, plus haut que ceux de la barrière, coiffé d'un chapeau
-        for y in range(6, BAS + 1):
-            t.put(x, y, P[3] if y > 7 else P[4])
-            t.put(x + 1, y, P[1] if y > 7 else P[3])
-        t.put(x, 5, P[2]); t.put(x + 1, 5, P[2])
-    if not vertical:
-        if not ouvert:
-            vantail(2, 13, 10, 20)
-            t.put(11, 15, FER[3]); t.put(12, 15, FER[3]); t.put(12, 16, FER[1])     # le loquet
-        else:
-            # le vantail tourné vers nous sur ses gonds (le pilier de gauche), vu de biais : il descend vers nous
-            for k, y in enumerate(range(10, BAS + 1)):
-                x = 2 + min(2, k // 5)
-                t.put(x, y, P[4]); t.put(x + 1, y, P[2]); t.put(x + 2, y, P[1])
-                if y in (10, 11, 19, 20):
-                    t.put(x + 3, y, P[1])
-            t.put(2, 11, FER[2]); t.put(2, 19, FER[2])                           # les gonds
-        pilier(0)
-        pilier(14)
-    else:
-        if not ouvert:
-            # le vantail vu par la tranche, le long de la barrière : comme ses lisses, plus épais, un loquet
-            t.rect(6, 0, 9, BAS, P[3])
-            for y in range(0, BAS + 1):
-                t.put(6, y, P[4]); t.put(9, y, P[1])
-            for y in (4, 18):
-                t.rect(6, y, 9, y + 1, P[2])
-            t.put(8, 11, FER[3])
-        else:
-            # tourné vers la droite sur ses gonds (en haut), vu de face : un petit vantail
-            for y in range(0, 6):
-                t.put(7, y, P[4]); t.put(8, y, P[2])
-            vantail(7, 15, 6, 14)
-    return t.fini()
+            y = round(y0 + 20 - k * 9 / n)
+            put(t, x0 + 2 + k, y, BOIS[3]); put(t, x0 + 2 + k, y + 1, BOIS[1])
+
+    out = []
+    # horizontal, fermé : de x -6 à 21 de la case (entre le poteau de gauche, en -10..-7, et celui de droite, en 22..25)
+    t = toile()
+    vantail(t, cx - 6)
+    put(t, cx + 18, y0 + 16, FER[3]); put(t, cx + 18, y0 + 17, FER[1])          # le loquet
+    for y in (12, 20):
+        put(t, cx - 6, y0 + y, FER[2])                                           # les gonds
+    out.append(t.fini())
+    # horizontal, ouvert : rabattu contre la barrière de gauche, de x -34 à -7 (les gonds restent en -6)
+    t = toile()
+    vantail(t, cx - 34)
+    for y in (12, 20):
+        put(t, cx - 6, y0 + y, FER[2])
+    out.append(t.fini())
+    # vertical, fermé : vu par la tranche, une planche épaisse entre le poteau du dessus (son pied en y -1 de la
+    # case) et celui du dessous (son haut en y 17), au milieu de la case comme les lisses verticales
+    t = toile()
+    for y in range(cy, cy + 17):
+        put(t, cx + 6, y, BOIS[4]); put(t, cx + 7, y, BOIS[3]); put(t, cx + 8, y, BOIS[2]); put(t, cx + 9, y, BOIS[1])
+    for y in (cy + 2, cy + 13):
+        put(t, cx + 10, y, FER[2])
+    put(t, cx + 5, cy + 9, FER[3])
+    out.append(t.fini())
+    # vertical, ouvert : tourné vers la droite sur ses gonds (le poteau du dessus), vu de face, sur l'herbe
+    t = toile()
+    vantail(t, cx + 9)
+    for y in (12, 20):
+        put(t, cx + 9, y0 + y - 8, FER[2])
+    out.append(t.fini())
+    return out
 
 
 def barrieres():
     """assets/clotures.png : pour chaque couleur (BARRIERE_COULEURS), chaque détail (BARRIERE_VARIANTES), une
-    rangée des 16 barrières raccordées : l'image ((couleur × détails + détail) × 16 + masque) ; puis le portail
-    (BLOCS_CARTE.clotures.portail) : fermé, ouvert, puis dans une barrière verticale fermé, ouvert."""
-    return [barriere(m, P, k) for P in BARRIERE_COULEURS.values() for k in range(len(BARRIERE_VARIANTES)) for m in range(16)] + \
-        [portail(o, v) for v in (False, True) for o in (False, True)]
+    rangée des 16 barrières raccordées : l'image ((couleur × détails + détail) × 16 + masque)."""
+    return [barriere(m, P, k) for P in BARRIERE_COULEURS.values() for k in range(len(BARRIERE_VARIANTES)) for m in range(16)]
 
 
 # ---------- les objets ----------
@@ -2756,6 +2772,7 @@ def main():
     grille(hauts + fen + REVERBERE, W, h, COLONNES_HAUTS).save(os.path.join(ASSETS, 'murs_hauts.png'))
     grille(barrieres(), W, H, 16).save(os.path.join(ASSETS, 'clotures.png'))
     icones_barrieres()
+    grille(portails(), PORTAIL_L, PORTAIL_H, 4).save(os.path.join(ASSETS, 'portails.png'))
     print(f'assets/clotures.png : {len(BARRIERE_COULEURS)} couleurs × {len(BARRIERE_VARIANTES)} détails × 16 barrières raccordées')
     print(f'assets/murs_hauts.png : {len(hauts)} murs puis {len(fen)} fenêtres (à partir de {len(hauts)}), '
           f'puis le réverbère (à partir de {len(hauts) + len(fen)}), images de {W} × {h}')
