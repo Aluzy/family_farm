@@ -91,9 +91,11 @@ export function recipeNode(id) {
   return Object.keys(DATA.ARBRE.noeuds).find((n) => (DATA.ARBRE.noeuds[n].effet.recettes || []).includes(id)) || null;
 }
 
-// Préparations en série : places totales d'un atelier (1 sans le nœud).
+// Préparations en série : places totales d'un atelier (celle en cours comprise) : FILE_BASE sans le nœud,
+// sa valeur avec (10).
+export const FILE_BASE = 3;
 export function queueCapacity(state) {
-  return Math.max(1, techFlag(state, 'fileAttente') || 1);
+  return Math.max(FILE_BASE, techFlag(state, 'fileAttente') || FILE_BASE);
 }
 
 // Reste-t-il une place dans la file d'un atelier occupé ?
@@ -103,10 +105,30 @@ function queueRoom(state, stationId) {
   return used < queueCapacity(state);
 }
 
-// Démarre la préparation `recette` sur un atelier libre.
-function beginTask(state, stationId, recette) {
+// Démarre la préparation `recette` sur un atelier libre. `pris` (les ingrédients sortis du stock) et `eau` (L) :
+// ce qui reviendra au stock si on l'arrête (stopCurrent).
+function beginTask(state, stationId, recette, pris = null, eau = 0) {
   const temps = recipeTime(state, recette) * 1000;
-  state.stations[stationId].tache = { recette, resteMs: temps, dureeMs: temps };
+  const t = { recette, resteMs: temps, dureeMs: temps };
+  if (pris) { t.pris = pris; t.eau = eau || 0; }
+  state.stations[stationId].tache = t;
+}
+
+// Arrête la préparation en cours (pas au Moulin : millCancel) : ses ingrédients et son eau reviennent au
+// stock, le temps déjà passé est perdu ; la suivante de la file démarre. (Une préparation lancée avant que
+// la tâche garde ses ingrédients : ceux de la recette, la première option de chacun.)
+export function stopCurrent(state, stationId) {
+  const st = state.stations[stationId];
+  if (!st || !st.tache) return fail('Rien à arrêter.');
+  if (stationId === 'moulin') return fail('Le blé qui se moud ne s\'arrête pas.');
+  const t = st.tache, r = DATA.RECETTES[t.recette];
+  const pris = Array.isArray(t.pris) ? t.pris : r.ingredients.map((ing) => ({ item: ingredientOptions(ing)[0], qte: ing.qte }));
+  for (const p of pris) storeWithSilo(state, p.item, p.qte);
+  const eau = t.pris ? t.eau : r.eau || 0;
+  if (eau) state.eauMl = Math.min(tankCapacity(state), state.eauMl + eau * 1000);
+  st.tache = null;
+  if (Array.isArray(st.file) && st.file.length) { const e = st.file.shift(); beginTask(state, stationId, e.recette, e.pris || [], e.eau); }
+  return { ok: true, recette: t.recette };
 }
 
 // Annule une préparation en file (pas celle en cours) : ses ingrédients et son
@@ -136,7 +158,7 @@ export function startRecipe(state, id) {
     return fail(`Recette à débloquer dans l'Arbre des technologies${n ? ` (${n.nom})` : ''}.`);
   }
   if (!st.construit) return fail(`Construis d'abord ${def.article} ${def.nom}.`);
-  if (st.tache && !queueRoom(state, r.station)) return fail(`${def.nom} : une préparation est déjà en cours.`);
+  if (st.tache && !queueRoom(state, r.station)) return fail(`${def.nom} : la file est pleine (${queueCapacity(state)} préparations).`);
   const lines = recipeLines(state, id);
   const missing = lines.find((l) => !l.ok);
   if (missing) return fail(missing.eau ? 'Pas assez d\'eau dans le réservoir.' : 'Il manque des ingrédients.');
@@ -160,7 +182,7 @@ export function startRecipe(state, id) {
   }
   // Lot 7 : les paliers « Préparation rapide » raccourcissent la préparation à
   // son lancement (une préparation déjà en cours garde son temps).
-  beginTask(state, r.station, id);
+  beginTask(state, r.station, id, pris, r.eau || 0);
   return { ok: true, recette: id };
 }
 
@@ -188,7 +210,8 @@ function completeTask(state, id) {
     st.tache.enAttente = enAttente - 1;
   } else if (Array.isArray(st.file) && st.file.length) {
     // Arbre v2 : la préparation suivante de la file démarre toute seule.
-    beginTask(state, id, st.file.shift().recette);
+    const e = st.file.shift();
+    beginTask(state, id, e.recette, e.pris || [], e.eau);
   }
   return { item, qty, sousProduit: extra ? { item: extra.item, qty: extra.qte } : null, suite: enAttente > 0 };
 }

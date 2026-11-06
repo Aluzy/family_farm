@@ -208,44 +208,64 @@ export function stationControls(d) {
     </span>`;
 }
 
+// Le bloc « En préparation » d'un atelier (four, cuisine) : le plat qui cuit (son icône, sa croix pour
+// l'arrêter, ce qu'il lui reste, sa barre), puis les places de la file (queueCapacity : celle en cours
+// comprise), chacune avec sa croix, ajustée à sa case.
+function preparationHtml(id) {
+  const st = state.stations[id];
+  const cap = queueCapacity(state);
+  const file = Array.isArray(st.file) ? st.file : [];
+  const job = st.tache;
+  const used = (job ? 1 : 0) + file.length;
+  const arret = id !== 'moulin';
+  let encours;
+  if (job) {
+    const r = DATA.RECETTES[job.recette];
+    const pct = Math.max(0, Math.min(100, Math.floor(((job.dureeMs - job.resteMs) * 100) / job.dureeMs)));
+    const left = taskTimeLeft(state, id);
+    encours = `
+      <div class="prep-encours">
+        <span class="prep-ico">${r.icone}${arret ? `<button type="button" class="prep-croix" data-action="stop-recipe" data-station="${id}" aria-label="Arrêter : ${r.nom} (ses ingrédients sont rendus)" title="Arrêter (ingrédients rendus)">✕</button>` : ''}</span>
+        <span class="prep-txt">${r.nom}<small>encore <span class="num">${Number.isFinite(left) ? left : '?'} s</span></small>
+          <span class="bar" role="progressbar" aria-label="Avancement : ${r.nom}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span class="bar-fill" style="width:${pct}%"></span></span>
+        </span>
+      </div>`;
+  } else encours = `<div class="prep-encours libre"><span class="muted">${DATA.STATIONS[id].nom} libre : choisis ${id === 'four' || id === 'cuisine' ? 'un plat' : 'une préparation'} ci-dessous.</span></div>`;
+  const places = Array.from({ length: Math.max(0, cap - 1) }, (_, i) => {
+    const e = file[i];
+    if (!e) return '<span class="prep-place" aria-hidden="true"></span>';
+    const r = DATA.RECETTES[e.recette];
+    return `<span class="prep-place pleine" title="${r.nom}">${r.icone}<button type="button" class="prep-croix" data-action="cancel-queued" data-station="${id}" data-index="${i}" aria-label="Retirer ${r.nom} de la file">✕</button></span>`;
+  }).join('');
+  return `
+    <div class="prep-tete"><span>En préparation</span><span class="muted num" aria-label="${used} sur ${cap} places">${used} / ${cap}</span></div>
+    ${encours}
+    ${cap > 1 ? `<div class="prep-file" style="--places:${Math.max(1, cap - 1)}" aria-label="La file : ${plural(file.length, 'plat', formatNumber(file.length))} en attente">${places}</div>` : ''}`;
+}
+
+// Le courant d'un atelier électrique (son état, son usure, ses boutons) ; '' sinon.
+function stationPower(id) {
+  const def = DATA.STATIONS[id];
+  if (!def.electrique) return '';
+  const d = state.stations[id].appareil;
+  const ds = deviceStatus(state, d);
+  return `
+      <span class="muted">${ds.label}${ds.badge ? ` · ⚠️ ${ds.badge}` : ''} · ${d.conso > 0 ? 'consomme du courant' : 'ne consomme rien'}</span>
+      ${wearHtml(d)}
+      ${stationControls(d)}`;
+}
+
 function stationCard(id) {
   const def = DATA.STATIONS[id];
   const st = state.stations[id];
   if (!st.construit) return stationBuildCard(id);
   const job = st.tache;
-  let work;
-  if (job) {
-    const r = DATA.RECETTES[job.recette];
-    const pct = Math.max(0, Math.min(100, Math.floor(((job.dureeMs - job.resteMs) * 100) / job.dureeMs)));
-    const left = taskTimeLeft(state, id);
-    work = `
-      <span class="muted">${r.icone} ${r.nom} · encore <span class="num">${Number.isFinite(left) ? left : '?'} s</span></span>
-      <span class="bar" role="progressbar" aria-label="Avancement : ${r.nom}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span class="bar-fill" style="width:${pct}%"></span></span>`;
-  } else {
-    work = '<span class="muted">Prête pour une nouvelle préparation.</span>';
-  }
-  // Arbre v2 : préparations en attente (annulables, ingrédients rendus).
-  const file = Array.isArray(st.file) ? st.file : [];
-  if (file.length) {
-    work += `<span class="muted">En attente :</span><span class="level-chips">${file
-      .map((e, i) => `<span class="chip">${DATA.RECETTES[e.recette].icone} ${DATA.RECETTES[e.recette].nom} <button type="button" class="btn" data-action="cancel-queued" data-station="${id}" data-index="${i}" aria-label="Annuler ${DATA.RECETTES[e.recette].nom}">✕</button></span>`)
-      .join('')}</span>`;
-  }
-  let power = '';
-  if (def.electrique) {
-    const d = st.appareil;
-    const ds = deviceStatus(state, d);
-    power = `
-      <span class="muted">${ds.label}${ds.badge ? ` · ⚠️ ${ds.badge}` : ''} · ${d.conso > 0 ? 'consomme du courant' : 'ne consomme rien'}</span>
-      ${wearHtml(d)}
-      ${stationControls(d)}`;
-  }
   const chip = job ? '<span class="chip">⏳ Occupée</span>' : '<span class="chip">✅ Libre</span>';
   return `
     <div class="card station ancre${job ? ' busy' : ''}" id="station-${id}">
       <span class="card-title"><span>${artIcon(id)}${def.nom}</span><span class="chips">${chip}${helpBtn(id)}</span></span>
-      ${work}
-      ${power}
+      ${preparationHtml(id)}
+      ${stationPower(id)}
     </div>`;
 }
 
@@ -276,7 +296,7 @@ function recipeCard(id) {
     const n = DATA.ARBRE.noeuds[status.noeud];
     reason = `<span class="alert">🔒 À débloquer dans l'Arbre des technologies : ${n ? `${n.icone} ${n.nom}` : ''}.</span>`;
   } else if (status.code === 'absente') reason = `<span class="alert">Construis d'abord ${sdef.article} ${sdef.nom}.</span>`;
-  else if (status.code === 'occupee') reason = `<span class="alert">${sdef.nom} : ${sdef.article === 'la' ? 'occupée' : 'occupé'}, attends la fin de la préparation.</span>`;
+  else if (status.code === 'occupee') reason = `<span class="alert">${sdef.nom} : la file est pleine, attends la fin d'une préparation.</span>`;
   else if (status.code === 'manque') reason = '<span class="alert">Il manque des ingrédients.</span>';
   const power = sdef.electrique ? ' · électrique' : '';
   return `
@@ -289,16 +309,86 @@ function recipeCard(id) {
     </article>`;
 }
 
-// Fenêtre d'un meuble de la maison (four, cuisine) : l'atelier (à construire, ou ce qui y
-// cuit), puis ses recettes, qu'on lance d'ici comme depuis le Livre de recette.
+// Combien de fois la recette peut partir avec ce qu'il y a en stock (et dans le réservoir).
+function combienPossible(id) {
+  const lignes = recipeStatus(state, id).lignes;
+  return lignes.reduce((m, l) => Math.min(m, Math.floor((l.have + EPS) / l.qte)), Infinity);
+}
+
+// La recette choisie dans la fenêtre de chaque atelier, et combien en lancer (la page seulement).
+const choix = {};
+const quantite = {};
+
+// Une recette de la grille : son icône seule ; blanchie s'il manque des ingrédients, pâle et cadenassée
+// si elle est à débloquer.
+function platCase(id, rid, choisie) {
+  const r = DATA.RECETTES[rid];
+  const status = recipeStatus(state, rid), code = status.code;
+  // (blanchie dès qu'il manque un ingrédient, même quand la file est pleine)
+  const manque = code !== 'verrouillee' && status.lignes.some((l) => !l.ok);
+  const sorte = code === 'verrouillee' ? ' verrou' : manque ? ' non' : '';
+  const dit = code === 'verrouillee' ? ' (à débloquer)' : manque ? ' (il manque des ingrédients)' : '';
+  return `<button type="button" class="plat-case${sorte}${choisie ? ' choisi' : ''}" data-action="recette-choisir" data-station="${id}" data-recipe="${rid}" aria-pressed="${choisie}" aria-label="${r.nom}${dit}" title="${r.nom}${dit}"><span class="plat-ico">${r.icone}</span>${code === 'verrouillee' ? '<span class="plat-cadenas" aria-hidden="true">🔒</span>' : ''}</button>`;
+}
+
+// La fiche de la recette choisie : ce qu'elle donne, ses ingrédients (ce que tu as), combien en lancer.
+function ficheRecette(id, rid) {
+  const r = DATA.RECETTES[rid];
+  const sdef = DATA.STATIONS[r.station];
+  const status = recipeStatus(state, rid);
+  const st = state.stations[id];
+  const used = (st.tache ? 1 : 0) + (Array.isArray(st.file) ? st.file.length : 0);
+  const place = Math.max(0, queueCapacity(state) - used);
+  const ingr = status.lignes.map((l) => {
+    const what = l.eau ? `${formatQty(l.qte)} L 💧` : `${formatQty(l.qte)} ${l.options.map((it) => DATA.OBJETS[it].icone).join(' ou ')}`;
+    const nom = l.eau ? 'eau' : l.options.map((it) => DATA.OBJETS[it].nom.toLowerCase()).join(' ou ');
+    const have = l.eau ? `${formatNumber(l.have)} L` : formatQty(l.have);
+    return `<span class="ingr${l.ok ? '' : ' manque'}" title="${nom}"><span>${what}</span><span class="muted">· tu en as ${have}</span></span>`;
+  }).join('');
+  let reason = '';
+  if (status.code === 'verrouillee') {
+    const n = DATA.ARBRE.noeuds[status.noeud];
+    reason = `<p class="alert">🔒 À débloquer dans l'Arbre des technologies : ${n ? `${n.icone} ${n.nom}` : ''}.</p>`;
+  } else if (status.code === 'occupee') reason = `<p class="alert">${status.lignes.some((l) => !l.ok) ? 'Il manque des ingrédients, et la' : 'La'} file est pleine : attends qu'une préparation se termine.</p>`;
+  else if (status.code === 'manque') reason = '<p class="alert">Il manque des ingrédients.</p>';
+  const max = status.ok ? Math.max(1, Math.min(place, combienPossible(rid))) : 1;
+  const n = Math.max(1, Math.min(max, quantite[id] || 1));
+  quantite[id] = n;
+  const pas = max > 1 ? `
+      <span class="fiche-pas" role="group" aria-label="Combien en lancer">
+        <button type="button" class="btn" data-action="recette-qte" data-station="${id}" data-delta="-1" aria-label="Un de moins"${n <= 1 ? ' disabled' : ''}>−</button>
+        <span class="num" aria-live="polite">${n}</span>
+        <button type="button" class="btn" data-action="recette-qte" data-station="${id}" data-delta="1" aria-label="Un de plus"${n >= max ? ' disabled' : ''}>+</button>
+      </span>` : '';
+  const libelle = st.tache ? `Ajouter ${n > 1 ? `${n} ` : ''}à la file` : n > 1 ? `Lancer ${n} à la suite` : 'Lancer';
+  return `
+    <div class="fiche-recette">
+      <h4>${r.icone} ${r.nom}</h4>
+      <p class="muted">${recipeMeta(rid)} · ${formatNumber(recipeTime(state, rid))} s${sdef.electrique ? ' · électrique' : ''}</p>
+      <div class="fiche-ingr" aria-label="Ingrédients">${ingr}</div>
+      ${reason}
+      <div class="fiche-lancer">${pas}<button type="button" class="btn${status.ok ? ' primary' : ''}" data-action="start-recipe" data-recipe="${rid}" data-n="${n}"${status.ok ? '' : ' disabled'}>${libelle}</button></div>
+    </div>`;
+}
+
+// Fenêtre d'un meuble de la maison (four, cuisine) : ce qui est en préparation, puis ses recettes en grille
+// (leurs icônes) et la fiche de celle qu'on a choisie, d'où on en lance une ou plusieurs à la suite.
 // `fonte` (le four) : true, les transformations seules (les lingots : RECETTES.transformation) ;
 // false, les plats seuls ; absent, toutes les recettes de la station.
 export function renderStationFenetre(id, fonte) {
   const recipes = Object.keys(DATA.RECETTES).filter((r) => DATA.RECETTES[r].station === id && !DATA.RECETTES[r].horsLivre
     && (fonte === undefined || !!DATA.RECETTES[r].transformation === fonte));
+  if (!state.stations[id].construit) return `<div class="cards">${stationBuildCard(id)}</div>`;
+  if (!recipes.includes(choix[id])) choix[id] = recipes.find((r) => recipeStatus(state, r).ok) || recipes.find((r) => recipeStatus(state, r).code !== 'verrouillee') || recipes[0];
+  const rid = choix[id];
   return `
-    <div class="cards">${stationCard(id)}</div>
-    ${state.stations[id].construit && recipes.length ? `<h3 class="section-title">Recettes</h3><div class="recipes">${recipes.map(recipeCard).join('')}</div>` : ''}`;
+    <div class="menu-atelier" id="station-${id}">
+      <div class="prep">${preparationHtml(id)}${stationPower(id)}</div>
+      ${recipes.length ? `
+      <h3 class="section-title">${fonte ? 'Fontes' : 'Plats'}</h3>
+      <div class="plats-grille" role="group" aria-label="${fonte ? 'Fontes' : 'Plats'}">${recipes.map((r) => platCase(id, r, r === rid)).join('')}</div>
+      ${ficheRecette(id, rid)}` : ''}
+    </div>`;
 }
 
 export function renderRecettes() {
@@ -314,7 +404,7 @@ export function renderRecettes() {
       ${energyChip('cuisiner')}
     </div>
     <p><button type="button" class="btn book-open-btn" data-action="book-open">📖 Feuilleter le livre <span class="chip">essai</span></button></p>
-    <p class="muted">${queueCapacity(state) > 1 ? `Jusqu'à ${queueCapacity(state)} préparations à la suite par atelier : elles s'enchaînent sans clic, ingrédients réservés au lancement.` : 'Une seule préparation à la fois par atelier : c\'est toi qui relances (les Préparations en série de l\'Arbre des technologies ajoutent une file).'} Tout ce qui est en cours se termine pendant la nuit. Certaines recettes se débloquent dans l'Arbre des technologies. La farine se fait au Moulin, dans son propre menu.</p>
+    <p class="muted">Jusqu'à ${queueCapacity(state)} préparations à la suite par atelier : elles s'enchaînent sans clic, ingrédients réservés au lancement${queueCapacity(state) < 10 ? ' (les Préparations en série de l\'Arbre des technologies en permettent 10)' : ''}. Tout ce qui est en cours se termine pendant la nuit. Certaines recettes se débloquent dans l'Arbre des technologies. La farine se fait au Moulin, dans son propre menu.</p>
     <h3 class="section-title">Stations</h3>
     <div class="cards">${ids.map(stationCard).join('')}</div>
     <h3 class="section-title">Recettes</h3>
@@ -342,6 +432,23 @@ registerActions({
   'cancel-queued': (target) => {
     applyResult(executer('cuisine.annuler', { station: String(target.dataset.station || ''), rang: Number(target.dataset.index) }));
   },
+  // la croix du plat en cours : il s'arrête, ses ingrédients reviennent
+  'stop-recipe': (target) => {
+    const result = applyResult(executer('cuisine.arreter', { station: String(target.dataset.station || '') }));
+    if (result.ok) { syncJobs(); notify(`${DATA.RECETTES[result.recette].icone} ${DATA.RECETTES[result.recette].nom} : arrêté, ingrédients rendus`); }
+  },
+  // la fenêtre d'un atelier : choisir une recette de la grille, combien en lancer
+  'recette-choisir': (target) => {
+    const id = String(target.dataset.station || '');
+    if (choix[id] !== target.dataset.recipe) quantite[id] = 1;
+    choix[id] = target.dataset.recipe;
+    refresh();
+  },
+  'recette-qte': (target) => {
+    const id = String(target.dataset.station || '');
+    quantite[id] = Math.max(1, (quantite[id] || 1) + (Number(target.dataset.delta) || 0));
+    refresh();
+  },
   'build-station': (target) => {
     const id = target.dataset.station;
     const result = applyResult(executer('atelier.construire', { station: id }));
@@ -350,12 +457,22 @@ registerActions({
       notify(`${def.icone} ${def.nom} construit${def.article === 'la' ? 'e' : ''} (−${formatCoins(result.cost)} 💰)${def.debloque ? ' · onglet Livre de recette débloqué !' : ''}`);
     }
   },
+  // (data-n : plusieurs à la suite, depuis la fenêtre d'un atelier ; on s'arrête au premier refus)
   'start-recipe': (target) => {
     const id = target.dataset.recipe;
-    const result = applyResult(executer('cuisine.lancer', { recette: id }));
-    if (result.ok) {
-      syncJobs();
-      notify(`${DATA.RECETTES[id].icone} ${DATA.RECETTES[id].nom} : préparation lancée`);
+    const n = Math.max(1, Math.floor(Number(target.dataset.n) || 1));
+    let faits = 0, refus = null;
+    for (let k = 0; k < n; k++) {
+      const r = executer('cuisine.lancer', { recette: id });
+      if (!r.ok) { refus = r; break; }
+      faits++;
     }
+    if (faits) {
+      syncJobs();
+      notify(`${DATA.RECETTES[id].icone} ${DATA.RECETTES[id].nom}${faits > 1 ? ` ×${faits}` : ''} : ${faits > 1 ? 'préparations lancées' : 'préparation lancée'}`);
+    }
+    const station = DATA.RECETTES[id].station;
+    quantite[station] = 1;
+    applyResult(refus || { ok: true });
   },
 });

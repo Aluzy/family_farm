@@ -61,6 +61,7 @@
    « Annuler » une préparation en attente est une commande à part entière) :
      cuisine.lancer   { recette }               lancer une recette à son atelier
      cuisine.annuler  { station, rang }         retirer la préparation en attente n° `rang` de la file
+     cuisine.arreter  { station }               arrêter la préparation en cours (ses ingrédients rendus)
      moulin.moudre    { quantite }              verser du blé au Moulin
      moulin.annuler   { }                       reprendre le blé du Moulin
      frigo.ranger     { objet, quantite }       mettre au réfrigérateur ; frigo.sortir : l'en sortir
@@ -118,7 +119,7 @@ import { harvestAll, plantAll, setSemis, upgradeRobotBattery, waterAll } from '.
 import { remplirCruche } from './cruche.js';
 import { buyPasture, feedAllHens, feedHen, setCowHerbs, shear, upgradePoulailler } from './animals.js';
 import { pickUp } from './ramassage.js';
-import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe } from './kitchen.js';
+import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe, stopCurrent } from './kitchen.js';
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
 import { deposerBoite, reprendreBoite } from './repas.js';
 import { eatSnack } from './family.js';
@@ -439,6 +440,10 @@ export const COMMANDES = {
   'cuisine.annuler': {
     args: { station: 'texte', rang: 'case' },
     executer: (state, { station, rang }) => (DATA.STATIONS[station] ? cancelQueued(state, station, rang) : fail('Atelier inconnu.')),
+  },
+  'cuisine.arreter': {
+    args: { station: 'texte' },
+    executer: (state, { station }) => (DATA.STATIONS[station] ? stopCurrent(state, station) : fail('Atelier inconnu.')),
   },
   'moulin.moudre': { args: { quantite: 'quantite' }, executer: (state, { quantite }) => startMilling(state, Math.max(1, Math.floor(quantite))) },
   'moulin.annuler': { args: {}, executer: (state) => cancelMilling(state) },
