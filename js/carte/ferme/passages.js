@@ -17,9 +17,32 @@
 
     // Revenu de la mine (jeu.html?arrivee=mine) : il sort de sa porte, la vue sur lui ; d'une
     // grotte de la montagne (jeu.html?arrivee=grotte_<n>) : devant son entrée, dans le monde.
+    // Sinon : là où il était quand on a quitté la partie ou rechargé la page (makeRetour).
     makeArrivee() {
       const params = new URLSearchParams(global.location.search), ou = params.get('arrivee');
       if (ou === 'mine' || /^grotte_\d+$/.test(ou || '')) this.arrive(ou);
+      else this.makeRetour();
+      this.positionLue = true;
+    },
+
+    // La partie reprise, la page rechargée : il réapparaît là où il était (la position notée par stepPosition,
+    // js/ui/position.js ; rien de noté : il sort de sa porte, comme avant), la vue sur lui.
+    makeRetour() {
+      const B = this.ctx.bridge, p = B && B.positionGardee ? B.positionGardee() : null;
+      if (!p || !this.fermier || !this.fermier.arrive) return;
+      const at = this.fermier.arrive(p.x, p.y);
+      if (at) this.setCentre(at.x, at.y);
+    },
+
+    // Chaque image : sa position notée (au plus une fois par seconde ; seulement ce qui change) : ses pieds,
+    // ou null s'il est rentré chez lui ou monté à l'étage (il repartira alors de sa porte).
+    stepPosition(time) {
+      const B = this.ctx.bridge;
+      if (!this.positionLue || !B || !B.positionNoter || !this.fermier || !this.fermier.pos) return;
+      if (this.positionA && time - this.positionA < 1000) return;
+      this.positionA = time;
+      const p = this.fermier.pos(), haut = this.etageLift ? this.etageLift() > 0 : false;
+      B.positionNoter(p && !haut ? { x: p.x, y: p.y } : null);
     },
 
     // Revenu de la mine : devant sa porte, la vue sur lui (l'adresse perd ?arrivee=…) ; d'une grotte
