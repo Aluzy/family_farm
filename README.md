@@ -118,9 +118,10 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
 - **Dix niveaux d'expérience** (⭐) débloquent cultures, bâtiments et ateliers ; un **arbre
   des technologies** (37 technologies, 7 branches) les automatisations (arrosage, robot de
   récolte et de semis, nourrissage…), payées en points, en pièces et en ressources.
-- **Sept chapitres** racontent l'histoire jusqu'à une famille **100 % autonome** : L'héritage,
-  Le grenier, Le poulailler, Le four et le livre de recette, Le troupeau, Toute l'année,
-  Famille autonome.
+- **Sept chapitres** racontent un foyer qui prend vie, jusqu'à **un petit coin de paradis** :
+  Notre nouveau chez-nous, Une maison à notre image, Les premiers animaux, Les plaisirs de la
+  cuisine, Une ferme pleine de vie, Au rythme de la nature, Notre petit coin de paradis. Ils
+  mènent vers les voisins (amitiés, projets des hameaux), les repas partagés et les styles.
 - **Pas de saisons** : les cultures, l'eau, le soleil et les arbres donnent la même chose
   chaque nuit de l'année.
 
@@ -513,9 +514,9 @@ node scripts/simulate.mjs
 ```
 
 Un joueur automatique joue une partie complète avec les vraies actions du moteur
-et compare la courbe d'autonomie aux jalons de la conception (section 8.10). Le
+et trace le bonheur de la famille au fil des nuits. Le
 même joueur est disponible dans le mode test (bouton « Simuler 60 nuits »). Le
-script écrit `simulation.csv` et `simulation-autonomie.svg` dans le dossier
+script écrit `simulation.csv` et `simulation-bonheur.svg` dans le dossier
 courant (ignorés par git).
 
 ### Mesure des touches (fluidité)
