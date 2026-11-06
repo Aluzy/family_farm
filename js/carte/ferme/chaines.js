@@ -25,7 +25,8 @@
   const reduit = () => global.CarteKit.reduit();
 
   const NIVEAUX = 5;            // les images de la jauge du réservoir (scripts/carte/blocs.py CH_NIVEAUX)
-  const SECOUSSE_MS = 90;       // un outil en marche tremble d'un pixel, toutes les SECOUSSE_MS ms
+  const SECOUSSE_MS = 90;
+  const MACHINES = new Set(['reservoir', 'pressoir', 'centrifugeuse', 'mixeur', 'chaudron', 'tonneau', 'ensacheuse']);       // un outil en marche tremble d'un pixel, toutes les SECOUSSE_MS ms
 
   F.partie({
 
@@ -51,6 +52,22 @@
       return -1;
     },
 
+    // Une machine des chaînes (le réservoir, un outil) posée sans entonnoir devant elle (elle n'est d'aucune chaîne du
+    // modèle) sous le doigt : sa case, ou -1. Un appui ouvre le diagnostic (ce qui lui manque : chaineAide).
+    machineSeuleAt(wx, wy) {
+      if (!this.blocSousLeDoigt) return -1;
+      const e = this.blocSousLeDoigt(wx, wy, MACHINES);
+      if (!e) return -1;
+      for (const ch of (this.chaines || new Map()).values()) if (ch.reservoir === e.case || ch.outils.includes(e.case)) return -1;
+      return e.case;
+    },
+
+    // Un appui sur une machine seule : le diagnostic.
+    machineSeule(c) {
+      const bridge = this.ctx.bridge;
+      if (bridge && bridge.chaineAide) bridge.chaineAide(c);
+    },
+
     // Un appui sur la chaîne de l'entonnoir `e` : le personnage y va et jette ce qu'il a (la file
     // des gestes : l'entonnoir scintille). Ce qui l'empêche (elle n'est pas complète, des outils
     // qui ne vont pas ensemble) : le jeu le dit tout de suite, sans qu'il bouge ; ce qui manque à
@@ -59,6 +76,8 @@
       const ch = this.chaines && this.chaines.get(e), bridge = this.ctx.bridge;
       if (!ch || !bridge || !bridge.verserChaine) return;
       if (this.ctx.lastModel && this.ctx.lastModel.coucher) return;   // au lit (ou en y allant) : rien
+      // (pas prête : la fenêtre du diagnostic, ce qui va et ce qui manque ; sans elle, le message)
+      if (!ch.ok && bridge.chaineAide && bridge.chaineAide(e)) return;
       if (!ch.ok || !this.fermier) { bridge.verserChaine(e); return; }
       const p = this.devantEntonnoir(e);
       if (!p) { bridge.verserChaine(e); return; }

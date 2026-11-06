@@ -29,6 +29,7 @@ import { registerActions } from './actions.js';
 import { openModal } from './modal.js';
 import { effetTexte } from './fiche-membre.js';
 import { penalite } from '../engine/inventory.js';
+import { ouvrirModeEmploi } from './chaines-aide.js';
 
 /* ---------- Lot 11 : aide sur chaque bâtiment ---------- */
 
@@ -385,6 +386,7 @@ export function helpBtn(id) {
 
 function openHelpModal(id) {
   tel('modal', 'help:' + id);
+  if (id === 'chaines') { ouvrirModeEmploi(); return; }   // (le mode d'emploi illustré : js/ui/chaines-aide.js)
   if (!HELP[id]) return;
   const h = HELP[id]();
   const sym = id === 'reservoir' ? 'b-reservoir' : `b-${id}`;

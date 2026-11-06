@@ -981,6 +981,9 @@
         // une chaîne de production (un de ses blocs) : il va jeter les ingrédients dans l'entonnoir
         const chaine = !hoeing ? this.chaineAt(wx, wy) : -1;
         if (chaine >= 0) return { chaine };
+        // une machine des chaînes posée seule (sans entonnoir devant) : ce qui lui manque
+        const seule = !hoeing ? this.machineSeuleAt(wx, wy) : -1;
+        if (seule >= 0) return { machineSeule: seule };
         // la botteleuse (une de ses pièces) : il va jeter ses fibres dans l'entonnoir
         const botte = !hoeing ? this.botteleuseAt(wx, wy) : -1;
         if (botte >= 0) return { botteleuse: botte };
@@ -1212,6 +1215,7 @@
         if (hit.caillou) { this.pickRock(hit.caillou); return; }
         if (hit.portail !== undefined) { this.ctx.bridge.act('portail', { case: hit.portail }); return; }
         if (hit.chaine !== undefined) { this.jeterChaine(hit.chaine); return; }
+        if (hit.machineSeule !== undefined) { this.machineSeule(hit.machineSeule); return; }
         if (hit.botteleuse !== undefined) { this.jeterFibres(hit.botteleuse); return; }
         if (hit.distributeur !== undefined) { this.jeterGrain(hit.distributeur); return; }
         if (hit.chop) { this.chop(hit.chop); return; }

@@ -30,6 +30,7 @@ import { notify } from './toasts.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { itemsText } from './common.js';
 import { iconeBloc } from './icone-bloc.js';
+import './chaines-aide.js';   // (le bouton « Mode d'emploi » de l'onglet Machines)
 
 // La carte : le personnage a pris ce qui était au sol (`id`). Renvoie { ok, items } ou null
 // (un message).
@@ -282,6 +283,7 @@ export function renderAtelier() {
   return `${tete}
     <div class="atelier-menu">${tabs}<div class="build-bar" role="group" aria-label="Recettes : touche une case pour la choisir"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div></div></div>
     ${detailHtml(choisie)}
+    ${o.id === 'machines' ? `<button type="button" class="btn chaine-aide-btn" data-action="chaine-mode-emploi">📖 Mode d'emploi des chaînes</button>` : ''}
     ${carnetPlansHtml()}`;
 }
 

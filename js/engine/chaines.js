@@ -129,6 +129,83 @@ export function etatChaine(state, e) {
   return out;
 }
 
+// Le diagnostic de la rangée de blocs de chaîne dont `tile` est un bloc (l'entonnoir, le réservoir, un outil, un
+// convoyeur ; la fenêtre « Chaîne de production » : js/ui/chaines-aide.js) : ce qui y est posé, de gauche à droite
+// (jusqu'à l'entonnoir d'une chaîne voisine), et chaque règle, tenue ou non.
+//   { rangee: [{ case, sorte, role } | { manque: role }], bout: { case, libre } | null, recette, produit, whParS,
+//     etapes: [{ id, ok, texte }], ok } ; null : pas un bloc de chaîne.
+// ok : la chaîne est prête (etatChaine(...).ok) ; un `manque` dans la rangée : la place du bloc qui manque.
+export function diagnosticChaine(state, tile) {
+  const blocs = state.blocs || {}, W = farmTerrain(state).LARGEUR, ligne = Math.floor(tile / W);
+  const r = (t) => (Number.isInteger(t) && t >= 0 && Math.floor(t / W) === ligne ? role(blocs[t]) : null);
+  if (!r(tile)) return null;
+  // (de l'entonnoir le plus proche à gauche, ou du premier bloc, jusqu'avant l'entonnoir suivant)
+  let s = tile;
+  while (r(s) !== 'entonnoir' && r(s - 1)) s -= 1;
+  const suite = [];
+  for (let t = s; r(t) && !(t > s && r(t) === 'entonnoir'); t += 1) suite.push({ case: t, sorte: blocs[t], role: r(t) });
+  const fin = suite[suite.length - 1].case + 1;
+  const nomDe = (o) => DATA.ATELIER.BLOCS[o].nom.toLowerCase();
+  const etapes = [], rangee = [];
+  const ent = suite[0].role === 'entonnoir';
+  if (!ent) rangee.push({ manque: 'entonnoir' });
+  etapes.push({ id: 'entonnoir', ok: ent, texte: ent ? 'Entonnoir' : 'Il manque l\'entonnoir, tout à gauche : on y jette les ingrédients.' });
+  // l'ordre : l'entonnoir, un réservoir au plus, des outils, des convoyeurs
+  const RANG = { entonnoir: 0, reservoir: 1, outil: 2, convoyeur: 3 };
+  let rang = 0, desordre = null, nRes = 0;
+  for (const b of suite) {
+    if (b.role === 'reservoir') nRes += 1;
+    if (!desordre && RANG[b.role] < rang) desordre = b;
+    rang = Math.max(rang, RANG[b.role]);
+  }
+  const outils = suite.filter((b) => b.role === 'outil'), convoyeurs = suite.filter((b) => b.role === 'convoyeur');
+  const sortes = outils.map((b) => b.sorte);
+  const recette = outils.length ? recetteDesOutils(sortes) : null;
+  if (nRes > 1) etapes.push({ id: 'ordre', ok: false, texte: 'Un seul réservoir par chaîne, juste après l\'entonnoir.' });
+  else if (desordre) {
+    const t = desordre.role === 'reservoir' ? 'Le réservoir va juste après l\'entonnoir, avant les outils.'
+      : desordre.role === 'outil' ? `${DATA.ATELIER.BLOCS[desordre.sorte].nom} : les outils vont avant les convoyeurs.`
+        : 'Les blocs ne sont pas dans l\'ordre : entonnoir, réservoir, outils, convoyeurs.';
+    etapes.push({ id: 'ordre', ok: false, texte: t });
+  }
+  for (const b of suite) {
+    rangee.push({ case: b.case, sorte: b.sorte, role: b.role });
+    // (il manque un convoyeur : sa place, juste après le dernier outil)
+    if (!convoyeurs.length && outils.length && b === outils[outils.length - 1] && !desordre) rangee.push({ manque: 'convoyeur' });
+  }
+  if (!outils.length) {
+    rangee.push({ manque: 'outil' });
+    etapes.push({ id: 'outils', ok: false, texte: `Il manque les outils, après l'entonnoir${nRes ? ' et le réservoir' : ''} : leur suite fait le produit.` });
+  } else if (!recette) {
+    etapes.push({ id: 'outils', ok: false, texte: `${sortes.map(nomDe).join(' → ')} : ces outils ne font rien ensemble. Vois les recettes du mode d'emploi.` });
+  } else {
+    const R = DATA.RECETTES[recette];
+    etapes.push({ id: 'outils', ok: true, texte: `${sortes.map(nomDe).join(' → ')} : ${R.icone} ${R.nom}` });
+    if (!recipeUnlocked(state, recette)) {
+      const n = DATA.ARBRE.noeuds[recipeNode(recette)];
+      etapes.push({ id: 'techno', ok: false, texte: `${R.nom} : à débloquer dans l'Arbre des technologies${n ? ` (${n.nom})` : ''}.` });
+    }
+  }
+  if (outils.length) {
+    const derOutil = outils[outils.length - 1].case;
+    const conv = r(derOutil + 1) === 'convoyeur';
+    etapes.push({ id: 'convoyeur', ok: conv, texte: conv ? `Convoyeur${convoyeurs.length > 1 ? `s (${convoyeurs.length})` : ''}` : `Il manque un convoyeur juste à droite du dernier outil (${nomDe(sortes[sortes.length - 1])}) : le produit en sort.` });
+  }
+  let bout = null;
+  if (convoyeurs.length && !desordre) {
+    const sur = Math.floor(fin / W) === ligne, b = DATA.ATELIER.BLOCS[blocs[fin]];
+    const libre = sur && !(b && b.bloque) && r(fin) !== 'entonnoir';
+    bout = { case: fin, libre };
+    etapes.push({ id: 'bout', ok: libre, texte: libre ? 'Case libre au bout : les produits y tombent' : 'La case au bout du convoyeur doit rester libre : les produits y tombent, en tas.' });
+  }
+  const O = C().OUTILS, whParS = sortes.reduce((n, o) => n + ((O[o] && O[o].whParS) || 0), 0);
+  const e = ent ? etatChaine(state, suite[0].case) : null;
+  return {
+    rangee, bout, recette, produit: recette ? produitDe(recette) : null, whParS,
+    reservoir: nRes > 0, etapes, ok: !!(e && e.ok && etapes.every((x) => x.ok)),
+  };
+}
+
 // Les chaînes de la ferme (une par entonnoir suivi d'outils).
 export function chaines(state) {
   const blocs = state.blocs || {};

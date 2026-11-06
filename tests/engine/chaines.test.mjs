@@ -4,7 +4,7 @@
 import {
   addItem, buildAtelier, chaineDe, chaines, chainesSansCarte, countItem, craft, DATA, etatChaine, farmTerrain,
   grantTech, migrate, morceauxDe, poserBloc, PRESSE_RENDU, STATE_VERSION, ramasserMorceau, recetteDesOutils, reprendreBloc, startRecipe, TAS_PLACES,
-  testFarmMap, testFillBatteries, testSetLevel, verserChaine,
+  testFarmMap, testFillBatteries, testSetLevel, verserChaine, diagnosticChaine, piecesCloses, blocAt, poseStatus, testBatir, serrePlaces,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, garden, runFor, setInv, test, tireless } from './aide.mjs';
 
@@ -33,6 +33,24 @@ function rangee(s, w) {
         for (let dc = 0; dc < w && ok; dc++) {
           const t = (r + dr) * W + c + dc;
           ok = T.LIGNES[r + dr][c + dc] === '#' && !s.potager.parcelles.some((p) => p.case === t) && !(T.HERBES && T.HERBES[t]);
+        }
+      }
+      if (ok) return r * W + c;
+    }
+  }
+  return null;
+}
+
+// Comme rangee, sans bloc déjà posé sur ces cases ni autour.
+function rangeeLibre(s, w) {
+  const T = farmTerrain(s), W = T.LARGEUR;
+  for (let r = 5; r < T.HAUTEUR - 5; r++) {
+    for (let c = 4; c < W - w - 4; c++) {
+      let ok = true;
+      for (let dr = -1; dr <= 1 && ok; dr++) {
+        for (let dc = -1; dc <= w && ok; dc++) {
+          const t = (r + dr) * W + c + dc;
+          ok = T.LIGNES[r + dr][c + dc] === '#' && !(s.blocs || {})[t] && !s.potager.parcelles.some((p) => p.case === t) && !(T.HERBES && T.HERBES[t]);
         }
       }
       if (ok) return r * W + c;
@@ -151,6 +169,65 @@ test('chaînes : des outils qui ne vont pas ensemble, une recette à débloquer,
   assertEqual(etatChaine(s, t).ok, true, 'le mur n\'est pas au bout');
   poser(s, t + 4, ['convoyeur']);
   assertEqual(etatChaine(s, t).raison, 'La case au bout du convoyeur doit rester libre : les produits y tombent, en tas.');
+});
+
+test('chaînes : le diagnostic dit ce qui va et ce qui manque, bloc par bloc', () => {
+  const s = usine(7);
+  const t = rangee(s, 8);
+  const ok = (d) => Object.fromEntries(d.etapes.map((e) => [e.id, e.ok]));
+  // un mixeur et une presse seuls : il manque l'entonnoir (à gauche) et un convoyeur (après la presse)
+  poser(s, t + 1, ['mixeur', 'pressoir']);
+  let d = diagnosticChaine(s, t + 2);
+  assertEqual(d.rangee.map((c) => c.manque || c.sorte), ['entonnoir', 'mixeur', 'pressoir', 'convoyeur']);
+  assertEqual([ok(d).entonnoir, ok(d).outils, ok(d).convoyeur, d.ok, d.recette, d.whParS], [false, true, false, false, 'jus_fruits', 35]);
+  assert(d.etapes.find((e) => e.id === 'convoyeur').texte.includes('(presse)'));
+  // l'entonnoir, puis le convoyeur : prête (comme etatChaine), la case du bout libre
+  poser(s, t, ['entonnoir']);
+  poser(s, t + 3, ['convoyeur']);
+  d = diagnosticChaine(s, t + 3);
+  assertEqual([d.ok, d.bout.case, d.bout.libre, etatChaine(s, t).ok], [true, t + 4, true, true]);
+  assertEqual(d.etapes.every((e) => e.ok), true);
+  // la case du bout prise : à corriger
+  poser(s, t + 4, ['mur_pierre']);
+  d = diagnosticChaine(s, t);
+  assertEqual([d.ok, d.bout.libre, ok(d).bout], [false, false, false]);
+  // des outils qui ne vont pas ensemble ; un bloc qui n'est pas d'une chaîne : null
+  const u = rangeeLibre(s, 6);
+  poser(s, u, ['entonnoir', 'tonneau', 'mixeur', 'convoyeur']);
+  d = diagnosticChaine(s, u + 1);
+  assertEqual([ok(d).outils, d.recette, d.ok], [false, null, false]);
+  assertEqual(diagnosticChaine(s, t + 4), null);
+  // un convoyeur avant l'outil : l'ordre
+  const v = rangeeLibre(s, 6);
+  poser(s, v, ['entonnoir', 'convoyeur', 'pressoir']);
+  d = diagnosticChaine(s, v);
+  assertEqual([ok(d).ordre, d.ok], [false, false]);
+});
+
+test('chaînes : elles se posent dans une pièce (la maison, une pièce à elles), pas dans un bâtiment', () => {
+  const s = usine(7);
+  assert(testBatir(s, 'foyer').ok);
+  // une rangée de 5 cases libres dans la maison (4 blocs, puis le bout)
+  const W = farmTerrain(s).LARGEUR, p = piecesCloses(s)[0], dedans = new Set(p.cases);
+  const t = p.cases.find((c) => [0, 1, 2, 3, 4].every((k) => dedans.has(c + k) && !blocAt(s, c + k) && Math.floor((c + k) / W) === Math.floor(c / W)));
+  assert(t !== undefined, 'une rangée libre dans la maison');
+  for (const o of ['reservoir', 'pressoir']) assertEqual(DATA.ATELIER.BLOCS[o].dehors, undefined, `${o} : plus seulement dehors`);
+  poser(s, t, ['entonnoir', 'reservoir', 'pressoir', 'convoyeur']);
+  const c = etatChaine(s, t);
+  assertEqual([c.ok, c.recette, c.bout], [true, 'huile', t + 4]);
+  // 3 graines jetées : une huile au bout, dans la maison
+  setInv(s, { graine_tournesol: 3 });
+  assert(verserChaine(s, t).ok);
+  runFor(s, C.OUTILS.pressoir.secondes + 2);
+  assertEqual(morceauxDe(s, 'ferme').filter((m) => m.item === 'huile').length, 1);
+  // dans la Serre : refusé (elle n'y prend que son bloc)
+  assert(testBatir(s, 'serre').ok);
+  const serre = serrePlaces(s)[0];
+  s.serre.parcelles = s.serre.parcelles.filter((q) => q.case !== serre);   // (sa case rebouchée)
+  addItem(s, 'pressoir', 1);
+  const r = poseStatus(s, 'pressoir', serre);
+  assertEqual(r.ok, false);
+  assert(/Serre/.test(r.raison), r.raison);
 });
 
 test('chaînes : la cuisine ne fait plus ces recettes ; le joueur automatique les fait sans carte', () => {
