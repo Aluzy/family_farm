@@ -15,7 +15,7 @@ import { chapterCount, inferChapter, legacyChamp, newCampaign, ownedPlots, ownsE
 import { newTutorial } from './alerts.js';
 import { newProgression, unlockLevel } from './levels.js';
 import { energyMax } from './stamina.js';
-import { caseLibreFoyer, elargirFours, majMoulin, majPoulailler, poserBloc, rangerPieces, serrePlaces } from './blocs.js';
+import { caseLibreFoyer, elargirFours, majMoulin, majPoulailler, majSerre, poserBloc, rangerPieces, serrePlaces } from './blocs.js';
 import { closeFridge, FRIGO_OBJET } from './fridge.js';
 import { ETAPES } from './didacticiel.js';
 import { caseDepart } from './atelier.js';
@@ -750,6 +750,13 @@ export const MIGRATIONS = {
       }
       delete g.niveau;
     }
+    return out;
+  },
+  // v76 → v77 : une parcelle du potager sur une case de la Serre (labourée avant que sa pièce soit la Serre) y
+  // devient une parcelle de la Serre (blocs.js majSerre) : la carte la dessine en bac, comme ses voisines.
+  76: (state) => {
+    const out = JSON.parse(JSON.stringify({ ...state, version: 77 }));
+    if (out.carte && out.serre && out.potager) majSerre(out);
     return out;
   },
 };

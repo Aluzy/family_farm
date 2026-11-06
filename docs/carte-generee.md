@@ -987,7 +987,7 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
        - **Sur la carte** : le joueur laboure lui-même les cases libres de sa pièce avec la
          houe (`serrePlaces` : ni le bac, ni les cases juste derrière ses portes, le passage ;
          `hoe`, `serreHoeStatus` dans `js/engine/crops.js`), une parcelle par case (`case`),
-         toutes les cases libres de sa pièce (`serreCap` = `serrePlaces(state).length` : plus de niveaux ni de plafond depuis la v76 ; une plus grande pièce, une plus grande Serre) ;
+         toutes les cases libres de sa pièce (`serreCap` = `serrePlaces(state).length` : plus de niveaux ni de plafond depuis la v76 ; une plus grande pièce, une plus grande Serre) ; une parcelle du potager sur l'une de ses cases (labourée avant que sa pièce soit la Serre) y devient un bac (`majSerre`, à chaque bloc posé ou repris, et la migration v76 → v77) ;
          une terre vide se rebouche. Comme au-dehors : la même terre et les mêmes bordures
          mi-herbe mi-terre (`syncZoneGround`, `soilLayoutOk`), le glissement de la houe ; ce qui y
          pousse se voit, et un appui y plante, arrose ou récolte comme au potager. Version 50 :

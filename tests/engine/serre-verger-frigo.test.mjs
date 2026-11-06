@@ -11,7 +11,7 @@ import {
   isBroken, lotsOf, maintainCost, maxStage, migrate, migrateFridgeCapacity, migrateOrchard,
   MIGRATIONS, expiringToFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, newTree, nightPower, plant,
   plantableCrops, poserBloc, readyCrops, repairCost, repairDevice, ripeTrees, scaleEnergie,
-  serreCap, serrePlaces, shelfLife, STATE_VERSION, testAddSeeds, testBatir, testBuildFridge,
+  majSerre, serreCap, serrePlaces, shelfLife, STATE_VERSION, testAddSeeds, testBatir, testBuildFridge,
   testBuildSerre, testBuildVerger, testEmptyBatteries, testFillBatteries, testSetLevel,
   testSetWear, tick, toggleDevice, treeInBloom, treeNextHarvest, treeStage, treeStageName,
   unlockLevel, upgradeCost, upgradeFridge, water, waterCostFor,
@@ -130,6 +130,31 @@ test('Serre : plus de niveaux ; la taille de sa pièce décide (v76 : les niveau
   assertEqual([v1.pieces, v1.serreRendue], [avant, undefined]);
   const non = MIGRATIONS[75]({ ...structuredClone(v75), serre: { construit: false, niveau: 3, parcelles: [] } });
   assertEqual([non.pieces, non.serreRendue, non.serre.niveau], [avant, undefined, undefined]);
+});
+
+test('Serre : une parcelle du potager sur une case de la Serre y devient un bac (v77 ; majSerre)', () => {
+  const s = garden();
+  s.pieces = 5000;
+  testBatir(reach(s, 'serre'), 'serre');
+  const pl = serrePlaces(s), n = pl.length, pot = s.potager.parcelles.length;
+  // trois cases de la Serre labourées au potager (avant qu'elle ne soit la Serre) : l'une vide, l'une plantée,
+  // l'une plantée où la parcelle de la Serre est vide
+  const [a, b, c] = pl;
+  s.serre.parcelles = s.serre.parcelles.filter((q) => q.case !== a && q.case !== b);
+  s.potager.parcelles.push(
+    { id: 'potager-90', lieu: 'potager', case: a, culture: null, stade: 0, arrose: false, semis: 'meme', verrou: null },
+    { id: 'potager-91', lieu: 'potager', case: b, culture: 'tomate', stade: 2, arrose: true, semis: 'meme', verrou: null },
+    { id: 'potager-92', lieu: 'potager', case: c, culture: 'poivron', stade: 1, arrose: false, semis: 'meme', verrou: null });
+  const m = MIGRATIONS[76](structuredClone({ ...s, version: 76 }));
+  assertEqual([m.version, m.potager.parcelles.length, m.serre.parcelles.length], [77, pot, n]);
+  const at = (k) => m.serre.parcelles.find((q) => q.case === k);
+  assertEqual([at(a).lieu, at(b).culture, at(b).stade, at(b).arrose, at(c).culture], ['serre', 'tomate', 2, true, 'poivron']);
+  assertEqual(new Set(m.serre.parcelles.map((q) => q.id)).size, n, 'des identifiants distincts');
+  // en jeu aussi : une parcelle du potager sur une case de la Serre (un bloc posé, repris) y passe
+  // (ici, la case `b` n'a plus de parcelle : n - 1 parcelles de la Serre une fois `a` rangée)
+  s.potager.parcelles = s.potager.parcelles.filter((q) => q.id === 'potager-90' || !pl.includes(q.case));
+  majSerre(s);
+  assertEqual([s.serre.parcelles.length, !!s.serre.parcelles.find((q) => q.case === a), s.potager.parcelles.some((q) => pl.includes(q.case))], [n - 1, true, false]);
 });
 
 test('Serre : tomate, courgette, aubergine, poivron, cacao, vanille, café', () => {
