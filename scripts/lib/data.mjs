@@ -331,7 +331,7 @@ export function validateData(data) {
     if (!s) warn(where, 'pas de sprite : la carte affichera l\'icône à la place d\'un dessin');
     else if (!(isInt(s.r) && [16, 32].includes(s.h) && Array.isArray(s.c) && [4, 5].includes(s.c.length) && s.c.every(isInt))) {
       err(where, 'sprite : { "r": rangée, "h": 16 ou 32, "c": [4 ou 5 colonnes, une par phase : la graine d\'abord, la plante mûre en dernier] }');
-    }
+    } else if (s.monte !== undefined && !(isInt(s.monte) && s.monte >= 0 && s.monte <= 12)) err(where, 'sprite.monte : un entier de 0 à 12 (px, le pied remonté au-dessus du bas de la case)');
   }
 
   /* le Champ (deuxième zone de culture) */
