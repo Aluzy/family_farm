@@ -483,8 +483,8 @@ export function testBatir(state, id) {
   return r.ok ? { ok: true, coin: at(0, 0) } : r;
 }
 
-// Laboure d'un coup les cases libres de la Serre (sans houe ni énergie), jusqu'à ce que son
-// niveau permet (serreCap). Renvoie combien de parcelles de plus.
+// Laboure d'un coup les cases libres de la Serre (sans houe ni énergie) :
+// toutes ses cases libres (serreCap). Renvoie combien de parcelles de plus.
 export function testLabourerSerre(state) {
   const g = state.serre, prises = new Set(g.parcelles.map((p) => p.case));
   let n = 0;

@@ -201,7 +201,7 @@ E-9 : les outils de la ferme (`outil.couper`, `outil.casser`, `outil.caillou`, `
 Le monde refuse un arbre, un rocher ou une touffe hors de la ferme, et les eaux du grand monde.
 
 E-10 : la progression commune (`tech.acheter`, `atelier.fabriquer`, `atelier.construire`, `appareil.*`,
-`reservoir.agrandir`, `robot.batterie`, `serre.agrandir`, `arbre.planter`, `potager.semis`). Restent hors
+`reservoir.agrandir`, `robot.batterie`, `arbre.planter`, `potager.semis`). Restent hors
 ligne, comme le veut la vision : le Marché, la calèche, les hameaux, le récit, les invitations.
 
 E-13 : les machines de l'Atelier (`botteleuse.verser`, `botteleuse.sortir`, `chaine.verser`,

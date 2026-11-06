@@ -17,7 +17,7 @@ import { levelBlock } from './levels.js';
 import { averageHappiness, dishHappiness } from './bonheur.js';
 import {
   allPlots, cropProduct, harvest, hasHoe, hoe, hoeStatus, isArable, isMature, plant, plotAtTile, seedItem, seedStock,
-  serreUpgradeCost, soilCount, upgradeSerre, water, waterCost,
+  soilCount, water, waterCost,
 } from './crops.js';
 import {
   accueillirAnimal, buyPasture, canFeedHen, cowCount, freeCowPlaces,
@@ -536,9 +536,9 @@ export function botStepInfo(state, step, eveilS) {
     }
     case 'serre':
       if (!isUnlocked(state, 'serre')) return { locked: true };
-      if (built(state.serre)) return { done: true };
-      // (agrandie, elle laboure ses cases de plus, comme le joueur avec la houe)
-      return state.serre.construit ? { cost: serreUpgradeCost(state), buy: () => { const r = upgradeSerre(state); if (r.ok) testLabourerSerre(state); return r; } } : botBatir(state, 'serre', DATA.SERRE.PRIX_CONSTRUCTION);
+      // (plus de niveaux, v76 : bâtie, elle laboure toutes les cases libres de sa pièce, comme le joueur à la houe)
+      if (state.serre.construit) { testLabourerSerre(state); return { done: true }; }
+      return botBatir(state, 'serre', DATA.SERRE.PRIX_CONSTRUCTION);
     // (le Verger s'ouvre avec le premier arbre planté)
     case 'verger':
       return isUnlocked(state, 'verger') ? { done: true } : { locked: true };

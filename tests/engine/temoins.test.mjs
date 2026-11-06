@@ -14,7 +14,7 @@
 import { readFileSync } from 'node:fs';
 import {
   caseDuMonde, caseVue, chevalOu, countItem, createInitialState, DATA, farmSeed, farmTerrain, FERME_DANS_MONDE,
-  genererFerme, migrate, PRESSE_RENDU, reparerPartie, STATE_VERSION, tick,
+  genererFerme, migrate, PRESSE_RENDU, reparerPartie, SERRE_V1, STATE_VERSION, tick,
 } from '../../js/engine/index.js';
 import { assert, assertEqual, sansCompteurs68, sleepOnce, test } from './aide.mjs';
 
@@ -147,7 +147,9 @@ test('les témoins : les parties d\'avant la ferme générée (format 46) démé
     assertEqual(m.version, STATE_VERSION, nom);
     // (une Presse construite : son prix rendu par la migration 66 → 67)
     const presse = avant.stations && avant.stations.presse && avant.stations.presse.construit ? PRESSE_RENDU : 0;
-    assertEqual([m.pieces, m.famille.membres.length, m.campagne.chapitre], [avant.pieces + presse, avant.famille.membres.length, avant.campagne.chapitre], nom);
+    // (une Serre agrandie : ses niveaux rendus par la migration 75 → 76)
+    const serre = (v) => (v.serre && v.serre.construit ? SERRE_V1.PRIX_NIVEAUX.slice(1, Math.max(1, Math.min(5, v.serre.niveau | 0 || 1))).reduce((a, b) => a + b, 0) : 0);
+    assertEqual([m.pieces - serre(avant), m.famille.membres.length, m.campagne.chapitre], [avant.pieces + presse, avant.famille.membres.length, avant.campagne.chapitre], nom);
     for (const [o] of Object.entries(compte(avant))) assert(countItem(m, o) >= countItem(avant, o), `${nom} : ${o}`);
     assertEqual([farmTerrain(m).FERME.X, farmTerrain(m).FERME.Y], FERME_DANS_MONDE, `${nom} : la ferme dans le monde`);
     assertEqual(migrate({ v: m.version, t: 0, s: copie(m) }), m, `${nom} : une seule fois`);

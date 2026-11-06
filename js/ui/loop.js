@@ -160,6 +160,12 @@ function watchRecit() {
     delete state.presseRendue;
     persistState();
   }
+  // une partie qui avait agrandi sa Serre : plus de niveaux, toute sa pièce se cultive (la migration 75 → 76)
+  if (state.serreRendue) {
+    notify(`🏡 La Serre n'a plus de niveaux : toutes les cases de sa pièce vitrée se cultivent, et une plus grande pièce fait une plus grande Serre. Ses agrandissements te sont rendus : ${formatNumber(state.serreRendue)} 💰.`, { kind: 'info' });
+    delete state.serreRendue;
+    persistState();
+  }
 }
 
 // Le récit, lot 8 : rentré d'une exploration (le personnage revient sur la ferme), le compagnon dit ce qu'il

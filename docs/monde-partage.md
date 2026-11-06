@@ -176,7 +176,7 @@ Ce qu'il ne faut **pas** faire maintenant : partager le grand monde, les hameaux
   - `tech.acheter` (un nœud de l'arbre des technologies) ;
   - `atelier.fabriquer` (une recette de l'Atelier : bloc, outil, meuble, animal attiré) et `atelier.construire` (la Presse) ;
   - `appareil.basculer`, `appareil.ameliorer`, `appareil.entretenir`, `appareil.reparer` ;
-  - `reservoir.agrandir`, `robot.batterie`, `serre.agrandir` ;
+  - `reservoir.agrandir`, `robot.batterie` (`serre.agrandir` a disparu : la Serre n'a plus de niveaux) ;
   - `arbre.planter` (soumis à la frontière, par sa case) et `potager.semis`.
 - **Une progression commune.** Les points de technologie, les nœuds acquis, les outils et les meubles fabriqués sont ceux du monde. Un ami qui achète une technologie la donne à toute la ferme, et dépense les points et les pièces du coffre commun. Le niveau et l'XP montent avec les gestes de chacun.
 - **Encore fermé en ligne, comme le veut la vision :**

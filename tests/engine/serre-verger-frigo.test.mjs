@@ -11,10 +11,10 @@ import {
   isBroken, lotsOf, maintainCost, maxStage, migrate, migrateFridgeCapacity, migrateOrchard,
   MIGRATIONS, expiringToFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, newTree, nightPower, plant,
   plantableCrops, poserBloc, readyCrops, repairCost, repairDevice, ripeTrees, scaleEnergie,
-  serreCap, serreUpgradeCost, shelfLife, STATE_VERSION, testAddSeeds, testBatir, testBuildFridge,
+  serreCap, serrePlaces, shelfLife, STATE_VERSION, testAddSeeds, testBatir, testBuildFridge,
   testBuildSerre, testBuildVerger, testEmptyBatteries, testFillBatteries, testSetLevel,
   testSetWear, tick, toggleDevice, treeInBloom, treeNextHarvest, treeStage, treeStageName,
-  unlockLevel, upgradeCost, upgradeFridge, upgradeSerre, water, waterCostFor,
+  unlockLevel, upgradeCost, upgradeFridge, water, waterCostFor,
 } from '../../js/engine/index.js';
 import {
   affamer, assert, assertEqual, construireFrigo, AVANT_DEMENAGEMENT, coldRoom, farm, fillCows, fillSheep, garden,
@@ -46,7 +46,7 @@ function planter(s, espece) {
 test('DATA Lot 8 : Serre, Verger et Réfrigérateur (plus de saisons)', () => {
   assertEqual(DATA.SAISONS, undefined, 'version 1.6 : plus de saisons');
   assertEqual(DATA.VERGER.FENETRE, undefined, 'les fruits viennent toute l\'année');
-  assertEqual(DATA.SERRE, { LIEU: 'serre', PRIX_CONSTRUCTION: 1000, PARCELLES: [16, 26, 36, 46, 56], PRIX_NIVEAUX: [0, 900, 1800, 3000, 5400] });
+  assertEqual(DATA.SERRE, { LIEU: 'serre', PRIX_CONSTRUCTION: 1000 });
   const V = DATA.VERGER;
   assertEqual([V.EMPLACEMENTS_DEPART, V.EMPLACEMENTS_MAX, V.EMPLACEMENT.base, V.EMPLACEMENT.croissance], [2, 12, 50, 125]);
   assertEqual([V.MATURITE, V.FRUITS, V.PERIODE], [15, 6, 3]);
@@ -63,7 +63,7 @@ test('DATA Lot 8 : Serre, Verger et Réfrigérateur (plus de saisons)', () => {
 
 test('état initial Lot 8 : Serre, Verger et Réfrigérateur à construire', () => {
   const s = createInitialState(1);
-  assertEqual(s.serre, { construit: false, niveau: 1, parcelles: [] });
+  assertEqual(s.serre, { construit: false, parcelles: [] });
   assertEqual(s.verger, { construit: false, places: 2, achetes: 0, compteur: 0, arbres: [] });
   assertEqual(s.frigo.construit, false);
   assertEqual(s.frigo.appareil, null);
@@ -101,42 +101,41 @@ test('version 1.6 : plus de saisons, la même production toute l\'année', () =>
 
 /* --- Serre --- */
 
-test('Serre : bâtie en blocs (une pièce close, le bac à semis), 16 parcelles ; un seul bac', () => {
+test('Serre : bâtie en blocs (une pièce close, le bac à semis), toutes ses cases libres ; un seul bac', () => {
   const s = garden();
   s.pieces = 0;
   assertEqual(testBatir(s, 'serre').error, `Disponible au niveau ${unlockLevel('serre')}.`);
   const r = testBatir(reach(s, 'serre'), 'serre');
   assertEqual([r.ok, s.pieces], [true, 0]);
-  assertEqual([s.serre.construit, s.serre.niveau, s.serre.parcelles.length], [true, 1, 16]);
+  const n = serrePlaces(s).length;
+  assert(n > 16, `plus que les 16 parcelles de l'ancien niveau 1 (${n})`);
+  assertEqual([s.serre.construit, s.serre.niveau, s.serre.parcelles.length, serreCap(s)], [true, undefined, n, n]);
   assertEqual(s.serre.parcelles.every((p) => p.lieu === 'serre'), true);
   assertEqual(testBatir(s, 'serre').ok, false, 'un seul bac à semis');
-  assertEqual(allPlots(s).length, 22, '6 du Potager et 16 de la Serre');
+  assertEqual(allPlots(s).length, 6 + n, '6 du Potager et toute la Serre');
   assertEqual(findPlot(s, 'serre-3').lieu, 'serre');
 });
 
-test('Serre : +10 parcelles à labourer par niveau, jusqu\'à 56, 900 / 1 800 / 3 000 / 5 400 pièces', () => {
-  const s = garden();
-  s.pieces = 100000;
-  testBatir(reach(s, 'serre'), 'serre');
-  const seen = [];
-  for (let i = 0; i < 4; i++) {
-    const cost = serreUpgradeCost(s);
-    const before = s.pieces;
-    assert(upgradeSerre(s).ok);
-    seen.push([s.serre.niveau, serreCap(s), s.serre.parcelles.length, before - s.pieces, cost]);
-  }
-  // (de la place pour plus de parcelles ; elles se labourent à la houe)
-  assertEqual(seen, [[2, 26, 16, 900, 900], [3, 36, 16, 1800, 1800], [4, 46, 16, 3000, 3000], [5, 56, 16, 5400, 5400]]);
-  assertEqual(serreUpgradeCost(s), null);
-  assertEqual(upgradeSerre(s).ok, false, 'niveau maximum');
-  assertEqual(upgradeSerre(garden()).ok, false, 'pas construite');
+test('Serre : plus de niveaux ; la taille de sa pièce décide (v76 : les niveaux payés sont rendus)', () => {
+  // (plus d'agrandissement à payer ni de plafond)
+  assertEqual([DATA.SERRE.PARCELLES, DATA.SERRE.PRIX_NIVEAUX], [undefined, undefined]);
+  // une Serre au niveau 4 d'avant : 900 + 1 800 + 3 000 pièces rendues, annoncées au réveil ; son niveau s'en va
+  const v75 = { ...garden(), version: 75 };
+  v75.serre = { construit: true, niveau: 4, parcelles: [] };
+  const avant = v75.pieces;
+  const m = MIGRATIONS[75](structuredClone(v75));
+  assertEqual([m.version, m.pieces - avant, m.serreRendue, m.serre.niveau], [76, 5700, 5700, undefined]);
+  // au niveau 1, ou pas construite : rien à rendre
+  const v1 = MIGRATIONS[75]({ ...structuredClone(v75), serre: { construit: true, niveau: 1, parcelles: [] } });
+  assertEqual([v1.pieces, v1.serreRendue], [avant, undefined]);
+  const non = MIGRATIONS[75]({ ...structuredClone(v75), serre: { construit: false, niveau: 3, parcelles: [] } });
+  assertEqual([non.pieces, non.serreRendue, non.serre.niveau], [avant, undefined, undefined]);
 });
 
 test('Serre : tomate, courgette, aubergine, poivron, cacao, vanille, café', () => {
   const s = garden();
   s.pieces = 5000;
   testBatir(reach(s, 'serre'), 'serre');
-  upgradeSerre(s); // niveau 2 : 9 parcelles, assez pour tout planter en même temps
   testAddSeeds(s);
   const toPlant = ['tomate', 'courgette', 'aubergine', 'poivron', 'cacao', 'vanille', 'cafe'];
   toPlant.forEach((culture, i) => {
@@ -606,7 +605,7 @@ test('migration v8 (Lot 7) → v9 (Lot 8) → v10 : Serre, Verger et Réfrigéra
   const m = migreAvant({ v: 8, t: 0, s: v8 });
   assertEqual(m.version, AVANT_DEMENAGEMENT);
   assertEqual([m.day, m.pieces], [25, 321]);
-  assertEqual(m.serre, { construit: false, niveau: 1, parcelles: [] });
+  assertEqual(m.serre, { construit: false, parcelles: [] });
   assertEqual(m.verger.places, 2);
   assertEqual(m.frigo.construit, false);
   assertEqual(m.nuit.fruits, {});
@@ -637,10 +636,10 @@ test('mode test Lot 8 : constructions gratuites, batteries vides', () => {
   testBuildSerre(t);
   testBuildVerger(t);
   testBuildFridge(t);
-  assertEqual([t.serre.construit, t.serre.parcelles.length, t.verger.construit, t.frigo.construit, t.pieces], [true, 16, true, true, 0]);
+  assertEqual([t.serre.construit, t.serre.parcelles.length, t.verger.construit, t.frigo.construit, t.pieces], [true, serrePlaces(t).length, true, true, 0]);
   assertEqual(t.frigo.appareil.type, 'frigo');
   testBuildSerre(t);
-  assertEqual(t.serre.parcelles.length, 16, 'sans doublon');
+  assertEqual(t.serre.parcelles.length, serrePlaces(t).length, 'sans doublon');
   testEmptyBatteries(t);
   t.panneaux[0].allume = false;
   assertEqual(availableEnergy(t), 0);

@@ -92,7 +92,6 @@
      appareil.reparer { appareil }
      reservoir.agrandir { }                     le réservoir d'eau ; robot.batterie : l'autonomie du robot
      robot.batterie   { }
-     serre.agrandir   { }                       la Serre
      arbre.planter    { sorte, case }           planter un arbre (un plant, une graine) sur une case
      potager.semis    { parcelle, mode, culture? } le semis automatique d'une parcelle
    Les machines de l'Atelier et ce qui traîne au sol (E-13, sans inverse) :
@@ -114,7 +113,7 @@ import {
   peindreBloc, reprendreBloc, sensBloc, solAt, basculerPortail, tournerBloc,
 } from './blocs.js';
 import { deplacerEtage, dessusEtage, etageBlocs, etageCouvertes, peindreEtage, poserEtage, poserSolEtage, reprendreEtage, reprendreSolEtage, sensEtage, solsEtage, tournerEtage } from './etage.js';
-import { harvest, hoe, plant, upgradeSerre, water } from './crops.js';
+import { harvest, hoe, plant, water } from './crops.js';
 import { harvestAll, plantAll, setSemis, upgradeRobotBattery, waterAll } from './automation.js';
 import { remplirCruche } from './cruche.js';
 import { buyPasture, feedAllHens, feedHen, setCowHerbs, shear, upgradePoulailler } from './animals.js';
@@ -475,7 +474,6 @@ export const COMMANDES = {
   'appareil.reparer': { args: { appareil: 'appareil' }, executer: (state, { appareil }) => repairDevice(state, appareil) },
   'reservoir.agrandir': { args: {}, executer: (state) => upgradeTank(state) },
   'robot.batterie': { args: {}, executer: (state) => upgradeRobotBattery(state) },
-  'serre.agrandir': { args: {}, executer: (state) => upgradeSerre(state) },
   'arbre.planter': { args: { sorte: 'sorte', case: 'case' }, executer: (state, { sorte, case: c }) => planterIci(state, sorte, c) },
   'potager.semis': {
     args: { parcelle: 'texte', mode: 'mode', culture: 'culture?' },

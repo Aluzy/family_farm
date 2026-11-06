@@ -2197,7 +2197,7 @@ export const RAW_DATA = {
       "JOUR": { "lac": 8, "riviere": 8, "mer": 12 }
     }
   },
-  "SERRE": { "LIEU": "serre", "PRIX_CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "PRIX_NIVEAUX": [0, 900, 1800, 3000, 5400] },
+  "SERRE": { "LIEU": "serre", "PRIX_CONSTRUCTION": 1000 },
   "VERGER": {
     "PRIX_CONSTRUCTION": 0,
     "EMPLACEMENTS_DEPART": 2,
@@ -3427,7 +3427,7 @@ export const RAW_DATA = {
       "3": [{ "type": "poulailler", "niveau": 1 }, { "type": "silo", "niveau": 1 }, { "type": "poules", "n": 4 }],
       "4": [{ "type": "station", "id": "four" }, { "type": "station", "id": "moulin" }, { "type": "station", "id": "cuisine" }],
       "5": [{ "type": "station", "id": "moulin" }, { "type": "paturage" }, { "type": "moutons", "n": 3 }],
-      "6": [{ "type": "serre", "niveau": 1 }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }],
+      "6": [{ "type": "serre" }, { "type": "verger" }, { "type": "arbres", "n": 2 }, { "type": "frigo" }],
       "7": []
     },
     "PLAN": [
@@ -3457,7 +3457,7 @@ export const RAW_DATA = {
       { "type": "poules", "n": 12 },
       { "type": "verger" },
       { "type": "arbres", "n": 2 },
-      { "type": "serre", "niveau": 1 },
+      { "type": "serre" },
       { "type": "frigo" },
       { "type": "frigo", "niveau": 2 },
       { "type": "tech", "id": "semis_auto" },
@@ -3466,8 +3466,6 @@ export const RAW_DATA = {
       { "type": "arbres", "n": 4 },
       { "type": "moutons", "n": 6 },
       { "type": "poules", "n": 16 },
-      { "type": "serre", "niveau": 2 },
-      { "type": "serre", "niveau": 3 },
       { "type": "vaches", "n": 4 },
       { "type": "arbres", "n": 8 },
       { "type": "vaches", "n": 8 },

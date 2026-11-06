@@ -177,7 +177,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "serre",
      "terme": "Serre",
-     "description": "Un bâtiment qu'on bâtit : une pièce close où l'on pose le bac à semis (fabriqué à l'Atelier). Ses cases se labourent à la houe : chaque case labourée devient une parcelle de culture protégée, jusqu'à 16 au niveau 1 (agrandir la Serre en permet plus) ; ses murs, quels qu'ils soient, deviennent du verre. C'est le seul endroit où peuvent être cultivés le cacao, la vanille et le café, les cultures de rente ; quelques légumes y poussent aussi.",
+     "description": "Un bâtiment qu'on bâtit : une pièce close où l'on pose le bac à semis (fabriqué à l'Atelier). Ses cases se labourent à la houe : chaque case libre de sa pièce, labourée, devient une parcelle de culture protégée (pour une plus grande Serre, on agrandit sa pièce) ; ses murs, quels qu'ils soient, deviennent du verre. C'est le seul endroit où peuvent être cultivés le cacao, la vanille et le café, les cultures de rente ; quelques légumes y poussent aussi.",
      "liens": [
       "piece_close",
       "bloc_cle",

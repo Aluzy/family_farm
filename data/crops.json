@@ -338,11 +338,11 @@
     }
   },
   "//SERRE": [
-    "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture.",
-    "CONSTRUCTION est le prix du niveau 1 ; COUT[n] est le prix pour",
-    "atteindre le niveau n + 1 (index 0 non utilisé). Tomate, courgette, aubergine."
+    "Serre (sections 1.4 et 8.3) : mêmes parcelles que la Zone de culture. Toutes les cases libres de sa pièce",
+    "vitrée se labourent (blocs.js serrePlaces) : plus de niveaux ni de plafond, une plus grande pièce donne une",
+    "plus grande Serre (v76 : les niveaux payés sont rendus). PRIX_CONSTRUCTION : le joueur automatique."
   ],
-  "SERRE": { "LIEU": "serre", "PRIX_CONSTRUCTION": 1000, "PARCELLES": [16, 26, 36, 46, 56], "PRIX_NIVEAUX": [0, 900, 1800, 3000, 5400] },
+  "SERRE": { "LIEU": "serre", "PRIX_CONSTRUCTION": 1000 },
   "//VERGER": [
     "Verger (sections 1.3, 1.4 et 8.4). Les arbres s'achètent à la calèche à prix",
     "fixe et se plantent sur un emplacement libre. Un arbre est adulte MATURITE",
