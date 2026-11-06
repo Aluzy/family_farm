@@ -97,6 +97,7 @@ const GROUPES = [
   { id: 'murs', nom: 'Murs', de: (b) => !!b.mur && !b.fenetre },
   { id: 'portes', nom: 'Portes', de: (b) => !!b.porte },
   { id: 'sols', nom: 'Sols', de: (b) => !!b.sol && !b.dehors },
+  { id: 'barrieres', nom: 'Barrières', de: (b) => !!b.cloture },
 ];
 const groupeDe = (s) => { const b = DATA.ATELIER.BLOCS[s]; return b ? GROUPES.find((g) => g.de(b)) || null : null; };
 // (les blocs du groupe `g` dans l'onglet `o`)
@@ -464,7 +465,7 @@ function quitteMeuble() {
 export function traceInfo() {
   if (!buildMode || meubleEnMain()) return null;
   const b = DATA.ATELIER.BLOCS[buildMode];
-  if (!b || b.porte || b.silo || !(b.mur || (b.sol && !b.meuble) || buildMode === 'barriere')) return null;
+  if (!b || b.porte || b.silo || !(b.mur || (b.sol && !b.meuble) || b.cloture)) return null;
   // (aux niveaux 1 et 2 : les murs, qu'on rehausse ; sur l'étage d'une pièce : murs et sols)
   if (niveau() && !niveauBati() && !b.mur && !solEnMain()) return null;
   if (niveauBati() && !(b.mur || b.sol)) return null;
@@ -500,7 +501,7 @@ export function tracePosable(c) {
     return h === n && rehausseStatus(state, buildMode, c).ok ? 'ok' : false;
   }
   const x = blocAt(state, c), bx = x && DATA.ATELIER.BLOCS[x];
-  if (b.mur ? bx && bx.mur : buildMode === 'barriere' ? x === 'barriere' : b.sol && solAt(state, c)) return 'fait';
+  if (b.mur ? bx && bx.mur : b.cloture ? x === buildMode : b.sol && solAt(state, c)) return 'fait';
   return poseStatus(state, buildMode, c).ok ? 'ok' : false;
 }
 // L'outil pièce (le bouton au bout de la barre, un mur en main) : un glissement trace une pièce.
@@ -560,13 +561,13 @@ export function deplacable(c) {
   if (niveauBati()) {
     const e = etageBlocs(state), couvert = etageCouvertes(state).get(c), ancre = couvert !== undefined && !e[c] ? couvert : c;
     const sorte = e[ancre], b = sorte && DATA.ATELIER.BLOCS[sorte];
-    if (!b || b.mur || b.sol || b.porte || b.fenetre || sorte === 'barriere' || sorte === 'escalier') return null;
+    if (!b || b.mur || b.sol || b.porte || b.fenetre || b.cloture || sorte === 'escalier') return null;
     return { sorte, ancre };
   }
   if (niveau()) return null;
   const couvert = casesCouvertes(state).get(c), ancre = couvert !== undefined && !surCase(c) ? couvert : c;
   const sorte = surCase(ancre), b = sorte && DATA.ATELIER.BLOCS[sorte];
-  if (!b || b.mur || b.sol || b.porte || b.silo || b.semis || b.arbre || sorte === 'barriere') return null;
+  if (!b || b.mur || b.sol || b.porte || b.silo || b.semis || b.arbre || b.cloture) return null;
   return { sorte, ancre };
 }
 // L'aperçu du déplacement : tiendrait-il, ancré sur `vers` ? { ok, cases }.

@@ -853,6 +853,21 @@ test('ferme générée : le Poulailler, une enceinte avec une porte dehors, un n
   assertEqual([s.poulailler.construit, coopCapacity(s)], [false, 0], 'repris : plus de Poulailler');
 });
 
+test('ferme générée : un enclos de barrières de toutes les couleurs, mêlées, ferme le Poulailler', () => {
+  const s = reach(chantier('p1'), 'poulailler');
+  s.pieces = 100000;
+  s.poulailler.construit = false;
+  const couleurs = ['barriere', 'barriere_blanche', 'barriere_rouge', 'barriere_grise', 'barriere_chene', 'barriere_verte', 'barriere_lavande'];
+  setInv(s, { mur_pierre: 30, porte: 3, nichoir: 2, ...Object.fromEntries(couleurs.map((c) => [c, 5])) });
+  const z = terrainLibre(s, 9, 6), p = enceinteEtEnclos(s, z);
+  assert(poserBloc(s, 'nichoir', p.dedans).ok);
+  p.barrieres.forEach((t, k) => assert(poserBloc(s, couleurs[k % couleurs.length], t).ok));
+  assertEqual([etatPoulailler(s).ok, s.poulailler.construit], [true, true]);
+  // une barrière rouge reprise : l'enclos s'ouvre
+  reprendreBloc(s, p.barrieres[2]);
+  assertEqual(s.poulailler.construit, false);
+});
+
 test('ferme générée : l\'enclos du Poulailler ou de l\'Étable peut être grand ; sinon, la fenêtre dit pourquoi', () => {
   const s = reach(chantier('enclos', 120), 'paturage');
   setInv(s, { mur_pierre: 40, porte: 4, mangeoire: 1, barriere: 120 });

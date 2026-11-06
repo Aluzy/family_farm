@@ -1216,12 +1216,18 @@ function conditionsEnclos(cle) {
 
 const enclosCache = new Map();
 
+// Une barrière, de toute couleur (data/recipes.json : « cloture »).
+export function estCloture(sorte) {
+  const s = sorteDe(sorte);
+  return !!(s && s.cloture);
+}
+
 // L'étendue d'herbe atteinte depuis `depart` sans passer un mur, une porte, l'Atelier ou une
 // barrière : { cases, close (elle ne touche ni le bord ni ne dépasse ENCLOS_MAX), barriere (une
 // barrière la borde) }.
 function etendue(state, depart) {
   const B = blocsPoses(state), T = farmTerrain(state), W = T.LARGEUR, H = T.HAUTEUR, max = DATA.ATELIER.ENCLOS_MAX;
-  const arret = (t) => { const s = sorteDe(B[t]); return !!(s && (s.ferme || B[t] === 'barriere')); };
+  const arret = (t) => { const s = sorteDe(B[t]); return !!(s && (s.ferme || s.cloture)); };
   const vus = new Set([depart]), pile = [depart], cases = [];
   let close = true, barriere = false;
   while (pile.length) {
@@ -1229,7 +1235,7 @@ function etendue(state, depart) {
     cases.push(i);
     if (c === 0 || r === 0 || c === W - 1 || r === H - 1 || cases.length > max) { close = false; break; }
     for (const j of [i - 1, i + 1, i - W, i + W]) {
-      if (arret(j)) { if (B[j] === 'barriere') barriere = true; continue; }
+      if (arret(j)) { if (estCloture(B[j])) barriere = true; continue; }
       if (!vus.has(j)) { vus.add(j); pile.push(j); }
     }
   }
@@ -1255,8 +1261,8 @@ export function etatEnclos(state, sorteCle) {
     // rejoint le dehors ; pour dire pourquoi il n'y a pas d'enclos)
     let bouchee = false, ouvert = 0;
     for (const d of p.portes) {
-      const o = [d - 1, d + 1, d - W, d + W].find((j) => !p.cases.includes(j) && !(sorteDe(B[j]) && (sorteDe(B[j]).ferme || B[j] === 'barriere')));
-      if (o === undefined) { bouchee = bouchee || [d - 1, d + 1, d - W, d + W].some((j) => B[j] === 'barriere'); continue; }
+      const o = [d - 1, d + 1, d - W, d + W].find((j) => !p.cases.includes(j) && !(sorteDe(B[j]) && (sorteDe(B[j]).ferme || sorteDe(B[j]).cloture)));
+      if (o === undefined) { bouchee = bouchee || [d - 1, d + 1, d - W, d + W].some((j) => estCloture(B[j])); continue; }
       if (pieces.some((q) => q !== p && q.cases.includes(o))) continue;
       const x = etendue(state, o);
       if (x.close && x.barriere) { if (!e.enclos || x.cases.length > e.enclos.length) { e.enclos = x.cases; e.porteEnclos = d; } } else if (!x.close) {

@@ -69,6 +69,27 @@
     return 'bois';
   }
 
+  // Les barrières (toutes les couleurs, BLOCS_CARTE.clotures.couleurs).
+  const estCloture = (sorte) => BLOCS_CARTE.clotures.couleurs[sorte] !== undefined;
+  // Le raccord d'une barrière (1 une voisine au-dessus, 2 à droite, 4 au-dessous, 8 à gauche) : une barrière
+  // de toute couleur, ou un mur (ses lisses vont jusqu'à lui : l'enclos s'appuie sur l'enceinte).
+  function masqueCloture(b, at, cols) {
+    const V = BLOCS_CARTE.hauts.variantes;
+    const c = b.case % cols, is = (k) => estCloture(at.get(k)) || V[at.get(k)] !== undefined;
+    return (is(b.case - cols) ? 1 : 0) + (c < cols - 1 && is(b.case + 1) ? 2 : 0) + (is(b.case + cols) ? 4 : 0) + (c > 0 && is(b.case - 1) ? 8 : 0);
+  }
+  // Le détail d'une barrière (scripts/carte/blocs.py BARRIERE_VARIANTES), tiré de sa case : toujours le même à
+  // la même place, et des voisines différentes. La moitié n'en a pas ; sur 64 : 4 une planche sombre, 4 une neuve
+  // clouée, 2 un nœud, 2 un poteau fendu, 4 une planche tombée, 2 une cassée, 2 une rapiécée, 6 une touffe
+  // d'herbe, 3 des fleurs, 2 du lierre, 1 un oiseau.
+  const DETAILS = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5, 6, 6, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 10, 10, 11];
+  function detailCloture(c) {
+    let h = Math.imul(c ^ 0x5bd1e995, 0x9e3779b1) >>> 0;
+    h = Math.imul(h ^ (h >>> 15), 0x85ebca6b) >>> 0;
+    const r = (h >>> 8) % 64;
+    return r < 32 ? 0 : DETAILS[r - 32];
+  }
+
   F.partie({
 
     // Les images des blocs : celles du modèle, créées, changées ou ôtées. Les murs et la porte
@@ -627,6 +648,10 @@
     // celle du mur de blocs.png.
     blocImage(b, at, cols) {
       const H = BLOCS_CARTE.hauts;
+      // (une barrière, de toute couleur : sa couleur, son détail, son raccord, dans assets/clotures.png ; sans
+      // elle, la barrière de bois de blocs.png)
+      const CL = BLOCS_CARTE.clotures;
+      if (estCloture(b.sorte) && this.has(CL.key)) return [CL.key, (CL.couleurs[b.sorte] * CL.details + detailCloture(b.case)) * 16 + masqueCloture(b, at, cols)];
       // (le réverbère, deux blocs de haut : son image dans la planche des murs hauts, éteint ;
       // sans elle, la lanterne éteinte)
       if (b.sorte === 'candelabre') return this.has(H.key) ? [H.key, H.candelabre] : [BLOCS_CARTE.key, BLOCS_CARTE.frames.lanterne];
@@ -715,13 +740,7 @@
     // une porte compte à gauche et à droite seulement). Une porte entre deux murs, l'un
     // au-dessus, l'autre au-dessous, et sans voisin à côté : celle d'un mur vertical.
     wallFrame(b, at, cols) {
-      if (b.sorte === 'barriere') {
-        // (une barrière : celles de ses voisines, BLOCS_CARTE.barrieres + masque ; un mur voisin
-        // compte aussi, ses lisses vont jusqu'à lui : l'enclos s'appuie sur l'enceinte)
-        const V = BLOCS_CARTE.hauts.variantes;
-        const c = b.case % cols, is = (k) => at.get(k) === 'barriere' || V[at.get(k)] !== undefined;
-        return BLOCS_CARTE.barrieres + (is(b.case - cols) ? 1 : 0) + (c < cols - 1 && is(b.case + 1) ? 2 : 0) + (is(b.case + cols) ? 4 : 0) + (c > 0 && is(b.case - 1) ? 8 : 0);
-      }
+      if (estCloture(b.sorte)) return BLOCS_CARTE.barrieres + masqueCloture(b, at, cols);
       // (la fenêtre et les pierres d'angle se raccordent comme le mur en pierre)
       const V = BLOCS_CARTE.hauts.variantes;
       const mur = V[b.sorte] !== undefined;

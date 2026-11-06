@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 441 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 448 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -348,6 +348,13 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/train.png" width="48" height="48" alt=""> | 🚆 | [`train.png`](train.png) |
 | <img src="apercu/bus.png" width="48" height="48" alt=""> | 🚌 | [`bus.png`](bus.png) |
 | <img src="apercu/construction_sign.png" width="48" height="48" alt=""> | 🚧 | [`construction_sign.png`](construction_sign.png) |
+| <img src="apercu/barriere_grise.png" width="48" height="48" alt=""> | 🚧‍⬛ | [`barriere_grise.png`](barriere_grise.png) |
+| <img src="apercu/barriere_blanche.png" width="48" height="48" alt=""> | 🚧‍⬜ | [`barriere_blanche.png`](barriere_blanche.png) |
+| <img src="apercu/barriere_chene.png" width="48" height="48" alt=""> | 🚧‍🟤 | [`barriere_chene.png`](barriere_chene.png) |
+| <img src="apercu/barriere_rouge.png" width="48" height="48" alt=""> | 🚧‍🟥 | [`barriere_rouge.png`](barriere_rouge.png) |
+| <img src="apercu/barriere_verte.png" width="48" height="48" alt=""> | 🚧‍🟩 | [`barriere_verte.png`](barriere_verte.png) |
+| <img src="apercu/barriere_lavande.png" width="48" height="48" alt=""> | 🚧‍🟪 | [`barriere_lavande.png`](barriere_lavande.png) |
+| <img src="apercu/barriere.png" width="48" height="48" alt=""> | 🚧‍🟫 | [`barriere.png`](barriere.png) |
 | <img src="apercu/door.png" width="48" height="48" alt=""> | 🚪 | [`door.png`](door.png) |
 | <img src="apercu/door+black_large_square.png" width="48" height="48" alt=""> | 🚪‍⬛ | [`door+black_large_square.png`](door+black_large_square.png) |
 | <img src="apercu/door+white_large_square.png" width="48" height="48" alt=""> | 🚪‍⬜ | [`door+white_large_square.png`](door+white_large_square.png) |

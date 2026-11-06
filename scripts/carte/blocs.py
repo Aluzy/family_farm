@@ -3,7 +3,7 @@
 # la face avant (tournée vers le bas de l'écran). Des images de 16 × 24 côte à côte ; le bas de
 # chaque image est le bas de sa case, le haut dépasse sur la case du dessus.
 #
-#   python3 scripts/carte/blocs.py            écrit assets/blocs.png et assets/murs_hauts.png
+#   python3 scripts/carte/blocs.py            écrit assets/blocs.png, assets/murs_hauts.png et assets/clotures.png
 #                                             (les murs une case plus hauts des maisons de la
 #                                             carte de transition, voir murs_hauts() ; puis le
 #                                             réverbère, deux blocs de haut : reverbere())
@@ -1097,43 +1097,137 @@ def plancher(m):
 
 # ---------- la barrière ----------
 
-def barriere(m):
+def barriere(m, P=None, var=0):
     """La barrière de masque m (1 une barrière au-dessus, 2 à droite, 4 au-dessous, 8 à
     gauche) : un poteau de bois au milieu de la case (son dessus clair, la face au ton moyen,
     le bord droit dans l'ombre) et deux lisses vers chaque voisine ; vers le haut et le bas,
     les lisses fuient vers le fond : on en voit le dessus, une bande de bois le long du poteau.
-    Contour sombre autour (fini) : deux barrières voisines se raccordent sans couture."""
+    Contour sombre autour (fini) : deux barrières voisines se raccordent sans couture.
+    P : ses 5 tons (du plus sombre au plus clair ; BOIS, le bois naturel, par défaut) ; var : un détail
+    qui la distingue de ses voisines dans une longue barrière (BARRIERE_VARIANTES ; 0 : aucun)."""
+    P = P or BOIS
     t = Toile()
     n, e, s, w = (m & 1, m & 2, m & 4, m & 8)
     x0, x1, haut = 6, 9, 9                       # le poteau : 4 px de large, son dessus en haut
+    v = BARRIERE_VARIANTES[var]
+    # la lisse que le détail touche : à droite s'il y en a une, sinon à gauche (aucune : pas de détail de lisse)
+    cote = 'e' if e else 'w' if w else None
+    plus = lambda tons, k: [tuple(max(0, min(255, round(c * k))) for c in ton) for ton in tons]
     # les lisses vers le fond (au-dessus) et vers nous (au-dessous) : leur dessus
     if n:
-        t.rect(x0 + 1, 0, x1 - 1, haut, BOIS[3])
+        t.rect(x0 + 1, 0, x1 - 1, haut, P[3])
         for y in range(0, haut):
-            t.put(x0 + 1, y, BOIS[4])
+            t.put(x0 + 1, y, P[4])
     if s:
-        t.rect(x0 + 1, BAS - 6, x1 - 1, BAS, BOIS[3])
+        t.rect(x0 + 1, BAS - 6, x1 - 1, BAS, P[3])
         for y in range(BAS - 6, BAS + 1):
-            t.put(x0 + 1, y, BOIS[4])
+            t.put(x0 + 1, y, P[4])
     # les lisses à gauche et à droite : deux planches couchées (le dessus clair, la face)
-    for y0 in (12, 17):
-        for (a, b, ok) in ((0, x0 - 1, w), (x1 + 1, W - 1, e)):
+    for i, y0 in enumerate((12, 17)):
+        for (a, b, ok, c) in ((0, x0 - 1, w, 'w'), (x1 + 1, W - 1, e, 'e')):
             if not ok:
                 continue
+            ici = c == cote
+            if ici and v == 'manque' and i == 1:
+                continue                         # une planche tombée
+            Q = plus(P, 0.72) if ici and (v == 'sombre' and i == 0 or v == 'rapiecee' and i == 1) \
+                else plus(P, 1.28) if ici and (v == 'neuve' and i == 1 or v == 'rapiecee' and i == 0) else P
             for x in range(a, b + 1):
-                t.put(x, y0, BOIS[4])
-                t.put(x, y0 + 1, BOIS[2] if (x + y0) % 7 else BOIS[1])
-                t.put(x, y0 + 2, BOIS[1])
+                # une planche cassée, qui pend vers le sol du côté du poteau qui ne la tient plus
+                yy = y0 + ((x - a) if c == 'w' else (b - x)) // 2 if ici and v == 'cassee' and i == 0 else y0
+                t.put(x, yy, Q[4])
+                t.put(x, yy + 1, Q[2] if (x + y0) % 7 else Q[1])
+                t.put(x, yy + 2, Q[1])
+            if ici and v == 'noeud' and i == 0:
+                k = (a + b) // 2
+                t.put(k, y0 + 1, Q[0]); t.put(k + 1, y0 + 1, Q[1]); t.put(k, y0, Q[2])
+            if ici and v in ('neuve', 'rapiecee'):
+                clou = a + 1 if c == 'w' else b - 1
+                for j in ((1,) if v == 'neuve' else (0, 1)):
+                    t.put(clou, (12, 17)[j] + 1, FER[1])
     # le poteau
     for y in range(haut, BAS + 1):
         for x in range(x0, x1 + 1):
-            c = BOIS[3] if x == x0 else BOIS[1] if x == x1 else BOIS[2]
+            c = P[3] if x == x0 else P[1] if x == x1 else P[2]
             if y in (haut, haut + 1):
-                c = BOIS[4] if y == haut else BOIS[3]  # le dessus du poteau, coupé net
+                c = P[4] if y == haut else P[3]  # le dessus du poteau, coupé net
             t.put(x, y, c)
+    if v == 'fente':
+        for y in range(haut + 4, haut + 9):
+            t.put(x0 + 2, y, P[0])
     for x in range(x0, x1 + 1):
-        t.put(x, BAS, BOIS[0])                   # le pied, dans l'herbe
-    return t.fini()
+        t.put(x, BAS, P[0])                      # le pied, dans l'herbe
+    # la nature au pied du poteau
+    if v in ('touffe', 'fleurs'):
+        for (x, y, c) in ((3, 22, HERBE_PIED[0]), (4, 21, HERBE_PIED[1]), (4, 20, HERBE_PIED[2]), (5, 22, HERBE_PIED[0]), (5, 19, HERBE_PIED[3]),
+                          (10, 22, HERBE_PIED[0]), (10, 20, HERBE_PIED[2]), (11, 19, HERBE_PIED[3]), (11, 21, HERBE_PIED[1]), (12, 22, HERBE_PIED[0]), (12, 20, HERBE_PIED[2])):
+            t.put(x, y, c)
+    if v == 'fleurs':
+        for (x, y, c) in ((2, 18, FLEUR_BLANCHE), (1, 19, FLEUR_BLANCHE), (3, 19, FLEUR_BLANCHE), (2, 20, FLEUR_BLANCHE), (2, 19, FLEUR_COEUR),
+                          (2, 21, HERBE_PIED[0]), (13, 17, FLEUR_ROSE), (12, 18, FLEUR_ROSE), (14, 18, FLEUR_ROSE), (13, 19, FLEUR_ROSE), (13, 18, FLEUR_COEUR),
+                          (13, 20, HERBE_PIED[0]), (13, 21, HERBE_PIED[0])):
+            t.put(x, y, c)
+    if v == 'lierre':
+        for (x, y) in ((7, 10), (8, 11), (6, 12), (7, 13), (9, 14), (8, 15), (6, 16), (7, 17), (8, 18), (9, 19), (7, 20), (8, 21)):
+            t.put(x, y, LIERRE[0])
+        for (x, y) in ((5, 12), (10, 14), (5, 16), (10, 19)):
+            t.put(x, y, LIERRE[1])
+    im = t.fini()
+    if v == 'oiseau':
+        # un rouge-gorge posé sur le poteau (après le contour : il a le sien)
+        o = im.load()
+        for (x, y, c) in OISEAU:
+            o[x, y] = c + (255,)
+    return im
+
+
+# Les détails qui distinguent une barrière de ses voisines (assets/clotures.png, BLOCS_CARTE.clotures) :
+# le bois patiné (une planche sombre, une neuve clouée, un nœud, un poteau fendu), l'usure et les réparations (une
+# planche tombée, une cassée qui pend, une rapiécée), la nature au pied (une touffe d'herbe, des fleurs, du lierre,
+# un oiseau). La carte en tire un pour chaque case, d'après sa place (js/carte/ferme/chantier.js, varianteBarriere).
+BARRIERE_VARIANTES = ['', 'sombre', 'neuve', 'noeud', 'fente', 'manque', 'cassee', 'rapiecee', 'touffe', 'fleurs', 'lierre', 'oiseau']
+HERBE_PIED = [(60, 112, 40), (78, 138, 48), (96, 160, 58), (110, 172, 64)]
+LIERRE = [(58, 120, 48), (90, 160, 70)]
+FLEUR_BLANCHE, FLEUR_ROSE, FLEUR_COEUR = (250, 250, 250), (230, 90, 120), (240, 200, 60)
+OISEAU = [(6, 4, OUT), (7, 4, OUT), (8, 4, OUT), (9, 4, OUT), (8, 3, OUT), (9, 3, OUT), (10, 4, OUT), (5, 5, OUT), (6, 5, (110, 80, 58)), (7, 5, (110, 80, 58)),
+          (8, 5, (110, 80, 58)), (9, 5, OUT), (10, 5, (230, 150, 40)), (4, 6, OUT), (5, 6, OUT), (6, 6, (200, 90, 60)), (7, 6, (200, 90, 60)), (8, 6, (150, 110, 80)),
+          (9, 6, OUT), (3, 7, OUT), (6, 7, OUT), (7, 7, OUT), (8, 7, OUT)]
+# Les couleurs des barrières (leurs 5 tons, du plus sombre au plus clair), dans l'ordre de assets/clotures.png
+BARRIERE_COULEURS = {
+    'barriere': None,                                       # le bois naturel (BOIS)
+    'barriere_blanche': [(92, 92, 96), (150, 152, 156), (196, 198, 200), (226, 228, 228), (250, 250, 246)],
+    'barriere_rouge': [(70, 24, 20), (118, 40, 32), (150, 56, 42), (184, 80, 60), (214, 118, 92)],
+    'barriere_grise': [(58, 58, 56), (92, 92, 88), (118, 118, 112), (152, 150, 142), (186, 184, 174)],
+    'barriere_chene': [(36, 24, 14), (60, 40, 24), (80, 54, 32), (108, 76, 46), (140, 104, 66)],
+    'barriere_verte': [(24, 46, 32), (40, 74, 52), (56, 98, 68), (82, 128, 90), (118, 160, 118)],
+    'barriere_lavande': [(44, 52, 82), (70, 82, 124), (96, 110, 156), (128, 142, 186), (168, 180, 214)],
+}
+
+
+# Les icônes des barrières (assets/icones/, l'inventaire, les menus : scripts/icones/build.py) : chaque couleur,
+# droite (raccordée à gauche et à droite), sans détail, ses 16 rangées du bas ; leurs émojis (data/items.json).
+ICONES_BARRIERES = {'barriere': '🟫', 'barriere_blanche': '⬜', 'barriere_rouge': '🟥', 'barriere_grise': '⬛',
+                    'barriere_chene': '🟤', 'barriere_verte': '🟩', 'barriere_lavande': '🟪'}
+
+
+def icones_barrieres():
+    """Écrit assets/icones/barriere*.png et les inscrit dans assets/icones/icones.json (🚧 + ZWJ + la couleur)."""
+    import json
+    dossier = os.path.join(ASSETS, 'icones')
+    chemin = os.path.join(dossier, 'icones.json')
+    with open(chemin, encoding='utf8') as f:
+        table = json.load(f)
+    for (sorte, P) in BARRIERE_COULEURS.items():
+        barriere(10, P).crop((0, H - 16, W, H)).save(os.path.join(dossier, f'{sorte}.png'))
+        table['🚧\u200d' + ICONES_BARRIERES[sorte]] = f'{sorte}.png'
+    with open(chemin, 'w', encoding='utf8') as f:
+        f.write(json.dumps(table, ensure_ascii=False, indent=1))
+
+
+def barrieres():
+    """assets/clotures.png : pour chaque couleur (BARRIERE_COULEURS), chaque détail (BARRIERE_VARIANTES), une
+    rangée des 16 barrières raccordées : l'image ((couleur × détails + détail) × 16 + masque)."""
+    return [barriere(m, P, k) for P in BARRIERE_COULEURS.values() for k in range(len(BARRIERE_VARIANTES)) for m in range(16)]
 
 
 # ---------- les objets ----------
@@ -2599,6 +2693,9 @@ def main():
     hauts, h = murs_hauts()
     fen = fenetres_hautes()
     grille(hauts + fen + REVERBERE, W, h, COLONNES_HAUTS).save(os.path.join(ASSETS, 'murs_hauts.png'))
+    grille(barrieres(), W, H, 16).save(os.path.join(ASSETS, 'clotures.png'))
+    icones_barrieres()
+    print(f'assets/clotures.png : {len(BARRIERE_COULEURS)} couleurs × {len(BARRIERE_VARIANTES)} détails × 16 barrières raccordées')
     print(f'assets/murs_hauts.png : {len(hauts)} murs puis {len(fen)} fenêtres (à partir de {len(hauts)}), '
           f'puis le réverbère (à partir de {len(hauts) + len(fen)}), images de {W} × {h}')
     if '--apercu' in sys.argv:

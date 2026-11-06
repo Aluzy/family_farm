@@ -251,6 +251,11 @@
       candelabre: 1337 },
     // la barrière : 16 images raccordées aux barrières voisines (barrieres + masque, comme les murs)
     barrieres: 50,
+    // les barrières de couleur et leurs détails (assets/clotures.png, scripts/carte/blocs.py barrieres) : pour
+    // chaque couleur (couleurs : son rang), chaque détail (details : combien ; js/carte/ferme/chantier.js en tire
+    // un pour chaque case, d'après sa place), les 16 barrières raccordées : ((couleur × details + détail) × 16 + masque)
+    clotures: { key: 'clotures', file: 'clotures.png', frame: { frameWidth: 16, frameHeight: 24 }, details: 12,
+      couleurs: { barriere: 0, barriere_blanche: 1, barriere_rouge: 2, barriere_grise: 3, barriere_chene: 4, barriere_verte: 5, barriere_lavande: 6 } },
     // la lanterne scintillante (un bloc `lumiere`, chantier.js stepLanterns) : éteinte le jour
     // (frames.lanterne) ; allumée quand la nuit tombe (le voile de l'heure plus sombre que
     // `allume`), ses deux images `allumee` alternent au hasard (elle scintille, `fps` au plus).
@@ -295,7 +300,7 @@
     // la meule qui moud (le Moulin en marche) : sa pierre et sa manivelle tournent (`fps` images
     // par seconde, un tour en 8 images ; chantier.js stepFires)
     meule: { sorte: 'meule', frames: [81, 82, 83, 84, 85, 86, 87, 88], fps: 8 },
-    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'bloc_silo', 'meule', 'lanterne', 'candelabre', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur', 'reservoir', 'pressoir', 'centrifugeuse', 'mixeur', 'chaudron', 'tonneau', 'ensacheuse', 'boite_nourriture', 'ruche', 'bac_fleurs', 'table_jardin', 'chaise_jardin', 'banc_jardin', 'banc_rondins', 'table_rondins', 'chaise_peinte', 'jarre_coquillages', 'lanterne_papier', 'bassin_nenuphars', 'banc_pierre', 'jardiniere_pierre', 'bac_lavande'],
+    plats: ['paillasse', 'escalier'], bloquent: ['mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'barriere_blanche', 'barriere_rouge', 'barriere_grise', 'barriere_chene', 'barriere_verte', 'barriere_lavande', 'atelier', 'four', 'cuisiniere', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'bloc_silo', 'meule', 'lanterne', 'candelabre', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur', 'reservoir', 'pressoir', 'centrifugeuse', 'mixeur', 'chaudron', 'tonneau', 'ensacheuse', 'boite_nourriture', 'ruche', 'bac_fleurs', 'table_jardin', 'chaise_jardin', 'banc_jardin', 'banc_rondins', 'table_rondins', 'chaise_peinte', 'jarre_coquillages', 'lanterne_papier', 'bassin_nenuphars', 'banc_pierre', 'jardiniere_pierre', 'bac_lavande'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png ; la
     // station du robot : station_robot.png, machines.js ; les blocs de silo : silo.js)
     ailleurs: ['puits', 'citerne', 'station_robot', 'bloc_silo'],

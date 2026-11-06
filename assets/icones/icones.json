@@ -439,5 +439,12 @@
  "💧‍🛢": "droplet+oil_drum.png",
  "☀‍🟦": "sun+blue_square.png",
  "🔋‍🔩": "battery+nut_and_bolt.png",
- "🔌‍🤖": "electric_plug+robot.png"
+ "🔌‍🤖": "electric_plug+robot.png",
+ "🚧‍🟫": "barriere.png",
+ "🚧‍⬜": "barriere_blanche.png",
+ "🚧‍🟥": "barriere_rouge.png",
+ "🚧‍⬛": "barriere_grise.png",
+ "🚧‍🟤": "barriere_chene.png",
+ "🚧‍🟩": "barriere_verte.png",
+ "🚧‍🟪": "barriere_lavande.png"
 }

@@ -115,6 +115,7 @@
         L.spritesheet(F.C.RAMASSABLES.key, v(F.C.RAMASSABLES.file), F.C.RAMASSABLES.frame);
         L.spritesheet(F.C.BLOCS_CARTE.key, v(F.C.BLOCS_CARTE.file), F.C.BLOCS_CARTE.frame);
         L.spritesheet(F.C.BLOCS_CARTE.hauts.key, v(F.C.BLOCS_CARTE.hauts.file), F.C.BLOCS_CARTE.hauts.frame);
+        L.spritesheet(F.C.BLOCS_CARTE.clotures.key, v(F.C.BLOCS_CARTE.clotures.file), F.C.BLOCS_CARTE.clotures.frame);
         // les animaux de compagnie de la famille (js/ambient-life.js) : trois robes de chat, trois de chien
         for (const k of COMPAGNONS) L.spritesheet(k, v(k + '.png'), CAT_FRAME);
         // la calèche du grand monde (js/carte/ferme/caleche.js, fiche 7c)

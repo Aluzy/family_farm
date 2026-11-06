@@ -95,7 +95,7 @@
 
       // le bas des murs de la ferme (pas des portes) et le pied des poteaux
       for (const e of B.values()) {
-        const poteau = e.sorte === 'barriere';
+        const poteau = BLOCS_CARTE.clotures.couleurs[e.sorte] !== undefined;   // (une barrière, de toute couleur)
         if (!e.img || !e.img.active || (!poteau && (e.img.texture.key !== H.key || estPorte(e.sorte)))) continue;
         if (pris(e.case + cols)) continue;
         const f = e.img.frame, x0 = e.x - f.cutWidth / 2, y0 = e.y - f.cutHeight;
