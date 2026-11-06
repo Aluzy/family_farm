@@ -259,9 +259,10 @@
     },
     // le portail (assets/portails.png, scripts/carte/blocs.py portails) : calé entre les poteaux de ses deux
     // voisines, son image dépasse de sa case (posée par `origine` : le milieu du bas de la case) ; fermé, ouvert
-    // (rabattu contre la barrière de gauche) ; dans une barrière verticale, fermé, ouvert. Un appui l'ouvre ou le
+    // (rabattu contre la barrière de gauche) ; dans une barrière verticale, fermé, ouvert (rabattu contre celle du
+    // dessus). Un appui l'ouvre ou le
     // ferme (chantier.js portailAt) ; fermé, il bloque (bloquent)
-    portails: { key: 'portails', file: 'portails.png', frame: { frameWidth: 96, frameHeight: 48 }, origine: [46 / 96, 40 / 48],
+    portails: { key: 'portails', file: 'portails.png', frame: { frameWidth: 96, frameHeight: 64 }, origine: [46 / 96, 56 / 64],
       ferme: 0, ouvert: 1, vertical: 2, verticalOuvert: 3, sortes: ['portail', 'portail_ouvert'] },
     // la lanterne scintillante (un bloc `lumiere`, chantier.js stepLanterns) : éteinte le jour
     // (frames.lanterne) ; allumée quand la nuit tombe (le voile de l'heure plus sombre que

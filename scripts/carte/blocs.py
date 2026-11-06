@@ -1231,15 +1231,16 @@ def icones_barrieres():
 # lisse vers lui, js/carte/ferme/chantier.js masqueCloture). Son image dépasse de sa case : une planche à part,
 # assets/portails.png, des images de PORTAIL_L × PORTAIL_H ; la case du portail y est en PORTAIL_CASE (son coin haut
 # gauche, en px), l'image posée par le milieu du bas de la case (BLOCS_CARTE.portails.origine).
-PORTAIL_L, PORTAIL_H = 96, 48
-PORTAIL_CASE = (38, 24)
+PORTAIL_L, PORTAIL_H = 96, 64
+PORTAIL_CASE = (38, 40)
 
 
 def portails():
     """Les 4 images du portail : dans une barrière horizontale, fermé (le vantail d'un poteau voisin à l'autre :
     un cadre, trois traverses, une écharpe, le loquet, les gonds sur le poteau de gauche) puis ouvert (rabattu à plat
     contre la barrière de gauche) ; dans une barrière verticale, fermé (vu par la tranche, entre le poteau du dessus et
-    celui du dessous) puis ouvert (tourné vers la droite sur ses gonds, vu de face)."""
+    celui du dessous) puis ouvert (rabattu contre la barrière du dessus, le long d'elle, vu par la tranche : ses gonds
+    sur le poteau du dessus, au bout du vantail)."""
     cx, cy = PORTAIL_CASE
     y0 = cy - 8                                   # le haut d'une image de 16 × 24 de la case (comme les barrières)
 
@@ -1292,11 +1293,15 @@ def portails():
         put(t, cx + 10, y, FER[2])
     put(t, cx + 5, cy + 9, FER[3])
     out.append(t.fini())
-    # vertical, ouvert : tourné vers la droite sur ses gonds (le poteau du dessus), vu de face, sur l'herbe
+    # vertical, ouvert : rabattu contre la barrière du dessus (de y -29 à -2 de la case), le long d'elle, juste à
+    # droite de ses lisses (on le voit par la tranche, comme fermé) ; ses gonds en bas, contre le poteau du dessus
     t = toile()
-    vantail(t, cx + 9)
-    for y in (12, 20):
-        put(t, cx + 9, y0 + y - 8, FER[2])
+    for y in range(cy - 29, cy - 1):
+        put(t, cx + 9, y, BOIS[4]); put(t, cx + 10, y, BOIS[3]); put(t, cx + 11, y, BOIS[2]); put(t, cx + 12, y, BOIS[1])
+    for y in (cy - 28, cy - 16):
+        put(t, cx + 10, y, BOIS[1]); put(t, cx + 11, y, BOIS[1])                 # les traverses, vues par le bout
+    for y in (cy - 4, cy - 12):
+        put(t, cx + 8, y, FER[2])                                                # les gonds, côté poteau
     out.append(t.fini())
     return out
 
