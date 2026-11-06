@@ -327,9 +327,23 @@ function platCase(id, rid, choisie) {
   // (blanchie dès qu'il manque un ingrédient, même quand la file est pleine)
   const manque = code !== 'verrouillee' && status.lignes.some((l) => !l.ok);
   const sorte = code === 'verrouillee' ? ' verrou' : manque ? ' non' : '';
-  const dit = code === 'verrouillee' ? ' (à débloquer)' : manque ? ' (il manque des ingrédients)' : '';
-  return `<button type="button" class="plat-case${sorte}${choisie ? ' choisi' : ''}" data-action="recette-choisir" data-station="${id}" data-recipe="${rid}" aria-pressed="${choisie}" aria-label="${r.nom}${dit}" title="${r.nom}${dit}"><span class="plat-ico">${r.icone}</span>${code === 'verrouillee' ? '<span class="plat-cadenas" aria-hidden="true">🔒</span>' : ''}</button>`;
+  // combien de fois elle peut partir avec le stock : une pastille ambre au coin haut
+  const n = code === 'verrouillee' || manque ? 0 : combienPossible(rid);
+  const dit = code === 'verrouillee' ? ' (à débloquer)' : manque ? ' (il manque des ingrédients)' : ` (de quoi en faire ${n})`;
+  const pastille = n > 0 ? `<span class="plat-nombre" aria-hidden="true">${n > 99 ? '99+' : n}</span>` : '';
+  return `<button type="button" class="plat-case${sorte}${choisie ? ' choisi' : ''}" data-action="recette-choisir" data-station="${id}" data-recipe="${rid}" aria-pressed="${choisie}" aria-label="${r.nom}${dit}" title="${r.nom}${dit}"><span class="plat-ico">${r.icone}</span>${pastille}${code === 'verrouillee' ? '<span class="plat-cadenas" aria-hidden="true">🔒</span>' : ''}</button>`;
 }
+
+// L'ordre de la grille : celles qu'on peut lancer, puis celles où il manque des ingrédients, puis celles à
+// débloquer (dans l'ordre des recettes, à l'intérieur de chaque groupe).
+function rangRecette(rid) {
+  const status = recipeStatus(state, rid);
+  if (status.code === 'verrouillee') return 2;
+  return status.lignes.some((l) => !l.ok) ? 1 : 0;
+}
+
+// Les recettes à débloquer, regroupées en une case « 🔒 +n » ; un appui les déplie (la page seulement).
+const deplie = {};
 
 // La fiche de la recette choisie : ce qu'elle donne, ses ingrédients (ce que tu as), combien en lancer.
 function ficheRecette(id, rid) {
@@ -379,14 +393,22 @@ export function renderStationFenetre(id, fonte) {
   const recipes = Object.keys(DATA.RECETTES).filter((r) => DATA.RECETTES[r].station === id && !DATA.RECETTES[r].horsLivre
     && (fonte === undefined || !!DATA.RECETTES[r].transformation === fonte));
   if (!state.stations[id].construit) return `<div class="cards">${stationBuildCard(id)}</div>`;
-  if (!recipes.includes(choix[id])) choix[id] = recipes.find((r) => recipeStatus(state, r).ok) || recipes.find((r) => recipeStatus(state, r).code !== 'verrouillee') || recipes[0];
+  const rang = new Map(recipes.map((r) => [r, rangRecette(r)]));
+  const tries = recipes.slice().sort((a, b) => rang.get(a) - rang.get(b));
+  if (!recipes.includes(choix[id])) choix[id] = tries.find((r) => recipeStatus(state, r).ok) || tries[0];
   const rid = choix[id];
+  // (les recettes à débloquer : regroupées dès qu'il y en a deux, sauf dépliées ou si l'une est choisie)
+  const verrous = tries.filter((r) => rang.get(r) === 2);
+  const groupe = verrous.length >= 2 && !deplie[id] && !verrous.includes(rid);
+  const cases = (groupe ? tries.filter((r) => rang.get(r) < 2) : tries).map((r) => platCase(id, r, r === rid));
+  if (groupe) cases.push(`<button type="button" class="plat-case verrou plat-groupe" data-action="recettes-deplier" data-station="${id}" aria-expanded="false" aria-label="${verrous.length} recettes à débloquer : les montrer" title="${verrous.length} recettes à débloquer"><span class="plat-ico">🔒</span><span class="plat-plus" aria-hidden="true">+${verrous.length}</span></button>`);
+  else if (verrous.length >= 2 && deplie[id]) cases.push(`<button type="button" class="plat-case verrou plat-groupe" data-action="recettes-deplier" data-station="${id}" aria-expanded="true" aria-label="Replier les recettes à débloquer" title="Replier"><span class="plat-ico">🔒</span><span class="plat-plus" aria-hidden="true">−</span></button>`);
   return `
     <div class="menu-atelier" id="station-${id}">
       <div class="prep">${preparationHtml(id)}${stationPower(id)}</div>
       ${recipes.length ? `
       <h3 class="section-title">${fonte ? 'Fontes' : 'Plats'}</h3>
-      <div class="plats-grille" role="group" aria-label="${fonte ? 'Fontes' : 'Plats'}">${recipes.map((r) => platCase(id, r, r === rid)).join('')}</div>
+      <div class="plats-grille" role="group" aria-label="${fonte ? 'Fontes' : 'Plats'}">${cases.join('')}</div>
       ${ficheRecette(id, rid)}` : ''}
     </div>`;
 }
@@ -442,6 +464,11 @@ registerActions({
     const id = String(target.dataset.station || '');
     if (choix[id] !== target.dataset.recipe) quantite[id] = 1;
     choix[id] = target.dataset.recipe;
+    refresh();
+  },
+  'recettes-deplier': (target) => {
+    const id = String(target.dataset.station || '');
+    deplie[id] = !deplie[id];
     refresh();
   },
   'recette-qte': (target) => {

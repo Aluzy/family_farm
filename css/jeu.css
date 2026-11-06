@@ -1115,6 +1115,12 @@ select {
 .plat-case.verrou { box-shadow: none; background: #fbf3e2; border-color: #d3b88a; }
 .plat-cadenas { position: absolute; right: 3px; bottom: 2px; font-size: 12px; }
 .plat-case.choisi { border-color: #2f6a2a; box-shadow: 0 0 0 3px #9cc77a; }
+/* combien de fois la recette peut partir avec le stock : une pastille ambre au coin haut */
+.plat-nombre { position: absolute; top: -6px; right: -6px; min-width: 19px; height: 19px; padding: 0 4px; border-radius: 10px; border: 1px solid #fff6e0; background: #e9a530; color: #3a2414; font-size: 11px; line-height: 17px; text-align: center; }
+/* les recettes à débloquer regroupées : « 🔒 +n » (un appui les déplie) */
+.plat-case.plat-groupe { border-style: dashed; }
+.plat-case.plat-groupe .plat-ico { font-size: 20px; opacity: 0.6; filter: none; }
+.plat-plus { position: absolute; right: 5px; bottom: 2px; font-size: 11px; color: #7a5a3a; }
 .fiche-recette { margin-top: 10px; padding: 9px 10px; border: 2px solid #c9a46e; border-radius: 10px; background: rgba(255, 246, 224, 0.6); }
 .fiche-recette h4 { margin: 0 0 2px; font-size: 1rem; font-weight: normal; }
 .fiche-recette > p { margin: 0 0 6px; font-size: 0.8rem; }
