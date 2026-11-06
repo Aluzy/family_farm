@@ -102,7 +102,11 @@ const seul = () => !accueil.compagnon && !accueil.enfants.length && !accueil.ani
 // La flèche en bas à droite : l'écran suivant.
 const fleche = (actif = true) => `<button type="button" class="accueil-suite" data-action="accueil-suite"${actif ? '' : ' disabled'} aria-label="Suivant" title="Suivant"><span aria-hidden="true"></span></button>`;
 const ouiNon = () => `<div class="accueil-choix"><button type="button" class="btn primary" data-action="accueil-oui">Oui</button><button type="button" class="btn" data-action="accueil-non">Non</button></div>`;
-const champ = (valeur, max, label, attrs = '') => `<input type="text" id="accueil-champ" class="member-input accueil-champ" maxlength="${max}" autocomplete="off" autocapitalize="words" spellcheck="false" aria-label="${label}" value="${escapeHtml(valeur)}"${attrs}>`;
+// Un champ à remplir, et sa flèche à côté de lui (pas en bas de la fenêtre) : sur un téléphone, le clavier ouvert
+// couvre le bas de l'écran ; le navigateur montre le champ, donc la flèche avec. La touche Entrée du clavier
+// (enterkeyhint : « Suivant ») valide aussi.
+const ligne = (input) => `<div class="accueil-ligne">${input}${fleche()}</div>`;
+const champ = (valeur, max, label, attrs = '') => ligne(`<input type="text" id="accueil-champ" class="member-input accueil-champ" maxlength="${max}" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="next" aria-label="${label}" value="${escapeHtml(valeur)}"${attrs}>`);
 const grille = (choisi, enfant = false) => `<div class="perso-grid accueil-persos${enfant ? ' accueil-persos-enfant' : ''}">${Array.from({ length: enfant ? DATA.FAMILLE.PROFIL.PERSOS_ENFANT : DATA.FAMILLE.PROFIL.PERSOS }, (_, i) => i + 1)
   .map((n) => `<button type="button" class="btn perso-btn${n === choisi ? ' active' : ''}" data-action="accueil-perso" data-perso="${n}" aria-pressed="${n === choisi}" aria-label="${enfant ? 'Enfant' : 'Personnage'} ${n}">${persoHtml(n, enfant)}</button>`).join('')}</div>`;
 // Le portrait de `qui` ({ perso, apparence }) : son apparence à lui s'il en a une (js/ui/apparence.js), sinon son personnage.
@@ -151,29 +155,29 @@ function ecranAccueil() {
     case 'enfant-apparence':
       return ['Tu peux personnaliser son apparence (la peau, les yeux, la coiffure, la tenue…), ou passer à la suite :', apparenceEcran()];
     case 'prenom':
-      return ['Comment s\'appelle-t-il ?', portrait(A) + champ(A.prenom, P.PRENOM_MAX, 'Prénom') + fleche()];
+      return ['Comment s\'appelle-t-il ?', portrait(A) + champ(A.prenom, P.PRENOM_MAX, 'Prénom')];
     case 'nom':
-      return ['Et son nom ?', portrait(A) + champ(A.nom, D.NOM_MAX, 'Nom') + fleche()];
+      return ['Et son nom ?', portrait(A) + champ(A.nom, D.NOM_MAX, 'Nom')];
     case 'confirme':
       return [`OK, donc c'est ${escapeHtml(A.prenom)} ${escapeHtml(A.nom)}, c'est bien ça ?`, `${portrait(A)}<div class="accueil-choix"><button type="button" class="pose-meuble-ok" data-action="accueil-oui" aria-label="Oui, c'est bien ça" title="Oui">✔️</button><button type="button" class="pose-meuble-non" data-action="accueil-non" aria-label="Non, changer" title="Changer">❌</button></div>`];
     case 'compagnon-perso':
       return ['Qui partage sa vie ? Choisis le personnage du compagnon (il gardera la ferme quand tu partiras explorer) :', grille(A.compagnon.perso) + fleche(A.compagnon.perso > 0)];
     case 'compagnon-prenom':
-      return ['Quel est son prénom ?', portrait(A.compagnon) + champ(A.compagnon.prenom, P.PRENOM_MAX, 'Prénom du compagnon') + fleche()];
+      return ['Quel est son prénom ?', portrait(A.compagnon) + champ(A.compagnon.prenom, P.PRENOM_MAX, 'Prénom du compagnon')];
     case 'enfants':
       return [A.compagnon ? 'Est-ce qu\'ils ont des enfants ?' : 'Est-ce qu\'il a des enfants ?', ouiNon()];
     case 'enfants-nombre':
-      return ['Combien ?', `<input type="number" id="accueil-champ" class="member-input accueil-champ accueil-nombre" min="1" max="${enfantsMax()}" step="1" inputmode="numeric" aria-label="Nombre d'enfants" value="${A.nbEnfants}">${fleche()}`];
+      return ['Combien ?', ligne(`<input type="number" id="accueil-champ" class="member-input accueil-champ accueil-nombre" min="1" max="${enfantsMax()}" step="1" inputmode="numeric" enterkeyhint="next" aria-label="Nombre d'enfants" value="${A.nbEnfants}">`)];
     case 'enfant-perso':
       return [`Choisis le personnage ${deLEnfant()} :`, grille(enfantK().perso, true) + fleche(enfantK().perso > 0)];
     case 'enfant-prenom':
-      return [A.nbEnfants === 1 ? 'Quel est son prénom ?' : `Quel est le prénom du ${ORDINAUX[A.k]} enfant ?`, portrait(enfantK(), true) + champ(enfantK().prenom, P.PRENOM_MAX, `Prénom de l'enfant ${A.k + 1}`) + fleche()];
+      return [A.nbEnfants === 1 ? 'Quel est son prénom ?' : `Quel est le prénom du ${ORDINAUX[A.k]} enfant ?`, portrait(enfantK(), true) + champ(enfantK().prenom, P.PRENOM_MAX, `Prénom de l'enfant ${A.k + 1}`)];
     case 'animal':
       return ['Un (ou des) animal de compagnie ?', ouiNon()];
     case 'animal-nom': {
       const E = DATA.FAMILLE.COMPAGNIE.ESPECES;
       const especes = Object.keys(E).map((k) => `<button type="button" class="btn accueil-espece${A.animal.espece === k ? ' active' : ''}" data-action="accueil-espece" data-id="${k}" aria-pressed="${A.animal.espece === k}">${E[k].icone} ${escapeHtml(E[k].nom)}</button>`).join('');
-      return [A.animaux.length ? 'Et celui-là, comment s\'appelle-t-il ?' : 'Comment s\'appelle-t-il ?', `<div class="accueil-choix">${especes}</div>${champ(A.animal.nom, P.PRENOM_MAX, 'Nom de l\'animal')}${fleche()}`];
+      return [A.animaux.length ? 'Et celui-là, comment s\'appelle-t-il ?' : 'Comment s\'appelle-t-il ?', `<div class="accueil-choix">${especes}</div>${champ(A.animal.nom, P.PRENOM_MAX, 'Nom de l\'animal')}`];
     }
     case 'animal-autre':
       return ['Un autre ?', ouiNon()];
@@ -182,6 +186,10 @@ function ecranAccueil() {
   }
 }
 
+// Un écran tactile (un téléphone, une tablette) : le curseur n'y va pas tout seul dans un champ, ce qui ouvrirait le
+// clavier par-dessus l'écran ; le joueur touche le champ quand il veut écrire. Ailleurs, il peut taper tout de suite.
+const tactile = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+
 export function openSetupModal() {
   if (accueil.etape === 'bienvenue') tel('modal', 'setup');
   const [texte, reglage] = ecranAccueil();
@@ -189,7 +197,7 @@ export function openSetupModal() {
     <p class="accueil-texte" id="accueil-texte">${texte}</p>
     <div class="accueil-reglage">${reglage}</div>
     <p class="alert" id="setup-error" role="alert"${accueil.erreur ? '' : ' hidden'}>${escapeHtml(accueil.erreur)}</p>`,
-  { labelledBy: 'accueil-texte', className: `modal bois accueil-modal accueil-${accueil.etape}`, id: 'setup-modal', dismiss: false, focus: '#accueil-champ, .accueil-suite:not([disabled]), .accueil-choix button' });
+  { labelledBy: 'accueil-texte', className: `modal bois accueil-modal accueil-${accueil.etape}`, id: 'setup-modal', dismiss: false, focus: `${tactile() ? '' : '#accueil-champ, '}.accueil-suite:not([disabled]), .accueil-choix button` });
   const input = document.getElementById('accueil-champ');
   if (input) {
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); suiteAccueil(); } });
@@ -198,9 +206,15 @@ export function openSetupModal() {
 
 // Passe à l'écran `etape` (sans message d'erreur).
 function allerA(etape) {
+  // le clavier d'un téléphone : il reste ouvert d'un champ au suivant (le prénom, puis le nom) ; il se ferme
+  // quand l'écran suivant n'a pas de champ (le champ qui l'avait ouvert s'en va)
+  const ecrit = !!(document.activeElement && document.activeElement.id === 'accueil-champ');
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   accueil.etape = etape;
   accueil.erreur = '';
   openSetupModal();
+  const champ = ecrit && document.getElementById('accueil-champ');
+  if (champ) champ.focus();
 }
 
 function refus(texte) {
