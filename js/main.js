@@ -7,8 +7,11 @@ import { chapterCount, mailbox } from './engine/campaign.js';
 import { alertSnapshot } from './engine/alerts.js';
 import { AUTOSAVE_MS, setState, state } from './ui/store.js';
 import {setTelChapter, telDay, telView} from './ui/consent.js';
-import { demenagementAnnonce, loadOrCreateState, persistState, sauvegardeAnnonce } from './ui/storage.js';
-import { catchUp, frame, onHide, renderLoop, setMailSeen, syncJobs } from './ui/loop.js';
+import { demenagementAnnonce, importSaveText, loadOrCreateState, makeSeed, persistState, sauvegardeAnnonce } from './ui/storage.js';
+import { ecranTitre, ecranTitreVoulu } from './ui/ecran-titre.js';
+import { newGameFrom } from './engine/alerts.js';
+import { notify } from './ui/toasts.js';
+import { catchUp, frame, onHide, renderLoop, setMailSeen, setPendingAbsence, setSimulatedAt, syncJobs } from './ui/loop.js';
 import { resumeExcursion } from './ui/excursion.js';
 import { render } from './ui/render.js';
 import { setEmojiNames, watch as watchEmojis } from './ui/pixel-emoji.js';
@@ -85,12 +88,23 @@ document.getElementById('test-chapter').innerHTML =
 // précédente, est relue avant la partie (js/ui/ferme-gardee.js : au plus 0,8 s d'attente) ; sinon elle
 // est tirée comme avant, puis gardée une fois le jeu affiché.
 async function demarrer() {
+  // l'écran d'accueil (js/ui/ecran-titre.js) : Nouvelle partie ou Charger une partie, avant de charger
+  const titre = ecranTitreVoulu() ? await ecranTitre() : null;
   await relireFerme();
   // E-2 : jeu.html?monde=… : la partie du monde en ligne (la partie solo reste intacte sur l'appareil)
   const monde = mondeDemande();
   const partieDuMonde = monde ? await rejoindre(monde) : null;
   if (monde && !partieDuMonde) { try { history.replaceState(null, '', 'jeu.html'); } catch (e) { /* (rien) */ } }
   setState(partieDuMonde || loadOrCreateState());
+  if (titre && titre.choix === 'nouvelle' && !partieDuMonde) {
+    // (comme « Recommencer à zéro » des options : une nouvelle partie à la place de celle de l'appareil)
+    setState(newGameFrom(state, makeSeed()));
+    setSimulatedAt(Date.now());
+    setPendingAbsence(null);
+    persistState();
+  } else if (titre && titre.choix === 'fichier' && !importSaveText(titre.texte)) {
+    notify('Ce fichier n\'est pas une sauvegarde du jeu : une nouvelle partie commence.');
+  }
   setTelChapter(state.campagne ? state.campagne.chapitre : null);
   syncJobs();
   setMailSeen(new Set(mailbox(state).map((l) => l.id))); // les lettres déjà là ne sont pas réannoncées
