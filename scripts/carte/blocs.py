@@ -2171,13 +2171,16 @@ def chaudron(marche=False):
 def tonneau(marche=False):
     """Le tonneau : debout, cerclé de fer, son barboteur de verre (des bulles quand il travaille)."""
     t = Toile()
-    for x in range(1, 15):
-        t.put(x, BAS, BOIS[1] if 1 < x < 14 else BOIS[0])
+    # le bas arrondi : les douelles se resserrent d'un pixel, puis de deux, sur les deux dernières rangées
+    retrait = {BAS - 1: 1, BAS: 2}
     for x in range(2, 14):
         u = (x - 2) / 11
         k = 4 if u < 0.15 else 3 if u < 0.45 else 2 if u < 0.8 else 1
-        for y in range(7, BAS):
-            t.put(x, y, BOIS[0] if (x - 2) % 3 == 2 else BOIS[min(4, k)])
+        for y in range(7, BAS + 1):
+            r = retrait.get(y, 0)
+            if not 2 + r <= x < 14 - r:
+                continue
+            t.put(x, y, BOIS[0] if y == BAS or (x - 2) % 3 == 2 else BOIS[min(4, k)])
     for y in (9, 15, 21):
         for x in range(2, 14):
             t.put(x, y, FER[3] if x == 2 else FER[1] if x == 13 else FER[2])

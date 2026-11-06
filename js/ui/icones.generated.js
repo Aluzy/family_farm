@@ -1,7 +1,7 @@
 // Fichier produit par scripts/icones/build.py : ne pas modifier à la main.
 // emoji (sans U+FE0F) → rang dans assets/icones.png (COLS cases par rangée).
 // VERSION : empreinte de la planche, ajoutée à son adresse (pas de vieille planche en cache).
-export const VERSION = '52b9ee16b6';
+export const VERSION = '199adcee6d';
 export const COLS = 16;
 export const ROWS = 28;
 export const ICONES = {
@@ -414,32 +414,33 @@ export const ICONES = {
 "🪡": 406,
 "🪢": 407,
 "🪣": 408,
-"🪨": 409,
-"🪨‍⚙": 410,
-"🪨‍⚪": 411,
-"🪨‍🌙": 412,
-"🪨‍🐚": 413,
-"🪨‍🔩": 414,
-"🪨‍🟠": 415,
-"🪨‍🟡": 416,
-"🪨‍🪲": 417,
-"🪴": 418,
-"🪴‍🌷": 419,
-"🪵": 420,
-"🪵‍🌈": 421,
-"🪵‍🔗": 422,
-"🪸": 423,
-"🪹": 424,
-"🪺": 425,
-"🫐": 426,
-"🫐‍⚫": 427,
-"🫑": 428,
-"🫕": 429,
-"🫘": 430,
-"🫙": 431,
-"🫙‍🌰": 432,
-"🫙‍🍓": 433,
-"🫙‍🥚": 434
+"🪣‍🧱": 409,
+"🪨": 410,
+"🪨‍⚙": 411,
+"🪨‍⚪": 412,
+"🪨‍🌙": 413,
+"🪨‍🐚": 414,
+"🪨‍🔩": 415,
+"🪨‍🟠": 416,
+"🪨‍🟡": 417,
+"🪨‍🪲": 418,
+"🪴": 419,
+"🪴‍🌷": 420,
+"🪵": 421,
+"🪵‍🌈": 422,
+"🪵‍🔗": 423,
+"🪸": 424,
+"🪹": 425,
+"🪺": 426,
+"🫐": 427,
+"🫐‍⚫": 428,
+"🫑": 429,
+"🫕": 430,
+"🫘": 431,
+"🫙": 432,
+"🫙‍🌰": 433,
+"🫙‍🍓": 434,
+"🫙‍🥚": 435
 };
 // Dessins de 32×32 (assets/art.png) : nom → rang, ART_COLS cases par rangée.
 export const ART_VERSION = 'bd0be71d50';

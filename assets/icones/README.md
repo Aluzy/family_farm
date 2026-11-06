@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 435 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 436 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -432,6 +432,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/sewing_needle.png" width="48" height="48" alt=""> | 🪡 | [`sewing_needle.png`](sewing_needle.png) |
 | <img src="apercu/knot.png" width="48" height="48" alt=""> | 🪢 | [`knot.png`](knot.png) |
 | <img src="apercu/bucket.png" width="48" height="48" alt=""> | 🪣 | [`bucket.png`](bucket.png) |
+| <img src="apercu/bucket+brick.png" width="48" height="48" alt=""> | 🪣‍🧱 | [`bucket+brick.png`](bucket+brick.png) |
 | <img src="apercu/rock.png" width="48" height="48" alt=""> | 🪨 | [`rock.png`](rock.png) |
 | <img src="apercu/rock+gear.png" width="48" height="48" alt=""> | 🪨‍⚙ | [`rock+gear.png`](rock+gear.png) |
 | <img src="apercu/rock+medium_white_circle.png" width="48" height="48" alt=""> | 🪨‍⚪ | [`rock+medium_white_circle.png`](rock+medium_white_circle.png) |
