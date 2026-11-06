@@ -1440,6 +1440,22 @@ FOYER = [
 ]
 
 
+# La marmite de la cuisinière, vue de trois quarts (la vue de la carte) : un couvercle bombé et son bouton, le
+# rebord clair et ses deux anses de fer, des flancs droits, le fond arrondi posé sur la plaque. Lettres :
+# MARMITE_COULEURS (k le bouton, o le contour, h, l, m, d de la lumière à l'ombre, i le rebord, a les anses).
+MARMITE = [
+    '....kk...',
+    '..ohhhlo.',
+    '.ohhllldo',
+    'aiiiiiiia',
+    '.olmmmmdo',
+    '.olmmmmdo',
+    '..ooooo..',
+]
+MARMITE_COULEURS = {'k': NOIR, 'o': (70, 20, 24), 'h': (232, 140, 112), 'l': LAINE[3], 'm': LAINE[2], 'd': LAINE[1],
+                    'i': (240, 150, 120), 'a': FER[3]}
+
+
 def cuisiniere(flamme=None):
     """La cuisinière : un fourneau de fonte vu de haut, deux plaques et la marmite, la porte
     du foyer sur la face, derrière la grille. flamme None : éteinte (le foyer sombre, deux braises) ;
@@ -1461,17 +1477,20 @@ def cuisiniere(flamme=None):
         t.put(cx - 1, yd + 3, FER[0])
         t.put(cx, yd + 3, FEU[1] if allume else FER[0])
         t.put(cx + 1, yd + 3, FER[0])
-    # la marmite, sur la plaque de gauche
-    for y in range(yd - 3, yd + 3):
-        for x in range(2, 7):
-            t.put(x, y, LAINE[2] if x == 2 else LAINE[0] if x == 6 else LAINE[1])
-    for x in range(2, 7):
-        t.put(x, yd - 3, LAINE[3])
-    t.put(4, yd - 4, NOIR)
-    # les flammes sous la marmite
+    # les flammes sous la marmite (sur la plaque ; la marmite est posée par-dessus, puis les flammes du bas
+    # lèchent son fond arrondi)
     if allume:
         for x, dy, c in SOUS_MARMITE[flamme % len(SOUS_MARMITE)]:
             t.put(x, yd + dy, FEU[c])
+    # la marmite, sur la plaque de gauche, vue de trois quarts (MARMITE)
+    for y, rang in enumerate(MARMITE):
+        for x, ch in enumerate(rang):
+            if ch in MARMITE_COULEURS:
+                t.put(x, 1 + y, MARMITE_COULEURS[ch])
+    if allume:
+        for x, dy, c in SOUS_MARMITE[flamme % len(SOUS_MARMITE)]:
+            if dy >= 2:                          # (celles qui lèchent le fond, devant lui)
+                t.put(x, yd + dy, FEU[c])
     # la porte du foyer : la grille, le feu (ou deux braises)
     t.rect(4, yf + 1, 11, yf + 6, FER[0])
     if allume:
