@@ -25,7 +25,7 @@ import { persistState } from './storage.js';
 import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
-import { meubleSrc } from './caleche.js';
+import { iconeBloc } from './icone-bloc.js';
 import { closeModal, openModal } from './modal.js';
 import { styleDe, styleInfo } from '../engine/styles.js';
 import { surCase as surCaseMoteur } from '../engine/commandes.js';
@@ -166,30 +166,8 @@ export function chantierOuvert() {
 // Les cases du menu, en colonnes de LIGNES (css/jeu.css, .build-dock .build-bar-grid).
 const LIGNES = 3;
 
-// Une machine des chaînes de production (l'onglet Machines, sauf l'Atelier) : son dessin de la carte (une
-// case de 16 × 24 de assets/blocs.png, à l'arrêt : BLOCS_CARTE de js/carte/ferme/config.js), plutôt que son
-// icône (deux émojis collés, qui débordaient sur les cases voisines). '' : pas une machine, ou la carte absente.
-function dessinMachine(sorte) {
-  const cat = DATA.ATELIER.CATEGORIES && DATA.ATELIER.CATEGORIES.machines;
-  if (sorte === 'atelier' || !cat || !(cat.blocs || []).includes(sorte)) return '';
-  const C = typeof window !== 'undefined' && window.FermeCarte && window.FermeCarte.C;
-  const f = C && C.BLOCS_CARTE && C.BLOCS_CARTE.frames[sorte];
-  if (typeof f !== 'number') return '';
-  const v = window.FERME_ASSET_VERSIONS && window.FERME_ASSET_VERSIONS['blocs.png'];
-  return `<span class="build-slot-dessin" style="--f:${f};background-image:url('assets/blocs.png${v ? `?v=${v}` : ''}')"></span>`;
-}
-
-// L'icône d'un bloc (celle de son objet ; un meuble : son dessin ; une machine : son dessin de la carte ;
-// l'Atelier : la sienne).
-function icone(sorte) {
-  const b = DATA.ATELIER.BLOCS[sorte];
-  const machine = dessinMachine(sorte);
-  if (machine) return machine;
-  if (b.meuble) return `<img class="build-slot-img" src="${meubleSrc(b.meuble)}" alt="" draggable="false">`;
-  // (le four redessiné : son dessin, éteint)
-  if (b.dessin === 'four') return `<img class="build-slot-img" src="${meubleSrc('four')}" alt="" draggable="false">`;
-  return b.objet ? DATA.OBJETS[b.objet].icone : DATA.ATELIER.ICONE;
-}
+// L'icône d'un bloc : js/ui/icone-bloc.js (la même dans l'Atelier).
+const icone = iconeBloc;
 
 // La case de la barre d'outils.
 export function buildSlotHtml() {

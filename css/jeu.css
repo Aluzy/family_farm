@@ -1788,15 +1788,13 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: var(--slot);
-  grid-template-rows: repeat(2, var(--slot));   /* les recettes de l'Atelier sur deux lignes */
+  grid-template-rows: repeat(3, var(--slot));   /* les cases sur trois lignes (Construire, l'Atelier) */
   gap: 5px;
   overflow-x: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   padding-bottom: 1px;
 }
-/* le menu Construire : les blocs sur trois lignes (js/ui/chantier.js, LIGNES) */
-.build-dock .build-bar-grid { grid-template-rows: repeat(3, var(--slot)); }
 .build-bar-bout { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
 /* Les outils (annuler, la gomme, l'outil pièce, le niveau) : une petite fenêtre du même bois, à part,
    sur la droite ; un appui long la rend déplaçable : elle s'irise (comme ce qui attend un geste sur la
@@ -1931,8 +1929,17 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
    barre, la recette choisie (son icône, ce qu'elle prend ➜ ce qu'elle donne, Fabriquer). */
 .atelier-menu { --slot: 48px; display: flex; flex-direction: column; margin-bottom: 10px; }
 .atelier-menu .build-bar { filter: none; }
+/* ses neuf onglets, plus serrés, pour que le nom de l'ouvert tienne en entier (sur un téléphone) */
+.atelier-menu .build-tabs { gap: 1px; margin-left: 3px; max-width: calc(100% - 6px); }
+.atelier-menu .build-tab { min-width: 28px; padding: 0 3px; justify-content: center; }
+.atelier-menu .build-tab .px { --pxs: 18px; }
+.atelier-menu .build-tab.on { padding: 0 6px 0 4px; font-size: 0.88rem; }
 .atelier-detail { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .atelier-detail-ico { font-size: 2rem; line-height: 1; }
+/* le dessin d'un bloc dans une pastille (ce que donne la recette) : à sa taille, sans l'agrandir */
+.atelier-mini { display: inline-flex; vertical-align: middle; margin-left: 3px; }
+.atelier-mini .build-slot-dessin { width: 16px; height: 24px; background-size: auto 24px; background-position: calc(var(--f) * -16px) 0; }
+.atelier-mini .build-slot-img { max-width: 20px; max-height: 20px; }
 .atelier-detail-ico .px { --pxs: 40px; }
 .atelier-detail-txt { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
 .atelier-detail-nom { font-weight: 800; }
