@@ -100,6 +100,8 @@ try {
   // l'accueil : une question par écran (js/ui/depart.js), jusqu'à « C'est parti ! »
   const clic = async (sel) => { const b = page.locator(sel).first(); await b.waitFor({ state: 'visible', timeout: 15000 }); await b.click(); };
   const saisir = async (texte) => { await page.locator('#accueil-champ').fill(texte); await clic('[data-action="accueil-suite"]'); };
+  // l'écran d'accueil du jeu (js/ui/ecran-titre.js) : Nouvelle partie
+  await clic('#ecran-titre [data-titre="nouvelle"]');
   await clic('[data-action="accueil-suite"]');
   await clic('[data-action="accueil-perso"]');
   await clic('[data-action="accueil-suite"]');

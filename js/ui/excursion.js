@@ -48,8 +48,10 @@ function mapEl() {
   return document.getElementById('map-stage');
 }
 
-// L'heure du jeu pour la mine : { jour, semaine (0 : lundi), heure, nuit }.
+// L'heure du jeu pour la mine : { jour, semaine (0 : lundi), heure, nuit } ; null avant que la partie soit
+// chargée (l'écran d'accueil, js/ui/ecran-titre.js : le son, lancé par le premier appui, la demande déjà).
 function maintenant() {
+  if (!state) return null;
   return { jour: state.day, semaine: weekdayIndex(state.day), heure: clockHours(state), nuit: nightActive(state) };
 }
 
