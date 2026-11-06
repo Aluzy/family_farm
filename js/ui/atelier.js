@@ -29,6 +29,7 @@ import { refresh } from './render.js';
 import { notify } from './toasts.js';
 import { registerActions, SOMMEIL_MESSAGE } from './actions.js';
 import { itemsText } from './common.js';
+import { iconeBloc } from './icone-bloc.js';
 
 // La carte : le personnage a pris ce qui était au sol (`id`). Renvoie { ok, items } ou null
 // (un message).
@@ -197,6 +198,9 @@ function icone(id) {
   const r = DATA.ATELIER.RECETTES[id];
   if (r.animal) return DATA.ANIMAUX[r.animal].icone;
   if (r.cheval) return DATA.CHEVAL.ICONE;
+  // (un bloc : la même icône que dans le menu Construire ; une machine, son dessin de la carte)
+  const b = !r.outil && blocDe(id);
+  if (b) return iconeBloc(b);
   return r.outil ? toolDef(r.outil).ICONE : DATA.OBJETS[sortieDe(id)].icone;
 }
 // (les outils de pierre ; la canne ne l'est pas)
@@ -224,7 +228,9 @@ function caseRecette(id, choisie) {
 function detailHtml(id) {
   const r = DATA.ATELIER.RECETTES[id], st = craftStatus(state, id), n = stock(id);
   const garde = r.outil || r.cheval ? (n ? (r.cheval ? 'il est à l\'Écurie' : 'déjà dans ta barre d\'outils') : '') : r.animal ? `${n} à la ferme` : `${n} en stock`;
-  const donne = r.sortie ? Object.entries(r.sortie).map(([item, q]) => `<span class="chip">${q} ${DATA.OBJETS[item].icone}</span>`).join('') : `<span class="chip">${icone(id)}</span>`;
+  // (un bloc : son icône du menu, en petit)
+  const ico = (item) => (blocDe(id) && DATA.ATELIER.BLOCS[blocDe(id)].objet === item ? `<span class="atelier-mini">${icone(id)}</span>` : DATA.OBJETS[item].icone);
+  const donne = r.sortie ? Object.entries(r.sortie).map(([item, q]) => `<span class="chip">${q} ${ico(item)}</span>`).join('') : `<span class="chip">${icone(id)}</span>`;
   return `
     <div class="card atelier-detail" id="atelier-${id}">
       <span class="atelier-detail-ico" aria-hidden="true">${icone(id)}</span>
@@ -269,9 +275,9 @@ export function renderAtelier() {
     return `<button type="button" class="tool-slot build-slot build-groupe${on ? ' active' : ''}${l.some(peut) ? '' : ' epuise'}" data-action="atelier-groupe" data-groupe="${g.id}" aria-expanded="${bulle === g.id}" aria-label="${g.nom} : ${nom(v)}. En choisir un autre" title="${g.nom} : en choisir un autre"><span class="build-groupe-plus" aria-hidden="true">⋯</span><span aria-hidden="true">${icone(v)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span></button>`;
   }).join('');
   const gb = GROUPES.find((g) => g.id === bulle), lb = gb ? duGroupe(o, gb) : [];
-  // (sa flèche vers la case du groupe : sa colonne dans la barre, deux lignes ; la bulle, sous sa ligne)
+  // (sa flèche vers la case du groupe : sa colonne dans la barre, trois lignes ; la bulle, sous sa ligne)
   const r = Math.max(0, rangs.indexOf(gb && gb.id));
-  const bulleHtml = lb.length > 1 ? `<div class="build-bulle" role="group" aria-label="${gb.nom}" style="--rang:${Math.floor(r / 2)};--ligne:${r % 2}"><div class="build-bulle-titre">${gb.nom}</div><div class="build-bulle-grid">${lb.map((id) => caseRecette(id, choisie)).join('')}</div></div>` : '';
+  const bulleHtml = lb.length > 1 ? `<div class="build-bulle" role="group" aria-label="${gb.nom}" style="--rang:${Math.floor(r / 3)};--ligne:${r % 3}"><div class="build-bulle-titre">${gb.nom}</div><div class="build-bulle-grid">${lb.map((id) => caseRecette(id, choisie)).join('')}</div></div>` : '';
   return `${tete}
     <div class="atelier-menu">${tabs}<div class="build-bar" role="group" aria-label="Recettes : touche une case pour la choisir"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div></div></div>
     ${detailHtml(choisie)}
