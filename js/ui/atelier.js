@@ -269,8 +269,9 @@ export function renderAtelier() {
     return `<button type="button" class="tool-slot build-slot build-groupe${on ? ' active' : ''}${l.some(peut) ? '' : ' epuise'}" data-action="atelier-groupe" data-groupe="${g.id}" aria-expanded="${bulle === g.id}" aria-label="${g.nom} : ${nom(v)}. En choisir un autre" title="${g.nom} : en choisir un autre"><span class="build-groupe-plus" aria-hidden="true">⋯</span><span aria-hidden="true">${icone(v)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span></button>`;
   }).join('');
   const gb = GROUPES.find((g) => g.id === bulle), lb = gb ? duGroupe(o, gb) : [];
-  // (sa flèche vers la case du groupe : son rang dans la barre)
-  const bulleHtml = lb.length > 1 ? `<div class="build-bulle" role="group" aria-label="${gb.nom}" style="--rang:${Math.max(0, rangs.indexOf(gb.id))}"><div class="build-bulle-titre">${gb.nom}</div><div class="build-bulle-grid">${lb.map((id) => caseRecette(id, choisie)).join('')}</div></div>` : '';
+  // (sa flèche vers la case du groupe : sa colonne dans la barre, deux lignes ; la bulle, sous sa ligne)
+  const r = Math.max(0, rangs.indexOf(gb && gb.id));
+  const bulleHtml = lb.length > 1 ? `<div class="build-bulle" role="group" aria-label="${gb.nom}" style="--rang:${Math.floor(r / 2)};--ligne:${r % 2}"><div class="build-bulle-titre">${gb.nom}</div><div class="build-bulle-grid">${lb.map((id) => caseRecette(id, choisie)).join('')}</div></div>` : '';
   return `${tete}
     <div class="atelier-menu">${tabs}<div class="build-bar" role="group" aria-label="Recettes : touche une case pour la choisir"><div class="build-bar-cases"><div class="build-bar-grid">${cases}</div>${bulleHtml}</div></div></div>
     ${detailHtml(choisie)}

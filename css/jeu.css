@@ -1788,20 +1788,22 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: var(--slot);
-  grid-template-rows: repeat(2, var(--slot));   /* les blocs sur deux lignes */
+  grid-template-rows: repeat(2, var(--slot));   /* les recettes de l'Atelier sur deux lignes */
   gap: 5px;
   overflow-x: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   padding-bottom: 1px;
 }
+/* le menu Construire : les blocs sur trois lignes (js/ui/chantier.js, LIGNES) */
+.build-dock .build-bar-grid { grid-template-rows: repeat(3, var(--slot)); }
 .build-bar-bout { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
 /* Les outils (annuler, la gomme, l'outil pièce, le niveau) : une petite fenêtre du même bois, à part,
    sur la droite ; un appui long la rend déplaçable : elle s'irise (comme ce qui attend un geste sur la
    carte) et suit le doigt (js/ui/chantier.js). */
 .build-outils {
   position: fixed;
-  top: calc(196px + env(safe-area-inset-top));
+  top: calc(253px + env(safe-area-inset-top));   /* sous le menu (trois lignes de cases) */
   right: calc(8px + env(safe-area-inset-right));
   z-index: var(--z-fab);
   display: flex; flex-direction: column; align-items: center; gap: 5px;
@@ -1852,6 +1854,8 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
   font-size: 0.72rem; font-weight: 800; line-height: 1;
   color: var(--color-earth);
 }
+/* sur le dessin d'une machine (qui remplit la case), le nombre sur un fond clair */
+.build-slot:has(.build-slot-dessin) .build-slot-n { padding: 1px 2px; border-radius: 3px; background: rgba(var(--wood-bg-rgb), 0.9); }
 /* le style d'aménagement d'un bloc (js/engine/styles.js) : sa petite icône, en haut à gauche */
 .build-slot-style { position: absolute; left: 2px; top: 1px; font-size: 0.62rem; line-height: 1; pointer-events: none; }
 /* A-2 (js/ui/catalogue.js) : un favori, sa petite étoile en haut à droite ; l'appui long qui le met en
@@ -1888,12 +1892,20 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
 .projet-bar { flex: 1 1 80px; min-width: 80px; }
 .build-slot.epuise { opacity: 0.55; }
 .build-slot-img { max-width: 30px; max-height: 30px; image-rendering: pixelated; pointer-events: none; }
+/* une machine des chaînes de production : son dessin de la carte (une case de 16 × 24 de blocs.png,
+   --f : son rang), agrandi deux fois */
+.build-slot-dessin {
+  display: block; width: 32px; height: 48px; margin: auto;
+  background-repeat: no-repeat; background-size: auto 48px; background-position: calc(var(--f) * -32px) 0;
+  image-rendering: pixelated; pointer-events: none;
+}
+.build-bulle .build-slot-dessin { transform: scale(0.75); }
 /* la case d'un groupe (les murs, les portes, les sols) : « ⋯ » en haut à gauche (elle ouvre sa bulle) */
 .build-groupe-plus { position: absolute; left: 4px; top: -2px; font-size: 1rem; font-weight: 900; line-height: 1; color: var(--color-earth); }
-/* la bulle d'un groupe : sous la barre, une flèche vers la case du groupe (--rang : son rang
-   dans la barre) ; chaque bloc, son icône */
+/* la bulle d'un groupe : sous la ligne de sa case (--ligne), une flèche vers elle (--rang : sa
+   colonne dans la barre) ; chaque bloc, son icône */
 .build-bulle {
-  position: absolute; left: -6px; top: calc(var(--slot) + 12px);
+  position: absolute; left: -6px; top: calc((var(--ligne, 0) + 1) * (var(--slot) + 5px) + 7px);
   z-index: 2;
   padding: 6px;
   background: rgba(var(--wood-bg-rgb), 0.97);
@@ -1910,6 +1922,9 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
 .build-bulle-grid { display: grid; grid-template-columns: repeat(5, 46px); grid-auto-rows: 46px; gap: 4px; }
 .build-bulle .build-slot { height: 46px; }
 .build-bulle .build-slot .px { --pxs: 30px; }
+/* (son style et son étoile gardent leur petite taille : la règle du dessus les grossissait) */
+.build-bulle .build-slot .build-slot-style .px, .build-bulle .build-slot .build-slot-fav .px { --pxs: 12px; }
+.build-slot .build-slot-style .px, .build-slot .build-slot-fav .px { margin: 0; }
 
 /* L'Atelier (js/ui/atelier.js) : dans sa fenêtre, le même menu que Construire (onglets
    intercalaires, barre de cases qui défile, bulles des murs, des portes et des sols) ; sous la
