@@ -1158,6 +1158,13 @@
       spin,
       // Sa vue et son sens (pour tenir l'outil prêt pendant la charge).
       regard: () => ({ face, flip }),
+      // Se tourner (arrêté) : vers le bas, le haut ou de côté (flip : vers la gauche) ; une rencontre sur la
+      // carte (js/carte/ferme/rencontre.js : il regarde qui lui parle).
+      tourne: (f, fl) => {
+        if (!(f === 'bas' || f === 'haut' || f === 'cote') || (face === f && flip === !!fl)) return;
+        face = f; flip = !!fl;
+        if (shown && !home && !job && !jobs.length && !steer) draw(`idle_${face}_0`);
+      },
       // À la main : prendre ce qui est au sol en `foot` (la ferme générée).
       gather,
       // Semer sur la terre `c` (la file des gestes, semis.js).

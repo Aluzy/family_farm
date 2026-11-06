@@ -204,15 +204,18 @@ test('récit : parler note la réplique ; « une fois » ne revient pas, le repo
 
 test('récit : les scènes de l\'acte I se jouent une fois, dans l\'ordre de leurs conditions', () => {
   const s = a(nouvelle(), 1, 9);
-  // l'arrivée d'abord ; la scène des enfants l'attend ; la clé attend le chapitre 2 et la ferme
+  // l'arrivée d'abord, sur la carte : Fernand et le personnage du joueur (son prénom) se répondent ; la
+  // phrase aux enfants s'il y en a ; la clé attend le chapitre 2 et la ferme
   assertEqual(scenesPossibles(s), ['arrivee']);
+  const moi = s.famille.membres.find((x) => x.id === s.famille.principal);
   const arrivee = jouerScene(s, 'arrivee');
-  assert(arrivee.ok, arrivee.error);
-  assertEqual(arrivee.lignes.map((l) => l.nom), ['Fernand', 'Fernand']);
-  assert(aFait(s, 'arrivee') && relation(s, 'fernand') === 10, 'ses effets : le fait, la relation');
+  assert(arrivee.ok && arrivee.carte, arrivee.error);
+  const enfants = s.famille.membres.some((x) => x.enfant);
+  assertEqual(arrivee.lignes.map((l) => l.nom), ['Fernand', moi.prenom, 'Fernand', moi.prenom, ...(enfants ? ['Fernand'] : []), 'Fernand']);
+  assert(/Voici votre terre/.test(arrivee.lignes[2].texte), arrivee.lignes[2].texte);
+  assert(aFait(s, 'arrivee') && aFait(s, 'arrivee_enfants') && relation(s, 'fernand') === 10, 'ses effets : les faits, la relation');
   assert(!jouerScene(s, 'arrivee').ok, 'une scène ne se rejoue pas');
-  assertEqual(scenesPossibles(s), ['arrivee_enfants']);
-  assert(jouerScene(s, 'arrivee_enfants').ok);
+  assertEqual(scenesPossibles(s), []);
   // la clé d'Achille : le chapitre 2, à la ferme
   assertEqual(scenesPossibles(s, { lieu: 'caleche_ferme' }), []);
   s.campagne.chapitre = 2;

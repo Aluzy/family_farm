@@ -11,6 +11,7 @@ import { notify } from './toasts.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { butBoussole, choisirBut, montrerLieu } from '../engine/monde-vu.js';
 import { solDuMonde } from './monde-sol.js';
+import { stageActive, stageUsable } from './stage.js';
 
 /* ---------- les scènes du récit (docs/recit/dialogues.md, « les formats ») ----------
 
@@ -82,7 +83,12 @@ function ligneHtml() {
 // est notée tout de suite dans la partie. → true si elle s'est ouverte.
 export function ouvrirScene(id, ctx = {}) {
   oublierSiRemplacee();
-  if (scene || modalOpen()) return false;
+  if (scene || enCarte || modalOpen()) return false;
+  // une scène sur la carte (« carte » : l'arrivée de Fernand) attend que la carte de la ferme soit là ; sans
+  // carte du tout (Phaser absent ou planté), elle se joue dans la fenêtre, comme les autres
+  const def = RECIT.SCENES.find((x) => x.id === id) || {};
+  if (def.carte && stageUsable() && !stageActive()) return false;
+  if (def.carte && stageUsable()) return ouvrirSurCarte(id, ctx);
   const r = jouerScene(state, id, ctx);
   if (!r.ok) return false;
   persistState();
@@ -107,7 +113,7 @@ export function ouvrirScene(id, ctx = {}) {
 export function proposerScene(ctx = {}) {
   montrerEnAttente();
   oublierSiRemplacee();
-  if (scene || !uiCalm()) return false;
+  if (scene || enCarte || !uiCalm()) return false;
   const ids = scenesPossibles(state, ctx);
   return ids.length ? ouvrirScene(ids[0], ctx) : false;
 }
@@ -115,7 +121,74 @@ export function proposerScene(ctx = {}) {
 // La scène ouverte (pour les tests et le déclencheur) : son id, ou null.
 export function sceneOuverte() {
   oublierSiRemplacee();
-  return scene ? scene.id : null;
+  return scene ? scene.id : enCarte ? enCarte.id : null;
+}
+
+/* ---------- une scène sur la carte (« carte » : l'arrivée de Fernand) ----------
+
+   Le premier personnage de la scène vient à pied jusqu'au personnage du joueur (js/carte/ferme/rencontre.js) ;
+   puis les répliques se suivent en bulles, au-dessus de qui parle (lui, ou le personnage du joueur : « joueur »),
+   une à chaque appui sur la carte (ou Entrée, Espace) ; à la fin, il repart d'où il est venu. Pendant qu'il vient
+   et qu'ils parlent, l'heure ne tourne pas, le personnage ne bouge pas et les autres fenêtres attendent (le corps
+   de la page porte la classe scene-carte : calme.js storyOpen, uiCalm). La scène est notée dès qu'elle commence,
+   comme les autres. Le modèle de la carte (stage.js) : sceneCarteModele() ; ses nouvelles : sceneCarteDepuisCarte. */
+
+let enCarte = null; // { id, lignes, i, phase : 'vient' | 'parle' | 'part', perso, depart }
+
+function ouvrirSurCarte(id, ctx) {
+  const r = jouerScene(state, id, ctx);
+  if (!r.ok) return false;
+  persistState();
+  const qui = r.lignes[0] && r.lignes[0].qui, P = RECIT.PERSONNAGES[qui] || {};
+  const T = farmTerrain(state);
+  enCarte = { id, lignes: r.lignes, i: 0, phase: 'vient', qui, nom: P.nom || '', perso: P.perso || 1, depart: Number.isInteger(T.SORTIE) ? T.SORTIE : null };
+  document.body.classList.add('scene-carte');
+  document.addEventListener('keydown', toucheCarte, true);
+  refresh();
+  return true;
+}
+
+// Entrée, Espace : la réplique suivante ; Échap : la scène écourtée (il repart)
+function toucheCarte(e) {
+  if (!enCarte || enCarte.phase !== 'parle' || modalOpen()) return;
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); sceneCarteDepuisCarte('suite'); }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finDesParoles(); }
+}
+
+function finDesParoles() {
+  if (!enCarte) return;
+  enCarte.phase = 'part';
+  document.body.classList.remove('scene-carte');
+  document.removeEventListener('keydown', toucheCarte, true);
+  refresh();
+}
+
+function babilCarte() {
+  const S = window.FermeSon, l = enCarte && enCarte.lignes[enCarte.i];
+  if (S && S.babil && l && l.qui !== 'joueur') S.babil(l.texte, S.voixDe({ recit: l.qui, id: l.qui }));
+}
+
+// Pour le modèle de la carte : null, ou { phase, qui, nom, perso, depart (une case du monde, ou null), ligne :
+// { qui, nom, texte } (pendant qu'ils parlent), i, n }.
+export function sceneCarteModele() {
+  if (!enCarte) return null;
+  const l = enCarte.phase === 'parle' ? enCarte.lignes[enCarte.i] : null;
+  return { phase: enCarte.phase, qui: enCarte.qui, nom: enCarte.nom, perso: enCarte.perso, depart: enCarte.depart, ligne: l, i: enCarte.i, n: enCarte.lignes.length };
+}
+
+// Ce que la carte dit : « la » (il est arrivé près du personnage), « suite » (un appui : la réplique suivante),
+// « fini » (reparti, il s'est effacé).
+export function sceneCarteDepuisCarte(quoi) {
+  if (!enCarte) return;
+  if (quoi === 'la' && enCarte.phase === 'vient') { enCarte.phase = 'parle'; enCarte.i = 0; babilCarte(); refresh(); }
+  else if (quoi === 'suite' && enCarte.phase === 'parle') {
+    if (enCarte.i >= enCarte.lignes.length - 1) finDesParoles();
+    else { enCarte.i++; babilCarte(); refresh(); }
+  } else if (quoi === 'fini') {
+    if (enCarte.phase !== 'part') finDesParoles();
+    enCarte = null;
+    refresh();
+  }
 }
 
 function suite() {

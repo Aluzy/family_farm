@@ -23,7 +23,7 @@ export function modalOpen() {
 
 export function uiCalm(ms = 500) {
   const now = performance.now();
-  if (modalOpen() || (state && setupPending(state))) lastBusy = now;
+  if (modalOpen() || (state && setupPending(state)) || sceneSurCarte()) lastBusy = now;
   return now - lastBusy >= ms;
 }
 
@@ -38,7 +38,13 @@ export function letterToastShown() {
 
 // L'histoire du départ est ouverte : l'heure ne tourne pas encore (FLU-21).
 export function storyOpen() {
-  return !!document.querySelector('#modal-root .story-modal');
+  return !!document.querySelector('#modal-root .story-modal') || sceneSurCarte();
+}
+
+// Une scène du récit se joue sur la carte (js/ui/scene.js : l'arrivée de Fernand, en bulles) : comme une
+// fenêtre d'histoire, l'heure attend, et les autres fenêtres aussi.
+export function sceneSurCarte() {
+  return document.body.classList.contains('scene-carte');
 }
 
 export function tutorialShown() {

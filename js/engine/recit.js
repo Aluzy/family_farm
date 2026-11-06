@@ -355,8 +355,11 @@ export function jouerScene(state, id, ctx = {}) {
   const dites = s.lignes.filter((l) => !l.quand || conditionsVraies(state, l.quand, l.qui, ctx));
   recitDe(state).dites[id] = jourDe(state);
   appliquerEffet(state, s.effet, s.lignes[0] && s.lignes[0].qui, ctx);
-  const lignes = dites.map((l) => ({ qui: l.qui, nom: l.nom || RECIT.PERSONNAGES[l.qui].nom, texte: texteRecit(state, l.texte, ctx) }));
-  return { ok: true, id, lignes };
+  // (« joueur », dans une scène sur la carte : le personnage principal répond, sous son prénom)
+  const moi = principal(state);
+  const nom = (l) => l.nom || (l.qui === 'joueur' ? (moi && moi.prenom) || 'Toi' : RECIT.PERSONNAGES[l.qui].nom);
+  const lignes = dites.map((l) => ({ qui: l.qui, nom: nom(l), texte: texteRecit(state, l.texte, ctx) }));
+  return { ok: true, id, lignes, carte: s.carte === true };
 }
 
 /* ---------- l'empreinte de la ferme et la confiance des hameaux (lot 2) ----------
