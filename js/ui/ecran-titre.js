@@ -1,6 +1,6 @@
 /* ---------- l'écran d'accueil du jeu (avant la partie) ----------
-   La grande ferme (assets/accueil_ferme.webp, la capture de la page de présentation) défile
-   lentement en fond ; en haut, l'enseigne de bois (le titre, le slogan) ; en bas, deux boutons :
+   La grande ferme (la capture de la page de présentation, assets/accueil_ferme.webp), vivante
+   (js/ui/accueil-vivant.js : le moulin tourne, les tournesols se balancent, le chat se promène…) ; en haut, l'enseigne de bois (le titre, le slogan) ; en bas, deux boutons :
      - Nouvelle partie : l'écran de départ (js/ui/depart.js) ; si une partie est déjà commencée sur
        l'appareil, l'écran demande d'abord de confirmer qu'elle sera remplacée ;
      - Charger une partie : la partie enregistrée sur l'appareil (sa ligne : la famille, le jour, le
@@ -14,6 +14,7 @@ import { familyName, setupPending } from '../engine/depart.js';
 import { levelReached } from '../engine/levels.js';
 import { SAVE_KEY } from './store.js';
 import { safeStorageGet } from './storage.js';
+import { animerFerme } from './accueil-vivant.js';
 
 const SLOGAN = 'Construis, jardine, partage !';
 const VU = 'ferme-titre-vu';          // (sessionStorage : l'écran déjà passé dans cet onglet)
@@ -46,8 +47,7 @@ function html(partie, confirmer) {
        <button type="button" class="btn primary titre-btn" data-titre="nouvelle-oui"><span>🌱 Oui, nouvelle partie</span></button>
        <button type="button" class="btn titre-btn" data-titre="retour"><span>Non, revenir</span></button>`
     : `<button type="button" class="btn primary titre-btn" data-titre="nouvelle"><span>🌱 Nouvelle partie</span></button>${charger}`;
-  return `<div class="titre-ferme" aria-hidden="true"></div>
-    <div class="titre-enseigne"><h1 class="titre-nom">Ferme Familiale</h1><p class="titre-slogan">${SLOGAN}</p></div>
+  return `<div class="titre-enseigne"><h1 class="titre-nom">Ferme Familiale</h1><p class="titre-slogan">${SLOGAN}</p></div>
     <div class="titre-boutons" role="group" aria-label="Commencer">${boutons}</div>
     <p class="titre-erreur" role="alert" hidden></p>
     <input type="file" class="titre-fichier" accept=".json,application/json,text/plain" hidden>`;
@@ -62,8 +62,16 @@ export function ecranTitre() {
   el.id = 'ecran-titre';
   el.setAttribute('aria-label', 'Ferme Familiale : accueil');
   document.body.appendChild(el);
+  // la grande ferme vivante (js/ui/accueil-vivant.js), sous l'enseigne et les boutons
+  const ferme = document.createElement('canvas');
+  ferme.className = 'titre-ferme';
+  ferme.setAttribute('aria-hidden', 'true');
+  el.appendChild(ferme);
+  const arreter = animerFerme(ferme);
+  const contenu = document.createElement('div');
+  el.appendChild(contenu);
   const dessiner = (confirmer) => {
-    el.innerHTML = html(partie, confirmer);
+    contenu.innerHTML = html(partie, confirmer);
     const b = el.querySelector('.titre-btn');
     if (b) b.focus();
   };
@@ -71,6 +79,7 @@ export function ecranTitre() {
   return new Promise((resolve) => {
     const fini = (r) => {
       try { sessionStorage.setItem(VU, '1'); } catch (e) { /* (rien) */ }
+      arreter();
       el.remove();
       resolve(r);
     };

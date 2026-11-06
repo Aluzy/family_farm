@@ -59,10 +59,11 @@
     return null;
   }
 
-  // Les images de la voilure (une planche, une fois) : V.images images d'un quart de tour,
-  // chacune dessinée point par point (pas de flou de rotation), avec un contour sombre.
-  function dessiner(textures) {
-    if (textures.exists(V.key)) return;
+  // Les images de la voilure (une planche) : V.images images d'un quart de tour, chacune
+  // dessinée point par point (pas de flou de rotation), avec un contour sombre ; un canvas de
+  // n × V.images sur n px (n = 2 r + 5, le moyeu au milieu de chaque image). (Aussi pour l'écran
+  // d'accueil, js/ui/ecran-titre.js : FermeCarte.voilure.)
+  function planche() {
     const n = V.r * 2 + 5, c = (n - 1) / 2;
     const cv = document.createElement('canvas');
     cv.width = n * V.images;
@@ -88,6 +89,13 @@
       }
     }
     g.putImageData(img, 0, 0);
+    return cv;
+  }
+  F.voilure = { planche, taille: V.r * 2 + 5, images: V.images, vitesse: V.vitesse };
+
+  function dessiner(textures) {
+    if (textures.exists(V.key)) return;
+    const n = V.r * 2 + 5, cv = planche();
     const tex = textures.addCanvas(V.key, cv);
     for (let f = 0; f < V.images; f++) tex.add(f, 0, f * n, 0, n, n);
   }
