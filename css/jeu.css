@@ -1080,6 +1080,53 @@ select {
 
 /* ---------- Lot 5 : ateliers (Ferme) et Livre de recette ---------- */
 
+/* Le bloc « En préparation » d'un atelier (js/ui/cuisine.js preparationHtml) : le plat qui cuit, les places
+   de la file ; la croix, un petit rond posé dans le coin de sa case. */
+.prep-tete { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.85rem; margin: 2px 0 6px; }
+.prep-encours { display: flex; align-items: center; gap: 10px; padding: 8px; border: 2px solid #c9a46e; border-radius: 10px; background: rgba(255, 246, 224, 0.6); }
+.prep-encours.libre { justify-content: center; min-height: 48px; font-size: 0.85rem; }
+.prep-ico { position: relative; flex: none; width: 44px; height: 44px; display: grid; place-items: center; font-size: 26px; border: 2px solid #b98a55; border-radius: 8px; background: #f3dfb4; }
+.prep-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 0.9rem; }
+.prep-txt small { font-size: 0.75rem; opacity: 0.75; }
+.prep-file { display: grid; grid-template-columns: repeat(var(--places, 9), minmax(0, 40px)); gap: 6px; margin-top: 8px; }
+.prep-place { position: relative; aspect-ratio: 1; max-width: 44px; display: grid; place-items: center; font-size: 18px; border: 2px dashed #d3b88a; border-radius: 7px; }
+.prep-place.pleine { border-style: solid; border-color: #b98a55; background: #f3dfb4; }
+.prep-croix {
+  position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; min-height: 0; padding: 0;
+  display: grid; place-items: center; border-radius: 50%; border: 1px solid #fff6e0;
+  background: #8a3020; color: #fff; font-size: 10px; line-height: 1; cursor: pointer;
+}
+.prep-croix::before { content: ''; position: absolute; inset: -8px; }   /* (une cible plus grande au doigt) */
+.prep-place .prep-croix { width: 16px; height: 16px; top: -5px; right: -5px; font-size: 9px; }
+.prep-croix:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.menu-atelier .prep { display: flex; flex-direction: column; gap: 4px; }
+
+/* La grille des recettes (leurs icônes) et la fiche de la recette choisie (renderStationFenetre). */
+.plats-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(66px, 1fr)); gap: 8px; }
+.plats-grille .plat-case { max-width: 96px; }
+.plat-case {
+  position: relative; aspect-ratio: 1; min-height: 0; padding: 0; display: grid; place-items: center;
+  border: 2px solid #b98a55; border-radius: 10px; background: #fff6e0; box-shadow: 0 2px 0 #c9a46e; cursor: pointer;
+}
+.plat-case .plat-ico { font-size: 30px; line-height: 1; }
+.plat-case.non .plat-ico { opacity: 0.45; filter: grayscale(0.35) brightness(1.15); }
+.plat-case.non { box-shadow: none; background: #fbf3e2; }
+.plat-case.verrou .plat-ico { opacity: 0.35; filter: grayscale(1) brightness(1.2); }
+.plat-case.verrou { box-shadow: none; background: #fbf3e2; border-color: #d3b88a; }
+.plat-cadenas { position: absolute; right: 3px; bottom: 2px; font-size: 12px; }
+.plat-case.choisi { border-color: #2f6a2a; box-shadow: 0 0 0 3px #9cc77a; }
+.fiche-recette { margin-top: 10px; padding: 9px 10px; border: 2px solid #c9a46e; border-radius: 10px; background: rgba(255, 246, 224, 0.6); }
+.fiche-recette h4 { margin: 0 0 2px; font-size: 1rem; font-weight: normal; }
+.fiche-recette > p { margin: 0 0 6px; font-size: 0.8rem; }
+.fiche-ingr { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.fiche-ingr .ingr { display: inline-flex; gap: 4px; padding: 3px 8px; border-radius: 12px; border: 1px solid #9cc77a; background: #e9f1dc; font-size: 0.8rem; }
+.fiche-ingr .ingr.manque { border-color: #d98f78; background: #f8e0d8; }
+.fiche-lancer { display: flex; gap: 8px; align-items: center; }
+.fiche-lancer > .btn { flex: 1; }
+.fiche-pas { display: inline-flex; align-items: center; gap: 4px; }
+.fiche-pas .btn { min-width: 34px; padding-inline: 0; }
+.fiche-pas .num { min-width: 22px; text-align: center; }
+
 .recipes {
   display: flex;
   flex-direction: column;

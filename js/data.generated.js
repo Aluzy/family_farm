@@ -2642,8 +2642,8 @@ export const RAW_DATA = {
         "prix": 500,
         "ressources": { "lingot_fer": 3, "lingot_cuivre": 1 },
         "requiert": [{ "noeud": "prepa_1" }],
-        "effet": { "fileAttente": 3 },
-        "description": "Le Four, la Cuisine et la Presse acceptent jusqu'à 3 préparations à la suite : elles s'enchaînent sans clic, ingrédients réservés au lancement. (Le Moulin, lui, moud déjà la quantité de blé que tu choisis.)"
+        "effet": { "fileAttente": 10 },
+        "description": "Le Four et la Cuisine acceptent jusqu'à 10 préparations à la suite (3 sans elle) : elles s'enchaînent sans clic, ingrédients réservés au lancement. (Le Moulin, lui, moud déjà la quantité de blé que tu choisis.)"
       },
       "cui_laiterie": {
         "branche": "cuisine",

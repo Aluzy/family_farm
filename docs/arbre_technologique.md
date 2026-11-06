@@ -74,7 +74,7 @@ Un seul agrégateur remplace `prepTimeMult()` et `awakeRequired()` : il parcourt
 | `tempsPrepa`, `eauArrosage`, `usure`, `kwhParLitre`, `frigoConso`, `blePoule` | produit | temps, eau, usure, pompe, frigo, poules | ×0,64 · ×0,765 · ×0,75 · ×0,75 · ×0,7 · ×0,8 |
 | `eveilMin` | minimum | éveil minimal | 10 s |
 | `conservation`, `grainesBonus`, `reveilEnergie` | somme | péremption, graines, énergie au réveil | +1 · +1 · +10 |
-| `gouter`, `solaireBonus`, `croissanceSurface`, `fileAttente` | valeur du nœud | en-cas, solaire, pâturage, ateliers | 150 % · 110 % · 1,1 · 3 |
+| `gouter`, `solaireBonus`, `croissanceSurface`, `fileAttente` | valeur du nœud | en-cas, solaire, pâturage, ateliers | 150 % · 110 % · 1,1 · 10 |
 | `auto: { tâche: [lieux] }` | union | nuit (`autoTasks`) | arrosage, récolte, semis, nourrissage, tonte |
 | `recettes` | union | Livre de recette | 16 recettes |
 | `actionsGroupees`, `pluie`, `delestage`, `entretienAuto`, `arrosagePrioritaire`, `routine` | présence | fonctions dédiées | — |
@@ -212,7 +212,7 @@ flowchart LR
 |---|---|---|---|---|---|---|
 | 2 | `prepa_1` | ⏱️ Préparation rapide I | Temps | 1 PT + 300 💰 | — | Les temps de préparation (Four, Cuisine, Moulin, Presse) baissent de 20 %. |
 | 2 | `cui_boulangerie` | 🥖 Boulangerie | Déblocage | 1 PT + 200 💰 | Four construit | Nouvelles recettes au Four : pain à l'ail, tarte aux fraises, quiche aux épinards. |
-| 3 | `cui_serie` | 📋 Préparations en série | Automatisation | 2 PT + 500 💰 | Préparation rapide I | Chaque atelier accepte jusqu'à 3 préparations à la suite : elles s'enchaînent sans clic, ingrédients réservés au lancement. |
+| 3 | `cui_serie` | 📋 Préparations en série | Automatisation | 2 PT + 500 💰 | Préparation rapide I | Chaque atelier accepte jusqu'à 10 préparations à la suite (3 sans elle) : elles s'enchaînent sans clic, ingrédients réservés au lancement. |
 | 3 | `cui_laiterie` | 🧀 Laiterie | Déblocage | 1 PT + 300 💰 | Pâturage construit | Nouvelles recettes en Cuisine : fromage frais, riz au lait. |
 | 3 | `cui_rotisserie` | 🍗 Rôtisserie | Déblocage | 1 PT + 300 💰 | Boulangerie + Pâturage construit | Nouvelles recettes au Four : rôti de bœuf, poulet rôti à l'ail, poivrons farcis. |
 | 4 | `prepa_2` | ⏱️ Préparation rapide II | Temps | 1 PT + 700 💰 | Préparations en série | Encore −20 % sur les temps de préparation (×0,64 en tout). |
@@ -256,7 +256,7 @@ Dans le Livre de recette, une recette verrouillée reste visible, grisée, avec 
 | **Bocal de légumes** | Cuisine, 4 légumes d'une même sorte + 1 L d'eau → 1 bocal. Ne périme pas. Nouvel item distinct de `conserve` : il compte comme **produit** pour l'autonomie (la conserve de départ reste « achetée »). | 30 s · 40 énergie · prix par la formule des plats |
 | **Eau de pluie** | Étape de nuit, avant l'arrosage automatique : ajoute des litres au réservoir, plafonnés à sa capacité, sans électricité. | 15 L par nuit (version 1.6 : plus de saisons) |
 | **Actions groupées** | « Arroser tout » et « Récolter tout » par zone, au clic : une tentative par parcelle, chacune payée en énergie comme un clic (version 1.8). | — |
-| **File de préparations** | Chaque atelier garde jusqu'à 3 préparations en attente ; les ingrédients sont retirés au moment de la mise en file ; annuler rend les ingrédients. Le hors-ligne fait avancer la file comme une préparation. | 3 places |
+| **File de préparations** | Chaque atelier tient 3 préparations (celle en cours comprise), 10 avec Préparations en série ; les ingrédients sont retirés au moment de la mise en file ; annuler rend les ingrédients, même celle en cours (le temps passé est perdu). Le hors-ligne fait avancer la file comme une préparation. | 3 places, 10 avec le nœud |
 | **Délestage** | Sous le seuil de charge totale des batteries, le Moulin, la Presse et la Pompe sont suspendus (pas éteints : ils reprennent seuls). | 10 % |
 | **Entretien automatique** | Au Dormir, chaque appareil à `SEUIL_ENTRETIEN` (70 %) ou plus est entretenu si les pièces suffisent, dans l'ordre du parc ; résumé dans le rapport du réveil. | — |
 | **Arrosage prioritaire** | Quand l'eau ne suffit pas, l'arrosage automatique trie les parcelles par stades restants (croissant). | — |

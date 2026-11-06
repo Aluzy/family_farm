@@ -11,7 +11,7 @@ import {
   houseRepaired, ingredientOptions, inventoryCounts, isBroken, isBuyable, isPerishable,
   loadShedding, lotsOf, maintainCost, maintainDevice, mangerMembre, mangeurs, marketCoef, migrate,
   millPending, millTimeLeft, moveToFridge, panelOutput, pastureCost, plant, productionItemKeys,
-  queueCapacity, recipeNode, recipeStatus, recipeUnlocked, repairCost, repairDevice, scaleEnergie,
+  queueCapacity, recipeNode, stopCurrent, recipeStatus, recipeUnlocked, repairCost, repairDevice, scaleEnergie,
   sellableCount, sellItem, sellPrice, shelfLife, simulateOffline, sleep, snackEnergy, startFarm,
   startHousehold, startLot4, startMilling, startRecipe, storeWheat, taskTimeLeft, techEffects,
   techPct, testAddEggs, testAddFlour, testAddHens, testAddOil, testAddSeeds, testAddWheat,
@@ -484,31 +484,57 @@ test('arbre v2 : 23 recettes libres (dont 6 de la ville, la mayonnaise, la quene
   assertEqual([shelfLife('bocal_legumes'), DATA.OBJETS.bocal_legumes.energie], [null, 40]);
 });
 
-test('arbre v2 : préparations en série (file de 3 par atelier)', () => {
+test('la file des ateliers : 3 places, 10 avec les préparations en série', () => {
   const s = atelier();
-  setInv(s, { farine: 10 });
-  assert(startRecipe(s, 'pain').ok);
-  assertEqual(startRecipe(s, 'pain').ok, false, 'sans le nœud : une préparation à la fois');
-  grantTech(s, 'cui_serie');
+  setInv(s, { farine: 30 });
+  s.eauMl = ml(38);
   assertEqual(queueCapacity(s), 3);
+  assert(startRecipe(s, 'pain').ok);
   assertEqual(startRecipe(s, 'pain').enFile, true);
   assertEqual(startRecipe(s, 'pain').enFile, true);
   assertEqual(startRecipe(s, 'pain').ok, false, 'file pleine : 1 en cours + 2 en attente');
   assertEqual(recipeStatus(s, 'pain').code, 'occupee');
-  assertEqual([countItem(s, 'farine'), s.eauMl], [4, ml(37)], 'ingrédients et eau réservés au lancement');
+  assertEqual([countItem(s, 'farine'), s.eauMl], [24, ml(35)], 'ingrédients et eau réservés au lancement');
   // annuler rend les ingrédients
   assert(cancelQueued(s, 'four', 1).ok);
-  assertEqual([countItem(s, 'farine'), s.eauMl, s.stations.four.file.length], [6, ml(38), 1]);
+  assertEqual([countItem(s, 'farine'), s.eauMl, s.stations.four.file.length], [26, ml(36), 1]);
   // la suivante démarre toute seule
   runFor(s, 10.2);
   assertEqual([countItem(s, 'pain'), s.stations.four.tache.recette, s.stations.four.file.length], [1, 'pain', 0]);
+  // le nœud : 10 places
+  grantTech(s, 'cui_serie');
+  assertEqual(queueCapacity(s), 10);
+  for (let k = 0; k < 9; k++) assert(startRecipe(s, 'pain').ok, `la place ${k + 2}`);
+  assertEqual([startRecipe(s, 'pain').ok, s.stations.four.file.length], [false, 9]);
   // la nuit termine tout ce qui est en cours
-  assert(startRecipe(s, 'pain').ok);
   setInv(s, { farine: countItem(s, 'farine'), pain: countItem(s, 'pain'), conserve: 200 });
   s.awakeMs = 30000;
   const r = sleep(s);
-  assertEqual(r.termine.pain, 2);
+  assertEqual(r.termine.pain, 10);
   assertEqual([s.stations.four.tache, s.stations.four.file], [null, []]);
+});
+
+test('arrêter la préparation en cours : ses ingrédients et son eau reviennent, la suivante démarre', () => {
+  const s = atelier();
+  setInv(s, { farine: 10 });
+  s.eauMl = ml(20);
+  assert(startRecipe(s, 'pain').ok);
+  assert(startRecipe(s, 'pain').ok);
+  runFor(s, 4);
+  assertEqual([countItem(s, 'farine'), s.eauMl], [6, ml(18)]);
+  const r = stopCurrent(s, 'four');
+  assert(r.ok && r.recette === 'pain', r.error);
+  assertEqual([countItem(s, 'farine'), s.eauMl], [8, ml(19)], 'la farine et l\'eau du pain arrêté sont rendues');
+  // la suivante démarre, du début ; on peut l'arrêter elle aussi (ses ingrédients venaient de la file)
+  const t = s.stations.four.tache;
+  assertEqual([t.recette, t.resteMs === t.dureeMs, s.stations.four.file.length], ['pain', true, 0]);
+  assert(stopCurrent(s, 'four').ok);
+  assertEqual([countItem(s, 'farine'), s.eauMl, s.stations.four.tache], [10, ml(20), null]);
+  assertEqual(stopCurrent(s, 'four').ok, false, 'rien à arrêter');
+  // une préparation d'une partie d'avant (la tâche sans ses ingrédients) : ceux de la recette
+  s.stations.four.tache = { recette: 'pain', resteMs: 5000, dureeMs: 10000 };
+  assert(stopCurrent(s, 'four').ok);
+  assertEqual([countItem(s, 'farine'), s.eauMl], [12, ml(21)]);
 });
 
 test('arbre v2 : les effets suivent la liste des technologies, même modifiée sur place ou remplacée', () => {
@@ -815,15 +841,15 @@ test('startRecipe : refusée sans station construite, sans rien retirer', () => 
   assertEqual(startRecipe(s, 'inconnue').ok, false);
 });
 
-test('une seule préparation par station, sans file d\'attente', () => {
+test('la file pleine refuse une préparation de plus, sans rien retirer', () => {
   const s = atelier();
-  setInv(s, { farine: 6, patate: 3, oeuf: 1 });
-  assertEqual(startRecipe(s, 'pain').ok, true);
+  setInv(s, { farine: 8, patate: 3, oeuf: 1 });
+  for (let k = 0; k < 3; k++) assertEqual(startRecipe(s, 'pain').ok, true);
   const r = startRecipe(s, 'gratin_patates'); // même station : le Four
-  assertEqual([r.ok, r.error], [false, 'Four : une préparation est déjà en cours.']);
+  assertEqual([r.ok, r.error], [false, 'Four : la file est pleine (3 préparations).']);
   assertEqual([countItem(s, 'patate'), countItem(s, 'oeuf')], [3, 1], 'rien n\'est retiré pour une recette refusée');
-  assertEqual(startRecipe(s, 'pain').ok, false, 'pas de file : la même recette non plus');
-  assertEqual(countItem(s, 'farine'), 4);
+  assertEqual(startRecipe(s, 'pain').ok, false, 'la même recette non plus');
+  assertEqual(countItem(s, 'farine'), 2);
 });
 
 test('les stations travaillent en parallèle : Four, Cuisine et Moulin', () => {
@@ -839,7 +865,7 @@ test('les ingrédients sont retirés au lancement (eau comprise)', () => {
   setInv(s, { farine: 5 });
   assertEqual(startRecipe(s, 'pain').ok, true);
   assertEqual([countItem(s, 'farine'), s.eauMl], [3, ml(39)]);
-  assertEqual(s.stations.four.tache, { recette: 'pain', resteMs: 10000, dureeMs: 10000 });
+  assertEqual(s.stations.four.tache, { recette: 'pain', resteMs: 10000, dureeMs: 10000, pris: [{ item: 'farine', qte: 2 }], eau: 1 }, 'la tâche garde ce qu\'elle a pris (pour l\'arrêter)');
   assertEqual(countItem(s, 'pain'), 0, 'le pain n\'existe pas avant la fin');
 });
 
@@ -942,7 +968,9 @@ test('recipeStatus : absente, occupée, manque ou prête, avec le détail des in
   assertEqual(pain.lignes.map((l) => [l.qte, l.have, l.ok]), [[2, 1, false], [1, 40, true]]);
   assertEqual(pain.lignes[1].eau, true);
   startRecipe(s, 'gratin_patates');
-  assertEqual(recipeStatus(s, 'pain').code, 'occupee', 'le Four est pris');
+  assertEqual(recipeStatus(s, 'pain').code, 'manque', 'le Four est pris, mais sa file a de la place');
+  s.stations.four.file = [{ recette: 'pain', pris: [], eau: 0 }, { recette: 'pain', pris: [], eau: 0 }];
+  assertEqual(recipeStatus(s, 'pain').code, 'occupee', 'le Four et sa file sont pleins');
 });
 
 test('Moulin : 1 blé → 1 farine (sans paille) en 5 s, 0,02 kWh/s pris sur les batteries', () => {
