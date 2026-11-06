@@ -163,9 +163,28 @@ export function chantierOuvert() {
   return true;
 }
 
-// L'icône d'un bloc (celle de son objet ; un meuble : son dessin ; l'Atelier : la sienne).
+// Les cases du menu, en colonnes de LIGNES (css/jeu.css, .build-dock .build-bar-grid).
+const LIGNES = 3;
+
+// Une machine des chaînes de production (l'onglet Machines, sauf l'Atelier) : son dessin de la carte (une
+// case de 16 × 24 de assets/blocs.png, à l'arrêt : BLOCS_CARTE de js/carte/ferme/config.js), plutôt que son
+// icône (deux émojis collés, qui débordaient sur les cases voisines). '' : pas une machine, ou la carte absente.
+function dessinMachine(sorte) {
+  const cat = DATA.ATELIER.CATEGORIES && DATA.ATELIER.CATEGORIES.machines;
+  if (sorte === 'atelier' || !cat || !(cat.blocs || []).includes(sorte)) return '';
+  const C = typeof window !== 'undefined' && window.FermeCarte && window.FermeCarte.C;
+  const f = C && C.BLOCS_CARTE && C.BLOCS_CARTE.frames[sorte];
+  if (typeof f !== 'number') return '';
+  const v = window.FERME_ASSET_VERSIONS && window.FERME_ASSET_VERSIONS['blocs.png'];
+  return `<span class="build-slot-dessin" style="--f:${f};background-image:url('assets/blocs.png${v ? `?v=${v}` : ''}')"></span>`;
+}
+
+// L'icône d'un bloc (celle de son objet ; un meuble : son dessin ; une machine : son dessin de la carte ;
+// l'Atelier : la sienne).
 function icone(sorte) {
   const b = DATA.ATELIER.BLOCS[sorte];
+  const machine = dessinMachine(sorte);
+  if (machine) return machine;
   if (b.meuble) return `<img class="build-slot-img" src="${meubleSrc(b.meuble)}" alt="" draggable="false">`;
   // (le four redessiné : son dessin, éteint)
   if (b.dessin === 'four') return `<img class="build-slot-img" src="${meubleSrc('four')}" alt="" draggable="false">`;
@@ -224,8 +243,8 @@ export function buildChipHtml() {
     return `<button type="button" class="tool-slot build-slot build-groupe${on ? ' active' : ''}${n ? '' : ' epuise'}" data-action="build-groupe" data-groupe="${g.id}" aria-expanded="${bulle === g.id}" aria-label="${g.nom} : ${DATA.ATELIER.BLOCS[v].nom}, ${n}. En choisir un autre" title="${g.nom} : en choisir un autre"><span class="build-groupe-plus" aria-hidden="true">⋯</span><span aria-hidden="true">${icone(v)}</span><span class="build-slot-n num" aria-hidden="true">${n}</span></button>`;
   }).join('');
   const gb = GROUPES.find((g) => g.id === bulle), lb = gb && !etoile ? duGroupe(vuesFiltres, gb) : [];
-  // (sa flèche vers la case du groupe : son rang dans la barre)
-  const bulleHtml = lb.length > 1 ? `<div class="build-bulle" role="group" aria-label="${gb.nom}" style="--rang:${Math.max(0, rangs.indexOf(gb.id))}"><div class="build-bulle-titre">${gb.nom}</div><div class="build-bulle-grid">${lb.map((s) => caseBloc(s)).join('')}</div></div>` : '';
+  // (sa flèche vers la case du groupe : sa colonne dans la barre ; la bulle, sous sa ligne)
+  const bulleHtml = lb.length > 1 ? `<div class="build-bulle" role="group" aria-label="${gb.nom}" style="--rang:${Math.floor(Math.max(0, rangs.indexOf(gb.id)) / LIGNES)};--ligne:${Math.max(0, rangs.indexOf(gb.id)) % LIGNES}"><div class="build-bulle-titre">${gb.nom}</div><div class="build-bulle-grid">${lb.map((s) => caseBloc(s)).join('')}</div></div>` : '';
   const dodo = couchages(state).length;
   const tete = niveauBati() ? '<span title="À l\'étage : on bâtit au-dessus de la pièce de l\'escalier ; ailleurs, on rehausse les murs">🪜 Étage</span>'
     : niveau() ? `<span title="Niveau ${niveau()} : touche un mur haut de ${niveau()} bloc${niveau() > 1 ? 's' : ''} pour le rehausser, un mur plus haut pour reprendre son bloc du dessus">🧱 Rehausser</span>`
