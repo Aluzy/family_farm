@@ -588,6 +588,17 @@ def bandes():
     return out
 
 
+# Les cases retouchées à la main dans assets/crops.png (culture : ses phases) : ce script les garde telles
+# qu'elles sont dans la planche, sans les redessiner.
+RETOUCHES = {
+    'ail': [0],                  # la graine
+    'carotte': [3],              # la carotte mûre
+    'fraise': [2, 3],            # le fraisier en fleurs, en fruits
+    'oignon': [2, 3],            # l'oignon qui grossit, mûr
+    'poivron': [4],              # le poivron mûr
+}
+
+
 def main():
     sheet = Image.open(SHEET).convert('RGBA')
     places = bandes()
@@ -602,7 +613,9 @@ def main():
             cases = [f()] + [sheet.crop((c * T, (r0 + 1) * T - H, c * T + T, (r0 + 1) * T)) for c in c0]
         else:
             cases = [NOUVELLES[nom](k) for k in range(4)]
-        for c, im in zip(cols, cases):
+        for k, (c, im) in enumerate(zip(cols, cases)):
+            if k in RETOUCHES.get(nom, ()):
+                im = sheet.crop((c * T, y, c * T + T, y + H))   # (retouchée à la main : gardée)
             out.alpha_composite(im, (c * T, y))
     out.save(SHEET, optimize=True)
     print(f'assets/crops.png : {out.width} × {out.height} (rangées {BASE} à {rangees - 1})')
