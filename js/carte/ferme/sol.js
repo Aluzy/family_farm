@@ -133,6 +133,12 @@
         this.ctx.monde.quandRegion((cle) => {
           const r = this.regions && this.regions.get(cle);
           if (r && r.tex) { this.paintRegion(r, null, this.regionParts(r).monde); this.eauMondeRegion(r); this.eauMondeCle = null; this.vegetationRegion(r); this.fauneRegion(r); }
+          // (le flanc des falaises lit les cases voisines : ceux des régions d'à côté, refaits)
+          if (r) {
+            for (const v of this.regions.values()) {
+              if (v.tex && Math.abs(v.rx - r.rx) <= 1 && Math.abs(v.ry - r.ry) <= 1 && (v === r || v.falaises)) { this.dropFalaises(v); this.falaisesRegion(v); }
+            }
+          }
         });
       }
       this.regions = new Map();
@@ -218,9 +224,11 @@
       this.eauMondeRegion(r);              // ses blocs d'eau (eau-monde.js)
       this.vegetationRegion(r);            // ses arbres, ses buissons (vegetation.js)
       this.fauneRegion(r);                 // ses bêtes (faune-monde.js)
+      this.falaisesRegion(r);              // le flanc de ses falaises (falaises.js)
     },
 
     dropRegion(r) {
+      this.dropFalaises(r);
       this.dropFaune(r);
       this.dropEauMonde(r);
       this.dropVegetation(r);
@@ -338,6 +346,7 @@
         this.solPeint = (this.solPeint || 0) + 1;
         (this.solSale || (this.solSale = [])).push(m);
       }
+      if (only) this.falaisesRepeintes(r, only);   // (le flanc des falaises qui les touche : falaises.js)
     },
 
     // Le dessin du sol de la région `r` dans `ctx`, dont le coin haut-gauche est (ox, oy) en px de carte :
