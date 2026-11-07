@@ -619,6 +619,11 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
     `BLOCS_CARTE.hauts.candelabre`, `scripts/carte/blocs.py` `reverbere`), éteint puis allumé
     en deux images ; sans cette planche, celle de la lanterne éteinte. Comme les murs hauts, il
     s'efface un peu devant quelqu'un et en mode Construire.
+  - **Sur sa case** : son image est remontée de `BLOCS_CARTE.candelabre.pied` px (6) : son socle se
+    pose dans la case, avec de l'herbe devant, et non sur son bord ; sa profondeur reste celle de la
+    case. Une petite touffe d'herbe pousse sur chaque coin de son socle (`herbes.js`).
+  - **Son ombre** : celle de sa silhouette, un fût fin et sa lanterne (`soleil.js`, `SILHOUETTE`),
+    et non le pavé d'un mur de la taille de sa case.
   - **Quand la nuit tombe** (avec les lanternes : `stepLanterns`, `BLOCS_CARTE.candelabre`), sa
     lanterne luit et vacille, et il pose une lumière chaude dans le voile de l'heure : une flaque
     sur l'herbe, la lueur de la lanterne en haut, un halo.

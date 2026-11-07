@@ -188,7 +188,7 @@
             const S = BLOCS_CARTE.sens && BLOCS_CARTE.sens[b.sorte], miroir = !!(S && S.miroir[b.sens || 0]);
             if (S) f = S.images[b.sens || 0];
             const plat = BLOCS_CARTE.plats.includes(b.sorte);
-            const img = add(this.add.image(p.x, p.y - dy, key, f).setOrigin(0.5, 1).setDepth(p.y + (plat ? 0.7 : 1)).setFlipX(miroir));
+            const img = add(this.add.image(p.x, p.y - dy - F.piedBloc(b.sorte), key, f).setOrigin(0.5, 1).setDepth(p.y + (plat ? 0.7 : 1)).setFlipX(miroir));
             if (b.sorte === 'paillasse') this.etageLits.set(b.case, { img, x: p.x, y: p.y - dy, paillasse: true });
             // (une lanterne, un réverbère : ils s'allument la nuit comme en bas, à la hauteur de l'étage)
             if (b.sorte === 'lanterne' || b.sorte === 'candelabre') this.etageLumieres.push({ case: b.case, sorte: b.sorte, img, x: p.x, y: p.y - dy });

@@ -284,11 +284,13 @@ const CULTURE_MONTE = 4;
     // planche des murs hauts (hauts.candelabre ; sans elle, celle de la lanterne éteinte), allumé
     // avec la lanterne ; sa lueur (les images `allumee`) vacille, sa lumière est chaude : une large
     // flaque `sol` au pied, la lueur de sa lanterne `vitre` (en haut, dy px au-dessus du pied de la
-    // case), un halo
+    // case), un halo. Son image est remontée de `pied` px dans sa case (chantier.js, etage.js) : son
+    // socle se pose dans la case, avec de l'herbe devant, et non sur son bord (la case du dessous) ;
+    // sa lumière avec lui. Son ombre est celle de sa silhouette, pas d'un mur (soleil.js).
     candelabre: {
-      allumee: [1338, 1339], fps: 5, vacille: 0.1,
-      sol: { rayon: 62, aplati: 0.7, teinte: 0xffc070, alpha: 0.95, dx: 0, dy: -6 },
-      vitre: { rayon: 16, teinte: 0xffe2a8, alpha: 0.95, dx: 0, dy: -33 },
+      allumee: [1338, 1339], fps: 5, vacille: 0.1, pied: 6,
+      sol: { rayon: 62, aplati: 0.7, teinte: 0xffc070, alpha: 0.95, dx: 0, dy: -12 },
+      vitre: { rayon: 16, teinte: 0xffe2a8, alpha: 0.95, dx: 0, dy: -39 },
       halo: { couleur: 0xffb050, rayon: 22, intensite: 0.1, attenuation: 0.08 },
     },
     // la lumière des maisons, la nuit (js/carte/ferme/fenetres.js) : une `teinte` chaude ; sur
