@@ -2140,6 +2140,17 @@ main .ancre { scroll-margin-top: 150px; }
   grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 4px;
   max-height: calc(100dvh - 230px);
 }
+/* Un écran de choix du personnage : la fenêtre ne défile pas (la flèche, posée en bas d'elle, défilerait avec la grille
+   et finirait sur les personnages), elle tient dans l'écran ; la grille prend la place qui reste et défile seule. Un
+   texte agrandi (la taille du texte d'Android, que suit le navigateur intégré de Messenger) lui prend de la place,
+   sans rien cacher. */
+.accueil-modal:has(.accueil-persos) {
+  display: flex; flex-direction: column; overflow: hidden;
+  max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px);
+}
+.accueil-modal:has(.accueil-persos) .accueil-texte { flex: none; }
+.accueil-modal:has(.accueil-persos) .accueil-reglage { flex: 1 1 auto; min-height: 0; }
+.accueil-modal:has(.accueil-persos) .perso-grid.accueil-persos { flex: 0 1 auto; min-height: 80px; max-height: none; grid-auto-rows: max-content; overscroll-behavior: contain; }
 .accueil-persos .perso-btn { padding: 0; overflow: hidden; }
 .accueil-persos .perso-btn .perso-px { --s: 64px; }
 .accueil-portrait .perso-px { --s: 128px; } /* en grand, vivant (js/ui/depart.js) */

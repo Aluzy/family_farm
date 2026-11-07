@@ -328,7 +328,19 @@ registerActions({
     if (qui.perso !== n) qui.apparence = null;
     qui.perso = n;
     accueil.erreur = '';
-    openSetupModal();
+    // (la fenêtre reste où elle est : la grille garde sa position, et la flèche s'allume ; la refaire la ramènerait
+    // en haut, loin du personnage choisi en bas de la grille)
+    const m = document.getElementById('setup-modal');
+    if (!m || !m.querySelector('.accueil-persos')) { openSetupModal(); return; }
+    for (const b of m.querySelectorAll('.perso-btn')) {
+      const oui = Number(b.dataset.perso) === n;
+      b.classList.toggle('active', oui);
+      b.setAttribute('aria-pressed', String(oui));
+    }
+    const suite = m.querySelector('.accueil-suite');
+    if (suite) suite.disabled = false;
+    const err = document.getElementById('setup-error');
+    if (err) err.hidden = true;
   },
   'accueil-apparence': (target) => {
     const [qui, enfant] = quiEtape();
