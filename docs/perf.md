@@ -254,3 +254,19 @@ ralenti 4 fois, sans processeur graphique : seules les comparaisons comptent), 8
 
 Ce qui reste près de l'étang est surtout le dessin de l'eau vivante (le shader, les reflets), fait ici par le
 processeur faute de processeur graphique ; à mesurer sur le téléphone (📏 Mesures › « Mesurer 30 s »).
+
+## Les traces de pas (`js/carte/ferme/traces.js`)
+
+Qui marche (le personnage, sa famille, les habitants des hameaux, les invités, les autres joueurs) laisse
+ses pas ; le cheval monté, ses fers en U. Pour que l'effet coûte peu :
+- **Qui marche** est relevé une fois par seconde (les images marquées `personnage`, celles des autres joueurs,
+  la couche de dessous du cheval monté), pas à chaque image ; à chaque image, seules celles-là sont suivies.
+- **Une trace est une image** prise dans une réserve de 80 (40 en qualité « économie ») : la plus vieille
+  resservant, rien n'est créé en continu ; ses formes (semelle, herbe couchée, fer, dans les quatre sens)
+  sont de petites textures faites une fois. Elles pâlissent 5 fois par seconde, s'effacent en 20 s.
+- **Le sol d'une trace** (herbe, eau, sol meuble) est lu dans le sol peint une fois par case, tant que le
+  sol n'est pas repeint.
+
+Mesuré dans un hameau (17 personnages suivis, la réserve pleine), Chromium, écran de téléphone, sur 15 s : 
+`stepTraces` prend 0,05 ms par image en moyenne (95 % des images : 0,2 ms) ; à 4 × de ralentissement,
+0,4 ms en moyenne, 1,7 ms pour 95 % des images, 6 ms au pire (le relevé, une fois par seconde).
