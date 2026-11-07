@@ -61,6 +61,9 @@
 
   // les blocs qui éclairent la nuit (stepLanterns) : leurs réglages sont BLOCS_CARTE[sorte]
   const LUMIERES = ['lanterne', 'candelabre'];
+  // De combien de px l'image d'un bloc est remontée dans sa case (le réverbère : BLOCS_CARTE.candelabre.pied).
+  const piedBloc = (sorte) => (BLOCS_CARTE[sorte] && BLOCS_CARTE[sorte].pied) || 0;
+  F.piedBloc = piedBloc;
 
   // la matière d'un bloc, pour le bruit de sa pose (js/son.js : pose_bois, pose_pierre, pose_metal)
   function matiereBloc(sorte) {
@@ -172,7 +175,8 @@
           const x = (b.case % cols) * T + T / 2, y = (Math.floor(b.case / cols) + 1) * T;
           const plat = BLOCS_CARTE.plats.includes(b.sorte);
           // (le puits et la citerne : leurs propres images, posées par syncWell et syncTank)
-          const img = this.add.image(x, y, key, f).setOrigin(0.5, 1).setDepth(plat ? y - T : y).setVisible(!BLOCS_CARTE.ailleurs.includes(b.sorte));
+          // (le réverbère : son image remontée dans sa case, BLOCS_CARTE.candelabre.pied ; sa profondeur reste celle de la case)
+          const img = this.add.image(x, y - piedBloc(b.sorte), key, f).setOrigin(0.5, 1).setDepth(plat ? y - T : y).setVisible(!BLOCS_CARTE.ailleurs.includes(b.sorte));
           // (le portail : son image dépasse de sa case, posée par le milieu du bas de la case ; devant les barrières
           // de sa rangée, sur lesquelles il se rabat ouvert)
           if (key === BLOCS_CARTE.portails.key) img.setOrigin(...BLOCS_CARTE.portails.origine).setDepth(y + 0.5);

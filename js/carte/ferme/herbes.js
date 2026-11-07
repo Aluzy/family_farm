@@ -5,7 +5,8 @@
  * le grand monde (js/engine/monde-hameaux.js) : les murs de leurs maisons (des images de la planche
  * « hameaux », vegetation.js), leurs dalles (planchers, dalles, tomettes, pavés de la place : peints
  * dans le sol de leur région). De petites touffes en éventail (HERBES) l'adoucissent : le long du bas des murs (pas
- * devant les portes : on y passe), une petite sous chaque poteau, au bas d'un sol posé dehors,
+ * devant les portes : on y passe), une petite sous chaque poteau, deux au pied du réverbère (aux
+ * bouts de son socle), au bas d'un sol posé dehors,
  * et quelques brins penchés sur ses côtés. Pas sur le haut d'un sol : vue de dessus, l'herbe
  * de derrière ne passe pas devant lui.
  *
@@ -73,8 +74,9 @@
       const pris = (c) => B.has(c) || S.has(c);
 
       // Le pied d'une image debout : son image (clé, numéro), son coin haut gauche (x0, y0), le bas
-      // de sa case (pied), sa case ; un poteau (une petite touffe par poteau) ou un mur.
-      const debout = (key, frame, x0, y0, pied, c, poteau) => {
+      // de sa case (pied), sa case ; un poteau (une petite touffe par poteau), un réverbère (`lampe` : une
+      // petite touffe de chaque côté de son socle) ou un mur.
+      const debout = (key, frame, x0, y0, pied, c, poteau, lampe) => {
         const out = { k: 'd' + Math.floor(c / cols), profondeur: pied + HERBES.dessus, pixels: [], rect: null };
         const p = this.profilHerbe(key, frame);
         if (!p) return out;
@@ -84,7 +86,10 @@
         if (!fond) return out;
         const pieds = p.colonnes.map((k) => x0 + k).filter((x) => fond.vert(x, y));
         const rng = hasard(c * 7919 + 13);
-        if (poteau) {
+        if (lampe) {
+          // (au pied du réverbère, remonté dans sa case : une petite touffe sur chaque coin de son socle)
+          if (pieds.length) for (const x of [pieds[0] + 1, pieds[pieds.length - 1] - 1]) touffe(out.pixels, x, y, fond.teintes, HERBES.petite, rng);
+        } else if (poteau) {
           // (une petite touffe au milieu de chaque poteau : ses colonnes qui se suivent)
           for (const g of groupes(pieds)) touffe(out.pixels, g[g.length >> 1], y, fond.teintes, HERBES.petite, rng);
         } else {
@@ -97,9 +102,11 @@
       for (const e of B.values()) {
         const poteau = BLOCS_CARTE.clotures.couleurs[e.sorte] !== undefined;   // (une barrière, de toute couleur)
         if (!e.img || !e.img.active || (!poteau && (e.img.texture.key !== H.key || estPorte(e.sorte)))) continue;
-        if (pris(e.case + cols)) continue;
-        const f = e.img.frame, x0 = e.x - f.cutWidth / 2, y0 = e.y - f.cutHeight;
-        source(`b${e.case}/${e.img.texture.key}/${f.name}/${x0},${y0}/${poteau ? 1 : 0}`, () => debout(e.img.texture.key, f.name, x0, y0, e.y, e.case, poteau));
+        // (un bloc remonté dans sa case, le réverbère : son pied est dans sa case, la case du dessous n'y fait rien)
+        const lampe = e.img.y < e.y;
+        if (!lampe && pris(e.case + cols)) continue;
+        const f = e.img.frame, x0 = e.x - f.cutWidth / 2, y0 = e.img.y - f.cutHeight;
+        source(`b${e.case}/${e.img.texture.key}/${f.name}/${x0},${y0}/${poteau ? 1 : 0}`, () => debout(e.img.texture.key, f.name, x0, y0, e.y, e.case, poteau, lampe));
       }
 
       // le bas des murs des maisons des hameaux (HERBES.mursHameaux ; pas les portes)

@@ -32,6 +32,8 @@
   const K = global.CarteKit;
   const F = global.FermeCarte;
   const { SOLEIL, T, BLOCS_CARTE } = F.C;
+  // les blocs de la planche des murs hauts qui ne sont pas des volumes : l'ombre de leur image (sunCasters)
+  const SILHOUETTE = new Set(['candelabre']);
 
   // L'enveloppe convexe de points [x, y] (la chaîne monotone).
   function enveloppe(pts) {
@@ -74,8 +76,9 @@
       for (const o of (this.occluders || []).concat(this.rocks || [])) if (o.img && o.tex && !o.gone) sprite(o.img, o.foot);
       // les arbres et les buissons du grand monde près de la vue (vegetation.js)
       for (const o of this.vegetationOmbres ? this.vegetationOmbres() : []) sprite(o.img, o.foot);
-      // (les murs et les portes hautes : des volumes, sunPrisms)
-      for (const e of (this.blocks || new Map()).values()) if (e.sorte !== 'paillasse' && !e.plat && e.img.texture.key !== BLOCS_CARTE.hauts.key) sprite(e.img);
+      // (les murs et les portes hautes : des volumes, sunPrisms ; le réverbère, dans la même planche, a l'ombre de sa
+      // silhouette : un fût fin et sa lanterne, pas un pavé de la taille de sa case)
+      for (const e of (this.blocks || new Map()).values()) if (e.sorte !== 'paillasse' && !e.plat && (e.img.texture.key !== BLOCS_CARTE.hauts.key || SILHOUETTE.has(e.sorte))) sprite(e.img);
       return out;
     },
 
@@ -86,7 +89,7 @@
       const out = [], dy = BLOCS_CARTE.etage.dy;
       const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
       for (const e of (this.blocks || new Map()).values()) {
-        if (e.img.texture.key !== BLOCS_CARTE.hauts.key || !e.img.active) continue;
+        if (e.img.texture.key !== BLOCS_CARTE.hauts.key || !e.img.active || SILHOUETTE.has(e.sorte)) continue;
         const r = rect(e.x - T / 2, e.y - T, e.x + T / 2, e.y - SOLEIL.base), v = dy * (e.hauteur || 1);
         out.push({ base: r, sommets: r.map(([x, y]) => [x, y, v]) });
       }
