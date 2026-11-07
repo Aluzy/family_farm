@@ -4,10 +4,10 @@
  * et demain de celles du grand monde) ; chaque scène dit ce qui la
  * concerne :
  *   eauEtendues()   ses étendues d'eau : [{ x, y, tex (une texture canevas : l'eau et ses rives,
- *                   telles que dessinées), sprite (son image, cachée sous le shader), mer }],
+ *                   telles que dessinées), sprite (son image, cachée sous le shader), mer, cells
+ *                   (les numéros de ses cases : celles qui portent une tuile d'eau animée ; au grand
+ *                   monde, cols : la largeur de la carte en cases ; sinon, celle de this.grid) }],
  *                   toujours le même tableau tant qu'elles ne changent pas (null : aucune) ;
- *   waters()        les cases d'eau ou de rive : « x,y » (px) → { eau, cells } (une étendue du
- *                   grand monde, `monde`, a les siennes : cells, ses numéros de cases, cols) ;
  *   eauMarge(a, eau) facultatif : la terre autour d'une étendue du grand monde (eau-monde.js) ;
  *   eauHeure()      l'heure du jeu (null : plein jour) ;
  *   eauMarcheurs()  qui marche (les ronds au bord de l'eau) : [{ id, x, y }] ;
@@ -572,11 +572,14 @@ void main() {
       return v;
     },
 
-    // Une case d'eau ou de rive (x, y : son coin, en px) de l'étendue a ? Au grand monde, ses
-    // cases (a.cells, numéros de cases de la carte) ; à la ferme, celles de waters().
+    // Une case d'eau ou de rive (x, y : son coin, en px) de l'étendue a ? Ses cases (a.cells, les
+    // numéros des cases qui portent une tuile d'eau animée). Pas waters() (la vie d'ambiance) : il
+    // juge chaque case sur sa tuile entière, et une tuile d'angle rentrant (surtout de l'herbe, un
+    // coin d'eau) y est de la terre : son coin d'eau restait figé sur l'image de la rive, un carré
+    // plus clair, et l'écume suivait le bord carré de la case, en escalier.
     eauCase(a, x, y) {
-      if (a.monde) return a.cells.has(Math.floor(y / T) * a.cols + Math.floor(x / T));
-      return this.waters().has(x + ',' + y);
+      const cols = a.monde ? a.cols : this.grid.cols;
+      return a.cells.has(Math.floor(y / T) * cols + Math.floor(x / T));
     },
 
     // L'eau vivante d'une étendue défaite (ses images, ses textures) ; l'étendue reprend son image.
