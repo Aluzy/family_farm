@@ -425,6 +425,19 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        pendent des falaises des sommets) ; une bande de falaise en biais fait des marches d'une case
        (des colonnes décalées) ; le côté d'une bande nord-sud n'a pas de face (vue de haut, il ne se
        voit pas) ; casser, miner, ramasser (étape 6).
+     - **Ajouté depuis : le flanc des falaises** (`js/carte/ferme/falaises.js`). Le côté est ou
+       ouest d'une bande haute n'était qu'un trait, et le personnage (ou son cheval) qui longeait son
+       pied passait par-dessus le plateau. Chaque côté (une colonne de cases qui se suivent) a
+       maintenant une image sur trois cases de large : le sol du plateau près du bord, repeint
+       (`peindreSol`) et découpé d'après les couches de son sol (la falaise ou la neige), avec par-dessus
+       un flanc de roche de 6 px (bleutée sous la neige avec des glaçons, brune sous la falaise ; la
+       neige sur le haut d'un flanc qui commence sous un coin). L'image est rangée selon le bas de la
+       bande : qui est au pied du flanc passe derrière le plateau, qui est au sud passe devant. Le
+       flanc s'arrête au rebord de la face du bas, qui reste entière. Les images sont faites quand la
+       région arrive (celles des régions voisines sont refaites, car elles lisent ses cases), refaites
+       quand leurs cases se repeignent (une petite pièce prise) et retirées avec la région. Mesuré
+       sur un PC : 9 ms pour une région de montagne (17 côtés). Vérifié dans Chromium : un sommet
+       (côté est, le jour et la nuit) et une falaise de roche (côté ouest).
 6. ✅ **Les ressources et la vie de chaque biome** (2 PR, fait) : ce qui se ramasse, les minerais et
    les grottes de la montagne, la pêche, les animaux à regarder.
    - **Fait (6a)** : couper, casser, cueillir et ramasser dans le monde (`js/engine/monde-recolte.js`,
