@@ -37,7 +37,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, BLOCS_CARTE } = F.C;
+  const { T, BLOCS_CARTE, SOLEIL } = F.C;
   const { reducedMotion } = F;
   const R = BLOCS_CARTE.toits;
   // la cheminée (px) ; la fumée : une bouffée toutes les `toutes` ms, qui monte de `monte` px en
@@ -329,12 +329,42 @@
       }
     },
 
-    // Les toits des hameaux dessinés, qui portent leur ombre (soleil.js sunPrisms).
+    // Les toits des hameaux dessinés, qui portent leur ombre (soleil.js sunPrisms). Comme à la ferme, un toit
+    // qui s'efface (le personnage est dedans) la garde.
     hameauxOmbres() {
       const out = [];
-      // (pas celui qui s'efface : le personnage est dedans)
-      for (const e of (this.hameauxVus || new Map()).values()) for (const t of e.toits) if (t.img.alpha > 0.5 && !t.img.brume) out.push(t);   // (ni sous le brouillard : brouillard.js)
+      for (const e of (this.hameauxVus || new Map()).values()) for (const t of e.toits) if (!t.img.brume) out.push(t);   // (pas sous le brouillard : brouillard.js)
       return out;
+    },
+
+    // Les cases des murs, fenêtres et portes des maisons des hameaux (SOLEIL.mursHameaux), dans les régions
+    // dessinées : [[x0, y0]…] (leur coin, px). Leur ombre est celle d'un volume de leur case, haut d'un
+    // étage (soleil.js sunPrisms), comme les murs de la ferme : pas celle de leurs images (vegetation.js),
+    // qui faisait un peigne de bandes. Gardées par région (son plan ne change pas).
+    hameauxMurs() {
+      const M = this.ctx.monde, V = this.veg, out = [];
+      const pl = M && V && V.planches.find((q) => q.cle === 'hameaux');
+      if (!pl || !this.regions) return out;
+      if (!pl.mursOmbre) pl.mursOmbre = pl.sortes.map((s) => SOLEIL.mursHameaux.test(s.nom));
+      for (const r of this.regions.values()) {
+        const reg = r.tex && M.region(r.rx, r.ry), im = reg && reg.hameau && reg.hameau.images;
+        if (!im) continue;
+        if (!r.mursOmbre || r.mursOmbre.reg !== reg) {
+          const vus = new Set(), cases = [];
+          for (let q = 0; q < im.length; q += 4) {
+            if (!pl.mursOmbre[im[q]]) continue;
+            const x0 = Math.floor(im[q + 1] / T) * T, y0 = Math.floor((im[q + 2] - 1) / T) * T, k = x0 + ',' + y0;
+            if (!vus.has(k)) { vus.add(k); cases.push([x0, y0]); }
+          }
+          r.mursOmbre = { reg, cases };
+        }
+        for (const c of r.mursOmbre.cases) out.push(c);
+      }
+      // (pas sous le brouillard, comme les images qu'il cache : brouillard.js brumeObjets)
+      const B = this.brume;
+      if (!B) return out;
+      const k = T * B.C, vu = ([x0, y0]) => { const cx = Math.floor((x0 + T / 2) / k), cy = Math.floor((y0 + T - 1) / k); return cx >= 0 && cy >= 0 && cx < B.L && cy < B.H && !!B.bits[cy * B.L + cx]; };
+      return out.filter(vu);
     },
 
     // Y a-t-il des maisons de hameau dessinées (leurs lumières) ?

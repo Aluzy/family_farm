@@ -609,7 +609,10 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        la région du hameau est dessinée et retiré avec elle (une clé de texture neuve à chaque fois : une
        texture retirée puis refaite sous la même clé plantait le rendu, de temps en temps), qui s'efface
        quand le personnage est dans la maison et à moitié quand il passe derrière, et porte son ombre au
-       soleil (`sunPrisms`) ; sa cheminée au-dessus
+       soleil (`sunPrisms`, même effacé, comme à la ferme). Les murs, fenêtres et portes des maisons
+       (`SOLEIL.mursHameaux`) portent l'ombre d'un volume de leur case, haut d'un étage, comme les murs de
+       la ferme (`hameauxMurs`), et non celle de leur image : les ombres en biais de chaque morceau de mur
+       faisaient un peigne de bandes ; sa cheminée au-dessus
        du foyer, d'où monte la fumée (pas avec « animations réduites ») ; la nuit, la vitre des fenêtres
        et le sol devant elles s'éclairent, le dedans aussi quand le toit s'efface (dans le voile, avec les
        lanternes : `stepFenetresHameaux`). Un appui sur le panneau dit le nom du hameau.

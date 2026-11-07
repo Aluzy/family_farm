@@ -540,7 +540,10 @@ const CULTURE_MONTE = 4;
   // px au-dessus de son bas ; sous tout ce qui est debout (`depth`). Le canevas couvre la vue et
   // `marge` px autour (la ferme générée est grande) ; une ombre porte jusqu'à `portee` px de son
   // pied.
-  const SOLEIL = { pas: 0.1, base: 2, depth: 0.06, marge: 96, portee: 200 };
+  // (mursHameaux : les images des hameaux qui sont des murs, des fenêtres ou des portes : leur ombre
+  // est celle d'un volume de leur case, comme les murs de la ferme, et non celle de leur dessin : soleil.js
+  // sunPrisms, hameaux.js hameauxMurs)
+  const SOLEIL = { pas: 0.1, base: 2, depth: 0.06, marge: 96, portee: 200, mursHameaux: /^(mur_|fenetre_|porte)/ };
 
   // Les touffes d'herbe au pied de ce qui est posé sur l'herbe (js/carte/ferme/herbes.js) : le
   // bas des murs (ceux de la ferme, et ceux des maisons des hameaux : `mursHameaux`), le pied des
