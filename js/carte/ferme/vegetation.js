@@ -52,7 +52,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, OCCLUDER_ALPHA } = F.C;
+  const { T, OCCLUDER_ALPHA, SOLEIL } = F.C;
   const { reducedMotion } = F;
   // les deux planches : la végétation (fiche 5b), les rochers (fiche 5c) ; leurs sortes (ctx.monde)
   const PLANCHES = [
@@ -229,8 +229,10 @@
         // (un ponton : sur l'eau, sous tout ce qui marche dessus ; il ne cache rien)
         const ponton = s.genre === 'ponton';
         const img = this.add.image(x, y, pl.cle, n).setOrigin(c.px / c.w, c.py / c.h).setDepth(ponton ? 0.3 : y);
-        // (pas d'ombre : les plantes hautes ; les falaises, dont la face regarde le soleil ; le ponton)
-        const o = { img, x: x - c.px, y: y - c.py, w: c.w, h: c.h, foot: ponton ? -Infinity : y, mask: c.mask, alpha: 1, ombre: s.genre !== 'haute' && s.genre !== 'paroi' && !ponton };
+        // (pas d'ombre : les plantes hautes ; les falaises, dont la face regarde le soleil ; le ponton ; les murs,
+        // fenêtres et portes des maisons des hameaux, dont l'ombre est un volume de leur case : hameaux.js hameauxMurs)
+        const murHameau = pl.cle === 'hameaux' && SOLEIL.mursHameaux.test(s.nom);
+        const o = { img, x: x - c.px, y: y - c.py, w: c.w, h: c.h, foot: ponton ? -Infinity : y, mask: c.mask, alpha: 1, ombre: s.genre !== 'haute' && s.genre !== 'paroi' && !ponton && !murHameau };
         if (penche) o.herbe = { img, fleurs: null, x, y, base: n, t: -1, dir: 1, inside: false };
         // (un arbre d'un jardin de hameau : la hache le dit, hameaux.js)
         if (pl.cle === 'hameaux' && s.genre === 'arbre') o.nomHameau = s.nom;

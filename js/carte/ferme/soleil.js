@@ -93,6 +93,12 @@
         const r = rect(e.x - T / 2, e.y - T, e.x + T / 2, e.y - SOLEIL.base), v = dy * (e.hauteur || 1);
         out.push({ base: r, sommets: r.map(([x, y]) => [x, y, v]) });
       }
+      // (les murs, fenêtres et portes des maisons des hameaux du grand monde : un volume de leur case, comme
+      // les murs de la ferme, haut d'un étage ; hameaux.js)
+      for (const [x0, y0] of this.hameauxMurs ? this.hameauxMurs() : []) {
+        const r = rect(x0, y0, x0 + T, y0 + T - SOLEIL.base);
+        out.push({ base: r, sommets: r.map(([x, y]) => [x, y, dy]) });
+      }
       // (et les toits des hameaux du grand monde : hameaux.js)
       for (const t of (this.toits || []).concat(this.hameauxOmbres ? this.hameauxOmbres() : [])) {
         if (!t.ombre) continue;
