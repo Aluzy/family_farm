@@ -255,6 +255,15 @@ ralenti 4 fois, sans processeur graphique : seules les comparaisons comptent), 8
 Ce qui reste près de l'étang est surtout le dessin de l'eau vivante (le shader, les reflets), fait ici par le
 processeur faute de processeur graphique ; à mesurer sur le téléphone (📏 Mesures › « Mesurer 30 s »).
 
+- **L'eau vivante refondue** (fiche 24, étapes 1 à 4, `js/carte/eau.js`) : une étendue n'est plus qu'un objet
+  de scène, son shader. Les vaguelettes glissent dans le shader (`fract((p + t·v) / 64)` sur une texture faite
+  une fois) : plus de `DynamicTexture` redessinée à chaque image. La rive et les reflets sont lus par le shader
+  (`uRive`, `uRefl`) : plus d'image de terre, plus d'image de reflets ni de filtre Displacement, plus de masque
+  `erase`. La texture des reflets n'est redessinée que si son empreinte (place, image, sens, opacité de chaque
+  objet reflété ; les ronds) a changé : zéro rendu hors-écran tant que personne ne passe au bord. Les
+  scintillements sont tirés d'un hachage dans le shader : plus de sprites en mode ADD. **À mesurer** près de
+  l'étang des automates et sur la côte (avant : 8,9 ips tout près).
+
 ## Les traces de pas (`js/carte/ferme/traces.js`)
 
 Qui marche (le personnage, sa famille, les habitants des hameaux, les invités, les autres joueurs) laisse
