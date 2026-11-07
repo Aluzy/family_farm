@@ -300,3 +300,9 @@ Mesuré (Chromium, écran de téléphone, 35 s de pluie dans un hameau) : 0,04 m
 95 % des images, 7 ms au pire (la première fois, quand les flaques paraissent). À 4 × de ralentissement, sur la
 lande : 0,16 ms en moyenne, 0,7 ms pour 95 % des images ; revoir les flaques quand la vue bouge prend ≈ 7 ms,
 une pointe à 27 ms quand elles paraissent.
+
+## Les brins d'herbe sous les pas (`js/carte/ferme/brins.js`)
+
+À chaque pas posé sur l'herbe (traces.js), deux brins légers sautent derrière le talon (un par fer du cheval).
+Une réserve de 30 images (16 en « économie ») ; mesuré dans un hameau (17 personnages), à 4 × de
+ralentissement : `stepBrins` 0,02 ms par image en moyenne, 0,1 ms pour 95 % des images, 1,3 ms au pire.
