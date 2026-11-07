@@ -284,3 +284,19 @@ Mesuré dans le même hameau (14 portes, 17 personnages), à 4 × de ralentissem
 0,16 ms par image en moyenne, 0,9 ms pour 95 % des images, 3,1 ms au pire. `stepTraces`, qui fait maintenant
 le relevé commun : 0,5 ms en moyenne, 3,5 ms pour 95 % des images, 8,8 ms au pire (une image par seconde ;
 d'une mesure à l'autre, ces pointes varient du simple au double).
+
+## Le sol mouillé et les flaques (`js/carte/ferme/flaques.js`)
+
+Sous la pluie, le sol fonce (un voile sur la vue, sous les planchers et l'eau) ; après 10 s de pluie, des
+flaques se forment sur la terre et les chemins, éparses (jamais deux à moins de 5 cases, ni alignées à moins
+de 10), avec des ronds de pluie. Pour le coût :
+- **Le sol des cases** près de la vue est lu d'un coup, un pixel par case (les morceaux du sol réduits au plus
+  proche, `solDesCases`), et non par `lireSol` (un grand rectangle, 10 à 17 ms d'une seule image) ;
+- **les cases possibles et leurs tirages** sont faits une fois dans deux tableaux, puis comparés ; revus quand la
+  vue a bougé de 4 cases ;
+- **les images des flaques** (une par flaque, sa forme dessinée une fois) sont faites deux par image au plus.
+
+Mesuré (Chromium, écran de téléphone, 35 s de pluie dans un hameau) : 0,04 ms par image en moyenne, 0,1 ms pour
+95 % des images, 7 ms au pire (la première fois, quand les flaques paraissent). À 4 × de ralentissement, sur la
+lande : 0,16 ms en moyenne, 0,7 ms pour 95 % des images ; revoir les flaques quand la vue bouge prend ≈ 7 ms,
+une pointe à 27 ms quand elles paraissent.
