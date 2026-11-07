@@ -591,6 +591,23 @@ test('arbre v2 : effets sur l\'énergie (usure, délestage, frigo, panneaux orie
   d.batteries[0].chargeMwh = kwh(1);
   tick(d, 1);
   assertEqual(d.eauMl, ml(1));
+  // En pause, elle ne repart qu'au-dessus de 15 % (la reprise) : à 12 %, elle attend encore ; au-dessus du
+  // seuil sans avoir été en pause, elle tourne
+  const e = farm({ pump: true });
+  toggleDevice(e, 'panneau-1');
+  grantTech(e, 'en_delestage');
+  e.batteries[0].chargeMwh = kwh(0.5);   // 8 %
+  tick(e, 1);
+  assertEqual([e.eauMl, e.flux.delestage], [0, true]);
+  e.batteries[0].chargeMwh = kwh(0.72);  // 12 %
+  tick(e, 1);
+  assertEqual([e.eauMl, e.flux.delestage], [0, true], 'entre le seuil et la reprise : encore en pause');
+  e.batteries[0].chargeMwh = kwh(0.96);  // 16 %
+  tick(e, 1);
+  assertEqual([e.eauMl, e.flux.delestage], [ml(1), false], 'au-dessus de la reprise : elle repart');
+  e.batteries[0].chargeMwh = kwh(0.72);  // 12 % : pas en pause avant, elle continue
+  tick(e, 1);
+  assertEqual([e.eauMl, e.flux.delestage], [ml(2), false]);
 });
 
 test('arbre v2 : entretien automatique et eau de pluie la nuit', () => {

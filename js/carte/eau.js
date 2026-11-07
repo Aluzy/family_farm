@@ -83,7 +83,9 @@
     // `largeur` (une part de l'écart), plus claires de `clair` ; le ressac (`ressac`) monte sur
     // le sable de `base` à `base + va` px, à `vitesse` rad/s, en une nappe `nappe` à `alpha`
     mer: { portee: 60, houle: { ecart: 9, vitesse: 0.18, largeur: 0.12, clair: 0.7 }, ressac: { base: 1.5, va: 6, vitesse: 0.7, alpha: 0.55, nappe: [0.55, 0.8, 0.9] } },
-    miroir: { portee: 40, haut: 160, ecrase: 0.9, teinte: 0x86a8c8, alpha: 0.42 },
+    // (`liste` ms : les images qui peuvent s'y refléter, celles près de l'étendue à `marge` px près, relevées
+    // de nouveau ; entre deux relevés, seules elles sont regardées : stepReflets)
+    miroir: { portee: 40, haut: 160, ecrase: 0.9, teinte: 0x86a8c8, alpha: 0.42, liste: 500, marge: 64 },
     ronds: { images: 6, vie: 1.1, alpha: 0.85, hasard: 0.35, saut: 14, poissons: 30, sautHaut: 10, sautMs: 520, rive: 6, pas: 0.45 },
   };
   const E = EAU;
@@ -927,8 +929,23 @@ void main() {
       };
       if (a.monde && a.mer && !v.ronds.length) { vide(); return; }
       v.refl.clear();
+      // (les images près de l'étendue, relevées toutes les R.liste ms parmi toutes celles de la scène : les
+      // passer toutes en revue à chaque image coûtait cher sur une grosse partie, plusieurs milliers)
+      const now = performance.now();
+      if (!v.a.mer && (!v.pres || now - v.presT >= R.liste)) {
+        const m = R.marge, pres = [];
+        for (const o of this.children.list) {
+          if (o.type !== 'Image' && o.type !== 'Sprite') continue;
+          const L = o.displayWidth, H = o.displayHeight, gauche = o.x - o.originX * L, pied = o.y + (1 - o.originY) * H;
+          if (pied < a.y - R.portee - m || pied > a.y + h + m || gauche > a.x + w + m || gauche + L < a.x - m) continue;
+          pres.push(o);
+        }
+        v.pres = pres;
+        v.presT = now;
+      }
       // (la mer, agitée par la houle, ne renvoie pas d'image nette : ni reflets, seulement les ronds)
-      for (const o of v.a.mer ? AUCUNE : this.children.list) {
+      for (const o of v.a.mer ? AUCUNE : v.pres) {
+        if (!o.active) continue;
         if (!o.visible || o.alpha < 0.3 || (o.type !== 'Image' && o.type !== 'Sprite') || o.depth < 1 || o.blendMode !== 0 || o === v.reflet) continue;
         const key = o.texture && o.texture.key;
         if (!key || key.startsWith('eau_') || key === '__DEFAULT' || key === '__MISSING') continue;

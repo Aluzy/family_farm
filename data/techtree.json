@@ -102,8 +102,8 @@
         "prix": 400,
         "ressources": { "lingot_fer": 3, "lingot_cuivre": 2 },
         "requiert": [{ "noeud": "en_entretien" }, { "batiment": "batterie", "niveau": 2 }],
-        "effet": { "delestage": { "seuil": 10 } },
-        "description": "Sous 10 % de charge, le Moulin, la Presse et la Pompe se mettent en pause pour garder l'électricité du réfrigérateur. Ils repartent seuls quand la charge remonte."
+        "effet": { "delestage": { "seuil": 10, "reprise": 15 } },
+        "description": "Sous 10 % de charge, le Moulin, la Presse et la Pompe se mettent en pause pour garder l'électricité du réfrigérateur. Ils repartent seuls quand la charge remonte au-dessus de 15 %."
       },
       "en_entretien_auto": {
         "branche": "energie",

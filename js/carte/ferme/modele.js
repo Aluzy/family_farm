@@ -18,6 +18,16 @@
 
     /* ---------- synchronisation avec le jeu ---------- */
 
+    // Seules les machines ont changé (js/farm-stage.js update : `quoi`, un Set de 'chaines', 'botteleuses',
+    // 'distributeurs') : leurs images, sans refaire le reste de la carte.
+    syncMachines(model, quoi) {
+      if (!this.ready) return;
+      this.rawModel = model;
+      if (quoi.has('botteleuses')) this.syncBotteleuses(model.botteleuses, model.botteVibre, model.fibres);
+      if (quoi.has('distributeurs')) this.syncDistributeurs(model.distributeurs, model.grainEnMain);
+      if (quoi.has('chaines')) this.syncChaines(model.chaines);
+    },
+
     sync(model, force) {
       if (!this.ready) return;
       // Le personnage compare ce modèle au précédent : une case qu'il n'a pas encore

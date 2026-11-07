@@ -171,7 +171,7 @@ flowchart LR
 | Palier | ID | Nœud | Fonction | Coût | Prérequis | Effet |
 |---|---|---|---|---|---|---|
 | 1 | `en_entretien` | 🔧 Entretien préventif | Productivité | 1 PT + 100 💰 | — | Panneaux, batteries et appareils s'usent 25 % moins vite. |
-| 3 | `en_delestage` | 🎛️ Délestage intelligent | Automatisation | 1 PT + 400 💰 | Entretien préventif + batterie niveau 2 | Sous 10 % de charge, le Moulin, la Presse et la Pompe se mettent en pause pour garder l'électricité du réfrigérateur. Ils repartent seuls quand la charge remonte. |
+| 3 | `en_delestage` | 🎛️ Délestage intelligent | Automatisation | 1 PT + 400 💰 | Entretien préventif + batterie niveau 2 | Sous 10 % de charge, le Moulin, la Presse et la Pompe se mettent en pause pour garder l'électricité du réfrigérateur. Ils repartent seuls quand la charge remonte au-dessus de 15 % (`reprise` : sans cet écart, ils s'arrêtaient et repartaient sans cesse autour du seuil). |
 | 3 | `en_entretien_auto` | 🛠️ Entretien automatique | Automatisation | 2 PT + 500 💰 | Entretien préventif | Chaque nuit, les appareils à 70 % d'usure ou plus sont entretenus automatiquement, au prix normal, si les pièces suffisent. |
 | 4 | `en_frigo_eco` | 🧊 Réfrigérateur basse consommation | Productivité | 1 PT + 600 💰 | Délestage intelligent + Réfrigérateur construit | Le réfrigérateur consomme 30 % d'électricité en moins. |
 | 4 | `en_hiver` | ☀️ Panneaux orientables | Productivité | 2 PT + 800 💰 | Entretien automatique | Les panneaux produisent 10 % de plus (version 1.6 : plus d'hiver). |

@@ -809,8 +809,10 @@
       const v = this.cameras.main.worldView;
       for (const a of this.animAreas || []) {
         if (!a.stale) for (const n of a.groups) if (changed.has(n)) { a.stale = true; break; }
-        // (un bloc d'eau du monde sous l'eau vivante : le shader bouge, ses tuiles ne sont pas repeintes)
-        if (a.monde && a.vive) continue;
+        // (une étendue sous l'eau vivante, du monde ou un étang de la ferme : le shader la fait onduler, ses
+        // tuiles ne sont pas repeintes ; repeindre un étang refaisait toute sa rive, eau.js eauRive, à chaque
+        // image de ses tuiles : jusqu'à 70 % du temps près d'un grand étang, sur une grosse partie)
+        if (a.vive) continue;
         if (!a.stale || a.x > v.right || a.y > v.bottom || a.x + a.tex.width < v.x || a.y + a.tex.height < v.y) continue;
         a.stale = false;
         this.paintAnimArea(a);
