@@ -289,6 +289,9 @@
       const key = p.culture ? p.culture + ':' + p.phase : '';
       if (key !== e.key) {
         if (e.crop) { if (e.tween) e.tween.stop(); e.crop.destroy(); e.crop = null; e.tween = null; }
+        // (la même culture, un stade plus loin : elle a poussé, son éclat vert plus bas : eclats.js)
+        const avant = e.key ? e.key.split(':') : null;
+        const pousse = !!avant && !!p.culture && avant[0] === p.culture && Number(p.phase) > Number(avant[1]);
         e.key = key;
         if (p.culture) {
           const framed = this.has('crops') && this.ctx.crops[p.culture];
@@ -302,6 +305,7 @@
           // Petite apparition : la case « change » sous les yeux du joueur.
           e.crop.setAlpha(0);
           this.tweens.add({ targets: e.crop, alpha: 1, duration: 250 });
+          if (pousse && this.eclatPousse) this.eclatPousse(e.crop, x, y + T / 2);
         }
       }
       if (e.crop) e.crop.setPosition(x, e.crop.type === 'Text' ? y + 6 : y + T / 2 - this.cultureMonte(p.culture));
