@@ -165,7 +165,7 @@ export const GAME_ACTIONS = {
 // part, jamais dans le classement des actions.
 export const INTERFACE_ACTIONS = new Set([
   'close-modal', 'close-screen', 'switch-tab', 'open-screen', 'open-options', 'open-about', 'open-levels', 'levels-all', 'open-compta',
-  'open-feedback', 'send-feedback', 'help', 'tuto-next', 'plant-open', 'semis-open',
+  'open-feedback', 'send-feedback', 'help', 'chaine-mode-emploi', 'tuto-next', 'plant-open', 'semis-open',
   'cancel-queued', 'stop-recipe', 'recette-choisir', 'recette-qte', 'recettes-deplier', 'ack-chapter',
   'frigo-tiroir', 'frigo-choisir', 'frigo-qte', // la fenêtre du frigo : le tiroir « Ranger au frais », l'aliment, la quantité
   'scene-suite', 'scene-fermer', 'carnet-open', // le récit : la réplique suivante d'une scène, la fermer ; ouvrir le carnet

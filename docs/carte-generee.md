@@ -124,6 +124,16 @@ la chaîne). La suite des outils fait la recette (`CHAINES.RECETTES`, l'ordre co
 - **Les anciennes parties** (migration 66 → 67) : une Presse construite rend son prix
   (`PRESSE_RENDU`) et un bloc de presse ; ce qui cuisait et se fait désormais sur une chaîne est
   fini tout de suite. Le joueur automatique fait son huile sans carte (`chainesSansCarte`).
+- **Où** : dehors, dans la maison ou dans une pièce à elle (ses blocs n'ont pas de genre de pièce) ;
+  pas dans un bâtiment (la Serre, le Poulailler, l'Étable, le Silo, le Moulin : `refusGenre`). Le
+  tas tombe sur la case du bout, sous le toit : on le voit et le ramasse une fois entré.
+- **Le mode d'emploi et le diagnostic** (`js/ui/chaines-aide.js`) : la fiche « Assembler une
+  chaîne » (la rangée dessinée, les règles, chaque recette : ses outils → son produit, grisée tant
+  qu'elle est à débloquer) s'ouvre du bouton de l'onglet Machines de l'Atelier et de la fiche de
+  À propos. Un appui sur une chaîne qui n'est pas prête, ou sur une machine posée seule (le
+  réservoir, un outil, sans entonnoir devant), ouvre « Chaîne de production » : la rangée telle
+  qu'elle est posée (un « ? » rouge où manque un bloc), puis chaque règle tenue ou non
+  (`diagnosticChaine`).
 
 ### Le distributeur de grain : le blé des poules
 

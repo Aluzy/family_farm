@@ -3701,3 +3701,39 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .titre-info { font-size: 0.8rem; opacity: 0.8; white-space: normal; }
 .titre-question { margin: 0; text-align: center; }
 .titre-erreur { position: absolute; left: 50%; bottom: 2%; transform: translateX(-50%); margin: 0; padding: 4px 10px; border-radius: 6px; background: rgba(0, 0, 0, 0.6); color: #fff; }
+
+/* Les chaînes de production : le mode d'emploi illustré et le diagnostic (js/ui/chaines-aide.js). La rangée : les
+   dessins des blocs de la carte, côte à côte sur un bout d'herbe ; la place d'un bloc qui manque : un « ? » rouge. */
+.chaine-rangee {
+  display: flex; justify-content: center; gap: 4px; margin: 8px 0; padding: 8px 4px 4px;
+  border-radius: 8px; background: #cfe3a8; overflow-x: auto;
+}
+.chaine-case { display: flex; flex-direction: column; align-items: center; flex: 1 1 0; min-width: 0; max-width: 70px; }
+.chaine-case small { font-size: 9px !important; line-height: 1.1; text-align: center; white-space: nowrap; color: var(--color-ink); }
+.chaine-case.bout small { white-space: normal; }
+.chaine-dessin .build-slot-dessin { width: 32px; height: 48px; }
+.chaine-vide {
+  display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin: 16px 0 2px;
+  border: 2px dashed var(--color-earth); border-radius: 6px; color: var(--color-earth); font-size: 18px !important;
+}
+.chaine-case.manque .chaine-vide { border-color: var(--danger); color: var(--danger); background: #fbe1dc; }
+.chaine-regles { margin: 6px 0; padding-left: 22px; }
+.chaine-regles li { margin: 2px 0; }
+.chaine-astuce { margin: 8px 0; padding: 6px 8px; border-radius: 8px; background: var(--bg-header); }
+.chaine-recettes { list-style: none; margin: 0 0 10px; padding: 0; }
+.chaine-recette { display: flex; align-items: center; gap: 4px; padding: 4px 2px; border-bottom: 1px solid var(--border); }
+.chaine-recette.verrou { opacity: 0.45; }
+.chaine-outils { display: flex; flex: 0 0 auto; }
+.chaine-mini .build-slot-dessin { width: 16px; height: 24px; background-size: auto 24px; background-position: calc(var(--f) * -16px) 0; }
+.chaine-fleche { margin: 0 2px; }
+.chaine-produit { font-size: 22px !important; }
+.chaine-recette-txt { display: flex; flex-direction: column; min-width: 0; }
+.chaine-recette-txt small { font-size: 13px !important; color: var(--text-muted); }
+.chaine-cadenas { margin-left: auto; }
+.chaine-diag { list-style: none; margin: 6px 0 10px; padding: 0; }
+.chaine-diag li { margin: 4px 0; padding: 4px 8px; border-radius: 6px; }
+.chaine-diag li.ok { background: #e5f0dc; }
+.chaine-diag li.ko { background: #fbe1dc; }
+.chaine-diag li.info { background: var(--bg-header); }
+.chaine-boutons { display: flex; gap: 8px; flex-wrap: wrap; }
+.chaine-aide-btn { margin-top: 8px; width: 100%; }
