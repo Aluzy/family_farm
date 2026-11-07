@@ -374,6 +374,7 @@
         for (const layer of raw.layers) {
           if (layer.type === 'tilelayer' && layer.visible !== false && Array.isArray(layer.data)) this.drawLayer(ctx, raw, layer, P.set, P.img, cells);
         }
+        this.peintGravier(ctx, cells, null);   // (les gravillons, les creux du chemin : gravier.js)
       }
       ctx.restore();
     },
@@ -440,7 +441,9 @@
           }
         }
       }
-      // ses petites plantes, sur le sol (vegetation.js) : toutes, ou celles des cases repeintes
+      // le décor de ses chemins (gravier.js), puis ses petites plantes, sur le sol (vegetation.js) : toutes, ou
+      // celles des cases repeintes
+      this.peintGravier(ctx, cells, reg);
       this.peintVegetation(ctx, reg, partie ? new Set(cells) : null);
       if (partie) ctx.restore();
     },

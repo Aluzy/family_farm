@@ -116,6 +116,8 @@
       if (!sol) return;
       // (sur l'herbe, quelques brins sautent sous le pas : brins.js)
       if (sol === 'herbe' && this.brinsPas) this.brinsPas(x, y, vue, forme);
+      // (sur un chemin, des gravillons et un peu de poussière : gravier.js)
+      else if (sol === 'sol' && this.gravillonsPas && this.cheminSous(x, y)) this.gravillonsPas(x, y, vue, forme);
       const R = this.tracesReserve || (this.tracesReserve = []);
       const max = K.reglages && K.reglages().demiDensite ? TRACES.MAX_ECO : TRACES.MAX;
       let t;

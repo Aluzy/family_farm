@@ -318,3 +318,15 @@ Sous chaque ruche pleine sur l'écran, une goutte se forme, tombe et s'écrase, 
 chaque fois, jamais à moins de 0,8 s de la prochaine d'une autre ruche). Les ruches pleines sont relevées dans
 le même passage que qui marche et les portes (traces.js) ; une Graphics par ruche, redessinée seulement
 pendant sa goutte.
+
+## Le chemin : son décor et ses gravillons (`js/carte/ferme/gravier.js`)
+
+Le décor (des gravillons, de petits creux, parfois une touffe d'herbe ou une pierre plate) est peint dans le
+sol, avec lui (sol.js : peindreSol, paintMonde) : rien ne tourne ensuite. Les cases de chemin sont reconnues
+par leurs tuiles, sans lire le sol peint. Mesuré sur 20 morceaux du sol (256 px) : 0,045 ms en moyenne par
+morceau (0,2 ms au plus), pour 1,1 ms de peinture du morceau.
+
+Sous les pas sur un chemin, trois gravillons sautent et un peu de poussière s'écarte (deux gravillons pour un
+fer du cheval). Des réserves de 36 gravillons et 42 grains de poussière (la moitié en « économie ») ;
+mesuré en marchant sur le chemin (une seule personne, ralenti) : `stepGravillons` 0,015 ms par image en
+moyenne, 0,1 ms pour 95 % des images, 0,2 ms au pire.
