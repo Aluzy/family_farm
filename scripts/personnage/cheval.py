@@ -390,6 +390,31 @@ TETE_BROUTE = {(39, 30): NOIR, (38, 30): BLANC, (40, 31): BLANC, (41, 31): BLANC
                (41, 33): BLANC}
 
 
+# De dos, les temps 1 et 2 du pas (cases 11 et 12) du redessin sont plus étroits que les temps 0 et 3 (cases 10 et 13) :
+# la croupe de 14 px au lieu de 18, la tête de 8 au lieu de 10, les jambes de 10 au lieu de 12, le tout 2 px plus à
+# gauche ; le cheval qui s'en va changeait de largeur à chaque pas. Ces deux cases sont élargies au gabarit des deux
+# autres en doublant ces colonnes (de la case étroite, de gauche à droite) : le bord gauche du corps, la jambe et la
+# tête à gauche, puis à droite, le bord droit du corps. Hors du corps, les colonnes des bords sont transparentes : la
+# tête et les jambes ne gagnent que les deux du milieu. La selle du cheval sellé (calquée sur le gabarit large)
+# retombe alors sur la croupe.
+DOS_ETROITS, DOS_COLONNES = (11, 12), (16, 19, 24, 27)
+
+
+def dos_elargi(case):
+    """Une case de dos étroite (W × H), élargie au gabarit des cases de dos larges (DOS_COLONNES doublées)."""
+    p = case.load()
+    out = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    q = out.load()
+    for y in range(H):
+        xo = 0
+        for x in range(W):
+            for _ in range(2 if x in DOS_COLONNES else 1):
+                if xo < W:
+                    q[xo, y] = p[x, y]
+                xo += 1
+    return out
+
+
 def planche_seul():
     """Le cheval seul : la planche du joueur, les têtes reportées (voir plus haut). Sans elle, celle d'avant."""
     if not os.path.exists(REDESSIN):
@@ -410,6 +435,9 @@ def planche_seul():
         xs = [x for x in range(30, W) if po[b + x, y][3]]
         if xs:
             po[b + max(xs), y] = NOIR + (255,)
+    for c in DOS_ETROITS:
+        large = dos_elargi(out.crop((c * W, 0, c * W + W, H)))
+        out.paste(large, (c * W, 0))
     return out
 
 
