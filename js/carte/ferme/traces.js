@@ -187,15 +187,20 @@
     // assis_), le cheval monté (la couche de dessous de cheval_monte : ses cases paires).
     releveMarcheurs(time) {
       this.tracesReleve = time;
-      const out = [], portes = [], types = this.imagesDePortes ? this.imagesDePortes() : null;
-      // (le même passage relève les portes : portes.js)
+      const out = [], portes = [], ruches = [], types = this.imagesDePortes ? this.imagesDePortes() : null;
+      const B = F.C.BLOCS_CARTE, pleine = B && B.frames ? B.frames.ruche_pleine : undefined;
+      // (le même passage relève les portes, portes.js, et les ruches pleines, miel.js)
       for (const o of this.children.list) {
         if (!o.frame || !o.texture) continue;
         if (o.personnage ? o.type === 'Sprite' : (o.texture.key === 'fermier' && o.toujours) || (o.texture.key === 'cheval_monte' && Number(o.frame.name) % 2 === 0)) out.push(o);
         else if (types && o.type === 'Image' && types.has(o.texture.key + ':' + o.frame.name)) portes.push(o);
+        else if (pleine !== undefined && o.type === 'Image' && o.texture.key === B.key && o.frame.name === pleine) ruches.push(o);
       }
       this.tracesMarcheurs = out;
       this.portesVues = portes;
+      // (une ruche qui n'est plus pleine : sa goutte retirée)
+      for (const r of this.ruchesVues || []) if (!ruches.includes(r) && r.mielEtat && r.mielEtat.g) { r.mielEtat.g.destroy(); r.mielEtat = null; }
+      this.ruchesVues = ruches;
     },
   });
 })(window);

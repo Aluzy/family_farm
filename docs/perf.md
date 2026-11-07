@@ -311,3 +311,10 @@ ralentissement : `stepBrins` 0,02 ms par image en moyenne, 0,1 ms pour 95 % des 
 
 Quand le personnage sème, un anneau de lumière verte s'élargit sur la terre et trois étincelles montent (0,9 s).
 Deux Graphics par éclat, défaites à la fin : rien ne reste, rien ne tourne entre deux semis.
+
+## La goutte de miel des ruches pleines (`js/carte/ferme/miel.js`)
+
+Sous chaque ruche pleine sur l'écran, une goutte se forme, tombe et s'écrase, toutes les 4 à 9 s (tirées à
+chaque fois, jamais à moins de 0,8 s de la prochaine d'une autre ruche). Les ruches pleines sont relevées dans
+le même passage que qui marche et les portes (traces.js) ; une Graphics par ruche, redessinée seulement
+pendant sa goutte.
