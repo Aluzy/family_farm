@@ -270,3 +270,17 @@ ses pas ; le cheval monté, ses fers en U. Pour que l'effet coûte peu :
 Mesuré dans un hameau (17 personnages suivis, la réserve pleine), Chromium, écran de téléphone, sur 15 s : 
 `stepTraces` prend 0,05 ms par image en moyenne (95 % des images : 0,2 ms) ; à 4 × de ralentissement,
 0,4 ms en moyenne, 1,7 ms pour 95 % des images, 6 ms au pire (le relevé, une fois par seconde).
+
+## Les portes qui s'ouvrent (`js/carte/ferme/portes.js`)
+
+Les portes des murs horizontaux (la ferme, les hameaux) s'ouvrent quand quelqu'un passe. Leurs images
+ouvertes (entrouverte, ouverte) sont faites une fois par image de porte fermée, d'après elle ; une porte
+ouverte est une image posée par-dessus la fermée. Les portes de la scène sont relevées une fois par seconde,
+dans le même passage sur les images de la scène que qui marche (traces.js, `releveMarcheurs`) : deux passages
+séparés faisaient des pointes de 8 à 9 ms à 4 × de ralentissement. À chaque image, chaque porte relevée ne
+regarde que les personnages suivis.
+
+Mesuré dans le même hameau (14 portes, 17 personnages), à 4 × de ralentissement, sur 15 s : `stepPortes`
+0,16 ms par image en moyenne, 0,9 ms pour 95 % des images, 3,1 ms au pire. `stepTraces`, qui fait maintenant
+le relevé commun : 0,5 ms en moyenne, 3,5 ms pour 95 % des images, 8,8 ms au pire (une image par seconde ;
+d'une mesure à l'autre, ces pointes varient du simple au double).

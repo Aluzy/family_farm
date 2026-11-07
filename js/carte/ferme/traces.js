@@ -185,12 +185,15 @@
     // assis_), le cheval monté (la couche de dessous de cheval_monte : ses cases paires).
     releveMarcheurs(time) {
       this.tracesReleve = time;
-      const out = [];
+      const out = [], portes = [], types = this.imagesDePortes ? this.imagesDePortes() : null;
+      // (le même passage relève les portes : portes.js)
       for (const o of this.children.list) {
         if (!o.frame || !o.texture) continue;
         if (o.personnage ? o.type === 'Sprite' : (o.texture.key === 'fermier' && o.toujours) || (o.texture.key === 'cheval_monte' && Number(o.frame.name) % 2 === 0)) out.push(o);
+        else if (types && o.type === 'Image' && types.has(o.texture.key + ':' + o.frame.name)) portes.push(o);
       }
       this.tracesMarcheurs = out;
+      this.portesVues = portes;
     },
   });
 })(window);
