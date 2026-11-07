@@ -231,6 +231,7 @@
     function frame(name) {
       const k = F[name];
       if (k !== undefined) s.setFrame(k);
+      s.caseNom = name;   // (le nom de sa case : assis_<vue>_k en selle ; les traces de pas, js/carte/ferme/traces.js)
     }
     // le cheval (js/carte/cheval.js) : dehors, quand il marche ou attend, il y est assis et va
     // plus vite (ctx.cheval : le modèle dit qu'il est en selle) ; pendant un geste, dans un
