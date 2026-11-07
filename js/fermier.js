@@ -750,9 +750,12 @@
 
     // Il arrive d'une autre carte : il apparaît en (tx, ty) (la case
     // libre la plus proche) et reste là, au lieu de sortir de la maison. `porte` ({ x, y }) : il
-    // sort d'une porte (la mine) : il y apparaît, s'éclaire et descend jusqu'en (tx, ty).
-    function arrive(tx, ty, porte) {
-      const spot = nearestFree(Math.max(0, Math.min(world.w - 1, tx)), Math.max(1, Math.min(world.h - 1, ty)));
+    // sort d'une porte (la mine) : il y apparaît, s'éclaire et descend jusqu'en (tx, ty). `exact` : sans
+    // case libre autour (la région du grand monde pas encore faite : tout y semble fermé), en (tx, ty)
+    // même (la partie reprise : il y était ; js/carte/ferme/passages.js le vérifie quand elle arrive).
+    function arrive(tx, ty, porte, exact) {
+      const cx = Math.max(0, Math.min(world.w - 1, tx)), cy = Math.max(1, Math.min(world.h - 1, ty));
+      const spot = nearestFree(cx, cy) || (exact ? { x: cx, y: cy } : null);
       if (!spot) return null;
       passe = false;
       job = null;
@@ -1161,7 +1164,8 @@
       goTo,
       // Au doigt : il marche dans la direction { x, y } ; null : il s'arrête.
       steer: steerTo,
-      // Il arrive d'une autre carte, en (x, y) (sorti d'une porte : arrive(x, y, porte)).
+      // Il arrive d'une autre carte, en (x, y) (sorti d'une porte : arrive(x, y, porte) ; en (x, y) même,
+      // sans case libre autour : arrive(x, y, null, true)).
       arrive,
       // Il entre par une porte (la mine) : entre(devant, porte, done).
       entre,
