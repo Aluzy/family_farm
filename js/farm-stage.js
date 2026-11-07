@@ -628,6 +628,7 @@
         this.stepFaune(time, delta);            // (les bêtes du grand monde : faune-monde.js)
         this.stepTraces(time);                  // (les traces de pas : traces.js)
         this.stepPortes(time, dt / 1000);       // (les portes qui s'ouvrent quand on passe : portes.js)
+        this.stepFlaques(time, dt / 1000);      // (le sol mouillé et les flaques sous la pluie : flaques.js)
         this.stepTallGrass(delta);
         this.stepShards(delta);
         this.stepSprinklers();
