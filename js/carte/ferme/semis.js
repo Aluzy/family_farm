@@ -56,7 +56,11 @@
       };
       const coup = () => {
         const ok = this.ctx.bridge.semer(c, culture, groupe);
-        if (ok) K.vibre('ramasse');
+        if (ok) {
+          K.vibre('ramasse');
+          // (la graine semée : son éclat de lumière verte, eclats.js)
+          if (this.eclatSemis) this.eclatSemis(x, y + T / 2);
+        }
         return ok;
       };
       this.geste({

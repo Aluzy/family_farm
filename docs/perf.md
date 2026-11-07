@@ -306,3 +306,8 @@ une pointe à 27 ms quand elles paraissent.
 À chaque pas posé sur l'herbe (traces.js), deux brins légers sautent derrière le talon (un par fer du cheval).
 Une réserve de 30 images (16 en « économie ») ; mesuré dans un hameau (17 personnages), à 4 × de
 ralentissement : `stepBrins` 0,02 ms par image en moyenne, 0,1 ms pour 95 % des images, 1,3 ms au pire.
+
+## L'éclat d'une graine semée (`js/carte/ferme/eclats.js`)
+
+Quand le personnage sème, un anneau de lumière verte s'élargit sur la terre et trois étincelles montent (0,9 s).
+Deux Graphics par éclat, défaites à la fin : rien ne reste, rien ne tourne entre deux semis.
