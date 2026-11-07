@@ -88,12 +88,16 @@ export const CONSUMERS = [
 ];
 
 // Arbre v2 (Délestage intelligent) : sous le seuil de charge totale, la pompe,
-// le Moulin et la Presse se mettent en pause pour garder le froid du frigo.
+// le Moulin et la Presse se mettent en pause pour garder le froid du frigo. Ils ne repartent qu'au-dessus
+// de `reprise` % (state.flux.delestage : en pause au début de ce pas, flowStep) : sans cet écart, une
+// batterie qui oscillait autour du seuil (le panneau la remonte, une chaîne la vide) les arrêtait et les
+// relançait plusieurs fois par seconde.
 export function loadShedding(state) {
   const d = techFlag(state, 'delestage');
   if (!d) return false;
   const cap = state.batteries.reduce((t, b) => (b.allume && !isBroken(b) ? t + batteryCapacity(b) : t), 0);
-  return cap > 0 && availableEnergy(state) * 100 < cap * d.seuil;
+  const seuil = state.flux && state.flux.delestage && d.reprise > d.seuil ? d.reprise : d.seuil;
+  return cap > 0 && availableEnergy(state) * 100 < cap * seuil;
 }
 
 // La pompe remplit le réservoir si elle est allumée, en état, et que le
@@ -191,7 +195,9 @@ function flowStep(state, dtMs) {
   state.flux.direct = storeEnergy(state, produced);
   state.jour.produite += produced;
 
-  // c. consommation : chaque consommateur tire sur ce reste, puis sur les batteries
+  // c. consommation : chaque consommateur tire sur ce reste, puis sur les batteries (le délestage, en pause
+  // ou non, décidé une fois pour ce pas : loadShedding)
+  state.flux.delestage = loadShedding(state);
   for (const c of CONSUMERS) c.run(state, dtMs);
   const lost = Math.max(0, state.flux.direct);
   state.flux.direct = 0;

@@ -519,6 +519,7 @@
     cheval: { cri: 'cheval', plus: ['ebrouement', 25, 60] },
   };
   const SALUT_CASES = 7, ENCLOS_PORTEE = 14;
+  const GRENOUILLES = 10;   // (cases : les grenouilles d'une mare s'entendent à moins de 10 cases, la nuit)
   const CRI = { aigle: ['aigle', 1], mouette: ['aigle', 1.45], cygne: ['cygne', 1], canard: ['cygne', 1.35], ecureuil: ['ecureuil', 1],
     marmotte: ['marmotte', 1], dauphin: ['dauphin', 1], bouquetin: ['bouquetin', 1], lievre: ['lievre', 1], lapin: ['lievre', 1.15],
     chevreuil: ['lievre', 0.8], perdrix: ['oiseau', 0.8] };
@@ -600,14 +601,27 @@
 
       // les mares et étangs de la ferme (cases d'eau ; liste faite une fois) : pas de bruit d'eau,
       // seulement les grenouilles la nuit, de près
-      const eaux = FS.waters ? FS.waters() : null;
+      // (rangées dans une grille de GRENOUILLES cases de côté : elles ne chantent qu'à moins de GRENOUILLES
+      // cases, seuls les 9 carrés autour du personnage sont regardés, et non toute l'eau, 4 fois par seconde)
+      const eaux = FS.waters ? FS.waters() : null, G = GRENOUILLES * T;
       if (eaux && eaux.size !== etat.eauxN) {
         etat.eauxN = eaux.size;
-        etat.eaux = [];
-        for (const w of eaux.values()) for (const k of w.cells) { const [x, y] = k.split(',').map(Number); etat.eaux.push({ x: x + T / 2, y: y + T / 2 }); }
+        etat.eaux = new Map();
+        for (const w of eaux.values()) {
+          for (const k of w.cells) {
+            const [x, y] = k.split(',').map(Number), o = { x: x + T / 2, y: y + T / 2 }, g = Math.floor(o.x / G) + ',' + Math.floor(o.y / G);
+            if (!etat.eaux.has(g)) etat.eaux.set(g, []);
+            etat.eaux.get(g).push(o);
+          }
+        }
       }
-      const pe = etat.eaux && etat.eaux.length ? proche(etat.eaux, p) : null;
-      if (pe && pe.d < 10 && nuit) boucle('n:grenouilles', 'grenouilles', (1 - pe.d / 10) * etouffe, 3);
+      let pe = null;
+      if (etat.eaux && etat.eaux.size) {
+        const gx = Math.floor(p.x / G), gy = Math.floor(p.y / G), pres = [];
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const l = etat.eaux.get((gx + dx) + ',' + (gy + dy)); if (l) for (const o of l) pres.push(o); }
+        pe = pres.length ? proche(pres, p) : null;
+      }
+      if (pe && pe.d < GRENOUILLES && nuit) boucle('n:grenouilles', 'grenouilles', (1 - pe.d / GRENOUILLES) * etouffe, 3);
 
       // les hameaux : leurs bruits de travail, le jour
       const toitsH = [];

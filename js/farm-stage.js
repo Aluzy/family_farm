@@ -1365,13 +1365,35 @@
     return n === 0;
   }
 
+  // Les champs du modèle qui ne concernent que les machines (leur synchronisation à elles : syncMachines,
+  // js/carte/ferme/modele.js) : quand seuls eux changent (une chaîne qui tourne, une botteleuse qui se remplit),
+  // la carte ne refait pas tout (les blocs, les ombres du soleil…) ; une chaîne au travail changeait le modèle
+  // plusieurs fois par seconde.
+  const MACHINES = { chaines: 'chaines', botteleuses: 'botteleuses', fibres: 'botteleuses', botteVibre: 'botteleuses', distributeurs: 'distributeurs', grainEnMain: 'distributeurs' };
+  const aLui = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  // Ce qui change du modèle `p` (le précédent) au modèle `m` : null (rien), un Set des machines à refaire
+  // (seulement elles), ou true (autre chose : toute la carte).
+  function changements(m, p) {
+    let quoi = null;
+    for (const k in m) {
+      if (!aLui(m, k) || (aLui(p, k) && pareil(m[k], p[k]))) continue;
+      if (!MACHINES[k] || !aLui(p, k)) return true;
+      (quoi || (quoi = new Set())).add(MACHINES[k]);
+    }
+    for (const k in p) if (aLui(p, k) && !aLui(m, k)) return true;
+    return quoi;
+  }
+
   function update(model) {
     ctx.lastModel = model;
     if (!mounted || !ctx.visible) return;
-    if (lastModel && pareil(model, lastModel)) return;
+    const quoi = lastModel ? changements(model, lastModel) : true;
+    if (!quoi) return;
     lastModel = model;
     const s = getScene();
-    if (s && s.ready) s.sync(model);
+    if (!s || !s.ready) return;
+    if (quoi === true || !s.syncMachines) s.sync(model);
+    else s.syncMachines(model, quoi);
   }
 
   function show() {

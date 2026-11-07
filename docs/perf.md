@@ -220,3 +220,37 @@ morceaux : sur un téléphone, chaque lecture rapatrie le canevas de la mémoire
 ne lit que MORCEAUX_VERIFIES morceaux (2), à tour de rôle (le navigateur les vide tous à la fois : deux
 suffisent à le voir) ; au retour de la page au premier plan (`visibilitychange`), là où le vidage arrive,
 tous sont vérifiés à l'image suivante.
+
+## Près des automates, sur la partie du jour 75 (un étang, les chaînes, le délestage)
+
+Le joueur trouvait le jeu lent en s'approchant de ses automates (trois chaînes de production, une botteleuse,
+le distributeur ; 696 blocs). Mesuré sur sa partie, dans Chromium (écran de téléphone 393 × 873, processeur
+ralenti 4 fois, sans processeur graphique : seules les comparaisons comptent), 8 s par situation :
+
+| Images par seconde | Loin (40 cases) | En marchant vers eux | Tout près |
+|---|---|---|---|
+| Avant | 15,2 | 13,2 | **3,8** |
+| Après | 16,8 | 14,1 | **8,9** |
+
+- **L'étang au sud des automates** (341 cases, sous l'eau vivante) était repeint en entier, sa rive recalculée
+  (`eauRive`), à chaque image de ses tuiles animées : 4,2 s de calcul sur 8 s, dès que son bord entrait dans la
+  vue. Comme l'eau du grand monde, un étang sous l'eau vivante n'est plus repeint (`stepTileAnims`,
+  js/carte/ferme/sol.js) : le shader le fait onduler, ses tuiles ne changent plus d'image (sur un même coin
+  d'étang, 519 pixels bougent en 0,4 s au lieu de 1 302).
+- **Les reflets** (`stepReflets`, js/carte/eau.js) passaient en revue toutes les images de la scène (≈ 4 000) à
+  chaque image : les images près de l'étendue sont relevées toutes les `miroir.liste` ms (500), à `miroir.marge` px
+  près (64) ; 750 → 324 ms sur 8 s.
+- **Les grenouilles** (js/son.js, 4 fois par seconde) cherchaient l'eau la plus proche dans toute l'eau
+  chargée : elle est rangée dans une grille de 10 cases, seuls les 9 carrés autour du personnage sont regardés
+  (≈ 290 ms sur 8 s → rien de mesurable).
+- **Les chaînes qui tournent** (mesuré sur une ferme d'essai : la ferme construite et 8 chaînes avec réservoir)
+  changeaient le modèle de la carte plusieurs fois par seconde, et toute la carte se resynchronisait
+  (les blocs, les ombres du soleil) : quand seules les machines changent (`chaines`, `botteleuses`,
+  `distributeurs`), elles seules sont refaites (`syncMachines`, js/carte/ferme/modele.js ; js/farm-stage.js
+  `changements`). En 30 s : ≈ 63 → 6 synchronisations complètes.
+- **Le délestage** arrêtait et relançait les machines plusieurs fois par seconde quand la batterie oscillait
+  autour de 10 % (le panneau la remonte, une chaîne la vide) : en pause, elles ne repartent qu'au-dessus de
+  15 % (`delestage.reprise`, data/techtree.json ; `state.flux.delestage`, décidé une fois par pas).
+
+Ce qui reste près de l'étang est surtout le dessin de l'eau vivante (le shader, les reflets), fait ici par le
+processeur faute de processeur graphique ; à mesurer sur le téléphone (📏 Mesures › « Mesurer 30 s »).
