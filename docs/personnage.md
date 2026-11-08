@@ -37,7 +37,13 @@ du bas compris).
 - `scripts/personnage/chibi.py` en tire les planches (`assets/personnages/perso_XX.png`,
   `enfant_XX.png`, et les planches par défaut `assets/fermiere.png` et `fermier.png`), avec les
   cases, la taille et les positions de mains et d'outils de `frames()` (`fermier.py`) : debout,
-  le modèle tel quel ; la marche lève une jambe ou les fait passer l'une devant l'autre ; avec
+  le modèle tel quel ; la marche lève une jambe ou les fait passer l'une devant l'autre, et ses
+  cheveux bougent « au vent » (`chibi.meches`) : aux images du passage (`marche_<vue>_1` et `_3`,
+  `panier_` aussi), les mèches (les cheveux à partir de la rangée 5 du modèle) s'étirent d'un pixel vers
+  le bas, traînent en arrière de profil (d'un pixel, de deux pour les pointes), s'écartent d'un pixel du
+  côté du pas de face et de dos ; jamais dans la zone du visage (le calque des expressions s'y pose
+  tel quel). Les cheveux courts ne bougent presque pas. `couches.py` et l'assembleur du jeu
+  (`js/carte/planches.js`) font de même, au pixel près ; avec
   un outil, les bras du modèle sont redessinés vers les mains. Un enfant est raccourci de 4
   rangées (le ventre et les cuisses), la tête garde sa taille. `fermier.py` l'appelle.
 

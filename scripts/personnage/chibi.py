@@ -40,6 +40,11 @@ VUES = {'bas': 0, 'haut': 27, 'cote': 54}
 TX, TY = 2, 7          # où le modèle est posé dans la case
 K = (43, 29, 20)       # le contour
 TETE, TORSE, JAMBES = 11, 18, 24      # fin (exclue) de la tête, du haut du corps, des jambes
+# Les mèches qui bougent en marchant (meches) : les cheveux à partir de la rangée MECHES du modèle ; MILIEU, la colonne
+# qui sépare la gauche de la droite ; rien n'est posé dans la zone du visage (VISAGE : x, y, l, h dans le modèle, celle
+# de expressions.ZONE) dans les vues où le jeu lui pose une expression (VISAGE_VUES) : sa tuile s'y retrouve telle quelle
+MECHES, MILIEU = 5, 6
+VISAGE, VISAGE_VUES = (2, 5, 8, 5), ('bas', 'cote')
 # Les yeux de face (le blanc et la pupille de chacun, sur deux rangées), les mêmes pour tous les modèles
 YEUX = [(x, y) for y in (5, 6) for x in (3, 4, 7, 8)]
 # Les zones des bras, par vue : (colonnes, rangées)
@@ -83,7 +88,8 @@ class Modele:
         # (d : la description d'un personnage hors du catalogue, une combinaison nouvelle ; couches.py)
         import modeles
         d, i = (d, 0) if d is not None else personnage(nom)
-        self.nom = nom
+        self.nom, self.d = nom, d
+        self._cheveux = {}
         self.pal = modeles.palette_de(nom, d, i)
         self.vues = {v: {p: L for p, L in g.items() if L != 'a'} for v, g in modeles.lettres(nom, d).items()}
         # (un modèle retouché dont un bras est ailleurs : ses vues quand les bras sont redessinés, modeles.RETOUCHES_BRAS)
@@ -120,6 +126,60 @@ class Modele:
 
     def jambes(self, vue):
         return {p: c for p, c in self.vues[vue].items() if TORSE <= p[1] < JAMBES}
+
+    def cheveux(self, vue, masque):
+        """Les cases du haut du corps qui montrent la coiffure (vue `vue`, les bras redessinés selon `masque` :
+        None, 'bras' ou 'marche') : ses éléments posés l'un sur l'autre, comme couches.assembler (le corps et le haut
+        ne se posent pas dans les zones des bras retirés)."""
+        cle = (vue, masque)
+        if cle not in self._cheveux:
+            import modeles
+            retire = set()
+            if masque:
+                retire = ZONES[vue][0] | (ZONES[vue][1] if masque == 'marche' else set())
+            proprio = {}
+            for c, _, grilles in modeles.elements(self.nom, self.d):
+                grille = grilles[f'{vue}:bras'] if masque and f'{vue}:bras' in grilles else grilles.get(vue, {})
+                for p in grille:
+                    if p[1] >= TORSE or (c in ('corps', 'haut') and p in retire):
+                        continue
+                    proprio[p] = c
+            self._cheveux[cle] = {p for p, c in proprio.items() if c == 'coiffure'}
+        return self._cheveux[cle]
+
+
+def meches(haut, cheveux, vue, walk):
+    """Les cheveux qui bougent en marchant (« au vent ») : aux images du passage (walk 1 et 3, la tête plus haute d'un
+    pixel), les mèches (les cases de `cheveux` à partir de la rangée MECHES) s'étirent d'un pixel vers le bas (les
+    pointes restent en bas) ; de profil, elles traînent en arrière d'un pixel (de deux pour les deux dernières
+    rangées) ; de face et de dos, les pointes (les quatre dernières rangées) s'écartent d'un pixel du côté du pied
+    qui passe (walk 1 : à droite, 3 : à gauche). Chaque mèche reste en place et sa copie, décalée, se pose
+    par-dessus (dans l'ordre : le décalage, puis la rangée et la colonne de la mèche), sauf dans la zone du visage.
+    haut : {(x, y): valeur} (le modèle) ; → un nouveau dict (le même haut aux autres images)."""
+    if walk not in (1, 3):
+        return haut
+    pas = 1 if walk == 1 else -1
+    brins = sorted((p for p in haut if p in cheveux and p[1] >= MECHES), key=lambda p: (p[1], p[0]))
+    if not brins:
+        return haut
+    bas = max(y for _, y in brins)
+    copies = []
+    for x, y in brins:
+        if vue == 'cote':
+            if y >= bas - 1:
+                copies += [(1, y, x, (x - 1, y)), (2, y, x, (x - 2, y + 1))]
+            else:
+                copies.append((1, y, x, (x - 1, y + 1)))
+        else:
+            cote = -1 if x < MILIEU else 1
+            copies.append((1, y, x, (x + cote, y + 1) if cote == pas and y >= bas - 3 else (x, y + 1)))
+    out = dict(haut)
+    vx, vy, vl, vh = VISAGE
+    for _, y, x, q in sorted(copies, key=lambda c: c[:3]):
+        if vue in VISAGE_VUES and vx <= q[0] < vx + vl and vy <= q[1] < vy + vh:
+            continue
+        out[q] = haut[(x, y)]
+    return out
 
 
 # De profil, le bras redessiné part du dos (la marche, MAINS) : là où la manche du modèle bordait la poitrine, le
@@ -370,7 +430,7 @@ def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, si
     dy = b + squat
     marche = walk is not None and not hands
     cv.trace = {'vue': vue, 'dy': dy, 'masque': 'marche' if marche else 'bras' if hands else None,
-                'fermes': bool(fermes and vue == 'bas'), 'bras': []}
+                'fermes': bool(fermes and vue == 'bas'), 'bras': [], 'meches': walk if walk is not None and not sit else None}
     dessus = lambda ref: (etape(f'bras_dessus:{len(cv.trace["bras"])}'), cv.trace['bras'].append(ref))
     etape('derriere')
     if before:
@@ -392,6 +452,7 @@ def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, si
         # la marche, les mains libres : les bras se balancent (refaits, sous ou sur le corps)
         # (et ce qui restait des mains du modèle, leurs ombres)
         haut = m.haut(vue, sans_bras=True, sans_mains=True)
+        haut = meches(haut, m.cheveux(vue, 'marche'), vue, walk)   # (les cheveux bougent en marchant)
         tous = bras_marche(vue, walk, MODELE.get('age', 'adulte'))
         etape('bras_sous')
         for epaule, (hx, hy), sous, proche, *coude in tous:
@@ -412,6 +473,8 @@ def figure(vue, walk=None, b=0, squat=0, hands=None, before=None, after=None, si
                 bras(cv, epaule[0], epaule[1] + dy, hx, hy + dy, m.manche, m.peau, torse if proche else tete,
                      (c[0], c[1] + dy) if c else None)
     else:
+        if walk is not None and not sit:
+            haut = meches(haut, m.cheveux(vue, cv.trace['masque']), vue, walk)
         etape('modele')
         poser(cv, haut, 0, dy)
     tete = {(TX + x, TY + y + dy) for (x, y) in haut if y < TETE}

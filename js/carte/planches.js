@@ -70,6 +70,37 @@
     return P;
   }
 
+  // Les cheveux qui bougent en marchant (« au vent » : scripts/personnage/chibi.py meches, à l'identique) : aux images
+  // du passage (walk 1 et 3), les mèches (les cheveux à partir de la rangée R.rangee du modèle) s'étirent d'un pixel
+  // vers le bas ; de profil, elles traînent en arrière d'un pixel (de deux pour les deux dernières rangées) ; de face
+  // et de dos, les pointes (les quatre dernières rangées) s'écartent du côté du pied qui passe. Chaque mèche reste,
+  // sa copie décalée se pose par-dessus (par décalage, puis rangée, puis colonne), sauf dans la zone du visage.
+  // R : couches.json modele.meches ; liste : [[x, y, lettre]…] (le modèle, x peut sortir de la grille) ;
+  // cheveux : celles de la coiffure. → une nouvelle liste.
+  function meches(R, liste, cheveux, v, walk) {
+    const pas = walk === 1 ? 1 : -1;
+    const brins = cheveux.filter(([, y]) => y >= R.rangee).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+    if (!brins.length) return liste;
+    const bas = Math.max(...brins.map(([, y]) => y)), copies = [];
+    for (const [x, y, L] of brins) {
+      if (v === 'cote') {
+        if (y >= bas - 1) copies.push([1, y, x, x - 1, y, L], [2, y, x, x - 2, y + 1, L]);
+        else copies.push([1, y, x, x - 1, y + 1, L]);
+      } else {
+        const cote = x < R.milieu ? -1 : 1;
+        copies.push(cote === pas && y >= bas - 3 ? [1, y, x, x + cote, y + 1, L] : [1, y, x, x, y + 1, L]);
+      }
+    }
+    copies.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]);
+    const out = new Map(liste.map(([x, y, L]) => [x + ',' + y, [x, y, L]]));
+    const [vx, vy, vl, vh] = R.visage, zone = R.vues.includes(v);
+    for (const [, , , qx, qy, L] of copies) {
+      if (zone && qx >= vx && qx < vx + vl && qy >= vy && qy < vy + vh) continue;
+      out.set(qx + ',' + qy, [qx, qy, L]);
+    }
+    return [...out.values()];
+  }
+
   // Une case, en lettres : un tableau de W × H (lettre ou null), avant le raccourci d'un enfant.
   function caseLettres(C, P, def, nom) {
     const { W, H, cle } = P, M = C.modele;
@@ -84,6 +115,7 @@
     // ils sont redessinés, le masque d'un couvre-chef, les yeux fermés
     const retire = !t.masque ? null : t.masque === 'marche' ? new Set([...P.zones[v].bras, ...P.zones[v].mains]) : P.zones[v].bras;
     const haut = new Map();          // cle(x, y) du modèle → lettre
+    const proprio = new Map();       // cle(x, y) du modèle → la couche qui l'a posée
     const otes = new Set();
     for (const e of def.elements) {
       const couche = e.slice(0, e.indexOf(':'));
@@ -99,19 +131,23 @@
         if (y >= M.torse) continue;
         if (ote && retire.has(cle(x, y))) { otes.add(cle(x, y)); continue; }
         haut.set(cle(x, y), L);
+        proprio.set(cle(x, y), couche);
       }
     }
     // le torse bouché là où la manche du modèle bordait la poitrine (chibi.REMPLIR)
     if (t.masque) {
       for (const [x, y, dx] of (C.remplir || {})[v] || []) {
         const k = cle(x, y), s = cle(x + dx, y);
-        if (otes.has(k) && !haut.has(k) && haut.has(s)) haut.set(k, haut.get(s));
+        if (otes.has(k) && !haut.has(k) && haut.has(s)) { haut.set(k, haut.get(s)); proprio.set(k, proprio.get(s)); }
       }
     }
-    if (t.fermes) for (const [x, y, L] of P.yeuxFermes) if (haut.has(cle(x, y))) haut.set(cle(x, y), L);
+    if (t.fermes) for (const [x, y, L] of P.yeuxFermes) if (haut.has(cle(x, y))) { haut.set(cle(x, y), L); proprio.set(cle(x, y), 'corps'); }
+    // (les cheveux qui bougent en marchant : meches)
+    let liste = [...haut].map(([k, L]) => [k % W, Math.floor(k / W), L]);
+    if (t.meches === 1 || t.meches === 3) liste = meches(M.meches, liste, liste.filter(([x, y]) => proprio.get(cle(x, y)) === 'coiffure'), v, t.meches);
     const torse = new Set(), tete = new Set();
-    for (const [k, L] of haut) {
-      const x = k % W, y = Math.floor(k / W), q = cle(M.x + x, M.y + y + dy);
+    for (const [x, y, L] of liste) {
+      const q = cle(M.x + x, M.y + y + dy);
       px.set(q, L);
       torse.add(q);
       if (y < M.tete) tete.add(q);
