@@ -2,11 +2,14 @@ import { DATA } from './catalog.js';
 import { EPS } from './base.js';
 import { fail, marcheFerme, marcheOuvert, NO_COINS, pay, percentCeil } from './devices.js';
 import { absoluteHours } from './clock.js';
-import { addLot } from './inventory.js';
-import { buyItem, buyPrice, buyQuote, isBuyable, sellableCount, sellItem } from './market.js';
+import { addLot, keepLots, lotsOf, pullLots, pushLots } from './inventory.js';
+import { fridgeLots } from './fridge.js';
+import { fillSilo } from './animals.js';
+import { buyItem, buyPrice, buyQuote, encaisserVente, isBuyable, payerSemences, rendreSemences, sellableCount, sellItem, sellPrice } from './market.js';
 import { farmSeed } from './terrain.js';
 import { habitantsDe } from './habitants.js';
 import { bumpCounter } from './campaign.js';
+import { earn } from './compta.js';
 import { genererMonde } from './monde.js';
 import { elementsDuMonde } from './monde-gen.js';
 import { etatCaleche, heureTournee, tourneeDuPlan, vueDeSens } from './caleche-tournee.js';
@@ -43,9 +46,17 @@ import { nomCocher, noterFait } from './recit.js';
    vente : l'argent va aux bourses des foyers. Chaque matin, elle a vendu en route tout sauf GARDE % de son
    coffre.
 
+   La malle (au bout du chemin de la ferme : js/carte/ferme/malle.js) : quand la calèche n'est pas là, on y
+   dépose ce qu'on veut lui vendre et on lui commande des semences ou ce que porte son coffre (payé tout de
+   suite) ; à son arrivée à la ferme (majCaleche), elle vend ce qu'elle y trouve (au prix de vente, comme en
+   main propre) et y livre les commandes, qu'on vient prendre.
+
    state.caleche = { coffre: { objet: n }, haltes: [{ debut, fin }] (les retenues du jour, en heures
      absolues : absoluteHours), fait (l'heure absolue jusqu'où les arrêts sont faits ; null : pas encore),
-     jour: { jour, vendu, achete } (les pièces gagnées et dépensées avec elle aujourd'hui) }.
+     jour: { jour, vendu, achete } (les pièces gagnées et dépensées avec elle aujourd'hui),
+     malle: { vente: { objet: [lots] } (déposé, à vendre : les lots de l'inventaire, leur fraîcheur gardée),
+       commande: { objet: { n, cout, sorte: 'semence' | 'coffre' } } (payé, à livrer), livre: { objet: n } (livré,
+       à prendre), passage: { jour, vendu: { objet: n }, gain, livre: { objet: n } } (son dernier passage) } }.
    Chaque hameau peuplé garde son dernier passage : habitants[id].caleche = { jour, achats, pieces }. */
 
 export const CALECHE = DATA.CALECHE;
@@ -276,6 +287,11 @@ export function majCaleche(state, H = absoluteHours(state)) {
     const de = Math.max(fait, j0), a = Math.min(H, j0 + 24 - 1e-9);
     if (a <= de) continue;
     const t1 = heureTournee(c.haltes, de), t2 = heureTournee(c.haltes, a);
+    // (son arrivée à la ferme, à l'heure 0 de la tournée : elle vide la malle et y livre les commandes)
+    if (t1 < 0 && t2 >= 0) {
+      const m = passageMalle(state, j + 1);
+      if (m) out.push({ id: 'ferme', jour: j + 1, malle: m });
+    }
     // (au gîte la nuit, avant le départ du matin : rien ; l'heure de chaque hameau dans la journée)
     for (let n = 1; n < tour.arrets.length; n++) {
       const o = tour.arrets[n], tt = o.arrivee <= tour.soir ? o.arrivee : o.arrivee - tour.D;
@@ -364,4 +380,176 @@ export function vendreCaleche(state, item, qty, ou = null, o = {}) {
 // Ce que le joueur peut lui vendre : [item] (ce qui se vend et qu'il a).
 export function vendablesCaleche(state) {
   return Object.keys(DATA.OBJETS).filter((k) => !DATA.OBJETS[k].invendable && Math.floor(sellableCount(state, k) + EPS) >= 1);
+}
+
+/* ---------- la malle : vendre et commander quand elle n'est pas là ---------- */
+
+export function malleDe(state) {
+  const c = calecheDe(state);
+  if (!c.malle || typeof c.malle !== 'object') c.malle = { vente: {}, commande: {}, livre: {}, passage: null };
+  const m = c.malle;
+  for (const k of ['vente', 'commande', 'livre']) if (!m[k] || typeof m[k] !== 'object') m[k] = {};
+  return m;
+}
+
+const nLots = (lots) => (Array.isArray(lots) ? lots.reduce((t, l) => t + (l.qty || 0), 0) : 0);
+
+// Ce qui est dans la malle : { vente: { objet: n }, valeur (au prix de vente), commande: { objet: n }, cout (payé),
+// livre: { objet: n } }.
+export function contenuMalle(state) {
+  const m = malleDe(state), vente = {}, commande = {};
+  let valeur = 0, cout = 0;
+  for (const [k, lots] of Object.entries(m.vente)) { const n = nLots(lots); if (n > 0 && DATA.OBJETS[k]) { vente[k] = n; valeur += n * sellPrice(k); } }
+  for (const [k, o] of Object.entries(m.commande)) if (o && o.n > 0) { commande[k] = o.n; cout += o.cout || 0; }
+  const livre = Object.fromEntries(Object.entries(m.livre).filter(([k, n]) => n > 0 && DATA.OBJETS[k]));
+  return { vente, valeur, commande, cout, livre };
+}
+
+// La malle a-t-elle quelque chose dedans (à vendre ou livré) ? (la scène l'ouvre)
+export function mallePleine(state) {
+  const c = state && state.caleche && state.caleche.malle;
+  if (!c) return false;
+  return Object.values(c.vente || {}).some((l) => nLots(l) > 0) || Object.values(c.livre || {}).some((n) => n > 0);
+}
+
+// Dépose `qty` unités de `item` dans la malle (de l'inventaire, puis du frigo, les plus anciennes d'abord).
+export function deposerMalle(state, item, qty) {
+  const def = DATA.OBJETS[item];
+  if (!def) return fail('Objet inconnu.');
+  if (def.invendable) return fail(`${def.nom} ne se vend pas.`);
+  if (!marcheOuvert(state)) return fail(marcheFerme(state));
+  let reste = Math.min(Math.floor(Number(qty)) || 0, Math.floor(sellableCount(state, item) + EPS));
+  if (reste <= 0) return fail('Rien à déposer.');
+  const m = malleDe(state), pris = [];
+  const inv = lotsOf(state, item), a = pullLots(inv, reste);
+  keepLots(state.inventaire, item, inv);
+  pris.push(...a);
+  reste -= nLots(a);
+  if (reste > 0 && state.frigo && state.frigo.items) {
+    const fr = fridgeLots(state, item), b = pullLots(fr, reste);
+    keepLots(state.frigo.items, item, fr);
+    pris.push(...b);
+  }
+  const n = nLots(pris);
+  if (!n) return fail('Rien à déposer.');
+  const lots = Array.isArray(m.vente[item]) ? m.vente[item] : [];
+  pushLots(lots, pris);
+  m.vente[item] = lots;
+  return { ok: true, n };
+}
+
+// Reprend `qty` unités de `item` (toutes sans qty) de la malle, dans l'inventaire (avec leur fraîcheur).
+export function reprendreMalle(state, item, qty = Infinity) {
+  const m = malleDe(state), lots = m.vente[item];
+  const n = Math.min(nLots(lots), Math.floor(Number(qty)) || 0);
+  if (!(n > 0)) return fail('Rien à reprendre.');
+  const pris = pullLots(lots, n);
+  if (!nLots(lots)) delete m.vente[item];
+  const inv = lotsOf(state, item);
+  pushLots(inv, pris);
+  keepLots(state.inventaire, item, inv);
+  return { ok: true, n };
+}
+
+// Reprend tout ce qui est à vendre. → le nombre d'objets repris.
+export function reprendreTout(state) {
+  let n = 0;
+  for (const k of Object.keys(malleDe(state).vente)) { const r = reprendreMalle(state, k); if (r.ok) n += r.n; }
+  return n;
+}
+
+// Commande `qty` unités de `item` (une semence, à son cours qui monte ; ou ce que porte son coffre, mis de côté,
+// à VENTE %) : payée tout de suite, livrée dans la malle à son prochain passage à la ferme.
+export function commanderCaleche(state, item, qty = 1) {
+  const def = DATA.OBJETS[item];
+  if (!def) return fail('Objet inconnu.');
+  if (!marcheOuvert(state)) return fail(marcheFerme(state));
+  const m = malleDe(state), q = Math.max(1, Math.floor(Number(qty)) || 1);
+  let r, sorte;
+  if (isBuyable(item)) {
+    sorte = 'semence';
+    r = payerSemences(state, item, q);
+  } else {
+    sorte = 'coffre';
+    const c = calecheDe(state), stock = c.coffre[item] || 0;
+    if (stock <= 0) return fail(`La calèche ne vend pas ${def.nom.toLowerCase()} : seulement des semences et ce qu'elle achète aux hameaux.`);
+    const p = prixCoffre(item), k = Math.min(stock, q, Math.floor((state.pieces + EPS) / p));
+    r = { quantite: 0, cout: 0 };
+    if (k > 0 && pay(state, k * p, `Commande : ${def.nom}`)) {
+      r = { quantite: k, cout: k * p };
+      c.coffre[item] = stock - k;
+      if (!c.coffre[item]) delete c.coffre[item];
+    }
+  }
+  if (!r.quantite) return fail(NO_COINS);
+  const o = m.commande[item] || { n: 0, cout: 0, sorte };
+  o.n += r.quantite; o.cout += r.cout;
+  m.commande[item] = o;
+  return { ok: true, bought: r.quantite, cost: r.cout };
+}
+
+// Annule la commande de `item` (toutes sans item) : remboursée ; le cours des semences reprend ses pas, ce qui
+// était mis de côté retourne dans son coffre. → les pièces rendues.
+export function annulerCommande(state, item = null) {
+  const m = malleDe(state), c = calecheDe(state);
+  let rendu = 0;
+  for (const k of item ? [item] : Object.keys(m.commande)) {
+    const o = m.commande[k];
+    if (!o || !(o.n > 0)) { delete m.commande[k]; continue; }
+    if (o.sorte === 'semence') rendreSemences(state, k, o.n);
+    else c.coffre[k] = (c.coffre[k] || 0) + o.n;
+    earn(state, o.cout, `Commande annulée : ${DATA.OBJETS[k] ? DATA.OBJETS[k].nom : k}`, o.n);
+    rendu += o.cout;
+    delete m.commande[k];
+  }
+  return rendu;
+}
+
+// Son arrivée à la ferme (le jour `jour`) : elle vend ce qui est dans la malle et y livre les commandes.
+// → { jour, vendu, gain, livre } (aussi gardé : malle.passage), ou null (rien à faire).
+export function passageMalle(state, jour = state.day) {
+  const m = malleDe(state), vendu = {}, livre = {};
+  let gain = 0;
+  for (const k of Object.keys(m.vente).sort()) {
+    const n = nLots(m.vente[k]);
+    delete m.vente[k];
+    if (!(n > 0) || !DATA.OBJETS[k]) continue;
+    vendu[k] = n;
+    gain += encaisserVente(state, k, n);
+  }
+  let achete = 0;
+  for (const k of Object.keys(m.commande).sort()) {
+    const o = m.commande[k];
+    delete m.commande[k];
+    if (!o || !(o.n > 0) || !DATA.OBJETS[k]) continue;
+    livre[k] = o.n;
+    m.livre[k] = (m.livre[k] || 0) + o.n;
+    achete += o.cout || 0;
+    if (o.sorte === 'coffre') bumpCounter(state, 'achatsHameaux', o.n);   // (la campagne, fiche 9b)
+  }
+  if (!gain && !Object.keys(livre).length) return null;
+  const J = jourDe(state);
+  J.vendu += gain; J.achete += achete;
+  if (gain) {
+    bumpCounter(state, 'calecheVentes', gain);   // (la campagne, fiche 9b : vendre à la calèche)
+    noterFait(state, 'vente.caleche');
+  }
+  m.passage = { jour, vendu, gain, livre };
+  return m.passage;
+}
+
+// Prend ce qui a été livré dans la malle (`item`, ou tout) : dans l'inventaire (le blé au Silo s'il y a de la
+// place, comme un achat). → le nombre d'objets pris.
+export function prendreLivraison(state, item = null) {
+  const m = malleDe(state);
+  let n = 0;
+  for (const k of item ? [item] : Object.keys(m.livre)) {
+    const q = Math.floor(m.livre[k] || 0);
+    delete m.livre[k];
+    if (!(q > 0) || !DATA.OBJETS[k]) continue;
+    addLot(state, k, q, DATA.ORIGINE.ACHETE);
+    if (k === DATA.SILO.ITEM && state.silo) fillSilo(state);
+    n += q;
+  }
+  return n;
 }

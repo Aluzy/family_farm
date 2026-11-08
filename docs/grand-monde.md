@@ -860,6 +860,25 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        même vitesse partout (la montagne, le marais) ; les habitants ne lui achètent rien (plus tard, si
        besoin) ; une tournée très longue la fait rouler vite ; au-delà de l'arrêt, sur la place, elle se gare
        là où passe le chemin (parfois devant le puits).
+     - **La malle** (après coup : les joueurs avaient du mal à acheter et vendre, la calèche ne passant qu'une
+       heure par jour). Une malle au bout du chemin de la ferme (`js/engine/caleche.js`, « la malle » ;
+       la scène : `js/carte/ferme/malle.js` ; l'image : `scripts/carte/malle.py`, `assets/malle.png`).
+       - **Sa place** (`js/engine/monde.js`, `placeMalle`, réglée par `MALLE`) : trois cases d'herbe libre côte
+         à côte (ni rocher, ni arbre, ni buisson, ni herbe haute) le long du chemin, au plus près de sa sortie ;
+         au nord du chemin de préférence. Ses cases sont réservées dans le terrain (« . » : on n'y bâtit, ne
+         laboure ni ne plante) ; la scène y arrête le personnage. 80 fermes essayées : toutes ont leur place.
+       - **Vendre** : la calèche absente (le Marché ouvert), l'onglet Vendre dépose dans la malle (de
+         l'inventaire, puis du frigo ; les lots gardent leur fraîcheur). On peut reprendre avant son passage.
+       - **Commander** : l'onglet Acheter commande des semences (payées tout de suite, au cours qui monte comme
+         un achat) ou ce que porte son coffre (mis de côté). Annuler rembourse, rend le cours et le coffre.
+       - **Son passage** : à son arrivée à la ferme (`majCaleche`, l'heure 0 de la tournée ; rattrapé après une
+         absence), elle vend la malle au prix de vente (comme en main propre : l'XP, le cours, les compteurs
+         de la campagne) et y livre les commandes. « Tout prendre » met la livraison dans l'inventaire. Un
+         message dit ce qu'elle a vendu et livré.
+       - **La malle à l'écran** : fermée quand elle est vide, ouverte quand elle contient quelque chose (les
+         produits vus d'en haut). Un appui sur elle : le personnage va devant elle, puis la fenêtre de la
+         calèche s'ouvre.
+       - Tests : `tests/engine/malle.test.mjs` (5 tests), et la place de la malle dans `tests/engine/monde.test.mjs`.
 8. ✅ **S'orienter** (1 PR, fait) : le brouillard, la carte du monde, une boussole.
    - **Fait (8)** : le brouillard, la carte du monde et la boussole.
      - **Le vu** (`js/engine/monde-vu.js`, réglé par `data/monde.json` : `DECOUVERTE`, vérifié par

@@ -3396,6 +3396,20 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .caleche-bandeau.ici { background: rgba(190, 226, 140, 0.55); }
 .caleche-bandeau .caleche-ico { font-size: 1.5rem; flex: none; }
 .caleche-bandeau .caleche-texte { flex: 1 1 180px; }
+/* La malle de la calèche (js/ui/caleche.js, malleHtml) : son image (assets/malle.png, la case fermée) dans le
+   bandeau ; les titres de ses sections, leur bouton à droite ; le titre des lots d'une fiche (Déposer, Commander). */
+.caleche-bandeau .malle-ico {
+  flex: none;
+  width: 50px;
+  height: 44px;
+  background-repeat: no-repeat;
+  background-size: 100px 44px;
+  background-position: 0 0;
+  image-rendering: pixelated;
+}
+.section-title.malle-titre { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.section-title.malle-titre .btn { margin-left: auto; }
+.lot-titre { margin: 6px 0 2px; }
 /* S'orienter (fiche 8). La boussole (js/carte/ferme/boussole.js) : sous l'horloge, à droite de la carte ;
    son cadran en gros pixels (un canevas de 30 px agrandi deux fois, sans lissage), dessous le but et sa
    distance sur une plaque de bois. Un appui ouvre la carte du monde. */

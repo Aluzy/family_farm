@@ -157,8 +157,13 @@ function fabriquer(graine) {
     return Object.fromEntries(trie ? e.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)) : e);
   };
   const vide = '.'.repeat(W), gauche = '.'.repeat(OX), droite = '.'.repeat(W - OX - fw);
+  // la malle de la calèche (caleche.js, « la malle » ; la scène : js/carte/ferme/malle.js), au bout du chemin :
+  // ses cases sont réservées (« . » : on n'y bâtit, ne laboure ni ne plante ; la scène y arrête le personnage)
+  const malle = placeMalle(f, tf, fw);
+  const lignesFerme = tf.LIGNES.slice();
+  if (malle) for (const [c, r] of malle.cases) lignesFerme[r] = lignesFerme[r].slice(0, c) + '.' + lignesFerme[r].slice(c + 1);
   const lignes = [];
-  for (let r = 0; r < H; r++) lignes.push(r >= OY && r < OY + fh ? gauche + tf.LIGNES[r - OY] + droite : vide);
+  for (let r = 0; r < H; r++) lignes.push(r >= OY && r < OY + fh ? gauche + lignesFerme[r - OY] + droite : vide);
   const zones = Object.fromEntries(Object.entries(tf.ZONES || {}).map(([z, o]) => [z, { ...o, X: o.X + OX, Y: o.Y + OY }]));
   const herbes = {};
   for (const [i, ids] of Object.entries(tf.HERBES || {})) herbes[versMonde(Number(i))] = ids.map((id) => idDuMonde(id, T));
@@ -172,6 +177,8 @@ function fabriquer(graine) {
     FLEURS: (tf.FLEURS || []).map(versMonde),
     BUISSONS_CASES: buissonsCases,
     FERME: { X: OX, Y: OY, LARGEUR: fw, HAUTEUR: fh },
+    // MALLE : { cases (ses trois cases, de gauche à droite), x (px : le bord gauche), y (px : le bas de ses cases) }, ou null
+    MALLE: malle ? { cases: malle.cases.map(([c, r]) => (r + OY) * W + c + OX), x: (malle.cases[0][0] + OX) * T, y: (malle.cases[0][1] + OY + 1) * T } : null,
   };
   Object.defineProperty(terrain, 'SOMMETS', { get: () => coins().sommets, enumerable: true });
   Object.defineProperty(terrain, 'TEINTES', { get: () => coins().teintes, enumerable: true });
@@ -190,4 +197,37 @@ function fabriquer(graine) {
     value: { graine, cadre, ferme: { sommets: tf.SOMMETS, teintes: tf.TEINTES }, taille: MONDE.REGION },
   });
   return { get carte() { return carte(); }, terrain, get plan() { return plan(); } };
+}
+
+// La place de la malle de la calèche dans la ferme `f` (sa carte) et son terrain `tf` (fw : sa largeur) : trois cases
+// d'herbe libre côte à côte (« # » ou « + » : pas sous un rocher, un arbre, un buisson ; sans herbe haute), le long du
+// chemin (les trois cases juste devant, ou juste derrière, sont du chemin : leurs coins, tf.SOMMETS, 1 le chemin, 2
+// l'eau), la plus proche de sa sortie à l'est (à MALLE.RAYON cases au plus ; MALLE.PRES cases au moins du bord) ;
+// au nord du chemin de préférence (elle lui fait face : MALLE.SUD de plus pour le sud).
+// → { cases: [[c, r]…] } (en cases de la ferme), ou null (pas de place).
+export const MALLE = { PRES: 4, RAYON: 30, SUD: 4 };
+export function placeMalle(f, tf, fw) {
+  const passages = f.layers.find((l) => l.name === 'passages');
+  const passage = passages && (passages.objects || []).find((o) => o.name === 'vers_la_transition');
+  if (!passage || !tf.SOMMETS) return null;
+  const sortie = Math.round(passage.y / MONDE.T) + 1, H = tf.LIGNES.length, V = fw + 1;
+  const libre = (c, r) => r >= 1 && r < H - 1 && c >= 1 && c < fw - 1 && (tf.LIGNES[r][c] === '#' || tf.LIGNES[r][c] === '+') && !(tf.HERBES && tf.HERBES[r * fw + c]);
+  const coin = (x, y) => tf.SOMMETS[y * V + x];
+  const chemin = (c, r) => {
+    if (r < 0 || r >= H || c < 0 || c >= fw) return false;
+    const k = [coin(c, r), coin(c + 1, r), coin(c, r + 1), coin(c + 1, r + 1)];
+    return k.includes(1) && !k.includes(2);
+  };
+  let best = null;
+  for (let r = Math.max(1, sortie - MALLE.RAYON); r <= Math.min(H - 2, sortie + MALLE.RAYON); r++) {
+    for (let c = fw - MALLE.PRES; c >= fw - MALLE.RAYON; c--) {
+      const trois = [c - 2, c - 1, c];
+      if (!trois.every((x) => libre(x, r))) continue;
+      const nord = trois.every((x) => chemin(x, r + 1)), sud = !nord && trois.every((x) => chemin(x, r - 1));
+      if (!nord && !sud) continue;
+      const cout = (fw - 1 - c) + Math.abs(r - sortie) + (sud ? MALLE.SUD : 0);
+      if (!best || cout < best.cout) best = { cout, cases: trois.map((x) => [x, r]) };
+    }
+  }
+  return best ? { cases: best.cases } : null;
 }
