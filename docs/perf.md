@@ -62,6 +62,7 @@ de l'appareil.
 | 2026-11-03 | Chromium sans carte graphique, émulation 393 × 873 (pas un téléphone) | 1.22.0 | ferme construite (275 blocs, 34 meubles) | 33,8 · 2,9 % | 2,0 s | 0,7 ms | 169 Mo |
 | 2026-11-03 | **Redmi Note 13 5G** (Dimensity 6080, 8 Go), Chrome 156 | 1.22.0 | ferme construite (382 blocs, 67 meubles) | **55,5** ✅ · 2,3 % ✅ (médiane 16,6 ms) | **8,1 s** ❌ (page chargée en 1,1 s) | **1,7 ms** ✅ | 117 Mo |
 | 2026-11-04 | **Redmi Note 13 5G**, Chrome 156 | 1.22.0, après les étapes 1 à 2c du lot « chargement » | ferme construite (382 blocs, 67 meubles) | **53,9** ✅ · 0,8 % ✅ (médiane 16,6 ms, la plus longue 482 ms) | **6,8 s** ❌ « jeu affiché » (page chargée en 1,0 s) | **3,5 ms** ✅ | 82 Mo |
+| 2026-11-08 | **Redmi Note 13 5G**, Chrome 156, qualité économie | 1.22.0, après la fiche 24 (eau vivante refondue, étapes 1 à 4) | ferme construite (696 blocs, 46 meubles, étage), partie relue de l'appareil | **52,9** ✅ · 2,2 % ✅ (médiane 16,6 ms, 99 % sous 50 ms, la plus longue 150 ms) | **8,7 s** ❌ « jeu affiché » (page chargée en 1,3 s) | **7,3 ms** ✅ | 190 Mo |
 
 ### Le chargement : où passent les 8 s (analyse du 2026-11-03)
 
@@ -261,8 +262,10 @@ processeur faute de processeur graphique ; à mesurer sur le téléphone (📏 M
   (`uRive`, `uRefl`) : plus d'image de terre, plus d'image de reflets ni de filtre Displacement, plus de masque
   `erase`. La texture des reflets n'est redessinée que si son empreinte (place, image, sens, opacité de chaque
   objet reflété ; les ronds) a changé : zéro rendu hors-écran tant que personne ne passe au bord. Les
-  scintillements sont tirés d'un hachage dans le shader : plus de sprites en mode ADD. **À mesurer** près de
-  l'étang des automates et sur la côte (avant : 8,9 ips tout près).
+  scintillements sont tirés d'un hachage dans le shader : plus de sprites en mode ADD. Sur le téléphone
+  (relevé du 2026-11-08, ci-dessus) : 52,9 images/s, 2,2 % de lentes, la plus longue 150 ms (482 ms le
+  2026-11-04) — le budget tient avec une ferme presque deux fois plus grande ; reste à mesurer tout près de
+  l'étang des automates et sur la côte (avant : 8,9 ips tout près, Chromium sans carte graphique).
 
 ## Les traces de pas (`js/carte/ferme/traces.js`)
 
