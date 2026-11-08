@@ -115,6 +115,8 @@ def assembler(elts, chapeau, age, communs, jambes, zones):
             for p, L in chibi.Modele.YEUX_FERMES.items():
                 if p in haut:
                     haut[p] = (L, 'corps')
+        # (les cheveux qui bougent en marchant : chibi.meches, sur les cases de la coiffure)
+        haut = chibi.meches(haut, {p for p, (_, c) in haut.items() if c == 'coiffure'}, v, t.get('meches'))
         poses = {}
         for (x, y), (L, _) in haut.items():
             poses[(chibi.TX + x, chibi.TY + y + dy)] = L
@@ -233,6 +235,7 @@ RACINE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)
 def exporter(chemin=os.path.join(RACINE, 'assets', 'personnages', 'couches.json')):
     """assets/personnages/couches.json : de quoi assembler les planches dans le jeu (étape E5)."""
     import json
+    assert chibi.VISAGE == expressions.ZONE and set(chibi.VISAGE_VUES) == set(expressions.VUES)
     communs = {age: communes(age, REFERENCES) for age in REFERENCES}
     elements, personnages, palettes = {}, {}, {}
     for nom, d in modeles.tous():
@@ -273,7 +276,9 @@ def exporter(chemin=os.path.join(RACINE, 'assets', 'personnages', 'couches.json'
         'case': {'w': F.W, 'h': F.H},
         'modele': {'x': chibi.TX, 'y': chibi.TY, 'torse': chibi.TORSE, 'tete': chibi.TETE,
                    'masqueTete': modeles.MASQUE_TETE, 'couvreTete': list(modeles.COUVRE_TETE),
-                   'masque': ['corps', 'coiffure'], 'retire': ['corps', 'haut']},
+                   'masque': ['corps', 'coiffure'], 'retire': ['corps', 'haut'],
+                   # (les mèches qui bougent en marchant : chibi.meches)
+                   'meches': {'rangee': chibi.MECHES, 'milieu': chibi.MILIEU, 'visage': list(chibi.VISAGE), 'vues': list(chibi.VISAGE_VUES)}},
         'ordre': ORDRE, 'ordreModele': modeles.ORDRE_COUCHES,
         'familles': modeles.FAMILLES,
         'contourIgnore': ['K', 'dr', 'sd'],

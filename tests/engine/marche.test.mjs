@@ -22,6 +22,11 @@ const K = fenetre.CarteKit;
 
 const CASES = JSON.parse(readFileSync(new URL('../../assets/personnages/cases.json', import.meta.url), 'utf8'));
 const CONTOUR = '43,29,20';
+// les couleurs des cheveux de chaque personnage (sa palette, les lettres de la coiffure : couches.json) : la mesure du
+// bras de profil ne les compte pas (en marchant, les mèches traînent en arrière : scripts/personnage/chibi.py meches)
+const COUCHES = JSON.parse(readFileSync(new URL('../../assets/personnages/couches.json', import.meta.url), 'utf8'));
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join();
+const cheveux = (nom) => new Set(COUCHES.familles.coiffure.map((L) => COUCHES.palettes[nom][L]).filter(Boolean).map(hex));
 // Les pieds au sol d'une case : les suites de pixels (hors contour) de la rangée du bas des
 // chaussures (30), leur talon (x le plus à gauche) ; `pieds` : de même sur la rangée du dessus (29),
 // où l'on voit aussi un pied décollé d'un pixel ; et le haut de la tête (la première rangée peinte).
@@ -80,16 +85,17 @@ test('les planches : de profil, le pied posé ne glisse pas ; au passage, les de
 
 // Le bas des bras de face : la plus basse rangée peinte (hors contour) des colonnes de la case à
 // gauche du corps (0 à 4) et à sa droite (11 à 15), au-dessus des pieds.
-function bras(planche, nom) {
+function bras(planche, nom, sansCouleurs) {
   const k = CASES.frames.indexOf(nom), x0 = (k % 8) * 16, y0 = Math.floor(k / 8) * 32;
   const plein = (x, y) => { const p = planche.px(x0 + x, y0 + y); return p[3] > 0 && p.slice(0, 3).join() !== CONTOUR; };
+  const corps = (x, y) => plein(x, y) && !(sansCouleurs && sansCouleurs.has(planche.px(x0 + x, y0 + y).slice(0, 3).join()));
   const bas = (cols) => { let b = -1; for (let y = 14; y < 28; y++) for (const x of cols) if (plein(x, y)) b = y; return b; };
   // de profil : le plus à droite (devant) et le plus à gauche (derrière) de la silhouette, sous les épaules et
   // au-dessus des jambes
   let devant = -1, derriere = 16;
   for (let y = 19; y < 27; y++) {
     for (let x = 0; x < 16; x++) {
-      if (!plein(x, y)) continue;
+      if (!corps(x, y)) continue;
       devant = Math.max(devant, x);
       derriere = Math.min(derriere, x);
     }
@@ -109,9 +115,9 @@ test('les bras se balancent : de face et de dos, en opposition ; de profil, derr
         // au passage, entre les deux
         assert(b1.gauche > Math.min(b0.gauche, b2.gauche) && b1.gauche < Math.max(b0.gauche, b2.gauche), `${nom}, ${vue} : au passage, le bras gauche le long du corps (${b0.gauche}, ${b1.gauche}, ${b2.gauche})`);
       }
-      const [c0, c1, c2] = [0, 1, 2].map((k) => bras(planche, `marche_cote_${k}`));
+      const [c0, c1, c2] = [0, 1, 2].map((k) => bras(planche, `marche_cote_${k}`, cheveux(nom)));
       // de profil (le bras droit, l'épaule au dos) : derrière le dos au premier contact, en retard au passage, plié
-      // devant au second contact (des cheveux longs peuvent dépasser autant que lui) ; la main du bras caché dépasse devant le ventre au premier contact
+      // devant au second contact (sans les cheveux : des mèches longues peuvent dépasser autant que lui) ; la main du bras caché dépasse devant le ventre au premier contact
       assert(c0.derriere < c1.derriere && c1.derriere <= c2.derriere, `${nom} : de profil, le bras derrière puis devant (${c0.derriere}, ${c1.derriere}, ${c2.derriere})`);
       assert(c0.devant > c1.devant, `${nom} : de profil, la main cachée dépasse au contact (${c0.devant}, ${c1.devant})`);
     }
