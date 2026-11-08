@@ -238,7 +238,7 @@ export function techProgress(state, brancheId) {
       e.automatise = isAutomated(state, cle);
     } else {
       e.ateliers = Object.keys(DATA.STATIONS).map((id) => ({
-        id, nom: DATA.STATIONS[id].nom, icone: DATA.STATIONS[id].icone, construit: !!(state.stations && state.stations[id].construit),
+        id, nom: DATA.STATIONS[id].nom, icone: DATA.STATIONS[id].icone, construit: !!(state.stations && state.stations[id] && state.stations[id].construit),
       }));
     }
     return e;

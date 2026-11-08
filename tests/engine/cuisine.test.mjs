@@ -462,11 +462,11 @@ test('mayonnaise (3 œufs) et quenelle de poisson (farine + truite, brochet ou p
   assertEqual(recipeStatus(s, 'quenelle_poisson').code, 'manque', 'sans farine');
 });
 
-test('arbre v2 : 23 recettes libres (dont 6 de la ville, la mayonnaise, la quenelle de poisson, les 4 lingots et le jus de fruits), 12 débloquées par un nœud', () => {
+test('arbre v2 : 29 recettes libres (dont 6 de la ville, la mayonnaise, la quenelle de poisson, les 4 lingots, le jus de fruits et les 6 colorants du mortier), 12 débloquées par un nœud', () => {
   const s = atelier();
   const libres = Object.keys(DATA.RECETTES).filter((id) => recipeUnlocked(s, id));
   assertEqual(libres.sort(), [...DATA.ARBRE.RECETTES_LIBRES].sort());
-  assertEqual(libres.length, 23);
+  assertEqual(libres.length, 29);
   assertEqual(Object.keys(DATA.RECETTES).length - libres.length, 12, 'dont le fromage d\'alpage (Laiterie)');
   for (const id of Object.keys(DATA.RECETTES)) assert(recipeUnlocked(s, id) || recipeNode(id), `${id} : libre ou débloquée par un nœud`);
   setInv(s, { pain: 1, ail: 1, huile: 1 });
@@ -793,10 +793,10 @@ test('la farine et l\'huile ne se mangent pas seules ; les plats se mangent', ()
   assertEqual([t.repasJour.mange.pain, t.repasJour.mange.omelette], [3, 1]);
 });
 
-test('état initial Lot 5 : trois stations à construire, libres, sans appareil', () => {
+test('état initial Lot 5 : quatre stations à construire (le mortier compris), libres, sans appareil', () => {
   const s = createInitialState(1);
-  assertEqual(Object.keys(s.stations), ['four', 'cuisine', 'moulin']);
-  for (const id of ['four', 'cuisine', 'moulin']) {
+  assertEqual(Object.keys(s.stations), ['four', 'cuisine', 'moulin', 'mortier']);
+  for (const id of ['four', 'cuisine', 'moulin', 'mortier']) {
     assertEqual(s.stations[id], { construit: false, tache: null, appareil: null }, id);
   }
   assertEqual(allDevices(s).length, 3, 'panneau, batterie, pompe seulement');

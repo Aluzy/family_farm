@@ -17,7 +17,7 @@ export function mulberry32(seed) {
   };
 }
 
-export const STATE_VERSION = 77;
+export const STATE_VERSION = 78;
 // Version du générateur de la ferme et du grand monde (ferme-generee.js, monde-gen.js, monde-sol.js,
 // monde-hameaux.js… et leurs réglages de data/monde.json, data/terrain.json), notée dans chaque partie
 // (state.carte.generateur, à côté de sa graine). Une même graine ne refait le même monde qu'avec le même
@@ -27,7 +27,10 @@ export const STATE_VERSION = 77;
 // échoue si le générateur change sans que ce numéro change.
 // 2 (D-2) : les secrets du monde (monde-gen.js, lieux.secrets), tirés à part, et la végétation dégagée autour
 // d'eux ; la ferme et tout le reste sont ceux du 1 (la migration 71 → 72 garde les parties du 1).
-export const GENERATEUR_VERSION = 2;
+// 3 : les fleurs sauvages du monde (coquelicot, pavot de Californie, tournesol, myosotis, lavande, lupin : de petites
+// plantes de data/monde.json VEGETATION, ajoutées au bout des tables de leurs sols) ; tirées dans les cases restées
+// vides, elles ne déplacent rien (la migration 77 → 78 garde les parties du 2).
+export const GENERATEUR_VERSION = 3;
 // Version du jeu, affichée dans les Options (À propos) : la dernière version notée dans le
 // code et les données (« version 1.22 » : les objectifs « objet »).
 export const GAME_VERSION = '1.22.0';

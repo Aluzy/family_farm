@@ -447,5 +447,17 @@
  "🚧‍🟤": "barriere_chene.png",
  "🚧‍🟩": "barriere_verte.png",
  "🚧‍🟪": "barriere_lavande.png",
- "🚧‍🚪": "portail.png"
+ "🚧‍🚪": "portail.png",
+ "🔴": "colorant_rouge.png",
+ "🟠": "colorant_orange.png",
+ "🟡": "colorant_jaune.png",
+ "🟢": "colorant_vert.png",
+ "🔵": "colorant_bleu.png",
+ "🟣": "colorant_violet.png",
+ "🌺": "fleur_coquelicot.png",
+ "🏵": "fleur_pavot.png",
+ "💠": "fleur_myosotis.png",
+ "🪻": "fleur_lavande.png",
+ "💮": "fleur_lupin.png",
+ "⚱": "mortier.png"
 }

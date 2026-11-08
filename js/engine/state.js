@@ -759,6 +759,18 @@ export const MIGRATIONS = {
     if (out.carte && out.serre && out.potager) majSerre(out);
     return out;
   },
+  // v77 → v78 (les colorants) : le mortier, une station de plus (à construire : son bloc posé dans la maison) ; le
+  // générateur 3 ajoute au monde ses fleurs sauvages, dans les cases restées vides : une partie du générateur 2 y
+  // passe sans rien perdre (rien d'autre ne bouge).
+  77: (state) => {
+    const out = { ...state, version: 78 };
+    if (state.stations && typeof state.stations === 'object' && !state.stations.mortier) {
+      out.stations = { ...state.stations, mortier: { construit: false, tache: null, appareil: null } };
+    }
+    const c = state.carte;
+    if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 2) out.carte = { ...c, generateur: 3 };
+    return out;
+  },
 };
 
 // La Serre d'avant la v76 : ses parcelles par niveau, le prix de chaque niveau (les anciennes migrations ;

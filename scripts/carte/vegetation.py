@@ -989,6 +989,148 @@ def nenuphar(graine, variante):
     return fini(t, 9, 7, (14, 46, 30))
 
 
+# ---------- les fleurs sauvages (on les cueille pour le mortier : data/monde.json RECOLTE.SORTES) ----------
+#
+# En massifs de deux ou trois fleurs. Les couleurs des fleurs sont celles des poudres du mortier
+# (scripts/carte/blocs.py POUDRES : sombre, moyen, clair, reflet).
+
+FL_ROUGE = [(110, 18, 22), (186, 36, 36), (226, 72, 60), (250, 150, 130)]
+FL_ORANGE = [(140, 58, 10), (220, 110, 24), (246, 154, 48), (255, 210, 140)]
+FL_JAUNE = [(150, 110, 10), (226, 186, 30), (250, 222, 70), (255, 246, 170)]
+FL_BLEU = [(24, 52, 120), (52, 104, 196), (100, 160, 236), (180, 220, 255)]
+FL_VIOLET = [(60, 26, 96), (112, 62, 164), (156, 110, 214), (214, 186, 244)]
+
+
+def coquelicot(graine, variante):
+    """Des coquelicots : de fines tiges, des fleurs rouges en coupe, leur cœur noir."""
+    r = random.Random(graine)
+    n = 3 if variante != 1 else 2
+    t = petite(14, 16, 13)
+    for x in range(4, 11):
+        t.pose(x, 13 + (x % 2), sur(RAMPE_PRE, 3 + (x % 3)))
+    for k in range(n):
+        x, top = 3 + k * (8 // max(1, n - 1)), r.randint(3, 6)
+        for y in range(top + 2, 14):
+            t.pose(x, y, sur(RAMPE_PRE, 4))
+        c = FL_ROUGE
+        for dx, dy, cc in ((-1, 0, c[1]), (0, 0, c[2]), (1, 0, c[1]), (-1, 1, c[1]), (0, 1, (30, 16, 16)), (1, 1, c[0]), (0, -1, c[3])):
+            t.pose(x + dx, top + dy, cc)
+    return fini(t, 7, 13, (14, 30, 10))
+
+
+def pavot_californie(graine, variante):
+    """Des pavots de Californie : des feuilles fines et découpées, vert-bleu, dressées en éventail ; des fleurs
+    orange en coupe."""
+    r = random.Random(graine)
+    n = 3 if variante != 2 else 2
+    glauque = [(30, 50, 44), (60, 92, 80), (100, 136, 118), (150, 180, 160)]
+    t = petite(14, 14, 12)
+    for k in range(9):
+        a = (k / 8 - 0.5) * 1.9
+        L = r.uniform(4, 6)
+        for d in range(int(L)):
+            x, y = 7 + math.sin(a) * d, 12 - math.cos(a) * d
+            t.pose(int(round(x)), int(round(y)), glauque[2 if a < 0 else 1])
+            if d == int(L) - 1:
+                t.pose(int(round(x)), int(round(y)) - 1, glauque[3])
+    for k in range(n):
+        x, y = 4 + k * 3 + r.randint(0, 1), r.randint(3, 6)
+        c = FL_ORANGE
+        for dx, dy, cc in ((-1, 0, c[1]), (1, 0, c[1]), (0, 0, c[2]), (-1, -1, c[2]), (1, -1, c[3]), (0, 1, c[0])):
+            t.pose(x + dx, y + dy, cc)
+    return fini(t, 7, 12, (16, 30, 24))
+
+
+def tournesol_sauvage(graine, variante):
+    """Des tournesols sauvages : de hautes tiges, deux feuilles, de grandes têtes jaunes au cœur brun."""
+    n = 3 if variante == 0 else 2
+    t = petite(22, 22, 20)
+    for k in range(n):
+        x = 4 + k * 7
+        for y in range(7, 20):
+            t.pose(x, y, sur(RAMPE_PRE, 4))
+        for dx, y in ((-2, 13), (-1, 13), (1, 15), (2, 15), (-2, 17), (-1, 17)):
+            t.pose(x + dx, y, sur(RAMPE_PRE, 5))
+    for k in range(n):
+        x, y = 4 + k * 7, 4 + k
+        c = FL_JAUNE
+        for dx in range(-2, 3):
+            for dy in range(-2, 3):
+                if abs(dx) + abs(dy) <= 3:
+                    t.pose(x + dx, y + dy, c[2] if (dx + dy) % 2 else c[1])
+        for dx, dy in ((0, 0), (-1, 0), (0, -1), (-1, -1)):
+            t.pose(x + dx, y + dy, (96, 56, 24) if (dx, dy) != (-1, -1) else (130, 84, 40))
+    return fini(t, 4 + (n - 1) * 7 // 2, 20, (14, 30, 10))
+
+
+def myosotis(graine, variante):
+    """Des myosotis : un coussin bas de feuilles, semé de petites fleurs bleu ciel, quelques cœurs jaunes."""
+    r = random.Random(graine)
+    w, h = 14, 11
+    t = petite(w, h, 9, (5, 1.5))
+    hb = champ_bosses([(7, 8, 5.5, 0.5), (4, 9, 3, 0.5), (10, 9, 3, 0.5)], graine, bosse=0.2)
+    sub = Toile(w, h)
+    feuillage(sub, hb, RAMPE_PRE, graine, pas=2, base=1.8, etendue=3.6, creux=1.4)
+    for k, c in sub.px.items():
+        t.px[k] = c
+    c = FL_BLEU
+    for k in range(9 + variante * 2):
+        x, y = r.randint(2, 11), r.randint(3, 8)
+        t.pose(x, y, c[3] if k % 3 else c[2])
+        if k % 4 == 0:
+            t.pose(x + 1, y, c[2])
+        if k % 5 == 0:
+            t.pose(x, y, (250, 230, 90))
+    return fini(t, 7, 9, (10, 30, 12))
+
+
+def lavande(graine, variante):
+    """De la lavande : une touffe de feuilles étroites gris-vert, des épis violets dressés."""
+    r = random.Random(graine)
+    gris = [(34, 48, 36), (68, 90, 70), (110, 132, 108), (160, 176, 150)]
+    n = 4 if variante != 1 else 3
+    t = petite(14, 16, 13)
+    for k in range(9):
+        a = (k / 8 - 0.5) * 1.8
+        for d in range(4):
+            t.pose(int(7 + math.sin(a) * d), 13 - d, gris[1 + d // 2])
+    for k in range(n):
+        x = 3 + k * (8 // max(1, n - 1))
+        top = r.randint(2, 4)
+        for y in range(top + 4, 11):
+            t.pose(x, y, gris[2])
+        c = FL_VIOLET
+        for d in range(4):
+            t.pose(x, top + d, c[2] if d % 2 == 0 else c[1])
+            if d in (1, 2):
+                t.pose(x + 1, top + d, c[0])
+        t.pose(x, top - 1, c[3])
+    return fini(t, 7, 13, (16, 24, 16))
+
+
+def lupin(graine, variante):
+    """Des lupins : des feuilles palmées au pied, de hautes grappes coniques violettes, plus claires en haut."""
+    r = random.Random(graine)
+    n = 3 if variante == 0 else 2
+    t = petite(14, 18, 15)
+    for cx in (4, 9):
+        for k in range(5):
+            a = (k / 4 - 0.5) * 2.6
+            for d in range(3):
+                t.pose(int(cx + math.sin(a) * d), int(15 - math.cos(a) * d * 0.6), sur(RAMPE_FORET, 4 + d))
+    for k in range(n):
+        x = 3 + k * (8 // max(1, n - 1))
+        top = r.randint(2, 4)
+        c = FL_VIOLET
+        for d in range(8):
+            larg = 1 if d < 3 else 2
+            for dx in range(-(larg // 2), larg - larg // 2 + (1 if d >= 3 else 0)):
+                t.pose(x + dx, top + d, c[3] if d < 2 else c[2] if d < 5 else c[1])
+        for y in range(top + 8, 15):
+            t.pose(x, y, sur(RAMPE_FORET, 3))
+    return fini(t, 7, 15, (12, 24, 30))
+
+
 def deco_ferme(rangee, colonnes, assombri=1.0):
     """Des décors de l'herbe de la ferme (assets/herbe_deco.png, tuiles de 16 × 16 : rangée, colonnes),
     tels quels (ou assombris), le pied au milieu du bas de la tuile."""
@@ -1064,6 +1206,13 @@ def dessins():
     # (les décors de l'herbe de la ferme : une rangée par teinte de l'herbe)
     out['fleurs'] = [im for te in range(4) for im in deco_ferme(4 + te, (1, 5, 9, 14))]
     out['touffe_pre'] = [im for te in range(4) for im in deco_ferme(te, (0, 3, 7, 13))]
+    # les fleurs sauvages
+    out['coquelicot'] = [coquelicot(1200 + k * 5, k) for k in range(3)]
+    out['pavot_californie'] = [pavot_californie(1220 + k * 5, k) for k in range(3)]
+    out['tournesol_sauvage'] = [tournesol_sauvage(1240 + k * 5, k) for k in range(2)]
+    out['myosotis'] = [myosotis(1260 + k * 5, k) for k in range(3)]
+    out['lavande'] = [lavande(1280 + k * 5, k) for k in range(3)]
+    out['lupin'] = [lupin(1300 + k * 5, k) for k in range(2)]
     return out
 
 
