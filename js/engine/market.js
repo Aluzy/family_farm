@@ -114,10 +114,37 @@ export function sellItem(state, item, qty) {
   const wanted = Math.min(Math.floor(Number(qty)) || 0, Math.floor(sellableCount(state, item) + EPS));
   const n = takeStock(state, item, wanted);
   if (n <= 0) return fail('Rien à vendre.');
+  const gain = encaisserVente(state, item, n);
+  return { ok: true, sold: n, gain };
+}
+
+// Le paiement de `n` unités vendues (déjà sorties du stock : sellItem, ou la malle de la calèche, caleche.js) :
+// les pièces au prix de vente, l'XP, le cours qui baisse d'un pas par unité, les déblocages. → le gain.
+export function encaisserVente(state, item, n) {
   const gain = n * sellPrice(item);
-  earn(state, gain, `Vente : ${def.nom}`, n);
+  earn(state, gain, `Vente : ${DATA.OBJETS[item].nom}`, n);
   gainActionXp(state, 'vendre', gain); // version 1.7 : 1 XP par pièce gagnée
   setMarketCoef(state, item, marketCoef(state, item) - DATA.MARCHE.PAS * n);
   refreshUnlocks(state);
-  return { ok: true, sold: n, gain };
+  return gain;
+}
+
+// Une commande de semences à la calèche (caleche.js, la malle) : payée tout de suite, unité par unité au cours
+// qui monte (comme buyItem), sans rien recevoir encore. → { quantite, cout }.
+export function payerSemences(state, item, qty) {
+  const def = DATA.OBJETS[item];
+  let quantite = 0, cout = 0;
+  for (let i = 0; i < Math.max(0, Math.floor(Number(qty)) || 0); i++) {
+    const price = buyPrice(state, item);
+    if (!pay(state, price, `Commande : ${def.nom}`)) break;
+    setMarketCoef(state, item, marketCoef(state, item) + DATA.MARCHE.PAS);
+    quantite += 1;
+    cout += price;
+  }
+  return { quantite, cout };
+}
+
+// Une commande de semences annulée : le cours reprend ses `n` pas.
+export function rendreSemences(state, item, n) {
+  setMarketCoef(state, item, marketCoef(state, item) - DATA.MARCHE.PAS * n);
 }

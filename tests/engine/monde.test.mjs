@@ -33,7 +33,23 @@ test('le monde : la ferme générée au centre, ses couches et son terrain à le
   // prairie autour n'est « rien » pour l'instant)
   const lu = terrainOfMap(m.carte);
   assertEqual([m.terrain.ROCHERS, m.terrain.ARBRES, m.terrain.ZONES], [lu.ROCHERS, lu.ARBRES, lu.ZONES]);
-  for (let r = 0; r < fh; r++) assertEqual(m.terrain.LIGNES[r + OY].slice(OX, OX + fw), lu.LIGNES[r + OY].slice(OX, OX + fw), `rangée ${r}`);
+  // (sauf les trois cases de la malle de la calèche, réservées : « . » ; de l'herbe libre sur la carte, au bord du
+  // chemin, près de la sortie : monde.js placeMalle)
+  const M = m.terrain.MALLE, malle = new Set(M.cases);
+  assertEqual([M.cases.length, M.cases[1] - M.cases[0], M.cases[2] - M.cases[1]], [3, 1, 1], 'la malle : trois cases côte à côte');
+  for (const c of M.cases) {
+    const x = c % W, y = Math.floor(c / W);
+    assert(x >= OX && x < OX + fw && y >= OY && y < OY + fh, 'la malle : dans la ferme');
+    assert(lu.LIGNES[y][x] === '#' || lu.LIGNES[y][x] === '+', 'la malle : sur de l\'herbe libre');
+    assertEqual(m.terrain.LIGNES[y][x], '.', 'la malle : sa case réservée');
+  }
+  const sortie = m.terrain.MONDE.cadre.SORTIE;
+  assert(Math.abs(M.cases[2] % W - sortie % W) <= 30 && Math.abs(Math.floor(M.cases[2] / W) - Math.floor(sortie / W)) <= 30, 'la malle : près de la sortie');
+  assertEqual([M.x, M.y], [(M.cases[0] % W) * 16, (Math.floor(M.cases[0] / W) + 1) * 16], 'la malle : sa place en px');
+  for (let r = 0; r < fh; r++) {
+    const lue = [...lu.LIGNES[r + OY].slice(OX, OX + fw)].map((ch, c) => (malle.has((r + OY) * W + c + OX) ? '.' : ch)).join('');
+    assertEqual(m.terrain.LIGNES[r + OY].slice(OX, OX + fw), lue, `rangée ${r}`);
+  }
   assert(m.terrain.LIGNES.every((l, r) => (r < OY || r >= OY + fh ? /^\.+$/.test(l) : /^\.+$/.test(l.slice(0, OX)) && /^\.+$/.test(l.slice(OX + fw)))), 'la prairie : rien');
   assertEqual(casesDuTerrain(m.terrain).length, fw * fh, 'le moteur ne parcourt que la ferme');
   // les herbes hautes, les fleurs, les buissons : dans les cases du monde

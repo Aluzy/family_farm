@@ -121,6 +121,8 @@
         for (const k of COMPAGNONS) L.spritesheet(k, v(k + '.png'), CAT_FRAME);
         // la calèche du grand monde (js/carte/ferme/caleche.js, fiche 7c)
         if (K.CALECHE) L.spritesheet(K.CALECHE.key, v(K.CALECHE.file), { frameWidth: K.CALECHE.w, frameHeight: K.CALECHE.h });
+        // sa malle, au bout du chemin de la ferme (js/carte/ferme/malle.js)
+        if (K.MALLE) L.spritesheet(K.MALLE.key, v(K.MALLE.file), { frameWidth: K.MALLE.w, frameHeight: K.MALLE.h });
         // le cheval : sellé, seul (à l'Écurie), son poteau (js/carte/cheval.js)
         if (K.chargeCheval) K.chargeCheval(this, v);
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
@@ -603,6 +605,7 @@
         if (!fige) {
           this.stepHameaux(dt / 1000);            // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
           if (this.stepCaleche) this.stepCaleche(dt / 1000);   // (la calèche : caleche.js)
+          if (this.stepMalle) this.stepMalle();                 // (sa malle : malle.js)
           if (this.stepVisite) this.stepVisite(dt / 1000);     // (la visite de bienvenue : visite.js, fiche 18)
           if (this.stepRencontre) this.stepRencontre(dt / 1000);   // (une scène du récit sur la carte : rencontre.js)
           if (this.stepPresents) this.stepPresents();          // (les présents des amis devant la porte : amis.js)
@@ -921,6 +924,8 @@
         // un habitant d'un hameau (js/carte/ferme/habitants.js) : il parle
         // la calèche du grand monde (js/carte/ferme/caleche.js) : sa fenêtre, ou on la hèle
         if (!hoeing && this.calecheAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.calecheAt(wx, wy)) return { caleche: true };
+        // sa malle, au bout du chemin (js/carte/ferme/malle.js) : il y va, sa fenêtre s'ouvre
+        if (!hoeing && this.malleAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.malleAt(wx, wy)) return { malle: true };
         // le visiteur de la visite de bienvenue (js/carte/ferme/visite.js) : il redit sa phrase
         if (!hoeing && this.visiteurAt && !(this.ctx.lastModel && this.ctx.lastModel.bati) && this.visiteurAt(wx, wy)) return { visiteur: true };
         // un invité d'un repas (js/carte/ferme/invites.js) : un mot
@@ -1206,6 +1211,7 @@
         }
         if (!hit) return;
         if (hit.caleche) { if (this.ctx.bridge.calecheTouchee) this.ctx.bridge.calecheTouchee(); return; }
+        if (hit.malle) { this.malleTouchee(); return; }
         if (hit.habitant) { this.habitantParle(hit.habitant); return; }
         if (hit.compagnon) { if (this.ctx.bridge.compagnonTouche) this.ctx.bridge.compagnonTouche(); return; }
         if (hit.visiteur) { if (this.visiteur) this.visiteParle(this.visiteur); return; }

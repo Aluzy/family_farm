@@ -821,6 +821,7 @@
       // les arbres plantés dans le sol : leur tronc (ceux du Verger, ceux d'une graine : foret.js)
       for (const e of (this.trees || new Map()).values()) if (e.a && e.a.sol) out.push(e.a.case);
       out.push(...this.foretCells());
+      if (this.malleCells) out.push(...this.malleCells());   // (la malle de la calèche : malle.js)
       return out;
     },
 
