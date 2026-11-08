@@ -17,13 +17,15 @@
  * Les étendues d'eau sont peintes par un shader (EAU_FRAG : vagues, eau plus sombre au large,
  * reflets de lumière au fond, ciel de l'heure, ligne d'écume qui avance et recule le long de la
  * rive ; la mer, EAU_MER : la houle qui roule vers la plage, le ressac qui monte sur le sable et
- * redescend, son écume). L'eau ondule : le shader la décale selon une texture dynamique où
- * glissent deux vaguelettes sans raccord (des sinus de périodes entières, dans les canaux rouge
- * et vert), en sens contraires ; la terre des rives (les pixels ni bleus ni blancs) est reposée
- * telle quelle par-dessus, et l'eau déborde un peu sous elle : seuls l'eau et son liseré blanc
- * bougent, jamais l'herbe (eauRive). La lumière y joue selon l'heure :
- *   - le jour, des scintillements (de petites croix claires, en mode « ajouter ») paraissent
- *     et s'éteignent çà et là sur l'eau, loin des rives, plus nombreux et dorés quand le soleil est bas ;
+ * redescend, son écume). L'eau ondule : le shader la décale selon deux vaguelettes sans raccord
+ * (des sinus de périodes entières, dans les canaux rouge et vert d'une texture faite une fois,
+ * eau_vague) qu'il fait glisser lui-même, en sens contraires, d'après le temps ; la terre des rives
+ * (les pixels ni bleus ni blancs) est lue en premier et rendue telle quelle (uRive), et l'eau
+ * déborde un peu sous elle : seuls l'eau et son liseré blanc bougent, jamais l'herbe (eauRive).
+ * La lumière y joue selon l'heure :
+ *   - le jour, des scintillements (de petites croix claires, ajoutées à l'eau) paraissent et
+ *     s'éteignent çà et là sur l'eau, loin des rives, plus nombreux et dorés quand le soleil est
+ *     bas (le shader les tire d'un hachage par cellule de 3 px et par tranche de temps) ;
  *   - la nuit, dans le voile de l'heure (avec les autres lumières de la scène : stepEauLumiere) :
  *     le reflet de la lune, une colonne de traits qui tremblent au milieu de l'eau, et celui des
  *     lumières posées au bord sur l'eau juste en dessous.
@@ -33,11 +35,16 @@
  * la carte, penchée selon l'heure, comme les ombres portées : CarteKit.soleil), rien la nuit.
  * Ce qui se tient au bord se reflète dans l'eau (stepReflets) : arbres, bâtiments, toits,
  * personnages, bêtes, chacun retourné sous son pied, teinté, à `EAU.miroir.alpha` ; dessinés
- * avec les ronds dans une texture par étendue, découpée à l'eau (ses pixels hors de l'eau
- * effacés) et qui ondule avec elle (le même filtre).
+ * avec les ronds dans une texture par étendue (uRefl), que le shader lit avec le même décalage que
+ * l'eau (le reflet ondule exactement avec elle) et seulement sur l'eau (la rive passe devant).
+ * Cette texture n'est redessinée que quand ce qu'elle montre a changé (une empreinte des objets
+ * proches : un étang bordé d'arbres ne coûte rien tant que personne ne passe).
  * Des ronds s'élargissent sur l'eau (rond) : à la pêche, quand un poisson saute (de temps en
  * temps, sautPoisson), quand quelqu'un longe la rive, et de petits ronds au hasard (des insectes).
- * Seulement en WebGL (le filtre, le shader), et pas si le joueur a demandé moins d'animations.
+ * Une étendue d'eau vivante n'est qu'un objet de scène : son shader (fiche 24 : tout ce qui est
+ * statique se calcule une fois, tout ce qui bouge se déduit du temps dans le shader, aucune
+ * texture n'est redessinée par image sans qu'une chose ait changé).
+ * Seulement en WebGL (le shader), et pas si le joueur a demandé moins d'animations.
  */
 (function (global) {
   'use strict';
@@ -46,15 +53,17 @@
   const T = K.T;
   const reducedMotion = K.reduit;
 
-  // L'eau vivante : elle ondule de `ondule` px au plus, ses
-  // vaguelettes glissent à `vitesse` px/s ; les scintillements du jour (`scintille` : `parCase`
-  // par case d'eau, plus quand le soleil est bas ; leur vie en s ; `clair` à midi, `dore` le
-  // soir) ; les reflets de la nuit (`reflets` : des traits tous les `pas` px qui tremblent de
-  // `ecart` px à `tremble` rad/s ; la lune, et les lumières posées au bord, jusqu'à `portee`
-  // cases d'eau en dessous, à `lumiere` de leur éclat)
+  // L'eau vivante : elle ondule de `ondule` px au plus, ses vaguelettes glissent à `vitesse` px/s
+  // (la première en (x, y), la seconde en (-y, 0,7 x) : en sens contraires) ; les scintillements du
+  // jour (`scintille`, dans le shader : par cellule de `cellule` px d'eau, une chance `parCase` par
+  // case (16 px) d'être allumée à un instant donné, plus quand le soleil est bas ; chacun vit `vie` s ;
+  // `alpha` l'éclat ; `clair` à midi, `dore` le soir, à `doreMax` d'entre eux à l'horizon) ; les reflets
+  // de la nuit (`reflets` : des traits tous les `pas` px qui tremblent de `ecart` px à `tremble` rad/s ;
+  // la lune, et les lumières posées au bord, jusqu'à `portee` cases d'eau en dessous, à `lumiere` de
+  // leur éclat)
   const EAU = {
     ondule: 1.5, vitesse: [6, 3.5],
-    scintille: { parCase: 0.05, vie: [0.35, 1.1], alpha: 0.9, clair: 0xffffff, dore: 0xffd27a },
+    scintille: { cellule: 5, parCase: 0.1, vie: 0.7, alpha: 0.9, clair: [1, 1, 1], dore: [1, 0.82, 0.48], doreMax: 1 },
     reflets: { pas: 3, ecart: 1.5, tremble: 2.2, portee: 3, lumiere: 0.6, lune: { long: 12, teinte: 0xcfe0ff, alpha: 0.6 } },
     // les reflets de ce qui se tient au bord (`miroir` : pied à `portee` px au plus au-dessus
     // de l'eau, haut de `haut` px au plus ; retourné, écrasé à `ecrase`, teinté, à `alpha`) ;
@@ -92,31 +101,32 @@
   const P = 64;   // la vaguelette : un carreau de P × P px sans raccord
 
   // Deux vaguelettes (a, b) : rouge et vert, chacun une somme de sinus aux périodes entières
-  // (le carreau se répète sans raccord).
+  // (le carreau se répète sans raccord), l'une à côté de l'autre dans une seule texture
+  // (eau_vague, 2 P × P px : a à gauche, b à droite) que le shader fait glisser lui-même (vague()).
   function vaguelettes(textures) {
-    if (textures.exists('eau_vague_a')) return;
+    if (textures.exists('eau_vague')) return;
     const ondes = [
       [[[1, 2, 0.4], [3, -1, 1.7], [-2, 3, 4.1]], [[2, 1, 2.2], [-1, 3, 0.9], [3, 2, 5.3]]],
       [[[2, -1, 3.1], [1, 3, 0.2], [-3, 2, 2.6]], [[1, -2, 1.1], [3, 1, 4.4], [-2, -3, 0.7]]],
     ];
+    const cvv = document.createElement('canvas');
+    cvv.width = 2 * P; cvv.height = P;
+    const gv = cvv.getContext('2d'), imv = gv.createImageData(2 * P, P);
     ondes.forEach((canaux, i) => {
-      const cv = document.createElement('canvas');
-      cv.width = cv.height = P;
-      const g = cv.getContext('2d'), im = g.createImageData(P, P);
       for (let y = 0; y < P; y++) {
         for (let x = 0; x < P; x++) {
           const v = canaux.map((ws) => ws.reduce((s, [a, b, ph]) => s + Math.sin((2 * Math.PI * (a * x + b * y)) / P + ph), 0) / ws.length);
-          const o = (y * P + x) * 4;
-          im.data[o] = Math.round(128 + 127 * v[0]);
-          im.data[o + 1] = Math.round(128 + 127 * v[1]);
-          im.data[o + 2] = 128;
-          im.data[o + 3] = 255;
+          const o = (y * 2 * P + i * P + x) * 4;
+          imv.data[o] = Math.round(128 + 127 * v[0]);
+          imv.data[o + 1] = Math.round(128 + 127 * v[1]);
+          imv.data[o + 2] = 128;
+          imv.data[o + 3] = 255;
         }
       }
-      g.putImageData(im, 0, 0);
-      textures.addCanvas('eau_vague_' + 'ab'[i], cv);
     });
-    // le scintillement : une petite croix (le cœur, quatre branches pâles)
+    gv.putImageData(imv, 0, 0);
+    textures.addCanvas('eau_vague', cvv);
+    // (une petite croix : l'image de réserve des reflets, stepReflets prend)
     const cv = document.createElement('canvas');
     cv.width = cv.height = 5;
     const g = cv.getContext('2d');
@@ -143,26 +153,28 @@
     for (let i = 0; i < N; i++) tx.add(i, 0, i * RW, 0, RW, RH);
   }
   const RW = 24, RH = 12;
-  const BLOC_MONDE = 256;   // un bloc d'eau entier du grand monde (js/carte/ferme/eau-monde.js), en px
   const AUCUNE = [];
   let scenes = 0;
+  // (un numéro par clé de texture ou d'image, pour l'empreinte des reflets : stepReflets)
+  const cles = new Map();
+  const cleId = (k) => { let n = cles.get(k); if (n === undefined) { n = cles.size + 1; cles.set(k, n); } return n; };
 
-  // Le shader de l'eau (js/carte/ferme/eau.js syncEau ; E.shader) : il peint l'eau de
-  // l'étendue à partir de son image (uBase : l'eau seule, la terre transparente, eauRive), pixel
-  // par pixel (les pixels de la carte, pas ceux de l'écran). Les reflets et l'écume s'inspirent
-  // du shader « 2D Pixel Art Water » de niwho (godotshaders.com, CC0) : deux bruits qui glissent
-  // en sens contraires, et un dégradé depuis la rive.
-  //   - l'eau ondule (uVague : la carte de la déformation, décalée de pixels entiers) ;
-  //   - de légers traits ondulés, clairs, au large : là où deux bruits (uBruit, rouge et vert,
-  //     étirés en largeur) qui glissent en sens contraires se croisent, et seulement par
-  //     endroits (un troisième, lent) ;
-  //   - plus sombre au large (uChamp : la distance à la terre, 0 à 15 px, euclidienne) ;
-  //   - de fins reflets de lumière au fond, là où l'eau est peu profonde ;
-  //   - le ciel s'y reflète (uCiel, la lumière de l'heure, à uCielK) ;
-  //   - le long de la rive, une ligne d'écume qui avance et recule (6), à tant de px de la terre
-  //     (arrondie dans les angles : la distance est euclidienne), coupée par endroits.
-  const EAU_FRAG = `
-#pragma phaserTemplate(shaderName)
+  // Ce que les deux shaders ont en commun (COMMUN, en tête de chacun) :
+  //   - les lecteurs : uBase (l'eau seule, la terre transparente, eauRive), uChamp (la distance à
+  //     la terre, rouge ; la terre ou la distance de la terre à l'eau, vert), uVague (les deux
+  //     vaguelettes, eau_vague), uBruit (eau_bruit), uRefl (les reflets et les ronds de l'étendue,
+  //     stepReflets : prémultipliés) ;
+  //   - vague(p, t) : le décalage de l'eau en pixels entiers, les deux vaguelettes glissant en sens
+  //     contraires (uVit : la vitesse de chacune, px/s), composées comme avant à parts égales ;
+  //   - reflets(c, uv) : la couleur de l'eau sous le reflet (la texture est prémultipliée) ;
+  //   - hache(q) : un hasard de 0 à 1 par cellule ;
+  //   - scintille(c, pw, d, t) : les scintillements du jour, loin de la rive (d ≥ 3 px) : uScint
+  //     (la densité par cellule, l'éclat, la cellule en px, la vie en s), uDore (la part des dorés),
+  //     uScintClair et uScintDore (leurs couleurs). Une cellule brille ou non selon un hasard tiré
+  //     de sa place et de sa tranche de temps (décalée d'une cellule à l'autre : elles ne
+  //     clignotent pas ensemble), en une croix de 5 px (le cœur plein, le bout des branches pâle) qui naît
+  //     et s'éteint en sinus, ajoutée à la couleur.
+  const COMMUN = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
 #define HP highp
 #else
@@ -173,34 +185,97 @@ uniform sampler2D uBase;
 uniform sampler2D uChamp;
 uniform sampler2D uVague;
 uniform sampler2D uBruit;
+uniform sampler2D uRefl;
 uniform vec2 uTaille;
-uniform float uTemps;
+uniform HP float uTemps;
 uniform float uOndule;
+uniform vec4 uVit;
 uniform vec3 uCiel;
 uniform float uCielK;
-uniform vec4 uVagues;
-uniform vec4 uEcume;
-uniform vec4 uOmbre;
-uniform float uDehors;
 uniform HP vec2 uOrigine;
 varying vec2 outTexCoord;
 float bruit(HP vec2 p) { return texture2D(uBruit, fract(p / 128.0)).r; }
 float bruit2(HP vec2 p) { return texture2D(uBruit, fract(p / 128.0)).g; }
-float reflet(HP vec2 p, float t) {
+vec2 vague(HP vec2 p, HP float t) {
+  vec2 ua = fract((p + t * uVit.xy) / 64.0);
+  vec2 ub = fract((p + t * uVit.zw) / 64.0);
+  vec2 a = texture2D(uVague, vec2(ua.x * 0.5, ua.y)).rg - 0.5;
+  vec2 b = texture2D(uVague, vec2(0.5 + ub.x * 0.5, ub.y)).rg - 0.5;
+  return floor((a + b) * uOndule + 0.5);
+}
+vec3 reflets(vec3 c, vec2 uv) {
+  vec4 r = texture2D(uRefl, uv);
+  return c * (1.0 - r.a) + r.rgb;
+}
+float hache(HP vec2 q) {
+  HP vec3 p3 = fract(vec3(q.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+uniform vec4 uScint;
+uniform float uDore;
+uniform vec3 uScintClair;
+uniform vec3 uScintDore;
+vec3 scintille(vec3 c, HP vec2 pw, float d, HP float t) {
+  if (uScint.y <= 0.0 || d < 3.0) return c;
+  HP vec2 cell = floor(pw / uScint.z);
+  float ph = hache(cell + 0.37);
+  float age = fract(t / uScint.w + ph);
+  HP float tranche = floor(t / uScint.w + ph);
+  float on = step(1.0 - uScint.x, hache(cell * 1.013 + tranche * 7.31 + 11.0));
+  HP vec2 l = pw - cell * uScint.z - floor(uScint.z * 0.5) - 0.5;   // (depuis le cœur de la cellule)
+  float croix = step(abs(l.x) * abs(l.y), 0.0) * step(abs(l.x) + abs(l.y), 2.0);
+  float eclat = mix(1.0, 0.55, step(1.5, abs(l.x) + abs(l.y)));
+  vec3 col = mix(uScintClair, uScintDore, step(1.0 - uDore, hache(cell + 5.1)));
+  return c + col * on * croix * eclat * sin(3.14159 * age) * uScint.y;
+}
+`;
+
+  // Le shader de l'eau (js/carte/ferme/eau.js syncEau ; E.shader) : il peint l'eau de
+  // l'étendue à partir de son image (uBase : l'eau seule, la terre transparente, eauRive), pixel
+  // par pixel (les pixels de la carte, pas ceux de l'écran). Les reflets et l'écume s'inspirent
+  // du shader « 2D Pixel Art Water » de niwho (godotshaders.com, CC0) : deux bruits qui glissent
+  // en sens contraires, et un dégradé depuis la rive.
+  //   - la terre de la rive (uRive : l'herbe, la berge, eauRive) est rendue telle quelle, en
+  //     premier : elle ne bouge pas, et rien ne se peint dessus ;
+  //   - l'eau ondule (vague() : la déformation, décalée de pixels entiers) ;
+  //   - de légers traits ondulés, clairs, au large : là où deux bruits (uBruit, rouge et vert,
+  //     étirés en largeur) qui glissent en sens contraires se croisent, et seulement par
+  //     endroits (un troisième, lent) ;
+  //   - plus sombre au large (uChamp : la distance à la terre, 0 à 15 px, euclidienne) ;
+  //   - de fins reflets de lumière au fond, là où l'eau est peu profonde ;
+  //   - le ciel s'y reflète (uCiel, la lumière de l'heure, à uCielK) ;
+  //   - le long de la rive, une ligne d'écume qui avance et recule (6), à tant de px de la terre
+  //     (arrondie dans les angles : la distance est euclidienne), coupée par endroits ;
+  //   - l'ombre de la berge (uOmbre), du côté d'où vient le soleil ;
+  //   - les reflets de ce qui se tient au bord (uRefl), décalés comme l'eau ;
+  //   - le jour, les scintillements (scintille, COMMUN).
+  const EAU_FRAG = `
+#pragma phaserTemplate(shaderName)
+${COMMUN}
+uniform sampler2D uRive;
+uniform vec4 uVagues;
+uniform vec4 uEcume;
+uniform vec4 uOmbre;
+uniform float uDehors;
+float reflet(HP vec2 p, HP float t) {
   HP vec2 q = p * 0.16;
   float v = sin(q.x + 1.7 * sin(q.y * 0.8 + t * 0.7)) + sin(q.y * 1.2 + 1.5 * sin(q.x * 0.9 - t * 0.6));
   return step(abs(v), 0.07);
 }
 void main() {
   vec2 px = floor(outTexCoord * uTaille) + 0.5;
-  vec2 w = texture2D(uVague, px / uTaille).rg - 0.5;
-  vec2 off = floor(w * 2.0 * uOndule + 0.5);
-  // (bornée à l'image : une texture de 256 px de côté, un bloc du grand monde, se répéterait)
-  vec4 base = texture2D(uBase, clamp(px + off, vec2(0.5), uTaille - 0.5) / uTaille);
-  if (base.a < 0.5) { gl_FragColor = vec4(0.0); return; }
-  float d = texture2D(uChamp, px / uTaille).r * 15.0;
-  float t = uTemps;
+  vec2 uv = px / uTaille;
+  vec4 rive = texture2D(uRive, uv);
+  if (rive.a > 0.5) { gl_FragColor = rive; return; }
+  HP float t = uTemps;
   HP vec2 pw = px + uOrigine;
+  vec2 off = vague(pw, t);
+  // (bornée à l'image : une texture de 256 px de côté, un bloc du grand monde, se répéterait)
+  vec2 uvd = clamp(px + off, vec2(0.5), uTaille - 0.5) / uTaille;
+  vec4 base = texture2D(uBase, uvd);
+  if (base.a < 0.5) { gl_FragColor = vec4(0.0); return; }
+  float d = texture2D(uChamp, uv).r * 15.0;
   vec3 c = base.rgb;
   float large = smoothstep(3.0, 7.0, d);
   // les traits ondulés : là où les deux bruits se croisent (étirés en largeur : des traits
@@ -232,6 +307,10 @@ void main() {
     if (hors ? uDehors > 0.5 : texture2D(uChamp, q / uTaille).g > 0.5) ombre = 1.0 - 0.45 * (v - 1.0) / max(1.0, uOmbre.w);
   }
   c = mix(c, c * vec3(0.46, 0.55, 0.64), ombre * uOmbre.z);
+  // les reflets de ce qui se tient au bord, et les ronds : ils ondulent avec l'eau
+  c = reflets(c, uvd);
+  // les scintillements du jour, loin de la rive
+  c = scintille(c, pw, d, t);
   gl_FragColor = vec4(c, 1.0);
 }`;
 
@@ -248,56 +327,39 @@ void main() {
   //     redescend ; le sable reste mouillé (plus sombre) derrière elle. La terre de l'étendue
   //     (uTerre : les pixels de terre de ses tuiles, eauRive) est peinte ici, sous la nappe ;
   //     ailleurs, la nappe se pose sur le sol de la carte ;
-  //   - l'eau ondule et le ciel s'y reflète, comme au lac.
+  //   - l'eau ondule et le ciel s'y reflète, comme au lac ; les scintillements du jour ; les ronds
+  //     (uRefl) ondulent avec elle.
   // (Les couleurs sortent prémultipliées par leur opacité.)
   const EAU_MER = `
 #pragma phaserTemplate(shaderName)
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-#define HP highp
-#else
-#define HP mediump
-#endif
-precision mediump float;
-uniform sampler2D uBase;
-uniform sampler2D uChamp;
-uniform sampler2D uVague;
-uniform sampler2D uBruit;
+${COMMUN}
 uniform sampler2D uTerre;
-uniform vec2 uTaille;
-uniform float uTemps;
-uniform float uOndule;
 uniform float uPortee;
-uniform vec3 uCiel;
-uniform float uCielK;
 uniform vec4 uHoule;
 uniform vec4 uRessac;
 uniform vec3 uNappe;
-uniform HP vec2 uOrigine;
-varying vec2 outTexCoord;
-float bruit(HP vec2 p) { return texture2D(uBruit, fract(p / 128.0)).r; }
-float bruit2(HP vec2 p) { return texture2D(uBruit, fract(p / 128.0)).g; }
 void main() {
   vec2 px = floor(outTexCoord * uTaille) + 0.5;
-  vec4 ch = texture2D(uChamp, px / uTaille);
+  vec2 uv = px / uTaille;
+  vec4 ch = texture2D(uChamp, uv);
   float d = ch.r * uPortee;
   float dl = ch.g * 15.0;
-  float t = uTemps;
+  HP float t = uTemps;
+  HP vec2 pw = px + uOrigine;
+  vec2 off = vague(pw, t);
+  // (bornée à l'image : une texture de 256 px de côté, un bloc du grand monde, se répéterait)
+  vec2 uvd = clamp(px + off, vec2(0.5), uTaille - 0.5) / uTaille;
   // (au large, à uPortee px de la terre et plus : ni houle, ni ressac, ni terre ; l'eau qui ondule,
-  // plus sombre, et le ciel : le gros de la mer, vite fait)
+  // plus sombre, le ciel et les ronds : le gros de la mer, vite fait)
   if (d > uPortee - 0.5) {
-    vec2 wl = texture2D(uVague, px / uTaille).rg - 0.5;
-    vec4 bl = texture2D(uBase, clamp(px + floor(wl * 2.0 * uOndule + 0.5), vec2(0.5), uTaille - 0.5) / uTaille);
-    gl_FragColor = vec4(mix(bl.rgb * 0.82, uCiel, uCielK), 1.0);
+    vec4 bl = texture2D(uBase, uvd);
+    gl_FragColor = vec4(reflets(scintille(mix(bl.rgb * 0.82, uCiel, uCielK), pw, d, t), uvd), 1.0);
     return;
   }
-  HP vec2 pw = px + uOrigine;
   float ph = t * uRessac.z + mod(pw.x, 1795.0) * 0.035 + 2.5 * bruit(vec2(pw.x * 0.35, 7.0));
   float monte = uRessac.x + uRessac.y * (0.5 + 0.5 * sin(ph));
-  vec4 terre = texture2D(uTerre, px / uTaille);
-  vec2 w = texture2D(uVague, px / uTaille).rg - 0.5;
-  vec2 off = floor(w * 2.0 * uOndule + 0.5);
-  // (bornée à l'image : une texture de 256 px de côté, un bloc du grand monde, se répéterait)
-  vec4 base = texture2D(uBase, clamp(px + off, vec2(0.5), uTaille - 0.5) / uTaille);
+  vec4 terre = texture2D(uTerre, uv);
+  vec4 base = texture2D(uBase, uvd);
   if (base.a < 0.5 || terre.a > 0.5) {
     if (dl > 0.0 && dl < monte) {
       float bord = step(monte - 1.2, dl) * step(0.3, bruit2(pw * 0.7 + vec2(t, 0.0)));
@@ -329,6 +391,9 @@ void main() {
   float brise = step(d, 1.0 + 3.0 * (0.5 + 0.5 * sin(ph + 2.2))) * step(0.3, bruit2(pw * 0.5 + vec2(-t * 1.5, t)));
   c = mix(c, vec3(0.94, 0.97, 1.0), brise * 0.8);
   c = mix(c, uCiel, uCielK);
+  // les scintillements du jour ; les ronds (la pêche, les poissons), qui ondulent avec l'eau
+  c = scintille(c, pw, d, t);
+  c = reflets(c, uvd);
   gl_FragColor = vec4(c, 1.0);
 }`;
 
@@ -500,74 +565,58 @@ void main() {
       this.eauVive = vive;
     },
 
-    // L'eau vivante d'une étendue : le shader, ses textures, ses reflets.
+    // L'eau vivante d'une étendue : le shader, ses textures, ses reflets. Un seul objet de scène :
+    // le shader lit l'image de l'étendue (uBase), le champ, les vaguelettes et le bruit (communs à
+    // toutes), la rive (uRive) et la texture des reflets (uRefl, stepReflets).
     eauFait(a) {
       const id = this.eauId, i = (this.eauN = (this.eauN || 0) + 1);
       const w = a.tex.width, h = a.tex.height;
-      // (la carte des vaguelettes : la même pour tous les blocs entiers du grand monde, posés sur
-      // les multiples de son carreau : une seule à redessiner à chaque image, eauCommune)
-      const commune = a.monde && w === BLOC_MONDE && h === BLOC_MONDE;
-      const cle = commune ? `eau_carte_${id}_monde` : `eau_carte_${id}_${i}`;
-      if (commune && !this.eauCommune) {
-        this.eauCommune = {
-          carte: dynamique(this, cle, w, h), t: -1,
-          ta: this.make.tileSprite({ x: 0, y: 0, width: w, height: h, key: 'eau_vague_a' }, false).setOrigin(0),
-          tb: this.make.tileSprite({ x: 0, y: 0, width: w, height: h, key: 'eau_vague_b' }, false).setOrigin(0).setAlpha(0.5),
-        };
-      }
-      const carte = commune ? this.eauCommune.carte : dynamique(this, cle, w, h);
-      const ta = commune ? this.eauCommune.ta : this.make.tileSprite({ x: 0, y: 0, width: w, height: h, key: 'eau_vague_a' }, false).setOrigin(0);
-      const tb = commune ? this.eauCommune.tb : this.make.tileSprite({ x: 0, y: 0, width: w, height: h, key: 'eau_vague_b' }, false).setOrigin(0).setAlpha(0.5);
-      // l'eau elle-même : le shader (EAU_FRAG) à la place de l'image de l'étendue (cachée)
       const champ = this.textures.createCanvas(`eau_champ_${id}_${i}`, w, h);
       const rive = this.textures.createCanvas(`eau_rive_${id}_${i}`, w, h);
-      const uni = { temps: 0, ciel: [1, 1, 1], cielK: 0, ombre: [0, 0, 0, 0] };
-      const S = E.shader, M = E.mer;
-      // (l'origine de l'étendue : ses bruits pris en px de la carte, pour qu'ils se suivent d'un
-      // bloc d'eau du monde au suivant ; à la ferme, ceux de son image, comme toujours)
+      // les reflets et les ronds : une texture par étendue, redessinée quand ils changent
+      // (stepReflets), lue par le shader avec le même décalage que l'eau, sur l'eau seulement
+      const refl = dynamique(this, `eau_refl_${id}_${i}`, w, h);
+      refl.clear().render();
+      const uni = { temps: 0, ciel: [1, 1, 1], cielK: 0, ombre: [0, 0, 0, 0], scint: [0, 0, E.scintille.cellule, E.scintille.vie], dore: 0 };
+      const S = E.shader, M = E.mer, Sc = E.scintille;
+      const vit = [E.vitesse[0], E.vitesse[1], -E.vitesse[1], E.vitesse[0] * 0.7];
+      // (l'origine de l'étendue : ses bruits et ses vaguelettes pris en px de la carte, pour qu'ils
+      // se suivent d'un bloc d'eau du monde au suivant ; à la ferme, ceux de son image, comme toujours)
       const origine = a.monde ? [a.x, a.y] : [0, 0];
+      const commun = (set) => {
+        set('uTaille', [w, h]); set('uTemps', uni.temps); set('uOndule', E.ondule); set('uVit', vit);
+        set('uCiel', uni.ciel); set('uCielK', uni.cielK); set('uOrigine', origine);
+        set('uScint', uni.scint); set('uDore', uni.dore); set('uScintClair', Sc.clair); set('uScintDore', Sc.dore);
+      };
       // (la mer, EAU_MER : la houle, le ressac ; la terre de ses tuiles, peinte par le shader)
       const shader = a.mer ? this.add.shader({
-        name: 'eauMer', fragmentSource: EAU_MER, initialUniforms: { uBase: 0, uChamp: 1, uVague: 2, uBruit: 3, uTerre: 4 },
+        name: 'eauMer', fragmentSource: EAU_MER, initialUniforms: { uBase: 0, uChamp: 1, uVague: 2, uBruit: 3, uRefl: 4, uTerre: 5 },
         setupUniforms: (set) => {
-          set('uTaille', [w, h]); set('uTemps', uni.temps); set('uOndule', E.ondule); set('uPortee', M.portee);
-          set('uCiel', uni.ciel); set('uCielK', uni.cielK); set('uOrigine', origine);
+          commun(set);
+          set('uPortee', M.portee);
           set('uHoule', [M.houle.ecart, M.houle.vitesse, M.houle.largeur, M.houle.clair]);
           set('uRessac', [M.ressac.base, M.ressac.va, M.ressac.vitesse, M.ressac.alpha]);
           set('uNappe', M.ressac.nappe);
         },
-      }, a.x, a.y, w, h, [a.tex.key, `eau_champ_${id}_${i}`, cle, 'eau_bruit', `eau_rive_${id}_${i}`]) : this.add.shader({
-        name: 'eauVive', fragmentSource: EAU_FRAG, initialUniforms: { uBase: 0, uChamp: 1, uVague: 2, uBruit: 3 },
+      }, a.x, a.y, w, h, [a.tex.key, champ.key, 'eau_vague', 'eau_bruit', refl.key, rive.key]) : this.add.shader({
+        name: 'eauVive', fragmentSource: EAU_FRAG, initialUniforms: { uBase: 0, uChamp: 1, uVague: 2, uBruit: 3, uRefl: 4, uRive: 5 },
         setupUniforms: (set) => {
-          set('uTaille', [w, h]); set('uTemps', uni.temps); set('uOndule', E.ondule);
-          set('uCiel', uni.ciel); set('uCielK', uni.cielK); set('uOrigine', origine);
+          commun(set);
           set('uVagues', [S.trait, S.glisse, S.clair, S.endroits]);
           set('uEcume', [S.ecume.pres, S.ecume.va, S.ecume.vitesse, S.ecume.alpha]);
           set('uOmbre', uni.ombre); set('uDehors', a.monde ? 0 : 1);
         },
-      }, a.x, a.y, w, h, [a.tex.key, `eau_champ_${id}_${i}`, cle, 'eau_bruit']);
+      }, a.x, a.y, w, h, [a.tex.key, champ.key, 'eau_vague', 'eau_bruit', refl.key, rive.key]);
       shader.setOrigin(0).setDepth(a.sprite.depth);
       // (l'image de l'étendue, sous le shader : transparente ; au grand monde, cachée, elle ne se
       // dessine même plus)
       if (a.monde) a.sprite.setVisible(false); else a.sprite.setAlpha(0);
       a.vive = true;
-      const fx = null;
-      // la terre de l'étendue (l'herbe, la terre des rives), posée telle quelle par-dessus
-      // l'eau qui ondule : elle ne bouge pas (eauRive ; la mer la peint elle-même)
-      const terre = this.add.image(a.x, a.y, `eau_rive_${id}_${i}`).setOrigin(0).setDepth(a.sprite.depth + 0.001).setVisible(!a.mer);
-      // les cases d'eau de l'étendue (les scintillements, les reflets)
+      // les cases d'eau de l'étendue (les ronds, les reflets de la nuit)
       const eau = [];
       if (a.monde) for (const c of a.ordre) eau.push({ x: (c % a.cols) * T, y: Math.floor(c / a.cols) * T });
       else for (const k of this.waters().keys()) { const [x, y] = k.split(',').map(Number); if (x >= a.x && y >= a.y && x < a.x + w && y < a.y + h) eau.push({ x, y }); }
-      // les reflets et les ronds : une texture par étendue, découpée à l'eau (`sec` : ce qui
-      // n'est pas de l'eau, effacé), qui ondule avec elle, juste au-dessus de l'eau
-      const refl = dynamique(this, `eau_refl_${id}_${i}`, w, h);
-      const reflet = this.add.image(a.x, a.y, `eau_refl_${id}_${i}`).setOrigin(0).setDepth(a.sprite.depth + 0.0005);
-      reflet.enableFilters();
-      const fx2 = reflet.filters.internal.addDisplacement(cle, (2 * E.ondule) / w, (2 * E.ondule) / h);
-      const sec = this.textures.createCanvas(`eau_sec_${id}_${i}`, w, h);
-      const secImg = this.make.image({ x: 0, y: 0, key: `eau_sec_${id}_${i}` }, false).setOrigin(0);
-      const v = { a, carte, ta, tb, commune, fx, fx2, champ, shader, uni, eau, rive, terre, refl, reflet, sec, secImg, i, id, brillants: [], profond: null, eauPx: null, ronds: [] };
+      const v = { a, champ, shader, uni, eau, rive, refl, reflVide: true, empreinte: 0, i, id, profond: null, eauPx: null, ronds: [] };
       this.eauRive(v);
       return v;
     },
@@ -586,9 +635,8 @@ void main() {
     eauDefait(v) {
       if (v.a.sprite && v.a.sprite.active) { if (v.a.monde) v.a.sprite.setVisible(!this.tilesStill); else v.a.sprite.setAlpha(1); }
       v.a.vive = false;
-      for (const o of [...(v.commune ? [] : [v.ta, v.tb]), v.terre, v.reflet, v.secImg, ...v.brillants.map((b) => b.img)]) o.destroy();
       shaderDefait(v.shader);
-      for (const k of [...(v.commune ? [] : ['carte']), 'rive', 'refl', 'sec', 'champ']) this.textures.remove(`eau_${k}_${v.id}_${v.i}`);
+      for (const k of ['rive', 'refl', 'champ']) this.textures.remove(`eau_${k}_${v.id}_${v.i}`);
     },
 
     // Après chaque peinture d'une étendue (à la ferme : sol.js paintAnimArea) : ses pixels de terre (ni bleus
@@ -621,11 +669,7 @@ void main() {
       if (berge) for (const [p, col] of berge) { for (let c = 0; c < 3; c++) ri.data[p * 4 + c] = col[c]; ri.data[p * 4 + 3] = 255; }
       rc.putImageData(ri, 0, 0);
       v.rive.refresh();
-      // ce qui n'est pas de l'eau (les reflets y sont effacés)
-      const sc = v.sec.getContext(), si = sc.createImageData(w, h);
-      for (let p = 0; p < w * h; p++) if (!eau[p]) si.data[p * 4 + 3] = 255;
-      sc.putImageData(si, 0, 0);
-      v.sec.refresh();
+      // (les reflets ne se voient que sur l'eau : le shader rend la rive en premier)
       v.eauPx = eau;
       // l'eau déborde sous la terre, ENTRE px (de proche en proche)
       let bord = eau.slice();
@@ -770,19 +814,15 @@ void main() {
       for (const v of avant) this.eauDefait(v);
       this.eauVive = null;
       this.eauAreas = null;
-      if (this.eauCommune) {
-        this.eauCommune.ta.destroy(); this.eauCommune.tb.destroy();
-        this.textures.remove(this.eauCommune.carte.key);
-        this.eauCommune = null;
-      }
       for (const o of this.refletPool || []) o.destroy();
       this.refletPool = null;
       // (l'étendue reprend sa peinture d'origine, sans l'eau qui déborde)
       if (!fin) for (const v of avant) if (v.a.sprite && v.a.sprite.active) this.eauRepeint(v.a);
     },
 
-    // À chaque image : les vaguelettes glissent (la carte de la déformation redessinée), les
-    // scintillements naissent et s'éteignent.
+    // À chaque image : les uniformes du shader (le temps : les vaguelettes glissent, les
+    // scintillements naissent et s'éteignent ; le ciel et le soleil de l'heure), les ronds, les
+    // reflets s'ils ont changé.
     stepEau(time, dt) {
       this.syncEau();
       if (!this.eauVive) return;
@@ -793,19 +833,18 @@ void main() {
         const a = v.a;
         const vu = !(a.x > cam.right || a.y > cam.bottom || a.x + a.tex.width < cam.x || a.y + a.tex.height < cam.y);
         if (!vu) continue;
-        if (!v.commune || this.eauCommune.t !== time) {
-          if (v.commune) this.eauCommune.t = time;
-          v.ta.tilePositionX = s * E.vitesse[0]; v.ta.tilePositionY = s * E.vitesse[1];
-          v.tb.tilePositionX = -s * E.vitesse[1]; v.tb.tilePositionY = s * E.vitesse[0] * 0.7;
-          v.carte.clear().draw(v.ta).draw(v.tb).render();
-        }
         // (le shader : le temps, le ciel de l'heure)
         v.uni.temps = s;
         v.uni.ciel = ciel;
         // (l'ombre de la berge : le soleil de l'heure, rien la nuit)
         v.uni.ombre = sol ? [sol.sh, sol.k, (E.berge.ombre.alpha * sol.alpha) / K.SOLEIL.alpha, E.berge.ombre.haut] : [0, 0, 0, 0];
         v.uni.cielK = E.shader.ciel;
-        this.stepScintille(v, sol, dt);
+        // (les scintillements : la part des cellules allumées, plus quand le soleil est bas ; leur
+        // éclat, celui du soleil, rien la nuit ; la part des dorés, le soir)
+        const Sc = E.scintille, parCellule = (Sc.cellule * Sc.cellule) / (T * T);
+        v.uni.scint[0] = sol ? Sc.parCase * (0.4 + 0.6 * sol.k) * parCellule : 0;
+        v.uni.scint[1] = sol ? (Sc.alpha * sol.alpha) / K.SOLEIL.alpha : 0;
+        v.uni.dore = sol ? Math.max(0, (sol.k - 0.6) / 0.4) * Sc.doreMax : 0;
         this.stepRonds(v, dt);
         this.stepReflets(v);
       }
@@ -916,26 +955,22 @@ void main() {
       return k;
     },
 
-    // Les reflets et les ronds d'une étendue, redessinés : ce qui se tient au bord (une image
-    // debout dont le pied est au-dessus de l'étendue, à E.miroir.portee px au plus, ou dedans),
-    // retourné sous son pied ; les ronds ; puis tout ce qui n'est pas de l'eau effacé.
+    // Les reflets et les ronds d'une étendue : ce qui se tient au bord (une image debout dont le
+    // pied est au-dessus de l'étendue, à E.miroir.portee px au plus, ou dedans), retourné sous son
+    // pied ; les ronds. Dessinés dans la texture uRefl du shader, qui la lit sur l'eau seulement et
+    // la décale comme l'eau. Redessinés seulement quand ils ont changé : une empreinte (la place,
+    // l'image, le sens, l'opacité, l'échelle de chaque image reflétée ; les ronds, qui changent à
+    // chaque image tant qu'ils vivent) comparée à celle de l'image d'avant.
     stepReflets(v) {
       const a = v.a, w = a.tex.width, h = a.tex.height, R = E.miroir;
       if (!this.refletPool) this.refletPool = [];
       const pool = this.refletPool;
-      let n = 0;
-      const prend = () => pool[n] || (pool[n] = this.make.image({ x: 0, y: 0, key: 'eau_scintille' }, false));
-      // (au grand monde, rien à refléter : la texture vidée une fois, son image cachée, son filtre
-      // d'ondulation ne coûte plus rien ; la mer sans rond n'a même pas à chercher)
-      const vide = () => {
-        if (!v.reflVide) { v.refl.clear().render(); v.reflet.setVisible(false); v.reflVide = true; }
-      };
-      if (a.monde && a.mer && !v.ronds.length) { vide(); return; }
-      v.refl.clear();
+      // (la mer, agitée par la houle, ne renvoie pas d'image nette : ni reflets, seulement les ronds)
+      const mer = a.mer;
       // (les images près de l'étendue, relevées toutes les R.liste ms parmi toutes celles de la scène : les
       // passer toutes en revue à chaque image coûtait cher sur une grosse partie, plusieurs milliers)
       const now = performance.now();
-      if (!v.a.mer && (!v.pres || now - v.presT >= R.liste)) {
+      if (!mer && (!v.pres || now - v.presT >= R.liste)) {
         const m = R.marge, pres = [];
         for (const o of this.children.list) {
           if (o.type !== 'Image' && o.type !== 'Sprite') continue;
@@ -946,18 +981,42 @@ void main() {
         v.pres = pres;
         v.presT = now;
       }
-      // (la mer, agitée par la houle, ne renvoie pas d'image nette : ni reflets, seulement les ronds)
-      for (const o of v.a.mer ? AUCUNE : v.pres) {
+      // ce qui se reflète en ce moment, et son empreinte
+      const vus = this.eauVus || (this.eauVus = []);
+      vus.length = 0;
+      let emp = 7;
+      const mele = (x) => { emp = (Math.imul(emp ^ (x | 0), 0x9e3779b1) + 0x7f4a7c15) | 0; };
+      for (const o of mer ? AUCUNE : v.pres) {
         if (!o.active) continue;
-        if (!o.visible || o.alpha < 0.3 || (o.type !== 'Image' && o.type !== 'Sprite') || o.depth < 1 || o.blendMode !== 0 || o === v.reflet) continue;
+        if (!o.visible || o.alpha < 0.3 || (o.type !== 'Image' && o.type !== 'Sprite') || o.depth < 1 || o.blendMode !== 0) continue;
         const key = o.texture && o.texture.key;
         if (!key || key.startsWith('eau_') || key === '__DEFAULT' || key === '__MISSING') continue;
         const H = o.displayHeight, L = o.displayWidth;
         const pied = o.y + (1 - o.originY) * H, gauche = o.x - o.originX * L;
         if (pied < a.y - R.portee || pied > a.y + h || gauche > a.x + w || gauche + L < a.x || H > R.haut) continue;
+        vus.push(o);
+        mele(cleId(key)); mele(cleId(String(o.frame.name)));
+        mele(o.x * 16); mele(pied * 16); mele(o.scaleX * 1024); mele(o.scaleY * 1024);
+        mele(o.angle * 64); mele(o.alpha * 255); mele((o.flipX ? 1 : 0) + (o.flipY ? 2 : 0)); mele(o.originX * 1024);
+      }
+      mele(v.ronds.length);
+      for (const d of v.ronds) { mele(d.x); mele(d.y); mele(d.t * 1000); }
+      if (!vus.length && !v.ronds.length) {
+        // (rien à montrer : la texture vidée une fois)
+        if (!v.reflVide) { v.refl.clear().render(); v.reflVide = true; v.empreinte = 0; }
+        return;
+      }
+      if (emp === v.empreinte && !v.reflVide) return;
+      v.empreinte = emp;
+      v.reflVide = false;
+      let n = 0;
+      const prend = () => pool[n] || (pool[n] = this.make.image({ x: 0, y: 0, key: 'eau_scintille' }, false));
+      v.refl.clear();
+      for (const o of vus) {
+        const H = o.displayHeight, pied = o.y + (1 - o.originY) * H;
         const r = prend();
         n++;
-        r.setTexture(this.eauOpaque(key), o.frame.name).setOrigin(o.originX, 0).setFlip(o.flipX, !o.flipY)
+        r.setTexture(this.eauOpaque(o.texture.key), o.frame.name).setOrigin(o.originX, 0).setFlip(o.flipX, !o.flipY)
           .setScale(o.scaleX, o.scaleY * R.ecrase).setAngle(-o.angle).setAlpha(R.alpha * o.alpha).setTint(R.teinte)
           .setPosition(o.x - a.x, pied - a.y);
         v.refl.draw(r);
@@ -972,43 +1031,7 @@ void main() {
           .setAlpha(E.ronds.alpha * d.a * (1 - k)).setPosition(d.x - a.x, d.y - a.y);
         v.refl.draw(r);
       }
-      if (a.monde && !n) { vide(); return; }
-      if (v.reflVide) { v.reflet.setVisible(true); v.reflVide = false; }
-      v.refl.erase(v.secImg).render();
-    },
-
-    // Les scintillements d'une étendue, le jour (sol : CarteKit.soleil, null la nuit).
-    stepScintille(v, sol, dt) {
-      const S = E.scintille;
-      // plus nombreux quand le soleil est bas (sol.k : 0.3 à midi, 1 à l'horizon)
-      const voulu = sol ? Math.round(v.eau.length * S.parCase * (0.4 + 0.6 * sol.k)) : 0;
-      const dore = sol ? Math.max(0, (sol.k - 0.6) / 0.4) : 0;
-      while (v.brillants.length < voulu) {
-        const img = this.add.image(0, 0, 'eau_scintille').setBlendMode(global.Phaser.BlendModes.ADD).setDepth(v.a.sprite.depth + 0.05).setAlpha(0);
-        v.brillants.push({ img, t: -Math.random() * S.vie[1], vie: 1 });
-      }
-      for (let j = v.brillants.length - 1; j >= 0; j--) {
-        const b = v.brillants[j];
-        b.t += dt;
-        if (b.t < 0) continue;
-        if (b.t >= b.vie) {
-          if (j >= voulu) { b.img.destroy(); v.brillants.splice(j, 1); continue; }
-          // ailleurs sur l'eau, loin des rives (v.profond ; sinon, il attend son tour)
-          const w = v.a.tex.width, P2 = v.profond;
-          let x = -1, y = -1;
-          for (let essai = 0; essai < 8 && x < 0; essai++) {
-            const c = v.eau[(Math.random() * v.eau.length) | 0];
-            const px = Math.floor(c.x - v.a.x + Math.random() * T), py = Math.floor(c.y - v.a.y + Math.random() * T);
-            if (P2 && P2[py * w + px]) { x = v.a.x + px; y = v.a.y + py; }
-          }
-          if (x < 0) { b.t = -0.2; b.img.setAlpha(0); continue; }
-          b.img.setPosition(x, y);
-          b.img.setTint(dore > Math.random() ? S.dore : S.clair);
-          b.vie = S.vie[0] + Math.random() * (S.vie[1] - S.vie[0]);
-          b.t = 0;
-        }
-        b.img.setAlpha(S.alpha * (sol ? sol.alpha / K.SOLEIL.alpha : 0) * Math.sin((Math.PI * b.t) / b.vie));
-      }
+      v.refl.render();
     },
 
     // La nuit, les reflets dans le voile de l'heure : ajoutés à `out` (les lumières des
