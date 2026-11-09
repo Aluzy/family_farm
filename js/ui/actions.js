@@ -42,6 +42,7 @@ export const SOMMEIL_BLOQUEES = new Set([
   'demande-rendre', // (V-2 : rendre une demande d'un habitant)
   'bac-semer', // (les bacs à fleurs : semer une graine de fleur)
   'tonnelet-remplir', // (le tonnelet : y mettre une tomme d'alpage, un moût de houblon)
+  'compost-jeter', 'engrais-many', // (le bac à compost : y jeter des aliments ; glisser l'engrais sur les cultures)
 ]);
 
 // Plusieurs actions, une même fonction (elle reçoit le nom de l'action en 3e argument).

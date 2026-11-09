@@ -1015,6 +1015,8 @@ export const RAW_DATA = {
     "tonneau": { "nom": "Tonneau", "icone": "🛢️‍🍺", "prix": 14, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "ensacheuse": { "nom": "Ensacheuse", "icone": "🫙‍⚙️", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "tonnelet": { "nom": "Tonnelet", "icone": "🛢️‍🧀", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "bac_compost": { "nom": "Bac à compost", "icone": "🪵‍🍂", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "engrais": { "nom": "Engrais", "icone": "🟫‍✨", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "pomme_de_pin": { "nom": "Pomme de pin", "icone": "🌲‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "gland": { "nom": "Gland", "icone": "🌳‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "jeune_pommier": { "nom": "Jeune pommier", "icone": "🌱‍🍎", "prix": 40, "mangeable": false, "categorie": "graine", "arbre": "pommier" },
@@ -1407,6 +1409,7 @@ export const RAW_DATA = {
       "tonneau": { "entrees": { "planche": 4, "lingot_fer": 1 }, "sortie": { "tonneau": 1 }, "debloque": "chaines" },
       "ensacheuse": { "entrees": { "lingot_fer": 2, "planche": 2 }, "sortie": { "ensacheuse": 1 }, "debloque": "chaines" },
       "tonnelet": { "entrees": { "planche": 3, "lingot_fer": 1 }, "sortie": { "tonnelet": 1 }, "debloque": "chaines" },
+      "bac_compost": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "bac_compost": 1 } },
       "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler" },
       "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler" },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
@@ -1625,6 +1628,7 @@ export const RAW_DATA = {
       "tonneau": { "nom": "Tonneau", "objet": "tonneau", "bloque": true, "chaine": "outil" },
       "ensacheuse": { "nom": "Ensacheuse", "objet": "ensacheuse", "bloque": true, "chaine": "outil" },
       "tonnelet": { "nom": "Tonnelet", "objet": "tonnelet", "dehors": true, "bloque": true, "tonnelet": true },
+      "compost": { "nom": "Bac à compost", "objet": "bac_compost", "dehors": true, "bloque": true, "compost": true },
       "distributeur": {
         "nom": "Distributeur de grain",
         "objet": "distributeur",
@@ -1945,7 +1949,7 @@ export const RAW_DATA = {
       "elevage": {
         "nom": "Élevage",
         "icone": "🐔",
-        "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "bloc_silo", "meule"]
+        "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "compost", "bloc_silo", "meule"]
       },
       "jardin": {
         "nom": "Jardin",
@@ -2041,6 +2045,7 @@ export const RAW_DATA = {
     "NUITS": 2,
     "AFFINE": { "tomme_alpage": "fromage_alpage", "mout_houblon": "biere_artisanale" }
   },
+  "COMPOST": { "NOM": "Bac à compost", "ICONE": "🪵‍🍂", "OBJET": "compost", "ENGRAIS": "engrais", "PAR_ENGRAIS": 10, "MAX_ENGRAIS": 5 },
   "BOTTELEUSE": { "NOM": "Botteleuse", "ICONE": "⚙️‍🌾", "FIBRES": 10, "VIBRE_S": 3, "PAILLE": 10, "CONVOYEUR": 2 },
   "STATIONS": {
     "four": {

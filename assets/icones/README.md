@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 479 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 481 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -398,6 +398,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/colorant_vert.png" width="48" height="48" alt=""> | 🟢 | [`colorant_vert.png`](colorant_vert.png) |
 | <img src="apercu/colorant_violet.png" width="48" height="48" alt=""> | 🟣 | [`colorant_violet.png`](colorant_violet.png) |
 | <img src="apercu/large_brown_square+medium_black_circle.png" width="48" height="48" alt=""> | 🟫‍⚫ | [`large_brown_square+medium_black_circle.png`](large_brown_square+medium_black_circle.png) |
+| <img src="apercu/engrais.png" width="48" height="48" alt=""> | 🟫‍✨ | [`engrais.png`](engrais.png) |
 | <img src="apercu/large_brown_square+white_large_square.png" width="48" height="48" alt=""> | 🟫‍⬜ | [`large_brown_square+white_large_square.png`](large_brown_square+white_large_square.png) |
 | <img src="apercu/large_brown_square+chequered_flag.png" width="48" height="48" alt=""> | 🟫‍🏁 | [`large_brown_square+chequered_flag.png`](large_brown_square+chequered_flag.png) |
 | <img src="apercu/large_brown_square+black_square_button.png" width="48" height="48" alt=""> | 🟫‍🔲 | [`large_brown_square+black_square_button.png`](large_brown_square+black_square_button.png) |
@@ -487,6 +488,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/bac_carre.png" width="48" height="48" alt=""> | 🪴‍🟫 | [`bac_carre.png`](bac_carre.png) |
 | <img src="apercu/wood.png" width="48" height="48" alt=""> | 🪵 | [`wood.png`](wood.png) |
 | <img src="apercu/wood+rainbow.png" width="48" height="48" alt=""> | 🪵‍🌈 | [`wood+rainbow.png`](wood+rainbow.png) |
+| <img src="apercu/bac_compost.png" width="48" height="48" alt=""> | 🪵‍🍂 | [`bac_compost.png`](bac_compost.png) |
 | <img src="apercu/wood+link_symbol.png" width="48" height="48" alt=""> | 🪵‍🔗 | [`wood+link_symbol.png`](wood+link_symbol.png) |
 | <img src="apercu/bassin.png" width="48" height="48" alt=""> | 🪷‍🧱 | [`bassin.png`](bassin.png) |
 | <img src="apercu/coral.png" width="48" height="48" alt=""> | 🪸 | [`coral.png`](coral.png) |

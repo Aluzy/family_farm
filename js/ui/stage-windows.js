@@ -50,6 +50,8 @@ import { renderChapterBanner } from './chapitres.js';
 import { renderBoite } from './boite.js';
 import { renderTonnelets } from './tonnelet.js';
 import { tonneletsPoses } from '../engine/tonnelets.js';
+import { renderComposts } from './compost.js';
+import { compostsPoses } from '../engine/compost.js';
 import { renderFrigoFenetre } from './frigo.js';
 import { boitePosee } from '../engine/repas.js';
 import { tutoTarget } from './aide.js';
@@ -290,6 +292,11 @@ export const STAGE_WINDOWS = {
   tonnelet: {
     nom: 'Tonnelets', icone: DATA.TONNELET.ICONE, ok: () => tonneletsPoses(state).length > 0, bois: true,
     corps: () => renderTonnelets(),
+  },
+  // Les bacs à compost posés dehors (un appui sur l'un d'eux) : ce qu'ils contiennent, y jeter des aliments.
+  compost: {
+    nom: 'Bacs à compost', icone: DATA.COMPOST.ICONE, ok: () => compostsPoses(state).length > 0, bois: true,
+    corps: () => renderComposts(),
   },
   // Meubles de la maison (intérieur) : chacun ouvre sa fenêtre, dans le cadre bois.
   // Le four : deux onglets, les aliments (pains, tartes…) et les objets (la fonte des lingots).

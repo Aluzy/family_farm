@@ -64,6 +64,7 @@
 #   253 : le mortier et son pilon (la station des colorants, js/engine/kitchen.js) : sur un petit établi, le
 #            mortier de pierre et sa poudre violette, deux pots de colorant (rouge, bleu), un petit bouquet.
 #   254 : le tonnelet d'affinage et de fermentation (js/engine/tonnelets.js ; rendu par scripts/carte/tonnelet.py).
+#   255-257 : le bac à compost vide, à moitié, plein (js/engine/compost.js ; rendu par scripts/carte/compost.py).
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -76,6 +77,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tonnelet import tonnelet as _tonnelet  # noqa: E402
+from compost import compost as _compost  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..'))  # scripts/pixel.py
@@ -2831,6 +2833,8 @@ MORTIER = len(DESSINS)                           # le mortier (BLOCS_CARTE.frame
 DESSINS += [mortier()]
 TONNELET = len(DESSINS)                          # le tonnelet d'affinage (BLOCS_CARTE.frames.tonnelet ; scripts/carte/tonnelet.py)
 DESSINS += [_tonnelet()]
+COMPOST = len(DESSINS)                           # le bac à compost, vide, à moitié, plein (BLOCS_CARTE.frames.compost + niveau)
+DESSINS += [_compost(0), _compost(1), _compost(2)]
 
 
 def masque(g, x, y):

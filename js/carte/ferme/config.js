@@ -179,7 +179,9 @@ const CULTURE_MONTE = 0;
       // le mortier et son pilon (la station des colorants : scripts/carte/blocs.py mortier)
       mortier: 253,
       // le tonnelet d'affinage et de fermentation (js/carte/ferme/tonnelets.js : il s'écrase et se relève en action)
-      tonnelet: 254 },
+      tonnelet: 254,
+      // le bac à compost : vide, il se remplit, un engrais au moins (+ son niveau, js/engine/compost.js)
+      compost: 255 },
     // le mobilier de jardin tourné (js/engine/blocs.js, sensBloc ; scripts/carte/blocs.py) : son image dans
     // chaque sens (de face, vers la droite, de dos, vers la gauche) et s'il est retourné en miroir
     sens: {
@@ -322,14 +324,14 @@ const CULTURE_MONTE = 0;
     // la meule qui moud (le Moulin en marche) : sa pierre et sa manivelle tournent (`fps` images
     // par seconde, un tour en 8 images ; chantier.js stepFires)
     meule: { sorte: 'meule', frames: [81, 82, 83, 84, 85, 86, 87, 88], fps: 8 },
-    plats: ['paillasse', 'escalier'], bloquent: ['bassin', 'mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'barriere_blanche', 'barriere_rouge', 'barriere_grise', 'barriere_chene', 'barriere_verte', 'barriere_lavande', 'portail', 'atelier', 'four', 'cuisiniere', 'mortier', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'bloc_silo', 'meule', 'lanterne', 'candelabre', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur', 'reservoir', 'pressoir', 'centrifugeuse', 'mixeur', 'chaudron', 'tonneau', 'ensacheuse', 'boite_nourriture', 'ruche', 'tonnelet', 'bac_fleurs', 'table_jardin', 'chaise_jardin', 'banc_jardin', 'banc_rondins', 'table_rondins', 'chaise_peinte', 'jarre_coquillages', 'lanterne_papier', 'bassin_nenuphars', 'banc_pierre', 'jardiniere_pierre', 'bac_lavande'],
+    plats: ['paillasse', 'escalier'], bloquent: ['bassin', 'mur_pierre', 'mur_fenetre', 'fenetre_ronde', 'fenetre_cintree', 'fenetre_volets', 'fenetre_vitrail', 'pierre_angle', 'paroi_vitree', 'mur_brique_rouge', 'mur_brique_orange', 'mur_brique_ocre', 'mur_brique_bleue', 'mur_pierre_taille', 'mur_bois', 'barriere', 'barriere_blanche', 'barriere_rouge', 'barriere_grise', 'barriere_chene', 'barriere_verte', 'barriere_lavande', 'portail', 'atelier', 'four', 'cuisiniere', 'mortier', 'puits', 'citerne', 'panneau', 'batterie', 'nichoir', 'mangeoire', 'bac_semis', 'bloc_silo', 'meule', 'lanterne', 'candelabre', 'station_robot', 'entonnoir', 'botteleuse', 'convoyeur', 'reservoir', 'pressoir', 'centrifugeuse', 'mixeur', 'chaudron', 'tonneau', 'ensacheuse', 'boite_nourriture', 'ruche', 'tonnelet', 'compost', 'bac_fleurs', 'table_jardin', 'chaise_jardin', 'banc_jardin', 'banc_rondins', 'table_rondins', 'chaise_peinte', 'jarre_coquillages', 'lanterne_papier', 'bassin_nenuphars', 'banc_pierre', 'jardiniere_pierre', 'bac_lavande'],
     // dessinés par la scène avec leurs propres images (puits.png et sa pompe, citerne.png ; la
     // station du robot : station_robot.png, machines.js ; les blocs de silo : silo.js)
     ailleurs: ['puits', 'citerne', 'station_robot', 'bloc_silo', 'bassin'],
     // un appui sur le four ou la cuisinière ouvre la fenêtre de sa station ; sur le panneau, la
     // batterie, le puits ou la citerne, l'énergie ou l'eau ; sur le nichoir, le Poulailler ; sur la mangeoire, l'Étable ; sur le bac à semis, la Serre ;
     // sur la meule, le Moulin ; sur la boîte à nourriture, ce qu'elle contient (le silo : silo.js, siloAt)
-    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', mortier: 'mortier', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo', tonnelet: 'tonnelet' },
+    fenetres: { atelier: 'atelier', four: 'four', cuisiniere: 'cuisine', mortier: 'mortier', panneau: 'energie', batterie: 'energie', puits: 'eau', citerne: 'eau', nichoir: 'poulailler', mangeoire: 'etable', bac_semis: 'serre', meule: 'moulin', station_robot: 'robot', boite_nourriture: 'boite', refrigerateur: 'frigo', tonnelet: 'tonnelet', compost: 'compost' },
     // le bloc clé de chaque bâtiment (étape 5b) : là où l'on ramasse ce qu'il donne (le silo :
     // le pied de sa première colonne)
     cles: { poulailler: 'nichoir', etable: 'mangeoire', serre: 'bac_semis', silo: 'bloc_silo' },

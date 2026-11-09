@@ -23,6 +23,7 @@ import { TIRED } from './stamina.js';
 import { aiderMembre } from './repas.js';
 import { recolterRuche, rucheDuTas, ruchesARecolter } from './ruches.js';
 import { recolterTonnelet, tonneletDuTas, tonneletsARecolter } from './tonnelets.js';
+import { compostDuTas, compostsARecolter, recolterCompost } from './compost.js';
 
 function pileId(lieu, ref) {
   return ref === null || ref === undefined ? lieu : `${lieu}:${ref}`;
@@ -62,6 +63,8 @@ export function pickUp(state, id) {
   if (rucheDuTas(id) !== null) return recolterRuche(state, rucheDuTas(id));
   // (un tonnelet prêt, « tonnelet:<case> » : son fromage, sa bière, js/engine/tonnelets.js)
   if (tonneletDuTas(id) !== null) return recolterTonnelet(state, tonneletDuTas(id));
+  // (un bac à compost qui a de l'engrais, « compost:<case> », js/engine/compost.js)
+  if (compostDuTas(id) !== null) return recolterCompost(state, compostDuTas(id));
   const pile = state.aRamasser && state.aRamasser[id];
   if (!pile) return fail('Il n\'y a plus rien à ramasser ici.');
   delete state.aRamasser[id];
@@ -122,6 +125,7 @@ export function aideAFaire(state) {
   if (a.etable || (E && (E.moutons || []).some(woolReady))) out.push('etable');
   for (const r of ruchesARecolter(state)) out.push(r.id);
   for (const r of tonneletsARecolter(state)) out.push(r.id);
+  for (const r of compostsARecolter(state)) out.push(r.id);
   return out;
 }
 
@@ -130,9 +134,9 @@ export function aideAFaire(state) {
 // attend ou récolte le miel, qui entre dans l'inventaire. Renvoie { ok, items, nourries }.
 export function aideBetes(state, lieu) {
   if (!aidant(state)) return fail('Il faut un second adulte dans le foyer.');
-  const ruche = rucheDuTas(lieu), tonnelet = tonneletDuTas(lieu);
-  if (ruche !== null || tonnelet !== null) {
-    const r = ruche !== null ? recolterRuche(state, ruche) : recolterTonnelet(state, tonnelet);
+  const ruche = rucheDuTas(lieu), tonnelet = tonneletDuTas(lieu), compost = compostDuTas(lieu);
+  if (ruche !== null || tonnelet !== null || compost !== null) {
+    const r = ruche !== null ? recolterRuche(state, ruche) : tonnelet !== null ? recolterTonnelet(state, tonnelet) : recolterCompost(state, compost);
     if (!r.ok) return r;
     aiderMembre(state, aidant(state).id);
     return { ok: true, items: r.items, nourries: 0 };
