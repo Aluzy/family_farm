@@ -5,10 +5,11 @@ import { allPlots, findPlot, isMature, maxStage } from './crops.js';
 
 /* ---------- le bac à compost et l'engrais (docs/compost.md) ----------
    Un bac à compost se fabrique à l'Atelier et se pose dehors comme un bloc (DATA.ATELIER.BLOCS.compost).
-   Chaque nuit, ce qui a périmé (state.nuit.perdus : l'inventaire, la boîte à nourriture, le sac, le
-   réfrigérateur) va dans les bacs posés, jusqu'à ce qu'ils soient pleins (COMPOST.MAX_ENGRAIS engrais chacun) ;
-   COMPOST.PAR_ENGRAIS aliments périmés font un engrais, qui attend qu'on le prenne : une bulle, comme le miel
-   d'une ruche pleine (un tas à ramasser « compost:<case> », js/engine/ramassage.js pickUp).
+   On y jette des aliments (jeterAuCompost, sa fenêtre) ; chaque nuit, ce qui a périmé (state.nuit.perdus :
+   l'inventaire, la boîte à nourriture, le sac, le réfrigérateur) y va aussi tout seul. COMPOST.PAR_ENGRAIS (1)
+   aliment fait un engrais, au plus COMPOST.MAX_ENGRAIS par bac ; ils attendent qu'on les prenne : une bulle, comme
+   le miel d'une ruche pleine (un tas à ramasser « compost:<case> », js/engine/ramassage.js pickUp). L'engrais
+   s'achète aussi à la calèche (OBJETS.engrais.comptoir, market.js isBuyable).
 
    L'engrais se glisse sur les cultures arrosées (des cases violettes sur la carte, comme les bleues de
    l'arrosage) : chacune gagne un cycle tout de suite (un stade), une fois par arrosage (p.engrais, oublié quand
@@ -40,8 +41,8 @@ export function compostsPoses(state) {
 
 // L'état du bac de `tile` : null (pas de bac), ou { matiere, engrais, reste, niveau, plein }.
 //   matiere : les aliments périmés qu'il garde ; engrais : ceux qu'ils font (à prendre) ;
-//   reste : combien d'aliments manquent pour le prochain ; niveau (son image) : 0 vide, 1 il se remplit,
-//   2 un engrais au moins ; plein : il ne prend plus rien.
+//   reste : combien d'aliments manquent pour le prochain ; niveau (son image) : 0 vide, 1 moins de la moitié
+//   de ses engrais, 2 la moitié au moins ; plein : il ne prend plus rien.
 export function etatCompost(state, tile) {
   const B = state.blocs || {};
   if (B[tile] !== C().OBJET) return null;
@@ -50,7 +51,7 @@ export function etatCompost(state, tile) {
   const engrais = Math.floor(matiere / C().PAR_ENGRAIS);
   return {
     matiere, engrais, reste: C().PAR_ENGRAIS - (matiere % C().PAR_ENGRAIS),
-    niveau: engrais > 0 ? 2 : matiere > 0 ? 1 : 0, plein: matiere >= capaciteCompost(),
+    niveau: matiere <= 0 ? 0 : engrais * 2 < C().MAX_ENGRAIS ? 1 : 2, plein: matiere >= capaciteCompost(),
   };
 }
 

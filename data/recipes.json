@@ -447,13 +447,13 @@
   ],
   "TONNELET": { "NOM": "Tonnelet", "ICONE": "🛢️‍🧀", "OBJET": "tonnelet", "NUITS": 2, "AFFINE": { "tomme_alpage": "fromage_alpage", "mout_houblon": "biere_artisanale" } },
   "//COMPOST": [
-    "Le bac à compost (docs/compost.md, js/engine/compost.js) : un bloc qu'on pose dehors. Chaque nuit, ce qui périme",
-    "(l'inventaire, la boîte à nourriture, le sac, le réfrigérateur) va dans les bacs posés, jusqu'à ce qu'ils soient",
-    "pleins (MAX_ENGRAIS engrais chacun). PAR_ENGRAIS aliments périmés font un engrais : il attend qu'on le prenne",
-    "(une bulle, comme le miel). L'engrais se glisse sur les cultures arrosées (des cases violettes) : chacune gagne",
-    "un cycle tout de suite (un stade), une fois par arrosage."
+    "Le bac à compost (docs/compost.md, js/engine/compost.js) : un bloc qu'on pose dehors. On y jette des aliments (sa",
+    "fenêtre) ; la nuit, ce qui périme y irait aussi tout seul (la péremption est coupée, PENALITES). PAR_ENGRAIS",
+    "aliment fait un engrais, au plus MAX_ENGRAIS par bac : ils attendent qu'on les prenne (une bulle, comme le miel).",
+    "L'engrais s'achète aussi à la calèche (OBJETS.engrais.comptoir). Il se glisse sur les cultures arrosées (des cases",
+    "violettes) : chacune gagne un cycle tout de suite (un stade), une fois par arrosage."
   ],
-  "COMPOST": { "NOM": "Bac à compost", "ICONE": "🪵‍🍂", "OBJET": "compost", "ENGRAIS": "engrais", "PAR_ENGRAIS": 10, "MAX_ENGRAIS": 5 },
+  "COMPOST": { "NOM": "Bac à compost", "ICONE": "🪵‍🍂", "OBJET": "compost", "ENGRAIS": "engrais", "PAR_ENGRAIS": 1, "MAX_ENGRAIS": 20 },
   "BOTTELEUSE": { "NOM": "Botteleuse", "ICONE": "⚙️‍🌾", "FIBRES": 10, "VIBRE_S": 3, "PAILLE": 10, "CONVOYEUR": 2 },
   "STATIONS": {
     "four": { "nom": "Four", "article": "le", "icone": "🔥", "prixConstruction": 100, "electrique": false, "debloque": ["recettes"], "action": "cuireFour" },

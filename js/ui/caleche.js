@@ -342,7 +342,7 @@ export function renderComptoir(fenetre = false) {
   } else {
     const etal = etalCaleche(state, seedForSale);
     const graines = etal.filter((o) => o.sorte === 'semence'), coffre = etal.filter((o) => o.sorte === 'coffre');
-    body = `${malleHtml('acheter')}<h3 class="section-title">🌱 Semences</h3>${slotsHtml(graines.map((o) => buySlot(o, p.ici, p.malle)), 'Aucune semence en vente.')}
+    body = `${malleHtml('acheter')}<h3 class="section-title">🌱 Semences et engrais</h3>${slotsHtml(graines.map((o) => buySlot(o, p.ici, p.malle)), 'Aucune semence en vente.')}
       <h3 class="section-title">🧺 Des hameaux</h3>${slotsHtml(coffre.map((o) => buySlot(o, p.ici, p.malle)), 'Son coffre est vide : elle achète en chemin ce que les hameaux ont en trop.')}`;
   }
   const html = `${bandeauHtml(p, tab.id)}${body}`;

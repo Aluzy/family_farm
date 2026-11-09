@@ -1,5 +1,5 @@
 import { DATA } from '../engine/catalog.js';
-import { aJeterAuCompost, capaciteCompost, compostsPoses, etatCompost } from '../engine/compost.js';
+import { aJeterAuCompost, compostsPoses, etatCompost } from '../engine/compost.js';
 import { state } from './store.js';
 import { persistState } from './storage.js';
 import { applyResult } from './game-actions.js';
@@ -11,9 +11,9 @@ import { refresh } from './render.js';
 import { notify } from './toasts.js';
 
 /* ---------- le bac à compost et l'engrais (docs/compost.md ; js/engine/compost.js) ----------
-   La fenêtre des bacs (un appui sur l'un d'eux, sur la carte) : chacun, ce qu'il contient (une jauge jusqu'au
-   prochain engrais), ses engrais à prendre (la bulle sur la carte) ; puis les aliments de l'inventaire à y jeter
-   (1, ou 10 d'un coup). La péremption coupée (B-1), c'est ainsi qu'il se remplit.
+   La fenêtre des bacs (un appui sur l'un d'eux, sur la carte) : chacun, ce qu'il contient (une jauge
+   jusqu'au plein), ses engrais à prendre (la bulle sur la carte) ; puis les aliments de l'inventaire à y jeter
+   (1, ou 10 d'un coup) : chacun fait un engrais.
 
    Glisser l'engrais (js/farm-stage.js engraisStart) : `engrais-many`, les cultures tracées, chacune gagne un
    cycle (la commande potager.engrais) ; la carte les a fait scintiller avant (js/carte/ferme/engrais.js). */
@@ -28,13 +28,12 @@ function bacOuJeter() {
 }
 
 function ligneBac(t, k) {
-  const e = etatCompost(state, t), P = C().PAR_ENGRAIS;
-  const dans = e.matiere - e.engrais * P;
-  const jauge = `<span class="compost-jauge" role="img" aria-label="${dans} sur ${P} avant le prochain engrais"><span style="width:${Math.round((dans / P) * 100)}%"></span></span>`;
-  const engrais = e.engrais ? `<span>${icone(C().ENGRAIS)} <span class="num">${e.engrais}</span> engrais : appuie sur sa bulle, sur la carte, pour ${e.engrais > 1 ? 'les' : 'le'} prendre.</span>` : '';
-  const etat = e.plein ? '<span class="muted">Plein : prends ses engrais.</span>' : `<span class="muted">Encore <span class="num">${e.reste}</span> pour le prochain engrais.</span>`;
+  const e = etatCompost(state, t), M = C().MAX_ENGRAIS;
+  const jauge = `<span class="compost-jauge" role="img" aria-label="${e.engrais} engrais sur ${M}"><span style="width:${Math.round((e.engrais / M) * 100)}%"></span></span>`;
+  const engrais = e.engrais ? `<span>${icone(C().ENGRAIS)} <span class="num">${e.engrais}</span> engrais : appuie sur sa bulle, sur la carte, pour ${e.engrais > 1 ? 'les' : 'le'} prendre.</span>` : '<span class="muted">Vide : jettes-y des aliments.</span>';
+  const etat = e.plein ? '<span class="muted">Plein : prends ses engrais.</span>' : '';
   return `<li class="compost-ligne"><span class="compost-titre">${C().ICONE} Bac ${k + 1}${t === bacOuJeter() ? ' <span class="muted">· on y jette</span>' : ''}</span>
-      <span class="compost-etat">${jauge}<span class="num">${dans}/${P}</span></span>${engrais}${etat}</li>`;
+      <span class="compost-etat">${jauge}<span class="num">${e.engrais}/${M}</span></span>${engrais}${etat}</li>`;
 }
 
 function aJeter() {
@@ -49,7 +48,7 @@ function aJeter() {
     </li>`).join('');
   return `<ul class="compost-aliments">${lignes}</ul>`;
 }
-const P10 = () => C().PAR_ENGRAIS;
+const P10 = () => 10;
 
 export function renderComposts() {
   const poses = compostsPoses(state);
@@ -58,7 +57,7 @@ export function renderComposts() {
     <div class="cards">
       <div class="card">
         <span class="card-title"><span>${C().ICONE} Bacs à compost · <span class="num">${poses.length}</span></span></span>
-        <span class="muted">${C().PAR_ENGRAIS} aliments font un engrais (au plus ${C().MAX_ENGRAIS} par bac, ${capaciteCompost()} aliments). L'engrais se glisse sur une culture arrosée (des cases violettes) : elle gagne un cycle.</span>
+        <span class="muted">Chaque aliment jeté fait un engrais (au plus ${C().MAX_ENGRAIS} par bac). L'engrais s'achète aussi à la calèche. Il se glisse sur une culture arrosée (des cases violettes) : elle gagne un cycle.</span>
         ${liste}
       </div>
       <div class="card">

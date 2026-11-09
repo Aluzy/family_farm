@@ -772,7 +772,7 @@
       const mur = V[b.sorte] !== undefined;
       // (une ruche : vide, ou pleine, le miel se devine, js/engine/ruches.js)
       if (b.sorte === 'ruche') return BLOCS_CARTE.frames[b.pleine ? 'ruche_pleine' : 'ruche'];
-      // (un bac à compost : vide, il se remplit, un engrais au moins, js/engine/compost.js)
+      // (un bac à compost : vide, moins de la moitié de ses engrais, la moitié au moins, js/engine/compost.js)
       if (b.sorte === 'compost') return BLOCS_CARTE.frames.compost + Math.max(0, Math.min(2, b.niveau | 0));
       // (un segment de convoyeur : le dernier de la file a son rouleau d'extrémité, botteleuse.js)
       if (b.sorte === 'convoyeur') return BLOCS_CARTE.frames[b.case % cols < cols - 1 && at.get(b.case + 1) === 'convoyeur' ? 'convoyeur' : 'convoyeur_bout'];

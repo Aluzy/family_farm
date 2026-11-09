@@ -132,6 +132,9 @@ test('le commerce : à la ferme à l\'heure, on vend une récolte et on achète 
   assertEqual(s.recit.faits['vente.caleche'][2], 1, 'le récit note la vente (Achille s\'en souvient)');
   const a = acheterCaleche(s, 'graine_carotte', 2, ici);
   assert(a.ok && countItem(s, 'graine_carotte') >= 2, 'des graines');
+  const e = acheterCaleche(s, 'engrais', 2, ici);
+  assert(e.ok && countItem(s, 'engrais') === 2, 'de l\'engrais (vendu avec les semences, docs/compost.md)');
+  assert(etalCaleche(s).some((o) => o.item === 'engrais' && o.sorte === 'semence'), 'à son étal');
   assertEqual(acheterCaleche(s, 'carotte', 1, ici).ok, false, 'elle ne vend pas de carottes (son coffre n\'en a pas)');
   assertEqual(acheterCaleche(s, 'meuble_chaise', 1, ici).ok, false, 'ni de meubles');
   assertEqual(s.caleche.jour.vendu, v.gain);
@@ -214,9 +217,9 @@ test('les hameaux : elle achète leur réserve à son arrêt, paie les foyers, e
   assertEqual(h.caleche.pieces, paye);
   assertEqual(s.caleche.coffre, { bois: pris, carotte: 3, poisson: 5 });
   assertEqual(majCaleche(s), [], 'pas deux fois');
-  // elle ne vend que les semences et son coffre
+  // elle ne vend que les semences (et l'engrais, avec elles : DATA.OBJETS.engrais.comptoir) et son coffre
   const etal = etalCaleche(s);
-  assert(etal.every((o) => o.sorte === 'coffre' || DATA.OBJETS[o.item].categorie === 'graine' || o.item === 'ble' || DATA.CULTURES[o.item]), 'des semences et son coffre');
+  assert(etal.every((o) => o.sorte === 'coffre' || DATA.OBJETS[o.item].categorie === 'graine' || o.item === 'ble' || DATA.CULTURES[o.item] || DATA.OBJETS[o.item].comptoir), 'des semences, l\'engrais et son coffre');
   assertEqual(etal.filter((o) => o.sorte === 'coffre').map((o) => o.item), ['bois', 'carotte', 'poisson']);
   // à la ferme le lendemain : du bois et du poisson d'un hameau (la moitié a été vendue en route)
   s.day += 1;

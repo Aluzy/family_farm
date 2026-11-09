@@ -35,10 +35,10 @@ function setMarketCoef(state, item, coef) {
 // Ce qui s'achète encore (fiche 7c : le Marché est devenu la calèche, qui ne vend que les semences
 // à leur cours, et ce que son coffre porte des hameaux : caleche.js) : les graines, les jeunes arbres
 // et ce qui se plante soi-même (le blé, la patate… : isGraineComptoir). Le reste se cultive, se
-// cuisine ou se fabrique à l'Atelier.
+// cuisine ou se fabrique à l'Atelier. (Et ce que la calèche vend avec les semences : `comptoir`, l'engrais.)
 export function isBuyable(item) {
   const def = DATA.OBJETS[item];
-  return !!def && def.rachetable !== false && !def.retire && isGraineComptoir(item);
+  return !!def && def.rachetable !== false && !def.retire && (isGraineComptoir(item) || def.comptoir === true);
 }
 
 export function sellPrice(item) {

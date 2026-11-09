@@ -1016,7 +1016,7 @@ export const RAW_DATA = {
     "ensacheuse": { "nom": "Ensacheuse", "icone": "🫙‍⚙️", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "tonnelet": { "nom": "Tonnelet", "icone": "🛢️‍🧀", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "bac_compost": { "nom": "Bac à compost", "icone": "🪵‍🍂", "prix": 8, "mangeable": false, "categorie": "matériau", "rachetable": false },
-    "engrais": { "nom": "Engrais", "icone": "🟫‍✨", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "engrais": { "nom": "Engrais", "icone": "🟫‍✨", "prix": 5, "mangeable": false, "categorie": "matériau", "comptoir": true },
     "pomme_de_pin": { "nom": "Pomme de pin", "icone": "🌲‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "gland": { "nom": "Gland", "icone": "🌳‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "jeune_pommier": { "nom": "Jeune pommier", "icone": "🌱‍🍎", "prix": 40, "mangeable": false, "categorie": "graine", "arbre": "pommier" },
@@ -2045,7 +2045,7 @@ export const RAW_DATA = {
     "NUITS": 2,
     "AFFINE": { "tomme_alpage": "fromage_alpage", "mout_houblon": "biere_artisanale" }
   },
-  "COMPOST": { "NOM": "Bac à compost", "ICONE": "🪵‍🍂", "OBJET": "compost", "ENGRAIS": "engrais", "PAR_ENGRAIS": 10, "MAX_ENGRAIS": 5 },
+  "COMPOST": { "NOM": "Bac à compost", "ICONE": "🪵‍🍂", "OBJET": "compost", "ENGRAIS": "engrais", "PAR_ENGRAIS": 1, "MAX_ENGRAIS": 20 },
   "BOTTELEUSE": { "NOM": "Botteleuse", "ICONE": "⚙️‍🌾", "FIBRES": 10, "VIBRE_S": 3, "PAILLE": 10, "CONVOYEUR": 2 },
   "STATIONS": {
     "four": {

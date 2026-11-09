@@ -180,7 +180,7 @@ const CULTURE_MONTE = 0;
       mortier: 253,
       // le tonnelet d'affinage et de fermentation (js/carte/ferme/tonnelets.js : il s'écrase et se relève en action)
       tonnelet: 254,
-      // le bac à compost : vide, il se remplit, un engrais au moins (+ son niveau, js/engine/compost.js)
+      // le bac à compost : vide, moins de la moitié de ses engrais, la moitié au moins (+ son niveau, js/engine/compost.js)
       compost: 255 },
     // le mobilier de jardin tourné (js/engine/blocs.js, sensBloc ; scripts/carte/blocs.py) : son image dans
     // chaque sens (de face, vers la droite, de dos, vers la gauche) et s'il est retourné en miroir

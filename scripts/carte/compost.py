@@ -5,8 +5,8 @@ couvercle relevé contre le fond, vu de haut à 45° comme les autres blocs.
 Le dessin est fait en coordonnées continues (une case = 16 unités), échantillonnées au centre de chaque pixel :
   compost(niveau)        l'image du bloc, 16 × 24 (scripts/carte/blocs.py la range dans assets/blocs.png)
   compost(niveau, k=2)   deux fois plus grande, pour l'icône (scripts/icones/compost.py)
-`niveau` : 0 vide, 1 à moitié, 2 plein (le compost déborde, une pousse dessus) ; la carte choisit l'image selon
-ce que le bac contient (js/carte/ferme/chantier.js).
+`niveau` : 0 vide, 1 moins de la moitié de ses engrais, 2 la moitié au moins (le compost déborde, une pousse
+dessus) ; la carte choisit l'image selon ce que le bac contient (js/carte/ferme/chantier.js).
 
 La lumière vient d'en haut à gauche ; des rampes de seize tons (les ombres froides, tirant sur le prune, les
 lumières chaudes, tirant sur le miel), chaque planche sa teinte, le fil du bois, les clous, l'ombre portée du
