@@ -771,6 +771,34 @@ export const MIGRATIONS = {
     if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 2) out.carte = { ...c, generateur: 3 };
     return out;
   },
+  // v78 → v79 (les bacs à fleurs) : les anciens bacs, le bac à fleurs et le bac de lavande, deviennent des bacs carrés
+  // en bois naturel, déjà en fleurs (des coquelicots, de la lavande : state.bacs, js/engine/bacs.js) ; ceux de
+  // l'inventaire, des bacs carrés ; le plan du bac de lavande (il n'y en a plus) s'en va. L'étage garde les siens.
+  78: (state) => {
+    const out = JSON.parse(JSON.stringify({ ...state, version: 79 }));
+    const ANCIENS = { bac_fleurs: 'coquelicot', bac_lavande: 'lavande' };
+    const B = out.blocs;
+    if (B && typeof B === 'object' && !Array.isArray(B)) {
+      for (const t of Object.keys(B)) {
+        if (!ANCIENS[B[t]]) continue;
+        if (!out.bacs || typeof out.bacs !== 'object' || Array.isArray(out.bacs)) out.bacs = {};
+        out.bacs[t] = { fleur: ANCIENS[B[t]], nuits: 3 };
+        B[t] = 'bac_carre';
+        for (const k of ['sens', 'teintes']) if (out[k] && typeof out[k] === 'object') delete out[k][t];
+      }
+    }
+    const I = out.inventaire;
+    if (I && typeof I === 'object' && !Array.isArray(I)) {
+      for (const k of Object.keys(ANCIENS)) {
+        if (!Array.isArray(I[k])) continue;
+        I.bac_carre = (Array.isArray(I.bac_carre) ? I.bac_carre : []).concat(I[k]);
+        delete I[k];
+      }
+    }
+    const K = out.plans && typeof out.plans === 'object' ? out.plans.connus : null;
+    if (K && typeof K === 'object') delete K.bac_lavande;
+    return out;
+  },
 };
 
 // La Serre d'avant la v76 : ses parcelles par niveau, le prix de chaque niveau (les anciennes migrations ;

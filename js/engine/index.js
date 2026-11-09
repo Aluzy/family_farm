@@ -41,6 +41,7 @@ export * from './stamina.js';
 export * from './night.js';
 export * from './ramassage.js';
 export * from './ruches.js';
+export * from './bacs.js';
 export * from './cheval.js';
 export * from './botteleuse.js';
 export * from './chaines.js';

@@ -98,7 +98,8 @@
         "icone": "🌷",
         "adj": "fleuri",
         "blocs": [
-          "bac_fleurs",
+          "bac_carre",
+          "bac_rond",
           "fenetre_vitrail",
           "fenetre_cintree",
           "mur_brique_rouge",
@@ -115,7 +116,7 @@
           "meuble_tableau_2",
           "lanterne_papier",
           "pergola",
-          "bac_lavande"
+          "bac_long"
         ]
       }
     },

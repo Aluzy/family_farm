@@ -484,6 +484,12 @@ const CULTURE_MONTE = 4;
   // (A-1) les lits qui tournent : la couverture de leurs vues de dos et de profil (meuble_<lit>_dos_drap.png,
   // _cote_drap.png)
   const LITS_SENS = ['lit_adulte', 'lit_enfant'];
+  // Les bacs à fleurs (js/engine/bacs.js, dessinBac ; scripts/carte/bacs.py) : une planche, une image de
+  // cellule[0] × cellule[1] par état (le bac rond et le carré : `largeur` px à gauche), découpée en images
+  // « meuble_<nom> » (js/farm-stage.js, chargerTard), dessinées comme un meuble (et repeintes de même).
+  const BAC_ETATS = ['vide', 'semis', ...['coquelicot', 'pavot', 'tournesol', 'myosotis', 'lavande', 'lupin'].flatMap((f) => [f + '_1', f + '_2', f])];
+  const BACS = { key: 'bacs', file: 'bacs.png', cellule: [32, 24], largeur: { rond: 16, carre: 16, long: 32 },
+    noms: ['rond', 'carre', 'long'].flatMap((forme) => BAC_ETATS.map((e) => ['bac_' + forme + '_' + e, forme])) };
 
   // l'appui et le double appui (sur l'herbe ou un chemin : le personnage y va), comme sur les
   // autres cartes (CarteKit.APPUI)
@@ -575,7 +581,7 @@ const CULTURE_MONTE = 4;
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, CULTURE_MONTE, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZOOM, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, MINE, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, LITS_SENS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, CONSTRUCTIBLE, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, AIDE, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL, HERBES },
+    C: { T, CULTURE_MONTE, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZOOM, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, MINE, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, LITS_SENS, BACS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, CONSTRUCTIBLE, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, AIDE, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL, HERBES },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

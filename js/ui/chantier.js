@@ -1018,7 +1018,7 @@ registerActions({
   'build-peindre': () => {
     if (!buildMode) return;
     modePeindre = !modePeindre;
-    if (modePeindre) { modeGomme = false; modeTourner = false; notify('🎨 Touche un meuble posé pour changer sa couleur (chaise, table, canapé, lit, commode). C\'est gratuit.', { duree: CONSEIL_MS * 2 }); }
+    if (modePeindre) { modeGomme = false; modeTourner = false; notify('🎨 Touche un meuble posé pour changer sa couleur (chaise, table, canapé, lit, commode, bac à fleurs). C\'est gratuit.', { duree: CONSEIL_MS * 2 }); }
     refresh();
   },
   // 🎨 dans la pose d'un meuble : sa couleur suivante (l'aperçu la montre ; il se posera ainsi).

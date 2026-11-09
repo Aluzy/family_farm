@@ -27,6 +27,7 @@ import { habitantsNuit } from './habitants.js';
 import { bienvenueNuit } from './bienvenue.js';
 import { recitNuit } from './recit.js';
 import { remplirRuches } from './ruches.js';
+import { pousserBacs } from './bacs.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 import { distribuerGrain } from './distributeur.js';
 import { chainesDeLaJournee } from './chaines.js';
@@ -327,6 +328,7 @@ export function runNight(state) {
   regrowGrass(state); // l'herbe haute fauchée dont le jour est venu repousse
   if (!state.mondePartage) repousseMonde(state); // ce qui a été pris dans le grand monde aussi (monde-recolte.js ; E-8 : pas dans un monde partagé)
   remplirRuches(state); // les abeilles remplissent les ruches
+  pousserBacs(state); // les fleurs des bacs poussent (bacs.js)
   if (!state.mondePartage) state.nuit.demande = demandesNuit(state); // V-2 : les petites demandes des habitants (demandes.js)
   refreshUnlocks(state);
   updateChapters(state); // Lot 9 : un chapitre peut se terminer avec le réveil

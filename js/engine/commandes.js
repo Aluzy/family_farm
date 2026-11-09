@@ -48,6 +48,8 @@
      potager.toutArroser  { lieu }
      potager.toutRecolter { lieu, direct? }
      cruche.remplir   { case }                 remplir la cruche au puits de cette case
+     bac.semer        { case, fleur }          semer une graine de fleur dans un bac à fleurs vide (js/engine/bacs.js)
+     bac.recolter     { case }                 couper à la faux les fleurs d'un bac en fleurs
    Les bêtes (E-6, sans inverse non plus) :
      poules.nourrir   { }                      une poule (« Nourrir une poule »)
      poules.toutNourrir { }                    « Nourrir tout »
@@ -118,6 +120,7 @@ import { harvestAll, plantAll, setSemis, upgradeRobotBattery, waterAll } from '.
 import { remplirCruche } from './cruche.js';
 import { buyPasture, feedAllHens, feedHen, setCowHerbs, shear, upgradePoulailler } from './animals.js';
 import { pickUp } from './ramassage.js';
+import { recolterBac, semerBac } from './bacs.js';
 import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe, stopCurrent } from './kitchen.js';
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
 import { deposerBoite, reprendreBoite } from './repas.js';
@@ -170,6 +173,7 @@ const CONTROLES = {
   station: (v) => typeof v === 'string' && !!DATA.STATIONS[v],
   appareil: (v) => typeof v === 'string' && /^[A-Za-z0-9_:-]{1,40}$/.test(v),
   mode: (v) => typeof v === 'string' && /^[a-z_]{1,20}$/.test(v),
+  fleur: (v) => typeof v === 'string' && !!(DATA.BACS && DATA.BACS.FLEURS[v]),
   quantite: (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1e6,   // (0 : le moteur dit pourquoi)
 };
 
@@ -415,6 +419,8 @@ export const COMMANDES = {
     args: { lieu: 'lieu', direct: 'drapeau?' },
     executer: (state, { lieu, direct = false }) => harvestAll(state, lieu, direct),
   },
+  'bac.semer': { args: { case: 'case', fleur: 'fleur' }, executer: (state, { case: c, fleur }) => semerBac(state, c, fleur) },
+  'bac.recolter': { args: { case: 'case' }, executer: (state, { case: c }) => recolterBac(state, c) },
   'cruche.remplir': {
     args: { case: 'case' },
     executer: (state, { case: c }) => remplirCruche(state, c),

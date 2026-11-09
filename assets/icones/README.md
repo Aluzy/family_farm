@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 461 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 469 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -65,6 +65,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/cloud_with_rain.png" width="48" height="48" alt=""> | 🌧 | [`cloud_with_rain.png`](cloud_with_rain.png) |
 | <img src="apercu/chestnut.png" width="48" height="48" alt=""> | 🌰 | [`chestnut.png`](chestnut.png) |
 | <img src="apercu/seedling.png" width="48" height="48" alt=""> | 🌱 | [`seedling.png`](seedling.png) |
+| <img src="apercu/graine_coquelicot.png" width="48" height="48" alt=""> | 🌱‍🌺 | [`graine_coquelicot.png`](graine_coquelicot.png) |
 | <img src="apercu/seedling+sunflower.png" width="48" height="48" alt=""> | 🌱‍🌻 | [`seedling+sunflower.png`](seedling+sunflower.png) |
 | <img src="apercu/seedling+tomato.png" width="48" height="48" alt=""> | 🌱‍🍅 | [`seedling+tomato.png`](seedling+tomato.png) |
 | <img src="apercu/seedling+aubergine.png" width="48" height="48" alt=""> | 🌱‍🍆 | [`seedling+aubergine.png`](seedling+aubergine.png) |
@@ -73,11 +74,15 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/seedling+peach.png" width="48" height="48" alt=""> | 🌱‍🍑 | [`seedling+peach.png`](seedling+peach.png) |
 | <img src="apercu/seedling+cherries.png" width="48" height="48" alt=""> | 🌱‍🍒 | [`seedling+cherries.png`](seedling+cherries.png) |
 | <img src="apercu/seedling+strawberry.png" width="48" height="48" alt=""> | 🌱‍🍓 | [`seedling+strawberry.png`](seedling+strawberry.png) |
+| <img src="apercu/graine_pavot.png" width="48" height="48" alt=""> | 🌱‍🏵 | [`graine_pavot.png`](graine_pavot.png) |
+| <img src="apercu/graine_myosotis.png" width="48" height="48" alt=""> | 🌱‍💠 | [`graine_myosotis.png`](graine_myosotis.png) |
+| <img src="apercu/graine_lupin.png" width="48" height="48" alt=""> | 🌱‍💮 | [`graine_lupin.png`](graine_lupin.png) |
 | <img src="apercu/seedling+large_orange_circle.png" width="48" height="48" alt=""> | 🌱‍🟠 | [`seedling+large_orange_circle.png`](seedling+large_orange_circle.png) |
 | <img src="apercu/seedling+cucumber.png" width="48" height="48" alt=""> | 🌱‍🥒 | [`seedling+cucumber.png`](seedling+cucumber.png) |
 | <img src="apercu/seedling+carrot.png" width="48" height="48" alt=""> | 🌱‍🥕 | [`seedling+carrot.png`](seedling+carrot.png) |
 | <img src="apercu/seedling+leafy_green.png" width="48" height="48" alt=""> | 🌱‍🥬 | [`seedling+leafy_green.png`](seedling+leafy_green.png) |
 | <img src="apercu/seedling+onion.png" width="48" height="48" alt=""> | 🌱‍🧅 | [`seedling+onion.png`](seedling+onion.png) |
+| <img src="apercu/graine_lavande.png" width="48" height="48" alt=""> | 🌱‍🪻 | [`graine_lavande.png`](graine_lavande.png) |
 | <img src="apercu/seedling+bell_pepper.png" width="48" height="48" alt=""> | 🌱‍🫑 | [`seedling+bell_pepper.png`](seedling+bell_pepper.png) |
 | <img src="apercu/evergreen_tree+large_brown_circle.png" width="48" height="48" alt=""> | 🌲‍🟤 | [`evergreen_tree+large_brown_circle.png`](evergreen_tree+large_brown_circle.png) |
 | <img src="apercu/deciduous_tree.png" width="48" height="48" alt=""> | 🌳 | [`deciduous_tree.png`](deciduous_tree.png) |
@@ -467,7 +472,10 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/rock+large_yellow_circle.png" width="48" height="48" alt=""> | 🪨‍🟡 | [`rock+large_yellow_circle.png`](rock+large_yellow_circle.png) |
 | <img src="apercu/rock+beetle.png" width="48" height="48" alt=""> | 🪨‍🪲 | [`rock+beetle.png`](rock+beetle.png) |
 | <img src="apercu/potted_plant.png" width="48" height="48" alt=""> | 🪴 | [`potted_plant.png`](potted_plant.png) |
+| <img src="apercu/bac_long.png" width="48" height="48" alt=""> | 🪴‍➖ | [`bac_long.png`](bac_long.png) |
+| <img src="apercu/bac_rond.png" width="48" height="48" alt=""> | 🪴‍⭕ | [`bac_rond.png`](bac_rond.png) |
 | <img src="apercu/potted_plant+tulip.png" width="48" height="48" alt=""> | 🪴‍🌷 | [`potted_plant+tulip.png`](potted_plant+tulip.png) |
+| <img src="apercu/bac_carre.png" width="48" height="48" alt=""> | 🪴‍🟫 | [`bac_carre.png`](bac_carre.png) |
 | <img src="apercu/wood.png" width="48" height="48" alt=""> | 🪵 | [`wood.png`](wood.png) |
 | <img src="apercu/wood+rainbow.png" width="48" height="48" alt=""> | 🪵‍🌈 | [`wood+rainbow.png`](wood+rainbow.png) |
 | <img src="apercu/wood+link_symbol.png" width="48" height="48" alt=""> | 🪵‍🔗 | [`wood+link_symbol.png`](wood+link_symbol.png) |

@@ -16,6 +16,7 @@ import { installStarter, removeStarter, starterBlock } from './depart.js';
 import { robotOn } from './automation.js';
 import { couchagesEtage, etageEmprise, etageHorsEmprise, rangerEtage } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
+import { bacReplante, bacRepris } from './bacs.js';
 import { botteleuseReprise } from './botteleuse.js';
 import { distributeurReprise } from './distributeur.js';
 import { chainesReprise } from './chaines.js';
@@ -128,8 +129,10 @@ export function tourneBloc(sorte) {
    id de la variante } (celle du dessin : rien). Elle se choisit à la pose et se repeint (peindreBloc). */
 
 // Les variantes du bloc `sorte` : [{ id, nom, remplace? }], ou [] (une seule couleur).
+// (un bloc qui n'est pas un meuble, les bacs à fleurs : sa peinture, DATA.PEINTURES[peinture], data/meubles.json)
 export function variantesBloc(sorte) {
   const s = sorteDe(sorte), m = s && s.meuble && DATA.MEUBLES && DATA.MEUBLES[s.meuble];
+  if (s && s.peinture && DATA.PEINTURES && Array.isArray(DATA.PEINTURES[s.peinture])) return DATA.PEINTURES[s.peinture];
   return (m && Array.isArray(m.variantes) && m.variantes) || [];
 }
 // La variante du bloc posé sur `tile` (son id), ou null : celle du dessin.
@@ -949,13 +952,14 @@ export function poseStatus(state, sorte, tile, sens = 0) {
 export function deplacerBloc(state, de, vers) {
   const r = reprendreBloc(state, de);
   if (!r.ok) return r;
-  // (il garde son sens et sa couleur)
+  // (il garde son sens et sa couleur ; un bac à fleurs, ce qui y pousse)
   const sens = r.sens || 0, v = r.variante || null;
-  if (r.case === vers) { poserBloc(state, r.sorte, r.case, sens, v); return { ok: true, sorte: r.sorte, de: r.case, vers }; }
+  const remettre = (t) => { const p = poserBloc(state, r.sorte, t, sens, v); if (p.ok && r.plante) bacReplante(state, t, r.plante); return p; };
+  if (r.case === vers) { remettre(r.case); return { ok: true, sorte: r.sorte, de: r.case, vers }; }
   const st = poseStatus(state, r.sorte, vers, sens);
-  if (!st.ok) { poserBloc(state, r.sorte, r.case, sens, v); return fail(st.raison); }
-  const p = poserBloc(state, r.sorte, vers, sens, v);
-  if (!p.ok) { poserBloc(state, r.sorte, r.case, sens, v); return p; }
+  if (!st.ok) { remettre(r.case); return fail(st.raison); }
+  const p = remettre(vers);
+  if (!p.ok) { remettre(r.case); return p; }
   return { ok: true, sorte: r.sorte, de: r.case, vers };
 }
 
@@ -1124,6 +1128,8 @@ export function reprendreBloc(state, tile, opts) {
   if (s && s.appareil) removeStarter(state, s.appareil);
   // (une ruche pleine : son miel vient avec elle)
   if (s && s.ruche) rucheReprise(state, tile);
+  // (un bac à fleurs : ce qui y pousse s'en va avec lui, js/engine/bacs.js ; déplacé, il le garde)
+  const plante = s && s.bac ? bacRepris(state, tile) : null;
   // (une botteleuse : les fibres qu'elle a reçues reviennent, js/engine/botteleuse.js)
   if (s && s.botteleuse === 'machine') botteleuseReprise(state, tile);
   // (un distributeur de grain : son blé revient, js/engine/distributeur.js)
@@ -1139,7 +1145,7 @@ export function reprendreBloc(state, tile, opts) {
   if (s && s.station && s.station !== 'moulin' && state.stations[s.station] && !Object.values(blocsPoses(state)).includes(sorte)) state.stations[s.station].construit = false;
   majPoulailler(state);
   rangerEtage(state);   // (l'escalier repris, la pièce ouverte : l'étage s'en va)
-  return { ok: true, sorte, case: tile, ...(sens ? { sens } : {}), ...(variante ? { variante } : {}) };
+  return { ok: true, sorte, case: tile, ...(sens ? { sens } : {}), ...(variante ? { variante } : {}), ...(plante ? { plante } : {}) };
 }
 
 // Pourquoi le bloc `sorte` (posé en `tile`) ne tourne pas : un tableau suit le mur où il est accroché ;

@@ -730,15 +730,18 @@ export const ENCYCLOPEDIE = {
     },
     {
      "id": "bac_a_fleurs",
-     "terme": "Bac à fleurs",
-     "description": "Se fabrique à l'Atelier (des planches et de la pierre) et se pose comme un bloc : les abeilles des ruches viennent y butiner.",
+     "terme": "Bacs à fleurs",
+     "description": "Le bac rond, le bac carré et le bac long (sur deux cases) se fabriquent à l'Atelier (des planches, de la fibre, de la pierre) et se posent dehors comme un bloc. Un appui sur un bac vide y sème une graine de fleur (une seule espèce par bac) : on trouve ces graines, parfois, en cueillant les fleurs sauvages du grand monde. Elle fleurit en 3 nuits, sans arrosage ; la faux y coupe alors 2 à 3 fleurs, et le bac refleurit en 3 nuits, sans resemer. En fleurs, il attire les abeilles des ruches. Le pinceau du mode Construire le repeint, gratuitement : le bois naturel ou l'une des six couleurs des colorants.",
      "liens": [
       "abeilles",
       "ruche",
+      "faux",
       "comptoir"
      ],
      "decouverte": [
-      "objet:bac_fleurs"
+      "objet:bac_carre",
+      "objet:bac_rond",
+      "objet:bac_long"
      ]
     },
     {
@@ -3023,7 +3026,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "plans_collection",
      "terme": "Plans de collection",
-     "description": "Chaque pays de l'île a sa collection de meubles de jardin, dans son style : la forêt (le banc et la table en rondins), la côte (la chaise peinte, la jarre aux coquillages), le marais (la lanterne de papier, le bassin aux nénuphars), la montagne (le banc et la jardinière de pierre), la prairie (la pergola fleurie, le bac de lavande, que les abeilles butinent). Leur recette ne se fait à l'Atelier qu'une fois leur plan trouvé. La première fois que tu passes dans un pays, hors de la ferme, tu y trouves le plan d'un de ses meubles ; un ami « proche » d'un hameau de ce pays (la forêt, la côte, le marais, la montagne, la prairie ou la lande) t'offre le suivant, une nuit. Les bancs, les chaises et les tables en font des terrasses pour tes invités ; les sièges se tournent. Le carnet de plans, sous l'Atelier, montre ce que tu as trouvé.",
+     "description": "Chaque pays de l'île a sa collection de meubles de jardin, dans son style : la forêt (le banc et la table en rondins), la côte (la chaise peinte, la jarre aux coquillages), le marais (la lanterne de papier, le bassin aux nénuphars), la montagne (le banc et la jardinière de pierre), la prairie (la pergola fleurie). Leur recette ne se fait à l'Atelier qu'une fois leur plan trouvé. La première fois que tu passes dans un pays, hors de la ferme, tu y trouves le plan d'un de ses meubles ; un ami « proche » d'un hameau de ce pays (la forêt, la côte, le marais, la montagne, la prairie ou la lande) t'offre le suivant, une nuit. Les bancs, les chaises et les tables en font des terrasses pour tes invités ; les sièges se tournent. Le carnet de plans, sous l'Atelier, montre ce que tu as trouvé.",
      "liens": [
       "styles",
       "invitation_repas",

@@ -19,7 +19,7 @@
         "titre": "Notre nouveau chez-nous",
         "etape": "L'héritage",
         "icone": "🏚️",
-        "recompense": { "objets": { "bac_fleurs": 2, "lanterne": 2 } },
+        "recompense": { "objets": { "bac_carre": 2, "lanterne": 2 } },
         "intro": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; fabrique une houe à l'Atelier, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "introSauvage": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. Celle de ton grand-père est à ta famille, sans maison ni bâtiment. Ramasse des pierres et du bois, construis l'Atelier, fabriques-y une faux pour faucher l'herbe haute (ses fibres), puis bâtis ton foyer : une pièce close et une paillasse. Fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
@@ -93,7 +93,7 @@
         "titre": "Au rythme de la nature",
         "etape": "Toute l'année",
         "icone": "📅",
-        "recompense": { "plans": ["bac_lavande"] },
+        "recompense": { "objets": { "bac_long": 1, "graine_lavande": 3 } },
         "intro": "« Une ferme, c'est comme une amitié : un peu de soin chaque jour », dit Odile. La Serre, le Verger et le Réfrigérateur pour tenir dans la durée. Les hameaux, eux, ont leurs projets : apporte-leur de quoi les achever. Ce qui manque à la ferme, les hameaux l'ont parfois : la calèche te vend ce qu'elle leur achète. Et le pays a ses bêtes, à regarder sans les chasser.",
         "objectifs": [
           { "type": "projets", "cible": 1, "libelle": "Aider un hameau à achever un projet", "unite": "" },

@@ -30,15 +30,56 @@
     "tissu_vert": ["#285238", "#427c50", "#70a86e"],
     "tissu_rouge": ["#5c1e24", "#8e3236", "#c0564e"],
     "tissu_bleu": ["#1e3460", "#34568e", "#6a8ec4"],
-    "tissu_moutarde": ["#7a5418", "#b08428", "#dcb850"]
+    "tissu_moutarde": ["#7a5418", "#b08428", "#dcb850"],
+    "bac_bandeau": ["#706042", "#96825d", "#bca37b"],
+    "bac_cerclage": ["#3e4451", "#626a77", "#929aa5"],
+    "bac_bandeau_rouge": ["#ba2424", "#e2483c", "#fa9682"],
+    "bac_cerclage_rouge": ["#ba2424", "#e2483c", "#fa9682"],
+    "bac_bandeau_orange": ["#dc6e18", "#f69a30", "#ffd28c"],
+    "bac_cerclage_orange": ["#dc6e18", "#f69a30", "#ffd28c"],
+    "bac_bandeau_jaune": ["#e2ba1e", "#fade46", "#fff6aa"],
+    "bac_cerclage_jaune": ["#e2ba1e", "#fade46", "#fff6aa"],
+    "bac_bandeau_vert": ["#34842c", "#62b442", "#b0e082"],
+    "bac_cerclage_vert": ["#34842c", "#62b442", "#b0e082"],
+    "bac_bandeau_bleu": ["#3468c4", "#64a0ec", "#b4dcff"],
+    "bac_cerclage_bleu": ["#3468c4", "#64a0ec", "#b4dcff"],
+    "bac_bandeau_violet": ["#703ea4", "#9c6ed6", "#d6baf4"],
+    "bac_cerclage_violet": ["#703ea4", "#9c6ed6", "#d6baf4"]
+  },
+  "//PEINTURES": [
+    "Les couleurs d'un bloc qui n'est pas un meuble (ATELIER.BLOCS.<id>.peinture : le nom d'une liste) : comme les variantes",
+    "des meubles (la première : celle du dessin), pour les bacs à fleurs (js/engine/bacs.js) : le bois naturel, puis les",
+    "six couleurs des colorants. Le bandeau et le rebord des bacs carré et long, les cerclages du bac rond. Repeindre est",
+    "gratuit et libre (le mode Construire : 🎨)."
+  ],
+  "PEINTURES": {
+    "bandeau": [{ "id": "naturel", "nom": "bois naturel" }, { "id": "rouge", "nom": "peint en rouge", "remplace": { "bac_bandeau": "bac_bandeau_rouge" } }, { "id": "orange", "nom": "peint en orange", "remplace": { "bac_bandeau": "bac_bandeau_orange" } }, { "id": "jaune", "nom": "peint en jaune", "remplace": { "bac_bandeau": "bac_bandeau_jaune" } }, { "id": "vert", "nom": "peint en vert", "remplace": { "bac_bandeau": "bac_bandeau_vert" } }, { "id": "bleu", "nom": "peint en bleu", "remplace": { "bac_bandeau": "bac_bandeau_bleu" } }, { "id": "violet", "nom": "peint en violet", "remplace": { "bac_bandeau": "bac_bandeau_violet" } }],
+    "cerclage": [{ "id": "naturel", "nom": "bois naturel" }, { "id": "rouge", "nom": "peint en rouge", "remplace": { "bac_cerclage": "bac_cerclage_rouge" } }, { "id": "orange", "nom": "peint en orange", "remplace": { "bac_cerclage": "bac_cerclage_orange" } }, { "id": "jaune", "nom": "peint en jaune", "remplace": { "bac_cerclage": "bac_cerclage_jaune" } }, { "id": "vert", "nom": "peint en vert", "remplace": { "bac_cerclage": "bac_cerclage_vert" } }, { "id": "bleu", "nom": "peint en bleu", "remplace": { "bac_cerclage": "bac_cerclage_bleu" } }, { "id": "violet", "nom": "peint en violet", "remplace": { "bac_cerclage": "bac_cerclage_violet" } }]
+  },
+  "//BACS": [
+    "Les bacs à fleurs (js/engine/bacs.js ; ATELIER.BLOCS.<id>.bac : leur forme). Une espèce par bac : une graine semée",
+    "(FLEURS.<espèce>.graine) fleurit en NUITS nuits, sans arrosage ; la faux y coupe RECOLTE fleurs (au moins, au plus),",
+    "puis le bac refleurit en NUITS nuits, sans resemer (des vivaces). Les graines : une chance de 25 % en cueillant les",
+    "fleurs sauvages (monde.json, RECOLTE.SORTES.<fleur>.chance). En fleurs, il attire les abeilles des ruches."
+  ],
+  "BACS": {
+    "NUITS": 3, "RECOLTE": [2, 3],
+    "FLEURS": {
+      "coquelicot": { "nom": "Coquelicots", "graine": "graine_coquelicot", "fleur": "fleur_coquelicot" },
+      "pavot": { "nom": "Pavots de Californie", "graine": "graine_pavot", "fleur": "fleur_pavot" },
+      "tournesol": { "nom": "Tournesols", "graine": "graine_tournesol", "fleur": "fleur_tournesol" },
+      "myosotis": { "nom": "Myosotis", "graine": "graine_myosotis", "fleur": "fleur_myosotis" },
+      "lavande": { "nom": "Lavande", "graine": "graine_lavande", "fleur": "fleur_lavande" },
+      "lupin": { "nom": "Lupins", "graine": "graine_lupin", "fleur": "fleur_lupin" }
+    }
   },
   "//DEHORS": [
     "Pour le dehors de la ferme générée (fabriqué à l'Atelier ; avant, au Marché) : il arrive dans",
     "l'inventaire (l'objet du même nom) et se pose comme un bloc (recipes.json, ATELIER.BLOCS.<id>).",
-    "nom ; prix (l'ancien prix au Marché). Le bac à fleurs : ses fleurs attirent les abeilles des ruches."
+    "nom ; prix (l'ancien prix au Marché). Le bac carré : en fleurs, il attire les abeilles des ruches (BACS)."
   ],
   "DEHORS": {
-    "bac_fleurs": { "nom": "Bac à fleurs", "prix": 60 }
+    "bac_carre": { "nom": "Bac carré", "prix": 60 }
   },
   "MEUBLES": {
     "chaise": { "nom": "Chaise", "piece": "cuisine", "prix": 30, "bonheur": 1, "max": "membres", "variantes": [{"id": "miel", "nom": "miel"}, {"id": "noyer", "nom": "noyer", "remplace": {"bois_miel": "bois_noyer"}}, {"id": "bleu", "nom": "peinte en bleu", "remplace": {"bois_miel": "bois_bleu"}}] },
