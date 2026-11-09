@@ -7,7 +7,8 @@
  *     feuille qui tombe, écureuil qui change d'arbre, lucioles au crépuscule.
  *   - Les animaux de compagnie de la famille (aucun si elle n'en a pas) : chats et chiens, qui
  *     enchaînent leurs activités au hasard (tirage pondéré) ; la nuit, un chat dort sur son
- *     toit, un chien en boule là où il est.
+ *     toit, un chien en boule là où il est. Quand il pleut, ils rentrent dans la maison (par la
+ *     porte, chacun à sa place) et y restent assis ou couchés ; la pluie finie, ils ressortent.
  *   - Les bêtes de la ferme : à 7 h les portes de l'Étable s'ouvrent et vaches et moutons
  *     sortent dans l'enclos ; à 6 h la porte du Poulailler s'ouvre et les poules sortent en
  *     liberté. Tous rentrent à 19 h.
@@ -745,6 +746,11 @@
       let night = false;               // il est rentré pour la nuit (ou en chemin)
       let jump = null;                 // saut en cours : { x0, y0, x1, y1 }
       let stirAt = 0, stir = 0;        // sommeil : date du prochain demi-réveil, et ce qu'il en reste
+      let abri = null;                 // sous la pluie : sa place dans la maison (il y va, ou il y est)
+      let dehors = null;               // le chemin du retour dehors, après la pluie (celui de l'aller, retourné)
+      let vecu = 0;                    // les secondes depuis qu'il est sur la carte
+      let abriEssai = 4;               // le prochain essai d'y aller (en secondes vécues) : pas avant que la maison et ses
+                                       // meubles soient sur la carte ; sans chemin, réessayé 3 s plus tard
       const breath = rand(1.1, 1.6);   // sommeil : secondes par souffle
       const s = scene.add.image(x, y, sheet, 0).setOrigin(0.5, 1);
       const res = nouveauRessort();    // écrasé, étiré (js/carte/ressort.js)
@@ -800,10 +806,53 @@
 
       // La suite : tirage pondéré dans CAT_NEXT, où ce qu'il faisait juste avant pèse moins.
       function next() {
-        if (!catHome && ctx.dusk) { enter('sieste'); return; }     // pas de toit : il dort sur place
+        if (!catHome && ctx.dusk && !abri) { enter('sieste'); return; }     // pas de toit : il dort sur place
         const w = Object.assign({}, CAT_NEXT[st]);
+        // (à l'abri dans la maison : il ne s'y promène pas, il s'assoit, fait sa toilette, se couche)
+        if (abri) { for (const k in CAT_WALK) delete w[k]; if (!Object.keys(w).length) w.couche = 1; }
         if (before && w[before]) w[before] *= CAT_AGAIN;
         begin(pickWeighted(w));
+      }
+
+      // Le chemin jusqu'en (tx, ty) : celui du personnage (par la porte, autour des murs), sinon tout droit.
+      function cheminVers(tx, ty) {
+        const p = ctx.chemin ? ctx.chemin(x, y, tx, ty) : null;
+        if (!p || p.droit) return null;
+        return p.length ? p.slice() : [{ x: tx, y: ty }];
+      }
+
+      // Il pleut : il rentre dans la maison (le foyer, sous son toit ; js/carte/ferme/chantier.js homeInside), à
+      // sa place (chacun la sienne), par la porte. Sans maison ni chemin : il reste dehors (réessayé plus tard).
+      function goShelter() {
+        const A = ctx.abri ? ctx.abri() : null;
+        if (!A || !A.places || !A.places.length) return false;
+        // (les places les plus proches de lui : il s'arrête dès qu'il est entré ; chacun la sienne, selon son rang)
+        // (pas juste au-dessus d'un mur ou d'un meuble : couché, il serait caché derrière, un mur haut cachant plus
+        // d'une case ; les deux cases du dessous sont libres, sinon au moins une)
+        const libres = new Set(A.places.map((q) => q.x + ',' + q.y));
+        const sous = (q, n) => libres.has(q.x + ',' + (q.y + n * T));
+        const vues = A.places.filter((q) => sous(q, 1) && sous(q, 2));
+        const assez = vues.length ? vues : A.places.filter((q) => sous(q, 1));
+        const proches = (assez.length ? assez : A.places).slice().sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
+        const place = proches[Math.min(proches.length - 1, rank * 2)];
+        if (A.dedans(x, y)) { abri = { x, y }; dehors = null; enter('couche'); return true; }
+        const p = cheminVers(place.x, place.y);
+        if (!p) return false;
+        // (le chemin de l'aller, retourné, le ramènera dehors : celui du personnage ne part pas toujours d'où il est)
+        abri = place; dehors = p.slice(0, -1).reverse().concat([{ x, y }]); path = p; night = false;
+        speed = rand(CAT_WALK.rentre.speed[0], CAT_WALK.rentre.speed[1]); stride = CAT_WALK.rentre.stride;
+        enter('rentre');
+        return true;
+      }
+
+      // La pluie s'est arrêtée : il ressort, vers son coin (puis reprend sa vie).
+      function leaveShelter() {
+        abri = null;
+        const p = dehors && dehors.length ? dehors : cheminVers(centre.x, centre.y);
+        dehors = null;
+        if (!p) { enter('debout'); return; }
+        path = p; speed = rand(CAT_WALK.marche.speed[0], CAT_WALK.marche.speed[1]); stride = CAT_WALK.marche.stride;
+        enter('marche');
       }
 
       function goToBed() {
@@ -836,7 +885,11 @@
 
       function vit(dt) {
         age += dt;
-        if (catHome && !night && ctx.dusk && CAT_NEXT[st]) goToBed();   // la nuit tombe : il rentre
+        // la pluie : il rentre dans la maison ; elle s'arrête : il ressort
+        vecu += dt;
+        if (ctx.pluie && !abri && CAT_NEXT[st] && vecu >= abriEssai && !goShelter()) abriEssai = vecu + 3;
+        else if (!ctx.pluie && abri && CAT_NEXT[st]) leaveShelter();
+        if (catHome && !night && ctx.dusk && !abri && CAT_NEXT[st]) goToBed();   // la nuit tombe : il rentre
         if (rise > 0) { rise -= dt; age = 0; draw('assis'); return; }
         if (CAT_WALK[st]) {
           // L'image suit la distance parcourue, pas l'horloge : les pattes ne patinent pas.
@@ -844,7 +897,8 @@
           const k = Math.floor(walked / stride);
           if (st === 'course') draw(k % 2 ? 'marche1' : 'marche0', -Math.abs(Math.sin((walked / stride) * Math.PI)) * 2);
           else draw(['marche0', 'idle', 'marche1', 'idle'][k % 4]);
-          if (done && st === 'rentre') { enter('vise'); len = rand(0.5, 0.9); }
+          if (done && st === 'rentre' && abri) enter('couche');          // (à l'abri, dans la maison)
+          else if (done && st === 'rentre') { enter('vise'); len = rand(0.5, 0.9); }
           else if (done) next();
         } else if (st === 'vise') {                  // ramassé au pied du mur, il vise le toit
           draw('assis');
@@ -881,7 +935,7 @@
         scare(px, py) {
           const d = Math.hypot(px - x, py - y);
           if (st === 'dort') { if (d < SCARE_R / 2 && stir <= 0) stir = rand(1.5, 3); return; }
-          if (d < SCARE_R && CAT_NEXT[st] && st !== 'course') {
+          if (d < SCARE_R && CAT_NEXT[st] && st !== 'course' && !abri) {
             begin('course', Math.atan2(y - py, x - px));
             if (res && st === 'course') res.pousse(C.elan * 0.6);   // il détale d'un bond
           }
@@ -892,7 +946,7 @@
           else if (CAT_NEXT[name] && CAT_NEXT[st]) begin(name);
           return this.info();
         },
-        info: () => ({ planche: sheet, etat: st, avant: before, x: Math.round(x), y: Math.round(y), nuit: night, toit: catHome ? catHome.roof : null }),
+        info: () => ({ planche: sheet, etat: st, avant: before, x: Math.round(x), y: Math.round(y), nuit: night, toit: catHome ? catHome.roof : null, abri: abri ? { x: Math.round(abri.x), y: Math.round(abri.y) } : null }),
         destroy() { petAt[sheet] = CAT_NEXT[st] ? { x, y } : null; s.destroy(); },
         // Pour les essais : l'écart du ressort à sa taille de repos (0 sans ressort).
         ressort: () => (res ? res.valeur() : 0),
@@ -1265,6 +1319,11 @@
         ctx.dusk = h >= 19.75 || h < 5;
       }
       if (c.trees) trees = c.trees.slice();
+      // La pluie (les animaux de compagnie rentrent dans la maison) ; la maison (ses places) et le chemin du
+      // personnage pour y aller, donnés par la scène.
+      if ('pluie' in c) ctx.pluie = !!c.pluie;
+      if (c.abri) ctx.abri = c.abri;
+      if (c.chemin) ctx.chemin = c.chemin;
       if (c.felled) felled = c.felled;
       if (Array.isArray(c.bati)) {
         const cle = c.cols + ':' + c.bati.join();

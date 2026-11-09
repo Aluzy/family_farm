@@ -300,8 +300,9 @@ d'une mesure à l'autre, ces pointes varient du simple au double).
 ## Le sol mouillé et les flaques (`js/carte/ferme/flaques.js`)
 
 Sous la pluie, le sol fonce (un voile sur la vue, sous les planchers et l'eau) ; après 10 s de pluie, des
-flaques se forment sur la terre et les chemins, éparses (jamais deux à moins de 5 cases, ni alignées à moins
-de 10), avec des ronds de pluie. Pour le coût :
+flaques se forment sur la terre et les chemins, loin de leurs bords (la case, ses huit voisines et les deux
+d'après, à gauche et à droite, sont du chemin : jamais sur la bordure chemin-herbe), éparses (jamais deux à
+moins de 5 cases, ni alignées à moins de 10), avec des ronds de pluie. Pour le coût :
 - **Le sol des cases** près de la vue est lu d'un coup, un pixel par case (les morceaux du sol réduits au plus
   proche, `solDesCases`), et non par `lireSol` (un grand rectangle, 10 à 17 ms d'une seule image) ;
 - **les cases possibles et leurs tirages** sont faits une fois dans deux tableaux, puis comparés ; revus quand la
