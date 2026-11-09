@@ -273,13 +273,24 @@ export function buyHoe(state) {
   return { ok: true, cost };
 }
 
-// Ce que fait la houe sur une tuile : { action: 'labourer' | 'reboucher' | null, ok, raison }.
+// Une culture vivace (la vigne : data/crops.json vivace) pas encore mûre : la houe l'arrache (la parcelle redevient de
+// la terre nue ; mûre, on la vendange d'abord). → { action: 'arracher', ok, raison } ou null.
+function arracheStatus(p) {
+  const def = p && p.culture && DATA.CULTURES[p.culture];
+  if (!def || !def.vivace) return null;
+  if (isMature(p)) return { action: null, ok: false, raison: `${def.nom} : vendange d'abord.` };
+  return { action: 'arracher', ok: true, raison: '' };
+}
+
+// Ce que fait la houe sur une tuile : { action: 'labourer' | 'reboucher' | 'arracher' | null, ok, raison }.
 export function hoeStatus(state, tile) {
   if (Number.isInteger(tile) && serrePlaces(state).includes(tile)) return serreHoeStatus(state, tile);
   const p = Number.isInteger(tile) ? plotAtTile(state, tile) : null;
   if (!p && !isArable(tile, state)) return { action: null, ok: false, raison: 'On ne laboure ici que l\'herbe : pas les chemins, l\'eau, les pierres, les arbres, ni les abords des bâtiments.' };
   if (!hasHoe(state)) return { action: null, ok: false, raison: `Il te faut une houe (à fabriquer à l'Atelier).` };
   if (p) {
+    const ar = arracheStatus(p);
+    if (ar) return ar;
     if (p.culture) return { action: null, ok: false, raison: 'Terre plantée : récolte d\'abord.' };
     if (!soilLayoutOk(state, tile, false)) return { action: 'reboucher', ok: false, raison: SOIL_LAYOUT_REFUS, dessin: true };
     return { action: 'reboucher', ok: true, raison: '' };
@@ -301,6 +312,8 @@ function serreHoeStatus(state, tile) {
   if (!hasHoe(state)) return { action: null, ok: false, raison: `Il te faut une houe (à fabriquer à l'Atelier).` };
   const p = serrePlotAt(state, tile);
   if (p) {
+    const ar = arracheStatus(p);
+    if (ar) return { ...ar, serre: true };
     if (p.culture) return { action: null, ok: false, raison: 'Terre plantée : récolte d\'abord.' };
     return { action: 'reboucher', ok: true, raison: '', serre: true };
   }
@@ -331,6 +344,16 @@ export function hoe(state, tile) {
   if (!st.ok) return fail(st.raison);
   const lieu = st.serre ? DATA.SERRE.LIEU : DATA.POTAGER.LIEU;
   const list = st.serre ? state.serre.parcelles : state.potager.parcelles;
+  // (une vigne pas mûre : arrachée, la parcelle reste, en terre nue)
+  if (st.action === 'arracher') {
+    const plot = list.find((p) => p.case === tile);
+    const culture = plot.culture;
+    plot.culture = null;
+    plot.stade = 0;
+    plot.arrose = false;
+    spendEnergy(state, 'labourer');
+    return { ok: true, action: 'arracher', plot, culture };
+  }
   if (st.action === 'reboucher') {
     const i = list.findIndex((p) => p.case === tile);
     const [plot] = list.splice(i, 1);
@@ -539,8 +562,9 @@ export function harvestPlot(state, plot, auto = false, direct = false) {
   // personnage la ramasse ; sinon (automatisation, Serre, sans carte) elle va à l'inventaire
   // (le blé d'abord au Silo).
   const aRamasser = deposit(state, 'parcelle', plot.case, items, !auto && !direct && plot.lieu === 'potager' && Number.isInteger(plot.case));
-  plot.culture = null;
-  plot.stade = 0;
+  // (une culture vivace, la vigne : le pied reste, revenu à son feuillage ; il refait ses fruits)
+  plot.culture = def.vivace ? culture : null;
+  plot.stade = def.vivace ? def.vivace.stade : 0;
   plot.arrose = false;
   if (items.carotte) bumpCounter(state, 'carottes', items.carotte); // Lot 9
   if (!auto) spendEnergy(state, 'recolter');

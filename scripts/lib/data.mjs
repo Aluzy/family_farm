@@ -323,6 +323,7 @@ export function validateData(data) {
     const recolte = c.produit || id;
     if (!(recolte in items)) err(where, `la récolte « ${recolte} » n'est pas un objet (OBJETS)${c.produit ? '' : ' : ajouter l\'objet, ou le champ "produit"'}`);
     if (c.requiert !== undefined && !elements.includes(c.requiert)) err(where, `requiert « ${c.requiert} » inconnu (NIVEAUX.ELEMENTS)`);
+    if (c.vivace !== undefined && !(c.vivace && isInt(c.vivace.stade) && c.vivace.stade >= 1 && c.vivace.stade < c.stades)) err(`${where}.vivace`, `{ stade : celui où le pied revient après la récolte, de 1 à ${c.stades - 1} }`);
     const g = c.graines || {};
     if (!MODES_GRAINES.includes(g.mode)) err(where, `graines.mode « ${g.mode} » inconnu (${MODES_GRAINES.join(', ')})`);
     if (!(g.item in items)) err(where, `graines.item « ${g.item} » n'est pas un objet (OBJETS)`);

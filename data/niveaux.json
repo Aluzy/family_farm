@@ -15,7 +15,7 @@
       { "debloque": ["poivron", "ail", "fraise", "ble", "silo", "poulailler", "marche"] },
       { "debloque": ["epinard", "tournesol", "riz", "moulin"] },
       { "debloque": ["houblon", "four", "paturage", "moutons"] },
-      { "debloque": ["chaines", "verger", "ecurie"] },
+      { "debloque": ["chaines", "verger", "ecurie", "vigne"] },
       { "debloque": ["cacao", "vanille", "cafe", "serre", "energie"] },
       { "debloque": ["frigo"] },
       { "debloque": [], "note": "une carte postale de Maurice : une enveloppe pour l'île" },

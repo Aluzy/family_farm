@@ -327,6 +327,7 @@ export const RAW_DATA = {
     "graine_aubergine": { "nom": "Graines d'aubergine", "icone": "🌱‍🍆", "prix": 1, "mangeable": false, "categorie": "graine" },
     "ble": { "nom": "Blé", "icone": "🌾", "prix": 1, "mangeable": false, "categorie": "ingrédient" },
     "graine_tournesol": { "nom": "Graines de tournesol", "icone": "🌱‍🌻", "prix": 1, "mangeable": false, "categorie": "graine" },
+    "plant_vigne": { "nom": "Plant de vigne", "icone": "🌱‍🍇", "prix": 6, "mangeable": false, "categorie": "graine" },
     "graine_coquelicot": {
       "nom": "Graines de coquelicot",
       "icone": "🌱‍🌺",
@@ -933,6 +934,7 @@ export const RAW_DATA = {
     "epinard": { "nom": "Épinard", "icone": "🥬", "energie": 5, "prix": 1, "mangeable": true, "categorie": "légume" },
     "graine_epinard": { "nom": "Graines d'épinard", "icone": "🌱‍🥬", "prix": 1, "mangeable": false, "categorie": "graine" },
     "fraise": { "nom": "Fraise", "icone": "🍓", "energie": 5, "prix": 2, "mangeable": true, "categorie": "fruit" },
+    "raisin": { "nom": "Raisin", "icone": "🍇", "energie": 6, "prix": 3, "mangeable": true, "categorie": "fruit" },
     "graine_fraise": { "nom": "Graines de fraise", "icone": "🌱‍🍓", "prix": 1, "mangeable": false, "categorie": "graine" },
     "riz": { "nom": "Riz", "icone": "🍚", "energie": 10, "prix": 1, "mangeable": true, "categorie": "légume" },
     "houblon": { "nom": "Houblon", "icone": "🌿", "prix": 3, "mangeable": false, "categorie": "ingrédient" },
@@ -2311,6 +2313,18 @@ export const RAW_DATA = {
       "rendement": 6,
       "graines": { "item": "cafe", "mode": "plant" },
       "sprite": { "r": 16, "c": [0, 1, 2, 3, 4], "l": 24, "h": 44 }
+    },
+    "vigne": {
+      "nom": "Vigne",
+      "icone": "🍇",
+      "lieux": ["potager"],
+      "stades": 6,
+      "litres": 2,
+      "rendement": 4,
+      "produit": "raisin",
+      "graines": { "item": "plant_vigne", "mode": "plant" },
+      "vivace": { "stade": 4 },
+      "sprite": { "r": 17, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     }
   },
   "POTAGER": {
@@ -3327,7 +3341,7 @@ export const RAW_DATA = {
       { "debloque": ["poivron", "ail", "fraise", "ble", "silo", "poulailler", "marche"] },
       { "debloque": ["epinard", "tournesol", "riz", "moulin"] },
       { "debloque": ["houblon", "four", "paturage", "moutons"] },
-      { "debloque": ["chaines", "verger", "ecurie"] },
+      { "debloque": ["chaines", "verger", "ecurie", "vigne"] },
       { "debloque": ["cacao", "vanille", "cafe", "serre", "energie"] },
       { "debloque": ["frigo"] },
       { "debloque": [], "note": "une carte postale de Maurice : une enveloppe pour l'île" },
@@ -7006,6 +7020,7 @@ export const RAW_DATA = {
     "poivron": 5,
     "epinard": 4,
     "fraise": 4,
+    "raisin": 4,
     "viande_boeuf": 5,
     "viande_volaille": 4,
     "lait": 4,
