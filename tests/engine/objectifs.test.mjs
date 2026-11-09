@@ -3,13 +3,15 @@
    - les données : la première semaine, sept jours, chaque tâche lit un état connu ou un compte noté ;
    - une nouvelle partie : l'abri, les pièces, le premier jour et ses graines ; pas d'ancien didacticiel ;
    - le premier jour, fait geste par geste : sa récompense ; le suivant le lendemain matin, ses compteurs à zéro ;
-   - un jour pas fini reste ; un état atteint le reste ; le sac du cinquième jour ; la fin de la semaine.
+   - un jour pas fini reste ; un état atteint le reste ; le sac du cinquième jour ;
+   - après la semaine (lot 3) : les objectifs tirés chaque jour, selon ce qu'on peut faire et le niveau ; un se change.
    Lancer seul : node tests/run-tests.mjs objectifs.
    ========================================================================== */
 
 import {
   allerAuJourObjectifs, buildAtelier, carnetDuJour, commencerObjectifs, countItem, craft, DATA, etapeDidacticiel, ETATS_OBJECTIFS,
-  hoe, hoeableTiles, majObjectifs, noterObjectif, objectifsActifs, piecesCloses, plant, tacheAFaire, testFarmMap,
+  changerObjectif, hoe, hoeableTiles, majObjectifs, noterObjectif, objectifsActifs, objectifsPossibles, piecesCloses, plant, SI_OBJECTIFS,
+  tacheAFaire, testFarmMap,
 } from '../../js/engine/index.js';
 import { sacPorte } from '../../js/engine/equipement.js';
 import { assert, assertEqual, garden, setInv, test, tireless } from './aide.mjs';
@@ -100,7 +102,7 @@ test('les comptes : les gestes qui rapportent de l\'XP, et les événements not�
   assertEqual([s.objectifs.faits.vendre, s.objectifs.faits.caleche], [12, 1], 'vendre, c\'est aussi rencontrer la calèche');
 });
 
-test('le cinquième jour offre le sac ; la semaine faite, les objectifs s\'arrêtent', () => {
+test('le cinquième jour offre le sac ; la semaine faite, le jour 8 tire ses objectifs', () => {
   const s = nouvelle('objectifs-fin');
   assertEqual(sacPorte(s), null);
   allerAuJourObjectifs(s, 5);
@@ -108,6 +110,86 @@ test('le cinquième jour offre le sac ; la semaine faite, les objectifs s\'arrê
   allerAuJourObjectifs(s, 7);
   s.objectifs.recu = s.day;
   s.day += 1;
-  assertEqual(majObjectifs(s), { fin: true });
-  assertEqual([objectifsActifs(s), carnetDuJour(s)], [false, null]);
+  assertEqual(majObjectifs(s), { nouveau: 8 });
+  const c = carnetDuJour(s);
+  assertEqual([objectifsActifs(s), c.jour, c.titre, c.tire, c.total], [true, 8, 'Les objectifs du jour', true, DATA.OBJECTIFS.TIRES.NOMBRE]);
+});
+
+// Une partie qui a fini sa semaine : au jour 8, ses objectifs tirés.
+function apresLaSemaine(graine) {
+  const s = nouvelle(graine);
+  allerAuJourObjectifs(s, 8);
+  return s;
+}
+
+test('les objectifs tirés : la liste, chacun un compte connu ; seulement ce que la partie peut faire', () => {
+  const T = DATA.OBJECTIFS.TIRES;
+  assertEqual([T.NOMBRE, T.CHANGER], [3, 1]);
+  for (const d of T.LISTE) {
+    assert(d.id && d.icone && d.libelle.includes('{n}') && d.guide, d.id);
+    assert(COMPTES.includes(d.quoi) || ['pecher', 'oeuf', 'lait', 'cuisiner'].includes(d.quoi), `${d.id} : le compte ${d.quoi}`);
+    assert(!d.si || SI_OBJECTIFS.includes(d.si), `${d.id} : si ${d.si}`);
+  }
+  const s = apresLaSemaine('tires-1');
+  // (une partie neuve : ni houe, ni outils, ni puits : ce qui ne demande rien, et la calèche si elle commerce déjà)
+  assertEqual(objectifsPossibles(s).map((d) => d.id).filter((id) => id !== 'vendre').sort(), ['cueillir', 'recolter']);
+  s.outils = { ...s.outils, hache: true, pioche: true, faux: true };
+  const ids = objectifsPossibles(s).map((d) => d.id);
+  for (const id of ['abattre', 'casser', 'faucher']) assert(ids.includes(id), id);
+  assert(!ids.includes('pecher') && !ids.includes('lait'), 'ni canne, ni vaches');
+});
+
+test('les objectifs tirés : le même tirage pour la même partie le même jour ; le nombre et la récompense suivent le niveau', () => {
+  const tire = (graine, niveauJoueur) => {
+    const s = nouvelle(graine);
+    s.outils = { ...s.outils, hache: true, pioche: true, faux: true, houe: true };
+    s.progression.niveau = niveauJoueur;
+    allerAuJourObjectifs(s, 8);
+    return carnetDuJour(s);
+  };
+  const a = tire('tires-2', 1), b = tire('tires-2', 1);
+  assertEqual(a.objectifs.map((o) => o.id), b.objectifs.map((o) => o.id), 'le même tirage');
+  assertEqual(new Set(a.objectifs.map((o) => o.id)).size, 3, 'trois objectifs différents');
+  const T = DATA.OBJECTIFS.TIRES, R = T.RECOMPENSE;
+  assertEqual(a.recompense, { xp: R.xp[0], pieces: R.pieces[0] });
+  const haut = tire('tires-2', 6);
+  assertEqual(haut.recompense, { xp: R.xp[0] + 5 * R.xp[1], pieces: R.pieces[0] + 5 * R.pieces[1] });
+  // (le nombre demandé : base + parNiveau × (niveau − 1), au plus max)
+  for (const o of haut.objectifs) {
+    const d = T.LISTE.find((x) => x.id === o.id);
+    assertEqual(o.taches[0].besoin, Math.max(1, Math.min(d.n[2], Math.round(d.n[0] + d.n[1] * 5))), o.id);
+    assert(o.libelle.includes(String(o.taches[0].besoin)) && !o.libelle.includes('{'), `${o.id} : ${o.libelle}`);
+    if (o.taches[0].besoin === 1) assert(!/ 1 \S+s\b/.test(o.libelle) || /fois/.test(o.libelle), `${o.id} : au singulier (${o.libelle})`);
+  }
+});
+
+test('les objectifs tirés : un se change par jour ; le jour fait, sa récompense, et le lendemain un nouveau tirage', () => {
+  const s = apresLaSemaine('tires-3');
+  s.outils = { ...s.outils, hache: true, pioche: true, faux: true };
+  allerAuJourObjectifs(s, 8);
+  const avant = carnetDuJour(s).objectifs.map((o) => o.id);
+  assert(carnetDuJour(s).changer);
+  const r = changerObjectif(s, avant[0]);
+  assert(r.ok, r.error);
+  const apres = carnetDuJour(s).objectifs.map((o) => o.id);
+  assert(apres[0] !== avant[0] && !avant.includes(apres[0]), 'un autre, pas un des autres du jour');
+  assertEqual([changerObjectif(s, apres[1]).error, carnetDuJour(s).changer], ['Tu as déjà changé un objectif aujourd\'hui.', false]);
+  // tout faire : la récompense, puis le jour 9
+  for (const o of carnetDuJour(s).objectifs) noterObjectif(s, o.taches[0].quoi, o.taches[0].besoin);
+  const xp = s.progression.xp, pieces = s.pieces, R = carnetDuJour(s).recompense;
+  assertEqual(majObjectifs(s).recompense, R);
+  assertEqual([s.progression.xp - xp, s.pieces - pieces], [R.xp, R.pieces]);
+  s.day += 1;
+  assertEqual(majObjectifs(s), { nouveau: 9 });
+  assertEqual([carnetDuJour(s).jour, carnetDuJour(s).faits, carnetDuJour(s).changer], [9, 0, true]);
+});
+
+test('une partie du lot 2 qui avait fini sa semaine : le lendemain, ses objectifs tirés', () => {
+  const s = nouvelle('tires-4');
+  allerAuJourObjectifs(s, 7);
+  s.objectifs.fini = true;
+  s.objectifs.recu = s.day;
+  s.day += 1;
+  assertEqual(majObjectifs(s), { nouveau: 8 });
+  assertEqual(carnetDuJour(s).tire, true);
 });

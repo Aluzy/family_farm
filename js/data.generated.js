@@ -458,7 +458,60 @@ export const RAW_DATA = {
           }
         ]
       }
-    ]
+    ],
+    "TIRES": {
+      "NOMBRE": 3,
+      "CHANGER": 1,
+      "RECOMPENSE": { "xp": [20, 10], "pieces": [10, 5] },
+      "LISTE": [
+        { "id": "recolter", "icone": "🥕", "libelle": "Récolter {n} culture{s}", "quoi": "recolter", "n": [3, 1, 12], "guide": "recolter" },
+        { "id": "planter", "icone": "🌱", "libelle": "Semer {n} parcelle{s}", "quoi": "planter", "n": [3, 1, 10], "si": "houe", "guide": "semis" },
+        { "id": "arroser", "icone": "💧", "libelle": "Arroser {n} plante{s}", "quoi": "arroser", "n": [3, 1, 12], "si": "puits", "guide": "arroser" },
+        { "id": "labourer", "icone": "🌾", "libelle": "Labourer {n} case{s}", "quoi": "labourer", "n": [3, 1, 8], "si": "houe", "guide": "labour" },
+        {
+          "id": "faucher",
+          "icone": "🌾",
+          "libelle": "Faucher {n} touffe{s} d'herbe haute",
+          "quoi": "faucher",
+          "n": [6, 2, 20],
+          "si": "faux",
+          "guide": "fibres"
+        },
+        { "id": "abattre", "icone": "🌳", "libelle": "Abattre {n} arbre{s}", "quoi": "abattu", "n": [1, 0.25, 4], "si": "hache", "guide": "couper" },
+        { "id": "casser", "icone": "🪨", "libelle": "Casser {n} rocher{s}", "quoi": "casse", "n": [1, 0.25, 4], "si": "pioche", "guide": "casser" },
+        { "id": "cueillir", "icone": "🫐", "libelle": "Cueillir {n} fois", "quoi": "cueillir", "n": [2, 0.5, 6], "guide": "cueillir" },
+        {
+          "id": "cuisiner",
+          "icone": "🍳",
+          "libelle": "Préparer {n} plat{s}",
+          "quoi": "cuisiner",
+          "n": [1, 0.25, 4],
+          "si": "cuisiniere",
+          "guide": "cuisiner"
+        },
+        {
+          "id": "vendre",
+          "icone": "💰",
+          "libelle": "Gagner {n} pièce{s} à la calèche",
+          "quoi": "vendre",
+          "n": [20, 10, 300],
+          "si": "marche",
+          "guide": "caleche"
+        },
+        { "id": "pecher", "icone": "🐟", "libelle": "Pêcher {n} poisson{s}", "quoi": "pecher", "n": [1, 0.25, 5], "si": "canne", "guide": "pecher" },
+        { "id": "oeufs", "icone": "🥚", "libelle": "Ramasser les œufs {n} fois", "quoi": "oeuf", "n": [1, 0, 1], "si": "poules", "guide": "oeufs" },
+        { "id": "lait", "icone": "🥛", "libelle": "Traire les vaches {n} fois", "quoi": "lait", "n": [1, 0, 1], "si": "vaches", "guide": "lait" },
+        {
+          "id": "parler",
+          "icone": "💬",
+          "libelle": "Parler à {n} habitant{s}",
+          "quoi": "parler",
+          "n": [1, 0.25, 4],
+          "si": "hameau",
+          "guide": "parler"
+        }
+      ]
+    }
   },
   "BONHEUR": {
     "DEPART": 60,
