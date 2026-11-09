@@ -3,8 +3,8 @@
 // Une pastille sous l'horloge (sous la boussole quand elle est là) : « 📜 Jour 1 · 1/2 ». Touchée, le carnet
 // s'ouvre : le titre du jour, ses objectifs (une case cochée quand c'est fait, leur compte), la récompense et
 // « Montre-moi ». Montre-moi ferme le carnet et guide la première tâche à faire : une bulle en bas de l'écran
-// (celle du didacticiel : .didac-bulle) dit quoi faire, ce qu'il faut toucher porte l'anneau qui pulse
-// (.didac-ring) et la carte entoure ce qu'il faut toucher (surbrillanceObjectifs). Le guide passe de lui-même à
+// (celle du didacticiel : .didac-bulle) dit quoi faire, ce qu'il faut toucher brille d'une lueur blanche
+// (.didac-ring) et la carte fait briller ce qu'il faut toucher (surbrillanceObjectifs). Le guide passe de lui-même à
 // la tâche suivante ; « Arrêter » le range. Les bulles des étapes viennent du didacticiel (ETAPES_UI : les
 // mêmes gestes, les mêmes cibles) ; celles qui manquent sont ici (GUIDES).
 //
@@ -84,7 +84,7 @@ function guidee() {
   return a ? a.tache : null;
 }
 
-// Pour la carte (modèle.surbrillance, js/ui/stage.js) : ce que la scène entoure, ou null.
+// Pour la carte (modèle.surbrillance, js/ui/stage.js) : ce que la scène fait briller, ou null.
 export function surbrillanceObjectifs() {
   const b = bulleDe(guidee());
   return b && b.carte ? b.carte() : null;
