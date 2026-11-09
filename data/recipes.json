@@ -155,6 +155,7 @@
       "tonneau": { "entrees": { "planche": 4, "lingot_fer": 1 }, "sortie": { "tonneau": 1 }, "debloque": "chaines" },
       "ensacheuse": { "entrees": { "lingot_fer": 2, "planche": 2 }, "sortie": { "ensacheuse": 1 }, "debloque": "chaines" },
       "tonnelet": { "entrees": { "planche": 3, "lingot_fer": 1 }, "sortie": { "tonnelet": 1 }, "debloque": "chaines" },
+      "bac_compost": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "bac_compost": 1 } },
       "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler" },
       "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler" },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
@@ -293,6 +294,7 @@
       "tonneau": { "nom": "Tonneau", "objet": "tonneau", "bloque": true, "chaine": "outil" },
       "ensacheuse": { "nom": "Ensacheuse", "objet": "ensacheuse", "bloque": true, "chaine": "outil" },
       "tonnelet": { "nom": "Tonnelet", "objet": "tonnelet", "dehors": true, "bloque": true, "tonnelet": true },
+      "compost": { "nom": "Bac à compost", "objet": "bac_compost", "dehors": true, "bloque": true, "compost": true },
       "distributeur": { "nom": "Distributeur de grain", "objet": "distributeur", "dehors": true, "bloque": true, "distributeur": "machine", "dessin": "distributeur" },
       "mangeoire_grain": { "nom": "Mangeoire à grain", "objet": "mangeoire_grain", "dehors": true, "bloque": true, "distributeur": "mangeoire", "dessin": "mangeoire_grain", "largeur": 2 },
       "meuble_chaise": { "nom": "Chaise", "objet": "meuble_chaise", "meuble": "chaise", "dedans": true, "bloque": true, "tourne": true },
@@ -356,7 +358,7 @@
       "batir": { "nom": "Bâtir", "icone": "🧱", "murs": true, "blocs": ["porte", "porte_chene", "porte_vitree", "porte_grange", "porte_bleue", "porte_fer", "porte_ecurie", "porte_blanche", "plancher", "sol_dalles", "sol_carrelage", "sol_tomettes", "sol_chevrons", "sol_marbre", "sol_paves", "sol_mosaique", "chemin", "barriere", "barriere_blanche", "barriere_rouge", "barriere_grise", "barriere_chene", "barriere_verte", "barriere_lavande", "portail", "escalier"] },
       "maison": { "nom": "Maison", "icone": "🏠", "blocs": ["paillasse", "boite_nourriture", "refrigerateur", "four", "cuisiniere", "mortier", "lanterne", "candelabre"] },
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
-      "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "bloc_silo", "meule"] },
+      "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "compost", "bloc_silo", "meule"] },
       "jardin": { "nom": "Jardin", "icone": "🌷", "blocs": ["table_jardin", "chaise_jardin", "banc_jardin", "bac_carre", "bac_rond", "bac_long", "banc_rondins", "table_rondins", "chaise_peinte", "jarre_coquillages", "lanterne_papier", "bassin", "banc_pierre", "jardiniere_pierre", "pergola", "bac_fleurs", "bac_lavande", "bassin_nenuphars"] },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
       "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur", "reservoir", "pressoir", "centrifugeuse", "mixeur", "chaudron", "tonneau", "ensacheuse", "tonnelet"] }
@@ -444,6 +446,14 @@
     "leur moût (la clé `cave` de leur recette)."
   ],
   "TONNELET": { "NOM": "Tonnelet", "ICONE": "🛢️‍🧀", "OBJET": "tonnelet", "NUITS": 2, "AFFINE": { "tomme_alpage": "fromage_alpage", "mout_houblon": "biere_artisanale" } },
+  "//COMPOST": [
+    "Le bac à compost (docs/compost.md, js/engine/compost.js) : un bloc qu'on pose dehors. On y jette des aliments (sa",
+    "fenêtre) ; la nuit, ce qui périme y irait aussi tout seul (la péremption est coupée, PENALITES). PAR_ENGRAIS",
+    "aliment fait un engrais, au plus MAX_ENGRAIS par bac : ils attendent qu'on les prenne (une bulle, comme le miel).",
+    "L'engrais s'achète aussi à la calèche (OBJETS.engrais.comptoir). Il se glisse sur les cultures arrosées (des cases",
+    "violettes) : chacune gagne un cycle tout de suite (un stade), une fois par arrosage."
+  ],
+  "COMPOST": { "NOM": "Bac à compost", "ICONE": "🪵‍🍂", "OBJET": "compost", "ENGRAIS": "engrais", "PAR_ENGRAIS": 1, "MAX_ENGRAIS": 20 },
   "BOTTELEUSE": { "NOM": "Botteleuse", "ICONE": "⚙️‍🌾", "FIBRES": 10, "VIBRE_S": 3, "PAILLE": 10, "CONVOYEUR": 2 },
   "STATIONS": {
     "four": { "nom": "Four", "article": "le", "icone": "🔥", "prixConstruction": 100, "electrique": false, "debloque": ["recettes"], "action": "cuireFour" },

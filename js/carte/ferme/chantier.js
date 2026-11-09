@@ -148,7 +148,7 @@
           seen.add(b.case);
           // (un meuble de la maison : son propre dessin, assets/meuble_<dessin>.png)
           if (b.meuble) { if (this.syncMeuble(b)) changed = true; continue; }
-          let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case), pleine: b.pleine, mur: b.mur }, at, cols);
+          let [key, f] = this.blocImage({ case: b.case, sorte: at.get(b.case), pleine: b.pleine, mur: b.mur, niveau: b.niveau }, at, cols);
           // (le mobilier de jardin tourné : son image dans ce sens, BLOCS_CARTE.sens ; en miroir vers la gauche)
           const S = BLOCS_CARTE.sens && BLOCS_CARTE.sens[b.sorte], miroir = !!(S && S.miroir[b.sens || 0]);
           if (S) f = S.images[b.sens || 0];
@@ -772,6 +772,8 @@
       const mur = V[b.sorte] !== undefined;
       // (une ruche : vide, ou pleine, le miel se devine, js/engine/ruches.js)
       if (b.sorte === 'ruche') return BLOCS_CARTE.frames[b.pleine ? 'ruche_pleine' : 'ruche'];
+      // (un bac à compost : vide, moins de la moitié de ses engrais, la moitié au moins, js/engine/compost.js)
+      if (b.sorte === 'compost') return BLOCS_CARTE.frames.compost + Math.max(0, Math.min(2, b.niveau | 0));
       // (un segment de convoyeur : le dernier de la file a son rouleau d'extrémité, botteleuse.js)
       if (b.sorte === 'convoyeur') return BLOCS_CARTE.frames[b.case % cols < cols - 1 && at.get(b.case + 1) === 'convoyeur' ? 'convoyeur' : 'convoyeur_bout'];
       if (!mur && !estPorte(b.sorte)) return BLOCS_CARTE.frames[b.sorte] || 0;

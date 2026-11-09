@@ -51,6 +51,8 @@
      bac.semer        { case, fleur }          semer une graine de fleur dans un bac à fleurs vide (js/engine/bacs.js)
      bac.recolter     { case }                 couper à la faux les fleurs d'un bac en fleurs
      tonnelet.remplir { case, objet }          mettre une tomme d'alpage, un moût de houblon dans un tonnelet vide (tonnelets.js)
+     compost.jeter    { case, objet, quantite } jeter des aliments de l'inventaire dans un bac à compost (compost.js)
+     potager.engrais  { parcelle }             mettre un engrais sur une culture arrosée : elle gagne un cycle (compost.js)
    Les bêtes (E-6, sans inverse non plus) :
      poules.nourrir   { }                      une poule (« Nourrir une poule »)
      poules.toutNourrir { }                    « Nourrir tout »
@@ -60,7 +62,7 @@
      etable.place     { }                      acheter une place de plus à l'Étable
      ramassage.prendre { tas }                 prendre un tas qui attend (ramassage.js : un id de tas,
                                                 une ruche pleine « ruche:<case> », un tonnelet prêt
-                                                « tonnelet:<case> » compris)
+                                                « tonnelet:<case> », un bac à compost « compost:<case> » compris)
    La cuisine (E-7, sans inverse : une préparation lancée, un plat mangé ne se défont pas comme un mur ;
    « Annuler » une préparation en attente est une commande à part entière) :
      cuisine.lancer   { recette }               lancer une recette à son atelier
@@ -124,6 +126,7 @@ import { buyPasture, feedAllHens, feedHen, setCowHerbs, shear, upgradePoulailler
 import { pickUp } from './ramassage.js';
 import { recolterBac, semerBac } from './bacs.js';
 import { remplirTonnelet } from './tonnelets.js';
+import { engraisser, jeterAuCompost } from './compost.js';
 import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe, stopCurrent } from './kitchen.js';
 import { buildFridge, moveAllToFridge, moveExpiringToFridge, moveFromFridge, moveToFridge, upgradeFridge } from './fridge.js';
 import { deposerBoite, reprendreBoite } from './repas.js';
@@ -424,6 +427,8 @@ export const COMMANDES = {
   },
   'bac.semer': { args: { case: 'case', fleur: 'fleur' }, executer: (state, { case: c, fleur }) => semerBac(state, c, fleur) },
   'bac.recolter': { args: { case: 'case' }, executer: (state, { case: c }) => recolterBac(state, c) },
+  'compost.jeter': { args: { case: 'case', objet: 'objet', quantite: 'quantite' }, executer: (state, { case: c, objet, quantite }) => jeterAuCompost(state, c, objet, quantite) },
+  'potager.engrais': { args: { parcelle: 'texte' }, executer: (state, { parcelle }) => engraisser(state, parcelle) },
   'tonnelet.remplir': { args: { case: 'case', objet: 'objet' }, executer: (state, { case: c, objet }) => remplirTonnelet(state, c, objet) },
   'cruche.remplir': {
     args: { case: 'case' },

@@ -26,6 +26,7 @@ import { compagnonTouche } from './compagnon.js';
 import { marcherMembre } from '../engine/repas.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
 import { tonneletActif, tonneletsARecolter } from '../engine/tonnelets.js';
+import { casesEngraissables, compostsARecolter, etatCompost } from '../engine/compost.js';
 import { dessinBac } from '../engine/bacs.js';
 import { bacRecolter, bacTouche } from './bacs.js';
 import { TIRED } from '../engine/stamina.js';
@@ -455,7 +456,8 @@ export function stageModel() {
   // case ; arbre : sa case du Verger ; Poulailler, Étable), avec le texte de sa bulle.
   // (et les ruches pleines : leur miel attend qu'il vienne le récolter, js/engine/ruches.js)
   // (et les tonnelets prêts : leur fromage, leur bière, js/engine/tonnelets.js)
-  const tas = piles(state).concat(ruchesARecolter(state), tonneletsARecolter(state));
+  // (et les bacs à compost qui ont de l'engrais, js/engine/compost.js)
+  const tas = piles(state).concat(ruchesARecolter(state), tonneletsARecolter(state), compostsARecolter(state));
   // Version 1.19 : la laine des moutons prêts à tondre s'annonce dans la bulle de l'Étable (le
   // personnage les tond quand le joueur l'y envoie).
   const M = DATA.ANIMAUX.mouton;
@@ -557,7 +559,7 @@ export function stageModel() {
     // (un meuble : son dessin, ses cases en largeur et en hauteur, s'il arrête le passage, s'il est à plat ou un lit)
     // (un mur rehaussé, version 1.25 : sa hauteur en blocs)
     // (une fenêtre percée dans un mur : la matière de ce mur)
-    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(sorte === 'tonnelet' && tonneletActif(state, Number(c)) ? { actif: true } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}), ...(rehausses[c] && hauteurs[c] > 1 ? { dessus: rehausses[c] } : {}) })),
+    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(sorte === 'tonnelet' && tonneletActif(state, Number(c)) ? { actif: true } : {}), ...(sorte === 'compost' ? { niveau: etatCompost(state, Number(c)).niveau } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}), ...(rehausses[c] && hauteurs[c] > 1 ? { dessus: rehausses[c] } : {}) })),
     // le Moulin de la ferme générée (version 1.25) : sa tour bâtie, ses bornes (les cases de la
     // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
     // le didacticiel (js/ui/didacticiel.js) : ce que la carte entoure (pierres, bois, Atelier, puits)
@@ -597,7 +599,7 @@ export function stageModel() {
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
-    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), pied: piedIci, rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? semables() : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), pied: piedIci, rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? semables() : null, engraissables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? casesEngraissables(state) : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 

@@ -28,6 +28,7 @@ import { bienvenueNuit } from './bienvenue.js';
 import { recitNuit } from './recit.js';
 import { remplirRuches } from './ruches.js';
 import { affinerTonnelets } from './tonnelets.js';
+import { composter } from './compost.js';
 import { pousserBacs } from './bacs.js';
 import { nuitCouchee, nuitSansCouchage } from './blocs.js';
 import { distribuerGrain } from './distributeur.js';
@@ -84,6 +85,8 @@ export function buildMorningReport(state) {
     pretes: readyCrops(state),
     // Lot 3 : ce qui a péri cette nuit, et ce qui périra à la prochaine.
     perimes: { ...(state.nuit.perdus || {}) },
+    // (ce qui en est allé au bac à compost, compost.js)
+    composte: state.nuit.composte || 0,
     aPerimer: expiringSoon(state),
     // Lot 4 : œufs pondus cette nuit, blé mangé par les poules pendant la journée.
     oeufs: state.nuit.oeufs || 0,
@@ -328,6 +331,7 @@ export function runNight(state) {
   respawnBushes(state); // les buissons coupés aussi
   regrowGrass(state); // l'herbe haute fauchée dont le jour est venu repousse
   if (!state.mondePartage) repousseMonde(state); // ce qui a été pris dans le grand monde aussi (monde-recolte.js ; E-8 : pas dans un monde partagé)
+  composter(state); // ce qui a périmé cette nuit va au bac à compost (compost.js ; après la péremption)
   remplirRuches(state); // les abeilles remplissent les ruches
   affinerTonnelets(state); // la tomme s'affine, le moût fermente (tonnelets.js)
   pousserBacs(state); // les fleurs des bacs poussent (bacs.js)

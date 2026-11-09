@@ -45,6 +45,7 @@ export * from './night.js';
 export * from './ramassage.js';
 export * from './ruches.js';
 export * from './tonnelets.js';
+export * from './compost.js';
 export * from './bacs.js';
 export * from './cheval.js';
 export * from './botteleuse.js';

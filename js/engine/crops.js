@@ -566,6 +566,7 @@ export function harvestPlot(state, plot, auto = false, direct = false) {
   plot.culture = def.vivace ? culture : null;
   plot.stade = def.vivace ? def.vivace.stade : 0;
   plot.arrose = false;
+  delete plot.engrais;
   if (items.carotte) bumpCounter(state, 'carottes', items.carotte); // Lot 9
   if (!auto) spendEnergy(state, 'recolter');
   gainActionXp(state, 'recolter', 1, auto); // version 1.7
@@ -585,6 +586,7 @@ export function growAll(state) {
   for (const p of allPlots(state)) {
     if (p.culture && p.arrose && p.stade < maxStage(p)) p.stade = stadeGagne(state, p, now);
     p.arrose = false;
+    delete p.engrais;
   }
 }
 
@@ -654,6 +656,7 @@ export function growDue(state) {
     p.stade = e.stade;
     p.arrose = false;
     delete p.arroseH;
+    delete p.engrais;   // (l'engrais de ce cycle : un autre au prochain arrosage, compost.js)
     n += 1;
   }
   return n;

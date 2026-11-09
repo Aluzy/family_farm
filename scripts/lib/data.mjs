@@ -131,6 +131,7 @@ export function sourcesOf(data, id) {
   if (data.RUCHE && id === data.RUCHE.OBJET) out.push('ruche (Marché)');
   for (const b of Object.values((A && A.BLOCS) || {})) if (b.frigo && b.objet === id && data.FRIGO) out.push('achat du Réfrigérateur');
   if (data.RUCHE && id === data.RUCHE.PRODUIT) out.push('ruche');
+  if (data.COMPOST && id === data.COMPOST.ENGRAIS) out.push('bac à compost (ce qui périme)');
   if (data.HACHE && id === 'bois') out.push('hache');
   if (data.HACHE && Object.values(data.HACHE.GRAINES || {}).includes(id)) out.push('hache (graine d\'un arbre abattu)');
   if (data.PIOCHE && id === 'pierre') out.push('pioche');
