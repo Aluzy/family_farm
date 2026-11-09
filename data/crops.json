@@ -14,6 +14,8 @@
     "sprite : le dessin de la plante sur la carte, découpé dans assets/crops.png (cases de 16 px) —",
     "r = rangée de la base de la plante, h = hauteur du dessin (16 ou 32), c = colonnes des 4 ou 5",
     "phases : la graine (le jour du semis), la croissance, la plante mûre (scripts/carte/cultures.py).",
+    "Chaque dessin a son pied au bas de sa case et sa tige au milieu (scripts/carte/aligner_cultures.py) :",
+    "la carte les pose toutes de la même façon, le pied à 4 px du bas de la case de terre.",
     "Sans sprite, la carte affiche l'icône de la culture."
   ],
   "CULTURES": {
@@ -76,7 +78,7 @@
       "litres": 4,
       "rendement": 6,
       "graines": { "item": "graine_poivron", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 19, "h": 32, "c": [5, 6, 7, 8, 9], "monte": 0 }
+      "sprite": { "r": 19, "h": 32, "c": [5, 6, 7, 8, 9] }
     },
     "oignon": {
       "nom": "Oignon",

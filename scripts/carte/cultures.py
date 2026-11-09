@@ -23,6 +23,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
 from pixel import ASSETS, apercu, contour, hasard  # noqa: E402
+from aligner_cultures import aligner  # noqa: E402
 SHEET = os.path.join(ASSETS, 'crops.png')
 T = 16
 W, H = 16, 32
@@ -617,6 +618,7 @@ def main():
             if k in RETOUCHES.get(nom, ()):
                 im = sheet.crop((c * T, y, c * T + T, y + H))   # (retouchée à la main : gardée)
             out.alpha_composite(im, (c * T, y))
+    aligner(out)   # (le pied de chaque dessin au bas de sa case, sa tige au milieu : aligner_cultures.py)
     out.save(SHEET, optimize=True)
     print(f'assets/crops.png : {out.width} × {out.height} (rangées {BASE} à {rangees - 1})')
     for nom, (r, cols) in places.items():

@@ -16,6 +16,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
 from pixel import ASSETS, ROOT, T  # noqa: E402
+from aligner_cultures import aligner  # noqa: E402
 SHEET = os.path.join(ASSETS, 'crops.png')
 ROW = 11
 
@@ -159,6 +160,7 @@ def main():
         box = (col * T, ROW * T, (col + 1) * T, (ROW + 1) * T)
         sheet.paste(Image.new('RGBA', (T, T), (0, 0, 0, 0)), box)
         sheet.alpha_composite(im, (col * T, ROW * T))
+    aligner(sheet)   # (le pied de chaque dessin au bas de sa case, sa tige au milieu : aligner_cultures.py)
     sheet.save(SHEET, optimize=True)
     if '--apercu' in sys.argv:
         row = sheet.crop((0, ROW * T, 5 * T, (ROW + 1) * T)).resize((5 * T * 8, T * 8), Image.NEAREST)
