@@ -11,7 +11,7 @@
 import {
   allerAuJourObjectifs, buildAtelier, carnetDuJour, commencerObjectifs, countItem, craft, DATA, etapeDidacticiel, ETATS_OBJECTIFS,
   changerObjectif, hoe, hoeableTiles, majObjectifs, noterObjectif, objectifsActifs, objectifsPossibles, piecesCloses, plant, SI_OBJECTIFS,
-  tacheAFaire, testFarmMap,
+  ramassables, ramasser, tacheAFaire, testFarmMap,
 } from '../../js/engine/index.js';
 import { sacPorte } from '../../js/engine/equipement.js';
 import { assert, assertEqual, garden, setInv, test, tireless } from './aide.mjs';
@@ -100,6 +100,23 @@ test('les comptes : les gestes qui rapportent de l\'XP, et les événements not�
   assertEqual(c.objectifs.slice(1).map((b) => b.fait), [true, true], 'l\'arbre, le rocher');
   noterObjectif(s, 'vendre', 12);
   assertEqual([s.objectifs.faits.vendre, s.objectifs.faits.caleche], [12, 1], 'vendre, c\'est aussi rencontrer la calèche');
+});
+
+test('le quatrième jour : cueillir les baies d\'un buisson de la ferme coche « Cueillir des baies »', () => {
+  const s = nouvelle('objectifs-baies');
+  allerAuJourObjectifs(s, 4);
+  const avant = carnetDuJour(s).objectifs.find((b) => b.id === 'cueillir');
+  assertEqual(avant.fait, false);
+  const baie = ramassables(s).find((q) => q.sorte === 'baies');
+  assert(baie, 'un buisson porte des baies');
+  assert(ramasser(s, baie.id).ok);
+  assertEqual(carnetDuJour(s).objectifs.find((b) => b.id === 'cueillir').fait, true, 'cueilli');
+  // (une pierre ramassée n'est pas une cueillette)
+  const t = nouvelle('objectifs-baies-2');
+  allerAuJourObjectifs(t, 4);
+  const pierre = ramassables(t).find((q) => q.sorte !== 'baies');
+  assert(ramasser(t, pierre.id).ok);
+  assertEqual(carnetDuJour(t).objectifs.find((b) => b.id === 'cueillir').fait, false, 'pas une pierre');
 });
 
 test('le cinquième jour offre le sac ; la semaine faite, le jour 8 tire ses objectifs', () => {
