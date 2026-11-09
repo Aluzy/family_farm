@@ -374,27 +374,29 @@ test('botteleuse : entonnoir, machine et convoyeur côte à côte ; 10 fibres je
   assertEqual(etatBotteleuse(s, t + 1).raison, 'La case au bout du convoyeur doit rester libre : la botte de paille y tombe.');
 });
 
-test('bac à fleurs : acheté au Marché, posé comme un bloc, ses fleurs attirent les abeilles', () => {
+test('bac carré : acheté au Marché, posé comme un bloc ; en fleurs, il attire les abeilles', () => {
   const s = chantier('bac');
-  const prix = DATA.DEHORS.bac_fleurs.prix;
+  const prix = DATA.DEHORS.bac_carre.prix;
   s.pieces = prix + DATA.RUCHE.PRIX;
-  assertEqual(buyDehors(s, 'bac_fleurs'), { ok: true, cost: prix });
-  assertEqual([s.pieces, countItem(s, 'bac_fleurs')], [DATA.RUCHE.PRIX, 1]);
+  assertEqual(buyDehors(s, 'bac_carre'), { ok: true, cost: prix });
+  assertEqual([s.pieces, countItem(s, 'bac_carre')], [DATA.RUCHE.PRIX, 1]);
   const z = terrainLibre(s, 6, 5);
   const t = z.r * z.W + z.c;
-  assertEqual(poserBloc(s, 'bac_fleurs', t).ok, true);
-  assertEqual([blocAt(s, t), blocBloque(s, t)], ['bac_fleurs', true]);
-  assertEqual(poserBloc(s, 'bac_fleurs', t + 2).error, 'Plus de bac à fleurs : fabrique-en à l\'Atelier.');
-  // sans ruche, pas d'abeilles (rien à butiner) ; avec une ruche, le bac est une fleur
+  assertEqual(poserBloc(s, 'bac_carre', t).ok, true);
+  assertEqual([blocAt(s, t), blocBloque(s, t)], ['bac_carre', true]);
+  assertEqual(poserBloc(s, 'bac_carre', t + 2).error, 'Plus de bac carré : fabrique-en à l\'Atelier.');
+  // sans ruche, pas d'abeilles (rien à butiner) ; avec une ruche, le bac en fleurs est une fleur
   assertEqual(fleursPourAbeilles(s), []);
   buyRuche(s);
   poserBloc(s, 'ruche', t + 3);
+  assert(!fleursPourAbeilles(s).includes(t), 'vide : pas une fleur');
+  s.bacs = { [t]: { fleur: 'coquelicot', nuits: DATA.BACS.NUITS } };
   const f = fleursPourAbeilles(s);
-  assert(f.includes(t), 'le bac');
+  assert(f.includes(t), 'le bac en fleurs');
   assert(!f.includes(t + 3), 'pas la ruche');
   assert(f.length > 1, 'et les fleurs de l\'herbe');
   assertEqual(reprendreBloc(s, t).ok, true);
-  assertEqual([countItem(s, 'bac_fleurs'), fleursPourAbeilles(s).includes(t)], [1, false]);
+  assertEqual([countItem(s, 'bac_carre'), fleursPourAbeilles(s).includes(t)], [1, false]);
 });
 
 test('ferme générée : sous un buisson coupé, on bâtit (et il ne repousse pas sous ce qui est bâti)', () => {

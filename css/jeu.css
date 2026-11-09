@@ -3762,3 +3762,10 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .chaine-diag li.info { background: var(--bg-header); }
 .chaine-boutons { display: flex; gap: 8px; flex-wrap: wrap; }
 .chaine-aide-btn { margin-top: 8px; width: 100%; }
+
+/* les bacs à fleurs : la fenêtre « Semer » (js/ui/bacs.js) */
+.bac-graines { list-style: none; margin: 0.6em 0 1em; padding: 0; display: grid; gap: 0.4em; }
+.bac-graine { width: 100%; display: flex; align-items: center; gap: 0.5em; text-align: left; }
+.bac-graine .bac-graine-nom { flex: 1; }
+.bac-graine small { white-space: nowrap; opacity: 0.8; }
+.bac-astuce { font-style: italic; }

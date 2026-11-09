@@ -327,6 +327,25 @@ export const RAW_DATA = {
     "graine_aubergine": { "nom": "Graines d'aubergine", "icone": "🌱‍🍆", "prix": 1, "mangeable": false, "categorie": "graine" },
     "ble": { "nom": "Blé", "icone": "🌾", "prix": 1, "mangeable": false, "categorie": "ingrédient" },
     "graine_tournesol": { "nom": "Graines de tournesol", "icone": "🌱‍🌻", "prix": 1, "mangeable": false, "categorie": "graine" },
+    "graine_coquelicot": {
+      "nom": "Graines de coquelicot",
+      "icone": "🌱‍🌺",
+      "prix": 1,
+      "mangeable": false,
+      "categorie": "graine",
+      "rachetable": false
+    },
+    "graine_pavot": {
+      "nom": "Graines de pavot de Californie",
+      "icone": "🌱‍🏵",
+      "prix": 1,
+      "mangeable": false,
+      "categorie": "graine",
+      "rachetable": false
+    },
+    "graine_myosotis": { "nom": "Graines de myosotis", "icone": "🌱‍💠", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
+    "graine_lavande": { "nom": "Graines de lavande", "icone": "🌱‍🪻", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
+    "graine_lupin": { "nom": "Graines de lupin", "icone": "🌱‍💮", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "oeuf": { "nom": "Œuf", "icone": "🥚", "energie": 13, "prix": 2, "mangeable": true, "categorie": "produit" },
     "viande_mouton": {
       "nom": "Viande de mouton",
@@ -452,13 +471,14 @@ export const RAW_DATA = {
       "retire": true
     },
     "bac_fleurs": {
-      "nom": "Bac à fleurs",
+      "nom": "Bac à fleurs (ancien)",
       "icone": "🪴‍🌷",
       "prix": 60,
       "mangeable": false,
       "categorie": "matériau",
       "rachetable": false,
-      "invendable": true
+      "invendable": true,
+      "retire": true
     },
     "table_jardin": {
       "nom": "Table de jardin",
@@ -572,6 +592,34 @@ export const RAW_DATA = {
       "nom": "Bac de lavande",
       "icone": "🪻",
       "prix": 30,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true,
+      "retire": true
+    },
+    "bac_carre": {
+      "nom": "Bac carré",
+      "icone": "🪴‍🟫",
+      "prix": 60,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "bac_rond": {
+      "nom": "Bac rond",
+      "icone": "🪴‍⭕",
+      "prix": 40,
+      "mangeable": false,
+      "categorie": "matériau",
+      "rachetable": false,
+      "invendable": true
+    },
+    "bac_long": {
+      "nom": "Bac long",
+      "icone": "🪴‍➖",
+      "prix": 90,
       "mangeable": false,
       "categorie": "matériau",
       "rachetable": false,
@@ -1150,7 +1198,9 @@ export const RAW_DATA = {
         "debloque": "four"
       },
       "ruche": { "entrees": { "planche": 4, "fibre": 8, "pierre": 1 }, "sortie": { "ruche": 1 } },
-      "bac_fleurs": { "entrees": { "planche": 3, "pierre": 2, "fibre": 1 }, "sortie": { "bac_fleurs": 1 } },
+      "bac_carre": { "entrees": { "planche": 3, "pierre": 2, "fibre": 1 }, "sortie": { "bac_carre": 1 } },
+      "bac_rond": { "entrees": { "planche": 3, "fibre": 1 }, "sortie": { "bac_rond": 1 } },
+      "bac_long": { "entrees": { "planche": 5, "pierre": 3, "fibre": 1 }, "sortie": { "bac_long": 1 } },
       "table_jardin": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "table_jardin": 1 } },
       "chaise_jardin": { "entrees": { "planche": 2 }, "sortie": { "chaise_jardin": 1 } },
       "banc_jardin": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "banc_jardin": 1 } },
@@ -1162,8 +1212,7 @@ export const RAW_DATA = {
       "bassin_nenuphars": { "entrees": { "pierre": 3, "algues": 2 }, "sortie": { "bassin_nenuphars": 1 }, "plan": true },
       "banc_pierre": { "entrees": { "pierre": 5 }, "sortie": { "banc_pierre": 1 }, "plan": true },
       "jardiniere_pierre": { "entrees": { "pierre": 3, "herbes_montagne": 2 }, "sortie": { "jardiniere_pierre": 1 }, "plan": true },
-      "pergola": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "pergola": 1 }, "plan": true },
-      "bac_lavande": { "entrees": { "planche": 2, "pierre": 1, "fibre": 1 }, "sortie": { "bac_lavande": 1 }, "plan": true }
+      "pergola": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "pergola": 1 }, "plan": true }
     },
     "BLOCS": {
       "mur_pierre": { "nom": "Mur en pierre", "objet": "mur_pierre", "bloque": true, "ferme": true, "mur": true },
@@ -1269,7 +1318,36 @@ export const RAW_DATA = {
       "pomme_de_pin": { "nom": "Pomme de pin", "objet": "pomme_de_pin", "dehors": true, "semis": "pin" },
       "gland": { "nom": "Gland", "objet": "gland", "dehors": true, "semis": "arbre" },
       "ruche": { "nom": "Ruche", "objet": "ruche", "dehors": true, "bloque": true, "ruche": true, "marche": "Animaux" },
-      "bac_fleurs": { "nom": "Bac à fleurs", "objet": "bac_fleurs", "bloque": true, "fleurs": true, "marche": "Meubles" },
+      "bac_fleurs": { "nom": "Bac à fleurs (ancien)", "objet": "bac_fleurs", "bloque": true, "fleurs": true },
+      "bac_carre": {
+        "nom": "Bac carré",
+        "objet": "bac_carre",
+        "dehors": true,
+        "bloque": true,
+        "bac": "carre",
+        "dessin": "bac_carre",
+        "peinture": "bandeau",
+        "marche": "Meubles"
+      },
+      "bac_rond": {
+        "nom": "Bac rond",
+        "objet": "bac_rond",
+        "dehors": true,
+        "bloque": true,
+        "bac": "rond",
+        "dessin": "bac_rond",
+        "peinture": "cerclage"
+      },
+      "bac_long": {
+        "nom": "Bac long",
+        "objet": "bac_long",
+        "dehors": true,
+        "bloque": true,
+        "bac": "long",
+        "dessin": "bac_long",
+        "largeur": 2,
+        "peinture": "bandeau"
+      },
       "table_jardin": { "nom": "Table de jardin", "objet": "table_jardin", "bloque": true, "terrasse": "table", "tourne": "symetrique" },
       "chaise_jardin": { "nom": "Chaise de jardin", "objet": "chaise_jardin", "bloque": true, "terrasse": "siege", "tourne": true },
       "banc_jardin": { "nom": "Banc de jardin", "objet": "banc_jardin", "bloque": true, "terrasse": "siege", "tourne": true },
@@ -1282,7 +1360,7 @@ export const RAW_DATA = {
       "banc_pierre": { "nom": "Banc de pierre", "objet": "banc_pierre", "bloque": true, "terrasse": "siege", "tourne": true },
       "jardiniere_pierre": { "nom": "Jardinière de pierre", "objet": "jardiniere_pierre", "bloque": true, "tourne": "symetrique" },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
-      "bac_lavande": { "nom": "Bac de lavande", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
+      "bac_lavande": { "nom": "Bac de lavande (ancien)", "objet": "bac_lavande", "bloque": true, "fleurs": true, "tourne": "symetrique" },
       "station_robot": { "nom": "Station du robot", "objet": "station_robot", "dehors": true, "bloque": true, "unique": true, "robot": true },
       "entonnoir": { "nom": "Entonnoir", "objet": "entonnoir", "bloque": true, "botteleuse": "entonnoir" },
       "botteleuse": { "nom": "Botteleuse", "objet": "botteleuse", "bloque": true, "botteleuse": "machine" },
@@ -1623,7 +1701,9 @@ export const RAW_DATA = {
           "table_jardin",
           "chaise_jardin",
           "banc_jardin",
-          "bac_fleurs",
+          "bac_carre",
+          "bac_rond",
+          "bac_long",
           "banc_rondins",
           "table_rondins",
           "chaise_peinte",
@@ -1633,6 +1713,7 @@ export const RAW_DATA = {
           "banc_pierre",
           "jardiniere_pierre",
           "pergola",
+          "bac_fleurs",
           "bac_lavande"
         ]
       },
@@ -2933,7 +3014,7 @@ export const RAW_DATA = {
         "titre": "Notre nouveau chez-nous",
         "etape": "L'héritage",
         "icone": "🏚️",
-        "recompense": { "objets": { "bac_fleurs": 2, "lanterne": 2 } },
+        "recompense": { "objets": { "bac_carre": 2, "lanterne": 2 } },
         "intro": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; fabrique une houe à l'Atelier, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "introSauvage": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. Celle de ton grand-père est à ta famille, sans maison ni bâtiment. Ramasse des pierres et du bois, construis l'Atelier, fabriques-y une faux pour faucher l'herbe haute (ses fibres), puis bâtis ton foyer : une pièce close et une paillasse. Fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
@@ -3027,7 +3108,7 @@ export const RAW_DATA = {
         "titre": "Au rythme de la nature",
         "etape": "Toute l'année",
         "icone": "📅",
-        "recompense": { "plans": ["bac_lavande"] },
+        "recompense": { "objets": { "bac_long": 1, "graine_lavande": 3 } },
         "intro": "« Une ferme, c'est comme une amitié : un peu de soin chaque jour », dit Odile. La Serre, le Verger et le Réfrigérateur pour tenir dans la durée. Les hameaux, eux, ont leurs projets : apporte-leur de quoi les achever. Ce qui manque à la ferme, les hameaux l'ont parfois : la calèche te vend ce qu'elle leur achète. Et le pays a ses bêtes, à regarder sans les chasser.",
         "objectifs": [
           { "type": "projets", "cible": 1, "libelle": "Aider un hameau à achever un projet", "unite": "" },
@@ -3350,9 +3431,55 @@ export const RAW_DATA = {
     "tissu_vert": ["#285238", "#427c50", "#70a86e"],
     "tissu_rouge": ["#5c1e24", "#8e3236", "#c0564e"],
     "tissu_bleu": ["#1e3460", "#34568e", "#6a8ec4"],
-    "tissu_moutarde": ["#7a5418", "#b08428", "#dcb850"]
+    "tissu_moutarde": ["#7a5418", "#b08428", "#dcb850"],
+    "bac_bandeau": ["#706042", "#96825d", "#bca37b"],
+    "bac_cerclage": ["#3e4451", "#626a77", "#929aa5"],
+    "bac_bandeau_rouge": ["#ba2424", "#e2483c", "#fa9682"],
+    "bac_cerclage_rouge": ["#ba2424", "#e2483c", "#fa9682"],
+    "bac_bandeau_orange": ["#dc6e18", "#f69a30", "#ffd28c"],
+    "bac_cerclage_orange": ["#dc6e18", "#f69a30", "#ffd28c"],
+    "bac_bandeau_jaune": ["#e2ba1e", "#fade46", "#fff6aa"],
+    "bac_cerclage_jaune": ["#e2ba1e", "#fade46", "#fff6aa"],
+    "bac_bandeau_vert": ["#34842c", "#62b442", "#b0e082"],
+    "bac_cerclage_vert": ["#34842c", "#62b442", "#b0e082"],
+    "bac_bandeau_bleu": ["#3468c4", "#64a0ec", "#b4dcff"],
+    "bac_cerclage_bleu": ["#3468c4", "#64a0ec", "#b4dcff"],
+    "bac_bandeau_violet": ["#703ea4", "#9c6ed6", "#d6baf4"],
+    "bac_cerclage_violet": ["#703ea4", "#9c6ed6", "#d6baf4"]
   },
-  "DEHORS": { "bac_fleurs": { "nom": "Bac à fleurs", "prix": 60 } },
+  "PEINTURES": {
+    "bandeau": [
+      { "id": "naturel", "nom": "bois naturel" },
+      { "id": "rouge", "nom": "peint en rouge", "remplace": { "bac_bandeau": "bac_bandeau_rouge" } },
+      { "id": "orange", "nom": "peint en orange", "remplace": { "bac_bandeau": "bac_bandeau_orange" } },
+      { "id": "jaune", "nom": "peint en jaune", "remplace": { "bac_bandeau": "bac_bandeau_jaune" } },
+      { "id": "vert", "nom": "peint en vert", "remplace": { "bac_bandeau": "bac_bandeau_vert" } },
+      { "id": "bleu", "nom": "peint en bleu", "remplace": { "bac_bandeau": "bac_bandeau_bleu" } },
+      { "id": "violet", "nom": "peint en violet", "remplace": { "bac_bandeau": "bac_bandeau_violet" } }
+    ],
+    "cerclage": [
+      { "id": "naturel", "nom": "bois naturel" },
+      { "id": "rouge", "nom": "peint en rouge", "remplace": { "bac_cerclage": "bac_cerclage_rouge" } },
+      { "id": "orange", "nom": "peint en orange", "remplace": { "bac_cerclage": "bac_cerclage_orange" } },
+      { "id": "jaune", "nom": "peint en jaune", "remplace": { "bac_cerclage": "bac_cerclage_jaune" } },
+      { "id": "vert", "nom": "peint en vert", "remplace": { "bac_cerclage": "bac_cerclage_vert" } },
+      { "id": "bleu", "nom": "peint en bleu", "remplace": { "bac_cerclage": "bac_cerclage_bleu" } },
+      { "id": "violet", "nom": "peint en violet", "remplace": { "bac_cerclage": "bac_cerclage_violet" } }
+    ]
+  },
+  "BACS": {
+    "NUITS": 3,
+    "RECOLTE": [2, 3],
+    "FLEURS": {
+      "coquelicot": { "nom": "Coquelicots", "graine": "graine_coquelicot", "fleur": "fleur_coquelicot" },
+      "pavot": { "nom": "Pavots de Californie", "graine": "graine_pavot", "fleur": "fleur_pavot" },
+      "tournesol": { "nom": "Tournesols", "graine": "graine_tournesol", "fleur": "fleur_tournesol" },
+      "myosotis": { "nom": "Myosotis", "graine": "graine_myosotis", "fleur": "fleur_myosotis" },
+      "lavande": { "nom": "Lavande", "graine": "graine_lavande", "fleur": "fleur_lavande" },
+      "lupin": { "nom": "Lupins", "graine": "graine_lupin", "fleur": "fleur_lupin" }
+    }
+  },
+  "DEHORS": { "bac_carre": { "nom": "Bac carré", "prix": 60 } },
   "MEUBLES": {
     "chaise": {
       "nom": "Chaise",
@@ -4091,12 +4218,12 @@ export const RAW_DATA = {
       "ronces": { "geste": "cueillir", "variantes": [0, 1], "apres": 2, "fin": { "mures": [2, 4] }, "retour": [3, 5] },
       "champignons": { "geste": "ramasser", "fin": { "champignon": [1, 2] }, "retour": [3, 6] },
       "touffe_mont": { "geste": "ramasser", "fin": { "herbes_montagne": [1, 1] }, "retour": [4, 6] },
-      "coquelicot": { "geste": "ramasser", "fin": { "fleur_coquelicot": [2, 3] }, "retour": [4, 7] },
-      "pavot_californie": { "geste": "ramasser", "fin": { "fleur_pavot": [2, 3] }, "retour": [4, 7] },
-      "tournesol_sauvage": { "geste": "ramasser", "fin": { "fleur_tournesol": [2, 3] }, "retour": [4, 7] },
-      "myosotis": { "geste": "ramasser", "fin": { "fleur_myosotis": [2, 3] }, "retour": [4, 7] },
-      "lavande": { "geste": "ramasser", "fin": { "fleur_lavande": [2, 3] }, "retour": [4, 7] },
-      "lupin": { "geste": "ramasser", "fin": { "fleur_lupin": [2, 3] }, "retour": [4, 7] },
+      "coquelicot": { "geste": "ramasser", "fin": { "fleur_coquelicot": [2, 3] }, "chance": { "graine_coquelicot": 25 }, "retour": [4, 7] },
+      "pavot_californie": { "geste": "ramasser", "fin": { "fleur_pavot": [2, 3] }, "chance": { "graine_pavot": 25 }, "retour": [4, 7] },
+      "tournesol_sauvage": { "geste": "ramasser", "fin": { "fleur_tournesol": [2, 3] }, "chance": { "graine_tournesol": 25 }, "retour": [4, 7] },
+      "myosotis": { "geste": "ramasser", "fin": { "fleur_myosotis": [2, 3] }, "chance": { "graine_myosotis": 25 }, "retour": [4, 7] },
+      "lavande": { "geste": "ramasser", "fin": { "fleur_lavande": [2, 3] }, "chance": { "graine_lavande": 25 }, "retour": [4, 7] },
+      "lupin": { "geste": "ramasser", "fin": { "fleur_lupin": [2, 3] }, "chance": { "graine_lupin": 25 }, "retour": [4, 7] },
       "bois_flotte": { "geste": "ramasser", "fin": { "bois": [1, 2] }, "retour": [5, 8] },
       "fougere": { "geste": "faucher", "fin": { "fibre": [1, 1] }, "retour": [3, 5] },
       "bruyere": { "geste": "faucher", "fin": { "fibre": [1, 1] }, "retour": [3, 5] },
@@ -6603,7 +6730,8 @@ export const RAW_DATA = {
         "icone": "🌷",
         "adj": "fleuri",
         "blocs": [
-          "bac_fleurs",
+          "bac_carre",
+          "bac_rond",
           "fenetre_vitrail",
           "fenetre_cintree",
           "mur_brique_rouge",
@@ -6620,7 +6748,7 @@ export const RAW_DATA = {
           "meuble_tableau_2",
           "lanterne_papier",
           "pergola",
-          "bac_lavande"
+          "bac_long"
         ]
       }
     },
@@ -6671,13 +6799,7 @@ export const RAW_DATA = {
         "hameaux": ["montagne"],
         "plans": ["banc_pierre", "jardiniere_pierre"]
       },
-      "prairie": {
-        "nom": "la prairie",
-        "icone": "🌼",
-        "biomes": ["prairie", "lande"],
-        "hameaux": ["prairie", "lande"],
-        "plans": ["pergola", "bac_lavande"]
-      }
+      "prairie": { "nom": "la prairie", "icone": "🌼", "biomes": ["prairie", "lande"], "hameaux": ["prairie", "lande"], "plans": ["pergola"] }
     },
     "TROUVE": [
       "En chemin, tu ramasses un vieux carnet abîmé : le plan {de} ({pays}).",

@@ -459,5 +459,13 @@
  "💠": "fleur_myosotis.png",
  "🪻": "fleur_lavande.png",
  "💮": "fleur_lupin.png",
- "⚱": "mortier.png"
+ "⚱": "mortier.png",
+ "🪴‍⭕": "bac_rond.png",
+ "🪴‍🟫": "bac_carre.png",
+ "🪴‍➖": "bac_long.png",
+ "🌱‍🌺": "graine_coquelicot.png",
+ "🌱‍🏵": "graine_pavot.png",
+ "🌱‍💠": "graine_myosotis.png",
+ "🌱‍🪻": "graine_lavande.png",
+ "🌱‍💮": "graine_lupin.png"
 }

@@ -48,7 +48,7 @@
 
   const K = global.CarteKit;
   const F = global.FermeCarte;
-  const { T, MAP, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, LITS_SENS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, CONSTRUCTIBLE, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
+  const { T, MAP, TREE_FRAME, TREE_BODY, SPRINKLER, ROBOT, TALL_GRASS, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, LITS_SENS, BACS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, MAX_SPEED, FOLLOW_MS, FOLLOW_UP, CONSTRUCTIBLE, LABEL_HOLD_MS, LONG_PRESS_MS, GROUND_CHECK_MS } = F.C;
   const { clamp, pixelRatio, reducedMotion, v } = F;
 
   let game = null;          // le jeu Phaser de toutes les cartes (js/carte/jeu.js)
@@ -184,14 +184,30 @@
         for (const name of LITS) L.image('meuble_' + name + '_drap', v('meuble_' + name + '_drap.png'));
         for (const name of LITS_SENS) for (const vue of ['_dos', '_cote']) L.image('meuble_' + name + vue + '_drap', v('meuble_' + name + vue + '_drap.png'));
         if (this.ctx.monde) for (const e of this.ctx.monde.faune.especes) L.image('faune_' + e.cle, v('faune_' + e.cle + '.png'));
+        // (les bacs à fleurs : une planche, découpée en une image par état, BACS)
+        L.image(BACS.key, v(BACS.file));
         L.once('complete', () => {
           if (!this.sys || !this.sys.isActive()) return;
+          this.decouperBacs();
           this.imagesTard = true;
           this.fauneEtat = undefined;
           for (const r of this.shownRegions ? this.shownRegions() : []) if (this.fauneRegion) this.fauneRegion(r);
           if (this.rawModel) this.sync(this.rawModel);
         });
         L.start();
+      }
+
+      // La planche des bacs à fleurs (BACS) découpée : une image « meuble_<nom> » par état, comme celle d'un meuble.
+      decouperBacs() {
+        if (!this.textures.exists(BACS.key)) return;
+        const src = this.textures.get(BACS.key).getSourceImage(), [cw, ch] = BACS.cellule;
+        BACS.noms.forEach(([nom, forme], k) => {
+          const key = 'meuble_' + nom, w = BACS.largeur[forme];
+          if (this.textures.exists(key)) return;
+          const cv = this.textures.createCanvas(key, w, ch);
+          cv.context.drawImage(src, k * cw, 0, w, ch, 0, 0, w, ch);
+          cv.refresh();
+        });
       }
 
       create() {
@@ -1002,6 +1018,9 @@
         // le distributeur de grain (une de ses pièces) : il va jeter son blé dans l'entonnoir
         const distrib = !hoeing ? this.distributeurAt(wx, wy) : -1;
         if (distrib >= 0) return { distributeur: distrib };
+        // un bac à fleurs : semer, voir ce qui pousse, couper ses fleurs à la faux (js/carte/ferme/bacs.js)
+        const bac = !hoeing && this.bacAt ? this.bacAt(wx, wy) : -1;
+        if (bac >= 0) return { bac };
         // le silo de la ferme générée (ses blocs) : la fenêtre du Silo
         if (!hoeing && this.siloAt(wx, wy)) return { window: 'silo' };
         // un four, une cuisinière posés (la ferme générée) : la fenêtre de sa station
@@ -1229,6 +1248,7 @@
         if (hit.portail !== undefined) { this.ctx.bridge.act('portail', { case: hit.portail }); return; }
         if (hit.chaine !== undefined) { this.jeterChaine(hit.chaine); return; }
         if (hit.machineSeule !== undefined) { this.machineSeule(hit.machineSeule); return; }
+        if (hit.bac !== undefined) { this.bacTouche(hit.bac); return; }
         if (hit.botteleuse !== undefined) { this.jeterFibres(hit.botteleuse); return; }
         if (hit.distributeur !== undefined) { this.jeterGrain(hit.distributeur); return; }
         if (hit.chop) { this.chop(hit.chop); return; }

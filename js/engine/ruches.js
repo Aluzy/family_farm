@@ -3,6 +3,7 @@ import { fail, NO_COINS, pay } from './devices.js';
 import { addItem } from './inventory.js';
 import { storeWithSilo } from './animals.js';
 import { farmTerrain } from './terrain.js';
+import { bacsFleuris } from './bacs.js';
 
 /* ---------- les ruches de la ferme générée ----------
    Une ruche se fabrique à l'Atelier (fiche 7c ; avant, au Marché), arrive dans l'inventaire
@@ -92,12 +93,12 @@ export function recolterRuche(state, tile) {
 // Les fleurs où butinent les abeilles (la carte les y envoie, js/carte/ferme/abeilles.js) : les
 // cases fleuries de la ferme générée (farmTerrain().FLEURS) qu'aucun bloc, sol ni labour ne
 // recouvre, et les blocs à fleurs posés (un bloc `fleurs` de DATA.ATELIER.BLOCS : les bacs à
-// fleurs). Rien sans ruche.
+// fleurs anciens) ; les bacs à fleurs en fleurs (js/engine/bacs.js). Rien sans ruche.
 export function fleursPourAbeilles(state) {
   if (!ruchesPosees(state).length) return [];
   const B = state.blocs || {}, S = state.sols || {};
   const labour = new Set(((state.potager && state.potager.parcelles) || []).map((p) => p.case));
   const bacs = Object.keys(B).filter((t) => (DATA.ATELIER.BLOCS[B[t]] || {}).fleurs).map(Number);
   const sauvages = (farmTerrain(state).FLEURS || []).filter((t) => !B[t] && !S[t] && !labour.has(t));
-  return sauvages.concat(bacs);
+  return sauvages.concat(bacs, bacsFleuris(state));
 }

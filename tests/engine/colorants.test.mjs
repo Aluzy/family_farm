@@ -86,7 +86,7 @@ test('les fleurs sauvages : on les cueille dans le monde ; le coquelicot pousse 
   const fleurs = { coquelicot: 'fleur_coquelicot', pavot_californie: 'fleur_pavot', tournesol_sauvage: 'fleur_tournesol', myosotis: 'fleur_myosotis', lavande: 'fleur_lavande', lupin: 'fleur_lupin' };
   for (const [sorte, item] of Object.entries(fleurs)) {
     assert(noms.includes(sorte), `${sorte} : une sorte du monde`);
-    assertEqual(DATA.RECOLTE.SORTES[sorte], { geste: 'ramasser', fin: { [item]: [2, 3] }, retour: [4, 7] }, sorte);
+    assertEqual(DATA.RECOLTE.SORTES[sorte], { geste: 'ramasser', fin: { [item]: [2, 3] }, chance: { [item.replace('fleur_', 'graine_')]: 25 }, retour: [4, 7] }, sorte);
   }
   // le coquelicot dans la région de la ferme (la prairie autour), pour trois mondes
   for (const g of ['1', 'abc', 'colorants-3']) {

@@ -25,6 +25,8 @@ import { arroseesCompagnon, demandeCompagnon, estTacheCompagnon, faireCompagnon,
 import { compagnonTouche } from './compagnon.js';
 import { marcherMembre } from '../engine/repas.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
+import { dessinBac } from '../engine/bacs.js';
+import { bacRecolter, bacTouche } from './bacs.js';
 import { TIRED } from '../engine/stamina.js';
 import { executer } from './commandes.js';
 import { brokenRocks, cutBushes, cutGrass, fellenTrees, morceauxDe, poussesArbres, arbresPlantes } from '../engine/outils.js';
@@ -605,7 +607,12 @@ export function stageModel() {
 // jardin, un bloc de la planche : son sens seulement (js/carte/ferme/chantier.js, BLOCS_CARTE.sens).
 function meubleDe(sorte, tile, etage = false) {
   const b = DATA.ATELIER.BLOCS[sorte];
-  if (b && b.dessin) return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: false, lit: false } };
+  if (b && b.dessin) {
+    // (un bac à fleurs : ce qui y pousse, sa peinture ; js/engine/bacs.js)
+    const teinte = b.peinture && Number.isInteger(tile) && !etage ? varianteBloc(state, tile) : null;
+    const couleurs = teinte ? couleursVariante(sorte, teinte) : null;
+    return { meuble: { dessin: dessinBloc(b, tile), largeur: b.largeur || 1, hauteur: b.hauteur || 1, bloque: !!b.bloque, plat: false, lit: false, ...(couleurs ? { variante: teinte, couleurs } : {}) } };
+  }
   const sens = b && b.tourne && Number.isInteger(tile) ? (etage ? sensEtage(state, tile) : sensBloc(state, tile)) : 0;
   if (!b || !b.meuble) return sens ? { sens } : {};
   const mes = mesuresMeuble(sorte, sens), v = vueMeuble(sorte, sens);
@@ -618,6 +625,7 @@ function meubleDe(sorte, tile, etage = false) {
 // L'image d'un bloc dessiné comme un meuble : le distributeur selon son blé (assets/
 // meuble_distributeur_<0 à 4>.png : vide à plein), la mangeoire pleine tant qu'il en a.
 function dessinBloc(b, tile) {
+  if (b.bac) return (Number.isInteger(tile) && dessinBac(state, tile)) || `bac_${b.bac}_vide`;
   if (b.distributeur === 'machine') {
     const f = grainDans(state, tile) / DATA.DISTRIBUTEUR.CAPACITE;
     return `distributeur_${f > 0 ? Math.max(1, Math.round(f * 4)) : 0}`;
@@ -1227,7 +1235,7 @@ export function renderStage() {
     el.hidden = false;
     // Ne pas laisser un plantage de Phaser empêcher de jouer : repli sur la liste classique.
     try {
-      if (!FarmStage.mount(el, enLigneSurLaFerme({ act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, secret: stageSecret, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, lot: (f) => enLot(state, f), pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, malle: malleDepuisCarte, malleTouchee: malleToucheeDepuisCarte, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, compagnonTouche, visite: visiteDepuisCarte, sceneCarte: sceneCarteDepuisCarte, positionGardee, positionNoter, invites: invitesDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, presents: presentsDepuisCarte, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, chaineAide: ouvrirDiagnosticChaine, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() }))) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
+      if (!FarmStage.mount(el, enLigneSurLaFerme({ act: stageAct, onView: stageOnView, pickup: stagePickup, collect: stageCollect, aide: stageAide, marche: stageMarche, region: stageRegion, ici: stageIci, faune: stageFaune, fauneVue: stageFauneVue, hameau: stageHameau, hameauIci: stageHameauIci, maison: stageMaison, lieuRecit: stageLieuRecit, secret: stageSecret, hameauPanneau: stageHameauPanneau, hameauRefus: stageHameauRefus, parcelle: stageParcelle, trace: { info: traceInfo, posable: tracePosable, lot: (f) => enLot(state, f), pipette: pipetteSorte, deplacable, deplacePossible }, caleche: calecheDepuisCarte, calecheTouchee: calecheToucheeDepuisCarte, calecheHeler: helerCaleche, malle: malleDepuisCarte, malleTouchee: malleToucheeDepuisCarte, habitantAgit: habitantDepuisCarte, habitantParle: paroleDepuisCarte, compagnonTouche, visite: visiteDepuisCarte, sceneCarte: sceneCarteDepuisCarte, positionGardee, positionNoter, invites: invitesDepuisCarte, regionTuiles: MONDE.REGION, chop: chopFromStage, recolte: mondeFromStage, mine: mineFromStage, caillou: caillouFromStage, semer: semerFromStage, presents: presentsDepuisCarte, gestePossible: gesteFromStage, scythe: scytheFromStage, scytheAround: scytheAroundFromStage, fish: fishFromStage, ramasser: ramasserFromStage, morceau: morceauFromStage, verser: verserFromStage, puiser: puiserFromStage, verserGrain: verserGrainFromStage, verserChaine: verserChaineFromStage, chaineAide: ouvrirDiagnosticChaine, bacTouche, bacRecolter, botte: botteFromStage, asleep: asleepFromStage, icone: (item) => (DATA.OBJETS[item] ? DATA.OBJETS[item].icone : item === 'arrose' ? '💧' : ''), base: 'assets/', crops: cropSprites(), carte: farmMap(state), monde: mondeDeLaCarte() }))) { stageBroken = true; if (window.Chargement) window.Chargement.fini(); }
     } catch (err) {
       stageBroken = true;
       if (window.Chargement) window.Chargement.fini();
