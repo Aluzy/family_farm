@@ -90,7 +90,8 @@ TETE = lambda a, b: b <= 12 or (b == 13 and 4 <= a <= 8)
 def tetes(im):
     """Les têtes des tournesols mûrs (le dessin du jeu reconnu dans la capture, sur la grille de 16 px) :
     [(x, y, l, h, pixels {(x, y): couleur})], les seuls pixels de la tête que la capture montre."""
-    cr = Image.open(os.path.join(RACINE, 'assets', 'crops.png')).convert('RGBA')
+    # (la source des cultures, dans la disposition d'origine : assets/crops.png est rangée autrement, planche_cultures.py)
+    cr = Image.open(os.path.join(RACINE, 'scripts', 'carte', 'sources', 'cultures.png')).convert('RGBA')
     r, c = TOURNESOL
     fp = cr.crop((c * 16, r * 32, c * 16 + 16, r * 32 + 32)).load()
     op = [(a, b, fp[a, b][:3]) for b in range(32) for a in range(16) if fp[a, b][3] > 0]

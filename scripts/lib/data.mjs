@@ -329,9 +329,9 @@ export function validateData(data) {
     if (g.mode === 'recolte' && !(isInt(g.min) && isInt(g.max) && g.min >= 0 && g.max >= g.min)) err(where, 'graines.min et graines.max : deux entiers, min ≤ max');
     const s = c.sprite;
     if (!s) warn(where, 'pas de sprite : la carte affichera l\'icône à la place d\'un dessin');
-    else if (!(isInt(s.r) && [16, 32].includes(s.h) && Array.isArray(s.c) && [4, 5].includes(s.c.length) && s.c.every(isInt))) {
-      err(where, 'sprite : { "r": rangée, "h": 16 ou 32, "c": [4 ou 5 colonnes, une par phase : la graine d\'abord, la plante mûre en dernier] }');
-    } else if (s.monte !== undefined) err(where, 'sprite.monte : plus de réglage par culture ; aligner le dessin (scripts/carte/aligner_cultures.py)');
+    else if (!(isInt(s.r) && s.r >= 0 && isInt(s.l) && isInt(s.h) && s.l >= 16 && s.l <= 48 && s.h >= 16 && s.h <= 64 && Array.isArray(s.c) && [4, 5].includes(s.c.length) && s.c.every(isInt))) {
+      err(where, 'sprite : { "r": rangée, "c": [4 ou 5 colonnes, une par phase : la graine d\'abord, la plante mûre en dernier], "l", "h": la taille d\'une case } (scripts/carte/planche_cultures.py)');
+    } else if (s.monte !== undefined) err(where, 'sprite.monte : plus de réglage par culture ; les dessins sont alignés (scripts/carte/planche_cultures.py)');
   }
 
   /* le Champ (deuxième zone de culture) */

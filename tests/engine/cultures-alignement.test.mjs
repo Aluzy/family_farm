@@ -1,8 +1,9 @@
 /* ==========================================================================
-   Tests : l'alignement des cultures sur la carte (assets/crops.png, scripts/carte/aligner_cultures.py).
-   Chaque dessin (data/crops.json sprite : sa rangée du bas, sa hauteur, ses colonnes) a son pied au bas de sa
-   case et sa tige au milieu (à un pixel près, ou au plus près sans rogner un dessin trop large) ; la carte les pose
-   toutes de la même façon (plus de sprite.monte).
+   Tests : la planche des cultures de la carte (assets/crops.png, faite par scripts/carte/planche_cultures.py des
+   dessins à la main de scripts/carte/sources/cultures.png).
+   Chaque dessin (data/crops.json sprite : sa rangée r, ses colonnes c, la taille l × h d'une case) est entier dans sa
+   case, le bas de sa butte au bas de la case, sa tige (le milieu de ses trois rangées du bas) au milieu : sur la carte,
+   toutes les cultures ont le pied à la même place (plus de sprite.monte).
    Lancer seul : node tests/run-tests.mjs cultures-alignement.
    ========================================================================== */
 
@@ -10,24 +11,35 @@ import { DATA } from '../../js/engine/index.js';
 import { lirePng } from './png.mjs';
 import { assert, assertEqual, test } from './aide.mjs';
 
-test('crops.png : le pied de chaque culture au bas de sa case, sa tige au milieu', () => {
+test('crops.png : chaque culture le pied au bas de sa case, sa tige au milieu', () => {
   const im = lirePng('assets/crops.png');
-  const T = 16, ecarts = [];
+  const ecarts = [];
   for (const [k, c] of Object.entries(DATA.CULTURES)) {
     const sp = c.sprite;
-    if (!sp) continue;
     assertEqual(sp.monte, undefined, `${k} : plus de sprite.monte`);
     sp.c.forEach((col, ph) => {
-      const x0 = col * T, y1 = (sp.r + 1) * T, y0 = y1 - sp.h, pts = [];
-      for (let y = y0; y < y1; y++) for (let x = x0; x < x0 + T; x++) if (im.px(x, y)[3]) pts.push([x - x0, y - y0]);
-      assert(pts.length, `${k}:${ph} : un dessin`);
+      const x0 = col * sp.l, y0 = sp.r * sp.h, pts = [];
+      assert(x0 + sp.l <= im.w && y0 + sp.h <= im.h, `${k}:${ph} : dans la planche`);
+      for (let y = y0; y < y0 + sp.h; y++) for (let x = x0; x < x0 + sp.l; x++) if (im.px(x, y)[3]) pts.push([x - x0, y - y0]);
+      assert(pts.length > 10, `${k}:${ph} : un dessin`);
       const bas = Math.max(...pts.map((p) => p[1]));
-      assertEqual(bas, sp.h - 1, `${k}:${ph} : le pied au bas de la case`);
+      assertEqual(bas, sp.h - 1, `${k}:${ph} : le bas de sa butte au bas de la case`);
       const pied = pts.filter((p) => p[1] >= bas - 2).map((p) => p[0]);
       const cx = (Math.min(...pied) + Math.max(...pied) + 1) / 2;
-      const xs = pts.map((p) => p[0]), bord = Math.min(...xs) === 0 || Math.max(...xs) === T - 1;
-      if (Math.abs(cx - T / 2) > 1 && !bord) ecarts.push(`${k}:${ph} (tige à ${cx})`);
+      if (Math.abs(cx - sp.l / 2) > 0.5) ecarts.push(`${k}:${ph} (tige à ${cx})`);
+      // (entier : rien ne touche les bords de la case, il n'a pas été rogné)
+      const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+      assert(Math.min(...xs) > 0 && Math.max(...xs) < sp.l - 1 && Math.min(...ys) > 0, `${k}:${ph} : entier dans sa case`);
     });
   }
-  assertEqual(ecarts, [], 'la tige au milieu (sauf un dessin qui touche déjà le bord de sa case)');
+  assertEqual(ecarts, [], 'la tige au milieu');
+});
+
+test('crops.png : rien d\'autre que les dessins des cultures', () => {
+  const im = lirePng('assets/crops.png');
+  const sp = Object.values(DATA.CULTURES).map((c) => c.sprite);
+  const dans = (x, y) => sp.some((s) => s.c.some((col) => x >= col * s.l && x < (col + 1) * s.l && y >= s.r * s.h && y < (s.r + 1) * s.h));
+  let hors = 0;
+  for (let y = 0; y < im.h; y++) for (let x = 0; x < im.w; x++) if (im.px(x, y)[3] && !dans(x, y)) hors++;
+  assertEqual(hors, 0);
 });

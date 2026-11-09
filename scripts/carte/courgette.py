@@ -16,8 +16,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
 from pixel import ASSETS, ROOT, T  # noqa: E402
-from aligner_cultures import aligner  # noqa: E402
-SHEET = os.path.join(ASSETS, 'crops.png')
+SHEET = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sources', 'cultures.png')   # (la source : planche_cultures.py)
 ROW = 11
 
 C = {
@@ -154,13 +153,17 @@ def graines():
 
 
 def main():
+    # (les cultures sont désormais dessinées à la main : scripts/carte/sources/cultures.png, rangées dans
+    # assets/crops.png par scripts/carte/planche_cultures.py ; ce script les écraserait)
+    if '--ecraser' not in sys.argv:
+        raise SystemExit('Les cultures sont dessinées à la main (scripts/carte/sources/cultures.png) : '
+                         'python3 scripts/carte/planche_cultures.py. (--ecraser : réécrire la source avec ce script.)')
     sheet = Image.open(SHEET).convert('RGBA')
     cells = {0: graines(), 1: phase1(), 2: phase2(), 3: phase3(), 4: harvested()}
     for col, im in cells.items():
         box = (col * T, ROW * T, (col + 1) * T, (ROW + 1) * T)
         sheet.paste(Image.new('RGBA', (T, T), (0, 0, 0, 0)), box)
         sheet.alpha_composite(im, (col * T, ROW * T))
-    aligner(sheet)   # (le pied de chaque dessin au bas de sa case, sa tige au milieu : aligner_cultures.py)
     sheet.save(SHEET, optimize=True)
     if '--apercu' in sys.argv:
         row = sheet.crop((0, ROW * T, 5 * T, (ROW + 1) * T)).resize((5 * T * 8, T * 8), Image.NEAREST)
