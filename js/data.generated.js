@@ -272,7 +272,12 @@ export const RAW_DATA = {
     "RATION_PERDUE": false
   },
   "AIDE": { "ETAPES": ["eau", "potager", "dormir"] },
-  "DIDACTICIEL": { "GRAINES": { "graine_carotte": 6 }, "LABOURS": 3, "SAC": { "objet": "sac_petit", "provisions": { "baies": 4 } } },
+  "DIDACTICIEL": {
+    "GRAINES": { "graine_carotte": 6 },
+    "LABOURS": 3,
+    "SAC": { "objet": "sac_petit", "provisions": { "baies": 4 } },
+    "ABRI": { "LARGEUR": 6, "PROFONDEUR": 3, "PORTE": 3, "MATIERE": "mur_bois", "SOL": "plancher" }
+  },
   "BONHEUR": {
     "DEPART": 60,
     "MAX": 100,

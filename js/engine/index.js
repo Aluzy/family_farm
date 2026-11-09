@@ -30,6 +30,7 @@ export * from './depart.js';
 export * from './cruche.js';
 export * from './compagnon.js';
 export * from './didacticiel.js';
+export * from './abri-depart.js';
 export * from './animals.js';
 export * from './orchard.js';
 export * from './kitchen.js';
