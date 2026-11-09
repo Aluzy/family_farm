@@ -576,6 +576,9 @@ const CULTURE_MONTE = 0;
     mursHameaux: /^(mur_|fenetre_)/,
     touffe: [[-2, 2, -1], [-1, 4, -1], [0, 5, 0], [1, 4, 1], [2, 2, 1]],
     petite: [[-1, 3, -1], [0, 4, 0], [1, 3, 1]],
+    // au pied du puits et du silo (herbes.js piedHerbe) : jusqu'à combien de px au-dessus du plus bas le contour
+    // compte, les fleurs (combien, leurs pétales, leur cœur)
+    contour: 6, fleurs: 4, couleursFleurs: ['#f7f3e6', '#f2a7cf', '#b7a6ee', '#f6f2e4'], coeurFleur: '#f4cf3a',
   };
 
   const clamp = (v, lo, hi) => (hi < lo ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
