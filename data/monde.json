@@ -171,7 +171,10 @@
     "  couvre pas) ; LIEUX : rien à moins de tant de cases d'un hameau, d'une entrée de grotte, d'un",
     "  coin de pêche (la place des étapes suivantes).",
     "BORNES : les densités attendues par biome (part des cases qui portent une image, une petite",
-    "  plante), vérifiées par les tests sur des mondes entiers."
+    "  plante), vérifiées par les tests sur des mondes entiers.",
+    "REMPLACE : une part (`part`) des images de la sorte `de` tirées dans les sols `sols` d'un biome",
+    "  devient la sorte `vers` (de mêmes cases fermées et du même écart) : un tirage d'après la case,",
+    "  après celui de la sorte ; rien d'autre ne bouge (le châtaignier : un feuillu des forêts sur 16)."
   ],
   "VEGETATION": {
     "SORTES": [
@@ -209,7 +212,11 @@
       { "nom": "tournesol_sauvage", "genre": "basse", "variantes": 2 },
       { "nom": "myosotis", "genre": "basse", "variantes": 3 },
       { "nom": "lavande", "genre": "basse", "variantes": 3 },
-      { "nom": "lupin", "genre": "basse", "variantes": 2 }
+      { "nom": "lupin", "genre": "basse", "variantes": 2 },
+      { "nom": "chataignier", "genre": "arbre", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 }
+    ],
+    "REMPLACE": [
+      { "biome": "foret", "sols": ["feuilles", "mousse"], "de": "feuillu", "vers": "chataignier", "part": 0.0625 }
     ],
     "DENSITES": {
       "foret": {
@@ -391,6 +398,7 @@
       "souche": { "geste": "couper", "coups": 2, "coup": { "bois": 1 }, "fin": { "bois": [1, 2] }, "retour": [12, 20] },
       "tronc_couche": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 4] }, "retour": [12, 20] },
       "ronces": { "geste": "cueillir", "variantes": [0, 1], "apres": 2, "fin": { "mures": [2, 4] }, "retour": [3, 5] },
+      "chataignier": { "geste": "couper", "coups": 3, "coup": { "bois": 1 }, "fin": { "bois": [2, 3] }, "retour": [5, 8], "aussi": { "geste": "cueillir", "variantes": [0, 1], "apres": 2, "fin": { "chataigne": [3, 5] }, "retour": [4, 7] } },
       "champignons": { "geste": "ramasser", "fin": { "champignon": [1, 2] }, "retour": [3, 6] },
       "touffe_mont": { "geste": "ramasser", "fin": { "herbes_montagne": [1, 1] }, "retour": [4, 6] },
       "coquelicot": { "geste": "ramasser", "fin": { "fleur_coquelicot": [2, 3] }, "chance": { "graine_coquelicot": 25 }, "retour": [4, 7] },

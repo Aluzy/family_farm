@@ -58,6 +58,8 @@ function tables(codes) {
     for (const [sol, parts] of Object.entries(sols)) {
       const t = { images: [], basses: [] };
       for (const [nom, p] of Object.entries(parts)) (EN_IMAGE[SORTE[nom]] ? t.images : t.basses).push([SORTE[nom], p]);
+      // (REMPLACE : une part des images d'une sorte de ce sol en devient une autre, le châtaignier)
+      t.remplace = (V.REMPLACE || []).filter((r) => r.biome === b && r.sols.includes(sol)).map((r) => ({ de: SORTE[r.de], vers: SORTE[r.vers], part: r.part }));
       if (sol === 'clairiere') { if (b === 'foret') clairiere = t; continue; }
       parBiome[BIOME[b]].set(codes[sol], t);
     }
@@ -193,7 +195,11 @@ export function vegetationDeRegion(ctx, g) {
         if (u < cumul) {
           const so = SORTES[k];
           // ses autres cases bloquées : libres, du même sol
-          if ((so.bloque || []).every(([dx, dy]) => (!dx && !dy) || (libre(X + dx, Y + dy) && solCase(X + dx, Y + dy) === s)) && eauOk(so, X, Y)) image[o] = k + 1;
+          if ((so.bloque || []).every(([dx, dy]) => (!dx && !dy) || (libre(X + dx, Y + dy) && solCase(X + dx, Y + dy) === s)) && eauOk(so, X, Y)) {
+            image[o] = k + 1;
+            // (REMPLACE : un tirage à lui, d'après la case : la sorte change, ni la case ni la force)
+            for (const r of t.remplace || []) if (r.de === k && (hasard(ctx.gv ^ 0x2c1b3c6d, Y * W + X) & 0xffff) / 0x10000 < r.part) image[o] = r.vers + 1;
+          }
           break;
         }
       }

@@ -1724,7 +1724,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "creme_de_marrons",
      "terme": "Crème de marrons",
-     "description": "Plat préparé à la cuisine à partir de châtaignes et de miel (ou de sucre, qu'une ancienne partie aurait encore). Les châtaignes viennent des cueilleurs des hameaux, par la calèche.",
+     "description": "Plat préparé à la cuisine à partir de châtaignes et de miel (ou de sucre, qu'une ancienne partie aurait encore). Les châtaignes se cueillent sur les châtaigniers des forêts du grand monde, ou viennent des cueilleurs des hameaux, par la calèche.",
      "liens": [
       "cuisine",
       "miel",
@@ -2543,7 +2543,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "chataigne",
      "terme": "Châtaigne",
-     "description": "Bien à l'abri dans sa bogue piquante, la châtaigne tombe des grands arbres de la forêt. Grillée, c'est un régal. Elle fait partie de la collection « Cueillette des sous-bois ».",
+     "description": "Bien à l'abri dans sa bogue piquante, elle pousse sur les châtaigniers des forêts du grand monde (un grand arbre au feuillage sombre, piqué de bogues brunes ouvertes) : à la main, on en cueille 3 à 5, et l'arbre en porte de nouveau 4 à 7 jours plus tard ; la hache l'abat, comme un autre arbre. Grillée, c'est un régal. Elle fait partie de la collection « Cueillette des sous-bois ».",
      "liens": [
       "champignon",
       "b_foret"

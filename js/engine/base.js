@@ -17,7 +17,7 @@ export function mulberry32(seed) {
   };
 }
 
-export const STATE_VERSION = 80;
+export const STATE_VERSION = 81;
 // Version du générateur de la ferme et du grand monde (ferme-generee.js, monde-gen.js, monde-sol.js,
 // monde-hameaux.js… et leurs réglages de data/monde.json, data/terrain.json), notée dans chaque partie
 // (state.carte.generateur, à côté de sa graine). Une même graine ne refait le même monde qu'avec le même
@@ -30,7 +30,9 @@ export const STATE_VERSION = 80;
 // 3 : les fleurs sauvages du monde (coquelicot, pavot de Californie, tournesol, myosotis, lavande, lupin : de petites
 // plantes de data/monde.json VEGETATION, ajoutées au bout des tables de leurs sols) ; tirées dans les cases restées
 // vides, elles ne déplacent rien (la migration 77 → 78 garde les parties du 2).
-export const GENERATEUR_VERSION = 3;
+// 4 : le châtaignier (data/monde.json VEGETATION.REMPLACE : un feuillu sur seize des forêts de feuilles et de
+// mousse en devient un, tiré d'après sa case) ; aucun arbre ne bouge (la migration 80 → 81 garde les parties du 3).
+export const GENERATEUR_VERSION = 4;
 // Version du jeu, affichée dans les Options (À propos) : la dernière version notée dans le
 // code et les données (« version 1.22 » : les objectifs « objet »).
 export const GAME_VERSION = '1.22.0';

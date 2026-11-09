@@ -94,7 +94,9 @@
       if (!o.img || !o.img.active) return;
       const E = this.mondeEtat;
       const pris = !!E && E.pris.has(o.id), cueilli = !!E && E.cueillis.has(o.id);
-      const n = o.pl.images[o.code][(cueilli && o.regle.apres != null ? o.regle.apres : o.v) * (o.herbe ? 5 : 1)];
+      // (le dessin cueilli : celui de sa règle, ou de son second geste, aussi : le châtaignier sans ses bogues)
+      const apres = o.regle.apres != null ? o.regle.apres : o.regle.aussi ? o.regle.aussi.apres : null;
+      const n = o.pl.images[o.code][(cueilli && apres != null ? apres : o.v) * (o.herbe ? 5 : 1)];
       if (n != null && o.img.frame.name !== n) { o.img.setFrame(n); if (o.herbe) o.herbe.base = n; }
       if (!pris && o.img.sansOmbre) { o.img.sansOmbre = false; this.sunDirty = true; }   // (revenue : son ombre aussi)
       if (pris === !o.img.visible) return;
@@ -116,10 +118,13 @@
     mondeObjetAt(wx, wy) {
       if (!this.ctx.monde || !this.mondeObjets) return null;
       const m = this.ctx.lastModel || {};
-      const peut = (regle) => {
+      const peut1 = (regle) => {
         const g = regle.geste;
         return g === 'cueillir' || g === 'ramasser' || (g === 'couper' && !!m.hache) || (g === 'casser' && !!m.pioche) || (g === 'faucher' && !!m.faux);
       };
+      // (le geste possible : celui de la sorte, sinon son second geste, aussi : le châtaignier se coupe la hache en
+      // main, ses châtaignes se cueillent sinon) → sa règle, ou null
+      const peut = (regle) => (peut1(regle) ? regle : regle.aussi && peut1(regle.aussi) ? regle.aussi : null);
       const E = this.mondeEtat, occupe = this.mondeOccupe || new Set();
       const min = (MIN_TAP * pixelRatio()) / this.cameras.main.zoom / 2;
       let best = null;
@@ -134,7 +139,7 @@
         }
         if (!best || o.foot > best.foot) best = o;
       }
-      if (best) return { o: best, regle: best.regle, x: best.fx, y: best.fy, id: best.id, variante: best.v };
+      if (best) return { o: best, regle: peut(best.regle), x: best.fx, y: best.fy, id: best.id, variante: best.v };
       // les petites pièces peintes dans le sol des régions dessinées
       const V = this.vegetationPrete && this.vegetationPrete();
       if (!V) return null;
@@ -154,7 +159,7 @@
             const id = this.ctx.monde.idObjet(P.sortes[b[k]].nom, x, y);
             if ((E && E.pris.has(id)) || occupe.has(id)) continue;
             bd = d;
-            petite = { o: null, regle, x, y, id, variante: b[k + 3], planche: P, code: b[k] };
+            petite = { o: null, regle: peut(regle), x, y, id, variante: b[k + 3], planche: P, code: b[k] };
           }
         }
       }
@@ -177,7 +182,7 @@
       const B = this.ctx.bridge;
       if (!B || !B.recolte) return null;
       const t0 = performance.now();
-      const got = B.recolte(h.id, Object.assign({ variante: h.variante, depuis: this.persoCase ? this.persoCase() : -1 }, o));
+      const got = B.recolte(h.id, Object.assign({ variante: h.variante, depuis: this.persoCase ? this.persoCase() : -1, geste: h.regle.geste }, o));
       (this.mondeMesures || (this.mondeMesures = { coups: [], repeint: [] })).coups.push(performance.now() - t0);
       return got;
     },

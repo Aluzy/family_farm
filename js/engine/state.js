@@ -823,6 +823,14 @@ export const MIGRATIONS = {
     }
     return out;
   },
+  // v80 → v81 (le châtaignier) : le générateur 4 change en châtaigniers un feuillu sur seize des forêts, sans rien
+  // déplacer : une partie du générateur 3 y passe (un feuillu abattu qui devient un châtaignier repousse châtaignier).
+  80: (state) => {
+    const out = { ...state, version: 81 };
+    const c = state.carte;
+    if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 3) out.carte = { ...c, generateur: 4 };
+    return out;
+  },
 };
 
 // La Serre d'avant la v76 : ses parcelles par niveau, le prix de chaque niveau (les anciennes migrations ;
