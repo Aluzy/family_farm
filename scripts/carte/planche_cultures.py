@@ -10,8 +10,10 @@ une planche régulière :
 
   - une rangée par culture (dans l'ordre de data/crops.json), une case de L × H px par phase (la graine d'abord, la
     plante mûre en dernier) ;
-  - chaque dessin posé le bas de sa butte au bas de sa case, sa tige (le milieu de ses trois rangées du bas) au milieu :
-    sur la carte, toutes les cultures ont le pied à la même place (js/carte/ferme/config.js CULTURE_MONTE) ;
+  - chaque dessin posé le milieu de sa masse du bas (ses MASSE rangées du bas : la butte, le bulbe, le tubercule) sur
+    le centre de la tache d'arrosage (scripts/carte/terre_arrosee.py CENTRE) : la carte pose le bas de chaque case au
+    bas de la case de terre, son milieu au milieu (js/carte/ferme/config.js CULTURE_MONTE : 0) ; toutes les cultures,
+    sèches ou arrosées, sont ainsi au milieu de leur tache ;
   - data/crops.json : le sprite de chaque culture réécrit ({ r: sa rangée, c: ses colonnes, l: L, h: H }).
 
 Retoucher un dessin : dans la source, puis relancer ce script.
@@ -34,7 +36,11 @@ SRC = os.path.join(HERE, 'sources', 'cultures.png')
 SHEET = os.path.join(ASSETS, 'crops.png')
 DONNEES = os.path.join(ROOT, 'data', 'crops.json')
 T = 16
-L, H = 24, 40                  # une case de la planche
+L, H = 24, 44                  # une case de la planche
+MASSE = 6                      # les rangées du bas d'un dessin : sa masse au sol
+# le centre de la tache d'arrosage dans une case de terre (scripts/carte/terre_arrosee.py CENTRE), dans une case de la
+# planche (posée le bas au bas de la case de terre, son milieu au milieu)
+TACHE = (L / 2, H - T + 11.8)
 
 # la disposition de la source : culture → (rangée du bas, hauteur de ses cases, colonnes de ses phases)
 SOURCE = {
@@ -171,20 +177,24 @@ def dessins(src):
     return D
 
 
+def masse(pts):
+    """Le milieu de la masse du bas d'un dessin (la boîte de ses MASSE rangées du bas) : (x, y)."""
+    y1 = max(p[1] for p in pts)
+    bas = [p for p in pts if p[1] > y1 - MASSE]
+    xs, ys = [p[0] for p in bas], [p[1] for p in bas]
+    return (min(xs) + max(xs) + 1) / 2, (min(ys) + max(ys) + 1) / 2
+
+
 def case(src, pts):
-    """Le dessin (ses pixels `pts` de la source) dans une case de L × H : le bas de sa butte au bas, sa tige au milieu."""
+    """Le dessin (ses pixels `pts` de la source) dans une case de L × H, le milieu de sa masse du bas sur TACHE."""
     px = src.load()
-    x0, y0 = min(p[0] for p in pts), min(p[1] for p in pts)
-    x1, y1 = max(p[0] for p in pts), max(p[1] for p in pts)
-    if x1 - x0 + 1 > L or y1 - y0 + 1 > H:
-        raise SystemExit(f'un dessin de {x1 - x0 + 1} × {y1 - y0 + 1} px ne tient pas dans une case de {L} × {H}')
-    pied = [p[0] for p in pts if p[1] >= y1 - 2]
-    cx = (min(pied) + max(pied) + 1) / 2
-    dx = round(L / 2 - cx)
-    dx = max(-x0, min(L - 1 - x1, dx))          # (sans sortir de la case : elle est assez large, L)
+    mx, my = masse(pts)
+    dx, dy = round(TACHE[0] - mx), round(TACHE[1] - my)
     out = Image.new('RGBA', (L, H), (0, 0, 0, 0))
     for (x, y) in pts:
-        out.putpixel((x + dx, H - 1 - (y1 - y)), px[x, y])
+        if not (0 <= x + dx < L and 0 <= y + dy < H):
+            raise SystemExit(f'un dessin ne tient pas dans une case de {L} × {H} (le pixel {x}, {y} de la source)')
+        out.putpixel((x + dx, y + dy), px[x, y])
     return out
 
 

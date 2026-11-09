@@ -4,8 +4,8 @@
 #
 #   python3 scripts/carte/terre_arrosee.py
 #
-# Les plantes sont posées au milieu du bas de la tuile (js/carte/ferme/modele.js, syncCrop) :
-# leur pied (la graine, la tige) est vers y = 13 à 15. La tache est centrée sous lui (CENTRE),
+# Les plantes sont posées le milieu de leur masse du bas (la butte, le bulbe) sur CENTRE
+# (scripts/carte/planche_cultures.py TACHE, js/carte/ferme/modele.js syncCrop). La tache est centrée là (CENTRE),
 # de rayons RAYONS, aplatie comme un rond vu de haut à 45° (10/16). Dedans, chaque couleur de la
 # terre sèche prend sa teinte mouillée (HUMIDE) ; sur le bord, un anneau tramé (BAYER) mêle
 # une teinte à mi-chemin et la terre sèche, pour un bord doux.

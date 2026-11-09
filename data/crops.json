@@ -15,8 +15,8 @@
     "culture, c = les colonnes de ses 4 ou 5 phases (la graine le jour du semis, la croissance, la plante",
     "mûre), l × h = la taille d'une case. La planche est faite des dessins à la main de",
     "scripts/carte/sources/cultures.png par scripts/carte/planche_cultures.py (qui réécrit ces sprites) :",
-    "chaque dessin a le bas de sa butte au bas de sa case et sa tige au milieu ; la carte les pose toutes",
-    "de la même façon, le bas de la case à 4 px du bas de la case de terre.",
+    "chaque dessin y a le milieu de sa masse du bas (sa butte, son bulbe) sur le centre de la tache",
+    "d'arrosage ; la carte pose chaque case le bas au bas de la case de terre, le milieu au milieu.",
     "Sans sprite, la carte affiche l'icône de la culture."
   ],
   "CULTURES": {
@@ -28,7 +28,7 @@
       "litres": 2,
       "rendement": 6,
       "graines": { "item": "graine_carotte", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 0, "c": [0, 1, 2, 3], "l": 24, "h": 40 }
+      "sprite": { "r": 0, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
     "patate": {
       "nom": "Patate",
@@ -38,7 +38,7 @@
       "litres": 3,
       "rendement": 8,
       "graines": { "item": "patate", "mode": "plant" },
-      "sprite": { "r": 1, "c": [0, 1, 2, 3], "l": 24, "h": 40 }
+      "sprite": { "r": 1, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
     "tomate": {
       "nom": "Tomate",
@@ -48,7 +48,7 @@
       "litres": 3,
       "rendement": 10,
       "graines": { "item": "graine_tomate", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 2, "c": [0, 1, 2, 3], "l": 24, "h": 40 }
+      "sprite": { "r": 2, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
     "courgette": {
       "nom": "Courgette",
@@ -58,7 +58,7 @@
       "litres": 4,
       "rendement": 6,
       "graines": { "item": "graine_courgette", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 3, "c": [0, 1, 2, 3], "l": 24, "h": 40 }
+      "sprite": { "r": 3, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
     "aubergine": {
       "nom": "Aubergine",
@@ -68,7 +68,7 @@
       "litres": 4,
       "rendement": 6,
       "graines": { "item": "graine_aubergine", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 4, "c": [0, 1, 2, 3, 4], "l": 24, "h": 40 }
+      "sprite": { "r": 4, "c": [0, 1, 2, 3, 4], "l": 24, "h": 44 }
     },
     "//poivron": "Le poivron pousse dans la Zone de culture ET en Serre, comme la tomate, la courgette et l'aubergine.",
     "poivron": {
@@ -79,7 +79,7 @@
       "litres": 4,
       "rendement": 6,
       "graines": { "item": "graine_poivron", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 5, "c": [0, 1, 2, 3, 4], "l": 24, "h": 40 }
+      "sprite": { "r": 5, "c": [0, 1, 2, 3, 4], "l": 24, "h": 44 }
     },
     "oignon": {
       "nom": "Oignon",
@@ -89,7 +89,7 @@
       "litres": 3,
       "rendement": 8,
       "graines": { "item": "graine_oignon", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 6, "c": [0, 1, 2, 3], "l": 24, "h": 40 }
+      "sprite": { "r": 6, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
     "//ail": "1 ail = 1 plant (mode 'plant', comme la patate) : pas d'item graine séparé.",
     "ail": {
@@ -100,7 +100,7 @@
       "litres": 2,
       "rendement": 6,
       "graines": { "item": "ail", "mode": "plant" },
-      "sprite": { "r": 7, "c": [0, 1, 2, 3, 4], "l": 24, "h": 40 }
+      "sprite": { "r": 7, "c": [0, 1, 2, 3, 4], "l": 24, "h": 44 }
     },
     "epinard": {
       "nom": "Épinard",
@@ -110,7 +110,7 @@
       "litres": 3,
       "rendement": 8,
       "graines": { "item": "graine_epinard", "mode": "recolte", "min": 1, "max": 2 },
-      "sprite": { "r": 8, "c": [0, 1, 2, 3], "l": 24, "h": 40 }
+      "sprite": { "r": 8, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
     "fraise": {
       "nom": "Fraise",
@@ -120,7 +120,7 @@
       "litres": 3,
       "rendement": 10,
       "graines": { "item": "graine_fraise", "mode": "recolte", "min": 2, "max": 3 },
-      "sprite": { "r": 9, "c": [0, 1, 2, 3], "l": 24, "h": 40 }
+      "sprite": { "r": 9, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
     "//ble": [
       "Lot 4 (cultures de plein champ). produit : l'objet récolté quand il n'a pas",
@@ -138,7 +138,7 @@
       "litres": 2,
       "rendement": 8,
       "graines": { "item": "ble", "mode": "plant" },
-      "sprite": { "r": 10, "c": [0, 1, 2, 3], "l": 24, "h": 40 }
+      "sprite": { "r": 10, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
     "tournesol": {
       "nom": "Tournesol",
@@ -150,7 +150,7 @@
       "rendement": 9,
       "produit": "graine_tournesol",
       "graines": { "item": "graine_tournesol", "mode": "plant" },
-      "sprite": { "r": 11, "c": [0, 1, 2, 3], "l": 24, "h": 40 }
+      "sprite": { "r": 11, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
     "//riz": [
       "Riz : comestible directement (contrairement au blé), mais demande plus",
@@ -166,7 +166,7 @@
       "litres": 4,
       "rendement": 10,
       "graines": { "item": "riz", "mode": "plant" },
-      "sprite": { "r": 12, "c": [0, 1, 2, 3], "l": 24, "h": 40 }
+      "sprite": { "r": 12, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
     "houblon": {
       "nom": "Houblon",
@@ -177,7 +177,7 @@
       "litres": 2,
       "rendement": 6,
       "graines": { "item": "houblon", "mode": "plant" },
-      "sprite": { "r": 13, "c": [0, 1, 2, 3], "l": 24, "h": 40 }
+      "sprite": { "r": 13, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     },
     "//cacao": [
       "Cultures de rente : lieux: ['serre'] *seul* (pas 'potager') —",
@@ -193,7 +193,7 @@
       "litres": 3,
       "rendement": 5,
       "graines": { "item": "cacao", "mode": "plant" },
-      "sprite": { "r": 14, "c": [0, 1, 2, 3, 4], "l": 24, "h": 40 }
+      "sprite": { "r": 14, "c": [0, 1, 2, 3, 4], "l": 24, "h": 44 }
     },
     "vanille": {
       "nom": "Vanille",
@@ -203,7 +203,7 @@
       "litres": 2,
       "rendement": 3,
       "graines": { "item": "vanille", "mode": "plant" },
-      "sprite": { "r": 15, "c": [0, 1, 2, 3, 4], "l": 24, "h": 40 }
+      "sprite": { "r": 15, "c": [0, 1, 2, 3, 4], "l": 24, "h": 44 }
     },
     "cafe": {
       "nom": "Café",
@@ -213,7 +213,7 @@
       "litres": 3,
       "rendement": 6,
       "graines": { "item": "cafe", "mode": "plant" },
-      "sprite": { "r": 16, "c": [0, 1, 2, 3, 4], "l": 24, "h": 40 }
+      "sprite": { "r": 16, "c": [0, 1, 2, 3, 4], "l": 24, "h": 44 }
     }
   },
   "//POTAGER": [
