@@ -12,6 +12,7 @@ import { CALECHE, tourneeDe, etatCaleche } from './caleche.js';
 import { hameauxVus } from './monde-hameaux.js';
 import { butBoussole } from './monde-vu.js';
 import { offrirSac } from './equipement.js';
+import { batirAbriDepart } from './abri-depart.js';
 
 /* ---------- le didacticiel d'une nouvelle partie ----------
    Une nouvelle partie (sur la ferme générée) commence par un didacticiel : une suite d'étapes
@@ -76,6 +77,8 @@ export function commencerDidacticiel(state) {
   state.didacticiel = { etape: 0, fini: false };
   state.pieces = DATA.DEPART.PIECES_SAUVAGE;
   if (state.aide) state.aide.fini = true;
+  // l'abri de départ, déjà bâti (js/engine/abri-depart.js) : les étapes de l'abri passent d'elles-mêmes
+  batirAbriDepart(state);
   return { ok: true };
 }
 
@@ -188,6 +191,8 @@ const atteint = (cs) => cs.every((c) => c.n >= c.besoin);
 // étape à lire.
 export function objectifDidacticiel(state) {
   const e = etapeDidacticiel(state);
+  // (l'abri de départ déjà bâti : l'étape des arbres, entre les ressources et la fabrication de l'abri, n'a plus lieu)
+  if (e === 'arbres' && state.abriDepart) return { compteurs: [], fait: true };
   if (!e || A_LIRE.has(e)) return null;
   const C = DATA.ATELIER.CONSTRUCTION, poses = Object.values(blocsPoses(state));
   const R = DATA.ATELIER.RECETTES;
@@ -198,7 +203,9 @@ export function objectifDidacticiel(state) {
     case 'faux': return { compteurs: compte(state, besoinOutils(state, ['faux'])), fait: !!(state.outils && state.outils.faux) };
     case 'fibres': {
       // celles de la hache, de la pioche et des paillasses
-      const n = (R.hache.entrees.fibre || 0) + (R.pioche.entrees.fibre || 0) + planAbri(state).paillasses * R.paillasse.entrees.fibre;
+      // (les paillasses déjà posées, celles de l'abri de départ, n'en demandent plus)
+      const manque = Math.max(0, planAbri(state).paillasses - couchages(state).length);
+      const n = (R.hache.entrees.fibre || 0) + (R.pioche.entrees.fibre || 0) + manque * R.paillasse.entrees.fibre;
       const cs = compte(state, { fibre: n });
       return { compteurs: cs, fait: atteint(cs) };
     }

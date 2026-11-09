@@ -275,14 +275,14 @@ function chantier(graine, n = 40) {
   return s;
 }
 
-// Une case d'herbe libre de `w` × `h` cases (coin haut-gauche), loin des bords.
+// Une case d'herbe libre de `w` × `h` cases (coin haut-gauche), loin des bords, sans bloc ni sol posé.
 // (de l'herbe, sans herbe haute : elle se fauche avant de bâtir)
 function terrainLibre(s, w, h) {
   const T = farmTerrain(s), W = T.LARGEUR;
   for (let r = 4; r < T.HAUTEUR - h - 4; r++) {
     for (let c = 4; c < W - w - 4; c++) {
       let ok = true;
-      for (let dr = 0; dr < h && ok; dr++) for (let dc = 0; dc < w && ok; dc++) ok = T.LIGNES[r + dr][c + dc] === '#' && !s.potager.parcelles.some((p) => p.case === (r + dr) * W + c + dc) && !(T.HERBES && T.HERBES[(r + dr) * W + c + dc]);
+      for (let dr = 0; dr < h && ok; dr++) for (let dc = 0; dc < w && ok; dc++) ok = T.LIGNES[r + dr][c + dc] === '#' && !s.potager.parcelles.some((p) => p.case === (r + dr) * W + c + dc) && !(T.HERBES && T.HERBES[(r + dr) * W + c + dc]) && !(s.blocs || {})[(r + dr) * W + c + dc] && !(s.sols || {})[(r + dr) * W + c + dc];
       if (ok) return { c, r, W };
     }
   }
@@ -1903,8 +1903,11 @@ test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il
   setInv(s, { pierre: 3, bois: 3 });
   majDidacticiel(s);
   assertEqual([etapeDidacticiel(s), [...blocsDidacticiel(s)]], ['atelier', ['atelier']]);
+  // (l'abri de départ est bâti : tests/engine/abri-depart.test.mjs)
+  const N = planAbri(s).paillasses;
+  assertEqual([piecesCloses(s).length, couchages(s).length], [1, N]);
   // l'Atelier : posé, il se construit (ses matériaux quittent l'inventaire)
-  const N = planAbri(s).paillasses, z = terrainLibre(s, N + 6, 8);
+  const z = terrainLibre(s, N + 6, 8);
   assert(poserBloc(s, 'atelier', z.r * z.W + z.c + N + 4).ok);
   assertEqual([atelierConstruit(s), countItem(s, 'pierre'), countItem(s, 'bois')], [true, 0, 0]);
   majDidacticiel(s);
@@ -1914,38 +1917,15 @@ test('didacticiel : des jauges à l\'arrosage, chaque étape débloque ce qu\'il
   setInv(s, R.faux.entrees);
   assert(craft(s, 'faux').ok);
   majDidacticiel(s);
-  const fibres = 2 + R.paillasse.entrees.fibre * N;
+  // (les fibres de la hache et de la pioche : les paillasses de l'abri sont déjà posées)
+  const fibres = R.hache.entrees.fibre + R.pioche.entrees.fibre;
   assertEqual([etapeDidacticiel(s), objectifDidacticiel(s).compteurs], ['fibres', [{ objet: 'fibre', n: 0, besoin: fibres }]]);
   setInv(s, { fibre: fibres, bois: 4, pierre: 5 });
   majDidacticiel(s);
   assertEqual(etapeDidacticiel(s), 'outils', 'les fibres, puis la hache et la pioche');
   assert(craft(s, 'hache').ok && craft(s, 'pioche').ok);
   majDidacticiel(s);
-  const p = planAbri(s);
-  assertEqual([etapeDidacticiel(s), p], ['abri_ressources', { murs: 2 * N + 5, porte: 1, paillasses: N }]);
-  const RC = DATA.ATELIER.RECETTES, bois = p.murs * RC.mur_bois.entrees.bois + 6, fib = RC.paillasse.entrees.fibre * N;
-  assertEqual(objectifDidacticiel(s).compteurs, [{ objet: 'bois', n: 0, besoin: bois }, { objet: 'fibre', n: fib, besoin: fib }]);
-  setInv(s, { bois, fibre: fib });
-  majDidacticiel(s);
-  // (une étape à lire : un arbre abattu ne repousse pas, il faut planter sa graine)
-  assertEqual(etapeDidacticiel(s), 'arbres');
-  assert(suivantDidacticiel(s, 'arbres').ok);
-  assertEqual([etapeDidacticiel(s), recettesDidacticiel(s).has('mur_bois')], ['abri_fabriquer', true]);
-  for (let k = 0; k < p.murs; k++) assert(craft(s, 'mur_bois').ok);
-  for (let k = 0; k < 3; k++) assert(craft(s, 'planche').ok);
-  assert(craft(s, 'porte').ok);
-  for (let k = 0; k < N; k++) assert(craft(s, 'paillasse').ok);
-  majDidacticiel(s);
-  assertEqual([etapeDidacticiel(s), [...blocsDidacticiel(s)].sort()], ['abri_construire', ['atelier', 'mur_bois', 'porte']]);
-  // l'abri : une rangée de N cases entourée de murs, la porte au milieu du bas
-  const m = murs(z, N + 2, 3);
-  // (la porte se pose directement sur sa case)
-  assert(poserBloc(s, 'porte', m.porte).ok);
-  for (const t of m.murs) { const q = poserBloc(s, 'mur_bois', t); assert(q.ok, `mur ${t} : ${q.error}`); }
-  majDidacticiel(s);
-  assertEqual(etapeDidacticiel(s), 'paillasses');
-  for (let k = 0; k < N; k++) assert(poserBloc(s, 'paillasse', (z.r + 1) * z.W + z.c + 1 + k).ok);
-  majDidacticiel(s);
+  // (les étapes de l'abri passent d'elles-mêmes : il est déjà là)
   assertEqual([etapeDidacticiel(s), houseRepaired(s)], ['houe', true]);
   setInv(s, R.houe.entrees);
   assert(craft(s, 'houe').ok);
@@ -2095,7 +2075,8 @@ test('ferme générée : sans paillasse dans une pièce close, on ne dort pas (n
 test('didacticiel : les cases de l\'abri s\'allument, à la taille de la famille ; posées, elles forment l\'abri', () => {
   for (const n of [1, 6]) {
     const s = chantier('abri' + n);
-    commencerDidacticiel(s);
+    // (une partie commencée avant l'abri de départ : il reste à bâtir, ses cases s'allument)
+    s.didacticiel = { etape: 0, fini: false };
     s.famille.membres = s.famille.membres.slice(0, 1);
     while (s.famille.membres.length < n) s.famille.membres.push({ ...s.famille.membres[0], id: 'm' + s.famille.membres.length });
     const p = planAbriCases(s);
