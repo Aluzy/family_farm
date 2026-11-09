@@ -53,9 +53,9 @@ import { consentBannerPending, consentBannerShown, storyOpen } from './calme.js'
 import { son } from './son.js';
 
 const nomObjet = (o) => (DATA.OBJETS[o] ? DATA.OBJETS[o].nom.toLowerCase() : o);
-const fabricable = (id) => craftStatus(state, id).ok;
-const atelierOuvertFenetre = () => stageWindow === 'atelier';
-const tenu = (outil) => !!document.querySelector(`.tool-slot.active[data-outil="${outil}"]`);
+export const fabricable = (id) => craftStatus(state, id).ok;
+export const atelierOuvertFenetre = () => stageWindow === 'atelier';
+export const tenu = (outil) => !!document.querySelector(`.tool-slot.active[data-outil="${outil}"]`);
 const ongletGraines = () => !!document.querySelector('.inv-tab.active[data-tab="graines"]');
 
 // La première recette de `ids` qu'on peut fabriquer maintenant, sinon la première de la liste.
@@ -64,21 +64,21 @@ function recette(ids) {
 }
 
 // L'entrée `tab` du menu latéral (d'abord la flèche, s'il est fermé).
-const menu = (tab) => (menuOpen ? `.nav-btn[data-tab="${tab}"]` : '#side-tab');
+export const menu = (tab) => (menuOpen ? `.nav-btn[data-tab="${tab}"]` : '#side-tab');
 
 // Le menu Construire, ouvert sur le bloc `sorte` : d'abord l'entrée 🔨 du menu, puis la case du
 // bloc ; null quand il est en main (on touche alors la carte).
-function construire(sorte) {
+export function construire(sorte) {
   if (!buildMode) return menu('atelier');
   return buildMode === sorte ? null : cibleBloc(sorte);
 }
 
 // Un outil de la barre d'outils : d'abord fermer la fenêtre ouverte (la barre ne se montre pas
 // sous une fenêtre), puis la languette si la barre est rangée, puis la case de l'outil.
-const outil = (id) => (tenu(id) ? null : stageWindow ? '#stage-window-close' : toolbarOpen ? `.tool-slot[data-outil="${id}"]` : '.tool-bar-tab');
+export const outil = (id) => (tenu(id) ? null : stageWindow ? '#stage-window-close' : toolbarOpen ? `.tool-slot[data-outil="${id}"]` : '.tool-bar-tab');
 
 // Ce qu'il faut dire pour prendre un outil (`nom` : son nom, en HTML) dans la barre d'outils.
-function prendreOutil(nom) {
+export function prendreOutil(nom) {
   if (stageWindow === 'atelier') return 'Ferme la fenêtre de l\'<b>Atelier</b> (✕) pour retrouver ta barre d\'outils.';
   if (stageWindow) return 'Ferme cette fenêtre (✕) pour retrouver ta barre d\'outils.';
   if (!toolbarOpen) return 'Appuie sur la <b>flèche</b> de la barre d\'outils, en bas de l\'écran, pour la faire sortir.';
@@ -87,7 +87,7 @@ function prendreOutil(nom) {
 
 // Une recette de l'Atelier : sa fenêtre ouverte, son onglet, sa case (ou celle de son groupe),
 // le bouton Fabriquer ; sinon l'Atelier de la carte.
-function fabriquer(ids) {
+export function fabriquer(ids) {
   if (buildMode) return { cible: '.build-bar-close' };
   if (!atelierOuvertFenetre()) return { carte: { blocs: ['atelier'] } };
   const id = recette(ids);
@@ -101,9 +101,9 @@ const fabrique = (ids) => ({ cible: () => fabriquer(ids()).cible || null, carte:
 /* -- fiche 9b : le grand monde -- */
 
 // La carte du monde est-elle ouverte (js/ui/carte-monde.js : une fenêtre par-dessus) ?
-const carteOuverte = () => !!document.querySelector('#modal-root .carte-monde');
+export const carteOuverte = () => !!document.querySelector('#modal-root .carte-monde');
 // L'entrée 🧭 du menu (d'abord la flèche, s'il est fermé).
-const menuCarte = () => (menuOpen ? '.nav-btn[data-action="carte-monde-open"]' : '#side-tab');
+export const menuCarte = () => (menuOpen ? '.nav-btn[data-action="carte-monde-open"]' : '#side-tab');
 // Les trois cases de la sortie de la ferme (le chemin y a trois cases de large) : là où la calèche se gare.
 function casesSortie(sorte = 'porte') {
   const T = farmTerrain(state), S = T.MONDE && T.MONDE.cadre && T.MONDE.cadre.SORTIE;
@@ -113,14 +113,17 @@ function casesSortie(sorte = 'porte') {
 // L'heure du jeu, en mots (« 8 h 15 »).
 const heure = () => heureTexte(absoluteHours(state) % 24);
 // Le premier élément visible de `sel`, ou null (pour une cible qui peut manquer).
-const visibleSel = (sel) => (element(sel) ? sel : null);
+export const visibleSel = (sel) => (element(sel) ? sel : null);
 
 // Le hameau voisin, montré sur la carte du monde en arrivant à son étape (le cocher en a parlé) : le Gué (le
 // récit : le plus proche de la ferme, gue vrai, monde-gen.js), sinon le plus proche de la sortie de la ferme
 // parmi ceux du plan ; sauf si un hameau y est déjà (vu en marchant).
 // Gardé dans state.didacticiel.montre. → vrai si la partie a changé.
-function montrerHameauVoisin() {
-  const d = state.didacticiel, T = farmTerrain(state), sol = T.MONDE ? solDuMonde(T) : null, lieux = sol && sol.lieux();
+export function montrerHameauVoisin() {
+  // (le didacticiel d'avant, ou les objectifs du jour : le septième, le hameau voisin, js/ui/objectifs.js)
+  const d = state.didacticiel || state.objectifs;
+  if (!d) return false;
+  const T = farmTerrain(state), sol = T.MONDE ? solDuMonde(T) : null, lieux = sol && sol.lieux();
   if (!lieux || d.montre) return false;
   if (lieuxDeLaCarte(state, lieux, T).hameaux.length) { d.montre = true; return true; }
   const S = T.MONDE.cadre.SORTIE, W = T.LARGEUR, dist = (t) => Math.hypot((t % W) - (S % W), Math.floor(t / W) - Math.floor(S / W));
@@ -148,7 +151,7 @@ function degagerCible() {
 
 // Les étapes : leur texte (HTML sûr : rien de ce que tape le joueur), et ce qu'elles montrent
 // ({ cible: sélecteur, carte: surbrillance de la scène }).
-const ETAPES_UI = {
+export const ETAPES_UI = {
   sante: { texte: () => 'Bienvenue sur ta ferme ! Voici tes jauges. Le cœur, c\'est ta <b>santé</b> : ton énergie. Chaque action en coûte un peu ; elle remonte en dormant et en mangeant.', cible: () => '.player-gauge:nth-child(1)' },
   endurance: { texte: () => 'L\'éclair, c\'est ton <b>endurance</b> : plus tu montes de niveau, plus ta jauge d\'énergie est grande.', cible: () => '.player-gauge:nth-child(2)' },
   bonheur: { texte: () => 'Le sourire, c\'est le <b>bonheur</b> de ta famille : de bons repas, un lit pour chacun, et il grimpe.', cible: () => '.player-gauge:nth-child(3)' },
@@ -281,7 +284,7 @@ function puits() {
 }
 
 // La cible `sel` : son élément visible, ou null.
-function element(sel) {
+export function element(sel) {
   if (!sel) return null;
   const el = [...document.querySelectorAll(sel)].find((e) => e.getClientRects().length > 0);
   return el || null;
@@ -289,7 +292,13 @@ function element(sel) {
 
 // Le didacticiel se montre-t-il ? (la carte est là, rien ne passe avant lui)
 function visible() {
-  if (!state || !etapeDidacticiel(state) || !stageUsable() || setupPending(state) || storyOpen()) return false;
+  return !!(state && etapeDidacticiel(state)) && affichable();
+}
+
+// Une bulle d'aide peut-elle se montrer ? (la carte est là, ni l'accueil, ni le récit, ni le consentement ;
+// aussi pour « Montre-moi » des objectifs du jour, js/ui/objectifs.js)
+export function affichable() {
+  if (!state || !stageUsable() || setupPending(state) || storyOpen()) return false;
   if (consentBannerShown() || consentBannerPending()) return false;
   return !document.querySelector('#modal-root .story-modal, #modal-root .setup-modal');
 }

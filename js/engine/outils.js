@@ -15,6 +15,7 @@ import { noter } from './journal.js';
 import { chevalMonte, vitesseCheval } from './cheval.js';
 import { MINERAIS_GROTTE, PIERRES_GROTTE } from './grotte.js';
 import { bumpCounter } from './campaign.js';
+import { noterObjectif } from './objectifs-compte.js';
 
 /* ---------- les outils : houe, pioche, hache, faux, canne à pêche ---------- */
 
@@ -292,6 +293,7 @@ export function chopTree(state, id, ou, fort = false) {
   }
   spendEnergy(state, 'couper', f.energie);
   gainActionXp(state, 'couper');
+  if (tombe) noterObjectif(state, 'abattu');   // (les objectifs du jour)
   return { ok: true, bois, chute, morceaux, reste: chopsLeft(state, id), coups, tombe, fort: !!fort, graine };
 }
 
@@ -406,6 +408,7 @@ export function mineRock(state, id, ou, fort = false) {
   const morceaux = lacher(state, 'pierre', pierre, bris, ou);
   spendEnergy(state, 'piocher', f.energie);
   gainActionXp(state, 'piocher');
+  if (casse) noterObjectif(state, 'casse');   // (les objectifs du jour)
   return { ok: true, pierre, bris, morceaux, coups, casse, fort: !!fort };
 }
 

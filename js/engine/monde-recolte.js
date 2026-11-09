@@ -9,6 +9,7 @@ import { farmTerrain, regionVue, voirRegion } from './terrain.js';
 import { force, hasTool, hitsNeeded, lacher, toolDef, withBonus } from './outils.js';
 import { SORTES as SORTES_VEG } from './monde-vegetation.js';
 import { SORTES_ROCHES } from './monde-roches.js';
+import { noterObjectif } from './objectifs-compte.js';
 
 /* ---------- couper, casser, cueillir et ramasser dans le grand monde (docs/grand-monde.md : fiche 6a) ---------- */
 
@@ -279,6 +280,7 @@ function frapper(state, id, geste, ou, fort, depuis) {
   ecrire(state, id, fini ? { retour: retourDe(state, id, o.regle) } : cueilli ? { ...e, coups } : coups);
   const morceaux = poser(state, parCoup, fin, ou);
   finir(state, o, G, f.energie);
+  if (fini) noterObjectif(state, geste === 'couper' ? 'abattu' : 'casse');   // (les objectifs du jour)
   return { ok: true, coups, fini, reste: fini ? 0 : Math.max(0, hitsNeeded(state, base) - coups), items: somme(parCoup, fin), morceaux, fort: !!fort };
 }
 

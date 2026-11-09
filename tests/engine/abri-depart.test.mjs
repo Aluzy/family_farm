@@ -62,7 +62,7 @@ test('le four et la cuisinière s\'y posent sans agrandir ; la case derrière la
   assert(passage !== bas && passage !== bas + 1 && passage !== bas + 4, 'le passage derrière la porte n\'est pas pris');
 });
 
-test('l\'emplacement : ni la case de départ, ni la Zone de culture, ni ce qu\'il y a à ramasser', () => {
+test('l\'emplacement : ni la case de départ, ni la Zone de culture, ni ce qu\'il y a à ramasser, même sous le toit', () => {
   for (const graine of ['abri-1', 'abri-2', 'abri-3', 'abri-4']) {
     const s = nouvelle(graine);
     const T = farmTerrain(s), W = T.LARGEUR, d0 = caseDepart(T), p = s.abriDepart;
@@ -70,6 +70,8 @@ test('l\'emplacement : ni la case de départ, ni la Zone de culture, ni ce qu\'i
     assert(!cases.includes(d0), 'pas sur la case de départ');
     const Z = T.ZONES[1];
     assert(!cases.some((t) => { const r = Math.floor(t / W), c = t % W; return r >= Z.Y && r < Z.Y + 2 && c >= Z.X && c < Z.X + Z.COLONNES; }), 'hors de la Zone de culture');
+    const sousLeToit = [1, 2, 3, 4].flatMap((dr) => Array.from({ length: 8 }, (_, dc) => (p.r - dr) * W + p.c + dc));
+    assert(!ramassables(s).some((q) => sousLeToit.includes(q.case)), 'rien à ramasser sous le toit');
     const pierres = ramassables(s).filter((q) => q.sorte === 'petite_pierre').length, bois = ramassables(s).filter((q) => q.sorte === 'morceau_bois').length;
     assert(pierres >= DATA.ATELIER.CONSTRUCTION.pierre && bois >= DATA.ATELIER.CONSTRUCTION.bois, `${graine} : de quoi poser l'Atelier (${pierres} pierres, ${bois} bois)`);
   }

@@ -1,4 +1,5 @@
 import { escapeHtml } from '../engine/format.js';
+import { noterObjectif } from '../engine/objectifs-compte.js';
 import { farmTerrain } from '../engine/terrain.js';
 import { blocsPoses } from '../engine/blocs.js';
 import { calecheMaintenant } from '../engine/caleche.js';
@@ -423,6 +424,7 @@ registerActions({
     if (C && C.dlg.isConnected) return;
     fermer();
     openCarteMonde();
+    noterObjectif(state, 'carte');   // (les objectifs du jour, js/engine/objectifs.js)
     refresh();   // (le didacticiel, fiche 9b : son étape « carte » passe)
   },
   'carte-monde-zoom': (target) => {

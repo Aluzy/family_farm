@@ -21,7 +21,7 @@
         "icone": "🏚️",
         "recompense": { "objets": { "bac_carre": 2, "lanterne": 2 } },
         "intro": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; fabrique une houe à l'Atelier, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
-        "introSauvage": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. Celle de ton grand-père est à ta famille, sans maison ni bâtiment. Ramasse des pierres et du bois, construis l'Atelier, fabriques-y une faux pour faucher l'herbe haute (ses fibres), puis bâtis ton foyer : une pièce close et une paillasse. Fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
+        "introSauvage": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. Celle de ton grand-père est à ta famille, sans maison ni bâtiment : juste un abri de bois, monté pour vous attendre. Ramasse des pierres et du bois, construis l'Atelier, fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
           { "type": "maison", "cible": 1, "libelle": "Réparer la maison", "libelleSauvage": "Bâtir le foyer (une pièce close, une paillasse)", "unite": "" },
           { "type": "panneau", "sauvage": false, "cible": 1, "libelle": "Acheter le panneau solaire", "libelleSauvage": "Poser le panneau solaire", "unite": "" },
