@@ -662,7 +662,8 @@ void main() {
         }
       }
       // la berge (E.berge ; pas la mer, qui a sa plage) : peinte sur l'eau, elle devient de la terre
-      const berge = v.a.mer ? null : this.eauBerge(eau, d, w, h, v.a);
+      // (un bassin, js/carte/ferme/bassins.js : sa paroi est de pierre, peinte avec lui)
+      const berge = v.a.mer || v.a.bassin ? null : this.eauBerge(eau, d, w, h, v.a);
       // la rive : les pixels de terre (et la berge)
       const rc = v.rive.getContext(), ri = rc.createImageData(w, h);
       for (let p = 0; p < w * h; p++) if (!eau[p] && d[p * 4 + 3]) for (let c = 0; c < 4; c++) ri.data[p * 4 + c] = d[p * 4 + c];

@@ -185,7 +185,7 @@
       "chaise_peinte": { "entrees": { "planche": 2, "colorant_bleu": 1 }, "sortie": { "chaise_peinte": 1 }, "plan": true },
       "jarre_coquillages": { "entrees": { "pierre": 2, "coquille": 2, "etoile_mer": 1 }, "sortie": { "jarre_coquillages": 1 }, "plan": true },
       "lanterne_papier": { "entrees": { "planche": 1, "fibre": 3, "colorant_rouge": 1 }, "sortie": { "lanterne_papier": 1 }, "plan": true },
-      "bassin_nenuphars": { "entrees": { "pierre": 3, "algues": 2 }, "sortie": { "bassin_nenuphars": 1 }, "plan": true },
+      "bassin": { "entrees": { "pierre": 3 }, "sortie": { "bassin": 1 }, "plan": true },
       "banc_pierre": { "entrees": { "pierre": 5 }, "sortie": { "banc_pierre": 1 }, "plan": true },
       "jardiniere_pierre": { "entrees": { "pierre": 3, "herbes_montagne": 2 }, "sortie": { "jardiniere_pierre": 1 }, "plan": true },
       "pergola": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "pergola": 1 }, "plan": true }
@@ -271,7 +271,8 @@
       "chaise_peinte": { "nom": "Chaise peinte", "objet": "chaise_peinte", "bloque": true, "terrasse": "siege", "tourne": true },
       "jarre_coquillages": { "nom": "Jarre aux coquillages", "objet": "jarre_coquillages", "bloque": true, "tourne": "symetrique" },
       "lanterne_papier": { "nom": "Lanterne de papier", "objet": "lanterne_papier", "bloque": true, "tourne": "symetrique" },
-      "bassin_nenuphars": { "nom": "Bassin aux nénuphars", "objet": "bassin_nenuphars", "bloque": true, "tourne": "symetrique" },
+      "bassin_nenuphars": { "nom": "Bassin aux nénuphars (ancien)", "objet": "bassin_nenuphars", "bloque": true, "tourne": "symetrique" },
+      "bassin": { "nom": "Bassin", "objet": "bassin", "dehors": true, "bloque": true, "bassin": true },
       "banc_pierre": { "nom": "Banc de pierre", "objet": "banc_pierre", "bloque": true, "terrasse": "siege", "tourne": true },
       "jardiniere_pierre": { "nom": "Jardinière de pierre", "objet": "jardiniere_pierre", "bloque": true, "tourne": "symetrique" },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
@@ -351,7 +352,7 @@
       "maison": { "nom": "Maison", "icone": "🏠", "blocs": ["paillasse", "boite_nourriture", "refrigerateur", "four", "cuisiniere", "mortier", "lanterne", "candelabre"] },
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
       "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "bloc_silo", "meule"] },
-      "jardin": { "nom": "Jardin", "icone": "🌷", "blocs": ["table_jardin", "chaise_jardin", "banc_jardin", "bac_carre", "bac_rond", "bac_long", "banc_rondins", "table_rondins", "chaise_peinte", "jarre_coquillages", "lanterne_papier", "bassin_nenuphars", "banc_pierre", "jardiniere_pierre", "pergola", "bac_fleurs", "bac_lavande"] },
+      "jardin": { "nom": "Jardin", "icone": "🌷", "blocs": ["table_jardin", "chaise_jardin", "banc_jardin", "bac_carre", "bac_rond", "bac_long", "banc_rondins", "table_rondins", "chaise_peinte", "jarre_coquillages", "lanterne_papier", "bassin", "banc_pierre", "jardiniere_pierre", "pergola", "bac_fleurs", "bac_lavande", "bassin_nenuphars"] },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
       "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur", "reservoir", "pressoir", "centrifugeuse", "mixeur", "chaudron", "tonneau", "ensacheuse"] }
     },

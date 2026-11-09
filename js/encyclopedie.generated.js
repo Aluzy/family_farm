@@ -745,6 +745,18 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
+     "id": "bassin",
+     "terme": "Bassin",
+     "description": "Son plan se trouve au marais (une collection de plans) ; une case de bassin se fabrique ensuite à l'Atelier (3 pierres) et se pose dehors comme un bloc. Les cases posées côte à côte se raccordent en un seul bassin, cerclé d'une margelle de pierre taillée : on en fait un carré, une longue allée d'eau, un L… Son eau bouge comme celle des étangs, des nénuphars y poussent tout seuls, et l'on ne marche pas dedans.",
+     "liens": [
+      "plans_collection",
+      "mode_construire"
+     ],
+     "decouverte": [
+      "objet:bassin"
+     ]
+    },
+    {
      "id": "terrasse",
      "terme": "Terrasse",
      "description": "La table de jardin (des planches et de la fibre pour sa nappe), la chaise de jardin et le banc de jardin se fabriquent à l'Atelier et se posent dehors (l'onglet « Jardin » du mode Construire). Une chaise ou un banc qui touche la table est une place : c'est là que s'assoient tes invités quand tu les invites à un repas depuis le calendrier.",
@@ -3026,7 +3038,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "plans_collection",
      "terme": "Plans de collection",
-     "description": "Chaque pays de l'île a sa collection de meubles de jardin, dans son style : la forêt (le banc et la table en rondins), la côte (la chaise peinte, la jarre aux coquillages), le marais (la lanterne de papier, le bassin aux nénuphars), la montagne (le banc et la jardinière de pierre), la prairie (la pergola fleurie). Leur recette ne se fait à l'Atelier qu'une fois leur plan trouvé. La première fois que tu passes dans un pays, hors de la ferme, tu y trouves le plan d'un de ses meubles ; un ami « proche » d'un hameau de ce pays (la forêt, la côte, le marais, la montagne, la prairie ou la lande) t'offre le suivant, une nuit. Les bancs, les chaises et les tables en font des terrasses pour tes invités ; les sièges se tournent. Le carnet de plans, sous l'Atelier, montre ce que tu as trouvé.",
+     "description": "Chaque pays de l'île a sa collection de meubles de jardin, dans son style : la forêt (le banc et la table en rondins), la côte (la chaise peinte, la jarre aux coquillages), le marais (la lanterne de papier, le bassin de pierre), la montagne (le banc et la jardinière de pierre), la prairie (la pergola fleurie). Leur recette ne se fait à l'Atelier qu'une fois leur plan trouvé. La première fois que tu passes dans un pays, hors de la ferme, tu y trouves le plan d'un de ses meubles ; un ami « proche » d'un hameau de ce pays (la forêt, la côte, le marais, la montagne, la prairie ou la lande) t'offre le suivant, une nuit. Les bancs, les chaises et les tables en font des terrasses pour tes invités ; les sièges se tournent. Le carnet de plans, sous l'Atelier, montre ce que tu as trouvé.",
      "liens": [
       "styles",
       "invitation_repas",

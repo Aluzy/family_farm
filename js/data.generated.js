@@ -553,14 +553,16 @@ export const RAW_DATA = {
       "invendable": true
     },
     "bassin_nenuphars": {
-      "nom": "Bassin aux nénuphars",
+      "nom": "Bassin aux nénuphars (ancien)",
       "icone": "🪷",
       "prix": 30,
       "mangeable": false,
       "categorie": "matériau",
       "rachetable": false,
-      "invendable": true
+      "invendable": true,
+      "retire": true
     },
+    "bassin": { "nom": "Bassin", "icone": "🪷‍🧱", "prix": 30, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "banc_pierre": {
       "nom": "Banc de pierre",
       "icone": "🪨",
@@ -1209,7 +1211,7 @@ export const RAW_DATA = {
       "chaise_peinte": { "entrees": { "planche": 2, "colorant_bleu": 1 }, "sortie": { "chaise_peinte": 1 }, "plan": true },
       "jarre_coquillages": { "entrees": { "pierre": 2, "coquille": 2, "etoile_mer": 1 }, "sortie": { "jarre_coquillages": 1 }, "plan": true },
       "lanterne_papier": { "entrees": { "planche": 1, "fibre": 3, "colorant_rouge": 1 }, "sortie": { "lanterne_papier": 1 }, "plan": true },
-      "bassin_nenuphars": { "entrees": { "pierre": 3, "algues": 2 }, "sortie": { "bassin_nenuphars": 1 }, "plan": true },
+      "bassin": { "entrees": { "pierre": 3 }, "sortie": { "bassin": 1 }, "plan": true },
       "banc_pierre": { "entrees": { "pierre": 5 }, "sortie": { "banc_pierre": 1 }, "plan": true },
       "jardiniere_pierre": { "entrees": { "pierre": 3, "herbes_montagne": 2 }, "sortie": { "jardiniere_pierre": 1 }, "plan": true },
       "pergola": { "entrees": { "planche": 4, "fibre": 2 }, "sortie": { "pergola": 1 }, "plan": true }
@@ -1356,7 +1358,8 @@ export const RAW_DATA = {
       "chaise_peinte": { "nom": "Chaise peinte", "objet": "chaise_peinte", "bloque": true, "terrasse": "siege", "tourne": true },
       "jarre_coquillages": { "nom": "Jarre aux coquillages", "objet": "jarre_coquillages", "bloque": true, "tourne": "symetrique" },
       "lanterne_papier": { "nom": "Lanterne de papier", "objet": "lanterne_papier", "bloque": true, "tourne": "symetrique" },
-      "bassin_nenuphars": { "nom": "Bassin aux nénuphars", "objet": "bassin_nenuphars", "bloque": true, "tourne": "symetrique" },
+      "bassin_nenuphars": { "nom": "Bassin aux nénuphars (ancien)", "objet": "bassin_nenuphars", "bloque": true, "tourne": "symetrique" },
+      "bassin": { "nom": "Bassin", "objet": "bassin", "dehors": true, "bloque": true, "bassin": true },
       "banc_pierre": { "nom": "Banc de pierre", "objet": "banc_pierre", "bloque": true, "terrasse": "siege", "tourne": true },
       "jardiniere_pierre": { "nom": "Jardinière de pierre", "objet": "jardiniere_pierre", "bloque": true, "tourne": "symetrique" },
       "pergola": { "nom": "Pergola fleurie", "objet": "pergola", "bloque": false, "tourne": "symetrique" },
@@ -1709,12 +1712,13 @@ export const RAW_DATA = {
           "chaise_peinte",
           "jarre_coquillages",
           "lanterne_papier",
-          "bassin_nenuphars",
+          "bassin",
           "banc_pierre",
           "jardiniere_pierre",
           "pergola",
           "bac_fleurs",
-          "bac_lavande"
+          "bac_lavande",
+          "bassin_nenuphars"
         ]
       },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
@@ -6697,7 +6701,7 @@ export const RAW_DATA = {
           "candelabre",
           "banc_rondins",
           "table_rondins",
-          "bassin_nenuphars"
+          "bassin"
         ]
       },
       "cotier": {
@@ -6791,7 +6795,7 @@ export const RAW_DATA = {
         "hameaux": ["cote"],
         "plans": ["chaise_peinte", "jarre_coquillages"]
       },
-      "marais": { "nom": "le marais", "icone": "🪷", "biomes": ["marais"], "hameaux": ["marais"], "plans": ["lanterne_papier", "bassin_nenuphars"] },
+      "marais": { "nom": "le marais", "icone": "🪷", "biomes": ["marais"], "hameaux": ["marais"], "plans": ["lanterne_papier", "bassin"] },
       "montagne": {
         "nom": "la montagne",
         "icone": "⛰️",

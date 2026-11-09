@@ -21,7 +21,17 @@
     // d'eau vivante (le shader de la houle, de l'écume et du ressac, le plus cher à dessiner) : ses tuiles
     // animées seulement ; les lacs, les rivières et les étangs gardent la leur. La liste filtrée est
     // gardée tant que la liste d'origine et la qualité ne changent pas (syncEau compare les listes).
+    // (les bassins posés, js/carte/ferme/bassins.js : leurs étendues s'ajoutent, une liste neuve quand l'une ou
+    // l'autre change)
     eauEtendues() {
+      const l = this.eauEtenduesCarte(), b = this.bassinsAreas;
+      if (!b || !b.length) return l;
+      const m = this.eauAvecBassins;
+      if (m && m.l === l && m.b === b) return m.liste;
+      this.eauAvecBassins = { l, b, liste: (l || []).concat(b) };
+      return this.eauAvecBassins.liste;
+    },
+    eauEtenduesCarte() {
       const l = this.eauListe || this.animAreas;
       if (!this.eauListe || K.reglages().merVivante) return l;
       const f = this.eauSansMer;
@@ -44,6 +54,7 @@
     },
 
     eauRepeint(a) {
+      if (a.bassin) { this.peindreBassin(a); return; }
       this.paintAnimArea(a);
     },
 

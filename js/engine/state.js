@@ -799,6 +799,30 @@ export const MIGRATIONS = {
     if (K && typeof K === 'object') delete K.bac_lavande;
     return out;
   },
+  // v79 → v80 (les bassins) : l'ancien bassin aux nénuphars, posé ou dans l'inventaire, devient une case du bassin
+  // raccordable (ses nénuphars poussent tout seuls) ; son plan, celui du bassin. L'étage garde les siens.
+  79: (state) => {
+    const out = JSON.parse(JSON.stringify({ ...state, version: 80 }));
+    const B = out.blocs;
+    if (B && typeof B === 'object' && !Array.isArray(B)) {
+      for (const t of Object.keys(B)) {
+        if (B[t] !== 'bassin_nenuphars') continue;
+        B[t] = 'bassin';
+        for (const k of ['sens', 'teintes']) if (out[k] && typeof out[k] === 'object') delete out[k][t];
+      }
+    }
+    const I = out.inventaire;
+    if (I && typeof I === 'object' && !Array.isArray(I) && Array.isArray(I.bassin_nenuphars)) {
+      I.bassin = (Array.isArray(I.bassin) ? I.bassin : []).concat(I.bassin_nenuphars);
+      delete I.bassin_nenuphars;
+    }
+    const K = out.plans && typeof out.plans === 'object' ? out.plans.connus : null;
+    if (K && typeof K === 'object' && K.bassin_nenuphars) {
+      if (!K.bassin) K.bassin = K.bassin_nenuphars;
+      delete K.bassin_nenuphars;
+    }
+    return out;
+  },
 };
 
 // La Serre d'avant la v76 : ses parcelles par niveau, le prix de chaque niveau (les anciennes migrations ;
