@@ -120,8 +120,8 @@
         const cols = this.grid.cols || 1;
         return { x: (p.ref % cols) * T + T / 2, y: Math.floor(p.ref / cols) * T + 2 };
       }
-      // (une ruche pleine : au-dessus de son toit)
-      if (p.lieu === 'ruche' && Number.isInteger(p.ref)) {
+      // (une ruche pleine, un tonnelet prêt : au-dessus de son toit, de son couvercle)
+      if ((p.lieu === 'ruche' || p.lieu === 'tonnelet') && Number.isInteger(p.ref)) {
         const cols = this.grid.cols || 1;
         return { x: (p.ref % cols) * T + T / 2, y: (Math.floor(p.ref / cols) + 1) * T - 20 };
       }

@@ -774,6 +774,7 @@ export const RAW_DATA = {
     "chaudron": { "nom": "Chaudron", "icone": "🍲", "prix": 22, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "tonneau": { "nom": "Tonneau", "icone": "🛢️‍🍺", "prix": 14, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "ensacheuse": { "nom": "Ensacheuse", "icone": "🫙‍⚙️", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "tonnelet": { "nom": "Tonnelet", "icone": "🛢️‍🧀", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "pomme_de_pin": { "nom": "Pomme de pin", "icone": "🌲‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "gland": { "nom": "Gland", "icone": "🌳‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "jeune_pommier": { "nom": "Jeune pommier", "icone": "🌱‍🍎", "prix": 40, "mangeable": false, "categorie": "graine", "arbre": "pommier" },
@@ -1019,6 +1020,8 @@ export const RAW_DATA = {
       "retire": true
     },
     "ordinateur": { "nom": "Ordinateur", "icone": "💻", "prix": 240, "mangeable": false, "categorie": "produit", "rachetable": false, "retire": true },
+    "tomme_alpage": { "nom": "Tomme d'alpage", "icone": "🧀‍⚪", "prix": 36, "mangeable": false, "categorie": "produit", "rachetable": false },
+    "mout_houblon": { "nom": "Moût de houblon", "icone": "🍺‍🟤", "prix": 13, "mangeable": false, "categorie": "produit", "rachetable": false },
     "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 70, "prix": 47, "mangeable": true, "categorie": "produit" },
     "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "mangeable": false, "categorie": "ingrédient" },
     "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "mangeable": false, "categorie": "ingrédient" },
@@ -1163,6 +1166,7 @@ export const RAW_DATA = {
       "chaudron": { "entrees": { "lingot_fer": 2, "lingot_cuivre": 1 }, "sortie": { "chaudron": 1 }, "debloque": "chaines" },
       "tonneau": { "entrees": { "planche": 4, "lingot_fer": 1 }, "sortie": { "tonneau": 1 }, "debloque": "chaines" },
       "ensacheuse": { "entrees": { "lingot_fer": 2, "planche": 2 }, "sortie": { "ensacheuse": 1 }, "debloque": "chaines" },
+      "tonnelet": { "entrees": { "planche": 3, "lingot_fer": 1 }, "sortie": { "tonnelet": 1 }, "debloque": "chaines" },
       "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler" },
       "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler" },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
@@ -1380,6 +1384,7 @@ export const RAW_DATA = {
       "chaudron": { "nom": "Chaudron", "objet": "chaudron", "bloque": true, "chaine": "outil" },
       "tonneau": { "nom": "Tonneau", "objet": "tonneau", "bloque": true, "chaine": "outil" },
       "ensacheuse": { "nom": "Ensacheuse", "objet": "ensacheuse", "bloque": true, "chaine": "outil" },
+      "tonnelet": { "nom": "Tonnelet", "objet": "tonnelet", "dehors": true, "bloque": true, "tonnelet": true },
       "distributeur": {
         "nom": "Distributeur de grain",
         "objet": "distributeur",
@@ -1741,7 +1746,8 @@ export const RAW_DATA = {
           "mixeur",
           "chaudron",
           "tonneau",
-          "ensacheuse"
+          "ensacheuse",
+          "tonnelet"
         ]
       }
     },
@@ -1787,6 +1793,13 @@ export const RAW_DATA = {
       "biere_artisanale": ["chaudron", "tonneau"],
       "bocal_legumes": ["chaudron", "ensacheuse"]
     }
+  },
+  "TONNELET": {
+    "NOM": "Tonnelet",
+    "ICONE": "🛢️‍🧀",
+    "OBJET": "tonnelet",
+    "NUITS": 2,
+    "AFFINE": { "tomme_alpage": "fromage_alpage", "mout_houblon": "biere_artisanale" }
   },
   "BOTTELEUSE": { "NOM": "Botteleuse", "ICONE": "⚙️‍🌾", "FIBRES": 10, "VIBRE_S": 3, "PAILLE": 10, "CONVOYEUR": 2 },
   "STATIONS": {
@@ -1895,6 +1908,7 @@ export const RAW_DATA = {
       "ingredients": [{ "item": "lait_alpage", "qte": 3 }],
       "transformation": true,
       "sortie": "fromage_alpage",
+      "cave": "tomme_alpage",
       "qteSortie": 1
     },
     "riz_au_lait": {
@@ -1957,6 +1971,7 @@ export const RAW_DATA = {
       "temps": 60,
       "ingredients": [{ "item": "houblon", "qte": 2 }],
       "eau": 1,
+      "cave": "mout_houblon",
       "coefPrix": 300
     },
     "bocal_legumes": {
@@ -7049,6 +7064,8 @@ export const RAW_DATA = {
     "pizza": 2,
     "burger": 2,
     "frites": 2,
+    "tomme_alpage": 4,
+    "mout_houblon": 4,
     "fromage_alpage": 10,
     "champignon": 3,
     "myrtille": 3,

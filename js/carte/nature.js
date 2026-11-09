@@ -101,7 +101,9 @@
     prise: 9, pied: 13, bas: 7, cime: [24, 36, 48], eclats: 15, cherche: 32, saut: 10, sautMs: 380,
     images: { bois: 1, pierre: 0, fibre: 2, paille: 4, pomme_de_pin: 5, gland: 6, botte: 9,
       // les produits des chaînes de production, tombés en tas au bout du convoyeur (js/engine/chaines.js)
-      huile: 10, jus_fruits: 11, fromage_frais: 12, fromage_alpage: 13, compote: 14, confiture_fraises: 15, biere_artisanale: 16, bocal_legumes: 17 },
+      huile: 10, jus_fruits: 11, fromage_frais: 12, fromage_alpage: 13, compote: 14, confiture_fraises: 15, biere_artisanale: 16, bocal_legumes: 17,
+      // (la tomme d'alpage, le moût de houblon : ceux du fromage frais, de la bière ; ils s'affinent au tonnelet)
+      tomme_alpage: 12, mout_houblon: 16 },
   };
 
   // Les points où tombent les morceaux d'un coup : { coup: [3 points], fin: [3 points] } (px de

@@ -64,7 +64,9 @@ export function recetteDesOutils(sortes) {
 
 // Ce que la recette `id` rend : { item, qte }.
 export function produitDe(id) {
-  return { item: recipeOutput(id), qte: recipeOutputQty(id) };
+  // (le fromage d'alpage, la bière : la chaîne donne leur tomme, leur moût, qui s'affinent au tonnelet, DATA.TONNELET)
+  const cave = DATA.RECETTES[id] && DATA.RECETTES[id].cave;
+  return { item: cave || recipeOutput(id), qte: recipeOutputQty(id) };
 }
 
 // Les objets qu'accepte chaque ingrédient de la recette `id` : [{ items: [...], qte }].
@@ -179,8 +181,8 @@ export function diagnosticChaine(state, tile) {
   } else if (!recette) {
     etapes.push({ id: 'outils', ok: false, texte: `${sortes.map(nomDe).join(' → ')} : ces outils ne font rien ensemble. Vois les recettes du mode d'emploi.` });
   } else {
-    const R = DATA.RECETTES[recette];
-    etapes.push({ id: 'outils', ok: true, texte: `${sortes.map(nomDe).join(' → ')} : ${R.icone} ${R.nom}` });
+    const R = DATA.RECETTES[recette], cave = R.cave && DATA.OBJETS[R.cave];
+    etapes.push({ id: 'outils', ok: true, texte: `${sortes.map(nomDe).join(' → ')} : ${cave ? `${cave.icone} ${cave.nom} (au tonnelet : ${R.nom.toLowerCase()})` : `${R.icone} ${R.nom}`}` });
     if (!recipeUnlocked(state, recette)) {
       const n = DATA.ARBRE.noeuds[recipeNode(recette)];
       etapes.push({ id: 'techno', ok: false, texte: `${R.nom} : à débloquer dans l'Arbre des technologies${n ? ` (${n.nom})` : ''}.` });

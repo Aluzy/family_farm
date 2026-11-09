@@ -3155,6 +3155,13 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 .boite-ligne .boite-nom { flex: 1 1 auto; min-width: 0; }
 .boite-ligne .btn { min-width: 44px; padding: 0 8px; }
 
+/* les tonnelets (js/ui/tonnelet.js) : un tonnelet par ligne, ce qui s'y affine, ou les boutons pour le remplir */
+.tonnelet-liste { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; }
+.tonnelet-ligne { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid rgba(120, 80, 40, 0.25); }
+.tonnelet-titre { font-weight: bold; }
+.tonnelet-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.tonnelet-actions .btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 10px; }
+
 /* La bannière d'un hameau du grand monde découvert (js/ui/stage.js, banniereHameau : fiche 7a) : son
    nom, en haut de la carte, quelques secondes ; un panneau de bois clair au liseré sombre. */
 .hameau-banniere {

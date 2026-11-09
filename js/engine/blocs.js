@@ -16,6 +16,7 @@ import { installStarter, removeStarter, starterBlock } from './depart.js';
 import { robotOn } from './automation.js';
 import { couchagesEtage, etageEmprise, etageHorsEmprise, rangerEtage } from './etage.js';
 import { ruchePosee, rucheReprise } from './ruches.js';
+import { tonneletPose, tonneletRepris } from './tonnelets.js';
 import { bacReplante, bacRepris } from './bacs.js';
 import { botteleuseReprise } from './botteleuse.js';
 import { distributeurReprise } from './distributeur.js';
@@ -1059,6 +1060,8 @@ function poser(state, sorte, tile, sens = 0) {
   if (s.appareil) installStarter(state, s.appareil);
   // une ruche : vide, elle commence à se remplir (js/engine/ruches.js)
   if (s.ruche) ruchePosee(state, tile);
+  // un tonnelet : vide (js/engine/tonnelets.js)
+  if (s.tonnelet) tonneletPose(state, tile);
   // le réfrigérateur : construit, la famille y mange (la boîte revient dans l'inventaire)
   if (s.frigo) openFridge(state);
   // le bloc clé d'un bâtiment (le nichoir : le Poulailler ; la mangeoire : l'Étable , le bac à semis : la Serre) : le bâtiment est construit
@@ -1128,6 +1131,8 @@ export function reprendreBloc(state, tile, opts) {
   if (s && s.appareil) removeStarter(state, s.appareil);
   // (une ruche pleine : son miel vient avec elle)
   if (s && s.ruche) rucheReprise(state, tile);
+  // (un tonnelet : ce qu'il contient revient, fini ou non, js/engine/tonnelets.js)
+  if (s && s.tonnelet) tonneletRepris(state, tile);
   // (un bac à fleurs : ce qui y pousse s'en va avec lui, js/engine/bacs.js ; déplacé, il le garde)
   const plante = s && s.bac ? bacRepris(state, tile) : null;
   // (une botteleuse : les fibres qu'elle a reçues reviennent, js/engine/botteleuse.js)

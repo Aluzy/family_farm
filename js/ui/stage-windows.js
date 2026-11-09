@@ -48,6 +48,8 @@ import { farmTerrain } from '../engine/terrain.js';
 import { comptoirTabAOuvrir, marketTabsHtml, renderComptoir } from './caleche.js';
 import { renderChapterBanner } from './chapitres.js';
 import { renderBoite } from './boite.js';
+import { renderTonnelets } from './tonnelet.js';
+import { tonneletsPoses } from '../engine/tonnelets.js';
 import { renderFrigoFenetre } from './frigo.js';
 import { boitePosee } from '../engine/repas.js';
 import { tutoTarget } from './aide.js';
@@ -283,6 +285,11 @@ export const STAGE_WINDOWS = {
   boite: {
     nom: 'Boîte à nourriture', icone: '🧺', ok: () => boitePosee(state) && !state.frigo.construit, bois: true,
     corps: () => renderBoite(),
+  },
+  // Les tonnelets posés dehors (un appui sur l'un d'eux) : ce qui s'y affine, y mettre une tomme ou un moût.
+  tonnelet: {
+    nom: 'Tonnelets', icone: DATA.TONNELET.ICONE, ok: () => tonneletsPoses(state).length > 0, bois: true,
+    corps: () => renderTonnelets(),
   },
   // Meubles de la maison (intérieur) : chacun ouvre sa fenêtre, dans le cadre bois.
   // Le four : deux onglets, les aliments (pains, tartes…) et les objets (la fonte des lingots).

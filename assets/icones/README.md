@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 476 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 479 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -137,6 +137,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/cooking+mushroom.png" width="48" height="48" alt=""> | 🍳‍🍄 | [`cooking+mushroom.png`](cooking+mushroom.png) |
 | <img src="apercu/cooking+egg.png" width="48" height="48" alt=""> | 🍳‍🥚 | [`cooking+egg.png`](cooking+egg.png) |
 | <img src="apercu/beer_mug.png" width="48" height="48" alt=""> | 🍺 | [`beer_mug.png`](beer_mug.png) |
+| <img src="apercu/mout_houblon.png" width="48" height="48" alt=""> | 🍺‍🟤 | [`mout_houblon.png`](mout_houblon.png) |
 | <img src="apercu/fork_and_knife_with_plate.png" width="48" height="48" alt=""> | 🍽 | [`fork_and_knife_with_plate.png`](fork_and_knife_with_plate.png) |
 | <img src="apercu/party_popper.png" width="48" height="48" alt=""> | 🎉 | [`party_popper.png`](party_popper.png) |
 | <img src="apercu/pine_decoration.png" width="48" height="48" alt=""> | 🎍 | [`pine_decoration.png`](pine_decoration.png) |
@@ -389,6 +390,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/playground_slide.png" width="48" height="48" alt=""> | 🛝 | [`playground_slide.png`](playground_slide.png) |
 | <img src="apercu/hammer_and_wrench.png" width="48" height="48" alt=""> | 🛠 | [`hammer_and_wrench.png`](hammer_and_wrench.png) |
 | <img src="apercu/oil_drum.png" width="48" height="48" alt=""> | 🛢 | [`oil_drum.png`](oil_drum.png) |
+| <img src="apercu/tonnelet.png" width="48" height="48" alt=""> | 🛢️‍🧀 | [`tonnelet.png`](tonnelet.png) |
 | <img src="apercu/railway_track.png" width="48" height="48" alt=""> | 🛤 | [`railway_track.png`](railway_track.png) |
 | <img src="apercu/canoe.png" width="48" height="48" alt=""> | 🛶 | [`canoe.png`](canoe.png) |
 | <img src="apercu/colorant_orange.png" width="48" height="48" alt=""> | 🟠 | [`colorant_orange.png`](colorant_orange.png) |
@@ -427,6 +429,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/deer.png" width="48" height="48" alt=""> | 🦌 | [`deer.png`](deer.png) |
 | <img src="apercu/oyster.png" width="48" height="48" alt=""> | 🦪 | [`oyster.png`](oyster.png) |
 | <img src="apercu/cheese_wedge.png" width="48" height="48" alt=""> | 🧀 | [`cheese_wedge.png`](cheese_wedge.png) |
+| <img src="apercu/tomme_alpage.png" width="48" height="48" alt=""> | 🧀‍⚪ | [`tomme_alpage.png`](tomme_alpage.png) |
 | <img src="apercu/cheese_wedge+glass_of_milk.png" width="48" height="48" alt=""> | 🧀‍🥛 | [`cheese_wedge+glass_of_milk.png`](cheese_wedge+glass_of_milk.png) |
 | <img src="apercu/garlic.png" width="48" height="48" alt=""> | 🧄 | [`garlic.png`](garlic.png) |
 | <img src="apercu/onion.png" width="48" height="48" alt=""> | 🧅 | [`onion.png`](onion.png) |
