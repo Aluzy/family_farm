@@ -1,12 +1,13 @@
 /* carte/ferme/herbes.js — la scène de la ferme : les touffes d'herbe au pied de ce qui est posé.
  *
- * Là où un mur, un poteau de barrière ou un sol posé dehors touche l'herbe, la ligne était
+ * Là où un mur, un poteau de barrière, un sol posé dehors, le puits ou le silo touche l'herbe, la ligne était
  * nette. Les murs et les sols : ceux posés sur la ferme (chantier.js), et ceux des hameaux de tout
  * le grand monde (js/engine/monde-hameaux.js) : les murs de leurs maisons (des images de la planche
  * « hameaux », vegetation.js), leurs dalles (planchers, dalles, tomettes, pavés de la place : peints
  * dans le sol de leur région). De petites touffes en éventail (HERBES) l'adoucissent : le long du bas des murs (pas
  * devant les portes : on y passe), une petite sous chaque poteau, deux au pied du réverbère (aux
- * bouts de son socle), au bas d'un sol posé dehors,
+ * bouts de son socle), au bas d'un sol posé dehors, le long du contour arrondi du pied du puits et du silo
+ * (avec quelques fleurs : piedHerbe),
  * et quelques brins penchés sur ses côtés. Pas sur le haut d'un sol : vue de dessus, l'herbe
  * de derrière ne passe pas devant lui.
  *
@@ -109,6 +110,15 @@
         source(`b${e.case}/${e.img.texture.key}/${f.name}/${x0},${y0}/${poteau ? 1 : 0}`, () => debout(e.img.texture.key, f.name, x0, y0, e.y, e.case, poteau, lampe));
       }
 
+      // le pied du puits et du silo (leurs propres images : modele.js syncWell, silo.js) : touffes et fleurs
+      const pieds = [];
+      if (this.well && this.well.active) pieds.push(['puits', this.well]);
+      if (this.silo && this.silo.img && this.silo.img.active) pieds.push(['silo', this.silo.img]);
+      for (const [nom, im] of pieds) {
+        const f = im.frame, x0 = Math.round(im.x - im.originX * f.cutWidth), y0 = Math.round(im.y - im.originY * f.cutHeight);
+        source(`p${nom}/${im.texture.key}/${f.name}/${x0},${y0}`, () => this.piedHerbe(im.texture.key, f.name, x0, y0, im.depth, nom));
+      }
+
       // le bas des murs des maisons des hameaux (HERBES.mursHameaux ; pas les portes)
       for (const m of this.mursHameaux()) source(`h${m.case}/${m.n}/${m.x},${m.y}`, () => debout('hameaux', m.n, m.x - m.c.px, m.y - m.c.py, m.y, m.case, false));
 
@@ -171,6 +181,40 @@
       this.herbes = [...gardees.values()];
     },
 
+    // Les herbes au pied d'une grande image posée seule (le puits, le silo) : son image (clé, numéro), son coin haut
+    // gauche, sa profondeur. Des touffes aux couleurs de l'herbe le long du contour de son pied (une image ronde :
+    // il remonte vers les côtés), et quelques fleurs. → { k, profondeur, pixels, rect }.
+    piedHerbe(key, frame, x0, y0, profondeur, nom) {
+      const out = { k: 'p' + nom, profondeur: profondeur + HERBES.dessus, pixels: [], rect: null };
+      const p = this.profilHerbe(key, frame);
+      if (!p) return out;
+      const Fe = HERBES.fenetre, yb = y0 + p.bas + 1;
+      // le contour du bas : pour chaque colonne qui descend assez bas, son pied (x, y)
+      const pts = [];
+      p.parColonne.forEach((b, k) => { if (b >= 0 && b >= p.bas - HERBES.contour) pts.push([x0 + k, y0 + b + 1]); });
+      if (!pts.length) return out;
+      const yh = Math.min(...pts.map((q) => q[1]));
+      out.rect = { x: x0 - Fe, y: yh - 8, w: p.w + 2 * Fe, h: yb - yh + Fe + 10 };
+      const fond = this.fondHerbe(out.rect.x, out.rect.y, out.rect.w, out.rect.h);
+      if (!fond) return out;
+      const t = fond.teintes, ok = pts.filter(([x, y]) => fond.vert(x, y));
+      if (!ok.length) return out;
+      const rng = hasard((x0 * 31 + y0 * 17 + nom.length) >>> 0);
+      // le long du contour (un peu plus serré que le long d'un mur)
+      for (let i = Math.floor(rng() * 3); i < ok.length; i += Math.max(2, pas(rng) - 4)) touffe(out.pixels, ok[i][0], ok[i][1], t, rng() < 0.35 ? HERBES.petite : HERBES.touffe, rng);
+      // quelques fleurs, comme les fleurs sauvages de la carte : une tige, quatre pétales autour d'un cœur jaune ;
+      // pas deux côte à côte
+      const posees = [];
+      for (let k = 0; k < HERBES.fleurs * 3 && posees.length < HERBES.fleurs; k++) {
+        const q = ok[Math.floor(rng() * ok.length)], x = q[0] + Math.floor(rng() * 7) - 3, yy = q[1] + 1 + Math.floor(rng() * 2);
+        if (!fond.vert(x, yy) || posees.some((o) => Math.abs(o - x) < 5)) continue;
+        posees.push(x);
+        const c = HERBES.couleursFleurs[Math.floor(rng() * HERBES.couleursFleurs.length)];
+        out.pixels.push([x, yy, t[0]], [x, yy - 1, t[1]], [x, yy - 3, c], [x - 1, yy - 2, c], [x + 1, yy - 2, c], [x, yy - 2, HERBES.coeurFleur]);
+      }
+      return out;
+    },
+
     // Les murs des maisons des hameaux, dans les régions dessinées : les images de leur plan
     // (reg.hameau.images : [sorte, x, y, variante], le pied en px) dont la sorte est un mur ou une
     // fenêtre (HERBES.mursHameaux) : { n (son numéro dans la planche « hameaux »), c (son cadre), x,
@@ -227,7 +271,7 @@
           bas.push(b);
         }
         const m = Math.max(...bas);
-        if (m >= 0) p = { w, h, bas: m, colonnes: bas.map((b, x) => (b === m ? x : -1)).filter((x) => x >= 0) };
+        if (m >= 0) p = { w, h, bas: m, colonnes: bas.map((b, x) => (b === m ? x : -1)).filter((x) => x >= 0), parColonne: bas };
       }
       cache.set(k, p);
       return p;
