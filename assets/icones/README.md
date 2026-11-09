@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 470 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 472 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -69,6 +69,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/seedling+sunflower.png" width="48" height="48" alt=""> | 🌱‍🌻 | [`seedling+sunflower.png`](seedling+sunflower.png) |
 | <img src="apercu/seedling+tomato.png" width="48" height="48" alt=""> | 🌱‍🍅 | [`seedling+tomato.png`](seedling+tomato.png) |
 | <img src="apercu/seedling+aubergine.png" width="48" height="48" alt=""> | 🌱‍🍆 | [`seedling+aubergine.png`](seedling+aubergine.png) |
+| <img src="apercu/plant_vigne.png" width="48" height="48" alt=""> | 🌱‍🍇 | [`plant_vigne.png`](plant_vigne.png) |
 | <img src="apercu/seedling+red_apple.png" width="48" height="48" alt=""> | 🌱‍🍎 | [`seedling+red_apple.png`](seedling+red_apple.png) |
 | <img src="apercu/seedling+pear.png" width="48" height="48" alt=""> | 🌱‍🍐 | [`seedling+pear.png`](seedling+pear.png) |
 | <img src="apercu/seedling+peach.png" width="48" height="48" alt=""> | 🌱‍🍑 | [`seedling+peach.png`](seedling+peach.png) |
@@ -103,6 +104,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/mushroom+sparkles.png" width="48" height="48" alt=""> | 🍄‍✨ | [`mushroom+sparkles.png`](mushroom+sparkles.png) |
 | <img src="apercu/tomato.png" width="48" height="48" alt=""> | 🍅 | [`tomato.png`](tomato.png) |
 | <img src="apercu/aubergine.png" width="48" height="48" alt=""> | 🍆 | [`aubergine.png`](aubergine.png) |
+| <img src="apercu/raisin.png" width="48" height="48" alt=""> | 🍇 | [`raisin.png`](raisin.png) |
 | <img src="apercu/red_apple.png" width="48" height="48" alt=""> | 🍎 | [`red_apple.png`](red_apple.png) |
 | <img src="apercu/pear.png" width="48" height="48" alt=""> | 🍐 | [`pear.png`](pear.png) |
 | <img src="apercu/peach.png" width="48" height="48" alt=""> | 🍑 | [`peach.png`](peach.png) |

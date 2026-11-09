@@ -137,7 +137,7 @@ test('Lot 12 : le gratin est doublé une seule fois (formule sur ingrédients d�
 const PRIX_PRODUCTIONS_AVANT_LOT_12 = {
   carotte: 1, patate: 2, tomate: 1, courgette: 2, aubergine: 2, ble: 1,
   oeuf: 2, pomme: 2, poire: 2, cerise: 2, abricot: 2, peche: 2, laine: 6,
-  oignon: 1, ail: 2, poivron: 2, epinard: 1, fraise: 2, riz: 1,
+  oignon: 1, ail: 2, poivron: 2, epinard: 1, fraise: 2, riz: 1, raisin: 3,
   houblon: 3, cacao: 8, vanille: 15, cafe: 6,
   lait: 4,
 };
@@ -167,7 +167,8 @@ test('Lot 12 : graines, conserve, huile inchangées ; aucun bâtiment, animal ni
   const it = DATA.OBJETS;
   for (const [id, def] of Object.entries(it)) {
     // (les jeunes arbres de la ferme générée ont le prix des arbres du Verger)
-    if (def.categorie === 'graine' && !def.arbre) assertEqual(def.prix, 1, `${id} : graine inchangée`);
+    // (le plant de vigne, une culture pérenne qui produit sans être replantée : 6)
+    if (def.categorie === 'graine' && !def.arbre) assertEqual(def.prix, id === 'plant_vigne' ? 6 : 1, `${id} : graine inchangée`);
   }
   assertEqual(it.graine_tournesol.prix, 1, 'le tournesol récolte des graines : non doublées');
   assertEqual([it.conserve.prix, it.huile.prix], [3, 4]); // la farine, elle, double au Lot 13

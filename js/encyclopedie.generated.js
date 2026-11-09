@@ -833,6 +833,17 @@ export const ENCYCLOPEDIE = {
    "nom": "Cultures & plantes",
    "entrees": [
     {
+     "id": "vigne",
+     "terme": "Vigne",
+     "description": "Une culture pérenne de la Zone de culture : le plant de vigne s'achète à la calèche (dès le niveau 6). Le pied grimpe le long de son tuteur et donne ses grappes de raisin noir au bout de 6 stades de croissance (un arrosage chacun) ; après la vendange (4 raisins), le pied reste dans sa parcelle, en feuillage, et refait ses grappes sans replanter : il repart de son stade 4 sur 6. Pour libérer la parcelle, la houe arrache une vigne qui n'est pas mûre.",
+     "liens": [
+      "potager"
+     ],
+     "decouverte": [
+      "culture:vigne"
+     ]
+    },
+    {
      "id": "carotte",
      "terme": "Carotte",
      "description": "Légume de plein air (Zone de culture) qui atteint sa maturité en 4 stades de croissance (un stade 24 heures après chaque arrosage). Sa récolte rend aussi 1 à 2 graines de carotte.",

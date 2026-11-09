@@ -214,6 +214,24 @@
       "rendement": 6,
       "graines": { "item": "cafe", "mode": "plant" },
       "sprite": { "r": 16, "c": [0, 1, 2, 3, 4], "l": 24, "h": 44 }
+    },
+    "//vigne": [
+      "La vigne (le lot 4 des évolutions du crafting) : une culture pérenne. Le plant (plant_vigne) s'achète à la",
+      "calèche ; vivace : après la vendange, le pied reste dans sa parcelle, revenu au stade vivace.stade (son",
+      "feuillage), et refait ses grappes en stades - vivace.stade stades arrosés, comme une autre culture. La houe",
+      "l'arrache (une vigne qui n'est pas mûre : js/engine/crops.js hoe)."
+    ],
+    "vigne": {
+      "nom": "Vigne",
+      "icone": "🍇",
+      "lieux": ["potager"],
+      "stades": 6,
+      "litres": 2,
+      "rendement": 4,
+      "produit": "raisin",
+      "graines": { "item": "plant_vigne", "mode": "plant" },
+      "vivace": { "stade": 4 },
+      "sprite": { "r": 17, "c": [0, 1, 2, 3], "l": 24, "h": 44 }
     }
   },
   "//POTAGER": [

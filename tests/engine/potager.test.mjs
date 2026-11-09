@@ -45,7 +45,7 @@ test('DATA Lot 2 : cultures (stades, eau, rendement, graines)', () => {
   assertEqual(Object.keys(c), [
     'carotte', 'patate', 'tomate', 'courgette', 'aubergine',
     'poivron', 'oignon', 'ail', 'epinard', 'fraise',
-    'ble', 'tournesol', 'riz', 'houblon', 'cacao', 'vanille', 'cafe',
+    'ble', 'tournesol', 'riz', 'houblon', 'cacao', 'vanille', 'cafe', 'vigne',
   ]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].stades), [4, 6, 5, 5, 6]);
   assertEqual(['carotte', 'patate', 'tomate', 'courgette', 'aubergine'].map((k) => c[k].litres), [2, 3, 3, 4, 4]);

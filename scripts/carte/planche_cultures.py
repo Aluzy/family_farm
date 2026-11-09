@@ -61,6 +61,7 @@ SOURCE = {
     'cacao': (21, 32, [0, 1, 2, 3, 4]),
     'vanille': (21, 32, [10, 11, 12, 13, 14]),
     'cafe': (21, 32, [5, 6, 7, 8, 9]),
+    'vigne': (14, 32, [0, 2, 4, 6]),          # (dessinée par scripts/carte/vigne.py)
 }
 HAUT = 5        # les rangées du haut d'une case, où tombent les buttes des dessins du dessus
 BUTTE = 5       # ce que la butte d'un dessin descend au plus sous sa case

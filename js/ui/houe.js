@@ -1,6 +1,6 @@
 import { DATA } from '../engine/catalog.js';
 import {
-  hasHoe, hoe, soilCap, soilCapNext, soilCount,
+  hasHoe, hoe, hoeStatus, soilCap, soilCapNext, soilCount,
 } from '../engine/crops.js';
 import { levelReached } from '../engine/levels.js';
 import { actionCost, TIRED } from '../engine/stamina.js';
@@ -79,7 +79,9 @@ registerActions({
   },
   'hoe': (target) => {
     const c = Number(target.dataset.case);
-    applyResult(Number.isInteger(c) && c >= 0 ? executer('potager.labourer', { case: c }) : hoe(state, c));
+    const r = applyResult(Number.isInteger(c) && c >= 0 ? executer('potager.labourer', { case: c }) : hoe(state, c));
+    // (une vigne pas mûre : arrachée d'un appui ; la parcelle reste, en terre nue)
+    if (r && r.ok && r.action === 'arracher' && DATA.CULTURES[r.culture]) notify(`${DATA.CULTURES[r.culture].icone} ${DATA.CULTURES[r.culture].nom} arrachée : la parcelle est libre.`);
   },
   // FLU-12 : les cases traversées d'un glissement, labourées dans l'ordre ; on s'arrête au
   // plafond ou à court d'énergie. Un seul rendu à la fin.
@@ -88,6 +90,8 @@ registerActions({
     let n = 0;
     let raison = '';
     for (const t of tiles) {
+      // (en glissant, la houe passe sur les vignes sans les arracher : un appui sur chacune pour ça)
+      if (t >= 0 && hoeStatus(state, t).action === 'arracher') continue;
       const r = t >= 0 ? executer('potager.labourer', { case: t }) : hoe(state, t);
       if (r.ok) { n += 1; continue; }
       raison = raison || r.error;
