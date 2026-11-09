@@ -56,6 +56,12 @@ dessiné dans le script, mêmes 8 cases, sa case « leche » le montre qui halè
 Le chien suit le même graphe que le chat, mais ne grimpe pas : la nuit, il dort en boule là où
 il est. Plusieurs chats partagent le toit, chacun décalé de quelques pixels.
 
+**Sous la pluie**, chats et chiens rentrent dans la maison (le foyer de la ferme générée, sous son toit :
+`homeInside` de `js/carte/ferme/chantier.js`) par le chemin du personnage, chacun à sa place (la plus proche de
+lui, décalée selon son rang). Ils y restent assis, couchés, font leur toilette ou la sieste, sans s'y promener
+ni détaler ; la pluie finie, ils ressortent par le même chemin et reprennent leur vie. Sans maison ni chemin, ils
+restent dehors. La scène leur donne la pluie, la maison et le chemin (`setContext` : `pluie`, `abri`, `chemin`).
+
 **Ce qu'il fait** est un graphe, `CAT_NEXT` : pour chaque activité, celles qui peuvent suivre, avec
 un poids.
 

@@ -130,7 +130,22 @@
         // oiseau, ni luciole, ni papillon n'y vont, ambient-life.js)
         const bati = (model.blocs || []).map((b) => b.case);
         for (const t of model.toits || []) for (const c of t.cases) bati.push(c);
-        this.ambient.setContext({ hour: model.heure, trees: leafy, herd: model.animaux || {}, compagnons: model.compagnons || [], bati, cols: this.grid.cols });
+        // (la pluie : les animaux de compagnie rentrent dans la maison, par le chemin du personnage)
+        if (!this.abriCompagnons) {
+          // (les places libres de la maison, sans les cases où un meuble vient d'être posé)
+          this.abriCompagnons = () => {
+            const h = this.homeInside(), B = this.blocks, cols = this.grid.cols;
+            if (!h || !B) return h;
+            const pris = new Set();
+            for (const e of B.values()) for (const k of e.cases || [e.case]) pris.add(k);
+            return { dedans: h.dedans, places: h.places.filter((q) => !pris.has(Math.floor((q.y - 1) / T) * cols + Math.floor(q.x / T))) };
+          };
+          this.cheminCompagnons = (x0, y0, x1, y1) => (this.fermier && this.fermier.path ? this.fermier.path(x0, y0, x1, y1) : null);
+        }
+        this.ambient.setContext({
+          hour: model.heure, trees: leafy, herd: model.animaux || {}, compagnons: model.compagnons || [], bati, cols: this.grid.cols,
+          pluie: !!(model.meteo && model.meteo.pluie), abri: this.abriCompagnons, chemin: this.cheminCompagnons,
+        });
       }
       this.placeLabels();
     },

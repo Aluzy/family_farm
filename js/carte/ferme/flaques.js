@@ -4,7 +4,8 @@
  *   - Le sol mouillé : dès que la pluie tombe, le sol fonce un peu (un voile sombre sur le sol seul, sous les
  *     planchers, l'eau et tout ce qui a un pied : PROFONDEUR_SOL) ; il sèche quand elle s'arrête.
  *   - Les flaques : après ATTENTE s de pluie, elles se forment (MONTE s) sur la terre et les chemins (le sol
- *     peint brun : ni l'herbe, ni la lande, ni l'eau), sur une case où l'on marche (pas sous un buisson, un
+ *     peint brun : ni l'herbe, ni la lande, ni l'eau), loin de leurs bords (la case, ses huit voisines et les
+ *     deux d'après, à gauche et à droite, sont brunes : jamais le long de la bordure chemin-herbe), sur une case où l'on marche (pas sous un buisson, un
  *     rocher), ni sur un plancher, ni sous un toit, ni sur la terre labourée ; elles sèchent après la pluie
  *     (SECHE s). Elles sont éparses : la flaque d'une case est la sienne si son tirage (fixe, d'après la
  *     case) est le plus fort des cases possibles à moins de ECART cases, et de celles de sa rangée et de sa
@@ -114,7 +115,7 @@
     flaquesPres(c0, r0, c1, r1) {
       const E = this.flaques, W = this.grid.cols, M = FLAQUES.LIGNE;
       // (le sol au milieu de chaque case du rectangle et de la marge où l'on compare les tirages)
-      const ca = c0 - M - 1, ra = r0 - M, nc = c1 - c0 + 2 * M + 3, nr = r1 - r0 + 2 * M + 1;
+      const ca = c0 - M - 2, ra = r0 - M - 1, nc = c1 - c0 + 2 * M + 5, nr = r1 - r0 + 2 * M + 3;
       const lu = this.solDesCases(ca, ra, nc, nr);
       if (!lu) return false;
       const brun = (X, Y) => {
@@ -123,6 +124,10 @@
         const q = (y * nc + x) * 4, r = lu.data[q], g = lu.data[q + 1], b = lu.data[q + 2];
         return lu.data[q + 3] > 0 && r > g + 12 && g > b;
       };
+      const loinDuBord = (X, Y) => {
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!brun(X + dx, Y + dy)) return false;
+        return brun(X - 2, Y) && brun(X + 2, Y);
+      };
       // (sous un toit : les maisons de la ferme et des hameaux ; leurs cases, réunies)
       const toits = [...(this.toits || [])];
       for (const e of (this.hameauxVus ? this.hameauxVus.values() : [])) toits.push(...(e.toits || []));
@@ -130,10 +135,12 @@
       for (const t of toits) if (t.dedans) for (const c of t.dedans) sous.add(c);
       // les cases où une flaque peut être, et leurs tirages : une fois chacune, dans deux tableaux
       const f = this.fermier, possible = new Uint8Array(nc * nr), tirage = new Float32Array(nc * nr);
-      for (let y = 0; y < nr; y++) {
-        for (let x = 1; x < nc - 1; x++) {
+      for (let y = 1; y < nr - 1; y++) {
+        for (let x = 2; x < nc - 2; x++) {
           const X = ca + x, Y = ra + y, k = Y * W + X;
-          if (!brun(X, Y) || !brun(X - 1, Y) || !brun(X + 1, Y) || sous.has(k) || (this.floors && this.floors.has(k))) continue;
+          // (loin des bords du chemin : la case, ses huit voisines et les deux d'après, à gauche et à droite, sont
+          // du chemin ; la flaque, plus large que haute, ne déborde jamais sur la bordure chemin-herbe)
+          if (!loinDuBord(X, Y) || sous.has(k) || (this.floors && this.floors.has(k))) continue;
           if (this.dirt && (this.dirt.has(k) || this.dirt.has(k - 1) || this.dirt.has(k + 1))) continue;
           const px = X * T + 8, py = Y * T + 14, l = f && f.librePres ? f.librePres(px, py) : null;
           if (!l || l.x !== px || l.y !== py) continue;
