@@ -578,13 +578,34 @@ const MINERAIS = MINERAIS_GROTTE;
 // minerai_<sorte> dans l'inventaire (un de plus, parfois, avec la Lampe de mineur :
 // grotte.minerai %), l'énergie et l'XP d'un coup de pioche. Dans une grotte de la montagne (fiche
 // 6b), une pierre prise dans le mur (quartz, améthyste) : l'objet lui-même.
+// Le niveau de la pioche (le lot 5 : DATA.PIOCHE.NIVEAUX ; 1 : en pierre, celle d'une partie d'avant), 0 sans pioche.
+export function niveauPioche(state) {
+  if (!hasTool(state, 'pioche')) return 0;
+  return Math.min(DATA.PIOCHE.NIVEAUX.length, Math.max(1, Math.floor(Number(state.outils.niveauPioche) || 1)));
+}
+// Son niveau : { nom, icone, minerai (le bonus, en %) }, ou null sans pioche.
+export function piocheDef(state) {
+  const n = niveauPioche(state);
+  return n ? DATA.PIOCHE.NIVEAUX[n - 1] : null;
+}
+// Pourquoi la pioche ne prend pas le minerai `sorte` (DATA.PIOCHE.MINERAIS : le niveau qu'il lui faut), ou null.
+export function refusMinerai(state, sorte) {
+  if (!hasTool(state, 'pioche')) return `Il te faut une pioche (à fabriquer à l'Atelier).`;
+  const besoin = DATA.PIOCHE.MINERAIS[sorte] || 1, n = niveauPioche(state);
+  if (n >= besoin) return null;
+  const nom = sorte === 'or' ? 'L\'or' : sorte === 'platine' ? 'Le platine' : `Ce minerai (${sorte})`;
+  return `${nom} : il faut une pioche en ${DATA.PIOCHE.NIVEAUX[besoin - 1].nom} au moins (Atelier).`;
+}
+
 export function mineOre(state, sorte) {
   const P = DATA.PIOCHE;
-  if (!hasTool(state, 'pioche')) return fail(`Il te faut une pioche (à fabriquer à l'Atelier).`);
   if (!MINERAIS.includes(sorte) && !PIERRES_GROTTE.includes(sorte)) return fail('Minerai inconnu.');
+  const refus = refusMinerai(state, sorte);
+  if (refus) return fail(refus);
   if (!canAfford(state, 'piocher')) return fail(TIRED);
   const lampe = techFlag(state, 'grotte');
-  const pct = lampe && lampe.minerai ? lampe.minerai : 0;
+  // (la Lampe de mineur, et le niveau de la pioche : DATA.PIOCHE.NIVEAUX minerai)
+  const pct = (lampe && lampe.minerai ? lampe.minerai : 0) + piocheDef(state).minerai;
   const n = withBonus(state, 1, pct);
   const item = PIERRES_GROTTE.includes(sorte) ? sorte : 'minerai_' + sorte;
   addItem(state, item, n);

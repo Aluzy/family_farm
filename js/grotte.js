@@ -511,6 +511,9 @@
       // la pioche en main, comme pour les rochers de la ferme
       const H = hote();
       if (H && H.enMain && H.enMain() !== 'pioche') return false;
+      // (la pioche trop faible pour ce minerai, l'or, le platine : le message, sans y aller ; le lot 5)
+      const refus = o.kind && H && H.refusMinerai ? H.refusMinerai(o.kind) : null;
+      if (refus) { this.say('⛏️ ' + refus); return true; }
       // la case de sol voisine la plus proche du personnage
       const P = this.heroPos;
       const pres = [[0, 1], [-1, 0], [1, 0], [0, -1]].map(([dx, dy]) => ({ x: o.x + dx, y: o.y + dy }))

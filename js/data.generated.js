@@ -1168,6 +1168,9 @@ export const RAW_DATA = {
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
       "hache": { "entrees": { "bois": 2, "pierre": 2, "fibre": 1 }, "outil": "hache" },
       "pioche": { "entrees": { "bois": 2, "pierre": 3, "fibre": 1 }, "outil": "pioche" },
+      "pioche_cuivre": { "entrees": { "lingot_cuivre": 3, "planche": 2 }, "outil": "pioche", "niveau": 2 },
+      "pioche_fer": { "entrees": { "lingot_fer": 3, "lingot_cuivre": 1, "planche": 2 }, "outil": "pioche", "niveau": 3 },
+      "pioche_or": { "entrees": { "lingot_or": 3, "lingot_fer": 1, "planche": 2 }, "outil": "pioche", "niveau": 4 },
       "faux": { "entrees": { "bois": 3, "pierre": 2 }, "outil": "faux" },
       "canne": { "entrees": { "bois": 3, "fibre": 4, "pierre": 1 }, "outil": "canne" },
       "nid_poule": { "nom": "Nid garni : une poule", "entrees": { "fibre": 4, "ble": 3 }, "animal": "poule", "debloque": "poulailler" },
@@ -2351,7 +2354,23 @@ export const RAW_DATA = {
     "POUSSE": [2, 4]
   },
   "CRUCHE": { "LITRES": 10 },
-  "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "BRIS": 2, "COUPS": 3, "RETOUR": [1, 3], "MAIN": 1 },
+  "PIOCHE": {
+    "NOM": "Pioche",
+    "ICONE": "⚒️",
+    "PRIX": 60,
+    "PIERRE": 1,
+    "BRIS": 2,
+    "COUPS": 3,
+    "RETOUR": [1, 3],
+    "MAIN": 1,
+    "NIVEAUX": [
+      { "nom": "pierre", "icone": "⚒‍🪨", "minerai": 0 },
+      { "nom": "cuivre", "icone": "⚒‍🟠", "minerai": 25 },
+      { "nom": "fer", "icone": "⚒‍⚙", "minerai": 50 },
+      { "nom": "or", "icone": "⚒‍🟡", "minerai": 75 }
+    ],
+    "MINERAIS": { "or": 3, "platine": 4 }
+  },
   "COUP_FORT": { "COUPS": 2, "ENERGIE": 2 },
   "FAUX": { "NOM": "Faux", "ICONE": "🌾‍🔪", "PRIX": 50, "FIBRE": 1, "RETOUR": [2, 4], "BOT_TOUFFES": 40 },
   "CANNE": {

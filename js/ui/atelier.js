@@ -13,7 +13,7 @@ import { atelierConstruit, craftStatus, ramasser, recetteDebloquee } from '../en
 import { carnetPlansHtml } from './plans.js';
 import { recettesDidacticiel } from '../engine/didacticiel.js';
 import { countItem } from '../engine/inventory.js';
-import { hasTool, toolDef } from '../engine/outils.js';
+import { hasTool, niveauPioche, toolDef } from '../engine/outils.js';
 import { cowCount, sheepCount } from '../engine/animals.js';
 import { chevalPossede } from '../engine/cheval.js';
 import { categorieBloc } from '../engine/blocs.js';
@@ -203,19 +203,23 @@ function icone(id) {
   // (un bloc : la même icône que dans le menu Construire ; une machine, son dessin de la carte)
   const b = !r.outil && blocDe(id);
   if (b) return iconeBloc(b);
+  // (une amélioration de la pioche : l'icône de son métal, DATA.PIOCHE.NIVEAUX)
+  if (r.outil && r.niveau) return DATA.PIOCHE.NIVEAUX[r.niveau - 1].icone;
   return r.outil ? toolDef(r.outil).ICONE : DATA.OBJETS[sortieDe(id)].icone;
 }
 // (les outils de pierre ; la canne ne l'est pas)
 const DE_PIERRE = ['houe', 'hache', 'pioche', 'faux'];
 function nom(id) {
   const r = DATA.ATELIER.RECETTES[id];
-  const n = r.nom || (r.outil ? `${toolDef(r.outil).NOM}${DE_PIERRE.includes(r.outil) ? ' de pierre' : ''}` : DATA.OBJETS[sortieDe(id)].nom);
+  const n = r.nom || (r.outil && r.niveau ? `${toolDef(r.outil).NOM} en ${DATA.PIOCHE.NIVEAUX[r.niveau - 1].nom}` : r.outil ? `${toolDef(r.outil).NOM}${DE_PIERRE.includes(r.outil) ? ' de pierre' : ''}` : DATA.OBJETS[sortieDe(id)].nom);
   return n.charAt(0).toUpperCase() + n.slice(1);
 }
 function stock(id) {
   const r = DATA.ATELIER.RECETTES[id];
   if (r.animal) return String(r.animal === 'poule' ? state.poulailler.poules : r.animal === 'mouton' ? sheepCount(state) : cowCount(state));
   if (r.cheval) return chevalPossede(state) ? '✓' : '';
+  // (la pioche : ✓ sur celle qu'on a, et les niveaux d'avant)
+  if (r.outil === 'pioche') return niveauPioche(state) >= (r.niveau || 1) ? '✓' : '';
   return r.outil ? (hasTool(state, r.outil) ? '✓' : '') : String(countItem(state, sortieDe(id)));
 }
 

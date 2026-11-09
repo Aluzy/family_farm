@@ -1,7 +1,7 @@
 import { DATA } from '../engine/catalog.js';
 import { asleep } from '../engine/night.js';
 import { SOMMEIL_MESSAGE } from './actions.js';
-import { castLine, chopTree, hasTool, mineRock, OUTILS, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass, selectTool, toolDef } from '../engine/outils.js';
+import { castLine, chopTree, hasTool, mineRock, OUTILS, piocheDef, ramasserCaillou, ramasserMorceau, scytheAround, scytheGrass, selectTool, toolDef } from '../engine/outils.js';
 import { recolterMonde } from '../engine/monde-recolte.js';
 import { canAfford, TIRED } from '../engine/stamina.js';
 import { axeMode, enLigne, hoeMode, pickMode, rodMode, scytheMode, setAxeMode, setHoeMode, setPickMode, setRodMode, setScytheMode, state } from './store.js';
@@ -58,7 +58,10 @@ export function toolBarHtml() {
     }
     const tenu = id === main;
     const label = tenu ? `${def.NOM} en main : la ranger` : `Prendre : ${def.NOM}`;
-    return `<button type="button" class="tool-slot${tenu ? ' active' : ''}" data-action="tool-use" data-outil="${id}" aria-pressed="${tenu}" aria-label="${label}" title="${label}">${def.ICONE}</button>`;
+    // (la pioche : l'icône de son métal, son nom, le lot 5 : DATA.PIOCHE.NIVEAUX)
+    const pd = id === 'pioche' ? piocheDef(state) : null;
+    const lab = pd ? label.replace(def.NOM, `${def.NOM} en ${pd.nom}`) : label;
+    return `<button type="button" class="tool-slot${tenu ? ' active' : ''}" data-action="tool-use" data-outil="${id}" aria-pressed="${tenu}" aria-label="${lab}" title="${lab}">${pd ? pd.icone : def.ICONE}</button>`;
   }).join('') + cruche + (cheval ? chevalSlot() : '') + bati;
   const tab = `<button type="button" class="tool-bar-tab" data-action="toolbar-toggle" aria-expanded="${toolbarOpen}" aria-label="${toolbarOpen ? 'Ranger la barre d\'outils' : 'Sortir la barre d\'outils'}" title="Outils">${BARRE_FLECHE}</button>`;
   return tab + `<div class="tool-bar-body" role="toolbar" aria-label="Outils"${toolbarOpen ? '' : ' inert'}>${cases}</div>`;
