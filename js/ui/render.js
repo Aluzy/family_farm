@@ -10,6 +10,7 @@ import {
 import { animateIn } from './animations.js';
 import { renderTutorial } from './aide.js';
 import { renderDidacticiel } from './didacticiel.js';
+import { renderObjectifs } from './objectifs.js';
 import { renderItemModal } from './inventaire.js';
 import { renderShopModal } from './caleche.js';
 import { pixelize, watch } from './pixel-emoji.js';
@@ -63,6 +64,7 @@ function rendre() {
   applyAnchor();
   renderTutorial();
   renderDidacticiel();
+  renderObjectifs();
   renderRecipeBook();
   renderEncyclopedie();
   renderPlantation();

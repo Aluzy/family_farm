@@ -4,7 +4,7 @@ import {
   composeFamily, familyName, finishSetup, houseRepaired, setMainCharacter, setupPending, starterBlock,
 } from '../engine/depart.js';
 import { cleanFirstName, validFirstName } from '../engine/family.js';
-import { commencerDidacticiel } from '../engine/didacticiel.js';
+import { commencerObjectifs } from '../engine/objectifs.js';
 import { levelBlock } from '../engine/levels.js';
 import { escapeHtml } from '../engine/format.js';
 import { state } from './store.js';
@@ -376,9 +376,9 @@ registerActions({
     });
     const f = r.ok ? finishSetup(state) : r;
     if (!f.ok) return refus(f.error);
-    // la partie est sur sa terre sauvage depuis sa création (js/ui/storage.js) ; le didacticiel
-    // commence (js/ui/didacticiel.js)
-    commencerDidacticiel(state);
+    // la partie est sur sa terre sauvage depuis sa création (js/ui/storage.js) ; elle commence dans son abri,
+    // avec les objectifs du jour (js/engine/objectifs.js ; le didacticiel d'avant reste aux parties commencées)
+    commencerObjectifs(state);
     persistState();
     location.reload();
     return undefined;

@@ -292,15 +292,21 @@ export function horsDeLaFerme(state) {
 // L'étape de la calèche, avant le niveau du Marché : le personnage (sur la case `ou`) touche la calèche
 // arrêtée à côté de lui (à un arrêt, ou hélée) : la rencontre est faite. → vrai si elle compte.
 export function rencontreCaleche(state, ou) {
-  if (etapeDidacticiel(state) !== 'caleche' || !Number.isInteger(ou)) return false;
+  if (etapeDidacticiel(state) !== 'caleche' || !calecheAPortee(state, ou)) return false;
+  state.didacticiel.cocher = true;
+  return true;
+}
+
+// La calèche est-elle arrêtée (à un arrêt, ou hélée) à côté du personnage, sur la case `ou` ? (aussi pour les
+// objectifs du jour : la rencontrer, js/ui/caleche.js)
+export function calecheAPortee(state, ou) {
+  if (!Number.isInteger(ou)) return false;
   const tour = tourneeDe(state);
   if (!tour) return false;
   const e = etatCaleche(tour, absoluteHours(state), (state.caleche && state.caleche.haltes) || []);
   if (e.etat !== 'arret' && e.etat !== 'halte') return false;
   const dist = Math.hypot((ou % tour.W) + 0.5 - e.x, Math.floor(ou / tour.W) + 0.5 - e.y);
-  if (dist > (e.etat === 'halte' ? CALECHE.HELER : CALECHE.PORTEE) + 1e-9) return false;
-  state.didacticiel.cocher = true;
-  return true;
+  return dist <= (e.etat === 'halte' ? CALECHE.HELER : CALECHE.PORTEE) + 1e-9;
 }
 
 // « Passer cette étape » : une étape du grand monde ne bloque jamais (la calèche est loin, la carte du

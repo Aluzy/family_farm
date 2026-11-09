@@ -37,17 +37,44 @@ celles de la hache et de la pioche. Le chapitre 1 (« Bâtir le foyer ») est fa
 
 Tests : `tests/engine/abri-depart.test.mjs`.
 
-## Lot 2 : la première semaine (à faire)
+## Lot 2 : les objectifs du jour (`js/engine/objectifs.js`, `js/ui/objectifs.js`)
+
+Une nouvelle partie (`commencerObjectifs`, depuis l'accueil) commence dans son abri avec la première semaine
+d'objectifs (`OBJECTIFS.SEMAINE`, `data/general.json`) ; elle n'a plus l'ancien didacticiel (les parties
+commencées le gardent).
+
+**Le moteur.** Chaque jour a 2 ou 3 objectifs, chacun ses tâches :
+- **etat** : ce qui doit être vrai (l'Atelier posé, la houe, le puits, la cruche, la cuisinière posée, sortie de
+  la ferme, une prise dans le monde, la boussole vers un hameau, un hameau découvert…) ; une fois atteint, il
+  le reste (`atteints`) ;
+- **compte** : ce qui est fait depuis le début du jour, noté par les gestes (`objectifs-compte.js`,
+  `noterObjectif`) : chaque action qui rapporte de l'XP (`levels.js gainActionXp` : labourer, planter,
+  arroser, faucher, cueillir, récolter, vendre…), un arbre abattu, un rocher cassé (`outils.js`,
+  `monde-recolte.js`), la carte du monde ouverte, la calèche rencontrée (ou une vente), un habitant à qui l'on
+  parle (`recit.js paroleHameau`).
+
+Le jour fini (`majObjectifs`, à chaque rendu), sa récompense (XP, pièces, objets) ; le jour suivant commence le
+lendemain matin, ses compteurs à zéro. Un jour pas fini reste. Ce qu'un jour offre en arrivant : les graines
+du premier potager (jour 1), le sac à provisions (jour 5, avant de sortir de la ferme). La semaine faite, les
+objectifs s'arrêtent (le lot 3 les tirera chaque jour).
+
+**Le carnet.** Une pastille « 📜 Jour 1 · 0/2 » sous l'horloge (sous la boussole quand elle est là) ; touchée,
+le carnet s'ouvre : le titre du jour, ses objectifs (cochés, leur compte), la récompense et **Montre-moi**.
+Montre-moi guide la première tâche à faire : la bulle du didacticiel en bas de l'écran, l'anneau sur ce qu'il
+faut toucher, le cercle sur la carte ; il passe de lui-même à la tâche suivante, « Arrêter » le range. Ses
+bulles sont celles des étapes du didacticiel (`ETAPES_UI`), et quelques autres (`GUIDES`).
 
 | Jour | Thème | Objectifs |
 |---|---|---|
-| 1 | S'installer | Poser l'Atelier (3 pierres, 3 bois) · Préparer le potager (la houe, labourer 3 cases, semer les carottes offertes) |
-| 2 | L'eau | Le puits et la cruche, arroser · La faux, faucher 6 fibres (la visite de bienvenue) |
-| 3 | Les outils | La hache et la pioche · Abattre un arbre et replanter sa graine · Casser un rocher |
-| 4 | La cuisine | La cuisinière, posée dans l'abri · Un premier plat · Le repas du soir en famille |
-| 5 | Le grand monde | La carte du monde, sortir de la ferme · Une prise dehors · Rencontrer la calèche |
-| 6 | La première récolte | Récolter les carottes · En vendre à la calèche · Replanter |
-| 7 | Le hameau voisin | La boussole vers le hameau, y aller · Parler à un habitant |
+| 1 | S'installer | Poser l'Atelier · Préparer le potager (la houe, labourer 3 cases, semer) — 6 graines de carotte offertes |
+| 2 | L'eau | Arroser (le puits, la cruche, un arrosage) · Faucher (la faux, 6 touffes) |
+| 3 | Les outils | La hache et la pioche · Abattre un arbre · Casser un rocher |
+| 4 | Le confort | Poser la cuisinière dans l'abri · Cueillir des baies · Arroser |
+| 5 | Le grand monde | Ouvrir la carte du monde · Sortir de la ferme · Récolter dehors — le sac à provisions offert |
+| 6 | La première récolte | Récolter une culture · Rencontrer la calèche · Replanter |
+| 7 | Le hameau voisin | Mener la boussole au hameau · Y aller · Parler à un habitant |
 
-Chaque jour fini rapporte une récompense (XP, pièces, un objet). Les explications de l'interface viennent quand
-elles servent (l'énergie quand elle baisse, l'argent à la calèche).
+(Le jour 4 ne demande pas encore de cuisiner : les premières recettes demandent des ingrédients qu'on n'a pas si
+tôt ; les objectifs tirés chaque jour, ensuite, y viendront.)
+
+Tests : `tests/engine/objectifs.test.mjs`.

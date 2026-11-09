@@ -178,7 +178,7 @@ export const INTERFACE_ACTIONS = new Set([
   'scene-suite', 'scene-fermer', 'carnet-open', // le récit : la réplique suivante d'une scène, la fermer ; ouvrir le carnet
   'ask-new-game', 'cancel-new-game', 'copy-export',
   'compte-lien', 'compte-autre', 'compte-deconnexion', 'compte-supprimer', 'compte-supprimer-non', 'compte-supprimer-oui', 'monde-creer', 'monde-quitter', 'monde-membres', 'monde-inviter', 'monde-copier', 'monde-partager', 'monde-retirer', 'monde-retirer-non', 'monde-retirer-oui', 'monde-role', 'monde-journal', 'monde-journal-suite', 'monde-sauvegardes', 'monde-sauvegarder', 'monde-restaurer', 'monde-restaurer-non', 'monde-restaurer-oui', 'demandes-open', // E-0, E-2, E-3, E-11, E-12 ; V-2 : le compte du jeu en ligne, les mondes
-  'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-apparence', 'accueil-apparence-hasard', 'accueil-apparence-retour', 'accueil-espece', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier',
+  'accueil-suite', 'accueil-oui', 'accueil-non', 'accueil-perso', 'accueil-apparence', 'accueil-apparence-hasard', 'accueil-apparence-retour', 'accueil-espece', 'didacticiel-suivant', 'didacticiel-passer', 'didacticiel-passer-etape', 'didacticiel-deplier', 'objectifs-carnet', 'objectifs-montrer', 'objectifs-arreter',
   'do-export', 'do-import', 'download-export', 'import-file', 'tuto-skip', 'do-new-game',
   'stage-open', 'stage-close', 'maison-tab', 'four-tab', 'atelier-tab', 'atelier-groupe', 'atelier-choisir', 'silo-agrandir', // carte de la ferme : fenêtres et onglets de la maison
   // versions 1.1 et 1.1.1 : déplacements sur la carte, raccourcis des notifications,

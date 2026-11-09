@@ -31,6 +31,8 @@ export * from './cruche.js';
 export * from './compagnon.js';
 export * from './didacticiel.js';
 export * from './abri-depart.js';
+export * from './objectifs.js';
+export * from './objectifs-compte.js';
 export * from './animals.js';
 export * from './orchard.js';
 export * from './kitchen.js';

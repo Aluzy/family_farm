@@ -1,4 +1,5 @@
 import { DATA } from './catalog.js';
+import { noterObjectif } from './objectifs-compte.js';
 import { mulberry32 } from './base.js';
 import { fail } from './devices.js';
 import { hourOfDay } from './clock.js';
@@ -593,6 +594,7 @@ function salutConfiance(state, hameauId, m, o) {
 // { heure, activite, n } comme paroleHabitant ; le contexte du récit : le lieu (« gue » au Gué, sinon
 // l'id du hameau), le hameau, l'humeur de son foyer, le rang de l'appui, le nom du hameau ({hameau}).
 export function paroleHameau(state, hameauId, membreId, o = {}) {
+  noterObjectif(state, 'parler');   // (les objectifs du jour)
   const m = membreDuHameau(state, hameauId, membreId);
   const salut = m ? salutConfiance(state, hameauId, m, o) : null;
   const base = paroleHabitant(state, hameauId, membreId, salut ? { ...o, salut } : o);

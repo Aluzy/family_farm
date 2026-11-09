@@ -278,6 +278,188 @@ export const RAW_DATA = {
     "SAC": { "objet": "sac_petit", "provisions": { "baies": 4 } },
     "ABRI": { "LARGEUR": 6, "PROFONDEUR": 3, "PORTE": 3, "MATIERE": "mur_bois", "SOL": "plancher" }
   },
+  "OBJECTIFS": {
+    "SEMAINE": [
+      {
+        "titre": "S'installer",
+        "intro": "Ta famille a un toit. Au travail !",
+        "offre": { "graine_carotte": 6 },
+        "recompense": { "xp": 30, "pieces": 20 },
+        "objectifs": [
+          {
+            "id": "atelier",
+            "icone": "🔨",
+            "libelle": "Poser l'Atelier",
+            "sous": "3 pierres et 3 bois, ramassés autour de toi",
+            "taches": [{ "type": "etat", "quoi": "atelier", "guide": "atelier" }]
+          },
+          {
+            "id": "potager",
+            "icone": "🌱",
+            "libelle": "Préparer le potager",
+            "sous": "La houe, 3 cases labourées, un semis",
+            "taches": [
+              { "type": "etat", "quoi": "houe", "guide": "houe" },
+              { "type": "compte", "quoi": "labourer", "n": 3, "guide": "labour" },
+              { "type": "compte", "quoi": "planter", "n": 1, "guide": "semis" }
+            ]
+          }
+        ]
+      },
+      {
+        "titre": "L'eau",
+        "intro": "Tes semis ont soif.",
+        "recompense": { "xp": 40, "pieces": 20 },
+        "objectifs": [
+          {
+            "id": "eau",
+            "icone": "💧",
+            "libelle": "Arroser tes semis",
+            "sous": "Le puits, la cruche, puis arroser",
+            "taches": [
+              { "type": "etat", "quoi": "puits", "guide": "puits" },
+              { "type": "etat", "quoi": "cruche", "guide": "puits" },
+              { "type": "compte", "quoi": "arroser", "n": 1, "guide": "arroser" }
+            ]
+          },
+          {
+            "id": "faux",
+            "icone": "🌾",
+            "libelle": "Faucher l'herbe haute",
+            "sous": "La faux, puis 6 touffes fauchées",
+            "taches": [{ "type": "etat", "quoi": "faux", "guide": "faux" }, { "type": "compte", "quoi": "faucher", "n": 6, "guide": "fibres" }]
+          }
+        ]
+      },
+      {
+        "titre": "Les outils",
+        "intro": "Du bois et de la pierre pour la suite.",
+        "recompense": { "xp": 50, "pieces": 20, "objets": { "planche": 4 } },
+        "objectifs": [
+          {
+            "id": "outils",
+            "icone": "🪓",
+            "libelle": "Fabriquer la hache et la pioche",
+            "sous": "Bois, pierres et fibres",
+            "taches": [{ "type": "etat", "quoi": "hache", "guide": "outils" }, { "type": "etat", "quoi": "pioche", "guide": "outils" }]
+          },
+          {
+            "id": "arbre",
+            "icone": "🌳",
+            "libelle": "Abattre un arbre",
+            "sous": "La hache en main, quelques coups",
+            "taches": [{ "type": "compte", "quoi": "abattu", "n": 1, "guide": "couper" }]
+          },
+          {
+            "id": "rocher",
+            "icone": "🪨",
+            "libelle": "Casser un rocher",
+            "sous": "La pioche en main",
+            "taches": [{ "type": "compte", "quoi": "casse", "n": 1, "guide": "casser" }]
+          }
+        ]
+      },
+      {
+        "titre": "Le confort",
+        "intro": "Une cuisine pour la famille, et des plantes bien soignées.",
+        "recompense": { "xp": 50, "pieces": 30 },
+        "objectifs": [
+          {
+            "id": "cuisiniere",
+            "icone": "🍳",
+            "libelle": "Poser la cuisinière dans l'abri",
+            "sous": "6 pierres, 4 planches",
+            "taches": [{ "type": "etat", "quoi": "cuisiniere", "guide": "cuisiniere" }]
+          },
+          {
+            "id": "cueillir",
+            "icone": "🫐",
+            "libelle": "Cueillir des baies",
+            "sous": "Touche un buisson qui en porte",
+            "taches": [{ "type": "compte", "quoi": "cueillir", "n": 1, "guide": "cueillir" }]
+          },
+          {
+            "id": "soigner",
+            "icone": "💧",
+            "libelle": "Arroser tes plantes",
+            "sous": "Chaque jour, elles grandissent",
+            "taches": [{ "type": "compte", "quoi": "arroser", "n": 1, "guide": "arroser" }]
+          }
+        ]
+      },
+      {
+        "titre": "Le grand monde",
+        "intro": "Ta ferme n'est qu'un coin du monde.",
+        "offre": { "sac": 1 },
+        "recompense": { "xp": 60, "pieces": 30 },
+        "objectifs": [
+          {
+            "id": "carte",
+            "icone": "🧭",
+            "libelle": "Ouvrir la carte du monde",
+            "taches": [{ "type": "compte", "quoi": "carte", "n": 1, "guide": "carte" }]
+          },
+          {
+            "id": "sortie",
+            "icone": "🛤",
+            "libelle": "Sortir de la ferme",
+            "sous": "Suis le chemin de terre vers l'est",
+            "taches": [{ "type": "etat", "quoi": "sortie", "guide": "sortie" }]
+          },
+          {
+            "id": "prise",
+            "icone": "🍄",
+            "libelle": "Récolter quelque chose dehors",
+            "taches": [{ "type": "etat", "quoi": "prise_monde", "guide": "recolte_monde" }]
+          }
+        ]
+      },
+      {
+        "titre": "La première récolte",
+        "intro": "Tes carottes sont-elles mûres ?",
+        "recompense": { "xp": 80, "pieces": 40 },
+        "objectifs": [
+          {
+            "id": "recolte",
+            "icone": "🥕",
+            "libelle": "Récolter une culture",
+            "sous": "Touche une plante mûre",
+            "taches": [{ "type": "compte", "quoi": "recolter", "n": 1, "guide": "recolter" }]
+          },
+          {
+            "id": "caleche",
+            "icone": "🐴",
+            "libelle": "Rencontrer la calèche",
+            "sous": "Elle passe devant la ferme vers 10 h",
+            "taches": [{ "type": "compte", "quoi": "caleche", "n": 1, "guide": "caleche" }]
+          },
+          { "id": "replanter", "icone": "🌱", "libelle": "Replanter", "taches": [{ "type": "compte", "quoi": "planter", "n": 1, "guide": "semis" }] }
+        ]
+      },
+      {
+        "titre": "Le hameau voisin",
+        "intro": "Des voisins t'attendent.",
+        "recompense": { "xp": 100, "pieces": 50 },
+        "objectifs": [
+          {
+            "id": "boussole",
+            "icone": "🧭",
+            "libelle": "Mener la boussole au hameau",
+            "sous": "Sur la carte du monde",
+            "taches": [{ "type": "etat", "quoi": "boussole_hameau", "guide": "hameau_choisir" }]
+          },
+          { "id": "hameau", "icone": "🏘", "libelle": "Aller au hameau", "taches": [{ "type": "etat", "quoi": "hameau", "guide": "hameau_aller" }] },
+          {
+            "id": "parler",
+            "icone": "💬",
+            "libelle": "Parler à un habitant",
+            "sous": "Touche-le",
+            "taches": [{ "type": "compte", "quoi": "parler", "n": 1, "guide": "parler" }]
+          }
+        ]
+      }
+    ]
+  },
   "BONHEUR": {
     "DEPART": 60,
     "MAX": 100,
@@ -3073,7 +3255,7 @@ export const RAW_DATA = {
         "icone": "🏚️",
         "recompense": { "objets": { "bac_carre": 2, "lanterne": 2 } },
         "intro": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. La ferme du grand-père est à ta famille, mais rien ne fonctionne. Répare la maison, installe le panneau solaire et la pompe, puis le réservoir ; fabrique une houe à l'Atelier, laboure, plante : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
-        "introSauvage": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. Celle de ton grand-père est à ta famille, sans maison ni bâtiment. Ramasse des pierres et du bois, construis l'Atelier, fabriques-y une faux pour faucher l'herbe haute (ses fibres), puis bâtis ton foyer : une pièce close et une paillasse. Fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
+        "introSauvage": "« Ne te laisse pas impressionner par la terre », t'écrit ta mère. Celle de ton grand-père est à ta famille, sans maison ni bâtiment : juste un abri de bois, monté pour vous attendre. Ramasse des pierres et du bois, construis l'Atelier, fabrique une houe, laboure, plante et arrose à la cruche, remplie au puits : la première récolte lancera la ferme. Les conserves nourrissent la famille en attendant.",
         "objectifs": [
           {
             "type": "maison",

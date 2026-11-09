@@ -12,7 +12,9 @@ import {
 } from '../engine/caleche.js';
 import { marcheFerme, marcheOuvert } from '../engine/devices.js';
 import { unlockLevel } from '../engine/levels.js';
-import { etapeDidacticiel, rencontreCaleche } from '../engine/didacticiel.js';
+import { calecheAPortee, etapeDidacticiel, rencontreCaleche } from '../engine/didacticiel.js';
+import { objectifsActifs } from '../engine/objectifs.js';
+import { noterObjectif } from '../engine/objectifs-compte.js';
 import { farmSeed, farmTerrain } from '../engine/terrain.js';
 import { solDuMonde } from './monde-sol.js';
 import { openStageWindow, stageWindow } from './stage-windows.js';
@@ -538,10 +540,13 @@ export function calecheToucheeDepuisCarte() {
   if (!marcheOuvert(state)) {
     // (le didacticiel, fiche 9b : avant le niveau du Marché, on la rencontre : hélée en chemin, ou
     // arrêtée à côté, son cocher te salue)
-    if (etapeDidacticiel(state) === 'caleche') {
+    // (et les objectifs du jour : la rencontrer, js/engine/objectifs.js)
+    if (etapeDidacticiel(state) === 'caleche' || objectifsActifs(state)) {
       const h = helable(state, ou);
       if (h.ok && h.e.etat === 'route') heler(state, ou);
-      if (rencontreCaleche(state, ou)) {
+      const vue = etapeDidacticiel(state) === 'caleche' ? rencontreCaleche(state, ou) : calecheAPortee(state, ou);
+      if (vue) {
+        noterObjectif(state, 'caleche');
         persistState();
         notify(`${CALECHE.ICONE} « Ho. » ${nomCocher(state)} te salue d'un signe : il passe ici chaque jour vers ${heureTexte(CALECHE.FERME)}, et commercera avec toi dès le niveau ${unlockLevel('marche')}. « ${DATA.PLAN_MONDE.HAMEAUX.GUE}, c'est le hameau d'à côté. Va voir. »`, { kind: 'info' });
         refresh();

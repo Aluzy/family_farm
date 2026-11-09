@@ -14,12 +14,14 @@ import { montrerLieu } from './monde-vu.js';
 
    L'emplacement : de l'herbe libre (sans herbe haute, ni arbre, ni rocher, ni terre labourée) où rien
    n'est à ramasser le premier jour, hors de la Zone de culture, à au moins deux cases de la case de départ,
-   avec une case libre devant la porte ; le plus près possible (en spirale). Les blocs sont posés comme le
+   avec une case libre devant la porte, rien à ramasser sous son toit (qui déborde de TOIT rangées au-dessus) ;
+   le plus près possible (en spirale). Les blocs sont posés comme le
    joueur les poserait (poserBloc : leurs objets d'abord dans l'inventaire) : les murs, la porte, le
    plancher, puis les paillasses (elles demandent une pièce close). Le brouillard du départ se lève autour de
    lui. Voir docs/didacticiel.md. */
 
 const A = () => DATA.DIDACTICIEL.ABRI;
+const TOIT = 4;   // les rangées au-dessus de l'abri que son toit recouvre (à l'écran)
 
 // Le plan de l'abri dont le coin haut-gauche (murs compris) est en (c, r) : { murs, porte, sols, paillasses }.
 export function planAbriDepart(W, c, r, n) {
@@ -48,12 +50,15 @@ export function placeAbriDepart(state) {
       for (let dc = -d; dc <= d; dc++) {
         if (Math.max(Math.abs(dr), Math.abs(dc)) !== d) continue;
         const c = c0 + dc, r = r0 + dr;
-        if (c < 2 || r < 2 || c + L + 3 >= W || r + P + 4 >= T.HAUTEUR) continue;
+        if (c < 2 || r < TOIT + 1 || c + L + 3 >= W || r + P + 4 >= T.HAUTEUR) continue;
         const p = planAbriDepart(W, c, r, 0);
         const cases = p.murs.concat(p.sols, [p.porte, p.porte + W]);
         // (et pas collé à la case de départ : le personnage apparaît dehors, à côté)
         if (cases.some((t) => Math.max(Math.abs((t % W) - c0), Math.abs(Math.floor(t / W) - r0)) < 2)) continue;
-        if (cases.every(libre)) return { c, r };
+        // (le toit déborde au-dessus du bâtiment : rien à ramasser dessous, on ne le verrait pas)
+        const sousLeToit = [];
+        for (let dr = 1; dr <= TOIT; dr++) for (let dc = 0; dc < L + 2; dc++) sousLeToit.push((r - dr) * W + c + dc);
+        if (cases.every(libre) && !sousLeToit.some((t) => aRamasser.has(t))) return { c, r };
       }
     }
   }
