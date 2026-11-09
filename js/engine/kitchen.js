@@ -193,7 +193,8 @@ export function startRecipe(state, id) {
 // du blé en attente au Moulin.
 function completeTask(state, id) {
   const st = state.stations[id];
-  if (!st.tache) return null;
+  // (une station que la partie n'a pas encore : une très vieille partie pas encore migrée, le mortier)
+  if (!st || !st.tache) return null;
   const recette = st.tache.recette;
   const enAttente = queuedWheat(st.tache);
   const item = recipeOutput(recette);
@@ -280,7 +281,7 @@ export function runCooking(state, dtMs) {
   for (const id of Object.keys(DATA.STATIONS)) {
     if (isElectricStation(id)) continue;
     const st = state.stations[id];
-    if (!st.construit || !st.tache) continue;
+    if (!st || !st.construit || !st.tache) continue;
     st.tache.resteMs -= Math.floor((dtMs * stationSpeed(state, id)) / 100);
     if (st.tache.resteMs <= 0) completeTask(state, id);
   }

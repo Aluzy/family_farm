@@ -249,6 +249,7 @@ export const RAW_DATA = {
       "cuisiner": 3,
       "cuireFour": 3,
       "moudre": 1,
+      "broyer": 1,
       "presser": 1
     },
     "BONHEUR_REDUCTION": 50,
@@ -700,6 +701,7 @@ export const RAW_DATA = {
     "meuble_plante_aloe": { "nom": "Aloe vera", "icone": "🪴", "prix": 5, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "meuble_plante_bonsai": { "nom": "Bonsaï", "icone": "🌲", "prix": 18, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "four_pierre": { "nom": "Four de pierre", "icone": "🔥", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "mortier": { "nom": "Mortier et pilon", "icone": "⚱", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "nichoir": { "nom": "Nichoir", "icone": "🪺", "prix": 10, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "mangeoire": { "nom": "Mangeoire", "icone": "🛶", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "ratelier": { "nom": "Râtelier", "icone": "🌾‍🪜", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
@@ -1000,6 +1002,18 @@ export const RAW_DATA = {
       "trouvaille": "foret"
     },
     "mures": { "nom": "Mûres", "icone": "🫐‍⚫", "energie": 5, "prix": 2, "mangeable": true, "categorie": "fruit", "rachetable": false },
+    "fleur_coquelicot": { "nom": "Coquelicot", "icone": "🌺", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false },
+    "fleur_pavot": { "nom": "Pavot de Californie", "icone": "🏵", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false },
+    "fleur_tournesol": { "nom": "Tournesol", "icone": "🌻", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false },
+    "fleur_myosotis": { "nom": "Myosotis", "icone": "💠", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false },
+    "fleur_lavande": { "nom": "Lavande", "icone": "🪻", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false },
+    "fleur_lupin": { "nom": "Lupin", "icone": "💮", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false },
+    "colorant_rouge": { "nom": "Colorant rouge", "icone": "🔴", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "colorant_orange": { "nom": "Colorant orange", "icone": "🟠", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "colorant_jaune": { "nom": "Colorant jaune", "icone": "🟡", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "colorant_vert": { "nom": "Colorant vert", "icone": "🟢", "prix": 7, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "colorant_bleu": { "nom": "Colorant bleu", "icone": "🔵", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "colorant_violet": { "nom": "Colorant violet", "icone": "🟣", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "etoile_mer": { "nom": "Étoile de mer", "icone": "⭐‍🌊", "prix": 4, "mangeable": false, "categorie": "produit", "rachetable": false },
     "algues": { "nom": "Algues", "icone": "🌿‍🌊", "prix": 1, "mangeable": false, "categorie": "produit", "rachetable": false }
   },
@@ -1022,13 +1036,16 @@ export const RAW_DATA = {
       "mur_fenetre": { "entrees": { "pierre": 3, "planche": 1 }, "sortie": { "mur_fenetre": 1 } },
       "fenetre_ronde": { "entrees": { "pierre": 2, "planche": 1 }, "sortie": { "fenetre_ronde": 1 } },
       "fenetre_cintree": { "entrees": { "pierre": 3, "planche": 2 }, "sortie": { "fenetre_cintree": 1 } },
-      "fenetre_volets": { "entrees": { "planche": 3, "pierre": 1, "baies": 1 }, "sortie": { "fenetre_volets": 1 } },
-      "fenetre_vitrail": { "entrees": { "pierre": 3, "lingot_cuivre": 1, "baies": 2 }, "sortie": { "fenetre_vitrail": 1 } },
+      "fenetre_volets": { "entrees": { "planche": 3, "pierre": 1, "colorant_vert": 1 }, "sortie": { "fenetre_volets": 1 } },
+      "fenetre_vitrail": {
+        "entrees": { "pierre": 3, "lingot_cuivre": 1, "colorant_bleu": 1, "colorant_jaune": 1 },
+        "sortie": { "fenetre_vitrail": 1 }
+      },
       "pierre_angle": { "entrees": { "pierre": 5 }, "sortie": { "pierre_angle": 1 } },
-      "mur_brique_rouge": { "entrees": { "pierre": 3, "bois": 1 }, "sortie": { "mur_brique_rouge": 1 } },
-      "mur_brique_orange": { "entrees": { "pierre": 3, "bois": 1 }, "sortie": { "mur_brique_orange": 1 } },
-      "mur_brique_ocre": { "entrees": { "pierre": 3, "bois": 1 }, "sortie": { "mur_brique_ocre": 1 } },
-      "mur_brique_bleue": { "entrees": { "pierre": 3, "bois": 1 }, "sortie": { "mur_brique_bleue": 1 } },
+      "mur_brique_rouge": { "entrees": { "pierre": 3, "colorant_rouge": 1 }, "sortie": { "mur_brique_rouge": 1 } },
+      "mur_brique_orange": { "entrees": { "pierre": 3, "colorant_orange": 1 }, "sortie": { "mur_brique_orange": 1 } },
+      "mur_brique_ocre": { "entrees": { "pierre": 3, "colorant_jaune": 1 }, "sortie": { "mur_brique_ocre": 1 } },
+      "mur_brique_bleue": { "entrees": { "pierre": 3, "colorant_bleu": 1 }, "sortie": { "mur_brique_bleue": 1 } },
       "mur_pierre_taille": { "entrees": { "pierre": 5 }, "sortie": { "mur_pierre_taille": 1 } },
       "mur_bois": { "entrees": { "bois": 2 }, "sortie": { "mur_bois": 1 } },
       "cruche": { "entrees": { "bois": 3 }, "sortie": { "cruche": 1 } },
@@ -1038,7 +1055,7 @@ export const RAW_DATA = {
       "porte_chene": { "entrees": { "planche": 4 }, "sortie": { "porte_chene": 1 } },
       "porte_vitree": { "entrees": { "planche": 2, "lingot_fer": 1 }, "sortie": { "porte_vitree": 1 } },
       "porte_grange": { "entrees": { "planche": 3, "bois": 1 }, "sortie": { "porte_grange": 1 } },
-      "porte_bleue": { "entrees": { "planche": 3, "baies": 2 }, "sortie": { "porte_bleue": 1 } },
+      "porte_bleue": { "entrees": { "planche": 3, "colorant_bleu": 1 }, "sortie": { "porte_bleue": 1 } },
       "porte_fer": { "entrees": { "lingot_fer": 2, "planche": 1 }, "sortie": { "porte_fer": 1 } },
       "porte_ecurie": { "entrees": { "planche": 4, "fibre": 1 }, "sortie": { "porte_ecurie": 1 } },
       "porte_blanche": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "porte_blanche": 1 } },
@@ -1064,6 +1081,7 @@ export const RAW_DATA = {
       "boite_nourriture": { "entrees": { "planche": 3 }, "sortie": { "boite_nourriture": 1 } },
       "four_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "four_pierre": 1 } },
       "cuisiniere": { "entrees": { "pierre": 6, "planche": 4 }, "sortie": { "cuisiniere": 1 } },
+      "mortier": { "entrees": { "pierre": 4, "planche": 1 }, "sortie": { "mortier": 1 } },
       "puits_pierre": { "entrees": { "pierre": 8, "planche": 2 }, "sortie": { "puits_pierre": 1 } },
       "nichoir": { "entrees": { "planche": 4, "fibre": 3 }, "sortie": { "nichoir": 1 } },
       "mangeoire": { "entrees": { "planche": 6, "pierre": 4, "fibre": 2 }, "sortie": { "mangeoire": 1 } },
@@ -1138,9 +1156,9 @@ export const RAW_DATA = {
       "banc_jardin": { "entrees": { "planche": 3, "pierre": 1 }, "sortie": { "banc_jardin": 1 } },
       "banc_rondins": { "entrees": { "bois": 4 }, "sortie": { "banc_rondins": 1 }, "plan": true },
       "table_rondins": { "entrees": { "bois": 5 }, "sortie": { "table_rondins": 1 }, "plan": true },
-      "chaise_peinte": { "entrees": { "planche": 2, "baies": 1 }, "sortie": { "chaise_peinte": 1 }, "plan": true },
+      "chaise_peinte": { "entrees": { "planche": 2, "colorant_bleu": 1 }, "sortie": { "chaise_peinte": 1 }, "plan": true },
       "jarre_coquillages": { "entrees": { "pierre": 2, "coquille": 2, "etoile_mer": 1 }, "sortie": { "jarre_coquillages": 1 }, "plan": true },
-      "lanterne_papier": { "entrees": { "planche": 1, "fibre": 3, "baies": 1 }, "sortie": { "lanterne_papier": 1 }, "plan": true },
+      "lanterne_papier": { "entrees": { "planche": 1, "fibre": 3, "colorant_rouge": 1 }, "sortie": { "lanterne_papier": 1 }, "plan": true },
       "bassin_nenuphars": { "entrees": { "pierre": 3, "algues": 2 }, "sortie": { "bassin_nenuphars": 1 }, "plan": true },
       "banc_pierre": { "entrees": { "pierre": 5 }, "sortie": { "banc_pierre": 1 }, "plan": true },
       "jardiniere_pierre": { "entrees": { "pierre": 3, "herbes_montagne": 2 }, "sortie": { "jardiniere_pierre": 1 }, "plan": true },
@@ -1205,6 +1223,7 @@ export const RAW_DATA = {
       "candelabre": { "nom": "Réverbère", "objet": "candelabre", "bloque": true, "lumiere": true },
       "four": { "nom": "Four", "objet": "four_pierre", "dedans": true, "bloque": true, "station": "four", "dessin": "four", "largeur": 2 },
       "cuisiniere": { "nom": "Cuisinière", "objet": "cuisiniere", "dedans": true, "bloque": true, "station": "cuisine" },
+      "mortier": { "nom": "Mortier et pilon", "objet": "mortier", "dedans": true, "bloque": true, "station": "mortier" },
       "meule": { "nom": "Meule", "objet": "meule", "dedans": true, "bloque": true, "unique": true, "station": "moulin", "debloque": "moulin" },
       "pommier": { "nom": "Pommier", "objet": "jeune_pommier", "dehors": true, "arbre": "pommier", "debloque": "verger" },
       "poirier": { "nom": "Poirier", "objet": "jeune_poirier", "dehors": true, "arbre": "poirier", "debloque": "verger" },
@@ -1589,7 +1608,7 @@ export const RAW_DATA = {
       "maison": {
         "nom": "Maison",
         "icone": "🏠",
-        "blocs": ["paillasse", "boite_nourriture", "refrigerateur", "four", "cuisiniere", "lanterne", "candelabre"]
+        "blocs": ["paillasse", "boite_nourriture", "refrigerateur", "four", "cuisiniere", "mortier", "lanterne", "candelabre"]
       },
       "meubles": { "nom": "Meubles", "icone": "🛏", "meubles": true },
       "elevage": {
@@ -1699,7 +1718,8 @@ export const RAW_DATA = {
       "debloque": ["recettes"],
       "action": "cuisiner"
     },
-    "moulin": { "nom": "Moulin", "article": "le", "icone": "⚙️", "prixConstruction": 120, "electrique": true, "whParS": 20, "action": "moudre" }
+    "moulin": { "nom": "Moulin", "article": "le", "icone": "⚙️", "prixConstruction": 120, "electrique": true, "whParS": 20, "action": "moudre" },
+    "mortier": { "nom": "Mortier", "article": "le", "icone": "⚱", "prixConstruction": 0, "electrique": false, "action": "broyer" }
   },
   "CUISINE": { "COEF_PLAT": 130, "ENERGIE_EAU": 0, "PRIX_EAU": 1, "DIVISEUR_TEMPS": 2, "STATIONS_TEMPS_DIVISE": ["four", "cuisine"] },
   "RECETTES": {
@@ -1917,6 +1937,66 @@ export const RAW_DATA = {
       "ingredients": [{ "item": "minerai_platine", "qte": 4 }, { "item": "bois", "qte": 5 }],
       "transformation": true,
       "sortie": "lingot_platine",
+      "qteSortie": 1
+    },
+    "colorant_rouge": {
+      "nom": "Colorant rouge",
+      "icone": "🔴",
+      "station": "mortier",
+      "temps": 10,
+      "ingredients": [{ "item": "fleur_coquelicot", "qte": 3 }],
+      "transformation": true,
+      "sortie": "colorant_rouge",
+      "qteSortie": 1
+    },
+    "colorant_orange": {
+      "nom": "Colorant orange",
+      "icone": "🟠",
+      "station": "mortier",
+      "temps": 10,
+      "ingredients": [{ "item": "fleur_pavot", "qte": 3 }],
+      "transformation": true,
+      "sortie": "colorant_orange",
+      "qteSortie": 1
+    },
+    "colorant_jaune": {
+      "nom": "Colorant jaune",
+      "icone": "🟡",
+      "station": "mortier",
+      "temps": 10,
+      "ingredients": [{ "item": "fleur_tournesol", "qte": 3 }],
+      "transformation": true,
+      "sortie": "colorant_jaune",
+      "qteSortie": 1
+    },
+    "colorant_vert": {
+      "nom": "Colorant vert",
+      "icone": "🟢",
+      "station": "mortier",
+      "temps": 10,
+      "ingredients": [{ "item": "epinard", "qte": 3 }],
+      "transformation": true,
+      "sortie": "colorant_vert",
+      "qteSortie": 1
+    },
+    "colorant_bleu": {
+      "nom": "Colorant bleu",
+      "icone": "🔵",
+      "station": "mortier",
+      "temps": 10,
+      "ingredients": [{ "item": "fleur_myosotis", "qte": 3 }],
+      "transformation": true,
+      "sortie": "colorant_bleu",
+      "qteSortie": 1
+    },
+    "colorant_violet": {
+      "nom": "Colorant violet",
+      "icone": "🟣",
+      "station": "mortier",
+      "temps": 10,
+      "ingredients": [{ "ou": ["fleur_lavande", "fleur_lupin"], "qte": 3 }],
+      "transformation": true,
+      "sortie": "colorant_violet",
       "qteSortie": 1
     },
     "omelette_champignons": {
@@ -2831,6 +2911,12 @@ export const RAW_DATA = {
       "lingot_cuivre",
       "lingot_or",
       "lingot_platine",
+      "colorant_rouge",
+      "colorant_orange",
+      "colorant_jaune",
+      "colorant_vert",
+      "colorant_bleu",
+      "colorant_violet",
       "omelette_champignons",
       "poisson_grille",
       "raclette",
@@ -3212,6 +3298,7 @@ export const RAW_DATA = {
       "cuisiner": 40,
       "cuireFour": 50,
       "moudre": 10,
+      "broyer": 10,
       "presser": 10,
       "vendre": 1
     },
@@ -3817,7 +3904,13 @@ export const RAW_DATA = {
       { "nom": "bois_flotte", "genre": "basse", "variantes": 2, "eau": [0, 3] },
       { "nom": "touffe_mont", "genre": "basse", "variantes": 3 },
       { "nom": "fleurs", "genre": "basse", "variantes": 16, "teinte": true },
-      { "nom": "touffe_pre", "genre": "basse", "variantes": 16, "teinte": true }
+      { "nom": "touffe_pre", "genre": "basse", "variantes": 16, "teinte": true },
+      { "nom": "coquelicot", "genre": "basse", "variantes": 3 },
+      { "nom": "pavot_californie", "genre": "basse", "variantes": 3 },
+      { "nom": "tournesol_sauvage", "genre": "basse", "variantes": 2 },
+      { "nom": "myosotis", "genre": "basse", "variantes": 3 },
+      { "nom": "lavande", "genre": "basse", "variantes": 3 },
+      { "nom": "lupin", "genre": "basse", "variantes": 2 }
     ],
     "DENSITES": {
       "foret": {
@@ -3851,19 +3944,39 @@ export const RAW_DATA = {
           "fougere": 0.16,
           "champignons": 0.04
         },
-        "clairiere": { "touffe_foret": 0.1, "fougere": 0.05, "ronces": 0.01, "bouleau": 0.01 }
+        "clairiere": { "touffe_foret": 0.1, "fougere": 0.05, "ronces": 0.01, "bouleau": 0.01, "myosotis": 0.012, "lupin": 0.006 }
       },
       "lande": {
-        "lande": { "ajonc": 0.022, "genet": 0.012, "pin_tordu": 0.006, "bruyere": 0.18, "herbe_seche": 0.05 },
-        "terre": { "herbe_seche": 0.05, "bruyere": 0.03, "ajonc": 0.004 }
+        "lande": {
+          "ajonc": 0.022,
+          "genet": 0.012,
+          "pin_tordu": 0.006,
+          "bruyere": 0.18,
+          "herbe_seche": 0.05,
+          "lavande": 0.012,
+          "pavot_californie": 0.004
+        },
+        "terre": { "herbe_seche": 0.05, "bruyere": 0.03, "ajonc": 0.004, "pavot_californie": 0.006 }
       },
       "marais": {
-        "vase": { "saule": 0.012, "roseaux": 0.15, "massette": 0.03, "jonc": 0.14 },
+        "vase": { "saule": 0.012, "roseaux": 0.15, "massette": 0.03, "jonc": 0.14, "myosotis": 0.02 },
         "eau_basse": { "nenuphar": 0.12, "roseaux": 0.06, "massette": 0.05 }
       },
       "plage": { "sable": { "oyat": 0.12, "chardon": 0.025, "bois_flotte": 0.02 }, "galets": { "bois_flotte": 0.015, "oyat": 0.01 } },
-      "montagne": { "eboulis": { "sapin_nain": 0.05, "rhododendron": 0.02, "touffe_mont": 0.1 } },
-      "prairie": { "herbe": { "arbre_pre": 0.004, "buisson_pre": 0.004, "fleurs": 0.03, "touffe_pre": 0.05 } }
+      "montagne": { "eboulis": { "sapin_nain": 0.05, "rhododendron": 0.02, "touffe_mont": 0.1, "lupin": 0.008 } },
+      "prairie": {
+        "herbe": {
+          "arbre_pre": 0.004,
+          "buisson_pre": 0.004,
+          "fleurs": 0.03,
+          "touffe_pre": 0.05,
+          "coquelicot": 0.006,
+          "pavot_californie": 0.002,
+          "tournesol_sauvage": 0.002,
+          "lupin": 0.002,
+          "myosotis": 0.002
+        }
+      }
     },
     "LISIERE": { "MIN": 0.3, "RAYON": 4 },
     "CLAIRIERES": { "PAS": 18, "SEUIL": 0.7, "FONDU": 0.06 },
@@ -3978,6 +4091,12 @@ export const RAW_DATA = {
       "ronces": { "geste": "cueillir", "variantes": [0, 1], "apres": 2, "fin": { "mures": [2, 4] }, "retour": [3, 5] },
       "champignons": { "geste": "ramasser", "fin": { "champignon": [1, 2] }, "retour": [3, 6] },
       "touffe_mont": { "geste": "ramasser", "fin": { "herbes_montagne": [1, 1] }, "retour": [4, 6] },
+      "coquelicot": { "geste": "ramasser", "fin": { "fleur_coquelicot": [2, 3] }, "retour": [4, 7] },
+      "pavot_californie": { "geste": "ramasser", "fin": { "fleur_pavot": [2, 3] }, "retour": [4, 7] },
+      "tournesol_sauvage": { "geste": "ramasser", "fin": { "fleur_tournesol": [2, 3] }, "retour": [4, 7] },
+      "myosotis": { "geste": "ramasser", "fin": { "fleur_myosotis": [2, 3] }, "retour": [4, 7] },
+      "lavande": { "geste": "ramasser", "fin": { "fleur_lavande": [2, 3] }, "retour": [4, 7] },
+      "lupin": { "geste": "ramasser", "fin": { "fleur_lupin": [2, 3] }, "retour": [4, 7] },
       "bois_flotte": { "geste": "ramasser", "fin": { "bois": [1, 2] }, "retour": [5, 8] },
       "fougere": { "geste": "faucher", "fin": { "fibre": [1, 1] }, "retour": [3, 5] },
       "bruyere": { "geste": "faucher", "fin": { "fibre": [1, 1] }, "retour": [3, 5] },

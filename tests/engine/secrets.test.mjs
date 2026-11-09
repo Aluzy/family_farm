@@ -99,9 +99,10 @@ test('D-2 : le belvédère montre le pays ; rien dans un monde partagé', () => 
 test('D-2 : une partie du générateur 1 passe au 2 (la migration 71 → 72), rien d\'autre ne change', () => {
   const neuve = createInitialState(7);
   const v71 = { ...JSON.parse(JSON.stringify(neuve)), version: 71, carte: { ...neuve.carte, generateur: 1 } };
-  const m = migrate(v71);
-  assertEqual(m.carte, { graine: neuve.carte.graine, generateur: 2 });
-  assertEqual(GENERATEUR_VERSION, 2);
+  // (jusqu'à la version 72 seulement : la migration 77 → 78 la passe ensuite au générateur 3, les fleurs sauvages)
+  const m = migrate(v71, 72);
+  assertEqual([m.version, m.carte], [72, { graine: neuve.carte.graine, generateur: 2 }]);
+  assert(GENERATEUR_VERSION >= 2);
   const { carte: a, version: va, ...ra } = m, { carte: b, version: vb, ...rb } = JSON.parse(JSON.stringify(neuve));
   assertEqual(ra, rb, 'le reste de la partie est intact');
 });

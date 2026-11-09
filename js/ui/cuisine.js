@@ -407,8 +407,8 @@ export function renderStationFenetre(id, fonte) {
     <div class="menu-atelier" id="station-${id}">
       <div class="prep">${preparationHtml(id)}${stationPower(id)}</div>
       ${recipes.length ? `
-      <h3 class="section-title">${fonte ? 'Fontes' : 'Plats'}</h3>
-      <div class="plats-grille" role="group" aria-label="${fonte ? 'Fontes' : 'Plats'}">${cases.join('')}</div>
+      <h3 class="section-title">${fonte ? 'Fontes' : id === 'mortier' ? 'Colorants' : 'Plats'}</h3>
+      <div class="plats-grille" role="group" aria-label="${fonte ? 'Fontes' : id === 'mortier' ? 'Colorants' : 'Plats'}">${cases.join('')}</div>
       ${ficheRecette(id, rid)}` : ''}
     </div>`;
 }

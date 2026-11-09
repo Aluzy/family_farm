@@ -61,6 +61,8 @@
 #            de dos puis de profil.
 #   249 à 252 : la cuisinière qui cuit (BLOCS_CARTE.cuisine) : le feu du foyer et les flammes sous la
 #            marmite bougent, une image après l'autre (la 6 : éteinte, le foyer sombre).
+#   253 : le mortier et son pilon (la station des colorants, js/engine/kitchen.js) : sur un petit établi, le
+#            mortier de pierre et sa poudre violette, deux pots de colorant (rouge, bleu), un petit bouquet.
 # Un mur qui a un voisin au-dessous n'a pas de face avant : son dessus descend jusqu'au bas de
 # la case et rejoint celui du voisin (un côté de la pièce fait une bande continue, seul le
 # dernier mur montre sa face). Les pierres suivent la case dans la carte (un motif de 16 px de
@@ -2760,6 +2762,69 @@ DESSINS += [banc_rondins(), table_rondins(), chaise_peinte(), jarre_coquillages(
             banc_rondins(2), banc_rondins(1), chaise_peinte(2), chaise_peinte(1), banc_pierre(2), banc_pierre(1)]
 CUISINE_FEU = len(DESSINS)                       # la cuisinière qui cuit (BLOCS_CARTE.cuisine : 4 images)
 DESSINS += [cuisiniere(k) for k in range(len(FOYER))]
+
+
+# ---------- le mortier et son pilon (les colorants : data/recipes.json, station « mortier ») ----------
+
+# les poudres de colorant : sombre, moyen, clair, reflet (comme les icônes des colorants, scripts/icones/colorants.py)
+POUDRES = {
+    'rouge': [(110, 18, 22), (186, 36, 36), (226, 72, 60), (250, 150, 130)],
+    'orange': [(140, 58, 10), (220, 110, 24), (246, 154, 48), (255, 210, 140)],
+    'jaune': [(150, 110, 10), (226, 186, 30), (250, 222, 70), (255, 246, 170)],
+    'vert': [(22, 74, 26), (52, 132, 44), (98, 180, 66), (176, 224, 130)],
+    'bleu': [(24, 52, 120), (52, 104, 196), (100, 160, 236), (180, 220, 255)],
+    'violet': [(60, 26, 96), (112, 62, 164), (156, 110, 214), (214, 186, 244)],
+}
+POT_TERRE = [(110, 62, 34), (150, 92, 50), (196, 128, 74)]
+
+
+def ovale(t, cx, cy, rx, ry, couleur_de):
+    """Remplit l'ovale de centre (cx, cy) : couleur_de(dx, dy, d) (d : la distance au centre, au carré, de 0 à 1)."""
+    for y in range(H):
+        for x in range(W):
+            dx, dy = (x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry
+            d = dx * dx + dy * dy
+            if d <= 1:
+                c = couleur_de(dx, dy, d)
+                if c:
+                    t.put(x, y, c)
+
+
+def bol_mortier(t, cx, top, rx, ry, prof, poudre):
+    """Un mortier de pierre vu de haut : sa tranche (prof px), son bord clair, le creux, la poudre au fond,
+    et le pilon de bois penché vers la droite, la tête dans la poudre."""
+    for k in range(prof, 0, -1):
+        ovale(t, cx, top + k, rx, ry, lambda dx, dy, d: PIERRE[3] if dx < -0.3 else PIERRE[2] if dx < 0.4 else PIERRE[1])
+    ovale(t, cx, top, rx, ry, lambda dx, dy, d: PIERRE[5] if dy < 0 and dx < 0.2 else PIERRE[4])
+    ovale(t, cx, top + 0.3, rx * 0.7, ry * 0.62, lambda dx, dy, d: PIERRE[1] if dy < -0.2 else PIERRE[2])
+    ovale(t, cx, top + 0.8, rx * 0.5, ry * 0.4, lambda dx, dy, d: poudre[2] if dx < -0.2 and dy < 0 else poudre[1])
+    for k in range(7):
+        x, y = int(cx + 1 + k * 0.7), int(top - k)
+        t.put(x, y, BOIS[3] if k % 2 else BOIS[4])
+        t.put(x + 1, y, BOIS[2])
+    t.put(int(cx + 5.9), int(top - 7), BOIS[4])
+
+
+def mortier():
+    """Le mortier et son pilon : un petit établi (un dessus de planches, quatre pieds), le mortier de pierre et sa
+    poudre violette, deux pots de terre pleins de colorant (rouge, bleu), un petit bouquet couché."""
+    t = Toile()
+    pieds(t, (2, 12), 18, 22)
+    boite(t, 1, 14, 18, 3, 13, BOIS, lambda x, y: BOIS[0] if y == 18 else BOIS[3] if x == 1 else BOIS[2])
+    bol_mortier(t, 6, 11, 4.4, 2.6, 3, POUDRES['violet'])
+    for x0, c in ((11, POUDRES['rouge']), (13, POUDRES['bleu'])):
+        t.rect(x0, 10, x0 + 1, 14, POT_TERRE[1])
+        t.put(x0, 10, POT_TERRE[2])
+        t.put(x0, 9, c[2])
+        t.put(x0 + 1, 9, c[1])
+        t.put(x0, 8, c[3])
+    for x, y, c in ((2, 9, POUDRES['jaune'][2]), (3, 8, POUDRES['orange'][2]), (2, 10, VERT[2]), (3, 10, VERT[2])):
+        t.put(x, y, c)
+    return t.fini()
+
+
+MORTIER = len(DESSINS)                           # le mortier (BLOCS_CARTE.frames.mortier)
+DESSINS += [mortier()]
 
 
 def masque(g, x, y):

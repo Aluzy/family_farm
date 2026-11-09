@@ -243,7 +243,7 @@ test('migration v15 → v16 : les préparations des recettes retirées sont term
   testFillBatteries(m);
   runFor(m, 60);
   assertEqual([countItem(m, 'farine'), countItem(m, 'paille'), countItem(m, 'omelette'), countItem(m, 'pain')], [3, 0, 1, 1]);
-  assertEqual(Object.keys(DATA.STATIONS).map((id) => m.stations[id].tache), [null, null, null]);
+  assertEqual(Object.keys(DATA.STATIONS).map((id) => m.stations[id].tache), [null, null, null, null]);
   // un Moulin dont seule la file contenait du blé (cas limite) repart avec ce blé
   const file = migreAvant({ v: 15, t: 0, s: v15State((s) => { openStation(s, 'moulin'); s.stations.moulin.file = [{ recette: 'farine', pris: [], eau: 0 }, { recette: 'farine', pris: [], eau: 0 }]; }) });
   assertEqual(file.stations.moulin.tache, { recette: 'farine', resteMs: 5000, dureeMs: 5000, enAttente: 1 });

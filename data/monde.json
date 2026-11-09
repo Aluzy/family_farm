@@ -203,21 +203,27 @@
       { "nom": "bois_flotte", "genre": "basse", "variantes": 2, "eau": [0, 3] },
       { "nom": "touffe_mont", "genre": "basse", "variantes": 3 },
       { "nom": "fleurs", "genre": "basse", "variantes": 16, "teinte": true },
-      { "nom": "touffe_pre", "genre": "basse", "variantes": 16, "teinte": true }
+      { "nom": "touffe_pre", "genre": "basse", "variantes": 16, "teinte": true },
+      { "nom": "coquelicot", "genre": "basse", "variantes": 3 },
+      { "nom": "pavot_californie", "genre": "basse", "variantes": 3 },
+      { "nom": "tournesol_sauvage", "genre": "basse", "variantes": 2 },
+      { "nom": "myosotis", "genre": "basse", "variantes": 3 },
+      { "nom": "lavande", "genre": "basse", "variantes": 3 },
+      { "nom": "lupin", "genre": "basse", "variantes": 2 }
     ],
     "DENSITES": {
       "foret": {
         "feuilles": { "feuillu": 0.34, "bouleau": 0.03, "sapin": 0.03, "ronces": 0.012, "souche": 0.006, "tronc_couche": 0.004, "fougere": 0.07, "champignons": 0.015, "touffe_foret": 0.04 },
         "aiguilles": { "sapin": 0.36, "feuillu": 0.03, "souche": 0.008, "tronc_couche": 0.003, "fougere": 0.03, "champignons": 0.03, "touffe_foret": 0.02 },
         "mousse": { "feuillu": 0.22, "bouleau": 0.08, "sapin": 0.04, "souche": 0.008, "tronc_couche": 0.006, "ronces": 0.008, "fougere": 0.16, "champignons": 0.04 },
-        "clairiere": { "touffe_foret": 0.1, "fougere": 0.05, "ronces": 0.01, "bouleau": 0.01 }
+        "clairiere": { "touffe_foret": 0.1, "fougere": 0.05, "ronces": 0.01, "bouleau": 0.01, "myosotis": 0.012, "lupin": 0.006 }
       },
       "lande": {
-        "lande": { "ajonc": 0.022, "genet": 0.012, "pin_tordu": 0.006, "bruyere": 0.18, "herbe_seche": 0.05 },
-        "terre": { "herbe_seche": 0.05, "bruyere": 0.03, "ajonc": 0.004 }
+        "lande": { "ajonc": 0.022, "genet": 0.012, "pin_tordu": 0.006, "bruyere": 0.18, "herbe_seche": 0.05, "lavande": 0.012, "pavot_californie": 0.004 },
+        "terre": { "herbe_seche": 0.05, "bruyere": 0.03, "ajonc": 0.004, "pavot_californie": 0.006 }
       },
       "marais": {
-        "vase": { "saule": 0.012, "roseaux": 0.15, "massette": 0.03, "jonc": 0.14 },
+        "vase": { "saule": 0.012, "roseaux": 0.15, "massette": 0.03, "jonc": 0.14, "myosotis": 0.02 },
         "eau_basse": { "nenuphar": 0.12, "roseaux": 0.06, "massette": 0.05 }
       },
       "plage": {
@@ -225,10 +231,10 @@
         "galets": { "bois_flotte": 0.015, "oyat": 0.01 }
       },
       "montagne": {
-        "eboulis": { "sapin_nain": 0.05, "rhododendron": 0.02, "touffe_mont": 0.1 }
+        "eboulis": { "sapin_nain": 0.05, "rhododendron": 0.02, "touffe_mont": 0.1, "lupin": 0.008 }
       },
       "prairie": {
-        "herbe": { "arbre_pre": 0.004, "buisson_pre": 0.004, "fleurs": 0.03, "touffe_pre": 0.05 }
+        "herbe": { "arbre_pre": 0.004, "buisson_pre": 0.004, "fleurs": 0.03, "touffe_pre": 0.05, "coquelicot": 0.006, "pavot_californie": 0.002, "tournesol_sauvage": 0.002, "lupin": 0.002, "myosotis": 0.002 }
       }
     },
     "LISIERE": { "MIN": 0.3, "RAYON": 4 },
@@ -387,6 +393,12 @@
       "ronces": { "geste": "cueillir", "variantes": [0, 1], "apres": 2, "fin": { "mures": [2, 4] }, "retour": [3, 5] },
       "champignons": { "geste": "ramasser", "fin": { "champignon": [1, 2] }, "retour": [3, 6] },
       "touffe_mont": { "geste": "ramasser", "fin": { "herbes_montagne": [1, 1] }, "retour": [4, 6] },
+      "coquelicot": { "geste": "ramasser", "fin": { "fleur_coquelicot": [2, 3] }, "retour": [4, 7] },
+      "pavot_californie": { "geste": "ramasser", "fin": { "fleur_pavot": [2, 3] }, "retour": [4, 7] },
+      "tournesol_sauvage": { "geste": "ramasser", "fin": { "fleur_tournesol": [2, 3] }, "retour": [4, 7] },
+      "myosotis": { "geste": "ramasser", "fin": { "fleur_myosotis": [2, 3] }, "retour": [4, 7] },
+      "lavande": { "geste": "ramasser", "fin": { "fleur_lavande": [2, 3] }, "retour": [4, 7] },
+      "lupin": { "geste": "ramasser", "fin": { "fleur_lupin": [2, 3] }, "retour": [4, 7] },
       "bois_flotte": { "geste": "ramasser", "fin": { "bois": [1, 2] }, "retour": [5, 8] },
       "fougere": { "geste": "faucher", "fin": { "fibre": [1, 1] }, "retour": [3, 5] },
       "bruyere": { "geste": "faucher", "fin": { "fibre": [1, 1] }, "retour": [3, 5] },

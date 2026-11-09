@@ -98,7 +98,7 @@ function botEnergyPerDay(state, eveilS) {
   if (state.frigo && state.frigo.construit) mwh += fridgeRate(state) * (eveilS + DATA.FRIGO.BLOC_NUIT_S);
   for (const id of Object.keys(DATA.STATIONS)) {
     const st = state.stations[id];
-    if (DATA.STATIONS[id].electrique && st.construit) mwh += Math.floor((DATA.STATIONS[id].whParS * 1000 * eveilS * DATA.SIMULATION.MARCHE_STATIONS) / 100);
+    if (DATA.STATIONS[id].electrique && st && st.construit) mwh += Math.floor((DATA.STATIONS[id].whParS * 1000 * eveilS * DATA.SIMULATION.MARCHE_STATIONS) / 100);
   }
   return mwh;
 }
@@ -446,7 +446,7 @@ function botCook(state) {
   if (!state.stations) return;
   for (const station of Object.keys(DATA.STATIONS)) {
     const st = state.stations[station];
-    if (!st.construit || st.tache) continue;
+    if (!st || !st.construit || st.tache) continue;
     let best = null;
     for (const id of Object.keys(DATA.RECETTES)) {
       if (DATA.RECETTES[id].station !== station) continue;

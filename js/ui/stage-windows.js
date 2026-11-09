@@ -295,6 +295,11 @@ export const STAGE_WINDOWS = {
     nom: 'Cuisine', icone: '🍳', ok: () => isUnlocked(state, 'cuisine') || state.stations.cuisine.construit, bois: true,
     corps: () => renderStationFenetre('cuisine'),
   },
+  // Le mortier et son pilon (posé dans la maison) : les fleurs (et les épinards) broyées en colorants.
+  mortier: {
+    nom: 'Mortier', icone: '⚱', ok: () => !!(state.stations.mortier && state.stations.mortier.construit), bois: true,
+    corps: () => renderStationFenetre('mortier'),
+  },
   frigo: {
     nom: 'Réfrigérateur', icone: '🧊', ok: () => isUnlocked(state, 'frigo') || state.frigo.construit, bois: true,
     // (ranger depuis la fenêtre : l'urgent, la case « + » et son tiroir, js/ui/frigo.js)

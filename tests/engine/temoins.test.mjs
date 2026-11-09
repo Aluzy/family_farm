@@ -55,8 +55,9 @@ function gardee(nom, avant, m) {
   }
   for (const k of ['silo', 'poulailler', 'atelier']) assertEqual(m[k], avant[k], `${nom} : ${k}`);
   // (la Presse a laissé la place aux chaînes de production : la migration 66 → 67 l'ôte et rend son prix)
+  // (le mortier : une station de plus, à construire, migration 77 → 78)
   const { presse, ...stations } = avant.stations;
-  assertEqual(m.stations, stations, `${nom} : stations`);
+  assertEqual(m.stations, { ...stations, mortier: stations.mortier || { construit: false, tache: null, appareil: null } }, `${nom} : stations`);
   if (presse && presse.construit) assert(countItem(m, 'pressoir') >= 1, `${nom} : le bloc de presse rendu`);
   // les bêtes, le cheval (à l'Écurie)
   assertEqual(m.paturage, avant.paturage, `${nom} : l'Étable`);
