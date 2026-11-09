@@ -393,14 +393,72 @@ export function brokenRocks(state) {
   return r ? Object.keys(r).filter((id) => rockGone(state, id)) : [];
 }
 
+/* ---------- les gisements de la ferme (docs/gisements.md) ----------
+   Quelques gros rochers de la ferme (deux cases sur deux) sont des gisements : PIOCHE.GISEMENTS en donne le nombre
+   par métal ; lesquels, un tirage fixé par la graine de la ferme (toujours les mêmes). Ils se cassent comme les
+   gisements du grand monde (RECOLTE.SORTES gisement_<métal>) : plus de coups, la pierre de chaque coup, le minerai
+   à la fin, un retour plus long ; l'or et le platine demandent leur niveau de pioche. La carte les dessine avec les
+   images du grand monde (js/carte/ferme/pioche.js). */
+
+let gisementsCache = null, gisementsCle = null;
+// Les gisements de la ferme : { [id du rocher]: métal }.
+export function gisementsFerme(state) {
+  const T = farmTerrain(state), cle = `${farmSeed(state)}|${Object.keys(T.ROCHERS || {}).length}`;
+  if (gisementsCache && gisementsCle === cle && gisementsCache.T === T) return gisementsCache.out;
+  const gros = Object.entries(T.ROCHERS || {}).filter(([, cs]) => Array.isArray(cs) && cs.length === 4).map(([id]) => id);
+  const graine = String(farmSeed(state) || '');
+  const rang = (id) => { let h = 2166136261; for (const ch of `${graine}|gisement|${id}`) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+  gros.sort((a, b) => rang(a) - rang(b) || (a < b ? -1 : 1));
+  const out = {};
+  let k = 0;
+  for (const [metal, n] of Object.entries(DATA.PIOCHE.GISEMENTS || {})) for (let i = 0; i < n && k < gros.length; i++) out[gros[k++]] = metal;
+  gisementsCache = { T, out };
+  gisementsCle = cle;
+  return out;
+}
+
+// Un coup de pioche sur le gisement `id` de la ferme, de métal `metal` (voir mineRock).
+function piocherGisement(state, id, metal, ou, f) {
+  const regle = DATA.RECOLTE.SORTES['gisement_' + metal];
+  const refus = refusMinerai(state, metal);
+  if (refus) return fail(refus);
+  if (!canAfford(state, 'piocher', f.energie)) return fail(TIRED);
+  // (ses coups se comptent à part, state.outils.gisements : un rocher compte comme cassé à PIOCHE.COUPS coups,
+  // rockGone ; brisé, il rejoint les rochers cassés, et revient comme eux)
+  const { coups, fini: casse } = hit(state, 'gisements', id, regle.coups, regle.retour, f.coups);
+  if (casse) { const o = outils(state); if (!o.rochers || typeof o.rochers !== 'object') o.rochers = {}; o.rochers[id] = o.gisements[id]; delete o.gisements[id]; }
+  const pierre = withBonus(state, (regle.coup && regle.coup.pierre) || 0, techSum(state, 'recolteBonus'));
+  const minerai = {};
+  if (casse) {
+    for (const [item, [a, b]] of Object.entries(regle.fin || {})) {
+      const bonus = techSum(state, 'recolteBonus') + ((piocheDef(state) || {}).minerai || 0);
+      minerai[item] = withBonus(state, randomInt(state, a, b), bonus);
+    }
+  }
+  const morceaux = { coup: [], fin: [] };
+  const m1 = lacher(state, 'pierre', pierre, 0, ou);
+  if (m1) { morceaux.coup.push(...m1.coup); morceaux.fin.push(...m1.fin); }
+  for (const [item, n] of Object.entries(minerai)) {
+    const m = lacher(state, item, 0, n, ou);
+    if (m) { morceaux.coup.push(...m.coup); morceaux.fin.push(...m.fin); }
+  }
+  spendEnergy(state, 'piocher', f.energie);
+  gainActionXp(state, 'piocher');
+  if (casse) noterObjectif(state, 'casse');   // (les objectifs du jour)
+  return { ok: true, pierre, bris: 0, minerai, gisement: metal, morceaux: ou ? morceaux : null, coups, reste: casse ? 0 : Math.max(0, hitsNeeded(state, regle.coups) - coups), casse, fort: f.coups > 1 };
+}
+
 // Un coup de pioche sur le rocher `id` : PIOCHE.PIERRE pierre au sol, de l'énergie, de l'XP ;
 // `casse` : le rocher vient de se briser, PIOCHE.BRIS pierres de plus. `ou`, `fort` : comme chopTree.
+// (un gisement de la ferme : piocherGisement)
 export function mineRock(state, id, ou, fort = false) {
   const P = DATA.PIOCHE;
   if (!hasTool(state, 'pioche')) return fail(`Il te faut une pioche (à fabriquer à l'Atelier).`);
   if (typeof id !== 'string' || !id) return fail('Touche un rocher pour le casser.');
   if (rockGone(state, id)) return fail('Ce rocher est déjà cassé.');
   const f = force(fort);
+  const metal = gisementsFerme(state)[id];
+  if (metal) return piocherGisement(state, id, metal, ou, f);
   if (!canAfford(state, 'piocher', f.energie)) return fail(TIRED);
   const { coups, fini: casse } = hit(state, 'rochers', id, P.COUPS, P.RETOUR, f.coups);
   const pierre = withBonus(state, P.PIERRE, techSum(state, 'recolteBonus'));

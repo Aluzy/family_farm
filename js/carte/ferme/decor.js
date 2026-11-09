@@ -106,8 +106,10 @@
       const P = this.planche();
       if (!P) return;
       if (this.textures.exists(o.key)) this.textures.remove(o.key);
+      // (un gros rocher de la ferme qui est un gisement : l'image du grand monde, pioche.js cadreGisement)
+      const G = o.rocher && o.gisement ? this.cadreGisement(o) : null;
       o.tex = this.textures.createCanvas(o.key, o.w, o.h);
-      this.paintOccluder(o, this.mapRaw, P.set, P.img);
+      if (G) this.peindreGisement(o, G); else this.paintOccluder(o, this.mapRaw, P.set, P.img);
       if (o.rocher) this.rockBox(o);
       o.img = this.add.image(o.x, o.y, o.key).setOrigin(0).setDepth(o.foot);
       o.alpha = 1;

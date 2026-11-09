@@ -831,6 +831,15 @@ export const MIGRATIONS = {
     if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 3) out.carte = { ...c, generateur: 4 };
     return out;
   },
+  // v81 → v82 (les gisements, docs/gisements.md) : le générateur 5 tire des gisements de minerai parmi les rochers du
+  // monde (au bout des tables de leurs sols) ; il n'en déplace aucun, l'écart en retire au plus un voisin : une partie
+  // du générateur 4 y passe (un rocher pris qui n'est plus là est simplement oublié).
+  81: (state) => {
+    const out = { ...state, version: 82 };
+    const c = state.carte;
+    if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 4) out.carte = { ...c, generateur: 5 };
+    return out;
+  },
 };
 
 // La Serre d'avant la v76 : ses parcelles par niveau, le prix de chaque niveau (les anciennes migrations ;

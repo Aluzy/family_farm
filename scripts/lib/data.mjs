@@ -156,6 +156,8 @@ export function sourcesOf(data, id) {
 }
 
 const isInt = (n) => Number.isInteger(n);
+// les minerais d'un gisement (RECOLTE.SORTES, minerai ; PIOCHE.MINERAIS : le niveau qu'il leur faut)
+const DATA_MINERAIS = ['fer', 'cuivre', 'or', 'platine'];
 const isDish = (data, id) => !!data.RECETTES[id] && !data.RECETTES[id].transformation;
 
 // Renvoie { errors, warnings } : des phrases prêtes à afficher. Une erreur
@@ -876,8 +878,10 @@ export function validateData(data) {
       for (const [item, q] of Object.entries(r.fin || {})) { needItem(`${ou}.fin`, item); if (!(Array.isArray(q) && q.length === 2 && isInt(q[0]) && isInt(q[1]) && q[0] >= 1 && q[0] <= q[1])) err(`${ou}.fin.${item}`, '[au moins, au plus], des entiers positifs'); }
       for (const [item, p] of Object.entries(r.chance || {})) { needItem(`${ou}.chance`, item); if (!(typeof p === 'number' && p > 0 && p <= 100)) err(`${ou}.chance.${item}`, 'un % de 0 à 100'); }
       if (!(Array.isArray(r.retour) && r.retour.length === 2 && isInt(r.retour[0]) && r.retour[0] >= 1 && r.retour[0] <= r.retour[1])) err(`${ou}.retour`, '[au moins, au plus] jours, 1 au moins');
-      // (au sol, la scène dessine le bois, la pierre, la fibre et les graines d'arbre : js/carte/nature.js, MORCEAUX)
-      if (r.geste !== 'cueillir' && r.geste !== 'ramasser') for (const item of [...Object.keys(r.coup || {}), ...Object.keys(r.fin || {}), ...Object.keys(r.chance || {})]) if (!['bois', 'pierre', 'fibre', 'pomme_de_pin', 'gland'].includes(item)) err(ou, `« ${item} » tomberait au sol, qui n'a pas son image (bois, pierre, fibre, pomme_de_pin, gland)`);
+      // (au sol, la scène dessine le bois, la pierre, la fibre, les graines d'arbre et les minerais : js/carte/nature.js, MORCEAUX)
+      const AU_SOL = ['bois', 'pierre', 'fibre', 'pomme_de_pin', 'gland', 'minerai_fer', 'minerai_cuivre', 'minerai_or', 'minerai_platine'];
+      if (r.geste !== 'cueillir' && r.geste !== 'ramasser') for (const item of [...Object.keys(r.coup || {}), ...Object.keys(r.fin || {}), ...Object.keys(r.chance || {})]) if (!AU_SOL.includes(item)) err(ou, `« ${item} » tomberait au sol, qui n'a pas son image (${AU_SOL.join(', ')})`);
+      if (r.minerai !== undefined && !(r.geste === 'casser' && DATA_MINERAIS.includes(r.minerai))) err(`${ou}.minerai`, `un gisement : casser, et un minerai (${DATA_MINERAIS.join(', ')})`);
       if (r.geste === 'cueillir') {
         if (!(Array.isArray(r.variantes) && r.variantes.length && r.variantes.every((v) => isInt(v) && v >= 0 && v < so.variantes))) err(`${ou}.variantes`, `des variantes de la sorte (0 à ${so.variantes - 1})`);
         if (!(isInt(r.apres) && r.apres >= 0 && r.apres < so.variantes)) err(`${ou}.apres`, `une variante de la sorte (0 à ${so.variantes - 1})`);

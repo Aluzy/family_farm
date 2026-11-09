@@ -111,6 +111,7 @@
       }
       this.syncZoneGround(model);
       this.syncHoeGrid(model.labourables);
+      this.syncGisements(model.gisements);
       this.syncRocks(model.rochers);
       this.syncFelled(model.abattus);
       if (this.ctx.monde) this.syncMonde(model.monde);   // (ce qui est pris dans le grand monde : recolte-monde.js)

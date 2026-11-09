@@ -2623,6 +2623,7 @@ export const RAW_DATA = {
     "COUPS": 3,
     "RETOUR": [1, 3],
     "MAIN": 1,
+    "GISEMENTS": { "fer": 3, "cuivre": 2 },
     "NIVEAUX": [
       { "nom": "pierre", "icone": "⚒‍🪨", "minerai": 0 },
       { "nom": "cuivre", "icone": "⚒‍🟠", "minerai": 25 },
@@ -4439,25 +4440,56 @@ export const RAW_DATA = {
       { "nom": "coquillages", "genre": "basse", "variantes": 6, "eau": [0, 2] },
       { "nom": "etoile_mer", "genre": "basse", "variantes": 3, "eau": [0, 1] },
       { "nom": "algues", "genre": "basse", "variantes": 4, "eau": [0, 1] },
-      { "nom": "congere", "genre": "basse", "variantes": 4 }
+      { "nom": "congere", "genre": "basse", "variantes": 4 },
+      { "nom": "gisement_fer", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 3 },
+      { "nom": "gisement_cuivre", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 3 },
+      { "nom": "gisement_or", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 3 },
+      { "nom": "gisement_platine", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 3 }
     ],
     "DENSITES": {
-      "prairie": { "herbe": { "rocher": 0.002, "pierres": 0.006 } },
+      "prairie": { "herbe": { "rocher": 0.002, "pierres": 0.006, "gisement_fer": 0.0005 } },
       "foret": {
-        "feuilles": { "rocher_moussu": 0.03, "pierres_moussues": 0.03 },
-        "aiguilles": { "rocher_moussu": 0.02, "rocher": 0.01, "pierres_moussues": 0.025 },
+        "feuilles": { "rocher_moussu": 0.03, "pierres_moussues": 0.03, "gisement_fer": 0.0015, "gisement_cuivre": 0.001 },
+        "aiguilles": { "rocher_moussu": 0.02, "rocher": 0.01, "pierres_moussues": 0.025, "gisement_fer": 0.0015, "gisement_cuivre": 0.001 },
         "mousse": { "rocher_moussu": 0.045, "pierres_moussues": 0.05 }
       },
-      "lande": { "lande": { "rocher": 0.006, "bloc": 0.002, "pierres": 0.02 }, "terre": { "rocher": 0.01, "bloc": 0.004, "pierres": 0.06 } },
+      "lande": {
+        "lande": { "rocher": 0.006, "bloc": 0.002, "pierres": 0.02, "gisement_fer": 0.002, "gisement_cuivre": 0.0015 },
+        "terre": { "rocher": 0.01, "bloc": 0.004, "pierres": 0.06, "gisement_fer": 0.003, "gisement_cuivre": 0.002 }
+      },
       "marais": { "vase": { "pierres_moussues": 0.006 } },
       "plage": {
         "sable": { "rocher": 0.002, "galets": 0.01, "coquillages": 0.05, "etoile_mer": 0.012, "algues": 0.04 },
         "galets": { "rocher": 0.012, "galets": 0.16, "coquillages": 0.02, "algues": 0.03 }
       },
       "montagne": {
-        "eboulis": { "rocher": 0.012, "bloc": 0.01, "galets": 0.05, "pierres": 0.1 },
-        "roche": { "bloc": 0.014, "piton": 0.01, "rocher": 0.008, "pierres": 0.08 },
-        "haut": { "rocher_neige": 0.03, "sapin_neige": 0.03, "piton_neige": 0.006, "congere": 0.025, "pierres": 0.03 }
+        "eboulis": {
+          "rocher": 0.012,
+          "bloc": 0.01,
+          "galets": 0.05,
+          "pierres": 0.1,
+          "gisement_fer": 0.003,
+          "gisement_cuivre": 0.003,
+          "gisement_or": 0.0015
+        },
+        "roche": {
+          "bloc": 0.014,
+          "piton": 0.01,
+          "rocher": 0.008,
+          "pierres": 0.08,
+          "gisement_cuivre": 0.002,
+          "gisement_or": 0.002,
+          "gisement_platine": 0.0025
+        },
+        "haut": {
+          "rocher_neige": 0.03,
+          "sapin_neige": 0.03,
+          "piton_neige": 0.006,
+          "congere": 0.025,
+          "pierres": 0.03,
+          "gisement_or": 0.0015,
+          "gisement_platine": 0.003
+        }
       },
       "sommet": { "neige": { "rocher_neige": 0.012, "piton_neige": 0.006, "congere": 0.012 } }
     },
@@ -4543,6 +4575,31 @@ export const RAW_DATA = {
       "bloc": { "geste": "casser", "coups": 5, "coup": { "pierre": 1 }, "fin": { "pierre": [3, 4] }, "retour": [8, 12] },
       "eboulis": { "geste": "casser", "coups": 2, "coup": { "pierre": 1 }, "fin": { "pierre": [2, 3] }, "retour": [5, 8] },
       "rocher_neige": { "geste": "casser", "coups": 3, "coup": { "pierre": 1 }, "fin": { "pierre": [2, 2] }, "retour": [6, 10] },
+      "gisement_fer": {
+        "geste": "casser",
+        "minerai": "fer",
+        "coups": 6,
+        "coup": { "pierre": 1 },
+        "fin": { "minerai_fer": [3, 5] },
+        "retour": [8, 12]
+      },
+      "gisement_cuivre": {
+        "geste": "casser",
+        "minerai": "cuivre",
+        "coups": 6,
+        "coup": { "pierre": 1 },
+        "fin": { "minerai_cuivre": [3, 5] },
+        "retour": [8, 12]
+      },
+      "gisement_or": { "geste": "casser", "minerai": "or", "coups": 8, "coup": { "pierre": 1 }, "fin": { "minerai_or": [2, 4] }, "retour": [10, 15] },
+      "gisement_platine": {
+        "geste": "casser",
+        "minerai": "platine",
+        "coups": 8,
+        "coup": { "pierre": 1 },
+        "fin": { "minerai_platine": [2, 3] },
+        "retour": [12, 18]
+      },
       "galets": { "geste": "ramasser", "fin": { "pierre": [1, 1] }, "retour": [4, 6] },
       "pierres": { "geste": "ramasser", "fin": { "pierre": [1, 1] }, "retour": [4, 6] },
       "pierres_moussues": { "geste": "ramasser", "fin": { "pierre": [1, 1] }, "retour": [4, 6] },

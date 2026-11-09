@@ -28,6 +28,8 @@ const EMPREINTES = {
   3: { ferme: '4e86e112', plan: '72a8a80f', regions: { '3,3': '4effd48f', '0,0': '313201a6', '8,6': 'bf5709e4', '5,1': '9f1f1017', '1,1': '7b146bae' } },
   // (4 : le châtaignier, un feuillu des forêts sur seize, à sa place ; la ferme et le plan sont ceux du 3)
   4: { ferme: '4e86e112', plan: '72a8a80f', regions: { '3,3': 'da6bd046', '0,0': '313201a6', '8,6': '74d42079', '5,1': '03e0eb61', '1,1': '7b146bae' } },
+  // (5 : les gisements de minerai, au bout des tables des rochers ; la ferme et le plan sont ceux du 4)
+  5: { ferme: '4e86e112', plan: '72a8a80f', regions: { '3,3': 'da6bd046', '0,0': '18c531a4', '8,6': '1e86fe49', '5,1': 'c96ea039', '1,1': '711bba34' } },
 };
 
 // Une empreinte FNV-1a (32 bits) d'une valeur : nombres, textes, listes, tableaux typés, objets (clés
@@ -80,14 +82,14 @@ test('le générateur : une partie neuve et une partie qui change de ferme noten
   assertEqual(s.carte, { graine: 'autre', generateur: GENERATEUR_VERSION });
 });
 
-test('le générateur : une partie d\'avant (v69) reçoit le premier numéro (puis le 2, D-2, le 3, les fleurs, et le 4, le châtaignier), rien d\'autre ne change', () => {
+test('le générateur : une partie d\'avant (v69) reçoit le premier numéro (puis le 2, D-2, le 3, les fleurs, le 4, le châtaignier, et le 5, les gisements), rien d\'autre ne change', () => {
   const neuve = createInitialState(7);
   const { generateur, ...carte69 } = neuve.carte;
   const v69 = { ...JSON.parse(JSON.stringify(neuve)), version: 69, carte: carte69 };
   const m = migrate(v69);
   // (le premier numéro, puis la migration 71 → 72 la passe au générateur 2 : les secrets du monde, D-2 ; puis la
   // migration 77 → 78 au 3 : les fleurs sauvages)
-  assertEqual([m.version, m.carte], [STATE_VERSION, { graine: carte69.graine, generateur: 4 }]);
+  assertEqual([m.version, m.carte], [STATE_VERSION, { graine: carte69.graine, generateur: 5 }]);
   const { carte: a, version: va, ...resteA } = m, { carte: b, version: vb, ...resteB } = JSON.parse(JSON.stringify(neuve));
   assertEqual(resteA, resteB, 'le reste de la partie est intact');
   // (sans carte : la migration n'en invente pas ; la réparation lui en donne une, du générateur actuel)

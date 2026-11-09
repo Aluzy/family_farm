@@ -48,6 +48,7 @@ from pixel import ASSETS, BAYER, ROOT, hasard  # noqa: E402
 from rochers import CONTOUR, GRIS, MOUSSE  # noqa: E402
 from rochers import LUMIERE as LUMIERE_ROCHERS  # noqa: E402
 import vegetation as V  # noqa: E402
+from gisements import gisements  # noqa: E402
 
 SORTIE = os.path.join(ASSETS, 'roches.png')
 SORTIE_JSON = os.path.join(ASSETS, 'roches.json')
@@ -833,6 +834,9 @@ def dessins():
         'algues': algues(),
         'congere': congeres(),
     }
+    # les gisements de minerai (scripts/carte/gisements.py, maquette G4)
+    for metal in ('fer', 'cuivre', 'or', 'platine'):
+        out['gisement_' + metal] = gisements(metal)
     for nom, rebord in (('paroi', 'roche'), ('paroi_herbe', 'herbe'), ('paroi_neige', 'neige')):
         out[nom] = [paroi(rebord, classe, bouts, k) for classe in (1, 2, 3) for bouts in range(9) for k in range(3)]
     out['ecume'] = ecumes()
