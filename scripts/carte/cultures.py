@@ -23,7 +23,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
 from pixel import ASSETS, apercu, contour, hasard  # noqa: E402
-SHEET = os.path.join(ASSETS, 'crops.png')
+SHEET = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sources', 'cultures.png')   # (la source : planche_cultures.py)
 T = 16
 W, H = 16, 32
 BASE = 18                    # première rangée écrite par ce script
@@ -588,8 +588,10 @@ def bandes():
     return out
 
 
-# Les cases retouchées à la main dans assets/crops.png (culture : ses phases) : ce script les garde telles
-# qu'elles sont dans la planche, sans les redessiner.
+# La planche a été redessinée à la main (toutes les cultures, toutes leurs phases) : ce script garde chaque case
+# telle qu'elle est dans assets/crops.png (A_LA_MAIN) ; il ne fait plus que les ranger et les aligner. Sans elle,
+# les cases retouchées à la main avant (culture : ses phases) étaient gardées, les autres redessinées ici.
+A_LA_MAIN = True
 RETOUCHES = {
     'ail': [0],                  # la graine
     'carotte': [3],              # la carotte mûre
@@ -600,6 +602,11 @@ RETOUCHES = {
 
 
 def main():
+    # (les cultures sont désormais dessinées à la main : scripts/carte/sources/cultures.png, rangées dans
+    # assets/crops.png par scripts/carte/planche_cultures.py ; ce script les écraserait)
+    if '--ecraser' not in sys.argv:
+        raise SystemExit('Les cultures sont dessinées à la main (scripts/carte/sources/cultures.png) : '
+                         'python3 scripts/carte/planche_cultures.py. (--ecraser : réécrire la source avec ce script.)')
     sheet = Image.open(SHEET).convert('RGBA')
     places = bandes()
     rangees = max(r for r, _ in places.values()) + 1
@@ -614,8 +621,8 @@ def main():
         else:
             cases = [NOUVELLES[nom](k) for k in range(4)]
         for k, (c, im) in enumerate(zip(cols, cases)):
-            if k in RETOUCHES.get(nom, ()):
-                im = sheet.crop((c * T, y, c * T + T, y + H))   # (retouchée à la main : gardée)
+            if A_LA_MAIN or k in RETOUCHES.get(nom, ()):
+                im = sheet.crop((c * T, y, c * T + T, y + H))   # (dessinée à la main : gardée)
             out.alpha_composite(im, (c * T, y))
     out.save(SHEET, optimize=True)
     print(f'assets/crops.png : {out.width} × {out.height} (rangées {BASE} à {rangees - 1})')

@@ -316,7 +316,7 @@ def main():
     def legume(nom):
         sp = cultures[nom]['sprite']
         c = sp['c'][-1]
-        return crops.crop((c * 16, (sp['r'] + 1) * 16 - sp['h'], c * 16 + 16, (sp['r'] + 1) * 16))
+        return crops.crop((c * sp['l'], sp['r'] * sp['h'], (c + 1) * sp['l'], (sp['r'] + 1) * sp['h']))
 
     # chaque sorte : ses images, une par variante, et leur pied ; par défaut le milieu du bas
     images = {}

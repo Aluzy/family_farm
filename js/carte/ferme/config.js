@@ -11,9 +11,10 @@
 
   const K = global.CarteKit;
   const T = K.T;
-// Les cultures (crops.png, data/crops.json sprite) : le pied de la plante, remonté de CULTURE_MONTE px au-dessus du
-// bas de sa case (au milieu de la parcelle) ; une culture peut avoir le sien (sprite.monte : le poivron, 0).
-const CULTURE_MONTE = 4;
+// Les cultures (crops.png, data/crops.json sprite) : le bas de la case du dessin, remonté de CULTURE_MONTE px au-dessus
+// du bas de la case de terre, son milieu au milieu. Chaque dessin y est posé le milieu de sa masse du bas (la butte, le
+// bulbe) sur le centre de la tache d'arrosage (scripts/carte/planche_cultures.py) : toutes au milieu de leur tache.
+const CULTURE_MONTE = 0;
   // Version 1.6 : plus de saisons, une seule carte (celle du printemps).
   const MAP = { key: 'map_sp', json: 'carte_printemps.json', tiles: 'tiles_sp', image: 'farm_spring_summer.png' };
 

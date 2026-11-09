@@ -55,13 +55,14 @@
       g.destroy();
     },
 
-    // Découpes : crops.png, une image « culture:phase » par case (table reçue au
-    // montage).
+    // Découpes : crops.png, une image « culture:phase » par case (table reçue au montage : data/crops.json
+    // sprite { r : la rangée de la culture, c : la colonne de chaque phase, l × h : la taille d'une case ;
+    // scripts/carte/planche_cultures.py).
     defineFrames() {
       if (this.has('crops')) {
         const t = this.textures.get('crops');
         for (const [name, sp] of Object.entries(this.ctx.crops)) {
-          sp.c.forEach((col, phase) => t.add(name + ':' + phase, 0, col * T, (sp.r + 1) * T - sp.h, T, sp.h));
+          sp.c.forEach((col, phase) => t.add(name + ':' + phase, 0, col * sp.l, sp.r * sp.h, sp.l, sp.h));
         }
       }
     },

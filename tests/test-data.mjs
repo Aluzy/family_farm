@@ -85,7 +85,7 @@ refuse('arbre : prérequis inconnu', (d) => { Object.values(d.ARBRE.noeuds)[0].r
 refuse('objet : catégorie inconnue', (d) => { d.OBJETS.melon = { nom: 'Melon', icone: '🍈', energie: 9, prix: 2, mangeable: true, categorie: 'fruits' }; }, 'categorie « fruits » inconnue');
 refuse('objet : comestible sans énergie', (d) => { d.OBJETS.melon = { nom: 'Melon', icone: '🍈', prix: 2, mangeable: true, categorie: 'fruit' }; }, 'a besoin d\'une energie');
 
-const culture = (extra = {}) => ({ nom: 'Melon', icone: '🍈', lieux: ['potager'], stades: 6, litres: 3, rendement: 4, graines: { item: 'graine_melon', mode: 'recolte', min: 1, max: 2 }, sprite: { r: 1, h: 32, c: [0, 1, 2, 3] }, ...extra });
+const culture = (extra = {}) => ({ nom: 'Melon', icone: '🍈', lieux: ['potager'], stades: 6, litres: 3, rendement: 4, graines: { item: 'graine_melon', mode: 'recolte', min: 1, max: 2 }, sprite: { r: 1, c: [0, 1, 2, 3], l: 24, h: 40 }, ...extra });
 const avecMelon = (d) => {
   d.OBJETS.melon = { nom: 'Melon', icone: '🍈', energie: 9, prix: 2, mangeable: true, categorie: 'fruit', conservation: 5 };
   d.OBJETS.graine_melon = { nom: 'Graines de melon', icone: '🌱', prix: 1, mangeable: false, categorie: 'graine' };
@@ -99,7 +99,7 @@ refuse('culture : lieu inconnu', (d) => { avecMelon(d); d.CULTURES.melon = cultu
 refuse('culture : bâtiment requis inconnu', (d) => { avecMelon(d); d.CULTURES.melon = culture({ requiert: 'champs' }); }, 'requiert « champs » inconnu');
 refuse('niveaux : une culture débloquée deux fois', (d) => { d.NIVEAUX.liste[1].debloque.push('carotte'); }, '« carotte » est déjà débloqué');
 refuse('niveaux : un déblocage inconnu', (d) => { d.NIVEAUX.liste[1].debloque.push('fusee'); }, 'debloque « fusee »');
-refuse('culture : découpe incomplète', (d) => { avecMelon(d); d.CULTURES.melon = culture({ sprite: { r: 1, h: 32, c: [0, 1, 2] } }); }, 'sprite :');
+refuse('culture : découpe incomplète', (d) => { avecMelon(d); d.CULTURES.melon = culture({ sprite: { r: 1, c: [0, 1, 2], l: 24, h: 40 } }); }, 'sprite :');
 test('culture sans découpe : un avertissement, pas une erreur', () => {
   const d = copy();
   avecMelon(d);

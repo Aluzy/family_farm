@@ -279,11 +279,10 @@
       return this.add.image(x, y, def.key, 0).setOrigin(0, 1).setDepth(y);
     },
 
-    // De combien de px la plante `culture` est remontée au-dessus du bas de sa case (config.js CULTURE_MONTE ;
-    // data/crops.json sprite.monte, s'il y en a un).
-    cultureMonte(culture) {
-      const sp = this.ctx.crops && this.ctx.crops[culture];
-      return sp && Number.isFinite(sp.monte) ? sp.monte : F.C.CULTURE_MONTE;
+    // De combien de px la plante est remontée au-dessus du bas de sa case (config.js CULTURE_MONTE) : la même pour
+    // toutes, leurs dessins sont alignés dans crops.png (scripts/carte/aligner_cultures.py).
+    cultureMonte() {
+      return F.C.CULTURE_MONTE;
     },
 
     syncCrop(e, p, x, y) {
