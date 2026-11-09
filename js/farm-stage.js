@@ -650,6 +650,7 @@
         this.stepGravillons(dt / 1000);         // (les gravillons qui sautent sous les pas sur un chemin : gravier.js)
         this.stepEclats(dt / 1000);             // (l'éclat vert d'une graine semée : eclats.js)
         this.stepMiel(time, dt / 1000);         // (la goutte de miel des ruches pleines : miel.js)
+        this.stepTonnelets(dt / 1000);          // (le tonnelet en action s'écrase et se relève : tonnelets.js)
         this.stepPortes(time, dt / 1000);       // (les portes qui s'ouvrent quand on passe : portes.js)
         this.stepFlaques(time, dt / 1000);      // (le sol mouillé et les flaques sous la pluie : flaques.js)
         this.stepTallGrass(delta);

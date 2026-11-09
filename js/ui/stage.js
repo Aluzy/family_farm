@@ -25,6 +25,7 @@ import { arroseesCompagnon, demandeCompagnon, estTacheCompagnon, faireCompagnon,
 import { compagnonTouche } from './compagnon.js';
 import { marcherMembre } from '../engine/repas.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
+import { tonneletActif, tonneletsARecolter } from '../engine/tonnelets.js';
 import { dessinBac } from '../engine/bacs.js';
 import { bacRecolter, bacTouche } from './bacs.js';
 import { TIRED } from '../engine/stamina.js';
@@ -452,7 +453,8 @@ export function stageModel() {
   // Version 1.18 : ce qui attend que le personnage le ramasse, à sa place (parcelle : sa
   // case ; arbre : sa case du Verger ; Poulailler, Étable), avec le texte de sa bulle.
   // (et les ruches pleines : leur miel attend qu'il vienne le récolter, js/engine/ruches.js)
-  const tas = piles(state).concat(ruchesARecolter(state));
+  // (et les tonnelets prêts : leur fromage, leur bière, js/engine/tonnelets.js)
+  const tas = piles(state).concat(ruchesARecolter(state), tonneletsARecolter(state));
   // Version 1.19 : la laine des moutons prêts à tondre s'annonce dans la bulle de l'Étable (le
   // personnage les tond quand le joueur l'y envoie).
   const M = DATA.ANIMAUX.mouton;
@@ -554,7 +556,7 @@ export function stageModel() {
     // (un meuble : son dessin, ses cases en largeur et en hauteur, s'il arrête le passage, s'il est à plat ou un lit)
     // (un mur rehaussé, version 1.25 : sa hauteur en blocs)
     // (une fenêtre percée dans un mur : la matière de ce mur)
-    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}), ...(rehausses[c] && hauteurs[c] > 1 ? { dessus: rehausses[c] } : {}) })),
+    blocs: Object.entries(blocsPoses(state)).map(([c, sorte]) => ({ case: Number(c), sorte, ...meubleDe(sorte, Number(c)), ...(hauteurs[c] > 1 ? { hauteur: hauteurs[c] } : {}), ...(sorte === 'ruche' && ruchePleine(state, Number(c)) ? { pleine: true } : {}), ...(sorte === 'tonnelet' && tonneletActif(state, Number(c)) ? { actif: true } : {}), ...(fenetres[c] ? { mur: fenetres[c] } : {}), ...(rehausses[c] && hauteurs[c] > 1 ? { dessus: rehausses[c] } : {}) })),
     // le Moulin de la ferme générée (version 1.25) : sa tour bâtie, ses bornes (les cases de la
     // pièce) ; la voilure tourne quand il moud (batiments.moulin.enMarche)
     // le didacticiel (js/ui/didacticiel.js) : ce que la carte entoure (pierres, bois, Atelier, puits)

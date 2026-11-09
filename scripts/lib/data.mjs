@@ -108,6 +108,7 @@ export function sourcesOf(data, id) {
   for (const [rid, r] of Object.entries(data.RECETTES)) {
     if ((r.transformation ? r.sortie : rid) === id) out.push(`recette ${rid}`);
     if (r.sousProduit && r.sousProduit.item === id) out.push(`sous-produit de ${rid}`);
+    if (r.cave === id) out.push(`chaîne ${rid} (avant le tonnelet)`);
   }
   for (const [cid, c] of Object.entries(data.CULTURES)) {
     if ((c.produit || cid) === id) out.push(`récolte ${cid}`);
@@ -253,6 +254,10 @@ export function validateData(data) {
       if ('conservation' in r) err(where, 'la conservation d\'une transformation se règle sur l\'objet rendu (OBJETS), pas sur la recette');
     } else if (id in items) {
       err(where, `un plat porte le nom de sa recette : « ${id} » est déjà un objet (OBJETS), il serait remplacé. Renommer la recette (comme cafe_boisson)`);
+    }
+    if (r.cave) {
+      needItem(`${where}.cave`, r.cave);
+      if (!(data.TONNELET && data.TONNELET.AFFINE[r.cave] === (r.sortie || id))) err(`${where}.cave`, 'la tomme, le moût d\'une recette doit s\'affiner au tonnelet en son produit (TONNELET.AFFINE)');
     }
     if (r.sousProduit) {
       needItem(`${where}.sousProduit`, r.sousProduit.item);

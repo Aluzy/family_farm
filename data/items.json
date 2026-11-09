@@ -274,6 +274,7 @@
     "chaudron": { "nom": "Chaudron", "icone": "🍲", "prix": 22, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "tonneau": { "nom": "Tonneau", "icone": "🛢️‍🍺", "prix": 14, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "ensacheuse": { "nom": "Ensacheuse", "icone": "🫙‍⚙️", "prix": 16, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "tonnelet": { "nom": "Tonnelet", "icone": "🛢️‍🧀", "prix": 12, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "//pomme_de_pin": ["Les graines des arbres de la ferme générée (HACHE.GRAINES) : un sapin abattu laisse une pomme de pin,", "un autre arbre un gland ; l'arbre abattu ne repousse pas. Plantées sur une case d'herbe libre (Inventaire › « Planter »), un arbre y pousse."],
     "pomme_de_pin": { "nom": "Pomme de pin", "icone": "🌲‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
     "gland": { "nom": "Gland", "icone": "🌳‍🟤", "prix": 1, "mangeable": false, "categorie": "graine", "rachetable": false },
@@ -438,6 +439,13 @@
     "burger": { "nom": "Burger", "icone": "🍔", "energie": 90, "prix": 16, "mangeable": true, "categorie": "produit", "bonheur": 5, "rachetable": false, "conservation": 2, "retire": true },
     "frites": { "nom": "Frites", "icone": "🍟", "energie": 30, "prix": 5, "mangeable": true, "categorie": "produit", "bonheur": 3, "rachetable": false, "conservation": 2, "retire": true },
     "ordinateur": { "nom": "Ordinateur", "icone": "💻", "prix": 240, "mangeable": false, "categorie": "produit", "rachetable": false, "retire": true },
+    "//tomme_alpage": [
+      "Le lot 6 des évolutions du crafting (docs/tonnelet.md) : la chaîne du fromage d'alpage donne une tomme d'alpage,",
+      "qui s'affine 2 nuits dans un tonnelet (DATA.TONNELET) ; la chaîne de la bière, un moût de houblon, qui y",
+      "fermente. Leur prix : celui de leurs ingrédients (3 laits d'alpage ; 2 houblons et 1 L d'eau)."
+    ],
+    "tomme_alpage": { "nom": "Tomme d'alpage", "icone": "🧀‍⚪", "prix": 36, "mangeable": false, "categorie": "produit", "rachetable": false, "conservation": 4 },
+    "mout_houblon": { "nom": "Moût de houblon", "icone": "🍺‍🟤", "prix": 13, "mangeable": false, "categorie": "produit", "rachetable": false, "conservation": 4 },
     "fromage_alpage": { "nom": "Fromage d'alpage", "icone": "🧀", "energie": 70, "prix": 47, "mangeable": true, "categorie": "produit", "conservation": 10 },
     "sucre": { "nom": "Sucre", "icone": "🍬", "energie": 10, "prix": 2, "mangeable": false, "categorie": "ingrédient" },
     "epices": { "nom": "Épices", "icone": "🌶", "energie": 0, "prix": 3, "mangeable": false, "categorie": "ingrédient" },

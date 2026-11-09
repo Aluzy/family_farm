@@ -65,6 +65,7 @@ export const GAME_ACTIONS = {
   'malle-annuler': 'Annuler une commande à la calèche',
   'malle-prendre': 'Prendre dans la malle ce que la calèche a livré',
   'bac-semer': 'Semer une graine de fleur dans un bac à fleurs',
+  'tonnelet-remplir': 'Mettre une tomme ou un moût dans un tonnelet',
   'promesse-confier': 'Confier au cocher de quoi tenir une promesse de Maurice (le récit)',
   'carte-monde-but': 'Choisir le but de la boussole (carte du monde)',
   'carte-monde-ferme': 'Ramener la boussole à la ferme',

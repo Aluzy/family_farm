@@ -159,6 +159,8 @@
           // (un modèle de porte : son image dans la matière du mur voisin, la pierre sinon)
           else if (key === H.key && f === modele) f = modele + Math.max(0, H.matieresPortes.indexOf(murDe(b, false)));
           const e = B.get(b.case);
+          // (un tonnelet en action : tonnelets.js le fait s'écraser et se relever)
+          if (e && e.sorte === b.sorte) e.actif = !!b.actif;
           if (e && e.sorte === b.sorte) {
             // (les flammes du four, la meule qui moud, la lanterne allumée : stepFires, stepLanterns choisissent leur image)
             // (la botteleuse qui travaille, sa bande qui tourne : botteleuse.js)
@@ -181,7 +183,7 @@
           // de sa rangée, sur lesquelles il se rabat ouvert)
           if (key === BLOCS_CARTE.portails.key) img.setOrigin(...BLOCS_CARTE.portails.origine).setDepth(y + 0.5);
           img.setFlipX(miroir);
-          const ne = { case: b.case, sorte: b.sorte, x, y, img, sens: b.sens || 0 };
+          const ne = { case: b.case, sorte: b.sorte, x, y, img, sens: b.sens || 0, actif: !!b.actif };
           B.set(b.case, ne);
           (this.sonPoses || (this.sonPoses = [])).push(ne);
           const li = linteau(b);

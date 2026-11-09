@@ -96,10 +96,10 @@ la chaîne). La suite des outils fait la recette (`CHAINES.RECETTES`, l'ordre co
 | Huile | presse |
 | Jus de fruits (nouveau) | mixeur, presse |
 | Fromage frais | centrifugeuse, presse |
-| Fromage d'alpage | centrifugeuse, presse, tonneau |
+| Tomme d'alpage (2 nuits au tonnelet : le fromage d'alpage, docs/tonnelet.md) | centrifugeuse, presse, tonneau |
 | Compote | mixeur, chaudron |
 | Confiture de fraises | mixeur, chaudron, ensacheuse |
-| Bière artisanale | chaudron, tonneau |
+| Moût de houblon (2 nuits au tonnelet : la bière artisanale) | chaudron, tonneau |
 | Bocal de légumes | chaudron, ensacheuse |
 
 - **Ces recettes ne se font plus en cuisine** (`station: "chaine"` dans `DATA.RECETTES` : elles y

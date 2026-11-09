@@ -34,10 +34,14 @@ function recettesHtml() {
     const R = DATA.RECETTES[id], ok = recipeUnlocked(state, id);
     const ing = R.ingredients.map((g) => `${formatNumber(g.qte)} ${(g.ou || [g.item]).map((it) => DATA.OBJETS[it].nom.toLowerCase()).join(' ou ')}`).join(' + ');
     const outils = suite.map((s) => `<span class="chaine-mini" title="${nomBloc(s)}">${iconeBloc(s)}</span>`).join('');
-    return `<li class="chaine-recette${ok ? '' : ' verrou'}" aria-label="${R.nom} : ${suite.map((s) => nomBloc(s).toLowerCase()).join(' puis ')}, avec ${ing}${ok ? '' : ' (à débloquer)'}">
+    // (le fromage d'alpage, la bière : la chaîne donne leur tomme, leur moût, qui s'affinent 2 nuits au tonnelet)
+    const cave = R.cave ? DATA.OBJETS[R.cave] : null;
+    const nom = cave ? cave.nom : R.nom, icone = cave ? cave.icone : R.icone;
+    const suiteTxt = cave ? ` ; puis ${DATA.TONNELET.NUITS} nuits au tonnelet : ${R.nom.toLowerCase()}` : '';
+    return `<li class="chaine-recette${ok ? '' : ' verrou'}" aria-label="${nom} : ${suite.map((s) => nomBloc(s).toLowerCase()).join(' puis ')}, avec ${ing}${suiteTxt}${ok ? '' : ' (à débloquer)'}">
       <span class="chaine-outils" aria-hidden="true">${outils}</span><span class="chaine-fleche" aria-hidden="true">→</span>
-      <span class="chaine-produit" aria-hidden="true">${R.icone}</span>
-      <span class="chaine-recette-txt" aria-hidden="true"><span>${R.nom}</span><small>${ing}</small></span>
+      <span class="chaine-produit" aria-hidden="true">${icone}</span>
+      <span class="chaine-recette-txt" aria-hidden="true"><span>${nom}</span><small>${ing}${cave ? ` · ${DATA.TONNELET.NUITS} nuits au tonnelet → ${R.nom.toLowerCase()}` : ''}</small></span>
       ${ok ? '' : '<span class="chaine-cadenas" aria-hidden="true">🔒</span>'}</li>`;
   }).join('');
 }

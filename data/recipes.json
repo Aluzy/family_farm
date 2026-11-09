@@ -154,6 +154,7 @@
       "chaudron": { "entrees": { "lingot_fer": 2, "lingot_cuivre": 1 }, "sortie": { "chaudron": 1 }, "debloque": "chaines" },
       "tonneau": { "entrees": { "planche": 4, "lingot_fer": 1 }, "sortie": { "tonneau": 1 }, "debloque": "chaines" },
       "ensacheuse": { "entrees": { "lingot_fer": 2, "planche": 2 }, "sortie": { "ensacheuse": 1 }, "debloque": "chaines" },
+      "tonnelet": { "entrees": { "planche": 3, "lingot_fer": 1 }, "sortie": { "tonnelet": 1 }, "debloque": "chaines" },
       "distributeur": { "entrees": { "planche": 6, "lingot_fer": 1 }, "sortie": { "distributeur": 1 }, "debloque": "poulailler" },
       "mangeoire_grain": { "entrees": { "planche": 4, "pierre": 2 }, "sortie": { "mangeoire_grain": 1 }, "debloque": "poulailler" },
       "houe": { "entrees": { "bois": 2, "pierre": 1, "fibre": 1 }, "outil": "houe" },
@@ -291,6 +292,7 @@
       "chaudron": { "nom": "Chaudron", "objet": "chaudron", "bloque": true, "chaine": "outil" },
       "tonneau": { "nom": "Tonneau", "objet": "tonneau", "bloque": true, "chaine": "outil" },
       "ensacheuse": { "nom": "Ensacheuse", "objet": "ensacheuse", "bloque": true, "chaine": "outil" },
+      "tonnelet": { "nom": "Tonnelet", "objet": "tonnelet", "dehors": true, "bloque": true, "tonnelet": true },
       "distributeur": { "nom": "Distributeur de grain", "objet": "distributeur", "dehors": true, "bloque": true, "distributeur": "machine", "dessin": "distributeur" },
       "mangeoire_grain": { "nom": "Mangeoire à grain", "objet": "mangeoire_grain", "dehors": true, "bloque": true, "distributeur": "mangeoire", "dessin": "mangeoire_grain", "largeur": 2 },
       "meuble_chaise": { "nom": "Chaise", "objet": "meuble_chaise", "meuble": "chaise", "dedans": true, "bloque": true, "tourne": true },
@@ -357,7 +359,7 @@
       "elevage": { "nom": "Élevage", "icone": "🐔", "blocs": ["nichoir", "distributeur", "mangeoire_grain", "mangeoire", "ratelier", "bac_semis", "ruche", "bloc_silo", "meule"] },
       "jardin": { "nom": "Jardin", "icone": "🌷", "blocs": ["table_jardin", "chaise_jardin", "banc_jardin", "bac_carre", "bac_rond", "bac_long", "banc_rondins", "table_rondins", "chaise_peinte", "jarre_coquillages", "lanterne_papier", "bassin", "banc_pierre", "jardiniere_pierre", "pergola", "bac_fleurs", "bac_lavande", "bassin_nenuphars"] },
       "energie": { "nom": "Énergie", "icone": "⚡", "blocs": ["puits", "pompe", "citerne", "panneau", "batterie", "station_robot"] },
-      "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur", "reservoir", "pressoir", "centrifugeuse", "mixeur", "chaudron", "tonneau", "ensacheuse"] }
+      "machines": { "nom": "Machines", "icone": "⚙️", "blocs": ["atelier", "entonnoir", "botteleuse", "convoyeur", "reservoir", "pressoir", "centrifugeuse", "mixeur", "chaudron", "tonneau", "ensacheuse", "tonnelet"] }
     },
     "//SILO": [
       "Le Silo de la ferme générée (js/engine/blocs.js, etatSilo) : des blocs de silo (fabriqués à l'Atelier",
@@ -434,6 +436,14 @@
       "bocal_legumes": ["chaudron", "ensacheuse"]
     }
   },
+  "//TONNELET": [
+    "Le tonnelet (le lot 6 des évolutions du crafting, docs/tonnelet.md) : un bloc qu'on pose dehors, où s'affine la",
+    "tomme d'alpage et fermente le moût de houblon (AFFINE : ce qu'on y met → ce qui en sort). Un produit à la fois ;",
+    "il y reste NUITS nuits (l'étape de nuit, comme les ruches), puis il attend qu'on le prenne (une bulle, comme le",
+    "miel). Les chaînes de production qui faisaient le fromage d'alpage et la bière donnent maintenant leur tomme et",
+    "leur moût (la clé `cave` de leur recette)."
+  ],
+  "TONNELET": { "NOM": "Tonnelet", "ICONE": "🛢️‍🧀", "OBJET": "tonnelet", "NUITS": 2, "AFFINE": { "tomme_alpage": "fromage_alpage", "mout_houblon": "biere_artisanale" } },
   "BOTTELEUSE": { "NOM": "Botteleuse", "ICONE": "⚙️‍🌾", "FIBRES": 10, "VIBRE_S": 3, "PAILLE": 10, "CONVOYEUR": 2 },
   "STATIONS": {
     "four": { "nom": "Four", "article": "le", "icone": "🔥", "prixConstruction": 100, "electrique": false, "debloque": ["recettes"], "action": "cuireFour" },
@@ -635,6 +645,7 @@
       "ingredients": [{ "item": "lait_alpage", "qte": 3 }],
       "transformation": true,
       "sortie": "fromage_alpage",
+      "cave": "tomme_alpage",
       "qteSortie": 1
     },
     "riz_au_lait": {
@@ -734,6 +745,7 @@
       "temps": 60,
       "ingredients": [{ "item": "houblon", "qte": 2 }],
       "eau": 1,
+      "cave": "mout_houblon",
       "coefPrix": 300,
       "//conservation": [
         "La bière artisanale et la confiture de fraises sont des plats (donc",
