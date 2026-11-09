@@ -49,7 +49,8 @@ commencées le gardent).
   le reste (`atteints`) ;
 - **compte** : ce qui est fait depuis le début du jour, noté par les gestes (`objectifs-compte.js`,
   `noterObjectif`) : chaque action qui rapporte de l'XP (`levels.js gainActionXp` : labourer, planter,
-  arroser, faucher, cueillir, récolter, vendre…), un arbre abattu, un rocher cassé (`outils.js`,
+  arroser, faucher, cueillir, récolter, vendre…), les baies d'un buisson de la ferme (`atelier.js ramasser` : c'est
+  cueillir), un arbre abattu, un rocher cassé (`outils.js`,
   `monde-recolte.js`), la carte du monde ouverte, la calèche rencontrée (ou une vente), un habitant à qui l'on
   parle (`recit.js paroleHameau`).
 

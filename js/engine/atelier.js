@@ -10,6 +10,7 @@ import { casesDuTerrain, farmSeed, farmTerrain, regionsVues } from './terrain.js
 import { casesDeRegion } from './monde.js';
 import { cutBushCases } from './outils.js';
 import { accueillirAnimal, animalRefus } from './animals.js';
+import { noterObjectif } from './objectifs-compte.js';
 import { accueillirCheval, chevalRefus } from './cheval.js';
 import { ajouterMeuble, meubleRefus } from './meubles.js';
 import { noter } from './journal.js';
@@ -179,6 +180,8 @@ export function ramasser(state, id) {
   noter('ramasse', { item: p.objet, n });
   if (!def.gratuit) spendEnergy(state, 'ramasser');
   gainActionXp(state, 'ramasser');
+  // (les baies d'un buisson : c'est cueillir, pour les objectifs du jour, objectifs.js)
+  if (def.buissons) noterObjectif(state, 'cueillir');
   return { ok: true, sorte: p.sorte, items: { [p.objet]: n } };
 }
 
