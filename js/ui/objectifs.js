@@ -13,7 +13,8 @@
 
 import { DATA } from '../engine/catalog.js';
 import { countItem } from '../engine/inventory.js';
-import { carnetDuJour, majObjectifs, objectifsActifs, tacheAFaire } from '../engine/objectifs.js';
+import { carnetDuJour, changerObjectif, majObjectifs, objectifsActifs, tacheAFaire } from '../engine/objectifs.js';
+import { applyResult } from './game-actions.js';
 import { montrerLieu } from '../engine/monde-vu.js';
 import { state } from './store.js';
 import { menuOpen } from './stage-windows.js';
@@ -59,6 +60,14 @@ const GUIDES = {
     cible: () => (carteOuverte() ? null : menuCarte()),
   }),
   parler: () => ({ texte: () => 'Au hameau, touche un <b>habitant</b> pour lui parler.' }),
+  // (les objectifs tirés après la première semaine)
+  cuisiner: () => ({ texte: () => 'Touche la <b>cuisinière</b> dans ta maison, puis choisis un plat dont tu as les ingrédients.', carte: () => ({ blocs: ['cuisiniere'] }) }),
+  pecher: () => ({
+    texte: () => (tenu('canne') ? 'Touche l\'<b>eau</b> (une rivière, un lac, la mer) pour lancer ta ligne.' : prendreOutil('<b>canne à pêche</b>')),
+    cible: () => outil('canne'),
+  }),
+  oeufs: () => ({ texte: () => 'Au <b>Poulailler</b>, les poules ont pondu : touche-le, ton personnage va prendre les œufs.' }),
+  lait: () => ({ texte: () => 'À l\'<b>Étable</b>, les vaches ont du lait : touche-la, ton personnage va les traire.' }),
 };
 
 // La bulle de la tâche `t` : { texte, cible, carte }.
@@ -108,6 +117,7 @@ function carnet(c) {
       <span class="obj-icone" aria-hidden="true">${b.icone}</span>
       <span class="obj-texte"><span class="obj-libelle">${b.libelle}</span>${b.sous ? `<small>${b.sous}</small>` : ''}</span>
       ${b.besoin > 1 || !b.fait ? `<span class="obj-compte num">${b.fait ? '✓' : `${b.n}/${b.besoin}`}</span>` : ''}
+      ${c.changer && !b.fait ? `<button type="button" class="obj-changer" data-action="objectifs-changer" data-id="${b.id}" title="Un autre objectif à la place (une fois par jour)" aria-label="Changer : ${b.libelle}">↻</button>` : ''}
       <span class="visually-hidden">${b.fait ? 'fait' : 'à faire'}</span>
     </li>`).join('');
   const R = recompenseTexte(c.recompense);
@@ -164,4 +174,10 @@ registerActions({
   'objectifs-carnet': () => { ouvert = !ouvert; refresh(); },
   'objectifs-montrer': () => { ouvert = false; guide = true; refresh(); },
   'objectifs-arreter': () => { guide = false; refresh(); },
+  // (après la première semaine : un objectif tiré se change, une fois par jour)
+  'objectifs-changer': (target) => {
+    const r = applyResult(changerObjectif(state, target.dataset.id));
+    if (r.ok) persistState();
+    refresh();
+  },
 });

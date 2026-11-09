@@ -78,3 +78,20 @@ bulles sont celles des étapes du didacticiel (`ETAPES_UI`), et quelques autres 
 tôt ; les objectifs tirés chaque jour, ensuite, y viendront.)
 
 Tests : `tests/engine/objectifs.test.mjs`.
+
+## Lot 3 : les objectifs tirés chaque jour (`OBJECTIFS.TIRES`)
+
+Après la première semaine, chaque nouveau jour tire ses objectifs (`entrer` : `state.objectifs.tire`) :
+- **NOMBRE** (3) objectifs différents, tirés dans **LISTE** parmi ceux que la partie peut faire (`si` : la houe,
+  le puits, la faux, la hache, la pioche, la canne, la cuisinière posée, la calèche qui commerce, des poules, des
+  vaches, un hameau découvert ; sans `si`, toujours) ; le tirage suit la graine de la partie et le jour ;
+- chacun est un compte (récolter, semer, arroser, labourer, faucher, abattre, casser, cueillir, cuisiner,
+  gagner des pièces à la calèche, pêcher, les œufs, le lait, parler aux habitants) ; son nombre suit le niveau :
+  `base + parNiveau × (niveau − 1)`, au plus `max` ;
+- la récompense du jour (XP et pièces) grandit avec le niveau (`RECOMPENSE`) ;
+- **un objectif se change par jour** (`CHANGER` ; le bouton ↻ du carnet, `changerObjectif`) : un autre est
+  tiré à sa place, jamais un de ceux du jour ;
+- comme la semaine : le jour fini, sa récompense ; le suivant le lendemain matin ; un jour pas fini reste.
+
+Le carnet titre ces jours « Jour 8 — Les objectifs du jour ». Montre-moi a une bulle pour chacun (cuisiner,
+pêcher, les œufs, le lait s'ajoutent à celles de la semaine).
