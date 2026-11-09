@@ -1,8 +1,10 @@
 /* carte/ferme/didacticiel.js — la scène de la ferme : ce que le didacticiel montre sur la carte.
  *
- * Le didacticiel d'une nouvelle partie (js/ui/didacticiel.js) désigne ce qu'il faut toucher :
- * dans la page, un anneau autour du bouton ; sur la carte, un cercle doré qui pulse autour des
- * objets (modèle.surbrillance : { ramassables: sorte } les pierres ou le bois à ramasser, les
+ * Le didacticiel d'une nouvelle partie (js/ui/didacticiel.js) et « Montre-moi » des objectifs du jour
+ * (js/ui/objectifs.js) désignent ce qu'il faut toucher : dans la page, le bouton brille (.didac-ring, une
+ * lueur blanche qui respire) ; sur la carte, l'objet lui-même brille de la même lueur blanche : sa
+ * silhouette, blanche, un peu plus grande (de quelques px), juste derrière lui, deux couches pour une lueur douce, qui
+ * respire lentement (modèle.surbrillance : { ramassables: sorte } les pierres ou le bois à ramasser, les
  * plus proches du personnage ; { blocs: [sortes] } l'Atelier, le puits) ; et les cases où poser
  * l'abri ({ cases: [{ case, sorte }] } : une case allumée qui pulse, dorée pour un mur, blanche
  * pour la porte, verte pour une paillasse). Fiche 9b : { caleche: true } entoure aussi la calèche, d'un
@@ -18,31 +20,39 @@
   const F = global.FermeCarte;
   const { reducedMotion } = F;
 
-  // `max` objets entourés au plus (les plus proches du personnage) ; le cercle : `rayon` px de
-  // carte (± `pouls` px, `periode` ms), `trait` px, sa couleur.
-  const S = { max: 6, rayon: 11, rayonCaleche: 40, pouls: 2.5, periode: 900, trait: 1.5, couleur: 0xffd23f };
+  // `max` objets qui brillent au plus (les plus proches du personnage) ; leur lueur : `couches` [px de lueur
+  // autour de la silhouette, opacité au plus bas, au plus haut], qui respire en `periode` ms ; sa couleur.
+  // (`couleur` : celle des cases à bâtir sans sorte connue.)
+  const S = { max: 6, periode: 2000, lueur: 0xffffff, couches: [[1.5, 0.6, 1], [3.5, 0.2, 0.5]], couleur: 0xffd23f };
   // Les cases à bâtir : leur couleur selon ce qui s'y pose ; le fond et le bord pulsent.
   const CASES = { mur_bois: 0xffd23f, porte: 0xffffff, paillasse: 0x8be36a, fond: 0.22, bord: 0.55 };
   const { T } = F.C;
+
+  // Une image toute blanche (Phaser 4 : la teinte pleine, comme amis.js, file.js).
+  const blanche = (im) => {
+    im.setTint(S.lueur);
+    if (im.setTintMode && global.Phaser && global.Phaser.TintModes) im.setTintMode(global.Phaser.TintModes.FILL);
+    return im;
+  };
 
   F.partie({
 
     syncSurbrillance(s) {
       this.surbrillance = s || null;
       if (!this.surbrillanceG) this.surbrillanceG = this.add.graphics().setDepth(1e7);
-      if (!s) this.surbrillanceG.clear();
+      if (!s) { this.surbrillanceG.clear(); this.lueurs([]); }
     },
 
-    // Les points à entourer : { x, y } en px de carte.
+    // Les objets qui brillent : { x, y (px de carte, pour les trier et le brouillard), imgs : leurs images }.
     pointsSurbrillance() {
       const s = this.surbrillance, out = [];
       if (!s) return out;
-      if (s.blocs && this.blocks) for (const e of this.blocks.values()) if (s.blocs.includes(e.sorte)) out.push({ x: e.x, y: e.y - 8 });
+      if (s.blocs && this.blocks) for (const e of this.blocks.values()) if (s.blocs.includes(e.sorte) && e.img) out.push({ x: e.x, y: e.y - 8, imgs: [e.img] });
       if (s.ramassables && this.gatherables) {
-        for (const g of this.gatherables.values()) if (g.sorte === s.ramassables && !g.busy) out.push({ x: g.x, y: g.y - 5 });
+        for (const g of this.gatherables.values()) if (g.sorte === s.ramassables && !g.busy) out.push({ x: g.x, y: g.y - 5, imgs: g.imgs || [] });
       }
-      // (la calèche : un grand cercle autour de son attelage)
-      if (s.caleche && this.calecheSprite && this.calecheVue) out.push({ x: this.calecheVue.x, y: this.calecheVue.y - 22, r: S.rayonCaleche });
+      // (la calèche : son attelage brille)
+      if (s.caleche && this.calecheSprite && this.calecheVue) out.push({ x: this.calecheVue.x, y: this.calecheVue.y - 22, imgs: [this.calecheSprite] });
       // (fiche 14b : rien sous le brouillard du grand monde, la ferme comprise : un cercle n'y trahit rien ;
       // brouillard.js)
       const vus = this.sousBrume ? out.filter((q) => !this.sousBrume(q.x, q.y + 5)) : out;
@@ -53,14 +63,37 @@
       return out.slice(0, S.max);
     },
 
-    // Chaque image : les cercles pulsent.
+    // Les lueurs des images `imgs` : une silhouette blanche par couche, derrière chacune, à sa place et à son
+    // image ; celles des images qui ne brillent plus sont retirées. `k` : la respiration (0 à 1).
+    lueurs(imgs, k = 0.5) {
+      if (!this.halos) this.halos = new Map();
+      const H = this.halos, vues = new Set(imgs);
+      for (const [img, hs] of H) if (!vues.has(img) || !img.active) { hs.forEach((h) => h.destroy()); H.delete(img); }
+      for (const img of imgs) {
+        if (!img.active || !img.visible) continue;
+        let hs = H.get(img);
+        if (!hs) {
+          hs = S.couches.map(() => blanche(this.add.image(0, 0, img.texture.key, img.frame.name).setOrigin(0.5)));
+          H.set(img, hs);
+        }
+        const c = img.getCenter();
+        hs.forEach((h, i) => {
+          const [e, a0, a1] = S.couches[i];
+          if (h.frame.name !== img.frame.name || h.texture.key !== img.texture.key) blanche(h.setTexture(img.texture.key, img.frame.name));
+          const w = Math.max(1, img.displayWidth), hh = Math.max(1, img.displayHeight);
+          h.setPosition(c.x, c.y).setScale(img.scaleX * (w + 2 * e) / w, img.scaleY * (hh + 2 * e) / hh).setFlipX(img.flipX).setDepth(img.depth - 0.002 - 0.001 * i)
+            .setAlpha((a0 + (a1 - a0) * k) * img.alpha);
+        });
+      }
+    },
+
+    // Chaque image : les objets brillent, leur lueur respire ; les cases à bâtir pulsent.
     stepSurbrillance(time) {
       const g = this.surbrillanceG;
       if (!g) return;
       g.clear();
-      if (!this.surbrillance) return;
+      if (!this.surbrillance) { if (this.halos && this.halos.size) this.lueurs([]); return; }
       const k = reducedMotion() ? 0.5 : (Math.sin((time / S.periode) * Math.PI * 2) + 1) / 2;
-      const r = S.rayon + S.pouls * k;
       if (Array.isArray(this.surbrillance.cases)) {
         const cols = this.grid.cols, v = this.cameras.main.worldView;
         for (const q of this.surbrillance.cases) {
@@ -72,11 +105,7 @@
           g.lineStyle(1, c, CASES.bord + 0.4 * k).strokeRect(x + 1.5, y + 1.5, T - 3, T - 3);
         }
       }
-      for (const q of this.pointsSurbrillance()) {
-        const rq = q.r ? q.r + S.pouls * 2 * k : r;
-        g.lineStyle(S.trait + 1.5, 0x2a2018, 0.55).strokeCircle(q.x, q.y, rq);
-        g.lineStyle(S.trait, S.couleur, 0.65 + 0.35 * k).strokeCircle(q.x, q.y, rq);
-      }
+      this.lueurs(this.pointsSurbrillance().flatMap((q) => q.imgs), k);
     },
   });
 })(window);

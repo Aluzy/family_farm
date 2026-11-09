@@ -1555,25 +1555,21 @@ body:has(#tool-bar:not(.open)) .didac-bulle:not(.haut):not(.reduite) { bottom: c
 .obj-pied .btn { min-height: 40px; }
 .obj-recompense { font-size: 13px; }
 .obj-fermer { margin-left: auto; min-width: 40px; min-height: 40px; border: 2px solid var(--color-earth); border-radius: 8px; background: transparent; color: var(--wood-ink); font: inherit; cursor: pointer; }
-.didac-ring {
-  outline: 3px solid #ffd23f;
-  outline-offset: 3px;
-  box-shadow: 0 0 0 6px rgba(255, 210, 63, 0.35);
-  animation: didac-ring 0.9s ease-in-out infinite;
+.didac-ring { /* ce qu'il faut toucher brille : une lueur blanche qui respire lentement (pas d'anneau) */
   position: relative;
   z-index: 1;
+  border-radius: 10px;
+  animation: didac-ring 2s ease-in-out infinite;
 }
 @keyframes didac-ring {
-  0%, 100% { outline-offset: 3px; box-shadow: 0 0 0 6px rgba(255, 210, 63, 0.35); }
-  50% { outline-offset: 7px; box-shadow: 0 0 0 12px rgba(255, 210, 63, 0); }
+  0%, 100% { box-shadow: 0 0 8px 3px rgba(255, 255, 255, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.55); filter: brightness(1.05); }
+  50% { box-shadow: 0 0 16px 7px rgba(255, 255, 255, 0.95), inset 0 0 14px rgba(255, 255, 255, 0.85); filter: brightness(1.18); }
 }
-.didac-lueur { /* ce que le didacticiel montre sans le faire toucher (les graines offertes) */
-  outline: 3px solid #8be36a;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 6px rgba(139, 227, 106, 0.35);
-  animation: didac-ring 0.9s ease-in-out infinite;
+.didac-lueur { /* ce que le didacticiel montre sans le faire toucher (les graines offertes) : la même lueur */
+  border-radius: 10px;
+  animation: didac-ring 2s ease-in-out infinite;
 }
-@media (prefers-reduced-motion: reduce) { .didac-ring, .didac-lueur { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .didac-ring, .didac-lueur { animation: none; box-shadow: 0 0 12px 5px rgba(255, 255, 255, 0.8); } }
 /* pendant le didacticiel : ni l'ancienne bulle d'aide ni la puce du chapitre */
 body.didacticiel .stage-chip:not(.hoe):not(.compact), body.didacticiel #tuto-root { display: none; }
 

@@ -1,9 +1,9 @@
 // didacticiel.js — le didacticiel d'une nouvelle partie (le moteur : js/engine/didacticiel.js).
 //
 // Une bulle de texte, en bas de l'écran (en haut quand ce qu'elle montre est en bas), dit quoi
-// faire ; ce qu'il faut toucher porte un anneau qui pulse (.didac-ring) : une jauge, la flèche du
+// faire ; ce qu'il faut toucher brille d'une lueur blanche qui respire (.didac-ring) : une jauge, la flèche du
 // menu latéral, une entrée du menu, une case du menu Construire, une recette de l'Atelier, un outil
-// de la barre d'outils. Sur la carte, la scène entoure d'un cercle les objets à toucher (modèle :
+// de la barre d'outils. Sur la carte, la scène fait briller les objets à toucher (modèle :
 // surbrillance, js/carte/ferme/didacticiel.js) : les pierres, le bois, l'Atelier, le puits. En
 // haut à droite, sous le hublot, les compteurs (« 🪨 2 / 3 ») de ce qu'il reste à réunir. Les
 // étapes à lire ont un bouton « Suivant » ; les autres passent d'elles-mêmes quand leur objectif
@@ -158,7 +158,7 @@ export const ETAPES_UI = {
   xp: { texte: () => 'L\'étoile, c\'est ton <b>niveau</b> ; l\'anneau doré autour de ton portrait, ton <b>expérience</b> (XP) : chaque action t\'en rapporte. Anneau plein, tu passes au niveau suivant et de nouvelles choses se débloquent.', cible: () => '.player-level' },
   argent: { texte: () => 'Et voici ton <b>argent</b>, pour commercer avec la calèche quand elle passera à la ferme.', cible: () => '.player-money' },
   deplacement: { texte: () => 'Pour <b>te déplacer</b>, pose ton doigt sur la carte et fais-le glisser : ton personnage marche dans cette direction tant que ton doigt reste posé, et la carte le suit.' },
-  pierres: { texte: () => 'Pour <b>ramasser</b>, touche simplement l\'objet : ton personnage va le chercher. Commence par les <b>petites pierres</b> (entourées sur la carte) : il en faut pour l\'Atelier.', carte: () => ({ ramassables: 'petite_pierre' }) },
+  pierres: { texte: () => 'Pour <b>ramasser</b>, touche simplement l\'objet : ton personnage va le chercher. Commence par les <b>petites pierres</b> (elles brillent sur la carte) : il en faut pour l\'Atelier.', carte: () => ({ ramassables: 'petite_pierre' }) },
   bois: { texte: () => 'Parfait ! Maintenant, ramasse des <b>morceaux de bois</b>.', carte: () => ({ ramassables: 'morceau_bois' }) },
   atelier: {
     texte: () => (buildMode === 'atelier' ? 'Touche une case d\'herbe libre de la carte pour y <b>poser l\'Atelier</b>.' : buildMode ? 'Choisis l\'<b>Atelier</b> dans le menu Construire.' : menuOpen ? 'Touche 🔨 <b>Construire</b>.' : 'Tu as de quoi bâtir ton <b>Atelier</b> ! Ouvre le menu sur le côté (la flèche).'),
@@ -303,7 +303,7 @@ export function affichable() {
   return !document.querySelector('#modal-root .story-modal, #modal-root .setup-modal');
 }
 
-// Pour la carte (modèle.surbrillance) : ce que la scène entoure, ou null.
+// Pour la carte (modèle.surbrillance) : ce que la scène fait briller, ou null.
 export function surbrillanceDidacticiel() {
   if (!visible()) return null;
   const e = ETAPES_UI[etapeDidacticiel(state)];
