@@ -137,7 +137,7 @@ export function sourcesOf(data, id) {
   if (data.BOTTELEUSE && data.PATURAGE && id === data.PATURAGE.NOURRITURE) out.push('botteleuse');
   if (id.startsWith('minerai_')) out.push('grotte');
   if (it.trouvaille) out.push(`trouvaille du grand monde (${it.trouvaille})`);
-  for (const [nom, r] of Object.entries((data.RECOLTE && data.RECOLTE.SORTES) || {})) if (id in (r.fin || {}) || id in (r.coup || {}) || id in (r.chance || {})) out.push(`récolte du grand monde (${nom})`);
+  for (const [nom, r0] of Object.entries((data.RECOLTE && data.RECOLTE.SORTES) || {})) for (const r of [r0, r0.aussi].filter(Boolean)) if (id in (r.fin || {}) || id in (r.coup || {}) || id in (r.chance || {})) out.push(`récolte du grand monde (${nom})`);
   if (it.cueillette) out.push(`cueillette (${it.cueillette})`);
   if (data.DEPART && id in data.DEPART.INVENTAIRE) out.push('DEPART.INVENTAIRE');
   if (data.DEPART && data.DEPART.ETAT_INITIAL && id in data.DEPART.ETAT_INITIAL.INVENTAIRE) out.push('DEPART.ETAT_INITIAL.INVENTAIRE');
@@ -617,6 +617,15 @@ export function validateData(data) {
         if (total > 1) err(`VEGETATION.DENSITES.${b}.${sol}`, `des parts qui font plus que 1 (${total})`);
       }
     }
+    // (REMPLACE : une part des images d'une sorte en devient une autre, de mêmes cases fermées et du même écart)
+    for (const [i, r] of (V.REMPLACE || []).entries()) {
+      const ou = `VEGETATION.REMPLACE[${i}]`, de = V.SORTES.find((s) => s.nom === r.de), vers = V.SORTES.find((s) => s.nom === r.vers);
+      if (!BI.includes(r.biome)) err(ou, `« ${r.biome} » n'est pas un biome`);
+      if (!(Array.isArray(r.sols) && r.sols.every((sol) => (V.DENSITES[r.biome] || {})[sol] && (V.DENSITES[r.biome][sol][r.de] > 0)))) err(`${ou}.sols`, `des sols du biome où « ${r.de} » pousse`);
+      if (!de || !vers) err(ou, 'de, vers : deux sortes (SORTES)');
+      else if (JSON.stringify(de.bloque) !== JSON.stringify(vers.bloque) || de.ecart !== vers.ecart || de.genre !== vers.genre) err(ou, `« ${r.vers} » : le même genre, les mêmes cases fermées et le même écart que « ${r.de} »`);
+      if (!(typeof r.part === 'number' && r.part > 0 && r.part < 1)) err(`${ou}.part`, 'une part de 0 à 1');
+    }
     for (const [b, bornes] of Object.entries(V.BORNES || {})) {
       if (!BI.includes(b)) err('VEGETATION.BORNES', `« ${b} » n'est pas un biome (BIOMES)`);
       for (const q of ['images', 'basses']) if (!(Array.isArray(bornes[q]) && bornes[q].length === 2 && bornes[q][0] <= bornes[q][1])) err(`VEGETATION.BORNES.${b}.${q}`, '[au moins, au plus]');
@@ -838,8 +847,17 @@ export function validateData(data) {
     const RC = data.RECOLTE, gestes = ['couper', 'casser', 'faucher', 'cueillir', 'ramasser'];
     const toutes = [...((data.VEGETATION && data.VEGETATION.SORTES) || []), ...((data.ROCHES && data.ROCHES.SORTES) || [])];
     if (!(isInt(RC.PORTEE) && RC.PORTEE > 0)) err('RECOLTE.PORTEE', 'un entier positif (des cases)');
+    // (une règle, et son second geste `aussi` : le châtaignier se coupe et se cueille)
+    const regles = [];
     for (const [nom, r] of Object.entries(RC.SORTES || {})) {
-      const ou = `RECOLTE.SORTES.${nom}`, so = toutes.find((x) => x.nom === nom);
+      regles.push([nom, r, `RECOLTE.SORTES.${nom}`]);
+      if (r.aussi !== undefined) {
+        if (!r.aussi || typeof r.aussi !== 'object' || r.aussi.geste === r.geste || r.aussi.aussi !== undefined) err(`RECOLTE.SORTES.${nom}.aussi`, 'un second geste (une règle, d\'un autre geste, sans aussi)');
+        else regles.push([nom, r.aussi, `RECOLTE.SORTES.${nom}.aussi`]);
+      }
+    }
+    for (const [nom, r, ou] of regles) {
+      const so = toutes.find((x) => x.nom === nom);
       if (!so) { err(ou, `« ${nom} » n'est pas une sorte du monde (VEGETATION.SORTES, ROCHES.SORTES)`); continue; }
       if (['paroi', 'mer', 'epave'].includes(so.genre)) err(ou, `une ${so.genre} reste du décor`);
       if (!gestes.includes(r.geste)) err(`${ou}.geste`, `l'un de ${gestes.join(', ')} ; reçu ${JSON.stringify(r.geste)}`);

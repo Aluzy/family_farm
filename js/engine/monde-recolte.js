@@ -67,6 +67,14 @@ export function idDansRegion(cle, liste, k) {
   return so ? idObjetMonde(so.nom, liste[k + 1], liste[k + 2]) : null;
 }
 
+// La règle du geste `geste` dans la règle `regle` d'une sorte : elle-même, ou son second geste (`aussi` : le
+// châtaignier se coupe à la hache, et ses châtaignes se cueillent à la main), ou null.
+export function regleGeste(regle, geste) {
+  if (!regle) return null;
+  if (regle.geste === geste) return regle;
+  return regle.aussi && regle.aussi.geste === geste ? regle.aussi : null;
+}
+
 // Ce que donne la sorte `nom` (RECOLTE.SORTES), ou null (du décor).
 export function regleMonde(nom) {
   const s = PAR_NOM.get(nom);
@@ -204,7 +212,9 @@ function butinFinal(state, id, regle) {
 function preparer(state, id, geste, depuis, n = 1) {
   const o = lireIdMonde(id);
   if (!o || !o.regle) return { refus: fail('Il n\'y a rien à prendre ici.') };
-  if (o.regle.geste !== geste) return { refus: fail(refusGeste(o.regle.geste)) };
+  const regle = regleGeste(o.regle, geste);
+  if (!regle) return { refus: fail(refusGeste(o.regle.geste)) };
+  o.regle = regle;
   const G = GESTES[geste];
   if (G.outil && !hasTool(state, G.outil)) {
     const def = toolDef(G.outil);
@@ -212,7 +222,8 @@ function preparer(state, id, geste, depuis, n = 1) {
   }
   const e = etatObjetMonde(state, id);
   if (estPrise(e)) return { refus: fail('Il n\'y a plus rien ici : ça repoussera.') };
-  if (estCueillie(e)) return { refus: fail('Déjà cueilli : les fruits reviendront dans quelques jours.') };
+  // (cueilli : on ne le cueille plus, mais la hache l'abat encore : le châtaignier)
+  if (estCueillie(e) && geste !== 'couper' && geste !== 'casser') return { refus: fail('Déjà cueilli : les fruits reviendront dans quelques jours.') };
   if (Number.isInteger(depuis) && depuis >= 0) {
     const W = farmTerrain(state).LARGEUR;
     if (Math.max(Math.abs((depuis % W) - o.X), Math.abs(Math.floor(depuis / W) - o.Y)) > RECOLTE.PORTEE) return { refus: fail('C\'est trop loin : approche-toi.') };
@@ -258,12 +269,14 @@ function frapper(state, id, geste, ou, fort, depuis) {
   const { o, G, refus } = preparer(state, id, geste, depuis, f.energie);
   if (refus) return refus;
   const e = etatObjetMonde(state, id), base = o.regle.coups;
-  const coups = (Number.isInteger(e) ? e : 0) + f.coups;
+  // (les coups déjà reçus ; un arbre cueilli les garde avec lui : { retour, cueilli, coups })
+  const cueilli = estCueillie(e);
+  const coups = (Number.isInteger(e) ? e : cueilli && Number.isInteger(e.coups) ? e.coups : 0) + f.coups;
   const fini = coups >= hitsNeeded(state, base);
   const parCoup = {};
   for (const [item, n] of Object.entries(o.regle.coup || {})) parCoup[item] = withBonus(state, n, techSum(state, 'recolteBonus'));
   const fin = fini ? butinFinal(state, id, o.regle) : {};
-  ecrire(state, id, fini ? { retour: retourDe(state, id, o.regle) } : coups);
+  ecrire(state, id, fini ? { retour: retourDe(state, id, o.regle) } : cueilli ? { ...e, coups } : coups);
   const morceaux = poser(state, parCoup, fin, ou);
   finir(state, o, G, f.energie);
   return { ok: true, coups, fini, reste: fini ? 0 : Math.max(0, hitsNeeded(state, base) - coups), items: somme(parCoup, fin), morceaux, fort: !!fort };
@@ -300,7 +313,7 @@ export function faucherMonde(state, id, ou, depuis) {
 export function cueillirMonde(state, id, variante, depuis) {
   const { o, G, refus } = preparer(state, id, 'cueillir', depuis);
   if (refus) return refus;
-  if (!o.regle.variantes.includes(Number(variante))) return fail(o.nom === 'ronces' ? 'Ce roncier est en fleur : pas encore de mûres.' : 'Pas encore de fruits.');
+  if (!o.regle.variantes.includes(Number(variante))) return fail(o.nom === 'ronces' ? 'Ce roncier est en fleur : pas encore de mûres.' : o.nom === 'chataignier' ? 'Ce châtaignier n\'a pas encore de bogues.' : 'Pas encore de fruits.');
   const items = butinFinal(state, id, o.regle);
   ecrire(state, id, { retour: retourDe(state, id, o.regle), cueilli: true });
   donner(state, items);
@@ -338,10 +351,10 @@ function donner(state, items) {
 }
 
 // Le geste qui convient à la pièce `id` (la carte : js/ui/outils.js) ; `o` : { ou, fort, variante,
-// depuis }.
+// depuis, geste (celui que la carte a choisi, pour une sorte qui en a deux : la règle `aussi`) }.
 export function recolterMonde(state, id, o = {}) {
   const r = lireIdMonde(id);
-  const geste = r && r.regle ? r.regle.geste : null;
+  const geste = r && r.regle ? (o.geste && regleGeste(r.regle, o.geste) ? o.geste : r.regle.geste) : null;
   if (geste === 'couper') return couperMonde(state, id, o.ou, o.fort, o.depuis);
   if (geste === 'casser') return casserMonde(state, id, o.ou, o.fort, o.depuis);
   if (geste === 'faucher') return faucherMonde(state, id, o.ou, o.depuis);

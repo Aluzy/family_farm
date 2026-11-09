@@ -1131,6 +1131,77 @@ def lupin(graine, variante):
     return fini(t, 7, 15, (12, 24, 30))
 
 
+# ---------- le châtaignier (le lot 4 des évolutions du crafting) ----------
+# L'arbre de la ferme (originaux/arbre_feuillu.png), foncé (le vert du feuillage, luminosité × 0,66, saturation × 0,9,
+# un peu bleuté ; le tronc × 0,85), et ses bogues brunes ouvertes, la châtaigne au milieu (variantes 0 et 1) ; cueilli,
+# sans ses bogues (variante 2 : data/monde.json RECOLTE.SORTES.chataignier.aussi.apres).
+BOGUE = [(80, 54, 22), (140, 100, 44), (190, 150, 70), (222, 196, 120)]
+CHATAIGNE = [(56, 26, 12), (110, 56, 26), (156, 92, 46)]
+
+
+def _vert(c):
+    return c[1] > c[0] + 8 and c[1] > c[2]
+
+
+def fonce(im, k=0.66, sat=0.9, teinte=0.035, tronc=0.85):
+    import colorsys
+    out = im.copy()
+    px = out.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if not a:
+                continue
+            h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+            if _vert((r, g, b)):
+                h, l, s = (h + teinte) % 1, l * k, min(1, s * sat)
+            else:
+                l *= tronc
+            r2, g2, b2 = colorsys.hls_to_rgb(h, l, s)
+            px[x, y] = (round(r2 * 255), round(g2 * 255), round(b2 * 255), a)
+    return out
+
+
+def bogue(t, x, y, ouverte, r):
+    """Une bogue hérissée (un rond de 2 px et ses piquants) ; ouverte, la châtaigne brune au milieu."""
+    c0, c1, c2, c3 = BOGUE
+    for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+        t.pose(x + dx, y + dy, c1)
+    t.pose(x, y, c2)
+    for dx, dy in ((-1, 0), (2, 1), (0, -1), (1, 2), (-1, 2), (2, -1)):
+        if r.random() < 0.8:
+            t.pose(x + dx, y + dy, c3 if dy < 0 else c0)
+    if ouverte:
+        t.pose(x + 1, y, CHATAIGNE[2]); t.pose(x, y + 1, CHATAIGNE[1]); t.pose(x + 1, y + 1, CHATAIGNE[0])
+
+
+def chataignier(graine, variante):
+    base = fonce(Image.open(os.path.join(ORIG, 'arbre_feuillu.png')).convert('RGBA'))
+    if variante == 2:
+        return base, 24, 61
+    t = Toile(base.width, base.height)
+    px = base.load()
+    lum = {}
+    for y in range(base.height):
+        for x in range(base.width):
+            if px[x, y][3]:
+                t.px[(x, y)] = px[x, y]
+                if _vert(px[x, y]) and y < 46:
+                    lum[(x, y)] = sum(px[x, y][:3]) / 765
+    r = random.Random(graine)
+    places = [p for p, l in sorted(lum.items()) if l > 0.18 and 4 < p[0] < base.width - 5 and 3 < p[1] < 44]
+    r.shuffle(places)
+    pris = []
+    for (x, y) in places:
+        if len(pris) >= 11:
+            break
+        if any(abs(x - a) < 5 and abs(y - b) < 5 for a, b in pris) or (x + 1, y + 1) not in lum:
+            continue
+        pris.append((x, y))
+        bogue(t, x, y, r.random() < 0.75, r)
+    return t.image(), 24, 61
+
+
 def deco_ferme(rangee, colonnes, assombri=1.0):
     """Des décors de l'herbe de la ferme (assets/herbe_deco.png, tuiles de 16 × 16 : rangée, colonnes),
     tels quels (ou assombris), le pied au milieu du bas de la tuile."""
@@ -1213,6 +1284,8 @@ def dessins():
     out['myosotis'] = [myosotis(1260 + k * 5, k) for k in range(3)]
     out['lavande'] = [lavande(1280 + k * 5, k) for k in range(3)]
     out['lupin'] = [lupin(1300 + k * 5, k) for k in range(2)]
+    # le châtaignier : avec ses bogues (deux dessins), puis cueilli
+    out['chataignier'] = [chataignier(1320 + k * 5, k) for k in range(3)]
     return out
 
 
