@@ -58,6 +58,7 @@
       this.cuisineOn = !!model.cuisineAllumee;
       this.meuleOn = !!model.meuleTourne;
       this.syncBlocks(model.blocs, model.bati, model.pieces, model.serreMurs);   // (avant le puits et la citerne : posés sur leurs blocs)
+      this.syncBassins(model.blocs);      // (les bassins : leur image, leur eau vivante, bassins.js)
       this.syncSilo(model.blocs);         // (les blocs de silo : leurs caisses, ou le silo qu'ils forment, silo.js)
       this.syncAbeilles(model);   // (les abeilles des ruches, et les fleurs où elles butinent)
       this.syncBotteleuses(model.botteleuses, model.botteVibre, model.fibres);   // (après les blocs : leurs images)

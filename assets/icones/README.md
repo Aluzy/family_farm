@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 469 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 470 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -479,6 +479,7 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/wood.png" width="48" height="48" alt=""> | 🪵 | [`wood.png`](wood.png) |
 | <img src="apercu/wood+rainbow.png" width="48" height="48" alt=""> | 🪵‍🌈 | [`wood+rainbow.png`](wood+rainbow.png) |
 | <img src="apercu/wood+link_symbol.png" width="48" height="48" alt=""> | 🪵‍🔗 | [`wood+link_symbol.png`](wood+link_symbol.png) |
+| <img src="apercu/bassin.png" width="48" height="48" alt=""> | 🪷‍🧱 | [`bassin.png`](bassin.png) |
 | <img src="apercu/coral.png" width="48" height="48" alt=""> | 🪸 | [`coral.png`](coral.png) |
 | <img src="apercu/empty_nest.png" width="48" height="48" alt=""> | 🪹 | [`empty_nest.png`](empty_nest.png) |
 | <img src="apercu/nest_with_eggs.png" width="48" height="48" alt=""> | 🪺 | [`nest_with_eggs.png`](nest_with_eggs.png) |
