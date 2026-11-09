@@ -312,7 +312,22 @@
     "appui dessus, et MAIN pierre va dans l'inventaire (l'énergie et l'XP du ramassage) ; il revient",
     "comme un rocher cassé. La pioche en main, il se casse comme les autres."
   ],
-  "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "BRIS": 2, "COUPS": 3, "RETOUR": [1, 3], "MAIN": 1 },
+  "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "BRIS": 2, "COUPS": 3, "RETOUR": [1, 3], "MAIN": 1,
+    "//NIVEAUX": [
+      "Les niveaux de la pioche (le lot 5 des évolutions du crafting ; js/engine/outils.js niveauPioche) : la pioche de",
+      "l'Atelier est en pierre (niveau 1) ; ses améliorations (ATELIER.RECETTES pioche_cuivre, _fer, _or : niveau) se",
+      "fabriquent chacune avec ce que le niveau d'avant extrait. Chacun : son nom, son icône (la tête de la couleur du",
+      "métal), son bonus de minerai (minerai : en %). MINERAIS : le niveau qu'il faut pour piocher un minerai (sinon,",
+      "le niveau 1)."
+    ],
+    "NIVEAUX": [
+      { "nom": "pierre", "icone": "⚒‍🪨", "minerai": 0 },
+      { "nom": "cuivre", "icone": "⚒‍🟠", "minerai": 25 },
+      { "nom": "fer", "icone": "⚒‍⚙", "minerai": 50 },
+      { "nom": "or", "icone": "⚒‍🟡", "minerai": 75 }
+    ],
+    "MINERAIS": { "or": 3, "platine": 4 }
+  },
   "//FAUX": [
     "La faux en main, un appui sur une touffe d'herbe haute de la carte la fauche : FIBRE fibre au",
     "sol, à son pied (à ramasser en marchant dessus), PERSONNAGE.COUTS.faucher d'énergie,",

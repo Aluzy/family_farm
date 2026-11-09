@@ -3,7 +3,7 @@ import { clockHours, nightActive } from '../engine/clock.js';
 import { weekdayIndex } from '../engine/format.js';
 import { mainCharacter, setupPending } from '../engine/depart.js';
 import { memberApparence, memberPerso } from '../engine/family.js';
-import { depositOreNotebook, hitsNeeded, mineOre } from '../engine/outils.js';
+import { depositOreNotebook, hitsNeeded, mineOre, refusMinerai } from '../engine/outils.js';
 import { techFlag } from '../engine/techtree.js';
 import { coiffeCarte, lumiereGrotte } from '../engine/equipement.js';
 import { addItem } from '../engine/inventory.js';
@@ -141,6 +141,8 @@ window.FermeHote = {
   // le carnet d'avant y est versé une fois ; les coups qu'il faut (Lames affûtées) ; un réglage
   // de l'arbre des technologies (la Lampe de mineur : tech('grotte'))
   miner: (sorte) => nuit() || joue(mineOre(state, sorte)),
+  // (le lot 5 : la pioche trop faible pour ce minerai, l'or, le platine : pourquoi, ou null)
+  refusMinerai: (sorte) => refusMinerai(state, sorte),
   verser: (carnet) => joue(depositOreNotebook(state, carnet)),
   coups: (base) => hitsNeeded(state, base),
   tech: (cle) => techFlag(state, cle),

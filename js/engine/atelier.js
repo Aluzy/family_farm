@@ -218,6 +218,15 @@ export function buildAtelier(state) {
 function aDejaOutil(state, outil) {
   return outil === 'houe' ? hasHoe(state) : !!(state.outils && state.outils[outil]);
 }
+// Une amélioration de la pioche (le lot 5 : niveau) : pourquoi on ne la fabrique pas, ou null. Il faut la pioche du
+// niveau d'avant (pas une plus haute : on ne redescend pas).
+function refusNiveau(state, r) {
+  const n = state.outils && state.outils.pioche ? Math.max(1, Number(state.outils.niveauPioche) || 1) : 0;
+  const N = DATA.PIOCHE.NIVEAUX;
+  if (n >= r.niveau) return `Tu as déjà la pioche en ${N[n - 1].nom}.`;
+  if (n < r.niveau - 1) return n ? `Il te faut d'abord la pioche en ${N[r.niveau - 2].nom}.` : 'Il te faut d\'abord une pioche (en pierre).';
+  return null;
+}
 
 // Peut-on fabriquer la recette `id` ? { ok, raison, manque }
 // Une recette « debloque » (le bloc de silo) : à partir du niveau de cet élément (NIVEAUX).
@@ -237,7 +246,7 @@ export function craftStatus(state, id) {
   if (!r) return { ok: false, raison: 'Recette inconnue.', manque: {} };
   if (r.plan && !planTrouve(state, id)) return { ok: false, raison: 'Il te faut d\'abord son plan : explore le pays de sa collection, ou attends qu\'un ami de là-bas te l\'offre.', manque: {} };
   if (!atelierConstruit(state)) return { ok: false, raison: 'Il faut d\'abord construire l\'Atelier.', manque: {} };
-  if (r.outil && aDejaOutil(state, r.outil)) return { ok: false, raison: 'Tu as déjà cet outil.', manque: {} };
+  if (r.outil && r.niveau) { const refusN = refusNiveau(state, r); if (refusN) return { ok: false, raison: refusN, manque: {} }; } else if (r.outil && aDejaOutil(state, r.outil)) return { ok: false, raison: 'Tu as déjà cet outil.', manque: {} };
   if (!recetteDebloquee(state, id)) return { ok: false, raison: `Se débloque au niveau ${unlockLevel(r.debloque)}.`, manque: {} };
   // (ce qui doit trouver sa place : l'animal, le cheval, le meuble)
   const refus = r.animal ? animalRefus(state, r.animal) : r.cheval ? chevalRefus(state) : r.meuble ? meubleRefus(state, r.meuble) : null;
@@ -260,6 +269,7 @@ export function craft(state, id) {
   else if (r.outil) {
     if (!state.outils || typeof state.outils !== 'object') state.outils = { hache: false, pioche: false, canne: false, choisi: 'houe' };
     state.outils[r.outil] = true;
+    if (r.niveau) state.outils.niveauPioche = r.niveau;
   }
   if (r.animal) accueillirAnimal(state, r.animal);
   if (r.cheval) accueillirCheval(state);

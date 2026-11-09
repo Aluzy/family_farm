@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 472 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 476 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -32,6 +32,10 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/hot_beverage+chocolate_bar.png" width="48" height="48" alt=""> | ☕‍🍫 | [`hot_beverage+chocolate_bar.png`](hot_beverage+chocolate_bar.png) |
 | <img src="apercu/hot_beverage+fire.png" width="48" height="48" alt=""> | ☕‍🔥 | [`hot_beverage+fire.png`](hot_beverage+fire.png) |
 | <img src="apercu/hammer_and_pick.png" width="48" height="48" alt=""> | ⚒ | [`hammer_and_pick.png`](hammer_and_pick.png) |
+| <img src="apercu/pioche_fer.png" width="48" height="48" alt=""> | ⚒‍⚙ | [`pioche_fer.png`](pioche_fer.png) |
+| <img src="apercu/pioche_cuivre.png" width="48" height="48" alt=""> | ⚒‍🟠 | [`pioche_cuivre.png`](pioche_cuivre.png) |
+| <img src="apercu/pioche_or.png" width="48" height="48" alt=""> | ⚒‍🟡 | [`pioche_or.png`](pioche_or.png) |
+| <img src="apercu/pioche_pierre.png" width="48" height="48" alt=""> | ⚒‍🪨 | [`pioche_pierre.png`](pioche_pierre.png) |
 | <img src="apercu/gear.png" width="48" height="48" alt=""> | ⚙ | [`gear.png`](gear.png) |
 | <img src="apercu/gear+ear_of_rice.png" width="48" height="48" alt=""> | ⚙‍🌾 | [`gear+ear_of_rice.png`](gear+ear_of_rice.png) |
 | <img src="apercu/warning_sign.png" width="48" height="48" alt=""> | ⚠ | [`warning_sign.png`](warning_sign.png) |

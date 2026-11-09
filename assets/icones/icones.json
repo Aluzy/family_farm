@@ -470,5 +470,9 @@
  "🌱‍💮": "graine_lupin.png",
  "🪷‍🧱": "bassin.png",
  "🍇": "raisin.png",
- "🌱‍🍇": "plant_vigne.png"
+ "🌱‍🍇": "plant_vigne.png",
+ "⚒‍🪨": "pioche_pierre.png",
+ "⚒‍🟠": "pioche_cuivre.png",
+ "⚒‍⚙": "pioche_fer.png",
+ "⚒‍🟡": "pioche_or.png"
 }
