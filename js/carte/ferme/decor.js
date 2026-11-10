@@ -20,6 +20,10 @@
   const { pixelRatio, reducedMotion } = F;
   const DECOR_MARGE = 64;
   const CULL_MS = 300;              // ms : les images revues même sans que la vue bouge (ce qui se déplace)           // px autour de la vue : dessiné quand même (voir cullDecor)
+  // Fiche 26 : les images loin de la vue (au-delà d'une vue de chaque côté, et d'un quart de plus pour ne
+  // pas aller et venir) passent dans un calque caché (cullScene), revu toutes les RESERVE.REVUE_MS ou quand
+  // la vue a bougé d'un quart.
+  const RESERVE = { MARGE: 1, ECART: 0.25, REVUE_MS: 1000 };
   const HERBE_MORCEAU = 256;        // px : le côté d'un morceau d'herbe haute (voir makeTallGrass)
 
   F.partie({
@@ -481,6 +485,7 @@
       const M = DECOR_MARGE, x0 = v.x - M, y0 = v.y - M, x1 = v.right + M, y1 = v.bottom + M;
       const marque = (img) => {
         if (!img) return;
+        img.fixe = true;   // (fiche 26 : du décor fixe, qui peut aller dans la réserve : cullScene)
         if (!img.horsVuePose) {
           const rend = img.willRender;
           img.willRender = function (camera) { return !this.horsVue && rend.call(this, camera); };
@@ -506,18 +511,64 @@
 
     // Les images de la scène (pas dans un conteneur, qui suivent la vue) hors de la vue et de sa marge :
     // pas dessinées (horsVue, comme ci-dessus). Les images qui portent `toujours` sont laissées.
+    // Fiche 26 : les images du décor fixe (`fixe` : arbres, rochers, herbes hautes, ramassables, blocs et
+    // leurs dalles, végétation du grand monde, terre et cultures des parcelles) qui sont loin (au-delà
+    // d'une vue de chaque côté) sortent même de la liste d'affichage, dans un calque caché
+    // (this.reserveVue) : Phaser trie et parcourt toute sa liste à chaque image (≈ 4 600 images sur une
+    // grosse partie, dont ≈ 600 près de la vue). Elles reviennent quand la vue approche (revu toutes les
+    // RESERVE.REVUE_MS, ou quand la vue a bougé d'un quart) et le tri les remet à leur rang ; le brouillard
+    // est alors revu. Seulement le décor fixe : une image que son code déplace (une ombre qui suit la vue,
+    // une image d'une réserve réutilisée ailleurs, une abeille) pourrait revenir près de la vue sans que
+    // la vue bouge, et manquer jusqu'à la revue suivante ; les surveiller toutes à chaque image coûtait
+    // autant que ce qu'on gagnait.
     cullScene(v) {
       const M = DECOR_MARGE, x0 = v.x - M, y0 = v.y - M, x1 = v.right + M, y1 = v.bottom + M;
+      let R = this.reserveVue;
+      if (!R) {
+        R = this.reserveVue = { calque: this.add.layer().setVisible(false), t: -Infinity, cx: NaN, cy: NaN };
+      }
+      const ex = v.width * RESERVE.ECART, ey = v.height * RESERVE.ECART;
+      const gx0 = v.x - v.width * RESERVE.MARGE, gx1 = v.right + v.width * RESERVE.MARGE;
+      const gy0 = v.y - v.height * RESERVE.MARGE, gy1 = v.bottom + v.height * RESERVE.MARGE;
+      const aPart = (img) => img.type !== 'Image' || img.toujours || img.personnage || img.depth >= 1e5 || img.parentContainer || img.scrollFactorX !== 1 || img.scrollFactorY !== 1;
+      const pose = (img) => {
+        if (img.horsVuePose) return;
+        const rend = img.willRender;
+        img.willRender = function (camera) { return !this.horsVue && rend.call(this, camera); };
+        img.horsVuePose = true;
+      };
+      let sortir = null;
       for (const img of this.children.list) {
-        if (img.type !== 'Image' || img.toujours || img.parentContainer || img.scrollFactorX !== 1 || img.scrollFactorY !== 1) continue;
-        if (!img.horsVuePose) {
-          const rend = img.willRender;
-          img.willRender = function (camera) { return !this.horsVue && rend.call(this, camera); };
-          img.horsVuePose = true;
-        }
+        if (aPart(img)) continue;
+        pose(img);
+        const w = img.displayWidth, h = img.displayHeight, x = img.x - img.originX * w, y = img.y - img.originY * h;
+        if (img.fixe && (x > gx1 + ex || x + w < gx0 - ex || y > gy1 + ey || y + h < gy0 - ey)) { (sortir || (sortir = [])).push(img); continue; }
+        img.horsVue = x > x1 || x + w < x0 || y > y1 || y + h < y0;
+      }
+      if (sortir) for (const img of sortir) img.addToDisplayList(R.calque);
+      // les images mises à l'écart qui sont revenues près de la vue
+      const now = performance.now();
+      if (now - R.t < RESERVE.REVUE_MS && Math.abs(v.centerX - R.cx) < ex && Math.abs(v.centerY - R.cy) < ey) return;
+      R.t = now; R.cx = v.centerX; R.cy = v.centerY;
+      let rentrer = null;
+      for (const img of R.calque.list) {
+        const w = img.displayWidth, h = img.displayHeight, x = img.x - img.originX * w, y = img.y - img.originY * h;
+        if (x > gx1 || x + w < gx0 || y > gy1 || y + h < gy0) continue;
+        (rentrer || (rentrer = [])).push(img);
+      }
+      this.rentrerReserve(rentrer, v);
+    },
+
+    // Remettre ces images de la réserve dans la liste d'affichage (le tri les range), leur `horsVue` à jour.
+    rentrerReserve(rentrer, v) {
+      if (!rentrer) return;
+      const M = DECOR_MARGE, x0 = v.x - M, y0 = v.y - M, x1 = v.right + M, y1 = v.bottom + M;
+      for (const img of rentrer) {
+        img.addToDisplayList(this.sys.displayList);
         const w = img.displayWidth, h = img.displayHeight, x = img.x - img.originX * w, y = img.y - img.originY * h;
         img.horsVue = x > x1 || x + w < x0 || y > y1 || y + h < y0;
       }
+      if (this.brume) this.brume.objets = true;   // (leur brouillard : brouillard.js brumeObjets)
     },
 
     // L'image de l'arbre `t` (mapTrees) : celle qui contient sa première case.

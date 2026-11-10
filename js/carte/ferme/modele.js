@@ -93,6 +93,7 @@
             // les ombres du soleil (soleil.js) qui s'y portent comme sur l'herbe
             const terre = (BLOCS_CARTE.solDepth + SOLEIL.depth) / 2;
             e = { soil: this.add.image(x, y, 'ph_dry').setDepth(terre), crop: null, key: '', tween: null };
+            e.soil.fixe = true;   // (fiche 26 : décor fixe, decor.js cullScene)
             this.plots.set(p.id, e);
           }
           // (dans la Serre, la terre est celle de son bac, dessinée au sol avec ses planches,
@@ -313,6 +314,7 @@
           const framed = this.has('crops') && this.ctx.crops[p.culture];
           if (framed) {
             e.crop = this.add.image(x, y + T / 2 - this.cultureMonte(p.culture), 'crops', key).setOrigin(0.5, 1);
+            e.crop.fixe = true;
           } else {
             // Sans image : l'emoji de la culture, grossit avec les phases.
             e.crop = this.add.text(x, y + 6, p.icone, { fontSize: '12px' }).setOrigin(0.5, 1).setScale(0.45 + 0.18 * Math.max(0, p.phase));

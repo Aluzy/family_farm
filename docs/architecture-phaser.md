@@ -195,6 +195,12 @@ la ferme dormait à côté avec ses propres textures.
 - **Le suivi de la vue et les fondus** se calculent avec `CarteKit.rattrape(dt, ms)` = 1 − e^(−dt/ms) :
   la même trajectoire à 30, 60 ou 120 images par seconde (`dt / ms` rattrapait plus vite quand les
   images étaient plus courtes).
+- **Le décor loin de la vue** (fiche 26) : Phaser trie et parcourt toute la liste d'affichage à chaque
+  image ; les images du décor fixe (`img.fixe` : arbres, rochers, herbes, ramassables, blocs, dalles,
+  sols, parcelles, végétation du monde) à plus d'une vue de l'écran passent dans un calque caché
+  (`reserveVue`, `js/carte/ferme/decor.js` `cullScene`) et reviennent quand la vue approche. Une image
+  que son code déplace n'est jamais mise à l'écart. Le code qui parcourt `this.children.list` (figer,
+  traces, brouillard, eau) ne voit donc que ce qui est près de la vue.
 - **Le pas borné à 50 ms** (`update` de la scène, le personnage) : sous 20 images par seconde, le monde
   ralentit au lieu de sauter (pas de personnage qui traverse un mur d'une image à l'autre). C'est voulu.
 - **Le clavier** est celui de Phaser (`input.keyboard`), sans capture : rien n'est retenu à la

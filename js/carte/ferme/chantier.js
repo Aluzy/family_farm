@@ -414,6 +414,7 @@
       }
       const x = e.x - T / 2, y = e.y - T;
       e.dalle = { f, img: this.add.image(x, y, key).setOrigin(0, 0).setDepth(DALLE.profondeur) };
+      e.dalle.img.fixe = true;   // (fiche 26 : décor fixe, decor.js cullScene)
     },
 
     // Un meuble posé (modèle.blocs : b.meuble = { dessin, largeur, hauteur, bloque, plat, lit }) :
@@ -566,7 +567,9 @@
         const frame = (BLOCS_CARTE.modelesSols[sorte] !== undefined ? BLOCS_CARTE.modelesSols[sorte] : BLOCS_CARTE.sols) + m, img = S.get(c);
         if (img) { if (img.frame.name !== frame) img.setFrame(frame); continue; }
         const x = col * T + T / 2, y = (Math.floor(c / cols) + 1) * T;
-        S.set(c, this.add.image(x, y, BLOCS_CARTE.key, frame).setOrigin(0.5, 1).setDepth(BLOCS_CARTE.solDepth));
+        const sol = this.add.image(x, y, BLOCS_CARTE.key, frame).setOrigin(0.5, 1).setDepth(BLOCS_CARTE.solDepth);
+        sol.fixe = true;   // (fiche 26 : décor fixe, decor.js cullScene)
+        S.set(c, sol);
         this.floorsN = (this.floorsN || 0) + 1;       // (les touffes d'herbe autour : herbes.js)
       }
       for (const [c, img] of S) if (!at.has(c)) { img.destroy(); S.delete(c); this.floorsN = (this.floorsN || 0) + 1; }

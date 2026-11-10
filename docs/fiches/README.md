@@ -75,7 +75,7 @@ après 26 et 28. Les pistes de `docs/chantier-allegement.md` restent valables à
 | Fiche | Dépend de | Risque | État |
 |---|---|---|---|
 | [25 — la cadence de la carte : 60 images par seconde au plus, une seule boucle](25-cadence-de-la-carte.md) | — | faible | fait (`low-power` à mesurer sur le téléphone) |
-| [26 — la scène rangée en Layers : sol, monde trié, ciel, voiles](26-layers-de-la-scene.md) | — | faible | à faire |
+| [26 — le décor loin de la vue hors de la liste d'affichage (au lieu des Layers)](26-layers-de-la-scene.md) | — | faible | fait (autrement : les mesures) |
 | [27 — la pluie en particules, les shaders prêts, moins d'allocations](27-pluie-shaders-allocations.md) | — | faible | à faire |
 | [28 — les calculs hors du fil principal : rives, encyclopédie, rattrapage](28-calculs-hors-du-fil.md) | — | moyen | à faire |
 | [29 — le sol peint dans un Worker et la teinte de l'herbe](29-sol-peint-dans-un-worker.md) | 28 | moyen | à faire |
