@@ -391,3 +391,10 @@ Sur la partie du jour 75 (696 blocs, une station de robot, trois chaînes), le r
 petite partie) : `robotStation` parcourait tous les blocs plusieurs fois à chacun des 5 760 pas. La station
 figée le temps d'un pas et du rattrapage : 148 ms dans Node, le même état à l'octet près. Le chargement
 après 8 h d'absence, ralenti ×4 : 16,0 s → 11,0 à 12,1 s.
+
+## La teinte de l'herbe haute, 3 fois plus rapide (fiche 29)
+
+`tintTallGrass` peignait chaque région entière pour lire 16 × 6 px sous chaque touffe : elle ne peint plus
+que les cases sous les touffes et ne relit que leurs fenêtres. Ralenti ×4, la partie du jour 75 : ≈ 930 ms
+→ ≈ 310 à 350 ms, les mêmes teintes pour ses 4 267 touffes. La peinture des morceaux de sol, mesurée
+(≈ 0,27 s ralenti), reste sur le fil principal.

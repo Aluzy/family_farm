@@ -1,5 +1,10 @@
 # Fiche 29 — Le sol peint dans un Worker (OffscreenCanvas) et la teinte de l'herbe qui en sort
 
+> **Fait (2026-11-10), sans Worker, d'après les mesures** : la peinture des morceaux de sol ne coûtait que
+> ≈ 0,27 s au chargement (ralenti ×4) ; la teinte de l'herbe haute, ≈ 0,93 s, peignait toute la région
+> pour lire quelques pixels sous chaque touffe. Elle est 3 fois plus rapide, mêmes teintes. Voir « Ce qui
+> a été fait » en fin de fiche.
+
 Chantier « Phaser 4 », piste 5 du rapport (seconde moitié). Dépend de la fiche 28 (le Worker « carte » et
 le repli sans Worker).
 
@@ -60,3 +65,18 @@ une partie neuve ; marcher vers une région pas encore peinte.
 ## Livraison
 
 Un commit ; `docs/perf.md` et `docs/architecture-phaser.md` mis à jour.
+
+## Ce qui a été fait (les mesures : Chromium, processeur ralenti 4 fois, la sauvegarde du jour 75)
+
+- **Mesuré au chargement** : la peinture des morceaux de sol (`paintMorceau`) ≈ 0,27 s, la teinte de l'herbe
+  haute (`tintTallGrass`) ≈ 0,93 s. Le reste du chargement est ailleurs : la création de la scène et le
+  modèle (≈ 2,5 s), les objets du décor des régions (`showRegionObjs`, ≈ 0,7 s), la génération de la ferme
+  (≈ 1 s), l'eau (≈ 0,5 s). Peindre le sol dans un Worker ne vaut pas le transfert des planches et des
+  images.
+- **La teinte de l'herbe haute** (`decor.js`, `tintTallGrass`) : elle peignait chaque région entière (1 056 ×
+  1 056 px, toutes les couches) dans un canevas de travail, puis en relisait tous les pixels (4,4 Mo),
+  pour une fenêtre de 16 × 6 px sous chaque touffe. Elle ne peint plus que les cases de ces fenêtres (les
+  tuiles se dessinent case par case : les mêmes pixels là où on lit) et ne relit que chaque fenêtre.
+  ≈ 930 ms → ≈ 310 à 350 ms ; les 4 267 touffes de la partie ont exactement la même teinte (comparé dans
+  Chromium, ancienne et nouvelle méthode sur la même partie, sur la ferme et dans le grand monde). La plus
+  longue tâche après l'affichage : ≈ 1,0 s → 0,5 à 0,7 s.
