@@ -49,8 +49,111 @@
   const FUITE = { court: [1.1, 1.8], vite: 3, cache: [6, 12], retour: 1.6, envol: 70 };
   const PROFONDEUR = { air: 9e5 };
 
-  // Un nombre au hasard entre a et b.
-  const entre = (a, b) => a + Math.random() * (b - a);
+  // Un nombre au hasard entre a et b, du hasard `h` de la bête (fiche 31 : à graine, CarteKit.hasard).
+  const entre = (h, a, b) => a + h() * (b - a);
+
+  /* ---------- ce qu'elles font : leur machine à états (fiche 31, CarteKit.machine) ----------
+     Chaque état fait son pas : il règle l'image à montrer (c.suite, c.n) et rend, au besoin, l'état
+     suivant ; `c.fini` : l'état s'est dessiné lui-même (le dauphin sous l'eau, son saut). La fuite est
+     une transition revue à chaque image (cadence 0), avant le temps qui s'écoule (b.t) puis le pas. */
+  const ETATS = {
+    vol: { pas(b, dt, c) {          // l'aigle : des cercles, haut au-dessus de sa place
+      const e = b.e, img = b.img, time = c.time;
+      b.angle += (dt * e.vitesse) / b.rayon;
+      b.x = b.hx + Math.cos(b.angle) * b.rayon;
+      b.y = b.hy + Math.sin(b.angle) * b.rayon * 0.6;
+      c.suite = 'vol';
+      c.n = Math.sin(time / 900 + b.phase * 6) > 0.6 ? Math.floor(time / 160) : 0;     // (il bat des ailes, de temps en temps)
+      img.setRotation(b.angle + Math.PI);
+      if (b.ombre) b.ombre.setRotation(b.angle + Math.PI).setFrame(c.scene.fauneCadre(b, 'vol', c.n));
+    } },
+    sous: { pas(b, dt, c) {         // le dauphin sous l'eau : il attend, puis saute un peu plus loin
+      const img = b.img, S = c.scene;
+      c.fini = true;
+      img.setVisible(false);
+      let suite;
+      if (b.t <= 0) {
+        const a = b.h() * Math.PI * 2, R = S.ctx.monde.faune.RAYON * T;
+        const x = b.hx + Math.cos(a) * R * b.h(), y = b.hy + Math.sin(a) * R * b.h();
+        if (S.faunePeut(b, x, y)) { b.x = x; b.y = y; }
+        suite = 'saut'; b.t = 0; b.flip = b.h() < 0.5;
+        img.setVisible(true);
+      }
+      S.faunePlace(b, b.x, b.y);
+      return suite;
+    } },
+    saut: { pas(b, dt, c) {
+      const img = b.img;
+      c.fini = true;
+      b.t += dt;
+      const k = Math.floor((b.t * 1000) / SAUT.image), l = b.imgs.saut.length;
+      if (k >= l) { b.t = entre(b.h, ...SAUT.attente); img.setVisible(false); return 'sous'; }
+      img.setVisible(true).setFrame(b.imgs.saut[k]).setFlipX(b.flip);
+      c.scene.faunePlace(b, b.x, b.y);
+      return undefined;
+    } },
+    repos: { pas(b, dt, c) {
+      if (b.t > 0) return undefined;
+      // plus loin, autour de sa place ; un canard, un cygne plonge parfois la tête
+      if (b.imgs.plonge && !b.terre && b.h() < 0.3) { b.t = entre(b.h, 1, 2.2); return 'plonge'; }
+      const R = c.scene.ctx.monde.faune.RAYON * T, a = b.h() * Math.PI * 2, r = b.h() * R;
+      const x = b.hx + Math.cos(a) * r, y = b.hy + Math.sin(a) * r;
+      if (c.scene.faunePeut(b, x, y)) { b.tx = x; b.ty = y; b.t = 8; return 'marche'; }
+      b.t = entre(b.h, ...REPOS.attente);
+      return undefined;
+    } },
+    plonge: { pas(b, dt, c) {
+      c.suite = 'plonge';
+      c.n = Math.floor(c.time / 300);
+      if (b.t <= 0) { b.t = entre(b.h, ...REPOS.attente); return 'repos'; }
+      return undefined;
+    } },
+    marche: { pas(b, dt, c) {
+      c.suite = 'marche';
+      c.n = Math.floor(c.time / 160);
+      if (!c.scene.fauneAvance(b, b.tx, b.ty, b.e.vitesse, dt) || b.t <= 0) { b.t = entre(b.h, ...REPOS.attente); return 'repos'; }
+      return undefined;
+    } },
+    fuite: { pas(b, dt, c) {        // court, nage, ou file vers son terrier
+      const e = b.e;
+      c.suite = b.imgs.fuite ? 'fuite' : 'marche';
+      c.n = Math.floor(c.time / 110);
+      const ok = c.scene.fauneAvance(b, b.tx, b.ty, e.vitesse * FUITE.vite, dt);
+      if (b.t <= 0 || !ok) {
+        if (e.fuit === 'terrier') { b.t = entre(b.h, ...FUITE.cache); return 'cache'; }
+        b.t = entre(b.h, ...REPOS.attente);
+        return 'repos';
+      }
+      return undefined;
+    } },
+    envol: { pas(b, dt, c) {        // il s'envole, monte et s'en va en s'effaçant
+      c.suite = 'vol';
+      c.n = Math.floor(c.time / 120);
+      const l = Math.hypot(b.tx - b.x, b.ty - b.y) || 1;
+      b.x += ((b.tx - b.x) / l) * FUITE.envol * dt;
+      b.y += ((b.ty - b.y) / l) * FUITE.envol * dt;
+      b.haut = (b.haut || 0) + 24 * dt;
+      b.alpha = Math.max(0, b.alpha - dt / 1.6);
+      if (b.alpha <= 0) { b.t = entre(b.h, ...FUITE.cache) + 4; return 'cache'; }
+      return undefined;
+    } },
+    cache: { pas(b, dt, c) {        // disparu ; revenu à sa place quand le personnage est loin
+      b.alpha = Math.max(0, b.alpha - dt * 3);
+      const p = c.p, dh = p ? Math.hypot(p.x - b.hx, p.y - b.hy) : Infinity;
+      if (b.t <= 0 && dh > b.e.fuite * FUITE.retour) { b.x = b.hx; b.y = b.hy; b.haut = 0; return 'revient'; }
+      return undefined;
+    } },
+    revient: { pas(b, dt) {
+      b.alpha = Math.min(1, b.alpha + dt * 1.5);
+      if (b.alpha >= 1) { b.t = entre(b.h, ...REPOS.attente); return 'repos'; }
+      return undefined;
+    } },
+  };
+  const FUIT_DE = ['repos', 'marche', 'plonge'];
+  const VIE = K.machine(ETATS, [
+    // le personnage à moins de `fuite` px : elle fuit, à sa façon (fauneFuit)
+    { de: FUIT_DE, si: (b, c) => !!b.e.fuite && c.d < b.e.fuite, fait: (b, c) => c.scene.fauneFuit(b, c.p) },
+  ], { cadence: 0, avant: (b, dt) => { b.t -= dt; } });
 
   F.partie({
 
@@ -88,9 +191,11 @@
         const e = E.especes[f[k]];
         if (!e) continue;
         const x = f[k + 1], y = f[k + 2];
+        // (son hasard à graine : son espèce et sa place, fiche 31)
+        const h = K.hasard(K.graine(e.cle + ':' + x + ',' + y));
         r.betes.push({
-          e, x, y, hx: x, hy: y, img: null, ombre: null, etat: e.lieu === 'air' ? 'vol' : e.images.saut ? 'sous' : 'repos',
-          t: entre(0.5, REPOS.attente[1]), k: 0, flip: (x + y) % 2 === 0, imgs: e.variantes[f[k + 3]] || e.variantes[0],
+          e, x, y, hx: x, hy: y, img: null, ombre: null, etat: e.lieu === 'air' ? 'vol' : e.images.saut ? 'sous' : 'repos', h,
+          t: entre(h, 0.5, REPOS.attente[1]), k: 0, flip: (x + y) % 2 === 0, imgs: e.variantes[f[k + 3]] || e.variantes[0],
           angle: ((x * 7 + y * 13) % 628) / 100, rayon: AIR.rayon[0] + ((x + y) % (AIR.rayon[1] - AIR.rayon[0])), alpha: 1, cache: false,
           phase: ((x * 31 + y * 17) % 1000) / 1000,
         });
@@ -174,14 +279,9 @@
     },
 
     // Un pas vers (tx, ty), `v` px/s : false si la case d'après ne lui est pas permise (il s'arrête).
+    // (le pas commun du socle, fiche 31 : CarteKit.avance)
     fauneAvance(b, tx, ty, v, dt) {
-      const dx = tx - b.x, dy = ty - b.y, l = Math.hypot(dx, dy);
-      if (l < 0.5) return false;
-      const s = Math.min(l, v * dt), nx = b.x + (dx / l) * s, ny = b.y + (dy / l) * s;
-      if (!this.faunePeut(b, nx, ny)) return false;
-      b.x = nx; b.y = ny;
-      if (Math.abs(dx) > 0.3) b.flip = dx < 0;
-      return true;
+      return K.avance(b, tx, ty, v, dt, (x, y) => this.faunePeut(b, x, y));
     },
 
     // À chaque image : les bêtes des régions dessinées (images faites près de la vue, retirées loin),
@@ -230,94 +330,13 @@
         if (b.ombre) b.ombre.setVisible(!cachee);
         return;
       }
-      const d = p ? Math.hypot(p.x - b.x, p.y - b.y) : Infinity;
-      if (e.fuite && d < e.fuite && ['repos', 'marche', 'plonge'].includes(b.etat)) this.fauneFuit(b, p);
-      b.t -= dt;
-      let suite = 'repos', n = Math.floor((time + b.phase * 1000) / REPOS.image);
-      switch (b.etat) {
-        case 'vol': {        // l'aigle : des cercles, haut au-dessus de sa place
-          b.angle += (dt * e.vitesse) / b.rayon;
-          b.x = b.hx + Math.cos(b.angle) * b.rayon;
-          b.y = b.hy + Math.sin(b.angle) * b.rayon * 0.6;
-          suite = 'vol';
-          n = Math.sin(time / 900 + b.phase * 6) > 0.6 ? Math.floor(time / 160) : 0;     // (il bat des ailes, de temps en temps)
-          img.setRotation(b.angle + Math.PI);
-          if (b.ombre) b.ombre.setRotation(b.angle + Math.PI).setFrame(this.fauneCadre(b, 'vol', n));
-          break;
-        }
-        case 'sous': {       // le dauphin sous l'eau : il attend, puis saute un peu plus loin
-          img.setVisible(false);
-          if (b.t <= 0) {
-            const a = Math.random() * Math.PI * 2, R = this.ctx.monde.faune.RAYON * T;
-            const x = b.hx + Math.cos(a) * R * Math.random(), y = b.hy + Math.sin(a) * R * Math.random();
-            if (this.faunePeut(b, x, y)) { b.x = x; b.y = y; }
-            b.etat = 'saut'; b.t = 0; b.flip = Math.random() < 0.5;
-            img.setVisible(true);
-          }
-          this.faunePlace(b, b.x, b.y);
-          return;
-        }
-        case 'saut': {
-          b.t += dt;
-          const k = Math.floor((b.t * 1000) / SAUT.image), l = b.imgs.saut.length;
-          if (k >= l) { b.etat = 'sous'; b.t = entre(...SAUT.attente); img.setVisible(false); return; }
-          img.setVisible(true).setFrame(b.imgs.saut[k]).setFlipX(b.flip);
-          this.faunePlace(b, b.x, b.y);
-          return;
-        }
-        case 'repos': {
-          if (b.t <= 0) {
-            // plus loin, autour de sa place ; un canard, un cygne plonge parfois la tête
-            if (b.imgs.plonge && !b.terre && Math.random() < 0.3) { b.etat = 'plonge'; b.t = entre(1, 2.2); break; }
-            const R = this.ctx.monde.faune.RAYON * T, a = Math.random() * Math.PI * 2, r = Math.random() * R;
-            const x = b.hx + Math.cos(a) * r, y = b.hy + Math.sin(a) * r;
-            if (this.faunePeut(b, x, y)) { b.etat = 'marche'; b.tx = x; b.ty = y; b.t = 8; } else b.t = entre(...REPOS.attente);
-          }
-          break;
-        }
-        case 'plonge':
-          suite = 'plonge';
-          n = Math.floor(time / 300);
-          if (b.t <= 0) { b.etat = 'repos'; b.t = entre(...REPOS.attente); }
-          break;
-        case 'marche': {
-          suite = 'marche';
-          n = Math.floor(time / 160);
-          if (!this.fauneAvance(b, b.tx, b.ty, e.vitesse, dt) || b.t <= 0) { b.etat = 'repos'; b.t = entre(...REPOS.attente); }
-          break;
-        }
-        case 'fuite': {      // court, nage, ou file vers son terrier
-          suite = b.imgs.fuite ? 'fuite' : 'marche';
-          n = Math.floor(time / 110);
-          const ok = this.fauneAvance(b, b.tx, b.ty, e.vitesse * FUITE.vite, dt);
-          if (b.t <= 0 || !ok) {
-            if (e.fuit === 'terrier') { b.etat = 'cache'; b.t = entre(...FUITE.cache); } else { b.etat = 'repos'; b.t = entre(...REPOS.attente); }
-          }
-          break;
-        }
-        case 'envol': {      // il s'envole, monte et s'en va en s'effaçant
-          suite = 'vol';
-          n = Math.floor(time / 120);
-          const l = Math.hypot(b.tx - b.x, b.ty - b.y) || 1;
-          b.x += ((b.tx - b.x) / l) * FUITE.envol * dt;
-          b.y += ((b.ty - b.y) / l) * FUITE.envol * dt;
-          b.haut = (b.haut || 0) + 24 * dt;
-          b.alpha = Math.max(0, b.alpha - dt / 1.6);
-          if (b.alpha <= 0) { b.etat = 'cache'; b.t = entre(...FUITE.cache) + 4; }
-          break;
-        }
-        case 'cache': {      // disparu ; revenu à sa place quand le personnage est loin
-          b.alpha = Math.max(0, b.alpha - dt * 3);
-          const dh = p ? Math.hypot(p.x - b.hx, p.y - b.hy) : Infinity;
-          if (b.t <= 0 && dh > e.fuite * FUITE.retour) { b.x = b.hx; b.y = b.hy; b.haut = 0; b.etat = 'revient'; }
-          break;
-        }
-        case 'revient':
-          b.alpha = Math.min(1, b.alpha + dt * 1.5);
-          if (b.alpha >= 1) { b.etat = 'repos'; b.t = entre(...REPOS.attente); }
-          break;
-        default: break;
-      }
+      // (fiche 31 : la machine à états de la faune, VIE ; c : ce que l'image partage, réutilisé)
+      const c = this.fauneVie || (this.fauneVie = { scene: this, time: 0, p: null, d: 0, suite: 'repos', n: 0, fini: false });
+      c.time = time; c.p = p; c.d = p ? Math.hypot(p.x - b.x, p.y - b.y) : Infinity;
+      c.suite = 'repos'; c.n = Math.floor((time + b.phase * 1000) / REPOS.image); c.fini = false;
+      VIE.pas(b, dt, c);
+      if (c.fini) return;
+      const suite = c.suite, n = c.n;
       const cadre = this.fauneCadre(b, suite, n);
       img.setVisible(b.alpha > 0.02).setAlpha(b.alpha).setFrame(cadre);
       if (e.lieu !== 'air') img.setFlipX(b.flip);
@@ -362,10 +381,10 @@
         const x = b.x + Math.cos(a + da) * R, y = b.y + Math.sin(a + da) * R;
         if (!this.faunePeut(b, b.x + Math.cos(a + da) * 8, b.y + Math.sin(a + da) * 8)) continue;
         b.etat = 'fuite'; b.tx = x; b.ty = y;
-        b.t = e.fuit === 'terrier' ? 0.5 : entre(...FUITE.court);
+        b.t = e.fuit === 'terrier' ? 0.5 : entre(b.h, ...FUITE.court);
         return;
       }
-      if (e.fuit === 'terrier') { b.etat = 'cache'; b.t = entre(...FUITE.cache); }
+      if (e.fuit === 'terrier') { b.etat = 'cache'; b.t = entre(b.h, ...FUITE.cache); }
     },
 
     // L'image de la bête posée en (x, y) (le pied ; un oiseau en vol, plus haut), rangée selon son

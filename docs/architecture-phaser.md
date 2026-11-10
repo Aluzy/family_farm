@@ -205,6 +205,10 @@ la ferme dormait à côté avec ses propres textures.
   a besoin, au milieu d'une image (le lot d'images standard en a une variante par nombre de textures du
   lot, 1 à 16 ; l'eau, `eauMer` et `eauVive`). La scène les fait préparer un par un pendant les temps
   morts, 4 s après sa création (`CarteJeu.prechauffe`, `tachesLots` ; `eauPrechauffe`, js/carte/eau.js).
+- **Les comportements** (fiche 31, `js/carte/comportement.js`) : un socle commun pour ce qui vit sur la
+  carte : `CarteKit.machine` (états, transitions en table à leur cadence), `perception` (grille de 64 px),
+  `avance` (le pas commun), `separation`, `hasard` / `graine` (à graine). La faune du grand monde
+  (`faune-monde.js`, `ETATS`, `VIE`) l'utilise ; les autres acteurs y passeront un à un.
 - **Le pas borné à 50 ms** (`update` de la scène, le personnage) : sous 20 images par seconde, le monde
   ralentit au lieu de sauter (pas de personnage qui traverse un mur d'une image à l'autre). C'est voulu.
 - **Le clavier** est celui de Phaser (`input.keyboard`), sans capture : rien n'est retenu à la
