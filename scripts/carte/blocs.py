@@ -1873,34 +1873,57 @@ MIEL = [(150, 84, 14), (214, 136, 22), (246, 186, 48), (255, 226, 120)]         
 
 
 def ruche(pleine=False):
-    """La ruche : deux hausses de planches peintes sur un petit socle, le toit plat qui
-    déborde, le trou de vol en bas. Pleine, le miel se devine : il luit entre les hausses et
-    perle au trou de vol, une goutte coule sur la planche d'envol."""
+    """La ruche, vue de haut à 45° comme les autres blocs : le dessus de son couvercle de zinc
+    (raccourci) et son chant, qui débordent un peu ; dessous, la face avant de deux hausses de
+    planches peintes (le joint entre elles, une poignée creusée dans chacune) ; en bas, le trou
+    de vol et la planche d'envol qui avance devant (son dessus éclairé, son chant) ; le socle
+    sur deux pieds. Lumière en haut à gauche. Pleine, le miel se devine : il luit dans le joint
+    et perle au trou de vol, une goutte coule sur la planche d'envol."""
     t = Toile()
-    pieds(t, (3, 11), 20, BAS - 1)
-    yd, yf = boite(t, 2, 13, 19, 12, 5, PEINT, planches(PEINT, 'h', pas=3, y0=1))
-    joint = yf + (19 - yf) // 2                  # le joint entre les deux hausses
+    pieds(t, (3, 11), 21, BAS)
+    # le corps : deux hausses (13 px de haut, sous le couvercle), leurs planches couchées
+    bois = planches(PEINT, 'h', pas=3, y0=1)
+    _, yf = boite(t, 2, 13, 20, 13, 0, PEINT,
+                  lambda x, y: PEINT[4] if x == 2 else PEINT[1] if x == 13 else bois(x, y), arete=False)
+    joint = yf + (20 - yf) // 2                  # le joint entre les deux hausses
     for x in range(2, 14):
         t.put(x, joint, PEINT[0])
         t.put(x, joint + 1, PEINT[4] if x == 2 else PEINT[3])
-    # le toit : une planche plate qui déborde, son chant sombre
-    for y in range(yd - 2, yd + 2):
+    for y0 in (yf + 2, joint + 3):               # une poignée creusée dans chaque hausse
+        t.rect(6, y0, 9, y0, PEINT[0])
+        t.rect(6, y0 + 1, 9, y0 + 1, PEINT[4])
+    # le couvercle de zinc : il déborde d'un pixel de chaque côté et devant ; son dessus,
+    # raccourci (11 px de fond), éclairé en haut à gauche, des reflets en biais ; son chant
+    yd, yc = boite(t, 1, 14, yf, 2, 11, FER, FER, arete=False)
+    for y in range(yd, yc):
         for x in range(1, 15):
-            t.put(x, y, TOIT[4] if y < yd + 1 else TOIT[2])
+            if x == 1 or y == yd:
+                c = FER[4]                       # les bords éclairés (gauche, fond)
+            elif x == 14:
+                c = FER[2]
+            else:
+                c = FER[4] if (x + y) % 7 == 0 else FER[3]
+            t.put(x, y, c)
     for x in range(1, 15):
-        t.put(x, yd + 2, TOIT[1])
-    # le trou de vol et la planche d'envol
-    t.rect(6, 18, 9, 18, OUT)
-    for x in range(5, 11):
-        t.put(x, 19, PEINT[4] if x == 5 else PEINT[3])
+        t.put(x, yc - 1, FER[4])                 # l'arête du devant, éclairée
+        t.put(x, yc, FER[2] if x > 1 else FER[3])
+        t.put(x, yc + 1, FER[1])
+    for x in range(2, 14):
+        t.put(x, yc + 2, PEINT[1])               # l'ombre du couvercle sur la hausse
+    # le trou de vol, et la planche d'envol qui avance devant : son dessus, puis son chant
+    t.rect(6, 19, 9, 19, OUT)
+    for x in range(4, 12):
+        t.put(x, 20, PEINT[4] if x == 4 else PEINT[3])
+        t.put(x, 21, PEINT[1])
     if pleine:
-        for x in (4, 7, 10, 12):                 # le miel luit dans le joint
+        for x in (4, 10, 12):                    # le miel luit dans le joint
             t.put(x, joint, MIEL[2])
-        t.put(8, joint, MIEL[3])
-        t.put(7, 18, MIEL[1])                    # il perle au trou de vol
-        t.put(8, 18, MIEL[2])
-        t.put(8, 19, MIEL[2])                    # une goutte coule sur la planche
-        t.put(8, 20, MIEL[1])
+        t.put(11, joint, MIEL[3])
+        t.put(7, 19, MIEL[1])                    # il perle au trou de vol
+        t.put(8, 19, MIEL[2])
+        t.put(8, 20, MIEL[3])                    # une goutte coule sur la planche
+        t.put(8, 21, MIEL[2])
+        t.put(8, 22, MIEL[1])
     return t.fini()
 
 
