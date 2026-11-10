@@ -1,5 +1,5 @@
-# Un arbre plus clair (pour l'herbe vive de herbe_chemin) et deux buissons tirés de son
-# feuillage, à partir d'un arbre modèle.
+# Un arbre plus clair (pour l'herbe vive de herbe_chemin) et deux buissons, dessinés à la main ;
+# et le pin, harmonisé à partir d'un modèle.
 #
 #   python3 scripts/carte/arbre_clair.py            écrit assets/arbre_clair.png
 #   python3 scripts/carte/arbre_clair.py --apercu   écrit aussi apercu_arbre_clair.png
@@ -11,26 +11,24 @@
 # au milieu du bas de sa case :
 #   0 l'arbre : scripts/carte/originaux/arbre_feuillu.png (48 × 64), dessiné à la main, repris
 #     tel quel (couleurs et contour compris) ;
-#   1 un buisson rond (trois bosses), 2 un buisson large (six bosses) : des dômes éclairés en
-#     haut à gauche, du feuillage de l'arbre modèle éclairci (chaque vert du modèle prend sa
-#     place, selon sa luminosité, sur une rampe de verts tirée de l'herbe ; le relief est
-#     gardé), contour sombre.
+#   1 un buisson rond, 2 un buisson large : scripts/carte/originaux/buissons.png (96 × 64 : les
+#     deux cases côte à côte), dessinés à la main, repris tels quels.
 # assets/pin_clair.png : le pin (scripts/carte/originaux/pin_modele.png, 58 × 64) harmonisé de
 # la même façon, sur une rampe un peu plus froide et profonde (un conifère, même famille).
 # assets/arbre_clair_sp.png et assets/pin_clair_sp.png : 3 images d'inclinaison (le coup de
 # hache) de l'arbre (48 × 64) et du pin (centré sur 64 × 64), avec une marge de chaque côté.
 # Les ombres portées ne sont pas dans les dessins : le jeu (ou la carte) les pose au sol.
 import colorsys
-import math
 import os
 import sys
 
 from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
-from pixel import ASSETS, BAYER, ROOT, contour, hls  # noqa: E402
+from pixel import ASSETS, ROOT, contour, hls  # noqa: E402
 MODELE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'arbre_modele.png')
 ARBRE = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'arbre_feuillu.png')
+BUISSONS = os.path.join(ROOT, 'scripts', 'carte', 'originaux', 'buissons.png')
 SORTIE = os.path.join(ASSETS, 'arbre_clair.png')
 CW, CH = 48, 64
 
@@ -87,58 +85,15 @@ def eclaircir(modele, rampe=None, hmax=170, clarte=(0.08, 0.92, 0.85)):
     return out
 
 
-def buisson(texture, bosses, graine):
-    """Un buisson : des bosses rondes (cx, cy, r en pixels, par rapport au pied), chacune un
-    dôme éclairé du haut à gauche, le bord bosselé ; la couleur est celle du feuillage de
-    l'arbre éclairci (texture), plus claire ou plus sombre selon la lumière ; contour sombre.
-    Posé pied au milieu du bas d'une case CW × CH."""
-    pt = texture.load()
-    tw, th = texture.size
-    cx0, base = CW // 2, CH - 2
-    L = (-0.55, -0.75, 0.9)
-    n = math.sqrt(sum(c * c for c in L))
-    L = tuple(c / n for c in L)
-
-    def haut(x, y):
-        best = 0.0
-        for (bx, by, r) in bosses:
-            ax, ay = cx0 + bx, base + by
-            a = math.atan2(y - ay, x - ax)
-            rr = r * (1 + 0.07 * math.sin(a * 7 + graine) + 0.05 * math.sin(a * 11 + graine * 2))
-            d2 = (x - ax) ** 2 + (y - ay) ** 2
-            if d2 < rr * rr and y <= base:
-                best = max(best, math.sqrt(rr * rr - d2))
-        return best
-
-    out = Image.new('RGBA', (CW, CH))
-    for y in range(CH):
-        for x in range(CW):
-            hz = haut(x + 0.5, y + 0.5)
-            if hz <= 0:
-                continue
-            gx = (haut(x + 1.1, y + 0.5) - haut(x - 0.1, y + 0.5)) / 1.2
-            gy = (haut(x + 0.5, y + 1.1) - haut(x + 0.5, y - 0.1)) / 1.2
-            nn = math.sqrt(gx * gx + gy * gy + 1)
-            lam = (-gx * L[0] - gy * L[1] + L[2]) / nn
-            c = pt[(x * 3 + graine * 5) % tw, (y + graine * 3) % th]
-            if not c[3] or not vert(c[:3]):
-                c = RAMPE[3] + (255,)
-            k = 0.55 + 0.75 * max(0.0, lam) + (BAYER[y % 4][x % 4] / 16 - 0.5) * 0.12
-            out.putpixel((x, y), tuple(min(255, round(v * k)) for v in c[:3]) + (255,))
-    return contour(out, CONTOUR)       # il se détache de l'herbe vive
-
-
-def planche(modele):
-    # le houppier du modèle éclairci (le haut, sans le tronc) sert de texture aux buissons
-    houppier = eclaircir(modele).crop((4, 4, 44, 40))
-    rond = buisson(houppier, [(0, -10, 11), (-6, -5, 7), (6, -5, 7)], 3)
-    large = buisson(houppier, [(-9, -8, 9), (8, -9, 10), (0, -14, 9), (-1, -5, 8), (14, -4, 6), (-15, -4, 5)], 7)
+def planche():
     out = Image.new('RGBA', (CW * 3, CH))
     arbre = Image.open(ARBRE).convert('RGBA')
     assert arbre.size == (CW, CH), f'arbre_feuillu.png : {arbre.size}, il faut {CW} × {CH}'
     out.paste(arbre, (0, 0))
-    out.alpha_composite(rond, (CW, 0))
-    out.alpha_composite(large, (CW * 2, 0))
+    # les deux buissons, dessinés à la main, tels quels
+    buissons = Image.open(BUISSONS).convert('RGBA')
+    assert buissons.size == (CW * 2, CH), f'buissons.png : {buissons.size}, il faut {CW * 2} × {CH}'
+    out.paste(buissons, (CW, 0))
     return out
 
 
@@ -169,7 +124,7 @@ def inclinaison(img, pied_y):
 
 def main():
     modele = Image.open(MODELE).convert('RGBA')
-    img = planche(modele)
+    img = planche()
     img.save(SORTIE)
     print('assets/arbre_clair.png : arbre, buisson rond, buisson large (cases de 48 × 64)')
     pin0 = Image.open(MODELE_PIN).convert('RGBA')
