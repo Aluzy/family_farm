@@ -848,6 +848,14 @@ export const MIGRATIONS = {
     if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 5) out.carte = { ...c, generateur: 6 };
     return out;
   },
+  // v83 → v84 (la pierre de lune, docs/gisements.md lot 3) : le générateur 7 pose dans le plan l'amas d'améthyste
+  // (lieux.recit, sorte « geode »), sans tirage : les autres lieux ne bougent pas ; une partie du générateur 6 y passe.
+  83: (state) => {
+    const out = { ...state, version: 84 };
+    const c = state.carte;
+    if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 6) out.carte = { ...c, generateur: 7 };
+    return out;
+  },
 };
 
 // La Serre d'avant la v76 : ses parcelles par niveau, le prix de chaque niveau (les anciennes migrations ;

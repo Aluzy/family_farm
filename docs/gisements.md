@@ -51,3 +51,22 @@ Tests : `tests/engine/gisements.test.mjs`.
 - La nuit (`js/carte/ferme/lumineux.js`, appelé par `chantier.js stepLanterns`) : quand la nuit tombe (au seuil des
   lanternes), chacun pose dans le voile une lueur de sa couleur (cyan, bleu pâle, violet), une large au sol et une
   vive sur lui, qui respire lentement. Le jour, rien. Ceux qui sont pris ne brillent pas.
+
+## Lot 3 : la pierre de lune, dans l'amas d'améthyste
+
+La galerie secrète de la mine (le récit, lot 10) a désormais sa place dehors : un **grand amas d'améthyste**, unique,
+dans la montagne la plus proche de la ferme.
+
+- Le plan (`monde-gen.js`, lieux.recit `{ id: 'geode_lune', sorte: 'geode' }`) : une case de montagne entourée de
+  montagne, loin des chemins, des hameaux, des entrées de grotte et des coins de pêche (`PLAN_MONDE.RECIT.GEODE`) ; la
+  plus proche de la ferme, sans tirage (les autres lieux ne bougent pas). Le générateur passe au numéro 7 (la
+  migration 83 → 84 garde les parties).
+- Son dessin : `scripts/carte/lumineux.py geode` (dans `assets/lieux_monde.png` ; `LIEUX.SORTES` geode, genre
+  « recit », trois cases fermées). Il luit en violet chaque nuit (`js/carte/ferme/lumineux.js`) ; les nuits de pleine
+  lune, tant que la pierre y dort, sa lueur grandit et pâlit (`fil-lune.js geodeLuit`, modèle `geodeLuit`).
+- Le toucher (`RECIT.LIEUX.geode`, `recit.js toucherLieu`) : une nuit de pleine lune, de 22 h à 4 h, les six pages du
+  fil au carnet, il s'ouvre sur la cachette de Maurice enfant et donne la pierre de lune (une fois : le fait
+  « pierre.trouvee ») ; sinon, un texte : sa lumière froide (pleine lune), sa lueur (la nuit), un grand amas (le jour),
+  refermé (la pierre prise). La pierre se pose sur la ferme comme avant (`poserPierre`).
+
+Tests : `tests/engine/fil-lune.test.mjs` (l'amas d'améthyste).

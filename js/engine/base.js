@@ -17,7 +17,7 @@ export function mulberry32(seed) {
   };
 }
 
-export const STATE_VERSION = 83;
+export const STATE_VERSION = 84;
 // Version du générateur de la ferme et du grand monde (ferme-generee.js, monde-gen.js, monde-sol.js,
 // monde-hameaux.js… et leurs réglages de data/monde.json, data/terrain.json), notée dans chaque partie
 // (state.carte.generateur, à côté de sa graine). Une même graine ne refait le même monde qu'avec le même
@@ -36,7 +36,9 @@ export const STATE_VERSION = 83;
 // leurs sols ; docs/gisements.md) ; la migration 81 → 82 garde les parties du 4.
 // 6 : ce qui brille la nuit (VEGETATION champignons_lumineux dans les forêts, ROCHES cristaux_quartz, cristaux_amethyste
 // dans les montagnes, au bout des tables de leurs sols) ; la migration 82 → 83 garde les parties du 5.
-export const GENERATEUR_VERSION = 6;
+// 7 : l'amas d'améthyste de la pierre de lune (lieux.recit, sorte « geode » : la montagne la plus proche de la ferme,
+// sans tirage) ; la migration 83 → 84 garde les parties du 6.
+export const GENERATEUR_VERSION = 7;
 // Version du jeu, affichée dans les Options (À propos) : la dernière version notée dans le
 // code et les données (« version 1.22 » : les objectifs « objet »).
 export const GAME_VERSION = '1.22.0';

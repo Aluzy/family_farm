@@ -10,7 +10,7 @@
    ========================================================================== */
 
 import {
-  awakeMsAtHour, composeFamily, createNewGame, DATA, finishSetup, genererNiveau, reglagesGrotte,
+  awakeMsAtHour, BIOME, composeFamily, createNewGame, DATA, finishSetup, genererNiveau, planDuMonde, reglagesGrotte,
 } from '../../js/engine/index.js';
 import { addItem, countItem } from '../../js/engine/inventory.js';
 import { equiper } from '../../js/engine/equipement.js';
@@ -19,7 +19,7 @@ import {
   aFait, ajouterFragment, ajouterRelation, foisFait, jouerScene, noterFait, recitDe, scenesPossibles, toucherLieu,
 } from '../../js/engine/recit.js';
 import {
-  FIL, fermeLuit, filComplet, fissureDuNiveau, galerieOuverte, niveauGalerie, poserPierre, prendrePierre, visiteObservatoire,
+  FIL, fermeLuit, filComplet, fissureDuNiveau, galerieOuverte, geodeLuit, niveauGalerie, poserPierre, prendrePierre, visiteObservatoire,
 } from '../../js/engine/fil-lune.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
@@ -151,4 +151,32 @@ test('la pierre : prise une fois ; posée sur la ferme, tout pousse plus vite ; 
   a(s, PHASE.croissante, 14);
   assert(visiteObservatoire(s).texte.startsWith(FIL.OBSERVATOIRE.PIERRE));
   assertEqual(visiteObservatoire(s).texte.startsWith(FIL.OBSERVATOIRE.PIERRE), false, 'une fois');
+});
+
+test('l\'amas d\'améthyste (docs/gisements.md, lot 3) : dans la montagne la plus proche de la ferme ; la pierre, une nuit de pleine lune, les fragments au carnet', () => {
+  // dans le plan : une case de montagne, loin de la ferme, la même pour la même graine
+  for (const g of ['238913', 'empreinte-1', '7']) {
+    const p = planDuMonde(g), geode = p.lieux.recit.find((l) => l.sorte === 'geode');
+    assert(geode, `${g} : un amas d'améthyste`);
+    assertEqual(p.biome[geode.case], BIOME.montagne, `${g} : en montagne`);
+    assertEqual(planDuMonde(g).lieux.recit.find((l) => l.sorte === 'geode').case, geode.case, 'toujours le même');
+  }
+  const s = partie();
+  a(s, PHASE.croissante, 14);
+  assert(/améthyste/.test(toucherLieu(s, 'geode').texte), 'le jour : un grand amas');
+  a(s, PHASE.pleine, 23);
+  assert(geodeLuit(s), 'les nuits de pleine lune, il luit plus fort');
+  assert(/lumière froide/.test(toucherLieu(s, 'geode').texte), 'sans les fragments : rien ne s\'ouvre');
+  assertEqual(countItem(s, FIL.PIERRE.OBJET), 0);
+  for (const f of FIL.FRAGMENTS) ajouterFragment(s, f);
+  a(s, PHASE.pleine, 21);
+  assertEqual(countItem(s, FIL.PIERRE.OBJET), 0, 'trop tôt');
+  toucherLieu(s, 'geode');
+  assertEqual(countItem(s, FIL.PIERRE.OBJET), 0, 'trop tôt : pas de pierre');
+  a(s, PHASE.pleine, 23);
+  assert(/pierre/.test(toucherLieu(s, 'geode').texte));
+  assertEqual([countItem(s, FIL.PIERRE.OBJET), aFait(s, 'pierre.trouvee'), geodeLuit(s)], [1, true, false], 'la pierre, une fois ; l\'amas ne luit plus fort');
+  toucherLieu(s, 'geode');
+  assertEqual(countItem(s, FIL.PIERRE.OBJET), 1, 'une seule');
+  assert(poserPierre(s).ok, 'elle se pose sur la ferme comme avant');
 });

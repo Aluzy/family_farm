@@ -2,7 +2,7 @@ import { DATA } from '../engine/catalog.js';
 import { proposerScene, sceneCarteDepuisCarte, sceneCarteModele } from './scene.js';
 import { positionGardee, positionNoter } from './position.js';
 import { aFait, noterVisite, RECIT, toucherLieu } from '../engine/recit.js';
-import { fermeLuit, visiteObservatoire } from '../engine/fil-lune.js';
+import { fermeLuit, geodeLuit, visiteObservatoire } from '../engine/fil-lune.js';
 import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
 import { brume as brumeDuMoment, pleut } from '../engine/meteo.js';
@@ -480,6 +480,8 @@ export function stageModel() {
     // le récit, lot 9 : les toits abîmés des hameaux ({ hameau: [maisons] } : js/carte/ferme/hameaux.js les troue)
     toitsUses: tousLesToitsUses(state),
     // le récit, lot 10 : la ferme luit, la pierre de lune posée, les nuits de pleine lune (son centre, son rayon, px)
+    // (l'amas d'améthyste de la pierre de lune, les nuits de pleine lune : il luit plus fort, js/carte/ferme/lumineux.js)
+    geodeLuit: geodeLuit(state),
     fermeLuit: fermeLuit(state) ? (() => { const F = farmTerrain(state).FERME; return F ? { x: (F.X + F.LARGEUR / 2) * 16, y: (F.Y + F.HAUTEUR / 2) * 16, rayon: Math.max(F.LARGEUR, F.HAUTEUR) * 9 } : null; })() : null,
     // le récit, lot 8 : sa tente plantée, le bivouac de la nuit (le pied de la tente, px) ; null sinon
     bivouac: state.bivouac && Number.isInteger(state.bivouac.case) ? { x: (state.bivouac.case % farmTerrain(state).LARGEUR) * 16 + 8, y: Math.floor(state.bivouac.case / farmTerrain(state).LARGEUR) * 16 + 14 } : null,

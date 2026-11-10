@@ -569,6 +569,8 @@ def dessins():
         'arbre_ancien': [arbre_ancien()],
         'belvedere': [belvedere()],
         'pierre_levee': [pierre_levee()],
+        # (le récit : l'amas d'améthyste de la pierre de lune, scripts/carte/lumineux.py)
+        'geode': [__import__('lumineux').geode()],
     }
 
 

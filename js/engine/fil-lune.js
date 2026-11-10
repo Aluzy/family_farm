@@ -132,6 +132,12 @@ export function pierrePosee(state) {
   return aFait(state, 'pierre.posee');
 }
 
+// L'amas d'améthyste de la montagne (lieux.recit, sorte « geode » ; RECIT.LIEUX.geode : la pierre y dort, prise une
+// nuit de pleine lune, les fragments au carnet) luit-il plus fort ? Les nuits de pleine lune, tant que la pierre y est.
+export function geodeLuit(state) {
+  return !aFait(state, 'pierre.trouvee') && moonPhase(state.day).id === FIL.GALERIE.LUNE && dans(hourOfDay(state), FIL.GALERIE.HEURES);
+}
+
 // La ferme luit-elle ? (la pierre posée, une nuit de pleine lune : la carte, faiblement)
 export function fermeLuit(state) {
   return pierrePosee(state) && moonPhase(state.day).id === 'pleine' && dans(hourOfDay(state), FIL.LUEUR);

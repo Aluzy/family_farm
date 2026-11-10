@@ -642,6 +642,13 @@
       "fin": "La maison était trop calme sans toi. Assieds-toi et raconte-moi tout."
     },
     "LIEUX": {
+      "geode": [
+        { "quand": { "fait": "pierre.trouvee" }, "texte": "L'améthyste refermée sur la cachette de Maurice enfant. La pierre est partie avec toi." },
+        { "quand": { "lune": "pleine", "heure": [22, 4], "fragment": ["note_etoile", "journal_bord", "releves_frida", "ciel_pleine", "ciel_noire", "ciel_croissante"] }, "texte": "Sous la pleine lune, l'améthyste s'ouvre : une cachette d'enfant, des lunes gravées, une pierre qui luit.", "effet": { "fait": "pierre.trouvee", "donner": { "pierre_lune": 1 } } },
+        { "quand": { "lune": "pleine", "heure": [22, 4] }, "texte": "Cette nuit, l'améthyste luit d'une lumière froide, comme si elle gardait quelque chose." },
+        { "quand": { "heure": [20, 6] }, "texte": "Un grand amas d'améthyste, plus haut qu'un homme. Il luit doucement dans la nuit." },
+        { "texte": "Un grand amas d'améthyste, plus haut qu'un homme, posé là depuis toujours. On dit qu'il luit, la nuit." }
+      ],
       "cabane": [
         { "texte": "L'observatoire de Maurice : une longue-vue tournée vers le ciel, un plaid. Un carnet attend sur la table." }
       ],

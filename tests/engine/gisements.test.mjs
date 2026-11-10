@@ -112,7 +112,7 @@ test('migration 81 → 82 : le générateur 5 (les gisements)', () => {
   const v81 = JSON.parse(JSON.stringify({ ...s, version: 81 }));
   v81.carte = { ...(v81.carte || {}), graine: '7', generateur: 4 };
   const m = migrate(v81);
-  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 6], 'puis le 6');
+  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 7], 'puis le 6, le 7');
 });
 
 /* ---------- le lot 2 : ce qui brille la nuit ---------- */
@@ -145,5 +145,5 @@ test('migration 82 → 83 : le générateur 6 (ce qui brille la nuit)', () => {
   const v82 = JSON.parse(JSON.stringify({ ...s, version: 82 }));
   v82.carte = { ...(v82.carte || {}), graine: '7', generateur: 5 };
   const m = migrate(v82);
-  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 6]);
+  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 7], 'puis le 7');
 });

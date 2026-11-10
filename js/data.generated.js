@@ -4281,7 +4281,8 @@ export const RAW_DATA = {
       "CABANE": { "CHEMIN": 14, "HAMEAU": 45, "FERME": 60 },
       "ATELIER": { "HAMEAU": 40 },
       "EPAVE": { "HAMEAU": 30 },
-      "CALE": { "RAYON": 40, "HAMEAU": 8, "PECHE": 8 }
+      "CALE": { "RAYON": 40, "HAMEAU": 8, "PECHE": 8 },
+      "GEODE": { "FERME": 12, "CHEMIN": 3, "HAMEAU": 12, "LIEU": 8 }
     },
     "SECRETS": {
       "SORTES": {
@@ -4645,7 +4646,8 @@ export const RAW_DATA = {
       { "nom": "cairn", "genre": "secret", "variantes": 1, "bloque": [[0, 0]], "boite": [12, 30] },
       { "nom": "arbre_ancien", "genre": "secret", "variantes": 1, "bloque": [[-1, 0], [0, 0], [1, 0]], "boite": [30, 70] },
       { "nom": "belvedere", "genre": "secret", "variantes": 1, "bloque": [[-1, 0], [1, 0]], "boite": [26, 30] },
-      { "nom": "pierre_levee", "genre": "secret", "variantes": 1, "bloque": [[0, 0]], "boite": [12, 40] }
+      { "nom": "pierre_levee", "genre": "secret", "variantes": 1, "bloque": [[0, 0]], "boite": [12, 40] },
+      { "nom": "geode", "genre": "recit", "variantes": 1, "bloque": [[-1, 0], [0, 0], [1, 0]], "boite": [22, 40] }
     ],
     "NEIGE": 0.86,
     "BLOQUE": [[-1, 0], [0, 0], [1, 0], [-1, -1], [0, -1], [1, -1], [-1, -2], [0, -2], [1, -2]],
@@ -6193,6 +6195,24 @@ export const RAW_DATA = {
       "fin": "La maison était trop calme sans toi. Assieds-toi et raconte-moi tout."
     },
     "LIEUX": {
+      "geode": [
+        { "quand": { "fait": "pierre.trouvee" }, "texte": "L'améthyste refermée sur la cachette de Maurice enfant. La pierre est partie avec toi." },
+        {
+          "quand": {
+            "lune": "pleine",
+            "heure": [22, 4],
+            "fragment": ["note_etoile", "journal_bord", "releves_frida", "ciel_pleine", "ciel_noire", "ciel_croissante"]
+          },
+          "texte": "Sous la pleine lune, l'améthyste s'ouvre : une cachette d'enfant, des lunes gravées, une pierre qui luit.",
+          "effet": { "fait": "pierre.trouvee", "donner": { "pierre_lune": 1 } }
+        },
+        {
+          "quand": { "lune": "pleine", "heure": [22, 4] },
+          "texte": "Cette nuit, l'améthyste luit d'une lumière froide, comme si elle gardait quelque chose."
+        },
+        { "quand": { "heure": [20, 6] }, "texte": "Un grand amas d'améthyste, plus haut qu'un homme. Il luit doucement dans la nuit." },
+        { "texte": "Un grand amas d'améthyste, plus haut qu'un homme, posé là depuis toujours. On dit qu'il luit, la nuit." }
+      ],
       "cabane": [{ "texte": "L'observatoire de Maurice : une longue-vue tournée vers le ciel, un plaid. Un carnet attend sur la table." }],
       "atelier": [
         {
