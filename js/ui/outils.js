@@ -75,12 +75,10 @@ function chevalSlot() {
 }
 
 // Monter en selle ou descendre du cheval (un appui sur sa case). Sur la ferme seulement pour
-// l'instant : le poteau d'attache servira dans le grand monde (docs/grand-monde.md) ; dans la
-// mine, on ne monte ni ne descend.
+// l'instant : le poteau d'attache servira dans le grand monde (docs/grand-monde.md).
 function useCheval() {
   if (asleep(state)) { notify(SOMMEIL_MESSAGE); return; }
   const C = DATA.CHEVAL;
-  if (document.body.classList.contains('en-excursion')) { notify(`${C.ICONE} Pas de cheval dans la mine.`); return; }
   const lieu = { carte: 'ferme' }, avant = chevalOu(state);
   const r = applyResult(toggleCheval(state, lieu));
   if (!r.ok) return;

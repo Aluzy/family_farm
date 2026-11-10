@@ -23,8 +23,6 @@ import { equipementDe } from './equipement.js';
      famille:enfant      un enfant dans la famille ; famille:animal : un animal de compagnie
      construit:<bât.>    state[<bât.>].construit (silo, poulailler, paturage, serre, verger, frigo)
      didacticiel:<étape> le didacticiel a atteint l'étape (ou il est fini, ou la partie n'en a pas)
-     carte:<carte>       la carte a été visitée (noterEncyclopedie, à l'arrivée ; grotte : la mine
-                         ou une grotte de la montagne, grotte_monde : une grotte de la montagne)
      faune:<espèce>      une bête du grand monde a été vue (noterEncyclopedie, la première fois :
                          DATA.FAUNE.ESPECES, data/monde.json)
      biome:<biome>       D-1 : le personnage est entré dans ce biome du grand monde (noterEncyclopedie,
@@ -40,7 +38,6 @@ import { equipementDe } from './equipement.js';
      fait:<fait>         un fait du récit est noté (state.recit.faits, js/engine/recit.js : « odile.rencontre »,
                          « visite.bois_joli », « lieu.cale »… ; le récit, lot 11 : les pages de l'île de Céron) */
 
-export const CARTES_ENCYCLOPEDIE = ['grotte', 'grotte_monde'];
 const SEULES = ['depart', 'piece_close', 'veillee', 'courrier', 'technologies', 'hameau'];
 const OUTILS = ['houe', 'hache', 'faux', 'pioche', 'canne'];
 const ANIMAUX = ['poule', 'mouton', 'vache'];
@@ -105,7 +102,6 @@ export function conditionRemplie(state, cond, evenements = {}, memo = null) {
     }
     case 'construit': return !!(state[v] && state[v].construit);
     case 'didacticiel': return etapeAtteinte(state, v);
-    case 'carte': return !!evenements[`carte:${v}`];
     case 'faune': return !!evenements[`faune:${v}`];
     case 'biome': return !!evenements[`biome:${v}`];
     case 'secret': return !!evenements[`secret:${v}`];
@@ -138,7 +134,6 @@ export function erreurCondition(cond) {
     famille: () => v === 'enfant' || v === 'animal',
     construit: () => BATIMENTS.includes(v),
     didacticiel: () => ETAPES.includes(v),
-    carte: () => CARTES_ENCYCLOPEDIE.includes(v),
     faune: () => !!(DATA.FAUNE && DATA.FAUNE.ESPECES && DATA.FAUNE.ESPECES[v]),
     biome: () => Array.isArray(DATA.BIOMES) && DATA.BIOMES.includes(v),
     secret: () => !!(DATA.SECRETS && (DATA.SECRETS.NOMS[v] || DATA.SECRETS.PAGES.includes(v))),

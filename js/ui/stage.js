@@ -900,7 +900,7 @@ function boussoleModele() {
   const b = butBoussole(state), lieux = sol.lieux();
   let but = null;
   if (b && lieux) {
-    const L = lieuxDeLaCarte(state, lieux, T), l = (b.sorte === 'hameau' ? L.hameaux : b.sorte === 'grotte' ? L.grottes : L.peche).find((q) => q.id === b.id);
+    const L = lieuxDeLaCarte(state, lieux, T), l = (b.sorte === 'hameau' ? L.hameaux : L.peche).find((q) => q.id === b.id);
     if (l) but = { ...px(l.case), nom: l.nom, icone: LIEUX_ICONES[b.sorte] };
   }
   return {
@@ -1226,15 +1226,6 @@ export function renderStage() {
   const configuration = !!state && setupPending(state);
   document.body.classList.toggle('configuration', configuration);
   let on = stageActive() && !configuration;
-  // Une autre carte est affichée (js/ui/excursion.js) : celle de la ferme se cache, les
-  // fenêtres et la barre d'outils restent.
-  if (on && document.body.classList.contains('en-excursion')) {
-    aideSansCarte();
-    el.hidden = true;
-    document.body.classList.add('has-stage');
-    if (window.FarmStage && stageMounted) FarmStage.hide();
-    return;
-  }
   const wasOn = stageMounted && !el.hidden; // la carte était-elle déjà à l'écran ?
   if (on && !stageMounted) {
     stageMounted = true;

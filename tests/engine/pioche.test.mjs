@@ -8,7 +8,9 @@
    Lancer seul : node tests/run-tests.mjs pioche.
    ========================================================================== */
 
-import { buildAtelier, countItem, craft, craftStatus, DATA, mineOre, niveauPioche, piocheDef, refusMinerai } from '../../js/engine/index.js';
+import { bonusMinerai, buildAtelier, countItem, craft, craftStatus, DATA, niveauPioche, piocheDef, refusMinerai } from '../../js/engine/index.js';
+// (la mine n'est plus : la pioche prend le minerai des gisements, docs/gisements.md ; refusMinerai dit si elle le peut)
+const prend = (s, m) => refusMinerai(s, m) === null;
 import { assert, assertEqual, atelier, setInv, test, tireless } from './aide.mjs';
 
 function partie() {
@@ -41,8 +43,8 @@ test('les données : quatre niveaux, leurs recettes, le minerai qu\'il leur faut
 test('une partie d\'avant : sa pioche est en pierre ; elle prend le fer et le cuivre, pas l\'or ni le platine', () => {
   const s = partie();
   assertEqual([niveauPioche(s), piocheDef(s).nom], [1, 'pierre']);
-  assert(mineOre(s, 'fer').ok && mineOre(s, 'cuivre').ok && mineOre(s, 'quartz').ok);
-  assertEqual(mineOre(s, 'or').error, 'L\'or : il faut une pioche en fer au moins (Atelier).');
+  assert(prend(s, 'fer') && prend(s, 'cuivre') && prend(s, 'quartz'));
+  assertEqual(refusMinerai(s, 'or'), 'L\'or : il faut une pioche en fer au moins (Atelier).');
   assertEqual(refusMinerai(s, 'platine'), 'Le platine : il faut une pioche en or au moins (Atelier).');
   assertEqual(countItem(s, 'minerai_or'), 0);
   s.outils.pioche = false;
@@ -57,24 +59,18 @@ test('les améliorations, dans l\'ordre ; l\'or avec la pioche en fer, le platin
   assert(craft(s, 'pioche_cuivre').ok);
   assertEqual([niveauPioche(s), countItem(s, 'lingot_cuivre'), countItem(s, 'planche')], [2, 7, 8]);
   assertEqual(craftStatus(s, 'pioche_cuivre').raison, 'Tu as déjà la pioche en cuivre.');
-  assertEqual(mineOre(s, 'or').ok, false, 'le cuivre ne suffit pas pour l\'or');
+  assertEqual(prend(s, 'or'), false, 'le cuivre ne suffit pas pour l\'or');
   assert(craft(s, 'pioche_fer').ok);
-  assert(mineOre(s, 'or').ok, 'la pioche en fer : l\'or');
-  assertEqual(mineOre(s, 'platine').ok, false);
+  assert(prend(s, 'or'), 'la pioche en fer : l\'or');
+  assertEqual(prend(s, 'platine'), false);
   assert(craft(s, 'pioche_or').ok);
   assertEqual([niveauPioche(s), piocheDef(s).nom], [4, 'or']);
-  assert(mineOre(s, 'platine').ok, 'la pioche en or : le platine');
+  assert(prend(s, 'platine'), 'la pioche en or : le platine');
   assertEqual(craftStatus(s, 'pioche_cuivre').raison, 'Tu as déjà la pioche en or.', 'on ne redescend pas');
 });
 
-test('chaque niveau : +25 % de minerai', () => {
-  const moyenne = (n) => {
-    const s = partie();
-    s.outils.niveauPioche = n;
-    for (let k = 0; k < 400; k++) mineOre(s, 'fer');
-    return countItem(s, 'minerai_fer') / 400;
-  };
-  const m = [1, 2, 3, 4].map(moyenne);
-  assertEqual(m[0], 1, `en pierre : 1 par minerai (${m.join(', ')})`);
-  for (const [k, attendu] of [[1, 1.25], [2, 1.5], [3, 1.75]]) assert(Math.abs(m[k] - attendu) < 0.12, `niveau ${k + 1} : ${m[k]} (≈ ${attendu})`);
+test('chaque niveau : +25 % de minerai (le bonus d\'un gisement brisé)', () => {
+  const s = partie();
+  const m = [1, 2, 3, 4].map((n) => { s.outils.niveauPioche = n; return bonusMinerai(s); });
+  assertEqual(m, [0, 25, 50, 75]);
 });

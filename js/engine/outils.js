@@ -13,7 +13,6 @@ import { FERME_GENEREE } from './ferme-generee.js';
 import { genererMonde } from './monde.js';
 import { noter } from './journal.js';
 import { chevalMonte, vitesseCheval } from './cheval.js';
-import { MINERAIS_GROTTE, PIERRES_GROTTE } from './grotte.js';
 import { bumpCounter } from './campaign.js';
 import { noterObjectif } from './objectifs-compte.js';
 
@@ -431,7 +430,7 @@ function piocherGisement(state, id, metal, ou, f) {
   const minerai = {};
   if (casse) {
     for (const [item, [a, b]] of Object.entries(regle.fin || {})) {
-      const bonus = techSum(state, 'recolteBonus') + ((piocheDef(state) || {}).minerai || 0);
+      const bonus = techSum(state, 'recolteBonus') + bonusMinerai(state);
       minerai[item] = withBonus(state, randomInt(state, a, b), bonus);
     }
   }
@@ -631,14 +630,8 @@ export function faucherSousBati(state) {
   return n;
 }
 
-/* ---------- la pioche dans la grotte : le minerai ---------- */
+/* ---------- la pioche : son niveau, le minerai ---------- */
 
-const MINERAIS = MINERAIS_GROTTE;
-
-// Un minerai pris dans la grotte (la carte compte les coups de pioche, voir hitsNeeded) :
-// minerai_<sorte> dans l'inventaire (un de plus, parfois, avec la Lampe de mineur :
-// grotte.minerai %), l'énergie et l'XP d'un coup de pioche. Dans une grotte de la montagne (fiche
-// 6b), une pierre prise dans le mur (quartz, améthyste) : l'objet lui-même.
 // Le niveau de la pioche (le lot 5 : DATA.PIOCHE.NIVEAUX ; 1 : en pierre, celle d'une partie d'avant), 0 sans pioche.
 export function niveauPioche(state) {
   if (!hasTool(state, 'pioche')) return 0;
@@ -658,33 +651,11 @@ export function refusMinerai(state, sorte) {
   return `${nom} : il faut une pioche en ${DATA.PIOCHE.NIVEAUX[besoin - 1].nom} au moins (Atelier).`;
 }
 
-export function mineOre(state, sorte) {
-  const P = DATA.PIOCHE;
-  if (!MINERAIS.includes(sorte) && !PIERRES_GROTTE.includes(sorte)) return fail('Minerai inconnu.');
-  const refus = refusMinerai(state, sorte);
-  if (refus) return fail(refus);
-  if (!canAfford(state, 'piocher')) return fail(TIRED);
+// Le bonus de minerai d'un gisement brisé (docs/gisements.md), en % : le niveau de la pioche (DATA.PIOCHE.NIVEAUX
+// minerai) et la Lampe de mineur de l'Arbre des technologies (son effet « grotte » : minerai).
+export function bonusMinerai(state) {
   const lampe = techFlag(state, 'grotte');
-  // (la Lampe de mineur, et le niveau de la pioche : DATA.PIOCHE.NIVEAUX minerai)
-  const pct = (lampe && lampe.minerai ? lampe.minerai : 0) + piocheDef(state).minerai;
-  const n = withBonus(state, 1, pct);
-  const item = PIERRES_GROTTE.includes(sorte) ? sorte : 'minerai_' + sorte;
-  addItem(state, item, n);
-  noter('ramasse', { item, n });
-  spendEnergy(state, 'piocher');
-  gainActionXp(state, 'piocher');
-  return { ok: true, item, n };
-}
-
-// Le carnet des grottes d'avant les minerais (localStorage « ferme-grottes ») : ce qu'il
-// comptait entre dans l'inventaire, une fois. { fer: 3, … } → { minerai_fer: 3, … }.
-export function depositOreNotebook(state, carnet) {
-  const out = {};
-  for (const sorte of MINERAIS) {
-    const n = Math.floor(Number(carnet && carnet[sorte]) || 0);
-    if (n > 0) { addItem(state, 'minerai_' + sorte, n); out['minerai_' + sorte] = n; }
-  }
-  return { ok: true, items: out };
+  return (lampe && lampe.minerai ? lampe.minerai : 0) + ((piocheDef(state) || {}).minerai || 0);
 }
 
 // La case du pied de la touffe `id` (« x,y » en px) sur le terrain T.

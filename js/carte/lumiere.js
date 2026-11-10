@@ -5,8 +5,7 @@
  * jour (le voile est alors caché), doré le soir, bleu et sombre la nuit (on distingue encore
  * les formes). Ce qui est en DOM (étiquettes, bulles, boutons) reste au-dessus, en couleurs.
  *
- * La ferme le règle sur l'heure de son modèle (js/ui/stage.js). La grotte a sa propre
- * obscurité (la lumière autour du personnage).
+ * La ferme le règle sur l'heure de son modèle (js/ui/stage.js).
  *
  * Des lumières (voile.eclaire(sources) : les fenêtres et les lanternes de la ferme) : le voile devient une carte de lumière, une texture de la taille de la vue
  * (en px de carte : la lumière a les mêmes gros pixels que le dessin), remplie de la couleur

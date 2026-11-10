@@ -152,7 +152,6 @@ export function effetTexte(item) {
     out.push(`${pcts.length === 1 ? `−${pcts[0]} %` : 'moins'} d'énergie pour ${gestes.slice(0, -1).join(', ')}${gestes.length > 1 ? ' et ' : ''}${gestes[gestes.length - 1]}${p.soleil ? ` au soleil (${p.soleil[0]} h à ${p.soleil[1]} h)` : ''}`);
   }
   if (p.toutes) out.push(`−${p.toutes} % d'énergie pour tous les gestes${p.horsFerme ? ' loin de la ferme' : ''}`);
-  if (p.grotte) out.push(`+${p.grotte - 100} % de lumière dans la mine et les grottes`);
   if (p.vueNuit) out.push(`voit ${p.vueNuit === 150 ? 'une fois et demie' : `${p.vueNuit} %`} plus loin la nuit dans le grand monde`);
   if (p.pied) out.push(`plus vite à pied dans ${Object.keys(p.pied).map((b) => ({ marais: 'le marais', montagne: 'la montagne', sommet: 'les sommets' }[b] || b)).join(', ')}`);
   if (p.faimMarche) out.push(`pour un autre membre, −${p.faimMarche} % de faim en marchant`);

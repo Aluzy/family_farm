@@ -34,7 +34,7 @@
  *
  * Les lieux du plan qui ont leur dessin (fiche 6b, js/engine/monde-lieux.js : reg.lieux, de même
  * forme) suivent encore le même chemin, avec leur planche (assets/lieux_monde.png,
- * scripts/carte/lieux.py) : la bouche des grottes de la montagne, rangée selon son pied ; le ponton
+ * scripts/carte/lieux.py) : le ponton
  * d'un coin de pêche, posé sur l'eau sous tout le reste (le personnage y marche) ; les piquets. Et
  * les hameaux bâtis (fiche 7a, js/engine/monde-hameaux.js : reg.hameau ; assets/hameaux.png) : leurs
  * murs, portes, meubles, clôtures, objets et arbres en images ; leurs planchers, pavés et potagers
@@ -58,7 +58,7 @@
   const PLANCHES = [
     { cle: 'vegetation', json: 'vegetation_cases', donnees: 'vegetation', sortes: 'sortes' },
     { cle: 'roches', json: 'roches_cases', donnees: 'roches', sortes: 'roches' },
-    // les lieux qui ont leur dessin (fiche 6b, js/engine/monde-lieux.js : l'entrée des grottes, le
+    // les lieux qui ont leur dessin (fiche 6b, js/engine/monde-lieux.js : le
     // ponton et les piquets des coins de pêche ; scripts/carte/lieux.py)
     { cle: 'lieux_monde', json: 'lieux_monde_cases', donnees: 'lieux', sortes: 'lieuxSortes' },
     // les hameaux bâtis (fiche 7a, js/engine/monde-hameaux.js : leurs murs, leurs meubles, leurs

@@ -1609,14 +1609,13 @@ body.didacticiel .stage-chip:not(.hoe):not(.compact), body.didacticiel #tuto-roo
 /* La taille réelle du canvas (× densité de l'écran) est gérée par farm-stage.js. */
 #farm-stage canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: pixelated; cursor: grab; }
 body.has-stage main { display: none; }
-/* La mine (js/grotte.js, js/ui/excursion.js),
-   à la place de celle de la ferme ; le reste de l'écran (carte du joueur, menu, outils) ne change pas. */
+/* Une autre carte que la ferme (js/carte/jeu.js : #map-stage), à la place de celle de la ferme ; le reste de l'écran
+   (carte du joueur, menu, outils) ne change pas. (La mine, qui s'y affichait, n'est plus : docs/gisements.md.) */
 #map-stage { position: fixed; left: 0; right: 0; top: var(--header-h); bottom: var(--dock); z-index: var(--z-stage); overflow: hidden; background: #665951; touch-action: none; -webkit-user-select: none; user-select: none; }
-#map-stage[data-carte="grotte"] { background: #0b090a; }
 #map-stage[hidden] { display: none; }
 /* Le même canvas que la ferme (un seul jeu Phaser, js/carte/jeu.js), posé ici pendant l'excursion. */
 #map-stage canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: pixelated; }
-/* le god mode (Options) : le menu des cartes, à gauche sous la carte du joueur */
+/* le god mode (Options) : son menu d'actions de test, à gauche sous la carte du joueur (js/ui/hote.js) */
 #god-bar { position: fixed; left: 8px; top: calc(var(--player-h, 110px) + 10px); z-index: var(--z-debug); }
 #god-bar label { display: flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 10px; background: rgba(40, 26, 14, 0.82); color: #fff3d6; font-size: 13px; }
 #god-bar select { max-width: 52vw; font: inherit; border-radius: 6px; border: 1px solid #b08850; background: #fff8e8; color: #3a2610; padding: 2px 4px; }

@@ -20,7 +20,6 @@ T = {
  'musique_matin': ('musique', g(f'{M1}/music/morning_theme.wav')),
  'musique_soir': ('musique', g(f'{M1}/music/evening_theme.wav')),
  'musique_nuit': ('musique', g(f'{M1}/music/night_theme.wav')),
- 'musique_mine': ('musique', g(f'{MM}/music/mine_theme.wav')),
  # G-2 : les musiques des lieux (musique.py)
  'musique_hameau': ('musique', g(f'{MM}/music/village_theme.wav')),
  'musique_cote': ('musique', g(f'{MM}/music/coast_theme.wav')),
@@ -38,7 +37,6 @@ T = {
  'foret': ('ambiance', g(f'{M2}/ambient/forest_loop.wav')),
  'montagne': ('ambiance', g(f'{M2}/ambient/mountain_wind_loop.wav')),
  'hameau': ('ambiance', g(f'{M2}/ambient/village_loop.wav')),
- 'grotte': ('ambiance', g(f'{M2}/ambient/cave_loop.wav')),
  'abeilles': ('ambiance', g(f'{M2}/ambient/bees_loop.wav')),
  'moulin': ('ambiance', g(f'{M1}/environment/mill_loop.wav')),
  'feu': ('ambiance', g(f'{M2}/environment/fire_loop.wav')),

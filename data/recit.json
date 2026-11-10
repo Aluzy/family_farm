@@ -93,9 +93,8 @@
     "Conditions de plus : equipe (une pièce ou une liste, portée par le personnage principal : la lanterne-tempête),",
     "plat (true / false : il a un plat cuisiné), fragment / sans_fragment (une page ou une liste : au carnet, ou non).",
     "Une entrée de LIEUX peut avoir un effet (appliqué quand elle est lue : la page de bord, à l'épave).",
-    "FIL : FRAGMENTS (les pages qu'il faut au carnet pour que la galerie s'ouvre) ; GALERIE : NIVEAU (celui de la mine",
-    "de la ferme où se voit la fissure), LUNE et HEURES (quand), CHAMBRE (la petite chambre : LARGEUR, HAUTEUR, SALLE",
-    "[x0, y0, x1, y1]) ; PIERRE : OBJET, POUSSE (le cycle de pousse multiplié, la pierre posée sur la ferme) ; LUEUR :",
+    "FIL : FRAGMENTS (les pages qu'il faut au carnet pour que l'amas d'améthyste s'ouvre, RECIT.LIEUX.geode) ; GALERIE :",
+    "LUNE et HEURES (quand il s'ouvre, et luit plus fort ; docs/gisements.md) ; PIERRE : OBJET, POUSSE (le cycle de pousse multiplié, la pierre posée sur la ferme) ; LUEUR :",
     "les heures où la ferme luit, les nuits de pleine lune ; JOHNNY : REPAS (les repas avant ses bribes), NUIT (les",
     "heures de ses bribes), DEHORS (les heures où il n'est pas chez lui, les nuits de pleine lune), BRIBES (la page de",
     "chaque phase), ACCUEIL, REPAS_TEXTES (le premier repas, le deuxième…), DEJA (un deuxième plat le même jour),",
@@ -135,22 +134,11 @@
         "ciel_croissante"
       ],
       "GALERIE": {
-        "NIVEAU": 4,
         "LUNE": "pleine",
         "HEURES": [
           22,
           4
-        ],
-        "CHAMBRE": {
-          "LARGEUR": 16,
-          "HAUTEUR": 14,
-          "SALLE": [
-            5,
-            5,
-            10,
-            9
-          ]
-        }
+        ]
       },
       "PIERRE": {
         "OBJET": "pierre_lune",

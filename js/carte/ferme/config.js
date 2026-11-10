@@ -376,14 +376,6 @@ const CULTURE_MONTE = 0;
         frames: { idle: 0, marche0: 1, marche1: 2, marche2: 3, marche3: 4, broute: 5, bas0: 6, bas1: 7, bas2: 8, bas3: 9, haut0: 10, haut1: 11, haut2: 12, haut3: 13 } },
     },
   };
-  // L'entrée de la mine, sur la ferme générée (le rectangle `mine` de la carte, couche « batiment » :
-  // le tas de terre de 3 × 3 tuiles, MINE dans js/engine/planche.js ; la porte au milieu de son
-  // bas). Un double appui sur le tas, ou le personnage poussé vers la porte quand il est juste
-  // devant (à `near` px au plus), et il y entre : il va devant (`arrive` px sous le tas), monte
-  // dans la porte (`seuil` px au-dessus du bas du tas) en s'effaçant, puis le premier niveau de
-  // la mine s'ouvre (`page` : js/grotte.js, l'entrée « ferme »). En revenant de là
-  // (jeu.html?arrivee=mine), il sort de la porte et descend devant.
-  const MINE = { object: 'mine', near: 14, arrive: 10, seuil: 6, page: 'grotte?grotte=ferme&niveau=1&arrivee=haut' };
   // L'herbe haute (CarteKit.NATURE.herbe) : la couche d'objets « herbe_haute » de la carte, un
   // point par touffe (type = variante, une rangée de la planche). Une touffe sur une case
   // labourée disparaît. Sa teinte suit l'herbe sur laquelle elle pousse : la couleur du fond
@@ -589,7 +581,7 @@ const CULTURE_MONTE = 0;
 
   const parties = [];
   global.FermeCarte = {
-    C: { T, CULTURE_MONTE, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZOOM, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, MINE, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, LITS_SENS, BACS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, CONSTRUCTIBLE, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, AIDE, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL, HERBES },
+    C: { T, CULTURE_MONTE, MAP, ZONE_TILES, SFX, VIEW_ROWS, ZOOM, ZONE_OBJECTS, TREE_OBJECT, TREE_FRAME, ORCHARD_FRAMES, ORCHARD_ADULT, TREE_BODY, CHOP_TREES, CHOP_FPS, FISHING, ROCKS, SPRINKLER, ROBOT, OCCLUDER_ALPHA, RAMASSABLES, BLOCS_CARTE, BETES, TALL_GRASS, COUP_FORT, DEFAULT_W, DEFAULT_H, DEFAULT_OBJECTS, WELL, PUMP_SHAKE_MS, TANK, CAT_FRAME, COMPAGNONS, FERMIER_FRAME, PERSONNAGE, HERD_SHEETS, MEUBLES, MEUBLES_SENS, LITS, LITS_SENS, BACS, TAP_SLOP, DOUBLE_TAP_MS, DOUBLE_TAP_PX, MIN_TAP, INERTIA_MS, MAX_SPEED, PAN_MS, FOLLOW_MS, FOLLOW_UP, CONSTRUCTIBLE, LABEL_GAP, LABEL_HOLD_MS, BUBBLE_TIP_X, BUBBLE_TIP_Y, AIDE, ABEILLES, BOTTELEUSE, LONG_PRESS_MS, GROUND_CHECK_MS, SPRITE_CHECKS, ZONE_LABEL_UP, SOLEIL, HERBES },
     clamp, pixelRatio, reducedMotion: K.reduit, v: K.v,
     // les méthodes de la scène, fichier par fichier (voir js/farm-stage.js : sceneClass)
     parties,

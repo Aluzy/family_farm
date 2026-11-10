@@ -3,18 +3,12 @@ import { BIOME } from './monde-gen.js';
 
 /* ---------- les lieux du grand monde qui ont leur dessin (docs/grand-monde.md : fiche 6b) ----------
 
-   Les entrées de grotte et les coins de pêche du plan (monde-gen.js, lieux.grottes, lieux.peche : une
-   case chacun) ont leur dessin dans le monde, posé région par région avec la végétation et les
-   rochers (monde-sol.js, solDeRegion : dans le Web Worker sur le site), du plan seul (pas de hasard).
-   Les réglages : data/monde.json (LIEUX) ; les dessins : scripts/carte/lieux.py (assets/lieux_monde.png,
-   lieux_monde.json).
+   Les coins de pêche du plan (monde-gen.js, lieux.peche : une case chacun) ont leur dessin dans le monde, posé
+   région par région avec la végétation et les rochers (monde-sol.js, solDeRegion : dans le Web Worker sur le site),
+   du plan seul (pas de hasard). Les réglages : data/monde.json (LIEUX) ; les dessins : scripts/carte/lieux.py
+   (assets/lieux_monde.png, lieux_monde.json). (Les entrées de grotte, lieux.grottes, ne sont plus dessinées : la
+   mine et les grottes de la montagne ne sont plus, docs/gisements.md ; leur place reste dans le plan.)
 
-     - L'entrée d'une grotte (sorte « entree_grotte ») : une bouche de roche posée sur sa case (le
-       pied de l'image : le bas de l'arche, au bas de la case), enneigée au-dessus du relief NEIGE.
-       Ses cases BLOQUE (la case de l'entrée, ses voisines et les rangées du dessus) ferment la
-       marche ; la case devant (au sud) reste ouverte : on s'y tient, poussé vers la bouche, pour
-       entrer (js/carte/ferme/lieux-monde.js). Les rochers et la végétation ne poussent pas autour
-       (les cases réservées des lieux, monde-vegetation.js).
      - Un coin de pêche (la case de la rive, au bord de son eau) : un ponton qui avance de PONTON
        cases sur un lac ou la mer, droit depuis la rive, si l'eau est là assez loin (et continue
        au-delà, pour y lancer) ; ses cases s'ouvrent à la marche (on va pêcher au bout). Sinon (une
@@ -76,7 +70,7 @@ function placePiquets(p, biome, marche, W) {
 }
 
 // lieuxDeRegion(ctx, g) → { images: Int32Array ([sorte, x, y, variante] : le pied en px), basses
-// (vide) } ; ferme dans g.marche les cases d'une entrée de grotte, ouvre celles d'un ponton.
+// (vide) } ; ouvre dans g.marche les cases d'un ponton, ferme celles d'un lieu dessiné.
 // `g` : la région (solDeRegion : cx0, cy0, cl, ch, marche, biomeDe).
 export function lieuxDeRegion(ctx, g) {
   const el = ctx.elements, W = ctx.cadre.LARGEUR, H = ctx.cadre.HAUTEUR, T = 16;
@@ -85,12 +79,8 @@ export function lieuxDeRegion(ctx, g) {
   const pose = (X, Y, v) => { if (dans(X, Y)) marche[(Y - cy0) * cl + X - cx0] = v; };
   const images = [];
   const lieux = (el && el.lieux) || { grottes: [], peche: [], recit: [], secrets: [] };
-  for (const gr of lieux.grottes || []) {
-    const X = gr.case % W, Y = Math.floor(gr.case / W);
-    if (X < cx0 - 2 || Y < cy0 - 3 || X > cx0 + cl + 1 || Y > cy0 + ch + 1) continue;
-    for (const [dx, dy] of LIEUX.BLOQUE) pose(X + dx, Y + dy, 0);
-    if (dans(X, Y)) images.push(SORTE_LIEU.entree_grotte, X * T + T / 2, Y * T + T - 2, ctx.lire.relief(gr.case) > LIEUX.NEIGE ? 1 : 0);
-  }
+  // (les entrées de grotte ne sont plus dessinées : la mine et les grottes de la montagne ne sont plus,
+  // docs/gisements.md, lot 4 ; lieux.grottes ne garde que leur place, qui écarte les autres lieux)
   const biome = (i) => g.biomeDe(i), libre = (i) => !g.biomeDe || ![BIOME.mer, BIOME.lac, BIOME.riviere, BIOME.falaise, BIOME.sommet].includes(g.biomeDe(i));
   for (const p of lieux.peche || []) {
     const X = p.case % W, Y = Math.floor(p.case / W);

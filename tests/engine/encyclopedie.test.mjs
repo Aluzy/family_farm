@@ -46,11 +46,11 @@ test('encyclopédie : ce qui est connu au début ne compte pas comme nouveau, pu
   // une graine : la page de la culture
   setInv(s, { graine_carotte: 1 });
   assert(majEncyclopedie(s).includes('carotte'));
-  // une carte visitée
-  assert(!pageConnue(s, 'grotte'));
-  noterEncyclopedie(s, 'carte:grotte');
-  assert(majEncyclopedie(s).includes('grotte'));
-  assertEqual(pagesConnues(s, 'mine').includes('grotte'), true);
+  // un minerai en main : la page des gisements (la mine n'est plus : docs/gisements.md, lot 4)
+  assert(!pageConnue(s, 'gisements'));
+  setInv(s, { minerai_fer: 1 });
+  assert(majEncyclopedie(s).includes('gisements'));
+  assertEqual(pagesConnues(s, 'mine').includes('gisements'), true);
 });
 
 test('encyclopédie : le didacticiel, les outils et les recettes', () => {

@@ -1,11 +1,7 @@
 /* ==========================================================================
-   Tests du moteur : les grottes de la montagne, la pêche dans le monde et les bêtes du grand monde
-   (fiche 6b : js/engine/grotte.js, monde-lieux.js, monde-faune.js, outils.js castLine).
-   - les grottes : chaque entrée du plan a sa bouche (ses cases fermées, la case devant ouverte) et
-     mène à une grotte jouable (l'échelle, le puits, du minerai dans les murs, des pierres) ; les
-     niveaux sont déterministes (même entrée, même jour : même grotte) ; la mine de la ferme ne
-     change pas (une empreinte de ses niveaux, prise avant la fiche) ; le quartz et l'améthyste se
-     piochent ;
+   Tests du moteur : la pêche dans le monde et les bêtes du grand monde (fiche 6b : monde-lieux.js,
+   monde-faune.js, outils.js castLine). Les grottes de la montagne, testées ici avant, ne sont plus
+   (docs/gisements.md, lot 4) : le quartz et l'améthyste se piochent sur les cristaux (gisements.test.mjs).
    - la pêche : chaque eau du monde a ses poissons ; les coins de pêche ont leurs chances (un poisson
      plus rare), leurs prises du jour, comptées à part de leur eau ; la limite par jour ; un ponton
      s'avance sur l'eau et ouvre ses cases ;
@@ -14,13 +10,13 @@
      et sa page de l'encyclopédie, qui se découvre quand on en voit une.
    La sauvegarde ne change pas de forme (les prises du jour : state.outils.peche, déjà là ; les bêtes
    vues : state.encyclopedie.evenements) : pas de migration.
-   Lancer seul : node --test tests/engine/grottes-peche-faune.test.mjs (ou node tests/run-tests.mjs grottes).
+   Lancer seul : node --test tests/engine/peche-faune.test.mjs (ou node tests/run-tests.mjs peche-faune).
    ========================================================================== */
 
 import { existsSync, readFileSync } from 'node:fs';
 import {
-  BIOMES, caseMarchable, castLine, conditionRemplie, contexteSol, countItem, DATA, elementsSol, entreeEncyclopedie,
-  fishLeft, genererMonde, genererNiveau, idGrotteMonde, mineOre, MONDE, nomSolDeCase, poidsGrotte, reglagesGrotte,
+  BIOMES, caseMarchable, castLine, conditionRemplie, contexteSol, DATA, elementsSol, entreeEncyclopedie,
+  fishLeft, genererMonde, MONDE, nomSolDeCase,
   solDeRegion, solDirect, STATE_VERSION,
 } from '../../js/engine/index.js';
 import { LIEUX, pontonDe, SORTE_LIEU } from '../../js/engine/monde-lieux.js';
@@ -28,7 +24,7 @@ import { casePermise, ESPECES_FAUNE, FAUNE } from '../../js/engine/monde-faune.j
 import { assert, assertEqual, garden, sleepOnce, test } from './aide.mjs';
 
 const W = MONDE.LARGEUR, H = MONDE.HAUTEUR, N = MONDE.REGION;
-const GRAINES = ['grottes-1', 'grottes-2'];
+const GRAINES = ['grottes-1', 'grottes-2']; // (les graines d'avant le lot 4 : les mêmes mondes)
 
 // Un monde : son terrain, son sol (calcul direct), ses éléments (les lieux du plan).
 const mondes = new Map();
@@ -42,107 +38,6 @@ function monde(graine) {
 }
 const regionDe = (m, i) => m.sol.region(Math.floor((i % W) / N), Math.floor(Math.floor(i / W) / N));
 const biomeCase = (m, i) => { const r = regionDe(m, i), c = i % W, y = Math.floor(i / W); return BIOMES[r.biome[(y - r.cy0) * r.cl + c - r.cx0]]; };
-
-// Peut-on aller de l'échelle au puits (au sol, 4-voisins) ?
-function relie(c, a, b) {
-  const vu = new Uint8Array(c.W * c.H), q = [a.y * c.W + a.x];
-  vu[q[0]] = 1;
-  for (let k = 0; k < q.length; k++) {
-    const i = q[k], x = i % c.W, y = Math.floor(i / c.W);
-    if (x === b.x && y === b.y) return true;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const j = (y + dy) * c.W + x + dx;
-      if (c.sol(x + dx, y + dy) && !vu[j]) { vu[j] = 1; q.push(j); }
-    }
-  }
-  return false;
-}
-
-/* ---------- les grottes ---------- */
-
-test('les grottes : la mine de la ferme ne change pas (ses réglages, ses niveaux d\'avant la fiche 6b)', () => {
-  const J = reglagesGrotte('ferme');
-  assertEqual([J.id, J.monde, J.filon, J.NIVEAUX, Object.keys(J.POIDS)], ['ferme', '', null, DATA.GROTTE.NIVEAUX, ['fer', 'cuivre', 'or', 'platine']]);
-  assertEqual(reglagesGrotte('n-importe-quoi').id, 'ferme', 'une entrée inconnue : la mine');
-  // (l'empreinte de trois niveaux, prise avec le tirage de js/grotte.js d'avant la fiche)
-  let h = 2166136261;
-  const mix = (t) => { for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } };
-  for (const [n, j] of [[1, 1], [4, 7], [8, 30]]) {
-    const c = genererNiveau(J, n, j);
-    mix(JSON.stringify({ g: [...c.g].join(''), e: c.echelle, p: c.puits, o: c.ores, d: c.decor, s: c.stalag }));
-  }
-  assertEqual((h >>> 0).toString(16), '8dcae3fb');
-});
-
-test('les grottes : chaque entrée du plan a sa bouche dans la montagne, ses cases fermées, la case devant ouverte', () => {
-  for (const graine of GRAINES) {
-    const m = monde(graine);
-    assert(m.lieux.grottes.length >= DATA.PLAN_MONDE.GROTTES.NOMBRE[0], 'des entrées');
-    for (const g of m.lieux.grottes) {
-      assert(idGrotteMonde(g.id) === g.id, g.id);
-      const reg = regionDe(m, g.case), X = g.case % W, Y = Math.floor(g.case / W), im = reg.lieux.images;
-      let bouche = false;
-      for (let k = 0; k < im.length; k += 4) if (im[k] === SORTE_LIEU.entree_grotte && im[k + 1] === X * 16 + 8 && im[k + 2] === Y * 16 + 14) bouche = true;
-      assert(bouche, `la bouche de ${g.id}`);
-      assertEqual(biomeCase(m, g.case), 'montagne', g.id);
-      for (const [dx, dy] of LIEUX.BLOQUE) assert(!caseMarchable(m.T, g.case + dy * W + dx, m.sol), `${g.id} : la case ${dx},${dy} est fermée`);
-      assert(caseMarchable(m.T, g.case + W, m.sol), `${g.id} : on se tient devant`);
-    }
-  }
-});
-
-test('les grottes : chaque grotte du monde est jouable (échelle, puits, minerai et pierres), plus riche que la mine', () => {
-  const m = monde(GRAINES[0]);
-  const vus = new Set();
-  for (const g of m.lieux.grottes) {
-    const J = reglagesGrotte(g.id, m.ctx.graine);
-    assertEqual([J.id, J.monde, J.NIVEAUX, J.nom], [g.id, m.ctx.graine, DATA.GROTTE.MONDE.NIVEAUX, DATA.GROTTE.MONDE.NOM]);
-    assert(Object.keys(DATA.GROTTE.MONDE.FILONS).includes(J.filon), 'un filon');
-    for (let n = 1; n <= J.NIVEAUX; n++) {
-      const c = genererNiveau(J, n, 3);
-      const E = c.echelle;
-      assert(!c.sol(E.x, E.y - 1) && c.sol(E.x, E.y) && c.sol(E.x, E.y + 1), `${g.id} ${n} : l'échelle contre un mur`);
-      if (n < J.NIVEAUX) assert(c.puits && relie(c, E, c.puits), `${g.id} ${n} : le puits se rejoint`);
-      else assertEqual(c.puits, null, 'le dernier niveau n\'a pas de puits');
-      for (const o of c.ores) {
-        assert(!c.sol(o.x, o.y) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => c.sol(o.x + dx, o.y + dy)), 'un minerai dans un mur qui borde le sol');
-        vus.add(o.kind);
-      }
-    }
-  }
-  for (const k of ['fer', 'cuivre', 'or', 'platine', 'quartz', 'amethyste']) assert(vus.has(k), `on trouve du ${k}`);
-  // plus riche : plus de minerai, et l'or plus tôt
-  const ferme = reglagesGrotte('ferme'), M = reglagesGrotte('grotte_1', 'x');
-  let a = 0, b = 0;
-  for (let j = 1; j <= 20; j++) { a += genererNiveau(ferme, 2, j).ores.length; b += genererNiveau(M, 2, j).ores.length; }
-  assert(b > a * 1.3, `plus de minerai au niveau 2 (${b} contre ${a})`);
-  assertEqual(poidsGrotte(ferme, 1).or, 0);
-  assert(poidsGrotte(M, 1).or > 0 && poidsGrotte(M, 2).platine > 0, 'l\'or et le platine dès les premiers niveaux');
-});
-
-test('les grottes : déterministes (même entrée, même jour : même grotte ; un autre jour, une autre entrée : une autre)', () => {
-  const sig = (c) => [...c.g].join('') + JSON.stringify(c.ores);
-  const J = reglagesGrotte('grotte_2', 'abc');
-  assertEqual(sig(genererNiveau(J, 2, 5)), sig(genererNiveau(reglagesGrotte('grotte_2', 'abc'), 2, 5)));
-  assert(sig(genererNiveau(J, 2, 5)) !== sig(genererNiveau(J, 2, 6)), 'un autre jour');
-  assert(sig(genererNiveau(J, 2, 5)) !== sig(genererNiveau(reglagesGrotte('grotte_3', 'abc'), 2, 5)), 'une autre entrée');
-  assert(sig(genererNiveau(J, 2, 5)) !== sig(genererNiveau(reglagesGrotte('grotte_2', 'abd'), 2, 5)), 'un autre monde');
-  assert(sig(genererNiveau(J, 2, 5)) !== sig(genererNiveau(reglagesGrotte('ferme'), 2, 5)), 'pas la mine');
-  assertEqual(reglagesGrotte('grotte_2', 'abc').filon, reglagesGrotte('grotte_2', 'abc').filon);
-});
-
-test('les grottes : le quartz et l\'améthyste se piochent (l\'objet lui-même), comme le minerai', () => {
-  const s = garden();
-  s.outils = { pioche: true, choisi: 'pioche' };
-  s.energie = DATA.PERSONNAGE.MAX * 100;
-  for (const k of ['quartz', 'amethyste']) {
-    const r = mineOre(s, k);
-    assert(r.ok, r.error);
-    assertEqual(r.item, k);
-    assert(countItem(s, k) >= 1, k);
-  }
-  assertEqual(mineOre(s, 'diamant').error, 'Minerai inconnu.');
-});
 
 /* ---------- la pêche ---------- */
 
@@ -295,5 +190,4 @@ test('les bêtes : chaque espèce a son dessin (ses images) et sa page de l\'enc
     assert(conditionRemplie(s, 'faune:' + e.cle, { ['faune:' + e.cle]: true }), 'vue');
   }
   assert(entreeEncyclopedie('faune_du_monde'), 'la page de la faune');
-  assert(entreeEncyclopedie('grotte_montagne'), 'la page des grottes de la montagne');
 });

@@ -171,10 +171,9 @@ test('marcher dans le monde : ni la mer, ni les lacs, ni les rivières (sauf à 
       for (let k = 0; k < ro.length; k += 4) for (const [dx, dy] of SORTES_ROCHES[ro[k]].bloque || []) pieds.add((Math.floor((ro[k + 2] - 1) / 16) + dy) * W + Math.floor(ro[k + 1] / 16) + dx);
     }
   }
-  // (les entrées des grottes ferment leurs cases ; les pontons des coins de pêche ouvrent les leurs,
-  // sur l'eau : monde-lieux.js, fiche 6b)
+  // (les pontons des coins de pêche ouvrent leurs cases, sur l'eau : monde-lieux.js, fiche 6b ; les entrées
+  // des grottes, qui fermaient les leurs, ne sont plus : docs/gisements.md, lot 4)
   const pontons = new Set(), bio = (i) => p.biome[i];
-  for (const g of p.lieux.grottes) for (const [dx, dy] of LIEUX.BLOQUE) pieds.add(g.case + dy * W + dx);
   // (les lieux du récit dessinés ferment leurs cases bloque : l'épave ; la cabane et l'atelier sont bâtis,
   // leurs murs dans sol.ctx.hameaux.bloque, docs/recit/)
   // (les secrets du monde aussi, D-2)

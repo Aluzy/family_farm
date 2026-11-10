@@ -13,8 +13,8 @@
  *   - le jour, un adulte va à son lieu de travail et y fait le geste de son métier (les gestes du
  *     personnage) : le bûcheron fend au billot et, de temps en temps, abat un arbre du monde tout
  *     près (il tremble, bascule et s'efface comme sous la hache du joueur : recolte-monde.js) ; le
- *     pêcheur pêche depuis la rive la plus proche de sa barque ; le mineur pioche devant l'entrée de
- *     grotte voisine (sinon au tas de minerai) ; le berger va et vient dans l'enclos, parmi ses
+ *     pêcheur pêche depuis la rive la plus proche de sa barque ; le mineur pioche à son tas de minerai
+ *     ; le berger va et vient dans l'enclos, parmi ses
  *     moutons ; le cueilleur cueille dans les jardins et près des claies ; le jardinier plante et
  *     arrose ; chaque geste fini compte dans la journée de son foyer, une fois (le pont :
  *     ctx.bridge.habitantAgit → habitantAgit ; la bulle « +x » monte au-dessus de lui) ;
@@ -51,9 +51,9 @@
   const EVITE = { loin: 26, pres: 11, cote: 14, repos: 0.6, patience: 1.5, passe: 3 };
   const ENFANT_DY = 4;                     // px : un enfant couché est remonté d'autant
   const COURSE = 1.7;                      // un enfant qui court
-  // les lieux de travail : à tant de cases au plus (la rive du pêcheur, la grotte du mineur, les
-  // arbres du bûcheron) ; un arbre abattu toutes les COUPE s (au plus)
-  const RAYONS = { rive: 30, grotte: 45, arbre: 20 };
+  // les lieux de travail : à tant de cases au plus (la rive du pêcheur, les arbres du bûcheron) ; un arbre
+  // abattu toutes les COUPE s (au plus)
+  const RAYONS = { rive: 30, arbre: 20 };
   const COUPE = [30, 60];
   const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -233,22 +233,14 @@
       return out;
     },
 
-    // La grotte du mineur : l'entrée du monde la plus proche (au plus RAYONS.grotte cases), sinon
-    // son tas de minerai.
+    // Le poste du mineur : son tas de minerai (ou son wagonnet). (Les entrées de grotte ne sont plus.)
     mineDe(e) {
       const L = e.gens.lieux;
       if (L.mine) return L.mine;
-      const W = this.grid.cols, cx = (e.plan.case % W) * T, cy = Math.floor(e.plan.case / W) * T;
       let best = null;
-      for (const g of (this.grottesMonde ? this.grottesMonde() : [])) {
-        const d = Math.hypot(g.devant.x - cx, g.devant.y - cy);
-        if (d <= RAYONS.grotte * T && (!best || d < best.d) && this.libre(g.devant.x, g.devant.y)) best = { d, x: g.devant.x, y: g.devant.y, grotte: true };
-      }
-      if (!best) {
-        const t = this.travailDe(e, 'tas_minerai') || this.travailDe(e, 'wagonnet');
-        const p = t ? this.pres(t.case + 1) || this.pres(t.case) : null;
-        if (p) best = { x: p.x, y: p.y, grotte: false, vers: this.pied(t.case) };
-      }
+      const t = this.travailDe(e, 'tas_minerai') || this.travailDe(e, 'wagonnet');
+      const p = t ? this.pres(t.case + 1) || this.pres(t.case) : null;
+      if (p) best = { x: p.x, y: p.y, vers: this.pied(t.case) };
       L.mine = best;
       return best;
     },
@@ -481,18 +473,16 @@
           return;
         }
       } else if (mt === 'mineur') {
-        // (les premiers à l'entrée de la grotte, les autres au wagonnet et au tas de minerai)
+        // (au wagonnet et au tas de minerai)
         const mi = this.mineDe(e), places = this.placesAtelier(e, ['wagonnet', 'tas_minerai']);
-        if (places.length && (!mi || !mi.grotte || m.poste >= 3)) {
+        if (places.length) {
           const p = places[m.poste % places.length];
           this.habAller(m, p.x, p.y, fait('pioche', 'cote', p.flip, 'compte'));
           return;
         }
         if (mi) {
           const flip = mi.vers ? mi.vers.x < mi.x : Math.random() < 0.5;
-          const dx = mi.grotte ? ((m.poste % 2) ? 1 : -1) * (6 + 10 * Math.floor(m.poste / 2)) : 0;
-          const x = this.libre(mi.x + dx, mi.y) ? mi.x + dx : mi.x;
-          this.habAller(m, x, mi.y, fait('pioche', 'cote', mi.grotte ? x < mi.x : flip, 'compte'));
+          this.habAller(m, mi.x, mi.y, fait('pioche', 'cote', flip, 'compte'));
           return;
         }
       } else if (mt === 'berger') {

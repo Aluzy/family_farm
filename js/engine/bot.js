@@ -46,7 +46,6 @@ import { elementsSol, solDirect } from './monde-sol.js';
 import { hameauxVus, voirHameau } from './monde-hameaux.js';
 import { peuplerHameau } from './habitants.js';
 import { voirAutour } from './monde-vu.js';
-import { noterEncyclopedie } from './encyclopedie.js';
 import { castLine } from './outils.js';
 
 /* ==========================================================================
@@ -410,14 +409,14 @@ function botGather(state, id) {
   for (const r of techResources(state, id)) if (!r.ok) addItem(state, r.item, r.qte - r.stock);
 }
 
-// Les objectifs « objet » du chapitre en cours (grotte, Four) : le joueur simulé rapporte
-// les minerais de la grotte (comme botGather pour l'arbre), et fond un lingot au Four dès
-// qu'il le peut, minerais et bois compris.
+// Les objectifs « objet » du chapitre en cours (gisements, cristaux, Four) : le joueur simulé rapporte
+// les minerais des gisements et le quartz de la montagne (comme botGather pour l'arbre), et fond un lingot au
+// Four dès qu'il le peut, minerais et bois compris.
 function botObjectives(state) {
   if (!state.campagne || state.campagne.fini) return;
   for (const o of chapterProgress(state).objectifs) {
-    // fiche 9b : vendre à la calèche : le bois qu'il a coupé dans le monde (comme le minerai de la
-    // grotte, il l'a), dès qu'elle commerce avec lui
+    // fiche 9b : vendre à la calèche : le bois qu'il a coupé dans le monde (comme le minerai des
+    // gisements, il l'a), dès qu'elle commerce avec lui
     if (o.type === 'caleche' && !o.ok && marcheOuvert(state)) {
       const prix = Math.max(1, DATA.OBJETS.bois.prix);
       addItem(state, 'bois', Math.ceil((o.cible - o.valeur) / prix));
@@ -427,7 +426,7 @@ function botObjectives(state) {
     if (o.type !== 'objet' || o.ok) continue;
     const manque = o.cible - o.valeur;
     const r = DATA.RECETTES[o.item];
-    if (o.item.startsWith('minerai_')) addItem(state, o.item, manque);
+    if (o.item.startsWith('minerai_') || o.item === 'quartz') addItem(state, o.item, manque);
     else if (r && r.transformation && r.sortie === o.item) {
       const st = state.stations && state.stations[r.station];
       if (!st || !st.construit || st.tache || !recipeUnlocked(state, o.item)) continue;
@@ -672,10 +671,10 @@ function botStore(state) {
 /* ---------- fiche 9b : sortir dans le grand monde ---------- */
 
 // Les objectifs de la campagne qui se font dans le monde, et que le joueur simulé sait faire.
-const OBJECTIFS_MONDE = new Set(['hameaux', 'monde', 'grotteMonde', 'pecheMer']);
+const OBJECTIFS_MONDE = new Set(['hameaux', 'monde', 'pecheMer']);
 
 // Ce qu'il sait du monde de sa graine : la tournée de la calèche (le fil des chemins, ses arrêts dans
-// l'ordre), les plans des hameaux, les entrées de grotte, les coins de pêche. Tiré une fois par graine
+// l'ordre), les plans des hameaux, les coins de pêche. Tiré une fois par graine
 // (les éléments du plan : quelques centaines de ms), seulement le jour où un objectif le demande.
 const mondes = new Map();
 function mondeDuBot(state) {
@@ -697,8 +696,8 @@ const distCases = (m, a, b) => Math.hypot((a % m.W) - (b % m.W), Math.floor(a / 
 
 // Une excursion par jour, le soir, quand le chapitre en cours demande d'aller dans le monde : il suit
 // le chemin de la calèche jusqu'au prochain hameau qu'il ne connaît pas (ce qu'il voit en route devient
-// vu, le hameau découvert et peuplé) ; une fois tous vus, il fait le tour entier ; il va à l'entrée de
-// grotte la plus proche et y entre ; il pêche dans la mer, à son coin le plus proche. Ce sont les
+// vu, le hameau découvert et peuplé) ; une fois tous vus, il fait le tour entier ; il pêche dans la mer, à son
+// coin le plus proche. Ce sont les
 // actions du moteur (voirAutour, voirHameau, peuplerHameau, castLine), sans carte : le trajet n'est pas
 // marché pas à pas, et ne coûte que l'énergie de la pêche.
 export function botMonde(state) {
@@ -720,10 +719,6 @@ export function botMonde(state) {
       voirHameau(state, plan);
       peuplerHameau(state, plan);
     } else voirJusqua(m.tour.x.length - 1);
-  }
-  if (restants.includes('grotteMonde')) {
-    const g = [...(m.lieux.grottes || [])].sort((a, b) => distCases(m, a.case, m.sortie) - distCases(m, b.case, m.sortie))[0];
-    if (g) { voirAutour(state, g.case, { biome: 'montagne' }); noterEncyclopedie(state, 'carte:grotte_monde'); }
   }
   if (restants.includes('pecheMer')) {
     const coin = [...(m.lieux.peche || [])].filter((p) => p.eau === 'mer').sort((a, b) => distCases(m, a.case, m.sortie) - distCases(m, b.case, m.sortie))[0];

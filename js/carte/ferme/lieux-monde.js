@@ -1,13 +1,6 @@
 /* carte/ferme/lieux-monde.js — la scène de la ferme : les lieux du grand monde (fiche 6b).
  *
- * Les entrées des grottes de la montagne (le plan : lieux.grottes, ctx.monde.lieux() ; leur bouche de
- * roche est une image de la végétation, vegetation.js, posée par js/engine/monde-lieux.js) :
- *   - un appui sur la bouche (son arche sombre se voit : pas de flèche par-dessus, fiche 14), ou le
- *     personnage poussé vers elle quand il est juste devant, et il y entre : il va devant, passe dans l'arche en
- *     s'effaçant, puis la grotte s'ouvre (js/grotte.js : « grotte?grotte=grotte_<n>&niveau=1 ») ;
- *   - en remontant du premier niveau (jeu.html?arrivee=grotte_<n>, passages.js arrive), il ressort
- *     de l'arche et descend devant elle. La région de l'entrée peut ne pas être encore faite (la page
- *     rechargée dans la grotte) : il attend qu'elle arrive.
+ * (Les entrées des grottes de la montagne ne sont plus : docs/gisements.md, lot 4.)
  * Les lieux du récit qui sont un dessin (lieux.recit : l'épave, la cale du bac aux Mouettes ; la cabane et
  * l'atelier sont bâtis, comme les maisons des hameaux : hameaux.js) : un appui sur le dessin (pour la cale : le
  * bac) le dit à la page (ctx.bridge.lieuRecit : ce qu'on y lit, js/ui/stage.js).
@@ -27,83 +20,16 @@
   const F = global.FermeCarte;
   const { T } = F.C;
   const { reducedMotion } = F;
-  // la bouche : sa boîte d'appui autour du pied (px) ; le personnage s'y tient `devant` px sous le
-  // pied, entre jusqu'à `seuil` px au-dessus ; poussé vers elle à `pres` px au plus, il y entre ;
   // les remous d'un coin de pêche : un toutes les `remous` ms (au hasard autour), à `vue` px de la vue
-  const BOUCHE = { l: 22, h: 40, devant: 14, seuil: 8, pres: 14 };
   const COINS = { remous: [1400, 3200], vue: 160 };
   // l'étoile d'un secret pas encore ouvert : une toutes les `tous` ms (au hasard), à `vue` px de la vue
   const ETOILE = { tous: [1800, 4200], vue: 120, couleur: 0xfff3b0 };
 
   F.partie({
 
-    // Les entrées des grottes du monde : [{ id, x, y (le pied de la bouche, px), devant { x, y } }],
-    // faites une fois que les lieux du plan sont là (ctx.monde.lieux()), ou [].
-    grottesMonde() {
-      if (this.grottesListe) return this.grottesListe;
-      const M = this.ctx.monde, L = M && M.lieux ? M.lieux() : null;
-      if (!L) return [];
-      const W = this.grid.cols;
-      this.grottesListe = (L.grottes || []).map((g) => {
-        const X = g.case % W, Y = Math.floor(g.case / W), x = X * T + T / 2, y = Y * T + T - 2;
-        return { id: g.id, x, y, devant: { x, y: y + BOUCHE.devant } };
-      });
-      return this.grottesListe;
-    },
-
-    // L'entrée sous le point (wx, wy) (sa bouche), ou null.
-    grotteMondeAt(wx, wy) {
-      for (const g of this.grottesMonde()) {
-        if (Math.abs(wx - g.x) <= BOUCHE.l && wy <= g.y + 4 && wy >= g.y - BOUCHE.h) return g;
-      }
-      return null;
-    },
-
-    // Il entre dans la grotte `g` : il va devant, passe l'arche en s'effaçant, puis la grotte
-    // s'ouvre. Une fois seulement (this.enGrotte) ; au lit, rien.
-    enterGrotteMonde(g) {
-      if (!g || this.enGrotte || !this.fermier || !this.fermier.entre) return;
-      if (this.ctx.lastModel && this.ctx.lastModel.coucher) return;
-      this.enGrotte = true;
-      this.fermier.entre(g.devant, { x: g.x, y: g.y - BOUCHE.seuil }, () => {
-        this.enGrotte = false;
-        if (global.FermeHote) global.FermeHote.go(`grotte?grotte=${g.id}&niveau=1&arrivee=haut`);
-        if (!global.document.body.classList.contains('en-excursion')) this.arriveGrotte(g.id);
-      });
-    },
-
-    // Revenu de la grotte `id` : il ressort de l'arche, devant elle, la vue sur lui. Les lieux du
-    // plan ou la région de l'entrée pas encore là : il attend (stepLieuxMonde réessaie).
-    arriveGrotte(id) {
-      const g = this.grottesMonde().find((q) => q.id === id);
-      const M = this.ctx.monde, N = K.REGION.tuiles;
-      if (g && M) M.region(Math.floor(g.devant.x / T / N), Math.floor(g.devant.y / T / N));
-      if (!g || !M || !M.marchable(Math.floor(g.devant.y / T) * this.grid.cols + Math.floor(g.devant.x / T))) {
-        this.arriveeGrotte = { id, t: performance.now() };
-        return;
-      }
-      this.arriveeGrotte = null;
-      const at = this.fermier && this.fermier.arrive ? this.fermier.arrive(g.devant.x, g.devant.y, { x: g.x, y: g.y - BOUCHE.seuil }) : null;
-      if (at) { this.followSnap = true; this.setCentre(at.x, at.y); }
-    },
-
-    // À chaque image : l'arrivée qui attend ; le personnage poussé vers une bouche, juste devant, y
-    // entre ; les remous des coins.
+    // À chaque image : les remous des coins de pêche, l'étoile des secrets.
     stepLieuxMonde(time) {
       if (!this.ctx.monde) return;
-      if (this.arriveeGrotte) {
-        // (au plus 20 s d'attente : une entrée inconnue, il reste où il est)
-        if (performance.now() - this.arriveeGrotte.t > 20000) this.arriveeGrotte = null;
-        else this.arriveGrotte(this.arriveeGrotte.id);
-      }
-      const p = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
-      const grottes = this.grottesMonde();
-      if (p && grottes.length) {
-        const dir = this.manette ? this.manette.dir() : null;
-        for (const g of grottes) {
-          if (dir && dir.y < -0.6 && Math.abs(dir.x) < 0.6 && Math.abs(p.x - g.x) <= BOUCHE.pres && p.y >= g.y && p.y - g.y <= BOUCHE.devant + BOUCHE.pres) this.enterGrotteMonde(g);
-        }
-      }
       this.stepRemous(time);
       this.stepSecrets();
     },

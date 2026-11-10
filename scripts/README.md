@@ -28,8 +28,7 @@ from pixel import ASSETS, T, contour  # noqa: E402
 
 Quelques modules de `carte/`, venus de l'ancienne ville (`scripts/ville/`, retiré avec elle :
 docs/grand-monde.md), passent par `carte/commun.py`, qui reprend ce qu'il faut de `pixel.py` :
-`carte/grotte.py` (les tuiles et les objets des niveaux de la mine : `assets/grotte_tuiles.png`,
-`grotte_objets.png`, `grotte.json`, lus par `js/grotte.js`), `carte/briques.py` (les matières de brique et de pierre de
+`carte/briques.py` (les matières de brique et de pierre de
 taille des murs de la ferme, pour `carte/blocs.py`) et `carte/faune.py` (les animaux des biomes à
 venir du grand monde). Les icônes ne sont plus dessinées par un script : leurs PNG
 (`assets/icones/`, `assets/dessins/`) sont la source, que `icones/build.py` assemble en planches. N'y vont que les aides vraiment identiques d'un dossier à l'autre : les

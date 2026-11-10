@@ -83,7 +83,5 @@ export const DESSINS_ROCHERS = {
 // « tronc_creux » (scripts/carte/tronc_creux.py). La carte de Tiled garde celui du pack (539, 540).
 export const TRONC_CREUX = [blocGid('tronc_creux', 0), blocGid('tronc_creux', 1)];
 
-// L'entrée de la mine (le passage vers les niveaux de la grotte : MINE dans
-// js/carte/ferme/config.js), un tas de terre de 3 × 3 tuiles de « plantes_pierres », la porte au
-// milieu de la rangée du bas : le bloc « mine » (scripts/carte/mine.py).
-export const MINE = Array.from({ length: 9 }, (_, k) => blocGid('mine', k));
+// (Le bloc « mine », le tas de terre de l'entrée de la mine, reste dans la planche, mais la ferme ne le pose plus :
+// la mine n'est plus, docs/gisements.md.)

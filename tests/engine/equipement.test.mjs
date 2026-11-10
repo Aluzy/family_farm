@@ -14,7 +14,7 @@
 import {
   actionCost, addItem, addMember, alerteFaim, alerteSortie, capaciteSac, casesMembre, choixPieces, countItem,
   createInitialState, DATA, eatSnack, economiePct, enExpedition, equiper, farmTerrain, getNotifications,
-  lumiereGrotte, mainCharacter, marcherMembre, migrate, portionsSac, poserSac, refusPiece, remplirSac, removeMember,
+  mainCharacter, marcherMembre, migrate, portionsSac, poserSac, refusPiece, remplirSac, removeMember,
   reparerPartie, reprendreSac, retirerPiece, retirerSac, sacCounts, sacPorte, spoil, STATE_VERSION, vitessePied,
   voirAutour, vueNuitPct, aiderMembre, jaugeMembre, botDay, energyMax, craft, craftStatus,
 } from '../../js/engine/index.js';
@@ -93,9 +93,9 @@ test('équipement : le casque à lampe se fabrique à l\'Atelier (au niveau du F
   assert(craft(s, 'casque_lampe').ok);
   assertEqual([countItem(s, 'casque_lampe'), countItem(s, 'lingot_fer')], [1, 0]);
   assert(equiper(s, p, 'casque_lampe').ok);
-  assertEqual(lumiereGrotte(s), 140);
+  assertEqual(vueNuitPct(s), 150);
   assert(retirerPiece(s, p, 0).ok);
-  assertEqual([lumiereGrotte(s), countItem(s, 'casque_lampe')], [100, 1]);
+  assertEqual([vueNuitPct(s), countItem(s, 'casque_lampe')], [100, 1]);
 });
 
 /* ---------- les effets ---------- */
@@ -135,12 +135,12 @@ test('équipement : le chapeau au soleil seulement, le manteau loin de la ferme 
   assertEqual(economiePct(s, 'couper'), 85, 'loin de la ferme');
 });
 
-test('équipement : le casque éclaire la grotte et voit plus loin la nuit ; les bottes vont plus vite dans le marais', () => {
+test('équipement : le casque voit plus loin la nuit ; les bottes vont plus vite dans le marais', () => {
   const s = partie(1), p = principal(s), t = createInitialState(1);
   setInv(s, { casque_lampe: 1, bottes: 1 });
-  assertEqual([lumiereGrotte(s), vueNuitPct(s), vitessePied(s, 'marais')], [100, 100, 1]);
+  assertEqual([vueNuitPct(s), vitessePied(s, 'marais')], [100, 1]);
   assert(equiper(s, p, 'casque_lampe').ok && equiper(s, p, 'bottes').ok);
-  assertEqual([lumiereGrotte(s), vueNuitPct(s)], [140, 150]);
+  assertEqual(vueNuitPct(s), 150);
   assertEqual([vitessePied(s, 'marais'), vitessePied(s, 'montagne'), vitessePied(s, 'prairie'), vitessePied(s, null)], [1.3, 1.2, 1, 1]);
   // la nuit, dans le monde : plus de cellules vues avec le casque ; de jour, autant
   const T = farmTerrain(s), loin = T.MONDE.cadre.SORTIE + 40;

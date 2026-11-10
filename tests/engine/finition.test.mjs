@@ -5,7 +5,7 @@
      l'action réelle, chacune passable ; une partie d'avant (v58) sur l'ancienne bulle de fin les
      reprend, une partie plus tôt ou finie ne bouge pas ;
    - la campagne : chaque objectif du grand monde se joue avec les actions du moteur (vendre à la
-     calèche, découvrir des hameaux, voir le monde, entrer dans une grotte de la montagne, pêcher en
+     calèche, découvrir des hameaux, voir le monde, pêcher en
      mer, acheter aux hameaux, voir des bêtes), et le joueur automatique fait les siens ;
    - la migration v58 → v59 ;
    - la chasse aux restes : aucun texte du jeu (données, encyclopédie, chaînes de l'interface, pages)
@@ -180,10 +180,6 @@ test('campagne : chaque objectif du grand monde se joue avec les actions du mote
   assertEqual(val('hameaux'), m.plans.length);
   assert(val('hameaux') >= 5, `${val('hameaux')} hameaux (il en faut 5 au chapitre 7)`);
   assert(val('monde') >= 15 && val('monde') > vu0, `le tour du monde par les chemins : ${val('monde')} % vu`);
-  // une grotte de la montagne (la page le note en y entrant : excursion.js)
-  assertEqual(val('grotteMonde'), 0);
-  noterEncyclopedie(s, 'carte:grotte_monde');
-  assertEqual(val('grotteMonde'), 1);
   // pêcher dans la mer, la canne en main
   s.outils = { ...(s.outils || {}), canne: true };
   for (let k = 0; k < 40 && val('pecheMer') < 1; k++) castLine(s, 'mer');
@@ -205,18 +201,18 @@ test('campagne : chaque objectif du grand monde se joue avec les actions du mote
   assertEqual(val('faune'), 6);
   // tous les chapitres : leurs objectifs du monde sont remplis
   for (let ch = 2; ch <= 7; ch++) {
-    const p = chapterProgress(s, ch).objectifs.filter((o) => ['caleche', 'hameaux', 'monde', 'grotteMonde', 'pecheMer', 'achatsHameaux', 'faune'].includes(o.type));
+    const p = chapterProgress(s, ch).objectifs.filter((o) => ['caleche', 'hameaux', 'monde', 'pecheMer', 'achatsHameaux', 'faune'].includes(o.type));
     assert(p.length > 0 && p.every((o) => o.ok), `chapitre ${ch} : ${JSON.stringify(p.map((o) => [o.type, o.valeur, o.cible]))}`);
   }
 });
 
-test('campagne : le joueur automatique fait ses objectifs du monde (hameaux, monde vu, grotte, mer)', () => {
+test('campagne : le joueur automatique fait ses objectifs du monde (hameaux, monde vu, mer)', () => {
   const s = tireless(partie(1));
   for (const ch of [3, 4, 5, 7]) {
     testGoToChapter(s, ch);
     const avant = s.campagne.chapitre;
     for (let jour = 0; jour < 12; jour++) botMonde(s);
-    const reste = chapterProgress(s, avant).objectifs.filter((o) => ['hameaux', 'monde', 'grotteMonde', 'pecheMer'].includes(o.type) && !o.ok);
+    const reste = chapterProgress(s, avant).objectifs.filter((o) => ['hameaux', 'monde', 'pecheMer'].includes(o.type) && !o.ok);
     assertEqual(reste.map((o) => o.type), [], `chapitre ${ch}`);
   }
   // (la vente à la calèche du chapitre 2 et les chapitres atteints : tests/engine/bot.test.mjs)

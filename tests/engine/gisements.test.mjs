@@ -11,7 +11,7 @@
 
 import {
   casserMonde, countItem, DATA, farmTerrain, gisementsFerme, migrate, MONDE, mineRock, objetsDeRegion, ramasserMonde, RECOLTE, rockGone,
-  solDirect, STATE_VERSION, testFarmMap,
+  genererFerme, planDuMonde, solDirect, STATE_VERSION, testFarmMap,
 } from '../../js/engine/index.js';
 import { SORTES_ROCHES } from '../../js/engine/monde-roches.js';
 import { assert, assertEqual, garden, test } from './aide.mjs';
@@ -112,7 +112,7 @@ test('migration 81 → 82 : le générateur 5 (les gisements)', () => {
   const v81 = JSON.parse(JSON.stringify({ ...s, version: 81 }));
   v81.carte = { ...(v81.carte || {}), graine: '7', generateur: 4 };
   const m = migrate(v81);
-  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 7], 'puis le 6, le 7');
+  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 8], 'puis le 6, le 7, le 8');
 });
 
 /* ---------- le lot 2 : ce qui brille la nuit ---------- */
@@ -145,5 +145,23 @@ test('migration 82 → 83 : le générateur 6 (ce qui brille la nuit)', () => {
   const v82 = JSON.parse(JSON.stringify({ ...s, version: 82 }));
   v82.carte = { ...(v82.carte || {}), graine: '7', generateur: 5 };
   const m = migrate(v82);
-  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 7], 'puis le 7');
+  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 8], 'puis le 7, le 8');
+});
+
+/* ---------- le lot 4 : la fin de la mine ---------- */
+
+test('migration 84 → 85 : le générateur 8 (la fin de la mine) ; la ferme n\'a plus son tas, le monde plus d\'entrées dessinées', () => {
+  const s = garden();
+  const v84 = JSON.parse(JSON.stringify({ ...s, version: 84 }));
+  v84.carte = { ...(v84.carte || {}), graine: '7', generateur: 7 };
+  const m = migrate(v84);
+  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 8]);
+  // la ferme : ni l'objet de la mine, ni ses tuiles
+  const f = genererFerme('gis-mine');
+  const objets = f.carte.layers.filter((l) => l.type === 'objectgroup').flatMap((l) => l.objects || []);
+  assert(!objets.some((o) => o.name === 'mine' || o.type === 'mine'), 'pas d\'entrée de mine');
+  // le monde : l'entrée des grottes n'est plus dessinée, même là où le plan garde leur place
+  const p = planDuMonde('gis-mine');
+  assert(p.lieux.grottes.length > 0, 'le plan garde leur place (les autres lieux ne bougent pas)');
+  assertEqual(DATA.GROTTE, undefined, 'plus de réglages de la mine');
 });

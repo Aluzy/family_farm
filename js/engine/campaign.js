@@ -236,7 +236,6 @@ export function objectiveValue(state, obj) {
     case 'pecheMer': return Math.floor(k.pecheMer || 0);
     case 'hameaux': return Object.keys(hameauxVus(state)).length;
     case 'monde': return partDuMonde(state);
-    case 'grotteMonde': return evenement(state, 'carte:grotte_monde') ? 1 : 0;
     case 'faune': return Object.keys(evenements(state)).filter((e) => e.startsWith('faune:')).length;
     default: return 0;
   }

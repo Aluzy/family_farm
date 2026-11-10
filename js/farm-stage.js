@@ -155,7 +155,7 @@
         if (this.ctx.monde) { L.image('vegetation', v('vegetation.png')); L.json('vegetation_cases', v('vegetation.json')); }
         // ses rochers, ses falaises, sa côte (scripts/carte/roches.py, js/carte/ferme/vegetation.js)
         if (this.ctx.monde) { L.image('roches', v('roches.png')); L.json('roches_cases', v('roches.json')); }
-        // ses lieux (l'entrée des grottes, les coins de pêche : scripts/carte/lieux.py) et ses bêtes
+        // ses lieux (les coins de pêche, les lieux du récit : scripts/carte/lieux.py) et ses bêtes
         // (scripts/carte/faune.py : une planche par espèce, découpée d'après faune.json ;
         // js/carte/ferme/faune-monde.js)
         if (this.ctx.monde) {
@@ -629,8 +629,7 @@
           this.fermier.update(delta);
           this.stepRegionPerso();            // (la région où il entre devient vue : js/carte/ferme/sol.js)
         }
-        this.stepMine();
-        this.stepLieuxMonde(time);              // (les entrées des grottes du monde, les coins de pêche : lieux-monde.js)
+        this.stepLieuxMonde(time);              // (les coins de pêche, les secrets : lieux-monde.js)
         if (!fige) {
           this.stepHameaux(dt / 1000);            // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
           if (this.stepCaleche) this.stepCaleche(dt / 1000);   // (la calèche : caleche.js)
@@ -999,11 +998,9 @@
         }
         const pile = !hoeing ? this.pileAt(wx, wy) : null;
         if (pile) return { pile: pile.id };
-        // le grand monde : l'entrée d'une grotte de la montagne (sa bouche, sa flèche), une bête
-        // (son nom, sa page de l'encyclopédie : js/carte/ferme/lieux-monde.js, faune-monde.js)
+        // le grand monde : un lieu du récit, un secret, une bête (son nom, sa page de l'encyclopédie :
+        // js/carte/ferme/lieux-monde.js, faune-monde.js)
         if (!hoeing && this.ctx.monde) {
-          const grotte = this.grotteMondeAt(wx, wy);
-          if (grotte) return { grotteMonde: grotte };
           const lieu = this.lieuRecitAt(wx, wy);
           if (lieu) return { lieuRecit: lieu };
           const bete = this.fauneAt(wx, wy);
@@ -1227,7 +1224,7 @@
             clearTimeout(prev.timer);
             this.lastTap = null;
             if (farmyard) this.goCollect(farmyard, hit.window);
-            else if (!this.askMine(wx, wy)) this.goHere(wx, wy);
+            else this.goHere(wx, wy);
             return;
           }
           if (prev) clearTimeout(prev.timer);
@@ -1269,7 +1266,6 @@
         if (hit.mine) { this.mine(hit.mine); return; }
         if (hit.scythe) { this.scythe(hit.scythe); return; }
         if (hit.monde) { this.mondeAgir(hit.monde); return; }
-        if (hit.grotteMonde) { this.enterGrotteMonde(hit.grotteMonde); return; }
         if (hit.lieuRecit) { this.lieuRecitTouche(hit.lieuRecit); return; }
         if (hit.faune) { this.fauneTouchee(hit.faune); return; }
         if (hit.fish) { this.goFish(hit.fish, wx, wy); return; }
@@ -1498,10 +1494,6 @@
     return s.panTo(best.p, false);
   }
 
-  // Revenu d'une autre carte (js/ui/excursion.js) : le personnage au bout du chemin de l'est
-  // (`est`), devant la porte de la mine (`mine`) ou devant l'entrée d'une grotte de la montagne
-  // (`grotte_<n>`) ; la scène pas encore prête, elle le fera en se créant (?arrivee=…).
-  function arrive(ou) { const s = getScene(); if (s && s.ready) s.arrive(ou); }
   // Un membre de la famille va manger à la boîte à nourriture (js/famille-ferme.js) ; false s'il
   // n'est pas dehors sur la carte.
   function allerManger(id) {
@@ -1547,5 +1539,5 @@
     const s = getScene();
     return !!(s && s.emotionHabitant && s.emotionHabitant(id, e));
   }
-  global.FarmStage = { emotion, compagnonDit, mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, semer, semisEnAttente, arrive, scene: getScene }; // scene() : pour le débogage et les tests
+  global.FarmStage = { emotion, compagnonDit, mount, update, show, hide, ready, view, panTo, showTiles, hasFermier, persoCase, perso, goHome, allerManger, allerAuPuits, semer, semisEnAttente, scene: getScene }; // scene() : pour le débogage et les tests
 })(window);

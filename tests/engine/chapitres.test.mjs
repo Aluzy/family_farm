@@ -38,7 +38,7 @@ test('DATA Lot 9 : sept chapitres, objectifs (version 1.7 : ils ne débloquent p
     [['maison', 1], ['panneau', 1], ['pompe', 1], ['reservoir', 1], ['houe', 1], ['labours', 6], ['semis', 6], ['arrosees', 6], ['recoltes', 1]],
     [['niveau', 2], ['cultures', 4], ['silo', 1], ['semisBle', 1], ['siloBle', 50], ['caleche', 50]],
     [['pontes', 7], ['amis', 1], ['objet', 4], ['hameaux', 1]],
-    [['pains', 5], ['plats', 3], ['objet', 1], ['grotteMonde', 1], ['monde', 10]],
+    [['pains', 5], ['plats', 3], ['objet', 1], ['objet', 1], ['monde', 10]],
     [['laines', 10], ['repas', 1], ['hameaux', 3], ['pecheMer', 1]],
     [['projets', 1], ['achatsHameaux', 5], ['faune', 6]],
     [['styles', 3], ['plans', 7], ['hameaux', 5], ['monde', 15]],
@@ -226,7 +226,7 @@ testBase('chapitre 3 : 7 nuits de ponte d\'affilée (et un ami, le minerai)', ()
     sleepOnce(s);
     assertEqual(s.campagne.compteurs.serieOeufs, night);
   }
-  assertEqual([s.campagne.chapitre, okList(s)], [3, [true, false]], 'version 1.22 : il manque le minerai de la grotte');
+  assertEqual([s.campagne.chapitre, okList(s)], [3, [true, false]], 'version 1.22 : il manque le minerai de fer');
   addItem(s, 'minerai_fer', 4);
   updateChapters(s);
   assertEqual(s.campagne.chapitre, 4);
@@ -285,7 +285,7 @@ testBase('chapitre 4 : 5 pains et 3 plats différents', () => {
     assert(startRecipe(s, 'pain').ok);
     runFor(s, 25);
   }
-  assertEqual([s.campagne.compteurs.pains, okList(s)], [5, [true, false, false]]);
+  assertEqual([s.campagne.compteurs.pains, okList(s)], [5, [true, false, false, false]]);
   assertEqual(s.campagne.chapitre, 4, 'cinq pains ne font pas les trois plats');
   // version 1.22 : un lingot de fer fondu au Four (4 minerais + du bois)
   addItem(s, 'minerai_fer', 4);
@@ -293,6 +293,10 @@ testBase('chapitre 4 : 5 pains et 3 plats différents', () => {
   assert(startRecipe(s, 'lingot_fer').ok, 'fondre un lingot de fer');
   runFor(s, 25);
   assertEqual([countItem(s, 'minerai_fer'), countItem(s, 'lingot_fer'), okList(s)[2]], [0, 1, true]);
+  // la mine n'est plus (docs/gisements.md, lot 4) : un quartz des cristaux de la montagne
+  assertEqual(okList(s)[3], false);
+  addItem(s, 'quartz', 1);
+  assertEqual(okList(s)[3], true);
   const dishes = [['omelette', { oeuf: 3, huile: 1 }, 20], ['gratin_patates', { patate: 3, oeuf: 1 }, 35], ['ratatouille', { tomate: 1, courgette: 1, aubergine: 1, huile: 1 }, 35]];
   dishes.forEach(([id, ing, secs], i) => {
     for (const [item, n] of Object.entries(ing)) addItem(s, item, n);

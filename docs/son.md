@@ -26,7 +26,7 @@ ne fait rien : les scènes et l'interface l'appellent toujours par
 | Bus | Curseur des Options | Contenu |
 |---|---|---|
 | musique | 🎵 Musique | les thèmes |
-| nature | 🌳 Ambiance | oiseaux, grillons, vent, forêt, montagne, grotte, grenouilles, cris d'oiseaux et hulotte |
+| nature | 🌳 Ambiance | oiseaux, grillons, vent, forêt, montagne, grenouilles, cris d'oiseaux et hulotte |
 | monde | 🌳 Ambiance | bêtes de la ferme et du grand monde, moulin, four, pompe, asperseurs, robot, ruches, hameaux, botteleuse |
 | effets | 🪓 Gestes | outils, pas, ramassage, pêche, construction, échelle |
 | interface | 🔔 Fenêtres et messages | fenêtres, onglets, notifications, pièces, niveau, chapitre, technologie |
@@ -65,7 +65,7 @@ n'entrent pas dans la sauvegarde.
   (`musique_hameau`), la montagne, le sommet ou la falaise (`musique_montagne`), la côte et la mer
   (`musique_cote`), la forêt (`musique_foret`), sinon la ferme, la prairie, la lande et le marais
   (`musique_matin`) ; le soir (17 h-21 h) et la nuit, les thèmes du soir et de la nuit ; dans un hameau
-  pendant sa fête (V-4), `musique_fete`, sans pause ; sous terre, celui de la mine. Un lieu tenu 4 s
+  pendant sa fête (V-4), `musique_fete`, sans pause . Un lieu tenu 4 s
   seulement (pas de va-et-vient à une lisière) ; un nouveau lieu fait revenir sa musique tout de suite.
   « Par moments » (le réglage par défaut) : deux à trois minutes de musique, puis une à deux minutes et
   demie de monde seul.
@@ -76,7 +76,7 @@ n'entrent pas dans la sauvegarde.
   Lise aiguë et rapide, Frida pétillante…) ; un habitant généré, la sienne, tirée de son id selon son
   genre et son âge. Un réglage la coupe (⚙️ Options › Son, « La voix des habitants »).
 
-Dans la mine : la grotte (le grondement, les gouttes) et son thème, rien de la ferme.
+(La mine, son ambiance de grotte et son thème ne sont plus : docs/gisements.md, lot 4.)
 
 ### Les gestes et l'interface
 
@@ -86,12 +86,12 @@ Dans la mine : la grotte (le grondement, les gouttes) et son thème, rien de la 
 | à cheval | `galop` (une boucle), `ebrouement` | `FermeSon.pas` |
 | houe, semis, arrosage, récolte (au coup) | `houe`, `semis`, `arrosage`, `recolte` | `js/fermier.js` (`GESTE_SON`) |
 | hache, arbre qui tombe, buisson | `hache`, `arbre_tombe`, `recolte`, `arracher` | `hache.js`, `recolte-monde.js`, `habitants.js` (le bûcheron) |
-| pioche, rocher brisé, minerai | `pioche`, `retrait`, `pioche_minerai` | `pioche.js`, `recolte-monde.js`, `js/grotte.js` |
+| pioche, rocher brisé, minerai | `pioche`, `retrait`, `pioche_minerai` | `pioche.js`, `recolte-monde.js` |
 | faux, coup fort, coup dans le vide | `faux`, `houe`, `coup_vide` | `decor.js`, `recolte-monde.js`, `coupfort.js` |
-| ce qu'il prend (la bulle « +x ») | `pris_bois`, `pris_pierre`, `pris_herbe`, `pris_minerai`, `oeuf`, `lait`, `tonte` | `etiquettes.js` (`showGain`), `js/grotte.js` (`popGain`) |
+| ce qu'il prend (la bulle « +x ») | `pris_bois`, `pris_pierre`, `pris_herbe`, `pris_minerai`, `oeuf`, `lait`, `tonte` | `etiquettes.js` (`showGain`) |
 | pêche : lancer, bouchon, touche, moulinet, prise, rien | `lancer`, `plouf`, `touche`, `moulinet`, `prise`, `rate` | `peche.js` |
 | un bloc posé (bois, pierre, métal), retiré | `pose_bois`, `pose_pierre`, `pose_metal`, `retrait` | `chantier.js` (`syncBlocks`, pas au premier dessin) |
-| la porte de la mine, l'échelle, l'escalier | `porte_ouvre`, `echelle` | `passages.js`, `js/grotte.js`, `etage.js` |
+| une porte, l'escalier | `porte_ouvre`, `echelle` | `portes.js`, `etage.js` |
 | une bête du monde touchée ou qui fuit | son cri (`FermeSon.cri`) | `faune-monde.js` |
 | la botteleuse qui se met en marche | `botteleuse` | `botteleuse.js` |
 | il s'endort ; 6 h (et le coq s'il y a des poules) | `dodo` ; `nouveau_jour`, `coq` | `js/fermier.js` ; `js/ui/game-actions.js` (`wakeUp`) |

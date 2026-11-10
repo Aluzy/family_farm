@@ -83,7 +83,7 @@ export const EFFETS_TECHNO = [
   'frigoConso', // techPct (energy.js)
   'gouter', // techFlag (family.js)
   'grainesBonus', // techSum (crops.js)
-  'grotte', // techFlag (outils.js, grotte.js)
+  'grotte', // techFlag (outils.js bonusMinerai : la Lampe de mineur, son bonus de minerai)
   'groupeEconome', // techFlag (crops.js)
   'parBle', // techFlag (animals.js)
   'pecheJour', // techSum (outils.js)
@@ -100,8 +100,7 @@ export const EFFETS_TECHNO = [
 ];
 
 // Les façons d'obtenir un objet (liste vide : aucune). Sert à l'avertissement
-// « objet introuvable » de validateData(). Les minerais viennent de la grotte
-// (mineOre, js/engine/outils.js : minerai_<sorte>), hors des données.
+// « objet introuvable » de validateData(). (Les minerais viennent des gisements : RECOLTE.SORTES, docs/gisements.md.)
 export function sourcesOf(data, id) {
   const out = [];
   const it = data.OBJETS[id] || {};
@@ -120,7 +119,6 @@ export function sourcesOf(data, id) {
   }
   for (const [eau, p] of Object.entries((data.CANNE && data.CANNE.PRISES) || {})) if (id in p) out.push(`pêche ${eau}`);
   for (const [eau, p] of Object.entries((data.CANNE && data.CANNE.COINS && data.CANNE.COINS.PRISES) || {})) if (id in p) out.push(`coin de pêche (${eau})`);
-  for (const [sorte, p] of Object.entries((data.GROTTE && data.GROTTE.MONDE && data.GROTTE.MONDE.POIDS) || {})) if (id === sorte || id === 'minerai_' + sorte) out.push('grotte de la montagne');
   const A = data.ATELIER;
   for (const [rid, r] of Object.entries((A && A.RECETTES) || {})) if (id in (r.sortie || {})) out.push(`atelier ${rid}`);
   for (const [rid, r] of Object.entries((A && A.RAMASSAGE) || {})) if (r.objet === id) out.push(`ramassage ${rid}`);
@@ -137,7 +135,6 @@ export function sourcesOf(data, id) {
   if (data.PIOCHE && id === 'pierre') out.push('pioche');
   if (data.FAUX && id === 'fibre') out.push('faux');
   if (data.BOTTELEUSE && data.PATURAGE && id === data.PATURAGE.NOURRITURE) out.push('botteleuse');
-  if (id.startsWith('minerai_')) out.push('grotte');
   if (it.trouvaille) out.push(`trouvaille du grand monde (${it.trouvaille})`);
   for (const [nom, r0] of Object.entries((data.RECOLTE && data.RECOLTE.SORTES) || {})) for (const r of [r0, r0.aussi].filter(Boolean)) if (id in (r.fin || {}) || id in (r.coup || {}) || id in (r.chance || {})) out.push(`récolte du grand monde (${nom})`);
   if (it.cueillette) out.push(`cueillette (${it.cueillette})`);
@@ -491,47 +488,6 @@ export function validateData(data) {
   if (data.PATURAGE) needItem('PATURAGE.NOURRITURE', data.PATURAGE.NOURRITURE);
   const SIM = data.SIMULATION || {};
   if (SIM.DEPANNAGE) needItem('SIMULATION.DEPANNAGE.item', SIM.DEPANNAGE.item);
-
-  /* la mine (data/grotte.json, lue par sa scène : js/grotte.js) */
-  const G = data.GROTTE;
-  if (G) {
-    for (const cle of ['LARGEUR', 'HAUTEUR', 'NIVEAUX', 'PASSES', 'COUPS']) {
-      if (!(isInt(G[cle]) && G[cle] >= 1)) err(`GROTTE.${cle}`, `un entier supérieur à 0 ; reçu ${JSON.stringify(G[cle])}`);
-    }
-    for (const cle of ['MURS', 'MINERAI']) {
-      if (!(typeof G[cle] === 'number' && G[cle] >= 0 && G[cle] <= 1)) err(`GROTTE.${cle}`, `une part entre 0 et 1 ; reçu ${JSON.stringify(G[cle])}`);
-    }
-    for (const cle of ['MINERAI_NIVEAU', 'COUP']) {
-      if (!(typeof G[cle] === 'number' && G[cle] >= 0)) err(`GROTTE.${cle}`, `un nombre positif ; reçu ${JSON.stringify(G[cle])}`);
-    }
-    // chaque sorte est l'objet minerai_<sorte> (mineOre, js/engine/outils.js) ; FIXE, ou DEPUIS et PENTE
-    for (const [sorte, p] of Object.entries(G.POIDS || {})) {
-      needItem('GROTTE.POIDS', `minerai_${sorte}`);
-      const ok = (n) => typeof n === 'number' && n >= 0;
-      if (!(p && ('FIXE' in p ? ok(p.FIXE) : ok(p.DEPUIS) && ok(p.PENTE)))) err(`GROTTE.POIDS.${sorte}`, 'FIXE, ou DEPUIS et PENTE : des nombres positifs');
-    }
-    // les grottes de la montagne du grand monde (fiche 6b, js/engine/grotte.js : reglagesGrotte) :
-    // des minerais (minerai_<sorte>) et des pierres (quartz, améthyste : l'objet lui-même), chacun
-    // sa case dans assets/grotte_tuiles.png (scripts/carte/grotte.py)
-    const GM = G.MONDE;
-    if (GM) {
-      if (!(typeof GM.NOM === 'string' && GM.NOM)) err('GROTTE.MONDE.NOM', 'le nom de la grotte');
-      if (!(isInt(GM.NIVEAUX) && GM.NIVEAUX >= 1)) err('GROTTE.MONDE.NIVEAUX', 'un entier supérieur à 0');
-      if (!(typeof GM.MINERAI === 'number' && GM.MINERAI > 0 && GM.MINERAI <= 1)) err('GROTTE.MONDE.MINERAI', 'une part entre 0 et 1');
-      if (!(typeof GM.MINERAI_NIVEAU === 'number' && GM.MINERAI_NIVEAU >= 0)) err('GROTTE.MONDE.MINERAI_NIVEAU', 'un nombre positif');
-      const pierres = ['quartz', 'amethyste'];
-      for (const [sorte, p] of Object.entries(GM.POIDS || {})) {
-        if (pierres.includes(sorte)) needItem('GROTTE.MONDE.POIDS', sorte);
-        else needItem('GROTTE.MONDE.POIDS', `minerai_${sorte}`);
-        const ok = (n) => typeof n === 'number' && n >= 0;
-        if (!(p && ('FIXE' in p ? ok(p.FIXE) : ok(p.DEPUIS) && ok(p.PENTE)))) err(`GROTTE.MONDE.POIDS.${sorte}`, 'FIXE, ou DEPUIS et PENTE : des nombres positifs');
-      }
-      for (const [sorte, f] of Object.entries(GM.FILONS || {})) {
-        if (!(GM.POIDS && sorte in GM.POIDS)) err(`GROTTE.MONDE.FILONS.${sorte}`, 'une sorte de GROTTE.MONDE.POIDS');
-        if (!(typeof f === 'number' && f >= 1)) err(`GROTTE.MONDE.FILONS.${sorte}`, 'un facteur d\'au moins 1');
-      }
-    }
-  }
 
   /* le plan du grand monde (data/monde.json, lu par js/engine/monde-gen.js) */
   if (data.BIOMES || data.PLAN_MONDE) {
@@ -947,7 +903,7 @@ export function validateData(data) {
       if (p.toutes !== undefined && !(isInt(p.toutes) && p.toutes > 0 && p.toutes < 100)) err(`${where}.toutes`, 'un pourcentage entier (1 à 99)');
       if (p.soleil !== undefined && !(Array.isArray(p.soleil) && p.soleil.length === 2 && p.soleil[0] < p.soleil[1])) err(`${where}.soleil`, '[de, à] heures');
       for (const [b, v] of Object.entries(p.pied || {})) { if (!biomes.includes(b)) err(`${where}.pied.${b}`, 'un biome de DECOUVERTE.RAYONS'); pct(`${where}.pied.${b}`, v); }
-      for (const k of ['grotte', 'vueNuit']) if (p[k] !== undefined) pct(`${where}.${k}`, p[k]);
+      for (const k of ['vueNuit']) if (p[k] !== undefined) pct(`${where}.${k}`, p[k]);
       for (const k of ['faimMarche', 'faimAide']) if (p[k] !== undefined && !(isInt(p[k]) && p[k] > 0 && p[k] < 100)) err(`${where}.${k}`, 'un pourcentage entier (1 à 99)');
     }
     for (const [id, sac] of Object.entries(E.SACS || {})) {
@@ -1097,12 +1053,8 @@ export function validateData(data) {
     if (!Array.isArray(FL.FRAGMENTS) || !FL.FRAGMENTS.length || !FL.FRAGMENTS.every((f) => frags.includes(f))) err('RECIT.FIL.FRAGMENTS', 'une liste de pages de RECIT.FRAGMENTS');
     const heures = (w, v) => { if (!(Array.isArray(v) && v.length === 2 && v.every((h) => isInt(h) && h >= 0 && h <= 24) && v[0] !== v[1])) err(w, '[de, à] heures entières'); };
     const GA = FL.GALERIE || {};
-    const nbNiveaux = data.GROTTE && data.GROTTE.NIVEAUX;
-    if (isInt(nbNiveaux) && nbNiveaux > 0 && !(isInt(GA.NIVEAU) && GA.NIVEAU >= 1 && GA.NIVEAU <= nbNiveaux)) err('RECIT.FIL.GALERIE.NIVEAU', 'un niveau de la mine de la ferme (GROTTE.NIVEAUX)');
     if (!phases.includes(GA.LUNE)) err('RECIT.FIL.GALERIE.LUNE', 'une phase de lune');
     heures('RECIT.FIL.GALERIE.HEURES', GA.HEURES);
-    const CH = GA.CHAMBRE || {}, S = CH.SALLE || [];
-    if (!(isInt(CH.LARGEUR) && isInt(CH.HAUTEUR) && S.length === 4 && S.every(isInt) && S[0] >= 2 && S[1] >= 2 && S[2] < CH.LARGEUR - 2 && S[3] < CH.HAUTEUR - 2 && S[2] - S[0] >= 3 && S[3] - S[1] >= 3)) err('RECIT.FIL.GALERIE.CHAMBRE', 'LARGEUR, HAUTEUR et SALLE [x0, y0, x1, y1] : au moins 4 × 4 cases, deux cases de mur autour');
     needItem('RECIT.FIL.PIERRE.OBJET', (FL.PIERRE || {}).OBJET);
     if (!(typeof (FL.PIERRE || {}).POUSSE === 'number' && FL.PIERRE.POUSSE > 0 && FL.PIERRE.POUSSE <= 1)) err('RECIT.FIL.PIERRE.POUSSE', 'un nombre de 0 (exclu) à 1');
     heures('RECIT.FIL.LUEUR', FL.LUEUR);

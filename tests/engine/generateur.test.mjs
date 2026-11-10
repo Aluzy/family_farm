@@ -34,6 +34,8 @@ const EMPREINTES = {
   6: { ferme: '4e86e112', plan: '72a8a80f', regions: { '3,3': '09a9a9b6', '0,0': '18c531a4', '8,6': '1e86fe49', '5,1': '1e5652f1', '1,1': '1ae76b42' } },
   // (7 : l'amas d'améthyste de la pierre de lune, dans le plan ; la ferme est celle du 6)
   7: { ferme: '4e86e112', plan: '3080e6fc', regions: { '3,3': '09a9a9b6', '0,0': '18c531a4', '8,6': '1e86fe49', '5,1': '8b0df96e', '1,1': '1ae76b42' } },
+  // (8 : la fin de la mine : ni le tas sur la ferme, ni les entrées de grotte dessinées ; le plan est celui du 7)
+  8: { ferme: '4da6ebef', plan: '3080e6fc', regions: { '3,3': '09a9a9b6', '0,0': '18c531a4', '8,6': '1e86fe49', '5,1': '1f056b3b', '1,1': '1ae76b42' } },
 };
 
 // Une empreinte FNV-1a (32 bits) d'une valeur : nombres, textes, listes, tableaux typés, objets (clés
@@ -86,14 +88,14 @@ test('le générateur : une partie neuve et une partie qui change de ferme noten
   assertEqual(s.carte, { graine: 'autre', generateur: GENERATEUR_VERSION });
 });
 
-test('le générateur : une partie d\'avant (v69) reçoit le premier numéro (puis le 2, D-2, le 3, les fleurs, le 4, le châtaignier, le 5, les gisements, le 6, ce qui brille la nuit, et le 7, la pierre de lune), rien d\'autre ne change', () => {
+test('le générateur : une partie d\'avant (v69) reçoit le premier numéro (puis le 2, D-2, le 3, les fleurs, le 4, le châtaignier, le 5, les gisements, le 6, ce qui brille la nuit, le 7, la pierre de lune, et le 8, la fin de la mine), rien d\'autre ne change', () => {
   const neuve = createInitialState(7);
   const { generateur, ...carte69 } = neuve.carte;
   const v69 = { ...JSON.parse(JSON.stringify(neuve)), version: 69, carte: carte69 };
   const m = migrate(v69);
   // (le premier numéro, puis la migration 71 → 72 la passe au générateur 2 : les secrets du monde, D-2 ; puis la
   // migration 77 → 78 au 3 : les fleurs sauvages)
-  assertEqual([m.version, m.carte], [STATE_VERSION, { graine: carte69.graine, generateur: 7 }]);
+  assertEqual([m.version, m.carte], [STATE_VERSION, { graine: carte69.graine, generateur: 8 }]);
   const { carte: a, version: va, ...resteA } = m, { carte: b, version: vb, ...resteB } = JSON.parse(JSON.stringify(neuve));
   assertEqual(resteA, resteB, 'le reste de la partie est intact');
   // (sans carte : la migration n'en invente pas ; la réparation lui en donne une, du générateur actuel)

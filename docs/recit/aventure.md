@@ -123,6 +123,9 @@ Personne ne quitte l'île : un foyer malheureux parle de partir, sans partir.
 
 ## 4. Le fil de la lune
 
+> **Depuis la fin de la mine** (docs/gisements.md, lots 3 et 4) : la galerie secrète est devenue un grand amas
+> d'améthyste, dans la montagne la plus proche de la ferme ; il s'ouvre aux mêmes conditions et donne la pierre.
+
 Quatre fragments à recueillir, puis une nuit de pleine lune dans la mine : la galerie secrète
 n'apparaît qu'à ces deux conditions, et rien dans le jeu ne dit qu'elle existe. Les fragments
 entrent dans le carnet du joueur, sans objectif ni marqueur (`RECIT.FRAGMENTS`).

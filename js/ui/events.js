@@ -1,7 +1,7 @@
 import { buildMode, enLigne, setComptoirTab, setComptoirTabChoisi, setGodMode, setInvTab, setTestMode, state, testMode } from './store.js';
 import { actionPermise } from './en-ligne.js';
 import { persistState } from './storage.js';
-import { syncGodBar } from './excursion.js';
+import { syncGodBar } from './hote.js';
 import { asleep } from '../engine/night.js';
 import { notify } from './toasts.js';
 import { tel, telClick } from './consent.js';

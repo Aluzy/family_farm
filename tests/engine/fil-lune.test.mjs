@@ -4,13 +4,14 @@
      nuit, la lanterne-tempête à la main), les relevés de Frida (son atelier, la deuxième fois), les pages du
      carnet du ciel de Maurice (son observatoire, la nuit, après deux nuits à regarder le ciel, une par phase) ;
    - l'observatoire : le jour, on le découvre ; la nuit, la longue-vue (une nuit comptée par jour) ;
-   - la galerie : les fragments au carnet, une nuit de pleine lune, de 22 h à 4 h ; la fissure d'un niveau ;
-     la petite chambre ; la pierre, une fois ; posée, tout pousse plus vite ; Frida doute, le carnet du ciel sait.
+   - l'amas d'améthyste (la galerie de la mine n'est plus : docs/gisements.md) : une nuit de pleine lune, de 22 h
+     à 4 h, les fragments au carnet ; la pierre, une fois ; posée, tout pousse plus vite ; Frida doute, le carnet
+     du ciel sait.
    Lancer seul : node tests/run-tests.mjs fil-lune.
    ========================================================================== */
 
 import {
-  awakeMsAtHour, BIOME, composeFamily, createNewGame, DATA, finishSetup, genererNiveau, planDuMonde, reglagesGrotte,
+  awakeMsAtHour, BIOME, composeFamily, createNewGame, DATA, finishSetup, planDuMonde,
 } from '../../js/engine/index.js';
 import { addItem, countItem } from '../../js/engine/inventory.js';
 import { equiper } from '../../js/engine/equipement.js';
@@ -19,7 +20,7 @@ import {
   aFait, ajouterFragment, ajouterRelation, foisFait, jouerScene, noterFait, recitDe, scenesPossibles, toucherLieu,
 } from '../../js/engine/recit.js';
 import {
-  FIL, fermeLuit, filComplet, fissureDuNiveau, galerieOuverte, geodeLuit, niveauGalerie, poserPierre, prendrePierre, visiteObservatoire,
+  FIL, fermeLuit, geodeLuit, poserPierre, visiteObservatoire,
 } from '../../js/engine/fil-lune.js';
 import { assert, assertEqual, test } from './aide.mjs';
 
@@ -100,44 +101,25 @@ test('l\'observatoire : le jour, on le découvre ; la nuit, la longue-vue ; une 
   assertEqual(visiteObservatoire(s).fragment, 'ciel_noire');
 });
 
-test('la galerie : les fragments, une nuit de pleine lune, de 22 h à 4 h', () => {
+test('l\'amas d\'améthyste luit plus fort une nuit de pleine lune, de 22 h à 4 h', () => {
   const s = partie();
   a(s, PHASE.pleine, 23);
-  assertEqual(galerieOuverte(s), false, 'sans les fragments');
-  for (const f of FIL.FRAGMENTS) ajouterFragment(s, f);
-  assert(filComplet(s));
-  assert(galerieOuverte(s));
+  assert(geodeLuit(s));
   a(s, PHASE.pleine, 21);
-  assertEqual(galerieOuverte(s), false, 'trop tôt');
+  assertEqual(geodeLuit(s), false, 'trop tôt');
   a(s, PHASE.pleine, 3);
-  assert(galerieOuverte(s), 'après minuit');
+  assert(geodeLuit(s), 'après minuit');
   a(s, PHASE.pleine + DATA.LUNE.PHASES.find((p) => p.id === 'pleine').jours, 23);
-  assertEqual(galerieOuverte(s), false, 'pas un autre soir');
-});
-
-test('la fissure : un mur de face, du sol dessous, loin de l\'échelle ; la même pour le même niveau', () => {
-  const J = reglagesGrotte('ferme');
-  for (const jour of [1, 7, 40]) {
-    const c = genererNiveau(J, FIL.GALERIE.NIVEAU, jour), f = fissureDuNiveau(c);
-    assert(f, `jour ${jour} : une fissure`);
-    assert(!c.sol(f.x, f.y) && c.sol(f.x, f.y + 1) && c.sol(f.x, f.y + 2), `jour ${jour} : sur une paroi`);
-    assert(Math.abs(f.x - c.echelle.x) + Math.abs(f.y - c.echelle.y) >= 6, 'loin de l\'échelle');
-    assertEqual(fissureDuNiveau(genererNiveau(J, FIL.GALERIE.NIVEAU, jour)), f);
-  }
-  // la petite chambre : on arrive sous la fissure ; ses objets dans la salle, les gravures sur la paroi
-  const g = niveauGalerie();
-  assert(g.galerie && g.sol(g.echelle.x, g.echelle.y) && g.sol(g.echelle.x, g.echelle.y + 1) && !g.sol(g.echelle.x, g.echelle.y - 1));
-  const O = g.objets;
-  assert(g.sol(O.couverture.x, O.couverture.y) && g.sol(O.tasse.x, O.tasse.y) && g.sol(O.pierre.x, O.pierre.y) && !g.sol(O.gravures.x, O.gravures.y));
-  assertEqual(g.retour, FIL.GALERIE.NIVEAU);
+  assertEqual(geodeLuit(s), false, 'pas un autre soir');
 });
 
 test('la pierre : prise une fois ; posée sur la ferme, tout pousse plus vite ; Frida doute, le carnet du ciel sait', () => {
   const s = partie();
-  assertEqual(prendrePierre(s).ok, false, 'sans les fragments');
   for (const f of FIL.FRAGMENTS) ajouterFragment(s, f);
-  assert(prendrePierre(s).ok);
-  assertEqual([countItem(s, FIL.PIERRE.OBJET), prendrePierre(s).ok], [1, false]);
+  a(s, PHASE.pleine, 23);
+  toucherLieu(s, 'geode');
+  toucherLieu(s, 'geode');
+  assertEqual(countItem(s, FIL.PIERRE.OBJET), 1, 'prise une fois, dans l\'amas d\'améthyste');
   assertEqual(heuresPousse(s), DATA.TEMPS.POUSSE_HEURES);
   assert(poserPierre(s).ok);
   assertEqual([countItem(s, FIL.PIERRE.OBJET), heuresPousse(s), poserPierre(s).ok], [0, DATA.TEMPS.POUSSE_HEURES * FIL.PIERRE.POUSSE, false]);

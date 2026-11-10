@@ -213,11 +213,11 @@ const MONDE_ESSAI = (() => {
 test('la carte n\'expose rien de non vu : les lieux pas encore vus en sont absents', () => {
   const { s: s0, lieux } = MONDE_ESSAI();
   const s = copie(s0);
-  const total = lieux.hameaux.length + lieux.grottes.length + lieux.peche.length;
+  const total = lieux.hameaux.length + lieux.peche.length;
   assert(lieux.hameaux.length >= 3 && total > lieux.hameaux.length, 'des lieux dans le plan');
   const vide = lieuxDeLaCarte(s, lieux);
-  assertEqual(vide.hameaux.length + vide.grottes.length + vide.peche.length, [...lieux.hameaux, ...lieux.grottes, ...lieux.peche].filter((l) => caseVue(s, l.case)).length);
-  for (const l of [...vide.hameaux, ...vide.grottes, ...vide.peche]) assert(caseVue(s, l.case), `${l.id} est vu`);
+  assertEqual(vide.hameaux.length + vide.peche.length, [...lieux.hameaux, ...lieux.peche].filter((l) => caseVue(s, l.case)).length);
+  for (const l of [...vide.hameaux, ...vide.peche]) assert(caseVue(s, l.case), `${l.id} est vu`);
   // un hameau vu de loin : sans nom (sauf le Gué, le récit : on en parle avant d'y aller) ; visité : son nom
   const h = lieux.hameaux.find((q) => !q.gue && !caseVue(s, q.case));
   voirAutour(s, h.case, { biome: 'prairie' });
@@ -233,7 +233,7 @@ test('la carte n\'expose rien de non vu : les lieux pas encore vus en sont absen
   // tout vu : tous les lieux
   toutVoir(s);
   const tout = lieuxDeLaCarte(s, lieux);
-  assertEqual(tout.hameaux.length + tout.grottes.length + tout.peche.length, total);
+  assertEqual(tout.hameaux.length + tout.peche.length, total);
 });
 
 test('l\'image du monde : la même d\'un coup ou par morceaux de rangées, sans la partie', () => {
