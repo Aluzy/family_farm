@@ -1,5 +1,10 @@
 # Fiche 28 — Les calculs hors du fil principal : rives, encyclopédie, rattrapage, longues tâches découpées
 
+> **Fait (2026-11-10), d'après les mesures** : le rattrapage hors ligne coûtait cent fois plus que ne le
+> disait `docs/perf.md` ; il est rendu 10 fois plus rapide, ce qui rend inutile de le passer dans un Worker.
+> Les rives, l'encyclopédie et le découpage des longues tâches, mesurés, sont laissés. Voir « Ce qui a été
+> fait » en fin de fiche.
+
 Chantier « Phaser 4 », piste 5 du rapport (première moitié : les calculs ; la peinture du sol et la teinte
 de l'herbe sont la fiche 29).
 
@@ -69,3 +74,21 @@ sauvegarde vieille de 8 h (`t` reculé) pour le rattrapage.
 
 Un commit ; `docs/perf.md` (le chargement) et `docs/architecture-phaser.md` (ce que font les Workers) mis
 à jour.
+
+## Ce qui a été fait (les mesures : Chromium, processeur ralenti 4 fois, la sauvegarde du jour 75)
+
+- **Le rattrapage hors ligne** (`simulateOffline`) d'une absence de 8 h coûtait 6,6 s ralenti (1,47 s dans
+  Node), la moitié du chargement : `robotStation` cherchait la station du robot parmi les 696 blocs posés
+  (`Object.entries(...).find`) plusieurs fois par pas, à chacun des 5 760 pas. Elle est maintenant figée le
+  temps d'un pas (`figerStation`, appelé par `farmStep`) et pour tout le rattrapage, où aucun bloc ne se
+  pose ni ne s'ôte, et cherchée sans tableau alloué ; `recetteDesOutils` (les chaînes) lit un index fait une
+  fois. 8 h dans Node : médiane **1 466 ms → 148 ms** ; le résultat est identique à l'octet près (l'état et
+  le bilan, pour 0,5, 3 et 8 h d'absence suivies de 10 s de jeu). Le passer dans un Worker n'est plus utile.
+- **Le chargement** après 8 h d'absence (ralenti ×4, sans profileur) : **16,0 s → 11,0 à 12,1 s**.
+- **Laissés, mesurés** : les rives de l'eau (`eauRive`, ≈ 0,4 s ralenti sur 11,5, déjà étalé à une étendue
+  par image ; les sortir demande de lire les pixels du sol peint ailleurs que dans son canvas, avec la
+  fiche 29) ; l'encyclopédie (`majEncyclopedie`, 31 ms ralenti) ; le découpage des longues tâches (celles
+  qui restent sont d'un seul tenant : la génération de la ferme, `genererFerme`, ≈ 1 s ralenti, la création
+  de la scène et le modèle, ≈ 1,7 s, la peinture des premières régions, ≈ 2,2 s, la teinte de l'herbe
+  haute, ≈ 1,1 s : c'est la fiche 29).
+- Test : `tests/engine/automatisation.test.mjs` (la station figée le temps d'un pas, revue hors de là).

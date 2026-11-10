@@ -56,10 +56,13 @@ function etats(state) {
 }
 
 // La recette qu'une suite d'outils fait (id de DATA.RECETTES), ou null.
+// (fiche 28 : l'index des suites, fait une fois par table de recettes : elle était relue à chaque pas de
+// chaque chaîne)
+let indexSuites = null, indexDe = null;
 export function recetteDesOutils(sortes) {
-  const cle = sortes.join('>');
-  for (const [id, suite] of Object.entries(C().RECETTES)) if (suite.join('>') === cle) return id;
-  return null;
+  const R = C().RECETTES;
+  if (indexDe !== R) { indexDe = R; indexSuites = new Map(); for (const [id, suite] of Object.entries(R)) if (!indexSuites.has(suite.join('>'))) indexSuites.set(suite.join('>'), id); }
+  return indexSuites.get(sortes.join('>')) || null;
 }
 
 // Ce que la recette `id` rend : { item, qte }.

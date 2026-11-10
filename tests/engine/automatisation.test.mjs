@@ -9,7 +9,7 @@ import {
   findPlot, grantTech, inventoryCounts, irrigate, isAutomated, isUnlocked, makePlot, maxStage,
   migrateCropZone, migrateToIntegers, newAutoReport, newNightStats, plant, plantableCropsFor,
   prepTimeMult, recipeTime, recordNight, robotBattery, robotCapacity, robotChargePct, robotNight,
-  robotStation, robotStep, robotTaskCapacity, robotTrip, runRobotCharge, sellItem, setSeedReserve,
+  figerStation, robotStation, robotStep, robotTaskCapacity, robotTrip, runRobotCharge, sellItem, setSeedReserve,
   setSemis, siloCapacity, sleep, soilCap, spend, startFarm, startHousehold, startLot4, startLot5,
   startLot6, startRecipe, STATE_VERSION, takeItem, techPoints, techPrereqs, techProgress,
   techStatus, testAddHens, testAddPieces, testAddWheat, testBatir, testEmptyBatteries,
@@ -936,4 +936,25 @@ test('migration v14 → v15 : plus de 30 parcelles, on en garde 30 et chaque pla
   }) });
   assertEqual([pile.potager.parcelles.length, pile.inventaire], [30, {}]);
   assertEqual(pile.potager.parcelles.map((p) => p.culture), [...Array(29).fill('patate'), null]);
+});
+
+// Fiche 28 : la station du robot, figée le temps d'un pas ou d'un rattrapage (figerStation) ; hors de là,
+// cherchée à chaque fois (un bloc posé ou ôté se voit tout de suite).
+testBase('robot : sa station, figée le temps d\'un pas (fiche 28), revue hors de là', () => {
+  const s = auto5('potager');
+  const st = robotStation(s);
+  assert(Number.isInteger(st), 'une station posée');
+  const blocs = s.blocs;
+  // figée : la même, même si le bloc change pendant (ce qui n'arrive pas dans un pas)
+  const vu = figerStation(s, () => { delete blocs[st]; const a = robotStation(s); blocs[st] = 'station_robot'; return a; });
+  assertEqual(vu, st);
+  // hors du gel : ôtée, plus de station ; reposée, la revoilà
+  delete blocs[st];
+  assertEqual(robotStation(s), null);
+  blocs[st] = 'station_robot';
+  assertEqual(robotStation(s), st);
+  // réentrant ; une autre partie n'est pas figée par celle-ci
+  const t = auto5('potager');
+  delete t.blocs[robotStation(t)];
+  assertEqual(figerStation(s, () => figerStation(s, () => [robotStation(s), robotStation(t)])), [st, null]);
 });
