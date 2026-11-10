@@ -735,7 +735,9 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        marchent par les ruelles et les chemins (`fermier.path` : les cases libres du monde, les murs
        fermés ; trois recherches par image au plus, ou 6 ms) ; loin de la vue, ils sautent à leur but
        sans chercher ; sans chemin, ils s'effacent et reparaissent ; ils contournent le personnage
-       (un pas de côté ; s'il bouche le passage plus d'une seconde et demie, ils passent). Avec
+       (un pas de côté ; s'il bouche le passage plus d'une seconde et demie, ils passent) et, depuis la
+       fiche 32, les uns les autres ; ils se saluent, rentrent sous la pluie et attendent leur tour au
+       puits (voir « Fiche 32, groupe 3 »). Avec
        « animations réduites », ils vont d'un point à l'autre sans marcher.
      - **Parler** : un appui sur un habitant (en premier dans `hitAt`) : il s'arrête, se tourne vers le
        personnage, et sa bulle dit son prénom, son métier (« bûcheronne », « jardinier », « fils
@@ -1466,3 +1468,14 @@ SwiftShader, sans carte graphique) :
   approche encore ; ce rayon suit son allure (× 0,7 à petits pas, × 2 au galop) et se réduit près des
   hameaux (× 0,6) ; une bête qui fuit entraîne celles de son espèce à 96 px, l'une après l'autre ; les
   lapins, lièvres, perdrix et écureuils fuient le renard.
+
+- **Fiche 32, groupe 3 — les habitants entre voisins** (`js/carte/ferme/habitants.js`, `VOISINS`) : ils
+  s'évitent entre eux (la grille du socle, refaite à chaque image : un voisin devant lui, entre lui et son
+  prochain point, il s'écarte par sa droite et ils se croisent ; un voisin qui va du même côté, il le
+  laisse prendre de l'avance) ; deux voisins ne prennent plus la même place de travail (à 7 px près : un
+  peu à côté) ; sous la pluie (`meteo.pluie`), ils rentrent (le travail, les jeux et le soir dehors
+  deviennent « maison » ; le repas, le lit et la fête ne changent pas) ; deux habitants qui se croisent à
+  moins de 22 px s'arrêtent 1,1 s face à face, l'un dit une fois sur deux « Bonjour ! », « Salut ! »…,
+  l'autre répond parfois (pas deux fois en 45 s environ ; dans la vue seulement) ; le jardinier va parfois
+  puiser au puits de la place (3 fois sur 10, au plus une fois toutes les 40 à 90 s), un seul à la fois :
+  les autres attendent leur tour à côté, tournés vers le puits.
