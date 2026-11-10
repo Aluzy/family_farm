@@ -68,3 +68,25 @@ la pluie, forêt et lande du grand monde, à pied et à cheval.
 
 Un commit par groupe (ou un seul) ; `docs/grand-monde.md` (la faune, les habitants) et
 `docs/carte-generee.md` (les bêtes de la ferme) mis à jour.
+
+## Groupe 1, la faune du grand monde : fait (2026-11-10)
+
+`js/carte/ferme/faune-monde.js` (`REACTION`, sur le socle de la fiche 31), le réglage « méfiante » choisi sur
+film parmi trois (vive, posée, méfiante) :
+
+- **l'alerte** : le personnage à moins de 2 × son rayon de fuite, la bête se fige, tournée vers lui, un peu
+  étirée (le ressort, `tenu`) ; elle ne fuit que s'il continue d'approcher, et se calme au-delà de 3 × ;
+- **l'allure** : le rayon de fuite × 0,7 quand il approche à moins de la moitié de la marche, × 2 au-delà
+  d'une fois et demie (le cheval) (`CarteKit.rayonFuite`, testé en Node) ;
+- **la contagion** : une bête qui fuit fait fuir celles de son espèce à moins de 96 px, chacune après 0,2 à
+  0,6 s (la perception du socle) ;
+- **le renard** : lapins, lièvres, perdrix et écureuils à moins de 0,8 × leur rayon de fuite d'un renard le
+  fuient ;
+- **l'accoutumance** : près d'un hameau (6 cases), le rayon de fuite × 0,6. (L'accoutumance à une espèce
+  souvent croisée n'est pas faite : l'encyclopédie ne compte que la première rencontre.)
+- **Pas fait** : les chiens de la famille comme menace (ils ne sortent pas de la ferme, où il n'y a pas de
+  faune ; ils viendront avec le groupe 2, le chien qui suit le personnage).
+- Vérifié dans Chromium (4 perdrix sur la lande, le personnage qui approche à la marche, au galop, à petits
+  pas ; un renard près des lapins) : alerte puis envol vers 1 × le rayon à la marche, l'une après l'autre ;
+  au galop tout le groupe part dès 1,5 × ; à petits pas on approche plus longtemps ; les lapins fuient le
+  renard.

@@ -19,6 +19,9 @@
  *     false s'il est arrivé ou bloqué. Il regarde du côté où il va (a.flip).
  *   - CarteKit.separation(a, voisins, n, rayon, force, dt, peut) : une poussée douce loin des voisins à
  *     moins de `rayon` px (pas de collision dure : « ne pas se marcher dessus »).
+ *   - CarteKit.rayonFuite(base, v, marche, habitue, R) : la distance de fuite d'une bête (fiche 32) : × R.lent
+ *     quand on approche à moins de la moitié de la marche, × R.galop au-delà d'une fois et demie, × R.habitue
+ *     près des hommes.
  *   - CarteKit.hasard(graine) : un générateur à graine (nombres de 0 à 1) ; CarteKit.graine(texte) :
  *     la graine d'un texte (une bête : son espèce et sa place). Le même spectacle pour le même monde,
  *     et des essais reproductibles.
@@ -164,5 +167,11 @@
     return true;
   }
 
-  Object.assign(K, { machine, perception, avance, separation, hasard, graine });
+  function rayonFuite(base, v, marche, habitue, R) {
+    if (!base) return 0;
+    const allure = v < marche * 0.5 ? R.lent : v > marche * 1.5 ? R.galop : 1;
+    return base * allure * (habitue ? R.habitue : 1);
+  }
+
+  Object.assign(K, { machine, perception, avance, separation, rayonFuite, hasard, graine });
 })(window);
