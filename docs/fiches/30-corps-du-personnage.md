@@ -1,5 +1,9 @@
 # Fiche 30 — Le corps du personnage : il ne mord plus dans les murs, il glisse dans les coins
 
+> **Fait (2026-11-10)** : `CarteKit.deplacer` (js/carte/kit.js), le réglage B choisi sur film (le corps de
+> 12 px de large sur 5 de haut, le coin poussé jusqu'à 5 px, départ en 0,2 s, arrêt en 0,15 s). Voir « Ce qui
+> a été fait » en fin de fiche.
+
 Chantier « Phaser 4 », piste 6 du rapport.
 
 ## Objectif
@@ -68,3 +72,16 @@ voit (vitesses, boîte), proposer deux ou trois réglages filmés (GIF) et faire
 ## Livraison
 
 Un commit ; `docs/personnage.md` (le corps, le coin, l'accélération) mis à jour.
+
+## Ce qui a été fait
+
+- `CarteKit.deplacer(x, y, dx, dy, libre)` et `CarteKit.corpsLibre` (js/carte/kit.js, testés en Node :
+  `tests/engine/corps.test.mjs`) : la boîte aux pieds, axe par axe jusqu'au contact (il glisse le long des
+  murs), la correction de coin. `CarteKit.CORPS` : `{ l: 6, h: 5, coin: 5, accel: 0.2, arret: 0.15 }`.
+- `js/fermier.js` : la marche au doigt (`stepSteer`) passe par le corps (`pasDuCorps`) ; déjà coincé (sa
+  boîte sur une case fermée : une marche vers un but l'a laissé au ras d'un mur), il en sort comme avant,
+  au point. Il monte en vitesse en `accel` s (`pousse`), et au lâcher du doigt finit son pas en freinant
+  (`elan`). La marche vers un but (`walkTo`, ses chemins tendus) ne change pas.
+- Le choix sur film : quatre réglages côte à côte (avant, A 8 px / 0,12 s, B 12 px / 0,2 s, C 6 px /
+  0,06 s), la même marche en biais vers une porte de la maison, puis contre un mur : avant, il entrait à
+  moitié dans le mur ; B s'arrête net à côté.
