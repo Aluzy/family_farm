@@ -147,7 +147,7 @@ export function exportSaveJson() {
 export function nomFichierSauvegarde(date = new Date()) {
   const j = (n) => String(n).padStart(2, '0');
   const jour = state && Number.isFinite(state.day) ? `-jour-${state.day}` : '';
-  return `ferme-familiale${jour}-${date.getFullYear()}-${j(date.getMonth() + 1)}-${j(date.getDate())}-${j(date.getHours())}${j(date.getMinutes())}.json`;
+  return `moon-bloom-village${jour}-${date.getFullYear()}-${j(date.getMonth() + 1)}-${j(date.getDate())}-${j(date.getHours())}${j(date.getMinutes())}.json`;
 }
 
 // Télécharge la sauvegarde en fichier .json. → true si le téléchargement a été lancé.

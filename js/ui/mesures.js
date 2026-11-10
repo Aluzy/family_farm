@@ -92,7 +92,7 @@ function faireRapport(images) {
   const mem = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null;
   const nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
   const lignes = [
-    `📏 Family Farm — mesures (${new Date().toLocaleString('fr-FR')})`,
+    `📏 Moon Bloom Village — mesures (${new Date().toLocaleString('fr-FR')})`,
     '',
     '— Budgets (docs/perf.md) —',
     `${coche(fps >= BUDGETS.IMAGES_MIN && partLentes <= BUDGETS.PART_LENTES_MAX)} Images : ${fps.toFixed(1)} par seconde en moyenne, ${partLentes.toFixed(1)} % de plus de ${Math.round(lent)} ms (budget : ≥ ${BUDGETS.IMAGES_MIN}/s, ≤ ${BUDGETS.PART_LENTES_MAX} % lentes)`,
@@ -209,7 +209,7 @@ async function mesurerConstruire() {
   let obs = null;
   try { obs = new PerformanceObserver((l) => { for (const e of l.getEntries()) longues.push(e.duration); }); obs.observe({ entryTypes: ['longtask'] }); } catch (e) { obs = null; }
   const remettre = espionnerCarte();
-  const lignes = [`📏 Family Farm — Construire mesuré sur l'appareil (${new Date().toLocaleString('fr-FR')})`, ''];
+  const lignes = [`📏 Moon Bloom Village — Construire mesuré sur l'appareil (${new Date().toLocaleString('fr-FR')})`, ''];
   let tuile = null;
   const geste = async (nom, faire, apres = 3000) => {
     etat(`Mesure : ${nom}…`);

@@ -1,4 +1,4 @@
-"""Family Farm — les bêtes de la ferme, deuxième version : trois propositions par son.
+"""Moon Bloom Village — les bêtes de la ferme, deuxième version : trois propositions par son.
 
 A « réaliste »   : source glottique (impulsions de Rosenberg, jitter, shimmer, souffle,
                    rugosité par sous-harmonique) dans des formants qui bougent dans le temps.

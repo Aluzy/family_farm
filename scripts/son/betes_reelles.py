@@ -1,4 +1,4 @@
-"""Family Farm — les bêtes, version « d'après nature » : cinq propositions réalistes par bête.
+"""Moon Bloom Village — les bêtes, version « d'après nature » : cinq propositions réalistes par bête.
 
 1. extraire (si on lui donne le dossier ESC-50) : pour 5 cris de référence par bête (choisis par
    analyse.py), les contours fins mesurés toutes les 10 ms — hauteur (YIN), volume, part voisée,

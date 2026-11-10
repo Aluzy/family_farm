@@ -1,4 +1,4 @@
-"""Petite bibliothèque de synthèse pour la bande-son Family Farm (numpy/scipy)."""
+"""Petite bibliothèque de synthèse pour la bande-son Moon Bloom Village (numpy/scipy)."""
 import numpy as np
 from scipy import signal
 import subprocess, os, wave

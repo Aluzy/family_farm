@@ -1,4 +1,4 @@
-# Ferme Familiale — Idle Game d'autonomie alimentaire
+# Moon Bloom Village — Idle Game d'autonomie alimentaire
 ## Document de conception v15 : 3 structures organisationnelles & stratégie de développement web
 
 > **v2 en préparation** : [`conception-v2.md`](conception-v2.md) propose une refonte

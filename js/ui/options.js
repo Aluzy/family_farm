@@ -97,7 +97,7 @@ export function openOptionsModal() {
   openModal(`
     <button class="btn modal-close" type="button" data-action="close-modal">Fermer</button>
     <h2 id="options-title">⚙️ Options</h2>
-    <p class="muted about-version">Ferme Familiale · version ${GAME_VERSION}</p>
+    <p class="muted about-version">Moon Bloom Village · version ${GAME_VERSION}</p>
     <div class="stack">
       <div class="stack">
         <strong>À propos</strong>

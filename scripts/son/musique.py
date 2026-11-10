@@ -1,4 +1,4 @@
-"""Compose les trois thèmes de Family Farm (matin, crépuscule, nuit) + stems synchronisés."""
+"""Compose les trois thèmes de Moon Bloom Village (matin, crépuscule, nuit) + stems synchronisés."""
 import numpy as np
 from synthlib import *
 

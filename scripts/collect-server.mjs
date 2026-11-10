@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Serveur de collecte local pour Ferme Familiale.
+// Serveur de collecte local pour Moon Bloom Village.
 // Reçoit le JSON d'une session de jeu (POST /session) et l'écrit dans
 // ./sessions/<date>_<sid>.json. Un fichier par session : si le jeu renvoie la
 // même session (envoi périodique puis envoi final), le fichier est remplacé
@@ -83,5 +83,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Collecte Ferme Familiale : http://${HOST}:${PORT}/session -> ${DIR}`);
+  console.log(`Collecte Moon Bloom Village : http://${HOST}:${PORT}/session -> ${DIR}`);
 });

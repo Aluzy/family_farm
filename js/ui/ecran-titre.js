@@ -51,7 +51,7 @@ function html(partie, confirmer) {
        <button type="button" class="btn primary titre-btn" data-titre="nouvelle-oui"><span>🌱 Oui, nouvelle partie</span></button>
        <button type="button" class="btn titre-btn" data-titre="retour"><span>Non, revenir</span></button>`
     : `<button type="button" class="btn primary titre-btn" data-titre="nouvelle"><span>🌱 Nouvelle partie</span></button>${charger}`;
-  return `<div class="titre-enseigne"><h1 class="titre-nom">Ferme Familiale</h1><p class="titre-slogan">${SLOGAN}</p></div>
+  return `<div class="titre-enseigne"><h1 class="titre-nom"><img src="assets/logo.png" alt="Moon Bloom Village" width="90" height="45"></h1><p class="titre-slogan">${SLOGAN}</p></div>
     <div class="titre-boutons" role="group" aria-label="Commencer">${boutons}</div>
     <p class="titre-erreur" role="alert" hidden></p>
     <input type="file" class="titre-fichier" accept=".json,application/json,text/plain" hidden>`;
@@ -64,7 +64,7 @@ export function ecranTitre() {
   const partie = partieEnregistree();
   const el = document.createElement('section');
   el.id = 'ecran-titre';
-  el.setAttribute('aria-label', 'Ferme Familiale : accueil');
+  el.setAttribute('aria-label', 'Moon Bloom Village : accueil');
   document.body.appendChild(el);
   // la grande ferme vivante (js/ui/accueil-vivant.js), sous l'enseigne et les boutons
   const ferme = document.createElement('canvas');

@@ -917,7 +917,7 @@
         // (le compte : au-dessus de la case sous le doigt ; pour une pièce, du coin qu'il tient)
         const fin = L.info.forme === 'piece' ? Math.max(0, r1) * W + Math.max(0, Math.min(W - 1, c1)) : L.cases[L.cases.length - 1];
         this.traceMarks.push(this.add.text((fin % W) * T + T / 2, Math.floor(fin / W) * T - 2 - dy, L.info.gomme ? `${n} à reprendre` : L.manque ? `${n} / ${besoin} · il en manque ${L.manque}` : `${n} / ${L.info.stock}`, {
-          fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '8px', color: '#4a2a10', backgroundColor: '#fff1d2', padding: { x: 2, y: 0 },
+          fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '8px', color: '#3a2a55', backgroundColor: '#f1e3f7', padding: { x: 2, y: 0 },
         }).setOrigin(0.5, 1).setDepth(1e5 + 1).setResolution(6));
       }
 

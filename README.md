@@ -1,4 +1,4 @@
-# 🌾 Ferme Familiale
+# 🌾 Moon Bloom Village
 
 Un jeu de gestion agricole familiale en pixel art : une famille (quatre personnes au départ)
 s'installe sur une **terre sauvage** et doit, à terme, se nourrir de ce que la ferme produit.

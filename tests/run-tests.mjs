@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Lanceur de tests pour Ferme Familiale, posé sur node:test (le lanceur intégré de Node).
+// Lanceur de tests pour Moon Bloom Village, posé sur node:test (le lanceur intégré de Node).
 //
 // Les tests du moteur sont rangés par thème dans tests/engine/*.test.mjs (aide commune :
 // tests/engine/aide.mjs). Les autres suites : tests/test-data.mjs (données),
@@ -124,7 +124,7 @@ for await (const _ of flux); // eslint-disable-line no-unused-vars
 const total = { passes: 0, echecs: 0 };
 const fmtMs = (ms) => `${Math.round(ms)} ms`;
 for (const s of choisis) {
-  const titre = `Ferme Familiale — ${s.titre}${motifs.length ? ` (--grep ${motifs.join(' | ')})` : ''}`;
+  const titre = `Moon Bloom Village — ${s.titre}${motifs.length ? ` (--grep ${motifs.join(' | ')})` : ''}`;
   console.log('');
   console.log(titre);
   console.log('-'.repeat(titre.length));

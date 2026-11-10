@@ -1,4 +1,4 @@
-# Ferme Familiale — Conception v2 (niveaux, énergie du personnage, houe)
+# Moon Bloom Village — Conception v2 (niveaux, énergie du personnage, houe)
 
 > **Statut** : document de travail. Il reprend les notes de game design du 9 octobre 2026,
 > répond aux deux questions qu'elles posent (tuiles voisines de la houe, cultures par

@@ -1,4 +1,4 @@
-"""Family Farm — deuxième lot : tout ce que le jeu demande en plus du prototype.
+"""Moon Bloom Village — deuxième lot : tout ce que le jeu demande en plus du prototype.
 
 Animaux de la ferme et faune du grand monde, pêche, houe, faux, semis, ramassage, mine,
 eau (mer, lac, mare, grenouilles), forêt, montagne, hameau, machines, interface et progression.

@@ -1,4 +1,4 @@
-// Rapport quotidien Ferme Familiale : calcul pur (aucun accès réseau ni R2),
+// Rapport quotidien Moon Bloom Village : calcul pur (aucun accès réseau ni R2),
 // pour pouvoir le tester avec `node tests/test-report.mjs`.
 //
 // Entrée : les fichiers JSON de session écrits par le Worker (voir js/telemetry.js)
@@ -1006,7 +1006,7 @@ function renderGame(L, r) {
 
 export function renderMarkdown(r) {
   const L = [];
-  L.push(`# 🌾 Ferme Familiale — rapport du ${fmtLongDate(r.end)}`);
+  L.push(`# 🌾 Moon Bloom Village — rapport du ${fmtLongDate(r.end)}`);
   L.push('');
   L.push(`Période : ${fmtDateTime(r.start)} → ${fmtDateTime(r.end)} (heure de Paris)`);
   L.push('');

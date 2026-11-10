@@ -6,7 +6,7 @@ Durée : 20 minutes environ. Matériel : son propre téléphone, une nouvelle pa
 
 ## À lire à la testeuse (mot pour mot)
 
-> « Merci de tester Ferme Familiale. Ce n'est pas toi qu'on teste, c'est le jeu : si quelque
+> « Merci de tester Moon Bloom Village. Ce n'est pas toi qu'on teste, c'est le jeu : si quelque
 > chose est difficile, c'est sa faute. Je ne vais pas t'aider ni répondre aux questions
 > pendant le test, mais pose-les à voix haute : je les note, elles sont précieuses. Dis aussi
 > à voix haute ce que tu cherches et ce que tu penses. Tu peux arrêter quand tu veux. »

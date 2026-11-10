@@ -135,6 +135,11 @@ def glyphes():
     g['œ'] = (po | {(x + wo - 1, y) for x, y in pe}, wo + we - 1)
     for c, (base, accent) in COMPOSES.items():
         pts, w = g[base]
+        if w < 3:
+            # une lettre d'un pixel de large (le i sans point) : l'accent déborderait à gauche, sur la
+            # lettre d'avant (« î » se lisait « 1 ») ; elle s'élargit à 3 colonnes, centrée dessous
+            d = (3 - w + 1) // 2
+            pts, w = {(x + d, y) for x, y in pts}, 3
         haut = max(y for _, y in pts) + (1 if base.isupper() else 2)
         milieu = (w - 1) // 2
         g[c] = (pts | {(milieu + dc, haut - r - 1) for r, dc in ACCENTS[accent]}, w)

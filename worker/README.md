@@ -99,7 +99,7 @@ un **lien reçu par e-mail**, sans mot de passe (`worker/src/comptes.mjs`, la ru
    **secrets** :
    - `RESEND_API_KEY` : la clé de l'étape 3 ;
    - `COMPTE_EXPEDITEUR` : l'expéditeur, sur le domaine vérifié, par exemple
-     `Ferme Familiale <connexion@ton-domaine.fr>` ;
+     `Moon Bloom Village <connexion@ton-domaine.fr>` ;
    - `JEU_URL` (facultatif) : l'adresse du jeu où mène le lien. Par défaut :
      `https://aluzy.github.io/family_farm/jeu.html`.
 5. Déployer (fusionner la pull request : Workers Builds redéploie et crée le Durable Object).

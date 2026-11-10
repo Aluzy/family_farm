@@ -1,4 +1,4 @@
-# Ferme Familiale — Arbre des technologies v2
+# Moon Bloom Village — Arbre des technologies v2
 
 > ⚠️ **Document historique.** La source de vérité de l'arbre des technologies est
 > **`data/techtree.json`** (compilé dans `js/data.generated.js` par `scripts/build-data.mjs`).
