@@ -10,7 +10,7 @@
    ========================================================================== */
 
 import {
-  casserMonde, countItem, DATA, farmTerrain, gisementsFerme, migrate, MONDE, mineRock, objetsDeRegion, RECOLTE, rockGone,
+  casserMonde, countItem, DATA, farmTerrain, gisementsFerme, migrate, MONDE, mineRock, objetsDeRegion, ramasserMonde, RECOLTE, rockGone,
   solDirect, STATE_VERSION, testFarmMap,
 } from '../../js/engine/index.js';
 import { SORTES_ROCHES } from '../../js/engine/monde-roches.js';
@@ -112,5 +112,38 @@ test('migration 81 → 82 : le générateur 5 (les gisements)', () => {
   const v81 = JSON.parse(JSON.stringify({ ...s, version: 81 }));
   v81.carte = { ...(v81.carte || {}), graine: '7', generateur: 4 };
   const m = migrate(v81);
-  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 5]);
+  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 6], 'puis le 6');
+});
+
+/* ---------- le lot 2 : ce qui brille la nuit ---------- */
+
+test('les données : les champignons lumineux (forêt, à la main), les cristaux (montagne, à la pioche)', () => {
+  assertEqual(RECOLTE.SORTES.champignons_lumineux.geste, 'ramasser');
+  assertEqual(Object.keys(RECOLTE.SORTES.champignons_lumineux.fin), ['champignon_lumineux']);
+  assertEqual([RECOLTE.SORTES.cristaux_quartz.geste, Object.keys(RECOLTE.SORTES.cristaux_quartz.fin)], ['casser', ['quartz']]);
+  assertEqual([RECOLTE.SORTES.cristaux_amethyste.geste, Object.keys(RECOLTE.SORTES.cristaux_amethyste.fin)], ['casser', ['amethyste']]);
+});
+
+test('le grand monde : on ramasse des champignons lumineux en forêt, on casse des cristaux en montagne', () => {
+  const s = partie();
+  const c = trouve(s, 'champignons_lumineux');
+  assert(c, 'des champignons lumineux dans le monde');
+  const r = ramasserMonde(s, c.id);
+  assert(r.ok, r.error);
+  assert(countItem(s, 'champignon_lumineux') >= 1, 'dans l\'inventaire');
+  for (const [nom, item] of [['cristaux_quartz', 'quartz'], ['cristaux_amethyste', 'amethyste']]) {
+    const g = trouve(s, nom);
+    assert(g, `des ${nom} dans le monde`);
+    let q = null;
+    for (let k = 0; k < RECOLTE.SORTES[nom].coups; k++) { q = casserMonde(s, g.id); assert(q.ok, q.error); }
+    assert(q.fini && countItem(s, item) >= 1, `${item} dans l'inventaire`);
+  }
+});
+
+test('migration 82 → 83 : le générateur 6 (ce qui brille la nuit)', () => {
+  const s = garden();
+  const v82 = JSON.parse(JSON.stringify({ ...s, version: 82 }));
+  v82.carte = { ...(v82.carte || {}), graine: '7', generateur: 5 };
+  const m = migrate(v82);
+  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 6]);
 });

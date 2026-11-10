@@ -837,6 +837,10 @@ def dessins():
     # les gisements de minerai (scripts/carte/gisements.py, maquette G4)
     for metal in ('fer', 'cuivre', 'or', 'platine'):
         out['gisement_' + metal] = gisements(metal)
+    # les cristaux des montagnes (scripts/carte/lumineux.py : ils brillent la nuit)
+    from lumineux import cristaux
+    for sorte in ('quartz', 'amethyste'):
+        out['cristaux_' + sorte] = [cristaux(sorte, k) for k in range(3)]
     for nom, rebord in (('paroi', 'roche'), ('paroi_herbe', 'herbe'), ('paroi_neige', 'neige')):
         out[nom] = [paroi(rebord, classe, bouts, k) for classe in (1, 2, 3) for bouts in range(9) for k in range(3)]
     out['ecume'] = ecumes()

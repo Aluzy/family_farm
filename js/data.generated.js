@@ -4336,7 +4336,8 @@ export const RAW_DATA = {
       { "nom": "myosotis", "genre": "basse", "variantes": 3 },
       { "nom": "lavande", "genre": "basse", "variantes": 3 },
       { "nom": "lupin", "genre": "basse", "variantes": 2 },
-      { "nom": "chataignier", "genre": "arbre", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 }
+      { "nom": "chataignier", "genre": "arbre", "variantes": 3, "bloque": [[0, 0]], "ecart": 1 },
+      { "nom": "champignons_lumineux", "genre": "haute", "variantes": 3, "ecart": 1 }
     ],
     "REMPLACE": [{ "biome": "foret", "sols": ["feuilles", "mousse"], "de": "feuillu", "vers": "chataignier", "part": 0.0625 }],
     "DENSITES": {
@@ -4350,7 +4351,8 @@ export const RAW_DATA = {
           "tronc_couche": 0.004,
           "fougere": 0.07,
           "champignons": 0.015,
-          "touffe_foret": 0.04
+          "touffe_foret": 0.04,
+          "champignons_lumineux": 0.004
         },
         "aiguilles": {
           "sapin": 0.36,
@@ -4359,7 +4361,8 @@ export const RAW_DATA = {
           "tronc_couche": 0.003,
           "fougere": 0.03,
           "champignons": 0.03,
-          "touffe_foret": 0.02
+          "touffe_foret": 0.02,
+          "champignons_lumineux": 0.005
         },
         "mousse": {
           "feuillu": 0.22,
@@ -4369,7 +4372,8 @@ export const RAW_DATA = {
           "tronc_couche": 0.006,
           "ronces": 0.008,
           "fougere": 0.16,
-          "champignons": 0.04
+          "champignons": 0.04,
+          "champignons_lumineux": 0.006
         },
         "clairiere": { "touffe_foret": 0.1, "fougere": 0.05, "ronces": 0.01, "bouleau": 0.01, "myosotis": 0.012, "lupin": 0.006 }
       },
@@ -4444,7 +4448,9 @@ export const RAW_DATA = {
       { "nom": "gisement_fer", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 3 },
       { "nom": "gisement_cuivre", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 3 },
       { "nom": "gisement_or", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 3 },
-      { "nom": "gisement_platine", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 3 }
+      { "nom": "gisement_platine", "genre": "bloc", "variantes": 3, "bloque": [[0, 0], [1, 0]], "ecart": 3 },
+      { "nom": "cristaux_quartz", "genre": "bloc", "variantes": 3, "bloque": [[0, 0]], "ecart": 2 },
+      { "nom": "cristaux_amethyste", "genre": "bloc", "variantes": 3, "bloque": [[0, 0]], "ecart": 2 }
     ],
     "DENSITES": {
       "prairie": { "herbe": { "rocher": 0.002, "pierres": 0.006, "gisement_fer": 0.0005 } },
@@ -4470,7 +4476,8 @@ export const RAW_DATA = {
           "pierres": 0.1,
           "gisement_fer": 0.003,
           "gisement_cuivre": 0.003,
-          "gisement_or": 0.0015
+          "gisement_or": 0.0015,
+          "cristaux_quartz": 0.004
         },
         "roche": {
           "bloc": 0.014,
@@ -4479,7 +4486,9 @@ export const RAW_DATA = {
           "pierres": 0.08,
           "gisement_cuivre": 0.002,
           "gisement_or": 0.002,
-          "gisement_platine": 0.0025
+          "gisement_platine": 0.0025,
+          "cristaux_quartz": 0.005,
+          "cristaux_amethyste": 0.002
         },
         "haut": {
           "rocher_neige": 0.03,
@@ -4488,7 +4497,9 @@ export const RAW_DATA = {
           "congere": 0.025,
           "pierres": 0.03,
           "gisement_or": 0.0015,
-          "gisement_platine": 0.003
+          "gisement_platine": 0.003,
+          "cristaux_quartz": 0.004,
+          "cristaux_amethyste": 0.004
         }
       },
       "sommet": { "neige": { "rocher_neige": 0.012, "piton_neige": 0.006, "congere": 0.012 } }
@@ -4592,6 +4603,9 @@ export const RAW_DATA = {
         "retour": [8, 12]
       },
       "gisement_or": { "geste": "casser", "minerai": "or", "coups": 8, "coup": { "pierre": 1 }, "fin": { "minerai_or": [2, 4] }, "retour": [10, 15] },
+      "champignons_lumineux": { "geste": "ramasser", "fin": { "champignon_lumineux": [1, 2] }, "retour": [2, 4] },
+      "cristaux_quartz": { "geste": "casser", "coups": 2, "fin": { "quartz": [1, 2] }, "retour": [6, 10] },
+      "cristaux_amethyste": { "geste": "casser", "coups": 3, "fin": { "amethyste": [1, 2] }, "retour": [8, 12] },
       "gisement_platine": {
         "geste": "casser",
         "minerai": "platine",

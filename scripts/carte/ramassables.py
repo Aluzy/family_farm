@@ -10,7 +10,7 @@
 #
 # Même ordre que js/carte/ferme/config.js (RAMASSABLES.frames) : petite_pierre, morceau_bois,
 # fibre, baies, paille, pomme_de_pin, gland, pousse_pin, pousse_arbre, botte, puis les produits des
-# chaînes de production (PRODUITS, dans leur ordre), puis un éclat de minerai de fer, de cuivre, d'or, de platine. La grappe : 4 × 4 pixels, un dégradé de rouges du clair (en haut à gauche) au
+# chaînes de production (PRODUITS, dans leur ordre), puis un éclat de minerai de fer, de cuivre, d'or, de platine, et un éclat de quartz, d'améthyste. La grappe : 4 × 4 pixels, un dégradé de rouges du clair (en haut à gauche) au
 # sombre, sans les quatre coins (pas de carré) et sans contour ; au bas milieu de l'image. Les gris sont ceux des rochers de la carte, les bruns ceux des troncs, les verts ceux de
 # l'herbe haute ; contour d'un pixel dans la teinte très sombre de la matière, lumière en haut à
 # gauche.
@@ -307,12 +307,35 @@ def minerai(metal):
     return contour(im, rgb('#26242a'))
 
 
+# un éclat de cristal (les cristaux de la montagne) : un prisme couché et un petit debout, la face gauche claire
+CRISTAL = [
+    '........4.......',
+    '.......343......',
+    '...3...232......',
+    '..343..121.4....',
+    '..232..121343...',
+    '..121..010232...',
+]
+
+
+def eclat_cristal(sorte):
+    from lumineux import AMETHYSTE, QUARTZ
+    pal = QUARTZ if sorte == 'quartz' else AMETHYSTE
+    im = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
+    for y, rang in enumerate(CRISTAL):
+        for x, ch in enumerate(rang):
+            if ch != '.':
+                im.putpixel((x + 1, 8 + y), pal[int(ch)] + (255,))
+    return contour(im, rgb('#22202c'))
+
+
 def main():
     images = [dessin(d, c) for d, c in zip(DESSINS, CONTOURS)] + [grappe(), dessin(PAILLE, '#4a3010')]
     images += [dessin(POMME_DE_PIN, '#2e1a0c'), dessin(GLAND, '#2e1a0c'), dessin(POUSSE_PIN, '#173418'), dessin(POUSSE_ARBRE, '#173418')]
     images += [dessin(BOTTE, '#4a3010')]
     images += [produit(PRODUITS[k]) for k in PRODUITS]
     images += [minerai(m) for m in ('fer', 'cuivre', 'or', 'platine')]   # (18 à 21 : js/carte/nature.js MORCEAUX)
+    images += [eclat_cristal(s) for s in ('quartz', 'amethyste')]       # (22, 23)
     sheet = rangee(images, 16, 16)
     sheet.save(os.path.join(ASSETS, 'ramassables.png'))
     print(f'assets/ramassables.png : {len(images)} images de 16 × 16')

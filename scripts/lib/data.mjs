@@ -879,7 +879,7 @@ export function validateData(data) {
       for (const [item, p] of Object.entries(r.chance || {})) { needItem(`${ou}.chance`, item); if (!(typeof p === 'number' && p > 0 && p <= 100)) err(`${ou}.chance.${item}`, 'un % de 0 à 100'); }
       if (!(Array.isArray(r.retour) && r.retour.length === 2 && isInt(r.retour[0]) && r.retour[0] >= 1 && r.retour[0] <= r.retour[1])) err(`${ou}.retour`, '[au moins, au plus] jours, 1 au moins');
       // (au sol, la scène dessine le bois, la pierre, la fibre, les graines d'arbre et les minerais : js/carte/nature.js, MORCEAUX)
-      const AU_SOL = ['bois', 'pierre', 'fibre', 'pomme_de_pin', 'gland', 'minerai_fer', 'minerai_cuivre', 'minerai_or', 'minerai_platine'];
+      const AU_SOL = ['bois', 'pierre', 'fibre', 'pomme_de_pin', 'gland', 'minerai_fer', 'minerai_cuivre', 'minerai_or', 'minerai_platine', 'quartz', 'amethyste'];
       if (r.geste !== 'cueillir' && r.geste !== 'ramasser') for (const item of [...Object.keys(r.coup || {}), ...Object.keys(r.fin || {}), ...Object.keys(r.chance || {})]) if (!AU_SOL.includes(item)) err(ou, `« ${item} » tomberait au sol, qui n'a pas son image (${AU_SOL.join(', ')})`);
       if (r.minerai !== undefined && !(r.geste === 'casser' && DATA_MINERAIS.includes(r.minerai))) err(`${ou}.minerai`, `un gisement : casser, et un minerai (${DATA_MINERAIS.join(', ')})`);
       if (r.geste === 'cueillir') {
