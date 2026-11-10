@@ -1286,6 +1286,9 @@ def dessins():
     out['lupin'] = [lupin(1300 + k * 5, k) for k in range(2)]
     # le châtaignier : avec ses bogues (deux dessins), puis cueilli
     out['chataignier'] = [chataignier(1320 + k * 5, k) for k in range(3)]
+    # les champignons lumineux des forêts (scripts/carte/lumineux.py : ils brillent la nuit)
+    from lumineux import champignons_lumineux
+    out['champignons_lumineux'] = [champignons_lumineux(k) for k in range(3)]
     return out
 
 

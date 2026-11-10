@@ -88,5 +88,5 @@ test('migration 80 → 81 : le générateur 4 (le châtaignier)', () => {
   const v80 = JSON.parse(JSON.stringify({ ...s, version: 80 }));
   v80.carte = { ...(v80.carte || {}), graine: '7', generateur: 3 };
   const m = migrate(v80);
-  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 5], 'puis le 5 (les gisements)');
+  assertEqual([m.version, m.carte.generateur], [STATE_VERSION, 6], 'puis le 5 (les gisements), le 6 (ce qui brille)');
 });

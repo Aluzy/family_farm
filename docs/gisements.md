@@ -34,3 +34,20 @@ d'après la graine de la ferme (`outils.js gisementsFerme` : toujours les mêmes
 comptent à part (`state.outils.gisements`) ; brisés, ils rejoignent les rochers cassés et reviennent comme eux.
 
 Tests : `tests/engine/gisements.test.mjs`.
+
+## Lot 2 : ce qui brille la nuit
+
+| | Où | Comment | Donne | Retour (jours) |
+|---|---|---|---|---|
+| Champignons lumineux | les forêts (feuilles, aiguilles, mousse) | à la main (ramasser) | 1 à 2 champignons lumineux | 2 à 4 |
+| Cristaux de quartz | la montagne (éboulis, roche, près des sommets) | 2 coups de pioche | 1 à 2 quartz | 6 à 10 |
+| Cristaux d'améthyste | la montagne (roche, près des sommets) | 3 coups de pioche | 1 à 2 améthystes | 8 à 12 |
+
+- Données : `VEGETATION.SORTES` champignons_lumineux (genre « haute » : on le traverse), `ROCHES.SORTES`
+  cristaux_quartz, cristaux_amethyste (genre « bloc »), leurs densités, leurs règles `RECOLTE.SORTES` ; au bout des
+  tables : le générateur passe au numéro 6 (la migration 82 → 83 garde les parties).
+- Dessins : `scripts/carte/lumineux.py` (rangés par `vegetation.py` et `roches.py`) ; les éclats de quartz et
+  d'améthyste au sol, `assets/ramassables.png`.
+- La nuit (`js/carte/ferme/lumineux.js`, appelé par `chantier.js stepLanterns`) : quand la nuit tombe (au seuil des
+  lanternes), chacun pose dans le voile une lueur de sa couleur (cyan, bleu pâle, violet), une large au sol et une
+  vive sur lui, qui respire lentement. Le jour, rien. Ceux qui sont pris ne brillent pas.

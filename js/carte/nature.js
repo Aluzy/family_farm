@@ -105,7 +105,9 @@
       // (la tomme d'alpage, le moût de houblon : ceux du fromage frais, de la bière ; ils s'affinent au tonnelet)
       tomme_alpage: 12, mout_houblon: 16,
       // (les éclats de minerai d'un gisement brisé à la pioche, docs/gisements.md)
-      minerai_fer: 18, minerai_cuivre: 19, minerai_or: 20, minerai_platine: 21 },
+      minerai_fer: 18, minerai_cuivre: 19, minerai_or: 20, minerai_platine: 21,
+      // (les éclats des cristaux de la montagne)
+      quartz: 22, amethyste: 23 },
   };
 
   // Les points où tombent les morceaux d'un coup : { coup: [3 points], fin: [3 points] } (px de

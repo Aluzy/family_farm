@@ -840,6 +840,14 @@ export const MIGRATIONS = {
     if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 4) out.carte = { ...c, generateur: 5 };
     return out;
   },
+  // v82 → v83 (ce qui brille la nuit, docs/gisements.md lot 2) : le générateur 6 tire des champignons lumineux dans
+  // les forêts et des cristaux dans les montagnes (au bout des tables de leurs sols) ; une partie du générateur 5 y passe.
+  82: (state) => {
+    const out = { ...state, version: 83 };
+    const c = state.carte;
+    if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 5) out.carte = { ...c, generateur: 6 };
+    return out;
+  },
 };
 
 // La Serre d'avant la v76 : ses parcelles par niveau, le prix de chaque niveau (les anciennes migrations ;
