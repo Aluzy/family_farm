@@ -3,41 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Moon Bloom Village — un jeu de ferme en pixel art où tu fais revivre la ferme familiale : construis, jardine, et partage-la avec tes voisins et tes amis.">
-  <meta name="theme-color" content="#664579">
-  <title>Moon Bloom Village — Construis, jardine, partage !</title>
+  <meta name="description" content="Moon Bloom Village — un jeu cosy en pixel art : tes grands-parents t'ont confié leur ferme sur une petite île. Jardine, décore, rencontre tes voisins et vis au rythme de la lune.">
+  <meta name="theme-color" content="#3a2a55">
+  <title>Moon Bloom Village — Une petite île, une grande lune</title>
   <style>
-    /* Le style du jeu (css/jeu.css) : sa police en pixels (assets/police_dialogue.woff), ses
-       cadres de bois sur fond crème, ses couleurs (le soleil, la feuille, la terre), et une
-       vraie ferme du jeu vue de loin (assets/accueil_ferme.webp : une capture au zoom 1, un
-       pixel du jeu par pixel de l'écran, sans lissage). */
+    /* La page d'accueil : la police du jeu (assets/police_dialogue.woff), la palette du logo
+       (prune, mauve, pétale, rose, pervenche, lavande ; css/jeu.css), le logo (assets/logo.png,
+       90 × 45, agrandi sans lissage, toujours sur un fond prune où ses lettres se lisent) et une
+       vraie ferme du jeu vue de loin, au crépuscule (assets/accueil_ferme.webp). */
     @font-face {
       font-family: 'Ferme Dialogue';
       src: url('assets/police_dialogue.woff') format('woff');
       font-display: swap;
     }
     :root {
-      --color-sun: #d074d6;
-      --color-leaf: #4f8a3d;
-      --color-earth: #3a2a55;
-      --wood-ink: #3a2a55;
-      --wood-dark: #1e1530;
-      --wood-light: #9673a7;
-      --wood-glow: rgba(150, 115, 167, 0.9);
-      --wood-cream: #fbf3ff;
-      --wood-paper: #f1e3f7;
-      --wood-bg: rgba(251, 243, 255, 0.97);
-      --accent: #444f9f;
-      --accent-dark: #2f3878;
-      --night: #1f2a44;
-      --night-2: #2c3b5e;
+      --prune: #3a2a55;
+      --prune-nuit: #1e1530;
+      --mauve: #9673a7;
+      --petale: #fbf3ff;
+      --petale-ombre: #f1e3f7;
+      --rose: #d074d6;
+      --rose-pale: #f0b8f3;
+      --pervenche: #444f9f;
+      --pervenche-filet: #7480d6;
+      --lavande: #b2bfff;
+      --lavande-filet: #dfe4ff;
+      --lavande-encre: #2a2f5e;
+      --encre: #2a1f3d;
+      --encre-douce: #6e5a80;
       --bg: #f8f2fb;
       --bg-band: #efe4f4;
-      --text: #2a1f3d;
-      --text-muted: #6e5a80;
+      --text: var(--encre);
+      --text-muted: var(--encre-douce);
     }
     @media (prefers-color-scheme: dark) {
-      :root { --bg: #19161a; --bg-band: #211d24; --text: #e9e1ee; --text-muted: #aa9cb2; }
+      :root { --bg: #19161f; --bg-band: #221c2b; --text: #ece4f2; --text-muted: #b6a6c4; }
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -54,164 +54,158 @@
     a { color: inherit; text-decoration: none; }
     h1, h2, h3, strong, b { font-weight: normal; }
     .wrap { width: min(1120px, calc(100% - 32px)); margin: auto; }
+    .pix { display: block; image-rendering: pixelated; }
 
-    /* le cadre de bois du jeu (.modal.bois, la barre d'outils) */
-    .bois {
-      background: var(--wood-bg);
-      color: var(--wood-ink);
-      border: 3px solid var(--color-earth);
+    /* les cadres des fenêtres du jeu : pétale, cadre prune, filet mauve */
+    .cadre {
+      background: rgba(251, 243, 255, 0.97);
+      color: var(--prune);
+      border: 3px solid var(--prune);
       border-radius: 8px;
-      box-shadow: inset 0 0 0 2px var(--wood-glow), 0 4px 0 rgba(42, 28, 50, 0.35);
+      box-shadow: inset 0 0 0 2px var(--mauve), 0 4px 0 rgba(30, 21, 48, 0.35);
     }
-    .bois p, .bois span { color: #5d426c; }
+    .cadre p, .cadre span { color: var(--encre-douce); }
+    /* une planche prune (l'en-tête, l'enseigne du logo) */
+    .prune {
+      background: var(--prune);
+      color: var(--petale);
+      border: 3px solid var(--prune-nuit);
+      border-radius: 8px;
+      box-shadow: inset 0 0 0 2px var(--mauve), 0 4px 0 rgba(30, 21, 48, 0.45);
+    }
 
-    /* boutons : le vert du jeu ou le papier du bois, cadrés de terre */
+    /* les boutons du jeu : pervenche (principal), lavande (secondaire) */
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
       min-height: 48px; padding: 0 20px;
-      border: 3px solid var(--color-earth); border-radius: 6px;
+      border: 3px solid var(--prune-nuit); border-radius: 6px;
       font-size: 18px; cursor: pointer;
       transition: transform 0.1s;
     }
     .btn:hover { transform: translateY(-2px); }
     .btn:active { transform: translateY(1px); }
-    .btn:focus-visible, .nav a:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
-    .btn-primary { background: var(--accent); color: #fff; box-shadow: inset 0 0 0 2px #7480d6, 0 3px 0 var(--wood-dark); }
-    .btn-secondary { background: #b2bfff; color: #2a2f5e; box-shadow: inset 0 0 0 2px #dfe4ff, 0 3px 0 var(--wood-dark); }
+    .btn:focus-visible, .nav a:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
+    .btn-primary { background: var(--pervenche); color: #fff; box-shadow: inset 0 0 0 2px var(--pervenche-filet), 0 3px 0 var(--prune-nuit); }
+    .btn-secondary { background: var(--lavande); color: var(--lavande-encre); box-shadow: inset 0 0 0 2px var(--lavande-filet), 0 3px 0 var(--prune-nuit); }
     .btn .px { --pxs: 24px; }
 
-    /* l'en-tête : une planche de bois */
+    /* l'en-tête : une planche prune, le logo à sa taille */
     .nav { position: sticky; top: 0; z-index: 5; padding: 8px 0; }
-    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 8px 6px 6px; }
-    .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; }
-    .nav .prune { background: #3a2a55; border-color: #1e1530; box-shadow: inset 0 0 0 2px #9673a7, 0 4px 0 rgba(30, 21, 48, 0.35); color: #fbf3ff; }
-    .nav .prune a:not(.btn) { color: #fbf3ff; }
-    .brand .logo { display: block; width: 90px; height: 45px; image-rendering: pixelated; }
-    .medaillon {
-      width: 44px; height: 44px; flex: none; border-radius: 50%;
-      display: grid; place-items: center;
-      background: var(--wood-cream);
-      border: 3px solid var(--color-earth);
-      box-shadow: inset 0 0 0 2px var(--color-sun);
-    }
-    .medaillon .px { --pxs: 28px; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 8px 6px 10px; }
+    .brand .logo { width: 90px; height: 45px; }
     .nav-links { display: flex; gap: 22px; font-size: 16px; }
-    .nav-links a:hover { color: var(--accent); }
+    .nav-links a:hover { color: var(--rose-pale); }
     .nav .btn { min-height: 40px; font-size: 16px; padding: 0 16px; }
 
-    /* l'accueil : la vue de la ferme, et un panneau de bois par-dessus */
-    /* la ferme vue de loin, à sa taille (3600 × 1000 : un pixel du jeu par pixel, jamais
-       redimensionnée) : son bord gauche (x = 1130 dans l'image, les ruches) juste à droite
-       du panneau, qui se pose sur les bois ; sur un grand écran, toute la ferme se voit */
+    /* l'accueil : un ciel de crépuscule, la lune, la ferme en bas ; le logo dans le ciel */
     .hero {
-      position: relative; margin-top: -80px; padding: 140px 0 120px; overflow: hidden;
-      border-bottom: 3px solid var(--color-earth);
+      position: relative; margin-top: -80px; padding: 120px 0 110px; overflow: hidden;
+      background: linear-gradient(#1e1530 0%, #3a2a55 42%, #6a4f8a 74%, #c99bc0 100%);
+      border-bottom: 3px solid var(--prune-nuit);
     }
-    .hero-img {
+    .etoiles {
       position: absolute; inset: 0;
-      background: #6f9f3c url('assets/accueil_ferme.webp') no-repeat;
-      background-position: calc(max(16px, (100vw - 1120px) / 2) + 560px - 1130px) calc(50% + 20px);
-      image-rendering: pixelated;
+      background-image:
+        radial-gradient(2px 2px at 8% 18%, #fff 50%, transparent 51%), radial-gradient(2px 2px at 22% 8%, #f3e6ff 50%, transparent 51%),
+        radial-gradient(2px 2px at 35% 26%, #fff 50%, transparent 51%), radial-gradient(2px 2px at 61% 12%, #fff 50%, transparent 51%),
+        radial-gradient(2px 2px at 74% 30%, #f3e6ff 50%, transparent 51%), radial-gradient(2px 2px at 88% 9%, #fff 50%, transparent 51%),
+        radial-gradient(2px 2px at 95% 40%, #fff 50%, transparent 51%), radial-gradient(2px 2px at 48% 6%, #fff 50%, transparent 51%);
     }
-    .hero-grid { position: relative; display: grid; grid-template-columns: minmax(0, 540px) 1fr; }
-    .hero-panel { padding: 28px 30px 26px; }
+    .lune {
+      position: absolute; right: max(24px, calc(50vw - 520px)); top: 100px; width: 120px; height: 120px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fffbe9, #e1dfc3 70%);
+      box-shadow: 0 0 60px 20px rgba(255, 248, 214, 0.3);
+    }
+    .ferme {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 300px;
+      background: url('assets/accueil_ferme.webp') no-repeat;
+      background-position: calc(50% + 300px) 62%;
+      image-rendering: pixelated;
+      filter: brightness(0.82) saturate(1.05);
+      -webkit-mask: linear-gradient(transparent, #000 35%); mask: linear-gradient(transparent, #000 35%);
+    }
+    .hero-grid { position: relative; display: grid; grid-template-columns: minmax(0, 560px) 1fr; }
+    .hero-logo { width: 540px; max-width: 100%; height: auto; aspect-ratio: 2 / 1; margin: 0 auto 18px; filter: drop-shadow(0 0 18px rgba(208, 116, 214, 0.3)); }
+    .hero-panel { padding: 26px 30px; text-align: center; }
     .ruban {
       display: inline-block; padding: 2px 14px; margin-bottom: 8px;
-      background: #f0d4f2; border: 2px solid var(--color-earth); border-radius: 4px;
-      font-size: 14px; color: var(--wood-ink);
+      background: var(--petale-ombre); border: 2px solid var(--prune); border-radius: 4px;
+      font-size: 14px; color: var(--prune);
     }
-    h1 { font-size: clamp(34px, 5vw, 52px); line-height: 1.05; margin: 6px 0 14px; color: var(--wood-dark); }
-    h1 em { font-style: normal; color: var(--accent); }
-    .lead { font-size: 19px; margin: 0 0 22px; }
-    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; margin: 4px 0 12px; color: var(--prune-nuit); }
+    h1 em { font-style: normal; color: var(--pervenche); }
+    .lead { font-size: 19px; margin: 0 0 20px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
     .micro { font-size: 14px; margin-top: 14px; }
-    .jauges { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 18px; padding-top: 14px; border-top: 2px dashed var(--wood-light); font-size: 15px; color: var(--wood-ink); }
 
-    section { padding: 80px 0; }
-    .section-head { max-width: 720px; margin-bottom: 34px; }
-    .kicker { display: inline-block; font-size: 15px; color: var(--color-earth); border-bottom: 3px solid var(--color-sun); }
-    h2 { font-size: clamp(30px, 4vw, 42px); line-height: 1.1; margin: 10px 0 12px; }
+    section { padding: 76px 0; }
+    .section-head { max-width: 720px; margin-bottom: 30px; }
+    .kicker { display: inline-block; font-size: 15px; color: var(--pervenche); border-bottom: 3px solid var(--rose); }
+    h2 { font-size: clamp(28px, 3.6vw, 40px); line-height: 1.12; margin: 10px 0 12px; }
     .section-head p { color: var(--text-muted); font-size: 18px; margin: 0; }
+    @media (prefers-color-scheme: dark) { .kicker { color: var(--lavande); } }
 
-    /* les cartes : des fiches de bois, l'icône dans sa case (.item-icon du jeu) */
-    .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-    .card { padding: 20px 20px 22px; }
-    .icon {
-      width: 60px; height: 60px; margin-bottom: 14px;
-      display: grid; place-items: center;
-      border: 3px solid var(--color-earth); border-radius: 6px;
-      background: #cbafdb; box-shadow: inset 0 0 0 2px var(--wood-light);
-      font-size: 30px;
-    }
-    .icon .px { --pxs: 40px; }
-    .card h3 { margin: 0 0 6px; font-size: 21px; color: var(--wood-dark); }
-    .card p { margin: 0; font-size: 16px; }
+    .grille { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .carte { padding: 22px; }
+    .carte .icon { font-size: 34px; line-height: 1; }
+    .carte .icon .px { --pxs: 36px; }
+    .carte h3 { font-size: 21px; margin: 8px 0 6px; color: var(--prune-nuit); }
+    .carte p { margin: 0; }
 
-    /* la journée : la nuit du jeu, des cases comme celles de la barre d'outils */
-    .nuit { background: var(--night); color: #e9e1ee; position: relative; overflow: hidden; }
-    .nuit:before {
-      content: ""; position: absolute; inset: 0; pointer-events: none;
-      background-image: radial-gradient(#fff 1px, transparent 1.5px), radial-gradient(#d8c1e6 1px, transparent 1.5px);
-      background-size: 90px 70px, 140px 110px; background-position: 10px 20px, 60px 45px; opacity: 0.35;
-    }
-    .nuit > .wrap { position: relative; }
-    .nuit .kicker { color: #f0d4f2; }
-    .nuit .section-head p { color: #c9cfe0; }
-    .loop { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-    .step { padding: 16px 14px; text-align: center; }
-    .step b { display: block; font-size: 14px; color: var(--color-earth); }
-    .step strong { display: block; font-size: 19px; margin: 6px 0 2px; color: var(--wood-dark); }
-    .step strong .px { --pxs: 32px; display: block; margin: 0 auto 6px; }
-    .step span { display: block; font-size: 15px; }
+    /* la lune : une bande de nuit prune */
+    .nuit { background: linear-gradient(var(--prune), var(--prune-nuit)); color: var(--petale); }
+    .nuit .section-head p { color: #d9c8e8; }
+    .nuit .kicker { color: var(--rose-pale); border-color: var(--rose); }
+    .phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .phase { padding: 20px; text-align: center; }
+    .phase .icon { font-size: 40px; line-height: 1; }
+    .phase .icon .px { --pxs: 40px; }
+    .phase strong { display: block; font-size: 19px; margin-top: 6px; color: var(--prune-nuit); }
+    .phase p { margin: 6px 0 0; }
 
-    /* la progression : les sept chapitres, comme les lettres du jeu */
-    .progress { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; align-items: start; }
-    .chapters { display: grid; gap: 10px; }
-    .chapter { display: flex; gap: 14px; align-items: center; padding: 10px 14px; }
-    .num {
-      width: 38px; height: 38px; flex: none; display: grid; place-items: center;
-      border-radius: 50%; background: var(--color-sun); color: var(--wood-dark);
-      border: 3px solid var(--color-earth); font-size: 18px;
-    }
-    .chapter strong { display: block; font-size: 18px; color: var(--wood-dark); }
-    .chapter span { font-size: 15px; }
-    .lettre {
-      position: sticky; top: 90px;
-      background: #f2e8f8; color: #291a32;
-      border: 3px solid var(--color-earth); border-radius: 8px;
-      box-shadow: inset 0 0 0 2px #c1abce, 0 4px 0 rgba(42, 28, 50, 0.35);
-      padding: 30px 30px 24px; font-size: 23px; line-height: 1.35;
-    }
-    .lettre small { display: block; margin-top: 16px; font-size: 15px; color: var(--color-earth); }
+    .gens { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .gens .carte { text-align: center; padding: 18px 14px; }
+    .gens .icon { font-size: 40px; }
+    .gens .icon .px { --pxs: 40px; }
+    .gens em { font-style: normal; display: block; margin-top: 8px; font-size: 15px; color: var(--pervenche); }
 
-    .cta { text-align: center; background: var(--bg-band); border-top: 3px solid var(--color-earth); border-bottom: 3px solid var(--color-earth); }
-    .cta p { color: var(--text-muted); max-width: 600px; margin: 0 auto 24px; font-size: 18px; }
-    .cta .actions { justify-content: center; }
-    footer { padding: 24px 0 32px; color: var(--text-muted); font-size: 15px; }
-    .footer-inner { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+    .courrier { background: var(--bg-band); }
+    .courrier-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: center; }
+    .postale { padding: 26px 28px; font-size: 20px; line-height: 1.4; transform: rotate(-1.2deg); border-style: dashed; }
+    .postale small { display: block; margin-top: 12px; font-size: 15px; }
+    .timbre { float: right; width: 74px; height: 88px; margin: 0 0 8px 14px; border: 3px dotted var(--prune); display: grid; place-items: center; font-size: 34px; background: #e9eeff; }
+    .timbre .px { --pxs: 40px; }
+
+    .cta { text-align: center; background: linear-gradient(var(--prune), var(--prune-nuit)); color: var(--petale); border-top: 3px solid var(--prune-nuit); }
+    .cta .logo { width: 360px; max-width: 100%; height: auto; aspect-ratio: 2 / 1; margin: 0 auto 10px; }
+    .cta p { color: #d9c8e8; max-width: 640px; margin: 0 auto 22px; font-size: 18px; }
+
+    footer { padding: 26px 0; background: var(--prune-nuit); color: #d9c8e8; font-size: 15px; }
+    .footer-inner { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .footer-inner img { width: 90px; height: 45px; }
     footer a { text-decoration: underline; }
 
-    @media (max-width: 900px) {
+    @media (max-width: 920px) {
       .nav-links { display: none; }
-      /* (la ferme sous le panneau : une bande de 340 px, son centre au milieu de la bande ; à
-         moitié taille, toujours un pixel de l'écran au moins par pixel du jeu sur un téléphone) */
-      .hero { padding: 92px 0 340px; }
-      .hero-img { background-size: 1800px 500px; background-position: left calc(50vw - 830px) bottom -60px; }
+      .hero { padding: 96px 0 200px; }
       .hero-grid { grid-template-columns: 1fr; }
-      .hero-panel { padding: 22px 20px; }
-      .loop { grid-template-columns: 1fr 1fr; }
-      .progress { grid-template-columns: 1fr; }
-      .lettre { position: static; }
+      .lune { width: 54px; height: 54px; top: 92px; right: 18px; }
+      .ferme { height: 260px; background-position: calc(50% + 560px) 60%; }
+      .grille, .gens, .phases { grid-template-columns: 1fr 1fr; }
+      .courrier-grille { grid-template-columns: 1fr; }
     }
     @media (max-width: 520px) {
       body { font-size: 16px; }
-      section { padding: 56px 0; }
-      .feature-grid { grid-template-columns: 1fr; }
-      .loop { grid-template-columns: 1fr; }
+      section { padding: 52px 0; }
+      h1 { font-size: 27px; }
+      .lead { font-size: 17px; }
+      .ruban { font-size: 12px; }
+      .hero-logo { width: 100%; margin-bottom: 10px; }
+      .hero-panel { padding: 20px 16px; }
+      .grille { grid-template-columns: 1fr; }
       .btn { width: 100%; }
       .nav .btn { width: auto; }
-      .brand span:last-child { font-size: 18px; }
-      .lettre { padding: 22px; font-size: 20px; }
+      .postale { font-size: 18px; padding: 22px; }
       .footer-inner { flex-direction: column; align-items: flex-start; }
     }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
@@ -219,14 +213,12 @@
 </head>
 <body>
   <header class="nav">
-    <div class="wrap nav-inner bois prune">
-      <a class="brand" href="#">
-        <img class="logo" src="assets/logo.png" alt="Moon Bloom Village" width="90" height="45">
-      </a>
+    <div class="wrap nav-inner prune">
+      <a class="brand" href="#"><img class="pix logo" src="assets/logo.png" alt="Moon Bloom Village" width="90" height="45"></a>
       <nav class="nav-links" aria-label="Sections">
-        <a href="#concept">Le concept</a>
-        <a href="#systemes">Ta journée</a>
-        <a href="#progression">Progression</a>
+        <a href="#ile">L'île</a>
+        <a href="#lune">La lune</a>
+        <a href="#habitants">Les habitants</a>
         <a href="encyclopedie.html">Encyclopédie</a>
       </nav>
       <a class="btn btn-primary" href="jeu.html">Jouer</a>
@@ -235,95 +227,98 @@
 
   <main>
     <section class="hero">
-      <div class="hero-img" role="img" aria-label="Une ferme du jeu vue de loin : la grande maison et la serre, le moulin, le silo, les étables, les potagers clos, le verger, les mares et les bois autour"></div>
+      <div class="etoiles" aria-hidden="true"></div>
+      <div class="lune" aria-hidden="true"></div>
+      <div class="ferme" role="img" aria-label="Une ferme du jeu au crépuscule : la grande maison, le moulin, le silo, les potagers et les bois autour"></div>
       <div class="wrap hero-grid">
-        <div class="hero-panel bois">
-          <div class="ruban">Jeu de ferme · Famille · Partage</div>
-          <h1>Fais revivre la ferme du grand-père, <em>à l'image de ta famille.</em></h1>
-          <p class="lead">Cultive, élève, cuisine et bâtis bloc par bloc ; fais-toi des amis dans les hameaux et invite les tiens à ta table. Ici, chaque journée fait grandir un foyer.</p>
-          <div class="actions">
-            <a class="btn btn-primary" href="jeu.html">🌱 Jouer gratuitement</a>
-            <a class="btn btn-secondary" href="encyclopedie.html">📖 Encyclopédie</a>
-          </div>
-          <div class="micro">Aucune installation · Directement dans ton navigateur, sur ordinateur ou téléphone</div>
-          <div class="jauges"><span>🏡 la maison</span><span>🌾 les récoltes</span><span>❤️ les voisins</span><span>🍲 les repas partagés</span></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="concept">
-      <div class="wrap">
-        <div class="section-head">
-          <div class="kicker">Le concept</div>
-          <h2>Plus qu'un jeu de ferme : un foyer qui prend vie.</h2>
-          <p>Répare la maison, fais pousser le potager, cuisine de bons plats pour le bonheur de la famille. Puis ouvre ta porte : aux habitants des hameaux, à leurs projets, et à tes amis qui viennent jouer chez toi.</p>
-        </div>
-        <div class="feature-grid">
-          <article class="card bois"><div class="icon">🥕</div><h3>Cultive ta nourriture</h3><p>Potager, serre et verger donnent une grande variété de récoltes, des légumes aux fruits.</p></article>
-          <article class="card bois"><div class="icon">🐄</div><h3>Développe l'élevage</h3><p>Poules, moutons, vaches et abeilles fournissent œufs, lait, laine et miel.</p></article>
-          <article class="card bois"><div class="icon">🍲</div><h3>Transforme tes récoltes</h3><p>Moulin, presse, four et cuisine forment des chaînes de production pour des aliments plus nourrissants.</p></article>
-          <article class="card bois"><div class="icon">☀️</div><h3>Le soleil et l'eau</h3><p>Panneau solaire, batterie, puits et pompe font tourner les appareils et arrosent les cultures.</p></article>
-          <article class="card bois"><div class="icon">🔨</div><h3>Bâtis bloc par bloc</h3><p>Murs, portes, fenêtres, toits et étages : la maison, le poulailler, l'étable et la serre se construisent à ta façon.</p></article>
-          <article class="card bois"><div class="icon">🪑</div><h3>Décore à ton image</h3><p>Mêle les styles qui vous plaisent, des barrières colorées aux meubles, et cherche dans le pays les plans des meubles de collection.</p></article>
-          <article class="card bois"><div class="icon">🧭</div><h3>Explore le grand monde</h3><p>Autour de la ferme, un pays caché sous le brouillard : forêts, marais, lande, montagne et côte, leurs gisements et leurs cristaux qui luisent la nuit, et des hameaux habités au bout des chemins.</p></article>
-          <article class="card bois"><div class="icon">🐴</div><h3>Commerce avec la calèche</h3><p>Elle fait le tour du pays et passe devant ta ferme : vends-lui tes surplus, achète-lui des graines et ce qu'elle rapporte des hameaux.</p></article>
-          <article class="card bois"><div class="icon">❤️</div><h3>Fais-toi des amis</h3><p>Parle aux habitants des hameaux, offre-leur ce qu'ils aiment, et aide leur hameau à achever ses projets.</p></article>
-          <article class="card bois"><div class="icon">🍲</div><h3>Invite à ta table</h3><p>Depuis le calendrier, invite tes amis à partager un repas : un bon plat, une table pleine, une famille heureuse.</p></article>
-          <article class="card bois"><div class="icon">💌</div><h3>Joue à plusieurs</h3><p>Mets ta ferme en ligne et invite tes amis : ils viennent construire, cultiver, s'occuper des bêtes et cuisiner avec toi.</p></article>
-          <article class="card bois"><div class="icon">👨‍👩‍👧‍👦</div><h3>Prends soin de la famille</h3><p>Chacun a ses besoins, son équipement et son humeur ; ton compagnon t'aide aux tâches de la ferme.</p></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="nuit" id="systemes">
-      <div class="wrap">
-        <div class="section-head">
-          <div class="kicker">Ta journée</div>
-          <h2>Planifie. Produis. Dors. Recommence.</h2>
-          <p>Une heure passe toutes les trente secondes. La famille mange le soir ; la nuit, les poules pondent, les plantes poussent et la ferme avance.</p>
-        </div>
-        <div class="loop">
-          <div class="step bois"><b>01</b><strong>🌱 Produire</strong><span>Planter, arroser, récolter</span></div>
-          <div class="step bois"><b>02</b><strong>🐔 Nourrir</strong><span>Les bêtes et le silo</span></div>
-          <div class="step bois"><b>03</b><strong>⚙️ Transformer</strong><span>Moudre, cuisiner, fabriquer à l'Atelier</span></div>
-          <div class="step bois"><b>04</b><strong>❤️ Partager</strong><span>Offrir aux voisins, recevoir à table, vendre à la calèche</span></div>
-          <div class="step bois"><b>05</b><strong>🌙 Dormir</strong><span>Faire avancer la ferme</span></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="progression">
-      <div class="wrap progress">
         <div>
-          <div class="section-head">
-            <div class="kicker">Ta progression</div>
-            <h2>De la terre sauvage à ton petit coin de paradis.</h2>
-            <p>Sept chapitres racontent l'installation de la famille ; dix niveaux et un arbre des technologies ouvrent de nouvelles possibilités.</p>
-          </div>
-          <div class="chapters">
-            <div class="chapter bois"><div class="num">1</div><div><strong>Notre nouveau chez-nous</strong><span>Réparer la maison, l'eau et le soleil ; la première récolte.</span></div></div>
-            <div class="chapter bois"><div class="num">2</div><div><strong>Une maison à notre image</strong><span>Le Silo, le blé, et la calèche qui s'arrête chaque matin.</span></div></div>
-            <div class="chapter bois"><div class="num">3</div><div><strong>Les premiers animaux</strong><span>Les poules, un premier voisin, le fer des gisements.</span></div></div>
-            <div class="chapter bois"><div class="num">4</div><div><strong>Les plaisirs de la cuisine</strong><span>Le pain, les plats cuisinés, les lingots du Four.</span></div></div>
-            <div class="chapter bois"><div class="num">5</div><div><strong>Une ferme pleine de vie</strong><span>Moutons et vaches ; un premier repas avec des invités.</span></div></div>
-            <div class="chapter bois"><div class="num">6</div><div><strong>Au rythme de la nature</strong><span>La Serre, le Verger, et le projet d'un hameau à achever.</span></div></div>
-            <div class="chapter bois"><div class="num">7</div><div><strong>Notre petit coin de paradis</strong><span>Mêler les styles, trouver les plans des meubles du pays.</span></div></div>
+          <img class="pix hero-logo" src="assets/logo.png" alt="Moon Bloom Village" width="90" height="45">
+          <div class="hero-panel cadre">
+            <div class="ruban">Jeu cosy · Ferme · Île · Entre proches</div>
+            <h1>Une petite île, une grande lune, <em>et une terre qui t'attend.</em></h1>
+            <p class="lead">Tes grands-parents sont partis voguer autour des îles et t'ont confié leur ferme. Jardine, décore, rencontre tes voisins et vis au rythme de la lune.</p>
+            <div class="actions">
+              <a class="btn btn-primary" href="jeu.html">🌙 Jouer gratuitement</a>
+              <a class="btn btn-secondary" href="encyclopedie.html">📖 Découvrir l'île</a>
+            </div>
+            <div class="micro">Sans installation · Dans ton navigateur, sur ordinateur ou téléphone · À ton rythme</div>
           </div>
         </div>
-        <div class="lettre">
-          « Une ferme, c'est comme une amitié : un peu de soin chaque jour. »
-          <small>Odile, chapitre 6</small>
+      </div>
+    </section>
+
+    <section id="ile">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="kicker">L'île de Céron</div>
+          <h2>Ici, on prend son temps.</h2>
+          <p>Pas d'urgence, pas de perte, pas de reproche. Juste une terre à faire fleurir, des voisins à connaître et des coins secrets à trouver.</p>
+        </div>
+        <div class="grille">
+          <article class="carte cadre"><div class="icon">🌷</div><h3>Fais fleurir ta terre</h3><p>Potager, verger, serre et fleurs : on sème quand la lune monte, on récolte à la pleine lune.</p></article>
+          <article class="carte cadre"><div class="icon">🏡</div><h3>Construis ton nid</h3><p>Bâtis ta maison bloc par bloc, peins-la, meuble-la, et invite tes voisins à ta table.</p></article>
+          <article class="carte cadre"><div class="icon">🐑</div><h3>Prends soin des bêtes</h3><p>Poules, moutons, vaches et abeilles : des œufs, de la laine, du lait et du miel.</p></article>
+          <article class="carte cadre"><div class="icon">🧭</div><h3>Explore sous la brume</h3><p>Forêts, landes, côte et montagne : des hameaux, des ruines, des cairns et les pages d'un vieux carnet de voyageur.</p></article>
+          <article class="carte cadre"><div class="icon">🎉</div><h3>Vis la vie des hameaux</h3><p>Les fêtes de village, les veillées de pleine lune et les projets qu'on bâtit tous ensemble.</p></article>
+          <article class="carte cadre"><div class="icon">💌</div><h3>Joue avec tes proches</h3><p>Ouvre ta ferme en ligne à ta famille ou à tes amis : chacun son rôle, une ferme en commun.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="nuit" id="lune">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="kicker">Le calendrier de lune</div>
+          <h2>L'île vit au rythme de la lune.</h2>
+          <p>Douze mois de quatorze jours, et chaque phase a sa coutume, toujours douce. Les anciens t'en apprendront les dictons.</p>
+        </div>
+        <div class="phases">
+          <div class="phase cadre"><div class="icon">🌒</div><strong>Lune croissante</strong><p>On sème : « ce qui monte avec la lune pousse avec elle ».</p></div>
+          <div class="phase cadre"><div class="icon">🌕</div><strong>Pleine lune</strong><p>La grande récolte, et la veillée sur la place.</p></div>
+          <div class="phase cadre"><div class="icon">🌘</div><strong>Lune décroissante</strong><p>On économise l'eau, on bricole.</p></div>
+          <div class="phase cadre"><div class="icon">🌑</div><strong>Nuits noires</strong><p>La terre fait la sieste ; on raconte des histoires.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="habitants">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="kicker">Les habitants</div>
+          <h2>Des voisins qui deviennent des amis.</h2>
+          <p>Chacun a sa passion, son petit travers attachant, et une histoire à partager.</p>
+        </div>
+        <div class="gens">
+          <div class="carte cadre"><div class="icon">🍓</div><h3>Odile</h3><p>La grand-mère du Gué</p><em>« On sème quand elle monte. »</em></div>
+          <div class="carte cadre"><div class="icon">⚙️</div><h3>Frida</h3><p>L'inventrice</p><em>« 14 % de mieux à la pleine lune ! C'est merveilleux. »</em></div>
+          <div class="carte cadre"><div class="icon">🐴</div><h3>Achille</h3><p>Le cocher, et Biscotte</p><em>« Ho, Biscotte. Regarde qui c'est. »</em></div>
+          <div class="carte cadre"><div class="icon">🦊</div><h3>Lise</h3><p>L'enfant des cachettes</p><em>« Tu sais où dort le renard ? Moi oui. Mais je dis pas. »</em></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="courrier">
+      <div class="wrap courrier-grille">
+        <div class="section-head" style="margin:0">
+          <div class="kicker">Le courrier</div>
+          <h2>Des nouvelles de la Luciole.</h2>
+          <p>Maurice et Philomène t'écrivent depuis les îles au soleil. Et ta mère, Adèle, a toujours un « au fait » qui ramène un souvenir.</p>
+        </div>
+        <div class="postale cadre">
+          <div class="timbre">⛵</div>
+          « Ici, il fait chaud et les poissons sont jaunes. Philomène a appris à danser. »
+          <small>— Maurice. P.S. de Philomène : on pense à vous à chaque coucher de soleil.</small>
         </div>
       </div>
     </section>
 
     <section class="cta">
       <div class="wrap">
-        <div class="kicker">Ta ferme t'attend</div>
-        <h2>Alors… qui vas-tu inviter à ta table ?</h2>
-        <p>Commence sur une terre sauvage et fais-en, nuit après nuit, un foyer plein de vie, à partager.</p>
+        <img class="pix logo" src="assets/logo.png" alt="Moon Bloom Village" width="90" height="45">
+        <h2>Ta terre t'attend sous la lune.</h2>
+        <p>Commence aujourd'hui, à ton rythme. Ta ferme garde tout, même quand tu n'es pas là.</p>
         <div class="actions">
-          <a class="btn btn-primary" href="jeu.html">🌾 Commencer une partie</a>
+          <a class="btn btn-primary" href="jeu.html">🌙 Commencer ma partie</a>
           <a class="btn btn-secondary" href="encyclopedie.html">📖 Consulter l'encyclopédie</a>
         </div>
       </div>
@@ -332,8 +327,8 @@
 
   <footer>
     <div class="wrap footer-inner">
-      <div>🌱 Moon Bloom Village — un jeu de ferme en pixel art.</div>
-      <div>Jouable dans ton navigateur · <a href="cookies.html">Cookies et confidentialité</a></div>
+      <img class="pix" src="assets/logo.png" alt="Moon Bloom Village" width="90" height="45">
+      <div>Moon Bloom Village — un jeu cosy en pixel art · <a href="cookies.html">Cookies et confidentialité</a></div>
     </div>
   </footer>
 <script type="module" src="js/icones-page.js"></script>
