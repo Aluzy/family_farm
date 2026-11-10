@@ -1130,10 +1130,11 @@
       if (!variante || !couleurs || !couleurs.length || !this.textures.exists(key)) return key;
       const k = key + '~' + variante;
       if (this.textures.exists(k)) return k;
-      const src = this.textures.get(key).getSourceImage(), w = src.width, h = src.height;
+      // (son image et sa case : dans son atlas, piste 4, js/carte/atlas.js)
+      const D = K.atlas.decoupe(this.textures, key), w = D.w, h = D.h;
       const cv = this.textures.createCanvas(k, w, h), g = cv.context;
       g.imageSmoothingEnabled = false;
-      g.drawImage(src, 0, 0);
+      g.drawImage(D.img, D.x, D.y, w, h, 0, 0, w, h);
       const px = g.getImageData(0, 0, w, h), d = px.data;
       const hex = (c) => parseInt(c.slice(1), 16), table = new Map(couleurs.map(([de, vers]) => [hex(de), hex(vers)]));
       for (let i = 0; i < d.length; i += 4) {

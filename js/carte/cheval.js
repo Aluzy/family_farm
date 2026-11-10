@@ -46,10 +46,11 @@
 
   // Les planches à charger (preload d'une scène) : le cheval sellé, seul, et le poteau.
   function charge(scene, v) {
-    const L = scene.load, u = v || ((f) => 'assets/' + f);
-    if (!scene.textures.exists(CHEVAL.key)) L.spritesheet(CHEVAL.key, u(CHEVAL.file), { frameWidth: CHEVAL.w, frameHeight: CHEVAL.h });
-    if (!scene.textures.exists(CHEVAL.seul.key)) L.spritesheet(CHEVAL.seul.key, u(CHEVAL.seul.file), { frameWidth: CHEVAL.w, frameHeight: CHEVAL.h });
-    if (!scene.textures.exists(CHEVAL.poteau.key)) L.image(CHEVAL.poteau.key, u(CHEVAL.poteau.file));
+    // (par leur atlas, piste 4 : js/carte/atlas.js)
+    const A = K.atlas, cases = { frameWidth: CHEVAL.w, frameHeight: CHEVAL.h };
+    if (!scene.textures.exists(CHEVAL.key)) A.feuille(scene, CHEVAL.key, CHEVAL.file, cases, v);
+    if (!scene.textures.exists(CHEVAL.seul.key)) A.feuille(scene, CHEVAL.seul.key, CHEVAL.seul.file, cases, v);
+    if (!scene.textures.exists(CHEVAL.poteau.key)) A.image(scene, CHEVAL.poteau.key, CHEVAL.poteau.file, v);
   }
 
   function cheval(scene) {
