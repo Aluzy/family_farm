@@ -594,126 +594,140 @@
       }
 
       update(time, delta) {
-        const dt = Math.min(delta, 50);
-        // L'écran de chargement (jeu.html) s'efface quand la vue est entièrement dessinée (vueDessinee :
-        // les régions sous la caméra, leur sol du grand monde arrivé), la carte affichée ; pas pendant
-        // la configuration d'une nouvelle partie (l'écran y est caché, il attend la ferme qui suit).
-        if (this.chargement && this.ctx.visible && !document.body.classList.contains('configuration')) {
-          const part = this.vueDessinee();
-          global.Chargement.avance(0.75 + 0.25 * part);
-          if (part >= 1) { this.chargement = false; global.Chargement.fini(); this.chargerTard(); }
-        }
-        // Déplacement et fondu suivent l'horloge réelle : ils durent le même temps même
-        // si les images sont lentes (Phaser plafonne `delta`).
-        if (this.pan) this.stepPan();
-        else if (this.vx || this.vy) this.stepInertia(dt);
-        this.stepLanterns(time, dt / 1000);      // (avant le voile : leurs lumières y sont posées)
-        this.lumiere.step();
-        this.syncEauMonde();                    // (les blocs d'eau du grand monde près de la vue : eau-monde.js)
-        this.syncVegetation();                  // (les arbres du grand monde près de la vue : vegetation.js)
-        if (this.tileAnims.length) this.stepTileAnims(time);
-        this.stepEau(time, dt / 1000);           // (l'eau vivante, js/carte/ferme/eau.js)
-        if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
-        if (this.tankTipUntil && performance.now() >= this.tankTipUntil) this.showTankTip(false);
-        this.syncTankTip();
-        this.syncCaseTip();                     // (fiche 21 : la bulle d'une case de culture)
-        // Filet de sécurité : le fond est vérifié toutes les quelques secondes.
-        if (time >= this.groundCheckAt) { this.groundCheckAt = time + GROUND_CHECK_MS; const tout = !!this.groundTout; this.groundTout = false; this.repairGround(false, !tout); }
-        if (this.ambient) this.ambient.update(delta);
-        // le mode Construire fige le monde : les personnages s'effacent et ne bougent plus
-        const fige = !!(this.ctx.lastModel && this.ctx.lastModel.bati);
-        this.figer(fige);
-        this.syncPresence(delta);                // (E-4 : les autres joueurs d'un monde en ligne : presence.js)
-        this.syncMeteo(delta);                   // (G-1 : la pluie, la brume : meteo.js)
-        this.syncConstructible();               // (en mode Construire : les cases où le bloc se pose, en blanc)
-        if (this.conseilsAFaire) this.syncConseilsTextes();   // (et les étiquettes des pièces qui arrivent à l'écran)
-        this.stepCharge();
-        if (this.fermier && !fige) {
-          // (une scène du récit sur la carte : il reste là pendant qu'on vient lui parler, js/carte/ferme/rencontre.js)
-          this.fermier.steer(this.rencontreRetient && this.rencontreRetient() ? null : this.manette.dir());
-          this.fermier.update(delta);
-          this.stepRegionPerso();            // (la région où il entre devient vue : js/carte/ferme/sol.js)
-        }
-        this.stepLieuxMonde(time);              // (les coins de pêche, les secrets : lieux-monde.js)
-        if (!fige) {
-          this.stepHameaux(dt / 1000);            // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
-          if (this.stepCaleche) this.stepCaleche(dt / 1000);   // (la calèche : caleche.js)
-          if (this.stepMalle) this.stepMalle();                 // (sa malle : malle.js)
-          if (this.stepVisite) this.stepVisite(dt / 1000);     // (la visite de bienvenue : visite.js, fiche 18)
-          if (this.stepRencontre) this.stepRencontre(dt / 1000);   // (une scène du récit sur la carte : rencontre.js)
-          if (this.stepPresents) this.stepPresents();          // (les présents des amis devant la porte : amis.js)
-          if (this.stepInvites) this.stepInvites(dt / 1000);   // (les invités d'un repas : invites.js)
-          if (this.family) this.family.update(delta);
-        }
-        // La vue suit le personnage, centrée sur lui (comme sur les autres cartes) ; pas pendant un
-        // labour ou un arrosage en glissant : les cases restent sous le doigt.
-        if (this.suitPerso() && !(this.drag && (this.drag.labour || this.drag.arrose || this.drag.engrais || this.drag.seme))) {
-          const p = this.fermier.pos();
-          if (p) {
+        // (fiche 33 : les étapes de l'image, chacune à sa cadence : js/carte/ordonnanceur.js, la table plus bas)
+        (this.ordre || (this.ordre = K.ordonnanceur(this.systemes()))).pas(time, delta, Math.min(delta, 50));
+      }
+
+      // Les systèmes de la scène, dans l'ordre où ils passent (fiche 33). `cadence` : 'image' (ce qui se voit
+      // bouger), 10 (ce qui décide), 2 (ce qui relève). I : { time, delta (ms, brut), dt (ms, borné à 50 par
+      // image), s (dt en s) } depuis le dernier pas du système. Dans le doute : à chaque image.
+      systemes() {
+        const img = 'image', fige = () => !!this.imageFige;
+        return [
+          // L'écran de chargement (jeu.html) s'efface quand la vue est entièrement dessinée (vueDessinee :
+          // les régions sous la caméra, leur sol du grand monde arrivé), la carte affichée ; pas pendant
+          // la configuration d'une nouvelle partie (l'écran y est caché, il attend la ferme qui suit).
+          { nom: 'chargement', cadence: img, actif: () => this.chargement && this.ctx.visible && !document.body.classList.contains('configuration'), pas: () => {
+            const part = this.vueDessinee();
+            global.Chargement.avance(0.75 + 0.25 * part);
+            if (part >= 1) { this.chargement = false; global.Chargement.fini(); this.chargerTard(); }
+          } },
+          // Déplacement et fondu suivent l'horloge réelle : ils durent le même temps même
+          // si les images sont lentes (Phaser plafonne `delta`).
+          { nom: 'glissement', cadence: img, pas: (I) => { if (this.pan) this.stepPan(); else if (this.vx || this.vy) this.stepInertia(I.dt); } },
+          { nom: 'lanternes', cadence: img, pas: (I) => this.stepLanterns(I.time, I.s) },      // (avant le voile : leurs lumières y sont posées)
+          { nom: 'lumiere', cadence: img, pas: () => this.lumiere.step() },
+          { nom: 'eauMonde', cadence: img, pas: () => this.syncEauMonde() },                    // (les blocs d'eau du grand monde près de la vue : eau-monde.js)
+          { nom: 'vegetationMonde', cadence: img, pas: () => this.syncVegetation() },          // (les arbres du grand monde près de la vue : vegetation.js)
+          { nom: 'tuilesAnimees', cadence: img, actif: () => this.tileAnims.length > 0, pas: (I) => this.stepTileAnims(I.time) },
+          { nom: 'eau', cadence: img, pas: (I) => this.stepEau(I.time, I.s) },                   // (l'eau vivante, js/carte/ferme/eau.js)
+          { nom: 'bulles', cadence: img, pas: () => {
+            if (this.hoverUntil && !this.drag && performance.now() >= this.hoverUntil) this.setHover(null);
+            if (this.tankTipUntil && performance.now() >= this.tankTipUntil) this.showTankTip(false);
+            this.syncTankTip();
+            this.syncCaseTip();                     // (fiche 21 : la bulle d'une case de culture)
+          } },
+          // Filet de sécurité : le fond est vérifié toutes les quelques secondes.
+          { nom: 'fond', cadence: 2, actif: (I) => I.time >= this.groundCheckAt, pas: (I) => { this.groundCheckAt = I.time + GROUND_CHECK_MS; const tout = !!this.groundTout; this.groundTout = false; this.repairGround(false, !tout); } },
+          { nom: 'ambiance', cadence: img, actif: () => !!this.ambient, pas: (I) => this.ambient.update(I.delta) },
+          // le mode Construire fige le monde : les personnages s'effacent et ne bougent plus
+          { nom: 'figer', cadence: img, pas: () => { this.imageFige = !!(this.ctx.lastModel && this.ctx.lastModel.bati); this.figer(this.imageFige); } },
+          { nom: 'presence', cadence: img, pas: (I) => this.syncPresence(I.delta) },          // (E-4 : les autres joueurs d'un monde en ligne : presence.js)
+          { nom: 'meteo', cadence: img, pas: (I) => this.syncMeteo(I.delta) },                // (G-1 : la pluie, la brume : meteo.js)
+          { nom: 'constructible', cadence: img, pas: () => this.syncConstructible() },        // (en mode Construire : les cases où le bloc se pose, en blanc)
+          { nom: 'conseils', cadence: 10, actif: () => !!this.conseilsAFaire, pas: () => this.syncConseilsTextes() },   // (et les étiquettes des pièces qui arrivent à l'écran)
+          { nom: 'charge', cadence: img, pas: () => this.stepCharge() },
+          { nom: 'personnage', cadence: img, actif: () => !!this.fermier && !fige(), pas: (I) => {
+            // (une scène du récit sur la carte : il reste là pendant qu'on vient lui parler, js/carte/ferme/rencontre.js)
+            this.fermier.steer(this.rencontreRetient && this.rencontreRetient() ? null : this.manette.dir());
+            this.fermier.update(I.delta);
+          } },
+          { nom: 'regionPerso', cadence: 10, actif: () => !!this.fermier && !fige(), pas: () => this.stepRegionPerso() },   // (la région où il entre devient vue : js/carte/ferme/sol.js)
+          { nom: 'lieuxMonde', cadence: 10, pas: (I) => this.stepLieuxMonde(I.time) },       // (les coins de pêche, les secrets : lieux-monde.js)
+          { nom: 'hameaux', cadence: img, actif: () => !fige(), pas: (I) => this.stepHameaux(I.s) },     // (les hameaux bâtis : leurs toits, leur fumée, l'arrivée : hameaux.js)
+          { nom: 'caleche', cadence: img, actif: () => !fige() && !!this.stepCaleche, pas: (I) => this.stepCaleche(I.s) },   // (la calèche : caleche.js)
+          { nom: 'malle', cadence: img, actif: () => !fige() && !!this.stepMalle, pas: () => this.stepMalle() },               // (sa malle : malle.js)
+          { nom: 'visite', cadence: img, actif: () => !fige() && !!this.stepVisite, pas: (I) => this.stepVisite(I.s) },       // (la visite de bienvenue : visite.js, fiche 18)
+          { nom: 'rencontre', cadence: img, actif: () => !fige() && !!this.stepRencontre, pas: (I) => this.stepRencontre(I.s) },   // (une scène du récit sur la carte : rencontre.js)
+          // (les présents des amis devant la porte : amis.js ; seulement quand il y en a : l'événement modele:presents)
+          { nom: 'presents', cadence: img, actif: () => !fige() && !!this.stepPresents && (this.presentsLa || !!this.presentsPaquet), pas: () => this.stepPresents() },
+          { nom: 'invites', cadence: img, actif: () => !fige() && !!this.stepInvites, pas: (I) => this.stepInvites(I.s) },   // (les invités d'un repas : invites.js)
+          { nom: 'famille', cadence: img, actif: () => !fige() && !!this.family, pas: (I) => this.family.update(I.delta) },
+          // La vue suit le personnage, centrée sur lui (comme sur les autres cartes) ; pas pendant un
+          // labour ou un arrosage en glissant : les cases restent sous le doigt.
+          { nom: 'vue', cadence: img, pas: (I) => {
+            if (!this.suitPerso() || (this.drag && (this.drag.labour || this.drag.arrose || this.drag.engrais || this.drag.seme))) return;
+            const p = this.fermier.pos();
+            if (!p) return;
             this.pan = null;
-            const k = this.followSnap ? 1 : K.rattrape(dt, FOLLOW_MS);   // (fiche 25 : la même à tout rythme)
+            const k = this.followSnap ? 1 : K.rattrape(I.dt, FOLLOW_MS);   // (fiche 25 : la même à tout rythme)
             this.followSnap = false;
             this.setCentre(this.cx + (p.x - this.cx) * k, this.cy + (p.y - FOLLOW_UP - this.cy) * k);
-          }
-        }
-        this.syncRegions();
-        this.syncHerbes();                      // (les touffes au pied des murs et des sols : herbes.js)
-        this.cullDecor();
-        this.stepOccluders(delta);
-        this.stepVegetation(delta);
-        this.stepFaune(time, delta);            // (les bêtes du grand monde : faune-monde.js)
-        this.stepTraces(time);                  // (les traces de pas : traces.js)
-        this.stepBrins(dt / 1000);              // (les brins d'herbe qui sautent sous les pas : brins.js)
-        this.stepGravillons(dt / 1000);         // (les gravillons qui sautent sous les pas sur un chemin : gravier.js)
-        this.stepEclats(dt / 1000);             // (l'éclat vert d'une graine semée : eclats.js)
-        this.stepMiel(time, dt / 1000);         // (la goutte de miel des ruches pleines : miel.js)
-        this.stepTonnelets(dt / 1000);          // (le tonnelet en action s'écrase et se relève : tonnelets.js)
-        this.stepPortes(time, dt / 1000);       // (les portes qui s'ouvrent quand on passe : portes.js)
-        this.stepFlaques(time, dt / 1000);      // (le sol mouillé et les flaques sous la pluie : flaques.js)
-        this.stepTallGrass(delta);
-        this.stepShards(delta);
-        this.stepSprinklers();
-        this.stepFires(time);
-        if (this.stepPosition) this.stepPosition(time);   // (où il est, noté pour la reprise : passages.js)
-        if (this.stepVapeur) this.stepVapeur(delta / 1000);   // (la vapeur de la cuisinière qui cuit : vapeur.js)
-        this.stepSurbrillance(time);
-        this.stepPlantation(time);
-        this.stepSilo();
-        this.stepMurs(dt / 1000);
-        this.stepEtage(dt / 1000);
-        this.stepToits(dt / 1000);
-        this.stepVoilure(dt / 1000);
-        this.stepPieces();
-        this.stepFile(delta);                   // (la file des gestes du joueur, leurs reflets : file.js)
-        this.stepBeasts(time, delta / 1000);
-        this.stepAbeilles(delta / 1000);
-        this.stepRougegorges(delta / 1000);    // (les rouges-gorges des barrières : rougegorges.js)
-        this.stepBotteleuses(dt);
-        this.stepChaines(dt);                   // (les chaînes de production qui tournent : chaines.js)
-        this.stepRobot(dt);
-        this.stepFishing(delta);
-        this.stepSun();
-        if (this.stepBrouillard) this.stepBrouillard(time, delta);   // (le brouillard du grand monde : brouillard.js)
-        if (this.stepBoussole) this.stepBoussole();                  // (la boussole : boussole.js)
-        this.stepBulleDidacticiel();            // (la bulle du didacticiel sur le personnage : camera.js)
-        this.placeLabels();
-        this.placePiles();
-        this.placeGain();
-        this.placeGainAide();
-        this.stepAide();
-        this.reportView();
-        // La cadence (fiche 25, js/carte/jeu.js) : quelque chose bouge-t-il ? Le personnage, la vue (son
-        // centre, son zoom, son glissement, son élan), un doigt posé ou la manette. (La vue qui suit le
-        // personnage s'approche de lui sans jamais l'atteindre tout à fait : sous 0,05 px de carte, elle ne
-        // bouge plus.)
-        const fp = this.fermier && this.fermier.pos(), zoom = this.cameras.main.zoom;
-        const vu = this.cadenceVu || (this.cadenceVu = { cx: 0, cy: 0, zoom: 0, x: 0, y: 0 });
-        const loin = (a, b) => !(Math.abs(a - b) < 0.05);
-        const bouge = !!(this.drag || this.pince || this.pan || this.vx || this.vy || (this.manette && this.manette.dir()))
-          || loin(this.cx, vu.cx) || loin(this.cy, vu.cy) || zoom !== vu.zoom || (fp && (loin(fp.x, vu.x) || loin(fp.y, vu.y)));
-        vu.cx = this.cx; vu.cy = this.cy; vu.zoom = zoom;
-        if (fp) { vu.x = fp.x; vu.y = fp.y; }
-        if (global.CarteJeu && global.CarteJeu.cadence) global.CarteJeu.cadence(bouge, time);
+          } },
+          { nom: 'regions', cadence: img, pas: () => this.syncRegions() },
+          { nom: 'herbes', cadence: img, pas: () => this.syncHerbes() },                       // (les touffes au pied des murs et des sols : herbes.js)
+          { nom: 'tri', cadence: img, pas: () => this.cullDecor() },
+          { nom: 'occultants', cadence: img, pas: (I) => this.stepOccluders(I.delta) },
+          { nom: 'vegetation', cadence: img, pas: (I) => this.stepVegetation(I.delta) },
+          { nom: 'faune', cadence: img, pas: (I) => this.stepFaune(I.time, I.delta) },          // (les bêtes du grand monde : faune-monde.js)
+          { nom: 'traces', cadence: img, pas: (I) => this.stepTraces(I.time) },                 // (les traces de pas : traces.js)
+          { nom: 'brins', cadence: img, pas: (I) => this.stepBrins(I.s) },                      // (les brins d'herbe qui sautent sous les pas : brins.js)
+          { nom: 'gravillons', cadence: img, pas: (I) => this.stepGravillons(I.s) },            // (les gravillons qui sautent sous les pas sur un chemin : gravier.js)
+          { nom: 'eclats', cadence: img, pas: (I) => this.stepEclats(I.s) },                    // (l'éclat vert d'une graine semée : eclats.js)
+          { nom: 'miel', cadence: img, pas: (I) => this.stepMiel(I.time, I.s) },                // (la goutte de miel des ruches pleines : miel.js)
+          { nom: 'tonnelets', cadence: img, pas: (I) => this.stepTonnelets(I.s) },              // (le tonnelet en action s'écrase et se relève : tonnelets.js)
+          { nom: 'portes', cadence: img, pas: (I) => this.stepPortes(I.time, I.s) },            // (les portes qui s'ouvrent quand on passe : portes.js)
+          { nom: 'flaques', cadence: img, pas: (I) => this.stepFlaques(I.time, I.s) },          // (le sol mouillé et les flaques sous la pluie : flaques.js)
+          { nom: 'herbesHautes', cadence: img, pas: (I) => this.stepTallGrass(I.delta) },
+          { nom: 'eclatsPierre', cadence: img, pas: (I) => this.stepShards(I.delta) },
+          { nom: 'asperseurs', cadence: img, pas: () => this.stepSprinklers() },
+          { nom: 'feux', cadence: img, pas: (I) => this.stepFires(I.time) },
+          { nom: 'position', cadence: 2, actif: () => !!this.stepPosition, pas: (I) => this.stepPosition(I.time) },   // (où il est, noté pour la reprise, une fois par seconde : passages.js)
+          { nom: 'vapeur', cadence: img, actif: () => !!this.stepVapeur, pas: (I) => this.stepVapeur(I.delta / 1000) },   // (la vapeur de la cuisinière qui cuit : vapeur.js)
+          { nom: 'surbrillance', cadence: img, pas: (I) => this.stepSurbrillance(I.time) },
+          { nom: 'plantation', cadence: img, pas: (I) => this.stepPlantation(I.time) },
+          { nom: 'silo', cadence: 10, pas: () => this.stepSilo() },                             // (le personnage derrière le silo le voit à travers)
+          { nom: 'murs', cadence: img, pas: (I) => this.stepMurs(I.s) },
+          { nom: 'etage', cadence: img, pas: (I) => this.stepEtage(I.s) },
+          { nom: 'toits', cadence: img, pas: (I) => this.stepToits(I.s) },
+          { nom: 'voilure', cadence: img, pas: (I) => this.stepVoilure(I.s) },
+          { nom: 'pieces', cadence: 10, pas: () => this.stepPieces() },                         // (les morceaux ramassés sous ses pieds)
+          { nom: 'file', cadence: img, pas: (I) => this.stepFile(I.delta) },                    // (la file des gestes du joueur, leurs reflets : file.js)
+          { nom: 'betes', cadence: img, pas: (I) => this.stepBeasts(I.time, I.delta / 1000) },
+          { nom: 'abeilles', cadence: img, pas: (I) => this.stepAbeilles(I.delta / 1000) },
+          { nom: 'rougesGorges', cadence: img, pas: (I) => this.stepRougegorges(I.delta / 1000) },   // (les rouges-gorges des barrières : rougegorges.js)
+          { nom: 'botteleuses', cadence: img, pas: (I) => this.stepBotteleuses(I.dt) },
+          { nom: 'chaines', cadence: img, pas: (I) => this.stepChaines(I.dt) },                 // (les chaînes de production qui tournent : chaines.js)
+          { nom: 'robot', cadence: img, pas: (I) => this.stepRobot(I.dt) },
+          { nom: 'peche', cadence: img, pas: (I) => this.stepFishing(I.delta) },
+          { nom: 'soleil', cadence: 10, pas: () => this.stepSun() },                            // (les ombres du soleil, repeintes quand il le faut : soleil.js)
+          { nom: 'brouillard', cadence: img, actif: () => !!this.stepBrouillard, pas: (I) => this.stepBrouillard(I.time, I.delta) },   // (le brouillard du grand monde : brouillard.js)
+          { nom: 'boussole', cadence: img, actif: () => !!this.stepBoussole, pas: () => this.stepBoussole() },   // (la boussole : boussole.js)
+          { nom: 'bulleDidacticiel', cadence: 10, pas: () => this.stepBulleDidacticiel() },     // (la bulle du didacticiel sur le personnage : camera.js)
+          { nom: 'etiquettes', cadence: img, pas: () => { this.placeLabels(); this.placePiles(); this.placeGain(); this.placeGainAide(); this.stepAide(); } },
+          { nom: 'vuePage', cadence: 10, pas: () => this.reportView() },                        // (ce que la page affiche selon la vue : camera.js)
+          // La cadence (fiche 25, js/carte/jeu.js) : quelque chose bouge-t-il ? Le personnage, la vue (son
+          // centre, son zoom, son glissement, son élan), un doigt posé ou la manette. (La vue qui suit le
+          // personnage s'approche de lui sans jamais l'atteindre tout à fait : sous 0,05 px de carte, elle ne
+          // bouge plus.)
+          { nom: 'cadence', cadence: img, pas: (I) => {
+            const fp = this.fermier && this.fermier.pos(), zoom = this.cameras.main.zoom;
+            const vu = this.cadenceVu || (this.cadenceVu = { cx: 0, cy: 0, zoom: 0, x: 0, y: 0 });
+            const loin = (a, b) => !(Math.abs(a - b) < 0.05);
+            const bouge = !!(this.drag || this.pince || this.pan || this.vx || this.vy || (this.manette && this.manette.dir()))
+              || loin(this.cx, vu.cx) || loin(this.cy, vu.cy) || zoom !== vu.zoom || (fp && (loin(fp.x, vu.x) || loin(fp.y, vu.y)));
+            vu.cx = this.cx; vu.cy = this.cy; vu.zoom = zoom;
+            if (fp) { vu.x = fp.x; vu.y = fp.y; }
+            if (global.CarteJeu && global.CarteJeu.cadence) global.CarteJeu.cadence(bouge, I.time);
+          } },
+        ];
+      }
+
+      // Fiche 33 : le hasard à graine d'un acteur de la couche visuelle (une bête, un oiseau…) : la graine du
+      // monde, le jour de la partie et son identifiant ; le même spectacle pour la même partie, le même jour.
+      hasardDe(id) {
+        const g = (this.ctx.monde && this.ctx.monde.graine) || '', j = (this.ctx.lastModel && this.ctx.lastModel.jour) || 0;
+        return K.hasard(K.graine(g + ':' + j + ':' + id));
       }
 
       // La vue suit-elle le personnage ? Dehors, dès qu'il est sur la carte (sans lui, la vue

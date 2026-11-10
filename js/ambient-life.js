@@ -191,8 +191,10 @@
     poule: { fold: 'poulailler', max: 8, frames: HEN_FRAMES, next: HEN_NEXT, time: HEN_TIME, pose: henPose, half: 5, walk: { marche: [9, 14, 1.6, 2 * T], course: [30, 42, 3, 4 * T] } },
   };
 
-  const rand = (a, b) => a + Math.random() * (b - a);
-  const pick = (list) => list[(Math.random() * list.length) | 0];
+  // (fiche 33 : le hasard de la vie d'ambiance, à graine dès que la scène a la partie : AmbientLife.graine)
+  let alea = Math.random;
+  const rand = (a, b) => a + alea() * (b - a);
+  const pick = (list) => list[(alea() * list.length) | 0];
   const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
   // L'écrasement et l'étirement des bêtes (js/carte/ressort.js) : sans ce fichier, aucun ressort et
@@ -228,7 +230,7 @@
   function pickWeighted(weights) {
     let total = 0;
     for (const k in weights) total += weights[k];
-    let r = Math.random() * total;
+    let r = alea() * total;
     for (const k in weights) { r -= weights[k]; if (r < 0) return k; }
     return Object.keys(weights)[0];
   }
@@ -485,7 +487,7 @@
       // Traverse la vue en zigzaguant, poussé par le vent ; se pose une fois en chemin.
       papillon() {
         const v = view();
-        const dir = Math.random() < 0.5 ? 1 : -1;
+        const dir = alea() < 0.5 ? 1 : -1;
         let x = dir > 0 ? v.x - MARGIN : v.x + v.width + MARGIN;
         let base = v.y + rand(0.15, 0.85) * v.height;
         const s = sprite(x, base, 'pap0').setDepth(FLY_DEPTH).setTint(pick(BUTTERFLY_TINTS)).setFlipX(dir < 0);
@@ -521,14 +523,14 @@
         const spot = freeSpot();
         if (!spot) return null;
         const v = view();
-        const dir = Math.random() < 0.5 ? 1 : -1;
+        const dir = alea() < 0.5 ? 1 : -1;
         const from = { x: dir > 0 ? v.x - MARGIN : v.x + v.width + MARGIN, y: Math.max(v.y - MARGIN, spot.y - rand(70, 130)) };
         const s = sprite(from.x, from.y, 'ois_vol0').setOrigin(0.5, 1).setDepth(FLY_DEPTH).setFlipX(dir < 0);
         let state = 'arrive', age = 0, x = from.x, y = from.y, face = dir;
         let stay = rand(6, 14), wait = rand(0.4, 1), hop = null, pecks = 0;
         const res = nouveauRessort();             // écrasé, étiré (js/carte/ressort.js)
         let tenu = 0;
-        const leave = () => { if (state === 'part') return; state = 'part'; age = 0; face = Math.random() < 0.5 ? 1 : -1; s.setDepth(FLY_DEPTH); if (res) res.pousse(C.elan); };
+        const leave = () => { if (state === 'part') return; state = 'part'; age = 0; face = alea() < 0.5 ? 1 : -1; s.setDepth(FLY_DEPTH); if (res) res.pousse(C.elan); };
         // (À chaque image : ce qu'il fait, puis son ressort.)
         function step(dt) {
           tenu = 0;
@@ -562,8 +564,8 @@
             } else if (wait <= 0) {
               s.setFrame('ois_sol');
               if (age > stay || !inView(x, y, MARGIN)) leave();
-              else if (Math.random() < 0.45) {
-                const dx = rand(5, 11) * (Math.random() < 0.5 ? -1 : 1), dy = rand(-4, 4);
+              else if (alea() < 0.45) {
+                const dx = rand(5, 11) * (alea() < 0.5 ? -1 : 1), dy = rand(-4, 4);
                 if (freeAt(x + dx, y + dy)) {
                   hop = { x0: x, y0: y, dx, dy, k: 0 }; face = dx > 0 ? 1 : -1; s.setFlipX(face < 0);
                   if (res) res.pousse(C.elan * 0.5);
@@ -751,7 +753,7 @@
       const centre = { x: base.x + dx, y: base.y + rank * 6 };
       const at = petAt[sheet];
       let x = at ? at.x : centre.x, y = at ? at.y : centre.y;
-      let face = Math.random() < 0.5 ? 1 : -1;
+      let face = alea() < 0.5 ? 1 : -1;
       let st = 'debout', before = null, age = 0, len = rand(0.5, 1.5);   // activité, celle d'avant, son âge, sa durée
       let rise = 0;                    // secondes de la pose de passage (assis) entre couché et debout
       let path = null, speed = 0, stride = 3, walked = 0;
@@ -1133,8 +1135,8 @@
         let x, y;
         if (f.pen) {
           const p = f.pen;
-          x = p.x + half + Math.random() * Math.max(0, p.w - 2 * half);
-          y = p.y + Math.random() * p.h;
+          x = p.x + half + alea() * Math.max(0, p.w - 2 * half);
+          y = p.y + alea() * p.h;
           if (near) {
             x = Math.min(p.x + p.w - half, Math.max(p.x + half, self.x + rand(-near, near)));
             y = Math.min(p.y + p.h, Math.max(p.y, self.y + rand(-near, near) * 0.4));
@@ -1156,7 +1158,7 @@
       const F = {};
       H.frames.forEach((name, i) => { F[name] = i; });
       const me = { kind, fold: f, x: 0, y: 0, age: 0, nod: 1.3, swish: -1 };
-      let face = Math.random() < 0.5 ? 1 : -1;
+      let face = alea() < 0.5 ? 1 : -1;
       let st = 'dedans', len = 0, before = null;
       let path = [], speed = 0, stride = 2, walked = 0;   // déplacement en cours
       let vue = 'profil';                                 // profil, bas (vers nous), haut (de dos)
@@ -1169,7 +1171,7 @@
       function enter(name) {
         before = st; st = name; me.age = 0; walked = 0;
         if (H.time[name]) len = rand(H.time[name][0], H.time[name][1]);
-        if (name === 'debout') me.swish = Math.random() < 0.7 ? rand(0.2, Math.max(0.3, len - 0.8)) : -1;
+        if (name === 'debout') me.swish = alea() < 0.7 ? rand(0.2, Math.max(0.3, len - 0.8)) : -1;
         me.nod = rand(1.1, 1.7);
       }
       function walkTo(points, name, gait) {
@@ -1457,5 +1459,7 @@
     };
   }
 
-  global.AmbientLife = { attach, EVENTS };
+  // graine(h) : le hasard de la vie d'ambiance devient `h` (une fonction de [0, 1) : CarteKit.hasard).
+  function graine(h) { alea = typeof h === 'function' ? h : Math.random; }
+  global.AmbientLife = { attach, EVENTS, graine };
 })(window);

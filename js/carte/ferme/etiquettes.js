@@ -49,14 +49,22 @@
       this.syncTankTip();
     },
 
+    // Fiche 33 : son texte change (l'événement modele:citerne, js/carte/ferme/modele.js) : posé une fois, sa
+    // taille relue à l'image suivante.
+    citerneTexte(texte) {
+      this.tankTexte = texte;
+      const el = this.tankTip;
+      if (el && el.textContent !== texte) { el.textContent = texte; this.tipW = 0; }
+    },
+
     syncTankTip() {
       const el = this.tankTip;
       if (!el || el.hidden) return;
-      const text = (this.ctx.lastModel && this.ctx.lastModel.citerneTexte) || '';
+      const text = this.tankTexte || '';
       if (!text || !this.tank) { this.showTankTip(false); return; }
       // Sa taille n'est relue (lecture qui force la mise en page) que quand son texte change
       // ou qu'elle réapparaît (showTankTip remet tipW à 0).
-      if (el.textContent !== text) { el.textContent = text; this.tipW = 0; }
+      if (!el.textContent) { el.textContent = text; this.tipW = 0; }
       if (!this.tipW) { this.tipW = el.offsetWidth; this.tipH = el.offsetHeight; }
       const dpr = pixelRatio();
       const cam = this.cameras.main;

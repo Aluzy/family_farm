@@ -30,7 +30,8 @@
     pose: [4, 4], peur: 40, retour: 72, absence: [12, 25], vitesse: 60, monte: 26, battements: 12, efface: 1.6,
     tourne: [2.5, 7],
   };
-  const entre = (a, b) => a + Math.random() * (b - a);
+  // (h : le hasard de l'oiseau, à graine : fiche 33)
+  const entre = (a, b, h = Math.random) => a + h() * (b - a);
 
   F.partie({
 
@@ -57,7 +58,9 @@
       const R = ROUGEGORGE, B = this.blocks;
       if (!this.rougegorges) this.rougegorges = new Map();
       const G = this.rougegorges, vus = new Set();
-      if (B && F.estPerchoir) {
+      // (fiche 33 : les perchoirs ne sont revus que quand les blocs ont changé : le modèle, modele.js)
+      if (B && F.estPerchoir && !this.perchoirsRevus) {
+        this.perchoirsRevus = true;
         for (const e of B.values()) {
           if (!F.estPerchoir(e)) continue;
           vus.add(e.case);
@@ -65,10 +68,11 @@
           const img = this.add.image(0, 0, this.rougegorgeTexture(), 0).setOrigin(0, 0);
           // (posé : le haut de son image dans celle de la barrière, 16 × 24, posée par le milieu du bas de la case)
           const x = e.x - 8 + R.pose[0], y = e.y - 24 + R.pose[1];
-          G.set(e.case, { img, x, y, hx: x, hy: y, etat: 'pose', t: entre(...R.tourne), flip: Math.random() < 0.5, pied: e.y });
+          const h = this.hasardDe('rouge-gorge:' + e.case);
+          G.set(e.case, { img, x, y, hx: x, hy: y, etat: 'pose', t: entre(R.tourne[0], R.tourne[1], h), flip: h() < 0.5, pied: e.y, h });
         }
+        for (const [c, o] of G) if (!vus.has(c)) { o.img.destroy(); G.delete(c); }
       }
-      for (const [c, o] of G) if (!vus.has(c)) { o.img.destroy(); G.delete(c); }
       if (!G.size) return;
       // qui peut l'effrayer : le personnage, la famille
       const gens = [];
@@ -92,7 +96,7 @@
             o.etat = 'envol'; o.t = R.efface; o.age = 0;
           } else if (o.t <= 0) {
             o.flip = !o.flip;                     // (il se retourne)
-            o.t = entre(...R.tourne);
+            o.t = entre(R.tourne[0], R.tourne[1], o.h);
           }
           img.setPosition(o.hx, o.hy).setFrame(0).setAlpha(1).setVisible(true).setFlipX(o.flip).setDepth(o.pied + 0.6);
         } else if (o.etat === 'envol') {
@@ -101,10 +105,10 @@
           const k = 1 + (Math.floor(o.age * R.battements) % 2);
           img.setPosition(Math.round(o.x), Math.round(o.y)).setFrame(k).setFlipX(o.flip)
             .setAlpha(Math.max(0, Math.min(1, o.t / (R.efface * 0.5)))).setDepth(9e5);
-          if (o.t <= 0) { o.etat = 'parti'; o.t = entre(...R.absence); img.setVisible(false); }
+          if (o.t <= 0) { o.etat = 'parti'; o.t = entre(R.absence[0], R.absence[1], o.h); img.setVisible(false); }
         } else if (o.etat === 'parti') {
           // il revient quand personne n'est près de son poteau
-          if (o.t <= 0 && !proche(o, R.retour)) { o.etat = 'pose'; o.x = o.hx; o.y = o.hy; o.t = entre(...R.tourne); }
+          if (o.t <= 0 && !proche(o, R.retour)) { o.etat = 'pose'; o.x = o.hx; o.y = o.hy; o.t = entre(R.tourne[0], R.tourne[1], o.h); }
         }
         if (o.etat !== 'envol') { o.x = o.hx; o.y = o.hy; }
       }

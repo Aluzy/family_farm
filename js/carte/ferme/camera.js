@@ -192,10 +192,9 @@
 
     // Le didacticiel (js/ui/didacticiel.js) : quand sa bulle passe sur le personnage (au bord de la
     // carte, la vue ne le garde plus au milieu de l'écran), elle devient transparente
-    // (#didacticiel-root.transparente : jeu.css). Regardé une image sur six ; la page n'est touchée
-    // que quand cela change.
+    // (#didacticiel-root.transparente : jeu.css). Regardé dix fois par seconde (l'ordonnanceur, fiche 33) ;
+    // la page n'est touchée que quand cela change.
     stepBulleDidacticiel() {
-      if ((this.bulleTour = ((this.bulleTour || 0) + 1) % 6)) return;
       const root = document.getElementById('didacticiel-root');
       if (!root) return;
       const bulle = root.querySelector('.didac-bulle:not(.reduite)'), p = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
