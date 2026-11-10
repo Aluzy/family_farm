@@ -1460,3 +1460,9 @@ SwiftShader, sans carte graphique) :
   Le retour ne le couche plus d'office (`simulateOffline`, `js/engine/offline.js`) : la nuit
   passée jeu fermé rend toujours son énergie (s'il a une paillasse dans une pièce close), mais au
   retour il est éveillé comme il l'était ; c'est le joueur qui le couche.
+
+- **Fiche 32, groupe 1 — la faune plus crédible** (`js/carte/ferme/faune-monde.js`, `REACTION`) : les bêtes
+  se mettent en alerte (figées, tournées vers le personnage) à 2 × leur rayon de fuite et ne fuient que s'il
+  approche encore ; ce rayon suit son allure (× 0,7 à petits pas, × 2 au galop) et se réduit près des
+  hameaux (× 0,6) ; une bête qui fuit entraîne celles de son espèce à 96 px, l'une après l'autre ; les
+  lapins, lièvres, perdrix et écureuils fuient le renard.

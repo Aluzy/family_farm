@@ -90,3 +90,12 @@ test('le hasard à graine : le même tirage pour la même graine, entre 0 et 1',
   const m = ta.reduce((s, x) => s + x, 0) / ta.length;
   assert(m > 0.3 && m < 0.7, `moyenne ${m}`);
 });
+
+test('la distance de fuite (fiche 32) : à petits pas, au galop, près d\'un hameau', () => {
+  const R = { lent: 0.7, galop: 2, habitue: 0.6 }, M = 40;
+  assertEqual(K.rayonFuite(50, M, M, false, R), 50, 'à la marche');
+  assertEqual(K.rayonFuite(50, 10, M, false, R), 35, 'à petits pas');
+  assertEqual(K.rayonFuite(50, 81, M, false, R), 100, 'au galop');
+  assertEqual(K.rayonFuite(50, M, M, true, R), 30, 'près d\'un hameau');
+  assertEqual(K.rayonFuite(0, M, M, false, R), 0, 'une bête qui ne fuit pas');
+});

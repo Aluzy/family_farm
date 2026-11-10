@@ -48,6 +48,23 @@
   const REPOS = { image: 620, attente: [2.5, 7] };
   const FUITE = { court: [1.1, 1.8], vite: 3, cache: [6, 12], retour: 1.6, envol: 70 };
   const PROFONDEUR = { air: 9e5 };
+  // Fiche 32 (groupe 1) : ce qui rend la faune plus crédible. L'alerte : le personnage à moins de `loin` ×
+  // son rayon de fuite, la bête s'arrête, tête levée (étirée de `tenu`), et le regarde ; elle ne fuit que s'il
+  // continue d'approcher, et se calme au-delà de `calme` × `loin` × le rayon. L'allure : le rayon de fuite
+  // × `lent` à petits pas (moins de la moitié de la marche), × `galop` au-delà d'une fois et demie (le
+  // cheval). La contagion : une bête qui fuit fait fuir celles de son espèce à moins de `rayon` px, chacune
+  // après un `delai` (s). Le renard : ses proies à moins de `rayon` × leur rayon de fuite le fuient.
+  // L'accoutumance : près d'un hameau (à `marge` cases), le rayon de fuite × `facteur`.
+  const REACTION = {
+    // (le réglage « méfiante », choisi sur film : elles se figent de loin, puis partent l'une après l'autre)
+    alerte: { loin: 2, calme: 1.5, tenu: 0.05 },
+    allure: { lent: 0.7, galop: 2 },
+    contagion: { rayon: 96, delai: [0.2, 0.6] },
+    renard: { proies: ['lapin', 'lievre', 'perdrix', 'ecureuil'], rayon: 0.8 },
+    hameau: { marge: 6, facteur: 0.6 },
+  };
+  const CALMES = ['repos', 'marche', 'plonge', 'alerte'];
+  K.REACTION_FAUNE = REACTION;   // (lu par les essais filmés)
 
   // Un nombre au hasard entre a et b, du hasard `h` de la bête (fiche 31 : à graine, CarteKit.hasard).
   const entre = (h, a, b) => a + h() * (b - a);
@@ -143,17 +160,28 @@
       if (b.t <= 0 && dh > b.e.fuite * FUITE.retour) { b.x = b.hx; b.y = b.hy; b.haut = 0; return 'revient'; }
       return undefined;
     } },
+    alerte: { pas(b, dt, c) {       // tête levée, immobile : elle le regarde (fiche 32)
+      c.suite = 'repos'; c.n = 0;
+      if (c.p) b.flip = c.p.x < b.x;
+      if (c.d > c.rf * REACTION.alerte.loin * REACTION.alerte.calme) { b.t = entre(b.h, ...REPOS.attente); return 'repos'; }
+      return undefined;
+    } },
     revient: { pas(b, dt) {
       b.alpha = Math.min(1, b.alpha + dt * 1.5);
       if (b.alpha >= 1) { b.t = entre(b.h, ...REPOS.attente); return 'repos'; }
       return undefined;
     } },
   };
-  const FUIT_DE = ['repos', 'marche', 'plonge'];
   const VIE = K.machine(ETATS, [
-    // le personnage à moins de `fuite` px : elle fuit, à sa façon (fauneFuit)
-    { de: FUIT_DE, si: (b, c) => !!b.e.fuite && c.d < b.e.fuite, fait: (b, c) => c.scene.fauneFuit(b, c.p) },
-  ], { cadence: 0, avant: (b, dt) => { b.t -= dt; } });
+    // (fiche 32) une voisine de son espèce a fui : elle fuit à son tour, après son délai
+    { de: CALMES, si: (b) => b.peurDans !== undefined && b.peurDans <= 0, fait: (b, c) => { const p = b.peurDe; b.peurDans = b.peurDe = undefined; c.scene.fauneFuit(b, p); } },
+    // le personnage à moins de son rayon de fuite (selon son allure, l'accoutumance) : elle fuit, à sa façon
+    { de: CALMES, si: (b, c) => !!b.e.fuite && c.d < c.rf, fait: (b, c) => c.scene.fauneFuit(b, c.p) },
+    // (fiche 32) un renard tout près : ses proies le fuient
+    { de: CALMES, si: (b, c) => !!c.menace, fait: (b, c) => c.scene.fauneFuit(b, c.menace) },
+    // (fiche 32) il approche : elle se met en alerte
+    { de: ['repos', 'marche', 'plonge'], si: (b, c) => !!b.e.fuite && REACTION.alerte.loin > 0 && c.d < c.rf * REACTION.alerte.loin, vers: 'alerte' },
+  ], { cadence: 0, avant: (b, dt) => { b.t -= dt; if (b.peurDans !== undefined) b.peurDans -= dt; } });
 
   F.partie({
 
@@ -299,6 +327,13 @@
       const v = { x: mx - vw / 2, y: my - vh / 2, r: mx + vw / 2, b: my + vh / 2 };
       const p = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
       const m = this.ctx.lastModel, nuit = !!(m && m.nuit), calme = reducedMotion();
+      // (fiche 32) son allure (px/s, lissée), et les bêtes vivantes dans la grille du socle (CarteKit.perception)
+      const J = this.fauneJoueur || (this.fauneJoueur = { x: null, y: null, v: 0 });
+      if (p && J.x !== null && dt > 0) J.v += (Math.hypot(p.x - J.x, p.y - J.y) / dt - J.v) * Math.min(1, dt * 6);
+      if (p) { J.x = p.x; J.y = p.y; }
+      const P = this.faunePerception || (this.faunePerception = K.perception(64));
+      P.vide();
+      for (const b of E.betes) if (b.img) P.ajoute(b.x, b.y, b.e.cle, b, dt);
       const loin = (b, d) => b.x < v.x - d || b.x > v.r + d || b.y < v.y - d - 80 || b.y > v.b + d;
       for (const b of E.betes) {
         if (!b.img && !loin(b, E.F.PRES)) this.fauneImage(b);
@@ -333,6 +368,7 @@
       // (fiche 31 : la machine à états de la faune, VIE ; c : ce que l'image partage, réutilisé)
       const c = this.fauneVie || (this.fauneVie = { scene: this, time: 0, p: null, d: 0, suite: 'repos', n: 0, fini: false });
       c.time = time; c.p = p; c.d = p ? Math.hypot(p.x - b.x, p.y - b.y) : Infinity;
+      c.rf = this.fauneRayon(b); c.menace = this.fauneMenace(b, c.rf);
       c.suite = 'repos'; c.n = Math.floor((time + b.phase * 1000) / REPOS.image); c.fini = false;
       VIE.pas(b, dt, c);
       if (c.fini) return;
@@ -358,13 +394,40 @@
         }
         b.vu = cadre;
       }
-      R.maj(dt, b.etat === 'envol' ? K.RESSORT.TENU.air : 0).applique(b.img);
+      R.maj(dt, b.etat === 'envol' ? K.RESSORT.TENU.air : b.etat === 'alerte' ? REACTION.alerte.tenu : 0).applique(b.img);
       // (l'ombre au sol s'élargit avec elle quand elle s'écrase)
       if (b.ombre && b.e.lieu === 'terre') b.ombre.setScale(b.img.scaleX, 1);
     },
 
+    // (fiche 32) Son rayon de fuite du moment : le personnage à petits pas, au galop ; près d'un hameau.
+    fauneRayon(b) {
+      const e = b.e, A = REACTION.allure, J = this.fauneJoueur, V = K.VITESSES.fermier;
+      if (!e.fuite) return 0;
+      if (b.habitue === undefined) b.habitue = this.hameauDeCase ? !!this.hameauDeCase(Math.floor(b.hy / T) * this.grid.cols + Math.floor(b.hx / T), REACTION.hameau.marge) : false;
+      return K.rayonFuite(e.fuite, J ? J.v : V, V, b.habitue, { lent: A.lent, galop: A.galop, habitue: REACTION.hameau.facteur });
+    },
+    // (fiche 32) Un renard tout près d'une de ses proies (sa place), ou null.
+    fauneMenace(b, rf) {
+      if (!this.faunePerception || REACTION.renard.proies.indexOf(b.e.cle) < 0) return null;
+      const out = this.fauneVoisins || (this.fauneVoisins = []);
+      const n = this.faunePerception.voisins(b.x, b.y, (rf || b.e.fuite || 0) * REACTION.renard.rayon, out, (o) => o.genre === 'renard');
+      return n ? { x: out[0].x, y: out[0].y } : null;
+    },
+    // (fiche 32) Elle fuit : celles de son espèce tout près fuient à leur tour, chacune après son délai.
+    fauneContagion(b, p) {
+      if (!this.faunePerception || !p) return;
+      const out = this.fauneVoisins || (this.fauneVoisins = []);
+      const n = this.faunePerception.voisins(b.x, b.y, REACTION.contagion.rayon, out, (o) => o.genre === b.e.cle && o.ref !== b);
+      for (let i = 0; i < n; i++) {
+        const o = out[i].ref;
+        if (CALMES.indexOf(o.etat) < 0 || o.peurDans !== undefined) continue;
+        o.peurDans = entre(o.h, ...REACTION.contagion.delai); o.peurDe = { x: p.x, y: p.y };
+      }
+    },
+
     // Elle fuit le personnage (en p) : chacune à sa façon (`fuit`).
     fauneFuit(b, p) {
+      this.fauneContagion(b, p);
       const e = b.e, a = Math.atan2(b.y - p.y, b.x - p.x);
       if (global.FermeSon) global.FermeSon.cri(e.cle, b.x, b.y, 0.7);
       // (elle part d'un bond ; sur l'eau, d'un simple coup de pattes)
