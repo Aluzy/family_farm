@@ -6,7 +6,7 @@ import {
 import { availableEnergy, runFridge } from './fridge.js';
 import { runCooking, runElectricStation } from './kitchen.js';
 import { refreshUnlocks, techFlag, techPct } from './techtree.js';
-import { bumpCounter, noteEnergyRecord, updateChapters } from './campaign.js';
+import { bumpCounter, chapitresAuPas, noteEnergyRecord } from './campaign.js';
 import { nightActive } from './clock.js';
 import { growDue } from './crops.js';
 import { figerStation, irrigate, robotStep, runRobotCharge } from './automation.js';
@@ -143,7 +143,7 @@ export function tick(state, dt, horlogeArretee = false) {
   }
   farmStep(state, dtMs, { horloge: !horlogeArretee });
   refreshUnlocks(state); // Lot 7 : l'arbre des technologies s'ouvre à 100 pièces
-  updateChapters(state); // objectifs du chapitre
+  chapitresAuPas(state); // objectifs du chapitre (piste 5 : chaque seconde, et après un geste)
   return state;
 }
 

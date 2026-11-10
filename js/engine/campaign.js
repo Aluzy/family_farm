@@ -329,6 +329,31 @@ export function updateChapters(state) {
   return done;
 }
 
+// Piste 5 du chantier « allègement » (docs/chantier-allegement.md) : tick() n'évalue plus les objectifs du
+// chapitre (chapterProgress : ≈ 85 % de son coût) à chaque pas de 200 ms, mais tous les PAS_OBJECTIFS pas
+// (1 s) ; et au pas suivant toute commande du joueur (objectifsARevoir, appelée par executerCommande et par
+// le rendu de la page après chaque geste), pour qu'un geste soit reconnu comme avant. Les records d'objets
+// (noteItemRecords) restent notés à chaque pas : un maximum ne se perd pas entre deux évaluations. Le
+// compteur n'est pas sauvegardé (une partie rechargée évalue dès son premier pas). La nuit, l'absence et le
+// départ appellent toujours updateChapters directement.
+export const PAS_OBJECTIFS = 5;
+const pasObjectifs = new WeakMap();   // partie → pas depuis la dernière évaluation
+const objectifsVus = new WeakSet();   // parties dont un geste attend d'être évalué
+export function objectifsARevoir(state) {
+  if (state && typeof state === 'object') objectifsVus.add(state);
+}
+export function chapitresAuPas(state) {
+  const n = pasObjectifs.get(state) || 0;
+  if (n % PAS_OBJECTIFS === 0 || objectifsVus.has(state)) {
+    pasObjectifs.set(state, 1);
+    objectifsVus.delete(state);
+    return updateChapters(state);
+  }
+  pasObjectifs.set(state, n + 1);
+  if (state.campagne) noteItemRecords(state);
+  return 0;
+}
+
 /* ---------- version 1.3 : le courrier ---------- */
 
 export function mailbox(state) {

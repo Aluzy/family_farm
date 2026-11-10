@@ -11,7 +11,7 @@ import {
   plantableCropsFor, shear, startMilling, startRecipe, storeWheat, takeItem, testAddHens,
   testAddWheat, testBatir, testEmptyBatteries, testFillBatteries, testGoToChapter,
   testSetBuildingLevel5, testSetLevel, testWoolReady, tick, unlockLevel, updateChapters, water,
-  zoneTile,
+  zoneTile, executerCommande, objectifsARevoir, PAS_OBJECTIFS,
 } from '../../js/engine/index.js';
 import { ETAPES } from '../../js/engine/didacticiel.js';
 import {
@@ -478,4 +478,59 @@ test('migration v68 → v69 : l\'historique d\'autonomie, l\'autonomie de la nui
   assertEqual(['historique' in m.campagne, 'autonomie' in m.nuit, 'energieProduit' in m.nuit], [false, false, false]);
   assertEqual(m.repasJour, { mange: { patate: 2 }, energie: 10 });
   assertEqual(m.campagne, s.campagne);
+});
+
+/* ---------- piste 5 du chantier « allègement » : les objectifs revus chaque seconde ---------- */
+
+// Le chapitre 2 rempli sauf la vente à la calèche : la vente (le « geste ») est faite à la main.
+function avantLaVente() {
+  const s = atChapter(2);
+  testSetLevel(s, 3);
+  Object.assign(s.campagne.compteurs, { cultures: ['carotte', 'patate', 'tomate', 'courgette'], semisBle: 1 });
+  assert(testBatir(reach(s, 'silo'), 'silo').ok);
+  storeWheat(s, 50);
+  tick(s, 0.2);   // (un premier pas évalue : le compteur repart de là)
+  assertEqual([s.campagne.chapitre, chapterProgress(s).objectifs.map((o) => o.ok)], [2, [true, true, true, true, true, false]]);
+  return s;
+}
+
+test('piste 5 : tick revoit les objectifs du chapitre au plus tard 1 s après', () => {
+  assertEqual(PAS_OBJECTIFS, 5);
+  const s = avantLaVente();
+  s.campagne.compteurs.calecheVentes = 50;
+  let pas = 0;
+  while (s.campagne.chapitre === 2 && pas < 10) { tick(s, 0.2); pas += 1; }
+  assertEqual(s.campagne.chapitre, 3);
+  assert(pas <= PAS_OBJECTIFS, `${pas} pas`);
+});
+
+test('piste 5 : après une commande du joueur, les objectifs sont revus au pas suivant', () => {
+  // (la marque seule, puis une vraie commande : un semis)
+  const a = avantLaVente();
+  a.campagne.compteurs.calecheVentes = 50;
+  objectifsARevoir(a);
+  tick(a, 0.2);
+  assertEqual(a.campagne.chapitre, 3, 'objectifsARevoir');
+  const s = avantLaVente();
+  s.campagne.compteurs.calecheVentes = 50;
+  const libre = s.potager.parcelles.find((p) => !p.culture);
+  assert(libre, 'une parcelle libre');
+  addItem(s, 'graine_carotte', 1);
+  const cmd = (args) => executerCommande(s, { id: `p5-${args.culture}`, type: 'potager.planter', args });
+  assert(!cmd({ parcelle: libre.id, culture: 'licorne' }).ok, 'une commande refusée');
+  tick(s, 0.2);
+  assertEqual(s.campagne.chapitre, 2, 'une commande refusée ne compte pas');
+  assert(cmd({ parcelle: libre.id, culture: 'carotte' }).ok, 'le semis');
+  tick(s, 0.2);
+  assertEqual(s.campagne.chapitre, 3, 'après le semis');
+});
+
+test('piste 5 : les records d\'objets restent notés à chaque pas', () => {
+  const s = avantLaVente();
+  const avant = s.campagne.compteurs.objets.minerai_fer || 0;
+  addItem(s, 'minerai_fer', avant + 3);
+  tick(s, 0.2);
+  takeItem(s, 'minerai_fer', avant + 3);
+  tick(s, 0.2);
+  assert((s.campagne.compteurs.objets.minerai_fer || 0) >= avant + 3, 'le maximum est gardé');
 });

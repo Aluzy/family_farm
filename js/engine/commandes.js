@@ -112,6 +112,7 @@
                                                 (le monde en ligne la joue, quand tous sont couchés)
 */
 
+import { objectifsARevoir } from './campaign.js';
 import { DATA } from './catalog.js';
 import { fail, maintainDevice, repairDevice, toggleDevice, upgradeDevice, upgradeTank } from './devices.js';
 import {
@@ -533,6 +534,7 @@ export function executerCommande(state, c) {
   if (err) return { ...fail(err), id };
   const args = Object.fromEntries(Object.entries(c.args).filter(([, v]) => v !== undefined && v !== null));
   const r = COMMANDES[c.type].executer(state, args);
+  if (r.ok) objectifsARevoir(state);   // (piste 5 : les objectifs du chapitre revus au pas suivant)
   return r.ok ? { ...r, id, inverses: r.inverses || [] } : { ...r, id };
 }
 
