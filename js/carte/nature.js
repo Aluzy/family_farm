@@ -83,7 +83,7 @@
   // L'opacité d'un arbre qui passe de `cur` à `want` (NATURE.devant derrière lui, 1 sinon)
   // doucement : un peu plus à chaque image (`dt` en ms).
   function fondu(cur, want, dt) {
-    const k = Math.min(1, dt / 120);
+    const k = global.CarteKit.rattrape(dt, 120);   // (fiche 25 : le même fondu à tout rythme)
     return Math.abs(want - cur) < 0.02 ? want : cur + (want - cur) * k;
   }
 

@@ -6,6 +6,7 @@
  *
  *   - T, la tuile (16 px) ; v(fichier), l'adresse versionnée d'un fichier de assets/ ;
  *   - reduit(), le réglage « réduire les animations » (une seule requête, lue à chaque image) ;
+ *   - rattrape(dt, ms), la part rattrapée par ce qui en suit une autre (la vue, un fondu : fiche 25) ;
  *   - ratio(), la densité de l'écran à laquelle le canvas des cartes est rendu (plafonnée à 3) ;
  *   - qualite(), reglages(), reglerQualite() : la qualité du rendu (fiche 9a : « économie » sur un
  *     téléphone, « normale » sur un ordinateur, ou au choix dans les Options) ;
@@ -365,8 +366,13 @@
       .setOrigin(0.5, 1).setResolution(TEXTE.resolution);
   }
 
+  // La part du chemin qu'une chose qui en suit une autre rattrape en `dt` ms, de constante de temps `ms`
+  // (fiche 25) : 1 − e^(−dt/ms), la même trajectoire à 30, 60 ou 120 images par seconde (dt / ms, lui,
+  // rattrapait plus vite quand les images étaient plus courtes).
+  function rattrape(dt, ms) { return dt > 0 ? 1 - Math.exp(-dt / ms) : 0; }
+
   global.CarteKit = Object.assign(global.CarteKit || {}, {
-    T, v, reduit, ratio, appareilMobile, QUALITE, qualite, qualiteChoisie, reglages, reglerQualite, extrude, planche, planchePerso, saisie, regard, PAS, CADENCE, FOULEE, imageMarche, allure, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
+    T, v, rattrape, reduit, ratio, appareilMobile, QUALITE, qualite, qualiteChoisie, reglages, reglerQualite, extrude, planche, planchePerso, saisie, regard, PAS, CADENCE, FOULEE, imageMarche, allure, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
     cycle, imageA, animTuiles, pasAnimTuiles, TEXTE, texte,
   });
 })(window);

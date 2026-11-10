@@ -351,7 +351,6 @@ export function frame(now) {
   watchAbsence();
   watchChapters();
   watchLevels(); // version 1.7 : après l'écran de fin de chapitre
-  requestAnimationFrame(frame);
 }
 
 /* ---------- Lot 11 : rattrapage hors-ligne et écran « Pendant ton absence… » ---------- */
@@ -420,5 +419,42 @@ export function renderLoop(now) {
     setLastRenderAt(now);
     render();
   }
-  requestAnimationFrame(renderLoop);
+}
+
+/* ---------- une seule boucle (fiche 25) ----------
+   Le tick du moteur et ses veilleurs (frame) et le rendu de la page (renderLoop, 5 fois par seconde au
+   plus) suivent le pas de la boucle de Phaser quand la carte est affichée (son événement « poststep » :
+   CarteJeu.surPas), au même rythme qu'elle, plafond compris ; sinon, un seul requestAnimationFrame de la
+   page les appelle. Plus de trois rappels par image que le navigateur pouvait décaler l'un de l'autre. Un
+   filet relance la boucle de la page si rien n'a tourné depuis 250 ms (la carte endormie sans l'avoir dit). */
+let imagePage = 0;            // le requestAnimationFrame de la page en attente, ou 0
+let dernierTour = 0;          // (performance.now) le dernier tour, d'où qu'il vienne
+function tour(now) {
+  dernierTour = performance.now();
+  frame(now);
+  renderLoop(now);
+}
+const carteTourne = () => !!(window.CarteJeu && window.CarteJeu.tourne && window.CarteJeu.tourne());
+function auPasDeLaPage(now) {
+  imagePage = 0;
+  if (carteTourne()) return;   // (la carte a repris : c'est elle qui mène)
+  tour(now);
+  imagePage = requestAnimationFrame(auPasDeLaPage);
+}
+function relancePage() {
+  if (!imagePage && !carteTourne()) imagePage = requestAnimationFrame(auPasDeLaPage);
+}
+export function demarrerBoucles() {
+  const J = window.CarteJeu;
+  if (J && J.surPas) {
+    J.surPas((t) => {
+      if (imagePage) { cancelAnimationFrame(imagePage); imagePage = 0; }
+      tour(t);
+    });
+    J.surVeille(relancePage);
+  }
+  relancePage();
+  setInterval(() => {
+    if (document.visibilityState === 'visible' && performance.now() - dernierTour > 250) relancePage();
+  }, 250);
 }

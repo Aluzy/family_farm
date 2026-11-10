@@ -343,3 +343,28 @@ Sous les pas sur un chemin, trois gravillons sautent et un peu de poussière s'�
 fer du cheval). Des réserves de 36 gravillons et 42 grains de poussière (la moitié en « économie ») ;
 mesuré en marchant sur le chemin (une seule personne, ralenti) : `stepGravillons` 0,015 ms par image en
 moyenne, 0,1 ms pour 95 % des images, 0,2 ms au pire.
+
+## La cadence et la boucle unique (fiche 25)
+
+Mesuré dans Chromium (sans carte graphique, rendu logiciel), la sauvegarde du jour 75 migrée, la vue
+immobile puis un doigt posé (la manette) ; « rAF » : les `requestAnimationFrame` demandés par seconde.
+
+| | Images par seconde | rAF par seconde | Heures de jeu en 4 s (attendu : 0,134) |
+|---|---|---|---|
+| Avant (main) | 28 | 83 à 87 (trois boucles) | 0,133 |
+| Après | 28 | 28 (une seule) | 0,133 |
+
+Cette partie est trop lourde pour que le rendu logiciel atteigne le plafond ; le plafond lui-même, mesuré
+avec une scène vide qui passe par `js/carte/jeu.js` (3 s, temps donné à la scène / temps réel) :
+
+| Écran | Qualité | Rien ne bouge | Ça bouge |
+|---|---|---|---|
+| 60 Hz | normale | 60 images/s, 3 015 / 3 017 ms | — |
+| 60 Hz | économie | 30 images/s, 3 033 / 3 033 ms | 60 images/s, 3 016 / 3 017 ms |
+| non plafonné (≈ 270 Hz) | normale | 51 images/s (plafond 60), 3 019 / 3 019 ms | — |
+| non plafonné | économie | 27 images/s (plafond 30), 3 032 / 3 032 ms | 51 images/s, 3 001 / 3 001 ms |
+
+L'option `fps: { limit: 60 }` de Phaser 4.2.1, mesurée de la même façon avant la correction : 60 images/s
+mais 5 557 ms donnés à la scène pour 3 017 ms réels sur un écran à 60 Hz (le jeu 1,8 fois trop vite), et
+3 670 pour 3 015 sur l'écran non plafonné. `powerPreference: 'low-power'` n'est pas posé : son effet ne
+se mesure que sur le téléphone de référence.

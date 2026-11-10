@@ -179,6 +179,24 @@ la ferme dormait à côté avec ses propres textures.
   d'un point dans un lot à plusieurs textures (`outTexDatum == float(i)` devient une comparaison à
   l'entier le plus proche) : sous un rendu WebGL logiciel (SwiftShader), une image tournée y perdait
   des morceaux (fiche 9a).
+- **La cadence** (fiche 25) : la boucle de Phaser suit l'écran ; sur un écran de plus de 100 Hz, elle
+  est plafonnée à 60 images par seconde (`CarteJeu.cadence`, que la scène appelle à chaque image en
+  disant si quelque chose bouge : le personnage, la vue, son glissement ou son zoom, un doigt posé, la
+  manette), et en qualité « économie » à 30 quand rien n'a bougé depuis une seconde ; le moindre
+  mouvement la remet à l'écran. Le limiteur de Phaser 4.2.1 (`TimeStep.stepLimitFPS`) redonnait à la
+  scène le reste gardé du pas d'avant : plafonné à 60 sur un écran à 60 Hz, le temps du jeu filait 1,8
+  fois trop vite (5,56 s pour 3,02 s). Il est remplacé par `CarteJeu.pasLimite` : une image n'est donnée
+  que si le temps écoulé atteint le plafond (à 10 % près), et elle reçoit ce temps-là, sans lissage.
+- **Une seule boucle** (fiche 25) : le tick du moteur et ses veilleurs (`frame`) et le rendu de la page
+  (`renderLoop`, 5 fois par seconde au plus) suivent l'événement `poststep` du jeu (`CarteJeu.surPas`)
+  quand la boucle de Phaser tourne ; sinon (l'écran-titre, la carte cachée : `CarteJeu.surVeille`), un
+  seul `requestAnimationFrame` de la page (`js/ui/loop.js`, `demarrerBoucles`). Un filet la relance si
+  rien n'a tourné depuis 250 ms. Avant, trois rappels par image.
+- **Le suivi de la vue et les fondus** se calculent avec `CarteKit.rattrape(dt, ms)` = 1 − e^(−dt/ms) :
+  la même trajectoire à 30, 60 ou 120 images par seconde (`dt / ms` rattrapait plus vite quand les
+  images étaient plus courtes).
+- **Le pas borné à 50 ms** (`update` de la scène, le personnage) : sous 20 images par seconde, le monde
+  ralentit au lieu de sauter (pas de personnage qui traverse un mur d'une image à l'autre). C'est voulu.
 - **Le clavier** est celui de Phaser (`input.keyboard`), sans capture : rien n'est retenu à la
   page ; `CarteKit.saisie()` laisse les touches au champ qui a le focus ou à la fenêtre ouverte.
 - **Fenêtres des cartes** : celles du jeu, par `FermeHote.modal(html, options)` / `FermeHote.closeModal()` (js/ui/modal.js :
