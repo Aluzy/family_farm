@@ -160,3 +160,11 @@ arbres (lus par `js/ambient-life.js`, `ground()`). Les zones de culture restent 
 
 Pour les essais : `FarmStage.scene().fermier.info()` (dont `aRamasser` et `prevus`), et
 `.fetch('poulailler')` l'envoie chercher un tas, comme un appui sur sa bulle.
+
+## Le corps dirigé au doigt (fiche 30)
+
+Dirigé au doigt, le personnage a un corps : une boîte de 12 × 5 px à ses pieds (`CarteKit.CORPS`,
+js/carte/kit.js), qui ne chevauche jamais une case fermée. Il avance un axe après l'autre jusqu'au contact
+(il glisse le long d'un mur), passe un coin dont il ne dépasse que de 5 px au plus (une porte prise de
+biais), monte en vitesse en 0,2 s et, le doigt levé, s'arrête en 0,15 s. Déjà coincé (une marche vers un
+but l'a laissé au ras d'un mur), il en sort comme avant. La marche vers un but (`walkTo`) ne change pas.

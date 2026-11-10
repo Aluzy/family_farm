@@ -366,13 +366,56 @@
       .setOrigin(0.5, 1).setResolution(TEXTE.resolution);
   }
 
+  /* ---------- le corps du personnage (fiche 30) ----------
+     Dirigé au doigt, le personnage n'est plus un point : une boîte à ses pieds (CORPS.l px de chaque
+     côté, de CORPS.h px au-dessus des pieds à la rangée des pieds, (y − 1) comme ses cases), qui ne
+     chevauche jamais une case fermée. Il avance un axe après l'autre, jusqu'au contact (il glisse le long
+     de ce qui le gêne) ; s'il ne dépasse d'un coin que de CORPS.coin px au plus, il est poussé de côté et
+     passe (une porte prise de biais). Accélération et freinage : CORPS.accel, CORPS.arret (secondes). */
+  // (le réglage B, choisi sur film : il s'arrête net à côté d'un mur, sans le mordre ; départ et arrêt doux)
+  const CORPS = { l: 6, h: 5, coin: 5, accel: 0.2, arret: 0.15 };
+  // La boîte de pieds (x, y) est-elle toute sur des cases libres (libre(colonne, rangée)) ?
+  function corpsLibre(x, y, libre, C) {
+    const c0 = Math.floor((x - C.l) / T), c1 = Math.floor((x + C.l - 0.001) / T);
+    const r0 = Math.floor((y - C.h) / T), r1 = Math.floor((y - 1) / T);
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) if (!libre(c, r)) return false;
+    return true;
+  }
+  // Le pas (dx, dy) depuis (x, y) : { x, y } où il arrive, ou null s'il est déjà coincé (sa boîte
+  // chevauche une case fermée : à l'appelant de l'en sortir, comme avant).
+  function deplacer(x, y, dx, dy, libre, C = CORPS) {
+    if (!corpsLibre(x, y, libre, C)) return null;
+    const axe = (px, py, d, horiz) => {
+      if (!d) return { px, py };
+      const ok = (s) => (horiz ? corpsLibre(px + d * s, py, libre, C) : corpsLibre(px, py + d * s, libre, C));
+      if (ok(1)) return horiz ? { px: px + d, py } : { px, py: py + d };
+      // la correction de coin : poussé de côté, au plus de la longueur du pas, s'il ne dépasse que de peu
+      for (let s = 1; s <= C.coin; s++) {
+        for (const sg of [-1, 1]) {
+          const ax = horiz ? px : px + sg * s, ay = horiz ? py + sg * s : py;
+          if (corpsLibre(ax, ay, libre, C) && (horiz ? corpsLibre(px + d, ay, libre, C) : corpsLibre(ax, py + d, libre, C))) {
+            const k = Math.min(s, Math.abs(d));
+            return horiz ? { px, py: py + sg * k } : { px: px + sg * k, py };
+          }
+        }
+      }
+      // jusqu'au contact (la plus grande part du pas qui reste libre)
+      let a = 0, b = 1;
+      for (let n = 0; n < 10; n++) { const m = (a + b) / 2; if (ok(m)) a = m; else b = m; }
+      return horiz ? { px: px + d * a, py } : { px, py: py + d * a };
+    };
+    const h = axe(x, y, dx, true);
+    const v = axe(h.px, h.py, dy, false);
+    return { x: v.px, y: v.py };
+  }
+
   // La part du chemin qu'une chose qui en suit une autre rattrape en `dt` ms, de constante de temps `ms`
   // (fiche 25) : 1 − e^(−dt/ms), la même trajectoire à 30, 60 ou 120 images par seconde (dt / ms, lui,
   // rattrapait plus vite quand les images étaient plus courtes).
   function rattrape(dt, ms) { return dt > 0 ? 1 - Math.exp(-dt / ms) : 0; }
 
   global.CarteKit = Object.assign(global.CarteKit || {}, {
-    T, v, rattrape, reduit, ratio, appareilMobile, QUALITE, qualite, qualiteChoisie, reglages, reglerQualite, extrude, planche, planchePerso, saisie, regard, PAS, CADENCE, FOULEE, imageMarche, allure, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
+    T, v, rattrape, CORPS, corpsLibre, deplacer, reduit, ratio, appareilMobile, QUALITE, qualite, qualiteChoisie, reglages, reglerQualite, extrude, planche, planchePerso, saisie, regard, PAS, CADENCE, FOULEE, imageMarche, allure, cases, VITESSES, REGION, regionsPleines, casesPleines, longueur,
     cycle, imageA, animTuiles, pasAnimTuiles, TEXTE, texte,
   });
 })(window);

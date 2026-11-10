@@ -717,32 +717,45 @@
     // direction (de longueur 1) et glisse le long de ce qui le gêne ; steer(null), il s'arrête,
     // et reste là. Le geste qu'il fait finit d'abord ; ceux qui attendent
     // reprennent après (le chemin vers un geste repart d'où il est). Au lit (ou en y allant) : rien.
-    let steer = null, steerWalked = 0;
+    // (fiche 30 : `pousse`, de 0 à 1, sa vitesse montée en CarteKit.CORPS.accel s ; `elan`, au lâcher, la
+    // vitesse qui lui reste, perdue en CarteKit.CORPS.arret s)
+    let steer = null, steerWalked = 0, pousse = 0, elan = null;
     function steerTo(dir) {
       if (passe) return;
       if (dir && !ctx.coucher && !ctx.dort) {
         // (il prend la main : les gestes que le joueur avait demandés sont oubliés ; celui qui est
         // en cours finit d'abord)
-        if (!steer) { steerWalked = 0; jobs = jobs.filter((j) => !j.geste); if (job && job.geste && job.walk) job = null; }
+        if (!steer) { steerWalked = 0; jobs = jobs.filter((j) => !j.geste); if (job && job.geste && job.walk) job = null; if (!elan) pousse = 0; }
         steer = dir;
+        elan = null;
         return;
       }
       if (!steer) return;
+      if (pousse > 0 && !reduced()) elan = { x: steer.x, y: steer.y, v: pousse };
       steer = null;
       idleAge = 0;
       jobs.unshift(wait(rand(3, 5)));
     }
+    // Un pas de (dirx, diry) × v px : le corps (CarteKit.deplacer) ; coincé (sa boîte sur une case fermée,
+    // à son arrivée), comme avant : il en sort dans n'importe quelle direction. La distance faite.
+    function pasDuCorps(dirx, diry, v) {
+      const nx = Math.max(0, Math.min(world.w - 1, x + dirx * v)), ny = Math.max(1, Math.min(world.h - 1, y + diry * v));
+      const r = K.deplacer ? K.deplacer(x, y, nx - x, ny - y, free) : null;
+      let mx = x, my = y;
+      if (r) { mx = r.x; my = r.y; } else {
+        const libre = (px, py) => freeAt(px, py) || !freeAt(x, y);
+        if (libre(nx, ny)) { mx = nx; my = ny; } else if (libre(nx, y)) mx = nx; else if (libre(x, ny)) my = ny;
+      }
+      const d = Math.hypot(mx - x, my - y);
+      x = mx; y = my;
+      return d;
+    }
     function stepSteer(dt) {
       if (!blocked) buildGrid();
       if (!shown) { const d = door(); x = d.x; y = d.y; appear(); }
-      const v = SPEED * vitesse() * dt;
-      const nx = Math.max(0, Math.min(world.w - 1, x + steer.x * v)), ny = Math.max(1, Math.min(world.h - 1, y + steer.y * v));
-      // (coincé là où il ne devrait pas être : il en sort dans n'importe quelle direction)
-      const libre = (px, py) => freeAt(px, py) || !freeAt(x, y);
-      let mx = x, my = y;
-      if (libre(nx, ny)) { mx = nx; my = ny; } else if (libre(nx, y)) mx = nx; else if (libre(x, ny)) my = ny;
-      const d = Math.hypot(mx - x, my - y);
-      x = mx; y = my;
+      const C = K.CORPS || { accel: 0 };
+      pousse = reduced() || !C.accel ? 1 : Math.min(1, pousse + dt / C.accel);
+      const d = pasDuCorps(steer.x, steer.y, SPEED * vitesse() * dt * pousse);
       lookWalk(steer.x, steer.y, d);
       // (arrêté contre un obstacle : debout ; il repartira par un passage)
       if (d > 0.01) steerWalked += d; else steerWalked = 0;
@@ -1135,6 +1148,12 @@
       }
       if (assis && resteAssis()) return;
       if (steer && (ctx.coucher || ctx.dort)) steerTo(null);
+      // (fiche 30 : le doigt levé, il finit son pas en freinant)
+      if (elan && !steer) {
+        const C = K.CORPS || { arret: 0 };
+        elan.v -= C.arret ? dt / C.arret : 1;
+        if (elan.v <= 0) { elan = null; pousse = 0; } else { const d = pasDuCorps(elan.x, elan.y, SPEED * vitesse() * dt * elan.v); steerWalked += d; draw(`marche_${face}_${K.imageMarche(steerWalked, 'fermier')}`); return; }
+      }
       if (steer && (!job || job.idle || job.walk)) {
         // une marche vers un tas reprendra au relâchement ; double appui : oublié
         if (job && !job.idle && !job.joueur && !job.geste) jobs.unshift(job);

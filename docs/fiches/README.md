@@ -79,7 +79,7 @@ après 26 et 28. Les pistes de `docs/chantier-allegement.md` restent valables à
 | [27 — la pluie en particules, les shaders prêts, moins d'allocations](27-pluie-shaders-allocations.md) | — | faible | fait (les shaders ; pluie et allocations mesurées, laissées) |
 | [28 — les calculs hors du fil principal : rives, encyclopédie, rattrapage](28-calculs-hors-du-fil.md) | — | moyen | fait (le rattrapage 10 fois plus rapide ; le reste mesuré, laissé) |
 | [29 — le sol peint dans un Worker et la teinte de l'herbe](29-sol-peint-dans-un-worker.md) | 28 | moyen | fait (sans Worker : la teinte 3 fois plus rapide) |
-| [30 — le corps du personnage : collision, coins, accélération](30-corps-du-personnage.md) | — | moyen | à faire |
+| [30 — le corps du personnage : collision, coins, accélération](30-corps-du-personnage.md) | — | moyen | fait (réglage B, choisi sur film) |
 | [31 — le socle des comportements : états, perception, séparation](31-socle-des-comportements.md) | 30 | moyen | à faire |
 | [32 — une vie plus crédible : faune, bêtes de la ferme, habitants](32-vie-plus-credible.md) | 31 | moyen | à faire |
 | [33 — l'ordonnanceur de la scène, les événements, le hasard à graine](33-ordonnanceur-de-la-scene.md) | 25 | faible | à faire |
