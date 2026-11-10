@@ -127,7 +127,9 @@
           // (l'entier calculé une fois par point, au début de getTexture : sous un rendu logiciel,
           // chaque opération de plus par point se paie)
           const avant = texte;
-          texte = texte.replace(/vec4 getTexture \(vec2 texCoord\)\s*\{/, (m) => m + '\n    float texIdArrondi = floor(outTexDatum + 0.5);');
+          // (fiche 34 : seulement quand le shader a plusieurs textures, comme le code de Phaser autour ; avec une
+          // seule (le SpriteGPULayer), outTexDatum n'existe pas et le shader ne se compilait plus)
+          texte = texte.replace(/vec4 getTexture \(vec2 texCoord\)\s*\{/, (m) => m + '\n    #if TEXTURE_COUNT != 1\n    float texIdArrondi = floor(outTexDatum + 0.5);\n    #endif');
           if (texte !== avant) texte = texte.replace(/outTexDatum ==/g, 'texIdArrondi ==');
           texte = texte.replace(/float texId = outTexDatum;/g, 'float texId = floor(outTexDatum + 0.5);');
         }
