@@ -1,5 +1,8 @@
 # Fiche 31 — Le socle des comportements : états, perception et pas communs
 
+> **Fait (2026-11-10)** : `js/carte/comportement.js`, la faune du grand monde y est passée à l'identique.
+> La visite de bienvenue n'est pas réécrite en `Time.Timeline` (voir « Ce qui a été fait »).
+
 Chantier « Phaser 4 », piste 7 du rapport (le socle ; ce qu'il permet ensuite est la fiche 32). Dépend de
 la fiche 30 (le corps et `deplacer`).
 
@@ -72,3 +75,23 @@ une partie neuve pour la visite de bienvenue.
 ## Livraison
 
 Un commit ; `docs/architecture-phaser.md` (une section « Les comportements ») mis à jour.
+
+## Ce qui a été fait
+
+- `js/carte/comportement.js` (script classique du kit, chargé après `ressort.js` ; testé en Node :
+  `tests/engine/comportement.test.mjs`) : `CarteKit.machine` (les états, l'état suivant que rend leur pas, les
+  transitions en table revues à leur cadence, `avant` entre les deux), `CarteKit.perception` (une grille de
+  64 px, `voisins` sans tableau neuf, la vitesse d'une image à l'autre), `CarteKit.avance` (le pas commun),
+  `CarteKit.separation` (la poussée douce entre voisins), `CarteKit.hasard` et `CarteKit.graine` (le hasard à
+  graine).
+- **La faune du grand monde** (`faune-monde.js`) y est passée : son `switch` est devenu la table d'états
+  `ETATS` et la machine `VIE`, la fuite une transition revue à chaque image (cadence 0, comme avant), son pas
+  `CarteKit.avance`, son hasard une graine par bête (son espèce et sa place : le même spectacle pour le
+  même monde). Vérifié dans Chromium contre main, en forêt, sur la côte et en montagne : la même
+  répartition des états (repos, marche, fuite, envol, cachée), la fuite dès que le personnage approche
+  (lapin au terrier, mouette et perdrix en vol), le même coût (≈ 0,04 ms par image).
+- **Pas encore appliqués** : la perception et la séparation (les bêtes de la ferme, les habitants : fiche
+  32) ; les habitants, la famille et la vie d'ambiance gardent leur code.
+- **La visite de bienvenue n'est pas réécrite en `Time.Timeline`** : elle suit des événements (le chemin
+  jusqu'à la porte, le personnage proche ou non, la nuit qui tombe), pas des instants fixes ; une Timeline
+  n'y retirerait rien. Les invités d'un repas et les scènes du récit sur la carte sont du même genre.
