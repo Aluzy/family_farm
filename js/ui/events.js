@@ -1,5 +1,6 @@
 import { buildMode, enLigne, setComptoirTab, setComptoirTabChoisi, setGodMode, setInvTab, setTestMode, state, testMode } from './store.js';
 import { actionPermise } from './en-ligne.js';
+import { chargerModeTest } from './mode-test.js';
 import { persistState } from './storage.js';
 import { syncGodBar } from './hote.js';
 import { asleep } from '../engine/night.js';
@@ -37,11 +38,13 @@ export function runAction(action, target, e) {
   }
   const run = ACTIONS[action];
   if (run) run(target, e, action);
+  // (piste 3 : une action du mode test avant que son module soit là : chargé, puis l'action jouée)
+  else if (action.startsWith('test-') && testMode) chargerModeTest().then(() => { if (ACTIONS[action]) ACTIONS[action](target, e, action); });
 }
 
 document.addEventListener('change', (e) => {
   if (e.target && e.target.id === 'test-mode-toggle') {
-    setTestMode(e.target.checked);
+    if (setTestMode(e.target.checked)) chargerModeTest();
     scheduleRender();
   }
   if (e.target && e.target.id === 'god-mode-toggle') {

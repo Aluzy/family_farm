@@ -18,7 +18,9 @@
 //   monde ne joue pas deux fois la même : leur id).
 // - Le bandeau « 🌐 » dit où l'on est, si l'on est à jour, et permet de revenir à sa ferme solo.
 
-import { executerCommande, GAME_VERSION, ICONES_ROLES, NOMS_ROLES, refusDuRole } from '../engine/index.js';
+import { executerCommande } from '../engine/commandes.js';
+import { GAME_VERSION } from '../engine/base.js';
+import { ICONES_ROLES, NOMS_ROLES, refusDuRole } from '../engine/roles.js';
 import { adresseServeur, appelServeur, compteGarde, quandConnecte } from './compte.js';
 import { closeModal, openModal } from './modal.js';
 import { Synchro } from './synchro.js';

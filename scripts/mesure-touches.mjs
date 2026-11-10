@@ -122,9 +122,9 @@ try {
   await page.waitForTimeout(800);
 
   // Un glissement sur 6 cases vertes alignées (FLU-12)
-  const line = await page.evaluate(() => {
+  const line = await page.evaluate(async () => {
     const s = FF.state;
-    const tiles = new Set(FF.engine.hoeableTiles(s));
+    const tiles = new Set((await FF.moteur()).hoeableTiles(s));
     const sc = FarmStage.scene();
     const cam = sc.cameras.main;
     const v = cam.worldView;
@@ -173,10 +173,10 @@ try {
   for (let essai = 0; essai < 6; essai++) {
     const sols = await page.evaluate(() => FF.state.potager.parcelles.length);
     if (sols >= 6) break;
-    const p = await page.evaluate(() => {
+    const p = await page.evaluate(async () => {
       const sc = FarmStage.scene(); const cam = sc.cameras.main; const v = cam.worldView; const W = sc.grid.cols;
       const canvas = sc.game.canvas.getBoundingClientRect(); const k = canvas.width / sc.scale.width;
-      for (const t of FF.engine.hoeableTiles(FF.state)) {
+      for (const t of (await FF.moteur()).hoeableTiles(FF.state)) {
         const x = canvas.left + ((t % W) * 16 + 8 - v.x) * cam.zoom * k, y = canvas.top + (Math.floor(t / W) * 16 + 8 - v.y) * cam.zoom * k;
         if (x > canvas.left + 30 && x < canvas.right - 30 && y > canvas.top + 90 && y < canvas.bottom - 120) return { x, y };
       }

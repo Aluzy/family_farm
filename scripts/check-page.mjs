@@ -51,6 +51,8 @@ function load(path) {
     info.imports.push({ names, from: resolve(dirname(path), m[2]) });
   }
   for (const m of src.matchAll(/^import '([^']+)'/gm)) info.imports.push({ names: [], from: resolve(dirname(path), m[1]) });
+  // (un module chargé à la demande, import('./x.js') : piste 3 du chantier « allègement »)
+  for (const m of src.matchAll(/\bimport\('(\.[^']+)'\)/g)) info.imports.push({ names: [], from: resolve(dirname(path), m[1]) });
   for (const dep of [...info.imports.map((i) => i.from), ...info.stars]) load(dep);
   return info;
 }

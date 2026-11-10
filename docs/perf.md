@@ -409,6 +409,23 @@ ralenti, 2,26 → 2,17 et 2,71 → 2,34 ms. Les plus lourds restent le tri du d�
 brouillard (≈ 1,4 ms), qui dessinent à chaque image ; les abeilles d'une ruche loin de la vue (0,56 → 0,19 ms)
 et les rouges-gorges (0,34 → 0,19 ms) ont baissé.
 
+## Le regroupement découpé (piste 3 du chantier « allègement », 2026-11-10)
+
+Voir `docs/chantier-allegement.md`, piste 3. Chromium, les sites construits de main et de la branche, trois
+fois chacun en alternance, ralenti ×4 du processeur :
+
+| Mesure | main | Branche |
+|---|---|---|
+| JavaScript des modules lu au départ | 1 397 Ko (472 Ko compressés) | 1 207 Ko (407 Ko compressés) |
+| … à la demande | — | 208 Ko (encyclopédie, mode test, fiches d'aide, moteur pour la console) |
+| De l'adresse à l'écran-titre | 1,55 – 1,83 s | 1,60 – 1,68 s |
+| Temps de script jusque-là (CDP) | 0,86 – 0,92 s | 0,87 – 0,95 s |
+| Carte affichée (après « Charger ») | 9,0 – 9,2 s | 8,9 – 9,1 s |
+
+Pas de différence au-delà du bruit : retirer 190 Ko de JavaScript surtout fait de textes et de fonctions
+jamais appelées au départ ne raccourcit pas le chargement (V8 ne compile une fonction qu'à son premier appel).
+Sur le téléphone, seul le téléchargement (− 65 Ko compressés) peut se voir, sur un réseau lent.
+
 ## Les atlas de la carte (piste 4 du chantier « allègement », 2026-11-10)
 
 Voir `docs/chantier-allegement.md`, piste 4. 160 petites images dans deux atlas (`assets/atlas_ferme.png`,

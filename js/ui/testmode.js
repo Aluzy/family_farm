@@ -1,4 +1,5 @@
 import { DATA } from '../engine/catalog.js';
+import { brancherRenduTest } from './mode-test.js';
 import {
   testAddCows, testAddEggs, testAddFlour, testAddFood, testAddHens, testAddOil,
   testAddPieces, testAddSeeds, testAddSheep, testAddStraw, testAddTechPoints, testAddWheat,
@@ -285,3 +286,6 @@ registerActions({
     if (result.ok) notify('🌫️ Le brouillard couvre de nouveau le monde (sauf la ferme et sa prairie).');
   },
 });
+
+// (piste 3 : ce module est chargé à la demande, js/ui/mode-test.js ; son rendu du panneau s'y branche)
+brancherRenduTest(renderTestPanel);

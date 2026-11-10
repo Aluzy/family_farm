@@ -37,6 +37,7 @@ const jsonPath = join(here, 'encyclopedie_ferme_familiale.json');
 const assets = join(here, 'assets');
 const htmlPath = join(here, 'encyclopedie.html');
 const jeuPath = join(here, 'js', 'encyclopedie.generated.js');
+const textesPath = join(here, 'js', 'encyclopedie-textes.generated.js');
 
 const data = JSON.parse(readFileSync(jsonPath, 'utf8'));
 const page = readFileSync(htmlPath, 'utf8');
@@ -149,7 +150,7 @@ const jeu = {
     icone: c.icone,
     nom: c.nom,
     entrees: c.entrees.map((e) => ({
-      id: e.id, terme: e.terme, description: remplir(e.description, e.id), liens: e.liens || [], decouverte: e.decouverte,
+      id: e.id, terme: e.terme, liens: e.liens || [], decouverte: e.decouverte,
       ...(VISUELS[e.id] ? { visuels: VISUELS[e.id] } : {}),
       ...(ICONES[e.id] ? { icones: ICONES[e.id]() } : {}),
     })),
@@ -158,7 +159,18 @@ const jeu = {
 const jeuSource = `// FICHIER GÉNÉRÉ par scripts/build-encyclopedie.mjs à partir de encyclopedie_ferme_familiale.json.
 // Ne pas le modifier : changer le fichier JSON, puis lancer
 //   node scripts/build-encyclopedie.mjs
+// (sans les textes des pages : js/encyclopedie-textes.generated.js, chargé à l'ouverture du livre)
 export const ENCYCLOPEDIE = ${JSON.stringify(jeu, null, 1)};
+`;
+// Piste 3 du chantier « allègement » : les textes des pages (88 Ko), à part ; la page les charge à la
+// première ouverture de l'Encyclopédie (js/ui/encyclopedie.js), le moteur n'en a pas besoin.
+const textes = {};
+for (const c of data.categories) for (const e of c.entrees) textes[e.id] = remplir(e.description, e.id);
+const textesSource = `// FICHIER GÉNÉRÉ par scripts/build-encyclopedie.mjs à partir de encyclopedie_ferme_familiale.json.
+// Ne pas le modifier : changer le fichier JSON, puis lancer
+//   node scripts/build-encyclopedie.mjs
+// Le texte de chaque page de l'Encyclopédie du jeu (id → texte), chargé à la demande (js/ui/encyclopedie.js).
+export const TEXTES = ${JSON.stringify(textes, null, 1)};
 `;
 
 // Le récit, lot 11 : une entrée « secret » (la pierre du fil de la lune, que rien ne doit signaler) n'est que
@@ -214,20 +226,22 @@ out = remplacer(out, '<nav class="cat-nav">', '</nav>', `\n        ${menu}\n    
 out = remplacer(out, '<main class="wrap">', '    <p class="no-results"', `\n    \n${data.categories.map(section).join('\n')}\n`);
 
 const total = data.categories.reduce((t, c) => t + c.entrees.length, 0);
-let jeuActuel = null;
+let jeuActuel = null, textesActuel = null;
 try {
   jeuActuel = readFileSync(jeuPath, 'utf8');
+  textesActuel = readFileSync(textesPath, 'utf8');
 } catch (err) {
   // pas encore généré
 }
 if (process.argv.includes('--check')) {
-  if (out !== page || jeuActuel !== jeuSource) {
-    console.error(`${out !== page ? 'encyclopedie.html' : 'js/encyclopedie.generated.js'} n'est pas à jour : lancer « node scripts/build-encyclopedie.mjs ».`);
+  if (out !== page || jeuActuel !== jeuSource || textesActuel !== textesSource) {
+    console.error(`${out !== page ? 'encyclopedie.html' : 'js/encyclopedie.generated.js (ou ses textes)'} n'est pas à jour : lancer « node scripts/build-encyclopedie.mjs ».`);
     process.exit(1);
   }
   console.log(`encyclopedie.html et js/encyclopedie.generated.js sont à jour (${total} termes, ${data.categories.length} catégories).`);
 } else {
   writeFileSync(htmlPath, out);
   if (jeuActuel !== jeuSource) writeFileSync(jeuPath, jeuSource);
+  if (textesActuel !== textesSource) writeFileSync(textesPath, textesSource);
   console.log(`encyclopedie.html ${out === page ? 'inchangé' : 'réécrit'}, js/encyclopedie.generated.js ${jeuActuel === jeuSource ? 'inchangé' : 'réécrit'} : ${total} termes, ${data.categories.length} catégories.`);
 }

@@ -13,7 +13,7 @@
 
 import { executerCommande } from '../engine/commandes.js';
 import { enLigne, state } from './store.js';
-import { defaire as defaireMoteur } from '../engine/index.js';
+import { defaire as defaireMoteur } from '../engine/commandes.js';
 import { persistState } from './storage.js';
 import { telCommande } from './consent.js';
 import { mesurer } from './chrono.js';

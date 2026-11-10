@@ -268,7 +268,7 @@ a.chat('nuit')         // les envoie se coucher (un chat sur son toit ; en plein
 a.stats().troupeau     // ce que fait chaque bête ; a.stats().portes : 0 fermée, 2 ouverte
 ```
 
-Pour voir les bêtes sans jouer jusque-là : `FF.engine.testAddCows(FF.state); FF.render()` (et
+Pour voir les bêtes sans jouer jusque-là : `(await FF.moteur()).testAddCows(FF.state); FF.render()` (et
 `testAddSheep`, `testAddHens`).
 
 ## 9. Limites

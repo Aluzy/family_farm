@@ -1,8 +1,8 @@
 import {
-  activeTab, FERME_LINKS, RENDER_THROTTLE_MS, setActiveTab, setEcranFerme, state, tabAvailable,
+  activeTab, FERME_LINKS, RENDER_THROTTLE_MS, setActiveTab, setEcranFerme, state, tabAvailable, testMode,
 } from './store.js';
 import { objectifsARevoir } from '../engine/campaign.js';
-import { renderTestPanel } from './testmode.js';
+import { rendreModeTest } from './mode-test.js';
 import { renderStage, stageUsable } from './stage.js';
 import {
   applyAnchor, renderIndicators, renderSleepBar, renderStageWindow, renderTabbar, renderTabContent,
@@ -78,7 +78,7 @@ function rendre() {
   renderPlantation();
   renderItemModal();
   renderShopModal();
-  renderTestPanel();
+  rendreModeTest(testMode);   // (piste 3 : le panneau du mode test, chargé à la demande : js/ui/mode-test.js)
 }
 
 // Rafraîchit tout de suite (après une action du joueur).

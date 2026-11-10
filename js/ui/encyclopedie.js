@@ -93,6 +93,18 @@ function categorieHtml(id) {
     <p class="encyclo-retour"><button type="button" class="encyclo-lien-texte" data-action="book-goto" data-page="0">↩ Sommaire</button></p>`;
 }
 
+// Piste 3 du chantier « allègement » : les textes des pages (js/encyclopedie-textes.generated.js) ne sont
+// pas dans le regroupement lu au départ : chargés à la première ouverture du livre, puis la page se refait.
+let TEXTES = null, chargementTextes = null;
+function textes() {
+  if (!TEXTES && !chargementTextes) {
+    chargementTextes = import('../encyclopedie-textes.generated.js')
+      .then((m) => { TEXTES = m.TEXTES; encyclo().rendu(); })
+      .catch(() => { chargementTextes = null; });   // (hors ligne : réessayé à la prochaine page)
+  }
+  return TEXTES;
+}
+
 function entreeHtml(id) {
   const e = entreeEncyclopedie(id);
   const c = CATEGORIES.find((x) => x.id === e.categorie);
@@ -101,7 +113,7 @@ function entreeHtml(id) {
     ${dessinEntree(e, c)}
     <p class="encyclo-categorie"><button type="button" class="encyclo-lien-texte" data-action="book-goto" data-page="${numero('categorie', c.id)}">${c.icone} ${escapeHtml(c.nom)}</button></p>
     <h2 class="book-title">${escapeHtml(e.terme)}</h2>
-    <p class="encyclo-texte">${escapeHtml(e.description)}</p>
+    <p class="encyclo-texte">${textes() ? escapeHtml(TEXTES[id] || '') : '…'}</p>
     ${id === 'hameaux' ? hameauxHtml() : ''}
     ${liens ? `<h3 class="book-h3">Voir aussi</h3><div class="encyclo-liens">${liens}</div>` : ''}`;
 }
@@ -167,6 +179,7 @@ const encyclo = () => livreEncyclo || (livreEncyclo = livre({
 
 export function openEncyclopedie(id = null) {
   tel('modal', 'encyclopedie');
+  textes();
   majDecouvertes(true);
   encyclo().ouvrir(id ? Math.max(0, numero('entree', id)) : 0);
 }

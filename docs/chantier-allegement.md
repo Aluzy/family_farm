@@ -13,7 +13,7 @@ le vérifier, et ce qu'elle ne doit pas toucher. Une piste, une PR, comme les fi
 |---|---|---|---|
 | [1 — une révision des blocs à la place des clés JSON](#1-une-révision-des-blocs-à-la-place-des-clés-json) | processeur, à chaque modèle de la carte et à chaque geste de Construire | faible (couvert par les tests Node) | à faire |
 | [2 — le son : ne plus garder en mémoire le PCM des boucles longues](#2-le-son--ne-plus-garder-en-mémoire-le-pcm-des-boucles-longues) | mémoire (jusqu'à plusieurs centaines de Mo sur une longue session) | moyen (comportement du navigateur) | à faire |
-| [3 — découper le regroupement et charger à la demande](#3-découper-le-regroupement-et-charger-à-la-demande) | chargement : lecture et compilation du JS | moyen (ordre de chargement) | à faire |
+| [3 — découper le regroupement et charger à la demande](#3-découper-le-regroupement-et-charger-à-la-demande) | chargement : lecture et compilation du JS | moyen (ordre de chargement) | fait en partie (2026-11-10) : − 13 %, pas de gain de temps mesuré |
 | [4 — des atlas pour les ~170 petites images](#4-des-atlas-pour-les-170-petites-images) | chargement : requêtes et envois à la carte graphique | faible (pipeline déjà en place pour les icônes) | fait (2026-11-10) |
 | [5 — les cadences : veilleurs et objectifs au rythme du tick](#5-les-cadences--veilleurs-et-objectifs-au-rythme-du-tick) | processeur, à chaque image | faible | fait (2026-11-10) |
 | [6 — le modèle de la carte mémorisé par sections](#6-le-modèle-de-la-carte-mémorisé-par-sections) | processeur, 5 fois par seconde | moyen (dépend de la piste 1) | à faire |
@@ -245,6 +245,33 @@ code ne sert pas au premier écran :
 
 Les scripts classiques des cartes (`js/carte/`, `farm-stage.js`) restent chargés d'emblée : la carte est
 le premier écran. Phaser n'est pas touché ici.
+
+### Ce qui a été fait (2026-11-10)
+
+- **Le regroupement découpé** (`scripts/build-site.mjs`) : un module (`<script type="module">`, toujours en
+  fin de page, après les scripts classiques) et des morceaux, `js/morceaux/<nom>-<empreinte>.js` (le nom
+  porte l'empreinte : pas de `?v=`). Le bilan du site construit dit ce qui est lu au départ et ce qui attend.
+- **À la demande** :
+  - les textes des pages de l'Encyclopédie (`js/encyclopedie-textes.generated.js`, écrit à part par
+    `scripts/build-encyclopedie.mjs`) : chargés à l'ouverture du livre ; le moteur n'en avait pas besoin
+    (`majEncyclopedie` ne lit que les conditions) ;
+  - le mode test (`js/ui/testmode.js`, `js/ui/mesures.js`, avec `js/engine/testmode.js` et le joueur
+    automatique `js/engine/bot.js`) : chargés quand le mode test est allumé (`js/ui/mode-test.js`) ;
+  - les fiches d'aide « ? » (`js/ui/aide-fiches.js`) : au premier appui ; leurs noms restent dans `aide.js` ;
+  - tout le moteur pour la console : `FF.engine` le gardait entier dans le regroupement (`import *`) ;
+    désormais `await FF.moteur()` (puis `FF.engine`).
+- `scripts/check-page.mjs` suit les `import('./…')`.
+- **Mesuré** (`docs/perf.md`, « Le regroupement découpé ») : lu au départ, 1 397 → 1 207 Ko (− 13,6 %, au
+  lieu des 20 % visés), 472 → 407 Ko compressés ; **aucun gain de temps mesurable** dans Chromium au ralenti
+  ×4 (l'écran-titre, la carte affichée, le temps de script : les mêmes, au bruit près). La lecture du
+  JavaScript n'est donc pas ce qui retient le chargement : V8 ne compile une fonction qu'à son premier
+  appel, et le gros des textes retirés n'était que lu. Le gain reste les octets téléchargés (− 65 Ko).
+- **Pas fait** : la mine n'existe plus ; les textes du récit (`RECIT`) servent dès l'arrivée ; ceux du
+  courrier pèsent 5 Ko ; le jeu en ligne, la carte du monde et les fenêtres sont importés par le cœur de la
+  page — les en sortir demande de charger les fenêtres à la demande, pour un gain de temps que la mesure
+  ci-dessus ne promet pas.
+- Ouvrir l'Encyclopédie, une fiche « ? », À propos, le mode test (+ 100 💰), `FF.moteur()` : au premier
+  essai, sans erreur ; la fiche « ? » attend ≈ 100 ms de plus que sur main, le reste autant.
 
 ## 4. Des atlas pour les ~170 petites images
 

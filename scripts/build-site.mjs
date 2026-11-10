@@ -129,12 +129,19 @@ await esbuild.build({
 });
 
 /* les modules, regroupés */
-await esbuild.build({
+const regroupement = await esbuild.build({
+  metafile: true,
   define: { MONDE_WORKER: JSON.stringify(`${WORKER}?v=${createHash('sha256').update(readFileSync(join(OUT, WORKER))).digest('hex').slice(0, 10)}`) },
   entryPoints: [join(ROOT, ENTRY)],
-  outfile: join(OUT, BUNDLE),
+  // (piste 3 du chantier « allègement » : un module découpé ; ce qui n'est atteint que par import() — les
+  // textes de l'encyclopédie, le mode test, les fiches d'aide… — va dans des morceaux à part, chargés à la
+  // demande. Leur nom porte l'empreinte de leur contenu : pas de « ?v= » à leur ajouter.)
+  outdir: join(OUT, 'js'),
+  entryNames: 'jeu.bundle',
+  chunkNames: 'morceaux/[name]-[hash]',
+  splitting: true,
   bundle: true,
-  format: 'iife',       // un script classique : s'exécute en fin de page, comme avant les modules
+  format: 'esm',        // un module : s'exécute en fin de page (après les scripts classiques), comme avant
   target: ['es2020'],
   minify: true,
   sourcemap: SOURCEMAP, // jeu.bundle.js.map : seulement avec --sourcemap (en local), jamais publié
@@ -173,7 +180,7 @@ if (html.split(MODULE_TAG).length !== 2) {
   console.error(`✗ jeu.html : la balise ${MODULE_TAG} est attendue une fois, exactement sous cette forme.`);
   process.exit(1);
 }
-html = html.replace(MODULE_TAG, `<script src="${BUNDLE}"></script>`);
+html = html.replace(MODULE_TAG, `<script type="module" src="${BUNDLE}"></script>`);
 
 /* les fichiers de assets/ (images, cartes) : chargés par js/farm-stage.js, qui ajoute
    « ?v=<empreinte> » à chaque adresse d'après la table écrite ici. Ce fichier de table
@@ -206,7 +213,7 @@ const stamp = (page, src) => src.replace(/(<(?:script[^>]*\bsrc|link[^>]*\bhref)
   return `${before}${ref}?v=${fingerprint(file)}${after}`;
 });
 html = stamp('jeu.html', html);
-if (/type="module"/.test(html)) errors.push('jeu.html : il reste un <script type="module"> après le regroupement');
+if (html.includes(`src="${ENTRY}`)) errors.push(`jeu.html : il reste ${ENTRY} après le regroupement`);
 if (errors.length) {
   console.error(errors.map((e) => `✗ ${e}`).join('\n'));
   process.exit(1);
@@ -219,4 +226,11 @@ for (const name of readdirSync(OUT, { recursive: true })) {
   const st = statSync(join(OUT, name));
   if (st.isFile()) total += st.size;
 }
-console.log(`_site/ construit : ${BUNDLE} ${ko(BUNDLE)} Ko, jeu.html ${ko('jeu.html')} Ko, ${count} fichiers suivis d'une empreinte, ${Object.keys(assetVersions).length} fichiers de assets/ aussi ; ${(total / 1048576).toFixed(1)} Mo en tout.`);
+// (ce que la page lit au départ : le regroupement et ce qu'il importe, de proche en proche ; le reste, à la demande)
+const sorties = regroupement.metafile.outputs, departs = new Set();
+const suivre = (f) => { if (departs.has(f) || !sorties[f]) return; departs.add(f); for (const i of sorties[f].imports) if (i.kind === 'import-statement') suivre(i.path); };
+suivre(Object.keys(sorties).find((f) => f.endsWith(BUNDLE)));
+const koDe = (L) => Math.round(L.reduce((t, f) => t + sorties[f].bytes, 0) / 1024);
+const js = Object.keys(sorties).filter((f) => f.endsWith('.js'));
+const auDepart = js.filter((f) => departs.has(f)), aLaDemande = js.filter((f) => !departs.has(f));
+console.log(`_site/ construit : modules lus au départ ${koDe(auDepart)} Ko (${auDepart.length} fichiers), à la demande ${koDe(aLaDemande)} Ko (${aLaDemande.length}), jeu.html ${ko('jeu.html')} Ko, ${count} fichiers suivis d'une empreinte, ${Object.keys(assetVersions).length} fichiers de assets/ aussi ; ${(total / 1048576).toFixed(1)} Mo en tout.`);

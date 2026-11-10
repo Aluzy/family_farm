@@ -16,7 +16,6 @@ import { oublierAdresseMine } from './ui/hote.js';
 import { render } from './ui/render.js';
 import { setEmojiNames, watch as watchEmojis } from './ui/pixel-emoji.js';
 import { setAlertState } from './ui/toasts.js';
-import * as engine from './engine/index.js';
 import { stageModel } from './ui/stage.js';
 import { stageWindow } from './ui/stage-windows.js';
 import { wantConsentBanner } from './ui/calme.js';
@@ -30,8 +29,7 @@ import './ui/store.js';
 import './ui/consent.js';
 import './ui/storage.js';
 import './ui/game-actions.js';
-import './ui/testmode.js';
-import './ui/mesures.js';
+// (le mode test, ./ui/testmode.js et ./ui/mesures.js : chargés à la demande, ./ui/mode-test.js)
 import './ui/loop.js';
 import './ui/render.js';
 import './ui/stage.js';
@@ -144,12 +142,16 @@ function entrerDansLeMonde() {
 demarrer().catch((e) => setTimeout(() => { throw e; }));
 
 // Pour la console du navigateur : l'état de la partie, le moteur et le rendu ne sont
-// plus des variables globales. FF.state, FF.engine.countItem(FF.state, 'carotte'), FF.render(),
-// FF.stageModel(), FF.stageWindow.
+// plus des variables globales. FF.state, (await FF.moteur()).countItem(FF.state, 'carotte'), FF.render(),
+// FF.stageModel(), FF.stageWindow. Piste 3 du chantier « allègement » : tout le moteur
+// (js/engine/index.js, le mode test et le joueur automatique compris) n'est plus dans le regroupement
+// lu au départ : FF.moteur() le charge ; FF.engine, ensuite, le donne directement.
+let moteurCharge = null;
 window.FF = {
   get state() { return state; },
   get stageWindow() { return stageWindow; },
-  engine,
+  moteur: () => import('./engine/index.js').then((m) => (moteurCharge = m)),
+  get engine() { return moteurCharge; },
   render,
   stageModel,
 };

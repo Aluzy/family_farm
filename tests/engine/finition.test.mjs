@@ -14,6 +14,7 @@
    Lancer seul : node --test tests/engine/finition.test.mjs (ou node tests/run-tests.mjs finition).
    ========================================================================== */
 
+import { TEXTES } from '../../js/encyclopedie-textes.generated.js';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -307,7 +308,7 @@ test('restes : aucune page de l\'encyclopédie ne se découvre seulement par un 
       assert(vivantes.length > 0, `${e.id} : seulement des objets retirés`);
       // (la page des viandes est un historique voulu : la ferme n'en produit plus depuis la version 1.1)
       if (e.id === 'viandes') continue;
-      for (const n of noms) assert(!e.description.toLowerCase().includes(n), `${e.id} : « ${n} »`);
+      for (const n of noms) assert(!TEXTES[e.id].toLowerCase().includes(n), `${e.id} : « ${n} »`);
     }
   }
 });

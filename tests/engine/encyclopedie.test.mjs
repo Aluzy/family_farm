@@ -69,3 +69,13 @@ test('encyclopédie : le didacticiel, les outils et les recettes', () => {
   assertEqual(conditionRemplie(s, 'recette:pain'), true, 'le pain se lit dans le Livre de recette');
   assertEqual([conditionRemplie(s, 'jour:1'), conditionRemplie(s, 'jour:2')], [true, false]);
 });
+
+// Piste 3 du chantier « allègement » : les textes des pages, à part (chargés à l'ouverture du livre).
+test('encyclopédie : chaque page a son texte, à part ; le reste du livre n\'en porte plus', async () => {
+  const { TEXTES } = await import('../../js/encyclopedie-textes.generated.js');
+  const { CATEGORIES } = await import('../../js/engine/encyclopedie.js');
+  const ids = CATEGORIES.flatMap((c) => c.entrees.map((e) => e.id));
+  assertEqual(Object.keys(TEXTES).sort(), [...ids].sort());
+  for (const id of ids) assert(TEXTES[id] && TEXTES[id].length > 20, id);
+  assert(CATEGORIES.every((c) => c.entrees.every((e) => e.description === undefined)));
+});
