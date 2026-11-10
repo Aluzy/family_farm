@@ -1,5 +1,9 @@
 # Fiche 33 — L'ordonnanceur de la scène : chaque étape à sa cadence, des événements plutôt que des sondages
 
+> **Fait (2026-11-10)** : `js/carte/ordonnanceur.js`, la table `systemes()` de `js/farm-stage.js`, les
+> événements `modele:presents` et `modele:citerne`, le hasard à graine des bêtes de la ferme, des ruches, des
+> rouges-gorges et de la vie d'ambiance. Voir « Ce qui a été fait ».
+
 Chantier « Phaser 4 », pistes 9 et 10 du rapport et sa partie « Logique ». Après la fiche 25 (une seule
 boucle).
 
@@ -68,3 +72,33 @@ grand monde.
 
 Un commit ; `docs/architecture-phaser.md` (l'ordonnanceur, les événements du modèle, le pont d'actions)
 et `docs/perf.md` mis à jour.
+
+## Ce qui a été fait
+
+- **L'ordonnanceur** (`CarteKit.ordonnanceur`, `js/carte/ordonnanceur.js`, testé en Node :
+  `tests/engine/ordonnanceur.test.mjs`) : `update` ne fait plus qu'avancer la table `systemes()` de la scène,
+  ≈ 70 systèmes nommés dans l'ordre d'avant, chacun avec sa cadence et sa condition (`actif`) ; un système lent
+  reçoit le temps écoulé depuis son dernier pas ; les systèmes lents sont décalés ; pendant une mesure 📏,
+  chacun est noté « système : <nom> ».
+- **Les cadences** : à 10 Hz, la région du personnage, les coins de pêche et les secrets, le silo transparent,
+  les morceaux ramassés, les ombres du soleil (qui ne se repeignent que quand il le faut), les étiquettes des
+  conseils, la bulle du didacticiel (elle était regardée une image sur six), ce que la page affiche selon la
+  vue ; à 2 Hz, le fond et la position notée pour la reprise. Tout ce qui se voit bouger (personnage, vue,
+  eau, bêtes, traces, ressorts, murs, toits, brouillard…) reste à chaque image : les plus lourds (le tri du
+  décor ≈ 1,5 ms, le brouillard ≈ 1,4 ms au ralenti ×4) le sont parce qu'ils dessinent, et ont déjà leur
+  propre rythme intérieur (fiches 9a et 26).
+- **Dans les systèmes** : une ruche loin de la vue ne fait bouger ses abeilles que deux fois par seconde
+  (0,56 → 0,19 ms par image au ralenti ×4) ; les rouges-gorges ne revoient leurs perchoirs (tous les blocs)
+  que quand les blocs changent (0,34 → 0,19 ms).
+- **Les événements** : `sync()` émet `modele:presents` et `modele:citerne` quand ces parties du modèle changent ;
+  le système des présents ne tourne que quand il y en a ; la bulle de la citerne reçoit son texte une fois.
+  `stepSilo` ne lisait pas le modèle (le personnage derrière le silo : une position) : il passe à 10 Hz.
+- **Le hasard à graine** : `hasardDe(id)` (la graine du monde, le jour, l'acteur) pour les bêtes de la ferme,
+  les ruches et les rouges-gorges ; `AmbientLife.graine` pour la vie d'ambiance. Deux chargements de la même
+  partie : les 38 bêtes dehors à 1 px près après 5 s (sur main : 58 px d'écart médian) ; après 25 s, le même
+  papillon et le chat à 2 px. Les habitants, la famille, le personnage, l'eau et les petits effets gardent
+  `Math.random`.
+- **La doc du pont d'actions** (`docs/architecture-phaser.md`) : `stageAct` appelle `runAction`.
+- **Mesuré** (Chromium, la partie du jour 75, 3 fois 15 s chacun, contre main) : le temps de `update` par image
+  au ralenti ×4, 10,39 → 9,99 ms sur la ferme, 11,20 → 10,68 ms dans un hameau (le Gué) ; sans ralenti, 2,26 →
+  2,17 ms et 2,71 → 2,34 ms. Un gain modeste : l'essentiel du temps est ce qui se dessine à chaque image.
