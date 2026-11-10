@@ -201,6 +201,10 @@ la ferme dormait à côté avec ses propres textures.
   (`reserveVue`, `js/carte/ferme/decor.js` `cullScene`) et reviennent quand la vue approche. Une image
   que son code déplace n'est jamais mise à l'écart. Le code qui parcourt `this.children.list` (figer,
   traces, brouillard, eau) ne voit donc que ce qui est près de la vue.
+- **Les shaders préparés d'avance** (fiche 27) : Phaser compile un programme la première fois qu'il en
+  a besoin, au milieu d'une image (le lot d'images standard en a une variante par nombre de textures du
+  lot, 1 à 16 ; l'eau, `eauMer` et `eauVive`). La scène les fait préparer un par un pendant les temps
+  morts, 4 s après sa création (`CarteJeu.prechauffe`, `tachesLots` ; `eauPrechauffe`, js/carte/eau.js).
 - **Le pas borné à 50 ms** (`update` de la scène, le personnage) : sous 20 images par seconde, le monde
   ralentit au lieu de sauter (pas de personnage qui traverse un mur d'une image à l'autre). C'est voulu.
 - **Le clavier** est celui de Phaser (`input.keyboard`), sans capture : rien n'est retenu à la

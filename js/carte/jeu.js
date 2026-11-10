@@ -31,7 +31,8 @@
  *       CarteJeu.suitTaille(scène, fn)  fn() à chaque changement de taille, tant que la scène vit ;
  *       CarteJeu.zoomEntier(scène)       le zoom entier des cartes vues de près (la mine) ;
  *       CarteJeu.cadence(bouge, t)       la scène dit à chaque image si quelque chose bouge (fiche 25) ;
- *       CarteJeu.surPas(fn), surVeille(fn), tourne()   la boucle de la page suit celle de Phaser (fiche 25).
+ *       CarteJeu.surPas(fn), surVeille(fn), tourne()   la boucle de la page suit celle de Phaser (fiche 25) ;
+ *       CarteJeu.prechauffe(taches), tachesLots(scène)  les shaders préparés pendant les temps morts (fiche 27).
  *
  * La cadence (fiche 25, docs/architecture-phaser.md § 1 quater) : la boucle de Phaser suit l'écran ; sur
  * un écran de plus de 100 Hz, elle est plafonnée à 60 images par seconde, et en qualité « économie », à 30
@@ -171,6 +172,37 @@
     const rapide = L.actualFps > CADENCE.RAPIDE;
     const voulu = eco ? CADENCE.ECONOMIE : rapide ? CADENCE.PLAFOND : 0;
     if (L.fpsLimit !== voulu) L.setFPSLimit(voulu);
+  }
+
+  /* ---------- les shaders préparés d'avance (fiche 27) ----------
+     Phaser compile un programme de shader la première fois qu'il en a besoin, au milieu d'une image : le
+     lot d'images standard en a une variante par nombre de textures du lot (1 à 16), l'eau de la mer le
+     sien. Au premier passage à la mer, 5 programmes d'un coup (≈ 30 à 90 ms d'appels WebGL dans
+     Chromium) : un à-coup. Ici, ils se préparent un par un pendant les temps morts de la page
+     (requestIdleCallback ; repli : un setTimeout), après le chargement : ni à-coup, ni chargement plus
+     long. (skipUnreadyShaders, l'autre piste, ne dessine pas ce dont le shader n'est pas prêt : tout un
+     lot d'images pouvait disparaître quelques images.) */
+  function prechauffe(taches) {
+    const file = (taches || []).slice();
+    const suivante = () => {
+      if (!file.length) return;
+      const t = file.shift();
+      try { t(); } catch (e) { /* une préparation ratée se refera au besoin, comme avant */ }
+      attendre(suivante);
+    };
+    // (une page occupée n'a presque jamais de temps mort : 250 ms au plus entre deux tâches, de quelques ms)
+    const attendre = (fn) => (global.requestIdleCallback ? global.requestIdleCallback(fn, { timeout: 250 }) : setTimeout(fn, 50));
+    attendre(suivante);
+  }
+  // Les variantes du lot d'images standard (BatchHandlerQuad : une par nombre de textures du lot). Chaque
+  // lot refixe son nombre avant de dessiner (finalizeTextureCount) : le changer entre deux images est sans
+  // effet sur l'image.
+  function tachesLots(scene) {
+    const R = scene.sys.renderer, N = R && R.renderNodes, q = N && N.getNode && N.getNode('BatchHandlerQuad');
+    if (!q || !q.programManager || !q.finalizeTextureCount) return [];
+    const out = [];
+    for (let n = 1; n <= q.maxTexturesPerBatch; n++) out.push(() => { q.finalizeTextureCount(n); q.programManager.getCurrentProgramSuite(); });
+    return out;
   }
 
   // La boucle de Phaser tourne-t-elle (la carte affichée, le jeu démarré) ?
@@ -324,5 +356,5 @@
     return Math.max(1, Math.round(css * r));
   }
 
-  global.CarteJeu = { jeu, montre, prepare, cache, affichee, taille, suitTaille, zoomEntier, cadence, tourne, surPas, surVeille, pasLimite, CADENCE, game: () => game };
+  global.CarteJeu = { jeu, montre, prepare, cache, affichee, taille, suitTaille, zoomEntier, cadence, tourne, surPas, surVeille, pasLimite, CADENCE, prechauffe, tachesLots, game: () => game };
 })(window);

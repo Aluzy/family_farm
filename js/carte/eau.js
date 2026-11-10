@@ -525,6 +525,20 @@ void main() {
   K.EAU = EAU;
   K.eauVive = {
 
+    // Fiche 27 (CarteJeu.prechauffe) : les programmes des deux shaders de l'eau, préparés d'avance (un
+    // shader fait et défait aussitôt, avant toute image : on n'en garde que le programme compilé).
+    eauPrechauffe() {
+      if (this.sys.renderer.type !== (global.Phaser && global.Phaser.WEBGL)) return [];
+      return [['eauMer', EAU_MER], ['eauVive', EAU_FRAG]].map(([name, fragmentSource]) => () => {
+        // (six textures, comme les vraies : le programme dépend de leur nombre)
+        const sh = this.add.shader({ name, fragmentSource }, -1e5, -1e5, 1, 1, Array(6).fill('__DEFAULT'));
+        try {
+          const pm = sh.renderNode && sh.renderNode.programManager;
+          if (pm && pm.getCurrentProgramSuite) pm.getCurrentProgramSuite();
+        } finally { shaderDefait(sh); }
+      });
+    },
+
     // L'eau vivante, posée (ou ôtée) sur les étendues animées du moment. Quand la liste des
     // étendues change (le grand monde : des blocs d'eau qui paraissent et s'en vont avec la vue),
     // seules celles qui changent sont faites ou défaites ; une étendue du monde par image au plus
