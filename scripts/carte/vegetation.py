@@ -231,6 +231,11 @@ def tronc(t, x0, y0, y1, l0, l1, ecorce=ECORCE, graine=0, racines=2, penche=0.0)
 
 # ---------- les arbres ----------
 
+# La marge au-dessus des houppiers (px) : leurs bosses du haut et leur contour montent jusque-là ;
+# sans elle, la toile coupait le haut de la cime (une cime plate, en jeu).
+MARGE_CIME = 7
+
+
 def feuillu(forme, rampe, graine, ecorce=ECORCE, touffe=True):
     """Un feuillu : un houppier de bosses (forme : 'rond', 'large', 'haut'), un tronc dessous."""
     r = random.Random(graine)
@@ -246,7 +251,10 @@ def feuillu(forme, rampe, graine, ecorce=ECORCE, touffe=True):
         w, h, fx = 40, 70, 20
         bosses = [(20, 30, 15), (20, 16, 12), (13, 38, 10), (27, 38, 10), (20, 8, 8), (20, 44, 9)]
         tr = (20, 46, 66, 6, 8)
-    bosses = [(cx + r.uniform(-1.5, 1.5), cy + r.uniform(-1.5, 1.5), rr * r.uniform(0.94, 1.06)) for cx, cy, rr in bosses]
+    m = MARGE_CIME
+    bosses = [(cx + r.uniform(-1.5, 1.5), cy + m + r.uniform(-1.5, 1.5), rr * r.uniform(0.94, 1.06)) for cx, cy, rr in bosses]
+    tr = (tr[0], tr[1] + m, tr[2] + m, tr[3], tr[4])
+    h += m
     t = Toile(w, h)
     tronc(t, tr[0], tr[1], tr[2], tr[3], tr[4], ecorce, graine)
     if touffe:
@@ -394,11 +402,12 @@ def saule(graine, variante):
     """Un saule pleureur : un dôme bleuté d'où retombent des rameaux en mèches jusqu'au sol (des
     rubans de feuilles, chacun éclairé à gauche, effilé au bout), le tronc entrevu entre eux."""
     r = random.Random(graine)
-    w, h = 58, 60
+    m = MARGE_CIME
+    w, h = 58, 60 + m
     t = Toile(w, h)
     cx, pied = 29, h - 3
-    tronc(t, cx, 24, pied, 6, 8, ECORCE_GRISE, graine)
-    dome = [(29, 20, 18, 0.7), (16, 23, 11, 0.7), (42, 23, 11, 0.7), (29, 11, 12, 0.7)]
+    tronc(t, cx, 24 + m, pied, 6, 8, ECORCE_GRISE, graine)
+    dome = [(29, 20 + m, 18, 0.7), (16, 23 + m, 11, 0.7), (42, 23 + m, 11, 0.7), (29, 11 + m, 12, 0.7)]
     hb = champ_bosses(dome, graine)
     cime = Toile(w, h)
     lum = feuillage(cime, hb, RAMPE_SAULE, graine + 2, pas=3, base=2.4, etendue=4.0)
@@ -413,7 +422,7 @@ def saule(graine, variante):
         u = (i + 0.5) / n * 2 - 1                       # de -1 (gauche) à 1 (droite)
         x0 = cx + u * 25 + r.uniform(-1, 1)
         milieu = abs(u) < 0.3
-        y0 = bord.get(int(x0), 24) - 4 - r.randint(0, 3)
+        y0 = bord.get(int(x0), 24 + m) - 4 - r.randint(0, 3)
         if milieu and variante == 0:
             fin = y0 + 8 + r.randint(0, 4)              # on voit le tronc
         else:

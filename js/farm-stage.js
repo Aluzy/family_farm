@@ -259,6 +259,8 @@
             this.ambient = global.AmbientLife.attach(this, {
               world: this.world, map: this.mapRaw, tiles: this.has(MAP.tiles) ? MAP.tiles : null,
               objects: this.objects, lightDepth: this.light.depth, reduced: reducedMotion,
+              // (un oiseau ne se pose qu'où l'on marche : pas sur l'eau du grand monde)
+              marchable: (x, y) => !this.ctx.monde || this.ctx.monde.marchable(Math.floor(y / T) * this.grid.cols + Math.floor(x / T)),
               herd: Object.fromEntries(Object.keys(HERD_SHEETS).filter((kind) => this.has(kind)).map((kind) => [kind, kind])),
             });
           } catch (e) { console.warn('[FarmStage] vie d\'ambiance indisponible', e); }
