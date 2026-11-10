@@ -7,7 +7,8 @@
 //   2. E-3 : A crée un lien d'invitation (👥 › Inviter un ami) ; B l'ouvre et entre dans le monde :
 //      les deux y sont, bandeau « à jour » ; ils ouvrent le mode Construire ;
 //   3. un mur posé chez l'un est vu chez l'autre en moins d'une seconde, dans les deux sens ;
-//   3b. l'avatar de l'autre joueur est dessiné là où il regarde (E-4) ;
+//   3b. chacun joue son personnage à lui (celui de sa partie solo) ; l'autre le voit là où il est, son prénom
+//       au-dessus (E-4) ;
 //   4. la partie confirmée de chacun est celle du monde (la même empreinte) ;
 //   4b. E-5 : B récolte une carotte mûre : elle va au coffre commun, A voit la parcelle vide ;
 //   4b'. E-6 : B nourrit les poules : A les voit nourries ;
@@ -100,16 +101,21 @@ s0.poulailler.poules = 2;   // (E-6 : deux poules à nourrir, du blé)
 addItem(s0, 'ble', 6);
 s0.outils = { hache: true, pioche: true, faux: true, canne: true };   // (E-9 : les outils de la ferme)
 const SAUVEGARDE = JSON.stringify({ v: s0.version, t: Date.now(), s: s0 });
+// (la partie solo de B : son personnage à lui, Sam, le personnage 7 du catalogue ; c'est lui qu'il joue en ligne)
+const sB = JSON.parse(JSON.stringify(s0));
+const mB = sB.famille.membres.find((m) => m.id === sB.famille.principal) || sB.famille.membres[0];
+Object.assign(mB, { prenom: 'Sam', perso: 7, apparence: null });
+const SAUVEGARDE_B = JSON.stringify({ v: sB.version, t: Date.now(), s: sB });
 
 let navigateur;
 try { navigateur = await playwright.chromium.launch(); } catch (e) { serveur.close(); saute(`Chromium ne démarre pas (${String(e.message).split('\n')[0]}).`); }
 const erreurs = [];
 async function onglet(qui) {
   const ctx = await navigateur.newContext({ viewport: { width: 412, height: 860 } });
-  await ctx.addInitScript(([v, c]) => { if (!sessionStorage.getItem('x')) { localStorage.setItem('ferme-save', v); localStorage.setItem('ferme-compte', JSON.stringify(c)); sessionStorage.setItem('x', 1); } }, [SAUVEGARDE, { session: qui.session, email: qui.email }]);
+  await ctx.addInitScript(([v, c]) => { if (!sessionStorage.getItem('x')) { localStorage.setItem('ferme-save', v); localStorage.setItem('ferme-compte', JSON.stringify(c)); sessionStorage.setItem('x', 1); } sessionStorage.setItem('ferme-titre-vu', '1'); }, [qui === B ? SAUVEGARDE_B : SAUVEGARDE, { session: qui.session, email: qui.email }]);
   await ctx.route('http://127.0.0.1:8787/**', async (route) => {
     const rq = route.request();
-    const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
+    const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Prenom', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
     if (rq.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
     const r = await W.fetch(new Request(rq.url(), { method: rq.method(), headers: { ...rq.headers(), origin: 'https://aluzy.github.io' }, body: rq.postData() || undefined }), env);
     return route.fulfill({ status: r.status, contentType: 'application/json', headers: cors, body: await r.text() });
@@ -174,12 +180,11 @@ try {
     const ms = await attendre(vers, voit, t, 5000);
     verifie(ms !== null && ms < 1000, `3. un mur posé (${nom}) est vu en ${ms} ms`);
   }
-  // 3b. E-4 : B déplace sa vue, A voit l'avatar de B arriver au centre de cette vue
-  await pb.evaluate(() => { const c = FarmStage.scene().cameras.main; c.setScroll(c.scrollX + 64, c.scrollY + 32); });
-  await pb.waitForTimeout(100);
-  const centreB = await pb.evaluate(() => { const m = FarmStage.scene().cameras.main.midPoint; return { x: m.x, y: m.y }; });
-  const msAvatar = await attendre(pa, (c) => { const e = (FarmStage.scene().presences || new Map()).get(c.id); return !!e && Math.hypot(e.img.x - c.x, e.img.y - c.y) < 24; }, { id: B.id, ...centreB }, 3000);
-  verifie(msAvatar !== null && msAvatar < 1500, `3b. A voit l'avatar de B au centre de sa vue en ${msAvatar} ms`);
+  // 3b. E-4 : chacun joue son personnage (B, Sam, le 7) ; A voit celui de B là où il est, avec son prénom
+  const persoB = await pb.evaluate(() => FarmStage.scene().fermier.vu() && FarmStage.scene().persoCle);
+  const pieds = await pb.evaluate(() => { const v = FarmStage.scene().fermier.vu(); return v && { x: v.x, y: v.y - v.h }; });
+  const msAvatar = pieds && await attendre(pa, (c) => { const e = (FarmStage.scene().presences || new Map()).get(c.id); return !!e && Math.hypot(e.img.x - c.x, e.img.y - c.y) < 4 && e.img.texture.key === 'perso_7' && e.nom.text === 'Sam'; }, { id: B.id, ...pieds }, 5000);
+  verifie(persoB === 'perso_7' && msAvatar !== null && msAvatar < 3000, `3b. B joue son personnage (${persoB}) ; A le voit là où il est, avec son prénom, en ${msAvatar} ms`);
   await attendre(pa, () => !/en attente/.test(document.getElementById('en-ligne-bandeau').innerText), null, 5000);
   const reg = mondes.get(idMonde).registre;
   const confirmee = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); const L = await import('/js/ui/en-ligne.js'); return E.empreintePartie(L._lien().synchro.confirmee); });
@@ -187,16 +192,29 @@ try {
   verifie((await confirmee(pa)) === em && (await confirmee(pb)) === em && reg.rev === 2, `4. les deux parties confirmées sont celle du monde (révision ${reg.rev})`);
   // 4b. E-5 : le potager, hors de Construire
   for (const p of [pa, pb]) { await action(p, 'build-toggle'); await attendre(p, () => !document.body.classList.contains('construction'), null, 5000); }
+  // 3c. E-4 : B fait quelques pas : chez A, son avatar marche (les images de marche, de profil), sans à-coups
+  await pb.evaluate(() => { const f = FarmStage.scene().fermier, v = f.vu(); f.goTo(v.x - 6 * 16, v.y + 3 * 16); });
+  const imagesB = await pa.evaluate((id) => new Promise((ok) => {
+    const vues = [], t0 = performance.now();
+    const pas = () => { const e = FarmStage.scene().presences.get(id), j = FarmStage.scene().cache.json.get('perso_cases').frames; if (e) vues.push({ n: j[+e.img.frame.name], x: e.img.x }); if (performance.now() - t0 < 2400) requestAnimationFrame(pas); else ok(vues); };
+    pas();
+  }), B.id);
+  const noms = new Set(imagesB.map((v) => v.n)), sauts = imagesB.slice(1).filter((v, i) => Math.abs(v.x - imagesB[i].x) > 12).length;
+  const parSens = {};
+  for (const n of noms) { const m = /^marche_(bas|haut|cote)_\d$/.exec(n || ''); if (m) parSens[m[1]] = (parSens[m[1]] || 0) + 1; }
+  verifie(Math.max(0, ...Object.values(parSens)) >= 3 && sauts === 0, `3c. B fait quelques pas : chez A, son avatar marche (${JSON.stringify(parSens)} images de marche par sens, ${sauts} à-coup)`);
   // 4a. E-8 : la frontière
   const F = await pb.evaluate(async () => { const E = await import('/js/engine/index.js'); return { ...E.farmTerrain(FF.state).FERME, cols: FarmStage.scene().grid.cols, W: E.farmTerrain(FF.state).LARGEUR }; });
   await pb.evaluate((f) => FarmStage.scene().goHere((f.X - 30) * 16, (f.Y + f.HAUTEUR / 2) * 16), F);
-  await pb.waitForTimeout(2500);
   const bord = await pb.evaluate((f) => { const sc = FarmStage.scene(), i = sc.fermier.info(), v = sc.cameras.main.worldView; return { c: Math.floor(i.x / 16), dit: /reste du monde/.test(document.body.innerText), vueX: v.x }; }, F);
   verifie(F.cols === F.W && reg.charger().mondePartage === true && JSON.stringify(reg.charger().monde.habitants) === '{}' && bord.c >= F.X && bord.dit && bord.vueX >= (F.X - 6) * 16 - 1, `4a. le monde est la ferme : B, envoyé dehors, s'arrête au bord (colonne ${bord.c}, la ferme commence à ${F.X}), le jeu le dit, la vue reste sur la ferme`);
   const carottes = (p) => p.evaluate(async () => { const E = await import('/js/engine/index.js'); return E.countItem(FF.state, 'carotte'); });
   const avantCarottes = await carottes(pa);
   await action(pb, 'harvest', { id: 'potager-1' });
   const msRecolte = await attendre(pa, async () => { const E = await import('/js/engine/index.js'); return !E.findPlot(FF.state, 'potager-1').culture; }, null, 5000);
+  await pa.waitForTimeout(400);
+  const fermierA = await pa.evaluate(() => FarmStage.scene().fermier.info());
+  verifie(fermierA.jobs === 0 && !fermierA.retenues.length, `4b-. le personnage de A ne refait pas la récolte de B (${fermierA.jobs} tâche, ${fermierA.retenues.length} case retenue)`);
   verifie(msRecolte !== null && (await carottes(pa)) > avantCarottes, `4b. B a récolté une carotte : A voit la parcelle vide et la récolte au coffre commun en ${msRecolte} ms`);
   // 4b'. E-6 : les bêtes
   await action(pb, 'feed-all');

@@ -18,8 +18,8 @@
 //   monde ne joue pas deux fois la même : leur id).
 // - Le bandeau « 🌐 » dit où l'on est, si l'on est à jour, et permet de revenir à sa ferme solo.
 
-import { executerCommande, GAME_VERSION, ICONES_ROLES, NOMS_ROLES, refusDuRole } from '../engine/index.js';
-import { adresseServeur, appelServeur, compteGarde, quandConnecte } from './compte.js';
+import { executerCommande, GAME_VERSION, ICONES_ROLES, memberPerso, NOMS_ROLES, refusDuRole, validApparence } from '../engine/index.js';
+import { adresseServeur, appelServeur, compteGarde, personnageSolo, prenomJoueur, quandConnecte } from './compte.js';
 import { closeModal, openModal } from './modal.js';
 import { Synchro } from './synchro.js';
 import { setEnLigne, setState } from './store.js';
@@ -46,7 +46,7 @@ let lien = null;   // la connexion en cours : { monde, ws, synchro, etat, essais
 function ouvrirWs(monde) {
   const base = adresseServeur(), c = compteGarde();
   if (!base || !c) return null;
-  return new WebSocket(`${base.replace(/^http/, 'ws')}/mondes/${monde}/ws?session=${encodeURIComponent(c.session)}`);
+  return new WebSocket(`${base.replace(/^http/, 'ws')}/mondes/${monde}/ws?session=${encodeURIComponent(c.session)}&prenom=${encodeURIComponent(prenomJoueur())}`);
 }
 
 // Au démarrage, le monde `monde` : sa partie (la locale de la synchro), ou null (pas connecté, refusé,
@@ -58,6 +58,7 @@ export function rejoindre(monde, delaiMs = 15000) {
     const finir = (v) => { if (!fini) { fini = true; clearTimeout(minuterie); ok(v); } };
     const minuterie = setTimeout(() => { notify('🌐 Le monde ne répond pas : ta ferme solo s\'ouvre.'); fermer(); finir(null); }, delaiMs);
     lien = { monde, ws: null, synchro: null, etat: 'connexion', essais: 0, titre: '', membres: [], premiere: finir };
+    window.FermeEnLigne.moi = monLook();
     connecter();
   });
 }
@@ -98,6 +99,7 @@ function connecter() {
 function fermer() {
   if (lien && lien.ws) { try { lien.ws.close(); } catch (e) { /* (rien) */ } }
   lien = null;
+  if (typeof window !== 'undefined' && window.FermeEnLigne) window.FermeEnLigne.moi = null;
 }
 
 function envoyer(m) {
@@ -142,7 +144,17 @@ function recevoir(ws, data) {
   }
   // E-4 : où regardent les autres (relayé par le monde, jamais écrit) ; leur départ
   if (m.t === 'pos') {
-    autres.set(m.acteur, { nom: m.nom, x: m.x, y: m.y, t: Date.now() });
+    const a = autres.get(m.acteur) || { nom: '', look: null, ech: [], t: 0 };
+    a.nom = m.nom;
+    if (m.look) a.look = lookValide(m.look);
+    a.t = Date.now();
+    // (après un arrêt, rien n'a été envoyé : il repart de là où il était il y a un instant, pas de la
+    // dernière fois qu'il a bougé)
+    const der = a.ech[a.ech.length - 1];
+    if (der && a.t - der.t > 2 * POS_MS) a.ech.push({ ...der, t: a.t - POS_MS });
+    a.ech.push({ t: a.t, x: m.x, y: m.y, h: Number(m.h) || 0, img: typeof m.img === 'string' ? m.img : '', flip: !!m.flip });
+    if (a.ech.length > ECH_MAX) a.ech.shift();
+    autres.set(m.acteur, a);
     return;
   }
   if (m.t === 'parti') {
@@ -226,7 +238,14 @@ function toutRedemander() {
 }
 
 // La partie locale refaite (un geste d'un autre joueur, un refus) : le jeu la reprend.
+// (la partie refaite par la commande d'un autre : la carte ne fait pas faire ce geste à son personnage à lui,
+// js/carte/ferme/modele.js ; mêlée à un geste à soi pas encore dessiné : comme avant)
+function marquerChangement(qui) {
+  const F = typeof window !== 'undefined' && window.FermeEnLigne;
+  if (F) F.changement = !F.changement || F.changement === qui ? qui : 'mixte';
+}
 function partieRefaite(locale) {
+  marquerChangement('distant');
   setState(locale);
   refresh();
 }
@@ -238,7 +257,7 @@ export function jouerEnLigne(cmd) {
   const refus = lien.role ? refusDuRole(lien.role, lien.synchro.locale, cmd) : null;
   if (refus) return { ok: false, error: `🌐 ${refus}` };
   const r = lien.synchro.jouer(cmd);
-  if (r.ok) envoyer({ t: 'cmd', id: cmd.id, type: cmd.type, args: cmd.args });
+  if (r.ok) { marquerChangement('local'); envoyer({ t: 'cmd', id: cmd.id, type: cmd.type, args: cmd.args }); }
   bandeau();
   return r;
 }
@@ -247,21 +266,43 @@ brancherEnLigne(jouerEnLigne);
 
 /* ---------- E-4 : la présence ---------- */
 
-// Les autres joueurs du monde : acteur → { nom, x, y, t } (le centre de leur vue, en px de la carte ; t : la
-// dernière fois qu'on l'a reçu). La carte les dessine (js/carte/ferme/presence.js lit window.FermeEnLigne).
+// Les autres joueurs du monde : acteur → { nom, look, ech, t } : ech, leurs derniers états reçus ({ t, x, y,
+// h, img, flip } : les pieds de leur personnage, sa hauteur à l'étage, son image, son sens), t la dernière fois
+// qu'on en a reçu un ; look, l'allure de leur personnage ({ perso, apparence }). La carte les dessine un peu en
+// retard, en glissant d'un état au suivant (js/carte/ferme/presence.js lit window.FermeEnLigne).
 const autres = new Map();
-if (typeof window !== 'undefined') window.FermeEnLigne = { autres };
-// Le centre de sa propre vue, envoyé quand il a bougé, POS_MS au plus souvent (le monde en relaie au plus 5
-// par seconde) ; jamais quand rien ne change.
-const POS_MS = 200;
-let derniere = null;
+const ECH_MAX = 12;
+if (typeof window !== 'undefined') window.FermeEnLigne = { autres, moi: null, changement: null };
+
+// Son propre personnage, celui de sa partie solo (sur cet appareil) : son personnage du catalogue et son
+// apparence. En ligne, c'est lui qu'il joue (la partie du monde a la famille du propriétaire), et lui que
+// les autres voient.
+function monLook() {
+  const m = personnageSolo();
+  return m ? { perso: memberPerso({ ...m, enfant: false }), apparence: validApparence(m.apparence, false) } : null;
+}
+// L'allure reçue d'un autre, revue ici (rien d'autre que les champs connus ; sinon, la fermière).
+function lookValide(l) {
+  if (!l || typeof l !== 'object') return null;
+  return { perso: memberPerso({ perso: l.perso, enfant: false, genre: 'f' }), apparence: validApparence(l.apparence, false) };
+}
+
+// Son personnage sur la carte (js/fermier.js, vu()), envoyé quand il bouge ou change d'image, POS_MS au plus
+// souvent (le monde en relaie au plus ≈ 6 par seconde) ; jamais quand rien ne change. Son allure, avec le
+// premier envoi puis toutes les LOOK_MS.
+const POS_MS = 200, LOOK_MS = 5000;
+let derniere = null, lookEnvoye = 0;
 function envoyerPosition() {
   if (!lien || lien.etat !== 'ok' || !window.FarmStage || !FarmStage.scene) return;
   const sc = FarmStage.scene();
-  if (!sc || !sc.cameras || !sc.cameras.main) return;
-  const p = sc.cameras.main.midPoint, x = Math.round(p.x), y = Math.round(p.y);
-  if (derniere && Math.abs(derniere.x - x) < 2 && Math.abs(derniere.y - y) < 2) return;
-  if (envoyer({ t: 'pos', x, y })) derniere = { x, y };
+  const v = sc && sc.fermier && sc.fermier.vu ? sc.fermier.vu() : null;
+  if (!v) return;
+  const x = Math.round(v.x), y = Math.round(v.y), h = Math.round(v.h || 0), img = String(v.img || ''), flip = !!v.flip;
+  const maintenant = Date.now(), look = maintenant - lookEnvoye >= LOOK_MS || !derniere;
+  if (!look && derniere && derniere.x === x && derniere.y === y && derniere.h === h && derniere.img === img && derniere.flip === flip) return;
+  const m = { t: 'pos', x, y, h, img, flip };
+  if (look) m.look = window.FermeEnLigne.moi;
+  if (envoyer(m)) { derniere = { x, y, h, img, flip }; if (look) lookEnvoye = maintenant; }
 }
 if (typeof window !== 'undefined') setInterval(envoyerPosition, POS_MS);
 
@@ -301,7 +342,7 @@ export function bandeau() {
   const nc = (lien.couches || []).length, total = lien.connectes || 0;
   const lit = `<button class="btn${lien.couche ? ' primary' : ''}" type="button" data-action="monde-coucher" aria-pressed="${!!lien.couche}">🛏 ${lien.couche ? 'Couché' : 'Se coucher'}${total > 1 && nc ? ` ${nc}/${total}` : ''}</button>`;
   const role = lien.role ? `<span title="Ton rôle : ${NOMS_ROLES[lien.role] || lien.role}" aria-label="Ton rôle : ${NOMS_ROLES[lien.role] || lien.role}">${ICONES_ROLES[lien.role] || ''}</span> ` : '';
-  el.innerHTML = `<span>🌐 ${role}En ligne · ${etat}${attente}</span>${lit}<button class="btn" type="button" data-action="monde-membres" aria-label="Les membres du monde">👥 ${n}</button><button class="btn" type="button" data-action="monde-quitter">Ma ferme solo</button>`;
+  el.innerHTML = `<span class="en-ligne-etat">🌐 ${role}<span class="en-ligne-mot">En ligne · </span>${etat}${attente}</span>${lit}<button class="btn" type="button" data-action="monde-membres" aria-label="Les membres du monde">👥 ${n}</button><button class="btn" type="button" data-action="monde-quitter" aria-label="Revenir à ma ferme solo"><span class="en-ligne-mot">Ma ferme </span>solo</button>`;
 }
 
 /* ---------- E-3 : les membres, inviter, retirer ---------- */

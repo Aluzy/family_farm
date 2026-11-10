@@ -540,7 +540,9 @@
       return found;
     }
 
-    function filter(model) {
+    // opts.distant : le changement vient d'un autre joueur (en ligne) : rien à refaire ici, la case se
+    // montre tout de suite
+    function filter(model, opts) {
       const raw = model;
       ctx.hour = raw.heure == null ? 12 : raw.heure;
       ctx.cheval = !!raw.cheval;
@@ -550,7 +552,7 @@
       ctx.dort = !!raw.dort;
       pilesNow = new Map((raw.ramasser || []).map((p) => [p.id, p]));
       for (const id of [...claimed]) if (!pilesNow.has(id)) claimed.delete(id);
-      if (prevRaw && raw.jour === prevRaw.jour) {
+      if (prevRaw && raw.jour === prevRaw.jour && !(opts && opts.distant)) {
         const found = diff(prevRaw, raw);
         if (reduced()) holds.clear();
         else {
@@ -1255,6 +1257,9 @@
         if (!lastPos || lastPos.x !== x || lastPos.y !== y) lastPos = { x, y };
         return lastPos;
       },
+      // E-4 : ce que voient les autres joueurs d'un monde en ligne : ses pieds, sa hauteur (à l'étage), le nom
+      // de son image (sans le cheval), son sens ; null s'il n'est pas sur la carte.
+      vu: () => (!shown || home ? null : { x, y, h: lift(), img: drawn, flip }),
       destroy() { s.destroy(); for (const k in selles) if (selles[k]) selles[k].destroy(); if (drapDehors) drapDehors.destroy(); zs.forEach((z) => z.destroy()); holds.clear(); },
       // Autre planche (le personnage du joueur a changé) : mêmes cases, dans le même ordre.
       setSheet(key) {

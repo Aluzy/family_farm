@@ -261,6 +261,14 @@ export class MondeRegistre {
     const m = this.un('SELECT compte, nom, role, revoque FROM membres WHERE compte = ?', String(compte || ''));
     return m && !m.revoque ? m : null;
   }
+  // E-4 : le nom montré du membre `compte` (le prénom de son personnage, redit à chaque connexion) : vrai
+  // s'il a changé.
+  renommer(compte, nom) {
+    const m = this.membre(compte), n = String(nom || '').slice(0, MONDE.NOM_MAX);
+    if (!m || !n || m.nom === n) return false;
+    this.faire('UPDATE membres SET nom = ? WHERE compte = ?', n, String(compte));
+    return true;
+  }
   membres() { return this.tous('SELECT compte, nom, role FROM membres WHERE revoque = 0 ORDER BY role DESC, nom'); }
 
   // L'accueil d'un joueur : refusé si ce n'est pas un membre, ou si son jeu n'a pas la version du monde ;
@@ -531,6 +539,7 @@ export class Monde {
       if (request.headers.get('Upgrade') !== 'websocket') return json({ ok: false, erreur: 'WebSocket attendue.' }, 426);
       if (!this.registre.existe()) return json({ ok: false, erreur: 'Monde inconnu.' }, 404);
       if (!this.registre.membre(compte)) return json({ ok: false, erreur: 'Tu n\'es pas membre de ce monde.' }, 403);
+      if (this.registre.renommer(compte, nom)) this.diffuser({ t: 'membres', membres: this.registre.membres() });
       const paire = new WebSocketPair();
       this.ctx.acceptWebSocket(paire[1], [compte]);
       return new Response(null, { status: 101, webSocket: paire[0] });
@@ -633,7 +642,12 @@ export function traiterMessage(registre, compte, message, repondre, diffuser, di
     const t = registre.maintenant(), avant = registre.positions.get(compte) || 0;
     if (t - avant < MONDE.POS_MS) return;
     registre.positions.set(compte, t);
-    diffuserAutres({ t: 'pos', acteur: compte, nom: membre.nom, x: Math.round(x), y: Math.round(y) });
+    // (son personnage : sa hauteur à l'étage, le nom de son image, son sens ; son allure, de temps en temps,
+    // petite : chacun la revoit chez lui)
+    const h = Number(m.h), img = typeof m.img === 'string' && /^[a-z]+(_[a-z]+)*_\d{1,2}$/.test(m.img) && m.img.length <= 32 ? m.img : '';
+    let look;
+    try { look = m.look && typeof m.look === 'object' && JSON.stringify(m.look).length <= 1000 ? m.look : undefined; } catch (e) { look = undefined; }
+    diffuserAutres({ t: 'pos', acteur: compte, nom: membre.nom, x: Math.round(x), y: Math.round(y), h: Number.isFinite(h) ? Math.max(0, Math.min(200, Math.round(h))) : 0, img, flip: m.flip === true, ...(look ? { look } : {}) });
     return;
   }
   repondre({ t: 'erreur', erreur: `Message inconnu : ${String(m.t)}.` });
