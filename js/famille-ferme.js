@@ -100,6 +100,23 @@
   // (on le rejoint en courant)
   const JEU = { VITE: 1.7, BOND: 1.5, SAUT: 4, RAYON: 18, TOURS: 2, POURSUITE: [6, 10], SEUL: [2, 3.5], PROCHE: 14 * T, ATTRAPE: 12 };
   const ECHEC = 20;                        // s : une tâche du second adulte sans chemin est laissée d'autant
+  // Fiche 32 bis : la pluie, l'écart entre les membres, les bêtes de la ferme.
+  // - Sous la pluie, chacun rentre dans la maison (sans maison : devant la porte) ; un enfant qui joue finit
+  //   sa partie (JEU s) puis rentre ; le second adulte va encore aux bêtes (le Poulailler, l'Étable, les
+  //   ruches) et à la cuisinière (dans la maison) : le reste (arroser, puiser, ramasser) attend la fin de
+  //   l'averse. La pluie finie, chacun ressort vers son coin.
+  // - En marchant, un membre contourne (par sa droite, de COTE px ; le personnage du joueur : du côté le plus
+  //   loin de lui) le membre, le personnage ou la bête qui est devant lui, entre lui et son prochain point
+  //   (à moins de LOIN px devant, PRES px de côté) ; un membre qui va du même côté que lui : il le laisse
+  //   prendre de l'avance. Il n'attend jamais plus de PATIENCE s : il passe (PASSE s sans contourner).
+  // - Arrêtés, deux membres (ou un membre et le personnage) gardent FROLE px entre eux (la séparation douce
+  //   du socle, à FORCE px/s), sans quitter les cases libres ; au lit, à table, en plein geste, non.
+  // - Deux membres ne prennent pas le même coin, ni la même place dans la maison (à PLACE px près).
+  // - Les bêtes de la ferme s'écartent d'eux comme du personnage (js/carte/ferme/chantier.js, stepBeasts :
+  //   positions()). Les chats et les chiens ne suivent pas ces règles.
+  const PLUIE = { JEU: [3, 6] };
+  const ECART = { FROLE: 7, FORCE: 20, LOIN: 22, PRES: 9, COTE: 12, REPOS: 0.6, PATIENCE: 1.5, PASSE: 3, PLACE: 9 };
+  const SOUS_LA_PLUIE = (l) => l === 'poulailler' || l === 'etable' || l === 'cuisiner' || String(l).startsWith('ruche:');
 
   // Les gestes du second adulte (fiche 19), les images de son personnage (assets/personnages/
   // cases.json), en séquence sur `dur` s : aux bêtes et à la boîte, il se baisse (ramasse_<n>) ;
@@ -155,7 +172,27 @@
     const litDe = (m) => (o.lit && m.rang >= 0 ? o.lit(m.rang) : null);
     const heure = () => (model ? model.heure : 12);
     const nuit = () => !model || !!model.nuit;
-    const ouVeut = (m) => voulu(heure(), nuit(), !!litDe(m), m.enfant, model && model.horaire);
+    const pluie = () => !!(model && model.meteo && model.meteo.pluie);
+    // (fiche 32 bis : sous la pluie, dedans ; sauf le second adulte qui va aux bêtes, et l'enfant qui finit sa partie)
+    const ouVeut = (m) => {
+      const v = voulu(heure(), nuit(), !!litDe(m), m.enfant, model && model.horaire);
+      if (v !== 'dehors' || !pluie()) return v;
+      if (m.jeu && m.jeuPluie > 0) return 'dehors';
+      if (m.tache && m.tache !== 'boite' && SOUS_LA_PLUIE(m.tache)) return 'dehors';
+      if (aFaire(m)) return 'dehors';
+      return 'dedans';
+    };
+    // Les tâches du second adulte qu'il fait maintenant (sous la pluie : les bêtes et la cuisinière).
+    const lieuxPermis = (A) => (A.lieux || []).filter((l) => !pluie() || SOUS_LA_PLUIE(l));
+    // (fiche 32 bis : le coin ou la place d'un autre membre, à PLACE px près : pris)
+    const prise = (m, x, y) => {
+      for (const a of membres.values()) {
+        if (a === m || !a.visible || a.couche) continue;
+        const f = a.chemin.length ? a.chemin[a.chemin.length - 1] : a;
+        if (Math.hypot(f.x - x, f.y - y) < ECART.PLACE) return true;
+      }
+      return false;
+    };
 
     // la planche d'un membre : celle de son personnage d'adulte ou d'enfant
     // (étape E6 : son apparence à lui, js/carte/planches.js)
@@ -164,6 +201,8 @@
     const cle = (def) => (propre(def) ? global.CartePlanches.cleMembre(def) : (def.enfant ? 'enfant_' : 'perso_') + def.perso);
 
     let rang = 0;                  // chacun son décalage : ils ne marchent pas l'un sur l'autre
+    // (fiche 32 bis : la grille de l'image (le socle, CarteKit.perception) : les membres, le personnage, les bêtes)
+    const grille = K.perception ? K.perception(32) : null;
     function creer(def) {
       const k = rang++;
       const key = cle(def);
@@ -261,7 +300,7 @@
       // ressortirait aussitôt, et y reviendrait, en rond)
       for (let i = 0; i < 12; i++) {
         const tx = d.x + m.coin.dx + rand(-2 * T, 2 * T), ty = d.y + m.coin.dy + rand(-2 * T, 2 * T);
-        if (!libre(tx, ty) || (H && H.dedans(tx, ty))) continue;
+        if (!libre(tx, ty) || (H && H.dedans(tx, ty)) || prise(m, tx, ty)) continue;
         if (!m.enfant && Math.hypot(tx - m.x, ty - m.y) < FLANE.PAS_MIN) continue;
         if (aller(m, tx, ty, null, 'dehors')) return;
       }
@@ -282,7 +321,7 @@
       const d = door();
       for (let i = 0; i < 8; i++) {
         const tx = d.x + rand(-DEVANT, DEVANT), ty = d.y + rand(0, DEVANT);
-        if (libre(tx, ty) && aller(m, tx, ty, null, 'dedans')) return;
+        if (libre(tx, ty) && (i === 7 || !prise(m, tx, ty)) && aller(m, tx, ty, null, 'dedans')) return;
       }
     }
     // Dans la maison : une place libre au hasard (H.places).
@@ -293,8 +332,9 @@
       const pres = ici ? H.places.filter((q) => { const l = Math.hypot(q.x - m.x, q.y - m.y); return l < FLANE.PIECE && l >= FLANE.PAS_MIN; }) : [];
       const choix = pres.length ? pres : H.places;
       for (let i = 0; i < 6; i++) {
-        const q = choix[Math.floor(Math.random() * choix.length)];
-        if (aller(m, q.x + rand(-3, 3), q.y, null, 'dedans')) return true;
+        const q = choix[Math.floor(Math.random() * choix.length)], tx = q.x + rand(-3, 3);
+        if (i < 5 && prise(m, tx, q.y)) continue;
+        if (aller(m, tx, q.y, null, 'dedans')) return true;
       }
       return false;
     }
@@ -314,7 +354,7 @@
       if (!A || A.id !== m.id || m.enfant || m.tache || m.repos > 0 || !o.aide || !travaille()) return false;
       const now = performance.now() / 1000;
       for (const [l, t] of m.echecs) if (now - t > ECHEC) m.echecs.delete(l);
-      for (const lieu of A.lieux || []) {
+      for (const lieu of lieuxPermis(A)) {
         if (m.echecs.has(lieu)) continue;
         const spot = lieuDe(lieu);
         if (!spot) { m.echecs.set(lieu, now); continue; }   // (pas de place libre : laissée, comme sans chemin)
@@ -330,7 +370,7 @@
     // Le second adulte a-t-il une tâche à faire (qu'il n'a pas laissée faute de place ou de chemin) ?
     function aFaire(m) {
       const A = model && model.aide;
-      return !!A && A.id === m.id && !m.enfant && !!o.aide && travaille() && (A.lieux || []).some((l) => !m.echecs.has(l));
+      return !!A && A.id === m.id && !m.enfant && !!o.aide && travaille() && lieuxPermis(A).some((l) => !m.echecs.has(l));
     }
     function finirTache(m) {
       const lieu = m.tache;
@@ -486,6 +526,8 @@
     }
 
     function decider(m, dt) {
+      // (fiche 32 bis : la pluie commence, l'enfant qui joue finit sa partie en quelques secondes)
+      if (m.jeu && pluie()) { if (m.jeuPluie == null) m.jeuPluie = rand(PLUIE.JEU[0], PLUIE.JEU[1]); m.jeuPluie -= dt; } else if (!pluie()) m.jeuPluie = null;
       const v = ouVeut(m);
       if (m.repos > 0) m.repos -= dt;
       if (m.bloque > 0) m.bloque -= dt;
@@ -548,14 +590,48 @@
       }
     }
 
+    // Fiche 32 bis : le premier gêneur devant lui (un membre, le personnage, une bête de la ferme), entre lui
+    // et son prochain point : → { x, y, joueur, suit } ou null. (Son camarade de jeu ne le gêne pas.)
+    const vois = [];
+    function geneur(m, dx, dy, l) {
+      if (!grille || m.evite > 0 || l <= 1 || m.couche) return null;
+      const devant = (q) => { const jx = q.x - m.x, jy = q.y - m.y; return Math.hypot(jx, jy) < ECART.LOIN && (jx * dx + jy * dy) / l > 0 && Math.abs(jx * (dy / l) - jy * (dx / l)) < ECART.PRES && jx * dx + jy * dy < l * (l + 2); };
+      // (à côté de son but : il y est presque, il ne tourne pas autour)
+      if (m.chemin.length === 1 && l < ECART.LOIN / 2) return null;
+      const ami = m.jeu && m.jeu.ami;
+      const n = grille.voisins(m.x, m.y, ECART.LOIN, vois, (q) => q.ref !== m && q.ref !== ami);
+      let g = null, dmin = Infinity;
+      for (let i = 0; i < n; i++) {
+        const q = vois[i];
+        if (!devant(q)) continue;
+        const d = Math.hypot(q.x - m.x, q.y - m.y);
+        if (d < dmin) { dmin = d; g = { x: q.x, y: q.y, joueur: q.genre === 'joueur', suit: q.genre === 'famille' && q.vx * dx + q.vy * dy > 0 }; }
+      }
+      return g;
+    }
+
     function avancer(m, dt) {
       if (m.pause > 0 && m.chemin.length) { m.pause -= dt; return false; }
       if (!m.chemin.length) {
         if (m.puis) { const f = m.puis; m.puis = null; m.but = null; f(); }
         return false;
       }
-      const to = m.chemin[0];
-      const dx = to.x - m.x, dy = to.y - m.y, l = Math.hypot(dx, dy), st = (m.enfant ? VITESSE.enfant : VITESSE.adulte) * (m.vite || 1) * dt;
+      let to = m.chemin[0];
+      let dx = to.x - m.x, dy = to.y - m.y, l = Math.hypot(dx, dy);
+      const st = (m.enfant ? VITESSE.enfant : VITESSE.adulte) * (m.vite || 1) * dt;
+      // (fiche 32 bis : quelqu'un devant lui ; il attend trop : il passe)
+      if (m.gene > ECART.PATIENCE) { m.gene = 0; m.evite = ECART.PASSE; }
+      const g = reduced() ? null : geneur(m, dx, dy, l);
+      if (g && g.suit) { m.pause = 0.3; m.gene = (m.gene || 0) + 0.3; return false; }
+      if (g) {
+        const ux = dx / l, uy = dy / l, L = o.fermier && o.fermier.ligneLibre ? o.fermier.ligneLibre : () => true;
+        m.evite = ECART.REPOS;
+        const cotes = [1, -1].map((k) => ({ x: m.x - uy * ECART.COTE * k + ux * 4, y: m.y + ux * ECART.COTE * k + uy * 4 }));
+        if (g.joueur) cotes.sort((a, b) => Math.hypot(b.x - g.x, b.y - g.y) - Math.hypot(a.x - g.x, a.y - g.y));
+        const c = cotes.find((q) => libre(q.x, q.y) && L(m.x, m.y, q.x, q.y) && L(q.x, q.y, to.x, to.y));
+        if (c) { m.chemin.unshift(c); to = c; dx = c.x - m.x; dy = c.y - m.y; l = Math.hypot(dx, dy); } else { m.evite = 0; m.pause = 0.4; m.gene = (m.gene || 0) + 0.4; return false; }
+      } else if (m.gene > 0) m.gene = Math.max(0, m.gene - dt);
+      if (m.evite > 0) m.evite -= dt;
       // (le regard lissé : une diagonale en escalier ne le fait pas tourner à chaque case)
       ({ face: m.face, flip: m.flip } = (m.allure || (m.allure = K.allure())).pas(dx, dy, Math.min(l, st), m));
       if (l <= st) { m.x = to.x; m.y = to.y; m.chemin.shift(); } else { m.x += (dx / l) * st; m.y += (dy / l) * st; }
@@ -662,6 +738,14 @@
       },
       update(deltaMs) {
         const dt = Math.min(deltaMs, 100) / 1000;
+        if (grille) {
+          grille.vide();
+          for (const m of membres.values()) if (m.visible && !m.couche && !m.assis) grille.ajoute(m.x, m.y, 'famille', m, dt);
+          const j = o.fermier && o.fermier.pos ? o.fermier.pos() : null;
+          if (j) grille.ajoute(j.x, j.y, 'joueur', 'joueur', dt);
+          // (les bêtes de la ferme, dehors dans leur enclos : pas les chats ni les chiens)
+          if (scene.beasts) for (const e of scene.beasts.values()) if (e.lieu === 'enclos' && e.img && e.img.alpha > 0.5) grille.ajoute(e.x, e.y, 'bete', e, dt);
+        }
         for (const m of membres.values()) {
           // (le second adulte se baisse au Poulailler ou à l'Étable)
           if (m.geste > 0) {
@@ -684,6 +768,13 @@
           const marche = !parle && avancer(m, dt);
           // (arrêté, il repartira par un passage : m.marche compte depuis le départ)
           if (!marche) m.marche = 0;
+          // (fiche 32 bis : arrêté, il garde FROLE px entre lui et un autre membre (ou le personnage) ; pas au lit,
+          // ni en plein jeu avec son camarade)
+          if (!marche && grille && K.separation && m.visible && !m.couche && !reduced()) {
+            const ami = m.jeu && m.jeu.ami;
+            const n = grille.voisins(m.x, m.y, ECART.FROLE, vois, (q) => q.ref !== m && q.ref !== ami && q.genre !== 'bete');
+            if (n) K.separation(m, vois, n, ECART.FROLE, ECART.FORCE, dt, (x, y) => libre(x, y));
+          }
           if (m.fade) {
             m.alpha = Math.max(0, Math.min(1, m.alpha + (m.fade * dt) / FADE_S));
             if (m.alpha >= 1 && m.fade > 0) m.fade = 0;
@@ -754,6 +845,15 @@
         // (d'autres places : celles qui n'y sont plus se libèrent)
         if (table) for (const m of membres.values()) if (m.place && !places.includes(m.place)) quitterTable(m);
       },
+      // (fiche 32 bis : pour les essais filmés) un membre, par son id : il va en (x, y) par les cases libres.
+      essaiAller(id, x, y) { const m = membres.get(id); return !!m && aller(m, x, y, null, ouVeut(m)); },
+      essai(id) { return membres.get(id) || null; },
+      // (fiche 32 bis) Où sont les membres debout (pas au lit) : les bêtes de la ferme s'en écartent (stepBeasts).
+      positions() {
+        const out = [];
+        for (const m of membres.values()) if (m.visible && !m.couche) out.push(m);
+        return out;
+      },
       aidePos() {
         const A = model && model.aide, m = A && membres.get(A.id);
         return m && m.visible ? { x: m.x, y: m.y } : null;
@@ -762,5 +862,5 @@
     };
   }
 
-  global.FamilleFerme = { attach, voulu, couche, GESTES };
+  global.FamilleFerme = { attach, voulu, couche, GESTES, ECART, PLUIE };   // (ECART, PLUIE : lus par les essais filmés)
 })(window);
