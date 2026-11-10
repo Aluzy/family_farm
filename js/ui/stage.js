@@ -31,7 +31,7 @@ import { dessinBac } from '../engine/bacs.js';
 import { bacRecolter, bacTouche } from './bacs.js';
 import { TIRED } from '../engine/stamina.js';
 import { executer } from './commandes.js';
-import { brokenRocks, cutBushes, cutGrass, fellenTrees, morceauxDe, poussesArbres, arbresPlantes } from '../engine/outils.js';
+import { brokenRocks, gisementsFerme, cutBushes, cutGrass, fellenTrees, morceauxDe, poussesArbres, arbresPlantes } from '../engine/outils.js';
 import { asleep } from '../engine/night.js';
 import { absoluteHours } from '../engine/clock.js';
 import { farmMap, farmTerrain, tileCount, voirRegion } from '../engine/terrain.js';
@@ -599,7 +599,7 @@ export function stageModel() {
     toits: stageInterior ? null : toits(state),
     couchages: couchages(state),
     foyer: foyerPorte(),
-    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), pied: piedIci, rochers, abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? semables() : null, engraissables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? casesEngraissables(state) : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
+    houe, hache, pioche, faux, canne, cheval: chevalMonte(state), chevalVitesse: vitesseCheval(state), pied: piedIci, rochers, gisements: gisementsFerme(state), abattus: abattus.concat(buissonsCoupes), buissons, fauchees, asperseurs, robot, parAuto: autoDone(), labourables: houe ? labourables() : null, arrosables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? arrosables() : null, semables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? semables() : null, engraissables: !houe && !hache && !pioche && !faux && !canne && !buildMode ? casesEngraissables(state) : null, serre, interieur: stageInterior, arbres, batiments, animaux, compagnons, panneaux, pompe, pompeEnMarche, citerne, citerneTexte, meubles,
   };
 }
 

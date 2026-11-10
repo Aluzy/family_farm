@@ -83,6 +83,49 @@
       } catch (e) { /* la boîte des cases suffit */ }
     },
 
+    // Les gisements de la ferme (modèle.gisements : { id du rocher: métal }, js/engine/outils.js gisementsFerme ;
+    // docs/gisements.md) : ces gros rochers prennent l'image du gisement de leur métal (la planche des rochers du
+    // grand monde) ; s'ils sont déjà dessinés, ils sont repeints.
+    syncGisements(map) {
+      if (!this.rocks) return;
+      const G = map || {}, cle = Object.entries(G).map(([id, m]) => id + ':' + m).join(',');
+      if (cle === this.gisementsCle) return;
+      this.gisementsCle = cle;
+      for (const r of this.rocks) {
+        const m = G[r.id] || null;
+        if (m === (r.gisement || null)) continue;
+        r.gisement = m;
+        if (r.img) { const vis = r.img.visible; this.dropObj(r); this.showObj(r); if (r.img) r.img.setVisible(vis); }
+      }
+      this.sunDirty = true;
+    },
+
+    // L'image du gisement du rocher `r` dans la planche des rochers (assets/roches.png, roches.json) : { src, x, y,
+    // w, h } ; le rocher prend sa place (son pied au milieu de sa case de gauche, au bas de ses cases), ou null.
+    cadreGisement(r) {
+      const table = this.cache.json.get('roches_cases');
+      const liste = table && this.has('roches') && table['gisement_' + r.gisement];
+      if (!liste || !liste.length) return null;
+      const [c0] = r.id.split(',').map(Number);
+      const [x, y, w, h, px, py] = liste[(c0 * 7 + Number(r.id.split(',')[1]) * 13) % liste.length];
+      if (r.base === undefined) r.base = { x: r.x, y: r.y, w: r.w, h: r.h };
+      const T = this.mapRaw ? this.mapRaw.tilewidth : 16;
+      r.x = r.base.x + T / 2 - px; r.y = r.foot - py; r.w = w; r.h = h;
+      r.box = { x0: r.x, y0: r.y, x1: r.x + w, y1: r.y + h };
+      r.boxVue = false;
+      return { src: this.textures.get('roches').getSourceImage(), x, y, w, h };
+    },
+
+    peindreGisement(r, G) {
+      const ctx = r.tex.getContext();
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, r.w, r.h);
+      ctx.drawImage(G.src, G.x, G.y, G.w, G.h, 0, 0, G.w, G.h);
+      r.tex.refresh();
+      r.probe = this.probeOf(r.tex, r.w, r.h);
+      this.rockBox(r);
+    },
+
     // Les rochers cassés (modèle.rochers : leurs identifiants) ne sont plus sur la carte ; un
     // rocher qui se brise sous la pioche attend son dernier coup (breaking). Un rocher qui
     // revient (quelques jours plus tard, au réveil) apparaît en fondu.

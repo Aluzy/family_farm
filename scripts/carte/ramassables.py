@@ -10,7 +10,7 @@
 #
 # Même ordre que js/carte/ferme/config.js (RAMASSABLES.frames) : petite_pierre, morceau_bois,
 # fibre, baies, paille, pomme_de_pin, gland, pousse_pin, pousse_arbre, botte, puis les produits des
-# chaînes de production (PRODUITS, dans leur ordre). La grappe : 4 × 4 pixels, un dégradé de rouges du clair (en haut à gauche) au
+# chaînes de production (PRODUITS, dans leur ordre), puis un éclat de minerai de fer, de cuivre, d'or, de platine. La grappe : 4 × 4 pixels, un dégradé de rouges du clair (en haut à gauche) au
 # sombre, sans les quatre coins (pas de carré) et sans contour ; au bas milieu de l'image. Les gris sont ceux des rochers de la carte, les bruns ceux des troncs, les verts ceux de
 # l'herbe haute ; contour d'un pixel dans la teinte très sombre de la matière, lumière en haut à
 # gauche.
@@ -20,6 +20,7 @@ import sys
 from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # scripts/pixel.py
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # scripts/carte : gisements
 from pixel import ASSETS, apercu, contour, rangee, rgb  # noqa: E402
 
 PALETTE = {
@@ -279,11 +280,39 @@ POUSSE_ARBRE = [
 ]
 
 
+# un éclat de minerai (les gisements, docs/gisements.md) : un caillou gris piqué de métal, à la lumière en haut à
+# gauche ; m, M, W : le métal (sombre, moyen, éclat), dans les teintes des gisements (scripts/carte/gisements.py)
+MINERAI = [
+    '.....bbcc.......',
+    '....bcMWdc......',
+    '...bcMmMcdc.....',
+    '...bmcbcMWc.....',
+    '..abcMmbccmb....',
+    '..abmmcbMcba....',
+    '...aabbabba.....',
+]
+
+
+def minerai(metal):
+    from gisements import METAUX
+    pal = METAUX[metal]
+    im = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
+    couleurs = {'m': pal[1], 'M': pal[2], 'W': pal[4]}
+    for y, rang in enumerate(MINERAI):
+        for x, ch in enumerate(rang):
+            if ch == '.':
+                continue
+            c = couleurs.get(ch)
+            im.putpixel((x + 1, 7 + y), c + (255,) if c else rgb(PALETTE[ch]))
+    return contour(im, rgb('#26242a'))
+
+
 def main():
     images = [dessin(d, c) for d, c in zip(DESSINS, CONTOURS)] + [grappe(), dessin(PAILLE, '#4a3010')]
     images += [dessin(POMME_DE_PIN, '#2e1a0c'), dessin(GLAND, '#2e1a0c'), dessin(POUSSE_PIN, '#173418'), dessin(POUSSE_ARBRE, '#173418')]
     images += [dessin(BOTTE, '#4a3010')]
     images += [produit(PRODUITS[k]) for k in PRODUITS]
+    images += [minerai(m) for m in ('fer', 'cuivre', 'or', 'platine')]   # (18 à 21 : js/carte/nature.js MORCEAUX)
     sheet = rangee(images, 16, 16)
     sheet.save(os.path.join(ASSETS, 'ramassables.png'))
     print(f'assets/ramassables.png : {len(images)} images de 16 × 16')

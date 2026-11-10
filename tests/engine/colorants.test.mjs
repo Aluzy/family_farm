@@ -111,5 +111,5 @@ test('migration 77 → 78 : le mortier (à construire), le générateur 3 (les f
   assertEqual(m.version, STATE_VERSION);
   assertEqual(m.stations.mortier, { construit: false, tache: null, appareil: null });
   assertEqual(m.stations.four.construit, true, 'les autres stations restent');
-  assertEqual(m.carte.generateur, 4, 'puis le 4 (le châtaignier)');
+  assertEqual(m.carte.generateur, 5, 'puis le 4 (le châtaignier), le 5 (les gisements)');
 });

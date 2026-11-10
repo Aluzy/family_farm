@@ -313,6 +313,12 @@
     "comme un rocher cassé. La pioche en main, il se casse comme les autres."
   ],
   "PIOCHE": { "NOM": "Pioche", "ICONE": "⚒️", "PRIX": 60, "PIERRE": 1, "BRIS": 2, "COUPS": 3, "RETOUR": [1, 3], "MAIN": 1,
+    "//GISEMENTS": [
+      "Les gisements de la ferme (docs/gisements.md ; js/engine/outils.js gisementsFerme) : tant de ses gros rochers (deux",
+      "cases sur deux) sont des gisements de ce métal ; ils se cassent comme ceux du grand monde (RECOLTE.SORTES",
+      "gisement_<métal>, data/monde.json : les coups, la pierre de chaque coup, le minerai de la fin, le retour)."
+    ],
+    "GISEMENTS": { "fer": 3, "cuivre": 2 },
     "//NIVEAUX": [
       "Les niveaux de la pioche (le lot 5 des évolutions du crafting ; js/engine/outils.js niveauPioche) : la pioche de",
       "l'Atelier est en pierre (niveau 1) ; ses améliorations (ATELIER.RECETTES pioche_cuivre, _fer, _or : niveau) se",

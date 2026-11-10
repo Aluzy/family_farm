@@ -6,7 +6,7 @@ import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { techSum } from './techtree.js';
 import { farmTerrain, regionVue, voirRegion } from './terrain.js';
-import { force, hasTool, hitsNeeded, lacher, toolDef, withBonus } from './outils.js';
+import { force, hasTool, hitsNeeded, lacher, refusMinerai, toolDef, withBonus } from './outils.js';
 import { SORTES as SORTES_VEG } from './monde-vegetation.js';
 import { SORTES_ROCHES } from './monde-roches.js';
 import { noterObjectif } from './objectifs-compte.js';
@@ -221,6 +221,8 @@ function preparer(state, id, geste, depuis, n = 1) {
     const def = toolDef(G.outil);
     return { refus: fail(`Il te faut ${def.ARTICLE === 'un' ? 'un' : 'une'} ${def.NOM.toLowerCase()} (à fabriquer à l'Atelier).`) };
   }
+  // (un gisement : la pioche doit avoir le niveau de son minerai, PIOCHE.MINERAIS ; docs/gisements.md)
+  if (regle.minerai && geste === 'casser') { const r = refusMinerai(state, regle.minerai); if (r) return { refus: fail(r) }; }
   const e = etatObjetMonde(state, id);
   if (estPrise(e)) return { refus: fail('Il n\'y a plus rien ici : ça repoussera.') };
   // (cueilli : on ne le cueille plus, mais la hache l'abat encore : le châtaignier)

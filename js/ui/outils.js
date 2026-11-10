@@ -209,7 +209,8 @@ export function mineFromStage(id, ou, fort) {
   if (!r.ok) { notify(r.error); return null; }
   persistState();
   refresh();
-  return { items: { pierre: r.pierre }, casse: r.casse, morceaux: r.morceaux };
+  // (un gisement brisé : son minerai aussi, docs/gisements.md)
+  return { items: { pierre: r.pierre, ...(r.minerai || {}) }, casse: r.casse, morceaux: r.morceaux };
 }
 
 // La carte : le joueur a touché un caillou (un rocher d'une seule tuile) : il le ramasse à la

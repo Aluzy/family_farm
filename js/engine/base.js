@@ -17,7 +17,7 @@ export function mulberry32(seed) {
   };
 }
 
-export const STATE_VERSION = 81;
+export const STATE_VERSION = 82;
 // Version du générateur de la ferme et du grand monde (ferme-generee.js, monde-gen.js, monde-sol.js,
 // monde-hameaux.js… et leurs réglages de data/monde.json, data/terrain.json), notée dans chaque partie
 // (state.carte.generateur, à côté de sa graine). Une même graine ne refait le même monde qu'avec le même
@@ -32,7 +32,9 @@ export const STATE_VERSION = 81;
 // vides, elles ne déplacent rien (la migration 77 → 78 garde les parties du 2).
 // 4 : le châtaignier (data/monde.json VEGETATION.REMPLACE : un feuillu sur seize des forêts de feuilles et de
 // mousse en devient un, tiré d'après sa case) ; aucun arbre ne bouge (la migration 80 → 81 garde les parties du 3).
-export const GENERATEUR_VERSION = 4;
+// 5 : les gisements de minerai (data/monde.json ROCHES : gisement_fer, _cuivre, _or, _platine, au bout des tables de
+// leurs sols ; docs/gisements.md) ; la migration 81 → 82 garde les parties du 4.
+export const GENERATEUR_VERSION = 5;
 // Version du jeu, affichée dans les Options (À propos) : la dernière version notée dans le
 // code et les données (« version 1.22 » : les objectifs « objet »).
 export const GAME_VERSION = '1.22.0';
