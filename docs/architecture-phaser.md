@@ -229,6 +229,17 @@ la ferme dormait à côté avec ses propres textures.
   bêtes de la ferme, les ruches, les rouges-gorges ; la vie d'ambiance (`AmbientLife.graine`) tire le sien
   de la partie et du jour. Deux chargements de la même partie donnent le même spectacle. (Les habitants,
   la famille, le personnage, l'eau et les petits effets gardent `Math.random`.)
+- **Les objets GPU de Phaser 4** (fiche 34, l'essai : `js/carte/ferme/sol-gpu.js`, éteint par défaut) : la
+  décision. **Adopter en partie** : le `TilemapGPULayer` dessine le sol d'une région du grand monde comme les
+  morceaux peints (au pixel près, sans liseré à zoom non entier grâce à la planche réunie et extrudée
+  `assets/sol_gpu.png`), se construit en 8 à 20 ms, ne prend presque pas de mémoire de canevas et, en forêt,
+  rend plus fluide que le canevas ; il coûte la planche réunie (13 Mo au GPU, ≈ 1 s de chargement au ralenti
+  ×4) et perd ce qui est peint dans le sol (le décor des chemins, les petites plantes). La migration est la
+  fiche 35, après une mesure sur le téléphone (Chromium sans écran dessine en logiciel). **Écarter** le
+  `SpriteGPULayer` pour le menu décor : le même dessin, mais plus lent en forêt (des milliers de membres
+  dessinés à chaque image) que les petites plantes peintes. La ferme garde son sol peint (ses couches de
+  Tiled, la terre labourée, la teinte de l'herbe de la fiche 29). (Le shader « arrondi » de `jeu.js` ne touche
+  plus les shaders à une seule texture : il cassait celui du SpriteGPULayer.)
 - **Le pas borné à 50 ms** (`update` de la scène, le personnage) : sous 20 images par seconde, le monde
   ralentit au lieu de sauter (pas de personnage qui traverse un mur d'une image à l'autre). C'est voulu.
 - **Le clavier** est celui de Phaser (`input.keyboard`), sans capture : rien n'est retenu à la

@@ -215,7 +215,9 @@
     showRegion(r) {
       r.tex = true;
       r.morceaux = [];
-      for (let y = r.y; y < r.y + r.h; y += MORCEAU) {
+      // (fiche 34, l'essai éteint par défaut : le sol de la région en objets GPU, sol-gpu.js)
+      if (this.solGPU && this.solGPU(r)) this.solGPUFaire(r);
+      else for (let y = r.y; y < r.y + r.h; y += MORCEAU) {
         for (let x = r.x; x < r.x + r.w; x += MORCEAU) {
           const w = Math.min(MORCEAU, r.x + r.w - x), h = Math.min(MORCEAU, r.y + r.h - y);
           r.morceaux.push({ x, y, w, h, c0: x / T, r0: y / T, c1: (x + w) / T, r1: (y + h) / T, cells: null, tex: null, img: null });
@@ -229,6 +231,7 @@
     },
 
     dropRegion(r) {
+      if (r.gpu) this.solGPUDefaire(r);
       this.dropFalaises(r);
       this.dropFaune(r);
       this.dropEauMonde(r);
@@ -337,6 +340,7 @@
     // peints (ceux qui touchent les cases). `only`, seulement ces cases-là (repeinture partielle).
     paintRegion(r, ctx0, only) {
       if (ctx0) { this.peindreSol(r, ctx0, r.x, r.y, only, false); return; }
+      if (r.gpu) { this.solGPUFaire(r); if (only) this.falaisesRepeintes(r, only); return; }   // (fiche 34 : refaite en entier)
       for (const m of r.morceaux || []) {
         if (!m.tex) continue;
         if (!only) { this.paintMorceau(r, m); continue; }

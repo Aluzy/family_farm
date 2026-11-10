@@ -408,3 +408,20 @@ système (« système : <nom> »). Mesuré sur la partie du jour 75 (Chromium, 3
 ralenti, 2,26 → 2,17 et 2,71 → 2,34 ms. Les plus lourds restent le tri du décor (≈ 1,5 ms au ralenti ×4) et le
 brouillard (≈ 1,4 ms), qui dessinent à chaque image ; les abeilles d'une ruche loin de la vue (0,56 → 0,19 ms)
 et les rouges-gorges (0,34 → 0,19 ms) ont baissé.
+
+## Le sol en objets GPU de Phaser 4 : l'essai (fiche 34)
+
+L'essai (`js/carte/ferme/sol-gpu.js`, éteint) : le sol d'une région du grand monde en `TilemapGPULayer`, ses
+petites plantes en `SpriteGPULayer`. Chromium (rendu logiciel), la partie du jour 75, chargement puis 20 s de
+marche (ouest puis sud) :
+
+| | chargement ×4 | sol peint en marchant ×4 | images en 20 s ×4 (médiane) | mémoire du sol |
+|---|---|---|---|---|
+| près de la ferme, canevas | 7,6–8,1 s | 177–200 ms | 445 (33 ms) | 5,3 Mo de canevas |
+| près de la ferme, sol GPU | 8,8–9,4 s | 41–51 ms | 457–459 (33 ms) | 4,0 Mo + planche 13,3 Mo |
+| en forêt, canevas | 9,0–10,9 s | 76–108 ms | 263–320 (50–67 ms) | 3,2 Mo |
+| en forêt, sol GPU | 8,6 s | 0 ms (régions faites au chargement) | 437 (33 ms) | 0,2 Mo + planche 13,3 Mo |
+| en forêt, sol et décor GPU | 8,9–11,0 s | 0 ms | 176–247 (67–100 ms) | 0,2 Mo + planche 13,3 Mo |
+
+Sans ralenti, près de la ferme : chargement 2,5 → 2,7 s, sol peint 50 → 24 ms, 60 images par seconde dans les
+deux cas. Décision : `docs/architecture-phaser.md` (« Les objets GPU de Phaser 4 ») ; la suite : fiche 35.
