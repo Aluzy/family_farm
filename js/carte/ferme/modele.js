@@ -147,6 +147,8 @@
         this.ambient.setContext({
           hour: model.heure, trees: leafy, herd: model.animaux || {}, compagnons: model.compagnons || [], bati, cols: this.grid.cols,
           pluie: !!(model.meteo && model.meteo.pluie), abri: this.abriCompagnons, chemin: this.cheminCompagnons,
+          // (fiche 32 : le chien le suit parfois)
+          joueur: this.joueurCompagnons || (this.joueurCompagnons = () => (this.fermier && this.fermier.pos ? this.fermier.pos() : null)),
         });
       }
       this.placeLabels();

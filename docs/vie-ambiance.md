@@ -298,3 +298,11 @@ Pour voir les bêtes sans jouer jusque-là : `FF.engine.testAddCows(FF.state); F
 - Essayé dans Chromium sur ordinateur seulement, pas sur un vrai téléphone. Le redessin des
   textures après une perte de mémoire graphique (`repaint()`) suit la même méthode que
   `repairGround()`, sans avoir été vérifié.
+
+## Le chien qui suit, le chat qui chasse (fiche 32)
+
+Le chien suit parfois le personnage (activité `suit`, tirée de jour quand il est à moins de 8 cases) : à
+18 px de lui, par son chemin, même hors de la ferme ; il le laisse au bout de 20 à 40 s, la nuit, sous la
+pluie ou s'il s'éloigne trop, et rentre chez lui (`revient`). Le chat chasse l'oiseau posé à moins de 6
+cases (activité `chasse`) : à ras du sol, puis un bond ; l'oiseau s'envole. Pour les essais :
+`FarmStage.scene().ambient.chat('suit')`, `chat('chasse')`.

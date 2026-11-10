@@ -90,3 +90,21 @@ film parmi trois (vive, posée, méfiante) :
   pas ; un renard près des lapins) : alerte puis envol vers 1 × le rayon à la marche, l'une après l'autre ;
   au galop tout le groupe part dès 1,5 × ; à petits pas on approche plus longtemps ; les lapins fuient le
   renard.
+
+## Groupe 2, les bêtes de la ferme et les compagnons : fait (2026-11-10)
+
+Le réglage filmé, gardé tel quel :
+
+- **le troupeau** (`chantier.js`, `stepBeasts`, `troupeauEcart`, `TROUPEAU`) : les bêtes d'un même enclos
+  gardent leurs distances (vaches 16 px, moutons 12, poules 7 ; la séparation douce du socle) et s'écartent
+  du personnage à 18 px, sans quitter leurs cases. Mesuré sur la partie du jour 75 (38 bêtes dehors) : les
+  paires de bêtes à moins de 6 px l'une de l'autre, 2,9 à 3,1 par relevé sur main, 0,8 après ;
+- **les poules** : le personnage qui a du blé (le Silo, l'inventaire) à moins de 64 px d'elles, leur
+  prochain but est une case de l'enclos à 20 px de lui au plus ; mesuré : les six plus proches passent de
+  32 à 19 px de lui en 8 s ;
+- **le chien** (`ambient-life.js`, activité `suit`, `SUIT`) : de jour, tiré parfois (poids 2) quand le
+  personnage est à moins de 8 cases ; il le suit par son chemin (même hors de la ferme), à 18 px, en courant
+  s'il est loin ; au bout de 20 à 40 s, la nuit, sous la pluie ou s'il s'éloigne de plus de 20 cases, il le
+  laisse et rentre chez lui (`revient`) ; mesuré : il se tient à 20 px du personnage qui marche ;
+- **le chat** (activité `chasse`, `CHASSE`) : un oiseau posé à moins de 6 cases, il s'en approche à ras du
+  sol (9 px/s), puis bondit ; l'oiseau s'envole ; il s'assoit, bredouille.
