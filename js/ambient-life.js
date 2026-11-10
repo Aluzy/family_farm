@@ -446,6 +446,9 @@
       if (x < 8 || y < 8 || x > world.w - 8 || y > world.h - 8) return false;
       if (surBati(x, y)) return false;
       if (waterSet.has(Math.floor(x / T) * T + ',' + Math.floor(y / T) * T)) return false;
+      // (le grand monde autour de la ferme : son eau, ses falaises, les pieds de ses arbres ne sont pas dans les
+      // couches de la carte ; la scène dit où l'on marche : options.marchable, en px)
+      if (o.marchable && !o.marchable(x, y)) return false;
       if (onFence(x, y, 4)) return false;
       for (const r of blocked) if (x > r.x - 8 && x < r.x + r.width + 8 && y > r.y - 8 && y < r.y + r.height + 8) return false;
       for (const m of standing()) if (Math.abs(x - m.x) < m.r + 10 && y > m.top && y < m.base + 4) return false;

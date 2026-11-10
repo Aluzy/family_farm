@@ -521,14 +521,16 @@ def belvedere():
 
 
 def arbre_ancien():
-    """Un arbre ancien : 96 × 98 px. Un houppier immense et sombre, en larges bosses ; un tronc très épais, ses
-    racines à nu qui s'étalent au pied."""
-    w, h = 96, 98
+    """Un arbre ancien : 96 × 106 px. Un houppier immense et sombre, en larges bosses ; un tronc très épais, ses
+    racines à nu qui s'étalent au pied. (m : la marge au-dessus du houppier, que ses bosses du haut et son
+    contour ne soient pas coupés : V.MARGE_CIME, comme les arbres du monde, et un peu plus.)"""
+    m = V.MARGE_CIME + 1
+    w, h = 96, 98 + m
     r = random.Random(1201)
     bosses = [(48, 34, 30), (24, 40, 18), (72, 40, 18), (36, 18, 17), (60, 18, 17), (14, 52, 11), (82, 52, 11), (48, 50, 20), (30, 56, 13), (66, 56, 13)]
-    bosses = [(cx + r.uniform(-1.5, 1.5), cy + r.uniform(-1.5, 1.5), rr * r.uniform(0.95, 1.05)) for cx, cy, rr in bosses]
+    bosses = [(cx + r.uniform(-1.5, 1.5), cy + m + r.uniform(-1.5, 1.5), rr * r.uniform(0.95, 1.05)) for cx, cy, rr in bosses]
     t = V.Toile(w, h)
-    V.tronc(t, 48, 54, h - 2, 16, 22, V.ECORCE, 1203, racines=7)
+    V.tronc(t, 48, 54 + m, h - 2, 16, 22, V.ECORCE, 1203, racines=7)
     # les racines à nu, qui rampent de part et d'autre
     for sens in (-1, 1):
         for k in range(2):
