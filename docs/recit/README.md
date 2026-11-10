@@ -8,7 +8,7 @@
 > plus (quelques-uns à rafraîchir, une fois par hameau) ; personne n'est en colère. Ce qui suit garde l'histoire de
 > la conception : où il diffère, la bible l'emporte (les noms changés : `RECIT_RENOMMAGES`, js/engine/state.js).
 
-Ferme Familiale raconte l'installation d'une famille sur la terre sauvage dont elle hérite, sur
+Moon Bloom Village raconte l'installation d'une famille sur la terre sauvage dont elle hérite, sur
 Céron, petite île volcanique de l'archipel des Terres Lointaines. Ce dossier est la référence de
 l'histoire : ce qui est décidé fait foi pour l'écriture et pour le code.
 

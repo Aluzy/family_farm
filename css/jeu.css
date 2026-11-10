@@ -3652,7 +3652,9 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   transition: opacity 0.4s ease-out;
 }
 .chargement.fini { opacity: 0; pointer-events: none; }
-.chargement-titre { font-size: 32px; color: var(--text); }
+.chargement-titre { margin: 0; font-size: 32px; font-weight: normal; color: var(--text); }
+/* le logo (assets/logo_contour.png, 92 × 47 : le logo et son contour de nuit) agrandi sans lissage */
+.chargement-titre img { display: block; width: 276px; max-width: 80vw; height: auto; image-rendering: pixelated; }
 .chargement-rang { display: flex; flex-direction: column; align-items: stretch; }
 .chargement-plants { display: flex; gap: 4px; padding: 0 10px; margin-bottom: -36px; position: relative; z-index: 1; }
 .chargement-plants i {
@@ -3776,6 +3778,7 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 }
 .titre-enseigne { top: max(8%, calc(16px + env(safe-area-inset-top))); width: min(86%, 460px); padding: 14px 20px 12px; text-align: center; }
 .titre-nom { margin: 0; font-size: clamp(32px, 9vw, 48px); font-weight: normal; line-height: 1; }
+.titre-nom img { display: block; width: 368px; max-width: 100%; height: auto; margin: 0 auto; image-rendering: pixelated; }
 .titre-slogan { margin: 8px 0 0; font-size: 1.05rem; color: #7a5434; }
 .titre-boutons {
   bottom: max(7%, calc(16px + env(safe-area-inset-bottom))); width: min(88%, 400px);

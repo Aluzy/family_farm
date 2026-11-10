@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Ferme Familiale — un jeu de ferme en pixel art où tu fais revivre la ferme familiale : construis, jardine, et partage-la avec tes voisins et tes amis.">
+  <meta name="description" content="Moon Bloom Village — un jeu de ferme en pixel art où tu fais revivre la ferme familiale : construis, jardine, et partage-la avec tes voisins et tes amis.">
   <meta name="theme-color" content="#8a5a34">
-  <title>Ferme Familiale — Construis, jardine, partage !</title>
+  <title>Moon Bloom Village — Construis, jardine, partage !</title>
   <style>
     /* Le style du jeu (css/jeu.css) : sa police en pixels (assets/police_dialogue.woff), ses
        cadres de bois sur fond crème, ses couleurs (le soleil, la feuille, la terre), et une
@@ -84,6 +84,7 @@
     .nav { position: sticky; top: 0; z-index: 5; padding: 8px 0; }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 8px 6px 6px; }
     .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; }
+    .brand .logo { display: block; width: 92px; height: 47px; image-rendering: pixelated; }
     .medaillon {
       width: 44px; height: 44px; flex: none; border-radius: 50%;
       display: grid; place-items: center;
@@ -218,7 +219,7 @@
   <header class="nav">
     <div class="wrap nav-inner bois">
       <a class="brand" href="#">
-        <span class="medaillon">🌾</span><span>Ferme Familiale</span>
+        <img class="logo" src="assets/logo_contour.png" alt="Moon Bloom Village" width="92" height="47">
       </a>
       <nav class="nav-links" aria-label="Sections">
         <a href="#concept">Le concept</a>
@@ -329,7 +330,7 @@
 
   <footer>
     <div class="wrap footer-inner">
-      <div>🌱 Ferme Familiale — un jeu de ferme en pixel art.</div>
+      <div>🌱 Moon Bloom Village — un jeu de ferme en pixel art.</div>
       <div>Jouable dans ton navigateur · <a href="cookies.html">Cookies et confidentialité</a></div>
     </div>
   </footer>

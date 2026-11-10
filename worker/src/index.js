@@ -1,4 +1,4 @@
-// Point de collecte Ferme Familiale (Cloudflare Worker + R2).
+// Point de collecte Moon Bloom Village (Cloudflare Worker + R2).
 // - POST /session : reçoit le JSON d'une session (depuis le jeu) et l'écrit dans
 //   le bucket R2 sous la clé sessions/<sid>.json. Un envoi ultérieur de la même
 //   session remplace le fichier (dernière version = la plus complète). Une session

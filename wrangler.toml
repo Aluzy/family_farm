@@ -46,4 +46,4 @@ enabled = true
 #                        pour prévisualiser ou tester la publication
 #   RESEND_API_KEY       (jeu en ligne) clé de l'API de Resend, qui envoie les liens de connexion
 #   COMPTE_EXPEDITEUR    (jeu en ligne) l'expéditeur des liens, d'un domaine vérifié chez Resend,
-#                        par exemple « Ferme Familiale <connexion@mon-domaine.fr> »
+#                        par exemple « Moon Bloom Village <connexion@mon-domaine.fr> »

@@ -1,6 +1,6 @@
 # La carte de la ferme (Phaser 4) : architecture
 
-Périmètre : la zone entre le bandeau « Ferme Familiale » (titre + indicateurs) et le menu
+Périmètre : la zone entre le bandeau « Moon Bloom Village » (titre + indicateurs) et le menu
 du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur) reste en DOM.
 La seule autre carte, la grotte de la mine (`js/grotte.js`), s'affichait au même endroit ; elle n'est
 plus (docs/gisements.md, lot 4). Le kit commun (§ 1 bis) et le jeu Phaser (§ 1 quater) restent. La ville, la transition,

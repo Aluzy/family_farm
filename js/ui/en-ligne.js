@@ -488,7 +488,7 @@ registerActions({
     z.select();
     try { navigator.clipboard.writeText(z.value).then(() => notify('📋 Lien copié.'), () => notify('Le lien est sélectionné : copie-le.')); } catch (e) { notify('Le lien est sélectionné : copie-le.'); }
   },
-  'monde-partager': () => { try { navigator.share({ title: 'Ferme Familiale', text: 'Viens dans ma ferme !', url: invitation && invitation.lien }); } catch (e) { /* (rien) */ } },
+  'monde-partager': () => { try { navigator.share({ title: 'Moon Bloom Village', text: 'Viens dans ma ferme !', url: invitation && invitation.lien }); } catch (e) { /* (rien) */ } },
   'monde-retirer': (target) => { aRetirer = target.dataset.compte; ouvrirMembres(); },
   'monde-retirer-non': () => { aRetirer = null; ouvrirMembres(); },
   'monde-retirer-oui': (target) => { retirer(target.dataset.compte); },

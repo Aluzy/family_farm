@@ -152,9 +152,9 @@ export class Registre {
 
 // Le texte de l'e-mail (sujet, texte, HTML) pour le lien `lien`.
 export function emailDuLien(lien) {
-  const sujet = 'Ton lien de connexion à Ferme Familiale';
-  const texte = `Bonjour,\n\nPour te connecter à Ferme Familiale (le jeu en ligne), ouvre ce lien sur l'appareil où tu joues :\n${lien}\n\nIl vaut ${COMPTES.LIEN_MIN} minutes et ne sert qu'une fois. Si tu n'as rien demandé, ignore ce message : sans ce lien, personne ne peut se connecter.\n\nFerme Familiale`;
-  const html = `<p>Bonjour,</p><p>Pour te connecter à <b>Ferme Familiale</b> (le jeu en ligne), ouvre ce lien sur l'appareil où tu joues :</p><p><a href="${lien}">Me connecter</a></p><p>Il vaut ${COMPTES.LIEN_MIN} minutes et ne sert qu'une fois. Si tu n'as rien demandé, ignore ce message : sans ce lien, personne ne peut se connecter.</p><p>Ferme Familiale</p>`;
+  const sujet = 'Ton lien de connexion à Moon Bloom Village';
+  const texte = `Bonjour,\n\nPour te connecter à Moon Bloom Village (le jeu en ligne), ouvre ce lien sur l'appareil où tu joues :\n${lien}\n\nIl vaut ${COMPTES.LIEN_MIN} minutes et ne sert qu'une fois. Si tu n'as rien demandé, ignore ce message : sans ce lien, personne ne peut se connecter.\n\nMoon Bloom Village`;
+  const html = `<p>Bonjour,</p><p>Pour te connecter à <b>Moon Bloom Village</b> (le jeu en ligne), ouvre ce lien sur l'appareil où tu joues :</p><p><a href="${lien}">Me connecter</a></p><p>Il vaut ${COMPTES.LIEN_MIN} minutes et ne sert qu'une fois. Si tu n'as rien demandé, ignore ce message : sans ce lien, personne ne peut se connecter.</p><p>Moon Bloom Village</p>`;
   return { sujet, texte, html };
 }
 

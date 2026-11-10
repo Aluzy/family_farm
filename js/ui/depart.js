@@ -147,7 +147,7 @@ function ecranAccueil() {
   const A = accueil, P = DATA.FAMILLE.PROFIL, D = DATA.DEPART;
   switch (A.etape) {
     case 'bienvenue':
-      return ['Bienvenue dans Family Farm ! Ici tu peux construire ta ferme, élever des animaux, produire des ressources et fabriquer des objets, cuisiner des recettes et plein d\'autres super activités !', fleche()];
+      return ['Bienvenue dans Moon Bloom Village ! Ici tu peux construire ta ferme, élever des animaux, produire des ressources et fabriquer des objets, cuisiner des recettes et plein d\'autres super activités !', fleche()];
     case 'perso':
       return ['Pour commencer, choisis un personnage :', grille(A.perso) + fleche(A.perso > 0)];
     case 'apparence':

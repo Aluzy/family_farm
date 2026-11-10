@@ -587,7 +587,7 @@ export function openAboutModal() {
   ];
   openModal(`
     <h2 id="about-title">ℹ️ À propos</h2>
-    <p class="about-version"><strong>Ferme Familiale</strong> · version ${GAME_VERSION} <span class="muted">(format de sauvegarde ${STATE_VERSION})</span></p>
+    <p class="about-version"><strong>Moon Bloom Village</strong> · version ${GAME_VERSION} <span class="muted">(format de sauvegarde ${STATE_VERSION})</span></p>
     <h3>Règles principales</h3>
     <ol class="about-rules">${rules.map((r) => `<li>${r}</li>`).join('')}</ol>
     <h3>Fiches d'aide</h3>

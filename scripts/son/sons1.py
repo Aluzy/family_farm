@@ -1,4 +1,4 @@
-"""Ambiances, sources spatiales et effets d'interaction de Family Farm."""
+"""Ambiances, sources spatiales et effets d'interaction de Moon Bloom Village."""
 import numpy as np
 from synthlib import *
 from scipy import signal
