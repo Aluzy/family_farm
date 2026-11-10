@@ -626,6 +626,20 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
+     "id": "pas_japonais",
+     "terme": "Pas japonais",
+     "description": "Des pas d'ardoise, de pierre ou de bois, enfoncés dans l'herbe, pour dessiner les allées de la ferme. Ils se fabriquent à l'Atelier (deux pierres, ou deux bois, pour deux pas) et se posent dehors, sur l'herbe, comme le chemin : posés à la suite, ils suivent l'allée, un pas à droite, un pas à gauche, et se tournent quand elle tourne.",
+     "liens": [
+      "plancher_chemin",
+      "mode_construire"
+     ],
+     "decouverte": [
+      "objet:sol_pas_ardoise",
+      "objet:sol_pas_pierre",
+      "objet:sol_pas_bois"
+     ]
+    },
+    {
      "id": "lanterne",
      "terme": "Lanterne scintillante",
      "description": "Un bloc qui éclaire autour de lui la nuit. Elle se fabrique à l'Atelier avec un champignon lumineux (il pousse dans les forêts du grand monde et luit la nuit) et deux bois, et se pose sur la ferme, dehors comme dans la maison.",

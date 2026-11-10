@@ -1,6 +1,6 @@
 # Les icônes d'emoji
 
-Les 481 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
+Les 484 icônes (16×16, ou 32×32 pour les plus fines) qui remplacent les emojis à l'affichage. Une nouvelle icône :
 déposer son PNG ici, l'ajouter à `icones.json` (emoji → fichier), puis lancer le script.
 
 ## Télécharger
@@ -187,6 +187,9 @@ noir pur), lumière en haut à gauche, 3 à 4 teintes par matière, pas d'anticr
 | <img src="apercu/womans_hat+ear_of_rice.png" width="48" height="48" alt=""> | 👒‍🌾 | [`womans_hat+ear_of_rice.png`](womans_hat+ear_of_rice.png) |
 | <img src="apercu/jeans+wrench.png" width="48" height="48" alt=""> | 👖‍🔧 | [`jeans+wrench.png`](jeans+wrench.png) |
 | <img src="apercu/womans_boots+large_brown_square.png" width="48" height="48" alt=""> | 👢‍🟫 | [`womans_boots+large_brown_square.png`](womans_boots+large_brown_square.png) |
+| <img src="apercu/pas_ardoise.png" width="48" height="48" alt=""> | 👣‍⬛ | [`pas_ardoise.png`](pas_ardoise.png) |
+| <img src="apercu/pas_pierre.png" width="48" height="48" alt=""> | 👣‍🪨 | [`pas_pierre.png`](pas_pierre.png) |
+| <img src="apercu/pas_bois.png" width="48" height="48" alt=""> | 👣‍🪵 | [`pas_bois.png`](pas_bois.png) |
 | <img src="apercu/boy.png" width="48" height="48" alt=""> | 👦 | [`boy.png`](boy.png) |
 | <img src="apercu/boy+person_with_blond_hair.png" width="48" height="48" alt=""> | 👦‍👱 | [`boy+person_with_blond_hair.png`](boy+person_with_blond_hair.png) |
 | <img src="apercu/boy+emoji_component_red_hair.png" width="48" height="48" alt=""> | 👦‍🦰 | [`boy+emoji_component_red_hair.png`](boy+emoji_component_red_hair.png) |

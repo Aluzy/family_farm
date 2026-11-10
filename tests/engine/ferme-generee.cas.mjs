@@ -1333,6 +1333,7 @@ test('niveau 1 : des sols dans une pièce dont les murs y montent ; avec l\'esca
   assertEqual(piecesNiveau1(s).length, 1);
   assertEqual(casesSolEtage(s).size, 9);
   assertEqual(poseSolEtageStatus(s, 'chemin', dedans).ok, false, 'pas le chemin');
+  assertEqual(poseSolEtageStatus(s, 'sol_pas_ardoise', dedans).ok, false, 'ni les pas japonais');
   assertEqual(poserSolEtage(s, 'plancher', dedans), { ok: true, sorte: 'plancher', case: dedans, sol: true });
   assertEqual(poserSolEtage(s, 'sol_carrelage', dedans).remplace, 'plancher', 'un autre sol le change');
   assertEqual([solsEtage(s)[dedans], countItem(s, 'plancher'), countItem(s, 'sol_carrelage')], ['sol_carrelage', 6, 1]);
@@ -1474,7 +1475,7 @@ test('migration v37 → v38 : une enceinte qui mêle une maison et un bâtiment 
 
 test('ferme générée : la barrière arrête le passage sans fermer de pièce ; le chemin se pose dehors, comme celui de la carte', () => {
   const s = reach(chantier('h1'), 'poulailler');
-  setInv(s, { mur_pierre: 30, porte: 2, barriere: 30, chemin: 10, plancher: 2, nichoir: 1 });
+  setInv(s, { mur_pierre: 30, porte: 2, barriere: 30, chemin: 10, plancher: 2, nichoir: 1, sol_pas_pierre: 4, sol_pas_bois: 2 });
   // une enceinte de barrières : pas une pièce close
   const z = terrainLibre(s, 12, 5), p = murs(z, 5, 5);
   for (const t of p.murs) assert(poserBloc(s, 'barriere', t).ok);
@@ -1489,12 +1490,21 @@ test('ferme générée : la barrière arrête le passage sans fermer de pièce ;
   assert(tuiles.some(([i]) => i === c) && tuiles.length >= 6, 'le chemin et ses raccords');
   assert(tuiles.every(([, g]) => g >= blocGid('herbe_chemin', 0) && g <= blocGid('herbe_chemin', 255)), 'les tuiles herbe / chemin de la planche');
   assertEqual(poserBloc(s, 'plancher', c).error, 'Il y a déjà un chemin ici.');
+  // les pas japonais : des sols du dehors comme le chemin, sur l'herbe ; ni l'un ni l'autre ne prend la place d'un autre
+  assert(poserBloc(s, 'sol_pas_pierre', c + 2).ok);
+  assert(poserBloc(s, 'sol_pas_pierre', c + 3).ok);
+  assertEqual([solAt(s, c + 2), countItem(s, 'sol_pas_pierre')], ['sol_pas_pierre', 2]);
+  assertEqual(poserBloc(s, 'sol_pas_bois', c + 2).ok, false, 'pas un pas sur un autre');
+  assertEqual(poserBloc(s, 'sol_pas_bois', c).ok, false, 'ni sur le chemin');
+  reprendreBloc(s, c + 2); reprendreBloc(s, c + 3);
+  assertEqual(countItem(s, 'sol_pas_pierre'), 4, 'repris, ils reviennent dans l\'inventaire');
   // pas dans une pièce close ; le plancher, lui, entre au Poulailler même après le nichoir
   reprendreBloc(s, c); reprendreBloc(s, c + 1);
   for (const k of p.murs) reprendreBloc(s, k);
   for (const k of p.murs) poserBloc(s, 'mur_pierre', k);
   assert(poserBloc(s, 'nichoir', p.dedans).ok);
   assertEqual(poserBloc(s, 'chemin', p.dedans + 1).ok, false, 'le chemin : dehors');
+  assertEqual(poserBloc(s, 'sol_pas_pierre', p.dedans + 1).ok, false, 'les pas japonais : dehors aussi');
   assert(poserBloc(s, 'plancher', p.dedans + 1).ok, 'un plancher au Poulailler, après le nichoir');
 });
 

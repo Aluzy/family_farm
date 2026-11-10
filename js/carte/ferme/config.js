@@ -197,6 +197,11 @@ const CULTURE_MONTE = 0;
     // depuis celle-ci + masque, comme le plancher ; les modèles de portes percés dans un mur
     // vertical (MODELES_PORTES) : leur image
     modelesSols: { sol_dalles: 90, sol_carrelage: 106, sol_tomettes: 122, sol_chevrons: 138, sol_marbre: 154, sol_paves: 170, sol_mosaique: 186 },
+    // les pas japonais (scripts/carte/pas_japonais.py) : des sols du dehors, à part (assets/pas_japonais.png,
+    // images de 16 × 16 posées par le bas de la case), enfoncés dans l'herbe, qui la laisse voir. Par sorte,
+    // 64 images depuis la sienne : (côté + 2 × forme) × 16 + masque des voisins ; le côté alterne d'une
+    // case à l'autre (le pas à droite, puis à gauche de l'axe de l'allée), la forme se tire de la case.
+    pasJaponais: { key: 'pas_japonais', file: 'pas_japonais.png', frame: { frameWidth: 16, frameHeight: 16 }, sortes: { sol_pas_ardoise: 0, sol_pas_pierre: 64, sol_pas_bois: 128 } },
     portesVerticales: { porte_chene: 202, porte_vitree: 203, porte_grange: 204, porte_bleue: 205, porte_fer: 206, porte_ecurie: 207, porte_blanche: 208 },
     // l'étage (un essai, js/carte/ferme/etage.js) : le haut de l'escalier (`haut`) ; l'étage
     // est dessiné `dy` px plus haut (la hauteur de la face des murs hauts : leurs faces se suivent) ; le niveau où l'on n'est pas,

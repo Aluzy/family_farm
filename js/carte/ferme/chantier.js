@@ -560,7 +560,9 @@
     },
 
     // Les sols posés (modèle.sols : [{ case, sorte }], le plancher et les autres modèles), à plat
-    // sous les blocs : chacun prend l'image raccordée à ses voisins de même sorte.
+    // sous les blocs : chacun prend l'image raccordée à ses voisins de même sorte. Les pas japonais
+    // (BLOCS_CARTE.pasJaponais) : leur planche à eux ; leur côté alterne d'une case à l'autre, leur
+    // forme se tire de la case.
     syncFloors(list) {
       if (!this.floors) this.floors = new Map();
       const S = this.floors, cols = this.grid.cols, at = new Map((list || []).map((p) => [p.case, p.sorte]));
@@ -568,10 +570,18 @@
       for (const [c, sorte] of at) {
         const col = c % cols, is = (k) => at.get(k) === sorte;
         const m = (is(c - cols) ? 1 : 0) + (col < cols - 1 && is(c + 1) ? 2 : 0) + (is(c + cols) ? 4 : 0) + (col > 0 && is(c - 1) ? 8 : 0);
-        const frame = (BLOCS_CARTE.modelesSols[sorte] !== undefined ? BLOCS_CARTE.modelesSols[sorte] : BLOCS_CARTE.sols) + m, img = S.get(c);
-        if (img) { if (img.frame.name !== frame) img.setFrame(frame); continue; }
+        const pas = BLOCS_CARTE.pasJaponais, depart = pas.sortes[sorte];
+        let key = BLOCS_CARTE.key, frame;
+        if (depart !== undefined) {
+          const row = Math.floor(c / cols), cote = (col + row) % 2, forme = (Math.imul(c, 2654435761) >>> 16) & 1;
+          key = pas.key;
+          frame = depart + (cote + 2 * forme) * 16 + m;
+        } else frame = (BLOCS_CARTE.modelesSols[sorte] !== undefined ? BLOCS_CARTE.modelesSols[sorte] : BLOCS_CARTE.sols) + m;
+        const img = S.get(c);
+        if (img) { if (img.texture.key !== key || img.frame.name !== frame) img.setTexture(key, frame); continue; }
+        if (!this.has(key)) continue;
         const x = col * T + T / 2, y = (Math.floor(c / cols) + 1) * T;
-        const sol = this.add.image(x, y, BLOCS_CARTE.key, frame).setOrigin(0.5, 1).setDepth(BLOCS_CARTE.solDepth);
+        const sol = this.add.image(x, y, key, frame).setOrigin(0.5, 1).setDepth(BLOCS_CARTE.solDepth);
         sol.fixe = true;   // (fiche 26 : décor fixe, decor.js cullScene)
         S.set(c, sol);
         this.floorsN = (this.floorsN || 0) + 1;       // (les touffes d'herbe autour : herbes.js)
