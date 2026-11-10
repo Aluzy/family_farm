@@ -131,7 +131,8 @@
       "CABANE": { "CHEMIN": 14, "HAMEAU": 45, "FERME": 60 },
       "ATELIER": { "HAMEAU": 40 },
       "EPAVE": { "HAMEAU": 30 },
-      "CALE": { "RAYON": 40, "HAMEAU": 8, "PECHE": 8 }
+      "CALE": { "RAYON": 40, "HAMEAU": 8, "PECHE": 8 },
+      "GEODE": { "FERME": 12, "CHEMIN": 3, "HAMEAU": 12, "LIEU": 8 }
     },
     "SECRETS": {
       "SORTES": {
@@ -473,7 +474,8 @@
       { "nom": "cairn", "genre": "secret", "variantes": 1, "bloque": [[0, 0]], "boite": [12, 30] },
       { "nom": "arbre_ancien", "genre": "secret", "variantes": 1, "bloque": [[-1, 0], [0, 0], [1, 0]], "boite": [30, 70] },
       { "nom": "belvedere", "genre": "secret", "variantes": 1, "bloque": [[-1, 0], [1, 0]], "boite": [26, 30] },
-      { "nom": "pierre_levee", "genre": "secret", "variantes": 1, "bloque": [[0, 0]], "boite": [12, 40] }
+      { "nom": "pierre_levee", "genre": "secret", "variantes": 1, "bloque": [[0, 0]], "boite": [12, 40] },
+      { "nom": "geode", "genre": "recit", "variantes": 1, "bloque": [[-1, 0], [0, 0], [1, 0]], "boite": [22, 40] }
     ],
     "NEIGE": 0.86,
     "BLOQUE": [[-1, 0], [0, 0], [1, 0], [-1, -1], [0, -1], [1, -1], [-1, -2], [0, -2], [1, -2]],

@@ -22,13 +22,16 @@
     champignons_lumineux: { teinte: 0x8ff5e0, sol: [30, 0.8], coeur: [12, 0.95, 6] },
     cristaux_quartz: { teinte: 0xd4e8ff, sol: [24, 0.5], coeur: [10, 0.7, 8] },
     cristaux_amethyste: { teinte: 0xc48cff, sol: [26, 0.6], coeur: [11, 0.8, 8] },
+    // (l'amas d'améthyste du récit, un lieu dessiné : plus grand ; les nuits de pleine lune, tant que la pierre de
+    // lune y dort, sa lueur grandit et pâlit, modèle.geodeLuit)
+    geode: { teinte: 0xb47cff, sol: [52, 0.75], coeur: [22, 0.85, 22], lune: 0xcaa6ff },
   };
 
   F.partie({
 
     // Y a-t-il de quoi briller près de la vue ? (chantier.js : sans aucune lumière, le voile n'en calcule pas)
     lumineuxVus() {
-      for (const o of this.vegListe || []) if (o.nom && LUMINEUX[o.nom]) return true;
+      for (const o of this.vegListe || []) if (LUMINEUX[o.nom || o.lieuNom]) return true;
       return false;
     },
 
@@ -37,13 +40,17 @@
       const on = nuit > BLOCS_CARTE.lanterne.allume ? Math.min(1, (nuit - BLOCS_CARTE.lanterne.allume) / 0.3) : 0;
       if (on <= 0 || !this.vegListe) return;
       const v = this.cameras.main.worldView, calme = global.CarteKit.reduit();
+      const pleine = !!(this.ctx.lastModel && this.ctx.lastModel.geodeLuit);
       for (const o of this.vegListe) {
-        const L = o.nom && LUMINEUX[o.nom];
+        const nom = o.nom || o.lieuNom, L = LUMINEUX[nom];
         if (!L || !o.img || !o.img.visible) continue;
-        if (o.fx < v.x - 48 || o.fx > v.right + 48 || o.fy < v.y - 48 || o.fy > v.bottom + 64) continue;
-        const k = on * (calme ? 1 : 0.8 + 0.2 * Math.sin(time / 900 + (o.fx * 13 + o.fy * 7) % 17));
-        out.push({ key: 'lueur', x: o.fx, y: o.fy - 2, tint: L.teinte, alpha: L.sol[1] * k, scaleX: L.sol[0] / R, scaleY: (L.sol[0] * 0.7) / R });
-        out.push({ key: 'lueur', x: o.fx, y: o.fy - L.coeur[2], tint: L.teinte, alpha: L.coeur[1] * k, scaleX: L.coeur[0] / R, scaleY: L.coeur[0] / R });
+        // (un lieu dessiné n'a pas son pied à part : le bas du milieu de son image)
+        const fx = o.fx !== undefined ? o.fx : o.x + o.w / 2, fy = o.fy !== undefined ? o.fy : o.y + o.h;
+        if (fx < v.x - 96 || fx > v.right + 96 || fy < v.y - 96 || fy > v.bottom + 96) continue;
+        const fort = nom === 'geode' && pleine ? 1.5 : 1, teinte = fort > 1 ? L.lune : L.teinte;
+        const k = on * (calme ? 1 : 0.8 + 0.2 * Math.sin(time / (fort > 1 ? 500 : 900) + (fx * 13 + fy * 7) % 17));
+        out.push({ key: 'lueur', x: fx, y: fy - 2, tint: teinte, alpha: Math.min(1, L.sol[1] * k * fort), scaleX: (L.sol[0] * fort) / R, scaleY: (L.sol[0] * fort * 0.7) / R });
+        out.push({ key: 'lueur', x: fx, y: fy - L.coeur[2], tint: teinte, alpha: Math.min(1, L.coeur[1] * k * fort), scaleX: (L.coeur[0] * fort) / R, scaleY: (L.coeur[0] * fort) / R });
       }
     },
   });

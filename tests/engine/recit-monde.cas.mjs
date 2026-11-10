@@ -238,12 +238,13 @@ test('les hameaux garantis : chaque nom une fois, dans chaque monde, et leur mé
   }
 });
 
-test('les lieux du récit : la cabane en forêt, l\'atelier au bord de l\'eau, l\'épave sur la plage, la cale aux Mouettes', () => {
+test('les lieux du récit : la cabane en forêt, l\'atelier au bord de l\'eau, l\'épave sur la plage, la cale aux Mouettes, l\'amas d\'améthyste en montagne', () => {
   for (const g of GRAINES) {
     const m = genererMonde(g), p = m.plan, W = m.terrain.LARGEUR, R = p.lieux.recit;
     const b = (i) => p.BIOMES[p.biome[i]];
     const de = (sorte) => R.find((x) => x.sorte === sorte);
-    assertEqual(R.map((x) => x.sorte), ['cabane', 'atelier', 'epave', 'cale'], `${g} : les quatre lieux`);
+    assertEqual(R.map((x) => x.sorte), ['cabane', 'atelier', 'epave', 'cale', 'geode'], `${g} : les cinq lieux`);
+    assertEqual(b(de('geode').case), 'montagne', `${g} : l'amas d'améthyste en montagne`);
     // la cale du bac : sur la terre, au bord de la mer, près des Mouettes ; sa jetée et la place du bac sur la mer
     const cale = de('cale'), mo = p.lieux.hameaux.find((h) => h.garanti === 'mouettes');
     const d = Math.hypot((cale.case % W) - (mo.case % W), Math.floor(cale.case / W) - Math.floor(mo.case / W));

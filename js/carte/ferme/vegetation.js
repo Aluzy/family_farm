@@ -236,6 +236,8 @@
         if (penche) o.herbe = { img, fleurs: null, x, y, base: n, t: -1, dir: 1, inside: false };
         // (un arbre d'un jardin de hameau : la hache le dit, hameaux.js)
         if (pl.cle === 'hameaux' && s.genre === 'arbre') o.nomHameau = s.nom;
+        // (un lieu dessiné : sa sorte ; l'amas d'améthyste du récit luit la nuit, lumineux.js)
+        if (pl.cle === 'lieux_monde') o.lieuNom = s.nom;
         if (s.genre === 'mer' && pl.ecume.length) {
           // l'écume autour, sur l'eau (sous le rocher), chaque rocher à son moment
           const e = pl.ecume[0], ce = pl.cadres[e];

@@ -133,3 +133,49 @@ def cristaux(sorte, k):
         if 0 <= tx < W and 0 <= ty < H:
             P[tx, ty] = pal[4] + (255,)          # un éclat sur la pointe
     return contour(im, 0.3), W // 2, sol + 1
+
+
+# le grand amas d'améthyste du récit (lieux.recit, sorte « geode » : la cachette de Maurice enfant, où dort la pierre
+# de lune ; docs/gisements.md, lot 3) : de hauts prismes sur un socle de granit, trois cases de large
+GEODE = [(22, 30, 4.2, 0.0), (14, 22, 3.4, -0.35), (30, 24, 3.6, 0.35), (19, 15, 2.6, -0.15), (27, 16, 2.4, 0.25),
+         (9, 12, 2.4, -0.55), (35, 13, 2.4, 0.6), (24, 10, 2.0, 0.1)]
+
+
+def geode():
+    """L'amas d'améthyste : 44 × 44 px, le pied au bas du milieu."""
+    from roches import GRANIT as G, pierre
+    W, H = 44, 44
+    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    socle = pierre(W, 14, [(12, 8, 10, 5, 6), (24, 7, 13, 6, 8), (35, 8, 8, 5, 5)], G, 901, mouchete=0.06, pans=5)
+    P = im.load()
+    sol = H - 6
+    for bx, haut, larg, pente in sorted(GEODE, key=lambda g: -g[1]):
+        for t in range(int(haut * 4)):
+            h = t / 4
+            yc = sol - h
+            xc = bx + pente * h
+            w = larg * (1 if h < haut - larg * 1.2 else max(0.0, (haut - h) / (larg * 1.2)))
+            for x in range(int(math.floor(xc - w)), int(math.ceil(xc + w)) + 1):
+                if not (0 <= x < W and 0 <= int(yc) < H):
+                    continue
+                f = (x + 0.5 - xc) / max(0.6, w)
+                i = 3 if f < -0.4 else 2 if f < 0.15 else 1
+                if h > haut - larg * 1.2 - 0.5:
+                    i = min(4, i + 1)
+                if h < 2:
+                    i = max(0, i - 1)
+                P[x, int(yc)] = AMETHYSTE[i] + (255,)
+        # l'arête claire de la face gauche, un éclat à la pointe
+        for t in range(int((haut - larg) * 2)):
+            h = t / 2 + 1
+            x, y = int(bx + pente * h - larg * 0.3), int(sol - h)
+            if 0 <= x < W and 0 <= y < H and P[x, y][3] and hasard(901, bx, t) < 0.6:
+                P[x, y] = AMETHYSTE[3] + (255,)
+        tx, ty = int(bx + pente * (haut - 1.5)), int(sol - haut + 1.5)
+        if 0 <= tx < W and 0 <= ty < H:
+            P[tx, ty] = AMETHYSTE[4] + (255,)
+    im = contour(im, 0.3)
+    out = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    out.alpha_composite(socle, (0, H - 14))
+    out.alpha_composite(im)
+    return out, W // 2, H - 2

@@ -896,6 +896,24 @@ export function elementsDuMonde(graine, cadre, lire = releve(champsDuMonde(grain
     }
     if (best) recit.push({ id: 'cale_bac', sorte: 'cale', case: best.i, sens: best.sens });
   }
+  // l'amas d'améthyste (la cachette de Maurice enfant, la pierre de lune ; docs/gisements.md, lot 3) : dans la
+  // montagne la plus proche de la ferme, une case de montagne entourée de montagne, loin des chemins, des hameaux,
+  // des entrées de grotte et des coins de pêche ; la plus proche de la ferme (aucun tirage : les autres lieux ne
+  // bougent pas).
+  if (PR.GEODE) {
+    const C = PR.GEODE;
+    let best = null, bd = Infinity;
+    for (let y = 6; y < H - 6; y++) {
+      for (let x = 6; x < W - 6; x++) {
+        const i = y * W + x, d = distFerme(i);
+        if (d >= bd || bio(i) !== montagne || d < C.FERME || surChemin[i] || distChemin(i) < C.CHEMIN || distHameaux(i) < C.HAMEAU) continue;
+        if (!entoure(i, 2, (j) => bio(j) === montagne)) continue;
+        if ([...grottes, ...peche].some((l) => Math.hypot(col(i) - col(l.case), rang(i) - rang(l.case)) < C.LIEU)) continue;
+        best = i; bd = d;
+      }
+    }
+    if (best !== null) recit.push({ id: 'geode_lune', sorte: 'geode', case: best });
+  }
 
   /* -- D-2 : les secrets du monde (la ruine, le cairn, l'arbre ancien, le belvédère, la pierre levée) -- */
   // (leur propre hasard, après tout le reste : les autres lieux ne bougent pas ; data/monde.json SECRETS)
