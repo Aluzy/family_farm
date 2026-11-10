@@ -109,6 +109,7 @@
     // Les images des blocs : celles du modèle, créées, changées ou ôtées. Les murs et la porte
     // de l'enceinte de la Serre (`serre` : leurs cases) sont en verre et en bois.
     syncBlocks(list, bati, pieces, serre) {
+      this.perchoirsRevus = false;        // (les rouges-gorges revoient leurs perchoirs : rougegorges.js, fiche 33)
       if (!this.blocks) this.blocks = new Map();
       const B = this.blocks, seen = new Set(), cols = this.grid.cols, H = BLOCS_CARTE.hauts;
       let changed = false;
@@ -599,7 +600,7 @@
           let e = M.get(id);
           if (e && e.kind !== kind) { e.img.destroy(); e = null; }
           if (!e) {
-            e = { kind, def, img: this.add.image(0, 0, def.key, 0).setOrigin(0.5, 1).setAlpha(0), lieu: null, x: 0, y: 0, to: null, t: 0, age: 0, pose: null };
+            e = { kind, def, img: this.add.image(0, 0, def.key, 0).setOrigin(0.5, 1).setAlpha(0), lieu: null, x: 0, y: 0, to: null, t: 0, age: 0, pose: null, h: this.hasardDe('bete:' + id) };
             M.set(id, e);
           }
           if (e.cle !== cle) { e.cle = cle; e.lieu = null; }
@@ -610,10 +611,10 @@
     },
 
     // (fiche 32) Une case de l'enclos `cases` à moins de TROUPEAU.autour px du point p, au hasard, ou null.
-    caseAutour(cases, p) {
+    caseAutour(cases, p, h = Math.random) {
       const cols = this.grid.cols, A = TROUPEAU.autour, pres = [];
       for (const c of cases) if (Math.hypot((c % cols) * T + T / 2 - p.x, Math.floor(c / cols) * T + T - 4 - p.y) <= A) pres.push(c);
-      return pres.length ? pres[Math.floor(Math.random() * pres.length)] : null;
+      return pres.length ? pres[Math.floor(h() * pres.length)] : null;
     },
     // (fiche 32) La bête `e` s'écarte de ses voisines de l'enclos et du personnage, sans quitter ses cases.
     troupeauEcart(e, cases, dt, P) {
@@ -627,10 +628,10 @@
       if (nj) K.separation(e, v, nj, TROUPEAU.joueur, TROUPEAU.forceJoueur, dt, peut);
     },
 
-    // Le point (pieds) d'une case, un peu au hasard dans la case.
-    beastSpot(c) {
+    // Le point (pieds) d'une case, un peu au hasard dans la case (h : le hasard de la bête, fiche 33).
+    beastSpot(c, h = Math.random) {
       const cols = this.grid.cols;
-      return { x: (c % cols) * T + T / 2 + Math.round((Math.random() - 0.5) * 8), y: Math.floor(c / cols) * T + T - 2 - Math.round(Math.random() * 4) };
+      return { x: (c % cols) * T + T / 2 + Math.round((h() - 0.5) * 8), y: Math.floor(c / cols) * T + T - 2 - Math.round(h() * 4) };
     },
 
     // Fiche 32 (groupe 2) : le troupeau. Les bêtes d'un même enclos gardent `rayon` px entre elles (la
@@ -659,8 +660,9 @@
           // (de l'enclos au bâtiment, ou l'inverse : elle s'efface, puis apparaît là-bas)
           if (e.lieu && e.img.alpha > 0) { e.img.setAlpha(Math.max(0, e.img.alpha - dt * 3)); continue; }
           e.lieu = lieu;
-          const p = this.beastSpot(cases[Math.floor(Math.random() * cases.length)]);
-          e.x = p.x; e.y = p.y; e.to = null; e.t = 0.5 + Math.random() * 2; e.pose = null; e.age = Math.random() * 3;
+          const h = e.h;
+          const p = this.beastSpot(cases[Math.floor(h() * cases.length)], h);
+          e.x = p.x; e.y = p.y; e.to = null; e.t = 0.5 + h() * 2; e.pose = null; e.age = h() * 3;
         }
         if (e.img.alpha < 1) e.img.setAlpha(Math.min(1, e.img.alpha + dt * 3));
         e.age += dt;
@@ -671,11 +673,11 @@
             // sinon de profil retourné)
             if (!e.vue) e.vue = d.face && Math.abs(dy) > Math.abs(dx) ? (dy > 0 ? 'face' : 'dos') : 'marche';
             e.img.setFlipX(e.vue === 'marche' ? dx < 0 || (Math.abs(dx) <= 0.5 && e.img.flipX) : false);
-            if (l <= st) { e.x = e.to.x; e.y = e.to.y; e.to = null; e.t = d.pause[0] + Math.random() * (d.pause[1] - d.pause[0]); e.pose = d.poses[Math.floor(Math.random() * d.poses.length)]; e.age = 0; } else { e.x += (dx / l) * st; e.y += (dy / l) * st; }
+            if (l <= st) { e.x = e.to.x; e.y = e.to.y; e.to = null; e.t = d.pause[0] + e.h() * (d.pause[1] - d.pause[0]); e.pose = d.poses[Math.floor(e.h() * d.poses.length)]; e.age = 0; } else { e.x += (dx / l) * st; e.y += (dy / l) * st; }
           } else if ((e.t -= dt) <= 0) {
             // (fiche 32 : la poule et le blé du personnage tout près : elle va vers lui)
-            const pres = e.kind === 'poule' && grain && joueur && Math.hypot(joueur.x - e.x, joueur.y - e.y) < TROUPEAU.attire ? this.caseAutour(cases, joueur) : null;
-            e.to = this.beastSpot(pres !== null ? pres : cases[Math.floor(Math.random() * cases.length)]);
+            const pres = e.kind === 'poule' && grain && joueur && Math.hypot(joueur.x - e.x, joueur.y - e.y) < TROUPEAU.attire ? this.caseAutour(cases, joueur, e.h) : null;
+            e.to = this.beastSpot(pres !== null ? pres : cases[Math.floor(e.h() * cases.length)], e.h);
             e.vue = null; e.age = 0;
           }
           if (P && K.separation) this.troupeauEcart(e, cases, dt, P);

@@ -18,7 +18,8 @@
   const { T, ABEILLES } = F.C;
   const { reducedMotion } = F;
 
-  const rand = (a, b) => a + Math.random() * (b - a);
+  // (h : le hasard de la ruche, à graine : fiche 33)
+  const rand = (a, b, h = Math.random) => a + h() * (b - a);
 
   F.partie({
 
@@ -49,14 +50,14 @@
         if (R.has(b.case)) continue;
         // (le trou de vol : en bas de la ruche, ABEILLES.trou px au-dessus du pied de sa case)
         const x = (b.case % cols) * T + T / 2, y = (Math.floor(b.case / cols) + 1) * T - ABEILLES.trou;
-        const key = this.abeilleTexture();
+        const key = this.abeilleTexture(), h = this.hasardDe('ruche:' + b.case);
         const abeilles = [];
         for (let k = 0; k < ABEILLES.parRuche; k++) {
           const img = this.add.image(x, y, key, 0).setOrigin(0.5, 1).setVisible(false);
           // (elles ne sortent pas toutes en même temps)
-          abeilles.push({ img, etat: 'dedans', t: rand(0, ABEILLES.dedans[1] * 2), x, y, cx: 0, cy: 0, phase: rand(0, 7), vers: null });
+          abeilles.push({ img, etat: 'dedans', t: rand(0, ABEILLES.dedans[1] * 2, h), x, y, cx: 0, cy: 0, phase: rand(0, 7, h), vers: null });
         }
-        R.set(b.case, { x, y, abeilles });
+        R.set(b.case, { x, y, abeilles, h });
       }
       for (const [c, r] of R) if (!seen.has(c)) { r.abeilles.forEach((a) => a.img.destroy()); R.delete(c); }
       // les fleurs : le milieu de chaque case fleurie (le modèle ne change de liste qu'avec la ferme)
@@ -76,7 +77,7 @@
       const pres = (p) => (p.x - r.x) * (p.x - r.x) + (p.y - r.y) * (p.y - r.y) <= P;
       const list = (this.fleursCases || []).filter(pres);
       for (const g of this.tallGrass || []) if (g.fleurie && g.img && g.img.visible && pres(g)) list.push({ x: g.x, y: g.y - 5 });
-      return list.length ? list[Math.floor(Math.random() * list.length)] : null;
+      return list.length ? list[Math.floor(r.h() * list.length)] : null;
     },
 
     stepAbeilles(dt) {
@@ -86,18 +87,28 @@
       const h = M ? M.heure : 12;
       const dehors = !(M && M.nuit) && h >= ABEILLES.heures[0] && h < ABEILLES.heures[1] && !reducedMotion();
       const now = performance.now() / 1000, A = ABEILLES;
+      // (fiche 33 : une ruche loin de la vue (au-delà de la portée de ses abeilles) : ses abeilles ne
+      // bougent que deux fois par seconde, du temps écoulé)
+      const v = this.cameras.main.worldView, marge = A.portee + 2 * T;
       for (const r of R.values()) {
+        let dtR = dt;
+        if (dehors && (r.x < v.x - marge || r.x > v.right + marge || r.y < v.y - marge || r.y > v.bottom + marge)) {
+          r.cumul = (r.cumul || 0) + dt;
+          if (r.cumul < A.loinPas) continue;
+          dtR = r.cumul;
+        }
+        r.cumul = 0;
         for (const a of r.abeilles) {
           // la nuit (ou pas visibles) : toutes dans la ruche
-          if (!dehors) { if (a.etat !== 'dedans') { a.etat = 'dedans'; a.t = rand(0, A.dedans[1]); } a.img.setVisible(false); continue; }
-          a.t -= dt;
+          if (!dehors) { if (a.etat !== 'dedans') { a.etat = 'dedans'; a.t = rand(0, A.dedans[1], r.h); } a.img.setVisible(false); continue; }
+          a.t -= dtR;
           if (a.etat === 'dedans') {
             a.img.setVisible(false);
             if (a.t > 0) continue;
             // elle sort : vers une fleur, sinon autour de la ruche
             const f = this.fleurPour(r);
             a.x = r.x; a.y = r.y;
-            a.vers = f || { x: r.x + rand(-1.5, 1.5) * T, y: r.y + rand(-1.5, 0.8) * T };
+            a.vers = f || { x: r.x + rand(-1.5, 1.5, r.h) * T, y: r.y + rand(-1.5, 0.8, r.h) * T };
             a.fleur = !!f;
             a.etat = 'aller';
           }
@@ -107,11 +118,11 @@
             a.y = a.vers.y + Math.sin(now * 3.1 + a.phase) * 1.5 - 2;
             if (a.t <= 0) { a.etat = 'retour'; a.vers = { x: r.x, y: r.y }; }
           } else if (a.etat === 'aller' || a.etat === 'retour') {
-            const dx = a.vers.x - a.x, dy = a.vers.y - a.y, l = Math.hypot(dx, dy), st = A.vitesse * dt;
+            const dx = a.vers.x - a.x, dy = a.vers.y - a.y, l = Math.hypot(dx, dy), st = A.vitesse * dtR;
             if (l <= st) {
               a.x = a.vers.x; a.y = a.vers.y;
-              if (a.etat === 'aller') { a.etat = 'butine'; a.t = a.fleur ? rand(A.butine[0], A.butine[1]) : rand(0.5, 1.5); }
-              else { a.etat = 'dedans'; a.t = rand(A.dedans[0], A.dedans[1]); a.img.setVisible(false); continue; }
+              if (a.etat === 'aller') { a.etat = 'butine'; a.t = a.fleur ? rand(A.butine[0], A.butine[1], r.h) : rand(0.5, 1.5, r.h); }
+              else { a.etat = 'dedans'; a.t = rand(A.dedans[0], A.dedans[1], r.h); a.img.setVisible(false); continue; }
             } else {
               a.x += (dx / l) * st;
               a.y += (dy / l) * st;

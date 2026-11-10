@@ -40,7 +40,7 @@ Flux de données, à sens unique dans chaque direction :
 
 ```
 state ──stageModel()──▶ modèle de vue ──FarmStage.update()──▶ scène.sync()      (affichage)
-state ◀── clic DOM ◀── stageAct(action, données) ◀── scène : appui sur la carte  (actions)
+state ◀── runAction ◀── stageAct(action, données) ◀── scène : appui sur la carte  (actions)
 ```
 
 - **Modèle de vue** (`stageModel()`), le seul objet que la scène reçoit :
@@ -52,10 +52,14 @@ state ◀── clic DOM ◀── stageAct(action, données) ◀── scène :
 - **`sync(modèle)` est idempotent** : `render()` appelle `renderStage()` environ 5 fois par
   seconde ; un modèle identique est écarté avant la scène (comparaison de valeur avec le précédent, `pareil()`, sans texte JSON), un modèle
   différent crée, met à jour ou détruit exactement ce qui a changé.
-- **Pont d'actions** `stageAct(action, données)` : crée un bouton masqué portant
-  `data-action` et `data-*`, le clique, le retire. L'unique écouteur de clics de la page fait le
-  reste : une seule logique d'action, mêmes fenêtres, même suivi de session (aucune donnée
-  nouvelle : seulement de nouveaux noms d'action, `stage-open`, `stage-close`, `maison-tab`).
+- **Pont d'actions** `stageAct(action, données)` (`js/ui/stage.js`) : appelle `runAction(action, cible)`
+  directement, la cible portant les données comme un `dataset` (`data-*`), comme si un bouton de la
+  page avait été touché : une seule logique d'action, mêmes fenêtres, même suivi de session (aucune
+  donnée nouvelle : seulement de nouveaux noms d'action, `stage-open`, `stage-close`, `maison-tab`).
+- **Les événements du modèle** (fiche 33, `evenementsModele`, `js/carte/ferme/modele.js`) : les parties
+  du modèle qui changent rarement sont annoncées par la scène (`this.events`) au lieu d'être relues à
+  chaque image : `modele:presents` (les présents devant la porte : le système `presents` ne tourne que
+  quand il y en a), `modele:citerne` (le texte de la bulle de la citerne, posé une fois).
 
 Pour ajouter un élément à la carte : un champ dans `stageModel()`, un bloc dans `sync()`
 (`js/carte/ferme/modele.js`), une action existante dans `tap()` (`js/farm-stage.js`). Jamais
@@ -209,6 +213,22 @@ la ferme dormait à côté avec ses propres textures.
   carte : `CarteKit.machine` (états, transitions en table à leur cadence), `perception` (grille de 64 px),
   `avance` (le pas commun), `separation`, `hasard` / `graine` (à graine). La faune du grand monde
   (`faune-monde.js`, `ETATS`, `VIE`) l'utilise ; les autres acteurs y passeront un à un.
+- **L'ordonnanceur** (fiche 33, `js/carte/ordonnanceur.js`, `CarteKit.ordonnanceur`) : `update` de la scène
+  ne fait plus qu'avancer la table `systemes()` (`js/farm-stage.js`) : ses ≈ 70 étapes, dans l'ordre
+  d'avant, chacune avec son nom, sa cadence et sa condition (`actif`). À chaque image ce qui se voit
+  bouger ; à 10 Hz ce qui décide (la région du personnage, les coins de pêche et les secrets, le silo
+  transparent, les morceaux ramassés, les ombres du soleil (repeintes quand il le faut), les étiquettes
+  des conseils, la bulle du didacticiel, ce que la page affiche selon la vue) ; à 2 Hz ce qui relève (le
+  fond, la position notée pour la reprise). Un système lent reçoit le temps écoulé depuis son dernier pas ;
+  les systèmes lents sont décalés. Pendant une mesure 📏, le temps de chaque système est noté
+  (« système : <nom> »). Pour ajouter une étape : une ligne dans la table, à sa place, à chaque image
+  dans le doute. Dans les systèmes eux-mêmes : une ruche loin de la vue fait bouger ses abeilles deux
+  fois par seconde ; les rouges-gorges ne revoient leurs perchoirs que quand les blocs changent.
+- **Le hasard à graine de la couche visuelle** (fiche 33) : `hasardDe(id)` (la scène) rend un générateur
+  à graine (`CarteKit.hasard`) tiré de la graine du monde, du jour et de l'identifiant de l'acteur : les
+  bêtes de la ferme, les ruches, les rouges-gorges ; la vie d'ambiance (`AmbientLife.graine`) tire le sien
+  de la partie et du jour. Deux chargements de la même partie donnent le même spectacle. (Les habitants,
+  la famille, le personnage, l'eau et les petits effets gardent `Math.random`.)
 - **Le pas borné à 50 ms** (`update` de la scène, le personnage) : sous 20 images par seconde, le monde
   ralentit au lieu de sauter (pas de personnage qui traverse un mur d'une image à l'autre). C'est voulu.
 - **Le clavier** est celui de Phaser (`input.keyboard`), sans capture : rien n'est retenu à la

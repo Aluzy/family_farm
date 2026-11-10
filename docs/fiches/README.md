@@ -82,5 +82,5 @@ après 26 et 28. Les pistes de `docs/chantier-allegement.md` restent valables à
 | [30 — le corps du personnage : collision, coins, accélération](30-corps-du-personnage.md) | — | moyen | fait (réglage B, choisi sur film) |
 | [31 — le socle des comportements : états, perception, séparation](31-socle-des-comportements.md) | 30 | moyen | fait (la faune y est passée ; pas de Timeline pour la visite) |
 | [32 — une vie plus crédible : faune, bêtes de la ferme, habitants](32-vie-plus-credible.md) | 31 | moyen | fait (2026-11-10 : la faune du monde, les bêtes de la ferme et les compagnons, les habitants) |
-| [33 — l'ordonnanceur de la scène, les événements, le hasard à graine](33-ordonnanceur-de-la-scene.md) | 25 | faible | à faire |
+| [33 — l'ordonnanceur de la scène, les événements, le hasard à graine](33-ordonnanceur-de-la-scene.md) | 25 | faible | fait (2026-11-10) |
 | [34 — l'essai des objets GPU (TilemapGPULayer, SpriteGPULayer)](34-essai-objets-gpu.md) | 26, 28 | élevé | à faire |

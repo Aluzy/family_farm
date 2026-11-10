@@ -28,11 +28,31 @@
       if (quoi.has('chaines')) this.syncChaines(model.chaines);
     },
 
+    // Fiche 33 : les parties du modèle qui changent rarement sont annoncées par des événements de la scène
+    // (this.events) plutôt que regardées à chaque image : `modele:presents` (la liste des présents devant la
+    // porte : amis.js), `modele:citerne` (le texte de la bulle de la citerne : etiquettes.js). Émis quand la
+    // partie change (et au premier modèle).
+    evenementsModele(model) {
+      const E = this.modeleVu || (this.modeleVu = { presents: null, citerne: null });
+      if (!this.modeleEcoute) {
+        this.modeleEcoute = true;
+        this.events.on('modele:presents', (L) => { this.presentsLa = L.length > 0; });
+        this.events.on('modele:citerne', (texte) => this.citerneTexte(texte));
+      }
+      const L = model.presents || [], cle = L.map((x) => x.de + ':' + x.objet + ':' + x.n).join('|');
+      if (cle !== E.presents) { E.presents = cle; this.events.emit('modele:presents', L); }
+      const c = model.citerneTexte || '';
+      if (c !== E.citerne) { E.citerne = c; this.events.emit('modele:citerne', c); }
+    },
+
     sync(model, force) {
       if (!this.ready) return;
       // Le personnage compare ce modèle au précédent : une case qu'il n'a pas encore
       // travaillée garde son ancien dessin (voir js/fermier.js).
       this.rawModel = model;
+      this.evenementsModele(model);
+      // (fiche 33 : la vie d'ambiance tire son hasard de la partie et du jour : ambient-life.js)
+      if (global.AmbientLife && global.AmbientLife.graine && this.ambianceJour !== model.jour) { this.ambianceJour = model.jour; global.AmbientLife.graine(this.hasardDe('ambiance')); }
       if (this.family) this.family.sync(model);
       if (this.fermier) model = this.fermier.filter(model);
       const rebuild = !!force;                     // premier affichage ou affichage forcé

@@ -398,3 +398,13 @@ après 8 h d'absence, ralenti ×4 : 16,0 s → 11,0 à 12,1 s.
 que les cases sous les touffes et ne relit que leurs fenêtres. Ralenti ×4, la partie du jour 75 : ≈ 930 ms
 → ≈ 310 à 350 ms, les mêmes teintes pour ses 4 267 touffes. La peinture des morceaux de sol, mesurée
 (≈ 0,27 s ralenti), reste sur le fil principal.
+
+## L'ordonnanceur de la scène (fiche 33)
+
+`update` de la carte est une table de systèmes nommés, chacun à sa cadence (`js/carte/ordonnanceur.js`) : ce
+qui décide à 10 Hz, ce qui relève à 2 Hz, ce qui se voit bouger à chaque image. 📏 note le temps de chaque
+système (« système : <nom> »). Mesuré sur la partie du jour 75 (Chromium, 3 × 15 s, contre la version d'avant) :
+`update` par image au ralenti ×4, 10,39 → 9,99 ms sur la ferme, 11,20 → 10,68 ms dans un hameau ; sans
+ralenti, 2,26 → 2,17 et 2,71 → 2,34 ms. Les plus lourds restent le tri du décor (≈ 1,5 ms au ralenti ×4) et le
+brouillard (≈ 1,4 ms), qui dessinent à chaque image ; les abeilles d'une ruche loin de la vue (0,56 → 0,19 ms)
+et les rouges-gorges (0,34 → 0,19 ms) ont baissé.

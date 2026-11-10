@@ -512,9 +512,10 @@ const CULTURE_MONTE = 0;
   // une fleur à moins de `portee` px, y butinent `butine` s, rentrent, restent `dedans` s dans
   // la ruche, ressortent ; de `heures[0]` à `heures[1]` h. Dessinées `dessus` plus loin que leur
   // point au sol (devant ce qu'elles survolent). Les fleurs d'un bac à fleurs : `bac` px au-dessus
-  // du pied de sa case.
+  // du pied de sa case. Une ruche loin de la vue : ses abeilles ne bougent que toutes les `loinPas` s
+  // (fiche 33).
   const ABEILLES = { key: 'abeille', parRuche: 4, trou: 5, bac: 16, portee: 9 * T, vitesse: 26, vol: 6, zigzag: 1.5,
-    butine: [1.5, 4], dedans: [1, 4], heures: [7, 19.5], battements: 14, dessus: 24,
+    butine: [1.5, 4], dedans: [1, 4], heures: [7, 19.5], battements: 14, dessus: 24, loinPas: 0.5,
     dessin: [['.ww.', 'ybyk'], ['....', 'ybyk']],
     couleurs: { y: '#f6c02c', b: '#2a1c10', k: '#2a1c10', w: 'rgba(232,246,255,0.85)' } };
   // La bulle du compagnon (js/carte/ferme/etiquettes.js compagnonDit) : l'appui sur lui (`boite` : autour de
