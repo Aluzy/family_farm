@@ -271,7 +271,9 @@
     // La teinte de chaque touffe : la couleur moyenne du fond autour de son pied, divisée par
     // celle de l'herbe la plus claire (sur laquelle les touffes sont dessinées). Lue une fois,
     // région par région (CarteKit.REGION) : chacune dessinée dans un canevas de travail, qu'on
-    // jette ensuite.
+    // jette ensuite. Fiche 29 : seules les cases sous les touffes y sont peintes (les tuiles se
+    // dessinent case par case : les mêmes pixels là où on lit) ; peindre toute la région, toutes ses
+    // couches, coûtait ≈ 0,9 s au chargement sur un téléphone.
     tintTallGrass() {
       if (!this.grassAll.length || !this.regions || !this.planche()) return;
       const N = K.REGION.tuiles * T;
@@ -289,13 +291,26 @@
         cv.width = r.w; cv.height = r.h;
         const ctx = cv.getContext('2d', { willReadFrequently: true });
         let d;
-        try { this.paintRegion(r, ctx); d = ctx.getImageData(0, 0, r.w, r.h).data; } catch (e) { continue; }
+        // (les cases de la fenêtre lue sous chaque touffe : 16 px de large, de 4 px au-dessus du pied à
+        // 2 px au-dessous)
+        const W = this.grid.cols, cases = new Set();
+        for (const k of ks) {
+          const g = this.grassAll[k];
+          const x0 = Math.max(r.x, g.x - 8), x1 = Math.min(r.x + r.w, g.x + 8) - 1, y0 = Math.max(r.y, g.y - 4), y1 = Math.min(r.y + r.h, g.y + 2) - 1;
+          for (let cy = Math.floor(y0 / T); cy <= Math.floor(y1 / T); cy++) for (let cx = Math.floor(x0 / T); cx <= Math.floor(x1 / T); cx++) cases.add(cy * W + cx);
+        }
+        try { this.paintRegion(r, ctx, [...cases].sort((a, b) => a - b)); } catch (e) { continue; }
         for (const k of ks) {
           const g = this.grassAll[k];
           let rr = 0, v = 0, b = 0, n = 0;
-          for (let y = Math.max(r.y, g.y - 4); y < Math.min(r.y + r.h, g.y + 2); y++) {
-            for (let x = Math.max(r.x, g.x - 8); x < Math.min(r.x + r.w, g.x + 8); x++) {
-              const i = (((y - r.y) | 0) * r.w + ((x - r.x) | 0)) * 4;
+          // (la fenêtre seule est relue, pas toute la région : 4,4 Mo par région)
+          const ya = Math.max(r.y, g.y - 4), yb = Math.min(r.y + r.h, g.y + 2), xa = Math.max(r.x, g.x - 8), xb = Math.min(r.x + r.w, g.x + 8);
+          if (yb <= ya || xb <= xa) { under[k] = null; continue; }
+          const l0 = (ya - r.y) | 0, l1 = ((ya + Math.ceil(yb - ya) - 1) - r.y) | 0, c0 = (xa - r.x) | 0, cl = (((xb - 1) - r.x) | 0) - c0 + 1;
+          try { d = ctx.getImageData(c0, l0, cl, l1 - l0 + 1).data; } catch (e) { under[k] = null; continue; }
+          for (let y = ya; y < yb; y++) {
+            for (let x = xa; x < xb; x++) {
+              const i = ((((y - r.y) | 0) - l0) * cl + (((x - r.x) | 0) - c0)) * 4;
               if (d[i + 3] > 200) { rr += d[i]; v += d[i + 1]; b += d[i + 2]; n++; }
             }
           }
