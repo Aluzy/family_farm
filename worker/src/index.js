@@ -50,7 +50,7 @@ function corsHeaders(origin) {
   return {
     'Access-Control-Allow-Origin': ORIGINES.has(origin) ? origin : 'null',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Prenom',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin',
   };
@@ -239,6 +239,16 @@ function idAuHasard() {
   return 'm-' + btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+// Le prénom qu'envoie le jeu (encodé pour l'en-tête) : sans caractère de contrôle ni balise, 20 caractères
+// au plus ; sans prénom, « Voisin ».
+export function nomAffiche(brut) {
+  let t = '';
+  try { t = decodeURIComponent(String(brut || '')); } catch (e) { t = ''; }
+  t = t.replace(/[\u0000-\u001f\u007f<>]+/g, ' ').replace(/\s+/g, ' ').trim();
+  t = Array.from(t).slice(0, 20).join('').trim();
+  return t || 'Voisin';
+}
+
 async function routeMondes(request, env, origin, url) {
   if (!ORIGINES.has(origin)) return json({ ok: false, erreur: 'origine refusée' }, 403, origin);
   if (!env.COMPTES || !env.MONDES) return json({ ok: false, erreur: 'Le jeu en ligne n\'est pas encore ouvert.' }, 503, origin);
@@ -246,7 +256,8 @@ async function routeMondes(request, env, origin, url) {
   const session = auth.startsWith('Bearer ') ? auth.slice(7).trim() : (url.searchParams.get('session') || '');
   const s = await interne(env, '/interne/session', { headers: { Authorization: `Bearer ${session}` } });
   if (!s.ok) return json({ ok: false, erreur: s.erreur }, 401, origin);
-  const compte = s.compte.id, nom = String(s.compte.email).split('@')[0].slice(0, 40);
+  // (le nom montré aux autres : le prénom du personnage que le jeu envoie, nettoyé ; jamais tiré de l'e-mail)
+  const compte = s.compte.id, nom = nomAffiche(request.headers.get('X-Prenom') || url.searchParams.get('prenom'));
   // (vers le Durable Object du monde : l'identité vérifiée ici, jamais celle qu'envoie le jeu)
   const vers = (id, chemin, init = {}) => {
     const h = new Headers(init.headers || {});

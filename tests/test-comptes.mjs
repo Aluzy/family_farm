@@ -144,3 +144,9 @@ test('comptes : le Worker passe /compte/… au Durable Object, depuis le jeu seu
   const fichier = readFileSync(join(here, 'wrangler.toml'), 'utf8');
   assert(/class_name = "Comptes"/.test(fichier) && /new_sqlite_classes = \["Comptes"\]/.test(fichier), 'wrangler.toml : la liaison et la migration');
 });
+
+test('en ligne : le nom montré aux autres, le prénom du personnage (jamais l\'e-mail), nettoyé', async () => {
+  const { nomAffiche } = await import('../worker/src/index.js');
+  eq([nomAffiche(encodeURIComponent('Zoé')), nomAffiche(''), nomAffiche(null), nomAffiche('%E0%A4%A'), nomAffiche('<b>Léa</b>'), nomAffiche('a'.repeat(50)).length],
+    ['Zoé', 'Voisin', 'Voisin', 'Voisin', 'b Léa /b', 20]);
+});

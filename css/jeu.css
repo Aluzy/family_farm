@@ -3777,7 +3777,27 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   max-width: calc(100vw - 16px);
 }
-.en-ligne-bandeau .btn { min-height: 32px; padding: 2px 10px; font-size: 0.8rem; }
+.en-ligne-bandeau .btn { min-height: 32px; padding: 2px 10px; font-size: 0.8rem; white-space: nowrap; flex: none; }
+.en-ligne-etat { white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Sur un écran étroit, la carte du joueur (en haut à gauche), la lune et la boussole (à droite) occupent
+   le haut : le bandeau passe sous la carte du joueur (≈ 50 pixels du jeu, --hud-px), à gauche de la
+   boussole, sur deux lignes (l'état, puis les boutons), « Ma ferme solo » dit « solo ». */
+@media (max-width: 820px) {
+  .en-ligne-bandeau {
+    top: calc(env(safe-area-inset-top, 0px) + 12px + 50 * var(--hud-px, 2px));
+    left: calc(8px + env(safe-area-inset-left, 0px));
+    transform: none;
+    max-width: calc(100vw - 16px - 50 * var(--hud-px, 2px));
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    padding: 4px 6px;
+    border-radius: 16px;
+    font-size: 0.8rem;
+  }
+  .en-ligne-bandeau .btn { min-height: 30px; padding: 2px 8px; }
+  .en-ligne-etat { flex-basis: 100%; padding-left: 4px; }
+  .en-ligne-bandeau .btn .en-ligne-mot { display: none; }
+}
 
 /* L'écran d'accueil (js/ui/ecran-titre.js) : la grande ferme vivante en plein écran (js/ui/accueil-vivant.js),
    l'enseigne de bois en haut, les deux boutons en bas. */

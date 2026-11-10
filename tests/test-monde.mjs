@@ -275,12 +275,23 @@ test('E-4 : une position est relayée aux autres membres (pas à soi), 5 par sec
   const avant = tables(), soi = [], autres = [];
   const pos = (compte, x, y) => traiterMessage(r, compte, JSON.stringify({ t: 'pos', x, y }), (m) => soi.push(m), () => {}, (m) => autres.push(m));
   pos(B, 100.4, 200.6);
-  eq(autres, [{ t: 'pos', acteur: B, nom: 'Sam', x: 100, y: 201 }]);
+  eq(autres, [{ t: 'pos', acteur: B, nom: 'Sam', x: 100, y: 201, h: 0, img: '', flip: false }]);
   pos(B, 110, 210);
   eq(autres.length, 1, 'trop tôt : ignorée');
   horloge.t += MONDE.POS_MS;
   pos(B, 120, 220);
   eq(autres.length, 2);
+  // son personnage : son image, son sens, sa hauteur, son allure ; une image au nom bizarre, une allure trop grosse : laissées
+  horloge.t += MONDE.POS_MS;
+  traiterMessage(r, B, JSON.stringify({ t: 'pos', x: 1, y: 2, h: 14, img: 'marche_cote_2', flip: true, look: { perso: 7 } }), () => {}, () => {}, (m) => autres.push(m));
+  eq(autres[2], { t: 'pos', acteur: B, nom: 'Sam', x: 1, y: 2, h: 14, img: 'marche_cote_2', flip: true, look: { perso: 7 } });
+  horloge.t += MONDE.POS_MS;
+  traiterMessage(r, B, JSON.stringify({ t: 'pos', x: 1, y: 2, img: '<b>x</b>', look: { a: 'x'.repeat(2000) } }), () => {}, () => {}, (m) => autres.push(m));
+  eq([autres[3].img, 'look' in autres[3]], ['', false]);
+  autres.length = 2;
+  // le nom montré : redit à la connexion (le prénom de son personnage)
+  eq([r.renommer(B, 'Zoé'), r.renommer(B, 'Zoé'), r.membre(B).nom], [true, false, 'Zoé']);
+  r.renommer(B, 'Sam');
   horloge.t += 1000;
   pos(B, 'abc', 3); pos(B, 1e9, 3); pos('c-inconnu', 5, 5);
   eq([autres.length, soi.length], [2, 0], 'invalide ou pas membre : ignorée ; rien à soi');

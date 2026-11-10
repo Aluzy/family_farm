@@ -10,6 +10,7 @@ import { registerActions } from './actions.js';
 import { morph } from './render.js';
 import { notify } from './toasts.js';
 import { exportSaveJson } from './storage.js';
+import { SAVE_KEY } from './store.js';
 
 const CLE = 'ferme-compte';
 
@@ -42,6 +43,24 @@ function garder(v) {
 async function appel(chemin, opts = {}) {
   return appelServeur('/compte/' + chemin, opts);
 }
+// E-4 : son personnage, celui de sa partie solo (sur cet appareil : { v, t, s }) : le personnage principal de
+// la famille (un objet de famille.membres), ou null sans partie.
+export function personnageSolo() {
+  try {
+    const p = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    const f = p && (p.s || p).famille;
+    const ms = f && Array.isArray(f.membres) ? f.membres : [];
+    return ms.find((x) => x && x.id === f.principal) || ms.find((x) => x && !x.enfant) || ms[0] || null;
+  } catch (e) {
+    return null;
+  }
+}
+// Le prénom que voient les autres joueurs : celui de ce personnage, encodé pour l'en-tête ; vide sans partie
+// (le serveur dit alors « Voisin »). Jamais l'e-mail.
+export function prenomJoueur() {
+  const m = personnageSolo();
+  return m && typeof m.prenom === 'string' ? encodeURIComponent(m.prenom.trim().slice(0, 40)) : '';
+}
 export async function appelServeur(chemin, { methode = 'POST', corps } = {}) {
   const base = adresseServeur();
   if (!base) return { ok: false, erreur: 'Le jeu en ligne n\'est pas disponible ici.' };
@@ -49,7 +68,7 @@ export async function appelServeur(chemin, { methode = 'POST', corps } = {}) {
   try {
     const r = await fetch(base + chemin, {
       method: methode,
-      headers: { 'Content-Type': 'application/json', ...(c ? { Authorization: `Bearer ${c.session}` } : {}) },
+      headers: { 'Content-Type': 'application/json', ...(c ? { Authorization: `Bearer ${c.session}`, 'X-Prenom': prenomJoueur() } : {}) },
       body: corps === undefined ? undefined : JSON.stringify(corps),
     });
     let b = {};

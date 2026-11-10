@@ -54,7 +54,11 @@
       // (fiche 33 : la vie d'ambiance tire son hasard de la partie et du jour : ambient-life.js)
       if (global.AmbientLife && global.AmbientLife.graine && this.ambianceJour !== model.jour) { this.ambianceJour = model.jour; global.AmbientLife.graine(this.hasardDe('ambiance')); }
       if (this.family) this.family.sync(model);
-      if (this.fermier) model = this.fermier.filter(model);
+      // (en ligne : ce qu'un autre joueur vient de faire n'est pas un geste de son personnage à lui)
+      const EL = global.FermeEnLigne;
+      const distant = !!(EL && EL.changement === 'distant');
+      if (EL) EL.changement = null;
+      if (this.fermier) model = this.fermier.filter(model, { distant });
       const rebuild = !!force;                     // premier affichage ou affichage forcé
 
       // Lumière de l'heure (CarteKit.voile) : en fondu, sauf au premier affichage.
@@ -70,7 +74,10 @@
         const o = v && typeof v === 'object' ? v : { visible: !!v };
         return o.visible ? o : null;
       };
-      this.syncPerso(model.perso | 0, model.apparence || null, model.coiffe || null);
+      // (en ligne : son personnage à lui, celui de sa partie solo ; js/ui/en-ligne.js)
+      const moi = global.FermeEnLigne && global.FermeEnLigne.moi;
+      if (moi) this.syncPerso(moi.perso | 0, moi.apparence || null, null);
+      else this.syncPerso(model.perso | 0, model.apparence || null, model.coiffe || null);
       this.syncFloors(model.sols);
       this.syncPaths(model.chemins);
       this.syncBeasts(model.enclos, model.heure);
