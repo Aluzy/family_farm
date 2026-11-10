@@ -33,7 +33,7 @@
  * chiens : scripts/compagnons/compagnons.py).
  *
  * API : AmbientLife.attach(scène, { world, map, tiles, objects, lightDepth, reduced, herd })
- *       → { update(dt), setContext({ hour, trees, folds, herd, felled, compagnons, bati, cols }), scare(x, y),
+ *       → { update(dt), setContext({ hour, trees, folds, herd, felled, compagnons, bati, cols, pluie, abri, chemin, joueur }), scare(x, y),
  *           spawn(type), stats(), chat(activité) }
  */
 (function (global) {
@@ -105,7 +105,16 @@
     marche: { speed: [13, 19], tiles: [2, 6], stride: 3.2 },
     course: { speed: [50, 70], tiles: [5, 10], stride: 6 },
     rentre: { speed: [26, 34], stride: 4 },
+    revient: { speed: [24, 32], stride: 4 },     // (fiche 32 : le chien qui a suivi le personnage rentre chez lui)
   };
+  // Fiche 32 (groupe 2). Le chien suit parfois le personnage (même hors de la ferme) : tiré avec le poids
+  // `poids` quand il est à moins de `portee` px, de jour, ni à l'abri ni la nuit ; il se tient à `pres` px
+  // de lui, court s'il est à plus de `court` px, et le laisse au bout de `duree` s, s'il s'éloigne à plus de
+  // `lache` px, la nuit ou sous la pluie ; il rentre alors chez lui. Le chat chasse l'oiseau posé à moins de
+  // `portee` px (poids `poids`) : à pas de loup (`approche` px/s) jusqu'à `bond` px, puis il bondit ;
+  // l'oiseau s'envole.
+  const SUIT = { poids: 2, portee: 8 * 16, pres: 18, court: 5 * 16, duree: [20, 40], lache: 20 * 16, revue: 0.6 };
+  const CHASSE = { poids: 6, portee: 6 * 16, approche: 9, bond: 26 };
   const CAT_AGAIN = 0.3;        // poids de ce qu'il faisait juste avant : il n'y revient pas tout de suite
   const CAT_RANGE = 14 * T;     // son territoire : rayon autour du pied de son toit
   const CAT_ROOF = 'chat_toit'; // objet de la carte (point ou rectangle) où il dort ; sinon le toit de la maison
@@ -574,6 +583,9 @@
         return {
           sprites: [s],
           scare(px, py) { if (state !== 'part' && Math.hypot(px - x, py - y) < SCARE_R) leave(); },
+          // (fiche 32 : le chat le chasse quand il est posé)
+          oiseau: true,
+          pose: () => (state === 'sol' ? { x, y } : null),
           step,
         };
       },
@@ -811,7 +823,37 @@
         // (à l'abri dans la maison : il ne s'y promène pas, il s'assoit, fait sa toilette, se couche)
         if (abri) { for (const k in CAT_WALK) delete w[k]; if (!Object.keys(w).length) w.couche = 1; }
         if (before && w[before]) w[before] *= CAT_AGAIN;
-        begin(pickWeighted(w));
+        // (fiche 32) le chien : suivre le personnage tout près ; le chat : chasser l'oiseau posé tout près
+        if (!abri && !night && ctx.day && !ctx.pluie) {
+          const j = dog && ctx.joueur ? ctx.joueur() : null;
+          if (j && Math.hypot(j.x - x, j.y - y) < SUIT.portee) w.suit = SUIT.poids;
+          if (!dog && proie()) w.chasse = CHASSE.poids;
+        }
+        const choix = pickWeighted(w);
+        if (choix === 'suit') { enter('suit'); len = rand(SUIT.duree[0], SUIT.duree[1]); revue = 0; return; }
+        if (choix === 'chasse') { cible = proie(); enter('chasse'); return; }
+        begin(choix);
+      }
+
+      // (fiche 32) L'oiseau posé le plus proche à moins de CHASSE.portee px (l'acteur), ou null.
+      let cible = null, revue = 0;
+      function proie() {
+        let best = null, bd = CHASSE.portee;
+        for (const a of actors) {
+          if (!a.oiseau) continue;
+          const q = a.pose();
+          if (!q) continue;
+          const d = Math.hypot(q.x - x, q.y - y);
+          if (d < bd) { bd = d; best = a; }
+        }
+        return best;
+      }
+      // (fiche 32) Fini de suivre, loin : il rentre chez lui par le chemin du personnage (sinon il reprend sa vie).
+      function rentreChezLui() {
+        const p = Math.hypot(x - centre.x, y - centre.y) > CAT_RANGE ? cheminVers(centre.x, centre.y) : null;
+        if (!p) { enter('debout'); return; }
+        path = p; speed = rand(CAT_WALK.revient.speed[0], CAT_WALK.revient.speed[1]); stride = CAT_WALK.revient.stride;
+        enter('revient');
       }
 
       // Le chemin jusqu'en (tx, ty) : celui du personnage (par la porte, autour des murs), sinon tout droit.
@@ -891,6 +933,50 @@
         else if (!ctx.pluie && abri && CAT_NEXT[st]) leaveShelter();
         if (catHome && !night && ctx.dusk && !abri && CAT_NEXT[st]) goToBed();   // la nuit tombe : il rentre
         if (rise > 0) { rise -= dt; age = 0; draw('assis'); return; }
+        if (st === 'suit') {                         // (fiche 32) il suit le personnage
+          const j = ctx.joueur ? ctx.joueur() : null;
+          const d = j ? Math.hypot(j.x - x, j.y - y) : Infinity;
+          if (!j || age >= len || d > SUIT.lache || night || ctx.dusk || ctx.pluie || !ctx.day) { path = null; rentreChezLui(); return; }
+          revue -= dt;
+          if (revue <= 0) {
+            revue = SUIT.revue;
+            if (d <= SUIT.pres + 4) path = null;
+            else {
+              // (à SUIT.pres px de lui, de son côté)
+              const tx = j.x + ((x - j.x) / d) * SUIT.pres, ty = j.y + ((y - j.y) / d) * SUIT.pres;
+              const W = d > SUIT.court ? CAT_WALK.course : CAT_WALK.marche;
+              path = cheminVers(tx, ty) || [{ x: tx, y: ty }];
+              speed = W.speed[1]; stride = W.stride;
+            }
+          }
+          if (path && path.length) {
+            const garde = age; age = 1;             // (pas de démarrage progressif à chaque nouveau chemin)
+            advance(dt);
+            age = garde;
+            const k = Math.floor(walked / stride);
+            if (stride >= CAT_WALK.course.stride) draw(k % 2 ? 'marche1' : 'marche0', -Math.abs(Math.sin((walked / stride) * Math.PI)) * 2);
+            else draw(['marche0', 'idle', 'marche1', 'idle'][k % 4]);
+          } else {
+            if (j && Math.abs(j.x - x) > 1) face = j.x > x ? 1 : -1;
+            draw('assis');
+          }
+          return;
+        }
+        if (st === 'chasse') {                       // (fiche 32) le chat chasse l'oiseau posé
+          const q = cible && cible.pose ? cible.pose() : null;
+          if (!q || age > 12) { cible = null; enter('assis'); len = rand(2, 4); return; }
+          const dx = q.x - x, dy = q.y - y, d = Math.hypot(dx, dy);
+          if (Math.abs(dx) > 1) face = dx > 0 ? 1 : -1;
+          if (d < SCARE_R / 3) { cible.scare(x, y); cible = null; enter('assis'); len = rand(2, 5); return; }
+          const v = d > CHASSE.bond ? CHASSE.approche : CAT_WALK.course.speed[1];
+          const st2 = Math.min(d, v * dt);
+          if (clearWay(x, y, x + (dx / d) * st2, y + (dy / d) * st2)) { x += (dx / d) * st2; y += (dy / d) * st2; walked += st2; }
+          else { cible = null; enter('debout'); return; }
+          const k = Math.floor(walked / (d > CHASSE.bond ? 2.4 : CAT_WALK.course.stride));
+          if (d > CHASSE.bond) draw(['marche0', 'couche', 'marche1', 'couche'][k % 4]);   // (à ras du sol)
+          else draw(k % 2 ? 'marche1' : 'marche0', -Math.abs(Math.sin(k * Math.PI / 2)) * 2);
+          return;
+        }
         if (CAT_WALK[st]) {
           // L'image suit la distance parcourue, pas l'horloge : les pattes ne patinent pas.
           const done = advance(dt);
@@ -899,6 +985,7 @@
           else draw(['marche0', 'idle', 'marche1', 'idle'][k % 4]);
           if (done && st === 'rentre' && abri) enter('couche');          // (à l'abri, dans la maison)
           else if (done && st === 'rentre') { enter('vise'); len = rand(0.5, 0.9); }
+          else if (done && st === 'revient') enter('debout');
           else if (done) next();
         } else if (st === 'vise') {                  // ramassé au pied du mur, il vise le toit
           draw('assis');
@@ -943,6 +1030,8 @@
         // Pour les essais : chat('toilette') lance une activité de CAT_NEXT, chat('nuit') l'envoie se coucher.
         force(name) {
           if (name === 'nuit' && catHome && CAT_NEXT[st]) goToBed();
+          else if (name === 'suit' && dog && CAT_NEXT[st]) { enter('suit'); len = rand(SUIT.duree[0], SUIT.duree[1]); revue = 0; }
+          else if (name === 'chasse' && !dog && CAT_NEXT[st]) { cible = proie(); if (cible) enter('chasse'); }
           else if (CAT_NEXT[name] && CAT_NEXT[st]) begin(name);
           return this.info();
         },
@@ -1324,6 +1413,7 @@
       if ('pluie' in c) ctx.pluie = !!c.pluie;
       if (c.abri) ctx.abri = c.abri;
       if (c.chemin) ctx.chemin = c.chemin;
+      if (c.joueur) ctx.joueur = c.joueur;     // (fiche 32 : où est le personnage ; le chien le suit parfois)
       if (c.felled) felled = c.felled;
       if (Array.isArray(c.bati)) {
         const cle = c.cols + ':' + c.bati.join();

@@ -34,7 +34,10 @@
   'use strict';
 
   const F = global.FermeCarte;
+  const K = global.CarteKit;
   const { T, BLOCS_CARTE, BETES } = F.C;
+  // (fiche 32, le troupeau : stepBeasts, troupeauEcart)
+  const TROUPEAU = { rayon: { vache: 16, mouton: 12, poule: 7, defaut: 10 }, force: 30, joueur: 18, forceJoueur: 60, attire: 64, autour: 20 };
   // (une porte : celle de planches, ou un de ses modèles, BLOCS_CARTE.hauts.modelesPortes)
   const estPorte = (s) => s === 'porte' || BLOCS_CARTE.hauts.modelesPortes[s] !== undefined;
 
@@ -606,15 +609,48 @@
       for (const [id, e] of M) if (!seen.has(id)) { e.img.destroy(); M.delete(id); }
     },
 
+    // (fiche 32) Une case de l'enclos `cases` à moins de TROUPEAU.autour px du point p, au hasard, ou null.
+    caseAutour(cases, p) {
+      const cols = this.grid.cols, A = TROUPEAU.autour, pres = [];
+      for (const c of cases) if (Math.hypot((c % cols) * T + T / 2 - p.x, Math.floor(c / cols) * T + T - 4 - p.y) <= A) pres.push(c);
+      return pres.length ? pres[Math.floor(Math.random() * pres.length)] : null;
+    },
+    // (fiche 32) La bête `e` s'écarte de ses voisines de l'enclos et du personnage, sans quitter ses cases.
+    troupeauEcart(e, cases, dt, P) {
+      const S = e.casesSet && e.casesCle === cases ? e.casesSet : (e.casesSet = new Set(cases), e.casesCle = cases, e.casesSet);
+      const cols = this.grid.cols, peut = (x, y) => S.has(Math.floor((y - 1) / T) * cols + Math.floor(x / T));
+      const v = this.troupeauV || (this.troupeauV = []);
+      const R = TROUPEAU.rayon[e.kind] || TROUPEAU.rayon.defaut;
+      const n = P.voisins(e.x, e.y, R, v, (o) => o.ref !== e && o.genre === (e.plan ? e.plan.id : ''));
+      if (n) K.separation(e, v, n, R, TROUPEAU.force, dt, peut);
+      const nj = P.voisins(e.x, e.y, TROUPEAU.joueur, v, (o) => o.genre === 'joueur');
+      if (nj) K.separation(e, v, nj, TROUPEAU.joueur, TROUPEAU.forceJoueur, dt, peut);
+    },
+
     // Le point (pieds) d'une case, un peu au hasard dans la case.
     beastSpot(c) {
       const cols = this.grid.cols;
       return { x: (c % cols) * T + T / 2 + Math.round((Math.random() - 0.5) * 8), y: Math.floor(c / cols) * T + T - 2 - Math.round(Math.random() * 4) };
     },
 
+    // Fiche 32 (groupe 2) : le troupeau. Les bêtes d'un même enclos gardent `rayon` px entre elles (la
+    // séparation douce du socle, CarteKit.separation, à `force` px/s) et s'écartent du personnage qui passe
+    // à moins de `joueur` px ; jamais hors de leurs cases. Les poules : le personnage qui a du blé (le
+    // Silo, l'inventaire : modèle.grainEnMain) à moins de `attire` px d'elles, elles vont près de lui (à
+    // `autour` px au plus).
+    troupeauReglages() { return TROUPEAU; },
     stepBeasts(time, dt) {
       if (!this.beasts || !this.beasts.size) return;
       const lieu = this.beastDay ? 'enclos' : 'piece', still = F.reducedMotion && F.reducedMotion();
+      // (fiche 32) la grille du socle : les bêtes dehors et le personnage
+      const P = this.troupeauP || (this.troupeauP = K.perception ? K.perception(64) : null);
+      const joueur = this.fermier && this.fermier.pos ? this.fermier.pos() : null;
+      const md = this.ctx.lastModel, grain = !!(md && md.grainEnMain > 0);
+      if (P) {
+        P.vide();
+        if (lieu === 'enclos') for (const e of this.beasts.values()) if (e.lieu === 'enclos') P.ajoute(e.x, e.y, e.plan ? e.plan.id : '', e, dt);
+        if (joueur) P.ajoute(joueur.x, joueur.y, 'joueur', 'joueur', dt);
+      }
       for (const e of this.beasts.values()) {
         const cases = (e.plan && e.plan[lieu]) || [];
         if (!cases.length) continue;
@@ -637,9 +673,12 @@
             e.img.setFlipX(e.vue === 'marche' ? dx < 0 || (Math.abs(dx) <= 0.5 && e.img.flipX) : false);
             if (l <= st) { e.x = e.to.x; e.y = e.to.y; e.to = null; e.t = d.pause[0] + Math.random() * (d.pause[1] - d.pause[0]); e.pose = d.poses[Math.floor(Math.random() * d.poses.length)]; e.age = 0; } else { e.x += (dx / l) * st; e.y += (dy / l) * st; }
           } else if ((e.t -= dt) <= 0) {
-            e.to = this.beastSpot(cases[Math.floor(Math.random() * cases.length)]);
+            // (fiche 32 : la poule et le blé du personnage tout près : elle va vers lui)
+            const pres = e.kind === 'poule' && grain && joueur && Math.hypot(joueur.x - e.x, joueur.y - e.y) < TROUPEAU.attire ? this.caseAutour(cases, joueur) : null;
+            e.to = this.beastSpot(pres !== null ? pres : cases[Math.floor(Math.random() * cases.length)]);
             e.vue = null; e.age = 0;
           }
+          if (P && K.separation) this.troupeauEcart(e, cases, dt, P);
         }
         let f;
         if (e.lieu === 'piece') f = Fr[d.nuit[((e.age / 1.6) | 0) % d.nuit.length]];

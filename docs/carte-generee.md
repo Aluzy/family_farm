@@ -1085,3 +1085,7 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
        - La fenêtre du Verger liste les arbres plantés. On n'aménage plus de Verger et on n'achète
          plus d'emplacements (`buildVerger`, `buyOrchardSlot`, `plantTree` refusent) ; la cour
          n'a plus ses douze emplacements ni le panneau.
+
+- **Le troupeau** (fiche 32) : les bêtes d'un même enclos gardent leurs distances (vaches 16 px, moutons
+  12, poules 7) et s'écartent du personnage qui passe (18 px), sans quitter leurs cases ; le personnage
+  qui a du blé attire les poules près de lui (`chantier.js`, `TROUPEAU`).
