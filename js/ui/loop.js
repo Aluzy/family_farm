@@ -16,8 +16,9 @@ import { showConsentBanner } from './consent.js';
 import { consentBannerDue, consentBannerPending, consentBannerShown, modalRoot, storyOpen, uiCalm } from './calme.js';
 import { actionNightStart, wakeUp } from './game-actions.js';
 import {
-  lastRenderAt, refresh, render, renderScheduled, setLastRenderAt, setRenderScheduled,
+  lastRenderAt, refresh, render, renderScheduled, setLastRenderAt, setRenderScheduled, setVeilleDemandee, veilleDemandee,
 } from './render.js';
+import { mesurer } from './chrono.js';
 import { watchChapters } from './chapitres.js';
 import { watchLevels } from './niveaux.js';
 import { sceneCaleche, watchCaleche } from './caleche.js';
@@ -324,7 +325,7 @@ export function frame(now) {
   // E-2 (F.2) : un monde en ligne est figé : son horloge ne tourne pas chez le joueur
   if (enLigne) accumulatorMs = 0;
   while (accumulatorMs >= TICK_MS) {
-    tick(state, TICK_MS / 1000, horlogeArretee);
+    mesurer('moteur : tick', () => tick(state, TICK_MS / 1000, horlogeArretee));
     accumulatorMs -= TICK_MS;
     ticked = true;
     scheduleRender();
@@ -332,6 +333,16 @@ export function frame(now) {
   simulatedAt = wall;
   watchSetup(); // version 1.12 : la configuration de la famille passe avant tout
   if (consentBannerDue()) showConsentBanner(); // FLU-17 : après l'histoire, la carte seule 500 ms
+  // Piste 5 du chantier « allègement » : les autres veilleurs ne regardent que ce qui change au tick ou sur
+  // un geste ; ils passent au tick (5 fois par seconde), ou à l'image qui suit un geste (refresh), ou toutes
+  // les TICK_MS quand l'horloge est figée (Construire, en ligne), au lieu de chaque image (60 à 120 Hz).
+  if (!ticked && !veilleDemandee && now - derniereVeille < TICK_MS) return;
+  derniereVeille = now;
+  setVeilleDemandee(false);
+  mesurer('interface : veilleurs', () => veiller(ticked));
+}
+let derniereVeille = -Infinity;
+function veiller(ticked) {
   watchRecit(); // le récit : ses scènes, avant les lettres (une fenêtre à la fois)
   watchTechPoints();
   watchDay();

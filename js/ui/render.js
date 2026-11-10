@@ -1,6 +1,7 @@
 import {
-  activeTab, FERME_LINKS, RENDER_THROTTLE_MS, setActiveTab, setEcranFerme, tabAvailable,
+  activeTab, FERME_LINKS, RENDER_THROTTLE_MS, setActiveTab, setEcranFerme, state, tabAvailable,
 } from './store.js';
+import { objectifsARevoir } from '../engine/campaign.js';
 import { renderTestPanel } from './testmode.js';
 import { renderStage, stageUsable } from './stage.js';
 import {
@@ -22,6 +23,13 @@ import { mesurer } from './chrono.js';
 export let renderScheduled = false;
 export function setRenderScheduled(value) {
   renderScheduled = value;
+  return value;
+}
+// Piste 5 : un geste (refresh) demande un passage des veilleurs (js/ui/loop.js) à l'image suivante, et la
+// revue des objectifs du chapitre au prochain pas du moteur (objectifsARevoir).
+export let veilleDemandee = true;
+export function setVeilleDemandee(value) {
+  veilleDemandee = value;
   return value;
 }
 export let lastRenderAt = 0;
@@ -77,6 +85,8 @@ function rendre() {
 // Lot 11 : jamais plus de 5 rendus par seconde, même en tapant vite : si le
 // dernier rendu est trop récent, celui-ci part au prochain créneau (≤ 200 ms).
 export function refresh() {
+  veilleDemandee = true;
+  objectifsARevoir(state);
   const now = performance.now();
   if (now - lastRenderAt < RENDER_THROTTLE_MS) {
     renderScheduled = true;

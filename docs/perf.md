@@ -409,6 +409,32 @@ ralenti, 2,26 → 2,17 et 2,71 → 2,34 ms. Les plus lourds restent le tri du d�
 brouillard (≈ 1,4 ms), qui dessinent à chaque image ; les abeilles d'une ruche loin de la vue (0,56 → 0,19 ms)
 et les rouges-gorges (0,34 → 0,19 ms) ont baissé.
 
+## Les cadences : veilleurs et objectifs (piste 5 du chantier « allègement », 2026-11-10)
+
+Voir `docs/chantier-allegement.md`, piste 5. Les objectifs du chapitre revus chaque seconde (et au pas qui
+suit un geste) au lieu de chaque tick ; les veilleurs de la page au tick au lieu de chaque image.
+
+Le moteur, en Node (la ferme d'essai `testFermeConstruite`, le banc du chantier) :
+
+| Mesure | Avant | Après |
+|---|---|---|
+| `tick(0,2 s)`, en moyenne | 211 µs | 90 µs (− 58 %) |
+| dont `chapterProgress` (une fois par seconde désormais) | 158 µs par pas | 158 µs par seconde |
+
+La page, dans Chromium (la partie du jour 75, ralenti ×4 du processeur, 20 s, deux passages de chaque ;
+main et la branche avec les mêmes postes de mesure) :
+
+| Poste | Avant | Après |
+|---|---|---|
+| « interface : veilleurs », passages par seconde | 15,8 – 16,4 (chaque image) | 5 |
+| « interface : veilleurs », ms par seconde | 4,6 – 5,2 | 1,4 – 2,2 |
+| « moteur : tick », ms par seconde | 8,4 – 9,3 | 8,2 – 8,7 |
+
+Le tick de cette partie ne baisse pas : ses objectifs coûtent peu (`chapterProgress` 1,6 µs en Node, remise
+au chapitre 5, contre 158 µs sur la ferme d'essai) ; son coût, ≈ 1,7 ms au ralenti ×4, est le pas de la ferme
+(les chaînes, l'étang, les automates). Les annonces (la fin de chapitre, la nuit à 22 h, « Farine : prêt ! ») arrivent au
+même moment sur main et sur la branche, au chargement près.
+
 ## Le sol en objets GPU de Phaser 4 : l'essai (fiche 34)
 
 L'essai (retiré depuis : voir l'historique git, fiche 34) : le sol d'une région du grand monde en `TilemapGPULayer`, ses

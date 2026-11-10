@@ -15,7 +15,7 @@ le vérifier, et ce qu'elle ne doit pas toucher. Une piste, une PR, comme les fi
 | [2 — le son : ne plus garder en mémoire le PCM des boucles longues](#2-le-son--ne-plus-garder-en-mémoire-le-pcm-des-boucles-longues) | mémoire (jusqu'à plusieurs centaines de Mo sur une longue session) | moyen (comportement du navigateur) | à faire |
 | [3 — découper le regroupement et charger à la demande](#3-découper-le-regroupement-et-charger-à-la-demande) | chargement : lecture et compilation du JS | moyen (ordre de chargement) | à faire |
 | [4 — des atlas pour les ~170 petites images](#4-des-atlas-pour-les-170-petites-images) | chargement : requêtes et envois à la carte graphique | faible (pipeline déjà en place pour les icônes) | à faire |
-| [5 — les cadences : veilleurs et objectifs au rythme du tick](#5-les-cadences--veilleurs-et-objectifs-au-rythme-du-tick) | processeur, à chaque image | faible | à faire |
+| [5 — les cadences : veilleurs et objectifs au rythme du tick](#5-les-cadences--veilleurs-et-objectifs-au-rythme-du-tick) | processeur, à chaque image | faible | fait (2026-11-10) |
 | [6 — le modèle de la carte mémorisé par sections](#6-le-modèle-de-la-carte-mémorisé-par-sections) | processeur, 5 fois par seconde | moyen (dépend de la piste 1) | à faire |
 | [Bonus](#bonus) : style et pages minifiés, Service Worker | octets, rechargements | faible | à faire |
 
@@ -331,6 +331,29 @@ Enfin, la page a deux boucles `requestAnimationFrame` (`frame` et `renderLoop`) 
   seconde au repos au lieu de 60 à 120 ; le poste « moteur : tick » baisse d'au moins 60 %.
 - Les annonces (lettre, chapitre, « prêt ! », nuit) arrivent comme avant lors d'une partie d'essai de
   trois journées en mode test.
+
+### Ce qui a été fait (2026-11-10)
+
+- **Le moteur** (`js/engine/campaign.js`, `chapitresAuPas`, appelée par `tick`) : les objectifs du chapitre
+  (`updateChapters` : `chapterProgress`, `checkMastery`, `deliverMail`) sont revus tous les
+  `PAS_OBJECTIFS` = 5 pas (1 s) au lieu de chaque pas, et au pas qui suit toute commande réussie
+  (`executerCommande` → `objectifsARevoir`) ou tout geste de la page (`refresh` → `objectifsARevoir`) : un
+  geste est reconnu au même pas qu'avant. Le compteur et la marque sont hors de la partie (une `WeakMap`,
+  un `WeakSet`) : rien de sauvegardé, pas de migration ; une partie chargée est revue dès son premier pas.
+  Les records d'objets (`noteItemRecords`) restent notés à chaque pas (un maximum ne se perd pas entre
+  deux revues). `refreshUnlocks` (0,1 µs) reste à chaque pas. La nuit, l'absence et le départ appellent
+  toujours `updateChapters` directement.
+- **La page** (`js/ui/loop.js`) : `watchSetup` et le bandeau des cookies restent à chaque image ; les autres
+  veilleurs passent au tick, à l'image qui suit un geste (`refresh` lève `veilleDemandee`), ou toutes les
+  `TICK_MS` quand l'horloge est figée (Construire, en ligne). Deux postes de mesure : « moteur : tick » et
+  « interface : veilleurs ».
+- `renderLoop` était déjà fusionné dans le même tour par la fiche 25 (une seule boucle).
+- **Mesuré** : voir `docs/perf.md`, « Les cadences : veilleurs et objectifs (piste 5) ». Le tick de la ferme
+  d'essai en Node : 211 → 90 µs (− 58 %, un peu sous les 60 % visés : le reste est le pas de la ferme) ; les
+  veilleurs dans Chromium : 16 → 5 passages par seconde. Les annonces (fin de chapitre, nuit à 22 h,
+  « prêt ! ») arrivent au même moment qu'avant (Chromium, la partie du jour 75, main et la branche côte à
+  côte). Tests : `tests/engine/chapitres.test.mjs`, « piste 5 » (au plus 1 s ; au pas suivant après une
+  commande, pas après une commande refusée ; les records).
 
 ## 6. Le modèle de la carte mémorisé par sections
 
