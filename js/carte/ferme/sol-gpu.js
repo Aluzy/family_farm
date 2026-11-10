@@ -1,12 +1,12 @@
 /* carte/ferme/sol-gpu.js — l'essai des objets GPU de Phaser 4 pour le sol du grand monde (fiche 34).
  *
- * Éteint par défaut. Allumé (CarteKit.essaiSolGPU() : l'adresse porte « ?solgpu=1 », ou
- * localStorage['ferme-essai-sol-gpu'] = '1'), une région du grand monde entièrement hors de la ferme ne
+ * Éteint par défaut. Allumé (CarteKit.essaiSolGPU() : localStorage['ferme-essai-sol-gpu'] = '1' pour le sol,
+ * '2' pour le sol et le menu décor), une région du grand monde entièrement hors de la ferme ne
  * peint plus son sol dans des morceaux de canevas (sol.js) : chacune de ses couches de tuiles devient un
  * TilemapGPULayer (un seul quad, dessiné par un shader qui lit les tuiles dans une texture de données), sur
  * la planche réunie et extrudée assets/sol_gpu.png (scripts/carte/planche_sol_gpu.py) ;
- * ses petites plantes et petites pierres (vegetation.js peintVegetation) deviennent un SpriteGPULayer par
- * planche (un appel de dessin pour toutes). Ce qui n'y est pas : le décor des chemins (gravier.js), la
+ * avec '2', ses petites plantes et petites pierres (vegetation.js peintVegetation) deviennent un
+ * SpriteGPULayer par planche (un appel de dessin pour toutes) ; avec '1', elles ne sont pas dessinées. Ce qui n'y est pas : le décor des chemins (gravier.js), la
  * lecture du sol par les touffes d'herbe (herbes.js : lireSol rend null sur ces régions), les petites
  * pièces prises (la région est refaite quand le monde change : quandRegion).
  *
@@ -28,8 +28,9 @@
   K.essaiSolGPU = function () {
     if (essai !== null) return essai;
     try {
-      essai = /[?&]solgpu=1\b/.test(global.location.search) || global.localStorage.getItem('ferme-essai-sol-gpu') === '1';
-    } catch (e) { essai = false; }
+      const v = global.localStorage.getItem('ferme-essai-sol-gpu');
+      essai = v === '1' || v === '2' ? Number(v) : 0;
+    } catch (e) { essai = 0; }
     return essai;
   };
 
@@ -85,7 +86,7 @@
         couche.setDepth(0);
         G.couches.push({ carte, couche });
       }
-      if (!global.SANS_DECO_GPU) this.solGPUDeco(r, reg);
+      if (K.essaiSolGPU() === 2) this.solGPUDeco(r, reg);
       G.ms = performance.now() - t0;
       this.solGPUFaits = (this.solGPUFaits || 0) + 1;
     },

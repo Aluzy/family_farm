@@ -1,5 +1,9 @@
 # Fiche 34 — L'essai des objets GPU de Phaser 4 : TilemapGPULayer pour le sol, SpriteGPULayer pour le menu décor
 
+> **Fait (2026-11-10)** : l'essai derrière son réglage (éteint), la planche réunie, la décision : **adopter en
+> partie** le TilemapGPULayer pour le sol du grand monde (fiche 35), **écarter** le SpriteGPULayer pour le
+> menu décor. Voir « Ce qui a été fait ».
+
 Chantier « Phaser 4 », piste 8 du rapport. Un essai qui décide, pas une migration : à faire après les
 fiches 26 (les Layers) et 28. Risque élevé : tout derrière un réglage, éteint par défaut.
 
@@ -64,3 +68,38 @@ chargement ; sur le téléphone de référence si possible.
 ## Livraison
 
 Un commit (l'essai derrière son réglage, le script de planche, la décision écrite).
+
+## Ce qui a été fait
+
+- **La planche réunie** : `scripts/carte/planche_sol_gpu.py` → `assets/sol_gpu.png` (la planche de la ferme
+  en haut, `sols_monde.png` dessous, extrudée : marge 1, espacement 2 ; 1 350 × 2 592 px). Les planches
+  existantes ne changent pas.
+- **L'essai** (`js/carte/ferme/sol-gpu.js`, éteint par défaut ; `localStorage['ferme-essai-sol-gpu']` = '1' : le
+  sol, '2' : le sol et le menu décor) : une région du grand monde entièrement hors de la ferme a un
+  `TilemapGPULayer` par niveau de superposition de ses tuiles (3 ou 4 par région en pratique) au lieu de ses
+  morceaux peints ; avec '2', un `SpriteGPULayer` par planche pour ses petites plantes et petites pierres.
+  Les régions qui touchent la ferme gardent leurs morceaux (ses couches de Tiled, la terre labourée…).
+- **Un défaut trouvé et corrigé** : le shader « arrondi » de `js/carte/jeu.js` (`shadersArrondis`, la texture
+  choisie par un entier) ajoutait une ligne qui lit `outTexDatum` à tous les shaders, même à une seule texture
+  où elle n'existe pas : le shader du SpriteGPULayer ne se compilait plus, et le rendu de tout ce qui suivait
+  dans l'image (le personnage, les arbres) se perdait. La ligne est maintenant sous `#if TEXTURE_COUNT != 1`.
+- **Ce qu'on voit** (`34-sol-gpu.png`, `34-sol-gpu-zoom.png`) : le même sol, au pixel près (10 pixels
+  différents sur 275 000 avec le sol et le décor, ce qui bouge) ; à zoom non entier (1,37 et 2,08), aucun
+  liseré entre les tuiles (la planche extrudée) ; le personnage, l'eau, les traces, le brouillard par-dessus
+  comme avant. Ce qui se perd : le décor des chemins (`gravier.js`, peint dans le sol), la lecture du sol par
+  les touffes d'herbe (`lireSol`), et une petite pièce prise refait toute la région.
+- **Mesuré** (Chromium, la partie du jour 75, 20 s de marche dans le grand monde ; voir `docs/perf.md`) :
+  - la construction d'une région : 8 à 20 ms (ses couches) au lieu de ≈ 12 ms par morceau de 256 px peint ;
+    la peinture du sol pendant la marche, 177–200 → 41–51 ms au ralenti ×4 ; moins de tâches longues ;
+  - la mémoire du sol : 0,2 Mo de textures de données pour quatre régions au lieu de 3,2 à 5,3 Mo de canevas,
+    mais la planche réunie, 13,3 Mo, toujours là ;
+  - le chargement : 0,7 à 1,7 s de plus au ralenti ×4 (la planche réunie, chargée et envoyée au GPU) ;
+  - les images : près de la ferme, les mêmes ; en forêt (quatre régions en GPU), le sol seul est plus fluide
+    que le canevas (437 images en 20 s, médiane 33 ms, contre 263–320 et 50–67 ms) ; avec le SpriteGPULayer
+    des petites plantes, plus lent (176–247 images, médiane 67–100 ms).
+  - Réserve : Chromium sans écran dessine en logiciel (SwiftShader) : le coût d'un shader par pixel y pèse
+    plus que sur le GPU d'un téléphone. Pas mesuré sur le téléphone de référence.
+- **La décision** (`docs/architecture-phaser.md`, « Les objets GPU de Phaser 4 ») : adopter en partie. Le
+  TilemapGPULayer pour le sol du grand monde hors de la ferme, à migrer par la fiche 35 (après une mesure sur
+  le téléphone) ; le SpriteGPULayer écarté pour le menu décor (les petites plantes restent peintes, la fiche
+  35 dit où). La fiche 29 (la teinte de l'herbe) reste entière : la ferme garde son sol peint.
