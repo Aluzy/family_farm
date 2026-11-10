@@ -159,7 +159,7 @@
               // (la moitié droite d'un lit deux places : rien à dessiner, sa place seulement)
               if (pr && !pr.gauche) {
                 const g = pos(pr.autre);
-                this.etageLits.set(b.case, { img: null, gauche: pr.autre, x: x0, y: g.y - dy - 1, haut: this.textures.get(k).getSourceImage().height, dessin: LD.double, double: true });
+                this.etageLits.set(b.case, { img: null, gauche: pr.autre, x: x0, y: g.y - dy - 1, haut: this.textures.getFrame(k).height, dessin: LD.double, double: true });
                 continue;
               }
               // (un meuble qui bloque : devant le personnage de sa rangée, derrière ses murs ; un
@@ -168,9 +168,9 @@
               if (M.bloque || M.hauteur < 2) {
                 const img = add(this.add.image(x, p.y - dy - 1, k).setOrigin(0.5, 1).setDepth(p.y + (M.bloque ? 0.9 : M.lit ? 0.75 : 0.6)).setFlipX(!!M.miroir));
                 // (un lit de profil, sur une rangée : on y dort aussi)
-                if (M.lit) this.etageLits.set(b.case, { img, x, y: p.y - dy - 1, haut: this.textures.get(k).getSourceImage().height, dessin: M.dessin, sens: M.sens || 0, variante: M.variante || null, couleurs: M.couleurs || null });
+                if (M.lit) this.etageLits.set(b.case, { img, x, y: p.y - dy - 1, haut: this.textures.getFrame(k).height, dessin: M.dessin, sens: M.sens || 0, variante: M.variante || null, couleurs: M.couleurs || null });
               } else {
-                const H = this.textures.get(k).getSourceImage().height;
+                const H = this.textures.getFrame(k).height;
                 let bas = null;
                 for (let j = 0; j < M.hauteur; j++) {
                   const y1 = H - j * T, y0 = j === M.hauteur - 1 ? 0 : y1 - T;

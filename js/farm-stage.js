@@ -110,20 +110,22 @@
         L.on('progress', (p) => { if (global.Chargement) global.Chargement.avance(0.1 + 0.6 * p); });
         L.on('loaderror', (file) => this.missing.add(file.key));
         L.image('crops', v('crops.png'));
-        L.image('soil_dry', v('soil_dry.png'));
-        L.image('soil_wet', v('soil_wet.png'));
-        L.spritesheet(F.C.RAMASSABLES.key, v(F.C.RAMASSABLES.file), F.C.RAMASSABLES.frame);
+        // (piste 4 : les petites images entrent par leurs atlas, js/carte/atlas.js ; les autres, seules)
+        const A = K.atlas;
+        A.image(this, 'soil_dry', 'soil_dry.png', v);
+        A.image(this, 'soil_wet', 'soil_wet.png', v);
+        A.feuille(this, F.C.RAMASSABLES.key, F.C.RAMASSABLES.file, F.C.RAMASSABLES.frame, v);
         L.spritesheet(F.C.BLOCS_CARTE.key, v(F.C.BLOCS_CARTE.file), F.C.BLOCS_CARTE.frame);
-        L.spritesheet(F.C.BLOCS_CARTE.pasJaponais.key, v(F.C.BLOCS_CARTE.pasJaponais.file), F.C.BLOCS_CARTE.pasJaponais.frame);
+        A.feuille(this, F.C.BLOCS_CARTE.pasJaponais.key, F.C.BLOCS_CARTE.pasJaponais.file, F.C.BLOCS_CARTE.pasJaponais.frame, v);
         L.spritesheet(F.C.BLOCS_CARTE.hauts.key, v(F.C.BLOCS_CARTE.hauts.file), F.C.BLOCS_CARTE.hauts.frame);
         L.spritesheet(F.C.BLOCS_CARTE.clotures.key, v(F.C.BLOCS_CARTE.clotures.file), F.C.BLOCS_CARTE.clotures.frame);
-        L.spritesheet(F.C.BLOCS_CARTE.portails.key, v(F.C.BLOCS_CARTE.portails.file), F.C.BLOCS_CARTE.portails.frame);
+        A.feuille(this, F.C.BLOCS_CARTE.portails.key, F.C.BLOCS_CARTE.portails.file, F.C.BLOCS_CARTE.portails.frame, v);
         // les animaux de compagnie de la famille (js/ambient-life.js) : trois robes de chat, trois de chien
-        for (const k of COMPAGNONS) L.spritesheet(k, v(k + '.png'), CAT_FRAME);
+        for (const k of COMPAGNONS) A.feuille(this, k, k + '.png', CAT_FRAME, v);
         // la calèche du grand monde (js/carte/ferme/caleche.js, fiche 7c)
-        if (K.CALECHE) L.spritesheet(K.CALECHE.key, v(K.CALECHE.file), { frameWidth: K.CALECHE.w, frameHeight: K.CALECHE.h });
+        if (K.CALECHE) A.feuille(this, K.CALECHE.key, K.CALECHE.file, { frameWidth: K.CALECHE.w, frameHeight: K.CALECHE.h }, v);
         // sa malle, au bout du chemin de la ferme (js/carte/ferme/malle.js)
-        if (K.MALLE) L.spritesheet(K.MALLE.key, v(K.MALLE.file), { frameWidth: K.MALLE.w, frameHeight: K.MALLE.h });
+        if (K.MALLE) A.feuille(this, K.MALLE.key, K.MALLE.file, { frameWidth: K.MALLE.w, frameHeight: K.MALLE.h }, v);
         // le cheval : sellé, seul (à l'Écurie), son poteau (js/carte/cheval.js)
         if (K.chargeCheval) K.chargeCheval(this, v);
         L.spritesheet('fermier', v(PERSONNAGE + '.png'), FERMIER_FRAME);
@@ -133,23 +135,23 @@
         if (global.CarteVisages) global.CarteVisages.charger(L, v);   // (les expressions du visage : js/carte/visages.js)
         // (les planches de personnages assemblées depuis leurs couches, un essai : js/carte/planches.js)
         if (global.CartePlanches && global.CartePlanches.actif()) L.json('couches', v('personnages/couches.json'));
-        for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) L.spritesheet(kind, v(file), size);
-        L.spritesheet(TALL_GRASS.key, v(TALL_GRASS.file), TALL_GRASS.frame);
-        L.spritesheet(TALL_GRASS.fleurs.key, v(TALL_GRASS.fleurs.file), TALL_GRASS.frame);
-        L.spritesheet(WELL.key, v(WELL.file), WELL.frame);
-        L.spritesheet(TANK.key, v(TANK.file), TANK.frame);
+        for (const [kind, [file, size]] of Object.entries(HERD_SHEETS)) A.feuille(this, kind, file, size, v);
+        A.feuille(this, TALL_GRASS.key, TALL_GRASS.file, TALL_GRASS.frame, v);
+        A.feuille(this, TALL_GRASS.fleurs.key, TALL_GRASS.fleurs.file, TALL_GRASS.frame, v);
+        A.feuille(this, WELL.key, WELL.file, WELL.frame, v);
+        A.feuille(this, TANK.key, TANK.file, TANK.frame, v);
         L.tilemapTiledJSON(MAP.key, v(MAP.json));
-        L.spritesheet(SPRINKLER.key, v(SPRINKLER.file), SPRINKLER.frame);
-        L.spritesheet(ROBOT.key, v(ROBOT.file), ROBOT.frame);
-        L.spritesheet(ROBOT.station.key, v(ROBOT.station.file), ROBOT.station.frame);
+        A.feuille(this, SPRINKLER.key, SPRINKLER.file, SPRINKLER.frame, v);
+        A.feuille(this, ROBOT.key, ROBOT.file, ROBOT.frame, v);
+        A.feuille(this, ROBOT.station.key, ROBOT.station.file, ROBOT.station.frame, v);
         // (les meubles et les bêtes du grand monde : chargés après que la carte a paru, chargerTard)
         L.image(MAP.tiles, v(MAP.image));
-        L.spritesheet('verger', v('verger.png'), TREE_FRAME);
-        L.spritesheet('arbre_clair_sp', v('arbre_clair_sp.png'), { frameWidth: 56, frameHeight: 64 });
-        L.spritesheet('pin_clair_sp', v('pin_clair_sp.png'), { frameWidth: 72, frameHeight: 64 });
+        A.feuille(this, 'verger', 'verger.png', TREE_FRAME, v);
+        A.feuille(this, 'arbre_clair_sp', 'arbre_clair_sp.png', { frameWidth: 56, frameHeight: 64 }, v);
+        A.feuille(this, 'pin_clair_sp', 'pin_clair_sp.png', { frameWidth: 72, frameHeight: 64 }, v);
         L.image('terre_bords', v('terre_bords.png'));
         L.image('terre_serre', v('terre_serre.png'));   // les bacs de la Serre (scripts/carte/terre_serre.py)
-        L.image('soil_wet_serre', v('soil_wet_serre.png'));
+        A.image(this, 'soil_wet_serre', 'soil_wet_serre.png', v);
         // les sols des biomes du grand monde (scripts/carte/sols_monde.py, js/carte/ferme/sol.js)
         if (this.ctx.monde) L.image('sols_monde', v(this.ctx.monde.tuiles.fichier));
         // la végétation du grand monde (scripts/carte/vegetation.py, js/carte/ferme/vegetation.js)
@@ -161,7 +163,7 @@
         // js/carte/ferme/faune-monde.js)
         if (this.ctx.monde) {
           L.image('lieux_monde', v('lieux_monde.png'));
-          L.image('tente', v('tente.png')); // le récit, lot 8 : la tente du bivouac (scripts/carte/tente.py)
+          A.image(this, 'tente', 'tente.png', v); // le récit, lot 8 : la tente du bivouac (scripts/carte/tente.py)
           L.json('lieux_monde_cases', v('lieux_monde.json'));
           // les hameaux bâtis (scripts/carte/hameaux.py, js/carte/ferme/hameaux.js)
           L.image('hameaux', v('hameaux.png'));
@@ -179,14 +181,15 @@
         if (this.tardLance) return;
         this.tardLance = true;
         const L = this.load;
-        for (const name of MEUBLES) L.image('meuble_' + name, v('meuble_' + name + '.png'));
+        const A = K.atlas;
+        for (const name of MEUBLES) A.image(this, 'meuble_' + name, 'meuble_' + name + '.png', v);
         // (les meubles tournés : de dos, de profil)
-        for (const name of MEUBLES_SENS) for (const vue of ['_dos', '_cote']) L.image('meuble_' + name + vue, v('meuble_' + name + vue + '.png'));
-        for (const name of LITS) L.image('meuble_' + name + '_drap', v('meuble_' + name + '_drap.png'));
-        for (const name of LITS_SENS) for (const vue of ['_dos', '_cote']) L.image('meuble_' + name + vue + '_drap', v('meuble_' + name + vue + '_drap.png'));
-        if (this.ctx.monde) for (const e of this.ctx.monde.faune.especes) L.image('faune_' + e.cle, v('faune_' + e.cle + '.png'));
+        for (const name of MEUBLES_SENS) for (const vue of ['_dos', '_cote']) A.image(this, 'meuble_' + name + vue, 'meuble_' + name + vue + '.png', v);
+        for (const name of LITS) A.image(this, 'meuble_' + name + '_drap', 'meuble_' + name + '_drap.png', v);
+        for (const name of LITS_SENS) for (const vue of ['_dos', '_cote']) A.image(this, 'meuble_' + name + vue + '_drap', 'meuble_' + name + vue + '_drap.png', v);
+        if (this.ctx.monde) for (const e of this.ctx.monde.faune.especes) A.image(this, 'faune_' + e.cle, 'faune_' + e.cle + '.png', v);
         // (les bacs à fleurs : une planche, découpée en une image par état, BACS)
-        L.image(BACS.key, v(BACS.file));
+        A.image(this, BACS.key, BACS.file, v);
         L.once('complete', () => {
           if (!this.sys || !this.sys.isActive()) return;
           this.decouperBacs();
@@ -201,12 +204,12 @@
       // La planche des bacs à fleurs (BACS) découpée : une image « meuble_<nom> » par état, comme celle d'un meuble.
       decouperBacs() {
         if (!this.textures.exists(BACS.key)) return;
-        const src = this.textures.get(BACS.key).getSourceImage(), [cw, ch] = BACS.cellule;
+        const D = K.atlas.decoupe(this.textures, BACS.key), [cw, ch] = BACS.cellule;
         BACS.noms.forEach(([nom, forme], k) => {
           const key = 'meuble_' + nom, w = BACS.largeur[forme];
           if (this.textures.exists(key)) return;
           const cv = this.textures.createCanvas(key, w, ch);
-          cv.context.drawImage(src, k * cw, 0, w, ch, 0, 0, w, ch);
+          cv.context.drawImage(D.img, D.x + k * cw, D.y, w, ch, 0, 0, w, ch);
           cv.refresh();
         });
       }

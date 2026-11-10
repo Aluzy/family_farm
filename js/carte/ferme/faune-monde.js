@@ -198,8 +198,9 @@
       const especes = M.faune.especes.map((e) => {
         const m = meta.especes[e.cle], cle = 'faune_' + e.cle;
         if (!m || !this.has(cle)) return null;
-        const tex = this.textures.get(cle);
-        m.frames.forEach((nom, k) => { if (!tex.has(nom)) tex.add(nom, 0, k * m.frameWidth, 0, m.frameWidth, m.frameHeight); });
+        // (son image est une case d'un atlas, piste 4 : ses images à partir du coin de sa case)
+        const tex = this.textures.get(cle), b0 = tex.get('__BASE');
+        m.frames.forEach((nom, k) => { if (!tex.has(nom)) tex.add(nom, 0, b0.cutX + k * m.frameWidth, b0.cutY, m.frameWidth, m.frameHeight); });
         // (les images de chaque variante : celles de l'espèce, une variante en remplace certaines)
         const variantes = (e.variantes && e.variantes.length ? e.variantes : [{}]).map((v) => Object.assign({}, e.images, v));
         return { ...e, tex: cle, w: m.frameWidth, h: m.frameHeight, ox: m.anchor.x / m.frameWidth, oy: m.anchor.y / m.frameHeight, variantes };

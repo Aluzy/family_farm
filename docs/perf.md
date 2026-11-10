@@ -409,6 +409,29 @@ ralenti, 2,26 → 2,17 et 2,71 → 2,34 ms. Les plus lourds restent le tri du d�
 brouillard (≈ 1,4 ms), qui dessinent à chaque image ; les abeilles d'une ruche loin de la vue (0,56 → 0,19 ms)
 et les rouges-gorges (0,34 → 0,19 ms) ont baissé.
 
+## Les atlas de la carte (piste 4 du chantier « allègement », 2026-11-10)
+
+Voir `docs/chantier-allegement.md`, piste 4. 160 petites images dans deux atlas (`assets/atlas_ferme.png`,
+`assets/atlas_meubles.png`, `scripts/carte/atlas.py`). Chromium, la partie du jour 75, de l'appui sur
+« Charger » à l'écran de chargement effacé (« carte affichée »), puis aux meubles et bêtes du grand monde
+arrivés (`imagesTard`) ; main et la branche, trois fois chacune, en alternance :
+
+| Mesure | Avant | Après |
+|---|---|---|
+| Images PNG demandées (toutes) | 184 | 32 |
+| dont celles de la carte (Phaser) | 167 | 15 |
+| Carte affichée, ralenti ×4 | 8,9 – 9,1 s | 8,4 – 9,0 s |
+| Meubles et bêtes arrivés, ralenti ×4 | 11,4 – 11,7 s | 8,8 – 9,5 s |
+| Carte affichée, sans ralenti | 3,0 s | 2,8 s |
+| Meubles et bêtes arrivés, sans ralenti | 4,1 s | 3,1 s |
+| Mémoire de la carte graphique (ces images) | 3,4 Mo (154 textures) | 5,0 Mo (2 atlas) |
+| Octets à télécharger (ces images) | 193 Ko | 200 Ko |
+
+Au pixel près : les mêmes cases et les mêmes pixels pour les 154 clés ; dessinées à zoom non entier, 0,12 %
+des pixels tombent sur le pixel voisin de l'image (une lecture « au plus proche » pile entre deux pixels :
+`docs/allegement-4-atlas.png`). Pas mesuré sur le téléphone de référence : le gain y est à attendre surtout
+sur le nombre de requêtes et d'envois à la carte graphique (≈ 150 de moins).
+
 ## Les cadences : veilleurs et objectifs (piste 5 du chantier « allègement », 2026-11-10)
 
 Voir `docs/chantier-allegement.md`, piste 5. Les objectifs du chapitre revus chaque seconde (et au pas qui

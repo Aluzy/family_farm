@@ -14,7 +14,7 @@ le vérifier, et ce qu'elle ne doit pas toucher. Une piste, une PR, comme les fi
 | [1 — une révision des blocs à la place des clés JSON](#1-une-révision-des-blocs-à-la-place-des-clés-json) | processeur, à chaque modèle de la carte et à chaque geste de Construire | faible (couvert par les tests Node) | à faire |
 | [2 — le son : ne plus garder en mémoire le PCM des boucles longues](#2-le-son--ne-plus-garder-en-mémoire-le-pcm-des-boucles-longues) | mémoire (jusqu'à plusieurs centaines de Mo sur une longue session) | moyen (comportement du navigateur) | à faire |
 | [3 — découper le regroupement et charger à la demande](#3-découper-le-regroupement-et-charger-à-la-demande) | chargement : lecture et compilation du JS | moyen (ordre de chargement) | à faire |
-| [4 — des atlas pour les ~170 petites images](#4-des-atlas-pour-les-170-petites-images) | chargement : requêtes et envois à la carte graphique | faible (pipeline déjà en place pour les icônes) | à faire |
+| [4 — des atlas pour les ~170 petites images](#4-des-atlas-pour-les-170-petites-images) | chargement : requêtes et envois à la carte graphique | faible (pipeline déjà en place pour les icônes) | fait (2026-11-10) |
 | [5 — les cadences : veilleurs et objectifs au rythme du tick](#5-les-cadences--veilleurs-et-objectifs-au-rythme-du-tick) | processeur, à chaque image | faible | fait (2026-11-10) |
 | [6 — le modèle de la carte mémorisé par sections](#6-le-modèle-de-la-carte-mémorisé-par-sections) | processeur, 5 fois par seconde | moyen (dépend de la piste 1) | à faire |
 | [Bonus](#bonus) : style et pages minifiés, Service Worker | octets, rechargements | faible | à faire |
@@ -287,6 +287,39 @@ Le dépôt a déjà la mécanique : `scripts/icones/build.py` assemble `assets/i
 
 Les planches de personnages (`assets/personnages/`, chargées à la demande par `habitants.js`) et
 `icones.png` (déjà une planche).
+
+### Ce qui a été fait (2026-11-10)
+
+- **Le générateur** `scripts/carte/atlas.py` recopie, telles quelles, 160 petites images dans deux atlas :
+  `assets/atlas_ferme.png` (2 048 × 512 : les compagnons, les bêtes, le cheval, la calèche, la malle, le puits,
+  la citerne, l'asperseur, le robot, le verger, les arbres, les herbes hautes, les ramassables, les pas
+  japonais, les portails, la terre sèche et mouillée, la tente) et `assets/atlas_meubles.png` (2 048 × 128 :
+  tous les `meuble_*`, les bêtes du grand monde, les bacs). Chaque image a une bordure de 1 px qui répète
+  son bord (le même « clamp » qu'une image seule) ; un rangement « ligne d'horizon » ; des côtés en
+  puissances de deux. Sa table, `js/carte/atlas.generated.js`, garde l'empreinte de chaque source :
+  `tests/engine/atlas.test.mjs` échoue si une image est refaite sans relancer le script. Les fichiers seuls
+  restent dans `assets/` (les sources ; l'interface en montre certains).
+- **Dans la scène** : pas de `{ texture, frame }` à changer dans cinquante appels. `K.atlas` (`js/carte/atlas.js`)
+  crée, à l'arrivée de l'atlas, une texture par clé qui **partage** l'image de l'atlas (un seul envoi à la
+  carte graphique) : `'meuble_table'`, `'poule'`, `setFrame(3)`… marchent comme avant. Les planches à
+  cases (`spritesheet`) entrent entières, redécoupées comme Phaser le fait. Ce qui lisait les pixels d'une
+  image à ses propres coordonnées passe par `K.atlas.decoupe()` : la teinte des meubles (`imageTeinte`), les
+  bacs (`decouperBacs`), la hauteur des meubles de l'étage, les images des bêtes du grand monde. Restent
+  seules les planches lues pixel par pixel (les tuiles, les sols, `crops`, `terre_bords`, `terre_serre`), les
+  grandes (blocs, murs, clôtures) et les personnages.
+- **Mesuré** (`docs/perf.md`, « Les atlas de la carte ») : les images PNG demandées à l'ouverture, 184 → 32
+  (celles de la carte : 167 → 15 ; le reste, le bandeau, la police et les personnages, n'a pas changé) ; les
+  meubles et les bêtes paraissent 2 à 2,7 s plus tôt au ralenti ×4 ; la carte paraît 0,1 à 0,7 s plus tôt.
+- **Au pixel près ?** Chaque texture tirée d'un atlas a les mêmes cases et les mêmes pixels que l'image seule
+  (les 154 clés chargées, vérifiées dans Chromium). Dessinées à zoom non entier (1,37, 2,08, 2,37) et à
+  des positions décimales, 0,12 % des pixels diffèrent (1 618 sur 1,4 million) : la carte graphique, qui lit
+  au plus proche, tombe une fois sur un pixel de l'image, une fois sur son voisin quand le point est pile
+  entre deux (99 % de ces pixels ont la couleur d'un voisin) — `docs/allegement-4-atlas.png`. Un pixel de
+  l'image décalé d'un pixel d'écran, en bordure ; les captures de la carte entière ne s'en distinguent pas
+  (deux ouvertures de main diffèrent déjà plus entre elles, par ce qui bouge).
+- **La mémoire de la carte graphique** : 5 Mo pour les deux atlas, au lieu de 3,4 Mo pour les 154 images seules.
+- Pas fait : la vérification dans `build-site.mjs` qu'aucune carte ne demande une image d'atlas (les images
+  seules restent servies : rien ne casse).
 
 ## 5. Les cadences : veilleurs et objectifs au rythme du tick
 
