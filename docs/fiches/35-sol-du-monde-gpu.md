@@ -2,8 +2,8 @@
 
 > **Écartée (2026-11-10)** sur la mesure du téléphone (le point 1) : le sol GPU y est nettement moins fluide que
 > le sol peint (31 à 32 images par seconde au lieu de 55, une image de 3 à 4 s au premier dessin). Le sol du grand
-> monde reste peint ; l'essai de la fiche 34 reste dans le code, éteint. Voir « La mesure du téléphone » en fin
-> de fiche.
+> monde reste peint ; l'essai de la fiche 34, sa planche et le bouton « Essai sol GPU » ont ensuite été retirés
+> (l'historique git les garde). Voir « La mesure du téléphone » en fin de fiche.
 
 Chantier « Phaser 4 », suite de l'essai de la fiche 34 (la décision : `docs/architecture-phaser.md`, « Les objets
 GPU de Phaser 4 »). À faire seulement si la mesure sur le téléphone de référence (point 1) confirme celle de

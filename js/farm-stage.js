@@ -151,8 +151,6 @@
         L.image('soil_wet_serre', v('soil_wet_serre.png'));
         // les sols des biomes du grand monde (scripts/carte/sols_monde.py, js/carte/ferme/sol.js)
         if (this.ctx.monde) L.image('sols_monde', v(this.ctx.monde.tuiles.fichier));
-        // (fiche 34 : l'essai du sol en objets GPU, éteint par défaut : sa planche réunie, sol-gpu.js)
-        if (this.ctx.monde && K.essaiSolGPU && K.essaiSolGPU()) L.image('sol_gpu', v('sol_gpu.png'));
         // la végétation du grand monde (scripts/carte/vegetation.py, js/carte/ferme/vegetation.js)
         if (this.ctx.monde) { L.image('vegetation', v('vegetation.png')); L.json('vegetation_cases', v('vegetation.json')); }
         // ses rochers, ses falaises, sa côte (scripts/carte/roches.py, js/carte/ferme/vegetation.js)
