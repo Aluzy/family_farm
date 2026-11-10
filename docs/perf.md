@@ -383,3 +383,11 @@ du lot d'images par nombre de textures), 30 à 90 ms d'appels WebGL dans une ima
 préparent maintenant pendant les temps morts après le chargement (≤ 5,5 ms par tâche) : au premier passage
 à la mer, 0 programme compilé. La pluie (≈ 0,1 ms par image) et les allocations (≈ 4,4 Ko par image),
 mesurées, n'ont pas été touchées : `docs/fiches/27-pluie-shaders-allocations.md`.
+
+## Le rattrapage hors ligne, 10 fois plus rapide (fiche 28)
+
+Sur la partie du jour 75 (696 blocs, une station de robot, trois chaînes), le rattrapage d'une absence de
+8 h prenait 1,47 s dans Node, 6,6 s dans Chromium ralenti ×4 (et non 17 ms comme mesuré plus haut sur une
+petite partie) : `robotStation` parcourait tous les blocs plusieurs fois à chacun des 5 760 pas. La station
+figée le temps d'un pas et du rattrapage : 148 ms dans Node, le même état à l'octet près. Le chargement
+après 8 h d'absence, ralenti ×4 : 16,0 s → 11,0 à 12,1 s.

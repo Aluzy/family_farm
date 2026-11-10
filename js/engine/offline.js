@@ -10,6 +10,7 @@ import { refreshUnlocks } from './techtree.js';
 import { updateChapters } from './campaign.js';
 import { nuitCouchee } from './blocs.js';
 import { journeeCompagnon } from './compagnon.js';
+import { figerStation } from './automation.js';
 
 /* ---------- Lot 11 : progression hors-ligne ---------- */
 
@@ -111,11 +112,14 @@ export function simulateOffline(state, seconds) {
     left = Math.max(0, left - reste);
   }
   const eveilMax = Math.max(state.awakeMs, awakeRequired(state) * 1000);
-  while (left > 0) {
-    const dtMs = Math.min(H.PAS_S * 1000, left);
-    farmStep(state, dtMs, { usure: !!H.USURE, eveilMax }); // le même pas que tick
-    left -= dtMs;
-  }
+  // (fiche 28 : la station du robot figée pour tout le rattrapage, où aucun bloc ne se pose)
+  figerStation(state, () => {
+    while (left > 0) {
+      const dtMs = Math.min(H.PAS_S * 1000, left);
+      farmStep(state, dtMs, { usure: !!H.USURE, eveilMax }); // le même pas que tick
+      left -= dtMs;
+    }
+  });
   // fiche 19 : une vraie absence (COMPAGNON.ABSENCE_S au moins ; pas une page rechargée, où on le
   // voit faire sur la carte) : le compagnon a fait ce qu'il fait à cette heure-là (le moteur, sans
   // dessin) ; ce qu'il a ramassé compte dans le bilan (terminees), le détail dans report.compagnon

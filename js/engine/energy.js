@@ -9,7 +9,7 @@ import { refreshUnlocks, techFlag, techPct } from './techtree.js';
 import { bumpCounter, noteEnergyRecord, updateChapters } from './campaign.js';
 import { nightActive } from './clock.js';
 import { growDue } from './crops.js';
-import { irrigate, robotStep, runRobotCharge } from './automation.js';
+import { figerStation, irrigate, robotStep, runRobotCharge } from './automation.js';
 import { distribuerGrain } from './distributeur.js';
 import { pluieSurLaFerme } from './meteo.js';
 import { runChaines } from './chaines.js';
@@ -150,7 +150,11 @@ export function tick(state, dt, horlogeArretee = false) {
 // Un pas de jour de la ferme, le même pour tick, simulateOffline et advanceHours : flux, usure (`usure`), puis, si l'heure avance (`horloge`), le temps d'éveil
 // (plafonné à `eveilMax`) et ce qui suit l'horloge : pousse, robot, asperseurs.
 // Enfin le record d'énergie stockée (Lot 9). Ni nuit, ni repas : chaque appelant s'en charge.
-export function farmStep(state, dtMs, { usure = true, horloge = true, eveilMax = Infinity } = {}) {
+export function farmStep(state, dtMs, opts) {
+  // (fiche 28 : la station du robot cherchée une fois par pas : aucun bloc ne change pendant un pas)
+  figerStation(state, () => pasDeFerme(state, dtMs, opts));
+}
+function pasDeFerme(state, dtMs, { usure = true, horloge = true, eveilMax = Infinity } = {}) {
   flowStep(state, dtMs);
   // (B-1 : PENALITES.USURE coupée, les appareils ne s'usent plus)
   if (usure && penalite('USURE')) wearStep(state, dtMs);

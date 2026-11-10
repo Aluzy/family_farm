@@ -159,8 +159,25 @@ function robotSpot(state, id) {
 // Sa station de charge : un bloc qu'on pose (BLOCS station_robot, fabriqué à l'Atelier) ; sa
 // case, ou null tant qu'elle n'est pas posée (il ne se recharge pas, et attend près de la maison).
 export function robotStation(state) {
-  const t = Object.entries(blocsPoses(state)).find(([, s]) => s === 'station_robot');
-  return t ? Number(t[0]) : null;
+  if (stationFigee && stationFigee.state === state) return stationFigee.case;
+  return chercheStation(state);
+}
+// (le premier bloc station_robot, dans l'ordre des cases ; sans tableau alloué : fiche 28)
+function chercheStation(state) {
+  const blocs = blocsPoses(state);
+  for (const k in blocs) if (blocs[k] === 'station_robot') return Number(k);
+  return null;
+}
+// Fiche 28 : sa case, figée le temps de `fn` (un pas de la ferme, farmStep ; tout un rattrapage hors ligne,
+// simulateOffline), où aucun bloc ne se pose ni ne s'ôte. Elle était cherchée parmi tous les blocs posés à
+// chaque appel, plusieurs fois par pas : 1,4 s sur les 1,5 s du rattrapage de 8 h d'une grosse partie (696
+// blocs, 5 760 pas). Réentrant : déjà figée pour cette partie, `fn` tourne telle quelle.
+let stationFigee = null;
+export function figerStation(state, fn) {
+  if (stationFigee && stationFigee.state === state) return fn();
+  const avant = stationFigee;
+  stationFigee = { state, case: chercheStation(state) };
+  try { return fn(); } finally { stationFigee = avant; }
 }
 
 // Sa base (en tuiles) : juste à droite de sa station posée, sinon ROBOT.BASE (près de la maison).
