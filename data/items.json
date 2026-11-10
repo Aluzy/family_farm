@@ -150,6 +150,9 @@
     "barriere_lavande": { "nom": "Barrière lavande", "icone": "🚧‍🟪", "prix": 3, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "portail": { "nom": "Portail", "icone": "🚧‍🚪", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "chemin": { "nom": "Chemin", "icone": "🟫‍🪨", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "sol_pas_ardoise": { "nom": "Pas japonais en ardoise", "icone": "👣‍⬛", "prix": 2, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "sol_pas_pierre": { "nom": "Pas japonais en pierre", "icone": "👣‍🪨", "prix": 2, "mangeable": false, "categorie": "matériau", "rachetable": false },
+    "sol_pas_bois": { "nom": "Pas japonais en bois", "icone": "👣‍🪵", "prix": 2, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "//champignon_lumineux": [
       "La lanterne scintillante (ATELIER : un champignon lumineux et deux bois). Le champignon se ramasse à la main",
       "dans les forêts du grand monde, où il luit la nuit (RECOLTE.SORTES champignons_lumineux ; docs/gisements.md).",

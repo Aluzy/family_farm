@@ -97,6 +97,7 @@ const GROUPES = [
   { id: 'murs', nom: 'Murs', de: (b) => !!b.mur && !b.fenetre },
   { id: 'portes', nom: 'Portes', de: (b) => !!b.porte },
   { id: 'sols', nom: 'Sols', de: (b) => !!b.sol && !b.dehors },
+  { id: 'pas', nom: 'Pas japonais', de: (b) => !!b.pasJaponais },
   { id: 'barrieres', nom: 'Barrières', de: (b) => !!b.cloture },
 ];
 const groupeDe = (s) => { const b = DATA.ATELIER.BLOCS[s]; return b ? GROUPES.find((g) => g.de(b)) || null : null; };

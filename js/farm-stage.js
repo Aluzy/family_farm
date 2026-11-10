@@ -114,6 +114,7 @@
         L.image('soil_wet', v('soil_wet.png'));
         L.spritesheet(F.C.RAMASSABLES.key, v(F.C.RAMASSABLES.file), F.C.RAMASSABLES.frame);
         L.spritesheet(F.C.BLOCS_CARTE.key, v(F.C.BLOCS_CARTE.file), F.C.BLOCS_CARTE.frame);
+        L.spritesheet(F.C.BLOCS_CARTE.pasJaponais.key, v(F.C.BLOCS_CARTE.pasJaponais.file), F.C.BLOCS_CARTE.pasJaponais.frame);
         L.spritesheet(F.C.BLOCS_CARTE.hauts.key, v(F.C.BLOCS_CARTE.hauts.file), F.C.BLOCS_CARTE.hauts.frame);
         L.spritesheet(F.C.BLOCS_CARTE.clotures.key, v(F.C.BLOCS_CARTE.clotures.file), F.C.BLOCS_CARTE.clotures.frame);
         L.spritesheet(F.C.BLOCS_CARTE.portails.key, v(F.C.BLOCS_CARTE.portails.file), F.C.BLOCS_CARTE.portails.frame);
