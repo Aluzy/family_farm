@@ -2,8 +2,8 @@
 
 Périmètre : la zone entre le bandeau « Ferme Familiale » (titre + indicateurs) et le menu
 du bas, sur l'onglet **Ferme**. Tout le reste du jeu (onglets, fenêtres, moteur) reste en DOM.
-La seule autre carte, la grotte de la mine (`js/grotte.js`), s'affiche au même endroit et
-partage avec elle un kit commun (§ 1 bis) et le jeu Phaser (§ 1 quater). La ville, la transition,
+La seule autre carte, la grotte de la mine (`js/grotte.js`), s'affichait au même endroit ; elle n'est
+plus (docs/gisements.md, lot 4). Le kit commun (§ 1 bis) et le jeu Phaser (§ 1 quater) restent. La ville, la transition,
 la montagne, la plage et l'infra-monde ont été retirées (étape 1 de docs/grand-monde.md) ; elles
 restent sur la branche `archive/jeu-avant-grand-monde`.
 
@@ -29,7 +29,6 @@ jeu.html                  la page : structure seule, charge les fichiers ci-dess
  ├─ js/famille-ferme.js   les autres membres de la famille sur la carte de la ferme
  ├─ js/carte/ferme/       la scène de la ferme, fichier par fichier (FermeCarte : ses réglages et ses méthodes)
  ├─ js/farm-stage.js      la scène de la ferme : ne connaît ni `state` ni le moteur (script classique)
- ├─ js/grotte.js          la scène de la grotte de la mine (GrotteScene, window.Grotte ; réglages : data/grotte.json)
  └─ js/main.js            point d'entrée des modules ES
      ├─ js/engine/        moteur pur (aucun DOM, aucun Phaser)      ← node tests/run-tests.mjs
      └─ js/ui/            interface ; la carte : stage.js (« Carte Phaser ») et stage-windows.js (« Fenêtres de la carte »)
@@ -112,8 +111,8 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | `semis.js` | semer avec la file des gestes : une graine irisée posée sur chaque terre choisie (un appui ou un tracé), le personnage va la semer et le jeu sème au geste (`bridge.semer`, js/ui/elevage.js `semerFromStage`) ; `FarmStage.semer`, `FarmStage.semisEnAttente` |
 | `amis.js` | l'amitié (js/engine/amitie.js) vue sur la carte : la couleur d'une émotion sur les habitants — une réaction colore toute leur peau, avec un emoji (`planchePeau` : la planche refaite, ses teintes de peau d'après `assets/personnages/peau.json`, que fait `scripts/personnage/peau_emotions.py`), hors de ces réactions, aucune teinte durable ; les réactions aux coups de hache et de pioche (`habitantsVoient`), au cheval ; les présents des amis devant la porte (`modèle.presents`, `bridge.presents`) ; `FarmStage.emotion` |
 | `invites.js` | les invités d'un repas (js/engine/invitations.js, `modèle.invites`) : la table (`placesTable` : une table de jardin et ses chaises ou ses bancs, la terrasse, sinon la table de la maison), chacun vient à pied du côté de son hameau, s'assoit (les cases `assis_<vue>`), bavarde ; la famille s'attable aux places qui restent (`family.attabler`, js/famille-ferme.js) ; le personnage qui vient à table ouvre « Servir le repas » (`bridge.invites('table', { terrasse })`) ; servis, ils mangent, remercient et repartent ; un appui sur l'un d'eux : un mot |
-| `passages.js` | l'entrée de la mine (la porte du tas de terre, vers `js/grotte.js`) et le retour de la mine (`?arrivee=mine`) ou d'une grotte de la montagne (`?arrivee=grotte_<n>`) |
-| `lieux-monde.js` | les lieux du grand monde (fiche 6b) : l'entrée des grottes de la montagne (l'appui sur la bouche ou la poussée qui y fait entrer, sans flèche depuis la fiche 14, le retour devant l'entrée, qui attend que sa région soit faite), les coins de pêche (`coinPeche`, leurs remous) |
+| `passages.js` | le retour du personnage à sa place (`makeRetour`, `stepRetour`) et sa position (`stepPosition`) ; l'entrée de la mine et le retour des grottes ne sont plus (docs/gisements.md, lot 4) |
+| `lieux-monde.js` | les lieux du grand monde (fiche 6b) : les coins de pêche (`coinPeche`, leurs remous), les secrets (les entrées des grottes de la montagne ne sont plus : docs/gisements.md, lot 4) |
 | `hameaux.js` | les hameaux bâtis du grand monde (fiche 7a) : leurs toits (`CarteKit.toit` : tuiles, ardoise, chaume, roseaux), qui s'effacent quand le personnage entre, leurs cheminées et leur fumée, les fenêtres éclairées la nuit (`stepFenetresHameaux`, dans le voile avec les lanternes), l'arrivée (pont `hameau`), le panneau (pont `hameauPanneau`), les outils qui n'ont rien à y faire (`hameauOutil`, en premier dans `hitAt` ; pont `hameauRefus`) ; leurs murs, meubles, clôtures et objets sont une planche de `vegetation.js` |
 | `habitants.js` | les habitants des hameaux (fiche 7b) : faits avec les toits de leur hameau (la planche de leur personnage chargée à la demande), ils suivent l'horaire (`modèle.habitants`) : au lit la nuit (sous la couverture des lits des maisons), au travail le jour avec le geste de leur métier (le bûcheron abat aussi des arbres du monde : `mondeAbat`), les enfants sur la place, à la maison aux repas ; leurs trajets (`fermier.path`, bornés par image), le personnage qu'ils contournent ; un geste fini (pont `habitantAgit`, la bulle « +x »), un appui (`habitantAt`, en premier dans `hitAt` ; pont `habitantParle`, la bulle de parole) ; les moutons de l'enclos du berger |
 | `faune-monde.js` | les bêtes du grand monde (fiche 6b) : leurs images près de la vue, ce qu'elles font (repos, petits trajets, fuite à la façon de chacune, l'aigle qui tourne et son ombre, le dauphin qui saute), la nuit, « animations réduites », un appui (pont `faune`) et la première vue d'une espèce (pont `fauneVue`) |
@@ -123,30 +122,12 @@ affichée). Les autres méthodes sont dans `js/carte/ferme/`, chaque fichier les
 | `abeilles.js` | les abeilles des ruches : elles sortent par le trou de vol, butinent les fleurs à portée (`modèle.fleurs`, l'herbe haute fleurie), rentrent ; le jour seulement |
 | `modele.js` | `sync(modèle)` et ce qu'il crée (bâtiments, parcelles, Verger, puits, citerne) |
 
-**La grotte** : `js/grotte.js` est une scène Phaser à elle seule (`GrotteScene`, l'API
-`window.Grotte` : `start`, `stop`, `scene`), sortie de l'ancien `js/ville-carte.js`. Chaque niveau
-est tiré au hasard pour la journée (un automate cellulaire, avec les morceaux de tuiles de
-`scripts/carte/grotte.py` : `assets/grotte_tuiles.png`, `grotte_objets.png`, `grotte.json`) ; on
-descend par le puits et on remonte par l'échelle (un appui dessus, ou le personnage qui s'y
-pousse : plus de flèche bleue par-dessus depuis la fiche 14). Ses réglages de jeu (taille d'un niveau, nombre de
-niveaux, minerai, coups de pioche) sont dans `data/grotte.json` (`GROTTE`) ; le tirage d'un niveau
-est dans le moteur (`js/engine/grotte.js` : `reglagesGrotte`, `genererNiveau`), que la page lui
-donne (`FermeHote.reglages(id)`, `FermeHote.niveau(J, n, jour)`) ; le fichier ne garde que les
-images et la lumière (la
-lanterne, le jour qui tombe de l'échelle, les champignons et les améthystes : des lumières WebGL,
-sans WebGL une image noire percée autour du personnage). `js/ui/excursion.js` l'ouvre dans
-`#map-stage` (`jeu.html?carte=grotte&niveau=N…`) et lui sert de pont (`FermeHote` : l'heure, le
-personnage, la pioche, le minerai, les messages, `go(cible)` pour changer de niveau ou remonter).
-Le temps passe comme à la ferme : la grotte lit le jour du jeu (`FermeHote.maintenant()`) pour
-tirer ses niveaux, il n'y a plus d'horloge à part (`HorlogeSortie` a été retirée).
-Les grottes de la montagne du grand monde (fiche 6b) sont la même scène
-(`jeu.html?carte=grotte&grotte=grotte_<n>&niveau=N…`) : leurs réglages (`GROTTE.MONDE` : moins de
-niveaux, plus de minerai, des pierres, un filon par entrée, d'après la graine du monde de la partie)
-et leurs niveaux viennent du même moteur ; l'échelle du premier niveau ramène devant leur entrée
-(`jeu.html?arrivee=grotte_<n>`, `js/carte/ferme/lieux-monde.js`). La flèche de la grotte a sa propre
-clé de texture (la page rechargée dans une grotte charge la ferme en même temps).
-En god mode (⚙️ Options), un menu mène à la ferme, aux niveaux 1, 4 et 8 de la mine et à une grotte
-de la montagne (niveaux 1 et 4).
+**La grotte** (retirée, docs/gisements.md, lot 4) : `js/grotte.js` était une scène Phaser à elle seule
+(`GrotteScene`), la mine de la ferme et les grottes de la montagne, ouverte dans `#map-stage` par
+`js/ui/excursion.js` (`jeu.html?carte=grotte&…`). Le minerai se prend maintenant sur les gisements, en
+surface ; une ancienne adresse de la mine gardée par le navigateur ramène à la ferme
+(`js/ui/hote.js`, `oublierAdresseMine`). `window.FermeHote` (`js/ui/hote.js`) ne donne plus aux
+scripts des cartes que l'heure, le personnage et les messages ; le god mode, ses actions de test.
 
 ## 1 ter. Le jour et la nuit
 
@@ -158,13 +139,12 @@ suite au premier affichage et avec « réduire les animations »).
 
 - **La ferme** : l'heure du modèle (`modèle.heure`), à la profondeur 1e6. Les intérieurs, posés
   à droite de la carte, restent hors du voile : ils sont éclairés.
-- **Pas de voile** : la grotte (elle a sa propre obscurité, la lumière autour du personnage).
 - Hors de portée pour l'instant : les réverbères et les fenêtres allumées la nuit.
 
 ## 1 quater. Un seul jeu Phaser pour toutes les cartes
 
 `js/carte/jeu.js` (`window.CarteJeu`, chargé après le kit) tient **un seul `Phaser.Game`** :
-la ferme et la grotte de la mine en sont des scènes. Un canvas, un contexte WebGL, un jeu de textures. Avant, chaque
+la ferme en est la scène (la grotte de la mine en était une autre, retirée). Un canvas, un contexte WebGL, un jeu de textures. Avant, chaque
 changement de carte détruisait le jeu de la carte précédente et en créait un autre (nouveau
 contexte WebGL, images retéléchargées et redécodées, planches réextrudées), pendant que celui de
 la ferme dormait à côté avec ses propres textures.
@@ -172,8 +152,7 @@ la ferme dormait à côté avec ses propres textures.
 - **Changer de carte = changer de scène** (`CarteJeu.montre(zone, clé, { cree, data, neuve, garde })`).
   La ferme est une scène *gardée* : elle s'endort (`scene.sleep`) et se réveille telle qu'on l'a
   laissée (vue, personnage, intérieur). Une autre carte est une **scène neuve à chaque fois**
-  (`new GrotteScene()`, ses paramètres en `data` : `{ search: '?carte=grotte&niveau=…' }`, lus dans
-  `init()`), retirée quand on la quitte : ses objets, ses minuteries (`this.time`), ses tweens,
+  (ses paramètres en `data`, lus dans `init()`), retirée quand on la quitte : ses objets, ses minuteries (`this.time`), ses tweens,
   ses appuis et ses touches partent avec elle. Pendant une image (une carte quittée depuis une
   minuterie de sa scène), le passage est fait juste après, hors de l'image.
 - **Les textures restent** : le chargeur d'une scène saute ce qui est déjà dans le jeu, une carte
@@ -184,9 +163,8 @@ la ferme dormait à côté avec ses propres textures.
 - **Le canvas** est rendu à la densité de l'écran (`CarteKit.ratio()`, plafonnée à 3) en
   `Scale.NONE`, et posé dans la zone de la carte affichée (`#farm-stage`, `#map-stage`) ; un
   `ResizeObserver` sur ces zones et `CarteJeu.taille()` tiennent sa taille. La ferme garde son
-  zoom non entier ; la grotte prend un **zoom entier en pixels de l'écran**
-  (`CarteJeu.zoomEntier` : 2 à 5 pixels CSS par pixel de carte comme avant, arrondi à un nombre
-  entier de pixels de l'écran) et arrondissent par leur caméra. Un écouteur de taille posé par une
+  zoom non entier ; `CarteJeu.zoomEntier` (2 à 5 pixels CSS par pixel de carte, arrondi à un nombre
+  entier de pixels de l'écran) reste pour une autre carte (la grotte le prenait). Un écouteur de taille posé par une
   scène passe par `CarteJeu.suitTaille(scène, fn)`, retiré à son arrêt.
 - **La qualité de l'affichage** (fiche 9a, `CarteKit.qualite()`, `reglages()`, `reglerQualite()`) :
   un réglage de l'appareil (localStorage « ferme-qualite » : `auto`, `economie`, `normale` ; les
@@ -206,8 +184,7 @@ la ferme dormait à côté avec ses propres textures.
 - **Fenêtres des cartes** : celles du jeu, par `FermeHote.modal(html, options)` / `FermeHote.closeModal()` (js/ui/modal.js :
   cadre bois, focus gardé par Tab, Échap, focus rendu). Tant qu'une fenêtre est ouverte, les
   touchers et les flèches ne vont pas à la carte.
-- **Sans Phaser** (ou sans WebGL ni canvas utilisable) : la ferme garde sa liste classique (§ 6) ;
-  la mine ne s'ouvre pas, le joueur reste à la ferme avec un message.
+- **Sans Phaser** (ou sans WebGL ni canvas utilisable) : la ferme garde sa liste classique (§ 6).
 
 ## 2. La carte : 72×57 tuiles, trois repères
 
@@ -295,7 +272,7 @@ poulailler et le moulin n'y ont plus d'image (leur forme de secours).
   prises rendent (`ouvertes`, posé par js/ui/stage.js : `casesOuvertesMonde`). La case du
   personnage va au moteur à chaque pas (pont `ici`) : rien ne repousse sous lui.
 - **Les lieux et les bêtes du monde** (fiche 6b) : chaque région arrive aussi avec ses lieux
-  (`reg.lieux`, `js/engine/monde-lieux.js` : la bouche des grottes, le ponton ou les piquets des
+  (`reg.lieux`, `js/engine/monde-lieux.js` : le ponton ou les piquets des
   coins de pêche ; une troisième planche de `vegetation.js`, `assets/lieux_monde.png`, le ponton posé
   sur l'eau sous tout le reste) et ses bêtes (`reg.faune`, `js/engine/monde-faune.js`, animées par
   `js/carte/ferme/faune-monde.js` : leurs images faites à moins de `FAUNE.PRES` px de la vue,

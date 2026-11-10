@@ -11,7 +11,6 @@
     "  economie : { action: % } d'énergie en moins pour ces gestes (PERSONNAGE.COUTS) ; toutes : % en moins pour tous ;",
     "  soleil : [de, à] heures : l'économie ne vaut qu'au soleil, de jour entre ces heures ; horsFerme : elle ne vaut",
     "  que loin de la ferme (dans le grand monde) ;",
-    "  grotte : la lumière autour de lui dans la mine et les grottes, en % (multipliée par la Lampe de mineur de l'Arbre) ;",
     "  vueNuit : le rayon de vue la nuit dans le grand monde (DECOUVERTE), en % ;",
     "  pied : { biome: % } sa vitesse à pied dans ces biomes du grand monde (pas en selle).",
     "Pour un autre membre, ce qu'il fait de lui-même : faimMarche, % de faim en moins quand il marche sur la ferme ;",
@@ -34,7 +33,7 @@
     "CASES": 3,
     "PLACES": { "tete": "Tête", "corps": "Corps", "mains": "Mains", "pieds": "Pieds" },
     "PIECES": {
-      "casque_lampe": { "place": "tete", "enfant": false, "grotte": 140, "vueNuit": 150, "carte": "casque" },
+      "casque_lampe": { "place": "tete", "enfant": false, "vueNuit": 150, "carte": "casque" },
       "chapeau_paille": { "place": "tete", "enfant": true, "carte": "paille", "economie": { "labourer": 10, "planter": 10, "arroser": 10, "recolter": 10, "cueillir": 10, "faucher": 10 }, "soleil": [11, 17] },
       "bottes": { "place": "pieds", "enfant": true, "pied": { "marais": 130, "montagne": 120, "sommet": 120 }, "faimMarche": 25 },
       "gants_travail": { "place": "mains", "enfant": false, "economie": { "couper": 20, "piocher": 20 } },

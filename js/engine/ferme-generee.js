@@ -1,5 +1,5 @@
 import { mulberry32 } from './base.js';
-import { blocGid, DESSINS_ROCHERS, MINE, TRONC_CREUX, TUILES_VIDES } from './planche.js';
+import { blocGid, DESSINS_ROCHERS, TRONC_CREUX, TUILES_VIDES } from './planche.js';
 import { terrainOfMap } from './terrain-carte.js';
 import { chemin } from './chemin.js';
 
@@ -17,8 +17,7 @@ import { chemin } from './chemin.js';
 //     plus ; la graine de la carte n'a pas changé) ;
 //   - des bois (arbres clairs, pins, buissons) plus denses vers les bords de la carte, des
 //     rochers, des fleurs, des touffes d'herbe haute, le tronc creux au bord d'un étang (un
-//     décor) et l'entrée de la mine, dans les bois pas trop loin de la cour
-//     (le rectangle `mine`, couche « batiment ») ;
+//     décor) et la clairière de l'ancienne mine, dans les bois pas trop loin de la cour (rien n'y est posé) ;
 //   - pour l'instant (docs/carte-generee.md), une cour dégagée où les bâtiments de la carte de
 //     Tiled gardent leur disposition (COUR) : la construction bloc par bloc les remplace un à un
 //     (étape 5b). La maison n'y est plus : sa place (MAISON) reste dégagée, le chemin part de
@@ -304,11 +303,11 @@ function fabriquer(graine) {
     }
   }
 
-  // ---- 6b. l'entrée de la mine : 3 × 3 cases d'herbe franche, loin du chemin et de l'eau, la
-  // porte (au milieu de la rangée du bas) ouverte sur 2 rangées d'herbe ; à bonne distance de la
-  // maison, au plus épais du bois (sans tirage : les autres usages ne bougent pas). Les rochers
-  // restent à l'écart ; les arbres, eux, poussent tout contre et la cachent un peu (étape 8),
-  // sauf devant la porte.
+  // ---- 6b. la clairière de l'ancienne mine : 3 × 3 cases d'herbe franche, loin du chemin et de l'eau,
+  // ouvertes sur 2 rangées d'herbe au sud ; à bonne distance de la maison, au plus épais du bois (sans
+  // tirage : les autres usages ne bougent pas). La mine n'est plus (docs/gisements.md, lot 4) : rien n'y est
+  // posé, mais sa place reste réservée (les rochers restent à l'écart, les arbres poussent tout contre, étape 8,
+  // sauf au sud), pour que rien d'autre ne bouge sur les fermes déjà jouées.
   const bois = bruit(graine + ':bois', 18, 3);
   const mineCase = new Uint8Array(N);    // le tas : pas de pied d'arbre
   const devantMine = new Uint8Array(N);  // la porte et le devant : ni pied ni feuillage
@@ -336,16 +335,11 @@ function fabriquer(graine) {
   const prisMine = [];
   if (mine) {
     const [c0, r0] = mine, m = G.MINE_MARGE;
-    for (let k = 0; k < 9; k++) {
-      const i = idx(c0 + (k % 3), r0 + Math.floor(k / 3));
-      plantes[i] = MINE[k];
-      mineCase[i] = 1;
-    }
+    for (let k = 0; k < 9; k++) mineCase[idx(c0 + (k % 3), r0 + Math.floor(k / 3))] = 1;
     devantMine[idx(c0 + 1, r0 + 1)] = devantMine[idx(c0 + 1, r0 + 2)] = 1;
     for (let r = r0 + 3; r < r0 + 5; r++) for (let c = c0 - m; c < c0 + 3 + m; c++) if (dedans(c, r)) devantMine[idx(c, r)] = 1;
     // (les rochers, à l'étape 7, restent à MINE_MARGE case du tas)
     for (let r = r0 - m; r < r0 + 5; r++) for (let c = c0 - m; c < c0 + 3 + m; c++) if (dedans(c, r) && !pris[idx(c, r)]) { pris[idx(c, r)] = 1; prisMine.push(idx(c, r)); }
-    objets.mine = { x: c0 * T, y: r0 * T, width: 3 * T, height: 3 * T };
   }
 
   // ---- 7. les rochers (jamais côte à côte : chacun est un groupe de cases à part)
@@ -395,9 +389,9 @@ function fabriquer(graine) {
       poses.push([(y1 + 1) * T, (x0 + w / 2) * T, bloc, w, h]);
     }
   }
-  // autour de la mine, quelques arbres tout contre le tas, qui le cachent un peu : leur feuillage
-  // sur la colonne de gauche du tas, sur celle de droite, et derrière (côté, rangée du pied
-  // depuis le haut du tas), si la place est libre ; jamais sur la porte
+  // autour de la clairière de l'ancienne mine, quelques arbres tout contre : leur feuillage sur sa colonne de
+  // gauche, sur celle de droite, et derrière (côté, rangée du pied depuis son haut), si la place est libre ;
+  // jamais au sud
   if (mine) {
     const [c0, r0] = mine, rm = hasard('mine');
     for (const [cote, dr] of [['gauche', 2 + Math.floor(rm() * 2)], ['droite', 1 + Math.floor(rm() * 2)], [rm() < 0.5 ? 'gauche' : 'droite', -1]]) {

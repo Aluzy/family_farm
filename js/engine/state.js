@@ -856,6 +856,16 @@ export const MIGRATIONS = {
     if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 6) out.carte = { ...c, generateur: 7 };
     return out;
   },
+  // v84 → v85 (la fin de la mine, docs/gisements.md lot 4) : le générateur 8 ne pose plus le tas de la mine (sa place,
+  // une clairière, reste réservée : rien d'autre ne bouge sur la ferme) ni les entrées de grotte du monde (leur place
+  // reste dans le plan ; la végétation y repousse) ; une partie du générateur 7 y passe. Ce que la mine gardait
+  // d'elle sur l'appareil (localStorage « ferme-grottes ») est oublié par la page.
+  84: (state) => {
+    const out = { ...state, version: 85 };
+    const c = state.carte;
+    if (c && typeof c === 'object' && !Array.isArray(c) && c.generateur === 7) out.carte = { ...c, generateur: 8 };
+    return out;
+  },
 };
 
 // La Serre d'avant la v76 : ses parcelles par niveau, le prix de chaque niveau (les anciennes migrations ;

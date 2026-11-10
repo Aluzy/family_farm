@@ -37,7 +37,7 @@ import { closeModal, openModal } from './modal.js';
    Elle reste juste tant qu'elle est ouverte : le personnage et la calèche quatre fois par seconde, le
    brouillard et les lieux dès que le vu change (carteMondeVu, appelée par js/ui/stage.js). */
 
-export const LIEUX_ICONES = { ferme: '🏡', hameau: '🏘️', grotte: '🕳️', peche: '🎣', caleche: '🐴' };
+export const LIEUX_ICONES = { ferme: '🏡', hameau: '🏘️', peche: '🎣', caleche: '🐴' };
 const ZOOM = { min: 0.5, max: 10, depart: 3, pas: 1.4 };
 const BRUME = { tons: [[201, 208, 216], [226, 230, 234]], fond: '#c9d0d8', deborde: 2, flou: 1 };
 
@@ -267,7 +267,6 @@ function reperes() {
   const T = C.T, W = T.LARGEUR, F = T.FERME, b = butBoussole(state);
   const liste = [{ sorte: 'ferme', id: 'ferme', nom: 'La ferme', x: F.X + F.LARGEUR / 2, y: F.Y + F.HAUTEUR / 2, nomme: C.z >= 2 }];
   const ajoute = (sorte, l, nomme) => liste.push({ sorte, id: l.id, nom: l.nom, x: (l.case % W) + 0.5, y: Math.floor(l.case / W) + 0.5, nomme });
-  for (const l of C.lieux.grottes) ajoute('grotte', l, false);
   for (const l of C.lieux.peche) ajoute('peche', l, false);
   for (const l of C.lieux.hameaux) ajoute('hameau', l, l.connu);
   const e = calecheMaintenant(state);
@@ -327,7 +326,7 @@ function info() {
   if (c) {
     const r = trouve(c);
     if (!r) { C.choix = null; C.infoCle = null; return; }
-    const quoi = c.sorte === 'ferme' ? 'Ta ferme' : c.sorte === 'hameau' ? (r.connu ? `Un hameau ${HAMEAUX.STYLES[(state.monde.hameaux[r.id] || {}).style] ? HAMEAUX.STYLES[state.monde.hameaux[r.id].style].nom : ''}` : 'Un hameau que tu n\'as pas encore visité') : c.sorte === 'grotte' ? 'L\'entrée d\'une grotte de la montagne' : 'Un coin de pêche : plus de touches, un poisson rare';
+    const quoi = c.sorte === 'ferme' ? 'Ta ferme' : c.sorte === 'hameau' ? (r.connu ? `Un hameau ${HAMEAUX.STYLES[(state.monde.hameaux[r.id] || {}).style] ? HAMEAUX.STYLES[state.monde.hameaux[r.id].style].nom : ''}` : 'Un hameau que tu n\'as pas encore visité') : 'Un coin de pêche : plus de touches, un poisson rare';
     const estBut = c.sorte === 'ferme' ? !b : !!(b && b.sorte === c.sorte && b.id === c.id);
     const x = c.sorte === 'ferme' ? T.FERME.X + T.FERME.LARGEUR / 2 : (r.case % W) + 0.5, y = c.sorte === 'ferme' ? T.FERME.Y + T.FERME.HAUTEUR / 2 : Math.floor(r.case / W) + 0.5;
     html = `<span class="carte-monde-info-nom"><span aria-hidden="true">${LIEUX_ICONES[c.sorte]}</span> <strong>${escapeHtml(r.nom)}</strong></span><span class="muted">${escapeHtml(quoi)}${loin(x, y)}</span>`
@@ -347,7 +346,7 @@ function info() {
 function trouve(q) {
   if (q.sorte === 'ferme') return { id: 'ferme', nom: 'La ferme' };
   const L = C.lieux || lieuxDeLaCarte(state, C.sol.lieux(), C.T);
-  return (q.sorte === 'hameau' ? L.hameaux : q.sorte === 'grotte' ? L.grottes : L.peche).find((l) => l.id === q.id) || null;
+  return (q.sorte === 'hameau' ? L.hameaux : L.peche).find((l) => l.id === q.id) || null;
 }
 
 /* ---------- le doigt, la souris ---------- */

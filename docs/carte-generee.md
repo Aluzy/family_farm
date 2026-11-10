@@ -159,7 +159,7 @@ l'Écurie construite : une enceinte de murs où est posé le râtelier (`ATELIER
 la ferme (`syncBeasts`, l'entrée `ecurie` de `betesDesEnclos`). Sa case de la barre d'outils met
 le personnage en selle (`toggleCheval`) : il va `VITESSE` fois plus vite, assis sur le cheval
 sellé (`js/carte/cheval.js`, `scripts/personnage/cheval.py`). Pour l'instant
-il ne se monte qu'à la ferme : il n'entre pas dans la mine. L'attacher à un poteau sur une autre
+il ne se monte qu'à la ferme. L'attacher à un poteau sur une autre
 carte (`CHEVAL.ATTACHE`, l'ancien `js/carte/ville/monture.js`, retiré avec la ville) reviendra avec
 le grand monde (docs/grand-monde.md) ; une partie dont le cheval était attaché ailleurs le
 retrouve à l'Écurie (migration 50 → 51, `rentrerCheval`). La nuit, après l'Étable, il mange
@@ -396,19 +396,10 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
     blocs : la pierre des bâtiments taillée en pans, un contour sombre, de la mousse sur les
     gros. Trois tailles : 2 × 2 cases, 1 × 2 (debout ou couché) et 1 × 1 (`DESSINS_ROCHERS` :
     l'emprise de chaque forme, et ses dessins).
-- **La mine** : un tas de terre de 3 × 3 tuiles, sa porte sombre étayée de poutres au milieu du
-  bas (`scripts/carte/mine.py`, le bloc « mine » de la planche, `MINE`). Il est posé à 16 à 34
-  tuiles de la maison (`MINE_DISTANCE`), là où le bois est le plus dense, sur de l'herbe franche
-  loin du chemin et de l'eau ; pas de rocher à une tuile autour. Des arbres poussent tout contre
-  et le cachent un peu (leur feuillage sur ses colonnes de gauche et de droite, un derrière),
-  jamais sur la porte ni sur les deux rangées d'herbe devant elle. Ses cases ne se bâtissent
-  pas ; le rectangle `mine` (couche « batiment ») arrête le personnage. Un double appui sur le
-  tas, ou le personnage poussé au doigt vers la porte quand il est juste devant, et il y entre
-  (`MINE` dans `js/carte/ferme/config.js`, `js/carte/ferme/passages.js`, `entre` dans
-  `js/fermier.js`) : il va devant, monte dans la porte en s'effaçant, puis le premier niveau de
-  la grotte s'ouvre (`js/grotte.js`, l'entrée « ferme »). Au premier niveau, l'échelle
-  ramène à la ferme (`jeu.html?arrivee=mine`) : il sort de la porte en apparaissant et descend
-  devant.
+- **La mine** (retirée, docs/gisements.md, lot 4) : un tas de terre de 3 × 3 tuiles et sa porte, dans le bois, à
+  16 à 34 tuiles de la maison (`MINE_DISTANCE`), menaient aux niveaux de la grotte. Sa place reste une clairière
+  d'herbe (pas d'arbre sur le tas ni devant, pas de rocher autour), pour que le reste de la ferme ne bouge pas ;
+  le minerai se prend sur les gisements de la ferme.
 - **Les arbres devant le personnage** s'effacent un peu quand il passe derrière, mais seulement
   derrière leur dessin : chaque image d'arbre a son masque (des carrés de 4 px, opaques à plus de
   moitié : `probeOf`, `couvre` dans `js/carte/ferme/decor.js`), que le corps du personnage doit
@@ -598,9 +589,8 @@ gomme (le bloc du dessus) et Annuler ; sur l'étage d'une pièce à escalier, se
   ses voisines, comme les murs (`BLOCS_CARTE.barrieres` + masque, `wallFrame`). Elle ne
   ferme pas de pièce : un enclos de barrières n'est ni une maison ni un bâtiment.
 - **La lanterne scintillante** (à l'Atelier : 1 champignon lumineux et 2 bois) éclaire la nuit.
-  - **Le champignon se cueille à la main** (champ `cueillette` de `data/items.json`,
-    `FermeHote.ramasser`) : il luit au sol de la grotte de la mine (`tapChampignon`,
-    `js/grotte.js`) ; un champignon cueilli s'éteint et ne repousse que le lendemain. (Le
+  - **Le champignon** se ramasse à la main dans les forêts du grand monde, où il luit la nuit
+    (docs/gisements.md, lot 2 ; il luisait au sol de la grotte de la mine, retirée). (Le
     morceau d'arbre de l'infra-monde, `bois_infra`, est retiré avec l'infra-monde.)
   - **Où la poser** : dehors, dans la maison ou dans une enceinte vide, mais pas dans un
     bâtiment (comme la batterie). Elle arrête le passage.
@@ -912,7 +902,7 @@ Une partie de la carte de Tiled peut déménager sur une ferme générée, sans 
            bibliothèque vitrée, le coffre à jouets et le bonsaï prennent 2 cases.
      - ✅ **5b-2, l'énergie et l'eau** : le puits et la citerne quittent la cour.
        - Le puits, la pompe, le panneau solaire, la citerne et la batterie se fabriquent à
-         l'Atelier (il faut des lingots : le minerai de la grotte, fondu au four) :
+         l'Atelier (il faut des lingots : le minerai des gisements, fondu au four) :
 
          | Bloc | Coût |
          |---|---|

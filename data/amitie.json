@@ -112,7 +112,7 @@
     "BESOINS": {
       "bucheron": [["pierre", 3, 6, "pour caler le bûcher"], ["fibre", 3, 5, "pour tresser une corde"], ["pain", 1, 2, "pour la pause de midi"], ["carotte", 3, 5, "pour la soupe du soir"]],
       "pecheur": [["fibre", 4, 6, "pour réparer mes filets"], ["bois", 3, 5, "pour retaper ma barque"], ["pain", 1, 2, "pour la pêche de l'aube"], ["oignon", 2, 3, "pour accompagner la friture"]],
-      "mineur": [["bois", 4, 6, "pour étayer la galerie"], ["pain", 1, 2, "pour descendre à la mine"], ["patate", 3, 5, "pour le gratin du soir"], ["fibre", 2, 4, "pour les mèches des lampes"]],
+      "mineur": [["bois", 4, 6, "pour étayer le tas de minerai"], ["pain", 1, 2, "pour la journée au gisement"], ["patate", 3, 5, "pour le gratin du soir"], ["fibre", 2, 4, "pour les mèches des lampes"]],
       "berger": [["ble", 4, 8, "pour la réserve des bêtes"], ["paille", 3, 6, "pour la litière"], ["carotte", 3, 5, "pour gâter mes bêtes"], ["bois", 2, 4, "pour réparer l'enclos"]],
       "cueilleur": [["fibre", 3, 5, "pour tresser des paniers"], ["pain", 1, 2, "pour la cueillette"], ["oeuf", 2, 4, "pour une omelette aux champignons"], ["bois", 2, 4, "pour le séchoir"]],
       "jardinier": [["oeuf", 2, 4, "pour la tarte du dimanche"], ["fibre", 2, 4, "pour attacher les tomates"], ["pierre", 2, 4, "pour une bordure de potager"], ["ble", 3, 5, "pour faire mon pain"]]

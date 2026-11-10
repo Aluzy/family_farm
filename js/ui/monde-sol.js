@@ -30,9 +30,10 @@ import { DATA } from '../engine/catalog.js';
 //     chaque sorte), idObjet(sorte, x, y) (l'identifiant d'une pièce, le même que le moteur) ;
 //     ouvertes : une fonction que la page pose (js/ui/stage.js) et qui donne les cases que les
 //     pièces prises rendent à la marche (casesOuvertesMonde), lues par marchable ;
-//   - les lieux et les bêtes (fiche 6b) : lieux() (les lieux du plan, { hameaux, grottes, peche },
-//     ou null tant que les éléments ne sont pas tirés), lieuxSortes (LIEUX.SORTES : l'entrée des
-//     grottes, le ponton, les piquets, js/engine/monde-lieux.js), coins (CANNE.COINS.RAYON : à tant
+//   - les lieux et les bêtes (fiche 6b) : lieux() (les lieux du plan, { hameaux, grottes (leur place seule : la
+//     mine n'est plus, docs/gisements.md), peche },
+//     ou null tant que les éléments ne sont pas tirés), lieuxSortes (LIEUX.SORTES : le ponton,
+//     les piquets, les lieux du récit, les secrets, js/engine/monde-lieux.js), coins (CANNE.COINS.RAYON : à tant
 //     de cases d'un coin de pêche, on pêche « au coin »), faune ({ especes : [{ cle, …FAUNE.ESPECES }],
 //     PRES, LOIN, RAYON } : js/engine/monde-faune.js) ;
 //   - les hameaux bâtis (fiche 7a) : hameaux() (leurs plans, js/engine/monde-hameaux.js : maisons,

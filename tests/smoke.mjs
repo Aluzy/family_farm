@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Test de fumée du jeu dans un vrai navigateur (Playwright + Chromium), hors CI.
 // Sert le dépôt avec un petit serveur statique Node sur un port libre, ouvre jeu.html, lance une
-// partie (« Partir pour la ferme ») puis visite les niveaux de la mine par window.FermeHote.go
-// (le premier, puis un plus profond), revient à la ferme, puis visite une grotte de la montagne du
-// grand monde (la première entrée du plan, deux niveaux) et en ressort devant son entrée.
+// partie (« Partir pour la ferme »), ouvre la Famille, laisse tourner la ferme, puis rouvre le jeu par une
+// ancienne adresse de la mine (jeu.html?carte=grotte&…) : la mine n'est plus (docs/gisements.md, lot 4),
+// la page oublie l'adresse et revient sur jeu.html.
 // Échoue sur une erreur de la console, une exception de la page ou une réponse HTTP ≥ 400.
 // Sans Playwright ou sans Chromium : message, et sortie 0 (le test est sauté).
 //
@@ -20,18 +20,8 @@ import { fileURLToPath } from 'node:url';
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const VOIR = process.argv.includes('--voir');
 
-// Les cartes visitées (cible donnée à FermeHote.go), dans l'ordre : « grotte?… », un niveau de
-// la mine ; « jeu.html », la ferme.
-const CARTES = [
-  'grotte?grotte=ferme&niveau=1&arrivee=haut',
-  'jeu.html',
-  'grotte?grotte=ferme&niveau=4&arrivee=haut',
-  'jeu.html?arrivee=mine',
-  'grotte?grotte=grotte_1&niveau=1&arrivee=haut',
-  'grotte?grotte=grotte_1&niveau=2&arrivee=haut',
-  'grotte?grotte=grotte_1&niveau=1&arrivee=bas',
-  'jeu.html?arrivee=grotte_1',
-];
+// Une ancienne adresse de la mine, gardée par le navigateur (js/ui/hote.js, oublierAdresseMine).
+const VIEILLE_ADRESSE = 'jeu.html?carte=grotte&grotte=ferme&niveau=1&arrivee=haut';
 const PAUSE_MS = 1500; // le temps qu'une carte se charge et tourne un peu
 
 function saute(raison) {
@@ -132,33 +122,19 @@ try {
   await fiche.waitFor({ state: 'visible', timeout: 10000 }).catch(() => erreurs.push('[médaillon] la fiche de la Famille ne s\'ouvre pas'));
   if (await fiche.isVisible()) { await fiche.click(); await clic('#help-close'); }
   await clic('#stage-window-close');
-  for (const cible of CARTES) {
-    etape = cible;
-    await page.waitForFunction(() => window.FermeHote && typeof window.FermeHote.go === 'function', null, { timeout: 10000 });
-    await page.evaluate((c) => window.FermeHote.go(c), cible);
-    await page.waitForTimeout(PAUSE_MS);
-    // La carte ouverte (l'élément des cartes porte data-carte ; rien de visible à la ferme).
-    const attendue = cible.startsWith('grotte') ? 'grotte' : null;
-    const ouverte = await page.evaluate(() => {
-      const el = document.querySelector('[data-carte]');
-      return el && !el.hidden ? el.dataset.carte : null;
-    });
-    if (ouverte !== attendue) erreurs.push(`[${cible}] carte affichée : ${ouverte ?? 'aucune'}, attendue : ${attendue ?? 'aucune (la ferme)'}`);
-    // revenu d'une grotte de la montagne : le personnage devant son entrée, dans le monde (la
-    // région de l'entrée peut demander un instant : js/carte/ferme/lieux-monde.js, arriveGrotte)
-    const m = /arrivee=(grotte_\d+)/.exec(cible);
-    if (m && cible.startsWith('jeu.html')) {
-      const ou = await page.waitForFunction((id) => {
-        const s = window.FarmStage && FarmStage.scene(), L = s && s.ctx.monde && s.ctx.monde.lieux();
-        const g = L && L.grottes.find((q) => q.id === id), p = s && s.fermier && s.fermier.pos();
-        if (!g || !p || s.arriveeGrotte) return null;
-        const W = s.grid.cols, x = (g.case % W) * 16 + 8, y = Math.floor(g.case / W) * 16 + 14;
-        return { d: Math.hypot(p.x - x, p.y - y) };
-      }, m[1], { timeout: 20000 }).then((h) => h.jsonValue()).catch(() => null);
-      if (!ou || ou.d > 40) erreurs.push(`[${cible}] le personnage n'est pas ressorti devant l'entrée (${ou ? Math.round(ou.d) + ' px' : 'introuvable'})`);
-    }
-    console.log(`  · ${cible}`);
-  }
+  // la ferme tourne un peu : aucune carte à part (la mine avait la sienne, [data-carte])
+  etape = 'la ferme';
+  await page.waitForTimeout(PAUSE_MS);
+  const carte = await page.evaluate(() => { const el = document.querySelector('[data-carte]'); return el && !el.hidden ? el.dataset.carte : null; });
+  if (carte) erreurs.push(`[la ferme] une carte à part est ouverte : ${carte}`);
+  console.log('  · la ferme');
+  // une ancienne adresse de la mine : la page l'oublie
+  etape = VIEILLE_ADRESSE;
+  await page.goto(`${BASE}/${VIEILLE_ADRESSE}`, { waitUntil: 'load' });
+  await page.waitForTimeout(PAUSE_MS);
+  const adresse = await page.evaluate(() => window.location.pathname.split('/').pop() + window.location.search);
+  if (adresse !== 'jeu.html') erreurs.push(`[${VIEILLE_ADRESSE}] l'adresse reste : ${adresse}`);
+  console.log(`  · ${VIEILLE_ADRESSE} → ${adresse}`);
 } catch (e) {
   erreurs.push(`[${etape}] ${e.message.split('\n')[0]}`);
 } finally {
@@ -172,6 +148,6 @@ if (erreurs.length) {
   for (const e of erreurs) console.log(`  ✗ ${e}`);
   code = 1;
 } else {
-  console.log(`\nTest de fumée : jeu.html, une nouvelle partie et ${CARTES.filter((c) => c.startsWith('grotte')).length} niveaux de grotte (la mine, une grotte de la montagne) sans erreur, en ${duree} s.`);
+  console.log(`\nTest de fumée : jeu.html, une nouvelle partie, la ferme et une ancienne adresse de la mine sans erreur, en ${duree} s.`);
 }
 process.exit(code);

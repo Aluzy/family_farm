@@ -26,7 +26,6 @@
     musique_matin: ["musique/musique_matin"],
     musique_soir: ["musique/musique_soir"],
     musique_nuit: ["musique/musique_nuit"],
-    musique_mine: ["musique/musique_mine"],
     musique_hameau: ["musique/musique_hameau"],
     musique_cote: ["musique/musique_cote"],
     musique_montagne: ["musique/musique_montagne"],
@@ -42,7 +41,6 @@
     foret: ["ambiance/foret"],
     montagne: ["ambiance/montagne"],
     hameau: ["ambiance/hameau"],
-    grotte: ["ambiance/grotte"],
     abeilles: ["ambiance/abeilles"],
     moulin: ["ambiance/moulin"],
     feu: ["ambiance/feu"],
@@ -246,8 +244,6 @@
   /* ---------- l'auditeur : le personnage ---------- */
 
   function auditeur() {
-    const J = global.CarteJeu, aff = J && J.affichee ? J.affichee() : null;
-    if (aff === 'grotte') { const g = global.Grotte && global.Grotte.scene; return g && g.heroPos ? g.heroPos : null; }
     const FS = global.FarmStage;
     return FS && FS.perso ? FS.perso() : null;
   }
@@ -466,7 +462,6 @@
   const PAS_BIOME = { plage: 'sable', foret: 'feuilles', montagne: 'pierre', sommet: 'pierre', falaise: 'pierre', lac: 'eau', riviere: 'eau', mer: 'eau', marais: 'terre', lande: 'herbe' };
   function sol(x, y) {
     const J = global.CarteJeu;
-    if (J && J.affichee && J.affichee() === 'grotte') return 'pierre';
     const FS = sceneFerme();
     if (!FS) return 'herbe';
     const t = FS.tileAtPoint ? FS.tileAtPoint(x, y - 1) : -1;
@@ -507,7 +502,7 @@
   }
   // pas de fond d'eau : ni la mer, ni les lacs, ni les rivières, ni les mares n'ont de boucle (le
   // bruit montait dès qu'on approchait d'une rive) ; restent les pas dans l'eau et les grenouilles
-  const NATURE = ['oiseaux_matin', 'oiseaux_jour', 'grillons_soir', 'grillons_nuit', 'vent', 'pluie', 'grenouilles', 'foret', 'montagne', 'grotte'];
+  const NATURE = ['oiseaux_matin', 'oiseaux_jour', 'grillons_soir', 'grillons_nuit', 'vent', 'pluie', 'grenouilles', 'foret', 'montagne'];
   const SOURCES = ['moulin', 'meule', 'feu', 'pompe', 'asperseur', 'robot', 'abeilles', 'hameau'];
   // les bêtes de la ferme : le cri de chaque sorte, et ce qu'on entend en plus de temps en temps
   // (les poussins, la clochette d'une vache, le cheval qui s'ébroue). Pas de fond d'ambiance
@@ -537,14 +532,6 @@
     const niv = {};
     for (const k of NATURE) niv[k] = 0;
     const p = auditeur();
-
-    if (aff === 'grotte') {
-      niv.grotte = 1;
-      for (const k of NATURE) boucle('n:' + k, k, niv[k], 3);
-      for (const k of SOURCES) boucle('s:' + k, k === 'meule' ? 'moulin' : k, 0, 1.5);
-      musique('musique_mine');
-      return;
-    }
 
     // dehors : l'heure fait la nature (oiseaux le matin et le jour, grillons le soir et la nuit)
     const dort = !!(m && m.dort);

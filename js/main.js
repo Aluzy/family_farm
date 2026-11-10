@@ -12,7 +12,7 @@ import { ecranTitre, ecranTitreVoulu } from './ui/ecran-titre.js';
 import { newGameFrom } from './engine/alerts.js';
 import { notify } from './ui/toasts.js';
 import { catchUp, frame, onHide, renderLoop, setMailSeen, setPendingAbsence, setSimulatedAt, syncJobs } from './ui/loop.js';
-import { resumeExcursion } from './ui/excursion.js';
+import { oublierAdresseMine } from './ui/hote.js';
 import { render } from './ui/render.js';
 import { setEmojiNames, watch as watchEmojis } from './ui/pixel-emoji.js';
 import { setAlertState } from './ui/toasts.js';
@@ -63,7 +63,7 @@ import './ui/actions.js';
 import './ui/events.js';
 import './ui/common.js';
 import './ui/modal.js';
-import './ui/excursion.js';
+import './ui/hote.js';
 
 /* ---------- démarrage ---------- */
 
@@ -121,7 +121,7 @@ async function demarrer() {
   requestAnimationFrame(frame);
   requestAnimationFrame(renderLoop);
   render();
-  resumeExcursion(); // jeu.html?carte=grotte&… : un niveau de la mine
+  oublierAdresseMine(); // (une ancienne adresse de la mine, jeu.html?carte=grotte&… : la ferme)
 
   // Suivi de session : démarre seulement si le joueur a déjà accepté ; sinon on le lui demande.
   try {

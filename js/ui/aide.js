@@ -182,7 +182,7 @@ const HELP = {
 
   four: () => ({
     nom: 'Four',
-    role: `Cuit le pain et les plats au four, et fond les minerais de la grotte en lingots, avec du bois (${ingotRecipes().map((r) => DATA.OBJETS[r.sortie].nom.toLowerCase()).join(', ')}). Une préparation à la fois ; le construire ouvre le Livre de recette.`,
+    role: `Cuit le pain et les plats au four, et fond les minerais des gisements en lingots, avec du bois (${ingotRecipes().map((r) => DATA.OBJETS[r.sortie].nom.toLowerCase()).join(', ')}). Une préparation à la fois ; le construire ouvre le Livre de recette.`,
     conso: 'Pas d\'électricité ; le bois des lingots vient des arbres coupés à la hache.',
     prod: `${stationRecipesLine('four')}.`,
     note: 'Les temps de préparation suivent la productivité de la famille. Les lingots ne se vendent pas : ils paient les technologies (Arbre des technologies).',
@@ -212,7 +212,7 @@ const HELP = {
       note: `Une production dure la somme des temps de ses outils. Sans courant, la chaîne attend. Un tas de ${formatNumber(C.TAS)} produits l'arrête : ramasse-le en marchant dessus. Ces produits ne se font plus en cuisine.`,
     };
   },
-  // Les fiches du grand monde, des outils, de la grotte, de la pêche et de l'Arbre des technologies
+  // Les fiches du grand monde, des outils, des gisements, de la pêche et de l'Arbre des technologies
   // (ouvertes depuis À propos).
   outils: () => {
     const C = DATA.PERSONNAGE.COUTS;
@@ -225,7 +225,7 @@ const HELP = {
         ['Fabrication', `Chaque outil se fabrique une fois à l'Atelier (onglet Outils), puis se choisit dans la barre d'outils de la carte : ${[DATA.HOUE, H, P, DATA.FAUX, DATA.CANNE].map((o) => `${o.ICONE} ${o.NOM.toLowerCase()}`).join(' · ')}.`],
         ['Houe', `Change une tuile d'herbe en terre à cultiver : ${formatNumber(C.labourer)} d'énergie la tuile.`],
         ['Hache', `Touche un arbre : ${formatNumber(C.couper)} d'énergie par coup, et ${formatNumber(H.BOIS)} bois qui tombe au sol. L'arbre tombe au ${H.COUPES}e coup et lâche ${formatNumber(H.CHUTE)} bois de plus là où il touche le sol. Marche sur le bois pour le ramasser. Sur ta ferme, un sapin laisse une pomme de pin, un autre arbre un gland, et il ne repousse pas : plante sa graine sur une case d'herbe libre (Inventaire › « Planter »), un arbre y pousse en ${H.POUSSE[0]} à ${H.POUSSE[1]} jours. Dans le grand monde, il repousse de lui-même quelques jours plus tard.`],
-        ['Pioche', `Touche un rocher : ${formatNumber(C.piocher)} d'énergie par coup, et ${formatNumber(P.PIERRE)} pierre qui tombe au sol ; il se casse au ${P.COUPS}e coup en lâchant ${formatNumber(P.BRIS)} pierres de plus (marche dessus pour les ramasser) et revient ${P.RETOUR[0]} à ${P.RETOUR[1]} jours plus tard. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : touche-le, ${formatNumber(P.MAIN)} pierre va dans ton inventaire. Dans la grotte, elle prend aussi le minerai.`],
+        ['Pioche', `Touche un rocher : ${formatNumber(C.piocher)} d'énergie par coup, et ${formatNumber(P.PIERRE)} pierre qui tombe au sol ; il se casse au ${P.COUPS}e coup en lâchant ${formatNumber(P.BRIS)} pierres de plus (marche dessus pour les ramasser) et revient ${P.RETOUR[0]} à ${P.RETOUR[1]} jours plus tard. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : touche-le, ${formatNumber(P.MAIN)} pierre va dans ton inventaire. Elle brise aussi les gisements (leur minerai) et les cristaux de la montagne (voir la fiche « Gisements, minerais et lingots »).`],
         ['Faux', `Touche une touffe d'herbe haute : ${formatNumber(C.faucher)} d'énergie, et ${formatNumber(DATA.FAUX.FIBRE)} fibre qui tombe au sol (marche dessus pour la ramasser). La touffe repousse ${DATA.FAUX.RETOUR[0]} à ${DATA.FAUX.RETOUR[1]} jours plus tard. C'est la seule façon d'avoir de la fibre (l'Atelier, la paille de la botteleuse).`],
         ['Dans le grand monde', 'Hors de la ferme, les mêmes gestes : la hache, la pioche et la faux y prennent le bois, la pierre et la fibre, et la main cueille et ramasse (voir la fiche « Le grand monde »).'],
         ['Coup fort', `Outil en main, garde le doigt appuyé sur ton personnage : il tremble, puis frappe fort quand tu lèves le doigt. La hache ou la pioche comptent ${formatNumber(DATA.COUP_FORT.COUPS)} coups sur l'arbre ou le rocher le plus proche (pour l'énergie de ${formatNumber(DATA.COUP_FORT.ENERGIE)} coups) ; la faux tournoie et fauche toute l'herbe haute autour de lui ; la houe laboure les tuiles autour de lui.`],
@@ -248,10 +248,10 @@ const HELP = {
         ['Le pays', `Ta ferme est au milieu d'un grand pays${T.MONDE ? ` de ${formatNumber(T.LARGEUR)} × ${formatNumber(T.HAUTEUR)} cases` : ''}, fermé par la montagne au nord et à l'ouest, par la mer au sud et à l'est. Autour d'elle, des prés ; plus loin, des forêts profondes, des marais, la lande, la montagne et ses sommets enneigés, la côte et ses plages. Des rivières descendent de la montagne à la mer, parfois par un lac.`],
         ['Chemins et gués', 'Les chemins de terre partent de la sortie de ta ferme, à l\'est, et font le tour du pays de hameau en hameau : la calèche les suit. On ne passe ni la mer, ni un lac, ni les falaises, ni les sommets ; une rivière se traverse à gué, là où un chemin la croise (des pierres plates sur l\'eau).'],
         ['Le brouillard', 'Tout est caché au départ, ta ferme comprise : seuls les alentours de ton personnage sont dégagés. Le brouillard se lève autour de toi quand tu marches (plus loin en montagne et à découvert, moins en forêt, dans le marais et la nuit), et ce que tu as vu le reste. Rien de ce qu\'il cache ne se voit ni ne se touche.'],
-        ['La carte du monde', 'Le menu « Carte du monde » (ou la touche M, ou un appui sur la boussole) montre tout ce que tu as vu : les biomes, les chemins, ta ferme, les hameaux, les entrées de grotte et les coins de pêche découverts, la calèche quand elle y passe. Fais-la glisser, zoome, touche un lieu : son nom, sa distance, et « Y mener la boussole ».'],
+        ['La carte du monde', 'Le menu « Carte du monde » (ou la touche M, ou un appui sur la boussole) montre tout ce que tu as vu : les biomes, les chemins, ta ferme, les hameaux et les coins de pêche découverts, la calèche quand elle y passe. Fais-la glisser, zoome, touche un lieu : son nom, sa distance, et « Y mener la boussole ».'],
         ['La boussole', 'Sous l\'horloge, son aiguille montre la ferme, ou le lieu choisi sur la carte du monde, et sa distance en cases. Arrivé au lieu, elle montre de nouveau la ferme ; sur la ferme, sans lieu choisi, elle se cache. Les Options la retirent.'],
-        ['Récolter dans le monde', `Hors de la ferme, les mêmes gestes : la hache abat les arbres, les buissons, les souches et les troncs couchés (un arbre en ${formatNumber(DATA.RECOLTE.SORTES.feuillu.coups)} coups) ; la pioche casse les rochers, les gros blocs et les éboulis ; la faux fauche les fougères, la bruyère, les joncs, les roseaux et les oyats. À la main (touche-les), cueille les mûres des ronciers et ramasse les champignons, les herbes de montagne, le bois flotté, les galets, les coquillages, les étoiles de mer et les algues. Ce qui est pris revient quelques jours plus tard (${DATA.RECOLTE.SORTES.feuillu.retour[0]} à ${DATA.RECOLTE.SORTES.feuillu.retour[1]} jours pour un arbre), si tu es passé par là.`],
-        ['Grottes de la montagne', 'Au pied de la montagne, des bouches de roche mènent à des grottes plus riches que la mine de la ferme (voir la fiche « Mine, minerais et lingots »).'],
+        ['Récolter dans le monde', `Hors de la ferme, les mêmes gestes : la hache abat les arbres, les buissons, les souches et les troncs couchés (un arbre en ${formatNumber(DATA.RECOLTE.SORTES.feuillu.coups)} coups) ; la pioche casse les rochers, les gros blocs, les éboulis, les gisements et les cristaux ; la faux fauche les fougères, la bruyère, les joncs, les roseaux et les oyats. À la main (touche-les), cueille les mûres des ronciers et ramasse les champignons (les lumineux aussi, en forêt), les herbes de montagne, le bois flotté, les galets, les coquillages, les étoiles de mer et les algues. Ce qui est pris revient quelques jours plus tard (${DATA.RECOLTE.SORTES.feuillu.retour[0]} à ${DATA.RECOLTE.SORTES.feuillu.retour[1]} jours pour un arbre), si tu es passé par là.`],
+        ['Ce qui luit la nuit', 'En forêt, des champignons lumineux ; en montagne, des amas de quartz et d\'améthyste : le jour, on les voit à peine ; la nuit, chacun luit de sa couleur.'],
         ['Pêche', 'La canne s\'utilise au bord de toute eau du monde : les lacs, les rivières et la mer ont chacun leurs poissons ; les coins de pêche (un ponton, des piquets et une nasse, des remous) sont meilleurs (voir la fiche « Pêche »).'],
         ['Les bêtes du monde', 'Marmottes, bouquetins et aigles en montagne, mouettes, crabes et dauphins sur la côte, canards et cygnes sur les lacs et le marais, chevreuils, renards, lapins et écureuils en forêt, lièvres et perdrix sur la lande : on ne les chasse pas, on les regarde. Elles fuient si tu t\'approches trop. Touche une bête : son nom et sa page de l\'Encyclopédie (elle se découvre la première fois que tu en vois une).'],
         ['Les hameaux', `Les chemins du grand monde mènent à des hameaux de ${DATA.HAMEAUX.MAISONS[0]} à ${DATA.HAMEAUX.MAISONS[1]} maisons, bâties de murs, de portes et de fenêtres comme ta maison, dans le style du pays (pierre et ardoise en montagne, pierre blanche et tuiles sur la côte, bois et chaume en forêt et sur la lande, bois et roseaux au bord du marais). Promène-toi sur la place, entre dans les maisons par leur porte (le toit s'efface). On n'y bâtit pas, on n'y laboure pas, on n'y casse rien et on n'y coupe pas les arbres des jardins. Le premier passage dans un hameau l'annonce et l'inscrit dans l'Encyclopédie.`],
@@ -280,18 +280,20 @@ const HELP = {
       ],
     };
   },
-  grotte: () => ({
-    nom: 'Mine, minerais et lingots',
-    icone: '⛏️',
-    lignes: [
-      ['La mine', 'Sur la ferme, caché dans les bois, un tas de terre avec une porte sombre : touche deux fois le tas (ou avance vers la porte quand tu es devant) pour y entrer. Au premier niveau, l\'échelle te fait ressortir par la porte.'],
-      ['Sous terre', 'Chaque niveau change tous les jours ; on descend par le puits, on remonte par l\'échelle. Il y fait noir : on n\'y voit qu\'autour de soi.'],
-      ['Minerais', `La pioche en main, touche un minerai dans les murs (${formatNumber(DATA.PERSONNAGE.COUTS.piocher)} d'énergie le coup) : il va dans l'inventaire. Le fer est partout ; le cuivre, l'or et le platine se trouvent de plus en plus bas.`],
-      ['Lingots', `Au Four, avec du bois : ${ingotRecipes().map((r) => `${DATA.OBJETS[r.sortie].nom.toLowerCase()} = ${ingredientsText(r)}`).join(' ; ')}.`],
-      ['À quoi ça sert', 'Minerais et lingots ne se vendent pas (ce sont des matériaux) : avec le bois et la pierre, ils paient les technologies de l\'Arbre des technologies.'],
-      ['Grottes de la montagne', `Dans le grand monde, au pied de la montagne, des bouches de roche : approche-toi (une flèche paraît), touche la bouche ou avance vers elle pour entrer. ${formatNumber(DATA.GROTTE.MONDE.NIVEAUX)} niveaux, plus riches que la mine : l'or et le platine dès le haut, du quartz et des améthystes à piocher, un filon dans chacune. En remontant, tu ressors devant l'entrée.`],
-    ],
-  }),
+  gisements: () => {
+    const G = (m) => DATA.RECOLTE.SORTES['gisement_' + m];
+    return {
+      nom: 'Gisements, minerais et lingots',
+      icone: '⛏️',
+      lignes: [
+        ['Les gisements', `Des tas de blocs de pierre veinés de métal : sur la ferme (du fer et du cuivre, parmi les gros rochers), et dans le grand monde (le fer et le cuivre dans les prés, les forêts et les landes ; l'or et le platine en montagne).`],
+        ['À la pioche', `Touche un gisement, la pioche en main : ${formatNumber(G('fer').coups)} coups pour le fer et le cuivre, ${formatNumber(G('or').coups)} pour l'or et le platine (${formatNumber(DATA.PERSONNAGE.COUTS.piocher)} d'énergie le coup). Chaque coup lâche une pierre, le dernier le minerai (marche dessus pour le ramasser). L'or demande une pioche en ${DATA.PIOCHE.NIVEAUX[DATA.PIOCHE.MINERAIS.or - 1].nom}, le platine une pioche en ${DATA.PIOCHE.NIVEAUX[DATA.PIOCHE.MINERAIS.platine - 1].nom}. Il revient quelques jours plus tard.`],
+        ['Lingots', `Au Four, avec du bois : ${ingotRecipes().map((r) => `${DATA.OBJETS[r.sortie].nom.toLowerCase()} = ${ingredientsText(r)}`).join(' ; ')}.`],
+        ['À quoi ça sert', 'Minerais et lingots ne se vendent pas (ce sont des matériaux) : avec le bois et la pierre, ils paient les technologies de l\'Arbre des technologies.'],
+        ['Cristaux', 'En montagne, des amas de quartz et, plus haut, d\'améthyste, que la pioche brise : ils luisent la nuit.'],
+      ],
+    };
+  },
   peche: () => {
     const C = DATA.CANNE;
     const poissons = [...new Set(Object.values(C.PRISES).flatMap((p) => Object.keys(p)))];
@@ -345,7 +347,7 @@ const HELP = {
       icone: '🔬',
       lignes: [
         ['PT', `Les points de technologie (PT) : chaque chapitre terminé en rapporte (${T.POINTS.CHAPITRES.join(' · ')}), chaque jalon de maîtrise 1, et en jeu libre 1 toutes les ${T.POINTS.MODE_LIBRE_NUITS} nuits.`],
-        ['Coût', 'Une technologie se paie en PT, en pièces et en ressources : du bois et de la pierre (hache, pioche), puis des lingots fondus au Four avec le minerai de la grotte.'],
+        ['Coût', 'Une technologie se paie en PT, en pièces et en ressources : du bois et de la pierre (hache, pioche), puis des lingots fondus au Four avec le minerai des gisements.'],
         ['Paliers', `Les paliers s'ouvrent avec les chapitres : ${Object.entries(T.PALIERS).map(([n, p]) => `${n}. ${p.nom} (chapitre ${p.chapitre})`).join(' · ')}.`],
         ['Branches', `${noeuds.length} technologies en ${T.branches.length} branches : ${T.branches.map((b) => `${b.icone} ${b.nom} (${noeuds.filter((x) => x.branche === b.id).length})`).join(' · ')}.`],
         ['Outils', `${noeuds.filter((x) => x.branche === 'outils').map((x) => x.nom).join(', ')} : moins de coups, plus de bois, de pierre, de minerai et de poisson, moins d'énergie.`],
@@ -369,7 +371,7 @@ const HELP = {
 };
 
 // Les fiches sans bâtiment, ouvertes depuis À propos.
-const FICHES = ['monde', 'outils', 'equipement', 'grotte', 'peche', 'chaines', 'techno'];
+const FICHES = ['monde', 'outils', 'equipement', 'gisements', 'peche', 'chaines', 'techno'];
 const fiches = () => FICHES;
 
 // Le nom des actions de DATA.PERSONNAGE.COUTS, pour la règle de l'énergie.
@@ -413,7 +415,7 @@ const TUTO = {
     texte: () => (!farmOpen(state) && !houseRepaired(state)
       ? 'Une terre sauvage, sans maison : ramasse les petites pierres et les morceaux de bois (un appui dessus), cueille les baies des buissons pour reprendre des forces (même épuisé) ou coupe-les à la hache pour leur bois, pose l\'Atelier (menu, 🔨 Construire) et touche-le pour y fabriquer une faux pour faucher l\'herbe haute (ses fibres), puis des murs, une porte et une paillasse, puis bâtis une pièce close avec la case 🔨 de la barre d\'outils (la porte se pose sur une case libre, ou à la place d\'un mur). Ce sera ton foyer : on y dort.'
       : !farmOpen(state)
-      ? `Ton foyer est bâti. Ici, tout se fait d'abord à la main : fabrique à l'Atelier un puits et une cruche, pose le puits dehors avec la case 🔨, remplis la cruche au puits (un appui dessus : ton personnage y va et puise ; sa jauge bleue, dans la barre d'outils, dit l'eau qui reste) et arrose tes plantes. La calèche, qui passe à la ferme chaque jour vers ${DATA.CALECHE.FERME} h, commerce avec toi à partir du niveau ${unlockLevel('marche')}. Au niveau ${unlockLevel('energie')}, le panneau solaire, la pompe, la citerne et la batterie (il faut des lingots : le minerai de la grotte, fondu au four) pomperont l'eau pour toi : l'automatisation commence.`
+      ? `Ton foyer est bâti. Ici, tout se fait d'abord à la main : fabrique à l'Atelier un puits et une cruche, pose le puits dehors avec la case 🔨, remplis la cruche au puits (un appui dessus : ton personnage y va et puise ; sa jauge bleue, dans la barre d'outils, dit l'eau qui reste) et arrose tes plantes. La calèche, qui passe à la ferme chaque jour vers ${DATA.CALECHE.FERME} h, commerce avec toi à partir du niveau ${unlockLevel('marche')}. Au niveau ${unlockLevel('energie')}, le panneau solaire, la pompe, la citerne et la batterie (il faut des lingots : le minerai des gisements, fondu au four) pomperont l'eau pour toi : l'automatisation commence.`
       : `Le panneau solaire charge la batterie de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h ; la pompe s'en sert pour remplir le réservoir (${formatNumber(DATA.POMPE.WH_PAR_L)} Wh par litre). Chaque arrosage puise dans le réservoir : maintiens le doigt sur la citerne pour voir son niveau.${stageUsable() ? ' Sur la carte, touche le panneau solaire ou la batterie pour l\'énergie, le puits ou la citerne pour l\'eau.' : ''}`),
   },
   potager: {
@@ -580,7 +582,7 @@ export function openAboutModal() {
     `Électricité : panneau (de ${DATA.SOLEIL.DEBUT} h à ${DATA.SOLEIL.FIN} h) → batterie → pompe (son eau sert aussi aux asperseurs de l'arrosage automatique), moulin, chaînes de production, réfrigérateur, station de charge du robot. ${penalite('USURE') ? `Un appareil en marche s'use d'un point toutes les ${formatNumber(DATA.USURE.HEURES_PAR_POINT)} heures de jeu ; l'entretenir coûte ${formatNumber(DATA.USURE.TAUX_ENTRETIEN)} % de son prix, le réparer après une panne ${formatNumber(DATA.USURE.TAUX_REPARATION)} % (arrondis à l'entier supérieur).` : 'Les appareils ne s\'usent pas et ne tombent pas en panne.'}`,
     `La calèche : elle fait chaque jour le tour du monde par les chemins et passe à la ferme vers ${DATA.CALECHE.FERME} h ; on commerce avec elle quand elle est arrêtée à côté de soi (ou hélée sur un chemin). Prix de vente fixes. Elle vend les semences (prix d'achat = prix de vente × coefficient, arrondi à l'entier supérieur ; chaque unité achetée ajoute ${formatNumber(M.PAS)} points au coefficient, chaque unité vendue en retire ${formatNumber(M.PAS)}, plancher ${formatNumber(M.PLANCHER.defaut)} %, graines ${formatNumber(M.PLANCHER.graine)} %) et ce qu'elle achète aux hameaux (à ${DATA.CALECHE.VENTE} % du prix de vente). Les outils, les animaux et les meubles se fabriquent à l'Atelier.`,
     `${chapterCount()} chapitres racontent un foyer qui prend vie : des amis, des repas partagés, les projets des hameaux, une ferme à votre image ; le dernier ouvre le jeu libre.`,
-    `Arbre des technologies : ${Object.keys(DATA.ARBRE.noeuds).length} technologies en ${DATA.ARBRE.branches.length} branches, payées en points de technologie (PT : chapitres terminés, jalons de maîtrise, mode libre), en pièces et en ressources (bois, pierre, puis lingots fondus au Four avec le minerai de la grotte). Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
+    `Arbre des technologies : ${Object.keys(DATA.ARBRE.noeuds).length} technologies en ${DATA.ARBRE.branches.length} branches, payées en points de technologie (PT : chapitres terminés, jalons de maîtrise, mode libre), en pièces et en ressources (bois, pierre, puis lingots fondus au Four avec le minerai des gisements). Les automatisations (arrosage, récolte, semis, nourrissage, tonte) et certaines recettes s'y débloquent.`,
     `Absence : jusqu'à ${formatDuration(H.MAX_S)} sont rattrapées au retour (énergie, eau, préparations, réfrigérateur), sans nuit${H.USURE ? '' : ' et sans usure'}. Ce temps compte comme temps d'éveil.`,
   ];
   openModal(`

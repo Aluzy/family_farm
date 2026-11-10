@@ -6,7 +6,7 @@ import { gainActionXp } from './levels.js';
 import { canAfford, spendEnergy, TIRED } from './stamina.js';
 import { techSum } from './techtree.js';
 import { farmTerrain, regionVue, voirRegion } from './terrain.js';
-import { force, hasTool, hitsNeeded, lacher, refusMinerai, toolDef, withBonus } from './outils.js';
+import { bonusMinerai, force, hasTool, hitsNeeded, lacher, refusMinerai, toolDef, withBonus } from './outils.js';
 import { SORTES as SORTES_VEG } from './monde-vegetation.js';
 import { SORTES_ROCHES } from './monde-roches.js';
 import { noterObjectif } from './objectifs-compte.js';
@@ -200,7 +200,9 @@ function butinFinal(state, id, regle) {
   const out = {};
   Object.entries(regle.fin || {}).forEach(([item, q], k) => {
     const n = entre(`${id}:${item}:${state.day}`, q);
-    out[item] = k === 0 && regle.geste !== 'cueillir' && regle.geste !== 'ramasser' ? withBonus(state, n, techSum(state, 'recolteBonus')) : n;
+    // (un gisement : son minerai suit aussi le niveau de la pioche et la Lampe de mineur, outils.js bonusMinerai)
+    const bonus = techSum(state, 'recolteBonus') + (regle.minerai ? bonusMinerai(state) : 0);
+    out[item] = k === 0 && regle.geste !== 'cueillir' && regle.geste !== 'ramasser' ? withBonus(state, n, bonus) : n;
   });
   for (const [item, pct] of Object.entries(regle.chance || {})) if (hache(`${id}:${item}:chance:${state.day}`) * 100 < pct) out[item] = (out[item] || 0) + 1;
   return out;

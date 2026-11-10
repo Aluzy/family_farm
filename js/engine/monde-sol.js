@@ -280,8 +280,8 @@ function solDe(ctx, b, i, x, y) {
 // BORD case autour, borné au monde), couches (Uint16Array, COUCHES tuiles par case de ce rectangle,
 // rangée par rangée ; 0 : rien ; les cases de la ferme n'ont rien), cx0, cy0, cl, ch (la région
 // elle-même), biome, marche (Uint8Array, une valeur par case de la région : son biome, 1 si l'on
-// peut y marcher : ni l'eau, ni le pied d'un arbre, d'un buisson ou d'un gros rocher, ni une entrée
-// de grotte ; un ponton, oui), vegetation ({ images, basses } : monde-vegetation.js), roches
+// peut y marcher : ni l'eau, ni le pied d'un arbre, d'un buisson ou d'un gros rocher ; un ponton,
+// oui), vegetation ({ images, basses } : monde-vegetation.js), roches
 // ({ images, basses } : monde-roches.js), lieux ({ images, basses } : monde-lieux.js), hameau
 // ({ images, basses } : monde-hameaux.js, les hameaux bâtis), faune
 // (Int32Array : monde-faune.js), ms (la durée du calcul) }.
@@ -499,8 +499,8 @@ export function solDeRegion(ctx, rx, ry) {
   g.apresTirages = (t) => { tir = t; r = rochesDeRegion(ctx, g, t); return r.pris; };
   const vegetation = vegetationDeRegion(ctx, g);
   const roches = { images: Int32Array.from(r.images), basses: bassesRoches(ctx, g, r, tir, vegetation.basses) };
-  // les lieux qui ont leur dessin (monde-lieux.js : l'entrée des grottes, les pontons et les piquets
-  // des coins de pêche ; ils ferment ou ouvrent leurs cases), puis les bêtes (monde-faune.js), sur la
+  // les lieux qui ont leur dessin (monde-lieux.js : les pontons et les piquets des coins de pêche, les
+  // lieux du récit, les secrets ; ils ferment ou ouvrent leurs cases), puis les bêtes (monde-faune.js), sur la
   // marche finale de la région
   const lieux = lieuxDeRegion(ctx, g);
   // les hameaux bâtis (monde-hameaux.js) : leurs murs, leurs meubles, leurs clôtures ferment leurs cases

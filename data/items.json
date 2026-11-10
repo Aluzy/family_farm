@@ -151,13 +151,12 @@
     "portail": { "nom": "Portail", "icone": "🚧‍🚪", "prix": 6, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "chemin": { "nom": "Chemin", "icone": "🟫‍🪨", "prix": 1, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "//champignon_lumineux": [
-      "La lanterne scintillante (ATELIER : un champignon lumineux et deux bois) : « cueillette » dit où",
-      "se prend le champignon à la main (FermeHote.ramasser, js/ui/excursion.js) : au sol de la mine",
-      "(js/grotte.js, ils repoussent le lendemain). Le morceau d'arbre de l'infra-monde, son ancienne",
-      "matière, ne s'obtient plus (« retire »). Posée sur la ferme, la lanterne éclaire la nuit (BLOCS",
-      "lanterne, lumiere)."
+      "La lanterne scintillante (ATELIER : un champignon lumineux et deux bois). Le champignon se ramasse à la main",
+      "dans les forêts du grand monde, où il luit la nuit (RECOLTE.SORTES champignons_lumineux ; docs/gisements.md).",
+      "Le morceau d'arbre de l'infra-monde, son ancienne matière, ne s'obtient plus (« retire »). Posée sur la ferme,",
+      "la lanterne éclaire la nuit (BLOCS lanterne, lumiere)."
     ],
-    "champignon_lumineux": { "nom": "Champignon lumineux", "icone": "🍄‍✨", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "cueillette": "grotte" },
+    "champignon_lumineux": { "nom": "Champignon lumineux", "icone": "🍄‍✨", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false },
     "bois_infra": { "nom": "Morceau d'arbre de l'infra-monde", "icone": "🪵‍🌈", "prix": 4, "mangeable": false, "categorie": "matériau", "rachetable": false, "retire": true },
     "bac_fleurs": { "nom": "Bac à fleurs (ancien)", "icone": "🪴‍🌷", "prix": 60, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true, "retire": true },
     "table_jardin": { "nom": "Table de jardin", "icone": "🍽️", "prix": 40, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
@@ -208,7 +207,7 @@
     "enveloppe_maurice": { "nom": "Enveloppe de Maurice", "icone": "✉️", "prix": 0, "mangeable": false, "categorie": "souvenir", "rachetable": false, "invendable": true },
     "cloche_maurice": { "nom": "Cloche de Maurice", "icone": "🔔", "prix": 0, "mangeable": false, "categorie": "souvenir", "rachetable": false, "invendable": true },
     "//pierre_lune": [
-      "Le récit, lot 10 (le fil de la lune, js/engine/fil-lune.js) : la pierre, trouvée dans la galerie secrète de la mine ;",
+      "Le récit, lot 10 (le fil de la lune, js/engine/fil-lune.js) : la pierre, trouvée dans l'amas d'améthyste de la montagne, une nuit de pleine lune ;",
       "posée sur la ferme (sa fiche, dans l'inventaire), tout y pousse plus vite. Ni vendue ni rachetée."
     ],
     "pierre_lune": { "nom": "Pierre de lune", "icone": "🪨‍🌙", "prix": 0, "mangeable": false, "categorie": "souvenir", "rachetable": false, "invendable": true },
@@ -319,8 +318,8 @@
     ],
     "herbes_montagne": { "nom": "Herbes de montagne", "icone": "🌿‍🏔️", "prix": 2, "mangeable": false, "categorie": "produit", "rachetable": false, "trouvaille": "montagne", "conservation": 3 },
     "//minerai_fer": [
-      "Les minerais de la grotte (fer partout, puis cuivre, or et platine de plus en plus bas), pris à",
-      "la pioche (GROTTE, js/grotte.js). Au Four, 4 minerais et du bois donnent un",
+      "Les minerais des gisements (docs/gisements.md : le fer et le cuivre sur la ferme et dans les prés, les forêts,",
+      "les landes ; l'or et le platine en montagne), brisés à la pioche. Au Four, 4 minerais et du bois donnent un",
       "lingot (recipes.json : lingot_*). Minerais et lingots (catégorie « matériau ») servent à l'arbre",
       "des technologies : invendables (ni au Marché ni en ville), ils ne se rachètent pas et ne périment pas.",
       "Leur prix, purement indicatif, couvre au moins celui des intrants (lingot ≥ 4 minerais + bois)."

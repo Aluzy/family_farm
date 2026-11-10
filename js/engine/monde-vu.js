@@ -240,12 +240,12 @@ export function toutCacher(state) {
 
 /* ---------- ce que la carte du monde montre ---------- */
 
-// Les lieux du plan (monde-gen.js : { hameaux: [{ id, case, nom }], grottes: [{ id, case }], peche:
-// [{ id, case, eau }] }) que la carte du monde montre : ceux dont la case est vue, et rien d'autre. Un
-// hameau vu de loin n'a pas de nom tant que le personnage n'y est pas allé (state.monde.hameaux), sauf le Gué.
-// → { hameaux: [{ id, case, nom, connu }], grottes: [{ id, case, nom }], peche: [{ id, case, eau, nom }] }.
+// Les lieux du plan (monde-gen.js : { hameaux: [{ id, case, nom }], peche: [{ id, case, eau }] }) que la carte du
+// monde montre : ceux dont la case est vue, et rien d'autre. Un hameau vu de loin n'a pas de nom tant que le
+// personnage n'y est pas allé (state.monde.hameaux), sauf le Gué. (Les entrées de grotte ne sont plus.)
+// → { hameaux: [{ id, case, nom, connu }], peche: [{ id, case, eau, nom }] }.
 export function lieuxDeLaCarte(state, lieux, T = farmTerrain(state)) {
-  const out = { hameaux: [], grottes: [], peche: [] };
+  const out = { hameaux: [], peche: [] };
   if (!lieux) return out;
   const connus = (state.monde && state.monde.hameaux) || {};
   for (const h of lieux.hameaux || []) {
@@ -254,7 +254,6 @@ export function lieuxDeLaCarte(state, lieux, T = farmTerrain(state)) {
     // (le Gué garde son nom : la lettre d'Adèle et le cocher en parlent avant qu'on y aille ; le récit)
     out.hameaux.push({ id: h.id, case: h.case, nom: c ? c.nom : h.gue && h.nom ? h.nom : 'Un hameau', connu: !!c });
   }
-  for (const g of lieux.grottes || []) if (caseVue(state, g.case, T)) out.grottes.push({ id: g.id, case: g.case, nom: 'Une grotte' });
   const EAUX = { lac: 'au lac', riviere: 'à la rivière', mer: 'en mer' };
   for (const p of lieux.peche || []) if (caseVue(state, p.case, T)) out.peche.push({ id: p.id, case: p.case, eau: p.eau, nom: `Un coin de pêche ${EAUX[p.eau] || ''}`.trim() });
   return out;
@@ -262,7 +261,7 @@ export function lieuxDeLaCarte(state, lieux, T = farmTerrain(state)) {
 
 /* ---------- la boussole ---------- */
 
-export const SORTES_BUTS = ['hameau', 'grotte', 'peche'];
+export const SORTES_BUTS = ['hameau', 'peche'];
 
 // Le lieu choisi sur la carte du monde (state.monde.but : { sorte, id }), ou null (la ferme).
 export function butBoussole(state) {
@@ -276,7 +275,7 @@ export function choisirBut(state, but, lieux = null) {
   if (!but) { state.monde.but = null; return { ok: true }; }
   if (!SORTES_BUTS.includes(but.sorte) || typeof but.id !== 'string') return { ok: false, error: 'Lieu inconnu.' };
   if (lieux) {
-    const liste = lieuxDeLaCarte(state, lieux)[but.sorte === 'hameau' ? 'hameaux' : but.sorte === 'grotte' ? 'grottes' : 'peche'];
+    const liste = lieuxDeLaCarte(state, lieux)[but.sorte === 'hameau' ? 'hameaux' : 'peche'];
     if (!liste.some((l) => l.id === but.id)) return { ok: false, error: 'Ce lieu n\'a pas encore été vu.' };
   }
   state.monde.but = { sorte: but.sorte, id: but.id };
@@ -309,7 +308,7 @@ export function etatBoussole(state, x, y, lieux, sortie, T = farmTerrain(state))
   const W = T.LARGEUR, F = T.FERME, b = butBoussole(state);
   let but = null;
   if (b && lieux) {
-    const l = lieuxDeLaCarte(state, lieux, T)[b.sorte === 'hameau' ? 'hameaux' : b.sorte === 'grotte' ? 'grottes' : 'peche'].find((q) => q.id === b.id);
+    const l = lieuxDeLaCarte(state, lieux, T)[b.sorte === 'hameau' ? 'hameaux' : 'peche'].find((q) => q.id === b.id);
     if (l) but = { sorte: b.sorte, id: l.id, nom: l.nom, x: (l.case % W) + 0.5, y: Math.floor(l.case / W) + 0.5 };
   }
   if (!but) {

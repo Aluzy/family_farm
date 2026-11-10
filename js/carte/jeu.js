@@ -1,6 +1,6 @@
 /* carte/jeu.js — le jeu Phaser, un seul pour toutes les cartes (window.CarteJeu).
  *
- * La ferme (js/farm-stage.js) et la mine (js/grotte.js) sont des scènes d'un même Phaser.Game : un seul canvas,
+ * La ferme (js/farm-stage.js) et les autres cartes sont des scènes d'un même Phaser.Game : un seul canvas,
  * un seul contexte WebGL, un seul jeu de textures. Changer de carte, c'est changer de scène :
  *
  *   - la ferme s'endort (scene.sleep) et se réveille telle qu'on l'a laissée (la vue, le
@@ -62,8 +62,7 @@
       // Pixels nets sans arrondi des positions pour la ferme (zoom non entier : des sommets
       // arrondis un par un ouvriraient des fentes entre parcelles voisines) ; les autres cartes
       // arrondissent par leur caméra (zoom entier, setRoundPixels).
-      // maxLights : les lumières qu'une vue garde (les plus proches de son centre ; la grotte,
-      // js/grotte.js).
+      // maxLights : les lumières qu'une vue garde (les plus proches de son centre).
       render: { antialias: false, antialiasGL: false, roundPixels: false, maxLights: 12 },
       transparent: false,
       backgroundColor: '#6a8157',

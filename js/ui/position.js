@@ -4,7 +4,7 @@
    ses pieds, en px de la carte ; au plus une fois par seconde, quand il bouge), ici, sur l'appareil, avec la
    graine de la partie ; elle l'y remet en se créant (makeRetour). Rien de noté (null) : il est rentré chez lui,
    ou à l'étage ; il repart alors de sa porte, comme avant. Une autre partie (une autre graine) ne le reprend
-   pas. Au retour d'une grotte (jeu.html?arrivee=…), il sort de son entrée, comme avant. */
+   pas. */
 import { farmSeed } from '../engine/terrain.js';
 import { state } from './store.js';
 import { safeStorageGet, safeStorageSet } from './storage.js';

@@ -14,8 +14,7 @@ import { clockHours, nightActive } from './clock.js';
    l'inventaire, elle ne se vend donc pas.
 
    Ce qu'elle fait (modeste) vaut pour le personnage principal : moins d'énergie pour certains
-   gestes (economiePct, lue par stamina.js actionCost), plus de lumière dans les grottes
-   (lumiereGrotte), plus loin la nuit dans le grand monde (vueNuitPct, monde-vu.js voirAutour), plus
+   gestes (economiePct, lue par stamina.js actionCost), plus loin la nuit dans le grand monde (vueNuitPct, monde-vu.js voirAutour), plus
    vite à pied dans certains biomes (vitessePied). Pour un autre membre, ce qu'il fait de lui-même :
    moins de faim quand il marche (faimMarchePct) et quand il aide (faimAidePct, repas.js).
 
@@ -238,10 +237,6 @@ export function economiePct(state, action) {
   return pct;
 }
 
-// La lumière autour du personnage dans la mine et les grottes (en %, 100 sans casque).
-export function lumiereGrotte(state) {
-  return piecesPrincipal(state).reduce((f, item) => (pieceDef(item).grotte ? (f * pieceDef(item).grotte) / 100 : f), 100);
-}
 
 // Le rayon de vue la nuit dans le grand monde (en %, 100 sans rien).
 export function vueNuitPct(state) {

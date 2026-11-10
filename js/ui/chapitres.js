@@ -30,7 +30,6 @@ export function objectiveValueText(o) {
     // fiche 9b : le grand monde
     case 'caleche': return `${n(o.valeur)} / ${formatNumber(o.cible)} 💰`;
     case 'monde': return `${n(o.valeur)} / ${formatNumber(o.cible)} %`;
-    case 'grotteMonde': return o.ok ? '✅' : '';
     default: return `${n(o.valeur)} / ${formatNumber(o.cible)}`;
   }
 }

@@ -519,7 +519,7 @@
         "ressources": { "bois": 4, "lingot_fer": 2 },
         "requiert": [{ "noeud": "out_hotte" }],
         "effet": { "coupsMoins": 1 },
-        "description": "Arbres, rochers et minerais de la grotte tombent en 2 coups au lieu de 3."
+        "description": "Arbres, rochers et gisements tombent en un coup de moins."
       },
       "out_socs": {
         "branche": "outils",
@@ -544,8 +544,8 @@
         "prix": 300,
         "ressources": { "lingot_fer": 1, "lingot_cuivre": 2 },
         "requiert": [{ "noeud": "out_lames" }],
-        "effet": { "grotte": { "lumiere": 150, "minerai": 25 } },
-        "description": "Dans la grotte, la lumière porte 50 % plus loin et chaque minerai a 1 chance sur 4 d'en donner un de plus."
+        "effet": { "grotte": { "minerai": 25 } },
+        "description": "Chaque gisement brisé donne un quart de minerai en plus."
       },
       "out_moulinet": {
         "branche": "outils",

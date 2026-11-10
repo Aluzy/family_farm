@@ -200,13 +200,6 @@ export function encyclopedieNouveautes() {
   return state ? nouveautesEncyclopedie(state).length : 0;
 }
 
-// Une carte visitée (js/ui/excursion.js) : ses pages se découvrent.
-export function encyclopedieCarte(carte) {
-  if (!state) return;
-  noterEncyclopedie(state, `carte:${carte}`);
-  majDecouvertes(true);
-}
-
 // Une bête du grand monde vue pour la première fois (js/carte/ferme/faune-monde.js) : sa page se
 // découvre (« faune:<espèce> »). Renvoie true si c'est nouveau.
 export function encyclopedieFaune(espece) {

@@ -117,9 +117,6 @@ refuse('île : un atelier d\'un hameau qui n\'est pas garanti', (d) => { d.ILE.A
 refuse('île : une commande qui demande un objet inconnu', (d) => { d.ILE.ATELIERS.scierie.recettes.planches.entrees.chene = 1; }, '« chene »');
 refuse('île : un meuble sans vendeur', (d) => { d.MEUBLES.chaise.vendeur = 'mouettes'; }, 'un hameau qui vend des meubles');
 refuse('île : la veillée sans l\'élément du niveau 10', (d) => { delete d.NIVEAUX.ELEMENTS.veillee; d.NIVEAUX.liste[9].debloque = []; d.RECIT.SCENES = d.RECIT.SCENES.filter((x) => x.id !== 'veillee_ferme'); }, 'l\'élément « veillee » manque');
-refuse('grotte : minerai inconnu', (d) => { d.GROTTE.POIDS.argent = { FIXE: 1 }; }, 'GROTTE.POIDS : « minerai_argent »');
-refuse('grotte : aucun niveau', (d) => { d.GROTTE.NIVEAUX = 0; }, 'GROTTE.NIVEAUX : un entier');
-refuse('grotte : une chance au-delà de 1', (d) => { d.GROTTE.MINERAI = 7; }, 'GROTTE.MINERAI : une part entre 0 et 1');
 refuse('monde : un biome manque', (d) => { d.BIOMES = d.BIOMES.filter((b) => b !== 'sommet'); delete d.ROCHES.DENSITES.sommet; delete d.ROCHES.BORNES.sommet; }, 'BIOMES : « sommet » manque');
 refuse('rochers : une sorte inconnue dans les densités', (d) => { d.ROCHES.DENSITES.montagne.roche.menhir = 0.01; }, '« menhir » n\'est pas une sorte');
 refuse('rochers : une falaise sans toutes ses colonnes', (d) => { d.ROCHES.SORTES.find((s) => s.nom === 'paroi').variantes = 24; }, 'ROCHES.SORTES[10].variantes');
@@ -133,7 +130,7 @@ refuse('récolte du monde : une falaise reste du décor', (d) => { d.RECOLTE.SOR
 
 refuse('arbre : clé d\'effet que le moteur ne lit pas', (d) => { d.ARBRE.noeuds.cu_outils.effet.vitesseRecolte = 120; }, '« vitesseRecolte » : aucun code du moteur');
 test('chaque clé d\'effet de EFFETS_TECHNO est lue dans js/', () => {
-  const src = readdirSync('js/engine').map((f) => readFileSync(`js/engine/${f}`, 'utf8')).join('\n') + readFileSync('js/grotte.js', 'utf8');
+  const src = readdirSync('js/engine').map((f) => readFileSync(`js/engine/${f}`, 'utf8')).join('\n');
   const lue = (cle) => new RegExp(`(tech(Effects|Pct|Sum|Flag)\\(state, '${cle}'|withBonus\\([^)]*'${cle}'|e\\.${cle}\\b|tech\\('${cle}'\\))`).test(src);
   eq(EFFETS_TECHNO.filter((cle) => !lue(cle)), []);
 });
@@ -143,7 +140,7 @@ test('objet impossible à obtenir : un avertissement, pas une erreur', () => {
   d.OBJETS.melon = { nom: 'Melon', icone: '🍈', energie: 9, prix: 2, mangeable: true, categorie: 'fruit', rachetable: false };
   const r = validateData(d);
   eq([r.errors, r.warnings.filter((w) => w.startsWith('OBJETS.melon'))], [[], ['OBJETS.melon : aucun moyen de l\'obtenir (ni récolte, ni recette, ni animal, ni pêche, ni sortie, ni achat, ni inventaire de départ…)']]);
-  eq(sourcesOf(d, 'minerai_or'), ['grotte de la montagne', 'grotte', 'récolte du grand monde (gisement_or)']);
+  eq(sourcesOf(d, 'minerai_or'), ['récolte du grand monde (gisement_or)']);
   eq(sourcesOf(d, 'anchois'), ['pêche mer', 'coin de pêche (mer)']);
 });
 test('le fromage d\'alpage : herbes de montagne (trouvaille, récolte du grand monde) → lait d\'alpage (vache) → fromage (Cuisine)', () => {
@@ -195,7 +192,7 @@ refuse('courrier : des jours après, sans fait', (d) => { d.COURRIER.adele_recol
 // (le récit, lot 10 : le fil de la lune)
 refuse('récit : une page inconnue au carnet en condition', (d) => { R0(d).quand = { fragment: 'page_perdue' }; }, 'une page de RECIT.FRAGMENTS');
 refuse('récit : porter ce qui ne se porte pas', (d) => { R0(d).quand = { equipe: 'planche' }; }, 'une pièce de EQUIPEMENT.PIECES');
-refuse('récit : la galerie sous la mine', (d) => { d.RECIT.FIL.GALERIE.NIVEAU = 99; }, 'un niveau de la mine de la ferme');
+refuse('récit : l\'amas d\'améthyste, une lune qui n\'existe pas', (d) => { d.RECIT.FIL.GALERIE.LUNE = 'bleue'; }, 'RECIT.FIL.GALERIE.LUNE');
 refuse('récit : une pierre qui ne pousse rien', (d) => { d.RECIT.FIL.PIERRE.POUSSE = 0; }, 'RECIT.FIL.PIERRE.POUSSE');
 refuse('courrier : une condition inconnue', (d) => { d.COURRIER.adele_recolte.quand = { lune: 'pleine' }; }, 'condition inconnue');
 refuse('récit : montrer depuis une réplique (une scène seulement)', (d) => { R0(d).effet = { montrer: 'gue' }; }, 'effet inconnu');

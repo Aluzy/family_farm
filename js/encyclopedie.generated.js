@@ -306,7 +306,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "four",
      "terme": "Four",
-     "description": "Station qui débloque le livre de recette dès qu'elle est là : le four de pierre se fabrique à l'Atelier (8 pierres, 2 planches) et se pose dans la maison. Sert à cuire le pain et d'autres plats comme le gratin de patates, les tartes ou le pain d'épices. Il fond aussi le minerai de la grotte en lingots : 4 minerais et quelques bûches de bois donnent 1 lingot.",
+     "description": "Station qui débloque le livre de recette dès qu'elle est là : le four de pierre se fabrique à l'Atelier (8 pierres, 2 planches) et se pose dans la maison. Sert à cuire le pain et d'autres plats comme le gratin de patates, les tartes ou le pain d'épices. Il fond aussi le minerai des gisements en lingots : 4 minerais et quelques bûches de bois donnent 1 lingot.",
      "liens": [
       "livre_de_recette",
       "atelier",
@@ -362,7 +362,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "arbre_technologique",
      "terme": "Arbre des technologies",
-     "description": "Onglet de la Maison : 37 technologies réparties en 7 branches (Énergie, Eau, Culture, Élevage, Cuisine, Famille, Outils) et 5 paliers. Chaque technologie se paie en points de technologie (PT), en pièces et en ressources : du bois et de la pierre (hache, pioche), puis des lingots fondus au Four avec le minerai de la grotte. Elle débloque une automatisation, des recettes ou un effet (moins d'eau, d'usure ou d'électricité, temps de préparation réduit, outils plus efficaces…). Un palier s'ouvre avec le chapitre en cours.",
+     "description": "Onglet de la Maison : 37 technologies réparties en 7 branches (Énergie, Eau, Culture, Élevage, Cuisine, Famille, Outils) et 5 paliers. Chaque technologie se paie en points de technologie (PT), en pièces et en ressources : du bois et de la pierre (hache, pioche), puis des lingots fondus au Four avec le minerai des gisements. Elle débloque une automatisation, des recettes ou un effet (moins d'eau, d'usure ou d'électricité, temps de préparation réduit, outils plus efficaces…). Un palier s'ouvre avec le chapitre en cours.",
      "liens": [
       "maison",
       "points_technologie",
@@ -459,7 +459,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "cheval",
      "terme": "Cheval et Écurie",
-     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Sa case de la barre d'outils te met en selle : tu vas 1,4 fois plus vite, sur la ferme comme dans tout le grand monde (pas dans la mine ni dans les grottes). Quand tu en descends, il rentre à l'Écurie. Chaque nuit il mange 2 paille s'il y en a. Le poteau d'attache et la corde de fibre (Atelier) ne servent pas encore : le cheval rentre toujours à l'Écurie.",
+     "description": "Le cheval vient à la ferme une fois l'Écurie construite, attiré par un licol et des friandises fabriqués à l'Atelier (deux cordes, des carottes et des pommes) : une enceinte de murs avec une porte sur le dehors, son râtelier (Atelier) et 2 cases libres. Sa case de la barre d'outils te met en selle : tu vas 1,4 fois plus vite, sur la ferme comme dans tout le grand monde. Quand tu en descends, il rentre à l'Écurie. Chaque nuit il mange 2 paille s'il y en a. Le poteau d'attache et la corde de fibre (Atelier) ne servent pas encore : le cheval rentre toujours à l'Écurie.",
      "liens": [
       "atelier",
       "murs",
@@ -628,10 +628,10 @@ export const ENCYCLOPEDIE = {
     {
      "id": "lanterne",
      "terme": "Lanterne scintillante",
-     "description": "Un bloc qui éclaire autour de lui la nuit. Elle se fabrique à l'Atelier avec un champignon lumineux (il pousse au sol de la mine, et repousse le lendemain) et deux bois, et se pose sur la ferme, dehors comme dans la maison.",
+     "description": "Un bloc qui éclaire autour de lui la nuit. Elle se fabrique à l'Atelier avec un champignon lumineux (il pousse dans les forêts du grand monde et luit la nuit) et deux bois, et se pose sur la ferme, dehors comme dans la maison.",
      "liens": [
       "atelier",
-      "grotte",
+      "cristaux_lumineux",
       "candelabre"
      ],
      "decouverte": [
@@ -1878,11 +1878,11 @@ export const ENCYCLOPEDIE = {
     {
      "id": "pioche",
      "terme": "Pioche",
-     "description": "Outil fabriqué une fois à l'Atelier. Pioche en main, un appui sur un rocher donne un coup : 3 énergie et 1 pierre. Le rocher se casse au 3e coup et revient 1 à 3 jours plus tard. Dans le grand monde, elle casse aussi les rochers, les gros blocs et les éboulis de la montagne. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : un appui dessus, et 1 pierre va dans l'inventaire. Dans la grotte, elle prend aussi le minerai dans les murs.",
+     "description": "Outil fabriqué une fois à l'Atelier. Pioche en main, un appui sur un rocher donne un coup : 3 énergie et 1 pierre. Le rocher se casse au 3e coup et revient 1 à 3 jours plus tard. Dans le grand monde, elle casse aussi les rochers, les gros blocs et les éboulis de la montagne. Un caillou (un rocher d'une seule case) se ramasse aussi à la main, sans pioche : un appui dessus, et 1 pierre va dans l'inventaire. Elle brise aussi les gisements (leur minerai) et les cristaux de la montagne.",
      "liens": [
       "outils",
       "bois_et_pierre",
-      "grotte",
+      "gisements",
       "minerai",
       "recolte_du_monde"
      ],
@@ -1919,10 +1919,9 @@ export const ENCYCLOPEDIE = {
     {
      "id": "minerai",
      "terme": "Minerai",
-     "description": "Fer, cuivre, or et platine, pris à la pioche dans les murs de la mine (la grotte) : le fer est partout, les autres de plus en plus rares et profonds. Les grottes de la montagne en ont davantage, l'or et le platine dès les premiers niveaux, et des pierres (quartz, améthyste). Le minerai va dans l'inventaire ; c'est un matériau, qui ne se mange pas et ne se vend pas. Au Four, 4 minerais et du bois font un lingot.",
+     "description": "Fer, cuivre, or et platine, que donnent les gisements brisés à la pioche : le fer et le cuivre sur la ferme et dans les prés, les forêts et les landes, l'or et le platine en montagne (il leur faut une pioche en fer, puis en or). Le minerai va dans l'inventaire ; c'est un matériau, qui ne se mange pas et ne se vend pas. Au Four, 4 minerais et du bois font un lingot.",
      "liens": [
-      "grotte",
-      "grotte_montagne",
+      "gisements",
       "pioche",
       "lingot",
       "four"
@@ -2005,21 +2004,21 @@ export const ENCYCLOPEDIE = {
   {
    "id": "mine",
    "icone": "🏙️",
-   "nom": "Mine & pêche",
+   "nom": "Minerais & pêche",
    "entrees": [
     {
-     "id": "grotte",
-     "terme": "Grotte",
-     "description": "Sous la ferme, par l'entrée de la mine (un tas de terre et sa porte sombre, caché dans les bois : on ressort par elle) : des niveaux tirés au hasard chaque jour, de plus en plus profonds. On descend par le puits, on remonte par l'échelle ; il fait noir, on n'y voit qu'autour de soi. La pioche en main, on y prend le minerai des murs : du fer partout, du cuivre, de l'or et du platine plus bas. La montagne du grand monde a ses propres grottes, plus riches.",
+     "id": "gisements",
+     "terme": "Gisements",
+     "description": "Des tas de blocs de pierre veinés de métal, posés sur la ferme (des gisements de fer et de cuivre parmi ses gros rochers) et dans le grand monde : le fer et le cuivre dans les prés, les forêts et les landes, l'or et le platine en montagne. La pioche les brise en plus de coups qu'un rocher : chaque coup lâche une pierre, le dernier le minerai ; l'or demande une pioche en fer, le platine une pioche en or. Ils reviennent quelques jours plus tard. (La mine de la ferme et les grottes de la montagne d'autrefois ne sont plus.)",
      "liens": [
       "minerai",
       "pioche",
       "lingot",
-      "grotte_montagne"
+      "cristaux_lumineux"
      ],
      "decouverte": [
-      "carte:grotte",
-      "objet:minerai_fer"
+      "objet:minerai_fer",
+      "objet:minerai_cuivre"
      ]
     },
     {
@@ -2052,16 +2051,17 @@ export const ENCYCLOPEDIE = {
      ]
     },
     {
-     "id": "grotte_montagne",
-     "terme": "Grottes de la montagne",
-     "description": "Au pied de la montagne du grand monde, des bouches de roche s'ouvrent dans la pente : chacune mène à sa grotte (on y entre en touchant sa bouche, ou en s'y poussant juste devant). Ce sont des niveaux de grotte comme ceux de la mine (le même jour, la même grotte ; un autre jour, une autre), 5 niveaux de profondeur, mais plus riches : plus de minerai dans les murs, l'or et le platine dès les premiers niveaux, des cristaux de quartz et des améthystes à piocher, et dans chacune un filon (du cuivre, de l'or, du platine, du quartz ou de l'améthyste en abondance). En remontant l'échelle du premier niveau, on ressort devant l'entrée, dans le monde, au même jour et à la même heure.",
+     "id": "cristaux_lumineux",
+     "terme": "Ce qui luit la nuit",
+     "description": "Dans les forêts, des touffes de champignons lumineux, qu'on ramasse à la main (pour les lanternes et le casque à lampe) ; dans la montagne, des amas de cristaux de quartz et, plus haut, d'améthyste, que la pioche brise. Le jour, on les voit à peine ; la nuit, chacun luit de sa couleur : cyan, bleu pâle, violet. Ils repoussent quelques jours plus tard. On raconte qu'un grand amas d'améthyste, dans la montagne la plus proche, luit plus fort les nuits de pleine lune.",
      "liens": [
-      "grotte",
-      "minerai",
-      "pioche"
+      "gisements",
+      "quartz",
+      "amethyste",
+      "lanterne"
      ],
      "decouverte": [
-      "carte:grotte_monde",
+      "objet:champignon_lumineux",
       "objet:quartz",
       "objet:amethyste"
      ]
@@ -2455,7 +2455,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "quartz",
      "terme": "Cristal de quartz",
-     "description": "Un cristal clair comme de l'eau gelée, qui pousse dans les fentes de la roche. On le ramasse dans la montagne, souvent près des éboulis. Il fait partie de la collection « Fossiles et cristaux ».",
+     "description": "Un cristal clair comme de l'eau gelée, qui pousse dans les fentes de la roche. Dans la montagne, il pousse en amas qui luisent la nuit : la pioche les brise. Il fait partie de la collection « Fossiles et cristaux ».",
      "liens": [
       "amethyste",
       "b_montagne"
@@ -2467,7 +2467,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "amethyste",
      "terme": "Améthyste",
-     "description": "Le cousin violet du quartz, plus rare. Les vieux de la montagne disent qu'elle garde des mauvais rêves. Il fait partie de la collection « Fossiles et cristaux ».",
+     "description": "Le cousin violet du quartz, plus rare, plus haut dans la montagne : ses amas luisent en violet la nuit. Les vieux de la montagne disent qu'elle garde des mauvais rêves. Il fait partie de la collection « Fossiles et cristaux ».",
      "liens": [
       "quartz",
       "b_montagne"
@@ -2996,7 +2996,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "habitants",
      "terme": "Les habitants",
-     "description": "Chaque maison d'un hameau abrite une famille : un ou deux adultes et quelques enfants, jamais plus que de lits. Le premier adulte fait le métier du hameau — bûcheron, pêcheur, mineur, berger ou cueilleur —, le second le même, un autre, ou il tient le jardin. Ils vivent leurs journées comme la tienne : levés à six heures et demie, les adultes partent au travail (le bûcheron fend au billot et abat les arbres alentour, qui repoussent comme les autres ; le pêcheur pêche depuis la rive ; le mineur pioche devant l'entrée d'une grotte ou au tas de minerai ; le berger soigne ses moutons dans l'enclos ; le cueilleur fait le tour des jardins), les enfants jouent sur la place ; à midi et le soir, tout le monde rentre manger, et la nuit chacun dort dans son lit. Touche un habitant : il s'arrête et te dit son prénom, son métier et un mot selon l'heure et son humeur. Chaque nuit, même loin de toi, chaque famille vit sa journée : son métier produit, son jardin et le poulailler donnent, elle cuisine les plats qu'elle connaît et mange à sa faim (ou non : son bonheur suit les mêmes règles que celui de ta famille) ; ce qui reste va à la réserve du hameau. Le panneau de la place ouvre la fiche du hameau : ses familles, leur bonheur et leur bourse, et sa réserve, qui grandit nuit après nuit. La calèche l'achète à chacun de ses passages (ce qu'elle a pris la dernière fois est dans la fiche), et l'argent va aux bourses des familles.",
+     "description": "Chaque maison d'un hameau abrite une famille : un ou deux adultes et quelques enfants, jamais plus que de lits. Le premier adulte fait le métier du hameau — bûcheron, pêcheur, mineur, berger ou cueilleur —, le second le même, un autre, ou il tient le jardin. Ils vivent leurs journées comme la tienne : levés à six heures et demie, les adultes partent au travail (le bûcheron fend au billot et abat les arbres alentour, qui repoussent comme les autres ; le pêcheur pêche depuis la rive ; le mineur pioche à son tas de minerai ; le berger soigne ses moutons dans l'enclos ; le cueilleur fait le tour des jardins), les enfants jouent sur la place ; à midi et le soir, tout le monde rentre manger, et la nuit chacun dort dans son lit. Touche un habitant : il s'arrête et te dit son prénom, son métier et un mot selon l'heure et son humeur. Chaque nuit, même loin de toi, chaque famille vit sa journée : son métier produit, son jardin et le poulailler donnent, elle cuisine les plats qu'elle connaît et mange à sa faim (ou non : son bonheur suit les mêmes règles que celui de ta famille) ; ce qui reste va à la réserve du hameau. Le panneau de la place ouvre la fiche du hameau : ses familles, leur bonheur et leur bourse, et sa réserve, qui grandit nuit après nuit. La calèche l'achète à chacun de ses passages (ce qu'elle a pris la dernière fois est dans la fiche), et l'argent va aux bourses des familles.",
      "liens": [
       "hameaux",
       "bonheur",
@@ -3075,12 +3075,12 @@ export const ENCYCLOPEDIE = {
     {
      "id": "metiers",
      "terme": "Les métiers des hameaux",
-     "description": "Chaque hameau a son métier, que le pays lui donne : mineur près d'une grotte de la montagne, pêcheur au bord de l'eau, bûcheron à la lisière d'une forêt, berger sur la lande, cueilleur ailleurs. Le bûcheron fend au billot et abat des arbres alentour (du bois, parfois une pomme de pin) ; le pêcheur pêche depuis la rive le poisson de son eau (sardines, anchois, dorades et bars en mer, truites, ombles et brochets au lac, truites, goujons et saumons en rivière) ; le mineur pioche devant l'entrée d'une grotte ou à son tas de minerai (de la pierre, parfois du fer, du cuivre, du quartz) ; le berger soigne ses moutons (du lait, parfois de la laine) ; le cueilleur rapporte des baies, des champignons, des mûres, des myrtilles et des châtaignes. Le jardinier, lui, tient le potager du foyer. Ce que les familles ne mangent pas va à la réserve du hameau, que la calèche achète et revend : c'est par elle que la ferme a les produits qu'elle ne fait pas.",
+     "description": "Chaque hameau a son métier, que le pays lui donne : mineur au pied de la montagne, pêcheur au bord de l'eau, bûcheron à la lisière d'une forêt, berger sur la lande, cueilleur ailleurs. Le bûcheron fend au billot et abat des arbres alentour (du bois, parfois une pomme de pin) ; le pêcheur pêche depuis la rive le poisson de son eau (sardines, anchois, dorades et bars en mer, truites, ombles et brochets au lac, truites, goujons et saumons en rivière) ; le mineur pioche à son tas de minerai (de la pierre, parfois du fer, du cuivre, du quartz) ; le berger soigne ses moutons (du lait, parfois de la laine) ; le cueilleur rapporte des baies, des champignons, des mûres, des myrtilles et des châtaignes. Le jardinier, lui, tient le potager du foyer. Ce que les familles ne mangent pas va à la réserve du hameau, que la calèche achète et revend : c'est par elle que la ferme a les produits qu'elle ne fait pas.",
      "liens": [
       "habitants",
       "hameaux",
       "comptoir",
-      "grotte_montagne",
+      "gisements",
       "peche"
      ],
      "decouverte": [
@@ -3330,7 +3330,7 @@ export const ENCYCLOPEDIE = {
      "description": "Le hameau de la montagne volcanique : des mineurs, des sources chaudes, l'île ancienne. C'est là qu'a lieu, une fois l'an, la fête des premiers arrivants.",
      "liens": [
       "fete_premiers",
-      "grotte_montagne"
+      "gisements"
      ],
      "decouverte": [
       "fait:visite.brumeval",
@@ -3559,14 +3559,15 @@ export const ENCYCLOPEDIE = {
     {
      "id": "grand_monde",
      "terme": "Le grand monde",
-     "description": "Une seule carte, vingt fois la ferme : la ferme est posée au milieu, dans une prairie, et le pays s'étend tout autour, fermé par la montagne au nord et à l'ouest, par la mer au sud et à l'est. Les prés entourent la ferme ; plus loin, les forêts profondes (feuillus, bouleaux, sapins, ronciers), les marais (saules, roseaux, eau basse), la lande (bruyère, ajoncs, pins tordus), la montagne et ses éboulis, les sommets enneigés et leurs falaises, la côte et ses plages de sable ou de galets. Des rivières descendent de la montagne à la mer, parfois par un lac. Chaque biome a ses plantes à récolter, ses bêtes, et ses lieux : des hameaux au bout des chemins, des grottes au pied de la montagne, des coins de pêche sur l'eau. Tout est caché sous le brouillard au départ.",
+     "description": "Une seule carte, vingt fois la ferme : la ferme est posée au milieu, dans une prairie, et le pays s'étend tout autour, fermé par la montagne au nord et à l'ouest, par la mer au sud et à l'est. Les prés entourent la ferme ; plus loin, les forêts profondes (feuillus, bouleaux, sapins, ronciers), les marais (saules, roseaux, eau basse), la lande (bruyère, ajoncs, pins tordus), la montagne et ses éboulis, les sommets enneigés et leurs falaises, la côte et ses plages de sable ou de galets. Des rivières descendent de la montagne à la mer, parfois par un lac. Chaque biome a ses plantes à récolter, ses bêtes, et ses lieux : des hameaux au bout des chemins, des gisements et des cristaux qui luisent la nuit dans la montagne, des coins de pêche sur l'eau. Tout est caché sous le brouillard au départ.",
      "liens": [
       "chemins_et_gues",
       "brouillard",
       "carte_du_monde",
       "recolte_du_monde",
       "hameaux",
-      "grotte_montagne",
+      "gisements",
+      "cristaux_lumineux",
       "peche",
       "faune_du_monde"
      ],
@@ -3605,7 +3606,7 @@ export const ENCYCLOPEDIE = {
     {
      "id": "carte_du_monde",
      "terme": "La carte du monde",
-     "description": "Elle s'ouvre par le menu (« Carte du monde »), la touche M au clavier ou un appui sur la boussole. Elle montre, en petit, tout ce que tu as vu du grand monde — les prés, les forêts, les marais, la lande, la montagne, la côte, les rivières et les lacs, les chemins, ta ferme — et laisse le reste dans le brouillard. Les lieux que tu as découverts y ont leur icône : les hameaux (avec leur nom une fois que tu y es allé), les entrées de grotte, les coins de pêche ; tu y vois aussi ta position et ta direction, et la calèche quand elle passe dans une partie que tu connais. Fais-la glisser du doigt ou à la souris, zoome à deux doigts, à la molette ou avec les boutons ; touche un lieu pour lire son nom et sa distance, et choisis-le pour que la boussole t'y mène.",
+     "description": "Elle s'ouvre par le menu (« Carte du monde »), la touche M au clavier ou un appui sur la boussole. Elle montre, en petit, tout ce que tu as vu du grand monde — les prés, les forêts, les marais, la lande, la montagne, la côte, les rivières et les lacs, les chemins, ta ferme — et laisse le reste dans le brouillard. Les lieux que tu as découverts y ont leur icône : les hameaux (avec leur nom une fois que tu y es allé), les coins de pêche ; tu y vois aussi ta position et ta direction, et la calèche quand elle passe dans une partie que tu connais. Fais-la glisser du doigt ou à la souris, zoome à deux doigts, à la molette ou avec les boutons ; touche un lieu pour lire son nom et sa distance, et choisis-le pour que la boussole t'y mène.",
      "liens": [
       "brouillard",
       "boussole",
@@ -3726,14 +3727,14 @@ export const ENCYCLOPEDIE = {
     {
      "id": "chapitres",
      "terme": "Chapitres",
-     "description": "7 étapes de l'histoire d'un foyer qui prend vie, avec leurs objectifs : Notre nouveau chez-nous (l'héritage : bâtir le foyer, première récolte), Une maison à notre image (le grenier : cultures, Silo, blé, et les premières ventes à la calèche), Les premiers animaux (le poulailler, le premier minerai de fer de la mine, un premier hameau du grand monde et un premier ami), Les plaisirs de la cuisine (le four, le premier lingot de fer, une grotte de la montagne, et une part du monde vue), Une ferme pleine de vie (le troupeau, un repas partagé avec des invités, d'autres hameaux, un poisson de mer), Au rythme de la nature (toute l'année : un projet de hameau achevé, acheter aux hameaux par la calèche, regarder les bêtes sauvages), puis Notre petit coin de paradis (mêler les styles, trouver des plans, connaître son pays). Ils ne débloquent plus rien depuis la version 1.7 : chaque chapitre terminé rapporte de l'expérience, des points de technologie, ouvre un palier de l'Arbre des technologies et offre une récompense : un plan de meuble de collection ou des objets de décor, chacun de son style (un plan déjà trouvé cède la place au suivant de sa collection). Le dernier ne termine rien : il ouvre le jeu libre (aménager, inviter, aider les hameaux, compléter les collections).",
+     "description": "7 étapes de l'histoire d'un foyer qui prend vie, avec leurs objectifs : Notre nouveau chez-nous (l'héritage : bâtir le foyer, première récolte), Une maison à notre image (le grenier : cultures, Silo, blé, et les premières ventes à la calèche), Les premiers animaux (le poulailler, le premier minerai de fer d'un gisement, un premier hameau du grand monde et un premier ami), Les plaisirs de la cuisine (le four, le premier lingot de fer, un quartz de la montagne, et une part du monde vue), Une ferme pleine de vie (le troupeau, un repas partagé avec des invités, d'autres hameaux, un poisson de mer), Au rythme de la nature (toute l'année : un projet de hameau achevé, acheter aux hameaux par la calèche, regarder les bêtes sauvages), puis Notre petit coin de paradis (mêler les styles, trouver des plans, connaître son pays). Ils ne débloquent plus rien depuis la version 1.7 : chaque chapitre terminé rapporte de l'expérience, des points de technologie, ouvre un palier de l'Arbre des technologies et offre une récompense : un plan de meuble de collection ou des objets de décor, chacun de son style (un plan déjà trouvé cède la place au suivant de sa collection). Le dernier ne termine rien : il ouvre le jeu libre (aménager, inviter, aider les hameaux, compléter les collections).",
      "liens": [
       "points_technologie",
       "niveaux",
-      "grotte",
+      "gisements",
       "lingot",
       "hameaux",
-      "grotte_montagne",
+      "cristaux_lumineux",
       "comptoir",
       "grand_monde",
       "plans_collection"
@@ -4078,11 +4079,10 @@ export const ENCYCLOPEDIE = {
     {
      "id": "casque_a_lampe",
      "terme": "Casque à lampe",
-     "description": "Un casque jaune, une lampe au front, fabriqué à l'Atelier avec deux lingots de fer, un lingot de cuivre et deux champignons lumineux (dès le niveau du Four). Sur la tête du personnage principal, il éclaire 140 % autour de lui dans la mine et les grottes (la Lampe de mineur de l'Arbre s'y cumule), et la nuit, dans le grand monde, il voit plus loin (150 % du rayon). Pour les adultes seulement.",
+     "description": "Un casque jaune, une lampe au front, fabriqué à l'Atelier avec deux lingots de fer, un lingot de cuivre et deux champignons lumineux (dès le niveau du Four). Sur la tête du personnage principal, la nuit, dans le grand monde, il voit plus loin (150 % du rayon). Pour les adultes seulement.",
      "liens": [
       "equipement",
-      "grotte",
-      "grotte_montagne",
+      "cristaux_lumineux",
       "carte_du_monde"
      ],
      "decouverte": [

@@ -4,12 +4,12 @@
    ========================================================================== */
 
 import {
-  absoluteHours, actionCost, addItem, advanceNight, alertSnapshot, animalBuyMax, animalRoom,
+  absoluteHours, actionCost, addItem, bonusMinerai, advanceNight, alertSnapshot, animalBuyMax, animalRoom,
   asleep, awakeMsAtHour, bedtimeDue, boiteCounts, buyAnimals, buyItem, buyPrice, buyQuote,
   canSleep, castLine, chopTree, collectAt, countItem, createInitialState, DATA, dayOfMonth,
-  deposit, depositOreNotebook, energyMax, findPlot, fishLeft, formatDay, getNotifications,
+  deposit, energyMax, findPlot, fishLeft, formatDay, getNotifications,
   goToSleep, grantTech, growAll, harvest, harvestYield, hitsNeeded, hourOfDay, isBuyable, maxStage,
-  midnightMs, MIGRATIONS, mineOre, mineRock, monthIndex, monthName, moonPhase, nightActive,
+  midnightMs, MIGRATIONS, mineRock, monthIndex, monthName, moonPhase, nightActive,
   nightLengthMs, nightSpeed, piles, plant, recipeTime, sellItem, sheepCount,
   simulateOffline, skipNight, sleep, sleepTarget, startNight, startRecipe, STATE_VERSION,
   strawMissing, strawNeed, testAddHens, testAddSeeds, testAddSheep, testBatir, testFillEnergy,
@@ -139,22 +139,15 @@ test('version 1.21 : la mer (du grand monde, fiche 6b), dorade, sardine, anchois
   assertEqual(castLine(s, 'mer').error, 'Le poisson se fait rare en mer aujourd\'hui : essaie un lac, une rivière, ou reviens demain.');
 });
 
-test('minerais et lingots : la grotte remplit l\'inventaire, le Four fond 4 minerais et du bois en 1 lingot', () => {
+test('minerais et lingots : les gisements remplissent l\'inventaire, le Four fond 4 minerais et du bois en 1 lingot', () => {
   for (const m of ['fer', 'cuivre', 'or', 'platine']) {
     const [mi, li] = [DATA.OBJETS['minerai_' + m], DATA.OBJETS['lingot_' + m]];
     assertEqual([mi.categorie, li.categorie, mi.invendable, li.invendable, isBuyable('lingot_' + m)], ['matériau', 'matériau', true, true, false], m);
     assertEqual(DATA.RECETTES['lingot_' + m].ingredients[0], { item: 'minerai_' + m, qte: 4 });
   }
   const s = atelier();
-  assertEqual(mineOre(s, 'fer').error, 'Il te faut une pioche (à fabriquer à l\'Atelier).');
-  s.outils = { hache: false, pioche: true, choisi: 'pioche' };
-  const e = s.energie;
-  const r = mineOre(s, 'fer');
-  assertEqual([r.ok, r.item, r.n, countItem(s, 'minerai_fer'), s.energie], [true, 'minerai_fer', 1, 1, e - actionCost(s, 'piocher')]);
-  assertEqual(mineOre(s, 'diamant').error, 'Minerai inconnu.');
-  // le carnet d'avant : versé dans l'inventaire
-  depositOreNotebook(s, { fer: 3, or: 2, pierre: 9 });
-  assertEqual([countItem(s, 'minerai_fer'), countItem(s, 'minerai_or'), countItem(s, 'pierre')], [4, 2, 0]);
+  // (le minerai des gisements brisés à la pioche : gisements.test.mjs)
+  addItem(s, 'minerai_fer', 4);
   // au Four : 4 minerais de fer + 3 bois
   assertEqual(startRecipe(s, 'lingot_fer').ok, false, 'pas de bois');
   addItem(s, 'bois', 3);
@@ -194,11 +187,10 @@ test('branche Outils : coups en moins, ressources en plus, énergie, minerai, p�
   // Moulinet en laiton : 2 prises de plus par jour
   grantTech(s, 'out_moulinet');
   assertEqual(fishLeft(s, 'lac'), DATA.CANNE.JOUR.lac + 2);
-  // Lampe de mineur : parfois 2 minerais
+  // Lampe de mineur : +25 % de minerai aux gisements brisés
+  const b0 = bonusMinerai(s);
   grantTech(s, 'out_lampe');
-  let n = 0;
-  for (let i = 0; i < 60; i++) { testFillEnergy(s); n += mineOre(s, 'cuivre').n; }
-  assert(n > 60 && n < 100, `un minerai de plus de temps en temps (${n} pour 60)`);
+  assertEqual(bonusMinerai(s), b0 + 25);
 });
 
 test('version 1.1.1 : devis d\'achat (buyQuote) = ce que buyItem achète, prix montant compris', () => {

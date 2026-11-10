@@ -24,7 +24,6 @@ export * from './monde-hameaux.js';
 export * from './monde-vu.js';
 export * from './habitants.js';
 export * from './bienvenue.js';
-export * from './grotte.js';
 export * from './crops.js';
 export * from './depart.js';
 export * from './cruche.js';

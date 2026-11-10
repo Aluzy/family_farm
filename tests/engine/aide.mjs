@@ -368,11 +368,11 @@ export function coldRoom({ charge = true, lest = 50 } = {}) {
 }
 
 // Fiche 9b : les objectifs de la campagne qui se font dans le grand monde (la calèche, les hameaux, le
-// monde vu, une grotte de la montagne, la mer, les bêtes), tous remplis d'un coup : les tests d'un
+// monde vu, la mer, les bêtes), tous remplis d'un coup : les tests d'un
 // chapitre de la ferme n'ont pas à sortir. (Après testGoToChapter, qui remet les compteurs à zéro.)
 // La nouvelle vision : les objectifs d'un foyer qui prend vie (un ami, un repas partagé, un projet de hameau,
 // des styles, des plans) se font hors des gestes de la ferme : remplis eux aussi (vieFaite).
-export const OBJECTIFS_MONDE = ['caleche', 'hameaux', 'monde', 'grotteMonde', 'pecheMer', 'achatsHameaux', 'faune', 'amis', 'repas', 'projets', 'styles', 'plans'];
+export const OBJECTIFS_MONDE = ['caleche', 'hameaux', 'monde', 'pecheMer', 'achatsHameaux', 'faune', 'amis', 'repas', 'projets', 'styles', 'plans'];
 export function vieFaite(s) {
   const k = s.campagne.compteurs;
   k.repasInvites = Math.max(k.repasInvites || 0, 5);
@@ -395,7 +395,6 @@ export function mondeFait(s) {
   s.monde.hameaux = {};
   for (let i = 1; i <= 10; i++) s.monde.hameaux['hameau_' + i] = { nom: 'Hameau ' + i, style: 'prairie', jour: 1 };
   toutVoir(s);
-  noterEncyclopedie(s, 'carte:grotte_monde');
   for (const e of Object.keys(DATA.FAUNE.ESPECES)) noterEncyclopedie(s, 'faune:' + e);
   return s;
 }

@@ -11,7 +11,7 @@ nuit partagée. **E-8 a posé la frontière** : M.1, M.2 et M.3 ci-dessous sont 
 ## 1. Le principe
 
 > **Un monde partagé, c'est ta ferme.** Tes amis viennent chez toi : ils construisent, cultivent,
-> s'occupent des bêtes, cuisinent et dorment sous ton toit. Les routes, les hameaux, la mine et le
+> s'occupent des bêtes, cuisinent et dorment sous ton toit. Les routes, les hameaux et le
 > reste du grand monde restent ton aventure, dans ta partie solo.
 
 La zone de la ferme est le rectangle `FERME` du terrain généré (`farmTerrain(state).FERME`). Sur la carte
@@ -69,7 +69,7 @@ carte. `horsDeLaFerme(state)` (`js/engine/didacticiel.js`) et `enExpedition(stat
 | Les hameaux et leurs habitants | `monde.hameaux`, `monde.habitants`, `projets` | hors du monde partagé |
 | Les amitiés, les invitations à un repas, les plans | `amitie`, `invitations`, `plans`, `bienvenue` | hors du monde partagé |
 | Le récit, le didacticiel, le courrier | `recit`, `didacticiel`, `courrier`, `campagne` | figés (ni lus ni changés en ligne) |
-| La calèche, le cheval, les excursions (mine, grottes) | `caleche`, `cheval`, `bivouac`, `jeu.html?carte=…` | hors du monde partagé |
+| La calèche, le cheval, les excursions (autrefois la mine et les grottes) | `caleche`, `cheval`, `bivouac`, `jeu.html?carte=…` | hors du monde partagé |
 
 La partie solo n'est jamais touchée par le jeu en ligne (F.4 : le monde est une copie). Ce qui a été
 fait dans le grand monde avant la mise en ligne reste dans la partie solo, intact.

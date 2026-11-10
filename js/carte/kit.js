@@ -1,6 +1,6 @@
 /* carte/kit.js — ce que toutes les cartes Phaser du jeu partagent (window.CarteKit).
  *
- * La ferme (js/farm-stage.js et js/carte/ferme/), la mine (js/grotte.js), et les
+ * La ferme (js/farm-stage.js et js/carte/ferme/) et les
  * personnages (js/fermier.js, js/famille-ferme.js) lisent ici leurs réglages communs au lieu
  * d'en garder chacun une copie qui finissait par diverger :
  *
@@ -205,7 +205,7 @@
   // la vitesse de marche de chacun (VITESSES), un pas et demi par seconde, une allure posée (à une image
   // tous les PAS px, le pied ne glissait pas mais la marche était frénétique) ; plus vite il va,
   // plus vite les images défilent. imageMarche(parcouru, qui) : l'image après `parcouru` px depuis
-  // le départ, `qui` le marcheur ('fermier', 'grotte', 'adulte' par défaut ou 'enfant') ; elle
+  // le départ, `qui` le marcheur ('fermier', 'adulte' par défaut ou 'enfant') ; elle
   // commence par un passage (l'image 1, la plus proche de la pose debout), pas par les jambes écartées.
   const PAS = { adulte: 3, enfant: 2 };
   const CADENCE = 6;
@@ -253,16 +253,14 @@
     return f;
   }
 
-  // La vitesse de marche de chacun (px de carte par seconde) : chaque carte a sa mesure (la
-  // grotte est vue de plus près que la ferme), mais toutes sont ici.
+  // La vitesse de marche de chacun (px de carte par seconde) : toutes sont ici.
   const VITESSES = {
     fermier: 58,                                   // le personnage, à la ferme (js/fermier.js)
     famille: { adulte: 26, enfant: 32 },           // les autres membres, à la ferme (js/famille-ferme.js)
-    grotte: 48,                                    // le personnage, dans la mine (js/grotte.js)
   };
   // px parcourus par image de marche (imageMarche) : CADENCE images par seconde à ces vitesses
   const FOULEE = {
-    fermier: VITESSES.fermier / CADENCE, grotte: VITESSES.grotte / CADENCE,
+    fermier: VITESSES.fermier / CADENCE,
     adulte: VITESSES.famille.adulte / CADENCE, enfant: VITESSES.famille.enfant / CADENCE,
   };
 

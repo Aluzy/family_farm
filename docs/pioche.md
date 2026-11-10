@@ -25,10 +25,11 @@ avec ce que celle-ci extrait :
 
 - `state.outils.niveauPioche` (absent : 1, la pierre). Une partie d'avant garde sa pioche, en pierre : pas de migration.
 - `js/engine/outils.js` : `niveauPioche`, `piocheDef`, `refusMinerai` (« L'or : il faut une pioche en fer au moins
-  (Atelier). ») ; `mineOre` refuse un minerai trop dur et ajoute le bonus du niveau à celui de la lampe.
+  (Atelier). ») ; `bonusMinerai` ajoute le bonus du niveau à celui de la lampe, sur le
+  minerai d'un gisement brisé (docs/gisements.md ; le geste `mineOre` de la mine n'est plus).
 - `js/engine/atelier.js` : `craftStatus` refuse une amélioration hors de l'ordre (« Il te faut d'abord la pioche en
   cuivre. », « Tu as déjà la pioche en fer. ») ; `craft` monte le niveau.
-- La grotte (`js/grotte.js`, `tapOre`) : un minerai trop dur, le héros le dit sans marcher jusqu'à lui.
+- Un gisement trop dur (`piocherGisement`, `monde-recolte.js`) : le héros le dit. (La grotte de la mine n'est plus.)
 
 ## L'affichage
 

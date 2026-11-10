@@ -7,7 +7,7 @@
        niveau) ; sans partie enregistrée, un fichier de sauvegarde à ouvrir (comme « Importer » des
        options).
    Il s'affiche avant que la partie soit chargée (js/main.js : rien ne tourne derrière), une fois par
-   ouverture du jeu : pas quand la page est rouverte par le jeu lui-même (jeu.html?… : une grotte, le
+   ouverture du jeu : pas quand la page est rouverte par le jeu lui-même (jeu.html?… : le
    monde en ligne ; #invitation, #connexion), ni après un rechargement dans le même onglet. */
 import { migrate } from '../engine/state.js';
 import { familyName, setupPending } from '../engine/depart.js';
@@ -20,8 +20,12 @@ const SLOGAN = 'Construis, jardine, partage !';
 const VU = 'ferme-titre-vu';          // (sessionStorage : l'écran déjà passé dans cet onglet)
 
 // L'écran d'accueil doit-il s'afficher à ce démarrage ?
+// (une ancienne adresse de la mine, jeu.html?carte=grotte&…, compte comme jeu.html : la mine n'est plus,
+// docs/gisements.md, lot 4 ; js/ui/hote.js oublierAdresseMine)
 export function ecranTitreVoulu() {
-  if (typeof location === 'undefined' || location.search || /invitation=|connexion=/.test(location.hash)) return false;
+  if (typeof location === 'undefined' || /invitation=|connexion=/.test(location.hash)) return false;
+  const p = new URLSearchParams(location.search);
+  if (location.search && !p.get('carte') && !p.get('arrivee')) return false;
   try { return !sessionStorage.getItem(VU); } catch (e) { return true; }
 }
 

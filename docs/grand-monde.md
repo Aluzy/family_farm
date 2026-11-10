@@ -29,8 +29,8 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
 - **Ce qui reste** : le modèle des familles autonomes (l'ancien `js/engine/voisins.js` :
   foyers, métiers, argent, repas, bonheur, maisons par étapes), pour les habitants du grand
   monde, à reprendre de la branche d'archive à l'étape 7 ; le bonheur de la famille
-  (`js/engine/bonheur.js`) ; la mine de la ferme et ses niveaux de grotte (`js/grotte.js`) ; le
-  cheval.
+  (`js/engine/bonheur.js`) ; la mine de la ferme et ses niveaux de grotte (`js/grotte.js`, retirés
+  depuis : docs/gisements.md, lot 4) ; le cheval.
 - **Le Marché devient une calèche** : elle fait le tour du monde par les chemins, de hameau en
   hameau et jusqu'à la ferme, et achète ce que les habitants et le joueur produisent. On la
   voit passer ; on peut la héler quand elle est près de soi. Elle ne vend que les produits des
@@ -499,7 +499,8 @@ plage, le train, l'infra-monde, l'école, le cheval) est gardé tel quel sur la 
        ferme comme dans le monde : une partie de son feuillage manque pendant la chute ; à revoir sur
        une vraie carte graphique) ; le coup fort de la faux ne fauche pas encore les plantes
        du monde ; les fleurs des prés restent du décor (rien à cueillir pour l'instant).
-   - **Fait (6b)** : les grottes de la montagne, la pêche dans le monde et les animaux.
+   - **Fait (6b)** : les grottes de la montagne, la pêche dans le monde et les animaux. (Les grottes et la
+     mine sont retirées depuis : docs/gisements.md, lot 4.)
      - **Les grottes** : chaque entrée du plan (`lieux.grottes`, 3 à 6) a sa bouche de roche dans la
        montagne (`scripts/carte/lieux.py` → `assets/lieux_monde.png`, `lieux_monde.json` : un éperon de
        granit, sa face en strates comme les falaises de la 5c, l'arche noire, des éboulis au pied ;

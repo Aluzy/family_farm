@@ -2,7 +2,7 @@
  * (CarteKit.APPUI, doubleAppui, MANETTE, manette, astuceMarche, SECOUSSE, secousse, VIBRATION,
  * vibre, BULLE, bulleGain).
  *
- * La ferme (js/farm-stage.js, js/carte/ferme/) et la mine (js/grotte.js) se jouent de la même
+ * La ferme (js/farm-stage.js, js/carte/ferme/) et les autres cartes se jouent de la même
  * façon :
  *
  *   - la caméra suit le personnage ;

@@ -3,7 +3,7 @@
 La mine disparaît (un chantier en quatre lots) : le minerai se trouve désormais en surface, dans des **gisements**,
 des tas de blocs de pierre riches en veines et en pépites de métal (maquette G4, façon mines d'Age of Empires).
 
-1. **Les gisements** (ce lot) : sur la ferme et dans le grand monde.
+1. **Les gisements** : sur la ferme et dans le grand monde.
 2. Les champignons lumineux en forêt, les cristaux (quartz, améthyste) en montagne, qui brillent la nuit.
 3. La pierre de lune du récit, dans un rocher d'améthyste de la montagne, les nuits de pleine lune.
 4. La mine de la ferme et les grottes de la montagne supprimées.
@@ -70,3 +70,35 @@ dans la montagne la plus proche de la ferme.
   refermé (la pierre prise). La pierre se pose sur la ferme comme avant (`poserPierre`).
 
 Tests : `tests/engine/fil-lune.test.mjs` (l'amas d'améthyste).
+
+## Lot 4 : la fin de la mine et des grottes
+
+La mine de la ferme et les grottes de la montagne sont retirées : le minerai, le quartz, l'améthyste et les
+champignons lumineux se trouvent tous dehors (lots 1 à 3).
+
+- **Retirés** : la scène de la grotte (`js/grotte.js`), son ouverture (`js/ui/excursion.js`), son moteur
+  (`js/engine/grotte.js`), ses réglages (`data/grotte.json`), ses images (`assets/grotte_tuiles.png`,
+  `grotte_objets.png`, `grotte.json`, `galerie.png`) et leurs scripts (`scripts/carte/grotte.py`, `galerie.py`), son
+  ambiance et sa musique (`assets/son/ambiance/grotte`, `musique/musique_mine`) ; le geste `mineOre` et le vieux carnet
+  de minerai (`depositOreNotebook`), la lumière du casque dans la grotte (`lumiereGrotte`), la galerie du récit
+  (`galerieOuverte`, `niveauGalerie`, `prendrePierre` : la pierre est dans l'amas d'améthyste, lot 3).
+- **La ferme** : plus de tas de terre ni de porte (`objets.mine`, les tuiles `MINE`) ; sa place reste une clairière
+  d'herbe, pour que rien d'autre ne bouge (`ferme-generee.js` garde `mineCase`, `devantMine`).
+- **Le monde** : les entrées de grotte ne sont plus dessinées ni bloquées ; `lieux.grottes` reste dans le plan, sans
+  dessin, parce que leur place écarte encore les autres lieux et les maisons des hameaux et donne le métier de mineur
+  (`monde-hameaux.js`). `LIEUX.SORTES` garde `entree_grotte` (la table ne fait que s'allonger).
+- **Le générateur 8** (`GENERATEUR_VERSION`), la sauvegarde 85 (`STATE_VERSION`) : la migration 84 → 85 refait la
+  ferme et le plan, comme les lots d'avant ; le reste de la partie ne change pas.
+- **La campagne** : le chapitre 4 demande un quartz des cristaux de la montagne au lieu d'entrer dans une grotte
+  (l'objectif `grotteMonde` et l'événement `carte:grotte_monde` ne sont plus) ; le joueur automatique traite le quartz
+  comme un minerai.
+- **La Lampe de mineur** (`out_lampe`) : +25 % de minerai aux gisements brisés (son effet `grotte.minerai`, lu par
+  `outils.js bonusMinerai`, avec le niveau de la pioche) ; le casque à lampe voit plus loin la nuit.
+- **La page** : `js/ui/hote.js` garde `window.FermeHote` (l'heure, le personnage, les messages), le menu du god mode
+  (ses actions de test) et oublie une ancienne adresse de la mine (`jeu.html?carte=grotte&…` : la ferme).
+- **L'aide et l'encyclopédie** : la fiche « Gisements, minerais et lingots » remplace celle de la grotte ; les pages
+  `gisements` et `cristaux_lumineux` remplacent `grotte` et `grotte_montagne`.
+
+Tests : `tests/engine/gisements.test.mjs` (la migration 84 → 85), `peche-faune.test.mjs` (renommé : sans les
+grottes), `chapitres.test.mjs` (le quartz du chapitre 4), `pioche.test.mjs` (`refusMinerai`, `bonusMinerai`),
+`tests/smoke.mjs` (une ancienne adresse de la mine).

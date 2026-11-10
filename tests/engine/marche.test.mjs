@@ -43,7 +43,7 @@ function pose(planche, nom) {
 test("l'image du pas : une tous les FOULEE px (6 images par seconde), en commençant par un passage", () => {
   assertEqual([K.PAS.adulte, K.PAS.enfant, K.CADENCE], [3, 2, 6]);
   // à sa vitesse de marche, chacun fait CADENCE images par seconde (deux pas)
-  const v = { fermier: K.VITESSES.fermier, grotte: K.VITESSES.grotte, adulte: K.VITESSES.famille.adulte, enfant: K.VITESSES.famille.enfant };
+  const v = { fermier: K.VITESSES.fermier, adulte: K.VITESSES.famille.adulte, enfant: K.VITESSES.famille.enfant };
   for (const qui of Object.keys(v)) {
     let changements = 0, avant = K.imageMarche(0, qui);
     for (let t = 1; t <= 1000; t++) { const k = K.imageMarche(v[qui] * t / 1000, qui); if (k !== avant) changements++; avant = k; }

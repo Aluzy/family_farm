@@ -4,10 +4,10 @@ Un jeu de gestion agricole familiale en pixel art : une famille (quatre personne
 s'installe sur une **terre sauvage** et doit, à terme, se nourrir de ce que la ferme produit.
 On y ramasse des pierres et du bois, on fauche l'herbe haute (des fibres, des bottes de paille par la botteleuse), on fabrique à l'Atelier, on **construit bloc
 par bloc** (murs, portes, fenêtres, étage, toits), on cultive, on élève poules, moutons, vaches
-et abeilles, on cuisine, et l'on descend à la mine, cachée dans les bois de la ferme. La ferme
+et abeilles, on cuisine, et l'on brise à la pioche les gisements veinés de métal. La ferme
 est au centre du **grand monde**, une seule carte de biomes (prairie, forêt profonde, marais,
 lande, montagne, côte, mer) cachée au départ et découverte en marchant ou à cheval : des
-hameaux et leurs habitants, des grottes, de quoi ramasser, pêcher et chasser des yeux, et la
+hameaux et leurs habitants, des gisements et des cristaux qui luisent la nuit, de quoi ramasser, pêcher et chasser des yeux, et la
 **calèche** de son cocher qui fait le tour des hameaux (voir
 [`docs/grand-monde.md`](docs/grand-monde.md)). Un récit, celui de l'île de Céron, se découvre
 au fil des rencontres ([`docs/recit/`](docs/recit/README.md)). Les anciennes autres cartes (la
@@ -29,9 +29,9 @@ ville, le chemin de transition, la montagne, la plage, le train, l'école, l'inf
   Le jeu se sert en HTTP (voir Structure) ; les autres pages s'ouvrent aussi depuis le disque.
   Le jeu lui-même n'a besoin d'aucun serveur ; seul le suivi de session facultatif
   (voir plus bas) envoie des données, et uniquement si le joueur l'accepte.
-- **Cartes** : le grand monde (avec la ferme) et les grottes sont des cartes en pixel art
+- **Cartes** : le grand monde (avec la ferme) est une carte en pixel art
   (Phaser 4, `vendor/phaser.min.js` ; scène du monde et de la ferme dans `js/farm-stage.js` et
-  `js/carte/ferme/`, dessinée par régions ; scène des grottes dans `js/grotte.js` ; images dans
+  `js/carte/ferme/`, dessinée par régions ; images dans
   `assets/`). Sur téléphone et tablette, deux doigts pincés dézooment la vue ; voir
   [`docs/architecture-phaser.md`](docs/architecture-phaser.md). Tous les graphismes sont
   originaux, dessinés par les générateurs Python de `scripts/` (la vue de la ferme des pages
@@ -89,7 +89,7 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   est un bac en planches) ; la **hache** coupe arbres et
   buissons (un sapin laisse une pomme de pin, un autre arbre un gland : un arbre abattu ne
   repousse pas, mais une graine se plante sur n'importe quelle case d'herbe libre) ; la
-  **pioche** casse les rochers (et le minerai de la grotte) ; la **faux** fauche l'herbe haute
+  **pioche** casse les rochers et les gisements (leur minerai) ; la **faux** fauche l'herbe haute
   (la paille des bêtes) ; la **canne à pêche** pêche dans l'étang, la mare, le lac et la mer.
 - **Le grand monde** : le brouillard se lève autour du personnage ; la carte du monde et la
   boussole montrent ce qui a été vu. Le **cheval** (l'Écurie) va plus vite. Dans les **hameaux**
@@ -98,8 +98,8 @@ Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fa
   habitants, vendre ceux de la ferme et passer commande au cocher. Loin de la ferme, le
   personnage ne mange que ce que contient son **sac à provisions**.
 - **La famille** : chaque membre a son **équipement** (casque à lampe, chapeau, bottes, gants,
-  tablier, salopette, manteau, fabriqués à l'Atelier) : des gestes moins fatigants, la lumière
-  des grottes, une marche plus rapide dans le marais et la montagne ; le
+  tablier, salopette, manteau, fabriqués à l'Atelier) : des gestes moins fatigants, une vue
+  plus loin la nuit, une marche plus rapide dans le marais et la montagne ; le
   second adulte, le **compagnon**, aide aux tâches de la ferme (bêtes, ruches, arrosage).
 - **Le temps** : la journée commence à 6 h, une heure dure 30 s ; la famille mange à 19 h et
   se couche à 22 h ; à minuit, la nuit passe (ponte, laine, lait).
@@ -159,7 +159,7 @@ intacte. On y entre ensuite par « Entrer » (`jeu.html?monde=…`). Dans un mon
 - le bandeau « 🌐 » dit si l'on est à jour et ramène à sa ferme solo.
 
 **Le monde partagé, c'est la ferme** (`docs/monde-partage.md`) : le rectangle de la ferme, ce qu'on y
-bâtit, cultive, élève et cuisine. Le grand monde (les routes, les hameaux, la mine, le récit) reste à
+bâtit, cultive, élève et cuisine. Le grand monde (les routes, les hameaux, le récit) reste à
 la partie solo de son propriétaire. En ligne, le personnage ne sort pas de la ferme et la vue reste sur
 elle ; la copie mise en ligne n'emporte pas le grand monde, et sa nuit ne fait que la ferme (E-8).
 
@@ -197,7 +197,7 @@ l'argent et les biens produits pendant l'absence.
 classiques (`js/telemetry.js`, le suivi de session ; `vendor/phaser.min.js` ; `js/carte/*.js`,
 les outils communs des cartes ; `js/son.js`, le son ; `js/ambient-life.js`, la vie d'ambiance ; `js/fermier.js`, le
 personnage ; `js/famille-ferme.js`, la famille ; `js/carte/ferme/*.js` et `js/farm-stage.js`,
-la carte de la ferme ; `js/grotte.js`, la grotte de la mine), puis `js/main.js`, point
+la carte de la ferme), puis `js/main.js`, point
 d'entrée de **modules ES** :
 
 | Dossier | Contenu |
@@ -207,7 +207,6 @@ d'entrée de **modules ES** :
 | `js/ui/` | l'interface, un module par écran (`ferme.js`, `elevage.js`, `cuisine.js`, `marche.js`, `famille.js`…), plus `store.js` (l'état de l'interface), `render.js`, `loop.js`, `storage.js`, `actions.js` |
 | `js/main.js` | charge tous les modules, puis démarre la partie |
 | `js/farm-stage.js`, `js/carte/ferme/` | la carte Phaser de la ferme, une partie par fichier (le sol, le décor, la hache, les blocs, l'étage, les toits, les abeilles, les arbres plantés…) |
-| `js/grotte.js` | la scène Phaser de la grotte de la mine (`window.Grotte`), réglée par `data/grotte.json` |
 | `js/ambient-life.js`, `js/fermier.js`, `js/famille-ferme.js` | la vie d'ambiance, le personnage et la famille sur la carte (scripts classiques, hors modules ; voir docs/personnage.md) |
 | `js/son.js`, `js/ui/son.js`, `assets/son/` | le son (`window.FermeSon`) : musique, ambiances, bruits des gestes et de l'interface, la partie « Son » des Options ; voir [`docs/son.md`](docs/son.md) |
 | `scripts/` | outils Node et Python : données, carte, site, vérifications, simulation, icônes (voir plus bas) |
@@ -261,7 +260,7 @@ que GitHub publie :
 - `jeu.html` : la même page, qui charge ce fichier ; chaque fichier local y est suivi de
   `?v=<empreinte de son contenu>`. Un fichier modifié change d'adresse et le navigateur le
   recharge ; il n'y a plus de numéro à changer à la main à chaque version ;
-- les scripts classiques de la page (`js/farm-stage.js`, `js/grotte.js`…) minifiés
+- les scripts classiques de la page (`js/farm-stage.js`, `js/son.js`…) minifiés
   un à un, sans changer de forme ;
 - les autres pages, `css/`, `assets/`, `vendor/`, copiés tels quels, sauf les fichiers de
   travail de `assets/` que le jeu ne charge pas (cartes et jeux de tuiles Tiled `.tmj`/`.tsx`,
@@ -312,8 +311,7 @@ des emojis (`js/icones-page.js`). Thème sombre et téléphone compris.
   les images de la scène comptent pour 10 à 70 % (le chargeur de Phaser, `js/farm-stage.js`), la
   scène créée 75 %, puis la part de la vue dessinée (`vueDessinee`, `js/carte/ferme/sol.js` : les
   régions sous la caméra et, dans le grand monde, leur sol arrivé du Web Worker). L'écran est
-  caché pendant la configuration d'une nouvelle partie, s'efface à la première image d'une
-  grotte, aussitôt si la carte ne peut pas s'afficher, et au plus tard au bout de 30 s.
+  caché pendant la configuration d'une nouvelle partie, aussitôt si la carte ne peut pas s'afficher, et au plus tard au bout de 30 s.
 - **`encyclopedie.html`, l'encyclopédie** : son style est dans la page ; le générateur
   (`scripts/build-encyclopedie.mjs`) n'en réécrit que le compte des entrées (le ruban de
   l'en-tête), le menu des catégories et les sections, à partir de
@@ -335,7 +333,6 @@ Toutes les valeurs du jeu sont dans `data/`, un fichier JSON par domaine :
 | `meubles.json` | meubles de la maison, objets du dehors (bac à fleurs) |
 | `equipement.json` | l'équipement de la famille et le sac à provisions |
 | `terrain.json` | le terrain de la carte de Tiled et la génération de la ferme |
-| `grotte.json` | la grotte de la mine : niveaux, minerais, réglages de la scène |
 | `monde.json` | le grand monde : les biomes (`BIOMES`), les réglages de son générateur (`PLAN_MONDE`), sa végétation, ses roches, ce qui s'y ramasse, sa faune, les hameaux, leurs habitants et la calèche |
 | `recit.json` | le récit de Céron : personnages, répliques, scènes, carnet (voir `docs/recit/`) |
 | `ile.json` | l'économie de l'île : les ateliers des hameaux, la veillée, le remboursement |
@@ -441,10 +438,9 @@ npm run smoke
 ```
 
 `tests/smoke.mjs` sert le dépôt avec un petit serveur statique Node sur un port libre, ouvre
-`jeu.html` dans Chromium (Playwright), lance une nouvelle partie, puis visite les cartes par
-`window.FermeHote.go` : la mine de la ferme, puis un niveau plus profond, revient à la ferme,
-puis visite une grotte de la montagne du grand monde (deux niveaux) et en ressort. Il échoue sur une erreur de la console, une exception de
-la page, une réponse HTTP ≥ 400 ou une carte qui ne s'ouvre pas ; les requêtes vers un autre
+`jeu.html` dans Chromium (Playwright), lance une nouvelle partie, ouvre la Famille, laisse tourner la ferme, puis rouvre le jeu par une
+ancienne adresse de la mine (`jeu.html?carte=grotte&…`), que la page doit oublier. Il échoue sur une
+erreur de la console, une exception de la page, une réponse HTTP ≥ 400 ou une adresse qui reste ; les requêtes vers un autre
 hôte sont coupées. Playwright : celui du dépôt s'il est installé, sinon
 `/opt/node-tools/node_modules/playwright` ; navigateurs : `PLAYWRIGHT_BROWSERS_PATH` (par
 défaut `/opt/pw-browsers`). Sans Playwright ou sans Chromium, il le dit et sort sans erreur.
@@ -470,8 +466,7 @@ plus légers, pixel pour pixel identiques.
 - **Cartes Tiled** : `node scripts/build-map.mjs` (ou `npm run build:map`) fabrique les cartes
   que le jeu charge (`assets/carte_printemps.json`, dont la ferme générée reprend les jeux de
   tuiles) à partir de la carte de travail `.tmj` et de ses jeux de tuiles `.tsx`. À relancer
-  après chaque modification dans Tiled ; `--check` vérifie sans écrire. Les tuiles de la grotte
-  sont dessinées par `scripts/carte/grotte.py`. Les jeux de tuiles de la montagne et de la
+  après chaque modification dans Tiled ; `--check` vérifie sans écrire. Les jeux de tuiles de la montagne et de la
   plage, `assets/trouvailles.png` et la faune (`assets/faune.json`, `faune_*.png` : `scripts/carte/faune.py`) restent dans
   `assets/` comme kit de textures pour les biomes du grand monde. Voir
   [`docs/architecture-phaser.md`](docs/architecture-phaser.md).
@@ -554,7 +549,7 @@ copier le rapport ; le téléphone de référence, les budgets et la marche à s
 |---|---|
 | [`docs/conception.md`](docs/conception.md) | la conception du jeu : règles, valeurs, équilibrage (fait foi) |
 | [`docs/conception-v2.md`](docs/conception-v2.md) | refonte v2 (niveaux d'XP, énergie du personnage, houe…) : saisons retirées et un seul panneau et une seule batterie (version 1.6), niveaux d'expérience (version 1.7) ; le reste n'est pas encore codé |
-| [`docs/carte-generee.md`](docs/carte-generee.md) | la ferme générée : ramassage, Atelier, construction bloc par bloc, étage, bâtiments, mine, anciennes parties |
+| [`docs/carte-generee.md`](docs/carte-generee.md) | la ferme générée : ramassage, Atelier, construction bloc par bloc, étage, bâtiments, anciennes parties |
 | [`docs/architecture-phaser.md`](docs/architecture-phaser.md) | les cartes Phaser : découpage, cartes Tiled, pièges à éviter |
 | [`docs/perf.md`](docs/perf.md) | performances : téléphone de référence, budgets, mesures et résultats |
 | [`docs/chantier-allegement.md`](docs/chantier-allegement.md) | chantier à venir : six pistes mesurées pour alléger le jeu (processeur, mémoire, chargement) sans rien changer pour le joueur |

@@ -139,7 +139,7 @@ export function renderTechno() {
       <h2>🌳 Arbre des technologies</h2>
       <span class="chips"><span class="chip" title="Points de technologie disponibles">🔬 ${formatNumber(pt.solde)} PT</span><span class="chip" title="Pièces disponibles">💰 ${formatCoins(state.pieces)}</span></span>
     </div>
-    <p class="muted">Chaque technologie coûte des points de technologie (PT), des pièces et des ressources (🪵 bois et 🪨 pierre des arbres et des rochers ; des lingots, fondus au Four avec 4 minerais de la grotte et du bois), et s'ouvre à un palier de la campagne. Les chapitres terminés rapportent des PT (${P.CHAPITRES.join(' · ')}), comme les jalons de maîtrise ci-dessous.${libre} Tu as gagné ${formatNumber(pt.gagnes)} PT en tout.</p>
+    <p class="muted">Chaque technologie coûte des points de technologie (PT), des pièces et des ressources (🪵 bois et 🪨 pierre des arbres et des rochers ; des lingots, fondus au Four avec 4 minerais des gisements et du bois), et s'ouvre à un palier de la campagne. Les chapitres terminés rapportent des PT (${P.CHAPITRES.join(' · ')}), comme les jalons de maîtrise ci-dessous.${libre} Tu as gagné ${formatNumber(pt.gagnes)} PT en tout.</p>
     <details class="card">
       <summary><strong>🏅 Jalons de maîtrise</strong> <span class="muted">(${pt.maitrise.length} / ${P.MAITRISE.length})</span></summary>
       ${masteryHtml()}

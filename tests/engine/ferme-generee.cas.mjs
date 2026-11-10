@@ -16,7 +16,7 @@ const PARTIE = globalThis.PARTIE_TESTS;
 let rangTest = 0;
 const test = (...args) => (PARTIE && rangTest++ % PARTIE[1] !== PARTIE[0] ? undefined : testNode(...args));
 import { readFileSync } from 'node:fs';
-import { blocGid, MINE, TRONC_CREUX } from '../../js/engine/planche.js';
+import { blocGid, TRONC_CREUX } from '../../js/engine/planche.js';
 import {
   casesCouvertes, elargirFours, mesuresMeuble, sensBloc, tournerBloc, tourneBloc,
   isArable as arable, etage2Emprise, escaliersEtage, poseEtageStatus, casesSolEtage, piecesNiveau, piecesNiveau1, poseSolEtageStatus, poserSolEtage, solsEtage, hauteurPile, matiereDessus, rehausser, rehausseStatus, rehaussesPosees,
@@ -67,32 +67,16 @@ test('ferme générée : la même graine donne la même carte, une autre graine 
   assert(JSON.stringify(c.carte) !== JSON.stringify(a.carte), 'une autre graine, une autre carte');
   // d'une fois sur l'autre (pas seulement dans la même page) : toujours la même ferme pour
   // « test-1 » (à mettre à jour si le générateur change, ce qui change les fermes des parties)
-  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 255, 12010]);
+  assertEqual([a.terrain.DECALAGE, Object.keys(a.terrain.ARBRES).length, a.terrain.LIGNES.join('').split('#').length - 1], [[25, 29], 255, 12019]);
   assertEqual([a.carte.width, a.carte.height, a.terrain.LARGEUR, a.terrain.HAUTEUR], [FERME_GENEREE.LARGEUR, FERME_GENEREE.HAUTEUR, 144, 114]);
 });
 
 for (const graine of ['1', '2', '7', 'abc', '12345']) {
-  test(`ferme générée « ${graine} » : l'entrée de la mine, dans les bois, la porte dégagée`, () => {
-    const { carte, terrain } = genererFerme(graine);
-    const W = carte.width, T = carte.tilewidth;
-    const o = carte.layers.find((l) => l.name === 'batiment').objects.find((x) => x.name === 'mine');
-    assert(o, 'le rectangle de la mine');
-    assertEqual([o.width, o.height, o.x % T, o.y % T], [3 * T, 3 * T, 0, 0], '3 × 3 tuiles');
-    const c0 = o.x / T, r0 = o.y / T;
-    const plantes = carte.layers.find((l) => l.name === 'plantes_pierres').data;
-    for (let k = 0; k < 9; k++) {
-      const i = (r0 + Math.floor(k / 3)) * W + c0 + (k % 3);
-      assertEqual(plantes[i], MINE[k], 'les tuiles du tas');
-      assertEqual(terrain.LIGNES[Math.floor(i / W)][i % W], '.', 'on ne bâtit pas sur la mine');
-    }
-    // devant la porte : deux rangées d'herbe, sans arbre (on y arrive en remontant)
-    const arbres = carte.layers.filter((l) => l.name.startsWith('layer_tree'));
-    for (const r of [r0 + 3, r0 + 4]) {
-      for (let c = c0; c < c0 + 3; c++) {
-        assertEqual(terrain.LIGNES[r][c], '#', 'de l\'herbe devant la porte');
-        assert(arbres.every((l) => !l.data[r * W + c]), 'aucun arbre devant la porte');
-      }
-    }
+  // la mine n'est plus (docs/gisements.md, lot 4) : ni son rectangle, ni les tuiles de son tas
+  test(`ferme générée « ${graine} » : plus d'entrée de mine`, () => {
+    const { carte } = genererFerme(graine);
+    const objets = carte.layers.filter((l) => l.type === 'objectgroup').flatMap((l) => l.objects);
+    assert(!objets.some((x) => x.name === 'mine'), 'pas de rectangle de mine');
   });
 
   test(`ferme générée « ${graine} » : un chemin mène de la maison à la sortie vers la transition`, () => {
@@ -1548,10 +1532,10 @@ test('ferme générée : déplacer un bloc posé (le mode Construire) ; refusé,
   assertEqual([deplacerBloc(s, b, mur).ok, blocAt(s, b), blocAt(s, mur), countItem(s, 'lanterne')], [false, 'lanterne', 'mur_pierre', 0]);
 });
 
-test('ferme générée : la lanterne scintillante (un champignon lumineux de la mine et du bois) éclaire, dehors ou dans la maison', () => {
+test('ferme générée : la lanterne scintillante (un champignon lumineux des forêts et du bois) éclaire, dehors ou dans la maison', () => {
   const s = reach(chantier('l1'), 'poulailler');
-  // le champignon se cueille dans la mine ; la recette de l'Atelier
-  assertEqual(DATA.OBJETS.champignon_lumineux.cueillette, 'grotte');
+  // le champignon se ramasse dans les forêts du grand monde (RECOLTE.SORTES) ; la recette de l'Atelier
+  assert(DATA.RECOLTE.SORTES.champignons_lumineux.fin.champignon_lumineux);
   setInv(s, { champignon_lumineux: 2, bois: 2, mur_pierre: 30, porte: 2, nichoir: 1 });
   assert(craft(s, 'lanterne').ok);
   assertEqual([countItem(s, 'lanterne'), countItem(s, 'champignon_lumineux'), countItem(s, 'bois')], [1, 1, 0]);

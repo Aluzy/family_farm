@@ -699,8 +699,7 @@ export const RAW_DATA = {
       "prix": 4,
       "mangeable": false,
       "categorie": "matériau",
-      "rachetable": false,
-      "cueillette": "grotte"
+      "rachetable": false
     },
     "bois_infra": {
       "nom": "Morceau d'arbre de l'infra-monde",
@@ -3219,7 +3218,7 @@ export const RAW_DATA = {
         "ressources": { "bois": 4, "lingot_fer": 2 },
         "requiert": [{ "noeud": "out_hotte" }],
         "effet": { "coupsMoins": 1 },
-        "description": "Arbres, rochers et minerais de la grotte tombent en 2 coups au lieu de 3."
+        "description": "Arbres, rochers et gisements tombent en un coup de moins."
       },
       "out_socs": {
         "branche": "outils",
@@ -3244,8 +3243,8 @@ export const RAW_DATA = {
         "prix": 300,
         "ressources": { "lingot_fer": 1, "lingot_cuivre": 2 },
         "requiert": [{ "noeud": "out_lames" }],
-        "effet": { "grotte": { "lumiere": 150, "minerai": 25 } },
-        "description": "Dans la grotte, la lumière porte 50 % plus loin et chaque minerai a 1 chance sur 4 d'en donner un de plus."
+        "effet": { "grotte": { "minerai": 25 } },
+        "description": "Chaque gisement brisé donne un quart de minerai en plus."
       },
       "out_moulinet": {
         "branche": "outils",
@@ -3367,11 +3366,11 @@ export const RAW_DATA = {
         "etape": "Le poulailler",
         "icone": "🐔",
         "recompense": { "plans": ["banc_rondins"] },
-        "intro": "« On ne laisse pas une poule sans grain, ni une famille sans œufs », dit Odile. Une ponte régulière demande du blé. Et un voisin, ça se gagne : parle aux habitants, offre-leur ce qu'ils aiment. L'Arbre des technologies demande maintenant du fer : une pioche en main, cherche la mine de la ferme, cachée dans les bois, et descends-y. Et il est temps de sortir de la ferme : suis le chemin de la calèche jusqu'au premier hameau.",
+        "intro": "« On ne laisse pas une poule sans grain, ni une famille sans œufs », dit Odile. Une ponte régulière demande du blé. Et un voisin, ça se gagne : parle aux habitants, offre-leur ce qu'ils aiment. L'Arbre des technologies demande maintenant du fer : une pioche en main, cherche les rochers veinés de rouille, sur la ferme et autour : ce sont des gisements. Et il est temps de sortir de la ferme : suis le chemin de la calèche jusqu'au premier hameau.",
         "objectifs": [
           { "type": "pontes", "cible": 7, "libelle": "Pondre 7 nuits d'affilée", "unite": "nuits" },
           { "type": "amis", "palier": 2, "cible": 1, "libelle": "Devenir « cordial » avec un habitant d'un hameau", "unite": "" },
-          { "type": "objet", "item": "minerai_fer", "cible": 4, "libelle": "Rapporter 4 minerais de fer de la mine", "unite": "" },
+          { "type": "objet", "item": "minerai_fer", "cible": 4, "libelle": "Rapporter 4 minerais de fer d'un gisement", "unite": "" },
           { "type": "hameaux", "cible": 1, "libelle": "Découvrir un hameau du grand monde", "unite": "" }
         ]
       },
@@ -3380,12 +3379,12 @@ export const RAW_DATA = {
         "etape": "Le four et le livre de recette",
         "icone": "🍞",
         "recompense": { "plans": ["table_rondins"] },
-        "intro": "« Ton pain se vend mieux que ton blé. Et le fer, ça se cuit aussi », dit Achille. Moudre, presser, cuire : le pain et les plats cuisinés valent plus que leurs ingrédients. Le Four fond aussi le minerai de la grotte, avec du bois : les lingots paient les technologies. Les grottes de la montagne, au nord et à l'ouest du monde, en ont bien plus que la mine.",
+        "intro": "« Ton pain se vend mieux que ton blé. Et le fer, ça se cuit aussi », dit Achille. Moudre, presser, cuire : le pain et les plats cuisinés valent plus que leurs ingrédients. Le Four fond aussi le minerai des gisements, avec du bois : les lingots paient les technologies. La montagne, au nord et à l'ouest du monde, cache de l'or, du platine et des cristaux qui luisent la nuit.",
         "objectifs": [
           { "type": "pains", "cible": 5, "recette": "pain", "libelle": "Cuire 5 pains", "unite": "" },
           { "type": "plats", "cible": 3, "exclut": ["pain"], "libelle": "Préparer 3 plats différents (hors pain)", "unite": "" },
           { "type": "objet", "item": "lingot_fer", "cible": 1, "libelle": "Fondre un lingot de fer au Four", "unite": "" },
-          { "type": "grotteMonde", "cible": 1, "libelle": "Entrer dans une grotte de la montagne", "unite": "" },
+          { "type": "objet", "item": "quartz", "cible": 1, "libelle": "Rapporter un quartz des cristaux de la montagne", "unite": "" },
           { "type": "monde", "cible": 10, "libelle": "Voir 10 % du grand monde", "unite": "%" }
         ]
       },
@@ -3686,38 +3685,6 @@ export const RAW_DATA = {
     "CHAPITRES_XP": [200, 500, 1000, 2500, 2000, 4000, 8000],
     "CHAPITRE_NIVEAU": [1, 2, 3, 6, 6, 8, 8, 8]
   },
-  "GROTTE": {
-    "LARGEUR": 46,
-    "HAUTEUR": 34,
-    "NIVEAUX": 8,
-    "MURS": 0.46,
-    "PASSES": 5,
-    "MINERAI": 0.07,
-    "MINERAI_NIVEAU": 0.06,
-    "POIDS": {
-      "fer": { "FIXE": 1 },
-      "cuivre": { "DEPUIS": 1, "PENTE": 0.35 },
-      "or": { "DEPUIS": 2.5, "PENTE": 0.18 },
-      "platine": { "DEPUIS": 4, "PENTE": 0.1 }
-    },
-    "COUPS": 3,
-    "COUP": 0.5,
-    "MONDE": {
-      "NOM": "La grotte de la montagne",
-      "NIVEAUX": 5,
-      "MINERAI": 0.1,
-      "MINERAI_NIVEAU": 0.1,
-      "POIDS": {
-        "fer": { "FIXE": 1 },
-        "cuivre": { "DEPUIS": 0, "PENTE": 0.4 },
-        "or": { "DEPUIS": 0.5, "PENTE": 0.25 },
-        "platine": { "DEPUIS": 1.5, "PENTE": 0.14 },
-        "quartz": { "FIXE": 0.3 },
-        "amethyste": { "DEPUIS": 1, "PENTE": 0.1 }
-      },
-      "FILONS": { "cuivre": 2, "or": 2, "platine": 2, "quartz": 2.5, "amethyste": 2.5 }
-    }
-  },
   "PALETTES": {
     "bois_miel": ["#3c1e16", "#603620", "#86522e", "#aa7040", "#cc965c"],
     "bois_noyer": ["#2c1810", "#4a2a1a", "#66402a", "#845a3c", "#a27654"],
@@ -3873,7 +3840,7 @@ export const RAW_DATA = {
     "CASES": 3,
     "PLACES": { "tete": "Tête", "corps": "Corps", "mains": "Mains", "pieds": "Pieds" },
     "PIECES": {
-      "casque_lampe": { "place": "tete", "enfant": false, "grotte": 140, "vueNuit": 150, "carte": "casque" },
+      "casque_lampe": { "place": "tete", "enfant": false, "vueNuit": 150, "carte": "casque" },
       "chapeau_paille": {
         "place": "tete",
         "enfant": true,
@@ -4414,7 +4381,7 @@ export const RAW_DATA = {
     "CLAIRIERES": { "PAS": 18, "SEUIL": 0.7, "FONDU": 0.06 },
     "TOUFFES": { "PAS": 5, "MIN": 0.2, "MAX": 1.8 },
     "FERME": 5,
-    "LIEUX": { "hameaux": 6, "grottes": 3, "peche": 2, "recit": 4, "secrets": 3 },
+    "LIEUX": { "hameaux": 6, "peche": 2, "recit": 4, "secrets": 3 },
     "BORNES": {
       "foret": { "images": [0.05, 0.16], "basses": [0.03, 0.2] },
       "lande": { "images": [0.01, 0.05], "basses": [0.05, 0.3] },
@@ -5568,7 +5535,7 @@ export const RAW_DATA = {
     "TOURNEE": ["genets", "bois_joli"],
     "FIL": {
       "FRAGMENTS": ["note_etoile", "journal_bord", "releves_frida", "ciel_pleine", "ciel_noire", "ciel_croissante"],
-      "GALERIE": { "NIVEAU": 4, "LUNE": "pleine", "HEURES": [22, 4], "CHAMBRE": { "LARGEUR": 16, "HAUTEUR": 14, "SALLE": [5, 5, 10, 9] } },
+      "GALERIE": { "LUNE": "pleine", "HEURES": [22, 4] },
       "PIERRE": { "OBJET": "pierre_lune", "POUSSE": 0.75 },
       "LUEUR": [20, 6],
       "OBSERVATOIRE": {
@@ -6974,8 +6941,8 @@ export const RAW_DATA = {
         ["oignon", 2, 3, "pour accompagner la friture"]
       ],
       "mineur": [
-        ["bois", 4, 6, "pour étayer la galerie"],
-        ["pain", 1, 2, "pour descendre à la mine"],
+        ["bois", 4, 6, "pour étayer le tas de minerai"],
+        ["pain", 1, 2, "pour la journée au gisement"],
         ["patate", 3, 5, "pour le gratin du soir"],
         ["fibre", 2, 4, "pour les mèches des lampes"]
       ],
