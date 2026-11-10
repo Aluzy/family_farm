@@ -375,3 +375,11 @@ Phaser triait et parcourait à chaque image toute la liste d'affichage (≈ 4 60
 ≈ 600 près de la vue). Le décor fixe loin de la vue passe dans un calque caché (`decor.js`, `cullScene`).
 Rendu + `cullScene` par image (Chromium, sans ralenti) : ferme 2,66 à 2,77 ms → 2,11 à 2,56 ms ; grand
 monde 1,68 à 1,73 ms → 0,98 ms. Les mesures qui ont fait écarter les Layers : `docs/fiches/26-layers-de-la-scene.md`.
+
+## Les shaders préparés d'avance (fiche 27)
+
+Au premier passage à la mer, Phaser compilait et liait 5 à 6 programmes (le shader de la mer, des variantes
+du lot d'images par nombre de textures), 30 à 90 ms d'appels WebGL dans une image (Chromium). Ils se
+préparent maintenant pendant les temps morts après le chargement (≤ 5,5 ms par tâche) : au premier passage
+à la mer, 0 programme compilé. La pluie (≈ 0,1 ms par image) et les allocations (≈ 4,4 Ko par image),
+mesurées, n'ont pas été touchées : `docs/fiches/27-pluie-shaders-allocations.md`.

@@ -1,5 +1,9 @@
 # Fiche 27 — Trois petites corrections : la pluie en particules, les shaders prêts, moins d'allocations
 
+> **Fait (2026-11-10), d'après les mesures** : seuls les shaders préparés d'avance gagnaient vraiment ;
+> la pluie et les allocations, mesurées, ne coûtaient presque rien et n'ont pas été touchées. Voir
+> « Ce qui a été fait » en fin de fiche.
+
 Chantier « Phaser 4 », pistes 3 et 4 du rapport et ses « petites corrections ».
 
 ## Objectif
@@ -58,3 +62,21 @@ les à-coups à la première eau vue, et les petits tableaux créés à chaque i
 ## Livraison
 
 Un commit ; `docs/perf.md` (mesures) mis à jour.
+
+## Ce qui a été fait (les mesures : Chromium, la sauvegarde du jour 75)
+
+- **Les shaders, préparés d'avance** (`CarteJeu.prechauffe`, `tachesLots`, `js/carte/jeu.js` ;
+  `eauPrechauffe`, `js/carte/eau.js`) : au premier passage à la mer, Phaser compilait et liait 5 à 6
+  programmes d'un coup (le shader de la mer et des variantes du lot d'images standard, une par nombre de
+  textures du lot : 9, 10, 12, 13), 30 à 90 ms d'appels WebGL au milieu d'une image. Ils se préparent
+  maintenant un par un, 4 s après la création de la scène, pendant les temps morts de la page
+  (`requestIdleCallback`, 250 ms au plus entre deux) : chaque tâche coûte au plus ≈ 5,5 ms. Au premier
+  passage à la mer : plus aucun programme compilé (0 ms d'appels WebGL). `skipUnreadyShaders` n'est pas
+  posé : il ne dessine pas ce dont le shader n'est pas prêt, et un lot entier d'images (le décor) pouvait
+  disparaître quelques images.
+- **La pluie, gardée telle quelle** : mesurée sous une averse (alternée 4 fois, avec et sans les
+  gouttes), elle coûte ≈ 0,065 ms au rendu et ≈ 0,05 ms à `syncMeteo` par image, ≈ 0,1 ms en tout. Un
+  émetteur de particules ou un shader ne gagnerait presque rien et changerait son allure.
+- **Les allocations, laissées** : un profil d'allocations (échantillonnage du tas, 10 s de marche dans le
+  grand monde) donne ≈ 4,4 Ko par image en tout, Phaser compris ; les deux cas cités (`includes` de
+  faune-monde.js, `cellOf` de fermier.js) n'y paraissent même pas (V8 les élimine).

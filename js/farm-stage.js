@@ -211,6 +211,11 @@
       }
 
       create() {
+        // (fiche 27 : les shaders du lot d'images et de l'eau préparés pendant les temps morts, après le
+        // chargement : js/carte/jeu.js prechauffe)
+        if (global.CarteJeu && global.CarteJeu.prechauffe) {
+          this.time.delayedCall(4000, () => global.CarteJeu.prechauffe([...(this.eauPrechauffe ? this.eauPrechauffe() : []), ...global.CarteJeu.tachesLots(this)]));
+        }
         this.cameras.main.setBackgroundColor('#6a8157'); // vert de l'herbe de la carte
         this.cameras.main.roundPixels = false;
         this.makePlaceholders();
