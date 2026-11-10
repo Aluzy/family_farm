@@ -63,8 +63,29 @@ function appareil() {
     `Écran : ${screen.width} × ${screen.height} (fenêtre ${innerWidth} × ${innerHeight}, densité ${devicePixelRatio})`,
     `Processeurs : ${n.hardwareConcurrency || '?'} · mémoire de l'appareil : ${n.deviceMemory ? n.deviceMemory + ' Go' : '?'}`,
     `Qualité de l'affichage : ${K && K.qualite ? K.qualite() : '?'}`,
+    `Essai sol GPU (fiche 34) : ${ESSAI_SOL[essaiSol()]}${regionsGPU()}`,
   ];
 }
+
+// Fiche 35, la mesure sur le téléphone : l'essai du sol en objets GPU (js/carte/ferme/sol-gpu.js), éteint ('0'),
+// le sol ('1'), le sol et le menu décor ('2') ; gardé dans l'appareil, lu au chargement de la carte.
+const ESSAI_SOL = { 0: 'éteint', 1: 'le sol', 2: 'le sol et le décor' };
+const CLE_ESSAI_SOL = 'ferme-essai-sol-gpu';
+function essaiSol() {
+  try { const v = localStorage.getItem(CLE_ESSAI_SOL); return v === '1' || v === '2' ? Number(v) : 0; } catch (e) { return 0; }
+}
+// (les régions de la vue dessinées en GPU / toutes celles dessinées)
+function regionsGPU() {
+  const sc = window.FarmStage && FarmStage.scene && FarmStage.scene();
+  if (!sc || !sc.regions) return '';
+  const R = [...sc.regions.values()].filter((r) => r.tex);
+  return ` · régions dessinées : ${R.length}, dont ${R.filter((r) => r.gpu).length} en GPU`;
+}
+function boutonEssaiSol() {
+  const b = document.querySelector('[data-action="test-essai-sol"]');
+  if (b) b.textContent = `Essai sol GPU : ${ESSAI_SOL[essaiSol()]}`;
+}
+if (typeof document !== 'undefined') { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boutonEssaiSol); else boutonEssaiSol(); }
 
 function partie() {
   const B = blocsPoses(state), sortes = Object.values(B), A = DATA.ATELIER.BLOCS;
@@ -276,5 +297,12 @@ registerActions({
     setTimeout(() => location.reload(), 600);
   },
   'test-perf-mesurer': () => mesurer(),
+  'test-essai-sol': () => {
+    const v = (essaiSol() + 1) % 3;
+    try { if (v) localStorage.setItem(CLE_ESSAI_SOL, String(v)); else localStorage.removeItem(CLE_ESSAI_SOL); } catch (e) { /* le temps de la visite */ }
+    persistState();
+    notify(`🧪 Essai sol GPU : ${ESSAI_SOL[v]}. La page se recharge.`);
+    setTimeout(() => location.reload(), 600);
+  },
   'test-perf-copier': () => { copier(); },
 });
