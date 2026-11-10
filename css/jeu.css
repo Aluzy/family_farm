@@ -1,40 +1,49 @@
 :root {
-  /* Couleurs de la marque : les mêmes en thème clair et en thème sombre. */
-  --color-sun: #f2a71b;
-  --color-sun-dark: #d68c0c;
+  /* Couleurs de la marque : les mêmes en thème clair et en thème sombre. La palette du logo de
+     Moon Bloom Village : prune (cadres, encre), mauve (filets), pétale (fenêtres), rose (sélection),
+     pervenche (boutons principaux), lavande (boutons secondaires). */
+  --color-sun: #d074d6;      /* (le rose des fleurs du logo : la sélection, le focus) */
+  --color-sun-dark: #a94db0;
   --color-leaf: #4f8a3d;
   --color-leaf-dark: #386b2a;
-  --color-earth: #8a5a34;
-  --color-earth-rgb: 138, 90, 52; /* pour rgba(var(--color-earth-rgb), …) */
-  --color-ink: #2c2416;   /* encre des bulles et étiquettes posées sur la carte */
+  --color-earth: #3a2a55;
+  --color-earth-rgb: 58, 42, 85; /* pour rgba(var(--color-earth-rgb), …) */
+  --color-ink: #2a1f3d;   /* encre des bulles et étiquettes posées sur la carte */
   --color-tomato: #c1442e; /* pastilles « à faire » de la carte */
 
-  /* Le bois des cartes flottantes et des fenêtres « bois » (mêmes couleurs dans les deux thèmes). */
-  --wood-ink: #4a2a10;       /* texte sur le bois */
-  --wood-dark: #3a2414;      /* cuir du Livre, contours sombres */
-  --wood-light: #d9a066;     /* filet clair intérieur */
-  --wood-glow: rgba(217, 160, 102, 0.9);
-  --wood-cream: #fff4dc;     /* fond des cartes dans le bois */
-  --wood-paper: #fff1d2;     /* fond des boutons dans le bois */
-  --wood-bg-rgb: 255, 230, 178; /* fond crème, rgba(var(--wood-bg-rgb), …) */
+  /* Les fenêtres et les cartes flottantes (les noms « bois » datent du premier thème) (mêmes couleurs dans les deux thèmes). */
+  --wood-ink: #3a2a55;       /* texte sur le bois */
+  --wood-dark: #1e1530;      /* cuir du Livre, contours sombres */
+  --wood-light: #9673a7;     /* filet clair intérieur */
+  --wood-glow: rgba(150, 115, 167, 0.9);
+  --wood-cream: #fbf3ff;     /* fond des cartes dans le bois */
+  --wood-paper: #f1e3f7;     /* fond des boutons dans le bois */
+  --wood-bg-rgb: 251, 243, 255;
+  --prune: #3a2a55;            /* bandeaux de titre, enseignes */
+  --rose: #d074d6;             /* ce qui est choisi : onglet, jour, outil */
+  --rose-pale: #f0d4f2;
+  --pervenche-filet: #7480d6;  /* le filet clair du bouton principal (--accent, pervenche) */
+  --lavande: #b2bfff;          /* les boutons secondaires */
+  --lavande-filet: #dfe4ff;
+  --lavande-encre: #2a2f5e; /* fond crème, rgba(var(--wood-bg-rgb), …) */
 
   /* Thème clair (contrastes AA mesurés : texte ≥ 4,5:1, contours ≥ 3:1 ; vert et rouge un
      peu plus foncés que la marque, ambre lisible pour les pastilles). */
-  --bg: #faf6ee;
+  --bg: #f8f2fb;
   --bg-elevated: #ffffff;
-  --bg-header: #fef3dc;
-  --bg-muted: #f1ebdc;
+  --bg-header: #f4e9f9;
+  --bg-muted: #efe4f4;
   --text: var(--color-ink);
-  --text-muted: #6b5f4a;
-  --border: #e3d9c2;
-  --accent: #3a7530;
+  --text-muted: #6e5a80;
+  --border: #dccbe6;
+  --accent: #444f9f;
   --accent-contrast: #ffffff;
   --accent-secondary: var(--color-sun);
   --danger: #b23a25;
   --danger-contrast: #ffffff;
   --warn-text: #855400;
-  --focus: #a35a00;
-  --shadow: 0 1px 3px rgba(44, 36, 22, 0.12);
+  --focus: #444f9f;
+  --shadow: 0 1px 3px rgba(35, 26, 40, 0.12);
   --radius: 12px;
   --inv-icon-bg: #ffffff;
 
@@ -62,16 +71,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1c1a14;
-    --bg-elevated: #26231b;
-    --inv-icon-bg: #3a3428;
-    --bg-header: #2c2718;
-    --bg-muted: #2a271e;
-    --text: #f2ecdd;
-    --text-muted: #b9ae95;
-    --border: #3c3626;
-    --accent: #6fae5a;
-    --accent-contrast: #10230d;
+    --bg: #19161a;
+    --bg-elevated: #211d24;
+    --inv-icon-bg: #322c36;
+    --bg-header: #241c28;
+    --bg-muted: #252028;
+    --text: #e9e1ee;
+    --text-muted: #aa9cb2;
+    --border: #332a38;
+    --accent: #9aa3ee;
+    --accent-contrast: #141833;
     --accent-secondary: var(--color-sun);
     --danger: #ea7a61;
     --danger-contrast: #2a0d06;
@@ -211,7 +220,7 @@ main {
   cursor: pointer;
 }
 .side-tab::after { content: ""; position: absolute; inset: -6px -16px -6px 0; } /* zone d'appui de 44 px environ */
-.side-tab-arrow { fill: #6b3f1c; transition: transform 0.2s; }
+.side-tab-arrow { fill: #4a2c5b; transition: transform 0.2s; }
 .side-menu.open .side-tab-arrow { transform: scaleX(-1); } /* ouvert : le triangle montre le sens de la fermeture */
 .side-tab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 .side-tab-badge {
@@ -304,20 +313,20 @@ main {
 
 /* Version 1.3 : le courrier. Une lettre non lue se remarque ; la lettre ouverte est une
    feuille de papier (mêmes couleurs en thème clair et en thème sombre). */
-.notif.mail { border-left-color: #b9772a; }
+.notif.mail { border-left-color: #7d479c; }
 .notif.mail.lu { opacity: 0.8; }
-.notif.mail:not(.lu) { background: #fff6dc; color: #3a2a12; border-color: #d9b56a; border-left-color: #b9772a; }
-.notif.mail:not(.lu) .notif-where { color: #6b5330; }
-.mail-new { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #b9772a; color: #ffffff; font-size: 0.72rem; font-weight: 700; vertical-align: middle; }
+.notif.mail:not(.lu) { background: #f1e2f9; color: #291a32; border-color: #aa80c3; border-left-color: #7d479c; }
+.notif.mail:not(.lu) .notif-where { color: #523c5f; }
+.mail-new { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #7d479c; color: #ffffff; font-size: 0.72rem; font-weight: 700; vertical-align: middle; }
 .mail-title { margin-top: 18px; }
-.modal.letter { background: #fdf6e3; color: #3a2a12; border: 1px solid #d9c9a0; }
-.modal.letter h2 { color: #3a2a12; }
-.letter-place { margin: 0 0 4px; text-align: right; font-style: italic; color: #6b5330; }
+.modal.letter { background: #f2e8f8; color: #291a32; border: 1px solid #c1abce; }
+.modal.letter h2 { color: #291a32; }
+.letter-place { margin: 0 0 4px; text-align: right; font-style: italic; color: #523c5f; }
 .letter-body { margin: 10px 0; font-family: inherit; font-size: 1.02rem; line-height: 1.55; }
 .letter-body p { margin: 0 0 10px; }
 .letter-sign { margin: 0 0 14px; text-align: right; font-family: inherit; font-style: italic; font-size: 1.05rem; }
-.letter-gifts { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; padding: 10px 12px; border: 1px dashed #b9772a; border-radius: var(--radius); background: #fff9ea; }
-.letter-gifts .muted { color: #6b5330; }
+.letter-gifts { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; padding: 10px 12px; border: 1px dashed #7d479c; border-radius: var(--radius); background: #f6eefb; }
+.letter-gifts .muted { color: #523c5f; }
 .letter-gift-list { font-size: 1.05rem; font-weight: 700; }
 
 .panel {
@@ -593,7 +602,7 @@ button.card:active { transform: translateY(1px); }
   background: var(--bg-elevated);
   color: var(--text);
   border-top: 1px solid var(--border);
-  box-shadow: 0 -2px 10px rgba(44, 36, 22, 0.15);
+  box-shadow: 0 -2px 10px rgba(35, 26, 40, 0.15);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -656,7 +665,7 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
   background: var(--accent);
 }
 
-.bar-fill.warn { background: var(--color-sun); }
+.bar-fill.warn { background: #e8b030; }
 .bar-fill.bad { background: var(--danger); }
 
 .switch {
@@ -892,25 +901,25 @@ select {
   place-items: center;
   border: 3px solid var(--color-earth);
   border-radius: 6px;
-  background: rgba(122, 82, 50, 0.22);
-  box-shadow: inset 2px 2px 0 rgba(58, 36, 20, 0.35), inset -2px -2px 0 rgba(255, 244, 220, 0.5);
+  background: rgba(92, 64, 108, 0.22);
+  box-shadow: inset 2px 2px 0 rgba(42, 28, 50, 0.35), inset -2px -2px 0 rgba(241, 226, 249, 0.5);
   cursor: pointer;
 }
 .inv-slot:active { transform: translateY(1px); }
 .inv-slot:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; }
 .inv-slot-icon { font-size: 2rem; line-height: 1; }
 .inv-slot-icon .px { --pxs: 32px; vertical-align: top; } /* 16 px doublés : des pixels entiers */
-.inv-slot-qty { position: absolute; right: 3px; bottom: 3px; filter: drop-shadow(1px 1px 0 #2a1a0e) drop-shadow(-1px 0 0 #2a1a0e); }
+.inv-slot-qty { position: absolute; right: 3px; bottom: 3px; filter: drop-shadow(1px 1px 0 #1e1424) drop-shadow(-1px 0 0 #1e1424); }
 .inv-slot-qty .pxt { --p: 2px; }
 .inv-slot.soon { border-color: var(--danger); }
 .inv-slot-soon { position: absolute; top: 3px; left: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px var(--wood-cream); }
 .inv-fridge { margin: 0 0 8px; font-weight: 700; }
 /* la fenêtre du frigo (js/ui/frigo.js) : ce qui périt cette nuit, la case « + », le tiroir « Ranger au frais » */
-.frigo-urgent { margin-bottom: 10px; background: #fbe3d6; border-color: var(--danger); }
-.frigo-plus { border-style: dashed; background: rgba(255, 244, 220, 0.35); }
+.frigo-urgent { margin-bottom: 10px; background: #ecdcf5; border-color: var(--danger); }
+.frigo-plus { border-style: dashed; background: rgba(241, 226, 249, 0.35); }
 .frigo-plus .inv-slot-icon { font-size: 1.8rem; font-weight: 700; color: var(--color-earth); }
 .frigo-plus.on { border-style: solid; border-color: var(--color-sun); }
-.inv-slot.choisi { border-color: var(--color-sun); box-shadow: 0 0 0 3px var(--color-sun), inset 2px 2px 0 rgba(58, 36, 20, 0.35); }
+.inv-slot.choisi { border-color: var(--color-sun); box-shadow: 0 0 0 3px var(--color-sun), inset 2px 2px 0 rgba(42, 28, 50, 0.35); }
 .frigo-tiroir { margin: 10px 0; }
 .frigo-choisi { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 .frigo-choisi .item-icon { font-size: 2rem; }
@@ -959,15 +968,15 @@ select {
    clair comme en sombre) ; cartes, boutons et textes suivent. */
 .modal.bois,
 .stage-window.bois {
-  --bg: rgba(250, 232, 196, 0.98);
+  --bg: rgba(var(--wood-bg-rgb), 0.98);
   --bg-elevated: var(--wood-cream);
-  --bg-muted: rgba(var(--wood-bg-rgb), 0.82);
-  --border: #c9965e;
+  --bg-muted: var(--wood-paper);
+  --border: #d9bde6;
   --text: var(--wood-ink);
-  --text-muted: #7a5434;
+  --text-muted: #6e5a80;
   /* (le vert, le rouge et l'ambre du thème clair : ceux du sombre, faits pour un fond sombre,
      ne se lisent pas sur le crème) */
-  --accent: #3a7530;
+  --accent: #444f9f;
   --accent-contrast: #ffffff;
   --danger: #b23a25;
   --danger-contrast: #ffffff;
@@ -981,7 +990,9 @@ select {
   box-shadow: inset 0 0 0 2px var(--wood-glow), 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 .modal.bois .btn:not(.primary):not(.danger),
-.stage-window.bois .btn:not(.primary):not(.danger) { border: 2px solid var(--color-earth); background: var(--wood-paper); }
+.stage-window.bois .btn:not(.primary):not(.danger) { border: 2px solid var(--color-earth); background: var(--lavande); color: var(--lavande-encre); box-shadow: inset 0 0 0 2px var(--lavande-filet); }
+.modal.bois .btn.primary,
+.stage-window.bois .btn.primary { border: 2px solid var(--color-earth); box-shadow: inset 0 0 0 2px var(--pervenche-filet); }
 .item-modal { max-width: 360px; }
 .modal-backdrop:has(.item-modal) { align-items: center; padding: 16px; } /* une carte au milieu de l'écran */
 .modal-backdrop:has(.item-modal) .modal { border-radius: 8px; }
@@ -996,7 +1007,7 @@ select {
   place-items: center;
   border: 3px solid var(--color-earth);
   border-radius: 6px;
-  background: rgba(122, 82, 50, 0.22);
+  background: rgba(92, 64, 108, 0.22);
   font-size: 2.6rem;
   line-height: 1;
 }
@@ -1083,17 +1094,17 @@ select {
 /* Le bloc « En préparation » d'un atelier (js/ui/cuisine.js preparationHtml) : le plat qui cuit, les places
    de la file ; la croix, un petit rond posé dans le coin de sa case. */
 .prep-tete { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.85rem; margin: 2px 0 6px; }
-.prep-encours { display: flex; align-items: center; gap: 10px; padding: 8px; border: 2px solid #c9a46e; border-radius: 10px; background: rgba(255, 246, 224, 0.6); }
+.prep-encours { display: flex; align-items: center; gap: 10px; padding: 8px; border: 2px solid #a380b7; border-radius: 10px; background: rgba(242, 229, 250, 0.6); }
 .prep-encours.libre { justify-content: center; min-height: 48px; font-size: 0.85rem; }
-.prep-ico { position: relative; flex: none; width: 44px; height: 44px; display: grid; place-items: center; font-size: 26px; border: 2px solid #b98a55; border-radius: 8px; background: #f3dfb4; }
+.prep-ico { position: relative; flex: none; width: 44px; height: 44px; display: grid; place-items: center; font-size: 26px; border: 2px solid #8f69a5; border-radius: 8px; background: #d8c1e6; }
 .prep-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 0.9rem; }
 .prep-txt small { font-size: 0.75rem; opacity: 0.75; }
 .prep-file { display: grid; grid-template-columns: repeat(var(--places, 9), minmax(0, 40px)); gap: 6px; margin-top: 8px; }
-.prep-place { position: relative; aspect-ratio: 1; max-width: 44px; display: grid; place-items: center; font-size: 18px; border: 2px dashed #d3b88a; border-radius: 7px; }
-.prep-place.pleine { border-style: solid; border-color: #b98a55; background: #f3dfb4; }
+.prep-place { position: relative; aspect-ratio: 1; max-width: 44px; display: grid; place-items: center; font-size: 18px; border: 2px dashed #b499c4; border-radius: 7px; }
+.prep-place.pleine { border-style: solid; border-color: #8f69a5; background: #d8c1e6; }
 .prep-croix {
   position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; min-height: 0; padding: 0;
-  display: grid; place-items: center; border-radius: 50%; border: 1px solid #fff6e0;
+  display: grid; place-items: center; border-radius: 50%; border: 1px solid #f2e5fa;
   background: #8a3020; color: #fff; font-size: 10px; line-height: 1; cursor: pointer;
 }
 .prep-croix::before { content: ''; position: absolute; inset: -8px; }   /* (une cible plus grande au doigt) */
@@ -1106,27 +1117,27 @@ select {
 .plats-grille .plat-case { max-width: 96px; }
 .plat-case {
   position: relative; aspect-ratio: 1; min-height: 0; padding: 0; display: grid; place-items: center;
-  border: 2px solid #b98a55; border-radius: 10px; background: #fff6e0; box-shadow: 0 2px 0 #c9a46e; cursor: pointer;
+  border: 2px solid #8f69a5; border-radius: 10px; background: #f2e5fa; box-shadow: 0 2px 0 #a380b7; cursor: pointer;
 }
 .plat-case .plat-ico { font-size: 30px; line-height: 1; }
 .plat-case.non .plat-ico { opacity: 0.45; filter: grayscale(0.35) brightness(1.15); }
-.plat-case.non { box-shadow: none; background: #fbf3e2; }
+.plat-case.non { box-shadow: none; background: #f1e6f7; }
 .plat-case.verrou .plat-ico { opacity: 0.35; filter: grayscale(1) brightness(1.2); }
-.plat-case.verrou { box-shadow: none; background: #fbf3e2; border-color: #d3b88a; }
+.plat-case.verrou { box-shadow: none; background: #f1e6f7; border-color: #b499c4; }
 .plat-cadenas { position: absolute; right: 3px; bottom: 2px; font-size: 12px; }
 .plat-case.choisi { border-color: #2f6a2a; box-shadow: 0 0 0 3px #9cc77a; }
 /* combien de fois la recette peut partir avec le stock : une pastille ambre au coin haut */
-.plat-nombre { position: absolute; top: -6px; right: -6px; min-width: 19px; height: 19px; padding: 0 4px; border-radius: 10px; border: 1px solid #fff6e0; background: #e9a530; color: #3a2414; font-size: 11px; line-height: 17px; text-align: center; }
+.plat-nombre { position: absolute; top: -6px; right: -6px; min-width: 19px; height: 19px; padding: 0 4px; border-radius: 10px; border: 1px solid #f2e5fa; background: #e9a530; color: #2a1c32; font-size: 11px; line-height: 17px; text-align: center; }
 /* les recettes à débloquer regroupées : « 🔒 +n » (un appui les déplie) */
 .plat-case.plat-groupe { border-style: dashed; }
 .plat-case.plat-groupe .plat-ico { font-size: 20px; opacity: 0.6; filter: none; }
-.plat-plus { position: absolute; right: 5px; bottom: 2px; font-size: 11px; color: #7a5a3a; }
-.fiche-recette { margin-top: 10px; padding: 9px 10px; border: 2px solid #c9a46e; border-radius: 10px; background: rgba(255, 246, 224, 0.6); }
+.plat-plus { position: absolute; right: 5px; bottom: 2px; font-size: 11px; color: #5f476d; }
+.fiche-recette { margin-top: 10px; padding: 9px 10px; border: 2px solid #a380b7; border-radius: 10px; background: rgba(242, 229, 250, 0.6); }
 .fiche-recette h4 { margin: 0 0 2px; font-size: 1rem; font-weight: normal; }
 .fiche-recette > p { margin: 0 0 6px; font-size: 0.8rem; }
 .fiche-ingr { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .fiche-ingr .ingr { display: inline-flex; gap: 4px; padding: 3px 8px; border-radius: 12px; border: 1px solid #9cc77a; background: #e9f1dc; font-size: 0.8rem; }
-.fiche-ingr .ingr.manque { border-color: #d98f78; background: #f8e0d8; }
+.fiche-ingr .ingr.manque { border-color: #d98f78; background: #ebdef2; }
 .fiche-lancer { display: flex; gap: 8px; align-items: center; }
 .fiche-lancer > .btn { flex: 1; }
 .fiche-pas { display: inline-flex; align-items: center; gap: 4px; }
@@ -1323,14 +1334,14 @@ summary.branch-head h3::before { content: '▸'; display: inline-block; margin-r
   display: flex;
   gap: 3px;
   padding: 3px;
-  background: #3b2a1c;
-  box-shadow: inset 0 3px 0 #24180f;
+  background: #2e2235;
+  box-shadow: inset 0 3px 0 #1b1320;
   height: 21px;
   border-radius: 0;
 }
-.pxgauge i { flex: 1; background: #6a4e36; box-shadow: inset 0 3px 0 #574029; }
+.pxgauge i { flex: 1; background: #544060; box-shadow: inset 0 3px 0 #44324e; }
 .pxgauge i.on { background: #5aa83c; box-shadow: inset 0 3px 0 #8cd06a, inset 0 -3px 0 #3d7a2a; }
-.pxgauge.full i.on { background: #e0a82a; box-shadow: inset 0 3px 0 #f8d878, inset 0 -3px 0 #a8701a; }
+.pxgauge.full i.on { background: #9352b8; box-shadow: inset 0 3px 0 #f8d878, inset 0 -3px 0 #6c388a; }
 .pxgauge.low i.on { background: #c8503a; box-shadow: inset 0 3px 0 #ec8a6e, inset 0 -3px 0 #8a2e22; }
 .pxgauge.off i { opacity: 0.55; }
 
@@ -1441,10 +1452,10 @@ body.has-tuto { padding-bottom: calc(300px + var(--dock)); }
   margin: 0 auto;
   padding: 8px 10px 6px;
   --text: var(--wood-ink);
-  --text-muted: #7a5434; /* le texte sombre du bois, en clair comme en sombre */
-  --accent: #3a7530;
+  --text-muted: #5d426c; /* le texte sombre du bois, en clair comme en sombre */
+  --accent: #444f9f;
   --danger: #b23a25;
-  --warn-text: #855400;
+  --warn-text: #4a275e;
   color: var(--text);
   background: rgba(var(--wood-bg-rgb), 0.96);
   border: 3px solid var(--color-earth);
@@ -1536,7 +1547,7 @@ body:has(#tool-bar:not(.open)) .didac-bulle:not(.haut):not(.reduite) { bottom: c
   border: 3px solid var(--color-earth);
   border-radius: 12px;
   color: var(--wood-ink);
-  box-shadow: 0 4px 0 rgba(58, 36, 20, 0.3);
+  box-shadow: 0 4px 0 rgba(42, 28, 50, 0.3);
 }
 .obj-carnet h2 { margin: 0; font-size: 19px; }
 .obj-intro { margin: 2px 0 8px; font-size: 14px; color: var(--text-muted); }
@@ -1611,14 +1622,14 @@ body.didacticiel .stage-chip:not(.hoe):not(.compact), body.didacticiel #tuto-roo
 body.has-stage main { display: none; }
 /* Une autre carte que la ferme (js/carte/jeu.js : #map-stage), à la place de celle de la ferme ; le reste de l'écran
    (carte du joueur, menu, outils) ne change pas. (La mine, qui s'y affichait, n'est plus : docs/gisements.md.) */
-#map-stage { position: fixed; left: 0; right: 0; top: var(--header-h); bottom: var(--dock); z-index: var(--z-stage); overflow: hidden; background: #665951; touch-action: none; -webkit-user-select: none; user-select: none; }
+#map-stage { position: fixed; left: 0; right: 0; top: var(--header-h); bottom: var(--dock); z-index: var(--z-stage); overflow: hidden; background: #5d5562; touch-action: none; -webkit-user-select: none; user-select: none; }
 #map-stage[hidden] { display: none; }
 /* Le même canvas que la ferme (un seul jeu Phaser, js/carte/jeu.js), posé ici pendant l'excursion. */
 #map-stage canvas { display: block; width: 100% !important; height: 100% !important; image-rendering: pixelated; }
 /* le god mode (Options) : son menu d'actions de test, à gauche sous la carte du joueur (js/ui/hote.js) */
 #god-bar { position: fixed; left: 8px; top: calc(var(--player-h, 110px) + 10px); z-index: var(--z-debug); }
-#god-bar label { display: flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 10px; background: rgba(40, 26, 14, 0.82); color: #fff3d6; font-size: 13px; }
-#god-bar select { max-width: 52vw; font: inherit; border-radius: 6px; border: 1px solid #b08850; background: #fff8e8; color: #3a2610; padding: 2px 4px; }
+#god-bar label { display: flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 10px; background: rgba(29, 19, 35, 0.82); color: #eeddf8; font-size: 13px; }
+#god-bar select { max-width: 52vw; font: inherit; border-radius: 6px; border: 1px solid #88639d; background: #f5ecfb; color: #281832; padding: 2px 4px; }
 #map-stage .map-retour { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--player-h, 110px) + 16px); z-index: 6; }
 
 body.has-stage { padding-bottom: 0; }
@@ -1697,8 +1708,8 @@ body.has-stage { padding-bottom: 0; }
   min-height: 22px;
   padding: 2px 8px;
   border-radius: 999px;
-  border: 1px solid rgba(44, 36, 22, 0.45);
-  background: rgba(255, 250, 238, 0.94);
+  border: 1px solid rgba(35, 26, 40, 0.45);
+  background: rgba(248, 241, 252, 0.94);
   color: var(--color-ink);
   font-size: 0.78rem;
   font-weight: 700;
@@ -1824,7 +1835,7 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
   display: flex; align-items: center; gap: 4px;
   height: 30px; min-width: 32px; padding: 0 5px;
   border: 3px solid var(--color-earth); border-bottom: 0; border-radius: 7px 7px 0 0;
-  background: #c99a5e;
+  background: #9c73b4;
   font: inherit; font-weight: 800; color: var(--color-earth);
   cursor: pointer;
 }
@@ -1863,15 +1874,15 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
   height: calc(var(--slot) - 6px);
   padding: 0 8px; border: 0; border-radius: 4px;
   text-align: left;
-  background: #ead0a0; box-shadow: inset 0 0 0 2px var(--wood-light);
+  background: #cbafdb; box-shadow: inset 0 0 0 2px var(--wood-light);
   font: inherit; font-size: 1.3rem; font-weight: 800; color: var(--color-earth);
   cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none;
 }
 .build-level-n { flex: none; width: 1.4em; text-align: center; font-size: 1.4rem; }
 .build-level-quoi { font-size: 0.8rem; font-weight: 700; line-height: 1.1; white-space: nowrap; pointer-events: none; }
 .build-level-n { pointer-events: none; }
-.build-level-item.active { background: #fbd98c; box-shadow: inset 0 0 0 2px var(--color-earth); }
-.build-level-item.survol { background: #fff1c9; box-shadow: inset 0 0 0 3px var(--color-sun); }
+.build-level-item.active { background: #f0d4f2; box-shadow: inset 0 0 0 2px var(--color-earth); }
+.build-level-item.survol { background: #e9d2f6; box-shadow: inset 0 0 0 3px var(--color-sun); }
 .build-bar {
   box-sizing: border-box;
   display: flex;
@@ -1943,7 +1954,7 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
 .build-bar-close {
   width: 34px; height: 34px; padding: 0;
   border: 0; border-radius: 4px;
-  background: #ead0a0; box-shadow: inset 0 0 0 2px var(--wood-light);
+  background: #cbafdb; box-shadow: inset 0 0 0 2px var(--wood-light);
   font: inherit; font-size: 1rem; line-height: 1; cursor: pointer;
 }
 .build-slot { position: relative; height: var(--slot); font-size: 1.4rem; }
@@ -1973,7 +1984,7 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
   flex: none; display: flex; align-items: center; gap: 3px;
   height: 26px; min-width: 30px; padding: 0 6px;
   border: 2px solid var(--color-earth); border-radius: 13px;
-  background: #d8b27c;
+  background: #b18ec6;
   font: inherit; font-size: 0.78rem; font-weight: 800; color: var(--color-earth);
   cursor: pointer;
 }
@@ -2094,7 +2105,7 @@ body.construction .stage-hud > :not(.build-dock):not(.pose-meuble):not(.build-ou
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(28, 26, 20, 0.5);
+  background: rgba(25, 22, 26, 0.5);
   font-size: 1.6rem;
   line-height: 1;
   padding-bottom: 4px;
@@ -2377,7 +2388,7 @@ main .ancre { scroll-margin-top: 150px; }
   white-space: nowrap;
   font-size: 0.72rem;
   font-weight: 700;
-  color: #4a2c14;
+  color: #331f3f;
   font-variant-numeric: tabular-nums;
 }
 .hud-day { white-space: nowrap; }
@@ -2398,13 +2409,13 @@ main .ancre { scroll-margin-top: 150px; }
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.25;
-  color: #4a2c14;
+  color: #331f3f;
   font-variant-numeric: tabular-nums;
 }
 
 /* ---------- Calendrier lunaire (fenêtre) ---------- */
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 4px 0; }
-.cal-head { text-align: center; font-size: 0.8rem; font-weight: 700; color: #6a4426; }
+.cal-head { text-align: center; font-size: 0.8rem; font-weight: 700; color: #4d345c; }
 .cal-day {
   display: flex;
   flex-direction: column;
@@ -2412,22 +2423,22 @@ main .ancre { scroll-margin-top: 150px; }
   gap: 2px;
   padding: 4px 0;
   border-radius: 4px;
-  background: #ead0a0;
+  background: #cbafdb;
   box-shadow: inset 0 0 0 2px var(--wood-light);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .cal-day.past { opacity: 0.55; }
-.cal-day.today { background: #fbd98c; box-shadow: inset 0 0 0 2px var(--color-earth); }
+.cal-day.today { background: #f0d4f2; box-shadow: inset 0 0 0 2px var(--color-earth); }
 .cal-day { position: relative; }
 button.cal-day { border: 0; font: inherit; color: inherit; cursor: pointer; }
-button.cal-day:hover, button.cal-day:focus-visible { background: #f6e2b6; box-shadow: inset 0 0 0 2px var(--color-earth); }
+button.cal-day:hover, button.cal-day:focus-visible { background: #dbc5e7; box-shadow: inset 0 0 0 2px var(--color-earth); }
 .cal-evt { position: absolute; top: 1px; right: 2px; font-size: 0.7rem; line-height: 1; }
 /* Les évènements du calendrier (js/ui/invitations.js) */
 .evenements { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; padding: 6px 0; border-top: 2px solid var(--wood-light); border-bottom: 2px solid var(--wood-light); }
 .evenements > .btn { align-self: flex-start; }
 .evt-liste { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.evt { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-radius: 4px; background: #f3dfb4; box-shadow: inset 0 0 0 2px var(--wood-light); }
+.evt { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; border-radius: 4px; background: #d8c1e6; box-shadow: inset 0 0 0 2px var(--wood-light); }
 .evt-annuler { align-self: flex-start; margin-top: 2px; }
 .evt-form { display: flex; flex-direction: column; gap: 8px; }
 .evt-groupe { display: flex; flex-direction: column; gap: 4px; border: 0; margin: 0; padding: 0; }
@@ -2438,7 +2449,7 @@ button.cal-day:hover, button.cal-day:focus-visible { background: #f6e2b6; box-sh
 .repas-plats { display: flex; flex-direction: column; gap: 2px; max-height: 40vh; overflow-y: auto; }
 .cal-phases { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .cal-phase { display: flex; gap: 6px; align-items: flex-start; padding: 4px 6px; border-radius: 4px; }
-.cal-phase.current { background: #fbd98c; box-shadow: inset 0 0 0 2px var(--wood-light); }
+.cal-phase.current { background: #f0d4f2; box-shadow: inset 0 0 0 2px var(--wood-light); }
 /* Un menu ouvert (fenêtre de la carte, fenêtre de dialogue) : la carte flottante reste
    visible par-dessus, à 80 % de transparence, et laisse passer les appuis. */
 body:has(.window-layer) .hud,
@@ -2664,12 +2675,16 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 /* ---------- Fenêtres de la carte « bois » (Famille…) : le cadre bois des cartes flottantes ----------
    Couleurs, fond et cadre : la règle commune avec .modal.bois, plus haut. */
 .stage-window.bois {
-  --bg: rgba(250, 232, 196, 0.97);
-  --bg-header: rgba(232, 196, 140, 0.6);
+  --bg: rgba(var(--wood-bg-rgb), 0.97);
+  --bg-header: var(--prune);
   border-bottom: 0;
   box-shadow: inset 0 0 0 2px var(--wood-glow), 0 -4px 24px rgba(0, 0, 0, 0.3);
 }
-.stage-window.bois .window-head { border-bottom: 3px solid var(--color-earth); }
+.stage-window.bois .window-head { border-bottom: 3px solid var(--wood-dark); }
+.stage-window.bois .window-head h2 { color: var(--wood-cream); --text-muted: #cdb8e0; }
+.stage-window.bois .window-head h2 :is(.muted, small) { color: #cdb8e0; }
+/* le bandeau prune : ce qui s'y pose (onglets, boutons) garde ses couleurs claires */
+.stage-window.bois .window-head .inv-tab.active { border-color: var(--rose); background: rgba(208, 116, 214, 0.35); }
 .stage-window.bois .card {
   border: 3px solid var(--color-earth);
   border-radius: 6px;
@@ -2690,7 +2705,7 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
   flex-direction: column;
   gap: 8px;
   padding: 14px 14px 10px 22px;
-  background: #6b3f1c;
+  background: #4a2c5b;
   background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0) 14px, rgba(255, 255, 255, 0.06) 40%, rgba(0, 0, 0, 0.12));
   border: 3px solid var(--wood-dark);
   border-radius: 6px 12px 12px 6px;
@@ -2706,7 +2721,7 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
   height: 40px;
   border-radius: 50%;
   border: 3px solid var(--wood-dark);
-  background: #f6e7c8;
+  background: #e3d0ee;
   color: var(--wood-dark);
   font-weight: 800;
   cursor: pointer;
@@ -2724,12 +2739,12 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
   inset: 0;
   overflow-y: auto;
   padding: 18px 18px 30px 26px;
-  background: #fbf3e0;
+  background: #f0e5f6;
   background-image:
-    linear-gradient(90deg, rgba(120, 80, 40, 0.28), rgba(120, 80, 40, 0) 18px),
+    linear-gradient(90deg, rgba(86, 56, 104, 0.28), rgba(86, 56, 104, 0) 18px),
     repeating-linear-gradient(180deg, rgba(0, 0, 0, 0) 0 27px, rgba(var(--color-earth-rgb), 0.12) 27px 28px);
   border-radius: 2px 8px 8px 2px;
-  box-shadow: 2px 0 0 #e8d8b4, 4px 0 0 #d8c49a, 6px 2px 6px rgba(0, 0, 0, 0.3); /* tranche des pages */
+  box-shadow: 2px 0 0 #d2bede, 4px 0 0 #bea6cc, 6px 2px 6px rgba(0, 0, 0, 0.3); /* tranche des pages */
   font-family: inherit;
 }
 .book-leaf {
@@ -2750,18 +2765,18 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
   to { transform: rotateY(0deg); filter: brightness(1); }
 }
 .book-title { margin: 4px 0 2px; font-size: 1.4rem; text-align: center; color: var(--wood-ink); }
-.book-sub { margin: 0 0 12px; text-align: center; font-style: italic; color: #7a5434; }
-.book-h3 { margin: 14px 0 6px; font-size: 1.02rem; color: #6b3f1c; border-bottom: 1px solid rgba(var(--color-earth-rgb), 0.4); }
+.book-sub { margin: 0 0 12px; text-align: center; font-style: italic; color: #5d426c; }
+.book-h3 { margin: 14px 0 6px; font-size: 1.02rem; color: #4a2c5b; border-bottom: 1px solid rgba(var(--color-earth-rgb), 0.4); }
 .book-dish { text-align: center; font-size: 3.2rem; line-height: 1.1; margin-top: 6px; }
 /* fiche 14 : le dessin d'une bête (sa case de la planche du jeu, en gros pixels) */
 .encyclo-betes { display: flex; justify-content: center; align-items: flex-end; flex-wrap: wrap; gap: 12px; min-height: 96px; }
 .encyclo-bete { display: block; background-repeat: no-repeat; image-rendering: pixelated; }
 /* (les poissons de la page de la pêche : leurs icônes, plus petites, sur deux rangées s'il le faut) */
 .book-dish.encyclo-icones { font-size: 2.2rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; }
-.book-meta { margin: 0 0 6px; text-align: center; font-family: inherit; font-size: 0.85rem; color: #6b4a2a; }
+.book-meta { margin: 0 0 6px; text-align: center; font-family: inherit; font-size: 0.85rem; color: #50375e; }
 .book-ingredients { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .book-ingredients li.missing { color: #8a2e22; }
-.book-note { font-size: 0.85em; color: #8a6a4a; }
+.book-note { font-size: 0.85em; color: #6f577d; }
 .book-reason { margin: 6px 0 10px; font-style: italic; color: #8a2e22; }
 .book-prepare { width: 100%; font-family: inherit; }
 .book-toc { list-style: none; margin: 0; padding: 0; }
@@ -2780,10 +2795,10 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
   cursor: pointer;
 }
 .book-toc-link:hover span:first-child { text-decoration: underline; }
-.book-toc-dots { flex: 1; border-bottom: 2px dotted rgba(107, 63, 28, 0.5); transform: translateY(-4px); }
-.book-folio { position: absolute; right: 14px; bottom: 8px; font-style: italic; color: #8a6a4a; font-size: 0.85rem; }
-.book-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #f6e7c8; }
-.book-turn { min-width: 52px; font-size: 1.4rem; line-height: 1; background: #f6e7c8; border: 2px solid var(--wood-dark); color: var(--wood-dark); }
+.book-toc-dots { flex: 1; border-bottom: 2px dotted rgba(74, 44, 91, 0.5); transform: translateY(-4px); }
+.book-folio { position: absolute; right: 14px; bottom: 8px; font-style: italic; color: #6f577d; font-size: 0.85rem; }
+.book-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #e3d0ee; }
+.book-turn { min-width: 52px; font-size: 1.4rem; line-height: 1; background: #e3d0ee; border: 2px solid var(--wood-dark); color: var(--wood-dark); }
 .book-turn:disabled { opacity: 0.4; }
 .book-count { font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .book-leaf { animation: none; } }
@@ -2793,19 +2808,19 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 .book.encyclo {
   background-color: #2f4f3a;
   border-color: #1d3324;
-  box-shadow: inset 0 0 0 2px #b8913f, 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 0 0 2px #8557a0, 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 .book.encyclo .book-turn, .book.encyclo .book-close { border-color: #1d3324; color: #1d3324; }
 .book.encyclo .book-toc-link .num { flex: none; white-space: nowrap; }
 .book.encyclo .book-toc-dots { min-width: 12px; }
-.encyclo-jauge { height: 10px; margin: 0 auto 4px; max-width: 260px; border: 2px solid var(--color-earth); border-radius: 6px; background: #efe0bd; overflow: hidden; }
+.encyclo-jauge { height: 10px; margin: 0 auto 4px; max-width: 260px; border: 2px solid var(--color-earth); border-radius: 6px; background: #dac7e5; overflow: hidden; }
 .encyclo-jauge span { display: block; height: 100%; background: #5d9a4a; }
-.encyclo-total { margin: 0 0 4px; text-align: center; font-size: 0.85rem; color: #6b4a2a; }
+.encyclo-total { margin: 0 0 4px; text-align: center; font-size: 0.85rem; color: #50375e; }
 .encyclo-liens { display: flex; flex-wrap: wrap; gap: 6px; }
 .encyclo-lien, .encyclo-inconnue { font: inherit; font-size: 0.9rem; }
-.encyclo-lien { cursor: pointer; border: 2px solid var(--color-earth); background: #fff8e6; color: var(--wood-ink); }
-.encyclo-lien:hover { background: #f6e7c8; }
-.encyclo-inconnue { border: 2px dashed rgba(var(--color-earth-rgb), 0.45); background: none; color: #a08463; letter-spacing: 0.1em; }
+.encyclo-lien { cursor: pointer; border: 2px solid var(--color-earth); background: #f5eafb; color: var(--wood-ink); }
+.encyclo-lien:hover { background: #e3d0ee; }
+.encyclo-inconnue { border: 2px dashed rgba(var(--color-earth-rgb), 0.45); background: none; color: #866f94; letter-spacing: 0.1em; }
 .encyclo-neuf { margin-left: 4px; padding: 0 5px; border-radius: 4px; background: #c0392b; color: #fff; font-size: 0.72rem; vertical-align: 1px; }
 .encyclo-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 /* D-1 : les collections du naturaliste, au sommaire */
@@ -2817,12 +2832,12 @@ body:has(#modal-root > *) .player-card { z-index: var(--z-hud-over); opacity: 0.
 .encyclo-item { display: block; width: 100%; min-height: 32px; padding: 4px 2px; border: 0; border-bottom: 1px dotted rgba(var(--color-earth-rgb), 0.45); background: none; color: var(--wood-ink); font: inherit; text-align: left; }
 button.encyclo-item { cursor: pointer; }
 button.encyclo-item:hover { text-decoration: underline; }
-span.encyclo-item.encyclo-inconnue { color: #a08463; }
+span.encyclo-item.encyclo-inconnue { color: #866f94; }
 .encyclo-categorie { margin: 0; text-align: center; }
-.encyclo-lien-texte { padding: 4px 0; border: 0; background: none; color: #6b3f1c; font: inherit; font-size: 0.9rem; text-decoration: underline; cursor: pointer; }
+.encyclo-lien-texte { padding: 4px 0; border: 0; background: none; color: #4a2c5b; font: inherit; font-size: 0.9rem; text-decoration: underline; cursor: pointer; }
 .encyclo-retour { margin: 12px 0 0; }
 .encyclo-texte { margin: 8px 0 4px; line-height: 1.5; color: var(--wood-ink); }
-.encyclo-astuce { margin: 14px 0 0; font-size: 0.85rem; font-style: italic; color: #7a5434; }
+.encyclo-astuce { margin: 14px 0 0; font-size: 0.85rem; font-style: italic; color: #5d426c; }
 
 /* ---------- Marché en cases (comme l'Inventaire) ----------
    Le prix en haut à gauche (police pixel et pièce), la quantité en bas à droite ; une case
@@ -2834,7 +2849,7 @@ span.encyclo-item.encyclo-inconnue { color: #a08463; }
   display: inline-flex;
   align-items: center;
   gap: 1px;
-  filter: drop-shadow(1px 1px 0 #2a1a0e) drop-shadow(-1px 0 0 #2a1a0e);
+  filter: drop-shadow(1px 1px 0 #1e1424) drop-shadow(-1px 0 0 #1e1424);
 }
 .shop-slot-price .pxt { --p: 2px; }
 .shop-coin .px { --pxs: 10px; vertical-align: top; }
@@ -3058,12 +3073,12 @@ span.encyclo-item.encyclo-inconnue { color: #a08463; }
   padding: 0;
   border: 0;
   border-radius: 4px;
-  background: #ead0a0;
+  background: #cbafdb;
   box-shadow: inset 0 0 0 2px var(--wood-light);
   font-size: 1rem;
   cursor: pointer;
 }
-.tool-slot.active { background: #fbd98c; box-shadow: inset 0 0 0 2px var(--color-earth); }
+.tool-slot.active { background: #f0d4f2; box-shadow: inset 0 0 0 2px var(--color-earth); }
 .tool-slot .px { --pxs: 32px; vertical-align: 0; }
 /* Les outils, à des tailles accordées entre elles (leurs dessins de 32 px n'occupent pas tous leur
    case autant) : la houe et la hache × 2, la pioche × 1,75, la faux et la canne × 1,25, le marteau
@@ -3083,13 +3098,13 @@ span.encyclo-item.encyclo-inconnue { color: #a08463; }
 .cruche-jauge {
   position: absolute; right: 5px; top: 7px; bottom: 7px; width: 7px;
   display: flex; flex-direction: column; justify-content: flex-end;
-  background: #4a3524; border-radius: 2px; box-shadow: inset 0 0 0 1px #2c2416; overflow: hidden;
+  background: #3a2c42; border-radius: 2px; box-shadow: inset 0 0 0 1px #231a28; overflow: hidden;
 }
 .cruche-jauge > span { display: block; width: 100%; background: linear-gradient(90deg, #3a86c8, #7cc4f0); transition: height 0.3s ease-out; }
 .cruche-slot.vide-eau .cruche-jauge { box-shadow: inset 0 0 0 1px var(--color-tomato); }
 .cruche-litres {
   position: absolute; left: 4px; bottom: 2px;
-  font-size: 0.62rem; font-weight: 800; line-height: 1; color: #2c2416;
+  font-size: 0.62rem; font-weight: 800; line-height: 1; color: #231a28;
 }
 @media (prefers-reduced-motion: reduce) { .cruche-jauge > span { transition: none; } }
 /* La languette, au-dessus du milieu de la barre : le même bois, le même fond. */
@@ -3109,7 +3124,7 @@ span.encyclo-item.encyclo-inconnue { color: #a08463; }
   cursor: pointer;
 }
 .tool-bar-tab::after { content: ""; position: absolute; inset: -12px 0 -6px; } /* zone d'appui de 44 px environ */
-.tool-bar-arrow { fill: #6b3f1c; transition: transform 0.2s; }
+.tool-bar-arrow { fill: #4a2c5b; transition: transform 0.2s; }
 .tool-bar:not(.open) .tool-bar-arrow { transform: scaleY(-1); } /* rangée : le triangle montre le sens où elle ressort */
 .tool-bar-tab:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 /* Avec la barre, le chevron « la carte continue vers le bas » passe au-dessus d'elle. */
@@ -3148,16 +3163,16 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 }
 .pose-meuble-ok { background: #6fcf6a; box-shadow: inset 0 0 0 3px #2f8a3a; }
 .pose-meuble-ok:disabled { background: #c9d8c2; box-shadow: inset 0 0 0 3px #9aa894; opacity: 0.6; cursor: default; }
-.pose-meuble-non { background: #ead0a0; box-shadow: inset 0 0 0 2px var(--wood-light); }
+.pose-meuble-non { background: #cbafdb; box-shadow: inset 0 0 0 2px var(--wood-light); }
 /* 🎨 : la couleur du meuble qu'on pose (A-3) */
-.pose-meuble-peint { background: #fbd98c; box-shadow: inset 0 0 0 3px var(--color-earth); }
+.pose-meuble-peint { background: #f0d4f2; box-shadow: inset 0 0 0 3px var(--color-earth); }
 /* ↻ : tourner l'aperçu du meuble (js/ui/chantier.js) ; la flèche dit où il regarde */
-.pose-meuble-tourne { position: relative; background: #fbd98c; box-shadow: inset 0 0 0 3px var(--color-earth); color: var(--color-earth); font-weight: 700; }
+.pose-meuble-tourne { position: relative; background: #f0d4f2; box-shadow: inset 0 0 0 3px var(--color-earth); color: var(--color-earth); font-weight: 700; }
 .pose-meuble-sens { position: absolute; right: 2px; bottom: 1px; font-size: 0.85rem; }
 
 /* « Ravi de te revoir ! » (js/ui/loop.js openAbsenceModal) : une petite fenêtre du jeu, cadre
    bois, en-tête et ✕ comme les fenêtres de la carte ; la date, l'argent, les biens produits. */
-.absence-modal { --bg-header: rgba(232, 196, 140, 0.6); max-width: 320px; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.absence-modal { --bg-header: rgba(193, 158, 214, 0.6); max-width: 320px; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
 .absence-modal .window-head { min-height: 0; padding: 6px 8px 6px 14px; border-bottom: 3px solid var(--color-earth); }
 .absence-modal .window-head h2 { font-size: 1.05rem; }
 .absence-body { padding: 12px 14px 16px; overflow-y: auto; }
@@ -3205,18 +3220,18 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 
 /* les bacs à compost (js/ui/compost.js) : un bac par ligne, sa jauge jusqu'au prochain engrais ; les aliments à y jeter */
 .compost-liste, .compost-aliments { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; }
-.compost-ligne { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid rgba(120, 80, 40, 0.25); }
+.compost-ligne { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid rgba(86, 56, 104, 0.25); }
 .compost-titre { font-weight: bold; }
 .compost-etat { display: flex; align-items: center; gap: 8px; }
-.compost-jauge { flex: 1 1 auto; max-width: 180px; height: 10px; border-radius: 5px; background: rgba(80, 50, 30, 0.25); overflow: hidden; }
-.compost-jauge > span { display: block; height: 100%; background: linear-gradient(90deg, #6b4428, #9a6b3e); }
+.compost-jauge { flex: 1 1 auto; max-width: 180px; height: 10px; border-radius: 5px; background: rgba(59, 40, 70, 0.25); overflow: hidden; }
+.compost-jauge > span { display: block; height: 100%; background: linear-gradient(90deg, #4f355e, #735088); }
 .compost-aliment { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
 .compost-aliment .compost-nom { flex: 1 1 auto; min-width: 0; }
 .compost-aliment .btn { min-width: 44px; min-height: 44px; padding: 0 8px; }
 
 /* les tonnelets (js/ui/tonnelet.js) : un tonnelet par ligne, ce qui s'y affine, ou les boutons pour le remplir */
 .tonnelet-liste { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; }
-.tonnelet-ligne { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid rgba(120, 80, 40, 0.25); }
+.tonnelet-ligne { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid rgba(86, 56, 104, 0.25); }
 .tonnelet-titre { font-weight: bold; }
 .tonnelet-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .tonnelet-actions .btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 10px; }
@@ -3235,11 +3250,11 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
   gap: 2px;
   padding: 10px 28px 12px;
   max-width: calc(100vw - 32px);
-  background: #e9d8a6;
-  color: #3a2414;
-  border: 3px solid #5a3a1e;
+  background: #cdb3dc;
+  color: #2a1c32;
+  border: 3px solid #412a4e;
   border-radius: 6px;
-  box-shadow: 0 0 0 2px #e9d8a6, 0 6px 18px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 2px #cdb3dc, 0 6px 18px rgba(0, 0, 0, 0.35);
   text-align: center;
   pointer-events: none;
   opacity: 0;
@@ -3288,9 +3303,9 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
   gap: 1px;
   max-width: 220px;
   padding: 6px 10px 7px;
-  background: #f6ead0;
-  color: #3a2414;
-  border: 2px solid #5a3a1e;
+  background: #e6d7ef;
+  color: #2a1c32;
+  border: 2px solid #412a4e;
   border-radius: 6px;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
   font-size: 0.8rem;
@@ -3305,7 +3320,7 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
   bottom: -8px;
   margin-left: -6px;
   border: 6px solid transparent;
-  border-top: 6px solid #5a3a1e;
+  border-top: 6px solid #412a4e;
   border-bottom: 0;
 }
 .habitant-bulle strong { font-size: 0.9rem; }
@@ -3313,7 +3328,7 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 /* une scène du récit sur la carte (js/carte/ferme/rencontre.js) : la bulle de qui parle ; celle du personnage du
    joueur, d'un autre ton ; le petit signe « appuie pour la suite » */
 .rencontre-bulle { max-width: 240px; padding-right: 20px; }
-.rencontre-bulle.joueur { background: #fdf6e3; border-color: #2f6a2a; }
+.rencontre-bulle.joueur { background: #f2e8f8; border-color: #2f6a2a; }
 .rencontre-bulle.joueur::after { border-top-color: #2f6a2a; }
 .rencontre-aide { margin-top: 3px; font-size: 0.68rem; opacity: 0.65; font-style: italic; }
 .rencontre-suite { position: absolute; right: 6px; bottom: 3px; font-size: 0.7rem; opacity: 0.7; animation: rencontre-suite 1.1s ease-in-out infinite; }
@@ -3321,7 +3336,7 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
 @media (prefers-reduced-motion: reduce) { .rencontre-suite { animation: none; } }
 /* l'amitié (js/ui/amitie.js) : le palier, la jauge, le bouton « Offrir » de la bulle */
 .habitant-bulle-ami { display: flex; align-items: center; gap: 4px; margin-top: 3px; font-size: 0.72rem; }
-.ami-jauge { display: inline-block; width: 46px; height: 6px; background: #d9c39b; border: 1px solid #5a3a1e; border-radius: 3px; overflow: hidden; vertical-align: middle; }
+.ami-jauge { display: inline-block; width: 46px; height: 6px; background: #bfa7cd; border: 1px solid #412a4e; border-radius: 3px; overflow: hidden; vertical-align: middle; }
 .ami-jauge > span { display: block; height: 100%; background: #e8a33a; }
 .ami-jauge.grande { width: 120px; height: 9px; }
 .ami-gain { color: #2f7a2a; font-weight: 700; }
@@ -3335,9 +3350,9 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
   padding: 3px 10px;
   font: inherit;
   font-size: 0.8rem;
-  color: #3a2414;
-  background: #ffe9a8;
-  border: 2px solid #5a3a1e;
+  color: #2a1c32;
+  background: #d8c1e6;
+  border: 2px solid #412a4e;
   border-radius: 6px;
   cursor: pointer;
 }
@@ -3349,9 +3364,9 @@ body.has-toolbar .sleep-fab { bottom: calc(var(--dock) + 9 * 7.5px + 18px); }
   padding: 2px 8px;
   font: inherit;
   font-size: 0.75rem;
-  color: #3a2414;
-  background: #ffe9a8;
-  border: 2px solid #5a3a1e;
+  color: #2a1c32;
+  background: #d8c1e6;
+  border: 2px solid #412a4e;
   border-radius: 5px;
   cursor: pointer;
 }
@@ -3375,7 +3390,7 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .ami-cadeau { justify-content: flex-start; text-align: left; }
 .ami-marque { margin-left: 2px; }
 .ami-mini { font-size: 0.78rem; white-space: nowrap; }
-.ile-ami { font-size: 0.78rem; color: #8a5a10; white-space: nowrap; }
+.ile-ami { font-size: 0.78rem; color: #562d6d; white-space: nowrap; }
 .habitant-bulle-texte { margin-top: 2px; }
 /* La visite de bienvenue (fiche 18, js/carte/ferme/visite.js) : le plat posé devant la porte, qui
    attend le retour du personnage. */
@@ -3386,8 +3401,8 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   padding: 2px 4px;
   font-size: 1.1rem;
   line-height: 1;
-  background: #f6ead0;
-  border: 2px solid #5a3a1e;
+  background: #e6d7ef;
+  border: 2px solid #412a4e;
   border-radius: 50%;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   pointer-events: none;
@@ -3425,9 +3440,9 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  background: #f6ead0;
-  color: #3a2414;
-  border: 2px solid #5a3a1e;
+  background: #e6d7ef;
+  color: #2a1c32;
+  border: 2px solid #412a4e;
   border-radius: 999px;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
   font: inherit;
@@ -3439,10 +3454,10 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 }
 .caleche-signe[hidden], .caleche-heler[hidden] { display: none; }
 .caleche-signe-ico { font-size: 1.15rem; }
-.caleche-signe-fleche { display: inline-block; transform: rotate(var(--angle, 0rad)); color: #5a3a1e; }
+.caleche-signe-fleche { display: inline-block; transform: rotate(var(--angle, 0rad)); color: #412a4e; }
 .caleche-signe-heler { display: none; font-weight: bold; }
 .caleche-signe.helable .caleche-signe-heler { display: inline; }
-.caleche-signe.helable, .caleche-heler { background: #ffe9a8; animation: caleche-pouls 1.2s ease-in-out infinite; }
+.caleche-signe.helable, .caleche-heler { background: #d8c1e6; animation: caleche-pouls 1.2s ease-in-out infinite; }
 @keyframes caleche-pouls { 50% { box-shadow: 0 0 0 4px rgba(255, 200, 80, 0.55), 0 3px 8px rgba(0, 0, 0, 0.3); } }
 @media (prefers-reduced-motion: reduce) { .caleche-signe.helable, .caleche-heler { animation: none; } }
 .caleche-bulle { font-weight: bold; }
@@ -3453,9 +3468,9 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   flex-wrap: wrap;
   margin: 0 0 8px;
   padding: 6px 10px;
-  border: 2px solid rgba(90, 58, 30, 0.35);
+  border: 2px solid rgba(65, 42, 78, 0.35);
   border-radius: 6px;
-  background: rgba(255, 246, 222, 0.6);
+  background: rgba(241, 228, 249, 0.6);
   font-size: 0.85rem;
   line-height: 1.3;
 }
@@ -3504,15 +3519,15 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   align-items: center;
   max-width: 132px;
   padding: 2px 8px 3px;
-  background: #f6ead0;
-  color: #3a2414;
-  border: 2px solid #5a3a1e;
+  background: #e6d7ef;
+  color: #2a1c32;
+  border: 2px solid #412a4e;
   border-radius: 6px;
   font-size: 0.72rem;
   line-height: 1.2;
 }
 .boussole-nom { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 116px; }
-.boussole-distance { color: #6a4a2a; }
+.boussole-distance { color: #4f375d; }
 @media (max-width: 560px) {
   .boussole { top: calc(96px + env(safe-area-inset-top, 0px) - var(--header-h, 0px)); right: 8px; }
   #farm-stage .boussole canvas.boussole-cadran { width: 48px !important; height: 48px !important; }
@@ -3559,7 +3574,7 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   border: 0;
   background: none;
   font: inherit;
-  color: #3a2414;
+  color: #2a1c32;
   pointer-events: auto;
   cursor: pointer;
 }
@@ -3568,8 +3583,8 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   place-items: center;
   width: 24px;
   height: 24px;
-  background: #f6ead0;
-  border: 2px solid #5a3a1e;
+  background: #e6d7ef;
+  border: 2px solid #412a4e;
   border-radius: 50%;
   font-size: 0.9rem;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
@@ -3577,14 +3592,14 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .carte-monde-icone .px { --pxs: 16px; }
 .carte-monde-repere.ferme .carte-monde-icone { width: 28px; height: 28px; }
 .carte-monde-repere.caleche { pointer-events: none; margin: -2px 0 0 14px; }
-.carte-monde-repere.caleche .carte-monde-icone { width: 20px; height: 20px; background: #ffe9a8; }
+.carte-monde-repere.caleche .carte-monde-icone { width: 20px; height: 20px; background: #d8c1e6; }
 .carte-monde-repere.but .carte-monde-icone { border-color: #c03a24; box-shadow: 0 0 0 2px #ffd36a, 0 2px 3px rgba(0, 0, 0, 0.35); }
-.carte-monde-repere.choisi .carte-monde-icone { background: #ffe9a8; transform: scale(1.15); }
+.carte-monde-repere.choisi .carte-monde-icone { background: #d8c1e6; transform: scale(1.15); }
 .carte-monde-repere:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; border-radius: 6px; }
 .carte-monde-nom {
   padding: 1px 6px;
-  background: rgba(246, 234, 208, 0.92);
-  border: 1px solid #5a3a1e;
+  background: rgba(230, 215, 239, 0.92);
+  border: 1px solid #412a4e;
   border-radius: 4px;
   font-size: 0.72rem;
   font-weight: bold;
@@ -3601,7 +3616,7 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   background: #ffffff;
   border: 2px solid #c03a24;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(58, 36, 20, 0.6);
+  box-shadow: 0 0 0 2px rgba(42, 28, 50, 0.6);
 }
 .carte-monde-fleche { position: absolute; left: 0; top: 0; width: 0; height: 0; }
 .carte-monde-fleche::after {
@@ -3611,11 +3626,11 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   top: -6px;
   border: 6px solid transparent;
   border-left: 9px solid #c03a24;
-  filter: drop-shadow(0 0 1px #3a2414);
+  filter: drop-shadow(0 0 1px #2a1c32);
 }
 .carte-monde-zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; }
 .carte-monde-zoom .btn { min-width: 36px; min-height: 36px; padding: 0; font-size: 1.1rem; font-weight: bold; }
-.carte-monde-attente { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: #3a2414; font-weight: bold; pointer-events: none; }
+.carte-monde-attente { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: #2a1c32; font-weight: bold; pointer-events: none; }
 .carte-monde-attente[hidden] { display: none; }
 .carte-monde-info { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; min-height: 36px; }
 .carte-monde-info-nom { font-size: 1.05rem; }
@@ -3653,8 +3668,11 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 }
 .chargement.fini { opacity: 0; pointer-events: none; }
 .chargement-titre { margin: 0; font-size: 32px; font-weight: normal; color: var(--text); }
-/* le logo (assets/logo_contour.png, 92 × 47 : le logo et son contour de nuit) agrandi sans lissage */
-.chargement-titre img { display: block; width: 276px; max-width: 80vw; height: auto; image-rendering: pixelated; }
+/* l'écran de chargement : un soir prune, où les lettres du logo se lisent */
+.chargement { background: radial-gradient(circle at 50% 35%, #4a3a6a, var(--prune) 70%); }
+.chargement .chargement-texte { color: #f0b8f3; }
+/* le logo (assets/logo.png, 90 × 45) agrandi sans lissage, sur le soir prune */
+.chargement-titre img { display: block; width: 270px; max-width: 80vw; height: auto; image-rendering: pixelated; }
 .chargement-rang { display: flex; flex-direction: column; align-items: stretch; }
 .chargement-plants { display: flex; gap: 4px; padding: 0 10px; margin-bottom: -36px; position: relative; z-index: 1; }
 .chargement-plants i {
@@ -3672,7 +3690,7 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   border-radius: 4px;
   background: url('../assets/soil_dry.png') 0 0 / 64px 64px;
   image-rendering: pixelated;
-  box-shadow: inset 0 0 0 2px var(--wood-light), 0 4px 0 rgba(58, 36, 20, 0.35);
+  box-shadow: inset 0 0 0 2px var(--wood-light), 0 4px 0 rgba(42, 28, 50, 0.35);
 }
 .chargement-texte { font-size: 20px; color: var(--color-earth); }
 @media (prefers-color-scheme: dark) { .chargement-texte { color: var(--wood-light); } }
@@ -3690,10 +3708,10 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   color: var(--color-earth);
   cursor: pointer;
 }
-.build-piece.on { background: #fbd98c; box-shadow: inset 0 0 0 2px var(--color-earth); }
+.build-piece.on { background: #f0d4f2; box-shadow: inset 0 0 0 2px var(--color-earth); }
 .build-piece:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 1px; }
 .build-piece:disabled { opacity: 0.45; cursor: default; }
-.build-gomme.on { background: #ffd9a8; }
+.build-gomme.on { background: #d8c1e6; }
 .build-tourner span, .build-sens span { font-size: 1.1rem; font-weight: 700; line-height: 1; }
 .build-tourner.on { background: #cfe8ff; }
 
@@ -3706,7 +3724,7 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 }
 .btn.primary.apparence-hasard {
   display: block; margin: 0 auto 4px; min-height: 40px; padding: 4px 16px; border-radius: 999px;
-  background: var(--color-sun); border: 2px solid var(--wood-dark); color: #2b1a08; font-weight: 700;
+  background: var(--color-sun); border: 2px solid var(--wood-dark); color: #1c0f24; font-weight: 700;
 }
 .apparence-groupe { border: 0; border-top: 2px dashed var(--wood-light); margin: 10px 0 0; padding: 4px 0 0; min-width: 0; }
 .apparence-groupe legend { padding: 0 6px 0 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--wood-ink); opacity: 0.65; }
@@ -3732,13 +3750,13 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 }
 .vignette-apparence img { width: 32px; height: 32px; image-rendering: pixelated; }
 .apparence-options .vignette-apparence span { font-size: 10px; letter-spacing: -0.03em; line-height: 1.15; overflow-wrap: normal; white-space: normal; }
-.vignette-apparence.active { outline: 3px solid var(--color-sun); outline-offset: 1px; background: #f6e3bd; }
+.vignette-apparence.active { outline: 3px solid var(--color-sun); outline-offset: 1px; background: #dec7ec; }
 /* le reste (le motif, les signes, les accessoires) : des puces */
 .choix-apparence {
   min-height: 34px; padding: 3px 12px; font: inherit; font-size: 0.85rem; border-radius: 999px; cursor: pointer;
   background: var(--wood-paper); border: 2px solid var(--wood-dark); color: var(--wood-ink);
 }
-.choix-apparence.active { background: var(--color-sun); color: #2b1a08; font-weight: 700; }
+.choix-apparence.active { background: var(--color-sun); color: #1c0f24; font-weight: 700; }
 
 /* E-2 : le bandeau du monde en ligne (js/ui/en-ligne.js), en haut, au milieu */
 .en-ligne-bandeau {
@@ -3753,7 +3771,7 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   padding: 4px 6px 4px 12px;
   border-radius: 999px;
   border: 2px solid var(--border);
-  background: var(--bg-card, #fbefd5);
+  background: var(--bg-card, #ebdcf4);
   color: var(--text);
   font-size: 0.85rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
@@ -3774,12 +3792,14 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   position: absolute; left: 50%; transform: translateX(-50%);
   background: rgba(var(--wood-bg-rgb), 0.96);
   border: 3px solid var(--color-earth); border-radius: 8px;
-  box-shadow: inset 0 0 0 2px var(--wood-glow), 0 4px 0 rgba(58, 36, 20, 0.35);
+  box-shadow: inset 0 0 0 2px var(--wood-glow), 0 4px 0 rgba(42, 28, 50, 0.35);
 }
 .titre-enseigne { top: max(8%, calc(16px + env(safe-area-inset-top))); width: min(86%, 460px); padding: 14px 20px 12px; text-align: center; }
+/* l'enseigne : la prune du logo, sur laquelle ses lettres lavande se lisent */
+.titre-enseigne { background: var(--prune); border-color: var(--wood-dark); box-shadow: inset 0 0 0 2px var(--wood-light), 0 4px 0 rgba(30, 21, 48, 0.45); }
 .titre-nom { margin: 0; font-size: clamp(32px, 9vw, 48px); font-weight: normal; line-height: 1; }
-.titre-nom img { display: block; width: 368px; max-width: 100%; height: auto; margin: 0 auto; image-rendering: pixelated; }
-.titre-slogan { margin: 8px 0 0; font-size: 1.05rem; color: #7a5434; }
+.titre-nom img { display: block; width: 360px; max-width: 100%; height: auto; margin: 0 auto; image-rendering: pixelated; }
+.titre-slogan { margin: 8px 0 0; font-size: 1.05rem; color: #f0b8f3; }
 .titre-boutons {
   bottom: max(7%, calc(16px + env(safe-area-inset-bottom))); width: min(88%, 400px);
   display: grid; gap: 12px; padding: 14px;
@@ -3789,10 +3809,10 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   min-height: 56px; padding: 6px 16px; width: 100%;
   border: 3px solid var(--color-earth); border-radius: 7px;
   font: inherit; font-size: 1.25rem; line-height: 1.2; white-space: nowrap; cursor: pointer;
-  background: #fff1d2; color: var(--wood-ink);
-  box-shadow: inset 0 0 0 2px var(--wood-glow), 0 3px 0 #3a2414;
+  background: #ecdaf7; color: var(--wood-ink);
+  box-shadow: inset 0 0 0 2px var(--wood-glow), 0 3px 0 #2a1c32;
 }
-.titre-btn.primary { background: #3a7530; color: #fff; box-shadow: inset 0 0 0 2px #6fae5a, 0 3px 0 #3a2414; }
+.titre-btn.primary { background: #444f9f; color: #fff; box-shadow: inset 0 0 0 2px #7480d6, 0 3px 0 #2a1c32; }
 .titre-btn:active { transform: translateY(2px); box-shadow: none; }
 .titre-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 .titre-info { font-size: 0.8rem; opacity: 0.8; white-space: normal; }

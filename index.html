@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Moon Bloom Village — un jeu de ferme en pixel art où tu fais revivre la ferme familiale : construis, jardine, et partage-la avec tes voisins et tes amis.">
-  <meta name="theme-color" content="#8a5a34">
+  <meta name="theme-color" content="#664579">
   <title>Moon Bloom Village — Construis, jardine, partage !</title>
   <style>
     /* Le style du jeu (css/jeu.css) : sa police en pixels (assets/police_dialogue.woff), ses
@@ -17,27 +17,27 @@
       font-display: swap;
     }
     :root {
-      --color-sun: #f2a71b;
+      --color-sun: #d074d6;
       --color-leaf: #4f8a3d;
-      --color-earth: #8a5a34;
-      --wood-ink: #4a2a10;
-      --wood-dark: #3a2414;
-      --wood-light: #d9a066;
-      --wood-glow: rgba(217, 160, 102, 0.9);
-      --wood-cream: #fff4dc;
-      --wood-paper: #fff1d2;
-      --wood-bg: rgba(250, 232, 196, 0.97);
-      --accent: #3a7530;
-      --accent-dark: #2b5a23;
+      --color-earth: #3a2a55;
+      --wood-ink: #3a2a55;
+      --wood-dark: #1e1530;
+      --wood-light: #9673a7;
+      --wood-glow: rgba(150, 115, 167, 0.9);
+      --wood-cream: #fbf3ff;
+      --wood-paper: #f1e3f7;
+      --wood-bg: rgba(251, 243, 255, 0.97);
+      --accent: #444f9f;
+      --accent-dark: #2f3878;
       --night: #1f2a44;
       --night-2: #2c3b5e;
-      --bg: #faf6ee;
-      --bg-band: #f1e4c6;
-      --text: #2c2416;
-      --text-muted: #6b5f4a;
+      --bg: #f8f2fb;
+      --bg-band: #efe4f4;
+      --text: #2a1f3d;
+      --text-muted: #6e5a80;
     }
     @media (prefers-color-scheme: dark) {
-      :root { --bg: #1c1a14; --bg-band: #26231b; --text: #f2ecdd; --text-muted: #b9ae95; }
+      :root { --bg: #19161a; --bg-band: #211d24; --text: #e9e1ee; --text-muted: #aa9cb2; }
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -61,9 +61,9 @@
       color: var(--wood-ink);
       border: 3px solid var(--color-earth);
       border-radius: 8px;
-      box-shadow: inset 0 0 0 2px var(--wood-glow), 0 4px 0 rgba(58, 36, 20, 0.35);
+      box-shadow: inset 0 0 0 2px var(--wood-glow), 0 4px 0 rgba(42, 28, 50, 0.35);
     }
-    .bois p, .bois span { color: #7a5434; }
+    .bois p, .bois span { color: #5d426c; }
 
     /* boutons : le vert du jeu ou le papier du bois, cadrés de terre */
     .btn {
@@ -76,15 +76,17 @@
     .btn:hover { transform: translateY(-2px); }
     .btn:active { transform: translateY(1px); }
     .btn:focus-visible, .nav a:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
-    .btn-primary { background: var(--accent); color: #fff; box-shadow: inset 0 0 0 2px #6fae5a, 0 3px 0 var(--wood-dark); }
-    .btn-secondary { background: var(--wood-paper); color: var(--wood-ink); box-shadow: inset 0 0 0 2px var(--wood-glow), 0 3px 0 var(--wood-dark); }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: inset 0 0 0 2px #7480d6, 0 3px 0 var(--wood-dark); }
+    .btn-secondary { background: #b2bfff; color: #2a2f5e; box-shadow: inset 0 0 0 2px #dfe4ff, 0 3px 0 var(--wood-dark); }
     .btn .px { --pxs: 24px; }
 
     /* l'en-tête : une planche de bois */
     .nav { position: sticky; top: 0; z-index: 5; padding: 8px 0; }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 8px 6px 6px; }
     .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; }
-    .brand .logo { display: block; width: 92px; height: 47px; image-rendering: pixelated; }
+    .nav .prune { background: #3a2a55; border-color: #1e1530; box-shadow: inset 0 0 0 2px #9673a7, 0 4px 0 rgba(30, 21, 48, 0.35); color: #fbf3ff; }
+    .nav .prune a:not(.btn) { color: #fbf3ff; }
+    .brand .logo { display: block; width: 90px; height: 45px; image-rendering: pixelated; }
     .medaillon {
       width: 44px; height: 44px; flex: none; border-radius: 50%;
       display: grid; place-items: center;
@@ -115,7 +117,7 @@
     .hero-panel { padding: 28px 30px 26px; }
     .ruban {
       display: inline-block; padding: 2px 14px; margin-bottom: 8px;
-      background: #fbd98c; border: 2px solid var(--color-earth); border-radius: 4px;
+      background: #f0d4f2; border: 2px solid var(--color-earth); border-radius: 4px;
       font-size: 14px; color: var(--wood-ink);
     }
     h1 { font-size: clamp(34px, 5vw, 52px); line-height: 1.05; margin: 6px 0 14px; color: var(--wood-dark); }
@@ -138,7 +140,7 @@
       width: 60px; height: 60px; margin-bottom: 14px;
       display: grid; place-items: center;
       border: 3px solid var(--color-earth); border-radius: 6px;
-      background: #ead0a0; box-shadow: inset 0 0 0 2px var(--wood-light);
+      background: #cbafdb; box-shadow: inset 0 0 0 2px var(--wood-light);
       font-size: 30px;
     }
     .icon .px { --pxs: 40px; }
@@ -146,14 +148,14 @@
     .card p { margin: 0; font-size: 16px; }
 
     /* la journée : la nuit du jeu, des cases comme celles de la barre d'outils */
-    .nuit { background: var(--night); color: #f2ecdd; position: relative; overflow: hidden; }
+    .nuit { background: var(--night); color: #e9e1ee; position: relative; overflow: hidden; }
     .nuit:before {
       content: ""; position: absolute; inset: 0; pointer-events: none;
-      background-image: radial-gradient(#fff 1px, transparent 1.5px), radial-gradient(#ffe9a8 1px, transparent 1.5px);
+      background-image: radial-gradient(#fff 1px, transparent 1.5px), radial-gradient(#d8c1e6 1px, transparent 1.5px);
       background-size: 90px 70px, 140px 110px; background-position: 10px 20px, 60px 45px; opacity: 0.35;
     }
     .nuit > .wrap { position: relative; }
-    .nuit .kicker { color: #fbd98c; }
+    .nuit .kicker { color: #f0d4f2; }
     .nuit .section-head p { color: #c9cfe0; }
     .loop { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
     .step { padding: 16px 14px; text-align: center; }
@@ -175,9 +177,9 @@
     .chapter span { font-size: 15px; }
     .lettre {
       position: sticky; top: 90px;
-      background: #fdf6e3; color: #3a2a12;
+      background: #f2e8f8; color: #291a32;
       border: 3px solid var(--color-earth); border-radius: 8px;
-      box-shadow: inset 0 0 0 2px #d9c9a0, 0 4px 0 rgba(58, 36, 20, 0.35);
+      box-shadow: inset 0 0 0 2px #c1abce, 0 4px 0 rgba(42, 28, 50, 0.35);
       padding: 30px 30px 24px; font-size: 23px; line-height: 1.35;
     }
     .lettre small { display: block; margin-top: 16px; font-size: 15px; color: var(--color-earth); }
@@ -217,9 +219,9 @@
 </head>
 <body>
   <header class="nav">
-    <div class="wrap nav-inner bois">
+    <div class="wrap nav-inner bois prune">
       <a class="brand" href="#">
-        <img class="logo" src="assets/logo_contour.png" alt="Moon Bloom Village" width="92" height="47">
+        <img class="logo" src="assets/logo.png" alt="Moon Bloom Village" width="90" height="45">
       </a>
       <nav class="nav-links" aria-label="Sections">
         <a href="#concept">Le concept</a>

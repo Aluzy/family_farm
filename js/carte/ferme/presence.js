@@ -35,7 +35,7 @@
           const img = this.add.image(a.x, a.y, 'fermier', 0).setOrigin(0.5, 1).setDepth(PRESENCE.PROFONDEUR).setTint(PRESENCE.TEINTE);
           img.toujours = true;   // (pas masqué hors de la vue : decor.js, cullScene)
           const nom = this.add.text(a.x, a.y - 34, String(a.nom || 'Ami'), {
-            fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '6px', color: '#4a2a10', backgroundColor: 'rgba(255,241,210,0.9)', padding: { x: 2, y: 1 },
+            fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '6px', color: '#3a2a55', backgroundColor: 'rgba(241,227,247,0.9)', padding: { x: 2, y: 1 },
           }).setOrigin(0.5, 1).setDepth(PRESENCE.PROFONDEUR + 1).setResolution(8);
           p = { img, nom, x: a.x, y: a.y };
           P.set(id, p);

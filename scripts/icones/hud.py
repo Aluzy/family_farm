@@ -42,18 +42,18 @@ from pixel import ASSETS, ROOT, rgb  # noqa: E402
 DIR = os.path.join(ASSETS, 'hud')
 
 PAL = {
-    'o': '#3a2414',     # contour
-    'w': '#6e4426',     # bois sombre
-    'm': '#8a5a34',     # bois
-    'l': '#a8744a',     # bois clair
-    'h': '#d9a066',     # reflet du bois
-    'c': '#ffe6b2',     # crème
-    'C': '#f0cc8c',     # crème ombrée
-    't': '#5e3e22',     # fond des tubes
+    'o': '#1e1530',     # contour (prune nuit)
+    'w': '#3a2a55',     # prune
+    'm': '#5e4680',     # prune clair
+    'l': '#7d5f99',     # mauve sombre
+    'h': '#a888c2',     # reflet mauve
+    'c': '#fbf3ff',     # pétale
+    'C': '#e6d3f0',     # pétale ombré
+    't': '#2a1f3d',     # fond des tubes
     'R': '#e04838', 'r': '#a82a24', 'P': '#ff9c8c',          # cœur
     'Y': '#f8d040', 'y': '#c89418', 'J': '#fff2a0',          # éclair, smiley, étoile, pièce
     'G': '#5ab43c', 'g': '#2e7a2a', 'L': '#9ce070',          # pousse
-    'k': '#3a2414',                                          # traits du visage
+    'k': '#1e1530',                                          # traits du visage
 }
 
 
@@ -98,29 +98,29 @@ def neuf(n, couches, coins=1, fond=None):
 
 
 def cadre():
-    return neuf(16, ['o', ('h', 'w'), 'm', 'm', ('w', 'h'), 'o'], 2, '#ffe6b2ee')
+    return neuf(16, ['o', ('h', 'w'), 'm', 'm', ('w', 'h'), 'o'], 2, '#fbf3ffee')
 
 
 def fenetre():
-    return neuf(8, [('w', 'h'), ('C', 'c')], 0, '#f6dca8')
+    return neuf(8, [('w', 'h'), ('C', 'c')], 0, '#efe2f6')
 
 
 def plaque():
-    return neuf(10, ['o', ('h', 'w'), 'm'], 1, '#ffe6b2')
+    return neuf(10, ['o', ('h', 'w'), 'm'], 1, '#fbf3ff')
 
 
 def heure():
     """La plaque de l'heure (8 × 8, 3 px de bord) : un contour, un liseré de bois (clair en haut
     et à gauche, sombre en bas et à droite), un trait fin, le fond crème."""
-    return neuf(8, ['o', ('h', 'w'), 'o'], 1, '#ffe6b2')
+    return neuf(8, ['o', ('h', 'w'), 'o'], 1, '#fbf3ff')
 
 
 def tube():
-    return neuf(9, ['o', ('h', 'w')], 1, '#5e3e22')
+    return neuf(9, ['o', ('h', 'w')], 1, '#2a1f3d')
 
 
 def pastille():
-    return neuf(10, ['o', ('h', 'w'), 'C'], 1, '#ffe6b2')
+    return neuf(10, ['o', ('h', 'w'), 'C'], 1, '#fbf3ff')
 
 
 COEUR = [
@@ -374,11 +374,11 @@ def ruban():
         if dehors:
             col = PAL['o']
         elif y == 1:
-            col = '#fff6dc'
+            col = '#fbf3ff'
         elif y == H - 2:
             col = PAL['C']
         else:
-            col = '#f6deb0'
+            col = '#ead8f2'
         im.putpixel((x, y), rgb(col))
     return im
 

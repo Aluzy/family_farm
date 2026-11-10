@@ -920,7 +920,7 @@
         for (const c of cases) { const x = c % cols, y = Math.floor(c / cols); c0 = Math.min(c0, x); c1 = Math.max(c1, x); r0 = Math.min(r0, y); r1 = Math.max(r1, y); }
         const l = Math.max(3, c1 - c0 + 1) * T - 4;
         this.conseilsAFaire.push({ x: (c0 + c1 + 1) / 2 * T, y: (r0 + r1 + 1) / 2 * T, texte, origine: [0.5, 0.5], style: {
-          fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '6px', color: '#4a2a10', backgroundColor: 'rgba(255,241,210,0.88)',
+          fontFamily: 'Ferme Dialogue, sans-serif', fontSize: '6px', color: '#3a2a55', backgroundColor: 'rgba(241,227,247,0.88)',
           padding: { x: 2, y: 1 }, align: 'center', wordWrap: { width: Math.max(texte.length > 40 ? 120 : 70, l) },
         } });
       };
