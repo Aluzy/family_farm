@@ -2,7 +2,9 @@
 
 > **Fait (2026-11-10)** : l'essai derrière son réglage (éteint), la planche réunie, la décision : **adopter en
 > partie** le TilemapGPULayer pour le sol du grand monde (fiche 35), **écarter** le SpriteGPULayer pour le
-> menu décor. Voir « Ce qui a été fait ».
+> menu décor. Voir « Ce qui a été fait ». Puis la mesure du téléphone a écarté aussi le sol GPU (fiche 35) :
+> l'essai (`sol-gpu.js`), sa planche (`assets/sol_gpu.png`, `scripts/carte/planche_sol_gpu.py`) et le bouton du
+> mode test ont été retirés ; ils restent dans l'historique git. La correction du shader de `jeu.js` reste.
 
 Chantier « Phaser 4 », piste 8 du rapport. Un essai qui décide, pas une migration : à faire après les
 fiches 26 (les Layers) et 28. Risque élevé : tout derrière un réglage, éteint par défaut.

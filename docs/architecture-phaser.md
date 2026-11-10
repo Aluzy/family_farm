@@ -229,15 +229,15 @@ la ferme dormait à côté avec ses propres textures.
   bêtes de la ferme, les ruches, les rouges-gorges ; la vie d'ambiance (`AmbientLife.graine`) tire le sien
   de la partie et du jour. Deux chargements de la même partie donnent le même spectacle. (Les habitants,
   la famille, le personnage, l'eau et les petits effets gardent `Math.random`.)
-- **Les objets GPU de Phaser 4** (fiches 34 et 35 ; l'essai : `js/carte/ferme/sol-gpu.js`, éteint par défaut,
-  le bouton « Essai sol GPU » du mode test) : **écartés**. Le `TilemapGPULayer` dessine le sol d'une région du
-  grand monde comme les morceaux peints (au pixel près, sans liseré à zoom non entier grâce à la planche réunie
-  et extrudée `assets/sol_gpu.png`) et, dans Chromium sans écran (rendu logiciel), il était plus fluide en forêt ;
+- **Les objets GPU de Phaser 4** (fiches 34 et 35 ; l'essai, retiré depuis, est dans l'historique git) :
+  **écartés**. Le `TilemapGPULayer` dessinait le sol d'une région du grand monde comme les morceaux peints (au
+  pixel près, sans liseré à zoom non entier grâce à une planche réunie et extrudée) et, dans Chromium sans
+  écran (rendu logiciel), il était plus fluide en forêt ;
   mais sur le téléphone de référence il ne l'est pas : 31 à 32 images par seconde au lieu de 55, et une image de
   3 à 4 s au premier dessin (la planche de 13 Mo envoyée au GPU, ses shaders). Plusieurs couches superposées,
   chacune un quad de toute la région, coûtent plus au GPU d'un téléphone qu'une image par morceau peint. Le
   `SpriteGPULayer` (le menu décor) : le même dessin, plus lent dès la forêt. Le sol reste peint en morceaux
-  (`sol.js`). (Le shader « arrondi » de `jeu.js` ne touche plus les shaders à une seule texture : il cassait
+  (`sol.js`) ; l'essai, sa planche et son bouton du mode test ont été retirés. (Le shader « arrondi » de `jeu.js` ne touche plus les shaders à une seule texture : il cassait
   celui du SpriteGPULayer ; la correction reste.)
 - **Le pas borné à 50 ms** (`update` de la scène, le personnage) : sous 20 images par seconde, le monde
   ralentit au lieu de sauter (pas de personnage qui traverse un mur d'une image à l'autre). C'est voulu.

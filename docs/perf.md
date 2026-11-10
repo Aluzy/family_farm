@@ -411,7 +411,7 @@ et les rouges-gorges (0,34 → 0,19 ms) ont baissé.
 
 ## Le sol en objets GPU de Phaser 4 : l'essai (fiche 34)
 
-L'essai (`js/carte/ferme/sol-gpu.js`, éteint) : le sol d'une région du grand monde en `TilemapGPULayer`, ses
+L'essai (retiré depuis : voir l'historique git, fiche 34) : le sol d'une région du grand monde en `TilemapGPULayer`, ses
 petites plantes en `SpriteGPULayer`. Chromium (rendu logiciel), la partie du jour 75, chargement puis 20 s de
 marche (ouest puis sud) :
 
