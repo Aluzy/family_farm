@@ -425,3 +425,7 @@ marche (ouest puis sud) :
 
 Sans ralenti, près de la ferme : chargement 2,5 → 2,7 s, sol peint 50 → 24 ms, 60 images par seconde dans les
 deux cas. Décision : `docs/architecture-phaser.md` (« Les objets GPU de Phaser 4 ») ; la suite : fiche 35.
+
+Sur le téléphone de référence (Android 10, Chrome 156, qualité « économie », fiche 35), « Mesurer 30 s » en marchant
+dans le grand monde : le sol peint 55,4 images par seconde (0,4 % de plus de 34 ms, la plus longue 898 ms) ; le sol
+GPU 32,4 (4,6 %, 3 226 ms) ; le sol et le décor GPU 30,9 (4,2 %, 3 874 ms). Le sol GPU est écarté.

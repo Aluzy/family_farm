@@ -229,17 +229,16 @@ la ferme dormait à côté avec ses propres textures.
   bêtes de la ferme, les ruches, les rouges-gorges ; la vie d'ambiance (`AmbientLife.graine`) tire le sien
   de la partie et du jour. Deux chargements de la même partie donnent le même spectacle. (Les habitants,
   la famille, le personnage, l'eau et les petits effets gardent `Math.random`.)
-- **Les objets GPU de Phaser 4** (fiche 34, l'essai : `js/carte/ferme/sol-gpu.js`, éteint par défaut) : la
-  décision. **Adopter en partie** : le `TilemapGPULayer` dessine le sol d'une région du grand monde comme les
-  morceaux peints (au pixel près, sans liseré à zoom non entier grâce à la planche réunie et extrudée
-  `assets/sol_gpu.png`), se construit en 8 à 20 ms, ne prend presque pas de mémoire de canevas et, en forêt,
-  rend plus fluide que le canevas ; il coûte la planche réunie (13 Mo au GPU, ≈ 1 s de chargement au ralenti
-  ×4) et perd ce qui est peint dans le sol (le décor des chemins, les petites plantes). La migration est la
-  fiche 35, après une mesure sur le téléphone (Chromium sans écran dessine en logiciel). **Écarter** le
-  `SpriteGPULayer` pour le menu décor : le même dessin, mais plus lent en forêt (des milliers de membres
-  dessinés à chaque image) que les petites plantes peintes. La ferme garde son sol peint (ses couches de
-  Tiled, la terre labourée, la teinte de l'herbe de la fiche 29). (Le shader « arrondi » de `jeu.js` ne touche
-  plus les shaders à une seule texture : il cassait celui du SpriteGPULayer.)
+- **Les objets GPU de Phaser 4** (fiches 34 et 35 ; l'essai : `js/carte/ferme/sol-gpu.js`, éteint par défaut,
+  le bouton « Essai sol GPU » du mode test) : **écartés**. Le `TilemapGPULayer` dessine le sol d'une région du
+  grand monde comme les morceaux peints (au pixel près, sans liseré à zoom non entier grâce à la planche réunie
+  et extrudée `assets/sol_gpu.png`) et, dans Chromium sans écran (rendu logiciel), il était plus fluide en forêt ;
+  mais sur le téléphone de référence il ne l'est pas : 31 à 32 images par seconde au lieu de 55, et une image de
+  3 à 4 s au premier dessin (la planche de 13 Mo envoyée au GPU, ses shaders). Plusieurs couches superposées,
+  chacune un quad de toute la région, coûtent plus au GPU d'un téléphone qu'une image par morceau peint. Le
+  `SpriteGPULayer` (le menu décor) : le même dessin, plus lent dès la forêt. Le sol reste peint en morceaux
+  (`sol.js`). (Le shader « arrondi » de `jeu.js` ne touche plus les shaders à une seule texture : il cassait
+  celui du SpriteGPULayer ; la correction reste.)
 - **Le pas borné à 50 ms** (`update` de la scène, le personnage) : sous 20 images par seconde, le monde
   ralentit au lieu de sauter (pas de personnage qui traverse un mur d'une image à l'autre). C'est voulu.
 - **Le clavier** est celui de Phaser (`input.keyboard`), sans capture : rien n'est retenu à la
