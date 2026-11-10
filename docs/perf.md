@@ -368,3 +368,10 @@ L'option `fps: { limit: 60 }` de Phaser 4.2.1, mesurée de la même façon avant
 mais 5 557 ms donnés à la scène pour 3 017 ms réels sur un écran à 60 Hz (le jeu 1,8 fois trop vite), et
 3 670 pour 3 015 sur l'écran non plafonné. `powerPreference: 'low-power'` n'est pas posé : son effet ne
 se mesure que sur le téléphone de référence.
+
+## Le décor loin de la vue hors de la liste d'affichage (fiche 26)
+
+Phaser triait et parcourait à chaque image toute la liste d'affichage (≈ 4 600 images au jour 75, dont
+≈ 600 près de la vue). Le décor fixe loin de la vue passe dans un calque caché (`decor.js`, `cullScene`).
+Rendu + `cullScene` par image (Chromium, sans ralenti) : ferme 2,66 à 2,77 ms → 2,11 à 2,56 ms ; grand
+monde 1,68 à 1,73 ms → 0,98 ms. Les mesures qui ont fait écarter les Layers : `docs/fiches/26-layers-de-la-scene.md`.
