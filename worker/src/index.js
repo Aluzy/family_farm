@@ -30,7 +30,10 @@ export { Comptes } from './comptes.mjs';
 // Le monde partagé (E-1) : un Durable Object Monde par monde (monde.mjs), routes /mondes….
 export { Monde } from './monde.mjs';
 
-const ALLOWED_ORIGIN = 'https://aluzy.github.io';
+// Les adresses du jeu publié : son domaine (moonbloom-village.com, avec ou sans www) et l'ancienne
+// adresse GitHub Pages (qui renvoie vers le domaine, gardée le temps que tout le monde suive).
+const ORIGINES = new Set(['https://moonbloom-village.com', 'https://www.moonbloom-village.com', 'https://aluzy.github.io']);
+const JEU_URL = 'https://moonbloom-village.com/jeu.html';
 const MAX_BYTES = 64 * 1024;
 const SID_RE = /^[A-Za-z0-9-]{8,64}$/;
 const PID_RE = SID_RE;
@@ -45,7 +48,7 @@ const READ_BATCH = 25;
 
 function corsHeaders(origin) {
   return {
-    'Access-Control-Allow-Origin': origin === ALLOWED_ORIGIN ? origin : 'null',
+    'Access-Control-Allow-Origin': ORIGINES.has(origin) ? origin : 'null',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
@@ -213,7 +216,7 @@ async function handleReport(request, env, url) {
 
 // Les routes /compte/… : depuis le jeu seulement, servies par le Durable Object Comptes.
 async function routeComptes(request, env, origin) {
-  if (origin !== ALLOWED_ORIGIN) return json({ ok: false, erreur: 'origine refusée' }, 403, origin);
+  if (!ORIGINES.has(origin)) return json({ ok: false, erreur: 'origine refusée' }, 403, origin);
   if (!env.COMPTES) return json({ ok: false, erreur: 'Le jeu en ligne n\'est pas encore ouvert.' }, 503, origin);
   const declared = Number(request.headers.get('Content-Length') || 0);
   if (declared > 4096) return json({ ok: false, erreur: 'trop volumineux' }, 413, origin);
@@ -237,7 +240,7 @@ function idAuHasard() {
 }
 
 async function routeMondes(request, env, origin, url) {
-  if (origin !== ALLOWED_ORIGIN) return json({ ok: false, erreur: 'origine refusée' }, 403, origin);
+  if (!ORIGINES.has(origin)) return json({ ok: false, erreur: 'origine refusée' }, 403, origin);
   if (!env.COMPTES || !env.MONDES) return json({ ok: false, erreur: 'Le jeu en ligne n\'est pas encore ouvert.' }, 503, origin);
   const auth = request.headers.get('Authorization') || '';
   const session = auth.startsWith('Bearer ') ? auth.slice(7).trim() : (url.searchParams.get('session') || '');
@@ -294,7 +297,7 @@ async function routeMondes(request, env, origin, url) {
     const r = await (await vers(id, 'inviter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: b.role }) })).json();
     if (!r.ok) return json(r, 403, origin);
     const code = `${id}.${r.secret}`;
-    return json({ ok: true, code, lien: `${env.JEU_URL || 'https://aluzy.github.io/family_farm/jeu.html'}#invitation=${code}`, expire: r.expire }, 200, origin);
+    return json({ ok: true, code, lien: `${env.JEU_URL || JEU_URL}#invitation=${code}`, expire: r.expire }, 200, origin);
   }
   if (parties[2] === 'retirer' && request.method === 'POST') {
     const b = await corpsJson();
@@ -340,7 +343,7 @@ export default {
     if (url.pathname.startsWith('/compte/')) return routeComptes(request, env, origin);
     if (url.pathname === '/mondes' || url.pathname.startsWith('/mondes/') || url.pathname === '/rejoindre') return routeMondes(request, env, origin, url);
     if (request.method !== 'POST' || url.pathname !== '/session') return json({ error: 'not found' }, 404, origin);
-    if (origin !== ALLOWED_ORIGIN) return json({ error: 'origine refusée' }, 403, origin);
+    if (!ORIGINES.has(origin)) return json({ error: 'origine refusée' }, 403, origin);
 
     const declared = Number(request.headers.get('Content-Length') || 0);
     if (declared > MAX_BYTES) return json({ error: 'trop volumineux' }, 413, origin);

@@ -179,7 +179,7 @@ export async function envoyerLien(env, email, lien, envoyer = fetch) {
 // L'adresse du jeu où mène le lien : le jeton dans le fragment (#), qui ne part jamais vers le serveur
 // des pages (ni dans ses journaux).
 export function adresseDuLien(env, jeton) {
-  const base = (env && env.JEU_URL) || 'https://aluzy.github.io/family_farm/jeu.html';
+  const base = (env && env.JEU_URL) || 'https://moonbloom-village.com/jeu.html';
   return `${base}#connexion=${jeton}`;
 }
 

@@ -385,7 +385,7 @@ const Telemetry = (() => {
   function endpoint() {
     let host = '';
     try { host = location.hostname; } catch (e) { return null; }
-    if (host === 'aluzy.github.io') return ENDPOINT_PROD;
+    if (host === 'moonbloom-village.com' || host === 'www.moonbloom-village.com' || host === 'aluzy.github.io') return ENDPOINT_PROD;
     if (host === '' || host === 'localhost' || host === '127.0.0.1') return ENDPOINT_LOCAL;
     return null; // autre domaine (copie, aperçu) : rien n'est envoyé
   }

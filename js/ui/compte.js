@@ -13,9 +13,12 @@ import { exportSaveJson } from './storage.js';
 
 const CLE = 'ferme-compte';
 
+// Les adresses du site publié : son domaine, et l'ancienne adresse GitHub Pages.
+const SITE_PUBLIE = new Set(['moonbloom-village.com', 'www.moonbloom-village.com', 'aluzy.github.io']);
+
 // L'adresse du Worker : celle du site publié ; en local, le serveur d'essai (s'il sert /compte/).
 export function adresseServeur(host = typeof location !== 'undefined' ? location.hostname : '') {
-  if (host === 'aluzy.github.io') return 'https://family-farm.contact-voidr.workers.dev';
+  if (SITE_PUBLIE.has(host)) return 'https://family-farm.contact-voidr.workers.dev';
   if (host === '' || host === 'localhost' || host === '127.0.0.1') return 'http://127.0.0.1:8787';
   return null;
 }

@@ -579,7 +579,7 @@ Control ou Do Not Track du navigateur désactive tout. La politique publique est
   `localStorage` (`ferme-consent`) pour le choix, valable 6 mois.
 - **Envoi** : un fichier JSON par session, toutes les 60 s si quelque chose a changé
   et à la fermeture de l'onglet (`sendBeacon`).
-  - Sur `https://aluzy.github.io` : vers le Worker Cloudflare de `worker/`, qui écrit
+  - Sur `https://moonbloom-village.com` (et l'ancienne adresse `https://aluzy.github.io`) : vers le Worker Cloudflare de `worker/`, qui écrit
     `sessions/<sid>.json` dans un bucket R2 (juridiction UE). Le fichier
     `wrangler.toml` (racine) décrit ce Worker.
   - Ouvert en local (`file://`, `localhost`) : vers `http://127.0.0.1:8787/session`, où
