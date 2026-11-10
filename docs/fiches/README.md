@@ -62,3 +62,25 @@ Conventions communes à toutes les fiches :
 | [24 — l'eau vivante refondue](24-eau-refonte.md) | — | étapes 1 à 4 faites ; 5 et 6 à faire |
 | [14b — le brouillard couvre aussi la ferme](14b-brouillard-sur-la-ferme.md) | — | fait |
 | [16b — la soirée de la famille : dehors jusqu'au coucher, manger quand on a faim](16b-soiree-de-la-famille.md) | — | fait |
+
+## Le chantier « Phaser 4 » (fiches 25 à 34)
+
+D'après le rapport *Ferme Familiale — améliorations possibles avec Phaser 4* (2026-11-09) : quatre leviers
+(les objets GPU, le fil principal, les boucles et les cadences, un socle commun pour les comportements et
+la collision). Toutes les API citées existent dans la version embarquée (`vendor/phaser.min.js`, 4.2.1) ;
+chaque fiche mesure son gain avec 🧪 **Mesurer 30 s** et `docs/perf.md`. Ordre conseillé : 25, 27 et 26
+(sans risque), 28 puis 29 (le chargement), 30 puis 31 puis 32 (la vie sur la carte), 33, et l'essai 34
+après 26 et 28. Les pistes de `docs/chantier-allegement.md` restent valables à côté.
+
+| Fiche | Dépend de | Risque | État |
+|---|---|---|---|
+| [25 — la cadence de la carte : 60 images par seconde au plus, une seule boucle](25-cadence-de-la-carte.md) | — | faible | à faire |
+| [26 — la scène rangée en Layers : sol, monde trié, ciel, voiles](26-layers-de-la-scene.md) | — | faible | à faire |
+| [27 — la pluie en particules, les shaders prêts, moins d'allocations](27-pluie-shaders-allocations.md) | — | faible | à faire |
+| [28 — les calculs hors du fil principal : rives, encyclopédie, rattrapage](28-calculs-hors-du-fil.md) | — | moyen | à faire |
+| [29 — le sol peint dans un Worker et la teinte de l'herbe](29-sol-peint-dans-un-worker.md) | 28 | moyen | à faire |
+| [30 — le corps du personnage : collision, coins, accélération](30-corps-du-personnage.md) | — | moyen | à faire |
+| [31 — le socle des comportements : états, perception, séparation](31-socle-des-comportements.md) | 30 | moyen | à faire |
+| [32 — une vie plus crédible : faune, bêtes de la ferme, habitants](32-vie-plus-credible.md) | 31 | moyen | à faire |
+| [33 — l'ordonnanceur de la scène, les événements, le hasard à graine](33-ordonnanceur-de-la-scene.md) | 25 | faible | à faire |
+| [34 — l'essai des objets GPU (TilemapGPULayer, SpriteGPULayer)](34-essai-objets-gpu.md) | 26, 28 | élevé | à faire |
