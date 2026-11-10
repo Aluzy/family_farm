@@ -13,7 +13,7 @@ le vérifier, et ce qu'elle ne doit pas toucher. Une piste, une PR, comme les fi
 |---|---|---|---|
 | [1 — une révision des blocs à la place des clés JSON](#1-une-révision-des-blocs-à-la-place-des-clés-json) | processeur, à chaque modèle de la carte et à chaque geste de Construire | faible (couvert par les tests Node) | à faire |
 | [2 — le son : ne plus garder en mémoire le PCM des boucles longues](#2-le-son--ne-plus-garder-en-mémoire-le-pcm-des-boucles-longues) | mémoire (jusqu'à plusieurs centaines de Mo sur une longue session) | moyen (comportement du navigateur) | à faire |
-| [3 — découper le regroupement et charger à la demande](#3-découper-le-regroupement-et-charger-à-la-demande) | chargement : lecture et compilation du JS | moyen (ordre de chargement) | à faire |
+| [3 — découper le regroupement et charger à la demande](#3-découper-le-regroupement-et-charger-à-la-demande) | chargement : lecture et compilation du JS | moyen (ordre de chargement) | écartée (2026-11-10) : essayée, pas de gain de temps |
 | [4 — des atlas pour les ~170 petites images](#4-des-atlas-pour-les-170-petites-images) | chargement : requêtes et envois à la carte graphique | faible (pipeline déjà en place pour les icônes) | fait (2026-11-10) |
 | [5 — les cadences : veilleurs et objectifs au rythme du tick](#5-les-cadences--veilleurs-et-objectifs-au-rythme-du-tick) | processeur, à chaque image | faible | fait (2026-11-10) |
 | [6 — le modèle de la carte mémorisé par sections](#6-le-modèle-de-la-carte-mémorisé-par-sections) | processeur, 5 fois par seconde | moyen (dépend de la piste 1) | à faire |
@@ -245,6 +245,27 @@ code ne sert pas au premier écran :
 
 Les scripts classiques des cartes (`js/carte/`, `farm-stage.js`) restent chargés d'emblée : la carte est
 le premier écran. Phaser n'est pas touché ici.
+
+### Essayée, puis écartée (2026-11-10)
+
+Un essai (PR #566, fermée sans fusion ; le commit `7d04d97` reste dans l'historique git) : le regroupement
+découpé par esbuild (`splitting`, un module), et chargés à la demande les textes des pages de
+l'Encyclopédie, le mode test (avec le moteur de test et le joueur automatique), les fiches d'aide « ? » et le
+moteur entier pour la console (`FF.engine` le gardait dans le regroupement par un `import *`).
+
+| Mesure (Chromium, sites construits, ralenti ×4, trois fois chacun) | main | Essai |
+|---|---|---|
+| JavaScript des modules lu au départ | 1 397 Ko (472 Ko compressés) | 1 207 Ko (407 Ko compressés) |
+| De l'adresse à l'écran-titre | 1,55 – 1,83 s | 1,60 – 1,68 s |
+| Temps de script jusque-là | 0,86 – 0,92 s | 0,87 – 0,95 s |
+| Carte affichée (après « Charger ») | 9,0 – 9,2 s | 8,9 – 9,1 s |
+
+− 13,6 % de JavaScript lu au départ (au lieu des 20 % visés), et **aucun gain de temps** au-delà du bruit : V8
+ne compile une fonction qu'à son premier appel, et le gros de ce qui était retiré (des textes, du code jamais
+appelé au départ) ne coûtait presque rien. Seul le téléchargement baissait (− 65 Ko compressés). Le reste à
+retirer (le jeu en ligne, la carte du monde, les fenêtres) demandait de charger les fenêtres à la demande,
+sans promesse de gain de temps. Écartée : le code reste plus simple. Ce qui retient le chargement est
+ailleurs (la carte : ses images, son sol, ses scènes ; voir les pistes 4 et 2, et `docs/perf.md`).
 
 ## 4. Des atlas pour les ~170 petites images
 
