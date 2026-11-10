@@ -10,7 +10,8 @@
     /* La page d'accueil : la police du jeu (assets/police_dialogue.woff), la palette du logo
        (prune, mauve, pétale, rose, pervenche, lavande ; css/jeu.css), le logo (assets/logo.png,
        90 × 45, agrandi sans lissage, toujours sur un fond prune où ses lettres se lisent) et une
-       vraie ferme du jeu vue de loin, au crépuscule (assets/accueil_ferme.webp). */
+       vraie ferme du jeu vue de loin, au crépuscule (assets/accueil_ferme.webp) ; la lune du logo a
+       son halo. */
     @font-face {
       font-family: 'Ferme Dialogue';
       src: url('assets/police_dialogue.woff') format('woff');
@@ -111,11 +112,6 @@
         radial-gradient(2px 2px at 74% 30%, #f3e6ff 50%, transparent 51%), radial-gradient(2px 2px at 88% 9%, #fff 50%, transparent 51%),
         radial-gradient(2px 2px at 95% 40%, #fff 50%, transparent 51%), radial-gradient(2px 2px at 48% 6%, #fff 50%, transparent 51%);
     }
-    .lune {
-      position: absolute; right: max(24px, calc(50vw - 520px)); top: 100px; width: 120px; height: 120px; border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #fffbe9, #e1dfc3 70%);
-      box-shadow: 0 0 60px 20px rgba(255, 248, 214, 0.3);
-    }
     .ferme {
       position: absolute; left: 0; right: 0; bottom: 0; height: 300px;
       background: url('assets/accueil_ferme.webp') no-repeat;
@@ -125,7 +121,15 @@
       -webkit-mask: linear-gradient(transparent, #000 35%); mask: linear-gradient(transparent, #000 35%);
     }
     .hero-grid { position: relative; display: grid; grid-template-columns: minmax(0, 560px) 1fr; }
-    .hero-logo { width: 540px; max-width: 100%; height: auto; aspect-ratio: 2 / 1; margin: 0 auto 18px; filter: drop-shadow(0 0 18px rgba(208, 116, 214, 0.3)); }
+    /* le logo, et le halo de sa lune (dans assets/logo.png, la lune est centrée vers 15 % de la
+       largeur et 60 % de la hauteur, et fait environ 23 % de la largeur) */
+    .hero-logo-cadre { position: relative; width: 540px; max-width: 100%; margin: 0 auto 18px; }
+    .hero-logo-cadre::before {
+      content: ''; position: absolute; left: 15%; top: 60%; width: 23%; aspect-ratio: 1;
+      transform: translate(-50%, -50%); border-radius: 50%;
+      box-shadow: 0 0 60px 20px rgba(255, 248, 214, 0.3);
+    }
+    .hero-logo { position: relative; width: 100%; height: auto; aspect-ratio: 2 / 1; }
     .hero-panel { padding: 26px 30px; text-align: center; }
     .ruban {
       display: inline-block; padding: 2px 14px; margin-bottom: 8px;
@@ -188,8 +192,7 @@
     @media (max-width: 920px) {
       .nav-links { display: none; }
       .hero { padding: 96px 0 200px; }
-      .hero-grid { grid-template-columns: 1fr; }
-      .lune { width: 54px; height: 54px; top: 92px; right: 18px; }
+      .hero-grid { grid-template-columns: minmax(0, 1fr); }
       .ferme { height: 260px; background-position: calc(50% + 560px) 60%; }
       .grille, .gens, .phases { grid-template-columns: 1fr 1fr; }
       .courrier-grille { grid-template-columns: 1fr; }
@@ -200,7 +203,7 @@
       h1 { font-size: 27px; }
       .lead { font-size: 17px; }
       .ruban { font-size: 12px; }
-      .hero-logo { width: 100%; margin-bottom: 10px; }
+      .hero-logo-cadre { margin-bottom: 10px; }
       .hero-panel { padding: 20px 16px; }
       .grille { grid-template-columns: 1fr; }
       .btn { width: 100%; }
@@ -228,11 +231,10 @@
   <main>
     <section class="hero">
       <div class="etoiles" aria-hidden="true"></div>
-      <div class="lune" aria-hidden="true"></div>
       <div class="ferme" role="img" aria-label="Une ferme du jeu au crépuscule : la grande maison, le moulin, le silo, les potagers et les bois autour"></div>
       <div class="wrap hero-grid">
         <div>
-          <img class="pix hero-logo" src="assets/logo.png" alt="Moon Bloom Village" width="90" height="45">
+          <div class="hero-logo-cadre"><img class="pix hero-logo" src="assets/logo.png" alt="Moon Bloom Village" width="90" height="45"></div>
           <div class="hero-panel cadre">
             <div class="ruban">Jeu cosy · Ferme · Île · Entre proches</div>
             <h1>Une petite île, une grande lune, <em>et une terre qui t'attend.</em></h1>
