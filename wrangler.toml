@@ -33,6 +33,11 @@ new_sqlite_classes = ["Monde"]
 [triggers]
 crons = ["0 11 * * *", "0 12 * * *"]
 
+# L'adresse du jeu, où mènent les liens de connexion et d'invitation. Elle est publique : elle vit
+# ici (une variable créée à la main dans Cloudflare serait effacée au prochain déploiement).
+[vars]
+JEU_URL = "https://moonbloom-village.com/jeu.html"
+
 # Journaux visibles dans Cloudflare : Workers › family-farm › Observability.
 [observability]
 enabled = true
@@ -46,4 +51,4 @@ enabled = true
 #                        pour prévisualiser ou tester la publication
 #   RESEND_API_KEY       (jeu en ligne) clé de l'API de Resend, qui envoie les liens de connexion
 #   COMPTE_EXPEDITEUR    (jeu en ligne) l'expéditeur des liens, d'un domaine vérifié chez Resend,
-#                        par exemple « Moon Bloom Village <connexion@mon-domaine.fr> »
+#                        « Moon Bloom Village <connexion@mail.moonbloom-village.com> »

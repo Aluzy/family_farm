@@ -255,6 +255,7 @@ test('Worker : la collecte garde ses protections (origine, sid, événements)', 
   const worker = await loadWorker();
   const env = baseEnv({});
   eq((await worker.fetch(post({ sid: 'abcdefgh-1', events: [] }, 'https://autre.site'), env)).status, 403);
+  eq((await worker.fetch(post({ sid: 'abcdefgh-1', events: [] }, 'https://moonbloom.village.com'), env)).status, 403, 'un domaine qui ressemble');
   eq((await worker.fetch(post({ sid: 'court', events: [] }), env)).status, 400);
   eq((await worker.fetch(post({ sid: 'abcdefgh-1' }), env)).status, 400);
   eq(env.SESSIONS.puts.length, 0);
@@ -499,7 +500,7 @@ test('Worker : une session v2 met à jour la fiche du joueur, relue par le rappo
   const s1 = { ...sessionV2(PID_A, { sid: 'sess-aaaa-0001', startedAt: ago(30 * MIN) }), events: [{ t: 1, type: 'level', level: 2, day: 2, playMs: 9 * MIN }] };
   const s2 = { ...sessionV2(PID_A, { sid: 'sess-aaaa-0002', startedAt: ago(20 * MIN) }), events: [{ t: 1, type: 'level', level: 3, day: 4, playMs: 30 * MIN }] };
   eq((await worker.fetch(post(s1), env)).status, 200);
-  eq((await worker.fetch(post(s2), env)).status, 200);
+  eq((await worker.fetch(post(s2, 'https://moonbloom-village.com'), env)).status, 200, 'le domaine du jeu');
   const fiche = files[`players/${PID_A}.json`].data;
   eq(Object.keys(fiche.points).sort(), ['l2', 'l3']);
   eq(Object.keys(fiche.sessions).length, 2);

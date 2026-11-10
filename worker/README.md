@@ -3,7 +3,8 @@
 ## Ce qu'il fait
 
 - `POST /session` : reçoit le JSON d'une session de jeu et l'écrit dans le bucket R2
-  `ferme-familiale-sessions` sous `sessions/<sid>.json`. N'accepte que l'origine
+  `ferme-familiale-sessions` sous `sessions/<sid>.json`. N'accepte que les origines du jeu
+  publié : `https://moonbloom-village.com` (avec ou sans `www`) et l'ancienne adresse
   `https://aluzy.github.io`. Les commentaires des joueurs (`feedback`) sont nettoyés
   (3 au plus, 1 000 signes chacun). Une session de la version 2 porte aussi un numéro de
   joueur aléatoire (le même d'une visite à l'autre) : sa fiche `players/<id>.json`, la
@@ -99,9 +100,11 @@ un **lien reçu par e-mail**, sans mot de passe (`worker/src/comptes.mjs`, la ru
    **secrets** :
    - `RESEND_API_KEY` : la clé de l'étape 3 ;
    - `COMPTE_EXPEDITEUR` : l'expéditeur, sur le domaine vérifié, par exemple
-     `Moon Bloom Village <connexion@ton-domaine.fr>` ;
-   - `JEU_URL` (facultatif) : l'adresse du jeu où mène le lien. Par défaut :
-     `https://aluzy.github.io/family_farm/jeu.html`.
+     `Moon Bloom Village <connexion@mail.moonbloom-village.com>`.
+
+   L'adresse du jeu où mène le lien, `JEU_URL`, est dans `wrangler.toml` (`[vars]`) :
+   `https://moonbloom-village.com/jeu.html`. Elle n'est pas secrète, et une variable créée à la
+   main dans Cloudflare serait effacée au prochain déploiement.
 5. Déployer (fusionner la pull request : Workers Builds redéploie et crée le Durable Object).
 6. Tester : dans le jeu publié, ⚙️ Options › « 🌐 Jeu en ligne », donner ton adresse, ouvrir le lien
    reçu sur le téléphone. La rubrique affiche « Connecté ». En cas d'échec : Workers ›

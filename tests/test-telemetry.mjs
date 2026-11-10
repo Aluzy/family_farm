@@ -230,8 +230,9 @@ test('consentement expiré (> 6 mois) ou politique modifiée : on redemande', ()
   }
 });
 
-test('destination : local en essai, rien sur un autre domaine', () => {
-  for (const [hostname, expected] of [['localhost', 'http://127.0.0.1:8787/session'], ['', 'http://127.0.0.1:8787/session'], ['exemple.org', null]]) {
+const ENDPOINT_PROD_ATTENDU = 'https://family-farm.contact-voidr.workers.dev/session';
+test('destination : local en essai, le Worker sur le site publié, rien sur un autre domaine', () => {
+  for (const [hostname, expected] of [['localhost', 'http://127.0.0.1:8787/session'], ['', 'http://127.0.0.1:8787/session'], ['exemple.org', null], ['moonbloom-village.com', ENDPOINT_PROD_ATTENDU], ['www.moonbloom-village.com', ENDPOINT_PROD_ATTENDU]]) {
     const b = makeBrowser({ hostname });
     b.T.init({ version: '1' });
     b.T.setConsent('granted');
