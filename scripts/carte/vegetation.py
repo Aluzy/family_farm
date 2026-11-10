@@ -210,14 +210,17 @@ def feuillage(t, h, rampe, graine, pas=3, base=1.6, etendue=4.6, creux=2.0, pied
 def tronc(t, x0, y0, y1, l0, l1, ecorce=ECORCE, graine=0, racines=2, penche=0.0):
     """Un tronc de y0 (haut) à y1 (bas, le pied), large de l0 en haut et l1 en bas, centré en x0
     (+ penche px par px de hauteur, vers le haut) : éclairé à gauche, sombre à droite, des
-    stries d'écorce ; les racines s'évasent sur `racines` px au pied."""
+    stries d'écorce ; au pied, il s'évase en un bulbe arrondi sur `racines` + 2 px (le plus large
+    un peu au-dessus du sol, le bas qui se referme : pas de coupe nette)."""
     r = random.Random(graine)
     stries = {r.randint(-6, 6): r.random() for _ in range(5)}
+    R = racines + 2
     for y in range(y0, y1 + 1):
         f = (y - y0) / max(1, y1 - y0)
         l = l0 + (l1 - l0) * f
-        if y > y1 - racines:
-            l += (y - (y1 - racines)) * 2.2
+        if y > y1 - R:
+            u = (y - (y1 - R)) / R
+            l += (1.8 * racines + 1) * math.sin(math.pi * (0.12 + 0.76 * u))
         cx = x0 + penche * (y1 - y)
         xa, xb = int(round(cx - l / 2)), int(round(cx + l / 2))
         for x in range(xa, xb):
@@ -271,14 +274,28 @@ def feuillu(forme, rampe, graine, ecorce=ECORCE, touffe=True):
 
 
 def herbe_pied(t, cx, y, graine, largeur=14, rampe=None):
-    """Quelques brins d'herbe sombre au pied d'un tronc (comme l'arbre de la ferme)."""
+    """Une touffe d'herbe au pied d'un tronc : un coussin arrondi (une demi-ellipse posée sur le sol, qui
+    descend de 2 px sous le pied), sombre en bas, plus clair en haut, d'où sortent des brins ; il couvre le bas
+    du tronc."""
     rampe = rampe or RAMPE_PRE
     r = random.Random(graine * 7 + 3)
-    for k in range(int(largeur * 0.8)):
-        x = cx - largeur // 2 + r.randint(0, largeur)
-        hh = r.randint(2, 5)
-        for d in range(hh):
-            t.pose(x + (1 if d == hh - 1 and r.random() < 0.4 else 0), y - d, sur(rampe, 1 + d * 0.8 + r.random()))
+    rx, haut, bas = largeur / 2 + 1, 3.2, 2.4
+    for yy in range(int(y - haut) - 1, int(y + bas) + 2):
+        for x in range(int(cx - rx) - 1, int(cx + rx) + 2):
+            dy = (yy + 0.5 - y) / (haut if yy + 0.5 < y else bas)
+            d = ((x + 0.5 - cx) / rx) ** 2 + dy * dy
+            if d > 1:
+                continue
+            v = (yy + 0.5 - (y - haut)) / (haut + bas)          # 0 en haut, 1 en bas
+            k = 4.2 - 2.8 * v - 0.6 * (x + 0.5 - cx) / rx + (BAYER[yy % 4][x % 4] / 16 - 0.5) * 0.9
+            if (x * 3 + yy) % 4 == 0:
+                k -= 0.9                                           # des brins sombres dans le coussin
+            t.pose(x, yy, sur(rampe, k))
+    for k in range(int(largeur * 0.7)):                            # des brins qui dépassent en haut
+        x = int(cx - rx + 1 + r.random() * (2 * rx - 2))
+        top = y - haut * math.sqrt(max(0.0, 1 - ((x + 0.5 - cx) / rx) ** 2))
+        for d in range(r.randint(1, 3)):
+            t.pose(x + (1 if d == 2 and r.random() < 0.5 else 0), int(top) - d, sur(rampe, 3.6 + d * 0.7 + r.random()))
 
 
 def sapin(w, h, rampe, graine, etages=5, asym=0.0, sec=False, tronc_h=6):
@@ -347,6 +364,22 @@ def sapin(w, h, rampe, graine, etages=5, asym=0.0, sec=False, tronc_h=6):
         p = (x + cote, y + 2)
         if p in lum:
             t.pose(p[0], p[1], sur(rampe, n0 - 3.2))
+    # des chevrons sombres au cœur des branches (un V par étage, sous l'axe) : du relief
+    for k in range(etages):
+        f = (k + 1) / etages
+        y0 = haut + pas * (k + 0.7)
+        long = (3.0 + (w / 2 - 3.0) * f ** 0.9) * 0.62
+        for d in range(int(long) + 1):
+            for cote in (-1, 1):
+                for e in (0, 1):                                   # 2 px d'épaisseur
+                    p = (int(cx + cote * d - (0 if cote > 0 else 1)), int(y0 + 1.2 + d * 0.85) + e)
+                    if p in lum:
+                        t.pose(p[0], p[1], sur(rampe, 1.0 + 0.6 * e + (BAYER[p[1] % 4][p[0] % 4] / 16 - 0.5) * 0.6))
+    # et l'axe, sombre, du haut au bas des branches
+    for y in range(int(haut + pas * 0.8), int(bas)):
+        for x in (int(cx) - 1, int(cx)):
+            if (x, y) in lum:
+                t.pose(x, y, sur(rampe, 1.4 + (BAYER[y % 4][x % 4] / 16 - 0.5) * 0.6))
     if sec:
         # une branche morte, nue
         y = int(haut + (bas - haut) * 0.55)
@@ -493,9 +526,15 @@ def pin_tordu(graine, variante):
 
 # ---------- les buissons ----------
 
+# La marge sous les buissons (px) : leurs bosses du bas descendent jusque-là ; sans elle, la toile coupait
+# leur bas à plat. Le pied ne bouge pas : le bas arrondi descend un peu sous lui.
+MARGE_BAS = 4
+
+
 def dome(w, h, bosses, rampe, graine, pas=2, base=1.8, etendue=4.4, creux=2.0):
-    """Un buisson en dôme : des bosses éclairées, couvertes de touffes de feuilles, son contour."""
-    t = Toile(w, h)
+    """Un buisson en dôme : des bosses éclairées, couvertes de touffes de feuilles, son contour (h : la
+    hauteur sans la marge du bas)."""
+    t = Toile(w, h + MARGE_BAS)
     hb = champ_bosses(bosses, graine, bosse=0.12)
     lum = feuillage(t, hb, rampe, graine, pas=pas, base=base, etendue=etendue, creux=creux)
     return t, lum, hb
@@ -560,7 +599,7 @@ def souche(graine, variante):
     """Une souche : le dessus coupé (le bois clair, ses cernes), l'écorce sur le côté, les racines ;
     l'une couverte de mousse, l'autre avec des champignons."""
     r = random.Random(graine)
-    w, h = 22, 18
+    w, h = 22, 22
     t = Toile(w, h)
     cx, top, bas = 11, 5, 14
     rx, ry = 6.5 + variante * 0.5, 3.0
@@ -575,10 +614,16 @@ def souche(graine, variante):
                 if (x * 7) % 5 == 0:
                     k -= 1.1
                 t.pose(x, y, sur(ECORCE, k))
-    # les racines
-    for s_ in (-1, 1):
-        for d in range(4):
-            t.pose(int(cx + s_ * (rx + d)), bas - (d // 2), ECORCE[2 if s_ < 0 else 1])
+    # les racines : deux qui s'étalent sur les côtés en descendant, une qui plonge au milieu ; épaisses près
+    # du tronc (3 px), en pointe au bout ; éclairées à gauche, à l'ombre à droite
+    for s_, dx0, long, pente, avance in ((-1, rx - 2, 6, 0.5, 1.0), (1, rx - 2, 6, 0.5, 1.0), (1, 1.0, 4, 1.0, 0.25)):
+        for d in range(long):
+            x = int(round(cx + s_ * (dx0 + d * avance)))
+            y = bas - 1 + int(round(d * pente))
+            epais = 3 if d < 2 else 2 if d < long - 1 else 1
+            for e in range(epais):
+                k = 3.6 - 0.8 * e if s_ < 0 else 2.0 - 0.4 * e
+                t.pose(x, y - e + 1, sur(ECORCE, k + (BAYER[y % 4][x % 4] / 16 - 0.5) * 0.6))
     # le dessus : une ellipse claire, des cernes
     for y in range(int(top - ry) - 1, int(top + ry) + 2):
         for x in range(w):
@@ -1028,26 +1073,43 @@ def coquelicot(graine, variante):
 
 
 def pavot_californie(graine, variante):
-    """Des pavots de Californie : des feuilles fines et découpées, vert-bleu, dressées en éventail ; des fleurs
-    orange en coupe."""
+    """Des pavots de Californie, au naturel : un feuillage fin et découpé, vert-bleu, au pied ; de fines tiges
+    qui s'élèvent en s'écartant, chacune une fleur orange ouverte (quatre pétales, le bord éclairé en haut à
+    gauche, le cœur jaune), ou un bouton."""
     r = random.Random(graine)
-    n = 3 if variante != 2 else 2
     glauque = [(30, 50, 44), (60, 92, 80), (100, 136, 118), (150, 180, 160)]
-    t = petite(14, 14, 12)
-    for k in range(9):
-        a = (k / 8 - 0.5) * 1.9
-        L = r.uniform(4, 6)
-        for d in range(int(L)):
-            x, y = 7 + math.sin(a) * d, 12 - math.cos(a) * d
-            t.pose(int(round(x)), int(round(y)), glauque[2 if a < 0 else 1])
-            if d == int(L) - 1:
-                t.pose(int(round(x)), int(round(y)) - 1, glauque[3])
+    w, h, pied = 18, 20, 17
+    t = petite(w, h, pied, (5, 1.6))
+    cx = w // 2
+    # le feuillage, bas, en éventail
+    for k in range(11):
+        a_ = (k / 10 - 0.5) * 2.4 + r.uniform(-0.1, 0.1)
+        L = r.uniform(3, 5)
+        for d in range(int(L) + 1):
+            x, y = cx + math.sin(a_) * d * 1.2, pied - math.cos(a_) * d * 0.8
+            t.pose(int(round(x)), int(round(y)), glauque[2 if a_ < 0 else 1])
+        t.pose(int(round(cx + math.sin(a_) * L * 1.2)), int(round(pied - math.cos(a_) * L * 0.8)) - 1, glauque[3])
+    contour(t, (16, 30, 24))          # (le feuillage seul : les tiges et les fleurs, fines, sans contour noir)
+    # les tiges et leurs fleurs
+    n = 3 if variante != 2 else 2
+    c = FL_ORANGE
     for k in range(n):
-        x, y = 4 + k * 3 + r.randint(0, 1), r.randint(3, 6)
-        c = FL_ORANGE
-        for dx, dy, cc in ((-1, 0, c[1]), (1, 0, c[1]), (0, 0, c[2]), (-1, -1, c[2]), (1, -1, c[3]), (0, 1, c[0])):
-            t.pose(x + dx, y + dy, cc)
-    return fini(t, 7, 12, (16, 30, 24))
+        u = (k / max(1, n - 1) - 0.5) * 2 if n > 1 else 0
+        haut = r.randint(9, 13) - int(abs(u) * 2)
+        x0, x1 = cx + u * 1.5, cx + u * 5 + r.uniform(-0.8, 0.8)
+        for d in range(haut + 1):
+            f = d / haut
+            t.pose(int(round(x0 + (x1 - x0) * f * f)), pied - d, glauque[1] if d % 3 else glauque[2])
+        fx, fy = int(round(x1)), pied - haut - 1
+        if variante == 1 and k == 1:                        # un bouton, pas encore ouvert
+            t.pose(fx, fy, c[1]); t.pose(fx, fy - 1, c[2])
+            continue
+        for dx, dy, cc in ((-1, 0, c[2]), (1, 0, c[1]), (0, -1, c[3]), (0, 1, c[0]), (-1, -1, c[3]), (1, -1, c[2]), (-1, 1, c[1]), (1, 1, c[0]), (0, 0, (250, 222, 96))):
+            t.pose(fx + dx, fy + dy, cc)
+        for dx, dy in ((2, 0), (2, 1), (0, 2), (1, 2), (-1, 2)):     # le bord à l'ombre, en bas à droite
+            if not t.a(fx + dx, fy + dy):
+                t.pose(fx + dx, fy + dy, c[0])
+    return (t.image(), cx, pied)
 
 
 def tournesol_sauvage(graine, variante):
@@ -1073,24 +1135,34 @@ def tournesol_sauvage(graine, variante):
 
 
 def myosotis(graine, variante):
-    """Des myosotis : un coussin bas de feuilles, semé de petites fleurs bleu ciel, quelques cœurs jaunes."""
+    """Des myosotis, au naturel : un coussin de petites feuilles ovales, d'où montent de courtes tiges ; au bout
+    de chacune, un bouquet de fleurs bleu ciel à cinq pétales (une croix), leur œil jaune."""
     r = random.Random(graine)
-    w, h = 14, 11
-    t = petite(w, h, 9, (5, 1.5))
-    hb = champ_bosses([(7, 8, 5.5, 0.5), (4, 9, 3, 0.5), (10, 9, 3, 0.5)], graine, bosse=0.2)
+    w, h, pied = 16, 16, 13
+    t = petite(w, h, pied, (5.5, 1.6))
+    hb = champ_bosses([(8, pied - 1, 5.5, 0.5), (4, pied, 3.2, 0.5), (12, pied, 3.2, 0.5)], graine, bosse=0.2)
     sub = Toile(w, h)
     feuillage(sub, hb, RAMPE_PRE, graine, pas=2, base=1.8, etendue=3.6, creux=1.4)
-    for k, c in sub.px.items():
-        t.px[k] = c
+    for k, cc in sub.px.items():
+        t.px[k] = cc
+    contour(t, (10, 30, 12))
     c = FL_BLEU
-    for k in range(9 + variante * 2):
-        x, y = r.randint(2, 11), r.randint(3, 8)
-        t.pose(x, y, c[3] if k % 3 else c[2])
-        if k % 4 == 0:
-            t.pose(x + 1, y, c[2])
-        if k % 5 == 0:
-            t.pose(x, y, (250, 230, 90))
-    return fini(t, 7, 9, (10, 30, 12))
+    n = 3 + variante % 2
+    for k in range(n):
+        x = 3 + k * (10 // max(1, n - 1)) + r.randint(-1, 1)
+        haut = r.randint(4, 7)
+        for d in range(2, haut):
+            t.pose(x + (1 if d > haut - 2 and k % 2 else 0), pied - d, sur(RAMPE_PRE, 3.2))
+        fx, fy = x + (1 if k % 2 else 0), pied - haut - 1
+        for j, (dx, dy) in enumerate(((0, 0), (-2, 1), (2, 1))[: 2 + (k % 2)]):
+            bx, by = fx + dx, fy + dy
+            for ex, ey in ((0, -1), (-1, 0), (1, 0), (0, 1)):
+                t.pose(bx + ex, by + ey, c[3] if (ex, ey) in ((0, -1), (-1, 0)) else c[2])
+            t.pose(bx, by, (250, 230, 90))
+            for ex, ey in ((1, 1), (0, 2)):
+                if not t.a(bx + ex, by + ey):
+                    t.pose(bx + ex, by + ey, c[0])
+    return (t.image(), w // 2, pied)
 
 
 def lavande(graine, variante):
@@ -1298,7 +1370,33 @@ def dessins():
     # les champignons lumineux des forêts (scripts/carte/lumineux.py : ils brillent la nuit)
     from lumineux import champignons_lumineux
     out['champignons_lumineux'] = [champignons_lumineux(k) for k in range(3)]
+    originaux(out)
     return out
+
+
+# Les dessins retouchés à la main (scripts/carte/originaux/vegetation/<sorte>_<variante>.png, et leur pied :
+# pieds.json) prennent la place des dessins générés, tels quels ; les petites plantes ont leur ombre au pied,
+# posée sous elles comme pour les autres (OMBRES : rx, ry ; l'original n'en a pas).
+ORIG_VEG = os.path.join(ORIG, 'vegetation')
+OMBRES = {'coquelicot': (5, 1.6), 'tournesol_sauvage': (6, 1.6), 'lavande': (5, 1.6), 'lupin': (5, 1.6), 'touffe_foret': (5, 1.6)}
+
+
+def originaux(out):
+    chemin = os.path.join(ORIG_VEG, 'pieds.json')
+    if not os.path.exists(chemin):
+        return
+    with open(chemin, encoding='utf-8') as f:
+        pieds = json.load(f)
+    for nom, (px, py) in pieds.items():
+        sorte, k = nom.rsplit('_', 1)
+        im = Image.open(os.path.join(ORIG_VEG, nom + '.png')).convert('RGBA')
+        if sorte in OMBRES:
+            t = Toile(im.width, im.height)
+            ombre_pied(t, px + 0.5, py + 0.5, *OMBRES[sorte])
+            fond = t.image()
+            fond.alpha_composite(im)
+            im = fond
+        out[sorte][int(k)] = (im, px, py)
 
 
 def planche(sortes, d):

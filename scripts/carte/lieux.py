@@ -480,10 +480,13 @@ def pierre_levee():
                 c = LICHEN[0] if u > 0.5 else LICHEN[1]
             _pose(q, w, h, x, y, c)
     out = R.avec_contour(im, CONTOUR)
-    t = V.Toile(w, h)
+    # (3 px de plus sous le pied : la touffe d'herbe y descend)
+    grand = Image.new('RGBA', (w, h + 3), (0, 0, 0, 0))
+    grand.alpha_composite(out)
+    t = V.Toile(w, h + 3)
     V.herbe_pied(t, 11, h - 2, 83, largeur=16, rampe=V.RAMPE_PRE)
-    out.alpha_composite(t.image())
-    return out, 11, h - 2
+    grand.alpha_composite(t.image())
+    return grand, 11, h - 2
 
 
 def belvedere():
@@ -521,25 +524,26 @@ def belvedere():
 
 
 def arbre_ancien():
-    """Un arbre ancien : 96 × 106 px. Un houppier immense et sombre, en larges bosses ; un tronc très épais, ses
+    """Un arbre ancien : 96 × 109 px. Un houppier immense et sombre, en larges bosses ; un tronc très épais, ses
     racines à nu qui s'étalent au pied. (m : la marge au-dessus du houppier, que ses bosses du haut et son
     contour ne soient pas coupés : V.MARGE_CIME, comme les arbres du monde, et un peu plus.)"""
     m = V.MARGE_CIME + 1
-    w, h = 96, 98 + m
+    w, h = 96, 98 + m + 3          # (3 px sous le pied : la touffe d'herbe y descend)
+    sol = h - 5                     # le pied
     r = random.Random(1201)
     bosses = [(48, 34, 30), (24, 40, 18), (72, 40, 18), (36, 18, 17), (60, 18, 17), (14, 52, 11), (82, 52, 11), (48, 50, 20), (30, 56, 13), (66, 56, 13)]
     bosses = [(cx + r.uniform(-1.5, 1.5), cy + m + r.uniform(-1.5, 1.5), rr * r.uniform(0.95, 1.05)) for cx, cy, rr in bosses]
     t = V.Toile(w, h)
-    V.tronc(t, 48, 54 + m, h - 2, 16, 22, V.ECORCE, 1203, racines=7)
+    V.tronc(t, 48, 54 + m, sol, 16, 22, V.ECORCE, 1203, racines=7)
     # les racines à nu, qui rampent de part et d'autre
     for sens in (-1, 1):
         for k in range(2):
-            x0, y0 = 48 + sens * (8 + k * 4), h - 6 + k * 2
+            x0, y0 = 48 + sens * (8 + k * 4), sol - 4 + k * 2
             for d in range(10 + k * 6):
                 x, y = x0 + sens * d, y0 + int(d * 0.25)
                 for e in range(3 - (d > 8)):
                     t.pose(x, y - e, V.sur(V.ECORCE, 3.2 - e * 0.8))
-    V.herbe_pied(t, 48, h - 2, 1204, largeur=50)
+    V.herbe_pied(t, 48, sol, 1204, largeur=50)
     hb = V.champ_bosses(bosses, 1205)
     bas = max(cy + rr for cx, cy, rr in bosses)
     cime = V.Toile(w, h)
@@ -548,7 +552,7 @@ def arbre_ancien():
     for k, c in cime.px.items():
         t.px[k] = c
     V.contour(t, V.assombrir(V.RAMPE_FORET[0], 0.8))
-    return t.image(), 48, h - 2
+    return t.image(), 48, sol
 
 
 # ---------- la planche ----------
