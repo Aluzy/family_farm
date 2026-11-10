@@ -108,3 +108,27 @@ Le réglage filmé, gardé tel quel :
   laisse et rentre chez lui (`revient`) ; mesuré : il se tient à 20 px du personnage qui marche ;
 - **le chat** (activité `chasse`, `CHASSE`) : un oiseau posé à moins de 6 cases, il s'en approche à ras du
   sol (9 px/s), puis bondit ; l'oiseau s'envole ; il s'assoit, bredouille.
+
+## Groupe 3, les habitants : fait (2026-11-10)
+
+`js/carte/ferme/habitants.js` (`VOISINS`), le réglage « normal » du salut choisi sur film parmi trois
+(discret, normal, marqué), et le puits « comme filmé » :
+
+- **ils s'évitent** : la grille du socle (`CarteKit.perception`), refaite à chaque image avec les habitants
+  des hameaux en vue ; un voisin devant lui, entre lui et son prochain point, il fait un pas de côté par sa
+  droite (l'autre aussi : ils se croisent) ; un voisin qui va du même côté, il le laisse prendre de
+  l'avance ; près de son but, il ne tourne pas autour de celui qui y est déjà. Deux voisins ne prennent
+  plus la même place (deux bûcherons pour un billot se superposaient tout le temps de leur travail) : le
+  second se met à côté. Mesuré sur quatre hameaux, 40 s chacun : plus aucune paire à moins de 6 px plus
+  d'1 s (0,8 s au plus ; avant : 26 à 30 s pour les deux bûcherons du Gué) ;
+- **la pluie** : le travail, les jeux et le soir dehors deviennent « maison » (vérifié : tout le Gué y
+  passe en 3 s) ; le repas, le lit et la fête ne changent pas ;
+- **le salut** : deux habitants qui marchent à moins de 22 px l'un de l'autre s'arrêtent 1,1 s face à face ;
+  l'un dit une fois sur deux une phrase (« Bonjour ! », « Salut ! », « Belle journée ! », « Bien le
+  bonjour ! »), l'autre répond trois fois sur dix ; pas deux fois en 45 s environ ;
+- **le puits** : le jardinier (ou un habitant sans métier) qui change de place au travail y va 3 fois sur
+  10, au plus une fois toutes les 40 à 90 s ; il puise (le geste « ramasser », tourné vers le puits) ; le
+  puits est pris : il attend à côté, et y va quand l'autre a fini (vérifié avec trois habitants : l'un
+  après l'autre) ;
+- **le coût** : `stepHabitants` passe de 0,19–0,23 à 0,26 ms par image dans un hameau (Brumeval, le Gué ;
+  Chromium sans ralenti) : quelques centièmes de ms pour l'image entière.

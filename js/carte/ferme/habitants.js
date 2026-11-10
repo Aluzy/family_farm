@@ -49,6 +49,19 @@
   // contourner le personnage : devant lui à moins de `loin` px, à moins de `pres` px de son chemin,
   // un pas de `cote` px ; `patience` s d'attente au plus, puis il passe (`passe` s sans l'éviter)
   const EVITE = { loin: 26, pres: 11, cote: 14, repos: 0.6, patience: 1.5, passe: 3 };
+  // Fiche 32 (groupe 3) : la vie entre voisins. La pluie : on rentre (le travail, les jeux, le soir dehors).
+  // Le salut : deux habitants qui marchent à moins de `rayon` px l'un de l'autre s'arrêtent `duree` s, face à
+  // face ; l'un des deux dit parfois (`parle`) une phrase, l'autre lui répond parfois (`reponse`) ; pas deux
+  // fois en `attente` s. Le puits de la place : le jardinier y va parfois (`chance`) puiser ; quelqu'un y
+  // est déjà : il attend son tour à côté. Deux voisins ne prennent pas la même place (à `place` px près).
+  // (Le réglage « normal » choisi sur film parmi trois : discret, normal, marqué.)
+  const VOISINS = {
+    pluie: true,
+    salut: { rayon: 22, duree: 1.1, attente: 45, parle: 0.5, reponse: 0.3, phrases: ['Bonjour !', 'Salut !', 'Belle journée !', 'Bien le bonjour !'] },
+    puits: { chance: 0.3 },
+    place: 7,
+  };
+  K.VOISINS_HABITANTS = VOISINS;   // (lu par les essais filmés)
   const ENFANT_DY = 4;                     // px : un enfant couché est remonté d'autant
   const COURSE = 1.7;                      // un enfant qui court
   // les lieux de travail : à tant de cases au plus (la rive du pêcheur, les arbres du bûcheron) ; un arbre
@@ -294,7 +307,10 @@
       if (md.nuit || h < H.LEVER || h >= H.COUCHER) return 'dort';
       if (h < H.TRAVAIL) return 'maison';
       if (h >= H.MIDI && h < H.REPRISE) return 'repas';
-      if (h >= H.RENTREE) return h < H.RENTREE + 1.5 ? 'repas' : 'soir';
+      // (fiche 32 : sous la pluie, on rentre ; le repas et le lit ne changent pas)
+      const pluie = VOISINS.pluie && md.meteo && md.meteo.pluie;
+      if (h >= H.RENTREE) return h < H.RENTREE + 1.5 ? 'repas' : pluie ? 'maison' : 'soir';
+      if (pluie) return 'maison';
       return m.def.enfant ? 'joue' : 'travail';
     },
 
@@ -310,6 +326,16 @@
 
     // Il va en (x, y) ; puis : puis(). La recherche du chemin attend son tour (TRAJETS par image).
     habAller(m, x, y, puis, vite = 1) {
+      // (fiche 32 : une place déjà prise par un voisin (deux bûcherons pour un billot) : un peu à côté)
+      const G = m.e && m.e.gens;
+      if (G) {
+        const pris = (qx, qy) => { for (const o of G.membres.values()) if (o !== m && o.but && Math.hypot(o.but.x - qx, o.but.y - qy) < VOISINS.place) return true; return false; };
+        if (pris(x, y)) {
+          const q = [[10, 0], [-10, 0], [0, 7], [14, 4], [-14, 4]].map(([ddx, ddy]) => ({ x: x + ddx, y: y + ddy })).find((p) => this.libre(p.x, p.y) && !pris(p.x, p.y));
+          if (q) { x = q.x; y = q.y; }
+        }
+      }
+      m.but = { x, y };
       m.demande = { x, y, puis: puis || null, vite };
       m.chemin = [];
       m.puis = null;
@@ -340,8 +366,9 @@
       m.vite = d.vite;
     },
 
-    // Un pas sur son chemin ; il contourne le personnage du joueur. → true s'il a marché.
-    habAvancer(m, dt, joueur) {
+    // Un pas sur son chemin ; il contourne le personnage du joueur, et (fiche 32) les autres habitants. →
+    // true s'il a marché.
+    habAvancer(m, dt, joueur, P) {
       if (!m.chemin.length) {
         if (m.puis) { const f = m.puis; m.puis = null; f(); }
         return false;
@@ -353,14 +380,31 @@
       // (le personnage devant lui : un pas de côté, sinon il attend un peu ; s'il attend trop (le
       // personnage dans un passage étroit, sur son lit), il passe quand même)
       if (m.gene > EVITE.patience) { m.gene = 0; m.evite = EVITE.passe; }
-      if (joueur && m.evite <= 0 && l > 1) {
-        const jx = joueur.x - m.x, jy = joueur.y - m.y, dj = Math.hypot(jx, jy);
-        if (dj < EVITE.loin && (jx * dx + jy * dy) / l > 0) {
-          const ux = dx / l, uy = dy / l, ecart = Math.abs(jx * uy - jy * ux);
-          if (ecart < EVITE.pres) {
+      // (le premier gêneur devant lui : le personnage, ou un autre habitant (fiche 32 : la grille du socle))
+      let gene = null;
+      if (m.evite <= 0 && l > 1) {
+        const devant = (o) => { const jx = o.x - m.x, jy = o.y - m.y; return Math.hypot(jx, jy) < EVITE.loin && (jx * dx + jy * dy) / l > 0 && Math.abs(jx * (dy / l) - jy * (dx / l)) < EVITE.pres; };
+        if (joueur && devant(joueur)) gene = { x: joueur.x, y: joueur.y, joueur: true };
+        // (un voisin : seulement entre lui et son prochain point, pas à côté de son but (il y est déjà, à sa
+        // place : il ne tourne pas autour))
+        else if (P && m.chemin.length === 1 && l < EVITE.loin) gene = null;
+        else if (P) {
+          const v = this.habVoisins || (this.habVoisins = []);
+          const n = P.voisins(m.x, m.y, EVITE.loin, v, (o) => o.ref !== m && !o.ref.couche);
+          for (let i = 0; i < n && !gene; i++) if (devant(v[i]) && (v[i].x - m.x) * dx + (v[i].y - m.y) * dy < l * (l - 4)) gene = { x: v[i].x, y: v[i].y, joueur: false, suit: v[i].vx * dx + v[i].vy * dy > 0 };
+        }
+      }
+      // (un voisin qui va du même côté que lui, devant : il le laisse prendre de l'avance)
+      if (gene && gene.suit) { m.pause = 0.3; return false; }
+      if (gene) {
+        const ux = dx / l, uy = dy / l;
+        {
+          {
             m.evite = EVITE.repos;
-            const cotes = [1, -1].map((s) => ({ x: m.x - uy * EVITE.cote * s + ux * 6, y: m.y + ux * EVITE.cote * s + uy * 6 }))
-              .sort((a, b) => Math.hypot(b.x - joueur.x, b.y - joueur.y) - Math.hypot(a.x - joueur.x, a.y - joueur.y));
+            // (le personnage : du côté le plus loin de lui ; un autre habitant : chacun par sa droite, et ils
+            // se croisent)
+            const cotes = [1, -1].map((s) => ({ x: m.x - uy * EVITE.cote * s + ux * 6, y: m.y + ux * EVITE.cote * s + uy * 6 }));
+            if (gene.joueur) cotes.sort((a, b) => Math.hypot(b.x - gene.x, b.y - gene.y) - Math.hypot(a.x - gene.x, a.y - gene.y));
             // (un pas de côté, s'il ne coupe pas un mur, ni pour y aller ni pour reprendre son chemin)
             const L = this.fermier && this.fermier.ligneLibre ? this.fermier.ligneLibre : () => true;
             const c = cotes.find((q) => this.libre(q.x, q.y) && L(m.x, m.y, q.x, q.y) && L(q.x, q.y, to.x, to.y));
@@ -405,6 +449,8 @@
       m.act = voulu;
       m.seq = null;
       m.geste = null;
+      m.veutPuits = false;
+      if (m.auPuits) { m.auPuits = false; if (e.gens && e.gens.puitsPar === m) e.gens.puitsPar = null; }
       m.ici = null;
       if (voulu === 'dort') {
         const L = this.litDe(m);
@@ -506,10 +552,43 @@
       // (le jardinier, ou un lieu qu'on ne trouve pas : au jardin, sinon sur la place ; il le
       // cherchera de nouveau)
       m.repli = !!mt;
+      // (fiche 32 : le jardinier va parfois puiser au puits de la place)
+      if ((!mt || mt === 'jardinier') && e.plan.place.puits != null && now >= (m.puitsApres || 0) && Math.random() < VOISINS.puits.chance) { this.habPuits(e, m); return; }
       const jardins = e.plan.jardins.flatMap((j) => j.cases);
       const q = this.auHasard(jardins) || this.auHasard(e.plan.place.cases) || this.pied(e.plan.case);
       this.habAller(m, q.x, q.y, fait(Math.random() < 0.5 ? 'plante' : 'arrose', 'bas', false, null));
     },
+    // Fiche 32 : au puits de la place, un à la fois. Libre : il y va et puise (un geste) ; pris : il attend à
+    // côté (m.veutPuits), tourné vers lui, et y va quand l'autre a fini (stepHabitants).
+    puitsDe(e) {
+      const G = e.gens;
+      if (G.puitsLieux === undefined) {
+        const W = this.grid.cols, k = e.plan.place.puits, devant = this.pres(k + W, 1);
+        const attente = devant ? [k + W + 2, k + W - 2, k + 2 * W + 1, k + 2 * W - 1].map((c) => this.pied(c)).filter((p) => this.libre(p.x, p.y)) : [];
+        G.puitsLieux = devant ? { devant, attente, centre: { x: this.pied(k).x, y: this.pied(k).y - 6 } } : null;
+      }
+      return G.puitsLieux;
+    },
+    // (celui qui tient le puits : encore à l'ouvrage, sinon il est libre)
+    puitsPris(e, m) {
+      const G = e.gens, o = G.puitsPar;
+      if (o && (o === m || !o.auPuits || !G.membres.has(o.id) || o.act !== 'travail')) { if (o !== m) G.puitsPar = null; }
+      return !!G.puitsPar && G.puitsPar !== m;
+    },
+    habPuits(e, m) {
+      const L = this.puitsDe(e);
+      if (!L) { const q = this.auHasard(e.plan.place.cases) || this.pied(e.plan.case); this.habAller(m, q.x, q.y); return; }
+      m.puitsApres = performance.now() + rand(40, 90) * 1000;
+      if (this.puitsPris(e, m) && L.attente.length) {
+        const p = L.attente[m.rang % L.attente.length];
+        this.habAller(m, p.x + rand(-1, 1), p.y, () => { ({ face: m.face, flip: m.flip } = K.regard(L.centre.x - m.x, L.centre.y - m.y)); m.ici = 'puits'; m.veutPuits = true; });
+        return;
+      }
+      m.veutPuits = false;
+      e.gens.puitsPar = m; m.auPuits = true;
+      this.habAller(m, L.devant.x, L.devant.y, () => { m.face = 'haut'; m.flip = false; m.ici = 'geste'; m.seq = { pas: SEQ.ramasse(), k: 0, t: 0, coup: null, puits: true }; });
+    },
+
     // Les places autour des pièces `genres` du lieu de travail (billot, tas de bois…) : les cases
     // libres à leur gauche et à leur droite, tournées vers elles ; une fois par hameau.
     placesAtelier(e, genres) {
@@ -582,6 +661,13 @@
       const t0 = now;
       const f = this.screenFrame ? this.screenFrame() : null;
       this.habNombre = 0;
+      // (fiche 32 : la grille des habitants de cette image (le socle), pour qu'ils s'évitent et se saluent)
+      const P = this.habGrille || (this.habGrille = K.perception(64));
+      P.vide();
+      for (const e of this.hameauxVus.values()) {
+        const G = e.gens;
+        if (G) for (const m of G.membres.values()) if (m.s && m.place && !m.saut && !m.couche && m.alpha > 0) P.ajoute(m.x, m.y, 'habitant', m, dt);
+      }
       for (const e of this.hameauxVus.values()) {
         const G = this.habitantsDe(e);
         if (!G) continue;
@@ -603,7 +689,8 @@
             m.alpha = Math.max(0, m.alpha - dt / FADE_S);
             if (m.alpha <= 0 || calme) { const s = m.saut; m.saut = null; m.x = s.x; m.y = s.y; m.fade = 1; if (s.puis) s.puis(); }
           } else if (parle) {
-            if (joueur) ({ face: m.face, flip: m.flip } = K.regard(joueur.x - m.x, joueur.y - m.y));
+            const v = m.parle.vers || joueur;
+            if (v) ({ face: m.face, flip: m.flip } = K.regard(v.x - m.x, v.y - m.y));
           } else if (m.act !== voulu && !m.demande) {
             // (un geste en cours se finit d'abord, sauf pour aller dormir)
             if (!m.seq || voulu === 'dort') { m.geste = null; this.habCommencer(e, m, voulu); }
@@ -611,7 +698,10 @@
             if (trajets < TRAJETS.n && (!trajets || performance.now() - t0 < TRAJETS.ms)) { trajets++; this.habTrajet(m, vue); }
           } else if (!m.chemin.length && !m.puis && !m.seq && !m.couche) {
             // sur place : son geste, ou il attend puis va ailleurs
-            if (m.geste) {
+            if (m.veutPuits) {
+              // (il attend son tour au puits)
+              if (!this.puitsPris(e, m)) { m.veutPuits = false; this.habPuits(e, m); }
+            } else if (m.geste) {
               const g = m.geste;
               if (m.repit > 0) m.repit -= dt;
               else m.seq = { pas: SEQ[g.seq](g.vue === 'cote' ? 'cote' : g.vue), k: 0, t: 0, coup: g.coup };
@@ -627,7 +717,8 @@
               }
             }
           }
-          const marche = !parle && !m.saut && this.habAvancer(m, dt, joueur);
+          if (!parle && !m.saut) this.habSaluer(m, P, now, vue);
+          const marche = !parle && !m.saut && this.habAvancer(m, dt, joueur, P);
           // (arrêté, il repartira par un passage : m.marche compte depuis le départ)
           if (!marche) m.marche = 0;
           if (m.fade > 0) { m.alpha = Math.min(1, m.alpha + dt / FADE_S); if (m.alpha >= 1) m.fade = 0; }
@@ -644,10 +735,13 @@
               sq.k++;
               if (m.seq === sq && sq.k >= sq.pas.length) {
                 m.seq = null;
+                // (fiche 32 : il a puisé ; le puits est libre, il retourne au jardin)
+                if (sq.puits) { m.auPuits = false; if (G.puitsPar === m) G.puitsPar = null; m.geste = null; this.habTravailler(e, m); } else {
                 // (le bûcheron, le berger, le cueilleur, le jardinier : un autre geste, ailleurs, de temps en temps)
                 const bouge = m.act === 'travail' && (m.def.metier === 'berger' || m.def.metier === 'cueilleur' || !m.def.metier || m.repli) && Math.random() < 0.35;
                 const coupe = m.act === 'travail' && m.def.metier === 'bucheron' && now >= m.prochaineCoupe && Math.random() < 0.5;
                 if (bouge || coupe) { m.geste = null; this.habTravailler(e, m); } else if (m.geste) m.repit = rand(0.2, 1.2);
+                }
               }
             }
           }
@@ -780,6 +874,40 @@
       this.habitantBabil(m, r.texte);
       // (sa réaction : la joie de te voir, de te retrouver après une longue absence, amis.js)
       if (r.emotion && this.emouvoir) this.emouvoir(m, r.emotion, true);
+    },
+
+    // Fiche 32 : deux habitants qui marchent se croisent : ils s'arrêtent, face à face ; l'un dit parfois
+    // une phrase. Dans la vue seulement ; pas deux fois de suite les mêmes avant `attente` s.
+    habSaluer(m, P, now, vue) {
+      const S = VOISINS.salut;
+      if (!S || !m.chemin.length || m.pause > 0 || now < (m.salutApres || 0)) return;
+      if (m.x < vue.x || m.x > vue.right || m.y < vue.y || m.y > vue.bottom) return;
+      const v = this.habVoisins || (this.habVoisins = []);
+      const n = P.voisins(m.x, m.y, S.rayon, v, (o) => o.ref !== m);
+      for (let i = 0; i < n; i++) {
+        const o = v[i].ref;
+        if (!o.chemin || !o.chemin.length || o.pause > 0 || o.parle || now < (o.salutApres || 0) || o.def.enfant !== m.def.enfant && Math.random() < 0.5) continue;
+        const d = S.duree * 1000;
+        for (const [a, b] of [[m, o], [o, m]]) {
+          a.salutApres = now + S.attente * 1000 * (0.7 + Math.random() * 0.6);
+          a.pause = S.duree;
+          ({ face: a.face, flip: a.flip } = K.regard(b.x - a.x, b.y - a.y));
+        }
+        if (Math.random() < S.parle) {
+          const qui = Math.random() < 0.5 ? m : o, autre = qui === m ? o : m;
+          this.habitantDit(qui, S.phrases[Math.floor(Math.random() * S.phrases.length)]);
+          if (qui.parle) { qui.parle = { until: now + Math.max(d, 1400), vers: autre }; qui.pause = 0; }
+          // (l'autre lui répond, parfois)
+          if (Math.random() < S.reponse && this.time) {
+            this.time.delayedCall(700, () => {
+              if (autre.saut || autre.couche || !autre.s) return;
+              this.habitantDit(autre, S.phrases[Math.floor(Math.random() * S.phrases.length)]);
+              if (autre.parle) { autre.parle = { until: performance.now() + 1400, vers: qui }; autre.pause = 0; }
+            });
+          }
+        }
+        return;
+      }
     },
 
     // Il dit une petite phrase (une réaction, amis.js) : sa bulle, sans son prénom ni l'amitié, PAROLE_MS / 2.
