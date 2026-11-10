@@ -18,6 +18,17 @@ canevas vidés par le navigateur à réparer (`repairGround`) pour ces régions.
   le sol ; le SpriteGPULayer a été écarté : plus lent en forêt), la lecture du sol par les touffes (`lireSol`),
   la repeinture partielle (une petite pièce prise refait toute la région).
 
+## La mesure sur le téléphone (le point 1)
+
+Le panneau de test (🧪, 📏 Mesures) a un bouton **« Essai sol GPU : … »** : chaque appui passe à l'état
+suivant (éteint → le sol → le sol et le décor → éteint) et recharge la page (l'état est gardé dans l'appareil,
+`localStorage['ferme-essai-sol-gpu']`). Le rapport de **« Mesurer 30 s »** dit l'état de l'essai et combien des
+régions dessinées le sont en GPU (« régions dessinées : 4, dont 4 en GPU »).
+
+Le protocole : dans une forêt du grand monde, loin de la ferme (toutes les régions de la vue en GPU),
+« Mesurer 30 s » en marchant, l'essai éteint, puis « le sol », puis « le sol et le décor » ; la même chose près
+de la ferme ; copier les six rapports (le bouton « Copier le rapport »). Remettre l'essai à « éteint » ensuite.
+
 ## À faire
 
 1. **Mesurer sur le téléphone** (🧪 **Mesurer 30 s**, essai '1' et éteint, en forêt et près de la ferme) : images
