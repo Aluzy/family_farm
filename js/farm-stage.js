@@ -646,7 +646,7 @@
           const p = this.fermier.pos();
           if (p) {
             this.pan = null;
-            const k = this.followSnap ? 1 : Math.min(1, dt / FOLLOW_MS);
+            const k = this.followSnap ? 1 : K.rattrape(dt, FOLLOW_MS);   // (fiche 25 : la même à tout rythme)
             this.followSnap = false;
             this.setCentre(this.cx + (p.x - this.cx) * k, this.cy + (p.y - FOLLOW_UP - this.cy) * k);
           }
@@ -697,6 +697,18 @@
         this.placeGainAide();
         this.stepAide();
         this.reportView();
+        // La cadence (fiche 25, js/carte/jeu.js) : quelque chose bouge-t-il ? Le personnage, la vue (son
+        // centre, son zoom, son glissement, son élan), un doigt posé ou la manette. (La vue qui suit le
+        // personnage s'approche de lui sans jamais l'atteindre tout à fait : sous 0,05 px de carte, elle ne
+        // bouge plus.)
+        const fp = this.fermier && this.fermier.pos(), zoom = this.cameras.main.zoom;
+        const vu = this.cadenceVu || (this.cadenceVu = { cx: 0, cy: 0, zoom: 0, x: 0, y: 0 });
+        const loin = (a, b) => !(Math.abs(a - b) < 0.05);
+        const bouge = !!(this.drag || this.pince || this.pan || this.vx || this.vy || (this.manette && this.manette.dir()))
+          || loin(this.cx, vu.cx) || loin(this.cy, vu.cy) || zoom !== vu.zoom || (fp && (loin(fp.x, vu.x) || loin(fp.y, vu.y)));
+        vu.cx = this.cx; vu.cy = this.cy; vu.zoom = zoom;
+        if (fp) { vu.x = fp.x; vu.y = fp.y; }
+        if (global.CarteJeu && global.CarteJeu.cadence) global.CarteJeu.cadence(bouge, time);
       }
 
       // La vue suit-elle le personnage ? Dehors, dès qu'il est sur la carte (sans lui, la vue

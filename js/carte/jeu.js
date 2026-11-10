@@ -29,7 +29,15 @@
  *       CarteJeu.cache(clé)       la scène `clé` n'est plus affichée (rien d'autre : la boucle dort) ;
  *       CarteJeu.affichee()       la clé de la scène affichée, ou null ;
  *       CarteJeu.suitTaille(scène, fn)  fn() à chaque changement de taille, tant que la scène vit ;
- *       CarteJeu.zoomEntier(scène)       le zoom entier des cartes vues de près (la mine).
+ *       CarteJeu.zoomEntier(scène)       le zoom entier des cartes vues de près (la mine) ;
+ *       CarteJeu.cadence(bouge, t)       la scène dit à chaque image si quelque chose bouge (fiche 25) ;
+ *       CarteJeu.surPas(fn), surVeille(fn), tourne()   la boucle de la page suit celle de Phaser (fiche 25).
+ *
+ * La cadence (fiche 25, docs/architecture-phaser.md § 1 quater) : la boucle de Phaser suit l'écran ; sur
+ * un écran de plus de 100 Hz, elle est plafonnée à 60 images par seconde, et en qualité « économie », à 30
+ * quand rien n'a bougé depuis une seconde (aucune marche, aucun glissement ni zoom de la vue, aucun doigt
+ * posé). Le limiteur de Phaser 4.2.1 (stepLimitFPS) redonnait le reste du pas d'avant : le temps du jeu
+ * filait 1,8 fois trop vite à 60 sur un écran à 60 Hz ; il est remplacé ici (pasLimite).
  *
  * Script classique, chargé après js/carte/kit.js ; il ne demande Phaser qu'à la création du jeu.
  * Voir docs/architecture-phaser.md (§ 1 quater).
@@ -49,6 +57,12 @@
   const attenteCreation = new WeakSet(); // les scènes cachées qui s'endormiront une fois créées
   // Les états d'une scène (Phaser.Scenes) : en route jusqu'à RUNNING, puis endormie, arrêtée.
   const START = 2, RUNNING = 5, PAUSED = 6, SLEEPING = 7;
+  // La cadence (fiche 25) : le plafond d'images par seconde (0 : l'écran), et à partir de combien d'images
+  // par seconde de l'écran on plafonne à 60 ; l'immobilité qui fait passer l'économie à 30.
+  const CADENCE = { RAPIDE: 100, PLAFOND: 60, ECONOMIE: 30, CALME_MS: 1000, TOLERANCE: 0.1 };
+  let dernierMouvement = 0;
+  const auPas = [];           // fn(temps) appelées à chaque pas de la boucle de Phaser (surPas)
+  const aLaVeille = [];       // fn() appelées quand la boucle de Phaser s'endort ou se réveille (surVeille)
 
   function jeu(el) {
     if (game) return game;
@@ -82,6 +96,9 @@
       banner: false,
       scene: [],
     });
+    // (le limiteur corrigé, avant tout plafond : pasLimite)
+    game.loop.stepLimitFPS = pasLimite;
+    game.events.on('poststep', (t) => { for (const fn of auPas) fn(t); });
     game.events.once('ready', () => { taille(); applique(); });
     if (global.ResizeObserver) jeu.observe = new global.ResizeObserver(taille);
     global.addEventListener('resize', taille);
@@ -118,6 +135,52 @@
       arrondi.fermeArrondi = true;
       P.shaderSource = arrondi;
     }
+  }
+
+  // Le pas plafonné de la boucle de Phaser (TimeStep, `this` : game.loop), à la place de stepLimitFPS :
+  // une image n'est donnée à la scène que si le temps écoulé depuis la dernière atteint le plafond (à 10 %
+  // près : l'horloge de l'écran tremble un peu), et elle reçoit ce temps-là, ni plus ni moins. (Celui de
+  // Phaser passait aussi le reste gardé du pas d'avant : il comptait du temps deux fois.) Les compteurs
+  // de Phaser (actualFps : les images de l'écran) restent tenus comme avant.
+  function pasLimite(t) {
+    this.now = t;
+    const e = Math.max(0, t - this.lastTime);
+    this.rawDelta = e;
+    this.time += e;
+    this.delta += e;
+    if (t >= this.nextFpsUpdate) this.updateFPS(t);
+    this.framesThisSecond++;
+    if (this.delta >= this._limitRate * (1 - CADENCE.TOLERANCE)) {
+      // (sans le lissage de Phaser, smoothDelta : il ramène le pas à 1/60 s quand la fenêtre n'a pas le
+      // focus, ce qui, plafonné à 30, ferait marcher le jeu au ralenti)
+      const d = this.delta;
+      this.delta = 0;
+      this.callback(t, d);
+    }
+    this.lastTime = t;
+    this.frame++;
+  }
+
+  // La scène dit à chaque image si quelque chose bouge (`t` : son temps, en ms) ; le plafond suit.
+  function cadence(bouge, t) {
+    if (!game || !game.loop) return;
+    if (bouge || !dernierMouvement) dernierMouvement = t;
+    const L = game.loop;
+    const eco = K.qualite && K.qualite() === 'economie' && t - dernierMouvement > CADENCE.CALME_MS;
+    // (actualFps compte les images de l'écran, plafond ou non ; il lui faut une seconde pour se mesurer)
+    const rapide = L.actualFps > CADENCE.RAPIDE;
+    const voulu = eco ? CADENCE.ECONOMIE : rapide ? CADENCE.PLAFOND : 0;
+    if (L.fpsLimit !== voulu) L.setFPSLimit(voulu);
+  }
+
+  // La boucle de Phaser tourne-t-elle (la carte affichée, le jeu démarré) ?
+  function tourne() { return !!(game && game.loop && game.loop.running); }
+  function surPas(fn) { auPas.push(fn); }
+  function surVeille(fn) { aLaVeille.push(fn); }
+  function veille(dort) {
+    if (!game) return;
+    if (dort) game.loop.sleep(); else game.loop.wake();
+    for (const fn of aLaVeille) fn();
   }
 
   // Une zone qui reçoit le canvas : sa taille est suivie ; avant chaque geste, Phaser relit la
@@ -184,8 +247,7 @@
     if (!v) {
       // Une scène gardée encore en chargement : la boucle tourne jusqu'à sa création, sans quoi
       // le chargeur s'arrête en route (elle s'endort alors d'elle-même, voir endort).
-      if (S.getScenes(false).some((s) => s.sys.settings.status < RUNNING)) game.loop.wake();
-      else game.loop.sleep();
+      veille(!S.getScenes(false).some((s) => s.sys.settings.status < RUNNING));
       return;
     }
     place(v.zone);
@@ -199,7 +261,7 @@
       else if (s.sys.settings.status < START) S.start(v.cle, v.data);
       s.sys.setVisible(true);
     }
-    game.loop.wake();
+    veille(false);
   }
 
   // Une scène gardée passe derrière : endormie (plus d'image, plus d'appuis, plus de mise à
@@ -262,5 +324,5 @@
     return Math.max(1, Math.round(css * r));
   }
 
-  global.CarteJeu = { jeu, montre, prepare, cache, affichee, taille, suitTaille, zoomEntier, game: () => game };
+  global.CarteJeu = { jeu, montre, prepare, cache, affichee, taille, suitTaille, zoomEntier, cadence, tourne, surPas, surVeille, pasLimite, CADENCE, game: () => game };
 })(window);

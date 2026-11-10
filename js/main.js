@@ -11,7 +11,7 @@ import { demenagementAnnonce, importSaveText, loadOrCreateState, makeSeed, persi
 import { ecranTitre, ecranTitreVoulu } from './ui/ecran-titre.js';
 import { newGameFrom } from './engine/alerts.js';
 import { notify } from './ui/toasts.js';
-import { catchUp, frame, onHide, renderLoop, setMailSeen, setPendingAbsence, setSimulatedAt, syncJobs } from './ui/loop.js';
+import { catchUp, demarrerBoucles, onHide, setMailSeen, setPendingAbsence, setSimulatedAt, syncJobs } from './ui/loop.js';
 import { oublierAdresseMine } from './ui/hote.js';
 import { render } from './ui/render.js';
 import { setEmojiNames, watch as watchEmojis } from './ui/pixel-emoji.js';
@@ -118,8 +118,7 @@ async function demarrer() {
   window.addEventListener('pagehide', persistState);
   document.addEventListener('visibilitychange', onHide);
 
-  requestAnimationFrame(frame);
-  requestAnimationFrame(renderLoop);
+  demarrerBoucles(); // (fiche 25 : une seule boucle, celle de la carte quand elle est affichée)
   render();
   oublierAdresseMine(); // (une ancienne adresse de la mine, jeu.html?carte=grotte&… : la ferme)
 
