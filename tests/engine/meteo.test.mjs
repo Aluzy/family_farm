@@ -7,7 +7,7 @@
    Lancer seul : node --test tests/engine/meteo.test.mjs (ou node tests/run-tests.mjs meteo).
    ========================================================================== */
 
-import { brume, DATA, findPlot, meteoDuJour, plant, pleut, pluieSurLaFerme, tick } from '../../js/engine/index.js';
+import { arroseesParLaPluie, brume, DATA, findPlot, meteoDuJour, plant, pleut, pluieSurLaFerme, tick } from '../../js/engine/index.js';
 import { assert, assertEqual, garden, test } from './aide.mjs';
 
 const M = DATA.METEO;
@@ -50,6 +50,12 @@ test('G-1 : la pluie arrose les cultures de la ferme, sans eau ni énergie, pend
   const p = findPlot(s, 'potager-1');
   assertEqual([p.arrose, s.eauMl, s.energie, s.meteo.arrosees], [true, eau, energie, 1]);
   assertEqual(pluieSurLaFerme(s), 0, 'déjà arrosée');
+  // ses cases : la pluie les a arrosées, pas le personnage (la carte n'en fait pas un geste) ; le lendemain, plus rien
+  assert(Number.isInteger(p.case), 'la parcelle a sa case');
+  assertEqual(arroseesParLaPluie(s), [p.case]);
+  s.day += 1;
+  assertEqual(arroseesParLaPluie(s), []);
+  s.day -= 1;
   // au pas de l'horloge
   const t = garden();
   t.day = s.day;

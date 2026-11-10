@@ -6,7 +6,8 @@
 
    La pluie arrose : pendant l'averse, les cultures de la ferme qui ne le sont pas encore le sont (pas la Serre,
    qui est couverte), sans eau ni énergie (pluieSurLaFerme, à chaque pas de l'horloge : energy.js).
-   state.meteo = { jour, arrosees } : ce que la pluie du jour a arrosé. */
+   state.meteo = { jour, arrosees, cases } : ce que la pluie du jour a arrosé (combien, et les cases : la carte
+   n'en fait pas un geste du personnage, js/ui/stage.js autoDone). */
 
 import { DATA } from './catalog.js';
 import { mulberry32 } from './base.js';
@@ -51,21 +52,31 @@ export function brume(state, heure = hourOfDay(state)) {
 }
 
 // Pendant l'averse : les cultures de la ferme (pas la Serre) qui ne sont pas arrosées le sont (aussi celles
-// semées sous la pluie), sans eau ni énergie. Renvoie combien à ce pas ; state.meteo = { jour, arrosees }
-// compte celles du jour (l'annonce : js/ui/meteo.js).
+// semées sous la pluie), sans eau ni énergie. Renvoie combien à ce pas ; state.meteo = { jour, arrosees, cases }
+// compte celles du jour (l'annonce : js/ui/meteo.js) et garde leurs cases (la pluie les a arrosées, pas le
+// personnage : js/ui/stage.js autoDone).
 export function pluieSurLaFerme(state) {
   if (!pleut(state)) return 0;
   let n = 0, h = null;
+  const cases = [];
   for (const p of (state.potager && state.potager.parcelles) || []) {
     if (!p.culture || p.arrose || isMature(p)) continue;
     if (h === null) h = absoluteHours(state);
     p.arrose = true;
     p.arroseH = h;
     n += 1;
+    if (Number.isInteger(p.case)) cases.push(p.case);
   }
   if (n) {
     if (!state.meteo || typeof state.meteo !== 'object' || state.meteo.jour !== state.day) state.meteo = { jour: state.day, arrosees: 0 };
     state.meteo.arrosees += n;
+    state.meteo.cases = (Array.isArray(state.meteo.cases) ? state.meteo.cases : []).concat(cases);
   }
   return n;
+}
+
+// Les cases que la pluie du jour a arrosées.
+export function arroseesParLaPluie(state) {
+  const m = state.meteo;
+  return m && typeof m === 'object' && m.jour === state.day && Array.isArray(m.cases) ? m.cases : [];
 }

@@ -5,7 +5,7 @@ import { aFait, noterVisite, RECIT, toucherLieu } from '../engine/recit.js';
 import { fermeLuit, geodeLuit, visiteObservatoire } from '../engine/fil-lune.js';
 import { escapeHtml, formatLitres } from '../engine/format.js';
 import { clockHours, nightActive } from '../engine/clock.js';
-import { brume as brumeDuMoment, pleut } from '../engine/meteo.js';
+import { arroseesParLaPluie, brume as brumeDuMoment, pleut } from '../engine/meteo.js';
 import { fetesDuJour } from '../engine/fetes.js';
 import { ouvrirSecret } from '../engine/secrets.js';
 import { entreeEncyclopedie } from '../engine/encyclopedie.js';
@@ -757,6 +757,8 @@ function autoDone() {
   if (I && I.jour === state.day) for (const c of I.faites || I.cases || []) out.push(`arroser:${c}`);
   // (le compagnon arrose de lui-même, fiche 19 : il fait son geste, pas le personnage)
   for (const c of arroseesCompagnon(state)) out.push(`arroser:${c}`);
+  // (la pluie arrose, G-1 : pas le personnage)
+  for (const c of arroseesParLaPluie(state)) out.push(`arroser:${c}`);
   for (const c of recolteesCompagnon(state)) out.push(`recolter:${c}`);   // (les légumes qu'on lui a demandé de ramasser)
   return out;
 }
