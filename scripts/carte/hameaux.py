@@ -174,6 +174,11 @@ COEUR = rampe([(96, 56, 26), (150, 100, 52), (198, 146, 82), (230, 190, 126), (2
 FRENE = rampe([(96, 70, 40), (150, 116, 72), (202, 168, 116), (236, 214, 170)])
 ACIER = rampe([(30, 34, 40), (70, 78, 88), (122, 132, 144), (180, 188, 198), (236, 240, 244)])
 BLEU = rampe([(22, 44, 70), (40, 78, 116), (66, 116, 158), (110, 160, 196), (170, 206, 228)])
+FILET_R = rampe([(70, 64, 48), (120, 110, 84), (170, 160, 128), (214, 206, 176), (238, 234, 214)])
+LIEGE = rampe([(110, 34, 24), (176, 62, 40), (222, 108, 66), (246, 160, 112)])
+ROCHE = rampe([(44, 44, 50), (82, 82, 88), (124, 122, 124), (170, 166, 162), (212, 208, 200)])
+CUIVRE_R = rampe([(96, 46, 22), (160, 86, 42), (214, 136, 74), (246, 196, 132)])
+FERRUGINEUX = rampe([(70, 34, 26), (124, 62, 40), (176, 98, 62), (214, 146, 104)])
 ECORCE = rampe([(30, 20, 12), (58, 40, 24), (88, 64, 40), (120, 92, 60), (150, 120, 82)])
 
 
@@ -430,33 +435,119 @@ def barque():
     return im, (18, 19)
 
 
+def poteau(t, x, y0, y1, R, s=0):
+    """Un poteau rond de 2 px vu à 45° : le flanc au soleil, le flanc à l'ombre, sa tête claire."""
+    for y in range(y0, y1 + 1):
+        f = (y - y0) / max(1, y1 - y0)
+        t.put(x, y, ton(R, 0.70 - 0.15 * f + 0.05 * bruit(x, y, s)))
+        t.put(x + 1, y, ton(R, 0.36 - 0.10 * f + 0.04 * bruit(x + 1, y, s)))
+    t.put(x, y0, ton(R, 0.92))
+    t.put(x + 1, y0, ton(R, 0.66))
+
+
 def sechoir():
-    """Le séchoir à filets : deux perches, une traverse, le filet qui pend en losanges, des flotteurs."""
-    t = Toile(34, 30)
-    for x in (3, 30):
-        t.rect(x, 2, x + 1, 29, BOIS[1]); t.put(x, 2, BOIS[3])
-    t.rect(2, 3, 31, 4, BOIS[3])
-    for y in range(5, 25):
-        for x in range(5, 30):
-            if ((x + y) % 6 == 0 or (x - y) % 6 == 0) and y < 24 - abs(x - 17) // 4:
-                t.put(x, y, FILET[2] if (x + y) % 6 == 0 else FILET[1])
-    for x in range(6, 30, 5):
-        t.put(x, 6, (210, 90, 50)); t.put(x + 1, 6, (230, 130, 70))
-    return t.fini(), (17, 30)
+    """Le séchoir à filets du pêcheur, vu de haut à 45° : deux perches plantées, calées par des
+    piquets ; une traverse ronde ; le filet de chanvre qui pend en losanges, son bord de flotteurs
+    de liège rouges, ses plombs ; le bas du filet qui traîne en tas ; l'ombre du tout au sol."""
+    t = Toile(36, 34)
+    for x in (3, 31):                                                 # les perches
+        poteau(t, x, 2, 30, CHENE, 81)
+        t.put(x - 1, 30, ton(CHENE, 0.3))
+        t.put(x + 2, 30, ton(CHENE, 0.2))
+    for k in range(4):                                                # les piquets qui les calent
+        t.put(1 - k // 3, 27 + k, ton(CHENE, 0.6))
+        t.put(34 + k // 3, 27 + k, ton(CHENE, 0.35))
+    for x in range(2, 34):                                            # la traverse
+        t.put(x, 3, ton(CHENE, 0.88 - 0.1 * x / 33))
+        t.put(x, 4, ton(CHENE, 0.55 - 0.1 * x / 33))
+        t.put(x, 5, ton(CHENE, 0.28))
+    for x in (3, 4, 31, 32):                                          # les liens de corde
+        t.put(x, 4, ton(FILET_R, 0.9))
+    im = ombre_portee(t.fini(), 18, 31.3, 17.5, 2.4)
+    # le filet, posé après le contour : ses mailles restent ajourées (l'herbe se voit au travers)
+    filet = Toile(36, 34)
+    filet.im, filet.px = im, im.load()
+    t = filet
+    for x in range(6, 31):                                            # le filet, une maille de 6 px
+        bas = 23 + 3 * (1 - ((x - 18) / 13) ** 2)                     # il pend plus au milieu
+        for y in range(6, int(bas) + 1):
+            if (x + y) % 6 == 0 or (x - y) % 6 == 0:
+                lum = 0.75 - 0.30 * (y - 6) / 20 + 0.08 * bruit(x, y, 82)
+                if (x - y) % 6 == 0:
+                    lum -= 0.18                                        # le fil qui part vers l'ombre
+                if bruit(x // 3, y // 3, 83) > 0.7:
+                    lum -= 0.15                                        # un pli
+                t.put(x, y, ton(FILET_R, lum))
+        if x % 3 == 0:                                                # les flotteurs, sous la traverse
+            t.put(x, 6, ton(LIEGE, 0.85))
+            t.put(x, 7, ton(LIEGE, 0.45))
+        if x % 4 == 1:                                                # les plombs, au bas
+            t.put(x, int(bas), ton(ACIER, 0.35))
+    for x in range(7, 30):                                            # le bas du filet, en tas au sol
+        h = int(2.4 * (1 - ((x - 18) / 12) ** 2)) + 1
+        for k in range(h):
+            y = 30 - k
+            lum = 0.52 - 0.12 * k + 0.12 * bruit(x, y, 84)
+            if (x + y) % 3 == 0:
+                lum -= 0.18
+            t.put(x, y, ton(FILET_R, lum))
+    return im, (18, 31)
 
 
 def wagonnet():
-    """Le wagonnet du mineur : une caisse de bois cerclée de fer sur ses roues, pleine de minerai."""
-    t = Toile(16, 22)
-    boite(t, 1, 14, 18, 8, 5, [BOIS[0], BOIS[1], BOIS[2], BOIS[3], BOIS[4]])
-    for x in range(2, 14):
-        t.put(x, 8 + (1 if hasard(x, 3) < 0.4 else 0), PIERRE[2])
-    for x in (3, 6, 9, 12):
-        t.put(x, 7, CUIVRE[2] if x % 2 else PIERRE[4])
-    t.rect(1, 12, 14, 12, FER[2]); t.rect(1, 16, 14, 16, FER[2])
-    for x in (4, 11):
-        t.ellipse(x + 0.5, 19.5, 2.2, 2.2, lambda u, v: FER[1] if u * u + v * v > 0.3 else FER[3])
-    return t.fini(), (8, 22)
+    """Le wagonnet du mineur, vu de haut à 45° : une caisse de chêne évasée, cerclée de fer et
+    rivetée, pleine de minerai (pierres grises, éclats de cuivre et de fer) ;
+    ses roues de fonte vues de chant ; le bout de voie sous lui (deux rails sur leurs traverses) ; son ombre."""
+    t = Toile(18, 25)
+    for y in (19, 22):                                                # les traverses de la voie
+        for x in range(1, 17):
+            t.put(x, y, ton(CHENE, 0.50 - 0.2 * (x / 16) + 0.05 * bruit(x, y, 91)))
+            t.put(x, y + 1, ton(CHENE, 0.22))
+    for x in (2, 14):                                                 # les rails
+        for y in range(18, 25):
+            t.put(x, y, ton(ACIER, 0.80))
+            t.put(x + 1, y, ton(ACIER, 0.40))
+    for y in range(9, 17):                                            # la face avant, en planches
+        r = 1 if y >= 13 else 0                                        # un peu évasée vers le haut
+        for x in range(1 + r, 17 - r):
+            lum = 0.55 - 0.20 * (x - 1) / 15 - 0.10 * (y - 9) / 8 + 0.04 * bruit(x, y, 92)
+            if (y - 9) % 3 == 0:
+                lum -= 0.14                                            # le joint des planches
+            c = ton(CHENE, lum)
+            if y in (10, 15):
+                c = ton(ACIER, 0.62 - 0.3 * (x - 1) / 15)               # les cercles de fer
+            if x in (1 + r, 16 - r):
+                c = ton(ACIER, 0.75 if x == 1 + r else 0.30)            # les cornières
+            t.put(x, y, c)
+    for x in (4, 8, 12):
+        t.put(x + (1 if x == 12 else 0), 10, ton(ACIER, 0.95))         # les rivets
+        t.put(x + (1 if x == 12 else 0), 15, ton(ACIER, 0.95))
+    for y in range(4, 9):                                             # le dessus : le rebord et le minerai
+        for x in range(0, 18):
+            if y in (4, 8) or x in (0, 17):
+                if y == 4 and x in (0, 17):
+                    continue
+                t.put(x, y, ton(CHENE, 0.88 if y == 4 or x == 0 else 0.60))
+    pierres = [(3, 5, 0), (6, 4, 1), (9, 4, 2), (12, 5, 3), (14, 6, 4), (4, 7, 5), (8, 6, 6), (11, 7, 7), (2, 3, 8), (7, 2, 9),
+               (10, 2, 10), (13, 3, 11), (5, 3, 12)]
+    for px, py, k in pierres:                                         # le minerai qui dépasse
+        R = CUIVRE_R if k in (2, 7) else FERRUGINEUX if k == 5 else ROCHE
+        for dy in range(2):
+            for dx in range(3 - dy):
+                lum = 0.80 - 0.25 * dx - 0.35 * dy + 0.06 * bruit(px, py, k)
+                t.put(px + dx, py + dy, ton(R, lum))
+    for x in range(2, 16):                                            # le châssis, dans l'ombre
+        t.put(x, 17, ton(NOYER, 0.10))
+    for x0 in (2, 13):                                                # les roues, vues de chant sur les rails
+        for y in range(17, 22):
+            bombe = 1 if y in (17, 21) else 0
+            t.put(x0 + bombe, y, ton(ACIER, 0.60 - 0.08 * (y - 17)))
+            t.put(x0 + 1, y, ton(ACIER, 0.34 - 0.04 * (y - 17)))
+            if not bombe:
+                t.put(x0 + 2, y, ton(ACIER, 0.16))
+        t.put(x0 + 1, 19, ton(ACIER, 0.85))                            # le moyeu
+    im = ombre_portee(t.fini(), 9, 22.5, 8.8, 2.4)
+    return im, (9, 22)
 
 
 def tas_minerai():
