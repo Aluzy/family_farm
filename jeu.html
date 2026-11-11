@@ -9,28 +9,35 @@
 <body>
 
 <!-- L'écran de chargement (css/jeu.css, .chargement) : par-dessus tout dès la première image, le
-     temps que la carte soit entièrement dessinée ; quatre carottes y poussent avec le chargement
-     (window.Chargement.avance(p), p de 0 à 1 ; fini() le retire : js/farm-stage.js). -->
+     temps que la carte soit entièrement dessinée ; la liane fleurie du logo s'y remplit avec le chargement
+     et ses boutons s'ouvrent en fleurs (window.Chargement.avance(p), p de 0 à 1 ; fini() le retire :
+     js/farm-stage.js ; l'image : scripts/chargement/liane.py). -->
 <div class="chargement" id="chargement" role="status" aria-live="polite">
   <div class="chargement-titre"><img src="assets/logo.png" alt="Moon Bloom Village" width="90" height="45"></div>
-  <div class="chargement-rang" aria-hidden="true">
-    <div class="chargement-plants"><i></i><i></i><i></i><i></i></div>
-    <div class="chargement-terre"></div>
+  <div class="chargement-liane" aria-hidden="true">
+    <i class="liane-fond"></i><i class="liane-plein"></i><i class="liane-feuilles"></i>
+    <b style="--x:9"></b><b style="--x:26"></b><b style="--x:43"></b><b style="--x:60"></b><b style="--x:77"></b>
   </div>
-  <div class="chargement-texte">Les carottes poussent… <span id="chargement-pct">0 %</span></div>
+  <div class="chargement-texte">Les fleurs s'ouvrent… <span id="chargement-pct">0 %</span></div>
 </div>
 <script>
-// Le chargement : avance(p) fait pousser les carottes (elles ne reculent jamais), fini() les mûrit
-// et efface l'écran. Sans fin au bout de 30 s (une erreur, une autre carte), l'écran s'efface seul.
+// Le chargement : avance(p) remplit la liane (elle ne recule jamais) et ouvre les fleurs qu'elle a
+// dépassées, fini() la remplit et efface l'écran. Sans fin au bout de 30 s (une erreur, une autre
+// carte), l'écran s'efface seul.
 (function () {
   var el = document.getElementById('chargement'), pct = document.getElementById('chargement-pct');
-  var plants = el.querySelectorAll('.chargement-plants i'), fait = 0, parti = false;
+  var liane = el.querySelector('.chargement-liane'), fleurs = liane.querySelectorAll('b'), fait = 0, parti = false;
+  var PLEIN = 82;   // la jauge, en pixels du dessin (scripts/chargement/liane.py)
   function avance(p) {
     p = Math.max(fait, Math.min(1, Number(p) || 0));
     fait = p;
-    // une vague de gauche à droite : la i-ème carotte part un stade après la précédente (4 stades)
-    var n = Math.floor(p * 6 + 1e-9);
-    for (var i = 0; i < plants.length; i++) plants[i].dataset.stade = Math.max(0, Math.min(3, n - i));
+    var n = Math.round(p * PLEIN);
+    liane.style.setProperty('--plein', n);
+    // une fleur s'ouvre quand la jauge atteint son milieu : sa case commence à --x, son milieu à --x + 4,
+    // et le plein va de 4 à 4 + n
+    for (var i = 0; i < fleurs.length; i++) {
+      if (n >= Number(fleurs[i].style.getPropertyValue('--x'))) fleurs[i].setAttribute('data-ouverte', '');
+    }
     pct.textContent = Math.round(p * 100) + ' %';
   }
   function fini() {
