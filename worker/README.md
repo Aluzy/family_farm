@@ -293,8 +293,8 @@ envoi d'une visite, toutes les 10 minutes et à la fin (`fiche: true` dans la se
 
 ## Les gemmes (achats en argent réel, par Stripe)
 
-`worker/src/boutique.mjs` ; dans le jeu, `js/ui/gemmes.js`. Les gemmes 💎 s'achètent en packs (100 gemmes à
-0,99 €, 550 à 4,99 €, 1 200 à 9,99 €) et achètent les rosiers grimpants (25 gemmes, 4 coloris). Le solde, les
+`worker/src/boutique.mjs` ; dans le jeu, `js/ui/gemmes.js`. Les gemmes 💎 s'achètent en packs (200 gemmes à
+1,99 €, 550 à 4,99 €, 1 200 à 9,99 €) et achètent les rosiers grimpants (25 gemmes, 4 coloris). Le solde, les
 paiements et les achats sont dans la base du Durable Object Comptes : jamais dans la partie, qui se modifie à la
 main. Il faut un compte du jeu en ligne pour acheter.
 

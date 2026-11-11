@@ -38,7 +38,7 @@ function faussesApi(id = SESSION) {
 
 test('boutique : le mode vient de la clé (test, live, clé restreinte) ; sans clé ni secret, fermée', () => {
   eq([modeStripe({ STRIPE_SECRET_KEY: 'sk_test_x' }), modeStripe({ STRIPE_SECRET_KEY: 'rk_live_x' }), modeStripe({ STRIPE_SECRET_KEY: 'pk_test_x' }), modeStripe({})], ['test', 'live', null, null]);
-  eq(BOUTIQUE.PACKS, { petit: { gemmes: 100, centimes: 99 }, moyen: { gemmes: 550, centimes: 499 }, grand: { gemmes: 1200, centimes: 999 } }, 'les prix validés');
+  eq(BOUTIQUE.PACKS, { petit: { gemmes: 200, centimes: 199 }, moyen: { gemmes: 550, centimes: 499 }, grand: { gemmes: 1200, centimes: 999 } }, 'les prix validés');
   for (const a of Object.values(BOUTIQUE.ARTICLES)) eq(a.prix, 25, 'un rosier : 25 gemmes');
 });
 
@@ -78,7 +78,7 @@ test('boutique : la notification de paiement crédite les gemmes une seule fois 
   b.noterPaiement(SESSION, 'c-1', 'petit', 'test');
   const t = Math.floor(Date.now() / 1000);
   const recevoir = (type, objet, livemode = false, env = ENV) => { const corps = evenement(type, objet, livemode); return recevoirStripe(corps, signer(corps, t), b, env, t); };
-  const payee = { id: SESSION, payment_status: 'paid', client_reference_id: 'c-1', amount_total: 99, currency: 'eur' };
+  const payee = { id: SESSION, payment_status: 'paid', client_reference_id: 'c-1', amount_total: 199, currency: 'eur' };
   // une signature fausse : 400, rien
   const corps = evenement('checkout.session.completed', payee);
   eq((await recevoirStripe(corps, signer(corps, t, 'whsec_faux'), b, ENV, t)).statut, 400);
@@ -90,14 +90,14 @@ test('boutique : la notification de paiement crédite les gemmes une seule fois 
   }
   eq((await recevoir('checkout.session.completed', payee, true)).corps.ignore, 'mode', 'un événement réel avec une clé de test');
   eq((await recevoir('payment_intent.created', payee)).corps.ignore, 'payment_intent.created');
-  // la bonne : 100 gemmes, une fois
+  // la bonne : 200 gemmes, une fois
   eq((await recevoir('checkout.session.completed', payee)).corps, { ok: true, credite: true });
   eq((await recevoir('checkout.session.completed', payee)).corps, { ok: true, credite: false }, 'reçue deux fois');
   eq((await recevoir('checkout.session.async_payment_succeeded', payee)).corps.credite, false);
-  eq(b.solde('c-1'), 100);
+  eq(b.solde('c-1'), 200);
   // une session qui n'est pas la nôtre
   eq((await recevoir('checkout.session.completed', { ...payee, id: 'cs_test_inconnue123456' })).corps.credite, false);
-  eq(b.solde('c-1'), 100);
+  eq(b.solde('c-1'), 200);
 });
 
 test('boutique : acheter un rosier (25 gemmes), la livraison reproposée jusqu\'à confirmation ; la suppression du compte efface le solde', async () => {

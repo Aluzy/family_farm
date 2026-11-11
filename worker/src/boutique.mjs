@@ -27,7 +27,7 @@ export const BOUTIQUE = {
   DEVISE: 'eur',
   // les packs de gemmes : leur prix en centimes
   PACKS: {
-    petit: { gemmes: 100, centimes: 99 },
+    petit: { gemmes: 200, centimes: 199 },
     moyen: { gemmes: 550, centimes: 499 },
     grand: { gemmes: 1200, centimes: 999 },
   },
