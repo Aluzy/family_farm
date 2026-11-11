@@ -17,7 +17,9 @@
     "variante d'un meuble (MEUBLES.<id>.variantes : la première est celle de son dessin) remplace des rampes par d'autres",
     "de même longueur (remplace : { rampe du dessin : rampe de la variante }) : la carte recolore ses images au chargement",
     "(js/carte/ferme/chantier.js, imageTeinte), de face, de dos, de profil et sa couverture ; rien n'est dessiné en plus.",
-    "Le joueur la choisit à la pose et peut repeindre un meuble posé (le mode Construire : 🎨 ; js/engine/blocs.js, varianteBloc)."
+    "Le joueur la choisit à la pose et peut repeindre un meuble posé (le mode Construire : 🎨 ; js/engine/blocs.js, varianteBloc).",
+    "Les tissus ont 9 tons : leurs 3 tons d'origine (les dessins anciens) et 6 tons interpolés de la même façon pour chaque tissu",
+    "(un plus sombre, deux intermédiaires, trois reflets), pour les dessins nuancés (le lit double : scripts/batiments/meubles.py)."
   ],
   "PALETTES": {
     "bois_miel": ["#3c1e16", "#603620", "#86522e", "#aa7040", "#cc965c"],
@@ -27,10 +29,10 @@
     "chene": ["#382f1d", "#5a4c32", "#706041", "#96825c", "#bca37a"],
     "chene_noyer": ["#2a1c12", "#46301e", "#5e4028", "#7e5a3a", "#a27c58"],
     "chene_sauge": ["#465846", "#60765c", "#7e9474", "#a0b494", "#c6d4b8"],
-    "tissu_vert": ["#285238", "#427c50", "#70a86e"],
-    "tissu_rouge": ["#5c1e24", "#8e3236", "#c0564e"],
-    "tissu_bleu": ["#1e3460", "#34568e", "#6a8ec4"],
-    "tissu_moutarde": ["#7a5418", "#b08428", "#dcb850"],
+    "tissu_vert": ["#1b3826", "#285238", "#356744", "#427c50", "#59925f", "#70a86e", "#8fbb8e", "#accdab", "#c9dec8"],
+    "tissu_rouge": ["#3f1418", "#5c1e24", "#75282d", "#8e3236", "#a74442", "#c0564e", "#ce7b75", "#da9d98", "#e7bfbc"],
+    "tissu_bleu": ["#142341", "#1e3460", "#294577", "#34568e", "#4f72a9", "#6a8ec4", "#8ba7d1", "#a9bddd", "#c6d4e9"],
+    "tissu_moutarde": ["#533910", "#7a5418", "#956c20", "#b08428", "#c69e3c", "#dcb850", "#e4c876", "#ebd69a", "#f2e4bc"],
     "bac_bandeau": ["#706042", "#96825d", "#bca37b"],
     "bac_cerclage": ["#3e4451", "#626a77", "#929aa5"],
     "bac_bandeau_rouge": ["#ba2424", "#e2483c", "#fa9682"],
