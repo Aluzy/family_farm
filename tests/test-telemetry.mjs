@@ -462,3 +462,14 @@ test('créer : rien sans consentement', () => {
   b.T.coop();
   eq([b.local.map.size, b.session.map.size, b.beacons.length], [0, 0, 0]);
 });
+
+test('la fiche du joueur : demandée au premier envoi, tous les 10 envois et à la fin (moins d\'opérations R2)', () => {
+  const b = makeBrowser();
+  b.T.init({ version: '1' });
+  b.T.setConsent('granted');
+  for (let i = 0; i < 11; i++) { b.T.click('water', 'p' + i); b.T._flush(false); }
+  b.T._flush(true);
+  const f = b.beacons.map((x) => x.body.fiche);
+  eq(f.length, 13);
+  eq([f[0], f[1], f[9], f[10], f[11], f[12]], [true, false, false, true, false, true]);
+});

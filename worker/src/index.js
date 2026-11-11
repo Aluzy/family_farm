@@ -26,6 +26,7 @@
 import { buildReport, mergePlayer, playerMeta, renderMarkdown, reportSubject, parisHour } from './report.mjs';
 
 // Les comptes des joueurs (E-0) : le Durable Object Comptes (comptes.mjs), routes /compte/….
+import { routeAdmin } from './admin.mjs';
 export { Comptes } from './comptes.mjs';
 // Le monde partagé (E-1) : un Durable Object Monde par monde (monde.mjs), routes /mondes….
 export { Monde } from './monde.mjs';
@@ -115,6 +116,32 @@ async function loadAnnuaire(bucket) {
     cursor = page.truncated ? page.cursor : undefined;
   } while (cursor);
   return out;
+}
+
+// La console d'administration (admin.mjs) : ce qu'elle lit, par ici.
+function outilsAdmin(env) {
+  return {
+    page: async () => (await import('./admin.html')).default,
+    rapport: async (fenetreMs) => {
+      const now = new Date(), since = new Date(now.getTime() - fenetreMs);
+      const { sessions, unreadable, truncated } = await loadFiles(env.SESSIONS, 'sessions/', since, MAX_READ);
+      const fiches = await loadFiles(env.SESSIONS, 'players/', since, MAX_PLAYERS_READ);
+      const annuaire = await loadAnnuaire(env.SESSIONS);
+      return buildReport(sessions, now, { fenetreMs, unreadable: unreadable + fiches.unreadable, truncated: truncated + fiches.truncated }, fiches.sessions, annuaire);
+    },
+    listeSessions: async (fenetreMs) => {
+      const since = new Date(Date.now() - fenetreMs), out = [];
+      let cursor;
+      do {
+        const page = await env.SESSIONS.list({ prefix: 'sessions/', cursor, limit: 1000 });
+        for (const o of page.objects) if (o.uploaded >= since) out.push({ sid: o.key.slice(9, -5), date: o.uploaded, taille: o.size });
+        cursor = page.truncated ? page.cursor : undefined;
+      } while (cursor);
+      return out.sort((a, b) => b.date - a.date).slice(0, 300);
+    },
+    lire: async (cle) => { const o = await env.SESSIONS.get(cle); return o ? o.json() : null; },
+    enLigne: async () => (env.COMPTES ? interne(env, '/interne/admin') : { ok: false, erreur: 'Le jeu en ligne n\'est pas ouvert.' }),
+  };
 }
 
 async function makeReport(env, now) {
@@ -361,6 +388,9 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === 'GET' && url.pathname === '/report') return handleReport(request, env, url);
+    // la console d'administration : derrière Cloudflare Access, vérifiée ici (admin.mjs)
+    if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return routeAdmin(request, env, url, outilsAdmin(env));
+    if (url.hostname.startsWith('admin.') && url.pathname === '/') return Response.redirect(`${url.origin}/admin`, 302);
 
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
     if (url.pathname.startsWith('/compte/')) return routeComptes(request, env, origin);
@@ -386,7 +416,9 @@ export default {
     await env.SESSIONS.put(`sessions/${data.sid}.json`, JSON.stringify(data), {
       httpMetadata: { contentType: 'application/json' },
     });
-    try { await updatePlayer(env.SESSIONS, data); } catch (e) { console.error(`fiche joueur en échec : ${e.message}`); }
+    // (la fiche : seulement quand le jeu la demande, au premier envoi, toutes les 10 minutes et à la fin ; un
+    // ancien jeu, sans `fiche`, la demande à chaque envoi)
+    if (data.fiche !== false) try { await updatePlayer(env.SESSIONS, data); } catch (e) { console.error(`fiche joueur en échec : ${e.message}`); }
     return json({ ok: true, events: data.events.length }, 200, origin);
   },
 

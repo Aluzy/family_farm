@@ -504,7 +504,8 @@ function perDay(days, field) {
 // annuaire : les métadonnées (playerMeta) de toutes les fiches, pour la rétention et les abandons.
 export function buildReport(sessions, now, meta = {}, players = [], annuaire = []) {
   const end = now.getTime();
-  const start = end - DAY_MS;
+  // (la fenêtre : 24 h pour le rapport quotidien ; la console d'administration en demande d'autres)
+  const start = end - (meta.fenetreMs > 0 ? meta.fenetreMs : DAY_MS);
   const valid = sessions.filter((s) => s && typeof s === 'object');
 
   const inWindow = valid.filter((s) => {

@@ -139,6 +139,27 @@ export class Registre {
     return this.tous('SELECT monde, titre, role, cree FROM mondes WHERE compte = ? ORDER BY cree', compte);
   }
 
+  // La console d'administration : combien de comptes, de mondes, d'amis ; qui est en ligne (son prénom, s'il
+  // joue à plusieurs) ; jamais d'adresse e-mail.
+  statsAdmin() {
+    const t = this.maintenant(), n = (q, ...v) => (this.un(q, ...v) || {}).n || 0;
+    const enLigne = this.tous('SELECT prenom, niveau, monde, proprio, vu FROM profils WHERE vu > ? ORDER BY vu DESC LIMIT 100', t - 90 * 1000);
+    return {
+      comptes: n('SELECT COUNT(*) AS n FROM comptes'),
+      nouveaux7j: n('SELECT COUNT(*) AS n FROM comptes WHERE cree > ?', t - 7 * JOUR),
+      vus7j: n('SELECT COUNT(*) AS n FROM comptes WHERE vu > ?', t - 7 * JOUR),
+      sessionsOuvertes: n('SELECT COUNT(*) AS n FROM sessions WHERE expire > ?', t),
+      mondes: n('SELECT COUNT(DISTINCT monde) AS n FROM mondes'),
+      mondesParRole: this.tous('SELECT role, COUNT(*) AS n FROM mondes GROUP BY role'),
+      amities: n('SELECT COUNT(*) AS n FROM amities WHERE etat = \'ami\'') / 2,
+      demandes: n('SELECT COUNT(*) AS n FROM amities WHERE etat = \'demande\''),
+      profils: n('SELECT COUNT(*) AS n FROM profils'),
+      vus24h: n('SELECT COUNT(*) AS n FROM profils WHERE vu > ?', t - JOUR),
+      enLigne: enLigne.map((p) => ({ prenom: p.prenom, niveau: p.niveau, aPlusieurs: !!p.monde, proprio: !!p.proprio, vu: p.vu })),
+      mondesActifs: new Set(enLigne.filter((p) => p.monde).map((p) => p.monde)).size,
+    };
+  }
+
   // Le compte de la session supprimé, avec toutes ses sessions et les liens en attente de son adresse.
   async supprimer(session) {
     const c = await this.moi(session);
@@ -257,6 +278,8 @@ export async function routeInterne(request, registre) {
     const r = registre.amis.deposer(String(b.de || ''), String(b.pour || ''), String(b.type || ''), { monde: b.monde, code: b.code, titre: b.titre });
     return { statut: r.ok ? 200 : r.statut, corps: r };
   }
+  // (la console d'administration : des comptes, jamais d'adresse e-mail)
+  if (url.pathname === '/interne/admin') return { statut: 200, corps: { ok: true, ...registre.statsAdmin() } };
   if (url.pathname === '/interne/mondes') return { statut: 200, corps: { ok: true, mondes: registre.mondesDe(url.searchParams.get('compte') || '') } };
   return { statut: 404, corps: { ok: false, erreur: 'not found' } };
 }
