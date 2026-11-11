@@ -17,7 +17,7 @@ import { buildSlotHtml } from './chantier.js';
 import { crucheSlotHtml } from './cruche.js';
 import { setBuildMode } from './store.js';
 import { chevalMonte, chevalOu, chevalPossede, toggleCheval } from '../engine/cheval.js';
-import { rangeeGalopHtml } from './galop.js';
+import { ouvrirFicheCheval, rangeeGalopHtml } from './galop.js';
 
 /* ---------- la barre d'outils, en bas de la carte ---------- */
 
@@ -85,6 +85,8 @@ function useCheval() {
   const r = applyResult(toggleCheval(state, lieu));
   if (!r.ok) return;
   persistState();
+  // En selle : la fiche du cheval s'ouvre (sa sacoche, ses pommes : js/ui/galop.js).
+  if (r.monte) ouvrirFicheCheval();
   if (r.monte) notify(`${C.ICONE} En selle : tu vas ${String(state.cheval.nourri === false ? C.VITESSE_FAIM : C.VITESSE).replace('.', ',')} fois plus vite sur les cartes${state.cheval.nourri === false ? ' (il n\'a pas mangé sa paille cette nuit)' : ''}.`);
   else if (r.attache) notify(`${C.ICONE} Tu l'attaches à son poteau : il t'attend ici. Touche-le pour remonter.`);
   else if (avant === 'monte') notify(`${C.ICONE} Tu descends de cheval : il rentre à l'Écurie.`);
