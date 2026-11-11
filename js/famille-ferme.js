@@ -105,7 +105,7 @@
   //   sa partie (JEU s) puis rentre ; le second adulte va encore aux bêtes (le Poulailler, l'Étable, les
   //   ruches) et à la cuisinière (dans la maison) : le reste (arroser, puiser, ramasser) attend la fin de
   //   l'averse. La pluie finie, chacun ressort vers son coin.
-  // - En marchant, un membre contourne (par sa droite, de COTE px ; le personnage du joueur : du côté le plus
+  // - En marchant, un membre contourne (par sa droite, de COTE px, le réglage « discret » choisi sur film ; le personnage du joueur : du côté le plus
   //   loin de lui) le membre, le personnage ou la bête qui est devant lui, entre lui et son prochain point
   //   (à moins de LOIN px devant, PRES px de côté) ; un membre qui va du même côté que lui : il le laisse
   //   prendre de l'avance. Il n'attend jamais plus de PATIENCE s : il passe (PASSE s sans contourner).
@@ -115,7 +115,7 @@
   // - Les bêtes de la ferme s'écartent d'eux comme du personnage (js/carte/ferme/chantier.js, stepBeasts :
   //   positions()). Les chats et les chiens ne suivent pas ces règles.
   const PLUIE = { JEU: [3, 6] };
-  const ECART = { FROLE: 7, FORCE: 20, LOIN: 22, PRES: 9, COTE: 12, REPOS: 0.6, PATIENCE: 1.5, PASSE: 3, PLACE: 9 };
+  const ECART = { FROLE: 7, FORCE: 20, LOIN: 18, PRES: 7, COTE: 8, REPOS: 0.6, PATIENCE: 1.5, PASSE: 3, PLACE: 9 };
   const SOUS_LA_PLUIE = (l) => l === 'poulailler' || l === 'etable' || l === 'cuisiner' || String(l).startsWith('ruche:');
 
   // Les gestes du second adulte (fiche 19), les images de son personnage (assets/personnages/
@@ -740,11 +740,20 @@
         const dt = Math.min(deltaMs, 100) / 1000;
         if (grille) {
           grille.vide();
-          for (const m of membres.values()) if (m.visible && !m.couche && !m.assis) grille.ajoute(m.x, m.y, 'famille', m, dt);
+          // (le cadre où sont les membres debout : seules les bêtes qui en sont à moins de LOIN px comptent)
+          let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+          for (const m of membres.values()) {
+            if (!m.visible || m.couche || m.assis) continue;
+            grille.ajoute(m.x, m.y, 'famille', m, dt);
+            if (m.x < x0) x0 = m.x; if (m.x > x1) x1 = m.x; if (m.y < y0) y0 = m.y; if (m.y > y1) y1 = m.y;
+          }
           const j = o.fermier && o.fermier.pos ? o.fermier.pos() : null;
           if (j) grille.ajoute(j.x, j.y, 'joueur', 'joueur', dt);
           // (les bêtes de la ferme, dehors dans leur enclos : pas les chats ni les chiens)
-          if (scene.beasts) for (const e of scene.beasts.values()) if (e.lieu === 'enclos' && e.img && e.img.alpha > 0.5) grille.ajoute(e.x, e.y, 'bete', e, dt);
+          const R = ECART.LOIN;
+          if (scene.beasts && x0 <= x1) for (const e of scene.beasts.values()) {
+            if (e.lieu === 'enclos' && e.x > x0 - R && e.x < x1 + R && e.y > y0 - R && e.y < y1 + R && e.img && e.img.alpha > 0.5) grille.ajoute(e.x, e.y, 'bete', e, dt);
+          }
         }
         for (const m of membres.values()) {
           // (le second adulte se baisse au Poulailler ou à l'Étable)
