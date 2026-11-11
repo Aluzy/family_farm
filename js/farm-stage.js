@@ -1069,6 +1069,9 @@
         // un bac à fleurs : semer, voir ce qui pousse, couper ses fleurs à la faux (js/carte/ferme/bacs.js)
         const bac = !hoeing && this.bacAt ? this.bacAt(wx, wy) : -1;
         if (bac >= 0) return { bac };
+        // des fleurs semées dans l'herbe : voir ce qui pousse, les cueillir à la main (js/carte/ferme/massifs.js)
+        const massif = !hoeing && this.massifAt ? this.massifAt(wx, wy) : -1;
+        if (massif >= 0) return { massif };
         // le silo de la ferme générée (ses blocs) : la fenêtre du Silo
         if (!hoeing && this.siloAt(wx, wy)) return { window: 'silo' };
         // un four, une cuisinière posés (la ferme générée) : la fenêtre de sa station
@@ -1297,6 +1300,7 @@
         if (hit.chaine !== undefined) { this.jeterChaine(hit.chaine); return; }
         if (hit.machineSeule !== undefined) { this.machineSeule(hit.machineSeule); return; }
         if (hit.bac !== undefined) { this.bacTouche(hit.bac); return; }
+        if (hit.massif !== undefined) { this.massifTouche(hit.massif); return; }
         if (hit.botteleuse !== undefined) { this.jeterFibres(hit.botteleuse); return; }
         if (hit.distributeur !== undefined) { this.jeterGrain(hit.distributeur); return; }
         if (hit.chop) { this.chop(hit.chop); return; }

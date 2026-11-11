@@ -439,7 +439,7 @@ test('ferme générée : un sapin abattu laisse une pomme de pin, un arbre un gl
 test('menu Construire : chaque bloc dans une catégorie ; seuls les blocs débloqués se montrent', () => {
   const B = DATA.ATELIER.BLOCS;
   // (le portail ouvert : un état du portail, pas un bloc qu'on pose)
-  assertEqual(Object.keys(B).filter((k) => !B[k].semis && !B[k].arbre && !B[k].ouvert && !categorieBloc(k)), [], 'chaque bloc posable a son onglet');
+  assertEqual(Object.keys(B).filter((k) => !B[k].semis && !B[k].arbre && !B[k].massif && !B[k].ouvert && !categorieBloc(k)), [], 'chaque bloc posable a son onglet');
   assertEqual([categorieBloc('mur_brique_bleue'), categorieBloc('porte'), categorieBloc('refrigerateur'), categorieBloc('meuble_canape'), categorieBloc('meuble_tableau_1'), categorieBloc('nichoir'), categorieBloc('citerne'), categorieBloc('atelier')],
     ['batir', 'batir', 'maison', 'meubles', 'meubles', 'elevage', 'energie', 'machines']);
   const s = chantier('menu');

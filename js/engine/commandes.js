@@ -50,6 +50,7 @@
      cruche.remplir   { case }                 remplir la cruche au puits de cette case
      bac.semer        { case, fleur }          semer une graine de fleur dans un bac à fleurs vide (js/engine/bacs.js)
      bac.recolter     { case }                 couper à la faux les fleurs d'un bac en fleurs
+     massif.cueillir  { case }                 cueillir à la main les fleurs semées dans l'herbe (js/engine/massifs.js)
      tonnelet.remplir { case, objet }          mettre une tomme d'alpage, un moût de houblon dans un tonnelet vide (tonnelets.js)
      compost.jeter    { case, objet, quantite } jeter des aliments de l'inventaire dans un bac à compost (compost.js)
      potager.engrais  { parcelle }             mettre un engrais sur une culture arrosée : elle gagne un cycle (compost.js)
@@ -98,7 +99,7 @@
      appareil.reparer { appareil }
      reservoir.agrandir { }                     le réservoir d'eau ; robot.batterie : l'autonomie du robot
      robot.batterie   { }
-     arbre.planter    { sorte, case }           planter un arbre (un plant, une graine) sur une case
+     arbre.planter    { sorte, case }           planter un arbre (un plant, une graine) ou semer une fleur sur une case
      potager.semis    { parcelle, mode, culture? } le semis automatique d'une parcelle
    Les machines de l'Atelier et ce qui traîne au sol (E-13, sans inverse) :
      botteleuse.verser { case }                 jeter ses fibres dans l'entonnoir d'une botteleuse
@@ -126,6 +127,7 @@ import { remplirCruche } from './cruche.js';
 import { buyPasture, feedAllHens, feedHen, setCowHerbs, shear, upgradePoulailler } from './animals.js';
 import { pickUp } from './ramassage.js';
 import { recolterBac, semerBac } from './bacs.js';
+import { cueillirMassif } from './massifs.js';
 import { remplirTonnelet } from './tonnelets.js';
 import { engraisser, jeterAuCompost } from './compost.js';
 import { buildStation, cancelMilling, cancelQueued, startMilling, startRecipe, stopCurrent } from './kitchen.js';
@@ -428,6 +430,7 @@ export const COMMANDES = {
   },
   'bac.semer': { args: { case: 'case', fleur: 'fleur' }, executer: (state, { case: c, fleur }) => semerBac(state, c, fleur) },
   'bac.recolter': { args: { case: 'case' }, executer: (state, { case: c }) => recolterBac(state, c) },
+  'massif.cueillir': { args: { case: 'case' }, executer: (state, { case: c }) => cueillirMassif(state, c) },
   'compost.jeter': { args: { case: 'case', objet: 'objet', quantite: 'quantite' }, executer: (state, { case: c, objet, quantite }) => jeterAuCompost(state, c, objet, quantite) },
   'potager.engrais': { args: { parcelle: 'texte' }, executer: (state, { parcelle }) => engraisser(state, parcelle) },
   'tonnelet.remplir': { args: { case: 'case', objet: 'objet' }, executer: (state, { case: c, objet }) => remplirTonnelet(state, c, objet) },

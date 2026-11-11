@@ -165,7 +165,8 @@ function itemBodyHtml(o) {
   if (o.item === DATA.SILO.ITEM && state.silo.construit) lines.push(`🛖 Silo : ${formatQty(state.silo.ble)}`);
   const aPlanter = o.lieu === 'sac' && stageUsable() && sorteAPlanter(o.item);
   if (it.categorie === 'graine' && !sorteAPlanter(o.item)) lines.push('🌱 Se sème dans la Zone de culture.');
-  if (aPlanter) lines.push('🌳 Se plante dehors, sur une case d\'herbe libre, loin des autres arbres.');
+  const massif = aPlanter && DATA.ATELIER.BLOCS[aPlanter].massif;
+  if (aPlanter) lines.push(massif ? `🌼 Se sème dehors, sur une case d'herbe libre : en fleurs dans ${DATA.MASSIFS.NUITS} nuits, à cueillir à la main ; elles refleurissent ensuite. Aussi dans un bac à fleurs.` : '🌳 Se plante dehors, sur une case d\'herbe libre, loin des autres arbres.');
   // fiche 11 : une pièce d'équipement, un sac à provisions
   // le récit, lot 9 : l'enveloppe de Maurice (ce qu'il a écrit dessus ; l'ouvrir la garde, js/engine/recit.js)
   if (o.item === RECIT.ENVELOPPE.OBJET) lines.push('📜 « Pour les toits de Céron : Odile saura. Ou pour toi, si tu en as plus besoin qu\'eux. Tu sauras. M. »');
@@ -179,7 +180,7 @@ function itemBodyHtml(o) {
       <button type="button" class="btn" data-action="fridge-out" data-item="${o.item}" data-qty="1">Sortir 1</button>
       <button type="button" class="btn" data-action="fridge-out" data-item="${o.item}" data-qty="all">Tout sortir</button>`;
   } else {
-    if (aPlanter) actions += `<button type="button" class="btn primary" data-action="arbre-planter" data-item="${o.item}">🌱 Planter</button>`;
+    if (aPlanter) actions += `<button type="button" class="btn primary" data-action="arbre-planter" data-item="${o.item}">🌱 ${massif ? 'Semer dans l\'herbe' : 'Planter'}</button>`;
     if (o.item === RECIT.ENVELOPPE.OBJET) actions += '<button type="button" class="btn" data-action="enveloppe-ouvrir">✉️ L\'ouvrir</button>';
     if (o.item === FIL.PIERRE.OBJET && (lieuDuPerso() || {}).lieu === 'ferme') actions += '<button type="button" class="btn" data-action="pierre-poser">🪨 La poser sur la ferme</button>';
     if (it.mangeable) actions += eatButton(o.item, 'Manger');

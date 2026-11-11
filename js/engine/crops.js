@@ -104,6 +104,7 @@ export function isArable(tile, state, libres) {
   if (state && state.blocs && state.blocs[tile]) return false;     // un bloc posé
   if (state && state.sols && state.sols[tile]) return false;       // un plancher
   if (state && state.verger.arbres.some((t) => t.case === tile)) return false;   // un arbre planté
+  if (state && state.massifs && state.massifs[tile]) return false;   // des fleurs semées (massifs.js)
   const ch = terrainChar(tile, farmTerrain(state));
   return ch === '#' || (ch === 'o' && (libres || freedRockTiles(state)).has(tile));
 }

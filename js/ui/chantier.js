@@ -84,8 +84,8 @@ function leLotTrace() {
 const enMain = (s) => !DATA.ATELIER.BLOCS[s].meuble || s === buildMode || blocsEnMain(state, s) > 0;
 // (pendant le didacticiel : seulement les blocs qu'il a débloqués, js/engine/didacticiel.js)
 const vu = (s) => { const v = blocsDidacticiel(state); return !v || v.has(s); };
-// (les arbres, graines et jeunes arbres fruitiers, se plantent depuis l'Inventaire : js/ui/plantation.js)
-const bati = (s) => !DATA.ATELIER.BLOCS[s].semis && !DATA.ATELIER.BLOCS[s].arbre;
+// (les arbres, graines et jeunes arbres fruitiers, et les graines de fleurs, se plantent depuis l'Inventaire : js/ui/plantation.js)
+const bati = (s) => !DATA.ATELIER.BLOCS[s].semis && !DATA.ATELIER.BLOCS[s].arbre && !DATA.ATELIER.BLOCS[s].massif;
 // (seulement ceux qui sont débloqués : en main, posés, ou que l'Atelier sait fabriquer)
 const ouvert = (s) => s === buildMode || blocDebloque(state, s);
 const SORTES = () => (niveauBati() ? ETAGE_BLOCS.filter(enMain).concat(SOLS()) : niveau() ? MURS().concat(SOLS()) : Object.keys(DATA.ATELIER.BLOCS).filter(enMain)).filter(vu).filter(bati).filter(ouvert);
@@ -568,7 +568,7 @@ export function deplacable(c) {
   if (niveau()) return null;
   const couvert = casesCouvertes(state).get(c), ancre = couvert !== undefined && !surCase(c) ? couvert : c;
   const sorte = surCase(ancre), b = sorte && DATA.ATELIER.BLOCS[sorte];
-  if (!b || b.mur || b.sol || b.porte || b.silo || b.semis || b.arbre || b.cloture) return null;
+  if (!b || b.mur || b.sol || b.porte || b.silo || b.semis || b.arbre || b.massif || b.cloture) return null;
   return { sorte, ancre };
 }
 // L'aperçu du déplacement : tiendrait-il, ancré sur `vers` ? { ok, cases }.

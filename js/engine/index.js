@@ -46,6 +46,7 @@ export * from './ruches.js';
 export * from './tonnelets.js';
 export * from './compost.js';
 export * from './bacs.js';
+export * from './massifs.js';
 export * from './cheval.js';
 export * from './botteleuse.js';
 export * from './chaines.js';

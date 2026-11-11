@@ -400,7 +400,7 @@ const GESTES = {
   'outil.couper': 'a coupé du bois', 'outil.casser': 'a cassé un rocher', 'outil.caillou': 'a ramassé un caillou', 'outil.faucher': 'a fauché', 'outil.faucherAutour': 'a fauché', 'outil.pecher': 'a pêché', 'verger.cueillir': 'a cueilli des fruits',
   'tech.acheter': 'a acquis une technologie', 'atelier.fabriquer': 'a fabriqué à l\'Atelier', 'atelier.construire': 'a construit un atelier',
   'appareil.basculer': 'a allumé ou éteint un appareil', 'appareil.ameliorer': 'a amélioré un appareil', 'appareil.entretenir': 'a entretenu un appareil', 'appareil.reparer': 'a réparé un appareil',
-  'reservoir.agrandir': 'a agrandi le réservoir', 'robot.batterie': 'a agrandi la batterie du robot', 'arbre.planter': 'a planté un arbre',
+  'reservoir.agrandir': 'a agrandi le réservoir', 'robot.batterie': 'a agrandi la batterie du robot', 'arbre.planter': 'a planté un arbre', 'massif.cueillir': 'a cueilli des fleurs',
   'nuit.partagee': 'tout le monde a dormi : la nuit est passée',
   'monde.restaurer': 'a restauré une sauvegarde',
 };

@@ -103,6 +103,7 @@
       this.syncPlantation(model.plantation);       // (planter un arbre : les cases possibles)
       this.syncPousses(model.pousses);   // (les arbres plantés d'une graine : une jeune pousse,
       this.syncForet(model.foret);       //  puis un arbre, foret.js)
+      this.syncMassifs(model.massifs);   // (les fleurs semées dans l'herbe, massifs.js)
 
       // Parcelles des deux zones : on crée, met à jour, détruit. Tuiles jointives depuis le
       // coin de chaque rectangle (zone_culture_1, zone_culture_2).
