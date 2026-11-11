@@ -61,6 +61,12 @@ Source : GitHub Actions**. Le site est à l'adresse
 `.../jeu.html` et l'encyclopédie à `.../encyclopedie.html`. L'avancement de chaque mise
 en ligne se suit dans l'onglet **Actions** du dépôt.
 
+Le jeu est aujourd'hui publié à `https://moonbloom-village.com` (le domaine personnalisé du dépôt) ; l'ancienne
+adresse `https://aluzy.github.io/family_farm/` y renvoie. Les parties jouées à l'ancienne adresse restent dans le
+navigateur sous `https://aluzy.github.io` : la page pont (`pont-ancienne-adresse/`, à publier à la racine de
+`https://aluzy.github.io/` par le dépôt `aluzy.github.io`) les porte au jeu (« 🔎 Retrouver ma partie d'avant » de
+l'écran d'accueil, `js/ui/transfert.js`). Voir `pont-ancienne-adresse/README.md`.
+
 Ce qui est publié n'est pas le dépôt tel quel mais le dossier `_site/` que fabrique
 `scripts/build-site.mjs` : voir « Le site mis en ligne » plus bas.
 

@@ -3859,6 +3859,9 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .titre-btn:focus-visible { outline: 3px solid var(--color-sun); outline-offset: 2px; }
 .titre-info { font-size: 0.8rem; opacity: 0.8; white-space: normal; }
 .titre-question { margin: 0; text-align: center; }
+/* la partie d'avant (js/ui/transfert.js) : le bouton, plus discret, et le message au retour de l'ancienne adresse */
+.titre-btn.titre-pont { min-height: 44px; font-size: 1rem; }
+.titre-message { margin: 0; padding: 6px 8px; border-radius: 6px; background: #f6efc8; text-align: center; font-size: 0.95rem; line-height: 1.35; }
 .titre-erreur { position: absolute; left: 50%; bottom: 2%; transform: translateX(-50%); margin: 0; padding: 4px 10px; border-radius: 6px; background: rgba(0, 0, 0, 0.6); color: #fff; }
 
 /* Les chaînes de production : le mode d'emploi illustré et le diagnostic (js/ui/chaines-aide.js). La rangée : les

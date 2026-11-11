@@ -9,6 +9,7 @@ import { AUTOSAVE_MS, setState, state } from './ui/store.js';
 import {setTelChapter, telDay, telView} from './ui/consent.js';
 import { demenagementAnnonce, importSaveText, loadOrCreateState, makeSeed, persistState, sauvegardeAnnonce } from './ui/storage.js';
 import { ecranTitre, ecranTitreVoulu } from './ui/ecran-titre.js';
+import { lireTransfert } from './ui/transfert.js';
 import { newGameFrom } from './engine/alerts.js';
 import { notify } from './ui/toasts.js';
 import { catchUp, demarrerBoucles, onHide, setMailSeen, setPendingAbsence, setSimulatedAt, syncJobs } from './ui/loop.js';
@@ -90,7 +91,9 @@ document.getElementById('test-chapter').innerHTML =
 // est tirée comme avant, puis gardée une fois le jeu affiché.
 async function demarrer() {
   // l'écran d'accueil (js/ui/ecran-titre.js) : Nouvelle partie ou Charger une partie, avant de charger
-  const titre = ecranTitreVoulu() ? await ecranTitre() : null;
+  // (la partie d'avant, revenue de l'ancienne adresse du jeu : js/ui/transfert.js ; l'écran d'accueil le dit)
+  const transfert = await lireTransfert();
+  const titre = transfert || ecranTitreVoulu() ? await ecranTitre(transfert) : null;
   await relireFerme();
   // E-2 : jeu.html?monde=… : la partie du monde en ligne (la partie solo reste intacte sur l'appareil)
   const monde = mondeDemande();
