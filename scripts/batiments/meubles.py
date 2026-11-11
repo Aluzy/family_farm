@@ -332,26 +332,118 @@ def lit(enfant):
     outline(im)
     return im
 
+def _palette(nom):
+    """Une rampe de data/meubles.json (PALETTES) : ses couleurs exactes, que la carte remplace pour
+    repeindre le meuble (js/carte/ferme/chantier.js, imageTeinte)."""
+    import json
+    P = json.load(open(os.path.join(ROOT, 'data', 'meubles.json'), encoding='utf-8'))['PALETTES']
+    return [tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) for h in P[nom]]
+
+
+def _rampe(cles, n=40):
+    out = []
+    for i in range(n):
+        f = i / (n - 1) * (len(cles) - 1)
+        k = min(int(f), len(cles) - 2)
+        r = f - k
+        out.append(tuple(round(cles[k][j] * (1 - r) + cles[k + 1][j] * r) for j in range(3)))
+    return out
+
+
+def _ton(r, t):
+    return r[round(max(0.0, min(1.0, t)) * (len(r) - 1))]
+
+
+def _bruit(x, y, s=0):
+    h = (int(x) * 374761393 + int(y) * 668265263 + s * 2246822519) & 0xffffffff
+    h = ((h ^ (h >> 13)) * 1274126177) & 0xffffffff
+    return ((h ^ (h >> 16)) & 0xffff) / 32767.5 - 1
+
+
 def lit_double():
-    # deux lits adulte côte à côte (sur la carte, js/carte/ferme/chantier.js) : un lit deux
-    # places, la tête de lit d'un seul tenant, deux oreillers, une seule couverture ; mêmes
-    # rangées que le lit adulte (oreillers 5 à 9, couverture à partir de 12)
+    # deux lits adulte côte à côte (sur la carte, js/carte/ferme/chantier.js) : un lit deux places,
+    # vu de haut à 45°, en nuances : la tête de lit de miel d'un seul tenant (ses montants ronds, son
+    # panneau de planches, son chapeau éclairé), le drap crème et ses plis, deux oreillers gonflés,
+    # l'édredon matelassé (ses carreaux piqués, son revers de drap, le pli qui tombe à droite), le
+    # pied de lit. Mêmes rangées que le lit adulte (oreillers 5 à 9, couverture à partir de 12 : sa
+    # couverture seule, meuble_lit_double_drap.png). L'édredon n'emploie que les 9 tons exacts de
+    # tissu_vert (data/meubles.json) : la carte le repeint en rouge, en bleu (variantes du lit adulte).
     W, H = 36, 34
     im = canvas(W, H)
-    put, _ = painter(im)
-    rect(put, 0, 0, W - 1, 3, 'w2')                   # tête de lit
-    rect(put, 0, 0, W - 1, 0, 'w3')
-    rect(put, 1, 4, W - 2, H - 5, 'c2')               # matelas
-    for x0 in (3, W // 2 + 1):                        # deux oreillers
-        rect(put, x0, 5, x0 + 13, 9, 'b3')
-        rect(put, x0, 9, x0 + 13, 9, 'b1')
-    rect(put, 1, 12, W - 2, H - 5, 'V1')              # couverture, le haut rabattu
-    rect(put, 1, 12, W - 2, 14, 'V2')
-    rect(put, W - 3, 15, W - 2, H - 5, 'V0')          # le pli sur le côté droit
-    for y in range(17, H - 5, 4):
-        for x in range(3, W - 4, 4):
-            put(x, y, 'V2')
-    box(put, 0, H - 4, W, 1, 3, 'w3', 'w1')           # pied de lit
+    px = im.load()
+    BOIS = _rampe([(54, 26, 18), (96, 54, 32), (134, 82, 46), (170, 112, 64), (204, 150, 92), (232, 196, 140)])
+    DRAP = _rampe([(150, 140, 120), (196, 186, 164), (228, 220, 200), (246, 240, 226), (255, 252, 244)])
+    T = _palette('tissu_vert')                       # 9 tons, du plus sombre au plus clair
+
+    def put(x, y, c):
+        if 0 <= x < W and 0 <= y < H:
+            px[int(x), int(y)] = tuple(c[:3]) + (255,)
+
+    def tissu(t):                                     # un des 9 tons exacts de l'édredon
+        return T[max(0, min(8, round(t * 8)))]
+
+    # la tête de lit : son chapeau (rangée 0), son panneau de planches (1 à 3), les montants ronds
+    for x in range(W):
+        u = x / (W - 1)
+        put(x, 0, _ton(BOIS, 0.92 - 0.2 * u))
+        for y in (1, 2, 3):
+            lum = 0.58 - 0.18 * u - 0.06 * (y - 1) + 0.03 * _bruit(x // 4, y, 1)
+            if x % 6 == 5:
+                lum -= 0.16                           # le joint des planches
+            put(x, y, _ton(BOIS, lum))
+    for x0 in (0, W - 2):                             # les montants
+        for y in range(0, 5):
+            put(x0, y, _ton(BOIS, 0.80 - 0.05 * y))
+            put(x0 + 1, y, _ton(BOIS, 0.40 - 0.03 * y))
+    # le matelas sous le drap (rangées 4 à H - 5) : crème, des plis doux, plus sombre contre la tête de lit
+    for y in range(4, H - 4):
+        for x in range(1, W - 1):
+            lum = 0.80 - 0.10 * x / W - (0.18 if y == 4 else 0) + 0.04 * _bruit(x // 3, y // 2, 2)
+            put(x, y, _ton(DRAP, lum))
+    # deux oreillers gonflés (rangées 5 à 9) : éclairés en haut à gauche, la couture, l'ombre dessous
+    for x0 in (3, W // 2 + 1):
+        for y in range(5, 10):
+            for x in range(x0, x0 + 14):
+                u, v = (x - x0 - 6.5) / 7, (y - 7) / 2.5
+                lum = 0.86 - 0.18 * u - 0.20 * v - 0.10 * (u * u + v * v)
+                if (x in (x0, x0 + 13)) and y in (5, 9):
+                    continue                          # les coins arrondis
+                put(x, y, _ton(DRAP, lum))
+        for x in range(x0 + 1, x0 + 13):
+            put(x, 10, _ton(DRAP, 0.45))              # l'ombre de l'oreiller sur le drap
+        put(x0 + 3, 6, _ton(DRAP, 1.0))
+    # l'édredon (à partir de la rangée 12) : le revers du drap, puis les carreaux piqués
+    bas = H - 5
+    for y in range(12, bas + 1):
+        for x in range(1, W - 1):
+            if y in (12, 13):                         # le revers de drap, rabattu sur l'édredon
+                put(x, y, _ton(DRAP, (0.95 if y == 12 else 0.70) - 0.12 * x / W))
+                continue
+            u = x / (W - 1)
+            cx, cy = (x - 1) % 6, (y - 14) % 5        # un carreau de 6 × 5, bombé, piqué aux coins
+            bombe = 1 - ((cx - 2.5) / 3) ** 2 - ((cy - 2) / 2.5) ** 2
+            t = 0.42 + 0.30 * bombe - 0.22 * u + (0.10 if cy == 0 and cx < 3 else 0)
+            if cx == 5 or cy == 4:
+                t = 0.20 - 0.08 * u                   # la piqûre entre deux carreaux
+            if x >= W - 4:
+                t -= 0.25 + 0.06 * (x - (W - 4))      # le pli qui tombe sur le côté droit
+            if y == bas:
+                t -= 0.15
+            put(x, y, tissu(t))
+    put(3, 15, tissu(1.0)); put(9, 15, tissu(0.9))    # deux reflets
+    # le pied de lit : son dessus (rangée H - 4), sa face (H - 3 à H - 1), ses montants
+    for x in range(W):
+        u = x / (W - 1)
+        put(x, H - 4, _ton(BOIS, 0.90 - 0.2 * u))
+        for y in range(H - 3, H):
+            lum = 0.55 - 0.2 * u - 0.07 * (y - (H - 3)) + 0.03 * _bruit(x // 4, y, 3)
+            if x % 6 == 5:
+                lum -= 0.14
+            put(x, y, _ton(BOIS, lum))
+    for x0 in (0, W - 2):
+        for y in range(H - 4, H):
+            put(x0, y, _ton(BOIS, 0.75 - 0.05 * (y - H + 4)))
+            put(x0 + 1, y, _ton(BOIS, 0.38))
     outline(im)
     return im
 
