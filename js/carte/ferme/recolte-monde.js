@@ -153,7 +153,7 @@
           if (!b) continue;
           for (let k = 0; k < b.length; k += 4) {
             const regle = P.regles[b[k]];
-            if (!regle || !peut(regle)) continue;
+            if (!regle || !peut(regle) || P.sortes[b[k]].penche) continue;   // (une plante qui penche : son image, plus haut)
             const x = b[k + 1], y = b[k + 2], d = Math.hypot(wx - x, wy - (y - 4));
             if (d > r0 || d >= bd) continue;
             const id = this.ctx.monde.idObjet(P.sortes[b[k]].nom, x, y);

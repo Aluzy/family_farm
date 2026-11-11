@@ -688,6 +688,7 @@
           { nom: 'portes', cadence: img, pas: (I) => this.stepPortes(I.time, I.s) },            // (les portes qui s'ouvrent quand on passe : portes.js)
           { nom: 'flaques', cadence: img, pas: (I) => this.stepFlaques(I.time, I.s) },          // (le sol mouillé et les flaques sous la pluie : flaques.js)
           { nom: 'herbesHautes', cadence: img, pas: (I) => this.stepTallGrass(I.delta) },
+          { nom: 'massifs', cadence: img, pas: (I) => this.stepMassifs(I.delta) },               // (les massifs de fleurs qu'on traverse penchent : massifs.js)
           { nom: 'eclatsPierre', cadence: img, pas: (I) => this.stepShards(I.delta) },
           { nom: 'asperseurs', cadence: img, pas: () => this.stepSprinklers() },
           { nom: 'feux', cadence: img, pas: (I) => this.stepFires(I.time) },

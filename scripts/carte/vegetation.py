@@ -15,9 +15,10 @@
 # n'est pas une grille : chaque dessin a sa taille, rangé par rangées de même hauteur ; le fichier
 # assets/vegetation.json donne, pour chaque sorte, ses images : { "sorte": [[x, y, l, h, px, py]…] }
 # (le rectangle dans la planche, et le pied : le point du dessin posé sur le sol, au milieu du bas
-# du tronc). Une plante qui penche quand on la traverse (les roseaux, les massettes) a cinq images
-# par variante, à la suite (droite, penchée à droite un peu puis plus, à gauche un peu puis plus),
-# comme l'herbe haute de la ferme (scripts/carte/herbe_haute.py).
+# du tronc). Une plante qui penche quand on la traverse (les roseaux, les massettes ; les fleurs, les touffes,
+# la bruyère… : les petites plantes marquées penche, data/monde.json) a cinq images par variante, à la suite
+# (droite, penchée à droite un peu puis plus, à gauche un peu puis plus), comme l'herbe haute de la ferme
+# (scripts/carte/herbe_haute.py) ; celles des petites plantes sont tirées de leur dessin (penchees_dessin).
 #
 # Les ombres ne sont pas dans les grands dessins : le jeu les porte au sol selon le soleil (comme
 # celles des arbres de la ferme, js/carte/ferme/soleil.js). Les petites plantes, peintes dans le
@@ -1403,12 +1404,35 @@ def originaux(out):
         out[sorte][int(k)] = (im, px, py)
 
 
+# Une petite plante (genre « basse ») qui penche quand on la traverse (data/monde.json : penche) : ses cinq images
+# sont tirées de son dessin (généré ou fait à la main), le haut décalé de PENTES px, moins près du pied et moins
+# pour une plante courte ; MARGE px de chaque côté pour qu'elle penche sans être coupée.
+MARGE = 3
+
+
+def penchees_dessin(im, px, py):
+    bb = im.getbbox() or (0, 0, im.width, im.height)
+    haut = max(1, py - bb[1])
+    k = min(1.0, max(0.45, haut / 14))
+    out = []
+    for pente in PENTES:
+        t = Image.new('RGBA', (im.width + 2 * MARGE, im.height), (0, 0, 0, 0))
+        for y in range(im.height):
+            f = min(1.0, max(0.0, (py - y) / haut))
+            dx = int(round(pente * k * f ** 1.4))
+            t.alpha_composite(im.crop((0, y, im.width, y + 1)), (MARGE + dx, y))
+        out.append((t, px + MARGE, py))
+    return out
+
+
 def planche(sortes, d):
     """Range les dessins par rangées (de même hauteur, triés), et la table des images."""
     items = []
     for s in sortes:
         nom, n = s['nom'], s['variantes'] * (5 if s.get('penche') else 1)
         imgs = d.get(nom, [])
+        if s.get('penche') and s.get('genre') == 'basse' and len(imgs) == s['variantes']:
+            imgs = [q for im, px, py in imgs for q in penchees_dessin(im, px, py)]
         assert len(imgs) == n, f'{nom} : {len(imgs)} images dessinées, il en faut {n} (data/monde.json)'
         for k, (im, px, py) in enumerate(imgs):
             bb = im.getbbox() or (0, 0, 1, 1)

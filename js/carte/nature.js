@@ -1,5 +1,5 @@
 /* carte/nature.js — ce qui pousse, tombe et se pêche, pareil sur toutes les cartes
- * (CarteKit.NATURE, CarteKit.PECHE, CarteKit.herbe, CarteKit.fondu, CarteKit.MORCEAUX,
+ * (CarteKit.NATURE, CarteKit.PECHE, CarteKit.herbes, CarteKit.fondu, CarteKit.MORCEAUX,
  * CarteKit.pointsMorceaux).
  *
  * La ferme (js/carte/ferme/), et demain les cartes du grand monde, ont la même herbe haute, les mêmes arbres qui
@@ -47,22 +47,22 @@
     bouchon: { haut: 0xd8483a, bas: 0xf4efe6, fil: 0xe8e4dc },
   };
 
-  // Chaque image : l'herbe haute que le personnage traverse penche dans le sens de sa marche
-  // (vers la droite s'il va à droite) et revient en se balançant. `list` : les touffes
-  // ({ img, fleurs (ses fleurs, ou rien), x, y, base (première image de sa rangée), t, dir, inside }) ; `P` : les pieds du
-  // personnage (null : il n'est pas là) ; `prev` : ses pieds à l'image d'avant ; `dt` en ms.
-  // Renvoie la position à garder pour l'image suivante (`prev` lui-même, mis à jour, quand il
-  // existe : rien n'est alloué à chaque image).
-  function herbe(list, P, prev, dt) {
-    const G = NATURE.herbe;
-    const dx = P && prev ? P.x - prev.x : 0;
-    const moving = !!(P && prev && Math.hypot(dx, P.y - prev.y) > 0.05);
-    const R = G.reach;
+  // Chaque image : l'herbe haute (et ce qui penche comme elle) que quelqu'un traverse penche dans le sens de sa
+  // marche (vers la droite s'il va à droite) et revient en se balançant. `list` : les touffes ({ img, fleurs (ses
+  // fleurs, ou rien), x, y, base (première image de sa rangée), t, dir, inside }) ; `W` : ceux qui marchent
+  // ([{ x, y, dx, bouge }] : leurs pieds, de combien ils ont avancé vers la droite, s'ils ont avancé :
+  // carte/ferme/marcheurs.js) ; `dt` en ms.
+  function herbes(list, W, dt) {
+    const G = NATURE.herbe, R = G.reach, reduit = K.reduit();
     for (const g of list) {
-      const inside = !!P && Math.abs(P.x - g.x) < R.x && P.y > g.y - R.up && P.y < g.y + R.down;
-      if (inside && moving && (!g.inside || g.t < 0) && g.img.visible && !K.reduit()) {
+      let qui = null;
+      for (const w of W) {
+        if (Math.abs(w.x - g.x) < R.x && w.y > g.y - R.up && w.y < g.y + R.down) { qui = w; if (w.bouge) break; }
+      }
+      const inside = !!qui;
+      if (inside && qui.bouge && (!g.inside || g.t < 0) && g.img.visible && !reduit) {
         g.t = 0;
-        g.dir = Math.abs(dx) > 0.05 ? Math.sign(dx) : (P.x < g.x ? 1 : -1);
+        g.dir = Math.abs(qui.dx) > 0.05 ? Math.sign(qui.dx) : (qui.x < g.x ? 1 : -1);
       }
       g.inside = inside;
       if (g.t < 0) continue;
@@ -74,10 +74,6 @@
       g.img.setFrame(g.base + f);
       if (g.fleurs) g.fleurs.setFrame(g.base + f);
     }
-    if (!P) return null;
-    if (!prev) return { x: P.x, y: P.y };
-    prev.x = P.x; prev.y = P.y;
-    return prev;
   }
 
   // L'opacité d'un arbre qui passe de `cur` à `want` (NATURE.devant derrière lui, 1 sinon)
@@ -134,5 +130,5 @@
     return { coup, fin };
   }
 
-  Object.assign(K, { NATURE, PECHE, MORCEAUX, herbe, fondu, pointsMorceaux });
+  Object.assign(K, { NATURE, PECHE, MORCEAUX, herbes, fondu, pointsMorceaux });
 })(window);

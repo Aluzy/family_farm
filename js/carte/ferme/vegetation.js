@@ -7,9 +7,11 @@
  * assets/vegetation.json : une image par variante (cinq pour une plante qui penche), chacune son
  * pied.
  *
- *   - Les petites plantes (genre « basse » : fleurs, herbes, bruyère, fougères basses…) sont
- *     peintes dans le canevas de la région, sur son sol (sol.js paintMonde → peintVegetation) :
- *     aucune image de plus. La région en a aussi pour son bord peint (les mêmes que sa voisine).
+ *   - Les petites plantes (genre « basse » : champignons, nénuphars, bois flotté…) sont peintes
+ *     dans le canevas de la région, sur son sol (sol.js paintMonde → peintVegetation) : aucune
+ *     image de plus. La région en a aussi pour son bord peint (les mêmes que sa voisine). Celles qui
+ *     penchent (les fleurs, les touffes, la bruyère, les fougères… : penche, data/monde.json) ont
+ *     leur image, comme les plantes hautes (ci-dessous) : on les traverse, elles penchent.
  *   - Les arbres, les buissons et les plantes hautes ont chacun leur image (une découpe de la
  *     planche : pas de canevas), rangée selon son pied comme le personnage et les arbres de la
  *     ferme. Ils sont nombreux (une forêt dense : quelques centaines par région) : une région
@@ -17,8 +19,9 @@
  *     px) ont leurs images, retirées au-delà de LOIN px (syncVegetation : quelques centaines à la
  *     fois). Un arbre ou un buisson devant le personnage, qui le cache (son masque, lu une fois par
  *     image de la planche), devient transparent comme ceux de la ferme (stepVegetation) ; il porte
- *     son ombre au soleil (soleil.js sunCasters). Les roseaux et les massettes penchent quand on
- *     les traverse (CarteKit.herbe, comme l'herbe haute de la ferme).
+ *     son ombre au soleil (soleil.js sunCasters). Les roseaux, les massettes et les petites plantes
+ *     qui penchent penchent quand on les traverse, le personnage, les habitants ou les bêtes
+ *     (CarteKit.herbe, comme l'herbe haute de la ferme ; marcheurs.js).
  *   - Marcher : les pieds des arbres et des buissons sont fermés dans la marche de la région
  *     (monde-sol.js), que le personnage lit déjà (caseMarchable) : rien à faire ici.
  *
@@ -142,6 +145,7 @@
         if (!reg[P.donnees]) continue;
         const b = reg[P.donnees].basses, tex = this.textures.get(P.cle), src = tex.getSourceImage();
         for (let k = 0; k < b.length; k += 4) {
+          if (P.sortes[b[k]].penche) continue;       // (une petite plante qui penche : son image, vegBlocOn)
           const x = b[k + 1], y = b[k + 2];
           const n = P.images[b[k]][b[k + 3]], c = P.cadres[n], f = tex.get(n);
           if (!f) continue;
@@ -159,12 +163,22 @@
       const M = this.ctx.monde, reg = M.region(r.rx, r.ry);
       if (!reg || !reg.vegetation) return;
       const blocs = new Map(), P = BLOC * T;
+      const range = (j, k, x, y, basse) => {
+        const cle = Math.floor(x / P) + ',' + Math.floor((y - 1) / P);
+        if (!blocs.has(cle)) blocs.set(cle, { x: Math.floor(x / P) * P, y: Math.floor((y - 1) / P) * P, items: [], objets: null });
+        blocs.get(cle).items.push(j, k, basse);
+      };
       this.veg.planches.forEach((pl, j) => {
-        const im = reg[pl.donnees] ? reg[pl.donnees].images : [];
-        for (let k = 0; k < im.length; k += 4) {
-          const cle = Math.floor(im[k + 1] / P) + ',' + Math.floor((im[k + 2] - 1) / P);
-          if (!blocs.has(cle)) blocs.set(cle, { x: Math.floor(im[k + 1] / P) * P, y: Math.floor((im[k + 2] - 1) / P) * P, items: [], objets: null });
-          blocs.get(cle).items.push(j, k);
+        const d = reg[pl.donnees];
+        if (!d) return;
+        const im = d.images;
+        for (let k = 0; k < im.length; k += 4) range(j, k, im[k + 1], im[k + 2], 0);
+        // les petites plantes qui penchent ont aussi leur image : celles de la région seulement (ses basses
+        // comptent aussi celles de son bord, peintes chez sa voisine)
+        const b = d.basses;
+        for (let k = 0; k < b.length; k += 4) {
+          const x = b[k + 1], y = b[k + 2];
+          if (pl.sortes[b[k]].penche && x >= r.x && x < r.x + r.w && y - 1 >= r.y && y - 1 < r.y + r.h) range(j, k, x, y, 1);
         }
       });
       r.vegReg = reg;
@@ -218,8 +232,8 @@
     vegBlocOn(b, reg) {
       const V = this.veg, M = this.ctx.monde, E = this.mondeEtat;
       b.objets = [];
-      for (let q = 0; q < b.items.length; q += 2) {
-        const pl = V.planches[b.items[q]], k = b.items[q + 1], im = reg[pl.donnees].images;
+      for (let q = 0; q < b.items.length; q += 3) {
+        const pl = V.planches[b.items[q]], k = b.items[q + 1], im = reg[pl.donnees][b.items[q + 2] ? 'basses' : 'images'];
         const s = pl.sortes[im[k]], x = im[k + 1], y = im[k + 2], v = im[k + 3];
         // (une pièce qui se prend : son identifiant ; cueillie, son dessin sans fruits)
         const regle = pl.regles[im[k]], id = regle ? M.idObjet(s.nom, x, y) : null;
@@ -232,7 +246,7 @@
         // (pas d'ombre : les plantes hautes ; les falaises, dont la face regarde le soleil ; le ponton ; les murs,
         // fenêtres et portes des maisons des hameaux, dont l'ombre est un volume de leur case : hameaux.js hameauxMurs)
         const murHameau = pl.cle === 'hameaux' && SOLEIL.mursHameaux.test(s.nom);
-        const o = { img, x: x - c.px, y: y - c.py, w: c.w, h: c.h, foot: ponton ? -Infinity : y, mask: c.mask, alpha: 1, ombre: s.genre !== 'haute' && s.genre !== 'paroi' && !ponton && !murHameau };
+        const o = { img, x: x - c.px, y: y - c.py, w: c.w, h: c.h, foot: ponton ? -Infinity : y, mask: c.mask, alpha: 1, ombre: s.genre !== 'haute' && s.genre !== 'basse' && s.genre !== 'paroi' && !ponton && !murHameau };
         if (penche) o.herbe = { img, fleurs: null, x, y, base: n, t: -1, dir: 1, inside: false };
         // (un arbre d'un jardin de hameau : la hache le dit, hameaux.js)
         if (pl.cle === 'hameaux' && s.genre === 'arbre') o.nomHameau = s.nom;
@@ -279,7 +293,7 @@
         o.alpha = K.fondu(o.alpha, want, dt);
         o.img.setAlpha(o.alpha);
       }
-      if (this.vegHerbes.length) this.vegPrev = K.herbe(this.vegHerbes, p, this.vegPrev, dt);
+      if (this.vegHerbes.length) K.herbes(this.vegHerbes, this.marcheurs(), dt);
       // l'écume qui bat autour des rochers dans l'eau (immobile avec « animations réduites »)
       if (this.vegEcumes.length && !reducedMotion()) {
         const pas = Math.floor(performance.now() / ECUME);

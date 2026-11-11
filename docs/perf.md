@@ -283,6 +283,21 @@ Mesuré dans un hameau (17 personnages suivis, la réserve pleine), Chromium, é
 `stepTraces` prend 0,05 ms par image en moyenne (95 % des images : 0,2 ms) ; à 4 × de ralentissement,
 0,4 ms en moyenne, 1,7 ms pour 95 % des images, 6 ms au pire (le relevé, une fois par seconde).
 
+## L'herbe et les petites plantes qui penchent (`js/carte/ferme/marcheurs.js`)
+
+L'herbe haute de la ferme, les roseaux, les massettes et les petites plantes du grand monde (fleurs, touffes,
+bruyère, fougères… : `penche`, data/monde.json), les massifs semés penchent quand quelqu'un les traverse : le
+personnage, les habitants, les bêtes (`CarteKit.herbes`). Les petites plantes qui penchent ne sont plus peintes
+dans le sol : elles ont leur image, par blocs près de la vue, comme les plantes hautes. Pour que l'effet coûte peu :
+- **Qui marche** vient du relevé des traces de pas (une fois par seconde, dans le même passage sur les images
+  de la scène : `tracesMarcheurs`, `tracesBetes`) ; leurs pieds sont lus une fois par image (`marcheurs()`),
+  pour toutes les sortes de plantes.
+- **Une plante ne change d'image** que quand elle penche (5 images de sa planche) ; sinon, rien.
+
+Mesuré dans une prairie du grand monde (234 plantes qui penchent près de la vue, 11 marcheurs), Chromium, écran
+de téléphone, en marchant 10 s : `stepVegetation` 0,03 ms par image en moyenne, 0,1 ms pour 95 % des images,
+0,5 ms au pire.
+
 ## Les portes qui s'ouvrent (`js/carte/ferme/portes.js`)
 
 Les portes des murs horizontaux (la ferme, les hameaux) s'ouvrent quand quelqu'un passe. Leurs images
