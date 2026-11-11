@@ -529,9 +529,13 @@
       for (const e of (this.blocks || new Map()).values()) if (LUMIERES.includes(e.sorte)) list.push(e);
       // (et celles de l'étage, js/carte/ferme/etage.js)
       for (const e of this.etageLumieres || []) if (e.img && e.img.active) list.push(e);
+      // (les lampes de chevet, en bas et à l'étage : BLOCS_CARTE.lampeChevet)
+      const LC = BLOCS_CARTE.lampeChevet, lampes = [];
+      for (const e of (this.blocks || new Map()).values()) if (e.dessin === LC.dessin && e.img) lampes.push({ img: e.img, x: e.x, y: e.y - 1, e });
+      for (const e of this.etageLampes || []) if (e.img && e.img.active) lampes.push({ img: e.img, x: e.x, y: e.y, e });
       // (et la lumière des maisons, js/carte/ferme/fenetres.js ; les reflets dans l'eau, eau.js)
       const luit = this.ctx.lastModel && this.ctx.lastModel.fermeLuit;
-      if (!list.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !this.calecheSprite && !luit) return;
+      if (!list.length && !lampes.length && !this.lanternLights && !(this.toits || []).some((t) => t.maison) && !this.eauVive && !(this.hameauxEclaires && this.hameauxEclaires()) && !(this.lumineuxVus && this.lumineuxVus()) && !this.calecheSprite && !luit) return;
       if (!this.lanternLights) {
         this.lanternLights = [];
         lueur(this.textures);
@@ -571,6 +575,24 @@
           e.img.once('destroy', () => { if (e.halo) e.halo.destroy(); });
         }
         if (e.halo) e.halo.setVisible(true).setAlpha(k);
+      }
+      // les lampes de chevet : allumées le soir, une lueur chaude qui respire à peine ; leur halo (WebGL)
+      for (const l of lampes) {
+        const e = l.e;
+        if (e.phaseLampe == null) e.phaseLampe = Math.random() * 7;
+        const allumee = nuit > LC.allume;
+        if (e.haloLampe) e.haloLampe.setVisible(allumee);
+        if (!allumee) continue;
+        const k = (calme ? 1 : 1 - LC.respire + LC.respire * Math.sin(time / 900 + e.phaseLampe)) * Math.min(1, nuit / 0.4);
+        const S = LC.sol, A = LC.abatJour;
+        out.push({ key: 'lueur', x: l.x + S.dx, y: l.y + S.dy, tint: S.teinte, alpha: S.alpha * k, scaleX: S.rayon / R, scaleY: (S.rayon * S.aplati) / R });
+        out.push({ key: 'lueur', x: l.x + A.dx, y: l.y + A.dy, tint: A.teinte, alpha: A.alpha * k, scaleX: A.rayon / R, scaleY: A.rayon / R });
+        if (webgl && !e.haloLampe) {
+          const H = LC.halo;
+          e.haloLampe = this.add.pointlight(l.x + A.dx, l.y + A.dy, H.couleur, H.rayon, H.intensite, H.attenuation).setDepth(V.depth + 1);
+          l.img.once('destroy', () => { if (e.haloLampe) { e.haloLampe.destroy(); e.haloLampe = null; } });
+        }
+        if (e.haloLampe) e.haloLampe.setPosition(l.x + A.dx, l.y + A.dy).setAlpha(k);
       }
       this.stepFenetres(out, nuit, dt);
       if (this.stepFenetresHameaux) this.stepFenetresHameaux(out, nuit);   // (les fenêtres des hameaux : hameaux.js)

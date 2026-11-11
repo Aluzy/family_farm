@@ -175,33 +175,14 @@ def tapis_tourne(n):
 
 
 def chevet_dos():
-    """La table de chevet de dos : son dos de planches, la lampe sur le dessus."""
-    W, H = 14, 22
-    t = T(W, H)
-    caisson(t, 0, W - 1, 20, 8, 5, BOIS_M, planches(BOIS_M, 4))
-    t.rect(1, 21, 2, 21, BOIS_M[0]); t.rect(11, 21, 12, 21, BOIS_M[0])
-    t.rect(5, 9, 8, 11, C['i2'])
-    for y in range(2, 8):
-        for x in range(3, 11):
-            if abs(x - 6.5) <= 2 + (y - 2) * 0.5:
-                t.put(x, y, C['J2'] if x > 6 else C['J1'])
-    return t.fini()
+    """La table de chevet de dos : son dos de planches, la lampe sur le dessus (meubles.py, chevet_vue)."""
+    return M.chevet_vue('dos')
 
 
 def chevet_cote():
-    """La table de chevet de profil : son flanc, le chant du tiroir à droite, la lampe."""
-    W, H = 16, 22
-    t = T(W, H)
-    yd, yf = caisson(t, 3, 12, 20, 8, 7, BOIS_M, BOIS_M)
-    flanc(t, BOIS_M, 3, 12, yf, 20)
-    bord_avant(t, BOIS_M, 12, yf, 20); t.put(12, yf + 3, C['i3'])
-    t.rect(3, 21, 4, 21, BOIS_M[0]); t.rect(11, 21, 12, 21, BOIS_M[0])
-    t.rect(6, yd + 1, 9, yd + 3, C['i2'])
-    for y in range(yd - 7, yd + 1):
-        for x in range(3, 13):
-            if abs(x - 7.5) <= 2 + (y - yd + 7) * 0.5:
-                t.put(x, y, C['J2'] if x < 8 else C['J1'])
-    return t.fini()
+    """La table de chevet de profil : son flanc, le chant du tiroir à droite, la lampe (meubles.py,
+    chevet_vue)."""
+    return M.chevet_vue('cote')
 
 
 def canape_dos():
