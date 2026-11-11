@@ -6303,14 +6303,6 @@ export const RAW_DATA = {
         "effet": { "fragment": "souvenir_lise", "relation": { "lise": 10 } }
       }
     ],
-    "COMPAGNON": {
-      "debut": "Te voilà ! Viens là, que je te voie.",
-      "arroser": "J'ai arrosé le potager tous les jours, tout pousse bien, tu verras.",
-      "cuisiner": "Je t'ai gardé une assiette au chaud, elle t'attend sur la table.",
-      "ramasser": "J'ai rentré du bois et des pierres, pour qu'on ne manque de rien.",
-      "betes": "Les bêtes ont bien mangé ; elles guettaient le chemin, elles aussi.",
-      "fin": "La maison était trop calme sans toi. Assieds-toi et raconte-moi tout."
-    },
     "LIEUX": {
       "geode": [
         { "quand": { "fait": "pierre.trouvee" }, "texte": "L'améthyste refermée sur la cachette de Maurice enfant. La pierre est partie avec toi." },

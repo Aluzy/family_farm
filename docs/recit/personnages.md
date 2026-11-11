@@ -10,7 +10,7 @@ aucun n'est négatif ni rustre : chacun a une passion et un petit travers attach
 ## La famille du joueur
 
 - **Le personnage principal** : le petit-enfant de Maurice et Philomène, environ 30 ans, grandi à Cadolon, venu en été à Céron quand il était petit. Son arc : de « petit de Maurice » à quelqu'un d'ici.
-- **Le compagnon** : il garde la ferme quand le joueur explore, et dit avec chaleur ce qu'il a fait. (Inchangé.)
+- **Le compagnon** : il garde la ferme quand le joueur explore (sans message au retour).
 - **Les enfants** : ils adorent l'île. Lise devient leur amie et leur guide.
 
 ## Adèle, la mère

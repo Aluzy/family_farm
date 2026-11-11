@@ -1130,11 +1130,6 @@ export function validateData(data) {
       else for (const [item, n] of Object.entries(P.besoin)) { needItem(`${where}.besoin`, item); if (!(isInt(n) && n >= 1)) err(`${where}.besoin.${item}`, 'un entier au moins égal à 1'); }
       effet(where, P.effet, P.qui);
     }
-    // Ce que dit le compagnon au retour d'une exploration (lot 8) : des textes, pour des actions connues.
-    for (const [k, t] of Object.entries(R.COMPAGNON || {})) {
-      if (!['debut', 'arroser', 'cuisiner', 'ramasser', 'betes', 'fin'].includes(k)) err(`RECIT.COMPAGNON.${k}`, 'debut, arroser, cuisiner, ramasser, betes ou fin');
-      if (typeof t !== 'string' || !t) err(`RECIT.COMPAGNON.${k}`, 'un texte');
-    }
     // Les saluts selon la confiance : un niveau de CONFIANCE.NIVEAUX, une liste de textes (bulle courte).
     for (const [n, liste] of Object.entries(R.SALUTS || {})) {
       if (!(n in ((R.CONFIANCE && R.CONFIANCE.NIVEAUX) || {}))) err(`RECIT.SALUTS.${n}`, 'un niveau de RECIT.CONFIANCE.NIVEAUX');
