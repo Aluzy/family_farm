@@ -70,7 +70,8 @@
   // ne le voit jamais), gardé dans localStorage (QUALITE.cle) : « auto » (par défaut), « economie » ou
   // « normale ». En « auto », un téléphone ou une tablette (un écran tactile sans souris, ou un
   // navigateur qui se dit mobile) prend « economie », un ordinateur « normale » : sur ordinateur, rien ne
-  // change. Ce que l'économie règle (QUALITE.reglages) :
+  // change. L'économie plafonne aussi la carte à 30 images par seconde (js/carte/jeu.js, cadence). Ce qu'elle
+  // règle ici (QUALITE.reglages) :
   //   - demiDensite : le canvas à la moitié de la densité de l'écran (ratio) ;
   //   - brouillardPx, brouillardImages : le brouillard du grand monde en points de 4 px de carte au lieu
   //     de 2 (quatre fois moins de points à calculer et à envoyer à la carte graphique), refait deux fois

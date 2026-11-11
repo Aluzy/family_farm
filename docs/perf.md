@@ -16,7 +16,7 @@ réglage qu'on mesure, sauf mention contraire.
 
 | Mesure | Budget | Pourquoi |
 |---|---|---|
-| Images par seconde sur la carte | au moins **30** en moyenne, au plus **5 %** d'images de plus de 34 ms (60 visées) | un jeu calme : la fluidité compte plus que la vitesse |
+| Images par seconde sur la carte | au moins **30** en moyenne, au plus **5 %** d'images lentes, de plus de 37 ms (un trentième de seconde, à 10 % près ; avant le 2026-11-11 : 34 ms) (60 visées sur ordinateur, 30 en qualité économie) | un jeu calme : la fluidité compte plus que la vitesse |
 | Jeu affiché (l'écran de chargement retiré) après l'ouverture de la page | moins de **5 s** | une courte session doit commencer vite |
 | Une sauvegarde (sérialiser puis écrire) | moins de **16 ms** | elle a lieu après chaque geste (F0-5) : elle ne doit pas coûter une image |
 

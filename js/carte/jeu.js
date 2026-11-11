@@ -30,14 +30,15 @@
  *       CarteJeu.affichee()       la clé de la scène affichée, ou null ;
  *       CarteJeu.suitTaille(scène, fn)  fn() à chaque changement de taille, tant que la scène vit ;
  *       CarteJeu.zoomEntier(scène)       le zoom entier des cartes vues de près (la mine) ;
- *       CarteJeu.cadence(bouge, t)       la scène dit à chaque image si quelque chose bouge (fiche 25) ;
+ *       CarteJeu.cadence()               la scène revoit le plafond à chaque image (fiche 25) ;
  *       CarteJeu.surPas(fn), surVeille(fn), tourne()   la boucle de la page suit celle de Phaser (fiche 25) ;
  *       CarteJeu.prechauffe(taches), tachesLots(scène)  les shaders préparés pendant les temps morts (fiche 27).
  *
  * La cadence (fiche 25, docs/architecture-phaser.md § 1 quater) : la boucle de Phaser suit l'écran ; sur
- * un écran de plus de 100 Hz, elle est plafonnée à 60 images par seconde, et en qualité « économie », à 30
- * quand rien n'a bougé depuis une seconde (aucune marche, aucun glissement ni zoom de la vue, aucun doigt
- * posé). Le limiteur de Phaser 4.2.1 (stepLimitFPS) redonnait le reste du pas d'avant : le temps du jeu
+ * un écran de plus de 100 Hz, elle est plafonnée à 60 images par seconde, et en qualité « économie », à 30,
+ * tout le temps (avant : seulement quand rien n'avait bougé depuis une seconde ; mais un téléphone qui ne
+ * tient pas 60 en marchant alternait des images de 16 et de 33 ms, ce qui se voit plus qu'un 30 régulier,
+ * docs/perf.md). Le limiteur de Phaser 4.2.1 (stepLimitFPS) redonnait le reste du pas d'avant : le temps du jeu
  * filait 1,8 fois trop vite à 60 sur un écran à 60 Hz ; il est remplacé ici (pasLimite).
  *
  * Script classique, chargé après js/carte/kit.js ; il ne demande Phaser qu'à la création du jeu.
@@ -59,9 +60,8 @@
   // Les états d'une scène (Phaser.Scenes) : en route jusqu'à RUNNING, puis endormie, arrêtée.
   const START = 2, RUNNING = 5, PAUSED = 6, SLEEPING = 7;
   // La cadence (fiche 25) : le plafond d'images par seconde (0 : l'écran), et à partir de combien d'images
-  // par seconde de l'écran on plafonne à 60 ; l'immobilité qui fait passer l'économie à 30.
-  const CADENCE = { RAPIDE: 100, PLAFOND: 60, ECONOMIE: 30, CALME_MS: 1000, TOLERANCE: 0.1 };
-  let dernierMouvement = 0;
+  // par seconde de l'écran on plafonne à 60 ; le plafond de l'économie.
+  const CADENCE = { RAPIDE: 100, PLAFOND: 60, ECONOMIE: 30, TOLERANCE: 0.1 };
   const auPas = [];           // fn(temps) appelées à chaque pas de la boucle de Phaser (surPas)
   const aLaVeille = [];       // fn() appelées quand la boucle de Phaser s'endort ou se réveille (surVeille)
 
@@ -164,12 +164,11 @@
     this.frame++;
   }
 
-  // La scène dit à chaque image si quelque chose bouge (`t` : son temps, en ms) ; le plafond suit.
-  function cadence(bouge, t) {
+  // La scène revoit le plafond à chaque image (la qualité peut changer dans les Options).
+  function cadence() {
     if (!game || !game.loop) return;
-    if (bouge || !dernierMouvement) dernierMouvement = t;
     const L = game.loop;
-    const eco = K.qualite && K.qualite() === 'economie' && t - dernierMouvement > CADENCE.CALME_MS;
+    const eco = K.qualite && K.qualite() === 'economie';
     // (actualFps compte les images de l'écran, plafond ou non ; il lui faut une seconde pour se mesurer)
     const rapide = L.actualFps > CADENCE.RAPIDE;
     const voulu = eco ? CADENCE.ECONOMIE : rapide ? CADENCE.PLAFOND : 0;

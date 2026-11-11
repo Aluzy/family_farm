@@ -185,10 +185,10 @@ la ferme dormait à côté avec ses propres textures.
   l'entier le plus proche) : sous un rendu WebGL logiciel (SwiftShader), une image tournée y perdait
   des morceaux (fiche 9a).
 - **La cadence** (fiche 25) : la boucle de Phaser suit l'écran ; sur un écran de plus de 100 Hz, elle
-  est plafonnée à 60 images par seconde (`CarteJeu.cadence`, que la scène appelle à chaque image en
-  disant si quelque chose bouge : le personnage, la vue, son glissement ou son zoom, un doigt posé, la
-  manette), et en qualité « économie » à 30 quand rien n'a bougé depuis une seconde ; le moindre
-  mouvement la remet à l'écran. Le limiteur de Phaser 4.2.1 (`TimeStep.stepLimitFPS`) redonnait à la
+  est plafonnée à 60 images par seconde (`CarteJeu.cadence`, que la scène appelle à chaque image), et en
+  qualité « économie » à 30, tout le temps : un téléphone qui ne tenait pas 60 en marchant alternait des
+  images de 16 et de 33 ms, plus visible qu'un 30 régulier (avant le 2026-11-11 : 30 seulement quand rien
+  n'avait bougé depuis une seconde). Le limiteur de Phaser 4.2.1 (`TimeStep.stepLimitFPS`) redonnait à la
   scène le reste gardé du pas d'avant : plafonné à 60 sur un écran à 60 Hz, le temps du jeu filait 1,8
   fois trop vite (5,56 s pour 3,02 s). Il est remplacé par `CarteJeu.pasLimite` : une image n'est donnée
   que si le temps écoulé atteint le plafond (à 10 % près), et elle reçoit ce temps-là, sans lissage.
