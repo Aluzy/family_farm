@@ -2608,18 +2608,21 @@ def chaudron(marche=False):
 
 
 def tonneau(marche=False):
-    """Le tonneau : debout, en douelles de chêne bombées et cerclées de fer, son fond de planches ;
+    """Le tonneau : debout, en douelles de chêne bombées et cerclées de fer, arrondi en bas, son fond
+    de planches ;
     son barboteur de verre (des bulles qui montent quand il travaille) ; un voyant."""
     t = Toile()
+    arrondi = {BAS - 2: 0.8, BAS - 1: 1.8, BAS: 3.2}           # le bas arrondi : les douelles se resserrent
     for y in range(7, BAS + 1):
         bombe = 1 - ((y - 15) / 9) ** 2                       # plus large au milieu
-        r = 5.6 + 0.6 * bombe
+        r = 5.6 + 0.6 * bombe - arrondi.get(y, 0)
         x0, x1 = round(7.5 - r), round(7.5 + r) - 1
         for x in range(x0, x1 + 1):
             u = 2 * (x + .5 - x0) / (x1 + 1 - x0) - 1
             lum = 0.58 - 0.30 * u - 0.1 * u * u + 0.03 * bruit(x, y, 61)
             if (x - x0) % 3 == 2:
                 lum -= 0.18                                    # le joint des douelles
+            lum -= 0.10 * arrondi.get(y, 0)                    # le dessous, qui tourne vers l'ombre
             t.put(x, y, ton(R_CHENE, lum))
     for y in (9, 14, 20):                                      # les cercles de fer
         for x in range(2, 14):
