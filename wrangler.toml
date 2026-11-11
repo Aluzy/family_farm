@@ -2,6 +2,15 @@ name = "family-farm"
 main = "worker/src/index.js"
 compatibility_date = "2026-09-01"
 
+# L'adresse du Worker utilisée par le jeu (family-farm.<compte>.workers.dev) et ses aperçus : gardées.
+workers_dev = true
+preview_urls = true
+# La console d'administration (worker/src/admin.mjs) à sa propre adresse, derrière Cloudflare Access :
+# Cloudflare crée l'enregistrement DNS et le certificat au déploiement (domaine personnalisé).
+routes = [
+  { pattern = "admin.moonbloom-village.com", custom_domain = true },
+]
+
 [[r2_buckets]]
 binding = "SESSIONS"
 bucket_name = "ferme-familiale-sessions"

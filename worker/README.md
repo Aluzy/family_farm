@@ -256,8 +256,10 @@ La console ne fait que lire. Elle est **fermée** tant que les réglages ci-dess
 
 ### Mise en route (une seule fois)
 
-1. **Une adresse pour la console** : Workers & Pages › `family-farm` › Settings › Domains & Routes › Add ›
-   **Custom domain** : `admin.moonbloom-village.com`. (Le domaine est déjà chez Cloudflare : le certificat se crée seul.)
+1. **Une adresse pour la console** : `admin.moonbloom-village.com`, déclarée dans `wrangler.toml` (`routes`,
+   `custom_domain = true`) : le déploiement crée l'enregistrement DNS et le certificat. Rien à faire à la main.
+   (Si le déploiement échoue sur cette ligne, le jeton du build n'a pas le droit de créer un domaine : Workers &
+   Pages › `family-farm` › Paramètres › Compilations › jeton, avec la permission « Zone › Workers Routes › Edit ».)
 2. **Cloudflare Access** (Zero Trust, offre gratuite) : dans le tableau de bord, **Zero Trust**. La première fois,
    choisis un nom d'équipe (par exemple `moonbloom`) et l'offre **Free**. Puis Access › Applications › Add an
    application › **Self-hosted** :
