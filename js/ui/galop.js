@@ -6,7 +6,8 @@
    La carte (js/fermier.js) dit combien de temps il a avancé au galop (le pont galop, chaque seconde environ) : la
    jauge se met à jour sans redessiner la page ; une pomme finie, le galop qui s'arrête : la page se redessine (la
    vitesse change). La partie est sauvegardée à chaque pomme finie, et toutes les SAUVE_MS sinon.
-   La fiche du cheval (un appui sur lui, à l'Écurie : js/carte/ferme/chantier.js chevalAt) : ses vitesses, la sacoche
+   La fiche du cheval (à chaque montée en selle : js/ui/outils.js useCheval ; ou un appui sur lui, à l'Écurie :
+   js/carte/ferme/chantier.js chevalAt) : ses vitesses, la sacoche
    et ses places, ce qu'il y a de pommes dans l'inventaire, « Remplir » (les pommes, la pomme dorée), « Reprendre »
    (les entières) ; l'aide derrière un « ? ». */
 
@@ -105,7 +106,7 @@ function majFiche() {
   if (b) b.innerHTML = ficheHtml();
 }
 
-// Le pont de la carte : un appui sur le cheval, à l'Écurie.
+// La montée en selle (js/ui/outils.js), ou le pont de la carte : un appui sur le cheval, à l'Écurie.
 export function ouvrirFicheCheval() {
   if (!chevalPossede(state)) return;
   openModal(`
