@@ -916,11 +916,12 @@ function boussoleModele() {
   };
 }
 
-// En début de partie (pas encore de foyer : foyerPorte), sur la ferme, la boussole montre l'établi
-// quand le personnage s'en éloigne pour ramasser : l'Atelier posé, sinon la case où il est apparu
-// (caseDepart). Une fois le foyer bâti : null (elle se cache sur la ferme, comme avant).
+// Sur la ferme, la boussole montre le foyer (la porte de la maison : foyerPorte, l'abri de départ compris) quand le
+// personnage s'en éloigne. Pas encore de foyer (une partie d'avant l'abri de départ) : l'Atelier posé, sinon la
+// case où il est apparu (caseDepart).
 function etabliBoussole(T, px) {
-  if (foyerPorte() !== null) return null;
+  const porte = foyerPorte();
+  if (porte !== null) return { ...px(porte), nom: 'La maison', icone: '🏠' };
   const at = Object.entries(blocsPoses(state)).find(([, s]) => s === 'atelier');
   if (at) return { ...px(Number(at[0])), nom: DATA.ATELIER.NOM, icone: DATA.ATELIER.ICONE };
   return T.ZONES && T.ZONES[1] ? { ...px(caseDepart(T)), nom: 'Le point de départ', icone: '🚩' } : null;
