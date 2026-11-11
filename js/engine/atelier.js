@@ -11,7 +11,7 @@ import { casesDeRegion } from './monde.js';
 import { cutBushCases } from './outils.js';
 import { accueillirAnimal, animalRefus } from './animals.js';
 import { noterObjectif } from './objectifs-compte.js';
-import { accueillirCheval, chevalRefus } from './cheval.js';
+import { accueillirCheval, chevalRefus, poserSacoche, sacocheRefus } from './cheval.js';
 import { ajouterMeuble, meubleRefus } from './meubles.js';
 import { noter } from './journal.js';
 
@@ -252,7 +252,7 @@ export function craftStatus(state, id) {
   if (r.outil && r.niveau) { const refusN = refusNiveau(state, r); if (refusN) return { ok: false, raison: refusN, manque: {} }; } else if (r.outil && aDejaOutil(state, r.outil)) return { ok: false, raison: 'Tu as déjà cet outil.', manque: {} };
   if (!recetteDebloquee(state, id)) return { ok: false, raison: `Se débloque au niveau ${unlockLevel(r.debloque)}.`, manque: {} };
   // (ce qui doit trouver sa place : l'animal, le cheval, le meuble)
-  const refus = r.animal ? animalRefus(state, r.animal) : r.cheval ? chevalRefus(state) : r.meuble ? meubleRefus(state, r.meuble) : null;
+  const refus = r.animal ? animalRefus(state, r.animal) : r.cheval ? chevalRefus(state) : r.sacoche ? sacocheRefus(state) : r.meuble ? meubleRefus(state, r.meuble) : null;
   if (refus) return { ok: false, raison: refus, manque: {} };
   const m = manque(state, r.entrees);
   if (Object.keys(m).length) return { ok: false, raison: 'Il manque des matériaux.', manque: m };
@@ -276,6 +276,7 @@ export function craft(state, id) {
   }
   if (r.animal) accueillirAnimal(state, r.animal);
   if (r.cheval) accueillirCheval(state);
+  if (r.sacoche) poserSacoche(state);
   const items = { ...(r.sortie || {}) };
   if (r.meuble) { ajouterMeuble(state, r.meuble); items['meuble_' + r.meuble] = 1; }
   for (const [item, n] of Object.entries(r.sortie || {})) addItem(state, item, n);

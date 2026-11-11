@@ -334,6 +334,7 @@
     "lingot_fer": { "nom": "Lingot de fer", "icone": "🧈‍🔩", "prix": 15, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "lingot_cuivre": { "nom": "Lingot de cuivre", "icone": "🧈‍🟠", "prix": 20, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "lingot_or": { "nom": "Lingot d'or", "icone": "🧈‍🟡", "prix": 35, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
+    "pomme_doree": { "nom": "Pomme dorée", "icone": "🍎‍✨", "prix": 200, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "lingot_platine": { "nom": "Lingot de platine", "icone": "🧈‍⚪", "prix": 55, "mangeable": false, "categorie": "matériau", "rachetable": false, "invendable": true },
     "//oignon": [
       "10 nouvelles cultures : Zone de culture (oignon, ail, poivron, épinard,",

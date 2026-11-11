@@ -257,11 +257,33 @@
       if (k !== pasVu && (k === 0 || k === 2)) S.pas(x, y, null, 0);
       pasVu = k;
     }
+    // le galop (js/ui/galop.js) : ctx.galop, le modèle dit qu'il mange une pomme ; avance : il a bougé à la
+    // dernière image (le temps du galop ne compte qu'en avançant) ; des bouffées de poussière derrière les sabots,
+    // tous les POUSSIERE.pas px
+    let avance = false, galopMs = 0, poussiereRoule = 0;
+    const POUSSIERE = { pas: 7, ms: 380, couleurs: [0xd8c8a4, 0xb8a27a, 0xeae0c8] };
+    function poussiere(dx, dy) {
+      if (reduced() || !scene.add) return;
+      // (en gros pixels : trois grains de 1 ou 2 px qui s'écartent vers l'arrière et montent en pâlissant)
+      const n = Math.hypot(dx, dy) || 1, ux = dx / n, uy = dy / n;
+      const bx = Math.round(x - ux * 9), by = Math.round(y - uy * 4 - 1);
+      for (let i = 0; i < 3; i++) {
+        const t = 1 + (i === 0 ? 1 : Math.round(Math.random())), ox = Math.round(Math.random() * 4 - 2), oy = Math.round(Math.random() * 2 - 1);
+        const g = scene.add.rectangle(bx + ox, by + oy, t, t, POUSSIERE.couleurs[i % 3], 0.9).setOrigin(0.5, 1).setDepth(dz(y) - 1);
+        scene.tweens.add({ targets: g, x: bx + ox - ux * (3 + i * 2) + (Math.random() * 2 - 1), y: by + oy - 2 - Math.random() * 3, alpha: 0, duration: POUSSIERE.ms + i * 60, ease: 'Sine.easeOut', onUpdate: () => { g.x = Math.round(g.x); g.y = Math.round(g.y); }, onComplete: () => g.destroy() });
+      }
+    }
     function draw(name) {
       drawn = name;
       bruitPas(name);
       if (enSelle() && ROULE.test(name)) {
-        roule += Math.hypot(x - rx, y - ry);
+        const d = Math.hypot(x - rx, y - ry);
+        avance = d > 0.01;
+        if (ctx.galop && avance) {
+          poussiereRoule += d;
+          if (poussiereRoule >= POUSSIERE.pas) { poussiereRoule = 0; poussiere(x - rx, y - ry); }
+        }
+        roule += d;
         for (const k in selles) if (k !== monture() && selles[k]) selles[k].cache();
         const r = selles[monture()].place(x, y, face, flip, roule, alpha);
         frame(r.image);
@@ -547,6 +569,7 @@
       ctx.hour = raw.heure == null ? 12 : raw.heure;
       ctx.cheval = !!raw.cheval;
       ctx.chevalVitesse = raw.chevalVitesse || 1;
+      ctx.galop = !!raw.galop;
       ctx.pied = raw.pied || 1;
       ctx.coucher = !!raw.coucher;
       ctx.dort = !!raw.dort;
@@ -1123,6 +1146,12 @@
     }
     function pas(delta) {
       const dt = Math.min(delta, 50) / 1000;
+      // (au galop, en avançant : le temps compte ; la page le reçoit chaque seconde environ, hors de l'image)
+      if (ctx.galop && avance && enSelle()) {
+        galopMs += dt * 1000;
+        if (galopMs >= 1000 && o.galop) { const ms = galopMs; galopMs = 0; setTimeout(() => o.galop(ms), 0); }
+      }
+      avance = false;
       // (rentré, caché, descendu : plus de cheval sous lui ; draw le repose s'il avance)
       if (!enSelle() || !s.visible || !ROULE.test(drawn)) cacheSelles();
       // Retenues trop longues (onglet caché, chemin bloqué) : la case se montre.

@@ -28,9 +28,14 @@
     "touchant (le poteau et la corde reviennent). Revenu à la ferme, il rentre à l'Écurie.",
     "Chaque nuit, il mange RATION (de la paille, PATURAGE.NOURRITURE), après les bêtes de l'Étable.",
     "B-1 : VITESSE_FAIM vaut VITESSE (un cheval pas nourri n'est plus ralenti ; avant : 1,3).",
-    "La marche du cheval (proposition B) : VITESSE 1,4 (avant : 1,8), la marche plus posée avec js/carte/cheval.js CHEVAL.foulee (12 px par temps du pas, avant 7)."
+    "La marche du cheval (proposition B) : VITESSE 1,4 (avant : 1,8), la marche plus posée avec js/carte/cheval.js CHEVAL.foulee (12 px par temps du pas, avant 7).",
+    "Le galop (GALOP) : la sacoche du cheval (ATELIER.RECETTES.sacoche_cheval) a PLACES places, chacune une friandise de",
+    "FRIANDISES (la pomme, la pomme dorée du four). En selle, un appui sur une friandise lance le galop (vitesse fois plus",
+    "vite qu'à pied), un autre l'arrête ; elle se mange en secondes de chevauchée, seulement quand il avance ; finie, la",
+    "suivante prend le relais. Dans la sacoche, elles ne se périment pas. Descendu (ou attaché), il reprend le pas."
   ],
-  "CHEVAL": { "NOM": "Cheval", "ICONE": "🐴", "PRIX": 600, "PLACES": 2, "VITESSE": 1.4, "VITESSE_FAIM": 1.4, "RATION": 2, "ATTACHE": ["poteau_attache", "corde"], "PROCHE": 40 },
+  "CHEVAL": { "NOM": "Cheval", "ICONE": "🐴", "PRIX": 600, "PLACES": 2, "VITESSE": 1.4, "VITESSE_FAIM": 1.4, "RATION": 2, "ATTACHE": ["poteau_attache", "corde"], "PROCHE": 40,
+    "GALOP": { "PLACES": 5, "FRIANDISES": { "pomme": { "vitesse": 2, "secondes": 30 }, "pomme_doree": { "vitesse": 2.5, "secondes": 600 } } } },
   "//POULAILLER": "Poulailler (sections 1.3 et 8.5).",
   "POULAILLER": { "PRIX_CONSTRUCTION": 40, "CAPACITE": [4, 8, 12, 16, 24], "PRIX_NIVEAUX": [0, 100, 220, 450, 900] },
   "//ANIMAUX": [

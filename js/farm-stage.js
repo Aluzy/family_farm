@@ -287,6 +287,8 @@
               // boucle d'image ; puis la bulle « +x » monte au-dessus de lui.
               pickup: (id, done) => setTimeout(() => done(this.ctx.bridge && this.ctx.bridge.pickup ? this.ctx.bridge.pickup(id) : null), 0),
               gain: (items) => this.showGain(items),
+              // le galop (js/ui/galop.js) : il a avancé tant de ms au galop
+              galop: (ms) => { if (this.ctx.bridge && this.ctx.bridge.galop) this.ctx.bridge.galop(ms); },
               // Version 1.19 : au Poulailler ou à l'Étable, il prend ce qui l'attend.
               collect: (lieu, done) => setTimeout(() => done(this.ctx.bridge && this.ctx.bridge.collect ? this.ctx.bridge.collect(lieu) : null), 0),
               // Il dort dans son lit : la nuit peut passer.
@@ -1033,6 +1035,8 @@
           const siege = this.siegeAt ? this.siegeAt(wx, wy) : null;
           if (siege) return { siege };
         }
+        // le cheval, à l'Écurie : sa fiche (la sacoche du galop, js/ui/galop.js)
+        if (!hoeing && this.chevalAt && this.chevalAt(wx, wy)) return { chevalFiche: true };
         const pile = !hoeing ? this.pileAt(wx, wy) : null;
         if (pile) return { pile: pile.id };
         // le grand monde : un lieu du récit, un secret, une bête (son nom, sa page de l'encyclopédie :
@@ -1300,6 +1304,7 @@
         if (hit.chaine !== undefined) { this.jeterChaine(hit.chaine); return; }
         if (hit.machineSeule !== undefined) { this.machineSeule(hit.machineSeule); return; }
         if (hit.bac !== undefined) { this.bacTouche(hit.bac); return; }
+        if (hit.chevalFiche) { this.ctx.bridge.act('cheval-fiche', {}); return; }
         if (hit.massif !== undefined) { this.massifTouche(hit.massif); return; }
         if (hit.botteleuse !== undefined) { this.jeterFibres(hit.botteleuse); return; }
         if (hit.distributeur !== undefined) { this.jeterGrain(hit.distributeur); return; }

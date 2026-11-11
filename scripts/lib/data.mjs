@@ -863,14 +863,14 @@ export function validateData(data) {
       for (const [item, n] of Object.entries(r.entrees || {})) { needItem(`ATELIER.RECETTES.${rid}.entrees`, item); if (!isInt(n) || n <= 0) err(`ATELIER.RECETTES.${rid}.entrees.${item}`, 'une quantité entière positive'); }
       for (const item of Object.keys(r.sortie || {})) needItem(`ATELIER.RECETTES.${rid}.sortie`, item);
       // (fiche 7c : ce que vendait le Marché se fabrique ici : un outil, un animal qu'on attire, le
-      // cheval, un meuble)
-      const effets = ['sortie', 'outil', 'animal', 'cheval', 'meuble'].filter((k) => r[k]);
-      if (effets.length !== 1) err(`ATELIER.RECETTES.${rid}`, 'une sortie, un outil, un animal, le cheval ou un meuble (l\'un des cinq)');
+      // cheval, un meuble ; la sacoche du cheval, js/engine/cheval.js)
+      const effets = ['sortie', 'outil', 'animal', 'cheval', 'meuble', 'sacoche'].filter((k) => r[k]);
+      if (effets.length !== 1) err(`ATELIER.RECETTES.${rid}`, 'une sortie, un outil, un animal, le cheval, un meuble ou la sacoche du cheval (l\'un des six)');
       if (r.outil && !['houe', 'hache', 'pioche', 'faux', 'canne'].includes(r.outil)) err(`ATELIER.RECETTES.${rid}.outil`, 'houe, hache, pioche, faux ou canne');
       if (r.animal && !['poule', 'mouton', 'vache'].includes(r.animal)) err(`ATELIER.RECETTES.${rid}.animal`, 'poule, mouton ou vache');
       if (r.meuble && !(data.MEUBLES && data.MEUBLES[r.meuble])) err(`ATELIER.RECETTES.${rid}.meuble`, `« ${r.meuble} » n'est pas un meuble (MEUBLES)`);
       if (r.debloque && !(data.NIVEAUX && data.NIVEAUX.ELEMENTS && data.NIVEAUX.ELEMENTS[r.debloque]) && !(data.CULTURES && data.CULTURES[r.debloque])) err(`ATELIER.RECETTES.${rid}.debloque`, `« ${r.debloque} » n'est pas un élément des niveaux`);
-      if ((r.animal || r.cheval || r.meuble) && typeof r.nom !== 'string' && !r.meuble) err(`ATELIER.RECETTES.${rid}.nom`, 'le nom de la recette (elle ne donne pas d\'objet)');
+      if ((r.animal || r.cheval || r.meuble || r.sacoche) && typeof r.nom !== 'string' && !r.meuble) err(`ATELIER.RECETTES.${rid}.nom`, 'le nom de la recette (elle ne donne pas d\'objet)');
     }
     for (const [bid, b] of Object.entries(A.BLOCS || {})) {
       if (b.objet) needItem(`ATELIER.BLOCS.${bid}.objet`, b.objet);
