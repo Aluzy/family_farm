@@ -21,7 +21,7 @@ import { techAuto } from '../engine/techtree.js';
 import { isUnlocked, plantableCropsFor } from '../engine/campaign.js';
 import { alertSnapshot, getNotifications } from '../engine/alerts.js';
 import { aidant, aideAFaire, aideBetes, collectAt, pickUp, pickUpAll, piles } from '../engine/ramassage.js';
-import { arroseesCompagnon, demandeCompagnon, estTacheCompagnon, faireCompagnon, journeeCompagnon, noterGarde, recolteesCompagnon, tachesCompagnon } from '../engine/compagnon.js';
+import { arroseesCompagnon, demandeCompagnon, estTacheCompagnon, faireCompagnon, journeeCompagnon, recolteesCompagnon, tachesCompagnon } from '../engine/compagnon.js';
 import { compagnonTouche } from './compagnon.js';
 import { marcherMembre } from '../engine/repas.js';
 import { fleursPourAbeilles, ruchePleine, ruchesARecolter } from '../engine/ruches.js';
@@ -816,7 +816,6 @@ function stageAide(lieu) {
   const betes = !estTacheCompagnon(lieu);
   const r = betes ? aideBetes(state, lieu) : faireCompagnon(state, lieu);
   if (!r.ok) return null;
-  if (betes) noterGarde(state, 'betes');   // (le récit, lot 8 : il garde la ferme quand le joueur explore)
   persistState();
   refresh();
   return r.items;
@@ -1118,7 +1117,7 @@ function mondeDeLaCarte() {
 function aideSansCarte() {
   if (enLigne) return;   // (E-6 : de même)
   if (nightActive(state) || clockHours(state) >= DATA.FAMILLE.HORAIRE.FIN_TRAVAIL_ADULTES) return;
-  for (const lieu of aideAFaire(state)) if (aideBetes(state, lieu).ok) noterGarde(state, 'betes');
+  for (const lieu of aideAFaire(state)) aideBetes(state, lieu);
   // (fiche 19 : ses initiatives aussi, d'un coup, sans dessin)
   if (journeeCompagnon(state).length) persistState();
 }

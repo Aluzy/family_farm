@@ -2,21 +2,17 @@
    Tests du moteur : l'exploration (le récit, lot 8 ; docs/recit/plan.md).
    - la tente : une case à part, à côté du sac ; elle se prend de l'inventaire et s'y range ;
    - le bivouac : loin de la ferme, la nuit, sa tente portée, le personnage dort là où il est ; l'énergie
-     remonte comme dans un lit ; il ne prend pas de couchage de la maison ; le bivouac finit avec la nuit ;
-   - le compagnon garde la ferme : ce qu'il fait pendant que le joueur explore est compté, et il le dit au
-     retour (une fois).
+     remonte comme dans un lit ; il ne prend pas de couchage de la maison ; le bivouac finit avec la nuit.
    Lancer seul : node tests/run-tests.mjs exploration.
    ========================================================================== */
 
 import {
-  addItem, advanceNight, aidant, awakeMsAtHour, countItem, DATA, farmTerrain, journeeCompagnon, nightLengthMs,
-  plant, ramassables, seedItem, startNight,
+  addItem, advanceNight, awakeMsAtHour, countItem, DATA, farmTerrain, nightLengthMs, startNight,
 } from '../../js/engine/index.js';
 import { equipementDe, poserTente, retirerTente, tentePortee } from '../../js/engine/equipement.js';
 import { dormirSousTente } from '../../js/engine/night.js';
 import { bivouacEnCours, nuitCouchee, nuitSansCouchage } from '../../js/engine/blocs.js';
-import { noterGarde, retourCompagnon } from '../../js/engine/compagnon.js';
-import { assert, assertEqual, farm, garden, growZone, test } from './aide.mjs';
+import { assert, assertEqual, farm, test } from './aide.mjs';
 
 const TENTE = DATA.EQUIPEMENT.TENTE;
 // La case d'une partie loin de la ferme (au-delà de son bord est), ou sur la ferme.
@@ -76,23 +72,3 @@ test('le bivouac : le personnage ne prend pas de couchage de la maison (les autr
   assert(sans.length <= n - 1);
 });
 
-test('le compagnon garde la ferme : compté pendant l\'exploration seulement, dit au retour, une fois', () => {
-  const s = growZone(garden(), 10);
-  s.awakeMs = awakeMsAtHour(9);
-  s.cueillette = { jour: s.day, pris: ramassables(s).map((p) => p.id) };
-  addItem(s, seedItem('carotte'), 4);
-  for (const p of s.potager.parcelles.filter((q) => !q.culture).slice(0, 4)) assert(plant(s, p.id, 'carotte').ok);
-  // à la ferme : rien n'est compté
-  s.monde.ici = dedans(s);
-  noterGarde(s, 'betes');
-  assertEqual(retourCompagnon(s), null, 'rien à dire : le joueur était là');
-  // loin : ce qu'il fait est compté
-  s.monde.ici = loin(s);
-  const faits = journeeCompagnon(s);
-  assert(faits.some((f) => f.action === 'arroser'), 'il a arrosé');
-  noterGarde(s, 'betes');
-  const r = retourCompagnon(s);
-  assert(r && r.id === aidant(s).id, 'c\'est lui qui parle');
-  assert(r.texte.includes(DATA.RECIT.COMPAGNON.arroser) && r.texte.includes(DATA.RECIT.COMPAGNON.betes), r.texte);
-  assertEqual(retourCompagnon(s), null, 'une fois');
-});

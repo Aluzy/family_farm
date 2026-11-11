@@ -15,7 +15,6 @@ import { farmTerrain } from './terrain.js';
 import { aidant, aideBetes } from './ramassage.js';
 import { noter } from './journal.js';
 import { ETAPES } from './didacticiel.js';
-import { enExpedition } from './equipement.js';
 
 /* ---------- fiche 19 : le compagnon aide à la ferme ----------
    Le compagnon du personnage principal (l'autre adulte du foyer : aidant, ramassage.js), en plus
@@ -66,8 +65,7 @@ import { enExpedition } from './equipement.js';
    (plantes arrosées dans la sortie en cours), prochain: { action: heure absolue }, ml (sa cruche),
    derniere (la case de la dernière plante arrosée : il continue par la plus proche), arrosees (les cases
    qu'il a arrosées ce jour-là : la carte ne les prend pas pour des gestes du joueur ; recoltees, de même pour
-   les légumes qu'il a cueillis), demande ({ quoi, jour } : ce que le joueur lui a demandé), garde (le récit, lot 8 :
-   ce qu'il a fait pendant que le joueur explorait, noterGarde) }. Le champ
+   les légumes qu'il a cueillis), demande ({ quoi, jour } : ce que le joueur lui a demandé) }. Le champ
    n'existe pas dans une sauvegarde d'avant : reparerPartie (state.js) le remet tel qu'une partie
    neuve l'a, sans changer le format. */
 
@@ -269,7 +267,6 @@ export function estTacheCompagnon(lieu) {
 function compter(state, a, fin = true) {
   const c = etatCompagnon(state), m = aidant(state);
   c[a] += 1;
-  noterGarde(state, a);
   aiderMembre(state, m.id, C()[a.toUpperCase()].FAIM);
   if (fin) c.prochain[a] = absoluteHours(state) + C()[a.toUpperCase()].ECART_H;
 }
@@ -293,7 +290,6 @@ export function faireCompagnon(state, lieu) {
   if (s === 'poulailler' && demande) {
     const r = aideBetes(state, 'poulailler');
     if (!r.ok) return r;
-    noterGarde(state, 'betes');
     return { ok: true, action: 'nourrir', items: r.items, nourries: r.nourries };
   }
   if (sorte === 'puits') {
@@ -468,34 +464,8 @@ function cueillirDemande(state, sorte, k) {
   }
   c.derniere = k;
   aiderMembre(state, m.id, C().DEMANDE.FAIM);
-  noterGarde(state, sorte);
   dire(state, sorte, items);
   return { ok: true, action: sorte, items };
-}
-
-/* ---------- le récit, lot 8 : il garde la ferme quand le joueur explore ----------
-   Pendant que le personnage principal est loin de la ferme (enExpedition, ou sous sa tente), ce que le
-   compagnon fait est compté (state.compagnon.garde = { arroser, cuisiner, ramasser, betes } ; absent :
-   rien) ; au retour du joueur, il le dit en une phrase sobre (retourCompagnon : les textes de
-   RECIT.COMPAGNON, data/recit.json), et le compte repart de zéro. */
-
-export function noterGarde(state, action, n = 1) {
-  if (!(enExpedition(state) || state.bivouac) || !aidant(state)) return;
-  const c = etatCompagnon(state);
-  if (!c.garde || typeof c.garde !== 'object') c.garde = {};
-  c.garde[action] = (Number(c.garde[action]) || 0) + n;
-}
-
-// Le joueur rentre à la ferme : ce que le compagnon dit de sa garde, ou null (rien n'a été compté). →
-// { prenom, texte } ; le compte est remis à zéro.
-export function retourCompagnon(state) {
-  const c = etatCompagnon(state), m = aidant(state), g = c.garde;
-  c.garde = null;
-  if (!m || !g || typeof g !== 'object') return null;
-  const T = (DATA.RECIT && DATA.RECIT.COMPAGNON) || {};
-  const parts = ['arroser', 'cuisiner', 'ramasser', 'betes'].filter((a) => g[a] > 0 && T[a]).map((a) => String(T[a]).replace('{n}', String(g[a])));
-  if (!parts.length) return null;
-  return { id: m.id, prenom: m.prenom || m.nom || '', texte: [T.debut, ...parts.slice(0, 3), T.fin].filter(Boolean).join(' ') };
 }
 
 // Sans la carte (ou pendant une absence) : il fait d'un coup tout ce qu'il ferait maintenant

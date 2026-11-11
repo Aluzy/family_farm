@@ -9,7 +9,7 @@ import { mailbox } from '../engine/campaign.js';
 import { PRESSE_RENDU } from '../engine/state.js';
 import { mergeOfflineReports, simulateOffline } from '../engine/offline.js';
 import { alertSnapshot, tutorialStep } from '../engine/alerts.js';
-import { escapeHtml, formatCoins, formatDay, formatNumber } from '../engine/format.js';
+import { formatCoins, formatDay, formatNumber } from '../engine/format.js';
 import { enLigne, MAX_FRAME_MS, RENDER_THROTTLE_MS, state, tabAvailable, TICK_MS } from './store.js';
 import { persistState } from './storage.js';
 import { showConsentBanner } from './consent.js';
@@ -26,8 +26,6 @@ import { proposerScene } from './scene.js';
 import { lieuDuPerso } from './stage.js';
 import { aFait, acteEnCours, deHameau } from '../engine/recit.js';
 import { veilleeFerme, veilleeFermePossible } from '../engine/ile.js';
-import { enExpedition } from '../engine/equipement.js';
-import { retourCompagnon } from '../engine/compagnon.js';
 import { moonPhase } from '../engine/lune.js';
 import { watchBienvenue } from './bienvenue.js';
 import { watchPresents } from './amitie.js';
@@ -137,7 +135,6 @@ function watchRecit() {
   const ici = lieuDuPerso();
   if (!proposerScene(ici || {})) sceneCaleche();
   inviterVeillee();
-  watchGarde();
   // le récit, lot 7 : la veillée à la ferme, une fois par pleine lune (la première est une scène)
   if (ici && ici.lieu === 'ferme' && veilleeFermePossible(state) && veilleeFerme(state).ok) {
     persistState();
@@ -167,20 +164,6 @@ function watchRecit() {
     delete state.serreRendue;
     persistState();
   }
-}
-
-// Le récit, lot 8 : rentré d'une exploration (le personnage revient sur la ferme), le compagnon dit ce qu'il
-// a fait pendant la garde (retourCompagnon), une fois, quand l'écran est calme.
-let dehors = null;
-function watchGarde() {
-  const e = enExpedition(state);
-  if (dehors === null || e) { dehors = e; return; }
-  if (!dehors || !uiCalm()) return;
-  dehors = false;
-  const r = retourCompagnon(state);
-  if (!r) return;
-  persistState();
-  notify(`🏡 ${escapeHtml(r.prenom)} : « ${escapeHtml(r.texte)} »`, { kind: 'info' });
 }
 
 // La veillée (le récit, lot 6) : un soir de pleine lune, à partir de 17 h, une seule annonce par pleine

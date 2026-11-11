@@ -127,12 +127,8 @@ l'atelier de Frida (lot 3b) ; les veillées suivantes (acte III).
 - **Le compagnon est obligatoire** au départ (`js/ui/depart.js` : l'écran « avec un compagnon ? » est ôté,
   on choisit directement son personnage et son prénom). Le moteur (`composeFamily`) l'accepte encore absent :
   les anciennes parties et les tests sans compagnon marchent.
-- **Il garde la ferme** : il faisait déjà ses gestes pendant que le joueur est loin (fiche 19) ; ce qu'il fait
-  quand le joueur explore ou bivouaque est compté (`noterGarde`, `state.compagnon.garde`), et au retour à la
-  ferme il le dit chaleureusement, une fois (`retourCompagnon`, `watchGarde` dans `js/ui/loop.js`) : les
-  phrases de `RECIT.COMPAGNON` (un accueil, puis arroser, cuisiner, ramasser, bêtes, au plus trois, puis la fin :
-  « La maison était trop calme sans toi. Assieds-toi et raconte-moi tout. »). Ton plus chaleureux demandé à la
-  relecture du lot 8.
+- **Il garde la ferme** : il fait ses gestes pendant que le joueur est loin (fiche 19). Le message qu'il disait
+  au retour à la ferme (« Te voilà ! … raconte-moi tout. ») a été retiré à la demande de l'auteur.
 - **La tente** (nouvel objet, `EQUIPEMENT.TENTE`) : elle se fabrique à l'Atelier (onglet équipement : 12 fibres,
   2 planches, 2 cordes, recette provisoire) et se porte dans une case de la fiche du personnage, à côté du
   sac (`poserTente`, `retirerTente`, l'action `fiche-tente`). La clé `equipement.tente` n'existe que si elle
