@@ -3593,10 +3593,11 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .lot-titre { margin: 6px 0 2px; }
 /* S'orienter (fiche 8). La boussole (js/carte/ferme/boussole.js) : sous l'horloge, à droite de la carte ;
    son cadran en gros pixels (un canevas de 30 px agrandi deux fois, sans lissage), dessous le but et sa
-   distance sur une plaque de bois. Un appui ouvre la carte du monde. */
+   distance sur une plaque de bois. Un appui ouvre la carte du monde. Son haut suit le bas de l'horloge (.hud :
+   8 px, le hublot de 40 pixels du jeu, le bandeau de 12 qui en chevauche 5, soit 47 × --hud-px), plus 6 px. */
 .boussole {
   position: absolute;
-  top: calc(118px + env(safe-area-inset-top, 0px) - var(--header-h, 0px));
+  top: calc(max(118px, 14px + 47 * var(--hud-px, 2px)) + env(safe-area-inset-top, 0px) - var(--header-h, 0px));
   right: calc(12px + env(safe-area-inset-right, 0px));
   z-index: 3;
   display: flex;
@@ -3629,7 +3630,7 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .boussole-nom { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 116px; }
 .boussole-distance { color: #4f375d; }
 @media (max-width: 560px) {
-  .boussole { top: calc(96px + env(safe-area-inset-top, 0px) - var(--header-h, 0px)); right: 8px; }
+  .boussole { top: calc(14px + 47 * var(--hud-px, 2px) + env(safe-area-inset-top, 0px) - var(--header-h, 0px)); right: 8px; }
   #farm-stage .boussole canvas.boussole-cadran { width: 48px !important; height: 48px !important; }
   .boussole-legende { font-size: 0.66rem; max-width: 104px; }
 }
@@ -3993,9 +3994,10 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .bac-astuce { font-style: italic; }
 
 /* ---------- Les amis (js/ui/amis.js) : le bouton 💌, le volet, la fiche ---------- */
+/* (sous la boussole et sa plaque, qui suivent le bas de l'horloge : environ 100 px de haut, 86 sur un écran étroit) */
 .amis-bouton {
   position: fixed;
-  top: calc(212px + env(safe-area-inset-top, 0px) - var(--header-h, 0px));
+  top: calc(max(226px, 122px + 47 * var(--hud-px, 2px)) + env(safe-area-inset-top, 0px) - var(--header-h, 0px));
   right: calc(12px + env(safe-area-inset-right, 0px));
   z-index: var(--z-fab);
   width: 46px; height: 46px; border-radius: 50%;
@@ -4004,6 +4006,9 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
   background: var(--wood-cream); border: 3px solid var(--prune);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   cursor: pointer;
+}
+@media (max-width: 560px) {
+  .amis-bouton { top: calc(max(212px, 108px + 47 * var(--hud-px, 2px)) + env(safe-area-inset-top, 0px) - var(--header-h, 0px)); }
 }
 .amis-bouton:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
 body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
