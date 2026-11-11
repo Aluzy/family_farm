@@ -469,6 +469,10 @@ racine, ignorés par git. Ils écrivent des PNG en couleurs vraies (RGBA) ; les 
 de `assets/` sont, eux, en palette indexée quand c'est possible sans perte (≤ 256 couleurs) :
 plus légers, pixel pour pixel identiques.
 
+`python3 scripts/capture/pixelart.py capture.png` fait le chemin inverse : d'une capture d'écran
+d'un dessin en pixel art, il retire le fond, retrouve les pixels de base et rend le dessin en
+16 × 16 ou 32 × 32, 16 couleurs au plus (voir [`scripts/README.md`](scripts/README.md)).
+
 - **Cartes Tiled** : `node scripts/build-map.mjs` (ou `npm run build:map`) fabrique les cartes
   que le jeu charge (`assets/carte_printemps.json`, dont la ferme générée reprend les jeux de
   tuiles) à partir de la carte de travail `.tmj` et de ses jeux de tuiles `.tsx`. À relancer

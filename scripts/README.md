@@ -37,3 +37,22 @@ venir du grand monde). Les icônes ne sont plus dessinées par un script : leurs
 Une retouche de `pixel.py` touche toutes les images : relancer les générateurs et vérifier que
 leurs sorties (les pixels décodés, pas les octets : les PNG de `assets/` sont en palette) ne
 changent pas.
+
+## D'une capture d'écran à un dessin : `scripts/capture/pixelart.py`
+
+Un outil à part des générateurs : il ne dessine rien, il relit un dessin en pixel art depuis sa
+capture d'écran (le dessin agrandi, sur un fond) et le rend à sa taille, en PNG à palette :
+
+    python3 scripts/capture/pixelart.py capture.png [sortie.png] [--apercu 8]
+
+Dans l'ordre : le fond est lu sur le bord de l'image et retiré (ce qui lui ressemble et touche
+l'extérieur ; `--trous` pour le fond enfermé dans le dessin) ; la taille d'un pixel du dessin est
+cherchée dans les changements de couleur, et le dessin tient sur une toile de 16 × 16 ou de
+32 × 32 (`--taille`, sinon la plus petite qui convient ; un dessin plus grand y est ramené) ; la
+palette est lue puis réduite à 16 couleurs au plus (`--couleurs`), chacune une vraie couleur du
+dessin ; les motifs sont relevés (symétrie, motif répété, trames, contour : un motif répété à
+95 % est corrigé, sauf `--sans-motifs`) ; le dessin est composé et écrit. Le programme imprime ce
+qu'il a lu (`--rapport fichier.json` pour le garder). Les autres options sont en tête du fichier.
+
+`python3 scripts/capture/essais.py` le vérifie sur de fausses captures (agrandissement entier ou
+non, damier de transparence, JPEG) ; il n'est pas lancé par l'action GitHub, qui n'a pas Python.
