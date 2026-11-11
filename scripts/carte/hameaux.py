@@ -28,6 +28,7 @@
 # pièce d'une case : le milieu du bas de sa case ; de deux ou trois cases : le milieu du bas de ses
 # cases ; un lit : 8 px plus haut (rangé derrière qui passe devant lui, comme à la ferme : PIED).
 import json
+import math
 import os
 import sys
 
@@ -170,6 +171,9 @@ VITRE = rampe([(30, 52, 64), (52, 92, 108), (98, 146, 160), (176, 214, 220)])
 FER_R = rampe([(34, 36, 40), (70, 74, 80), (128, 132, 138)])
 PAILLE_R = rampe([(150, 112, 44), (214, 176, 90), (246, 226, 160)])
 COEUR = rampe([(96, 56, 26), (150, 100, 52), (198, 146, 82), (230, 190, 126), (248, 226, 172)])
+FRENE = rampe([(96, 70, 40), (150, 116, 72), (202, 168, 116), (236, 214, 170)])
+ACIER = rampe([(30, 34, 40), (70, 78, 88), (122, 132, 144), (180, 188, 198), (236, 240, 244)])
+BLEU = rampe([(22, 44, 70), (40, 78, 116), (66, 116, 158), (110, 160, 196), (170, 206, 228)])
 ECORCE = rampe([(30, 20, 12), (58, 40, 24), (88, 64, 40), (120, 92, 60), (150, 120, 82)])
 
 
@@ -294,29 +298,136 @@ def tas_bois(v):
 
 
 def billot():
-    """Le billot du bûcheron : une souche coupée net, une hache plantée dedans."""
-    t = Toile(16, 22)
-    t.ellipse(8, 11, 6, 3, lambda u, v: PAILLE[3] if u * u + v * v < 0.35 else PAILLE[2])
-    t.rect(2, 12, 13, 19, BOIS[2]); t.rect(2, 12, 2, 19, BOIS[3]); t.rect(13, 12, 13, 19, BOIS[1])
-    for x in (5, 9):
-        t.rect(x, 13, x, 18, BOIS[1])
-    t.rect(1, 20, 14, 21, BOIS[0])
-    t.rect(9, 1, 10, 10, BOIS[3])                 # le manche
-    t.rect(6, 8, 12, 10, FER[3]); t.rect(6, 10, 12, 10, FER[1])     # le fer
-    return t.fini(), (8, 22)
+    """Le billot du bûcheron, vu de haut à 45° : une souche sciée net, son dessus en bois de bout
+    (cernes, cœur, fentes) cerné d'un pixel d'écorce, son flanc d'écorce crevassée, ses racines, une
+    hache plantée dedans (fer et fil brillant, manche de frêne) ; des copeaux au pied."""
+    t = Toile(18, 24)
+    cx, cy, rx, ry = 8.5, 11.5, 6.6, 3.6
+    for y in range(11, 22):                                           # le flanc, de l'écorce
+        for x in range(2, 16):
+            dx = (x + .5 - cx) / rx
+            if abs(dx) > 1:
+                continue
+            lum = 0.58 - 0.42 * dx - 0.12 * (y - 11) / 10 + 0.07 * bruit(x, y // 2, 61)
+            if bruit(x, y // 3, 62) > 0.55:
+                lum -= 0.22                                            # une crevasse
+            yb = cy + ry * (1 - dx * dx) ** 0.5
+            if y >= yb + 7:
+                continue
+            t.put(x, y, ton(ECORCE, lum))
+    for x0, d in ((1, -1), (15, 1), (6, 0), (11, 0)):                  # les racines, au pied
+        for k in range(3):
+            x = x0 + d * k // 2
+            y = 18 + k
+            t.put(x, y, ton(ECORCE, 0.45 - 0.12 * k - 0.2 * max(0, d)))
+            t.put(x + 1, y, ton(ECORCE, 0.30 - 0.1 * k))
+    for y in range(7, 16):                                            # le dessus, en bois de bout
+        for x in range(1, 17):
+            u, v = (x + .5 - cx) / rx, (y + .5 - cy) / ry
+            d = (u * u + v * v) ** 0.5
+            if d > 1:
+                continue
+            if d > 0.86:
+                c = ton(ECORCE, 0.62 - 0.3 * (u + v) / 2)
+            else:
+                lum = 0.66 - 0.16 * (u + v) / 2 + 0.11 * math.sin(d * 13) - 0.18 * max(0, d - 0.7) / 0.16
+                if d < 0.12:
+                    lum -= 0.22                                        # le cœur
+                if abs(v + 0.15 * u) < 0.16 and u > 0.2:
+                    lum -= 0.32                                        # une fente
+                if bruit(x, y, 63) > 0.85:
+                    lum -= 0.1                                         # les traces de hache
+                c = ton(COEUR, lum)
+            t.put(x, y, c)
+    for k in range(9):                                                # le manche, en biais
+        x, y = 12 + k // 3, 9 - k
+        t.put(x, y, ton(FRENE, 0.78 - 0.04 * k))
+        t.put(x + 1, y, ton(FRENE, 0.40 - 0.02 * k))
+    for y in range(8, 12):                                            # le fer, planté dans le bois
+        for x in range(7, 13):
+            if y == 11 and x in (7, 12):
+                continue
+            lum = 0.55 + 0.25 * (12 - x) / 5 - 0.15 * (y - 8) / 3
+            if y == 8:
+                lum += 0.3                                             # le dos, au soleil
+            if x == 7:
+                lum = 0.95                                             # le fil, brillant
+            t.put(x, y, ton(ACIER, lum))
+    t.put(11, 9, ton(ACIER, 0.15))                                     # l'œil du fer
+    im = ombre_portee(t.fini(), 9, 21.3, 8.5, 2.2)
+    p = im.load()
+    for i in range(7):                                                # des copeaux
+        x = int((bruit(i, 0, 64) + 1) * 8.5)
+        y = 21 + int((bruit(i, 1, 64) + 1) * 1.4)
+        if 0 <= x < 18 and y < 24 and p[x, y][3] < 200:
+            p[x, y] = ton(COEUR, 0.55 + 0.35 * bruit(i, 2, 64)) + (255,)
+    return im, (9, 22)
 
 
 def barque():
-    """La barque tirée au sec, vue de haut : sa coque de planches, deux bancs, une rame."""
-    t = Toile(34, 18)
-    t.ellipse(17, 9, 15.5, 7, lambda u, v: BOIS[2] if abs(v) > 0.7 else BOIS[3] if v < 0 else BOIS[2])
-    t.ellipse(17, 9, 13, 4.6, lambda u, v: BOIS[1] if v < -0.5 else BOIS[2])
-    for x in (11, 22):
-        t.rect(x, 5, x + 1, 13, BOIS[4])
-    for x in range(5, 30):
-        t.put(x, 9, BOIS[1] if x % 4 else BOIS[0])
-    t.rect(6, 15, 28, 15, BOIS[4]); t.rect(26, 14, 29, 16, BOIS[3])   # la rame
-    return t.fini(), (17, 18)
+    """La barque tirée au sec, vue de haut à 45° : la proue pointue à droite, le tableau arrière
+    plat à gauche ; le plat-bord clair, l'intérieur en bordages et membrures, deux bancs, deux
+    une rame couchée devant ; le flanc proche peint d'une bande bleue, le bas goudronné ; son ombre."""
+    t = Toile(36, 22)
+    yc = 8.5
+
+    def demi(x):                                                      # la demi-largeur, vue à 45°
+        s = (x + .5 - 2) / 31
+        if s < 0 or s > 1:
+            return 0
+        if s < 0.4:
+            return 5.0 * (0.66 + 0.34 * math.sin(math.pi / 2 * s / 0.4))
+        return 5.0 * max(0, 1 - ((s - 0.4) / 0.6) ** 1.8)
+
+    for x in range(1, 35):                                            # le flanc proche
+        w = demi(x)
+        if w <= 0:
+            continue
+        haut = int(3.6 * (1 - ((x + .5 - 2) / 31) ** 3)) + 1
+        for k in range(haut + 1):
+            y = int(yc + w) + k
+            f = k / max(1, haut)
+            if f < 0.30:
+                c = ton(BLEU, 0.62 - 0.25 * f + 0.05 * bruit(x, y, 71))
+            elif f < 0.85:
+                c = ton(CHENE, 0.42 - 0.2 * f + 0.05 * bruit(x, y, 72) - (0.1 if k % 2 else 0))
+            else:
+                c = ton(NOYER, 0.12)
+            t.put(x, y, c)
+    for x in range(1, 35):                                            # le dessus : plat-bord, intérieur
+        w = demi(x)
+        if w <= 0:
+            continue
+        for y in range(int(yc - w - 1), int(yc + w + 2)):
+            v = (y + .5 - yc) / w
+            if abs(v) > 1:
+                continue
+            bord = abs(v) > 1 - 1.4 / max(w, 1.4) or x <= 2
+            if bord:
+                c = ton(CHENE, (0.88 if v < 0 else 0.64) + 0.04 * bruit(x, y, 73))
+            else:
+                lum = 0.50 - 0.26 * v + 0.04 * bruit(x, y, 74)        # le fond, la paroi éloignée éclairée
+                if int((v + 1) * 3) != int((v + 1) * 3 + 0.22):
+                    lum -= 0.10                                        # le joint des bordages
+                if x % 4 == 0:
+                    lum -= 0.07                                        # une membrure
+                c = ton(CHENE, lum)
+            t.put(x, y, c)
+    for x0 in (10, 20):                                               # les bancs
+        w = demi(x0)
+        for y in range(int(yc - w) + 1, int(yc + w)):
+            t.put(x0, y, ton(CHENE, 0.92))
+            t.put(x0 + 1, y, ton(CHENE, 0.74))
+            t.put(x0 + 2, y, ton(CHENE, 0.28))
+    for x in range(5, 27):                                            # une rame couchée au sol, devant
+        y = 18 + (x - 5) // 11
+        t.put(x, y, ton(FRENE, 0.82))
+        t.put(x, y + 1, ton(FRENE, 0.45))
+    for x in range(27, 32):                                           # sa pelle
+        t.rect(x, 19, x, 21, ton(FRENE, 0.78 - 0.08 * (x - 27)))
+        t.put(x, 21, ton(FRENE, 0.40))
+    im = ombre_portee(t.fini(), 17, 15.5, 16.5, 3.2)
+    return im, (18, 19)
 
 
 def sechoir():
