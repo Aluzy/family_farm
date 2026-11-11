@@ -179,6 +179,7 @@ LIEGE = rampe([(110, 34, 24), (176, 62, 40), (222, 108, 66), (246, 160, 112)])
 ROCHE = rampe([(44, 44, 50), (82, 82, 88), (124, 122, 124), (170, 166, 162), (212, 208, 200)])
 CUIVRE_R = rampe([(96, 46, 22), (160, 86, 42), (214, 136, 74), (246, 196, 132)])
 FERRUGINEUX = rampe([(70, 34, 26), (124, 62, 40), (176, 98, 62), (214, 146, 104)])
+EAU_R = rampe([(20, 44, 66), (36, 76, 108), (60, 116, 150), (110, 168, 196), (200, 230, 240)])
 ECORCE = rampe([(30, 20, 12), (58, 40, 24), (88, 64, 40), (120, 92, 60), (150, 120, 82)])
 
 
@@ -550,22 +551,96 @@ def wagonnet():
     return im, (9, 22)
 
 
+def caillou(t, cx, cy, rx, ry, R, s, veine=None):
+    """Une pierre taillée par facettes, vue à 45° : le dessus au soleil, le flanc gauche à mi-ombre,
+    le flanc droit à l'ombre, une arête sombre en bas et à droite ; veine : une rampe de minerai."""
+    for y in range(int(cy - ry - 1), int(cy + ry + 2)):
+        for x in range(int(cx - rx - 1), int(cx + rx + 2)):
+            u, v = (x + .5 - cx) / rx, (y + .5 - cy) / ry
+            d = u * u + v * v + 0.10 * bruit(x, y, s)
+            if d > 1:
+                continue
+            if v < -0.2 + 0.25 * u:
+                lum = 0.80 - 0.10 * u
+            elif u < 0.1:
+                lum = 0.55
+            else:
+                lum = 0.30
+            lum += 0.03 * bruit(x, y, s + 1) + 0.07 * bruit(s, 0, 5)          # chaque pierre son ton
+            lum += 0.08 * (1 - (u * u + v * v))                         # bombée au milieu
+            if d > 0.70 and (u + v) > 0.1:
+                lum -= 0.28                                            # l'arête, contre le voisin
+            c = ton(R, lum)
+            if veine and bruit(x + y, x - y, s + 2) > 0.78 and d < 0.6:
+                c = ton(veine, lum + 0.15)                              # une veine de minerai
+            t.put(x, y, c)
+
+
 def tas_minerai():
-    """Un tas de minerai : des pierres grises, des éclats de cuivre."""
-    t = Toile(16, 16)
-    for k, (x, y, r) in enumerate([(5, 11, 3.6), (11, 11, 3.6), (8, 7.5, 3.4), (8, 12, 3)]):
-        t.ellipse(x, y, r, r * 0.85, lambda u, v, k=k: PIERRE[4] if v < -0.3 and u < 0.2 else PIERRE[2] if v > 0.4 else PIERRE[3])
-    for x, y in ((6, 9), (10, 12), (9, 6), (4, 12)):
-        t.put(x, y, CUIVRE[1]); t.put(x + 1, y, CUIVRE[2])
-    return t.fini(), (8, 16)
+    """Un tas de minerai, vu de haut à 45° : des pierres taillées par facettes, éclairées en haut à
+    gauche, veinées de cuivre et de fer ; des éclats brillants ; du gravier au pied ; l'ombre."""
+    t = Toile(18, 19)
+    pierres = [(4.5, 13, 3.6, 3.0, ROCHE, CUIVRE_R), (13.5, 13.5, 3.6, 3.0, ROCHE, FERRUGINEUX),
+               (9, 14.5, 3.4, 2.8, ROCHE, None), (6.5, 9.5, 3.2, 2.8, ROCHE, FERRUGINEUX),
+               (11.5, 9.5, 3.4, 2.9, ROCHE, CUIVRE_R), (9, 6, 3.0, 2.6, ROCHE, CUIVRE_R)]
+    for k, (cx, cy, rx, ry, R, veine) in enumerate(pierres):
+        caillou(t, cx, cy, rx, ry, R, 100 + 7 * k, veine)
+    for x, y in ((8, 5), (12, 8), (4, 12), (14, 12)):                 # les éclats qui brillent
+        t.put(x, y, ton(CUIVRE_R, 1.0))
+    im = ombre_portee(t.fini(), 9, 17.3, 8.6, 2)
+    p = im.load()
+    for i in range(8):                                                # le gravier au pied
+        x = int((bruit(i, 0, 111) + 1) * 8.5)
+        y = 17 + int((bruit(i, 1, 111) + 1))
+        if 0 <= x < 18 and y < 19 and p[x, y][3] < 200:
+            p[x, y] = ton(ROCHE, 0.4 + 0.3 * bruit(i, 2, 111)) + (255,)
+    return im, (9, 18)
 
 
 def auge():
-    """L'auge de l'enclos du berger : un bac de planches, de l'eau dedans."""
-    t = Toile(32, 16)
-    boite(t, 2, 29, 14, 6, 5, [BOIS[0], BOIS[1], BOIS[2], BOIS[3], BOIS[4]], joints=3)
-    t.rect(4, 5, 27, 7, EAU[0]); t.rect(4, 5, 27, 5, EAU[1])
-    return t.fini(), (16, 16)
+    """L'auge de l'enclos du berger, vue de haut à 45° : un bac de planches de chêne évasé, cerclé
+    de fer, posé sur deux tréteaux ; le rebord éclairé ; l'eau dedans, plus claire au fond, ses
+    reflets et quelques brins de paille qui flottent ; des taches d'eau au sol ; l'ombre."""
+    t = Toile(34, 21)
+    for x0 in (4, 28):                                                # les tréteaux, aux deux bouts
+        for k in range(5):
+            t.put(x0 - 1 - k // 2, 13 + k, ton(CHENE, 0.55 - 0.05 * k))
+            t.put(x0 + 2 + k // 2, 13 + k, ton(CHENE, 0.30 - 0.03 * k))
+    for y in range(9, 16):                                            # la face avant, évasée vers le haut
+        r = (y - 9) // 3
+        for x in range(1 + r, 33 - r):
+            lum = 0.55 - 0.18 * (x / 32) - 0.12 * (y - 9) / 6 + 0.04 * bruit(x, y, 121)
+            if (y - 9) % 3 == 2:
+                lum -= 0.14                                            # le joint des planches
+            c = ton(CHENE, lum)
+            if x in (6, 7, 26, 27):
+                c = ton(ACIER, 0.62 if x in (6, 26) else 0.32)          # les cercles de fer
+            t.put(x, y, c)
+    for y in range(2, 9):                                             # le dessus : rebord et eau
+        for x in range(0, 34):
+            bord = y in (2, 8) or x in (0, 1, 32, 33)
+            if y in (2, 8) and x in (0, 33):
+                continue
+            if bord:
+                lum = 0.90 if (y == 2 or x <= 1) else 0.62
+                t.put(x, y, ton(CHENE, lum + 0.03 * bruit(x, y, 122)))
+            else:
+                lum = 0.35 + 0.30 * (y - 3) / 4 + 0.05 * bruit(x, y, 123)
+                if y == 3:
+                    lum -= 0.15                                        # l'ombre du rebord du fond
+                if (x - 2 * y) % 13 in (0, 1) and 3 < y < 7:
+                    lum += 0.25                                        # un reflet
+                t.put(x, y, ton(EAU_R, lum))
+    for x, y in ((9, 5), (10, 5), (21, 6), (22, 7)):                  # des brins de paille qui flottent
+        t.put(x, y, ton(PAILLE_R, 0.75))
+    for x in (6, 7, 26, 27):                                          # les cercles passent sur le rebord
+        t.put(x, 8, ton(ACIER, 0.7 if x in (6, 26) else 0.4))
+    im = ombre_portee(t.fini(), 17, 18, 16.5, 2.6)
+    p = im.load()
+    for x, y in ((3, 19), (4, 19), (29, 20), (30, 20), (16, 20)):     # des flaques
+        if p[x, y][3] < 200:
+            p[x, y] = ton(EAU_R, 0.35) + (255,)
+    return im, (17, 18)
 
 
 def claie():
