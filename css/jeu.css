@@ -1799,6 +1799,7 @@ body.has-stage { padding-bottom: 0; }
    paillasses. La bulle des murs s'ouvre sous la case des murs. */
 body.construction #player-card,
 body.construction #hud,
+body.construction #amis-bouton,
 body.construction #side-menu,
 body.construction #tool-bar,
 body.construction .boussole,
@@ -3881,3 +3882,97 @@ body.construction .habitant-emo, body.construction .presents-porte { display: no
 .bac-graine .bac-graine-nom { flex: 1; }
 .bac-graine small { white-space: nowrap; opacity: 0.8; }
 .bac-astuce { font-style: italic; }
+
+/* ---------- Les amis (js/ui/amis.js) : le bouton 💌, le volet, la fiche ---------- */
+.amis-bouton {
+  position: fixed;
+  top: calc(212px + env(safe-area-inset-top, 0px) - var(--header-h, 0px));
+  right: calc(12px + env(safe-area-inset-right, 0px));
+  z-index: var(--z-fab);
+  width: 46px; height: 46px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 1.35rem; line-height: 1;
+  background: var(--wood-cream); border: 3px solid var(--prune);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+.amis-bouton:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
+body:has(#modal-root > *) .amis-bouton { opacity: 0.2; pointer-events: none; }
+.amis-pastille {
+  display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 9px;
+  background: var(--rose); color: #fff; font-size: 0.72rem; font-weight: 700; line-height: 18px; text-align: center;
+}
+.amis-bouton .amis-pastille { position: absolute; top: -4px; right: -4px; box-shadow: 0 0 0 2px var(--wood-cream); }
+#amis-volet { position: fixed; inset: 0; z-index: calc(var(--z-modal) - 1); }
+.amis-fond { position: absolute; inset: 0; background: rgba(30, 21, 48, 0.25); }
+.amis-panneau {
+  position: absolute; top: 0; right: 0; bottom: 0; width: min(320px, 82vw);
+  display: flex; flex-direction: column;
+  background: var(--wood-cream); color: var(--wood-ink);
+  border-left: 4px solid var(--prune); box-shadow: -6px 0 18px rgba(0, 0, 0, 0.35);
+  animation: amis-entre 0.2s ease-out;
+}
+@keyframes amis-entre { from { transform: translateX(100%); } }
+.amis-panneau header {
+  display: flex; align-items: center; gap: 8px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px;
+  background: var(--prune); color: var(--wood-cream); font-weight: 700; font-size: 1.05rem;
+}
+.amis-x { margin-left: auto; min-width: 40px; min-height: 40px; background: none; border: 0; color: var(--wood-cream); font-size: 1.2rem; cursor: pointer; }
+.amis-liste { flex: 1; overflow-y: auto; padding-bottom: 8px; }
+.amis-liste h3 { margin: 12px 12px 4px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+.amis-v { display: flex; align-items: center; gap: 6px; padding: 4px 10px; }
+.amis-qui { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 2px; background: none; border: 0; border-radius: 10px; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.amis-qui:hover, .amis-qui:focus-visible { background: var(--wood-paper); }
+.amis-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.amis-id > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.amis-niv { display: inline-block; padding: 0 6px; border-radius: 999px; background: var(--prune); color: var(--wood-cream); font-size: 0.72rem; font-weight: 700; vertical-align: 1px; }
+.amis-ou { font-size: 0.78rem; color: var(--text-muted); }
+.amis-ou.on { color: #3d8a47; font-weight: 700; }
+.amis-v.off .amis-av { filter: grayscale(0.7) brightness(0.92); opacity: 0.85; }
+.amis-rond { flex: none; width: 40px; min-width: 40px; height: 40px; min-height: 40px; padding: 0; border-radius: 50%; font-size: 1rem; }
+.amis-av {
+  display: inline-block; flex: none;
+  width: calc(16px * var(--k)); height: calc(32px * var(--k));
+  background-repeat: no-repeat; background-size: calc(128px * var(--k)) calc(448px * var(--k)); background-position: 0 0;
+  image-rendering: pixelated;
+}
+.amis-av.marche { animation: amis-marche 0.72s steps(1) infinite; }
+.amis-av.respire { animation: amis-respire 1.2s steps(1) infinite; }
+@keyframes amis-marche {
+  0% { background-position: calc(-32px * var(--k)) 0; } 25% { background-position: calc(-48px * var(--k)) 0; }
+  50% { background-position: calc(-64px * var(--k)) 0; } 75% { background-position: calc(-80px * var(--k)) 0; }
+}
+@keyframes amis-respire { 0% { background-position: 0 0; } 50% { background-position: calc(-16px * var(--k)) 0; } }
+@media (prefers-reduced-motion: reduce) { .amis-av.marche, .amis-av.respire, .amis-panneau { animation: none; } }
+.amis-msg { display: flex; align-items: center; gap: 8px; margin: 4px 10px; padding: 8px; border-radius: 12px; background: var(--rose-pale); border: 2px solid var(--rose); font-size: 0.85rem; }
+.amis-msg span { flex: 1; }
+.amis-msg .btn { flex: none; min-height: 36px; padding: 2px 10px; font-size: 0.82rem; }
+.amis-vide, .amis-attente { margin: 12px; color: var(--text-muted); font-size: 0.88rem; }
+.amis-pied { padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); border-top: 2px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.amis-pied > .btn { width: 100%; }
+.amis-ajout { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; }
+.amis-ajout p { margin: 0; }
+.amis-code { font-size: 1.05rem; letter-spacing: 1px; color: var(--prune); user-select: all; }
+.amis-ajout .row { display: flex; gap: 6px; flex-wrap: wrap; }
+.amis-ajout input { flex: 1; min-width: 0; min-height: 40px; padding: 4px 10px; font: inherit; font-size: 1rem; text-transform: uppercase; border-radius: 10px; border: 2px solid var(--wood-light); background: #fff; color: var(--wood-ink); }
+.amis-fiche-fond { position: absolute; inset: 0; background: rgba(30, 21, 48, 0.35); }
+.amis-fiche {
+  position: absolute; left: 0; right: 0; bottom: 0; max-width: 520px; margin: 0 auto;
+  padding: 10px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  background: var(--wood-cream); color: var(--wood-ink);
+  border-top: 4px solid var(--prune); border-radius: 18px 18px 0 0; box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.35);
+  animation: amis-monte 0.2s ease-out;
+}
+@keyframes amis-monte { from { transform: translateY(100%); } }
+.amis-poignee { display: block; width: 60px; height: 18px; margin: 0 auto 6px; background: none; border: 0; cursor: pointer; position: relative; }
+.amis-poignee::after { content: ''; position: absolute; left: 8px; right: 8px; top: 6px; height: 5px; border-radius: 3px; background: var(--border); }
+.amis-fiche-haut { display: flex; gap: 14px; align-items: flex-end; }
+.amis-socle { flex: none; width: 96px; height: 118px; border-radius: 14px; display: flex; justify-content: center; align-items: flex-end; background: linear-gradient(var(--lavande) 0 60%, #7fb069 60%); }
+.amis-socle.off { background: linear-gradient(#444f9f 0 60%, #4f7a4a 60%); }
+.amis-socle .amis-av { margin-bottom: 4px; }
+.amis-fiche-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+.amis-fiche-id h2 { margin: 0; }
+.amis-fiche-actions { margin-top: 12px; gap: 6px; }
+.amis-fiche-actions .row { display: flex; gap: 6px; }
+.amis-fiche-actions .row .btn { flex: 1; }

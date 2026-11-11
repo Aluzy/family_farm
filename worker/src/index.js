@@ -310,6 +310,18 @@ async function routeMondes(request, env, origin, url) {
     const code = `${id}.${r.secret}`;
     return json({ ok: true, code, lien: `${env.JEU_URL || JEU_URL}#invitation=${code}`, expire: r.expire }, 200, origin);
   }
+  // Les amis : inviter un ami dans ce monde (le propriétaire) : un lien d'invitation, déposé dans sa boîte
+  if (parties[2] === 'inviter-ami' && request.method === 'POST') {
+    const b = await corpsJson();
+    const ami = String(b.compte || '');
+    const ok = await interne(env, '/interne/amis-ok', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ de: compte, pour: ami }) });
+    if (!ok.ok) return json({ ok: false, erreur: 'Vous n\'êtes pas (ou plus) amis.' }, 403, origin);
+    const r = await (await vers(id, 'inviter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'batisseur' }) })).json();
+    if (!r.ok) return json(r, 403, origin);
+    const m = ((await interne(env, '/interne/mondes?compte=' + encodeURIComponent(compte))).mondes || []).find((x) => x.monde === id);
+    const d = await interne(env, '/interne/amis-deposer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ de: compte, pour: ami, type: 'invitation', monde: id, code: `${id}.${r.secret}`, titre: m ? m.titre : 'Ma ferme' }) });
+    return json(d.ok ? { ok: true } : { ok: false, erreur: d.erreur }, d.ok ? 200 : 403, origin);
+  }
   if (parties[2] === 'retirer' && request.method === 'POST') {
     const b = await corpsJson();
     const r = await vers(id, 'retirer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ compte: b.compte }) });

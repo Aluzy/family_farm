@@ -13,6 +13,8 @@
 // visite. Le stockage est une base SQLite (`sql.exec(requête, ...valeurs)`, comme celle d'un Durable
 // Object de Cloudflare ; tests/test-comptes.mjs en fait une avec node:sqlite).
 
+import { Amis, routeAmis } from './amis.mjs';
+
 export const COMPTES = {
   LIEN_MIN: 15,             // minutes de validité d'un lien
   SESSION_JOURS: 90,        // jours de validité d'une session
@@ -61,6 +63,7 @@ export class Registre {
     this.sql = sql;
     this.maintenant = maintenant;
     creerTables(sql);
+    this.amis = new Amis(sql, maintenant);   // (les amis : amis.mjs)
   }
 
   un(requete, ...valeurs) { return lignes(this.sql.exec(requete, ...valeurs))[0] || null; }
@@ -143,6 +146,7 @@ export class Registre {
     this.faire('DELETE FROM sessions WHERE compte = ?', c.id);
     this.faire('DELETE FROM liens WHERE email = ?', c.email);
     this.faire('DELETE FROM mondes WHERE compte = ?', c.id);
+    this.amis.oublier(c.id);
     this.faire('DELETE FROM comptes WHERE id = ?', c.id);
     return { ok: true };
   }
@@ -209,6 +213,12 @@ export async function routeCompte(request, registre, env, envoyer = fetch) {
     const c = await registre.moi(session);
     return c ? { statut: 200, corps: { ok: true, compte: c } } : { statut: 401, corps: { ok: false, erreur: 'Pas connecté.' } };
   }
+  // les amis (amis.mjs) : connecté seulement
+  if (chemin === 'amis' || chemin.startsWith('amis/')) {
+    const c = await registre.moi(session);
+    if (!c) return { statut: 401, corps: { ok: false, erreur: 'Connecte-toi d\'abord (⚙️ Options › Jeu en ligne).' } };
+    return routeAmis(chemin, request, registre.amis, c);
+  }
   if (request.method === 'POST' && chemin === 'deconnexion') return { statut: 200, corps: await registre.deconnecter(session) };
   if (request.method === 'POST' && chemin === 'supprimer') {
     const r = await registre.supprimer(session);
@@ -236,6 +246,16 @@ export async function routeInterne(request, registre) {
     const b = await corps();
     registre.retirerMonde(String(b.compte), String(b.monde));
     return { statut: 200, corps: { ok: true } };
+  }
+  // (l'invitation d'un ami dans un monde : sont-ils amis ? puis le message dans sa boîte)
+  if (url.pathname === '/interne/amis-ok' && request.method === 'POST') {
+    const b = await corps();
+    return { statut: 200, corps: { ok: registre.amis.sontAmis(String(b.de || ''), String(b.pour || '')) } };
+  }
+  if (url.pathname === '/interne/amis-deposer' && request.method === 'POST') {
+    const b = await corps();
+    const r = registre.amis.deposer(String(b.de || ''), String(b.pour || ''), String(b.type || ''), { monde: b.monde, code: b.code, titre: b.titre });
+    return { statut: r.ok ? 200 : r.statut, corps: r };
   }
   if (url.pathname === '/interne/mondes') return { statut: 200, corps: { ok: true, mondes: registre.mondesDe(url.searchParams.get('compte') || '') } };
   return { statut: 404, corps: { ok: false, erreur: 'not found' } };
