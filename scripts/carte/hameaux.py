@@ -39,6 +39,7 @@ sys.path.insert(0, os.path.join(HERE, '..'))  # scripts/pixel.py
 sys.path.insert(0, os.path.join(HERE, '..', 'batiments'))  # style_v2.py (blocs.py)
 sys.path.insert(0, HERE)
 from pixel import ASSETS, ROOT, contour, hasard  # noqa: E402
+from nuances import bruit, rampe, ton  # noqa: E402,F401
 import blocs as B  # noqa: E402
 
 SORTIE = os.path.join(ASSETS, 'hameaux.png')
@@ -127,30 +128,7 @@ def boite(t, x0, x1, base, face, dessus, tons, joints=None):
             t.put(x, y, c)
 
 
-# ---------- les nuances : des rampes de tons interpolés, un bruit fixe ----------
-
-def bruit(x, y, s=0):
-    """Un bruit fixe de -1 à 1, tiré de (x, y, s) (le même à chaque relance)."""
-    h = (int(x) * 374761393 + int(y) * 668265263 + s * 2246822519) & 0xffffffff
-    h = ((h ^ (h >> 13)) * 1274126177) & 0xffffffff
-    return ((h ^ (h >> 16)) & 0xffff) / 32767.5 - 1
-
-
-def rampe(cles, n=40):
-    """n nuances interpolées entre des couleurs clés, du sombre au clair."""
-    out = []
-    for i in range(n):
-        f = i / (n - 1) * (len(cles) - 1)
-        k = min(int(f), len(cles) - 2)
-        r = f - k
-        out.append(tuple(round(cles[k][j] * (1 - r) + cles[k + 1][j] * r) for j in range(3)))
-    return out
-
-
-def ton(r, t):
-    """La nuance t (0 sombre … 1 clair) de la rampe r."""
-    return r[round(max(0.0, min(1.0, t)) * (len(r) - 1))]
-
+# ---------- les nuances (scripts/carte/nuances.py : bruit, rampe, ton) ----------
 
 def ombre_portee(im, cx, cy, rx, ry, a=80):
     """Une ombre douce au sol (une ellipse translucide), glissée sous le dessin déjà cerné."""
@@ -187,24 +165,54 @@ LAVANDE = rampe([(58, 36, 92), (96, 66, 140), (140, 108, 184), (186, 160, 220)])
 CHAMPI_R = rampe([(70, 36, 20), (122, 66, 36), (176, 108, 62), (216, 160, 108), (240, 216, 180)])
 BAIE_R = rampe([(56, 10, 30), (110, 22, 50), (170, 40, 70), (220, 90, 110), (250, 180, 190)])
 CEPE = rampe([(52, 30, 16), (96, 56, 28), (142, 92, 48), (190, 142, 92), (236, 214, 176)])
+FONTE_R = rampe([(14, 14, 16), (32, 32, 36), (56, 56, 62), (90, 90, 98), (140, 140, 150)])
 ECORCE = rampe([(30, 20, 12), (58, 40, 24), (88, 64, 40), (120, 92, 60), (150, 120, 82)])
 
 
 # ---------- les objets du hameau ----------
 
 def banc():
-    """Le banc de la place : deux cases de large, une planche d'assise sur quatre pieds, un dossier."""
-    t = Toile(32, 22)
-    for x in (4, 27):
-        t.rect(x, 4, x + 1, 13, BOIS[1])          # les montants du dossier
-    t.rect(3, 5, 28, 6, BOIS[3]); t.rect(3, 7, 28, 7, BOIS[2])     # le dossier
-    t.rect(3, 9, 28, 9, BOIS[1])
-    for x in (5, 26):
-        t.rect(x, 15, x + 1, 20, BOIS[0])         # les pieds
-    t.rect(2, 12, 29, 13, BOIS[4]); t.rect(2, 14, 29, 15, BOIS[2])     # l'assise
-    for x in range(6, 28, 7):
-        t.put(x, 12, BOIS[3])
-    return t.fini(), (16, 22)
+    """Le banc de la place, vu de haut à 45° : deux cases de large ; un dossier de deux lattes de chêne
+    sur ses montants, l'assise de trois lattes vue de dessus (le fil du bois, les vis), son chant ;
+    des accoudoirs de fer forgé enroulés ; quatre pieds et leur entretoise ; l'ombre."""
+    t = Toile(34, 26)
+    for x in (4, 28):                                                 # les montants du dossier
+        for y in range(3, 15):
+            t.put(x, y, ton(CHENE, 0.62 - 0.02 * (y - 3)))
+            t.put(x + 1, y, ton(CHENE, 0.32))
+    for y0 in (4, 8):                                                 # les lattes du dossier
+        for x in range(2, 32):
+            fil = 0.03 * bruit(x // 3, y0, 201) + 0.025 * bruit(x, y0, 202)
+            t.put(x, y0, ton(CHENE, 0.88 - 0.12 * x / 31 + fil))
+            t.put(x, y0 + 1, ton(CHENE, 0.62 - 0.12 * x / 31 + fil))
+            t.put(x, y0 + 2, ton(CHENE, 0.36 - 0.08 * x / 31))
+    for x in (5, 28):
+        for y0 in (5, 9):
+            t.put(x, y0, ton(ACIER, 0.85))                             # les vis
+    for x in (5, 26, 6, 27):                                          # les pieds
+        for y in range(18, 25):
+            t.put(x, y, ton(CHENE, (0.55 if x in (5, 26) else 0.28) - 0.02 * (y - 18)))
+    for x in range(7, 26):                                            # l'entretoise
+        t.put(x, 21, ton(CHENE, 0.42 - 0.1 * x / 25))
+    for k, y in enumerate((12, 14, 16)):                              # l'assise : trois lattes vues de dessus
+        for x in range(2, 32):
+            fil = 0.03 * bruit(x // 4, y, 203 + k) + 0.02 * bruit(x, y, 204)
+            t.put(x, y, ton(CHENE, 0.90 - 0.14 * x / 31 - 0.04 * k + fil))
+            t.put(x, y + 1, ton(CHENE, 0.58 - 0.14 * x / 31 - 0.04 * k + fil))      # le bord de la latte, le jour entre deux
+    for x in range(2, 32):                                            # le chant de l'assise
+        t.put(x, 18, ton(CHENE, 0.40 - 0.1 * x / 31))
+    for x in (6, 27):
+        for y in (12, 14, 16):
+            t.put(x, y + 1, ton(ACIER, 0.80))                          # les vis
+    for x0, sens in ((1, 1), (32, -1)):                               # les accoudoirs de fer forgé
+        for y in range(10, 19):
+            t.put(x0, y, ton(FONTE_R, 0.55 if sens > 0 else 0.30))
+        for k in range(3):
+            t.put(x0 + sens * k, 10, ton(FONTE_R, 0.75 - 0.1 * k))
+        t.put(x0 + sens * 2, 11, ton(FONTE_R, 0.5))
+        t.put(x0 + sens, 12, ton(FONTE_R, 0.35))                       # l'enroulement
+    im = ombre_portee(t.fini(), 17, 23.8, 16.5, 2.4)
+    return im, (17, 25)
 
 
 def panneau():
